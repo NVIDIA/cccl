@@ -68,7 +68,7 @@ public:
 
   tuple_of_iterator_references() = default;
 
-  // allow implicit construction from::cuda::std::tuple<refs>
+  // allow implicit construction from cuda::std::tuple<refs>
   _CCCL_HOST_DEVICE tuple_of_iterator_references(const super_t& other)
       : super_t(other)
   {}

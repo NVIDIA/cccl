@@ -121,8 +121,8 @@ struct make_zip_iterator_base<::cuda::std::tuple<Its...>>
 //!
 //! \code
 //! #include <thrust/iterator/zip_iterator.h>
-//! #include <cuda/std/tuple>
 //! #include <thrust/device_vector.h>
+//! #include <cuda/std/tuple>
 //! ...
 //! thrust::device_vector<int> int_v{0, 1, 2};
 //! thrust::device_vector<float> float_v{0.0f, 1.0f, 2.0f};
@@ -140,7 +140,7 @@ struct make_zip_iterator_base<::cuda::std::tuple<Its...>>
 //! using ZipIterator = thrust::zip_iterator<IteratorTuple>;
 //!
 //! // finally, create the zip_iterator
-//! ZipIterator iter(::cuda::std::make_tuple(int_v.begin(), float_v.begin(), char_v.begin()));
+//! ZipIterator iter(cuda::std::make_tuple(int_v.begin(), float_v.begin(), char_v.begin()));
 //!
 //! *iter;   // returns (0, 0.0f, 'a')
 //! iter[0]; // returns (0, 0.0f, 'a')
