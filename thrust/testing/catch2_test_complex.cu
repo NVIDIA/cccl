@@ -47,32 +47,23 @@ using other_floating_point_type_t = typename other_floating_point_type<T>::type;
 double const DEFAULT_RELATIVE_TOL = 1e-4;
 double const DEFAULT_ABSOLUTE_TOL = 1e-4;
 
-// Trait to detect complex types
-using true_type  = ::cuda::std::true_type;
-using false_type = ::cuda::std::false_type;
-
 template <typename T>
-struct is_complex : false_type
-{};
-
+inline constexpr bool is_complex = false;
 template <typename T>
-struct is_complex<thrust::complex<T>> : true_type
-{};
-
+inline constexpr bool is_complex<thrust::complex<T>> = true;
 template <typename T>
-struct is_complex<std::complex<T>> : true_type
-{};
+inline constexpr bool is_complex<std::complex<T>> = true;
 
 // Overload for complex types
 template <typename T1, typename T2>
-::cuda::std::enable_if_t<is_complex<T1>::value && is_complex<T2>::value> REQUIRE_ALMOST_EQUAL(const T1& a, const T2& b)
+::cuda::std::enable_if_t<is_complex<T1> && is_complex<T2>> require_almost_equal(const T1& a, const T2& b)
 {
   CHECK(a.real() == Catch::Approx(b.real()).margin(DEFAULT_ABSOLUTE_TOL).epsilon(DEFAULT_RELATIVE_TOL));
   CHECK(a.imag() == Catch::Approx(b.imag()).margin(DEFAULT_ABSOLUTE_TOL).epsilon(DEFAULT_RELATIVE_TOL));
 }
 
 template <typename T1, typename T2>
-::cuda::std::enable_if_t<!is_complex<T1>::value && !is_complex<T2>::value> REQUIRE_ALMOST_EQUAL(const T1& a, const T2& b)
+::cuda::std::enable_if_t<!is_complex<T1> && !is_complex<T2>> require_almost_equal(const T1& a, const T2& b)
 {
   CHECK(a == Catch::Approx(b).margin(DEFAULT_ABSOLUTE_TOL).epsilon(DEFAULT_RELATIVE_TOL));
 }
@@ -195,27 +186,27 @@ TEMPLATE_LIST_TEST_CASE("ComplexConstructionAndAssignmentWithPromoting", "[compl
 
   {
     const thrust::complex<T0> construct_from_real_and_imag(real_T1, imag_T1);
-    REQUIRE_ALMOST_EQUAL(real_T0, construct_from_real_and_imag.real());
-    REQUIRE_ALMOST_EQUAL(imag_T0, construct_from_real_and_imag.imag());
+    require_almost_equal(real_T0, construct_from_real_and_imag.real());
+    require_almost_equal(imag_T0, construct_from_real_and_imag.imag());
   }
 
   {
     const thrust::complex<T0> construct_from_real(real_T1);
-    REQUIRE_ALMOST_EQUAL(real_T0, construct_from_real.real());
+    require_almost_equal(real_T0, construct_from_real.real());
     CHECK(T0() == construct_from_real.imag());
   }
 
   {
     const thrust::complex<T1> expected(real_T1, imag_T1);
     thrust::complex<T0> construct_from_copy(expected);
-    REQUIRE_ALMOST_EQUAL(real_T0, construct_from_copy.real());
-    REQUIRE_ALMOST_EQUAL(imag_T0, construct_from_copy.imag());
+    require_almost_equal(real_T0, construct_from_copy.real());
+    require_almost_equal(imag_T0, construct_from_copy.imag());
   }
 
   {
     thrust::complex<T0> construct_from_move(thrust::complex<T1>(real_T1, imag_T1));
-    REQUIRE_ALMOST_EQUAL(real_T0, construct_from_move.real());
-    REQUIRE_ALMOST_EQUAL(imag_T0, construct_from_move.imag());
+    require_almost_equal(real_T0, construct_from_move.real());
+    require_almost_equal(imag_T0, construct_from_move.imag());
   }
 
   {
@@ -231,30 +222,30 @@ TEMPLATE_LIST_TEST_CASE("ComplexConstructionAndAssignmentWithPromoting", "[compl
     const thrust::complex<T1> expected{real_T1};
     const T1 to_be_copied = real_T1;
     assign_from_lvalue_T  = to_be_copied;
-    REQUIRE_ALMOST_EQUAL(expected.real(), assign_from_lvalue_T.real());
+    require_almost_equal(expected.real(), assign_from_lvalue_T.real());
     CHECK(expected.imag() == assign_from_lvalue_T.imag());
   }
 
   {
     const std::complex<T1> expected(real_T1, imag_T1);
     const thrust::complex<T0> copy_from_std(expected);
-    REQUIRE_ALMOST_EQUAL(expected.real(), copy_from_std.real());
-    REQUIRE_ALMOST_EQUAL(expected.imag(), copy_from_std.imag());
+    require_almost_equal(expected.real(), copy_from_std.real());
+    require_almost_equal(expected.imag(), copy_from_std.imag());
   }
 
   {
     thrust::complex<T1> assign_from_lvalue_std{};
     const std::complex<T0> expected(real_T1, imag_T1);
     assign_from_lvalue_std = expected;
-    REQUIRE_ALMOST_EQUAL(expected.real(), assign_from_lvalue_std.real());
-    REQUIRE_ALMOST_EQUAL(expected.imag(), assign_from_lvalue_std.imag());
+    require_almost_equal(expected.real(), assign_from_lvalue_std.real());
+    require_almost_equal(expected.imag(), assign_from_lvalue_std.imag());
   }
 
   {
     thrust::complex<T0> assign_from_rvalue_std{};
     assign_from_rvalue_std = std::complex<T1>(real_T1, imag_T1);
-    REQUIRE_ALMOST_EQUAL(real_T0, assign_from_rvalue_std.real());
-    REQUIRE_ALMOST_EQUAL(imag_T1, assign_from_rvalue_std.imag());
+    require_almost_equal(real_T0, assign_from_rvalue_std.real());
+    require_almost_equal(imag_T1, assign_from_rvalue_std.imag());
   }
 }
 
@@ -347,43 +338,43 @@ TEMPLATE_LIST_TEST_CASE("ComplexMemberOperators", "[complex]", FloatingPointType
 
     a_thrust += b_thrust;
     a_std += b_std;
-    REQUIRE_ALMOST_EQUAL(a_thrust, a_std);
+    require_almost_equal(a_thrust, a_std);
 
     a_thrust -= b_thrust;
     a_std -= b_std;
-    REQUIRE_ALMOST_EQUAL(a_thrust, a_std);
+    require_almost_equal(a_thrust, a_std);
 
     a_thrust *= b_thrust;
     a_std *= b_std;
-    REQUIRE_ALMOST_EQUAL(a_thrust, a_std);
+    require_almost_equal(a_thrust, a_std);
 
     a_thrust /= b_thrust;
     a_std /= b_std;
-    REQUIRE_ALMOST_EQUAL(a_thrust, a_std);
+    require_almost_equal(a_thrust, a_std);
 
     // arithmetic operators with `double` and `float`
     const T real = data[4];
 
     a_thrust += real;
     a_std += std::complex<T>(real);
-    REQUIRE_ALMOST_EQUAL(a_thrust, a_std);
+    require_almost_equal(a_thrust, a_std);
 
     a_thrust -= real;
     a_std -= std::complex<T>(real);
-    REQUIRE_ALMOST_EQUAL(a_thrust, a_std);
+    require_almost_equal(a_thrust, a_std);
 
     a_thrust *= real;
     a_std *= std::complex<T>(real);
-    REQUIRE_ALMOST_EQUAL(a_thrust, a_std);
+    require_almost_equal(a_thrust, a_std);
 
     a_thrust /= real;
     a_std /= std::complex<T>(real);
-    REQUIRE_ALMOST_EQUAL(a_thrust, a_std);
+    require_almost_equal(a_thrust, a_std);
 
     // casting operator
     a_std = (std::complex<T>) a_thrust;
-    REQUIRE_ALMOST_EQUAL(a_thrust.real(), a_std.real());
-    REQUIRE_ALMOST_EQUAL(a_thrust.imag(), a_std.imag());
+    require_almost_equal(a_thrust.real(), a_std.real());
+    require_almost_equal(a_thrust.imag(), a_std.imag());
   }
 
   // Testing arithmetic member operators with promoted types.
@@ -400,43 +391,43 @@ TEMPLATE_LIST_TEST_CASE("ComplexMemberOperators", "[complex]", FloatingPointType
     const std::complex<T1> b_std(data[2], data[3]);
 
     // The following tests require that thrust::complex and std::complex are `almost` equal.
-    REQUIRE_ALMOST_EQUAL(a_thrust, a_std);
-    REQUIRE_ALMOST_EQUAL(b_thrust, b_std);
+    require_almost_equal(a_thrust, a_std);
+    require_almost_equal(b_thrust, b_std);
 
     a_thrust += b_thrust;
     a_std += b_std;
-    REQUIRE_ALMOST_EQUAL(a_thrust, a_std);
+    require_almost_equal(a_thrust, a_std);
 
     a_thrust -= b_thrust;
     a_std -= b_std;
-    REQUIRE_ALMOST_EQUAL(a_thrust, a_std);
+    require_almost_equal(a_thrust, a_std);
 
     a_thrust *= b_thrust;
     a_std *= b_std;
-    REQUIRE_ALMOST_EQUAL(a_thrust, a_std);
+    require_almost_equal(a_thrust, a_std);
 
     a_thrust /= b_thrust;
     a_std /= b_std;
-    REQUIRE_ALMOST_EQUAL(a_thrust, a_std);
+    require_almost_equal(a_thrust, a_std);
 
     // Testing arithmetic member operators with another floating point type.
     const T1 e = data[2];
 
     a_thrust += e;
     a_std += std::complex<T1>(e);
-    REQUIRE_ALMOST_EQUAL(a_thrust, a_std);
+    require_almost_equal(a_thrust, a_std);
 
     a_thrust -= e;
     a_std -= std::complex<T1>(e);
-    REQUIRE_ALMOST_EQUAL(a_thrust, a_std);
+    require_almost_equal(a_thrust, a_std);
 
     a_thrust *= e;
     a_std *= std::complex<T1>(e);
-    REQUIRE_ALMOST_EQUAL(a_thrust, a_std);
+    require_almost_equal(a_thrust, a_std);
 
     a_thrust /= e;
     a_std /= std::complex<T1>(e);
-    REQUIRE_ALMOST_EQUAL(a_thrust, a_std);
+    require_almost_equal(a_thrust, a_std);
   }
 }
 
@@ -451,14 +442,14 @@ TEMPLATE_LIST_TEST_CASE("ComplexBasicArithmetic", "[complex]", FloatingPointType
   const std::complex<T> b(a);
 
   // Test the basic arithmetic functions against std
-  REQUIRE_ALMOST_EQUAL(thrust::abs(a), std::abs(b));
-  REQUIRE_ALMOST_EQUAL(thrust::arg(a), std::arg(b));
-  REQUIRE_ALMOST_EQUAL(thrust::norm(a), std::norm(b));
+  require_almost_equal(thrust::abs(a), std::abs(b));
+  require_almost_equal(thrust::arg(a), std::arg(b));
+  require_almost_equal(thrust::norm(a), std::norm(b));
 
   CHECK(thrust::conj(a) == std::conj(b));
   STATIC_REQUIRE(cuda::std::is_same<thrust::complex<T>, decltype(thrust::conj(a))>::value);
 
-  REQUIRE_ALMOST_EQUAL(thrust::polar(data[0], data[1]), std::polar(data[0], data[1]));
+  require_almost_equal(thrust::polar(data[0], data[1]), std::polar(data[0], data[1]));
   STATIC_REQUIRE(cuda::std::is_same<thrust::complex<T>, decltype(thrust::polar(data[0], data[1]))>::value);
 
   // random_samples does not seem to produce infinities so proj(z) == z
@@ -477,21 +468,21 @@ TEMPLATE_LIST_TEST_CASE("ComplexBinaryArithmetic", "[complex]", FloatingPointTyp
     const thrust::complex<T> b(data[2], data[3]);
     const T real = data[4];
 
-    REQUIRE_ALMOST_EQUAL(a * b, std::complex<T>(a) * std::complex<T>(b));
-    REQUIRE_ALMOST_EQUAL(a * real, std::complex<T>(a) * real);
-    REQUIRE_ALMOST_EQUAL(real * b, real * std::complex<T>(b));
+    require_almost_equal(a * b, std::complex<T>(a) * std::complex<T>(b));
+    require_almost_equal(a * real, std::complex<T>(a) * real);
+    require_almost_equal(real * b, real * std::complex<T>(b));
 
-    REQUIRE_ALMOST_EQUAL(a / b, std::complex<T>(a) / std::complex<T>(b));
-    REQUIRE_ALMOST_EQUAL(a / real, std::complex<T>(a) / real);
-    REQUIRE_ALMOST_EQUAL(real / b, real / std::complex<T>(b));
+    require_almost_equal(a / b, std::complex<T>(a) / std::complex<T>(b));
+    require_almost_equal(a / real, std::complex<T>(a) / real);
+    require_almost_equal(real / b, real / std::complex<T>(b));
 
-    REQUIRE_ALMOST_EQUAL(a + b, std::complex<T>(a) + std::complex<T>(b));
-    REQUIRE_ALMOST_EQUAL(a + real, std::complex<T>(a) + real);
-    REQUIRE_ALMOST_EQUAL(real + b, real + std::complex<T>(b));
+    require_almost_equal(a + b, std::complex<T>(a) + std::complex<T>(b));
+    require_almost_equal(a + real, std::complex<T>(a) + real);
+    require_almost_equal(real + b, real + std::complex<T>(b));
 
-    REQUIRE_ALMOST_EQUAL(a - b, std::complex<T>(a) - std::complex<T>(b));
-    REQUIRE_ALMOST_EQUAL(a - real, std::complex<T>(a) - real);
-    REQUIRE_ALMOST_EQUAL(real - b, real - std::complex<T>(b));
+    require_almost_equal(a - b, std::complex<T>(a) - std::complex<T>(b));
+    require_almost_equal(a - real, std::complex<T>(a) - real);
+    require_almost_equal(real - b, real - std::complex<T>(b));
   }
 
   // Testing binary arithmetic with promoted types.
@@ -509,21 +500,21 @@ TEMPLATE_LIST_TEST_CASE("ComplexBinaryArithmetic", "[complex]", FloatingPointTyp
     const T0 real_T0 = data[4];
     const T1 real_T1 = static_cast<T1>(real_T0);
 
-    REQUIRE_ALMOST_EQUAL(a_thrust * b_thrust, a_std * b_std);
-    REQUIRE_ALMOST_EQUAL(a_thrust * real_T1, a_std * real_T0);
-    REQUIRE_ALMOST_EQUAL(real_T0 * b_thrust, real_T0 * b_std);
+    require_almost_equal(a_thrust * b_thrust, a_std * b_std);
+    require_almost_equal(a_thrust * real_T1, a_std * real_T0);
+    require_almost_equal(real_T0 * b_thrust, real_T0 * b_std);
 
-    REQUIRE_ALMOST_EQUAL(a_thrust / b_thrust, a_std / b_std);
-    REQUIRE_ALMOST_EQUAL(a_thrust / real_T1, a_std / real_T0);
-    REQUIRE_ALMOST_EQUAL(real_T0 / b_thrust, real_T0 / b_std);
+    require_almost_equal(a_thrust / b_thrust, a_std / b_std);
+    require_almost_equal(a_thrust / real_T1, a_std / real_T0);
+    require_almost_equal(real_T0 / b_thrust, real_T0 / b_std);
 
-    REQUIRE_ALMOST_EQUAL(a_thrust + b_thrust, a_std + b_std);
-    REQUIRE_ALMOST_EQUAL(a_thrust + real_T1, a_std + real_T0);
-    REQUIRE_ALMOST_EQUAL(real_T0 + b_thrust, real_T0 + b_std);
+    require_almost_equal(a_thrust + b_thrust, a_std + b_std);
+    require_almost_equal(a_thrust + real_T1, a_std + real_T0);
+    require_almost_equal(real_T0 + b_thrust, real_T0 + b_std);
 
-    REQUIRE_ALMOST_EQUAL(a_thrust - b_thrust, a_std - b_std);
-    REQUIRE_ALMOST_EQUAL(a_thrust - real_T1, a_std - real_T0);
-    REQUIRE_ALMOST_EQUAL(real_T0 - b_thrust, real_T0 - b_std);
+    require_almost_equal(a_thrust - b_thrust, a_std - b_std);
+    require_almost_equal(a_thrust - real_T1, a_std - real_T0);
+    require_almost_equal(real_T0 - b_thrust, real_T0 - b_std);
   }
 }
 
@@ -548,9 +539,9 @@ TEMPLATE_LIST_TEST_CASE("ComplexExponentialFunctions", "[complex]", FloatingPoin
   const thrust::complex<T> a(data[0], data[1]);
   const std::complex<T> b(a);
 
-  REQUIRE_ALMOST_EQUAL(thrust::exp(a), std::exp(b));
-  REQUIRE_ALMOST_EQUAL(thrust::log(a), std::log(b));
-  REQUIRE_ALMOST_EQUAL(thrust::log10(a), std::log10(b));
+  require_almost_equal(thrust::exp(a), std::exp(b));
+  require_almost_equal(thrust::log(a), std::log(b));
+  require_almost_equal(thrust::log10(a), std::log10(b));
   STATIC_REQUIRE(cuda::std::is_same<thrust::complex<T>, decltype(thrust::exp(a))>::value);
   STATIC_REQUIRE(cuda::std::is_same<thrust::complex<T>, decltype(thrust::log(a))>::value);
   STATIC_REQUIRE(cuda::std::is_same<thrust::complex<T>, decltype(thrust::log10(a))>::value);
@@ -568,17 +559,17 @@ TEMPLATE_LIST_TEST_CASE("ComplexPowerFunctions", "[complex]", FloatingPointTypes
     const std::complex<T> a_std(a_thrust);
     const std::complex<T> b_std(b_thrust);
 
-    REQUIRE_ALMOST_EQUAL(thrust::pow(a_thrust, b_thrust), std::pow(a_std, b_std));
+    require_almost_equal(thrust::pow(a_thrust, b_thrust), std::pow(a_std, b_std));
     STATIC_REQUIRE(cuda::std::is_same<thrust::complex<T>, decltype(thrust::pow(a_thrust, b_thrust))>::value);
-    REQUIRE_ALMOST_EQUAL(thrust::pow(a_thrust, b_thrust.real()), std::pow(a_std, b_std.real()));
+    require_almost_equal(thrust::pow(a_thrust, b_thrust.real()), std::pow(a_std, b_std.real()));
     STATIC_REQUIRE(cuda::std::is_same<thrust::complex<T>, decltype(thrust::pow(a_thrust, b_thrust.real()))>::value);
-    REQUIRE_ALMOST_EQUAL(thrust::pow(a_thrust.real(), b_thrust), std::pow(a_std.real(), b_std));
+    require_almost_equal(thrust::pow(a_thrust.real(), b_thrust), std::pow(a_std.real(), b_std));
     STATIC_REQUIRE(cuda::std::is_same<thrust::complex<T>, decltype(thrust::pow(a_thrust.real(), b_thrust))>::value);
 
-    REQUIRE_ALMOST_EQUAL(thrust::pow(a_thrust, 4), std::pow(a_std, 4));
+    require_almost_equal(thrust::pow(a_thrust, 4), std::pow(a_std, 4));
     STATIC_REQUIRE(cuda::std::is_same<thrust::complex<T>, decltype(thrust::pow(a_thrust, 4))>::value);
 
-    REQUIRE_ALMOST_EQUAL(thrust::sqrt(a_thrust), std::sqrt(a_std));
+    require_almost_equal(thrust::sqrt(a_thrust), std::sqrt(a_std));
     STATIC_REQUIRE(cuda::std::is_same<thrust::complex<T>, decltype(thrust::sqrt(a_thrust))>::value);
   }
 
@@ -595,20 +586,20 @@ TEMPLATE_LIST_TEST_CASE("ComplexPowerFunctions", "[complex]", FloatingPointTypes
     const std::complex<T0> a_std(data[0], data[1]);
     const std::complex<T0> b_std(data[2], data[3]);
 
-    REQUIRE_ALMOST_EQUAL(thrust::pow(a_thrust, b_thrust), std::pow(a_std, b_std));
+    require_almost_equal(thrust::pow(a_thrust, b_thrust), std::pow(a_std, b_std));
     STATIC_REQUIRE(cuda::std::is_same<thrust::complex<promoted>, decltype(thrust::pow(a_thrust, b_thrust))>::value);
-    REQUIRE_ALMOST_EQUAL(thrust::pow(b_thrust, a_thrust), std::pow(b_std, a_std));
+    require_almost_equal(thrust::pow(b_thrust, a_thrust), std::pow(b_std, a_std));
     STATIC_REQUIRE(cuda::std::is_same<thrust::complex<promoted>, decltype(thrust::pow(b_thrust, a_thrust))>::value);
-    REQUIRE_ALMOST_EQUAL(thrust::pow(a_thrust, b_thrust.real()), std::pow(a_std, b_std.real()));
+    require_almost_equal(thrust::pow(a_thrust, b_thrust.real()), std::pow(a_std, b_std.real()));
     STATIC_REQUIRE(
       cuda::std::is_same<thrust::complex<promoted>, decltype(thrust::pow(a_thrust, b_thrust.real()))>::value);
-    REQUIRE_ALMOST_EQUAL(thrust::pow(b_thrust, a_thrust.real()), std::pow(b_std, a_std.real()));
+    require_almost_equal(thrust::pow(b_thrust, a_thrust.real()), std::pow(b_std, a_std.real()));
     STATIC_REQUIRE(
       cuda::std::is_same<thrust::complex<promoted>, decltype(thrust::pow(b_thrust, a_thrust.real()))>::value);
-    REQUIRE_ALMOST_EQUAL(thrust::pow(a_thrust.real(), b_thrust), std::pow(a_std.real(), b_std));
+    require_almost_equal(thrust::pow(a_thrust.real(), b_thrust), std::pow(a_std.real(), b_std));
     STATIC_REQUIRE(
       cuda::std::is_same<thrust::complex<promoted>, decltype(thrust::pow(a_thrust.real(), b_thrust))>::value);
-    REQUIRE_ALMOST_EQUAL(thrust::pow(b_thrust.real(), a_thrust), std::pow(b_std.real(), a_std));
+    require_almost_equal(thrust::pow(b_thrust.real(), a_thrust), std::pow(b_std.real(), a_std));
     STATIC_REQUIRE(
       cuda::std::is_same<thrust::complex<promoted>, decltype(thrust::pow(b_thrust.real(), a_thrust))>::value);
   }
@@ -623,30 +614,30 @@ TEMPLATE_LIST_TEST_CASE("ComplexTrigonometricFunctions", "[complex]", FloatingPo
   const thrust::complex<T> a(data[0], data[1]);
   const std::complex<T> c(a);
 
-  REQUIRE_ALMOST_EQUAL(thrust::cos(a), std::cos(c));
-  REQUIRE_ALMOST_EQUAL(thrust::sin(a), std::sin(c));
-  REQUIRE_ALMOST_EQUAL(thrust::tan(a), std::tan(c));
+  require_almost_equal(thrust::cos(a), std::cos(c));
+  require_almost_equal(thrust::sin(a), std::sin(c));
+  require_almost_equal(thrust::tan(a), std::tan(c));
   STATIC_REQUIRE(cuda::std::is_same<thrust::complex<T>, decltype(thrust::cos(a))>::value);
   STATIC_REQUIRE(cuda::std::is_same<thrust::complex<T>, decltype(thrust::sin(a))>::value);
   STATIC_REQUIRE(cuda::std::is_same<thrust::complex<T>, decltype(thrust::tan(a))>::value);
 
-  REQUIRE_ALMOST_EQUAL(thrust::cosh(a), std::cosh(c));
-  REQUIRE_ALMOST_EQUAL(thrust::sinh(a), std::sinh(c));
-  REQUIRE_ALMOST_EQUAL(thrust::tanh(a), std::tanh(c));
+  require_almost_equal(thrust::cosh(a), std::cosh(c));
+  require_almost_equal(thrust::sinh(a), std::sinh(c));
+  require_almost_equal(thrust::tanh(a), std::tanh(c));
   STATIC_REQUIRE(cuda::std::is_same<thrust::complex<T>, decltype(thrust::cosh(a))>::value);
   STATIC_REQUIRE(cuda::std::is_same<thrust::complex<T>, decltype(thrust::sinh(a))>::value);
   STATIC_REQUIRE(cuda::std::is_same<thrust::complex<T>, decltype(thrust::tanh(a))>::value);
 
-  REQUIRE_ALMOST_EQUAL(thrust::acos(a), std::acos(c));
-  REQUIRE_ALMOST_EQUAL(thrust::asin(a), std::asin(c));
-  REQUIRE_ALMOST_EQUAL(thrust::atan(a), std::atan(c));
+  require_almost_equal(thrust::acos(a), std::acos(c));
+  require_almost_equal(thrust::asin(a), std::asin(c));
+  require_almost_equal(thrust::atan(a), std::atan(c));
   STATIC_REQUIRE(cuda::std::is_same<thrust::complex<T>, decltype(thrust::acos(a))>::value);
   STATIC_REQUIRE(cuda::std::is_same<thrust::complex<T>, decltype(thrust::asin(a))>::value);
   STATIC_REQUIRE(cuda::std::is_same<thrust::complex<T>, decltype(thrust::atan(a))>::value);
 
-  REQUIRE_ALMOST_EQUAL(thrust::acosh(a), std::acosh(c));
-  REQUIRE_ALMOST_EQUAL(thrust::asinh(a), std::asinh(c));
-  REQUIRE_ALMOST_EQUAL(thrust::atanh(a), std::atanh(c));
+  require_almost_equal(thrust::acosh(a), std::acosh(c));
+  require_almost_equal(thrust::asinh(a), std::asinh(c));
+  require_almost_equal(thrust::atanh(a), std::atanh(c));
   STATIC_REQUIRE(cuda::std::is_same<thrust::complex<T>, decltype(thrust::acosh(a))>::value);
   STATIC_REQUIRE(cuda::std::is_same<thrust::complex<T>, decltype(thrust::asinh(a))>::value);
   STATIC_REQUIRE(cuda::std::is_same<thrust::complex<T>, decltype(thrust::atanh(a))>::value);
@@ -661,9 +652,9 @@ TEMPLATE_LIST_TEST_CASE("ComplexStreamOperators", "[complex]", FloatingPointType
 
   std::stringstream out;
   out << a;
-  thrust::complex<T> b(T(0), T(0));
+  thrust::complex<T> b{};
   out >> b;
-  REQUIRE_ALMOST_EQUAL(a, b);
+  require_almost_equal(a, b);
 }
 
 TEMPLATE_LIST_TEST_CASE("ComplexStdComplexDeviceInterop", "[complex]", FloatingPointTypes)
@@ -677,12 +668,12 @@ TEMPLATE_LIST_TEST_CASE("ComplexStdComplexDeviceInterop", "[complex]", FloatingP
   vec[2] = std::complex<T>(data[4], data[5]);
 
   thrust::device_vector<thrust::complex<T>> device_vec = vec;
-  REQUIRE_ALMOST_EQUAL(vec[0].real(), thrust::complex<T>(device_vec[0]).real());
-  REQUIRE_ALMOST_EQUAL(vec[0].imag(), thrust::complex<T>(device_vec[0]).imag());
-  REQUIRE_ALMOST_EQUAL(vec[1].real(), thrust::complex<T>(device_vec[1]).real());
-  REQUIRE_ALMOST_EQUAL(vec[1].imag(), thrust::complex<T>(device_vec[1]).imag());
-  REQUIRE_ALMOST_EQUAL(vec[2].real(), thrust::complex<T>(device_vec[2]).real());
-  REQUIRE_ALMOST_EQUAL(vec[2].imag(), thrust::complex<T>(device_vec[2]).imag());
+  require_almost_equal(vec[0].real(), thrust::complex<T>(device_vec[0]).real());
+  require_almost_equal(vec[0].imag(), thrust::complex<T>(device_vec[0]).imag());
+  require_almost_equal(vec[1].real(), thrust::complex<T>(device_vec[1]).real());
+  require_almost_equal(vec[1].imag(), thrust::complex<T>(device_vec[1]).imag());
+  require_almost_equal(vec[2].real(), thrust::complex<T>(device_vec[2]).real());
+  require_almost_equal(vec[2].imag(), thrust::complex<T>(device_vec[2]).imag());
 }
 
 TEMPLATE_LIST_TEST_CASE("ComplexExplicitConstruction", "[complex]", FloatingPointTypes)
