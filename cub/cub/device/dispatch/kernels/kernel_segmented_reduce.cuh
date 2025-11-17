@@ -102,7 +102,7 @@ template <typename ChainedPolicyT,
 CUB_DETAIL_KERNEL_ATTRIBUTES
 __launch_bounds__(int(ChainedPolicyT::ActivePolicy::ReducePolicy::BLOCK_THREADS)) void DeviceSegmentedReduceKernel(
   _CCCL_GRID_CONSTANT const InputIteratorT d_in,
-  OutputIteratorT d_out,
+  _CCCL_GRID_CONSTANT const OutputIteratorT d_out,
   _CCCL_GRID_CONSTANT const BeginOffsetIteratorT d_begin_offsets,
   _CCCL_GRID_CONSTANT const EndOffsetIteratorT d_end_offsets,
   _CCCL_GRID_CONSTANT const ReductionOpT reduction_op,
@@ -189,7 +189,7 @@ template <typename ChainedPolicyT,
 CUB_DETAIL_KERNEL_ATTRIBUTES
 __launch_bounds__(int(ChainedPolicyT::ActivePolicy::ReducePolicy::BLOCK_THREADS)) void DeviceFixedSizeSegmentedReduceKernel(
   _CCCL_GRID_CONSTANT const InputIteratorT d_in,
-  OutputIteratorT d_out,
+  _CCCL_GRID_CONSTANT const OutputIteratorT d_out,
   _CCCL_GRID_CONSTANT const OffsetT segment_size,
   _CCCL_GRID_CONSTANT const int num_segments,
   _CCCL_GRID_CONSTANT const ReductionOpT reduction_op,

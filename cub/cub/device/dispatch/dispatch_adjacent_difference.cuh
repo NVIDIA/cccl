@@ -33,7 +33,7 @@ namespace detail::adjacent_difference
 {
 template <typename AgentDifferenceInitT, typename InputIteratorT, typename InputT, typename OffsetT>
 CUB_DETAIL_KERNEL_ATTRIBUTES void
-DeviceAdjacentDifferenceInitKernel(InputIteratorT first, InputT* result, OffsetT num_tiles, int items_per_tile)
+DeviceAdjacentDifferenceInitKernel(_CCCL_GRID_CONSTANT const InputIteratorT first, InputT* result, _CCCL_GRID_CONSTANT const OffsetT num_tiles, _CCCL_GRID_CONSTANT const int items_per_tile)
 {
   const int tile_idx = static_cast<int>(blockIdx.x * blockDim.x + threadIdx.x);
   AgentDifferenceInitT::Process(tile_idx, first, result, num_tiles, items_per_tile);

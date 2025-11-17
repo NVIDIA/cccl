@@ -61,7 +61,7 @@ template <typename BufferOffsetScanTileStateT, typename BlockOffsetScanTileState
 CUB_DETAIL_KERNEL_ATTRIBUTES void InitTileStateKernel(
   BufferOffsetScanTileStateT buffer_offset_scan_tile_state,
   BlockOffsetScanTileStateT block_offset_scan_tile_state,
-  TileOffsetT num_tiles)
+  _CCCL_GRID_CONSTANT const TileOffsetT num_tiles)
 {
   // Initialize tile status
   buffer_offset_scan_tile_state.InitializeStatus(num_tiles);

@@ -115,10 +115,10 @@ template <typename ChainedPolicyT,
 __launch_bounds__(int(ChainedPolicyT::ActivePolicy::ThreeWayPartitionPolicy::BLOCK_THREADS))
   CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceThreeWayPartitionKernel(
     _CCCL_GRID_CONSTANT const InputIteratorT d_in,
-    FirstOutputIteratorT d_first_part_out,
-    SecondOutputIteratorT d_second_part_out,
-    UnselectedOutputIteratorT d_unselected_out,
-    NumSelectedIteratorT d_num_selected_out,
+    _CCCL_GRID_CONSTANT const FirstOutputIteratorT d_first_part_out,
+    _CCCL_GRID_CONSTANT const SecondOutputIteratorT d_second_part_out,
+    _CCCL_GRID_CONSTANT const UnselectedOutputIteratorT d_unselected_out,
+    _CCCL_GRID_CONSTANT const NumSelectedIteratorT d_num_selected_out,
     ScanTileStateT tile_status,
     _CCCL_GRID_CONSTANT const SelectFirstPartOp select_first_part_op,
     _CCCL_GRID_CONSTANT const SelectSecondPartOp select_second_part_op,
@@ -181,7 +181,7 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::ThreeWayPartitionPolicy::BLO
  */
 template <typename ScanTileStateT, typename NumSelectedIteratorT>
 CUB_DETAIL_KERNEL_ATTRIBUTES void
-DeviceThreeWayPartitionInitKernel(ScanTileStateT tile_state, _CCCL_GRID_CONSTANT const int num_tiles, NumSelectedIteratorT d_num_selected_out)
+DeviceThreeWayPartitionInitKernel(ScanTileStateT tile_state, _CCCL_GRID_CONSTANT const int num_tiles, _CCCL_GRID_CONSTANT const NumSelectedIteratorT d_num_selected_out)
 {
   // Initialize tile status
   tile_state.InitializeStatus(num_tiles);

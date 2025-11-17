@@ -133,9 +133,9 @@ __launch_bounds__(int(
   CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceUniqueByKeySweepKernel(
     _CCCL_GRID_CONSTANT const KeyInputIteratorT d_keys_in,
     _CCCL_GRID_CONSTANT const ValueInputIteratorT d_values_in,
-    KeyOutputIteratorT d_keys_out,
-    ValueOutputIteratorT d_values_out,
-    NumSelectedIteratorT d_num_selected_out,
+    _CCCL_GRID_CONSTANT const KeyOutputIteratorT d_keys_out,
+    _CCCL_GRID_CONSTANT const ValueOutputIteratorT d_values_out,
+    _CCCL_GRID_CONSTANT const NumSelectedIteratorT d_num_selected_out,
     ScanTileStateT tile_state,
     _CCCL_GRID_CONSTANT const EqualityOpT equality_op,
     _CCCL_GRID_CONSTANT const OffsetT num_items,

@@ -215,7 +215,7 @@ template <typename ChainedPolicyT,
 CUB_DETAIL_KERNEL_ATTRIBUTES __launch_bounds__(
   int(ChainedPolicyT::ActivePolicy::SingleTilePolicy::BLOCK_THREADS),
   1) void DeviceReduceSingleTileKernel(_CCCL_GRID_CONSTANT const InputIteratorT d_in,
-                                       OutputIteratorT d_out,
+                                       _CCCL_GRID_CONSTANT const OutputIteratorT d_out,
                                        _CCCL_GRID_CONSTANT const OffsetT num_items,
                                        _CCCL_GRID_CONSTANT const ReductionOpT reduction_op,
                                        _CCCL_GRID_CONSTANT const InitT init,
@@ -303,7 +303,7 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::ReducePolicy::BLOCK_THREADS)
   _CCCL_GRID_CONSTANT const int num_items,
   _CCCL_GRID_CONSTANT const ReductionOpT reduction_op,
   _CCCL_GRID_CONSTANT const TransformOpT transform_op,
-  const int reduce_grid_size)
+  _CCCL_GRID_CONSTANT const int reduce_grid_size)
 {
   using reduce_policy_t = typename ChainedPolicyT::ActivePolicy::ReducePolicy;
 
@@ -432,7 +432,7 @@ template <typename ChainedPolicyT,
 CUB_DETAIL_KERNEL_ATTRIBUTES __launch_bounds__(
   int(ChainedPolicyT::ActivePolicy::SingleTilePolicy::BLOCK_THREADS),
   1) void DeterministicDeviceReduceSingleTileKernel(_CCCL_GRID_CONSTANT const InputIteratorT d_in,
-                                                    OutputIteratorT d_out,
+                                                    _CCCL_GRID_CONSTANT const OutputIteratorT d_out,
                                                     _CCCL_GRID_CONSTANT const int num_items,
                                                     _CCCL_GRID_CONSTANT const ReductionOpT reduction_op,
                                                     _CCCL_GRID_CONSTANT const InitT init,
@@ -499,7 +499,7 @@ template <typename ChainedPolicyT,
 CUB_DETAIL_KERNEL_ATTRIBUTES __launch_bounds__(int(
   ChainedPolicyT::ActivePolicy::ReduceNondeterministicPolicy::
     BLOCK_THREADS)) void NondeterministicDeviceReduceAtomicKernel(_CCCL_GRID_CONSTANT const InputIteratorT d_in,
-                                                                  OutputIteratorT d_out,
+                                                                  _CCCL_GRID_CONSTANT const OutputIteratorT d_out,
                                                                   _CCCL_GRID_CONSTANT const OffsetT num_items,
                                                                   GridEvenShare<OffsetT> even_share,
                                                                   _CCCL_GRID_CONSTANT const ReductionOpT reduction_op,

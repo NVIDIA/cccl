@@ -89,7 +89,7 @@ __launch_bounds__(int((ALT_DIGIT_BITS) ? int(ChainedPolicyT::ActivePolicy::AltUp
     _CCCL_GRID_CONSTANT const int current_bit,
     _CCCL_GRID_CONSTANT const int num_bits,
     GridEvenShare<OffsetT> even_share,
-    DecomposerT decomposer = {})
+    _CCCL_GRID_CONSTANT const DecomposerT decomposer = {})
 {
   using ActiveUpsweepPolicyT =
     ::cuda::std::_If<ALT_DIGIT_BITS,
@@ -247,7 +247,7 @@ __launch_bounds__(int((ALT_DIGIT_BITS) ? int(ChainedPolicyT::ActivePolicy::AltDo
     _CCCL_GRID_CONSTANT const int current_bit,
     _CCCL_GRID_CONSTANT const int num_bits,
     GridEvenShare<OffsetT> even_share,
-    DecomposerT decomposer = {})
+    _CCCL_GRID_CONSTANT const DecomposerT decomposer = {})
 {
   using ActiveUpsweepPolicyT =
     ::cuda::std::_If<ALT_DIGIT_BITS,
@@ -334,7 +334,7 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::SingleTilePolicy::BLOCK_THRE
     OffsetT num_items,
     _CCCL_GRID_CONSTANT const int current_bit,
     _CCCL_GRID_CONSTANT const int end_bit,
-    DecomposerT decomposer = {})
+    _CCCL_GRID_CONSTANT const DecomposerT decomposer = {})
 {
   // Constants
   static constexpr int BLOCK_THREADS    = ChainedPolicyT::ActivePolicy::SingleTilePolicy::BLOCK_THREADS;
@@ -444,7 +444,7 @@ template <typename ChainedPolicyT,
           typename DecomposerT = identity_decomposer_t>
 CUB_DETAIL_KERNEL_ATTRIBUTES
 __launch_bounds__(ChainedPolicyT::ActivePolicy::HistogramPolicy::BLOCK_THREADS) void DeviceRadixSortHistogramKernel(
-  OffsetT* d_bins_out, const KeyT* d_keys_in, _CCCL_GRID_CONSTANT const OffsetT num_items, _CCCL_GRID_CONSTANT const int start_bit, _CCCL_GRID_CONSTANT const int end_bit, DecomposerT decomposer = {})
+  OffsetT* d_bins_out, KeyT* d_keys_in, _CCCL_GRID_CONSTANT const OffsetT num_items, _CCCL_GRID_CONSTANT const int start_bit, _CCCL_GRID_CONSTANT const int end_bit, _CCCL_GRID_CONSTANT const DecomposerT decomposer = {})
 {
   using HistogramPolicyT = typename ChainedPolicyT::ActivePolicy::HistogramPolicy;
   using AgentT = AgentRadixSortHistogram<HistogramPolicyT, Order == SortOrder::Descending, KeyT, OffsetT, DecomposerT>;
@@ -474,7 +474,7 @@ CUB_DETAIL_KERNEL_ATTRIBUTES void __launch_bounds__(ChainedPolicyT::ActivePolicy
     _CCCL_GRID_CONSTANT const PortionOffsetT num_items,
     _CCCL_GRID_CONSTANT const int current_bit,
     _CCCL_GRID_CONSTANT const int num_bits,
-    DecomposerT decomposer = {})
+    _CCCL_GRID_CONSTANT const DecomposerT decomposer = {})
 {
   using OnesweepPolicyT = typename ChainedPolicyT::ActivePolicy::OnesweepPolicy;
   using AgentT =
