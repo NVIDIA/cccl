@@ -86,6 +86,7 @@ Structs
 * :doc:`cub::DeviceScan <structcub_1_1DeviceScan>`
 * :doc:`cub::DeviceSegmentedRadixSort <structcub_1_1DeviceSegmentedRadixSort>`
 * :doc:`cub::DeviceSegmentedReduce <structcub_1_1DeviceSegmentedReduce>`
+* :doc:`cub::DeviceSegmentedScan <structcub_1_1DeviceSegmentedScan>`
 * :doc:`cub::DeviceSegmentedSort <structcub_1_1DeviceSegmentedSort>`
 * :doc:`cub::DeviceSelect <structcub_1_1DeviceSelect>`
 * :doc:`cub::DeviceTopK <structcub_1_1DeviceTopK>`
@@ -279,6 +280,7 @@ Enumerations
    structcub_1_1DeviceScan
    structcub_1_1DeviceSegmentedRadixSort
    structcub_1_1DeviceSegmentedReduce
+   structcub_1_1DeviceSegmentedScan
    structcub_1_1DeviceSegmentedSort
    structcub_1_1DeviceSelect
    structcub_1_1DeviceTopK
