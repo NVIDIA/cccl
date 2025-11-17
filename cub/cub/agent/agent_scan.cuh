@@ -379,7 +379,7 @@ struct AgentScan
 
     if constexpr (UsePDL)
     {
-      _CCCL_PDL_TRIGGER_NEXT_LAUNCH();
+      _CCCL_PDL_TRIGGER_NEXT_LAUNCH(); // omitting makes almost no difference in cub.bench.scan.exclusive.sum.base
     }
 
     // Store items
