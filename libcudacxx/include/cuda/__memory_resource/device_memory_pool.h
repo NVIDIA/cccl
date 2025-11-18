@@ -37,7 +37,7 @@
 //! @file
 //! The \c device_memory_pool class provides an asynchronous memory resource that allocates device memory in stream
 //! order.
-_CCCL_BEGIN_NAMESPACE_CUDA
+_CCCL_BEGIN_NAMESPACE_CUDA_MR
 
 //! @rst
 //! .. _cudax-memory-resource-async:
@@ -82,7 +82,7 @@ public:
 //! @returns The default memory pool of the specified device.
 [[nodiscard]] inline device_memory_pool_ref device_default_memory_pool(::cuda::device_ref __device)
 {
-  ::cuda::__verify_device_supports_stream_ordered_allocations(__device.get());
+  ::cuda::mr::__verify_device_supports_stream_ordered_allocations(__device.get());
 
   ::cudaMemPool_t __pool;
   _CCCL_TRY_CUDA_API(
@@ -142,7 +142,7 @@ static_assert(::cuda::mr::synchronous_resource_with<device_memory_pool_ref, ::cu
 
 static_assert(::cuda::mr::resource_with<device_memory_pool, ::cuda::mr::device_accessible>, "");
 
-_CCCL_END_NAMESPACE_CUDA
+_CCCL_END_NAMESPACE_CUDA_MR
 
 #include <cuda/std/__cccl/epilogue.h>
 

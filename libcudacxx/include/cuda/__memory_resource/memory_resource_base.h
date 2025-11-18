@@ -39,7 +39,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_CCCL_BEGIN_NAMESPACE_CUDA
+_CCCL_BEGIN_NAMESPACE_CUDA_MR
 
 enum class __pool_attr_settable : bool
 {
@@ -119,7 +119,7 @@ struct __pool_attr<::cudaMemPoolAttrReservedMemHigh>
 {
   static void set(::cudaMemPool_t __pool, type __value)
   {
-    ::cuda::__set_attribute_non_zero_only(__pool, ::CU_MEMPOOL_ATTR_RESERVED_MEM_HIGH, __value);
+    ::cuda::mr::__set_attribute_non_zero_only(__pool, ::CU_MEMPOOL_ATTR_RESERVED_MEM_HIGH, __value);
   }
 };
 
@@ -129,7 +129,7 @@ struct __pool_attr<::cudaMemPoolAttrUsedMemHigh>
 {
   static void set(::cudaMemPool_t __pool, type __value)
   {
-    ::cuda::__set_attribute_non_zero_only(__pool, ::CU_MEMPOOL_ATTR_USED_MEM_HIGH, __value);
+    ::cuda::mr::__set_attribute_non_zero_only(__pool, ::CU_MEMPOOL_ATTR_USED_MEM_HIGH, __value);
   }
 };
 
@@ -299,8 +299,9 @@ struct memory_pool_properties
   if (__error != ::cudaSuccess)
   {
     // Mempool creation failed, lets try to figure out why
-    ::cuda::__verify_device_supports_stream_ordered_allocations(__location.id);
-    ::cuda::__verify_device_supports_export_handle_type(__location.id, __properties.allocation_handle_type, __location);
+    ::cuda::mr::__verify_device_supports_stream_ordered_allocations(__location.id);
+    ::cuda::mr::__verify_device_supports_export_handle_type(
+      __location.id, __properties.allocation_handle_type, __location);
 
     // Could not find the reason, throw a generic error
     ::cuda::__throw_cuda_error(__error, "Failed to create a memory pool");
@@ -509,7 +510,8 @@ public:
   //! @param __devices A span of `device_ref`s listing devices to enable access for
   _CCCL_HOST_API void enable_access_from(::cuda::std::span<const device_ref> __devices)
   {
-    ::cuda::__mempool_set_access(__pool_, {__devices.data(), __devices.size()}, ::CU_MEM_ACCESS_FLAGS_PROT_READWRITE);
+    ::cuda::mr::__mempool_set_access(
+      __pool_, {__devices.data(), __devices.size()}, ::CU_MEM_ACCESS_FLAGS_PROT_READWRITE);
   }
 
   //! @brief Enable access to memory allocated through this memory resource by the supplied device
@@ -520,7 +522,7 @@ public:
   //! @param __device device_ref indicating for which device the access should be enabled
   _CCCL_HOST_API void enable_access_from(device_ref __device)
   {
-    ::cuda::__mempool_set_access(__pool_, {&__device, 1}, ::CU_MEM_ACCESS_FLAGS_PROT_READWRITE);
+    ::cuda::mr::__mempool_set_access(__pool_, {&__device, 1}, ::CU_MEM_ACCESS_FLAGS_PROT_READWRITE);
   }
 
   //! @brief Disable access to memory allocated through this memory resource by the supplied devices
@@ -532,7 +534,7 @@ public:
   //! @param __devices A span of `device_ref`s listing devices to disable access for
   _CCCL_HOST_API void disable_access_from(::cuda::std::span<const device_ref> __devices)
   {
-    ::cuda::__mempool_set_access(__pool_, {__devices.data(), __devices.size()}, ::CU_MEM_ACCESS_FLAGS_PROT_NONE);
+    ::cuda::mr::__mempool_set_access(__pool_, {__devices.data(), __devices.size()}, ::CU_MEM_ACCESS_FLAGS_PROT_NONE);
   }
 
   //! @brief Disable access to memory allocated through this memory resource by the supplied device
@@ -543,7 +545,7 @@ public:
   //! @param __device device_ref indicating for which device the access should be disabled
   _CCCL_HOST_API void disable_access_from(device_ref __device)
   {
-    ::cuda::__mempool_set_access(__pool_, {&__device, 1}, ::CU_MEM_ACCESS_FLAGS_PROT_NONE);
+    ::cuda::mr::__mempool_set_access(__pool_, {&__device, 1}, ::CU_MEM_ACCESS_FLAGS_PROT_NONE);
   }
 
   //! @brief Query if memory allocated through this memory resource is accessible by the supplied device
@@ -551,7 +553,7 @@ public:
   //! @param __device device for which the access is queried
   [[nodiscard]] _CCCL_HOST_API bool is_accessible_from(device_ref __device)
   {
-    return ::cuda::__mempool_get_access(__pool_, __device);
+    return ::cuda::mr::__mempool_get_access(__pool_, __device);
   }
 
   //! @brief Equality comparison with another __memory_resource_base.
@@ -571,7 +573,7 @@ public:
 #endif // _CCCL_STD_VER <= 2017
 };
 
-_CCCL_END_NAMESPACE_CUDA
+_CCCL_END_NAMESPACE_CUDA_MR
 
 #include <cuda/std/__cccl/epilogue.h>
 

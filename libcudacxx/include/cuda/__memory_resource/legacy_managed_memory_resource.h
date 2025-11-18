@@ -38,7 +38,7 @@
 
 //! @file
 //! The \c managed_memory_resource class provides a memory resource that allocates managed memory.
-_CCCL_BEGIN_NAMESPACE_CUDA
+_CCCL_BEGIN_NAMESPACE_CUDA_MR
 
 //! @brief \c managed_memory_resource uses `cudaMallocManaged` / `cudaFree` for allocation / deallocation.
 class legacy_managed_memory_resource
@@ -141,7 +141,7 @@ private:
 static_assert(::cuda::mr::synchronous_resource_with<legacy_managed_memory_resource, ::cuda::mr::device_accessible>, "");
 static_assert(::cuda::mr::synchronous_resource_with<legacy_managed_memory_resource, ::cuda::mr::host_accessible>, "");
 
-_CCCL_END_NAMESPACE_CUDA
+_CCCL_END_NAMESPACE_CUDA_MR
 
 #include <cuda/std/__cccl/epilogue.h>
 

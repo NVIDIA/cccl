@@ -47,7 +47,7 @@ void check_result_and_erase(cudax::stream_ref stream, Result&& result, uint8_t p
 template <typename Layout = cuda::std::layout_right, typename Extents>
 auto make_buffer_for_mdspan(Extents extents, char value = 0)
 {
-  cuda::legacy_pinned_memory_resource host_resource;
+  cuda::mr::legacy_pinned_memory_resource host_resource;
   auto mapping = typename Layout::template mapping<decltype(extents)>{extents};
 
   cudax::uninitialized_buffer<int, cuda::mr::host_accessible> buffer(host_resource, mapping.required_span_size());
@@ -75,11 +75,11 @@ namespace cuda::experimental
 template <typename RelocatableValue = cuda::std::span<int>>
 struct weird_buffer
 {
-  legacy_pinned_memory_resource& resource;
+  cuda::mr::legacy_pinned_memory_resource& resource;
   int* data;
   std::size_t size;
 
-  weird_buffer(legacy_pinned_memory_resource& res, std::size_t s)
+  weird_buffer(cuda::mr::legacy_pinned_memory_resource& res, std::size_t s)
       : resource(res)
       , data((int*) res.allocate_sync(s * sizeof(int)))
       , size(s)
