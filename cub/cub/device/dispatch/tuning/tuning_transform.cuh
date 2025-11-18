@@ -372,6 +372,7 @@ struct policy_hub<RequiresStableAddress,
     using prefetch_policy        = prefetch_policy_t<256>;
     using vectorized_policy      = vectorized_policy_t<
            tuning_vec<500, size_of<it_value_t<RandomAccessIteratorOut>>, sizeof(it_value_t<RandomAccessIteratorsIn>)...>>;
+    using async_policy              = void;
     static constexpr auto algorithm = fallback_to_prefetch ? Algorithm::prefetch : Algorithm::vectorized;
   };
 
