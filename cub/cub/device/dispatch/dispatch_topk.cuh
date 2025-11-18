@@ -125,8 +125,8 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::topk_policy_t::block_threads
     _CCCL_GRID_CONSTANT const OffsetT num_items,
     _CCCL_GRID_CONSTANT const OutOffsetT k,
     _CCCL_GRID_CONSTANT const OffsetT buffer_length,
-    _CCCL_GRID_CONSTANT const ExtractBinOpT extract_bin_op,
-    _CCCL_GRID_CONSTANT const IdentifyCandidatesOpT identify_candidates_op,
+    ExtractBinOpT extract_bin_op,
+    IdentifyCandidatesOpT identify_candidates_op,
     _CCCL_GRID_CONSTANT const int pass)
 {
   using agent_topk_policy_t = typename ChainedPolicyT::ActivePolicy::topk_policy_t;
@@ -178,7 +178,7 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::topk_policy_t::block_threads
     _CCCL_GRID_CONSTANT const OffsetT num_items,
     _CCCL_GRID_CONSTANT const OutOffsetT k,
     _CCCL_GRID_CONSTANT const OffsetT buffer_length,
-    _CCCL_GRID_CONSTANT const IdentifyCandidatesOpT identify_candidates_op,
+    IdentifyCandidatesOpT identify_candidates_op,
     _CCCL_GRID_CONSTANT const int pass)
 {
   using agent_topk_policy_t = typename ChainedPolicyT::ActivePolicy::topk_policy_t;

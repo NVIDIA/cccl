@@ -143,7 +143,7 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::ScanPolicyT::BLOCK_THREADS))
     _CCCL_GRID_CONSTANT const OutputIteratorT d_out,
     ScanTileStateT tile_state,
     _CCCL_GRID_CONSTANT const int start_tile,
-    _CCCL_GRID_CONSTANT const ScanOpT scan_op,
+    ScanOpT scan_op,
     InitValueT init_value,
     _CCCL_GRID_CONSTANT const OffsetT num_items)
 {

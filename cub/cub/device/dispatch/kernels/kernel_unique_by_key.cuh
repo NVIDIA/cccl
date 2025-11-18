@@ -137,7 +137,7 @@ __launch_bounds__(int(
     _CCCL_GRID_CONSTANT const ValueOutputIteratorT d_values_out,
     _CCCL_GRID_CONSTANT const NumSelectedIteratorT d_num_selected_out,
     ScanTileStateT tile_state,
-    _CCCL_GRID_CONSTANT const EqualityOpT equality_op,
+    EqualityOpT equality_op,
     _CCCL_GRID_CONSTANT const OffsetT num_items,
     _CCCL_GRID_CONSTANT const int num_tiles,
     vsmem_t vsmem)

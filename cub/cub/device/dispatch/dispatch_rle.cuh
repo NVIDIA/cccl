@@ -175,7 +175,7 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::RleSweepPolicyT::BLOCK_THREA
     _CCCL_GRID_CONSTANT const LengthsOutputIteratorT d_lengths_out,
     _CCCL_GRID_CONSTANT const NumRunsOutputIteratorT d_num_runs_out,
     ScanTileStateT tile_status,
-    _CCCL_GRID_CONSTANT const EqualityOpT equality_op,
+    EqualityOpT equality_op,
     _CCCL_GRID_CONSTANT const OffsetT num_items,
     _CCCL_GRID_CONSTANT const int num_tiles,
     _CCCL_GRID_CONSTANT const StreamingContextT streaming_context)

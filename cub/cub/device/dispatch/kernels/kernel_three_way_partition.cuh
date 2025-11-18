@@ -120,8 +120,8 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::ThreeWayPartitionPolicy::BLO
     _CCCL_GRID_CONSTANT const UnselectedOutputIteratorT d_unselected_out,
     _CCCL_GRID_CONSTANT const NumSelectedIteratorT d_num_selected_out,
     ScanTileStateT tile_status,
-    _CCCL_GRID_CONSTANT const SelectFirstPartOp select_first_part_op,
-    _CCCL_GRID_CONSTANT const SelectSecondPartOp select_second_part_op,
+    SelectFirstPartOp select_first_part_op,
+    SelectSecondPartOp select_second_part_op,
     _CCCL_GRID_CONSTANT const OffsetT num_items,
     _CCCL_GRID_CONSTANT const int num_tiles,
     _CCCL_GRID_CONSTANT const StreamingContextT streaming_context)

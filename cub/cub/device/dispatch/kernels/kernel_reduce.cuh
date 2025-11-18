@@ -133,8 +133,8 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::ReducePolicy::BLOCK_THREADS)
   AccumT* d_out,
   _CCCL_GRID_CONSTANT const OffsetT num_items,
   GridEvenShare<OffsetT> even_share,
-  _CCCL_GRID_CONSTANT const ReductionOpT reduction_op,
-  _CCCL_GRID_CONSTANT const TransformOpT transform_op)
+  ReductionOpT reduction_op,
+  TransformOpT transform_op)
 {
   // Thread block type for reducing input tiles
   using AgentReduceT =
@@ -217,9 +217,9 @@ CUB_DETAIL_KERNEL_ATTRIBUTES __launch_bounds__(
   1) void DeviceReduceSingleTileKernel(_CCCL_GRID_CONSTANT const InputIteratorT d_in,
                                        _CCCL_GRID_CONSTANT const OutputIteratorT d_out,
                                        _CCCL_GRID_CONSTANT const OffsetT num_items,
-                                       _CCCL_GRID_CONSTANT const ReductionOpT reduction_op,
+                                       ReductionOpT reduction_op,
                                        _CCCL_GRID_CONSTANT const InitT init,
-                                       _CCCL_GRID_CONSTANT const TransformOpT transform_op)
+                                       TransformOpT transform_op)
 {
   // Thread block type for reducing input tiles
   using AgentReduceT =
@@ -301,8 +301,8 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::ReducePolicy::BLOCK_THREADS)
   _CCCL_GRID_CONSTANT const InputIteratorT d_in,
   AccumT* d_out,
   _CCCL_GRID_CONSTANT const int num_items,
-  _CCCL_GRID_CONSTANT const ReductionOpT reduction_op,
-  _CCCL_GRID_CONSTANT const TransformOpT transform_op,
+  ReductionOpT reduction_op,
+  TransformOpT transform_op,
   _CCCL_GRID_CONSTANT const int reduce_grid_size)
 {
   using reduce_policy_t = typename ChainedPolicyT::ActivePolicy::ReducePolicy;
@@ -434,9 +434,9 @@ CUB_DETAIL_KERNEL_ATTRIBUTES __launch_bounds__(
   1) void DeterministicDeviceReduceSingleTileKernel(_CCCL_GRID_CONSTANT const InputIteratorT d_in,
                                                     _CCCL_GRID_CONSTANT const OutputIteratorT d_out,
                                                     _CCCL_GRID_CONSTANT const int num_items,
-                                                    _CCCL_GRID_CONSTANT const ReductionOpT reduction_op,
+                                                    ReductionOpT reduction_op,
                                                     _CCCL_GRID_CONSTANT const InitT init,
-                                                    _CCCL_GRID_CONSTANT const TransformOpT transform_op)
+                                                    TransformOpT transform_op)
 {
   using single_tile_policy_t = typename ChainedPolicyT::ActivePolicy::SingleTilePolicy;
 
@@ -502,9 +502,9 @@ CUB_DETAIL_KERNEL_ATTRIBUTES __launch_bounds__(int(
                                                                   _CCCL_GRID_CONSTANT const OutputIteratorT d_out,
                                                                   _CCCL_GRID_CONSTANT const OffsetT num_items,
                                                                   GridEvenShare<OffsetT> even_share,
-                                                                  _CCCL_GRID_CONSTANT const ReductionOpT reduction_op,
+                                                                  ReductionOpT reduction_op,
                                                                   _CCCL_GRID_CONSTANT const InitT init,
-                                                                  _CCCL_GRID_CONSTANT const TransformOpT transform_op)
+                                                                  TransformOpT transform_op)
 {
   NV_IF_TARGET(NV_PROVIDES_SM_60,
                (),

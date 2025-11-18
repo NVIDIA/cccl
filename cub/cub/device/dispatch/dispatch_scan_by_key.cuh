@@ -123,7 +123,7 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::ScanByKeyPolicyT::BLOCK_THRE
     _CCCL_GRID_CONSTANT const ValuesOutputIteratorT d_values_out,
     ScanByKeyTileStateT tile_state,
     _CCCL_GRID_CONSTANT const int start_tile,
-    _CCCL_GRID_CONSTANT const EqualityOp equality_op,
+    EqualityOp equality_op,
     _CCCL_GRID_CONSTANT const ScanOpT scan_op,
     _CCCL_GRID_CONSTANT const InitValueT init_value,
     _CCCL_GRID_CONSTANT const OffsetT num_items)

@@ -188,8 +188,8 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::ReduceByKeyPolicyT::BLOCK_TH
     _CCCL_GRID_CONSTANT const NumRunsOutputIteratorT d_num_runs_out,
     ScanTileStateT tile_state,
     _CCCL_GRID_CONSTANT const int start_tile,
-    _CCCL_GRID_CONSTANT const EqualityOpT equality_op,
-    _CCCL_GRID_CONSTANT const ReductionOpT reduction_op,
+    EqualityOpT equality_op,
+    ReductionOpT reduction_op,
     _CCCL_GRID_CONSTANT const OffsetT num_items,
     _CCCL_GRID_CONSTANT const StreamingContextT streaming_context,
     vsmem_t vsmem)

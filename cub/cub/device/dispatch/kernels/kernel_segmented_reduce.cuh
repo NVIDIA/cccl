@@ -105,7 +105,7 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::ReducePolicy::BLOCK_THREADS)
   _CCCL_GRID_CONSTANT const OutputIteratorT d_out,
   _CCCL_GRID_CONSTANT const BeginOffsetIteratorT d_begin_offsets,
   _CCCL_GRID_CONSTANT const EndOffsetIteratorT d_end_offsets,
-  _CCCL_GRID_CONSTANT const ReductionOpT reduction_op,
+  ReductionOpT reduction_op,
   _CCCL_GRID_CONSTANT const InitT init)
 {
   // Thread block type for reducing input tiles
@@ -192,7 +192,7 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::ReducePolicy::BLOCK_THREADS)
   _CCCL_GRID_CONSTANT const OutputIteratorT d_out,
   _CCCL_GRID_CONSTANT const OffsetT segment_size,
   _CCCL_GRID_CONSTANT const int num_segments,
-  _CCCL_GRID_CONSTANT const ReductionOpT reduction_op,
+  ReductionOpT reduction_op,
   _CCCL_GRID_CONSTANT const InitT init)
 {
   using ActivePolicyT = typename ChainedPolicyT::ActivePolicy;

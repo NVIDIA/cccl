@@ -79,7 +79,7 @@ CUB_DETAIL_KERNEL_ATTRIBUTES void device_partition_merge_path_kernel(
   _CCCL_GRID_CONSTANT const Offset keys2_count,
   _CCCL_GRID_CONSTANT const Offset num_diagonals,
   Offset* key1_beg_offsets,
-  _CCCL_GRID_CONSTANT const CompareOp compare_op)
+  CompareOp compare_op)
 {
   // items_per_tile must be the same of the merge kernel later, so we have to consider whether a fallback agent will be
   // selected for the merge agent that changes the tile size
@@ -130,7 +130,7 @@ __launch_bounds__(
     _CCCL_GRID_CONSTANT const Offset num_keys2,
     _CCCL_GRID_CONSTANT const KeyIt3 keys_result,
     _CCCL_GRID_CONSTANT const ValueIt3 items_result,
-    _CCCL_GRID_CONSTANT const CompareOp compare_op,
+    CompareOp compare_op,
     Offset* key1_beg_offsets,
     vsmem_t global_temp_storage)
 {
