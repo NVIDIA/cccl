@@ -152,6 +152,7 @@ TEMPLATE_LIST_TEST_CASE("Generators produce uniformly distributed offsets", "[ge
 }
 
 TEMPLATE_LIST_TEST_CASE("Generators produce uniformly distributed key segments", "[gen]", types)
+try
 {
   const std::size_t min_segment_size = 1;
   const std::size_t max_segment_size = 128;
@@ -191,4 +192,8 @@ TEMPLATE_LIST_TEST_CASE("Generators produce uniformly distributed key segments",
   segment_sizes.push_back(length);
 
   REQUIRE(is_uniform(std::move(segment_sizes), min_segment_size, max_segment_size));
+}
+catch (std::bad_alloc&)
+{
+  // Skip test on OOM.
 }
