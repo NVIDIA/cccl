@@ -27,10 +27,12 @@
 
 #  include <cuda/__execution/policy.h>
 #  include <cuda/__runtime/api_wrapper.h>
+#  include <cuda/__stream/get_stream.h>
 #  include <cuda/__stream/stream_ref.h>
 #  include <cuda/std/__algorithm/for_each_n.h>
 #  include <cuda/std/__exception/cuda_error.h>
 #  include <cuda/std/__exception/terminate.h>
+#  include <cuda/std/__execution/env.h>
 #  include <cuda/std/__execution/policy.h>
 #  include <cuda/std/__iterator/iterator_traits.h>
 #  include <cuda/std/__pstl/dispatch.h>
@@ -54,7 +56,8 @@ struct __pstl_dispatch<__pstl_algorithm::__for_each_n, __execution_backend::__cu
   __par_impl([[maybe_unused]] _Policy __policy, _Iter __first, _Size __orig_n, _Fn __func) noexcept
   {
     const auto __count = ::cuda::std::__convert_to_integral(__orig_n);
-    ::cuda::stream_ref __stream{cudaStreamPerThread};
+
+    auto __stream = __policy.query(::cuda::get_stream);
 
     _CCCL_TRY_CUDA_API(
       ::cub::DeviceFor::ForEachN,
