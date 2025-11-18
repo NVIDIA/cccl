@@ -951,6 +951,22 @@ _CCCL_HOST_DEVICE auto make_aligned_base_ptr_kernel_arg(It ptr, int alignment) -
   return arg;
 }
 
+template <typename ActivePolicy>
+inline constexpr int get_block_threads = [] {
+  if constexpr (ActivePolicy::algorithm == Algorithm::prefetch)
+  {
+    return ActivePolicy::prefetch_policy::block_threads;
+  }
+  else if constexpr (ActivePolicy::algorithm == Algorithm::vectorized)
+  {
+    return ActivePolicy::vectorized_policy::block_threads;
+  }
+  else
+  {
+    return ActivePolicy::async_policy::block_threads;
+  }
+}();
+
 // There is only one kernel for all algorithms, that dispatches based on the selected policy. It must be instantiated
 // with the same arguments for each algorithm. Only the device compiler will then select the implementation. This
 // saves some compile-time and binary size.
@@ -960,7 +976,7 @@ template <typename MaxPolicy,
           typename F,
           typename RandomAccessIteratorOut,
           typename... RandomAccessIteartorsIn>
-__launch_bounds__(MaxPolicy::ActivePolicy::algo_policy::block_threads)
+__launch_bounds__(get_block_threads<typename MaxPolicy::ActivePolicy>)
   CUB_DETAIL_KERNEL_ATTRIBUTES void transform_kernel(
     Offset num_items,
     int num_elem_per_thread,
@@ -974,7 +990,7 @@ __launch_bounds__(MaxPolicy::ActivePolicy::algo_policy::block_threads)
 
   if constexpr (MaxPolicy::ActivePolicy::algorithm == Algorithm::prefetch)
   {
-    transform_kernel_prefetch<typename MaxPolicy::ActivePolicy::algo_policy>(
+    transform_kernel_prefetch<typename MaxPolicy::ActivePolicy::prefetch_policy>(
       num_items,
       num_elem_per_thread,
       ::cuda::std::move(pred),
@@ -986,7 +1002,7 @@ __launch_bounds__(MaxPolicy::ActivePolicy::algo_policy::block_threads)
   {
     static_assert(::cuda::std::is_same_v<Predicate, always_true_predicate>,
                   "Cannot vectorize transform with a predicate");
-    transform_kernel_vectorized<typename MaxPolicy::ActivePolicy::algo_policy>(
+    transform_kernel_vectorized<typename MaxPolicy::ActivePolicy::vectorized_policy>(
       num_items,
       num_elem_per_thread,
       can_vectorize,
@@ -998,7 +1014,7 @@ __launch_bounds__(MaxPolicy::ActivePolicy::algo_policy::block_threads)
   {
     NV_IF_TARGET(
       NV_PROVIDES_SM_80,
-      (transform_kernel_ldgsts<typename MaxPolicy::ActivePolicy::algo_policy>(
+      (transform_kernel_ldgsts<typename MaxPolicy::ActivePolicy::async_policy>(
          num_items,
          num_elem_per_thread,
          ::cuda::std::move(pred),
@@ -1010,7 +1026,7 @@ __launch_bounds__(MaxPolicy::ActivePolicy::algo_policy::block_threads)
   {
     NV_IF_TARGET(
       NV_PROVIDES_SM_90,
-      (transform_kernel_ublkcp<typename MaxPolicy::ActivePolicy::algo_policy>(
+      (transform_kernel_ublkcp<typename MaxPolicy::ActivePolicy::async_policy>(
          num_items,
          num_elem_per_thread,
          ::cuda::std::move(pred),
