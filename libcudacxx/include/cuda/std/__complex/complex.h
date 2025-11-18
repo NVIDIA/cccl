@@ -292,21 +292,21 @@ template <class _Tp>
                     || (__c == _Tp(0) && ::cuda::std::isnan(__d)));
     if (__z_nan || __w_nan)
     {
-      return complex<_Tp>(_Tp(numeric_limits<_Tp>::quiet_NaN()), _Tp(0));
+      return complex<_Tp>(numeric_limits<_Tp>::quiet_NaN(), _Tp(0));
     }
     if (__z_inf || __w_inf)
     {
       if (__z_zero || __w_zero)
       {
-        return complex<_Tp>(_Tp(numeric_limits<_Tp>::quiet_NaN()), _Tp(0));
+        return complex<_Tp>(numeric_limits<_Tp>::quiet_NaN(), _Tp(0));
       }
-      return complex<_Tp>(_Tp(numeric_limits<_Tp>::infinity()), _Tp(numeric_limits<_Tp>::infinity()));
+      return complex<_Tp>(numeric_limits<_Tp>::infinity(), numeric_limits<_Tp>::infinity());
     }
     bool __z_nonzero_nan = !__z_inf && !__z_nan && (::cuda::std::isnan(__a) || ::cuda::std::isnan(__b));
     bool __w_nonzero_nan = !__w_inf && !__w_nan && (::cuda::std::isnan(__c) || ::cuda::std::isnan(__d));
     if (__z_nonzero_nan || __w_nonzero_nan)
     {
-      return complex<_Tp>(_Tp(numeric_limits<_Tp>::quiet_NaN()), _Tp(0));
+      return complex<_Tp>(numeric_limits<_Tp>::quiet_NaN(), _Tp(0));
     }
   }
 #endif // _CCCL_BUILTIN_IS_CONSTANT_EVALUATED
@@ -429,7 +429,7 @@ template <class _Tp>
                     || (__c == _Tp(0) && ::cuda::std::isnan(__d)));
     if ((__z_nan || __w_nan) || (__z_inf && __w_inf))
     {
-      return complex<_Tp>(_Tp(numeric_limits<_Tp>::quiet_NaN()), _Tp(0));
+      return complex<_Tp>(numeric_limits<_Tp>::quiet_NaN(), _Tp(0));
     }
     bool __z_nonzero_nan = !__z_inf && !__z_nan && (::cuda::std::isnan(__a) || ::cuda::std::isnan(__b));
     bool __w_nonzero_nan = !__w_inf && !__w_nan && (::cuda::std::isnan(__c) || ::cuda::std::isnan(__d));
@@ -437,9 +437,9 @@ template <class _Tp>
     {
       if (__w_zero)
       {
-        return complex<_Tp>(_Tp(numeric_limits<_Tp>::infinity()), _Tp(numeric_limits<_Tp>::infinity()));
+        return complex<_Tp>(numeric_limits<_Tp>::infinity(), numeric_limits<_Tp>::infinity());
       }
-      return complex<_Tp>(_Tp(numeric_limits<_Tp>::quiet_NaN()), _Tp(0));
+      return complex<_Tp>(numeric_limits<_Tp>::quiet_NaN(), _Tp(0));
     }
     if (__w_inf)
     {
@@ -447,15 +447,15 @@ template <class _Tp>
     }
     if (__z_inf)
     {
-      return complex<_Tp>(_Tp(numeric_limits<_Tp>::infinity()), _Tp(numeric_limits<_Tp>::infinity()));
+      return complex<_Tp>(numeric_limits<_Tp>::infinity(), numeric_limits<_Tp>::infinity());
     }
     if (__w_zero)
     {
       if (__z_zero)
       {
-        return complex<_Tp>(_Tp(numeric_limits<_Tp>::quiet_NaN()), _Tp(0));
+        return complex<_Tp>(numeric_limits<_Tp>::quiet_NaN(), _Tp(0));
       }
-      return complex<_Tp>(_Tp(numeric_limits<_Tp>::infinity()), _Tp(numeric_limits<_Tp>::infinity()));
+      return complex<_Tp>(numeric_limits<_Tp>::infinity(), numeric_limits<_Tp>::infinity());
     }
   }
 #endif // _CCCL_BUILTIN_IS_CONSTANT_EVALUATED
