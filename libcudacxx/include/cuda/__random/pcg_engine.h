@@ -22,12 +22,13 @@
 #endif // no system header
 
 #include <cuda/std/__bit/rotate.h>
+#include <cuda/std/__limits/numeric_limits.h>
 #include <cuda/std/__random/is_seed_sequence.h>
 #include <cuda/std/__type_traits/enable_if.h>
+#include <cuda/std/__type_traits/integral_constant.h>
+#include <cuda/std/__utility/pair.h>
 #include <cuda/std/array>
 #include <cuda/std/cstdint>
-#include <cuda/std/limits>
-#include <cuda/std/utility>
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -63,14 +64,15 @@ private:
   static constexpr __uint128_t __multiplier = (static_cast<__uint128_t>(_AHi) << 64) | _ALo;
   static constexpr __uint128_t __increment  = (static_cast<__uint128_t>(_CHi) << 64) | _CLo;
 
-  [[nodiscard]] _CCCL_API constexpr result_type __output_transform(__uint128_t __internal) noexcept
+  [[nodiscard]] _CCCL_API static constexpr result_type __output_transform(__uint128_t __internal) noexcept
   {
-    const int __rot = static_cast<__bitcount_t>(__internal >> 122);
+    const auto __rot = static_cast<__bitcount_t>(__internal >> 122);
     __internal ^= __internal >> 64;
     return ::cuda::std::rotr(result_type(__internal), __rot);
   }
 
-  [[nodiscard]] _CCCL_API constexpr ::cuda::std::pair<__uint128_t, __uint128_t> __power_mod(__uint128_t __delta) noexcept
+  [[nodiscard]] _CCCL_API static constexpr ::cuda::std::pair<__uint128_t, __uint128_t>
+  __power_mod(__uint128_t __delta) noexcept
   {
     __uint128_t __acc_mult = 1;
     __uint128_t __acc_plus = 0;
@@ -177,13 +179,13 @@ public:
     return __x.__x_ == __y.__x_;
   }
 
-#  if _CCCL_STD_VER == 2017
+#  if _CCCL_STD_VER <= 2017
   //! @brief Inequality comparison for two engines.
   [[nodiscard]] _CCCL_API constexpr friend bool operator!=(const pcg64_engine& __x, const pcg64_engine& __y) noexcept
   {
     return !(__x == __y);
   }
-#  endif
+#  endif // _CCCL_STD_VER <= 2017
 
 #  if !_CCCL_COMPILER(NVRTC)
 
@@ -262,7 +264,7 @@ public:
 //!
 //! @note This class requires compiler support for 128-bit integers.
 using pcg64 =
-  pcg64_engine<2549297995355413924ULL, 4865540595714422341ULL, 6364136223846793005ULL, 1442695040888963407ULL>;
+  pcg64_engine<2549297995355413924ull, 4865540595714422341ull, 6364136223846793005ull, 1442695040888963407ull>;
 
 #endif // _CCCL_HAS_INT128()
 _CCCL_END_NAMESPACE_CUDA
