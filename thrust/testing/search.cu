@@ -82,7 +82,7 @@ void TestSearchWithPredicate()
   // Test with equality predicate
   Vector data2{0, 1, 2, 3, 4, 1, 2, 5};
   Vector pattern2{1, 2};
-  iter = thrust::search(data2.begin(), data2.end(), pattern2.begin(), pattern2.end(), thrust::equal_to<T>());
+  iter = thrust::search(data2.begin(), data2.end(), pattern2.begin(), pattern2.end(), ::cuda::std::equal_to<T>());
   ASSERT_EQUAL(iter - data2.begin(), 1);
 }
 DECLARE_INTEGRAL_VECTOR_UNITTEST(TestSearchWithPredicate);
