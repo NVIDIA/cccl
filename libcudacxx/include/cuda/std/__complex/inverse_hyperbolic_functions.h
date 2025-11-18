@@ -51,12 +51,15 @@ template <class _Tp>
   {
     NV_IF_TARGET(NV_IS_DEVICE, (return ::rsqrtf(__x);))
   }
-  if constexpr (is_same_v<_Tp, double>)
+  else if constexpr (is_same_v<_Tp, double>)
   {
     NV_IF_TARGET(NV_IS_DEVICE, (return ::rsqrt(__x);))
   }
+  else
 #endif // _CCCL_CUDA_COMPILATION()
-  return _Tp{1} / ::cuda::std::sqrt(__x);
+  {
+    return _Tp{1} / ::cuda::std::sqrt(__x);
+  }
 }
 
 template <class _Tp>
