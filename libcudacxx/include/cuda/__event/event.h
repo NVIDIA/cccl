@@ -98,7 +98,7 @@ public:
     {
       // Needs to call driver API in case current device is not set, runtime version would set dev 0 current
       // Alternative would be to store the device and push/pop here
-      [[maybe_unused]] auto __status = ::cuda::__driver::__eventDestroyNoThrow(__event_);
+      _CCCL_ASSERT_DRIVER_API(__eventDestroy(__event_));
     }
   }
 
@@ -158,7 +158,7 @@ private:
       : event_ref(::cudaEvent_t{})
   {
     [[maybe_unused]] __ensure_current_context __ctx_setter(__device);
-    __event_ = ::cuda::__driver::__eventCreate(static_cast<unsigned>(__flags));
+    __event_ = _CCCL_TRY_DRIVER_API(__eventCreate(static_cast<unsigned>(__flags)));
   }
 };
 

@@ -44,17 +44,15 @@ _CCCL_HOST_API inline bool is_managed(const void* __p)
   {
     return false;
   }
-  bool __is_managed{};
-  const auto __status =
-    ::cuda::__driver::__pointerGetAttributeNoThrow<::CU_POINTER_ATTRIBUTE_IS_MANAGED>(__is_managed, __p);
-  switch (__status)
+  const auto __is_managed = ::cuda::__driver::__pointerGetAttribute<::CU_POINTER_ATTRIBUTE_IS_MANAGED>(__p);
+  switch (__is_managed.__error_)
   {
-    case ::cudaSuccess:
-      return __is_managed;
-    case ::cudaErrorInvalidValue:
+    case ::CUDA_SUCCESS:
+      return __is_managed.__value_;
+    case ::CUDA_ERROR_INVALID_VALUE:
       return false;
     default:
-      ::cuda::__throw_cuda_error(__status, "is_managed() failed", _CCCL_BUILTIN_PRETTY_FUNCTION());
+      ::cuda::__throw_cuda_error(__is_managed.__error_, "is_managed() failed", _CCCL_BUILTIN_PRETTY_FUNCTION());
   }
 }
 
@@ -77,10 +75,10 @@ _CCCL_HOST_API inline bool is_host_accessible(const void* __p)
   int __is_managed         = 0;
   ::CUmemoryPool __mempool = nullptr;
   void* __results[3]       = {&__memory_type, &__is_managed, &__mempool};
-  const auto __status      = ::cuda::__driver::__pointerGetAttributesNoThrow(__attrs, __results, __p);
-  if (__status != ::cudaSuccess)
+  const auto __status      = ::cuda::__driver::__pointerGetAttributes(__attrs, __results, __p);
+  if (__status.__error_ != ::CUDA_SUCCESS)
   {
-    ::cuda::__throw_cuda_error(__status, "is_host_accessible() failed", _CCCL_BUILTIN_PRETTY_FUNCTION());
+    ::cuda::__throw_cuda_error(__status.__error_, "is_host_accessible() failed", _CCCL_BUILTIN_PRETTY_FUNCTION());
   }
   // (1) check if the pointer is unregistered
   if (__memory_type == static_cast<::CUmemorytype>(0)
@@ -93,8 +91,8 @@ _CCCL_HOST_API inline bool is_host_accessible(const void* __p)
   if (__mempool != nullptr)
   {
     ::CUmemLocation __prop{::CU_MEM_LOCATION_TYPE_HOST, 0};
-    const unsigned __pool_flags = ::cuda::__driver::__mempoolGetAccess(__mempool, &__prop);
-    return __pool_flags & unsigned{::CU_MEM_ACCESS_FLAGS_PROT_READ};
+    const auto __pool_flags = _CCCL_TRY_DRIVER_API(__mempoolGetAccess(__mempool, &__prop));
+    return __pool_flags & ::CU_MEM_ACCESS_FLAGS_PROT_READ;
   }
 #  endif // _CCCL_CTK_AT_LEAST(12, 2)
   return false;
@@ -124,10 +122,10 @@ _CCCL_HOST_API inline bool is_device_accessible(const void* __p, device_ref __de
   int __ptr_dev_id         = 0;
   ::CUmemoryPool __mempool = nullptr;
   void* __results[4]       = {&__memory_type, &__is_managed, &__ptr_dev_id, &__mempool};
-  const auto __status      = ::cuda::__driver::__pointerGetAttributesNoThrow(__attrs, __results, __p);
-  if (__status != ::cudaSuccess)
+  const auto __status      = ::cuda::__driver::__pointerGetAttributes(__attrs, __results, __p);
+  if (__status.__error_ != ::CUDA_SUCCESS)
   {
-    ::cuda::__throw_cuda_error(__status, "is_device_accessible() failed", _CCCL_BUILTIN_PRETTY_FUNCTION());
+    ::cuda::__throw_cuda_error(__status.__error_, "is_device_accessible() failed", _CCCL_BUILTIN_PRETTY_FUNCTION());
   }
   // (1) check if the pointer is unregistered
   if (__memory_type == static_cast<::CUmemorytype>(0))
@@ -143,8 +141,8 @@ _CCCL_HOST_API inline bool is_device_accessible(const void* __p, device_ref __de
   if (__mempool != nullptr)
   {
     ::CUmemLocation __prop{::CU_MEM_LOCATION_TYPE_DEVICE, __device.get()};
-    const unsigned __pool_flags = ::cuda::__driver::__mempoolGetAccess(__mempool, &__prop);
-    return __pool_flags & unsigned{::CU_MEM_ACCESS_FLAGS_PROT_READ};
+    const auto __pool_flags = _CCCL_TRY_DRIVER_API(__mempoolGetAccess(__mempool, &__prop));
+    return __pool_flags & ::CU_MEM_ACCESS_FLAGS_PROT_READ;
   }
   // (4) check if the pointer is allocated on the specified device
   if (__ptr_dev_id == __device.get())
@@ -152,7 +150,7 @@ _CCCL_HOST_API inline bool is_device_accessible(const void* __p, device_ref __de
     return true;
   }
   // (5) check if the pointer is peer accessible from the specified device
-  return ::cuda::__driver::__deviceCanAccessPeer(__device.get(), __ptr_dev_id);
+  return _CCCL_TRY_DRIVER_API(__deviceCanAccessPeer(__device.get(), __ptr_dev_id));
 }
 
 #endif // _CCCL_HAS_CTK() && !_CCCL_COMPILER(NVRTC)

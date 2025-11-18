@@ -47,9 +47,9 @@ struct green_context
       : __dev_id(__device.get())
   {
     // TODO get CUdevice from device
-    auto __dev_handle = ::cuda::__driver::__deviceGet(__dev_id);
-    __green_ctx       = ::cuda::__driver::__greenCtxCreate(__dev_handle);
-    __transformed     = ::cuda::__driver::__ctxFromGreenCtx(__green_ctx);
+    auto __dev_handle = _CCCL_TRY_DRIVER_API(__deviceGet(__dev_id));
+    __green_ctx       = _CCCL_TRY_DRIVER_API(__greenCtxCreate(__dev_handle));
+    __transformed     = _CCCL_TRY_DRIVER_API(__ctxFromGreenCtx(__green_ctx));
   }
 
   green_context(const green_context&)            = delete;
@@ -58,17 +58,17 @@ struct green_context
   // TODO this probably should be the runtime equivalent once available
   [[nodiscard]] static green_context from_native_handle(CUgreenCtx __gctx)
   {
-    CUcontext __transformed = ::cuda::__driver::__ctxFromGreenCtx(__gctx);
-    ::cuda::__driver::__ctxPush(__transformed);
-    CUdevice __device = ::cuda::__driver::__ctxGetDevice();
-    ::cuda::__driver::__ctxPop();
+    CUcontext __transformed = _CCCL_TRY_DRIVER_API(__ctxFromGreenCtx(__gctx));
+    (void) _CCCL_TRY_DRIVER_API(__ctxPush(__transformed));
+    CUdevice __device = _CCCL_TRY_DRIVER_API(__ctxGetDevice());
+    (void) _CCCL_TRY_DRIVER_API(__ctxPop());
     return green_context(::cuda::__driver::__cudevice_to_ordinal(__device), __gctx, __transformed);
   }
 
 #  if _CCCL_CTK_AT_LEAST(13, 0)
   [[nodiscard]] _CCCL_HOST_API green_context_id id() const
   {
-    return green_context_id{::cuda::__driver::__greenCtxGetId(__green_ctx)};
+    return green_context_id{_CCCL_TRY_DRIVER_API(__greenCtxGetId(__green_ctx))};
   }
 #  endif // _CCCL_CTK_AT_LEAST(13, 0)
 
@@ -83,7 +83,7 @@ struct green_context
   {
     if (__green_ctx)
     {
-      [[maybe_unused]] cudaError_t __status = ::cuda::__driver::__greenCtxDestroyNoThrow(__green_ctx);
+      _CCCL_ASSERT_DRIVER_API(__greenCtxDestroy(__green_ctx));
     }
   }
 

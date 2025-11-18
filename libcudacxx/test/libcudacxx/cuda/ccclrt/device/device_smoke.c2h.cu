@@ -36,7 +36,7 @@ C2H_CCCLRT_TEST("init", "[device]")
 {
   cuda::device_ref dev{0};
   dev.init();
-  CCCLRT_REQUIRE(cuda::__driver::__isPrimaryCtxActive(cuda::__driver::__deviceGet(0)));
+  CCCLRT_REQUIRE(CCCLRT_DRIVER_CALL(__isPrimaryCtxActive(CCCLRT_DRIVER_CALL(__deviceGet(0)))));
 }
 
 C2H_CCCLRT_TEST("Smoke", "[device]")

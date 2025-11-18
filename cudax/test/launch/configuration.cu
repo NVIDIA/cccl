@@ -76,7 +76,7 @@ void test_launch_kernel_replacement(CUlaunchConfig& config, CUfunction kernel, v
 
   if (!has_cluster || !skip_device_exec(arch_filter<std::less<int>, 90>))
   {
-    return ::cuda::__driver::__launchKernel(config, kernel, args);
+    CCCLRT_DRIVER_CALL(__launchKernel(config, kernel, args));
   }
 }
 

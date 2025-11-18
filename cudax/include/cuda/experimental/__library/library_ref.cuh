@@ -72,15 +72,15 @@ public:
   //! @throws cuda_error if the library could not be queried for the kernel
   [[nodiscard]] bool has_kernel(const char* __name) const
   {
-    ::CUkernel __kernel{};
-    switch (const auto __res = ::cuda::__driver::__libraryGetKernelNoThrow(__kernel, __library_, __name))
+    const auto __status = ::cuda::__driver::__libraryGetKernel(__library_, __name).__error_;
+    switch (__status)
     {
-      case ::cudaSuccess:
+      case ::CUDA_SUCCESS:
         return true;
-      case ::cudaErrorSymbolNotFound:
+      case ::CUDA_ERROR_NOT_FOUND:
         return false;
       default:
-        ::cuda::__throw_cuda_error(__res, "Failed to get the kernel from library");
+        ::cuda::__throw_cuda_error(__status, "Failed to get the kernel from library");
     }
   }
 
@@ -96,13 +96,7 @@ public:
   template <class _Signature>
   [[nodiscard]] kernel_ref<_Signature> kernel(const char* __name) const
   {
-    ::CUkernel __kernel{};
-    if (const auto __res = ::cuda::__driver::__libraryGetKernelNoThrow(__kernel, __library_, __name);
-        __res != ::cudaSuccess)
-    {
-      ::cuda::__throw_cuda_error(__res, "Failed to get the kernel from the library");
-    }
-    return kernel_ref<_Signature>{__kernel};
+    return kernel_ref<_Signature>{_CCCL_TRY_DRIVER_API(__libraryGetKernel(__library_, __name))};
   }
 
   //! @brief Checks if the library contains a global symbol with the given name on a device
@@ -117,16 +111,15 @@ public:
   {
     ::cuda::__ensure_current_context __ctx_guard(__device);
 
-    ::CUdeviceptr __dptr{};
-    ::cuda::std::size_t __size{};
-    switch (const auto __res = ::cuda::__driver::__libraryGetGlobalNoThrow(__dptr, __size, __library_, __name))
+    const auto __status = ::cuda::__driver::__libraryGetGlobal(__library_, __name).__error_;
+    switch (__status)
     {
-      case ::cudaSuccess:
+      case ::CUDA_SUCCESS:
         return true;
-      case ::cudaErrorSymbolNotFound:
+      case ::CUDA_ERROR_NOT_FOUND:
         return false;
       default:
-        ::cuda::__throw_cuda_error(__res, "Failed to get the global symbol from library");
+        ::cuda::__throw_cuda_error(__status, "Failed to get the global symbol from library");
     }
   }
 
@@ -141,15 +134,8 @@ public:
   [[nodiscard]] library_symbol_info global(const char* __name, ::cuda::device_ref __device) const
   {
     ::cuda::__ensure_current_context __ctx_guard(__device);
-
-    ::CUdeviceptr __dptr{};
-    ::cuda::std::size_t __size{};
-    if (const auto __res = ::cuda::__driver::__libraryGetGlobalNoThrow(__dptr, __size, __library_, __name);
-        __res != ::cudaSuccess)
-    {
-      ::cuda::__throw_cuda_error(__res, "Failed to get the global symbol from the library");
-    }
-    return library_symbol_info{reinterpret_cast<void*>(__dptr), __size};
+    auto [__ptr, __size] = _CCCL_TRY_DRIVER_API(__libraryGetGlobal(__library_, __name));
+    return library_symbol_info{__ptr, __size};
   }
 
   //! @brief Checks if the library contains a managed symbol with the given name
@@ -163,16 +149,15 @@ public:
   //! @note Managed memory is shared across devices
   [[nodiscard]] bool has_managed(const char* __name) const
   {
-    ::CUdeviceptr __dptr{};
-    ::cuda::std::size_t __size{};
-    switch (const auto __res = ::cuda::__driver::__libraryGetManagedNoThrow(__dptr, __size, __library_, __name))
+    const auto __status = ::cuda::__driver::__libraryGetManaged(__library_, __name).__error_;
+    switch (__status)
     {
-      case ::cudaSuccess:
+      case ::CUDA_SUCCESS:
         return true;
-      case ::cudaErrorSymbolNotFound:
+      case ::CUDA_ERROR_NOT_FOUND:
         return false;
       default:
-        ::cuda::__throw_cuda_error(__res, "Failed to get the managed symbol from library");
+        ::cuda::__throw_cuda_error(__status, "Failed to get the managed symbol from library");
     }
   }
 
@@ -187,14 +172,8 @@ public:
   //! @note Managed memory is shared across devices
   [[nodiscard]] library_symbol_info managed(const char* __name) const
   {
-    ::CUdeviceptr __dptr{};
-    ::cuda::std::size_t __size{};
-    if (const auto __res = ::cuda::__driver::__libraryGetManagedNoThrow(__dptr, __size, __library_, __name);
-        __res != ::cudaSuccess)
-    {
-      ::cuda::__throw_cuda_error(__res, "Failed to get the managed symbol from the library");
-    }
-    return library_symbol_info{reinterpret_cast<void*>(__dptr), __size};
+    auto [__ptr, __size] = _CCCL_TRY_DRIVER_API(__libraryGetManaged(__library_, __name));
+    return library_symbol_info{__ptr, __size};
   }
 
   //! @brief Gets the CUlibrary handle

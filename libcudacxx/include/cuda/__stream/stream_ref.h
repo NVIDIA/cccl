@@ -173,7 +173,7 @@ public:
   //! @throws cuda::cuda_error if synchronization fails.
   _CCCL_HOST_API void sync() const
   {
-    ::cuda::__driver::__streamSynchronize(__stream);
+    _CCCL_TRY_DRIVER_API(__streamSynchronize(__stream));
   }
 
   //! @brief Deprecated. Use sync() instead.
@@ -193,7 +193,7 @@ public:
   {
     _CCCL_ASSERT(__ev.get() != nullptr, "cuda::stream_ref::wait invalid event passed");
     // Need to use driver API, cudaStreamWaitEvent would push dev 0 if stack was empty
-    ::cuda::__driver::__streamWaitEvent(get(), __ev.get());
+    _CCCL_TRY_DRIVER_API(__streamWaitEvent(get(), __ev.get()));
   }
 
   //! @brief Make all future work submitted into this stream depend on completion of all work from the specified
@@ -221,13 +221,13 @@ public:
   //! \return `true` if all operations have completed, or `false` if not.
   [[nodiscard]] _CCCL_HOST_API bool is_done() const
   {
-    const auto __result = ::cuda::__driver::__streamQueryNoThrow(__stream);
+    const auto __result = ::cuda::__driver::__streamQuery(__stream).__error_;
     switch (__result)
     {
-      case ::cudaErrorNotReady:
-        return false;
-      case ::cudaSuccess:
+      case ::CUDA_SUCCESS:
         return true;
+      case ::CUDA_ERROR_NOT_READY:
+        return false;
       default:
         ::cuda::__throw_cuda_error(__result, "Failed to query stream.");
     }
@@ -250,7 +250,7 @@ public:
   //! @return value representing the priority of the wrapped stream.
   [[nodiscard]] _CCCL_HOST_API int priority() const
   {
-    return ::cuda::__driver::__streamGetPriority(__stream);
+    return _CCCL_TRY_DRIVER_API(__streamGetPriority(__stream));
   }
 
   //! @brief Get the unique ID of the stream
@@ -262,7 +262,7 @@ public:
   //! @throws cuda_error if the ID query fails
   [[nodiscard]] _CCCL_HOST_API stream_id id() const
   {
-    return stream_id{::cuda::__driver::__streamGetId(__stream)};
+    return stream_id{_CCCL_TRY_DRIVER_API(__streamGetId(__stream))};
   }
 
   //! @brief Create a new event and record it into this stream
@@ -295,12 +295,12 @@ public:
   {
     ::CUdevice __device{};
 #  if _CCCL_CTK_AT_LEAST(13, 0)
-    __device = ::cuda::__driver::__streamGetDevice(__stream);
+    __device = _CCCL_TRY_DRIVER_API(__streamGetDevice(__stream));
 #  else // ^^^ _CCCL_CTK_AT_LEAST(13, 0) ^^^ / vvv _CCCL_CTK_BELOW(13, 0) vvv
     {
-      ::CUcontext __stream_ctx = ::cuda::__driver::__streamGetCtx(__stream);
+      ::CUcontext __stream_ctx = _CCCL_TRY_DRIVER_API(__streamGetCtx(__stream));
       __ensure_current_context __setter(__stream_ctx);
-      __device = ::cuda::__driver::__ctxGetDevice();
+      __device = _CCCL_TRY_DRIVER_API(__ctxGetDevice());
     }
 #  endif // ^^^ _CCCL_CTK_BELOW(13, 0) ^^^
     return device_ref{::cuda::__driver::__cudevice_to_ordinal(__device)};
@@ -319,7 +319,7 @@ _CCCL_HOST_API inline void event_ref::record(stream_ref __stream) const
   _CCCL_ASSERT(__event_ != nullptr, "cuda::event_ref::record no event set");
   _CCCL_ASSERT(__stream.get() != nullptr, "cuda::event_ref::record invalid stream passed");
   // Need to use driver API, cudaEventRecord will push dev 0 if stack is empty
-  ::cuda::__driver::__eventRecord(__event_, __stream.get());
+  _CCCL_TRY_DRIVER_API(__eventRecord(__event_, __stream.get()));
 }
 
 _CCCL_HOST_API inline event::event(stream_ref __stream, event_flags __flags)
@@ -332,7 +332,7 @@ _CCCL_HOST_API inline event::event(stream_ref __stream, unsigned __flags)
     : event_ref(::cudaEvent_t{})
 {
   [[maybe_unused]] __ensure_current_context __ctx_setter(__stream);
-  __event_ = ::cuda::__driver::__eventCreate(static_cast<unsigned>(__flags));
+  __event_ = _CCCL_TRY_DRIVER_API(__eventCreate(static_cast<unsigned>(__flags)));
 }
 
 _CCCL_HOST_API inline timed_event::timed_event(stream_ref __stream, event_flags __flags)
@@ -343,8 +343,8 @@ _CCCL_HOST_API inline timed_event::timed_event(stream_ref __stream, event_flags 
 
 _CCCL_HOST_API inline __ensure_current_context::__ensure_current_context(stream_ref __stream)
 {
-  auto __ctx = __driver::__streamGetCtx(__stream.get());
-  ::cuda::__driver::__ctxPush(__ctx);
+  auto __ctx = _CCCL_TRY_DRIVER_API(__streamGetCtx(__stream.get()));
+  _CCCL_TRY_DRIVER_API(__ctxPush(__ctx));
 }
 
 _CCCL_END_NAMESPACE_CUDA

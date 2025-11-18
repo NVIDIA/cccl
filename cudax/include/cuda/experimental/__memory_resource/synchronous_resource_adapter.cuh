@@ -85,7 +85,7 @@ struct synchronous_resource_adapter : ::cuda::mr::__copy_default_queries<_Resour
     }
     else
     {
-      ::cuda::__driver::__streamSynchronizeNoThrow(__stream.get());
+      _CCCL_ASSERT_DRIVER_API(__streamSynchronize(__stream.get()));
       __resource.deallocate_sync(__ptr, __bytes, __alignment);
     }
   }

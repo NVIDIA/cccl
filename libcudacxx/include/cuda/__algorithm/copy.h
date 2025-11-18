@@ -90,10 +90,10 @@ _CCCL_HOST_API void __copy_bytes_impl(
   __attributes.dstLocHint.type    = static_cast<::CUmemLocationType>(__config.dst_location_hint.type);
 
   ::cuda::__ensure_current_context guard(__stream);
-  ::cuda::__driver::__memcpyAsyncWithAttributes(
-    __dst.data(), __src.data(), __src.size_bytes(), __stream.get(), __attributes);
+  _CCCL_TRY_DRIVER_API(
+    __memcpyAsyncWithAttributes(__dst.data(), __src.data(), __src.size_bytes(), __stream.get(), __attributes));
 #  else
-  ::cuda::__driver::__memcpyAsync(__dst.data(), __src.data(), __src.size_bytes(), __stream.get());
+  _CCCL_TRY_DRIVER_API(__memcpyAsync(__dst.data(), __src.data(), __src.size_bytes(), __stream.get()));
 #  endif // _CCCL_CTK_BELOW(13, 0)
 }
 

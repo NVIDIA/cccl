@@ -30,6 +30,10 @@
 
 #  include <nv/target>
 
+#  if _CCCL_HAS_CTK()
+#    include <cuda.h>
+#  endif // _CCCL_HAS_CTK()
+
 #  include <cstdio>
 #  include <stdexcept>
 
@@ -108,6 +112,17 @@ private:
 {
   _CCCL_THROW(::cuda::cuda_error(__status, __msg, __api, __loc));
 }
+
+#  if _CCCL_HAS_CTK()
+[[noreturn]] _CCCL_API inline void __throw_cuda_error(
+  [[maybe_unused]] const ::CUresult __status,
+  [[maybe_unused]] const char* __msg,
+  [[maybe_unused]] const char* __api                  = nullptr,
+  [[maybe_unused]] ::cuda::std::source_location __loc = ::cuda::std::source_location::current())
+{
+  _CCCL_THROW(::cuda::cuda_error(static_cast<__cuda_error_t>(__status), __msg, __api, __loc));
+}
+#  endif // _CCCL_HAS_CTK()
 
 _CCCL_END_NAMESPACE_CUDA
 

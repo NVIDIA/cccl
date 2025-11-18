@@ -119,9 +119,9 @@ struct device_memory_pool : device_memory_pool_ref
           ::CU_MEM_ALLOCATION_TYPE_PINNED))
   {}
 
-  ~device_memory_pool() noexcept
+  ~device_memory_pool()
   {
-    ::cuda::__driver::__mempoolDestroy(__pool_);
+    _CCCL_ASSERT_DRIVER_API(__mempoolDestroy(__pool_));
   }
 
   _CCCL_HOST_API static device_memory_pool from_native_handle(::cudaMemPool_t __pool) noexcept

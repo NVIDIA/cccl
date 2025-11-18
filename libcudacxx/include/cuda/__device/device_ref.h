@@ -142,8 +142,8 @@ public:
   //! @return true if its possible for this device to access the specified device's memory
   [[nodiscard]] _CCCL_HOST_API bool has_peer_access_to(device_ref __other_dev) const
   {
-    return ::cuda::__driver::__deviceCanAccessPeer(
-      ::cuda::__driver::__deviceGet(get()), ::cuda::__driver::__deviceGet(__other_dev.get()));
+    return _CCCL_TRY_DRIVER_API(__deviceCanAccessPeer(
+      _CCCL_TRY_DRIVER_API(__deviceGet(get())), _CCCL_TRY_DRIVER_API(__deviceGet(__other_dev.get()))));
   }
 
   // TODO this might return some more complex type in the future
