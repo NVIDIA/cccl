@@ -345,7 +345,7 @@ _CCCL_HOST_DEVICE OutputIterator binary_search(
 }
 
 template <typename DerivedPolicy, typename ForwardIterator, typename LessThanComparable>
-_CCCL_HOST_DEVICE thrust::pair<ForwardIterator, ForwardIterator> equal_range(
+_CCCL_HOST_DEVICE ::cuda::std::pair<ForwardIterator, ForwardIterator> equal_range(
   thrust::execution_policy<DerivedPolicy>& exec,
   ForwardIterator first,
   ForwardIterator last,
@@ -355,7 +355,7 @@ _CCCL_HOST_DEVICE thrust::pair<ForwardIterator, ForwardIterator> equal_range(
 }
 
 template <typename DerivedPolicy, typename ForwardIterator, typename T, typename StrictWeakOrdering>
-_CCCL_HOST_DEVICE thrust::pair<ForwardIterator, ForwardIterator> equal_range(
+_CCCL_HOST_DEVICE ::cuda::std::pair<ForwardIterator, ForwardIterator> equal_range(
   thrust::execution_policy<DerivedPolicy>& exec,
   ForwardIterator first,
   ForwardIterator last,
@@ -364,7 +364,7 @@ _CCCL_HOST_DEVICE thrust::pair<ForwardIterator, ForwardIterator> equal_range(
 {
   ForwardIterator lb = thrust::lower_bound(exec, first, last, value, comp);
   ForwardIterator ub = thrust::upper_bound(exec, first, last, value, comp);
-  return thrust::make_pair(lb, ub);
+  return ::cuda::std::make_pair(lb, ub);
 }
 } // namespace system::detail::generic
 THRUST_NAMESPACE_END

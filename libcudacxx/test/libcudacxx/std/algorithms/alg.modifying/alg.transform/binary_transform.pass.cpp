@@ -14,7 +14,7 @@
 // constexpr OutIter      // constexpr after C++17
 // transform(InIter1 first1, InIter1 last1, InIter2 first2, OutIter result, BinaryOp binary_op);
 
-#include <cuda/std/__algorithm_>
+#include <cuda/std/algorithm>
 #include <cuda/std/cassert>
 #include <cuda/std/functional>
 

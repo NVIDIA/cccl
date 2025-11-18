@@ -15,7 +15,7 @@
 //                    OutputIterator result,
 //                    BinaryOperation binary_op); // C++17
 
-#include <cuda/std/__algorithm_>
+#include <cuda/std/algorithm>
 #include <cuda/std/array>
 #include <cuda/std/cassert>
 #include <cuda/std/functional>

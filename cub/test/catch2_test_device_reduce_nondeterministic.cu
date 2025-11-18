@@ -234,8 +234,8 @@ C2H_TEST("Nondeterministic Device reduce works with float and double on gpu with
   using accum_t     = type;
   using transform_t = square_t<type>;
 
-  using nondeterministic_dispatch_t = cub::detail::
-    DispatchReduceNondeterministic<input_it_t, output_it_t, int, cuda::std::plus<type>, init_t, accum_t, transform_t>;
+  using nondeterministic_dispatch_t = cub::detail::reduce::
+    dispatch_nondeterministic_t<input_it_t, output_it_t, int, cuda::std::plus<type>, init_t, accum_t, transform_t>;
 
   std::size_t temp_storage_bytes{};
 

@@ -22,7 +22,7 @@
 #  pragma system_header
 #endif // no system header
 
-#if _CCCL_HAS_CUDA_COMPILER()
+#if _CCCL_CUDA_COMPILATION()
 
 #  include <cuda/__barrier/async_contract_fulfillment.h>
 #  include <cuda/__barrier/barrier.h>
@@ -174,6 +174,6 @@ _CCCL_END_NAMESPACE_CUDA
 
 #  include <cuda/std/__cccl/epilogue.h>
 
-#endif // _CCCL_HAS_CUDA_COMPILER()
+#endif // _CCCL_CUDA_COMPILATION()
 
 #endif // _CUDA___MEMCPY_ASYNC_MEMCPY_ASYNC_H_

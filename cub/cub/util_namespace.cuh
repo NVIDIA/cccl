@@ -102,13 +102,14 @@
 #  define CUB_DETAIL_MAGIC_NS_END
 #else // not defined(CUB_DISABLE_NAMESPACE_MAGIC)
 #  if defined(_NVHPC_CUDA)
-#    define CUB_DETAIL_MAGIC_NS_BEGIN                                                                  \
-      inline namespace _CCCL_PP_SPLICE_WITH(_, CUB, CUB_VERSION, SM, NV_TARGET_SM_INTEGER_LIST, NVHPC) \
+#    define CUB_DETAIL_MAGIC_NS_BEGIN                                                                                  \
+      inline namespace _CCCL_PP_CAT(                                                                                   \
+        _CCCL_PP_CAT(_CCCL_PP_CAT(_V_, CUB_VERSION), _CCCL_PP_SPLICE_WITH(_, _SM, NV_TARGET_SM_INTEGER_LIST)), _NVHPC) \
       {
 #    define CUB_DETAIL_MAGIC_NS_END }
 #  else // not defined(_NVHPC_CUDA)
-#    define CUB_DETAIL_MAGIC_NS_BEGIN                                                    \
-      inline namespace _CCCL_PP_SPLICE_WITH(_, CUB, CUB_VERSION, SM, __CUDA_ARCH_LIST__) \
+#    define CUB_DETAIL_MAGIC_NS_BEGIN                                                                                 \
+      inline namespace _CCCL_PP_CAT(_CCCL_PP_CAT(_V_, CUB_VERSION), _CCCL_PP_SPLICE_WITH(_, _SM, __CUDA_ARCH_LIST__)) \
       {
 #    define CUB_DETAIL_MAGIC_NS_END }
 #  endif // not defined(_NVHPC_CUDA)

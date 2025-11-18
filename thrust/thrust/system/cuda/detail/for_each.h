@@ -36,7 +36,7 @@
 #  pragma system_header
 #endif // no system header
 
-#if _CCCL_HAS_CUDA_COMPILER()
+#if _CCCL_CUDA_COMPILATION()
 #  include <thrust/system/cuda/config.h>
 
 #  include <cub/device/device_for.cuh>
@@ -80,4 +80,4 @@ Input _CCCL_API _CCCL_FORCEINLINE for_each(execution_policy<Derived>& policy, In
 } // namespace cuda_cub
 
 THRUST_NAMESPACE_END
-#endif
+#endif // _CCCL_CUDA_COMPILATION()

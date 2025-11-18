@@ -44,7 +44,8 @@ if (NOT TARGET cudax::libcudacxx)
       libcudacxx
       ${cudax_VERSION}
       CONFIG
-      REQUIRED ${cudax_quiet_flag}
+      REQUIRED
+      ${cudax_quiet_flag}
     )
   endif()
   add_library(cudax::libcudacxx ALIAS libcudacxx::libcudacxx)

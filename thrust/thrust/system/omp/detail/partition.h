@@ -17,9 +17,10 @@
 #  pragma system_header
 #endif // no system header
 
-#include <thrust/pair.h>
 #include <thrust/system/detail/generic/partition.h>
 #include <thrust/system/omp/detail/execution_policy.h>
+
+#include <cuda/std/__utility/pair.h>
 
 THRUST_NAMESPACE_BEGIN
 namespace system::omp::detail
@@ -49,7 +50,7 @@ template <typename DerivedPolicy,
           typename OutputIterator1,
           typename OutputIterator2,
           typename Predicate>
-thrust::pair<OutputIterator1, OutputIterator2> stable_partition_copy(
+::cuda::std::pair<OutputIterator1, OutputIterator2> stable_partition_copy(
   execution_policy<DerivedPolicy>& exec,
   InputIterator first,
   InputIterator last,
@@ -67,7 +68,7 @@ template <typename DerivedPolicy,
           typename OutputIterator1,
           typename OutputIterator2,
           typename Predicate>
-thrust::pair<OutputIterator1, OutputIterator2> stable_partition_copy(
+::cuda::std::pair<OutputIterator1, OutputIterator2> stable_partition_copy(
   execution_policy<DerivedPolicy>& exec,
   InputIterator1 first,
   InputIterator1 last,
