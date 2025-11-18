@@ -162,10 +162,10 @@ TEMPLATE_LIST_TEST_CASE("Generators produce uniformly distributed key segments",
 
   const thrust::host_vector<TestType> h_keys = d_keys;
 
-  thrust::host_vector<int> segment_sizes;
+  thrust::host_vector<std::size_t> segment_sizes;
 
-  TestType prev = h_keys[0];
-  int length    = 1;
+  TestType prev      = h_keys[0];
+  std::size_t length = 1;
 
   for (std::size_t kid = 1; kid < elements; kid++)
   {
@@ -190,5 +190,5 @@ TEMPLATE_LIST_TEST_CASE("Generators produce uniformly distributed key segments",
   REQUIRE(length <= max_segment_size);
   segment_sizes.push_back(length);
 
-  REQUIRE(is_uniform<int>(std::move(segment_sizes), min_segment_size, max_segment_size));
+  REQUIRE(is_uniform(std::move(segment_sizes), min_segment_size, max_segment_size));
 }
