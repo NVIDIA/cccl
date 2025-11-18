@@ -28,6 +28,11 @@
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD_EXECUTION
 
+enum __cuda_backend_options : uint16_t
+{
+  __with_stream = 1 << 0, ///> Determines whether the policy holds a stream
+};
+
 //! @brief Sets the execution backend to cuda
 template <uint32_t _Policy>
 [[nodiscard]] _CCCL_API constexpr uint32_t __with_cuda_backend() noexcept
@@ -37,6 +42,15 @@ template <uint32_t _Policy>
     (_Policy & __backend_mask) | (static_cast<uint32_t>(__execution_backend::__cuda) << 8);
   return __new_policy;
 }
+
+//! @brief Backend specific options of the CUDA backend
+template <uint32_t _Policy>
+inline constexpr __cuda_backend_options __policy_to_cuda_backend_options =
+  static_cast<__cuda_backend_options>((_Policy & uint32_t{0xFFFF0000}) >> 16);
+
+template <uint32_t _Policy>
+inline constexpr bool __cuda_policy_with_stream =
+  __policy_to_cuda_backend_options<_Policy> & __cuda_backend_options::__with_stream;
 
 _CCCL_END_NAMESPACE_CUDA_STD_EXECUTION
 
