@@ -31,6 +31,7 @@ _CCCL_DIAG_SUPPRESS_CLANG("-Wshadow")
 _CCCL_DIAG_POP
 
 #  include <cuda/__execution/policy.h>
+#  include <cuda/__memory_resource/get_memory_resource.h>
 #  include <cuda/__runtime/api_wrapper.h>
 #  include <cuda/__stream/get_stream.h>
 #  include <cuda/std/__exception/cuda_error.h>
@@ -61,15 +62,9 @@ struct __pstl_dispatch<__pstl_algorithm::__reduce, __execution_backend::__cuda>
   __par_impl(_Policy __policy, _Iter __first, _Iter __last, _Tp __init, _BinaryOp __func)
   {
     // Allocate memory for result
-    _Tp* __device_ret_ptr = nullptr;
     auto __stream         = __policy.query(::cuda::get_stream);
-
-    _CCCL_TRY_CUDA_API(
-      ::cudaMallocAsync,
-      "__pstl_cuda_reduce: allocation failed",
-      reinterpret_cast<void**>(&__device_ret_ptr),
-      sizeof(_Tp),
-      __stream.get());
+    auto __resource       = __policy.query(::cuda::mr::get_memory_resource);
+    _Tp* __device_ret_ptr = static_cast<_Tp*>(__resource.allocate(__stream, sizeof(_Tp), alignof(_Tp)));
 
     const auto __count = ::cuda::std::distance(__first, __last);
     _Tp __ret;
@@ -93,7 +88,7 @@ struct __pstl_dispatch<__pstl_algorithm::__reduce, __execution_backend::__cuda>
       ::cudaMemcpyDeviceToHost,
       __stream.get());
 
-    _CCCL_TRY_CUDA_API(::cudaFreeAsync, "__pstl_cuda_reduce: deallocate failed", __device_ret_ptr, __stream.get());
+    __resource.deallocate(__stream, __device_ret_ptr, sizeof(_Tp), alignof(_Tp));
 
     __stream.sync();
 

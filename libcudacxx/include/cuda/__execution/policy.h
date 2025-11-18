@@ -23,10 +23,14 @@
 #if _CCCL_HAS_BACKEND_CUDA()
 
 #  include <cuda/__fwd/execution_policy.h>
+#  include <cuda/__memory_resource/device_memory_pool.h>
+#  include <cuda/__memory_resource/get_memory_resource.h>
+#  include <cuda/__memory_resource/resource.h>
 #  include <cuda/__stream/get_stream.h>
 #  include <cuda/__stream/stream_ref.h>
 #  include <cuda/std/__execution/policy.h>
 #  include <cuda/std/__type_traits/is_execution_policy.h>
+#  include <cuda/std/__utility/forward.h>
 
 #  include <cuda/std/__cccl/prologue.h>
 
@@ -37,7 +41,7 @@ struct __policy_stream_holder
 {
   ::cuda::stream_ref __stream_;
 
-  _CCCL_API constexpr __policy_stream_holder(::cuda::stream_ref __stream) noexcept
+  _CCCL_HOST_API constexpr __policy_stream_holder(::cuda::stream_ref __stream) noexcept
       : __stream_(__stream)
   {}
 };
@@ -51,21 +55,49 @@ struct __policy_stream_holder<false>
   _CCCL_HOST_API constexpr __policy_stream_holder(::cuda::stream_ref) noexcept {}
 };
 
+template <bool _HasResource>
+struct __policy_memory_resource_holder
+{
+  using __resource_t = ::cuda::mr::any_resource<::cuda::mr::device_accessible>;
+
+  __resource_t __resource_;
+
+  _CCCL_TEMPLATE(class _Resource)
+  _CCCL_REQUIRES(::cuda::mr::resource_with<_Resource, ::cuda::mr::device_accessible>)
+  _CCCL_HOST_API constexpr __policy_memory_resource_holder(_Resource&& __resource) noexcept
+      : __resource_(::cuda::std::forward<_Resource>(__resource))
+  {}
+};
+
+template <>
+struct __policy_memory_resource_holder<false>
+{
+  _CCCL_HIDE_FROM_ABI __policy_memory_resource_holder() = default;
+
+  //! @brief Dummy constructor to simplify implementation of the cuda policy
+  _CCCL_TEMPLATE(class _Resource)
+  _CCCL_REQUIRES(::cuda::mr::resource_with<_Resource, ::cuda::mr::device_accessible>)
+  _CCCL_HOST_API constexpr __policy_memory_resource_holder(_Resource&&) noexcept {}
+};
+
 template <uint32_t _Policy>
 struct _CCCL_DECLSPEC_EMPTY_BASES __execution_policy_base<_Policy, __execution_backend::__cuda>
     : __execution_policy_base<_Policy, __execution_backend::__none>
     , protected __policy_stream_holder<__cuda_policy_with_stream<_Policy>>
+    , protected __policy_memory_resource_holder<__cuda_policy_with_memory_resource<_Policy>>
 {
 private:
   template <uint32_t, __execution_backend>
   friend struct __execution_policy_base;
 
-  using __stream_holder = __policy_stream_holder<__cuda_policy_with_stream<_Policy>>;
+  using __stream_holder   = __policy_stream_holder<__cuda_policy_with_stream<_Policy>>;
+  using __resource_holder = __policy_memory_resource_holder<__cuda_policy_with_memory_resource<_Policy>>;
 
   template <uint32_t _OtherPolicy>
   _CCCL_HOST_API constexpr __execution_policy_base(
     const __execution_policy_base<_OtherPolicy, __execution_backend::__cuda>& __policy) noexcept
       : __stream_holder(__policy.query(::cuda::get_stream))
+      , __resource_holder(__policy.query(::cuda::mr::get_memory_resource))
   {}
 
   template <uint32_t _OtherPolicy>
@@ -73,6 +105,14 @@ private:
     const __execution_policy_base<_OtherPolicy, __execution_backend::__cuda>& __policy,
     ::cuda::stream_ref __stream) noexcept
       : __stream_holder(__stream)
+      , __resource_holder(__policy.query(::cuda::mr::get_memory_resource))
+  {}
+
+  template <uint32_t _OtherPolicy, class _Resource>
+  _CCCL_HOST_API constexpr __execution_policy_base(
+    const __execution_policy_base<_OtherPolicy, __execution_backend::__cuda>& __policy, _Resource&& __resource) noexcept
+      : __stream_holder(__policy.query(::cuda::get_stream))
+      , __resource_holder(::cuda::std::forward<_Resource>(__resource))
   {}
 
 public:
@@ -110,6 +150,40 @@ public:
     }
   }
 
+  //! @brief Set the current memory resource
+  _CCCL_TEMPLATE(class _Resource, bool _WithResource = __cuda_policy_with_memory_resource<_Policy>)
+  _CCCL_REQUIRES(::cuda::mr::resource_with<_Resource, ::cuda::mr::device_accessible> _CCCL_AND _WithResource)
+  [[nodiscard]] _CCCL_HOST_API __execution_policy_base& set_memory_resource(_Resource&& __resource) noexcept
+  {
+    this->__resource_ = __resource;
+    return *this;
+  }
+
+  //! @brief Convert to a policy that holds a memory resource
+  _CCCL_TEMPLATE(class _Resource, bool _WithResource = __cuda_policy_with_memory_resource<_Policy>)
+  _CCCL_REQUIRES(::cuda::mr::resource_with<_Resource, ::cuda::mr::device_accessible> _CCCL_AND(!_WithResource))
+  [[nodiscard]] _CCCL_HOST_API auto set_memory_resource(_Resource&& __resource) const noexcept
+  {
+    constexpr uint32_t __new_policy =
+      _Policy | (static_cast<uint32_t>(__cuda_backend_options::__with_memory_resource) << 16);
+    return __execution_policy_base<__new_policy>{*this, __resource};
+  }
+
+  //! @brief Return either a stored or a default memory resource
+  //! @note We cannot put that into the __policy_memory_resource_holder because we need a stream for the device
+  [[nodiscard]] _CCCL_HOST_API auto query(const ::cuda::mr::get_memory_resource_t&) const noexcept
+  {
+    if constexpr (__cuda_policy_with_memory_resource<_Policy>)
+    {
+      return this->__resource_;
+    }
+    else
+    {
+      ::cuda::stream_ref __stream = this->query(::cuda::get_stream);
+      return ::cuda::device_default_memory_pool(__stream.device());
+    }
+  }
+
   template <uint32_t _OtherPolicy, __execution_backend _OtherBackend>
   [[nodiscard]] _CCCL_API friend constexpr bool operator==(
     const __execution_policy_base& __lhs, const __execution_policy_base<_OtherPolicy, _OtherBackend>& __rhs) noexcept
@@ -122,6 +196,14 @@ public:
     if constexpr (__cuda_policy_with_stream<_Policy>)
     {
       if (__lhs.query(::cuda::get_stream) != __rhs.query(::cuda::get_stream))
+      {
+        return false;
+      }
+    }
+
+    if constexpr (__cuda_policy_with_memory_resource<_Policy>)
+    {
+      if (__lhs.query(::cuda::mr::get_memory_resource) != __rhs.query(::cuda::mr::get_memory_resource))
       {
         return false;
       }
