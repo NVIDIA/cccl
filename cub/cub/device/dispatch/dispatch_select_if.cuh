@@ -562,10 +562,10 @@ struct DispatchSelectIf
 
     // For partitioning invocations, we cap the partition size to the maximum number of items supported.
     // For selection invocations, we cap at the largest multiple of a full tile. There's a selection-specific bug where
-    // we would otherwise overflow indexes for the last partial tile, when discounting for the out-of-bounds items.
+    // we would otherwise overflow indices for the last partial tile, when discounting for the out-of-bounds items.
     static constexpr per_partition_offset_t capped_partition_size =
       is_partitioning_invocation
-        ? ::cuda::std::numeric_limits<per_partition_offset_t>::max()
+        ? max_supported_partition_size
         : full_tile_partition_size;
 
     // The maximum number of items for which we will ever invoke the kernel (i.e. largest partition size)
