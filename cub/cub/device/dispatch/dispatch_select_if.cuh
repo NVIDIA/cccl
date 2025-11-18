@@ -564,9 +564,7 @@ struct DispatchSelectIf
     // For selection invocations, we cap at the largest multiple of a full tile. There's a selection-specific bug where
     // we would otherwise overflow indices for the last partial tile, when discounting for the out-of-bounds items.
     static constexpr per_partition_offset_t capped_partition_size =
-      is_partitioning_invocation
-        ? max_supported_partition_size
-        : full_tile_partition_size;
+      is_partitioning_invocation ? max_supported_partition_size : full_tile_partition_size;
 
     // The maximum number of items for which we will ever invoke the kernel (i.e. largest partition size)
     // The extra check of use_streaming_context ensures that OffsetT is larger than per_partition_offset_t to avoid
