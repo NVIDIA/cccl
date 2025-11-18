@@ -1418,6 +1418,27 @@ UNITTEST("logical data slice const")
   ctx.finalize();
 };
 
+// Ensure we can manipulate mdspan with static extents
+UNITTEST("mdspan static extents")
+{
+  context ctx;
+  using index_t = ::std::size_t;
+  ::std::array<int, 16 * 32> data{};
+  cuda::std::mdspan<int, cuda::std::extents<index_t, 16, 32>> m(data.data());
+
+  static_assert(decltype(m)::extents_type::static_extent(0) == 16);
+  static_assert(decltype(m)::extents_type::static_extent(1) == 32);
+
+  auto lm = ctx.logical_data(m);
+
+  ctx.task(lm.rw())->*[](cudaStream_t stream, auto dm) {
+    static_assert(decltype(dm)::extents_type::static_extent(0) == 16);
+    static_assert(decltype(dm)::extents_type::static_extent(1) == 32);
+  };
+
+  ctx.finalize();
+};
+
 inline void unit_test_partitioner_product()
 {
   context ctx;
