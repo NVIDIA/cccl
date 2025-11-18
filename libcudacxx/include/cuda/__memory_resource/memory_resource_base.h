@@ -427,8 +427,11 @@ public:
   //! that returned \p __ptr.
   //! @note The pointer passed to `deallocate` must not be in use in a stream other than \p __stream.
   //! It is the caller's responsibility to properly synchronize all relevant streams before calling `deallocate`.
-  void _CCCL_HOST_API
-  deallocate(const ::cuda::stream_ref __stream, void* __ptr, const size_t __bytes, const size_t __alignment) noexcept
+  void _CCCL_HOST_API deallocate(
+    const ::cuda::stream_ref __stream,
+    void* __ptr,
+    const size_t __bytes,
+    [[maybe_unused]] const size_t __alignment) noexcept
   {
     // We need to ensure that the provided alignment matches the minimal provided alignment
     _CCCL_ASSERT(__is_valid_alignment(__alignment), "Invalid alignment passed to __memory_resource_base::deallocate.");
