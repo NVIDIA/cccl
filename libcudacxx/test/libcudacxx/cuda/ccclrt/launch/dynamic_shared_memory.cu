@@ -10,13 +10,12 @@
 
 #include <cuda/devices>
 #include <cuda/hierarchy>
+#include <cuda/launch>
 #include <cuda/std/cstddef>
 #include <cuda/std/functional>
 #include <cuda/std/span>
 #include <cuda/std/type_traits>
 #include <cuda/stream>
-
-#include <cuda/experimental/launch.cuh>
 
 #include <testing.cuh>
 
@@ -26,16 +25,16 @@ struct TestKernel
   template <class Config>
   __device__ void operator()(const Config& config)
   {
-    static_assert(cuda::std::is_same_v<View, decltype(cudax::device::dynamic_shared_memory_view(config))>);
-    static_assert(noexcept(cudax::device::dynamic_shared_memory_view(config)));
+    static_assert(cuda::std::is_same_v<View, decltype(cuda::dynamic_shared_memory_view(config))>);
+    static_assert(noexcept(cuda::dynamic_shared_memory_view(config)));
 
-    write_smem(cudax::device::dynamic_shared_memory_view(config));
+    write_smem(cuda::dynamic_shared_memory_view(config));
   }
 
   __device__ void write_smem(T& view)
   {
     view = T{};
-    CUDAX_REQUIRE(view == T{});
+    CCCLRT_REQUIRE(view == T{});
   }
 
   template <cuda::std::size_t N>
@@ -44,7 +43,7 @@ struct TestKernel
     for (cuda::std::size_t i = 0; i < view.size(); ++i)
     {
       view[i] = T{};
-      CUDAX_REQUIRE(view[i] == T{});
+      CCCLRT_REQUIRE(view[i] == T{});
     }
   }
 };
@@ -55,16 +54,16 @@ void test_opt_and_launch(cuda::stream_ref stream, Opt opt)
   static_assert(cuda::std::is_same_v<T, typename Opt::value_type>);
   static_assert(cuda::std::is_same_v<View, typename Opt::view_type>);
 
-  const auto config = cudax::make_config(cuda::block_dims<1, 1>(), cuda::grid_dims<1, 1>(), opt);
-  cudax::launch(stream, config, TestKernel<T, View>{});
+  const auto config = cuda::make_config(cuda::block_dims<1, 1>(), cuda::grid_dims<1, 1>(), opt);
+  cuda::launch(stream, config, TestKernel<T, View>{});
   stream.sync();
 }
 
 template <class T>
 void test_ref(cuda::stream_ref stream)
 {
-  static_assert(noexcept(cudax::dynamic_shared_memory<T>()));
-  test_opt_and_launch<T, T&>(stream, cudax::dynamic_shared_memory<T>());
+  static_assert(noexcept(cuda::dynamic_shared_memory<T>()));
+  test_opt_and_launch<T, T&>(stream, cuda::dynamic_shared_memory<T>());
 }
 
 void test_ref(cuda::stream_ref stream)
@@ -78,11 +77,11 @@ void test_ref(cuda::stream_ref stream)
 template <class T, cuda::std::size_t N>
 void test_span(cuda::stream_ref stream)
 {
-  static_assert(!noexcept(cudax::dynamic_shared_memory<T[]>(N)));
-  test_opt_and_launch<T, cuda::std::span<T>>(stream, cudax::dynamic_shared_memory<T[]>(N));
+  static_assert(!noexcept(cuda::dynamic_shared_memory<T[]>(N)));
+  test_opt_and_launch<T, cuda::std::span<T>>(stream, cuda::dynamic_shared_memory<T[]>(N));
 
-  static_assert(noexcept(cudax::dynamic_shared_memory<T[N]>()));
-  test_opt_and_launch<T, cuda::std::span<T, N>>(stream, cudax::dynamic_shared_memory<T[N]>());
+  static_assert(noexcept(cuda::dynamic_shared_memory<T[N]>()));
+  test_opt_and_launch<T, cuda::std::span<T, N>>(stream, cuda::dynamic_shared_memory<T[N]>());
 }
 
 void test_span(cuda::stream_ref stream)
