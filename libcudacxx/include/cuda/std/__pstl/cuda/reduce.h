@@ -32,6 +32,7 @@ _CCCL_DIAG_POP
 
 #  include <cuda/__execution/policy.h>
 #  include <cuda/__runtime/api_wrapper.h>
+#  include <cuda/__stream/get_stream.h>
 #  include <cuda/std/__exception/cuda_error.h>
 #  include <cuda/std/__execution/env.h>
 #  include <cuda/std/__execution/policy.h>
@@ -61,9 +62,14 @@ struct __pstl_dispatch<__pstl_algorithm::__reduce, __execution_backend::__cuda>
   {
     // Allocate memory for result
     _Tp* __device_ret_ptr = nullptr;
+    auto __stream         = __policy.query(::cuda::get_stream);
 
     _CCCL_TRY_CUDA_API(
-      ::cudaMalloc, "__pstl_dispatch: allocation failed", reinterpret_cast<void**>(&__device_ret_ptr), sizeof(_Tp));
+      ::cudaMallocAsync,
+      "__pstl_dispatch: allocation failed",
+      reinterpret_cast<void**>(&__device_ret_ptr),
+      sizeof(_Tp),
+      __stream.get());
 
     const auto __count = ::cuda::std::distance(__first, __last);
     _Tp __ret;
@@ -79,14 +85,17 @@ struct __pstl_dispatch<__pstl_algorithm::__reduce, __execution_backend::__cuda>
       ::cuda::std::move(__policy));
 
     _CCCL_TRY_CUDA_API(
-      ::cudaMemcpy,
+      ::cudaMemcpyAsync,
       "__pstl_cuda_for_each: copy of result from device to host failed",
       ::cuda::std::addressof(__ret),
       __device_ret_ptr,
       sizeof(_Tp),
-      ::cudaMemcpyDeviceToHost);
+      ::cudaMemcpyDeviceToHost,
+      __stream.get());
 
-    _CCCL_TRY_CUDA_API(::cudaFree, "__pstl_cuda_for_each: deallocate failed", __device_ret_ptr);
+    _CCCL_TRY_CUDA_API(::cudaFreeAsync, "__pstl_cuda_for_each: deallocate failed", __device_ret_ptr, __stream.get());
+
+    __stream.sync();
 
     return __ret;
   }
