@@ -441,10 +441,9 @@ void TestTransformScanEdgeCases()
   {
     const int n = 10000;
     thrust::device_vector<int> d_input(n);
-    for (int i = 0; i < n; ++i)
-    {
-      d_input[i] = (i % 5) + 1;
-    }
+    thrust::tabulate(d_input.begin(), d_input.end(), [] __device__(int i) {
+      return (i % 5) + 1;
+    });
 
     thrust::device_vector<int> d_output(n);
     auto r = thrust::transform_inclusive_scan(
@@ -464,10 +463,9 @@ void TestTransformScanEdgeCases()
   {
     const int n = 10000;
     thrust::device_vector<int> d_input(n);
-    for (int i = 0; i < n; ++i)
-    {
-      d_input[i] = (i % 3) + 1;
-    }
+    thrust::tabulate(d_input.begin(), d_input.end(), [] __device__(int i) {
+      return (i % 3) + 1;
+    });
 
     thrust::device_vector<int> d_output(n);
     auto r = thrust::transform_exclusive_scan(
@@ -513,10 +511,9 @@ void TestTransformScanEdgeCases()
   {
     const int n = 1024;
     thrust::device_vector<int> d_input(n);
-    for (int i = 0; i < n; ++i)
-    {
-      d_input[i] = i + 1;
-    }
+    thrust::tabulate(d_input.begin(), d_input.end(), [] __device__(int i) {
+      return i + 1;
+    });
 
     thrust::device_vector<int> d_output(n);
     auto r = thrust::transform_inclusive_scan(
