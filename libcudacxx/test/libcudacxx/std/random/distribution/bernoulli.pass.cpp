@@ -39,11 +39,11 @@ struct bernoulli_cdf
 
 __host__ __device__ void test()
 {
-  const bool test_constexpr               = true;
-  using D                                 = cuda::std::bernoulli_distribution;
-  using P                                 = D::param_type;
-  using G                                 = cuda::std::philox4x64;
-  constexpr cuda::std::array<P, 5> params = {P(0.5), P(0.1), P(0.9), P(0.25), P(0.75)};
+  [[maybe_unused]] const bool test_constexpr = true; // Erroneous compiler warning about unused variable
+  using D                                    = cuda::std::bernoulli_distribution;
+  using P                                    = D::param_type;
+  using G                                    = cuda::std::philox4x64;
+  constexpr cuda::std::array<P, 5> params    = {P(0.5), P(0.1), P(0.9), P(0.25), P(0.75)};
   test_distribution<D, false, G, test_constexpr>(params, bernoulli_cdf{});
 }
 
