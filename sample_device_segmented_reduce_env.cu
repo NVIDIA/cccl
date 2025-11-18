@@ -11,16 +11,15 @@
 
 namespace cudax = cuda::experimental;
 
-// Compile with nvcc  -Icub -Ilibcudacxx/include -Icudax/include -Ithrust/ -Icudax/include/ sample_device_segmented_reduce_env.cu -o sample_device_segmented_reduce_env
+// Compile with nvcc  -Icub -Ilibcudacxx/include -Icudax/include -Ithrust/ -Icudax/include/
+// sample_device_segmented_reduce_env.cu -o sample_device_segmented_reduce_env
 
 // In cccl/ repo
 
 int main()
 {
-
   int num_segments = 3;
 
-  
   thrust::device_vector<int> d_offsets = {0, 3, 3, 7};
   int* d_offsets_it                    = thrust::raw_pointer_cast(d_offsets.data());
 
@@ -38,7 +37,13 @@ int main()
   // An environment we use to pass all necessary information to CUB
   cudax::env_t<cuda::mr::device_accessible> env{mr, stream};
 
+  const auto envdet = cuda::execution::require(cuda::execution::determinism::run_to_run);
+  // const auto envdet = cuda::execution::require(cuda::execution::determinism::not_guaranteed);
+  // const auto envdet = cuda::execution::require(cuda::execution::determinism::gpu_to_gpu);
+
   cub::DeviceSegmentedReduce::Sum(d_in_it, d_out_it, num_segments, d_offsets_it, d_offsets_it + 1, env);
+  //test specified determinism
+  cub::DeviceSegmentedReduce::Sum(d_in_it, d_out_it, num_segments, d_offsets_it, d_offsets_it + 1, envdet); 
 
   thrust::host_vector<int> h_out = d_out;
   thrust::host_vector<int> expected{21, 0, 17};

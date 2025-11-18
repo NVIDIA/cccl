@@ -407,12 +407,6 @@ struct DeviceSegmentedReduce
     _CCCL_UNREACHABLE();
   }
 
-  /*
-  Remi Bourgeois:
-  env-based overload of the device segmented reduce taking offset iterators.
-  Heavily inspired from the env-based device reduce.
-  */
-
   //! @rst
   //! Computes a device-wide segmented sum using the addition (``+``) operator.
   //!
@@ -507,42 +501,16 @@ struct DeviceSegmentedReduce
     using OutputT = detail::non_void_value_t<OutputIteratorT, detail::it_value_t<InputIteratorT>>;
     using init_t  = OutputT;
 
-    // Remi Bourgeois: copy-pasted from device_reduce.cuh but device segmented reduce has no determinism option ATM,
-    // left as comment
-    /*
     using requirements_t = ::cuda::std::execution::
       __query_result_or_t<EnvT, ::cuda::execution::__get_requirements_t, ::cuda::std::execution::env<>>;
-    using default_determinism_t =
+    using requested_determinism_t =
       ::cuda::std::execution::__query_result_or_t<requirements_t, //
                                                   ::cuda::execution::determinism::__get_determinism_t,
                                                   ::cuda::execution::determinism::run_to_run_t>;
 
-    constexpr auto no_determinism = detail::is_non_deterministic_v<default_determinism_t>;
-
-    // The output iterator must be a contiguous iterator or we fall back to
-    // run-to-run determinism.
-    constexpr auto is_contiguous_fallback =
-      !no_determinism || THRUST_NS_QUALIFIER::is_contiguous_iterator_v<OutputIteratorT>;
-
-    using OutputT = cub::detail::non_void_value_t<OutputIteratorT, cub::detail::it_value_t<InputIteratorT>>;
-
-    // Since atomics for types of size < 4B are emulated, they perform poorly, so we fall back to the run-to-run
-    // determinism.
-    constexpr auto is_4b_or_greater = !no_determinism || sizeof(OutputT) >= 4;
-
-    using determinism_t =
-      ::cuda::std::conditional_t<no_determinism && !(is_contiguous_fallback && is_4b_or_greater),
-                                 ::cuda::execution::determinism::run_to_run_t,
-                                 default_determinism_t>;
-    */
-
-    // Remi Bourgeois copy-pasted from device_reduce.cuh but device segmented reduce has no tuning option ATM, left as
-    // comment
-    /*
-    using tuning_t =
-      ::cuda::std::execution::__query_result_or_t<EnvT, ::cuda::execution::__get_tuning_t,
-    ::cuda::std::execution::env<>>;
-    */
+    // Static assert to reject gpu_to_gpu determinism since it's not properly implemented
+    static_assert(!::cuda::std::is_same_v<requested_determinism_t, ::cuda::execution::determinism::gpu_to_gpu_t>,
+                  "gpu_to_gpu determinism is not supported for device segmented reductions ");
 
     static_assert(::cuda::std::is_integral_v<OffsetT>, "Offset iterator value type should be integral.");
     if constexpr (::cuda::std::is_integral_v<OffsetT>)
