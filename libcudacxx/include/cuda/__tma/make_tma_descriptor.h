@@ -12,8 +12,6 @@
 
 #include <cuda/std/detail/__config>
 
-#include <cuda/__memory/is_pointer_accessible.h>
-
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
