@@ -12,15 +12,16 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
-#include <thrust/pair.h>
 #include <thrust/system/detail/generic/unique_by_key.h>
 #include <thrust/system/tbb/detail/execution_policy.h>
+
+#include <cuda/std/__utility/pair.h>
 
 THRUST_NAMESPACE_BEGIN
 namespace system::tbb::detail
 {
 template <typename DerivedPolicy, typename ForwardIterator1, typename ForwardIterator2, typename BinaryPredicate>
-thrust::pair<ForwardIterator1, ForwardIterator2> unique_by_key(
+::cuda::std::pair<ForwardIterator1, ForwardIterator2> unique_by_key(
   execution_policy<DerivedPolicy>& exec,
   ForwardIterator1 keys_first,
   ForwardIterator1 keys_last,
@@ -37,7 +38,7 @@ template <typename DerivedPolicy,
           typename OutputIterator1,
           typename OutputIterator2,
           typename BinaryPredicate>
-thrust::pair<OutputIterator1, OutputIterator2> unique_by_key_copy(
+::cuda::std::pair<OutputIterator1, OutputIterator2> unique_by_key_copy(
   execution_policy<DerivedPolicy>& exec,
   InputIterator1 keys_first,
   InputIterator1 keys_last,

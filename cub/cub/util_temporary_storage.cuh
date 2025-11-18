@@ -22,49 +22,47 @@
 #include <cub/util_debug.cuh>
 #include <cub/util_namespace.cuh>
 
+#include <cuda/__cmath/round_up.h>
+#include <cuda/__memory/align_up.h>
+
 CUB_NAMESPACE_BEGIN
 
 #ifndef _CCCL_DOXYGEN_INVOKED // Do not document
 
 namespace detail
 {
-/**
- * @brief Alias temporaries to externally-allocated device storage (or simply return the amount of storage needed).
- *
- * @param[in] d_temp_storage
- *   Device-accessible allocation of temporary storage.
- *   When nullptr, the required allocation size is written to @p temp_storage_bytes and no work is
- *   done.
- *
- * @param[in,out] temp_storage_bytes
- *   Size in bytes of @p d_temp_storage allocation
- *
- * @param[in,out] allocations
- *   Pointers to device allocations needed
- *
- * @param[in] allocation_sizes
- *   Sizes in bytes of device allocations needed
- */
-template <int ALLOCATIONS>
-_CCCL_HOST_DEVICE _CCCL_FORCEINLINE cudaError_t AliasTemporaries(
+//! @brief Alias temporaries to externally-allocated device storage (or simply return the amount of storage needed).
+//!
+//! @param[in] d_temp_storage
+//!   Device-accessible allocation of temporary storage.
+//!   When nullptr, the required allocation size is written to @p temp_storage_bytes and no work is done.
+//!
+//! @param[in,out] temp_storage_bytes
+//!   Size in bytes of @p d_temp_storage allocation
+//!
+//! @param[in,out] allocations
+//!   Pointers to device allocations needed
+//!
+//! @param[in] allocation_sizes
+//!   Sizes in bytes of device allocations needed
+template <int NumAllocations>
+[[nodiscard]] _CCCL_HOST_DEVICE _CCCL_FORCEINLINE cudaError_t alias_temporaries(
   void* d_temp_storage,
   size_t& temp_storage_bytes,
-  void* (&allocations)[ALLOCATIONS],
-  const size_t (&allocation_sizes)[ALLOCATIONS])
+  void* (&allocations)[NumAllocations],
+  const size_t (&allocation_sizes)[NumAllocations])
 {
-  constexpr size_t ALIGN_BYTES = 256;
-  constexpr size_t ALIGN_MASK  = ~(ALIGN_BYTES - 1);
+  constexpr size_t align_bytes = 256;
 
   // Compute exclusive prefix sum over allocation requests
-  size_t allocation_offsets[ALLOCATIONS];
+  size_t allocation_offsets[NumAllocations];
   size_t bytes_needed = 0;
-  for (int i = 0; i < ALLOCATIONS; ++i)
+  for (int i = 0; i < NumAllocations; ++i)
   {
-    const size_t allocation_bytes = (allocation_sizes[i] + ALIGN_BYTES - 1) & ALIGN_MASK;
-    allocation_offsets[i]         = bytes_needed;
-    bytes_needed += allocation_bytes;
+    allocation_offsets[i] = bytes_needed;
+    bytes_needed += ::cuda::round_up(allocation_sizes[i], +align_bytes);
   }
-  bytes_needed += ALIGN_BYTES - 1;
+  bytes_needed += align_bytes - 1;
 
   // Check if the caller is simply requesting the size of the storage allocation
   if (!d_temp_storage)
@@ -80,9 +78,8 @@ _CCCL_HOST_DEVICE _CCCL_FORCEINLINE cudaError_t AliasTemporaries(
   }
 
   // Alias
-  d_temp_storage =
-    reinterpret_cast<void*>((reinterpret_cast<uintptr_t>(d_temp_storage) + ALIGN_BYTES - 1) & ALIGN_MASK);
-  for (int i = 0; i < ALLOCATIONS; ++i)
+  d_temp_storage = ::cuda::align_up(d_temp_storage, align_bytes);
+  for (int i = 0; i < NumAllocations; ++i)
   {
     allocations[i] = static_cast<char*>(d_temp_storage) + allocation_offsets[i];
   }

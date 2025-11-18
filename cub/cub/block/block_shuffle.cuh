@@ -53,14 +53,11 @@ template <typename T, int BlockDimX, int BlockDimY = 1, int BlockDimZ = 1>
 class BlockShuffle
 {
 private:
-  enum
-  {
-    BLOCK_THREADS = BlockDimX * BlockDimY * BlockDimZ,
+  static constexpr int BLOCK_THREADS = BlockDimX * BlockDimY * BlockDimZ;
 
-    LOG_WARP_THREADS = detail::log2_warp_threads,
-    WARP_THREADS     = 1 << LOG_WARP_THREADS,
-    WARPS            = (BLOCK_THREADS + WARP_THREADS - 1) / WARP_THREADS,
-  };
+  static constexpr int LOG_WARP_THREADS = detail::log2_warp_threads;
+  static constexpr int WARP_THREADS     = 1 << LOG_WARP_THREADS;
+  static constexpr int WARPS            = (BLOCK_THREADS + WARP_THREADS - 1) / WARP_THREADS;
 
   /// Shared memory storage layout type (last element from each thread's input)
   using _TempStorage = T[BLOCK_THREADS];

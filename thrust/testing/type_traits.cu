@@ -5,11 +5,11 @@
 #include <thrust/iterator/iterator_traits.h>
 #include <thrust/iterator/transform_iterator.h>
 #include <thrust/iterator/zip_iterator.h>
-#include <thrust/pair.h>
 #include <thrust/tuple.h>
 #include <thrust/type_traits/is_contiguous_iterator.h>
 
 #include <cuda/__cccl_config>
+#include <cuda/std/utility>
 
 #if _CCCL_COMPILER(GCC, >=, 7)
 // This header pulls in an unsuppressable warning on GCC 6
@@ -189,25 +189,25 @@ void TestTriviallyRelocatable()
 #if _CCCL_COMPILER(GCC, >=, 7)
   static_assert(thrust::is_trivially_relocatable<thrust::complex<float>>::value, "");
   static_assert(thrust::is_trivially_relocatable<::cuda::std::complex<float>>::value, "");
-  static_assert(thrust::is_trivially_relocatable<thrust::pair<int, thrust::complex<float>>>::value, "");
+  static_assert(thrust::is_trivially_relocatable<cuda::std::pair<int, thrust::complex<float>>>::value, "");
   static_assert(thrust::is_trivially_relocatable<::cuda::std::pair<int, ::cuda::std::complex<float>>>::value, "");
   static_assert(thrust::is_trivially_relocatable<thrust::tuple<int, thrust::complex<float>, char>>::value, "");
   static_assert(thrust::is_trivially_relocatable<::cuda::std::tuple<int, ::cuda::std::complex<float>, char>>::value,
                 "");
 #endif // _CCCL_COMPILER(GCC, >=, 7)
   static_assert(thrust::is_trivially_relocatable<
-                  ::cuda::std::tuple<thrust::pair<int, thrust::tuple<int, ::cuda::std::tuple<>>>,
+                  ::cuda::std::tuple<cuda::std::pair<int, thrust::tuple<int, ::cuda::std::tuple<>>>,
                                      thrust::tuple<::cuda::std::pair<int, thrust::tuple<>>, int>>>::value,
                 "");
 
-  static_assert(!thrust::is_trivially_relocatable<thrust::pair<int, std::string>>::value, "");
+  static_assert(!thrust::is_trivially_relocatable<cuda::std::pair<int, std::string>>::value, "");
   static_assert(!thrust::is_trivially_relocatable<::cuda::std::pair<int, std::string>>::value, "");
   static_assert(!thrust::is_trivially_relocatable<thrust::tuple<int, float, std::string>>::value, "");
   static_assert(!thrust::is_trivially_relocatable<::cuda::std::tuple<int, float, std::string>>::value, "");
 
   // test propagation of relocatability through pair and tuple
   static_assert(thrust::is_trivially_relocatable<NonTriviallyCopyable>::value, "");
-  static_assert(thrust::is_trivially_relocatable<thrust::pair<NonTriviallyCopyable, int>>::value, "");
+  static_assert(thrust::is_trivially_relocatable<cuda::std::pair<NonTriviallyCopyable, int>>::value, "");
   static_assert(thrust::is_trivially_relocatable<::cuda::std::pair<NonTriviallyCopyable, int>>::value, "");
   static_assert(thrust::is_trivially_relocatable<thrust::tuple<NonTriviallyCopyable>>::value, "");
   static_assert(thrust::is_trivially_relocatable<::cuda::std::tuple<NonTriviallyCopyable>>::value, "");

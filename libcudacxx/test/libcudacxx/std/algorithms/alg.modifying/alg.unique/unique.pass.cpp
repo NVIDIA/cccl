@@ -16,7 +16,7 @@
 //   constexpr Iter        // constexpr after C++17
 //   unique(Iter first, Iter last);
 
-#include <cuda/std/__algorithm_>
+#include <cuda/std/algorithm>
 #include <cuda/std/cassert>
 #include <cuda/std/type_traits>
 

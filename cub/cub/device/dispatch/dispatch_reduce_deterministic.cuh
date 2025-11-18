@@ -46,9 +46,7 @@
 
 CUB_NAMESPACE_BEGIN
 
-namespace detail
-{
-namespace rfa
+namespace detail::rfa
 {
 template <typename Invocable, typename InputT>
 using transformed_input_t = ::cuda::std::decay_t<::cuda::std::invoke_result_t<Invocable, InputT>>;
@@ -61,7 +59,7 @@ template <typename FloatType                                                    
           typename ::cuda::std::enable_if_t<::cuda::std::is_floating_point_v<FloatType>>* = nullptr>
 struct deterministic_sum_t
 {
-  using DeterministicAcc = detail::rfa::ReproducibleFloatingAccumulator<FloatType>;
+  using DeterministicAcc = ReproducibleFloatingAccumulator<FloatType>;
 
   _CCCL_DEVICE DeterministicAcc operator()(DeterministicAcc acc, FloatType f)
   {
@@ -86,7 +84,6 @@ struct deterministic_sum_t
     return lhs + rhs;
   }
 };
-} // namespace rfa
 
 /******************************************************************************
  * Single-problem dispatch
@@ -112,11 +109,11 @@ template <typename InputIteratorT,
           typename OffsetT,
           typename InitT,
           typename TransformOpT = ::cuda::std::identity,
-          typename AccumT       = rfa::accum_t<InitT, InputIteratorT, TransformOpT>,
-          typename PolicyHub    = detail::rfa::policy_hub<AccumT, OffsetT, ::cuda::std::plus<>>>
-struct DispatchReduceDeterministic
+          typename AccumT       = accum_t<InitT, InputIteratorT, TransformOpT>,
+          typename PolicyHub    = policy_hub<AccumT, OffsetT, ::cuda::std::plus<>>>
+struct dispatch_t
 {
-  using deterministic_add_t = rfa::deterministic_sum_t<AccumT>;
+  using deterministic_add_t = deterministic_sum_t<AccumT>;
   using reduction_op_t      = deterministic_add_t;
 
   using deterministic_accum_t = typename deterministic_add_t::DeterministicAcc;
@@ -196,18 +193,12 @@ struct DispatchReduceDeterministic
     THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(1, ActivePolicyT::SingleTilePolicy::BLOCK_THREADS, 0, stream)
       .doit(single_tile_kernel, d_in, d_out, static_cast<int>(num_items), reduction_op, init, transform_op);
     // Check for failure to launch
-    auto error = CubDebug(cudaPeekAtLastError());
-    if (cudaSuccess != error)
+    if (const auto error = CubDebug(cudaPeekAtLastError()))
     {
       return error;
     }
     // Sync the stream if specified to flush runtime errors
-    error = CubDebug(detail::DebugSyncStream(stream));
-    if (cudaSuccess != error)
-    {
-      return error;
-    }
-    return cudaSuccess;
+    return CubDebug(detail::DebugSyncStream(stream));
   }
 
   //---------------------------------------------------------------------------
@@ -239,22 +230,19 @@ struct DispatchReduceDeterministic
     const auto tile_size = ActivePolicyT::ReducePolicy::BLOCK_THREADS * ActivePolicyT::ReducePolicy::ITEMS_PER_THREAD;
     // Get device ordinal
     int device_ordinal;
-    auto error = CubDebug(cudaGetDevice(&device_ordinal));
-    if (cudaSuccess != error)
+    if (const auto error = CubDebug(cudaGetDevice(&device_ordinal)))
     {
       return error;
     }
 
     int sm_count;
-    error = CubDebug(cudaDeviceGetAttribute(&sm_count, cudaDevAttrMultiProcessorCount, device_ordinal));
-    if (cudaSuccess != error)
+    if (const auto error = CubDebug(cudaDeviceGetAttribute(&sm_count, cudaDevAttrMultiProcessorCount, device_ordinal)))
     {
       return error;
     }
 
     KernelConfig reduce_config;
-    error = CubDebug(reduce_config.Init<typename ActivePolicyT::ReducePolicy>(reduce_kernel));
-    if (cudaSuccess != error)
+    if (const auto error = CubDebug(reduce_config.Init<typename ActivePolicyT::ReducePolicy>(reduce_kernel)))
     {
       return error;
     }
@@ -285,8 +273,8 @@ struct DispatchReduceDeterministic
 
     // Alias the temporary allocations from the single storage blob (or
     // compute the necessary size of the blob)
-    error = CubDebug(AliasTemporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes));
-    if (cudaSuccess != error)
+    if (const auto error =
+          CubDebug(detail::alias_temporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes)))
     {
       return error;
     }
@@ -332,8 +320,7 @@ struct DispatchReduceDeterministic
               current_grid_size);
 
       // Check for failure to launch
-      error = CubDebug(cudaPeekAtLastError());
-      if (cudaSuccess != error)
+      if (const auto error = CubDebug(cudaPeekAtLastError()))
       {
         return error;
       }
@@ -345,8 +332,7 @@ struct DispatchReduceDeterministic
       }
 
       // Sync the stream if specified to flush runtime errors
-      error = CubDebug(detail::DebugSyncStream(stream));
-      if (cudaSuccess != error)
+      if (const auto error = CubDebug(detail::DebugSyncStream(stream)))
       {
         return error;
       }
@@ -371,20 +357,13 @@ struct DispatchReduceDeterministic
             ::cuda::std::identity{});
 
     // Check for failure to launch
-    error = CubDebug(cudaPeekAtLastError());
-    if (cudaSuccess != error)
+    if (const auto error = CubDebug(cudaPeekAtLastError()))
     {
       return error;
     }
 
     // Sync the stream if specified to flush runtime errors
-    error = CubDebug(detail::DebugSyncStream(stream));
-    if (cudaSuccess != error)
-    {
-      return error;
-    }
-
-    return cudaSuccess;
+    return CubDebug(detail::DebugSyncStream(stream));
   }
 
   //---------------------------------------------------------------------------
@@ -470,12 +449,9 @@ struct DispatchReduceDeterministic
     cudaStream_t stream       = {},
     TransformOpT transform_op = {})
   {
-    cudaError error = cudaSuccess;
-
     // Get PTX version
     int ptx_version = 0;
-    error           = CubDebug(PtxVersion(ptx_version));
-    if (cudaSuccess != error)
+    if (const auto error = CubDebug(PtxVersion(ptx_version)))
     {
       return error;
     }
@@ -483,7 +459,7 @@ struct DispatchReduceDeterministic
     input_unwrapped_it_t d_in_unwrapped = THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator(d_in);
 
     // Create dispatch functor
-    DispatchReduceDeterministic dispatch{
+    dispatch_t dispatch{
       d_temp_storage,
       temp_storage_bytes,
       d_in_unwrapped,
@@ -496,9 +472,8 @@ struct DispatchReduceDeterministic
       transform_op};
 
     // Dispatch to chained policy
-    error = CubDebug(PolicyHub::MaxPolicy::Invoke(ptx_version, dispatch));
-    return error;
+    return CubDebug(PolicyHub::MaxPolicy::Invoke(ptx_version, dispatch));
   }
 };
-} // namespace detail
+} // namespace detail::rfa
 CUB_NAMESPACE_END

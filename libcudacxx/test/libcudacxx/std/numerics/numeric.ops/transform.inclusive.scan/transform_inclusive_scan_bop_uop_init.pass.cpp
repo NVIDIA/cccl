@@ -17,7 +17,7 @@
 //                                           UnaryOperation unary_op,
 //                                           T init);
 
-#include <cuda/std/__algorithm_>
+#include <cuda/std/algorithm>
 #include <cuda/std/array>
 #include <cuda/std/cassert>
 #include <cuda/std/functional>

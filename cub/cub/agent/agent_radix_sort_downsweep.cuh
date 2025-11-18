@@ -165,18 +165,16 @@ struct AgentRadixSortDownsweep
   static constexpr RadixRankAlgorithm RANK_ALGORITHM = AgentRadixSortDownsweepPolicy::RANK_ALGORITHM;
   static constexpr BlockScanAlgorithm SCAN_ALGORITHM = AgentRadixSortDownsweepPolicy::SCAN_ALGORITHM;
 
-  enum
-  {
-    BLOCK_THREADS    = AgentRadixSortDownsweepPolicy::BLOCK_THREADS,
-    ITEMS_PER_THREAD = AgentRadixSortDownsweepPolicy::ITEMS_PER_THREAD,
-    RADIX_BITS       = AgentRadixSortDownsweepPolicy::RADIX_BITS,
-    TILE_ITEMS       = BLOCK_THREADS * ITEMS_PER_THREAD,
+  static constexpr int BLOCK_THREADS    = AgentRadixSortDownsweepPolicy::BLOCK_THREADS;
+  static constexpr int ITEMS_PER_THREAD = AgentRadixSortDownsweepPolicy::ITEMS_PER_THREAD;
+  static constexpr int RADIX_BITS       = AgentRadixSortDownsweepPolicy::RADIX_BITS;
+  static constexpr int TILE_ITEMS       = BLOCK_THREADS * ITEMS_PER_THREAD;
 
-    RADIX_DIGITS      = 1 << RADIX_BITS,
-    KEYS_ONLY         = ::cuda::std::is_same_v<ValueT, NullType>,
-    LOAD_WARP_STRIPED = RANK_ALGORITHM == RADIX_RANK_MATCH || RANK_ALGORITHM == RADIX_RANK_MATCH_EARLY_COUNTS_ANY
-                     || RANK_ALGORITHM == RADIX_RANK_MATCH_EARLY_COUNTS_ATOMIC_OR,
-  };
+  static constexpr int RADIX_DIGITS = 1 << RADIX_BITS;
+  static constexpr bool KEYS_ONLY   = ::cuda::std::is_same_v<ValueT, NullType>;
+  static constexpr bool LOAD_WARP_STRIPED =
+    RANK_ALGORITHM == RADIX_RANK_MATCH || RANK_ALGORITHM == RADIX_RANK_MATCH_EARLY_COUNTS_ANY
+    || RANK_ALGORITHM == RADIX_RANK_MATCH_EARLY_COUNTS_ATOMIC_OR;
 
   // Input iterator wrapper type (for applying cache modifier)s
   using KeysItr   = CacheModifiedInputIterator<LOAD_MODIFIER, bit_ordered_type, OffsetT>;
@@ -189,11 +187,8 @@ struct AgentRadixSortDownsweep
   using fundamental_digit_extractor_t = BFEDigitExtractor<KeyT>;
   using digit_extractor_t = typename traits::template digit_extractor_t<fundamental_digit_extractor_t, DecomposerT>;
 
-  enum
-  {
-    /// Number of bin-starting offsets tracked per thread
-    BINS_TRACKED_PER_THREAD = BlockRadixRankT::BINS_TRACKED_PER_THREAD
-  };
+  /// Number of bin-starting offsets tracked per thread
+  static constexpr int BINS_TRACKED_PER_THREAD = BlockRadixRankT::BINS_TRACKED_PER_THREAD;
 
   // BlockLoad type (keys)
   using BlockLoadKeysT = BlockLoad<bit_ordered_type, BLOCK_THREADS, ITEMS_PER_THREAD, LOAD_ALGORITHM>;
@@ -497,7 +492,7 @@ struct AgentRadixSortDownsweep
    * Process tile
    */
   template <bool FULL_TILE>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void ProcessTile(OffsetT block_offset, const OffsetT& valid_items = TILE_ITEMS)
+  _CCCL_DEVICE _CCCL_FORCEINLINE void ProcessTile(OffsetT block_offset, OffsetT valid_items = TILE_ITEMS)
   {
     bit_ordered_type keys[ITEMS_PER_THREAD];
     int ranks[ITEMS_PER_THREAD];

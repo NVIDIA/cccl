@@ -128,7 +128,7 @@ _CCCL_HOST_DEVICE bool binary_search(
 
 _CCCL_EXEC_CHECK_DISABLE
 template <typename DerivedPolicy, typename ForwardIterator, typename T, typename StrictWeakOrdering>
-_CCCL_HOST_DEVICE thrust::pair<ForwardIterator, ForwardIterator> equal_range(
+_CCCL_HOST_DEVICE ::cuda::std::pair<ForwardIterator, ForwardIterator> equal_range(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   ForwardIterator first,
   ForwardIterator last,
@@ -142,7 +142,7 @@ _CCCL_HOST_DEVICE thrust::pair<ForwardIterator, ForwardIterator> equal_range(
 
 _CCCL_EXEC_CHECK_DISABLE
 template <typename DerivedPolicy, typename ForwardIterator, typename LessThanComparable>
-_CCCL_HOST_DEVICE thrust::pair<ForwardIterator, ForwardIterator> equal_range(
+_CCCL_HOST_DEVICE ::cuda::std::pair<ForwardIterator, ForwardIterator> equal_range(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   ForwardIterator first,
   ForwardIterator last,
@@ -365,7 +365,7 @@ bool binary_search(ForwardIterator first, ForwardIterator last, const T& value, 
 }
 
 template <typename ForwardIterator, typename LessThanComparable>
-thrust::pair<ForwardIterator, ForwardIterator>
+::cuda::std::pair<ForwardIterator, ForwardIterator>
 equal_range(ForwardIterator first, ForwardIterator last, const LessThanComparable& value)
 {
   _CCCL_NVTX_RANGE_SCOPE("thrust::equal_range");
@@ -379,7 +379,7 @@ equal_range(ForwardIterator first, ForwardIterator last, const LessThanComparabl
 }
 
 template <typename ForwardIterator, typename T, typename StrictWeakOrdering>
-thrust::pair<ForwardIterator, ForwardIterator>
+::cuda::std::pair<ForwardIterator, ForwardIterator>
 equal_range(ForwardIterator first, ForwardIterator last, const T& value, StrictWeakOrdering comp)
 {
   _CCCL_NVTX_RANGE_SCOPE("thrust::equal_range");

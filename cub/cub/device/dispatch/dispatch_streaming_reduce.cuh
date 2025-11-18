@@ -192,9 +192,6 @@ struct dispatch_streaming_arg_reduce_t
     InitT init,
     cudaStream_t stream)
   {
-    // Constant iterator to provide the offset of the current partition for the user-provided input iterator
-    using constant_offset_it_t = THRUST_NS_QUALIFIER::constant_iterator<GlobalOffsetT>;
-
     // Wrapped input iterator to produce index-value tuples, i.e., <PerPartitionOffsetT, InputT>-tuples
     // We make sure to offset the user-provided input iterator by the current partition's offset
     using arg_index_input_iterator_t = ArgIndexInputIterator<InputIteratorT, PerPartitionOffsetT, InitT>;
@@ -276,7 +273,7 @@ struct dispatch_streaming_arg_reduce_t
 
     // Alias the temporary allocations from the single storage blob (or compute the necessary size
     // of the blob)
-    cudaError_t error = detail::AliasTemporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes);
+    cudaError_t error = CubDebug(alias_temporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes));
     if (error != cudaSuccess)
     {
       return error;
