@@ -29,8 +29,9 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
-#include <thrust/pair.h>
 #include <thrust/random/detail/random_core_access.h>
+
+#include <cuda/std/__utility/pair.h>
 
 #include <iostream>
 
@@ -102,7 +103,7 @@ public:
   /*! \typedef param_type
    *  \brief The type of the object encapsulating this \p uniform_real_distribution's parameters.
    */
-  using param_type = thrust::pair<RealType, RealType>;
+  using param_type = ::cuda::std::pair<RealType, RealType>;
 
   // constructors and reset functions
 

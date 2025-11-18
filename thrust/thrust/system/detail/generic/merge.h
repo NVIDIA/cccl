@@ -62,7 +62,7 @@ template <typename DerivedPolicy,
           typename OutputIterator1,
           typename OutputIterator2,
           typename Compare>
-_CCCL_HOST_DEVICE thrust::pair<OutputIterator1, OutputIterator2> merge_by_key(
+_CCCL_HOST_DEVICE ::cuda::std::pair<OutputIterator1, OutputIterator2> merge_by_key(
   thrust::execution_policy<DerivedPolicy>& exec,
   InputIterator1 keys_first1,
   InputIterator1 keys_last1,
@@ -81,7 +81,7 @@ template <typename DerivedPolicy,
           typename InputIterator4,
           typename OutputIterator1,
           typename OutputIterator2>
-_CCCL_HOST_DEVICE thrust::pair<OutputIterator1, OutputIterator2> merge_by_key(
+_CCCL_HOST_DEVICE ::cuda::std::pair<OutputIterator1, OutputIterator2> merge_by_key(
   thrust::execution_policy<DerivedPolicy>& exec,
   InputIterator1 keys_first1,
   InputIterator1 keys_last1,

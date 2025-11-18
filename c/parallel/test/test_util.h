@@ -1402,6 +1402,59 @@ auto make_stateless_transform_input_iterator(
   return transform_it;
 }
 
+inline std::tuple<std::string, std::string, std::string> make_discard_iterator_sources(
+  iterator_kind kind,
+  std::string_view value_type,
+  std::string_view iterator_state_name,
+  std::string_view advance_fn_name,
+  std::string_view dereference_fn_name)
+{
+  std::string state_def_src      = std::format("struct {0} {{ {1}* data; }};\n", iterator_state_name, value_type);
+  std::string advance_fn_def_src = std::format(
+    "extern \"C\" __device__ void {0}({1}* /*state*/, unsigned long long /*offset*/) {{\n"
+    "}}",
+    advance_fn_name,
+    iterator_state_name);
+
+  std::string dereference_fn_def_src;
+  if (kind == iterator_kind::INPUT)
+  {
+    dereference_fn_def_src = std::format(
+      "extern \"C\" __device__ void {0}({1}* /*state*/, {2}* /*result*/) {{\n"
+      "}}",
+      dereference_fn_name,
+      iterator_state_name,
+      value_type);
+  }
+  else
+  {
+    dereference_fn_def_src = std::format(
+      "extern \"C\" __device__ void {0}({1}* /*state*/, {2} /*x*/) {{\n"
+      "}}",
+      dereference_fn_name,
+      iterator_state_name,
+      value_type);
+  }
+
+  return std::make_tuple(state_def_src, advance_fn_def_src, dereference_fn_def_src);
+}
+
+template <typename ValueT>
+auto make_discard_iterator(iterator_kind kind, std::string_view value_type, std::string prefix = "")
+{
+  std::string iterator_state_name = std::format("{0}struct_t", prefix);
+  std::string advance_fn_name     = std::format("{0}advance", prefix);
+  std::string dereference_fn_name = std::format("{0}dereference", prefix);
+
+  const auto& [iterator_state_src, advance_fn_src, dereference_fn_src] =
+    make_discard_iterator_sources(kind, value_type, iterator_state_name, advance_fn_name, dereference_fn_name);
+  name_source_t iterator_state = {iterator_state_name, iterator_state_src};
+  operation_t advance          = {advance_fn_name, advance_fn_src};
+  operation_t dereference      = {dereference_fn_name, dereference_fn_src};
+
+  return make_iterator<ValueT, random_access_iterator_state_t<ValueT>>(iterator_state, advance, dereference);
+}
+
 template <class T>
 struct value_t
 {

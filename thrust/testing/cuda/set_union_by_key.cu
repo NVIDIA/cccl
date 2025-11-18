@@ -40,7 +40,7 @@ void TestSetUnionByKeyDevice(ExecutionPolicy exec)
   Vector ref_key{0, 2, 3, 3, 4}, ref_val{0, 0, 1, 1, 0};
   Vector result_key(5), result_val(5);
 
-  thrust::device_vector<thrust::pair<Iterator, Iterator>> end_vec(1);
+  thrust::device_vector<cuda::std::pair<Iterator, Iterator>> end_vec(1);
 
   set_union_by_key_kernel<<<1, 1>>>(
     exec,
@@ -56,7 +56,7 @@ void TestSetUnionByKeyDevice(ExecutionPolicy exec)
   cudaError_t const err = cudaDeviceSynchronize();
   ASSERT_EQUAL(cudaSuccess, err);
 
-  thrust::pair<Iterator, Iterator> end = end_vec[0];
+  cuda::std::pair<Iterator, Iterator> end = end_vec[0];
 
   ASSERT_EQUAL_QUIET(result_key.end(), end.first);
   ASSERT_EQUAL_QUIET(result_val.end(), end.second);
@@ -91,7 +91,7 @@ void TestSetUnionByKeyCudaStreams()
   cudaStream_t s;
   cudaStreamCreate(&s);
 
-  thrust::pair<Iterator, Iterator> end = thrust::set_union_by_key(
+  cuda::std::pair<Iterator, Iterator> end = thrust::set_union_by_key(
     thrust::cuda::par.on(s),
     a_key.begin(),
     a_key.end(),

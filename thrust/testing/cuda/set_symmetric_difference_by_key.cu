@@ -40,7 +40,7 @@ void TestSetSymmetricDifferenceByKeyDevice(ExecutionPolicy exec)
   Vector ref_key{2, 3, 3, 6, 7}, ref_val{0, 1, 1, 0, 1};
   Vector result_key(5), result_val(5);
 
-  using iter_pair = thrust::pair<Iterator, Iterator>;
+  using iter_pair = cuda::std::pair<Iterator, Iterator>;
   thrust::device_vector<iter_pair> end_vec(1);
 
   set_symmetric_difference_by_key_kernel<<<1, 1>>>(
@@ -92,7 +92,7 @@ void TestSetSymmetricDifferenceByKeyCudaStreams()
   cudaStream_t s;
   cudaStreamCreate(&s);
 
-  thrust::pair<Iterator, Iterator> end = thrust::set_symmetric_difference_by_key(
+  cuda::std::pair<Iterator, Iterator> end = thrust::set_symmetric_difference_by_key(
     thrust::cuda::par.on(s),
     a_key.begin(),
     a_key.end(),
