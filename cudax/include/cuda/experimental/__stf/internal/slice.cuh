@@ -360,6 +360,7 @@ template <typename T, typename... P>
 class shape_of<mdspan<T, P...>>
 {
 public:
+  using element_type   = T;
   using described_type = mdspan<T, P...>;
   using coords_t       = array_tuple<size_t, described_type::rank()>;
 
@@ -624,6 +625,158 @@ private:
   typename described_type::extents_type extents{};
   ::cuda::std::array<typename described_type::index_type, described_type::rank()> strides{};
 };
+
+namespace reserved
+{
+
+// Primary template
+template <typename Container>
+class view_of;
+
+// Partial specialization for mdspan<T, P...>
+template <typename T, typename... P>
+class view_of<mdspan<T, P...>>
+{
+public:
+  // To use a raw pointer instead of an iterator, we need a contiguous layout.
+  static constexpr size_t rank = shape_of<mdspan<T, P...>>::rank();
+  // TODO check that mdspan of rank 1 are always contiguous (not just our slice<T>)
+  static constexpr bool can_provide_raw_data = (rank == 1);
+
+  _CCCL_HOST_DEVICE static cuda::std::array<size_t, rank>
+  inverse_canonical_mapping(const mdspan<T, P...>& m, size_t linear_index)
+  {
+    cuda::std::array<size_t, rank> indices = {};
+    for (size_t dim = 0; dim < rank; ++dim)
+    {
+      size_t stride = m.mapping().stride(dim);
+      size_t extent = m.extent(dim);
+      indices[dim]  = (linear_index / stride) % extent;
+      linear_index %= stride;
+    }
+    return indices;
+  }
+
+  class multidim_iterator
+  {
+  public:
+    // Required iterator type aliases
+    using difference_type   = ::std::ptrdiff_t;
+    using value_type        = T;
+    using pointer           = value_type*;
+    using reference         = mdspan<T, P...>&;
+    using iterator_category = ::std::random_access_iterator_tag;
+
+    _CCCL_HOST_DEVICE multidim_iterator(mdspan<T, P...> _m, size_t _linear_index)
+        : m(mv(_m))
+        , linear_index(_linear_index)
+    {}
+
+    _CCCL_HOST_DEVICE auto& operator*() const
+    {
+      const auto coords = inverse_canonical_mapping(m, linear_index);
+
+      const auto& strides = m.mapping().strides();
+
+      size_t offset = 0;
+      for (int d = 0; d < rank; d++)
+      {
+        offset += coords[d] * strides[d];
+      }
+
+      return m.data_handle()[offset];
+    }
+
+    // TODO factorize code to have a single helper to get the value from an index
+    _CCCL_HOST_DEVICE auto& operator[](difference_type n)
+    {
+      const auto coords_n = inverse_canonical_mapping(m, linear_index + n);
+      const auto& strides = m.mapping().strides();
+      size_t offset       = 0;
+      for (int d = 0; d < rank; d++)
+      {
+        offset += coords_n[d] * strides[d];
+      }
+
+      return m.data_handle()[offset];
+    }
+
+    _CCCL_HOST_DEVICE multidim_iterator& operator++()
+    {
+      linear_index++;
+      return *this;
+    }
+
+    _CCCL_HOST_DEVICE multidim_iterator operator+(difference_type n) const
+    {
+      multidim_iterator tmp(m, linear_index);
+      tmp.linear_index += n;
+      return tmp;
+    }
+
+    _CCCL_HOST_DEVICE multidim_iterator& operator+=(::std::ptrdiff_t n)
+    {
+      linear_index += n;
+      return *this;
+    }
+
+  private:
+    mdspan<T, P...> m;
+    //  typename box<rank>::iterator coord_it;
+    size_t linear_index;
+  };
+
+  // Use a conditional type:
+  using iterator = ::std::conditional_t<can_provide_raw_data, T*, multidim_iterator>;
+
+  _CCCL_HOST_DEVICE static iterator begin(const mdspan<T, P...>& m)
+  {
+    if constexpr (can_provide_raw_data)
+    {
+      // rank == 1 => raw pointer
+      return m.data_handle();
+    }
+    else
+    {
+      // custom multidim_iterator
+      return multidim_iterator(m, 0);
+    }
+  }
+
+  _CCCL_HOST_DEVICE static iterator end(const mdspan<T, P...>& m)
+  {
+    if constexpr (can_provide_raw_data)
+    {
+      // rank == 1 => raw pointer + size
+      return m.data_handle() + m.extent(0);
+    }
+    else
+    {
+      return multidim_iterator(m, m.size());
+    }
+  }
+
+  // Dynamic check to see if we can use a raw pointer (the static tests might
+  // be a little more conservative because an mdspan can have a contiguous
+  // layout based on extents available at runtime)
+  _CCCL_HOST_DEVICE static bool has_raw_data(const mdspan<T, P...>& m)
+  {
+    return (contiguous_dims(m) == rank);
+  }
+
+  _CCCL_HOST_DEVICE static T* data(const mdspan<T, P...>& m)
+  {
+    return m.data_handle();
+  }
+
+  _CCCL_HOST_DEVICE static size_t size(const mdspan<T, P...>& m)
+  {
+    // This is the proper number of elements even with a non contiguous layout
+    return m.size();
+  }
+};
+
+} // end namespace reserved
 
 #ifdef UNITTESTED_FILE
 #  ifdef STF_HAS_UNITTEST_WITH_ARGS

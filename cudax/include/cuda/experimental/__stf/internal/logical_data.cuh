@@ -2050,7 +2050,10 @@ inline void fetch_data(
     d.enforce_msi_protocol(instance_id, mode, stf_prereq);
   }
 
-  stf_prereq.optimize(bctx);
+    // TODO this is where we would insert an init operation if needed.
+    // use virtual methods in context to insert
+
+    stf_prereq.optimize(bctx);
 
   // Gather all prereqs required to fetch this piece of data into the
   // dependencies of the task.
