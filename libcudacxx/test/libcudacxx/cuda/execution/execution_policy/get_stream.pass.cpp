@@ -22,12 +22,6 @@
 template <class Policy>
 void test(Policy pol)
 {
-  namespace execution = cuda::std::execution;
-  static_assert(!execution::__queryable_with<execution::sequenced_policy, ::cuda::get_stream_t>);
-  static_assert(!execution::__queryable_with<execution::parallel_policy, ::cuda::get_stream_t>);
-  static_assert(!execution::__queryable_with<execution::parallel_unsequenced_policy, ::cuda::get_stream_t>);
-  static_assert(!execution::__queryable_with<execution::unsequenced_policy, ::cuda::get_stream_t>);
-
   { // Ensure that the plain policy returns a well defined stream
     cuda::stream_ref expected_stream{cudaStreamPerThread};
     assert(cuda::get_stream(pol) == expected_stream);
@@ -40,9 +34,7 @@ void test(Policy pol)
 
     using stream_policy_t = decltype(pol_with_stream);
     static_assert(noexcept(pol.set_stream(stream)));
-    static_assert(cuda::std::is_base_of_v<Policy, stream_policy_t>);
     static_assert(cuda::std::is_execution_policy_v<stream_policy_t>);
-    static_assert(cuda::std::is_base_of_v<cuda::std::execution::__policy_stream_holder<true>, stream_policy_t>);
   }
 
   { // Ensure that attaching a stream multiple times just overwrites the old stream
@@ -69,6 +61,9 @@ void test()
   static_assert(!execution::__queryable_with<execution::unsequenced_policy, ::cuda::get_stream_t>);
 
   test(cuda::execution::__cub_par_unseq);
+
+  // Ensure that all works even if we have a memory resource
+  test(cuda::execution::__cub_par_unseq.set_memory_resource(::cuda::device_default_memory_pool(::cuda::device_ref{0})));
 }
 
 int main(int, char**)
