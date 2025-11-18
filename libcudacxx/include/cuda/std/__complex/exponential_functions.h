@@ -152,8 +152,7 @@ _CCCL_API inline complex<float> exp(const complex<float>& __x)
       // __r == +-INF
       return ::cuda::std::signbit(__r)
              ? complex<float>{}
-             : complex<float>{::cuda::std::numeric_limits<float>::infinity(),
-                              ::cuda::std::numeric_limits<float>::quiet_NaN()};
+             : complex<float>{numeric_limits<float>::infinity(), numeric_limits<float>::quiet_NaN()};
     }
     // __r NaN:
     if (::cuda::std::isnan(__r) && (__i == 0.0f))
@@ -246,8 +245,7 @@ _CCCL_API inline complex<double> exp<double>(const complex<double>& __x)
     {
       return ::cuda::std::signbit(__r)
              ? complex<double>{}
-             : complex<double>{::cuda::std::numeric_limits<double>::infinity(),
-                               ::cuda::std::numeric_limits<double>::quiet_NaN()};
+             : complex<double>{numeric_limits<double>::infinity(), numeric_limits<double>::quiet_NaN()};
     }
     // __r NaN:
     if (::cuda::std::isnan(__r) && (__i == 0.0))
