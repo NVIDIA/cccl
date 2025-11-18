@@ -278,7 +278,7 @@ __launch_bounds__(
     _CCCL_GRID_CONSTANT const OffsetT keys_count,
     KeyT* keys_pong,
     ValueT* items_pong,
-    _CCCL_GRID_CONSTANT const CompareOpT compare_op,
+    CompareOpT compare_op,
     OffsetT* merge_partitions,
     _CCCL_GRID_CONSTANT const OffsetT target_merged_tiles_number,
     vsmem_t vsmem)

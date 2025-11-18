@@ -133,8 +133,8 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::ReducePolicy::BLOCK_THREADS)
   AccumT* d_out,
   _CCCL_GRID_CONSTANT const OffsetT num_items,
   GridEvenShare<OffsetT> even_share,
-  _CCCL_GRID_CONSTANT const ReductionOpT reduction_op,
-  _CCCL_GRID_CONSTANT const TransformOpT transform_op)
+  ReductionOpT reduction_op,
+  TransformOpT transform_op)
 {
   // Thread block type for reducing input tiles
   using AgentReduceT =
