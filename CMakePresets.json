@@ -721,7 +721,7 @@
       "inherits": "base",
       "filter": {
         "exclude": {
-          "name": "^cudax\\.cpp[0-9][0-9]\\.test\\.stf\\.stress.*$"
+          "name": "^cudax\\.cpp[0-9][0-9]\\.test\\.(cufile|stf\\.stress).*$"
         }
       }
     },

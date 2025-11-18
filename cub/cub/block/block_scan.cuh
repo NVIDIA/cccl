@@ -189,12 +189,8 @@ template <typename T, int BlockDimX, BlockScanAlgorithm Algorithm = BLOCK_SCAN_R
 class BlockScan
 {
 private:
-  /// Constants
-  enum
-  {
-    /// The thread block size in threads
-    BLOCK_THREADS = BlockDimX * BlockDimY * BlockDimZ,
-  };
+  /// The thread block size in threads
+  static constexpr int BLOCK_THREADS = BlockDimX * BlockDimY * BlockDimZ;
 
   /**
    * Ensure the template parameterization meets the requirements of the

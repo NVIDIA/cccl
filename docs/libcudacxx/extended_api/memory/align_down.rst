@@ -3,11 +3,17 @@
 ``cuda::align_down``
 ====================
 
+Defined in the header ``<cuda/memory>``.
+
 .. code:: cuda
+
+   namespace cuda {
 
    template <typename T>
    [[nodiscard]] __host__ __device__ inline
-   T* align_down(T* ptr, size_t alignment) noexcept
+   T* align_down(T* ptr, size_t alignment) noexcept;
+
+   } // namespace cuda
 
 The function returns the original pointer or closest pointer smaller than ``ptr`` that is aligned to the specified alignment  :math:`floor\left(\frac{ptr}{alignment}\right) * alignment`.
 
@@ -41,7 +47,7 @@ Example
 
     #include <cuda/memory>
 
-    __global__ void kernel(const int* ptr) {
+    __global__ void kernel(int* ptr) {
         auto ptr_align16 = cuda::align_down(ptr, 16);
         reinterpret_cast<int4*>(ptr_align16)[0] = int4{1, 2, 3, 4};
     }
@@ -54,4 +60,4 @@ Example
         return 0;
     }
 
-`See it on Godbolt 🔗 <https://godbolt.org/z/vTxdGbdTT>`_
+`See it on Godbolt 🔗 <https://godbolt.org/z/6acdx3KhY>`__

@@ -22,6 +22,7 @@
 #endif // no system header
 
 #include <cuda/__driver/driver_api.h>
+#include <cuda/__stream/device_transform.h>
 #include <cuda/__stream/stream_ref.h>
 #include <cuda/std/__exception/cuda_error.h>
 #include <cuda/std/__type_traits/is_function.h>
@@ -38,7 +39,6 @@
 #include <cuda/experimental/__graph/path_builder.cuh>
 #include <cuda/experimental/__kernel/kernel_ref.cuh>
 #include <cuda/experimental/__launch/configuration.cuh>
-#include <cuda/experimental/__stream/device_transform.cuh>
 #include <cuda/experimental/__utility/ensure_current_device.cuh>
 
 #include <cuda/std/__cccl/prologue.h>

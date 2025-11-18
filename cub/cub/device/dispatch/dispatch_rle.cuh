@@ -368,7 +368,7 @@ struct DeviceRleDispatch
     // the blob)
     void* allocations[3] = {};
 
-    error = CubDebug(detail::AliasTemporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes));
+    error = CubDebug(detail::alias_temporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes));
     if (error != cudaSuccess)
     {
       return error;

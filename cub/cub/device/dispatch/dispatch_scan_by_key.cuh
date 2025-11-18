@@ -332,142 +332,122 @@ struct DispatchScanByKey
   {
     using Policy = typename ActivePolicyT::ScanByKeyPolicyT;
 
-    cudaError error = cudaSuccess;
-    do
+    // Get device ordinal
+    int device_ordinal;
+    if (const auto error = CubDebug(cudaGetDevice(&device_ordinal)))
     {
-      // Get device ordinal
-      int device_ordinal;
-      error = CubDebug(cudaGetDevice(&device_ordinal));
-      if (cudaSuccess != error)
-      {
-        break;
-      }
+      return error;
+    }
 
-      // Number of input tiles
-      int tile_size = Policy::BLOCK_THREADS * Policy::ITEMS_PER_THREAD;
-      int num_tiles = static_cast<int>(::cuda::ceil_div(num_items, tile_size));
+    // Number of input tiles
+    const int tile_size = Policy::BLOCK_THREADS * Policy::ITEMS_PER_THREAD;
+    const int num_tiles = static_cast<int>(::cuda::ceil_div(num_items, tile_size));
 
-      // Specify temporary storage allocation requirements
-      size_t allocation_sizes[2];
-      error = CubDebug(ScanByKeyTileStateT::AllocationSize(num_tiles, allocation_sizes[0]));
-      if (cudaSuccess != error)
-      {
-        break; // bytes needed for tile status descriptors
-      }
+    // Specify temporary storage allocation requirements
+    size_t allocation_sizes[2];
+    if (const auto error = CubDebug(ScanByKeyTileStateT::AllocationSize(num_tiles, allocation_sizes[0])))
+    {
+      return error; // bytes needed for tile status descriptors
+    }
 
-      allocation_sizes[1] = sizeof(KeyT) * (num_tiles + 1);
+    allocation_sizes[1] = sizeof(KeyT) * (num_tiles + 1);
 
-      // Compute allocation pointers into the single storage blob (or compute
-      // the necessary size of the blob)
-      void* allocations[2] = {};
+    // Compute allocation pointers into the single storage blob (or compute
+    // the necessary size of the blob)
+    void* allocations[2] = {};
+    if (const auto error =
+          CubDebug(detail::alias_temporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes)))
+    {
+      return error;
+    }
 
-      error = CubDebug(detail::AliasTemporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes));
-      if (cudaSuccess != error)
-      {
-        break;
-      }
+    // Return if the caller is simply requesting the size of the storage allocation, or the problem is empty
+    if (d_temp_storage == nullptr || num_items == 0)
+    {
+      return cudaSuccess;
+    }
 
-      if (d_temp_storage == nullptr)
-      {
-        // Return if the caller is simply requesting the size of the storage
-        // allocation
-        break;
-      }
+    KeyT* d_keys_prev_in = static_cast<KeyT*>(allocations[1]);
 
-      // Return if empty problem
-      if (num_items == 0)
-      {
-        break;
-      }
+    // Construct the tile status interface
+    ScanByKeyTileStateT tile_state;
+    if (const auto error = CubDebug(tile_state.Init(num_tiles, allocations[0], allocation_sizes[0])))
+    {
+      return error;
+    }
 
-      KeyT* d_keys_prev_in = reinterpret_cast<KeyT*>(allocations[1]);
-
-      // Construct the tile status interface
-      ScanByKeyTileStateT tile_state;
-      error = CubDebug(tile_state.Init(num_tiles, allocations[0], allocation_sizes[0]));
-      if (cudaSuccess != error)
-      {
-        break;
-      }
-
-      // Log init_kernel configuration
-      int init_grid_size = ::cuda::ceil_div(num_tiles, INIT_KERNEL_THREADS);
+    // Log init_kernel configuration
+    const int init_grid_size = ::cuda::ceil_div(num_tiles, INIT_KERNEL_THREADS);
 #ifdef CUB_DEBUG_LOG
-      _CubLog("Invoking init_kernel<<<%d, %d, 0, %lld>>>()\n", init_grid_size, INIT_KERNEL_THREADS, (long long) stream);
+    _CubLog("Invoking init_kernel<<<%d, %d, 0, %lld>>>()\n", init_grid_size, INIT_KERNEL_THREADS, (long long) stream);
 #endif // CUB_DEBUG_LOG
 
-      // Invoke init_kernel to initialize tile descriptors
-      THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(init_grid_size, INIT_KERNEL_THREADS, 0, stream)
-        .doit(init_kernel, tile_state, d_keys_in, d_keys_prev_in, static_cast<OffsetT>(tile_size), num_tiles);
+    // Invoke init_kernel to initialize tile descriptors
+    THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(init_grid_size, INIT_KERNEL_THREADS, 0, stream)
+      .doit(init_kernel, tile_state, d_keys_in, d_keys_prev_in, static_cast<OffsetT>(tile_size), num_tiles);
+
+    // Check for failure to launch
+    if (const auto error = CubDebug(cudaPeekAtLastError()))
+    {
+      return error;
+    }
+
+    // Sync the stream if specified to flush runtime errors
+    if (const auto error = CubDebug(detail::DebugSyncStream(stream)))
+    {
+      return error;
+    }
+
+    // Get max x-dimension of grid
+    int max_dim_x;
+    if (const auto error = CubDebug(cudaDeviceGetAttribute(&max_dim_x, cudaDevAttrMaxGridDimX, device_ordinal)))
+    {
+      return error;
+    }
+
+    // Run grids in epochs (in case number of tiles exceeds max x-dimension
+    const int scan_grid_size = ::cuda::std::min(num_tiles, max_dim_x);
+    for (int start_tile = 0; start_tile < num_tiles; start_tile += scan_grid_size)
+    {
+// Log scan_kernel configuration
+#ifdef CUB_DEBUG_LOG
+      _CubLog("Invoking %d scan_kernel<<<%d, %d, 0, %lld>>>(), %d items "
+              "per thread\n",
+              start_tile,
+              scan_grid_size,
+              Policy::BLOCK_THREADS,
+              (long long) stream,
+              Policy::ITEMS_PER_THREAD);
+#endif // CUB_DEBUG_LOG
+
+      // Invoke scan_kernel
+      THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(scan_grid_size, Policy::BLOCK_THREADS, 0, stream)
+        .doit(scan_kernel,
+              d_keys_in,
+              d_keys_prev_in,
+              d_values_in,
+              d_values_out,
+              tile_state,
+              start_tile,
+              equality_op,
+              scan_op,
+              init_value,
+              num_items);
 
       // Check for failure to launch
-      error = CubDebug(cudaPeekAtLastError());
-      if (cudaSuccess != error)
+      if (const auto error = CubDebug(cudaPeekAtLastError()))
       {
-        break;
+        return error;
       }
 
       // Sync the stream if specified to flush runtime errors
-      error = CubDebug(detail::DebugSyncStream(stream));
-      if (cudaSuccess != error)
+      if (const auto error = CubDebug(detail::DebugSyncStream(stream)))
       {
-        break;
+        return error;
       }
+    }
 
-      // Get max x-dimension of grid
-      int max_dim_x;
-      error = CubDebug(cudaDeviceGetAttribute(&max_dim_x, cudaDevAttrMaxGridDimX, device_ordinal));
-      if (cudaSuccess != error)
-      {
-        break;
-      }
-
-      // Run grids in epochs (in case number of tiles exceeds max x-dimension
-      int scan_grid_size = ::cuda::std::min(num_tiles, max_dim_x);
-      for (int start_tile = 0; start_tile < num_tiles; start_tile += scan_grid_size)
-      {
-// Log scan_kernel configuration
-#ifdef CUB_DEBUG_LOG
-        _CubLog("Invoking %d scan_kernel<<<%d, %d, 0, %lld>>>(), %d items "
-                "per thread\n",
-                start_tile,
-                scan_grid_size,
-                Policy::BLOCK_THREADS,
-                (long long) stream,
-                Policy::ITEMS_PER_THREAD);
-#endif // CUB_DEBUG_LOG
-
-        // Invoke scan_kernel
-        THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(scan_grid_size, Policy::BLOCK_THREADS, 0, stream)
-          .doit(scan_kernel,
-                d_keys_in,
-                d_keys_prev_in,
-                d_values_in,
-                d_values_out,
-                tile_state,
-                start_tile,
-                equality_op,
-                scan_op,
-                init_value,
-                num_items);
-
-        // Check for failure to launch
-        error = CubDebug(cudaPeekAtLastError());
-        if (cudaSuccess != error)
-        {
-          break;
-        }
-
-        // Sync the stream if specified to flush runtime errors
-        error = CubDebug(detail::DebugSyncStream(stream));
-        if (cudaSuccess != error)
-        {
-          break;
-        }
-      }
-    } while (0);
-
-    return error;
+    return cudaSuccess;
   }
 
   template <typename ActivePolicyT>
@@ -536,41 +516,29 @@ struct DispatchScanByKey
     OffsetT num_items,
     cudaStream_t stream)
   {
-    cudaError_t error;
-
-    do
+    // Get PTX version
+    int ptx_version = 0;
+    if (const auto error = CubDebug(PtxVersion(ptx_version)))
     {
-      // Get PTX version
-      int ptx_version = 0;
-      error           = CubDebug(PtxVersion(ptx_version));
-      if (cudaSuccess != error)
-      {
-        break;
-      }
+      return error;
+    }
 
-      // Create dispatch functor
-      DispatchScanByKey dispatch(
-        d_temp_storage,
-        temp_storage_bytes,
-        d_keys_in,
-        d_values_in,
-        d_values_out,
-        equality_op,
-        scan_op,
-        init_value,
-        num_items,
-        stream,
-        ptx_version);
+    // Create dispatch functor
+    DispatchScanByKey dispatch(
+      d_temp_storage,
+      temp_storage_bytes,
+      d_keys_in,
+      d_values_in,
+      d_values_out,
+      equality_op,
+      scan_op,
+      init_value,
+      num_items,
+      stream,
+      ptx_version);
 
-      // Dispatch to chained policy
-      error = CubDebug(PolicyHub::MaxPolicy::Invoke(ptx_version, dispatch));
-      if (cudaSuccess != error)
-      {
-        break;
-      }
-    } while (0);
-
-    return error;
+    // Dispatch to chained policy
+    return CubDebug(PolicyHub::MaxPolicy::Invoke(ptx_version, dispatch));
   }
 };
 

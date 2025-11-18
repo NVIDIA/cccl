@@ -52,12 +52,8 @@ namespace detail
 template <typename T, int BlockDimX, int ItemsPerThread, int Bins, int BlockDimY, int BlockDimZ>
 struct BlockHistogramSort
 {
-  /// Constants
-  enum
-  {
-    /// The thread block size in threads
-    BLOCK_THREADS = BlockDimX * BlockDimY * BlockDimZ,
-  };
+  /// The thread block size in threads
+  static constexpr int BLOCK_THREADS = BlockDimX * BlockDimY * BlockDimZ;
 
   // Parameterize BlockRadixSort type for our thread block
   using BlockRadixSortT =
@@ -147,10 +143,7 @@ struct BlockHistogramSort
   template <typename CounterT>
   _CCCL_DEVICE _CCCL_FORCEINLINE void Composite(T (&items)[ItemsPerThread], CounterT histogram[Bins])
   {
-    enum
-    {
-      TILE_SIZE = BLOCK_THREADS * ItemsPerThread
-    };
+    static constexpr int TILE_SIZE = BLOCK_THREADS * ItemsPerThread;
 
     // Sort bytes in blocked arrangement
     BlockRadixSortT(temp_storage.sort).Sort(items);

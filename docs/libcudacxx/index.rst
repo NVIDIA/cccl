@@ -12,6 +12,7 @@ libcu++
    releases
    standard_api
    extended_api
+   runtime
    ptx_api
    API reference <api/index>
 

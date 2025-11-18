@@ -3,11 +3,17 @@
 ``cuda::ipow``
 ====================================
 
-.. code:: cpp
+Defined in the ``<cuda/cmath>`` header.
+
+.. code:: cuda
+
+   namespace cuda {
 
    template <typename T, typename E>
-   [[nodiscard]] __host__ __device__ inline constexpr
+   [[nodiscard]] __host__ __device__ constexpr
    T ipow(T base, E exp) noexcept;
+
+   } // namespace cuda
 
 The function computes the integer ``base`` raised to the power of ``exp``.
 
@@ -32,7 +38,7 @@ The function computes the integer ``base`` raised to the power of ``exp``.
 Example
 -------
 
-.. code:: cpp
+.. code:: cuda
 
     #include <cuda/cmath>
     #include <cuda/std/cassert>
@@ -51,4 +57,4 @@ Example
         cudaDeviceSynchronize();
     }
 
-`See it on Godbolt 🔗 <https://godbolt.org/z/Go5GKTfbP>`_
+`See it on Godbolt 🔗 <https://godbolt.org/z/TMacWvz8v>`__

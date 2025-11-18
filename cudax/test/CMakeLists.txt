@@ -1,6 +1,7 @@
 cccl_get_c2h()
 
 find_package(cudax) # already found, bring in version info.
+find_package(CUDAToolkit REQUIRED)
 
 if (cudax_ENABLE_CUFILE)
   find_package(CUDAToolkit REQUIRED)
@@ -34,7 +35,7 @@ function(cudax_add_catch2_test target_name_var test_name cudax_target) # ARGN=te
     PRIVATE #
       ${cudax_target}
       cccl.c2h.main
-      cudart
+      CUDA::cudart
   )
   target_compile_options(
     ${test_target}
@@ -60,18 +61,16 @@ foreach (cudax_target IN LISTS cudax_TARGETS)
   add_custom_target(${config_meta_target})
   add_dependencies(${config_prefix}.all ${config_meta_target})
 
-  # Add tests:
-  cudax_add_catch2_test(test_target hierarchy ${cudax_target}
-    hierarchy/hierarchy_smoke.cu
-    hierarchy/hierarchy_custom_types.cu
-  )
-
   cudax_add_catch2_test(test_target launch ${cudax_target}
     launch/launch_smoke.cu
   )
 
   cudax_add_catch2_test(test_target launch_configuration ${cudax_target}
     launch/configuration.cu
+  )
+
+  cudax_add_catch2_test(test_target launch_config_dynamic_smem ${cudax_target}
+    launch/dynamic_shared_memory.cu
   )
 
   cudax_add_catch2_test(test_target execution ${cudax_target}
@@ -152,14 +151,30 @@ foreach (cudax_target IN LISTS cudax_TARGETS)
   )
 
   if (cudax_ENABLE_CUFILE)
-    cudax_add_catch2_test(cufile_driver_target cufile_driver ${cudax_target}
-      cufile/driver.cu
+    cudax_add_catch2_test(test_target cufile_driver_attributes ${cudax_target}
+      cufile/driver_attributes.cu
     )
+    target_link_libraries(${test_target} PRIVATE CUDA::cuFile)
 
-    set(cufile_test_targets ${cufile_driver_target})
-    foreach (cufile_test_target IN LISTS cufile_test_targets)
-      target_link_libraries(${cufile_test_target} PRIVATE CUDA::cuFile)
-    endforeach()
+    cudax_add_catch2_test(test_target cufile_driver_register ${cudax_target}
+      cufile/driver_register.cu
+    )
+    target_link_libraries(${test_target} PRIVATE CUDA::cuFile)
+
+    cudax_add_catch2_test(test_target cufile_cufile ${cudax_target}
+      cufile/cufile.cu
+    )
+    target_link_libraries(${test_target} PRIVATE CUDA::cuFile)
+
+    cudax_add_catch2_test(test_target cufile_cufile_ref ${cudax_target}
+      cufile/cufile_ref.cu
+    )
+    target_link_libraries(${test_target} PRIVATE CUDA::cuFile)
+
+    cudax_add_catch2_test(test_target cufile_open_mode ${cudax_target}
+      cufile/open_mode.cu
+    )
+    target_link_libraries(${test_target} PRIVATE CUDA::cuFile)
   endif()
 endforeach()
 
