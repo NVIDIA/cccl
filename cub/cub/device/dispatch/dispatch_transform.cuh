@@ -456,7 +456,7 @@ struct dispatch_t<StableAddress,
   template <typename ActivePolicyT>
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t Invoke(ActivePolicyT active_policy = {})
   {
-    auto wrapped_policy = transform::MakeTransformPolicyWrapper(active_policy);
+    auto wrapped_policy = MakeTransformPolicyWrapper(active_policy);
     const auto seq      = ::cuda::std::index_sequence_for<RandomAccessIteratorsIn...>{};
     if CUB_DETAIL_CONSTEXPR_ISH (Algorithm::ublkcp == wrapped_policy.Algorithm())
     {
