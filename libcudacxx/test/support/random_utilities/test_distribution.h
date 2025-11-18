@@ -104,8 +104,7 @@ template <class D, class URNG, class Param>
 __host__ __device__ constexpr bool test_types(Param param)
 {
   D d1(param);
-  URNG g{};
-  d1(g);
+  [[maybe_unused]] URNG g{};
   using result_type = typename D::result_type;
   static_assert(cuda::std::is_same_v<result_type, decltype(d1.min())>);
   static_assert(cuda::std::is_same_v<result_type, decltype(d1.max())>);

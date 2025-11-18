@@ -63,10 +63,12 @@ public:
     {
       return __x.__a_ == __y.__a_ && __x.__b_ == __y.__b_;
     }
+#if _CCCL_STD_VER <= 2017
     [[nodiscard]] _CCCL_API friend constexpr bool operator!=(const param_type& __x, const param_type& __y) noexcept
     {
       return !(__x == __y);
     }
+#endif // _CCCL_STD_VER <= 2017
   };
 
 private:
@@ -135,11 +137,13 @@ public:
   {
     return __x.__p_ == __y.__p_;
   }
+#if _CCCL_STD_VER <= 2017
   [[nodiscard]] _CCCL_API friend constexpr bool
   operator!=(const uniform_real_distribution& __x, const uniform_real_distribution& __y) noexcept
   {
     return !(__x == __y);
   }
+#endif // _CCCL_STD_VER <= 2017
 };
 
 #if 0 // Implement streaming

@@ -157,11 +157,11 @@ public:
 
   [[nodiscard]] _CCCL_API constexpr result_type min() const noexcept
   {
-    return -numeric_limits<result_type>::lowest();
+    return -numeric_limits<result_type>::infinity();
   }
   [[nodiscard]] _CCCL_API constexpr result_type max() const noexcept
   {
-    return numeric_limits<result_type>::max();
+    return numeric_limits<result_type>::infinity();
   }
 
   [[nodiscard]] _CCCL_API friend constexpr bool
