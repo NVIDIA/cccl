@@ -33,7 +33,7 @@
 //! @file
 //! The \c managed_memory_resource class provides a memory resource that
 //! allocates managed memory.
-_CCCL_BEGIN_NAMESPACE_CUDA
+_CCCL_BEGIN_NAMESPACE_CUDA_MR
 
 //! @rst
 //! .. _cudax-memory-resource-async:
@@ -80,7 +80,7 @@ public:
 //! @returns The default managed memory pool.
 [[nodiscard]] inline managed_memory_pool_ref managed_default_memory_pool()
 {
-  static ::cudaMemPool_t __pool = ::cuda::__get_default_memory_pool(
+  static ::cudaMemPool_t __pool = ::cuda::mr::__get_default_memory_pool(
     ::CUmemLocation{::CU_MEM_LOCATION_TYPE_NONE, 0}, ::CU_MEM_ALLOCATION_TYPE_MANAGED);
   return managed_memory_pool_ref(__pool);
 }
@@ -142,7 +142,7 @@ static_assert(::cuda::mr::resource_with<managed_memory_pool_ref, ::cuda::mr::hos
 static_assert(::cuda::mr::resource_with<managed_memory_pool, ::cuda::mr::device_accessible>, "");
 static_assert(::cuda::mr::resource_with<managed_memory_pool, ::cuda::mr::host_accessible>, "");
 
-_CCCL_END_NAMESPACE_CUDA
+_CCCL_END_NAMESPACE_CUDA_MR
 
 #  include <cuda/std/__cccl/epilogue.h>
 
