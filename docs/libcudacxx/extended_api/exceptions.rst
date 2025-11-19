@@ -16,7 +16,7 @@ Standard C++ exception handling (``try``, ``catch``, ``throw``) is not supported
 - By defining ``CCCL_DISABLE_EXCEPTIONS`` before including any library headers.
 - By compiling with ``-fno-exceptions`` compiler flag with ``gcc`` or ``clang``, or ``/EH-`` compiler flag with ``msvc``.
 
-If exceptions are disabled, a ``throw`` exception is tranlated into a `cuda::std::terminate() <https://en.cppreference.com/w/cpp/error/terminate.html>`__ call, which terminates the program.
+If exceptions are disabled, a ``throw`` exception is translated into a `cuda::std::terminate() <https://en.cppreference.com/w/cpp/error/terminate.html>`__ call, which terminates the program.
 
 ``cuda::cuda_error``
 --------------------
