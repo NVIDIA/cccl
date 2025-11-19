@@ -1526,9 +1526,12 @@ DeviceTopK will return K items in an unspecified order as results. It is based o
 <p>DeviceTopK can process all of the built-in C++ numeric primitive types (<cite>unsigned char</cite>, <cite>int</cite>, <cite>double</cite>, etc.) as
 well as CUDA’s <cite>__half</cite>  and <cite>__nv_bfloat16</cite> 16-bit floating-point types.</p>
 </section>
-<section id="stability">
-<h2>Stability<a class="headerlink" href="#stability" title="Link to this heading">#</a></h2>
-<p>DeviceTopK currently only provides an unstable version.</p>
+<section id="determinism">
+<h2>Determinism<a class="headerlink" href="#determinism" title="Link to this heading">#</a></h2>
+<p>DeviceTopK currently only supports unordered output, which may be non-deterministic for certain inputs.
+That is, if there are multiple items across the k-th position that compare equal, the subset of tied elements that
+ends up in the returned top‑k is not uniquely defined and may vary between runs. This behavior has to be explicitly
+acknowledged by the user by passing <cite>cuda::execution::determinism::not_guaranteed</cite>.</p>
 </section>
 <section id="usage-considerations">
 <h2>Usage Considerations<a class="headerlink" href="#usage-considerations" title="Link to this heading">#</a></h2>
