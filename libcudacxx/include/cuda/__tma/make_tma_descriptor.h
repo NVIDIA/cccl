@@ -157,8 +157,8 @@ __to_cutensor_map(tma_interleave_layout __interleave_layout) noexcept
   }
 }
 
-[[nodiscard]] _CCCL_HOST_API inline ::cuda::std::size_t __to_cutensor_map_size(
-  ::cuda::std::size_t __num_items, ::CUtensorMapDataType __data_type) noexcept(!_CCCL_HAS_EXCEPTIONS())
+[[nodiscard]] _CCCL_HOST_API inline ::cuda::std::size_t
+__to_cutensor_map_size(::cuda::std::size_t __num_items, ::CUtensorMapDataType __data_type)
 {
   constexpr auto __max_size_t = ::cuda::std::numeric_limits<::cuda::std::size_t>::max();
   switch (__data_type)
@@ -197,8 +197,7 @@ __to_cutensor_map(tma_interleave_layout __interleave_layout) noexcept
  * DLTensor Internal API
  ***********************************************************************************************************************/
 
-_CCCL_HOST_API inline void
-__check_device(const ::DLTensor& __tensor, tma_swizzle __swizzle) noexcept(!_CCCL_HAS_EXCEPTIONS())
+_CCCL_HOST_API inline void __check_device(const ::DLTensor& __tensor, tma_swizzle __swizzle)
 {
   _CCCL_THROW_INVALID_ARG_IF(
     __tensor.device.device_type != ::kDLCUDA && __tensor.device.device_type != ::kDLCUDAManaged,
@@ -223,7 +222,7 @@ __check_device(const ::DLTensor& __tensor, tma_swizzle __swizzle) noexcept(!_CCC
 }
 
 [[nodiscard]] _CCCL_HOST_API inline ::CUtensorMapDataType
-__get_tensor_map_data_type(const ::DLTensor& __tensor, tma_oob_fill __oobfill) noexcept(!_CCCL_HAS_EXCEPTIONS())
+__get_tensor_map_data_type(const ::DLTensor& __tensor, tma_oob_fill __oobfill)
 {
   const auto __type = __tensor.dtype.code;
   switch (__type)
@@ -303,8 +302,8 @@ __get_tensor_map_data_type(const ::DLTensor& __tensor, tma_oob_fill __oobfill) n
   _CCCL_UNREACHABLE();
 }
 
-[[nodiscard]] _CCCL_HOST_API inline int __get_tensor_map_rank(
-  const ::DLTensor& __tensor, tma_interleave_layout __interleave_layout) noexcept(!_CCCL_HAS_EXCEPTIONS())
+[[nodiscard]] _CCCL_HOST_API inline int
+__get_tensor_map_rank(const ::DLTensor& __tensor, tma_interleave_layout __interleave_layout)
 {
   const auto __rank         = __tensor.ndim;
   constexpr auto __max_rank = 5;
@@ -317,8 +316,8 @@ __get_tensor_map_data_type(const ::DLTensor& __tensor, tma_oob_fill __oobfill) n
   return __rank;
 }
 
-[[nodiscard]] _CCCL_HOST_API inline void* __get_tensor_address(
-  const ::DLTensor& __tensor, tma_interleave_layout __interleave_layout) noexcept(!_CCCL_HAS_EXCEPTIONS())
+[[nodiscard]] _CCCL_HOST_API inline void*
+__get_tensor_address(const ::DLTensor& __tensor, tma_interleave_layout __interleave_layout)
 {
   using ::cuda::std::size_t;
   _CCCL_THROW_IF(__tensor.data == nullptr, ::std::invalid_argument, "Address is null");
@@ -337,8 +336,8 @@ using __tma_strides_array_t      = ::cuda::std::array<::cuda::std::uint64_t, 4>;
 using __tma_box_sizes_array_t    = ::cuda::std::array<::cuda::std::uint32_t, 5>;
 using __tma_elem_strides_array_t = ::cuda::std::array<::cuda::std::uint32_t, 5>;
 
-[[nodiscard]] _CCCL_HOST_API inline __tma_sizes_array_t __get_tensor_sizes(
-  const ::DLTensor& __tensor, int __rank, ::CUtensorMapDataType __data_type) noexcept(!_CCCL_HAS_EXCEPTIONS())
+[[nodiscard]] _CCCL_HOST_API inline __tma_sizes_array_t
+__get_tensor_sizes(const ::DLTensor& __tensor, int __rank, ::CUtensorMapDataType __data_type)
 {
   using ::cuda::std::int64_t;
   using ::cuda::std::uint64_t;
@@ -371,7 +370,7 @@ using __tma_elem_strides_array_t = ::cuda::std::array<::cuda::std::uint32_t, 5>;
   int __rank,
   ::CUtensorMapDataType __data_type,
   const __tma_sizes_array_t& __tensor_sizes,
-  tma_interleave_layout __interleave_layout) noexcept(!_CCCL_HAS_EXCEPTIONS())
+  tma_interleave_layout __interleave_layout)
 {
   using ::cuda::std::int64_t;
   __tma_strides_array_t __output_strides{1}; // inner stride is implicit = 1
@@ -422,7 +421,7 @@ _CCCL_HOST_API inline __tma_box_sizes_array_t __get_box_sizes(
   tma_interleave_layout __interleave_layout,
   tma_swizzle __swizzle,
   ::CUtensorMapDataType __data_type,
-  int __device_id) noexcept(!_CCCL_HAS_EXCEPTIONS())
+  int __device_id)
 {
   using ::cuda::std::size_t;
   using ::cuda::std::uint64_t;
@@ -490,7 +489,7 @@ _CCCL_HOST_API inline __tma_elem_strides_array_t __get_elem_strides(
   ::cuda::std::span<const int> __elem_strides,
   const __tma_sizes_array_t& __tensor_sizes,
   int __rank,
-  tma_interleave_layout __interleave_layout) noexcept(!_CCCL_HAS_EXCEPTIONS())
+  tma_interleave_layout __interleave_layout)
 {
   using ::cuda::std::size_t;
   using ::cuda::std::uint64_t;
@@ -510,8 +509,7 @@ _CCCL_HOST_API inline __tma_elem_strides_array_t __get_elem_strides(
   return __elem_strides_array;
 }
 
-_CCCL_HOST_API inline void
-__check_swizzle(tma_interleave_layout __interleave_layout, tma_swizzle __swizzle) noexcept(!_CCCL_HAS_EXCEPTIONS())
+_CCCL_HOST_API inline void __check_swizzle(tma_interleave_layout __interleave_layout, tma_swizzle __swizzle)
 {
   if (__interleave_layout == tma_interleave_layout::bytes32)
   {
@@ -531,7 +529,7 @@ __check_swizzle(tma_interleave_layout __interleave_layout, tma_swizzle __swizzle
   tma_interleave_layout __interleave_layout = tma_interleave_layout::none,
   tma_swizzle __swizzle                     = tma_swizzle::none,
   tma_l2_fetch_size __l2_fetch_size         = tma_l2_fetch_size::none,
-  tma_oob_fill __oobfill                    = tma_oob_fill::none) noexcept(!_CCCL_HAS_EXCEPTIONS())
+  tma_oob_fill __oobfill                    = tma_oob_fill::none)
 {
   using ::cuda::std::size_t;
   ::cuda::__check_device(__tensor, __swizzle);
@@ -574,7 +572,7 @@ __check_swizzle(tma_interleave_layout __interleave_layout, tma_swizzle __swizzle
   tma_interleave_layout __interleave_layout = tma_interleave_layout::none,
   tma_swizzle __swizzle                     = tma_swizzle::none,
   tma_l2_fetch_size __l2_fetch_size         = tma_l2_fetch_size::none,
-  tma_oob_fill __oobfill                    = tma_oob_fill::none) noexcept(!_CCCL_HAS_EXCEPTIONS())
+  tma_oob_fill __oobfill                    = tma_oob_fill::none)
 {
   using ::cuda::std::size_t;
   const auto __rank                       = ::cuda::__get_tensor_map_rank(__tensor, __interleave_layout);
