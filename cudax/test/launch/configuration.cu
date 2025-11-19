@@ -76,7 +76,7 @@ void test_launch_kernel_replacement(CUlaunchConfig& config, CUfunction kernel, v
 
   if (!has_cluster || !skip_device_exec(arch_filter<std::less<int>, 90>))
   {
-    return _CUDA_DRIVER::__launchKernel(config, kernel, args);
+    return ::cuda::__driver::__launchKernel(config, kernel, args);
   }
 }
 
@@ -87,12 +87,12 @@ auto make_test_dims(const dim3& grid_dims, const dim3& block_dims, const dim3& c
 {
   if constexpr (HasCluster)
   {
-    return cudax::make_hierarchy(
-      cudax::grid_dims(grid_dims), cudax::cluster_dims(cluster_dims), cudax::block_dims(block_dims));
+    return cuda::make_hierarchy(
+      cuda::grid_dims(grid_dims), cuda::cluster_dims(cluster_dims), cuda::block_dims(block_dims));
   }
   else
   {
-    return cudax::make_hierarchy(cudax::grid_dims(grid_dims), cudax::block_dims(block_dims));
+    return cuda::make_hierarchy(cuda::grid_dims(grid_dims), cuda::block_dims(block_dims));
   }
 }
 
@@ -143,10 +143,10 @@ auto configuration_test(
   SECTION("Priority and dynamic smem")
   {
     CUlaunchAttribute attrs[2];
-    const int priority = 42;
-    const int num_ints = 128;
+    constexpr int priority = 42;
+    constexpr int num_ints = 128;
     auto config =
-      cudax::make_config(dims, cudax::launch_priority(priority), cudax::dynamic_shared_memory<int>(num_ints));
+      cudax::make_config(dims, cudax::launch_priority(priority), cudax::dynamic_shared_memory<int[num_ints]>());
     expectedConfig.sharedMemBytes          = num_ints * sizeof(int);
     expectedConfig.numAttrs                = 1 + HasCluster;
     expectedConfig.attrs                   = &attrs[0];
@@ -168,7 +168,7 @@ auto configuration_test(
       int arr[13 * 1024];
     };
     CUlaunchAttribute attrs[1];
-    auto config                   = cudax::make_config(dims, cudax::dynamic_shared_memory<S, 1, true>());
+    auto config                   = cudax::make_config(dims, cudax::dynamic_shared_memory<S>(cudax::non_portable));
     expectedConfig.sharedMemBytes = sizeof(S);
     expectedConfig.numAttrs       = HasCluster;
     expectedConfig.attrs          = &attrs[0];
@@ -200,49 +200,49 @@ C2H_TEST("Launch configuration", "[launch]")
 
 C2H_TEST("Hierarchy construction in config", "[launch]")
 {
-  auto config = cudax::make_config(cudax::grid_dims<2>(), cudax::cooperative_launch());
-  static_assert(config.dims.count(cudax::block) == 2);
+  auto config = cudax::make_config(cuda::grid_dims<2>(), cudax::cooperative_launch());
+  static_assert(config.dims.count(cuda::block) == 2);
 
-  auto config_larger = cudax::make_config(cudax::grid_dims<2>(), cudax::block_dims(256), cudax::cooperative_launch());
-  CUDAX_REQUIRE(config_larger.dims.count(cudax::thread) == 512);
+  auto config_larger = cudax::make_config(cuda::grid_dims<2>(), cuda::block_dims(256), cudax::cooperative_launch());
+  CUDAX_REQUIRE(config_larger.dims.count(cuda::thread) == 512);
 
-  auto config_no_options = cudax::make_config(cudax::grid_dims(2), cudax::block_dims<128>());
-  CUDAX_REQUIRE(config_no_options.dims.count(cudax::thread) == 256);
+  auto config_no_options = cudax::make_config(cuda::grid_dims(2), cuda::block_dims<128>());
+  CUDAX_REQUIRE(config_no_options.dims.count(cuda::thread) == 256);
 
   [[maybe_unused]] auto config_no_dims = cudax::make_config(cudax::cooperative_launch());
-  static_assert(cuda::std::is_same_v<decltype(config_no_dims.dims), cudax::__empty_hierarchy>);
+  static_assert(cuda::std::is_same_v<decltype(config_no_dims.dims), cuda::__empty_hierarchy>);
 }
 
 C2H_TEST("Configuration combine", "[launch]")
 {
-  auto grid    = cudax::grid_dims<2>;
-  auto cluster = cudax::cluster_dims<2, 2>;
-  auto block   = cudax::block_dims(256);
+  auto grid    = cuda::grid_dims<2>;
+  auto cluster = cuda::cluster_dims<2, 2>;
+  auto block   = cuda::block_dims(256);
   SECTION("Combine with no overlap")
   {
-    auto config_part1                         = make_config(grid);
-    auto config_part2                         = make_config(block, cudax::launch_priority(2));
+    auto config_part1                         = cudax::make_config(grid);
+    auto config_part2                         = cudax::make_config(block, cudax::launch_priority(2));
     auto combined                             = config_part1.combine(config_part2);
     [[maybe_unused]] auto combined_other_way  = config_part2.combine(config_part1);
     [[maybe_unused]] auto combined_with_empty = combined.combine(cudax::make_config());
     [[maybe_unused]] auto empty_with_combined = cudax::make_config().combine(combined);
     static_assert(
-      cuda::std::is_same_v<decltype(combined), decltype(make_config(grid, block, cudax::launch_priority(2)))>);
+      cuda::std::is_same_v<decltype(combined), decltype(cudax::make_config(grid, block, cudax::launch_priority(2)))>);
     static_assert(cuda::std::is_same_v<decltype(combined), decltype(combined_other_way)>);
     static_assert(cuda::std::is_same_v<decltype(combined), decltype(combined_with_empty)>);
     static_assert(cuda::std::is_same_v<decltype(combined), decltype(empty_with_combined)>);
-    CUDAX_REQUIRE(combined.dims.count(cudax::thread) == 512);
+    CUDAX_REQUIRE(combined.dims.count(cuda::thread) == 512);
   }
   SECTION("Combine with overlap")
   {
     auto config_part1 = make_config(grid, cluster, cudax::launch_priority(2));
-    auto config_part2 = make_config(cudax::cluster_dims<256>, block, cudax::launch_priority(42));
+    auto config_part2 = make_config(cuda::cluster_dims<256>, block, cudax::launch_priority(42));
     auto combined     = config_part1.combine(config_part2);
-    CUDAX_REQUIRE(combined.dims.count(cudax::thread) == 2048);
+    CUDAX_REQUIRE(combined.dims.count(cuda::thread) == 2048);
     CUDAX_REQUIRE(cuda::std::get<0>(combined.options).priority == 2);
 
     auto replaced_one_option = cudax::make_config(cudax::launch_priority(3)).combine(combined);
-    CUDAX_REQUIRE(replaced_one_option.dims.count(cudax::thread) == 2048);
+    CUDAX_REQUIRE(replaced_one_option.dims.count(cuda::thread) == 2048);
     CUDAX_REQUIRE(cuda::std::get<0>(replaced_one_option.options).priority == 3);
 
     [[maybe_unused]] auto combined_with_extra_option =

@@ -36,7 +36,9 @@
 #include <thrust/scatter.h>
 #include <thrust/transform.h>
 
-#include <cuda/std/iterator>
+#include <cuda/std/__functional/not_fn.h>
+#include <cuda/std/__functional/operations.h>
+#include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/limits>
 
 THRUST_NAMESPACE_BEGIN
@@ -70,7 +72,7 @@ template <typename ExecutionPolicy,
           typename OutputIterator2,
           typename BinaryPredicate,
           typename BinaryFunction>
-_CCCL_HOST_DEVICE thrust::pair<OutputIterator1, OutputIterator2> reduce_by_key(
+_CCCL_HOST_DEVICE ::cuda::std::pair<OutputIterator1, OutputIterator2> reduce_by_key(
   thrust::execution_policy<ExecutionPolicy>& exec,
   InputIterator1 keys_first,
   InputIterator1 keys_last,
@@ -89,7 +91,7 @@ _CCCL_HOST_DEVICE thrust::pair<OutputIterator1, OutputIterator2> reduce_by_key(
 
   if (keys_first == keys_last)
   {
-    return thrust::make_pair(keys_output, values_output);
+    return ::cuda::std::make_pair(keys_output, values_output);
   }
 
   // input size
@@ -131,7 +133,7 @@ _CCCL_HOST_DEVICE thrust::pair<OutputIterator1, OutputIterator2> reduce_by_key(
   thrust::scatter_if(
     exec, scanned_values.begin(), scanned_values.end(), scanned_tail_flags.begin(), tail_flags.begin(), values_output);
 
-  return thrust::make_pair(keys_output + N, values_output + N);
+  return ::cuda::std::make_pair(keys_output + N, values_output + N);
 } // end reduce_by_key()
 
 template <typename ExecutionPolicy,
@@ -139,7 +141,7 @@ template <typename ExecutionPolicy,
           typename InputIterator2,
           typename OutputIterator1,
           typename OutputIterator2>
-_CCCL_HOST_DEVICE thrust::pair<OutputIterator1, OutputIterator2> reduce_by_key(
+_CCCL_HOST_DEVICE ::cuda::std::pair<OutputIterator1, OutputIterator2> reduce_by_key(
   thrust::execution_policy<ExecutionPolicy>& exec,
   InputIterator1 keys_first,
   InputIterator1 keys_last,
@@ -160,7 +162,7 @@ template <typename ExecutionPolicy,
           typename OutputIterator1,
           typename OutputIterator2,
           typename BinaryPredicate>
-_CCCL_HOST_DEVICE thrust::pair<OutputIterator1, OutputIterator2> reduce_by_key(
+_CCCL_HOST_DEVICE ::cuda::std::pair<OutputIterator1, OutputIterator2> reduce_by_key(
   thrust::execution_policy<ExecutionPolicy>& exec,
   InputIterator1 keys_first,
   InputIterator1 keys_last,
@@ -169,11 +171,9 @@ _CCCL_HOST_DEVICE thrust::pair<OutputIterator1, OutputIterator2> reduce_by_key(
   OutputIterator2 values_output,
   BinaryPredicate binary_pred)
 {
-  using T = ::cuda::std::
-
-    _If<thrust::detail::is_output_iterator<OutputIterator2>,
-        thrust::detail::it_value_t<InputIterator2>,
-        thrust::detail::it_value_t<OutputIterator2>>;
+  using T = ::cuda::std::_If<thrust::detail::is_output_iterator<OutputIterator2>,
+                             thrust::detail::it_value_t<InputIterator2>,
+                             thrust::detail::it_value_t<OutputIterator2>>;
 
   // use plus<T> as default BinaryFunction
   return thrust::reduce_by_key(

@@ -39,7 +39,11 @@
 
 #include <thrust/system/cuda/detail/util.h>
 
-#include <cuda/std/type_traits>
+#include <cuda/std/__type_traits/conditional.h>
+#include <cuda/std/__type_traits/integral_constant.h>
+#include <cuda/std/__type_traits/type_identity.h>
+#include <cuda/std/__type_traits/void_t.h>
+#include <cuda/std/cstdint>
 
 #include <nv/target>
 
@@ -58,19 +62,13 @@ struct typelist;
 
 struct sm52
 {
-  enum
-  {
-    ver      = 520,
-    warpSize = 32
-  };
+  static constexpr int ver      = 520;
+  static constexpr int warpSize = 32;
 };
 struct sm60
 {
-  enum
-  {
-    ver      = 600,
-    warpSize = 32
-  };
+  static constexpr int ver      = 600;
+  static constexpr int warpSize = 32;
 };
 
 // list of sm, checked from left to right order
@@ -216,10 +214,7 @@ struct has_enough_shmem_impl<V, A, S, typelist<Head, Tail...>>
 template <bool V, class A, size_t S>
 struct has_enough_shmem_impl<V, A, S, typelist<>>
 {
-  enum
-  {
-    value = V
-  };
+  static constexpr bool value = V;
   using type = ::cuda::std::conditional_t<value, thrust::detail::true_type, thrust::detail::false_type>;
 };
 
@@ -497,10 +492,7 @@ struct uninitialized
 {
   using DeviceWord = typename cub::UnitWord<T>::DeviceWord;
 
-  enum
-  {
-    WORDS = sizeof(T) / sizeof(DeviceWord)
-  };
+  static constexpr int WORDS = sizeof(T) / sizeof(DeviceWord);
 
   DeviceWord storage[WORDS];
 
@@ -578,7 +570,7 @@ template <int ALLOCATIONS>
 THRUST_RUNTIME_FUNCTION cudaError_t alias_storage(
   void* storage_ptr, size_t& storage_size, void* (&allocations)[ALLOCATIONS], size_t (&allocation_sizes)[ALLOCATIONS])
 {
-  return cub::detail::AliasTemporaries(storage_ptr, storage_size, allocations, allocation_sizes);
+  return cub::detail::alias_temporaries(storage_ptr, storage_size, allocations, allocation_sizes);
 }
 #endif // !_CCCL_COMPILER(NVRTC)
 } // namespace cuda_cub::core::detail

@@ -37,9 +37,11 @@
 #include <thrust/iterator/iterator_traits.h>
 
 #include <cuda/std/__iterator/iterator_traits.h>
+#include <cuda/std/__iterator/reverse_iterator.h>
+#include <cuda/std/__type_traits/enable_if.h>
+#include <cuda/std/__utility/move.h>
+#include <cuda/std/__utility/swap.h>
 #include <cuda/std/initializer_list>
-#include <cuda/std/iterator>
-#include <cuda/std/utility>
 
 #include <vector>
 

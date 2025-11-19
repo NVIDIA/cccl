@@ -7,13 +7,12 @@
 
 #include <thrust/fill.h>
 #include <thrust/functional.h>
-#include <thrust/iterator/counting_iterator.h>
-#include <thrust/iterator/transform_iterator.h>
 #include <thrust/memory.h>
 #include <thrust/random.h>
 #include <thrust/shuffle.h>
 #include <thrust/tabulate.h>
 
+#include <cuda/iterator>
 #include <cuda/std/iterator>
 #include <cuda/std/limits>
 #include <cuda/std/type_traits>
@@ -184,9 +183,8 @@ struct large_array_sort_helper
     TIME(timer.print_elapsed_seconds_and_reset("Device Alloc"));
 
     { // Place the sorted keys into keys_out
-      auto key_iter = thrust::make_transform_iterator(
-        thrust::make_counting_iterator(std::size_t{0}),
-        detail::key_sort_ref_key_transform<KeyType>(num_items, is_descending));
+      auto key_iter = cuda::make_transform_iterator(
+        cuda::counting_iterator(std::size_t{0}), detail::key_sort_ref_key_transform<KeyType>(num_items, is_descending));
       thrust::copy(c2h::device_policy, key_iter, key_iter + num_items, keys_out.begin());
     }
 
@@ -212,9 +210,8 @@ struct large_array_sort_helper
   void verify_unstable_key_sort(std::size_t num_items, bool is_descending, const c2h::device_vector<KeyType>& keys)
   {
     TIME(c2h::cpu_timer timer);
-    auto key_iter = thrust::make_transform_iterator(
-      thrust::make_counting_iterator(std::size_t{0}),
-      detail::key_sort_ref_key_transform<KeyType>{num_items, is_descending});
+    auto key_iter = cuda::make_transform_iterator(
+      cuda::counting_iterator(std::size_t{0}), detail::key_sort_ref_key_transform<KeyType>{num_items, is_descending});
     REQUIRE(thrust::equal(c2h::device_policy, keys.cbegin(), keys.cend(), key_iter));
     TIME(timer.print_elapsed_seconds_and_reset("Validate keys"));
   }
@@ -352,8 +349,8 @@ struct large_array_sort_helper
 
     TIME(c2h::cpu_timer timer);
 
-    auto ref_key_begin = thrust::make_transform_iterator(
-      thrust::make_counting_iterator(std::size_t{0}),
+    auto ref_key_begin = cuda::make_transform_iterator(
+      cuda::counting_iterator(std::size_t{0}),
       detail::pair_sort_ref_key_transform<KeyType>(num_items, num_summaries, is_descending));
 
     REQUIRE(thrust::equal(c2h::device_policy, keys.cbegin(), keys.cend(), ref_key_begin));

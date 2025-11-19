@@ -6,19 +6,27 @@ macro(pythonize_bool var)
   endif()
 endmacro()
 
+#add dlpack
+cccl_get_dlpack()
+
 find_package(CUDAToolkit REQUIRED)
 get_target_property(CUDA_INCLUDE_DIR CUDA::cudart INTERFACE_INCLUDE_DIRECTORIES)
 
 foreach (COMPUTE_ARCH ${LIBCUDACXX_COMPUTE_ARCHS})
   set(_compute_message "${_compute_message} sm_${COMPUTE_ARCH}")
-  set(LIBCUDACXX_COMPUTE_ARCHS_STRING "${LIBCUDACXX_COMPUTE_ARCHS_STRING} ${COMPUTE_ARCH}")
-endforeach ()
+  set(
+    LIBCUDACXX_COMPUTE_ARCHS_STRING
+    "${LIBCUDACXX_COMPUTE_ARCHS_STRING} ${COMPUTE_ARCH}"
+  )
+endforeach()
 
 message(STATUS "Enabled CUDA architectures:${_compute_message}")
 
-option(LIBCUDACXX_TEST_WITH_NVRTC
+option(
+  LIBCUDACXX_TEST_WITH_NVRTC
   "Test libcu++ with runtime compilation instead of offline compilation. Only runs device side tests."
-  OFF)
+  OFF
+)
 
 if (LIBCUDACXX_TEST_WITH_NVRTC)
   # TODO: Use project properties to get path to binary.
@@ -26,37 +34,59 @@ if (LIBCUDACXX_TEST_WITH_NVRTC)
   foreach (include IN ITEMS ${CUDA_INCLUDE_DIR})
     string(APPEND LIBCUDACXX_TEST_COMPILER_FLAGS " -I'${include}'")
   endforeach()
-  set(LIBCUDACXX_CUDA_COMPILER "${CMAKE_BINARY_DIR}/libcudacxx/test/utils/nvidia/nvrtc/nvrtcc")
+  set(
+    LIBCUDACXX_CUDA_COMPILER
+    "${CMAKE_BINARY_DIR}/libcudacxx/test/utils/nvidia/nvrtc/nvrtcc"
+  )
   set(LIBCUDACXX_CUDA_COMPILER_ARG1 "")
   set(LIBCUDACXX_CUDA_TEST_WITH_NVRTC "True")
   # Use the NVRTCC utility to run the built test outputs
-  set(LIBCUDACXX_EXECUTOR "PrefixExecutor(['${LIBCUDACXX_CUDA_COMPILER}'], LocalExecutor())")
+  set(
+    LIBCUDACXX_EXECUTOR
+    "PrefixExecutor(['${LIBCUDACXX_CUDA_COMPILER}'], LocalExecutor())"
+  )
   # Enable 128-bit types for NVRTC
   string(APPEND LIBCUDACXX_TEST_COMPILER_FLAGS " -device-int128")
   string(APPEND LIBCUDACXX_TEST_COMPILER_FLAGS " -device-float128")
 else() # NOT LIBCUDACXX_TEST_WITH_NVRTC
-  string(APPEND LIBCUDACXX_TEST_COMPILER_FLAGS " -DLIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE")
-  set(LIBCUDACXX_FORCE_INCLUDE "-include ${libcudacxx_SOURCE_DIR}/test/libcudacxx/force_include.h")
+  string(
+    APPEND LIBCUDACXX_TEST_COMPILER_FLAGS
+    " -DLIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE"
+  )
+  set(
+    LIBCUDACXX_FORCE_INCLUDE
+    "-include ${libcudacxx_SOURCE_DIR}/test/libcudacxx/force_include.h"
+  )
   set(LIBCUDACXX_CUDA_COMPILER "${CMAKE_CUDA_COMPILER}")
   set(LIBCUDACXX_CUDA_TEST_WITH_NVRTC "False")
 endif()
 
 # enable exceptions and assertions in tests
 string(APPEND LIBCUDACXX_TEST_COMPILER_FLAGS " -DCCCL_ENABLE_ASSERTIONS")
+string(APPEND LIBCUDACXX_TEST_COMPILER_FLAGS " -I ${dlpack_SOURCE_DIR}/include")
 
 # enable optional<T&>
 string(APPEND LIBCUDACXX_TEST_COMPILER_FLAGS " -DCCCL_ENABLE_OPTIONAL_REF")
 
 # Disable dialect deprecation
-string(APPEND LIBCUDACXX_TEST_COMPILER_FLAGS " -DCCCL_IGNORE_DEPRECATED_CPP_DIALECT")
-string(APPEND LIBCUDACXX_TEST_COMPILER_FLAGS " -DLIBCUDACXX_IGNORE_DEPRECATED_ABI")
+string(
+  APPEND LIBCUDACXX_TEST_COMPILER_FLAGS
+  " -DCCCL_IGNORE_DEPRECATED_CPP_DIALECT"
+)
+string(
+  APPEND LIBCUDACXX_TEST_COMPILER_FLAGS
+  " -DLIBCUDACXX_IGNORE_DEPRECATED_ABI"
+)
 
 if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
   string(APPEND LIBCUDACXX_TEST_LINKER_FLAGS " -latomic")
 endif()
 
 if (NOT MSVC AND NOT ${CMAKE_CUDA_COMPILER_ID} STREQUAL "Clang")
-  set(LIBCUDACXX_WARNING_LEVEL "--compiler-options=-Wall --compiler-options=-Wextra")
+  set(
+    LIBCUDACXX_WARNING_LEVEL
+    "--compiler-options=-Wall --compiler-options=-Wextra"
+  )
 endif()
 
 if (MSVC)
@@ -77,30 +107,34 @@ if (MSVC)
 endif()
 
 if (${CMAKE_CUDA_COMPILER_ID} STREQUAL "Clang")
-  string(APPEND LIBCUDACXX_TEST_COMPILER_FLAGS
+  string(
+    APPEND LIBCUDACXX_TEST_COMPILER_FLAGS
     " ${CMAKE_CUDA_FLAGS}"
     " -Xclang -fcuda-allow-variadic-functions"
     " -Xclang -Wno-unused-parameter"
     " -Wno-unknown-cuda-version"
     " ${LIBCUDACXX_FORCE_INCLUDE}"
     " -I${libcudacxx_SOURCE_DIR}/include"
-    " ${LIBCUDACXX_WARNING_LEVEL}")
+    " ${LIBCUDACXX_WARNING_LEVEL}"
+  )
 
-  string(APPEND LIBCUDACXX_TEST_LINKER_FLAGS
+  string(
+    APPEND LIBCUDACXX_TEST_LINKER_FLAGS
     " ${CMAKE_CUDA_FLAGS}"
     " -L${CUDAToolkit_LIBRARY_DIR}"
     " -lcuda"
-    " -lcudart")
+    " -lcudart"
+  )
 elseif (${CMAKE_CUDA_COMPILER_ID} STREQUAL "NVIDIA")
-  string(APPEND LIBCUDACXX_TEST_COMPILER_FLAGS
+  string(
+    APPEND LIBCUDACXX_TEST_COMPILER_FLAGS
     " ${LIBCUDACXX_FORCE_INCLUDE}"
     " ${LIBCUDACXX_WARNING_LEVEL}"
-    " -Wno-deprecated-gpu-targets")
+    " -Wno-deprecated-gpu-targets"
+  )
 elseif (${CMAKE_CUDA_COMPILER_ID} STREQUAL "NVHPC")
-  string(APPEND LIBCUDACXX_TEST_COMPILER_FLAGS
-    " -stdpar")
-  string(APPEND LIBCUDACXX_TEST_LINKER_FLAGS
-    " -stdpar")
+  string(APPEND LIBCUDACXX_TEST_COMPILER_FLAGS " -stdpar")
+  string(APPEND LIBCUDACXX_TEST_LINKER_FLAGS " -stdpar")
 endif()
 
 set(LIBCUDACXX_COMPUTE_ARCHS_STRING "${CMAKE_CUDA_ARCHITECTURES}")
@@ -109,62 +143,107 @@ include(AddLLVM)
 
 set(LIBCUDACXX_BINARY_DIR "${CMAKE_CURRENT_BINARY_DIR}")
 
-set(LIBCUDACXX_TARGET_INFO "libcudacxx.test.target_info.LocalTI" CACHE STRING
-"TargetInfo to use when setting up test environment.")
-set(LIBCUDACXX_EXECUTOR "None" CACHE STRING
-"Executor to use when running tests.")
+set(
+  LIBCUDACXX_TARGET_INFO
+  "libcudacxx.test.target_info.LocalTI"
+  CACHE STRING
+  "TargetInfo to use when setting up test environment."
+)
+set(
+  LIBCUDACXX_EXECUTOR
+  "None"
+  CACHE STRING
+  "Executor to use when running tests."
+)
 
-set(LIBCUDACXX_TEST_TIMEOUT "200" CACHE STRING "Enable test timeouts (Default = 200, Off = 0)")
+set(
+  LIBCUDACXX_TEST_TIMEOUT
+  "200"
+  CACHE STRING
+  "Enable test timeouts (Default = 200, Off = 0)"
+)
 
-set(AUTO_GEN_COMMENT "## Autogenerated by libcudacxx configuration.\n# Do not edit!")
+set(
+  AUTO_GEN_COMMENT
+  "## Autogenerated by libcudacxx configuration.\n# Do not edit!"
+)
 
 set(lit_site_cfg_path "${CMAKE_CURRENT_BINARY_DIR}/lit.site.cfg")
 configure_lit_site_cfg(
   "${CMAKE_CURRENT_SOURCE_DIR}/lit.site.cfg.in"
-  "${lit_site_cfg_path}")
+  "${lit_site_cfg_path}"
+)
 
 add_lit_testsuite(check-cudacxx
   "Running libcu++ tests"
-  "${CMAKE_CURRENT_BINARY_DIR}")
+  "${CMAKE_CURRENT_BINARY_DIR}"
+)
 
 find_program(libcudacxx_LIT lit REQUIRED)
 
-set(libcudacxx_LIT_FLAGS "" CACHE STRING "Semi-colon separated list of flags passed to the invocation of lit.")
+set(
+  libcudacxx_LIT_FLAGS
+  ""
+  CACHE STRING
+  "Semi-colon separated list of flags passed to the invocation of lit."
+)
 message(STATUS "libcudacxx_LIT_FLAGS: ${libcudacxx_LIT_FLAGS}")
 
 if (NOT LIBCUDACXX_TEST_WITH_NVRTC)
   # Build but don't run the tests. Used by CI to pre-seed sccache for the test machines.
   # Only executed if explicitly requested.
-  add_custom_target(libcudacxx.test.lit.precompile
-    DEPENDS libcudacxx.test.public_headers libcudacxx.test.internal_headers libcudacxx.test.public_headers_host_only
-    COMMAND "${CMAKE_COMMAND}" -E env "LIBCUDACXX_SITE_CONFIG=${lit_site_cfg_path}"
-    "${libcudacxx_LIT}" -vv --no-progress-bar --time-tests ${libcudacxx_LIT_FLAGS}
-    "-Dexecutor=\"NoopExecutor()\"" "${libcudacxx_SOURCE_DIR}/test/libcudacxx"
+  add_custom_target(
+    libcudacxx.test.lit.precompile
+    DEPENDS
+      libcudacxx.test.public_headers
+      libcudacxx.test.internal_headers
+      libcudacxx.test.public_headers_host_only
+    # gersemi: off
+    COMMAND
+      "${CMAKE_COMMAND}" -E env "LIBCUDACXX_SITE_CONFIG=${lit_site_cfg_path}"
+        "${libcudacxx_LIT}"
+          -vv --no-progress-bar --time-tests
+          ${libcudacxx_LIT_FLAGS}
+          "-Dexecutor=\"NoopExecutor()\""
+          "${libcudacxx_SOURCE_DIR}/test/libcudacxx"
+    # gersemi: on
   )
-
 endif()
 
 # Restricted to avoid oversubscribing the GPU:
-set(libcudacxx_LIT_PARALLEL_LEVEL 8 CACHE STRING
-"Parallelism used to run libcudacxx's lit test suite."
+set(
+  libcudacxx_LIT_PARALLEL_LEVEL
+  8
+  CACHE STRING
+  "Parallelism used to run libcudacxx's lit test suite."
 )
 
-add_test(NAME libcudacxx.test.lit COMMAND
-  "${CMAKE_COMMAND}" -E env
-    "LIBCUDACXX_SITE_CONFIG=${lit_site_cfg_path}"
-  "${libcudacxx_LIT}" -vv --no-progress-bar --time-tests ${libcudacxx_LIT_FLAGS}
-    -j "${libcudacxx_LIT_PARALLEL_LEVEL}" "${libcudacxx_SOURCE_DIR}/test/libcudacxx"
+add_test(
+  NAME libcudacxx.test.lit
+  # gersemi: off
+  COMMAND
+    "${CMAKE_COMMAND}" -E env "LIBCUDACXX_SITE_CONFIG=${lit_site_cfg_path}"
+      "${libcudacxx_LIT}"
+        -vv --no-progress-bar --time-tests
+        ${libcudacxx_LIT_FLAGS}
+        -j "${libcudacxx_LIT_PARALLEL_LEVEL}"
+        "${libcudacxx_SOURCE_DIR}/test/libcudacxx"
+  # gersemi: on
 )
 
-set_tests_properties(libcudacxx.test.lit PROPERTIES
-  TIMEOUT 10800 # 3hr, some CI machines are slow
-  RUN_SERIAL TRUE
+set_tests_properties(
+  libcudacxx.test.lit
+  PROPERTIES
+    # 3hr, some CI machines are slow
+    TIMEOUT 10800
+    RUN_SERIAL TRUE
 )
 
 # Add c2h tests:
 cccl_get_c2h()
 
-file(GLOB_RECURSE test_srcs
+file(
+  GLOB_RECURSE test_srcs
   RELATIVE "${CMAKE_CURRENT_LIST_DIR}"
   CONFIGURE_DEPENDS
   *.cu
@@ -181,11 +260,16 @@ function(libcudacxx_add_test target_name_var source)
 
   add_executable(${target_name} "${source}")
   cccl_configure_target(${target_name} DIALECT ${CMAKE_CUDA_STANDARD})
-  target_include_directories(${target_name} PRIVATE "${libcudacxx_SOURCE_DIR}/test/libcudacxx/cuda/ccclrt/common")
-  target_link_libraries(${target_name} PRIVATE
-    libcudacxx::libcudacxx
-    cccl.c2h.main
-    libcudacxx.compiler_interface
+  target_include_directories(
+    ${target_name}
+    PRIVATE "${libcudacxx_SOURCE_DIR}/test/libcudacxx/cuda/ccclrt/common"
+  )
+  target_link_libraries(
+    ${target_name}
+    PRIVATE #
+      libcudacxx::libcudacxx
+      cccl.c2h.main
+      libcudacxx.compiler_interface
   )
 
   add_dependencies(${c2h_all_target} ${target_name})

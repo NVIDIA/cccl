@@ -371,14 +371,11 @@ struct policy_hub
   /// SM50
   struct Policy500 : ChainedPolicy<500, Policy500, Policy500>
   {
-    enum
-    {
-      PRIMARY_RADIX_BITS     = (sizeof(KeyT) > 1) ? 7 : 5, // 3.5B 32b keys/s, 1.92B 32b pairs/s (TitanX)
-      SINGLE_TILE_RADIX_BITS = (sizeof(KeyT) > 1) ? 6 : 5,
-      SEGMENTED_RADIX_BITS   = (sizeof(KeyT) > 1) ? 6 : 5, // 3.1B 32b segmented keys/s (TitanX)
-      ONESWEEP               = false,
-      ONESWEEP_RADIX_BITS    = 8,
-    };
+    static constexpr int PRIMARY_RADIX_BITS = (sizeof(KeyT) > 1) ? 7 : 5; // 3.5B 32b keys/s, 1.92B 32b pairs/s (TitanX)
+    static constexpr int SINGLE_TILE_RADIX_BITS = (sizeof(KeyT) > 1) ? 6 : 5;
+    static constexpr int SEGMENTED_RADIX_BITS   = (sizeof(KeyT) > 1) ? 6 : 5; // 3.1B 32b segmented keys/s (TitanX)
+    static constexpr bool ONESWEEP              = false;
+    static constexpr int ONESWEEP_RADIX_BITS    = 8;
 
     // Histogram policy
     using HistogramPolicy = AgentRadixSortHistogramPolicy<256, 8, 1, KeyT, ONESWEEP_RADIX_BITS>;
@@ -466,15 +463,12 @@ struct policy_hub
   /// SM60 (GP100)
   struct Policy600 : ChainedPolicy<600, Policy600, Policy500>
   {
-    enum
-    {
-      PRIMARY_RADIX_BITS     = (sizeof(KeyT) > 1) ? 7 : 5, // 6.9B 32b keys/s (Quadro P100)
-      SINGLE_TILE_RADIX_BITS = (sizeof(KeyT) > 1) ? 6 : 5,
-      SEGMENTED_RADIX_BITS   = (sizeof(KeyT) > 1) ? 6 : 5, // 5.9B 32b segmented keys/s (Quadro P100)
-      ONESWEEP               = sizeof(KeyT) >= sizeof(uint32_t), // 10.0B 32b keys/s (GP100, 64M random keys)
-      ONESWEEP_RADIX_BITS    = 8,
-      OFFSET_64BIT           = sizeof(OffsetT) == 8,
-    };
+    static constexpr int PRIMARY_RADIX_BITS     = (sizeof(KeyT) > 1) ? 7 : 5; // 6.9B 32b keys/s (Quadro P100)
+    static constexpr int SINGLE_TILE_RADIX_BITS = (sizeof(KeyT) > 1) ? 6 : 5;
+    static constexpr int SEGMENTED_RADIX_BITS   = (sizeof(KeyT) > 1) ? 6 : 5; // 5.9B 32b segmented keys/s (Quadro P100)
+    static constexpr bool ONESWEEP = sizeof(KeyT) >= sizeof(uint32_t); // 10.0B 32b keys/s (GP100, 64M random keys)
+    static constexpr int ONESWEEP_RADIX_BITS = 8;
+    static constexpr bool OFFSET_64BIT       = sizeof(OffsetT) == 8;
 
     // Histogram policy
     using HistogramPolicy = AgentRadixSortHistogramPolicy<256, 8, 8, KeyT, ONESWEEP_RADIX_BITS>;
@@ -562,14 +556,11 @@ struct policy_hub
   /// SM61 (GP104)
   struct Policy610 : ChainedPolicy<610, Policy610, Policy600>
   {
-    enum
-    {
-      PRIMARY_RADIX_BITS     = (sizeof(KeyT) > 1) ? 7 : 5, // 3.4B 32b keys/s, 1.83B 32b pairs/s (1080)
-      SINGLE_TILE_RADIX_BITS = (sizeof(KeyT) > 1) ? 6 : 5,
-      SEGMENTED_RADIX_BITS   = (sizeof(KeyT) > 1) ? 6 : 5, // 3.3B 32b segmented keys/s (1080)
-      ONESWEEP               = sizeof(KeyT) >= sizeof(uint32_t),
-      ONESWEEP_RADIX_BITS    = 8,
-    };
+    static constexpr int PRIMARY_RADIX_BITS = (sizeof(KeyT) > 1) ? 7 : 5; // 3.4B 32b keys/s, 1.83B 32b pairs/s (1080)
+    static constexpr int SINGLE_TILE_RADIX_BITS = (sizeof(KeyT) > 1) ? 6 : 5;
+    static constexpr int SEGMENTED_RADIX_BITS   = (sizeof(KeyT) > 1) ? 6 : 5; // 3.3B 32b segmented keys/s (1080)
+    static constexpr bool ONESWEEP              = sizeof(KeyT) >= sizeof(uint32_t);
+    static constexpr int ONESWEEP_RADIX_BITS    = 8;
 
     // Histogram policy
     using HistogramPolicy = AgentRadixSortHistogramPolicy<256, 8, 8, KeyT, ONESWEEP_RADIX_BITS>;
@@ -657,13 +648,10 @@ struct policy_hub
   /// SM62 (Tegra, less RF)
   struct Policy620 : ChainedPolicy<620, Policy620, Policy610>
   {
-    enum
-    {
-      PRIMARY_RADIX_BITS  = 5,
-      ALT_RADIX_BITS      = PRIMARY_RADIX_BITS - 1,
-      ONESWEEP            = sizeof(KeyT) >= sizeof(uint32_t),
-      ONESWEEP_RADIX_BITS = 8,
-    };
+    static constexpr int PRIMARY_RADIX_BITS  = 5;
+    static constexpr int ALT_RADIX_BITS      = PRIMARY_RADIX_BITS - 1;
+    static constexpr bool ONESWEEP           = sizeof(KeyT) >= sizeof(uint32_t);
+    static constexpr int ONESWEEP_RADIX_BITS = 8;
 
     // Histogram policy
     using HistogramPolicy = AgentRadixSortHistogramPolicy<256, 8, 8, KeyT, ONESWEEP_RADIX_BITS>;
@@ -735,15 +723,12 @@ struct policy_hub
   /// SM70 (GV100)
   struct Policy700 : ChainedPolicy<700, Policy700, Policy620>
   {
-    enum
-    {
-      PRIMARY_RADIX_BITS     = (sizeof(KeyT) > 1) ? 7 : 5, // 7.62B 32b keys/s (GV100)
-      SINGLE_TILE_RADIX_BITS = (sizeof(KeyT) > 1) ? 6 : 5,
-      SEGMENTED_RADIX_BITS   = (sizeof(KeyT) > 1) ? 6 : 5, // 8.7B 32b segmented keys/s (GV100)
-      ONESWEEP               = sizeof(KeyT) >= sizeof(uint32_t), // 15.8B 32b keys/s (V100-SXM2, 64M random keys)
-      ONESWEEP_RADIX_BITS    = 8,
-      OFFSET_64BIT           = sizeof(OffsetT) == 8,
-    };
+    static constexpr int PRIMARY_RADIX_BITS     = (sizeof(KeyT) > 1) ? 7 : 5; // 7.62B 32b keys/s (GV100)
+    static constexpr int SINGLE_TILE_RADIX_BITS = (sizeof(KeyT) > 1) ? 6 : 5;
+    static constexpr int SEGMENTED_RADIX_BITS   = (sizeof(KeyT) > 1) ? 6 : 5; // 8.7B 32b segmented keys/s (GV100)
+    static constexpr bool ONESWEEP = sizeof(KeyT) >= sizeof(uint32_t); // 15.8B 32b keys/s (V100-SXM2, 64M random keys)
+    static constexpr int ONESWEEP_RADIX_BITS = 8;
+    static constexpr bool OFFSET_64BIT       = sizeof(OffsetT) == 8;
 
     // Histogram policy
     using HistogramPolicy = AgentRadixSortHistogramPolicy<256, 8, 8, KeyT, ONESWEEP_RADIX_BITS>;
@@ -832,15 +817,12 @@ struct policy_hub
   /// SM80
   struct Policy800 : ChainedPolicy<800, Policy800, Policy700>
   {
-    enum
-    {
-      PRIMARY_RADIX_BITS     = (sizeof(KeyT) > 1) ? 7 : 5,
-      SINGLE_TILE_RADIX_BITS = (sizeof(KeyT) > 1) ? 6 : 5,
-      SEGMENTED_RADIX_BITS   = (sizeof(KeyT) > 1) ? 6 : 5,
-      ONESWEEP               = sizeof(KeyT) >= sizeof(uint32_t),
-      ONESWEEP_RADIX_BITS    = 8,
-      OFFSET_64BIT           = sizeof(OffsetT) == 8,
-    };
+    static constexpr int PRIMARY_RADIX_BITS     = (sizeof(KeyT) > 1) ? 7 : 5;
+    static constexpr int SINGLE_TILE_RADIX_BITS = (sizeof(KeyT) > 1) ? 6 : 5;
+    static constexpr int SEGMENTED_RADIX_BITS   = (sizeof(KeyT) > 1) ? 6 : 5;
+    static constexpr bool ONESWEEP              = sizeof(KeyT) >= sizeof(uint32_t);
+    static constexpr int ONESWEEP_RADIX_BITS    = 8;
+    static constexpr bool OFFSET_64BIT          = sizeof(OffsetT) == 8;
 
     // Histogram policy
     using HistogramPolicy = AgentRadixSortHistogramPolicy<128, 16, 1, KeyT, ONESWEEP_RADIX_BITS>;

@@ -7,10 +7,9 @@
 #include <cub/util_namespace.cuh>
 #include <cub/util_type.cuh>
 
-#include <thrust/iterator/constant_iterator.h>
-
 #include <cuda/__functional/maximum.h>
 #include <cuda/__functional/minimum.h>
+#include <cuda/iterator>
 
 #include <nv/target>
 
@@ -157,11 +156,11 @@ inline __half* unwrap_it(half_t* it)
 }
 
 template <class OffsetT>
-inline thrust::constant_iterator<__half, OffsetT> unwrap_it(thrust::constant_iterator<half_t, OffsetT> it)
+inline cuda::constant_iterator<__half, OffsetT> unwrap_it(cuda::constant_iterator<half_t, OffsetT> it)
 {
   half_t wrapped_val = *it;
   __half val         = wrapped_val.operator __half();
-  return thrust::constant_iterator<__half, OffsetT>(val);
+  return cuda::constant_iterator<__half, OffsetT>(val);
 }
 #endif // TEST_HALF_T()
 
@@ -172,11 +171,11 @@ inline __nv_bfloat16* unwrap_it(bfloat16_t* it)
 }
 
 template <class OffsetT>
-thrust::constant_iterator<__nv_bfloat16, OffsetT> inline unwrap_it(thrust::constant_iterator<bfloat16_t, OffsetT> it)
+cuda::constant_iterator<__nv_bfloat16, OffsetT> inline unwrap_it(cuda::constant_iterator<bfloat16_t, OffsetT> it)
 {
   bfloat16_t wrapped_val = *it;
   __nv_bfloat16 val      = wrapped_val.operator __nv_bfloat16();
-  return thrust::constant_iterator<__nv_bfloat16, OffsetT>(val);
+  return cuda::constant_iterator<__nv_bfloat16, OffsetT>(val);
 }
 #endif // TEST_BF_T()
 
@@ -275,8 +274,8 @@ compute_single_problem_reference(InputItT h_in_begin, InputItT h_in_end, Reducti
 
   compute_host_reference(
     h_in_begin,
-    thrust::make_constant_iterator(0),
-    thrust::make_constant_iterator(cuda::std::distance(h_in_begin, h_in_end)),
+    cuda::constant_iterator(0),
+    cuda::constant_iterator(cuda::std::distance(h_in_begin, h_in_end)),
     num_segments,
     reduction_op,
     init,
@@ -314,11 +313,10 @@ void compute_segmented_problem_reference(
 {
   c2h::host_vector<ItemT> h_items(d_in);
   c2h::host_vector<OffsetT> h_offsets(d_offsets);
-  auto offsets_it = h_offsets.cbegin();
-  auto seg_sizes_it =
-    thrust::make_transform_iterator(thrust::make_counting_iterator(std::size_t{0}), [offsets_it](std::size_t i) {
-      return offsets_it[i + 1] - offsets_it[i];
-    });
+  auto offsets_it   = h_offsets.cbegin();
+  auto seg_sizes_it = cuda::transform_iterator(cuda::counting_iterator(std::size_t{0}), [offsets_it](std::size_t i) {
+    return offsets_it[i + 1] - offsets_it[i];
+  });
   std::size_t num_segments = h_offsets.size() - 1;
 
   compute_host_reference(
@@ -338,11 +336,10 @@ void compute_segmented_problem_reference(
   ResultItT h_results)
 {
   c2h::host_vector<OffsetT> h_offsets(d_offsets);
-  auto offsets_it = h_offsets.cbegin();
-  auto seg_sizes_it =
-    thrust::make_transform_iterator(thrust::make_counting_iterator(std::size_t{0}), [offsets_it](std::size_t i) {
-      return offsets_it[i + 1] - offsets_it[i];
-    });
+  auto offsets_it   = h_offsets.cbegin();
+  auto seg_sizes_it = cuda::transform_iterator(cuda::counting_iterator(std::size_t{0}), [offsets_it](std::size_t i) {
+    return offsets_it[i + 1] - offsets_it[i];
+  });
   std::size_t num_segments = h_offsets.size() - 1;
 
   compute_host_reference(in_it, h_offsets.cbegin(), seg_sizes_it, num_segments, reduction_op, init, h_results);

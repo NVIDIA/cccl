@@ -36,16 +36,17 @@
 #  pragma system_header
 #endif // no system header
 
-#if _CCCL_HAS_CUDA_COMPILER()
+#if _CCCL_CUDA_COMPILATION()
 
 #  include <thrust/iterator/zip_iterator.h>
 #  include <thrust/system/cuda/detail/parallel_for.h>
 #  include <thrust/system/cuda/detail/transform.h>
 #  include <thrust/type_traits/is_trivially_relocatable.h>
 
-#  include <cuda/functional>
-#  include <cuda/std/__algorithm_>
-#  include <cuda/std/iterator>
+#  include <cuda/__functional/address_stability.h>
+#  include <cuda/std/__iterator/distance.h>
+#  include <cuda/std/__iterator/iter_swap.h>
+#  include <cuda/std/__utility/swap.h>
 
 THRUST_NAMESPACE_BEGIN
 namespace cuda_cub
@@ -95,4 +96,4 @@ swap_ranges(execution_policy<Derived>& policy, ItemsIt1 first1, ItemsIt1 last1, 
 }
 } // namespace cuda_cub
 THRUST_NAMESPACE_END
-#endif
+#endif // _CCCL_CUDA_COMPILATION()

@@ -36,7 +36,7 @@
 #  pragma system_header
 #endif // no system header
 
-#if _CCCL_HAS_CUDA_COMPILER()
+#if _CCCL_CUDA_COMPILATION()
 #  include <thrust/system/cuda/config.h>
 
 #  include <cub/device/device_reduce.cuh>
@@ -45,7 +45,6 @@
 #  include <thrust/detail/alignment.h>
 #  include <thrust/detail/raw_reference_cast.h>
 #  include <thrust/detail/temporary_array.h>
-#  include <thrust/distance.h>
 #  include <thrust/functional.h>
 #  include <thrust/system/cuda/detail/cdp_dispatch.h>
 #  include <thrust/system/cuda/detail/core/agent_launcher.h>
@@ -55,6 +54,7 @@
 #  include <thrust/system/cuda/detail/make_unsigned_special.h>
 #  include <thrust/system/cuda/detail/util.h>
 
+#  include <cuda/std/__iterator/distance.h>
 #  include <cuda/std/cstdint>
 
 THRUST_NAMESPACE_BEGIN
@@ -136,4 +136,4 @@ T _CCCL_HOST_DEVICE transform_reduce(
 }
 } // namespace cuda_cub
 THRUST_NAMESPACE_END
-#endif
+#endif // _CCCL_CUDA_COMPILATION()

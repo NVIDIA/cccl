@@ -36,7 +36,7 @@
 #  pragma system_header
 #endif // no system header
 
-#if _CCCL_HAS_CUDA_COMPILER()
+#if _CCCL_CUDA_COMPILATION()
 
 #  include <thrust/system/cuda/config.h>
 
@@ -44,11 +44,13 @@
 
 #  include <thrust/detail/temporary_array.h>
 #  include <thrust/detail/type_traits.h>
-#  include <thrust/distance.h>
 #  include <thrust/iterator/iterator_traits.h>
 #  include <thrust/system/cuda/detail/cdp_dispatch.h>
 #  include <thrust/system/cuda/detail/dispatch.h>
 
+#  include <cuda/std/__functional/invoke.h>
+#  include <cuda/std/__functional/operations.h>
+#  include <cuda/std/__iterator/distance.h>
 #  include <cuda/std/cstdint>
 
 THRUST_NAMESPACE_BEGIN
@@ -335,4 +337,4 @@ THRUST_NAMESPACE_END
 
 #  include <thrust/scan.h>
 
-#endif // NVCC
+#endif // _CCCL_CUDA_COMPILATION()

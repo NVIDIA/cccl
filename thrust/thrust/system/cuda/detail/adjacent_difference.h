@@ -36,7 +36,7 @@
 #  pragma system_header
 #endif // no system header
 
-#if _CCCL_HAS_CUDA_COMPILER()
+#if _CCCL_CUDA_COMPILATION()
 
 #  include <thrust/system/cuda/config.h>
 
@@ -53,8 +53,11 @@
 #  include <thrust/type_traits/is_contiguous_iterator.h>
 #  include <thrust/type_traits/unwrap_contiguous_iterator.h>
 
+#  include <cuda/std/__functional/operations.h>
+#  include <cuda/std/__iterator/distance.h>
+#  include <cuda/std/__type_traits/is_pointer.h>
+#  include <cuda/std/__type_traits/is_same.h>
 #  include <cuda/std/cstdint>
-#  include <cuda/std/type_traits>
 
 THRUST_NAMESPACE_BEGIN
 
@@ -151,8 +154,8 @@ adjacent_difference(execution_policy<Derived>& policy, InputIt first, InputIt la
   using OutputValueT = thrust::detail::it_value_t<UnwrapOutputIt>;
 
   constexpr bool can_compare_iterators =
-    ::cuda::std::is_pointer<UnwrapInputIt>::value && ::cuda::std::is_pointer<UnwrapOutputIt>::value
-    && std::is_same<InputValueT, OutputValueT>::value;
+    ::cuda::std::is_pointer_v<UnwrapInputIt> && ::cuda::std::is_pointer_v<UnwrapOutputIt>
+    && std::is_same_v<InputValueT, OutputValueT>;
 
   auto first_unwrap  = thrust::try_unwrap_contiguous_iterator(first);
   auto result_unwrap = thrust::try_unwrap_contiguous_iterator(result);
@@ -212,4 +215,4 @@ THRUST_NAMESPACE_END
 //
 #  include <thrust/adjacent_difference.h>
 #  include <thrust/memory.h>
-#endif
+#endif // _CCCL_CUDA_COMPILATION()

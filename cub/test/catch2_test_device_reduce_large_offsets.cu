@@ -6,9 +6,8 @@
 #include <cub/device/device_reduce.cuh>
 #include <cub/thread/thread_operators.cuh>
 
-#include <thrust/iterator/counting_iterator.h>
-
-#include <cuda/std/__algorithm_>
+#include <cuda/iterator>
+#include <cuda/std/algorithm>
 
 #include <cstdint>
 
@@ -78,7 +77,7 @@ C2H_TEST("Device reduce works with all device interfaces", "[reduce][device]", o
     take(2, random(num_items_min, num_items_max)));
 
   // Input data
-  const auto index_it = thrust::make_counting_iterator(index_t{});
+  const auto index_it = cuda::counting_iterator(index_t{});
 
   SECTION("reduce")
   {
@@ -101,7 +100,7 @@ C2H_TEST("Device reduce works with all device interfaces", "[reduce][device]", o
     // Run test
     c2h::device_vector<index_t> out_result(1);
     const auto d_out_it = thrust::raw_pointer_cast(out_result.data());
-    const auto d_in_it  = thrust::make_transform_iterator(index_it, mod_op<index_t>{segment_size});
+    const auto d_in_it  = cuda::transform_iterator(index_it, mod_op<index_t>{segment_size});
 
     device_reduce(d_in_it, d_out_it, num_items, reduction_op, init_val);
 
@@ -120,7 +119,7 @@ C2H_TEST("Device reduce works with all device interfaces", "[reduce][device]", o
     // Run test
     c2h::device_vector<index_t> out_result(1);
     const auto d_out_it = thrust::raw_pointer_cast(out_result.data());
-    const auto d_in_it  = thrust::make_transform_iterator(index_it, mod_op<index_t>{segment_size});
+    const auto d_in_it  = cuda::transform_iterator(index_it, mod_op<index_t>{segment_size});
 
     device_sum(d_in_it, d_out_it, num_items);
 

@@ -23,8 +23,10 @@
 
 #include <thrust/random.h>
 
+#include <cuda/std/__type_traits/is_convertible.h>
+#include <cuda/std/__type_traits/is_integral.h>
+#include <cuda/std/__utility/forward.h>
 #include <cuda/std/cstdint>
-#include <cuda/std/type_traits>
 
 THRUST_NAMESPACE_BEGIN
 namespace detail

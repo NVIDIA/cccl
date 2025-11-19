@@ -18,7 +18,7 @@
 
 #include <cuda/__cccl_config>
 
-#if !_CCCL_HAS_CUDA_COMPILER()
+#if !_CCCL_CUDA_COMPILATION()
 
 #  ifndef __host__
 #    define __host__

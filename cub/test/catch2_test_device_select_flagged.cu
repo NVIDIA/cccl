@@ -9,6 +9,8 @@
 #include <thrust/partition.h>
 #include <thrust/reverse.h>
 
+#include <cuda/iterator>
+
 #include <algorithm>
 
 #include "catch2_test_device_select_common.cuh"
@@ -433,8 +435,8 @@ try
 
   // Input
   constexpr offset_t match_every_nth = 1000000;
-  auto in                            = thrust::make_counting_iterator(static_cast<type>(0));
-  auto flags_in = thrust::make_transform_iterator(in, mod_n<offset_t>{static_cast<offset_t>(match_every_nth)});
+  auto in                            = cuda::counting_iterator(static_cast<type>(0));
+  auto flags_in = cuda::transform_iterator(in, mod_n<offset_t>{static_cast<offset_t>(match_every_nth)});
 
   // Needs to be device accessible
   c2h::device_vector<offset_t> num_selected_out(1, 0);
@@ -447,8 +449,7 @@ try
 
   // Ensure that we created the correct output
   REQUIRE(num_selected_out[0] == expected_num_copied);
-  auto expected_out_it =
-    thrust::make_transform_iterator(in, multiply_n<offset_t>{static_cast<offset_t>(match_every_nth)});
+  auto expected_out_it     = cuda::transform_iterator(in, multiply_n<offset_t>{static_cast<offset_t>(match_every_nth)});
   bool all_results_correct = thrust::equal(out.cbegin(), out.cend(), expected_out_it);
   REQUIRE(all_results_correct == true);
 }

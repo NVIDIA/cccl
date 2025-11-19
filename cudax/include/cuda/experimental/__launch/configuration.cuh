@@ -12,11 +12,18 @@
 #define _CUDAX__LAUNCH_CONFIGURATION_CUH
 
 #include <cuda/__driver/driver_api.h>
+#include <cuda/__hierarchy/hierarchy_dimensions.h>
+#include <cuda/__numeric/overflow_cast.h>
+#include <cuda/__ptx/instructions/get_sreg.h>
+#include <cuda/std/__cstddef/types.h>
+#include <cuda/std/__type_traits/is_const.h>
+#include <cuda/std/__type_traits/is_reference.h>
+#include <cuda/std/__type_traits/is_unbounded_array.h>
+#include <cuda/std/__type_traits/rank.h>
 #include <cuda/std/span>
 #include <cuda/std/tuple>
 
 #include <cuda/experimental/__detail/utility.cuh>
-#include <cuda/experimental/hierarchy.cuh>
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -32,17 +39,7 @@ struct launch_option
 {
   static constexpr bool needs_attribute_space = false;
   static constexpr bool is_relevant_on_device = false;
-
-protected:
-  [[nodiscard]] cudaError_t apply(CUlaunchConfig&, CUfunction) const noexcept
-  {
-    return cudaSuccess;
-  }
 };
-
-template <typename Dimensions, typename... Options>
-cudaError_t apply_kernel_config(
-  const kernel_config<Dimensions, Options...>& config, CUlaunchConfig& cuda_config, CUfunction kernel) noexcept;
 
 // Might need to go to the main namespace?
 enum class launch_option_kind
@@ -98,10 +95,11 @@ inline constexpr bool no_duplicate_options<Option, Rest...> =
  * @brief Launch option enabling cooperative launch
  *
  * This launch option causes the launched grid to be restricted to a number of
- * blocks that can simultaneously execute on the device. It means that every thread
- * in the launched grid can eventually observe execution of each other thread in the grid.
- * It also enables usage of cooperative_groups::grid_group::sync() function, that
- * synchronizes all threads in the grid.
+ * blocks that can simultaneously execute on the device. It means that every
+ * thread in the launched grid can eventually observe execution of each other
+ * thread in the grid. It also enables usage of
+ * cooperative_groups::grid_group::sync() function, that synchronizes all
+ * threads in the grid.
  *
  * @par Snippet
  * @code
@@ -128,38 +126,70 @@ struct cooperative_launch : public __detail::launch_option
   static constexpr bool needs_attribute_space        = true;
   static constexpr bool is_relevant_on_device        = true;
   static constexpr __detail::launch_option_kind kind = __detail::launch_option_kind::cooperative_launch;
-
-  constexpr cooperative_launch() = default;
-
-  template <typename Dimensions, typename... Options>
-  friend cudaError_t __detail::apply_kernel_config(
-    const kernel_config<Dimensions, Options...>& config, CUlaunchConfig& cuda_config, CUfunction kernel) noexcept;
-
-private:
-  [[nodiscard]] cudaError_t apply(CUlaunchConfig& config, CUfunction) const noexcept
-  {
-    CUlaunchAttribute attr;
-    attr.id                = CU_LAUNCH_ATTRIBUTE_COOPERATIVE;
-    attr.value.cooperative = true;
-
-    config.attrs[config.numAttrs++] = attr;
-
-    return cudaSuccess;
-  }
 };
+
+[[nodiscard]] _CCCL_API inline cudaError_t
+__apply_launch_option(const cooperative_launch&, CUlaunchConfig& config, CUfunction) noexcept
+{
+  CUlaunchAttribute attr;
+  attr.id                = CU_LAUNCH_ATTRIBUTE_COOPERATIVE;
+  attr.value.cooperative = true;
+
+  config.attrs[config.numAttrs++] = attr;
+
+  return cudaSuccess;
+}
+
+template <class _Tp>
+class __dyn_smem_option_base
+{
+protected:
+  using value_type = _Tp;
+  using view_type  = _Tp&;
+};
+
+template <class _Tp>
+class __dyn_smem_option_base<_Tp[]>
+{
+protected:
+  using value_type = _Tp;
+  using view_type  = ::cuda::std::span<_Tp>;
+
+  ::cuda::std::size_t __n_;
+
+  _CCCL_HOST_API constexpr __dyn_smem_option_base(::cuda::std::size_t __n) noexcept
+      : __n_{__n}
+  {}
+};
+
+template <class _Tp, ::cuda::std::size_t _Np>
+class __dyn_smem_option_base<_Tp[_Np]>
+{
+protected:
+  using value_type = _Tp;
+  using view_type  = ::cuda::std::span<_Tp, _Np>;
+
+  static constexpr ::cuda::std::size_t __n_ = _Np;
+};
+
+enum class non_portable_t : unsigned char
+{
+};
+inline constexpr non_portable_t non_portable{};
+
+inline constexpr ::cuda::std::size_t __max_portable_dyn_smem_size = 48 * 1024;
 
 /**
  * @brief Launch option specifying dynamic shared memory configuration
  *
- * This launch option causes the launch to allocate amount of shared memory sufficient
- * to store the specified number of object of the specified type.
- * This type can be constructed directly or with dynamic_shared_memory helper function.
+ * This launch option causes the launch to allocate amount of shared memory
+ * sufficient to store the specified number of object of the specified type.
+ * This type can be constructed with dynamic_shared_memory helper function.
  *
- * When launch configuration contains this option, that configuration can be then
- * passed to dynamic_smem_span or dynamic_smem_ref function to get a span/reference
- * to that shared memory allocation that is appropriately typed.
- * It is also possible to obtain that memory through the original
- * extern __shared__ variable[] declaration.
+ * When launch configuration contains this option, that configuration can be
+ * then passed to dynamic_shared_memory_view to get the view_type over the
+ * dynamic shared memory. It is also possible to obtain that memory through the
+ * original extern __shared__ variable[] declaration.
  *
  * CUDA guarantees that each device has at least 48kB of shared memory
  * per block, but most devices have more than that.
@@ -174,13 +204,14 @@ private:
  * template <typename Configuration>
  * __global__ void kernel(Configuration conf)
  * {
- *     auto dynamic_shared = cudax::dynamic_smem_span(conf);
+ *     auto dynamic_shared = cudax::dynamic_shared_memory_view(conf);
  *     dynamic_shared[0] = 1;
  * }
  *
  * void kernel_launch(cuda::stream_ref stream) {
  *     auto dims = cudax::make_hierarchy(cudax::block<128>(), cudax::grid(4));
- *     auto conf = cudax::make_configuration(dims, dynamic_shared_memory<int, 128>());
+ *     auto conf = cudax::make_configuration(dims,
+ * dynamic_shared_memory<int[128]>());
  *
  *     cudax::launch(stream, conf, kernel);
  * }
@@ -195,134 +226,191 @@ private:
  *  or cuda::std::dynamic_extent, if its dynamic
  *
  * @tparam NonPortableSize
- *  Needs to be enabled to exceed the portable limit of 48kB of shared memory per block
+ *  Needs to be enabled to exceed the portable limit of 48kB of shared memory
+ * per block
  */
-template <typename Content, std::size_t Extent = 1, bool NonPortableSize = false>
-struct dynamic_shared_memory_option : public __detail::launch_option
+template <class _Tp>
+class _CCCL_DECLSPEC_EMPTY_BASES dynamic_shared_memory
+    : __dyn_smem_option_base<_Tp>
+    , public __detail::launch_option
 {
-  using content_type                                 = Content;
-  static constexpr std::size_t extent                = Extent;
+  using __base_type = __dyn_smem_option_base<_Tp>;
+
+  static_assert(::cuda::std::rank_v<_Tp> <= 1,
+                "multidimensional arrays cannot be used with dynamic shared "
+                "memory option");
+  static_assert(!::cuda::std::is_const_v<typename __base_type::value_type>, "the value type cannot be const");
+  static_assert(!::cuda::std::is_reference_v<typename __base_type::value_type>, "the value type cannot be a reference");
+
+public:
+  bool __non_portable_{}; //!< \c true if the object was created with
+                          //!< non_portable flag.
+
+  using typename __base_type::value_type; //!< Value type of the dynamic shared
+                                          //!< memory elements.
+  using typename __base_type::view_type; //!< The view type returned by the
+                                         //!< cuda::device::dynamic_shared_memory_view(config).
+
   static constexpr bool is_relevant_on_device        = true;
   static constexpr __detail::launch_option_kind kind = __detail::launch_option_kind::dynamic_shared_memory;
-  const std::size_t size;
 
-  constexpr dynamic_shared_memory_option(std::size_t set_size) noexcept
-      : size(set_size)
+  _CCCL_HIDE_FROM_ABI constexpr dynamic_shared_memory() noexcept = default;
+
+  _CCCL_HOST_API constexpr dynamic_shared_memory(non_portable_t) noexcept
+      : __non_portable_{true}
   {}
 
-  template <typename Dimensions, typename... Options>
-  friend cudaError_t __detail::apply_kernel_config(
-    const kernel_config<Dimensions, Options...>& config, CUlaunchConfig& cuda_config, CUfunction kernel) noexcept;
-
-private:
-  [[nodiscard]] cudaError_t apply(CUlaunchConfig& config, CUfunction kernel) const noexcept
+  _CCCL_TEMPLATE(class _Tp2 = _Tp)
+  _CCCL_REQUIRES((!::cuda::std::is_unbounded_array_v<_Tp2>) )
+  _CCCL_HOST_API constexpr dynamic_shared_memory() noexcept
   {
-    cudaError_t status = cudaSuccess;
+    static_assert(sizeof(_Tp2) <= __max_portable_dyn_smem_size, "portable dynamic shared memory limit exceeded");
+  }
 
-    int max_dynamic_shared_size{};
-    status = _CUDA_DRIVER::__functionGetAttributeNoThrow(
-      max_dynamic_shared_size, CU_FUNC_ATTRIBUTE_MAX_DYNAMIC_SHARED_SIZE_BYTES, kernel);
-    if (status != cudaSuccess)
+  _CCCL_TEMPLATE(class _Tp2 = _Tp)
+  _CCCL_REQUIRES((!::cuda::std::is_unbounded_array_v<_Tp2>) )
+  _CCCL_HOST_API constexpr dynamic_shared_memory(non_portable_t) noexcept
+      : __non_portable_{true}
+  {}
+
+  _CCCL_TEMPLATE(class _Tp2 = _Tp)
+  _CCCL_REQUIRES(::cuda::std::is_unbounded_array_v<_Tp2>)
+  _CCCL_HOST_API constexpr dynamic_shared_memory(::cuda::std::size_t __n)
+      : __base_type{__n}
+  {
+    if (__n * sizeof(value_type) > __max_portable_dyn_smem_size)
     {
-      return status;
+      ::cuda::std::__throw_invalid_argument("portable dynamic shared memory limit exceeded");
     }
+  }
 
-    int size_needed = static_cast<int>(size * sizeof(Content));
+  _CCCL_TEMPLATE(class _Tp2 = _Tp)
+  _CCCL_REQUIRES(::cuda::std::is_unbounded_array_v<_Tp2>)
+  _CCCL_HOST_API constexpr dynamic_shared_memory(::cuda::std::size_t __n, non_portable_t) noexcept
+      : __base_type{__n}
+      , __non_portable_{true}
+  {}
 
-    if ((size_needed > max_dynamic_shared_size) && NonPortableSize)
+  //! @brief Gets the size of the dynamic shared memory in bytes.
+  [[nodiscard]] _CCCL_API constexpr ::cuda::std::size_t size_bytes() const noexcept
+  {
+    if constexpr (::cuda::std::is_unbounded_array_v<_Tp>)
     {
-      // TODO since 12.6 there is a per launch option available, we should switch once compatibility is not an issue
-      // TODO should we validate the max amount with device props or just pass it through and rely on driver error?
-      status = _CUDA_DRIVER::__functionSetAttributeNoThrow(
-        kernel, CU_FUNC_ATTRIBUTE_MAX_DYNAMIC_SHARED_SIZE_BYTES, size_needed);
-      if (status != cudaSuccess)
+      if (!::cuda::std::__cccl_default_is_constant_evaluated())
       {
-        return status;
+        NV_IF_TARGET(NV_IS_DEVICE, (return ::cuda::ptx::get_sreg_dynamic_smem_size();))
       }
+      return __base_type::__n_ * sizeof(value_type);
     }
+    else
+    {
+      return sizeof(_Tp);
+    }
+  }
 
-    config.sharedMemBytes = static_cast<unsigned>(size_needed);
-    return cudaSuccess;
+  [[nodiscard]] _CCCL_API constexpr view_type __make_view(value_type* __ptr) const noexcept
+  {
+    if constexpr (::cuda::std::rank_v<_Tp> == 0)
+    {
+      return *__ptr;
+    }
+    else
+    {
+      return view_type{__ptr, __base_type::__n_};
+    }
   }
 };
 
-/**
- * @brief Creates an instance of dynamic_shared_memory_option with a statically known size
- *
- * Type and size need to specified using template arguments.
- *
- * @tparam Content
- *  Type intended to be stored in dynamic shared memory
- *
- * @tparam Extent
- *  Statically specified number of Content objects in dynamic shared memory
- *
- * @tparam NonPortableSize
- *  Needs to be enabled to exceed the portable limit of 48kB of shared memory per block
- */
-template <typename Content, std::size_t Extent = 1, bool NonPortableSize = false>
-constexpr dynamic_shared_memory_option<Content, Extent, NonPortableSize> dynamic_shared_memory() noexcept
+template <class _Tp>
+[[nodiscard]] ::cudaError_t __apply_launch_option(
+  const dynamic_shared_memory<_Tp>& __opt, ::CUlaunchConfig& __config, ::CUfunction __kernel) noexcept
 {
-  static_assert(Extent != ::cuda::std::dynamic_extent, "Size needs to be provided when dynamic_extent is specified");
+  ::cudaError_t __status = ::cudaSuccess;
 
-  return dynamic_shared_memory_option<Content, Extent, NonPortableSize>(Extent);
-}
+  // Since CUDA 12.4, querying CU_FUNC_ATTRIBUTE_SHARED_SIZE_BYTES requires the
+  // function to be loaded.
+  if (::cuda::__driver::__version_at_least(12, 4))
+  {
+    __status = ::cuda::__driver::__functionLoadNoThrow(__kernel);
+    if (__status != ::cudaSuccess)
+    {
+      return __status;
+    }
+  }
 
-/**
- * @brief Creates an instance of dynamic_shared_memory_option with a dynamic size
- *
- * Type stored needs to be specified using template argument, while size is a function argument
- *
- * @param count
- *  Number of Content elements in dynamic shared memory
- *
- * @tparam Content
- *  Type intended to be stored in dynamic shared memory
- *
- * @tparam NonPortableSize
- *  Needs to be enabled to exceed the portable limit of 48kB of shared memory per block
- */
-template <typename Content, bool NonPortableSize = false>
-constexpr dynamic_shared_memory_option<Content, ::cuda::std::dynamic_extent, NonPortableSize>
-dynamic_shared_memory(std::size_t count) noexcept
-{
-  return dynamic_shared_memory_option<Content, ::cuda::std::dynamic_extent, NonPortableSize>(count);
+  int __static_smem_size{};
+  __status = ::cuda::__driver::__functionGetAttributeNoThrow(
+    __static_smem_size, ::CU_FUNC_ATTRIBUTE_SHARED_SIZE_BYTES, __kernel);
+  if (__status != ::cudaSuccess)
+  {
+    return __status;
+  }
+
+  int __max_dyn_smem_size{};
+  __status = ::cuda::__driver::__functionGetAttributeNoThrow(
+    __max_dyn_smem_size, ::CU_FUNC_ATTRIBUTE_SHARED_SIZE_BYTES, __kernel);
+  if (__status != ::cudaSuccess)
+  {
+    return __status;
+  }
+
+  const auto __dyn_smem_size = ::cuda::overflow_cast<int>(__opt.size_bytes());
+  if (__dyn_smem_size.overflow)
+  {
+    return ::cudaErrorInvalidValue;
+  }
+
+  const int __smem_size = __static_smem_size + __dyn_smem_size.value;
+  if (static_cast<::cuda::std::size_t>(__smem_size) > __max_portable_dyn_smem_size && !__opt.__non_portable_)
+  {
+    return ::cudaErrorInvalidValue;
+  }
+
+  if (__max_dyn_smem_size < __dyn_smem_size.value)
+  {
+    __status = ::cuda::__driver::__functionSetAttributeNoThrow(
+      __kernel, ::CU_FUNC_ATTRIBUTE_MAX_DYNAMIC_SHARED_SIZE_BYTES, __dyn_smem_size.value);
+    if (__status != ::cudaSuccess)
+    {
+      return __status;
+    }
+  }
+
+  __config.sharedMemBytes = static_cast<unsigned>(__dyn_smem_size.value);
+  return ::cudaSuccess;
 }
 
 /**
  * @brief Launch option specifying launch priority
  *
- * This launch option causes the launched grid to be scheduled with the specified priority.
- * More about stream priorities and valid values can be found in the CUDA programming guide
- * `here <https://docs.nvidia.com/cuda/cuda-c-programming-guide/#stream-priorities>`_
+ * This launch option causes the launched grid to be scheduled with the
+ * specified priority. More about stream priorities and valid values can be
+ * found in the CUDA programming guide `here
+ * <https://docs.nvidia.com/cuda/cuda-c-programming-guide/#stream-priorities>`_
  */
 struct launch_priority : public __detail::launch_option
 {
   static constexpr bool needs_attribute_space        = true;
-  static constexpr bool is_relevant_on_dpevice       = false;
+  static constexpr bool is_relevant_on_device        = false;
   static constexpr __detail::launch_option_kind kind = __detail::launch_option_kind::launch_priority;
   int priority;
 
   launch_priority(int p) noexcept
       : priority(p)
   {}
-
-  template <typename Dimensions, typename... Options>
-  friend cudaError_t __detail::apply_kernel_config(
-    const kernel_config<Dimensions, Options...>& config, CUlaunchConfig& cuda_config, CUfunction kernel) noexcept;
-
-private:
-  [[nodiscard]] cudaError_t apply(CUlaunchConfig& config, CUfunction) const noexcept
-  {
-    CUlaunchAttribute attr;
-    attr.id             = CU_LAUNCH_ATTRIBUTE_PRIORITY;
-    attr.value.priority = priority;
-
-    config.attrs[config.numAttrs++] = attr;
-
-    return cudaSuccess;
-  }
 };
+
+[[nodiscard]] _CCCL_HOST_API inline cudaError_t
+__apply_launch_option(const launch_priority& __opt, CUlaunchConfig& config, CUfunction) noexcept
+{
+  CUlaunchAttribute attr;
+  attr.id             = CU_LAUNCH_ATTRIBUTE_PRIORITY;
+  attr.value.priority = __opt.priority;
+
+  config.attrs[config.numAttrs++] = attr;
+
+  return cudaSuccess;
+}
 
 template <typename... _OptionsToFilter>
 struct __filter_options
@@ -364,11 +452,12 @@ _CCCL_CONCEPT __kernel_has_default_config =
 /**
  * @brief Type describing a kernel launch configuration
  *
- * This type should not be constructed directly and make_config helper function should be used instead
+ * This type should not be constructed directly and make_config helper function
+ * should be used instead
  *
  * @tparam Dimensions
- * cuda::experimental::hierarchy_dimensions instance that describes dimensions of thread hierarchy in this
- * configuration object
+ * cuda::experimental::hierarchy_dimensions instance that describes dimensions
+ * of thread hierarchy in this configuration object
  *
  * @tparam Options
  * Types of options that were added to this configuration object
@@ -392,8 +481,8 @@ struct kernel_config
   /**
    * @brief Add a new option to this configuration
    *
-   * Returns a new kernel_config that has all option and dimensions from this kernel_config
-   * with the option from the argument added to it
+   * Returns a new kernel_config that has all option and dimensions from this
+   * kernel_config with the option from the argument added to it
    *
    * @param new_option
    * Option to be added to the configuration
@@ -408,13 +497,17 @@ struct kernel_config
   /**
    * @brief Combine this configuration with another configuration object
    *
-   * Returns a new `kernel_config` that is a combination of this configuration and the configuration from argument.
-   * It contains dimensions that are combination of dimensions in this object and the other configuration. The resulting
-   * hierarchy holds levels present in both hierarchies. In case of overlap of levels hierarchy from this configuration
-   * is prioritized, so the result always holds all levels from this hierarchy and non-overlapping
-   * levels from the other hierarchy. This behavior is the same as `combine()` member function of the hierarchy type.
-   * The result also contains configuration options from both configurations. In case the same type of a configuration
-   * option is present in both configuration this configuration is copied into the resulting configuration.
+   * Returns a new `kernel_config` that is a combination of this configuration
+   * and the configuration from argument. It contains dimensions that are
+   * combination of dimensions in this object and the other configuration. The
+   * resulting hierarchy holds levels present in both hierarchies. In case of
+   * overlap of levels hierarchy from this configuration is prioritized, so the
+   * result always holds all levels from this hierarchy and non-overlapping
+   * levels from the other hierarchy. This behavior is the same as `combine()`
+   * member function of the hierarchy type. The result also contains
+   * configuration options from both configurations. In case the same type of a
+   * configuration option is present in both configuration this configuration is
+   * copied into the resulting configuration.
    *
    * @param __other_config
    * Other configuration to combine with this configuration
@@ -422,20 +515,24 @@ struct kernel_config
   template <typename _OtherDimensions, typename... _OtherOptions>
   [[nodiscard]] auto combine(const kernel_config<_OtherDimensions, _OtherOptions...>& __other_config) const
   {
-    // can't use fully qualified kernel_config name here because of nvcc bug, TODO remove __make_config_from_tuple once
-    // fixed
+    // can't use fully qualified kernel_config name here because of nvcc bug,
+    // TODO remove __make_config_from_tuple once fixed
     return __make_config_from_tuple(
       dims.combine(__other_config.dims),
       ::cuda::std::tuple_cat(options, ::cuda::std::apply(__filter_options<Options...>{}, __other_config.options)));
   }
 
   /**
-   * @brief Combine this configuration with default configuration of a kernel functor
+   * @brief Combine this configuration with default configuration of a kernel
+   * functor
    *
-   * Returns a new `kernel_config` that is a combination of this configuration and a default configuration from the
-   * kernel argument. Default configuration is a `kernel_config` object returned from `default_config()` member function
-   * of the kernel type. The configurations are combined using the `combine()` member function of this configuration.
-   * If the kernel has no default configuration, a copy of this configuration is returned without any changes.
+   * Returns a new `kernel_config` that is a combination of this configuration
+   * and a default configuration from the kernel argument. Default configuration
+   * is a `kernel_config` object returned from `default_config()` member
+   * function of the kernel type. The configurations are combined using the
+   * `combine()` member function of this configuration. If the kernel has no
+   * default configuration, a copy of this configuration is returned without any
+   * changes.
    *
    * @param __kernel
    * Kernel functor to search for the default configuration
@@ -453,18 +550,22 @@ struct kernel_config
     }
   }
 };
+} // namespace cuda::experimental
 
-// We can consider removing the operator&, but its convenient for in-line construction
+_CCCL_BEGIN_NAMESPACE_CUDA
+
+// We can consider removing the operator&, but its convenient for in-line
+// construction
 template <typename Dimensions, typename... Options, typename NewLevel>
 _CCCL_HOST_API constexpr auto
-operator&(const kernel_config<Dimensions, Options...>& config, const NewLevel& new_level) noexcept
+operator&(const experimental::kernel_config<Dimensions, Options...>& config, const NewLevel& new_level) noexcept
 {
   return kernel_config(hierarchy_add_level(config.dims, new_level), config.options);
 }
 
 template <typename NewLevel, typename Dimensions, typename... Options>
 _CCCL_HOST_API constexpr auto
-operator&(const NewLevel& new_level, const kernel_config<Dimensions, Options...>& config) noexcept
+operator&(const NewLevel& new_level, const experimental::kernel_config<Dimensions, Options...>& config) noexcept
 {
   return kernel_config(hierarchy_add_level(config.dims, new_level), config.options);
 }
@@ -473,9 +574,13 @@ template <typename L1, typename Dims1, typename L2, typename Dims2>
 _CCCL_HOST_API constexpr auto
 operator&(const level_dimensions<L1, Dims1>& l1, const level_dimensions<L2, Dims2>& l2) noexcept
 {
-  return kernel_config(make_hierarchy(l1, l2));
+  return experimental::kernel_config(cuda::make_hierarchy(l1, l2));
 }
 
+_CCCL_END_NAMESPACE_CUDA
+
+namespace cuda::experimental
+{
 template <typename _Dimensions, typename... _Options>
 auto __make_config_from_tuple(const _Dimensions& __dims, const ::cuda::std::tuple<_Options...>& __opts)
 {
@@ -503,15 +608,18 @@ template <typename... Levels,
 /**
  * @brief Construct kernel configuration
  *
- * This function takes thread hierarchy dimensions description and any number of launch options and combines
- * them into kernel configuration object. It can be then used along with kernel function and its argument to launch
- * that kernel with the specified dimensions and options
+ * This function takes thread hierarchy dimensions description and any number of
+ * launch options and combines them into kernel configuration object. It can be
+ * then used along with kernel function and its argument to launch that kernel
+ * with the specified dimensions and options
  *
  * @param dims
- * Object describing dimensions of the thread hierarchy in the resulting kernel configuration object
+ * Object describing dimensions of the thread hierarchy in the resulting kernel
+ * configuration object
  *
  * @param opts
- * Variadic number of launch configuration options to be included in the resulting kernel configuration object
+ * Variadic number of launch configuration options to be included in the
+ * resulting kernel configuration object
  */
 template <typename BottomUnit, typename... Levels, typename... Opts>
 [[nodiscard]] constexpr auto
@@ -521,8 +629,8 @@ make_config(const hierarchy_dimensions<BottomUnit, Levels...>& dims, const Opts&
 }
 
 /**
- * @brief A shorthand for creating a kernel configuration with a hierarchy of CUDA threads evenly
- * distributing elements among blocks and threads.
+ * @brief A shorthand for creating a kernel configuration with a hierarchy of
+ * CUDA threads evenly distributing elements among blocks and threads.
  *
  * @par Snippet
  * @code
@@ -535,7 +643,8 @@ make_config(const hierarchy_dimensions<BottomUnit, Levels...>& dims, const Opts&
  * // Equivalent to:
  * constexpr int threadsPerBlock = 256;
  * int blocksPerGrid = (numElements + threadsPerBlock - 1) / threadsPerBlock;
- * auto dims = make_hierarchy(grid_dims(blocksPerGrid), block_dims<threadsPerBlock>());
+ * auto dims = make_hierarchy(grid_dims(blocksPerGrid),
+ * block_dims<threadsPerBlock>());
  * @endcode
  */
 template <int _ThreadsPerBlock>
@@ -605,7 +714,8 @@ template <typename Dimensions, typename... Options>
 
   ::cuda::std::apply(
     [&](auto&... config_options) {
-      // Use short-cutting && to skip the rest on error, is this too convoluted?
+      // Use short-cutting && to skip the rest on error, is this too
+      // convoluted?
       (void) (... && [&](cudaError_t call_status) {
         status = call_status;
         return call_status == cudaSuccess;
@@ -624,66 +734,32 @@ template <typename Dimensions, typename... Options>
 
   ::cuda::std::apply(
     [&](auto&... config_options) {
-      // Use short-cutting && to skip the rest on error, is this too convoluted?
+      // Use short-cutting && to skip the rest on error, is this too
+      // convoluted?
       (void) (... && [&](cudaError_t call_status) {
         status = call_status;
         return call_status == cudaSuccess;
-      }(config_options.apply(cuda_config, kernel)));
+      }(::cuda::experimental::__apply_launch_option(config_options, cuda_config, kernel)));
     },
     config.options);
 
   return status;
 }
-
-// Needs to be a char casted to the appropriate type, if it would be a template
-//  different instantiations would clash the extern symbol
-[[nodiscard]] _CCCL_DEVICE static char* get_smem_ptr() noexcept
-{
-  extern __shared__ char dynamic_smem[];
-
-  return &dynamic_smem[0];
-}
 } // namespace __detail
 
-// Might consider cutting this one due to being a potential trap with missing & in auto& var = dynamic_smem_ref(...);
-/**
- * @brief Returns a reference to shared memory variable in dynamic shared memory
- *
- * This function returns a reference to a variable placed in dynamic shared memory.
- * It accepts a kernel_config containing a dynamic_shared_memory_option.
- * Its only usable when dynamic shared memory option is holding a single object.
- */
-template <typename Dimensions, typename... Options>
-_CCCL_DEVICE auto& dynamic_smem_ref(const kernel_config<Dimensions, Options...>& config) noexcept
+namespace device
 {
-  auto& option = __detail::find_option_in_tuple<__detail::launch_option_kind::dynamic_shared_memory>(config.options);
-  using option_type = ::cuda::std::remove_reference_t<decltype(option)>;
-  static_assert(!::cuda::std::is_same_v<option_type, __detail::option_not_found>,
-                "Dynamic shared memory option not found in the kernel configuration");
-  static_assert(option_type::extent == 1, "Usable only on dynamic shared memory with a single element");
-
-  return *reinterpret_cast<typename option_type::content_type*>(__detail::get_smem_ptr());
-}
-
-/**
- * @brief Returns a cuda::std::span object referring to dynamic shared memory region
- *
- * This function returns a std::std::span object referring to the dynamic shared memory region
- * configured when launching the kernel.
- * It accepts a kernel_config containing a dynamic_shared_memory_option.
- * It is typed and sized according to the launch option provided as input.
- */
-template <typename Dimensions, typename... Options>
-_CCCL_DEVICE auto dynamic_smem_span(const kernel_config<Dimensions, Options...>& config) noexcept
+template <class _Dims, class... _Opts>
+_CCCL_DEVICE_API decltype(auto) dynamic_shared_memory_view(const kernel_config<_Dims, _Opts...>& __config) noexcept
 {
-  auto& option = __detail::find_option_in_tuple<__detail::launch_option_kind::dynamic_shared_memory>(config.options);
-  using option_type = ::cuda::std::remove_reference_t<decltype(option)>;
-  static_assert(!::cuda::std::is_same_v<option_type, __detail::option_not_found>,
+  auto& __opt = __detail::find_option_in_tuple<__detail::launch_option_kind::dynamic_shared_memory>(__config.options);
+  using _Opt  = ::cuda::std::remove_reference_t<decltype(__opt)>;
+  static_assert(!::cuda::std::is_same_v<_Opt, __detail::option_not_found>,
                 "Dynamic shared memory option not found in the kernel configuration");
-
-  return cuda::std::span<typename option_type::content_type, option_type::extent>(
-    reinterpret_cast<typename option_type::content_type*>(__detail::get_smem_ptr()), option.size);
+  extern __shared__ unsigned char __cccl_device_dyn_smem[];
+  return __opt.__make_view(reinterpret_cast<typename _Opt::value_type*>(__cccl_device_dyn_smem));
 }
+} // namespace device
 } // namespace cuda::experimental
 #endif // _CCCL_STD_VER >= 2017
 

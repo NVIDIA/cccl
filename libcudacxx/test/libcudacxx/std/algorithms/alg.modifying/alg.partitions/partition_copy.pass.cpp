@@ -17,7 +17,7 @@
 //                    OutputIterator1 out_true, OutputIterator2 out_false,
 //                    Predicate pred);
 
-#include <cuda/std/__algorithm_>
+#include <cuda/std/algorithm>
 #include <cuda/std/cassert>
 
 #include "test_iterators.h"
@@ -37,8 +37,8 @@ __host__ __device__ constexpr bool test()
     const int ia[] = {1, 2, 3, 4, 6, 8, 5, 7};
     int r1[10]     = {0};
     int r2[10]     = {0};
-    typedef cuda::std::pair<cpp17_output_iterator<int*>, int*> P;
-    P p = cuda::std::partition_copy(
+    using P        = cuda::std::pair<cpp17_output_iterator<int*>, int*>;
+    P p            = cuda::std::partition_copy(
       cpp17_input_iterator<const int*>(cuda::std::begin(ia)),
       cpp17_input_iterator<const int*>(cuda::std::end(ia)),
       cpp17_output_iterator<int*>(r1),

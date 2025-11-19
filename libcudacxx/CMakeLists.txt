@@ -22,7 +22,11 @@ include(CTest)
 enable_testing()
 
 # Add codegen module
-option(libcudacxx_ENABLE_CODEGEN "Enable libcudacxx's atomics backend codegen and tests." OFF)
+option(
+  libcudacxx_ENABLE_CODEGEN
+  "Enable libcudacxx's atomics backend codegen and tests."
+  OFF
+)
 if (libcudacxx_ENABLE_CODEGEN)
   add_subdirectory(codegen)
 endif()
@@ -34,7 +38,7 @@ set(LLVM_PATH "${libcudacxx_SOURCE_DIR}" CACHE STRING "" FORCE)
 option(LIBCUDACXX_ENABLE_CUDA "Enable the CUDA language support." ON)
 if (LIBCUDACXX_ENABLE_CUDA)
   enable_language(CUDA)
-endif ()
+endif()
 
 option(LIBCUDACXX_ENABLE_LIBCUDACXX_TESTS "Enable libcu++ tests." ON)
 if (LIBCUDACXX_ENABLE_LIBCUDACXX_TESTS)

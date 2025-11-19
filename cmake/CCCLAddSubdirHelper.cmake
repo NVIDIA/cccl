@@ -3,9 +3,21 @@
 # `PACKAGE_PATH` the path to the project's CMake package config files.
 function(cccl_add_subdir_helper project_name)
   set(options)
-  set(oneValueArgs PACKAGE_PATH PACKAGE_FILEBASE REQUIRED_COMPONENTS OPTIONAL_COMPONENTS)
+  set(
+    oneValueArgs
+    PACKAGE_PATH
+    PACKAGE_FILEBASE
+    REQUIRED_COMPONENTS
+    OPTIONAL_COMPONENTS
+  )
   set(multiValueArgs)
-  cmake_parse_arguments(CCCL_SUBDIR "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
+  cmake_parse_arguments(
+    CCCL_SUBDIR
+    "${options}"
+    "${oneValueArgs}"
+    "${multiValueArgs}"
+    ${ARGN}
+  )
 
   if (DEFINED CCCL_SUBDIR_PACKAGE_FILEBASE)
     set(package_filebase "${CCCL_SUBDIR_PACKAGE_FILEBASE}")
@@ -16,20 +28,29 @@ function(cccl_add_subdir_helper project_name)
   if (DEFINED CCCL_SUBDIR_PACKAGE_PATH)
     set(package_prefix "${CCCL_SUBDIR_PACKAGE_PATH}/${package_filebase}")
   else()
-    set(package_prefix "${CCCL_SOURCE_DIR}/lib/cmake/${package_filebase}/${package_filebase}")
+    set(
+      package_prefix
+      "${CCCL_SOURCE_DIR}/lib/cmake/${package_filebase}/${package_filebase}"
+    )
   endif()
 
   set(CMAKE_FIND_PACKAGE_NAME ${project_name})
   set(${CMAKE_FIND_PACKAGE_NAME}_FIND_COMPONENTS)
   if (DEFINED CCCL_SUBDIR_REQUIRED_COMPONENTS)
-    list(APPEND ${CMAKE_FIND_PACKAGE_NAME}_FIND_COMPONENTS ${CCCL_SUBDIR_REQUIRED_COMPONENTS})
-    foreach(component IN LISTS CCCL_SUBDIR_REQUIRED_COMPONENTS)
+    list(
+      APPEND ${CMAKE_FIND_PACKAGE_NAME}_FIND_COMPONENTS
+      ${CCCL_SUBDIR_REQUIRED_COMPONENTS}
+    )
+    foreach (component IN LISTS CCCL_SUBDIR_REQUIRED_COMPONENTS)
       set(${CMAKE_FIND_PACKAGE_NAME}_FIND_REQUIRED_${component} TRUE)
     endforeach()
   endif()
 
   if (DEFINED CCCL_SUBDIR_OPTIONAL_COMPONENTS)
-    list(APPEND ${CMAKE_FIND_PACKAGE_NAME}_FIND_COMPONENTS ${CCCL_SUBDIR_OPTIONAL_COMPONENTS})
+    list(
+      APPEND ${CMAKE_FIND_PACKAGE_NAME}_FIND_COMPONENTS
+      ${CCCL_SUBDIR_OPTIONAL_COMPONENTS}
+    )
   endif()
 
   # This effectively does a `find_package` actually going through the find_package

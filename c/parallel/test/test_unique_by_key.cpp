@@ -204,6 +204,50 @@ C2H_TEST("DeviceSelect::UniqueByKey works", "[unique_by_key]", key_types)
   REQUIRE(input_pairs == output_pairs);
 }
 
+struct UniqueByKey_KeysOnly_Fixture_Tag;
+C2H_TEST("DeviceSelect::UniqueByKey works with keys only", "[unique_by_key]", key_types)
+{
+  using key_t = c2h::get<0, TestType>;
+
+  const int num_items = GENERATE_COPY(take(2, random(1, 1000000)));
+
+  operation_t op                = make_operation("op", get_unique_by_key_op(get_type_info<key_t>().type));
+  std::vector<key_t> input_keys = generate<key_t>(num_items);
+
+  pointer_t<key_t> input_keys_it(input_keys);
+  iterator_t<uint8_t, random_access_iterator_state_t<uint8_t>> input_values_it =
+    make_discard_iterator<uint8_t>(iterator_kind::INPUT, "unsigned char", "in");
+  pointer_t<key_t> output_keys_it(num_items);
+  iterator_t<uint8_t, random_access_iterator_state_t<uint8_t>> output_values_it =
+    make_discard_iterator<uint8_t>(iterator_kind::OUTPUT, "unsigned char", "out");
+  pointer_t<int> output_num_selected_it(1);
+
+  auto& build_cache = get_cache<UniqueByKey_KeysOnly_Fixture_Tag>();
+  // key: (input_type, output_type, num_selected_type)
+  const auto& test_key = make_key<key_t, item_t, int>();
+
+  unique_by_key(
+    input_keys_it,
+    input_values_it,
+    output_keys_it,
+    output_values_it,
+    output_num_selected_it,
+    op,
+    num_items,
+    build_cache,
+    test_key);
+
+  const auto boundary = std::unique(input_keys.begin(), input_keys.end());
+  int num_selected    = output_num_selected_it[0];
+  REQUIRE((boundary - input_keys.begin()) == num_selected);
+
+  std::vector<key_t> host_output_keys(output_keys_it);
+  host_output_keys.erase(host_output_keys.begin() + num_selected, host_output_keys.end());
+  input_keys.erase(boundary, input_keys.end());
+
+  REQUIRE(input_keys == host_output_keys);
+}
+
 using floating_point_types = c2h::type_list<
 #if _CCCL_HAS_NVFP16()
   __half,

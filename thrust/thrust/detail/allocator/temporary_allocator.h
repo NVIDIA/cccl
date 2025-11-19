@@ -32,9 +32,9 @@
 #include <thrust/detail/execution_policy.h>
 #include <thrust/detail/temporary_buffer.h>
 #include <thrust/memory.h>
-#include <thrust/pair.h>
 #include <thrust/system/detail/bad_alloc.h>
 
+#include <cuda/std/__utility/pair.h>
 #include <cuda/std/cassert>
 
 #include <nv/target>
@@ -108,7 +108,7 @@ public:
   } // end system()
 
 private:
-  using pointer_and_size = thrust::pair<pointer, size_type>;
+  using pointer_and_size = ::cuda::std::pair<pointer, size_type>;
 }; // end temporary_allocator
 } // namespace detail
 THRUST_NAMESPACE_END
