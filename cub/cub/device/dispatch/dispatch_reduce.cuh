@@ -625,17 +625,17 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
   KernelLauncherFactory launcher_factory = {})
 {
   // from Dispatch()
-  int ptx_version = 0;
-  if (const auto error = CubDebug(launcher_factory.PtxVersion(ptx_version)))
+  ::cuda::arch_id arch_id;
+  if (const auto error = CubDebug(launcher_factory.ArchId(arch_id)))
   {
     return error;
   }
 
-  const reduce_arch_policy active_policy = arch_policies(ptx_version);
+  const reduce_arch_policy active_policy = arch_policies(arch_id);
 #if !_CCCL_COMPILER(NVRTC) && defined(CUB_DEBUG_LOG)
   NV_IF_TARGET(NV_IS_HOST,
                (std::stringstream ss; ss << active_policy;
-                _CubLog("Dispatching DeviceReduce to arch %d with tuning: %s\n", ptx_version, ss.str().c_str());))
+                _CubLog("Dispatching DeviceReduce to arch %d with tuning: %s\n", (int) arch_id, ss.str().c_str());))
 #endif // !_CCCL_COMPILER(NVRTC) && defined(CUB_DEBUG_LOG)
 
   auto invoke_single_tile = [&] {
