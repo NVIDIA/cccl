@@ -584,7 +584,7 @@ template <typename AccumT,
           typename TransformOpT,
           typename KernelSource,
           typename KernelLauncherFactory>
-CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto invoke_passes(
+CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t invoke_passes(
   void* d_temp_storage,
   size_t& temp_storage_bytes,
   InputIteratorT d_in,
