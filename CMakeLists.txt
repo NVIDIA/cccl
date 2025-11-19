@@ -41,6 +41,7 @@ option(CCCL_ENABLE_TESTING "Enable CUDA C++ Core Library tests." OFF)
 option(CCCL_ENABLE_EXAMPLES "Enable CUDA C++ Core Library examples." OFF)
 option(CCCL_ENABLE_C_PARALLEL "Enable CUDA C Parallel Library." OFF)
 option(CCCL_ENABLE_C_EXPERIMENTAL_STF "Enable CUDA C CUDASTF Library." OFF)
+option(CCCL_ENABLE_NVBENCH_HELPER "Enable the NVBench Helper Dev Build." OFF)
 
 if ("NVHPC" STREQUAL "${CMAKE_CXX_COMPILER_ID}")
   set(CCCL_ENABLE_BENCHMARKS OFF)
@@ -98,11 +99,16 @@ if (CCCL_ENABLE_C_PARALLEL OR CCCL_ENABLE_C_EXPERIMENTAL_STF)
 endif()
 
 if (CCCL_ENABLE_TESTING)
-  add_subdirectory(test)
+  add_subdirectory("ci")
+  add_subdirectory("test")
 endif()
 
 if (CCCL_ENABLE_EXAMPLES)
   add_subdirectory(examples)
+endif()
+
+if (CCCL_ENABLE_NVBENCH_HELPER)
+  add_subdirectory(nvbench_helper)
 endif()
 
 # Must stay at the end of this file.

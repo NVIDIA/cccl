@@ -38,7 +38,6 @@
 #include <cuda/std/__type_traits/disjunction.h>
 #include <cuda/std/__type_traits/fold.h>
 #include <cuda/std/__type_traits/is_arithmetic.h>
-#include <cuda/std/__type_traits/is_constant_evaluated.h>
 #include <cuda/std/__type_traits/is_trivially_copyable.h>
 #include <cuda/std/__type_traits/remove_cvref.h>
 #include <cuda/std/__utility/move.h>
@@ -1064,7 +1063,7 @@ _CCCL_API void __sort_dispatch(_Type* __first, _Type* __last, less<>&)
 template <class _AlgPolicy, class _RandomAccessIterator, class _Comp>
 _CCCL_API constexpr void __sort_impl(_RandomAccessIterator __first, _RandomAccessIterator __last, _Comp& __comp)
 {
-  if (::cuda::std::is_constant_evaluated())
+  _CCCL_IF_CONSTEVAL
   {
     ::cuda::std::__partial_sort<_AlgPolicy>(
       ::cuda::std::__unwrap_iter(__first),

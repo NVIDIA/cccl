@@ -23,7 +23,6 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__cccl/attributes.h>
 #include <cuda/std/__cccl/extended_data_types.h>
 #include <cuda/std/__cccl/host_std_lib.h>
 
