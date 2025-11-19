@@ -575,6 +575,139 @@ using DispatchTransformReduce =
 
 namespace detail::reduce
 {
+template <typename InputIteratorT,
+          typename OutputIteratorT,
+          typename OffsetT,
+          typename ReductionOpT,
+          typename InitT,
+          typename TransformOpT,
+          typename AccumT,
+          typename KernelSource,
+          typename KernelLauncherFactory>
+auto invoke_passes(
+  void* d_temp_storage,
+  size_t& temp_storage_bytes,
+  InputIteratorT d_in,
+  OutputIteratorT d_out,
+  OffsetT num_items,
+  ReductionOpT reduction_op,
+  InitT init,
+  cudaStream_t stream,
+  TransformOpT transform_op,
+  reduce_arch_policy active_policy,
+  KernelSource kernel_source,
+  KernelLauncherFactory launcher_factory)
+{
+  // Get SM count
+  int sm_count;
+  if (const auto error = CubDebug(launcher_factory.MultiProcessorCount(sm_count)))
+  {
+    return error;
+  }
+
+  // Init regular kernel configuration
+  const auto tile_size = active_policy.reduce_policy.block_threads * active_policy.reduce_policy.items_per_thread;
+  int sm_occupancy;
+  if (const auto error = CubDebug(launcher_factory.MaxSmOccupancy(
+        sm_occupancy, kernel_source.ReductionKernel(), active_policy.reduce_policy.block_threads)))
+  {
+    return error;
+  }
+
+  const int reduce_device_occupancy = sm_occupancy * sm_count;
+
+  // Even-share work distribution
+  const int max_blocks = reduce_device_occupancy * detail::subscription_factor;
+  GridEvenShare<OffsetT> even_share;
+  even_share.DispatchInit(num_items, max_blocks, tile_size);
+
+  // Temporary storage allocation requirements
+  void* allocations[1]       = {};
+  size_t allocation_sizes[1] = {
+    max_blocks * kernel_source.AccumSize() // bytes needed for privatized block reductions
+  };
+
+  // Alias the temporary allocations from the single storage blob (or
+  // compute the necessary size of the blob)
+  if (const auto error =
+        CubDebug(detail::alias_temporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes)))
+  {
+    return error;
+  }
+
+  if (d_temp_storage == nullptr)
+  {
+    // Return if the caller is simply requesting the size of the storage allocation
+    return cudaSuccess;
+  }
+
+  // Alias the allocation for the privatized per-block reductions
+  AccumT* d_block_reductions = static_cast<AccumT*>(allocations[0]);
+
+  // Get grid size for device_reduce_sweep_kernel
+  const int reduce_grid_size = even_share.grid_size;
+
+// Log device_reduce_sweep_kernel configuration
+#ifdef CUB_DEBUG_LOG
+  _CubLog("Invoking DeviceReduceKernel<<<%lu, %d, 0, %lld>>>(), %d items "
+          "per thread, %d SM occupancy\n",
+          (unsigned long) reduce_grid_size,
+          active_policy.reduce_policy.block_threads,
+          (long long) stream,
+          active_policy.reduce_policy.items_per_thread,
+          sm_occupancy);
+#endif // CUB_DEBUG_LOG
+
+  // Invoke DeviceReduceKernel
+  launcher_factory(reduce_grid_size, active_policy.reduce_policy.block_threads, 0, stream)
+    .doit(kernel_source.ReductionKernel(), d_in, d_block_reductions, num_items, even_share, reduction_op, transform_op);
+
+  // Check for failure to launch
+  if (const auto error = CubDebug(cudaPeekAtLastError()))
+  {
+    return error;
+  }
+
+  // Sync the stream if specified to flush runtime errors
+  if (const auto error = CubDebug(detail::DebugSyncStream(stream)))
+  {
+    return error;
+  }
+
+// Log single_reduce_sweep_kernel configuration
+#ifdef CUB_DEBUG_LOG
+  _CubLog("Invoking DeviceReduceSingleTileKernel<<<1, %d, 0, %lld>>>(), "
+          "%d items per thread\n",
+          active_policy.single_tile_policy.block_threads,
+          (long long) stream,
+          active_policy.single_tile_policy.items_per_thread);
+#endif // CUB_DEBUG_LOG
+
+  // Invoke DeviceReduceSingleTileKernel
+  launcher_factory(1, active_policy.single_tile_policy.block_threads, 0, stream)
+    .doit(kernel_source.SingleTileSecondKernel(),
+          d_block_reductions,
+          d_out,
+          reduce_grid_size,
+          reduction_op,
+          init,
+          ::cuda::std::identity{});
+
+  // Check for failure to launch
+  if (const auto error = CubDebug(cudaPeekAtLastError()))
+  {
+    return error;
+  }
+
+  // Sync the stream if specified to flush runtime errors
+  if (const auto error = CubDebug(detail::DebugSyncStream(stream)))
+  {
+    return error;
+  }
+
+  return cudaSuccess;
+};
+
 struct no_override
 {};
 
@@ -638,7 +771,10 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
                 _CubLog("Dispatching DeviceReduce to arch %d with tuning: %s\n", (int) arch_id, ss.str().c_str());))
 #endif // !_CCCL_COMPILER(NVRTC) && defined(CUB_DEBUG_LOG)
 
-  auto invoke_single_tile = [&] {
+  // Check for small, single tile size
+  if (num_items <= static_cast<OffsetT>(
+        active_policy.single_tile_policy.block_threads * active_policy.single_tile_policy.items_per_thread))
+  {
     // Return if the caller is simply requesting the size of the storage allocation
     if (d_temp_storage == nullptr)
     {
@@ -672,130 +808,22 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
     }
 
     return cudaSuccess;
-  };
-
-  auto invoke_passes = [&] {
-    // Get SM count
-    int sm_count;
-    if (const auto error = CubDebug(launcher_factory.MultiProcessorCount(sm_count)))
-    {
-      return error;
-    }
-
-    // Init regular kernel configuration
-    const auto tile_size = active_policy.reduce_policy.block_threads * active_policy.reduce_policy.items_per_thread;
-    int sm_occupancy;
-    if (const auto error = CubDebug(launcher_factory.MaxSmOccupancy(
-          sm_occupancy, kernel_source.ReductionKernel(), active_policy.reduce_policy.block_threads)))
-    {
-      return error;
-    }
-
-    const int reduce_device_occupancy = sm_occupancy * sm_count;
-
-    // Even-share work distribution
-    const int max_blocks = reduce_device_occupancy * detail::subscription_factor;
-    GridEvenShare<OffsetT> even_share;
-    even_share.DispatchInit(num_items, max_blocks, tile_size);
-
-    // Temporary storage allocation requirements
-    void* allocations[1]       = {};
-    size_t allocation_sizes[1] = {
-      max_blocks * kernel_source.AccumSize() // bytes needed for privatized block reductions
-    };
-
-    // Alias the temporary allocations from the single storage blob (or
-    // compute the necessary size of the blob)
-    if (const auto error =
-          CubDebug(detail::alias_temporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes)))
-    {
-      return error;
-    }
-
-    if (d_temp_storage == nullptr)
-    {
-      // Return if the caller is simply requesting the size of the storage allocation
-      return cudaSuccess;
-    }
-
-    // Alias the allocation for the privatized per-block reductions
-    AccumT* d_block_reductions = static_cast<AccumT*>(allocations[0]);
-
-    // Get grid size for device_reduce_sweep_kernel
-    const int reduce_grid_size = even_share.grid_size;
-
-// Log device_reduce_sweep_kernel configuration
-#ifdef CUB_DEBUG_LOG
-    _CubLog("Invoking DeviceReduceKernel<<<%lu, %d, 0, %lld>>>(), %d items "
-            "per thread, %d SM occupancy\n",
-            (unsigned long) reduce_grid_size,
-            active_policy.reduce_policy.block_threads,
-            (long long) stream,
-            active_policy.reduce_policy.items_per_thread,
-            sm_occupancy);
-#endif // CUB_DEBUG_LOG
-
-    // Invoke DeviceReduceKernel
-    launcher_factory(reduce_grid_size, active_policy.reduce_policy.block_threads, 0, stream)
-      .doit(
-        kernel_source.ReductionKernel(), d_in, d_block_reductions, num_items, even_share, reduction_op, transform_op);
-
-    // Check for failure to launch
-    if (const auto error = CubDebug(cudaPeekAtLastError()))
-    {
-      return error;
-    }
-
-    // Sync the stream if specified to flush runtime errors
-    if (const auto error = CubDebug(detail::DebugSyncStream(stream)))
-    {
-      return error;
-    }
-
-// Log single_reduce_sweep_kernel configuration
-#ifdef CUB_DEBUG_LOG
-    _CubLog("Invoking DeviceReduceSingleTileKernel<<<1, %d, 0, %lld>>>(), "
-            "%d items per thread\n",
-            active_policy.single_tile_policy.block_threads,
-            (long long) stream,
-            active_policy.single_tile_policy.items_per_thread);
-#endif // CUB_DEBUG_LOG
-
-    // Invoke DeviceReduceSingleTileKernel
-    launcher_factory(1, active_policy.single_tile_policy.block_threads, 0, stream)
-      .doit(kernel_source.SingleTileSecondKernel(),
-            d_block_reductions,
-            d_out,
-            reduce_grid_size,
-            reduction_op,
-            init,
-            ::cuda::std::identity{});
-
-    // Check for failure to launch
-    if (const auto error = CubDebug(cudaPeekAtLastError()))
-    {
-      return error;
-    }
-
-    // Sync the stream if specified to flush runtime errors
-    if (const auto error = CubDebug(detail::DebugSyncStream(stream)))
-    {
-      return error;
-    }
-
-    return cudaSuccess;
-  };
-
-  // from Invoke()
-  if (num_items <= static_cast<OffsetT>(
-        active_policy.single_tile_policy.block_threads * active_policy.single_tile_policy.items_per_thread))
-  {
-    // Small, single tile size
-    return invoke_single_tile();
   }
 
   // Regular size
-  return invoke_passes();
+  return invoke_passes(
+    d_temp_storage,
+    temp_storage_bytes,
+    d_in,
+    d_out,
+    num_items,
+    reduction_op,
+    init,
+    stream,
+    transform_op,
+    active_policy,
+    kernel_source,
+    launcher_factory);
 }
 } // namespace detail::reduce
 
