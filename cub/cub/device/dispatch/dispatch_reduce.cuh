@@ -661,11 +661,15 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
 
     // Check for failure to launch
     if (const auto error = CubDebug(cudaPeekAtLastError()))
+    {
       return error;
+    }
 
     // Sync the stream if specified to flush runtime errors
     if (const auto error = CubDebug(detail::DebugSyncStream(stream)))
+    {
       return error;
+    }
 
     return cudaSuccess;
   };
@@ -738,11 +742,15 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
 
     // Check for failure to launch
     if (const auto error = CubDebug(cudaPeekAtLastError()))
+    {
       return error;
+    }
 
     // Sync the stream if specified to flush runtime errors
     if (const auto error = CubDebug(detail::DebugSyncStream(stream)))
+    {
       return error;
+    }
 
 // Log single_reduce_sweep_kernel configuration
 #ifdef CUB_DEBUG_LOG
@@ -765,11 +773,15 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
 
     // Check for failure to launch
     if (const auto error = CubDebug(cudaPeekAtLastError()))
+    {
       return error;
+    }
 
     // Sync the stream if specified to flush runtime errors
     if (const auto error = CubDebug(detail::DebugSyncStream(stream)))
+    {
       return error;
+    }
 
     return cudaSuccess;
   };
