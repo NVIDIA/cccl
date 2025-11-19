@@ -116,6 +116,13 @@ exclude_patterns = [
 html_theme = "nvidia_sphinx_theme"
 
 html_logo = "_static/nvidia-logo.png"
+version_match = "unstable"
+
+html_baseurl = (
+    os.environ.get("CCCL_DOCS_BASE_URL", "https://nvidia.github.io/cccl/").rstrip("/")
+    + "/"
+)
+
 html_theme_options = {
     "icon_links": [
         {
@@ -133,6 +140,10 @@ html_theme_options = {
     "footer_end": ["sphinx-version"],
     "sidebar_includehidden": True,
     "collapse_navigation": False,
+    "switcher": {
+        "json_url": f"{html_baseurl}nv-versions.json",
+        "version_match": version_match,
+    },
 }
 
 html_static_path = ["_static"] if os.path.exists("_static") else []

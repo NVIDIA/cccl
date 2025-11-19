@@ -195,4 +195,22 @@ echo "Building documentation with Sphinx..."
 # Use the virtual environment's Python
 python -m sphinx.cmd.build -b html -j auto . ${BUILDDIR}/html ${SPHINXOPTS}
 
+# Generate version switcher data for local previews
+BASE_URL="${CCCL_DOCS_BASE_URL:-https://nvidia.github.io/cccl/}"
+BASE_URL="${BASE_URL%/}/"
+VERSION_NAME="${DOCS_VERSION_NAME:-unstable}"
+VERSION_LATEST="${DOCS_VERSION_LATEST:-true}"
+
+cat > "${BUILDDIR}/html/nv-versions.json" <<EOF
+{
+  "versions": [
+    {
+      "version": "${VERSION_NAME}",
+      "url": "${BASE_URL}${VERSION_NAME}/",
+      "latest": ${VERSION_LATEST}
+    }
+  ]
+}
+EOF
+
 echo "Documentation build complete! HTML output is in ${BUILDDIR}/html/"

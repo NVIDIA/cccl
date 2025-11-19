@@ -113,7 +113,7 @@ ignore_paths=(
   ".github/ISSUE_TEMPLATE"
   ".github/PULL_REQUEST_TEMPLATE.md"
   ".github/workflows/backport-prs.yml"
-  ".github/workflows/build-docs.yml"
+  ".github/workflows/docs-deploy.yml"
   ".github/workflows/build-rapids.yml"
   ".github/workflows/project_automation" # All project automation workflows
   ".github/workflows/triage_rotation.yml"

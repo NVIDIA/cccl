@@ -1,0 +1,156 @@
+# Usage:
+#   - Automatic deploys run on pushes to main and publish docs under docs/unstable/.
+#   - Manual workflow_dispatch accepts:
+#       * destination_override: publish into a custom docs/<dir> (e.g. for fork testing)
+#       * latest_override: set to "true" or "false" to control the "latest" flag in nv-versions.json
+#   - Root assets (index.html redirect, nv-versions.json, objects.inv, .nojekyll) are always rebuilt.
+#   - Base URL is computed from GITHUB_REPOSITORY (owner/repo) for both push and manual runs.
+name: Deploy CCCL Documentation
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+    inputs:
+      destination_override:
+        description: "Directory under docs/ to publish to (e.g. unstable, 3.0)"
+        required: false
+        type: string
+      latest_override:
+        description: "Mark this build as the latest version (true/false)"
+        required: false
+        type: boolean
+
+permissions:
+  contents: write
+  pages: write
+
+jobs:
+  deploy:
+    name: Build and deploy documentation
+    runs-on: ${{ github.repository == 'NVIDIA/cccl' && 'linux-amd64-cpu32' || 'ubuntu-latest' }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Compute base URL
+        id: base_url
+        shell: bash --noprofile --norc -euo pipefail {0}
+        run: |
+          repo_name="${GITHUB_REPOSITORY#*/}"
+          echo "base=https://${GITHUB_REPOSITORY_OWNER}.github.io/${repo_name}/" >> "${GITHUB_OUTPUT}"
+
+      - name: Determine deployment destination
+        id: destination
+        shell: bash --noprofile --norc -euo pipefail {0}
+        env:
+          DESTINATION_OVERRIDE: ${{ github.event.inputs.destination_override }}
+          LATEST_OVERRIDE: ${{ github.event.inputs.latest_override }}
+        run: |
+          if [ -n "${DESTINATION_OVERRIDE}" ]; then
+            dest_dir="${DESTINATION_OVERRIDE}"
+          else
+            ref="${GITHUB_REF#refs/heads/}"
+            if [ "$ref" = "main" ]; then
+              dest_dir="unstable"
+            elif [[ "$ref" == branch/* ]]; then
+              version="${ref#branch/}"
+              if [ -z "$version" ]; then
+                echo "Unable to determine version directory from branch '${ref}'." >&2
+                exit 1
+              fi
+              dest_dir="${version}"
+            else
+              echo "Branch '${ref}' is not configured for docs deployment." >&2
+              exit 1
+            fi
+          fi
+
+          is_latest="false"
+          if [ "${dest_dir}" = "unstable" ]; then
+            is_latest="true"
+          fi
+
+          if [ -n "${LATEST_OVERRIDE}" ]; then
+            case "${LATEST_OVERRIDE}" in
+              true|TRUE|True)
+                is_latest="true"
+                ;;
+              false|FALSE|False)
+                is_latest="false"
+                ;;
+            esac
+          fi
+
+          echo "destination_dir=${dest_dir}" >> "${GITHUB_OUTPUT}"
+          echo "is_latest=${is_latest}" >> "${GITHUB_OUTPUT}"
+
+      - name: Build docs
+        uses: ./.github/actions/docs-build
+        with:
+          upload_workflow_artifact: "false"
+        env:
+          CCCL_DOCS_BASE_URL: ${{ steps.base_url.outputs.base }}
+
+      - name: Prepare deployment artifacts
+        shell: bash --noprofile --norc -euo pipefail {0}
+        run: |
+          dest="${{ steps.destination.outputs.destination_dir }}"
+          is_latest="${{ steps.destination.outputs.is_latest }}"
+          root_dir="deploy/docs"
+          dest_dir="${root_dir}/${dest}"
+
+          mkdir -p "${dest_dir}"
+          mkdir -p "${root_dir}"
+
+          cp -a _site/. "${dest_dir}/"
+
+          base_url="${{ steps.base_url.outputs.base }}"
+          base_url="${base_url%/}/"
+
+          if [ -f "${dest_dir}/objects.inv" ]; then
+            cp "${dest_dir}/objects.inv" "${root_dir}/objects.inv"
+          else
+            echo "Warning: objects.inv not found in ${dest_dir}" >&2
+          fi
+
+          cat > "${root_dir}/index.html" <<'EOF'
+          <!DOCTYPE html>
+          <html lang="en">
+            <head>
+              <meta charset="utf-8">
+              <meta http-equiv="refresh" content="0; url=./unstable/">
+              <title>Redirecting…</title>
+            </head>
+            <body>
+              <p>This page has moved. If you are not redirected automatically, follow this <a href="./unstable/">link to the unstable documentation</a>.</p>
+            </body>
+          </html>
+          EOF
+
+          cat > "${root_dir}/nv-versions.json" <<EOF
+          {
+            "versions": [
+              {
+                "name": "${dest}",
+                "version": "${dest}",
+                "url": "${base_url}${dest}/",
+                "latest": ${is_latest},
+                "preferred": ${is_latest}
+              }
+            ]
+          }
+          EOF
+
+          touch "${root_dir}/.nojekyll"
+
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./deploy
+          publish_branch: gh-pages
+          keep_files: true

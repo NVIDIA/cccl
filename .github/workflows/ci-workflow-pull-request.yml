@@ -209,7 +209,7 @@ jobs:
       base_sha: ${{ needs.build-workflow.outputs.base_sha }}
 
   docs-build:
-    name: Build and deploy documentation preview
+    name: Build documentation
     needs: build-workflow
     if: >-
       ${{
@@ -217,14 +217,19 @@ jobs:
         needs.build-workflow.outputs.docs_enabled == 'true' &&
         github.repository == 'NVIDIA/cccl'
       }}
+    runs-on: ${{ github.repository == 'NVIDIA/cccl' && 'linux-amd64-cpu32' || 'ubuntu-latest' }}
     permissions:
-      contents: write
-      pull-requests: write
-      pages: write
-    uses: ./.github/workflows/build-docs.yml
-    with:
-      destination_dir: docs/pr-preview/pr-${{ needs.build-workflow.outputs.pr_number }}
-      pr_number: ${{ needs.build-workflow.outputs.pr_number }}
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Build docs
+        uses: ./.github/actions/docs-build
+        with:
+          upload_workflow_artifact: "false"
 
   build-rapids:
     name: Build RAPIDS (optional)
