@@ -7,6 +7,7 @@
 #include <thrust/iterator/discard_iterator.h>
 #include <thrust/iterator/retag.h>
 #include <thrust/scan.h>
+#include <thrust/tabulate.h>
 
 #include <cuda/functional>
 #include <cuda/std/array>

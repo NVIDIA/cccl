@@ -3,6 +3,7 @@
 #include <thrust/iterator/discard_iterator.h>
 #include <thrust/iterator/iterator_traits.h>
 #include <thrust/iterator/retag.h>
+#include <thrust/tabulate.h>
 #include <thrust/transform_scan.h>
 
 #include <algorithm>
