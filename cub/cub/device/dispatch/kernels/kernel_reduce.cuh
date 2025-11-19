@@ -135,6 +135,7 @@ __launch_bounds__(int(ArchPolicies{}(CUB_PTX_ARCH).reduce_policy.block_threads))
   TransformOpT transform_op)
 {
   static constexpr agent_reduce_policy policy = ArchPolicies{}(CUB_PTX_ARCH).reduce_policy;
+  // TODO(bgruber): pass policy directly as template argument to AgentReduce in C++20
   using agent_policy_t =
     AgentReducePolicy<policy.block_threads,
                       policy.items_per_thread,
@@ -221,6 +222,7 @@ CUB_DETAIL_KERNEL_ATTRIBUTES __launch_bounds__(
                                        TransformOpT transform_op)
 {
   static constexpr agent_reduce_policy policy = ArchPolicies{}(CUB_PTX_ARCH).single_tile_policy;
+  // TODO(bgruber): pass policy directly as template argument to AgentReduce in C++20
   using agent_policy_t =
     AgentReducePolicy<policy.block_threads,
                       policy.items_per_thread,
@@ -534,6 +536,7 @@ CUB_DETAIL_KERNEL_ATTRIBUTES __launch_bounds__(int(
 
   // Thread block type for reducing input tiles
   static constexpr agent_reduce_policy policy = ArchPolicies{}(CUB_PTX_ARCH).reduce_nondeterministic_policy;
+  // TODO(bgruber): pass policy directly as template argument to AgentReduce in C++20
   using agent_policy_t =
     AgentReducePolicy<policy.block_threads,
                       policy.items_per_thread,
