@@ -180,7 +180,8 @@ Furthermore, the tuning scripts require some additional python dependencies, whi
     pip install --user fpzip pandas scipy
 
 To select the appropriate CUDA GPU, first identify the GPU ID by running `nvidia-smi`, then set the
-desired GPU using `export CUDA_VISIBLE_DEVICES=x`, where `x` is the ID of the GPU you want to use (e.g., `1`).
+desired GPU using `export CUDA_VISIBLE_DEVICES=x <https://docs.nvidia.com/cuda/cuda-c-programming-guide/#cuda-environment-variables>`_,
+where `x` is the ID of the GPU you want to use (e.g., `1`).
 This ensures your application uses only the specified GPU.
 We can then run the full benchmark suite from the build directory with:
 
