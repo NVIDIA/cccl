@@ -710,7 +710,7 @@ inline unsigned int constexpr kernel_config_count_attr_space(const kernel_config
 
 template <typename Dimensions, typename... Options>
 [[nodiscard]] cudaError_t apply_kernel_config(
-  const kernel_config<Dimensions, Options...>& config, cudaLaunchConfig_t& cuda_config, void* kernel) noexcept
+  const kernel_config<Dimensions, Options...>& config, CUlaunchConfig& cuda_config, CUfunction kernel) noexcept
 {
   return ::cuda::std::apply(
     [&](auto&... config_options) {
@@ -718,33 +718,15 @@ template <typename Dimensions, typename... Options>
 
       // Use short-cutting && to skip the rest on error, is this too
       // convoluted?
-      (void) (... && [&](cudaError_t call_status) {
-        __status = call_status;
+      // For some reason gcc 7 complains about __status capture, so we pass it as a reference
+      (void) (... && [](cudaError_t call_status, cudaError_t& __status_out) {
+        __status_out = call_status;
         return call_status == cudaSuccess;
-      }(config_options.apply(cuda_config, kernel)));
+      }(::cuda::__apply_launch_option(config_options, cuda_config, kernel), __status));
+
       return __status;
     },
     config.options);
-}
-
-template <typename Dimensions, typename... Options>
-[[nodiscard]] cudaError_t apply_kernel_config(
-  const kernel_config<Dimensions, Options...>& config, CUlaunchConfig& cuda_config, CUfunction kernel) noexcept
-{
-  cudaError_t status = cudaSuccess;
-
-  ::cuda::std::apply(
-    [&](auto&... config_options) {
-      // Use short-cutting && to skip the rest on error, is this too
-      // convoluted?
-      (void) (... && [&](cudaError_t call_status) {
-        status = call_status;
-        return call_status == cudaSuccess;
-      }(::cuda::__apply_launch_option(config_options, cuda_config, kernel)));
-    },
-    config.options);
-
-  return status;
 }
 } // namespace __detail
 
