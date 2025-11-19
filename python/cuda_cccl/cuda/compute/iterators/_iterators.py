@@ -150,18 +150,6 @@ class IteratorBase:
         )
         return (abi_name, ltoir)
 
-    def get_input_dereference_signature(self):
-        return (
-            self.state_ptr_type,
-            types.CPointer(self.value_type),
-        )
-
-    def get_output_dereference_signature(self):
-        return (
-            self.state_ptr_type,
-            self.value_type,
-        )
-
     def get_input_dereference_ltoir(self) -> Tuple:
         from .._cccl_interop import _create_input_dereference_wrapper
 
