@@ -415,27 +415,17 @@ struct arch_policies // equivalent to the policy_hub, holds policies for a bunch
 
   [[nodiscard]] _CCCL_API constexpr auto operator()(::cuda::arch_id arch) const -> reduce_arch_policy
   {
-    if (arch >= ::cuda::arch_id::sm_100)
+    // if we don't have a tuning for sm100, fall through
+    auto sm100_tuning = get_sm100_tuning(accum_t, operation_t, offset_size, accum_size);
+    if (arch >= ::cuda::arch_id::sm_100 && sm100_tuning)
     {
-      // use tuning if we have one, otherwise, pick it from arch 600
       agent_reduce_policy rp{};
-      if (auto t = get_sm100_tuning(accum_t, operation_t, offset_size, accum_size))
-      {
-        auto [scaled_items, scaled_threads] = scale_mem_bound(t->threads, t->items, accum_size);
-        rp                                  = agent_reduce_policy{
-          scaled_threads, scaled_items, t->items_per_vec_load, BLOCK_REDUCE_WARP_REDUCTIONS, LOAD_LDG};
-      }
-      else
-      {
-        rp = (*this)(::cuda::arch_id::sm_60).reduce_policy;
-      }
+      auto [scaled_items, scaled_threads] = scale_mem_bound(sm100_tuning->threads, sm100_tuning->items, accum_size);
+      rp                                  = agent_reduce_policy{
+        scaled_threads, scaled_items, sm100_tuning->items_per_vec_load, BLOCK_REDUCE_WARP_REDUCTIONS, LOAD_LDG};
 
-      const auto rp_nondet = agent_reduce_policy{
-        rp.block_threads,
-        rp.items_per_thread,
-        rp.vector_load_length,
-        BLOCK_REDUCE_WARP_REDUCTIONS_NONDETERMINISTIC,
-        rp.load_modifier};
+      auto rp_nondet            = rp;
+      rp_nondet.block_algorithm = BLOCK_REDUCE_WARP_REDUCTIONS_NONDETERMINISTIC;
       return {rp, rp, rp, rp_nondet};
     }
 
@@ -450,12 +440,8 @@ struct arch_policies // equivalent to the policy_hub, holds policies for a bunch
       const auto rp =
         agent_reduce_policy{scaled_threads, scaled_items, items_per_vec_load, BLOCK_REDUCE_WARP_REDUCTIONS, LOAD_LDG};
 
-      const auto rp_nondet = agent_reduce_policy{
-        rp.block_threads,
-        rp.items_per_thread,
-        rp.vector_load_length,
-        BLOCK_REDUCE_WARP_REDUCTIONS_NONDETERMINISTIC,
-        rp.load_modifier};
+      auto rp_nondet            = rp;
+      rp_nondet.block_algorithm = BLOCK_REDUCE_WARP_REDUCTIONS_NONDETERMINISTIC;
       return {rp, rp, rp, rp_nondet};
     }
 
@@ -469,12 +455,8 @@ struct arch_policies // equivalent to the policy_hub, holds policies for a bunch
     const auto rp =
       agent_reduce_policy{scaled_threads, scaled_items, items_per_vec_load, BLOCK_REDUCE_WARP_REDUCTIONS, LOAD_LDG};
 
-    const auto rp_nondet = agent_reduce_policy{
-      rp.block_threads,
-      rp.items_per_thread,
-      rp.vector_load_length,
-      BLOCK_REDUCE_WARP_REDUCTIONS_NONDETERMINISTIC,
-      rp.load_modifier};
+    auto rp_nondet            = rp;
+    rp_nondet.block_algorithm = BLOCK_REDUCE_WARP_REDUCTIONS_NONDETERMINISTIC;
     return {rp, rp, rp, rp_nondet};
   }
 };
