@@ -38,8 +38,8 @@ struct __get_max_segment_size_t;
 
 //! A class template that can be used to specify the maximum segment size
 //! for segmented algorithms.
-//! \tparam _N The maximum segment size.
-template <size_t _N>
+//! \tparam _Size The maximum segment size.
+template <size_t _Size>
 struct max_segment_size : __guarantee
 {
   using value_type = size_t;
@@ -48,7 +48,7 @@ struct max_segment_size : __guarantee
 
   _CCCL_API constexpr operator value_type() const noexcept
   {
-    return _N;
+    return _Size;
   }
 
   [[nodiscard]] _CCCL_NODEBUG_API constexpr auto query(const __get_max_segment_size_t&) const noexcept
