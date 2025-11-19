@@ -68,6 +68,7 @@
         "CCCL_ENABLE_C_EXPERIMENTAL_STF": true,
         "CCCL_IGNORE_DEPRECATED_CPP_DIALECT": true,
         "LIBCUDACXX_ENABLE_LIBCUDACXX_TESTS": true,
+        "CUB_ENABLE_HEADER_TESTING": true,
         "CUB_ENABLE_TESTING": true,
         "CUB_ENABLE_EXAMPLES": true,
         "CUB_ENABLE_DIALECT_CPP17": true,
@@ -183,6 +184,7 @@
       "inherits": "base",
       "cacheVariables": {
         "CCCL_ENABLE_CUB": true,
+        "CUB_ENABLE_HEADER_TESTING": true,
         "CUB_ENABLE_TESTING": true,
         "CUB_ENABLE_EXAMPLES": true,
         "CUB_ENABLE_DIALECT_CPP17": false,
@@ -296,6 +298,15 @@
       "cacheVariables": {
         "CCCL_ENABLE_EXAMPLES": true,
         "CCCL_ENABLE_TESTING": true
+      }
+    },
+    {
+      "name": "nvbench-helper",
+      "displayName": "NVBench Helper",
+      "inherits": "base",
+      "cacheVariables": {
+        "CCCL_ENABLE_NVBENCH_HELPER": true,
+        "nvbench_helper_ENABLE_TESTING": true
       }
     },
     {
@@ -450,6 +461,10 @@
     {
       "name": "packaging",
       "configurePreset": "packaging"
+    },
+    {
+      "name": "nvbench-helper",
+      "configurePreset": "nvbench-helper"
     }
   ],
   "testPresets": [
@@ -748,6 +763,11 @@
     {
       "name": "packaging",
       "configurePreset": "packaging",
+      "inherits": "base"
+    },
+    {
+      "name": "nvbench-helper",
+      "configurePreset": "nvbench-helper",
       "inherits": "base"
     }
   ]
