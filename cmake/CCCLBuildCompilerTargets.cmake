@@ -76,6 +76,21 @@ function(
     endif()
   endif()
 
+  # Similarly, we expect the CXX and CUDA standards to match, if either is set:
+  if (CCCL_TOPLEVEL_PROJECT AND (CMAKE_CXX_STANDARD OR CMAKE_CUDA_STANDARD))
+    if (NOT CMAKE_CXX_STANDARD EQUAL CMAKE_CUDA_STANDARD)
+      message(
+        FATAL_ERROR
+        "CCCL developer builds require that CMAKE_CXX_STANDARD matches "
+        "CMAKE_CUDA_STANDARD when either is set:\n"
+        "CMAKE_CXX_STANDARD: ${CMAKE_CXX_STANDARD}\n"
+        "CMAKE_CUDA_STANDARD: ${CMAKE_CUDA_STANDARD}\n"
+        "Rerun cmake with:\n"
+        "\t\"-DCMAKE_CUDA_STANDARD=<std> -DCMAKE_CXX_STANDARD=<std>\"."
+      )
+    endif()
+  endif()
+
   add_library(${interface_target} INTERFACE)
 
   foreach (cuda_option IN LISTS cuda_compile_options)
