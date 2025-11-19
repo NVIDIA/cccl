@@ -21,7 +21,7 @@
 #include <cuda/std/optional>
 
 #if _CCCL_STD_VER >= 2020
-#  include <concepts>
+#  include <cuda/std/concepts>
 #endif // _CCCL_STD_VER >= 2020
 
 #if !_CCCL_COMPILER(NVRTC)
