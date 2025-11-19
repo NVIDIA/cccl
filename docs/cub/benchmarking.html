@@ -1611,7 +1611,7 @@ how the runtime changed from the base to the new version.</p>
 <section id="running-all-benchmarks-directly-from-the-command-line">
 <h2>Running all benchmarks directly from the command line<a class="headerlink" href="#running-all-benchmarks-directly-from-the-command-line" title="Link to this heading">#</a></h2>
 <p>To get a full snapshot of CUB’s performance, you can run all benchmarks and save the results.
-For example:</p>
+For example, inside a build directory you can run:</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>ninja<span class="w"> </span>cub.all.benches
 <span class="nv">benchmarks</span><span class="o">=</span><span class="k">$(</span>ls<span class="w"> </span>bin<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>cub.bench<span class="k">)</span><span class="p">;</span><span class="w"> </span><span class="nv">n</span><span class="o">=</span><span class="k">$(</span><span class="nb">echo</span><span class="w"> </span><span class="nv">$benchmarks</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>wc<span class="w"> </span>-w<span class="k">)</span><span class="p">;</span><span class="w"> </span><span class="nv">i</span><span class="o">=</span><span class="m">1</span><span class="p">;</span><span class="w"> </span><span class="se">\</span>
 <span class="k">for</span><span class="w"> </span>b<span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="nv">$benchmarks</span><span class="p">;</span><span class="w"> </span><span class="k">do</span><span class="w"> </span><span class="se">\</span>
@@ -1629,17 +1629,19 @@ You can archive those files for later comparison or analysis.</p>
 <p>The benchmark suite can also be run using the <a class="reference internal" href="tuning.html#cub-tuning"><span class="std std-ref">tuning</span></a> infrastructure.
 The tuning infrastructure handles building benchmarks itself, because it records the build times.
 Therefore, it’s critical that you run it in a clean build directory without any build artifacts.
-Running cmake is enough. Alternatively, you can also clean your build directory with.
-Furthermore, the tuning scripts require some additional python dependencies, which you have to install.</p>
-<p>To select the appropriate CUDA GPU, first identify the GPU ID by running <cite>nvidia-smi</cite>, then set the
-desired GPU using <cite>export CUDA_VISIBLE_DEVICES=x</cite>, where <cite>x</cite> is the ID of the GPU you want to use (e.g., <cite>1</cite>).
-This ensures your application uses only the specified GPU.</p>
+Running cmake is enough. Alternatively, you can also clean your build directory.
+Furthermore, the tuning scripts require some additional python dependencies, which you have to install:</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>ninja<span class="w"> </span>clean
 pip<span class="w"> </span>install<span class="w"> </span>--user<span class="w"> </span>fpzip<span class="w"> </span>pandas<span class="w"> </span>scipy
 </pre></div>
 </div>
-<p>We can then run the full benchmark suite from the build directory with:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>&lt;root_dir_to_cccl&gt;/cccl/benchmarks/scripts/run.py
+<p>To select the appropriate CUDA GPU, first identify the GPU ID by running <cite>nvidia-smi</cite>, then set the
+desired GPU using <a class="reference external" href="https://docs.nvidia.com/cuda/cuda-c-programming-guide/#cuda-environment-variables">export CUDA_VISIBLE_DEVICES=x</a>,
+where <cite>x</cite> is the ID of the GPU you want to use (e.g., <cite>1</cite>).
+This ensures your application uses only the specified GPU.
+We can then run the full benchmark suite from the build directory with:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">export</span><span class="w"> </span><span class="nv">CUDA_VISIBLE_DEVICES</span><span class="o">=</span><span class="m">0</span><span class="w"> </span><span class="c1"># or any other GPU ID</span>
+<span class="nv">PYTHONPATH</span><span class="o">=</span>../benchmarks/scripts<span class="w"> </span>../benchmarks/scripts/run.py
 </pre></div>
 </div>
 <p>You can expect the output to look like this:</p>
@@ -1655,8 +1657,9 @@ cub:<span class="w">  </span>812ba98d1
 </div>
 <p>The tuning infrastructure will build and execute all benchmarks and their variants one after each other,
 reporting the time in seconds it took to execute the benchmarked region.</p>
-<p>It’s also possible to benchmark a subset of algorithms and workloads:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>&lt;root_dir_to_cccl&gt;/cccl/benchmarks/scripts/run.py<span class="w"> </span>-R<span class="w"> </span><span class="s1">&#39;.*scan.exclusive.sum.*&#39;</span><span class="w"> </span>-a<span class="w"> </span><span class="s1">&#39;Elements{io}[pow2]=[24,28]&#39;</span><span class="w"> </span>-a<span class="w"> </span><span class="s1">&#39;T{ct}=I32&#39;</span>
+<p>It’s also possible to benchmark a subset of algorithms and workloads, by running in a build directory:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">export</span><span class="w"> </span><span class="nv">CUDA_VISIBLE_DEVICES</span><span class="o">=</span><span class="m">0</span><span class="w"> </span><span class="c1"># or any other GPU ID</span>
+<span class="nv">PYTHONPATH</span><span class="o">=</span>../benchmarks/scripts<span class="w"> </span>../benchmarks/scripts/run.py<span class="w"> </span>-R<span class="w"> </span><span class="s1">&#39;.*scan.exclusive.sum.*&#39;</span><span class="w"> </span>-a<span class="w"> </span><span class="s1">&#39;Elements{io}[pow2]=[24,28]&#39;</span><span class="w"> </span>-a<span class="w"> </span><span class="s1">&#39;T{ct}=I32&#39;</span>
 <span class="o">&amp;&amp;&amp;&amp;</span><span class="w"> </span>RUNNING<span class="w"> </span>bench
 <span class="w"> </span>ctk:<span class="w">  </span><span class="m">12</span>.6.77
 cccl:<span class="w">  </span>v2.7.0-rc0-265-g32aa6aa5a
@@ -1679,7 +1682,7 @@ If you interrupt the benchmark script and then launch it again, only missing ben
 <section id="comparing-results-of-multiple-tuning-databases">
 <h2>Comparing results of multiple tuning databases<a class="headerlink" href="#comparing-results-of-multiple-tuning-databases" title="Link to this heading">#</a></h2>
 <p>Benchmark results captured in different tuning databases can be compared as well:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>../benchmarks/scripts/compare.py<span class="w"> </span>-o<span class="w"> </span>cccl_meta_bench1.db<span class="w"> </span>cccl_meta_bench2.db
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>&lt;cccl_git_root&gt;/benchmarks/scripts/compare.py<span class="w"> </span>-o<span class="w"> </span>cccl_meta_bench1.db<span class="w"> </span>cccl_meta_bench2.db
 </pre></div>
 </div>
 <p>This will print a Markdown report showing the runtime differences and noise for each variant.</p>
@@ -1688,7 +1691,7 @@ If you interrupt the benchmark script and then launch it again, only missing ben
 </pre></div>
 </div>
 <p>You can plot one or more tuning databases as a bar chart or a box plot (add <cite>–box</cite>):</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>../benchmarks/scripts/sol.py<span class="w"> </span>cccl_meta_bench.db<span class="w"> </span>...
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>&lt;cccl_git_root&gt;/benchmarks/scripts/sol.py<span class="w"> </span>cccl_meta_bench.db<span class="w"> </span>...
 </pre></div>
 </div>
 <p>This is useful to display the current performance of CUB as captured in a single tuning database,
@@ -1698,7 +1701,7 @@ or visually compare the performance of CUB across different tuning databases
 <section id="dumping-benchmark-results-from-a-tuning-database">
 <h2>Dumping benchmark results from a tuning database<a class="headerlink" href="#dumping-benchmark-results-from-a-tuning-database" title="Link to this heading">#</a></h2>
 <p>The resulting database contains all samples, which can be extracted into JSON files:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>&lt;root_dir_to_cccl&gt;/cccl/benchmarks/scripts/analyze.py<span class="w"> </span>-o<span class="w"> </span>./cccl_meta_bench.db
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>&lt;cccl_git_root&gt;/benchmarks/scripts/analyze.py<span class="w"> </span>-o<span class="w"> </span>./cccl_meta_bench.db
 </pre></div>
 </div>
 <p>This will create a JSON file for each benchmark variant next to the database.
