@@ -1,8 +1,3 @@
-return a.reduce_policy == b.reduce_policy && a.single_tile_policy == b.single_tile_policy
-    && a.segmented_reduce_policy == b.segmented_reduce_policy
-    && a.reduce_nondeterministic_policy == b.reduce_nondeterministic_policy; // SPDX-FileCopyrightText: Copyright (c)
-                                                                             // 2024, NVIDIA CORPORATION. All rights
-                                                                             // reserved.
 // SPDX-License-Identifier: BSD-3
 
 #pragma once
