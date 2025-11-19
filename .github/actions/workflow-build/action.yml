@@ -74,7 +74,7 @@ runs:
       run: |
         echo "Running inspect-changes script..."
         mkdir workflow
-        ${{ inputs.inspect_changes_script }} ${base_ref} ${GITHUB_SHA} workflow/changes.md
+        ${{ inputs.inspect_changes_script }} --refs ${base_ref} ${GITHUB_SHA} --summary workflow/changes.md
 
     - name: Parse matrix file into a workflow
       id: build-workflow

@@ -69,8 +69,8 @@ struct add_kernel
   template <typename T>
   __device__ void operator()(cuda::std::span<T> a, cuda::std::span<const T> b)
   {
-    for (int i = cudax::hierarchy::rank(cudax::thread, cudax::grid); i < a.size();
-         i += cudax::hierarchy::count(cudax::thread, cudax::grid))
+    for (int i = cuda::hierarchy::rank(cuda::thread, cuda::grid); i < a.size();
+         i += cuda::hierarchy::count(cuda::thread, cuda::grid))
     {
       a[i] += b[i];
     }
@@ -87,7 +87,7 @@ C2H_CCCLRT_TEST("cudax::buffer launch transform", "[container][buffer]")
   cudax::device_buffer<int> a       = cudax::make_buffer<int>(stream, resource, array);
   const cudax::device_buffer<int> b = cudax::make_buffer(stream, resource, a.size(), 1);
 
-  cudax::launch(stream, cudax::make_config(cudax::grid_dims<1>, cudax::block_dims<32>), add_kernel{}, a, b);
+  cudax::launch(stream, cudax::make_config(cuda::grid_dims<1>, cuda::block_dims<32>), add_kernel{}, a, b);
 
   std::vector<int> host_result(a.size());
   cuda::copy_bytes(stream, a, host_result);
