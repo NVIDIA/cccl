@@ -34,13 +34,13 @@ struct TripleChevronFactory
 
   CUB_RUNTIME_FUNCTION ::cudaError_t PtxVersion(int& version)
   {
-    return ::cub::PtxVersion(version);
+    return cub::PtxVersion(version);
   }
 
   CUB_RUNTIME_FUNCTION ::cudaError_t ArchId(::cuda::arch_id& arch_id) const
   {
     int ptx_version;
-    if (const auto error = ::cub::PtxVersion(ptx_version))
+    if (const auto error = cub::PtxVersion(ptx_version))
     {
       return error;
     }
