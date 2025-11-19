@@ -16,6 +16,7 @@
 #include <cub/util_device.cuh>
 #include <cub/util_macro.cuh>
 
+#include <cuda/__device/arch_id.h>
 #include <cuda/std/optional>
 
 #if !_CCCL_COMPILER(NVRTC)
@@ -93,9 +94,9 @@ _CCCL_API consteval void __needs_a_constexpr_value(auto) {}
 
 // TODO(bgruber): bikeshed name before we make the tuning API public
 template <typename T>
-concept reduce_policy_hub = requires(T hub, int arch) {
+concept reduce_policy_hub = requires(T hub, ::cuda::arch_id arch) {
   { hub(arch) } -> ::cuda::std::same_as<reduce_arch_policy>;
-  { __needs_a_constexpr_value(hub(0)) }; // also checks that we return a value for PTX version 0 (host code)
+  { __needs_a_constexpr_value(hub(arch)) };
 };
 #endif
 
@@ -413,9 +414,9 @@ struct arch_policies // equivalent to the policy_hub, holds policies for a bunch
   // IDEA(bgruber): instead of the constexpr function, we could also provide a map<int, reduce_arch_policy> and move the
   // selection mechanism elsewhere
 
-  [[nodiscard]] _CCCL_API constexpr auto operator()(int arch) const -> reduce_arch_policy
+  [[nodiscard]] _CCCL_API constexpr auto operator()(::cuda::arch_id arch) const -> reduce_arch_policy
   {
-    if (arch >= 1000)
+    if (arch >= ::cuda::arch_id::sm_100)
     {
       // use tuning if we have one, otherwise, pick it from arch 600
       agent_reduce_policy rp{};
@@ -427,7 +428,7 @@ struct arch_policies // equivalent to the policy_hub, holds policies for a bunch
       }
       else
       {
-        rp = (*this)(600).reduce_policy;
+        rp = (*this)(::cuda::arch_id::sm_60).reduce_policy;
       }
 
       const auto rp_nondet = agent_reduce_policy{
@@ -439,7 +440,7 @@ struct arch_policies // equivalent to the policy_hub, holds policies for a bunch
       return {rp, rp, rp, rp_nondet};
     }
 
-    if (arch >= 600)
+    if (arch >= ::cuda::arch_id::sm_60)
     {
       constexpr int threads_per_block  = 256;
       constexpr int items_per_thread   = 16;
@@ -487,7 +488,7 @@ static_assert(reduce_policy_hub<arch_policies>);
 template <typename AccumT, typename OffsetT, typename ReductionOpT>
 struct arch_policies_from_types
 {
-  [[nodiscard]] _CCCL_API constexpr auto operator()(int arch) const -> reduce_arch_policy
+  [[nodiscard]] _CCCL_API constexpr auto operator()(::cuda::arch_id arch) const -> reduce_arch_policy
   {
     constexpr auto policies = arch_policies{
       classify_accum_type<AccumT>(), classify_op<ReductionOpT>(), int{sizeof(OffsetT)}, int{sizeof(AccumT)}};
