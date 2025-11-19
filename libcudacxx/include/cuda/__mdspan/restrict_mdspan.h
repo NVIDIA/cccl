@@ -109,7 +109,7 @@ template <typename>
 inline constexpr bool is_restrict_mdspan_v = false;
 
 template <typename _Tp, typename _Ep, typename _Lp, typename _Ap>
-inline constexpr bool is_restrict_mdspan_v<::cuda::std::mdspan<_Tp, _Ep, _Lp, _Ap>> = is_restrict_accessor_v<_Ap>;
+inline constexpr bool is_restrict_mdspan_v<restrict_mdspan<_Tp, _Ep, _Lp, _Ap>> = true;
 
 _CCCL_END_NAMESPACE_CUDA
 

@@ -227,10 +227,10 @@ managed_mdspan(const typename _AccessorType::data_handle_type, const _MappingTyp
  **********************************************************************************************************************/
 
 template <typename _Tp, typename _Ep, typename _Lp, typename _Ap>
-inline constexpr bool is_host_accessible_v<::cuda::std::mdspan<_Tp, _Ep, _Lp, _Ap>> = is_host_accessible_v<_Ap>;
+inline constexpr bool is_host_accessible_v<host_mdspan<_Tp, _Ep, _Lp, _Ap>> = true;
 
 template <typename _Tp, typename _Ep, typename _Lp, typename _Ap>
-inline constexpr bool is_device_accessible_v<::cuda::std::mdspan<_Tp, _Ep, _Lp, _Ap>> = is_device_accessible_v<_Ap>;
+inline constexpr bool is_device_accessible_v<device_mdspan<_Tp, _Ep, _Lp, _Ap>> = true;
 
 _CCCL_END_NAMESPACE_CUDA
 
