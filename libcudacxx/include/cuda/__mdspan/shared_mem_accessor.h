@@ -150,22 +150,22 @@ public:
   _CCCL_API constexpr reference access(__element_type* __p, ::cuda::std::size_t __i) const
     noexcept(__is_access_noexcept)
   {
-    NV_IF_TARGET(
-      NV_IS_DEVICE,
-      (bool __is_shared_mem = ::__isShared(__p); _CCCL_ASSERT(__is_shared_mem, "__p is not a shared memory pointer");
-       _CCCL_ASSUME(__is_shared_mem);
-       return _Accessor::access(__p, __i);))
+    NV_IF_TARGET(NV_IS_DEVICE,
+                 (bool __is_shared_mem = ::__isShared(__p); //
+                  _CCCL_ASSERT(__is_shared_mem, "__p is not a shared memory pointer");
+                  _CCCL_ASSUME(__is_shared_mem);
+                  return _Accessor::access(__p, __i);))
     _CCCL_VERIFY_DEVICE_ONLY_USAGE();
   }
 
   _CCCL_API constexpr data_handle_type offset(__element_type* __p, ::cuda::std::size_t __i) const
     noexcept(__is_offset_noexcept)
   {
-    NV_IF_TARGET(
-      NV_IS_DEVICE,
-      (bool __is_shared_mem = ::__isShared(__p); _CCCL_ASSERT(__is_shared_mem, "__p is not a shared memory pointer");
-       _CCCL_ASSUME(__is_shared_mem);
-       return _Accessor::offset(__p, __i);))
+    NV_IF_TARGET(NV_IS_DEVICE,
+                 (bool __is_shared_mem = ::__isShared(__p); //
+                  _CCCL_ASSERT(__is_shared_mem, "__p is not a shared memory pointer");
+                  _CCCL_ASSUME(__is_shared_mem);
+                  return _Accessor::offset(__p, __i);))
     _CCCL_VERIFY_DEVICE_ONLY_USAGE();
   }
 };

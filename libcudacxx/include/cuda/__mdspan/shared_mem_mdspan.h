@@ -23,6 +23,7 @@
 
 #include <cuda/__mdspan/shared_mem_accessor.h>
 #include <cuda/std/__concepts/concept_macros.h>
+#include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__fwd/array.h>
 #include <cuda/std/__fwd/span.h>
 #include <cuda/std/__mdspan/extents.h>
@@ -62,34 +63,35 @@ public:
 
 _CCCL_TEMPLATE(class _ElementType, class... _OtherIndexTypes)
 _CCCL_REQUIRES((sizeof...(_OtherIndexTypes) > 0)
-                 _CCCL_AND(::cuda::std::is_convertible_v<_OtherIndexTypes, size_t>&&... && true))
+                 _CCCL_AND(::cuda::std::is_convertible_v<_OtherIndexTypes, ::cuda::std::size_t>&&... && true))
 _CCCL_HOST_DEVICE explicit shared_mem_mdspan(_ElementType*, _OtherIndexTypes...)
-  -> shared_mem_mdspan<_ElementType, ::cuda::std::extents<size_t, ::cuda::std::__maybe_static_ext<_OtherIndexTypes>...>>;
+  -> shared_mem_mdspan<_ElementType,
+                       ::cuda::std::extents<::cuda::std::size_t, ::cuda::std::__maybe_static_ext<_OtherIndexTypes>...>>;
 
 _CCCL_TEMPLATE(class _Pointer)
 _CCCL_REQUIRES(::cuda::std::is_pointer_v<::cuda::std::remove_reference_t<_Pointer>>)
 _CCCL_HOST_DEVICE shared_mem_mdspan(_Pointer&&)
   -> shared_mem_mdspan<::cuda::std::remove_pointer_t<::cuda::std::remove_reference_t<_Pointer>>,
-                       ::cuda::std::extents<size_t>>;
+                       ::cuda::std::extents<::cuda::std::size_t>>;
 
 _CCCL_TEMPLATE(class _CArray)
 _CCCL_REQUIRES(::cuda::std::is_array_v<_CArray> _CCCL_AND(::cuda::std::rank_v<_CArray> == 1))
 _CCCL_HOST_DEVICE shared_mem_mdspan(_CArray&)
   -> shared_mem_mdspan<::cuda::std::remove_all_extents_t<_CArray>,
-                       ::cuda::std::extents<size_t, ::cuda::std::extent_v<_CArray, 0>>>;
+                       ::cuda::std::extents<::cuda::std::size_t, ::cuda::std::extent_v<_CArray, 0>>>;
 
-template <class _ElementType, class _OtherIndexType, size_t _Size>
+template <class _ElementType, class _OtherIndexType, ::cuda::std::size_t _Size>
 _CCCL_HOST_DEVICE shared_mem_mdspan(_ElementType*, const ::cuda::std::array<_OtherIndexType, _Size>&)
-  -> shared_mem_mdspan<_ElementType, ::cuda::std::dextents<size_t, _Size>>;
+  -> shared_mem_mdspan<_ElementType, ::cuda::std::dextents<::cuda::std::size_t, _Size>>;
 
-template <class _ElementType, class _OtherIndexType, size_t _Size>
+template <class _ElementType, class _OtherIndexType, ::cuda::std::size_t _Size>
 _CCCL_HOST_DEVICE shared_mem_mdspan(_ElementType*, ::cuda::std::span<_OtherIndexType, _Size>)
-  -> shared_mem_mdspan<_ElementType, ::cuda::std::dextents<size_t, _Size>>;
+  -> shared_mem_mdspan<_ElementType, ::cuda::std::dextents<::cuda::std::size_t, _Size>>;
 
 // This one is necessary because all the constructors take `data_handle_type`s, not
 // `_ElementType*`s, and `data_handle_type` is taken from `accessor_type::data_handle_type`, which
 // seems to throw off automatic deduction guides.
-template <class _ElementType, class _OtherIndexType, size_t... _ExtentsPack>
+template <class _ElementType, class _OtherIndexType, ::cuda::std::size_t... _ExtentsPack>
 _CCCL_HOST_DEVICE shared_mem_mdspan(_ElementType*, const ::cuda::std::extents<_OtherIndexType, _ExtentsPack...>&)
   -> shared_mem_mdspan<_ElementType, ::cuda::std::extents<_OtherIndexType, _ExtentsPack...>>;
 
