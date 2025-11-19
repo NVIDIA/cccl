@@ -21,27 +21,25 @@
 #  pragma system_header
 #endif // no system header
 
-#if _CCCL_DEVICE_COMPILATION()
+#include <cuda/__mdspan/shared_mem_accessor.h>
+#include <cuda/std/__concepts/concept_macros.h>
+#include <cuda/std/__fwd/array.h>
+#include <cuda/std/__fwd/span.h>
+#include <cuda/std/__mdspan/extents.h>
+#include <cuda/std/__mdspan/mdspan.h>
+#include <cuda/std/__type_traits/extent.h>
+#include <cuda/std/__type_traits/is_array.h>
+#include <cuda/std/__type_traits/is_convertible.h>
+#include <cuda/std/__type_traits/is_pointer.h>
+#include <cuda/std/__type_traits/rank.h>
+#include <cuda/std/__type_traits/remove_all_extents.h>
+#include <cuda/std/__type_traits/remove_pointer.h>
+#include <cuda/std/__type_traits/remove_reference.h>
+#include <cuda/std/__utility/delegate_constructors.h>
+#include <cuda/std/__utility/swap.h>
+#include <cuda/std/span> // __maybe_static_ext
 
-#  include <cuda/__mdspan/shared_mem_accessor.h>
-#  include <cuda/std/__concepts/concept_macros.h>
-#  include <cuda/std/__fwd/array.h>
-#  include <cuda/std/__fwd/span.h>
-#  include <cuda/std/__mdspan/mdspan.h>
-#  include <cuda/std/__mdspan/extents.h>
-#  include <cuda/std/__type_traits/extent.h>
-#  include <cuda/std/__type_traits/is_array.h>
-#  include <cuda/std/__type_traits/is_convertible.h>
-#  include <cuda/std/__type_traits/is_pointer.h>
-#  include <cuda/std/__type_traits/rank.h>
-#  include <cuda/std/__type_traits/remove_all_extents.h>
-#  include <cuda/std/__type_traits/remove_pointer.h>
-#  include <cuda/std/__type_traits/remove_reference.h>
-#  include <cuda/std/__utility/delegate_constructors.h>
-#  include <cuda/std/__utility/swap.h>
-#  include <cuda/std/span> // __maybe_static_ext
-
-#  include <cuda/std/__cccl/prologue.h>
+#include <cuda/std/__cccl/prologue.h>
 
 _CCCL_BEGIN_NAMESPACE_CUDA
 
@@ -118,7 +116,6 @@ template <typename _Tp, typename _Ep, typename _Lp, typename _Ap>
 inline constexpr bool is_shared_mem_mdspan_v<shared_mem_mdspan<_Tp, _Ep, _Lp, _Ap>> = true;
 
 _CCCL_END_NAMESPACE_CUDA
-#endif // _CCCL_DEVICE_COMPILATION()
 
 #include <cuda/std/__cccl/epilogue.h>
 

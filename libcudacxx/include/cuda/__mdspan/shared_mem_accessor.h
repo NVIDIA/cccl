@@ -21,23 +21,21 @@
 #  pragma system_header
 #endif // no system header
 
-#if _CCCL_DEVICE_COMPILATION()
+#include <cuda/std/__concepts/concept_macros.h>
+#include <cuda/std/__cstddef/types.h>
+#include <cuda/std/__type_traits/is_constructible.h>
+#include <cuda/std/__type_traits/is_convertible.h>
+#include <cuda/std/__type_traits/is_default_constructible.h>
+#include <cuda/std/__type_traits/is_nothrow_constructible.h>
+#include <cuda/std/__type_traits/is_nothrow_copy_constructible.h>
+#include <cuda/std/__type_traits/is_nothrow_default_constructible.h>
+#include <cuda/std/__type_traits/is_nothrow_move_constructible.h>
+#include <cuda/std/__type_traits/is_pointer.h>
+#include <cuda/std/__type_traits/remove_pointer.h>
+#include <cuda/std/__utility/declval.h>
+#include <cuda/std/__utility/move.h>
 
-#  include <cuda/std/__concepts/concept_macros.h>
-#  include <cuda/std/__cstddef/types.h>
-#  include <cuda/std/__type_traits/is_constructible.h>
-#  include <cuda/std/__type_traits/is_convertible.h>
-#  include <cuda/std/__type_traits/is_default_constructible.h>
-#  include <cuda/std/__type_traits/is_nothrow_constructible.h>
-#  include <cuda/std/__type_traits/is_nothrow_copy_constructible.h>
-#  include <cuda/std/__type_traits/is_nothrow_default_constructible.h>
-#  include <cuda/std/__type_traits/is_nothrow_move_constructible.h>
-#  include <cuda/std/__type_traits/is_pointer.h>
-#  include <cuda/std/__type_traits/remove_pointer.h>
-#  include <cuda/std/__utility/declval.h>
-#  include <cuda/std/__utility/move.h>
-
-#  include <cuda/std/__cccl/prologue.h>
+#include <cuda/std/__cccl/prologue.h>
 
 _CCCL_BEGIN_NAMESPACE_CUDA
 
@@ -56,6 +54,11 @@ inline constexpr bool is_shared_mem_accessor_v = false;
 
 template <typename _Accessor>
 inline constexpr bool is_shared_mem_accessor_v<__shared_mem_accessor<_Accessor>> = true;
+
+#define _CCCL_ONLY_DEVICE_CODE_ALLOWED() \
+  NV_IF_TARGET(                          \
+    NV_IS_HOST,                          \
+    (_CCCL_VERIFY(false, _CCCL_BUILTIN_PRETTY_FUNCTION() " cannot be used in HOST code"); _CCCL_UNREACHABLE();))
 
 /***********************************************************************************************************************
  * Restrict Accessor
@@ -86,77 +89,92 @@ public:
 
   _CCCL_TEMPLATE(class _Accessor2 = _Accessor)
   _CCCL_REQUIRES(::cuda::std::is_default_constructible_v<_Accessor2>)
-  _CCCL_DEVICE_API constexpr __shared_mem_accessor() noexcept(
-    ::cuda::std::is_nothrow_default_constructible_v<_Accessor2>)
+  _CCCL_API constexpr __shared_mem_accessor() noexcept(::cuda::std::is_nothrow_default_constructible_v<_Accessor2>)
       : _Accessor{}
-  {}
+  {
+    _CCCL_ONLY_DEVICE_CODE_ALLOWED();
+  }
 
-  _CCCL_DEVICE_API constexpr __shared_mem_accessor(const _Accessor& __acc) noexcept(
+  _CCCL_API constexpr __shared_mem_accessor(const _Accessor& __acc) noexcept(
     ::cuda::std::is_nothrow_copy_constructible_v<_Accessor>)
       : _Accessor{__acc}
-  {}
+  {
+    _CCCL_ONLY_DEVICE_CODE_ALLOWED();
+  }
 
-  _CCCL_DEVICE_API constexpr __shared_mem_accessor(_Accessor&& __acc) noexcept(
+  _CCCL_API constexpr __shared_mem_accessor(_Accessor&& __acc) noexcept(
     ::cuda::std::is_nothrow_move_constructible_v<_Accessor>)
       : _Accessor{::cuda::std::move(__acc)}
-  {}
+  {
+    _CCCL_ONLY_DEVICE_CODE_ALLOWED();
+  }
 
   _CCCL_TEMPLATE(typename _OtherAccessor)
   _CCCL_REQUIRES(::cuda::std::is_constructible_v<_Accessor, const _OtherAccessor&> _CCCL_AND(
     ::cuda::std::is_convertible_v<const _OtherAccessor&, _Accessor>))
-  _CCCL_DEVICE_API constexpr __shared_mem_accessor(const __shared_mem_accessor<_OtherAccessor>& __acc) noexcept(
+  _CCCL_API constexpr __shared_mem_accessor(const __shared_mem_accessor<_OtherAccessor>& __acc) noexcept(
     ::cuda::std::is_nothrow_constructible_v<_Accessor, const _OtherAccessor&>)
       : _Accessor{__acc}
-  {}
+  {
+    _CCCL_ONLY_DEVICE_CODE_ALLOWED();
+  }
 
   _CCCL_TEMPLATE(typename _OtherAccessor)
   _CCCL_REQUIRES(::cuda::std::is_constructible_v<_Accessor, const _OtherAccessor&> _CCCL_AND(
     !::cuda::std::is_convertible_v<const _OtherAccessor&, _Accessor>))
-  _CCCL_DEVICE_API constexpr explicit __shared_mem_accessor(const __shared_mem_accessor<_OtherAccessor>& __acc) noexcept(
+  _CCCL_API constexpr explicit __shared_mem_accessor(const __shared_mem_accessor<_OtherAccessor>& __acc) noexcept(
     ::cuda::std::is_nothrow_constructible_v<_Accessor, const _OtherAccessor&>)
       : _Accessor{__acc}
-  {}
+  {
+    _CCCL_ONLY_DEVICE_CODE_ALLOWED();
+  }
 
   _CCCL_TEMPLATE(typename _OtherAccessor)
   _CCCL_REQUIRES(::cuda::std::is_constructible_v<_Accessor, _OtherAccessor> _CCCL_AND(
     ::cuda::std::is_convertible_v<_OtherAccessor, _Accessor>))
-  _CCCL_DEVICE_API constexpr __shared_mem_accessor(__shared_mem_accessor<_OtherAccessor>&& __acc) noexcept(
+  _CCCL_API constexpr __shared_mem_accessor(__shared_mem_accessor<_OtherAccessor>&& __acc) noexcept(
     ::cuda::std::is_nothrow_constructible_v<_Accessor, _OtherAccessor>)
       : _Accessor{::cuda::std::move(__acc)}
-  {}
+  {
+    _CCCL_ONLY_DEVICE_CODE_ALLOWED();
+  }
 
   _CCCL_TEMPLATE(typename _OtherAccessor)
   _CCCL_REQUIRES(::cuda::std::is_constructible_v<_Accessor, _OtherAccessor> _CCCL_AND(
     !::cuda::std::is_convertible_v<_OtherAccessor, _Accessor>))
-  _CCCL_DEVICE_API constexpr explicit __shared_mem_accessor(__shared_mem_accessor<_OtherAccessor>&& __acc) noexcept(
+  _CCCL_API constexpr explicit __shared_mem_accessor(__shared_mem_accessor<_OtherAccessor>&& __acc) noexcept(
     ::cuda::std::is_nothrow_constructible_v<_Accessor, _OtherAccessor>)
       : _Accessor{::cuda::std::move(__acc)}
-  {}
-
-  _CCCL_DEVICE_API constexpr reference access(__element_type* __p, ::cuda::std::size_t __i) const
-    noexcept(__is_access_noexcept)
   {
-    bool __is_shared_mem = __isShared(__p);
-    _CCCL_ASSERT(__is_shared_mem, "pointer is not a shared memory pointer");
-    _CCCL_ASSUME(__is_shared_mem);
-    return _Accessor::access(__p, __i);
+    _CCCL_ONLY_DEVICE_CODE_ALLOWED();
   }
 
-  _CCCL_DEVICE_API constexpr data_handle_type offset(__element_type* __p, ::cuda::std::size_t __i) const
+  _CCCL_API constexpr reference access(__element_type* __p, ::cuda::std::size_t __i) const
+    noexcept(__is_access_noexcept)
+  {
+    NV_IF_TARGET(NV_IS_DEVICE,
+                 (bool __is_shared_mem = ::__isShared(__p);
+                  _CCCL_ASSERT(__is_shared_mem, "pointer is not a shared memory pointer");
+                  _CCCL_ASSUME(__is_shared_mem);
+                  return _Accessor::access(__p, __i);))
+    _CCCL_ONLY_DEVICE_CODE_ALLOWED();
+  }
+
+  _CCCL_API constexpr data_handle_type offset(__element_type* __p, ::cuda::std::size_t __i) const
     noexcept(__is_offset_noexcept)
   {
-    bool __is_shared_mem = ::__isShared(__p);
-    _CCCL_ASSERT(__is_shared_mem, "pointer is not a shared memory pointer");
-    _CCCL_ASSUME(__is_shared_mem);
-    return _Accessor::offset(__p, __i);
+    NV_IF_TARGET(NV_IS_DEVICE,
+                 (bool __is_shared_mem = ::__isShared(__p);
+                  _CCCL_ASSERT(__is_shared_mem, "pointer is not a shared memory pointer");
+                  _CCCL_ASSUME(__is_shared_mem);
+                  return _Accessor::offset(__p, __i);))
+    _CCCL_ONLY_DEVICE_CODE_ALLOWED();
   }
 };
 
 _CCCL_DIAG_POP
 
 _CCCL_END_NAMESPACE_CUDA
-
-#endif // _CCCL_DEVICE_COMPILATION()
 
 #include <cuda/std/__cccl/epilogue.h>
 
