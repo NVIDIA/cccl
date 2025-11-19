@@ -442,7 +442,7 @@ void TestTransformScanEdgeCases()
   {
     const int n = 10000;
     thrust::device_vector<int> d_input(n);
-    thrust::tabulate(d_input.begin(), d_input.end(), [] __device__(int i) {
+    thrust::tabulate(d_input.begin(), d_input.end(), [](int i) {
       return (i % 5) + 1;
     });
 
@@ -464,7 +464,7 @@ void TestTransformScanEdgeCases()
   {
     const int n = 10000;
     thrust::device_vector<int> d_input(n);
-    thrust::tabulate(d_input.begin(), d_input.end(), [] __device__(int i) {
+    thrust::tabulate(d_input.begin(), d_input.end(), [](int i) {
       return (i % 3) + 1;
     });
 
@@ -512,7 +512,7 @@ void TestTransformScanEdgeCases()
   {
     const int n = 1024;
     thrust::device_vector<int> d_input(n);
-    thrust::tabulate(d_input.begin(), d_input.end(), [] __device__(int i) {
+    thrust::tabulate(d_input.begin(), d_input.end(), [](int i) {
       return i + 1;
     });
 
