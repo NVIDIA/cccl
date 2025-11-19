@@ -223,8 +223,7 @@ private:
       TuningEnvT,
       detail::reduce::get_tuning_query_t,
       detail::reduce::arch_policies_from_types<accum_t, offset_t, ReductionOpT>>;
-    using dispatch_t = detail::reduce::
-      dispatch_nondeterministic_t<
+    using dispatch_t = detail::reduce::dispatch_nondeterministic_t<
       InputIteratorT,
       output_t,
       offset_t,
