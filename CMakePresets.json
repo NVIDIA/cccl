@@ -301,6 +301,15 @@
       }
     },
     {
+      "name": "nvbench-helper",
+      "displayName": "NVBench Helper",
+      "inherits": "base",
+      "cacheVariables": {
+        "CCCL_ENABLE_NVBENCH_HELPER": true,
+        "nvbench_helper_ENABLE_TESTING": true
+      }
+    },
+    {
       "name": "cub-benchmark",
       "displayName": "CUB benchmarking",
       "generator": "Ninja",
@@ -452,6 +461,10 @@
     {
       "name": "packaging",
       "configurePreset": "packaging"
+    },
+    {
+      "name": "nvbench-helper",
+      "configurePreset": "nvbench-helper"
     }
   ],
   "testPresets": [
@@ -750,6 +763,11 @@
     {
       "name": "packaging",
       "configurePreset": "packaging",
+      "inherits": "base"
+    },
+    {
+      "name": "nvbench-helper",
+      "configurePreset": "nvbench-helper",
       "inherits": "base"
     }
   ]
