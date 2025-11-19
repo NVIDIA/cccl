@@ -20,6 +20,10 @@
 #include <cuda/__device/arch_id.h>
 #include <cuda/std/optional>
 
+#if _CCCL_STD_VER >= 2020
+#  include <concepts>
+#endif // _CCCL_STD_VER >= 2020
+
 #if !_CCCL_COMPILER(NVRTC)
 #  include <ostream>
 #endif
