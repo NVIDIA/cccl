@@ -153,9 +153,9 @@ enum BlockReduceAlgorithm
 };
 
 #if !_CCCL_COMPILER(NVRTC)
-inline ::std::ostream& operator<<(::std::ostream& os, const BlockReduceAlgorithm& p)
+inline ::std::ostream& operator<<(::std::ostream& os, const BlockReduceAlgorithm& alg)
 {
-  switch (p)
+  switch (alg)
   {
     case BlockReduceAlgorithm::BLOCK_REDUCE_RAKING_COMMUTATIVE_ONLY:
       return os << "BLOCK_REDUCE_RAKING_COMMUTATIVE_ONLY";
@@ -166,7 +166,7 @@ inline ::std::ostream& operator<<(::std::ostream& os, const BlockReduceAlgorithm
     case BlockReduceAlgorithm::BLOCK_REDUCE_WARP_REDUCTIONS_NONDETERMINISTIC:
       return os << "BLOCK_REDUCE_WARP_REDUCTIONS_NONDETERMINISTIC";
     default:
-      return os << "<unknown BlockReduceAlgorithm: " << static_cast<int>(p) << ">";
+      return os << "<unknown BlockReduceAlgorithm: " << static_cast<int>(alg) << ">";
   }
 }
 #endif // !_CCCL_COMPILER(NVRTC)
