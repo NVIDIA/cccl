@@ -16,9 +16,9 @@ workflows:
   #   - { jobs: ['run_gpu'], project: 'target', ctk: ['12.X', '13.X'], cxx: ['gcc', 'clang'], gpu: 'rtxa6000',
   #       args: '--preset cub-cpp20 --build-targets "cub.cpp20.test.iterator" --ctest-targets "cub.cpp20.test.iterator"' }
   #   - { jobs: ['run_cpu'], project: 'target', ctk: ['12.X', '13.X'], cxx: ['gcc', 'clang', 'msvc'],
-  #       args: '--preset libcudacxx-cpp20 --lit-precompile-tests "cuda/utility/basic_any.pass.cpp"' }
+  #       args: '--preset libcudacxx --lit-precompile-tests "cuda/utility/basic_any.pass.cpp"' }
   #   - { jobs: ['run_gpu'], project: 'target', ctk: ['12.X', '13.X'], cxx: ['gcc', 'clang'], gpu: 'rtx2080',
-  #       args: '--preset libcudacxx-cpp20 --lit-tests "cuda/utility/basic_any.pass.cpp"' }
+  #       args: '--preset libcudacxx --lit-tests "cuda/utility/basic_any.pass.cpp"' }
   #
   override:
 
