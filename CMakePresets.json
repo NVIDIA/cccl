@@ -88,8 +88,6 @@
         "cudax_ENABLE_CUDASTF_BOUNDSCHECK": false,
         "cudax_ENABLE_CUDASTF_CODE_GENERATION": true,
         "cudax_ENABLE_CUDASTF_MATHLIBS": false,
-        "cudax_ENABLE_DIALECT_CPP17": true,
-        "cudax_ENABLE_DIALECT_CPP20": true,
         "cudax_ENABLE_CUFILE": false,
         "CCCL_C_Parallel_ENABLE_TESTING": true,
         "CCCL_C_Parallel_ENABLE_HEADER_TESTING": true,
@@ -233,8 +231,8 @@
       }
     },
     {
-      "name": "cudax-base",
-      "hidden": true,
+      "name": "cudax",
+      "displayName": "cudax",
       "inherits": "base",
       "cacheVariables": {
         "CCCL_ENABLE_CUDAX": true,
@@ -245,25 +243,25 @@
         "cudax_ENABLE_CUDASTF_BOUNDSCHECK": false,
         "cudax_ENABLE_CUDASTF_CODE_GENERATION": true,
         "cudax_ENABLE_CUDASTF_MATHLIBS": false,
-        "cudax_ENABLE_DIALECT_CPP17": false,
-        "cudax_ENABLE_DIALECT_CPP20": false,
         "cudax_ENABLE_CUFILE": false
       }
     },
     {
       "name": "cudax-cpp17",
       "displayName": "cudax: C++17",
-      "inherits": "cudax-base",
+      "inherits": "cudax",
       "cacheVariables": {
-        "cudax_ENABLE_DIALECT_CPP17": true
+        "CMAKE_CXX_STANDARD": "17",
+        "CMAKE_CUDA_STANDARD": "17"
       }
     },
     {
       "name": "cudax-cpp20",
       "displayName": "cudax: C++20",
-      "inherits": "cudax-base",
+      "inherits": "cudax",
       "cacheVariables": {
-        "cudax_ENABLE_DIALECT_CPP20": true
+        "CMAKE_CXX_STANDARD": "20",
+        "CMAKE_CUDA_STANDARD": "20"
       }
     },
     {
@@ -425,6 +423,10 @@
     {
       "name": "thrust-cpp20",
       "configurePreset": "thrust-cpp20"
+    },
+    {
+      "name": "cudax",
+      "configurePreset": "cudax"
     },
     {
       "name": "cudax-cpp17",
@@ -698,24 +700,24 @@
       "inherits": "thrust-base"
     },
     {
-      "name": "cudax-base",
-      "hidden": true,
+      "name": "cudax",
+      "configurePreset": "cudax",
       "inherits": "base",
       "filter": {
         "exclude": {
-          "name": "^cudax\\.cpp[0-9][0-9]\\.test\\.(cufile|stf\\.stress).*$"
+          "name": "^cudax\\.test\\.(cufile|stf\\.stress).*$"
         }
       }
     },
     {
       "name": "cudax-cpp17",
       "configurePreset": "cudax-cpp17",
-      "inherits": "cudax-base"
+      "inherits": "cudax"
     },
     {
       "name": "cudax-cpp20",
       "configurePreset": "cudax-cpp20",
-      "inherits": "cudax-base"
+      "inherits": "cudax"
     },
     {
       "name": "cccl-c-parallel",
