@@ -1,4 +1,8 @@
-// SPDX-FileCopyrightText: Copyright (c) 2024, NVIDIA CORPORATION. All rights reserved.
+return a.reduce_policy == b.reduce_policy && a.single_tile_policy == b.single_tile_policy
+    && a.segmented_reduce_policy == b.segmented_reduce_policy
+    && a.reduce_nondeterministic_policy == b.reduce_nondeterministic_policy; // SPDX-FileCopyrightText: Copyright (c)
+                                                                             // 2024, NVIDIA CORPORATION. All rights
+                                                                             // reserved.
 // SPDX-License-Identifier: BSD-3
 
 #pragma once
@@ -37,6 +41,18 @@ struct agent_reduce_policy // equivalent of AgentReducePolicy
   BlockReduceAlgorithm block_algorithm;
   CacheLoadModifier load_modifier;
 
+  _CCCL_API constexpr friend bool operator==(const agent_reduce_policy& lhs, const agent_reduce_policy& rhs)
+  {
+    return lhs.block_threads == rhs.block_threads && lhs.items_per_thread == rhs.items_per_thread
+        && lhs.vector_load_length == rhs.vector_load_length && lhs.block_algorithm == rhs.block_algorithm
+        && lhs.load_modifier == rhs.load_modifier;
+  }
+
+  _CCCL_API constexpr friend bool operator!=(const agent_reduce_policy& lhs, const agent_reduce_policy& rhs)
+  {
+    return !(lhs == rhs);
+  }
+
 #if !_CCCL_COMPILER(NVRTC)
   friend ::std::ostream& operator<<(::std::ostream& os, const agent_reduce_policy& p)
   {
@@ -54,6 +70,18 @@ struct reduce_arch_policy // equivalent of a policy for a single CUDA architectu
   agent_reduce_policy single_tile_policy;
   agent_reduce_policy segmented_reduce_policy;
   agent_reduce_policy reduce_nondeterministic_policy;
+
+  _CCCL_API constexpr friend bool operator==(const reduce_arch_policy& lhs, const reduce_arch_policy& rhs)
+  {
+    return lhs.reduce_policy == rhs.reduce_policy && lhs.single_tile_policy == rhs.single_tile_policy
+        && lhs.segmented_reduce_policy == rhs.segmented_reduce_policy
+        && lhs.reduce_nondeterministic_policy == rhs.reduce_nondeterministic_policy;
+  }
+
+  _CCCL_API constexpr friend bool operator!=(const reduce_arch_policy& lhs, const reduce_arch_policy& rhs)
+  {
+    return !(lhs == rhs);
+  }
 
 #if !_CCCL_COMPILER(NVRTC)
   friend ::std::ostream& operator<<(::std::ostream& os, const reduce_arch_policy& p)
