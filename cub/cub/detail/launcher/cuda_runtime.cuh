@@ -17,6 +17,9 @@
 
 #include <thrust/system/cuda/detail/core/triple_chevron_launch.h>
 
+#include <cuda/__device/arch_id.h>
+#include <cuda/__device/compute_capability.h>
+
 CUB_NAMESPACE_BEGIN
 
 namespace detail
@@ -31,7 +34,18 @@ struct TripleChevronFactory
 
   CUB_RUNTIME_FUNCTION ::cudaError_t PtxVersion(int& version)
   {
-    return cub::PtxVersion(version);
+    return ::cub::PtxVersion(version);
+  }
+
+  CUB_RUNTIME_FUNCTION ::cudaError_t ArchId(::cuda::arch_id& arch_id) const
+  {
+    int ptx_version;
+    if (const auto error = ::cub::PtxVersion(ptx_version))
+    {
+      return error;
+    }
+    arch_id = ::cuda::to_arch_id(::cuda::compute_capability(ptx_version / 10));
+    return ::cudaSuccess;
   }
 
   _CCCL_HIDE_FROM_ABI CUB_RUNTIME_FUNCTION ::cudaError_t MultiProcessorCount(int& sm_count) const
