@@ -49,8 +49,8 @@ if (LIBCUDACXX_ENABLE_LIBCUDACXX_TESTS)
   libcudacxx_build_compiler_targets()
 
   # Test all public and internal headers
-  # include(cmake/LibcudacxxInternalHeaderTesting.cmake)
-  # include(cmake/LibcudacxxPublicHeaderTesting.cmake)
+  include(cmake/LibcudacxxInternalHeaderTesting.cmake)
+  include(cmake/LibcudacxxPublicHeaderTesting.cmake)
   include(cmake/LibcudacxxPublicHeaderTestingHost.cmake)
 
   add_subdirectory(test)
