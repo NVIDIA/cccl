@@ -952,7 +952,8 @@ _CCCL_HOST_DEVICE auto make_aligned_base_ptr_kernel_arg(It ptr, int alignment) -
 }
 
 template <typename ActivePolicy>
-inline constexpr int get_block_threads = [] {
+_CCCL_DEVICE_API constexpr int get_block_threads_helper()
+{
   if constexpr (ActivePolicy::algorithm == Algorithm::prefetch)
   {
     return ActivePolicy::prefetch_policy::block_threads;
@@ -965,7 +966,12 @@ inline constexpr int get_block_threads = [] {
   {
     return ActivePolicy::async_policy::block_threads;
   }
-}();
+}
+
+// need a variable template to force constant evaluation of get_block_threads_helper(), otherwise nvcc will give us a
+// "bad attribute argument substitution" error
+template <typename ActivePolicy>
+inline constexpr int get_block_threads = get_block_threads_helper<ActivePolicy>();
 
 // There is only one kernel for all algorithms, that dispatches based on the selected policy. It must be instantiated
 // with the same arguments for each algorithm. Only the device compiler will then select the implementation. This
