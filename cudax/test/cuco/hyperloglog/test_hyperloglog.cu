@@ -26,7 +26,7 @@
 namespace cudax = cuda::experimental;
 
 template <typename Ref, typename InputIt, typename OutputIt>
-__global__ void estimate_kernel(double sketch_size_kb, InputIt in, size_t n, OutputIt out)
+__global__ void estimate_kernel(cudax::cuco::sketch_size_kb sketch_size_kb, InputIt in, size_t n, OutputIt out)
 {
   extern __shared__ cuda::std::byte local_sketch[];
 
@@ -61,10 +61,10 @@ C2H_TEST("HyperLogLog device ref", "[hyperloglog]", test_types)
   using estimator_type = cudax::cuco::hyperloglog<T>;
 
   // Test parameters
-  std::size_t num_items_pow2 = GENERATE(25, 26, 28);
-  int hll_precision          = GENERATE(8, 10, 12, 13);
-  double sketch_size_kb      = 4.0 * (1ull << hll_precision) / 1024.0;
-  std::size_t num_items      = 1ull << num_items_pow2;
+  const std::size_t num_items_pow2 = GENERATE(25, 26, 28);
+  const int hll_precision          = GENERATE(8, 10, 12, 13);
+  const auto sketch_size_kb        = static_cast<cudax::cuco::sketch_size_kb>(4.0 * (1ull << hll_precision) / 1024.0);
+  const std::size_t num_items      = 1ull << num_items_pow2;
 
   CAPTURE(num_items, hll_precision, sketch_size_kb);
 
@@ -96,10 +96,10 @@ C2H_TEST("HyperLogLog unique sequence", "[hyperloglog]", test_types)
   using T              = c2h::get<0, TestType>;
   using estimator_type = cudax::cuco::hyperloglog<T>;
 
-  std::size_t num_items_pow2 = GENERATE(25, 26, 28);
-  int hll_precision          = GENERATE(8, 10, 12, 13, 18, 20);
-  double sketch_size_kb      = 4.0 * (1ull << hll_precision) / 1024.0;
-  std::size_t num_items      = 1ull << num_items_pow2;
+  const std::size_t num_items_pow2 = GENERATE(25, 26, 28);
+  const int hll_precision          = GENERATE(8, 10, 12, 13, 18, 20);
+  const auto sketch_size_kb        = static_cast<cudax::cuco::sketch_size_kb>(4.0 * (1ull << hll_precision) / 1024.0);
+  const std::size_t num_items      = 1ull << num_items_pow2;
 
   CAPTURE(num_items, hll_precision, sketch_size_kb);
 

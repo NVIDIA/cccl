@@ -33,6 +33,7 @@
 
 #include <cuda/experimental/__cuco/detail/hyperloglog/finalizer.cuh>
 #include <cuda/experimental/__cuco/detail/hyperloglog/kernels.cuh>
+#include <cuda/experimental/__cuco/detail/utility/strong_type.cuh>
 #include <cuda/experimental/__cuco/hash_functions.cuh>
 #include <cuda/experimental/__stf/utility/cuda_safe_call.cuh>
 
@@ -45,6 +46,8 @@
 
 namespace cuda::experimental::cuco::detail
 {
+CUDAX_CUCO_DEFINE_STRONG_TYPE(sketch_size_kb, double);
+
 //! @brief A GPU-accelerated utility for approximating the number of distinct items in a multiset.
 //!
 //! @note This class implements the HyperLogLog/HyperLogLog++ algorithm:
@@ -82,7 +85,7 @@ public:
   _CCCL_API constexpr _HyperLogLog_Impl(::cuda::std::span<::cuda::std::byte> sketch_span, _Hash const& hash)
       : __hash{hash}
       , __precision{::cuda::std::countr_zero(
-          __sketch_bytes(static_cast<double>(sketch_span.size() / 1024.0)) / sizeof(register_type))}
+          __sketch_bytes(static_cast<detail::sketch_size_kb>(sketch_span.size() / 1024.0)) / sizeof(register_type))}
       , __register_mask{(1ull << this->__precision) - 1}
       , __sketch{reinterpret_cast<register_type*>(sketch_span.data()), this->__sketch_bytes() / sizeof(register_type)}
   {
@@ -445,7 +448,8 @@ public:
   //! @param sketch_size_kb Upper bound sketch size in KB
   //!
   //! @return The number of bytes required for the sketch
-  [[nodiscard]] _CCCL_API static constexpr size_t __sketch_bytes(double __sketch_size_kb) noexcept
+  [[nodiscard]] _CCCL_API static constexpr size_t
+  __sketch_bytes(detail::sketch_size_kb __sketch_size_kb) noexcept
   {
     // minimum precision is 4 or 64 bytes
     return ::cuda::std::max(static_cast<size_t>(sizeof(register_type) * 1ull << 4),

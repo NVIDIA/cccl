@@ -73,8 +73,8 @@ public:
   //! @param __hash The hash function used to hash items
   //! @param __stream CUDA stream used to initialize the object
   constexpr hyperloglog(_MemoryResource __memory_resource,
-                        double __sketch_size_kb     = 32.0,
-                        _Hash const& __hash         = {},
+                        ::cuda::experimental::cuco::sketch_size_kb __sketch_size_kb = 32.0,
+                        _Hash const& __hash                                         = {},
                         ::cuda::stream_ref __stream = ::cuda::stream_ref{cudaStream_t{nullptr}})
       : __memory_resource(__memory_resource)
       , __sketch_buffer{__stream,
@@ -95,8 +95,8 @@ public:
   //! @param __sketch_size_kb Maximum sketch size in KB
   //! @param __hash The hash function used to hash items
   //! @param __stream CUDA stream used to initialize the object
-  constexpr hyperloglog(double __sketch_size_kb     = 32.0,
-                        _Hash const& __hash         = {},
+  constexpr hyperloglog(::cuda::experimental::cuco::sketch_size_kb __sketch_size_kb = 32.0,
+                        _Hash const& __hash                                         = {},
                         ::cuda::stream_ref __stream = ::cuda::stream_ref{cudaStream_t{nullptr}})
       : __memory_resource(::cuda::device_default_memory_pool(::cuda::device_ref{0}))
       , __sketch_buffer{__stream,
@@ -225,7 +225,7 @@ public:
   //! @param __sketch_size_kb Upper bound sketch size in KB
   //!
   //! @return The number of bytes required for the sketch
-  [[nodiscard]] static constexpr std::size_t sketch_bytes(double __sketch_size_kb) noexcept
+  [[nodiscard]] static constexpr std::size_t sketch_bytes(::cuda::experimental::cuco::sketch_size_kb __sketch_size_kb) noexcept
   {
     return ref_type<>::sketch_bytes(__sketch_size_kb);
   }

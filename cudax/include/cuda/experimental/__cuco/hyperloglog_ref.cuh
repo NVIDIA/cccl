@@ -33,6 +33,12 @@
 
 namespace cuda::experimental::cuco
 {
+//! A strong type wrapper `cuda::experimental::cuco::sketch_size_kb` of `double`, for specifying the upper-bound sketch
+//! size of `cuda::experimental::cuco::hyperloglog(_ref)` in KB.
+//!
+//! Note: Values can also be specified as literals, e.g., 64.3_KB.
+using sketch_size_kb = detail::sketch_size_kb;
+
 //! @brief A non-owning reference to a HyperLogLog sketch for approximating the number of distinct
 //! items in a multiset.
 //!
@@ -212,7 +218,8 @@ public:
   //! @param __sketch_size_kb Upper bound sketch size in KB
   //!
   //! @return The number of bytes required for the sketch
-  [[nodiscard]] _CCCL_API static constexpr std::size_t sketch_bytes(double __sketch_size_kb) noexcept
+  [[nodiscard]] _CCCL_API static constexpr std::size_t
+  sketch_bytes(::cuda::experimental::cuco::sketch_size_kb __sketch_size_kb) noexcept
   {
     return __impl_type::__sketch_bytes(__sketch_size_kb);
   }
