@@ -87,7 +87,7 @@ Return value
 Preconditions
 -------------
 
-The functions throw ``std::invalid_argument`` or ``std::runtime_error`` if the preconditions are not met. The exceptions can be disabled by defining ``CCCL_DISABLE_EXCEPTIONS`` before including the header. If exceptions are disabled, the functions will terminate the program instead.
+See :ref:`libcudacxx-extended-api-exceptions` for more details on exception handling.
 
 **General preconditions**:
 
