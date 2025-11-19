@@ -19,7 +19,7 @@ Defined in the ``<cuda/tma>`` header.
       tma_interleave_layout      interleave_layout = tma_interleave_layout::none,
       tma_swizzle                swizzle           = tma_swizzle::none,
       tma_l2_fetch_size          l2_fetch_size     = tma_l2_fetch_size::none,
-      tma_oob_fill               oobfill           = tma_oob_fill::none) noexcept;
+      tma_oob_fill               oobfill           = tma_oob_fill::none);
 
     [[nodiscard]] inline
     CUtensorMap make_tma_descriptor(
@@ -28,7 +28,7 @@ Defined in the ``<cuda/tma>`` header.
         tma_interleave_layout      interleave_layout = tma_interleave_layout::none,
         tma_swizzle                swizzle           = tma_swizzle::none,
         tma_l2_fetch_size          l2_fetch_size     = tma_l2_fetch_size::none,
-        tma_oob_fill               oobfill           = tma_oob_fill::none) noexcept;
+        tma_oob_fill               oobfill           = tma_oob_fill::none);
 
     } // namespace cuda
 
@@ -86,6 +86,8 @@ Return value
 
 Preconditions
 -------------
+
+The functions throw ``std::invalid_argument`` or ``std::runtime_error`` if the preconditions are not met. The exceptions can be disabled by defining ``CCCL_DISABLE_EXCEPTIONS`` before including the header. If exceptions are disabled, the functions will terminate the program instead.
 
 **General preconditions**:
 

@@ -21,7 +21,12 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__exception/cuda_error.h>
 #include <cuda/std/__exception/terminate.h>
+#include <cuda/std/__exception/throw_error.h>
+#if _CCCL_HAS_EXCEPTIONS()
+#  include <cuda/std/source_location>
+#endif // _CCCL_HAS_EXCEPTIONS()
 
 #include <nv/target>
 
@@ -66,9 +71,18 @@ _CCCL_END_NAMESPACE_CUDA_STD
 #  define _CCCL_CATCH     catch
 #  define _CCCL_CATCH_ALL catch (...)
 #  define _CCCL_CATCH_FALLTHROUGH
-#  define _CCCL_THROW(...)                             throw __VA_ARGS__
-#  define _CCCL_RETHROW                                throw
-#  define _CCCL_THROW_IF(_CONDITION, _EXCEPTION, _MSG) (_CONDITION) ? (void) 0 : throw(_EXCEPTION(_MSG))
+#  define _CCCL_THROW(...) throw __VA_ARGS__
+#  define _CCCL_RETHROW    throw
+#  define _CCCL_THROW_IF(_CONDITION, _EXCEPTION, _MSG)                                            \
+    do                                                                                            \
+    {                                                                                             \
+      if (_CONDITION)                                                                             \
+      {                                                                                           \
+        ::cuda::std::__detail::__msg_storage __msg_buffer{};                                      \
+        throw _EXCEPTION(::cuda::std::__detail::__format_error(__msg_buffer, #_CONDITION, _MSG)); \
+      }                                                                                           \
+    } while (false)
+
 #else // ^^^ use exceptions ^^^ / vvv no exceptions vvv
 #  define _CCCL_TRY     \
     if constexpr (true) \
@@ -87,8 +101,10 @@ _CCCL_END_NAMESPACE_CUDA_STD
     }
 #  define _CCCL_THROW(...)                             ::cuda::std::terminate()
 #  define _CCCL_RETHROW                                ::cuda::std::terminate()
-#  define _CCCL_THROW_IF(_CONDITION, _EXCEPTION, _MSG) (_CONDITION) ? (void) 0 : _CCCL_VERIFY(_MSG);
+#  define _CCCL_THROW_IF(_CONDITION, _EXCEPTION, _MSG) _CCCL_VERIFY(!(_CONDITION), _MSG)
 #endif // ^^^ no exceptions ^^^
+
+#define _CCCL_THROW_INVALID_ARG_IF(_CONDITION, _MSG) _CCCL_THROW_IF(_CONDITION, ::std::invalid_argument, _MSG)
 
 #include <cuda/std/__cccl/epilogue.h>
 
