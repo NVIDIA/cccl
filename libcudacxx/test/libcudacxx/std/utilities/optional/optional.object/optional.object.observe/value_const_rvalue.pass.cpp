@@ -57,6 +57,15 @@ void test_exceptions()
   }
   catch (const bad_optional_access&)
   {}
+
+  const optional<X&> optref{};
+  try
+  {
+    (void) cuda::std::move(optref).value();
+    assert(false);
+  }
+  catch (const bad_optional_access&)
+  {}
 }
 #endif // TEST_HAS_EXCEPTIONS()
 
@@ -70,7 +79,7 @@ __host__ __device__ constexpr bool test()
 
     const optional<X&> optref;
     unused(optref);
-    static_assert(noexcept(cuda::std::move(optref).value()));
+    static_assert(!noexcept(cuda::std::move(optref).value()));
     static_assert(cuda::std::is_same_v<decltype(cuda::std::move(optref).value()), X&>);
   }
 

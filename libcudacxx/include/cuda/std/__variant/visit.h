@@ -20,6 +20,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__exception/exception_macros.h>
 #include <cuda/std/__fwd/variant.h>
 #include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/void_t.h>
@@ -115,9 +116,7 @@ template <class... _Vs>
 _CCCL_API constexpr void __throw_if_valueless(_Vs&&... __vs)
 {
   [[maybe_unused]] int __unused[] = {
-    (::cuda::std::__as_variant(__vs).valueless_by_exception() ? ::cuda::std::__throw_bad_variant_access() : void(),
-     0)...,
-    0};
+    (::cuda::std::__as_variant(__vs).valueless_by_exception() ? _CCCL_THROW(bad_variant_access()) : void(), 0)..., 0};
 }
 
 template <class _Visitor,
