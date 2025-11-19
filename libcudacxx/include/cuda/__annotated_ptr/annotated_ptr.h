@@ -25,7 +25,6 @@
 #include <cuda/__annotated_ptr/annotated_ptr_base.h>
 #include <cuda/__memcpy_async/memcpy_async.h>
 #include <cuda/__memory/address_space.h>
-#include <cuda/std/__type_traits/is_constant_evaluated.h>
 #include <cuda/std/cstddef>
 #include <cuda/std/cstdint>
 
@@ -74,7 +73,7 @@ public:
     NV_IF_TARGET(NV_IS_HOST, (_CCCL_ASSERT(!__is_smem, "shared memory pointer is not supported on the host");))
     if constexpr (__is_smem)
     {
-      if (!::cuda::std::__cccl_default_is_constant_evaluated())
+      _CCCL_IF_NOT_CONSTEVAL_DEFAULT
       {
         NV_IF_TARGET(NV_IS_DEVICE,
                      (_CCCL_ASSERT(::cuda::device::is_address_from(__p, ::cuda::device::address_space::shared),
@@ -84,7 +83,7 @@ public:
     else
     {
       _CCCL_ASSERT(__p != nullptr, "__p must not be null");
-      if (!::cuda::std::__cccl_default_is_constant_evaluated())
+      _CCCL_IF_NOT_CONSTEVAL_DEFAULT
       {
         NV_IF_TARGET(NV_IS_DEVICE,
                      (_CCCL_ASSERT(::cuda::device::is_address_from(__p, ::cuda::device::address_space::global),
