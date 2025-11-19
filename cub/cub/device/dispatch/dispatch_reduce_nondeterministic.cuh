@@ -90,9 +90,9 @@ template <typename InputIteratorT,
           typename InitT = non_void_value_t<OutputIteratorT, ::cuda::std::iter_value_t<InputIteratorT>>,
           typename AccumT = ::cuda::std::__accumulator_t<ReductionOpT, ::cuda::std::iter_value_t<InputIteratorT>, InitT>,
           typename TransformOpT = ::cuda::std::identity,
-          typename PolicyHub    = arch_policies_from_types<AccumT, OffsetT, ReductionOpT>,
+          typename ArchPolicies = arch_policies_from_types<AccumT, OffsetT, ReductionOpT>,
           typename KernelSource = DeviceReduceNondeterministicKernelSource<
-            PolicyHub,
+            ArchPolicies,
             InputIteratorT,
             OutputIteratorT,
             OffsetT,
@@ -102,7 +102,7 @@ template <typename InputIteratorT,
             TransformOpT>,
           typename KernelLauncherFactory = TripleChevronFactory>
 #if _CCCL_STD_VER >= 2020
-  requires detail::reduce::reduce_policy_hub<PolicyHub>
+  requires detail::reduce::reduce_policy_hub<ArchPolicies>
 #endif
 struct dispatch_nondeterministic_t
 {
@@ -269,7 +269,7 @@ struct dispatch_nondeterministic_t
       return error;
     }
 
-    const detail::reduce::reduce_arch_policy active_policy = PolicyHub{}(ptx_version);
+    const detail::reduce::reduce_arch_policy active_policy = ArchPolicies{}(ptx_version);
 #if !_CCCL_COMPILER(NVRTC) && defined(CUB_DEBUG_LOG)
     NV_IF_TARGET(
       NV_IS_HOST,
