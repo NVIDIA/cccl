@@ -40,9 +40,9 @@ struct agent_reduce_policy // equivalent of AgentReducePolicy
 #if !_CCCL_COMPILER(NVRTC)
   friend ::std::ostream& operator<<(::std::ostream& os, const agent_reduce_policy& p)
   {
-    return os << "agent_reduce_policy { block_threads = " << p.block_threads
-              << ", items_per_thread = " << p.items_per_thread << ", vector_load_length = " << p.vector_load_length
-              << ", block_algorithm = " << p.block_algorithm << ", load_modifier = " << p.load_modifier << " }";
+    return os << "agent_reduce_policy { .block_threads = " << p.block_threads
+              << ", .items_per_thread = " << p.items_per_thread << ", .vector_load_length = " << p.vector_load_length
+              << ", .block_algorithm = " << p.block_algorithm << ", .load_modifier = " << p.load_modifier << " }";
   }
 #endif // !_CCCL_COMPILER(NVRTC)
 };
@@ -58,9 +58,9 @@ struct reduce_arch_policy // equivalent of a policy for a single CUDA architectu
 #if !_CCCL_COMPILER(NVRTC)
   friend ::std::ostream& operator<<(::std::ostream& os, const reduce_arch_policy& p)
   {
-    return os << "reduce_arch_policy { reduce_policy = " << p.reduce_policy << ", single_tile_policy = "
-              << p.single_tile_policy << ", segmented_reduce_policy = " << p.segmented_reduce_policy
-              << ", reduce_nondeterministic_policy = " << p.reduce_nondeterministic_policy << " }";
+    return os << "reduce_arch_policy { .reduce_policy = " << p.reduce_policy << ", .single_tile_policy = "
+              << p.single_tile_policy << ", .segmented_reduce_policy = " << p.segmented_reduce_policy
+              << ", .reduce_nondeterministic_policy = " << p.reduce_nondeterministic_policy << " }";
   }
 #endif // !_CCCL_COMPILER(NVRTC)
 };
