@@ -87,6 +87,8 @@ finalize_and_store_aggregate(OutputIteratorT d_out, ReductionOpT, empty_problem_
 /**
  * @brief Reduce region kernel entry point (multi-block). Computes privatized
  *        reductions, one per thread block.
+ * @tparam ArchPolicies
+ *   The tuning polices
  *
  * @tparam InputIteratorT
  *   Random-access input iterator type for reading input items @iterator
@@ -170,6 +172,9 @@ CUB_DETAIL_KERNEL_ATTRIBUTES __launch_bounds__(int(
  * @brief Reduce a single tile kernel entry point (single-block). Can be used
  *        to aggregate privatized thread block reductions from a previous
  *        multi-block reduction pass.
+ *
+ * @tparam ArchPolicies
+ *   The tuning polices
  *
  * @tparam InputIteratorT
  *   Random-access input iterator type for reading input items @iterator
