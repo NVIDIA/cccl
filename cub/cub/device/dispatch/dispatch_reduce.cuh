@@ -575,13 +575,13 @@ using DispatchTransformReduce =
 
 namespace detail::reduce
 {
-template <typename InputIteratorT,
+template <typename AccumT,
+          typename InputIteratorT,
           typename OutputIteratorT,
           typename OffsetT,
           typename ReductionOpT,
           typename InitT,
           typename TransformOpT,
-          typename AccumT,
           typename KernelSource,
           typename KernelLauncherFactory>
 auto invoke_passes(
@@ -811,7 +811,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
   }
 
   // Regular size
-  return invoke_passes(
+  return invoke_passes<AccumT>(
     d_temp_storage,
     temp_storage_bytes,
     d_in,
