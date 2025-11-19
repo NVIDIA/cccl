@@ -758,7 +758,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
   KernelLauncherFactory launcher_factory = {})
 {
   // from Dispatch()
-  ::cuda::arch_id arch_id;
+  ::cuda::arch_id arch_id{};
   if (const auto error = CubDebug(launcher_factory.ArchId(arch_id)))
   {
     return error;
