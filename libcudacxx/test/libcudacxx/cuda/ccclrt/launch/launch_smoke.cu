@@ -28,7 +28,7 @@ struct kernel_run_proof_check
 {
   __device__ void operator()()
   {
-    CCCLRT_CHECK(kernel_run_proof);
+    CCCLRT_CHECK_DEVICE(kernel_run_proof);
     kernel_run_proof = false;
   }
 };
@@ -48,7 +48,7 @@ struct functor_taking_config
   __device__ void operator()(Config config, int grid_size)
   {
     static_assert(config.dims.static_count(cuda::thread, cuda::block) == BlockSize);
-    CCCLRT_REQUIRE(config.dims.count(cuda::block, cuda::grid) == grid_size);
+    CCCLRT_REQUIRE_DEVICE(config.dims.count(cuda::block, cuda::grid) == grid_size);
     kernel_run_proof = true;
   }
 };
@@ -82,7 +82,7 @@ struct dynamic_smem_single
   {
     decltype(auto) dynamic_smem = cuda::dynamic_shared_memory_view(config);
     static_assert(::cuda::std::is_same_v<SmemType&, decltype(dynamic_smem)>);
-    CCCLRT_REQUIRE(::cuda::device::is_object_from(dynamic_smem, ::cuda::device::address_space::shared));
+    CCCLRT_REQUIRE_DEVICE(::cuda::device::is_object_from(dynamic_smem, ::cuda::device::address_space::shared));
     kernel_run_proof = true;
   }
 };
@@ -96,8 +96,8 @@ struct dynamic_smem_span
     auto dynamic_smem = cuda::dynamic_shared_memory_view(config);
     static_assert(decltype(dynamic_smem)::extent == Extent);
     static_assert(::cuda::std::is_same_v<SmemType&, decltype(dynamic_smem[1])>);
-    CCCLRT_REQUIRE(dynamic_smem.size() == size);
-    CCCLRT_REQUIRE(::cuda::device::is_object_from(dynamic_smem[1], ::cuda::device::address_space::shared));
+    CCCLRT_REQUIRE_DEVICE(dynamic_smem.size() == size);
+    CCCLRT_REQUIRE_DEVICE(::cuda::device::is_object_from(dynamic_smem[1], ::cuda::device::address_space::shared));
     kernel_run_proof = true;
   }
 };

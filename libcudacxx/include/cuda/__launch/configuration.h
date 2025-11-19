@@ -11,19 +11,31 @@
 #ifndef _CUDA___LAUNCH_CONFIGURATION_H
 #define _CUDA___LAUNCH_CONFIGURATION_H
 
-#include <cuda/__driver/driver_api.h>
-#include <cuda/__hierarchy/hierarchy_dimensions.h>
-#include <cuda/__numeric/overflow_cast.h>
-#include <cuda/__ptx/instructions/get_sreg.h>
-#include <cuda/std/__cstddef/types.h>
-#include <cuda/std/__type_traits/is_const.h>
-#include <cuda/std/__type_traits/is_reference.h>
-#include <cuda/std/__type_traits/is_unbounded_array.h>
-#include <cuda/std/__type_traits/rank.h>
-#include <cuda/std/span>
-#include <cuda/std/tuple>
+#include <cuda/__cccl_config>
 
-#include <cuda/std/__cccl/prologue.h>
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
+
+#if _CCCL_HAS_CTK() && !_CCCL_COMPILER(NVRTC)
+
+#  include <cuda/__driver/driver_api.h>
+#  include <cuda/__hierarchy/hierarchy_dimensions.h>
+#  include <cuda/__numeric/overflow_cast.h>
+#  include <cuda/__ptx/instructions/get_sreg.h>
+#  include <cuda/std/__cstddef/types.h>
+#  include <cuda/std/__type_traits/is_const.h>
+#  include <cuda/std/__type_traits/is_reference.h>
+#  include <cuda/std/__type_traits/is_unbounded_array.h>
+#  include <cuda/std/__type_traits/rank.h>
+#  include <cuda/std/span>
+#  include <cuda/std/tuple>
+
+#  include <cuda/std/__cccl/prologue.h>
 
 _CCCL_BEGIN_NAMESPACE_CUDA
 
@@ -737,6 +749,8 @@ template <typename Dimensions, typename... Options>
 }
 } // namespace __detail
 
+#  if _CCCL_CUDA_COMPILATION()
+
 template <class _Dims, class... _Opts>
 _CCCL_DEVICE_API decltype(auto) dynamic_shared_memory_view(const kernel_config<_Dims, _Opts...>& __config) noexcept
 {
@@ -747,8 +761,13 @@ _CCCL_DEVICE_API decltype(auto) dynamic_shared_memory_view(const kernel_config<_
   extern __shared__ unsigned char __cccl_device_dyn_smem[];
   return __opt.__make_view(reinterpret_cast<typename _Opt::value_type*>(__cccl_device_dyn_smem));
 }
+
+#  endif // _CCCL_CUDA_COMPILATION()
+
 _CCCL_END_NAMESPACE_CUDA
 
-#include <cuda/std/__cccl/epilogue.h>
+#  include <cuda/std/__cccl/epilogue.h>
+
+#endif // _CCCL_HAS_CTK() && !_CCCL_COMPILER(NVRTC)
 
 #endif // _CUDA___LAUNCH_CONFIGURATION_H

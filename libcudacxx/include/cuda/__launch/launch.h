@@ -21,22 +21,26 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/__driver/driver_api.h>
-#include <cuda/__launch/configuration.h>
-#include <cuda/__runtime/api_wrapper.h>
-#include <cuda/__runtime/ensure_current_context.h>
-#include <cuda/__stream/device_transform.h>
-#include <cuda/__stream/stream_ref.h>
-#include <cuda/std/__exception/cuda_error.h>
-#include <cuda/std/__type_traits/is_function.h>
-#include <cuda/std/__type_traits/is_pointer.h>
-#include <cuda/std/__type_traits/type_identity.h>
-#include <cuda/std/__utility/forward.h>
-#include <cuda/std/__utility/pod_tuple.h>
+#if _CCCL_HAS_CTK() && !_CCCL_COMPILER(NVRTC)
 
-#include <cuda/std/__cccl/prologue.h>
+#  include <cuda/__driver/driver_api.h>
+#  include <cuda/__launch/configuration.h>
+#  include <cuda/__runtime/api_wrapper.h>
+#  include <cuda/__runtime/ensure_current_context.h>
+#  include <cuda/__stream/device_transform.h>
+#  include <cuda/__stream/stream_ref.h>
+#  include <cuda/std/__exception/cuda_error.h>
+#  include <cuda/std/__type_traits/is_function.h>
+#  include <cuda/std/__type_traits/is_pointer.h>
+#  include <cuda/std/__type_traits/type_identity.h>
+#  include <cuda/std/__utility/forward.h>
+#  include <cuda/std/__utility/pod_tuple.h>
+
+#  include <cuda/std/__cccl/prologue.h>
 
 _CCCL_BEGIN_NAMESPACE_CUDA
+
+#  if _CCCL_CUDA_COMPILATION()
 
 template <typename _Config, typename _Kernel, class... _Args>
 __global__ static void __kernel_launcher(const _CCCL_GRID_CONSTANT _Config __conf, _Kernel __kernel_fn, _Args... __args)
@@ -49,6 +53,8 @@ __global__ static void __kernel_launcher_no_config(_Kernel __kernel_fn, _Args...
 {
   __kernel_fn(__args...);
 }
+
+#  endif // _CCCL_CUDA_COMPILATION()
 
 template <class... _Args>
 [[nodiscard]] _CCCL_HOST_API ::CUfunction __get_cufunction_of(void (*__kernel)(_Args...))
@@ -63,11 +69,11 @@ _CCCL_HOST_API void inline __do_launch(
   ::cuda::stream_ref __stream, ::CUlaunchConfig& __config, ::CUfunction __kernel, void** __args_ptrs)
 {
   __config.hStream = __stream.get();
-#if defined(_CCCLRT_LAUNCH_CONFIG_TEST)
+#  if defined(_CCCLRT_LAUNCH_CONFIG_TEST)
   test_launch_kernel_replacement(__config, __kernel, __args_ptrs);
-#else // ^^^ _CUDAX_LAUNCH_CONFIG_TEST ^^^ / vvv !_CUDAX_LAUNCH_CONFIG_TEST vvv
+#  else // ^^^ _CUDAX_LAUNCH_CONFIG_TEST ^^^ / vvv !_CUDAX_LAUNCH_CONFIG_TEST vvv
   ::cuda::__driver::__launchKernel(__config, __kernel, __args_ptrs);
-#endif // ^^^ !_CUDAX_LAUNCH_CONFIG_TEST ^^^
+#  endif // ^^^ !_CUDAX_LAUNCH_CONFIG_TEST ^^^
 }
 
 template <typename... _ExpTypes, typename _Dst, typename _Config>
@@ -124,6 +130,8 @@ _CCCL_HOST_API ::cuda::stream_ref __forward_or_cast_to_stream_ref(::cuda::stream
 
 template <typename _Submitter>
 _CCCL_CONCEPT work_submitter = ::cuda::std::is_convertible_v<_Submitter, ::cuda::stream_ref>;
+
+#  if _CCCL_CUDA_COMPILATION()
 
 //! @brief Launch a kernel functor with specified configuration and arguments
 //!
@@ -203,6 +211,8 @@ _CCCL_HOST_API auto launch(_Submitter&& __submitter,
       device_transform(::cuda::__stream_or_invalid(__submitter), ::cuda::std::forward<_Args>(__args))...);
   }
 }
+
+#  endif // _CCCL_CUDA_COMPILATION()
 
 //! @brief Launch a kernel function with specified configuration and arguments
 //!
@@ -317,6 +327,8 @@ _CCCL_HOST_API auto launch(_Submitter&& __submitter,
 
 _CCCL_END_NAMESPACE_CUDA
 
-#include <cuda/std/__cccl/epilogue.h>
+#  include <cuda/std/__cccl/epilogue.h>
+
+#endif // _CCCL_HAS_CTK() && !_CCCL_COMPILER(NVRTC)
 
 #endif // _CUDA___LAUNCH_LAUNCH_H

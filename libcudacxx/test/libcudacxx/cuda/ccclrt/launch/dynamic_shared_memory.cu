@@ -34,7 +34,7 @@ struct TestKernel
   __device__ void write_smem(T& view)
   {
     view = T{};
-    CCCLRT_REQUIRE(view == T{});
+    CCCLRT_REQUIRE_DEVICE(view == T{});
   }
 
   template <cuda::std::size_t N>
@@ -43,7 +43,7 @@ struct TestKernel
     for (cuda::std::size_t i = 0; i < view.size(); ++i)
     {
       view[i] = T{};
-      CCCLRT_REQUIRE(view[i] == T{});
+      CCCLRT_REQUIRE_DEVICE(view[i] == T{});
     }
   }
 };
@@ -77,7 +77,7 @@ void test_ref(cuda::stream_ref stream)
 template <class T, cuda::std::size_t N>
 void test_span(cuda::stream_ref stream)
 {
-  static_assert(!noexcept(cuda::dynamic_shared_memory<T[]>(N)));
+  static_assert(!noexcept(cuda::dynamic_shared_memory<T[]>(N * 1024 * 1024)));
   test_opt_and_launch<T, cuda::std::span<T>>(stream, cuda::dynamic_shared_memory<T[]>(N));
 
   static_assert(noexcept(cuda::dynamic_shared_memory<T[N]>()));
