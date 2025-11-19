@@ -127,6 +127,18 @@ struct ReducePolicyWrapper<StaticPolicyT,
   CUB_DEFINE_SUB_POLICY_GETTER(SingleTile)
   CUB_DEFINE_SUB_POLICY_GETTER(SegmentedReduce)
   CUB_DEFINE_SUB_POLICY_GETTER(ReduceNondeterministic)
+
+  // TODO(bgruber): no longer needed by CCCL.C for reduce, but still needed for segmented_reduce
+#if defined(CUB_ENABLE_POLICY_PTX_JSON)
+  _CCCL_DEVICE static constexpr auto EncodedPolicy()
+  {
+    using namespace ptx_json;
+    return object<key<"ReducePolicy">()                 = Reduce().EncodedPolicy(),
+                  key<"SingleTilePolicy">()             = SingleTile().EncodedPolicy(),
+                  key<"SegmentedReducePolicy">()        = SegmentedReduce().EncodedPolicy(),
+                  key<"ReduceNondeterministicPolicy">() = ReduceNondeterministic().EncodedPolicy()>();
+  }
+#endif
 };
 
 template <typename PolicyT>
