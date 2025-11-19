@@ -24,7 +24,6 @@
 #include <cuda/std/__bit/bit_cast.h>
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__type_traits/conditional.h>
-#include <cuda/std/__type_traits/is_constant_evaluated.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/is_unsigned_integer.h>
 #include <cuda/std/cstdint>
@@ -115,7 +114,7 @@ template <typename _Tp>
 [[nodiscard]] _CCCL_API constexpr int __cccl_countl_zero_impl(_Tp __v) noexcept
 {
   static_assert(is_same_v<_Tp, uint32_t> || is_same_v<_Tp, uint64_t>);
-  if (!::cuda::std::__cccl_default_is_constant_evaluated())
+  _CCCL_IF_NOT_CONSTEVAL_DEFAULT
   {
     NV_IF_ELSE_TARGET(NV_IS_HOST,
                       (return ::cuda::std::__cccl_countl_zero_impl_host(__v);),

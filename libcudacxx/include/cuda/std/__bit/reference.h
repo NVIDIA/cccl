@@ -806,7 +806,7 @@ struct __bit_array
   _CCCL_API constexpr explicit __bit_array(difference_type __s)
       : __size_(__s)
   {
-    if (::cuda::std::is_constant_evaluated())
+    _CCCL_IF_CONSTEVAL
     {
       for (size_t __i = 0; __i != __bit_array<_Cp>::_Np; ++__i)
       {
