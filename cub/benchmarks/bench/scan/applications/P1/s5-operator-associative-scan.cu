@@ -96,23 +96,7 @@ thrust::device_vector<T> generate_data(std::size_t n)
 }
 
 template <typename T, int StateDim>
-struct vector_pair_t
-{
-  T A[StateDim];
-  T Bu[StateDim];
-
-  __host__ __device__ vector_pair_t() = default;
-
-  __host__ __device__ vector_pair_t(const T* a_ptr, const T* bu_ptr)
-  {
-#pragma unroll
-    for (int i = 0; i < StateDim; i++)
-    {
-      A[i]  = a_ptr[i];
-      Bu[i] = bu_ptr[i];
-    }
-  }
-};
+using vector_pair_t = cuda::std::pair<cuda::std::array<T, StateDim>, cuda::std::array<T, StateDim>>;
 
 // S5 scan operator: associative but non-commutative
 template <typename T, int StateDim>
@@ -121,14 +105,19 @@ struct s5_op
   __host__ __device__ vector_pair_t<T, StateDim>
   operator()(const vector_pair_t<T, StateDim>& x, const vector_pair_t<T, StateDim>& y) const
   {
+    const auto& [x_A, x_Bu] = x;
+    const auto& [y_A, y_Bu] = y;
+
     vector_pair_t<T, StateDim> result;
+
+    auto& [A, Bu] = result;
 
 #pragma unroll
     for (int i = 0; i < StateDim; i++)
     {
-      auto y_A_i   = y.A[i];
-      result.A[i]  = y_A_i * x.A[i];
-      result.Bu[i] = y_A_i * x.Bu[i] + y.Bu[i];
+      const auto y_A_i = y_A[i];
+      A[i]             = y_A_i * x_A[i];
+      Bu[i]            = y_A_i * x_Bu[i] + y_Bu[i];
     }
 
     return result;
@@ -141,7 +130,19 @@ struct load_row_functor
   template <typename Tuple>
   __host__ __device__ vector_pair_t<T, StateDim> operator()(const Tuple& ptrs) const
   {
-    return vector_pair_t<T, StateDim>(thrust::get<0>(ptrs), thrust::get<1>(ptrs));
+    vector_pair_t<T, StateDim> result;
+    auto& [a_arr, bu_arr] = result;
+    auto a_ptr            = thrust::get<0>(ptrs);
+    auto bu_ptr           = thrust::get<1>(ptrs);
+
+#pragma unroll
+    for (int i = 0; i < StateDim; i++)
+    {
+      a_arr[i]  = a_ptr[i];
+      bu_arr[i] = bu_ptr[i];
+    }
+
+    return result;
   }
 };
 
@@ -170,11 +171,13 @@ struct vector_pair_write_proxy
 
   __host__ __device__ vector_pair_write_proxy& operator=(const vector_pair_t<T, StateDim>& val)
   {
+    const auto& [A, Bu] = val;
+
 #pragma unroll
     for (int i = 0; i < StateDim; i++)
     {
-      a_row[i]  = val.A[i];
-      bu_row[i] = val.Bu[i];
+      a_row[i]  = A[i];
+      bu_row[i] = Bu[i];
     }
     return *this;
   }
@@ -284,4 +287,4 @@ using fp_types = nvbench::type_list<float, double>;
 NVBENCH_BENCH_TYPES(inclusive_scan, NVBENCH_TYPE_AXES(fp_types, offset_types))
   .set_name("s5-associative-scan")
   .set_type_axes_names({"T{ct}", "OffsetT{ct}"})
-  .add_int64_power_of_two_axis("Elements{io}", nvbench::range(16, 28, 4));
+  .add_int64_power_of_two_axis("Elements{io}", nvbench::range(16, 24, 2));
