@@ -137,8 +137,6 @@ struct dispatch_nondeterministic_t
   //! CUDA stream to launch kernels within. Default is stream<sub>0</sub>.
   cudaStream_t stream;
 
-  int ptx_version;
-
   TransformOpT transform_op;
 
   KernelSource kernel_source;
@@ -263,18 +261,18 @@ struct dispatch_nondeterministic_t
     KernelLauncherFactory launcher_factory = {})
   {
     // Get PTX version
-    int ptx_version = 0;
-    if (cudaError error = CubDebug(launcher_factory.PtxVersion(ptx_version)); cudaSuccess != error)
+    ::cuda::arch_id arch_id;
+    if (const auto error = CubDebug(launcher_factory.ArchId(arch_id)))
     {
       return error;
     }
 
-    const detail::reduce::reduce_arch_policy active_policy = ArchPolicies{}(ptx_version);
+    const detail::reduce::reduce_arch_policy active_policy = ArchPolicies{}(arch_id);
 #if !_CCCL_COMPILER(NVRTC) && defined(CUB_DEBUG_LOG)
     NV_IF_TARGET(
       NV_IS_HOST,
       (std::stringstream ss; ss << active_policy; _CubLog(
-         "Dispatching DeviceReduceNondeterministic to arch %d with tuning: %s\n", ptx_version, ss.str().c_str());))
+         "Dispatching DeviceReduceNondeterministic to arch %d with tuning: %s\n", (int) arch_id, ss.str().c_str());))
 #endif // !_CCCL_COMPILER(NVRTC) && defined(CUB_DEBUG_LOG)
 
     // Create dispatch functor
@@ -287,7 +285,6 @@ struct dispatch_nondeterministic_t
       reduction_op,
       init,
       stream,
-      ptx_version,
       transform_op,
       kernel_source,
       launcher_factory};
