@@ -92,7 +92,7 @@ __internal_double_Tp_sqrt_unsafe(_Tp __hi, _Tp __lo) noexcept
   // Add all terms
   const _Tp __full_term = _hi_hi_hi + (::cuda::std::fma(__lo, __init_sq_hi, __hi * __init_sq_lo) /*+ _hi_hi_lo*/);
 
-  const _Tp __correction_term = _Tp(-0.5) * __initial_guess * __full_term;
+  const _Tp __correction_term = _Tp{-0.5} * __initial_guess * __full_term;
 
   // rsqrt(hi + lo) is now estimated well by (__initial_guess + __correction_term)
   // Multiply everything by (hi + lo) to get sqrt(hi + lo)
@@ -134,21 +134,21 @@ template <class _Tp>
     if (::cuda::std::isfinite(__realx) && ::cuda::std::isinf(__imagx))
     {
       return complex<_Tp>(::cuda::std::copysign(numeric_limits<_Tp>::infinity(), __x.real()),
-                          ::cuda::std::copysign(_Tp(0.5) * __pi, __x.imag()));
+                          ::cuda::std::copysign(_Tp{0.5} * __pi, __x.imag()));
     }
 
     // If z is (+inf,y) (for any positive finite y), the result is (+inf,+0)
     if (::cuda::std::isinf(__realx) && ::cuda::std::isfinite(__imagx))
     {
       return complex<_Tp>(::cuda::std::copysign(numeric_limits<_Tp>::infinity(), __x.real()),
-                          ::cuda::std::copysign(_Tp(0), __x.imag()));
+                          ::cuda::std::copysign(_Tp{0}, __x.imag()));
     }
 
     // If z is (+inf,+inf), the result is (+inf, pi/4)
     if (::cuda::std::isinf(__realx) && ::cuda::std::isinf(__imagx))
     {
       return complex<_Tp>(::cuda::std::copysign(numeric_limits<_Tp>::infinity(), __x.real()),
-                          ::cuda::std::copysign(_Tp(0.25) * __pi, __x.imag()));
+                          ::cuda::std::copysign(_Tp{0.25} * __pi, __x.imag()));
     }
 
     // If z is (+inf,NaN), the result is (+inf,NaN)
@@ -172,7 +172,7 @@ template <class _Tp>
 
   // Special case that for various reasons does not pass
   // easily through the algorithm below:
-  if ((__realx == _Tp{0}) && (__imagx == _Tp(1)))
+  if ((__realx == _Tp{0}) && (__imagx == _Tp{1}))
   {
     return complex<_Tp>(__x.real(), ::cuda::std::copysign(_Tp{0.5} * __pi, __x.imag()));
   }
@@ -374,7 +374,7 @@ template <class _Tp>
     __realx_small_bound_override = _Tp{6.0e-08f};
   }
 
-  if (__realx < __realx_small_bound_override && __imagx < _Tp(1))
+  if (__realx < __realx_small_bound_override && __imagx < _Tp{1})
   {
     __ans_real = __small_x_real_return_val;
   }
