@@ -236,7 +236,7 @@ C2H_TEST("Configuration combine", "[launch]")
   SECTION("Combine with overlap")
   {
     auto config_part1 = make_config(grid, cluster, cuda::launch_priority(2));
-    auto config_part2 = make_config(cuda::cluster_dims<256>, block, cuda::launch_priority(42));
+    auto config_part2 = make_config(cuda::cluster_dims<256>(), block, cuda::launch_priority(42));
     auto combined     = config_part1.combine(config_part2);
     CCCLRT_REQUIRE(combined.dims.count(cuda::thread) == 2048);
     CCCLRT_REQUIRE(cuda::std::get<0>(combined.options).priority == 2);

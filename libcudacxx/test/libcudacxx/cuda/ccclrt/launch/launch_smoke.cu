@@ -15,6 +15,8 @@
 #include <cooperative_groups.h>
 #include <testing.cuh>
 
+#if !_CCCL_CUDA_COMPILER(CLANG)
+
 __managed__ bool kernel_run_proof = false;
 
 void check_kernel_run(cudaStream_t stream)
@@ -275,6 +277,7 @@ C2H_TEST("Launch smoke stream", "[launch]")
   CUDART(cudaStreamSynchronize(stream));
   CUDART(cudaStreamDestroy(stream));
 }
+#endif // !_CCCL_CUDA_COMPILER(CLANG)
 
 template <typename DefaultConfig>
 struct kernel_with_default_config

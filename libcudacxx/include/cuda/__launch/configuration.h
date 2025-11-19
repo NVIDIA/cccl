@@ -712,20 +712,19 @@ template <typename Dimensions, typename... Options>
 [[nodiscard]] cudaError_t apply_kernel_config(
   const kernel_config<Dimensions, Options...>& config, cudaLaunchConfig_t& cuda_config, void* kernel) noexcept
 {
-  cudaError_t status = cudaSuccess;
-
-  ::cuda::std::apply(
+  return ::cuda::std::apply(
     [&](auto&... config_options) {
+      cudaError_t __status = cudaSuccess;
+
       // Use short-cutting && to skip the rest on error, is this too
       // convoluted?
       (void) (... && [&](cudaError_t call_status) {
-        status = call_status;
+        __status = call_status;
         return call_status == cudaSuccess;
       }(config_options.apply(cuda_config, kernel)));
+      return __status;
     },
     config.options);
-
-  return status;
 }
 
 template <typename Dimensions, typename... Options>
