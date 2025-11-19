@@ -217,7 +217,7 @@ struct __align__({2}) storage_t {{
 {4}
 {5}
 using device_reduce_policy = {6};
-static_assert(device_reduce_policy{}(__CUDA_ARCH__) == {7}, "Host generated and JIT compiled policy mismatch");
+static_assert(device_reduce_policy()(__CUDA_ARCH__) == {7}, "Host generated and JIT compiled policy mismatch");
 )XXX",
       jit_template_header_contents, // 0
       input_it.value_type.size, // 1
