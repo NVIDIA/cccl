@@ -87,6 +87,7 @@ finalize_and_store_aggregate(OutputIteratorT d_out, ReductionOpT, empty_problem_
 /**
  * @brief Reduce region kernel entry point (multi-block). Computes privatized
  *        reductions, one per thread block.
+ *
  * @tparam ArchPolicies
  *   The tuning polices
  *

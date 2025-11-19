@@ -1,3 +1,4 @@
+// SPDX-FileCopyrightText: Copyright (c) 2024, NVIDIA CORPORATION. All rights reserved.
 // SPDX-License-Identifier: BSD-3
 
 #pragma once
@@ -151,19 +152,16 @@ enum class accum_size
   _16,
   unknown
 };
-_CCCL_HOST_DEVICE constexpr accum_size classify_accum_size(int size)
-{
-  return size == 1  ? accum_size::_1
-       : size == 2  ? accum_size::_2
-       : size == 4  ? accum_size::_4
-       : size == 8  ? accum_size::_8
-       : size == 16 ? accum_size::_16
-                    : accum_size::unknown;
-}
 template <class AccumT>
 _CCCL_HOST_DEVICE constexpr accum_size classify_accum_size()
 {
-  return classify_accum_size(int{sizeof(AccumT)});
+  return sizeof(AccumT) == 1 ? accum_size::_1
+       : sizeof(AccumT) == 2 ? accum_size::_2
+       : sizeof(AccumT) == 4 ? accum_size::_4
+       : sizeof(AccumT) == 8 ? accum_size::_8
+       : sizeof(AccumT) == 16
+         ? accum_size::_16
+         : accum_size::unknown;
 }
 template <class OffsetT>
 _CCCL_HOST_DEVICE constexpr offset_size classify_offset_size()
@@ -253,6 +251,7 @@ struct sm100_tuning<double, OffsetT, op_type::plus, offset_size::_4, accum_size:
   static constexpr int items_per_vec_load = 1;
 };
 
+// TODO(bgruber): we should have a more central enum for types, like cccl_type_enum in CCCL.C
 enum class accum_type
 {
   float32,
