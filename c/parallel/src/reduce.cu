@@ -167,6 +167,41 @@ CUresult cccl_device_reduce_build_ex(
 
     const auto offset_t = cccl_type_enum_to_name(cccl_type_enum::CCCL_UINT64);
 
+    const auto cub_arch_policies = [&] {
+      using namespace cub::detail::reduce;
+
+      auto accum_type = accum_type::other;
+      if (accum_t.type == CCCL_FLOAT32)
+      {
+        accum_type = accum_type::float32;
+      }
+      if (accum_t.type == CCCL_FLOAT64)
+      {
+        accum_type = accum_type::double32;
+      }
+
+      auto operation_t = op_type::unknown;
+      switch (op.type)
+      {
+        case CCCL_PLUS:
+          operation_t = op_type::plus;
+          break;
+        case CCCL_MINIMUM:
+        case CCCL_MAXIMUM:
+          operation_t = op_type::min_or_max;
+          break;
+        default:
+          break;
+      }
+
+      const int offset_size = int{sizeof(uint64_t)};
+      return arch_policies{accum_type, operation_t, offset_size, static_cast<int>(accum_t.size)};
+    }();
+
+    // TODO(bgruber): drop this if tuning policies become formattable
+    std::stringstream cub_arch_policies_str;
+    cub_arch_policies_str << cub_arch_policies((cc_major * 10) + cc_minor * 10);
+
     auto policy_hub_expr =
       std::format("cub::detail::reduce::arch_policies_from_types<{}, {}, {}>", accum_cpp, offset_t, op_name);
 
@@ -182,6 +217,7 @@ struct __align__({2}) storage_t {{
 {4}
 {5}
 using device_reduce_policy = {6};
+static_assert(device_reduce_policy{}(__CUDA_ARCH__) == {7}, "Host generated and JIT compiled policy mismatch");
 )XXX",
       jit_template_header_contents, // 0
       input_it.value_type.size, // 1
@@ -189,7 +225,8 @@ using device_reduce_policy = {6};
       input_iterator_src, // 3
       output_iterator_src, // 4
       op_src, // 5
-      policy_hub_expr); // 6
+      policy_hub_expr, // 6
+      cub_arch_policies_str.view()); // 7
 
 #if false // CCCL_DEBUGGING_SWITCH
     fflush(stderr);
@@ -254,40 +291,11 @@ using device_reduce_policy = {6};
       &build->single_tile_second_kernel, build->library, single_tile_second_kernel_lowered_name.c_str()));
     check(cuLibraryGetKernel(&build->reduction_kernel, build->library, reduction_kernel_lowered_name.c_str()));
 
-    // convert type information to CUB arch_policies
-    using namespace cub::detail::reduce;
-
-    auto accum_type = accum_type::other;
-    if (accum_t.type == CCCL_FLOAT32)
-    {
-      accum_type = accum_type::float32;
-    }
-    if (accum_t.type == CCCL_FLOAT64)
-    {
-      accum_type = accum_type::double32;
-    }
-
-    auto operation_t = op_type::unknown;
-    switch (op.type)
-    {
-      case CCCL_PLUS:
-        operation_t = op_type::plus;
-        break;
-      case CCCL_MINIMUM:
-      case CCCL_MAXIMUM:
-        operation_t = op_type::min_or_max;
-        break;
-      default:
-        break;
-    }
-
-    const int offset_size = int{sizeof(uint64_t)};
-
     build->cc               = cc_major * 10 + cc_minor;
     build->cubin            = (void*) result.data.release();
     build->cubin_size       = result.size;
     build->accumulator_size = accum_t.size;
-    build->runtime_policy   = new arch_policies{accum_type, operation_t, offset_size, static_cast<int>(accum_t.size)};
+    build->runtime_policy   = new cub::detail::reduce::arch_policies{cub_arch_policies};
   }
   catch (const std::exception& exc)
   {
