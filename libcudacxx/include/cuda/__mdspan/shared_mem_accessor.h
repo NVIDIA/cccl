@@ -55,13 +55,11 @@ inline constexpr bool is_shared_mem_accessor_v = false;
 template <typename _Accessor>
 inline constexpr bool is_shared_mem_accessor_v<__shared_mem_accessor<_Accessor>> = true;
 
-#define _CCCL_ONLY_DEVICE_CODE_ALLOWED() \
-  NV_IF_TARGET(                          \
-    NV_IS_HOST,                          \
-    (_CCCL_VERIFY(false, _CCCL_BUILTIN_PRETTY_FUNCTION() " cannot be used in HOST code"); _CCCL_UNREACHABLE();))
+#define _CCCL_VERIFY_DEVICE_ONLY_USAGE() \
+  NV_IF_TARGET(NV_IS_HOST, (_CCCL_VERIFY(false, "the function cannot be used in HOST code"); _CCCL_UNREACHABLE();))
 
 /***********************************************************************************************************************
- * Restrict Accessor
+ * Shared Memory Accessor
  **********************************************************************************************************************/
 
 _CCCL_DIAG_PUSH
@@ -92,21 +90,21 @@ public:
   _CCCL_API constexpr __shared_mem_accessor() noexcept(::cuda::std::is_nothrow_default_constructible_v<_Accessor2>)
       : _Accessor{}
   {
-    _CCCL_ONLY_DEVICE_CODE_ALLOWED();
+    _CCCL_VERIFY_DEVICE_ONLY_USAGE();
   }
 
   _CCCL_API constexpr __shared_mem_accessor(const _Accessor& __acc) noexcept(
     ::cuda::std::is_nothrow_copy_constructible_v<_Accessor>)
       : _Accessor{__acc}
   {
-    _CCCL_ONLY_DEVICE_CODE_ALLOWED();
+    _CCCL_VERIFY_DEVICE_ONLY_USAGE();
   }
 
   _CCCL_API constexpr __shared_mem_accessor(_Accessor&& __acc) noexcept(
     ::cuda::std::is_nothrow_move_constructible_v<_Accessor>)
       : _Accessor{::cuda::std::move(__acc)}
   {
-    _CCCL_ONLY_DEVICE_CODE_ALLOWED();
+    _CCCL_VERIFY_DEVICE_ONLY_USAGE();
   }
 
   _CCCL_TEMPLATE(typename _OtherAccessor)
@@ -116,7 +114,7 @@ public:
     ::cuda::std::is_nothrow_constructible_v<_Accessor, const _OtherAccessor&>)
       : _Accessor{__acc}
   {
-    _CCCL_ONLY_DEVICE_CODE_ALLOWED();
+    _CCCL_VERIFY_DEVICE_ONLY_USAGE();
   }
 
   _CCCL_TEMPLATE(typename _OtherAccessor)
@@ -126,7 +124,7 @@ public:
     ::cuda::std::is_nothrow_constructible_v<_Accessor, const _OtherAccessor&>)
       : _Accessor{__acc}
   {
-    _CCCL_ONLY_DEVICE_CODE_ALLOWED();
+    _CCCL_VERIFY_DEVICE_ONLY_USAGE();
   }
 
   _CCCL_TEMPLATE(typename _OtherAccessor)
@@ -136,7 +134,7 @@ public:
     ::cuda::std::is_nothrow_constructible_v<_Accessor, _OtherAccessor>)
       : _Accessor{::cuda::std::move(__acc)}
   {
-    _CCCL_ONLY_DEVICE_CODE_ALLOWED();
+    _CCCL_VERIFY_DEVICE_ONLY_USAGE();
   }
 
   _CCCL_TEMPLATE(typename _OtherAccessor)
@@ -146,29 +144,29 @@ public:
     ::cuda::std::is_nothrow_constructible_v<_Accessor, _OtherAccessor>)
       : _Accessor{::cuda::std::move(__acc)}
   {
-    _CCCL_ONLY_DEVICE_CODE_ALLOWED();
+    _CCCL_VERIFY_DEVICE_ONLY_USAGE();
   }
 
   _CCCL_API constexpr reference access(__element_type* __p, ::cuda::std::size_t __i) const
     noexcept(__is_access_noexcept)
   {
-    NV_IF_TARGET(NV_IS_DEVICE,
-                 (bool __is_shared_mem = ::__isShared(__p);
-                  _CCCL_ASSERT(__is_shared_mem, "pointer is not a shared memory pointer");
-                  _CCCL_ASSUME(__is_shared_mem);
-                  return _Accessor::access(__p, __i);))
-    _CCCL_ONLY_DEVICE_CODE_ALLOWED();
+    NV_IF_TARGET(
+      NV_IS_DEVICE,
+      (bool __is_shared_mem = ::__isShared(__p); _CCCL_ASSERT(__is_shared_mem, "__p is not a shared memory pointer");
+       _CCCL_ASSUME(__is_shared_mem);
+       return _Accessor::access(__p, __i);))
+    _CCCL_VERIFY_DEVICE_ONLY_USAGE();
   }
 
   _CCCL_API constexpr data_handle_type offset(__element_type* __p, ::cuda::std::size_t __i) const
     noexcept(__is_offset_noexcept)
   {
-    NV_IF_TARGET(NV_IS_DEVICE,
-                 (bool __is_shared_mem = ::__isShared(__p);
-                  _CCCL_ASSERT(__is_shared_mem, "pointer is not a shared memory pointer");
-                  _CCCL_ASSUME(__is_shared_mem);
-                  return _Accessor::offset(__p, __i);))
-    _CCCL_ONLY_DEVICE_CODE_ALLOWED();
+    NV_IF_TARGET(
+      NV_IS_DEVICE,
+      (bool __is_shared_mem = ::__isShared(__p); _CCCL_ASSERT(__is_shared_mem, "__p is not a shared memory pointer");
+       _CCCL_ASSUME(__is_shared_mem);
+       return _Accessor::offset(__p, __i);))
+    _CCCL_VERIFY_DEVICE_ONLY_USAGE();
   }
 };
 
