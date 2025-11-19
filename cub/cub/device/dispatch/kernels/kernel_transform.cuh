@@ -952,7 +952,7 @@ _CCCL_HOST_DEVICE auto make_aligned_base_ptr_kernel_arg(It ptr, int alignment) -
 }
 
 template <typename ActivePolicy>
-_CCCL_DEVICE_API constexpr int get_block_threads_helper()
+_CCCL_API constexpr int get_block_threads_helper()
 {
   if constexpr (ActivePolicy::algorithm == Algorithm::prefetch)
   {
