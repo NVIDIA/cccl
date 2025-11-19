@@ -36,7 +36,7 @@
 #  pragma system_header
 #endif // no system header
 
-#if _CCCL_HAS_CUDA_COMPILER()
+#if _CCCL_CUDA_COMPILATION()
 
 #  include <thrust/system/cuda/config.h>
 
@@ -130,7 +130,7 @@ struct DispatchCopyIf
           stream);
     _CUDA_CUB_RET_IF_FAIL(status);
 
-    status = cub::detail::AliasTemporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes);
+    status = cub::detail::alias_temporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes);
     _CUDA_CUB_RET_IF_FAIL(status);
 
     // Return if we're only querying temporary storage requirements
@@ -248,4 +248,4 @@ OutputIterator _CCCL_HOST_DEVICE copy_if(
 THRUST_NAMESPACE_END
 
 #  include <thrust/copy.h>
-#endif
+#endif // _CCCL_CUDA_COMPILATION()

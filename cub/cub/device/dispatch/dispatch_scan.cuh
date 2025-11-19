@@ -24,6 +24,7 @@
 
 #include <cub/agent/agent_scan.cuh>
 #include <cub/detail/launcher/cuda_runtime.cuh>
+#include <cub/device/dispatch/dispatch_common.cuh>
 #include <cub/device/dispatch/kernels/kernel_scan.cuh>
 #include <cub/device/dispatch/tuning/tuning_scan.cuh>
 #include <cub/thread/thread_operators.cuh>
@@ -41,12 +42,6 @@
 #include <cuda/std/__type_traits/is_unsigned.h>
 
 CUB_NAMESPACE_BEGIN
-
-enum class ForceInclusive
-{
-  Yes,
-  No
-};
 
 namespace detail::scan
 {
@@ -254,13 +249,6 @@ struct DispatchScan
     // performance.
     policy.CheckLoadModifier();
 
-    // Get device ordinal
-    int device_ordinal;
-    if (const auto error = CubDebug(cudaGetDevice(&device_ordinal)))
-    {
-      return error;
-    }
-
     // Number of input tiles
     const int tile_size = policy.Scan().BlockThreads() * policy.Scan().ItemsPerThread();
     const int num_tiles = static_cast<int>(::cuda::ceil_div(num_items, tile_size));
@@ -278,7 +266,7 @@ struct DispatchScan
     // the necessary size of the blob)
     void* allocations[1] = {};
     if (const auto error =
-          CubDebug(detail::AliasTemporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes)))
+          CubDebug(detail::alias_temporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes)))
     {
       return error;
     }

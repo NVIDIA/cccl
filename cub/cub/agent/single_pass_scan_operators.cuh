@@ -604,8 +604,8 @@ _CCCL_HOST_DEVICE _CCCL_FORCEINLINE constexpr size_t num_tiles_to_num_tile_state
   return warp_threads + num_tiles;
 }
 
-_CCCL_HOST_DEVICE _CCCL_FORCEINLINE size_t
-tile_state_allocation_size(size_t bytes_per_description, size_t bytes_per_payload, size_t num_tiles)
+_CCCL_HOST_DEVICE _CCCL_FORCEINLINE cudaError_t tile_state_allocation_size(
+  size_t& temp_storage_bytes, size_t bytes_per_description, size_t bytes_per_payload, size_t num_tiles)
 {
   size_t num_tile_states = num_tiles_to_num_tile_states(num_tiles);
   size_t allocation_sizes[]{
@@ -616,11 +616,9 @@ tile_state_allocation_size(size_t bytes_per_description, size_t bytes_per_payloa
     // bytes needed for inclusives
     num_tile_states * bytes_per_payload};
   // Set the necessary size of the blob
-  size_t temp_storage_bytes = 0;
-  void* allocations[3]      = {};
-  AliasTemporaries(nullptr, temp_storage_bytes, allocations, allocation_sizes);
-
-  return temp_storage_bytes;
+  temp_storage_bytes   = 0;
+  void* allocations[3] = {};
+  return alias_temporaries(nullptr, temp_storage_bytes, allocations, allocation_sizes);
 };
 
 _CCCL_HOST_DEVICE _CCCL_FORCEINLINE cudaError_t tile_state_init(
@@ -641,7 +639,7 @@ _CCCL_HOST_DEVICE _CCCL_FORCEINLINE cudaError_t tile_state_init(
     num_tile_states * bytes_per_payload};
 
   // Set the necessary size of the blob
-  return AliasTemporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes);
+  return alias_temporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes);
 }
 } // namespace detail
 
@@ -716,9 +714,8 @@ struct ScanTileState<T, true>
   _CCCL_HOST_DEVICE _CCCL_FORCEINLINE static constexpr cudaError_t
   AllocationSize(int num_tiles, size_t& temp_storage_bytes)
   {
-    temp_storage_bytes =
-      detail::tile_state_allocation_size(description_bytes_per_tile, payload_bytes_per_tile, num_tiles);
-    return cudaSuccess;
+    return detail::tile_state_allocation_size(
+      temp_storage_bytes, description_bytes_per_tile, payload_bytes_per_tile, num_tiles);
   }
 
   /**
@@ -933,9 +930,8 @@ struct ScanTileState<T, false>
   _CCCL_HOST_DEVICE _CCCL_FORCEINLINE static constexpr cudaError_t
   AllocationSize(int num_tiles, size_t& temp_storage_bytes)
   {
-    temp_storage_bytes =
-      detail::tile_state_allocation_size(description_bytes_per_tile, payload_bytes_per_tile, num_tiles);
-    return cudaSuccess;
+    return detail::tile_state_allocation_size(
+      temp_storage_bytes, description_bytes_per_tile, payload_bytes_per_tile, num_tiles);
   }
   /**
    * Initialize (from device)

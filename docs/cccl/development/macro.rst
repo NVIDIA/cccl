@@ -431,9 +431,9 @@ Debugging Macros
 ----------------
 
 +-----------------------------------+-------------------------------------------------------------------------------------------------------------+
-| ``_CCCL_ASSERT(COND, MSG)``       | Portable CCCL assert macro. Requires (``CCCL_ENABLE_HOST_ASSERTIONS`` or ``CCCL_ENABLE_DEVICE_ASSERTIONS``) |
+| ``_CCCL_ASSERT(COND, MSG)``       | Portable, conditional CCCL `assert()` macro. Requires (``CCCL_ENABLE_HOST_ASSERTIONS`` or ``CCCL_ENABLE_DEVICE_ASSERTIONS``) |
 +-----------------------------------+-------------------------------------------------------------------------------------------------------------+
-| ``_CCCL_VERIFY(COND, MSG)``       | Portable ``alignas(X)`` keyword (variable)                                                                  |
+| ``_CCCL_VERIFY(COND, MSG)``       | Portable, always-on `assert()` reserved for critical checks that are always required                                                           |
 +-----------------------------------+-------------------------------------------------------------------------------------------------------------+
 | ``_CCCL_ENABLE_ASSERTIONS``       | Enable assertions                                                                                           |
 +-----------------------------------+-------------------------------------------------------------------------------------------------------------+

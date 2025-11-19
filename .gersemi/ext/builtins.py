@@ -15,8 +15,15 @@ from gersemi.builtin_commands import builtin_commands
 # - function
 # - macro
 
+# Patch up https://github.com/BlankSpruce/gersemi/pull/80 if needed:
+mod_find_package = builtin_commands["find_package"]
+if "REQUIRED" in mod_find_package["multi_value_keywords"]:
+    mod_find_package["multi_value_keywords"].remove("REQUIRED")
+    mod_find_package["options"] += ["REQUIRED"]
+
 command_definitions = {
     "if ": builtin_commands["if"],
     "elseif ": builtin_commands["elseif"],
     "foreach ": builtin_commands["foreach"],
+    "find_package": mod_find_package,
 }
