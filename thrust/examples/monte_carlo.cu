@@ -25,7 +25,7 @@ int main()
   // use 30K independent seeds
   int M = 30000;
 
-  auto estimate_pi = [] __device__(unsigned int thread_id) {
+  auto estimate_pi = [] __device__(unsigned int thread_id) -> float {
     float sum      = 0;
     unsigned int N = 10000; // samples per thread
 
