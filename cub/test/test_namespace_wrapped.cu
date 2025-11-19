@@ -1,3 +1,5 @@
+#define CCCL_IGNORE_DEPRECATED_API
+
 // Wrap thrust and cub in different enclosing namespaces
 // (In practice, you probably want these to be the same, in which case just
 // set THRUST_CUB_WRAPPED_NAMESPACE to set both).

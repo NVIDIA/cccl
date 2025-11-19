@@ -5,7 +5,11 @@
 # entrypoints.
 
 # Add regexes matching deprecated headers here to disable warnings for them:
-set(deprecated_headers_regexes "thrust/iterator/tabulate_output_iterator\\.h")
+set(
+  deprecated_headers_regexes
+  "thrust/iterator/tabulate_output_iterator\\.h"
+  "thrust/iterator/constant_iterator\\.h"
+)
 
 # Meta target for all configs' header builds:
 add_custom_target(thrust.all.headers)
