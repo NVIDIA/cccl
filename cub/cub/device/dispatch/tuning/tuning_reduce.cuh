@@ -89,7 +89,7 @@ struct reduce_arch_policy // equivalent of a policy for a single CUDA architectu
 };
 
 #if _CCCL_STD_VER >= 2020
-consteval void __needs_a_constexpr_value(auto) {}
+_CCCL_API consteval void __needs_a_constexpr_value(auto) {}
 
 // TODO(bgruber): bikeshed name before we make the tuning API public
 template <typename T>
