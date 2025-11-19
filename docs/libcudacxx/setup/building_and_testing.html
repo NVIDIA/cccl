@@ -1502,31 +1502,31 @@
 <p>However, often only a small subset of the full test suite needs to be run during development. For that we rely on <code class="docutils literal notranslate"><span class="pre">lit</span></code>.
 After libcu++ has been configured either through the build scripts or directly via a cmake preset one can then run.</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">cd</span><span class="w"> </span>build
-lit<span class="w"> </span>libcudacxx-cpp17/RELATIVE_PATH_TO_TEST_OR_SUBFOLDER<span class="w"> </span>-sv
+lit<span class="w"> </span>libcudacxx/RELATIVE_PATH_TO_TEST_OR_SUBFOLDER<span class="w"> </span>-sv
 </pre></div>
 </div>
 <p>This will build and run all tests within <code class="docutils literal notranslate"><span class="pre">RELATIVE_PATH_TO_TEST_OR_SUBFOLDER</span></code> which must be a valid path within the CCCL.
 Note that the name of the top level folder is the same as the name of the preset. For the build script the default is
-<code class="docutils literal notranslate"><span class="pre">libcudacxx-cpp17</span></code>. As an example this is how to run all tests for <code class="docutils literal notranslate"><span class="pre">cuda::std::span</span></code>, which are located in
+<code class="docutils literal notranslate"><span class="pre">libcudacxx</span></code>. As an example this is how to run all tests for <code class="docutils literal notranslate"><span class="pre">cuda::std::span</span></code>, which are located in
 <code class="docutils literal notranslate"><span class="pre">libcudacxx/test/libcudacxx/std/containers/views/views.span</span></code></p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">cd</span><span class="w"> </span>build
 
 <span class="c1"># Builds all tests within libcudacxx/test/libcudacxx/std/containers/views/views.span</span>
-lit<span class="w"> </span>libcudacxx-cpp17/libcudacxx/test/libcudacxx/std/containers/views/views.span<span class="w"> </span>-sv
+lit<span class="w"> </span>libcudacxx/libcudacxx/test/libcudacxx/std/containers/views/views.span<span class="w"> </span>-sv
 
 <span class="c1"># Builds the individual test array.pass.cpp</span>
-lit<span class="w"> </span>libcudacxx-cpp17/libcudacxx/test/libcudacxx/std/containers/views/views.span/span.cons/array.pass.cpp<span class="w"> </span>-sv
+lit<span class="w"> </span>libcudacxx/libcudacxx/test/libcudacxx/std/containers/views/views.span/span.cons/array.pass.cpp<span class="w"> </span>-sv
 </pre></div>
 </div>
 <p>If only building the tests and not running them is desired one can pass <code class="docutils literal notranslate"><span class="pre">-Dexecutor=&quot;NoopExecutor()&quot;</span></code> to the lit invocation.
 This is especially useful if the machine has no GPU or testing a different architecture</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">cd</span><span class="w"> </span>build
-lit<span class="w"> </span>libcudacxx-cpp17/RELATIVE_PATH_TO_TEST_OR_SUBFOLDER<span class="w"> </span>-sv<span class="w"> </span>-Dexecutor<span class="o">=</span><span class="s2">&quot;NoopExecutor()&quot;</span>
+lit<span class="w"> </span>libcudacxx/RELATIVE_PATH_TO_TEST_OR_SUBFOLDER<span class="w"> </span>-sv<span class="w"> </span>-Dexecutor<span class="o">=</span><span class="s2">&quot;NoopExecutor()&quot;</span>
 </pre></div>
 </div>
 <p>Finally different standard modes can be tested by passing e.g <code class="docutils literal notranslate"><span class="pre">--param=std=c++20</span></code></p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">cd</span><span class="w"> </span>build
-lit<span class="w"> </span>libcudacxx-cpp17/RELATIVE_PATH_TO_TEST_OR_SUBFOLDER<span class="w"> </span>-sv<span class="w"> </span>--param<span class="o">=</span><span class="nv">std</span><span class="o">=</span>c++20
+lit<span class="w"> </span>libcudacxx/RELATIVE_PATH_TO_TEST_OR_SUBFOLDER<span class="w"> </span>-sv<span class="w"> </span>--param<span class="o">=</span><span class="nv">std</span><span class="o">=</span>c++20
 </pre></div>
 </div>
 </section>

@@ -1562,20 +1562,20 @@ container and choose a CUDA toolkit and host compiler:
 </div>
 <p>Precompile the libcudacxx lit suite:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">ci</span><span class="o">/</span><span class="n">util</span><span class="o">/</span><span class="n">build_and_test_targets</span><span class="o">.</span><span class="n">sh</span> \
-  <span class="o">--</span><span class="n">preset</span> <span class="n">libcudacxx</span><span class="o">-</span><span class="n">cpp20</span> \
+  <span class="o">--</span><span class="n">preset</span> <span class="n">libcudacxx</span> \
   <span class="o">--</span><span class="n">build</span><span class="o">-</span><span class="n">targets</span> <span class="n">libcudacxx</span><span class="o">.</span><span class="n">test</span><span class="o">.</span><span class="n">lit</span><span class="o">.</span><span class="n">precompile</span>
 </pre></div>
 </div>
 <p>Precompile a single libcudacxx lit test (no execution):</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">ci</span><span class="o">/</span><span class="n">util</span><span class="o">/</span><span class="n">build_and_test_targets</span><span class="o">.</span><span class="n">sh</span> \
-  <span class="o">--</span><span class="n">preset</span> <span class="n">libcudacxx</span><span class="o">-</span><span class="n">cpp20</span> \
+  <span class="o">--</span><span class="n">preset</span> <span class="n">libcudacxx</span> \
   <span class="o">--</span><span class="n">lit</span><span class="o">-</span><span class="n">precompile</span><span class="o">-</span><span class="n">tests</span> \
     <span class="s2">&quot;std/algorithms/alg.nonmodifying/alg.any_of/any_of.pass.cpp&quot;</span>
 </pre></div>
 </div>
 <p>Execute one or more libcudacxx lit tests:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">ci</span><span class="o">/</span><span class="n">util</span><span class="o">/</span><span class="n">build_and_test_targets</span><span class="o">.</span><span class="n">sh</span> \
-  <span class="o">--</span><span class="n">preset</span> <span class="n">libcudacxx</span><span class="o">-</span><span class="n">cpp20</span> \
+  <span class="o">--</span><span class="n">preset</span> <span class="n">libcudacxx</span> \
   <span class="o">--</span><span class="n">lit</span><span class="o">-</span><span class="n">tests</span> \
     <span class="s2">&quot;std/algorithms/alg.nonmodifying/alg.any_of/any_of.pass.cpp&quot;</span>
 </pre></div>
