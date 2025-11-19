@@ -200,7 +200,7 @@ CUresult cccl_device_reduce_build_ex(
 
     // TODO(bgruber): drop this if tuning policies become formattable
     std::stringstream cub_arch_policies_str;
-    cub_arch_policies_str << cub_arch_policies((cc_major * 10) + cc_minor * 10);
+    cub_arch_policies_str << cub_arch_policies((cc_major * 10 + cc_minor) * 10);
 
     auto policy_hub_expr =
       std::format("cub::detail::reduce::arch_policies_from_types<{}, {}, {}>", accum_cpp, offset_t, op_name);
@@ -217,6 +217,8 @@ struct __align__({2}) storage_t {{
 {4}
 {5}
 using device_reduce_policy = {6};
+using namespace cub;
+using namespace cub::detail::reduce;
 static_assert(device_reduce_policy()(__CUDA_ARCH__) == {7}, "Host generated and JIT compiled policy mismatch");
 )XXX",
       jit_template_header_contents, // 0
