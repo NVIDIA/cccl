@@ -820,9 +820,8 @@ void TestScanEdgeCases()
   {
     const int n = 10000;
     thrust::device_vector<int> d_input(n);
-    thrust::tabulate(d_input.begin(), d_input.end(), [](int i) {
-      return (i % 5) + 1;
-    });
+    using thrust::placeholders::_1;
+    thrust::tabulate(d_input.begin(), d_input.end(), (_1 % 5) + 1);
 
     thrust::device_vector<int> d_output(n);
     auto r = thrust::inclusive_scan(d_input.begin(), d_input.end(), d_output.begin(), 2, ::cuda::std::multiplies<>{});
@@ -840,9 +839,8 @@ void TestScanEdgeCases()
   {
     const int n = 1024;
     thrust::device_vector<int> d_input(n);
-    thrust::tabulate(d_input.begin(), d_input.end(), [](int i) {
-      return i + 1;
-    });
+    using thrust::placeholders::_1;
+    thrust::tabulate(d_input.begin(), d_input.end(), _1 + 1);
 
     thrust::device_vector<int> d_output(n);
     auto r = thrust::inclusive_scan(d_input.begin(), d_input.end(), d_output.begin(), 10, ::cuda::std::multiplies<>{});
@@ -859,9 +857,8 @@ void TestScanEdgeCases()
   {
     const int n = 1023;
     thrust::device_vector<int> d_input(n);
-    thrust::tabulate(d_input.begin(), d_input.end(), [](int i) {
-      return (i % 3) + 1;
-    });
+    using thrust::placeholders::_1;
+    thrust::tabulate(d_input.begin(), d_input.end(), (_1 % 3) + 1);
 
     thrust::device_vector<int> d_output(n);
     auto r = thrust::inclusive_scan(d_input.begin(), d_input.end(), d_output.begin(), 5, ::cuda::std::multiplies<>{});
@@ -890,9 +887,8 @@ void TestScanEdgeCases()
   {
     const int n = 10000;
     thrust::device_vector<int> d_input(n);
-    thrust::tabulate(d_input.begin(), d_input.end(), [](int i) {
-      return (i % 3) + 1;
-    });
+    using thrust::placeholders::_1;
+    thrust::tabulate(d_input.begin(), d_input.end(), (_1 % 3) + 1);
 
     thrust::device_vector<int> d_output(n);
     auto r = thrust::exclusive_scan(d_input.begin(), d_input.end(), d_output.begin(), 5, ::cuda::std::multiplies<>{});
@@ -909,9 +905,8 @@ void TestScanEdgeCases()
   {
     const int n = 1024;
     thrust::device_vector<int> d_input(n);
-    thrust::tabulate(d_input.begin(), d_input.end(), [](int i) {
-      return (i % 5) + 1;
-    });
+    using thrust::placeholders::_1;
+    thrust::tabulate(d_input.begin(), d_input.end(), (_1 % 5) + 1);
 
     thrust::device_vector<int> d_output(n);
     auto r = thrust::exclusive_scan(d_input.begin(), d_input.end(), d_output.begin(), 3, ::cuda::std::multiplies<>{});
