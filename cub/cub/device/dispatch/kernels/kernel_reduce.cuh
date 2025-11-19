@@ -128,15 +128,15 @@ template <typename ArchPolicies,
           typename OffsetT,
           typename ReductionOpT,
           typename AccumT,
-          typename TransformOpT>
-CUB_DETAIL_KERNEL_ATTRIBUTES __launch_bounds__(int(
-  ArchPolicies{}(::cuda::arch_id{CUB_PTX_ARCH / 10})
-    .reduce_policy.block_threads)) void DeviceReduceKernel(InputIteratorT d_in,
-                                                           AccumT* d_out,
-                                                           OffsetT num_items,
-                                                           GridEvenShare<OffsetT> even_share,
-                                                           ReductionOpT reduction_op,
-                                                           TransformOpT transform_op)
+          typename TransformOpT,
+          int BlockThreads = ArchPolicies{}(::cuda::arch_id{CUB_PTX_ARCH / 10}).reduce_policy.block_threads>
+CUB_DETAIL_KERNEL_ATTRIBUTES __launch_bounds__(BlockThreads) void DeviceReduceKernel(
+  InputIteratorT d_in,
+  AccumT* d_out,
+  OffsetT num_items,
+  GridEvenShare<OffsetT> even_share,
+  ReductionOpT reduction_op,
+  TransformOpT transform_op)
 {
   static constexpr agent_reduce_policy policy = ArchPolicies{}(::cuda::arch_id{CUB_PTX_ARCH / 10}).reduce_policy;
   // TODO(bgruber): pass policy directly as template argument to AgentReduce in C++20
@@ -218,15 +218,15 @@ template <typename ArchPolicies,
           typename ReductionOpT,
           typename InitT,
           typename AccumT,
-          typename TransformOpT = ::cuda::std::identity>
-CUB_DETAIL_KERNEL_ATTRIBUTES __launch_bounds__(
-  int(ArchPolicies{}(::cuda::arch_id{CUB_PTX_ARCH / 10}).single_tile_policy.block_threads),
-  1) void DeviceReduceSingleTileKernel(InputIteratorT d_in,
-                                       OutputIteratorT d_out,
-                                       OffsetT num_items,
-                                       ReductionOpT reduction_op,
-                                       InitT init,
-                                       TransformOpT transform_op)
+          typename TransformOpT = ::cuda::std::identity,
+          int BlockThreads      = ArchPolicies{}(::cuda::arch_id{CUB_PTX_ARCH / 10}).single_tile_policy.block_threads>
+CUB_DETAIL_KERNEL_ATTRIBUTES __launch_bounds__(BlockThreads, 1) void DeviceReduceSingleTileKernel(
+  InputIteratorT d_in,
+  OutputIteratorT d_out,
+  OffsetT num_items,
+  ReductionOpT reduction_op,
+  InitT init,
+  TransformOpT transform_op)
 {
   static constexpr agent_reduce_policy policy = ArchPolicies{}(::cuda::arch_id{CUB_PTX_ARCH / 10}).single_tile_policy;
   // TODO(bgruber): pass policy directly as template argument to AgentReduce in C++20
