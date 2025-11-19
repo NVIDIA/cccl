@@ -232,7 +232,7 @@ def make_zip_iterator(*iterators):
                 state_type=state_type,
                 value_type=value_type,
             )
-            self.kind_ = self.__class__.iterator_kind_type(
+            self._kind = self.__class__.iterator_kind_type(
                 (value_type, *kinds), self.state_type
             )
 
