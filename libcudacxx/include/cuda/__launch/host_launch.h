@@ -24,6 +24,7 @@
 #include <cuda/__driver/driver_api.h>
 #include <cuda/__stream/stream_ref.h>
 #include <cuda/std/__functional/reference_wrapper.h>
+#include <cuda/std/__memory/addressof.h>
 #include <cuda/std/__tuple_dir/apply.h>
 #include <cuda/std/__tuple_dir/tuple.h>
 #include <cuda/std/__type_traits/decay.h>
@@ -39,7 +40,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA
 template <class _Callable>
 _CCCL_HOST_API inline void CUDA_CB __host_func_launcher(void* __callable_ptr)
 {
-  (*static_cast<_Callable*>(__callable_ptr))();
+  (*(_Callable*) __callable_ptr)();
 }
 
 template <class _Callable, class... _Args>
@@ -86,12 +87,14 @@ _CCCL_HOST_API void host_launch(stream_ref __stream, _Callable __callable, _Args
 
   if constexpr (!__has_args && ::cuda::std::is_function_v<_Callable> && ::cuda::std::is_pointer_v<_Callable>)
   {
-    ::cuda::__driver::__launchHostFunc(__stream.get(), ::cuda::__host_func_launcher<_Callable>, __callable);
+    ::cuda::__driver::__launchHostFunc(__stream.get(), ::cuda::__host_func_launcher<_Callable>, (void*) __callable);
   }
   else if constexpr (!__has_args && ::cuda::std::__is_cuda_std_reference_wrapper_v<_Callable>)
   {
     ::cuda::__driver::__launchHostFunc(
-      __stream.get(), ::cuda::__host_func_launcher<typename _Callable::type>, ::cuda::std::addressof(__callable.get()));
+      __stream.get(),
+      ::cuda::__host_func_launcher<typename _Callable::type>,
+      (void*) ::cuda::std::addressof(__callable.get()));
   }
   else
   {
