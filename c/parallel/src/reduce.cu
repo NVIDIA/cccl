@@ -175,7 +175,7 @@ CUresult cccl_device_reduce_build_ex(
       {
         accum_type = accum_type::float32;
       }
-      if (accum_t.type == CCCL_FLOAT64)
+      else if (accum_t.type == CCCL_FLOAT64)
       {
         accum_type = accum_type::double32;
       }
@@ -194,7 +194,7 @@ CUresult cccl_device_reduce_build_ex(
           break;
       }
 
-      const int offset_size = int{sizeof(uint64_t)};
+      const int offset_size = int{sizeof(OffsetT)};
       return arch_policies{accum_type, operation_t, offset_size, static_cast<int>(accum_t.size)};
     }();
 
@@ -333,7 +333,7 @@ CUresult cccl_device_reduce(
       *temp_storage_bytes,
       indirect_arg_t{d_in}, // could be indirect_iterator_t, but CUB does not need to increment it
       indirect_arg_t{d_out}, // could be indirect_iterator_t, but CUB does not need to increment it
-      static_cast<::cuda::std::size_t>(num_items),
+      static_cast<OffsetT>(num_items),
       indirect_arg_t{op},
       indirect_arg_t{init},
       stream,
