@@ -92,8 +92,8 @@ struct DeviceReduceKernelSource
 template <typename PolicyHub>
 struct arch_policies_from_hub
 {
-  // this is only called in device code
-  _CCCL_DEVICE_API constexpr auto operator()(int /*arch*/) const -> reduce_arch_policy
+  // this is only called in device code, so we can ignore the arch parameter
+  _CCCL_DEVICE_API constexpr auto operator()(::cuda::arch_id /*arch*/) const -> reduce_arch_policy
   {
     using ap             = typename PolicyHub::MaxPolicy::ActivePolicy;
     using ap_reduce      = typename ap::ReducePolicy;
