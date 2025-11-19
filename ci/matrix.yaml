@@ -72,6 +72,11 @@ workflows:
     - {jobs: ['test'], project: 'packaging', ctk: '13.0', cxx: ['gcc',   'clang'],   gpu: 'rtx2080'}
     - {jobs: ['test'], project: 'packaging', ctk: '13.X', cxx: ['gcc',   'clang'],   gpu: 'rtx2080'}
     - {jobs: ['install'], project: 'packaging'}
+    # NVBench Helper testing:
+    - {jobs: ['test'], project: 'nvbench_helper', ctk: '12.0', cxx: ['gcc10', 'clang14'], gpu: 'rtx2080'}
+    - {jobs: ['test'], project: 'nvbench_helper', ctk: '12.X', cxx: ['gcc10', 'clang14'], gpu: 'rtx2080'}
+    - {jobs: ['test'], project: 'nvbench_helper', ctk: '13.0', cxx: ['gcc',   'clang'],   gpu: 'rtx2080'}
+    - {jobs: ['test'], project: 'nvbench_helper', ctk: '13.X', cxx: ['gcc',   'clang'],   gpu: 'rtx2080'}
     # NVHPC build
     - {jobs: ['build'], cxx: 'nvhpc', ctk: 'nvhpc', std: 'all', project: ['libcudacxx', 'cub', 'thrust', 'cudax', 'stdpar'], cpu: ['amd64', 'arm64']}
     # clang-cuda
@@ -112,6 +117,8 @@ workflows:
     # Packaging / install
     - {project: 'packaging', jobs: ['test'], ctk: '13.X', cxx: ['gcc', 'clang'], gpu: 'rtx2080', sm: 'gpu'}
     - {project: 'packaging', jobs: ['install']}
+    # NVBench Helper testing:
+    - {project: 'nvbench_helper', jobs: ['test'], ctk: '13.X', cxx: ['gcc', 'clang'], gpu: 'rtx2080'}
 
   nightly:
     # CTK 12.0 full matrix build: default projects
@@ -184,6 +191,11 @@ workflows:
     - {jobs: ['test'], project: 'packaging', ctk: '13.0', cxx: ['gcc',   'clang'],   gpu: 'rtx2080'}
     - {jobs: ['test'], project: 'packaging', ctk: '13.X', cxx: ['gcc',   'clang'],   gpu: 'rtx2080'}
     - {jobs: ['install'], project: 'packaging'}
+    # NVBench Helper testing:
+    - {jobs: ['test'], project: 'nvbench_helper', ctk: '12.0', cxx: ['gcc10', 'clang14'], gpu: 'rtx2080'}
+    - {jobs: ['test'], project: 'nvbench_helper', ctk: '12.X', cxx: ['gcc10', 'clang14'], gpu: 'rtx2080'}
+    - {jobs: ['test'], project: 'nvbench_helper', ctk: '13.0', cxx: ['gcc',   'clang'],   gpu: 'rtx2080'}
+    - {jobs: ['test'], project: 'nvbench_helper', ctk: '13.X', cxx: ['gcc',   'clang'],   gpu: 'rtx2080'}
     # NVHPC build
     - {jobs: ['build'], cxx: 'nvhpc-prev', ctk: 'nvhpc-prev', std: 'all', project: ['libcudacxx', 'cub', 'thrust', 'cudax', 'stdpar'], cpu: ['amd64', 'arm64']}
     - {jobs: ['build'], cxx: 'nvhpc',      ctk: 'nvhpc',      std: 'all', project: ['libcudacxx', 'cub', 'thrust', 'cudax', 'stdpar'], cpu: ['amd64', 'arm64']}
@@ -261,6 +273,11 @@ workflows:
     - {jobs: ['test'], project: 'packaging', ctk: '13.0', cxx: ['gcc',   'clang'],   gpu: 'rtx2080'}
     - {jobs: ['test'], project: 'packaging', ctk: '13.X', cxx: ['gcc',   'clang'],   gpu: 'rtx2080'}
     - {jobs: ['install'], project: 'packaging'}
+    # NVBench Helper:
+    - {jobs: ['test'], project: 'nvbench_helper', ctk: '12.0', cxx: ['gcc10', 'clang14'], gpu: 'rtx2080'}
+    - {jobs: ['test'], project: 'nvbench_helper', ctk: '12.X', cxx: ['gcc10', 'clang14'], gpu: 'rtx2080'}
+    - {jobs: ['test'], project: 'nvbench_helper', ctk: '13.0', cxx: ['gcc',   'clang'],   gpu: 'rtx2080'}
+    - {jobs: ['test'], project: 'nvbench_helper', ctk: '13.X', cxx: ['gcc',   'clang'],   gpu: 'rtx2080'}
     # NVHPC build
     - {jobs: ['build'], cxx: 'nvhpc-prev', ctk: 'nvhpc-prev', std: 'all', project: ['libcudacxx', 'cub', 'thrust', 'cudax', 'stdpar'], cpu: ['amd64', 'arm64']}
     - {jobs: ['build'], cxx: 'nvhpc',      ctk: 'nvhpc',      std: 'all', project: ['libcudacxx', 'cub', 'thrust', 'cudax', 'stdpar'], cpu: ['amd64', 'arm64']}
@@ -507,6 +524,12 @@ projects:
   cccl_c_stf:
     name: 'CCCL C CUDASTF'
     stds: [20]
+  nvbench_helper:
+    name: 'NVBench Helper'
+    stds: [17] # Only builds on oldest arch for max compat.
+    job_map:
+      build: []
+      test: ['test_nobuild']
 
   # Run specific build_and_test_targets.sh invocations across the CI matrix.
   # Use the override workflow and supply arguments via the `args` tag.

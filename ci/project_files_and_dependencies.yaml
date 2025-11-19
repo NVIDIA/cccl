@@ -165,9 +165,13 @@ projects:
 
   nvbench_helper:
     name: "NVBench Helper"
+    matrix_project: "nvbench_helper"
     lite_dependencies: [libcudacxx_public, cub_public, thrust_public]
     full_dependencies: []
-    include_regexes: ["nvbench_helper/"]
+    include_regexes:
+      - "nvbench_helper/"
+      # CCCLBenchmarkRegistry.cmake is effectively part of nvbench_helper:
+      - "benchmarks/cmake/"
 
 # Files matching any of these regexes will be ignored globally.
 ignore_regexes:
@@ -193,6 +197,7 @@ ignore_regexes:
   - '\.github/workflows/update_branch_version\.yml'
   - '\.github/workflows/verify-devcontainers\.yml'
   - '\.gitignore'
+  - "benchmarks/scripts/" # Python+bash scripts for running benchmarks, not used in tests.
   - 'cccl-version.json'
   - 'ci/matx/'
   - 'ci/pytorch/'
