@@ -57,12 +57,12 @@ public:
   {};
   static constexpr __storage_tag_t __storage_tag{};
 
-  _CCCL_API explicit operator _Storage() const noexcept
+  _CCCL_API operator _Storage() const noexcept
   {
     return __s_;
   }
 
-  _CCCL_API explicit simd_mask(const _Storage& __s, __storage_tag_t)
+  _CCCL_API simd_mask(const _Storage& __s, __storage_tag_t) noexcept
       : __s_(__s)
   {}
 
