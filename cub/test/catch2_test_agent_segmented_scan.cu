@@ -71,7 +71,8 @@ template <int BlockThreads,
           cub::BlockLoadAlgorithm LoadAlgorithm,
           cub::CacheLoadModifier LoadModifier,
           cub::BlockStoreAlgorithm StoreAlgorithm,
-          cub::BlockScanAlgorithm ScanAlgorithm>
+          cub::BlockScanAlgorithm ScanAlgorithm,
+          int SegmentsPerBlock = 1>
 struct agent_policy_t
 {
   static constexpr int BLOCK_THREADS                        = BlockThreads;
@@ -80,24 +81,26 @@ struct agent_policy_t
   static constexpr cub::CacheLoadModifier load_modifier     = LoadModifier;
   static constexpr cub::BlockStoreAlgorithm store_algorithm = StoreAlgorithm;
   static constexpr cub::BlockScanAlgorithm scan_algorithm   = ScanAlgorithm;
+  static constexpr int segments_per_block                   = SegmentsPerBlock;
 };
 
-template <int _BLOCK_THREADS, int _ITEMS_PER_THREAD>
+template <int BlockThreads, int ItemsPerThread, int SegmentsPerBlock = 1>
 struct policy_wrapper
 {
   using segmented_scan_policy_t =
-    agent_policy_t<_BLOCK_THREADS,
-                   _ITEMS_PER_THREAD,
+    agent_policy_t<BlockThreads,
+                   ItemsPerThread,
                    cub::BLOCK_LOAD_WARP_TRANSPOSE,
                    cub::LOAD_DEFAULT,
                    cub::BLOCK_STORE_WARP_TRANSPOSE,
-                   cub::BLOCK_SCAN_WARP_SCANS>;
+                   cub::BLOCK_SCAN_WARP_SCANS,
+                   SegmentsPerBlock>;
 };
 
-template <int _BLOCK_THREADS, int _ITEMS_PER_THREAD>
+template <int BlockThreads, int ItemsPerThread, int SegmentsPerBlock>
 struct ChainedPolicy
 {
-  using ActivePolicy = policy_wrapper<_BLOCK_THREADS, _ITEMS_PER_THREAD>;
+  using ActivePolicy = policy_wrapper<BlockThreads, ItemsPerThread, SegmentsPerBlock>;
 };
 
 template <typename ChainedPolicyT,
@@ -124,6 +127,7 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::segmented_scan_policy_t::BLO
     InitValueT init_value)
 {
   using segmented_scan_policy_t = typename ChainedPolicyT::ActivePolicy::segmented_scan_policy_t;
+  static_assert(segmented_scan_policy_t::segments_per_block == 1, "Policy with single segment per block must be used");
 
   using agent_segmented_scan_t = cub::detail::segmented_scan::agent_segmented_scan<
     segmented_scan_policy_t,
@@ -176,18 +180,17 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::segmented_scan_policy_t::BLO
     InitValueT init_value)
 {
   using segmented_scan_policy_t = typename ChainedPolicyT::ActivePolicy::segmented_scan_policy_t;
+  static_assert(segmented_scan_policy_t::segments_per_block == 2, "Policy with two segment per block must be used");
 
-  constexpr int num_segments_per_block = 2;
-  using agent_segmented_scan_t         = cub::detail::segmented_scan::agent_segmented_scan_multiple_segments_per_block<
-            segmented_scan_policy_t,
-            InputIteratorT,
-            OutputIteratorT,
-            OffsetT,
-            ScanOpT,
-            ActualInitValueT,
-            AccumT,
-            num_segments_per_block,
-            ForceInclusive>;
+  using agent_segmented_scan_t = cub::detail::segmented_scan::agent_segmented_scan<
+    segmented_scan_policy_t,
+    InputIteratorT,
+    OutputIteratorT,
+    OffsetT,
+    ScanOpT,
+    ActualInitValueT,
+    AccumT,
+    ForceInclusive>;
 
   __shared__ typename agent_segmented_scan_t::TempStorage temp_storage;
 
@@ -230,31 +233,31 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::segmented_scan_policy_t::BLO
     InitValueT init_value)
 {
   using segmented_scan_policy_t = typename ChainedPolicyT::ActivePolicy::segmented_scan_policy_t;
+  static_assert(segmented_scan_policy_t::segments_per_block == 3, "Policy with three segment per block must be used");
 
-  constexpr int num_segments_per_block = 3;
-  using agent_segmented_scan_t         = cub::detail::segmented_scan::agent_segmented_scan_multiple_segments_per_block<
-            segmented_scan_policy_t,
-            InputIteratorT,
-            OutputIteratorT,
-            OffsetT,
-            ScanOpT,
-            ActualInitValueT,
-            AccumT,
-            num_segments_per_block,
-            ForceInclusive>;
+  using agent_segmented_scan_t = cub::detail::segmented_scan::agent_segmented_scan<
+    segmented_scan_policy_t,
+    InputIteratorT,
+    OutputIteratorT,
+    OffsetT,
+    ScanOpT,
+    ActualInitValueT,
+    AccumT,
+    ForceInclusive>;
 
   __shared__ typename agent_segmented_scan_t::TempStorage temp_storage;
 
   const ActualInitValueT _init_value = init_value;
 
-  const auto segment_id = blockIdx.x;
+  const auto segment_id                = blockIdx.x;
+  constexpr int num_segments_per_block = segmented_scan_policy_t::segments_per_block;
 
-  _CCCL_ASSERT(3 * segment_id < n_segments,
+  _CCCL_ASSERT(num_segments_per_block * segment_id < n_segments,
                "device_segmented_scan_kernel launch configuration results in access violation");
 
-  OffsetT inp_begin_offsets[3];
-  OffsetT inp_end_offsets[3];
-  OffsetT out_begin_offsets[3];
+  OffsetT inp_begin_offsets[num_segments_per_block];
+  OffsetT inp_end_offsets[num_segments_per_block];
+  OffsetT out_begin_offsets[num_segments_per_block];
 
   if (num_segments_per_block * blockIdx.x + num_segments_per_block - 1 < n_segments)
   {
@@ -302,7 +305,7 @@ C2H_TEST("cub::detail::segmented_scan::agent_segmented_scan works with one segme
   unsigned* d_offsets = thrust::raw_pointer_cast(offsets.data());
 
   device_segmented_scan_kernel_one_segment_per_block<
-    ChainedPolicy<128, 4>,
+    ChainedPolicy<128, 4, 1>,
     pair_t*,
     pair_t*,
     unsigned*,
@@ -355,7 +358,7 @@ C2H_TEST("cub::detail::segmented_scan::agent_segmented_scan works with two segme
   unsigned* d_offsets = thrust::raw_pointer_cast(offsets.data());
 
   device_segmented_scan_kernel_two_segments_per_block<
-    ChainedPolicy<128, 4>,
+    ChainedPolicy<128, 4, 2>,
     pair_t*,
     pair_t*,
     unsigned*,
@@ -408,7 +411,7 @@ C2H_TEST("cub::detail::segmented_scan::agent_segmented_scan works with three seg
   unsigned* d_offsets = thrust::raw_pointer_cast(offsets.data());
 
   device_segmented_scan_kernel_three_segments_per_block<
-    ChainedPolicy<128, 4>,
+    ChainedPolicy<128, 4, 3>,
     pair_t*,
     pair_t*,
     unsigned*,
