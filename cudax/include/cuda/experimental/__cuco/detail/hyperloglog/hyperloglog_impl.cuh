@@ -21,10 +21,12 @@
 #  pragma system_header
 #endif // no system header
 
-#include <thrust/type_traits/is_contiguous_iterator.h>
+#include <thrust/detail/raw_pointer_cast.h>
 
+#include <cuda/__runtime/api_wrapper.h>
 #include <cuda/atomic>
 #include <cuda/std/__algorithm/max.h> // TODO #include <cuda/std/algorithm> once available
+#include <cuda/std/__iterator/concepts.h>
 #include <cuda/std/bit>
 #include <cuda/std/cstddef>
 #include <cuda/std/span>
@@ -35,7 +37,6 @@
 #include <cuda/experimental/__cuco/detail/hyperloglog/kernels.cuh>
 #include <cuda/experimental/__cuco/detail/utility/strong_type.cuh>
 #include <cuda/experimental/__cuco/hash_functions.cuh>
-#include <cuda/experimental/__stf/utility/cuda_safe_call.cuh>
 
 #include <vector>
 
@@ -176,7 +177,7 @@ public:
 
     // In case the input iterator represents a contiguous memory segment we can employ efficient
     // vectorized loads
-    if constexpr (thrust::is_contiguous_iterator_v<_InputIt>)
+    if constexpr (::cuda::std::contiguous_iterator<_InputIt>)
     {
       auto const __ptr                  = thrust::raw_pointer_cast(&__first[0]);
       auto constexpr __max_vector_bytes = 32;
@@ -203,19 +204,32 @@ public:
 
     if (__kernel != nullptr and this->__try_reserve_shmem(__kernel, __shmem_bytes))
     {
-      if constexpr (thrust::is_contiguous_iterator_v<_InputIt>)
+      if constexpr (::cuda::std::contiguous_iterator<_InputIt>)
       {
         // We make use of the occupancy calculator to get the minimum number of blocks which still
         // saturates the GPU. This reduces the shmem initialization overhead and atomic contention
         // on the final register array during the merge phase.
-        stf::cuda_safe_call(cudaOccupancyMaxPotentialBlockSize(&__grid_size, &__block_size, __kernel, __shmem_bytes));
+        _CCCL_TRY_CUDA_API(
+          ::cudaOccupancyMaxPotentialBlockSize,
+          "cudaOccupancyMaxPotentialBlockSize failed",
+          &__grid_size,
+          &__block_size,
+          __kernel,
+          __shmem_bytes);
 
         auto const __ptr      = thrust::raw_pointer_cast(&__first[0]);
         void* __kernel_args[] = {const_cast<void*>(reinterpret_cast<void const*>(&__ptr)),
                                  const_cast<void*>(reinterpret_cast<void const*>(&__num_items)),
                                  reinterpret_cast<void*>(this)};
-        stf::cuda_safe_call(
-          cudaLaunchKernel(__kernel, __grid_size, __block_size, __kernel_args, __shmem_bytes, __stream.get()));
+        _CCCL_TRY_CUDA_API(
+          ::cudaLaunchKernel,
+          "cudaLaunchKernel failed",
+          __kernel,
+          __grid_size,
+          __block_size,
+          __kernel_args,
+          __shmem_bytes,
+          __stream.get());
       }
     }
     else
@@ -226,10 +240,23 @@ public:
                                reinterpret_cast<void*>(this)};
       if (this->__try_reserve_shmem(__kernel, __shmem_bytes))
       {
-        stf::cuda_safe_call(cudaOccupancyMaxPotentialBlockSize(&__grid_size, &__block_size, __kernel, __shmem_bytes));
+        _CCCL_TRY_CUDA_API(
+          ::cudaOccupancyMaxPotentialBlockSize,
+          "cudaOccupancyMaxPotentialBlockSize failed",
+          &__grid_size,
+          &__block_size,
+          __kernel,
+          __shmem_bytes);
 
-        stf::cuda_safe_call(
-          cudaLaunchKernel(__kernel, __grid_size, __block_size, __kernel_args, __shmem_bytes, __stream.get()));
+        _CCCL_TRY_CUDA_API(
+          ::cudaLaunchKernel,
+          "cudaLaunchKernel failed",
+          __kernel,
+          __grid_size,
+          __block_size,
+          __kernel_args,
+          __shmem_bytes,
+          __stream.get());
       }
       else
       {
@@ -237,9 +264,23 @@ public:
         // shared memory available)
         __kernel = reinterpret_cast<void const*>(hyperloglog_ns::__add_gmem<_InputIt, _HyperLogLog_Impl>);
 
-        stf::cuda_safe_call(cudaOccupancyMaxPotentialBlockSize(&__grid_size, &__block_size, __kernel, 0));
+        _CCCL_TRY_CUDA_API(
+          ::cudaOccupancyMaxPotentialBlockSize,
+          "cudaOccupancyMaxPotentialBlockSize failed",
+          &__grid_size,
+          &__block_size,
+          __kernel,
+          0);
 
-        stf::cuda_safe_call(cudaLaunchKernel(__kernel, __grid_size, __block_size, __kernel_args, 0, __stream.get()));
+        _CCCL_TRY_CUDA_API(
+          ::cudaLaunchKernel,
+          "cudaLaunchKernel failed",
+          __kernel,
+          __grid_size,
+          __block_size,
+          __kernel_args,
+          0,
+          __stream.get());
       }
     }
   }
@@ -393,12 +434,14 @@ public:
     ::std::vector<register_type> __host_sketch(__num_regs);
 
     // TODO check if storage is host accessible
-    stf::cuda_safe_call(cudaMemcpyAsync(
+    _CCCL_TRY_CUDA_API(
+      ::cudaMemcpyAsync,
+      "cudaMemcpyAsync failed",
       __host_sketch.data(),
       this->__sketch.data(),
       sizeof(register_type) * __num_regs,
       cudaMemcpyDefault,
-      __stream.get()));
+      __stream.get());
 
     __stream.sync();
 
@@ -513,14 +556,23 @@ private:
   [[nodiscard]] _CCCL_HOST constexpr bool __try_reserve_shmem(_Kernel __kernel, int __shmem_bytes) const
   {
     int __device = -1;
-    stf::cuda_safe_call(cudaGetDevice(&__device));
+    _CCCL_TRY_CUDA_API(::cudaGetDevice, "cudaGetDevice failed", &__device);
     int __max_shmem_bytes = 0;
-    stf::cuda_safe_call(cudaDeviceGetAttribute(&__max_shmem_bytes, cudaDevAttrMaxSharedMemoryPerBlockOptin, __device));
+    _CCCL_TRY_CUDA_API(
+      ::cudaDeviceGetAttribute,
+      "cudaDeviceGetAttribute failed",
+      &__max_shmem_bytes,
+      cudaDevAttrMaxSharedMemoryPerBlockOptin,
+      __device);
 
     if (__shmem_bytes <= __max_shmem_bytes)
     {
-      stf::cuda_safe_call(cudaFuncSetAttribute(
-        reinterpret_cast<void const*>(__kernel), cudaFuncAttributeMaxDynamicSharedMemorySize, __shmem_bytes));
+      _CCCL_TRY_CUDA_API(
+        ::cudaFuncSetAttribute,
+        "cudaFuncSetAttribute failed",
+        reinterpret_cast<void const*>(__kernel),
+        cudaFuncAttributeMaxDynamicSharedMemorySize,
+        __shmem_bytes);
       return true;
     }
     else
