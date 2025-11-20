@@ -164,7 +164,7 @@ public:
   static constexpr int BLOCK_THREADS    = result.block_threads;
 };
 
-template <int Nominal4ByteBlockThreads, int Nominal4ByteItemsPerThread, typename>
+template <int Nominal4ByteBlockThreads, int Nominal4ByteItemsPerThread, typename = void>
 struct NoScaling
 {
   static constexpr int ITEMS_PER_THREAD = Nominal4ByteItemsPerThread;
