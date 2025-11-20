@@ -198,7 +198,7 @@ function(
       )
     endif()
 
-    if ("${test_target}" MATCHES "test.segmented_scan_api")
+    if ("${test_target}" MATCHES "test.device_segmented_scan_api")
       if (
         "Clang" STREQUAL "${CMAKE_CXX_COMPILER_ID}"
         AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 13
