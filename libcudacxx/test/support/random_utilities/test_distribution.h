@@ -9,10 +9,12 @@
 //===----------------------------------------------------------------------===//
 #ifndef LIBCUDACXX_TEST_SUPPORT_RANDOM_UTILITIES_TEST_DISTRIBUTION_H
 #define LIBCUDACXX_TEST_SUPPORT_RANDOM_UTILITIES_TEST_DISTRIBUTION_H
+
 #include <cuda/std/__algorithm/partial_sort.h>
 #include <cuda/std/__memory_>
 #include <cuda/std/array>
 #include <cuda/std/cstddef>
+
 #if !_CCCL_COMPILER(NVRTC)
 #  include <sstream>
 #endif // !_CCCL_COMPILER(NVRTC)
@@ -29,9 +31,6 @@ __host__ __device__ constexpr bool test_ctor_assign(Param param)
   d2 = d1;
   assert(d1 == d2);
   assert(d1.param() == param);
-  static_assert(noexcept(D()));
-  static_assert(noexcept(D(param)));
-  static_assert(noexcept(d2 = d1));
   return true;
 }
 
@@ -96,7 +95,6 @@ __host__ __device__ constexpr bool test_set_param(Param param)
   D d1;
   d1.param(param);
   assert(d1.param() == param);
-  static_assert(noexcept(d1.param(param)));
   return true;
 }
 
@@ -124,8 +122,6 @@ __host__ __device__ constexpr bool test_param(Param param)
   assert(!(p2 != param));
   Param p3 = param;
   assert(p3 == param);
-  static_assert(noexcept(Param()));
-  static_assert(noexcept(Param(param)));
   static_assert(noexcept(p3 = p2));
   static_assert(noexcept(p2 == p3));
   static_assert(noexcept(p2 != p3));

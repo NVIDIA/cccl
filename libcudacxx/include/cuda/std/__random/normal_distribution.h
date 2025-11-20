@@ -89,11 +89,9 @@ public:
   {}
   _CCCL_API constexpr explicit normal_distribution(result_type __mean, result_type __stddev = result_type{1}) noexcept
       : __p_{param_type(__mean, __stddev)}
-      , __v_hot_{false}
   {}
   _CCCL_API constexpr explicit normal_distribution(const param_type& __p) noexcept
       : __p_{__p}
-      , __v_hot_{false}
   {}
   _CCCL_API constexpr void reset() noexcept
   {
@@ -109,7 +107,7 @@ public:
   template <class _URng>
   _CCCL_API constexpr result_type operator()(_URng& __g, const param_type& __p)
   {
-    static_assert(__cccl_random_is_valid_urng<_URng>, "");
+    static_assert(__cccl_random_is_valid_urng<_URng>, "URng must meet the UniformRandomBitGenerator requirements");
     result_type __up = 0;
     if (__v_hot_)
     {
