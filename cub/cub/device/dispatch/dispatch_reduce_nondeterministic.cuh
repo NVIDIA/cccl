@@ -261,7 +261,7 @@ struct dispatch_nondeterministic_t
     KernelLauncherFactory launcher_factory = {})
   {
     // Get PTX version
-    ::cuda::arch_id arch_id;
+    ::cuda::arch_id arch_id{};
     if (const auto error = CubDebug(launcher_factory.PtxArchId(arch_id)))
     {
       return error;
