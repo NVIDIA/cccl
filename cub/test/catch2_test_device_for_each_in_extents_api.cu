@@ -6,25 +6,22 @@
 
 #include <cub/config.cuh>
 
-// MSVC doesn't support __device__ lambdas
-#if !_CCCL_COMPILER(MSVC)
+#include <cub/device/device_for.cuh>
 
-#  include <cub/device/device_for.cuh>
+#include <thrust/detail/raw_pointer_cast.h>
+#include <thrust/device_vector.h>
+#include <thrust/equal.h>
+#include <thrust/fill.h>
+#include <thrust/host_vector.h>
 
-#  include <thrust/detail/raw_pointer_cast.h>
-#  include <thrust/device_vector.h>
-#  include <thrust/equal.h>
-#  include <thrust/fill.h>
-#  include <thrust/host_vector.h>
+#include <cuda/std/array>
+#include <cuda/std/mdspan>
+#include <cuda/std/span>
 
-#  include <cuda/std/array>
-#  include <cuda/std/mdspan>
-#  include <cuda/std/span>
+#include <cstdlib>
+#include <iostream>
 
-#  include <cstdlib>
-#  include <iostream>
-
-#  include <c2h/catch2_test_helper.h>
+#include <c2h/catch2_test_helper.h>
 
 // example-begin for-each-in-extents-op
 struct linear_store_3D
@@ -56,23 +53,26 @@ C2H_TEST("Device ForEachInExtents", "[ForEachInExtents][device]")
                                                {1, 0, 0}, {1, 0, 1}, {1, 1, 0}, {1, 1, 1},
                                                {2, 0, 0}, {2, 0, 1}, {2, 1, 0}, {2, 1, 1}};
 
+#if __CUDACC_EXTENDED_LAMBDA__
   cub::DeviceFor::ForEachInExtents(extents, [=] __device__ (int idx, int x, int y, int z) {
     d_output1_raw[idx] = {x, y, z};
   });
   // d_output1 is now filled with the expected values
+#endif // __CUDACC_EXTENDED_LAMBDA__
 
   thrust::fill(d_output2.begin(), d_output2.end(), data_t{});
   cub::DeviceFor::ForEachInExtents(extents, linear_store_3D{d_output2_raw});
   // d_output2 is now filled with the expected values
 
   // example-end for-each-in-extents-example
+  // clang-format on
+
+#if __CUDACC_EXTENDED_LAMBDA__
   thrust::host_vector<data_t> h_output1(cub::detail::size(extents), thrust::no_init);
-  thrust::host_vector<data_t> h_output2(cub::detail::size(extents), thrust::no_init);
   h_output1 = d_output1;
-  h_output2 = d_output2;
   REQUIRE(h_output1 == expected);
+#endif // __CUDACC_EXTENDED_LAMBDA__
+  thrust::host_vector<data_t> h_output2(cub::detail::size(extents), thrust::no_init);
+  h_output2 = d_output2;
   REQUIRE(h_output2 == expected);
 }
-// clang-format on
-
-#endif // !_CCCL_COMPILER(MSVC)
