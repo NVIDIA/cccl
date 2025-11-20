@@ -63,11 +63,11 @@ TEST_CASE("Device reduce works with default environment", "[reduce][device]")
   int current_device{};
   REQUIRE(cudaSuccess == cudaGetDevice(&current_device));
 
-  int ptx_version{};
-  REQUIRE(cudaSuccess == cub::PtxVersion(ptx_version, current_device));
+  cuda::arch_id arch_id{};
+  REQUIRE(cudaSuccess == cub::detail::ptx_arch_id(arch_id, current_device));
 
   int target_block_size =
-    cub::detail::reduce::arch_policies_from_types<value_t, offset_t, block_size_check_t>{}(ptx_version)
+    cub::detail::reduce::arch_policies_from_types<value_t, offset_t, block_size_check_t>{}(arch_id)
       .single_tile_policy.block_threads;
 
   num_items_t num_items = 1;
@@ -107,10 +107,10 @@ TEST_CASE("Device sum works with default environment", "[reduce][device]")
 template <int BlockThreads>
 struct reduce_tuning : cub::detail::reduce::tuning<reduce_tuning<BlockThreads>>
 {
-  _CCCL_API constexpr auto operator()(int /*arch*/) const -> cub::reduce_arch_policy
+  _CCCL_API constexpr auto operator()(cuda::arch_id /*arch*/) const -> cub::detail::reduce::reduce_arch_policy
   {
-    const auto policy =
-      cub::agent_reduce_policy{BlockThreads, 1, 1, cub::BLOCK_REDUCE_WARP_REDUCTIONS, cub::LOAD_DEFAULT};
+    const auto policy = cub::detail::reduce::agent_reduce_policy{
+      BlockThreads, 1, 1, cub::BLOCK_REDUCE_WARP_REDUCTIONS, cub::LOAD_DEFAULT};
     return {policy, policy, policy, policy};
   }
 };
