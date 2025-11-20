@@ -108,15 +108,9 @@ struct stream_registry_factory_t
     return cub::PtxVersion(version);
   }
 
-  CUB_RUNTIME_FUNCTION cudaError_t ArchId(::cuda::arch_id& arch_id) const
+  CUB_RUNTIME_FUNCTION cudaError_t PtxArchId(::cuda::arch_id& arch_id) const
   {
-    int ptx_version;
-    if (const auto error = cub::PtxVersion(ptx_version))
-    {
-      return error;
-    }
-    arch_id = cuda::to_arch_id(cuda::compute_capability(ptx_version / 10));
-    return cudaSuccess;
+    return cub::detail::ptx_arch_id(arch_id);
   }
 
   CUB_RUNTIME_FUNCTION cudaError_t MultiProcessorCount(int& sm_count) const
