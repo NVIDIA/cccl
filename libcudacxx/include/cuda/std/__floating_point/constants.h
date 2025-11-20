@@ -369,6 +369,58 @@ template <class _Tp>
   }
 }
 
+// __fp_epsilon
+
+template <__fp_format _Fmt>
+[[nodiscard]] _CCCL_API constexpr __fp_storage_t<_Fmt> __fp_epsilon() noexcept
+{
+  using _Storage = __fp_storage_t<_Fmt>;
+  if constexpr (_Fmt == __fp_format::__fp4_nv_e2m1 || _Fmt == __fp_format::__fp6_nv_e2m3)
+  {
+    return _Storage{0x1u};
+  }
+  else
+  {
+    return static_cast<_Storage>(
+      (static_cast<_Storage>(__fp_exp_bias_v<_Fmt> + 1 - __fp_digits_v<_Fmt>) << __fp_mant_nbits_v<_Fmt>)
+      | __fp_explicit_bit_mask_v<_Fmt>);
+  }
+}
+
+template <class _Tp>
+[[nodiscard]] _CCCL_API constexpr _Tp __fp_epsilon() noexcept
+{
+  constexpr auto __fmt = __fp_format_of_v<_Tp>;
+  if constexpr (__fp_is_native_type_v<_Tp> && __fmt == __fp_format::__binary16)
+  {
+    return static_cast<_Tp>(0x1p-10);
+  }
+  else if constexpr (__fp_is_native_type_v<_Tp> && __fmt == __fp_format::__binary32)
+  {
+    return static_cast<_Tp>(0x1p-23);
+  }
+  else if constexpr (__fp_is_native_type_v<_Tp> && __fmt == __fp_format::__binary64)
+  {
+    return static_cast<_Tp>(0x1p-52);
+  }
+  else if constexpr (__fp_is_native_type_v<_Tp> && __fmt == __fp_format::__binary128)
+  {
+    return static_cast<_Tp>(0x1p-112);
+  }
+  else if constexpr (__fp_is_native_type_v<_Tp> && __fmt == __fp_format::__fp80_x86)
+  {
+    return static_cast<_Tp>(0x8p-66);
+  }
+  else if constexpr (__fp_is_native_type_v<_Tp> && __fmt == __fp_format::__bfloat16)
+  {
+    return static_cast<_Tp>(0x1p-7);
+  }
+  else
+  {
+    return ::cuda::std::__fp_from_storage<_Tp>(::cuda::std::__fp_epsilon<__fmt>());
+  }
+}
+
 _CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
