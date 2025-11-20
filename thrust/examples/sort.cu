@@ -100,27 +100,6 @@ void print(thrust::device_vector<int>& v1, thrust::device_vector<int> v2)
   std::cout << "\n";
 }
 
-// user-defined comparison operator that acts like less<int>,
-// except even numbers are considered to be smaller than odd numbers
-struct evens_before_odds
-{
-  __host__ __device__ bool operator()(int x, int y)
-  {
-    if (x % 2 == y % 2)
-    {
-      return x < y;
-    }
-    else if (x % 2)
-    {
-      return false;
-    }
-    else
-    {
-      return true;
-    }
-  }
-};
-
 int main()
 {
   size_t N = 16;
@@ -148,7 +127,20 @@ int main()
     thrust::device_vector<int> keys(N);
     initialize(keys);
     print(keys);
-    thrust::sort(keys.begin(), keys.end(), evens_before_odds());
+    thrust::sort(keys.begin(), keys.end(), [] __device__(int x, int y) {
+      if (x % 2 == y % 2)
+      {
+        return x < y;
+      }
+      else if (x % 2)
+      {
+        return false;
+      }
+      else
+      {
+        return true;
+      }
+    });
     print(keys);
   }
 
