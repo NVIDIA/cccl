@@ -128,11 +128,47 @@
       }
     },
     {
+      "name": "libcudacxx-cpp17",
+      "displayName": "libcu++: C++17",
+      "inherits": "libcudacxx",
+      "cacheVariables": {
+        "CMAKE_CXX_STANDARD": "17",
+        "CMAKE_CUDA_STANDARD": "17"
+      }
+    },
+    {
+      "name": "libcudacxx-cpp20",
+      "displayName": "libcu++: C++20",
+      "inherits": "libcudacxx",
+      "cacheVariables": {
+        "CMAKE_CXX_STANDARD": "20",
+        "CMAKE_CUDA_STANDARD": "20"
+      }
+    },
+    {
       "name": "libcudacxx-nvrtc",
       "inherits": "libcudacxx",
       "cacheVariables": {
         "LIBCUDACXX_TEST_WITH_NVRTC": true,
         "CMAKE_CUDA_ARCHITECTURES": "70"
+      }
+    },
+    {
+      "name": "libcudacxx-nvrtc-cpp17",
+      "displayName": "libcu++: NVRTC C++17",
+      "inherits": "libcudacxx-nvrtc",
+      "cacheVariables": {
+        "CMAKE_CXX_STANDARD": "17",
+        "CMAKE_CUDA_STANDARD": "17"
+      }
+    },
+    {
+      "name": "libcudacxx-nvrtc-cpp20",
+      "displayName": "libcu++: NVRTC C++20",
+      "inherits": "libcudacxx-nvrtc",
+      "cacheVariables": {
+        "CMAKE_CXX_STANDARD": "20",
+        "CMAKE_CUDA_STANDARD": "20"
       }
     },
     {
@@ -332,6 +368,16 @@
       ]
     },
     {
+      "name": "libcudacxx-cpp17",
+      "configurePreset": "libcudacxx-cpp17",
+      "inherits": "libcudacxx"
+    },
+    {
+      "name": "libcudacxx-cpp20",
+      "configurePreset": "libcudacxx-cpp20",
+      "inherits": "libcudacxx"
+    },
+    {
       "name": "libcudacxx-codegen",
       "configurePreset": "libcudacxx-codegen",
       "targets": [
@@ -351,6 +397,16 @@
       "targets": [
         "libcudacxx.nvrtcc"
       ]
+    },
+    {
+      "name": "libcudacxx-nvrtc-cpp17",
+      "configurePreset": "libcudacxx-nvrtc-cpp17",
+      "inherits": "libcudacxx-nvrtc"
+    },
+    {
+      "name": "libcudacxx-nvrtc-cpp20",
+      "configurePreset": "libcudacxx-nvrtc-cpp20",
+      "inherits": "libcudacxx-nvrtc"
     },
     {
       "name": "cub-cpp17",
@@ -436,6 +492,16 @@
       }
     },
     {
+      "name": "libcudacxx-ctest-cpp17",
+      "configurePreset": "libcudacxx-cpp17",
+      "inherits": "libcudacxx-ctest"
+    },
+    {
+      "name": "libcudacxx-ctest-cpp20",
+      "configurePreset": "libcudacxx-cpp20",
+      "inherits": "libcudacxx-ctest"
+    },
+    {
       "name": "libcudacxx-lit",
       "configurePreset": "libcudacxx",
       "inherits": "base",
@@ -450,9 +516,29 @@
       }
     },
     {
+      "name": "libcudacxx-lit-cpp17",
+      "configurePreset": "libcudacxx-cpp17",
+      "inherits": "libcudacxx-lit"
+    },
+    {
+      "name": "libcudacxx-lit-cpp20",
+      "configurePreset": "libcudacxx-cpp20",
+      "inherits": "libcudacxx-lit"
+    },
+    {
       "name": "libcudacxx-nvrtc",
       "configurePreset": "libcudacxx-nvrtc",
       "inherits": "libcudacxx-lit"
+    },
+    {
+      "name": "libcudacxx-nvrtc-cpp17",
+      "configurePreset": "libcudacxx-nvrtc-cpp17",
+      "inherits": "libcudacxx-nvrtc"
+    },
+    {
+      "name": "libcudacxx-nvrtc-cpp20",
+      "configurePreset": "libcudacxx-nvrtc-cpp20",
+      "inherits": "libcudacxx-nvrtc"
     },
     {
       "name": "cub-base",
