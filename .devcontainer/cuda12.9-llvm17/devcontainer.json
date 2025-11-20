@@ -22,6 +22,8 @@
   "containerEnv": {
     "SCCACHE_REGION": "us-east-2",
     "SCCACHE_BUCKET": "rapids-sccache-devs",
+    "SCCACHE_S3_USE_PREPROCESSOR_CACHE_MODE": "true",
+    "SCCACHE_S3_PREPROCESSOR_CACHE_KEY_PREFIX": "cccl-preprocessor-cache",
     "AWS_ROLE_ARN": "arn:aws:iam::279114543810:role/nv-gha-token-sccache-devs",
     "HISTFILE": "${containerWorkspaceFolder}/.cache/._bash_history",
     "DEVCONTAINER_NAME": "cuda12.9-llvm17",
