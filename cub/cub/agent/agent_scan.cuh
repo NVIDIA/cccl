@@ -339,11 +339,6 @@ struct AgentScan
     // Load items
     AccumT items[ITEMS_PER_THREAD];
 
-    if constexpr (UsePDL)
-    {
-      _CCCL_PDL_GRID_DEPENDENCY_SYNC();
-    }
-
     if constexpr (IS_LAST_TILE)
     {
       // Fill last element with the first element because collectives are

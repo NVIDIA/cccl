@@ -165,8 +165,11 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::ScanPolicyT::BLOCK_THREADS))
   // Shared memory for AgentScan
   __shared__ typename AgentScanT::TempStorage temp_storage;
 
-  // the read of the initial value is not guarded by _CCCL_PDL_GRID_DEPENDENCY_SYNC, since the previous kernel does not
-  // write it.
+  // Depending on the version of the PTX memory model the compiler and hardware implement, we could move the grid
+  // dependency sync back to the first read of data, that was actually written by the previous kernel (the tile state).
+  // So the BlockLoad in this kernel could even overlap with the previous tile init kernel. To be save, we retain it
+  // here before the first read.
+  _CCCL_PDL_GRID_DEPENDENCY_SYNC();
   RealInitValueT real_init_value = init_value;
 
   // Process tiles
