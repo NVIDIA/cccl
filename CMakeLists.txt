@@ -41,6 +41,7 @@ option(CCCL_ENABLE_TESTING "Enable CUDA C++ Core Library tests." OFF)
 option(CCCL_ENABLE_EXAMPLES "Enable CUDA C++ Core Library examples." OFF)
 option(CCCL_ENABLE_C_PARALLEL "Enable CUDA C Parallel Library." OFF)
 option(CCCL_ENABLE_C_EXPERIMENTAL_STF "Enable CUDA C CUDASTF Library." OFF)
+option(CCCL_ENABLE_NVBENCH_HELPER "Enable the NVBench Helper Dev Build." OFF)
 
 if ("NVHPC" STREQUAL "${CMAKE_CXX_COMPILER_ID}")
   set(CCCL_ENABLE_BENCHMARKS OFF)
@@ -48,9 +49,17 @@ else()
   option(CCCL_ENABLE_BENCHMARKS "Enable CUDA C++ Core Library benchmarks." OFF)
 endif()
 
-option(CCCL_ENABLE_UNSTABLE "Enable targets and developer build options for unstable projects." OFF)
+option(
+  CCCL_ENABLE_UNSTABLE
+  "Enable targets and developer build options for unstable projects."
+  OFF
+)
 if (CCCL_ENABLE_UNSTABLE)
-  option(CCCL_ENABLE_CUDAX "Enable the CUDA Experimental developer build." ${CCCL_TOPLEVEL_PROJECT})
+  option(
+    CCCL_ENABLE_CUDAX
+    "Enable the CUDA Experimental developer build."
+    ${CCCL_TOPLEVEL_PROJECT}
+  )
 else()
   # Always off if unstable disabled:
   # Note that this doesn't override the cache variable, but rather creates a new
@@ -90,11 +99,16 @@ if (CCCL_ENABLE_C_PARALLEL OR CCCL_ENABLE_C_EXPERIMENTAL_STF)
 endif()
 
 if (CCCL_ENABLE_TESTING)
-  add_subdirectory(test)
+  add_subdirectory("ci")
+  add_subdirectory("test")
 endif()
 
 if (CCCL_ENABLE_EXAMPLES)
   add_subdirectory(examples)
+endif()
+
+if (CCCL_ENABLE_NVBENCH_HELPER)
+  add_subdirectory(nvbench_helper)
 endif()
 
 # Must stay at the end of this file.

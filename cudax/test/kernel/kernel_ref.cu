@@ -176,10 +176,10 @@ template <const auto& Attr, ::CUfunction_attribute ExpectedAttr, class ExpectedR
 
 C2H_CCCLRT_TEST("Kernel reference", "[kernel_ref]")
 {
-  CUlibrary lib = _CUDA_DRIVER::__libraryLoadData(kernel_ptx_src, nullptr, nullptr, 0, nullptr, nullptr, 0);
+  CUlibrary lib = ::cuda::__driver::__libraryLoadData(kernel_ptx_src, nullptr, nullptr, 0, nullptr, nullptr, 0);
 
-  CUkernel kernel_ptx1_handle = _CUDA_DRIVER::__libraryGetKernel(lib, "kernel_ptx1");
-  CUkernel kernel_ptx2_handle = _CUDA_DRIVER::__libraryGetKernel(lib, "kernel_ptx2");
+  CUkernel kernel_ptx1_handle = ::cuda::__driver::__libraryGetKernel(lib, "kernel_ptx1");
+  CUkernel kernel_ptx2_handle = ::cuda::__driver::__libraryGetKernel(lib, "kernel_ptx2");
 
   cuda::device_ref device{0};
   cuda::__ensure_current_context context_guard{device};
@@ -314,5 +314,5 @@ C2H_CCCLRT_TEST("Kernel reference", "[kernel_ref]")
   }
 #endif // _CCCL_CTK_AT_LEAST(12, 1)
 
-  CUDAX_REQUIRE(_CUDA_DRIVER::__libraryUnloadNoThrow(lib) == cudaSuccess);
+  CUDAX_REQUIRE(::cuda::__driver::__libraryUnloadNoThrow(lib) == cudaSuccess);
 }

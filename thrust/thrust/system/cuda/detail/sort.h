@@ -36,7 +36,7 @@
 #  pragma system_header
 #endif // no system header
 
-#if _CCCL_HAS_CUDA_COMPILER()
+#if _CCCL_CUDA_COMPILATION()
 #  include <thrust/system/cuda/config.h>
 
 #  include <cub/device/device_merge_sort.cuh>
@@ -45,7 +45,6 @@
 #  include <thrust/detail/alignment.h>
 #  include <thrust/detail/temporary_array.h>
 #  include <thrust/detail/trivial_sequence.h>
-#  include <thrust/distance.h>
 #  include <thrust/extrema.h>
 #  include <thrust/sequence.h>
 #  include <thrust/sort.h>
@@ -56,7 +55,13 @@
 #  include <thrust/system/cuda/detail/util.h>
 #  include <thrust/type_traits/is_contiguous_iterator.h>
 
-#  include <cuda/cmath>
+#  include <cuda/__cmath/round_up.h>
+#  include <cuda/std/__functional/operations.h>
+#  include <cuda/std/__iterator/distance.h>
+#  include <cuda/std/__type_traits/enable_if.h>
+#  include <cuda/std/__type_traits/integral_constant.h>
+#  include <cuda/std/__type_traits/is_arithmetic.h>
+#  include <cuda/std/__type_traits/is_same.h>
 #  include <cuda/std/cstdint>
 
 THRUST_NAMESPACE_BEGIN
@@ -303,19 +308,19 @@ namespace __smart_sort
 template <class Key, class CompareOp>
 using can_use_primitive_sort = ::cuda::std::integral_constant<
   bool,
-  (::cuda::std::is_arithmetic<Key>::value
+  (::cuda::std::is_arithmetic_v<Key>
 #  if _CCCL_HAS_NVFP16() && !defined(__CUDA_NO_HALF_OPERATORS__) && !defined(__CUDA_NO_HALF_CONVERSIONS__)
-   || ::cuda::std::is_same<Key, __half>::value
+   || ::cuda::std::is_same_v<Key, __half>
 #  endif // _CCCL_HAS_NVFP16() && !defined(__CUDA_NO_HALF_OPERATORS__) && !defined(__CUDA_NO_HALF_CONVERSIONS__)
 #  if _CCCL_HAS_NVBF16() && !defined(__CUDA_NO_BFLOAT16_CONVERSIONS__) && !defined(__CUDA_NO_BFLOAT16_OPERATORS__)
-   || ::cuda::std::is_same<Key, __nv_bfloat16>::value
+   || ::cuda::std::is_same_v<Key, __nv_bfloat16>
 #  endif // _CCCL_HAS_NVBF16() && !defined(__CUDA_NO_BFLOAT16_CONVERSIONS__) &&
          // !defined(__CUDA_NO_BFLOAT16_OPERATORS__)
    )
-    && (::cuda::std::is_same<CompareOp, ::cuda::std::less<Key>>::value
-        || ::cuda::std::is_same<CompareOp, ::cuda::std::less<void>>::value
-        || ::cuda::std::is_same<CompareOp, ::cuda::std::greater<Key>>::value
-        || ::cuda::std::is_same<CompareOp, ::cuda::std::greater<void>>::value)>;
+    && (::cuda::std::is_same_v<CompareOp, ::cuda::std::less<Key>>
+        || ::cuda::std::is_same_v<CompareOp, ::cuda::std::less<void>>
+        || ::cuda::std::is_same_v<CompareOp, ::cuda::std::greater<Key>>
+        || ::cuda::std::is_same_v<CompareOp, ::cuda::std::greater<void>>)>;
 
 template <
   class SORT_ITEMS,
@@ -465,4 +470,4 @@ stable_sort_by_key(execution_policy<Derived>& policy, KeysIt keys_first, KeysIt 
 }
 } // namespace cuda_cub
 THRUST_NAMESPACE_END
-#endif
+#endif // _CCCL_CUDA_COMPILATION()

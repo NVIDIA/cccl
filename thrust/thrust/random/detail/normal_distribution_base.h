@@ -32,10 +32,11 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
-#include <thrust/pair.h>
 #include <thrust/random/uniform_real_distribution.h>
 
-#include <cuda/std/cmath>
+#include <cuda/std/__cmath/logarithms.h>
+#include <cuda/std/__cmath/roots.h>
+#include <cuda/std/__cmath/trigonometric_functions.h>
 #include <cuda/std/limits>
 
 THRUST_NAMESPACE_BEGIN
@@ -145,11 +146,12 @@ private:
 template <typename RealType>
 struct normal_distribution_base
 {
-#if _CCCL_HAS_CUDA_COMPILER() && !_CCCL_CUDA_COMPILER(NVHPC)
+#if _CCCL_CUDA_COMPILATION() && !_CCCL_CUDA_COMPILER(NVHPC)
   using type = normal_distribution_nvcc<RealType>;
-#else
+#else // ^^^ _CCCL_CUDA_COMPILATION() && !_CCCL_CUDA_COMPILER(NVHPC) ^^^ /
+      // vvv !_CCCL_CUDA_COMPILATION() || _CCCL_CUDA_COMPILER(NVHPC) vvv
   using type = normal_distribution_portable<RealType>;
-#endif
+#endif // ^^^ !_CCCL_CUDA_COMPILATION() || _CCCL_CUDA_COMPILER(NVHPC) ^^^
 };
 } // namespace random::detail
 THRUST_NAMESPACE_END

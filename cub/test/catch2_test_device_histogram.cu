@@ -9,9 +9,8 @@
 
 #include <cub/device/device_histogram.cuh>
 
-#include <thrust/iterator/counting_iterator.h>
-
-#include <cuda/std/__algorithm_>
+#include <cuda/iterator>
+#include <cuda/std/algorithm>
 #include <cuda/std/array>
 #include <cuda/std/bit>
 #include <cuda/std/type_traits>
@@ -586,7 +585,7 @@ C2H_TEST("DeviceHistogram::HistogramEven sample iterator", "[histogram_even][dev
   const auto lower_level = array<int, active_channels>{0, -10, cs::numeric_limits<int>::lowest()};
   const auto upper_level = array<int, active_channels>{total_values, 10, cs::numeric_limits<int>::max()};
 
-  auto sample_iterator = thrust::counting_iterator<sample_t>(0);
+  auto sample_iterator = cuda::counting_iterator<sample_t>(0);
 
   // Channel #0: 0, 4,  8, 12
   // Channel #1: 1, 5,  9, 13
@@ -668,7 +667,7 @@ C2H_TEST_LIST("DeviceHistogram::HistogramEven bin computation does not overflow"
   constexpr sample_t lower_level = 0;
   constexpr sample_t upper_level = cs::numeric_limits<sample_t>::max();
   constexpr auto num_samples     = 1000;
-  auto d_samples                 = thrust::counting_iterator<sample_t>{0UL};
+  auto d_samples                 = cuda::counting_iterator<sample_t>{0UL};
   auto d_histo_out               = c2h::device_vector<counter_t>(1024);
   const auto num_bins            = GENERATE(1, 2);
 

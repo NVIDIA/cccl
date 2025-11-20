@@ -36,16 +36,14 @@
 #  pragma system_header
 #endif // no system header
 
-#if _CCCL_HAS_CUDA_COMPILER()
+#if _CCCL_CUDA_COMPILATION()
 
 #  include <thrust/system/cuda/config.h>
 
 #  include <cub/device/device_select.cuh>
 #  include <cub/util_math.cuh>
 
-#  include <thrust/advance.h>
 #  include <thrust/count.h>
-#  include <thrust/distance.h>
 #  include <thrust/functional.h>
 #  include <thrust/system/cuda/detail/cdp_dispatch.h>
 #  include <thrust/system/cuda/detail/core/agent_launcher.h>
@@ -53,6 +51,10 @@
 #  include <thrust/system/cuda/detail/get_value.h>
 #  include <thrust/system/cuda/detail/util.h>
 
+#  include <cuda/std/__functional/operations.h>
+#  include <cuda/std/__iterator/advance.h>
+#  include <cuda/std/__iterator/distance.h>
+#  include <cuda/std/__iterator/next.h>
 #  include <cuda/std/cstdint>
 
 THRUST_NAMESPACE_BEGIN
@@ -133,7 +135,7 @@ THRUST_RUNTIME_FUNCTION cudaError_t dispatch_select_unique(
                             stream);
   _CUDA_CUB_RET_IF_FAIL(status);
 
-  status = cub::detail::AliasTemporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes);
+  status = cub::detail::alias_temporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes);
   _CUDA_CUB_RET_IF_FAIL(status);
 
   // Return if we're only querying temporary storage requirements
@@ -283,4 +285,4 @@ THRUST_NAMESPACE_END
 //
 #  include <thrust/memory.h>
 #  include <thrust/unique.h>
-#endif
+#endif // _CCCL_CUDA_COMPILATION()

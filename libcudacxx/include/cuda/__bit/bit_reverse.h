@@ -21,11 +21,34 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__type_traits/is_constant_evaluated.h>
 #include <cuda/std/__type_traits/is_unsigned_integer.h>
 #include <cuda/std/cstdint>
 
 #include <cuda/std/__cccl/prologue.h>
+
+#if _CCCL_CHECK_BUILTIN(builtin_bitreverse8)
+#  define _CCCL_BUILTIN_BITREVERSE8(...) __builtin_bitreverse8(__VA_ARGS__)
+#endif
+
+#if _CCCL_CHECK_BUILTIN(builtin_bitreverse16)
+#  define _CCCL_BUILTIN_BITREVERSE16(...) __builtin_bitreverse16(__VA_ARGS__)
+#endif
+
+#if _CCCL_CHECK_BUILTIN(builtin_bitreverse32)
+#  define _CCCL_BUILTIN_BITREVERSE32(...) __builtin_bitreverse32(__VA_ARGS__)
+#endif
+
+#if _CCCL_CHECK_BUILTIN(builtin_bitreverse64)
+#  define _CCCL_BUILTIN_BITREVERSE64(...) __builtin_bitreverse64(__VA_ARGS__)
+#endif
+
+// nvcc doesn't allow clang's bitreverse builtin
+#if _CCCL_CUDA_COMPILER(NVCC)
+#  undef _CCCL_BUILTIN_BITREVERSE8
+#  undef _CCCL_BUILTIN_BITREVERSE16
+#  undef _CCCL_BUILTIN_BITREVERSE32
+#  undef _CCCL_BUILTIN_BITREVERSE64
+#endif // _CCCL_CUDA_COMPILER(NVCC)
 
 _CCCL_BEGIN_NAMESPACE_CUDA
 
@@ -37,20 +60,22 @@ template <typename _Tp>
 #  if _CCCL_HAS_INT128()
   if constexpr (sizeof(_Tp) == sizeof(__uint128_t))
   {
-    auto __high = static_cast<__uint128_t>(_CCCL_BUILTIN_BITREVERSE64(static_cast<uint64_t>(__value))) << 64;
-    auto __low  = static_cast<__uint128_t>(_CCCL_BUILTIN_BITREVERSE64(static_cast<uint64_t>(__value >> 64)));
+    auto __high = static_cast<__uint128_t>(_CCCL_BUILTIN_BITREVERSE64(static_cast<::cuda::std::uint64_t>(__value)))
+               << 64;
+    auto __low =
+      static_cast<__uint128_t>(_CCCL_BUILTIN_BITREVERSE64(static_cast<::cuda::std::uint64_t>(__value >> 64)));
     return __high | __low;
   }
 #  endif // _CCCL_HAS_INT128()
-  if constexpr (sizeof(_Tp) == sizeof(uint64_t))
+  if constexpr (sizeof(_Tp) == sizeof(::cuda::std::uint64_t))
   {
     return _CCCL_BUILTIN_BITREVERSE64(__value);
   }
-  else if constexpr (sizeof(_Tp) == sizeof(uint32_t))
+  else if constexpr (sizeof(_Tp) == sizeof(::cuda::std::uint32_t))
   {
     return _CCCL_BUILTIN_BITREVERSE32(__value);
   }
-  else if constexpr (sizeof(_Tp) == sizeof(uint16_t))
+  else if constexpr (sizeof(_Tp) == sizeof(::cuda::std::uint16_t))
   {
     return _CCCL_BUILTIN_BITREVERSE16(__value);
   }
@@ -70,26 +95,28 @@ template <typename _Tp>
 #  if _CCCL_HAS_INT128()
   if constexpr (sizeof(_Tp) == sizeof(__uint128_t))
   {
-    auto __high = static_cast<__uint128_t>(::cuda::__bit_reverse_device(static_cast<uint64_t>(__value))) << 64;
-    auto __low  = static_cast<__uint128_t>(::cuda::__bit_reverse_device(static_cast<uint64_t>(__value >> 64)));
+    auto __high = static_cast<__uint128_t>(::cuda::__bit_reverse_device(static_cast<::cuda::std::uint64_t>(__value)))
+               << 64;
+    auto __low =
+      static_cast<__uint128_t>(::cuda::__bit_reverse_device(static_cast<::cuda::std::uint64_t>(__value >> 64)));
     return __high | __low;
   }
 #  endif // _CCCL_HAS_INT128()
-  if constexpr (sizeof(_Tp) == sizeof(uint64_t))
+  if constexpr (sizeof(_Tp) == sizeof(::cuda::std::uint64_t))
   {
     NV_IF_TARGET(NV_IS_DEVICE, (return ::__brevll(__value);))
   }
-  else if constexpr (sizeof(_Tp) == sizeof(uint32_t))
+  else if constexpr (sizeof(_Tp) == sizeof(::cuda::std::uint32_t))
   {
     NV_IF_TARGET(NV_IS_DEVICE, (return ::__brev(__value);))
   }
-  else if constexpr (sizeof(_Tp) == sizeof(uint16_t))
+  else if constexpr (sizeof(_Tp) == sizeof(::cuda::std::uint16_t))
   {
-    NV_IF_TARGET(NV_IS_DEVICE, (return ::__brev(static_cast<uint32_t>(__value) << 16);))
+    NV_IF_TARGET(NV_IS_DEVICE, (return ::__brev(static_cast<::cuda::std::uint32_t>(__value) << 16);))
   }
   else
   {
-    NV_IF_TARGET(NV_IS_DEVICE, (return ::__brev(static_cast<uint32_t>(__value) << 24);))
+    NV_IF_TARGET(NV_IS_DEVICE, (return ::__brev(static_cast<::cuda::std::uint32_t>(__value) << 24);))
   }
   _CCCL_UNREACHABLE();
 }
@@ -102,12 +129,12 @@ template <typename _Tp>
 #if _CCCL_HAS_INT128()
   if constexpr (sizeof(_Tp) == sizeof(__uint128_t))
   {
-    constexpr auto __c1 = __uint128_t{0x5555555555555555} << 64 | uint64_t{0x5555555555555555};
-    constexpr auto __c2 = __uint128_t{0x3333333333333333} << 64 | uint64_t{0x3333333333333333};
-    constexpr auto __c3 = __uint128_t{0x0F0F0F0F0F0F0F0F} << 64 | uint64_t{0x0F0F0F0F0F0F0F0F};
-    constexpr auto __c4 = __uint128_t{0x00FF00FF00FF00FF} << 64 | uint64_t{0x00FF00FF00FF00FF};
-    constexpr auto __c5 = __uint128_t{0x0000FFFF0000FFFF} << 64 | uint64_t{0x0000FFFF0000FFFF};
-    constexpr auto __c6 = __uint128_t{0x00000000FFFFFFFF} << 64 | uint64_t{0x00000000FFFFFFFF};
+    constexpr auto __c1 = __uint128_t{0x5555555555555555} << 64 | ::cuda::std::uint64_t{0x5555555555555555};
+    constexpr auto __c2 = __uint128_t{0x3333333333333333} << 64 | ::cuda::std::uint64_t{0x3333333333333333};
+    constexpr auto __c3 = __uint128_t{0x0F0F0F0F0F0F0F0F} << 64 | ::cuda::std::uint64_t{0x0F0F0F0F0F0F0F0F};
+    constexpr auto __c4 = __uint128_t{0x00FF00FF00FF00FF} << 64 | ::cuda::std::uint64_t{0x00FF00FF00FF00FF};
+    constexpr auto __c5 = __uint128_t{0x0000FFFF0000FFFF} << 64 | ::cuda::std::uint64_t{0x0000FFFF0000FFFF};
+    constexpr auto __c6 = __uint128_t{0x00000000FFFFFFFF} << 64 | ::cuda::std::uint64_t{0x00000000FFFFFFFF};
     __value             = ((__value >> 1) & __c1) | ((__value & __c1) << 1);
     __value             = ((__value >> 2) & __c2) | ((__value & __c2) << 2);
     __value             = ((__value >> 4) & __c3) | ((__value & __c3) << 4);
@@ -117,7 +144,7 @@ template <typename _Tp>
     return (__value >> 64) | (__value << 64);
   }
 #endif // _CCCL_HAS_INT128()
-  if constexpr (sizeof(_Tp) == sizeof(uint64_t))
+  if constexpr (sizeof(_Tp) == sizeof(::cuda::std::uint64_t))
   {
     __value = ((__value >> 1) & 0x5555555555555555) | ((__value & 0x5555555555555555) << 1);
     __value = ((__value >> 2) & 0x3333333333333333) | ((__value & 0x3333333333333333) << 2);
@@ -126,7 +153,7 @@ template <typename _Tp>
     __value = ((__value >> 16) & 0x0000FFFF0000FFFF) | ((__value & 0x0000FFFF0000FFFF) << 16);
     return (__value >> 32) | (__value << 32);
   }
-  else if constexpr (sizeof(_Tp) == sizeof(uint32_t))
+  else if constexpr (sizeof(_Tp) == sizeof(::cuda::std::uint32_t))
   {
     __value = ((__value >> 1) & 0x55555555) | ((__value & 0x55555555) << 1);
     __value = ((__value >> 2) & 0x33333333) | ((__value & 0x33333333) << 2);
@@ -134,7 +161,7 @@ template <typename _Tp>
     __value = ((__value >> 8) & 0x00FF00FF) | ((__value & 0x00FF00FF) << 8);
     return (__value >> 16) | (__value << 16);
   }
-  else if constexpr (sizeof(_Tp) == sizeof(uint16_t))
+  else if constexpr (sizeof(_Tp) == sizeof(::cuda::std::uint16_t))
   {
     __value = ((__value >> 1) & 0x5555) | ((__value & 0x5555) << 1);
     __value = ((__value >> 2) & 0x3333) | ((__value & 0x3333) << 2);
@@ -153,7 +180,7 @@ template <typename _Tp>
 [[nodiscard]] _CCCL_API constexpr _Tp bit_reverse(_Tp __value) noexcept
 {
   static_assert(::cuda::std::__cccl_is_cv_unsigned_integer_v<_Tp>, "bit_reverse() requires unsigned integer types");
-  if (!::cuda::std::__cccl_default_is_constant_evaluated())
+  _CCCL_IF_NOT_CONSTEVAL_DEFAULT
   {
     NV_IF_TARGET(NV_IS_DEVICE, (return ::cuda::__bit_reverse_device(__value);))
   }

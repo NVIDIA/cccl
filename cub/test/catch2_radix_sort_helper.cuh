@@ -16,7 +16,7 @@
 #include <thrust/scan.h>
 #include <thrust/sequence.h>
 
-#include <cuda/std/__algorithm_>
+#include <cuda/std/algorithm>
 #include <cuda/std/bit>
 #include <cuda/std/functional>
 #include <cuda/type_traits>

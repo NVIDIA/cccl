@@ -1,10 +1,9 @@
-#define CUB_DETAIL_BEFORE_NVTX_RANGE_SCOPE(name) static_assert(false, "");
+#define _CCCL_BEFORE_NVTX_RANGE_SCOPE(name) static_assert(false, "");
 #define CCCL_DISABLE_NVTX
 
 #include <cub/device/device_for.cuh>
 
-#include <thrust/iterator/counting_iterator.h>
-
+#include <cuda/iterator>
 #include <cuda/std/functional>
 
 #if defined(CCCL_DISABLE_NVTX) && defined(NVTX_VERSION)
@@ -13,7 +12,7 @@
 
 int main()
 {
-  thrust::counting_iterator<int> it{0};
+  cuda::counting_iterator<int> it{0};
   cub::DeviceFor::ForEach(it, it + 16, ::cuda::std::negate<int>{});
   cudaDeviceSynchronize();
 }

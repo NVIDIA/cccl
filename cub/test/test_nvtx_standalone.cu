@@ -8,15 +8,14 @@
 
 #include <cub/device/device_for.cuh>
 
-#include <thrust/iterator/counting_iterator.h>
-
+#include <cuda/iterator>
 #include <cuda/std/functional>
 
 int main()
 {
   _CCCL_NVTX_RANGE_SCOPE("main");
 
-  thrust::counting_iterator<int> it{0};
+  cuda::counting_iterator<int> it{0};
   cub::DeviceFor::ForEach(it, it + 16, ::cuda::std::negate<int>{});
   cudaDeviceSynchronize();
 }

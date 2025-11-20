@@ -8,7 +8,7 @@
 //
 //===----------------------------------------------------------------------===//
 #include <cuda/memory_resource>
-#include <cuda/std/__algorithm_>
+#include <cuda/std/algorithm>
 #include <cuda/std/array>
 #include <cuda/std/cassert>
 #include <cuda/std/initializer_list>
@@ -29,11 +29,11 @@ using test_types = c2h::type_list<cuda::std::tuple<int, cuda::mr::host_accessibl
 using test_types = c2h::type_list<cuda::std::tuple<int, cuda::mr::device_accessible>>;
 #endif // ^^^ _CCCL_CTK_BELOW(12, 6) ^^^
 
-C2H_CCCLRT_TEST("cudax::async_buffer swap", "[container][async_buffer]", test_types)
+C2H_CCCLRT_TEST("cudax::buffer swap", "[container][buffer]", test_types)
 {
   using TestT     = c2h::get<0, TestType>;
   using Resource  = typename extract_properties<TestT>::resource;
-  using Buffer    = typename extract_properties<TestT>::async_buffer;
+  using Buffer    = typename extract_properties<TestT>::buffer;
   using T         = typename Buffer::value_type;
   using size_type = typename Buffer::size_type;
 
@@ -49,7 +49,7 @@ C2H_CCCLRT_TEST("cudax::async_buffer swap", "[container][async_buffer]", test_ty
   // Note we do not care about the elements just the sizes
   Buffer vec_small{stream, resource, 5, cudax::no_init};
 
-  SECTION("Can swap async_buffer")
+  SECTION("Can swap buffer")
   {
     Buffer vec_large{stream, resource, 42, cudax::no_init};
 
@@ -71,7 +71,7 @@ C2H_CCCLRT_TEST("cudax::async_buffer swap", "[container][async_buffer]", test_ty
     CUDAX_CHECK(vec_small.size() == 5);
   }
 
-  SECTION("Can swap async_buffer without allocation")
+  SECTION("Can swap buffer without allocation")
   {
     Buffer vec_no_allocation{stream, resource, 0, cudax::no_init};
 

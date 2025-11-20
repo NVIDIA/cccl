@@ -34,7 +34,7 @@ struct ThreeWayPartitionPolicyWrapper : PolicyT
 };
 
 template <typename StaticPolicyT>
-struct ThreeWayPartitionPolicyWrapper<StaticPolicyT, _CUDA_VSTD::void_t<typename StaticPolicyT::ThreeWayPartitionPolicy>>
+struct ThreeWayPartitionPolicyWrapper<StaticPolicyT, ::cuda::std::void_t<typename StaticPolicyT::ThreeWayPartitionPolicy>>
     : StaticPolicyT
 {
   _CCCL_HOST_DEVICE ThreeWayPartitionPolicyWrapper(StaticPolicyT base)

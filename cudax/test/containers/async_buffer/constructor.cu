@@ -9,7 +9,7 @@
 //===----------------------------------------------------------------------===//
 
 #include <cuda/memory_resource>
-#include <cuda/std/__algorithm_>
+#include <cuda/std/algorithm>
 #include <cuda/std/array>
 #include <cuda/std/cassert>
 #include <cuda/std/initializer_list>
@@ -31,11 +31,11 @@ using test_types = c2h::type_list<cuda::std::tuple<int, cuda::mr::host_accessibl
 using test_types = c2h::type_list<cuda::std::tuple<int, cuda::mr::device_accessible>>;
 #endif // ^^^ _CCCL_CTK_BELOW(12, 6) ^^^
 
-C2H_CCCLRT_TEST("cudax::async_buffer constructors", "[container][async_buffer]", test_types)
+C2H_CCCLRT_TEST("cudax::buffer constructors", "[container][buffer]", test_types)
 {
   using TestT    = c2h::get<0, TestType>;
   using Resource = typename extract_properties<TestT>::resource;
-  using Buffer   = typename extract_properties<TestT>::async_buffer;
+  using Buffer   = typename extract_properties<TestT>::buffer;
   using T        = typename Buffer::value_type;
 
   cudax::stream stream{cuda::device_ref{0}};
@@ -49,19 +49,19 @@ C2H_CCCLRT_TEST("cudax::async_buffer constructors", "[container][async_buffer]",
       CUDAX_CHECK(buf.data() == nullptr);
     }
     {
-      const auto buf = cudax::make_async_buffer<T>(stream, resource);
+      const auto buf = cudax::make_buffer<T>(stream, resource);
       CUDAX_CHECK(buf.empty());
       CUDAX_CHECK(buf.data() == nullptr);
     }
 
     {
-      const auto buf = cudax::make_async_buffer(stream, extract_properties<TestT>::get_resource(), 0, T{42});
+      const auto buf = cudax::make_buffer(stream, extract_properties<TestT>::get_resource(), 0, T{42});
       CUDAX_CHECK(buf.empty());
       CUDAX_CHECK(buf.data() == nullptr);
     }
 
     {
-      const auto buf = cudax::make_async_buffer(stream, extract_properties<TestT>::get_resource(), 5, T{42});
+      const auto buf = cudax::make_buffer(stream, extract_properties<TestT>::get_resource(), 5, T{42});
       CUDAX_CHECK(buf.size() == 5);
       CUDAX_CHECK(equal_size_value(buf, 5, T(42)));
     }
@@ -75,7 +75,7 @@ C2H_CCCLRT_TEST("cudax::async_buffer constructors", "[container][async_buffer]",
       CUDAX_CHECK(buf.data() == nullptr);
     }
     {
-      const auto buf = cudax::make_async_buffer<T>(stream, resource, 0, cudax::no_init);
+      const auto buf = cudax::make_buffer<T>(stream, resource, 0, cudax::no_init);
       CUDAX_CHECK(buf.empty());
       CUDAX_CHECK(buf.data() == nullptr);
     }
@@ -86,7 +86,7 @@ C2H_CCCLRT_TEST("cudax::async_buffer constructors", "[container][async_buffer]",
       CUDAX_CHECK(buf.data() != nullptr);
     }
     {
-      const auto buf = cudax::make_async_buffer<T>(stream, resource, 5, cudax::no_init);
+      const auto buf = cudax::make_buffer<T>(stream, resource, 5, cudax::no_init);
       CUDAX_CHECK(buf.size() == 5);
       CUDAX_CHECK(buf.data() != nullptr);
     }
@@ -101,7 +101,7 @@ C2H_CCCLRT_TEST("cudax::async_buffer constructors", "[container][async_buffer]",
       CUDAX_CHECK(buf.data() == nullptr);
     }
     {
-      const auto buf = cudax::make_async_buffer<T>(stream, resource, input.begin(), input.begin());
+      const auto buf = cudax::make_buffer<T>(stream, resource, input.begin(), input.begin());
       CUDAX_CHECK(buf.empty());
       CUDAX_CHECK(buf.data() == nullptr);
     }
@@ -112,7 +112,7 @@ C2H_CCCLRT_TEST("cudax::async_buffer constructors", "[container][async_buffer]",
       CUDAX_CHECK(equal_range(buf));
     }
     {
-      const auto buf = cudax::make_async_buffer<T>(stream, resource, input.begin(), input.end());
+      const auto buf = cudax::make_buffer<T>(stream, resource, input.begin(), input.end());
       CUDAX_CHECK(buf.size() == 6);
       CUDAX_CHECK(equal_range(buf));
     }
@@ -126,7 +126,7 @@ C2H_CCCLRT_TEST("cudax::async_buffer constructors", "[container][async_buffer]",
       CUDAX_CHECK(buf.data() == nullptr);
     }
     {
-      const auto buf = cudax::make_async_buffer<T>(stream, resource, cuda::std::array<T, 0>{});
+      const auto buf = cudax::make_buffer<T>(stream, resource, cuda::std::array<T, 0>{});
       CUDAX_CHECK(buf.empty());
       CUDAX_CHECK(buf.data() == nullptr);
     }
@@ -138,7 +138,7 @@ C2H_CCCLRT_TEST("cudax::async_buffer constructors", "[container][async_buffer]",
     }
     {
       const auto buf =
-        cudax::make_async_buffer<T>(stream, resource, cuda::std::array<T, 6>{T(1), T(42), T(1337), T(0), T(12), T(-1)});
+        cudax::make_buffer<T>(stream, resource, cuda::std::array<T, 6>{T(1), T(42), T(1337), T(0), T(12), T(-1)});
       CUDAX_CHECK(!buf.empty());
       CUDAX_CHECK(equal_range(buf));
     }
@@ -153,7 +153,7 @@ C2H_CCCLRT_TEST("cudax::async_buffer constructors", "[container][async_buffer]",
       CUDAX_CHECK(buf.data() == nullptr);
     }
     {
-      const auto buf = cudax::make_async_buffer(stream, resource, cuda::std::initializer_list<T>{});
+      const auto buf = cudax::make_buffer(stream, resource, cuda::std::initializer_list<T>{});
       CUDAX_CHECK(buf.empty());
       CUDAX_CHECK(buf.data() == nullptr);
     }
@@ -165,8 +165,8 @@ C2H_CCCLRT_TEST("cudax::async_buffer constructors", "[container][async_buffer]",
       CUDAX_CHECK(equal_range(buf));
     }
     {
-      const auto buf = cudax::make_async_buffer(
-        stream, resource, cuda::std::initializer_list<T>{T(1), T(42), T(1337), T(0), T(12), T(-1)});
+      const auto buf =
+        cudax::make_buffer(stream, resource, cuda::std::initializer_list<T>{T(1), T(42), T(1337), T(0), T(12), T(-1)});
       CUDAX_CHECK(buf.size() == 6);
       CUDAX_CHECK(equal_range(buf));
     }
@@ -219,11 +219,11 @@ C2H_CCCLRT_TEST("cudax::async_buffer constructors", "[container][async_buffer]",
 #  if _CCCL_HAS_EXCEPTIONS()
   SECTION("Exception handling throwing bad_alloc")
   {
-    using async_buffer = cudax::async_buffer<int>;
+    using buffer = cudax::buffer<int>;
 
     try
     {
-      async_buffer too_small(2 * capacity);
+      buffer too_small(2 * capacity);
     }
     catch (const std::bad_alloc&)
     {}
@@ -234,7 +234,7 @@ C2H_CCCLRT_TEST("cudax::async_buffer constructors", "[container][async_buffer]",
 
     try
     {
-      async_buffer too_small(2 * capacity, 42);
+      buffer too_small(2 * capacity, 42);
     }
     catch (const std::bad_alloc&)
     {}
@@ -246,7 +246,7 @@ C2H_CCCLRT_TEST("cudax::async_buffer constructors", "[container][async_buffer]",
     try
     {
       cuda::std::array<int, 2 * capacity> input{0, 1, 2, 3, 4, 5, 6, 7};
-      async_buffer too_small(input.begin(), input.end());
+      buffer too_small(input.begin(), input.end());
     }
     catch (const std::bad_alloc&)
     {}
@@ -258,7 +258,7 @@ C2H_CCCLRT_TEST("cudax::async_buffer constructors", "[container][async_buffer]",
     try
     {
       cuda::std::initializer_list<int> input{0, 1, 2, 3, 4, 5, 6};
-      async_buffer too_small(input);
+      buffer too_small(input);
     }
     catch (const std::bad_alloc&)
     {}
@@ -270,7 +270,7 @@ C2H_CCCLRT_TEST("cudax::async_buffer constructors", "[container][async_buffer]",
     try
     {
       uncommon_range<int, 2 * capacity> input{{0, 1, 2, 3, 4, 5, 6, 7}};
-      async_buffer too_small(input);
+      buffer too_small(input);
     }
     catch (const std::bad_alloc&)
     {}
@@ -282,7 +282,7 @@ C2H_CCCLRT_TEST("cudax::async_buffer constructors", "[container][async_buffer]",
     try
     {
       sized_uncommon_range<int, 2 * capacity> input{{0, 1, 2, 3, 4, 5, 6, 7}};
-      async_buffer too_small(input);
+      buffer too_small(input);
     }
     catch (const std::bad_alloc&)
     {}
@@ -294,7 +294,7 @@ C2H_CCCLRT_TEST("cudax::async_buffer constructors", "[container][async_buffer]",
     try
     {
       cuda::std::array<int, 2 * capacity> input{0, 1, 2, 3, 4, 5, 6, 7};
-      async_buffer too_small(input);
+      buffer too_small(input);
     }
     catch (const std::bad_alloc&)
     {}
@@ -306,3 +306,45 @@ C2H_CCCLRT_TEST("cudax::async_buffer constructors", "[container][async_buffer]",
 #  endif // _CCCL_HAS_EXCEPTIONS()
 #endif // 0
 }
+
+C2H_CCCLRT_TEST("cudax::buffer constructors with legacy resource", "[container][buffer]")
+{
+  cudax::stream stream{cuda::device_ref{0}};
+  cuda::legacy_pinned_memory_resource resource;
+  auto input = compare_data_initializer_list;
+  cudax::buffer<int, cuda::mr::device_accessible> buffer{stream, resource, input};
+  CUDAX_CHECK(equal_range(buffer));
+  STATIC_CHECK(!decltype(buffer)::properties_list::has_property(cuda::mr::host_accessible{}));
+  STATIC_CHECK(decltype(buffer)::properties_list::has_property(cuda::mr::device_accessible{}));
+
+  cudax::buffer<int, cuda::mr::host_accessible> buffer2{stream, resource, input};
+  auto buf2 = cudax::make_buffer(stream, resource, buffer2);
+  CUDAX_CHECK(equal_range(buffer2));
+  STATIC_CHECK(decltype(buffer2)::properties_list::has_property(cuda::mr::host_accessible{}));
+  STATIC_CHECK(!decltype(buffer2)::properties_list::has_property(cuda::mr::device_accessible{}));
+}
+
+#if _CCCL_CTK_AT_LEAST(12, 6)
+C2H_CCCLRT_TEST("cudax::make_buffer narrowing properties", "[container][buffer]")
+{
+  auto resource = cuda::pinned_default_memory_pool();
+  cudax::stream stream{cuda::device_ref{0}};
+
+  auto buf = cudax::make_buffer<int>(stream, resource, 0, cudax::no_init);
+
+  auto input      = compare_data_initializer_list;
+  auto buf_host   = cudax::make_buffer<int, cuda::mr::host_accessible>(stream, resource, input);
+  auto buf_device = cudax::make_buffer<int, cuda::mr::device_accessible>(stream, resource, 2, 42);
+
+  STATIC_CHECK(decltype(buf)::properties_list::has_property(cuda::mr::host_accessible{}));
+  STATIC_CHECK(decltype(buf)::properties_list::has_property(cuda::mr::device_accessible{}));
+  STATIC_CHECK(decltype(buf_host)::properties_list::has_property(cuda::mr::host_accessible{}));
+  STATIC_CHECK(!decltype(buf_host)::properties_list::has_property(cuda::mr::device_accessible{}));
+  STATIC_CHECK(decltype(buf_device)::properties_list::has_property(cuda::mr::device_accessible{}));
+  STATIC_CHECK(!decltype(buf_device)::properties_list::has_property(cuda::mr::host_accessible{}));
+
+  CUDAX_CHECK(buf.empty());
+  CUDAX_CHECK(equal_range(buf_host));
+  CUDAX_CHECK(buf_device.size() == 2);
+}
+#endif // ^^^ _CCCL_CTK_AT_LEAST(12, 6) ^^^

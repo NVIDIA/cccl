@@ -5,6 +5,8 @@
 
 #include <cub/device/device_scan.cuh>
 
+#include <cuda/iterator>
+
 #include <cstdint>
 
 #include "catch2_large_problem_helper.cuh"
@@ -64,8 +66,8 @@ try
 
   // Prepare input (generate a series of: 0, 1, 2, ..., <segment_size-1>,  0, 1, 2, ..., <segment_size-1>, 0, 1, ...)
   constexpr index_t segment_size = 1000;
-  auto index_it                  = thrust::make_counting_iterator(index_t{});
-  auto items_it                  = thrust::make_transform_iterator(index_it, mod_op<item_t>{segment_size});
+  auto index_it                  = cuda::counting_iterator(index_t{});
+  auto items_it                  = cuda::transform_iterator(index_it, mod_op<item_t>{segment_size});
 
   // Output memory allocation
   c2h::device_vector<item_t> d_items_out(num_items);
@@ -80,7 +82,7 @@ try
 
   // Ensure that we created the correct output
   auto expected_out_it =
-    thrust::make_transform_iterator(index_it, expected_sum_op<item_t>{static_cast<index_t>(segment_size)});
+    cuda::transform_iterator(index_it, expected_sum_op<item_t>{static_cast<index_t>(segment_size)});
   bool all_results_correct = thrust::equal(d_items_out.cbegin(), d_items_out.cend(), expected_out_it);
   REQUIRE(all_results_correct == true);
 }

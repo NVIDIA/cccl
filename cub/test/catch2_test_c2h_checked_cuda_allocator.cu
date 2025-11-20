@@ -36,7 +36,7 @@ C2H_TEST("c2h::device_vector throws when requested allocations exceed free devic
 C2H_TEST("c2h::device_policy throws when requested allocations exceed free device memory",
          "[c2h][checked_cuda_allocator][device_policy]")
 {
-  thrust::pair<char*, std::ptrdiff_t> buffer{nullptr, 0};
+  cuda::std::pair<char*, std::ptrdiff_t> buffer{nullptr, 0};
   auto policy = thrust::detail::derived_cast(thrust::detail::strip_const(c2h::device_policy));
 
   const std::size_t alloc_bytes = get_alloc_bytes();

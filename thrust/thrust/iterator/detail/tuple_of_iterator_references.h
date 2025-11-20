@@ -28,11 +28,12 @@
 
 #include <thrust/detail/raw_reference_cast.h>
 #include <thrust/detail/reference_forward_declaration.h>
-#include <thrust/pair.h>
 #include <thrust/tuple.h>
 
+#include <cuda/std/__type_traits/enable_if.h>
+#include <cuda/std/__utility/move.h>
+#include <cuda/std/__utility/pair.h>
 #include <cuda/std/tuple>
-#include <cuda/std/type_traits>
 
 THRUST_NAMESPACE_BEGIN
 
@@ -91,7 +92,7 @@ public:
   // XXX might be worthwhile to guard this with an enable_if is_assignable
   _CCCL_EXEC_CHECK_DISABLE
   template <typename U1, typename U2>
-  _CCCL_HOST_DEVICE tuple_of_iterator_references& operator=(const pair<U1, U2>& other)
+  _CCCL_HOST_DEVICE tuple_of_iterator_references& operator=(const ::cuda::std::pair<U1, U2>& other)
   {
     super_t::operator=(other);
     return *this;

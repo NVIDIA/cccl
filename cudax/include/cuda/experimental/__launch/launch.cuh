@@ -22,6 +22,7 @@
 #endif // no system header
 
 #include <cuda/__driver/driver_api.h>
+#include <cuda/__stream/device_transform.h>
 #include <cuda/__stream/stream_ref.h>
 #include <cuda/std/__exception/cuda_error.h>
 #include <cuda/std/__type_traits/is_function.h>
@@ -38,7 +39,6 @@
 #include <cuda/experimental/__graph/path_builder.cuh>
 #include <cuda/experimental/__kernel/kernel_ref.cuh>
 #include <cuda/experimental/__launch/configuration.cuh>
-#include <cuda/experimental/__stream/device_transform.cuh>
 #include <cuda/experimental/__utility/ensure_current_device.cuh>
 
 #include <cuda/std/__cccl/prologue.h>
@@ -60,7 +60,7 @@ __global__ static void __kernel_launcher_no_config(_Kernel __kernel_fn, _Args...
 template <class... _Args>
 [[nodiscard]] _CCCL_HOST_API CUfunction __get_cufunction_of(kernel_ref<void(_Args...)> __kernel)
 {
-  return _CUDA_DRIVER::__kernelGetFunction(__kernel.get());
+  return ::cuda::__driver::__kernelGetFunction(__kernel.get());
 }
 
 template <class... _Args>
@@ -90,12 +90,12 @@ __do_launch(_GraphInserter&& __inserter, ::CUlaunchConfig& __config, ::CUfunctio
 
   auto __dependencies = __inserter.get_dependencies();
 
-  const auto __node = _CUDA_DRIVER::__graphAddKernelNode(
+  const auto __node = ::cuda::__driver::__graphAddKernelNode(
     __inserter.get_graph().get(), __dependencies.data(), __dependencies.size(), __node_params);
 
   for (unsigned int __i = 0; __i < __config.numAttrs; ++__i)
   {
-    _CUDA_DRIVER::__graphKernelNodeSetAttribute(__node, __config.attrs[__i].id, __config.attrs[__i].value);
+    ::cuda::__driver::__graphKernelNodeSetAttribute(__node, __config.attrs[__i].id, __config.attrs[__i].value);
   }
 
   // TODO skip the update if called on rvalue?
@@ -111,7 +111,7 @@ _CCCL_HOST_API void inline __do_launch(
 #if defined(_CUDAX_LAUNCH_CONFIG_TEST)
   test_launch_kernel_replacement(__config, __kernel, __args_ptrs);
 #else // ^^^ _CUDAX_LAUNCH_CONFIG_TEST ^^^ / vvv !_CUDAX_LAUNCH_CONFIG_TEST vvv
-  _CUDA_DRIVER::__launchKernel(__config, __kernel, __args_ptrs);
+  ::cuda::__driver::__launchKernel(__config, __kernel, __args_ptrs);
 #endif // ^^^ !_CUDAX_LAUNCH_CONFIG_TEST ^^^
 }
 
@@ -158,7 +158,7 @@ _CCCL_TEMPLATE(typename _GraphInserter)
 _CCCL_REQUIRES(graph_inserter<_GraphInserter>)
 _CCCL_HOST_API ::cuda::stream_ref __stream_or_invalid([[maybe_unused]] const _GraphInserter& __inserter)
 {
-  return ::cuda::__detail::__invalid_stream;
+  return ::cuda::stream_ref{::cuda::invalid_stream};
 }
 
 _CCCL_HOST_API ::cuda::stream_ref inline __stream_or_invalid(::cuda::stream_ref __stream)

@@ -23,7 +23,12 @@ include(cmake/CPM.cmake)
 
 # We define these as variables so they can be overridden in CI to pull from a PR instead of CCCL `main`
 # In your project, these variables are unnecessary and you can just use the values directly
-set(CCCL_REPOSITORY "https://github.com/NVIDIA/cccl" CACHE STRING "Git repository to fetch CCCL from")
+set(
+  CCCL_REPOSITORY
+  "https://github.com/NVIDIA/cccl"
+  CACHE STRING
+  "Git repository to fetch CCCL from"
+)
 set(CCCL_TAG "main" CACHE STRING "Git tag/branch to fetch from CCCL repository")
 
 # This will automatically clone CCCL from GitHub and make the exported cmake targets available
@@ -37,15 +42,15 @@ CPMAddPackage(
 )
 
 # Default to building for the GPU on the current system
-if(NOT DEFINED CMAKE_CUDA_ARCHITECTURES)
+if (NOT DEFINED CMAKE_CUDA_ARCHITECTURES)
   set(CMAKE_CUDA_ARCHITECTURES native)
 endif()
 
 add_library(cudax_samples_interface INTERFACE)
 
 target_compile_definitions(
-  cudax_samples_interface INTERFACE
-  LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE
+  cudax_samples_interface
+  INTERFACE LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE
 )
 
 target_link_libraries(cudax_samples_interface INTERFACE CCCL::CCCL CCCL::cudax)
@@ -55,16 +60,22 @@ if ("MSVC" STREQUAL "${CMAKE_CXX_COMPILER_ID}")
   target_compile_features(cudax_samples_interface INTERFACE cxx_std_20)
 
   # Require the conforming preprocessor
-  target_compile_options(cudax_samples_interface INTERFACE
-    $<$<COMPILE_LANGUAGE:CXX>:/Zc:__cplusplus /Zc:preprocessor>
-    $<$<COMPILE_LANG_AND_ID:CUDA,NVIDIA>:-Xcompiler=/Zc:__cplusplus -Xcompiler=/Zc:preprocessor>
+  target_compile_options(
+    cudax_samples_interface
+    INTERFACE
+      $<$<COMPILE_LANGUAGE:CXX>:/Zc:__cplusplus>
+      $<$<COMPILE_LANGUAGE:CXX>:/Zc:preprocessor>
+      $<$<COMPILE_LANG_AND_ID:CUDA,NVIDIA>:-Xcompiler=/Zc:__cplusplus>
+      $<$<COMPILE_LANG_AND_ID:CUDA,NVIDIA>:-Xcompiler=/Zc:preprocessor>
   )
 
   if (MSVC_TOOLSET_VERSION LESS 143)
     # winbase.h(9572): warning C5105: macro expansion producing 'defined' has undefined behavior
-    target_compile_options(cudax_samples_interface INTERFACE
-      $<$<COMPILE_LANGUAGE:CXX>:/wd5105>
-      $<$<COMPILE_LANG_AND_ID:CUDA,NVIDIA>:-Xcompiler=/wd5105>
+    target_compile_options(
+      cudax_samples_interface
+      INTERFACE
+        $<$<COMPILE_LANGUAGE:CXX>:/wd5105>
+        $<$<COMPILE_LANG_AND_ID:CUDA,NVIDIA>:-Xcompiler=/wd5105>
     )
   endif()
 endif()

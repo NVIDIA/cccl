@@ -46,11 +46,8 @@ template <int BlockThreads,
           typename DelayConstructorT            = detail::fixed_delay_constructor_t<350, 450>>
 struct AgentUniqueByKeyPolicy
 {
-  enum
-  {
-    BLOCK_THREADS    = BlockThreads,
-    ITEMS_PER_THREAD = ItemsPerThread,
-  };
+  static constexpr int BLOCK_THREADS                      = BlockThreads;
+  static constexpr int ITEMS_PER_THREAD                   = ItemsPerThread;
   static constexpr cub::BlockLoadAlgorithm LOAD_ALGORITHM = LoadAlgorithm;
   static constexpr cub::CacheLoadModifier LOAD_MODIFIER   = LoadModifier;
   static constexpr cub::BlockScanAlgorithm SCAN_ALGORITHM = ScanAlgorithm;
@@ -133,12 +130,9 @@ struct AgentUniqueByKey
   using ScanTileStateT = ScanTileState<OffsetT>;
 
   // Constants
-  enum
-  {
-    BLOCK_THREADS    = AgentUniqueByKeyPolicyT::BLOCK_THREADS,
-    ITEMS_PER_THREAD = AgentUniqueByKeyPolicyT::ITEMS_PER_THREAD,
-    ITEMS_PER_TILE   = BLOCK_THREADS * ITEMS_PER_THREAD,
-  };
+  static constexpr int BLOCK_THREADS    = AgentUniqueByKeyPolicyT::BLOCK_THREADS;
+  static constexpr int ITEMS_PER_THREAD = AgentUniqueByKeyPolicyT::ITEMS_PER_THREAD;
+  static constexpr int ITEMS_PER_TILE   = BLOCK_THREADS * ITEMS_PER_THREAD;
 
   // Cache-modified Input iterator wrapper type (for applying cache modifier) for keys
   using WrappedKeyInputIteratorT = ::cuda::std::conditional_t<

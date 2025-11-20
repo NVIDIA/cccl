@@ -36,16 +36,14 @@
 #  pragma system_header
 #endif // no system header
 
-#if _CCCL_HAS_CUDA_COMPILER()
+#if _CCCL_CUDA_COMPILATION()
 
 #  include <cub/block/block_load.cuh>
 #  include <cub/iterator/cache_modified_input_iterator.cuh>
 
 #  include <thrust/detail/alignment.h>
 #  include <thrust/detail/temporary_array.h>
-#  include <thrust/distance.h>
 #  include <thrust/extrema.h>
-#  include <thrust/pair.h>
 #  include <thrust/set_operations.h>
 #  include <thrust/system/cuda/detail/cdp_dispatch.h>
 #  include <thrust/system/cuda/detail/core/agent_launcher.h>
@@ -56,6 +54,9 @@
 #  include <cuda/std/__algorithm/max.h>
 #  include <cuda/std/__algorithm/min.h>
 #  include <cuda/std/__bit/popcount.h>
+#  include <cuda/std/__functional/operations.h>
+#  include <cuda/std/__iterator/distance.h>
+#  include <cuda/std/__utility/pair.h>
 #  include <cuda/std/cstdint>
 
 THRUST_NAMESPACE_BEGIN
@@ -152,7 +153,7 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE Size merge_path(It1 a, Size aCount, It2 b, Si
 }
 
 template <class It1, class It2, class Size, class Size2, class CompareOp>
-_CCCL_DEVICE_API _CCCL_FORCEINLINE pair<Size, Size>
+_CCCL_DEVICE_API _CCCL_FORCEINLINE ::cuda::std::pair<Size, Size>
 balanced_path(It1 keys1, It2 keys2, Size num_keys1, Size num_keys2, Size diag, Size2 levels, CompareOp compare_op)
 {
   using T = thrust::detail::it_value_t<It1>;
@@ -194,7 +195,7 @@ balanced_path(It1 keys1, It2 keys2, Size num_keys1, Size num_keys2, Size diag, S
 
     index1 = start1 + advance1;
   }
-  return thrust::make_pair(index1, (diag - index1) + star);
+  return ::cuda::std::make_pair(index1, (diag - index1) + star);
 } // func balanced_path
 
 template <int _BLOCK_THREADS,
@@ -204,12 +205,9 @@ template <int _BLOCK_THREADS,
           cub::BlockScanAlgorithm _SCAN_ALGORITHM = cub::BLOCK_SCAN_WARP_SCANS>
 struct PtxPolicy
 {
-  enum
-  {
-    BLOCK_THREADS    = _BLOCK_THREADS,
-    ITEMS_PER_THREAD = _ITEMS_PER_THREAD,
-    ITEMS_PER_TILE   = _BLOCK_THREADS * _ITEMS_PER_THREAD - 1
-  };
+  static constexpr int BLOCK_THREADS    = _BLOCK_THREADS;
+  static constexpr int ITEMS_PER_THREAD = _ITEMS_PER_THREAD;
+  static constexpr int ITEMS_PER_TILE   = _BLOCK_THREADS * _ITEMS_PER_THREAD - 1;
 
   static const cub::BlockLoadAlgorithm LOAD_ALGORITHM = _LOAD_ALGORITHM;
   static const cub::CacheLoadModifier LOAD_MODIFIER   = _LOAD_MODIFIER;
@@ -222,16 +220,13 @@ struct Tuning;
 template <class T, class U>
 struct Tuning<core::detail::sm52, T, U>
 {
-  enum
-  {
-    MAX_INPUT_BYTES             = ::cuda::std::max(sizeof(T), sizeof(U)),
-    COMBINED_INPUT_BYTES        = sizeof(T), // + sizeof(U),
-    NOMINAL_4B_ITEMS_PER_THREAD = 15,
-    ITEMS_PER_THREAD            = ::cuda::std::min(
-      NOMINAL_4B_ITEMS_PER_THREAD,
-      ::cuda::std::max(
-        1, static_cast<int>(((NOMINAL_4B_ITEMS_PER_THREAD * 4) + COMBINED_INPUT_BYTES - 1) / COMBINED_INPUT_BYTES))),
-  };
+  static constexpr int MAX_INPUT_BYTES             = static_cast<int>(::cuda::std::max(sizeof(T), sizeof(U)));
+  static constexpr int COMBINED_INPUT_BYTES        = sizeof(T); // + sizeof(U)
+  static constexpr int NOMINAL_4B_ITEMS_PER_THREAD = 15;
+  static constexpr int ITEMS_PER_THREAD            = ::cuda::std::min(
+    NOMINAL_4B_ITEMS_PER_THREAD,
+    ::cuda::std::max(
+      1, static_cast<int>(((NOMINAL_4B_ITEMS_PER_THREAD * 4) + COMBINED_INPUT_BYTES - 1) / COMBINED_INPUT_BYTES)));
 
   using type =
     PtxPolicy<256, ITEMS_PER_THREAD, cub::BLOCK_LOAD_WARP_TRANSPOSE, cub::LOAD_DEFAULT, cub::BLOCK_SCAN_WARP_SCANS>;
@@ -240,16 +235,13 @@ struct Tuning<core::detail::sm52, T, U>
 template <class T, class U>
 struct Tuning<core::detail::sm60, T, U>
 {
-  enum
-  {
-    MAX_INPUT_BYTES             = ::cuda::std::max(sizeof(T), sizeof(U)),
-    COMBINED_INPUT_BYTES        = sizeof(T), // + sizeof(U),
-    NOMINAL_4B_ITEMS_PER_THREAD = 19,
-    ITEMS_PER_THREAD            = ::cuda::std::min(
-      NOMINAL_4B_ITEMS_PER_THREAD,
-      ::cuda::std::max(
-        1, static_cast<int>(((NOMINAL_4B_ITEMS_PER_THREAD * 4) + COMBINED_INPUT_BYTES - 1) / COMBINED_INPUT_BYTES))),
-  };
+  static constexpr int MAX_INPUT_BYTES             = static_cast<int>(::cuda::std::max(sizeof(T), sizeof(U)));
+  static constexpr int COMBINED_INPUT_BYTES        = sizeof(T); // + sizeof(U),
+  static constexpr int NOMINAL_4B_ITEMS_PER_THREAD = 19;
+  static constexpr int ITEMS_PER_THREAD            = ::cuda::std::min(
+    NOMINAL_4B_ITEMS_PER_THREAD,
+    ::cuda::std::max(
+      1, static_cast<int>(((NOMINAL_4B_ITEMS_PER_THREAD * 4) + COMBINED_INPUT_BYTES - 1) / COMBINED_INPUT_BYTES)));
 
   using type =
     PtxPolicy<512, ITEMS_PER_THREAD, cub::BLOCK_LOAD_WARP_TRANSPOSE, cub::LOAD_DEFAULT, cub::BLOCK_SCAN_WARP_SCANS>;
@@ -349,11 +341,8 @@ struct SetOpAgent
 
   using TempStorage = typename ptx_plan::TempStorage;
 
-  enum
-  {
-    ITEMS_PER_THREAD = ptx_plan::ITEMS_PER_THREAD,
-    BLOCK_THREADS    = ptx_plan::BLOCK_THREADS,
-  };
+  static constexpr int ITEMS_PER_THREAD = ptx_plan::ITEMS_PER_THREAD;
+  static constexpr int BLOCK_THREADS    = ptx_plan::BLOCK_THREADS;
 
   struct impl
   {
@@ -373,7 +362,7 @@ struct SetOpAgent
     ValuesOutputIt values_out;
     CompareOp compare_op;
     SetOp set_op;
-    pair<Size, Size>* partitions;
+    ::cuda::std::pair<Size, Size>* partitions;
     std::size_t* output_count;
 
     //---------------------------------------------------------------------
@@ -480,8 +469,8 @@ struct SetOpAgent
     {
       using core::detail::uninitialized_array;
 
-      pair<Size, Size> partition_beg = partitions[tile_idx + 0];
-      pair<Size, Size> partition_end = partitions[tile_idx + 1];
+      ::cuda::std::pair<Size, Size> partition_beg = partitions[tile_idx + 0];
+      ::cuda::std::pair<Size, Size> partition_end = partitions[tile_idx + 1];
 
       Size keys1_beg = partition_beg.first;
       Size keys1_end = partition_end.first;
@@ -504,7 +493,7 @@ struct SetOpAgent
 
       int diag_loc = min<int>(ITEMS_PER_THREAD * threadIdx.x, num_keys1 + num_keys2);
 
-      pair<int, int> partition_loc = balanced_path(
+      ::cuda::std::pair<int, int> partition_loc = balanced_path(
         &storage.load_storage.keys_shared[0],
         &storage.load_storage.keys_shared[num_keys1],
         num_keys1,
@@ -525,7 +514,7 @@ struct SetOpAgent
 
       __syncthreads();
 
-      pair<int, int> partition1_loc = thrust::make_pair(
+      ::cuda::std::pair<int, int> partition1_loc = ::cuda::std::make_pair(
         storage.load_storage.offset[threadIdx.x] >> 16, storage.load_storage.offset[threadIdx.x] & 0xFFFF);
 
       int keys1_end_loc = partition1_loc.first;
@@ -650,7 +639,7 @@ struct SetOpAgent
       ValuesOutputIt values_out_,
       CompareOp compare_op_,
       SetOp set_op_,
-      pair<Size, Size>* partitions_,
+      ::cuda::std::pair<Size, Size>* partitions_,
       std::size_t* output_count_)
         : storage(storage_)
         , tile_state(tile_state_)
@@ -696,7 +685,7 @@ struct SetOpAgent
     ValuesOutputIt values_output,
     CompareOp compare_op,
     SetOp set_op,
-    pair<Size, Size>* partitions,
+    ::cuda::std::pair<Size, Size>* partitions,
     std::size_t* output_count,
     ScanTileState tile_state,
     char* shmem)
@@ -739,7 +728,7 @@ struct PartitionAgent
     Size keys1_count,
     Size keys2_count,
     Size num_partitions,
-    pair<Size, Size>* partitions,
+    ::cuda::std::pair<Size, Size>* partitions,
     CompareOp compare_op,
     int items_per_tile,
     char* /*shmem*/)
@@ -747,8 +736,9 @@ struct PartitionAgent
     Size partition_idx = blockDim.x * blockIdx.x + threadIdx.x;
     if (partition_idx < num_partitions)
     {
-      Size partition_at         = min<Size>(partition_idx * items_per_tile, keys1_count + keys2_count);
-      pair<Size, Size> diag     = balanced_path(keys1, keys2, keys1_count, keys2_count, partition_at, 4ll, compare_op);
+      Size partition_at = min<Size>(partition_idx * items_per_tile, keys1_count + keys2_count);
+      ::cuda::std::pair<Size, Size> diag =
+        balanced_path(keys1, keys2, keys1_count, keys2_count, partition_at, 4ll, compare_op);
       partitions[partition_idx] = diag;
     }
   }
@@ -1092,8 +1082,8 @@ cudaError_t THRUST_RUNTIME_FUNCTION doit_step(
   status = tile_state.Init(static_cast<int>(num_tiles), allocations[0], allocation_sizes[0]);
   _CUDA_CUB_RET_IF_FAIL(status);
 
-  pair<Size, Size>* partitions = (pair<Size, Size>*) allocations[1];
-  char* vshmem_ptr             = vshmem_storage > 0 ? (char*) allocations[2] : nullptr;
+  ::cuda::std::pair<Size, Size>* partitions = (::cuda::std::pair<Size, Size>*) allocations[1];
+  char* vshmem_ptr                          = vshmem_storage > 0 ? (char*) allocations[2] : nullptr;
 
   init_agent ia(init_plan, num_tiles, stream, "set_op::init_agent");
   ia.launch(tile_state, num_tiles);
@@ -1133,7 +1123,7 @@ template <typename HAS_VALUES,
           typename ValuesOutputIt,
           typename CompareOp,
           typename SetOp>
-THRUST_RUNTIME_FUNCTION pair<KeysOutputIt, ValuesOutputIt> set_operations(
+THRUST_RUNTIME_FUNCTION ::cuda::std::pair<KeysOutputIt, ValuesOutputIt> set_operations(
   execution_policy<Derived>& policy,
   KeysIt1 keys1_first,
   KeysIt1 keys1_last,
@@ -1153,7 +1143,7 @@ THRUST_RUNTIME_FUNCTION pair<KeysOutputIt, ValuesOutputIt> set_operations(
 
   if (num_keys1 + num_keys2 == 0)
   {
-    return thrust::make_pair(keys_output, values_output);
+    return ::cuda::std::make_pair(keys_output, values_output);
   }
 
   size_t temp_storage_bytes = 0;
@@ -1224,7 +1214,7 @@ THRUST_RUNTIME_FUNCTION pair<KeysOutputIt, ValuesOutputIt> set_operations(
 
   std::size_t output_count = cuda_cub::get_value(policy, d_output_count);
 
-  return thrust::make_pair(keys_output + output_count, values_output + output_count);
+  return ::cuda::std::make_pair(keys_output + output_count, values_output + output_count);
 }
 } // namespace __set_operations
 
@@ -1435,7 +1425,7 @@ template <class Derived,
           class KeysOutputIt,
           class ItemsOutputIt,
           class CompareOp>
-pair<KeysOutputIt, ItemsOutputIt> _CCCL_HOST_DEVICE set_difference_by_key(
+::cuda::std::pair<KeysOutputIt, ItemsOutputIt> _CCCL_HOST_DEVICE set_difference_by_key(
   execution_policy<Derived>& policy,
   KeysIt1 keys1_first,
   KeysIt1 keys1_last,
@@ -1447,7 +1437,7 @@ pair<KeysOutputIt, ItemsOutputIt> _CCCL_HOST_DEVICE set_difference_by_key(
   ItemsOutputIt items_result,
   CompareOp compare_op)
 {
-  auto ret = thrust::make_pair(keys_result, items_result);
+  auto ret = ::cuda::std::make_pair(keys_result, items_result);
   THRUST_CDP_DISPATCH(
     (ret = __set_operations::set_operations<thrust::detail::true_type>(
        policy,
@@ -1476,7 +1466,7 @@ pair<KeysOutputIt, ItemsOutputIt> _CCCL_HOST_DEVICE set_difference_by_key(
 }
 
 template <class Derived, class KeysIt1, class KeysIt2, class ItemsIt1, class ItemsIt2, class KeysOutputIt, class ItemsOutputIt>
-pair<KeysOutputIt, ItemsOutputIt> _CCCL_HOST_DEVICE set_difference_by_key(
+::cuda::std::pair<KeysOutputIt, ItemsOutputIt> _CCCL_HOST_DEVICE set_difference_by_key(
   execution_policy<Derived>& policy,
   KeysIt1 keys1_first,
   KeysIt1 keys1_last,
@@ -1512,7 +1502,7 @@ template <class Derived,
           class KeysOutputIt,
           class ItemsOutputIt,
           class CompareOp>
-pair<KeysOutputIt, ItemsOutputIt> _CCCL_HOST_DEVICE set_intersection_by_key(
+::cuda::std::pair<KeysOutputIt, ItemsOutputIt> _CCCL_HOST_DEVICE set_intersection_by_key(
   execution_policy<Derived>& policy,
   KeysIt1 keys1_first,
   KeysIt1 keys1_last,
@@ -1523,7 +1513,7 @@ pair<KeysOutputIt, ItemsOutputIt> _CCCL_HOST_DEVICE set_intersection_by_key(
   ItemsOutputIt items_result,
   CompareOp compare_op)
 {
-  auto ret = thrust::make_pair(keys_result, items_result);
+  auto ret = ::cuda::std::make_pair(keys_result, items_result);
   THRUST_CDP_DISPATCH(
     (ret = __set_operations::set_operations<thrust::detail::true_type>(
        policy,
@@ -1551,7 +1541,7 @@ pair<KeysOutputIt, ItemsOutputIt> _CCCL_HOST_DEVICE set_intersection_by_key(
 }
 
 template <class Derived, class KeysIt1, class KeysIt2, class ItemsIt1, class ItemsIt2, class KeysOutputIt, class ItemsOutputIt>
-pair<KeysOutputIt, ItemsOutputIt> _CCCL_HOST_DEVICE set_intersection_by_key(
+::cuda::std::pair<KeysOutputIt, ItemsOutputIt> _CCCL_HOST_DEVICE set_intersection_by_key(
   execution_policy<Derived>& policy,
   KeysIt1 keys1_first,
   KeysIt1 keys1_last,
@@ -1585,7 +1575,7 @@ template <class Derived,
           class KeysOutputIt,
           class ItemsOutputIt,
           class CompareOp>
-pair<KeysOutputIt, ItemsOutputIt> _CCCL_HOST_DEVICE set_symmetric_difference_by_key(
+::cuda::std::pair<KeysOutputIt, ItemsOutputIt> _CCCL_HOST_DEVICE set_symmetric_difference_by_key(
   execution_policy<Derived>& policy,
   KeysIt1 keys1_first,
   KeysIt1 keys1_last,
@@ -1597,7 +1587,7 @@ pair<KeysOutputIt, ItemsOutputIt> _CCCL_HOST_DEVICE set_symmetric_difference_by_
   ItemsOutputIt items_result,
   CompareOp compare_op)
 {
-  auto ret = thrust::make_pair(keys_result, items_result);
+  auto ret = ::cuda::std::make_pair(keys_result, items_result);
   THRUST_CDP_DISPATCH(
     (ret = __set_operations::set_operations<thrust::detail::true_type>(
        policy,
@@ -1626,7 +1616,7 @@ pair<KeysOutputIt, ItemsOutputIt> _CCCL_HOST_DEVICE set_symmetric_difference_by_
 }
 
 template <class Derived, class KeysIt1, class KeysIt2, class ItemsIt1, class ItemsIt2, class KeysOutputIt, class ItemsOutputIt>
-pair<KeysOutputIt, ItemsOutputIt> _CCCL_HOST_DEVICE set_symmetric_difference_by_key(
+::cuda::std::pair<KeysOutputIt, ItemsOutputIt> _CCCL_HOST_DEVICE set_symmetric_difference_by_key(
   execution_policy<Derived>& policy,
   KeysIt1 keys1_first,
   KeysIt1 keys1_last,
@@ -1662,7 +1652,7 @@ template <class Derived,
           class KeysOutputIt,
           class ItemsOutputIt,
           class CompareOp>
-pair<KeysOutputIt, ItemsOutputIt> _CCCL_HOST_DEVICE set_union_by_key(
+::cuda::std::pair<KeysOutputIt, ItemsOutputIt> _CCCL_HOST_DEVICE set_union_by_key(
   execution_policy<Derived>& policy,
   KeysIt1 keys1_first,
   KeysIt1 keys1_last,
@@ -1674,7 +1664,7 @@ pair<KeysOutputIt, ItemsOutputIt> _CCCL_HOST_DEVICE set_union_by_key(
   ItemsOutputIt items_result,
   CompareOp compare_op)
 {
-  auto ret = thrust::make_pair(keys_result, items_result);
+  auto ret = ::cuda::std::make_pair(keys_result, items_result);
   THRUST_CDP_DISPATCH(
     (ret = __set_operations::set_operations<thrust::detail::true_type>(
        policy,
@@ -1703,7 +1693,7 @@ pair<KeysOutputIt, ItemsOutputIt> _CCCL_HOST_DEVICE set_union_by_key(
 }
 
 template <class Derived, class KeysIt1, class KeysIt2, class ItemsIt1, class ItemsIt2, class KeysOutputIt, class ItemsOutputIt>
-pair<KeysOutputIt, ItemsOutputIt> _CCCL_HOST_DEVICE set_union_by_key(
+::cuda::std::pair<KeysOutputIt, ItemsOutputIt> _CCCL_HOST_DEVICE set_union_by_key(
   execution_policy<Derived>& policy,
   KeysIt1 keys1_first,
   KeysIt1 keys1_last,
@@ -1729,4 +1719,4 @@ pair<KeysOutputIt, ItemsOutputIt> _CCCL_HOST_DEVICE set_union_by_key(
 }
 } // namespace cuda_cub
 THRUST_NAMESPACE_END
-#endif
+#endif // _CCCL_CUDA_COMPILATION()

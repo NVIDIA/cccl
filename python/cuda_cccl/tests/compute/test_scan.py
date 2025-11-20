@@ -399,3 +399,21 @@ def test_no_init_value(monkeypatch):
     got = d_output.get()
     expected = scan_host(d_input.get(), lambda a, b: a + b, [0], force_inclusive)
     np.testing.assert_array_equal(expected, got)
+
+
+def test_no_init_value_iterator():
+    force_inclusive = True
+    num_items = 1024
+    dtype = np.dtype("float64")
+
+    d_input = CountingIterator(np.float64(0))
+    d_output = cp.empty(num_items, dtype=dtype)
+
+    scan_device(d_input, d_output, num_items, OpKind.PLUS, None, force_inclusive)
+
+    got = d_output.get()
+    expected = scan_host(
+        np.arange(0, num_items, dtype=dtype), lambda a, b: a + b, [0], force_inclusive
+    )
+
+    np.testing.assert_array_equal(expected, got)

@@ -32,12 +32,13 @@
 #include <cuda/std/__type_traits/is_nothrow_copy_constructible.h>
 #include <cuda/std/__type_traits/is_nothrow_default_constructible.h>
 #include <cuda/std/__type_traits/is_nothrow_move_constructible.h>
+#include <cuda/std/__utility/delegate_constructors.h>
 #include <cuda/std/__utility/move.h>
 #include <cuda/std/optional>
 
 #include <cuda/std/__cccl/prologue.h>
 
-_CCCL_BEGIN_NAMESPACE_RANGES
+_CCCL_BEGIN_NAMESPACE_CUDA_STD_RANGES
 
 // __movable_box allows turning a type that is move-constructible (but maybe not move-assignable) into
 // a type that is both move-constructible and move-assignable. It does that by introducing an empty state
@@ -139,7 +140,7 @@ struct __mb_optional_destruct_base<_Tp, true>
 template <class _Tp, bool = copy_constructible<_Tp>>
 struct __mb_optional_copy_assign : __mb_optional_destruct_base<_Tp>
 {
-  _LIBCUDACXX_DELEGATE_CONSTRUCTORS(__mb_optional_copy_assign, __mb_optional_destruct_base, _Tp);
+  _CCCL_DELEGATE_CONSTRUCTORS(__mb_optional_copy_assign, __mb_optional_destruct_base, _Tp);
 
   _CCCL_HIDE_FROM_ABI constexpr __mb_optional_copy_assign(const __mb_optional_copy_assign&) = delete;
   _CCCL_HIDE_FROM_ABI constexpr __mb_optional_copy_assign(__mb_optional_copy_assign&&)      = default;
@@ -151,7 +152,7 @@ struct __mb_optional_copy_assign : __mb_optional_destruct_base<_Tp>
 template <class _Tp>
 struct __mb_optional_copy_assign<_Tp, true> : __mb_optional_destruct_base<_Tp>
 {
-  _LIBCUDACXX_DELEGATE_CONSTRUCTORS(__mb_optional_copy_assign, __mb_optional_destruct_base, _Tp);
+  _CCCL_DELEGATE_CONSTRUCTORS(__mb_optional_copy_assign, __mb_optional_destruct_base, _Tp);
 
   _CCCL_HIDE_FROM_ABI constexpr __mb_optional_copy_assign(const __mb_optional_copy_assign&) = default;
   _CCCL_HIDE_FROM_ABI constexpr __mb_optional_copy_assign(__mb_optional_copy_assign&&)      = default;
@@ -178,13 +179,13 @@ struct __mb_optional_copy_assign<_Tp, true> : __mb_optional_destruct_base<_Tp>
 template <class _Tp, bool = movable<_Tp>>
 struct __mb_optional_move_assign : __mb_optional_copy_assign<_Tp>
 {
-  _LIBCUDACXX_DELEGATE_CONSTRUCTORS(__mb_optional_move_assign, __mb_optional_copy_assign, _Tp);
+  _CCCL_DELEGATE_CONSTRUCTORS(__mb_optional_move_assign, __mb_optional_copy_assign, _Tp);
 };
 
 template <class _Tp>
 struct __mb_optional_move_assign<_Tp, false> : __mb_optional_copy_assign<_Tp>
 {
-  _LIBCUDACXX_DELEGATE_CONSTRUCTORS(__mb_optional_move_assign, __mb_optional_copy_assign, _Tp);
+  _CCCL_DELEGATE_CONSTRUCTORS(__mb_optional_move_assign, __mb_optional_copy_assign, _Tp);
 
   _CCCL_HIDE_FROM_ABI constexpr __mb_optional_move_assign(const __mb_optional_move_assign&)            = default;
   _CCCL_HIDE_FROM_ABI constexpr __mb_optional_move_assign(__mb_optional_move_assign&&)                 = default;
@@ -211,7 +212,7 @@ struct __mb_optional_move_assign<_Tp, false> : __mb_optional_copy_assign<_Tp>
 template <class _Tp>
 struct __mb_optional_base : __mb_optional_move_assign<_Tp>
 {
-  _LIBCUDACXX_DELEGATE_CONSTRUCTORS(__mb_optional_base, __mb_optional_move_assign, _Tp);
+  _CCCL_DELEGATE_CONSTRUCTORS(__mb_optional_base, __mb_optional_move_assign, _Tp);
 
   [[nodiscard]] _CCCL_API constexpr _Tp const& operator*() const noexcept
   {
@@ -295,13 +296,13 @@ struct __mb_holder_base<_Tp, true>
 template <class _Tp, bool = copyable<_Tp>>
 struct __mb_copy_assign : __mb_holder_base<_Tp>
 {
-  _LIBCUDACXX_DELEGATE_CONSTRUCTORS(__mb_copy_assign, __mb_holder_base, _Tp);
+  _CCCL_DELEGATE_CONSTRUCTORS(__mb_copy_assign, __mb_holder_base, _Tp);
 };
 
 template <class _Tp>
 struct __mb_copy_assign<_Tp, false> : __mb_holder_base<_Tp>
 {
-  _LIBCUDACXX_DELEGATE_CONSTRUCTORS(__mb_copy_assign, __mb_holder_base, _Tp);
+  _CCCL_DELEGATE_CONSTRUCTORS(__mb_copy_assign, __mb_holder_base, _Tp);
 
   _CCCL_HIDE_FROM_ABI constexpr __mb_copy_assign(const __mb_copy_assign&) = default;
   _CCCL_HIDE_FROM_ABI constexpr __mb_copy_assign(__mb_copy_assign&&)      = default;
@@ -323,13 +324,13 @@ struct __mb_copy_assign<_Tp, false> : __mb_holder_base<_Tp>
 template <class _Tp, bool = movable<_Tp>>
 struct __mb_move_assign : __mb_copy_assign<_Tp>
 {
-  _LIBCUDACXX_DELEGATE_CONSTRUCTORS(__mb_move_assign, __mb_copy_assign, _Tp);
+  _CCCL_DELEGATE_CONSTRUCTORS(__mb_move_assign, __mb_copy_assign, _Tp);
 };
 
 template <class _Tp>
 struct __mb_move_assign<_Tp, false> : __mb_copy_assign<_Tp>
 {
-  _LIBCUDACXX_DELEGATE_CONSTRUCTORS(__mb_move_assign, __mb_copy_assign, _Tp);
+  _CCCL_DELEGATE_CONSTRUCTORS(__mb_move_assign, __mb_copy_assign, _Tp);
 
   _CCCL_HIDE_FROM_ABI constexpr __mb_move_assign(const __mb_move_assign&)            = default;
   _CCCL_HIDE_FROM_ABI constexpr __mb_move_assign(__mb_move_assign&&)                 = default;
@@ -353,7 +354,7 @@ struct __mb_move_assign<_Tp, false> : __mb_copy_assign<_Tp>
 template <class _Tp>
 struct __mb_base : __mb_move_assign<_Tp>
 {
-  _LIBCUDACXX_DELEGATE_CONSTRUCTORS(__mb_base, __mb_move_assign, _Tp);
+  _CCCL_DELEGATE_CONSTRUCTORS(__mb_base, __mb_move_assign, _Tp);
 
   [[nodiscard]] _CCCL_API constexpr _Tp const& operator*() const noexcept
   {
@@ -401,7 +402,7 @@ struct __movable_box<_Tp, true> : __movable_box_base<_Tp>
   _CCCL_HIDE_FROM_ABI constexpr __movable_box() = default;
 };
 
-_CCCL_END_NAMESPACE_RANGES
+_CCCL_END_NAMESPACE_CUDA_STD_RANGES
 
 #include <cuda/std/__cccl/epilogue.h>
 

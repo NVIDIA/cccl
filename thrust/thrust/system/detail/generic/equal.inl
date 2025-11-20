@@ -29,7 +29,7 @@
 #include <thrust/mismatch.h>
 #include <thrust/system/detail/generic/equal.h>
 
-#include <cuda/std/functional>
+#include <cuda/std/__functional/operations.h>
 
 THRUST_NAMESPACE_BEGIN
 namespace system::detail::generic

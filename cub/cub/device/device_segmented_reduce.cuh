@@ -19,8 +19,8 @@
 #endif // no system header
 
 #include <cub/detail/choose_offset.cuh>
-#include <cub/device/dispatch/dispatch_reduce.cuh>
-#include <cub/device/dispatch/dispatch_reduce_by_key.cuh>
+#include <cub/device/dispatch/dispatch_fixed_size_segmented_reduce.cuh>
+#include <cub/device/dispatch/dispatch_segmented_reduce.cuh>
 #include <cub/iterator/arg_index_input_iterator.cuh>
 #include <cub/util_type.cuh>
 
@@ -806,9 +806,12 @@ struct DeviceSegmentedReduce
 
     using InputValueT  = detail::it_value_t<InputIteratorT>;
     using OutputTupleT = detail::non_void_value_t<OutputIteratorT, KeyValuePair<OffsetT, InputValueT>>;
+    using OutputKeyT   = typename OutputTupleT::Key;
     using OutputValueT = typename OutputTupleT::Value;
     using AccumT       = OutputTupleT;
     using InitT        = detail::reduce::empty_problem_init_t<AccumT>;
+
+    static_assert(::cuda::std::is_same_v<int, OutputKeyT>, "Output key type must be int.");
 
     // Wrapped input iterator to produce index-value <OffsetT, InputT> tuples
     using ArgIndexInputIteratorT = ArgIndexInputIterator<InputIteratorT, OffsetT, OutputValueT>;
@@ -921,8 +924,10 @@ struct DeviceSegmentedReduce
 
     using init_t = detail::reduce::empty_problem_init_t<accum_t>;
 
-    // The output value type
+    using output_key_t   = typename output_tuple_t::first_type;
     using output_value_t = typename output_tuple_t::second_type;
+
+    static_assert(::cuda::std::is_same_v<int, output_key_t>, "Output key type must be int.");
 
     // Wrapped input iterator to produce index-value <offset_t, InputT> tuples
     auto d_indexed_in = THRUST_NS_QUALIFIER::make_transform_iterator(
@@ -1265,7 +1270,10 @@ struct DeviceSegmentedReduce
     using OutputTupleT = cub::detail::non_void_value_t<OutputIteratorT, KeyValuePair<OffsetT, InputValueT>>;
     using AccumT       = OutputTupleT;
     using InitT        = detail::reduce::empty_problem_init_t<AccumT>;
+    using OutputKeyT   = typename OutputTupleT::Key;
     using OutputValueT = typename OutputTupleT::Value;
+
+    static_assert(::cuda::std::is_same_v<int, OutputKeyT>, "Output key type must be int.");
 
     // Wrapped input iterator to produce index-value <OffsetT, InputT> tuples
     using ArgIndexInputIteratorT = ArgIndexInputIterator<InputIteratorT, OffsetT, OutputValueT>;
@@ -1375,7 +1383,10 @@ struct DeviceSegmentedReduce
     using output_tuple_t = detail::non_void_value_t<OutputIteratorT, ::cuda::std::pair<input_t, input_value_t>>;
     using accum_t        = output_tuple_t;
     using init_t         = detail::reduce::empty_problem_init_t<accum_t>;
+    using output_key_t   = typename output_tuple_t::first_type;
     using output_value_t = typename output_tuple_t::second_type;
+
+    static_assert(::cuda::std::is_same_v<int, output_key_t>, "Output key type must be int.");
 
     // Wrapped input iterator to produce index-value <input_t, InputT> tuples
     auto d_indexed_in = THRUST_NS_QUALIFIER::make_transform_iterator(

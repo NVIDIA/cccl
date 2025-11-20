@@ -36,23 +36,23 @@
 #  pragma system_header
 #endif // no system header
 
-#if _CCCL_HAS_CUDA_COMPILER()
+#if _CCCL_CUDA_COMPILATION()
 
 #  include <thrust/system/cuda/config.h>
 
 #  include <cub/util_math.cuh>
 
 #  include <thrust/detail/temporary_array.h>
-#  include <thrust/distance.h>
 #  include <thrust/extrema.h>
 #  include <thrust/iterator/counting_iterator.h>
 #  include <thrust/iterator/transform_iterator.h>
-#  include <thrust/pair.h>
 #  include <thrust/system/cuda/detail/cdp_dispatch.h>
 #  include <thrust/system/cuda/detail/reduce.h>
 
+#  include <cuda/std/__functional/operations.h>
+#  include <cuda/std/__iterator/distance.h>
+#  include <cuda/std/__utility/pair.h>
 #  include <cuda/std/cstdint>
-#  include <cuda/std/iterator>
 
 THRUST_NAMESPACE_BEGIN
 namespace cuda_cub
@@ -253,7 +253,7 @@ cudaError_t THRUST_RUNTIME_FUNCTION doit_step(
       cub::GridQueue<UnsignedSize>::AllocationSize(), // bytes needed for grid queue descriptor0
       vshmem_size // size of virtualized shared memory storage
     };
-    status = cub::detail::AliasTemporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes);
+    status = cub::detail::alias_temporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes);
     _CUDA_CUB_RET_IF_FAIL(status);
     if (d_temp_storage == nullptr)
     {
@@ -428,10 +428,10 @@ ItemsIt _CCCL_HOST_DEVICE max_element(execution_policy<Derived>& policy, ItemsIt
 
 _CCCL_EXEC_CHECK_DISABLE
 template <class Derived, class ItemsIt, class BinaryPred>
-pair<ItemsIt, ItemsIt> _CCCL_HOST_DEVICE
+::cuda::std::pair<ItemsIt, ItemsIt> _CCCL_HOST_DEVICE
 minmax_element(execution_policy<Derived>& policy, ItemsIt first, ItemsIt last, BinaryPred binary_pred)
 {
-  auto ret = thrust::make_pair(last, last);
+  auto ret = ::cuda::std::make_pair(last, last);
   if (first == last)
   {
     return ret;
@@ -455,18 +455,19 @@ minmax_element(execution_policy<Derived>& policy, ItemsIt first, ItemsIt last, B
      zip_iterator begin    = make_zip_iterator(iter_tuple);
      two_pairs_type result = __extrema::extrema(
        policy, transform_t(begin, duplicate_t()), num_items, arg_minmax_t(binary_pred), (two_pairs_type*) (nullptr));
-     ret = thrust::make_pair(first + get<1>(get<0>(result)), first + get<1>(get<1>(result)));),
+     ret = ::cuda::std::make_pair(first + get<1>(get<0>(result)), first + get<1>(get<1>(result)));),
     // CDP Sequential impl:
     (ret = thrust::minmax_element(cvt_to_seq(derived_cast(policy)), first, last, binary_pred);));
   return ret;
 }
 
 template <class Derived, class ItemsIt>
-pair<ItemsIt, ItemsIt> _CCCL_HOST_DEVICE minmax_element(execution_policy<Derived>& policy, ItemsIt first, ItemsIt last)
+::cuda::std::pair<ItemsIt, ItemsIt> _CCCL_HOST_DEVICE
+minmax_element(execution_policy<Derived>& policy, ItemsIt first, ItemsIt last)
 {
   using value_type = thrust::detail::it_value_t<ItemsIt>;
   return cuda_cub::minmax_element(policy, first, last, ::cuda::std::less<value_type>());
 }
 } // namespace cuda_cub
 THRUST_NAMESPACE_END
-#endif
+#endif // _CCCL_CUDA_COMPILATION()

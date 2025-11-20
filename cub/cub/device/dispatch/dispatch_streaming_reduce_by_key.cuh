@@ -1,4 +1,3 @@
-
 // SPDX-FileCopyrightText: Copyright (c) 2025, NVIDIA CORPORATION. All rights reserved.
 // SPDX-License-Identifier: BSD-3-Clause
 
@@ -198,7 +197,7 @@ struct DispatchStreamingReduceByKey
     // Compute allocation pointers into the single storage blob (or compute the necessary size of the blob)
     void* allocations[3] = {};
 
-    error = CubDebug(detail::AliasTemporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes));
+    error = CubDebug(detail::alias_temporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes));
     if (cudaSuccess != error)
     {
       return error;

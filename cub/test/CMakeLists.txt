@@ -1,10 +1,17 @@
-option(CUB_ENABLE_LAUNCH_VARIANTS "Enable CUB launch variants (lid_1 and lid_2)" ON)
+option(
+  CUB_ENABLE_LAUNCH_VARIANTS
+  "Enable CUB launch variants (lid_1 and lid_2)"
+  ON
+)
 
-if(CMAKE_GENERATOR MATCHES "^Visual Studio")
-  if(CUB_ENABLE_RDC_TESTS)
-    if("${CMAKE_VERSION}" VERSION_LESS 3.27.5)
+if (CMAKE_GENERATOR MATCHES "^Visual Studio")
+  if (CUB_ENABLE_RDC_TESTS)
+    if ("${CMAKE_VERSION}" VERSION_LESS 3.27.5)
       # https://gitlab.kitware.com/cmake/cmake/-/merge_requests/8794
-      message(WARNING "CMake 3.27.5 or newer is required to enable RDC tests in Visual Studio.")
+      message(
+        WARNING
+        "CMake 3.27.5 or newer is required to enable RDC tests in Visual Studio."
+      )
       cmake_minimum_required(VERSION 3.27.5)
     endif()
   endif()
@@ -21,14 +28,15 @@ if ("NVHPC" STREQUAL "${CMAKE_CXX_COMPILER_ID}")
 endif()
 
 # Create meta targets that build all tests for a single configuration:
-foreach(cub_target IN LISTS CUB_TARGETS)
+foreach (cub_target IN LISTS CUB_TARGETS)
   cub_get_target_property(config_prefix ${cub_target} PREFIX)
   set(config_meta_target ${config_prefix}.tests)
   add_custom_target(${config_meta_target})
   add_dependencies(${config_prefix}.all ${config_meta_target})
 endforeach()
 
-file(GLOB_RECURSE test_srcs
+file(
+  GLOB_RECURSE test_srcs
   RELATIVE "${CUB_SOURCE_DIR}/test"
   CONFIGURE_DEPENDS
   test_*.cu
@@ -36,7 +44,10 @@ file(GLOB_RECURSE test_srcs
 )
 
 # nvtx headers contain a variable named `module`, which breaks nvc++ as that is a keyword
-if ("NVHPC" STREQUAL "${CMAKE_CXX_COMPILER_ID}" AND NOT "${CMAKE_CXX_STANDARD}" MATCHES "17")
+if (
+  "NVHPC" STREQUAL "${CMAKE_CXX_COMPILER_ID}"
+  AND NOT "${CMAKE_CXX_STANDARD}" MATCHES "17"
+)
   list(FILTER test_srcs EXCLUDE REGEX "test_nvtx*")
 endif()
 
@@ -89,7 +100,14 @@ endfunction()
 # test_src: The source file that implements the test.
 # cub_target: The reference cub target with configuration information.
 #
-function(cub_add_test target_name_var test_name test_src cub_target launcher_id)
+function(
+  cub_add_test
+  target_name_var
+  test_name
+  test_src
+  cub_target
+  launcher_id
+)
   cub_get_target_property(config_prefix ${cub_target} PREFIX)
   cub_get_target_property(config_dialect ${cub_target} DIALECT)
 
@@ -104,47 +122,68 @@ function(cub_add_test target_name_var test_name test_src cub_target launcher_id)
 
   if (is_catch2_test)
     # Per config helper library:
-    set(config_c2h_target ${config_prefix}.test.catch2_helper.lid_${launcher_id})
+    set(
+      config_c2h_target
+      ${config_prefix}.test.catch2_helper.lid_${launcher_id}
+    )
     if (NOT TARGET ${config_c2h_target})
       add_library(${config_c2h_target} INTERFACE)
       cccl_configure_target(${config_c2h_target} DIALECT ${config_dialect})
       cub_clone_target_properties(${config_c2h_target} ${cub_target})
       cub_configure_cuda_target(${config_c2h_target} RDC ${cdp_val})
-      target_include_directories(${config_c2h_target} INTERFACE "${CUB_SOURCE_DIR}/test")
-      target_link_libraries(${config_c2h_target} INTERFACE
-        ${cub_target}
-        cccl.c2h
-        CUDA::nvrtc
-        CUDA::cuda_driver
+      target_include_directories(
+        ${config_c2h_target}
+        INTERFACE "${CUB_SOURCE_DIR}/test"
+      )
+      target_link_libraries(
+        ${config_c2h_target}
+        INTERFACE #
+          ${cub_target}
+          cccl.c2h
+          CUDA::nvrtc
+          CUDA::cuda_driver
       )
     endif() # config_c2h_target
 
     add_executable(${test_target} "${test_src}")
     cccl_configure_target(${test_target} DIALECT ${config_dialect})
     cub_clone_target_properties(${test_target} ${cub_target})
-    target_link_libraries(${test_target} PRIVATE
-      ${cub_target}
-      ${config_c2h_target}
-      cccl.c2h.main
-      Catch2::Catch2
+    target_link_libraries(
+      ${test_target}
+      PRIVATE #
+        ${cub_target}
+        ${config_c2h_target}
+        cccl.c2h.main
+        Catch2::Catch2
     )
-    target_include_directories(${test_target}
-      PUBLIC "${CUB_SOURCE_DIR}/test"
-    )
+    target_include_directories(${test_target} PUBLIC "${CUB_SOURCE_DIR}/test")
     add_dependencies(${config_meta_target} ${test_target})
 
-    add_test(NAME ${test_target} COMMAND
-      "${CMAKE_COMMAND}"
-      "-DCCCL_SOURCE_DIR=${CCCL_SOURCE_DIR}"
-      "-DTEST=$<TARGET_FILE:${test_target}>"
-      "-DTYPE=Catch2"
-      -P "${CUB_SOURCE_DIR}/test/run_test.cmake"
+    add_test(
+      NAME ${test_target}
+      # gersemi: off
+      COMMAND
+        "${CMAKE_COMMAND}"
+           "-DCCCL_SOURCE_DIR=${CCCL_SOURCE_DIR}"
+           "-DTEST=$<TARGET_FILE:${test_target}>"
+           "-DTYPE=Catch2"
+           -P "${CUB_SOURCE_DIR}/test/run_test.cmake"
+      # gersemi: on
     )
-    set_tests_properties(${test_target} PROPERTIES SKIP_REGULAR_EXPRESSION "CCCL_SKIP_TEST")
+    set_tests_properties(
+      ${test_target}
+      PROPERTIES SKIP_REGULAR_EXPRESSION "CCCL_SKIP_TEST"
+    )
 
     if ("${test_target}" MATCHES "nvrtc")
-      configure_file("cmake/nvrtc_args.h.in" ${CMAKE_CURRENT_BINARY_DIR}/nvrtc_args.h)
-      target_include_directories(${test_target} PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
+      configure_file(
+        "cmake/nvrtc_args.h.in"
+        "${CMAKE_CURRENT_BINARY_DIR}/nvrtc_args.h"
+      )
+      target_include_directories(
+        ${test_target}
+        PRIVATE "${CMAKE_CURRENT_BINARY_DIR}"
+      )
     endif()
 
     if ("${test_target}" MATCHES "test.iterator")
@@ -153,7 +192,27 @@ function(cub_add_test target_name_var test_name test_src cub_target launcher_id)
 
     # enable lambdas for all API examples
     if ("${test_target}" MATCHES "test.[A-Za-z0-9_]+_api")
-      target_compile_options(${test_target} PRIVATE $<$<COMPILE_LANG_AND_ID:CUDA,NVIDIA>:--extended-lambda>)
+      target_compile_options(
+        ${test_target}
+        PRIVATE $<$<COMPILE_LANG_AND_ID:CUDA,NVIDIA>:--extended-lambda>
+      )
+    endif()
+
+    if ("${test_target}" MATCHES "test.segmented_scan_api")
+      if (
+        "Clang" STREQUAL "${CMAKE_CXX_COMPILER_ID}"
+        AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 13
+      )
+        # When clang >= 13 is used as host compiler, we get the following warning:
+        #   nvcc_internal_extended_lambda_implementation:312:22: error: definition of implicit copy constructor for '__nv_hdl_wrapper_t<false, true, false, __nv_dl_tag<void (*)(), &TestAddressStabilityLambda, 2>, int (const int &)>' is deprecated because it has a user-declared copy assignment operator [-Werror,-Wdeprecated-copy]
+        #   312 | __nv_hdl_wrapper_t & operator=(const __nv_hdl_wrapper_t &in) = delete;
+        #   |                      ^
+        # Let's suppress it until NVBug 4980157 is resolved.
+        target_compile_options(
+          ${test_target}
+          PRIVATE $<$<COMPILE_LANG_AND_ID:CUDA,NVIDIA>: -Wno-deprecated-copy>
+        )
+      endif()
     endif()
   else() # Not catch2:
     # Related target names:
@@ -162,9 +221,11 @@ function(cub_add_test target_name_var test_name test_src cub_target launcher_id)
     add_executable(${test_target} "${test_src}")
     cccl_configure_target(${test_target} DIALECT ${config_dialect})
     cub_clone_target_properties(${test_target} ${cub_target})
-    target_link_libraries(${test_target} PRIVATE
-      ${cub_target}
-      cccl.c2h
+    target_link_libraries(
+      ${test_target}
+      PRIVATE #
+        ${cub_target}
+        cccl.c2h
     )
     target_include_directories(${test_target} PRIVATE "${CUB_SOURCE_DIR}/test")
     target_compile_definitions(${test_target} PRIVATE CUB_DEBUG_SYNC)
@@ -175,32 +236,13 @@ function(cub_add_test target_name_var test_name test_src cub_target launcher_id)
 
     _cub_is_fail_test(is_fail_test "${test_src}")
     if (is_fail_test)
-      set_target_properties(${test_target} PROPERTIES EXCLUDE_FROM_ALL true
-                                           EXCLUDE_FROM_DEFAULT_BUILD true)
-      add_test(NAME ${test_target}
-               COMMAND ${CMAKE_COMMAND} --build "${CMAKE_BINARY_DIR}"
-                                        --target ${test_target}
-                                        --config $<CONFIGURATION>)
-      string(REGEX MATCH "err_([0-9]+)" MATCH_RESULT "${test_name}")
-      file(READ ${test_src} test_content)
-      if(MATCH_RESULT)
-        string(REGEX MATCH "// expected-error-${CMAKE_MATCH_1}+ {{\"([^\"]+)\"}}" expected_errors_matches ${test_content})
-
-        if (expected_errors_matches)
-          set_tests_properties(${test_target} PROPERTIES PASS_REGULAR_EXPRESSION "${CMAKE_MATCH_1}")
-        else()
-          set_tests_properties(${test_target} PROPERTIES WILL_FAIL true)
-        endif()
-      else()
-        string(REGEX MATCH "// expected-error {{\"([^\"]+)\"}}" expected_errors_matches ${test_content})
-
-        if (expected_errors_matches)
-          set_tests_properties(${test_target} PROPERTIES PASS_REGULAR_EXPRESSION "${CMAKE_MATCH_1}")
-        else()
-          set_tests_properties(${test_target} PROPERTIES WILL_FAIL true)
-        endif()
-      endif()
-    else() # Not fail test:
+      cccl_add_xfail_compile_target_test(
+        ${test_target}
+        SOURCE_FILE "${test_src}"
+        ERROR_REGEX_LABEL "expected-error"
+        ERROR_NUMBER_TARGET_NAME_REGEX "\\.err_([0-9]+)"
+      )
+    else()
       # Add to the active configuration's meta target
       add_dependencies(${config_meta_target} ${test_target})
 
@@ -210,13 +252,20 @@ function(cub_add_test target_name_var test_name test_src cub_target launcher_id)
       endif()
       add_dependencies(${test_meta_target} ${test_target})
 
-      add_test(NAME ${test_target} COMMAND
-        "${CMAKE_COMMAND}"
-        "-DCCCL_SOURCE_DIR=${CCCL_SOURCE_DIR}"
-        "-DTEST=$<TARGET_FILE:${test_target}>"
-        -P "${CUB_SOURCE_DIR}/test/run_test.cmake"
+      add_test(
+        NAME ${test_target}
+        # gersemi: off
+        COMMAND
+          "${CMAKE_COMMAND}"
+            "-DCCCL_SOURCE_DIR=${CCCL_SOURCE_DIR}"
+            "-DTEST=$<TARGET_FILE:${test_target}>"
+            -P "${CUB_SOURCE_DIR}/test/run_test.cmake"
+        # gersemi: on
       )
-      set_tests_properties(${test_target} PROPERTIES SKIP_REGULAR_EXPRESSION "CCCL_SKIP_TEST")
+      set_tests_properties(
+        ${test_target}
+        PROPERTIES SKIP_REGULAR_EXPRESSION "CCCL_SKIP_TEST"
+      )
     endif()
   endif() # Not catch2 test
 
@@ -238,7 +287,7 @@ endfunction()
 # to device-side (CDP) launch.
 function(_cub_launcher_id out_var label)
   string(REGEX MATCH "lid_([0-9]+)" MATCH_RESULT "${label}")
-  if(MATCH_RESULT)
+  if (MATCH_RESULT)
     set(${out_var} ${CMAKE_MATCH_1} PARENT_SCOPE)
   else()
     set(${out_var} 0 PARENT_SCOPE)
@@ -256,9 +305,14 @@ foreach (test_src IN LISTS test_srcs)
     endif()
   endif()
 
-  cccl_parse_variant_params("${test_src}" num_variants variant_labels variant_defs)
+  cccl_parse_variant_params(
+    "${test_src}"
+    num_variants
+    variant_labels
+    variant_defs
+  )
 
-  foreach(cub_target IN LISTS CUB_TARGETS)
+  foreach (cub_target IN LISTS CUB_TARGETS)
     cub_get_target_property(config_prefix ${cub_target} PREFIX)
 
     if (num_variants EQUAL 0)
@@ -281,7 +335,12 @@ foreach (test_src IN LISTS test_srcs)
       cub_add_test(test_target ${test_name} "${test_src}" ${cub_target} ${launcher})
       cub_configure_cuda_target(${test_target} RDC ${CUB_FORCE_RDC})
     else() # has variants:
-      cccl_log_variant_params("${test_name}" ${num_variants} variant_labels variant_defs)
+      cccl_log_variant_params(
+        "${test_name}"
+        ${num_variants}
+        variant_labels
+        variant_defs
+      )
 
       # Meta target to build all parametrizations of the current test for the
       # current CUB_TARGET config
@@ -301,7 +360,7 @@ foreach (test_src IN LISTS test_srcs)
       math(EXPR range_end "${num_variants} - 1")
 
       # Generate multiple tests, one per variant.
-      foreach(var_idx RANGE ${range_end})
+      foreach (var_idx RANGE ${range_end})
         cccl_get_variant_data(variant_labels variant_defs ${var_idx} label defs)
 
         # If a `label` is `lid`, it is assumed that the parameter is used to explicitly

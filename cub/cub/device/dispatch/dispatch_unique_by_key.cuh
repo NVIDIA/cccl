@@ -1,4 +1,3 @@
-
 // SPDX-FileCopyrightText: Copyright (c), NVIDIA CORPORATION. All rights reserved.
 // SPDX-License-Identifier: BSD-3
 
@@ -129,10 +128,7 @@ struct DispatchUniqueByKey
    * Types and constants
    ******************************************************************************/
 
-  enum
-  {
-    INIT_KERNEL_THREADS = 128,
-  };
+  static constexpr int INIT_KERNEL_THREADS = 128;
 
   /// Device-accessible allocation of temporary storage.  When nullptr, the required allocation size
   /// is written to `temp_storage_bytes` and no work is done.
@@ -240,183 +236,149 @@ struct DispatchUniqueByKey
   CUB_RUNTIME_FUNCTION _CCCL_HOST _CCCL_FORCEINLINE cudaError_t
   Invoke(InitKernelT init_kernel, UniqueByKeySweepKernelT sweep_kernel, ActivePolicyT policy = {})
   {
-    cudaError error = cudaSuccess;
-    do
+    // Number of input tiles
+    const auto block_threads = VSMemHelperT::template BlockThreads<
+      typename ActivePolicyT::UniqueByKeyPolicyT,
+      KeyInputIteratorT,
+      ValueInputIteratorT,
+      KeyOutputIteratorT,
+      ValueOutputIteratorT,
+      EqualityOpT,
+      OffsetT>(policy.UniqueByKey());
+    const auto items_per_thread = VSMemHelperT::template ItemsPerThread<
+      typename ActivePolicyT::UniqueByKeyPolicyT,
+      KeyInputIteratorT,
+      ValueInputIteratorT,
+      KeyOutputIteratorT,
+      ValueOutputIteratorT,
+      EqualityOpT,
+      OffsetT>(policy.UniqueByKey());
+    int tile_size = block_threads * items_per_thread;
+    int num_tiles = static_cast<int>(::cuda::ceil_div(num_items, tile_size));
+    const auto vsmem_size =
+      num_tiles
+      * VSMemHelperT::template VSMemPerBlock<
+        typename ActivePolicyT::UniqueByKeyPolicyT,
+        KeyInputIteratorT,
+        ValueInputIteratorT,
+        KeyOutputIteratorT,
+        ValueOutputIteratorT,
+        EqualityOpT,
+        OffsetT>(policy.UniqueByKey());
+
+    // Specify temporary storage allocation requirements
+    size_t allocation_sizes[2] = {0, vsmem_size};
+
+    auto tile_state = kernel_source.TileState();
+
+    // Bytes needed for tile status descriptors
+    if (const auto error = CubDebug(tile_state.AllocationSize(num_tiles, allocation_sizes[0])))
     {
-      // Get device ordinal
-      int device_ordinal;
-      error = CubDebug(cudaGetDevice(&device_ordinal));
-      if (cudaSuccess != error)
-      {
-        break;
-      }
+      return error;
+    }
 
-      // Number of input tiles
-      const auto block_threads = VSMemHelperT::template BlockThreads<
-        typename ActivePolicyT::UniqueByKeyPolicyT,
-        KeyInputIteratorT,
-        ValueInputIteratorT,
-        KeyOutputIteratorT,
-        ValueOutputIteratorT,
-        EqualityOpT,
-        OffsetT>(policy.UniqueByKey());
-      const auto items_per_thread = VSMemHelperT::template ItemsPerThread<
-        typename ActivePolicyT::UniqueByKeyPolicyT,
-        KeyInputIteratorT,
-        ValueInputIteratorT,
-        KeyOutputIteratorT,
-        ValueOutputIteratorT,
-        EqualityOpT,
-        OffsetT>(policy.UniqueByKey());
-      int tile_size = block_threads * items_per_thread;
-      int num_tiles = static_cast<int>(::cuda::ceil_div(num_items, tile_size));
-      const auto vsmem_size =
-        num_tiles
-        * VSMemHelperT::template VSMemPerBlock<
-          typename ActivePolicyT::UniqueByKeyPolicyT,
-          KeyInputIteratorT,
-          ValueInputIteratorT,
-          KeyOutputIteratorT,
-          ValueOutputIteratorT,
-          EqualityOpT,
-          OffsetT>(policy.UniqueByKey());
+    // Compute allocation pointers into the single storage blob (or compute the necessary size of the blob)
+    void* allocations[2] = {nullptr, nullptr};
+    if (const auto error =
+          CubDebug(detail::alias_temporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes)))
+    {
+      return error;
+    }
 
-      // Specify temporary storage allocation requirements
-      size_t allocation_sizes[2] = {0, vsmem_size};
+    if (d_temp_storage == nullptr)
+    {
+      // Return if the caller is simply requesting the size of the storage allocation
+      return cudaSuccess;
+    }
 
-      auto tile_state = kernel_source.TileState();
+    if (const auto error = CubDebug(tile_state.Init(num_tiles, allocations[0], allocation_sizes[0])))
+    {
+      return error;
+    }
 
-      // Bytes needed for tile status descriptors
-      error = CubDebug(tile_state.AllocationSize(num_tiles, allocation_sizes[0]));
-      if (cudaSuccess != error)
-      {
-        break;
-      }
-
-      // Compute allocation pointers into the single storage blob (or compute the necessary size of the blob)
-      void* allocations[2] = {nullptr, nullptr};
-
-      error = CubDebug(detail::AliasTemporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes));
-      if (cudaSuccess != error)
-      {
-        break;
-      }
-
-      if (d_temp_storage == nullptr)
-      {
-        // Return if the caller is simply requesting the size of the storage allocation
-        break;
-      }
-
-      error = CubDebug(tile_state.Init(num_tiles, allocations[0], allocation_sizes[0]));
-      if (cudaSuccess != error)
-      {
-        break;
-      }
-
-      // Log init_kernel configuration
-      num_tiles          = ::cuda::std::max(1, num_tiles);
-      int init_grid_size = ::cuda::ceil_div(num_tiles, INIT_KERNEL_THREADS);
+    // Log init_kernel configuration
+    num_tiles                = ::cuda::std::max(1, num_tiles);
+    const int init_grid_size = ::cuda::ceil_div(num_tiles, INIT_KERNEL_THREADS);
 
 #ifdef CUB_DEBUG_LOG
-      _CubLog("Invoking init_kernel<<<%d, %d, 0, %lld>>>()\n", init_grid_size, INIT_KERNEL_THREADS, (long long) stream);
+    _CubLog("Invoking init_kernel<<<%d, %d, 0, %lld>>>()\n", init_grid_size, INIT_KERNEL_THREADS, (long long) stream);
 #endif // CUB_DEBUG_LOG
 
-      // Invoke init_kernel to initialize tile descriptors
-      launcher_factory(init_grid_size, INIT_KERNEL_THREADS, 0, stream)
-        .doit(init_kernel, tile_state, num_tiles, d_num_selected_out);
+    // Invoke init_kernel to initialize tile descriptors
+    launcher_factory(init_grid_size, INIT_KERNEL_THREADS, 0, stream)
+      .doit(init_kernel, tile_state, num_tiles, d_num_selected_out);
 
-      // Check for failure to launch
-      error = CubDebug(cudaPeekAtLastError());
-      if (cudaSuccess != error)
-      {
-        break;
-      }
+    // Check for failure to launch
+    if (const auto error = CubDebug(cudaPeekAtLastError()))
+    {
+      return error;
+    }
 
-      // Sync the stream if specified to flush runtime errors
-      error = CubDebug(detail::DebugSyncStream(stream));
-      if (cudaSuccess != error)
-      {
-        break;
-      }
+    // Sync the stream if specified to flush runtime errors
+    if (const auto error = CubDebug(detail::DebugSyncStream(stream)))
+    {
+      return error;
+    }
 
-      // Return if empty problem
-      if (num_items == 0)
-      {
-        break;
-      }
+    // Return if empty problem
+    if (num_items == 0)
+    {
+      return cudaSuccess;
+    }
 
-      // Get max x-dimension of grid
-      int max_dim_x;
-      error = CubDebug(cudaDeviceGetAttribute(&max_dim_x, cudaDevAttrMaxGridDimX, device_ordinal));
-      if (cudaSuccess != error)
-      {
-        break;
-      }
+    constexpr int max_dim_x = INT_MAX; // Since sm30
 
-      // Get grid size for scanning tiles
-      dim3 scan_grid_size;
-      scan_grid_size.z = 1;
-      scan_grid_size.y = ::cuda::ceil_div(num_tiles, max_dim_x);
-      scan_grid_size.x = ::cuda::std::min(num_tiles, max_dim_x);
+    // Get grid size for scanning tiles
+    dim3 scan_grid_size;
+    scan_grid_size.z = 1;
+    scan_grid_size.y = ::cuda::ceil_div(num_tiles, max_dim_x);
+    scan_grid_size.x = ::cuda::std::min(num_tiles, max_dim_x);
 
-      // Log select_if_kernel configuration
+    // Log select_if_kernel configuration
 #ifdef CUB_DEBUG_LOG
+    {
+      // Get SM occupancy for unique_by_key_kernel
+      int sweep_sm_occupancy;
+      if (const auto error = CubDebug(launcher_factory.MaxSmOccupancy(
+            sweep_sm_occupancy, // out
+            sweep_kernel,
+            block_threads)))
       {
-        // Get SM occupancy for unique_by_key_kernel
-        int sweep_sm_occupancy;
-        error = CubDebug(launcher_factory.MaxSmOccupancy(
-          sweep_sm_occupancy, // out
-          sweep_kernel,
-          block_threads));
-        if (cudaSuccess != error)
-        {
-          break;
-        }
-
-        _CubLog("Invoking unique_by_key_kernel<<<{%d,%d,%d}, %d, 0, "
-                "%lld>>>(), %d items per thread, %d SM occupancy\n",
-                scan_grid_size.x,
-                scan_grid_size.y,
-                scan_grid_size.z,
-                block_threads,
-                (long long) stream,
-                items_per_thread,
-                sweep_sm_occupancy);
+        return error;
       }
+
+      _CubLog("Invoking unique_by_key_kernel<<<{%d,%d,%d}, %d, 0, "
+              "%lld>>>(), %d items per thread, %d SM occupancy\n",
+              scan_grid_size.x,
+              scan_grid_size.y,
+              scan_grid_size.z,
+              block_threads,
+              (long long) stream,
+              items_per_thread,
+              sweep_sm_occupancy);
+    }
 #endif // CUB_DEBUG_LOG
 
-      // Invoke select_if_kernel
-      error =
-        launcher_factory(scan_grid_size, block_threads, 0, stream)
-          .doit(sweep_kernel,
-                d_keys_in,
-                d_values_in,
-                d_keys_out,
-                d_values_out,
-                d_num_selected_out,
-                tile_state,
-                equality_op,
-                num_items,
-                num_tiles,
-                cub::detail::vsmem_t{allocations[1]});
+    // Invoke select_if_kernel
+    if (const auto error = CubDebug(
+          launcher_factory(scan_grid_size, block_threads, 0, stream)
+            .doit(sweep_kernel,
+                  d_keys_in,
+                  d_values_in,
+                  d_keys_out,
+                  d_values_out,
+                  d_num_selected_out,
+                  tile_state,
+                  equality_op,
+                  num_items,
+                  num_tiles,
+                  cub::detail::vsmem_t{allocations[1]})))
+    {
+      return error;
+    }
 
-      // Check for failure to launch
-      error = CubDebug(error);
-      if (cudaSuccess != error)
-      {
-        break;
-      }
-
-      // Sync the stream if specified to flush runtime errors
-      error = CubDebug(detail::DebugSyncStream(stream));
-      if (cudaSuccess != error)
-      {
-        break;
-      }
-    } while (0);
-
-    return error;
+    // Sync the stream if specified to flush runtime errors
+    return CubDebug(detail::DebugSyncStream(stream));
   }
 
   template <typename ActivePolicyT>
@@ -435,7 +397,7 @@ struct DispatchUniqueByKey
    *   When nullptr, the required allocation size is written to
    *   `temp_storage_bytes` and no work is done.
    *
-   * @param[in,out] &temp_storage_bytes
+   * @param[in,out] temp_storage_bytes
    *   Reference to size in bytes of `d_temp_storage` allocation
    *
    * @param[in] d_keys_in
@@ -480,41 +442,30 @@ struct DispatchUniqueByKey
     KernelLauncherFactory launcher_factory = {},
     MaxPolicyT max_policy                  = {})
   {
-    cudaError_t error;
-    do
+    // Get PTX version
+    int ptx_version = 0;
+    if (const auto error = CubDebug(launcher_factory.PtxVersion(ptx_version)))
     {
-      // Get PTX version
-      int ptx_version = 0;
-      error           = CubDebug(launcher_factory.PtxVersion(ptx_version));
-      if (cudaSuccess != error)
-      {
-        break;
-      }
+      return error;
+    }
 
-      // Create dispatch functor
-      DispatchUniqueByKey dispatch(
-        d_temp_storage,
-        temp_storage_bytes,
-        d_keys_in,
-        d_values_in,
-        d_keys_out,
-        d_values_out,
-        d_num_selected_out,
-        equality_op,
-        num_items,
-        stream,
-        kernel_source,
-        launcher_factory);
+    // Create dispatch functor
+    DispatchUniqueByKey dispatch(
+      d_temp_storage,
+      temp_storage_bytes,
+      d_keys_in,
+      d_values_in,
+      d_keys_out,
+      d_values_out,
+      d_num_selected_out,
+      equality_op,
+      num_items,
+      stream,
+      kernel_source,
+      launcher_factory);
 
-      // Dispatch to chained policy
-      error = CubDebug(max_policy.Invoke(ptx_version, dispatch));
-      if (cudaSuccess != error)
-      {
-        break;
-      }
-    } while (0);
-
-    return error;
+    // Dispatch to chained policy
+    return CubDebug(max_policy.Invoke(ptx_version, dispatch));
   }
 };
 
