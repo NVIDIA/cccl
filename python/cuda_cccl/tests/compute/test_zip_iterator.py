@@ -387,10 +387,7 @@ def test_deeply_nested_zip_iterators():
     "dtype_map",
     [
         {"x": np.float32, "y": np.float32},
-        pytest.param(
-            {"x": np.float64, "y": np.float32},
-            marks=pytest.mark.xfail(reason="Fails due to ODR violation (GH #4573)"),
-        ),
+        {"x": np.float64, "y": np.float32},
     ],
 )
 def test_nested_output_zip_iterator_with_scan(monkeypatch, num_items, dtype_map):
@@ -448,3 +445,17 @@ def test_nested_output_zip_iterator_with_scan(monkeypatch, num_items, dtype_map)
 
     np.testing.assert_array_equal(d_out1.get(), expected_out1)
     np.testing.assert_array_equal(d_out2.get(), expected_out2)
+
+
+def test_zip_iterator_of_transform_iterator_kind():
+    arr = cp.arange(10, dtype=np.int64)
+
+    def f(x):
+        return x
+
+    def g(x):
+        return x + 1
+
+    it1 = ZipIterator(TransformIterator(arr, f))
+    it2 = ZipIterator(TransformIterator(arr, g))
+    assert it1.kind != it2.kind
