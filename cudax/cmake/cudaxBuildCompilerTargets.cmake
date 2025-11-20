@@ -1,7 +1,4 @@
-include_guard(GLOBAL)
-
-# This file defines the `cudax_build_compiler_targets()` function, which
-# creates the following interface targets:
+# Including this file defines the following targets:
 #
 # cudax.compiler_interface
 # - Interface target that includes all compiler settings for cudax tests, etc.
