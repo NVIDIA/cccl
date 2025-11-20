@@ -223,7 +223,7 @@ function(cub_build_target_list)
       else()
         set(prefix "cub.cpp${dialect}")
       endif()
-      set(target_name "${prefix}")
+      set(target_name "${prefix}_config")
 
       add_library(${target_name} INTERFACE)
 

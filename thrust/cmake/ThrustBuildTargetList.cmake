@@ -239,7 +239,7 @@ function(_thrust_build_target_list_multiconfig)
           string(TOLOWER "${prefix}" prefix)
 
           # Configure a thrust interface target for this host/device
-          set(target_name "${prefix}")
+          set(target_name "${prefix}_config")
           thrust_create_target(
             ${target_name}
             HOST ${host}
