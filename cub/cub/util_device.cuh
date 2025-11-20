@@ -381,7 +381,7 @@ namespace detail
 //! @brief Retrieves the GPU architecture of the PTX or SASS that will be used on the current device.
 CUB_RUNTIME_FUNCTION inline cudaError_t ptx_arch_id(::cuda::arch_id& arch_id)
 {
-  int ptx_version;
+  int ptx_version = 0;
   if (const auto error = PtxVersion(ptx_version))
   {
     return error;
@@ -393,7 +393,7 @@ CUB_RUNTIME_FUNCTION inline cudaError_t ptx_arch_id(::cuda::arch_id& arch_id)
 //! @brief Retrieves the GPU architecture of the PTX or SASS that will be used on the given device.
 _CCCL_HOST_API inline cudaError_t ptx_arch_id(::cuda::arch_id& arch_id, int device)
 {
-  int ptx_version;
+  int ptx_version = 0;
   if (const auto error = PtxVersion(ptx_version, device))
   {
     return error;
