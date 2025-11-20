@@ -2292,8 +2292,6 @@ public:
 
     using OffsetT = detail::choose_offset_t<NumItemsT>;
 
-    // return DispatchTransformReduce<InputIteratorT, OutputIteratorT, OffsetT, ReductionOpT, TransformOpT,
-    // T>::Dispatch(
     return detail::reduce::dispatch(
       d_temp_storage,
       temp_storage_bytes,
