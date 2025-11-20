@@ -113,7 +113,7 @@ __internal_double_Tp_sqrt_unsafe(_Tp __hi, _Tp __lo) noexcept
 // asinh
 
 template <class _Tp>
-[[nodiscard]] _CCCL_API inline complex<_Tp> asinh(const complex<_Tp>& __x)
+[[nodiscard]] _CCCL_API inline complex<_Tp> asinh(const complex<_Tp>& __x) noexcept
 {
   // Uint of the same size as our fp type.
   using __uint_t = __fp_storage_of_t<_Tp>;
@@ -188,7 +188,7 @@ template <class _Tp>
 
   //  Check if the largest component of __x is > 2^__max_allowed_exponent:
   _Tp __x_big_factor = _Tp{0};
-  const _Tp __max    = (__realx > __imagx) ? __realx : __imagx;
+  const _Tp __max    = ::cuda::std::fmax(__realx, __imagx);
   const bool __x_big = ::cuda::std::bit_cast<__uint_t>(__max) > __max_allowed_val_as_uint;
 
   if (__x_big)
@@ -197,7 +197,7 @@ template <class _Tp>
     // but not small enough that the asinh(x) ~ log(2x) estimate does
     // not break down. We are not able to reduce this with a single simple reduction,
     // so we do a fast/inlined frexp/ldexp:
-    const int32_t __exp_biased = int32_t(::cuda::std::bit_cast<__uint_t>(__max) >> __mant_nbits);
+    const auto __exp_biased = static_cast<int32_t>(::cuda::std::bit_cast<__uint_t>(__max) >> __mant_nbits);
 
     // Get a factor such that (__max * __exp_mul_factor) <= __max_allowed_exponent
     const __uint_t __exp_reduce_factor =
@@ -291,14 +291,14 @@ template <class _Tp>
   // Extended sqrt function:
   // (__extended_sqrt_hi + __extended_sqrt_lo) = sqrt(__inner_most_term_hi + __inner_most_term_lo)
   const __cccl_asinh_sqrt_return_hilo<_Tp> __extended_sqrt_hilo =
-    __internal_double_Tp_sqrt_unsafe<_Tp>(__inner_most_term_hi, __inner_most_term_lo);
+    ::cuda::std::__internal_double_Tp_sqrt_unsafe<_Tp>(__inner_most_term_hi, __inner_most_term_lo);
 
   _Tp __extended_sqrt_hi = __extended_sqrt_hilo.__hi;
   _Tp __extended_sqrt_lo = __extended_sqrt_hilo.__lo;
 
   // 0.0, and some very particular values, do not survive this unsafe sqrt function.
   // This case occurs when (1 + x^2) is zero or denormal. (and rsqrt(x)*rsqrt(x) become inf).
-  constexpr __uint_t __min_normal_bits = __uint_t(0x1) << __mant_nbits;
+  constexpr __uint_t __min_normal_bits = __uint_t{0x1} << __mant_nbits;
   const _Tp __min_normal               = ::cuda::std::bit_cast<_Tp>(__min_normal_bits);
 
   if (__inner_most_term_hi <= _Tp{2} * __min_normal)
@@ -318,7 +318,7 @@ template <class _Tp>
   // We can have two slightly different paths depending on whether rsqrt is available
   // or not, aka are we on device or host.
 
-  const _Tp __recip_sqrt = __internal_rsqrt_inverse_hyperbloic<_Tp>(__inside_sqrt_term);
+  const _Tp __recip_sqrt = ::cuda::std::__internal_rsqrt_inverse_hyperbloic<_Tp>(__inside_sqrt_term);
   _Tp __pos_evaluation_real;
 
   // This reuses the sqrt calculated on CPU already in __recip_sqrt,
@@ -405,7 +405,7 @@ _CCCL_API inline complex<__half> asinh(const complex<__half>& __x)
 // acosh
 
 template <class _Tp>
-_CCCL_API inline complex<_Tp> acosh(const complex<_Tp>& __x)
+[[nodiscard]] _CCCL_API inline complex<_Tp> acosh(const complex<_Tp>& __x)
 {
   constexpr _Tp __pi = __numbers<_Tp>::__pi();
   if (::cuda::std::isinf(__x.real()))
@@ -467,7 +467,7 @@ _CCCL_API inline complex<__half> acosh(const complex<__half>& __x)
 // atanh
 
 template <class _Tp>
-_CCCL_API inline complex<_Tp> atanh(const complex<_Tp>& __x)
+[[nodiscard]] _CCCL_API inline complex<_Tp> atanh(const complex<_Tp>& __x)
 {
   constexpr _Tp __pi = __numbers<_Tp>::__pi();
   if (::cuda::std::isinf(__x.imag()))
