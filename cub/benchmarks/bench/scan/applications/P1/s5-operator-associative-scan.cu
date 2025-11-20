@@ -255,10 +255,10 @@ static void inclusive_scan(nvbench::state& state, nvbench::type_list<T, OffsetT>
 #  if !TUNE_BASE
   using policy_t   = policy_hub_t<accum_t>;
   using dispatch_t = cub::
-    DispatchScan<input_it_t, output_it_t, op_t, wrapped_init_t, offset_t, accum_t, cub::ForceInclusive::No, policy_t>;
+    DispatchScan<input_it_t, output_it_t, op_t, wrapped_init_t, offset_t, accum_t, cub::ForceInclusive::Yes, policy_t>;
 #  else
   using dispatch_t =
-    cub::DispatchScan<input_it_t, output_it_t, op_t, wrapped_init_t, offset_t, accum_t, cub::ForceInclusive::No>;
+    cub::DispatchScan<input_it_t, output_it_t, op_t, wrapped_init_t, offset_t, accum_t, cub::ForceInclusive::Yes>;
 #  endif
 
   const auto elements       = static_cast<std::size_t>(state.get_int64("Elements{io}"));
@@ -322,11 +322,11 @@ static void segmented_scan(nvbench::state& state, nvbench::type_list<T, OffsetT>
   using input_it_t  = cuda::zip_iterator<permuted_input_t, permuted_input_t>;
   using output_it_t = cuda::zip_iterator<permuted_output_t, permuted_output_t>;
 
-  using begin_offset_it_t = int*;
-  using end_offset_it_t   = int*;
+  using begin_offset_it_t = OffsetT*;
+  using end_offset_it_t   = OffsetT*;
 
   using accum_t  = cuda::std::tuple<value_t, value_t>;
-  using offset_t = cub::detail::choose_offset_t<OffsetT>;
+  using offset_t = cub::detail::common_iterator_value_t<begin_offset_it_t, end_offset_it_t>;
 
 #if !TUNE_BASE
   using policy_t   = policy_hub_t<accum_t>;
@@ -339,7 +339,7 @@ static void segmented_scan(nvbench::state& state, nvbench::type_list<T, OffsetT>
     op_t,
     wrapped_init_t,
     accum_t,
-    cub::ForceInclusive::No,
+    cub::ForceInclusive::Yes,
     offset_t,
     policy_t>;
 #else
@@ -352,7 +352,7 @@ static void segmented_scan(nvbench::state& state, nvbench::type_list<T, OffsetT>
     op_t,
     wrapped_init_t,
     accum_t,
-    cub::ForceInclusive::No,
+    cub::ForceInclusive::Yes,
     offset_t>;
 #endif
 
@@ -379,8 +379,8 @@ static void segmented_scan(nvbench::state& state, nvbench::type_list<T, OffsetT>
   auto Bu_output_iter = cuda::make_permutation_iterator(thrust::raw_pointer_cast(output_Bu.data()), col_major_iter);
   auto output_iter    = cuda::make_zip_iterator(A_output_iter, Bu_output_iter);
 
-  thrust::device_vector<int> begin_offsets(state_dim, thrust::no_init);
-  thrust::device_vector<int> end_offsets(state_dim, thrust::no_init);
+  thrust::device_vector<offset_t> begin_offsets(state_dim, thrust::no_init);
+  thrust::device_vector<offset_t> end_offsets(state_dim, thrust::no_init);
 
   thrust::sequence(begin_offsets.begin(), begin_offsets.end(), 0, nrows);
   thrust::sequence(end_offsets.begin(), end_offsets.end(), nrows, nrows);
@@ -408,7 +408,7 @@ static void segmented_scan(nvbench::state& state, nvbench::type_list<T, OffsetT>
   thrust::device_vector<nvbench::uint8_t> tmp(tmp_size, thrust::no_init);
   nvbench::uint8_t* d_tmp = thrust::raw_pointer_cast(tmp.data());
 
-  state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch, [&](nvbench::launch& launch) {
+  state.exec(nvbench::exec_tag::sync, [&](nvbench::launch& launch) {
     dispatch_t::dispatch(
       d_tmp,
       tmp_size,
