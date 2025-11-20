@@ -44,11 +44,11 @@ namespace cuda::experimental::cuco
 //! https://static.googleusercontent.com/media/research.google.com/de//pubs/archive/40671.pdf.
 //!
 //! @tparam _T Type of items to count
-//! @tparam _MemoryResource Type of memory resource used for device storage
+//! @tparam _MemoryResourceRef Type of non-owning memory resource used for device storage
 //! @tparam _Scope The scope in which operations will be performed by individual threads
 //! @tparam _Hash Hash function used to hash items
 template <class _T,
-          class _MemoryResource       = ::cuda::device_memory_pool_ref,
+          class _MemoryResourceRef    = ::cuda::device_memory_pool_ref,
           ::cuda::thread_scope _Scope = ::cuda::thread_scope_device,
           class _Hash = ::cuda::experimental::cuco::hash<_T, ::cuda::experimental::cuco::hash_algorithm::xxhash_64>>
 class hyperloglog
@@ -68,17 +68,17 @@ public:
   //!
   //! @note This function synchronizes the given stream.
   //!
-  //! @param __memory_resource Memory resource used for allocating device storage
+  //! @param __memory_resource_ref A non-owning memory resource used for allocating device storage
   //! @param __sketch_size_kb Maximum sketch size in KB
   //! @param __hash The hash function used to hash items
   //! @param __stream CUDA stream used to initialize the object
-  constexpr hyperloglog(_MemoryResource __memory_resource,
+  constexpr hyperloglog(_MemoryResourceRef __memory_resource_ref,
                         ::cuda::experimental::cuco::sketch_size_kb __sketch_size_kb = 32.0,
                         _Hash const& __hash                                         = {},
                         ::cuda::stream_ref __stream = ::cuda::stream_ref{cudaStream_t{nullptr}})
-      : __memory_resource(__memory_resource)
+      : __memory_resource_ref(__memory_resource_ref)
       , __sketch_buffer{__stream,
-                        __memory_resource,
+                        __memory_resource_ref,
                         ref_type<>::sketch_bytes(__sketch_size_kb) / sizeof(register_type),
                         ::cuda::experimental::no_init}
       , __ref{::cuda::std::span{reinterpret_cast<::cuda::std::byte*>(__sketch_buffer.data()),
@@ -98,9 +98,9 @@ public:
   constexpr hyperloglog(::cuda::experimental::cuco::sketch_size_kb __sketch_size_kb = 32.0,
                         _Hash const& __hash                                         = {},
                         ::cuda::stream_ref __stream = ::cuda::stream_ref{cudaStream_t{nullptr}})
-      : __memory_resource(::cuda::device_default_memory_pool(::cuda::device_ref{0}))
+      : __memory_resource_ref(::cuda::device_default_memory_pool(::cuda::device_ref{0}))
       , __sketch_buffer{__stream,
-                        __memory_resource,
+                        __memory_resource_ref,
                         ref_type<>::sketch_bytes(__sketch_size_kb) / sizeof(register_type),
                         ::cuda::experimental::no_init}
       , __ref{::cuda::std::span{reinterpret_cast<::cuda::std::byte*>(__sketch_buffer.data()),
@@ -114,17 +114,17 @@ public:
   //!
   //! @note This function synchronizes the given stream.
   //!
-  //! @param __memory_resource Memory resource used for allocating device storage
+  //! @param __memory_resource_ref A non-owning memory resource used for allocating device storage
   //! @param __sd Desired standard deviation for the approximation error
   //! @param __hash The hash function used to hash items
   //! @param __stream CUDA stream used to initialize the object
-  constexpr hyperloglog(_MemoryResource __memory_resource,
+  constexpr hyperloglog(_MemoryResourceRef __memory_resource_ref,
                         ::cuda::experimental::cuco::standard_deviation __sd,
                         _Hash const& __hash         = {},
                         ::cuda::stream_ref __stream = ::cuda::stream_ref{cudaStream_t{nullptr}})
-      : __memory_resource(__memory_resource)
+      : __memory_resource_ref(__memory_resource_ref)
       , __sketch_buffer{__stream,
-                        __memory_resource,
+                        __memory_resource_ref,
                         ref_type<>::sketch_bytes(__sd) / sizeof(register_type),
                         ::cuda::experimental::no_init}
       , __ref{::cuda::std::span{reinterpret_cast<::cuda::std::byte*>(__sketch_buffer.data()),
@@ -144,9 +144,9 @@ public:
   constexpr hyperloglog(::cuda::experimental::cuco::standard_deviation __sd,
                         _Hash const& __hash         = {},
                         ::cuda::stream_ref __stream = ::cuda::stream_ref{cudaStream_t{nullptr}})
-      : __memory_resource(::cuda::device_default_memory_pool(::cuda::device_ref{0}))
+      : __memory_resource_ref(::cuda::device_default_memory_pool(::cuda::device_ref{0}))
       , __sketch_buffer{__stream,
-                        __memory_resource,
+                        __memory_resource_ref,
                         ref_type<>::sketch_bytes(__sd) / sizeof(register_type),
                         ::cuda::experimental::no_init}
       , __ref{::cuda::std::span{reinterpret_cast<::cuda::std::byte*>(__sketch_buffer.data()),
@@ -296,13 +296,13 @@ public:
   }
 
 private:
-  _MemoryResource __memory_resource; ///< Memory resource used to allocate device-accessible storage
+  _MemoryResourceRef __memory_resource_ref; ///< Memory resource used to allocate device-accessible storage
   ::cuda::experimental::async_device_buffer<register_type> __sketch_buffer; ///< Storage for sketch
   ref_type<> __ref; ///< Device ref of the current `hyperloglog` object
 
   // Needs to be friends with other instantiations of this class template to have access to their
   // storage
-  template <class _T_, class _MemoryResource_, ::cuda::thread_scope _Scope_, class _Hash_>
+  template <class _T_, class _MemoryResourceRef_, ::cuda::thread_scope _Scope_, class _Hash_>
   friend class hyperloglog;
 };
 } // namespace cuda::experimental::cuco
