@@ -180,15 +180,14 @@ C2H_TEST("Reduce works with custom types", "[reduce]")
 {
   const std::size_t num_items = GENERATE(0, 42, take(4, random(1 << 12, 1 << 24)));
 
-  operation_t op = make_operation(
-    "op",
-    "struct pair { short a; size_t b; };\n"
-    "extern \"C\" __device__ void op(void* lhs_ptr, void* rhs_ptr, void* out_ptr) {\n"
-    "  pair* lhs = static_cast<pair*>(lhs_ptr);\n"
-    "  pair* rhs = static_cast<pair*>(rhs_ptr);\n"
-    "  pair* out = static_cast<pair*>(out_ptr);\n"
-    "  *out = pair{ lhs->a + rhs->a, lhs->b + rhs->b };\n"
-    "}");
+  operation_t op              = make_operation("op",
+                                  R"(struct pair { short a; size_t b; };
+extern "C" __device__ void op(void* lhs_ptr, void* rhs_ptr, void* out_ptr) {
+  pair* lhs = static_cast<pair*>(lhs_ptr);
+  pair* rhs = static_cast<pair*>(rhs_ptr);
+  pair* out = static_cast<pair*>(out_ptr);
+  *out = pair{ lhs->a + rhs->a, lhs->b + rhs->b };
+})");
   const std::vector<short> a  = generate<short>(num_items);
   const std::vector<size_t> b = generate<size_t>(num_items);
   std::vector<pair> input(num_items);
@@ -218,15 +217,14 @@ C2H_TEST("Reduce works with custom types with well-known operations", "[reduce][
 {
   const std::size_t num_items = GENERATE(0, 42, take(4, random(1 << 12, 1 << 24)));
 
-  operation_t op_state = make_operation(
-    "op",
-    "struct pair { short a; size_t b; };\n"
-    "extern \"C\" __device__ void op(void* lhs_ptr, void* rhs_ptr, void* out_ptr) {\n"
-    "  pair* lhs = static_cast<pair*>(lhs_ptr);\n"
-    "  pair* rhs = static_cast<pair*>(rhs_ptr);\n"
-    "  pair* out = static_cast<pair*>(out_ptr);\n"
-    "  *out = pair{ lhs->a + rhs->a, lhs->b + rhs->b };\n"
-    "}");
+  operation_t op_state        = make_operation("op",
+                                        R"(struct pair { short a; size_t b; };
+extern "C" __device__ void op(void* lhs_ptr, void* rhs_ptr, void* out_ptr) {
+  pair* lhs = static_cast<pair*>(lhs_ptr);
+  pair* rhs = static_cast<pair*>(rhs_ptr);
+  pair* out = static_cast<pair*>(out_ptr);
+  *out = pair{ lhs->a + rhs->a, lhs->b + rhs->b };
+})");
   cccl_op_t op                = op_state;
   op.type                     = cccl_op_kind_t::CCCL_PLUS;
   const std::vector<short> a  = generate<short>(num_items);
@@ -371,14 +369,14 @@ C2H_TEST("Reduce works with stateful operators", "[reduce]")
   pointer_t<int> counter(1);
   stateful_operation_t<invocation_counter_state_t> op = make_operation(
     "op",
-    "struct invocation_counter_state_t { int* d_counter; };\n"
-    "extern \"C\" __device__ void op(void* state_ptr, void* a_ptr, void* b_ptr, void* out_ptr) {\n"
-    "  invocation_counter_state_t* state = static_cast<invocation_counter_state_t*>(state_ptr);\n"
-    "  atomicAdd(state->d_counter, 1);\n"
-    "  int a = *static_cast<int*>(a_ptr);\n"
-    "  int b = *static_cast<int*>(b_ptr);\n"
-    "  *static_cast<int*>(out_ptr) = a + b;\n"
-    "}",
+    R"(struct invocation_counter_state_t { int* d_counter; };
+extern "C" __device__ void op(void* state_ptr, void* a_ptr, void* b_ptr, void* out_ptr) {
+  invocation_counter_state_t* state = static_cast<invocation_counter_state_t*>(state_ptr);
+  atomicAdd(state->d_counter, 1);
+  int a = *static_cast<int*>(a_ptr);
+  int b = *static_cast<int*>(b_ptr);
+  *static_cast<int*>(out_ptr) = a + b;
+})",
     invocation_counter_state_t{counter.ptr});
 
   const std::vector<int> input = generate<int>(num_items);

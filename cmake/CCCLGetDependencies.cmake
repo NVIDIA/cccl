@@ -2,7 +2,16 @@ set(_cccl_cpm_file "${CMAKE_CURRENT_LIST_DIR}/CPM.cmake")
 
 macro(cccl_get_boost)
   include("${_cccl_cpm_file}")
-  CPMAddPackage("gh:boostorg/boost#boost-1.83.0")
+  CPMAddPackage(
+    NAME Boost
+    GITHUB_REPOSITORY boostorg/boost
+    GIT_TAG "boost-1.83.0"
+    EXCLUDE_FROM_ALL TRUE
+    SYSTEM TRUE
+    GIT_SHALLOW TRUE
+    # Boost requests compatibility with obsolete CMake versions. Disable warning:
+    OPTIONS "CMAKE_POLICY_VERSION_MINIMUM 3.5"
+  )
 endmacro()
 
 # The CCCL Catch2Helper library:

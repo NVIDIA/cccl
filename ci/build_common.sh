@@ -343,7 +343,7 @@ function build_preset() {
         ./ninja_summary.py -C ${BUILD_DIR}/${PRESET} || echo "Warning: ninja_summary.py failed to execute properly."
         end_group
     else
-      sccache -s
+      sccache -s || :
     fi
 
     return $status

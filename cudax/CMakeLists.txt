@@ -40,7 +40,7 @@ option(
   "Enable STF tests/examples that use cublas/cusolver."
   OFF
 )
-option(cudax_ENABLE_CUFILE "Enable cuFile in CUDA Experimental" OFF)
+option(cudax_ENABLE_CUFILE "Enable cuFile in CUDA Experimental" ON)
 
 if (cudax_ENABLE_CUFILE)
   if (WIN32)
@@ -80,13 +80,9 @@ if (
 endif()
 
 include(cmake/cudaxBuildCompilerTargets.cmake)
-include(cmake/cudaxBuildTargetList.cmake)
 if (cudax_ENABLE_CUDASTF)
   include(cmake/cudaxSTFConfigureTarget.cmake)
 endif()
-
-cudax_build_compiler_targets()
-cudax_build_target_list()
 
 if (cudax_ENABLE_HEADER_TESTING)
   include(cmake/cudaxHeaderTesting.cmake)

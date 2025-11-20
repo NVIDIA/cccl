@@ -24,6 +24,7 @@
 
 #  include <cuda/__driver/driver_api.h>
 #  include <cuda/__memory/is_aligned.h>
+#  include <cuda/__memory/is_pointer_accessible.h>
 #  include <cuda/devices> // sub headers cause circular dependency
 #  include <cuda/std/__algorithm/min.h>
 #  include <cuda/std/__cstddef/types.h>
@@ -199,29 +200,25 @@ _CCCL_HOST_API inline void __check_device(const ::DLTensor& __tensor, tma_swizzl
                "Device type must be kDLCUDA or kDLCUDAManaged");
   auto __current_device     = ::cuda::device_ref(__tensor.device.device_id);
   auto __compute_capability = __current_device.attribute<::cudaDevAttrComputeCapabilityMajor>();
-  // auto __current_device = ::cuda::__driver::__deviceGet(__tensor.device.device_id);
-  // auto __compute_capability =
-  //   ::cuda::__driver::__deviceGetAttribute(::CU_DEVICE_ATTRIBUTE_COMPUTE_CAPABILITY_MAJOR, __current_device);
-  //_CCCL_VERIFY(__compute_capability >= 9, "Compute capability 9.0 or higher is required");
-  if (__compute_capability >= 10)
+  _CCCL_VERIFY(__compute_capability >= 9, "Compute capability 9.0 or higher is required");
+  if (__compute_capability == 9)
   {
-    return;
-  }
 #  if _CCCL_CTK_AT_LEAST(12, 8)
-  if (__swizzle == tma_swizzle::bytes128_atom_32B || __swizzle == tma_swizzle::bytes128_atom_32B_flip_8B
-      || __swizzle == tma_swizzle::bytes128_atom_64B)
-  {
-    _CCCL_VERIFY(false, "tma_swizzle::bytes128_atom* are not supported for compute capability 9");
-  }
+    if (__swizzle == tma_swizzle::bytes128_atom_32B || __swizzle == tma_swizzle::bytes128_atom_32B_flip_8B
+        || __swizzle == tma_swizzle::bytes128_atom_64B)
+    {
+      _CCCL_VERIFY(false, "tma_swizzle::bytes128_atom* are not supported with compute capability 9");
+    }
 #  endif // _CCCL_CTK_AT_LEAST(12, 8)
-  if (__tensor.dtype.code == ::kDLUInt && __tensor.dtype.bits == 4 && __tensor.dtype.lanes == 16)
-  {
-    _CCCL_VERIFY(false, "U4x16 is not supported for compute capability 9");
+    if (__tensor.dtype.code == ::kDLUInt && __tensor.dtype.bits == 4 && __tensor.dtype.lanes == 16)
+    {
+      _CCCL_VERIFY(false, "U4x16 is not supported with compute capability 9");
+    }
   }
 }
 
 [[nodiscard]] _CCCL_HOST_API inline ::CUtensorMapDataType
-__get_tensor_map_data_type(const ::DLTensor& __tensor, tma_swizzle __swizzle, tma_oob_fill __oobfill) noexcept
+__get_tensor_map_data_type(const ::DLTensor& __tensor, tma_oob_fill __oobfill) noexcept
 {
   const auto __type = __tensor.dtype.code;
   switch (__type)
@@ -322,7 +319,8 @@ __get_tensor_address(const ::DLTensor& __tensor, tma_interleave_layout __interle
   const auto __address   = reinterpret_cast<char*>(__tensor.data) + __tensor.byte_offset;
   const auto __alignment = (__interleave_layout == tma_interleave_layout::bytes32) ? 32 : 16;
   _CCCL_VERIFY(::cuda::is_aligned(__address, __alignment), "tensor.data (address) is not sufficiently aligned");
-  // TODO (fbusato): check that the address is a valid GPU global address, PR #6325
+  _CCCL_VERIFY(::cuda::is_device_accessible(__address, __tensor.device.device_id),
+               "Address is not a valid GPU global address");
   return static_cast<void*>(__address);
 }
 
@@ -519,7 +517,7 @@ _CCCL_HOST_API inline void __check_swizzle(tma_interleave_layout __interleave_la
   ::cuda::__check_device(__tensor, __swizzle);
   const auto __rank         = ::cuda::__get_tensor_map_rank(__tensor, __interleave_layout);
   const auto __address      = ::cuda::__get_tensor_address(__tensor, __interleave_layout);
-  const auto __data_type    = ::cuda::__get_tensor_map_data_type(__tensor, __swizzle, __oobfill);
+  const auto __data_type    = ::cuda::__get_tensor_map_data_type(__tensor, __oobfill);
   const auto __tensor_sizes = ::cuda::__get_tensor_sizes(__tensor, __rank, __data_type);
   const auto __input_strides =
     ::cuda::__get_tensor_strides(__tensor, __rank, __data_type, __tensor_sizes, __interleave_layout);

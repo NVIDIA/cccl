@@ -104,12 +104,12 @@ fi
 
 # This cuts the number of built targets roughly in half:
 echo "::group::Extracting cuda targets from build.ninja..."
-# Query ninja for all object files built from CUDA source files in ATen/native/cuda/
+# Query ninja for all object files built from CUDA source files
 # that are part of the torch_cuda library:
 ninja -C ./build -t query lib/libtorch_cuda.so |
-  grep -E "ATen/native/cuda/.*\\.cu\\.o$" |
+  grep -E "torch_cuda\\.dir/.*\\.cu\\.o$" |
   sort | uniq | tee build/cuda_targets.txt
-# At the time this script was written, there were 217 cuda targets.
+# At the time this script was written, there were 311 cuda targets.
 # Check that there are at least 100 detected targets, otherwise fail.
 num_targets=$(wc -l < build/cuda_targets.txt)
 if test "$num_targets" -lt 100; then
@@ -119,7 +119,7 @@ if test "$num_targets" -lt 100; then
 fi
 echo "::endgroup::"
 
-echo "::group::Building pytorch CUDA targets with custom CCCL..."
+echo "::group::Building $num_targets pytorch CUDA targets with custom CCCL..."
 ninja -C ./build $(xargs -a build/cuda_targets.txt)
 echo "::endgroup::"
 

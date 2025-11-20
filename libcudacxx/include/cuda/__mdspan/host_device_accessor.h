@@ -27,7 +27,6 @@
 #include <cuda/std/__iterator/concepts.h>
 #include <cuda/std/__memory/pointer_traits.h>
 #include <cuda/std/__type_traits/always_false.h>
-#include <cuda/std/__type_traits/is_constant_evaluated.h>
 #include <cuda/std/__type_traits/is_constructible.h>
 #include <cuda/std/__type_traits/is_convertible.h>
 #include <cuda/std/__type_traits/is_default_constructible.h>
@@ -112,7 +111,7 @@ class __host_accessor : public _Accessor
 #  if _CCCL_HAS_CTK()
     if constexpr (::cuda::std::contiguous_iterator<__data_handle_type>)
     {
-      if (!cuda::std::__cccl_default_is_constant_evaluated())
+      _CCCL_IF_NOT_CONSTEVAL_DEFAULT
       {
         auto __p1 = ::cuda::std::to_address(__p);
         ::CUmemorytype __type{};

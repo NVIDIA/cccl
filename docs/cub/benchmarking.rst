@@ -149,7 +149,7 @@ Running all benchmarks directly from the command line
 --------------------------------------------------------------------------------
 
 To get a full snapshot of CUB's performance, you can run all benchmarks and save the results.
-For example:
+For example, inside a build directory you can run:
 
 .. code-block:: bash
 
@@ -171,23 +171,24 @@ Running all benchmarks via tuning scripts (alternative)
 The benchmark suite can also be run using the :ref:`tuning <cub-tuning>` infrastructure.
 The tuning infrastructure handles building benchmarks itself, because it records the build times.
 Therefore, it's critical that you run it in a clean build directory without any build artifacts.
-Running cmake is enough. Alternatively, you can also clean your build directory with.
-Furthermore, the tuning scripts require some additional python dependencies, which you have to install.
-
-To select the appropriate CUDA GPU, first identify the GPU ID by running `nvidia-smi`, then set the
-desired GPU using `export CUDA_VISIBLE_DEVICES=x`, where `x` is the ID of the GPU you want to use (e.g., `1`).
-This ensures your application uses only the specified GPU.
+Running cmake is enough. Alternatively, you can also clean your build directory.
+Furthermore, the tuning scripts require some additional python dependencies, which you have to install:
 
 .. code-block:: bash
 
     ninja clean
     pip install --user fpzip pandas scipy
 
+To select the appropriate CUDA GPU, first identify the GPU ID by running `nvidia-smi`, then set the
+desired GPU using `export CUDA_VISIBLE_DEVICES=x <https://docs.nvidia.com/cuda/cuda-c-programming-guide/#cuda-environment-variables>`_,
+where `x` is the ID of the GPU you want to use (e.g., `1`).
+This ensures your application uses only the specified GPU.
 We can then run the full benchmark suite from the build directory with:
 
 .. code-block:: bash
 
-    <root_dir_to_cccl>/cccl/benchmarks/scripts/run.py
+    export CUDA_VISIBLE_DEVICES=0 # or any other GPU ID
+    PYTHONPATH=../benchmarks/scripts ../benchmarks/scripts/run.py
 
 You can expect the output to look like this:
 
@@ -205,11 +206,12 @@ You can expect the output to look like this:
 The tuning infrastructure will build and execute all benchmarks and their variants one after each other,
 reporting the time in seconds it took to execute the benchmarked region.
 
-It's also possible to benchmark a subset of algorithms and workloads:
+It's also possible to benchmark a subset of algorithms and workloads, by running in a build directory:
 
 .. code-block:: bash
 
-    <root_dir_to_cccl>/cccl/benchmarks/scripts/run.py -R '.*scan.exclusive.sum.*' -a 'Elements{io}[pow2]=[24,28]' -a 'T{ct}=I32'
+    export CUDA_VISIBLE_DEVICES=0 # or any other GPU ID
+    PYTHONPATH=../benchmarks/scripts ../benchmarks/scripts/run.py -R '.*scan.exclusive.sum.*' -a 'Elements{io}[pow2]=[24,28]' -a 'T{ct}=I32'
     &&&& RUNNING bench
      ctk:  12.6.77
     cccl:  v2.7.0-rc0-265-g32aa6aa5a
@@ -238,7 +240,7 @@ Benchmark results captured in different tuning databases can be compared as well
 
 .. code-block:: bash
 
-    ../benchmarks/scripts/compare.py -o cccl_meta_bench1.db cccl_meta_bench2.db
+    <cccl_git_root>/benchmarks/scripts/compare.py -o cccl_meta_bench1.db cccl_meta_bench2.db
 
 This will print a Markdown report showing the runtime differences and noise for each variant.
 
@@ -252,7 +254,7 @@ You can plot one or more tuning databases as a bar chart or a box plot (add `--b
 
 .. code-block:: bash
 
-    ../benchmarks/scripts/sol.py cccl_meta_bench.db ...
+    <cccl_git_root>/benchmarks/scripts/sol.py cccl_meta_bench.db ...
 
 This is useful to display the current performance of CUB as captured in a single tuning database,
 or visually compare the performance of CUB across different tuning databases
@@ -266,7 +268,7 @@ The resulting database contains all samples, which can be extracted into JSON fi
 
 .. code-block:: bash
 
-    <root_dir_to_cccl>/cccl/benchmarks/scripts/analyze.py -o ./cccl_meta_bench.db
+    <cccl_git_root>/benchmarks/scripts/analyze.py -o ./cccl_meta_bench.db
 
 This will create a JSON file for each benchmark variant next to the database.
 For example:

@@ -36,7 +36,7 @@
 #  pragma system_header
 #endif // no system header
 
-#if _CCCL_HAS_CUDA_COMPILER()
+#if _CCCL_CUDA_COMPILATION()
 #  include <thrust/system/cuda/detail/execution_policy.h>
 #  include <thrust/system/cuda/detail/fill.h>
 #  include <thrust/system/cuda/detail/parallel_for.h>
@@ -99,4 +99,4 @@ void _CCCL_HOST_DEVICE uninitialized_fill(execution_policy<Derived>& policy, Ite
 } // namespace cuda_cub
 
 THRUST_NAMESPACE_END
-#endif
+#endif // _CCCL_CUDA_COMPILATION()

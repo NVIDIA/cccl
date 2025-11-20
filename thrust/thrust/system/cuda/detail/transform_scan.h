@@ -36,7 +36,7 @@
 #  pragma system_header
 #endif // no system header
 
-#if _CCCL_HAS_CUDA_COMPILER()
+#if _CCCL_CUDA_COMPILATION()
 #  include <thrust/detail/type_traits.h>
 #  include <thrust/iterator/transform_iterator.h>
 #  include <thrust/system/cuda/detail/scan.h>
@@ -114,4 +114,4 @@ OutputIt _CCCL_HOST_DEVICE transform_exclusive_scan(
 } // namespace cuda_cub
 
 THRUST_NAMESPACE_END
-#endif
+#endif // _CCCL_CUDA_COMPILATION()

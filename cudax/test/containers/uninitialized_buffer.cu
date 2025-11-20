@@ -241,7 +241,7 @@ C2H_TEST("uninitialized_buffer is usable with cudax::launch", "[container]")
     const int grid_size = 4;
     cudax::uninitialized_buffer<int, ::cuda::mr::device_accessible> buffer{
       cuda::device_default_memory_pool(cuda::device_ref{0}), 1024};
-    auto configuration = cudax::make_config(cudax::grid_dims(grid_size), cudax::block_dims<256>());
+    auto configuration = cudax::make_config(cuda::grid_dims(grid_size), cuda::block_dims<256>());
 
     cudax::stream stream{cuda::device_ref{0}};
 
@@ -253,7 +253,7 @@ C2H_TEST("uninitialized_buffer is usable with cudax::launch", "[container]")
     const int grid_size = 4;
     const cudax::uninitialized_buffer<int, ::cuda::mr::device_accessible> buffer{
       cuda::device_default_memory_pool(cuda::device_ref{0}), 1024};
-    auto configuration = cudax::make_config(cudax::grid_dims(grid_size), cudax::block_dims<256>());
+    auto configuration = cudax::make_config(cuda::grid_dims(grid_size), cuda::block_dims<256>());
 
     cudax::stream stream{cuda::device_ref{0}};
 

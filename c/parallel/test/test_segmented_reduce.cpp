@@ -443,9 +443,11 @@ struct {0} {{
     /* 2 */ index_type_name);
 
   static constexpr std::string_view it_advance_fn_def_src_tmpl = R"XXX(
-extern "C" __device__ void {0}({1}* state, {2} offset)
+extern "C" __device__ void {0}(void* state, const void* offset)
 {{
-  state->linear_id += offset;
+  auto* typed_state = static_cast<{1}*>(state);
+  auto offset_val = *static_cast<const {2}*>(offset);
+  typed_state->linear_id += offset_val;
 }}
 )XXX";
 
@@ -453,10 +455,11 @@ extern "C" __device__ void {0}({1}* state, {2} offset)
     std::format(it_advance_fn_def_src_tmpl, /*0*/ advance_fn_name, state_name, index_type_name);
 
   static constexpr std::string_view it_dereference_fn_src_tmpl = R"XXX(
-extern "C" __device__ void {0}({2} *state, {1}* result) {{
-  unsigned long long col_id = (state->linear_id) / (state->n_rows);
-  unsigned long long row_id = (state->linear_id) - col_id * (state->n_rows);
-  *result = *(state->ptr + row_id * (state->n_cols) + col_id);
+extern "C" __device__ void {0}(const void* state, {1}* result) {{
+  auto* typed_state = static_cast<const {2}*>(state);
+  unsigned long long col_id = (typed_state->linear_id) / (typed_state->n_rows);
+  unsigned long long row_id = (typed_state->linear_id) - col_id * (typed_state->n_rows);
+  *result = *(typed_state->ptr + row_id * (typed_state->n_cols) + col_id);
 }}
 )XXX";
 

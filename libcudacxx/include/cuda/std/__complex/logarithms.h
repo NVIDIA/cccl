@@ -239,14 +239,13 @@ template <class _Tp>
   // Fix x == 0.0
   if (__x.real() == _Tp(0.0) && __x.imag() == _Tp(0.0))
   {
-    __abs_rescaled = -::cuda::std::numeric_limits<_Tp>::infinity();
+    __abs_rescaled = -numeric_limits<_Tp>::infinity();
   }
 
   // Fix hypot inf/nan case:
-  if ((__max == ::cuda::std::numeric_limits<_Tp>::infinity())
-      || (__min == ::cuda::std::numeric_limits<_Tp>::infinity()))
+  if ((__max == numeric_limits<_Tp>::infinity()) || (__min == numeric_limits<_Tp>::infinity()))
   {
-    __abs_rescaled = ::cuda::std::numeric_limits<_Tp>::infinity();
+    __abs_rescaled = numeric_limits<_Tp>::infinity();
   }
 
   return complex<_Tp>(__abs_rescaled, ::cuda::std::atan2(__x.imag(), __x.real()));

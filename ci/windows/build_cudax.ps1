@@ -21,8 +21,8 @@ If($CURRENT_PATH -ne "ci") {
 Remove-Module -Name build_common -ErrorAction SilentlyContinue
 Import-Module $PSScriptRoot/build_common.psm1 -ArgumentList @($CXX_STANDARD, $CUDA_ARCH, $CMAKE_OPTIONS)
 
-$PRESET = "cudax-cpp$CXX_STANDARD"
-$LOCAL_CMAKE_OPTIONS = ""
+$PRESET = "cudax"
+$LOCAL_CMAKE_OPTIONS = "-DCMAKE_CXX_STANDARD=$CXX_STANDARD -DCMAKE_CUDA_STANDARD=$CXX_STANDARD"
 
 configure_and_build_preset "CUDA Experimental" $PRESET $LOCAL_CMAKE_OPTIONS
 

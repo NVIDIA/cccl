@@ -3,12 +3,9 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-from typing import Any
+from typing import Protocol, runtime_checkable
 
-from typing_extensions import (
-    Protocol,
-    runtime_checkable,
-)  # TODO: typing_extensions required for Python 3.7 docs env
+import numpy as np
 
 
 @runtime_checkable
@@ -29,9 +26,11 @@ class StreamLike(Protocol):
     def __cuda_stream__(self) -> tuple[int, int]: ...
 
 
-# TODO: type GpuStruct appropriately. It should be any type that has
-# been decorated with `@gpu_struct`.
-GpuStruct = Any
-GpuStruct.__doc__ = """\
-    Type of instances of classes decorated with @gpu_struct.
-"""
+class GpuStruct(Protocol):
+    """
+    Type of instances of structs created with gpu_struct().
+    """
+
+    _data: np.ndarray
+    __array_interface__: dict
+    dtype: np.dtype
