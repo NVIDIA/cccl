@@ -21,13 +21,15 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__cstddef/types.h>
-#include <cuda/std/__type_traits/enable_if.h>
+#include <cuda/std/__type_traits/is_integral.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/remove_cvref.h>
 #include <cuda/std/__utility/forward.h>
 
 #include <cuda/experimental/__simd/declaration.h>
+#include <cuda/experimental/__simd/fixed_size_impl.h>
 #include <cuda/experimental/__simd/reference.h>
 #include <cuda/experimental/__simd/traits.h>
 #include <cuda/experimental/__simd/utility.h>
@@ -162,22 +164,64 @@ public:
 
   _CCCL_API constexpr friend simd& operator+=(simd& __lhs, const simd& __rhs) noexcept
   {
-    return __lhs = {__lhs + __rhs, __storage_tag};
+    return __lhs = __lhs + __rhs;
   }
 
   _CCCL_API constexpr friend simd& operator-=(simd& __lhs, const simd& __rhs) noexcept
   {
-    return __lhs = {__lhs - __rhs, __storage_tag};
+    return __lhs = __lhs - __rhs;
   }
 
   _CCCL_API constexpr friend simd& operator*=(simd& __lhs, const simd& __rhs) noexcept
   {
-    return __lhs = {__lhs * __rhs, __storage_tag};
+    return __lhs = __lhs * __rhs;
   }
 
   _CCCL_API constexpr friend simd& operator/=(simd& __lhs, const simd& __rhs) noexcept
   {
-    return __lhs = {__lhs / __rhs, __storage_tag};
+    return __lhs = __lhs / __rhs;
+  }
+
+  _CCCL_TEMPLATE(typename _Up)
+  _CCCL_REQUIRES(::cuda::std::is_integral_v<_Tp>)
+  _CCCL_API constexpr friend simd& operator%=(simd& __lhs, const simd& __rhs) noexcept
+  {
+    return __lhs = __lhs % __rhs;
+  }
+
+  _CCCL_TEMPLATE(typename _Up)
+  _CCCL_REQUIRES(::cuda::std::is_integral_v<_Tp>)
+  _CCCL_API constexpr friend simd& operator&=(simd& __lhs, const simd& __rhs) noexcept
+  {
+    return __lhs = __lhs & __rhs;
+  }
+
+  _CCCL_TEMPLATE(typename _Up)
+  _CCCL_REQUIRES(::cuda::std::is_integral_v<_Tp>)
+  _CCCL_API constexpr friend simd& operator|=(simd& __lhs, const simd& __rhs) noexcept
+  {
+    return __lhs = __lhs | __rhs;
+  }
+
+  _CCCL_TEMPLATE(typename _Up)
+  _CCCL_REQUIRES(::cuda::std::is_integral_v<_Tp>)
+  _CCCL_API constexpr friend simd& operator^=(simd& __lhs, const simd& __rhs) noexcept
+  {
+    return __lhs = __lhs ^ __rhs;
+  }
+
+  _CCCL_TEMPLATE(typename _Up)
+  _CCCL_REQUIRES(::cuda::std::is_integral_v<_Tp>)
+  _CCCL_API constexpr friend simd& operator<<=(simd& __lhs, const simd& __rhs) noexcept
+  {
+    return __lhs = __lhs << __rhs;
+  }
+
+  _CCCL_TEMPLATE(typename _Up)
+  _CCCL_REQUIRES(::cuda::std::is_integral_v<_Tp>)
+  _CCCL_API constexpr friend simd& operator>>=(simd& __lhs, const simd& __rhs) noexcept
+  {
+    return __lhs = __lhs >> __rhs;
   }
 
   [[nodiscard]] _CCCL_API constexpr friend simd operator+(const simd& __lhs, const simd& __rhs) noexcept
@@ -200,12 +244,61 @@ public:
     return {_Impl::__divides(__lhs.__s_, __rhs.__s_), __storage_tag};
   }
 
+  _CCCL_TEMPLATE(typename _Up)
+  _CCCL_REQUIRES(::cuda::std::is_integral_v<_Tp>)
+  [[nodiscard]] _CCCL_API constexpr friend simd operator%(const simd& __lhs, const simd& __rhs) noexcept
+  {
+    return {_Impl::__modulo(__lhs.__s_, __rhs.__s_), __storage_tag};
+  }
+
+  _CCCL_TEMPLATE(typename _Up)
+  _CCCL_REQUIRES(::cuda::std::is_integral_v<_Tp>)
+  [[nodiscard]] _CCCL_API constexpr friend simd operator&(const simd& __lhs, const simd& __rhs) noexcept
+  {
+    return {_Impl::__bitwise_and(__lhs.__s_, __rhs.__s_), __storage_tag};
+  }
+
+  _CCCL_TEMPLATE(typename _Up)
+  _CCCL_REQUIRES(::cuda::std::is_integral_v<_Tp>)
+  [[nodiscard]] _CCCL_API constexpr friend simd operator|(const simd& __lhs, const simd& __rhs) noexcept
+  {
+    return {_Impl::__bitwise_or(__lhs.__s_, __rhs.__s_), __storage_tag};
+  }
+
+  _CCCL_TEMPLATE(typename _Up)
+  _CCCL_REQUIRES(::cuda::std::is_integral_v<_Tp>)
+  [[nodiscard]] _CCCL_API constexpr friend simd operator^(const simd& __lhs, const simd& __rhs) noexcept
+  {
+    return {_Impl::__bitwise_xor(__lhs.__s_, __rhs.__s_), __storage_tag};
+  }
+
+  _CCCL_TEMPLATE(typename _Up)
+  _CCCL_REQUIRES(::cuda::std::is_integral_v<_Tp>)
+  [[nodiscard]] _CCCL_API constexpr friend simd operator<<(const simd& __lhs, const simd& __rhs) noexcept
+  {
+    return {_Impl::__shift_left(__lhs.__s_, __rhs.__s_), __storage_tag};
+  }
+
+  _CCCL_TEMPLATE(typename _Up)
+  _CCCL_REQUIRES(::cuda::std::is_integral_v<_Tp>)
+  [[nodiscard]] _CCCL_API constexpr friend simd operator>>(const simd& __lhs, const simd& __rhs) noexcept
+  {
+    return {_Impl::__shift_right(__lhs.__s_, __rhs.__s_), __storage_tag};
+  }
+
+  _CCCL_TEMPLATE(typename _Up)
+  _CCCL_REQUIRES(::cuda::std::is_integral_v<_Tp>)
+  [[nodiscard]] _CCCL_API constexpr simd operator~() const noexcept
+  {
+    return {_Impl::__bitwise_not(__s_), __storage_tag};
+  }
+
   [[nodiscard]] _CCCL_API constexpr friend mask_type operator==(const simd& __lhs, const simd& __rhs) noexcept
   {
     return {_Impl::__equal_to(__lhs.__s_, __rhs.__s_), __storage_tag};
   }
 
-  [[nodiscard]] _CCCL_API constexpr friend mask_type operator!=(const simd& __lhs, const simd& __rhs)
+  [[nodiscard]] _CCCL_API constexpr friend mask_type operator!=(const simd& __lhs, const simd& __rhs) noexcept
   {
     return {_Impl::__not_equal_to(__lhs.__s_, __rhs.__s_), __storage_tag};
   }
@@ -222,20 +315,20 @@ public:
 
   [[nodiscard]] _CCCL_API constexpr friend mask_type operator>(const simd& __lhs, const simd& __rhs) noexcept
   {
-    return {_Impl::__less(__lhs.__s_, __rhs.__s_), __storage_tag};
+    return {_Impl::__greater(__lhs.__s_, __rhs.__s_), __storage_tag};
   }
 
   [[nodiscard]] _CCCL_API constexpr friend mask_type operator>=(const simd& __lhs, const simd& __rhs) noexcept
   {
-    return {_Impl::__less_equal(__lhs.__s_, __rhs.__s_), __storage_tag};
+    return {_Impl::__greater_equal(__lhs.__s_, __rhs.__s_), __storage_tag};
   }
 };
 
 template <typename _Tp, typename _Abi>
 inline constexpr bool is_simd_v<basic_simd<_Tp, _Abi>> = true;
 
-template <typename _Tp>
-using native_simd = simd<_Tp, simd_abi::native<_Tp>>;
+// Note: native_simd would require platform-specific ABI specializations
+// For now, use fixed_size_simd directly or specialize with a known size
 
 template <typename _Tp, int _Np>
 using fixed_size_simd = simd<_Tp, _Np>;
