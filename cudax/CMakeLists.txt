@@ -80,13 +80,9 @@ if (
 endif()
 
 include(cmake/cudaxBuildCompilerTargets.cmake)
-include(cmake/cudaxBuildTargetList.cmake)
 if (cudax_ENABLE_CUDASTF)
   include(cmake/cudaxSTFConfigureTarget.cmake)
 endif()
-
-cudax_build_compiler_targets()
-cudax_build_target_list()
 
 if (cudax_ENABLE_HEADER_TESTING)
   include(cmake/cudaxHeaderTesting.cmake)

@@ -123,7 +123,7 @@ ci/util/build_and_test_targets.sh \
 
 ```bash
 ci/util/build_and_test_targets.sh \
-  --preset cudax-cpp20 \
+  --preset cudax \
   --build-targets "cudax.cpp20.test.async_buffer" \
   --ctest-targets "cudax.cpp20.test.async_buffer"
 ```
