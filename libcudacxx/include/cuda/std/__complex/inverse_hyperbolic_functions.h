@@ -120,6 +120,7 @@ template <class _Tp>
 
   constexpr int32_t __mant_nbits = __fp_mant_nbits_v<__fp_format_of_v<_Tp>>;
   constexpr int32_t __exp_max    = __fp_exp_max_v<__fp_format_of_v<_Tp>>;
+  constexpr int32_t __exp_bias   = __fp_exp_bias_v<__fp_format_of_v<_Tp>>;
 
   constexpr _Tp __pi  = __numbers<_Tp>::__pi();
   constexpr _Tp __ln2 = __numbers<_Tp>::__ln2();
@@ -185,7 +186,7 @@ template <class _Tp>
   // ~254 for double, ~30 for float
   constexpr int32_t __max_allowed_exponent = (__exp_max / 4) - 2;
   constexpr __uint_t __max_allowed_val_as_uint =
-    (__uint_t(__max_allowed_exponent + __exp_max) << __mant_nbits) | __fp_explicit_bit_mask_of_v<_Tp>;
+    (__uint_t(__max_allowed_exponent + __exp_bias) << __mant_nbits) | __fp_explicit_bit_mask_of_v<_Tp>;
 
   //  Check if the largest component of __x is > 2^__max_allowed_exponent:
   _Tp __x_big_factor = _Tp{0};
