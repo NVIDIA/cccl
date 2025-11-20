@@ -48,18 +48,18 @@ struct __fixed_size
 template <typename _Tp, int _Np>
 struct __simd_storage<_Tp, simd_abi::__fixed_size<_Np>>
 {
-  _Tp __data;
+  _Tp __data[_Np];
 
   [[nodiscard]] _CCCL_API constexpr _Tp __get([[maybe_unused]] ::cuda::std::size_t __idx) const noexcept
   {
     _CCCL_ASSERT(::cuda::in_range(__idx, 0, __simd_size), "Index is out of bounds");
-    return __data;
+    return __data[__idx];
   }
 
   _CCCL_API constexpr void __set([[maybe_unused]] ::cuda::std::size_t __idx, _Tp __v) noexcept
   {
     _CCCL_ASSERT(::cuda::in_range(__idx, 0, __simd_size), "Index is out of bounds");
-    __data = __v;
+    __data[__idx] = __v;
   }
 };
 
@@ -97,7 +97,7 @@ struct __simd_operations<_Tp, simd_abi::__fixed_size<_Np>>
   }
 
   template <typename _Generator>
-  [[nodiscard]] _CCCL_API static constexpr _SimdStorage __generate(_Generator&& __g) noexcept
+  [[nodiscard]] _CCCL_API static constexpr _SimdStorage __generate(_Generator&& __g)
   {
     return __generate_init(::cuda::std::forward<_Generator>(__g), ::cuda::std::make_index_sequence<_Np>());
   }

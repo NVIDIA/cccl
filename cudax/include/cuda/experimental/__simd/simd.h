@@ -70,17 +70,15 @@ public:
       : __s_(__s)
   {}
 
-  template <typename _Up,
-            ::cuda::std::enable_if_t<__can_broadcast_v<value_type, ::cuda::std::remove_cvref_t<_Up>>, int> = 0>
+  _CCCL_TEMPLATE(typename _Up)
+  _CCCL_REQUIRES(__can_broadcast_v<value_type, ::cuda::std::remove_cvref_t<_Up>>)
   _CCCL_API simd(_Up&& __v) noexcept
       : __s_(_Impl::__broadcast(static_cast<value_type>(::cuda::std::forward<_Up>(__v))))
   {}
 
-  template <typename _Up,
-            ::cuda::std::enable_if_t<
-              !::cuda::std::is_same_v<_Up, _Tp> && ::cuda::std::is_same_v<abi_type, simd_abi::fixed_size<size()>>
-                && __is_non_narrowing_convertible_v<_Up, value_type>,
-              int> = 0>
+  _CCCL_TEMPLATE(typename _Up)
+  _CCCL_REQUIRES(!::cuda::std::is_same_v<_Up, _Tp> && ::cuda::std::is_same_v<abi_type, simd_abi::fixed_size<size()>>
+                 && __is_non_narrowing_convertible_v<_Up, value_type>)
   _CCCL_API simd(const simd<_Up, size()>& __v) noexcept
   {
     for (::cuda::std::size_t __i = 0; __i < size(); __i++)
@@ -89,31 +87,29 @@ public:
     }
   }
 
-  template <typename _Generator, ::cuda::std::enable_if_t<__can_generate_v<value_type, _Generator, size()>, int> = 0>
+  _CCCL_TEMPLATE(typename _Generator)
+  _CCCL_REQUIRES(__can_generate_v<value_type, _Generator, size()>)
   _CCCL_API explicit simd(_Generator&& __g) noexcept
       : __s_(_Impl::__generate(::cuda::std::forward<_Generator>(__g)))
   {}
 
-  template <typename _Up,
-            typename _Flags,
-            ::cuda::std::enable_if_t<__is_vectorizable_v<_Up> && is_simd_flag_type_v<_Flags>, int> = 0>
-  _CCCL_API simd(const _Up* __mem, _Flags)
+  _CCCL_TEMPLATE(typename _Up, typename _Flags)
+  _CCCL_REQUIRES(__is_vectorizable_v<_Up>&& is_simd_flag_type_v<_Flags>)
+  _CCCL_API simd(const _Up* __mem, _Flags) noexcept
   {
     _Impl::__load(__s_, _Flags::template __apply<simd>(__mem));
   }
 
-  template <typename _Up,
-            typename _Flags,
-            ::cuda::std::enable_if_t<__is_vectorizable_v<_Up> && is_simd_flag_type_v<_Flags>, int> = 0>
-  _CCCL_API void copy_from(const _Up* __mem, _Flags)
+  _CCCL_TEMPLATE(typename _Up, typename _Flags)
+  _CCCL_REQUIRES(__is_vectorizable_v<_Up>&& is_simd_flag_type_v<_Flags>)
+  _CCCL_API void copy_from(const _Up* __mem, _Flags) noexcept
   {
     _Impl::__load(__s_, _Flags::template __apply<simd>(__mem));
   }
 
-  template <typename _Up,
-            typename _Flags,
-            ::cuda::std::enable_if_t<__is_vectorizable_v<_Up> && is_simd_flag_type_v<_Flags>, int> = 0>
-  _CCCL_API void copy_to(_Up* __mem, _Flags) const
+  _CCCL_TEMPLATE(typename _Up, typename _Flags)
+  _CCCL_REQUIRES(__is_vectorizable_v<_Up>&& is_simd_flag_type_v<_Flags>)
+  _CCCL_API void copy_to(_Up* __mem, _Flags) const noexcept
   {
     _Impl::__store(__s_, _Flags::template __apply<simd>(__mem));
   }
@@ -164,47 +160,47 @@ public:
     return {_Impl::__unary_minus(__s_), __storage_tag};
   }
 
-  _CCCL_API constexpr friend simd& operator+=(simd& __lhs, const simd& __rhs)
+  _CCCL_API constexpr friend simd& operator+=(simd& __lhs, const simd& __rhs) noexcept
   {
     return __lhs = {__lhs + __rhs, __storage_tag};
   }
 
-  _CCCL_API constexpr friend simd& operator-=(simd& __lhs, const simd& __rhs)
+  _CCCL_API constexpr friend simd& operator-=(simd& __lhs, const simd& __rhs) noexcept
   {
     return __lhs = {__lhs - __rhs, __storage_tag};
   }
 
-  _CCCL_API constexpr friend simd& operator*=(simd& __lhs, const simd& __rhs)
+  _CCCL_API constexpr friend simd& operator*=(simd& __lhs, const simd& __rhs) noexcept
   {
     return __lhs = {__lhs * __rhs, __storage_tag};
   }
 
-  _CCCL_API constexpr friend simd& operator/=(simd& __lhs, const simd& __rhs)
+  _CCCL_API constexpr friend simd& operator/=(simd& __lhs, const simd& __rhs) noexcept
   {
     return __lhs = {__lhs / __rhs, __storage_tag};
   }
 
-  [[nodiscard]] _CCCL_API constexpr friend simd operator+(const simd& __lhs, const simd& __rhs)
+  [[nodiscard]] _CCCL_API constexpr friend simd operator+(const simd& __lhs, const simd& __rhs) noexcept
   {
     return {_Impl::__plus(__lhs.__s_, __rhs.__s_), __storage_tag};
   }
 
-  [[nodiscard]] _CCCL_API constexpr friend simd operator-(const simd& __lhs, const simd& __rhs)
+  [[nodiscard]] _CCCL_API constexpr friend simd operator-(const simd& __lhs, const simd& __rhs) noexcept
   {
     return {_Impl::__minus(__lhs.__s_, __rhs.__s_), __storage_tag};
   }
 
-  [[nodiscard]] _CCCL_API constexpr friend simd operator*(const simd& __lhs, const simd& __rhs)
+  [[nodiscard]] _CCCL_API constexpr friend simd operator*(const simd& __lhs, const simd& __rhs) noexcept
   {
     return {_Impl::__multiplies(__lhs.__s_, __rhs.__s_), __storage_tag};
   }
 
-  [[nodiscard]] _CCCL_API constexpr friend simd operator/(const simd& __lhs, const simd& __rhs)
+  [[nodiscard]] _CCCL_API constexpr friend simd operator/(const simd& __lhs, const simd& __rhs) noexcept
   {
     return {_Impl::__divides(__lhs.__s_, __rhs.__s_), __storage_tag};
   }
 
-  [[nodiscard]] _CCCL_API constexpr friend mask_type operator==(const simd& __lhs, const simd& __rhs)
+  [[nodiscard]] _CCCL_API constexpr friend mask_type operator==(const simd& __lhs, const simd& __rhs) noexcept
   {
     return {_Impl::__equal_to(__lhs.__s_, __rhs.__s_), __storage_tag};
   }
@@ -214,22 +210,22 @@ public:
     return {_Impl::__not_equal_to(__lhs.__s_, __rhs.__s_), __storage_tag};
   }
 
-  [[nodiscard]] _CCCL_API constexpr friend mask_type operator<(const simd& __lhs, const simd& __rhs)
+  [[nodiscard]] _CCCL_API constexpr friend mask_type operator<(const simd& __lhs, const simd& __rhs) noexcept
   {
     return {_Impl::__less(__lhs.__s_, __rhs.__s_), __storage_tag};
   }
 
-  [[nodiscard]] _CCCL_API constexpr friend mask_type operator<=(const simd& __lhs, const simd& __rhs)
+  [[nodiscard]] _CCCL_API constexpr friend mask_type operator<=(const simd& __lhs, const simd& __rhs) noexcept
   {
     return {_Impl::__less_equal(__lhs.__s_, __rhs.__s_), __storage_tag};
   }
 
-  [[nodiscard]] _CCCL_API constexpr friend mask_type operator>(const simd& __lhs, const simd& __rhs)
+  [[nodiscard]] _CCCL_API constexpr friend mask_type operator>(const simd& __lhs, const simd& __rhs) noexcept
   {
     return {_Impl::__less(__lhs.__s_, __rhs.__s_), __storage_tag};
   }
 
-  [[nodiscard]] _CCCL_API constexpr friend mask_type operator>=(const simd& __lhs, const simd& __rhs)
+  [[nodiscard]] _CCCL_API constexpr friend mask_type operator>=(const simd& __lhs, const simd& __rhs) noexcept
   {
     return {_Impl::__less_equal(__lhs.__s_, __rhs.__s_), __storage_tag};
   }

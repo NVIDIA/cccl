@@ -80,7 +80,8 @@ public:
     return __get();
   }
 
-  template <typename _Up, ::cuda::std::enable_if_t<::cuda::std::is_assignable_v<value_type&, _Up&&>, int> = 0>
+  _CCCL_TEMPLATE(typename _Up)
+  _CCCL_REQUIRES(::cuda::std::is_assignable_v<value_type&, _Up&&>)
   _CCCL_API __simd_reference operator=(_Up&& __v) && noexcept
   {
     __set(static_cast<value_type>(::cuda::std::forward<_Up>(__v)));
