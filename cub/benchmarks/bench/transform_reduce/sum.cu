@@ -16,7 +16,7 @@
 #if !TUNE_BASE
 struct arch_policies
 {
-  _CCCL_API constexpr auto operator()(int /*arch*/) const -> ::cub::reduce_arch_policy
+  _CCCL_API constexpr auto operator()(cuda::arch_id) const -> ::cub::reduce_arch_policy
   {
     const auto policy = cub::agent_reduce_policy{
       TUNE_THREADS_PER_BLOCK,
