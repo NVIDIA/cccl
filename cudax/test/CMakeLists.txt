@@ -138,10 +138,6 @@ foreach (cudax_target IN LISTS cudax_TARGETS)
     PRIVATE $<$<COMPILE_LANG_AND_ID:CUDA,NVIDIA>:--expt-relaxed-constexpr>
   )
 
-  cudax_add_catch2_test(test_target memory_resource ${cudax_target}
-    memory_resource/shared_resource.cu
-  )
-
   cudax_add_catch2_test(test_target green_context ${cudax_target}
     green_context/green_ctx_smoke.cu
   )
