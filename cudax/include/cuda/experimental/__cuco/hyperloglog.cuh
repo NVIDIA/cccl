@@ -110,6 +110,52 @@ public:
     this->clear_async(__stream);
   }
 
+  //! @brief Constructs a `hyperloglog` host object.
+  //!
+  //! @note This function synchronizes the given stream.
+  //!
+  //! @param __memory_resource Memory resource used for allocating device storage
+  //! @param __sd Desired standard deviation for the approximation error
+  //! @param __hash The hash function used to hash items
+  //! @param __stream CUDA stream used to initialize the object
+  constexpr hyperloglog(_MemoryResource __memory_resource,
+                        ::cuda::experimental::cuco::standard_deviation __sd,
+                        _Hash const& __hash         = {},
+                        ::cuda::stream_ref __stream = ::cuda::stream_ref{cudaStream_t{nullptr}})
+      : __memory_resource(__memory_resource)
+      , __sketch_buffer{__stream,
+                        __memory_resource,
+                        ref_type<>::sketch_bytes(__sd) / sizeof(register_type),
+                        ::cuda::experimental::no_init}
+      , __ref{::cuda::std::span{reinterpret_cast<::cuda::std::byte*>(__sketch_buffer.data()),
+                                ref_type<>::sketch_bytes(__sd)},
+              __hash}
+  {
+    this->clear_async(__stream);
+  }
+
+  //! @brief Constructs a `hyperloglog` host object.
+  //!
+  //! @note This function synchronizes the given stream.
+  //!
+  //! @param __sd Desired standard deviation for the approximation error
+  //! @param __hash The hash function used to hash items
+  //! @param __stream CUDA stream used to initialize the object
+  constexpr hyperloglog(::cuda::experimental::cuco::standard_deviation __sd,
+                        _Hash const& __hash         = {},
+                        ::cuda::stream_ref __stream = ::cuda::stream_ref{cudaStream_t{nullptr}})
+      : __memory_resource(::cuda::device_default_memory_pool(::cuda::device_ref{0}))
+      , __sketch_buffer{__stream,
+                        __memory_resource,
+                        ref_type<>::sketch_bytes(__sd) / sizeof(register_type),
+                        ::cuda::experimental::no_init}
+      , __ref{::cuda::std::span{reinterpret_cast<::cuda::std::byte*>(__sketch_buffer.data()),
+                                ref_type<>::sketch_bytes(__sd)},
+              __hash}
+  {
+    this->clear_async(__stream);
+  }
+
   ~hyperloglog() = default;
 
   hyperloglog(hyperloglog const&) = delete;
@@ -225,23 +271,21 @@ public:
   //! @param __sketch_size_kb Upper bound sketch size in KB
   //!
   //! @return The number of bytes required for the sketch
-  [[nodiscard]] static constexpr std::size_t sketch_bytes(::cuda::experimental::cuco::sketch_size_kb __sketch_size_kb) noexcept
+  [[nodiscard]] static constexpr std::size_t
+  sketch_bytes(::cuda::experimental::cuco::sketch_size_kb __sketch_size_kb) noexcept
   {
     return ref_type<>::sketch_bytes(__sketch_size_kb);
   }
 
-//! TODO re-enable once standard_deviation is implemented
-#if 0
   //! @brief Gets the number of bytes required for the sketch storage.
   //!
-  //! @param standard_deviation Upper bound standard deviation for approximation error
+  //! @param __standard_deviation Upper bound standard deviation for approximation error
   //!
   //! @return The number of bytes required for the sketch
-  [[nodiscard]] static constexpr std::size_t sketch_bytes(cuco::standard_deviation standard_deviation) noexcept
+  [[nodiscard]] static constexpr std::size_t sketch_bytes(cuco::standard_deviation __standard_deviation) noexcept
   {
-    return ref_type<>::sketch_bytes(sketch_size_kb);
+    return ref_type<>::sketch_bytes(__standard_deviation);
   }
-#endif
 
   //! @brief Gets the alignment required for the sketch storage.
   //!

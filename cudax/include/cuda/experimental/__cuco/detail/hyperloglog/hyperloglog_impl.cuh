@@ -48,6 +48,8 @@ namespace cuda::experimental::cuco::detail
 {
 CUDAX_CUCO_DEFINE_STRONG_TYPE(sketch_size_kb, double);
 
+CUDAX_CUCO_DEFINE_STRONG_TYPE(standard_deviation, double);
+
 //! @brief A GPU-accelerated utility for approximating the number of distinct items in a multiset.
 //!
 //! @note This class implements the HyperLogLog/HyperLogLog++ algorithm:
@@ -448,38 +450,35 @@ public:
   //! @param sketch_size_kb Upper bound sketch size in KB
   //!
   //! @return The number of bytes required for the sketch
-  [[nodiscard]] _CCCL_API static constexpr size_t
-  __sketch_bytes(detail::sketch_size_kb __sketch_size_kb) noexcept
+  [[nodiscard]] _CCCL_API static constexpr size_t __sketch_bytes(detail::sketch_size_kb __sketch_size_kb) noexcept
   {
     // minimum precision is 4 or 64 bytes
     return ::cuda::std::max(static_cast<size_t>(sizeof(register_type) * 1ull << 4),
                             ::cuda::std::bit_floor(static_cast<size_t>(__sketch_size_kb * 1024)));
   }
 
-  // TODO re-enable once we have a standard_deviation strong type
-#if 0
   //! @brief Gets the number of bytes required for the sketch storage.
   //!
-  //! @param standard_deviation Upper bound standard deviation for approximation error
+  //! @param __standard_deviation Upper bound standard deviation for approximation error
   //!
   //! @return The number of bytes required for the sketch
   [[nodiscard]] _CCCL_API static constexpr std::size_t
-  sketch_bytes(cuco::standard_deviation standard_deviation) noexcept
+  sketch_bytes(detail::standard_deviation __standard_deviation) noexcept
   {
     // implementation taken from
     // https://github.com/apache/spark/blob/6a27789ad7d59cd133653a49be0bb49729542abe/sql/catalyst/src/main/scala/org/apache/spark/sql/catalyst/util/HyperLogLogPlusPlusHelper.scala#L43
 
     //  minimum precision is 4 or 64 bytes
-    auto const precision = ::cuda::std::max(
+    auto const __precision_ = ::cuda::std::max(
       static_cast<int32_t>(4),
-      static_cast<int32_t>(::cuda::std::ceil(2.0 * ::cuda::std::log(1.106 / standard_deviation) / ::cuda::std::log(2.0))));
+      static_cast<int32_t>(
+        ::cuda::std::ceil(2.0 * ::cuda::std::log(1.106 / __standard_deviation) / ::cuda::std::log(2.0))));
 
     // inverse of this function (ommitting the minimum precision constraint) is
-    // standard_deviation = 1.106 / exp((precision * log(2.0)) / 2.0)
+    // standard_deviation = 1.106 / exp((__precision_ * log(2.0)) / 2.0)
 
-    return sizeof(register_type) * (1ull << precision);
+    return sizeof(register_type) * (1ull << __precision_);
   }
-#endif
 
   //! @brief Gets the alignment required for the sketch storage.
   //!

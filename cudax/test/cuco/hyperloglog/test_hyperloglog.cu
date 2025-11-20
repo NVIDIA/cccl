@@ -136,3 +136,56 @@ C2H_TEST("HyperLogLog unique sequence", "[hyperloglog]", test_types)
   // Check if the error is acceptable
   REQUIRE(relative_error < tolerance_factor * relative_standard_deviation);
 }
+
+//! @brief The following unit tests mimic Spark's unit tests which can be found here:
+//! https://github.com/apache/spark/blob/d10dbaa31a44878df5c7e144f111e18261346531/sql/catalyst/src/test/scala/org/apache/spark/sql/catalyst/expressions/aggregate/HyperLogLogPlusPlusSuite.scala
+//!
+
+C2H_TEST("HyperLogLog Spark parity deterministic", "[hyperloglog]")
+{
+  using T              = int;
+  using estimator_type = cudax::cuco::hyperloglog<T>;
+
+  constexpr std::size_t repeats = 10;
+  // This factor determines the error threshold for passing the test
+  double constexpr tolerance_factor = 3.0;
+  const auto num_items              = GENERATE(100, 500, 1000, 5000, 10000, 50000, 100000, 500000, 1000000);
+  const auto standard_deviation     = GENERATE(0.1, 0.05, 0.025, 0.01, 0.001);
+
+  const auto expected_hll_precision =
+    std::max(static_cast<int32_t>(4),
+             static_cast<int32_t>(std::ceil(2.0 * std::log(1.106 / standard_deviation) / std::log(2.0))));
+  const auto expected_sketch_bytes = 4 * (1ull << expected_hll_precision);
+
+  CAPTURE(num_items, standard_deviation, expected_hll_precision, expected_sketch_bytes);
+
+  const auto sd = static_cast<cudax::cuco::standard_deviation>(standard_deviation);
+  const auto sb = static_cast<cudax::cuco::sketch_size_kb>(expected_sketch_bytes / 1024.0);
+
+  // Validate sketch size calculation
+  REQUIRE(estimator_type::sketch_bytes(sd) >= 64);
+  REQUIRE(estimator_type::sketch_bytes(sd) == expected_sketch_bytes);
+  REQUIRE(estimator_type::sketch_bytes(sd) == estimator_type::sketch_bytes(sb));
+
+  auto items_begin = thrust::make_transform_iterator(
+    thrust::make_counting_iterator<std::size_t>(0), cuda::proclaim_return_type<T>([repeats] __device__(auto i) {
+      return static_cast<T>(i / repeats);
+    }));
+
+  estimator_type estimator{sd};
+
+  REQUIRE(estimator.estimate() == 0);
+
+  // Add all items to the estimator
+  estimator.add(items_begin, items_begin + num_items);
+
+  auto const estimate = estimator.estimate();
+
+  double const relative_error =
+    std::abs((static_cast<double>(estimate) / static_cast<double>(num_items / repeats)) - 1.0);
+  // RSD for a given precision is given by the following formula
+  double const expected_standard_deviation = 1.04 / std::sqrt(static_cast<double>(1ull << expected_hll_precision));
+
+  // Check if the error is acceptable
+  REQUIRE(relative_error < expected_standard_deviation * tolerance_factor);
+}

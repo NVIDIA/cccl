@@ -39,6 +39,10 @@ namespace cuda::experimental::cuco
 //! Note: Values can also be specified as literals, e.g., 64.3_KB.
 using sketch_size_kb = detail::sketch_size_kb;
 
+//! A strong type wrapper `cuda::experimental::cuco::standard_deviation` of `double`, for specifying the desired
+//! standard deviation for the cardinality estimate of `cuda::experimental::cuco::hyperloglog(_ref)`.
+using standard_deviation = detail::standard_deviation;
+
 //! @brief A non-owning reference to a HyperLogLog sketch for approximating the number of distinct
 //! items in a multiset.
 //!
@@ -224,18 +228,16 @@ public:
     return __impl_type::__sketch_bytes(__sketch_size_kb);
   }
 
-#if 0
   //! @brief Gets the number of bytes required for the sketch storage.
   //!
-  //! @param standard_deviation Upper bound standard deviation for approximation error
+  //! @param __standard_deviation Upper bound standard deviation for approximation error
   //!
   //! @return The number of bytes required for the sketch
   [[nodiscard]] _CCCL_API static constexpr std::size_t
-  sketch_bytes(cuco::standard_deviation standard_deviation) noexcept
+  sketch_bytes(::cuda::experimental::cuco::standard_deviation __standard_deviation) noexcept
   {
-    return __impl_type::sketch_bytes(standard_deviation);
+    return __impl_type::sketch_bytes(__standard_deviation);
   }
-#endif
 
   //! @brief Gets the alignment required for the sketch storage.
   //!
