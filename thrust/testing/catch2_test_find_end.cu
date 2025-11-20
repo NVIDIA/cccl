@@ -147,4 +147,3 @@ TEST_CASE("FindEndDispatchImplicit", "[find_end]")
     CHECK(vec.front() == 42);
   }
 }
-
