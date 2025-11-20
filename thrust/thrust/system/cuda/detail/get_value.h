@@ -26,7 +26,7 @@
 #  pragma system_header
 #endif // no system header
 
-#if _CCCL_HAS_CUDA_COMPILER()
+#if _CCCL_CUDA_COMPILATION()
 #  include <thrust/system/cuda/config.h>
 
 #  include <thrust/detail/raw_pointer_cast.h>
@@ -62,4 +62,4 @@ _CCCL_HOST_DEVICE thrust::detail::it_value_t<Pointer> get_value(execution_policy
 } // namespace cuda_cub
 THRUST_NAMESPACE_END
 
-#endif
+#endif // _CCCL_CUDA_COMPILATION()

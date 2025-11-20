@@ -23,7 +23,6 @@
 #include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__format/format_error.h>
 #include <cuda/std/__fwd/format.h>
-#include <cuda/std/__type_traits/is_constant_evaluated.h>
 #include <cuda/std/__utility/ctad_support.h>
 #include <cuda/std/string_view>
 
@@ -78,7 +77,7 @@ public:
     {
       __indexing_ = _Indexing::__automatic;
     }
-    if (::cuda::std::is_constant_evaluated())
+    _CCCL_IF_CONSTEVAL
     {
       _CCCL_VERIFY(__next_arg_id_ < __num_args_, "argument index outside the valid range");
     }
@@ -95,7 +94,7 @@ public:
     {
       __indexing_ = _Indexing::__manual;
     }
-    if (::cuda::std::is_constant_evaluated())
+    _CCCL_IF_CONSTEVAL
     {
       _CCCL_VERIFY(__id < __num_args_, "argument index outside the valid range");
     }

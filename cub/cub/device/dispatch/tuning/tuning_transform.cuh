@@ -20,6 +20,7 @@
 #include <thrust/type_traits/is_contiguous_iterator.h>
 #include <thrust/type_traits/is_trivially_relocatable.h>
 
+#include <cuda/__cmath/pow2.h>
 #include <cuda/__cmath/round_up.h>
 #include <cuda/__functional/address_stability.h>
 #include <cuda/std/__algorithm/max.h>

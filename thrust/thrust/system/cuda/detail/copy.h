@@ -48,9 +48,9 @@
 #include <thrust/system/cuda/detail/util.h>
 #include <thrust/type_traits/is_trivially_relocatable.h>
 
-#if _CCCL_HAS_CUDA_COMPILER()
+#if _CCCL_CUDA_COMPILATION()
 #  include <cub/device/dispatch/tuning/tuning_transform.cuh>
-#endif // _CCCL_HAS_CUDA_COMPILER()
+#endif // _CCCL_CUDA_COMPILATION()
 
 #include <cuda/__fwd/zip_iterator.h>
 #include <cuda/std/tuple>
@@ -131,7 +131,7 @@ OutputIt _CCCL_HOST non_trivial_cross_system_copy_n(
   return ret;
 }
 
-#if _CCCL_HAS_CUDA_COMPILER()
+#if _CCCL_CUDA_COMPILATION()
 // non-trivial copy D->H, only supported with NVCC compiler
 // because copy ctor must have  __device__ annotations, which is nvcc-only
 // feature
@@ -158,7 +158,7 @@ OutputIt _CCCL_HOST non_trivial_cross_system_copy_n(
   OutputIt ret = thrust::copy_n(host_s, temp_host.data(), num_items, result);
   return ret;
 }
-#endif // _CCCL_HAS_CUDA_COMPILER()
+#endif // _CCCL_CUDA_COMPILATION()
 
 template <class System1, class System2, class InputIt, class Size, class OutputIt>
 OutputIt _CCCL_HOST cross_system_copy_n(cross_system<System1, System2> systems, InputIt begin, Size n, OutputIt result)
@@ -188,7 +188,7 @@ OutputIt _CCCL_HOST cross_system_copy_n(cross_system<System1, System2> systems, 
   }
 }
 
-#if _CCCL_HAS_CUDA_COMPILER()
+#if _CCCL_CUDA_COMPILATION()
 template <class Derived, class InputIt, class OutputIt>
 OutputIt THRUST_RUNTIME_FUNCTION
 device_to_device(execution_policy<Derived>& policy, InputIt first, InputIt last, OutputIt result)
@@ -229,10 +229,10 @@ device_to_device(execution_policy<Derived>& policy, InputIt first, InputIt last,
       policy, first, last, result, ::cuda::proclaim_copyable_arguments(::cuda::std::identity{}));
   }
 }
-#endif // _CCCL_HAS_CUDA_COMPILER()
+#endif // _CCCL_CUDA_COMPILATION()
 } // namespace __copy
 
-#if _CCCL_HAS_CUDA_COMPILER()
+#if _CCCL_CUDA_COMPILATION()
 
 _CCCL_EXEC_CHECK_DISABLE
 template <class System, class InputIterator, class OutputIterator>
@@ -253,7 +253,7 @@ copy_n(execution_policy<System>& system, InputIterator first, Size n, OutputIter
                       (result = thrust::copy_n(cvt_to_seq(derived_cast(system)), first, n, result);));
   return result;
 }
-#endif // _CCCL_HAS_CUDA_COMPILER()
+#endif // _CCCL_CUDA_COMPILATION()
 
 template <class System1, class System2, class InputIterator, class OutputIterator>
 OutputIterator _CCCL_HOST

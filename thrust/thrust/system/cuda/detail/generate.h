@@ -12,7 +12,7 @@
 #  pragma system_header
 #endif // no system header
 
-#if _CCCL_HAS_CUDA_COMPILER()
+#if _CCCL_CUDA_COMPILATION()
 #  include <cub/device/device_transform.cuh>
 
 #  include <thrust/system/cuda/detail/cdp_dispatch.h>
@@ -56,4 +56,4 @@ void _CCCL_HOST_DEVICE generate(execution_policy<Derived>& policy, OutputIt firs
 }
 } // namespace cuda_cub
 THRUST_NAMESPACE_END
-#endif
+#endif // _CCCL_CUDA_COMPILATION()

@@ -14,7 +14,7 @@ struct op_t
             class InputIterator4,
             class OutputIterator1,
             class OutputIterator2>
-  __host__ thrust::pair<OutputIterator1, OutputIterator2> operator()(
+  __host__ cuda::std::pair<OutputIterator1, OutputIterator2> operator()(
     const PolicyT& policy,
     InputIterator1 keys_first1,
     InputIterator1 keys_last1,

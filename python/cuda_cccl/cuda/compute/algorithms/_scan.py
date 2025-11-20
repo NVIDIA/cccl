@@ -71,14 +71,18 @@ class _Scan:
                 init_value_type_info = self.d_in_cccl.value_type
 
             case _bindings.InitKind.FUTURE_VALUE_INIT:
-                self.init_value_cccl = cccl.to_cccl_input_iter(init_value)
+                self.init_value_cccl = cccl.to_cccl_input_iter(
+                    cast(DeviceArrayLike, init_value)
+                )
                 value_type = numba.from_dtype(
                     protocols.get_dtype(cast(DeviceArrayLike, init_value))
                 )
                 init_value_type_info = self.init_value_cccl.value_type
 
             case _bindings.InitKind.VALUE_INIT:
-                self.init_value_cccl = cccl.to_cccl_value(init_value)
+                self.init_value_cccl = cccl.to_cccl_value(
+                    cast(np.ndarray | GpuStruct, init_value)
+                )
                 value_type = (
                     numba.from_dtype(init_value.dtype)
                     if isinstance(init_value, np.ndarray)
@@ -141,7 +145,9 @@ class _Scan:
 
             case _bindings.InitKind.VALUE_INIT:
                 self.init_value_cccl = cast(_bindings.Value, self.init_value_cccl)
-                self.init_value_cccl.state = to_cccl_value_state(init_value)
+                self.init_value_cccl.state = to_cccl_value_state(
+                    cast(np.ndarray | GpuStruct, init_value)
+                )
 
         stream_handle = validate_and_get_stream(stream)
 

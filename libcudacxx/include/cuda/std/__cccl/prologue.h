@@ -18,6 +18,7 @@
 
 #include <cuda/std/__cccl/compiler.h>
 #include <cuda/std/__cccl/diagnostic.h>
+#include <cuda/std/__cccl/dialect.h>
 
 // __declspec modifiers
 
@@ -270,6 +271,7 @@
 #endif // defined(clang)
 
 _CCCL_DIAG_PUSH
+_CCCL_NV_DIAG_PUSH()
 
 // disable some msvc warnings
 // https://github.com/microsoft/STL/blob/master/stl/inc/yvals_core.h#L353
@@ -285,5 +287,26 @@ _CCCL_DIAG_PUSH
 // warning C4800: 'boo': forcing value to bool 'true' or 'false' (performance warning)
 // warning C4996: 'meow': was declared deprecated
 _CCCL_DIAG_SUPPRESS_MSVC(4100 4127 4180 4197 4296 4324 4455 4503 4522 4668 4800 4996)
+
+// disable warnings about using C++23 features in C++20 (needed for if consteval)
+#if _CCCL_HAS_IF_CONSTEVAL_IN_CXX20()
+#  if _CCCL_COMPILER(GCC, >=, 12)
+_CCCL_DIAG_SUPPRESS_GCC("-Wc++23-extensions")
+#  endif // _CCCL_COMPILER(GCC, >=, 12)
+#  if _CCCL_COMPILER(CLANG, >=, 17)
+_CCCL_DIAG_SUPPRESS_CLANG("-Wc++23-extensions")
+#  else // ^^^ _CCCL_COMPILER(CLANG, >=, 17) ^^^ / vvv _CCCL_COMPILER(CLANG, <, 17) vvv
+_CCCL_DIAG_SUPPRESS_CLANG("-Wc++2b-extensions")
+#  endif // ^^^ _CCCL_COMPILER(CLANG, <, 17) ^^^
+_CCCL_DIAG_SUPPRESS_NVHPC(if_consteval_nonstandard)
+
+_CCCL_DIAG_SUPPRESS_NVCC(3215) // "if consteval" and "if not consteval" are not standard in this mode
+#endif // _CCCL_HAS_IF_CONSTEVAL_IN_CXX20()
+
+_CCCL_DIAG_SUPPRESS_NVHPC(is_constant_evaluated_in_nonconstexpr_context)
+
+_CCCL_DIAG_SUPPRESS_NVCC(3206) // "if consteval" and "if not consteval" are meaningless in a non-constexpr function
+_CCCL_DIAG_SUPPRESS_NVCC(3060) // call to __builtin_is_constant_evaluated appearing in a non-constexpr function always
+                               // produces "false"
 
 // NO include guards here (this file is included multiple times)
