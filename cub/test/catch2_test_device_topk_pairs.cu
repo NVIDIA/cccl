@@ -37,7 +37,7 @@ CUB_RUNTIME_FUNCTION static cudaError_t dispatch_topk_pairs(
   NumOutItemsT k,
   cudaStream_t stream = 0)
 {
-  auto stream_env = cuda::std::execution::prop{cuda::get_stream_t{}, cuda::stream_ref{stream}};
+  auto stream_env = cuda::stream_ref{stream};
   auto requirements =
     cuda::execution::require(cuda::execution::determinism::not_guaranteed, cuda::execution::output_ordering::unsorted);
 

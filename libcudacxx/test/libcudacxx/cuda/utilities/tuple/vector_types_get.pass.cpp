@@ -14,8 +14,6 @@
 
 #include "test_macros.h"
 
-_CCCL_SUPPRESS_DEPRECATED_PUSH
-
 template <class VType, class BaseType, size_t VSize>
 __host__ __device__ constexpr VType get_val()
 {
@@ -148,6 +146,11 @@ __host__ __device__ constexpr void test()
   test<Type##3, BaseType, 3>();            \
   test<Type##4, BaseType, 4>();
 
+#define EXPAND_VECTOR_TYPE_NO_VEC4(Type, BaseType) \
+  test<Type##1, BaseType, 1>();                    \
+  test<Type##2, BaseType, 2>();                    \
+  test<Type##3, BaseType, 3>();
+
 __host__ __device__ constexpr bool test_constexpr()
 {
   EXPAND_VECTOR_TYPE(char, signed char);
@@ -156,12 +159,12 @@ __host__ __device__ constexpr bool test_constexpr()
   EXPAND_VECTOR_TYPE(ushort, unsigned short);
   EXPAND_VECTOR_TYPE(int, int);
   EXPAND_VECTOR_TYPE(uint, unsigned int);
-  EXPAND_VECTOR_TYPE(long, long);
-  EXPAND_VECTOR_TYPE(ulong, unsigned long);
-  EXPAND_VECTOR_TYPE(longlong, long long);
-  EXPAND_VECTOR_TYPE(ulonglong, unsigned long long);
+  EXPAND_VECTOR_TYPE_NO_VEC4(long, long);
+  EXPAND_VECTOR_TYPE_NO_VEC4(ulong, unsigned long);
+  EXPAND_VECTOR_TYPE_NO_VEC4(longlong, long long);
+  EXPAND_VECTOR_TYPE_NO_VEC4(ulonglong, unsigned long long);
   EXPAND_VECTOR_TYPE(float, float);
-  EXPAND_VECTOR_TYPE(double, double);
+  EXPAND_VECTOR_TYPE_NO_VEC4(double, double);
 
 #if _CCCL_CTK_AT_LEAST(13, 0)
   test<long4_16a, long, 4>();
@@ -174,6 +177,12 @@ __host__ __device__ constexpr bool test_constexpr()
   test<ulonglong4_32a, unsigned long long, 4>();
   test<double4_16a, double, 4>();
   test<double4_32a, double, 4>();
+#else
+  test<long4, long, 4>();
+  test<ulong4, unsigned long, 4>();
+  test<longlong4, long long, 4>();
+  test<ulonglong4, unsigned long long, 4>();
+  test<double4, double, 4>();
 #endif // _CCCL_CTK_AT_LEAST(13, 0)
 
   test<dim3, unsigned int, 3, 0>();

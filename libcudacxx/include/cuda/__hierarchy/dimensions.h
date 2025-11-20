@@ -1,6 +1,6 @@
 //===----------------------------------------------------------------------===//
 //
-// Part of CUDA Experimental in CUDA C++ Core Libraries,
+// Part of libcu++, the C++ Standard Library for your entire system,
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
@@ -8,16 +8,16 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDAX__HIERARCHY_DIMENSIONS_CUH
-#define _CUDAX__HIERARCHY_DIMENSIONS_CUH
+#ifndef _CUDA___HIERARCHY_DIMENSIONS_H
+#define _CUDA___HIERARCHY_DIMENSIONS_H
 
+#include <cuda/std/__mdspan/extents.h>
 #include <cuda/std/functional>
-#include <cuda/std/mdspan>
 
 #include <cuda/std/__cccl/prologue.h>
 
-namespace cuda::experimental
-{
+_CCCL_BEGIN_NAMESPACE_CUDA
+
 template <class _Tp, size_t... _Extents>
 using dimensions = ::cuda::std::extents<_Tp, _Extents...>;
 
@@ -60,14 +60,14 @@ struct hierarchy_query_result : public dimensions<_Tp, _Extents...>
   using _Dims = dimensions<_Tp, _Extents...>;
   using _Dims::_Dims;
 
-  _CCCL_HOST_DEVICE constexpr hierarchy_query_result()
+  _CCCL_API constexpr hierarchy_query_result()
       : _Dims()
       , x(_Dims::extent(0))
       , y(_Dims::rank() > 1 ? _Dims::extent(1) : 1)
       , z(_Dims::rank() > 2 ? _Dims::extent(2) : 1)
   {}
 
-  _CCCL_HOST_DEVICE explicit constexpr hierarchy_query_result(const _Dims& dims)
+  _CCCL_API explicit constexpr hierarchy_query_result(const _Dims& dims)
       : _Dims(dims)
       , x(_Dims::extent(0))
       , y(_Dims::rank() > 1 ? _Dims::extent(1) : 1)
@@ -80,16 +80,18 @@ struct hierarchy_query_result : public dimensions<_Tp, _Extents...>
   const _Tp y;
   const _Tp z;
 
-  _CCCL_HOST_DEVICE constexpr operator dim3() const
+  _CCCL_API constexpr operator ::dim3() const
   {
-    return dim3(static_cast<uint32_t>(x), static_cast<uint32_t>(y), static_cast<uint32_t>(z));
+    return ::dim3(static_cast<::cuda::std::uint32_t>(x),
+                  static_cast<::cuda::std::uint32_t>(y),
+                  static_cast<::cuda::std::uint32_t>(z));
   }
 };
 
 namespace __detail
 {
 template <class _Op>
-[[nodiscard]] _CCCL_HOST_DEVICE constexpr size_t __merge_extents(size_t __e1, size_t __e2)
+[[nodiscard]] _CCCL_API constexpr size_t __merge_extents(size_t __e1, size_t __e2)
 {
   if (__e1 == ::cuda::std::dynamic_extent || __e2 == ::cuda::std::dynamic_extent)
   {
@@ -103,7 +105,7 @@ template <class _Op>
 }
 
 template <class _Dst, class _Op, class _T1, size_t... _E1, class _T2, size_t... _E2>
-[[nodiscard]] _CCCL_HOST_DEVICE constexpr auto
+[[nodiscard]] _CCCL_API constexpr auto
 __dims_op(const _Op& __op, const dimensions<_T1, _E1...>& __h1, const dimensions<_T2, _E2...>& __h2) noexcept
 {
   // For now target only 3 dim extents
@@ -117,26 +119,26 @@ __dims_op(const _Op& __op, const dimensions<_T1, _E1...>& __h1, const dimensions
 }
 
 template <class _Dst, class _T1, size_t... _E1, class _T2, size_t... _E2>
-[[nodiscard]] _CCCL_HOST_DEVICE constexpr auto
+[[nodiscard]] _CCCL_API constexpr auto
 __dims_product(const dimensions<_T1, _E1...>& __h1, const dimensions<_T2, _E2...>& __h2) noexcept
 {
-  return __dims_op<_Dst>(::cuda::std::multiplies(), __h1, __h2);
+  return __dims_op<_Dst>(::cuda::std::multiplies<void>(), __h1, __h2);
 }
 
 template <class _Dst, class _T1, size_t... _E1, class _T2, size_t... _E2>
-[[nodiscard]] _CCCL_HOST_DEVICE constexpr auto
+[[nodiscard]] _CCCL_API constexpr auto
 __dims_sum(const dimensions<_T1, _E1...>& __h1, const dimensions<_T2, _E2...>& __h2) noexcept
 {
-  return __dims_op<_Dst>(::cuda::std::plus(), __h1, __h2);
+  return __dims_op<_Dst>(::cuda::std::plus<void>(), __h1, __h2);
 }
 
 template <class _Tp, size_t... _Extents>
-[[nodiscard]] _CCCL_HOST_DEVICE constexpr auto __convert_to_query_result(const dimensions<_Tp, _Extents...>& __result)
+[[nodiscard]] _CCCL_API constexpr auto __convert_to_query_result(const dimensions<_Tp, _Extents...>& __result)
 {
   return hierarchy_query_result<_Tp, _Extents...>(__result);
 }
 
-[[nodiscard]] _CCCL_HOST_DEVICE constexpr auto __dim3_to_dims(const dim3& dims)
+[[nodiscard]] _CCCL_API constexpr auto __dim3_to_dims(const ::dim3& dims)
 {
   return dimensions<dimensions_index_type,
                     ::cuda::std::dynamic_extent,
@@ -145,7 +147,7 @@ template <class _Tp, size_t... _Extents>
 }
 
 template <class _TyTrunc, class _Index, class _Dims>
-[[nodiscard]] _CCCL_HOST_DEVICE constexpr auto __index_to_linear(const _Index& __index, const _Dims& __dims)
+[[nodiscard]] _CCCL_API constexpr auto __index_to_linear(const _Index& __index, const _Dims& __dims)
 {
   static_assert(_Dims::rank() == 3);
 
@@ -153,8 +155,8 @@ template <class _TyTrunc, class _Index, class _Dims>
        + __index.extent(0);
 }
 } // namespace __detail
-} // namespace cuda::experimental
+_CCCL_END_NAMESPACE_CUDA
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _CUDAX__HIERARCHY_DIMENSIONS_CUH
+#endif // _CUDA___HIERARCHY_DIMENSIONS_H

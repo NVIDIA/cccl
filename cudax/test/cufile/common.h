@@ -8,9 +8,27 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef __CUDAX_HIERARCHY___
-#define __CUDAX_HIERARCHY___
+#pragma once
 
-#include <cuda/experimental/__hierarchy/hierarchy_dimensions.cuh>
+#include <cstdio>
+#include <cstdlib>
+#include <string>
 
-#endif // __CUDAX_HIERARCHY___
+#include <fcntl.h>
+#include <unistd.h>
+
+void test_check_fd_is_valid(int fd)
+{
+  CUDAX_REQUIRE(fcntl(fd, F_GETFD) != -1);
+}
+
+void test_check_file_exists(const char* filename)
+{
+  CUDAX_REQUIRE(access(filename, F_OK) == 0);
+}
+
+void test_remove_file(const char* filename)
+{
+  test_check_file_exists(filename);
+  CUDAX_REQUIRE(std::remove(filename) == 0);
+}

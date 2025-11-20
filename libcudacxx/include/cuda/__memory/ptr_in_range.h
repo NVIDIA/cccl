@@ -21,7 +21,6 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__type_traits/is_constant_evaluated.h>
 #include <cuda/std/cstdint>
 #if _CCCL_HOST_COMPILATION()
 #  include <functional>
@@ -73,7 +72,7 @@ template <typename _Tp>
 template <typename _Tp>
 [[nodiscard]] _CCCL_API constexpr bool ptr_in_range(_Tp* __ptr, _Tp* __start, _Tp* __end) noexcept
 {
-  if (::cuda::std::__cccl_default_is_constant_evaluated())
+  _CCCL_IF_CONSTEVAL_DEFAULT
   {
     _CCCL_ASSERT(__end >= __start, "ptr_in_range: __end must be greater than __start");
     return __ptr >= __start && __ptr < __end; // UB is not possible in a constant expression
