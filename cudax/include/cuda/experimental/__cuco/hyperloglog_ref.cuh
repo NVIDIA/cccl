@@ -37,11 +37,11 @@ namespace cuda::experimental::cuco
 //! size of `cuda::experimental::cuco::hyperloglog(_ref)` in KB.
 //!
 //! Note: Values can also be specified as literals, e.g., 64.3_KB.
-using sketch_size_kb = detail::sketch_size_kb;
+using sketch_size_kb = detail::__sketch_size_kb_t;
 
 //! A strong type wrapper `cuda::experimental::cuco::standard_deviation` of `double`, for specifying the desired
 //! standard deviation for the cardinality estimate of `cuda::experimental::cuco::hyperloglog(_ref)`.
-using standard_deviation = detail::standard_deviation;
+using standard_deviation = detail::__standard_deviation_t;
 
 //! @brief A non-owning reference to a HyperLogLog sketch for approximating the number of distinct
 //! items in a multiset.

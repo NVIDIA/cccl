@@ -46,9 +46,9 @@
 
 namespace cuda::experimental::cuco::detail
 {
-CUDAX_CUCO_DEFINE_STRONG_TYPE(sketch_size_kb, double);
+CUDAX_CUCO_DEFINE_STRONG_TYPE(__sketch_size_kb_t, double);
 
-CUDAX_CUCO_DEFINE_STRONG_TYPE(standard_deviation, double);
+CUDAX_CUCO_DEFINE_STRONG_TYPE(__standard_deviation_t, double);
 
 //! @brief A GPU-accelerated utility for approximating the number of distinct items in a multiset.
 //!
@@ -87,7 +87,7 @@ public:
   _CCCL_API constexpr _HyperLogLog_Impl(::cuda::std::span<::cuda::std::byte> sketch_span, _Hash const& hash)
       : __hash{hash}
       , __precision{::cuda::std::countr_zero(
-          __sketch_bytes(static_cast<detail::sketch_size_kb>(sketch_span.size() / 1024.0)) / sizeof(register_type))}
+          __sketch_bytes(static_cast<detail::__sketch_size_kb_t>(sketch_span.size() / 1024.0)) / sizeof(register_type))}
       , __register_mask{(1ull << this->__precision) - 1}
       , __sketch{reinterpret_cast<register_type*>(sketch_span.data()), this->__sketch_bytes() / sizeof(register_type)}
   {
@@ -450,7 +450,7 @@ public:
   //! @param sketch_size_kb Upper bound sketch size in KB
   //!
   //! @return The number of bytes required for the sketch
-  [[nodiscard]] _CCCL_API static constexpr size_t __sketch_bytes(detail::sketch_size_kb __sketch_size_kb) noexcept
+  [[nodiscard]] _CCCL_API static constexpr size_t __sketch_bytes(detail::__sketch_size_kb_t __sketch_size_kb) noexcept
   {
     // minimum precision is 4 or 64 bytes
     return ::cuda::std::max(static_cast<size_t>(sizeof(register_type) * 1ull << 4),
@@ -463,7 +463,7 @@ public:
   //!
   //! @return The number of bytes required for the sketch
   [[nodiscard]] _CCCL_API static constexpr std::size_t
-  sketch_bytes(detail::standard_deviation __standard_deviation) noexcept
+  sketch_bytes(detail::__standard_deviation_t __standard_deviation) noexcept
   {
     // implementation taken from
     // https://github.com/apache/spark/blob/6a27789ad7d59cd133653a49be0bb49729542abe/sql/catalyst/src/main/scala/org/apache/spark/sql/catalyst/util/HyperLogLogPlusPlusHelper.scala#L43
