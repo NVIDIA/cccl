@@ -183,8 +183,9 @@ template <class _Tp>
   // Get the largest exponent that passes through the algorithm without issue.
   // This is ~(max_exponent / 4), with a small bias to make sure edge cases get caught
   // ~254 for double, ~30 for float
-  constexpr int32_t __max_allowed_exponent     = (__exp_max / 4) - 2;
-  constexpr __uint_t __max_allowed_val_as_uint = __uint_t(__max_allowed_exponent + __exp_max) << __mant_nbits;
+  constexpr int32_t __max_allowed_exponent = (__exp_max / 4) - 2;
+  constexpr __uint_t __max_allowed_val_as_uint =
+    (__uint_t(__max_allowed_exponent + __exp_max) << __mant_nbits) | __fp_explicit_bit_mask_of_v<_Tp>;
 
   //  Check if the largest component of __x is > 2^__max_allowed_exponent:
   _Tp __x_big_factor = _Tp{0};
@@ -201,7 +202,8 @@ template <class _Tp>
 
     // Get a factor such that (__max * __exp_mul_factor) <= __max_allowed_exponent
     const __uint_t __exp_reduce_factor =
-      __uint_t((2 * __exp_max) + __max_allowed_exponent - __exp_biased) << __mant_nbits;
+      (__uint_t((2 * __exp_max) + __max_allowed_exponent - __exp_biased) << __mant_nbits)
+      | __fp_explicit_bit_mask_of_v<_Tp>;
     const _Tp __exp_mul_factor = ::cuda::std::bit_cast<_Tp>(__exp_reduce_factor);
 
     // Scale down to a working range.
