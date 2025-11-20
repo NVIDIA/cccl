@@ -45,7 +45,7 @@ class _Finalizer
   // avoid confusion with the reference implementation.
 
 public:
-  //! @brief Contructs an HLL finalizer object.
+  //! @brief Constructs an HLL finalizer object.
   //!
   //! @param precision HLL precision parameter
   _CCCL_API constexpr _Finalizer(int __precision_)

@@ -234,7 +234,7 @@ public:
       else
       {
         // Computes sketch directly in global memory. (Fallback path in case there is not enough
-        // shared memory avalable)
+        // shared memory available)
         __kernel = reinterpret_cast<void const*>(hyperloglog_ns::__add_gmem<_InputIt, _HyperLogLog_Impl>);
 
         stf::cuda_safe_call(cudaOccupancyMaxPotentialBlockSize(&__grid_size, &__block_size, __kernel, 0));
@@ -474,7 +474,7 @@ public:
       static_cast<int32_t>(
         ::cuda::std::ceil(2.0 * ::cuda::std::log(1.106 / __standard_deviation) / ::cuda::std::log(2.0))));
 
-    // inverse of this function (ommitting the minimum precision constraint) is
+    // inverse of this function (omitting the minimum precision constraint) is
     // standard_deviation = 1.106 / exp((__precision_ * log(2.0)) / 2.0)
 
     return sizeof(register_type) * (1ull << __precision_);
@@ -508,7 +508,7 @@ private:
   //! @param __kernel The kernel function
   //! @param __shmem_bytes Number of requested dynamic shared memory bytes
   //!
-  //! @returns True iff kernel configuration is succesful
+  //! @returns True iff kernel configuration is successful
   template <typename _Kernel>
   [[nodiscard]] _CCCL_HOST constexpr bool __try_reserve_shmem(_Kernel __kernel, int __shmem_bytes) const
   {
