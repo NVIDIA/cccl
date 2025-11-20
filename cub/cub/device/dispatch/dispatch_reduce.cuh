@@ -740,9 +740,9 @@ template <
   typename KernelSource =
     DeviceReduceKernelSource<ArchPolicies, InputIteratorT, OutputIteratorT, OffsetT, ReductionOpT, InitT, AccumT, TransformOpT>,
   typename KernelLauncherFactory = CUB_DETAIL_DEFAULT_KERNEL_LAUNCHER_FACTORY>
-#if _CCCL_STD_VER >= 2020
+#if _CCCL_HAS_CONCEPTS()
   requires reduce_policy_hub<ArchPolicies>
-#endif
+#endif // _CCCL_HAS_CONCEPTS()
 CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
   void* d_temp_storage,
   size_t& temp_storage_bytes,

@@ -129,6 +129,9 @@ template <typename ArchPolicies,
           typename ReductionOpT,
           typename AccumT,
           typename TransformOpT>
+#if _CCCL_HAS_CONCEPTS()
+  requires reduce_policy_hub<ArchPolicies>
+#endif // _CCCL_HAS_CONCEPTS()
 CUB_DETAIL_KERNEL_ATTRIBUTES __launch_bounds__(int(
   ArchPolicies{}(::cuda::arch_id{CUB_PTX_ARCH / 10})
     .reduce_policy.block_threads)) void DeviceReduceKernel(InputIteratorT d_in,
@@ -219,6 +222,9 @@ template <typename ArchPolicies,
           typename InitT,
           typename AccumT,
           typename TransformOpT = ::cuda::std::identity>
+#if _CCCL_HAS_CONCEPTS()
+  requires reduce_policy_hub<ArchPolicies>
+#endif // _CCCL_HAS_CONCEPTS()
 CUB_DETAIL_KERNEL_ATTRIBUTES __launch_bounds__(
   int(ArchPolicies{}(::cuda::arch_id{CUB_PTX_ARCH / 10}).single_tile_policy.block_threads),
   1) void DeviceReduceSingleTileKernel(InputIteratorT d_in,
@@ -508,9 +514,9 @@ template <typename ArchPolicies,
           typename AccumT,
           typename InitT,
           typename TransformOpT>
-#if _CCCL_STD_VER >= 2020
+#if _CCCL_HAS_CONCEPTS()
   requires reduce_policy_hub<ArchPolicies>
-#endif
+#endif // _CCCL_HAS_CONCEPTS()
 CUB_DETAIL_KERNEL_ATTRIBUTES __launch_bounds__(int(
   ArchPolicies{}(::cuda::arch_id{CUB_PTX_ARCH / 10})
     .reduce_nondeterministic_policy

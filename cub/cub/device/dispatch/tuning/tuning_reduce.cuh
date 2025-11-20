@@ -20,9 +20,9 @@
 #include <cuda/__device/arch_id.h>
 #include <cuda/std/optional>
 
-#if _CCCL_STD_VER >= 2020
+#if _CCCL_HAS_CONCEPTS()
 #  include <cuda/std/concepts>
-#endif // _CCCL_STD_VER >= 2020
+#endif // _CCCL_HAS_CONCEPTS()
 
 #if !_CCCL_COMPILER(NVRTC)
 #  include <ostream>
@@ -94,7 +94,7 @@ struct reduce_arch_policy // equivalent of a policy for a single CUDA architectu
 #endif // !_CCCL_COMPILER(NVRTC)
 };
 
-#if _CCCL_STD_VER >= 2020
+#if _CCCL_HAS_CONCEPTS()
 _CCCL_API consteval void __needs_a_constexpr_value(auto) {}
 
 // TODO(bgruber): bikeshed name before we make the tuning API public
@@ -103,7 +103,7 @@ concept reduce_policy_hub = requires(T hub, ::cuda::arch_id arch) {
   { hub(arch) } -> ::cuda::std::same_as<reduce_arch_policy>;
   { __needs_a_constexpr_value(hub(arch)) };
 };
-#endif
+#endif // _CCCL_HAS_CONCEPTS()
 
 template <typename PolicyT, typename = void>
 struct ReducePolicyWrapper : PolicyT
@@ -477,9 +477,9 @@ struct arch_policies // equivalent to the policy_hub, holds policies for a bunch
   }
 };
 
-#if _CCCL_STD_VER >= 2020
+#if _CCCL_HAS_CONCEPTS()
 static_assert(reduce_policy_hub<arch_policies>);
-#endif // _CCCL_STD_VER >= 2020
+#endif // _CCCL_HAS_CONCEPTS()
 
 // stateless version which can be passed to kernels
 template <typename AccumT, typename OffsetT, typename ReductionOpT>

@@ -101,9 +101,9 @@ template <typename InputIteratorT,
             AccumT,
             TransformOpT>,
           typename KernelLauncherFactory = TripleChevronFactory>
-#if _CCCL_STD_VER >= 2020
+#if _CCCL_HAS_CONCEPTS()
   requires detail::reduce::reduce_policy_hub<ArchPolicies>
-#endif
+#endif // _CCCL_HAS_CONCEPTS()
 struct dispatch_nondeterministic_t
 {
   static_assert(detail::is_cuda_std_plus_v<ReductionOpT>,
