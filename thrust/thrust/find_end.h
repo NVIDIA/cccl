@@ -87,7 +87,8 @@ THRUST_NAMESPACE_BEGIN
  *  \endcode
  *
  *  \see find
- *  \see search
+ *  \see find_if
+ *  \see mismatch
  */
 template <typename DerivedPolicy, typename ForwardIterator1, typename ForwardIterator2>
 _CCCL_HOST_DEVICE ForwardIterator1 find_end(
@@ -121,7 +122,7 @@ _CCCL_HOST_DEVICE ForwardIterator1 find_end(
  * Iterator</a>.
  *  \tparam ForwardIterator2 is a model of <a href="https://en.cppreference.com/w/cpp/iterator/forward_iterator">Forward
  * Iterator</a>.
- *  \tparam BinaryPredicate is a model of <a href="https://en.cppreference.com/w/cpp/concepts/predicate">Binary
+ *  \tparam BinaryPredicate is a model of <a href="https://en.cppreference.com/w/cpp/named_req/BinaryPredicate">Binary
  * Predicate</a>.
  *
  *  \code
@@ -156,7 +157,8 @@ _CCCL_HOST_DEVICE ForwardIterator1 find_end(
  *  \endcode
  *
  *  \see find
- *  \see search
+ *  \see find_if
+ *  \see mismatch
  */
 template <typename DerivedPolicy, typename ForwardIterator1, typename ForwardIterator2, typename BinaryPredicate>
 _CCCL_HOST_DEVICE ForwardIterator1 find_end(
@@ -208,7 +210,8 @@ _CCCL_HOST_DEVICE ForwardIterator1 find_end(
  *  \endcode
  *
  *  \see find
- *  \see search
+ *  \see find_if
+ *  \see mismatch
  */
 template <typename ForwardIterator1, typename ForwardIterator2>
 ForwardIterator1
@@ -234,7 +237,7 @@ find_end(ForwardIterator1 first1, ForwardIterator1 last1, ForwardIterator2 first
  * Iterator</a>.
  *  \tparam ForwardIterator2 is a model of <a href="https://en.cppreference.com/w/cpp/iterator/forward_iterator">Forward
  * Iterator</a>.
- *  \tparam BinaryPredicate is a model of <a href="https://en.cppreference.com/w/cpp/concepts/predicate">Binary
+ *  \tparam BinaryPredicate is a model of <a href="https://en.cppreference.com/w/cpp/named_req/BinaryPredicate">Binary
  * Predicate</a>.
  *
  *  \code
@@ -269,7 +272,8 @@ find_end(ForwardIterator1 first1, ForwardIterator1 last1, ForwardIterator2 first
  *  \endcode
  *
  *  \see find
- *  \see search
+ *  \see find_if
+ *  \see mismatch
  */
 template <typename ForwardIterator1, typename ForwardIterator2, typename BinaryPredicate>
 ForwardIterator1 find_end(
