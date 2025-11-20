@@ -42,11 +42,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA
 template <typename _Group>
 [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE bool __elect_from_group(const _Group& __g) noexcept
 {
-  // cooperative groups maps a multidimensional thread id into the thread rank the same way as warps do
-  const unsigned int tid             = __g.thread_rank();
-  const unsigned int warp_id         = tid / 32;
-  const unsigned int uniform_warp_id = __shfl_sync(0xFFFFFFFF, warp_id, 0); // broadcast from lane 0
-  return uniform_warp_id == 0 && ::cuda::ptx::elect_sync(0xFFFFFFFF); // elect a leader thread among warp 0
+  return __g.thread_rank() == 0;
 }
 
 extern "C" _CCCL_DEVICE void __cuda_ptx_cp_async_bulk_shared_global_is_not_supported_before_SM_90__();
