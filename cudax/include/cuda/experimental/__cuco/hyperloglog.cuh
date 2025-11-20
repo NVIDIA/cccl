@@ -43,21 +43,21 @@ namespace cuda::experimental::cuco
 //! @note This implementation is based on the HyperLogLog++ algorithm:
 //! https://static.googleusercontent.com/media/research.google.com/de//pubs/archive/40671.pdf.
 //!
-//! @tparam _T Type of items to count
+//! @tparam _Tp Type of items to count
 //! @tparam _MemoryResourceRef Type of non-owning memory resource used for device storage
 //! @tparam _Scope The scope in which operations will be performed by individual threads
 //! @tparam _Hash Hash function used to hash items
-template <class _T,
+template <class _Tp,
           class _MemoryResourceRef    = ::cuda::device_memory_pool_ref,
           ::cuda::thread_scope _Scope = ::cuda::thread_scope_device,
-          class _Hash = ::cuda::experimental::cuco::hash<_T, ::cuda::experimental::cuco::hash_algorithm::xxhash_64>>
+          class _Hash = ::cuda::experimental::cuco::hash<_Tp, ::cuda::experimental::cuco::hash_algorithm::xxhash_64>>
 class hyperloglog
 {
 public:
   static constexpr auto thread_scope = _Scope; ///< CUDA thread scope
 
   template <::cuda::thread_scope _NewScope = thread_scope>
-  using ref_type = hyperloglog_ref<_T, _NewScope, _Hash>; ///< Non-owning reference type
+  using ref_type = hyperloglog_ref<_Tp, _NewScope, _Hash>; ///< Non-owning reference type
 
   using value_type    = typename ref_type<>::value_type; ///< Type of items to count
   using hasher        = typename ref_type<>::hasher; ///< Hash function type
@@ -190,7 +190,7 @@ public:
   //!
   //! @tparam _InputIt Device accessible random access input iterator where
   //! <tt>std::is_convertible<std::iterator_traits<_InputIt>::value_type,
-  //! _T></tt> is `true`
+  //! _Tp></tt> is `true`
   //!
   //! @param __first Beginning of the sequence of items
   //! @param __last End of the sequence of items
@@ -209,7 +209,7 @@ public:
   //!
   //! @tparam _InputIt Device accessible random access input iterator where
   //! <tt>std::is_convertible<std::iterator_traits<_InputIt>::value_type,
-  //! _T></tt> is `true`
+  //! _Tp></tt> is `true`
   //!
   //! @param __first Beginning of the sequence of items
   //! @param __last End of the sequence of items
@@ -302,7 +302,7 @@ private:
 
   // Needs to be friends with other instantiations of this class template to have access to their
   // storage
-  template <class _T_, class _MemoryResourceRef_, ::cuda::thread_scope _Scope_, class _Hash_>
+  template <class _Tp_, class _MemoryResourceRef_, ::cuda::thread_scope _Scope_, class _Hash_>
   friend class hyperloglog;
 };
 } // namespace cuda::experimental::cuco

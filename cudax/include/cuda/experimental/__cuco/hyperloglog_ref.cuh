@@ -49,15 +49,15 @@ using standard_deviation = detail::__standard_deviation_t;
 //! @note This implementation is based on the HyperLogLog++ algorithm:
 //! https://static.googleusercontent.com/media/research.google.com/de//pubs/archive/40671.pdf.
 //!
-//! @tparam _T Type of items to count
+//! @tparam _Tp Type of items to count
 //! @tparam _Scope The scope in which operations will be performed by individual threads
 //! @tparam _Hash Hash function used to hash items
-template <class _T,
+template <class _Tp,
           ::cuda::thread_scope _Scope = ::cuda::thread_scope_device,
-          class _Hash = ::cuda::experimental::cuco::hash<_T, ::cuda::experimental::cuco::hash_algorithm::xxhash_64>>
+          class _Hash = ::cuda::experimental::cuco::hash<_Tp, ::cuda::experimental::cuco::hash_algorithm::xxhash_64>>
 class hyperloglog_ref
 {
-  using __impl_type = detail::_HyperLogLog_Impl<_T, _Scope, _Hash>;
+  using __impl_type = detail::_HyperLogLog_Impl<_Tp, _Scope, _Hash>;
 
 public:
   static constexpr auto thread_scope = __impl_type::thread_scope; ///< CUDA thread scope
@@ -67,7 +67,7 @@ public:
   using register_type = typename __impl_type::register_type; ///< HLL register type
 
   template <::cuda::thread_scope _NewScope>
-  using with_scope = hyperloglog_ref<_T, _NewScope, _Hash>; ///< Ref type with different thread scope
+  using with_scope = hyperloglog_ref<_Tp, _NewScope, _Hash>; ///< Ref type with different thread scope
 
   //! @brief Constructs a non-owning `hyperloglog_ref` object.
   //!
@@ -115,7 +115,7 @@ public:
   //! @brief Adds an item to the estimator.
   //!
   //! @param __item The item to be counted
-  _CCCL_DEVICE constexpr void add(_T const& __item) noexcept
+  _CCCL_DEVICE constexpr void add(_Tp const& __item) noexcept
   {
     __impl.__add(__item);
   }
@@ -124,7 +124,7 @@ public:
   //!
   //! @tparam _InputIt Device accessible random access input iterator where
   //! <tt>std::is_convertible<std::iterator_traits<_InputIt>::value_type,
-  //! _T></tt> is `true`
+  //! _Tp></tt> is `true`
   //!
   //! @param __first Beginning of the sequence of items
   //! @param __last End of the sequence of items
@@ -143,7 +143,7 @@ public:
   //!
   //! @tparam _InputIt Device accessible random access input iterator where
   //! <tt>std::is_convertible<std::iterator_traits<_InputIt>::value_type,
-  //! _T></tt> is `true`
+  //! _Tp></tt> is `true`
   //!
   //! @param __first Beginning of the sequence of items
   //! @param __last End of the sequence of items
@@ -165,7 +165,7 @@ public:
   //! @param __group CUDA Cooperative group this operation is executed in
   //! @param __other Other estimator reference to be merged into `*this`
   template <class _CG, ::cuda::thread_scope _OtherScope>
-  _CCCL_DEVICE constexpr void merge(_CG __group, hyperloglog_ref<_T, _OtherScope, _Hash> const& __other)
+  _CCCL_DEVICE constexpr void merge(_CG __group, hyperloglog_ref<_Tp, _OtherScope, _Hash> const& __other)
   {
     __impl.__merge(__group, __other.__impl);
   }
@@ -250,7 +250,7 @@ public:
 private:
   __impl_type __impl; ///< Implementation object
 
-  template <class _T_, ::cuda::thread_scope _Scope_, class _Hash_>
+  template <class _Tp_, ::cuda::thread_scope _Scope_, class _Hash_>
   friend class hyperloglog_ref;
 };
 } // namespace cuda::experimental::cuco

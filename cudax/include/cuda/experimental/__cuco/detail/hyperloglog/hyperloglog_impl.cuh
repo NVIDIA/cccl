@@ -55,25 +55,25 @@ CUDAX_CUCO_DEFINE_STRONG_TYPE(__standard_deviation_t, double);
 //! @note This class implements the HyperLogLog/HyperLogLog++ algorithm:
 //! https://static.googleusercontent.com/media/research.google.com/de//pubs/archive/40671.pdf.
 //!
-//! @tparam _T Type of items to count
+//! @tparam _Tp Type of items to count
 //! @tparam _Scope The scope in which operations will be performed by individual threads
 //! @tparam _Hash Hash function used to hash items
-template <class _T, ::cuda::thread_scope _Scope, class _Hash>
+template <class _Tp, ::cuda::thread_scope _Scope, class _Hash>
 class _HyperLogLog_Impl
 {
   // We use `int` here since this is the smallest type that supports native `atomicMax` on GPUs
   using __fp_type         = double; ///< Floating point type used for reduction
-  using __hash_value_type = decltype(::cuda::std::declval<_Hash>()(::cuda::std::declval<_T>())); ///< Hash value type
+  using __hash_value_type = decltype(::cuda::std::declval<_Hash>()(::cuda::std::declval<_Tp>())); ///< Hash value type
 
 public:
   static constexpr auto thread_scope = _Scope; ///< CUDA thread scope
 
-  using value_type    = _T; ///< Type of items to count
+  using value_type    = _Tp; ///< Type of items to count
   using hasher        = _Hash; ///< Hash function type
   using register_type = int; ///< HLL register type
 
   template <::cuda::thread_scope _NewScope>
-  using with_scope = _HyperLogLog_Impl<_T, _NewScope, _Hash>; ///< Ref type with different thread scope
+  using with_scope = _HyperLogLog_Impl<_Tp, _NewScope, _Hash>; ///< Ref type with different thread scope
 
   //! @brief Constructs a non-owning `_HyperLogLog_Impl` object.
   //!
@@ -138,7 +138,7 @@ public:
   //! @brief Adds an item to the estimator.
   //!
   //! @param item The item to be counted
-  _CCCL_DEVICE constexpr void __add(_T const& __item) noexcept
+  _CCCL_DEVICE constexpr void __add(_Tp const& __item) noexcept
   {
     auto const __h      = this->__hash(__item);
     auto const __reg    = __h & this->__register_mask;
@@ -155,7 +155,7 @@ public:
   //!
   //! @tparam _InputIt Device accessible random access input iterator where
   //! <tt>std::is_convertible<std::iterator_traits<_InputIt>::value_type,
-  //! _T></tt> is `true`
+  //! _Tp></tt> is `true`
   //!
   //! @param __first Beginning of the sequence of items
   //! @param __last End of the sequence of items
@@ -251,7 +251,7 @@ public:
   //!
   //! @tparam _InputIt Device accessible random access input iterator where
   //! <tt>std::is_convertible<std::iterator_traits<_InputIt>::value_type,
-  //! _T></tt> is `true`
+  //! _Tp></tt> is `true`
   //!
   //! @param __first Beginning of the sequence of items
   //! @param __last End of the sequence of items
@@ -273,7 +273,7 @@ public:
   //! @param __group CUDA Cooperative group this operation is executed in
   //! @param __other Other estimator reference to be merged into `*this`
   template <class _CG, ::cuda::thread_scope _OtherScope>
-  _CCCL_DEVICE constexpr void __merge(_CG __group, _HyperLogLog_Impl<_T, _OtherScope, _Hash> const& __other)
+  _CCCL_DEVICE constexpr void __merge(_CG __group, _HyperLogLog_Impl<_Tp, _OtherScope, _Hash> const& __other)
   {
     // TODO find a better way to do error handling in device code
     // if (__other.__precision != this->__precision) { __trap(); }
@@ -295,7 +295,7 @@ public:
   //! @param other Other estimator reference to be merged into `*this`
   //! @param stream CUDA stream this operation is executed in
   template <::cuda::thread_scope _OtherScope>
-  _CCCL_HOST constexpr void merge_async(_HyperLogLog_Impl<_T, _OtherScope, _Hash> const& __other, ::cuda::stream_ref __stream)
+  _CCCL_HOST constexpr void merge_async(_HyperLogLog_Impl<_Tp, _OtherScope, _Hash> const& __other, ::cuda::stream_ref __stream)
   {
     CUCO_EXPECTS(__other.__precision == this->__precision, "Cannot merge estimators with different sketch sizes");
     auto constexpr __block_size = 1024;
@@ -314,7 +314,7 @@ public:
   //! @param other Other estimator reference to be merged into `*this`
   //! @param stream CUDA stream this operation is executed in
   template <::cuda::thread_scope _OtherScope>
-  _CCCL_HOST constexpr void merge(_HyperLogLog_Impl<_T, _OtherScope, _Hash> const& __other, ::cuda::stream_ref __stream)
+  _CCCL_HOST constexpr void merge(_HyperLogLog_Impl<_Tp, _OtherScope, _Hash> const& __other, ::cuda::stream_ref __stream)
   {
     this->merge_async(__other, __stream);
     __stream.sync();
@@ -534,7 +534,7 @@ private:
   __hash_value_type __register_mask; ///< Mask used to separate register index from count
   ::cuda::std::span<register_type> __sketch; ///< HLL sketch storage
 
-  template <class _T_, ::cuda::thread_scope _Scope_, class _Hash_>
+  template <class _Tp_, ::cuda::thread_scope _Scope_, class _Hash_>
   friend struct _HyperLogLog_Impl;
 };
 } // namespace cuda::experimental::cuco::detail
