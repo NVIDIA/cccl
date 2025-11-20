@@ -1,14 +1,15 @@
 //===----------------------------------------------------------------------===//
 //
-// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// Part of CUDA Experimental in CUDA C++ Core Libraries,
+// under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 // SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDA_EXPERIMENTAL___SIMD_DECLARATION_H
-#define _CUDA_EXPERIMENTAL___SIMD_DECLARATION_H
+#ifndef _CUDAX___SIMD_DECLARATION_H
+#define _CUDAX___SIMD_DECLARATION_H
 
 #include <cuda/std/detail/__config>
 
@@ -19,9 +20,6 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
-
-#include <cuda/std/__cstddef/size_t.h>
-#include <cuda/std/experimental/__simd/config.h>
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -36,6 +34,12 @@ struct __fixed_size;
 
 template <int _Np>
 using fixed_size = __fixed_size<_Np>;
+
+template <typename>
+using compatible = fixed_size<1>;
+
+template <typename>
+using native = fixed_size<1>;
 } // namespace simd_abi
 
 template <typename _Tp, typename _Abi>
@@ -65,4 +69,4 @@ class basic_simd_mask;
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _CUDA_EXPERIMENTAL___SIMD_DECLARATION_H
+#endif // _CUDAX___SIMD_DECLARATION_H

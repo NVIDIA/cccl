@@ -1,6 +1,7 @@
 //===----------------------------------------------------------------------===//
 //
 // Part of CUDA Experimental in CUDA C++ Core Libraries,
+// under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 // SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
@@ -20,9 +21,8 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__cstddef/::cuda::std::size_t.h>
+#include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__type_traits/enable_if.h>
-#include <cuda/std/__type_traits/is_integral.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/remove_cvref.h>
 #include <cuda/std/__utility/forward.h>
@@ -47,10 +47,10 @@ class simd : public __simd_operations<_Tp, simd_abi::fixed_size<_Np>>
 public:
   using value_type = _Tp;
   using reference  = __simd_reference<_Tp, _Storage, value_type>;
-  using mask_type  = simd_mask<_Tp, _Abi>;
-  using abi_type   = _Abi;
+  using mask_type  = simd_mask<_Tp, _Np>;
+  using abi_type   = simd_abi::fixed_size<_Np>;
 
-  _CCCL_API static constexpr ::cuda::std::size_t size() noexcept
+  [[nodiscard]] _CCCL_API static constexpr ::cuda::std::size_t size() noexcept
   {
     return simd_size_v<value_type, abi_type>;
   }
@@ -70,16 +70,18 @@ public:
       : __s_(__s)
   {}
 
-  template <class _Up, ::cuda::std::enable_if_t<__can_broadcast_v<value_type, remove_cvref_t<_Up>>, int> = 0>
+  template <typename _Up,
+            ::cuda::std::enable_if_t<__can_broadcast_v<value_type, ::cuda::std::remove_cvref_t<_Up>>, int> = 0>
   _CCCL_API simd(_Up&& __v) noexcept
       : __s_(_Impl::__broadcast(static_cast<value_type>(::cuda::std::forward<_Up>(__v))))
   {}
 
-  template <class _Up,
-            ::cuda::std::enable_if_t<!is_same_v<_Up, _Tp> && is_same_v<abi_type, simd_abi::fixed_size<size()>>
-                                       && __is_non_narrowing_convertible_v<_Up, value_type>,
-                                     int> = 0>
-  _CCCL_API simd(const simd<_Up, simd_abi::fixed_size<size()>>& __v) noexcept
+  template <typename _Up,
+            ::cuda::std::enable_if_t<
+              !::cuda::std::is_same_v<_Up, _Tp> && ::cuda::std::is_same_v<abi_type, simd_abi::fixed_size<size()>>
+                && __is_non_narrowing_convertible_v<_Up, value_type>,
+              int> = 0>
+  _CCCL_API simd(const simd<_Up, size()>& __v) noexcept
   {
     for (::cuda::std::size_t __i = 0; __i < size(); __i++)
     {
@@ -87,29 +89,29 @@ public:
     }
   }
 
-  template <class _Generator, ::cuda::std::enable_if_t<__can_generate_v<value_type, _Generator, size()>, int> = 0>
+  template <typename _Generator, ::cuda::std::enable_if_t<__can_generate_v<value_type, _Generator, size()>, int> = 0>
   _CCCL_API explicit simd(_Generator&& __g) noexcept
       : __s_(_Impl::__generate(::cuda::std::forward<_Generator>(__g)))
   {}
 
-  template <class _Up,
-            class _Flags,
+  template <typename _Up,
+            typename _Flags,
             ::cuda::std::enable_if_t<__is_vectorizable_v<_Up> && is_simd_flag_type_v<_Flags>, int> = 0>
   _CCCL_API simd(const _Up* __mem, _Flags)
   {
     _Impl::__load(__s_, _Flags::template __apply<simd>(__mem));
   }
 
-  template <class _Up,
-            class _Flags,
+  template <typename _Up,
+            typename _Flags,
             ::cuda::std::enable_if_t<__is_vectorizable_v<_Up> && is_simd_flag_type_v<_Flags>, int> = 0>
   _CCCL_API void copy_from(const _Up* __mem, _Flags)
   {
     _Impl::__load(__s_, _Flags::template __apply<simd>(__mem));
   }
 
-  template <class _Up,
-            class _Flags,
+  template <typename _Up,
+            typename _Flags,
             ::cuda::std::enable_if_t<__is_vectorizable_v<_Up> && is_simd_flag_type_v<_Flags>, int> = 0>
   _CCCL_API void copy_to(_Up* __mem, _Flags) const
   {
@@ -233,14 +235,14 @@ public:
   }
 };
 
-template <class _Tp, class _Abi>
-inline constexpr bool is_simd_v<simd<_Tp, _Abi>> = true;
+template <typename _Tp, typename _Abi>
+inline constexpr bool is_simd_v<basic_simd<_Tp, _Abi>> = true;
 
-template <class _Tp>
+template <typename _Tp>
 using native_simd = simd<_Tp, simd_abi::native<_Tp>>;
 
-template <class _Tp, int _Np>
-using fixed_size_simd = simd<_Tp, simd_abi::fixed_size<_Np>>;
+template <typename _Tp, int _Np>
+using fixed_size_simd = simd<_Tp, _Np>;
 } // namespace cuda::experimental::datapar
 
 #include <cuda/std/__cccl/epilogue.h>

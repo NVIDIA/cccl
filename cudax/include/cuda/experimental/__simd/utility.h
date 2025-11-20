@@ -1,15 +1,15 @@
-// -*- C++ -*-
 //===----------------------------------------------------------------------===//
 //
-// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// Part of CUDA Experimental in CUDA C++ Core Libraries,
+// under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 // SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDA_STD_EXPERIMENTAL___SIMD_UTILITY_H
-#define _CUDA_STD_EXPERIMENTAL___SIMD_UTILITY_H
+#ifndef _CUDAX___SIMD_UTILITY_H
+#define _CUDAX___SIMD_UTILITY_H
 
 #include <cuda/std/detail/__config>
 
@@ -21,80 +21,75 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/experimental/__simd/config.h>
-#include <cuda/std/limits>
+#include <cuda/std/__cstddef/types.h>
+#include <cuda/std/__limits/numeric_limits.h>
+#include <cuda/std/__type_traits/integral_constant.h>
+#include <cuda/std/__type_traits/is_arithmetic.h>
+#include <cuda/std/__type_traits/is_const.h>
+#include <cuda/std/__type_traits/is_convertible.h>
+#include <cuda/std/__type_traits/is_same.h>
+#include <cuda/std/__type_traits/is_unsigned_integer.h>
+#include <cuda/std/__type_traits/is_volatile.h>
+#include <cuda/std/__type_traits/make_nbit_int.h>
+#include <cuda/std/__type_traits/num_bits.h>
+#include <cuda/std/__type_traits/void_t.h>
+#include <cuda/std/__utility/declval.h>
 
-#if _LIBCUDACXX_EXPERIMENTAL_SIMD_ENABLED
+#include <cuda/std/__cccl/prologue.h>
 
-#  include <cuda/std/__cstddef/size_t.h>
-#  include <cuda/std/__type_traits/is_arithmetic.h>
-#  include <cuda/std/__type_traits/is_const.h>
-#  include <cuda/std/__type_traits/is_constant_evaluated.h>
-#  include <cuda/std/__type_traits/is_convertible.h>
-#  include <cuda/std/__type_traits/is_same.h>
-#  include <cuda/std/__type_traits/is_unsigned.h>
-#  include <cuda/std/__type_traits/is_volatile.h>
-#  include <cuda/std/__type_traits/void_t.h>
-#  include <cuda/std/__utility/declval.h>
-#  include <cuda/std/__utility/integer_sequence.h>
-#  include <cuda/std/cstdint>
-#  include <cuda/std/__cccl/prologue.h>
-
-_CCCL_BEGIN_NAMESPACE_CUDA_STD
-
-namespace experimental
+namespace cuda::experimental::datapar
 {
-inline namespace parallelism_v2
+template <typename _Tp>
+[[nodiscard]] _CCCL_API constexpr auto __set_all_bits(bool __v) noexcept
 {
+  static_assert(::cuda::std::__cccl_is_unsigned_integer_v<_Tp>, "set_all_bits() requires unsigned integer types");
+  using _Up = ::cuda::std::__make_nbit_uint_t<::cuda::std::__num_bits_v<_Tp>>;
+  return __v ? (::cuda::std::numeric_limits<_Up>::max()) : 0;
+}
 
-template <class _Tp>
+template <typename _Tp>
 inline constexpr bool __is_vectorizable_v =
-  is_arithmetic_v<_Tp> && !is_const_v<_Tp> && !is_volatile_v<_Tp> && !is_same_v<_Tp, bool>;
+  ::cuda::std::is_arithmetic_v<_Tp> && !::cuda::std::is_const_v<_Tp> && !::cuda::std::is_volatile_v<_Tp>
+  && !::cuda::std::is_same_v<_Tp, bool>;
 
 template <class _From, class _To, class = void>
 inline constexpr bool __is_non_narrowing_convertible_v = false;
 
-template <class _From, class _To>
+template <typename _From, typename _To>
 inline constexpr bool
-  __is_non_narrowing_convertible_v<_From, _To, ::cuda::std::void_t<decltype(_To{::cuda::std::declval<_From>()})>> = true;
+  __is_non_narrowing_convertible_v<_From, _To, ::cuda::std::void_t<decltype(_To{::cuda::std::declval<_From>()})>> =
+    true;
 
-template <class _Tp, class _Up>
+template <typename _Tp, typename _Up>
 inline constexpr bool __can_broadcast_v =
-  (__is_vectorizable_v<_Up> && __is_non_narrowing_convertible_v<_Up, _Tp>) ||
-  (!__is_vectorizable_v<_Up> && is_convertible_v<_Up, _Tp>) || is_same_v<_Up, int> ||
-  (is_same_v<_Up, unsigned int> && is_unsigned_v<_Tp>);
+  (__is_vectorizable_v<_Up> && __is_non_narrowing_convertible_v<_Up, _Tp>)
+  || (!__is_vectorizable_v<_Up> && ::cuda::std::is_convertible_v<_Up, _Tp>) || ::cuda::std::is_same_v<_Up, int>
+  || (::cuda::std::is_same_v<_Up, unsigned int> && ::cuda::std::is_unsigned_v<_Tp>);
 
-template <class _Tp, class _Generator, size_t _Idx, class = void>
+template <typename _Tp, typename _Generator, size_t _Idx, typename = void>
 inline constexpr bool __is_well_formed = false;
 
-template <class _Tp, class _Generator, size_t _Idx>
-inline constexpr bool
-  __is_well_formed<_Tp,
-                   _Generator,
-                   _Idx,
-                   ::cuda::std::void_t<decltype(::cuda::std::declval<_Generator>()(
-                     ::cuda::std::integral_constant<size_t, _Idx>())))> =
-    __can_broadcast_v<_Tp,
-                      decltype(::cuda::std::declval<_Generator>()(::cuda::std::integral_constant<size_t, _Idx>()))>;
+template <typename _Tp, typename _Generator, size_t _Idx>
+inline constexpr bool __is_well_formed<_Tp,
+                                       _Generator,
+                                       _Idx,
+                                       ::cuda::std::void_t<decltype(::cuda::std::declval<_Generator>()(
+                                         ::cuda::std::integral_constant<::cuda::std::size_t, _Idx>()))>> =
+  __can_broadcast_v<
+    _Tp,
+    decltype(::cuda::std::declval<_Generator>()(::cuda::std::integral_constant<::cuda::std::size_t, _Idx>()))>;
 
-template <class _Tp, class _Generator, size_t... _Idxes>
+template <typename _Tp, typename _Generator, size_t... _Idxes>
 _CCCL_HIDE_FROM_ABI constexpr bool __can_generate(::cuda::std::index_sequence<_Idxes...>)
 {
   return (true && ... && __is_well_formed<_Tp, _Generator, _Idxes>);
 }
 
-template <class _Tp, class _Generator, size_t _Size>
+template <typename _Tp, typename _Generator, size_t _Size>
 inline constexpr bool __can_generate_v =
-  experimental::__can_generate<_Tp, _Generator>(::cuda::std::make_index_sequence<_Size>());
+  ::cuda::experimental::datapar::__can_generate<_Tp, _Generator>(::cuda::std::make_index_sequence<_Size>());
+} // namespace cuda::experimental::datapar
 
-} // namespace parallelism_v2
-} // namespace experimental
+#include <cuda/std/__cccl/epilogue.h>
 
-_CCCL_END_NAMESPACE_CUDA_STD
-
-#  include <cuda/std/__cccl/epilogue.h>
-
-#endif // _LIBCUDACXX_EXPERIMENTAL_SIMD_ENABLED
-
-#endif // _CUDA_STD_EXPERIMENTAL___SIMD_UTILITY_H
-
+#endif // _CUDAX___SIMD_UTILITY_H

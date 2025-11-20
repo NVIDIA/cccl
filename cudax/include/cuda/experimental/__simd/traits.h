@@ -1,15 +1,15 @@
-// -*- C++ -*-
 //===----------------------------------------------------------------------===//
 //
-// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// Part of CUDA Experimental in CUDA C++ Core Libraries,
+// under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 // SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDA_STD_EXPERIMENTAL___SIMD_TRAITS_H
-#define _CUDA_STD_EXPERIMENTAL___SIMD_TRAITS_H
+#ifndef _CUDAX___SIMD_TRAITS_H
+#define _CUDAX___SIMD_TRAITS_H
 
 #include <cuda/std/detail/__config>
 
@@ -21,65 +21,51 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/experimental/__simd/config.h>
-#include <cuda/std/experimental/__simd/declaration.h>
-#include <cuda/std/experimental/__simd/utility.h>
+#include <cuda/std/__cstddef/types.h>
+#include <cuda/std/__type_traits/integral_constant.h>
 
-#if _LIBCUDACXX_EXPERIMENTAL_SIMD_ENABLED
+#include <cuda/experimental/__simd/declaration.h>
+#include <cuda/experimental/__simd/utility.h>
 
-#  include <cuda/std/__bit/bit_ceil.h>
-#  include <cuda/std/__cstddef/size_t.h>
-#  include <cuda/std/__type_traits/integral_constant.h>
-#  include <cuda/std/__type_traits/is_same.h>
-#  include <cuda/std/__cccl/prologue.h>
+#include <cuda/std/__cccl/prologue.h>
 
-_CCCL_BEGIN_NAMESPACE_CUDA_STD
-
-namespace experimental
+namespace cuda::experimental::datapar
 {
-inline namespace parallelism_v2
-{
-
-template <class _Tp>
+template <typename _Tp>
 inline constexpr bool is_abi_tag_v = false;
 
-template <class _Tp>
-struct is_abi_tag : bool_constant<is_abi_tag_v<_Tp>>
+template <typename _Tp>
+struct is_abi_tag : ::cuda::std::bool_constant<is_abi_tag_v<_Tp>>
 {};
 
-template <class _Tp>
+template <typename _Tp>
 inline constexpr bool is_simd_v = false;
 
-template <class _Tp>
-struct is_simd : bool_constant<is_simd_v<_Tp>>
+template <typename _Tp>
+struct is_simd : ::cuda::std::bool_constant<is_simd_v<_Tp>>
 {};
 
-template <class _Tp>
+template <typename _Tp>
 inline constexpr bool is_simd_flag_type_v = false;
 
-template <class _Tp>
-struct is_simd_flag_type : bool_constant<is_simd_flag_type_v<_Tp>>
+template <typename _Tp>
+struct is_simd_flag_type : ::cuda::std::bool_constant<is_simd_flag_type_v<_Tp>>
 {};
 
-template <class _Tp, class _Abi = simd_abi::compatible<_Tp>, bool = (__is_vectorizable_v<_Tp> && is_abi_tag_v<_Abi>)>
-struct simd_size : integral_constant<size_t, _Abi::__simd_size>
+template <typename _Tp,
+          typename _Abi = simd_abi::compatible<_Tp>,
+          bool          = (__is_vectorizable_v<_Tp> && is_abi_tag_v<_Abi>)>
+struct simd_size : ::cuda::std::integral_constant<::cuda::std::size_t, _Abi::__simd_size>
 {};
 
-template <class _Tp, class _Abi>
+template <typename _Tp, typename _Abi>
 struct simd_size<_Tp, _Abi, false>
 {};
 
-template <class _Tp, class _Abi = simd_abi::compatible<_Tp>>
-inline constexpr size_t simd_size_v = simd_size<_Tp, _Abi>::value;
+template <typename _Tp, typename _Abi = simd_abi::compatible<_Tp>>
+inline constexpr ::cuda::std::size_t simd_size_v = simd_size<_Tp, _Abi>::value;
+} // namespace cuda::experimental::datapar
 
-} // namespace parallelism_v2
-} // namespace experimental
+#include <cuda/std/__cccl/epilogue.h>
 
-_CCCL_END_NAMESPACE_CUDA_STD
-
-#  include <cuda/std/__cccl/epilogue.h>
-
-#endif // _LIBCUDACXX_EXPERIMENTAL_SIMD_ENABLED
-
-#endif // _CUDA_STD_EXPERIMENTAL___SIMD_TRAITS_H
-
+#endif // _CUDAX___SIMD_TRAITS_H

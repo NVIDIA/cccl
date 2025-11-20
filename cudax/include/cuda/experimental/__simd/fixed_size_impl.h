@@ -1,18 +1,17 @@
 //===----------------------------------------------------------------------===//
 //
-// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// Part of CUDA Experimental in CUDA C++ Core Libraries,
+// under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 // SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDAX___SIMD_SCALAR_H
-#define _CUDAX___SIMD_SCALAR_H
+#ifndef _CUDAX___SIMD_FIXED_SIZE_IMPL_H
+#define _CUDAX___SIMD_FIXED_SIZE_IMPL_H
 
 #include <cuda/std/detail/__config>
-
-#include <cuda/std/__cccl/compiler.h>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -29,10 +28,9 @@
 #include <cuda/std/__type_traits/num_bits.h>
 #include <cuda/std/__utility/forward.h>
 #include <cuda/std/__utility/integer_sequence.h>
-#include <cuda/std/limits>
 
 #include <cuda/experimental/__simd/declaration.h>
-#include <cuda/experimental/__simd/traits.h>
+#include <cuda/experimental/__simd/utility.h>
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -287,14 +285,6 @@ struct __simd_operations<_Tp, simd_abi::__fixed_size<_Np>>
 // *********************************************************************************************************************
 // * SIMD Mask Operations
 // *********************************************************************************************************************
-
-template <class _Tp>
-[[nodiscard]] _CCCL_API constexpr auto __set_all_bits(bool __v) noexcept
-{
-  static_assert(::cuda::std::__cccl_is_unsigned_integer_v<_Tp>, "set_all_bits() requires unsigned integer types");
-  using _Up = ::cuda::std::__make_nbit_uint_t<::cuda::std::__num_bits_v<_Tp>>;
-  return __v ? (::cuda::std::numeric_limits<_Up>::max()) : 0;
-}
 
 template <class _Tp, int _Np>
 struct __mask_operations<_Tp, simd_abi::__fixed_size<_Np>>
