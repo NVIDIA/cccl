@@ -92,7 +92,7 @@ try
 
   // Define the kernel launch parameters
   constexpr int threadsPerBlock = 256;
-  auto config                   = cudax::distribute<threadsPerBlock>(numElements);
+  auto config                   = cuda::distribute<threadsPerBlock>(numElements);
 
   // Launch the vectorAdd kernel
   printf(

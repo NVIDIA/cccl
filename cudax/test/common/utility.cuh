@@ -29,7 +29,7 @@ namespace
 {
 namespace test
 {
-constexpr auto one_thread_dims = cudax::make_config(cuda::block_dims<1>(), cuda::grid_dims<1>());
+constexpr auto one_thread_dims = cuda::make_config(cuda::block_dims<1>(), cuda::grid_dims<1>());
 
 struct _malloc_pinned
 {
@@ -39,13 +39,13 @@ private:
 public:
   explicit _malloc_pinned(std::size_t size)
   {
-    cudax::__ensure_current_device guard(cuda::device_ref{0});
+    cuda::__ensure_current_context guard(cuda::device_ref{0});
     _CCCL_TRY_CUDA_API(::cudaMallocHost, "failed to allocate pinned memory", &pv, size);
   }
 
   ~_malloc_pinned()
   {
-    cudax::__ensure_current_device guard(cuda::device_ref{0});
+    cuda::__ensure_current_context guard(cuda::device_ref{0});
     [[maybe_unused]] auto status = ::cudaFreeHost(pv);
   }
 
