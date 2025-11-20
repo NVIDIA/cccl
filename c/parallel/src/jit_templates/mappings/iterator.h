@@ -19,12 +19,12 @@
 template <typename ValueTp>
 struct cccl_iterator_t_mapping
 {
-  bool is_pointer                             = false;
-  int size                                    = 1;
-  int alignment                               = 1;
-  void (*advance)(void*, cuda::std::uint64_t) = nullptr;
-  void (*dereference)(const void*, ValueTp*)  = nullptr;
-  void (*assign)(const void*, ValueTp);
+  bool is_pointer                            = false;
+  int size                                   = 1;
+  int alignment                              = 1;
+  void (*advance)(void*, const void*)        = nullptr;
+  void (*dereference)(const void*, ValueTp*) = nullptr;
+  void (*assign)(const void*, const void*);
 
   using ValueT = ValueTp;
 };
@@ -68,22 +68,19 @@ struct parameter_mapping<cccl_iterator_t>
     {
       return std::format(
         R"output(
-extern "C" __device__ void {0}(void *, {1});
-extern "C" __device__ void {2}(const void *, {3});
+extern "C" __device__ void {0}(void *, const void*);
+extern "C" __device__ void {1}(const void *, const void*);
 )output",
         arg.advance.name,
-        cccl_type_enum_to_name(cccl_type_enum::CCCL_UINT64),
-        arg.dereference.name,
-        cccl_type_enum_to_name(arg.value_type.type));
+        arg.dereference.name);
     }
 
     return std::format(
       R"input(
-extern "C" __device__ void {0}(void *, {1});
-extern "C" __device__ void {2}(const void *, {3}*);
+extern "C" __device__ void {0}(void *, const void*);
+extern "C" __device__ void {1}(const void *, {2}*);
 )input",
       arg.advance.name,
-      cccl_type_enum_to_name(cccl_type_enum::CCCL_UINT64),
       arg.dereference.name,
       cccl_type_enum_to_name(arg.value_type.type));
   }

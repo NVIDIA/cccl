@@ -82,7 +82,7 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           pr_number: ${{ steps.export-pr-info.outputs.pr_number }}
           allow_override: "true"
-          inspect_changes_script: 'ci/inspect_changes.sh'
+          inspect_changes_script: 'ci/inspect_changes.py'
           inspect_changes_base_sha: ${{ steps.export-pr-info.outputs.base_sha }}
           workflows: ${{ github.repository == 'NVIDIA/cccl' && 'pull_request' || 'pull_request_fork' }}
 

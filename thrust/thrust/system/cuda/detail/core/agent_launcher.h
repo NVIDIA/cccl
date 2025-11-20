@@ -36,7 +36,7 @@
 #  pragma system_header
 #endif // no system header
 
-#if _CCCL_HAS_CUDA_COMPILER()
+#if _CCCL_CUDA_COMPILATION()
 #  include <thrust/system/cuda/detail/core/triple_chevron_launch.h>
 #  include <thrust/system/cuda/detail/core/util.h>
 
@@ -277,4 +277,4 @@ struct AgentLauncher : Agent
 
 THRUST_NAMESPACE_END
 
-#endif
+#endif // _CCCL_CUDA_COMPILATION()

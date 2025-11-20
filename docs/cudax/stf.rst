@@ -209,9 +209,9 @@ consumption and system instability.
 
     mkdir -p build
     cd build
-    cmake .. --preset cudax-cpp17
-    cd cudax-cpp17
-    ninja cudax.cpp17.examples.stf -j4
+    cmake .. --preset cudax
+    cd cudax
+    ninja cudax.examples.stf -j4
 
 To launch examples, simply run binaries under the `bin/`
 subdirectory in the current directory. For instance, to launch the `01-axpy`

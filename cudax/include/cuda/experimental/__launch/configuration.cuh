@@ -12,6 +12,7 @@
 #define _CUDAX__LAUNCH_CONFIGURATION_CUH
 
 #include <cuda/__driver/driver_api.h>
+#include <cuda/__hierarchy/hierarchy_dimensions.h>
 #include <cuda/__numeric/overflow_cast.h>
 #include <cuda/__ptx/instructions/get_sreg.h>
 #include <cuda/std/__cstddef/types.h>
@@ -23,7 +24,6 @@
 #include <cuda/std/tuple>
 
 #include <cuda/experimental/__detail/utility.cuh>
-#include <cuda/experimental/hierarchy.cuh>
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -95,10 +95,11 @@ inline constexpr bool no_duplicate_options<Option, Rest...> =
  * @brief Launch option enabling cooperative launch
  *
  * This launch option causes the launched grid to be restricted to a number of
- * blocks that can simultaneously execute on the device. It means that every thread
- * in the launched grid can eventually observe execution of each other thread in the grid.
- * It also enables usage of cooperative_groups::grid_group::sync() function, that
- * synchronizes all threads in the grid.
+ * blocks that can simultaneously execute on the device. It means that every
+ * thread in the launched grid can eventually observe execution of each other
+ * thread in the grid. It also enables usage of
+ * cooperative_groups::grid_group::sync() function, that synchronizes all
+ * threads in the grid.
  *
  * @par Snippet
  * @code
@@ -181,14 +182,14 @@ inline constexpr ::cuda::std::size_t __max_portable_dyn_smem_size = 48 * 1024;
 /**
  * @brief Launch option specifying dynamic shared memory configuration
  *
- * This launch option causes the launch to allocate amount of shared memory sufficient
- * to store the specified number of object of the specified type.
+ * This launch option causes the launch to allocate amount of shared memory
+ * sufficient to store the specified number of object of the specified type.
  * This type can be constructed with dynamic_shared_memory helper function.
  *
- * When launch configuration contains this option, that configuration can be then
- * passed to dynamic_shared_memory_view to get the view_type over the dynamic shared memory.
- * It is also possible to obtain that memory through the original
- * extern __shared__ variable[] declaration.
+ * When launch configuration contains this option, that configuration can be
+ * then passed to dynamic_shared_memory_view to get the view_type over the
+ * dynamic shared memory. It is also possible to obtain that memory through the
+ * original extern __shared__ variable[] declaration.
  *
  * CUDA guarantees that each device has at least 48kB of shared memory
  * per block, but most devices have more than that.
@@ -209,7 +210,8 @@ inline constexpr ::cuda::std::size_t __max_portable_dyn_smem_size = 48 * 1024;
  *
  * void kernel_launch(cuda::stream_ref stream) {
  *     auto dims = cudax::make_hierarchy(cudax::block<128>(), cudax::grid(4));
- *     auto conf = cudax::make_configuration(dims, dynamic_shared_memory<int[128]>());
+ *     auto conf = cudax::make_configuration(dims,
+ * dynamic_shared_memory<int[128]>());
  *
  *     cudax::launch(stream, conf, kernel);
  * }
@@ -224,7 +226,8 @@ inline constexpr ::cuda::std::size_t __max_portable_dyn_smem_size = 48 * 1024;
  *  or cuda::std::dynamic_extent, if its dynamic
  *
  * @tparam NonPortableSize
- *  Needs to be enabled to exceed the portable limit of 48kB of shared memory per block
+ *  Needs to be enabled to exceed the portable limit of 48kB of shared memory
+ * per block
  */
 template <class _Tp>
 class _CCCL_DECLSPEC_EMPTY_BASES dynamic_shared_memory
@@ -234,14 +237,17 @@ class _CCCL_DECLSPEC_EMPTY_BASES dynamic_shared_memory
   using __base_type = __dyn_smem_option_base<_Tp>;
 
   static_assert(::cuda::std::rank_v<_Tp> <= 1,
-                "multidimensional arrays cannot be used with dynamic shared memory option");
+                "multidimensional arrays cannot be used with dynamic shared "
+                "memory option");
   static_assert(!::cuda::std::is_const_v<typename __base_type::value_type>, "the value type cannot be const");
   static_assert(!::cuda::std::is_reference_v<typename __base_type::value_type>, "the value type cannot be a reference");
 
 public:
-  bool __non_portable_{}; //!< \c true if the object was created with non_portable flag.
+  bool __non_portable_{}; //!< \c true if the object was created with
+                          //!< non_portable flag.
 
-  using typename __base_type::value_type; //!< Value type of the dynamic shared memory elements.
+  using typename __base_type::value_type; //!< Value type of the dynamic shared
+                                          //!< memory elements.
   using typename __base_type::view_type; //!< The view type returned by the
                                          //!< cuda::device::dynamic_shared_memory_view(config).
 
@@ -290,7 +296,7 @@ public:
   {
     if constexpr (::cuda::std::is_unbounded_array_v<_Tp>)
     {
-      if (!::cuda::std::__cccl_default_is_constant_evaluated())
+      _CCCL_IF_NOT_CONSTEVAL_DEFAULT
       {
         NV_IF_TARGET(NV_IS_DEVICE, (return ::cuda::ptx::get_sreg_dynamic_smem_size();))
       }
@@ -321,7 +327,8 @@ template <class _Tp>
 {
   ::cudaError_t __status = ::cudaSuccess;
 
-  // Since CUDA 12.4, querying CU_FUNC_ATTRIBUTE_SHARED_SIZE_BYTES requires the function to be loaded.
+  // Since CUDA 12.4, querying CU_FUNC_ATTRIBUTE_SHARED_SIZE_BYTES requires the
+  // function to be loaded.
   if (::cuda::__driver::__version_at_least(12, 4))
   {
     __status = ::cuda::__driver::__functionLoadNoThrow(__kernel);
@@ -376,9 +383,10 @@ template <class _Tp>
 /**
  * @brief Launch option specifying launch priority
  *
- * This launch option causes the launched grid to be scheduled with the specified priority.
- * More about stream priorities and valid values can be found in the CUDA programming guide
- * `here <https://docs.nvidia.com/cuda/cuda-c-programming-guide/#stream-priorities>`_
+ * This launch option causes the launched grid to be scheduled with the
+ * specified priority. More about stream priorities and valid values can be
+ * found in the CUDA programming guide `here
+ * <https://docs.nvidia.com/cuda/cuda-c-programming-guide/#stream-priorities>`_
  */
 struct launch_priority : public __detail::launch_option
 {
@@ -444,11 +452,12 @@ _CCCL_CONCEPT __kernel_has_default_config =
 /**
  * @brief Type describing a kernel launch configuration
  *
- * This type should not be constructed directly and make_config helper function should be used instead
+ * This type should not be constructed directly and make_config helper function
+ * should be used instead
  *
  * @tparam Dimensions
- * cuda::experimental::hierarchy_dimensions instance that describes dimensions of thread hierarchy in this
- * configuration object
+ * cuda::experimental::hierarchy_dimensions instance that describes dimensions
+ * of thread hierarchy in this configuration object
  *
  * @tparam Options
  * Types of options that were added to this configuration object
@@ -472,8 +481,8 @@ struct kernel_config
   /**
    * @brief Add a new option to this configuration
    *
-   * Returns a new kernel_config that has all option and dimensions from this kernel_config
-   * with the option from the argument added to it
+   * Returns a new kernel_config that has all option and dimensions from this
+   * kernel_config with the option from the argument added to it
    *
    * @param new_option
    * Option to be added to the configuration
@@ -488,13 +497,17 @@ struct kernel_config
   /**
    * @brief Combine this configuration with another configuration object
    *
-   * Returns a new `kernel_config` that is a combination of this configuration and the configuration from argument.
-   * It contains dimensions that are combination of dimensions in this object and the other configuration. The resulting
-   * hierarchy holds levels present in both hierarchies. In case of overlap of levels hierarchy from this configuration
-   * is prioritized, so the result always holds all levels from this hierarchy and non-overlapping
-   * levels from the other hierarchy. This behavior is the same as `combine()` member function of the hierarchy type.
-   * The result also contains configuration options from both configurations. In case the same type of a configuration
-   * option is present in both configuration this configuration is copied into the resulting configuration.
+   * Returns a new `kernel_config` that is a combination of this configuration
+   * and the configuration from argument. It contains dimensions that are
+   * combination of dimensions in this object and the other configuration. The
+   * resulting hierarchy holds levels present in both hierarchies. In case of
+   * overlap of levels hierarchy from this configuration is prioritized, so the
+   * result always holds all levels from this hierarchy and non-overlapping
+   * levels from the other hierarchy. This behavior is the same as `combine()`
+   * member function of the hierarchy type. The result also contains
+   * configuration options from both configurations. In case the same type of a
+   * configuration option is present in both configuration this configuration is
+   * copied into the resulting configuration.
    *
    * @param __other_config
    * Other configuration to combine with this configuration
@@ -502,20 +515,24 @@ struct kernel_config
   template <typename _OtherDimensions, typename... _OtherOptions>
   [[nodiscard]] auto combine(const kernel_config<_OtherDimensions, _OtherOptions...>& __other_config) const
   {
-    // can't use fully qualified kernel_config name here because of nvcc bug, TODO remove __make_config_from_tuple once
-    // fixed
+    // can't use fully qualified kernel_config name here because of nvcc bug,
+    // TODO remove __make_config_from_tuple once fixed
     return __make_config_from_tuple(
       dims.combine(__other_config.dims),
       ::cuda::std::tuple_cat(options, ::cuda::std::apply(__filter_options<Options...>{}, __other_config.options)));
   }
 
   /**
-   * @brief Combine this configuration with default configuration of a kernel functor
+   * @brief Combine this configuration with default configuration of a kernel
+   * functor
    *
-   * Returns a new `kernel_config` that is a combination of this configuration and a default configuration from the
-   * kernel argument. Default configuration is a `kernel_config` object returned from `default_config()` member function
-   * of the kernel type. The configurations are combined using the `combine()` member function of this configuration.
-   * If the kernel has no default configuration, a copy of this configuration is returned without any changes.
+   * Returns a new `kernel_config` that is a combination of this configuration
+   * and a default configuration from the kernel argument. Default configuration
+   * is a `kernel_config` object returned from `default_config()` member
+   * function of the kernel type. The configurations are combined using the
+   * `combine()` member function of this configuration. If the kernel has no
+   * default configuration, a copy of this configuration is returned without any
+   * changes.
    *
    * @param __kernel
    * Kernel functor to search for the default configuration
@@ -533,18 +550,22 @@ struct kernel_config
     }
   }
 };
+} // namespace cuda::experimental
 
-// We can consider removing the operator&, but its convenient for in-line construction
+_CCCL_BEGIN_NAMESPACE_CUDA
+
+// We can consider removing the operator&, but its convenient for in-line
+// construction
 template <typename Dimensions, typename... Options, typename NewLevel>
 _CCCL_HOST_API constexpr auto
-operator&(const kernel_config<Dimensions, Options...>& config, const NewLevel& new_level) noexcept
+operator&(const experimental::kernel_config<Dimensions, Options...>& config, const NewLevel& new_level) noexcept
 {
   return kernel_config(hierarchy_add_level(config.dims, new_level), config.options);
 }
 
 template <typename NewLevel, typename Dimensions, typename... Options>
 _CCCL_HOST_API constexpr auto
-operator&(const NewLevel& new_level, const kernel_config<Dimensions, Options...>& config) noexcept
+operator&(const NewLevel& new_level, const experimental::kernel_config<Dimensions, Options...>& config) noexcept
 {
   return kernel_config(hierarchy_add_level(config.dims, new_level), config.options);
 }
@@ -553,9 +574,13 @@ template <typename L1, typename Dims1, typename L2, typename Dims2>
 _CCCL_HOST_API constexpr auto
 operator&(const level_dimensions<L1, Dims1>& l1, const level_dimensions<L2, Dims2>& l2) noexcept
 {
-  return kernel_config(make_hierarchy(l1, l2));
+  return experimental::kernel_config(cuda::make_hierarchy(l1, l2));
 }
 
+_CCCL_END_NAMESPACE_CUDA
+
+namespace cuda::experimental
+{
 template <typename _Dimensions, typename... _Options>
 auto __make_config_from_tuple(const _Dimensions& __dims, const ::cuda::std::tuple<_Options...>& __opts)
 {
@@ -583,15 +608,18 @@ template <typename... Levels,
 /**
  * @brief Construct kernel configuration
  *
- * This function takes thread hierarchy dimensions description and any number of launch options and combines
- * them into kernel configuration object. It can be then used along with kernel function and its argument to launch
- * that kernel with the specified dimensions and options
+ * This function takes thread hierarchy dimensions description and any number of
+ * launch options and combines them into kernel configuration object. It can be
+ * then used along with kernel function and its argument to launch that kernel
+ * with the specified dimensions and options
  *
  * @param dims
- * Object describing dimensions of the thread hierarchy in the resulting kernel configuration object
+ * Object describing dimensions of the thread hierarchy in the resulting kernel
+ * configuration object
  *
  * @param opts
- * Variadic number of launch configuration options to be included in the resulting kernel configuration object
+ * Variadic number of launch configuration options to be included in the
+ * resulting kernel configuration object
  */
 template <typename BottomUnit, typename... Levels, typename... Opts>
 [[nodiscard]] constexpr auto
@@ -601,8 +629,8 @@ make_config(const hierarchy_dimensions<BottomUnit, Levels...>& dims, const Opts&
 }
 
 /**
- * @brief A shorthand for creating a kernel configuration with a hierarchy of CUDA threads evenly
- * distributing elements among blocks and threads.
+ * @brief A shorthand for creating a kernel configuration with a hierarchy of
+ * CUDA threads evenly distributing elements among blocks and threads.
  *
  * @par Snippet
  * @code
@@ -615,7 +643,8 @@ make_config(const hierarchy_dimensions<BottomUnit, Levels...>& dims, const Opts&
  * // Equivalent to:
  * constexpr int threadsPerBlock = 256;
  * int blocksPerGrid = (numElements + threadsPerBlock - 1) / threadsPerBlock;
- * auto dims = make_hierarchy(grid_dims(blocksPerGrid), block_dims<threadsPerBlock>());
+ * auto dims = make_hierarchy(grid_dims(blocksPerGrid),
+ * block_dims<threadsPerBlock>());
  * @endcode
  */
 template <int _ThreadsPerBlock>
@@ -685,7 +714,8 @@ template <typename Dimensions, typename... Options>
 
   ::cuda::std::apply(
     [&](auto&... config_options) {
-      // Use short-cutting && to skip the rest on error, is this too convoluted?
+      // Use short-cutting && to skip the rest on error, is this too
+      // convoluted?
       (void) (... && [&](cudaError_t call_status) {
         status = call_status;
         return call_status == cudaSuccess;
@@ -704,7 +734,8 @@ template <typename Dimensions, typename... Options>
 
   ::cuda::std::apply(
     [&](auto&... config_options) {
-      // Use short-cutting && to skip the rest on error, is this too convoluted?
+      // Use short-cutting && to skip the rest on error, is this too
+      // convoluted?
       (void) (... && [&](cudaError_t call_status) {
         status = call_status;
         return call_status == cudaSuccess;

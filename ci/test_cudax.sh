@@ -6,7 +6,7 @@ print_environment_details
 
 ./build_cudax.sh "$@"
 
-PRESET="cudax-cpp$CXX_STANDARD"
+PRESET="cudax"
 
 test_preset "CUDA Experimental" ${PRESET}
 

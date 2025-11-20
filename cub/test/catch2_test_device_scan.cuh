@@ -45,8 +45,9 @@ void compute_exclusive_scan_reference(InputIt first, InputIt last, OutputIt resu
   accum_t acc    = static_cast<accum_t>(init);
   for (; first != last; ++first)
   {
+    auto v    = *first;
     *result++ = static_cast<output_t>(acc);
-    acc       = op(acc, *first);
+    acc       = op(acc, v);
   }
 }
 

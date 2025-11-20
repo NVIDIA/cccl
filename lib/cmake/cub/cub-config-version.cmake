@@ -2,7 +2,7 @@
 include("${CMAKE_CURRENT_LIST_DIR}/cub-header-search.cmake")
 
 set(CUB_VERSION_MAJOR 3)
-set(CUB_VERSION_MINOR 2)
+set(CUB_VERSION_MINOR 3)
 set(CUB_VERSION_PATCH 0)
 set(CUB_VERSION_TWEAK 0)
 set(

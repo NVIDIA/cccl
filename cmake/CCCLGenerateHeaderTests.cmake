@@ -21,6 +21,7 @@
 # EXCLUDES: Files that match these globbing patterns will be excluded from the header tests.
 # HEADERS: An explicit list of headers to include in the header tests.
 # PER_HEADER_DEFINES: A list of definitions to add to specific headers. Each definition is followed by one or more regexes that match the headers it should be applied to.
+# NO_METATARGETS: If specified, metatargets will not be created for the header test targets.
 #
 # Notes:
 # - The header globs are applied relative to <project_include_path>.
@@ -28,7 +29,7 @@
 # - The HEADER_TEMPLATE will be configured for each header, with the following variables:
 #   - @header@: The path to the target header, relative to <project_include_path>.
 function(cccl_generate_header_tests target_name project_include_path)
-  set(options)
+  set(options NO_METATARGETS)
   set(oneValueArgs LANGUAGE HEADER_TEMPLATE)
   set(multiValueArgs GLOBS EXCLUDES HEADERS PER_HEADER_DEFINES)
   cmake_parse_arguments(
@@ -157,11 +158,17 @@ function(cccl_generate_header_tests target_name project_include_path)
   # Object library that compiles each header:
   add_library(${target_name} OBJECT ${header_srcs})
   cccl_configure_target(${target_name} ${cccl_configure_target_options})
+  if (NOT CGHT_NO_METATARGETS)
+    cccl_ensure_metatargets(${target_name})
+  endif()
 
   # Check that all functions in headers are either template functions or inline:
   set(link_target ${target_name}.link_check)
-  add_executable(${link_target} "${CCCL_SOURCE_DIR}/cmake/link_check_main.cpp")
-  cccl_configure_target(${link_target} ${cccl_configure_target_options})
+  cccl_add_executable(
+    ${link_target}
+    SOURCES "${CCCL_SOURCE_DIR}/cmake/link_check_main.cpp"
+    NO_METATARGETS
+  )
   # Linking both ${target_name} and $<TARGET_OBJECTS:${target_name}> forces CMake to
   # link the same objects twice. The compiler will complain about duplicate symbols if
   # any functions are missing inline markup.

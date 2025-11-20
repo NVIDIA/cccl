@@ -36,7 +36,7 @@
 #  pragma system_header
 #endif // no system header
 
-#if _CCCL_HAS_CUDA_COMPILER()
+#if _CCCL_CUDA_COMPILATION()
 #  include <thrust/iterator/transform_iterator.h>
 #  include <thrust/iterator/zip_iterator.h>
 #  include <thrust/system/cuda/detail/reduce.h>
@@ -74,4 +74,4 @@ inner_product(execution_policy<Derived>& policy, InputIt1 first1, InputIt1 last1
 } // namespace cuda_cub
 
 THRUST_NAMESPACE_END
-#endif
+#endif // _CCCL_CUDA_COMPILATION()

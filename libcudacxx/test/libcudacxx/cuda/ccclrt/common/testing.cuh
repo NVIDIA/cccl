@@ -29,7 +29,6 @@ __device__ inline void ccclrt_require_impl(
 {
   if (!condition)
   {
-#if !_CCCL_CUDA_COMPILER(CLANG)
     // TODO do warp aggregate prints for easier readability?
     printf("%s:%u: %s: block: [%d,%d,%d], thread: [%d,%d,%d] Condition `%s` failed.\n",
            filename,
@@ -42,7 +41,6 @@ __device__ inline void ccclrt_require_impl(
            threadIdx.y,
            threadIdx.z,
            condition_text);
-#endif
     __trap();
   }
 }
@@ -73,6 +71,14 @@ __device__ inline void ccclrt_require_impl(
 
 #  define CCCLRT_CHECK_FALSE(condition) CCCLRT_CHECK(!(condition))
 #endif // _CCCL_CUDA_COMPILER(CLANG)
+
+// Explicit device side require macros for clang-cuda
+#define CCCLRT_REQUIRE_DEVICE(condition) \
+  ccclrt_require_impl(condition, #condition, __FILE__, __LINE__, __PRETTY_FUNCTION__);
+#define CCCLRT_CHECK_DEVICE(condition) \
+  ccclrt_require_impl(condition, #condition, __FILE__, __LINE__, __PRETTY_FUNCTION__);
+#define CCCLRT_FAIL_DEVICE(message)          ccclrt_require_impl(false, message, __FILE__, __LINE__, __PRETTY_FUNCTION__);
+#define CCCLRT_CHECK_FALSE_DEVICE(condition) CCCLRT_CHECK_DEVICE(!(condition))
 
 __host__ __device__ constexpr bool operator==(const dim3& lhs, const dim3& rhs) noexcept
 {

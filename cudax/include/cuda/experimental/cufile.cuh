@@ -32,8 +32,11 @@
 #  error "<cuda/cufile> requires at least CUDA 12.9"
 #endif // _CCCL_CTK_BELOW(12, 9)
 
+#include <cuda/experimental/__cufile/cufile.cuh>
+#include <cuda/experimental/__cufile/cufile_ref.cuh>
 #include <cuda/experimental/__cufile/driver.cuh>
 #include <cuda/experimental/__cufile/driver_attributes.cuh>
 #include <cuda/experimental/__cufile/exception.cuh>
+#include <cuda/experimental/__cufile/open_mode.cuh>
 
 #endif // __CUDAX_CUFILE_CUH

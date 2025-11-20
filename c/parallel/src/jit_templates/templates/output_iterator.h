@@ -35,7 +35,7 @@ struct output_iterator_proxy_t
 {
   __device__ output_iterator_proxy_t& operator=(AssignT x)
   {
-    AssignF(&state, cuda::std::move(x));
+    AssignF(&state, &x);
     return *this;
   }
 
@@ -59,7 +59,7 @@ struct output_iterator_t
 
   __device__ output_iterator_t& operator+=(difference_type diff)
   {
-    Iterator.advance(&state, diff);
+    Iterator.advance(&state, &diff);
     return *this;
   }
 

@@ -23,7 +23,6 @@
 
 #include <cuda/__cmath/neg.h>
 #include <cuda/std/__concepts/concept_macros.h>
-#include <cuda/std/__type_traits/is_constant_evaluated.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/is_unsigned_integer.h>
 #include <cuda/std/cstdint>
@@ -38,7 +37,7 @@ template <typename _Tp>
 {
   if constexpr (sizeof(_Tp) == sizeof(uint32_t))
   {
-    if (!::cuda::std::__cccl_default_is_constant_evaluated())
+    _CCCL_IF_NOT_CONSTEVAL_DEFAULT
     {
       NV_IF_TARGET(NV_IS_DEVICE, (return ::__funnelshift_r(__v, __v, __cnt);))
     }
@@ -53,7 +52,7 @@ template <typename _Tp>
 {
   if constexpr (sizeof(_Tp) == sizeof(uint32_t))
   {
-    if (!::cuda::std::__cccl_default_is_constant_evaluated())
+    _CCCL_IF_NOT_CONSTEVAL_DEFAULT
     {
       NV_IF_TARGET(NV_IS_DEVICE, (return ::__funnelshift_l(__v, __v, __cnt);))
     }

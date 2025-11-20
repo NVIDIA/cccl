@@ -329,21 +329,21 @@ C2H_TEST("ThreeWayPartition works with stateful operations", "[three_way_partiti
   selector_state_t op_state                      = {21};
   stateful_operation_t<selector_state_t> less_op = make_operation(
     "less_op",
-    "struct selector_state_t { int comparison_value; };\n"
-    "extern \"C\" __device__ void less_op(void* state_ptr, void* x_ptr, void* out_ptr) {\n"
-    "  selector_state_t* state = static_cast<selector_state_t*>(state_ptr);\n"
-    "  *static_cast<int*>(x_ptr) < state->comparison_value;\n"
-    "  *static_cast<bool*>(out_ptr) = *static_cast<int*>(x_ptr) < state->comparison_value;\n"
-    "}",
+    R"(struct selector_state_t { int comparison_value; };
+extern "C" __device__ void less_op(void* state_ptr, void* x_ptr, void* out_ptr) {
+  selector_state_t* state = static_cast<selector_state_t*>(state_ptr);
+  *static_cast<int*>(x_ptr) < state->comparison_value;
+  *static_cast<bool*>(out_ptr) = *static_cast<int*>(x_ptr) < state->comparison_value;
+})",
     op_state);
   stateful_operation_t<selector_state_t> greater_or_equal_op = make_operation(
     "greater_or_equal_op",
-    "struct selector_state_t { int comparison_value; };\n"
-    "extern \"C\" __device__ void greater_or_equal_op(void* state_ptr, void* x_ptr, void* out_ptr) {\n"
-    "  selector_state_t* state = static_cast<selector_state_t*>(state_ptr);\n"
-    "  *static_cast<int*>(x_ptr) >= state->comparison_value;\n"
-    "  *static_cast<bool*>(out_ptr) = *static_cast<int*>(x_ptr) >= state->comparison_value;\n"
-    "}",
+    R"(struct selector_state_t { int comparison_value; };
+extern "C" __device__ void greater_or_equal_op(void* state_ptr, void* x_ptr, void* out_ptr) {
+  selector_state_t* state = static_cast<selector_state_t*>(state_ptr);
+  *static_cast<int*>(x_ptr) >= state->comparison_value;
+  *static_cast<bool*>(out_ptr) = *static_cast<int*>(x_ptr) >= state->comparison_value;
+})",
     op_state);
 
   const std::size_t num_items      = GENERATE(0, 42, take(4, random(1 << 12, 1 << 20)));
@@ -409,21 +409,21 @@ C2H_TEST("ThreeWayPartition works with custom types", "[three_way_partition]")
 
   operation_t less_op = make_operation(
     "less_op",
-    std::format("struct pair_type {{ int a; size_t b; }};"
-                "extern \"C\" __device__ void less_op(void* x_ptr, void* out_ptr) {{ "
-                "  pair_type* x = static_cast<pair_type*>(x_ptr); "
-                "  bool* out = static_cast<bool*>(out_ptr); "
-                "  *out = x->a < {0}; "
-                "}}",
+    std::format(R"(struct pair_type {{ int a; size_t b; }};
+extern "C" __device__ void less_op(void* x_ptr, void* out_ptr) {{
+  pair_type* x = static_cast<pair_type*>(x_ptr);
+  bool* out = static_cast<bool*>(out_ptr);
+  *out = x->a < {0};
+}})",
                 comparison_value));
   operation_t greater_or_equal_op = make_operation(
     "greater_or_equal_op",
-    std::format("struct pair_type {{ int a; size_t b; }};"
-                "extern \"C\" __device__ void greater_or_equal_op(void* x_ptr, void* out_ptr) {{ "
-                "  pair_type* x = static_cast<pair_type*>(x_ptr); "
-                "  bool* out = static_cast<bool*>(out_ptr); "
-                "  *out = x->a >= {0}; "
-                "}}",
+    std::format(R"(struct pair_type {{ int a; size_t b; }};
+extern "C" __device__ void greater_or_equal_op(void* x_ptr, void* out_ptr) {{
+  pair_type* x = static_cast<pair_type*>(x_ptr);
+  bool* out = static_cast<bool*>(out_ptr);
+  *out = x->a >= {0};
+}})",
                 comparison_value));
 
   const std::size_t num_items      = GENERATE(0, 42, take(4, random(1 << 12, 1 << 20)));
