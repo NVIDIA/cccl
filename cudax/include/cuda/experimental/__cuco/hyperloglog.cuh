@@ -297,7 +297,7 @@ public:
 
 private:
   _MemoryResourceRef __memory_resource_ref; ///< Memory resource used to allocate device-accessible storage
-  ::cuda::experimental::async_device_buffer<register_type> __sketch_buffer; ///< Storage for sketch
+  ::cuda::experimental::device_buffer<register_type> __sketch_buffer; ///< Storage for sketch
   ref_type<> __ref; ///< Device ref of the current `hyperloglog` object
 
   // Needs to be friends with other instantiations of this class template to have access to their
