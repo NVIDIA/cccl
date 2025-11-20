@@ -36,7 +36,7 @@
 
 //! @file
 //! The \c pinned_memory_resource class provides a memory resource that allocates pinned memory.
-_CCCL_BEGIN_NAMESPACE_CUDA
+_CCCL_BEGIN_NAMESPACE_CUDA_MR
 
 #if _CCCL_CTK_AT_LEAST(12, 6)
 
@@ -84,7 +84,7 @@ public:
 //! @returns The default pinned memory pool.
 [[nodiscard]] inline pinned_memory_pool_ref pinned_default_memory_pool()
 {
-  return pinned_memory_pool_ref{::cuda::__get_default_host_pinned_pool()};
+  return pinned_memory_pool_ref{::cuda::mr::__get_default_host_pinned_pool()};
 }
 
 //! @rst
@@ -168,7 +168,7 @@ static_assert(::cuda::mr::resource_with<pinned_memory_pool, ::cuda::mr::host_acc
     ::cudaMemPool_t __pool = ::cuda::__driver::__getDefaultMemPool(
       ::CUmemLocation{::CU_MEM_LOCATION_TYPE_HOST, 0}, ::CU_MEM_ALLOCATION_TYPE_PINNED);
     // TODO should we be more careful with setting access from all devices? Maybe only if it was not set for any device?
-    ::cuda::__mempool_set_access(__pool, ::cuda::devices, ::CU_MEM_ACCESS_FLAGS_PROT_READWRITE);
+    ::cuda::mr::__mempool_set_access(__pool, ::cuda::devices, ::CU_MEM_ACCESS_FLAGS_PROT_READWRITE);
     return __pool;
   }();
 
@@ -181,7 +181,7 @@ static_assert(::cuda::mr::resource_with<pinned_memory_pool, ::cuda::mr::host_acc
 
 #endif // _CCCL_CTK_AT_LEAST(12, 6)
 
-_CCCL_END_NAMESPACE_CUDA
+_CCCL_END_NAMESPACE_CUDA_MR
 
 #include <cuda/std/__cccl/epilogue.h>
 
