@@ -108,6 +108,11 @@ struct stream_registry_factory_t
     return cub::PtxVersion(version);
   }
 
+  CUB_RUNTIME_FUNCTION cudaError_t PtxArchId(::cuda::arch_id& arch_id) const
+  {
+    return cub::detail::ptx_arch_id(arch_id);
+  }
+
   CUB_RUNTIME_FUNCTION cudaError_t MultiProcessorCount(int& sm_count) const
   {
     int device_ordinal;
