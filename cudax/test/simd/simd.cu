@@ -216,4 +216,3 @@ C2H_CCCLRT_TEST("simd.mask", "[simd][mask]")
   mask_t broadcast_true(true);
   CUDAX_REQUIRE(broadcast_true.all());
 }
-

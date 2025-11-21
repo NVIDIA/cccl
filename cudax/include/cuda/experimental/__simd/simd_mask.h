@@ -138,7 +138,7 @@ public:
   }
 
   _CCCL_TEMPLATE(typename _Up, typename _Ap)
-  _CCCL_REQUIRES((simd_size_v<_Up, _Ap> == simd_size_v<_Tp, abi_type>))
+  _CCCL_REQUIRES((simd_size_v<_Up, _Ap> == simd_size_v<_Tp, abi_type>) )
   _CCCL_API constexpr explicit operator basic_simd<_Up, _Ap>() const noexcept
   {
     basic_simd<_Up, _Ap> __result;
