@@ -102,18 +102,24 @@ _CCCL_END_NAMESPACE_CUDA_STD
     else                          \
     {                             \
     }
-#  define _CCCL_THROW(...) ::cuda::std::terminate()
+#  define _CCCL_THROW(...) \
+  do \
+  { \
+    NV_IF_TARGET(NV_IS_HOST, ({ \
+      ::cuda::__detail::__msg_storage __msg_buffer{};                         \
+      ::cuda::std::__detail::__format_error(__msg_buffer, (__VA_ARGS__).what()); \
+      ::fprintf(stderr, "%s\n", __msg_buffer.__buffer);                       \
+      ::fflush(stderr);                                                       \
+    }) \
+    ::cuda::std::terminate();                                               \
+  } while (0)
 #  define _CCCL_RETHROW    ::cuda::std::terminate()
-#  define _CCCL_THROW_IF(_CONDITION, _EXCEPTION, _MSG)                          \
+#  define _CCCL_THROW_IF(_CONDITION, ...)                          \
     do                                                                          \
     {                                                                           \
       if (_CONDITION)                                                           \
       {                                                                         \
-        ::cuda::__detail::__msg_storage __msg_buffer{};                         \
-        ::cuda::std::__detail::__format_error(__msg_buffer, #_CONDITION, _MSG); \
-        ::fprintf(stderr, "%s\n", __msg_buffer.__buffer);                       \
-        ::fflush(stderr);                                                       \
-        ::cuda::std::terminate();                                               \
+        _CCCL_THROW(__VA_ARGS__); \
       }                                                                         \
     } while (false)
 #endif // ^^^ no exceptions ^^^
