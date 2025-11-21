@@ -28,6 +28,7 @@
 #include <cuda/std/__type_traits/remove_cvref.h>
 
 #include <cuda/experimental/__simd/declaration.h>
+#include <cuda/experimental/__simd/fixed_size_impl.h>
 #include <cuda/experimental/__simd/reference.h>
 #include <cuda/experimental/__simd/simd_mask.h>
 #include <cuda/experimental/__simd/traits.h>
@@ -114,6 +115,17 @@ public:
     }
   }
 
+  _CCCL_TEMPLATE(typename _Up)
+  _CCCL_REQUIRES(!::cuda::std::is_same_v<_Up, _Tp> && !__is_non_narrowing_convertible_v<_Up, value_type> &&
+                 ::cuda::std::is_convertible_v<_Up, value_type>)
+  _CCCL_API explicit basic_simd(const basic_simd<_Up, abi_type>& __v) noexcept
+  {
+    for (::cuda::std::size_t __i = 0; __i < size(); __i++)
+    {
+      (*this)[__i] = static_cast<value_type>(__v[__i]);
+    }
+  }
+
   _CCCL_TEMPLATE(typename _Generator)
   _CCCL_REQUIRES(__can_generate_v<value_type, _Generator, size()>)
   _CCCL_API explicit basic_simd(_Generator&& __g)
@@ -122,7 +134,7 @@ public:
 
   _CCCL_TEMPLATE(typename _Up, typename _Flags = element_aligned_tag)
   _CCCL_REQUIRES(__is_vectorizable_v<_Up>&& is_simd_flag_type_v<_Flags>)
-  _CCCL_API basic_simd(const _Up* __mem, _Flags = {}) noexcept
+  _CCCL_API explicit basic_simd(const _Up* __mem, _Flags = {}) noexcept
   {
     _Impl::__load(__s_, _Flags::template __apply<basic_simd>(__mem));
   }

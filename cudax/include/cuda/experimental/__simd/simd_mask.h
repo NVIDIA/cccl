@@ -26,6 +26,7 @@
 #include <cuda/std/__type_traits/is_same.h>
 
 #include <cuda/experimental/__simd/declaration.h>
+#include <cuda/experimental/__simd/fixed_size_impl.h>
 #include <cuda/experimental/__simd/reference.h>
 #include <cuda/experimental/__simd/traits.h>
 
@@ -59,7 +60,7 @@ public:
   {};
   static constexpr __storage_tag_t __storage_tag{};
 
-  _CCCL_API operator _Storage() const noexcept
+  _CCCL_API explicit operator _Storage() const noexcept
   {
     return __s_;
   }
@@ -110,7 +111,7 @@ public:
 
   _CCCL_TEMPLATE(typename _Up, typename _Ap)
   _CCCL_REQUIRES(simd_size_v<_Up, _Ap> == simd_size_v<_Tp, abi_type>)
-  _CCCL_API constexpr explicit(sizeof(_Up) != sizeof(value_type)) operator basic_simd<_Up, _Ap>() const noexcept
+  _CCCL_API constexpr explicit operator basic_simd<_Up, _Ap>() const noexcept
   {
     basic_simd<_Up, _Ap> __result;
     _CCCL_PRAGMA_UNROLL_FULL()

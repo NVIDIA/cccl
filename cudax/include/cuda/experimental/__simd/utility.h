@@ -28,12 +28,14 @@
 #include <cuda/std/__type_traits/is_const.h>
 #include <cuda/std/__type_traits/is_convertible.h>
 #include <cuda/std/__type_traits/is_same.h>
+#include <cuda/std/__type_traits/is_unsigned.h>
 #include <cuda/std/__type_traits/is_unsigned_integer.h>
 #include <cuda/std/__type_traits/is_volatile.h>
 #include <cuda/std/__type_traits/make_nbit_int.h>
 #include <cuda/std/__type_traits/num_bits.h>
 #include <cuda/std/__type_traits/void_t.h>
 #include <cuda/std/__utility/declval.h>
+#include <cuda/std/__utility/integer_sequence.h>
 
 #include <cuda/std/__cccl/prologue.h>
 

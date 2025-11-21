@@ -23,6 +23,7 @@
 
 #include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__type_traits/integral_constant.h>
+#include <cuda/std/cstdint>
 
 #include <cuda/experimental/__simd/declaration.h>
 #include <cuda/experimental/__simd/utility.h>
