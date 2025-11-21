@@ -30,7 +30,7 @@ fi
 artifact_prefix=z_thrust-test-artifacts-$DEVCONTAINER_NAME-${JOB_ID}
 
 # BUILD_INFIX is undefined on windows CI
-build_dir_regex="build${CCCL_BUILD_INFIX:+/$CCCL_BUILD_INFIX}/thrust-[^/]+"
+build_dir_regex="build${CCCL_BUILD_INFIX:+/$CCCL_BUILD_INFIX}/thrust[^/]*"
 
 # Just collect the minimum set of files needed for running each ctest preset:
 for preset_variant in ${preset_variants[@]}; do
@@ -58,7 +58,7 @@ if [[ " ${preset_variants[@]} " =~ " test_cpu " ]]; then
       "$build_dir_regex/lib/.*\.test\.framework\..*" > /dev/null
   ci/util/artifacts/unstage.sh \
       "$artifact_prefix-test_cpu" \
-      "$build_dir_regex/lib/.*\.cuda\..*\.test\.framework\..*" > /dev/null
+      "$build_dir_regex/lib/.*\.cuda\.test\.framework\..*" > /dev/null
 
   # Windows builds generate binaries for the header tests, remove these:
   ci/util/artifacts/unstage.sh  \
@@ -75,7 +75,7 @@ if [[ " ${preset_variants[@]} " =~ " test_gpu " ]]; then
       "$build_dir_regex/bin/thrust\..*\.cuda\..*" > /dev/null
   ci/util/artifacts/stage.sh \
       "$artifact_prefix-test_gpu" \
-      "$build_dir_regex/lib/.*\.cuda\..*\.test\.framework\..*" > /dev/null
+      "$build_dir_regex/lib/.*\.cuda\.test\.framework\..*" > /dev/null
 
   # Windows builds generate binaries for the header tests, remove these:
   ci/util/artifacts/unstage.sh  \
