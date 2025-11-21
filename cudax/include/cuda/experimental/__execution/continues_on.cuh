@@ -73,27 +73,10 @@ struct __decay_args
     }
   }
 };
-
-// ATTENTION: This list of queries to not forward must be kept in sync with the
-// __attrs_t struct in __transfer_sndr_t
-template <class _Tag>
-_CCCL_CONCEPT __forwarding_continues_on_query =
-  __forwarding_query<_Tag>
-  && __none_of<_Tag,
-               get_completion_behavior_t,
-               get_completion_domain_t<set_value_t>,
-               get_completion_domain_t<set_error_t>,
-               get_completion_domain_t<set_stopped_t>,
-               get_completion_scheduler_t<set_value_t>,
-               get_completion_scheduler_t<set_error_t>,
-               get_completion_scheduler_t<set_stopped_t>>;
 } // namespace __detail
 
 struct _CCCL_TYPE_VISIBILITY_DEFAULT continues_on_t
 {
-  template <class _Sch, class _Sndr>
-  struct _CCCL_TYPE_VISIBILITY_DEFAULT __sndr_t;
-
   _CUDAX_SEMI_PRIVATE :
   struct __send_result_fn
   {
@@ -105,16 +88,13 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT continues_on_t
     }
   };
 
-  template <class _Rcvr>
   struct __send_result_visitor
   {
-    template <class _Tuple>
-    _CCCL_API constexpr void operator()(_Tuple& __tuple) const noexcept
+    template <class _Rcvr, class _Tuple>
+    _CCCL_API constexpr void operator()(_Rcvr& __rcvr, _Tuple& __tuple) const noexcept
     {
-      ::cuda::std::__apply(__send_result_fn{}, __tuple, __rcvr_);
+      ::cuda::std::__apply(__send_result_fn{}, __tuple, __rcvr);
     }
-
-    _Rcvr& __rcvr_;
   };
 
   template <class _Rcvr, class _Results>
@@ -131,15 +111,9 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT continues_on_t
   {
     using receiver_concept = receiver_t;
 
-    template <class _Tag, class... _As>
-    _CCCL_API constexpr void operator()(_Tag, _As&... __as) noexcept
-    {
-      _Tag{}(static_cast<_Rcvr&&>(__state_->__rcvr_), static_cast<_As&&>(__as)...);
-    }
-
     _CCCL_API constexpr void set_value() noexcept
     {
-      __state_->__result_.__visit(__send_result_visitor<_Rcvr>{__state_->__rcvr_}, __state_->__result_);
+      __state_->__result_.__visit(__send_result_visitor{}, __state_->__result_, __state_->__rcvr_);
     }
 
     template <class _Error>
@@ -246,93 +220,13 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT continues_on_t
     connect_result_t<_CvSndr, __stash_rcvr_t> __opstate1_;
   };
 
-  // see SCHED-ATTRS here: https://eel.is/c++draft/exec#snd.expos-6
-  template <class _Sch, class _Sndr>
-  struct __attrs_t
-  {
-    template <class... _Env>
-    [[nodiscard]] _CCCL_API constexpr auto query(get_completion_scheduler_t<set_value_t>, _Env&&...) const noexcept
-      -> _Sch
-    {
-      return __self_->__sch_;
-    }
-
-    // If the predecessor sender does not have a _SetTag completion, then the completion
-    // scheduler for _SetTag is the scheduler's if it has one.
-    _CCCL_TEMPLATE(class _SetTag, class... _Env)
-    _CCCL_REQUIRES((!__has_completions_for<_SetTag, _Sndr, __fwd_env_t<_Env>...>) )
-    [[nodiscard]] _CCCL_API constexpr auto query(get_completion_scheduler_t<_SetTag>, _Env&&... __env) const noexcept
-      -> __call_result_t<get_completion_scheduler_t<_SetTag>, _Sch, __fwd_env_t<_Env>...>
-    {
-      return get_completion_scheduler<_SetTag>(__self_->__sch_, __fwd_env(static_cast<_Env&&>(__env))...);
-    }
-
-    // If the scheduler's sender does not have a _SetTag completion, then the completion
-    // scheduler for _SetTag is the sender's if it has one.
-    _CCCL_TEMPLATE(class _SetTag, class... _Env)
-    _CCCL_REQUIRES((!__has_completions_for<_SetTag, schedule_result_t<_Sch>, __fwd_env_t<_Env>...>) )
-    [[nodiscard]] _CCCL_API constexpr auto query(get_completion_scheduler_t<_SetTag>, _Env&&... __env) const noexcept
-      -> __call_result_t<get_completion_scheduler_t<_SetTag>, env_of_t<_Sndr>, __fwd_env_t<_Env>...>
-    {
-      return get_completion_scheduler<_SetTag>(
-        execution::get_env(__self_->__sndr_), __fwd_env(static_cast<_Env&&>(__env))...);
-    }
-
-    // The continues_on sender completes on the scheduler's domain.
-    _CCCL_EXEC_CHECK_DISABLE
-    template <class... _Env>
-    [[nodiscard]] _CCCL_API constexpr auto query(get_completion_domain_t<set_value_t>, _Env&&...) const noexcept
-      -> __scheduler_domain_t<_Sch, __fwd_env_t<_Env>...>
-    {
-      return {};
-    }
-
-    // If the predecessor sender does not have a _SetTag completion, then the completion
-    // domain for _SetTag is the scheduler's if it has one.
-    _CCCL_EXEC_CHECK_DISABLE
-    _CCCL_TEMPLATE(class _SetTag, class... _Env)
-    _CCCL_REQUIRES((!__has_completions_for<_SetTag, _Sndr, __fwd_env_t<_Env>...>) )
-    [[nodiscard]] _CCCL_API constexpr auto query(get_completion_domain_t<_SetTag>, _Env&&... __env) const noexcept
-      -> __call_result_t<get_completion_domain_t<_SetTag>, _Sch, __fwd_env_t<_Env>...>
-    {
-      return {};
-    }
-
-    // If the scheduler's sender does not have a _SetTag completion, then the completion
-    // domain for _SetTag is the sender's if it has one.
-    _CCCL_EXEC_CHECK_DISABLE
-    _CCCL_TEMPLATE(class _SetTag, class... _Env)
-    _CCCL_REQUIRES((!__has_completions_for<_SetTag, schedule_result_t<_Sch>, __fwd_env_t<_Env>...>) )
-    [[nodiscard]] _CCCL_API constexpr auto query(get_completion_domain_t<_SetTag>, _Env&&... __env) const noexcept
-      -> __call_result_t<get_completion_domain_t<_SetTag>, env_of_t<_Sndr>, __fwd_env_t<_Env>...>
-    {
-      return {};
-    }
-
-    // The completion behavior of continues_on/continues_on is the weaker of the
-    // completion behaviors of the predecessor sender and the scheduler's sender.
-    template <class... _Env>
-    [[nodiscard]] _CCCL_API constexpr auto query(get_completion_behavior_t, _Env&&...) const noexcept
-    {
-      return (execution::min) (execution::get_completion_behavior<schedule_result_t<_Sch>, __fwd_env_t<_Env>...>(),
-                               execution::get_completion_behavior<_Sndr, __fwd_env_t<_Env>...>());
-    }
-
-    _CCCL_EXEC_CHECK_DISABLE
-    _CCCL_TEMPLATE(class _Query, class... _Args)
-    _CCCL_REQUIRES(
-      __detail::__forwarding_continues_on_query<_Query> _CCCL_AND __queryable_with<env_of_t<_Sndr>, _Query, _Args...>)
-    [[nodiscard]] _CCCL_API constexpr auto query(_Query, _Args&&... __args) const
-      noexcept(__nothrow_queryable_with<env_of_t<_Sndr>, _Query, _Args...>)
-        -> __query_result_t<env_of_t<_Sndr>, _Query, _Args...>
-    {
-      return execution::get_env(__self_->__sndr_).query(_Query{}, static_cast<_Args&&>(__args)...);
-    }
-
-    const __sndr_t<_Sch, _Sndr>* __self_;
-  };
-
 public:
+  template <class _Sch, class _Sndr>
+  struct _CCCL_TYPE_VISIBILITY_DEFAULT __attrs_t;
+
+  template <class _Sch, class _Sndr>
+  struct _CCCL_TYPE_VISIBILITY_DEFAULT __sndr_t;
+
   template <class _Sch>
   struct _CCCL_TYPE_VISIBILITY_DEFAULT __closure_t
   {
@@ -376,6 +270,142 @@ public:
   }
 };
 
+//! @brief The @c continues_on sender's attributes.
+template <class _Sch, class _Sndr>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT continues_on_t::__attrs_t
+{
+private:
+  //! @brief Returns `true` when:
+  //! - _SetTag is set_error_t, and
+  //! - _Sndr has value completions, and
+  //! - at least one of the value completions is not nothrow decay-copyable.
+  //! In that case, error completions can come from the sender's value completions.
+  template <class _SetTag, class... _Env>
+  _CCCL_API static _CCCL_CONSTEVAL bool __has_decay_copy_errors() noexcept
+  {
+    if constexpr (__same_as<_SetTag, set_error_t>)
+    {
+      if constexpr (__has_completions_for<_Sndr, set_value_t, __fwd_env_t<_Env>...>)
+      {
+        using __completion_parts_t =
+          __partitioned_completions_of_t<completion_signatures_of_t<_Sndr, __fwd_env_t<_Env>...>>;
+        return !__completion_parts_t::__nothrow_decay_copyable::__values::value;
+      }
+    }
+    return false;
+  }
+
+  const __sndr_t<_Sch, _Sndr>& __self_;
+
+public:
+  _CCCL_API constexpr explicit __attrs_t(const __sndr_t<_Sch, _Sndr>& __self) noexcept
+      : __self_(__self)
+  {}
+
+  //! @brief Queries the completion scheduler for a given @c _SetTag.
+  //! @tparam _SetTag The completion tag to query for.
+  //! @tparam _Env The environment to consider when querying for the completion
+  //! scheduler.
+  //!
+  //! @note If @c _SetTag is @c set_value_t, then we are in the happy path: everything
+  //! succeeded and execution continues on @c _Sch.
+  //!
+  //! Otherwise, if @c _Sndr never completes with @c _SetTag, and either @c _SetTag is
+  //! @c set_stopped_t or decay-copying @c _Sndr's value results cannot throw, then a
+  //! @c _SetTag completion can only come from the scheduler's sender. In this case, return
+  //! the scheduler's completion scheduler if it has one.
+  //!
+  //! Otherwise, if the scheduler's sender never completes with @c _SetTag, then a
+  //! @c _SetTag completion can only come from the original sender, so return the
+  //! original sender's completion scheduler.
+  _CCCL_TEMPLATE(class _SetTag, class... _Env)
+  _CCCL_REQUIRES((__same_as<_SetTag, set_value_t> || __never_completes_with<_Sndr, _SetTag, __fwd_env_t<_Env>...>)
+                   _CCCL_AND(!__has_decay_copy_errors<_SetTag, _Env...>()))
+  [[nodiscard]] _CCCL_API constexpr auto query(get_completion_scheduler_t<_SetTag>, const _Env&... __env) const noexcept
+    -> __call_result_t<get_completion_scheduler_t<_SetTag>, _Sch, __fwd_env_t<_Env>...>
+  {
+    return get_completion_scheduler<_SetTag>(__self_.__sch_, __fwd_env(__env)...);
+  }
+
+  //! @overload
+  _CCCL_TEMPLATE(class _SetTag, class... _Env)
+  _CCCL_REQUIRES(__never_completes_with<schedule_result_t<_Sch>, _SetTag, __fwd_env_t<_Env>...>)
+  [[nodiscard]] _CCCL_API constexpr auto query(get_completion_scheduler_t<_SetTag>, const _Env&... __env) const noexcept
+    -> __call_result_t<get_completion_scheduler_t<_SetTag>, env_of_t<_Sndr>, __fwd_env_t<_Env>...>
+  {
+    return get_completion_scheduler<_SetTag>(get_env(__self_.__sndr_), __fwd_env(__env)...);
+  }
+
+  //! @brief Queries the completion domain for a given @c _SetTag.
+  //! @tparam _SetTag The completion tag to query for.
+  //! @tparam _Env The environment to consider when querying for the completion domain.
+  //!
+  //! @note If @c _SetTag is @c set_value_t, then we are in the happy path: everything
+  //! succeeded and execution continues on @c _Sch.
+  //!
+  //! Otherwise, if @c _SetTag is @c set_stopped_t or if decay-copying @c _Sndr's value
+  //! results cannot throw, then a @c _SetTag completion can happen on the sender's
+  //! completion domain (if it has one) or the scheduler's completion domain (if it has
+  //! one).
+  //!
+  //! @note Otherwise, @c _SetTag is @c set_error_t and decay-copying @c _Sndr's value
+  //! results can throw, so error completions can also come from the sender's value
+  //! completions.
+  _CCCL_TEMPLATE(class _SetTag, class... _Env)
+  _CCCL_REQUIRES(__same_as<_SetTag, set_value_t>)
+  [[nodiscard]] _CCCL_API constexpr auto query(get_completion_domain_t<_SetTag>, const _Env&...) const noexcept
+    -> __unless_one_of_t<__compl_domain_t<_SetTag, schedule_result_t<_Sch>, __fwd_env_t<_Env>...>, __not_a_domain>
+  {
+    return {};
+  }
+
+  //! @overload
+  _CCCL_TEMPLATE(class _SetTag, class... _Env)
+  _CCCL_REQUIRES((!__same_as<_SetTag, set_value_t>) _CCCL_AND(!__has_decay_copy_errors<_SetTag, _Env...>()))
+  [[nodiscard]] _CCCL_API constexpr auto query(get_completion_domain_t<_SetTag>, const _Env&...) const noexcept
+    -> __unless_one_of_t<__common_domain_t<__compl_domain_t<_SetTag, _Sndr, __fwd_env_t<_Env>...>,
+                                           __compl_domain_t<_SetTag, schedule_result_t<_Sch>, __fwd_env_t<_Env>...>>,
+                         __not_a_domain>
+  {
+    return {};
+  }
+
+  //! @overload
+  _CCCL_TEMPLATE(class _SetTag, class... _Env)
+  _CCCL_REQUIRES((__has_decay_copy_errors<_SetTag, _Env...>()))
+  [[nodiscard]] _CCCL_API constexpr auto query(get_completion_domain_t<_SetTag>, const _Env&...) const noexcept
+    -> __unless_one_of_t<__common_domain_t<__compl_domain_t<_SetTag, _Sndr, __fwd_env_t<_Env>...>,
+                                           __compl_domain_t<_SetTag, schedule_result_t<_Sch>, __fwd_env_t<_Env>...>,
+                                           __compl_domain_t<set_value_t, _Sndr, __fwd_env_t<_Env>...>>,
+                         __not_a_domain>
+  {
+    return {};
+  }
+
+  //! @brief Queries the completion behavior of the combined sender.
+  //! @tparam _Env The environment to consider when querying for the completion behavior.
+  //! @note The completion behavior is the minimum between the scheduler's sender and
+  //! the original sender.
+  template <class... _Env>
+  [[nodiscard]] _CCCL_API constexpr auto query(get_completion_behavior_t, const _Env&...) const noexcept
+  {
+    return (execution::min) (execution::get_completion_behavior<schedule_result_t<_Sch>, __fwd_env_t<_Env>...>(),
+                             execution::get_completion_behavior<_Sndr, _Env...>());
+  }
+
+  //! @brief Forwards other queries to the underlying sender's environment.
+  //! @pre @c _Tag is a forwarding query but not a completion query.
+  _CCCL_TEMPLATE(class _Tag, class... _Args)
+  _CCCL_REQUIRES(__forwarding_query<_Tag> _CCCL_AND(!__is_completion_query<_Tag>)
+                   _CCCL_AND __queryable_with<env_of_t<_Sndr>, _Tag, _Args...>)
+  [[nodiscard]] _CCCL_API constexpr auto query(_Tag, _Args&&... __args) const
+    noexcept(__nothrow_queryable_with<env_of_t<_Sndr>, _Tag, _Args...>)
+      -> __query_result_t<env_of_t<_Sndr>, _Tag, _Args...>
+  {
+    return get_env(__self_.__sndr_).query(_Tag{}, static_cast<_Args&&>(__args)...);
+  }
+};
+
 //////////////////////////////////////////////////////////////////////////////////////////
 // continues_on sender
 template <class _Sch, class _Sndr>
@@ -405,19 +435,18 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT continues_on_t::__sndr_t
   template <class _Rcvr>
   [[nodiscard]] _CCCL_API constexpr auto connect(_Rcvr __rcvr) && -> __opstate_t<_Sch, _Sndr, _Rcvr>
   {
-    return __opstate_t<_Sch, _Sndr, _Rcvr>{
-      static_cast<_Sndr&&>(this->__sndr_), this->__sch_, static_cast<_Rcvr&&>(__rcvr)};
+    return __opstate_t<_Sch, _Sndr, _Rcvr>{static_cast<_Sndr&&>(__sndr_), __sch_, static_cast<_Rcvr&&>(__rcvr)};
   }
 
   template <class _Rcvr>
   [[nodiscard]] _CCCL_API constexpr auto connect(_Rcvr __rcvr) const& -> __opstate_t<_Sch, const _Sndr&, _Rcvr>
   {
-    return __opstate_t<_Sch, const _Sndr&, _Rcvr>{this->__sndr_, this->__sch_, static_cast<_Rcvr&&>(__rcvr)};
+    return __opstate_t<_Sch, const _Sndr&, _Rcvr>{__sndr_, __sch_, static_cast<_Rcvr&&>(__rcvr)};
   }
 
   [[nodiscard]] _CCCL_API constexpr auto get_env() const noexcept -> __attrs_t<_Sch, _Sndr>
   {
-    return __attrs_t<_Sch, _Sndr>{this};
+    return __attrs_t<_Sch, _Sndr>(*this);
   }
 
   /*_CCCL_NO_UNIQUE_ADDRESS*/ continues_on_t __tag_;

@@ -145,24 +145,6 @@ inline constexpr bool __type_contains_error =
 template <class... _Ts>
 using __type_find_error _CCCL_NODEBUG_ALIAS = decltype(+(declval<_Ts&>(), ..., declval<_ERROR<_UNKNOWN>&>()));
 
-template <bool _Error>
-struct __type_self_or_error_with_
-{
-  template <class _Ty, class... _With>
-  using __call _CCCL_NODEBUG_ALIAS = _Ty;
-};
-
-template <>
-struct __type_self_or_error_with_<true>
-{
-  template <class _Ty, class... _With>
-  using __call _CCCL_NODEBUG_ALIAS = decltype(declval<_Ty&>().with(declval<_ERROR<_With...>&>()));
-};
-
-template <class _Ty, class... _With>
-using __type_self_or_error_with _CCCL_NODEBUG_ALIAS =
-  ::cuda::std::__type_call<__type_self_or_error_with_<__type_is_error<_Ty>>, _Ty, _With...>;
-
 template <bool>
 struct __type_try__;
 
@@ -279,7 +261,7 @@ struct __type_self_or
 };
 
 template <template <class...> class _Fn, class _Default, class... _Ts>
-using __type_call_or_q =
+using __type_call_or_quote =
   typename ::cuda::std::_If<__is_instantiable_with<_Fn, _Ts...>,
                             ::cuda::std::__type_quote<_Fn>,
                             ::cuda::std::__type_always<_Default>>::template __call<_Ts...>;

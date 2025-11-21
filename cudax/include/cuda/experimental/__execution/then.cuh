@@ -224,9 +224,15 @@ struct __upon_t
                                                        // extended (host/device) lambda
   {
     template <class _Sndr>
-    _CCCL_API constexpr auto operator()(_Sndr __sndr) -> __call_result_t<__upon_tag_t, _Sndr, _Fn>
+    _CCCL_API constexpr auto operator()(_Sndr __sndr) && -> __call_result_t<__upon_tag_t, _Sndr, _Fn>
     {
       return __upon_tag_t{}(static_cast<_Sndr&&>(__sndr), static_cast<_Fn&&>(__fn_));
+    }
+
+    template <class _Sndr>
+    _CCCL_API constexpr auto operator()(_Sndr __sndr) const& -> __call_result_t<__upon_tag_t, _Sndr, _Fn>
+    {
+      return __upon_tag_t{}(static_cast<_Sndr&&>(__sndr), __fn_);
     }
 
     template <class _Sndr>
