@@ -44,12 +44,12 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-// MSVC complains about [[msvc::no_unique_address]] prior to C++20 as a vendor extension
-_CCCL_DIAG_PUSH
-_CCCL_DIAG_SUPPRESS_MSVC(4848)
-
 _CCCL_BEGIN_NAMESPACE_CUDA_STD_VIEWS
 _CCCL_BEGIN_NAMESPACE_CPO(__take)
+struct __fn;
+_CCCL_END_NAMESPACE_CPO
+
+_CCCL_BEGIN_NAMESPACE_CPO(__drop)
 struct __fn;
 _CCCL_END_NAMESPACE_CPO
 _CCCL_END_NAMESPACE_CUDA_STD_VIEWS
@@ -79,6 +79,7 @@ template <
 class repeat_view : public view_interface<repeat_view<_Tp, _Bound>>
 {
   friend ::cuda::std::ranges::views::__take::__fn;
+  friend ::cuda::std::ranges::views::__drop::__fn;
 
 public:
   class __iterator
