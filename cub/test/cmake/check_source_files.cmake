@@ -36,7 +36,8 @@ set(
 set(bare_ns_regex "namespace[ \n\r\t]+cub[ \n\r\t]*\\{")
 
 # Validation check for the above regex:
-count_substrings([=[
+count_substrings(
+  [=[
 namespace cub{
 namespace cub {
 namespace  cub  {
@@ -47,7 +48,8 @@ namespace
 cub
 {
 ]=]
-  ${bare_ns_regex} valid_count
+  ${bare_ns_regex}
+  valid_count
 )
 if (NOT valid_count EQUAL 6)
   message(
@@ -78,14 +80,16 @@ set(memory_regex "#[ \t]*include[ \t]+<memory>")
 set(numeric_regex "#[ \t]*include[ \t]+<numeric>")
 
 # Validation check for the above regex pattern:
-count_substrings([=[
+count_substrings(
+  [=[
 #include <algorithm>
 # include <algorithm>
 #include  <algorithm>
 # include  <algorithm>
 # include  <algorithm> // ...
 ]=]
-  ${algorithm_regex} valid_count
+  ${algorithm_regex}
+  valid_count
 )
 if (NOT valid_count EQUAL 5)
   message(

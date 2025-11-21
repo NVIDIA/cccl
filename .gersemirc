@@ -4,6 +4,8 @@ definitions: [
   # while formatting the rest of the codebase.
   "cmake/", # CCCL level utilities
   "lib/cmake/thrust/", # thrust_create_target and friends
+  # helper-function heavy:
+  "cub/test/"
 ]
 disable_formatting: false
 extensions: [".gersemi/ext/builtins.py", ".gersemi/ext/cccl.py", ".gersemi/ext/thirdparty.py"]
