@@ -29,15 +29,16 @@
 
 #include <cub/device/device_run_length_encode.cuh>
 
-#include <thrust/iterator/counting_iterator.h>
-#include <thrust/iterator/discard_iterator.h>
 #include <thrust/logical.h>
 #include <thrust/sequence.h>
+
+#include <cuda/iterator>
 
 #include <algorithm>
 #include <limits>
 #include <numeric>
 
+#include "catch2_large_problem_helper.cuh"
 #include "catch2_test_launch_helper.h"
 #include <c2h/catch2_test_helper.h>
 
@@ -123,23 +124,6 @@ C2H_TEST("DeviceRunLengthEncode::NonTrivialRuns can handle a single element", "[
   REQUIRE(out_num_runs.front() == 0);
 }
 
-#if 0 // DeviceRunLengthEncode::NonTrivialRuns cannot handle inputs larger than INT32_MAX
-C2H_TEST("DeviceRunLengthEncode::NonTrivialRuns can handle large indexes", "[device][run_length_encode]")
-{
-  constexpr cuda::std::size_t num_items = 1ull << 33;
-  c2h::device_vector<cuda::std::size_t> out_num_runs(1, -1);
-
-  // Note intentionally no discard_iterator as we want to ensure nothing is written to the output arrays
-  run_length_encode(thrust::make_counting_iterator(cuda::std::size_t{0}),
-                    static_cast<cuda::std::size_t*>(nullptr),
-                    static_cast<cuda::std::size_t*>(nullptr),
-                    out_num_runs.begin(),
-                    num_items);
-
-  REQUIRE(out_num_runs.front() == 0);
-}
-#endif
-
 C2H_TEST("DeviceRunLengthEncode::NonTrivialRuns can handle different counting types", "[device][run_length_encode]")
 {
   constexpr int num_items = 1;
@@ -166,7 +150,7 @@ C2H_TEST("DeviceRunLengthEncode::NonTrivialRuns can handle all unique", "[device
   c2h::device_vector<int> out_num_runs(1, -1);
 
   run_length_encode(
-    thrust::make_counting_iterator(type{}),
+    cuda::make_counting_iterator(type{}),
     static_cast<int*>(nullptr),
     static_cast<int*>(nullptr),
     out_num_runs.begin(),
@@ -248,7 +232,7 @@ C2H_TEST("DeviceRunLengthEncode::NonTrivialRuns can handle iterators", "[device]
 {
   using type = typename c2h::get<0, TestType>;
 
-  const int num_items = GENERATE_COPY(take(2, random(1, 1000000)));
+  const int num_items = GENERATE(take(2, random(1, 1000000)));
   c2h::device_vector<type> in(num_items);
   c2h::device_vector<int> out_offsets(num_items, -1);
   c2h::device_vector<int> out_lengths(num_items, -1);
@@ -266,7 +250,7 @@ C2H_TEST("DeviceRunLengthEncode::NonTrivialRuns can handle pointers", "[device][
 {
   using type = typename c2h::get<0, TestType>;
 
-  const int num_items = GENERATE_COPY(take(2, random(1, 1000000)));
+  const int num_items = GENERATE(take(2, random(1, 1000000)));
   c2h::device_vector<type> in(num_items);
   c2h::device_vector<int> out_offsets(num_items, -1);
   c2h::device_vector<int> out_lengths(num_items, -1);

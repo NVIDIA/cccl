@@ -145,13 +145,13 @@ struct large_problem_test_helper
 };
 
 template <typename Offset>
-auto make_large_offset() -> Offset
+auto make_large_offset(::cuda::std::size_t num_extra_items = 2000000ULL) -> Offset
 {
   // Clamp 64-bit offset type problem sizes to just slightly larger than 2^32 items
   const auto num_items_max_ull = ::cuda::std::clamp(
     static_cast<::cuda::std::size_t>(::cuda::std::numeric_limits<Offset>::max()),
     ::cuda::std::size_t{0},
-    ::cuda::std::numeric_limits<::cuda::std::uint32_t>::max() + static_cast<::cuda::std::size_t>(2000000ULL));
+    ::cuda::std::numeric_limits<::cuda::std::uint32_t>::max() + num_extra_items);
   return static_cast<Offset>(num_items_max_ull);
 }
 
