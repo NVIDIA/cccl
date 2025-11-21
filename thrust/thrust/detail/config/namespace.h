@@ -56,7 +56,6 @@
 #  define THRUST_NS_PREFIX             \
     namespace THRUST_WRAPPED_NAMESPACE \
     {
-
 #  define THRUST_NS_POSTFIX }
 
 #  define THRUST_NS_QUALIFIER ::THRUST_WRAPPED_NAMESPACE::thrust
@@ -108,13 +107,16 @@
 #    define THRUST_DETAIL_ABI_NS_END
 #  else // not defined(THRUST_DISABLE_ABI_NAMESPACE)
 #    if defined(_NVHPC_CUDA)
-#      define THRUST_DETAIL_ABI_NS_BEGIN                                                                           \
-        inline namespace _CCCL_PP_SPLICE_WITH(_, THRUST, THRUST_VERSION, SM, NV_TARGET_SM_INTEGER_LIST, NVHPC, NS) \
+#      define THRUST_DETAIL_ABI_NS_BEGIN                                                                            \
+        inline namespace _CCCL_PP_CAT(                                                                              \
+          _CCCL_PP_CAT(_CCCL_PP_CAT(_V_, THRUST_VERSION), _CCCL_PP_SPLICE_WITH(_, _SM, NV_TARGET_SM_INTEGER_LIST)), \
+          _NVHPC)                                                                                                   \
         {
 #      define THRUST_DETAIL_ABI_NS_END }
 #    else // not defined(_NVHPC_CUDA)
-#      define THRUST_DETAIL_ABI_NS_BEGIN                                                             \
-        inline namespace _CCCL_PP_SPLICE_WITH(_, THRUST, THRUST_VERSION, SM, __CUDA_ARCH_LIST__, NS) \
+#      define THRUST_DETAIL_ABI_NS_BEGIN                                                       \
+        inline namespace _CCCL_PP_CAT(                                                         \
+          _CCCL_PP_CAT(_V_, THRUST_VERSION), _CCCL_PP_SPLICE_WITH(_, _SM, __CUDA_ARCH_LIST__)) \
         {
 #      define THRUST_DETAIL_ABI_NS_END }
 #    endif // not defined(_NVHPC_CUDA)

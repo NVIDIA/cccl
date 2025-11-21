@@ -34,7 +34,6 @@
 THRUST_NAMESPACE_BEGIN
 namespace mr
 {
-
 /*! \addtogroup memory_resources Memory Resources
  *  \ingroup memory_management
  *  \{
@@ -62,6 +61,5 @@ tls_disjoint_pool(Upstream* upstream = nullptr, Bookkeeper* bookkeeper = nullptr
 
 /*! \}
  */
-
 } // namespace mr
 THRUST_NAMESPACE_END

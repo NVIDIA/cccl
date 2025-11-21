@@ -36,7 +36,7 @@
 #  pragma system_header
 #endif // no system header
 
-#if _CCCL_HAS_CUDA_COMPILER()
+#if _CCCL_CUDA_COMPILATION()
 
 #  include <thrust/system/cuda/config.h>
 
@@ -48,7 +48,6 @@
 #  include <thrust/detail/alignment.h>
 #  include <thrust/detail/raw_reference_cast.h>
 #  include <thrust/detail/temporary_array.h>
-#  include <thrust/distance.h>
 #  include <thrust/functional.h>
 #  include <thrust/system/cuda/detail/cdp_dispatch.h>
 #  include <thrust/system/cuda/detail/core/agent_launcher.h>
@@ -58,6 +57,13 @@
 #  include <thrust/system/cuda/detail/make_unsigned_special.h>
 #  include <thrust/system/cuda/detail/util.h>
 
+#  include <cuda/std/__functional/operations.h>
+#  include <cuda/std/__iterator/distance.h>
+#  include <cuda/std/__memory/is_sufficiently_aligned.h>
+#  include <cuda/std/__type_traits/conditional.h>
+#  include <cuda/std/__type_traits/is_arithmetic.h>
+#  include <cuda/std/__type_traits/is_pointer.h>
+#  include <cuda/std/__type_traits/remove_cv.h>
 #  include <cuda/std/cstdint>
 
 THRUST_NAMESPACE_BEGIN
@@ -82,10 +88,8 @@ void _CCCL_HOST_DEVICE reduce_into(
 
 namespace cuda_cub
 {
-
 namespace __reduce
 {
-
 template <bool>
 struct is_true : thrust::detail::false_type
 {};
@@ -101,13 +105,10 @@ template <int _BLOCK_THREADS,
           cub::GridMappingStrategy _GRID_MAPPING     = cub::GRID_MAPPING_DYNAMIC>
 struct PtxPolicy
 {
-  enum
-  {
-    BLOCK_THREADS      = _BLOCK_THREADS,
-    ITEMS_PER_THREAD   = _ITEMS_PER_THREAD,
-    VECTOR_LOAD_LENGTH = _VECTOR_LOAD_LENGTH,
-    ITEMS_PER_TILE     = _BLOCK_THREADS * _ITEMS_PER_THREAD
-  };
+  static constexpr int BLOCK_THREADS      = _BLOCK_THREADS;
+  static constexpr int ITEMS_PER_THREAD   = _ITEMS_PER_THREAD;
+  static constexpr int VECTOR_LOAD_LENGTH = _VECTOR_LOAD_LENGTH;
+  static constexpr int ITEMS_PER_TILE     = _BLOCK_THREADS * _ITEMS_PER_THREAD;
 
   static const cub::BlockReduceAlgorithm BLOCK_ALGORITHM = _BLOCK_ALGORITHM;
   static const cub::CacheLoadModifier LOAD_MODIFIER      = _LOAD_MODIFIER;
@@ -120,13 +121,10 @@ struct Tuning;
 template <class T>
 struct Tuning<core::detail::sm52, T>
 {
-  enum
-  {
-    // Relative size of T type to a 4-byte word
-    SCALE_FACTOR_4B = (sizeof(T) + 3) / 4,
-    // Relative size of T type to a 1-byte word
-    SCALE_FACTOR_1B = sizeof(T),
-  };
+  // Relative size of T type to a 4-byte word
+  static constexpr int SCALE_FACTOR_4B = (sizeof(T) + 3) / 4;
+  // Relative size of T type to a 1-byte word
+  static constexpr int SCALE_FACTOR_1B = sizeof(T);
 
   // ReducePolicy1B (GTX Titan: 228.7 GB/s @ 192M 1B items)
   using ReducePolicy1B =
@@ -209,17 +207,14 @@ struct ReduceAgent
   using BlockReduce  = typename ptx_plan::BlockReduce;
   using VectorLoadIt = typename ptx_plan::VectorLoadIt;
 
-  enum
-  {
-    ITEMS_PER_THREAD   = ptx_plan::ITEMS_PER_THREAD,
-    BLOCK_THREADS      = ptx_plan::BLOCK_THREADS,
-    ITEMS_PER_TILE     = ptx_plan::ITEMS_PER_TILE,
-    VECTOR_LOAD_LENGTH = ptx_plan::VECTOR_LOAD_LENGTH,
+  static constexpr int ITEMS_PER_THREAD   = ptx_plan::ITEMS_PER_THREAD;
+  static constexpr int BLOCK_THREADS      = ptx_plan::BLOCK_THREADS;
+  static constexpr int ITEMS_PER_TILE     = ptx_plan::ITEMS_PER_TILE;
+  static constexpr int VECTOR_LOAD_LENGTH = ptx_plan::VECTOR_LOAD_LENGTH;
 
-    ATTEMPT_VECTORIZATION = (VECTOR_LOAD_LENGTH > 1) && (ITEMS_PER_THREAD % VECTOR_LOAD_LENGTH == 0)
-                         && ::cuda::std::is_pointer<InputIt>::value
-                         && ::cuda::std::is_arithmetic<typename ::cuda::std::remove_cv<T>>::value
-  };
+  static constexpr bool ATTEMPT_VECTORIZATION =
+    (VECTOR_LOAD_LENGTH > 1) && (ITEMS_PER_THREAD % VECTOR_LOAD_LENGTH == 0)
+    && ::cuda::std::is_pointer_v<InputIt> && ::cuda::std::is_arithmetic_v<::cuda::std::remove_cv_t<T>>;
 
   struct impl
   {
@@ -301,10 +296,7 @@ struct ReduceAgent
       thrust::detail::true_type /* can_vectorize */)
     {
       // Alias items as an array of VectorT and load it in striped fashion
-      enum
-      {
-        WORDS = ITEMS_PER_THREAD / VECTOR_LOAD_LENGTH
-      };
+      static constexpr int WORDS = ITEMS_PER_THREAD / VECTOR_LOAD_LENGTH;
 
       T items[ITEMS_PER_THREAD];
 
@@ -610,7 +602,6 @@ struct DrainAgent
 
 namespace detail
 {
-
 template <typename Derived, typename InputIt, typename Size, typename T, typename BinaryOp>
 THRUST_RUNTIME_FUNCTION size_t get_reduce_n_temporary_storage_size(
   execution_policy<Derived>& policy, InputIt first, Size num_items, T init, BinaryOp binary_op)
@@ -700,7 +691,6 @@ THRUST_RUNTIME_FUNCTION void reduce_n_into_impl(
   status = cuda_cub::synchronize_optional(policy);
   cuda_cub::throw_on_error(status, "reduce failed to synchronize");
 }
-
 } // namespace detail
 
 //-------------------------
@@ -774,7 +764,6 @@ _CCCL_HOST_DEVICE void reduce_into(execution_policy<Derived>& policy, InputIt fi
   using value_type = thrust::detail::it_value_t<InputIt>;
   return cuda_cub::reduce_into(policy, first, last, output, value_type(0));
 }
-
 } // namespace cuda_cub
 
 THRUST_NAMESPACE_END
@@ -782,4 +771,4 @@ THRUST_NAMESPACE_END
 #  include <thrust/memory.h>
 #  include <thrust/reduce.h>
 
-#endif
+#endif // _CCCL_CUDA_COMPILATION()

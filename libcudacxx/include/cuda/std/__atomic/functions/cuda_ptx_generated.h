@@ -1,4 +1,3 @@
-
 //===----------------------------------------------------------------------===//
 //
 // Part of libcu++, the C++ Standard Library for your entire system,
@@ -42,7 +41,7 @@
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
-#if _CCCL_HAS_CUDA_COMPILER()
+#if _CCCL_CUDA_COMPILATION()
 
 extern "C" _CCCL_DEVICE void __atomic_cas_128b_unsupported_before_SM_90();
 extern "C" _CCCL_DEVICE void __atomic_exchange_128b_unsupported_before_SM_90();
@@ -4426,7 +4425,7 @@ template <class _Type, class _Up, class _Sco>
   return __atomic_fetch_add_cuda(__ptr, -__op, __memorder, _Sco{});
 }
 
-#endif // _CCCL_HAS_CUDA_COMPILER()
+#endif // _CCCL_CUDA_COMPILATION()
 
 _CCCL_END_NAMESPACE_CUDA_STD
 

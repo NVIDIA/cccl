@@ -27,13 +27,13 @@
 #endif // no system header
 #include <thrust/detail/function.h>
 #include <thrust/iterator/iterator_traits.h>
-#include <thrust/pair.h>
+
+#include <cuda/std/__utility/pair.h>
 
 THRUST_NAMESPACE_BEGIN
 
 namespace system::detail::generic::scalar
 {
-
 template <typename RandomAccessIterator, typename Size, typename T, typename BinaryPredicate>
 _CCCL_HOST_DEVICE RandomAccessIterator
 lower_bound_n(RandomAccessIterator first, Size n, const T& val, BinaryPredicate comp)
@@ -101,11 +101,11 @@ upper_bound(RandomAccessIterator first, RandomAccessIterator last, const T& val,
 }
 
 template <typename RandomAccessIterator, typename T, typename BinaryPredicate>
-_CCCL_HOST_DEVICE pair<RandomAccessIterator, RandomAccessIterator>
+_CCCL_HOST_DEVICE ::cuda::std::pair<RandomAccessIterator, RandomAccessIterator>
 equal_range(RandomAccessIterator first, RandomAccessIterator last, const T& val, BinaryPredicate comp)
 {
   RandomAccessIterator lb = thrust::system::detail::generic::scalar::lower_bound(first, last, val, comp);
-  return thrust::make_pair(lb, thrust::system::detail::generic::scalar::upper_bound(lb, last, val, comp));
+  return ::cuda::std::make_pair(lb, thrust::system::detail::generic::scalar::upper_bound(lb, last, val, comp));
 }
 
 template <typename RandomAccessIterator, typename T, typename Compare>
@@ -118,7 +118,6 @@ _CCCL_HOST_DEVICE bool binary_search(RandomAccessIterator first, RandomAccessIte
 
   return iter != last && !wrapped_comp(value, *iter);
 }
-
 } // namespace system::detail::generic::scalar
 
 THRUST_NAMESPACE_END

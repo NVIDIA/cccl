@@ -36,14 +36,15 @@
 #  pragma system_header
 #endif // no system header
 
-#if _CCCL_HAS_CUDA_COMPILER()
+#if _CCCL_CUDA_COMPILATION()
 #  include <thrust/system/cuda/config.h>
 
 #  include <thrust/system/cuda/detail/transform.h>
 #  include <thrust/system/cuda/execution_policy.h>
 
 #  include <cuda/__functional/address_stability.h>
-#  include <cuda/std/iterator>
+#  include <cuda/std/__iterator/distance.h>
+#  include <cuda/std/__iterator/incrementable_traits.h>
 
 THRUST_NAMESPACE_BEGIN
 namespace cuda_cub
@@ -58,4 +59,4 @@ void _CCCL_HOST_DEVICE tabulate(execution_policy<Derived>& policy, Iterator firs
 }
 } // namespace cuda_cub
 THRUST_NAMESPACE_END
-#endif
+#endif // _CCCL_CUDA_COMPILATION()

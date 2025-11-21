@@ -8,7 +8,7 @@ import numba
 import numpy as np
 from llvmlite import ir
 from numba import cuda, types
-from numba.core.extending import intrinsic, overload
+from numba.core.extending import as_numba_type, intrinsic, overload
 from numba.core.typing.ctypes_utils import to_ctypes
 from numba.cuda.dispatcher import CUDADispatcher
 
@@ -136,48 +136,45 @@ class IteratorBase:
         return self.output_dereference is not None
 
     def get_advance_ltoir(self) -> Tuple:
+        from .._cccl_interop import _create_advance_wrapper
+
         abi_name = f"advance_{_get_abi_suffix(self.kind)}"
-        signature = (
-            self.state_ptr_type,
-            types.uint64,  # distance type
+        wrapped_advance, wrapper_sig = _create_advance_wrapper(
+            self.advance, self.state_ptr_type
         )
         ltoir, _ = cached_compile(
-            self.advance,
-            signature,
+            wrapped_advance,
+            wrapper_sig,
             output="ltoir",
             abi_name=abi_name,
         )
         return (abi_name, ltoir)
 
-    def get_input_dereference_signature(self):
-        return (
-            self.state_ptr_type,
-            types.CPointer(self.value_type),
-        )
-
-    def get_output_dereference_signature(self):
-        return (
-            self.state_ptr_type,
-            self.value_type,
-        )
-
     def get_input_dereference_ltoir(self) -> Tuple:
+        from .._cccl_interop import _create_input_dereference_wrapper
+
         abi_name = f"input_dereference_{_get_abi_suffix(self.kind)}"
-        signature = self.get_input_dereference_signature()
+        wrapped_deref, wrapper_sig = _create_input_dereference_wrapper(
+            self.input_dereference, self.state_ptr_type, self.value_type
+        )
         ltoir, _ = cached_compile(
-            self.input_dereference,
-            signature,
+            wrapped_deref,
+            wrapper_sig,
             output="ltoir",
             abi_name=abi_name,
         )
         return (abi_name, ltoir)
 
     def get_output_dereference_ltoir(self) -> Tuple:
+        from .._cccl_interop import _create_output_dereference_wrapper
+
         abi_name = f"output_dereference_{_get_abi_suffix(self.kind)}"
-        signature = self.get_output_dereference_signature()
+        wrapped_deref, wrapper_sig = _create_output_dereference_wrapper(
+            self.output_dereference, self.state_ptr_type, self.value_type
+        )
         ltoir, _ = cached_compile(
-            self.output_dereference,
-            signature,
+            wrapped_deref,
+            wrapper_sig,
             output="ltoir",
             abi_name=abi_name,
         )
@@ -430,6 +427,48 @@ class CountingIterator(IteratorBase):
         result[0] = state[0]
 
 
+class DiscardIteratorKind(IteratorKind):
+    pass
+
+
+class DiscardIterator(IteratorBase):
+    iterator_kind_type = DiscardIteratorKind
+
+    def __init__(self):
+        value_type = numba.from_dtype(np.uint8)
+        cvalue = to_ctypes(value_type)(0)
+        state_type = value_type
+        super().__init__(
+            cvalue=cvalue,
+            state_type=state_type,
+            value_type=value_type,
+        )
+
+    @property
+    def host_advance(self):
+        return self._advance
+
+    @property
+    def advance(self):
+        return self._advance
+
+    @property
+    def input_dereference(self):
+        return self._dereference
+
+    @property
+    def output_dereference(self):
+        return self._dereference
+
+    @staticmethod
+    def _advance(state, distance):
+        pass
+
+    @staticmethod
+    def _dereference(state, result):
+        pass
+
+
 class ReverseIteratorKind(IteratorKind):
     pass
 
@@ -638,6 +677,8 @@ def make_permutation_iterator(values, indices):
     Returns:
         PermutationIterator: Iterator that yields permuted values
     """
+    from ..struct import make_struct_type
+
     # Convert arrays to iterators if needed
     if hasattr(values, "__cuda_array_interface__"):
         values = pointer(values, numba.from_dtype(get_dtype(values)))
@@ -673,22 +714,20 @@ def make_permutation_iterator(values, indices):
     # The cvalue and state for PermutationIterator are
     # structs composed of the cvalues and states of the
     # value and index iterators.
-    from ..struct import gpu_struct_from_numba_types
-
     class PermutationCValueStruct(ctypes.Structure):
         _fields_ = [
             ("value_state", values.cvalue.__class__),
             ("index_state", indices.cvalue.__class__),
         ]
 
-    PermutationState = gpu_struct_from_numba_types(
+    PermutationState = make_struct_type(
         "PermutationState",
-        ("value_state", "index_state"),
-        (values_state_type, indices.state_type),
+        field_names=("value_state", "index_state"),
+        field_types=(values_state_type, indices.state_type),
     )
 
     cvalue = PermutationCValueStruct(values.cvalue, indices.cvalue)
-    state_type = PermutationState._numba_type
+    state_type = as_numba_type(PermutationState)
     value_type = value_dtype
 
     # Define intrinsics for accessing struct fields

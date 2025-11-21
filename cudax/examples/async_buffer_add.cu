@@ -55,12 +55,12 @@ int main()
   // The execution policy we want to use to run all work on the same stream
   auto policy = thrust::cuda::par_nosync.on(stream.get());
 
-  cudax::device_memory_pool_ref device_resource = cudax::device_default_memory_pool(cuda::device_ref{0});
+  cuda::device_memory_pool_ref device_resource = cuda::device_default_memory_pool(cuda::device_ref{0});
 
   // Allocate the two inputs and output, but do not zero initialize via `cudax::no_init`
-  cudax::async_device_buffer<float> A{stream, device_resource, numElements, cudax::no_init};
-  cudax::async_device_buffer<float> B{stream, device_resource, numElements, cudax::no_init};
-  cudax::async_device_buffer<float> C{stream, device_resource, numElements, cudax::no_init};
+  cudax::device_buffer<float> A{stream, device_resource, numElements, cudax::no_init};
+  cudax::device_buffer<float> B{stream, device_resource, numElements, cudax::no_init};
+  cudax::device_buffer<float> C{stream, device_resource, numElements, cudax::no_init};
 
   // Fill both vectors on stream using a random number generator
   thrust::tabulate(policy, A.begin(), A.end(), generator{42});
@@ -69,12 +69,12 @@ int main()
   // Add the vectors together
   thrust::transform(policy, A.begin(), A.end(), B.begin(), C.begin(), cuda::std::plus<>{});
 
-  cudax::pinned_memory_pool_ref pinned_resource = cudax::pinned_default_memory_pool();
+  cuda::pinned_memory_pool_ref pinned_resource = cuda::pinned_default_memory_pool();
 
   // Verify that the result vector is correct, by copying it to host
-  cudax::async_host_buffer<float> h_A{stream, pinned_resource, A};
-  cudax::async_host_buffer<float> h_B{stream, pinned_resource, B};
-  cudax::async_host_buffer<float> h_C{stream, pinned_resource, C};
+  cudax::host_buffer<float> h_A{stream, pinned_resource, A};
+  cudax::host_buffer<float> h_B{stream, pinned_resource, B};
+  cudax::host_buffer<float> h_C{stream, pinned_resource, C};
 
   // Do not forget to sync afterwards
   stream.sync();

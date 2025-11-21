@@ -13,12 +13,9 @@
 #include <type_traits>
 #include <typeinfo>
 
-namespace std
+namespace std::experimental
 {
-namespace experimental
-{
-}
-} // namespace std
+} // namespace std::experimental
 
 #include "test_macros.h"
 #include "type_id.h"

@@ -50,7 +50,6 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 namespace __layout_stride_detail
 {
-
 template <class _StridedLayoutMapping, class _Extents>
 _CCCL_CONCEPT __can_convert = _CCCL_REQUIRES_EXPR((_StridedLayoutMapping, _Extents))(
   requires(__mdspan_detail::__layout_mapping_alike<_StridedLayoutMapping>),
@@ -67,11 +66,10 @@ struct __constraints
         || __mdspan_detail::__is_mapping_of<layout_right, _StridedLayoutMapping>
         || __mdspan_detail::__is_mapping_of<layout_stride, _StridedLayoutMapping>);
 };
-
 } // namespace __layout_stride_detail
 
 template <class _Extents>
-class layout_stride::mapping
+class _CCCL_DECLSPEC_EMPTY_BASES layout_stride::mapping
     : private __mdspan_ebco<_Extents,
                             __mdspan_detail::__possibly_empty_array<typename _Extents::index_type, _Extents::rank()>>
 {

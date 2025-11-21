@@ -14,9 +14,9 @@
 #include <cuda_runtime_api.h>
 // cuda_runtime_api needs to come first
 
+#include <cuda/__runtime/api_wrapper.h>
 #include <cuda/__stream/stream_ref.h>
 #include <cuda/atomic>
-#include <cuda/std/__cuda/api_wrapper.h>
 #include <cuda/std/utility>
 
 #include <cuda/experimental/launch.cuh>
@@ -29,8 +29,7 @@ namespace
 {
 namespace test
 {
-
-constexpr auto one_thread_dims = cudax::make_config(cudax::block_dims<1>(), cudax::grid_dims<1>());
+constexpr auto one_thread_dims = cudax::make_config(cuda::block_dims<1>(), cuda::grid_dims<1>());
 
 struct _malloc_pinned
 {
@@ -147,7 +146,6 @@ struct empty_kernel
 {
   __device__ void operator()() const noexcept {}
 };
-
 } // namespace test
 } // namespace
 #endif // __COMMON_UTILITY_H__

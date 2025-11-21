@@ -26,10 +26,10 @@ class OpKind(IntEnum):
     BIT_OR = ...
     BIT_XOR = ...
     BIT_NOT = ...
-    # IDENTITY = ...
+    IDENTITY = ...
     NEGATE = ...
-    # MINIMUM = ...
-    # MAXIMUM = ...
+    MINIMUM = ...
+    MAXIMUM = ...
 
 class TypeEnum(IntEnum):
     _value_: int
@@ -446,6 +446,29 @@ class DeviceHistogramBuildResult:
         row_stride_samples: int,
         stream,
     ) -> None: ...
+
+# -----------------
+# DeviceSegmentedSort
+# -----------------
+
+class DeviceSegmentedSortBuildResult:
+    def __init__(self): ...
+    def compute(
+        self,
+        temp_storage_ptr: int | None,
+        temp_storage_nbytes: int,
+        d_in_keys: Iterator,
+        d_out_keys: Iterator,
+        d_in_values: Iterator,
+        d_out_values: Iterator,
+        num_items: int,
+        num_segments: int,
+        d_begin_offsets: Iterator,
+        d_end_offsets: Iterator,
+        is_overwrite_okay: bool,
+        selector: int,
+        stream,
+    ) -> tuple[int, int]: ...
 
 # ---------------------
 # DeviceThreeWayPartition

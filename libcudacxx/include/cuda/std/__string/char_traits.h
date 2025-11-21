@@ -23,7 +23,6 @@
 #include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__fwd/char_traits.h>
 #include <cuda/std/__string/constexpr_c_functions.h>
-#include <cuda/std/__type_traits/is_constant_evaluated.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/cstdint>
 

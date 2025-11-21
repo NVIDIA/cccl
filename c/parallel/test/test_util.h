@@ -19,6 +19,7 @@
 #include <format>
 #include <fstream>
 #include <memory>
+#include <numeric>
 #include <random>
 #include <string>
 #include <tuple>
@@ -49,9 +50,9 @@ inline std::string inspect_sass(const void* cubin, size_t cubin_size)
   temp_in_file.close();
 
   std::string command = "nvdisasm -gi ";
-  command += temp_in_filename;
+  command += temp_in_filename.string();
   command += " > ";
-  command += temp_out_filename;
+  command += temp_out_filename.string();
 
   int exec_code = std::system(command.c_str());
 
@@ -114,12 +115,19 @@ inline std::string compile(const std::string& source)
 template <class T>
 std::vector<T> generate(std::size_t num_items)
 {
+  // Add support for 8-bit ints, otherwise MSVC fails with:
+  // error C2338: static_assert failed:
+  //   'invalid template argument for uniform_int_distribution:
+  //     N4950 [rand.req.genl]/1.5 requires one of
+  //       short, int, long, long long,
+  //       unsigned short, unsigned int, unsigned long, or unsigned long long'
+  using dist_type = std::conditional_t<sizeof(T) == 1, short, T>;
   std::random_device rnd_device;
   std::mt19937 mersenne_engine{rnd_device()}; // Generates random integers
-  std::uniform_int_distribution<T> dist{T{1}, T{42}};
+  std::uniform_int_distribution<dist_type> dist{dist_type{1}, dist_type{42}};
   std::vector<T> vec(num_items);
   std::generate(vec.begin(), vec.end(), [&]() {
-    return dist(mersenne_engine);
+    return static_cast<T>(dist(mersenne_engine));
   });
   return vec;
 }
@@ -923,8 +931,10 @@ inline std::tuple<std::string, std::string, std::string> make_random_access_iter
 {
   std::string state_def_src      = std::format("struct {0} {{ {1}* data; }};\n", iterator_state_name, value_type);
   std::string advance_fn_def_src = std::format(
-    "extern \"C\" __device__ void {0}({1}* state, unsigned long long offset) {{\n"
-    "  state->data += offset;\n"
+    "extern \"C\" __device__ void {0}(void* state, const void* offset) {{\n"
+    "  auto* typed_state = static_cast<{1}*>(state);\n"
+    "  auto offset_val = *static_cast<const unsigned long long*>(offset);\n"
+    "  typed_state->data += offset_val;\n"
     "}}",
     advance_fn_name,
     iterator_state_name);
@@ -933,19 +943,22 @@ inline std::tuple<std::string, std::string, std::string> make_random_access_iter
   if (kind == iterator_kind::INPUT)
   {
     dereference_fn_def_src = std::format(
-      "extern \"C\" __device__ void {0}({1}* state, {2}* result) {{\n"
-      "  *result = (*state->data){3};\n"
+      "extern \"C\" __device__ void {0}(const void* state, {1}* result) {{\n"
+      "  auto* typed_state = static_cast<const {2}*>(state);\n"
+      "  *result = (*typed_state->data){3};\n"
       "}}",
       dereference_fn_name,
-      iterator_state_name,
       value_type,
+      iterator_state_name,
       transform);
   }
   else
   {
     dereference_fn_def_src = std::format(
-      "extern \"C\" __device__ void {0}({1}* state, {2} x) {{\n"
-      "  *state->data = x{3};\n"
+      "extern \"C\" __device__ void {0}(void* state, const void* x) {{\n"
+      "  auto* typed_state = static_cast<{1}*>(state);\n"
+      "  auto x_val = *static_cast<const {2}*>(x);\n"
+      "  *typed_state->data = x_val{3};\n"
       "}}",
       dereference_fn_name,
       iterator_state_name,
@@ -983,15 +996,18 @@ inline std::tuple<std::string, std::string, std::string> make_counting_iterator_
 {
   std::string iterator_state_def_src = std::format("struct {0} {{ {1} value; }};\n", iterator_state_name, value_type);
   std::string advance_fn_def_src     = std::format(
-    "extern \"C\" __device__ void {0}({1}* state, unsigned long long offset) {{\n"
-        "  state->value += offset;\n"
+    "extern \"C\" __device__ void {0}(void* state, const void* offset) {{\n"
+        "  auto* typed_state = static_cast<{1}*>(state);\n"
+        "  auto offset_val = *static_cast<const unsigned long long*>(offset);\n"
+        "  typed_state->value += offset_val;\n"
         "}}",
     advance_fn_name,
     iterator_state_name);
 
   std::string dereference_fn_def_src = std::format(
-    "extern \"C\" __device__ void {0}({1}* state, {2}* result) {{ \n"
-    "  *result = state->value;\n"
+    "extern \"C\" __device__ void {0}(const void* state, {2}* result) {{ \n"
+    "  auto* typed_state = static_cast<const {1}*>(state);\n"
+    "  *result = typed_state->value;\n"
     "}}",
     dereference_fn_name,
     iterator_state_name,
@@ -1025,17 +1041,16 @@ inline std::tuple<std::string, std::string, std::string> make_constant_iterator_
   std::string_view dereference_fn_name)
 {
   std::string iterator_state_src = std::format("struct {0} {{ {1} value; }};\n", iterator_state_name, value_type);
-  std::string advance_fn_src     = std::format(
-    "extern \"C\" __device__ void {0}({1}* state, unsigned long long offset) {{ }}",
-    advance_fn_name,
-    iterator_state_name);
+  std::string advance_fn_src =
+    std::format("extern \"C\" __device__ void {0}(void* state, const void* offset) {{ }}", advance_fn_name);
   std::string dereference_fn_src = std::format(
-    "extern \"C\" __device__ void {0}({1}* state, {2}* result) {{ \n"
-    "  *result = state->value;\n"
+    "extern \"C\" __device__ void {0}(const void* state, {1}* result) {{ \n"
+    "  auto* typed_state = static_cast<const {2}*>(state);\n"
+    "  *result = typed_state->value;\n"
     "}}",
     dereference_fn_name,
-    iterator_state_name,
-    value_type);
+    value_type,
+    iterator_state_name);
 
   return std::make_tuple(iterator_state_src, advance_fn_src, dereference_fn_src);
 }
@@ -1068,8 +1083,10 @@ inline std::tuple<std::string, std::string, std::string> make_reverse_iterator_s
 {
   std::string iterator_state_src = std::format("struct {0} {{ {1}* data; }};\n", iterator_state_name, value_type);
   std::string advance_fn_src     = std::format(
-    "extern \"C\" __device__ void {0}({1}* state, unsigned long long offset) {{\n"
-        "  state->data -= offset;\n"
+    "extern \"C\" __device__ void {0}(void* state, const void* offset) {{\n"
+        "  auto* typed_state = static_cast<{1}*>(state);\n"
+        "  auto offset_val = *static_cast<const unsigned long long*>(offset);\n"
+        "  typed_state->data -= offset_val;\n"
         "}}",
     advance_fn_name,
     iterator_state_name);
@@ -1077,8 +1094,9 @@ inline std::tuple<std::string, std::string, std::string> make_reverse_iterator_s
   if (kind == iterator_kind::INPUT)
   {
     dereference_fn_src = std::format(
-      "extern \"C\" __device__ void {0}({1}* state, {2}* result) {{\n"
-      "  *result = (*state->data){3};\n"
+      "extern \"C\" __device__ void {0}(const void* state, {2}* result) {{\n"
+      "  auto* typed_state = static_cast<const {1}*>(state);\n"
+      "  *result = (*typed_state->data){3};\n"
       "}}",
       dereference_fn_name,
       iterator_state_name,
@@ -1088,8 +1106,10 @@ inline std::tuple<std::string, std::string, std::string> make_reverse_iterator_s
   else
   {
     dereference_fn_src = std::format(
-      "extern \"C\" __device__ void {0}({1}* state, {2} x) {{\n"
-      "  *state->data = x{3};\n"
+      "extern \"C\" __device__ void {0}(void* state, const void* x) {{\n"
+      "  auto* typed_state = static_cast<{1}*>(state);\n"
+      "  auto x_val = *static_cast<const {2}*>(x);\n"
+      "  *typed_state->data = x_val{3};\n"
       "}}",
       dereference_fn_name,
       iterator_state_name,
@@ -1098,6 +1118,79 @@ inline std::tuple<std::string, std::string, std::string> make_reverse_iterator_s
   }
 
   return std::make_tuple(iterator_state_src, advance_fn_src, dereference_fn_src);
+}
+
+inline std::tuple<std::string, std::string, std::string> make_step_counting_iterator_sources(
+  std::string_view index_ty_name,
+  std::string_view state_name,
+  std::string_view advance_fn_name,
+  std::string_view dereference_fn_name)
+{
+  static constexpr std::string_view it_state_src_tmpl = R"XXX(
+struct {0} {{
+  {1} linear_id;
+  {1} segment_size;
+}};
+)XXX";
+
+  const std::string it_state_def_src = std::format(it_state_src_tmpl, state_name, index_ty_name);
+
+  static constexpr std::string_view it_def_src_tmpl = R"XXX(
+extern "C" __device__ void {0}(void* state, const void* offset)
+{{
+  auto* typed_state = static_cast<{1}*>(state);
+  auto offset_val = *static_cast<const {2}*>(offset);
+  typed_state->linear_id += offset_val;
+}}
+)XXX";
+
+  const std::string it_advance_fn_def_src =
+    std::format(it_def_src_tmpl, /*0*/ advance_fn_name, state_name, index_ty_name);
+
+  static constexpr std::string_view it_deref_src_tmpl = R"XXX(
+extern "C" __device__ void {0}(const void* state, {1}* result)
+{{
+  auto* typed_state = static_cast<const {2}*>(state);
+  *result = (typed_state->linear_id) * (typed_state->segment_size);
+}}
+)XXX";
+
+  const std::string it_deref_fn_def_src =
+    std::format(it_deref_src_tmpl, dereference_fn_name, index_ty_name, state_name);
+
+  return std::make_tuple(it_state_def_src, it_advance_fn_def_src, it_deref_fn_def_src);
+}
+
+// Host-side advance function for iterator states that have a `linear_id` member
+template <typename StateT>
+inline void host_advance_linear_id(void* state, cccl_increment_t offset)
+{
+  auto* st    = reinterpret_cast<StateT*>(state);
+  using Index = decltype(st->linear_id);
+  if constexpr (std::is_signed_v<Index>)
+  {
+    st->linear_id += offset.signed_offset;
+  }
+  else
+  {
+    st->linear_id += offset.unsigned_offset;
+  }
+}
+
+// Host-side advance for iterator states that contain a nested `base_it_state.value`
+template <typename StateT>
+inline void host_advance_base_value(void* state, cccl_increment_t offset)
+{
+  auto st      = reinterpret_cast<StateT*>(state);
+  using IndexT = decltype(st->base_it_state.value);
+  if constexpr (std::is_signed_v<IndexT>)
+  {
+    st->base_it_state.value += offset.signed_offset;
+  }
+  else
+  {
+    st->base_it_state.value += offset.unsigned_offset;
+  }
 }
 
 template <class ValueT>
@@ -1151,8 +1244,9 @@ struct {0} {{
 
   static constexpr std::string_view transform_it_advance_fn_src_tmpl = R"XXX(
 {3}
-extern "C" __device__ void {0}({1} *transform_it_state, unsigned long long offset) {{
-    {2}(&(transform_it_state->base_it_state), offset);
+extern "C" __device__ void {0}(void* transform_it_state, const void* offset) {{
+    auto* typed_state = static_cast<{1}*>(transform_it_state);
+    {2}(&(typed_state->base_it_state), offset);
 }}
 )XXX";
 
@@ -1166,11 +1260,12 @@ extern "C" __device__ void {0}({1} *transform_it_state, unsigned long long offse
   static constexpr std::string_view transform_it_dereference_fn_src_tmpl = R"XXX(
 {5}
 {6}
-extern "C" __device__ void {0}({1} *transform_it_state, {2}* result) {{
+extern "C" __device__ void {0}(const void* transform_it_state, {2}* result) {{
+    auto* typed_state = static_cast<const {1}*>(transform_it_state);
     {7} base_result;
-    {4}(&(transform_it_state->base_it_state), &base_result);
+    {4}(&(typed_state->base_it_state), &base_result);
     *result = {3}(
-        &(transform_it_state->functor_state),
+        const_cast<decltype(typed_state->functor_state)*>(&(typed_state->functor_state)),
         base_result
     );
 }}
@@ -1254,8 +1349,9 @@ struct {0} {{
 
   static constexpr std::string_view transform_it_advance_fn_src_tmpl = R"XXX(
 {3}
-extern "C" __device__ void {0}({1} *transform_it_state, unsigned long long offset) {{
-    {2}(&(transform_it_state->base_it_state), offset);
+extern "C" __device__ void {0}(void *transform_it_state, const void* offset) {{
+    auto* typed_state = static_cast<{1}*>(transform_it_state);
+    {2}(&(typed_state->base_it_state), offset);
 }}
 )XXX";
 
@@ -1322,6 +1418,59 @@ auto make_stateless_transform_input_iterator(
     {transform_it_deref_fn_name, transform_it_deref_fn_src});
 
   return transform_it;
+}
+
+inline std::tuple<std::string, std::string, std::string> make_discard_iterator_sources(
+  iterator_kind kind,
+  std::string_view value_type,
+  std::string_view iterator_state_name,
+  std::string_view advance_fn_name,
+  std::string_view dereference_fn_name)
+{
+  std::string state_def_src      = std::format("struct {0} {{ {1}* data; }};\n", iterator_state_name, value_type);
+  std::string advance_fn_def_src = std::format(
+    "extern \"C\" __device__ void {0}(void* /*state*/, const void* /*offset*/) {{\n"
+    "}}",
+    advance_fn_name,
+    iterator_state_name);
+
+  std::string dereference_fn_def_src;
+  if (kind == iterator_kind::INPUT)
+  {
+    dereference_fn_def_src = std::format(
+      "extern \"C\" __device__ void {0}(const void* /*state*/, {2}* /*result*/) {{\n"
+      "}}",
+      dereference_fn_name,
+      iterator_state_name,
+      value_type);
+  }
+  else
+  {
+    dereference_fn_def_src = std::format(
+      "extern \"C\" __device__ void {0}(void* /*state*/, const void* /*x*/) {{\n"
+      "}}",
+      dereference_fn_name,
+      iterator_state_name,
+      value_type);
+  }
+
+  return std::make_tuple(state_def_src, advance_fn_def_src, dereference_fn_def_src);
+}
+
+template <typename ValueT>
+auto make_discard_iterator(iterator_kind kind, std::string_view value_type, std::string prefix = "")
+{
+  std::string iterator_state_name = std::format("{0}struct_t", prefix);
+  std::string advance_fn_name     = std::format("{0}advance", prefix);
+  std::string dereference_fn_name = std::format("{0}dereference", prefix);
+
+  const auto& [iterator_state_src, advance_fn_src, dereference_fn_src] =
+    make_discard_iterator_sources(kind, value_type, iterator_state_name, advance_fn_name, dereference_fn_name);
+  name_source_t iterator_state = {iterator_state_name, iterator_state_src};
+  operation_t advance          = {advance_fn_name, advance_fn_src};
+  operation_t dereference      = {dereference_fn_name, dereference_fn_src};
+
+  return make_iterator<ValueT, random_access_iterator_state_t<ValueT>>(iterator_state, advance, dereference);
 }
 
 template <class T>

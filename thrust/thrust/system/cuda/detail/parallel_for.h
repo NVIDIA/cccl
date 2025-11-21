@@ -36,7 +36,7 @@
 #  pragma system_header
 #endif // no system header
 
-#if _CCCL_HAS_CUDA_COMPILER()
+#if _CCCL_CUDA_COMPILATION()
 
 #  include <thrust/system/cuda/config.h>
 
@@ -49,7 +49,6 @@ THRUST_NAMESPACE_BEGIN
 
 namespace cuda_cub
 {
-
 _CCCL_EXEC_CHECK_DISABLE
 template <class Derived, class F, class Size>
 void _CCCL_HOST_DEVICE parallel_for(execution_policy<Derived>& policy, F f, Size count)
@@ -74,8 +73,7 @@ void _CCCL_HOST_DEVICE parallel_for(execution_policy<Derived>& policy, F f, Size
   ));
   // clang-format on
 }
-
 } // namespace cuda_cub
 
 THRUST_NAMESPACE_END
-#endif
+#endif // _CCCL_CUDA_COMPILATION()

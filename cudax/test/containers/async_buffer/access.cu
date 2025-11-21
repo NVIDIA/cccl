@@ -10,7 +10,7 @@
 
 #include <cuda/devices>
 #include <cuda/memory_resource>
-#include <cuda/std/__algorithm_>
+#include <cuda/std/algorithm>
 #include <cuda/std/array>
 #include <cuda/std/cassert>
 #include <cuda/std/initializer_list>
@@ -32,11 +32,11 @@ using test_types = c2h::type_list<cuda::std::tuple<int, cuda::mr::host_accessibl
 using test_types = c2h::type_list<cuda::std::tuple<int, cuda::mr::device_accessible>>;
 #endif // ^^^ _CCCL_CTK_BELOW(12, 6) ^^^
 
-C2H_CCCLRT_TEST("cudax::async_buffer access and stream", "[container][async_buffer]", test_types)
+C2H_CCCLRT_TEST("cudax::buffer access and stream", "[container][buffer]", test_types)
 {
   using TestT           = c2h::get<0, TestType>;
   using Resource        = typename extract_properties<TestT>::resource;
-  using Buffer          = typename extract_properties<TestT>::async_buffer;
+  using Buffer          = typename extract_properties<TestT>::buffer;
   using T               = typename Buffer::value_type;
   using reference       = typename Buffer::reference;
   using const_reference = typename Buffer::const_reference;
@@ -46,7 +46,7 @@ C2H_CCCLRT_TEST("cudax::async_buffer access and stream", "[container][async_buff
   cudax::stream stream{cuda::device_ref{0}};
   Resource resource = extract_properties<TestT>::get_resource();
 
-  SECTION("cudax::async_buffer::get_unsynchronized")
+  SECTION("cudax::buffer::get_unsynchronized")
   {
     static_assert(cuda::std::is_same_v<decltype(cuda::std::declval<Buffer&>().get_unsynchronized(1ull)), reference>);
     static_assert(
@@ -66,7 +66,7 @@ C2H_CCCLRT_TEST("cudax::async_buffer access and stream", "[container][async_buff
     }
   }
 
-  SECTION("cudax::async_buffer::data")
+  SECTION("cudax::buffer::data")
   {
     static_assert(cuda::std::is_same_v<decltype(cuda::std::declval<Buffer&>().data()), pointer>);
     static_assert(cuda::std::is_same_v<decltype(cuda::std::declval<const Buffer&>().data()), const_pointer>);
@@ -87,7 +87,7 @@ C2H_CCCLRT_TEST("cudax::async_buffer access and stream", "[container][async_buff
     }
   }
 
-  SECTION("cudax::async_buffer::stream")
+  SECTION("cudax::buffer::stream")
   {
     Buffer buf{stream, resource, {T(1), T(42), T(1337), T(0)}};
     CUDAX_CHECK(buf.stream() == stream);

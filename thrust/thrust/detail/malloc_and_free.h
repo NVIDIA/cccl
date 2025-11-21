@@ -30,8 +30,20 @@
 #include <thrust/detail/malloc_and_free_fwd.h>
 #include <thrust/detail/pointer.h>
 #include <thrust/detail/raw_pointer_cast.h>
-#include <thrust/system/detail/adl/malloc_and_free.h>
+
+// Include all active backend system implementations (generic, sequential, host and device)
 #include <thrust/system/detail/generic/memory.h>
+#include <thrust/system/detail/sequential/malloc_and_free.h>
+#include __THRUST_HOST_SYSTEM_ALGORITH_DETAIL_HEADER_INCLUDE(malloc_and_free.h)
+#include __THRUST_DEVICE_SYSTEM_ALGORITH_DETAIL_HEADER_INCLUDE(malloc_and_free.h)
+
+// Some build systems need a hint to know which files we could include
+#if 0
+#  include <thrust/system/cpp/detail/malloc_and_free.h>
+#  include <thrust/system/cuda/detail/malloc_and_free.h>
+#  include <thrust/system/omp/detail/malloc_and_free.h>
+#  include <thrust/system/tbb/detail/malloc_and_free.h>
+#endif
 
 THRUST_NAMESPACE_BEGIN
 

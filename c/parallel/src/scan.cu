@@ -10,6 +10,7 @@
 
 #include <cub/detail/choose_offset.cuh>
 #include <cub/detail/launcher/cuda_driver.cuh>
+#include <cub/detail/ptx-json-parser.h>
 #include <cub/device/dispatch/dispatch_scan.cuh>
 #include <cub/thread/thread_load.cuh>
 #include <cub/util_arch.cuh>
@@ -35,7 +36,6 @@
 #include <util/context.h>
 #include <util/errors.h>
 #include <util/indirect_arg.h>
-#include <util/runtime_policy.h>
 #include <util/scan_tile_state.h>
 #include <util/types.h>
 
@@ -49,7 +49,6 @@ struct output_iterator_t;
 
 namespace scan
 {
-
 enum class InitKind
 {
   Value,
@@ -247,34 +246,7 @@ CUresult cccl_device_scan_build_ex(
 
     const std::string op_src = make_kernel_user_binary_operator(accum_cpp, accum_cpp, accum_cpp, op);
 
-    constexpr std::string_view src_template = R"XXX(
-#include <cub/block/block_scan.cuh>
-#include <cub/device/dispatch/kernels/scan.cuh>
-#include <cub/agent/single_pass_scan_operators.cuh>
-struct __align__({1}) storage_t {{
-  char data[{0}];
-}};
-{2}
-{3}
-{4}
-)XXX";
-
-    const std::string& src = std::format(
-      src_template,
-      input_it.value_type.size, // 0
-      input_it.value_type.alignment, // 1
-      input_iterator_src, // 2
-      output_iterator_src, // 3
-      op_src); // 4
-
     const auto output_it_value_t = cccl_type_enum_to_name(output_it.value_type.type);
-
-    const std::string ptx_arch = std::format("-arch=compute_{}{}", cc_major, cc_minor);
-
-    std::vector<const char*> ptx_args = {
-      ptx_arch.c_str(), cub_path, thrust_path, libcudacxx_path, ctk_path, "-rdc=true"};
-
-    cccl::detail::extend_args_with_build_config(ptx_args, config);
 
     std::string policy_hub_expr = std::format(
       "cub::detail::scan::policy_hub<{}, {}, {}, {}, {}>",
@@ -284,36 +256,32 @@ struct __align__({1}) storage_t {{
       offset_t,
       "op_wrapper");
 
-    nlohmann::json runtime_policy = get_policy(
-      std::format("cub::detail::scan::MakeScanPolicyWrapper({}::MaxPolicy::ActivePolicy{{}})", policy_hub_expr),
-      "#include <cub/device/dispatch/tuning/tuning_scan.cuh>\n" + src,
-      ptx_args);
-
-    auto delay_ctor_info = runtime_policy["DelayConstructor"];
-    std::string delay_ctor_params;
-    for (auto&& param : delay_ctor_info["params"])
-    {
-      delay_ctor_params.append(to_string(param) + ", ");
-    }
-    delay_ctor_params.erase(delay_ctor_params.size() - 2); // remove last ", "
-    auto delay_ctor_t =
-      std::format("cub::detail::{}<{}>", delay_ctor_info["name"].get<std::string>(), delay_ctor_params);
-
-    using cub::detail::RuntimeScanAgentPolicy;
-    auto [scan_policy,
-          scan_policy_str] = RuntimeScanAgentPolicy::from_json(runtime_policy, "ScanPolicyT", delay_ctor_t);
-
     std::string final_src = std::format(
       R"XXX(
-{0}
-struct device_scan_policy {{
-  struct ActivePolicy {{
-    {1}
-  }};
+#include <cub/device/dispatch/tuning/tuning_scan.cuh>
+#include <cub/block/block_scan.cuh>
+#include <cub/device/dispatch/kernels/kernel_scan.cuh>
+#include <cub/agent/single_pass_scan_operators.cuh>
+struct __align__({1}) storage_t {{
+  char data[{0}];
 }};
+{2}
+{3}
+{4}
+using device_scan_policy = {5}::MaxPolicy;
+
+#include <cub/detail/ptx-json/json.h>
+__device__ consteval auto& policy_generator() {{
+  return ptx_json::id<ptx_json::string("device_scan_policy")>()
+    = cub::detail::scan::ScanPolicyWrapper<device_scan_policy::ActivePolicy>::EncodedPolicy();
+}}
 )XXX",
-      src,
-      scan_policy_str);
+      input_it.value_type.size, // 0
+      input_it.value_type.alignment, // 1
+      input_iterator_src, // 2
+      output_iterator_src, // 3
+      op_src, // 4
+      policy_hub_expr); // 5
 
 #if false // CCCL_DEBUGGING_SWITCH
     fflush(stderr);
@@ -330,7 +298,16 @@ struct device_scan_policy {{
     const std::string arch = std::format("-arch=sm_{0}{1}", cc_major, cc_minor);
 
     std::vector<const char*> args = {
-      arch.c_str(), cub_path, thrust_path, libcudacxx_path, ctk_path, "-rdc=true", "-dlto", "-DCUB_DISABLE_CDP"};
+      arch.c_str(),
+      cub_path,
+      thrust_path,
+      libcudacxx_path,
+      ctk_path,
+      "-rdc=true",
+      "-dlto",
+      "-DCUB_DISABLE_CDP",
+      "-DCUB_ENABLE_POLICY_PTX_JSON",
+      "-std=c++20"};
 
     cccl::detail::extend_args_with_build_config(args, config);
 
@@ -363,6 +340,12 @@ struct device_scan_policy {{
 
     auto [description_bytes_per_tile,
           payload_bytes_per_tile] = get_tile_state_bytes_per_tile(accum_t, accum_cpp, args.data(), args.size(), arch);
+
+    nlohmann::json runtime_policy =
+      cub::detail::ptx_json::parse("device_scan_policy", {result.data.get(), result.size});
+
+    using cub::detail::RuntimeScanAgentPolicy;
+    auto scan_policy = RuntimeScanAgentPolicy::from_json(runtime_policy, "ScanPolicyT");
 
     build_ptr->cc                         = cc;
     build_ptr->cubin                      = (void*) result.data.release();

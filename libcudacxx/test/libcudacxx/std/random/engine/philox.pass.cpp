@@ -10,10 +10,10 @@
 
 #include <cuda/std/__random_>
 
-#include "test_engine.h"
+#include "random_utilities/test_engine.h"
 
 template <typename Engine>
-__host__ __device__ constexpr bool test_set_counter()
+__host__ __device__ TEST_CONSTEXPR_CXX20 bool test_set_counter()
 {
   Engine e1(7);
   Engine e2(7);
@@ -43,7 +43,7 @@ __host__ __device__ constexpr bool test_set_counter()
   return true;
 }
 
-__host__ __device__ constexpr bool test_against_reference()
+__host__ __device__ TEST_CONSTEXPR_CXX20 bool test_against_reference()
 {
   // reference values obtained from other standard library implementations
   const int seeds[]                               = {10823018, 0, 23};
@@ -78,16 +78,18 @@ __host__ __device__ constexpr bool test_against_reference()
   return true;
 }
 
-__host__ __device__ constexpr bool test()
+__host__ __device__ TEST_CONSTEXPR_CXX20 bool test()
 {
   test_engine<cuda::std::philox4x32, 1955073260u>();
   test_engine<cuda::std::philox4x64, 3409172418970261260ull>();
   test_set_counter<cuda::std::philox4x32>();
-  static_assert(test_set_counter<cuda::std::philox4x32>());
   test_set_counter<cuda::std::philox4x64>();
-  static_assert(test_set_counter<cuda::std::philox4x64>());
   test_against_reference();
+#if TEST_STD_VER >= 2020
+  static_assert(test_set_counter<cuda::std::philox4x32>());
+  static_assert(test_set_counter<cuda::std::philox4x64>());
   static_assert(test_against_reference());
+#endif
   return true;
 }
 

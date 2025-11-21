@@ -49,27 +49,6 @@ jobs:
         with:
           fetch-depth: 0
           persist-credentials: false
-      - name: Define job details
-        shell: bash --noprofile --norc -euo pipefail {0}
-        run: |
-          # The new cache won't be uploaded unless the cache key is unique:
-          echo "UNIQUE_SLUG=${{github.run_id}}-${{github.run_attempt}}-$RANDOM" | tee -a "${GITHUB_ENV}"
-      - name: Setup sccache preprocessor cache
-        id: sccache-preprocessor-cache
-        uses: actions/cache@v4
-        with:
-          path: .cache/sccache/preprocessor
-          key: sccache-preprocessor-cache-matx-${{runner.os}}-${{env.UNIQUE_SLUG}}
-          restore-keys: |
-            sccache-preprocessor-cache-matx-${{runner.os}}
-      - name: Setup sccache-dist client toolchains cache
-        id: sccache-dist-toolchains-cache
-        uses: actions/cache@v4
-        with:
-          path: .cache/sccache-dist-client
-          key: sccache-toolchains-cache-matx-${{runner.os}}-${{env.UNIQUE_SLUG}}
-          restore-keys: |
-            sccache-toolchains-cache-matx-${{runner.os}}
       - name: Add NVCC problem matcher
         run: echo "::add-matcher::$(pwd)/.github/problem-matchers/problem-matcher.json"
       - uses: aws-actions/configure-aws-credentials@v4

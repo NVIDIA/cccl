@@ -204,6 +204,50 @@ C2H_TEST("DeviceSelect::UniqueByKey works", "[unique_by_key]", key_types)
   REQUIRE(input_pairs == output_pairs);
 }
 
+struct UniqueByKey_KeysOnly_Fixture_Tag;
+C2H_TEST("DeviceSelect::UniqueByKey works with keys only", "[unique_by_key]", key_types)
+{
+  using key_t = c2h::get<0, TestType>;
+
+  const int num_items = GENERATE_COPY(take(2, random(1, 1000000)));
+
+  operation_t op                = make_operation("op", get_unique_by_key_op(get_type_info<key_t>().type));
+  std::vector<key_t> input_keys = generate<key_t>(num_items);
+
+  pointer_t<key_t> input_keys_it(input_keys);
+  iterator_t<uint8_t, random_access_iterator_state_t<uint8_t>> input_values_it =
+    make_discard_iterator<uint8_t>(iterator_kind::INPUT, "unsigned char", "in");
+  pointer_t<key_t> output_keys_it(num_items);
+  iterator_t<uint8_t, random_access_iterator_state_t<uint8_t>> output_values_it =
+    make_discard_iterator<uint8_t>(iterator_kind::OUTPUT, "unsigned char", "out");
+  pointer_t<int> output_num_selected_it(1);
+
+  auto& build_cache = get_cache<UniqueByKey_KeysOnly_Fixture_Tag>();
+  // key: (input_type, output_type, num_selected_type)
+  const auto& test_key = make_key<key_t, item_t, int>();
+
+  unique_by_key(
+    input_keys_it,
+    input_values_it,
+    output_keys_it,
+    output_values_it,
+    output_num_selected_it,
+    op,
+    num_items,
+    build_cache,
+    test_key);
+
+  const auto boundary = std::unique(input_keys.begin(), input_keys.end());
+  int num_selected    = output_num_selected_it[0];
+  REQUIRE((boundary - input_keys.begin()) == num_selected);
+
+  std::vector<key_t> host_output_keys(output_keys_it);
+  host_output_keys.erase(host_output_keys.begin() + num_selected, host_output_keys.end());
+  input_keys.erase(boundary, input_keys.end());
+
+  REQUIRE(input_keys == host_output_keys);
+}
+
 using floating_point_types = c2h::type_list<
 #if _CCCL_HAS_NVFP16()
   __half,
@@ -218,7 +262,11 @@ C2H_TEST("DeviceSelect::UniqueByKey works with floating point types", "[unique_b
 
   operation_t op                   = make_operation("op", get_unique_by_key_op(get_type_info<key_t>().type));
   const std::vector<int> int_input = generate<int>(num_items);
+  // Suppress harmless conversion warnings on MSVC
+  _CCCL_DIAG_PUSH
+  _CCCL_DIAG_SUPPRESS_MSVC(4244)
   const std::vector<key_t> input_keys(int_input.begin(), int_input.end());
+  _CCCL_DIAG_POP
   std::vector<item_t> input_values = generate<item_t>(num_items);
 
   pointer_t<key_t> input_keys_it(input_keys);
@@ -413,15 +461,14 @@ C2H_TEST("DeviceSelect::UniqueByKey works with custom types", "[device][select_u
 {
   const int num_items = GENERATE_COPY(take(2, random(1, 1000000)));
 
-  operation_t op = make_operation(
-    "op",
-    "struct key_pair { short a; size_t b; };\n"
-    "extern \"C\" __device__ void op(void* lhs_ptr, void* rhs_ptr, bool* out_ptr) {\n"
-    "  key_pair* lhs = static_cast<key_pair*>(lhs_ptr);\n"
-    "  key_pair* rhs = static_cast<key_pair*>(rhs_ptr);\n"
-    "  bool* out = static_cast<bool*>(out_ptr);\n"
-    "  *out = (lhs->a == rhs->a && lhs->b == rhs->b);\n"
-    "}");
+  operation_t op              = make_operation("op",
+                                  R"(struct key_pair { short a; size_t b; };
+extern "C" __device__ void op(void* lhs_ptr, void* rhs_ptr, bool* out_ptr) {
+  key_pair* lhs = static_cast<key_pair*>(lhs_ptr);
+  key_pair* rhs = static_cast<key_pair*>(rhs_ptr);
+  bool* out = static_cast<bool*>(out_ptr);
+  *out = (lhs->a == rhs->a && lhs->b == rhs->b);
+})");
   const std::vector<short> a  = generate<short>(num_items);
   const std::vector<size_t> b = generate<size_t>(num_items);
   std::vector<key_pair> input_keys(num_items);
@@ -485,15 +532,14 @@ C2H_TEST("DeviceSelect::UniqueByKey works with custom types with well-known oper
 {
   const int num_items = GENERATE_COPY(take(2, random(1, 1000000)));
 
-  operation_t op_state = make_operation(
-    "op",
-    "struct key_pair { short a; size_t b; };\n"
-    "extern \"C\" __device__ void op(void* lhs_ptr, void* rhs_ptr, bool* out_ptr) {\n"
-    "  key_pair* lhs = static_cast<key_pair*>(lhs_ptr);\n"
-    "  key_pair* rhs = static_cast<key_pair*>(rhs_ptr);\n"
-    "  bool* out = static_cast<bool*>(out_ptr);\n"
-    "  *out = (lhs->a == rhs->a && lhs->b == rhs->b);\n"
-    "}");
+  operation_t op_state        = make_operation("op",
+                                        R"(struct key_pair { short a; size_t b; };
+extern "C" __device__ void op(void* lhs_ptr, void* rhs_ptr, bool* out_ptr) {
+  key_pair* lhs = static_cast<key_pair*>(lhs_ptr);
+  key_pair* rhs = static_cast<key_pair*>(rhs_ptr);
+  bool* out = static_cast<bool*>(out_ptr);
+  *out = (lhs->a == rhs->a && lhs->b == rhs->b);
+})");
   cccl_op_t op                = op_state;
   op.type                     = cccl_op_kind_t::CCCL_EQUAL_TO;
   const std::vector<short> a  = generate<short>(num_items);
@@ -645,12 +691,11 @@ C2H_TEST("DeviceSelect::UniqueByKey fails to build for large types due to no vsm
 {
   const int num_items = 1;
 
-  operation_t op = make_operation(
-    "op",
-    "struct large_key_pair { int a; char c[500]; };\n"
-    "extern \"C\" __device__ bool op(large_key_pair lhs, large_key_pair rhs) {\n"
-    "  return lhs.a == rhs.a;\n"
-    "}");
+  operation_t op           = make_operation("op",
+                                  R"(struct large_key_pair { int a; char c[500]; };
+extern "C" __device__ bool op(large_key_pair lhs, large_key_pair rhs) {
+  return lhs.a == rhs.a;
+})");
   const std::vector<int> a = generate<int>(num_items);
   std::vector<large_key_pair> input_keys(num_items);
   for (int i = 0; i < num_items; ++i)

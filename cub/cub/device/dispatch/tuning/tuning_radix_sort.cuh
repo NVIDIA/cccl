@@ -1,29 +1,5 @@
-/******************************************************************************
- * Copyright (c) 2024, NVIDIA CORPORATION. All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *     * Redistributions of source code must retain the above copyright
- *       notice, this list of conditions and the following disclaimer.
- *     * Redistributions in binary form must reproduce the above copyright
- *       notice, this list of conditions and the following disclaimer in the
- *       documentation and/or other materials provided with the distribution.
- *     * Neither the name of the NVIDIA CORPORATION nor the
- *       names of its contributors may be used to endorse or promote products
- *       derived from this software without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
- *AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- *IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
- * DISCLAIMED. IN NO EVENT SHALL NVIDIA CORPORATION BE LIABLE FOR ANY
- * DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
- * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
- * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
- * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- *
- ******************************************************************************/
+// SPDX-FileCopyrightText: Copyright (c) 2024, NVIDIA CORPORATION. All rights reserved.
+// SPDX-License-Identifier: BSD-3
 
 #pragma once
 
@@ -280,7 +256,7 @@ template <typename ValueT> struct sm100_small_key_tuning<ValueT, 8,  16, 8> : sm
 template <typename PolicyT, typename = void>
 struct RadixSortPolicyWrapper : PolicyT
 {
-  CUB_RUNTIME_FUNCTION RadixSortPolicyWrapper(PolicyT base)
+  _CCCL_HOST_DEVICE RadixSortPolicyWrapper(PolicyT base)
       : PolicyT(base)
   {}
 };
@@ -304,23 +280,23 @@ struct RadixSortPolicyWrapper<
                       typename StaticPolicyT::SegmentedPolicy,
                       typename StaticPolicyT::AltSegmentedPolicy>> : StaticPolicyT
 {
-  CUB_RUNTIME_FUNCTION RadixSortPolicyWrapper(StaticPolicyT base)
+  _CCCL_HOST_DEVICE RadixSortPolicyWrapper(StaticPolicyT base)
       : StaticPolicyT(base)
   {}
 
-  CUB_RUNTIME_FUNCTION static constexpr bool IsOnesweep()
+  _CCCL_HOST_DEVICE static constexpr bool IsOnesweep()
   {
     return StaticPolicyT::ONESWEEP;
   }
 
   template <typename PolicyT>
-  CUB_RUNTIME_FUNCTION static constexpr int RadixBits(PolicyT /*policy*/)
+  _CCCL_HOST_DEVICE static constexpr int RadixBits(PolicyT /*policy*/)
   {
     return PolicyT::RADIX_BITS;
   }
 
   template <typename PolicyT>
-  CUB_RUNTIME_FUNCTION static constexpr int BlockThreads(PolicyT /*policy*/)
+  _CCCL_HOST_DEVICE static constexpr int BlockThreads(PolicyT /*policy*/)
   {
     return PolicyT::BLOCK_THREADS;
   }
@@ -358,7 +334,7 @@ struct RadixSortPolicyWrapper<
 };
 
 template <typename PolicyT>
-CUB_RUNTIME_FUNCTION RadixSortPolicyWrapper<PolicyT> MakeRadixSortPolicyWrapper(PolicyT policy)
+_CCCL_HOST_DEVICE RadixSortPolicyWrapper<PolicyT> MakeRadixSortPolicyWrapper(PolicyT policy)
 {
   return RadixSortPolicyWrapper<PolicyT>{policy};
 }
@@ -395,14 +371,11 @@ struct policy_hub
   /// SM50
   struct Policy500 : ChainedPolicy<500, Policy500, Policy500>
   {
-    enum
-    {
-      PRIMARY_RADIX_BITS     = (sizeof(KeyT) > 1) ? 7 : 5, // 3.5B 32b keys/s, 1.92B 32b pairs/s (TitanX)
-      SINGLE_TILE_RADIX_BITS = (sizeof(KeyT) > 1) ? 6 : 5,
-      SEGMENTED_RADIX_BITS   = (sizeof(KeyT) > 1) ? 6 : 5, // 3.1B 32b segmented keys/s (TitanX)
-      ONESWEEP               = false,
-      ONESWEEP_RADIX_BITS    = 8,
-    };
+    static constexpr int PRIMARY_RADIX_BITS = (sizeof(KeyT) > 1) ? 7 : 5; // 3.5B 32b keys/s, 1.92B 32b pairs/s (TitanX)
+    static constexpr int SINGLE_TILE_RADIX_BITS = (sizeof(KeyT) > 1) ? 6 : 5;
+    static constexpr int SEGMENTED_RADIX_BITS   = (sizeof(KeyT) > 1) ? 6 : 5; // 3.1B 32b segmented keys/s (TitanX)
+    static constexpr bool ONESWEEP              = false;
+    static constexpr int ONESWEEP_RADIX_BITS    = 8;
 
     // Histogram policy
     using HistogramPolicy = AgentRadixSortHistogramPolicy<256, 8, 1, KeyT, ONESWEEP_RADIX_BITS>;
@@ -490,15 +463,12 @@ struct policy_hub
   /// SM60 (GP100)
   struct Policy600 : ChainedPolicy<600, Policy600, Policy500>
   {
-    enum
-    {
-      PRIMARY_RADIX_BITS     = (sizeof(KeyT) > 1) ? 7 : 5, // 6.9B 32b keys/s (Quadro P100)
-      SINGLE_TILE_RADIX_BITS = (sizeof(KeyT) > 1) ? 6 : 5,
-      SEGMENTED_RADIX_BITS   = (sizeof(KeyT) > 1) ? 6 : 5, // 5.9B 32b segmented keys/s (Quadro P100)
-      ONESWEEP               = sizeof(KeyT) >= sizeof(uint32_t), // 10.0B 32b keys/s (GP100, 64M random keys)
-      ONESWEEP_RADIX_BITS    = 8,
-      OFFSET_64BIT           = sizeof(OffsetT) == 8,
-    };
+    static constexpr int PRIMARY_RADIX_BITS     = (sizeof(KeyT) > 1) ? 7 : 5; // 6.9B 32b keys/s (Quadro P100)
+    static constexpr int SINGLE_TILE_RADIX_BITS = (sizeof(KeyT) > 1) ? 6 : 5;
+    static constexpr int SEGMENTED_RADIX_BITS   = (sizeof(KeyT) > 1) ? 6 : 5; // 5.9B 32b segmented keys/s (Quadro P100)
+    static constexpr bool ONESWEEP = sizeof(KeyT) >= sizeof(uint32_t); // 10.0B 32b keys/s (GP100, 64M random keys)
+    static constexpr int ONESWEEP_RADIX_BITS = 8;
+    static constexpr bool OFFSET_64BIT       = sizeof(OffsetT) == 8;
 
     // Histogram policy
     using HistogramPolicy = AgentRadixSortHistogramPolicy<256, 8, 8, KeyT, ONESWEEP_RADIX_BITS>;
@@ -586,14 +556,11 @@ struct policy_hub
   /// SM61 (GP104)
   struct Policy610 : ChainedPolicy<610, Policy610, Policy600>
   {
-    enum
-    {
-      PRIMARY_RADIX_BITS     = (sizeof(KeyT) > 1) ? 7 : 5, // 3.4B 32b keys/s, 1.83B 32b pairs/s (1080)
-      SINGLE_TILE_RADIX_BITS = (sizeof(KeyT) > 1) ? 6 : 5,
-      SEGMENTED_RADIX_BITS   = (sizeof(KeyT) > 1) ? 6 : 5, // 3.3B 32b segmented keys/s (1080)
-      ONESWEEP               = sizeof(KeyT) >= sizeof(uint32_t),
-      ONESWEEP_RADIX_BITS    = 8,
-    };
+    static constexpr int PRIMARY_RADIX_BITS = (sizeof(KeyT) > 1) ? 7 : 5; // 3.4B 32b keys/s, 1.83B 32b pairs/s (1080)
+    static constexpr int SINGLE_TILE_RADIX_BITS = (sizeof(KeyT) > 1) ? 6 : 5;
+    static constexpr int SEGMENTED_RADIX_BITS   = (sizeof(KeyT) > 1) ? 6 : 5; // 3.3B 32b segmented keys/s (1080)
+    static constexpr bool ONESWEEP              = sizeof(KeyT) >= sizeof(uint32_t);
+    static constexpr int ONESWEEP_RADIX_BITS    = 8;
 
     // Histogram policy
     using HistogramPolicy = AgentRadixSortHistogramPolicy<256, 8, 8, KeyT, ONESWEEP_RADIX_BITS>;
@@ -681,13 +648,10 @@ struct policy_hub
   /// SM62 (Tegra, less RF)
   struct Policy620 : ChainedPolicy<620, Policy620, Policy610>
   {
-    enum
-    {
-      PRIMARY_RADIX_BITS  = 5,
-      ALT_RADIX_BITS      = PRIMARY_RADIX_BITS - 1,
-      ONESWEEP            = sizeof(KeyT) >= sizeof(uint32_t),
-      ONESWEEP_RADIX_BITS = 8,
-    };
+    static constexpr int PRIMARY_RADIX_BITS  = 5;
+    static constexpr int ALT_RADIX_BITS      = PRIMARY_RADIX_BITS - 1;
+    static constexpr bool ONESWEEP           = sizeof(KeyT) >= sizeof(uint32_t);
+    static constexpr int ONESWEEP_RADIX_BITS = 8;
 
     // Histogram policy
     using HistogramPolicy = AgentRadixSortHistogramPolicy<256, 8, 8, KeyT, ONESWEEP_RADIX_BITS>;
@@ -759,15 +723,12 @@ struct policy_hub
   /// SM70 (GV100)
   struct Policy700 : ChainedPolicy<700, Policy700, Policy620>
   {
-    enum
-    {
-      PRIMARY_RADIX_BITS     = (sizeof(KeyT) > 1) ? 7 : 5, // 7.62B 32b keys/s (GV100)
-      SINGLE_TILE_RADIX_BITS = (sizeof(KeyT) > 1) ? 6 : 5,
-      SEGMENTED_RADIX_BITS   = (sizeof(KeyT) > 1) ? 6 : 5, // 8.7B 32b segmented keys/s (GV100)
-      ONESWEEP               = sizeof(KeyT) >= sizeof(uint32_t), // 15.8B 32b keys/s (V100-SXM2, 64M random keys)
-      ONESWEEP_RADIX_BITS    = 8,
-      OFFSET_64BIT           = sizeof(OffsetT) == 8,
-    };
+    static constexpr int PRIMARY_RADIX_BITS     = (sizeof(KeyT) > 1) ? 7 : 5; // 7.62B 32b keys/s (GV100)
+    static constexpr int SINGLE_TILE_RADIX_BITS = (sizeof(KeyT) > 1) ? 6 : 5;
+    static constexpr int SEGMENTED_RADIX_BITS   = (sizeof(KeyT) > 1) ? 6 : 5; // 8.7B 32b segmented keys/s (GV100)
+    static constexpr bool ONESWEEP = sizeof(KeyT) >= sizeof(uint32_t); // 15.8B 32b keys/s (V100-SXM2, 64M random keys)
+    static constexpr int ONESWEEP_RADIX_BITS = 8;
+    static constexpr bool OFFSET_64BIT       = sizeof(OffsetT) == 8;
 
     // Histogram policy
     using HistogramPolicy = AgentRadixSortHistogramPolicy<256, 8, 8, KeyT, ONESWEEP_RADIX_BITS>;
@@ -856,15 +817,12 @@ struct policy_hub
   /// SM80
   struct Policy800 : ChainedPolicy<800, Policy800, Policy700>
   {
-    enum
-    {
-      PRIMARY_RADIX_BITS     = (sizeof(KeyT) > 1) ? 7 : 5,
-      SINGLE_TILE_RADIX_BITS = (sizeof(KeyT) > 1) ? 6 : 5,
-      SEGMENTED_RADIX_BITS   = (sizeof(KeyT) > 1) ? 6 : 5,
-      ONESWEEP               = sizeof(KeyT) >= sizeof(uint32_t),
-      ONESWEEP_RADIX_BITS    = 8,
-      OFFSET_64BIT           = sizeof(OffsetT) == 8,
-    };
+    static constexpr int PRIMARY_RADIX_BITS     = (sizeof(KeyT) > 1) ? 7 : 5;
+    static constexpr int SINGLE_TILE_RADIX_BITS = (sizeof(KeyT) > 1) ? 6 : 5;
+    static constexpr int SEGMENTED_RADIX_BITS   = (sizeof(KeyT) > 1) ? 6 : 5;
+    static constexpr bool ONESWEEP              = sizeof(KeyT) >= sizeof(uint32_t);
+    static constexpr int ONESWEEP_RADIX_BITS    = 8;
+    static constexpr bool OFFSET_64BIT          = sizeof(OffsetT) == 8;
 
     // Histogram policy
     using HistogramPolicy = AgentRadixSortHistogramPolicy<128, 16, 1, KeyT, ONESWEEP_RADIX_BITS>;
@@ -1082,7 +1040,6 @@ struct policy_hub
 
   using MaxPolicy = Policy1000;
 };
-
 } // namespace detail::radix
 
 CUB_NAMESPACE_END

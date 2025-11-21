@@ -1,4 +1,5 @@
-set(stf_test_sources
+set(
+  stf_test_sources
   allocators/buddy_allocator.cu
   context/context_resource_test.cu
   context/simple_context_resource_test.cu
@@ -42,7 +43,6 @@ set(stf_test_sources
   interface/cuda_kernel_chain-add_deps.cu
   interface/cuda_kernel_chain-add_deps_low_level.cu
   interface/cuda_kernel_empty_args.cu
-
   interface/move_operator.cu
   local_stf/legacy_to_stf.cu
   local_stf/threads_multiple_graphs.cu
@@ -80,7 +80,8 @@ set(stf_test_sources
   utility/source_location_map.cu
 )
 
-set(stf_test_codegen_sources
+set(
+  stf_test_codegen_sources
   # algorithm/algorithm_with_read.cu
   # algorithm/graph_algorithms.cu
   # algorithm/in_graph_ctx.cu
@@ -159,7 +160,8 @@ set(stf_test_codegen_sources
 )
 
 # Examples using CUBLAS, CUSOLVER...
-set(stf_test_mathlib_sources
+set(
+  stf_test_mathlib_sources
   cuda-samples/0_Introduction/vectorAdd/vectorAdd_cudastf.cu
   # Reduce compilation time by not adding this (useless) example
   # cuda-samples/0_Introduction/vectorAdd/vectorAdd
@@ -173,7 +175,8 @@ set(stf_test_mathlib_sources
   gnu/07-cholesky.cpp
 )
 
-set(stf_unittested_headers
+set(
+  stf_unittested_headers
   cuda/experimental/__stf/allocators/buddy_allocator.cuh
   cuda/experimental/__stf/graph/graph_ctx.cuh
   cuda/experimental/__stf/internal/async_resources_handle.cuh
@@ -207,14 +210,11 @@ find_package(CUDAToolkit REQUIRED)
 # Add an stf test executable and register it with ctest.
 #
 # target_name_var: Variable name to overwrite with the name of the test
-#   target. Useful for post-processing target information.
+#   target. Useful for adding target information after creation.
 # source: The source file for the test.
-# cn_target: The reference cudax target with configuration information.
+#
 # Additional args are passed to cudax_stf_configure_target.
-function(cudax_add_stf_test target_name_var source cn_target)
-  cudax_get_target_property(config_dialect ${cn_target} DIALECT)
-  cudax_get_target_property(config_prefix ${cn_target} PREFIX)
-
+function(cudax_add_stf_test target_name_var source)
   get_filename_component(dir ${source} DIRECTORY)
   get_filename_component(filename ${source} NAME_WE)
   if (dir)
@@ -222,17 +222,11 @@ function(cudax_add_stf_test target_name_var source cn_target)
   endif()
   string(REPLACE "/" "." test_name "${filename}")
 
-  set(test_target ${config_prefix}.test.stf.${test_name})
+  set(test_target cudax.test.stf.${test_name})
 
-  add_executable(${test_target} ${source})
-  cccl_configure_target(${test_target} DIALECT ${config_dialect})
-  cudax_clone_target_properties(${test_target} ${cn_target})
+  cccl_add_executable(${test_target} SOURCES ${source} ADD_CTEST)
   cudax_stf_configure_target(${test_target} ${ARGN})
-
-  set(stf_meta_target ${config_prefix}.tests.stf)
-  add_dependencies(${stf_meta_target} ${test_target})
-
-  add_test(NAME ${test_target} COMMAND "$<TARGET_FILE:${test_target}>")
+  target_link_libraries(${test_target} PRIVATE cudax.compiler_interface)
 
   set(${target_name_var} ${test_target} PARENT_SCOPE)
 endfunction()
@@ -245,77 +239,65 @@ endfunction()
 # `unittest.cuh` and defining `UNITTESTED_FILE`.
 #
 # target_name_var: Variable name to overwrite with the name of the test
-#   target. Useful for post-processing target information.
+#   target. Useful for adding target information after creation.
 # source: The source file for the test.
-# cn_target: The reference cudax target with configuration information.
+#
 # Additional args are passed to cudax_stf_configure_target.
-function(cudax_add_stf_unittest_header target_name_var source cn_target)
-  cudax_get_target_property(config_dialect ${cn_target} DIALECT)
-  cudax_get_target_property(config_prefix ${cn_target} PREFIX)
-
+function(cudax_add_stf_unittest_header target_name_var source)
   get_filename_component(relative_path ${source} DIRECTORY)
   get_filename_component(filename ${source} NAME_WE)
 
-  string(REPLACE "cuda/experimental/" "" test_label "${relative_path}/${filename}")
+  string(
+    REPLACE
+    "cuda/experimental/"
+    ""
+    test_label
+    "${relative_path}/${filename}"
+  )
   string(REPLACE "/" "." test_label "${test_label}")
-  set(test_target "${config_prefix}.test.stf.unittest_headers.${test_label}")
+
+  set(test_target "cudax.test.stf.unittest_headers.${test_label}")
 
   # Pass the full path to configure_file (this is configured from cudax/tests/stf/
-  get_filename_component(source_full_path ../../../cudax/include/${source} ABSOLUTE)
+  get_filename_component(
+    source_full_path
+    ../../../cudax/include/${source}
+    ABSOLUTE
+  )
   set(source ${source_full_path})
 
   set(ut_template "${cudax_SOURCE_DIR}/cmake/stf_header_unittest.in.cu")
   set(ut_source "${cudax_BINARY_DIR}/unittest_headers/${test_target}.cu")
   configure_file(${ut_template} ${ut_source} @ONLY)
 
-  add_executable(${test_target} ${ut_source})
-  cccl_configure_target(${test_target} DIALECT ${config_dialect})
-  cudax_clone_target_properties(${test_target} ${cn_target})
+  cccl_add_executable(${test_target} SOURCES ${ut_source} ADD_CTEST)
   cudax_stf_configure_target(${test_target} ${ARGN})
-
-  set(stf_unittest_headers_meta_target ${config_prefix}.tests.stf.unittest_headers)
-  add_dependencies(${stf_unittest_headers_meta_target} ${test_target})
-
-  add_test(NAME ${test_target} COMMAND ${test_target})
+  target_link_libraries(${test_target} PRIVATE cudax.compiler_interface)
 
   set(${target_name_var} ${test_target} PARENT_SCOPE)
 endfunction()
 
-# Create tests for each enabled configuration:
-foreach(cn_target IN LISTS cudax_TARGETS)
-  cudax_get_target_property(config_prefix ${cn_target} PREFIX)
+# Basic tests:
+foreach (source IN LISTS stf_test_sources)
+  cudax_add_stf_test(test_target "${source}")
+endforeach()
 
-  # Metatargets for the current configuration's tests:
-  set(config_meta_target ${config_prefix}.tests)
-  set(stf_test_meta_target ${config_prefix}.tests.stf)
-  add_custom_target(${stf_test_meta_target})
-  add_dependencies(${config_meta_target} ${stf_test_meta_target})
-  set(stf_unittest_headers_meta_target ${config_prefix}.tests.stf.unittest_headers)
-  add_custom_target(${stf_unittest_headers_meta_target})
-  add_dependencies(${stf_test_meta_target} ${stf_unittest_headers_meta_target})
-
-  # Basic tests:
-  foreach(source IN LISTS stf_test_sources)
-    cudax_add_stf_test(test_target "${source}" ${cn_target})
+if (cudax_ENABLE_CUDASTF_CODE_GENERATION)
+  foreach (source IN LISTS stf_test_codegen_sources)
+    cudax_add_stf_test(test_target "${source}")
   endforeach()
+endif()
 
-  if (cudax_ENABLE_CUDASTF_CODE_GENERATION)
-    foreach(source IN LISTS stf_test_codegen_sources)
-      cudax_add_stf_test(test_target "${source}" ${cn_target})
-    endforeach()
-  endif()
-
-  # Tests with mathlib deps:
-  if (cudax_ENABLE_CUDASTF_MATHLIBS)
-    foreach(source IN LISTS stf_test_mathlib_sources)
-      cudax_add_stf_test(test_target "${source}" ${cn_target} LINK_MATHLIBS)
-    endforeach()
-  endif()
-
-  # Unittested headers
-  foreach(source IN LISTS stf_unittested_headers)
-    cudax_add_stf_unittest_header(test_target "${source}" ${cn_target})
+# Tests with mathlib deps:
+if (cudax_ENABLE_CUDASTF_MATHLIBS)
+  foreach (source IN LISTS stf_test_mathlib_sources)
+    cudax_add_stf_test(test_target "${source}" LINK_MATHLIBS)
   endforeach()
+endif()
+
+# Unittested headers
+foreach (source IN LISTS stf_unittested_headers)
+  cudax_add_stf_unittest_header(test_target "${source}")
 endforeach()
 
 add_subdirectory(static_error_checks)

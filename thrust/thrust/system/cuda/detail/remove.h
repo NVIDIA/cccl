@@ -36,13 +36,12 @@
 #  pragma system_header
 #endif // no system header
 
-#if _CCCL_HAS_CUDA_COMPILER()
+#if _CCCL_CUDA_COMPILATION()
 #  include <thrust/system/cuda/detail/copy_if.h>
 
 THRUST_NAMESPACE_BEGIN
 namespace cuda_cub
 {
-
 // in-place
 
 _CCCL_EXEC_CHECK_DISABLE
@@ -101,7 +100,6 @@ remove_copy(execution_policy<Derived>& policy, InputIt first, InputIt last, Outp
   thrust::detail::equal_to_value<T> pred{value};
   return cuda_cub::remove_copy_if(policy, first, last, result, pred);
 }
-
 } // namespace cuda_cub
 THRUST_NAMESPACE_END
-#endif
+#endif // _CCCL_CUDA_COMPILATION()

@@ -1,18 +1,5 @@
-/*
- *  Copyright 2008-2013 NVIDIA Corporation
- *
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- */
+// SPDX-FileCopyrightText: Copyright (c) 2008-2013, NVIDIA Corporation. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0
 
 #pragma once
 
@@ -32,21 +19,16 @@
 #include <thrust/system/tbb/detail/execution_policy.h>
 
 #include <cuda/std/__algorithm/min.h>
+#include <cuda/std/__type_traits/decay.h>
 #include <cuda/std/cassert>
-#include <cuda/std/type_traits>
 
 #include <tbb/parallel_for.h>
 
 THRUST_NAMESPACE_BEGIN
-namespace system
-{
-namespace tbb
-{
-namespace detail
+namespace system::tbb::detail
 {
 namespace reduce_intervals_detail
 {
-
 template <typename L, typename R>
 inline L divide_ri(const L x, const R y)
 {
@@ -95,7 +77,6 @@ body<RandomAccessIterator1, RandomAccessIterator2, Size, BinaryFunction> make_bo
   return body<RandomAccessIterator1, RandomAccessIterator2, Size, BinaryFunction>(
     first, result, n, interval_size, binary_op);
 }
-
 } // namespace reduce_intervals_detail
 
 template <typename DerivedPolicy,
@@ -133,8 +114,5 @@ void reduce_intervals(
   return thrust::system::tbb::detail::reduce_intervals(
     exec, first, last, interval_size, result, ::cuda::std::plus<value_type>());
 }
-
-} // namespace detail
-} // namespace tbb
-} // namespace system
+} // namespace system::tbb::detail
 THRUST_NAMESPACE_END

@@ -48,6 +48,7 @@
 
 _CCCL_DIAG_PUSH
 _CCCL_DIAG_SUPPRESS_GCC("-Wattributes")
+_CCCL_DIAG_SUPPRESS_NVHPC(attribute_requires_external_linkage)
 
 // This header provides a sender adaptor that adapts a non-stream sender to a stream
 // sender. The adaptor does several things:
@@ -269,8 +270,8 @@ private:
     // the receiver tell us how to launch the kernel.
     auto const __launch_config    = get_launch_config(execution::get_env(__state.__state_.__rcvr_));
     using __launch_dims_t         = decltype(__launch_config.dims);
-    constexpr int __block_threads = __launch_dims_t::static_count(experimental::thread, experimental::block);
-    int const __grid_blocks       = __launch_config.dims.count(experimental::block, experimental::grid);
+    constexpr int __block_threads = __launch_dims_t::static_count(thread, block);
+    int const __grid_blocks       = __launch_config.dims.count(block, grid);
     static_assert(__block_threads != ::cuda::std::dynamic_extent);
 
     // Start the child operation state. This will launch kernels for all the predecessors
@@ -291,7 +292,7 @@ private:
   _CCCL_DEVICE_API void __device_start() noexcept
   {
     using __launch_dims_t         = __dims_of_t<__rcvr_config_t>;
-    constexpr int __block_threads = __launch_dims_t::static_count(experimental::thread, experimental::block);
+    constexpr int __block_threads = __launch_dims_t::static_count(thread, block);
     auto& __state                 = __get_state();
 
     // without the following, the kernel in __host_start will fail to launch with
@@ -411,7 +412,6 @@ _CCCL_API constexpr auto __adapt(_Sndr&& __sndr, _GetStream __get_stream) noexce
 
 template <class _Sndr, class _GetStream>
 inline constexpr size_t structured_binding_size<__stream::__sndr_t<_Sndr, _GetStream>> = 3;
-
 } // namespace cuda::experimental::execution
 
 _CCCL_DIAG_POP

@@ -22,8 +22,8 @@
 
 #include <cuda/__device/all_devices.h>
 #include <cuda/__event/timed_event.h>
+#include <cuda/__runtime/api_wrapper.h>
 #include <cuda/__stream/stream_ref.h>
-#include <cuda/std/__cuda/api_wrapper.h>
 
 #include <cuda/experimental/__device/logical_device.cuh>
 #include <cuda/experimental/__execution/completion_behavior.cuh>
@@ -75,7 +75,7 @@ struct stream_ref : ::cuda::stream_ref
     CUcontext __stream_ctx;
     ::cuda::experimental::logical_device::kinds __ctx_kind = ::cuda::experimental::logical_device::kinds::device;
 #if _CCCL_CTK_AT_LEAST(12, 5)
-    if (__driver::__getVersion() >= 12050)
+    if (::cuda::__driver::__version_at_least(12, 5))
     {
       auto __ctx = ::cuda::__driver::__streamGetCtx_v2(__stream);
       if (__ctx.__ctx_kind_ == ::cuda::__driver::__ctx_from_stream::__kind::__green)
@@ -130,7 +130,6 @@ struct stream_ref : ::cuda::stream_ref
   query(const execution::get_completion_domain_t<execution::set_error_t>&, const _Env& __env) const noexcept
     -> __call_result_t<execution::get_domain_t, const _Env&>;
 };
-
 } // namespace cuda::experimental
 
 #include <cuda/std/__cccl/epilogue.h>

@@ -30,7 +30,6 @@
 THRUST_NAMESPACE_BEGIN
 namespace system::detail::generic
 {
-
 template <typename DerivedPolicy, typename RandomAccessIterator>
 _CCCL_HOST_DEVICE void
 sort(thrust::execution_policy<DerivedPolicy>& exec, RandomAccessIterator first, RandomAccessIterator last);
@@ -106,7 +105,6 @@ is_sorted_until(thrust::execution_policy<DerivedPolicy>& exec, ForwardIterator f
 template <typename DerivedPolicy, typename ForwardIterator, typename Compare>
 _CCCL_HOST_DEVICE ForwardIterator is_sorted_until(
   thrust::execution_policy<DerivedPolicy>& exec, ForwardIterator first, ForwardIterator last, Compare comp);
-
 } // namespace system::detail::generic
 THRUST_NAMESPACE_END
 

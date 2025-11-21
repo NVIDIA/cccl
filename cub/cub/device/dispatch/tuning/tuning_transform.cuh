@@ -1,29 +1,5 @@
-/******************************************************************************
- * Copyright (c) 2024, NVIDIA CORPORATION. All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *     * Redistributions of source code must retain the above copyright
- *       notice, this list of conditions and the following disclaimer.
- *     * Redistributions in binary form must reproduce the above copyright
- *       notice, this list of conditions and the following disclaimer in the
- *       documentation and/or other materials provided with the distribution.
- *     * Neither the name of the NVIDIA CORPORATION nor the
- *       names of its contributors may be used to endorse or promote products
- *       derived from this software without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
- *AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- *IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
- * DISCLAIMED. IN NO EVENT SHALL NVIDIA CORPORATION BE LIABLE FOR ANY
- * DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
- * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
- * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
- * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- *
- ******************************************************************************/
+// SPDX-FileCopyrightText: Copyright (c) 2024, NVIDIA CORPORATION. All rights reserved.
+// SPDX-License-Identifier: BSD-3
 
 #pragma once
 
@@ -44,6 +20,7 @@
 #include <thrust/type_traits/is_contiguous_iterator.h>
 #include <thrust/type_traits/is_trivially_relocatable.h>
 
+#include <cuda/__cmath/pow2.h>
 #include <cuda/__cmath/round_up.h>
 #include <cuda/__functional/address_stability.h>
 #include <cuda/std/__algorithm/max.h>
@@ -168,11 +145,12 @@ struct TransformPolicyWrapper : PolicyT
 };
 
 template <typename StaticPolicyT>
-struct TransformPolicyWrapper<
-  StaticPolicyT,
-  ::cuda::std::
-    void_t<decltype(StaticPolicyT::algorithm), decltype(StaticPolicyT::min_bif), typename StaticPolicyT::algo_policy>>
-    : StaticPolicyT
+struct TransformPolicyWrapper<StaticPolicyT,
+                              ::cuda::std::void_t<decltype(StaticPolicyT::algorithm),
+                                                  decltype(StaticPolicyT::min_bif),
+                                                  typename StaticPolicyT::prefetch_policy,
+                                                  typename StaticPolicyT::vectorized_policy,
+                                                  typename StaticPolicyT::async_policy>> : StaticPolicyT
 {
   _CCCL_HOST_DEVICE TransformPolicyWrapper(StaticPolicyT base)
       : StaticPolicyT(base)
@@ -188,18 +166,30 @@ struct TransformPolicyWrapper<
     return StaticPolicyT::min_bif;
   }
 
-  _CCCL_HOST_DEVICE static constexpr auto AlgorithmPolicy()
+  _CCCL_HOST_DEVICE static constexpr auto PrefetchPolicy()
   {
-    return MakePolicyWrapper(typename StaticPolicyT::algo_policy());
+    return MakePolicyWrapper(typename StaticPolicyT::prefetch_policy());
+  }
+
+  _CCCL_HOST_DEVICE static constexpr auto VectorizedPolicy()
+  {
+    return MakePolicyWrapper(typename StaticPolicyT::vectorized_policy());
+  }
+
+  _CCCL_HOST_DEVICE static constexpr auto AsyncPolicy()
+  {
+    return MakePolicyWrapper(typename StaticPolicyT::async_policy());
   }
 
 #if defined(CUB_ENABLE_POLICY_PTX_JSON)
   _CCCL_DEVICE static constexpr auto EncodedPolicy()
   {
     using namespace ptx_json;
-    return object<key<"min_bif">()     = value<StaticPolicyT::min_bif>(),
-                  key<"algorithm">()   = value<static_cast<int>(StaticPolicyT::algorithm)>(),
-                  key<"algo_policy">() = AlgorithmPolicy().EncodedPolicy()>();
+    return object<key<"min_bif">()           = value<StaticPolicyT::min_bif>(),
+                  key<"algorithm">()         = value<static_cast<int>(StaticPolicyT::algorithm)>(),
+                  key<"prefetch_policy">()   = PrefetchPolicy().EncodedPolicy(),
+                  key<"vectorized_policy">() = VectorizedPolicy().EncodedPolicy(),
+                  key<"async_policy">()      = AsyncPolicy().EncodedPolicy()>();
   }
 #endif // CUB_ENABLE_POLICY_PTX_JSON
 };
@@ -379,20 +369,26 @@ struct policy_hub<RequiresStableAddress,
   struct policy300 : ChainedPolicy<300, policy300, policy300>
   {
     static constexpr int min_bif = arch_to_min_bytes_in_flight(300);
-    // TODO(bgruber): we don't need algo, because we can just detect the type of algo_policy
+    using prefetch_policy        = prefetch_policy_t<256>;
+    using vectorized_policy      = vectorized_policy_t<
+           tuning_vec<500, size_of<it_value_t<RandomAccessIteratorOut>>, sizeof(it_value_t<RandomAccessIteratorsIn>)...>>;
+    using async_policy              = async_copy_policy_t<256, 16>; // dummy policy, never used
     static constexpr auto algorithm = fallback_to_prefetch ? Algorithm::prefetch : Algorithm::vectorized;
-    using vec_policy_t              = vectorized_policy_t<
-                   tuning_vec<500, size_of<it_value_t<RandomAccessIteratorOut>>, sizeof(it_value_t<RandomAccessIteratorsIn>)...>>;
-    using algo_policy = ::cuda::std::_If<fallback_to_prefetch, prefetch_policy_t<256>, vec_policy_t>;
   };
 
   struct policy800 : ChainedPolicy<800, policy800, policy300>
   {
   private:
-    using vec_policy_t = vectorized_policy_t<
-      tuning_vec<800, size_of<it_value_t<RandomAccessIteratorOut>>, sizeof(it_value_t<RandomAccessIteratorsIn>)...>>;
     static constexpr int block_threads = 256;
-    using async_policy                 = async_copy_policy_t<block_threads, ldgsts_size_and_align>;
+
+  public:
+    static constexpr int min_bif = arch_to_min_bytes_in_flight(800);
+    using prefetch_policy        = prefetch_policy_t<block_threads>;
+    using vectorized_policy      = vectorized_policy_t<
+           tuning_vec<800, size_of<it_value_t<RandomAccessIteratorOut>>, sizeof(it_value_t<RandomAccessIteratorsIn>)...>>;
+    using async_policy = async_copy_policy_t<block_threads, ldgsts_size_and_align>;
+
+  private:
     // We cannot use the architecture-specific amount of SMEM here instead of max_smem_per_block, because this is not
     // forward compatible. If a user compiled for sm_xxx and we assume the available SMEM for that architecture, but
     // then runs on the next architecture after that, which may have a smaller available SMEM, we get a crash.
@@ -405,28 +401,29 @@ struct policy_hub<RequiresStableAddress,
     static constexpr bool fallback_to_vectorized = exhaust_smem || no_input_streams || !can_memcpy_all_inputs;
 
   public:
-    static constexpr int min_bif = arch_to_min_bytes_in_flight(800);
     static constexpr auto algorithm =
       fallback_to_prefetch ? Algorithm::prefetch
       : fallback_to_vectorized
         ? Algorithm::vectorized
         : Algorithm::memcpy_async;
-    using algo_policy =
-      ::cuda::std::_If<fallback_to_prefetch,
-                       prefetch_policy_t<block_threads>,
-                       ::cuda::std::_If<fallback_to_vectorized, vec_policy_t, async_policy>>;
   };
 
   template <int AsyncBlockSize, int PtxVersion>
   struct bulk_copy_policy_base
   {
   private:
-    using vec_policy_t =
+    static constexpr int alignment = bulk_copy_alignment(PtxVersion);
+
+  public:
+    static constexpr int min_bif = arch_to_min_bytes_in_flight(PtxVersion);
+    using prefetch_policy        = prefetch_policy_t<256>;
+    using vectorized_policy =
       vectorized_policy_t<tuning_vec<PtxVersion,
                                      size_of<it_value_t<RandomAccessIteratorOut>>,
                                      sizeof(it_value_t<RandomAccessIteratorsIn>)...>>;
-    static constexpr int alignment = bulk_copy_alignment(PtxVersion);
-    using async_policy             = async_copy_policy_t<AsyncBlockSize, alignment>;
+    using async_policy = async_copy_policy_t<AsyncBlockSize, alignment>;
+
+  private:
     // We cannot use the architecture-specific amount of SMEM here instead of max_smem_per_block, because this is not
     // forward compatible. If a user compiled for sm_xxx and we assume the available SMEM for that architecture, but
     // then runs on the next architecture after that, which may have a smaller available SMEM, we get a crash.
@@ -451,16 +448,11 @@ struct policy_hub<RequiresStableAddress,
       || !can_memcpy_all_inputs;
 
   public:
-    static constexpr int min_bif = arch_to_min_bytes_in_flight(PtxVersion);
     static constexpr auto algorithm =
       fallback_to_prefetch ? Algorithm::prefetch
       : fallback_to_vectorized
         ? Algorithm::vectorized
         : Algorithm::ublkcp;
-    using algo_policy =
-      ::cuda::std::_If<fallback_to_prefetch,
-                       prefetch_policy_t<256>,
-                       ::cuda::std::_If<fallback_to_vectorized, vec_policy_t, async_policy>>;
   };
 
   struct policy900
@@ -475,7 +467,6 @@ struct policy_hub<RequiresStableAddress,
 
   using max_policy = policy1000;
 };
-
 } // namespace detail::transform
 
 CUB_NAMESPACE_END

@@ -39,6 +39,8 @@
     "SCCACHE_SERVER_LOG": "${localEnv:SCCACHE_SERVER_LOG:sccache=debug}",
     "SCCACHE_BUCKET": "rapids-sccache-devs",
     "SCCACHE_REGION": "us-east-2",
+    "SCCACHE_S3_USE_PREPROCESSOR_CACHE_MODE": "true",
+    "SCCACHE_S3_PREPROCESSOR_CACHE_KEY_PREFIX": "cccl-preprocessor-cache",
     "HISTFILE": "${containerWorkspaceFolder}/.cache/._bash_history",
     "DEVCONTAINER_NAME": "cuda12.9-llvm17",
     "DEVCONTAINER_UTILS_ENABLE_SCCACHE_DIST": "1",

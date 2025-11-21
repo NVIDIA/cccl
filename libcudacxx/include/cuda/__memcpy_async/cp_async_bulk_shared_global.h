@@ -30,6 +30,7 @@
 #    include <cuda/__ptx/instructions/mbarrier_expect_tx.h>
 #    include <cuda/__ptx/ptx_dot_variants.h>
 #    include <cuda/__ptx/ptx_helper_functions.h>
+#    include <cuda/std/__type_traits/conditional.h>
 #    include <cuda/std/cstdint>
 
 #    include <nv/target>
@@ -41,11 +42,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA
 template <typename _Group>
 [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE bool __elect_from_group(const _Group& __g) noexcept
 {
-  // cooperative groups maps a multidimensional thread id into the thread rank the same way as warps do
-  const unsigned int tid             = __g.thread_rank();
-  const unsigned int warp_id         = tid / 32;
-  const unsigned int uniform_warp_id = __shfl_sync(0xFFFFFFFF, warp_id, 0); // broadcast from lane 0
-  return uniform_warp_id == 0 && ::cuda::ptx::elect_sync(0xFFFFFFFF); // elect a leader thread among warp 0
+  return __g.thread_rank() == 0;
 }
 
 extern "C" _CCCL_DEVICE void __cuda_ptx_cp_async_bulk_shared_global_is_not_supported_before_SM_90__();
@@ -58,7 +55,12 @@ inline _CCCL_DEVICE void __cp_async_bulk_shared_global_and_expect_tx(
     NV_PROVIDES_SM_90,
     (if (__elect_from_group(__g)) {
       ::cuda::ptx::cp_async_bulk(
-        ::cuda::ptx::space_cluster, ::cuda::ptx::space_global, __dest, __src, __size, __bar_handle);
+        ::cuda::std::conditional_t<__cccl_ptx_isa >= 860, ::cuda::ptx::space_shared_t, ::cuda::ptx::space_cluster_t>{},
+        ::cuda::ptx::space_global,
+        __dest,
+        __src,
+        __size,
+        __bar_handle);
       ::cuda::ptx::mbarrier_expect_tx(
         ::cuda::ptx::sem_relaxed, ::cuda::ptx::scope_cta, ::cuda::ptx::space_shared, __bar_handle, __size);
     }),

@@ -160,7 +160,7 @@ For each :ref:`cuda::thread_scope <libcudacxx-extended-api-memory-model-thread-s
      cuda::barrier<cuda::thread_scope_block> d(10);
    }
 
-`See it on Godbolt <https://godbolt.org/z/7Kbz5qqhh>`_
+`See it on Godbolt <https://godbolt.org/z/7Kbz5qqhh>`__
 
 .. rubric:: Example: 1D TMA load of two buffers with arrival token (sm90+)
 
@@ -211,7 +211,7 @@ The following example shows how to use TMA to load two tiles of data from global
      // process data in smem ...
    }
 
-`See it on Godbolt <https://godbolt.org/z/ddhzGeWPE>`_
+`See it on Godbolt <https://godbolt.org/z/ddhzGeWPE>`__
 
 Data is loaded from the global memory pointers ``gmem1`` and ``gmem2``
 into the shared memory buffers ``smem1`` and ``smem2``.
@@ -268,7 +268,7 @@ Once ``wait`` returns, all data is available in shared memory.
      // process data in smem ...
    }
 
-`See it on Godbolt <https://godbolt.org/z/oq85PoKKj>`_
+`See it on Godbolt <https://godbolt.org/z/oq85PoKKj>`__
 
 This is similar to the above example, but this time only the leader thread arrives at the barrier.
 This has the advantage that only one leader election is necessary
@@ -294,4 +294,4 @@ This example can be found in :ref:`libcudacxx-extended-api-asynchronous-operatio
 .. rubric:: Example: 1D TMA load and store using `cuda::memcpy_async` (sm90+)
 
 This example can be found in the
-`CUDA programming guide <https://docs.nvidia.com/cuda/cuda-c-programming-guide/#using-tma-to-transfer-one-dimensional-arrays>`_.
+`CUDA programming guide <https://docs.nvidia.com/cuda/cuda-c-programming-guide/#using-tma-to-transfer-one-dimensional-arrays>`__.

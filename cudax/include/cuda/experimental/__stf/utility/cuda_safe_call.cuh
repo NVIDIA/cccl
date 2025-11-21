@@ -44,7 +44,6 @@
 
 namespace cuda::experimental::stf
 {
-
 #if _CCCL_HAS_INCLUDE(<cusolverDn.h>)
 // Undocumented
 inline const char* cusolverGetErrorString(const cusolverStatus_t status)
@@ -430,5 +429,4 @@ UNITTEST("cuda_try2")
 // Unused, keep for later
 #  define CUDATRY_ACCEPTS_ONLY_FUNCTION_NAMES_UNUSED(...) (__VA_ARGS__)
 #endif // !_CCCL_DOXYGEN_INVOKED
-
 } // namespace cuda::experimental::stf

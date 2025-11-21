@@ -37,7 +37,7 @@
 #  pragma system_header
 #endif // no system header
 
-#if _CCCL_HAS_CUDA_COMPILER()
+#if _CCCL_CUDA_COMPILATION()
 
 #  include <thrust/system/cuda/config.h>
 
@@ -51,7 +51,6 @@ THRUST_NAMESPACE_BEGIN
 
 namespace cuda_cub
 {
-
 template <typename MR, typename DerivedPolicy>
 _CCCL_HOST MR* get_per_device_resource(execution_policy<DerivedPolicy>&)
 {
@@ -64,9 +63,8 @@ _CCCL_HOST MR* get_per_device_resource(execution_policy<DerivedPolicy>&)
   std::lock_guard<std::mutex> lock{map_lock};
   return &device_id_to_resource[device_id];
 }
-
 } // namespace cuda_cub
 
 THRUST_NAMESPACE_END
 
-#endif
+#endif // _CCCL_CUDA_COMPILATION()

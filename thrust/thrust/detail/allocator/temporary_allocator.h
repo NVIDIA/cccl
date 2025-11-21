@@ -32,9 +32,9 @@
 #include <thrust/detail/execution_policy.h>
 #include <thrust/detail/temporary_buffer.h>
 #include <thrust/memory.h>
-#include <thrust/pair.h>
 #include <thrust/system/detail/bad_alloc.h>
 
+#include <cuda/std/__utility/pair.h>
 #include <cuda/std/cassert>
 
 #include <nv/target>
@@ -46,7 +46,6 @@
 THRUST_NAMESPACE_BEGIN
 namespace detail
 {
-
 // XXX the pointer parameter given to tagged_allocator should be related to
 //     the type of the expression get_temporary_buffer(system, n).first
 //     without decltype, compromise on pointer<T,System>
@@ -109,8 +108,7 @@ public:
   } // end system()
 
 private:
-  using pointer_and_size = thrust::pair<pointer, size_type>;
+  using pointer_and_size = ::cuda::std::pair<pointer, size_type>;
 }; // end temporary_allocator
-
 } // namespace detail
 THRUST_NAMESPACE_END

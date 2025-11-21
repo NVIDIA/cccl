@@ -9,7 +9,7 @@
 //===----------------------------------------------------------------------===//
 
 #include <cuda/memory_resource>
-#include <cuda/std/__algorithm_>
+#include <cuda/std/algorithm>
 #include <cuda/std/array>
 #include <cuda/std/cassert>
 #include <cuda/std/initializer_list>
@@ -30,20 +30,20 @@ using test_types = c2h::type_list<cuda::std::tuple<int, cuda::mr::host_accessibl
 using test_types = c2h::type_list<cuda::std::tuple<int, cuda::mr::device_accessible>>;
 #endif // ^^^ _CCCL_CTK_BELOW(12, 6) ^^^
 
-C2H_CCCLRT_TEST("cudax::async_buffer conversion", "[container][async_buffer]", test_types)
+C2H_CCCLRT_TEST("cudax::buffer conversion", "[container][buffer]", test_types)
 {
   using TestT    = c2h::get<0, TestType>;
   using Resource = typename extract_properties<TestT>::resource;
-  using Buffer   = typename extract_properties<TestT>::async_buffer;
+  using Buffer   = typename extract_properties<TestT>::buffer;
   using T        = typename Buffer::value_type;
 
   cudax::stream stream{cuda::device_ref{0}};
   Resource resource = extract_properties<TestT>::get_resource();
 
-  // Convert from a async_buffer that has more properties than the current one
+  // Convert from a buffer that has more properties than the current one
   using MatchingBuffer = typename extract_properties<TestT>::matching_vector;
 
-  SECTION("cudax::async_buffer construction with matching async_buffer")
+  SECTION("cudax::buffer construction with matching buffer")
   {
     { // can be copy constructed from empty input
       const MatchingBuffer input{stream, resource, 0, cudax::no_init};

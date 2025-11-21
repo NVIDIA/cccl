@@ -1,33 +1,11 @@
-/******************************************************************************
- * Copyright (c) 2024, NVIDIA CORPORATION.  All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *     * Redistributions of source code must retain the above copyright
- *       notice, this list of conditions and the following disclaimer.
- *     * Redistributions in binary form must reproduce the above copyright
- *       notice, this list of conditions and the following disclaimer in the
- *       documentation and/or other materials provided with the distribution.
- *     * Neither the name of the NVIDIA CORPORATION nor the
- *       names of its contributors may be used to endorse or promote products
- *       derived from this software without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
- * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
- * DISCLAIMED. IN NO EVENT SHALL NVIDIA CORPORATION BE LIABLE FOR ANY
- * DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
- * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
- * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
- * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- *
- ******************************************************************************/
+// SPDX-FileCopyrightText: Copyright (c) 2024, NVIDIA CORPORATION. All rights reserved.
+// SPDX-License-Identifier: BSD-3
 
 #include "insert_nested_NVTX_range_guard.h"
 
 #include <cub/device/device_scan.cuh>
+
+#include <cuda/iterator>
 
 #include <cstdint>
 
@@ -88,8 +66,8 @@ try
 
   // Prepare input (generate a series of: 0, 1, 2, ..., <segment_size-1>,  0, 1, 2, ..., <segment_size-1>, 0, 1, ...)
   constexpr index_t segment_size = 1000;
-  auto index_it                  = thrust::make_counting_iterator(index_t{});
-  auto items_it                  = thrust::make_transform_iterator(index_it, mod_op<item_t>{segment_size});
+  auto index_it                  = cuda::counting_iterator(index_t{});
+  auto items_it                  = cuda::transform_iterator(index_it, mod_op<item_t>{segment_size});
 
   // Output memory allocation
   c2h::device_vector<item_t> d_items_out(num_items);
@@ -104,7 +82,7 @@ try
 
   // Ensure that we created the correct output
   auto expected_out_it =
-    thrust::make_transform_iterator(index_it, expected_sum_op<item_t>{static_cast<index_t>(segment_size)});
+    cuda::transform_iterator(index_it, expected_sum_op<item_t>{static_cast<index_t>(segment_size)});
   bool all_results_correct = thrust::equal(d_items_out.cbegin(), d_items_out.cend(), expected_out_it);
   REQUIRE(all_results_correct == true);
 }

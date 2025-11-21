@@ -33,7 +33,10 @@
 #endif // no system header
 #include <thrust/detail/type_traits/is_thrust_pointer.h>
 
-#include <cuda/std/iterator>
+#include <cuda/std/__iterator/concepts.h>
+#include <cuda/std/__type_traits/integral_constant.h>
+#include <cuda/std/__type_traits/is_pointer.h>
+#include <cuda/std/__type_traits/remove_cvref.h>
 
 THRUST_NAMESPACE_BEGIN
 
@@ -111,7 +114,6 @@ inline constexpr bool is_contiguous_iterator_impl_v =
   ::cuda::std::contiguous_iterator<Iterator> || is_thrust_pointer_v<Iterator> || is_libcxx_wrap_iter_v<Iterator>
   || is_libstdcxx_normal_iterator_v<Iterator> || is_msvc_contiguous_iterator_v<Iterator>
   || proclaim_contiguous_iterator<Iterator>::value;
-
 } // namespace detail
 
 /*! \endcond

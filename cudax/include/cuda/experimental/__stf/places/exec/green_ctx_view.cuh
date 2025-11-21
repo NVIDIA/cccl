@@ -32,7 +32,6 @@
 
 namespace cuda::experimental::stf
 {
-
 // Green contexts are only supported since CUDA 12.4
 /**
  * @brief View of a green context and a pool of CUDA streams
@@ -64,7 +63,6 @@ struct hash<cuda::experimental::stf::green_ctx_view>
     return hash_all(k.g_ctx, k.pool, k.devid);
   }
 };
-
 } // end namespace cuda::experimental::stf
 
 #endif // _CCCL_CTK_AT_LEAST(12, 4)

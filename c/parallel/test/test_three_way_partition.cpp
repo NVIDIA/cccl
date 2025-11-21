@@ -91,13 +91,18 @@ template <typename T>
 struct three_way_partition_result_t
 {
   three_way_partition_result_t() = delete;
-  explicit three_way_partition_result_t(int num_items)
+  explicit three_way_partition_result_t(std::size_t num_items)
       : first_part(num_items)
       , second_part(num_items)
       , unselected(num_items)
   {}
   explicit three_way_partition_result_t(
-    std::vector<T> first, std::vector<T> second, std::vector<T> unselected, int n_first, int n_second, int n_unselected)
+    std::vector<T> first,
+    std::vector<T> second,
+    std::vector<T> unselected,
+    std::size_t n_first,
+    std::size_t n_second,
+    std::size_t n_unselected)
       : first_part(std::move(first))
       , second_part(std::move(second))
       , unselected(std::move(unselected))
@@ -110,9 +115,9 @@ struct three_way_partition_result_t
   std::vector<T> second_part;
   std::vector<T> unselected;
 
-  int num_items_in_first_part{};
-  int num_items_in_second_part{};
-  int num_unselected_items{};
+  std::size_t num_items_in_first_part{};
+  std::size_t num_items_in_second_part{};
+  std::size_t num_unselected_items{};
 
   bool operator==(const three_way_partition_result_t<T>& other) const
   {
@@ -324,21 +329,21 @@ C2H_TEST("ThreeWayPartition works with stateful operations", "[three_way_partiti
   selector_state_t op_state                      = {21};
   stateful_operation_t<selector_state_t> less_op = make_operation(
     "less_op",
-    "struct selector_state_t { int comparison_value; };\n"
-    "extern \"C\" __device__ void less_op(void* state_ptr, void* x_ptr, void* out_ptr) {\n"
-    "  selector_state_t* state = static_cast<selector_state_t*>(state_ptr);\n"
-    "  *static_cast<int*>(x_ptr) < state->comparison_value;\n"
-    "  *static_cast<bool*>(out_ptr) = *static_cast<int*>(x_ptr) < state->comparison_value;\n"
-    "}",
+    R"(struct selector_state_t { int comparison_value; };
+extern "C" __device__ void less_op(void* state_ptr, void* x_ptr, void* out_ptr) {
+  selector_state_t* state = static_cast<selector_state_t*>(state_ptr);
+  *static_cast<int*>(x_ptr) < state->comparison_value;
+  *static_cast<bool*>(out_ptr) = *static_cast<int*>(x_ptr) < state->comparison_value;
+})",
     op_state);
   stateful_operation_t<selector_state_t> greater_or_equal_op = make_operation(
     "greater_or_equal_op",
-    "struct selector_state_t { int comparison_value; };\n"
-    "extern \"C\" __device__ void greater_or_equal_op(void* state_ptr, void* x_ptr, void* out_ptr) {\n"
-    "  selector_state_t* state = static_cast<selector_state_t*>(state_ptr);\n"
-    "  *static_cast<int*>(x_ptr) >= state->comparison_value;\n"
-    "  *static_cast<bool*>(out_ptr) = *static_cast<int*>(x_ptr) >= state->comparison_value;\n"
-    "}",
+    R"(struct selector_state_t { int comparison_value; };
+extern "C" __device__ void greater_or_equal_op(void* state_ptr, void* x_ptr, void* out_ptr) {
+  selector_state_t* state = static_cast<selector_state_t*>(state_ptr);
+  *static_cast<int*>(x_ptr) >= state->comparison_value;
+  *static_cast<bool*>(out_ptr) = *static_cast<int*>(x_ptr) >= state->comparison_value;
+})",
     op_state);
 
   const std::size_t num_items      = GENERATE(0, 42, take(4, random(1 << 12, 1 << 20)));
@@ -404,21 +409,21 @@ C2H_TEST("ThreeWayPartition works with custom types", "[three_way_partition]")
 
   operation_t less_op = make_operation(
     "less_op",
-    std::format("struct pair_type {{ int a; size_t b; }};"
-                "extern \"C\" __device__ void less_op(void* x_ptr, void* out_ptr) {{ "
-                "  pair_type* x = static_cast<pair_type*>(x_ptr); "
-                "  bool* out = static_cast<bool*>(out_ptr); "
-                "  *out = x->a < {0}; "
-                "}}",
+    std::format(R"(struct pair_type {{ int a; size_t b; }};
+extern "C" __device__ void less_op(void* x_ptr, void* out_ptr) {{
+  pair_type* x = static_cast<pair_type*>(x_ptr);
+  bool* out = static_cast<bool*>(out_ptr);
+  *out = x->a < {0};
+}})",
                 comparison_value));
   operation_t greater_or_equal_op = make_operation(
     "greater_or_equal_op",
-    std::format("struct pair_type {{ int a; size_t b; }};"
-                "extern \"C\" __device__ void greater_or_equal_op(void* x_ptr, void* out_ptr) {{ "
-                "  pair_type* x = static_cast<pair_type*>(x_ptr); "
-                "  bool* out = static_cast<bool*>(out_ptr); "
-                "  *out = x->a >= {0}; "
-                "}}",
+    std::format(R"(struct pair_type {{ int a; size_t b; }};
+extern "C" __device__ void greater_or_equal_op(void* x_ptr, void* out_ptr) {{
+  pair_type* x = static_cast<pair_type*>(x_ptr);
+  bool* out = static_cast<bool*>(out_ptr);
+  *out = x->a >= {0};
+}})",
                 comparison_value));
 
   const std::size_t num_items      = GENERATE(0, 42, take(4, random(1 << 12, 1 << 20)));
@@ -500,7 +505,7 @@ C2H_TEST("ThreeWayPartition works with iterators", "[three_way_partition]")
   REQUIRE(first_part_output == std_result.first_part);
   REQUIRE(second_part_output == std_result.second_part);
   REQUIRE(unselected_output == std_result.unselected);
-  REQUIRE(num_selected[0] == std_result.num_items_in_first_part);
-  REQUIRE(num_selected[1] == std_result.num_items_in_second_part);
-  REQUIRE(static_cast<int>(num_items) - num_selected[0] - num_selected[1] == std_result.num_unselected_items);
+  REQUIRE(static_cast<std::size_t>(num_selected[0]) == std_result.num_items_in_first_part);
+  REQUIRE(static_cast<std::size_t>(num_selected[1]) == std_result.num_items_in_second_part);
+  REQUIRE(num_items - static_cast<std::size_t>(num_selected[0] + num_selected[1]) == std_result.num_unselected_items);
 }
