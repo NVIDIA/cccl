@@ -26,7 +26,9 @@
 #include <cuda/std/__exception/terminate.h>
 #include <cuda/std/source_location>
 
-#include <cstdio>
+#if !_CCCL_COMPILER(NVRTC)
+#  include <cstdio>
+#endif // !_CCCL_COMPILER(NVRTC)
 
 #if _CCCL_HAS_EXCEPTIONS()
 #  include <stdexcept>
@@ -44,12 +46,9 @@ static char* __format_error(::cuda::__detail::__msg_storage& __msg_buffer,
                             const char* __msg,
                             ::cuda::std::source_location __loc = ::cuda::std::source_location::current()) noexcept
 {
-  _CCCL_ASSERT(__condition != nullptr, "Condition is null");
-  _CCCL_ASSERT(__msg != nullptr, "Message is null");
   _CCCL_ASSERT(
     ::snprintf(__msg_buffer.__buffer, 512, "%s:%d %s: %s", __loc.file_name(), __loc.line(), __condition, __msg) > 0,
     "Failed to format error");
-  _CCCL_ASSERT(__msg_buffer.__buffer[511] == '\0', "Error message is not null-terminated");
   return __msg_buffer.__buffer;
 }
 } // namespace __detail

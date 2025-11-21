@@ -27,8 +27,11 @@
 #if _CCCL_HAS_EXCEPTIONS()
 #  include <cuda/std/source_location>
 #endif // _CCCL_HAS_EXCEPTIONS()
-
 #include <nv/target>
+
+#if !_CCCL_COMPILER(NVRTC)
+#  include <cstdio>
+#endif // !_CCCL_COMPILER(NVRTC)
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -78,7 +81,7 @@ _CCCL_END_NAMESPACE_CUDA_STD
     {                                                                                             \
       if (_CONDITION)                                                                             \
       {                                                                                           \
-        ::cuda::std::__detail::__msg_storage __msg_buffer{};                                      \
+        ::cuda::__detail::__msg_storage __msg_buffer{};                                           \
         throw _EXCEPTION(::cuda::std::__detail::__format_error(__msg_buffer, #_CONDITION, _MSG)); \
       }                                                                                           \
     } while (false)
@@ -99,12 +102,21 @@ _CCCL_END_NAMESPACE_CUDA_STD
     else                          \
     {                             \
     }
-#  define _CCCL_THROW(...)                             ::cuda::std::terminate()
-#  define _CCCL_RETHROW                                ::cuda::std::terminate()
-#  define _CCCL_THROW_IF(_CONDITION, _EXCEPTION, _MSG) _CCCL_VERIFY(!(_CONDITION), _MSG)
+#  define _CCCL_THROW(...) ::cuda::std::terminate()
+#  define _CCCL_RETHROW    ::cuda::std::terminate()
+#  define _CCCL_THROW_IF(_CONDITION, _EXCEPTION, _MSG)                          \
+    do                                                                          \
+    {                                                                           \
+      if (_CONDITION)                                                           \
+      {                                                                         \
+        ::cuda::__detail::__msg_storage __msg_buffer{};                         \
+        ::cuda::std::__detail::__format_error(__msg_buffer, #_CONDITION, _MSG); \
+        ::fprintf(stderr, "%s\n", __msg_buffer.__buffer);                       \
+        ::fflush(stderr);                                                       \
+        ::cuda::std::terminate();                                               \
+      }                                                                         \
+    } while (false)
 #endif // ^^^ no exceptions ^^^
-
-#define _CCCL_THROW_INVALID_ARG_IF(_CONDITION, _MSG) _CCCL_THROW_IF(_CONDITION, ::std::invalid_argument, _MSG)
 
 #include <cuda/std/__cccl/epilogue.h>
 
