@@ -47,7 +47,8 @@ namespace __detail
 {
 struct __msg_storage
 {
-  char __buffer[512]{0};
+  static constexpr ::cuda::std::size_t __size = 512;
+  char __buffer[__size]{0};
 };
 
 static char* __format_cuda_error(
