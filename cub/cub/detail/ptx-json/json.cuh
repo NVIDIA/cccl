@@ -3,10 +3,10 @@
 
 #pragma once
 
-#include <cub/detail/ptx-json/array.h>
-#include <cub/detail/ptx-json/object.h>
-#include <cub/detail/ptx-json/string.h>
-#include <cub/detail/ptx-json/value.h>
+#include <cub/detail/ptx-json/array.cuh>
+#include <cub/detail/ptx-json/object.cuh>
+#include <cub/detail/ptx-json/string.cuh>
+#include <cub/detail/ptx-json/value.cuh>
 
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__utility/integer_sequence.h>

@@ -28,8 +28,8 @@ target_link_libraries(
     Thrust::Thrust
     nvbench::nvbench
   PRIVATE #
+    cccl.compiler_interface
     CUDA::curand
-    cccl.compiler_interface_cpp17
 )
 
 target_include_directories(
@@ -68,11 +68,11 @@ if (nvbench_helper_ENABLE_TESTING)
     target_link_libraries(
       ${nvbench_helper_test_target}
       PRIVATE
+        cccl.compiler_interface
         cccl.nvbench_helper
         cccl.nvbench_helper.test.Thrust.cpp.${device_system}
         Catch2::Catch2WithMain
         Boost::math
-        cccl.compiler_interface_cpp17
     )
 
     add_test(
