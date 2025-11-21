@@ -50,6 +50,9 @@ function(libcudacxx_build_compiler_targets)
   # selected dialect target from cccl:
   target_link_libraries(
     libcudacxx.compiler_interface
-    INTERFACE cccl.compiler_interface_cpp${CMAKE_CUDA_STANDARD}
+    INTERFACE
+      cccl.compiler_interface_cpp${CMAKE_CUDA_STANDARD}
+      Thrust::Thrust
+      CUB::CUB
   )
 endfunction()
