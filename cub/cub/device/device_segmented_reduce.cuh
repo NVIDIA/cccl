@@ -432,8 +432,8 @@ struct DeviceSegmentedReduce
   //! .. literalinclude:: ../../../cub/test/catch2_test_device_segmented_reduce_api.cu
   //!     :language: c++
   //!     :dedent:
-  //!     :start-after: example-begin segmented-reduce-sum
-  //!     :end-before: example-end segmented-reduce-sum
+  //!     :start-after: example-begin segmented-reduce-sum-env
+  //!     :end-before: example-end segmented-reduce-sum-env
   //!
   //! @endrst
   //!
