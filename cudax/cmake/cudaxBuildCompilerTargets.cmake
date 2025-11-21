@@ -79,7 +79,7 @@ target_link_libraries(
   cudax.compiler_interface
   INTERFACE
     # order matters here, we need the cudax options to override the cccl options.
-    cccl.compiler_interface_cpp${CMAKE_CUDA_STANDARD}
+    cccl.compiler_interface
     cudax.compiler_flags
     libcudacxx::libcudacxx
     CUB::CUB

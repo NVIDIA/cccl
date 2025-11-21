@@ -10,7 +10,7 @@
 
 #include <cub/detail/choose_offset.cuh>
 #include <cub/detail/launcher/cuda_driver.cuh>
-#include <cub/detail/ptx-json-parser.h>
+#include <cub/detail/ptx-json-parser.cuh>
 #include <cub/device/dispatch/dispatch_transform.cuh>
 #include <cub/device/dispatch/tuning/tuning_transform.cuh>
 #include <cub/util_arch.cuh>
@@ -297,7 +297,7 @@ struct __align__({3}) output_storage_t {{
 {6}
 using device_transform_policy = {7}::max_policy;
 
-#include <cub/detail/ptx-json/json.h>
+#include <cub/detail/ptx-json/json.cuh>
 __device__ consteval auto& policy_generator() {{
   return ptx_json::id<ptx_json::string("device_transform_policy")>()
     = cub::detail::transform::TransformPolicyWrapper<device_transform_policy::ActivePolicy>::EncodedPolicy();
@@ -524,7 +524,7 @@ struct __align__({5}) output_storage_t {{
 {9}
 using device_transform_policy = {10}::max_policy;
 
-#include <cub/detail/ptx-json/json.h>
+#include <cub/detail/ptx-json/json.cuh>
 __device__ consteval auto& policy_generator() {{
   return ptx_json::id<ptx_json::string("device_transform_policy")>()
     = cub::detail::transform::TransformPolicyWrapper<device_transform_policy::ActivePolicy>::EncodedPolicy();

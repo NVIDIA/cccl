@@ -41,7 +41,7 @@ function(cub_build_compiler_targets)
     cub.compiler_interface
     INTERFACE
       # order matters here, we need the project options to override the cccl options.
-      cccl.compiler_interface_cpp${CMAKE_CUDA_STANDARD}
+      cccl.compiler_interface
       cub.compiler_flags
       CUB::CUB
       cub.thrust

@@ -70,12 +70,8 @@
         "LIBCUDACXX_ENABLE_LIBCUDACXX_TESTS": true,
         "CUB_ENABLE_TESTING": true,
         "CUB_ENABLE_EXAMPLES": true,
-        "CUB_ENABLE_DIALECT_CPP17": true,
-        "CUB_ENABLE_DIALECT_CPP20": true,
         "THRUST_ENABLE_MULTICONFIG": true,
         "THRUST_MULTICONFIG_WORKLOAD": "LARGE",
-        "THRUST_MULTICONFIG_ENABLE_DIALECT_CPP17": true,
-        "THRUST_MULTICONFIG_ENABLE_DIALECT_CPP20": true,
         "THRUST_MULTICONFIG_ENABLE_SYSTEM_CPP": true,
         "THRUST_MULTICONFIG_ENABLE_SYSTEM_CUDA": true,
         "THRUST_MULTICONFIG_ENABLE_SYSTEM_OMP": true,
@@ -198,8 +194,8 @@
       }
     },
     {
-      "name": "thrust-base",
-      "hidden": true,
+      "name": "thrust",
+      "displayName": "Thrust",
       "inherits": "base",
       "cacheVariables": {
         "CCCL_ENABLE_THRUST": true,
@@ -207,25 +203,25 @@
         "THRUST_MULTICONFIG_ENABLE_SYSTEM_CPP": true,
         "THRUST_MULTICONFIG_ENABLE_SYSTEM_CUDA": true,
         "THRUST_MULTICONFIG_ENABLE_SYSTEM_OMP": true,
-        "THRUST_MULTICONFIG_ENABLE_SYSTEM_TBB": true,
-        "THRUST_MULTICONFIG_ENABLE_DIALECT_CPP17": false,
-        "THRUST_MULTICONFIG_ENABLE_DIALECT_CPP20": false
+        "THRUST_MULTICONFIG_ENABLE_SYSTEM_TBB": true
       }
     },
     {
       "name": "thrust-cpp17",
       "displayName": "Thrust: C++17",
-      "inherits": "thrust-base",
+      "inherits": "thrust",
       "cacheVariables": {
-        "THRUST_MULTICONFIG_ENABLE_DIALECT_CPP17": true
+        "CMAKE_CXX_STANDARD": "17",
+        "CMAKE_CUDA_STANDARD": "17"
       }
     },
     {
       "name": "thrust-cpp20",
       "displayName": "Thrust: C++20",
-      "inherits": "thrust-base",
+      "inherits": "thrust",
       "cacheVariables": {
-        "THRUST_MULTICONFIG_ENABLE_DIALECT_CPP20": true
+        "CMAKE_CXX_STANDARD": "20",
+        "CMAKE_CUDA_STANDARD": "20"
       }
     },
     {
@@ -417,6 +413,10 @@
     {
       "name": "cub-cpp20",
       "configurePreset": "cub-cpp20"
+    },
+    {
+      "name": "thrust",
+      "configurePreset": "thrust"
     },
     {
       "name": "thrust-cpp17",
@@ -638,19 +638,24 @@
       "inherits": "cub-lid2"
     },
     {
-      "name": "thrust-base",
-      "hidden": true,
-      "inherits": "base",
-      "filter": {
-        "exclude": {
-          "name": "^thrust.*\\.test\\.async[._].*$"
-        }
-      }
+      "name": "thrust",
+      "configurePreset": "thrust",
+      "inherits": "base"
     },
     {
-      "name": "thrust-gpu-base",
-      "hidden": true,
-      "inherits": "thrust-base",
+      "name": "thrust-cpp17",
+      "configurePreset": "thrust-cpp17",
+      "inherits": "thrust"
+    },
+    {
+      "name": "thrust-cpp20",
+      "configurePreset": "thrust-cpp20",
+      "inherits": "thrust"
+    },
+    {
+      "name": "thrust-gpu",
+      "configurePreset": "thrust",
+      "inherits": "thrust",
       "filter": {
         "include": {
           "name": "^thrust.*\\.cuda\\..*$"
@@ -658,9 +663,19 @@
       }
     },
     {
-      "name": "thrust-cpu-base",
-      "hidden": true,
-      "inherits": "thrust-base",
+      "name": "thrust-gpu-cpp17",
+      "configurePreset": "thrust-cpp17",
+      "inherits": "thrust-gpu"
+    },
+    {
+      "name": "thrust-gpu-cpp20",
+      "configurePreset": "thrust-cpp20",
+      "inherits": "thrust-gpu"
+    },
+    {
+      "name": "thrust-cpu",
+      "configurePreset": "thrust",
+      "inherits": "thrust",
       "filter": {
         "exclude": {
           "name": "^thrust.*\\.cuda\\..*$"
@@ -668,34 +683,14 @@
       }
     },
     {
-      "name": "thrust-gpu-cpp17",
-      "configurePreset": "thrust-cpp17",
-      "inherits": "thrust-gpu-base"
-    },
-    {
-      "name": "thrust-gpu-cpp20",
-      "configurePreset": "thrust-cpp20",
-      "inherits": "thrust-gpu-base"
-    },
-    {
       "name": "thrust-cpu-cpp17",
       "configurePreset": "thrust-cpp17",
-      "inherits": "thrust-cpu-base"
+      "inherits": "thrust-cpu"
     },
     {
       "name": "thrust-cpu-cpp20",
       "configurePreset": "thrust-cpp20",
-      "inherits": "thrust-cpu-base"
-    },
-    {
-      "name": "thrust-cpp17",
-      "configurePreset": "thrust-cpp17",
-      "inherits": "thrust-base"
-    },
-    {
-      "name": "thrust-cpp20",
-      "configurePreset": "thrust-cpp20",
-      "inherits": "thrust-base"
+      "inherits": "thrust-cpu"
     },
     {
       "name": "cudax",

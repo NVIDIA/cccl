@@ -10,7 +10,7 @@
 
 #include <cub/detail/choose_offset.cuh>
 #include <cub/detail/launcher/cuda_driver.cuh>
-#include <cub/detail/ptx-json-parser.h>
+#include <cub/detail/ptx-json-parser.cuh>
 #include <cub/device/device_radix_sort.cuh>
 
 #include <format>
@@ -323,7 +323,7 @@ struct __align__({3}) values_storage_t {{
 {4}
 using {5} = {6}::MaxPolicy;
 
-#include <cub/detail/ptx-json/json.h>
+#include <cub/detail/ptx-json/json.cuh>
 __device__ consteval auto& policy_generator() {{
   return ptx_json::id<ptx_json::string("device_radix_sort_policy")>()
     = cub::detail::radix::RadixSortPolicyWrapper<{5}::ActivePolicy>::EncodedPolicy();
