@@ -29,6 +29,7 @@
 #include <cuda/experimental/__simd/fixed_size_impl.h>
 #include <cuda/experimental/__simd/reference.h>
 #include <cuda/experimental/__simd/traits.h>
+#include <cuda/experimental/__simd/utility.h>
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -71,9 +72,36 @@ public:
 
   _CCCL_TEMPLATE(typename _Up)
   _CCCL_REQUIRES(::cuda::std::is_same_v<_Up, bool>)
-  _CCCL_API basic_simd_mask(_Up __v) noexcept
+  _CCCL_API explicit basic_simd_mask(_Up __v) noexcept
       : __s_{_Impl::__broadcast(__v)}
   {}
+
+  _CCCL_TEMPLATE(typename _Generator)
+  _CCCL_REQUIRES(__can_generate_v<bool, _Generator, simd_size_v<_Tp, abi_type>>)
+  _CCCL_API explicit basic_simd_mask(_Generator&& __g) noexcept
+      : __s_(_Impl::__generate(__g))
+  {}
+
+  _CCCL_TEMPLATE(typename _Flags = element_aligned_tag)
+  _CCCL_REQUIRES(is_simd_flag_type_v<_Flags>)
+  _CCCL_API explicit basic_simd_mask(const bool* __mem, _Flags = {}) noexcept
+  {
+    _Impl::__load(__s_, _Flags::template __apply<basic_simd_mask>(__mem));
+  }
+
+  _CCCL_TEMPLATE(typename _Flags = element_aligned_tag)
+  _CCCL_REQUIRES(is_simd_flag_type_v<_Flags>)
+  _CCCL_API void copy_from(const bool* __mem, _Flags = {}) noexcept
+  {
+    _Impl::__load(__s_, _Flags::template __apply<basic_simd_mask>(__mem));
+  }
+
+  _CCCL_TEMPLATE(typename _Flags = element_aligned_tag)
+  _CCCL_REQUIRES(is_simd_flag_type_v<_Flags>)
+  _CCCL_API void copy_to(bool* __mem, _Flags = {}) const noexcept
+  {
+    _Impl::__store(__s_, _Flags::template __apply<basic_simd_mask>(__mem));
+  }
 
   _CCCL_API reference operator[](::cuda::std::size_t __i) noexcept
   {

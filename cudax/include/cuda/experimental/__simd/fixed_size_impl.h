@@ -266,6 +266,24 @@ struct __mask_operations<_Tp, simd_abi::__fixed_size<_Np>>
     return __result;
   }
 
+  template <typename _Generator, ::cuda::std::size_t... _Is>
+  [[nodiscard]] _CCCL_API static constexpr _MaskStorage
+  __generate_init(_Generator&& __g, ::cuda::std::index_sequence<_Is...>) noexcept
+  {
+    _MaskStorage __result;
+    ((__result.__set(_Is,
+                     ::cuda::experimental::datapar::__mask_bits_from_bool<_MaskStorage>(
+                       static_cast<bool>(__g(::cuda::std::integral_constant<::cuda::std::size_t, _Is>()))))),
+     ...);
+    return __result;
+  }
+
+  template <typename _Generator>
+  [[nodiscard]] _CCCL_API static constexpr _MaskStorage __generate(_Generator&& __g) noexcept
+  {
+    return __generate_init(__g, ::cuda::std::make_index_sequence<_Np>());
+  }
+
   _CCCL_API static constexpr void __load(_MaskStorage& __s, const bool* __mem) noexcept
   {
     _CCCL_PRAGMA_UNROLL_FULL()

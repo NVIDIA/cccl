@@ -86,6 +86,13 @@ struct is_simd : ::cuda::std::bool_constant<is_simd_v<_Tp>>
 {};
 
 template <typename _Tp>
+inline constexpr bool is_simd_mask_v = false;
+
+template <typename _Tp>
+struct is_simd_mask : ::cuda::std::bool_constant<is_simd_mask_v<_Tp>>
+{};
+
+template <typename _Tp>
 inline constexpr bool is_simd_flag_type_v = false;
 
 template <typename _Tp>
@@ -111,6 +118,9 @@ inline constexpr bool is_simd_v<basic_simd<_Tp, _Abi>> = true;
 template <typename _Tp, typename _Abi>
 inline constexpr bool is_simd_v<basic_simd_mask<_Tp, _Abi>> = true;
 
+template <typename _Tp, typename _Abi>
+inline constexpr bool is_simd_mask_v<basic_simd_mask<_Tp, _Abi>> = true;
+
 template <>
 inline constexpr bool is_simd_flag_type_v<element_aligned_tag> = true;
 
@@ -119,6 +129,62 @@ inline constexpr bool is_simd_flag_type_v<vector_aligned_tag> = true;
 
 template <::cuda::std::size_t _Alignment>
 inline constexpr bool is_simd_flag_type_v<overaligned_tag<_Alignment>> = true;
+
+// Memory alignment queries
+template <typename _Tp, typename _Flags = element_aligned_tag>
+struct memory_alignment;
+
+template <typename _Tp, typename _Abi>
+struct memory_alignment<basic_simd<_Tp, _Abi>, element_aligned_tag>
+    : ::cuda::std::integral_constant<::cuda::std::size_t, alignof(_Tp)>
+{};
+
+template <typename _Tp, typename _Abi>
+struct memory_alignment<basic_simd<_Tp, _Abi>, vector_aligned_tag>
+    : ::cuda::std::integral_constant<::cuda::std::size_t, alignof(_Tp) * simd_size_v<_Tp, _Abi>>
+{};
+
+template <typename _Tp, typename _Abi, ::cuda::std::size_t _Alignment>
+struct memory_alignment<basic_simd<_Tp, _Abi>, overaligned_tag<_Alignment>>
+    : ::cuda::std::integral_constant<::cuda::std::size_t, _Alignment>
+{};
+
+template <typename _Tp, typename _Abi>
+struct memory_alignment<basic_simd_mask<_Tp, _Abi>, element_aligned_tag>
+    : ::cuda::std::integral_constant<::cuda::std::size_t, alignof(bool)>
+{};
+
+template <typename _Tp, typename _Abi>
+struct memory_alignment<basic_simd_mask<_Tp, _Abi>, vector_aligned_tag>
+    : ::cuda::std::integral_constant<::cuda::std::size_t, alignof(bool) * simd_size_v<_Tp, _Abi>>
+{};
+
+template <typename _Tp, typename _Abi, ::cuda::std::size_t _Alignment>
+struct memory_alignment<basic_simd_mask<_Tp, _Abi>, overaligned_tag<_Alignment>>
+    : ::cuda::std::integral_constant<::cuda::std::size_t, _Alignment>
+{};
+
+template <typename _Tp, typename _Flags = element_aligned_tag>
+inline constexpr ::cuda::std::size_t memory_alignment_v = memory_alignment<_Tp, _Flags>::value;
+
+// Rebind simd element type
+template <typename _Tp, typename _Simd>
+struct rebind_simd;
+
+template <typename _Tp, typename _Up, typename _Abi>
+struct rebind_simd<_Tp, basic_simd<_Up, _Abi>>
+{
+  using type = basic_simd<_Tp, _Abi>;
+};
+
+template <typename _Tp, typename _Up, typename _Abi>
+struct rebind_simd<_Tp, basic_simd_mask<_Up, _Abi>>
+{
+  using type = basic_simd_mask<_Tp, _Abi>;
+};
+
+template <typename _Tp, typename _Simd>
+using rebind_simd_t = typename rebind_simd<_Tp, _Simd>::type;
 } // namespace cuda::experimental::datapar
 
 #include <cuda/std/__cccl/epilogue.h>
