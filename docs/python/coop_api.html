@@ -1745,24 +1745,24 @@ perform.  Currently, only <code class="xref py py-attr docutils literal notransl
 <li><p><strong>threads_per_block</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">cuda.coop._typing.DimType</span></code>) – Supplies the number of threads in the block,
 either as an integer for a 1D block or a tuple of two or three integers
 for a 2D or 3D block, respectively.</p></li>
-<li><p><strong>items_per_thread</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a>) – Supplies the number of items partitioned onto each
+<li><p><strong>items_per_thread</strong> (<em>int</em>) – Supplies the number of items partitioned onto each
 thread.</p></li>
-<li><p><strong>warp_time_slicing</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><em>bool</em></a><em>, </em><em>optional</em>) – Supplies a boolean indicating whether warp
+<li><p><strong>warp_time_slicing</strong> (<em>bool</em><em>, </em><em>optional</em>) – Supplies a boolean indicating whether warp
 time-slicing is used.  If set to <cite>True</cite>, the algorithm will only use
 enough shared memory to accommodate a single warp’s worth of tile data,
 time-slicing the block-wide exchange over multiple synchronized rounds.
 Yields a much smaller shared-memory footprint at the expense of
 decreased parallelism.  Defaults to <cite>False</cite>.</p></li>
-<li><p><strong>methods</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><em>dict</em></a><em>, </em><em>optional</em>) – Optionally supplies a dictionary of methods to use for
+<li><p><strong>methods</strong> (<em>dict</em><em>, </em><em>optional</em>) – Optionally supplies a dictionary of methods to use for
 user-defined types.  The default is <em>None</em>.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Raises<span class="colon">:</span></dt>
 <dd class="field-even"><ul class="simple">
-<li><p><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#ValueError" title="(in Python v3.14)"><strong>ValueError</strong></a> – If <code class="docutils literal notranslate"><span class="pre">block_exchange_type</span></code> is not a valid enum
+<li><p><strong>ValueError</strong> – If <code class="docutils literal notranslate"><span class="pre">block_exchange_type</span></code> is not a valid enum
 value of <a class="reference internal" href="#cuda.coop.block.BlockExchangeType" title="cuda.coop.block.BlockExchangeType"><code class="xref py py-class docutils literal notranslate"><span class="pre">BlockExchangeType</span></code></a>.</p></li>
-<li><p><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#ValueError" title="(in Python v3.14)"><strong>ValueError</strong></a> – If <code class="docutils literal notranslate"><span class="pre">items_per_thread</span></code> is less than 1.</p></li>
-<li><p><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#ValueError" title="(in Python v3.14)"><strong>ValueError</strong></a> – If <code class="docutils literal notranslate"><span class="pre">items_per_thread</span></code> is greater than 1 and
+<li><p><strong>ValueError</strong> – If <code class="docutils literal notranslate"><span class="pre">items_per_thread</span></code> is less than 1.</p></li>
+<li><p><strong>ValueError</strong> – If <code class="docutils literal notranslate"><span class="pre">items_per_thread</span></code> is greater than 1 and
 <code class="docutils literal notranslate"><span class="pre">methods</span></code> is not <em>None</em> (i.e. a user-defined type is being used).</p></li>
 </ul>
 </dd>
@@ -1800,7 +1800,7 @@ operator.</p>
 either as an integer for a 1-D block or a tuple of two or three
 integers for a 2-D or 3-D block, respectively.</p></li>
 <li><p><strong>scan_op</strong> (<em>ScanOpType</em>) – Supplies the scan operator to use for the block-wide scan.</p></li>
-<li><p><strong>items_per_thread</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a><em>, </em><em>optional</em>) – Supplies the number of items partitioned onto
+<li><p><strong>items_per_thread</strong> (<em>int</em><em>, </em><em>optional</em>) – Supplies the number of items partitioned onto
 each thread.  This parameter must be greater than or equal to 1.</p></li>
 <li><p><strong>initial_value</strong> (<em>Any</em><em>, </em><em>optional</em>) – Optionally supplies the initial value to use for the
 block-wide scan.  If a non-None value is supplied, <code class="docutils literal notranslate"><span class="pre">prefix_op</span></code> must
@@ -1814,25 +1814,25 @@ be <em>None</em>.</p></li>
 </em><em>optional</em>) – Optionally supplies the algorithm to use for the
 block-wide scan. Must be one of <code class="docutils literal notranslate"><span class="pre">&quot;raking&quot;</span></code>, <code class="docutils literal notranslate"><span class="pre">&quot;raking_memoize&quot;</span></code>,
 or <code class="docutils literal notranslate"><span class="pre">&quot;warp_scans&quot;</span></code>. The default is <code class="docutils literal notranslate"><span class="pre">&quot;raking&quot;</span></code>.</p></li>
-<li><p><strong>methods</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><em>dict</em></a><em>, </em><em>optional</em>) – Optionally supplies a dictionary of methods to use for
+<li><p><strong>methods</strong> (<em>dict</em><em>, </em><em>optional</em>) – Optionally supplies a dictionary of methods to use for
 user-defined types.  The default is <em>None</em>.  Not supported if
 <code class="docutils literal notranslate"><span class="pre">items_per_thread</span> <span class="pre">&gt;</span> <span class="pre">1</span></code>.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Raises<span class="colon">:</span></dt>
 <dd class="field-even"><ul class="simple">
-<li><p><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#ValueError" title="(in Python v3.14)"><strong>ValueError</strong></a> – If <code class="docutils literal notranslate"><span class="pre">algorithm</span></code> is not one of the supported algorithms
+<li><p><strong>ValueError</strong> – If <code class="docutils literal notranslate"><span class="pre">algorithm</span></code> is not one of the supported algorithms
 (<code class="docutils literal notranslate"><span class="pre">&quot;raking&quot;</span></code>, <code class="docutils literal notranslate"><span class="pre">&quot;raking_memoize&quot;</span></code>, or <code class="docutils literal notranslate"><span class="pre">&quot;warp_scans&quot;</span></code>).</p></li>
-<li><p><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#ValueError" title="(in Python v3.14)"><strong>ValueError</strong></a> – If <code class="docutils literal notranslate"><span class="pre">items_per_thread</span></code> is less than 1.</p></li>
-<li><p><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#ValueError" title="(in Python v3.14)"><strong>ValueError</strong></a> – If <code class="docutils literal notranslate"><span class="pre">items_per_thread</span></code> is greater than 1 and <code class="docutils literal notranslate"><span class="pre">methods</span></code>
+<li><p><strong>ValueError</strong> – If <code class="docutils literal notranslate"><span class="pre">items_per_thread</span></code> is less than 1.</p></li>
+<li><p><strong>ValueError</strong> – If <code class="docutils literal notranslate"><span class="pre">items_per_thread</span></code> is greater than 1 and <code class="docutils literal notranslate"><span class="pre">methods</span></code>
 is not <em>None</em> (i.e. a user-defined type is being used).</p></li>
-<li><p><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#ValueError" title="(in Python v3.14)"><strong>ValueError</strong></a> – If <code class="docutils literal notranslate"><span class="pre">scan_op</span></code> is an unsupported operator type.</p></li>
-<li><p><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#ValueError" title="(in Python v3.14)"><strong>ValueError</strong></a> – If <code class="docutils literal notranslate"><span class="pre">initial_value</span></code> is provided but the <code class="docutils literal notranslate"><span class="pre">scan_op</span></code>
+<li><p><strong>ValueError</strong> – If <code class="docutils literal notranslate"><span class="pre">scan_op</span></code> is an unsupported operator type.</p></li>
+<li><p><strong>ValueError</strong> – If <code class="docutils literal notranslate"><span class="pre">initial_value</span></code> is provided but the <code class="docutils literal notranslate"><span class="pre">scan_op</span></code>
 is a sum operator (sum operators do not support initial values).</p></li>
-<li><p><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#ValueError" title="(in Python v3.14)"><strong>ValueError</strong></a> – If <code class="docutils literal notranslate"><span class="pre">initial_value</span></code> is provided with
+<li><p><strong>ValueError</strong> – If <code class="docutils literal notranslate"><span class="pre">initial_value</span></code> is provided with
 <code class="docutils literal notranslate"><span class="pre">items_per_thread=1</span></code>, and <code class="docutils literal notranslate"><span class="pre">block_prefix_callback_op</span></code> is not <em>None</em>
 (this combination is not supported).</p></li>
-<li><p><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#ValueError" title="(in Python v3.14)"><strong>ValueError</strong></a> – If <code class="docutils literal notranslate"><span class="pre">initial_value</span></code> is required but not provided.
+<li><p><strong>ValueError</strong> – If <code class="docutils literal notranslate"><span class="pre">initial_value</span></code> is required but not provided.
 An initial value is required when <code class="docutils literal notranslate"><span class="pre">items_per_thread</span> <span class="pre">&gt;</span> <span class="pre">1</span></code> and
 <code class="docutils literal notranslate"><span class="pre">block_prefix_callback_op</span></code> is <em>None</em>.  If not provided, the function
 will attempt to create a default value (<code class="docutils literal notranslate"><span class="pre">0</span></code>) for the given data type,
@@ -1912,7 +1912,7 @@ threads where each thread owns 4 consecutive items.</p>
 <li><p><strong>threads_per_block</strong> (<em>DimType</em>) – Supplies the number of threads in the block,
 either as an integer for a 1D block or a tuple of two or three integers
 for a 2D or 3D block, respectively.</p></li>
-<li><p><strong>items_per_thread</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a><em>, </em><em>optional</em>) – Supplies the number of items partitioned onto
+<li><p><strong>items_per_thread</strong> (<em>int</em><em>, </em><em>optional</em>) – Supplies the number of items partitioned onto
 each thread.  This parameter must be greater than or equal to 1.</p></li>
 <li><p><strong>prefix_op</strong> (<em>Callable</em><em>, </em><em>optional</em>) – Optionally supplies a callable that will be invoked by the
 first warp of threads in a block with the block aggregate value;
@@ -1923,17 +1923,17 @@ the prefix value.</p></li>
 scan.  Must be one of the following: <code class="docutils literal notranslate"><span class="pre">&quot;raking&quot;</span></code>,
 <code class="docutils literal notranslate"><span class="pre">&quot;raking_memoize&quot;</span></code>, or <code class="docutils literal notranslate"><span class="pre">&quot;warp_scans&quot;</span></code>.  The default is
 <code class="docutils literal notranslate"><span class="pre">&quot;raking&quot;</span></code>.</p></li>
-<li><p><strong>methods</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><em>dict</em></a><em>, </em><em>optional</em>) – Optionally supplies a dictionary of methods to use for
+<li><p><strong>methods</strong> (<em>dict</em><em>, </em><em>optional</em>) – Optionally supplies a dictionary of methods to use for
 user-defined types.  The default is <em>None</em>.  Not supported if
 <code class="docutils literal notranslate"><span class="pre">items_per_thread</span> <span class="pre">&gt;</span> <span class="pre">1</span></code>.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Raises<span class="colon">:</span></dt>
 <dd class="field-even"><ul class="simple">
-<li><p><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#ValueError" title="(in Python v3.14)"><strong>ValueError</strong></a> – If <code class="docutils literal notranslate"><span class="pre">algorithm</span></code> is not one of the supported algorithms
+<li><p><strong>ValueError</strong> – If <code class="docutils literal notranslate"><span class="pre">algorithm</span></code> is not one of the supported algorithms
 (<code class="docutils literal notranslate"><span class="pre">&quot;raking&quot;</span></code>, <code class="docutils literal notranslate"><span class="pre">&quot;raking_memoize&quot;</span></code>, or <code class="docutils literal notranslate"><span class="pre">&quot;warp_scans&quot;</span></code>).</p></li>
-<li><p><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#ValueError" title="(in Python v3.14)"><strong>ValueError</strong></a> – If <code class="docutils literal notranslate"><span class="pre">items_per_thread</span></code> is less than 1.</p></li>
-<li><p><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#ValueError" title="(in Python v3.14)"><strong>ValueError</strong></a> – If <code class="docutils literal notranslate"><span class="pre">items_per_thread</span></code> is greater than 1 and <code class="docutils literal notranslate"><span class="pre">methods</span></code>
+<li><p><strong>ValueError</strong> – If <code class="docutils literal notranslate"><span class="pre">items_per_thread</span></code> is less than 1.</p></li>
+<li><p><strong>ValueError</strong> – If <code class="docutils literal notranslate"><span class="pre">items_per_thread</span></code> is greater than 1 and <code class="docutils literal notranslate"><span class="pre">methods</span></code>
 is not <em>None</em> (i.e. a user-defined type is being used).</p></li>
 </ul>
 </dd>
@@ -1973,7 +1973,7 @@ operator.</p>
 either as an integer for a 1-D block or a tuple of two or three
 integers for a 2-D or 3-D block, respectively.</p></li>
 <li><p><strong>scan_op</strong> (<em>ScanOpType</em>) – Supplies the scan operator to use for the block-wide scan.</p></li>
-<li><p><strong>items_per_thread</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a><em>, </em><em>optional</em>) – Supplies the number of items partitioned onto
+<li><p><strong>items_per_thread</strong> (<em>int</em><em>, </em><em>optional</em>) – Supplies the number of items partitioned onto
 each thread.  This parameter must be greater than or equal to 1.</p></li>
 <li><p><strong>initial_value</strong> (<em>Any</em><em>, </em><em>optional</em>) – Optionally supplies the initial value to use for the
 block-wide scan.  If a non-None value is supplied, <code class="docutils literal notranslate"><span class="pre">prefix_op</span></code> must
@@ -1988,20 +1988,20 @@ be <em>None</em>; a <code class="docutils literal notranslate"><span class="pre"
 </em><em>optional</em>) – Optionally supplies the algorithm to use for the
 block-wide scan. Must be one of <code class="docutils literal notranslate"><span class="pre">&quot;raking&quot;</span></code>, <code class="docutils literal notranslate"><span class="pre">&quot;raking_memoize&quot;</span></code>,
 or <code class="docutils literal notranslate"><span class="pre">&quot;warp_scans&quot;</span></code>. The default is <code class="docutils literal notranslate"><span class="pre">&quot;raking&quot;</span></code>.</p></li>
-<li><p><strong>methods</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><em>dict</em></a><em>, </em><em>optional</em>) – Optionally supplies a dictionary of methods to use for
+<li><p><strong>methods</strong> (<em>dict</em><em>, </em><em>optional</em>) – Optionally supplies a dictionary of methods to use for
 user-defined types.  The default is <em>None</em>.  Not supported if
 <code class="docutils literal notranslate"><span class="pre">items_per_thread</span> <span class="pre">&gt;</span> <span class="pre">1</span></code>.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Raises<span class="colon">:</span></dt>
 <dd class="field-even"><ul class="simple">
-<li><p><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#ValueError" title="(in Python v3.14)"><strong>ValueError</strong></a> – If <code class="docutils literal notranslate"><span class="pre">algorithm</span></code> is not one of the supported algorithms
+<li><p><strong>ValueError</strong> – If <code class="docutils literal notranslate"><span class="pre">algorithm</span></code> is not one of the supported algorithms
 (<code class="docutils literal notranslate"><span class="pre">&quot;raking&quot;</span></code>, <code class="docutils literal notranslate"><span class="pre">&quot;raking_memoize&quot;</span></code>, or <code class="docutils literal notranslate"><span class="pre">&quot;warp_scans&quot;</span></code>).</p></li>
-<li><p><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#ValueError" title="(in Python v3.14)"><strong>ValueError</strong></a> – If <code class="docutils literal notranslate"><span class="pre">items_per_thread</span></code> is less than 1.</p></li>
-<li><p><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#ValueError" title="(in Python v3.14)"><strong>ValueError</strong></a> – If <code class="docutils literal notranslate"><span class="pre">scan_op</span></code> is an unsupported operator type.</p></li>
-<li><p><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#ValueError" title="(in Python v3.14)"><strong>ValueError</strong></a> – If <code class="docutils literal notranslate"><span class="pre">initial_value</span></code> is provided but the <code class="docutils literal notranslate"><span class="pre">scan_op</span></code>
+<li><p><strong>ValueError</strong> – If <code class="docutils literal notranslate"><span class="pre">items_per_thread</span></code> is less than 1.</p></li>
+<li><p><strong>ValueError</strong> – If <code class="docutils literal notranslate"><span class="pre">scan_op</span></code> is an unsupported operator type.</p></li>
+<li><p><strong>ValueError</strong> – If <code class="docutils literal notranslate"><span class="pre">initial_value</span></code> is provided but the <code class="docutils literal notranslate"><span class="pre">scan_op</span></code>
 is a sum operator (sum operators do not support initial values).</p></li>
-<li><p><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#ValueError" title="(in Python v3.14)"><strong>ValueError</strong></a> – If <code class="docutils literal notranslate"><span class="pre">initial_value</span></code> is provided with
+<li><p><strong>ValueError</strong> – If <code class="docutils literal notranslate"><span class="pre">initial_value</span></code> is provided with
 <code class="docutils literal notranslate"><span class="pre">items_per_thread=1</span></code> (initial values are not supported for inclusive
 scans with a single item per thread).</p></li>
 </ul>
@@ -2039,7 +2039,7 @@ scan operator.</p>
 <li><p><strong>threads_per_block</strong> (<em>DimType</em>) – Supplies the number of threads in the block,
 either as an integer for a 1D block or a tuple of two or three integers
 for a 2D or 3D block, respectively.</p></li>
-<li><p><strong>items_per_thread</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a><em>, </em><em>optional</em>) – Supplies the number of items partitioned onto
+<li><p><strong>items_per_thread</strong> (<em>int</em><em>, </em><em>optional</em>) – Supplies the number of items partitioned onto
 each thread.  This parameter must be greater than or equal to 1.</p></li>
 <li><p><strong>prefix_op</strong> (<em>Callable</em><em>, </em><em>optional</em>) – Optionally supplies a callable that will be invoked by the
 first warp of threads in a block with the block aggregate value;
@@ -2050,16 +2050,16 @@ the prefix value.</p></li>
 scan.  Must be one of the following: <code class="docutils literal notranslate"><span class="pre">&quot;raking&quot;</span></code>,
 <code class="docutils literal notranslate"><span class="pre">&quot;raking_memoize&quot;</span></code>, or <code class="docutils literal notranslate"><span class="pre">&quot;warp_scans&quot;</span></code>.  The default is
 <code class="docutils literal notranslate"><span class="pre">&quot;raking&quot;</span></code>.</p></li>
-<li><p><strong>methods</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><em>dict</em></a><em>, </em><em>optional</em>) – Optionally supplies a dictionary of methods to use for
+<li><p><strong>methods</strong> (<em>dict</em><em>, </em><em>optional</em>) – Optionally supplies a dictionary of methods to use for
 user-defined types.  The default is <em>None</em>.  Not supported if
 <code class="docutils literal notranslate"><span class="pre">items_per_thread</span> <span class="pre">&gt;</span> <span class="pre">1</span></code>.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Raises<span class="colon">:</span></dt>
 <dd class="field-even"><ul class="simple">
-<li><p><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#ValueError" title="(in Python v3.14)"><strong>ValueError</strong></a> – If <code class="docutils literal notranslate"><span class="pre">algorithm</span></code> is not one of the supported algorithms
+<li><p><strong>ValueError</strong> – If <code class="docutils literal notranslate"><span class="pre">algorithm</span></code> is not one of the supported algorithms
 (<code class="docutils literal notranslate"><span class="pre">&quot;raking&quot;</span></code>, <code class="docutils literal notranslate"><span class="pre">&quot;raking_memoize&quot;</span></code>, or <code class="docutils literal notranslate"><span class="pre">&quot;warp_scans&quot;</span></code>).</p></li>
-<li><p><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#ValueError" title="(in Python v3.14)"><strong>ValueError</strong></a> – If <code class="docutils literal notranslate"><span class="pre">items_per_thread</span></code> is less than 1.</p></li>
+<li><p><strong>ValueError</strong> – If <code class="docutils literal notranslate"><span class="pre">items_per_thread</span></code> is less than 1.</p></li>
 </ul>
 </dd>
 <dt class="field-odd">Returns<span class="colon">:</span></dt>
@@ -2194,13 +2194,13 @@ The corresponding output <code class="docutils literal notranslate"><span class=
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>dtype</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a><em> | </em><a class="reference external" href="https://docs.python.org/3/library/functions.html#type" title="(in Python v3.14)"><em>type</em></a><em> | </em><em>np.dtype</em><em> | </em><em>numba.types.Type</em>) – Numba data type of the keys to be sorted</p></li>
-<li><p><strong>threads_per_block</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a>) – The number of threads in a block, either an integer
+<li><p><strong>dtype</strong> (<em>str</em><em> | </em><em>type</em><em> | </em><em>np.dtype</em><em> | </em><em>numba.types.Type</em>) – Numba data type of the keys to be sorted</p></li>
+<li><p><strong>threads_per_block</strong> (<em>int</em>) – The number of threads in a block, either an integer
 or a tuple of 2 or 3 integers</p></li>
-<li><p><strong>items_per_thread</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a>) – The number of items each thread owns</p></li>
-<li><p><strong>compare_op</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Callable" title="(in Python v3.14)"><em>Callable</em></a>) – Comparison function object which returns true if the first
+<li><p><strong>items_per_thread</strong> (<em>int</em>) – The number of items each thread owns</p></li>
+<li><p><strong>compare_op</strong> (<em>Callable</em>) – Comparison function object which returns true if the first
 argument is ordered before the second one</p></li>
-<li><p><strong>methods</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Literal" title="(in Python v3.14)"><em>Literal</em></a><em>[</em><em>'construct'</em><em>, </em><em>'assign'</em><em>]</em>)</p></li>
+<li><p><strong>methods</strong> (<em>Literal</em><em>[</em><em>'construct'</em><em>, </em><em>'assign'</em><em>]</em>)</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
@@ -2432,7 +2432,7 @@ and <code class="docutils literal notranslate"><span class="pre">inclusive_scan<
 <li><p><strong>threads_per_block</strong> (<em>DimType</em>) – Supplies the number of threads in the block,
 either as an integer for a 1D block or a tuple of two or three integers
 for a 2D or 3D block, respectively.</p></li>
-<li><p><strong>items_per_thread</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a><em>, </em><em>optional</em>) – Supplies the number of items partitioned onto
+<li><p><strong>items_per_thread</strong> (<em>int</em><em>, </em><em>optional</em>) – Supplies the number of items partitioned onto
 each thread.  This parameter must be greater than or equal to 1.</p></li>
 <li><p><strong>initial_value</strong> (<em>Any</em><em>, </em><em>optional</em>) – Optionally supplies the initial value to use for the
 block-wide scan.</p></li>
@@ -2447,28 +2447,28 @@ the prefix value.</p></li>
 <li><p><strong>algorithm</strong> (<em>Literal</em><em>[</em><em>&quot;raking&quot;</em><em>, </em><em>&quot;raking_memoize&quot;</em><em>, </em><em>&quot;warp_scans&quot;</em><em>]</em><em>, </em><em>optional</em>) – Supplies the algorithm to use for the block-wide scan.
 Must be one of <code class="docutils literal notranslate"><span class="pre">&quot;raking&quot;</span></code>, <code class="docutils literal notranslate"><span class="pre">&quot;raking_memoize&quot;</span></code>, or <code class="docutils literal notranslate"><span class="pre">&quot;warp_scans&quot;</span></code>.
 The default is <code class="docutils literal notranslate"><span class="pre">&quot;raking&quot;</span></code>.</p></li>
-<li><p><strong>methods</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><em>dict</em></a><em>, </em><em>optional</em>) – Optionally supplies a dictionary of methods to use for
+<li><p><strong>methods</strong> (<em>dict</em><em>, </em><em>optional</em>) – Optionally supplies a dictionary of methods to use for
 user-defined types.  The default is <em>None</em>.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Raises<span class="colon">:</span></dt>
 <dd class="field-even"><ul class="simple">
-<li><p><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#ValueError" title="(in Python v3.14)"><strong>ValueError</strong></a> – If <code class="docutils literal notranslate"><span class="pre">algorithm</span></code> is not one of the supported algorithms
+<li><p><strong>ValueError</strong> – If <code class="docutils literal notranslate"><span class="pre">algorithm</span></code> is not one of the supported algorithms
 (<code class="docutils literal notranslate"><span class="pre">&quot;raking&quot;</span></code>, <code class="docutils literal notranslate"><span class="pre">&quot;raking_memoize&quot;</span></code>, or <code class="docutils literal notranslate"><span class="pre">&quot;warp_scans&quot;</span></code>).</p></li>
-<li><p><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#ValueError" title="(in Python v3.14)"><strong>ValueError</strong></a> – If <code class="docutils literal notranslate"><span class="pre">items_per_thread</span></code> is less than 1.</p></li>
-<li><p><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#ValueError" title="(in Python v3.14)"><strong>ValueError</strong></a> – If <code class="docutils literal notranslate"><span class="pre">mode</span></code> is not one of the supported modes
+<li><p><strong>ValueError</strong> – If <code class="docutils literal notranslate"><span class="pre">items_per_thread</span></code> is less than 1.</p></li>
+<li><p><strong>ValueError</strong> – If <code class="docutils literal notranslate"><span class="pre">mode</span></code> is not one of the supported modes
 (<code class="docutils literal notranslate"><span class="pre">&quot;exclusive&quot;</span></code> or <code class="docutils literal notranslate"><span class="pre">&quot;inclusive&quot;</span></code>).</p></li>
-<li><p><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#ValueError" title="(in Python v3.14)"><strong>ValueError</strong></a> – If <code class="docutils literal notranslate"><span class="pre">scan_op</span></code> is an unsupported operator type.</p></li>
-<li><p><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#ValueError" title="(in Python v3.14)"><strong>ValueError</strong></a> – If <code class="docutils literal notranslate"><span class="pre">initial_value</span></code> is provided but the <code class="docutils literal notranslate"><span class="pre">scan_op</span></code>
+<li><p><strong>ValueError</strong> – If <code class="docutils literal notranslate"><span class="pre">scan_op</span></code> is an unsupported operator type.</p></li>
+<li><p><strong>ValueError</strong> – If <code class="docutils literal notranslate"><span class="pre">initial_value</span></code> is provided but the <code class="docutils literal notranslate"><span class="pre">scan_op</span></code>
 is a sum operator (sum operators do not support initial values).</p></li>
-<li><p><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#ValueError" title="(in Python v3.14)"><strong>ValueError</strong></a> – If <code class="docutils literal notranslate"><span class="pre">initial_value</span></code> is provided with an inclusive scan
+<li><p><strong>ValueError</strong> – If <code class="docutils literal notranslate"><span class="pre">initial_value</span></code> is provided with an inclusive scan
 (<code class="docutils literal notranslate"><span class="pre">mode=&quot;inclusive&quot;</span></code>) and <code class="docutils literal notranslate"><span class="pre">items_per_thread=1</span></code> (initial values are
 not supported for inclusive scans with a single item per thread).</p></li>
-<li><p><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#ValueError" title="(in Python v3.14)"><strong>ValueError</strong></a> – If <code class="docutils literal notranslate"><span class="pre">initial_value</span></code> is provided with an exclusive scan
+<li><p><strong>ValueError</strong> – If <code class="docutils literal notranslate"><span class="pre">initial_value</span></code> is provided with an exclusive scan
 (<code class="docutils literal notranslate"><span class="pre">mode=&quot;exclusive&quot;</span></code>), <code class="docutils literal notranslate"><span class="pre">items_per_thread=1</span></code>, and
 <code class="docutils literal notranslate"><span class="pre">block_prefix_callback_op</span></code> is not <em>None</em> (this combination is not
 supported).</p></li>
-<li><p><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#ValueError" title="(in Python v3.14)"><strong>ValueError</strong></a> – If <code class="docutils literal notranslate"><span class="pre">initial_value</span></code> is required but not provided.
+<li><p><strong>ValueError</strong> – If <code class="docutils literal notranslate"><span class="pre">initial_value</span></code> is required but not provided.
 An initial value is required when <code class="docutils literal notranslate"><span class="pre">items_per_thread</span> <span class="pre">&gt;</span> <span class="pre">1</span></code> and
 <code class="docutils literal notranslate"><span class="pre">block_prefix_callback_op</span></code> is <em>None</em>.  If not provided, the function
 will attempt to create a default value (<code class="docutils literal notranslate"><span class="pre">0</span></code>) for the given data type,
