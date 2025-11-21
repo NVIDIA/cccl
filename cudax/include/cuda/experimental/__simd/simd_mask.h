@@ -48,7 +48,7 @@ class basic_simd_mask : public __mask_operations<_Tp, _Abi>
 
 public:
   using value_type = bool;
-  using reference  = __simd_reference<_Tp, _Storage, bool>;
+  using reference  = __simd_reference<_Storage, bool>;
   using abi_type   = _Abi;
 
   [[nodiscard]] _CCCL_API static constexpr ::cuda::std::size_t size() noexcept

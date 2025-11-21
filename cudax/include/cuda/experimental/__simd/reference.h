@@ -35,7 +35,7 @@
 
 namespace cuda::experimental::datapar
 {
-template <typename _Tp, typename _Storage, typename _Vp>
+template <typename _Storage, typename _Vp>
 class __simd_reference
 {
   template <typename, typename>
@@ -59,14 +59,7 @@ class __simd_reference
 
   _CCCL_API constexpr void __set(_Vp __v) noexcept
   {
-    if constexpr (::cuda::std::is_same_v<_Vp, bool>)
-    {
-      __s_.__set(__idx_, ::cuda::experimental::datapar::__mask_bits_from_bool<_Storage>(__v));
-    }
-    else
-    {
-      __s_.__set(__idx_, __v);
-    }
+    __s_.__set(__idx_, __v);
   }
 
 public:
@@ -88,15 +81,15 @@ public:
     return {__s_, __idx_};
   }
 
-  template <typename _Tp1, typename _Storage1, typename _Vp1>
-  friend _CCCL_API void swap(__simd_reference<_Tp1, _Storage1, _Vp1>&& __a,
-                             __simd_reference<_Tp1, _Storage1, _Vp1>&& __b) noexcept;
+  template <typename _Storage1, typename _Vp1>
+  friend _CCCL_API void swap(__simd_reference<_Storage1, _Vp1>&& __a,
+                             __simd_reference<_Storage1, _Vp1>&& __b) noexcept;
 
-  template <typename _Tp1, typename _Storage1, typename _Vp1>
-  friend _CCCL_API void swap(_Vp1& __a, __simd_reference<_Tp1, _Storage1, _Vp1>&& __b) noexcept;
+  template <typename _Storage1, typename _Vp1>
+  friend _CCCL_API void swap(_Vp1& __a, __simd_reference<_Storage1, _Vp1>&& __b) noexcept;
 
-  template <typename _Tp1, typename _Storage1, typename _Vp1>
-  friend _CCCL_API void swap(__simd_reference<_Tp1, _Storage1, _Vp1>&& __a, _Vp1& __b) noexcept;
+  template <typename _Storage1, typename _Vp1>
+  friend _CCCL_API void swap(__simd_reference<_Storage1, _Vp1>&& __a, _Vp1& __b) noexcept;
 
   template <typename _Up, typename = decltype(::cuda::std::declval<value_type&>() += ::cuda::std::declval<_Up>())>
   _CCCL_API __simd_reference operator+=(_Up&& __v) && noexcept
@@ -195,24 +188,24 @@ public:
   }
 };
 
-template <typename _Tp, typename _Storage, typename _Vp>
-_CCCL_API void swap(__simd_reference<_Tp, _Storage, _Vp>&& __a, __simd_reference<_Tp, _Storage, _Vp>&& __b) noexcept
+template <typename _Storage, typename _Vp>
+_CCCL_API void swap(__simd_reference<_Storage, _Vp>&& __a, __simd_reference<_Storage, _Vp>&& __b) noexcept
 {
   _Vp __tmp(::cuda::std::move(__a));
   ::cuda::std::move(__a) = ::cuda::std::move(__b);
   ::cuda::std::move(__b) = ::cuda::std::move(__tmp);
 }
 
-template <typename _Tp, typename _Storage, typename _Vp>
-_CCCL_API void swap(_Vp& __a, __simd_reference<_Tp, _Storage, _Vp>&& __b) noexcept
+template <typename _Storage, typename _Vp>
+_CCCL_API void swap(_Vp& __a, __simd_reference<_Storage, _Vp>&& __b) noexcept
 {
   _Vp __tmp(::cuda::std::move(__a));
   __a                    = ::cuda::std::move(__b);
   ::cuda::std::move(__b) = ::cuda::std::move(__tmp);
 }
 
-template <typename _Tp, typename _Storage, typename _Vp>
-_CCCL_API void swap(__simd_reference<_Tp, _Storage, _Vp>&& __a, _Vp& __b) noexcept
+template <typename _Storage, typename _Vp>
+_CCCL_API void swap(__simd_reference<_Storage, _Vp>&& __a, _Vp& __b) noexcept
 {
   _Vp __tmp(::cuda::std::move(__a));
   ::cuda::std::move(__a) = ::cuda::std::move(__b);

@@ -255,7 +255,7 @@ struct __mask_operations<_Tp, simd_abi::__scalar>
 
   _CCCL_API static constexpr void __load(_MaskStorage& __s, const bool* __mem) noexcept
   {
-    __s.__data = ::cuda::experimental::datapar::__mask_bits_from_bool<_MaskStorage>(__mem[0]);
+    __s.__data = __mem[0];
   }
 
   _CCCL_API static constexpr void __store(const _MaskStorage& __s, bool* __mem) noexcept

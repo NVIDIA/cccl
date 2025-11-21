@@ -56,7 +56,7 @@ class basic_simd : public __simd_operations<_Tp, _Abi>
 
 public:
   using value_type = _Tp;
-  using reference  = __simd_reference<_Tp, _Storage, value_type>;
+  using reference  = __simd_reference<_Storage, value_type>;
   using abi_type   = _Abi;
   using mask_type  = basic_simd_mask<value_type, abi_type>;
 
