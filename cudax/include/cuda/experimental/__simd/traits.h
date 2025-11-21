@@ -76,6 +76,9 @@ template <typename _Tp>
 struct is_abi_tag : ::cuda::std::bool_constant<is_abi_tag_v<_Tp>>
 {};
 
+template <>
+inline constexpr bool is_abi_tag_v<simd_abi::scalar> = true;
+
 template <int _Np>
 inline constexpr bool is_abi_tag_v<simd_abi::fixed_size<_Np>> = true;
 

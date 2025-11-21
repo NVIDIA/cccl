@@ -21,7 +21,7 @@ namespace dp = cuda::experimental::datapar;
 
 namespace
 {
-struct identity_index_generator
+struct linear_index_gen
 {
   template <class Index>
   __host__ __device__ constexpr int operator()(Index idx) const
@@ -30,7 +30,7 @@ struct identity_index_generator
   }
 };
 
-struct double_index_generator
+struct linear_index_x2_gen
 {
   template <class Index>
   __host__ __device__ constexpr int operator()(Index idx) const
@@ -39,7 +39,7 @@ struct double_index_generator
   }
 };
 
-struct alternating_mask_generator
+struct alternating_mask_gen
 {
   template <class Index>
   __host__ __device__ constexpr bool operator()(Index idx) const
@@ -98,21 +98,22 @@ C2H_CCCLRT_TEST("simd.traits", "[simd][traits]")
 
 C2H_CCCLRT_TEST("simd.construction_and_memory", "[simd][construction]")
 {
-  using simd_t  = dp::simd<int, 4>;
-  using mask_t  = simd_t::mask_type;
-  using array_t = simd_array_t<simd_t>;
+  constexpr auto size = 4;
+  using simd_t        = dp::simd<int, size>;
+  using mask_t        = simd_t::mask_type;
+  using array_t       = simd_array_t<simd_t>;
 
   simd_t broadcast(7);
   expect_equal(broadcast, array_t{7, 7, 7, 7});
 
-  simd_t generated(double_index_generator{});
+  simd_t generated(linear_index_x2_gen{});
   expect_equal(generated, array_t{0, 2, 4, 6});
 
-  alignas(64) int storage[simd_t::size()] = {0, 1, 2, 3};
+  alignas(64) int storage[size] = {0, 1, 2, 3};
   simd_t from_ptr(storage, dp::overaligned<64>);
   expect_equal(from_ptr, array_t{0, 1, 2, 3});
 
-  alignas(64) int roundtrip[simd_t::size()] = {};
+  alignas(64) int roundtrip[size] = {};
   generated.copy_to(roundtrip, dp::overaligned<64>);
 
   simd_t loaded;
@@ -120,12 +121,12 @@ C2H_CCCLRT_TEST("simd.construction_and_memory", "[simd][construction]")
   expect_equal(loaded, array_t{0, 2, 4, 6});
 
   dp::simd<float, 4> widened(generated);
-  expect_equal(widened, ::cuda::std::array<float, simd_t::size()>{0.0F, 2.0F, 4.0F, 6.0F});
+  expect_equal(widened, ::cuda::std::array<float, size>{0.0f, 2.0f, 4.0f, 6.0f});
 
-  // mask_t from_simd = static_cast<mask_t>(generated);
-  // expect_equal(from_simd, ::cuda::std::array<bool, simd_t::size()>{false, true, true, true});
+  mask_t from_simd = static_cast<mask_t>(generated);
+  expect_equal(from_simd, ::cuda::std::array<bool, size>{false, true, true, true});
 
-  dp::simd<int, 4> assigned = simd_t(identity_index_generator{});
+  dp::simd<int, 4> assigned = simd_t(linear_index_gen{});
   assigned                  = generated;
   expect_equal(assigned, array_t{0, 2, 4, 6});
 
@@ -144,7 +145,7 @@ C2H_CCCLRT_TEST("simd.arithmetic_and_comparisons", "[simd][arithmetic]")
   using mask_t  = simd_t::mask_type;
   using array_t = simd_array_t<simd_t>;
 
-  simd_t lhs(identity_index_generator{});
+  simd_t lhs(linear_index_gen{});
   simd_t rhs(2);
 
   auto sum = lhs + rhs;
@@ -246,7 +247,7 @@ C2H_CCCLRT_TEST("simd.mask", "[simd][mask]")
   using mask_array_t     = ::cuda::std::array<bool, mask_t::size()>;
   using simd_array_typed = simd_array_t<simd_t>;
 
-  mask_t alternating(alternating_mask_generator{});
+  mask_t alternating(alternating_mask_gen{});
   expect_equal(alternating, mask_array_t{true, false, true, false});
   CUDAX_REQUIRE(alternating.count() == 2);
   CUDAX_REQUIRE(alternating.any());
@@ -306,7 +307,7 @@ C2H_CCCLRT_TEST("simd.reference", "[simd][reference]")
   using simd_t  = dp::simd<int, 4>;
   using array_t = simd_array_t<simd_t>;
 
-  simd_t values(identity_index_generator{});
+  simd_t values(linear_index_gen{});
   values[2] += 5;
   expect_equal(values, array_t{0, 1, 7, 3});
 

@@ -28,6 +28,7 @@
 #include <cuda/experimental/__simd/declaration.h>
 #include <cuda/experimental/__simd/fixed_size_impl.h>
 #include <cuda/experimental/__simd/reference.h>
+#include <cuda/experimental/__simd/scalar_impl.h>
 #include <cuda/experimental/__simd/traits.h>
 #include <cuda/experimental/__simd/utility.h>
 
@@ -143,7 +144,7 @@ public:
   {
     basic_simd<_Up, _Ap> __result;
     _CCCL_PRAGMA_UNROLL_FULL()
-    for (::cuda::std::size_t __i = 0; __i < size(); ++__i)
+    for (::cuda::std::size_t __i = 0; __i < simd_size_v<_Up, _Ap>; ++__i)
     {
       __result[__i] = static_cast<_Up>((*this)[__i]);
     }

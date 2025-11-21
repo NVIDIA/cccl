@@ -30,6 +30,7 @@
 #include <cuda/experimental/__simd/declaration.h>
 #include <cuda/experimental/__simd/fixed_size_impl.h>
 #include <cuda/experimental/__simd/reference.h>
+#include <cuda/experimental/__simd/scalar_impl.h>
 #include <cuda/experimental/__simd/simd_mask.h>
 #include <cuda/experimental/__simd/traits.h>
 #include <cuda/experimental/__simd/utility.h>

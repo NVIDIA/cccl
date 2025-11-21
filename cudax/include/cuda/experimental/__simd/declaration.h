@@ -27,7 +27,9 @@ namespace cuda::experimental::datapar
 {
 namespace simd_abi
 {
-struct vector_abi;
+struct __scalar;
+
+using scalar = __scalar;
 
 template <int _Np>
 struct __fixed_size;

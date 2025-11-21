@@ -268,7 +268,7 @@ struct __mask_operations<_Tp, simd_abi::__fixed_size<_Np>>
 
   template <typename _Generator, ::cuda::std::size_t... _Is>
   [[nodiscard]] _CCCL_API static constexpr _MaskStorage
-  __generate_init(_Generator&& __g, ::cuda::std::index_sequence<_Is...>) noexcept
+  __generate_init(_Generator&& __g, ::cuda::std::index_sequence<_Is...>)
   {
     _MaskStorage __result;
     ((__result.__set(_Is,
@@ -279,7 +279,7 @@ struct __mask_operations<_Tp, simd_abi::__fixed_size<_Np>>
   }
 
   template <typename _Generator>
-  [[nodiscard]] _CCCL_API static constexpr _MaskStorage __generate(_Generator&& __g) noexcept
+  [[nodiscard]] _CCCL_API static constexpr _MaskStorage __generate(_Generator&& __g)
   {
     return __generate_init(__g, ::cuda::std::make_index_sequence<_Np>());
   }
@@ -358,6 +358,7 @@ struct __mask_operations<_Tp, simd_abi::__fixed_size<_Np>>
     return false;
   }
 
+  // P1928R15 requires simd-size-type (ptrdiff_t) return type
   [[nodiscard]] _CCCL_API static constexpr int __count(const _MaskStorage& __s) noexcept
   {
     int __cnt = 0;
