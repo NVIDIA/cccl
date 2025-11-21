@@ -39,10 +39,10 @@ template <typename _Tp, typename _Storage, typename _Vp>
 class __simd_reference
 {
   template <typename, typename>
-  friend class simd;
+  friend class basic_simd;
 
   template <typename, typename>
-  friend class simd_mask;
+  friend class basic_simd_mask;
 
   _Storage& __s_;
   ::cuda::std::size_t __idx_;
@@ -61,7 +61,7 @@ class __simd_reference
   {
     if constexpr (::cuda::std::is_same_v<_Vp, bool>)
     {
-      __s_.__set(__idx_, ::cuda::experimental::datapar::__set_all_bits<_Tp>(__v));
+      __s_.__set(__idx_, ::cuda::experimental::datapar::__mask_bits_from_bool<_Storage>(__v));
     }
     else
     {

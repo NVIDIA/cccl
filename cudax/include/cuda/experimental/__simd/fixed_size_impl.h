@@ -21,13 +21,13 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/__utility/in_range.h>
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/is_integral.h>
 #include <cuda/std/__type_traits/make_nbit_int.h>
 #include <cuda/std/__type_traits/num_bits.h>
-#include <cuda/std/__utility/forward.h>
 #include <cuda/std/__utility/integer_sequence.h>
 
 #include <cuda/experimental/__simd/declaration.h>
@@ -49,17 +49,20 @@ struct __fixed_size
 template <typename _Tp, int _Np>
 struct __simd_storage<_Tp, simd_abi::__fixed_size<_Np>>
 {
+  using value_type = _Tp;
   _Tp __data[_Np];
 
   [[nodiscard]] _CCCL_API constexpr _Tp __get([[maybe_unused]] ::cuda::std::size_t __idx) const noexcept
   {
-    _CCCL_ASSERT(::cuda::in_range(__idx, 0, __simd_size), "Index is out of bounds");
+    using ::cuda::std::size_t;
+    _CCCL_ASSERT(::cuda::in_range(__idx, size_t{0}, size_t{_Np}), "Index is out of bounds");
     return __data[__idx];
   }
 
   _CCCL_API constexpr void __set([[maybe_unused]] ::cuda::std::size_t __idx, _Tp __v) noexcept
   {
-    _CCCL_ASSERT(::cuda::in_range(__idx, 0, __simd_size), "Index is out of bounds");
+    using ::cuda::std::size_t;
+    _CCCL_ASSERT(::cuda::in_range(__idx, size_t{0}, size_t{_Np}), "Index is out of bounds");
     __data[__idx] = __v;
   }
 };
@@ -67,7 +70,9 @@ struct __simd_storage<_Tp, simd_abi::__fixed_size<_Np>>
 template <typename _Tp, int _Np>
 struct __mask_storage<_Tp, simd_abi::__fixed_size<_Np>>
     : __simd_storage<::cuda::std::__make_nbit_uint_t<::cuda::std::__num_bits_v<_Tp>>, simd_abi::__fixed_size<_Np>>
-{};
+{
+  using value_type = ::cuda::std::__make_nbit_uint_t<::cuda::std::__num_bits_v<_Tp>>;
+};
 
 // *********************************************************************************************************************
 // * SIMD Arithmetic Operations
@@ -94,13 +99,13 @@ struct __simd_operations<_Tp, simd_abi::__fixed_size<_Np>>
   [[nodiscard]] _CCCL_API static constexpr _SimdStorage
   __generate_init(_Generator&& __g, ::cuda::std::index_sequence<_Is...>)
   {
-    return _SimdStorage{{__g(std::integral_constant<::cuda::std::size_t, _Is>())...}};
+    return _SimdStorage{{__g(::cuda::std::integral_constant<::cuda::std::size_t, _Is>())...}};
   }
 
   template <typename _Generator>
   [[nodiscard]] _CCCL_API static constexpr _SimdStorage __generate(_Generator&& __g)
   {
-    return __generate_init(::cuda::std::forward<_Generator>(__g), ::cuda::std::make_index_sequence<_Np>());
+    return __generate_init(__g, ::cuda::std::make_index_sequence<_Np>());
   }
 
   template <typename _Up>
@@ -147,7 +152,7 @@ struct __simd_operations<_Tp, simd_abi::__fixed_size<_Np>>
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int __i = 0; __i < _Np; __i++)
     {
-      __result.__data[__i] = !__s.__data[__i];
+      __result.__data[__i] = ::cuda::experimental::datapar::__mask_bits_from_bool<_MaskStorage>(!__s.__data[__i]);
     }
     return __result;
   }
@@ -222,79 +227,85 @@ struct __simd_operations<_Tp, simd_abi::__fixed_size<_Np>>
     return __result;
   }
 
-  [[nodiscard]] _CCCL_API static constexpr _SimdStorage
+  [[nodiscard]] _CCCL_API static constexpr _MaskStorage
   __equal_to(const _SimdStorage& __lhs, const _SimdStorage& __rhs) noexcept
   {
-    _SimdStorage __result;
+    _MaskStorage __result;
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int __i = 0; __i < _Np; __i++)
     {
-      __result.__data[__i] = __lhs.__data[__i] == __rhs.__data[__i];
+      __result.__data[__i] =
+        ::cuda::experimental::datapar::__mask_bits_from_bool<_MaskStorage>(__lhs.__data[__i] == __rhs.__data[__i]);
     }
     return __result;
   }
 
-  [[nodiscard]] _CCCL_API static constexpr _SimdStorage
+  [[nodiscard]] _CCCL_API static constexpr _MaskStorage
   __not_equal_to(const _SimdStorage& __lhs, const _SimdStorage& __rhs) noexcept
   {
-    _SimdStorage __result;
+    _MaskStorage __result;
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int __i = 0; __i < _Np; __i++)
     {
-      __result.__data[__i] = __lhs.__data[__i] != __rhs.__data[__i];
+      __result.__data[__i] =
+        ::cuda::experimental::datapar::__mask_bits_from_bool<_MaskStorage>(__lhs.__data[__i] != __rhs.__data[__i]);
     }
     return __result;
   }
 
-  [[nodiscard]] _CCCL_API static constexpr _SimdStorage
+  [[nodiscard]] _CCCL_API static constexpr _MaskStorage
   __less(const _SimdStorage& __lhs, const _SimdStorage& __rhs) noexcept
   {
-    _SimdStorage __result;
+    _MaskStorage __result;
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int __i = 0; __i < _Np; __i++)
     {
-      __result.__data[__i] = __lhs.__data[__i] < __rhs.__data[__i];
+      __result.__data[__i] =
+        ::cuda::experimental::datapar::__mask_bits_from_bool<_MaskStorage>(__lhs.__data[__i] < __rhs.__data[__i]);
     }
     return __result;
   }
 
-  [[nodiscard]] _CCCL_API static constexpr _SimdStorage
+  [[nodiscard]] _CCCL_API static constexpr _MaskStorage
   __less_equal(const _SimdStorage& __lhs, const _SimdStorage& __rhs) noexcept
   {
-    _SimdStorage __result;
+    _MaskStorage __result;
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int __i = 0; __i < _Np; __i++)
     {
-      __result.__data[__i] = __lhs.__data[__i] <= __rhs.__data[__i];
+      __result.__data[__i] =
+        ::cuda::experimental::datapar::__mask_bits_from_bool<_MaskStorage>(__lhs.__data[__i] <= __rhs.__data[__i]);
     }
     return __result;
   }
 
-  [[nodiscard]] _CCCL_API static constexpr _SimdStorage
+  [[nodiscard]] _CCCL_API static constexpr _MaskStorage
   __greater(const _SimdStorage& __lhs, const _SimdStorage& __rhs) noexcept
   {
-    _SimdStorage __result;
+    _MaskStorage __result;
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int __i = 0; __i < _Np; __i++)
     {
-      __result.__data[__i] = __lhs.__data[__i] > __rhs.__data[__i];
+      __result.__data[__i] =
+        ::cuda::experimental::datapar::__mask_bits_from_bool<_MaskStorage>(__lhs.__data[__i] > __rhs.__data[__i]);
     }
     return __result;
   }
 
-  [[nodiscard]] _CCCL_API static constexpr _SimdStorage
+  [[nodiscard]] _CCCL_API static constexpr _MaskStorage
   __greater_equal(const _SimdStorage& __lhs, const _SimdStorage& __rhs) noexcept
   {
-    _SimdStorage __result;
+    _MaskStorage __result;
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int __i = 0; __i < _Np; __i++)
     {
-      __result.__data[__i] = __lhs.__data[__i] >= __rhs.__data[__i];
+      __result.__data[__i] =
+        ::cuda::experimental::datapar::__mask_bits_from_bool<_MaskStorage>(__lhs.__data[__i] >= __rhs.__data[__i]);
     }
     return __result;
   }
 
-  _CCCL_TEMPLATE(typename _Up)
+  _CCCL_TEMPLATE(typename _Up = _Tp)
   _CCCL_REQUIRES(::cuda::std::is_integral_v<_Up>)
   [[nodiscard]] _CCCL_API static constexpr _SimdStorage
   __modulo(const _SimdStorage& __lhs, const _SimdStorage& __rhs) noexcept
@@ -308,7 +319,7 @@ struct __simd_operations<_Tp, simd_abi::__fixed_size<_Np>>
     return __result;
   }
 
-  _CCCL_TEMPLATE(typename _Up)
+  _CCCL_TEMPLATE(typename _Up = _Tp)
   _CCCL_REQUIRES(::cuda::std::is_integral_v<_Up>)
   [[nodiscard]] _CCCL_API static constexpr _SimdStorage
   __bitwise_and(const _SimdStorage& __lhs, const _SimdStorage& __rhs) noexcept
@@ -322,7 +333,7 @@ struct __simd_operations<_Tp, simd_abi::__fixed_size<_Np>>
     return __result;
   }
 
-  _CCCL_TEMPLATE(typename _Up)
+  _CCCL_TEMPLATE(typename _Up = _Tp)
   _CCCL_REQUIRES(::cuda::std::is_integral_v<_Up>)
   [[nodiscard]] _CCCL_API static constexpr _SimdStorage
   __bitwise_or(const _SimdStorage& __lhs, const _SimdStorage& __rhs) noexcept
@@ -336,7 +347,7 @@ struct __simd_operations<_Tp, simd_abi::__fixed_size<_Np>>
     return __result;
   }
 
-  _CCCL_TEMPLATE(typename _Up)
+  _CCCL_TEMPLATE(typename _Up = _Tp)
   _CCCL_REQUIRES(::cuda::std::is_integral_v<_Up>)
   [[nodiscard]] _CCCL_API static constexpr _SimdStorage
   __bitwise_xor(const _SimdStorage& __lhs, const _SimdStorage& __rhs) noexcept
@@ -350,7 +361,7 @@ struct __simd_operations<_Tp, simd_abi::__fixed_size<_Np>>
     return __result;
   }
 
-  _CCCL_TEMPLATE(typename _Up)
+  _CCCL_TEMPLATE(typename _Up = _Tp)
   _CCCL_REQUIRES(::cuda::std::is_integral_v<_Up>)
   [[nodiscard]] _CCCL_API static constexpr _SimdStorage
   __shift_left(const _SimdStorage& __lhs, const _SimdStorage& __rhs) noexcept
@@ -364,7 +375,7 @@ struct __simd_operations<_Tp, simd_abi::__fixed_size<_Np>>
     return __result;
   }
 
-  _CCCL_TEMPLATE(typename _Up)
+  _CCCL_TEMPLATE(typename _Up = _Tp)
   _CCCL_REQUIRES(::cuda::std::is_integral_v<_Up>)
   [[nodiscard]] _CCCL_API static constexpr _SimdStorage
   __shift_right(const _SimdStorage& __lhs, const _SimdStorage& __rhs) noexcept
@@ -391,7 +402,7 @@ struct __mask_operations<_Tp, simd_abi::__fixed_size<_Np>>
   [[nodiscard]] _CCCL_API static constexpr _MaskStorage __broadcast(bool __v) noexcept
   {
     _MaskStorage __result;
-    const auto __all_bits_v = ::cuda::experimental::datapar::__set_all_bits<_Tp>(__v);
+    const auto __all_bits_v = ::cuda::experimental::datapar::__mask_bits_from_bool<_MaskStorage>(__v);
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int __i = 0; __i < _Np; ++__i)
     {
@@ -405,7 +416,7 @@ struct __mask_operations<_Tp, simd_abi::__fixed_size<_Np>>
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int __i = 0; __i < _Np; __i++)
     {
-      __s.__data[__i] = ::cuda::experimental::datapar::__set_all_bits<_Tp>(__mem[__i]);
+      __s.__data[__i] = ::cuda::experimental::datapar::__mask_bits_from_bool<_MaskStorage>(__mem[__i]);
     }
   }
 
@@ -416,6 +427,106 @@ struct __mask_operations<_Tp, simd_abi::__fixed_size<_Np>>
     {
       __mem[__i] = static_cast<bool>(__s.__data[__i]);
     }
+  }
+
+  [[nodiscard]] _CCCL_API static constexpr _MaskStorage
+  __bitwise_and(const _MaskStorage& __lhs, const _MaskStorage& __rhs) noexcept
+  {
+    _MaskStorage __result;
+    _CCCL_PRAGMA_UNROLL_FULL()
+    for (int __i = 0; __i < _Np; __i++)
+    {
+      __result.__data[__i] = __lhs.__data[__i] & __rhs.__data[__i];
+    }
+    return __result;
+  }
+
+  [[nodiscard]] _CCCL_API static constexpr _MaskStorage
+  __bitwise_or(const _MaskStorage& __lhs, const _MaskStorage& __rhs) noexcept
+  {
+    _MaskStorage __result;
+    _CCCL_PRAGMA_UNROLL_FULL()
+    for (int __i = 0; __i < _Np; __i++)
+    {
+      __result.__data[__i] = __lhs.__data[__i] | __rhs.__data[__i];
+    }
+    return __result;
+  }
+
+  [[nodiscard]] _CCCL_API static constexpr _MaskStorage
+  __bitwise_xor(const _MaskStorage& __lhs, const _MaskStorage& __rhs) noexcept
+  {
+    _MaskStorage __result;
+    _CCCL_PRAGMA_UNROLL_FULL()
+    for (int __i = 0; __i < _Np; __i++)
+    {
+      __result.__data[__i] = __lhs.__data[__i] ^ __rhs.__data[__i];
+    }
+    return __result;
+  }
+
+  [[nodiscard]] _CCCL_API static constexpr _MaskStorage __bitwise_not(const _MaskStorage& __s) noexcept
+  {
+    _MaskStorage __result;
+    _CCCL_PRAGMA_UNROLL_FULL()
+    for (int __i = 0; __i < _Np; __i++)
+    {
+      __result.__data[__i] = ~__s.__data[__i];
+    }
+    return __result;
+  }
+
+  [[nodiscard]] _CCCL_API static constexpr bool __equal_to(const _MaskStorage& __lhs, const _MaskStorage& __rhs) noexcept
+  {
+    _CCCL_PRAGMA_UNROLL_FULL()
+    for (int __i = 0; __i < _Np; __i++)
+    {
+      if (__lhs.__data[__i] != __rhs.__data[__i])
+      {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  [[nodiscard]] _CCCL_API static constexpr bool __all(const _MaskStorage& __s) noexcept
+  {
+    _CCCL_PRAGMA_UNROLL_FULL()
+    for (int __i = 0; __i < _Np; __i++)
+    {
+      if (!__s.__data[__i])
+      {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  [[nodiscard]] _CCCL_API static constexpr bool __any(const _MaskStorage& __s) noexcept
+  {
+    _CCCL_PRAGMA_UNROLL_FULL()
+    for (int __i = 0; __i < _Np; __i++)
+    {
+      if (__s.__data[__i])
+      {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  [[nodiscard]] _CCCL_API static constexpr int __count(const _MaskStorage& __s) noexcept
+  {
+    int __cnt = 0;
+    _CCCL_PRAGMA_UNROLL_FULL()
+    for (int __i = 0; __i < _Np; __i++)
+    {
+      if (__s.__data[__i])
+      {
+        ++__cnt;
+      }
+    }
+    return __cnt;
   }
 };
 } // namespace cuda::experimental::datapar

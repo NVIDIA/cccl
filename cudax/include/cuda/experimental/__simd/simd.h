@@ -26,11 +26,10 @@
 #include <cuda/std/__type_traits/is_integral.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/remove_cvref.h>
-#include <cuda/std/__utility/forward.h>
 
 #include <cuda/experimental/__simd/declaration.h>
-#include <cuda/experimental/__simd/fixed_size_impl.h>
 #include <cuda/experimental/__simd/reference.h>
+#include <cuda/experimental/__simd/simd_mask.h>
 #include <cuda/experimental/__simd/traits.h>
 #include <cuda/experimental/__simd/utility.h>
 
@@ -38,26 +37,33 @@
 
 namespace cuda::experimental::datapar
 {
-template <typename _Tp, int _Np>
-class simd : public __simd_operations<_Tp, simd_abi::fixed_size<_Np>>
+template <typename _Tp, typename _Abi>
+class basic_simd : public __simd_operations<_Tp, _Abi>
 {
-  using _Impl    = __simd_operations<_Tp, simd_abi::fixed_size<_Np>>;
+  static_assert(is_abi_tag_v<_Abi>, "basic_simd requires a valid ABI tag");
+
+  using _Impl    = __simd_operations<_Tp, _Abi>;
   using _Storage = typename _Impl::_SimdStorage;
 
   _Storage __s_;
 
+  template <typename _Up>
+  static constexpr bool __is_value_preserving_broadcast =
+    (__is_vectorizable_v<::cuda::std::remove_cvref_t<_Up>> && __is_non_narrowing_convertible_v<_Up, _Tp>)
+    || (!__is_vectorizable_v<::cuda::std::remove_cvref_t<_Up>> && ::cuda::std::is_convertible_v<_Up, _Tp>);
+
 public:
   using value_type = _Tp;
   using reference  = __simd_reference<_Tp, _Storage, value_type>;
-  using mask_type  = simd_mask<_Tp, _Np>;
-  using abi_type   = simd_abi::fixed_size<_Np>;
+  using abi_type   = _Abi;
+  using mask_type  = basic_simd_mask<value_type, abi_type>;
 
   [[nodiscard]] _CCCL_API static constexpr ::cuda::std::size_t size() noexcept
   {
     return simd_size_v<value_type, abi_type>;
   }
 
-  _CCCL_API simd() noexcept = default;
+  _CCCL_API basic_simd() noexcept = default;
 
   struct __storage_tag_t
   {};
@@ -68,20 +74,26 @@ public:
     return __s_;
   }
 
-  _CCCL_API explicit simd(const _Storage& __s, __storage_tag_t)
+  _CCCL_API explicit basic_simd(const _Storage& __s, __storage_tag_t)
       : __s_(__s)
   {}
 
   _CCCL_TEMPLATE(typename _Up)
-  _CCCL_REQUIRES(__can_broadcast_v<value_type, ::cuda::std::remove_cvref_t<_Up>>)
-  _CCCL_API simd(_Up&& __v) noexcept
-      : __s_(_Impl::__broadcast(static_cast<value_type>(::cuda::std::forward<_Up>(__v))))
+  _CCCL_REQUIRES(__can_broadcast_v<value_type, ::cuda::std::remove_cvref_t<_Up>>&& __is_value_preserving_broadcast<_Up>)
+  _CCCL_API constexpr basic_simd(_Up&& __v) noexcept
+      : __s_(_Impl::__broadcast(static_cast<value_type>(__v)))
   {}
 
   _CCCL_TEMPLATE(typename _Up)
-  _CCCL_REQUIRES(!::cuda::std::is_same_v<_Up, _Tp> && ::cuda::std::is_same_v<abi_type, simd_abi::fixed_size<size()>>
-                 && __is_non_narrowing_convertible_v<_Up, value_type>)
-  _CCCL_API simd(const simd<_Up, size()>& __v) noexcept
+  _CCCL_REQUIRES(__can_broadcast_v<value_type, ::cuda::std::remove_cvref_t<_Up>>
+                 && !__is_value_preserving_broadcast<_Up>)
+  _CCCL_API constexpr explicit basic_simd(_Up&& __v) noexcept
+      : __s_(_Impl::__broadcast(static_cast<value_type>(__v)))
+  {}
+
+  _CCCL_TEMPLATE(typename _Up)
+  _CCCL_REQUIRES(!::cuda::std::is_same_v<_Up, _Tp> && __is_non_narrowing_convertible_v<_Up, value_type>)
+  _CCCL_API basic_simd(const basic_simd<_Up, abi_type>& __v) noexcept
   {
     for (::cuda::std::size_t __i = 0; __i < size(); __i++)
     {
@@ -91,29 +103,29 @@ public:
 
   _CCCL_TEMPLATE(typename _Generator)
   _CCCL_REQUIRES(__can_generate_v<value_type, _Generator, size()>)
-  _CCCL_API explicit simd(_Generator&& __g) noexcept
-      : __s_(_Impl::__generate(::cuda::std::forward<_Generator>(__g)))
+  _CCCL_API explicit basic_simd(_Generator&& __g)
+      : __s_(_Impl::__generate(__g))
   {}
 
-  _CCCL_TEMPLATE(typename _Up, typename _Flags)
+  _CCCL_TEMPLATE(typename _Up, typename _Flags = element_aligned_tag)
   _CCCL_REQUIRES(__is_vectorizable_v<_Up>&& is_simd_flag_type_v<_Flags>)
-  _CCCL_API simd(const _Up* __mem, _Flags) noexcept
+  _CCCL_API basic_simd(const _Up* __mem, _Flags = {}) noexcept
   {
-    _Impl::__load(__s_, _Flags::template __apply<simd>(__mem));
+    _Impl::__load(__s_, _Flags::template __apply<basic_simd>(__mem));
   }
 
-  _CCCL_TEMPLATE(typename _Up, typename _Flags)
+  _CCCL_TEMPLATE(typename _Up, typename _Flags = element_aligned_tag)
   _CCCL_REQUIRES(__is_vectorizable_v<_Up>&& is_simd_flag_type_v<_Flags>)
-  _CCCL_API void copy_from(const _Up* __mem, _Flags) noexcept
+  _CCCL_API void copy_from(const _Up* __mem, _Flags = {}) noexcept
   {
-    _Impl::__load(__s_, _Flags::template __apply<simd>(__mem));
+    _Impl::__load(__s_, _Flags::template __apply<basic_simd>(__mem));
   }
 
-  _CCCL_TEMPLATE(typename _Up, typename _Flags)
+  _CCCL_TEMPLATE(typename _Up, typename _Flags = element_aligned_tag)
   _CCCL_REQUIRES(__is_vectorizable_v<_Up>&& is_simd_flag_type_v<_Flags>)
-  _CCCL_API void copy_to(_Up* __mem, _Flags) const noexcept
+  _CCCL_API void copy_to(_Up* __mem, _Flags = {}) const noexcept
   {
-    _Impl::__store(__s_, _Flags::template __apply<simd>(__mem));
+    _Impl::__store(__s_, _Flags::template __apply<basic_simd>(__mem));
   }
 
   _CCCL_API reference operator[](::cuda::std::size_t __i) noexcept
@@ -126,206 +138,229 @@ public:
     return __s_.__get(__i);
   }
 
-  _CCCL_API simd& operator++() noexcept
+  _CCCL_API basic_simd& operator++() noexcept
   {
     _Impl::__increment(__s_);
     return *this;
   }
 
-  _CCCL_API simd operator++(int) noexcept
+  _CCCL_API basic_simd operator++(int) noexcept
   {
-    const simd __r = *this;
+    const basic_simd __r = *this;
     _Impl::__increment(__s_);
     return __r;
   }
 
-  _CCCL_API simd& operator--() noexcept
+  _CCCL_API basic_simd& operator--() noexcept
   {
     _Impl::__decrement(__s_);
     return *this;
   }
 
-  _CCCL_API simd operator--(int) noexcept
+  _CCCL_API basic_simd operator--(int) noexcept
   {
-    const simd __r = *this;
+    const basic_simd __r = *this;
     _Impl::__decrement(__s_);
     return __r;
   }
 
-  [[nodiscard]] _CCCL_API simd operator+() const noexcept
+  [[nodiscard]] _CCCL_API basic_simd operator+() const noexcept
   {
     return *this;
   }
 
-  [[nodiscard]] _CCCL_API simd operator-() const noexcept
+  [[nodiscard]] _CCCL_API basic_simd operator-() const noexcept
   {
     return {_Impl::__unary_minus(__s_), __storage_tag};
   }
 
-  _CCCL_API constexpr friend simd& operator+=(simd& __lhs, const simd& __rhs) noexcept
+  [[nodiscard]] _CCCL_API friend constexpr mask_type operator!(const basic_simd& __v) noexcept
+  {
+    return {_Impl::__negate(__v.__s_), mask_type::__storage_tag};
+  }
+
+  _CCCL_API constexpr friend basic_simd& operator+=(basic_simd& __lhs, const basic_simd& __rhs) noexcept
   {
     return __lhs = __lhs + __rhs;
   }
 
-  _CCCL_API constexpr friend simd& operator-=(simd& __lhs, const simd& __rhs) noexcept
+  _CCCL_API constexpr friend basic_simd& operator-=(basic_simd& __lhs, const basic_simd& __rhs) noexcept
   {
     return __lhs = __lhs - __rhs;
   }
 
-  _CCCL_API constexpr friend simd& operator*=(simd& __lhs, const simd& __rhs) noexcept
+  _CCCL_API constexpr friend basic_simd& operator*=(basic_simd& __lhs, const basic_simd& __rhs) noexcept
   {
     return __lhs = __lhs * __rhs;
   }
 
-  _CCCL_API constexpr friend simd& operator/=(simd& __lhs, const simd& __rhs) noexcept
+  _CCCL_API constexpr friend basic_simd& operator/=(basic_simd& __lhs, const basic_simd& __rhs) noexcept
   {
     return __lhs = __lhs / __rhs;
   }
 
-  _CCCL_TEMPLATE(typename _Up)
+  _CCCL_TEMPLATE(typename _Up = _Tp)
   _CCCL_REQUIRES(::cuda::std::is_integral_v<_Tp>)
-  _CCCL_API constexpr friend simd& operator%=(simd& __lhs, const simd& __rhs) noexcept
+  _CCCL_API constexpr friend basic_simd& operator%=(basic_simd& __lhs, const basic_simd& __rhs) noexcept
   {
     return __lhs = __lhs % __rhs;
   }
 
-  _CCCL_TEMPLATE(typename _Up)
+  _CCCL_TEMPLATE(typename _Up = _Tp)
   _CCCL_REQUIRES(::cuda::std::is_integral_v<_Tp>)
-  _CCCL_API constexpr friend simd& operator&=(simd& __lhs, const simd& __rhs) noexcept
+  _CCCL_API constexpr friend basic_simd& operator&=(basic_simd& __lhs, const basic_simd& __rhs) noexcept
   {
     return __lhs = __lhs & __rhs;
   }
 
-  _CCCL_TEMPLATE(typename _Up)
+  _CCCL_TEMPLATE(typename _Up = _Tp)
   _CCCL_REQUIRES(::cuda::std::is_integral_v<_Tp>)
-  _CCCL_API constexpr friend simd& operator|=(simd& __lhs, const simd& __rhs) noexcept
+  _CCCL_API constexpr friend basic_simd& operator|=(basic_simd& __lhs, const basic_simd& __rhs) noexcept
   {
     return __lhs = __lhs | __rhs;
   }
 
-  _CCCL_TEMPLATE(typename _Up)
+  _CCCL_TEMPLATE(typename _Up = _Tp)
   _CCCL_REQUIRES(::cuda::std::is_integral_v<_Tp>)
-  _CCCL_API constexpr friend simd& operator^=(simd& __lhs, const simd& __rhs) noexcept
+  _CCCL_API constexpr friend basic_simd& operator^=(basic_simd& __lhs, const basic_simd& __rhs) noexcept
   {
     return __lhs = __lhs ^ __rhs;
   }
 
-  _CCCL_TEMPLATE(typename _Up)
+  _CCCL_TEMPLATE(typename _Up = _Tp)
   _CCCL_REQUIRES(::cuda::std::is_integral_v<_Tp>)
-  _CCCL_API constexpr friend simd& operator<<=(simd& __lhs, const simd& __rhs) noexcept
+  _CCCL_API constexpr friend basic_simd& operator<<=(basic_simd& __lhs, const basic_simd& __rhs) noexcept
   {
     return __lhs = __lhs << __rhs;
   }
 
-  _CCCL_TEMPLATE(typename _Up)
+  _CCCL_TEMPLATE(typename _Up = _Tp)
   _CCCL_REQUIRES(::cuda::std::is_integral_v<_Tp>)
-  _CCCL_API constexpr friend simd& operator>>=(simd& __lhs, const simd& __rhs) noexcept
+  _CCCL_API constexpr friend basic_simd& operator>>=(basic_simd& __lhs, const basic_simd& __rhs) noexcept
   {
     return __lhs = __lhs >> __rhs;
   }
 
-  [[nodiscard]] _CCCL_API constexpr friend simd operator+(const simd& __lhs, const simd& __rhs) noexcept
+  [[nodiscard]] _CCCL_API constexpr friend basic_simd
+  operator+(const basic_simd& __lhs, const basic_simd& __rhs) noexcept
   {
     return {_Impl::__plus(__lhs.__s_, __rhs.__s_), __storage_tag};
   }
 
-  [[nodiscard]] _CCCL_API constexpr friend simd operator-(const simd& __lhs, const simd& __rhs) noexcept
+  [[nodiscard]] _CCCL_API constexpr friend basic_simd
+  operator-(const basic_simd& __lhs, const basic_simd& __rhs) noexcept
   {
     return {_Impl::__minus(__lhs.__s_, __rhs.__s_), __storage_tag};
   }
 
-  [[nodiscard]] _CCCL_API constexpr friend simd operator*(const simd& __lhs, const simd& __rhs) noexcept
+  [[nodiscard]] _CCCL_API constexpr friend basic_simd
+  operator*(const basic_simd& __lhs, const basic_simd& __rhs) noexcept
   {
     return {_Impl::__multiplies(__lhs.__s_, __rhs.__s_), __storage_tag};
   }
 
-  [[nodiscard]] _CCCL_API constexpr friend simd operator/(const simd& __lhs, const simd& __rhs) noexcept
+  [[nodiscard]] _CCCL_API constexpr friend basic_simd
+  operator/(const basic_simd& __lhs, const basic_simd& __rhs) noexcept
   {
     return {_Impl::__divides(__lhs.__s_, __rhs.__s_), __storage_tag};
   }
 
-  _CCCL_TEMPLATE(typename _Up)
+  _CCCL_TEMPLATE(typename _Up = _Tp)
   _CCCL_REQUIRES(::cuda::std::is_integral_v<_Tp>)
-  [[nodiscard]] _CCCL_API constexpr friend simd operator%(const simd& __lhs, const simd& __rhs) noexcept
+  [[nodiscard]] _CCCL_API constexpr friend basic_simd
+  operator%(const basic_simd& __lhs, const basic_simd& __rhs) noexcept
   {
     return {_Impl::__modulo(__lhs.__s_, __rhs.__s_), __storage_tag};
   }
 
-  _CCCL_TEMPLATE(typename _Up)
+  _CCCL_TEMPLATE(typename _Up = _Tp)
   _CCCL_REQUIRES(::cuda::std::is_integral_v<_Tp>)
-  [[nodiscard]] _CCCL_API constexpr friend simd operator&(const simd& __lhs, const simd& __rhs) noexcept
+  [[nodiscard]] _CCCL_API constexpr friend basic_simd
+  operator&(const basic_simd& __lhs, const basic_simd& __rhs) noexcept
   {
     return {_Impl::__bitwise_and(__lhs.__s_, __rhs.__s_), __storage_tag};
   }
 
-  _CCCL_TEMPLATE(typename _Up)
+  _CCCL_TEMPLATE(typename _Up = _Tp)
   _CCCL_REQUIRES(::cuda::std::is_integral_v<_Tp>)
-  [[nodiscard]] _CCCL_API constexpr friend simd operator|(const simd& __lhs, const simd& __rhs) noexcept
+  [[nodiscard]] _CCCL_API constexpr friend basic_simd
+  operator|(const basic_simd& __lhs, const basic_simd& __rhs) noexcept
   {
     return {_Impl::__bitwise_or(__lhs.__s_, __rhs.__s_), __storage_tag};
   }
 
-  _CCCL_TEMPLATE(typename _Up)
+  _CCCL_TEMPLATE(typename _Up = _Tp)
   _CCCL_REQUIRES(::cuda::std::is_integral_v<_Tp>)
-  [[nodiscard]] _CCCL_API constexpr friend simd operator^(const simd& __lhs, const simd& __rhs) noexcept
+  [[nodiscard]] _CCCL_API constexpr friend basic_simd
+  operator^(const basic_simd& __lhs, const basic_simd& __rhs) noexcept
   {
     return {_Impl::__bitwise_xor(__lhs.__s_, __rhs.__s_), __storage_tag};
   }
 
-  _CCCL_TEMPLATE(typename _Up)
+  _CCCL_TEMPLATE(typename _Up = _Tp)
   _CCCL_REQUIRES(::cuda::std::is_integral_v<_Tp>)
-  [[nodiscard]] _CCCL_API constexpr friend simd operator<<(const simd& __lhs, const simd& __rhs) noexcept
+  [[nodiscard]] _CCCL_API constexpr friend basic_simd
+  operator<<(const basic_simd& __lhs, const basic_simd& __rhs) noexcept
   {
     return {_Impl::__shift_left(__lhs.__s_, __rhs.__s_), __storage_tag};
   }
 
-  _CCCL_TEMPLATE(typename _Up)
+  _CCCL_TEMPLATE(typename _Up = _Tp)
   _CCCL_REQUIRES(::cuda::std::is_integral_v<_Tp>)
-  [[nodiscard]] _CCCL_API constexpr friend simd operator>>(const simd& __lhs, const simd& __rhs) noexcept
+  [[nodiscard]] _CCCL_API constexpr friend basic_simd
+  operator>>(const basic_simd& __lhs, const basic_simd& __rhs) noexcept
   {
     return {_Impl::__shift_right(__lhs.__s_, __rhs.__s_), __storage_tag};
   }
 
-  _CCCL_TEMPLATE(typename _Up)
+  _CCCL_TEMPLATE(typename _Up = _Tp)
   _CCCL_REQUIRES(::cuda::std::is_integral_v<_Tp>)
-  [[nodiscard]] _CCCL_API constexpr simd operator~() const noexcept
+  [[nodiscard]] _CCCL_API constexpr basic_simd operator~() const noexcept
   {
     return {_Impl::__bitwise_not(__s_), __storage_tag};
   }
 
-  [[nodiscard]] _CCCL_API constexpr friend mask_type operator==(const simd& __lhs, const simd& __rhs) noexcept
+  [[nodiscard]] _CCCL_API constexpr friend mask_type
+  operator==(const basic_simd& __lhs, const basic_simd& __rhs) noexcept
   {
     return {_Impl::__equal_to(__lhs.__s_, __rhs.__s_), __storage_tag};
   }
 
-  [[nodiscard]] _CCCL_API constexpr friend mask_type operator!=(const simd& __lhs, const simd& __rhs) noexcept
+  [[nodiscard]] _CCCL_API constexpr friend mask_type
+  operator!=(const basic_simd& __lhs, const basic_simd& __rhs) noexcept
   {
     return {_Impl::__not_equal_to(__lhs.__s_, __rhs.__s_), __storage_tag};
   }
 
-  [[nodiscard]] _CCCL_API constexpr friend mask_type operator<(const simd& __lhs, const simd& __rhs) noexcept
+  [[nodiscard]] _CCCL_API constexpr friend mask_type operator<(const basic_simd& __lhs, const basic_simd& __rhs) noexcept
   {
     return {_Impl::__less(__lhs.__s_, __rhs.__s_), __storage_tag};
   }
 
-  [[nodiscard]] _CCCL_API constexpr friend mask_type operator<=(const simd& __lhs, const simd& __rhs) noexcept
+  [[nodiscard]] _CCCL_API constexpr friend mask_type
+  operator<=(const basic_simd& __lhs, const basic_simd& __rhs) noexcept
   {
     return {_Impl::__less_equal(__lhs.__s_, __rhs.__s_), __storage_tag};
   }
 
-  [[nodiscard]] _CCCL_API constexpr friend mask_type operator>(const simd& __lhs, const simd& __rhs) noexcept
+  [[nodiscard]] _CCCL_API constexpr friend mask_type operator>(const basic_simd& __lhs, const basic_simd& __rhs) noexcept
   {
     return {_Impl::__greater(__lhs.__s_, __rhs.__s_), __storage_tag};
   }
 
-  [[nodiscard]] _CCCL_API constexpr friend mask_type operator>=(const simd& __lhs, const simd& __rhs) noexcept
+  [[nodiscard]] _CCCL_API constexpr friend mask_type
+  operator>=(const basic_simd& __lhs, const basic_simd& __rhs) noexcept
   {
     return {_Impl::__greater_equal(__lhs.__s_, __rhs.__s_), __storage_tag};
   }
 };
 
-template <typename _Tp, typename _Abi>
-inline constexpr bool is_simd_v<basic_simd<_Tp, _Abi>> = true;
+template <typename _Tp, int _Np>
+class simd : public basic_simd<_Tp, simd_abi::fixed_size<_Np>>
+{
+public:
+  using basic_simd<_Tp, simd_abi::fixed_size<_Np>>::basic_simd;
+};
 
 // Note: native_simd would require platform-specific ABI specializations
 // For now, use fixed_size_simd directly or specialize with a known size

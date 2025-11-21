@@ -54,17 +54,17 @@ struct __mask_storage;
 template <class _Tp, typename _Abi>
 struct __mask_operations;
 
-template <typename _Tp, int _Np>
-class simd;
-
 template <typename _Tp, typename _Abi>
 class basic_simd;
 
-template <class _Tp, int _Np>
-class simd_mask;
+template <typename _Tp, int _Np>
+using simd = basic_simd<_Tp, simd_abi::fixed_size<_Np>>;
 
-template <class _Tp, typename _Abi>
+template <typename _Tp, typename _Abi>
 class basic_simd_mask;
+
+template <typename _Tp, int _Np>
+using simd_mask = basic_simd_mask<_Tp, simd_abi::fixed_size<_Np>>;
 } // namespace cuda::experimental::datapar
 
 #include <cuda/std/__cccl/epilogue.h>

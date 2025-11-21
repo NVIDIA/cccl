@@ -39,12 +39,14 @@
 
 namespace cuda::experimental::datapar
 {
-template <typename _Tp>
-[[nodiscard]] _CCCL_API constexpr auto __set_all_bits(bool __v) noexcept
+template <class _Storage>
+[[nodiscard]] _CCCL_API constexpr typename _Storage::value_type __mask_bits_from_bool(bool __v) noexcept
 {
-  static_assert(::cuda::std::__cccl_is_unsigned_integer_v<_Tp>, "set_all_bits() requires unsigned integer types");
-  using _Up = ::cuda::std::__make_nbit_uint_t<::cuda::std::__num_bits_v<_Tp>>;
-  return __v ? (::cuda::std::numeric_limits<_Up>::max()) : 0;
+  using _MaskValueType = typename _Storage::value_type;
+  static_assert(::cuda::std::__cccl_is_unsigned_integer_v<_MaskValueType>,
+                "__mask_bits_from_bool requires unsigned integer storage");
+  using _Up = ::cuda::std::__make_nbit_uint_t<::cuda::std::__num_bits_v<_MaskValueType>>;
+  return __v ? (::cuda::std::numeric_limits<_Up>::max()) : _MaskValueType{0};
 }
 
 template <typename _Tp>

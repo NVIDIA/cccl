@@ -33,10 +33,12 @@
 
 namespace cuda::experimental::datapar
 {
-template <typename _Tp, int _Np>
-class simd_mask : public __mask_operations<_Tp, simd_abi::fixed_size<_Np>>
+template <typename _Tp, typename _Abi>
+class basic_simd_mask : public __mask_operations<_Tp, _Abi>
 {
-  using _Impl    = __mask_operations<_Tp, simd_abi::fixed_size<_Np>>;
+  static_assert(is_abi_tag_v<_Abi>, "basic_simd_mask requires a valid ABI tag");
+
+  using _Impl    = __mask_operations<_Tp, _Abi>;
   using _Storage = typename _Impl::_MaskStorage;
 
   _Storage __s_;
@@ -44,14 +46,14 @@ class simd_mask : public __mask_operations<_Tp, simd_abi::fixed_size<_Np>>
 public:
   using value_type = bool;
   using reference  = __simd_reference<_Tp, _Storage, bool>;
-  using abi_type   = simd_abi::fixed_size<_Np>;
+  using abi_type   = _Abi;
 
   [[nodiscard]] _CCCL_API static constexpr ::cuda::std::size_t size() noexcept
   {
-    return _Np;
+    return simd_size_v<_Tp, abi_type>;
   }
 
-  _CCCL_API simd_mask() noexcept = default;
+  _CCCL_API basic_simd_mask() noexcept = default;
 
   struct __storage_tag_t
   {};
@@ -62,13 +64,13 @@ public:
     return __s_;
   }
 
-  _CCCL_API simd_mask(const _Storage& __s, __storage_tag_t) noexcept
+  _CCCL_API basic_simd_mask(const _Storage& __s, __storage_tag_t) noexcept
       : __s_(__s)
   {}
 
   _CCCL_TEMPLATE(typename _Up)
   _CCCL_REQUIRES(::cuda::std::is_same_v<_Up, bool>)
-  _CCCL_API simd_mask(_Up __v) noexcept
+  _CCCL_API basic_simd_mask(_Up __v) noexcept
       : __s_(_Impl::__broadcast(__v))
   {}
 
@@ -83,49 +85,54 @@ public:
   }
 
   // Bitwise operations
-  [[nodiscard]] _CCCL_API constexpr friend simd_mask operator&(const simd_mask& __lhs, const simd_mask& __rhs) noexcept
+  [[nodiscard]] _CCCL_API constexpr friend basic_simd_mask
+  operator&(const basic_simd_mask& __lhs, const basic_simd_mask& __rhs) noexcept
   {
     return {_Impl::__bitwise_and(__lhs.__s_, __rhs.__s_), __storage_tag};
   }
 
-  [[nodiscard]] _CCCL_API constexpr friend simd_mask operator|(const simd_mask& __lhs, const simd_mask& __rhs) noexcept
+  [[nodiscard]] _CCCL_API constexpr friend basic_simd_mask
+  operator|(const basic_simd_mask& __lhs, const basic_simd_mask& __rhs) noexcept
   {
     return {_Impl::__bitwise_or(__lhs.__s_, __rhs.__s_), __storage_tag};
   }
 
-  [[nodiscard]] _CCCL_API constexpr friend simd_mask operator^(const simd_mask& __lhs, const simd_mask& __rhs) noexcept
+  [[nodiscard]] _CCCL_API constexpr friend basic_simd_mask
+  operator^(const basic_simd_mask& __lhs, const basic_simd_mask& __rhs) noexcept
   {
     return {_Impl::__bitwise_xor(__lhs.__s_, __rhs.__s_), __storage_tag};
   }
 
-  [[nodiscard]] _CCCL_API constexpr simd_mask operator!() const noexcept
+  [[nodiscard]] _CCCL_API constexpr basic_simd_mask operator!() const noexcept
   {
     return {_Impl::__bitwise_not(__s_), __storage_tag};
   }
 
-  _CCCL_API simd_mask& operator&=(const simd_mask& __rhs) noexcept
+  _CCCL_API basic_simd_mask& operator&=(const basic_simd_mask& __rhs) noexcept
   {
     return *this = *this & __rhs;
   }
 
-  _CCCL_API simd_mask& operator|=(const simd_mask& __rhs) noexcept
+  _CCCL_API basic_simd_mask& operator|=(const basic_simd_mask& __rhs) noexcept
   {
     return *this = *this | __rhs;
   }
 
-  _CCCL_API simd_mask& operator^=(const simd_mask& __rhs) noexcept
+  _CCCL_API basic_simd_mask& operator^=(const basic_simd_mask& __rhs) noexcept
   {
     return *this = *this ^ __rhs;
   }
 
   // Comparison operations
-  [[nodiscard]] _CCCL_API constexpr friend bool operator==(const simd_mask& __lhs, const simd_mask& __rhs) noexcept
+  [[nodiscard]] _CCCL_API constexpr friend bool
+  operator==(const basic_simd_mask& __lhs, const basic_simd_mask& __rhs) noexcept
   {
     return _Impl::__equal_to(__lhs.__s_, __rhs.__s_);
   }
 
 #if _CCCL_STD_VER < 2020
-  [[nodiscard]] _CCCL_API constexpr friend bool operator!=(const simd_mask& __lhs, const simd_mask& __rhs) noexcept
+  [[nodiscard]] _CCCL_API constexpr friend bool
+  operator!=(const basic_simd_mask& __lhs, const basic_simd_mask& __rhs) noexcept
   {
     return !(__lhs == __rhs);
   }
@@ -152,8 +159,12 @@ public:
   }
 };
 
-template <typename _Tp, typename _Abi>
-inline constexpr bool is_simd_v<basic_simd_mask<_Tp, _Abi>> = true;
+template <typename _Tp, int _Np>
+class simd_mask : public basic_simd_mask<_Tp, simd_abi::fixed_size<_Np>>
+{
+public:
+  using basic_simd_mask<_Tp, simd_abi::fixed_size<_Np>>::basic_simd_mask;
+};
 
 template <typename _Tp, int _Np>
 using fixed_size_simd_mask = simd_mask<_Tp, _Np>;
