@@ -70,7 +70,7 @@ public:
       // The threshold `2.5 * m` is from the original HLL algorithm.
       if (__e <= 2.5 * this->__m)
       {
-        return ::cuda::std::round(__h);
+        return static_cast<std::size_t>(::cuda::std::round(__h));
       }
 
       if (this->__precision < 19)
@@ -87,7 +87,7 @@ public:
       }
     }
 
-    return ::cuda::std::round(__e);
+    return static_cast<std::size_t>(::cuda::std::round(__e));
   }
 
 private:
