@@ -16,6 +16,8 @@
 #include <cub/agent/agent_scan.cuh>
 #include <cub/util_macro.cuh>
 
+#include <cuda/std/__cccl/cuda_capabilities.h>
+
 CUB_NAMESPACE_BEGIN
 
 namespace detail::scan
@@ -39,6 +41,8 @@ namespace detail::scan
 template <typename ScanTileStateT>
 CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceScanInitKernel(ScanTileStateT tile_state, int num_tiles)
 {
+  _CCCL_PDL_GRID_DEPENDENCY_SYNC();
+  _CCCL_PDL_TRIGGER_NEXT_LAUNCH(); // beneficial for all problem sizes in cub.bench.scan.exclusive.sum.base
   // Initialize tile status
   tile_state.InitializeStatus(num_tiles);
 }
@@ -147,12 +151,25 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::ScanPolicyT::BLOCK_THREADS))
   using ScanPolicyT = typename ChainedPolicyT::ActivePolicy::ScanPolicyT;
 
   // Thread block type for scanning input tiles
-  using AgentScanT = detail::scan::
-    AgentScan<ScanPolicyT, InputIteratorT, OutputIteratorT, ScanOpT, RealInitValueT, OffsetT, AccumT, ForceInclusive>;
+  using AgentScanT = detail::scan::AgentScan<
+    ScanPolicyT,
+    InputIteratorT,
+    OutputIteratorT,
+    ScanOpT,
+    RealInitValueT,
+    OffsetT,
+    AccumT,
+    ForceInclusive,
+    /* UsePDL */ true>;
 
   // Shared memory for AgentScan
   __shared__ typename AgentScanT::TempStorage temp_storage;
 
+  // Depending on the version of the PTX memory model the compiler and hardware implement, we could move the grid
+  // dependency sync back to the first read of data, that was actually written by the previous kernel (the tile state).
+  // So the BlockLoad in this kernel could even overlap with the previous tile init kernel. To be save, we retain it
+  // here before the first read.
+  _CCCL_PDL_GRID_DEPENDENCY_SYNC();
   RealInitValueT real_init_value = init_value;
 
   // Process tiles
