@@ -1586,18 +1586,18 @@ items:</p>
 <span class="k">auto</span><span class="w"> </span><span class="n">requirements</span><span class="w"> </span><span class="o">=</span>
 <span class="w">  </span><span class="n">cuda</span><span class="o">::</span><span class="n">execution</span><span class="o">::</span><span class="n">require</span><span class="p">(</span><span class="n">cuda</span><span class="o">::</span><span class="n">execution</span><span class="o">::</span><span class="n">determinism</span><span class="o">::</span><span class="n">not_guaranteed</span><span class="p">,</span><span class="w"> </span><span class="n">cuda</span><span class="o">::</span><span class="n">execution</span><span class="o">::</span><span class="n">output_ordering</span><span class="o">::</span><span class="n">unsorted</span><span class="p">);</span>
 
+<span class="c1">// Prepare CUDA stream</span>
+<span class="n">cudaStream_t</span><span class="w"> </span><span class="n">stream</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">nullptr</span><span class="p">;</span>
+<span class="n">cudaStreamCreate</span><span class="p">(</span><span class="o">&amp;</span><span class="n">stream</span><span class="p">);</span>
+<span class="n">cuda</span><span class="o">::</span><span class="n">stream_ref</span><span class="w"> </span><span class="n">stream_ref</span><span class="p">{</span><span class="n">stream</span><span class="p">};</span>
+
+<span class="c1">// Create the environment with the stream and requirements</span>
+<span class="k">auto</span><span class="w"> </span><span class="n">env</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">cuda</span><span class="o">::</span><span class="n">std</span><span class="o">::</span><span class="n">execution</span><span class="o">::</span><span class="n">env</span><span class="p">{</span><span class="n">stream_ref</span><span class="p">,</span><span class="w"> </span><span class="n">requirements</span><span class="p">};</span>
+
 <span class="c1">// Query temporary storage requirements</span>
 <span class="kt">size_t</span><span class="w"> </span><span class="n">temp_storage_bytes</span><span class="p">{};</span>
 <span class="n">cub</span><span class="o">::</span><span class="n">DeviceTopK</span><span class="o">::</span><span class="n">MaxPairs</span><span class="p">(</span>
-<span class="w">  </span><span class="k">nullptr</span><span class="p">,</span>
-<span class="w">  </span><span class="n">temp_storage_bytes</span><span class="p">,</span>
-<span class="w">  </span><span class="n">keys</span><span class="p">.</span><span class="n">begin</span><span class="p">(),</span>
-<span class="w">  </span><span class="n">keys_out</span><span class="p">.</span><span class="n">begin</span><span class="p">(),</span>
-<span class="w">  </span><span class="n">values</span><span class="p">,</span>
-<span class="w">  </span><span class="n">values_out</span><span class="p">.</span><span class="n">begin</span><span class="p">(),</span>
-<span class="w">  </span><span class="n">keys</span><span class="p">.</span><span class="n">size</span><span class="p">(),</span>
-<span class="w">  </span><span class="n">k</span><span class="p">,</span>
-<span class="w">  </span><span class="n">requirements</span><span class="p">);</span>
+<span class="w">  </span><span class="k">nullptr</span><span class="p">,</span><span class="w"> </span><span class="n">temp_storage_bytes</span><span class="p">,</span><span class="w"> </span><span class="n">keys</span><span class="p">.</span><span class="n">begin</span><span class="p">(),</span><span class="w"> </span><span class="n">keys_out</span><span class="p">.</span><span class="n">begin</span><span class="p">(),</span><span class="w"> </span><span class="n">values</span><span class="p">,</span><span class="w"> </span><span class="n">values_out</span><span class="p">.</span><span class="n">begin</span><span class="p">(),</span><span class="w"> </span><span class="n">keys</span><span class="p">.</span><span class="n">size</span><span class="p">(),</span><span class="w"> </span><span class="n">k</span><span class="p">,</span><span class="w"> </span><span class="n">env</span><span class="p">);</span>
 
 <span class="c1">// Allocate temporary storage</span>
 <span class="n">thrust</span><span class="o">::</span><span class="n">device_vector</span><span class="o">&lt;</span><span class="kt">char</span><span class="o">&gt;</span><span class="w"> </span><span class="n">temp_storage</span><span class="p">(</span><span class="n">temp_storage_bytes</span><span class="p">,</span><span class="w"> </span><span class="n">thrust</span><span class="o">::</span><span class="n">no_init</span><span class="p">);</span>
@@ -1611,7 +1611,7 @@ items:</p>
 <span class="w">  </span><span class="n">values_out</span><span class="p">.</span><span class="n">begin</span><span class="p">(),</span>
 <span class="w">  </span><span class="n">keys</span><span class="p">.</span><span class="n">size</span><span class="p">(),</span>
 <span class="w">  </span><span class="n">k</span><span class="p">,</span>
-<span class="w">  </span><span class="n">requirements</span><span class="p">);</span>
+<span class="w">  </span><span class="n">env</span><span class="p">);</span>
 
 <span class="c1">// Get the top-k results into sorted order for easy comparison</span>
 <span class="n">thrust</span><span class="o">::</span><span class="n">sort_by_key</span><span class="p">(</span><span class="n">keys_out</span><span class="p">.</span><span class="n">begin</span><span class="p">(),</span><span class="w"> </span><span class="n">keys_out</span><span class="p">.</span><span class="n">end</span><span class="p">(),</span><span class="w"> </span><span class="n">values_out</span><span class="p">.</span><span class="n">begin</span><span class="p">(),</span><span class="w"> </span><span class="n">cuda</span><span class="o">::</span><span class="n">std</span><span class="o">::</span><span class="n">greater</span><span class="o">&lt;&gt;</span><span class="p">{});</span>
@@ -1688,18 +1688,18 @@ items:</p>
 <span class="k">auto</span><span class="w"> </span><span class="n">requirements</span><span class="w"> </span><span class="o">=</span>
 <span class="w">  </span><span class="n">cuda</span><span class="o">::</span><span class="n">execution</span><span class="o">::</span><span class="n">require</span><span class="p">(</span><span class="n">cuda</span><span class="o">::</span><span class="n">execution</span><span class="o">::</span><span class="n">determinism</span><span class="o">::</span><span class="n">not_guaranteed</span><span class="p">,</span><span class="w"> </span><span class="n">cuda</span><span class="o">::</span><span class="n">execution</span><span class="o">::</span><span class="n">output_ordering</span><span class="o">::</span><span class="n">unsorted</span><span class="p">);</span>
 
+<span class="c1">// Prepare CUDA stream</span>
+<span class="n">cudaStream_t</span><span class="w"> </span><span class="n">stream</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">nullptr</span><span class="p">;</span>
+<span class="n">cudaStreamCreate</span><span class="p">(</span><span class="o">&amp;</span><span class="n">stream</span><span class="p">);</span>
+<span class="n">cuda</span><span class="o">::</span><span class="n">stream_ref</span><span class="w"> </span><span class="n">stream_ref</span><span class="p">{</span><span class="n">stream</span><span class="p">};</span>
+
+<span class="c1">// Create the environment with the stream and requirements</span>
+<span class="k">auto</span><span class="w"> </span><span class="n">env</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">cuda</span><span class="o">::</span><span class="n">std</span><span class="o">::</span><span class="n">execution</span><span class="o">::</span><span class="n">env</span><span class="p">{</span><span class="n">stream_ref</span><span class="p">,</span><span class="w"> </span><span class="n">requirements</span><span class="p">};</span>
+
 <span class="c1">// Query temporary storage requirements</span>
 <span class="kt">size_t</span><span class="w"> </span><span class="n">temp_storage_bytes</span><span class="p">{};</span>
 <span class="n">cub</span><span class="o">::</span><span class="n">DeviceTopK</span><span class="o">::</span><span class="n">MinPairs</span><span class="p">(</span>
-<span class="w">  </span><span class="k">nullptr</span><span class="p">,</span>
-<span class="w">  </span><span class="n">temp_storage_bytes</span><span class="p">,</span>
-<span class="w">  </span><span class="n">keys</span><span class="p">.</span><span class="n">begin</span><span class="p">(),</span>
-<span class="w">  </span><span class="n">keys_out</span><span class="p">.</span><span class="n">begin</span><span class="p">(),</span>
-<span class="w">  </span><span class="n">values</span><span class="p">,</span>
-<span class="w">  </span><span class="n">values_out</span><span class="p">.</span><span class="n">begin</span><span class="p">(),</span>
-<span class="w">  </span><span class="n">keys</span><span class="p">.</span><span class="n">size</span><span class="p">(),</span>
-<span class="w">  </span><span class="n">k</span><span class="p">,</span>
-<span class="w">  </span><span class="n">requirements</span><span class="p">);</span>
+<span class="w">  </span><span class="k">nullptr</span><span class="p">,</span><span class="w"> </span><span class="n">temp_storage_bytes</span><span class="p">,</span><span class="w"> </span><span class="n">keys</span><span class="p">.</span><span class="n">begin</span><span class="p">(),</span><span class="w"> </span><span class="n">keys_out</span><span class="p">.</span><span class="n">begin</span><span class="p">(),</span><span class="w"> </span><span class="n">values</span><span class="p">,</span><span class="w"> </span><span class="n">values_out</span><span class="p">.</span><span class="n">begin</span><span class="p">(),</span><span class="w"> </span><span class="n">keys</span><span class="p">.</span><span class="n">size</span><span class="p">(),</span><span class="w"> </span><span class="n">k</span><span class="p">,</span><span class="w"> </span><span class="n">env</span><span class="p">);</span>
 
 <span class="c1">// Allocate temporary storage</span>
 <span class="n">thrust</span><span class="o">::</span><span class="n">device_vector</span><span class="o">&lt;</span><span class="kt">char</span><span class="o">&gt;</span><span class="w"> </span><span class="n">temp_storage</span><span class="p">(</span><span class="n">temp_storage_bytes</span><span class="p">,</span><span class="w"> </span><span class="n">thrust</span><span class="o">::</span><span class="n">no_init</span><span class="p">);</span>
@@ -1713,7 +1713,7 @@ items:</p>
 <span class="w">  </span><span class="n">values_out</span><span class="p">.</span><span class="n">begin</span><span class="p">(),</span>
 <span class="w">  </span><span class="n">keys</span><span class="p">.</span><span class="n">size</span><span class="p">(),</span>
 <span class="w">  </span><span class="n">k</span><span class="p">,</span>
-<span class="w">  </span><span class="n">requirements</span><span class="p">);</span>
+<span class="w">  </span><span class="n">env</span><span class="p">);</span>
 
 <span class="c1">// Get the top-k results into sorted order for easy comparison</span>
 <span class="n">thrust</span><span class="o">::</span><span class="n">sort_by_key</span><span class="p">(</span><span class="n">keys_out</span><span class="p">.</span><span class="n">begin</span><span class="p">(),</span><span class="w"> </span><span class="n">keys_out</span><span class="p">.</span><span class="n">end</span><span class="p">(),</span><span class="w"> </span><span class="n">values_out</span><span class="p">.</span><span class="n">begin</span><span class="p">());</span>
@@ -1786,9 +1786,17 @@ items:</p>
 <span class="k">auto</span><span class="w"> </span><span class="n">requirements</span><span class="w"> </span><span class="o">=</span>
 <span class="w">  </span><span class="n">cuda</span><span class="o">::</span><span class="n">execution</span><span class="o">::</span><span class="n">require</span><span class="p">(</span><span class="n">cuda</span><span class="o">::</span><span class="n">execution</span><span class="o">::</span><span class="n">determinism</span><span class="o">::</span><span class="n">not_guaranteed</span><span class="p">,</span><span class="w"> </span><span class="n">cuda</span><span class="o">::</span><span class="n">execution</span><span class="o">::</span><span class="n">output_ordering</span><span class="o">::</span><span class="n">unsorted</span><span class="p">);</span>
 
+<span class="c1">// Prepare CUDA stream</span>
+<span class="n">cudaStream_t</span><span class="w"> </span><span class="n">stream</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">nullptr</span><span class="p">;</span>
+<span class="n">cudaStreamCreate</span><span class="p">(</span><span class="o">&amp;</span><span class="n">stream</span><span class="p">);</span>
+<span class="n">cuda</span><span class="o">::</span><span class="n">stream_ref</span><span class="w"> </span><span class="n">stream_ref</span><span class="p">{</span><span class="n">stream</span><span class="p">};</span>
+
+<span class="c1">// Create the environment with the stream and requirements</span>
+<span class="k">auto</span><span class="w"> </span><span class="n">env</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">cuda</span><span class="o">::</span><span class="n">std</span><span class="o">::</span><span class="n">execution</span><span class="o">::</span><span class="n">env</span><span class="p">{</span><span class="n">stream_ref</span><span class="p">,</span><span class="w"> </span><span class="n">requirements</span><span class="p">};</span>
+
 <span class="c1">// Query temporary storage requirements</span>
 <span class="kt">size_t</span><span class="w"> </span><span class="n">temp_storage_bytes</span><span class="p">{};</span>
-<span class="n">cub</span><span class="o">::</span><span class="n">DeviceTopK</span><span class="o">::</span><span class="n">MaxKeys</span><span class="p">(</span><span class="k">nullptr</span><span class="p">,</span><span class="w"> </span><span class="n">temp_storage_bytes</span><span class="p">,</span><span class="w"> </span><span class="n">input</span><span class="p">.</span><span class="n">begin</span><span class="p">(),</span><span class="w"> </span><span class="n">output</span><span class="p">.</span><span class="n">begin</span><span class="p">(),</span><span class="w"> </span><span class="n">input</span><span class="p">.</span><span class="n">size</span><span class="p">(),</span><span class="w"> </span><span class="n">k</span><span class="p">,</span><span class="w"> </span><span class="n">requirements</span><span class="p">);</span>
+<span class="n">cub</span><span class="o">::</span><span class="n">DeviceTopK</span><span class="o">::</span><span class="n">MaxKeys</span><span class="p">(</span><span class="k">nullptr</span><span class="p">,</span><span class="w"> </span><span class="n">temp_storage_bytes</span><span class="p">,</span><span class="w"> </span><span class="n">input</span><span class="p">.</span><span class="n">begin</span><span class="p">(),</span><span class="w"> </span><span class="n">output</span><span class="p">.</span><span class="n">begin</span><span class="p">(),</span><span class="w"> </span><span class="n">input</span><span class="p">.</span><span class="n">size</span><span class="p">(),</span><span class="w"> </span><span class="n">k</span><span class="p">,</span><span class="w"> </span><span class="n">env</span><span class="p">);</span>
 
 <span class="c1">// Allocate temporary storage</span>
 <span class="n">thrust</span><span class="o">::</span><span class="n">device_vector</span><span class="o">&lt;</span><span class="kt">char</span><span class="o">&gt;</span><span class="w"> </span><span class="n">temp_storage</span><span class="p">(</span><span class="n">temp_storage_bytes</span><span class="p">,</span><span class="w"> </span><span class="n">thrust</span><span class="o">::</span><span class="n">no_init</span><span class="p">);</span>
@@ -1800,7 +1808,7 @@ items:</p>
 <span class="w">  </span><span class="n">output</span><span class="p">.</span><span class="n">begin</span><span class="p">(),</span>
 <span class="w">  </span><span class="n">input</span><span class="p">.</span><span class="n">size</span><span class="p">(),</span>
 <span class="w">  </span><span class="n">k</span><span class="p">,</span>
-<span class="w">  </span><span class="n">requirements</span><span class="p">);</span>
+<span class="w">  </span><span class="n">env</span><span class="p">);</span>
 
 <span class="c1">// Get the top-k results into sorted order for easy comparison</span>
 <span class="n">thrust</span><span class="o">::</span><span class="n">sort</span><span class="p">(</span><span class="n">output</span><span class="p">.</span><span class="n">begin</span><span class="p">(),</span><span class="w"> </span><span class="n">output</span><span class="p">.</span><span class="n">end</span><span class="p">(),</span><span class="w"> </span><span class="n">cuda</span><span class="o">::</span><span class="n">std</span><span class="o">::</span><span class="n">greater</span><span class="p">{});</span>
@@ -1868,9 +1876,17 @@ items:</p>
 <span class="k">auto</span><span class="w"> </span><span class="n">requirements</span><span class="w"> </span><span class="o">=</span>
 <span class="w">  </span><span class="n">cuda</span><span class="o">::</span><span class="n">execution</span><span class="o">::</span><span class="n">require</span><span class="p">(</span><span class="n">cuda</span><span class="o">::</span><span class="n">execution</span><span class="o">::</span><span class="n">determinism</span><span class="o">::</span><span class="n">not_guaranteed</span><span class="p">,</span><span class="w"> </span><span class="n">cuda</span><span class="o">::</span><span class="n">execution</span><span class="o">::</span><span class="n">output_ordering</span><span class="o">::</span><span class="n">unsorted</span><span class="p">);</span>
 
+<span class="c1">// Prepare CUDA stream</span>
+<span class="n">cudaStream_t</span><span class="w"> </span><span class="n">stream</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">nullptr</span><span class="p">;</span>
+<span class="n">cudaStreamCreate</span><span class="p">(</span><span class="o">&amp;</span><span class="n">stream</span><span class="p">);</span>
+<span class="n">cuda</span><span class="o">::</span><span class="n">stream_ref</span><span class="w"> </span><span class="n">stream_ref</span><span class="p">{</span><span class="n">stream</span><span class="p">};</span>
+
+<span class="c1">// Create the environment with the stream and requirements</span>
+<span class="k">auto</span><span class="w"> </span><span class="n">env</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">cuda</span><span class="o">::</span><span class="n">std</span><span class="o">::</span><span class="n">execution</span><span class="o">::</span><span class="n">env</span><span class="p">{</span><span class="n">stream_ref</span><span class="p">,</span><span class="w"> </span><span class="n">requirements</span><span class="p">};</span>
+
 <span class="c1">// Query temporary storage requirements</span>
 <span class="kt">size_t</span><span class="w"> </span><span class="n">temp_storage_bytes</span><span class="p">{};</span>
-<span class="n">cub</span><span class="o">::</span><span class="n">DeviceTopK</span><span class="o">::</span><span class="n">MinKeys</span><span class="p">(</span><span class="k">nullptr</span><span class="p">,</span><span class="w"> </span><span class="n">temp_storage_bytes</span><span class="p">,</span><span class="w"> </span><span class="n">input</span><span class="p">.</span><span class="n">begin</span><span class="p">(),</span><span class="w"> </span><span class="n">output</span><span class="p">.</span><span class="n">begin</span><span class="p">(),</span><span class="w"> </span><span class="n">input</span><span class="p">.</span><span class="n">size</span><span class="p">(),</span><span class="w"> </span><span class="n">k</span><span class="p">,</span><span class="w"> </span><span class="n">requirements</span><span class="p">);</span>
+<span class="n">cub</span><span class="o">::</span><span class="n">DeviceTopK</span><span class="o">::</span><span class="n">MinKeys</span><span class="p">(</span><span class="k">nullptr</span><span class="p">,</span><span class="w"> </span><span class="n">temp_storage_bytes</span><span class="p">,</span><span class="w"> </span><span class="n">input</span><span class="p">.</span><span class="n">begin</span><span class="p">(),</span><span class="w"> </span><span class="n">output</span><span class="p">.</span><span class="n">begin</span><span class="p">(),</span><span class="w"> </span><span class="n">input</span><span class="p">.</span><span class="n">size</span><span class="p">(),</span><span class="w"> </span><span class="n">k</span><span class="p">,</span><span class="w"> </span><span class="n">env</span><span class="p">);</span>
 
 <span class="c1">// Allocate temporary storage</span>
 <span class="n">thrust</span><span class="o">::</span><span class="n">device_vector</span><span class="o">&lt;</span><span class="kt">char</span><span class="o">&gt;</span><span class="w"> </span><span class="n">temp_storage</span><span class="p">(</span><span class="n">temp_storage_bytes</span><span class="p">,</span><span class="w"> </span><span class="n">thrust</span><span class="o">::</span><span class="n">no_init</span><span class="p">);</span>
@@ -1882,7 +1898,7 @@ items:</p>
 <span class="w">  </span><span class="n">output</span><span class="p">.</span><span class="n">begin</span><span class="p">(),</span>
 <span class="w">  </span><span class="n">input</span><span class="p">.</span><span class="n">size</span><span class="p">(),</span>
 <span class="w">  </span><span class="n">k</span><span class="p">,</span>
-<span class="w">  </span><span class="n">requirements</span><span class="p">);</span>
+<span class="w">  </span><span class="n">env</span><span class="p">);</span>
 
 <span class="c1">// Get the top-k results into sorted order for easy comparison</span>
 <span class="n">thrust</span><span class="o">::</span><span class="n">sort</span><span class="p">(</span><span class="n">output</span><span class="p">.</span><span class="n">begin</span><span class="p">(),</span><span class="w"> </span><span class="n">output</span><span class="p">.</span><span class="n">end</span><span class="p">());</span>
