@@ -60,8 +60,7 @@ public:
   using mask_type  = basic_simd_mask<value_type, abi_type>;
 
   _CCCL_TEMPLATE(typename _Up, typename _Ap)
-  _CCCL_REQUIRES((::cuda::std::is_same_v<typename basic_simd_mask<_Up, _Ap>::abi_type, abi_type>
-                    _CCCL_AND ::cuda::std::is_same_v<typename basic_simd_mask<_Up, _Ap>::value_type, value_type>) )
+  _CCCL_REQUIRES((::cuda::std::is_same_v<_Up, value_type>) _CCCL_AND ::cuda::std::is_same_v<_Ap, abi_type>)
   _CCCL_API explicit operator basic_simd_mask<_Up, _Ap>() const noexcept
   {
     basic_simd_mask<_Up, _Ap> __result;
@@ -503,7 +502,7 @@ public:
   [[nodiscard]] _CCCL_API constexpr friend mask_type
   operator!=(const basic_simd& __lhs, const basic_simd& __rhs) noexcept
   {
-    return basic_simd{_Impl::__not_equal_to(__lhs.__s_, __rhs.__s_), __storage_tag};
+    return mask_type{_Impl::__not_equal_to(__lhs.__s_, __rhs.__s_), __storage_tag};
   }
 
   _CCCL_TEMPLATE(typename _Up)

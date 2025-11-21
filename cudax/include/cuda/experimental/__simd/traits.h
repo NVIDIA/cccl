@@ -113,11 +113,11 @@ struct simd_size<_Tp, _Abi, false>
 template <typename _Tp, typename _Abi = simd_abi::fixed_size<1>>
 inline constexpr ::cuda::std::size_t simd_size_v = simd_size<_Tp, _Abi>::value;
 
-template <typename _Tp, typename _Abi>
-inline constexpr bool is_simd_v<basic_simd<_Tp, _Abi>> = true;
+template <typename _Tp>
+inline constexpr ::cuda::std::size_t simd_size_v<_Tp, void> = _Tp::size();
 
 template <typename _Tp, typename _Abi>
-inline constexpr bool is_simd_v<basic_simd_mask<_Tp, _Abi>> = true;
+inline constexpr bool is_simd_v<basic_simd<_Tp, _Abi>> = true;
 
 template <typename _Tp, typename _Abi>
 inline constexpr bool is_simd_mask_v<basic_simd_mask<_Tp, _Abi>> = true;
