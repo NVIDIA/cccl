@@ -22,7 +22,7 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__exception/cuda_error.h>
+#include <cuda/std/__exception/msg_storage.h>
 #include <cuda/std/__exception/terminate.h>
 #include <cuda/std/source_location>
 
@@ -37,22 +37,23 @@
 #include <cuda/std/__cccl/prologue.h>
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
-#if _CCCL_HAS_EXCEPTIONS()
 
 namespace __detail
 {
 static char* __format_error(::cuda::__detail::__msg_storage& __msg_buffer,
-                            const char* __condition,
                             const char* __msg,
                             ::cuda::std::source_location __loc = ::cuda::std::source_location::current()) noexcept
 {
-  ::snprintf(
-    __msg_buffer.__buffer, __msg_buffer.__size, "%s(%u): %s: %s", __loc.file_name(), __loc.line(), __condition, (__msg != nullptr) ? __msg : "<unknown_error>");
+  (void) ::snprintf(
+    __msg_buffer.__buffer,
+    __msg_buffer.__size,
+    "%s:%u: %s",
+    __loc.file_name(),
+    __loc.line(),
+    (__msg != nullptr) ? __msg : "<unknown_error>");
   return __msg_buffer.__buffer;
 }
 } // namespace __detail
-
-#endif // _CCCL_HAS_EXCEPTIONS()
 
 [[noreturn]] _CCCL_API inline void __throw_runtime_error([[maybe_unused]] const char* __msg)
 {

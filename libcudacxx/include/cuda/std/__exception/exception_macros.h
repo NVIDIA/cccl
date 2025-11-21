@@ -21,13 +21,8 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__exception/cuda_error.h>
+#include <cuda/std/__exception/msg_storage.h>
 #include <cuda/std/__exception/terminate.h>
-#include <cuda/std/__exception/throw_error.h>
-#if _CCCL_HAS_EXCEPTIONS()
-#  include <cuda/std/source_location>
-#endif // _CCCL_HAS_EXCEPTIONS()
-#include <nv/target>
 
 #if !_CCCL_COMPILER(NVRTC)
 #  include <cstdio>
@@ -76,14 +71,13 @@ _CCCL_END_NAMESPACE_CUDA_STD
 #  define _CCCL_CATCH_FALLTHROUGH
 #  define _CCCL_THROW(...) throw __VA_ARGS__
 #  define _CCCL_RETHROW    throw
-#  define _CCCL_THROW_IF(_CONDITION, _EXCEPTION, _MSG)                                            \
-    do                                                                                            \
-    {                                                                                             \
-      if (_CONDITION)                                                                             \
-      {                                                                                           \
-        ::cuda::__detail::__msg_storage __msg_buffer{};                                           \
-        throw _EXCEPTION(::cuda::std::__detail::__format_error(__msg_buffer, #_CONDITION, _MSG)); \
-      }                                                                                           \
+#  define _CCCL_THROW_IF(_CONDITION, ...) \
+    do                                    \
+    {                                     \
+      if (_CONDITION)                     \
+      {                                   \
+        throw __VA_ARGS__;                \
+      }                                   \
     } while (false)
 
 #else // ^^^ use exceptions ^^^ / vvv no exceptions vvv
@@ -102,25 +96,25 @@ _CCCL_END_NAMESPACE_CUDA_STD
     else                          \
     {                             \
     }
-#  define _CCCL_THROW(...) \
-  do \
-  { \
-    NV_IF_TARGET(NV_IS_HOST, ({ \
-      ::cuda::__detail::__msg_storage __msg_buffer{};                         \
-      ::cuda::std::__detail::__format_error(__msg_buffer, (__VA_ARGS__).what()); \
-      ::fprintf(stderr, "%s\n", __msg_buffer.__buffer);                       \
-      ::fflush(stderr);                                                       \
-    }) \
-    ::cuda::std::terminate();                                               \
-  } while (0)
-#  define _CCCL_RETHROW    ::cuda::std::terminate()
-#  define _CCCL_THROW_IF(_CONDITION, ...)                          \
-    do                                                                          \
-    {                                                                           \
-      if (_CONDITION)                                                           \
-      {                                                                         \
-        _CCCL_THROW(__VA_ARGS__); \
-      }                                                                         \
+#  define _CCCL_THROW(...)                                                                      \
+    do                                                                                          \
+    {                                                                                           \
+      NV_IF_TARGET(NV_IS_HOST, ({                                                               \
+                     ::cuda::__detail::__msg_storage __msg_buffer{};                            \
+                     ::cuda::std::__detail::__format_error(__msg_buffer, (__VA_ARGS__).what()); \
+                     ::fprintf(stderr, "%s\n", __msg_buffer.__buffer);                          \
+                     ::fflush(stderr);                                                          \
+                   }));                                                                         \
+      ::cuda::std::terminate();                                                                 \
+    } while (0)
+#  define _CCCL_RETHROW ::cuda::std::terminate()
+#  define _CCCL_THROW_IF(_CONDITION, ...) \
+    do                                    \
+    {                                     \
+      if (_CONDITION)                     \
+      {                                   \
+        _CCCL_THROW(__VA_ARGS__);         \
+      }                                   \
     } while (false)
 #endif // ^^^ no exceptions ^^^
 
