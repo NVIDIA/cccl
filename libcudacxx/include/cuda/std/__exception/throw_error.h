@@ -46,11 +46,8 @@ static char* __format_error(::cuda::__detail::__msg_storage& __msg_buffer,
                             const char* __msg,
                             ::cuda::std::source_location __loc = ::cuda::std::source_location::current()) noexcept
 {
-  _CCCL_ASSERT(
-    ::snprintf(
-      __msg_buffer.__buffer, __msg_buffer.__size, "%s:%d %s: %s", __loc.file_name(), __loc.line(), __condition, __msg)
-      > 0,
-    "Failed to format error");
+  ::snprintf(
+    __msg_buffer.__buffer, __msg_buffer.__size, "%s(%u): %s: %s", __loc.file_name(), __loc.line(), __condition, (__msg != nullptr) ? __msg : "<unknown_error>");
   return __msg_buffer.__buffer;
 }
 } // namespace __detail
