@@ -70,7 +70,7 @@ public:
   {
     if (__primary_ctx_ != nullptr)
     {
-      [[maybe_unused]] const auto __ignore = ::cuda::__driver::__primaryCtxReleaseNoThrow(__device_);
+      _CCCL_ASSERT_DRIVER_API(__primaryCtxRelease(__device_));
     }
   }
 
@@ -80,7 +80,7 @@ public:
   [[nodiscard]] _CCCL_HOST_API ::CUcontext __primary_context()
   {
     ::std::call_once(__primary_ctx_once_flag_, [this]() {
-      __primary_ctx_ = ::cuda::__driver::__primaryCtxRetain(__device_);
+      __primary_ctx_ = _CCCL_TRY_DRIVER_API(__primaryCtxRetain(__device_));
     });
     return __primary_ctx_;
   }
@@ -88,8 +88,7 @@ public:
   [[nodiscard]] _CCCL_HOST_API ::cuda::std::string_view __name()
   {
     ::std::call_once(__name_once_flag_, [this]() {
-      const auto __id = ::cuda::__driver::__cudevice_to_ordinal(__device_);
-      ::cuda::__driver::__deviceGetName(__name_, __max_name_length, __id);
+      _CCCL_TRY_DRIVER_API(__deviceGetName(__name_, __max_name_length, __device_));
       __name_length_ = ::cuda::std::char_traits<char>::length(__name_);
     });
     return ::cuda::std::string_view{__name_, __name_length_};
@@ -141,15 +140,14 @@ __make_physical_devices(::cuda::std::size_t __device_count)
 
 [[nodiscard]] inline ::cuda::std::size_t __physical_devices_count()
 {
-  static const auto __device_count = static_cast<::cuda::std::size_t>(::cuda::__driver::__deviceGetCount());
+  static const auto __device_count = static_cast<::cuda::std::size_t>(_CCCL_TRY_DRIVER_API(__deviceGetCount()));
   return __device_count;
 }
 
 [[nodiscard]] inline ::cuda::std::span<__physical_device> __physical_devices()
 {
-  static const auto __device_count = __physical_devices_count();
-  static const auto __devices      = ::cuda::__make_physical_devices(__device_count);
-  return ::cuda::std::span<__physical_device>{__devices.get(), __device_count};
+  static const auto __devices = ::cuda::__make_physical_devices(::cuda::__physical_devices_count());
+  return ::cuda::std::span<__physical_device>{__devices.get(), ::cuda::__physical_devices_count()};
 }
 
 // device_ref methods dependent on __physical_device

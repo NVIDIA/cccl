@@ -42,7 +42,7 @@ __fill_bytes_impl(stream_ref __stream, ::cuda::std::span<_DstTy, _DstSize> __dst
   static_assert(::cuda::std::is_trivially_copyable_v<_DstTy>);
 
   // TODO do a host callback if not device accessible?
-  ::cuda::__driver::__memsetAsync(__dst.data(), __value, __dst.size_bytes(), __stream.get());
+  _CCCL_TRY_DRIVER_API(__memsetAsync(__dst.data(), __value, __dst.size_bytes(), __stream.get()));
 }
 
 template <typename _DstElem, typename _DstExtents, typename _DstLayout, typename _DstAccessor>

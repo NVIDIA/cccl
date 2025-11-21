@@ -177,8 +177,8 @@ private:
     static_assert(::cuda::std::contiguous_iterator<_Iter>, "Non contiguous iterators are not supported");
     // TODO use batched memcpy for non-contiguous iterators, it allows to
     // specify stream ordered access
-    ::cuda::__driver::__memcpyAsync(
-      __dest, ::cuda::std::to_address(__first), sizeof(_Tp) * __count, __buf_.stream().get());
+    _CCCL_TRY_DRIVER_API(
+      __memcpyAsync(__dest, ::cuda::std::to_address(__first), sizeof(_Tp) * __count, __buf_.stream().get()));
   }
 
 public:
@@ -635,11 +635,11 @@ template <typename _BufferTo, typename _BufferFrom>
 void __copy_cross_buffers(stream_ref __stream, _BufferTo& __to, const _BufferFrom& __from)
 {
   __stream.wait(__from.stream());
-  ::cuda::__driver::__memcpyAsync(
+  _CCCL_TRY_DRIVER_API(__memcpyAsync(
     __to.__unwrapped_begin(),
     __from.__unwrapped_begin(),
     sizeof(typename _BufferTo::value_type) * __from.size(),
-    __stream.get());
+    __stream.get()));
 }
 
 _CCCL_BEGIN_NAMESPACE_ARCH_DEPENDENT
@@ -660,16 +660,9 @@ __fill_n(cuda::stream_ref __stream, _Tp* __first, ::cuda::std::size_t __count, c
   // we need to check the attributes
   if constexpr (_Accessability == __memory_accessability::__device_and_host)
   {
-    __driver::__pointer_attribute_value_type_t<CU_POINTER_ATTRIBUTE_MEMORY_TYPE> __type;
-    bool __is_managed{};
-    auto __status1 = ::cuda::__driver::__pointerGetAttributeNoThrow<CU_POINTER_ATTRIBUTE_MEMORY_TYPE>(__type, __first);
-    auto __status2 =
-      ::cuda::__driver::__pointerGetAttributeNoThrow<CU_POINTER_ATTRIBUTE_IS_MANAGED>(__is_managed, __first);
-    if (__status1 != ::cudaSuccess || __status2 != ::cudaSuccess)
-    {
-      __throw_cuda_error(__status1, "Failed to get buffer memory attributes");
-    }
-    if (__type == ::CU_MEMORYTYPE_HOST && !__is_managed)
+    const auto __mem_type   = _CCCL_TRY_DRIVER_API(__pointerGetAttribute<::CU_POINTER_ATTRIBUTE_MEMORY_TYPE>(__first));
+    const auto __is_managed = _CCCL_TRY_DRIVER_API(__pointerGetAttribute<::CU_POINTER_ATTRIBUTE_IS_MANAGED>(__first));
+    if (__mem_type == ::CU_MEMORYTYPE_HOST && !__is_managed)
     {
       __fill_n<_Tp, __memory_accessability::__host>(__stream, __first, __count, __value);
     }
@@ -687,7 +680,7 @@ __fill_n(cuda::stream_ref __stream, _Tp* __first, ::cuda::std::size_t __count, c
   {
     if constexpr (sizeof(_Tp) <= 4)
     {
-      ::cuda::__driver::__memsetAsync(__first, __value, __count, __stream.get());
+      _CCCL_TRY_DRIVER_API(__memsetAsync(__first, __value, __count, __stream.get()));
     }
     else
     {

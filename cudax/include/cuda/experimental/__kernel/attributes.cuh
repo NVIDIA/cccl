@@ -47,8 +47,8 @@ struct __kernel_attr_impl
   template <class _Signature>
   [[nodiscard]] type operator()(kernel_ref<_Signature> __kernel, device_ref __dev) const
   {
-    return static_cast<type>(
-      ::cuda::__driver::__kernelGetAttribute(_Attr, __kernel.get(), ::cuda::__driver::__deviceGet(__dev.get())));
+    return static_cast<type>(_CCCL_TRY_DRIVER_API(
+      __kernelGetAttribute(_Attr, __kernel.get(), _CCCL_TRY_DRIVER_API(__deviceGet(__dev.get())))));
   }
 };
 

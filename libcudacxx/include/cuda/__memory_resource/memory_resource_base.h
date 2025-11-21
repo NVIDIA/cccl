@@ -57,7 +57,8 @@ struct __pool_attr_impl
 
   [[nodiscard]] _CCCL_HOST_API type operator()(::cudaMemPool_t __pool) const
   {
-    size_t __value = ::cuda::__driver::__mempoolGetAttribute(__pool, static_cast<::CUmemPool_attribute>(_Attr));
+    ::cuda::std::size_t __value =
+      _CCCL_TRY_DRIVER_API(__mempoolGetAttribute(__pool, static_cast<::CUmemPool_attribute>(_Attr)));
     return static_cast<type>(__value);
   }
 
@@ -66,7 +67,7 @@ struct __pool_attr_impl
     size_t __value_copy = __value;
     if constexpr (_Settable == __pool_attr_settable{true})
     {
-      ::cuda::__driver::__mempoolSetAttribute(__pool, static_cast<::CUmemPool_attribute>(_Attr), &__value_copy);
+      _CCCL_TRY_DRIVER_API(__mempoolSetAttribute(__pool, static_cast<::CUmemPool_attribute>(_Attr), &__value_copy));
     }
     else
     {
@@ -110,7 +111,7 @@ inline void __set_attribute_non_zero_only(::cudaMemPool_t __pool, ::CUmemPool_at
   {
     ::cuda::std::__throw_invalid_argument("This attribute can't be set to a non-zero value.");
   }
-  ::cuda::__driver::__mempoolSetAttribute(__pool, __attr, &__value);
+  _CCCL_TRY_DRIVER_API(__mempoolSetAttribute(__pool, __attr, &__value));
 }
 
 template <>
@@ -228,7 +229,7 @@ __mempool_set_access(::CUmemoryPool __pool, ::cuda::std::span<const device_ref> 
   {
     __descs.push_back({::CUmemLocation{::CU_MEM_LOCATION_TYPE_DEVICE, __devices[__i].get()}, __flags});
   }
-  ::cuda::__driver::__mempoolSetAccess(__pool, __descs.data(), __descs.size());
+  _CCCL_TRY_DRIVER_API(__mempoolSetAccess(__pool, __descs.data(), __descs.size()));
 }
 
 //! @brief Query if memory from a pool is accessible by the supplied device
@@ -242,7 +243,7 @@ __mempool_set_access(::CUmemoryPool __pool, ::cuda::std::span<const device_ref> 
   ::CUmemLocation __loc;
   __loc.type = ::CU_MEM_LOCATION_TYPE_DEVICE;
   __loc.id   = __dev.get();
-  __result   = ::cuda::__driver::__mempoolGetAccess(__pool, &__loc);
+  __result   = _CCCL_TRY_DRIVER_API(__mempoolGetAccess(__pool, &__loc));
   return __result == ::CU_MEM_ACCESS_FLAGS_PROT_READWRITE;
 }
 
@@ -294,33 +295,32 @@ struct memory_pool_properties
     ::cuda::std::__throw_invalid_argument("Initial pool size must be less than the release threshold");
   }
 
-  ::CUmemoryPool __cuda_pool_handle{};
-  ::cudaError_t __error = ::cuda::__driver::__mempoolCreateNoThrow(&__cuda_pool_handle, &__pool_properties);
-  if (__error != ::cudaSuccess)
+  auto __result = ::cuda::__driver::__mempoolCreate(&__pool_properties);
+  if (__result.__error_ != ::CUDA_SUCCESS)
   {
     // Mempool creation failed, lets try to figure out why
     ::cuda::__verify_device_supports_stream_ordered_allocations(__location.id);
     ::cuda::__verify_device_supports_export_handle_type(__location.id, __properties.allocation_handle_type, __location);
 
     // Could not find the reason, throw a generic error
-    ::cuda::__throw_cuda_error(__error, "Failed to create a memory pool");
+    ::cuda::__throw_cuda_error(__result.__error_, "Failed to create a memory pool");
   }
 
-  ::cuda::__driver::__mempoolSetAttribute(
-    __cuda_pool_handle, ::CU_MEMPOOL_ATTR_RELEASE_THRESHOLD, &__properties.release_threshold);
+  _CCCL_TRY_DRIVER_API(
+    __mempoolSetAttribute(__result.__value_, ::CU_MEMPOOL_ATTR_RELEASE_THRESHOLD, &__properties.release_threshold));
 
   // allocate the requested initial size to prime the pool.
   // We need to use a new stream so we do not wait on other work
   if (__properties.initial_pool_size != 0)
   {
-    ::CUdeviceptr __ptr = ::cuda::__driver::__mallocFromPoolAsync(
-      __properties.initial_pool_size, __cuda_pool_handle, __cccl_allocation_stream().get());
-    if (::cuda::__driver::__freeAsyncNoThrow(__ptr, __cccl_allocation_stream().get()) != ::cudaSuccess)
+    void* __ptr = _CCCL_TRY_DRIVER_API(
+      __mallocFromPoolAsync(__properties.initial_pool_size, __result.__value_, __cccl_allocation_stream().get()));
+    if (::cuda::__driver::__freeAsync(__ptr, __cccl_allocation_stream().get()).__error_ != ::CUDA_SUCCESS)
     {
       ::cuda::__throw_cuda_error(::cudaErrorMemoryAllocation, "Failed to allocate initial pool size");
     }
   }
-  return __cuda_pool_handle;
+  return __result.__value_;
 }
 
 class __memory_resource_base
@@ -362,9 +362,9 @@ public:
         "__memory_resource_base::allocate_sync.");
     }
 
-    ::CUdeviceptr __ptr = ::cuda::__driver::__mallocFromPoolAsync(__bytes, __pool_, __cccl_allocation_stream().get());
+    void* __ptr = _CCCL_TRY_DRIVER_API(__mallocFromPoolAsync(__bytes, __pool_, __cccl_allocation_stream().get()));
     __cccl_allocation_stream().sync();
-    return reinterpret_cast<void*>(__ptr);
+    return __ptr;
   }
 
   //! @brief deallocate_sync memory pointed to by \p __ptr.
@@ -380,11 +380,7 @@ public:
   {
     _CCCL_ASSERT(__is_valid_alignment(__alignment),
                  "Invalid alignment passed to __memory_resource_base::deallocate_sync.");
-    _CCCL_ASSERT_CUDA_API(
-      ::cuda::__driver::__freeAsyncNoThrow,
-      "deallocate failed",
-      reinterpret_cast<::CUdeviceptr>(__ptr),
-      __cccl_allocation_stream().get());
+    _CCCL_ASSERT_DRIVER_API(__freeAsync(__ptr, __cccl_allocation_stream().get()));
   }
 
   //! @brief Allocate device memory of size at least \p __bytes via `cudaMallocFromPoolAsync`.
@@ -414,8 +410,7 @@ public:
   //! @returns Pointer to the newly allocated memory.
   [[nodiscard]] _CCCL_HOST_API void* allocate(const ::cuda::stream_ref __stream, const size_t __bytes)
   {
-    ::CUdeviceptr __ptr = ::cuda::__driver::__mallocFromPoolAsync(__bytes, __pool_, __stream.get());
-    return reinterpret_cast<void*>(__ptr);
+    return _CCCL_TRY_DRIVER_API(__mallocFromPoolAsync(__bytes, __pool_, __stream.get()));
   }
 
   //! @brief Deallocate memory pointed to by \p __ptr.
@@ -441,7 +436,7 @@ public:
   //! pool will be guaranteed to have at least \p __minBytesToKeep bytes reserved after the operation.
   _CCCL_HOST_API void trim_to(const size_t __min_bytes_to_keep)
   {
-    ::cuda::__driver::__mempoolTrimTo(__pool_, __min_bytes_to_keep);
+    _CCCL_TRY_DRIVER_API(__mempoolTrimTo(__pool_, __min_bytes_to_keep));
   }
 
   //! @brief Gets the value of an attribute of the pool.
@@ -496,8 +491,7 @@ public:
   //! It is the caller's responsibility to properly synchronize all relevant streams before calling `deallocate`.
   _CCCL_HOST_API void deallocate(const ::cuda::stream_ref __stream, void* __ptr, size_t) noexcept
   {
-    _CCCL_ASSERT_CUDA_API(
-      ::cuda::__driver::__freeAsyncNoThrow, "deallocate failed", reinterpret_cast<::CUdeviceptr>(__ptr), __stream.get());
+    _CCCL_ASSERT_DRIVER_API(__freeAsync(__ptr, __stream.get()));
   }
 
   //! @brief Enable access to memory allocated through this memory resource by the supplied devices

@@ -530,8 +530,7 @@ _CCCL_HOST_API inline void __check_swizzle(tma_interleave_layout __interleave_la
     __box_sizes, __tensor_sizes, __rank, __interleave_layout, __swizzle, __data_type, __tensor.device.device_id);
   const auto __raw_elem_strides =
     ::cuda::__get_elem_strides(__elem_strides, __tensor_sizes, __rank, __interleave_layout);
-  ::CUtensorMap __tensorMap{};
-  const auto __status = ::cuda::__driver::__tensorMapEncodeTiledNoThrow(
+  const auto __tensorMap = ::cuda::__driver::__tensorMapEncodeTiled(
     __tensorMap,
     __data_type,
     __rank,
@@ -544,8 +543,8 @@ _CCCL_HOST_API inline void __check_swizzle(tma_interleave_layout __interleave_la
     __raw_swizzle,
     __raw_l2_fetch_size,
     __raw_oobfill);
-  _CCCL_VERIFY(__status == ::cudaSuccess, "Failed to encode TMA descriptor");
-  return __tensorMap;
+  _CCCL_VERIFY(__tensorMap.__error_ == ::CUDA_SUCCESS, "Failed to encode TMA descriptor");
+  return __tensorMap.__value_;
 }
 
 [[nodiscard]] _CCCL_HOST_API inline ::CUtensorMap make_tma_descriptor(

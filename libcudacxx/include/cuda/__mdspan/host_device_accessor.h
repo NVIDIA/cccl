@@ -113,11 +113,9 @@ class __host_accessor : public _Accessor
     {
       _CCCL_IF_NOT_CONSTEVAL_DEFAULT
       {
-        auto __p1 = ::cuda::std::to_address(__p);
-        ::CUmemorytype __type{};
-        const auto __status =
-          ::cuda::__driver::__pointerGetAttributeNoThrow<::CU_POINTER_ATTRIBUTE_MEMORY_TYPE>(__type, __p1);
-        return (__status != ::cudaSuccess) || __type == ::CU_MEMORYTYPE_HOST;
+        auto __p1             = ::cuda::std::to_address(__p);
+        const auto __mem_type = ::cuda::__driver::__pointerGetAttribute<::CU_POINTER_ATTRIBUTE_MEMORY_TYPE>(__p1);
+        return (__mem_type.__error_ != ::CUDA_SUCCESS) || __mem_type.__value_ == ::CU_MEMORYTYPE_HOST;
       }
       return true;
     }
@@ -248,11 +246,9 @@ class __device_accessor : public _Accessor
 #if _CCCL_HAS_CTK()
     if constexpr (::cuda::std::contiguous_iterator<__data_handle_type>)
     {
-      auto __p1 = ::cuda::std::to_address(__p);
-      ::CUmemorytype __type{};
-      const auto __status =
-        ::cuda::__driver::__pointerGetAttributeNoThrow<::CU_POINTER_ATTRIBUTE_MEMORY_TYPE>(__type, __p1);
-      return (__status != ::cudaSuccess) || __type == ::CU_MEMORYTYPE_DEVICE;
+      auto __p1             = ::cuda::std::to_address(__p);
+      const auto __mem_type = ::cuda::__driver::__pointerGetAttribute<::CU_POINTER_ATTRIBUTE_MEMORY_TYPE>(__p1);
+      return (__mem_type.__error_ != ::CUDA_SUCCESS) || __mem_type.__value_ == ::CU_MEMORYTYPE_DEVICE;
     }
     else
 #endif // _CCCL_HAS_CTK()
@@ -399,11 +395,9 @@ class __managed_accessor : public _Accessor
 #if _CCCL_HAS_CTK()
     if constexpr (::cuda::std::contiguous_iterator<__data_handle_type>)
     {
-      const auto __p1 = ::cuda::std::to_address(__p);
-      bool __is_managed{};
-      const auto __status =
-        ::cuda::__driver::__pointerGetAttributeNoThrow<::CU_POINTER_ATTRIBUTE_IS_MANAGED>(__is_managed, __p1);
-      return (__status != ::cudaSuccess) || __is_managed;
+      const auto __p1         = ::cuda::std::to_address(__p);
+      const auto __is_managed = ::cuda::__driver::__pointerGetAttribute<::CU_POINTER_ATTRIBUTE_IS_MANAGED>(__p1);
+      return (__is_managed.__error_ != ::CUDA_SUCCESS) || __is_managed.__value_;
     }
     else
 #endif // _CCCL_HAS_CTK()

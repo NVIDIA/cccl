@@ -20,7 +20,7 @@ void recursive_check_device_setter(int id)
   int cudart_id;
   cuda::__ensure_current_context setter(cuda::device_ref{id});
   CCCLRT_REQUIRE(test::count_driver_stack() == cuda::devices.size() - id);
-  auto ctx = driver::__ctxGetCurrent();
+  auto ctx = CCCLRT_DRIVER_CALL(__ctxGetCurrent());
   CUDART(cudaGetDevice(&cudart_id));
   CCCLRT_REQUIRE(cudart_id == id);
 
@@ -29,7 +29,7 @@ void recursive_check_device_setter(int id)
     recursive_check_device_setter(id - 1);
 
     CCCLRT_REQUIRE(test::count_driver_stack() == cuda::devices.size() - id);
-    CCCLRT_REQUIRE(ctx == driver::__ctxGetCurrent());
+    CCCLRT_REQUIRE(ctx == CCCLRT_DRIVER_CALL(__ctxGetCurrent()));
     CUDART(cudaGetDevice(&cudart_id));
     CCCLRT_REQUIRE(cudart_id == id);
   }

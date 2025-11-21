@@ -105,8 +105,8 @@ C2H_CCCLRT_TEST("Library", "[library]")
   constexpr char const_symbol_name[]   = "const_data";
   constexpr char managed_symbol_name[] = "managed_data";
 
-  CUlibrary lib1_native = ::cuda::__driver::__libraryLoadData(library_src, nullptr, nullptr, 0, nullptr, nullptr, 0);
-  CUlibrary lib2_native = ::cuda::__driver::__libraryLoadData(library_src, nullptr, nullptr, 0, nullptr, nullptr, 0);
+  CUlibrary lib1_native = CCCLRT_DRIVER_CALL(__libraryLoadData(library_src, nullptr, nullptr, 0, nullptr, nullptr, 0));
+  CUlibrary lib2_native = CCCLRT_DRIVER_CALL(__libraryLoadData(library_src, nullptr, nullptr, 0, nullptr, nullptr, 0));
 
   const cuda::device_ref device{0};
 
@@ -202,8 +202,7 @@ C2H_CCCLRT_TEST("Library", "[library]")
     cudax::library lib = cudax::library::from_native_handle(lib1_native);
     auto kernel        = lib.kernel<void(int*, int)>(kernel_name);
 
-    CUkernel kernel_handle;
-    CUDAX_REQUIRE(::cuda::__driver::__libraryGetKernelNoThrow(kernel_handle, lib1_native, kernel_name) == cudaSuccess);
+    CUkernel kernel_handle = CCCLRT_DRIVER_CALL(__libraryGetKernel(lib1_native, kernel_name));
     CUDAX_REQUIRE(kernel.get() == kernel_handle);
 
     (void) lib.release(); // prevent library unload in destructor
@@ -236,13 +235,9 @@ C2H_CCCLRT_TEST("Library", "[library]")
 
       cuda::__ensure_current_context context_guard{device};
 
-      CUdeviceptr global_symbol_ptr;
-      cuda::std::size_t global_symbol_size;
-      CUDAX_REQUIRE(::cuda::__driver::__libraryGetGlobalNoThrow(
-                      global_symbol_ptr, global_symbol_size, lib1_native, global_symbol_name)
-                    == cudaSuccess);
-
-      CUDAX_REQUIRE(reinterpret_cast<CUdeviceptr>(global_sym.ptr) == global_symbol_ptr);
+      const auto [global_symbol_ptr, global_symbol_size] =
+        CCCLRT_DRIVER_CALL(__libraryGetGlobal(lib1_native, global_symbol_name));
+      CUDAX_REQUIRE(global_sym.ptr == global_symbol_ptr);
       CUDAX_REQUIRE(global_sym.size == global_symbol_size);
       CUDAX_REQUIRE(global_sym.size == sizeof(int));
     }
@@ -253,13 +248,9 @@ C2H_CCCLRT_TEST("Library", "[library]")
 
       cuda::__ensure_current_context context_guard{device};
 
-      CUdeviceptr const_symbol_ptr;
-      cuda::std::size_t const_symbol_size;
-      CUDAX_REQUIRE(
-        ::cuda::__driver::__libraryGetGlobalNoThrow(const_symbol_ptr, const_symbol_size, lib1_native, const_symbol_name)
-        == cudaSuccess);
-
-      CUDAX_REQUIRE(reinterpret_cast<CUdeviceptr>(const_sym.ptr) == const_symbol_ptr);
+      const auto [const_symbol_ptr, const_symbol_size] =
+        CCCLRT_DRIVER_CALL(__libraryGetGlobal(lib1_native, const_symbol_name));
+      CUDAX_REQUIRE(const_sym.ptr == const_symbol_ptr);
       CUDAX_REQUIRE(const_sym.size == const_symbol_size);
       CUDAX_REQUIRE(const_sym.size == sizeof(int));
     }
@@ -287,13 +278,9 @@ C2H_CCCLRT_TEST("Library", "[library]")
     cudax::library lib = cudax::library::from_native_handle(lib1_native);
     auto managed_sym   = lib.managed(managed_symbol_name);
 
-    CUdeviceptr managed_symbol_ptr;
-    cuda::std::size_t managed_symbol_size;
-    CUDAX_REQUIRE(::cuda::__driver::__libraryGetManagedNoThrow(
-                    managed_symbol_ptr, managed_symbol_size, lib1_native, managed_symbol_name)
-                  == cudaSuccess);
-
-    CUDAX_REQUIRE(reinterpret_cast<CUdeviceptr>(managed_sym.ptr) == managed_symbol_ptr);
+    auto [managed_symbol_ptr,
+          managed_symbol_size] = CCCLRT_DRIVER_CALL(__libraryGetManaged(lib1_native, managed_symbol_name));
+    CUDAX_REQUIRE(managed_sym.ptr == managed_symbol_ptr);
     CUDAX_REQUIRE(managed_sym.size == managed_symbol_size);
     CUDAX_REQUIRE(managed_sym.size == sizeof(int));
 

@@ -79,7 +79,7 @@ public:
   _CCCL_HOST_API void sync() const
   {
     _CCCL_ASSERT(__event_ != nullptr, "cuda::event_ref::sync no event set");
-    ::cuda::__driver::__eventSynchronize(__event_);
+    _CCCL_TRY_DRIVER_API(__eventSynchronize(__event_));
   }
 
   //! @brief Checks if all the work in the stream prior to the record of the event has completed.
@@ -90,18 +90,15 @@ public:
   [[nodiscard]] _CCCL_HOST_API bool is_done() const
   {
     _CCCL_ASSERT(__event_ != nullptr, "cuda::event_ref::sync no event set");
-    ::cudaError_t __status = ::cuda::__driver::__eventQueryNoThrow(__event_);
-    if (__status == ::cudaSuccess)
+    const auto __status = ::cuda::__driver::__eventQuery(__event_).__error_;
+    switch (__status)
     {
-      return true;
-    }
-    else if (__status == ::cudaErrorNotReady)
-    {
-      return false;
-    }
-    else
-    {
-      ::cuda::__throw_cuda_error(__status, "Failed to query CUDA event");
+      case ::CUDA_SUCCESS:
+        return true;
+      case ::CUDA_ERROR_NOT_READY:
+        return false;
+      default:
+        ::cuda::__throw_cuda_error(__status, "Failed to query CUDA event");
     }
   }
 

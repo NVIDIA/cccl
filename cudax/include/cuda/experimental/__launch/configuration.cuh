@@ -325,33 +325,34 @@ template <class _Tp>
 [[nodiscard]] ::cudaError_t __apply_launch_option(
   const dynamic_shared_memory<_Tp>& __opt, ::CUlaunchConfig& __config, ::CUfunction __kernel) noexcept
 {
-  ::cudaError_t __status = ::cudaSuccess;
-
-  // Since CUDA 12.4, querying CU_FUNC_ATTRIBUTE_SHARED_SIZE_BYTES requires the
-  // function to be loaded.
-  if (::cuda::__driver::__version_at_least(12, 4))
+  // Since CUDA 12.4, querying CU_FUNC_ATTRIBUTE_SHARED_SIZE_BYTES requires the function to be loaded.
+  const auto __needs_load = ::cuda::__driver::__version_at_least(12, 4);
+  if (__needs_load.__error_ != ::CUDA_SUCCESS)
   {
-    __status = ::cuda::__driver::__functionLoadNoThrow(__kernel);
-    if (__status != ::cudaSuccess)
+    return static_cast<::cudaError_t>(__needs_load.__error_);
+  }
+
+  if (__needs_load.__value_)
+  {
+    const auto __status = ::cuda::__driver::__functionLoad(__kernel).__error_;
+    if (__status != ::CUDA_SUCCESS)
     {
-      return __status;
+      return static_cast<::cudaError_t>(__status);
     }
   }
 
-  int __static_smem_size{};
-  __status = ::cuda::__driver::__functionGetAttributeNoThrow(
-    __static_smem_size, ::CU_FUNC_ATTRIBUTE_SHARED_SIZE_BYTES, __kernel);
-  if (__status != ::cudaSuccess)
+  const auto __static_smem_size =
+    ::cuda::__driver::__functionGetAttribute(::CU_FUNC_ATTRIBUTE_SHARED_SIZE_BYTES, __kernel);
+  if (__static_smem_size.__error_ != ::CUDA_SUCCESS)
   {
-    return __status;
+    return static_cast<::cudaError_t>(__static_smem_size.__error_);
   }
 
-  int __max_dyn_smem_size{};
-  __status = ::cuda::__driver::__functionGetAttributeNoThrow(
-    __max_dyn_smem_size, ::CU_FUNC_ATTRIBUTE_SHARED_SIZE_BYTES, __kernel);
-  if (__status != ::cudaSuccess)
+  const auto __max_dyn_smem_size =
+    ::cuda::__driver::__functionGetAttribute(::CU_FUNC_ATTRIBUTE_SHARED_SIZE_BYTES, __kernel);
+  if (__max_dyn_smem_size.__error_ != ::CUDA_SUCCESS)
   {
-    return __status;
+    return static_cast<::cudaError_t>(__max_dyn_smem_size.__error_);
   }
 
   const auto __dyn_smem_size = ::cuda::overflow_cast<int>(__opt.size_bytes());
@@ -360,19 +361,21 @@ template <class _Tp>
     return ::cudaErrorInvalidValue;
   }
 
-  const int __smem_size = __static_smem_size + __dyn_smem_size.value;
+  const int __smem_size = __static_smem_size.__value_ + __dyn_smem_size.value;
   if (static_cast<::cuda::std::size_t>(__smem_size) > __max_portable_dyn_smem_size && !__opt.__non_portable_)
   {
     return ::cudaErrorInvalidValue;
   }
 
-  if (__max_dyn_smem_size < __dyn_smem_size.value)
+  if (__max_dyn_smem_size.__value_ < __dyn_smem_size.value)
   {
-    __status = ::cuda::__driver::__functionSetAttributeNoThrow(
-      __kernel, ::CU_FUNC_ATTRIBUTE_MAX_DYNAMIC_SHARED_SIZE_BYTES, __dyn_smem_size.value);
-    if (__status != ::cudaSuccess)
+    const auto __status =
+      ::cuda::__driver::__functionSetAttribute(
+        __kernel, ::CU_FUNC_ATTRIBUTE_MAX_DYNAMIC_SHARED_SIZE_BYTES, __dyn_smem_size.value)
+        .__error_;
+    if (__status != ::CUDA_SUCCESS)
     {
-      return __status;
+      return static_cast<::cudaError_t>(__status);
     }
   }
 

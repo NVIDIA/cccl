@@ -98,13 +98,27 @@ namespace
 {
 namespace test
 {
+template <class T>
+[[nodiscard]] inline T ccclrt_check_and_extract_driver_result(cuda::__driver::__driver_call_result<T> result)
+{
+  REQUIRE(result.__error_ == CUDA_SUCCESS);
+  return result.__value_;
+}
+
+inline void ccclrt_check_and_extract_driver_result(cuda::__driver::__driver_call_result<void> result)
+{
+  REQUIRE(result.__error_ == CUDA_SUCCESS);
+}
+
+#define CCCLRT_DRIVER_CALL(call) test::ccclrt_check_and_extract_driver_result(cuda::__driver::call)
+
 inline int count_driver_stack()
 {
-  if (cuda::__driver::__ctxGetCurrent() != nullptr)
+  if (_CCCL_TRY_DRIVER_API(__ctxGetCurrent()) != nullptr)
   {
-    auto ctx    = cuda::__driver::__ctxPop();
+    auto ctx    = _CCCL_TRY_DRIVER_API(__ctxPop());
     auto result = 1 + count_driver_stack();
-    cuda::__driver::__ctxPush(ctx);
+    _CCCL_ASSERT_DRIVER_API(__ctxPush(ctx));
     return result;
   }
   else
@@ -115,15 +129,15 @@ inline int count_driver_stack()
 
 inline void empty_driver_stack()
 {
-  while (cuda::__driver::__ctxGetCurrent() != nullptr)
+  while (_CCCL_TRY_DRIVER_API(__ctxGetCurrent()) != nullptr)
   {
-    cuda::__driver::__ctxPop();
+    _CCCL_ASSERT_DRIVER_API(__ctxPop());
   }
 }
 
 inline int cuda_driver_version()
 {
-  return cuda::__driver::__getVersion();
+  return _CCCL_TRY_DRIVER_API(__getVersion());
 }
 
 // Needs to be a template because we use template catch2 macro

@@ -136,9 +136,9 @@ struct pinned_memory_pool : pinned_memory_pool_ref
     enable_access_from(cuda::devices);
   }
 
-  ~pinned_memory_pool() noexcept
+  ~pinned_memory_pool()
   {
-    ::cuda::__driver::__mempoolDestroy(__pool_);
+    _CCCL_ASSERT_DRIVER_API(__mempoolDestroy(__pool_));
   }
 
   _CCCL_HOST_API static pinned_memory_pool from_native_handle(::cudaMemPool_t __pool) noexcept
@@ -165,8 +165,8 @@ static_assert(::cuda::mr::resource_with<pinned_memory_pool, ::cuda::mr::host_acc
 {
 #  if _CCCL_CTK_AT_LEAST(13, 0)
   static ::cudaMemPool_t __default_pool = []() {
-    ::cudaMemPool_t __pool = ::cuda::__driver::__getDefaultMemPool(
-      ::CUmemLocation{::CU_MEM_LOCATION_TYPE_HOST, 0}, ::CU_MEM_ALLOCATION_TYPE_PINNED);
+    ::cudaMemPool_t __pool = _CCCL_TRY_DRIVER_API(
+      __getDefaultMemPool(::CUmemLocation{::CU_MEM_LOCATION_TYPE_HOST, 0}, ::CU_MEM_ALLOCATION_TYPE_PINNED));
     // TODO should we be more careful with setting access from all devices? Maybe only if it was not set for any device?
     ::cuda::__mempool_set_access(__pool, ::cuda::devices, ::CU_MEM_ACCESS_FLAGS_PROT_READWRITE);
     return __pool;
