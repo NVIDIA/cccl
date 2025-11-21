@@ -43,7 +43,6 @@ using __cuda_error_t = int;
 
 namespace __detail
 {
-
 static char* __format_cuda_error(
   __msg_storage& __msg_buffer,
   const int __status,
