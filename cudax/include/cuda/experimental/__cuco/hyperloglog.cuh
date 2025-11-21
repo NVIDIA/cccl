@@ -72,10 +72,12 @@ public:
   //! @param __sketch_size_kb Maximum sketch size in KB
   //! @param __hash The hash function used to hash items
   //! @param __stream CUDA stream used to initialize the object
-  constexpr hyperloglog(_MemoryResourceRef __memory_resource_ref,
-                        ::cuda::experimental::cuco::sketch_size_kb __sketch_size_kb = 32.0,
-                        _Hash const& __hash                                         = {},
-                        ::cuda::stream_ref __stream = ::cuda::stream_ref{cudaStream_t{nullptr}})
+  constexpr hyperloglog(
+    _MemoryResourceRef __memory_resource_ref,
+    ::cuda::experimental::cuco::sketch_size_kb __sketch_size_kb =
+      static_cast<::cuda::experimental::cuco::sketch_size_kb>(32.0),
+    _Hash const& __hash         = {},
+    ::cuda::stream_ref __stream = ::cuda::stream_ref{cudaStream_t{nullptr}})
       : __memory_resource_ref(__memory_resource_ref)
       , __sketch_buffer{__stream,
                         __memory_resource_ref,
@@ -95,8 +97,9 @@ public:
   //! @param __sketch_size_kb Maximum sketch size in KB
   //! @param __hash The hash function used to hash items
   //! @param __stream CUDA stream used to initialize the object
-  constexpr hyperloglog(::cuda::experimental::cuco::sketch_size_kb __sketch_size_kb = 32.0,
-                        _Hash const& __hash                                         = {},
+  constexpr hyperloglog(::cuda::experimental::cuco::sketch_size_kb __sketch_size_kb =
+                          static_cast<::cuda::experimental::cuco::sketch_size_kb>(32.0),
+                        _Hash const& __hash         = {},
                         ::cuda::stream_ref __stream = ::cuda::stream_ref{cudaStream_t{nullptr}})
       : __memory_resource_ref(::cuda::device_default_memory_pool(::cuda::device_ref{0}))
       , __sketch_buffer{__stream,
