@@ -150,6 +150,10 @@ foreach (cudax_target IN LISTS cudax_TARGETS)
     algorithm/copy.cu
   )
 
+  cudax_add_catch2_test(test_target simd ${cudax_target}
+    simd/simd.cu
+  )
+
   if (cudax_ENABLE_CUFILE)
     cudax_add_catch2_test(test_target cufile_driver_attributes ${cudax_target}
       cufile/driver_attributes.cu

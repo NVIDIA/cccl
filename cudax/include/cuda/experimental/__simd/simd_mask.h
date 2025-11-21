@@ -55,7 +55,7 @@ public:
     return simd_size_v<_Tp, abi_type>;
   }
 
-  _CCCL_API basic_simd_mask() noexcept = default;
+  _CCCL_HIDE_FROM_ABI basic_simd_mask() noexcept = default;
 
   struct __storage_tag_t
   {};
@@ -138,7 +138,7 @@ public:
   }
 
   _CCCL_TEMPLATE(typename _Up, typename _Ap)
-  _CCCL_REQUIRES(simd_size_v<_Up, _Ap> == simd_size_v<_Tp, abi_type>)
+  _CCCL_REQUIRES((simd_size_v<_Up, _Ap> == simd_size_v<_Tp, abi_type>))
   _CCCL_API constexpr explicit operator basic_simd<_Up, _Ap>() const noexcept
   {
     basic_simd<_Up, _Ap> __result;
@@ -199,13 +199,6 @@ public:
   {
     return _Impl::__count(__s_);
   }
-};
-
-template <typename _Tp, int _Np>
-class simd_mask : public basic_simd_mask<_Tp, simd_abi::fixed_size<_Np>>
-{
-public:
-  using basic_simd_mask<_Tp, simd_abi::fixed_size<_Np>>::basic_simd_mask;
 };
 
 template <typename _Tp, int _Np>

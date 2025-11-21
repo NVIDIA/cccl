@@ -22,6 +22,7 @@
 #endif // no system header
 
 #include <cuda/std/__cstddef/types.h>
+#include <cuda/std/__memory/is_sufficiently_aligned.h>
 #include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/cstdint>
 
@@ -35,7 +36,7 @@ namespace cuda::experimental::datapar
 struct element_aligned_tag
 {
   template <class _Simd, class _Ptr>
-  _CCCL_HIDE_FROM_ABI static constexpr _Ptr* __apply(_Ptr* __ptr) noexcept
+  [[nodiscard]] _CCCL_API static constexpr _Ptr* __apply(_Ptr* __ptr) noexcept
   {
     return __ptr;
   }
@@ -44,7 +45,7 @@ struct element_aligned_tag
 struct vector_aligned_tag
 {
   template <class _Simd, class _Ptr>
-  _CCCL_HIDE_FROM_ABI static constexpr _Ptr* __apply(_Ptr* __ptr) noexcept
+  [[nodiscard]] _CCCL_API static constexpr _Ptr* __apply(_Ptr* __ptr) noexcept
   {
     return __ptr;
   }
@@ -54,9 +55,9 @@ template <::cuda::std::size_t _Alignment>
 struct overaligned_tag
 {
   template <class _Simd, class _Ptr>
-  _CCCL_HIDE_FROM_ABI static constexpr _Ptr* __apply(_Ptr* __ptr) noexcept
+  [[nodiscard]] _CCCL_API static constexpr _Ptr* __apply(_Ptr* __ptr) noexcept
   {
-    _CCCL_ASSERT(reinterpret_cast<::cuda::std::uintptr_t>(__ptr) % _Alignment == 0,
+    _CCCL_ASSERT(::cuda::std::is_sufficiently_aligned<_Alignment>(__ptr),
                  "Pointer does not satisfy overaligned_tag alignment requirement");
     return __ptr;
   }
