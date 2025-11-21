@@ -30,6 +30,9 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
+_CCCL_DIAG_PUSH
+_CCCL_DIAG_SUPPRESS_GCC("-Wattributes")
+
 namespace cuda::experimental::cuco::detail::hyperloglog_ns
 {
 //! @brief Returns the global thread ID in a 1D grid
@@ -179,6 +182,8 @@ CCCL_DETAIL_KERNEL_ATTRIBUTES void __estimate(std::size_t* __cardinality, RefTyp
   }
 }
 } // namespace cuda::experimental::cuco::detail::hyperloglog_ns
+
+_CCCL_DIAG_POP
 
 #include <cuda/std/__cccl/epilogue.h>
 
