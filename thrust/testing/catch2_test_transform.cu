@@ -11,6 +11,10 @@
 #include "unittest/random.h"
 #include "unittest/special_types.h"
 
+// %PARAM% TEST_ARITY arity 1:2
+
+#if TEST_ARITY == 1
+
 TEMPLATE_LIST_TEST_CASE("UnarySimple", "[transform]", vector_list)
 {
   using Vector = TestType;
@@ -58,66 +62,6 @@ TEST_CASE("UnaryDispatchImplicit", "[transform]", )
 
   thrust::transform(
     thrust::retag<my_tag>(vec.begin()), thrust::retag<my_tag>(vec.begin()), thrust::retag<my_tag>(vec.begin()), 0);
-
-  CHECK(13 == vec.front());
-}
-
-TEMPLATE_LIST_TEST_CASE("BinarySimple", "[transform]", vector_list)
-{
-  using Vector = TestType;
-  using T      = typename Vector::value_type;
-
-  typename Vector::iterator iter;
-
-  // There is a strange gcc bug here where it believes we would write out of bounds.
-  // It seems to go away if we add one more element that we leave untouched. Luckily 0 - 0 = 0 so all is fine.
-  // Note that we still write the element, so it does not hide a functional thrust bug
-  Vector input1{1, -2, 3};
-  Vector input2{-4, 5, 6};
-  Vector output(3);
-  Vector result{5, -7, -3};
-
-  iter = thrust::transform(input1.begin(), input1.end(), input2.begin(), output.begin(), ::cuda::std::minus<T>());
-
-  CHECK(std::size_t(iter - output.begin()) == input1.size());
-  CHECK(output == result);
-}
-
-template <typename InputIterator1, typename InputIterator2, typename OutputIterator, typename UnaryFunction>
-OutputIterator
-transform(my_system& system, InputIterator1, InputIterator1, InputIterator2, OutputIterator result, UnaryFunction)
-{
-  system.validate_dispatch();
-  return result;
-}
-
-TEST_CASE("BinaryDispatchExplicit", "[transform]")
-{
-  thrust::device_vector<int> vec(1);
-
-  my_system sys(0);
-  thrust::transform(sys, vec.begin(), vec.begin(), vec.begin(), vec.begin(), 0);
-
-  CHECK(sys.is_valid());
-}
-
-template <typename InputIterator1, typename InputIterator2, typename OutputIterator, typename UnaryFunction>
-OutputIterator transform(my_tag, InputIterator1, InputIterator1, InputIterator2, OutputIterator result, UnaryFunction)
-{
-  *result = 13;
-  return result;
-}
-
-TEST_CASE("BinaryDispatchImplicit", "[transform]")
-{
-  thrust::device_vector<int> vec(1);
-
-  thrust::transform(
-    thrust::retag<my_tag>(vec.begin()),
-    thrust::retag<my_tag>(vec.begin()),
-    thrust::retag<my_tag>(vec.begin()),
-    thrust::retag<my_tag>(vec.begin()),
-    0);
 
   CHECK(13 == vec.front());
 }
@@ -206,6 +150,87 @@ TEMPLATE_LIST_TEST_CASE("UnaryToDiscardIteratorZipped", "[transform]", variable_
   }
 }
 
+TEMPLATE_LIST_TEST_CASE("UnaryCountingIterator", "[transform]", generic_list)
+{
+  using T        = TestType;
+  size_t const n = 15 * sizeof(T);
+
+  CHECK(T(n) <= unittest::truncate_to_max_representable<T>(n));
+
+  thrust::counting_iterator<T, thrust::host_system_tag> h_first   = thrust::make_counting_iterator<T>(0);
+  thrust::counting_iterator<T, thrust::device_system_tag> d_first = thrust::make_counting_iterator<T>(0);
+
+  thrust::host_vector<T> h_result(n);
+  thrust::device_vector<T> d_result(n);
+
+  thrust::transform(h_first, h_first + n, h_result.begin(), ::cuda::std::identity{});
+  thrust::transform(d_first, d_first + n, d_result.begin(), ::cuda::std::identity{});
+
+  CHECK(h_result == d_result);
+}
+
+#else // #TEST_ARITY == 2
+
+TEMPLATE_LIST_TEST_CASE("BinarySimple", "[transform]", vector_list)
+{
+  using Vector = TestType;
+  using T      = typename Vector::value_type;
+
+  typename Vector::iterator iter;
+
+  // There is a strange gcc bug here where it believes we would write out of bounds.
+  // It seems to go away if we add one more element that we leave untouched. Luckily 0 - 0 = 0 so all is fine.
+  // Note that we still write the element, so it does not hide a functional thrust bug
+  Vector input1{1, -2, 3};
+  Vector input2{-4, 5, 6};
+  Vector output(3);
+  Vector result{5, -7, -3};
+
+  iter = thrust::transform(input1.begin(), input1.end(), input2.begin(), output.begin(), ::cuda::std::minus<T>());
+
+  CHECK(std::size_t(iter - output.begin()) == input1.size());
+  CHECK(output == result);
+}
+
+template <typename InputIterator1, typename InputIterator2, typename OutputIterator, typename UnaryFunction>
+OutputIterator
+transform(my_system& system, InputIterator1, InputIterator1, InputIterator2, OutputIterator result, UnaryFunction)
+{
+  system.validate_dispatch();
+  return result;
+}
+
+TEST_CASE("BinaryDispatchExplicit", "[transform]")
+{
+  thrust::device_vector<int> vec(1);
+
+  my_system sys(0);
+  thrust::transform(sys, vec.begin(), vec.begin(), vec.begin(), vec.begin(), 0);
+
+  CHECK(sys.is_valid());
+}
+
+template <typename InputIterator1, typename InputIterator2, typename OutputIterator, typename UnaryFunction>
+OutputIterator transform(my_tag, InputIterator1, InputIterator1, InputIterator2, OutputIterator result, UnaryFunction)
+{
+  *result = 13;
+  return result;
+}
+
+TEST_CASE("BinaryDispatchImplicit", "[transform]")
+{
+  thrust::device_vector<int> vec(1);
+
+  thrust::transform(
+    thrust::retag<my_tag>(vec.begin()),
+    thrust::retag<my_tag>(vec.begin()),
+    thrust::retag<my_tag>(vec.begin()),
+    thrust::retag<my_tag>(vec.begin()),
+    0);
+
+  CHECK(13 == vec.front());
+}
+
 TEMPLATE_LIST_TEST_CASE("Binary", "[transform]", variable_list)
 {
   using T = TestType;
@@ -255,25 +280,6 @@ TEMPLATE_LIST_TEST_CASE("BinaryToDiscardIterator", "[transform]", variable_list)
   }
 }
 
-TEMPLATE_LIST_TEST_CASE("UnaryCountingIterator", "[transform]", generic_list)
-{
-  using T        = TestType;
-  size_t const n = 15 * sizeof(T);
-
-  CHECK(T(n) <= unittest::truncate_to_max_representable<T>(n));
-
-  thrust::counting_iterator<T, thrust::host_system_tag> h_first   = thrust::make_counting_iterator<T>(0);
-  thrust::counting_iterator<T, thrust::device_system_tag> d_first = thrust::make_counting_iterator<T>(0);
-
-  thrust::host_vector<T> h_result(n);
-  thrust::device_vector<T> d_result(n);
-
-  thrust::transform(h_first, h_first + n, h_result.begin(), ::cuda::std::identity{});
-  thrust::transform(d_first, d_first + n, d_result.begin(), ::cuda::std::identity{});
-
-  CHECK(h_result == d_result);
-}
-
 TEMPLATE_LIST_TEST_CASE("BinaryCountingIterator", "[transform]", generic_list)
 {
   using T        = TestType;
@@ -304,7 +310,7 @@ struct plus_mod3
   }
 };
 
-TEMPLATE_LIST_TEST_CASE("WithIndirection", "[transform]", integral_vector_list)
+TEMPLATE_LIST_TEST_CASE("BinaryWithIndirection", "[transform]", integral_vector_list)
 {
   // add numbers modulo 3 with external lookup table
   using Vector = TestType;
@@ -322,3 +328,5 @@ TEMPLATE_LIST_TEST_CASE("WithIndirection", "[transform]", integral_vector_list)
   Vector ref{2, 0, 1, 1, 1, 1, 1};
   CHECK(output == ref);
 }
+
+#endif // #TEST_ARITY == 2
