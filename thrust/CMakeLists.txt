@@ -45,21 +45,6 @@ set_property(
   PROPERTY STRINGS "Dynamic" "Force32bit" "Force64bit"
 )
 
-# Check if we're actually building anything before continuing. If not, no need
-# to search for deps, etc. This is a common approach for packagers that just
-# need the install rules. See GH issue NVIDIA/thrust#1211.
-if (
-  NOT
-    (
-      THRUST_ENABLE_HEADER_TESTING
-      OR THRUST_ENABLE_TESTING
-      OR THRUST_ENABLE_EXAMPLES
-      OR CCCL_ENABLE_BENCHMARKS
-    )
-)
-  return()
-endif()
-
 #include first:
 include(cmake/ThrustUtilities.cmake)
 
@@ -83,9 +68,6 @@ if ("" STREQUAL "${CMAKE_BUILD_TYPE}")
     PROPERTY STRINGS Debug Release RelWithDebInfo MinSizeRel
   )
 endif()
-
-# Disable compiler extensions:
-set(CMAKE_CXX_EXTENSIONS OFF)
 
 thrust_configure_multiconfig()
 thrust_find_thrust()

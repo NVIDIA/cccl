@@ -34,20 +34,20 @@ If($CURRENT_PATH -ne "ci") {
 
 Import-Module -Name "$PSScriptRoot/build_common.psm1" -ArgumentList @($CXX_STANDARD, $CUDA_ARCH, $CMAKE_OPTIONS)
 
-$PRESET = "cub-cpp$CXX_STANDARD"
+$PRESET = "cub"
 $artifactTag = ""
 if ($NO_LID_SWITCH) {
     $artifactTag = "no_lid"
-    $PRESET = "cub-nolid-cpp$CXX_STANDARD"
+    $PRESET = "cub-nolid"
 } elseif ($LID0_SWITCH) {
     $artifactTag = "lid_0"
-    $PRESET = "cub-lid0-cpp$CXX_STANDARD"
+    $PRESET = "cub-lid0"
 } elseif ($LID1_SWITCH) {
     $artifactTag = "lid_1"
-    $PRESET = "cub-lid1-cpp$CXX_STANDARD"
+    $PRESET = "cub-lid1"
 } elseif ($LID2_SWITCH) {
     $artifactTag = "lid_2"
-    $PRESET = "cub-lid2-cpp$CXX_STANDARD"
+    $PRESET = "cub-lid2"
 }
 
 if ($env:GITHUB_ACTIONS -and $artifactTag) {
