@@ -49,14 +49,16 @@ set(memory_regex "#[ \t]*include[ \t]+<memory>")
 set(numeric_regex "#[ \t]*include[ \t]+<numeric>")
 
 # Validation check for the above regex pattern:
-count_substrings([=[
+count_substrings(
+  [=[
 #include <algorithm>
 # include <algorithm>
 #include  <algorithm>
 # include  <algorithm>
 # include  <algorithm> // ...
 ]=]
-  ${algorithm_regex} valid_count
+  ${algorithm_regex}
+  valid_count
 )
 if (NOT valid_count EQUAL 5)
   message(

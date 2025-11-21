@@ -154,10 +154,12 @@ elseif (MODE MATCHES "^compute-sanitizer-(.*)$")
     set(cs_tool_args)
   endif()
 
-  run_command(compute-sanitizer
+  run_command(
+    compute-sanitizer
     ${cs_general_args}
     ${cs_tool_args}
-    ${TEST} ${ARGS}
+    ${TEST}
+    ${ARGS}
   )
 else()
   usage()
