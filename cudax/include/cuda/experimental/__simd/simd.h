@@ -89,20 +89,20 @@ public:
   }
 
   _CCCL_API explicit basic_simd(const _Storage& __s, __storage_tag_t)
-      : __s_(__s)
+      : __s_{__s}
   {}
 
   _CCCL_TEMPLATE(typename _Up)
   _CCCL_REQUIRES(__can_broadcast_v<value_type, ::cuda::std::remove_cvref_t<_Up>>&& __is_value_preserving_broadcast<_Up>)
   _CCCL_API constexpr basic_simd(_Up&& __v) noexcept
-      : __s_(_Impl::__broadcast(static_cast<value_type>(__v)))
+      : __s_{_Impl::__broadcast(static_cast<value_type>(__v))}
   {}
 
   _CCCL_TEMPLATE(typename _Up)
   _CCCL_REQUIRES((__can_broadcast_v<value_type, ::cuda::std::remove_cvref_t<_Up>>
                   && !__is_value_preserving_broadcast<_Up>) )
   _CCCL_API constexpr explicit basic_simd(_Up&& __v) noexcept
-      : __s_(_Impl::__broadcast(static_cast<value_type>(__v)))
+      : __s_{_Impl::__broadcast(static_cast<value_type>(__v))}
   {}
 
   _CCCL_TEMPLATE(typename _Up)
