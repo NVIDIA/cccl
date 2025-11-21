@@ -35,12 +35,6 @@
 //! allocates managed memory.
 _CCCL_BEGIN_NAMESPACE_CUDA
 
-[[nodiscard]] static ::cudaMemPool_t __get_default_managed_pool()
-{
-  return ::cuda::__get_default_memory_pool(
-    ::CUmemLocation{::CU_MEM_LOCATION_TYPE_NONE, 0}, ::CU_MEM_ALLOCATION_TYPE_MANAGED);
-}
-
 //! @rst
 //! .. _cudax-memory-resource-async:
 //!
