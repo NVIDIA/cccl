@@ -4,9 +4,7 @@
   "runArgs": [
     "--init",
     "--name",
-    "${localEnv:USER:anon}-${localWorkspaceFolderBasename}-cuda13.0-llvm17",
-    "--ulimit",
-    "nofile=500000"
+    "${localEnv:USER:anon}-${localWorkspaceFolderBasename}-cuda13.0-llvm17"
   ],
   "hostRequirements": {
     "gpu": "optional"
@@ -30,17 +28,17 @@
     "AWS_ROLE_ARN": "arn:aws:iam::279114543810:role/nv-gha-token-sccache-devs",
     "CI": "${localEnv:CI}",
     "NVCC_APPEND_FLAGS": "-t=100",
+    "SCCACHE_BUCKET": "rapids-sccache-devs",
     "SCCACHE_DIST_AUTH_TOKEN_VAR": "${localEnv:SCCACHE_DIST_AUTH_TOKEN_VAR}",
-    "SCCACHE_DIST_TOKEN": "${localEnv:SCCACHE_DIST_TOKEN}",
     "SCCACHE_DIST_FALLBACK_TO_LOCAL_COMPILE": "${localEnv:SCCACHE_DIST_FALLBACK_TO_LOCAL_COMPILE:true}",
     "SCCACHE_DIST_MAX_RETRIES": "${localEnv:SCCACHE_DIST_MAX_RETRIES:4}",
     "SCCACHE_DIST_REQUEST_TIMEOUT": "${localEnv:SCCACHE_DIST_REQUEST_TIMEOUT:7140}",
+    "SCCACHE_DIST_TOKEN": "${localEnv:SCCACHE_DIST_TOKEN}",
     "SCCACHE_IDLE_TIMEOUT": "${localEnv:SCCACHE_IDLE_TIMEOUT:0}",
-    "SCCACHE_SERVER_LOG": "${localEnv:SCCACHE_SERVER_LOG:sccache=debug}",
-    "SCCACHE_BUCKET": "rapids-sccache-devs",
     "SCCACHE_REGION": "us-east-2",
-    "SCCACHE_S3_USE_PREPROCESSOR_CACHE_MODE": "true",
     "SCCACHE_S3_PREPROCESSOR_CACHE_KEY_PREFIX": "cccl-preprocessor-cache",
+    "SCCACHE_S3_USE_PREPROCESSOR_CACHE_MODE": "true",
+    "SCCACHE_SERVER_LOG": "${localEnv:SCCACHE_SERVER_LOG:sccache=debug}",
     "HISTFILE": "${containerWorkspaceFolder}/.cache/._bash_history",
     "DEVCONTAINER_NAME": "cuda13.0-llvm17",
     "DEVCONTAINER_UTILS_ENABLE_SCCACHE_DIST": "1",

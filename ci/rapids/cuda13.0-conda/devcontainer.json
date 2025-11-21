@@ -4,9 +4,7 @@
     "--init",
     "--rm",
     "--name",
-    "${localEnv:USER:anon}-${localWorkspaceFolderBasename}-rapids-25.12-cuda13.0-conda",
-    "--ulimit",
-    "nofile=500000"
+    "${localEnv:USER:anon}-${localWorkspaceFolderBasename}-rapids-25.12-cuda13.0-conda"
   ],
   "hostRequirements": {"gpu": "optional"},
   "containerEnv": {
