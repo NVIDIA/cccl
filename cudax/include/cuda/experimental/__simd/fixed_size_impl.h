@@ -26,12 +26,9 @@
 #include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/is_integral.h>
-#include <cuda/std/__type_traits/make_nbit_int.h>
-#include <cuda/std/__type_traits/num_bits.h>
 #include <cuda/std/__utility/integer_sequence.h>
 
 #include <cuda/experimental/__simd/declaration.h>
-#include <cuda/experimental/__simd/utility.h>
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -67,11 +64,11 @@ struct __simd_storage<_Tp, simd_abi::__fixed_size<_Np>>
   }
 };
 
+// use a single bit for the mask storage could be not efficient in CUDA
 template <typename _Tp, int _Np>
-struct __mask_storage<_Tp, simd_abi::__fixed_size<_Np>>
-    : __simd_storage<::cuda::std::__make_nbit_uint_t<::cuda::std::__num_bits_v<_Tp>>, simd_abi::__fixed_size<_Np>>
+struct __mask_storage<_Tp, simd_abi::__fixed_size<_Np>> : public __simd_storage<bool, simd_abi::__fixed_size<_Np>>
 {
-  using value_type = ::cuda::std::__make_nbit_uint_t<::cuda::std::__num_bits_v<_Tp>>;
+  using value_type = bool;
 };
 
 // Helper macros to generate repeated fixed-size operations.
@@ -88,18 +85,17 @@ struct __mask_storage<_Tp, simd_abi::__fixed_size<_Np>>
     return __result;                                                       \
   }
 
-#define _CUDAX_SIMD_FIXED_SIZE_BINARY_CMP_OP(_Name, _Op)                                                               \
-  [[nodiscard]] _CCCL_API static constexpr _MaskStorage _Name(                                                         \
-    const _SimdStorage& __lhs, const _SimdStorage& __rhs) noexcept                                                     \
-  {                                                                                                                    \
-    _MaskStorage __result;                                                                                             \
-    _CCCL_PRAGMA_UNROLL_FULL()                                                                                         \
-    for (int __i = 0; __i < _Np; ++__i)                                                                                \
-    {                                                                                                                  \
-      __result.__data[__i] =                                                                                           \
-        ::cuda::experimental::datapar::__mask_bits_from_bool<_MaskStorage>((__lhs.__data[__i] _Op __rhs.__data[__i])); \
-    }                                                                                                                  \
-    return __result;                                                                                                   \
+#define _CUDAX_SIMD_FIXED_SIZE_BINARY_CMP_OP(_Name, _Op)                \
+  [[nodiscard]] _CCCL_API static constexpr _MaskStorage _Name(          \
+    const _SimdStorage& __lhs, const _SimdStorage& __rhs) noexcept      \
+  {                                                                     \
+    _MaskStorage __result;                                              \
+    _CCCL_PRAGMA_UNROLL_FULL()                                          \
+    for (int __i = 0; __i < _Np; ++__i)                                 \
+    {                                                                   \
+      __result.__data[__i] = (__lhs.__data[__i] _Op __rhs.__data[__i]); \
+    }                                                                   \
+    return __result;                                                    \
   }
 
 #define _CUDAX_SIMD_FIXED_SIZE_BITWISE_OP(_StorageType, _Name, _Op) \
@@ -185,7 +181,7 @@ struct __simd_operations<_Tp, simd_abi::__fixed_size<_Np>>
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int __i = 0; __i < _Np; __i++)
     {
-      __result.__data[__i] = ::cuda::experimental::datapar::__mask_bits_from_bool<_MaskStorage>(!__s.__data[__i]);
+      __result.__data[__i] = !__s.__data[__i];
     }
     return __result;
   }
@@ -257,11 +253,10 @@ struct __mask_operations<_Tp, simd_abi::__fixed_size<_Np>>
   [[nodiscard]] _CCCL_API static constexpr _MaskStorage __broadcast(bool __v) noexcept
   {
     _MaskStorage __result;
-    const auto __all_bits_v = ::cuda::experimental::datapar::__mask_bits_from_bool<_MaskStorage>(__v);
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int __i = 0; __i < _Np; ++__i)
     {
-      __result.__set(__i, __all_bits_v);
+      __result.__set(__i, __v);
     }
     return __result;
   }
@@ -271,10 +266,7 @@ struct __mask_operations<_Tp, simd_abi::__fixed_size<_Np>>
   __generate_init(_Generator&& __g, ::cuda::std::index_sequence<_Is...>)
   {
     _MaskStorage __result;
-    ((__result.__set(_Is,
-                     ::cuda::experimental::datapar::__mask_bits_from_bool<_MaskStorage>(
-                       static_cast<bool>(__g(::cuda::std::integral_constant<::cuda::std::size_t, _Is>()))))),
-     ...);
+    ((__result.__set(_Is, static_cast<bool>(__g(::cuda::std::integral_constant<::cuda::std::size_t, _Is>())))), ...);
     return __result;
   }
 
@@ -289,7 +281,7 @@ struct __mask_operations<_Tp, simd_abi::__fixed_size<_Np>>
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int __i = 0; __i < _Np; __i++)
     {
-      __s.__data[__i] = ::cuda::experimental::datapar::__mask_bits_from_bool<_MaskStorage>(__mem[__i]);
+      __s.__data[__i] = __mem[__i];
     }
   }
 
@@ -302,11 +294,12 @@ struct __mask_operations<_Tp, simd_abi::__fixed_size<_Np>>
     }
   }
 
-  _CUDAX_SIMD_FIXED_SIZE_BINARY_STORAGE_OP(_MaskStorage, __bitwise_and, &)
+  // TODO: optimize with uint32 SWAR
+  _CUDAX_SIMD_FIXED_SIZE_BINARY_STORAGE_OP(_MaskStorage, __bitwise_and, &&)
 
-  _CUDAX_SIMD_FIXED_SIZE_BINARY_STORAGE_OP(_MaskStorage, __bitwise_or, |)
+  _CUDAX_SIMD_FIXED_SIZE_BINARY_STORAGE_OP(_MaskStorage, __bitwise_or, ||)
 
-  _CUDAX_SIMD_FIXED_SIZE_BINARY_STORAGE_OP(_MaskStorage, __bitwise_xor, ^)
+  _CUDAX_SIMD_FIXED_SIZE_BINARY_STORAGE_OP(_MaskStorage, __bitwise_xor, !=)
 
   [[nodiscard]] _CCCL_API static constexpr _MaskStorage __bitwise_not(const _MaskStorage& __s) noexcept
   {
@@ -314,7 +307,7 @@ struct __mask_operations<_Tp, simd_abi::__fixed_size<_Np>>
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int __i = 0; __i < _Np; __i++)
     {
-      __result.__data[__i] = ~__s.__data[__i];
+      __result.__data[__i] = !__s.__data[__i];
     }
     return __result;
   }
@@ -359,7 +352,7 @@ struct __mask_operations<_Tp, simd_abi::__fixed_size<_Np>>
   }
 
   // P1928R15 requires simd-size-type (ptrdiff_t) return type
-  [[nodiscard]] _CCCL_API static constexpr int __count(const _MaskStorage& __s) noexcept
+  [[nodiscard]] _CCCL_API static constexpr ::cuda::std::ptrdiff_t __count(const _MaskStorage& __s) noexcept
   {
     int __cnt = 0;
     _CCCL_PRAGMA_UNROLL_FULL()
@@ -370,7 +363,9 @@ struct __mask_operations<_Tp, simd_abi::__fixed_size<_Np>>
         ++__cnt;
       }
     }
-    return __cnt;
+    const auto __ret = static_cast<::cuda::std::ptrdiff_t>(__cnt);
+    _CCCL_ASSUME(__ret >= 0 && __ret <= _Np);
+    return __ret;
   }
 };
 

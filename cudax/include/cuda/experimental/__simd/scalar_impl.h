@@ -21,17 +21,13 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/__utility/in_range.h>
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/is_integral.h>
-#include <cuda/std/__type_traits/make_nbit_int.h>
-#include <cuda/std/__type_traits/num_bits.h>
 #include <cuda/std/__utility/integer_sequence.h>
 
 #include <cuda/experimental/__simd/declaration.h>
-#include <cuda/experimental/__simd/utility.h>
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -65,10 +61,9 @@ struct __simd_storage<_Tp, simd_abi::__scalar>
 };
 
 template <typename _Tp>
-struct __mask_storage<_Tp, simd_abi::__scalar>
-    : __simd_storage<::cuda::std::__make_nbit_uint_t<::cuda::std::__num_bits_v<_Tp>>, simd_abi::__scalar>
+struct __mask_storage<_Tp, simd_abi::__scalar> : __simd_storage<bool, simd_abi::__scalar>
 {
-  using value_type = ::cuda::std::__make_nbit_uint_t<::cuda::std::__num_bits_v<_Tp>>;
+  using value_type = bool;
 };
 
 // *********************************************************************************************************************
@@ -116,9 +111,7 @@ struct __simd_operations<_Tp, simd_abi::__scalar>
 
   [[nodiscard]] _CCCL_API static constexpr _MaskStorage __negate(const _SimdStorage& __s) noexcept
   {
-    _MaskStorage __result;
-    __result.__data = ::cuda::experimental::datapar::__mask_bits_from_bool<_MaskStorage>(!__s.__data);
-    return __result;
+    return _MaskStorage{!__s.__data};
   }
 
   [[nodiscard]] _CCCL_API static constexpr _SimdStorage __bitwise_not(const _SimdStorage& __s) noexcept
@@ -158,49 +151,37 @@ struct __simd_operations<_Tp, simd_abi::__scalar>
   [[nodiscard]] _CCCL_API static constexpr _MaskStorage
   __equal_to(const _SimdStorage& __lhs, const _SimdStorage& __rhs) noexcept
   {
-    _MaskStorage __result;
-    __result.__data = ::cuda::experimental::datapar::__mask_bits_from_bool<_MaskStorage>(__lhs.__data == __rhs.__data);
-    return __result;
+    return _MaskStorage{__lhs.__data == __rhs.__data};
   }
 
   [[nodiscard]] _CCCL_API static constexpr _MaskStorage
   __not_equal_to(const _SimdStorage& __lhs, const _SimdStorage& __rhs) noexcept
   {
-    _MaskStorage __result;
-    __result.__data = ::cuda::experimental::datapar::__mask_bits_from_bool<_MaskStorage>(__lhs.__data != __rhs.__data);
-    return __result;
+    return _MaskStorage{__lhs.__data != __rhs.__data};
   }
 
   [[nodiscard]] _CCCL_API static constexpr _MaskStorage
   __less(const _SimdStorage& __lhs, const _SimdStorage& __rhs) noexcept
   {
-    _MaskStorage __result;
-    __result.__data = ::cuda::experimental::datapar::__mask_bits_from_bool<_MaskStorage>(__lhs.__data < __rhs.__data);
-    return __result;
+    return _MaskStorage{__lhs.__data < __rhs.__data};
   }
 
   [[nodiscard]] _CCCL_API static constexpr _MaskStorage
   __less_equal(const _SimdStorage& __lhs, const _SimdStorage& __rhs) noexcept
   {
-    _MaskStorage __result;
-    __result.__data = ::cuda::experimental::datapar::__mask_bits_from_bool<_MaskStorage>(__lhs.__data <= __rhs.__data);
-    return __result;
+    return _MaskStorage{__lhs.__data <= __rhs.__data};
   }
 
   [[nodiscard]] _CCCL_API static constexpr _MaskStorage
   __greater(const _SimdStorage& __lhs, const _SimdStorage& __rhs) noexcept
   {
-    _MaskStorage __result;
-    __result.__data = ::cuda::experimental::datapar::__mask_bits_from_bool<_MaskStorage>(__lhs.__data > __rhs.__data);
-    return __result;
+    return _MaskStorage{__lhs.__data > __rhs.__data};
   }
 
   [[nodiscard]] _CCCL_API static constexpr _MaskStorage
   __greater_equal(const _SimdStorage& __lhs, const _SimdStorage& __rhs) noexcept
   {
-    _MaskStorage __result;
-    __result.__data = ::cuda::experimental::datapar::__mask_bits_from_bool<_MaskStorage>(__lhs.__data >= __rhs.__data);
-    return __result;
+    return _MaskStorage{__lhs.__data >= __rhs.__data};
   }
 
   _CCCL_TEMPLATE(typename _Up = _Tp)
@@ -263,18 +244,13 @@ struct __mask_operations<_Tp, simd_abi::__scalar>
 
   [[nodiscard]] _CCCL_API static constexpr _MaskStorage __broadcast(bool __v) noexcept
   {
-    _MaskStorage __result;
-    __result.__data = ::cuda::experimental::datapar::__mask_bits_from_bool<_MaskStorage>(__v);
-    return __result;
+    return _MaskStorage{__v};
   }
 
   template <typename _Generator>
-  [[nodiscard]] _CCCL_API static constexpr _MaskStorage __generate(_Generator&& __g) 
+  [[nodiscard]] _CCCL_API static constexpr _MaskStorage __generate(_Generator&& __g)
   {
-    _MaskStorage __result;
-    __result.__data = ::cuda::experimental::datapar::__mask_bits_from_bool<_MaskStorage>(
-      static_cast<bool>(__g(::cuda::std::integral_constant<::cuda::std::size_t, 0>())));
-    return __result;
+    return _MaskStorage{static_cast<bool>(__g(::cuda::std::integral_constant<::cuda::std::size_t, 0>()))};
   }
 
   _CCCL_API static constexpr void __load(_MaskStorage& __s, const bool* __mem) noexcept
@@ -290,24 +266,24 @@ struct __mask_operations<_Tp, simd_abi::__scalar>
   [[nodiscard]] _CCCL_API static constexpr _MaskStorage
   __bitwise_and(const _MaskStorage& __lhs, const _MaskStorage& __rhs) noexcept
   {
-    return _MaskStorage{__lhs.__data & __rhs.__data};
+    return _MaskStorage{__lhs.__data && __rhs.__data};
   }
 
   [[nodiscard]] _CCCL_API static constexpr _MaskStorage
   __bitwise_or(const _MaskStorage& __lhs, const _MaskStorage& __rhs) noexcept
   {
-    return _MaskStorage{__lhs.__data | __rhs.__data};
+    return _MaskStorage{__lhs.__data || __rhs.__data};
   }
 
   [[nodiscard]] _CCCL_API static constexpr _MaskStorage
   __bitwise_xor(const _MaskStorage& __lhs, const _MaskStorage& __rhs) noexcept
   {
-    return _MaskStorage{__lhs.__data ^ __rhs.__data};
+    return _MaskStorage{__lhs.__data != __rhs.__data};
   }
 
   [[nodiscard]] _CCCL_API static constexpr _MaskStorage __bitwise_not(const _MaskStorage& __s) noexcept
   {
-    return _MaskStorage{~__s.__data};
+    return _MaskStorage{!__s.__data};
   }
 
   [[nodiscard]] _CCCL_API static constexpr bool __equal_to(const _MaskStorage& __lhs, const _MaskStorage& __rhs) noexcept

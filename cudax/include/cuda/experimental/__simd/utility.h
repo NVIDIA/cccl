@@ -22,17 +22,13 @@
 #endif // no system header
 
 #include <cuda/std/__cstddef/types.h>
-#include <cuda/std/__limits/numeric_limits.h>
 #include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/is_arithmetic.h>
 #include <cuda/std/__type_traits/is_const.h>
 #include <cuda/std/__type_traits/is_convertible.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/is_unsigned.h>
-#include <cuda/std/__type_traits/is_unsigned_integer.h>
 #include <cuda/std/__type_traits/is_volatile.h>
-#include <cuda/std/__type_traits/make_nbit_int.h>
-#include <cuda/std/__type_traits/num_bits.h>
 #include <cuda/std/__type_traits/void_t.h>
 #include <cuda/std/__utility/declval.h>
 #include <cuda/std/__utility/integer_sequence.h>
@@ -41,16 +37,6 @@
 
 namespace cuda::experimental::datapar
 {
-template <class _Storage>
-[[nodiscard]] _CCCL_API constexpr typename _Storage::value_type __mask_bits_from_bool(bool __v) noexcept
-{
-  using _MaskValueType = typename _Storage::value_type;
-  static_assert(::cuda::std::__cccl_is_unsigned_integer_v<_MaskValueType>,
-                "__mask_bits_from_bool requires unsigned integer storage");
-  using _Up = ::cuda::std::__make_nbit_uint_t<::cuda::std::__num_bits_v<_MaskValueType>>;
-  return __v ? (::cuda::std::numeric_limits<_Up>::max()) : _MaskValueType{0};
-}
-
 template <typename _Tp>
 inline constexpr bool __is_vectorizable_v =
   ::cuda::std::is_arithmetic_v<_Tp> && !::cuda::std::is_const_v<_Tp> && !::cuda::std::is_volatile_v<_Tp>
