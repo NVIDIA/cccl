@@ -52,13 +52,19 @@ class CachableFunction:
     """
 
     def __init__(self, func):
+        # if the function is a `@cuda.jit'd` function, use the wrapped
+        # function for caching purposes.
+        import numba.cuda.dispatcher
+
+        if isinstance(func, numba.cuda.dispatcher.CUDADispatcher):
+            func = func.py_func
+
         self._func = func
 
-        closure = func.__closure__ if func.__closure__ is not None else []
         self._identity = (
             func.__code__.co_code,
             func.__code__.co_consts,
-            tuple(cell.cell_contents for cell in closure),
+            tuple(func.__closure__ if func.__closure__ is not None else []),
             tuple(func.__globals__.get(name, None) for name in func.__code__.co_names),
         )
 
