@@ -54,15 +54,7 @@ cccl_get_dlpack()
 find_package(CUDAToolkit REQUIRED)
 get_target_property(CUDA_INCLUDE_DIR CUDA::cudart INTERFACE_INCLUDE_DIRECTORIES)
 
-foreach (COMPUTE_ARCH ${LIBCUDACXX_COMPUTE_ARCHS})
-  set(_compute_message "${_compute_message} sm_${COMPUTE_ARCH}")
-  set(
-    LIBCUDACXX_COMPUTE_ARCHS_STRING
-    "${LIBCUDACXX_COMPUTE_ARCHS_STRING} ${COMPUTE_ARCH}"
-  )
-endforeach()
-
-message(STATUS "Lit enabled CUDA architectures:${_compute_message}")
+message(STATUS "Lit enabled CUDA architectures: ${CMAKE_CUDA_ARCHITECTURES}")
 
 option(
   LIBCUDACXX_TEST_WITH_NVRTC
@@ -125,10 +117,7 @@ if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
 endif()
 
 if (NOT MSVC AND NOT ${CMAKE_CUDA_COMPILER_ID} STREQUAL "Clang")
-  set(
-    LIBCUDACXX_WARNING_LEVEL
-    "--compiler-options=-Wall --compiler-options=-Wextra"
-  )
+  set(LIBCUDACXX_WARNING_LEVEL "-Xcompiler=-Wall -Xcompiler=-Wextra")
 endif()
 
 if (MSVC)
@@ -175,8 +164,6 @@ elseif (${CMAKE_CUDA_COMPILER_ID} STREQUAL "NVHPC")
   string(APPEND LIBCUDACXX_TEST_COMPILER_FLAGS " -stdpar")
   string(APPEND LIBCUDACXX_TEST_LINKER_FLAGS " -stdpar")
 endif()
-
-set(LIBCUDACXX_COMPUTE_ARCHS_STRING "${CMAKE_CUDA_ARCHITECTURES}")
 
 include(AddLLVM)
 
@@ -284,7 +271,7 @@ add_test(
 set_tests_properties(
   libcudacxx.test.lit
   PROPERTIES
-    # 3hr, some CI machines are slow
-    TIMEOUT 10800
+    # 6hr to match CI timeout
+    TIMEOUT 21600
     RUN_SERIAL TRUE
 )

@@ -69,7 +69,7 @@ update_devcontainer() {
         .containerEnv.CCCL_CUDA_VERSION = $cuda_version |
         .containerEnv.CCCL_CUDA_EXTENDED = $cuda_ext |
         .containerEnv.CCCL_HOST_COMPILER = $compiler_name |
-        .containerEnv.CCCL_HOST_COMPILER_VERSION = $compiler_version '\
+        .containerEnv.CCCL_HOST_COMPILER_VERSION = $compiler_version' \
        "$input_file" > "$output_file"
 }
 
