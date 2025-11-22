@@ -25,10 +25,8 @@
 #if !_CCCL_COMPILER(NVRTC)
 
 #  include <cuda/std/__exception/exception_macros.h>
-#  include <cuda/std/__exception/terminate.h>
+#  include <cuda/std/__exception/msg_storage.h>
 #  include <cuda/std/source_location>
-
-#  include <nv/target>
 
 #  include <cstdio>
 #  include <stdexcept>
@@ -45,11 +43,6 @@ using __cuda_error_t = int;
 
 namespace __detail
 {
-struct __msg_storage
-{
-  char __buffer[512]{0};
-};
-
 static char* __format_cuda_error(
   __msg_storage& __msg_buffer,
   const int __status,
@@ -87,7 +80,7 @@ public:
              const char* __api                    = nullptr,
              ::cuda::std::source_location __loc   = ::cuda::std::source_location::current(),
              __detail::__msg_storage __msg_buffer = {}) noexcept
-      : ::std::runtime_error(__detail::__format_cuda_error(__msg_buffer, __status, __msg, __api, __loc))
+      : ::std::runtime_error(::cuda::__detail::__format_cuda_error(__msg_buffer, __status, __msg, __api, __loc))
       , __status_(__status)
   {}
 
