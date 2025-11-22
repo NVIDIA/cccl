@@ -191,6 +191,7 @@ runs:
             --env "GITHUB_REPOSITORY=$GITHUB_REPOSITORY" \
             --env "HOST_WORKSPACE=${{github.workspace}}" \
             --env "JOB_ID=$JOB_ID" \
+            --env "NVCC_APPEND_FLAGS=-t=100" \
             --env "NVIDIA_VISIBLE_DEVICES=${NVIDIA_VISIBLE_DEVICES:-}" \
             --env "RUNNER_TEMP=$RUNNER_TEMP" \
             --volume "${ARTIFACT_ARCHIVES}:${ARTIFACT_ARCHIVES}" \
