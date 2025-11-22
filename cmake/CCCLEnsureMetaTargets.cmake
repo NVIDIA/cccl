@@ -16,14 +16,15 @@ function(cccl_ensure_metatargets target_name)
     "${multiValueArgs}"
     ${ARGN}
   )
-
-  if (_cccl_UNPARSED_ARGUMENTS)
-    message(FATAL_ERROR "Unrecognized arguments: ${_cccl_UNPARSED_ARGUMENTS}")
-  endif()
-
-  if (NOT DEFINED _cccl_METATARGET_PATH)
-    set(_cccl_METATARGET_PATH ${target_name})
-  endif()
+  cccl_parse_arguments_error_checks(
+    "cccl_ensure_metatargets"
+    "_cccl"
+    "${options}"
+    "${oneValueArgs}"
+    "${multiValueArgs}"
+    ERROR_UNPARSED
+    DEFAULT_VALUES METATARGET_PATH "${target_name}"
+  )
 
   set(parent_path "")
   set(current_path "")

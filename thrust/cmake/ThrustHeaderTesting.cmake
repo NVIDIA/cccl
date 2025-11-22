@@ -83,9 +83,21 @@ function(thrust_add_header_test thrust_target label definitions)
       set(headertest_target ${headertest_target}.cuda)
     endif()
 
+    # FIXME the device-link step in the link check acts weird with rdc enabled
+    # and clang host compiler. Need to investigate more.
+    set(no_link_check_option)
+    if (
+      lang STREQUAL "CUDA"
+      AND THRUST_FORCE_RDC
+      AND CMAKE_CXX_COMPILER_ID STREQUAL "Clang"
+    )
+      set(no_link_check_option NO_LINK_CHECK)
+    endif()
+
     cccl_generate_header_tests(
       ${headertest_target}
       thrust
+      ${no_link_check_option}
       LANGUAGE ${lang}
       HEADERS ${headers}
       PER_HEADER_DEFINES

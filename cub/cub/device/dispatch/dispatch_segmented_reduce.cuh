@@ -250,9 +250,9 @@ struct DispatchSegmentedReduce
 
 // Log device_reduce_sweep_kernel configuration
 #ifdef CUB_DEBUG_LOG
-        _CubLog("Invoking SegmentedDeviceReduceKernel<<<%ld, %d, 0, %lld>>>(), "
+        _CubLog("Invoking SegmentedDeviceReduceKernel<<<%lld, %d, 0, %lld>>>(), "
                 "%d items per thread, %d SM occupancy\n",
-                num_current_segments,
+                (long long) num_current_segments,
                 policy.SegmentedReduce().BlockThreads(),
                 (long long) stream,
                 policy.SegmentedReduce().ItemsPerThread(),

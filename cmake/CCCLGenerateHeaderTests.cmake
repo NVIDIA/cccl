@@ -9,6 +9,8 @@
 #                            [PER_HEADER_DEFINES
 #                               DEFINE <definition> <regex> [<regex> ...]
 #                              [DEFINE <definition> <regex> [<regex> ...]] ...]
+#                            [NO_METATARGETS]
+#                            [NO_LINK_CHECK]
 # )
 #
 # Options:
@@ -22,6 +24,7 @@
 # HEADERS: An explicit list of headers to include in the header tests.
 # PER_HEADER_DEFINES: A list of definitions to add to specific headers. Each definition is followed by one or more regexes that match the headers it should be applied to.
 # NO_METATARGETS: If specified, metatargets will not be created for the header test targets.
+# NO_LINK_CHECK: If specified, the link check target will not be created.
 #
 # Notes:
 # - The header globs are applied relative to <project_include_path>.
@@ -29,7 +32,7 @@
 # - The HEADER_TEMPLATE will be configured for each header, with the following variables:
 #   - @header@: The path to the target header, relative to <project_include_path>.
 function(cccl_generate_header_tests target_name project_include_path)
-  set(options NO_METATARGETS)
+  set(options NO_METATARGETS NO_LINK_CHECK)
   set(oneValueArgs LANGUAGE HEADER_TEMPLATE)
   set(multiValueArgs GLOBS EXCLUDES HEADERS PER_HEADER_DEFINES)
   cmake_parse_arguments(
@@ -39,19 +42,16 @@ function(cccl_generate_header_tests target_name project_include_path)
     "${multiValueArgs}"
     ${ARGN}
   )
-
-  if (CGHT_UNPARSED_ARGUMENTS)
-    message(FATAL_ERROR "Unrecognized arguments: ${CGHT_UNPARSED_ARGUMENTS}")
-  endif()
-
-  # Setup defaults
-  if (NOT DEFINED CGHT_LANGUAGE)
-    set(CGHT_LANGUAGE CUDA)
-  endif()
-
-  if (NOT DEFINED CGHT_HEADER_TEMPLATE)
-    set(CGHT_HEADER_TEMPLATE "${CCCL_SOURCE_DIR}/cmake/header_test.cu.in")
-  endif()
+  cccl_parse_arguments_error_checks(
+    "cccl_generate_header_tests"
+    "CGHT"
+    "${options}"
+    "${oneValueArgs}"
+    "${multiValueArgs}"
+    DEFAULT_VALUES #
+      LANGUAGE "CUDA"
+      HEADER_TEMPLATE "${CCCL_SOURCE_DIR}/cmake/header_test.cu.in"
+  )
 
   # Derived vars:
   if (${CGHT_LANGUAGE} STREQUAL "C")
@@ -162,20 +162,22 @@ function(cccl_generate_header_tests target_name project_include_path)
     cccl_ensure_metatargets(${target_name})
   endif()
 
-  # Check that all functions in headers are either template functions or inline:
-  set(link_target ${target_name}.link_check)
-  cccl_add_executable(
-    ${link_target}
-    SOURCES "${CCCL_SOURCE_DIR}/cmake/link_check_main.cpp"
-    NO_METATARGETS
-  )
-  # Linking both ${target_name} and $<TARGET_OBJECTS:${target_name}> forces CMake to
-  # link the same objects twice. The compiler will complain about duplicate symbols if
-  # any functions are missing inline markup.
-  target_link_libraries(
-    ${link_target}
-    PRIVATE #
-      ${target_name}
-      $<TARGET_OBJECTS:${target_name}>
-  )
+  if (NOT CGHT_NO_LINK_CHECK)
+    # Check that all functions in headers are either template functions or inline:
+    set(link_target ${target_name}.link_check)
+    cccl_add_executable(
+      ${link_target}
+      SOURCES "${CCCL_SOURCE_DIR}/cmake/link_check_main.${extension}"
+      NO_METATARGETS
+    )
+    # Linking both ${target_name} and $<TARGET_OBJECTS:${target_name}> forces CMake to
+    # link the same objects twice. The compiler will complain about duplicate symbols if
+    # any functions are missing inline markup.
+    target_link_libraries(
+      ${link_target}
+      PRIVATE #
+        ${target_name}
+        $<TARGET_OBJECTS:${target_name}>
+    )
+  endif()
 endfunction()

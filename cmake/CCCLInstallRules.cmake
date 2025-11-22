@@ -1,3 +1,5 @@
+include(${CMAKE_CURRENT_LIST_DIR}/CCCLParseArguments.cmake)
+
 # Bring in CMAKE_INSTALL_* vars
 include(GNUInstallDirs)
 
@@ -40,6 +42,14 @@ function(cccl_generate_install_rules project_name enable_rules_by_default)
     "${oneValueArgs}"
     "${multiValueArgs}"
     ${ARGN}
+  )
+  cccl_parse_arguments_error_checks(
+    "cccl_generate_install_rules"
+    "CGIR"
+    "${options}"
+    "${oneValueArgs}"
+    "${multiValueArgs}"
+    ERROR_UNPARSED
   )
 
   string(TOLOWER ${project_name} project_name_lower)
