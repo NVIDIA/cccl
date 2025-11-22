@@ -292,7 +292,7 @@ __host__ __device__ constexpr void AssertComparisonsReturnBool()
 }
 
 template <class T, class U = T>
-__host__ __device__ void AssertComparisonsConvertibleToBool()
+__host__ __device__ constexpr void AssertComparisonsConvertibleToBool()
 {
   static_assert(
     (cuda::std::is_convertible<decltype(cuda::std::declval<const T&>() == cuda::std::declval<const U&>()), bool>::value),
@@ -404,21 +404,21 @@ template <class T, class Param>
 }
 
 template <class T, class U = T>
-__host__ __device__ void AssertEqualityAreNoexcept()
+__host__ __device__ constexpr void AssertEqualityAreNoexcept()
 {
   static_assert(noexcept(cuda::std::declval<const T&>() == cuda::std::declval<const U&>()));
   static_assert(noexcept(cuda::std::declval<const T&>() != cuda::std::declval<const U&>()));
 }
 
 template <class T, class U = T>
-__host__ __device__ void AssertEqualityReturnBool()
+__host__ __device__ constexpr void AssertEqualityReturnBool()
 {
   static_assert(cuda::std::is_same_v<decltype(cuda::std::declval<const T&>() == cuda::std::declval<const U&>()), bool>);
   static_assert(cuda::std::is_same_v<decltype(cuda::std::declval<const T&>() != cuda::std::declval<const U&>()), bool>);
 }
 
 template <class T, class U = T>
-__host__ __device__ void AssertEqualityConvertibleToBool()
+__host__ __device__ constexpr void AssertEqualityConvertibleToBool()
 {
   static_assert(
     (cuda::std::is_convertible<decltype(cuda::std::declval<const T&>() == cuda::std::declval<const U&>()), bool>::value),
