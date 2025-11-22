@@ -216,7 +216,7 @@ inline void __verify_device_supports_export_handle_type(
   }
 }
 
-inline cudaMemPool_t
+[[nodiscard]] _CCCL_HOST_API inline cudaMemPool_t
 __get_default_memory_pool(const CUmemLocation __location, [[maybe_unused]] const CUmemAllocationType __allocation_type)
 {
   auto __device = __location.type == ::CU_MEM_LOCATION_TYPE_DEVICE ? __location.id : 0;
