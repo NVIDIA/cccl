@@ -4,14 +4,13 @@
 #include "insert_nested_NVTX_range_guard.h"
 
 #include <cub/device/device_segmented_scan.cuh>
-#include <cub/device/dispatch/dispatch_segmented_scan.cuh>
 
 #include <cstdint>
 #include <iostream>
 #include <typeinfo>
 #include <utility>
 
-#include "catch2_test_device_reduce.cuh"
+#include "catch2_test_device_reduce.cuh" // for reference_extended_fp
 #include "catch2_test_device_scan.cuh"
 #include "catch2_test_launch_helper.h"
 #include <c2h/catch2_test_helper.h>

@@ -7,15 +7,13 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++17
-
 // <functional>
 //
 // reference_wrapper
 //
 // template <ObjectType T> reference_wrapper<const T> cref(const T& t);
 //
-//  where T is an incomplete type (since C++20)
+//  where T is an incomplete type
 
 // #include <cuda/std/functional>
 #include <cuda/std/cassert>

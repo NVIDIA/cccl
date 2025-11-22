@@ -2,6 +2,7 @@
 
 import argparse
 import os
+import re
 
 import cccl
 import matplotlib.pyplot as plt
@@ -40,29 +41,29 @@ def filter_by_type(df):
     return df
 
 
-def alg_dfs(files):
+def alg_dfs(files, alg_regex):
+    pattern = re.compile(alg_regex)
     result = {}
     for file in files:
         storage = cccl.bench.SQLiteStorage(file)
         for algname in storage.algnames():
-            for subbench in storage.subbenches(algname):
-                df = storage.alg_to_df(algname, subbench)
-                df = df.map(lambda x: x if is_finite(x) else np.nan)
-                df = df.dropna(subset=["center"], how="all")
-                df = filter_by_type(filter_by_offset_type(filter_by_problem_size(df)))
-                df = df.filter(items=["ctk", "cccl", "gpu", "variant", "bw"])
-                df["variant"] = df["variant"].astype(str)
-                df["bw"] = df["bw"] * 100
-                fused_algname = (
-                    algname.removeprefix("cub.bench.").removeprefix("thrust.bench.")
-                    + "."
-                    + subbench
-                )
-                if fused_algname in result:
-                    result[fused_algname] = pd.concat([result[fused_algname], df])
-                else:
-                    result[fused_algname] = df
-
+            if pattern.match(algname):
+                for subbench in storage.subbenches(algname):
+                    df = storage.alg_to_df(algname, subbench)
+                    df = df.map(lambda x: x if is_finite(x) else np.nan)
+                    df = df.dropna(subset=["center"], how="all")
+                    df = filter_by_type(
+                        filter_by_offset_type(filter_by_problem_size(df))
+                    )
+                    df = df.filter(items=["ctk", "cccl", "gpu", "variant", "bw"])
+                    df["variant"] = df["variant"].astype(str)
+                    df["bw"] = df["bw"] * 100
+                    fused_algname = algname.replace("bench.", "") + "." + subbench
+                    if fused_algname in result:
+                        result[fused_algname] = pd.concat([result[fused_algname], df])
+                    else:
+                        result[fused_algname] = df
+                    print(fused_algname)
     return result
 
 
@@ -128,6 +129,7 @@ def plot_sol(medians, box):
     ax.set_xticklabels(
         ax.get_xticklabels(), rotation=30, rotation_mode="anchor", ha="right"
     )
+    ax.set_ylim([0, 100])
     plt.show()
 
 
@@ -146,12 +148,15 @@ def parse_args():
     )
     parser.add_argument("--box", action="store_true", help="Plot box instead of bar.")
     parser.add_argument("-v", action="store_true", help="Verbose legend.")
+    parser.add_argument(
+        "-R", type=str, default=".*", help="Regex for benchmarks selection."
+    )
     return parser.parse_args()
 
 
 def sol():
     args = parse_args()
-    medians = alg_bws(alg_dfs(args.files), args.v)
+    medians = alg_bws(alg_dfs(args.files, args.R), args.v)
     print_speedup(medians)
     plot_sol(medians, args.box)
 

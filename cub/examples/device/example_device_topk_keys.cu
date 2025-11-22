@@ -17,6 +17,8 @@
 #include <thrust/host_vector.h>
 #include <thrust/sort.h>
 
+#include <cuda/stream>
+
 #include <algorithm>
 #include <iostream>
 
@@ -107,18 +109,26 @@ int main(int argc, char** argv)
   auto requirements =
     cuda::execution::require(cuda::execution::determinism::not_guaranteed, cuda::execution::output_ordering::unsorted);
 
+  // Prepare CUDA stream
+  cudaStream_t stream = nullptr;
+  CubDebugExit(cudaStreamCreate(&stream));
+  cuda::stream_ref stream_ref{stream};
+
+  // Create the environment with the stream and requirements
+  auto env = cuda::std::execution::env{stream_ref, requirements};
+
   // Query temporary storage requirements
   size_t temp_storage_bytes = 0;
-  CubDebugExit(DeviceTopK::MinKeys(
-    nullptr, temp_storage_bytes, d_keys_in.begin(), d_keys_out.begin(), num_items, k, requirements));
+  CubDebugExit(
+    DeviceTopK::MinKeys(nullptr, temp_storage_bytes, d_keys_in.begin(), d_keys_out.begin(), num_items, k, env));
 
   // Allocate temporary storage
   thrust::device_vector<std::uint8_t> temp_storage(temp_storage_bytes, thrust::no_init);
   void* d_temp_storage = thrust::raw_pointer_cast(temp_storage.data());
 
   // Run the top-k algorithm
-  CubDebugExit(DeviceTopK::MinKeys(
-    d_temp_storage, temp_storage_bytes, d_keys_in.begin(), d_keys_out.begin(), num_items, k, requirements));
+  CubDebugExit(
+    DeviceTopK::MinKeys(d_temp_storage, temp_storage_bytes, d_keys_in.begin(), d_keys_out.begin(), num_items, k, env));
 
   // Check for correctness (and display results, if specified)
   auto h_res_keys_vector = sort_unordered_results(d_keys_out);

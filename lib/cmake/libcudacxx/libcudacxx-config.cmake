@@ -8,6 +8,16 @@ if (TARGET libcudacxx::libcudacxx)
   return()
 endif()
 
+set(quiet_flag)
+if (${CMAKE_FIND_PACKAGE_NAME}_FIND_QUIETLY)
+  set(quiet_flag "QUIET")
+endif()
+
+unset(required_flag)
+if (${CMAKE_FIND_PACKAGE_NAME}_FIND_REQUIRED_${component})
+  set(required_flag "REQUIRED")
+endif()
+
 function(_libcudacxx_declare_interface_alias alias_name ugly_name)
   # 1) Only IMPORTED and ALIAS targets can be placed in a namespace.
   # 2) When an IMPORTED library is linked to another target, its include
@@ -28,11 +38,49 @@ function(_libcudacxx_declare_interface_alias alias_name ugly_name)
   target_link_libraries(${alias_name} INTERFACE ${ugly_name})
 endfunction()
 
+# Create the main libcudacxx target now to avoid circular dependency issues when finding deps.
+_libcudacxx_declare_interface_alias(libcudacxx::libcudacxx _libcudacxx_libcudacxx)
+
+#
+# Find dependencies
+#
+
+if (NOT TARGET libcudacxx::Thrust)
+  if (NOT TARGET Thrust::Thrust)
+    find_package(
+      Thrust
+      ${libcudacxx_VERSION}
+      CONFIG
+      ${quiet_flag}
+      ${required}
+      NO_DEFAULT_PATH # Only check the explicit HINTS below:
+      HINTS "${CMAKE_CURRENT_LIST_DIR}/../thrust/"
+    )
+  endif()
+  _libcudacxx_declare_interface_alias(libcudacxx::Thrust _libcudacxx_Thrust)
+  target_link_libraries(libcudacxx::Thrust INTERFACE Thrust::Thrust)
+endif()
+
+if (NOT TARGET libcudacxx::CUB)
+  if (NOT TARGET CUB::CUB)
+    find_package(
+      CUB
+      ${libcudacxx_VERSION}
+      CONFIG
+      ${quiet_flag}
+      ${required}
+      NO_DEFAULT_PATH # Only check the explicit HINTS below:
+      HINTS "${CMAKE_CURRENT_LIST_DIR}/../cub/"
+    )
+  endif()
+  _libcudacxx_declare_interface_alias(libcudacxx::CUB _libcudacxx_CUB)
+  target_link_libraries(libcudacxx::CUB INTERFACE CUB::CUB)
+endif()
+
 #
 # Setup targets
 #
 
-_libcudacxx_declare_interface_alias(libcudacxx::libcudacxx _libcudacxx_libcudacxx)
 # Pull in the include dir detected by libcudacxx-config-version.cmake
 set(
   _libcudacxx_INCLUDE_DIR
@@ -41,6 +89,13 @@ set(
   "Location of libcudacxx headers."
 )
 unset(_libcudacxx_VERSION_INCLUDE_DIR CACHE) # Clear tmp variable from cache
+
+target_link_libraries(
+  _libcudacxx_libcudacxx
+  INTERFACE #
+    libcudacxx::Thrust
+    libcudacxx::CUB
+)
 target_include_directories(
   _libcudacxx_libcudacxx
   INTERFACE "${_libcudacxx_INCLUDE_DIR}"
