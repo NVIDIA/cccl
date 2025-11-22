@@ -31,7 +31,8 @@
 #include <thrust/iterator/zip_iterator.h>
 #include <thrust/system/detail/generic/copy.h>
 #include <thrust/transform.h>
-#include <thrust/tuple.h>
+
+#include <cuda/std/tuple>
 
 THRUST_NAMESPACE_BEGIN
 namespace system::detail::generic
@@ -51,12 +52,12 @@ copy_n(thrust::execution_policy<DerivedPolicy>& exec, InputIterator first, Size 
 
   using functor_type = thrust::detail::unary_transform_functor<xfrm_type>;
 
-  using iterator_tuple = thrust::tuple<InputIterator, OutputIterator>;
+  using iterator_tuple = ::cuda::std::tuple<InputIterator, OutputIterator>;
   using zip_iter       = thrust::zip_iterator<iterator_tuple>;
 
   zip_iter zipped = thrust::make_zip_iterator(first, result);
 
-  return thrust::get<1>(thrust::for_each_n(exec, zipped, n, functor_type{xfrm_type()}).get_iterator_tuple());
+  return ::cuda::std::get<1>(thrust::for_each_n(exec, zipped, n, functor_type{xfrm_type()}).get_iterator_tuple());
 } // end copy_n()
 } // namespace system::detail::generic
 THRUST_NAMESPACE_END
