@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDA___MEMORY_RESOURCE_MEMORY_RESOURCE_BASE_H
-#define _CUDA___MEMORY_RESOURCE_MEMORY_RESOURCE_BASE_H
+#ifndef _CUDA___MEMORY_RESOURCE_MEMORY_POOL_BASE_H
+#define _CUDA___MEMORY_RESOURCE_MEMORY_POOL_BASE_H
 
 #include <cuda/std/detail/__config>
 
@@ -139,16 +139,18 @@ namespace memory_pool_attributes
 using release_threshold_t = __pool_attr<::cudaMemPoolAttrReleaseThreshold>;
 static constexpr release_threshold_t release_threshold{};
 
-// Allow the pool to reuse the memory across streams as long as there is a stream ordering dependency between the
-// streams.
+// Allow the pool to reuse the memory across streams as long as there is a
+// stream ordering dependency between the streams.
 using reuse_follow_event_dependencies_t = __pool_attr<::cudaMemPoolReuseFollowEventDependencies>;
 static constexpr reuse_follow_event_dependencies_t reuse_follow_event_dependencies{};
 
-// Allow the pool to reuse already completed frees when there is no dependency between the streams.
+// Allow the pool to reuse already completed frees when there is no dependency
+// between the streams.
 using reuse_allow_opportunistic_t = __pool_attr<::cudaMemPoolReuseAllowOpportunistic>;
 static constexpr reuse_allow_opportunistic_t reuse_allow_opportunistic{};
 
-// Allow the pool to insert stream dependencies to reuse the memory across streams.
+// Allow the pool to insert stream dependencies to reuse the memory across
+// streams.
 using reuse_allow_internal_dependencies_t = __pool_attr<::cudaMemPoolReuseAllowInternalDependencies>;
 static constexpr reuse_allow_internal_dependencies_t reuse_allow_internal_dependencies{};
 
@@ -169,7 +171,8 @@ using used_mem_high_t = __pool_attr<::cudaMemPoolAttrUsedMemHigh>;
 static constexpr used_mem_high_t used_mem_high{};
 }; // namespace memory_pool_attributes
 
-//! @brief  Checks whether the current device supports stream-ordered allocations.
+//! @brief  Checks whether the current device supports stream-ordered
+//! allocations.
 //! @param __device The device for which to query support.
 //! @throws cuda_error if \c cudaDeviceGetAttribute failed.
 //! @returns true if \c cudaDevAttrMemoryPoolsSupported is not zero.
@@ -182,11 +185,12 @@ inline void __verify_device_supports_stream_ordered_allocations(const device_ref
   }
 }
 
-//! @brief Check whether the specified `cudaMemAllocationHandleType` is supported on the present
-//! CUDA driver/runtime version.
+//! @brief Check whether the specified `cudaMemAllocationHandleType` is
+//! supported on the present CUDA driver/runtime version.
 //! @param __device The device to check for support.
 //! @param __handle_type An IPC export handle type to check for support.
-//! @throws cuda_error if the specified `cudaMemAllocationHandleType` is not supported on the specified device.
+//! @throws cuda_error if the specified `cudaMemAllocationHandleType` is not
+//! supported on the specified device.
 inline void __verify_device_supports_export_handle_type(
   const device_ref __device, ::cudaMemAllocationHandleType __handle_type, ::CUmemLocation __location)
 {
@@ -200,8 +204,9 @@ inline void __verify_device_supports_export_handle_type(
 #endif
   )
   {
-    ::cuda::__throw_cuda_error(
-      ::cudaErrorNotSupported, "Requested IPC memory handle type not supported for the given location");
+    ::cuda::__throw_cuda_error(::cudaErrorNotSupported,
+                               "Requested IPC memory handle type not supported "
+                               "for the given location");
   }
   auto __supported_handles = __device.attribute(::cuda::device_attributes::memory_pool_supported_handle_types);
   if ((static_cast<int>(__handle_type) & __supported_handles) != static_cast<int>(__handle_type))
@@ -211,12 +216,33 @@ inline void __verify_device_supports_export_handle_type(
   }
 }
 
+[[nodiscard]] _CCCL_HOST_API inline cudaMemPool_t
+__get_default_memory_pool(const CUmemLocation __location, [[maybe_unused]] const CUmemAllocationType __allocation_type)
+{
+  auto __device = __location.type == ::CU_MEM_LOCATION_TYPE_DEVICE ? __location.id : 0;
+  ::cuda::__verify_device_supports_stream_ordered_allocations(__device);
+
+#if _CCCL_CTK_AT_LEAST(13, 0)
+  ::cudaMemPool_t __pool = ::cuda::__driver::__getDefaultMemPool(__location, __allocation_type);
+  if (::cuda::memory_pool_attributes::release_threshold(__pool) == 0)
+  {
+    ::cuda::memory_pool_attributes::release_threshold.set(__pool, ::cuda::std::numeric_limits<size_t>::max());
+  }
+#else // ^^^ _CCCL_CTK_AT_LEAST(13, 0) ^^^ / vvv _CCCL_CTK_BELOW(13, 0) vvv
+  _CCCL_ASSERT(__location.type == ::CU_MEM_LOCATION_TYPE_DEVICE,
+               "Before CUDA 13 only device memory pools have a default");
+  ::cudaMemPool_t __pool = ::cuda::__driver::__deviceGetDefaultMemPool(__device);
+#endif // ^^^ _CCCL_CTK_BELOW(13, 0) ^^^
+  return __pool;
+}
+
 //! @brief Enable access to this memory pool from the supplied devices
 //!
 //! Device on which this pool resides can be included in the span.
 //!
 //! @param __pool The memory pool to set access for
-//! @param __devices A span of `device_ref`s listing devices to enable access for
+//! @param __devices A span of `device_ref`s listing devices to enable access
+//! for
 //! @param __flags The access flags to set
 //! @throws cuda_error if ``cudaMemPoolSetAccess`` fails.
 inline void
@@ -246,8 +272,9 @@ __mempool_set_access(::CUmemoryPool __pool, ::cuda::std::span<const device_ref> 
   return __result == ::CU_MEM_ACCESS_FLAGS_PROT_READWRITE;
 }
 
-//! @brief \c memory_pool_properties is a type that can controls memory pool to control the creation options.
-//! Compared to attributes, properties can not be set after the pool is created.
+//! @brief \c memory_pool_properties is a type that can controls memory pool to
+//! control the creation options. Compared to attributes, properties can not be
+//! set after the pool is created.
 struct memory_pool_properties
 {
   size_t initial_pool_size                           = 0;
@@ -298,9 +325,10 @@ struct memory_pool_properties
   ::cudaError_t __error = ::cuda::__driver::__mempoolCreateNoThrow(&__cuda_pool_handle, &__pool_properties);
   if (__error != ::cudaSuccess)
   {
+    auto __device = __location.type == ::CU_MEM_LOCATION_TYPE_DEVICE ? __location.id : 0;
     // Mempool creation failed, lets try to figure out why
-    ::cuda::__verify_device_supports_stream_ordered_allocations(__location.id);
-    ::cuda::__verify_device_supports_export_handle_type(__location.id, __properties.allocation_handle_type, __location);
+    ::cuda::__verify_device_supports_stream_ordered_allocations(__device);
+    ::cuda::__verify_device_supports_export_handle_type(__device, __properties.allocation_handle_type, __location);
 
     // Could not find the reason, throw a generic error
     ::cuda::__throw_cuda_error(__error, "Failed to create a memory pool");
@@ -323,7 +351,7 @@ struct memory_pool_properties
   return __cuda_pool_handle;
 }
 
-class __memory_resource_base
+class __memory_pool_base
 {
 protected:
   ::cudaMemPool_t __pool_;
@@ -338,15 +366,16 @@ protected:
   }
 
 public:
-  __memory_resource_base(::cuda::std::nullptr_t) = delete;
+  __memory_pool_base(::cuda::std::nullptr_t) = delete;
 
-  //! @brief  Constructs the __memory_resource_base from a \c cudaMemPool_t.
+  //! @brief  Constructs the __memory_pool_base from a \c cudaMemPool_t.
   //! @param __pool The \c cudaMemPool_t used to allocate memory.
-  _CCCL_HOST_API explicit __memory_resource_base(::cudaMemPool_t __pool) noexcept
+  _CCCL_HOST_API explicit __memory_pool_base(::cudaMemPool_t __pool) noexcept
       : __pool_(__pool)
   {}
 
-  //! @brief Allocate device memory of size at least \p __bytes via cudaMallocFromPoolAsync.
+  //! @brief Allocate device memory of size at least \p __bytes via
+  //! cudaMallocFromPoolAsync.
   //! @param __bytes The size in bytes of the allocation.
   //! @param __alignment The requested alignment of the allocation.
   //! @throws std::invalid_argument In case of invalid alignment.
@@ -359,7 +388,7 @@ public:
     {
       ::cuda::std::__throw_invalid_argument(
         "Invalid alignment passed to "
-        "__memory_resource_base::allocate_sync.");
+        "__memory_pool_base::allocate_sync.");
     }
 
     ::CUdeviceptr __ptr = ::cuda::__driver::__mallocFromPoolAsync(__bytes, __pool_, __cccl_allocation_stream().get());
@@ -368,18 +397,21 @@ public:
   }
 
   //! @brief deallocate_sync memory pointed to by \p __ptr.
-  //! @param __ptr Pointer to be deallocated. Must have been allocated through a call to `allocate_sync`.
-  //! @param __bytes  The number of bytes that was passed to the allocation call that returned \p __ptr.
-  //! @param __alignment The alignment that was passed to the allocation call that returned \p __ptr.
-  //! @note The pointer passed to `deallocate_sync` must not be in use in a stream. It is the caller's responsibility to
-  //! properly synchronize all relevant streams before calling `deallocate_sync`.
+  //! @param __ptr Pointer to be deallocated. Must have been allocated through a
+  //! call to `allocate_sync`.
+  //! @param __bytes  The number of bytes that was passed to the allocation call
+  //! that returned \p __ptr.
+  //! @param __alignment The alignment that was passed to the allocation call
+  //! that returned \p __ptr.
+  //! @note The pointer passed to `deallocate_sync` must not be in use in a
+  //! stream. It is the caller's responsibility to properly synchronize all
+  //! relevant streams before calling `deallocate_sync`.
   _CCCL_HOST_API void deallocate_sync(
     void* __ptr,
     const size_t,
     [[maybe_unused]] const size_t __alignment = ::cuda::mr::default_cuda_malloc_alignment) noexcept
   {
-    _CCCL_ASSERT(__is_valid_alignment(__alignment),
-                 "Invalid alignment passed to __memory_resource_base::deallocate_sync.");
+    _CCCL_ASSERT(__is_valid_alignment(__alignment), "Invalid alignment passed to __memory_pool_base::deallocate_sync.");
     _CCCL_ASSERT_CUDA_API(
       ::cuda::__driver::__freeAsyncNoThrow,
       "deallocate failed",
@@ -387,7 +419,8 @@ public:
       __cccl_allocation_stream().get());
   }
 
-  //! @brief Allocate device memory of size at least \p __bytes via `cudaMallocFromPoolAsync`.
+  //! @brief Allocate device memory of size at least \p __bytes via
+  //! `cudaMallocFromPoolAsync`.
   //! @param __bytes The size in bytes of the allocation.
   //! @param __alignment The requested alignment of the allocation.
   //! @param __stream Stream on which to perform allocation.
@@ -401,13 +434,14 @@ public:
     {
       ::cuda::std::__throw_invalid_argument(
         "Invalid alignment passed to "
-        "__memory_resource_base::allocate.");
+        "__memory_pool_base::allocate.");
     }
 
     return allocate(__stream, __bytes);
   }
 
-  //! @brief Allocate device memory of size at least \p __bytes via cudaMallocFromPoolAsync.
+  //! @brief Allocate device memory of size at least \p __bytes via
+  //! cudaMallocFromPoolAsync.
   //! @param __bytes The size in bytes of the allocation.
   //! @param __stream Stream on which to perform allocation.
   //! @throws cuda::cuda_error If an error code was return by the cuda api call.
@@ -419,26 +453,33 @@ public:
   }
 
   //! @brief Deallocate memory pointed to by \p __ptr.
-  //! @param __ptr Pointer to be deallocated. Must have been allocated through a call to `allocate`
-  //! @param __bytes The number of bytes that was passed to the allocation call that returned \p __ptr.
-  //! @param __alignment The alignment that was passed to the allocation call that returned \p __ptr.
-  //! @param __stream A stream that has a stream ordering relationship with the stream used in the
-  //! <a href="https://docs.nvidia.com/cuda/cuda-runtime-api/group__CUDART__MEMORY__POOLS.html">allocate</a> call
+  //! @param __ptr Pointer to be deallocated. Must have been allocated through a
+  //! call to `allocate`
+  //! @param __bytes The number of bytes that was passed to the allocation call
   //! that returned \p __ptr.
-  //! @note The pointer passed to `deallocate` must not be in use in a stream other than \p __stream.
-  //! It is the caller's responsibility to properly synchronize all relevant streams before calling `deallocate`.
+  //! @param __alignment The alignment that was passed to the allocation call
+  //! that returned \p __ptr.
+  //! @param __stream A stream that has a stream ordering relationship with the
+  //! stream used in the <a
+  //! href="https://docs.nvidia.com/cuda/cuda-runtime-api/group__CUDART__MEMORY__POOLS.html">allocate</a>
+  //! call that returned \p __ptr.
+  //! @note The pointer passed to `deallocate` must not be in use in a stream
+  //! other than \p __stream. It is the caller's responsibility to properly
+  //! synchronize all relevant streams before calling `deallocate`.
   void _CCCL_HOST_API
   deallocate(const ::cuda::stream_ref __stream, void* __ptr, const size_t __bytes, const size_t __alignment) noexcept
   {
-    // We need to ensure that the provided alignment matches the minimal provided alignment
-    _CCCL_ASSERT(__is_valid_alignment(__alignment), "Invalid alignment passed to __memory_resource_base::deallocate.");
+    // We need to ensure that the provided alignment matches the minimal
+    // provided alignment
+    _CCCL_ASSERT(__is_valid_alignment(__alignment), "Invalid alignment passed to __memory_pool_base::deallocate.");
     deallocate(__stream, __ptr, __bytes);
   }
 
   //! @brief Tries to release memory.
   //! @param __min_bytes_to_keep the minimal guaranteed size of the pool.
-  //! @note If the pool has less than \p __minBytesToKeep reserved, the trim_to operation is a no-op. Otherwise the
-  //! pool will be guaranteed to have at least \p __minBytesToKeep bytes reserved after the operation.
+  //! @note If the pool has less than \p __minBytesToKeep reserved, the trim_to
+  //! operation is a no-op. Otherwise the pool will be guaranteed to have at
+  //! least \p __minBytesToKeep bytes reserved after the operation.
   _CCCL_HOST_API void trim_to(const size_t __min_bytes_to_keep)
   {
     ::cuda::__driver::__mempoolTrimTo(__pool_, __min_bytes_to_keep);
@@ -487,66 +528,81 @@ public:
   }
 
   //! @brief Deallocate memory pointed to by \p __ptr.
-  //! @param __ptr Pointer to be deallocated. Must have been allocated through a call to `allocate`.
-  //! @param __bytes The number of bytes that was passed to the allocation call that returned \p __ptr.
-  //! @param __stream A stream that has a stream ordering relationship with the stream used in the
-  //! <a href="https://docs.nvidia.com/cuda/cuda-runtime-api/group__CUDART__MEMORY__POOLS.html">allocate</a> call
+  //! @param __ptr Pointer to be deallocated. Must have been allocated through a
+  //! call to `allocate`.
+  //! @param __bytes The number of bytes that was passed to the allocation call
   //! that returned \p __ptr.
-  //! @note The pointer passed to `deallocate` must not be in use in a stream other than \p __stream.
-  //! It is the caller's responsibility to properly synchronize all relevant streams before calling `deallocate`.
+  //! @param __stream A stream that has a stream ordering relationship with the
+  //! stream used in the <a
+  //! href="https://docs.nvidia.com/cuda/cuda-runtime-api/group__CUDART__MEMORY__POOLS.html">allocate</a>
+  //! call that returned \p __ptr.
+  //! @note The pointer passed to `deallocate` must not be in use in a stream
+  //! other than \p __stream. It is the caller's responsibility to properly
+  //! synchronize all relevant streams before calling `deallocate`.
   _CCCL_HOST_API void deallocate(const ::cuda::stream_ref __stream, void* __ptr, size_t) noexcept
   {
     _CCCL_ASSERT_CUDA_API(
       ::cuda::__driver::__freeAsyncNoThrow, "deallocate failed", reinterpret_cast<::CUdeviceptr>(__ptr), __stream.get());
   }
 
-  //! @brief Enable access to memory allocated through this memory resource by the supplied devices
+  //! @brief Enable access to memory allocated through this memory resource by
+  //! the supplied devices
   //!
   //! Access is controlled through the underlying memory pool, so this
   //! setting is shared between all memory resources created from the same pool.
-  //! Device on which this resource allocates memory can be included in the span.
+  //! Device on which this resource allocates memory can be included in the
+  //! span.
   //!
-  //! @param __devices A span of `device_ref`s listing devices to enable access for
+  //! @param __devices A span of `device_ref`s listing devices to enable access
+  //! for
   _CCCL_HOST_API void enable_access_from(::cuda::std::span<const device_ref> __devices)
   {
     ::cuda::__mempool_set_access(__pool_, {__devices.data(), __devices.size()}, ::CU_MEM_ACCESS_FLAGS_PROT_READWRITE);
   }
 
-  //! @brief Enable access to memory allocated through this memory resource by the supplied device
+  //! @brief Enable access to memory allocated through this memory resource by
+  //! the supplied device
   //!
   //! Access is controlled through the underlying memory pool, so this
   //! setting is shared between all memory resources created from the same pool.
   //!
-  //! @param __device device_ref indicating for which device the access should be enabled
+  //! @param __device device_ref indicating for which device the access should
+  //! be enabled
   _CCCL_HOST_API void enable_access_from(device_ref __device)
   {
     ::cuda::__mempool_set_access(__pool_, {&__device, 1}, ::CU_MEM_ACCESS_FLAGS_PROT_READWRITE);
   }
 
-  //! @brief Disable access to memory allocated through this memory resource by the supplied devices
+  //! @brief Disable access to memory allocated through this memory resource by
+  //! the supplied devices
   //!
   //! Access is controlled through the underlying memory pool, so this
   //! setting is shared between all memory resources created from the same pool.
-  //! Device on which this resource allocates memory can be included in the span.
+  //! Device on which this resource allocates memory can be included in the
+  //! span.
   //!
-  //! @param __devices A span of `device_ref`s listing devices to disable access for
+  //! @param __devices A span of `device_ref`s listing devices to disable access
+  //! for
   _CCCL_HOST_API void disable_access_from(::cuda::std::span<const device_ref> __devices)
   {
     ::cuda::__mempool_set_access(__pool_, {__devices.data(), __devices.size()}, ::CU_MEM_ACCESS_FLAGS_PROT_NONE);
   }
 
-  //! @brief Disable access to memory allocated through this memory resource by the supplied device
+  //! @brief Disable access to memory allocated through this memory resource by
+  //! the supplied device
   //!
   //! Access is controlled through the underlying memory pool, so this
   //! setting is shared between all memory resources created from the same pool.
   //!
-  //! @param __device device_ref indicating for which device the access should be disabled
+  //! @param __device device_ref indicating for which device the access should
+  //! be disabled
   _CCCL_HOST_API void disable_access_from(device_ref __device)
   {
     ::cuda::__mempool_set_access(__pool_, {&__device, 1}, ::CU_MEM_ACCESS_FLAGS_PROT_NONE);
   }
 
-  //! @brief Query if memory allocated through this memory resource is accessible by the supplied device
+  //! @brief Query if memory allocated through this memory resource is
+  //! accessible by the supplied device
   //!
   //! @param __device device for which the access is queried
   [[nodiscard]] _CCCL_HOST_API bool is_accessible_from(device_ref __device)
@@ -554,17 +610,17 @@ public:
     return ::cuda::__mempool_get_access(__pool_, __device);
   }
 
-  //! @brief Equality comparison with another __memory_resource_base.
+  //! @brief Equality comparison with another __memory_pool_base.
   //! @returns true if underlying \c cudaMemPool_t are equal.
-  [[nodiscard]] _CCCL_HOST_API bool operator==(__memory_resource_base const& __rhs) const noexcept
+  [[nodiscard]] _CCCL_HOST_API bool operator==(__memory_pool_base const& __rhs) const noexcept
   {
     return __pool_ == __rhs.__pool_;
   }
 
 #if _CCCL_STD_VER <= 2017
-  //! @brief Inequality comparison with another __memory_resource_base.
+  //! @brief Inequality comparison with another __memory_pool_base.
   //! @returns true if underlying \c cudaMemPool_t are not equal.
-  [[nodiscard]] _CCCL_HOST_API bool operator!=(__memory_resource_base const& __rhs) const noexcept
+  [[nodiscard]] _CCCL_HOST_API bool operator!=(__memory_pool_base const& __rhs) const noexcept
   {
     return __pool_ != __rhs.__pool_;
   }
@@ -575,4 +631,4 @@ _CCCL_END_NAMESPACE_CUDA
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _CUDA___MEMORY_RESOURCE_MEMORY_RESOURCE_BASE_H
+#endif // _CUDA___MEMORY_RESOURCE_MEMORY_POOL_BASE_H
