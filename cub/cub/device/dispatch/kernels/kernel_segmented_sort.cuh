@@ -307,11 +307,11 @@ __launch_bounds__(ChainedPolicyT::ActivePolicy::SmallSegmentPolicy::BLOCK_THREAD
     _CCCL_GRID_CONSTANT const local_segment_index_t small_segments,
     _CCCL_GRID_CONSTANT const local_segment_index_t medium_segments,
     _CCCL_GRID_CONSTANT const local_segment_index_t medium_blocks,
-    const local_segment_index_t* d_small_segments_indices,
-    const local_segment_index_t* d_medium_segments_indices,
-    const KeyT* d_keys_in,
+    _CCCL_GRID_CONSTANT const local_segment_index_t* const d_small_segments_indices,
+    _CCCL_GRID_CONSTANT const local_segment_index_t* const d_medium_segments_indices,
+    _CCCL_GRID_CONSTANT const KeyT* const d_keys_in,
     KeyT* d_keys_out,
-    const ValueT* d_values_in,
+    _CCCL_GRID_CONSTANT const ValueT* const d_values_in,
     ValueT* d_values_out,
     _CCCL_GRID_CONSTANT const BeginOffsetIteratorT d_begin_offsets,
     _CCCL_GRID_CONSTANT const EndOffsetIteratorT d_end_offsets)
@@ -425,7 +425,7 @@ template <SortOrder Order,
           typename OffsetT>
 __launch_bounds__(ChainedPolicyT::ActivePolicy::LargeSegmentPolicy::BLOCK_THREADS)
   CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceSegmentedSortKernelLarge(
-    const local_segment_index_t* d_segments_indices,
+    _CCCL_GRID_CONSTANT const local_segment_index_t* const d_segments_indices,
     const KeyT* d_keys_in_orig,
     KeyT* d_keys_out_orig,
     device_double_buffer<KeyT> d_keys_double_buffer,

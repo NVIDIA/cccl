@@ -98,9 +98,9 @@ template <typename ChainedPolicyT,
 __launch_bounds__(int((ALT_DIGIT_BITS) ? ChainedPolicyT::ActivePolicy::AltSegmentedPolicy::BLOCK_THREADS
                                        : ChainedPolicyT::ActivePolicy::SegmentedPolicy::BLOCK_THREADS))
   CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceSegmentedRadixSortKernel(
-    const KeyT* d_keys_in,
+    _CCCL_GRID_CONSTANT const KeyT* const d_keys_in,
     KeyT* d_keys_out,
-    const ValueT* d_values_in,
+    _CCCL_GRID_CONSTANT const ValueT* const d_values_in,
     ValueT* d_values_out,
     _CCCL_GRID_CONSTANT const BeginOffsetIteratorT d_begin_offsets,
     _CCCL_GRID_CONSTANT const EndOffsetIteratorT d_end_offsets,

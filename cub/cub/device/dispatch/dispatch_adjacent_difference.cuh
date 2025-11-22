@@ -34,7 +34,7 @@ namespace detail::adjacent_difference
 template <typename AgentDifferenceInitT, typename InputIteratorT, typename InputT, typename OffsetT>
 CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceAdjacentDifferenceInitKernel(
   _CCCL_GRID_CONSTANT const InputIteratorT first,
-  InputT* result,
+  _CCCL_GRID_CONSTANT const InputT* result,
   _CCCL_GRID_CONSTANT const OffsetT num_tiles,
   _CCCL_GRID_CONSTANT const int items_per_tile)
 {

@@ -175,7 +175,7 @@ __launch_bounds__(
     _CCCL_GRID_CONSTANT const OffsetT keys_count,
     KeyT* tmp_keys_out,
     ValueT* tmp_items_out,
-    _CCCL_GRID_CONSTANT const CompareOpT compare_op,
+    CompareOpT compare_op,
     vsmem_t vsmem)
 {
   using MergeSortHelperT = typename VSMemHelperT::template MergeSortVSMemHelperT<

@@ -989,7 +989,7 @@ __launch_bounds__(get_block_threads<typename MaxPolicy::ActivePolicy>)
     [[maybe_unused]] bool can_vectorize,
     _CCCL_GRID_CONSTANT const Predicate pred,
     _CCCL_GRID_CONSTANT const F f,
-    RandomAccessIteratorOut out,
+    _CCCL_GRID_CONSTANT const RandomAccessIteratorOut out,
     kernel_arg<RandomAccessIteartorsIn>... ins)
 {
   _CCCL_ASSERT(blockDim.y == 1 && blockDim.z == 1, "transform_kernel only supports 1D blocks");
