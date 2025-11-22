@@ -3,7 +3,7 @@
 
 #pragma once
 
-#include <cub/detail/ptx-json/object.h>
+#include <cub/detail/ptx-json/object.cuh>
 
 namespace ptx_json
 {

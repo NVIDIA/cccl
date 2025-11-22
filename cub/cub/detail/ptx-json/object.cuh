@@ -3,8 +3,8 @@
 
 #pragma once
 
-#include <cub/detail/ptx-json/string.h>
-#include <cub/detail/ptx-json/value.h>
+#include <cub/detail/ptx-json/string.cuh>
+#include <cub/detail/ptx-json/value.cuh>
 
 #include <cuda/std/__type_traits/integral_constant.h>
 

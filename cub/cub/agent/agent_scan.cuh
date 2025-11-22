@@ -31,6 +31,7 @@
 #  include <cub/agent/agent_unique_by_key.cuh> // for UniqueByKeyAgentPolicy
 #endif
 
+#include <cuda/std/__cccl/cuda_capabilities.h>
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/is_pointer.h>
 #include <cuda/std/__type_traits/is_same.h>
@@ -149,7 +150,8 @@ template <typename AgentScanPolicyT,
           typename InitValueT,
           typename OffsetT,
           typename AccumT,
-          bool ForceInclusive = false>
+          bool ForceInclusive = false,
+          bool UsePDL         = false>
 struct AgentScan
 {
   //---------------------------------------------------------------------
@@ -370,6 +372,11 @@ struct AgentScan
     }
 
     __syncthreads();
+
+    if constexpr (UsePDL)
+    {
+      _CCCL_PDL_TRIGGER_NEXT_LAUNCH(); // omitting makes almost no difference in cub.bench.scan.exclusive.sum.base
+    }
 
     // Store items
     if constexpr (IS_LAST_TILE)

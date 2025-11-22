@@ -3,7 +3,7 @@
 
 #pragma once
 
-#include <cub/detail/ptx-json/string.h>
+#include <cub/detail/ptx-json/string.cuh>
 
 #include <cuda/std/__concepts/arithmetic.h>
 #include <cuda/std/__type_traits/integral_constant.h>
