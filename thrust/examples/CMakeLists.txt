@@ -33,6 +33,7 @@ function(
   set(${target_name_var} ${example_target} PARENT_SCOPE)
 
   cccl_add_executable(${example_target} SOURCES "${real_example_src}" ADD_CTEST)
+  thrust_add_all_config_metatarget(${example_target})
   target_link_libraries(${example_target} PRIVATE ${thrust_target})
   target_include_directories(
     ${example_target}

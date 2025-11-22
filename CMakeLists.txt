@@ -87,12 +87,15 @@ if (CCCL_TOPLEVEL_PROJECT)
   include(cmake/CCCLUtilities.cmake) # include this before other CCCL helpers
 
   include(cmake/CCCLAddExecutable.cmake)
+  include(cmake/CCCLAddTestsFromSrc.cmake)
+  include(cmake/CCCLAddXFailCompileTargetTest.cmake)
   include(cmake/CCCLBuildCompilerTargets.cmake)
   include(cmake/CCCLClangdCompileInfo.cmake)
   include(cmake/CCCLConfigureTarget.cmake)
   include(cmake/CCCLEnsureMetaTargets.cmake)
   include(cmake/CCCLGenerateHeaderTests.cmake)
   include(cmake/CCCLGetDependencies.cmake)
+  include(cmake/CCCLParseArguments.cmake)
   include(cmake/CCCLTestParams.cmake)
 
   cccl_build_compiler_targets()
