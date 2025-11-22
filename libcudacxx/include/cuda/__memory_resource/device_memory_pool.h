@@ -27,7 +27,7 @@
 #endif // _CCCL_CUDA_COMPILER(CLANG)
 
 #include <cuda/__memory_resource/get_property.h>
-#include <cuda/__memory_resource/memory_resource_base.h>
+#include <cuda/__memory_resource/memory_pool_base.h>
 #include <cuda/__memory_resource/properties.h>
 #include <cuda/__runtime/api_wrapper.h>
 #include <cuda/std/__concepts/concept_macros.h>
@@ -35,8 +35,8 @@
 #include <cuda/std/__cccl/prologue.h>
 
 //! @file
-//! The \c device_memory_pool class provides an asynchronous memory resource that allocates device memory in stream
-//! order.
+//! The \c device_memory_pool class provides an asynchronous memory resource
+//! that allocates device memory in stream order.
 _CCCL_BEGIN_NAMESPACE_CUDA
 
 //! @rst
@@ -45,30 +45,34 @@ _CCCL_BEGIN_NAMESPACE_CUDA
 //! Stream ordered memory pool
 //! ------------------------------
 //!
-//! ``device_memory_pool_ref`` allocates device memory using `cudaMallocFromPoolAsync / cudaFreeAsync
-//! <https://docs.nvidia.com/cuda/cuda-runtime-api/group__CUDART__MEMORY__POOLS.html>`__ for allocation/deallocation. A
-//! ``device_memory_pool_ref`` is a thin wrapper around a \c cudaMemPool_t with the location type set to \c
-//! cudaMemLocationTypeDevice.
+//! ``device_memory_pool_ref`` allocates device memory using
+//! `cudaMallocFromPoolAsync / cudaFreeAsync
+//! <https://docs.nvidia.com/cuda/cuda-runtime-api/group__CUDART__MEMORY__POOLS.html>`__
+//! for allocation/deallocation. A
+//! ``device_memory_pool_ref`` is a thin wrapper around a \c cudaMemPool_t with
+//! the location type set to \c cudaMemLocationTypeDevice.
 //!
 //! .. warning::
 //!
-//!    ``device_memory_pool_ref`` does not own the pool and it is the responsibility of the user to ensure that the
-//!    lifetime of the pool exceeds the lifetime of the ``device_memory_pool_ref``.
+//!    ``device_memory_pool_ref`` does not own the pool and it is the
+//!    responsibility of the user to ensure that the lifetime of the pool
+//!    exceeds the lifetime of the ``device_memory_pool_ref``.
 //!
 //! @endrst
-class device_memory_pool_ref : public __memory_resource_base
+class device_memory_pool_ref : public __memory_pool_base
 {
 public:
   //! @brief  Constructs the device_memory_pool_ref from a \c cudaMemPool_t.
   //! @param __pool The \c cudaMemPool_t used to allocate memory.
   _CCCL_HOST_API explicit device_memory_pool_ref(::cudaMemPool_t __pool) noexcept
-      : __memory_resource_base(__pool)
+      : __memory_pool_base(__pool)
   {}
 
   device_memory_pool_ref(int)                    = delete;
   device_memory_pool_ref(::cuda::std::nullptr_t) = delete;
 
-  //! @brief Enables the \c device_accessible property for \c device_memory_pool_ref.
+  //! @brief Enables the \c device_accessible property for \c
+  //! device_memory_pool_ref.
   //! @relates device_memory_pool_ref
   _CCCL_HOST_API friend constexpr void
   get_property(device_memory_pool_ref const&, ::cuda::mr::device_accessible) noexcept
@@ -82,12 +86,9 @@ public:
 //! @returns The default memory pool of the specified device.
 [[nodiscard]] inline device_memory_pool_ref device_default_memory_pool(::cuda::device_ref __device)
 {
-  ::cuda::__verify_device_supports_stream_ordered_allocations(__device.get());
-
-  ::cudaMemPool_t __pool;
-  _CCCL_TRY_CUDA_API(
-    ::cudaDeviceGetDefaultMemPool, "Failed to call cudaDeviceGetDefaultMemPool", &__pool, __device.get());
-  return device_memory_pool_ref{__pool};
+  static ::cudaMemPool_t __pool = ::cuda::__get_default_memory_pool(
+    ::CUmemLocation{::CU_MEM_LOCATION_TYPE_DEVICE, __device.get()}, ::CU_MEM_ALLOCATION_TYPE_PINNED);
+  return device_memory_pool_ref(__pool);
 }
 
 //! @rst
@@ -96,22 +97,28 @@ public:
 //! Stream ordered memory resource
 //! ------------------------------
 //!
-//! ``device_memory_pool`` allocates device memory using `cudaMallocFromPoolAsync / cudaFreeAsync
-//! <https://docs.nvidia.com/cuda/cuda-runtime-api/group__CUDART__MEMORY__POOLS.html>`__ for allocation/deallocation. A
-//! When constructed it creates an underlying \c cudaMemPool_t with the location type set to \c
-//! cudaMemLocationTypeDevice and owns it.
+//! ``device_memory_pool`` allocates device memory using
+//! `cudaMallocFromPoolAsync / cudaFreeAsync
+//! <https://docs.nvidia.com/cuda/cuda-runtime-api/group__CUDART__MEMORY__POOLS.html>`__
+//! for allocation/deallocation. A When constructed it creates an underlying \c
+//! cudaMemPool_t with the location type set to \c cudaMemLocationTypeDevice and
+//! owns it.
 //!
 //! @endrst
 struct device_memory_pool : device_memory_pool_ref
 {
   using reference_type = device_memory_pool_ref;
 
-  //! @brief Constructs a \c device_memory_pool with the optionally specified initial pool size and release
-  //! threshold. If the pool size grows beyond the release threshold, unused memory held by the pool will be released at
-  //! the next synchronization event.
-  //! @throws cuda_error if the CUDA version does not support ``cudaMallocAsync``.
-  //! @param __device_id The device id of the device the stream pool is constructed on.
-  //! @param __pool_properties Optional, additional properties of the pool to be created.
+  //! @brief Constructs a \c device_memory_pool with the optionally specified
+  //! initial pool size and release threshold. If the pool size grows beyond the
+  //! release threshold, unused memory held by the pool will be released at the
+  //! next synchronization event.
+  //! @throws cuda_error if the CUDA version does not support
+  //! ``cudaMallocAsync``.
+  //! @param __device_id The device id of the device the stream pool is
+  //! constructed on.
+  //! @param __pool_properties Optional, additional properties of the pool to be
+  //! created.
   _CCCL_HOST_API device_memory_pool(::cuda::device_ref __device_id, memory_pool_properties __properties = {})
       : device_memory_pool_ref(__create_cuda_mempool(
           __properties,
