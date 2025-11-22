@@ -21,6 +21,10 @@ workflows:
   #       args: '--preset libcudacxx --lit-tests "cuda/utility/basic_any.pass.cpp"' }
   #
   override:
+    - {jobs: ['test'], project: ['thrust', 'cub'], std: 20, cxx: ['gcc', 'clang', 'msvc'] }
+    # TODO add coverage for these:
+    - {jobs: ['test'], project: 'cub',    std: 20, cxx: ['gcc', 'clang', 'msvc'], cmake_options: "-DCUB_FORCE_RDC=ON" }
+    - {jobs: ['test'], project: 'thrust', std: 20, cxx: ['gcc', 'clang', 'msvc'], cmake_options: "-DTHRUST_FORCE_RDC=ON" }
 
   pull_request:
     # Old CTK: Oldest/newest supported host compilers:

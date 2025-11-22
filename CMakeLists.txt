@@ -86,6 +86,7 @@ if (CCCL_TOPLEVEL_PROJECT)
   include(cmake/CCCLEnsureMetaTargets.cmake)
   include(cmake/CCCLGenerateHeaderTests.cmake)
   include(cmake/CCCLGetDependencies.cmake)
+  include(cmake/CCCLParseArguments.cmake)
   include(cmake/CCCLTestParams.cmake)
 
   cccl_build_compiler_targets()

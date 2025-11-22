@@ -18,7 +18,7 @@ function(cub_add_header_test label definitions)
       "cub/detail/*ptx-json*"
       "cub/detail/ptx-json/*.cuh"
   )
-  cub_configure_cuda_target(${headertest_target} RDC ${CUB_FORCE_RDC})
+  cccl_set_rdc(${headertest_target} ${CUB_FORCE_RDC})
   target_link_libraries(${headertest_target} PUBLIC cub.compiler_interface)
   target_compile_definitions(${headertest_target} PRIVATE ${definitions})
 endfunction()

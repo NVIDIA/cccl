@@ -13,6 +13,14 @@ function(cccl_configure_target target_name)
     "${multiValueArgs}"
     ${ARGN}
   )
+  cccl_parse_arguments_error_checks(
+    "cccl_configure_target"
+    "CCT"
+    "${options}"
+    "${oneValueArgs}"
+    "${multiValueArgs}"
+    ERROR_UNPARSED
+  )
 
   get_target_property(type ${target_name} TYPE)
 

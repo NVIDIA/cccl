@@ -355,7 +355,12 @@ allocate(::cuda::stream_ref stream, void*& d_temp_storage, size_t temp_storage_b
       try { d_temp_storage = mr.allocate(stream, temp_storage_bytes); } catch (...) {
         return cudaErrorMemoryAllocation;
       }),
-    (d_temp_storage = mr.allocate(stream, temp_storage_bytes);));
+    ( // Can't allocate on stream from device
+      (void) stream; //
+      (void) d_temp_storage;
+      (void) temp_storage_bytes;
+      (void) mr;
+      return cudaErrorMemoryAllocation;));
   return cudaSuccess;
 }
 
@@ -369,7 +374,12 @@ deallocate(::cuda::stream_ref stream, void* d_temp_storage, size_t temp_storage_
       try { mr.deallocate(stream, d_temp_storage, temp_storage_bytes); } catch (...) {
         return cudaErrorMemoryAllocation;
       }),
-    (mr.deallocate(stream, d_temp_storage, temp_storage_bytes);));
+    ( // Can't deallocate on stream from device
+      (void) stream; //
+      (void) d_temp_storage;
+      (void) temp_storage_bytes;
+      (void) mr;
+      return cudaErrorMemoryAllocation;));
   return cudaSuccess;
 }
 } // namespace detail::temporary_storage

@@ -13,6 +13,24 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# Enable or disable relocatable device code (RDC) for a given target.
+function(cccl_set_rdc target_name rdc_enabled)
+  if (rdc_enabled)
+    set_target_properties(
+      ${target_name}
+      PROPERTIES #
+        CUDA_SEPARABLE_COMPILATION ON
+        CUDA_RESOLVE_DEVICE_SYMBOLS ON
+        POSITION_INDEPENDENT_CODE ON
+    )
+  else()
+    set_target_properties(
+      ${target_name}
+      PROPERTIES CUDA_SEPARABLE_COMPILATION OFF
+    )
+  endif()
+endfunction()
+
 # Passes all args directly to execute_process while setting up the following
 # results variables and propagating them to the caller's scope:
 #
@@ -128,31 +146,29 @@ function(cccl_add_xfail_compile_target_test target_name)
   )
   set(multiValueArgs)
   cmake_parse_arguments(
-    cccl_xfail
+    self
     "${options}"
     "${oneValueArgs}"
     "${multiValueArgs}"
     ${ARGN}
   )
-
-  if (cccl_xfail_UNPARSED_ARGUMENTS)
-    message(FATAL_ERROR "Unparsed arguments: ${cccl_xfail_UNPARSED_ARGUMENTS}")
-  endif()
-
-  set(test_name "${target_name}")
-  if (DEFINED cccl_xfail_TEST_NAME)
-    set(test_name "${cccl_xfail_TEST_NAME}")
-  endif()
+  cccl_parse_arguments_error_checks(
+    "cccl_add_xfail_compile_target_test"
+    "self"
+    "${options}"
+    "${oneValueArgs}"
+    "${multiValueArgs}"
+    ERROR_UNPARSED
+    DEFAULT_VALUES #
+      TEST_NAME ${target_name}
+  )
 
   set(regex)
-  if (DEFINED cccl_xfail_ERROR_REGEX)
-    set(regex "${cccl_xfail_ERROR_REGEX}")
-  elseif (
-    DEFINED cccl_xfail_SOURCE_FILE
-    AND DEFINED cccl_xfail_ERROR_REGEX_LABEL
-  )
-    get_filename_component(src_absolute "${cccl_xfail_SOURCE_FILE}" ABSOLUTE)
-    set(error_label_regex "${cccl_xfail_ERROR_REGEX_LABEL}")
+  if (DEFINED self_ERROR_REGEX)
+    set(regex "${self_ERROR_REGEX}")
+  elseif (DEFINED self_SOURCE_FILE AND DEFINED self_ERROR_REGEX_LABEL)
+    get_filename_component(src_absolute "${self_SOURCE_FILE}" ABSOLUTE)
+    set(error_label_regex "${self_ERROR_REGEX_LABEL}")
 
     # Cache all error label matches (with and without error numbers) as global properties.
     # This avoids re-reading and re-parsing the source file multiple times if multiple
@@ -182,12 +198,12 @@ function(cccl_add_xfail_compile_target_test target_name)
     )
 
     set(error_number)
-    if (DEFINED cccl_xfail_ERROR_NUMBER)
-      set(error_number "${cccl_xfail_ERROR_NUMBER}")
-    elseif (DEFINED cccl_xfail_ERROR_NUMBER_TARGET_NAME_REGEX)
+    if (DEFINED self_ERROR_NUMBER)
+      set(error_number "${self_ERROR_NUMBER}")
+    elseif (DEFINED self_ERROR_NUMBER_TARGET_NAME_REGEX)
       string(
         REGEX MATCH
-        "${cccl_xfail_ERROR_NUMBER_TARGET_NAME_REGEX}"
+        "${self_ERROR_NUMBER_TARGET_NAME_REGEX}"
         matched
         ${target_name}
       )
@@ -223,7 +239,7 @@ function(cccl_add_xfail_compile_target_test target_name)
     endif()
   endif()
 
-  message(VERBOSE "CCCL: Adding XFAIL test: ${test_name}")
+  message(VERBOSE "CCCL: Adding XFAIL test: ${self_TEST_NAME}")
   if (regex)
     message(VERBOSE "CCCL:   with expected regex: '${regex}'")
   endif()
@@ -244,13 +260,13 @@ function(cccl_add_xfail_compile_target_test target_name)
       # gersemi: on
     )
     set_tests_properties(
-      ${test_name}.clean
+      ${target_name}.clean
       PROPERTIES FIXTURES_SETUP ${target_name}.clean
     )
   endif()
 
   add_test(
-    NAME ${test_name}
+    NAME ${self_TEST_NAME}
     # gersemi: off
     COMMAND
       "${CMAKE_COMMAND}"
@@ -260,16 +276,16 @@ function(cccl_add_xfail_compile_target_test target_name)
     # gersemi: on
   )
   set_tests_properties(
-    ${test_name}
+    ${self_TEST_NAME}
     PROPERTIES FIXTURES_CLEANUP ${target_name}.clean
   )
 
   if (regex)
     set_tests_properties(
-      ${test_name}
+      ${self_TEST_NAME}
       PROPERTIES PASS_REGULAR_EXPRESSION "${regex}"
     )
   else()
-    set_tests_properties(${test_name} PROPERTIES WILL_FAIL true)
+    set_tests_properties(${self_TEST_NAME} PROPERTIES WILL_FAIL true)
   endif()
 endfunction()

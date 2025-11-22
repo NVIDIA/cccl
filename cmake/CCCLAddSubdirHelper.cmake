@@ -18,6 +18,14 @@ function(cccl_add_subdir_helper project_name)
     "${multiValueArgs}"
     ${ARGN}
   )
+  cccl_parse_arguments_error_checks(
+    "cccl_add_subdir_helper"
+    "CCCL_SUBDIR"
+    "${options}"
+    "${oneValueArgs}"
+    "${multiValueArgs}"
+    ERROR_UNPARSED
+  )
 
   if (DEFINED CCCL_SUBDIR_PACKAGE_FILEBASE)
     set(package_filebase "${CCCL_SUBDIR_PACKAGE_FILEBASE}")
