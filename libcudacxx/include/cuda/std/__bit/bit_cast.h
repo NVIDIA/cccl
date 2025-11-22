@@ -29,6 +29,11 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
+// MSVC supports __builtin_bit_cast from 19.25 on
+#if _CCCL_CHECK_BUILTIN(builtin_bit_cast) || _CCCL_COMPILER(MSVC, >, 19, 25)
+#  define _CCCL_BUILTIN_BIT_CAST(...) __builtin_bit_cast(__VA_ARGS__)
+#endif // _CCCL_CHECK_BUILTIN(builtin_bit_cast)
+
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 #if defined(_CCCL_BUILTIN_BIT_CAST)
