@@ -8,6 +8,7 @@
 cmake_minimum_required(VERSION 3.15)
 
 function(count_substrings input search_regex output_var)
+  # gersemi: ignore
   string(REGEX MATCHALL "${search_regex}" matches "${input}")
   list(LENGTH matches num_matches)
   set(${output_var} ${num_matches} PARENT_SCOPE)

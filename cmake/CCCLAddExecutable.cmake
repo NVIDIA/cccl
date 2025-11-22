@@ -11,33 +11,30 @@ function(cccl_add_executable target_name)
   set(oneValueArgs METATARGET_PATH)
   set(multiValueArgs SOURCES)
   cmake_parse_arguments(
-    _cccl
+    self
     "${options}"
     "${oneValueArgs}"
     "${multiValueArgs}"
     ${ARGN}
   )
+  cccl_parse_arguments_error_checks(
+    "cccl_add_executable"
+    ERROR_UNPARSED
+    REQUIRED_VALUES SOURCES
+    DEFAULT_VALUES METATARGET_PATH "${target_name}"
+  )
 
-  if (_cccl_UNPARSED_ARGUMENTS)
-    message(FATAL_ERROR "Unrecognized arguments: ${_cccl_UNPARSED_ARGUMENTS}")
-  endif()
-
-  if (NOT DEFINED _cccl_SOURCES)
-    message(FATAL_ERROR "cccl_add_executable requires SOURCES argument")
-  endif()
-
-  add_executable(${target_name} ${_cccl_SOURCES})
+  add_executable(${target_name} ${self_SOURCES})
   cccl_configure_target(${target_name})
 
-  if (_cccl_ADD_CTEST)
+  if (self_ADD_CTEST)
     add_test(NAME ${target_name} COMMAND "$<TARGET_FILE:${target_name}>")
   endif()
 
-  if (NOT _cccl_NO_METATARGETS)
-    set(metatarget_path ${target_name})
-    if (DEFINED _cccl_METATARGET_PATH)
-      set(metatarget_path ${_cccl_METATARGET_PATH})
-    endif()
-    cccl_ensure_metatargets(${target_name} METATARGET_PATH ${metatarget_path})
+  if (NOT self_NO_METATARGETS)
+    cccl_ensure_metatargets(
+      ${target_name}
+      METATARGET_PATH ${self_METATARGET_PATH}
+    )
   endif()
 endfunction()

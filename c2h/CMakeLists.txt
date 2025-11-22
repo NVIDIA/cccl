@@ -46,5 +46,5 @@ else()
   target_compile_definitions(cccl.c2h PRIVATE C2H_HAS_CURAND=0)
 endif()
 
-add_library(cccl.c2h.main OBJECT catch2_runner.cpp catch2_runner_helper.cu)
+add_library(cccl.c2h.main STATIC catch2_runner.cpp catch2_runner_helper.cu)
 target_link_libraries(cccl.c2h.main PUBLIC cccl.c2h)

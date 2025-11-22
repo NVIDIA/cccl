@@ -12,21 +12,22 @@ function(cccl_add_subdir_helper project_name)
   )
   set(multiValueArgs)
   cmake_parse_arguments(
-    CCCL_SUBDIR
+    self
     "${options}"
     "${oneValueArgs}"
     "${multiValueArgs}"
     ${ARGN}
   )
+  cccl_parse_arguments_error_checks("cccl_add_subdir_helper" ERROR_UNPARSED)
 
-  if (DEFINED CCCL_SUBDIR_PACKAGE_FILEBASE)
-    set(package_filebase "${CCCL_SUBDIR_PACKAGE_FILEBASE}")
+  if (DEFINED self_PACKAGE_FILEBASE)
+    set(package_filebase "${self_PACKAGE_FILEBASE}")
   else()
     string(TOLOWER "${project_name}" package_filebase)
   endif()
 
-  if (DEFINED CCCL_SUBDIR_PACKAGE_PATH)
-    set(package_prefix "${CCCL_SUBDIR_PACKAGE_PATH}/${package_filebase}")
+  if (DEFINED self_PACKAGE_PATH)
+    set(package_prefix "${self_PACKAGE_PATH}/${package_filebase}")
   else()
     set(
       package_prefix
@@ -36,20 +37,20 @@ function(cccl_add_subdir_helper project_name)
 
   set(CMAKE_FIND_PACKAGE_NAME ${project_name})
   set(${CMAKE_FIND_PACKAGE_NAME}_FIND_COMPONENTS)
-  if (DEFINED CCCL_SUBDIR_REQUIRED_COMPONENTS)
+  if (DEFINED self_REQUIRED_COMPONENTS)
     list(
       APPEND ${CMAKE_FIND_PACKAGE_NAME}_FIND_COMPONENTS
-      ${CCCL_SUBDIR_REQUIRED_COMPONENTS}
+      ${self_REQUIRED_COMPONENTS}
     )
-    foreach (component IN LISTS CCCL_SUBDIR_REQUIRED_COMPONENTS)
+    foreach (component IN LISTS self_REQUIRED_COMPONENTS)
       set(${CMAKE_FIND_PACKAGE_NAME}_FIND_REQUIRED_${component} TRUE)
     endforeach()
   endif()
 
-  if (DEFINED CCCL_SUBDIR_OPTIONAL_COMPONENTS)
+  if (DEFINED self_OPTIONAL_COMPONENTS)
     list(
       APPEND ${CMAKE_FIND_PACKAGE_NAME}_FIND_COMPONENTS
-      ${CCCL_SUBDIR_OPTIONAL_COMPONENTS}
+      ${self_OPTIONAL_COMPONENTS}
     )
   endif()
 
