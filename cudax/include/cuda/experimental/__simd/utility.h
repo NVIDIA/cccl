@@ -56,10 +56,10 @@ inline constexpr bool __can_broadcast_v =
   || (!__is_vectorizable_v<_Up> && ::cuda::std::is_convertible_v<_Up, _Tp>) || ::cuda::std::is_same_v<_Up, int>
   || (::cuda::std::is_same_v<_Up, unsigned int> && ::cuda::std::is_unsigned_v<_Tp>);
 
-template <typename _Tp, typename _Generator, size_t _Idx, typename = void>
+template <typename _Tp, typename _Generator, ::cuda::std::size_t _Idx, typename = void>
 inline constexpr bool __is_well_formed = false;
 
-template <typename _Tp, typename _Generator, size_t _Idx>
+template <typename _Tp, typename _Generator, ::cuda::std::size_t _Idx>
 inline constexpr bool __is_well_formed<_Tp,
                                        _Generator,
                                        _Idx,
@@ -69,13 +69,13 @@ inline constexpr bool __is_well_formed<_Tp,
     _Tp,
     decltype(::cuda::std::declval<_Generator>()(::cuda::std::integral_constant<::cuda::std::size_t, _Idx>()))>;
 
-template <typename _Tp, typename _Generator, size_t... _Idxes>
+template <typename _Tp, typename _Generator, ::cuda::std::size_t... _Idxes>
 _CCCL_HIDE_FROM_ABI constexpr bool __can_generate(::cuda::std::index_sequence<_Idxes...>)
 {
   return (true && ... && __is_well_formed<_Tp, _Generator, _Idxes>);
 }
 
-template <typename _Tp, typename _Generator, size_t _Size>
+template <typename _Tp, typename _Generator, ::cuda::std::size_t _Size>
 inline constexpr bool __can_generate_v =
   ::cuda::experimental::datapar::__can_generate<_Tp, _Generator>(::cuda::std::make_index_sequence<_Size>());
 } // namespace cuda::experimental::datapar
