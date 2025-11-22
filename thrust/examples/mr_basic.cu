@@ -1,3 +1,19 @@
+#include <thrust/detail/config/host_system.h>
+
+#include <thrust/detail/config/device_system.h>
+
+#include <cuda/std/__cccl/diagnostic.h>
+
+// clang-format off
+// GCC with specific host/device configs generates false positive static analysis warnings in this example:
+#if (THRUST_HOST_SYSTEM == THRUST_HOST_SYSTEM_CPP) && \
+    (THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CPP || \
+     THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_TBB || \
+     THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_OMP)
+_CCCL_DIAG_SUPPRESS_GCC("-Wstringop-overflow")
+#endif
+// clang-format on
+
 #include <thrust/device_ptr.h>
 #include <thrust/device_vector.h>
 #include <thrust/mr/allocator.h>

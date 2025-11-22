@@ -21,6 +21,13 @@ workflows:
   #       args: '--preset libcudacxx --lit-tests "cuda/utility/basic_any.pass.cpp"' }
   #
   override:
+    - {jobs: ['test'], project: ['thrust'], std: 20, cxx: ['gcc', 'clang', 'msvc'], gpu: 'rtx4090' }
+    - {jobs: ['test'], project: ['cub'],    std: 20, cxx: ['gcc', 'clang', 'msvc'], gpu: 'rtxa6000' }
+    # TODO add coverage for these:
+    - {jobs: ['test_nolid', 'test_lid0', 'test_lid2'],
+       project: 'cub',    std: 20, cxx: ['gcc', 'clang', 'msvc'], cmake_options: "-DCUB_FORCE_RDC=ON", gpu: 'rtxa6000' }
+    - {jobs: ['test_gpu'],
+       project: 'thrust', std: 20, cxx: ['gcc', 'clang', 'msvc'], cmake_options: "-DTHRUST_FORCE_RDC=ON", gpu: 'rtx4090' }
 
   pull_request:
     # Old CTK: Oldest/newest supported host compilers:
@@ -546,7 +553,6 @@ projects:
 
 # testing -> Runner with GPU is in a nv-gh-runners testing pool
 gpus:
-  v100:     { sm: 70 } # 32 GB,  40 runners
   t4:       { sm: 75 } # 16 GB,  10 runners
   rtx2080:  { sm: 75 } #  8 GB,  12 runners
   rtxa6000: { sm: 86 } # 48 GB,  12 runners
