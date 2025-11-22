@@ -35,7 +35,13 @@ CMAKE_OPTIONS=(
     -DCUB_ENABLE_RDC_TESTS=$ENABLE_CUB_RDC
 )
 
+GPU_REQUIRED=false
+
 configure_and_build_preset "CUB" "$PRESET" "${CMAKE_OPTIONS[*]}"
+
+# Fail tests run compilers to check for build errors. Run those here as they can be
+# very slow on GPU runners.
+test_preset "CUB" "cub-fail" ${GPU_REQUIRED}
 
 # Create test artifacts:
 if [[ -n "${GITHUB_ACTIONS:-}" ]]; then
