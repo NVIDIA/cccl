@@ -20,6 +20,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__concepts/derived_from.h>
 #include <cuda/std/__concepts/same_as.h>
 #include <cuda/std/__iterator/concepts.h>
@@ -39,16 +40,11 @@
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD_RANGES
 
-#if _CCCL_HAS_CONCEPTS()
 template <class _Tp>
-concept __can_empty = requires(_Tp& __t) { ::cuda::std::ranges::empty(__t); };
-#else // ^^^ _CCCL_HAS_CONCEPTS() ^^^ / vvv !_CCCL_HAS_CONCEPTS() vvv
-template <class _Tp>
-_CCCL_CONCEPT_FRAGMENT(__can_empty_, requires(_Tp& __t)(typename(decltype(::cuda::std::ranges::empty(__t)))));
-
-template <class _Tp>
-_CCCL_CONCEPT __can_empty = _CCCL_FRAGMENT(__can_empty_, _Tp);
-#endif // ^^^ !_CCCL_HAS_CONCEPTS() ^^^
+_CCCL_CONCEPT __can_empty = _CCCL_REQUIRES_EXPR((_Tp), _Tp& __t) //
+  ( //
+    (::cuda::std::ranges::empty(__t)) //
+  );
 
 #if _CCCL_HAS_CONCEPTS()
 template <class _Derived>
