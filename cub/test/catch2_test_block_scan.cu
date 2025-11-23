@@ -370,13 +370,13 @@ T host_scan(scan_mode mode, c2h::host_vector<T>& result, ScanOpT scan_op, T init
 
 C2H_TEST("Block scan handles operators returning wider type", "[scan][block]")
 {
-  using type                                  = int;
-  constexpr int items_per_thread              = 3;
-  constexpr int block_dim_x                   = 64;
-  constexpr int block_dim_y                   = 1;
-  constexpr int block_dim_z                   = 1;
-  constexpr cub::BlockScanAlgorithm algorithm = cub::BlockScanAlgorithm::BLOCK_SCAN_RAKING;
-  constexpr int tile_size                     = block_dim_x * block_dim_y * block_dim_z * items_per_thread;
+  using type                                                   = int;
+  constexpr int items_per_thread                               = 3;
+  constexpr int block_dim_x                                    = 64;
+  constexpr int block_dim_y                                    = 1;
+  constexpr int block_dim_z                                    = 1;
+  [[maybe_unused]] constexpr cub::BlockScanAlgorithm algorithm = cub::BlockScanAlgorithm::BLOCK_SCAN_RAKING;
+  constexpr int tile_size = block_dim_x * block_dim_y * block_dim_z * items_per_thread;
 
   c2h::host_vector<type> h_in(tile_size);
   for (int i = 0; i < tile_size; ++i)
