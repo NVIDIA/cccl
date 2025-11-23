@@ -147,7 +147,7 @@ struct agent_segmented_scan
   static constexpr int tile_items         = block_threads * items_per_thread;
   static constexpr int segments_per_block = AgentSegmentedScanPolicyT::segments_per_block;
 
-  using flag_t = bool;
+  using flag_t = ::cuda::std::uint8_t;
   using augmented_accum_t =
     ::cuda::std::conditional_t<segments_per_block == 1, AccumT, ::cuda::std::tuple<flag_t, AccumT>>;
 
@@ -210,7 +210,7 @@ struct agent_segmented_scan
   //! @param out_idx_begin
   //!  Index of start of the segment's prefix scan result in the output array
   //!
-  template <int NumSegments = segments_per_block, class = cuda::std::enable_if_t<(NumSegments == 1)>>
+  template <int NumSegments = segments_per_block, class = ::cuda::std::enable_if_t<(NumSegments == 1)>>
   _CCCL_DEVICE _CCCL_FORCEINLINE void consume_range(OffsetT inp_idx_begin, OffsetT inp_idx_end, OffsetT out_idx_begin)
   {
     const OffsetT segment_items = ::cuda::std::max(inp_idx_end, inp_idx_begin) - inp_idx_begin;
@@ -259,7 +259,7 @@ struct agent_segmented_scan
   //! @param out_idx_begin
   //!  Index of start of the segment's prefix scan result in the output array
   //!
-  template <int NumSegments = segments_per_block, class = cuda::std::enable_if_t<(NumSegments > 1)>>
+  template <int NumSegments = segments_per_block, class = ::cuda::std::enable_if_t<(NumSegments > 1)>>
   _CCCL_DEVICE _CCCL_FORCEINLINE void consume_ranges(
     OffsetT (&inp_idx_begin)[NumSegments], OffsetT (&inp_idx_end)[NumSegments], OffsetT (&out_idx_begin)[NumSegments])
   {
@@ -346,7 +346,7 @@ struct agent_segmented_scan
     }
   }
 
-  template <int NumSegments = segments_per_block, class = cuda::std::enable_if_t<(NumSegments > 1)>>
+  template <int NumSegments = segments_per_block, class = ::cuda::std::enable_if_t<(NumSegments > 1)>>
   _CCCL_DEVICE _CCCL_FORCEINLINE void consume_ranges(
     OffsetT (&inp_idx_begin)[NumSegments],
     OffsetT (&inp_idx_end)[NumSegments],
@@ -356,7 +356,7 @@ struct agent_segmented_scan
     OffsetT items_per_block{0};
     OffsetT logical_ids[NumSegments] = {};
 
-    n_segments = cuda::std::min(n_segments, NumSegments);
+    n_segments = ::cuda::std::min(n_segments, NumSegments);
 
     for (int i = 0; i < n_segments; ++i)
     {
@@ -364,7 +364,7 @@ struct agent_segmented_scan
       items_per_block += segment_items;
       logical_ids[i] = items_per_block;
     }
-    for (int i = cuda::std::max(n_segments, 0); i < NumSegments; ++i)
+    for (int i = ::cuda::std::max(n_segments, 0); i < NumSegments; ++i)
     {
       logical_ids[i] = items_per_block + 1;
     }
@@ -465,9 +465,21 @@ private:
     {
       const auto& [o1_flag, o1_value] = o1;
       const auto& [o2_flag, o2_value] = o2;
-      const _FlagT res_flag           = o1_flag | o2_flag;
+      const _FlagT res_flag           = flag_or(o1_flag, o2_flag);
       const _ValueT res_value         = (o2_flag) ? o2_value : scan_op(o1_value, o2_value);
       return {res_flag, res_value};
+    }
+
+    _CCCL_DEVICE _CCCL_FORCEINLINE static _FlagT flag_or(_FlagT f1, _FlagT f2)
+    {
+      if constexpr (::cuda::std::is_same_v<_FlagT, bool>)
+      {
+        return (f1 || f2);
+      }
+      else
+      {
+        return (f1 | f2);
+      }
     }
   };
 
