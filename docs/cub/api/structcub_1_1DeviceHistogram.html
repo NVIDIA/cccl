@@ -1561,7 +1561,7 @@ be returned if bin computation would overflow for 128-bit arithmetic.</p></li>
 <code class="docutils literal notranslate"><span class="pre">[d_histogram,</span> <span class="pre">d_histogram</span> <span class="pre">+</span> <span class="pre">num_levels</span> <span class="pre">-</span> <span class="pre">1)</span></code> shall not overlap in any way.</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">cuda::std::common_type&lt;LevelT,</span> <span class="pre">SampleT&gt;</span></code> must be valid, and both LevelT and SampleT must be valid
 arithmetic types. The common type must be convertible to <code class="docutils literal notranslate"><span class="pre">int</span></code> and trivially copyable.</p></li>
-<li><p>When <code class="docutils literal notranslate"><span class="pre">d_temp_storage</span></code> is <code class="docutils literal notranslate"><span class="pre">nullptr</span></code>, no work is done and the required allocation size is returned in <code class="docutils literal notranslate"><span class="pre">temp_storage_bytes</span></code>.</p></li>
+<li><p>When <code class="docutils literal notranslate"><span class="pre">d_temp_storage</span></code> is <code class="docutils literal notranslate"><span class="pre">nullptr</span></code>, no work is done and the required allocation size is returned in <code class="docutils literal notranslate"><span class="pre">temp_storage_bytes</span></code>. See <a class="reference internal" href="../api_docs/device_wide.html#device-temp-storage"><span class="std std-ref">Determining Temporary Storage Requirements</span></a> for usage guidance.</p></li>
 </ul>
 <section id="snippet">
 <h2>Snippet<a class="headerlink" href="#snippet" title="Link to this heading">#</a></h2>
@@ -1670,7 +1670,7 @@ shall not overlap in any way.</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">cuda::std::common_type&lt;LevelT,</span> <span class="pre">SampleT&gt;</span></code> must be valid, and both LevelT
 and SampleT must be valid arithmetic types. The common type must be
 convertible to <code class="docutils literal notranslate"><span class="pre">int</span></code> and trivially copyable.</p></li>
-<li><p>When <code class="docutils literal notranslate"><span class="pre">d_temp_storage</span></code> is <code class="docutils literal notranslate"><span class="pre">nullptr</span></code>, no work is done and the required allocation size is returned in <code class="docutils literal notranslate"><span class="pre">temp_storage_bytes</span></code>.</p></li>
+<li><p>When <code class="docutils literal notranslate"><span class="pre">d_temp_storage</span></code> is <code class="docutils literal notranslate"><span class="pre">nullptr</span></code>, no work is done and the required allocation size is returned in <code class="docutils literal notranslate"><span class="pre">temp_storage_bytes</span></code>. See <a class="reference internal" href="../api_docs/device_wide.html#device-temp-storage"><span class="std std-ref">Determining Temporary Storage Requirements</span></a> for usage guidance.</p></li>
 </ul>
 <section id="id1">
 <h2>Snippet<a class="headerlink" href="#id1" title="Link to this heading">#</a></h2>
@@ -1785,7 +1785,7 @@ computation would overflow for 128-bit arithmetic.</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">cuda::std::common_type&lt;LevelT,</span> <span class="pre">SampleT&gt;</span></code> must be valid, and both LevelT
 and SampleT must be valid arithmetic types.
 The common type must be convertible to <code class="docutils literal notranslate"><span class="pre">int</span></code> and trivially copyable.</p></li>
-<li><p>When <code class="docutils literal notranslate"><span class="pre">d_temp_storage</span></code> is <code class="docutils literal notranslate"><span class="pre">nullptr</span></code>, no work is done and the required allocation size is returned in <code class="docutils literal notranslate"><span class="pre">temp_storage_bytes</span></code>.</p></li>
+<li><p>When <code class="docutils literal notranslate"><span class="pre">d_temp_storage</span></code> is <code class="docutils literal notranslate"><span class="pre">nullptr</span></code>, no work is done and the required allocation size is returned in <code class="docutils literal notranslate"><span class="pre">temp_storage_bytes</span></code>. See <a class="reference internal" href="../api_docs/device_wide.html#device-temp-storage"><span class="std std-ref">Determining Temporary Storage Requirements</span></a> for usage guidance.</p></li>
 </ul>
 <section id="id2">
 <h2>Snippet<a class="headerlink" href="#id2" title="Link to this heading">#</a></h2>
@@ -1938,7 +1938,7 @@ will only be returned if bin computation would overflow for 128-bit arithmetic.<
 <li><p><code class="docutils literal notranslate"><span class="pre">cuda::std::common_type&lt;LevelT,</span> <span class="pre">SampleT&gt;</span></code> must be valid, and both LevelT
 and SampleT must be valid arithmetic types. The common type must be
 convertible to <code class="docutils literal notranslate"><span class="pre">int</span></code> and trivially copyable.</p></li>
-<li><p>When <code class="docutils literal notranslate"><span class="pre">d_temp_storage</span></code> is <code class="docutils literal notranslate"><span class="pre">nullptr</span></code>, no work is done and the required allocation size is returned in <code class="docutils literal notranslate"><span class="pre">temp_storage_bytes</span></code>.</p></li>
+<li><p>When <code class="docutils literal notranslate"><span class="pre">d_temp_storage</span></code> is <code class="docutils literal notranslate"><span class="pre">nullptr</span></code>, no work is done and the required allocation size is returned in <code class="docutils literal notranslate"><span class="pre">temp_storage_bytes</span></code>. See <a class="reference internal" href="../api_docs/device_wide.html#device-temp-storage"><span class="std std-ref">Determining Temporary Storage Requirements</span></a> for usage guidance.</p></li>
 </ul>
 <section id="id3">
 <h2>Snippet<a class="headerlink" href="#id3" title="Link to this heading">#</a></h2>
@@ -2074,7 +2074,7 @@ overlap <code class="docutils literal notranslate"><span class="pre">[d_samples,
 <code class="docutils literal notranslate"><span class="pre">[d_levels,</span> <span class="pre">d_levels</span> <span class="pre">+</span> <span class="pre">num_levels)</span></code> in any way. The ranges
 <code class="docutils literal notranslate"><span class="pre">[d_levels,</span> <span class="pre">d_levels</span> <span class="pre">+</span> <span class="pre">num_levels)</span></code> and
 <code class="docutils literal notranslate"><span class="pre">[d_samples,</span> <span class="pre">d_samples</span> <span class="pre">+</span> <span class="pre">num_samples)</span></code> may overlap.</p></li>
-<li><p>When <code class="docutils literal notranslate"><span class="pre">d_temp_storage</span></code> is <code class="docutils literal notranslate"><span class="pre">nullptr</span></code>, no work is done and the required allocation size is returned in <code class="docutils literal notranslate"><span class="pre">temp_storage_bytes</span></code>.</p></li>
+<li><p>When <code class="docutils literal notranslate"><span class="pre">d_temp_storage</span></code> is <code class="docutils literal notranslate"><span class="pre">nullptr</span></code>, no work is done and the required allocation size is returned in <code class="docutils literal notranslate"><span class="pre">temp_storage_bytes</span></code>. See <a class="reference internal" href="../api_docs/device_wide.html#device-temp-storage"><span class="std std-ref">Determining Temporary Storage Requirements</span></a> for usage guidance.</p></li>
 </ul>
 <section id="id4">
 <h2>Snippet<a class="headerlink" href="#id4" title="Link to this heading">#</a></h2>
@@ -2169,7 +2169,7 @@ size, i.e., <code class="docutils literal notranslate"><span class="pre">(row_st
 <code class="docutils literal notranslate"><span class="pre">[d_histogram,</span> <span class="pre">d_histogram</span> <span class="pre">+</span> <span class="pre">num_levels</span> <span class="pre">-</span> <span class="pre">1)</span></code> shall not overlap
 <code class="docutils literal notranslate"><span class="pre">[row_begin,</span> <span class="pre">row_end)</span></code> nor <code class="docutils literal notranslate"><span class="pre">[d_levels,</span> <span class="pre">d_levels</span> <span class="pre">+</span> <span class="pre">num_levels)</span></code>.
 The ranges <code class="docutils literal notranslate"><span class="pre">[d_levels,</span> <span class="pre">d_levels</span> <span class="pre">+</span> <span class="pre">num_levels)</span></code> and <code class="docutils literal notranslate"><span class="pre">[row_begin,</span> <span class="pre">row_end)</span></code> may overlap.</p></li>
-<li><p>When <code class="docutils literal notranslate"><span class="pre">d_temp_storage</span></code> is <code class="docutils literal notranslate"><span class="pre">nullptr</span></code>, no work is done and the required allocation size is returned in <code class="docutils literal notranslate"><span class="pre">temp_storage_bytes</span></code>.</p></li>
+<li><p>When <code class="docutils literal notranslate"><span class="pre">d_temp_storage</span></code> is <code class="docutils literal notranslate"><span class="pre">nullptr</span></code>, no work is done and the required allocation size is returned in <code class="docutils literal notranslate"><span class="pre">temp_storage_bytes</span></code>. See <a class="reference internal" href="../api_docs/device_wide.html#device-temp-storage"><span class="std std-ref">Determining Temporary Storage Requirements</span></a> for usage guidance.</p></li>
 </ul>
 <section id="id5">
 <h2>Snippet<a class="headerlink" href="#id5" title="Link to this heading">#</a></h2>
@@ -2272,7 +2272,7 @@ not overlap <code class="docutils literal notranslate"><span class="pre">[d_samp
 <code class="docutils literal notranslate"><span class="pre">[d_levels[c2],</span> <span class="pre">d_levels[c2]</span> <span class="pre">+</span> <span class="pre">num_levels[c2])</span></code> in any way.
 The ranges <code class="docutils literal notranslate"><span class="pre">[d_levels[c2],</span> <span class="pre">d_levels[c2]</span> <span class="pre">+</span> <span class="pre">num_levels[c2])</span></code> and
 <code class="docutils literal notranslate"><span class="pre">[d_samples,</span> <span class="pre">d_samples</span> <span class="pre">+</span> <span class="pre">NUM_CHANNELS</span> <span class="pre">*</span> <span class="pre">num_pixels)</span></code> may overlap.</p></li>
-<li><p>When <code class="docutils literal notranslate"><span class="pre">d_temp_storage</span></code> is <code class="docutils literal notranslate"><span class="pre">nullptr</span></code>, no work is done and the required allocation size is returned in <code class="docutils literal notranslate"><span class="pre">temp_storage_bytes</span></code>.</p></li>
+<li><p>When <code class="docutils literal notranslate"><span class="pre">d_temp_storage</span></code> is <code class="docutils literal notranslate"><span class="pre">nullptr</span></code>, no work is done and the required allocation size is returned in <code class="docutils literal notranslate"><span class="pre">temp_storage_bytes</span></code>. See <a class="reference internal" href="../api_docs/device_wide.html#device-temp-storage"><span class="std std-ref">Determining Temporary Storage Requirements</span></a> for usage guidance.</p></li>
 </ul>
 <section id="id6">
 <h2>Snippet<a class="headerlink" href="#id6" title="Link to this heading">#</a></h2>
@@ -2413,7 +2413,7 @@ size, i.e., <code class="docutils literal notranslate"><span class="pre">(row_st
 <code class="docutils literal notranslate"><span class="pre">[d_levels[c2],</span> <span class="pre">d_levels[c2]</span> <span class="pre">+</span> <span class="pre">num_levels[c2])</span></code> in any way. The ranges
 <code class="docutils literal notranslate"><span class="pre">[d_levels[c2],</span> <span class="pre">d_levels[c2]</span> <span class="pre">+</span> <span class="pre">num_levels[c2])</span></code> and
 <code class="docutils literal notranslate"><span class="pre">[sample_begin,</span> <span class="pre">sample_end)</span></code> may overlap.</p></li>
-<li><p>When <code class="docutils literal notranslate"><span class="pre">d_temp_storage</span></code> is <code class="docutils literal notranslate"><span class="pre">nullptr</span></code>, no work is done and the required allocation size is returned in <code class="docutils literal notranslate"><span class="pre">temp_storage_bytes</span></code>.</p></li>
+<li><p>When <code class="docutils literal notranslate"><span class="pre">d_temp_storage</span></code> is <code class="docutils literal notranslate"><span class="pre">nullptr</span></code>, no work is done and the required allocation size is returned in <code class="docutils literal notranslate"><span class="pre">temp_storage_bytes</span></code>. See <a class="reference internal" href="../api_docs/device_wide.html#device-temp-storage"><span class="std std-ref">Determining Temporary Storage Requirements</span></a> for usage guidance.</p></li>
 </ul>
 <section id="id7">
 <h2>Snippet<a class="headerlink" href="#id7" title="Link to this heading">#</a></h2>

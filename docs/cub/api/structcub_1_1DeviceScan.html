@@ -1583,7 +1583,7 @@ the <a class="reference external" href="https://research.nvidia.com/publication/
 <li><p>When <code class="docutils literal notranslate"><span class="pre">d_in</span></code> and <code class="docutils literal notranslate"><span class="pre">d_out</span></code> are equal, the scan is performed in-place.
 The range <code class="docutils literal notranslate"><span class="pre">[d_in,</span> <span class="pre">d_in</span> <span class="pre">+</span> <span class="pre">num_items)</span></code> and <code class="docutils literal notranslate"><span class="pre">[d_out,</span> <span class="pre">d_out</span> <span class="pre">+</span> <span class="pre">num_items)</span></code>
 shall not overlap in any other way.</p></li>
-<li><p>When <code class="docutils literal notranslate"><span class="pre">d_temp_storage</span></code> is <code class="docutils literal notranslate"><span class="pre">nullptr</span></code>, no work is done and the required allocation size is returned in <code class="docutils literal notranslate"><span class="pre">temp_storage_bytes</span></code>.</p></li>
+<li><p>When <code class="docutils literal notranslate"><span class="pre">d_temp_storage</span></code> is <code class="docutils literal notranslate"><span class="pre">nullptr</span></code>, no work is done and the required allocation size is returned in <code class="docutils literal notranslate"><span class="pre">temp_storage_bytes</span></code>. See <a class="reference internal" href="../api_docs/device_wide.html#device-temp-storage"><span class="std std-ref">Determining Temporary Storage Requirements</span></a> for usage guidance.</p></li>
 </ul>
 <section id="snippet">
 <h2>Snippet<a class="headerlink" href="#snippet" title="Link to this heading">#</a></h2>
@@ -1664,7 +1664,7 @@ the <a class="reference external" href="https://research.nvidia.com/publication/
 <li><p>When <code class="docutils literal notranslate"><span class="pre">d_in</span></code> and <code class="docutils literal notranslate"><span class="pre">d_out</span></code> are equal, the scan is performed in-place.
 The range <code class="docutils literal notranslate"><span class="pre">[d_in,</span> <span class="pre">d_in</span> <span class="pre">+</span> <span class="pre">num_items)</span></code> and <code class="docutils literal notranslate"><span class="pre">[d_out,</span> <span class="pre">d_out</span> <span class="pre">+</span> <span class="pre">num_items)</span></code>
 shall not overlap in any other way.</p></li>
-<li><p>When <code class="docutils literal notranslate"><span class="pre">d_temp_storage</span></code> is <code class="docutils literal notranslate"><span class="pre">nullptr</span></code>, no work is done and the required allocation size is returned in <code class="docutils literal notranslate"><span class="pre">temp_storage_bytes</span></code>.</p></li>
+<li><p>When <code class="docutils literal notranslate"><span class="pre">d_temp_storage</span></code> is <code class="docutils literal notranslate"><span class="pre">nullptr</span></code>, no work is done and the required allocation size is returned in <code class="docutils literal notranslate"><span class="pre">temp_storage_bytes</span></code>. See <a class="reference internal" href="../api_docs/device_wide.html#device-temp-storage"><span class="std std-ref">Determining Temporary Storage Requirements</span></a> for usage guidance.</p></li>
 </ul>
 <section id="preconditions">
 <h2>Preconditions<a class="headerlink" href="#preconditions" title="Link to this heading">#</a></h2>
@@ -1738,7 +1738,7 @@ The value of <code class="docutils literal notranslate"><span class="pre">0</spa
 addition of floating-point types). Results for pseudo-associative
 operators may vary from run to run. Additional details can be found in
 the <a class="reference external" href="https://research.nvidia.com/publication/single-pass-parallel-prefix-scan-decoupled-look-back">decoupled look-back</a> description.</p></li>
-<li><p>When <code class="docutils literal notranslate"><span class="pre">d_temp_storage</span></code> is <code class="docutils literal notranslate"><span class="pre">nullptr</span></code>, no work is done and the required allocation size is returned in <code class="docutils literal notranslate"><span class="pre">temp_storage_bytes</span></code>.</p></li>
+<li><p>When <code class="docutils literal notranslate"><span class="pre">d_temp_storage</span></code> is <code class="docutils literal notranslate"><span class="pre">nullptr</span></code>, no work is done and the required allocation size is returned in <code class="docutils literal notranslate"><span class="pre">temp_storage_bytes</span></code>. See <a class="reference internal" href="../api_docs/device_wide.html#device-temp-storage"><span class="std std-ref">Determining Temporary Storage Requirements</span></a> for usage guidance.</p></li>
 </ul>
 <section id="id6">
 <h2>Snippet<a class="headerlink" href="#id6" title="Link to this heading">#</a></h2>
@@ -1821,7 +1821,7 @@ the <a class="reference external" href="https://research.nvidia.com/publication/
 <li><p>When <code class="docutils literal notranslate"><span class="pre">d_in</span></code> and <code class="docutils literal notranslate"><span class="pre">d_out</span></code> are equal, the scan is performed in-place. The
 range <code class="docutils literal notranslate"><span class="pre">[d_in,</span> <span class="pre">d_in</span> <span class="pre">+</span> <span class="pre">num_items)</span></code> and <code class="docutils literal notranslate"><span class="pre">[d_out,</span> <span class="pre">d_out</span> <span class="pre">+</span> <span class="pre">num_items)</span></code>
 shall not overlap in any other way.</p></li>
-<li><p>When <code class="docutils literal notranslate"><span class="pre">d_temp_storage</span></code> is <code class="docutils literal notranslate"><span class="pre">nullptr</span></code>, no work is done and the required allocation size is returned in <code class="docutils literal notranslate"><span class="pre">temp_storage_bytes</span></code>.</p></li>
+<li><p>When <code class="docutils literal notranslate"><span class="pre">d_temp_storage</span></code> is <code class="docutils literal notranslate"><span class="pre">nullptr</span></code>, no work is done and the required allocation size is returned in <code class="docutils literal notranslate"><span class="pre">temp_storage_bytes</span></code>. See <a class="reference internal" href="../api_docs/device_wide.html#device-temp-storage"><span class="std std-ref">Determining Temporary Storage Requirements</span></a> for usage guidance.</p></li>
 </ul>
 <section id="id8">
 <h2>Snippet<a class="headerlink" href="#id8" title="Link to this heading">#</a></h2>
@@ -1921,7 +1921,7 @@ the <a class="reference external" href="https://research.nvidia.com/publication/
 <li><p>When <code class="docutils literal notranslate"><span class="pre">d_in</span></code> and <code class="docutils literal notranslate"><span class="pre">d_out</span></code> are equal, the scan is performed in-place. The
 range <code class="docutils literal notranslate"><span class="pre">[d_in,</span> <span class="pre">d_in</span> <span class="pre">+</span> <span class="pre">num_items)</span></code> and <code class="docutils literal notranslate"><span class="pre">[d_out,</span> <span class="pre">d_out</span> <span class="pre">+</span> <span class="pre">num_items)</span></code>
 shall not overlap in any other way.</p></li>
-<li><p>When <code class="docutils literal notranslate"><span class="pre">d_temp_storage</span></code> is <code class="docutils literal notranslate"><span class="pre">nullptr</span></code>, no work is done and the required allocation size is returned in <code class="docutils literal notranslate"><span class="pre">temp_storage_bytes</span></code>.</p></li>
+<li><p>When <code class="docutils literal notranslate"><span class="pre">d_temp_storage</span></code> is <code class="docutils literal notranslate"><span class="pre">nullptr</span></code>, no work is done and the required allocation size is returned in <code class="docutils literal notranslate"><span class="pre">temp_storage_bytes</span></code>. See <a class="reference internal" href="../api_docs/device_wide.html#device-temp-storage"><span class="std std-ref">Determining Temporary Storage Requirements</span></a> for usage guidance.</p></li>
 </ul>
 <section id="id10">
 <h2>Snippet<a class="headerlink" href="#id10" title="Link to this heading">#</a></h2>
@@ -1995,7 +1995,7 @@ the initial value, and is assigned to <code class="docutils literal notranslate"
 addition of floating-point types). Results for pseudo-associative
 operators may vary from run to run. Additional details can be found in
 the <a class="reference external" href="https://research.nvidia.com/publication/single-pass-parallel-prefix-scan-decoupled-look-back">decoupled look-back</a> description.</p></li>
-<li><p>When <code class="docutils literal notranslate"><span class="pre">d_temp_storage</span></code> is <code class="docutils literal notranslate"><span class="pre">nullptr</span></code>, no work is done and the required allocation size is returned in <code class="docutils literal notranslate"><span class="pre">temp_storage_bytes</span></code>.</p></li>
+<li><p>When <code class="docutils literal notranslate"><span class="pre">d_temp_storage</span></code> is <code class="docutils literal notranslate"><span class="pre">nullptr</span></code>, no work is done and the required allocation size is returned in <code class="docutils literal notranslate"><span class="pre">temp_storage_bytes</span></code>. See <a class="reference internal" href="../api_docs/device_wide.html#device-temp-storage"><span class="std std-ref">Determining Temporary Storage Requirements</span></a> for usage guidance.</p></li>
 </ul>
 <section id="id12">
 <h2>Snippet<a class="headerlink" href="#id12" title="Link to this heading">#</a></h2>
@@ -2094,7 +2094,7 @@ the <a class="reference external" href="https://research.nvidia.com/publication/
 <li><p>When <code class="docutils literal notranslate"><span class="pre">d_in</span></code> and <code class="docutils literal notranslate"><span class="pre">d_out</span></code> are equal, the scan is performed in-place.
 The range <code class="docutils literal notranslate"><span class="pre">[d_in,</span> <span class="pre">d_in</span> <span class="pre">+</span> <span class="pre">num_items)</span></code> and <code class="docutils literal notranslate"><span class="pre">[d_out,</span> <span class="pre">d_out</span> <span class="pre">+</span> <span class="pre">num_items)</span></code>
 shall not overlap in any other way.</p></li>
-<li><p>When <code class="docutils literal notranslate"><span class="pre">d_temp_storage</span></code> is <code class="docutils literal notranslate"><span class="pre">nullptr</span></code>, no work is done and the required allocation size is returned in <code class="docutils literal notranslate"><span class="pre">temp_storage_bytes</span></code>.</p></li>
+<li><p>When <code class="docutils literal notranslate"><span class="pre">d_temp_storage</span></code> is <code class="docutils literal notranslate"><span class="pre">nullptr</span></code>, no work is done and the required allocation size is returned in <code class="docutils literal notranslate"><span class="pre">temp_storage_bytes</span></code>. See <a class="reference internal" href="../api_docs/device_wide.html#device-temp-storage"><span class="std std-ref">Determining Temporary Storage Requirements</span></a> for usage guidance.</p></li>
 </ul>
 <section id="id14">
 <h2>Snippet<a class="headerlink" href="#id14" title="Link to this heading">#</a></h2>
@@ -2196,7 +2196,7 @@ The <code class="docutils literal notranslate"><span class="pre">init_value</spa
 addition of floating-point types). Results for pseudo-associative
 operators may vary from run to run. Additional details can be found in
 the <a class="reference external" href="https://research.nvidia.com/publication/single-pass-parallel-prefix-scan-decoupled-look-back">decoupled look-back</a> description.</p></li>
-<li><p>When <code class="docutils literal notranslate"><span class="pre">d_temp_storage</span></code> is <code class="docutils literal notranslate"><span class="pre">nullptr</span></code>, no work is done and the required allocation size is returned in <code class="docutils literal notranslate"><span class="pre">temp_storage_bytes</span></code>.</p></li>
+<li><p>When <code class="docutils literal notranslate"><span class="pre">d_temp_storage</span></code> is <code class="docutils literal notranslate"><span class="pre">nullptr</span></code>, no work is done and the required allocation size is returned in <code class="docutils literal notranslate"><span class="pre">temp_storage_bytes</span></code>. See <a class="reference internal" href="../api_docs/device_wide.html#device-temp-storage"><span class="std std-ref">Determining Temporary Storage Requirements</span></a> for usage guidance.</p></li>
 </ul>
 <section id="id16">
 <h2>Snippet<a class="headerlink" href="#id16" title="Link to this heading">#</a></h2>
@@ -2299,7 +2299,7 @@ the <a class="reference external" href="https://research.nvidia.com/publication/
 <li><p>When <code class="docutils literal notranslate"><span class="pre">d_in</span></code> and <code class="docutils literal notranslate"><span class="pre">d_out</span></code> are equal, the scan is performed in-place. The
 range <code class="docutils literal notranslate"><span class="pre">[d_in,</span> <span class="pre">d_in</span> <span class="pre">+</span> <span class="pre">num_items)</span></code> and <code class="docutils literal notranslate"><span class="pre">[d_out,</span> <span class="pre">d_out</span> <span class="pre">+</span> <span class="pre">num_items)</span></code>
 shall not overlap in any other way.</p></li>
-<li><p>When <code class="docutils literal notranslate"><span class="pre">d_temp_storage</span></code> is <code class="docutils literal notranslate"><span class="pre">nullptr</span></code>, no work is done and the required allocation size is returned in <code class="docutils literal notranslate"><span class="pre">temp_storage_bytes</span></code>.</p></li>
+<li><p>When <code class="docutils literal notranslate"><span class="pre">d_temp_storage</span></code> is <code class="docutils literal notranslate"><span class="pre">nullptr</span></code>, no work is done and the required allocation size is returned in <code class="docutils literal notranslate"><span class="pre">temp_storage_bytes</span></code>. See <a class="reference internal" href="../api_docs/device_wide.html#device-temp-storage"><span class="std std-ref">Determining Temporary Storage Requirements</span></a> for usage guidance.</p></li>
 </ul>
 <section id="id18">
 <h2>Snippet<a class="headerlink" href="#id18" title="Link to this heading">#</a></h2>
@@ -2377,7 +2377,7 @@ shall not overlap in any other way.</p></li>
 addition of floating-point types). Results for pseudo-associative
 operators may vary from run to run. Additional details can be found in
 the <a class="reference external" href="https://research.nvidia.com/publication/single-pass-parallel-prefix-scan-decoupled-look-back">decoupled look-back</a> description.</p></li>
-<li><p>When <code class="docutils literal notranslate"><span class="pre">d_temp_storage</span></code> is <code class="docutils literal notranslate"><span class="pre">nullptr</span></code>, no work is done and the required allocation size is returned in <code class="docutils literal notranslate"><span class="pre">temp_storage_bytes</span></code>.</p></li>
+<li><p>When <code class="docutils literal notranslate"><span class="pre">d_temp_storage</span></code> is <code class="docutils literal notranslate"><span class="pre">nullptr</span></code>, no work is done and the required allocation size is returned in <code class="docutils literal notranslate"><span class="pre">temp_storage_bytes</span></code>. See <a class="reference internal" href="../api_docs/device_wide.html#device-temp-storage"><span class="std std-ref">Determining Temporary Storage Requirements</span></a> for usage guidance.</p></li>
 </ul>
 <section id="id20">
 <h2>Snippet<a class="headerlink" href="#id20" title="Link to this heading">#</a></h2>
@@ -2457,7 +2457,7 @@ the <a class="reference external" href="https://research.nvidia.com/publication/
 <li><p>When <code class="docutils literal notranslate"><span class="pre">d_in</span></code> and <code class="docutils literal notranslate"><span class="pre">d_out</span></code> are equal, the scan is performed in-place. The
 range <code class="docutils literal notranslate"><span class="pre">[d_in,</span> <span class="pre">d_in</span> <span class="pre">+</span> <span class="pre">num_items)</span></code> and <code class="docutils literal notranslate"><span class="pre">[d_out,</span> <span class="pre">d_out</span> <span class="pre">+</span> <span class="pre">num_items)</span></code>
 shall not overlap in any other way.</p></li>
-<li><p>When <code class="docutils literal notranslate"><span class="pre">d_temp_storage</span></code> is <code class="docutils literal notranslate"><span class="pre">nullptr</span></code>, no work is done and the required allocation size is returned in <code class="docutils literal notranslate"><span class="pre">temp_storage_bytes</span></code>.</p></li>
+<li><p>When <code class="docutils literal notranslate"><span class="pre">d_temp_storage</span></code> is <code class="docutils literal notranslate"><span class="pre">nullptr</span></code>, no work is done and the required allocation size is returned in <code class="docutils literal notranslate"><span class="pre">temp_storage_bytes</span></code>. See <a class="reference internal" href="../api_docs/device_wide.html#device-temp-storage"><span class="std std-ref">Determining Temporary Storage Requirements</span></a> for usage guidance.</p></li>
 </ul>
 <section id="id22">
 <h2>Snippet<a class="headerlink" href="#id22" title="Link to this heading">#</a></h2>
@@ -2557,7 +2557,7 @@ the <a class="reference external" href="https://research.nvidia.com/publication/
 <li><p>When <code class="docutils literal notranslate"><span class="pre">d_in</span></code> and <code class="docutils literal notranslate"><span class="pre">d_out</span></code> are equal, the scan is performed in-place. The
 range <code class="docutils literal notranslate"><span class="pre">[d_in,</span> <span class="pre">d_in</span> <span class="pre">+</span> <span class="pre">num_items)</span></code> and <code class="docutils literal notranslate"><span class="pre">[d_out,</span> <span class="pre">d_out</span> <span class="pre">+</span> <span class="pre">num_items)</span></code>
 shall not overlap in any other way.</p></li>
-<li><p>When <code class="docutils literal notranslate"><span class="pre">d_temp_storage</span></code> is <code class="docutils literal notranslate"><span class="pre">nullptr</span></code>, no work is done and the required allocation size is returned in <code class="docutils literal notranslate"><span class="pre">temp_storage_bytes</span></code>.</p></li>
+<li><p>When <code class="docutils literal notranslate"><span class="pre">d_temp_storage</span></code> is <code class="docutils literal notranslate"><span class="pre">nullptr</span></code>, no work is done and the required allocation size is returned in <code class="docutils literal notranslate"><span class="pre">temp_storage_bytes</span></code>. See <a class="reference internal" href="../api_docs/device_wide.html#device-temp-storage"><span class="std std-ref">Determining Temporary Storage Requirements</span></a> for usage guidance.</p></li>
 </ul>
 <section id="id24">
 <h2>Snippet<a class="headerlink" href="#id24" title="Link to this heading">#</a></h2>
@@ -2635,7 +2635,7 @@ shall not overlap in any other way.</p></li>
 addition of floating-point types). Results for pseudo-associative
 operators may vary from run to run. Additional details can be found in
 the <a class="reference external" href="https://research.nvidia.com/publication/single-pass-parallel-prefix-scan-decoupled-look-back">decoupled look-back</a> description.</p></li>
-<li><p>When <code class="docutils literal notranslate"><span class="pre">d_temp_storage</span></code> is <code class="docutils literal notranslate"><span class="pre">nullptr</span></code>, no work is done and the required allocation size is returned in <code class="docutils literal notranslate"><span class="pre">temp_storage_bytes</span></code>.</p></li>
+<li><p>When <code class="docutils literal notranslate"><span class="pre">d_temp_storage</span></code> is <code class="docutils literal notranslate"><span class="pre">nullptr</span></code>, no work is done and the required allocation size is returned in <code class="docutils literal notranslate"><span class="pre">temp_storage_bytes</span></code>. See <a class="reference internal" href="../api_docs/device_wide.html#device-temp-storage"><span class="std std-ref">Determining Temporary Storage Requirements</span></a> for usage guidance.</p></li>
 </ul>
 <section id="id26">
 <h2>Snippet<a class="headerlink" href="#id26" title="Link to this heading">#</a></h2>
@@ -2738,7 +2738,7 @@ the <a class="reference external" href="https://research.nvidia.com/publication/
 <li><p><code class="docutils literal notranslate"><span class="pre">d_values_in</span></code> may equal <code class="docutils literal notranslate"><span class="pre">d_values_out</span></code> but the range
 <code class="docutils literal notranslate"><span class="pre">[d_values_in,</span> <span class="pre">d_values_in</span> <span class="pre">+</span> <span class="pre">num_items)</span></code> and the range
 <code class="docutils literal notranslate"><span class="pre">[d_values_out,</span> <span class="pre">d_values_out</span> <span class="pre">+</span> <span class="pre">num_items)</span></code> shall not overlap otherwise.</p></li>
-<li><p>When <code class="docutils literal notranslate"><span class="pre">d_temp_storage</span></code> is <code class="docutils literal notranslate"><span class="pre">nullptr</span></code>, no work is done and the required allocation size is returned in <code class="docutils literal notranslate"><span class="pre">temp_storage_bytes</span></code>.</p></li>
+<li><p>When <code class="docutils literal notranslate"><span class="pre">d_temp_storage</span></code> is <code class="docutils literal notranslate"><span class="pre">nullptr</span></code>, no work is done and the required allocation size is returned in <code class="docutils literal notranslate"><span class="pre">temp_storage_bytes</span></code>. See <a class="reference internal" href="../api_docs/device_wide.html#device-temp-storage"><span class="std std-ref">Determining Temporary Storage Requirements</span></a> for usage guidance.</p></li>
 </ul>
 <section id="id28">
 <h2>Snippet<a class="headerlink" href="#id28" title="Link to this heading">#</a></h2>
@@ -2834,7 +2834,7 @@ the <a class="reference external" href="https://research.nvidia.com/publication/
 <li><p><code class="docutils literal notranslate"><span class="pre">d_values_in</span></code> may equal <code class="docutils literal notranslate"><span class="pre">d_values_out</span></code> but the range
 <code class="docutils literal notranslate"><span class="pre">[d_values_in,</span> <span class="pre">d_values_in</span> <span class="pre">+</span> <span class="pre">num_items)</span></code> and the range
 <code class="docutils literal notranslate"><span class="pre">[d_values_out,</span> <span class="pre">d_values_out</span> <span class="pre">+</span> <span class="pre">num_items)</span></code> shall not overlap otherwise.</p></li>
-<li><p>When <code class="docutils literal notranslate"><span class="pre">d_temp_storage</span></code> is <code class="docutils literal notranslate"><span class="pre">nullptr</span></code>, no work is done and the required allocation size is returned in <code class="docutils literal notranslate"><span class="pre">temp_storage_bytes</span></code>.</p></li>
+<li><p>When <code class="docutils literal notranslate"><span class="pre">d_temp_storage</span></code> is <code class="docutils literal notranslate"><span class="pre">nullptr</span></code>, no work is done and the required allocation size is returned in <code class="docutils literal notranslate"><span class="pre">temp_storage_bytes</span></code>. See <a class="reference internal" href="../api_docs/device_wide.html#device-temp-storage"><span class="std std-ref">Determining Temporary Storage Requirements</span></a> for usage guidance.</p></li>
 </ul>
 <section id="id30">
 <h2>Snippet<a class="headerlink" href="#id30" title="Link to this heading">#</a></h2>
@@ -2955,7 +2955,7 @@ the <a class="reference external" href="https://research.nvidia.com/publication/
 <li><p><code class="docutils literal notranslate"><span class="pre">d_values_in</span></code> may equal <code class="docutils literal notranslate"><span class="pre">d_values_out</span></code> but the range
 <code class="docutils literal notranslate"><span class="pre">[d_values_in,</span> <span class="pre">d_values_in</span> <span class="pre">+</span> <span class="pre">num_items)</span></code> and the range
 <code class="docutils literal notranslate"><span class="pre">[d_values_out,</span> <span class="pre">d_values_out</span> <span class="pre">+</span> <span class="pre">num_items)</span></code> shall not overlap otherwise.</p></li>
-<li><p>When <code class="docutils literal notranslate"><span class="pre">d_temp_storage</span></code> is <code class="docutils literal notranslate"><span class="pre">nullptr</span></code>, no work is done and the required allocation size is returned in <code class="docutils literal notranslate"><span class="pre">temp_storage_bytes</span></code>.</p></li>
+<li><p>When <code class="docutils literal notranslate"><span class="pre">d_temp_storage</span></code> is <code class="docutils literal notranslate"><span class="pre">nullptr</span></code>, no work is done and the required allocation size is returned in <code class="docutils literal notranslate"><span class="pre">temp_storage_bytes</span></code>. See <a class="reference internal" href="../api_docs/device_wide.html#device-temp-storage"><span class="std std-ref">Determining Temporary Storage Requirements</span></a> for usage guidance.</p></li>
 </ul>
 <section id="id32">
 <h2>Snippet<a class="headerlink" href="#id32" title="Link to this heading">#</a></h2>
@@ -3048,7 +3048,7 @@ the <a class="reference external" href="https://research.nvidia.com/publication/
 <li><p><code class="docutils literal notranslate"><span class="pre">d_values_in</span></code> may equal <code class="docutils literal notranslate"><span class="pre">d_values_out</span></code> but the range
 <code class="docutils literal notranslate"><span class="pre">[d_values_in,</span> <span class="pre">d_values_in</span> <span class="pre">+</span> <span class="pre">num_items)</span></code> and the range
 <code class="docutils literal notranslate"><span class="pre">[d_values_out,</span> <span class="pre">d_values_out</span> <span class="pre">+</span> <span class="pre">num_items)</span></code> shall not overlap otherwise.</p></li>
-<li><p>When <code class="docutils literal notranslate"><span class="pre">d_temp_storage</span></code> is <code class="docutils literal notranslate"><span class="pre">nullptr</span></code>, no work is done and the required allocation size is returned in <code class="docutils literal notranslate"><span class="pre">temp_storage_bytes</span></code>.</p></li>
+<li><p>When <code class="docutils literal notranslate"><span class="pre">d_temp_storage</span></code> is <code class="docutils literal notranslate"><span class="pre">nullptr</span></code>, no work is done and the required allocation size is returned in <code class="docutils literal notranslate"><span class="pre">temp_storage_bytes</span></code>. See <a class="reference internal" href="../api_docs/device_wide.html#device-temp-storage"><span class="std std-ref">Determining Temporary Storage Requirements</span></a> for usage guidance.</p></li>
 </ul>
 <section id="id34">
 <h2>Snippet<a class="headerlink" href="#id34" title="Link to this heading">#</a></h2>

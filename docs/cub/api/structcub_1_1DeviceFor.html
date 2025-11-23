@@ -1534,7 +1534,7 @@ The algorithm is similar to
 from P2300.</p>
 <ul class="simple">
 <li><p>The return value of <code class="docutils literal notranslate"><span class="pre">op</span></code>, if any, is ignored.</p></li>
-<li><p>When <code class="docutils literal notranslate"><span class="pre">d_temp_storage</span></code> is <code class="docutils literal notranslate"><span class="pre">nullptr</span></code>, no work is done and the required allocation size is returned in <code class="docutils literal notranslate"><span class="pre">temp_storage_bytes</span></code>.</p></li>
+<li><p>When <code class="docutils literal notranslate"><span class="pre">d_temp_storage</span></code> is <code class="docutils literal notranslate"><span class="pre">nullptr</span></code>, no work is done and the required allocation size is returned in <code class="docutils literal notranslate"><span class="pre">temp_storage_bytes</span></code>. See <a class="reference internal" href="../api_docs/device_wide.html#device-temp-storage"><span class="std std-ref">Determining Temporary Storage Requirements</span></a> for usage guidance.</p></li>
 </ul>
 </section>
 <section id="a-simple-example">
@@ -1609,7 +1609,7 @@ from P2300.</p>
 <p>Applies the function object <code class="docutils literal notranslate"><span class="pre">op</span></code> to each element in the range <code class="docutils literal notranslate"><span class="pre">[first,</span> <span class="pre">first</span> <span class="pre">+</span> <span class="pre">num_items)</span></code></p>
 <ul class="simple">
 <li><p>The return value of <code class="docutils literal notranslate"><span class="pre">op</span></code>, if any, is ignored.</p></li>
-<li><p>When <code class="docutils literal notranslate"><span class="pre">d_temp_storage</span></code> is <code class="docutils literal notranslate"><span class="pre">nullptr</span></code>, no work is done and the required allocation size is returned in <code class="docutils literal notranslate"><span class="pre">temp_storage_bytes</span></code>.</p></li>
+<li><p>When <code class="docutils literal notranslate"><span class="pre">d_temp_storage</span></code> is <code class="docutils literal notranslate"><span class="pre">nullptr</span></code>, no work is done and the required allocation size is returned in <code class="docutils literal notranslate"><span class="pre">temp_storage_bytes</span></code>. See <a class="reference internal" href="../api_docs/device_wide.html#device-temp-storage"><span class="std std-ref">Determining Temporary Storage Requirements</span></a> for usage guidance.</p></li>
 </ul>
 </section>
 <section id="id2">
@@ -1684,7 +1684,7 @@ from P2300.</p>
 <p>Applies the function object <code class="docutils literal notranslate"><span class="pre">op</span></code> to each element in the range <code class="docutils literal notranslate"><span class="pre">[first,</span> <span class="pre">last)</span></code></p>
 <ul class="simple">
 <li><p>The return value of <code class="docutils literal notranslate"><span class="pre">op</span></code>, if any, is ignored.</p></li>
-<li><p>When <code class="docutils literal notranslate"><span class="pre">d_temp_storage</span></code> is <code class="docutils literal notranslate"><span class="pre">nullptr</span></code>, no work is done and the required allocation size is returned in <code class="docutils literal notranslate"><span class="pre">temp_storage_bytes</span></code>.</p></li>
+<li><p>When <code class="docutils literal notranslate"><span class="pre">d_temp_storage</span></code> is <code class="docutils literal notranslate"><span class="pre">nullptr</span></code>, no work is done and the required allocation size is returned in <code class="docutils literal notranslate"><span class="pre">temp_storage_bytes</span></code>. See <a class="reference internal" href="../api_docs/device_wide.html#device-temp-storage"><span class="std std-ref">Determining Temporary Storage Requirements</span></a> for usage guidance.</p></li>
 </ul>
 </section>
 <section id="id4">
@@ -1761,7 +1761,7 @@ This relaxation allows <code class="docutils literal notranslate"><span class="p
 <ul class="simple">
 <li><p>Allowed to invoke <code class="docutils literal notranslate"><span class="pre">op</span></code> on copies of the elements</p></li>
 <li><p>The return value of <code class="docutils literal notranslate"><span class="pre">op</span></code>, if any, is ignored.</p></li>
-<li><p>When <code class="docutils literal notranslate"><span class="pre">d_temp_storage</span></code> is <code class="docutils literal notranslate"><span class="pre">nullptr</span></code>, no work is done and the required allocation size is returned in <code class="docutils literal notranslate"><span class="pre">temp_storage_bytes</span></code>.</p></li>
+<li><p>When <code class="docutils literal notranslate"><span class="pre">d_temp_storage</span></code> is <code class="docutils literal notranslate"><span class="pre">nullptr</span></code>, no work is done and the required allocation size is returned in <code class="docutils literal notranslate"><span class="pre">temp_storage_bytes</span></code>. See <a class="reference internal" href="../api_docs/device_wide.html#device-temp-storage"><span class="std std-ref">Determining Temporary Storage Requirements</span></a> for usage guidance.</p></li>
 </ul>
 </section>
 <section id="id6">
@@ -1845,7 +1845,7 @@ This relaxation allows <code class="docutils literal notranslate"><span class="p
 <ul class="simple">
 <li><p>Allowed to invoke <code class="docutils literal notranslate"><span class="pre">op</span></code> on copies of the elements</p></li>
 <li><p>The return value of <code class="docutils literal notranslate"><span class="pre">op</span></code>, if any, is ignored.</p></li>
-<li><p>When <code class="docutils literal notranslate"><span class="pre">d_temp_storage</span></code> is <code class="docutils literal notranslate"><span class="pre">nullptr</span></code>, no work is done and the required allocation size is returned in <code class="docutils literal notranslate"><span class="pre">temp_storage_bytes</span></code>.</p></li>
+<li><p>When <code class="docutils literal notranslate"><span class="pre">d_temp_storage</span></code> is <code class="docutils literal notranslate"><span class="pre">nullptr</span></code>, no work is done and the required allocation size is returned in <code class="docutils literal notranslate"><span class="pre">temp_storage_bytes</span></code>. See <a class="reference internal" href="../api_docs/device_wide.html#device-temp-storage"><span class="std std-ref">Determining Temporary Storage Requirements</span></a> for usage guidance.</p></li>
 </ul>
 </section>
 <section id="id8">

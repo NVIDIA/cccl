@@ -203,6 +203,10 @@
   
 
   
+    <button class="pst-navbar-icon sidebar-toggle secondary-toggle" aria-label="On this page">
+      <span class="fa-solid fa-outdent"></span>
+    </button>
+  
 </div>
 
     </header>
@@ -1502,6 +1506,65 @@
 <span id="device-module"></span><h1>Device-Wide Primitives<a class="headerlink" href="#device-wide-primitives" title="Link to this heading">#</a></h1>
 <div class="toctree-wrapper compound">
 </div>
+<section id="determining-temporary-storage-requirements">
+<span id="device-temp-storage"></span><h2>Determining Temporary Storage Requirements<a class="headerlink" href="#determining-temporary-storage-requirements" title="Link to this heading">#</a></h2>
+<p><strong>Two-Phase API</strong> (Traditional)</p>
+<p>Most CUB device-wide algorithms follow a two-phase usage pattern:</p>
+<ol class="arabic simple">
+<li><p><strong>Query Phase</strong>: Call the algorithm with <code class="docutils literal notranslate"><span class="pre">d_temp_storage</span> <span class="pre">=</span> <span class="pre">nullptr</span></code> to determine the required temporary storage size</p></li>
+<li><p><strong>Execution Phase</strong>: Allocate storage and call the algorithm again to perform the actual operation</p></li>
+</ol>
+<p><strong>What arguments are needed during the query phase?</strong></p>
+<ul class="simple">
+<li><p><strong>Template instantiation</strong>: The query call must use the same template arguments as the execution call.</p></li>
+<li><p><strong>Argument access</strong>: Aside from <code class="docutils literal notranslate"><span class="pre">d_temp_storage</span></code>, <code class="docutils literal notranslate"><span class="pre">temp_storage_bytes</span></code>, and the problem-size arguments, no parameters are accessed during the query phase, so their values may be indeterminate. The dispatch layer returns before launching kernels or touching user storage.</p></li>
+<li><p><strong>Current device</strong>: The computed temporary storage size is valid only when the execution call runs on the same current CUDA device as the query. Re-run the query if the current device changes between phases.</p></li>
+</ul>
+<p>Example pattern:</p>
+<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="c1">// Request and allocate temporary storage</span>
+<span class="kt">void</span><span class="o">*</span><span class="w"> </span><span class="n">d_temp_storage</span><span class="w">      </span><span class="o">=</span><span class="w"> </span><span class="k">nullptr</span><span class="p">;</span>
+<span class="kt">size_t</span><span class="w"> </span><span class="n">temp_storage_bytes</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span>
+<span class="n">CubDebugExit</span><span class="p">(</span><span class="n">DeviceReduce</span><span class="o">::</span><span class="n">Sum</span><span class="p">(</span><span class="n">d_temp_storage</span><span class="p">,</span><span class="w"> </span><span class="n">temp_storage_bytes</span><span class="p">,</span><span class="w"> </span><span class="n">d_in</span><span class="p">,</span><span class="w"> </span><span class="n">d_out</span><span class="p">,</span><span class="w"> </span><span class="n">num_items</span><span class="p">));</span>
+<span class="n">CubDebugExit</span><span class="p">(</span><span class="n">g_allocator</span><span class="p">.</span><span class="n">DeviceAllocate</span><span class="p">(</span><span class="o">&amp;</span><span class="n">d_temp_storage</span><span class="p">,</span><span class="w"> </span><span class="n">temp_storage_bytes</span><span class="p">));</span>
+
+<span class="c1">// Run</span>
+<span class="n">CubDebugExit</span><span class="p">(</span><span class="n">DeviceReduce</span><span class="o">::</span><span class="n">Sum</span><span class="p">(</span><span class="n">d_temp_storage</span><span class="p">,</span><span class="w"> </span><span class="n">temp_storage_bytes</span><span class="p">,</span><span class="w"> </span><span class="n">d_in</span><span class="p">,</span><span class="w"> </span><span class="n">d_out</span><span class="p">,</span><span class="w"> </span><span class="n">num_items</span><span class="p">));</span>
+</pre></div>
+</div>
+<p><strong>Single-Phase API</strong> (Environment-Based)</p>
+<p>Environment-based overloads are rolling out across CUB device-wide primitives. They remove the manual query/execute split by obtaining the temporary storage from a memory resource queried from the execution environment argument.</p>
+<p>Key properties of the environment argument:</p>
+<ul class="simple">
+<li><p>It is defaulted and appears as the last argument.</p></li>
+<li><p>Streams can be specified with <code class="docutils literal notranslate"><span class="pre">cuda::get_stream</span></code> properties.</p></li>
+<li><p>You can select the memory resource (CCCL-provided or custom) used for internal allocations.</p></li>
+<li><p>Supported algorithms accept determinism requirements (for example, <code class="docutils literal notranslate"><span class="pre">cuda::execution::determinism::gpu_to_gpu</span></code>).</p></li>
+<li><p>Multiple properties compose into a single centralized argument.</p></li>
+</ul>
+<p>Example (centralized control via a single environment argument):</p>
+<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;cub/device/device_reduce.cuh&gt;</span>
+<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;cuda/std/execution&gt;</span>
+<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;cuda/stream_ref&gt;</span>
+<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;cuda/__memory_resource/get_memory_resource.h&gt;</span>
+<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;cuda/__execution/determinism.h&gt;</span>
+
+<span class="c1">// Build an execution environment with stream, memory resource, and determinism</span>
+<span class="n">cudaStream_t</span><span class="w"> </span><span class="n">stream</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="cm">/* ... */</span><span class="p">;</span>
+<span class="k">auto</span><span class="w"> </span><span class="n">stream_env</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">cuda</span><span class="o">::</span><span class="n">std</span><span class="o">::</span><span class="n">execution</span><span class="o">::</span><span class="n">prop</span><span class="p">{</span><span class="n">cuda</span><span class="o">::</span><span class="n">get_stream_t</span><span class="p">{},</span><span class="w"> </span><span class="n">cuda</span><span class="o">::</span><span class="n">stream_ref</span><span class="p">{</span><span class="n">stream</span><span class="p">}};</span>
+
+<span class="k">auto</span><span class="w"> </span><span class="n">mr</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="cm">/* CCCL-provided or user-defined device_memory_resource */</span><span class="p">;</span>
+<span class="k">auto</span><span class="w"> </span><span class="n">mr_env</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">cuda</span><span class="o">::</span><span class="n">std</span><span class="o">::</span><span class="n">execution</span><span class="o">::</span><span class="n">prop</span><span class="p">{</span><span class="n">cuda</span><span class="o">::</span><span class="n">mr</span><span class="o">::</span><span class="n">__get_memory_resource_t</span><span class="p">{},</span><span class="w"> </span><span class="n">mr</span><span class="p">};</span>
+
+<span class="k">auto</span><span class="w"> </span><span class="n">det_env</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">cuda</span><span class="o">::</span><span class="n">execution</span><span class="o">::</span><span class="n">require</span><span class="p">(</span><span class="n">cuda</span><span class="o">::</span><span class="n">execution</span><span class="o">::</span><span class="n">determinism</span><span class="o">::</span><span class="n">gpu_to_gpu</span><span class="p">);</span>
+
+<span class="k">auto</span><span class="w"> </span><span class="n">env</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">cuda</span><span class="o">::</span><span class="n">std</span><span class="o">::</span><span class="n">execution</span><span class="o">::</span><span class="n">env</span><span class="p">{</span><span class="n">stream_env</span><span class="p">,</span><span class="w"> </span><span class="n">mr_env</span><span class="p">,</span><span class="w"> </span><span class="n">det_env</span><span class="p">};</span>
+
+<span class="c1">// Single-phase API (no explicit temp storage, environment last and defaulted)</span>
+<span class="n">cub</span><span class="o">::</span><span class="n">DeviceReduce</span><span class="o">::</span><span class="n">Reduce</span><span class="p">(</span><span class="n">d_in</span><span class="p">,</span><span class="w"> </span><span class="n">d_out</span><span class="p">,</span><span class="w"> </span><span class="n">num_items</span><span class="p">,</span><span class="w"> </span><span class="n">cuda</span><span class="o">::</span><span class="n">std</span><span class="o">::</span><span class="n">plus</span><span class="o">&lt;&gt;</span><span class="p">{},</span><span class="w"> </span><span class="n">init</span><span class="p">,</span><span class="w"> </span><span class="n">env</span><span class="p">);</span>
+</pre></div>
+</div>
+<p>The remainder of this page focuses on the traditional two-phase pattern; see individual algorithm documentation for the
+availability and specifics of single-phase overloads.</p>
 <p>CUB device-level single-problem parallel algorithms:</p>
 <ul class="simple">
 <li><p><a class="reference internal" href="../api/structcub_1_1DeviceAdjacentDifference.html#_CPPv4N3cub24DeviceAdjacentDifferenceE" title="cub::DeviceAdjacentDifference"><code class="xref cpp cpp-struct docutils literal notranslate"><span class="pre">cub::DeviceAdjacentDifference</span></code></a> computes the difference between adjacent elements residing within device-accessible memory</p></li>
@@ -1512,7 +1575,7 @@
 <li><p><a class="reference internal" href="../api/structcub_1_1DeviceMergeSort.html#_CPPv4N3cub15DeviceMergeSortE" title="cub::DeviceMergeSort"><code class="xref cpp cpp-struct docutils literal notranslate"><span class="pre">cub::DeviceMergeSort</span></code></a> sorts items residing within device-accessible memory</p></li>
 <li><p><a class="reference internal" href="../api/structcub_1_1DeviceRadixSort.html#_CPPv4N3cub15DeviceRadixSortE" title="cub::DeviceRadixSort"><code class="xref cpp cpp-struct docutils literal notranslate"><span class="pre">cub::DeviceRadixSort</span></code></a> sorts items residing within device-accessible memory using radix sorting method</p></li>
 <li><p><a class="reference internal" href="../api/structcub_1_1DeviceReduce.html#_CPPv4N3cub12DeviceReduceE" title="cub::DeviceReduce"><code class="xref cpp cpp-struct docutils literal notranslate"><span class="pre">cub::DeviceReduce</span></code></a> computes reduction of items residing within device-accessible memory</p></li>
-<li><p><a class="reference internal" href="../api/structcub_1_1DeviceRunLengthEncode.html#_CPPv4N3cub21DeviceRunLengthEncodeE" title="cub::DeviceRunLengthEncode"><code class="xref cpp cpp-struct docutils literal notranslate"><span class="pre">cub::DeviceRunLengthEncode</span></code></a> demarcating “runs” of same-valued items withing a sequence residing within device-accessible memory</p></li>
+<li><p><a class="reference internal" href="../api/structcub_1_1DeviceRunLengthEncode.html#_CPPv4N3cub21DeviceRunLengthEncodeE" title="cub::DeviceRunLengthEncode"><code class="xref cpp cpp-struct docutils literal notranslate"><span class="pre">cub::DeviceRunLengthEncode</span></code></a> demarcating “runs” of same-valued items within a sequence residing within device-accessible memory</p></li>
 <li><p><a class="reference internal" href="../api/structcub_1_1DeviceScan.html#_CPPv4N3cub10DeviceScanE" title="cub::DeviceScan"><code class="xref cpp cpp-struct docutils literal notranslate"><span class="pre">cub::DeviceScan</span></code></a> computes a prefix scan across a sequence of data items residing within device-accessible memory</p></li>
 <li><p><a class="reference internal" href="../api/structcub_1_1DeviceSelect.html#_CPPv4N3cub12DeviceSelectE" title="cub::DeviceSelect"><code class="xref cpp cpp-struct docutils literal notranslate"><span class="pre">cub::DeviceSelect</span></code></a> compacts data residing within device-accessible memory</p></li>
 <li><p><a class="reference internal" href="../api/structcub_1_1DeviceTopK.html#_CPPv4N3cub10DeviceTopKE" title="cub::DeviceTopK"><code class="xref cpp cpp-struct docutils literal notranslate"><span class="pre">cub::DeviceTopK</span></code></a> finds the largest (or smallest) K items from an unordered list residing within device-accessible memory</p></li>
@@ -1525,6 +1588,7 @@
 <li><p><a class="reference internal" href="../api/structcub_1_1DeviceCopy.html#_CPPv4N3cub10DeviceCopyE" title="cub::DeviceCopy"><code class="xref cpp cpp-struct docutils literal notranslate"><span class="pre">cub::DeviceCopy</span></code></a> provides device-wide, parallel operations for batched copying of data residing within device-accessible memory</p></li>
 <li><p><a class="reference internal" href="../api/structcub_1_1DeviceMemcpy.html#_CPPv4N3cub12DeviceMemcpyE" title="cub::DeviceMemcpy"><code class="xref cpp cpp-struct docutils literal notranslate"><span class="pre">cub::DeviceMemcpy</span></code></a> provides device-wide, parallel operations for batched copying of data residing within device-accessible memory</p></li>
 </ul>
+</section>
 </section>
 
 
@@ -1562,9 +1626,25 @@
             
             
 
-<div class="bd-sidebar-secondary"></div>
+
+              
+                <dialog id="pst-secondary-sidebar-modal"></dialog>
+                <div id="pst-secondary-sidebar" class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
 
 
+  <div class="sidebar-secondary-item">
+<div
+    id="pst-page-navigation-heading-2"
+    class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> On this page
+  </div>
+  <nav class="bd-toc-nav page-toc" aria-labelledby="pst-page-navigation-heading-2">
+    <ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#determining-temporary-storage-requirements">Determining Temporary Storage Requirements</a></li>
+</ul>
+  </nav></div>
+
+</div></div>
               
             
 

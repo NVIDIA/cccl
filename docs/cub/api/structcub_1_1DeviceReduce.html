@@ -1560,7 +1560,7 @@ However, results for pseudo-associative reduction may be inconsistent
 from one device to a another device of a different compute-capability
 because CUB can employ different tile-sizing for different architectures.</p></li>
 <li><p>The range <code class="docutils literal notranslate"><span class="pre">[d_in,</span> <span class="pre">d_in</span> <span class="pre">+</span> <span class="pre">num_items)</span></code> shall not overlap <code class="docutils literal notranslate"><span class="pre">d_out</span></code>.</p></li>
-<li><p>When <code class="docutils literal notranslate"><span class="pre">d_temp_storage</span></code> is <code class="docutils literal notranslate"><span class="pre">nullptr</span></code>, no work is done and the required allocation size is returned in <code class="docutils literal notranslate"><span class="pre">temp_storage_bytes</span></code>.</p></li>
+<li><p>When <code class="docutils literal notranslate"><span class="pre">d_temp_storage</span></code> is <code class="docutils literal notranslate"><span class="pre">nullptr</span></code>, no work is done and the required allocation size is returned in <code class="docutils literal notranslate"><span class="pre">temp_storage_bytes</span></code>. See <a class="reference internal" href="../api_docs/device_wide.html#device-temp-storage"><span class="std std-ref">Determining Temporary Storage Requirements</span></a> for usage guidance.</p></li>
 </ul>
 <section id="snippet">
 <h2>Snippet<a class="headerlink" href="#snippet" title="Link to this heading">#</a></h2>
@@ -1810,7 +1810,7 @@ However, results for pseudo-associative reduction may be inconsistent
 from one device to a another device of a different compute-capability
 because CUB can employ different tile-sizing for different architectures.</p></li>
 <li><p>The range <code class="docutils literal notranslate"><span class="pre">[d_in,</span> <span class="pre">d_in</span> <span class="pre">+</span> <span class="pre">num_items)</span></code> shall not overlap <code class="docutils literal notranslate"><span class="pre">d_out</span></code>.</p></li>
-<li><p>When <code class="docutils literal notranslate"><span class="pre">d_temp_storage</span></code> is <code class="docutils literal notranslate"><span class="pre">nullptr</span></code>, no work is done and the required allocation size is returned in <code class="docutils literal notranslate"><span class="pre">temp_storage_bytes</span></code>.</p></li>
+<li><p>When <code class="docutils literal notranslate"><span class="pre">d_temp_storage</span></code> is <code class="docutils literal notranslate"><span class="pre">nullptr</span></code>, no work is done and the required allocation size is returned in <code class="docutils literal notranslate"><span class="pre">temp_storage_bytes</span></code>. See <a class="reference internal" href="../api_docs/device_wide.html#device-temp-storage"><span class="std std-ref">Determining Temporary Storage Requirements</span></a> for usage guidance.</p></li>
 </ul>
 <section id="id3">
 <h2>Snippet<a class="headerlink" href="#id3" title="Link to this heading">#</a></h2>
@@ -1889,7 +1889,7 @@ However, results for pseudo-associative reduction may be inconsistent
 from one device to a another device of a different compute-capability
 because CUB can employ different tile-sizing for different architectures.</p></li>
 <li><p>The range <code class="docutils literal notranslate"><span class="pre">[d_in,</span> <span class="pre">d_in</span> <span class="pre">+</span> <span class="pre">num_items)</span></code> shall not overlap <code class="docutils literal notranslate"><span class="pre">d_out</span></code>.</p></li>
-<li><p>When <code class="docutils literal notranslate"><span class="pre">d_temp_storage</span></code> is <code class="docutils literal notranslate"><span class="pre">nullptr</span></code>, no work is done and the required allocation size is returned in <code class="docutils literal notranslate"><span class="pre">temp_storage_bytes</span></code>.</p></li>
+<li><p>When <code class="docutils literal notranslate"><span class="pre">d_temp_storage</span></code> is <code class="docutils literal notranslate"><span class="pre">nullptr</span></code>, no work is done and the required allocation size is returned in <code class="docutils literal notranslate"><span class="pre">temp_storage_bytes</span></code>. See <a class="reference internal" href="../api_docs/device_wide.html#device-temp-storage"><span class="std std-ref">Determining Temporary Storage Requirements</span></a> for usage guidance.</p></li>
 </ul>
 <section id="id4">
 <h2>Snippet<a class="headerlink" href="#id4" title="Link to this heading">#</a></h2>
@@ -2036,7 +2036,7 @@ However, results for pseudo-associative reduction may be inconsistent
 from one device to a another device of a different compute-capability
 because CUB can employ different tile-sizing for different architectures.</p></li>
 <li><p>The range <code class="docutils literal notranslate"><span class="pre">[d_in,</span> <span class="pre">d_in</span> <span class="pre">+</span> <span class="pre">num_items)</span></code> shall not overlap <code class="docutils literal notranslate"><span class="pre">d_min_out</span></code> nor <code class="docutils literal notranslate"><span class="pre">d_index_out</span></code>.</p></li>
-<li><p>When <code class="docutils literal notranslate"><span class="pre">d_temp_storage</span></code> is <code class="docutils literal notranslate"><span class="pre">nullptr</span></code>, no work is done and the required allocation size is returned in <code class="docutils literal notranslate"><span class="pre">temp_storage_bytes</span></code>.</p></li>
+<li><p>When <code class="docutils literal notranslate"><span class="pre">d_temp_storage</span></code> is <code class="docutils literal notranslate"><span class="pre">nullptr</span></code>, no work is done and the required allocation size is returned in <code class="docutils literal notranslate"><span class="pre">temp_storage_bytes</span></code>. See <a class="reference internal" href="../api_docs/device_wide.html#device-temp-storage"><span class="std std-ref">Determining Temporary Storage Requirements</span></a> for usage guidance.</p></li>
 </ul>
 <section id="id6">
 <h2>Snippet<a class="headerlink" href="#id6" title="Link to this heading">#</a></h2>
@@ -2196,7 +2196,7 @@ However, results for pseudo-associative reduction may be inconsistent
 from one device to a another device of a different compute-capability
 because CUB can employ different tile-sizing for different architectures.</p></li>
 <li><p>The range <code class="docutils literal notranslate"><span class="pre">[d_in,</span> <span class="pre">d_in</span> <span class="pre">+</span> <span class="pre">num_items)</span></code> shall not overlap <code class="docutils literal notranslate"><span class="pre">d_out</span></code>.</p></li>
-<li><p>When <code class="docutils literal notranslate"><span class="pre">d_temp_storage</span></code> is <code class="docutils literal notranslate"><span class="pre">nullptr</span></code>, no work is done and the required allocation size is returned in <code class="docutils literal notranslate"><span class="pre">temp_storage_bytes</span></code>.</p></li>
+<li><p>When <code class="docutils literal notranslate"><span class="pre">d_temp_storage</span></code> is <code class="docutils literal notranslate"><span class="pre">nullptr</span></code>, no work is done and the required allocation size is returned in <code class="docutils literal notranslate"><span class="pre">temp_storage_bytes</span></code>. See <a class="reference internal" href="../api_docs/device_wide.html#device-temp-storage"><span class="std std-ref">Determining Temporary Storage Requirements</span></a> for usage guidance.</p></li>
 </ul>
 <section id="id8">
 <h2>Snippet<a class="headerlink" href="#id8" title="Link to this heading">#</a></h2>
@@ -2273,7 +2273,7 @@ However, results for pseudo-associative reduction may be inconsistent
 from one device to a another device of a different compute-capability
 because CUB can employ different tile-sizing for different architectures.</p></li>
 <li><p>The range <code class="docutils literal notranslate"><span class="pre">[d_in,</span> <span class="pre">d_in</span> <span class="pre">+</span> <span class="pre">num_items)</span></code> shall not overlap <code class="docutils literal notranslate"><span class="pre">d_out</span></code>.</p></li>
-<li><p>When <code class="docutils literal notranslate"><span class="pre">d_temp_storage</span></code> is <code class="docutils literal notranslate"><span class="pre">nullptr</span></code>, no work is done and the required allocation size is returned in <code class="docutils literal notranslate"><span class="pre">temp_storage_bytes</span></code>.</p></li>
+<li><p>When <code class="docutils literal notranslate"><span class="pre">d_temp_storage</span></code> is <code class="docutils literal notranslate"><span class="pre">nullptr</span></code>, no work is done and the required allocation size is returned in <code class="docutils literal notranslate"><span class="pre">temp_storage_bytes</span></code>. See <a class="reference internal" href="../api_docs/device_wide.html#device-temp-storage"><span class="std std-ref">Determining Temporary Storage Requirements</span></a> for usage guidance.</p></li>
 </ul>
 <section id="id9">
 <h2>Snippet<a class="headerlink" href="#id9" title="Link to this heading">#</a></h2>
@@ -2418,7 +2418,7 @@ However, results for pseudo-associative reduction may be inconsistent
 from one device to a another device of a different compute-capability
 because CUB can employ different tile-sizing for different architectures.</p></li>
 <li><p>The range <code class="docutils literal notranslate"><span class="pre">[d_in,</span> <span class="pre">d_in</span> <span class="pre">+</span> <span class="pre">num_items)</span></code> shall not overlap <code class="docutils literal notranslate"><span class="pre">d_out</span></code>.</p></li>
-<li><p>When <code class="docutils literal notranslate"><span class="pre">d_temp_storage</span></code> is <code class="docutils literal notranslate"><span class="pre">nullptr</span></code>, no work is done and the required allocation size is returned in <code class="docutils literal notranslate"><span class="pre">temp_storage_bytes</span></code>.</p></li>
+<li><p>When <code class="docutils literal notranslate"><span class="pre">d_temp_storage</span></code> is <code class="docutils literal notranslate"><span class="pre">nullptr</span></code>, no work is done and the required allocation size is returned in <code class="docutils literal notranslate"><span class="pre">temp_storage_bytes</span></code>. See <a class="reference internal" href="../api_docs/device_wide.html#device-temp-storage"><span class="std std-ref">Determining Temporary Storage Requirements</span></a> for usage guidance.</p></li>
 </ul>
 <section id="id11">
 <h2>Snippet<a class="headerlink" href="#id11" title="Link to this heading">#</a></h2>
@@ -2510,7 +2510,7 @@ However, results for pseudo-associative reduction may be inconsistent
 from one device to a another device of a different compute-capability
 because CUB can employ different tile-sizing for different architectures.</p></li>
 <li><p>The range <code class="docutils literal notranslate"><span class="pre">[d_in,</span> <span class="pre">d_in</span> <span class="pre">+</span> <span class="pre">num_items)</span></code> shall not overlap <code class="docutils literal notranslate"><span class="pre">d_out</span></code>.</p></li>
-<li><p>When <code class="docutils literal notranslate"><span class="pre">d_temp_storage</span></code> is <code class="docutils literal notranslate"><span class="pre">nullptr</span></code>, no work is done and the required allocation size is returned in <code class="docutils literal notranslate"><span class="pre">temp_storage_bytes</span></code>.</p></li>
+<li><p>When <code class="docutils literal notranslate"><span class="pre">d_temp_storage</span></code> is <code class="docutils literal notranslate"><span class="pre">nullptr</span></code>, no work is done and the required allocation size is returned in <code class="docutils literal notranslate"><span class="pre">temp_storage_bytes</span></code>. See <a class="reference internal" href="../api_docs/device_wide.html#device-temp-storage"><span class="std std-ref">Determining Temporary Storage Requirements</span></a> for usage guidance.</p></li>
 </ul>
 <section id="id12">
 <h2>Snippet<a class="headerlink" href="#id12" title="Link to this heading">#</a></h2>
@@ -2663,7 +2663,7 @@ However, results for pseudo-associative reduction may be inconsistent
 from one device to a another device of a different compute-capability
 because CUB can employ different tile-sizing for different architectures.</p></li>
 <li><p>The range <code class="docutils literal notranslate"><span class="pre">[d_in,</span> <span class="pre">d_in</span> <span class="pre">+</span> <span class="pre">num_items)</span></code> shall not overlap <code class="docutils literal notranslate"><span class="pre">d_out</span></code>.</p></li>
-<li><p>When <code class="docutils literal notranslate"><span class="pre">d_temp_storage</span></code> is <code class="docutils literal notranslate"><span class="pre">nullptr</span></code>, no work is done and the required allocation size is returned in <code class="docutils literal notranslate"><span class="pre">temp_storage_bytes</span></code>.</p></li>
+<li><p>When <code class="docutils literal notranslate"><span class="pre">d_temp_storage</span></code> is <code class="docutils literal notranslate"><span class="pre">nullptr</span></code>, no work is done and the required allocation size is returned in <code class="docutils literal notranslate"><span class="pre">temp_storage_bytes</span></code>. See <a class="reference internal" href="../api_docs/device_wide.html#device-temp-storage"><span class="std std-ref">Determining Temporary Storage Requirements</span></a> for usage guidance.</p></li>
 </ul>
 <section id="id14">
 <h2>Snippet<a class="headerlink" href="#id14" title="Link to this heading">#</a></h2>
@@ -2774,7 +2774,7 @@ because CUB can employ different tile-sizing for different architectures.</p></l
 <code class="docutils literal notranslate"><span class="pre">d_num_runs_out</span></code>. The ranges represented by <code class="docutils literal notranslate"><span class="pre">out</span></code> shall not overlap
 <code class="docutils literal notranslate"><span class="pre">[d_keys_in,</span> <span class="pre">d_keys_in</span> <span class="pre">+</span> <span class="pre">num_items)</span></code>,
 <code class="docutils literal notranslate"><span class="pre">[d_values_in,</span> <span class="pre">d_values_in</span> <span class="pre">+</span> <span class="pre">num_items)</span></code> nor <code class="docutils literal notranslate"><span class="pre">out</span></code> in any way.</p></li>
-<li><p>When <code class="docutils literal notranslate"><span class="pre">d_temp_storage</span></code> is <code class="docutils literal notranslate"><span class="pre">nullptr</span></code>, no work is done and the required allocation size is returned in <code class="docutils literal notranslate"><span class="pre">temp_storage_bytes</span></code>.</p></li>
+<li><p>When <code class="docutils literal notranslate"><span class="pre">d_temp_storage</span></code> is <code class="docutils literal notranslate"><span class="pre">nullptr</span></code>, no work is done and the required allocation size is returned in <code class="docutils literal notranslate"><span class="pre">temp_storage_bytes</span></code>. See <a class="reference internal" href="../api_docs/device_wide.html#device-temp-storage"><span class="std std-ref">Determining Temporary Storage Requirements</span></a> for usage guidance.</p></li>
 </ul>
 <section id="id15">
 <h2>Snippet<a class="headerlink" href="#id15" title="Link to this heading">#</a></h2>

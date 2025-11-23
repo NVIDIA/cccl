@@ -1632,7 +1632,7 @@ bits can be specified. This can reduce overall sorting overhead and
 yield a corresponding performance improvement.</p></li>
 <li><p>This operation requires an allocation of temporary device storage that is <code class="docutils literal notranslate"><span class="pre">O(N+P)</span></code>, where <code class="docutils literal notranslate"><span class="pre">N</span></code> is the length of the input and <code class="docutils literal notranslate"><span class="pre">P</span></code> is the number of streaming multiprocessors on the device. For sorting using only <code class="docutils literal notranslate"><span class="pre">O(P)</span></code> temporary storage, see
 the sorting interface using DoubleBuffer wrappers below.</p></li>
-<li><p>When <code class="docutils literal notranslate"><span class="pre">d_temp_storage</span></code> is <code class="docutils literal notranslate"><span class="pre">nullptr</span></code>, no work is done and the required allocation size is returned in <code class="docutils literal notranslate"><span class="pre">temp_storage_bytes</span></code>.</p></li>
+<li><p>When <code class="docutils literal notranslate"><span class="pre">d_temp_storage</span></code> is <code class="docutils literal notranslate"><span class="pre">nullptr</span></code>, no work is done and the required allocation size is returned in <code class="docutils literal notranslate"><span class="pre">temp_storage_bytes</span></code>. See <a class="reference internal" href="../api_docs/device_wide.html#device-temp-storage"><span class="std std-ref">Determining Temporary Storage Requirements</span></a> for usage guidance.</p></li>
 </ul>
 <section id="snippet">
 <h2>Snippet<a class="headerlink" href="#snippet" title="Link to this heading">#</a></h2>
@@ -1732,7 +1732,7 @@ differentiating key bits. This can reduce overall sorting overhead and
 yield a corresponding performance improvement.</p></li>
 <li><p>This operation requires an allocation of temporary device storage that is <code class="docutils literal notranslate"><span class="pre">O(N+P)</span></code>, where <code class="docutils literal notranslate"><span class="pre">N</span></code> is the length of the input and <code class="docutils literal notranslate"><span class="pre">P</span></code> is the number of streaming multiprocessors on the device. For sorting using only <span class="math notranslate nohighlight">\(O(P)\)</span> temporary storage, see
 the sorting interface using DoubleBuffer wrappers below.</p></li>
-<li><p>When <code class="docutils literal notranslate"><span class="pre">d_temp_storage</span></code> is <code class="docutils literal notranslate"><span class="pre">nullptr</span></code>, no work is done and the required allocation size is returned in <code class="docutils literal notranslate"><span class="pre">temp_storage_bytes</span></code>.</p></li>
+<li><p>When <code class="docutils literal notranslate"><span class="pre">d_temp_storage</span></code> is <code class="docutils literal notranslate"><span class="pre">nullptr</span></code>, no work is done and the required allocation size is returned in <code class="docutils literal notranslate"><span class="pre">temp_storage_bytes</span></code>. See <a class="reference internal" href="../api_docs/device_wide.html#device-temp-storage"><span class="std std-ref">Determining Temporary Storage Requirements</span></a> for usage guidance.</p></li>
 </ul>
 <section id="id1">
 <h2>Snippet<a class="headerlink" href="#id1" title="Link to this heading">#</a></h2>
@@ -1901,7 +1901,7 @@ any of the provided ranges:</p>
 </li>
 <li><p>This operation requires an allocation of temporary device storage that is <code class="docutils literal notranslate"><span class="pre">O(N+P)</span></code>, where <code class="docutils literal notranslate"><span class="pre">N</span></code> is the length of the input and <code class="docutils literal notranslate"><span class="pre">P</span></code> is the number of streaming multiprocessors on the device. For sorting using only <span class="math notranslate nohighlight">\(O(P)\)</span> temporary storage, see
 the sorting interface using DoubleBuffer wrappers below.</p></li>
-<li><p>When <code class="docutils literal notranslate"><span class="pre">d_temp_storage</span></code> is <code class="docutils literal notranslate"><span class="pre">nullptr</span></code>, no work is done and the required allocation size is returned in <code class="docutils literal notranslate"><span class="pre">temp_storage_bytes</span></code>.</p></li>
+<li><p>When <code class="docutils literal notranslate"><span class="pre">d_temp_storage</span></code> is <code class="docutils literal notranslate"><span class="pre">nullptr</span></code>, no work is done and the required allocation size is returned in <code class="docutils literal notranslate"><span class="pre">temp_storage_bytes</span></code>. See <a class="reference internal" href="../api_docs/device_wide.html#device-temp-storage"><span class="std std-ref">Determining Temporary Storage Requirements</span></a> for usage guidance.</p></li>
 </ul>
 <section id="id2">
 <h2>Snippet<a class="headerlink" href="#id2" title="Link to this heading">#</a></h2>
@@ -2048,7 +2048,7 @@ number of key bits specified and the targeted device architecture).</p></li>
 bits can be specified. This can reduce overall sorting overhead and
 yield a corresponding performance improvement.</p></li>
 <li><p>This operation requires a relatively small allocation of temporary device storage that is <code class="docutils literal notranslate"><span class="pre">O(P)</span></code>, where <code class="docutils literal notranslate"><span class="pre">P</span></code> is the number of streaming multiprocessors on the device (and is typically a small constant relative to the input size <code class="docutils literal notranslate"><span class="pre">N</span></code>).</p></li>
-<li><p>When <code class="docutils literal notranslate"><span class="pre">d_temp_storage</span></code> is <code class="docutils literal notranslate"><span class="pre">nullptr</span></code>, no work is done and the required allocation size is returned in <code class="docutils literal notranslate"><span class="pre">temp_storage_bytes</span></code>.</p></li>
+<li><p>When <code class="docutils literal notranslate"><span class="pre">d_temp_storage</span></code> is <code class="docutils literal notranslate"><span class="pre">nullptr</span></code>, no work is done and the required allocation size is returned in <code class="docutils literal notranslate"><span class="pre">temp_storage_bytes</span></code>. See <a class="reference internal" href="../api_docs/device_wide.html#device-temp-storage"><span class="std std-ref">Determining Temporary Storage Requirements</span></a> for usage guidance.</p></li>
 </ul>
 <section id="id3">
 <h2>Snippet<a class="headerlink" href="#id3" title="Link to this heading">#</a></h2>
@@ -2151,7 +2151,7 @@ indicator within each DoubleBuffer wrapper to reference which of the two
 buffers now contains the sorted output sequence (a function of the
 number of key bits specified and the targeted device architecture).</p></li>
 <li><p>This operation requires a relatively small allocation of temporary device storage that is <code class="docutils literal notranslate"><span class="pre">O(P)</span></code>, where <code class="docutils literal notranslate"><span class="pre">P</span></code> is the number of streaming multiprocessors on the device (and is typically a small constant relative to the input size <code class="docutils literal notranslate"><span class="pre">N</span></code>).</p></li>
-<li><p>When <code class="docutils literal notranslate"><span class="pre">d_temp_storage</span></code> is <code class="docutils literal notranslate"><span class="pre">nullptr</span></code>, no work is done and the required allocation size is returned in <code class="docutils literal notranslate"><span class="pre">temp_storage_bytes</span></code>.</p></li>
+<li><p>When <code class="docutils literal notranslate"><span class="pre">d_temp_storage</span></code> is <code class="docutils literal notranslate"><span class="pre">nullptr</span></code>, no work is done and the required allocation size is returned in <code class="docutils literal notranslate"><span class="pre">temp_storage_bytes</span></code>. See <a class="reference internal" href="../api_docs/device_wide.html#device-temp-storage"><span class="std std-ref">Determining Temporary Storage Requirements</span></a> for usage guidance.</p></li>
 </ul>
 <section id="id4">
 <h2>Snippet<a class="headerlink" href="#id4" title="Link to this heading">#</a></h2>
@@ -2306,7 +2306,7 @@ number of key bits specified and the targeted device architecture).</p></li>
 bits can be specified. This can reduce overall sorting overhead and
 yield a corresponding performance improvement.</p></li>
 <li><p>This operation requires a relatively small allocation of temporary device storage that is <code class="docutils literal notranslate"><span class="pre">O(P)</span></code>, where <code class="docutils literal notranslate"><span class="pre">P</span></code> is the number of streaming multiprocessors on the device (and is typically a small constant relative to the input size <code class="docutils literal notranslate"><span class="pre">N</span></code>).</p></li>
-<li><p>When <code class="docutils literal notranslate"><span class="pre">d_temp_storage</span></code> is <code class="docutils literal notranslate"><span class="pre">nullptr</span></code>, no work is done and the required allocation size is returned in <code class="docutils literal notranslate"><span class="pre">temp_storage_bytes</span></code>.</p></li>
+<li><p>When <code class="docutils literal notranslate"><span class="pre">d_temp_storage</span></code> is <code class="docutils literal notranslate"><span class="pre">nullptr</span></code>, no work is done and the required allocation size is returned in <code class="docutils literal notranslate"><span class="pre">temp_storage_bytes</span></code>. See <a class="reference internal" href="../api_docs/device_wide.html#device-temp-storage"><span class="std std-ref">Determining Temporary Storage Requirements</span></a> for usage guidance.</p></li>
 </ul>
 <section id="id5">
 <h2>Snippet<a class="headerlink" href="#id5" title="Link to this heading">#</a></h2>
@@ -2468,7 +2468,7 @@ bits can be specified. This can reduce overall sorting overhead and
 yield a corresponding performance improvement.</p></li>
 <li><p>This operation requires an allocation of temporary device storage that is <code class="docutils literal notranslate"><span class="pre">O(N+P)</span></code>, where <code class="docutils literal notranslate"><span class="pre">N</span></code> is the length of the input and <code class="docutils literal notranslate"><span class="pre">P</span></code> is the number of streaming multiprocessors on the device.  For sorting using only <code class="docutils literal notranslate"><span class="pre">O(P)</span></code> temporary storage, see
 the sorting interface using DoubleBuffer wrappers below.</p></li>
-<li><p>When <code class="docutils literal notranslate"><span class="pre">d_temp_storage</span></code> is <code class="docutils literal notranslate"><span class="pre">nullptr</span></code>, no work is done and the required allocation size is returned in <code class="docutils literal notranslate"><span class="pre">temp_storage_bytes</span></code>.</p></li>
+<li><p>When <code class="docutils literal notranslate"><span class="pre">d_temp_storage</span></code> is <code class="docutils literal notranslate"><span class="pre">nullptr</span></code>, no work is done and the required allocation size is returned in <code class="docutils literal notranslate"><span class="pre">temp_storage_bytes</span></code>. See <a class="reference internal" href="../api_docs/device_wide.html#device-temp-storage"><span class="std std-ref">Determining Temporary Storage Requirements</span></a> for usage guidance.</p></li>
 </ul>
 <section id="id6">
 <h2>Snippet<a class="headerlink" href="#id6" title="Link to this heading">#</a></h2>
@@ -2570,7 +2570,7 @@ differentiating key bits. This can reduce overall sorting overhead and
 yield a corresponding performance improvement.</p></li>
 <li><p>This operation requires an allocation of temporary device storage that is <code class="docutils literal notranslate"><span class="pre">O(N+P)</span></code>, where <code class="docutils literal notranslate"><span class="pre">N</span></code> is the length of the input and <code class="docutils literal notranslate"><span class="pre">P</span></code> is the number of streaming multiprocessors on the device. For sorting using only <span class="math notranslate nohighlight">\(O(P)\)</span> temporary storage, see
 the sorting interface using DoubleBuffer wrappers below.</p></li>
-<li><p>When <code class="docutils literal notranslate"><span class="pre">d_temp_storage</span></code> is <code class="docutils literal notranslate"><span class="pre">nullptr</span></code>, no work is done and the required allocation size is returned in <code class="docutils literal notranslate"><span class="pre">temp_storage_bytes</span></code>.</p></li>
+<li><p>When <code class="docutils literal notranslate"><span class="pre">d_temp_storage</span></code> is <code class="docutils literal notranslate"><span class="pre">nullptr</span></code>, no work is done and the required allocation size is returned in <code class="docutils literal notranslate"><span class="pre">temp_storage_bytes</span></code>. See <a class="reference internal" href="../api_docs/device_wide.html#device-temp-storage"><span class="std std-ref">Determining Temporary Storage Requirements</span></a> for usage guidance.</p></li>
 </ul>
 <section id="id7">
 <h2>Snippet<a class="headerlink" href="#id7" title="Link to this heading">#</a></h2>
@@ -2739,7 +2739,7 @@ any of the provided ranges:</p>
 </li>
 <li><p>This operation requires an allocation of temporary device storage that is <code class="docutils literal notranslate"><span class="pre">O(N+P)</span></code>, where <code class="docutils literal notranslate"><span class="pre">N</span></code> is the length of the input and <code class="docutils literal notranslate"><span class="pre">P</span></code> is the number of streaming multiprocessors on the device. For sorting using only <span class="math notranslate nohighlight">\(O(P)\)</span> temporary storage, see
 the sorting interface using DoubleBuffer wrappers below.</p></li>
-<li><p>When <code class="docutils literal notranslate"><span class="pre">d_temp_storage</span></code> is <code class="docutils literal notranslate"><span class="pre">nullptr</span></code>, no work is done and the required allocation size is returned in <code class="docutils literal notranslate"><span class="pre">temp_storage_bytes</span></code>.</p></li>
+<li><p>When <code class="docutils literal notranslate"><span class="pre">d_temp_storage</span></code> is <code class="docutils literal notranslate"><span class="pre">nullptr</span></code>, no work is done and the required allocation size is returned in <code class="docutils literal notranslate"><span class="pre">temp_storage_bytes</span></code>. See <a class="reference internal" href="../api_docs/device_wide.html#device-temp-storage"><span class="std std-ref">Determining Temporary Storage Requirements</span></a> for usage guidance.</p></li>
 </ul>
 <section id="id8">
 <h2>Snippet<a class="headerlink" href="#id8" title="Link to this heading">#</a></h2>
@@ -2886,7 +2886,7 @@ of key bits specified and the targeted device architecture).</p></li>
 bits can be specified. This can reduce overall sorting overhead and
 yield a corresponding performance improvement.</p></li>
 <li><p>This operation requires a relatively small allocation of temporary device storage that is <code class="docutils literal notranslate"><span class="pre">O(P)</span></code>, where <code class="docutils literal notranslate"><span class="pre">P</span></code> is the number of streaming multiprocessors on the device (and is typically a small constant relative to the input size <code class="docutils literal notranslate"><span class="pre">N</span></code>).</p></li>
-<li><p>When <code class="docutils literal notranslate"><span class="pre">d_temp_storage</span></code> is <code class="docutils literal notranslate"><span class="pre">nullptr</span></code>, no work is done and the required allocation size is returned in <code class="docutils literal notranslate"><span class="pre">temp_storage_bytes</span></code>.</p></li>
+<li><p>When <code class="docutils literal notranslate"><span class="pre">d_temp_storage</span></code> is <code class="docutils literal notranslate"><span class="pre">nullptr</span></code>, no work is done and the required allocation size is returned in <code class="docutils literal notranslate"><span class="pre">temp_storage_bytes</span></code>. See <a class="reference internal" href="../api_docs/device_wide.html#device-temp-storage"><span class="std std-ref">Determining Temporary Storage Requirements</span></a> for usage guidance.</p></li>
 </ul>
 <section id="id9">
 <h2>Snippet<a class="headerlink" href="#id9" title="Link to this heading">#</a></h2>
@@ -2989,7 +2989,7 @@ indicator within each DoubleBuffer wrapper to reference which of the two
 buffers now contains the sorted output sequence (a function of the
 number of key bits specified and the targeted device architecture).</p></li>
 <li><p>This operation requires a relatively small allocation of temporary device storage that is <code class="docutils literal notranslate"><span class="pre">O(P)</span></code>, where <code class="docutils literal notranslate"><span class="pre">P</span></code> is the number of streaming multiprocessors on the device (and is typically a small constant relative to the input size <code class="docutils literal notranslate"><span class="pre">N</span></code>).</p></li>
-<li><p>When <code class="docutils literal notranslate"><span class="pre">d_temp_storage</span></code> is <code class="docutils literal notranslate"><span class="pre">nullptr</span></code>, no work is done and the required allocation size is returned in <code class="docutils literal notranslate"><span class="pre">temp_storage_bytes</span></code>.</p></li>
+<li><p>When <code class="docutils literal notranslate"><span class="pre">d_temp_storage</span></code> is <code class="docutils literal notranslate"><span class="pre">nullptr</span></code>, no work is done and the required allocation size is returned in <code class="docutils literal notranslate"><span class="pre">temp_storage_bytes</span></code>. See <a class="reference internal" href="../api_docs/device_wide.html#device-temp-storage"><span class="std std-ref">Determining Temporary Storage Requirements</span></a> for usage guidance.</p></li>
 </ul>
 <section id="id10">
 <h2>Snippet<a class="headerlink" href="#id10" title="Link to this heading">#</a></h2>
@@ -3146,7 +3146,7 @@ number of key bits specified and the targeted device architecture).</p></li>
 bits can be specified. This can reduce overall sorting overhead and
 yield a corresponding performance improvement.</p></li>
 <li><p>This operation requires a relatively small allocation of temporary device storage that is <code class="docutils literal notranslate"><span class="pre">O(P)</span></code>, where <code class="docutils literal notranslate"><span class="pre">P</span></code> is the number of streaming multiprocessors on the device (and is typically a small constant relative to the input size <code class="docutils literal notranslate"><span class="pre">N</span></code>).</p></li>
-<li><p>When <code class="docutils literal notranslate"><span class="pre">d_temp_storage</span></code> is <code class="docutils literal notranslate"><span class="pre">nullptr</span></code>, no work is done and the required allocation size is returned in <code class="docutils literal notranslate"><span class="pre">temp_storage_bytes</span></code>.</p></li>
+<li><p>When <code class="docutils literal notranslate"><span class="pre">d_temp_storage</span></code> is <code class="docutils literal notranslate"><span class="pre">nullptr</span></code>, no work is done and the required allocation size is returned in <code class="docutils literal notranslate"><span class="pre">temp_storage_bytes</span></code>. See <a class="reference internal" href="../api_docs/device_wide.html#device-temp-storage"><span class="std std-ref">Determining Temporary Storage Requirements</span></a> for usage guidance.</p></li>
 </ul>
 <section id="id11">
 <h2>Snippet<a class="headerlink" href="#id11" title="Link to this heading">#</a></h2>
@@ -3309,7 +3309,7 @@ bits can be specified. This can reduce overall sorting overhead and
 yield a corresponding performance improvement.</p></li>
 <li><p>This operation requires an allocation of temporary device storage that is <code class="docutils literal notranslate"><span class="pre">O(N+P)</span></code>, where <code class="docutils literal notranslate"><span class="pre">N</span></code> is the length of the input and <code class="docutils literal notranslate"><span class="pre">P</span></code> is the number of streaming multiprocessors on the device.  For sorting using only <code class="docutils literal notranslate"><span class="pre">O(P)</span></code> temporary storage, see
 the sorting interface using DoubleBuffer wrappers below.</p></li>
-<li><p>When <code class="docutils literal notranslate"><span class="pre">d_temp_storage</span></code> is <code class="docutils literal notranslate"><span class="pre">nullptr</span></code>, no work is done and the required allocation size is returned in <code class="docutils literal notranslate"><span class="pre">temp_storage_bytes</span></code>.</p></li>
+<li><p>When <code class="docutils literal notranslate"><span class="pre">d_temp_storage</span></code> is <code class="docutils literal notranslate"><span class="pre">nullptr</span></code>, no work is done and the required allocation size is returned in <code class="docutils literal notranslate"><span class="pre">temp_storage_bytes</span></code>. See <a class="reference internal" href="../api_docs/device_wide.html#device-temp-storage"><span class="std std-ref">Determining Temporary Storage Requirements</span></a> for usage guidance.</p></li>
 </ul>
 <section id="id12">
 <h2>Snippet<a class="headerlink" href="#id12" title="Link to this heading">#</a></h2>
@@ -3400,7 +3400,7 @@ differentiating key bits. This can reduce overall sorting overhead and
 yield a corresponding performance improvement.</p></li>
 <li><p>This operation requires an allocation of temporary device storage that is <code class="docutils literal notranslate"><span class="pre">O(N+P)</span></code>, where <code class="docutils literal notranslate"><span class="pre">N</span></code> is the length of the input and <code class="docutils literal notranslate"><span class="pre">P</span></code> is the number of streaming multiprocessors on the device. For sorting using only <span class="math notranslate nohighlight">\(O(P)\)</span> temporary storage, see
 the sorting interface using DoubleBuffer wrappers below.</p></li>
-<li><p>When <code class="docutils literal notranslate"><span class="pre">d_temp_storage</span></code> is <code class="docutils literal notranslate"><span class="pre">nullptr</span></code>, no work is done and the required allocation size is returned in <code class="docutils literal notranslate"><span class="pre">temp_storage_bytes</span></code>.</p></li>
+<li><p>When <code class="docutils literal notranslate"><span class="pre">d_temp_storage</span></code> is <code class="docutils literal notranslate"><span class="pre">nullptr</span></code>, no work is done and the required allocation size is returned in <code class="docutils literal notranslate"><span class="pre">temp_storage_bytes</span></code>. See <a class="reference internal" href="../api_docs/device_wide.html#device-temp-storage"><span class="std std-ref">Determining Temporary Storage Requirements</span></a> for usage guidance.</p></li>
 </ul>
 <section id="id13">
 <h2>Snippet<a class="headerlink" href="#id13" title="Link to this heading">#</a></h2>
@@ -3540,7 +3540,7 @@ bits can be specified. This can reduce overall sorting overhead and
 yield a corresponding performance improvement.</p></li>
 <li><p>This operation requires an allocation of temporary device storage that is <code class="docutils literal notranslate"><span class="pre">O(N+P)</span></code>, where <code class="docutils literal notranslate"><span class="pre">N</span></code> is the length of the input and <code class="docutils literal notranslate"><span class="pre">P</span></code> is the number of streaming multiprocessors on the device. For sorting using only <span class="math notranslate nohighlight">\(O(P)\)</span> temporary storage, see
 the sorting interface using DoubleBuffer wrappers below.</p></li>
-<li><p>When <code class="docutils literal notranslate"><span class="pre">d_temp_storage</span></code> is <code class="docutils literal notranslate"><span class="pre">nullptr</span></code>, no work is done and the required allocation size is returned in <code class="docutils literal notranslate"><span class="pre">temp_storage_bytes</span></code>.</p></li>
+<li><p>When <code class="docutils literal notranslate"><span class="pre">d_temp_storage</span></code> is <code class="docutils literal notranslate"><span class="pre">nullptr</span></code>, no work is done and the required allocation size is returned in <code class="docutils literal notranslate"><span class="pre">temp_storage_bytes</span></code>. See <a class="reference internal" href="../api_docs/device_wide.html#device-temp-storage"><span class="std std-ref">Determining Temporary Storage Requirements</span></a> for usage guidance.</p></li>
 </ul>
 <section id="id14">
 <h2>Snippet<a class="headerlink" href="#id14" title="Link to this heading">#</a></h2>
@@ -3672,7 +3672,7 @@ number of key bits specified and the targeted device architecture).</p></li>
 bits can be specified. This can reduce overall sorting overhead and
 yield a corresponding performance improvement.</p></li>
 <li><p>This operation requires a relatively small allocation of temporary device storage that is <code class="docutils literal notranslate"><span class="pre">O(P)</span></code>, where <code class="docutils literal notranslate"><span class="pre">P</span></code> is the number of streaming multiprocessors on the device (and is typically a small constant relative to the input size <code class="docutils literal notranslate"><span class="pre">N</span></code>).</p></li>
-<li><p>When <code class="docutils literal notranslate"><span class="pre">d_temp_storage</span></code> is <code class="docutils literal notranslate"><span class="pre">nullptr</span></code>, no work is done and the required allocation size is returned in <code class="docutils literal notranslate"><span class="pre">temp_storage_bytes</span></code>.</p></li>
+<li><p>When <code class="docutils literal notranslate"><span class="pre">d_temp_storage</span></code> is <code class="docutils literal notranslate"><span class="pre">nullptr</span></code>, no work is done and the required allocation size is returned in <code class="docutils literal notranslate"><span class="pre">temp_storage_bytes</span></code>. See <a class="reference internal" href="../api_docs/device_wide.html#device-temp-storage"><span class="std std-ref">Determining Temporary Storage Requirements</span></a> for usage guidance.</p></li>
 </ul>
 <section id="id15">
 <h2>Snippet<a class="headerlink" href="#id15" title="Link to this heading">#</a></h2>
@@ -3762,7 +3762,7 @@ indicator within the DoubleBuffer wrapper to reference which of the two
 buffers now contains the sorted output sequence (a function of the
 number of key bits specified and the targeted device architecture).</p></li>
 <li><p>This operation requires a relatively small allocation of temporary device storage that is <code class="docutils literal notranslate"><span class="pre">O(P)</span></code>, where <code class="docutils literal notranslate"><span class="pre">P</span></code> is the number of streaming multiprocessors on the device (and is typically a small constant relative to the input size <code class="docutils literal notranslate"><span class="pre">N</span></code>).</p></li>
-<li><p>When <code class="docutils literal notranslate"><span class="pre">d_temp_storage</span></code> is <code class="docutils literal notranslate"><span class="pre">nullptr</span></code>, no work is done and the required allocation size is returned in <code class="docutils literal notranslate"><span class="pre">temp_storage_bytes</span></code>.</p></li>
+<li><p>When <code class="docutils literal notranslate"><span class="pre">d_temp_storage</span></code> is <code class="docutils literal notranslate"><span class="pre">nullptr</span></code>, no work is done and the required allocation size is returned in <code class="docutils literal notranslate"><span class="pre">temp_storage_bytes</span></code>. See <a class="reference internal" href="../api_docs/device_wide.html#device-temp-storage"><span class="std std-ref">Determining Temporary Storage Requirements</span></a> for usage guidance.</p></li>
 </ul>
 <section id="id16">
 <h2>Snippet<a class="headerlink" href="#id16" title="Link to this heading">#</a></h2>
@@ -3896,7 +3896,7 @@ indicator within the DoubleBuffer wrapper to reference which of the two
 buffers now contains the sorted output sequence (a function of the
 number of key bits specified and the targeted device architecture).</p></li>
 <li><p>This operation requires a relatively small allocation of temporary device storage that is <code class="docutils literal notranslate"><span class="pre">O(P)</span></code>, where <code class="docutils literal notranslate"><span class="pre">P</span></code> is the number of streaming multiprocessors on the device (and is typically a small constant relative to the input size <code class="docutils literal notranslate"><span class="pre">N</span></code>).</p></li>
-<li><p>When <code class="docutils literal notranslate"><span class="pre">d_temp_storage</span></code> is <code class="docutils literal notranslate"><span class="pre">nullptr</span></code>, no work is done and the required allocation size is returned in <code class="docutils literal notranslate"><span class="pre">temp_storage_bytes</span></code>.</p></li>
+<li><p>When <code class="docutils literal notranslate"><span class="pre">d_temp_storage</span></code> is <code class="docutils literal notranslate"><span class="pre">nullptr</span></code>, no work is done and the required allocation size is returned in <code class="docutils literal notranslate"><span class="pre">temp_storage_bytes</span></code>. See <a class="reference internal" href="../api_docs/device_wide.html#device-temp-storage"><span class="std std-ref">Determining Temporary Storage Requirements</span></a> for usage guidance.</p></li>
 </ul>
 <section id="id17">
 <h2>Snippet<a class="headerlink" href="#id17" title="Link to this heading">#</a></h2>
@@ -4041,7 +4041,7 @@ bits can be specified. This can reduce overall sorting overhead and
 yield a corresponding performance improvement.</p></li>
 <li><p>This operation requires an allocation of temporary device storage that is <code class="docutils literal notranslate"><span class="pre">O(N+P)</span></code>, where <code class="docutils literal notranslate"><span class="pre">N</span></code> is the length of the input and <code class="docutils literal notranslate"><span class="pre">P</span></code> is the number of streaming multiprocessors on the device. For sorting using only <code class="docutils literal notranslate"><span class="pre">O(P)</span></code> temporary storage, see
 the sorting interface using DoubleBuffer wrappers below.</p></li>
-<li><p>When <code class="docutils literal notranslate"><span class="pre">d_temp_storage</span></code> is <code class="docutils literal notranslate"><span class="pre">nullptr</span></code>, no work is done and the required allocation size is returned in <code class="docutils literal notranslate"><span class="pre">temp_storage_bytes</span></code>.</p></li>
+<li><p>When <code class="docutils literal notranslate"><span class="pre">d_temp_storage</span></code> is <code class="docutils literal notranslate"><span class="pre">nullptr</span></code>, no work is done and the required allocation size is returned in <code class="docutils literal notranslate"><span class="pre">temp_storage_bytes</span></code>. See <a class="reference internal" href="../api_docs/device_wide.html#device-temp-storage"><span class="std std-ref">Determining Temporary Storage Requirements</span></a> for usage guidance.</p></li>
 </ul>
 <section id="id18">
 <h2>Snippet<a class="headerlink" href="#id18" title="Link to this heading">#</a></h2>
@@ -4134,7 +4134,7 @@ bits can be specified. This can reduce overall sorting overhead and
 yield a corresponding performance improvement.</p></li>
 <li><p>This operation requires an allocation of temporary device storage that is <code class="docutils literal notranslate"><span class="pre">O(N+P)</span></code>, where <code class="docutils literal notranslate"><span class="pre">N</span></code> is the length of the input and <code class="docutils literal notranslate"><span class="pre">P</span></code> is the number of streaming multiprocessors on the device. For sorting using only <span class="math notranslate nohighlight">\(O(P)\)</span> temporary storage, see
 the sorting interface using DoubleBuffer wrappers below.</p></li>
-<li><p>When <code class="docutils literal notranslate"><span class="pre">d_temp_storage</span></code> is <code class="docutils literal notranslate"><span class="pre">nullptr</span></code>, no work is done and the required allocation size is returned in <code class="docutils literal notranslate"><span class="pre">temp_storage_bytes</span></code>.</p></li>
+<li><p>When <code class="docutils literal notranslate"><span class="pre">d_temp_storage</span></code> is <code class="docutils literal notranslate"><span class="pre">nullptr</span></code>, no work is done and the required allocation size is returned in <code class="docutils literal notranslate"><span class="pre">temp_storage_bytes</span></code>. See <a class="reference internal" href="../api_docs/device_wide.html#device-temp-storage"><span class="std std-ref">Determining Temporary Storage Requirements</span></a> for usage guidance.</p></li>
 </ul>
 <section id="id19">
 <h2>Snippet<a class="headerlink" href="#id19" title="Link to this heading">#</a></h2>
@@ -4268,7 +4268,7 @@ any of the provided ranges:</p>
 </li>
 <li><p>This operation requires an allocation of temporary device storage that is <code class="docutils literal notranslate"><span class="pre">O(N+P)</span></code>, where <code class="docutils literal notranslate"><span class="pre">N</span></code> is the length of the input and <code class="docutils literal notranslate"><span class="pre">P</span></code> is the number of streaming multiprocessors on the device. For sorting using only <span class="math notranslate nohighlight">\(O(P)\)</span> temporary storage, see
 the sorting interface using DoubleBuffer wrappers below.</p></li>
-<li><p>When <code class="docutils literal notranslate"><span class="pre">d_temp_storage</span></code> is <code class="docutils literal notranslate"><span class="pre">nullptr</span></code>, no work is done and the required allocation size is returned in <code class="docutils literal notranslate"><span class="pre">temp_storage_bytes</span></code>.</p></li>
+<li><p>When <code class="docutils literal notranslate"><span class="pre">d_temp_storage</span></code> is <code class="docutils literal notranslate"><span class="pre">nullptr</span></code>, no work is done and the required allocation size is returned in <code class="docutils literal notranslate"><span class="pre">temp_storage_bytes</span></code>. See <a class="reference internal" href="../api_docs/device_wide.html#device-temp-storage"><span class="std std-ref">Determining Temporary Storage Requirements</span></a> for usage guidance.</p></li>
 </ul>
 <section id="id20">
 <h2>Snippet<a class="headerlink" href="#id20" title="Link to this heading">#</a></h2>
@@ -4397,7 +4397,7 @@ number of key bits specified and the targeted device architecture).</p></li>
 bits can be specified. This can reduce overall sorting overhead and
 yield a corresponding performance improvement.</p></li>
 <li><p>This operation requires a relatively small allocation of temporary device storage that is <code class="docutils literal notranslate"><span class="pre">O(P)</span></code>, where <code class="docutils literal notranslate"><span class="pre">P</span></code> is the number of streaming multiprocessors on the device (and is typically a small constant relative to the input size <code class="docutils literal notranslate"><span class="pre">N</span></code>).</p></li>
-<li><p>When <code class="docutils literal notranslate"><span class="pre">d_temp_storage</span></code> is <code class="docutils literal notranslate"><span class="pre">nullptr</span></code>, no work is done and the required allocation size is returned in <code class="docutils literal notranslate"><span class="pre">temp_storage_bytes</span></code>.</p></li>
+<li><p>When <code class="docutils literal notranslate"><span class="pre">d_temp_storage</span></code> is <code class="docutils literal notranslate"><span class="pre">nullptr</span></code>, no work is done and the required allocation size is returned in <code class="docutils literal notranslate"><span class="pre">temp_storage_bytes</span></code>. See <a class="reference internal" href="../api_docs/device_wide.html#device-temp-storage"><span class="std std-ref">Determining Temporary Storage Requirements</span></a> for usage guidance.</p></li>
 </ul>
 <section id="id21">
 <h2>Snippet<a class="headerlink" href="#id21" title="Link to this heading">#</a></h2>
@@ -4486,7 +4486,7 @@ indicator within the DoubleBuffer wrapper to reference which of the two
 buffers now contains the sorted output sequence (a function of the
 number of key bits specified and the targeted device architecture).</p></li>
 <li><p>This operation requires a relatively small allocation of temporary device storage that is <code class="docutils literal notranslate"><span class="pre">O(P)</span></code>, where <code class="docutils literal notranslate"><span class="pre">P</span></code> is the number of streaming multiprocessors on the device (and is typically a small constant relative to the input size <code class="docutils literal notranslate"><span class="pre">N</span></code>).</p></li>
-<li><p>When <code class="docutils literal notranslate"><span class="pre">d_temp_storage</span></code> is <code class="docutils literal notranslate"><span class="pre">nullptr</span></code>, no work is done and the required allocation size is returned in <code class="docutils literal notranslate"><span class="pre">temp_storage_bytes</span></code>.</p></li>
+<li><p>When <code class="docutils literal notranslate"><span class="pre">d_temp_storage</span></code> is <code class="docutils literal notranslate"><span class="pre">nullptr</span></code>, no work is done and the required allocation size is returned in <code class="docutils literal notranslate"><span class="pre">temp_storage_bytes</span></code>. See <a class="reference internal" href="../api_docs/device_wide.html#device-temp-storage"><span class="std std-ref">Determining Temporary Storage Requirements</span></a> for usage guidance.</p></li>
 </ul>
 <section id="id22">
 <h2>Snippet<a class="headerlink" href="#id22" title="Link to this heading">#</a></h2>
@@ -4620,7 +4620,7 @@ indicator within the DoubleBuffer wrapper to reference which of the two
 buffers now contains the sorted output sequence (a function of the
 number of key bits specified and the targeted device architecture).</p></li>
 <li><p>This operation requires a relatively small allocation of temporary device storage that is <code class="docutils literal notranslate"><span class="pre">O(P)</span></code>, where <code class="docutils literal notranslate"><span class="pre">P</span></code> is the number of streaming multiprocessors on the device (and is typically a small constant relative to the input size <code class="docutils literal notranslate"><span class="pre">N</span></code>).</p></li>
-<li><p>When <code class="docutils literal notranslate"><span class="pre">d_temp_storage</span></code> is <code class="docutils literal notranslate"><span class="pre">nullptr</span></code>, no work is done and the required allocation size is returned in <code class="docutils literal notranslate"><span class="pre">temp_storage_bytes</span></code>.</p></li>
+<li><p>When <code class="docutils literal notranslate"><span class="pre">d_temp_storage</span></code> is <code class="docutils literal notranslate"><span class="pre">nullptr</span></code>, no work is done and the required allocation size is returned in <code class="docutils literal notranslate"><span class="pre">temp_storage_bytes</span></code>. See <a class="reference internal" href="../api_docs/device_wide.html#device-temp-storage"><span class="std std-ref">Determining Temporary Storage Requirements</span></a> for usage guidance.</p></li>
 </ul>
 <section id="id23">
 <h2>Snippet<a class="headerlink" href="#id23" title="Link to this heading">#</a></h2>
