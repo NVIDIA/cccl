@@ -65,21 +65,15 @@ template <class _From, class _To>
 _CCCL_CONCEPT __span_array_convertible = is_convertible_v<_From (*)[], _To (*)[]>;
 
 template <class _Range, class _ElementType>
-_CCCL_CONCEPT_FRAGMENT(
-  __span_compatible_range_,
-  requires()(
-    requires(::cuda::std::ranges::contiguous_range<_Range>),
-    requires(::cuda::std::ranges::sized_range<_Range>),
-    requires((::cuda::std::ranges::borrowed_range<_Range> || is_const_v<_ElementType>) ),
-    requires((!is_array_v<remove_cvref_t<_Range>>) ),
-    requires((!__is_cuda_std_span_v<remove_cvref_t<_Range>> && !__is_cuda_std_array_v<remove_cvref_t<_Range>>) ),
-    requires(
-      is_convertible_v<remove_reference_t<::cuda::std::ranges::range_reference_t<_Range>> (*)[], _ElementType (*)[]>)));
+_CCCL_CONCEPT __span_compatible_range =
+  ::cuda::std::ranges::contiguous_range<_Range> && //
+  ::cuda::std::ranges::sized_range<_Range> && //
+  (::cuda::std::ranges::borrowed_range<_Range> || is_const_v<_ElementType>) && //
+  !is_array_v<remove_cvref_t<_Range>> && //
+  !__is_cuda_std_span_v<remove_cvref_t<_Range>> && //
+  !__is_cuda_std_array_v<remove_cvref_t<_Range>> && //
+  is_convertible_v<remove_reference_t<::cuda::std::ranges::range_reference_t<_Range>> (*)[], _ElementType (*)[]>;
 
-template <class _Range, class _ElementType>
-_CCCL_CONCEPT __span_compatible_range = _CCCL_FRAGMENT(__span_compatible_range_, _Range, _ElementType);
-
-#if _CCCL_STD_VER >= 2020
 template <class _It, class _Tp>
 _CCCL_CONCEPT __span_compatible_iterator =
   contiguous_iterator<_It> && __span_array_convertible<remove_reference_t<iter_reference_t<_It>>, _Tp>;
@@ -87,23 +81,6 @@ _CCCL_CONCEPT __span_compatible_iterator =
 template <class _Sentinel, class _It>
 _CCCL_CONCEPT __span_compatible_sentinel_for =
   sized_sentinel_for<_Sentinel, _It> && !is_convertible_v<_Sentinel, size_t>;
-#else // ^^^ C++20 ^^^ / vvv C++17 vvv
-template <class _It, class _Tp>
-_CCCL_CONCEPT_FRAGMENT(__span_compatible_iterator_,
-                       requires()(requires(contiguous_iterator<_It>),
-                                  requires(__span_array_convertible<remove_reference_t<iter_reference_t<_It>>, _Tp>)));
-
-template <class _It, class _Tp>
-_CCCL_CONCEPT __span_compatible_iterator = _CCCL_FRAGMENT(__span_compatible_iterator_, _It, _Tp);
-
-template <class _Sentinel, class _It>
-_CCCL_CONCEPT_FRAGMENT(
-  __span_compatible_sentinel_for_,
-  requires()(requires(sized_sentinel_for<_Sentinel, _It>), requires(!is_convertible_v<_Sentinel, size_t>)));
-
-template <class _Sentinel, class _It>
-_CCCL_CONCEPT __span_compatible_sentinel_for = _CCCL_FRAGMENT(__span_compatible_sentinel_for_, _Sentinel, _It);
-#endif // ^^^ !_CCCL_HAS_CONCEPTS() ^^^
 
 #if _CCCL_HAS_CONCEPTS()
 

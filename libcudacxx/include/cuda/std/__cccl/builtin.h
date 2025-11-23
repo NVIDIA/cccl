@@ -86,10 +86,6 @@
 #  define _CCCL_BUILTIN_ARRAY_RANK(...) __array_rank(__VA_ARGS__)
 #endif // _CCCL_CHECK_BUILTIN(array_rank)
 
-#if _CCCL_HAS_BUILTIN(__array_extent)
-#  define _CCCL_BUILTIN_ARRAY_EXTENT(...) __array_extent(__VA_ARGS__)
-#endif // _CCCL_HAS_BUILTIN(__array_extent)
-
 // nvhpc has a bug where it supports __builtin_addressof but does not mark it via _CCCL_CHECK_BUILTIN
 #if _CCCL_CHECK_BUILTIN(builtin_addressof) || _CCCL_COMPILER(GCC, >=, 7) || _CCCL_COMPILER(MSVC) \
   || _CCCL_COMPILER(NVHPC) || _CCCL_COMPILER(NVRTC, >=, 12, 3)
@@ -353,10 +349,6 @@
 #  define _CCCL_BUILTIN_IS_ASSIGNABLE(...) __is_assignable(__VA_ARGS__)
 #endif // _CCCL_CHECK_BUILTIN(is_assignable) && gcc >= 9.0
 
-#if _CCCL_HAS_BUILTIN(__is_const)
-#  define _CCCL_BUILTIN_IS_CONST(...) __is_const(__VA_ARGS__)
-#endif // _CCCL_HAS_BUILTIN(__is_const)
-
 #if _CCCL_CHECK_BUILTIN(is_constructible) || _CCCL_COMPILER(GCC, >=, 8) || _CCCL_COMPILER(MSVC) || _CCCL_COMPILER(NVRTC)
 #  define _CCCL_BUILTIN_IS_CONSTRUCTIBLE(...) __is_constructible(__VA_ARGS__)
 #endif // _CCCL_CHECK_BUILTIN(is_constructible) && gcc >= 8.0
@@ -368,28 +360,6 @@
 #if _CCCL_CHECK_BUILTIN(is_destructible) || _CCCL_COMPILER(MSVC)
 #  define _CCCL_BUILTIN_IS_DESTRUCTIBLE(...) __is_destructible(__VA_ARGS__)
 #endif // _CCCL_CHECK_BUILTIN(is_destructible)
-
-#if _CCCL_CHECK_BUILTIN(is_function)
-#  define _CCCL_BUILTIN_IS_FUNCTION(...) __is_function(__VA_ARGS__)
-#endif // _CCCL_CHECK_BUILTIN(is_function)
-
-// All current versions of NVCC give wrong results with __is_function
-#if _CCCL_CUDA_COMPILER(NVCC)
-#  undef _CCCL_BUILTIN_IS_FUNCTION
-#endif // _CCCL_CUDA_COMPILER(NVCC)
-
-#if _CCCL_CHECK_BUILTIN(is_fundamental)
-#  define _CCCL_BUILTIN_IS_FUNDAMENTAL(...) __is_fundamental(__VA_ARGS__)
-#endif // _CCCL_CHECK_BUILTIN(is_fundamental)
-
-// clang prior to clang-10 gives wrong results for __is_fundamental
-#if _CCCL_COMPILER(CLANG, <, 10)
-#  undef _CCCL_BUILTIN_IS_FUNDAMENTAL
-#endif // clang < 10
-
-#if _CCCL_HAS_BUILTIN(__is_integral)
-#  define _CCCL_BUILTIN_IS_INTEGRAL(...) __is_integral(__VA_ARGS__)
-#endif // _CCCL_HAS_BUILTIN(__is_integral)
 
 #if _CCCL_CHECK_BUILTIN(is_layout_compatible) || _CCCL_COMPILER(MSVC, >=, 19, 29)
 #  define _CCCL_BUILTIN_IS_LAYOUT_COMPATIBLE(...) __is_layout_compatible(__VA_ARGS__)
@@ -454,38 +424,9 @@
 #  define _CCCL_BUILTIN_IS_SCALAR(...) __is_scalar(__VA_ARGS__)
 #endif // _CCCL_HAS_BUILTIN(__is_scalar)
 
-// Disabled due to libstdc++ conflict
-#if 0 // _CCCL_HAS_BUILTIN(__is_signed)
-#  define _CCCL_BUILTIN_IS_SIGNED(...) __is_signed(__VA_ARGS__)
-#endif // _CCCL_HAS_BUILTIN(__is_signed)
-
-#if _CCCL_CHECK_BUILTIN(is_unsigned)
-#  define _CCCL_BUILTIN_IS_UNSIGNED(...) __is_unsigned(__VA_ARGS__)
-#endif // _CCCL_CHECK_BUILTIN(is_unsigned)
-
-// Disabled due to libstdc++ conflict
-#if 0 // _CCCL_HAS_BUILTIN(__is_void)
-#  define _CCCL_BUILTIN_IS_VOID(...) __is_void(__VA_ARGS__)
-#endif // _CCCL_HAS_BUILTIN(__is_void)
-
-// Disabled due to libstdc++ conflict
-#if 0 // _CCCL_HAS_BUILTIN(__is_volatile)
-#  define _CCCL_BUILTIN_IS_VOLATILE(...) __is_volatile(__VA_ARGS__)
-#endif // _CCCL_HAS_BUILTIN(__is_volatile)
-
 #if _CCCL_CHECK_BUILTIN(make_integer_seq) || _CCCL_COMPILER(MSVC, >=, 19, 23)
 #  define _CCCL_BUILTIN_MAKE_INTEGER_SEQ(...) __make_integer_seq<__VA_ARGS__>
 #endif // _CCCL_CHECK_BUILTIN(make_integer_seq)
-
-// Disabled due to libstdc++ conflict
-#if 0 // _CCCL_HAS_BUILTIN(__make_signed)
-#  define _CCCL_BUILTIN_MAKE_SIGNED(...) __make_signed(__VA_ARGS__)
-#endif // _CCCL_HAS_BUILTIN(__make_signed)
-
-// Disabled due to libstdc++ conflict
-#if 0 // _CCCL_HAS_BUILTIN(__make_unsigned)
-#  define _CCCL_BUILTIN_MAKE_UNSIGNED(...) __make_unsigned(__VA_ARGS__)
-#endif // _CCCL_HAS_BUILTIN(__make_unsigned)
 
 #if _CCCL_HAS_BUILTIN(__reference_constructs_from_temporary)
 #  define _CCCL_BUILTIN_REFERENCE_CONSTRUCTS_FROM_TEMPORARY(...) __reference_constructs_from_temporary(__VA_ARGS__)
@@ -494,18 +435,6 @@
 #if _CCCL_HAS_BUILTIN(__reference_converts_from_temporary)
 #  define _CCCL_BUILTIN_REFERENCE_CONVERTS_FROM_TEMPORARY(...) __reference_converts_from_temporary(__VA_ARGS__)
 #endif // _CCCL_HAS_BUILTIN(__reference_converts_from_temporary)
-
-#if _CCCL_HAS_BUILTIN(__remove_all_extents) && _CCCL_CUDA_COMPILER(CLANG)
-#  define _CCCL_BUILTIN_REMOVE_ALL_EXTENTS(...) __remove_all_extents(__VA_ARGS__)
-#endif // _CCCL_HAS_BUILTIN(__remove_all_extents)
-
-#if _CCCL_HAS_BUILTIN(__remove_const) && _CCCL_CUDA_COMPILER(CLANG)
-#  define _CCCL_BUILTIN_REMOVE_CONST(...) __remove_const(__VA_ARGS__)
-#endif // _CCCL_HAS_BUILTIN(__remove_const)
-
-#if _CCCL_HAS_BUILTIN(__remove_cv) && _CCCL_CUDA_COMPILER(CLANG)
-#  define _CCCL_BUILTIN_REMOVE_CV(...) __remove_cv(__VA_ARGS__)
-#endif // _CCCL_HAS_BUILTIN(__remove_cv)
 
 #if _CCCL_HAS_BUILTIN(__remove_cvref) && _CCCL_CUDA_COMPILER(CLANG)
 #  define _CCCL_BUILTIN_REMOVE_CVREF(...) __remove_cvref(__VA_ARGS__)
