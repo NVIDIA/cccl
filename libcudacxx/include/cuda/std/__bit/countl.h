@@ -44,10 +44,10 @@
 #  define _CCCL_BUILTIN_CLZG(...) __builtin_clzg(__VA_ARGS__)
 #endif // _CCCL_CHECK_BUILTIN(builtin_clzg)
 
-// nvcc doesn't support this builtin in device code
-#if _CCCL_CUDA_COMPILER(NVCC) && _CCCL_DEVICE_COMPILATION()
+// nvcc doesn't support this builtin in device code and before 13.0 not even in host code
+#if (_CCCL_CUDA_COMPILER(NVCC) && _CCCL_DEVICE_COMPILATION()) || _CCCL_CUDA_COMPILER(NVCC, <, 13)
 #  undef _CCCL_BUILTIN_CLZG
-#endif // _CCCL_CUDA_COMPILER(NVCC) && _CCCL_DEVICE_COMPILATION()
+#endif // (_CCCL_CUDA_COMPILER(NVCC) && _CCCL_DEVICE_COMPILATION()) || _CCCL_CUDA_COMPILER(NVCC, <, 13)
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
