@@ -61,10 +61,12 @@ class CachableFunction:
 
         self._func = func
 
+        closure = func.__closure__ if func.__closure__ is not None else []
         self._identity = (
+            func.__name__,
             func.__code__.co_code,
             func.__code__.co_consts,
-            tuple(func.__closure__ if func.__closure__ is not None else []),
+            tuple(cell.cell_contents for cell in closure),
             tuple(func.__globals__.get(name, None) for name in func.__code__.co_names),
         )
 

@@ -8,20 +8,27 @@ def test_func_caching_basic():
         return x
 
     f1 = CachableFunction(func)
+
+    def func(x):
+        return x
+
     f2 = CachableFunction(func)
+
     assert f1 == f2
 
 
 def test_func_caching_different_names():
-    def func1(x):
+    def func(x):
         return x
+
+    f1 = CachableFunction(func)
 
     def func2(x):
         return x
 
-    f1 = CachableFunction(func1)
     f2 = CachableFunction(func2)
-    assert f1 == f2
+
+    assert f1 != f2
 
 
 def test_func_caching_different_code():
@@ -74,12 +81,13 @@ def test_func_caching_wrapped_cuda_jit_function():
     def inner(x):
         return x
 
-    def func1(x):
+    def func(x):
         return inner(x) + 1
 
-    def func2(x):
+    wrapped_func1 = numba.cuda.jit(func)
+
+    def func(x):
         return inner(x) + 1
 
-    wrapped_func1 = numba.cuda.jit(func1)
-    wrapped_func2 = numba.cuda.jit(func2)
+    wrapped_func2 = numba.cuda.jit(func)
     assert CachableFunction(wrapped_func1) == CachableFunction(wrapped_func2)
