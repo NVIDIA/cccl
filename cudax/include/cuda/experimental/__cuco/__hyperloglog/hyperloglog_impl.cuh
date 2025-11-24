@@ -91,7 +91,8 @@ public:
           __sketch_bytes(static_cast<::cuda::experimental::cuco::__sketch_size_kb_t>(sketch_span.size() / 1024.0))
           / sizeof(register_type))}
       , __register_mask{(1ull << __precision) - 1}
-      , __sketch{reinterpret_cast<register_type*>(sketch_span.data()), __sketch_bytes() / sizeof(register_type)}
+      , __sketch{reinterpret_cast<int*>(sketch_span.data()), __sketch_bytes() / sizeof(register_type)}
+  // MSVC fails with register_type*, use int* instead
   {
 #ifndef __CUDA_ARCH__
     const auto __alignment =
