@@ -34,10 +34,10 @@ struct poisson_cdf
     }
     double sum  = 0;
     double mean = p.mean();
-    for (int i = 0; i <= x; ++i)
+    for (cuda::std::uint64_t i = 0; i <= x; ++i)
     {
       double term = cuda::std::exp(-mean);
-      for (int j = 1; j <= i; ++j)
+      for (cuda::std::uint64_t j = 1; j <= i; ++j)
       {
         term *= mean / j;
       }
