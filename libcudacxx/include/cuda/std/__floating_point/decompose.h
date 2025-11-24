@@ -70,8 +70,9 @@ template <__fp_format _Fmt>
 __fp_set_exp_biased(__fp_storage_t<_Fmt> __v, int __exp) noexcept
 {
   using _Storage = __fp_storage_t<_Fmt>;
-  auto __result  = static_cast<_Storage>(__v & __fp_inv_exp_mask_v<_Fmt>)
-                | ((static_cast<_Storage>(__exp) << __fp_mant_nbits_v<_Fmt>) &__fp_exp_mask_v<_Fmt>);
+  auto __result  = static_cast<_Storage>(
+    (__v & __fp_inv_exp_mask_v<_Fmt>)
+    | ((static_cast<_Storage>(__exp) << __fp_mant_nbits_v<_Fmt>) &__fp_exp_mask_v<_Fmt>) );
 
   // if the type has explicit bit, it must be set to 1 if exponent is greater than 1 and to 0 otherwise.
   if constexpr (!__fp_has_implicit_bit_v<_Fmt>)
