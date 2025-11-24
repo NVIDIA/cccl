@@ -252,8 +252,7 @@ class __device_accessor : public _Accessor
 
 #if _CCCL_DEVICE_COMPILATION()
 
-  [[nodiscard]] _CCCL_HIDE_FROM_ABI
-  _CCCL_DEVICE static constexpr bool __is_device_accessible_pointer_from_device(__data_handle_type __p) noexcept
+  [[nodiscard]] _CCCL_DEVICE_API static constexpr bool __is_device_accessible_pointer_from_device(__data_handle_type __p) noexcept
   {
     return ::cuda::device::is_address_from(__p, ::cuda::device::address_space::global)
         || ::cuda::device::is_address_from(__p, ::cuda::device::address_space::shared)
