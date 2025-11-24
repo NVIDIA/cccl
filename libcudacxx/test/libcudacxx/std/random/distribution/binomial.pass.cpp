@@ -19,13 +19,12 @@
 #include "random_utilities/test_distribution.h"
 #include "test_macros.h"
 
-__host__ __device__ void test()
+struct binomial_cdf
 {
-  const bool test_constexpr = false; // Math functions cuda::std::log, cuda::std::exp are not yet constexpr
-  using D                   = cuda::std::binomial_distribution<>;
-  using P                   = D::param_type;
-  using G                   = cuda::std::philox4x64;
-  auto cdf                  = [] __host__ __device__(cuda::std::int64_t x, P p) {
+  using P = cuda::std::binomial_distribution<>::param_type;
+
+  __host__ __device__ double operator()(cuda::std::int64_t x, P p) const
+  {
     if (x < 0)
     {
       return 0.0;
@@ -45,9 +44,17 @@ __host__ __device__ void test()
       sum += prob;
     }
     return sum;
-  };
+  }
+};
+
+__host__ __device__ void test()
+{
+  const bool test_constexpr     = false; // Math functions cuda::std::log, cuda::std::exp are not yet constexpr
+  using D                       = cuda::std::binomial_distribution<>;
+  using P                       = D::param_type;
+  using G                       = cuda::std::philox4x64;
   cuda::std::array<P, 5> params = {P(10, 0.5), P(20, 0.3), P(15, 0.7), P(5, 0.25), P(30, 0.6)};
-  test_distribution<D, false, G, test_constexpr>(params, cdf);
+  test_distribution<D, false, G, test_constexpr>(params, binomial_cdf{});
 }
 
 int main(int, char**)
