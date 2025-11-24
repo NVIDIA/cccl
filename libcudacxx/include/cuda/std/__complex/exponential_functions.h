@@ -68,8 +68,9 @@ template <class _Tp>
       return complex<_Tp>(__x.real(), __i);
     }
   }
-  _Tp __e = ::cuda::std::exp(__x.real());
-  return complex<_Tp>(__e * ::cuda::std::cos(__i), __e * ::cuda::std::sin(__i));
+  _Tp __e                       = ::cuda::std::exp(__x.real());
+  const auto [__i_sin, __i_cos] = ::cuda::sincos(__i);
+  return complex<_Tp>(__e * __i_cos, __e * __i_sin);
 }
 
 // A real exp that doesn't combine the final polynomial estimate with the ldexp factor.
