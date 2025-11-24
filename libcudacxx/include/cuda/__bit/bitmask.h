@@ -27,7 +27,6 @@
 #  include <cuda/__ptx/instructions/shr.h>
 #endif // _CCCL_CUDA_COMPILATION()
 #include <cuda/std/__type_traits/conditional.h>
-#include <cuda/std/__type_traits/is_constant_evaluated.h>
 #include <cuda/std/__type_traits/is_unsigned_integer.h>
 #include <cuda/std/limits>
 
@@ -38,7 +37,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA
 template <typename _Tp>
 [[nodiscard]] _CCCL_API constexpr _Tp __shl(const _Tp __value, int __shift) noexcept
 {
-  if (!::cuda::std::__cccl_default_is_constant_evaluated())
+  _CCCL_IF_NOT_CONSTEVAL_DEFAULT
   {
     if constexpr (sizeof(_Tp) <= sizeof(uint64_t))
     {
@@ -53,7 +52,7 @@ template <typename _Tp>
 template <typename _Tp>
 [[nodiscard]] _CCCL_API constexpr _Tp __shr(const _Tp __value, int __shift) noexcept
 {
-  if (!::cuda::std::__cccl_default_is_constant_evaluated())
+  _CCCL_IF_NOT_CONSTEVAL_DEFAULT
   {
     if constexpr (sizeof(_Tp) <= sizeof(uint64_t))
     {
@@ -73,7 +72,7 @@ template <typename _Tp = uint32_t>
   _CCCL_ASSERT(__width >= 0 && __width <= __digits, "width out of range");
   _CCCL_ASSERT(__start >= 0 && __start <= __digits, "start position out of range");
   _CCCL_ASSERT(__start + __width <= __digits, "start position + width out of range");
-  if (!::cuda::std::__cccl_default_is_constant_evaluated())
+  _CCCL_IF_NOT_CONSTEVAL_DEFAULT
   {
     if constexpr (sizeof(_Tp) <= sizeof(uint32_t))
     {

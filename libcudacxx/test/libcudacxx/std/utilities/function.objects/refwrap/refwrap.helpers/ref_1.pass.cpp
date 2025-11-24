@@ -19,7 +19,7 @@
 
 #include "test_macros.h"
 
-__host__ __device__ TEST_CONSTEXPR_CXX20 bool test()
+__host__ __device__ constexpr bool test()
 {
   int i                               = 0;
   cuda::std::reference_wrapper<int> r = cuda::std::ref(i);
@@ -30,9 +30,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX20 bool test()
 int main(int, char**)
 {
   test();
-#if TEST_STD_VER > 2017 && !TEST_COMPILER(NVRTC)
   static_assert(test());
-#endif // TEST_STD_VER > 2017 && !TEST_COMPILER(NVRTC)
 
   return 0;
 }

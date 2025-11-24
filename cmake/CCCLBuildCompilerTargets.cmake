@@ -3,19 +3,8 @@
 #
 # cccl.compiler_interface
 # - Interface target providing compiler-specific options needed to build
-#   CCCL's tests, examples, etc. This includes warning flags and the like.
-#
-# cccl.compiler_interface_cppXX
-# - Interface targets providing compiler-specific options that should only be
-#   applied to certain dialects of C++. Includes `compiler_interface`, and will
-#   be defined for each supported dialect.
-#
-# cccl.silence_unreachable_code_warnings
-# - Interface target that silences unreachable code warnings.
-# - Used to selectively disable such warnings in unit tests caused by
-#   unconditionally thrown exceptions.
-
-set(CCCL_KNOWN_CXX_DIALECTS 11 14 17 20)
+#   CCCL's tests, examples, etc. for the current CMAKE_CUDA_STANDARD.
+#   This includes warning flags and the like.
 
 # sccache cannot handle the -Fd option generating pdb files
 set(CMAKE_MSVC_DEBUG_INFORMATION_FORMAT Embedded)
@@ -155,12 +144,6 @@ function(cccl_build_compiler_targets)
     # unintentional assignments and suppress all such warnings on MSVC.
     append_option_if_available("/wd4706" cxx_compile_options)
 
-    # Disabled loss-of-data conversion warnings.
-    # append_option_if_available("/wd4244" cxx_compile_options)
-
-    # Disable warning about applying unary operator- to unsigned type.
-    # append_option_if_available("/wd4146" cxx_compile_options)
-
     # MSVC STL assumes that `allocator_traits`'s allocator will use raw pointers,
     # and the `__DECLSPEC_ALLOCATOR` macro causes issues with thrust's universal
     # allocators:
@@ -230,27 +213,4 @@ function(cccl_build_compiler_targets)
       $<$<COMPILE_LANG_AND_ID:CUDA,Clang>:-Xclang=-fcuda-allow-variadic-functions>
       $<$<COMPILE_LANG_AND_ID:CUDA,Clang>:-Wno-unknown-cuda-version>
   )
-
-  # These targets are used for dialect-specific options:
-  foreach (dialect IN LISTS CCCL_KNOWN_CXX_DIALECTS)
-    add_library(cccl.compiler_interface_cpp${dialect} INTERFACE)
-    target_link_libraries(
-      cccl.compiler_interface_cpp${dialect}
-      INTERFACE cccl.compiler_interface
-    )
-  endforeach()
-
-  # Some of our unit tests unconditionally throw exceptions, and compilers will
-  # detect that the following instructions are unreachable. This is intentional
-  # and unavoidable in these cases. This target can be used to silence
-  # unreachable code warnings.
-  add_library(cccl.silence_unreachable_code_warnings INTERFACE)
-  if (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
-    target_compile_options(
-      cccl.silence_unreachable_code_warnings
-      INTERFACE
-        $<$<COMPILE_LANGUAGE:CXX>:/wd4702>
-        $<$<COMPILE_LANG_AND_ID:CUDA,NVIDIA>:-Xcompiler=/wd4702>
-    )
-  endif()
 endfunction()

@@ -39,7 +39,7 @@
 #endif // !_CCCL_COMPILER(NVRTC)
 
 #if defined(CUB_ENABLE_POLICY_PTX_JSON)
-#  include <cub/detail/ptx-json/json.h>
+#  include <cub/detail/ptx-json/json.cuh>
 #endif // defined(CUB_ENABLE_POLICY_PTX_JSON)
 
 #include <nv/target>

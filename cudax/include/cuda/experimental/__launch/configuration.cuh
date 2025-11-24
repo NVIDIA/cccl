@@ -296,7 +296,7 @@ public:
   {
     if constexpr (::cuda::std::is_unbounded_array_v<_Tp>)
     {
-      if (!::cuda::std::__cccl_default_is_constant_evaluated())
+      _CCCL_IF_NOT_CONSTEVAL_DEFAULT
       {
         NV_IF_TARGET(NV_IS_DEVICE, (return ::cuda::ptx::get_sreg_dynamic_smem_size();))
       }

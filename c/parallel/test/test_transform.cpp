@@ -281,14 +281,13 @@ C2H_TEST("Transform works with output of different type", "[transform]")
 {
   const std::size_t num_items = GENERATE(0, 42, take(4, random(1 << 12, 1 << 24)));
 
-  operation_t op = make_operation(
-    "op",
-    "struct pair { short a; size_t b; };\n"
-    "extern \"C\" __device__ void op(void* x_ptr, void* out_ptr) {\n"
-    "  int* x = static_cast<int*>(x_ptr);\n"
-    "  pair* out = static_cast<pair*>(out_ptr);\n"
-    "  *out = pair{ short(*x), size_t(*x) };\n"
-    "}");
+  operation_t op               = make_operation("op",
+                                  R"(struct pair { short a; size_t b; };
+extern "C" __device__ void op(void* x_ptr, void* out_ptr) {
+  int* x = static_cast<int*>(x_ptr);
+  pair* out = static_cast<pair*>(out_ptr);
+  *out = pair{ short(*x), size_t(*x) };
+})");
   const std::vector<int> input = generate<int>(num_items);
   std::vector<pair> expected(num_items);
   std::vector<pair> output(num_items);
@@ -315,14 +314,13 @@ C2H_TEST("Transform works with custom types", "[transform]")
 {
   const std::size_t num_items = GENERATE(0, 42, take(4, random(1 << 12, 1 << 24)));
 
-  operation_t op = make_operation(
-    "op",
-    "struct pair { short a; size_t b; };\n"
-    "extern \"C\" __device__ void op(void* x_ptr, void* out_ptr) {\n"
-    "  pair* x = static_cast<pair*>(x_ptr);\n"
-    "  pair* out = static_cast<pair*>(out_ptr);\n"
-    "  *out = pair{ x->a * 2, x->b * 2  };\n"
-    "}");
+  operation_t op              = make_operation("op",
+                                  R"(struct pair { short a; size_t b; };
+extern "C" __device__ void op(void* x_ptr, void* out_ptr) {
+  pair* x = static_cast<pair*>(x_ptr);
+  pair* out = static_cast<pair*>(out_ptr);
+  *out = pair{ x->a * 2, x->b * 2  };
+})");
   const std::vector<short> a  = generate<short>(num_items);
   const std::vector<size_t> b = generate<size_t>(num_items);
   std::vector<pair> input(num_items);
@@ -354,15 +352,14 @@ C2H_TEST("Transform works with custom types with well-known operators", "[transf
 {
   const std::size_t num_items = GENERATE(0, 42, take(4, random(1 << 12, 1 << 24)));
 
-  operation_t op_state = make_operation(
-    "op",
-    "struct pair { short a; size_t b; };\n"
-    "extern \"C\" __device__ void op(void* x_ptr, void* out_ptr) {\n"
-    "  pair* x = static_cast<pair*>(x_ptr);\n"
-    "  pair* out = static_cast<pair*>(out_ptr);\n"
-    "  *out = pair{ x->a * 2, x->b * 2  };\n"
-    "}");
-  cccl_op_t op = op_state;
+  operation_t op_state = make_operation("op",
+                                        R"(struct pair { short a; size_t b; };
+extern "C" __device__ void op(void* x_ptr, void* out_ptr) {
+  pair* x = static_cast<pair*>(x_ptr);
+  pair* out = static_cast<pair*>(out_ptr);
+  *out = pair{ x->a * 2, x->b * 2  };
+})");
+  cccl_op_t op         = op_state;
   // HACK: this doesn't actually match the operation above, but that's fine, as we are supposed to not take the
   // well-known path anyway
   op.type                     = cccl_op_kind_t::CCCL_NEGATE;
@@ -458,14 +455,13 @@ C2H_TEST("Transform with binary operator", "[transform]")
   pointer_t<int> input2_ptr(input2);
   pointer_t<int> output_ptr(output);
 
-  operation_t op = make_operation(
-    "op",
-    "extern \"C\" __device__ void op(void* x_ptr, void* y_ptr, void* out_ptr  ) {\n"
-    "  int* x = static_cast<int*>(x_ptr);\n"
-    "  int* y = static_cast<int*>(y_ptr);\n"
-    "  int* out = static_cast<int*>(out_ptr);\n"
-    "  *out = (*x > *y) ? *x : *y;\n"
-    "}");
+  operation_t op = make_operation("op",
+                                  R"(extern "C" __device__ void op(void* x_ptr, void* y_ptr, void* out_ptr  ) {
+  int* x = static_cast<int*>(x_ptr);
+  int* y = static_cast<int*>(y_ptr);
+  int* out = static_cast<int*>(out_ptr);
+  *out = (*x > *y) ? *x : *y;
+})");
 
   auto& build_cache    = get_cache<Transform_BinaryOp_Fixture_Tag>();
   const auto& test_key = make_key<int>();
@@ -496,14 +492,13 @@ C2H_TEST("Binary transform with one iterator", "[transform]")
   pointer_t<int> input1_ptr(input1);
   pointer_t<int> output_ptr(output);
 
-  operation_t op = make_operation(
-    "op",
-    "extern \"C\" __device__ void op(void* x_ptr, void* y_ptr, void* out_ptr) {\n"
-    "  int* x = static_cast<int*>(x_ptr);\n"
-    "  int* y = static_cast<int*>(y_ptr);\n"
-    "  int* out = static_cast<int*>(out_ptr);\n"
-    "  *out = (*x > *y) ? *x : *y;\n"
-    "}");
+  operation_t op = make_operation("op",
+                                  R"(extern "C" __device__ void op(void* x_ptr, void* y_ptr, void* out_ptr) {
+  int* x = static_cast<int*>(x_ptr);
+  int* y = static_cast<int*>(y_ptr);
+  int* out = static_cast<int*>(out_ptr);
+  *out = (*x > *y) ? *x : *y;
+})");
 
   auto& build_cache    = get_cache<Transform_BinaryOp_Iterator_Fixture_Tag>();
   const auto& test_key = make_key<int>();

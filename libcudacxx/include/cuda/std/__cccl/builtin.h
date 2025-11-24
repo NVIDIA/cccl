@@ -23,7 +23,6 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__cccl/attributes.h>
 #include <cuda/std/__cccl/extended_data_types.h>
 #include <cuda/std/__cccl/host_std_lib.h>
 
@@ -159,12 +158,6 @@
 #  undef _CCCL_BUITLIN_CTZG
 #endif // _CCCL_CUDA_COMPILER(NVCC)
 
-#if _CCCL_HAS_BUILTIN(__builtin_COLUMN) || _CCCL_COMPILER(MSVC, >=, 19, 27)
-#  define _CCCL_BUILTIN_COLUMN() __builtin_COLUMN()
-#else // ^^^ _CCCL_HAS_BUILTIN(__builtin_COLUMN) ^^^ / vvv !_CCCL_HAS_BUILTIN(__builtin_COLUMN) vvv
-#  define _CCCL_BUILTIN_COLUMN() 0
-#endif // !_CCCL_HAS_BUILTIN(__builtin_COLUMN)
-
 #if _CCCL_CHECK_BUILTIN(builtin_constant_p) || _CCCL_COMPILER(GCC)
 #  define _CCCL_BUILTIN_CONSTANT_P(...) __builtin_constant_p(__VA_ARGS__)
 #endif // _CCCL_CHECK_BUILTIN(builtin_constant_p)
@@ -172,18 +165,6 @@
 #if _CCCL_CHECK_BUILTIN(builtin_expect) || _CCCL_COMPILER(MSVC) || _CCCL_COMPILER(GCC)
 #  define _CCCL_BUILTIN_EXPECT(...) __builtin_expect(__VA_ARGS__)
 #endif // _CCCL_CHECK_BUILTIN(builtin_expect)
-
-#if _CCCL_HAS_BUILTIN(__builtin_FILE) || _CCCL_COMPILER(GCC) || _CCCL_COMPILER(MSVC, >=, 19, 27)
-#  define _CCCL_BUILTIN_FILE() __builtin_FILE()
-#else // ^^^ _CCCL_HAS_BUILTIN(__builtin_FILE) ^^^ / vvv !_CCCL_HAS_BUILTIN(__builtin_FILE) vvv
-#  define _CCCL_BUILTIN_FILE() __FILE__
-#endif // !_CCCL_HAS_BUILTIN(__builtin_LINE)
-
-#if _CCCL_HAS_BUILTIN(__builtin_FUNCTION) || _CCCL_COMPILER(GCC) || _CCCL_COMPILER(MSVC, >=, 19, 27)
-#  define _CCCL_BUILTIN_FUNCTION() __builtin_FUNCTION()
-#else // ^^^ _CCCL_HAS_BUILTIN(__builtin_FUNCTION) ^^^ / vvv !_CCCL_HAS_BUILTIN(__builtin_FUNCTION) vvv
-#  define _CCCL_BUILTIN_FUNCTION() "__builtin_FUNCTION is unsupported"
-#endif // !_CCCL_HAS_BUILTIN(__builtin_FUNCTION)
 
 #if _CCCL_CHECK_BUILTIN(builtin_huge_valf) || _CCCL_COMPILER(MSVC) || _CCCL_COMPILER(GCC, <, 10)
 #  define _CCCL_BUILTIN_HUGE_VALF() __builtin_huge_valf()
@@ -233,12 +214,6 @@
 // #  define _CCCL_BUILTIN_IS_POINTER_INTERCONVERTIBLE_WITH_CLASS(_S, _MPtr)
 // __is_pointer_interconvertible_with_class(_S, _MPtr)
 #endif // ^^^ _CCCL_COMPILER(MSVC, >=, 19, 29) ^^^
-
-#if _CCCL_HAS_BUILTIN(__builtin_LINE) || _CCCL_COMPILER(GCC) || _CCCL_COMPILER(MSVC, >=, 19, 27)
-#  define _CCCL_BUILTIN_LINE() __builtin_LINE()
-#else // ^^^ _CCCL_HAS_BUILTIN(__builtin_LINE) ^^^ / vvv !_CCCL_HAS_BUILTIN(__builtin_LINE) vvv
-#  define _CCCL_BUILTIN_LINE() __LINE__
-#endif // !_CCCL_HAS_BUILTIN(__builtin_LINE)
 
 #if _CCCL_CHECK_BUILTIN(builtin_nanf) || _CCCL_COMPILER(MSVC) || _CCCL_COMPILER(GCC, <, 10)
 #  define _CCCL_BUILTIN_NANF(...) __builtin_nanf(__VA_ARGS__)

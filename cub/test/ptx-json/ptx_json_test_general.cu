@@ -1,4 +1,4 @@
-#include <cub/detail/ptx-json/json.h>
+#include <cub/detail/ptx-json/json.cuh>
 
 // CHECK: {"a":1,"b":2,"c":[1,2,"a"]}
 

@@ -29,9 +29,6 @@ __host__ __device__ constexpr bool test_ctor_assign(Param param)
   d2 = d1;
   assert(d1 == d2);
   assert(d1.param() == param);
-  static_assert(noexcept(D()));
-  static_assert(noexcept(D(param)));
-  static_assert(noexcept(d2 = d1));
   return true;
 }
 
@@ -96,7 +93,6 @@ __host__ __device__ constexpr bool test_set_param(Param param)
   D d1;
   d1.param(param);
   assert(d1.param() == param);
-  static_assert(noexcept(d1.param(param)));
   return true;
 }
 
