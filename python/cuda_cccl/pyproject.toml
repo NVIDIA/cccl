@@ -31,8 +31,7 @@ dependencies = [
   "numpy",
   "cuda-pathfinder>=1.2.3",
   "cuda-core",
-  # FIXME
-  "numba-cuda @ git+https://github.com/NVIDIA/numba-cuda.git@main",
+  "numba-cuda>=0.21.0",
   "typing_extensions",
 ]
 
