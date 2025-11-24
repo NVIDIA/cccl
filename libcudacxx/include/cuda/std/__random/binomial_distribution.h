@@ -77,10 +77,12 @@ public:
     {
       return __x.__t_ == __y.__t_ && __x.__p_ == __y.__p_;
     }
+#if _CCCL_STD_VER <= 2017
     [[nodiscard]] friend _CCCL_API constexpr bool operator!=(const param_type& __x, const param_type& __y) noexcept
     {
       return !(__x == __y);
     }
+#endif //  _CCCL_STD_VER <= 2017
 
     friend class binomial_distribution;
   };
@@ -195,16 +197,18 @@ public:
     return t();
   }
 
-  [[nodiscard]] friend _CCCL_API constexpr bool
+  [[nodiscard]] _CCCL_API friend constexpr bool
   operator==(const binomial_distribution& __x, const binomial_distribution& __y) noexcept
   {
     return __x.__p_ == __y.__p_;
   }
-  [[nodiscard]] friend _CCCL_API constexpr bool
+#if _CCCL_STD_VER <= 2017
+  [[nodiscard]] _CCCL_API friend constexpr bool
   operator!=(const binomial_distribution& __x, const binomial_distribution& __y) noexcept
   {
     return !(__x == __y);
   }
+#endif //  _CCCL_STD_VER <= 2017
 
 #if !_CCCL_COMPILER(NVRTC)
   template <class _CharT, class _Traits>
@@ -228,7 +232,6 @@ public:
     using istream_type                        = ::std::basic_istream<_CharT, _Traits>;
     using ios_base                            = typename istream_type::ios_base;
     const typename ios_base::fmtflags __flags = __is.flags();
-    using result_type                         = typename binomial_distribution::result_type;
     using param_type                          = typename binomial_distribution::param_type;
     __is.flags(ios_base::dec | ios_base::skipws);
     result_type __t;
