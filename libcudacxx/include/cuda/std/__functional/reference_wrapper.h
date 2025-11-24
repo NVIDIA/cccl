@@ -41,33 +41,34 @@ public:
   using type = _Tp;
 
 private:
-  type* __f_;
+  type* __f_{};
 
-  static _CCCL_API inline void __fun(_Tp&) noexcept;
+  static _CCCL_API void __fun(_Tp&) noexcept;
   static void __fun(_Tp&&) = delete;
 
 public:
-  template <class _Up,
-            class = enable_if_t<!__is_same_uncvref<_Up, reference_wrapper>::value, decltype(__fun(declval<_Up>()))>>
-  _CCCL_API inline _CCCL_CONSTEXPR_CXX20 reference_wrapper(_Up&& __u) noexcept(noexcept(__fun(declval<_Up>())))
+  template <
+    class _Up,
+    class = enable_if_t<!__is_same_uncvref<_Up, reference_wrapper>::value, decltype(__fun(::cuda::std::declval<_Up>()))>>
+  _CCCL_API constexpr reference_wrapper(_Up&& __u) noexcept(noexcept(__fun(::cuda::std::declval<_Up>())))
   {
     type& __f = static_cast<_Up&&>(__u);
     __f_      = ::cuda::std::addressof(__f);
   }
 
   // access
-  _CCCL_API inline _CCCL_CONSTEXPR_CXX20 operator type&() const noexcept
+  _CCCL_API constexpr operator type&() const noexcept
   {
     return *__f_;
   }
-  _CCCL_API inline _CCCL_CONSTEXPR_CXX20 type& get() const noexcept
+  [[nodiscard]] _CCCL_API constexpr type& get() const noexcept
   {
     return *__f_;
   }
 
   // invoke
   template <class... _ArgTypes>
-  _CCCL_API inline _CCCL_CONSTEXPR_CXX20 invoke_result_t<type&, _ArgTypes...> operator()(_ArgTypes&&... __args) const
+  _CCCL_API constexpr invoke_result_t<type&, _ArgTypes...> operator()(_ArgTypes&&... __args) const
     noexcept(is_nothrow_invocable_v<_Tp&, _ArgTypes...>)
   {
     return ::cuda::std::invoke(get(), ::cuda::std::forward<_ArgTypes>(__args)...);
@@ -78,25 +79,25 @@ template <class _Tp>
 _CCCL_HOST_DEVICE reference_wrapper(_Tp&) -> reference_wrapper<_Tp>;
 
 template <class _Tp>
-_CCCL_API inline _CCCL_CONSTEXPR_CXX20 reference_wrapper<_Tp> ref(_Tp& __t) noexcept
+[[nodiscard]] _CCCL_API constexpr reference_wrapper<_Tp> ref(_Tp& __t) noexcept
 {
   return reference_wrapper<_Tp>(__t);
 }
 
 template <class _Tp>
-_CCCL_API inline _CCCL_CONSTEXPR_CXX20 reference_wrapper<_Tp> ref(reference_wrapper<_Tp> __t) noexcept
+[[nodiscard]] _CCCL_API constexpr reference_wrapper<_Tp> ref(reference_wrapper<_Tp> __t) noexcept
 {
   return __t;
 }
 
 template <class _Tp>
-_CCCL_API inline _CCCL_CONSTEXPR_CXX20 reference_wrapper<const _Tp> cref(const _Tp& __t) noexcept
+[[nodiscard]] _CCCL_API constexpr reference_wrapper<const _Tp> cref(const _Tp& __t) noexcept
 {
   return reference_wrapper<const _Tp>(__t);
 }
 
 template <class _Tp>
-_CCCL_API inline _CCCL_CONSTEXPR_CXX20 reference_wrapper<const _Tp> cref(reference_wrapper<_Tp> __t) noexcept
+[[nodiscard]] _CCCL_API constexpr reference_wrapper<const _Tp> cref(reference_wrapper<_Tp> __t) noexcept
 {
   return __t;
 }

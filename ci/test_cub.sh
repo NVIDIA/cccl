@@ -115,15 +115,15 @@ else
 fi
 
 if $NO_LID; then
-  PRESETS=("cub-nolid-cpp$CXX_STANDARD")
+  PRESETS=("cub-nolid")
 elif $LID0; then
-  PRESETS=("cub-lid0-cpp$CXX_STANDARD")
+  PRESETS=("cub-lid0")
 elif $LID1; then
-  PRESETS=("cub-lid1-cpp$CXX_STANDARD")
+  PRESETS=("cub-lid1")
 elif $LID2; then
-  PRESETS=("cub-lid2-cpp$CXX_STANDARD")
+  PRESETS=("cub-lid2")
 else
-  PRESETS=("cub-cpp$CXX_STANDARD")
+  PRESETS=("cub")
 fi
 
 if $COMPUTE_SANITIZER; then

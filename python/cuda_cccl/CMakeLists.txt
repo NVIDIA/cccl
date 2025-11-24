@@ -15,6 +15,7 @@ message(
   "Building for CUDA ${CUDA_VERSION_MAJOR}, output directory: ${CUDA_VERSION_DIR}"
 )
 
+# Build cccl.c.parallel and add CCCL's install rules
 set(_cccl_root ../..)
 
 include(${_cccl_root}/cmake/AppendOptionIfAvailable.cmake)
@@ -24,6 +25,7 @@ include(${_cccl_root}/cmake/CCCLGetDependencies.cmake)
 cccl_build_compiler_targets()
 
 # Build and install C++ library first
+set(CCCL_TOPLEVEL_PROJECT ON) # Enable the developer builds
 set(CCCL_ENABLE_C_PARALLEL ON)
 set(CCCL_ENABLE_C_EXPERIMENTAL_STF ON) # Enable C experimental STF library (triggers c/ directory)
 set(CCCL_C_PARALLEL_ENABLE_TESTING OFF) # Testing belongs in CI, not Python build
@@ -32,27 +34,19 @@ set(CCCL_ENABLE_UNSTABLE ON) # Enable unstable features
 set(CCCL_C_PARALLEL_LIBRARY_OUTPUT_DIRECTORY ${SKBUILD_PROJECT_NAME})
 set(CCCL_C_EXPERIMENTAL_STF_LIBRARY_OUTPUT_DIRECTORY ${SKBUILD_PROJECT_NAME})
 
+# Just install the rest:
+set(libcudacxx_ENABLE_INSTALL_RULES ON)
+set(CUB_ENABLE_INSTALL_RULES ON)
+set(Thrust_ENABLE_INSTALL_RULES ON)
+# Install to our output location:
+include(GNUInstallDirs)
+set(old_libdir "${CMAKE_INSTALL_LIBDIR}") # push
+set(old_includedir "${CMAKE_INSTALL_INCLUDEDIR}") # push
+set(CMAKE_INSTALL_LIBDIR "cuda/cccl/headers/lib")
+set(CMAKE_INSTALL_INCLUDEDIR "cuda/cccl/headers/include")
 add_subdirectory(${_cccl_root} _parent_cccl)
-
-# Now we can find CUB and other components
-find_package(CUB REQUIRED)
-find_package(Thrust REQUIRED)
-find_package(libcudacxx REQUIRED)
-find_package(cudax REQUIRED)
-
-# Install headers
-set(_dest_incl_dir cuda/cccl/headers/include)
-
-# No end slash: create ${_dest_inc_dir}/cub
-install(DIRECTORY "${CUB_SOURCE_DIR}/cub" DESTINATION "${_dest_incl_dir}")
-# No end slash: create ${_dest_inc_dir}/thrust
-install(DIRECTORY "${Thrust_SOURCE_DIR}/thrust" DESTINATION "${_dest_incl_dir}")
-# Slash at the end: copy content of
-#                   include/ into ${_dest_inc_dir}/
-install(
-  DIRECTORY "${libcudacxx_SOURCE_DIR}/include/"
-  DESTINATION "${_dest_incl_dir}"
-)
+set(CMAKE_INSTALL_LIBDIR "${old_libdir}") # pop
+set(CMAKE_INSTALL_INCLUDEDIR "${old_includedir}") # pop
 
 # ensure the destination directory exists
 file(MAKE_DIRECTORY "cuda/stf/${CUDA_VERSION_DIR}/cccl")

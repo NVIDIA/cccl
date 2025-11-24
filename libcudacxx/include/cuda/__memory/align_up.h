@@ -30,6 +30,15 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
+#if _CCCL_HAS_BUILTIN(__builtin_align_up)
+#  define _CCCL_BUILTIN_ALIGN_UP(...) __builtin_align_up(__VA_ARGS__)
+#endif // _CCCL_HAS_BUILTIN(__builtin_align_up)
+
+// nvcc doesn't support this builtin in device code, clang-cuda crashes
+#if (_CCCL_CUDA_COMPILER(NVCC) || _CCCL_CUDA_COMPILER(CLANG)) && _CCCL_DEVICE_COMPILATION()
+#  undef _CCCL_BUILTIN_ALIGN_UP
+#endif // (_CCCL_CUDA_COMPILER(NVCC) || _CCCL_CUDA_COMPILER(CLANG)) && _CCCL_DEVICE_COMPILATION()
+
 _CCCL_BEGIN_NAMESPACE_CUDA
 
 template <typename _Tp>
@@ -46,6 +55,9 @@ template <typename _Tp>
       return __ptr;
     }
   }
+#if defined(_CCCL_BUILTIN_ALIGN_UP)
+  return (_Tp*) _CCCL_BUILTIN_ALIGN_UP(__ptr, __alignment);
+#else // ^^^ _CCCL_BUILTIN_ALIGN_UP ^^^ / vvv !_CCCL_BUILTIN_ALIGN_UP vvv
   // all code below is translated to LOP3.LUT + IADD.64 instructions
   using _Up                = ::cuda::std::remove_cv_t<_Tp>;
   const auto __char_ptr    = reinterpret_cast<char*>(const_cast<_Up*>(__ptr));
@@ -55,6 +67,7 @@ template <typename _Tp>
   const auto __diff = static_cast<::cuda::std::size_t>(__aligned_ptr - __char_ptr);
   const auto __ret  = reinterpret_cast<_Tp*>(__char_ptr + __diff);
   return ::cuda::std::__runtime_assume_aligned(__ret, __alignment);
+#endif // ^^^ !_CCCL_BUILTIN_ALIGN_UP ^^^
 }
 
 _CCCL_END_NAMESPACE_CUDA

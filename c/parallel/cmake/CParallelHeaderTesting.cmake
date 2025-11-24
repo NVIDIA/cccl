@@ -9,6 +9,7 @@ set(target_name cccl.c.parallel.headers)
 cccl_generate_header_tests(
   ${target_name}
   c/parallel/include
+  NO_METATARGETS # Metatargets collide with the existing cccl.c.parallel target
   LANGUAGE C
   GLOBS "cccl/c/*.h"
 )

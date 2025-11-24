@@ -194,15 +194,21 @@ template <class _Env>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT write_env_t::__closure_t
 {
   template <class _Sndr>
-  [[nodiscard]] _CCCL_API constexpr auto operator()(_Sndr __sndr) const -> __sndr_t<_Sndr, _Env>
+  [[nodiscard]] _CCCL_API constexpr auto operator()(_Sndr __sndr) &&
   {
-    return __sndr_t<_Sndr, _Env>{{}, static_cast<_Env&&>(__env_), static_cast<_Sndr&&>(__sndr)};
+    return write_env_t()(static_cast<_Sndr&&>(__sndr), static_cast<_Env&&>(__env_));
   }
 
   template <class _Sndr>
-  [[nodiscard]] _CCCL_API friend constexpr auto operator|(_Sndr __sndr, __closure_t __self) -> __sndr_t<_Sndr, _Env>
+  [[nodiscard]] _CCCL_API constexpr auto operator()(_Sndr __sndr) const&
   {
-    return __sndr_t<_Sndr, _Env>{{}, static_cast<_Env&&>(__self.__env_), static_cast<_Sndr&&>(__sndr)};
+    return write_env_t()(static_cast<_Sndr&&>(__sndr), __env_);
+  }
+
+  template <class _Sndr>
+  [[nodiscard]] _CCCL_API friend constexpr auto operator|(_Sndr __sndr, __closure_t __self)
+  {
+    return write_env_t()(static_cast<_Sndr&&>(__sndr), static_cast<_Env&&>(__self.__env_));
   }
 
   _Env __env_;

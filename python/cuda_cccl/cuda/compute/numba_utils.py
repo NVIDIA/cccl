@@ -2,6 +2,7 @@ import inspect
 
 import numba
 from numba import cuda
+from numba.core.extending import as_numba_type
 from numpy.typing import DTypeLike
 
 from .typing import GpuStruct
@@ -16,8 +17,8 @@ def to_numba_type(tp: GpuStruct | DTypeLike) -> numba.types.Type:
     """
     Convert a GpuStruct or DtypeLike to a numba type.
     """
-    if hasattr(tp, "_numba_type"):
-        return tp._numba_type  # type: ignore[union-attr]
+    if value := as_numba_type.lookup.get(tp):
+        return value
     return numba.from_dtype(tp)
 
 
