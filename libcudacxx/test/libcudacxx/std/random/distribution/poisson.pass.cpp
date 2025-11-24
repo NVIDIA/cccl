@@ -28,10 +28,6 @@ struct poisson_cdf
 
   __host__ __device__ double operator()(cuda::std::uint64_t x, const P& p) const
   {
-    if (x < 0)
-    {
-      return 0;
-    }
     double sum  = 0;
     double mean = p.mean();
     for (cuda::std::uint64_t i = 0; i <= x; ++i)
