@@ -49,7 +49,8 @@ struct binomial_cdf
 
 __host__ __device__ void test()
 {
-  const bool test_constexpr     = false; // Math functions cuda::std::log, cuda::std::exp are not yet constexpr
+  [[maybe_unused]] const bool test_constexpr = false; // Math functions cuda::std::log, cuda::std::exp are not yet
+                                                      // constexpr
   using D                       = cuda::std::binomial_distribution<>;
   using P                       = D::param_type;
   using G                       = cuda::std::philox4x64;
