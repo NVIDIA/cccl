@@ -18,12 +18,9 @@ struct arch_policies
 {
   _CCCL_API constexpr auto operator()(cuda::arch_id) const -> ::cub::reduce_arch_policy
   {
-    const auto policy = cub::agent_reduce_policy{
-      TUNE_THREADS_PER_BLOCK,
-      TUNE_ITEMS_PER_THREAD,
-      1 << TUNE_ITEMS_PER_VEC_LOAD_POW2,
-      cub::BLOCK_REDUCE_WARP_REDUCTIONS,
-      cub::LOAD_DEFAULT};
+    const auto [items, threads] = cub::detail::scale_mem_bound(TUNE_THREADS_PER_BLOCK, TUNE_ITEMS_PER_THREAD);
+    const auto policy           = cub::agent_reduce_policy{
+      threads, items, 1 << TUNE_ITEMS_PER_VEC_LOAD_POW2, cub::BLOCK_REDUCE_WARP_REDUCTIONS, cub::LOAD_DEFAULT};
     return {policy, policy, policy, policy};
   }
 };
