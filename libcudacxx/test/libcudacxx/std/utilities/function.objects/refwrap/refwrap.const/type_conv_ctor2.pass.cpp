@@ -47,12 +47,12 @@ __host__ __device__ constexpr bool test()
 {
   {
     A1 a{};
-#if !_CCCL_COMPILER(GCC, <, 8) && !(_CCCL_COMPILER(MSVC, <, 19, 40) && _CCCL_STD_VER < 2020)
+#if !_CCCL_COMPILER(GCC, <, 9) && !(_CCCL_COMPILER(MSVC, <, 19, 40) && _CCCL_STD_VER < 2020)
     static_assert(!noexcept(implicitly_convert(a)));
 #endif // !_CCCL_COMPILER(GCC, <, 8) && !(_CCCL_COMPILER(MSVC, <, 19, 40) && _CCCL_STD_VER < 2020)
     cuda::std::reference_wrapper<B> b1 = a;
     assert(&b1.get() == &a.b_);
-#if !_CCCL_COMPILER(GCC, <, 8) && !(_CCCL_COMPILER(MSVC, <, 19, 40) && _CCCL_STD_VER < 2020)
+#if !_CCCL_COMPILER(GCC, <, 9) && !(_CCCL_COMPILER(MSVC, <, 19, 40) && _CCCL_STD_VER < 2020)
     static_assert(!noexcept(b1 = a));
 #endif // !_CCCL_COMPILER(GCC, <, 8) && !(_CCCL_COMPILER(MSVC, <, 19, 40) && _CCCL_STD_VER < 2020)
     b1 = a;
