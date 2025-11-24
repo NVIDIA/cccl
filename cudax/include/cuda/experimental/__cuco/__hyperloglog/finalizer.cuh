@@ -66,7 +66,7 @@ public:
     if (__v > 0)
     {
       // Use linear counting for small cardinality estimates.
-      double const __h = this->__m * log(static_cast<double>(this->__m) / __v);
+      const double __h = this->__m * log(static_cast<double>(this->__m) / __v);
       // The threshold `2.5 * m` is from the original HLL algorithm.
       if (__e <= 2.5 * this->__m)
       {
@@ -113,8 +113,8 @@ private:
 
   _CCCL_API constexpr double __bias(double __e) const noexcept
   {
-    auto const __anchor_index = this->__interpolation_anchor_index(__e);
-    int const __n             = __raw_estimate_data_size(this->__precision);
+    const auto __anchor_index = this->__interpolation_anchor_index(__e);
+    const int __n             = __raw_estimate_data_size(this->__precision);
 
     auto __low  = ::cuda::std::max(__anchor_index - __k + 1, 0);
     auto __high = ::cuda::std::min(__low + __k, __n);
@@ -138,14 +138,14 @@ private:
 
   _CCCL_API constexpr double __distance(double __e, int __i) const noexcept
   {
-    auto const __diff = __e - __raw_estimate_data(this->__precision)[__i];
+    const auto __diff = __e - __raw_estimate_data(this->__precision)[__i];
     return __diff * __diff;
   }
 
   _CCCL_API constexpr int __interpolation_anchor_index(double __e) const noexcept
   {
     auto __estimates      = __raw_estimate_data(this->__precision);
-    int const __n         = __raw_estimate_data_size(this->__precision);
+    const int __n         = __raw_estimate_data_size(this->__precision);
     int __left            = 0;
     int __right           = static_cast<int>(__n) - 1;
     int __mid             = -1;
@@ -174,12 +174,12 @@ private:
     // '__left - 1' to find the closest one, taking care of boundary conditions.
 
     // Distance from '__e' to the element at '__left', if within bounds
-    double const __dist_lhs =
+    const double __dist_lhs =
       __left < static_cast<int>(__n)
         ? ::cuda::std::abs(__estimates[__left] - __e)
         : ::cuda::std::numeric_limits<double>::max();
     // Distance from '__e' to the element at '__left - 1', if within bounds
-    double const __dist_rhs =
+    const double __dist_rhs =
       __left - 1 >= 0 ? ::cuda::std::abs(__estimates[__left - 1] - __e) : ::cuda::std::numeric_limits<double>::max();
 
     __candidate_index = (__dist_lhs < __dist_rhs) ? __left : __left - 1;

@@ -78,7 +78,7 @@ public:
   //!
   //! @param __sketch_span Reference to sketch storage
   //! @param __hash The hash function used to hash items
-  _CCCL_API constexpr hyperloglog_ref(::cuda::std::span<::cuda::std::byte> __sketch_span, _Hash const& __hash = {})
+  _CCCL_API constexpr hyperloglog_ref(::cuda::std::span<::cuda::std::byte> __sketch_span, const _Hash& __hash = {})
       : __impl{__sketch_span, __hash}
   {}
 
@@ -115,7 +115,7 @@ public:
   //! @brief Adds an item to the estimator.
   //!
   //! @param __item The item to be counted
-  _CCCL_DEVICE constexpr void add(_Tp const& __item) noexcept
+  _CCCL_DEVICE constexpr void add(const _Tp& __item) noexcept
   {
     __impl.__add(__item);
   }
@@ -165,7 +165,7 @@ public:
   //! @param __group CUDA Cooperative group this operation is executed in
   //! @param __other Other estimator reference to be merged into `*this`
   template <class _CG, ::cuda::thread_scope _OtherScope>
-  _CCCL_DEVICE constexpr void merge(_CG __group, hyperloglog_ref<_Tp, _OtherScope, _Hash> const& __other)
+  _CCCL_DEVICE constexpr void merge(_CG __group, hyperloglog_ref<_Tp, _OtherScope, const _Hash>& __other)
   {
     __impl.__merge(__group, __other.__impl);
   }
@@ -175,7 +175,7 @@ public:
   //! @param __group CUDA thread block group this operation is executed in
   //!
   //! @return Approximate distinct items count
-  [[nodiscard]] _CCCL_DEVICE std::size_t estimate(cooperative_groups::thread_block const& __group) const noexcept
+  [[nodiscard]] _CCCL_DEVICE std::size_t estimate(const cooperative_groups::thread_block& __group) const noexcept
   {
     return __impl.__estimate(__group);
   }

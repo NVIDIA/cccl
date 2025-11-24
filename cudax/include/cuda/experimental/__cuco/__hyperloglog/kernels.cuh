@@ -54,7 +54,7 @@ namespace cuda::experimental::cuco::__hyperloglog_ns
 template <class RefType>
 CCCL_DETAIL_KERNEL_ATTRIBUTES void __clear(RefType __ref)
 {
-  auto const __block = cooperative_groups::this_thread_block();
+  const auto __block = cooperative_groups::this_thread_block();
   if (__block.group_index().x == 0)
   {
     __ref.__clear(__block);
@@ -63,7 +63,7 @@ CCCL_DETAIL_KERNEL_ATTRIBUTES void __clear(RefType __ref)
 
 template <int32_t VectorSize, class RefType>
 CCCL_DETAIL_KERNEL_ATTRIBUTES void
-__add_shmem_vectorized(typename RefType::value_type const* __first, int64_t __n, RefType __ref)
+__add_shmem_vectorized(const typename RefType::value_type* __first, int64_t __n, RefType __ref)
 {
   using value_type     = typename RefType::value_type;
   using vector_type    = ::cuda::std::array<value_type, VectorSize>;
@@ -73,10 +73,10 @@ __add_shmem_vectorized(typename RefType::value_type const* __first, int64_t __n,
   // sufficient for this purpose
   extern __shared__ ::cuda::std::byte __local_sketch[];
 
-  auto const __loop_stride = __grid_stride();
+  const auto __loop_stride = __grid_stride();
   auto __idx               = __global_thread_id();
-  auto const __grid        = cooperative_groups::this_grid();
-  auto const __block       = cooperative_groups::this_thread_block();
+  const auto __grid        = cooperative_groups::this_grid();
+  const auto __block       = cooperative_groups::this_thread_block();
 
   local_ref_type __local_ref(::cuda::std::span{__local_sketch, __ref.__sketch_bytes()}, {});
   __local_ref.__clear(__block);
@@ -88,7 +88,7 @@ __add_shmem_vectorized(typename RefType::value_type const* __first, int64_t __n,
   {
     __vec =
       *reinterpret_cast<vector_type*>(__builtin_assume_aligned(__first + __idx * VectorSize, sizeof(vector_type)));
-    for (auto const& __i : __vec)
+    for (const auto& __i : __vec)
     {
       __local_ref.__add(__i);
     }
@@ -97,7 +97,7 @@ __add_shmem_vectorized(typename RefType::value_type const* __first, int64_t __n,
   // a single thread processes the remaining items
 #if defined(CUCO_HAS_CG_INVOKE_ONE)
   cooperative_groups::invoke_one(__grid, [&]() {
-    auto const __remainder = __n % VectorSize;
+    const auto __remainder = __n % VectorSize;
     for (int __i = 0; __i < __remainder; ++__i)
     {
       __local_ref.__add(*(__first + __n - __i - 1));
@@ -106,7 +106,7 @@ __add_shmem_vectorized(typename RefType::value_type const* __first, int64_t __n,
 #else
   if (__grid.thread_rank() == 0)
   {
-    auto const __remainder = __n % VectorSize;
+    const auto __remainder = __n % VectorSize;
     for (int __i = 0; __i < __remainder; ++__i)
     {
       __local_ref.__add(*(__first + __n - __i - 1));
@@ -126,9 +126,9 @@ CCCL_DETAIL_KERNEL_ATTRIBUTES void __add_shmem(InputIt __first, int64_t __n, Ref
   // TODO assert alignment
   extern __shared__ ::cuda::std::byte __local_sketch[];
 
-  auto const __loop_stride = __grid_stride();
+  const auto __loop_stride = __grid_stride();
   auto __idx               = __global_thread_id();
-  auto const __block       = cooperative_groups::this_thread_block();
+  const auto __block       = cooperative_groups::this_thread_block();
 
   local_ref_type __local_ref(::cuda::std::span{__local_sketch, __ref.__sketch_bytes()}, {});
   __local_ref.__clear(__block);
@@ -147,7 +147,7 @@ CCCL_DETAIL_KERNEL_ATTRIBUTES void __add_shmem(InputIt __first, int64_t __n, Ref
 template <class InputIt, class RefType>
 CCCL_DETAIL_KERNEL_ATTRIBUTES void __add_gmem(InputIt __first, int64_t __n, RefType __ref)
 {
-  auto const __loop_stride = __grid_stride();
+  const auto __loop_stride = __grid_stride();
   auto __idx               = __global_thread_id();
 
   while (__idx < __n)
@@ -160,7 +160,7 @@ CCCL_DETAIL_KERNEL_ATTRIBUTES void __add_gmem(InputIt __first, int64_t __n, RefT
 template <class OtherRefType, class RefType>
 CCCL_DETAIL_KERNEL_ATTRIBUTES void __merge(OtherRefType __other_ref, RefType __ref)
 {
-  auto const __block = cooperative_groups::this_thread_block();
+  const auto __block = cooperative_groups::this_thread_block();
   if (__block.group_index().x == 0)
   {
     __ref.__merge(__block, __other_ref);
@@ -171,10 +171,10 @@ CCCL_DETAIL_KERNEL_ATTRIBUTES void __merge(OtherRefType __other_ref, RefType __r
 template <class RefType>
 CCCL_DETAIL_KERNEL_ATTRIBUTES void __estimate(std::size_t* __cardinality, RefType __ref)
 {
-  auto const __block = cooperative_groups::this_thread_block();
+  const auto __block = cooperative_groups::this_thread_block();
   if (__block.group_index().x == 0)
   {
-    auto const __estimate = __ref.__estimate(__block);
+    const auto __estimate = __ref.__estimate(__block);
     if (__block.thread_rank() == 0)
     {
       *__cardinality = __estimate;

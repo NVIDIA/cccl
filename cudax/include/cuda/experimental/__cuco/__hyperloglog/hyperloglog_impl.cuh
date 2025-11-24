@@ -85,7 +85,7 @@ public:
   //!
   //! @param sketch_span Reference to sketch storage
   //! @param hash The hash function used to hash items
-  _CCCL_API constexpr _HyperLogLog_Impl(::cuda::std::span<::cuda::std::byte> sketch_span, _Hash const& hash)
+  _CCCL_API constexpr _HyperLogLog_Impl(::cuda::std::span<::cuda::std::byte> sketch_span, const _Hash& hash)
       : __hash{hash}
       , __precision{::cuda::std::countr_zero(
           __sketch_bytes(static_cast<::cuda::experimental::cuco::__sketch_size_kb_t>(sketch_span.size() / 1024.0))
@@ -94,7 +94,7 @@ public:
       , __sketch{reinterpret_cast<register_type*>(sketch_span.data()), this->__sketch_bytes() / sizeof(register_type)}
   {
 #ifndef __CUDA_ARCH__
-    auto const __alignment =
+    const auto __alignment =
       1ull << ::cuda::std::countr_zero(reinterpret_cast<::cuda::std::uintptr_t>(sketch_span.data()));
     _CCCL_ASSERT(__alignment >= __sketch_alignment(), "Insufficient sketch alignment");
 
@@ -140,15 +140,15 @@ public:
   //! @brief Adds an item to the estimator.
   //!
   //! @param item The item to be counted
-  _CCCL_DEVICE constexpr void __add(_Tp const& __item) noexcept
+  _CCCL_DEVICE constexpr void __add(const _Tp& __item) noexcept
   {
-    auto const __h      = this->__hash(__item);
-    auto const __reg    = __h & this->__register_mask;
-    auto const __zeroes = ::cuda::std::countl_zero(__h | this->__register_mask) + 1; // __clz
+    const auto __h      = this->__hash(__item);
+    const auto __reg    = __h & this->__register_mask;
+    const auto __zeroes = ::cuda::std::countl_zero(__h | this->__register_mask) + 1; // __clz
 
     // reversed order (same one as Spark uses)
-    // auto const __reg    = __h >> ((sizeof(__hash_value_type) * 8) - this->__precision);
-    // auto const __zeroes = ::cuda::std::countl_zero(__h << this->__precision) + 1;
+    // const auto __reg    = __h >> ((sizeof(__hash_value_type) * 8) - this->__precision);
+    // const auto __zeroes = ::cuda::std::countl_zero(__h << this->__precision) + 1;
 
     this->__update_max(__reg, __zeroes);
   }
@@ -165,7 +165,7 @@ public:
   template <class _InputIt>
   _CCCL_HOST constexpr void __add_async(_InputIt __first, _InputIt __last, ::cuda::stream_ref __stream)
   {
-    auto const __num_items = ::cuda::std::distance(__first, __last);
+    const auto __num_items = ::cuda::std::distance(__first, __last);
     if (__num_items == 0)
     {
       return;
@@ -173,35 +173,35 @@ public:
 
     int __grid_size         = 0;
     int __block_size        = 0;
-    int const __shmem_bytes = __sketch_bytes();
-    void const* __kernel    = nullptr;
+    const int __shmem_bytes = __sketch_bytes();
+    const void* __kernel    = nullptr;
 
     // In case the input iterator represents a contiguous memory segment we can employ efficient
     // vectorized loads
     if constexpr (::cuda::std::contiguous_iterator<_InputIt>)
     {
-      auto const __ptr                  = thrust::raw_pointer_cast(&__first[0]);
+      const auto __ptr                  = thrust::raw_pointer_cast(&__first[0]);
       auto constexpr __max_vector_bytes = 32;
-      auto const __alignment =
+      const auto __alignment =
         1 << ::cuda::std::countr_zero(reinterpret_cast<::cuda::std::uintptr_t>(__ptr) | __max_vector_bytes);
-      auto const __vector_size = __alignment / sizeof(value_type);
+      const auto __vector_size = __alignment / sizeof(value_type);
 
       switch (__vector_size)
       {
         case 2:
-          __kernel = reinterpret_cast<void const*>(
+          __kernel = reinterpret_cast<const void*>(
             ::cuda::experimental::cuco::__hyperloglog_ns::__add_shmem_vectorized<2, _HyperLogLog_Impl>);
           break;
         case 4:
-          __kernel = reinterpret_cast<void const*>(
+          __kernel = reinterpret_cast<const void*>(
             ::cuda::experimental::cuco::__hyperloglog_ns::__add_shmem_vectorized<4, _HyperLogLog_Impl>);
           break;
         case 8:
-          __kernel = reinterpret_cast<void const*>(
+          __kernel = reinterpret_cast<const void*>(
             ::cuda::experimental::cuco::__hyperloglog_ns::__add_shmem_vectorized<8, _HyperLogLog_Impl>);
           break;
         case 16:
-          __kernel = reinterpret_cast<void const*>(
+          __kernel = reinterpret_cast<const void*>(
             ::cuda::experimental::cuco::__hyperloglog_ns::__add_shmem_vectorized<16, _HyperLogLog_Impl>);
           break;
       };
@@ -222,9 +222,9 @@ public:
           __kernel,
           __shmem_bytes);
 
-        auto const __ptr      = thrust::raw_pointer_cast(&__first[0]);
-        void* __kernel_args[] = {const_cast<void*>(reinterpret_cast<void const*>(&__ptr)),
-                                 const_cast<void*>(reinterpret_cast<void const*>(&__num_items)),
+        const auto __ptr      = thrust::raw_pointer_cast(&__first[0]);
+        void* __kernel_args[] = {const_cast<void*>(reinterpret_cast<const void*>(&__ptr)),
+                                 const_cast<void*>(reinterpret_cast<const void*>(&__num_items)),
                                  reinterpret_cast<void*>(this)};
         _CCCL_TRY_CUDA_API(
           ::cudaLaunchKernel,
@@ -239,10 +239,10 @@ public:
     }
     else
     {
-      __kernel = reinterpret_cast<void const*>(
+      __kernel = reinterpret_cast<const void*>(
         ::cuda::experimental::cuco::__hyperloglog_ns::__add_shmem<_InputIt, _HyperLogLog_Impl>);
-      void* __kernel_args[] = {const_cast<void*>(reinterpret_cast<void const*>(&__first)),
-                               const_cast<void*>(reinterpret_cast<void const*>(&__num_items)),
+      void* __kernel_args[] = {const_cast<void*>(reinterpret_cast<const void*>(&__first)),
+                               const_cast<void*>(reinterpret_cast<const void*>(&__num_items)),
                                reinterpret_cast<void*>(this)};
       if (this->__try_reserve_shmem(__kernel, __shmem_bytes))
       {
@@ -268,7 +268,7 @@ public:
       {
         // Computes sketch directly in global memory. (Fallback path in case there is not enough
         // shared memory available)
-        __kernel = reinterpret_cast<void const*>(
+        __kernel = reinterpret_cast<const void*>(
           ::cuda::experimental::cuco::__hyperloglog_ns::__add_gmem<_InputIt, _HyperLogLog_Impl>);
 
         _CCCL_TRY_CUDA_API(
@@ -321,7 +321,7 @@ public:
   //! @param __group CUDA Cooperative group this operation is executed in
   //! @param __other Other estimator reference to be merged into `*this`
   template <class _CG, ::cuda::thread_scope _OtherScope>
-  _CCCL_DEVICE constexpr void __merge(_CG __group, _HyperLogLog_Impl<_Tp, _OtherScope, _Hash> const& __other)
+  _CCCL_DEVICE constexpr void __merge(_CG __group, _HyperLogLog_Impl<_Tp, _OtherScope, _Hash>& __other)
   {
     // TODO find a better way to do error handling in device code
     // if (__other.__precision != this->__precision) { __trap(); }
@@ -343,7 +343,7 @@ public:
   //! @param other Other estimator reference to be merged into `*this`
   //! @param stream CUDA stream this operation is executed in
   template <::cuda::thread_scope _OtherScope>
-  _CCCL_HOST constexpr void merge_async(_HyperLogLog_Impl<_Tp, _OtherScope, _Hash> const& __other, ::cuda::stream_ref __stream)
+  _CCCL_HOST constexpr void merge_async(_HyperLogLog_Impl<_Tp, _OtherScope, const _Hash>& __other, ::cuda::stream_ref __stream)
   {
     CUCO_EXPECTS(__other.__precision == this->__precision, "Cannot merge estimators with different sketch sizes");
     auto constexpr __block_size = 1024;
@@ -362,7 +362,7 @@ public:
   //! @param other Other estimator reference to be merged into `*this`
   //! @param stream CUDA stream this operation is executed in
   template <::cuda::thread_scope _OtherScope>
-  _CCCL_HOST constexpr void merge(_HyperLogLog_Impl<_Tp, _OtherScope, _Hash> const& __other, ::cuda::stream_ref __stream)
+  _CCCL_HOST constexpr void merge(_HyperLogLog_Impl<_Tp, _OtherScope, const _Hash>& __other, ::cuda::stream_ref __stream)
   {
     this->merge_async(__other, __stream);
     __stream.sync();
@@ -374,7 +374,7 @@ public:
   //! @param group CUDA thread block group this operation is executed in
   //!
   //! @return Approximate distinct items count
-  [[nodiscard]] _CCCL_DEVICE size_t __estimate(cooperative_groups::thread_block const& __group) const noexcept
+  [[nodiscard]] _CCCL_DEVICE size_t __estimate(const cooperative_groups::thread_block& __group) const noexcept
   {
     __shared__ ::cuda::atomic<__fp_type, ::cuda::std::thread_scope_block> __block_sum;
     __shared__ ::cuda::atomic<int, ::cuda::std::thread_scope_block> __block_zeroes;
@@ -391,21 +391,21 @@ public:
     int __thread_zeroes    = 0;
     for (int __i = __group.thread_rank(); __i < this->__sketch.size(); __i += __group.size())
     {
-      auto const __reg = this->__sketch[__i];
+      const auto __reg = this->__sketch[__i];
       __thread_sum += __fp_type{1} / static_cast<__fp_type>(1 << __reg);
       __thread_zeroes += __reg == 0;
     }
 
     // warp reduce Z and V
-    auto const __warp = cooperative_groups::tiled_partition<32, cooperative_groups::thread_block>(__group);
+    const auto __warp = cooperative_groups::tiled_partition<32, cooperative_groups::thread_block>(__group);
 
     // TODO check if this is always true with latest ctk or cccl version and remove
 #if defined(CUDART_VERSION) && (CUDART_VERSION >= 12000)
     cooperative_groups::reduce_update_async(__warp, __block_sum, __thread_sum, cooperative_groups::plus<__fp_type>());
     cooperative_groups::reduce_update_async(__warp, __block_zeroes, __thread_zeroes, cooperative_groups::plus<int>());
 #else
-    auto const __warp_sum    = cooperative_groups::reduce(__warp, __thread_sum, cooperative_groups::plus<__fp_type>());
-    auto const __warp_zeroes = cooperative_groups::reduce(__warp, __thread_zeroes, cooperative_groups::plus<int>());
+    const auto __warp_sum    = cooperative_groups::reduce(__warp, __thread_sum, cooperative_groups::plus<__fp_type>());
+    const auto __warp_zeroes = cooperative_groups::reduce(__warp, __thread_zeroes, cooperative_groups::plus<int>());
     // TODO warp sync needed?
     // TODO use invoke_one
     if (__warp.thread_rank() == 0)
@@ -418,9 +418,9 @@ public:
 
     if (__group.thread_rank() == 0)
     {
-      auto const __z        = __block_sum.load(::cuda::std::memory_order_relaxed);
-      auto const __v        = __block_zeroes.load(::cuda::std::memory_order_relaxed);
-      auto const __finalize = ::cuda::experimental::cuco::__hyperloglog_ns::_Finalizer(this->__precision);
+      const auto __z        = __block_sum.load(::cuda::std::memory_order_relaxed);
+      const auto __v        = __block_zeroes.load(::cuda::std::memory_order_relaxed);
+      const auto __finalize = ::cuda::experimental::cuco::__hyperloglog_ns::_Finalizer(this->__precision);
       __estimate            = __finalize(__z, __v);
     }
     __group.sync();
@@ -437,7 +437,7 @@ public:
   //! @return Approximate distinct items count
   [[nodiscard]] _CCCL_HOST size_t __estimate(::cuda::stream_ref __stream) const
   {
-    auto const __num_regs = 1ull << this->__precision;
+    const auto __num_regs = 1ull << this->__precision;
     ::std::vector<register_type> __host_sketch(__num_regs);
 
     // TODO check if storage is host accessible
@@ -456,13 +456,13 @@ public:
     int __zeroes    = 0;
 
     // geometric mean computation + count registers with 0s
-    for (auto const __reg : __host_sketch)
+    for (const auto __reg : __host_sketch)
     {
       __sum += __fp_type{1} / static_cast<__fp_type>(1ull << __reg);
       __zeroes += __reg == 0;
     }
 
-    auto const __finalize = ::cuda::experimental::cuco::__hyperloglog_ns::_Finalizer(this->__precision);
+    const auto __finalize = ::cuda::experimental::cuco::__hyperloglog_ns::_Finalizer(this->__precision);
 
     // pass intermediate result to _Finalizer for bias correction, etc.
     return __finalize(__sum, __zeroes);
@@ -520,7 +520,7 @@ public:
     // https://github.com/apache/spark/blob/6a27789ad7d59cd133653a49be0bb49729542abe/sql/catalyst/src/main/scala/org/apache/spark/sql/catalyst/util/HyperLogLogPlusPlusHelper.scala#L43
 
     //  minimum precision is 4 or 64 bytes
-    auto const __precision_ = ::cuda::std::max(
+    const auto __precision_ = ::cuda::std::max(
       static_cast<int32_t>(4),
       static_cast<int32_t>(
         ::cuda::std::ceil(2.0 * ::cuda::std::log(1.106 / __standard_deviation) / ::cuda::std::log(2.0))));
@@ -578,7 +578,7 @@ private:
       _CCCL_TRY_CUDA_API(
         ::cudaFuncSetAttribute,
         "cudaFuncSetAttribute failed",
-        reinterpret_cast<void const*>(__kernel),
+        reinterpret_cast<const void*>(__kernel),
         cudaFuncAttributeMaxDynamicSharedMemorySize,
         __shmem_bytes);
       return true;

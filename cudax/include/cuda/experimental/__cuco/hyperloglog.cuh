@@ -76,7 +76,7 @@ public:
     _MemoryResourceRef __memory_resource_ref,
     ::cuda::experimental::cuco::sketch_size_kb __sketch_size_kb =
       static_cast<::cuda::experimental::cuco::sketch_size_kb>(32.0),
-    _Hash const& __hash         = {},
+    const _Hash& __hash         = {},
     ::cuda::stream_ref __stream = ::cuda::stream_ref{cudaStream_t{nullptr}})
       : __memory_resource_ref(__memory_resource_ref)
       , __sketch_buffer{__stream,
@@ -99,7 +99,7 @@ public:
   //! @param __stream CUDA stream used to initialize the object
   constexpr hyperloglog(::cuda::experimental::cuco::sketch_size_kb __sketch_size_kb =
                           static_cast<::cuda::experimental::cuco::sketch_size_kb>(32.0),
-                        _Hash const& __hash         = {},
+                        const _Hash& __hash         = {},
                         ::cuda::stream_ref __stream = ::cuda::stream_ref{cudaStream_t{nullptr}})
       : __memory_resource_ref(::cuda::device_default_memory_pool(::cuda::device_ref{0}))
       , __sketch_buffer{__stream,
@@ -123,7 +123,7 @@ public:
   //! @param __stream CUDA stream used to initialize the object
   constexpr hyperloglog(_MemoryResourceRef __memory_resource_ref,
                         ::cuda::experimental::cuco::standard_deviation __sd,
-                        _Hash const& __hash         = {},
+                        const _Hash& __hash         = {},
                         ::cuda::stream_ref __stream = ::cuda::stream_ref{cudaStream_t{nullptr}})
       : __memory_resource_ref(__memory_resource_ref)
       , __sketch_buffer{__stream,
@@ -145,7 +145,7 @@ public:
   //! @param __hash The hash function used to hash items
   //! @param __stream CUDA stream used to initialize the object
   constexpr hyperloglog(::cuda::experimental::cuco::standard_deviation __sd,
-                        _Hash const& __hash         = {},
+                        const _Hash& __hash         = {},
                         ::cuda::stream_ref __stream = ::cuda::stream_ref{cudaStream_t{nullptr}})
       : __memory_resource_ref(::cuda::device_default_memory_pool(::cuda::device_ref{0}))
       , __sketch_buffer{__stream,
@@ -161,11 +161,11 @@ public:
 
   ~hyperloglog() = default;
 
-  hyperloglog(hyperloglog const&) = delete;
+  hyperloglog(const hyperloglog&) = delete;
   //! @brief Copy-assignment operator.
   //!
   //! @return Copy of `*this`
-  hyperloglog& operator=(hyperloglog const&) = delete;
+  hyperloglog& operator=(const hyperloglog&) = delete;
   hyperloglog(hyperloglog&&)                 = default; ///< Move constructor
 
   hyperloglog& operator=(hyperloglog&&) = default;

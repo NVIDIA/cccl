@@ -69,7 +69,7 @@ CUDAX_CUCO_HLL_TUNING_ARR_DECL __raw_estimate_data_p18{189084.0, 192250.913, 195
 //!
 //! @param __precision The precision value (4-18)
 //! @return Pointer to the raw estimate data array for the given precision
-_CCCL_API constexpr double const* __raw_estimate_data(int32_t __precision) noexcept {
+_CCCL_API constexpr const double* __raw_estimate_data(int32_t __precision) noexcept {
   switch (__precision) {
     case 4:  return __raw_estimate_data_p4.data();
     case 5:  return __raw_estimate_data_p5.data();
@@ -135,7 +135,7 @@ CUDAX_CUCO_HLL_TUNING_ARR_DECL __bias_data_p18{189083.0, 185696.913, 182348.774,
 //!
 //! @param __precision The precision value (4-18)
 //! @return Pointer to the bias data array for the given precision
-_CCCL_API constexpr double const* __bias_data(int32_t __precision) noexcept {
+_CCCL_API constexpr const double* __bias_data(int32_t __precision) noexcept {
   switch (__precision) {
     case 4:  return __bias_data_p4.data();
     case 5:  return __bias_data_p5.data();
