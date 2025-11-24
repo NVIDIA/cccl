@@ -13,10 +13,10 @@ from ._iterators import (
     DiscardIterator as _DiscardIterator,
 )
 from ._iterators import (
-    make_permutation_iterator,
     make_reverse_iterator,
     make_transform_iterator,
 )
+from ._permutation_iterator import make_permutation_iterator
 from ._zip_iterator import make_zip_iterator
 
 
