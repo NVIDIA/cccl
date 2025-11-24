@@ -267,7 +267,7 @@ class __device_accessor : public _Accessor
 
   _CCCL_API static constexpr void __check_device_pointer([[maybe_unused]] __data_handle_type __p) noexcept
   {
-    if (!::cuda::std::__cccl_default_is_constant_evaluated())
+    _CCCL_IF_NOT_CONSTEVAL_DEFAULT
     {
       NV_IF_TARGET(
         NV_IS_HOST,
