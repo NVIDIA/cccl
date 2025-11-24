@@ -196,7 +196,7 @@ public:
     return !any();
   }
 
-  [[nodiscard]] _CCCL_API constexpr int count() const noexcept
+  [[nodiscard]] _CCCL_API constexpr ::cuda::std::ptrdiff_t count() const noexcept
   {
     return _Impl::__count(__s_);
   }
