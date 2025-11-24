@@ -90,15 +90,15 @@ public:
       , __precision{::cuda::std::countr_zero(
           __sketch_bytes(static_cast<::cuda::experimental::cuco::__sketch_size_kb_t>(sketch_span.size() / 1024.0))
           / sizeof(register_type))}
-      , __register_mask{(1ull << this->__precision) - 1}
-      , __sketch{reinterpret_cast<register_type*>(sketch_span.data()), this->__sketch_bytes() / sizeof(register_type)}
+      , __register_mask{(1ull << __precision) - 1}
+      , __sketch{reinterpret_cast<register_type*>(sketch_span.data()), __sketch_bytes() / sizeof(register_type)}
   {
 #ifndef __CUDA_ARCH__
     const auto __alignment =
       1ull << ::cuda::std::countr_zero(reinterpret_cast<::cuda::std::uintptr_t>(sketch_span.data()));
     _CCCL_ASSERT(__alignment >= __sketch_alignment(), "Insufficient sketch alignment");
 
-    _CCCL_ASSERT(this->__precision >= 4, "Minimum required sketch size is 0.0625KB or 64B");
+    _CCCL_ASSERT(__precision >= 4, "Minimum required sketch size is 0.0625KB or 64B");
 #endif
   }
 
@@ -110,9 +110,9 @@ public:
   template <class _CG>
   _CCCL_DEVICE constexpr void __clear(_CG __group) noexcept
   {
-    for (int __i = __group.thread_rank(); __i < this->__sketch.size(); __i += __group.size())
+    for (int __i = __group.thread_rank(); __i < __sketch.size(); __i += __group.size())
     {
-      new (&(this->__sketch[__i])) register_type{};
+      new (&(__sketch[__i])) register_type{};
     }
   }
 
@@ -142,13 +142,13 @@ public:
   //! @param item The item to be counted
   _CCCL_DEVICE constexpr void __add(const _Tp& __item) noexcept
   {
-    const auto __h      = this->__hash(__item);
-    const auto __reg    = __h & this->__register_mask;
-    const auto __zeroes = ::cuda::std::countl_zero(__h | this->__register_mask) + 1; // __clz
+    const auto __h      = __hash(__item);
+    const auto __reg    = __h & __register_mask;
+    const auto __zeroes = ::cuda::std::countl_zero(__h | __register_mask) + 1; // __clz
 
     // reversed order (same one as Spark uses)
-    // const auto __reg    = __h >> ((sizeof(__hash_value_type) * 8) - this->__precision);
-    // const auto __zeroes = ::cuda::std::countl_zero(__h << this->__precision) + 1;
+    // const auto __reg    = __h >> ((sizeof(__hash_value_type) * 8) - __precision);
+    // const auto __zeroes = ::cuda::std::countl_zero(__h << __precision) + 1;
 
     this->__update_max(__reg, __zeroes);
   }
@@ -313,7 +313,7 @@ public:
 
   //! @brief Merges the result of `other` estimator reference into `*this` estimator reference.
   //!
-  //! @throw If this->__sketch_bytes() != other.__sketch_bytes() then behavior is undefined
+  //! @throw If __sketch_bytes() != other.__sketch_bytes() then behavior is undefined
   //!
   //! @tparam _CG CUDA Cooperative Group type
   //! @tparam _OtherScope Thread scope of `other` estimator
@@ -324,9 +324,9 @@ public:
   _CCCL_DEVICE constexpr void __merge(_CG __group, _HyperLogLog_Impl<_Tp, _OtherScope, _Hash>& __other)
   {
     // TODO find a better way to do error handling in device code
-    // if (__other.__precision != this->__precision) { __trap(); }
+    // if (__other.__precision != __precision) { __trap(); }
 
-    for (int __i = __group.thread_rank(); __i < this->__sketch.size(); __i += __group.size())
+    for (int __i = __group.thread_rank(); __i < __sketch.size(); __i += __group.size())
     {
       this->__update_max(__i, __other.__sketch[__i]);
     }
@@ -345,7 +345,7 @@ public:
   template <::cuda::thread_scope _OtherScope>
   _CCCL_HOST constexpr void merge_async(_HyperLogLog_Impl<_Tp, _OtherScope, const _Hash>& __other, ::cuda::stream_ref __stream)
   {
-    CUCO_EXPECTS(__other.__precision == this->__precision, "Cannot merge estimators with different sketch sizes");
+    CUCO_EXPECTS(__other.__precision == __precision, "Cannot merge estimators with different sketch sizes");
     auto constexpr __block_size = 1024;
     ::cuda::experimental::cuco::__hyperloglog_ns::__merge<<<1, __block_size, 0, __stream.get()>>>(__other, *this);
   }
@@ -389,9 +389,9 @@ public:
 
     __fp_type __thread_sum = 0;
     int __thread_zeroes    = 0;
-    for (int __i = __group.thread_rank(); __i < this->__sketch.size(); __i += __group.size())
+    for (int __i = __group.thread_rank(); __i < __sketch.size(); __i += __group.size())
     {
-      const auto __reg = this->__sketch[__i];
+      const auto __reg = __sketch[__i];
       __thread_sum += __fp_type{1} / static_cast<__fp_type>(1u << __reg);
       __thread_zeroes += __reg == 0;
     }
@@ -420,7 +420,7 @@ public:
     {
       const auto __z        = __block_sum.load(::cuda::std::memory_order_relaxed);
       const auto __v        = __block_zeroes.load(::cuda::std::memory_order_relaxed);
-      const auto __finalize = ::cuda::experimental::cuco::__hyperloglog_ns::_Finalizer(this->__precision);
+      const auto __finalize = ::cuda::experimental::cuco::__hyperloglog_ns::_Finalizer(__precision);
       __estimate            = __finalize(__z, __v);
     }
     __group.sync();
@@ -437,7 +437,7 @@ public:
   //! @return Approximate distinct items count
   [[nodiscard]] _CCCL_HOST size_t __estimate(::cuda::stream_ref __stream) const
   {
-    const auto __num_regs = 1ull << this->__precision;
+    const auto __num_regs = 1ull << __precision;
     ::std::vector<register_type> __host_sketch(__num_regs);
 
     // TODO check if storage is host accessible
@@ -445,7 +445,7 @@ public:
       ::cudaMemcpyAsync,
       "cudaMemcpyAsync failed",
       __host_sketch.data(),
-      this->__sketch.data(),
+      __sketch.data(),
       sizeof(register_type) * __num_regs,
       cudaMemcpyDefault,
       __stream.get());
@@ -462,7 +462,7 @@ public:
       __zeroes += __reg == 0;
     }
 
-    const auto __finalize = ::cuda::experimental::cuco::__hyperloglog_ns::_Finalizer(this->__precision);
+    const auto __finalize = ::cuda::experimental::cuco::__hyperloglog_ns::_Finalizer(__precision);
 
     // pass intermediate result to _Finalizer for bias correction, etc.
     return __finalize(__sum, __zeroes);
@@ -475,7 +475,7 @@ public:
   //! @return The hash function
   [[nodiscard]] _CCCL_API constexpr auto __hash_function() const noexcept
   {
-    return this->__hash;
+    return __hash;
   }
 
   //! @brief Gets the span of the sketch.
@@ -483,8 +483,7 @@ public:
   //! @return The ::cuda::std::span of the sketch
   [[nodiscard]] _CCCL_API constexpr ::cuda::std::span<::cuda::std::byte> __sketch_span() const noexcept
   {
-    return ::cuda::std::span<::cuda::std::byte>(
-      reinterpret_cast<::cuda::std::byte*>(this->__sketch.data()), this->__sketch_bytes());
+    return ::cuda::std::span<::cuda::std::byte>(reinterpret_cast<::cuda::std::byte*>(__sketch.data()), __sketch_bytes());
   }
 
   //! @brief Gets the number of bytes required for the sketch storage.
@@ -492,7 +491,7 @@ public:
   //! @return The number of bytes required for the sketch
   [[nodiscard]] _CCCL_API constexpr size_t __sketch_bytes() const noexcept
   {
-    return (1ull << this->__precision) * sizeof(register_type);
+    return (1ull << __precision) * sizeof(register_type);
   }
 
   //! @brief Gets the number of bytes required for the sketch storage.
@@ -548,7 +547,7 @@ private:
   //! @param value New value
   _CCCL_DEVICE constexpr void __update_max(int __i, register_type __value) noexcept
   {
-    ::cuda::atomic_ref<register_type, _Scope> __register_ref(this->__sketch[__i]);
+    ::cuda::atomic_ref<register_type, _Scope> __register_ref(__sketch[__i]);
     __register_ref.fetch_max(__value, ::cuda::memory_order_relaxed);
   }
 

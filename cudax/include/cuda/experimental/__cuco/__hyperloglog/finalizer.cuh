@@ -61,29 +61,29 @@ public:
   //! @return Bias-corrected cardinality estimate
   _CCCL_API std::size_t operator()(double __z, int __v) const noexcept
   {
-    double __e = this->__alpha_mm() / __z;
+    double __e = __alpha_mm() / __z;
 
     if (__v > 0)
     {
       // Use linear counting for small cardinality estimates.
-      const double __h = this->__m * log(static_cast<double>(this->__m) / __v);
+      const double __h = __m * log(static_cast<double>(__m) / __v);
       // The threshold `2.5 * m` is from the original HLL algorithm.
-      if (__e <= 2.5 * this->__m)
+      if (__e <= 2.5 * __m)
       {
         return static_cast<std::size_t>(::cuda::std::round(__h));
       }
 
-      if (this->__precision < 19)
+      if (__precision < 19)
       {
-        __e = (__h <= __hyperloglog_ns::__threshold(this->__precision)) ? __h : this->__bias_corrected_estimate(__e);
+        __e = (__h <= __hyperloglog_ns::__threshold(__precision)) ? __h : __bias_corrected_estimate(__e);
       }
     }
     else
     {
       // HLL++ is defined only when p < 19, otherwise we need to fallback to HLL.
-      if (this->__precision < 19)
+      if (__precision < 19)
       {
-        __e = this->__bias_corrected_estimate(__e);
+        __e = __bias_corrected_estimate(__e);
       }
     }
 
@@ -93,40 +93,40 @@ public:
 private:
   _CCCL_API constexpr double __alpha_mm() const noexcept
   {
-    switch (this->__m)
+    switch (__m)
     {
       case 16:
-        return 0.673 * this->__m * this->__m;
+        return 0.673 * __m * __m;
       case 32:
-        return 0.697 * this->__m * this->__m;
+        return 0.697 * __m * __m;
       case 64:
-        return 0.709 * this->__m * this->__m;
+        return 0.709 * __m * __m;
       default:
-        return (0.7213 / (1.0 + 1.079 / this->__m)) * this->__m * this->__m;
+        return (0.7213 / (1.0 + 1.079 / __m)) * __m * __m;
     }
   }
 
   _CCCL_API constexpr double __bias_corrected_estimate(double __e) const noexcept
   {
-    return (__e < 5.0 * this->__m) ? __e - this->__bias(__e) : __e;
+    return (__e < 5.0 * __m) ? __e - __bias(__e) : __e;
   }
 
   _CCCL_API constexpr double __bias(double __e) const noexcept
   {
-    const auto __anchor_index = this->__interpolation_anchor_index(__e);
-    const int __n             = __raw_estimate_data_size(this->__precision);
+    const auto __anchor_index = __interpolation_anchor_index(__e);
+    const int __n             = __raw_estimate_data_size(__precision);
 
     auto __low  = ::cuda::std::max(__anchor_index - __k + 1, 0);
     auto __high = ::cuda::std::min(__low + __k, __n);
     // Keep moving bounds as long as the (exclusive) high bound is closer to the estimate than
     // the lower (inclusive) bound.
-    while (__high < __n and this->__distance(__e, __high) < this->__distance(__e, __low))
+    while (__high < __n and __distance(__e, __high) < __distance(__e, __low))
     {
       __low += 1;
       __high += 1;
     }
 
-    auto __biases     = __bias_data(this->__precision);
+    auto __biases     = __bias_data(__precision);
     double __bias_sum = 0.0;
     for (int __i = __low; __i < __high; ++__i)
     {
@@ -138,14 +138,14 @@ private:
 
   _CCCL_API constexpr double __distance(double __e, int __i) const noexcept
   {
-    const auto __diff = __e - __raw_estimate_data(this->__precision)[__i];
+    const auto __diff = __e - __raw_estimate_data(__precision)[__i];
     return __diff * __diff;
   }
 
   _CCCL_API constexpr int __interpolation_anchor_index(double __e) const noexcept
   {
-    auto __estimates      = __raw_estimate_data(this->__precision);
-    const int __n         = __raw_estimate_data_size(this->__precision);
+    auto __estimates      = __raw_estimate_data(__precision);
+    const int __n         = __raw_estimate_data_size(__precision);
     int __left            = 0;
     int __right           = static_cast<int>(__n) - 1;
     int __mid             = -1;
