@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDAX__CUCO_DETAIL_STRONG_TYPE_CUH
-#define _CUDAX__CUCO_DETAIL_STRONG_TYPE_CUH
+#ifndef _CUDAX__CUCO__UTILITY__STRONG_TYPE_CUH
+#define _CUDAX__CUCO__UTILITY__STRONG_TYPE_CUH
 
 #include <cuda/__cccl_config>
 
@@ -23,7 +23,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-namespace cuda::experimental::cuco::detail
+namespace cuda::experimental::cuco
 {
 //! A strong type wrapper
 //!
@@ -50,17 +50,17 @@ struct __strong_type
 
   _T __value; //!< Underlying data value
 };
-} // namespace cuda::experimental::cuco::detail
+} // namespace cuda::experimental::cuco
 
 //! Convenience wrapper for defining a strong type
-#define CUDAX_CUCO_DEFINE_STRONG_TYPE(Name, Type)                            \
-  struct Name : public cuda::experimental::cuco::detail::__strong_type<Type> \
-  {                                                                          \
-    __host__ __device__ explicit constexpr Name(Type __value)                \
-        : cuda::experimental::cuco::detail::__strong_type<Type>(__value)     \
-    {}                                                                       \
+#define CUDAX_CUCO_DEFINE_STRONG_TYPE(Name, Type)                      \
+  struct Name : public ::cuda::experimental::cuco::__strong_type<Type> \
+  {                                                                    \
+    __host__ __device__ explicit constexpr Name(Type __value)          \
+        : ::cuda::experimental::cuco::__strong_type<Type>(__value)     \
+    {}                                                                 \
   };
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _CUDAX__CUCO_DETAIL_STRONG_TYPE_CUH
+#endif // _CUDAX__CUCO__UTILITY__STRONG_TYPE_CUH

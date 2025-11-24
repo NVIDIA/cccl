@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDAX__CUCO_DETAIL_HYPERLOGLOG_KERNELS_CUH
-#define _CUDAX__CUCO_DETAIL_HYPERLOGLOG_KERNELS_CUH
+#ifndef _CUDAX__CUCO__HYPERLOGLOG__KERNELS_CUH
+#define _CUDAX__CUCO__HYPERLOGLOG__KERNELS_CUH
 
 #include <cuda/__cccl_config>
 
@@ -33,7 +33,7 @@
 _CCCL_DIAG_PUSH
 _CCCL_DIAG_SUPPRESS_GCC("-Wattributes")
 
-namespace cuda::experimental::cuco::detail::hyperloglog_ns
+namespace cuda::experimental::cuco::__hyperloglog_ns
 {
 //! @brief Returns the global thread ID in a 1D grid
 //!
@@ -67,7 +67,7 @@ __add_shmem_vectorized(typename RefType::value_type const* __first, int64_t __n,
 {
   using value_type     = typename RefType::value_type;
   using vector_type    = ::cuda::std::array<value_type, VectorSize>;
-  using local_ref_type = typename RefType::template with_scope<::cuda::thread_scope_block>;
+  using local_ref_type = typename RefType::template with_scope<::cuda::std::thread_scope_block>;
 
   // Base address of dynamic shared memory is guaranteed to be aligned to at least 16 bytes which is
   // sufficient for this purpose
@@ -121,7 +121,7 @@ __add_shmem_vectorized(typename RefType::value_type const* __first, int64_t __n,
 template <class InputIt, class RefType>
 CCCL_DETAIL_KERNEL_ATTRIBUTES void __add_shmem(InputIt __first, int64_t __n, RefType __ref)
 {
-  using local_ref_type = typename RefType::template with_scope<::cuda::thread_scope_block>;
+  using local_ref_type = typename RefType::template with_scope<::cuda::std::thread_scope_block>;
 
   // TODO assert alignment
   extern __shared__ ::cuda::std::byte __local_sketch[];
@@ -181,10 +181,10 @@ CCCL_DETAIL_KERNEL_ATTRIBUTES void __estimate(std::size_t* __cardinality, RefTyp
     }
   }
 }
-} // namespace cuda::experimental::cuco::detail::hyperloglog_ns
+} // namespace cuda::experimental::cuco::__hyperloglog_ns
 
 _CCCL_DIAG_POP
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _CUDAX__CUCO_DETAIL_HYPERLOGLOG_IMPL_CUH
+#endif // _CUDAX__CUCO__HYPERLOGLOG__KERNELS_CUH

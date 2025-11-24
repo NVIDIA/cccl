@@ -21,8 +21,8 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/experimental/__cuco/detail/hash_functions/murmurhash3.cuh>
-#include <cuda/experimental/__cuco/detail/hash_functions/xxhash.cuh>
+#include <cuda/experimental/__cuco/__hash_functions/murmurhash3.cuh>
+#include <cuda/experimental/__cuco/__hash_functions/xxhash.cuh>
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -48,45 +48,45 @@ template <typename _Key, hash_algorithm _S = hash_algorithm::xxhash_32>
 class hash;
 
 template <typename _Key>
-class hash<_Key, hash_algorithm::xxhash_32> : private __detail::_XXHash_32<_Key>
+class hash<_Key, hash_algorithm::xxhash_32> : private ::cuda::experimental::cuco::_XXHash_32<_Key>
 {
 public:
-  using __detail::_XXHash_32<_Key>::_XXHash_32;
-  using __detail::_XXHash_32<_Key>::operator();
+  using ::cuda::experimental::cuco::_XXHash_32<_Key>::_XXHash_32;
+  using ::cuda::experimental::cuco::_XXHash_32<_Key>::operator();
 };
 
 template <typename _Key>
-class hash<_Key, hash_algorithm::xxhash_64> : private __detail::_XXHash_64<_Key>
+class hash<_Key, hash_algorithm::xxhash_64> : private ::cuda::experimental::cuco::_XXHash_64<_Key>
 {
 public:
-  using __detail::_XXHash_64<_Key>::_XXHash_64;
-  using __detail::_XXHash_64<_Key>::operator();
+  using ::cuda::experimental::cuco::_XXHash_64<_Key>::_XXHash_64;
+  using ::cuda::experimental::cuco::_XXHash_64<_Key>::operator();
 };
 
 template <typename _Key>
-class hash<_Key, hash_algorithm::murmurhash3_32> : private __detail::_MurmurHash3_32<_Key>
+class hash<_Key, hash_algorithm::murmurhash3_32> : private ::cuda::experimental::cuco::_MurmurHash3_32<_Key>
 {
 public:
-  using __detail::_MurmurHash3_32<_Key>::_MurmurHash3_32;
-  using __detail::_MurmurHash3_32<_Key>::operator();
+  using ::cuda::experimental::cuco::_MurmurHash3_32<_Key>::_MurmurHash3_32;
+  using ::cuda::experimental::cuco::_MurmurHash3_32<_Key>::operator();
 };
 
 #if _CCCL_HAS_INT128()
 
 template <typename _Key>
-class hash<_Key, hash_algorithm::murmurhash3_x86_128> : private __detail::_MurmurHash3_x86_128<_Key>
+class hash<_Key, hash_algorithm::murmurhash3_x86_128> : private ::cuda::experimental::cuco::_MurmurHash3_x86_128<_Key>
 {
 public:
-  using __detail::_MurmurHash3_x86_128<_Key>::_MurmurHash3_x86_128;
-  using __detail::_MurmurHash3_x86_128<_Key>::operator();
+  using ::cuda::experimental::cuco::_MurmurHash3_x86_128<_Key>::_MurmurHash3_x86_128;
+  using ::cuda::experimental::cuco::_MurmurHash3_x86_128<_Key>::operator();
 };
 
 template <typename _Key>
-class hash<_Key, hash_algorithm::murmurhash3_x64_128> : private __detail::_MurmurHash3_x64_128<_Key>
+class hash<_Key, hash_algorithm::murmurhash3_x64_128> : private ::cuda::experimental::cuco::_MurmurHash3_x64_128<_Key>
 {
 public:
-  using __detail::_MurmurHash3_x64_128<_Key>::_MurmurHash3_x64_128;
-  using __detail::_MurmurHash3_x64_128<_Key>::operator();
+  using ::cuda::experimental::cuco::_MurmurHash3_x64_128<_Key>::_MurmurHash3_x64_128;
+  using ::cuda::experimental::cuco::_MurmurHash3_x64_128<_Key>::operator();
 };
 
 #endif // _CCCL_HAS_INT128()

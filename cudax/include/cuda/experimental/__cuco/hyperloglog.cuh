@@ -285,7 +285,8 @@ public:
   //! @param __standard_deviation Upper bound standard deviation for approximation error
   //!
   //! @return The number of bytes required for the sketch
-  [[nodiscard]] static constexpr std::size_t sketch_bytes(cuco::standard_deviation __standard_deviation) noexcept
+  [[nodiscard]] static constexpr std::size_t
+  sketch_bytes(::cuda::experimental::cuco::standard_deviation __standard_deviation) noexcept
   {
     return ref_type<>::sketch_bytes(__standard_deviation);
   }

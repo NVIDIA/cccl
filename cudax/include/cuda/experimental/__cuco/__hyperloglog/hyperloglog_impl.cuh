@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDAX__CUCO_DETAIL_HYPERLOGLOG_IMPL_CUH
-#define _CUDAX__CUCO_DETAIL_HYPERLOGLOG_IMPL_CUH
+#ifndef _CUDAX__CUCO__HYPERLOGLOG__IMPL_CUH
+#define _CUDAX__CUCO__HYPERLOGLOG__IMPL_CUH
 
 #include <cuda/__cccl_config>
 
@@ -33,9 +33,9 @@
 #include <cuda/std/utility>
 #include <cuda/stream>
 
-#include <cuda/experimental/__cuco/detail/hyperloglog/finalizer.cuh>
-#include <cuda/experimental/__cuco/detail/hyperloglog/kernels.cuh>
-#include <cuda/experimental/__cuco/detail/utility/strong_type.cuh>
+#include <cuda/experimental/__cuco/__hyperloglog/finalizer.cuh>
+#include <cuda/experimental/__cuco/__hyperloglog/kernels.cuh>
+#include <cuda/experimental/__cuco/__utility/strong_type.cuh>
 #include <cuda/experimental/__cuco/hash_functions.cuh>
 
 #include <vector>
@@ -45,7 +45,7 @@
 #include <cooperative_groups/reduce.h>
 #include <cuda/std/__cccl/prologue.h>
 
-namespace cuda::experimental::cuco::detail
+namespace cuda::experimental::cuco
 {
 CUDAX_CUCO_DEFINE_STRONG_TYPE(__sketch_size_kb_t, double);
 
@@ -88,7 +88,8 @@ public:
   _CCCL_API constexpr _HyperLogLog_Impl(::cuda::std::span<::cuda::std::byte> sketch_span, _Hash const& hash)
       : __hash{hash}
       , __precision{::cuda::std::countr_zero(
-          __sketch_bytes(static_cast<detail::__sketch_size_kb_t>(sketch_span.size() / 1024.0)) / sizeof(register_type))}
+          __sketch_bytes(static_cast<::cuda::experimental::cuco::__sketch_size_kb_t>(sketch_span.size() / 1024.0))
+          / sizeof(register_type))}
       , __register_mask{(1ull << this->__precision) - 1}
       , __sketch{reinterpret_cast<register_type*>(sketch_span.data()), this->__sketch_bytes() / sizeof(register_type)}
   {
@@ -133,7 +134,7 @@ public:
   _CCCL_HOST constexpr void __clear_async(::cuda::stream_ref __stream)
   {
     auto constexpr __block_size = 1024;
-    hyperloglog_ns::__clear<<<1, __block_size, 0, __stream.get()>>>(*this);
+    ::cuda::experimental::cuco::__hyperloglog_ns::__clear<<<1, __block_size, 0, __stream.get()>>>(*this);
   }
 
   //! @brief Adds an item to the estimator.
@@ -188,16 +189,20 @@ public:
       switch (__vector_size)
       {
         case 2:
-          __kernel = reinterpret_cast<void const*>(hyperloglog_ns::__add_shmem_vectorized<2, _HyperLogLog_Impl>);
+          __kernel = reinterpret_cast<void const*>(
+            ::cuda::experimental::cuco::__hyperloglog_ns::__add_shmem_vectorized<2, _HyperLogLog_Impl>);
           break;
         case 4:
-          __kernel = reinterpret_cast<void const*>(hyperloglog_ns::__add_shmem_vectorized<4, _HyperLogLog_Impl>);
+          __kernel = reinterpret_cast<void const*>(
+            ::cuda::experimental::cuco::__hyperloglog_ns::__add_shmem_vectorized<4, _HyperLogLog_Impl>);
           break;
         case 8:
-          __kernel = reinterpret_cast<void const*>(hyperloglog_ns::__add_shmem_vectorized<8, _HyperLogLog_Impl>);
+          __kernel = reinterpret_cast<void const*>(
+            ::cuda::experimental::cuco::__hyperloglog_ns::__add_shmem_vectorized<8, _HyperLogLog_Impl>);
           break;
         case 16:
-          __kernel = reinterpret_cast<void const*>(hyperloglog_ns::__add_shmem_vectorized<16, _HyperLogLog_Impl>);
+          __kernel = reinterpret_cast<void const*>(
+            ::cuda::experimental::cuco::__hyperloglog_ns::__add_shmem_vectorized<16, _HyperLogLog_Impl>);
           break;
       };
     }
@@ -234,7 +239,8 @@ public:
     }
     else
     {
-      __kernel              = reinterpret_cast<void const*>(hyperloglog_ns::__add_shmem<_InputIt, _HyperLogLog_Impl>);
+      __kernel = reinterpret_cast<void const*>(
+        ::cuda::experimental::cuco::__hyperloglog_ns::__add_shmem<_InputIt, _HyperLogLog_Impl>);
       void* __kernel_args[] = {const_cast<void*>(reinterpret_cast<void const*>(&__first)),
                                const_cast<void*>(reinterpret_cast<void const*>(&__num_items)),
                                reinterpret_cast<void*>(this)};
@@ -262,7 +268,8 @@ public:
       {
         // Computes sketch directly in global memory. (Fallback path in case there is not enough
         // shared memory available)
-        __kernel = reinterpret_cast<void const*>(hyperloglog_ns::__add_gmem<_InputIt, _HyperLogLog_Impl>);
+        __kernel = reinterpret_cast<void const*>(
+          ::cuda::experimental::cuco::__hyperloglog_ns::__add_gmem<_InputIt, _HyperLogLog_Impl>);
 
         _CCCL_TRY_CUDA_API(
           ::cudaOccupancyMaxPotentialBlockSize,
@@ -340,7 +347,7 @@ public:
   {
     CUCO_EXPECTS(__other.__precision == this->__precision, "Cannot merge estimators with different sketch sizes");
     auto constexpr __block_size = 1024;
-    cuco::hyperloglog_ns::detail::merge<<<1, __block_size, 0, __stream.get()>>>(__other, *this);
+    ::cuda::experimental::cuco::__hyperloglog_ns::__merge<<<1, __block_size, 0, __stream.get()>>>(__other, *this);
   }
 
   //! @brief Merges the result of `other` estimator reference into `*this` estimator.
@@ -369,8 +376,8 @@ public:
   //! @return Approximate distinct items count
   [[nodiscard]] _CCCL_DEVICE size_t __estimate(cooperative_groups::thread_block const& __group) const noexcept
   {
-    __shared__ ::cuda::atomic<__fp_type, ::cuda::thread_scope_block> __block_sum;
-    __shared__ ::cuda::atomic<int, ::cuda::thread_scope_block> __block_zeroes;
+    __shared__ ::cuda::atomic<__fp_type, ::cuda::std::thread_scope_block> __block_sum;
+    __shared__ ::cuda::atomic<int, ::cuda::std::thread_scope_block> __block_zeroes;
     __shared__ size_t __estimate;
 
     if (__group.thread_rank() == 0)
@@ -413,7 +420,7 @@ public:
     {
       auto const __z        = __block_sum.load(::cuda::std::memory_order_relaxed);
       auto const __v        = __block_zeroes.load(::cuda::std::memory_order_relaxed);
-      auto const __finalize = hyperloglog_ns::_Finalizer(this->__precision);
+      auto const __finalize = ::cuda::experimental::cuco::__hyperloglog_ns::_Finalizer(this->__precision);
       __estimate            = __finalize(__z, __v);
     }
     __group.sync();
@@ -455,7 +462,7 @@ public:
       __zeroes += __reg == 0;
     }
 
-    auto const __finalize = hyperloglog_ns::_Finalizer(this->__precision);
+    auto const __finalize = ::cuda::experimental::cuco::__hyperloglog_ns::_Finalizer(this->__precision);
 
     // pass intermediate result to _Finalizer for bias correction, etc.
     return __finalize(__sum, __zeroes);
@@ -493,7 +500,8 @@ public:
   //! @param sketch_size_kb Upper bound sketch size in KB
   //!
   //! @return The number of bytes required for the sketch
-  [[nodiscard]] _CCCL_API static constexpr size_t __sketch_bytes(detail::__sketch_size_kb_t __sketch_size_kb) noexcept
+  [[nodiscard]] _CCCL_API static constexpr size_t
+  __sketch_bytes(::cuda::experimental::cuco::__sketch_size_kb_t __sketch_size_kb) noexcept
   {
     // minimum precision is 4 or 64 bytes
     return ::cuda::std::max(static_cast<size_t>(sizeof(register_type) * 1ull << 4),
@@ -506,7 +514,7 @@ public:
   //!
   //! @return The number of bytes required for the sketch
   [[nodiscard]] _CCCL_API static constexpr std::size_t
-  sketch_bytes(detail::__standard_deviation_t __standard_deviation) noexcept
+  sketch_bytes(::cuda::experimental::cuco::__standard_deviation_t __standard_deviation) noexcept
   {
     // implementation taken from
     // https://github.com/apache/spark/blob/6a27789ad7d59cd133653a49be0bb49729542abe/sql/catalyst/src/main/scala/org/apache/spark/sql/catalyst/util/HyperLogLogPlusPlusHelper.scala#L43
@@ -589,8 +597,8 @@ private:
   template <class _Tp_, ::cuda::thread_scope _Scope_, class _Hash_>
   friend struct _HyperLogLog_Impl;
 };
-} // namespace cuda::experimental::cuco::detail
+} // namespace cuda::experimental::cuco
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _CUDAX__CUCO_DETAIL_HYPERLOGLOG_IMPL_CUH
+#endif // _CUDAX__CUCO__HYPERLOGLOG__IMPL_CUH

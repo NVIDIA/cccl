@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDAX__CUCO_DETAIL_HYPERLOGLOG_TUNING_CUH
-#define _CUDAX__CUCO_DETAIL_HYPERLOGLOG_TUNING_CUH
+#ifndef _CUDAX__CUCO__HYPERLOGLOG__TUNING_CUH
+#define _CUDAX__CUCO__HYPERLOGLOG__TUNING_CUH
 
 #include <cuda/__cccl_config>
 
@@ -27,7 +27,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-namespace cuda::experimental::cuco::detail::hyperloglog_ns
+namespace cuda::experimental::cuco::__hyperloglog_ns
 {
 // TODO this will spawn one copy of each array in every TU :(
 // TODO use __constant__?
@@ -181,8 +181,8 @@ _CCCL_API constexpr size_t ____bias_data_size(int32_t __precision) noexcept {
   }
 }
 // clang-format on
-} // namespace cuda::experimental::cuco::detail::hyperloglog_ns
+} // namespace cuda::experimental::cuco::__hyperloglog_ns
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // CUCO_DETAIL_HYPERLOGLOG_TUNING_CUH_
+#endif // CUDAX__CUCO__HYPERLOGLOG__TUNING_CUH

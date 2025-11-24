@@ -24,7 +24,7 @@
 #include <cuda/std/cstddef>
 #include <cuda/stream>
 
-#include <cuda/experimental/__cuco/detail/hyperloglog/hyperloglog_impl.cuh>
+#include <cuda/experimental/__cuco/__hyperloglog/hyperloglog_impl.cuh>
 #include <cuda/experimental/__cuco/hash_functions.cuh>
 
 #include <cooperative_groups.h>
@@ -37,11 +37,11 @@ namespace cuda::experimental::cuco
 //! size of `cuda::experimental::cuco::hyperloglog(_ref)` in KB.
 //!
 //! Note: Values can also be specified as literals, e.g., 64.3_KB.
-using sketch_size_kb = detail::__sketch_size_kb_t;
+using sketch_size_kb = ::cuda::experimental::cuco::__sketch_size_kb_t;
 
 //! A strong type wrapper `cuda::experimental::cuco::standard_deviation` of `double`, for specifying the desired
 //! standard deviation for the cardinality estimate of `cuda::experimental::cuco::hyperloglog(_ref)`.
-using standard_deviation = detail::__standard_deviation_t;
+using standard_deviation = ::cuda::experimental::cuco::__standard_deviation_t;
 
 //! @brief A non-owning reference to a HyperLogLog sketch for approximating the number of distinct
 //! items in a multiset.
@@ -57,7 +57,7 @@ template <class _Tp,
           class _Hash = ::cuda::experimental::cuco::hash<_Tp, ::cuda::experimental::cuco::hash_algorithm::xxhash_64>>
 class hyperloglog_ref
 {
-  using __impl_type = detail::_HyperLogLog_Impl<_Tp, _Scope, _Hash>;
+  using __impl_type = ::cuda::experimental::cuco::_HyperLogLog_Impl<_Tp, _Scope, _Hash>;
 
 public:
   static constexpr auto thread_scope = __impl_type::thread_scope; ///< CUDA thread scope

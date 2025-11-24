@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDAX__CUCO_DETAIL_HYPERLOGLOG_FINALIZER_CUH
-#define _CUDAX__CUCO_DETAIL_HYPERLOGLOG_FINALIZER_CUH
+#ifndef _CUDAX__CUCO__HYPERLOGLOG__FINALIZER_CUH
+#define _CUDAX__CUCO__HYPERLOGLOG__FINALIZER_CUH
 
 #include <cuda/__cccl_config>
 
@@ -25,13 +25,13 @@
 #include <cuda/std/cmath>
 #include <cuda/std/limits>
 
-#include <cuda/experimental/__cuco/detail/hyperloglog/tuning.cuh>
+#include <cuda/experimental/__cuco/__hyperloglog/tuning.cuh>
 
 #include <cstddef>
 
 #include <cuda/std/__cccl/prologue.h>
 
-namespace cuda::experimental::cuco::detail::hyperloglog_ns
+namespace cuda::experimental::cuco::__hyperloglog_ns
 {
 //! @brief Estimate correction algorithm based on HyperLogLog++.
 //!
@@ -75,7 +75,7 @@ public:
 
       if (this->__precision < 19)
       {
-        __e = (__h <= hyperloglog_ns::__threshold(this->__precision)) ? __h : this->__bias_corrected_estimate(__e);
+        __e = (__h <= __hyperloglog_ns::__threshold(this->__precision)) ? __h : this->__bias_corrected_estimate(__e);
       }
     }
     else
@@ -191,8 +191,8 @@ private:
   int __precision; ///< HLL precision parameter
   int __m; ///< Number of registers (2^precision)
 };
-} // namespace cuda::experimental::cuco::detail::hyperloglog_ns
+} // namespace cuda::experimental::cuco::__hyperloglog_ns
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _CUDAX__CUCO_DETAIL_HYPERLOGLOG_FINALIZER_CUH
+#endif // _CUDAX__CUCO__HYPERLOGLOG__FINALIZER_CUH
