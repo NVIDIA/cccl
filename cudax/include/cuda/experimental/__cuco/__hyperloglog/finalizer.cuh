@@ -50,7 +50,7 @@ public:
   //! @param precision HLL precision parameter
   _CCCL_API constexpr _Finalizer(int __precision_)
       : __precision{__precision_}
-      , __m{1 << __precision_}
+      , __m{static_cast<int>(1u << __precision_)}
   {}
 
   //! @brief Compute the bias-corrected cardinality estimate.

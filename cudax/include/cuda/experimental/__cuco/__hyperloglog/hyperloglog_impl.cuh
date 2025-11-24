@@ -183,7 +183,7 @@ public:
       const auto __ptr                  = thrust::raw_pointer_cast(&__first[0]);
       auto constexpr __max_vector_bytes = 32;
       const auto __alignment =
-        1 << ::cuda::std::countr_zero(reinterpret_cast<::cuda::std::uintptr_t>(__ptr) | __max_vector_bytes);
+        1u << ::cuda::std::countr_zero(reinterpret_cast<::cuda::std::uintptr_t>(__ptr) | __max_vector_bytes);
       const auto __vector_size = __alignment / sizeof(value_type);
 
       switch (__vector_size)
@@ -392,7 +392,7 @@ public:
     for (int __i = __group.thread_rank(); __i < this->__sketch.size(); __i += __group.size())
     {
       const auto __reg = this->__sketch[__i];
-      __thread_sum += __fp_type{1} / static_cast<__fp_type>(1 << __reg);
+      __thread_sum += __fp_type{1} / static_cast<__fp_type>(1u << __reg);
       __thread_zeroes += __reg == 0;
     }
 
