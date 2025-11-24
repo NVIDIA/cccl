@@ -1,9 +1,6 @@
-import numba
 from numba import cuda
 
 from cuda.stf import context, dep, exec_place
-
-numba.cuda.config.CUDA_ENABLE_PYNVJITLINK = 1
 
 
 class stf_kernel_decorator:

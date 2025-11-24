@@ -8,7 +8,6 @@ from numba import cuda
 
 import cuda.stf as stf
 
-numba.cuda.config.CUDA_ENABLE_PYNVJITLINK = 1
 numba.cuda.config.CUDA_LOW_OCCUPANCY_WARNINGS = 0
 
 

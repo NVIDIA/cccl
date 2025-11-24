@@ -9,7 +9,6 @@ import pytest
 
 torch = pytest.importorskip("torch")
 
-numba.config.CUDA_ENABLE_PYNVJITLINK = 1
 numba.config.CUDA_LOW_OCCUPANCY_WARNINGS = 0
 
 from cuda.stf._stf_bindings import (  # noqa: E402
