@@ -59,7 +59,7 @@ public:
   public:
     using distribution_type = poisson_distribution;
 
-    [[nodiscard]] _CCCL_API explicit param_type(double __mean = 1.0) noexcept
+    _CCCL_API explicit param_type(double __mean = 1.0) noexcept
         // According to the standard `inf` is a valid input, but it causes the
         // distribution to hang, so we replace it with the maximum representable
         // mean.
