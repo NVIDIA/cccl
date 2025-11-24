@@ -74,11 +74,53 @@ The ``cuda.compute`` library supports defining custom data types,
 using the :func:`gpu_struct <cuda.compute.struct.gpu_struct>` decorator.
 Here are some examples showing how to define and use custom types:
 
-.. literalinclude:: ../../python/cuda_cccl/tests/compute/examples/reduction/pixel_reduction.py
+.. literalinclude:: ../../python/cuda_cccl/tests/compute/examples/struct/struct_reduction.py
    :language: python
    :start-after: # example-begin
    :caption: Custom type reduction example.
 
+User-defined operations
+-----------------------
+
+A powerful feature of ``cuda.compute`` is the ability to customized algorithms
+with user-defined operations. Below is an example of doing a custom reduction
+with a user-defined binary operation.
+
+.. literalinclude:: ../../python/cuda_cccl/tests/compute/examples/reduction/sum_custom_reduction.py
+   :language: python
+   :start-after: # example-begin
+   :caption: Reduction with user-defined binary operations.
+
+Note that user-defined operations are compiled into device code
+using [``numba-cuda``](https://nvidia.github.io/numba-cuda/),
+so many of the same features and restrictions of `numba` and `numba-cuda` apply.
+Here are some important gotchas to be aware of:
+
+* Lambda functions are not supported.
+* Functions may invoke other functions, but the inner functions must be
+  decorated with ``@numba.cuda.jit``.
+* Functions capturing by global reference may not work as intended.
+  Prefer using closures in these situations.
+
+  Here is an example of a function that captures a global variable by reference.
+
+  .. code-block:: python
+
+     i = 1
+     def func(x):
+        return x + i  # i is captured from global scope
+
+  Modifications to the global variable ``i``may not be reflected in the function.
+
+  To avoid this, capture the variable in a closure:
+
+  .. code-block:: python
+
+     i = 1
+     def make_func(i):
+        def func(x):
+              return x + i  # i is captured as a closure variable
+        return func
 
 Example Collections
 -------------------
