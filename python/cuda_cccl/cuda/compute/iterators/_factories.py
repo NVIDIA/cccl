@@ -96,10 +96,14 @@ def CountingIterator(offset):
     return _CountingIterator(offset)
 
 
-def DiscardIterator():
+def DiscardIterator(reference_iterator=None):
     """Returns an Input or Output Iterator that discards all values written to it.
 
     Similar to https://nvidia.github.io/cccl/thrust/api/classthrust_1_1discard__iterator.html
+
+    Args:
+        reference_iterator: Optional iterator to use as a reference for value_type and state_type.
+                          If not provided, defaults to uint8.
 
     Example:
         The code snippet below demonstrates the usage of a ``DiscardIterator`` to discard items in a unique by key operation:
@@ -112,7 +116,7 @@ def DiscardIterator():
     Returns:
         A ``DiscardIterator`` object
     """
-    return _DiscardIterator()
+    return _DiscardIterator(reference_iterator)
 
 
 def ReverseIterator(sequence):
