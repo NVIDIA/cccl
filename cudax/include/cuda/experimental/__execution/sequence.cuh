@@ -228,14 +228,14 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT sequence_t::__sndr_t
     // If _Sndr2 has _SetTag completions but does not know its _SetTag completion scheduler,
     // then we cannot know it either. Delete the function to prevent its use.
     _CCCL_TEMPLATE(class _SetTag, class... _Env)
-    _CCCL_REQUIRES(__has_completions_for<_SetTag, _Sndr2, __env2_t<_Env...>> _CCCL_AND(
+    _CCCL_REQUIRES(__has_completions_for<_Sndr2, _SetTag, __env2_t<_Env...>> _CCCL_AND(
       !__callable<get_completion_scheduler_t<_SetTag>, env_of_t<_Sndr2>, __env2_t<_Env...>>))
     _CCCL_API auto query(get_completion_scheduler_t<_SetTag>, const _Env&...) const = delete;
 
     // If _Sndr2 has _SetTag completions but does not know its _SetTag completion domain,
     // then we cannot know it either. Delete the function to prevent its use.
     _CCCL_TEMPLATE(class _SetTag, class... _Env)
-    _CCCL_REQUIRES(__has_completions_for<_SetTag, _Sndr2, __env2_t<_Env...>> _CCCL_AND(
+    _CCCL_REQUIRES(__has_completions_for<_Sndr2, _SetTag, __env2_t<_Env...>> _CCCL_AND(
       !__callable<get_completion_domain_t<_SetTag>, env_of_t<_Sndr2>, __env2_t<_Env...>>))
     _CCCL_API auto query(get_completion_domain_t<_SetTag>, const _Env&...) const = delete;
 

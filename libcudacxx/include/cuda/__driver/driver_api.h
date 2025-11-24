@@ -413,7 +413,15 @@ __getDefaultMemPool(CUmemLocation __location, CUmemAllocationType_enum __allocat
     __driver_fn, "Failed to get default memory pool", &__result, &__location, __allocation_type);
   return __result;
 }
-#  endif // _CCCL_CTK_AT_LEAST(13, 0)
+#  else // ^^^ _CCCL_CTK_AT_LEAST(13, 0) ^^^ / vvv _CCCL_CTK_BELOW(13, 0) vvv
+_CCCL_HOST_API inline ::CUmemoryPool __deviceGetDefaultMemPool(::CUdevice __device)
+{
+  static auto __driver_fn = _CCCLRT_GET_DRIVER_FUNCTION(cuDeviceGetDefaultMemPool);
+  ::CUmemoryPool __result = nullptr;
+  ::cuda::__driver::__call_driver_fn(__driver_fn, "Failed to get default memory pool", &__result, __device);
+  return __result;
+}
+#  endif // ^^^ _CCCL_CTK_BELOW(13, 0) ^^^
 
 _CCCL_HOST_API inline ::CUdeviceptr __mallocManaged(::cuda::std::size_t __bytes, unsigned int __flags)
 {

@@ -387,10 +387,7 @@ def test_deeply_nested_zip_iterators():
     "dtype_map",
     [
         {"x": np.float32, "y": np.float32},
-        pytest.param(
-            {"x": np.float64, "y": np.float32},
-            marks=pytest.mark.xfail(reason="Fails due to ODR violation (GH #4573)"),
-        ),
+        {"x": np.float64, "y": np.float32},
     ],
 )
 def test_nested_output_zip_iterator_with_scan(monkeypatch, num_items, dtype_map):
@@ -448,3 +445,72 @@ def test_nested_output_zip_iterator_with_scan(monkeypatch, num_items, dtype_map)
 
     np.testing.assert_array_equal(d_out1.get(), expected_out1)
     np.testing.assert_array_equal(d_out2.get(), expected_out2)
+
+
+def test_zip_iterator_of_transform_iterator_kind():
+    arr = cp.arange(10, dtype=np.int64)
+
+    def f(x):
+        return x
+
+    def g(x):
+        return x + 1
+
+    it1 = ZipIterator(TransformIterator(arr, f))
+    it2 = ZipIterator(TransformIterator(arr, g))
+    assert it1.kind != it2.kind
+
+
+def test_caching_zip_iterator():
+    # counting iterators with the same value type:
+    z1 = ZipIterator(
+        CountingIterator(np.int32(0)),
+    )
+    z2 = ZipIterator(
+        CountingIterator(np.int32(0)),
+    )
+    assert z1.advance is z2.advance
+    assert z1.input_dereference is z2.input_dereference
+
+    # counting iterators with different value types:
+    z1 = ZipIterator(CountingIterator(np.int32(0)))
+    z2 = ZipIterator(CountingIterator(np.int64(0)))
+    assert z1.advance is not z2.advance
+    assert z1.input_dereference is not z2.input_dereference
+
+    # arrays with the same dtype:
+    z1 = ZipIterator(cp.arange(10, dtype=np.int32))
+    z2 = ZipIterator(cp.arange(10, dtype=np.int32))
+    assert z1.advance is z2.advance
+    assert z1.input_dereference is z2.input_dereference
+    assert z1.output_dereference is z2.output_dereference
+
+    # arrays with different dtypes:
+    z1 = ZipIterator(cp.arange(10, dtype=np.int32))
+    z2 = ZipIterator(cp.arange(10, dtype=np.int64))
+    assert z1.advance is not z2.advance
+    assert z1.input_dereference is not z2.input_dereference
+    assert z1.output_dereference is not z2.output_dereference
+
+    # zip of transform iterator with the same op:
+    def op(x):
+        return x
+
+    z1 = ZipIterator(TransformIterator(cp.arange(10, dtype=np.int32), op))
+    z2 = ZipIterator(TransformIterator(cp.arange(10, dtype=np.int32), op))
+    assert z1.advance is z2.advance
+    assert z1.input_dereference is z2.input_dereference
+    # zip of transform iterator with different op:
+
+    def op2(x):
+        return x + 1
+
+    z1 = ZipIterator(TransformIterator(cp.arange(10, dtype=np.int32), op))
+    z2 = ZipIterator(TransformIterator(cp.arange(10, dtype=np.int32), op2))
+    assert z1.advance is not z2.advance
+    assert z1.input_dereference is not z2.input_dereference
+    # zip of transform iterator with different input iterator:
+    z1 = ZipIterator(TransformIterator(cp.arange(10, dtype=np.int32), op))
+    z2 = ZipIterator(TransformIterator(cp.arange(10, dtype=np.int64), op))
+    assert z1.advance is not z2.advance
+    assert z1.input_dereference is not z2.input_dereference

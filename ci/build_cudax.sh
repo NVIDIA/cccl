@@ -18,10 +18,14 @@ if [[ -z "${cudax_ENABLE_CUFILE:-}" ]]; then
   fi
 fi
 
-PRESET="cudax-cpp$CXX_STANDARD"
+PRESET="cudax"
 
-CMAKE_OPTIONS="-Dcudax_ENABLE_CUFILE=${cudax_ENABLE_CUFILE}"
+CMAKE_OPTIONS=(
+  "-Dcudax_ENABLE_CUFILE=${cudax_ENABLE_CUFILE}"
+  "-DCMAKE_CXX_STANDARD=${CXX_STANDARD}"
+  "-DCMAKE_CUDA_STANDARD=${CXX_STANDARD}"
+)
 
-configure_and_build_preset "CUDA Experimental" "$PRESET" "$CMAKE_OPTIONS"
+configure_and_build_preset "CUDA Experimental" "$PRESET" "${CMAKE_OPTIONS[*]}"
 
 print_time_summary

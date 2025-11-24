@@ -256,12 +256,8 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT conditional_t::__sndr_t<conditional_t::__cl
 template <class _Pred, class _Then, class _Else>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT conditional_t::__closure_base_t
 {
-  _Pred pred;
-  _Then on_true;
-  _Else on_false;
-
   template <class _Sndr>
-  _CCCL_API auto __mk_sender(_Sndr&& __sndr) -> __sndr_t<__closure_base_t, _Sndr>
+  _CCCL_API auto operator()(_Sndr __sndr) &&
   {
     using __sndr_t = conditional_t::__sndr_t<__closure_base_t, _Sndr>;
 
@@ -269,23 +265,27 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT conditional_t::__closure_base_t
     // the composed sender immediately.
     if constexpr (!dependent_sender<_Sndr>)
     {
-      __assert_valid_completion_signatures(get_completion_signatures<__sndr_t>());
+      __assert_valid_completion_signatures(execution::get_completion_signatures<__sndr_t>());
     }
 
     return __sndr_t{{}, static_cast<__closure_base_t&&>(*this), static_cast<_Sndr&&>(__sndr)};
   }
 
   template <class _Sndr>
-  _CCCL_API auto operator()(_Sndr __sndr) -> __sndr_t<__closure_base_t, _Sndr>
+  _CCCL_API auto operator()(_Sndr __sndr) const&
   {
-    return __mk_sender(static_cast<_Sndr&&>(__sndr));
+    return __closure_base_t(*this)(static_cast<_Sndr&&>(__sndr));
   }
 
   template <class _Sndr>
-  _CCCL_API friend auto operator|(_Sndr __sndr, __closure_base_t __self) -> __sndr_t<__closure_base_t, _Sndr>
+  _CCCL_API friend auto operator|(_Sndr __sndr, __closure_base_t __self)
   {
-    return __self.__mk_sender(static_cast<_Sndr&&>(__sndr));
+    return static_cast<__closure_base_t&&>(__self)(static_cast<_Sndr&&>(__sndr));
   }
+
+  _Pred pred;
+  _Then on_true;
+  _Else on_false;
 };
 
 template <class _Sndr, class _Pred, class _Then, class _Else>
@@ -293,7 +293,7 @@ _CCCL_API constexpr auto conditional_t::operator()(_Sndr __sndr, _Pred __pred, _
 {
   using __params_t _CCCL_NODEBUG_ALIAS = __closure_base_t<_Pred, _Then, _Else>;
   __params_t __params{static_cast<_Pred&&>(__pred), static_cast<_Then&&>(__then), static_cast<_Else&&>(__else)};
-  return static_cast<__params_t&&>(__params).__mk_sender(static_cast<_Sndr&&>(__sndr));
+  return static_cast<__params_t&&>(__params)(static_cast<_Sndr&&>(__sndr));
 }
 
 template <class _Pred, class _Then, class _Else>

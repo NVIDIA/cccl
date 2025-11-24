@@ -36,7 +36,7 @@ All CCCL subprojects are computationally expensive to build and test. Use the pr
 
 ### CMake Presets
 
-Presets are defined in `CMakePresets.json`. Names follow a `<project>-cxx<std>` format, such as `cub-cpp20`, `thrust-cpp17`, or `libcudacxx-cpp20`. Use `cmake --list-presets` to view available options. Build trees are placed under `build/${CCCL_BUILD_INFIX}/${PRESET}`.
+Presets are defined in `CMakePresets.json`. Names follow a `project` or `<project>-cxx<std>` format, such as `cub-cpp20`, `thrust-cpp17`, or `libcudacxx`. Use `cmake --list-presets` to view available options. Build trees are placed under `build/${CCCL_BUILD_INFIX}/${PRESET}`.
 
 ### `.devcontainer/launch.sh`
 
@@ -114,7 +114,7 @@ ci/util/build_and_test_targets.sh \
 
 ```bash
 ci/util/build_and_test_targets.sh \
-  --preset libcudacxx-cpp20 \
+  --preset libcudacxx \
   --lit-precompile-tests "std/algorithms/alg.nonmodifying/alg.any_of/any_of.pass.cpp" \
   --lit-tests "std/algorithms/alg.nonmodifying/alg.any_of/any_of.pass.cpp"
 ```
@@ -123,7 +123,7 @@ ci/util/build_and_test_targets.sh \
 
 ```bash
 ci/util/build_and_test_targets.sh \
-  --preset cudax-cpp20 \
+  --preset cudax \
   --build-targets "cudax.cpp20.test.async_buffer" \
   --ctest-targets "cudax.cpp20.test.async_buffer"
 ```
