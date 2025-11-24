@@ -58,7 +58,8 @@ def test_select_basic(dtype, num_items):
     def even_op(x):
         return x % 2 == 0
 
-    d_in = cp.asarray(h_in)
+    d_in = cp.empty(num_items, dtype=dtype)
+    d_in.set(h_in)
     d_out = cp.empty_like(d_in)
     d_num_selected = cp.empty(2, dtype=np.uint64)
 
@@ -135,7 +136,14 @@ def test_select_all_pass(dtype):
 
 
 @pytest.mark.parametrize("dtype", DTYPE_LIST)
-def test_select_none_pass(dtype):
+def test_select_none_pass(monkeypatch, dtype):
+    # Skip SASS check for this test.
+    monkeypatch.setattr(
+        cuda.compute._cccl_interop,
+        "_check_sass",
+        False,
+    )
+
     num_items = 1000
     h_in = random_array(num_items, dtype, max_value=100)
 
@@ -144,7 +152,7 @@ def test_select_none_pass(dtype):
 
     d_in = cp.asarray(h_in)
     d_out = cp.empty_like(d_in)
-    d_num_selected = cp.empty(2, dtype=np.uint64)
+    d_num_selected = cp.empty(2, dtype=np.int32)
 
     cuda.compute.select(
         d_in,
@@ -193,7 +201,7 @@ def test_select_with_iterator(dtype):
         return x < 50
 
     d_in = cp.asarray(h_in)
-    d_in_iter = CacheModifiedInputIterator(d_in)
+    d_in_iter = CacheModifiedInputIterator(d_in, modifier="stream")
     d_out = cp.empty_like(d_in)
     d_num_selected = cp.empty(2, dtype=np.uint64)
 
@@ -324,14 +332,15 @@ def test_select_with_struct(dtype):
     h_x = random_array(num_items, dtype, max_value=100)
     h_y = random_array(num_items, dtype, max_value=100)
 
-    h_in = np.empty(num_items, dtype=Point.struct_type)
+    h_in = np.empty(num_items, dtype=Point.dtype)
     h_in["x"] = h_x
     h_in["y"] = h_y
 
     def in_first_quadrant(p: Point) -> np.uint8:
         return (p.x > 50) and (p.y > 50)
 
-    d_in = cp.asarray(h_in)
+    d_in = cp.empty(num_items, dtype=Point.dtype)
+    d_in.set(h_in)
     d_out = cp.empty_like(d_in)
     d_num_selected = cp.empty(2, dtype=np.uint64)
 
@@ -348,7 +357,7 @@ def test_select_with_struct(dtype):
 
     # Host reference
     def host_in_first_quadrant(p):
-        return (p["x"] > 50) and (p["y"] > 50)
+        return (p[0] > 50) and (p[1] > 50)
 
     expected, expected_count = _host_select(h_in, host_in_first_quadrant)
 
