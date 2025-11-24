@@ -251,7 +251,8 @@ class __device_accessor : public _Accessor
 
 #if _CCCL_DEVICE_COMPILATION()
 
-  [[nodiscard]] _CCCL_DEVICE_API static constexpr bool __is_device_accessible_pointer_from_device(__data_handle_type __p) noexcept
+  [[nodiscard]]
+  _CCCL_DEVICE_API static constexpr bool __is_device_accessible_pointer_from_device(__data_handle_type __p) noexcept
   {
     return ::cuda::device::is_address_from(__p, ::cuda::device::address_space::global)
         || ::cuda::device::is_address_from(__p, ::cuda::device::address_space::shared)
@@ -348,7 +349,7 @@ public:
 
   _CCCL_API constexpr reference access(data_handle_type __p, size_t __i) const noexcept(__is_access_noexcept)
   {
-    if (!::cuda::std::__cccl_default_is_constant_evaluated())
+    _CCCL_IF_NOT_CONSTEVAL_DEFAULT
     {
       NV_IF_ELSE_TARGET(
         NV_IS_DEVICE,
@@ -366,7 +367,7 @@ public:
 
   [[nodiscard]] _CCCL_API constexpr bool __detectably_invalid(data_handle_type __p, size_t) const noexcept
   {
-    if (!::cuda::std::__cccl_default_is_constant_evaluated())
+    _CCCL_IF_NOT_CONSTEVAL_DEFAULT
     {
       NV_IF_ELSE_TARGET(NV_IS_HOST, (return __is_device_accessible_pointer_from_host(__p);), (return false;))
     }
