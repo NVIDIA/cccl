@@ -3188,6 +3188,68 @@ storage allocation. For simpler usage, consider using <a class="reference intern
 <p>This function automatically handles temporary storage allocation and execution.</p>
 <p class="rubric">Example</p>
 <p>Below, <code class="docutils literal notranslate"><span class="pre">three_way_partition</span></code> is used to partition a sequence of integers into three parts.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Example showing how to use three_way_partition to partition a sequence of integers into three parts.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">cupy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">cp</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">cuda.compute</span>
+
+<span class="c1"># Prepare the input and output arrays.</span>
+<span class="n">dtype</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">int32</span>
+<span class="n">h_input</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">0</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">9</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="mi">7</span><span class="p">,</span> <span class="o">-</span><span class="mi">3</span><span class="p">,</span> <span class="mi">17</span><span class="p">,</span> <span class="mi">10</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">)</span>
+<span class="n">d_input</span> <span class="o">=</span> <span class="n">cp</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">h_input</span><span class="p">)</span>
+<span class="n">d_first_part</span> <span class="o">=</span> <span class="n">cp</span><span class="o">.</span><span class="n">empty_like</span><span class="p">(</span><span class="n">d_input</span><span class="p">)</span>
+<span class="n">d_second_part</span> <span class="o">=</span> <span class="n">cp</span><span class="o">.</span><span class="n">empty_like</span><span class="p">(</span><span class="n">d_input</span><span class="p">)</span>
+<span class="n">d_unselected</span> <span class="o">=</span> <span class="n">cp</span><span class="o">.</span><span class="n">empty_like</span><span class="p">(</span><span class="n">d_input</span><span class="p">)</span>
+<span class="n">d_num_selected</span> <span class="o">=</span> <span class="n">cp</span><span class="o">.</span><span class="n">empty</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">int64</span><span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">less_than_op</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">x</span> <span class="o">&lt;</span> <span class="mi">8</span> <span class="ow">and</span> <span class="n">x</span> <span class="o">&gt;=</span> <span class="mi">0</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">greater_than_equal_op</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">x</span> <span class="o">&gt;=</span> <span class="mi">8</span>
+
+
+<span class="c1"># Perform the three_way_partition.</span>
+<span class="n">cuda</span><span class="o">.</span><span class="n">compute</span><span class="o">.</span><span class="n">three_way_partition</span><span class="p">(</span>
+    <span class="n">d_input</span><span class="p">,</span>
+    <span class="n">d_first_part</span><span class="p">,</span>
+    <span class="n">d_second_part</span><span class="p">,</span>
+    <span class="n">d_unselected</span><span class="p">,</span>
+    <span class="n">d_num_selected</span><span class="p">,</span>
+    <span class="n">less_than_op</span><span class="p">,</span>
+    <span class="n">greater_than_equal_op</span><span class="p">,</span>
+    <span class="nb">len</span><span class="p">(</span><span class="n">h_input</span><span class="p">),</span>
+<span class="p">)</span>
+
+<span class="c1"># Verify the result.</span>
+<span class="n">expected_first_part</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">0</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="mi">7</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">)</span>
+<span class="n">expected_second_part</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">9</span><span class="p">,</span> <span class="mi">17</span><span class="p">,</span> <span class="mi">10</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">)</span>
+<span class="n">expected_unselected</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="o">-</span><span class="mi">3</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">)</span>
+<span class="n">expected_num_selected</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">6</span><span class="p">,</span> <span class="mi">3</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">int64</span><span class="p">)</span>
+
+<span class="n">actual_num_selected</span> <span class="o">=</span> <span class="n">d_num_selected</span><span class="o">.</span><span class="n">get</span><span class="p">()</span>
+<span class="n">num_selected_first_part</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">actual_num_selected</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+<span class="n">num_selected_second_part</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">actual_num_selected</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+<span class="n">actual_first_part</span> <span class="o">=</span> <span class="n">d_first_part</span><span class="o">.</span><span class="n">get</span><span class="p">()[:</span><span class="n">num_selected_first_part</span><span class="p">]</span>
+<span class="n">actual_second_part</span> <span class="o">=</span> <span class="n">d_second_part</span><span class="o">.</span><span class="n">get</span><span class="p">()[:</span><span class="n">num_selected_second_part</span><span class="p">]</span>
+<span class="n">actual_unselected</span> <span class="o">=</span> <span class="n">d_unselected</span><span class="o">.</span><span class="n">get</span><span class="p">()[</span>
+    <span class="p">:</span> <span class="n">d_input</span><span class="o">.</span><span class="n">size</span> <span class="o">-</span> <span class="n">num_selected_first_part</span> <span class="o">-</span> <span class="n">num_selected_second_part</span>
+<span class="p">]</span>
+
+<span class="n">np</span><span class="o">.</span><span class="n">testing</span><span class="o">.</span><span class="n">assert_array_equal</span><span class="p">(</span><span class="n">actual_first_part</span><span class="p">,</span> <span class="n">expected_first_part</span><span class="p">)</span>
+<span class="n">np</span><span class="o">.</span><span class="n">testing</span><span class="o">.</span><span class="n">assert_array_equal</span><span class="p">(</span><span class="n">actual_second_part</span><span class="p">,</span> <span class="n">expected_second_part</span><span class="p">)</span>
+<span class="n">np</span><span class="o">.</span><span class="n">testing</span><span class="o">.</span><span class="n">assert_array_equal</span><span class="p">(</span><span class="n">actual_unselected</span><span class="p">,</span> <span class="n">expected_unselected</span><span class="p">)</span>
+<span class="n">np</span><span class="o">.</span><span class="n">testing</span><span class="o">.</span><span class="n">assert_array_equal</span><span class="p">(</span><span class="n">actual_num_selected</span><span class="p">,</span> <span class="n">expected_num_selected</span><span class="p">)</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Three way partition basic example completed successfully&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
@@ -3223,6 +3285,90 @@ storage allocation. For simpler usage, consider using <a class="reference intern
 <dd><p>Computes a device-wide three-way partition using the specified unary <code class="docutils literal notranslate"><span class="pre">select_first_part_op</span></code> and <code class="docutils literal notranslate"><span class="pre">select_second_part_op</span></code> operators.</p>
 <p class="rubric">Example</p>
 <p>Below, <code class="docutils literal notranslate"><span class="pre">make_three_way_partition</span></code> is used to create a three-way partition object that can be reused.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Example showing how to use three_way_partition with the object API.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">cupy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">cp</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">cuda.compute</span>
+
+<span class="c1"># Prepare the input and output arrays.</span>
+<span class="n">dtype</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">int32</span>
+<span class="n">h_input</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">0</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">9</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="mi">7</span><span class="p">,</span> <span class="o">-</span><span class="mi">3</span><span class="p">,</span> <span class="mi">17</span><span class="p">,</span> <span class="mi">10</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">)</span>
+<span class="n">d_input</span> <span class="o">=</span> <span class="n">cp</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">h_input</span><span class="p">)</span>
+<span class="n">d_first_part</span> <span class="o">=</span> <span class="n">cp</span><span class="o">.</span><span class="n">empty_like</span><span class="p">(</span><span class="n">d_input</span><span class="p">)</span>
+<span class="n">d_second_part</span> <span class="o">=</span> <span class="n">cp</span><span class="o">.</span><span class="n">empty_like</span><span class="p">(</span><span class="n">d_input</span><span class="p">)</span>
+<span class="n">d_unselected</span> <span class="o">=</span> <span class="n">cp</span><span class="o">.</span><span class="n">empty_like</span><span class="p">(</span><span class="n">d_input</span><span class="p">)</span>
+<span class="n">d_num_selected</span> <span class="o">=</span> <span class="n">cp</span><span class="o">.</span><span class="n">empty</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">int64</span><span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">less_than_op</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">x</span> <span class="o">&lt;</span> <span class="mi">8</span> <span class="ow">and</span> <span class="n">x</span> <span class="o">&gt;=</span> <span class="mi">0</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">greater_than_equal_op</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">x</span> <span class="o">&gt;=</span> <span class="mi">8</span>
+
+
+<span class="c1"># Create the three_way_partition object.</span>
+<span class="n">partitioner</span> <span class="o">=</span> <span class="n">cuda</span><span class="o">.</span><span class="n">compute</span><span class="o">.</span><span class="n">make_three_way_partition</span><span class="p">(</span>
+    <span class="n">d_input</span><span class="p">,</span>
+    <span class="n">d_first_part</span><span class="p">,</span>
+    <span class="n">d_second_part</span><span class="p">,</span>
+    <span class="n">d_unselected</span><span class="p">,</span>
+    <span class="n">d_num_selected</span><span class="p">,</span>
+    <span class="n">less_than_op</span><span class="p">,</span>
+    <span class="n">greater_than_equal_op</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="c1"># Get the temporary storage size.</span>
+<span class="n">temp_storage_size</span> <span class="o">=</span> <span class="n">partitioner</span><span class="p">(</span>
+    <span class="kc">None</span><span class="p">,</span>
+    <span class="n">d_input</span><span class="p">,</span>
+    <span class="n">d_first_part</span><span class="p">,</span>
+    <span class="n">d_second_part</span><span class="p">,</span>
+    <span class="n">d_unselected</span><span class="p">,</span>
+    <span class="n">d_num_selected</span><span class="p">,</span>
+    <span class="nb">len</span><span class="p">(</span><span class="n">h_input</span><span class="p">),</span>
+<span class="p">)</span>
+<span class="n">d_temp_storage</span> <span class="o">=</span> <span class="n">cp</span><span class="o">.</span><span class="n">empty</span><span class="p">(</span><span class="n">temp_storage_size</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">uint8</span><span class="p">)</span>
+
+<span class="c1"># Perform the three_way_partition.</span>
+<span class="n">partitioner</span><span class="p">(</span>
+    <span class="n">d_temp_storage</span><span class="p">,</span>
+    <span class="n">d_input</span><span class="p">,</span>
+    <span class="n">d_first_part</span><span class="p">,</span>
+    <span class="n">d_second_part</span><span class="p">,</span>
+    <span class="n">d_unselected</span><span class="p">,</span>
+    <span class="n">d_num_selected</span><span class="p">,</span>
+    <span class="nb">len</span><span class="p">(</span><span class="n">h_input</span><span class="p">),</span>
+<span class="p">)</span>
+
+<span class="c1"># Verify the result.</span>
+<span class="n">expected_first_part</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">0</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="mi">7</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">)</span>
+<span class="n">expected_second_part</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">9</span><span class="p">,</span> <span class="mi">17</span><span class="p">,</span> <span class="mi">10</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">)</span>
+<span class="n">expected_unselected</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="o">-</span><span class="mi">3</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">)</span>
+<span class="n">expected_num_selected</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">6</span><span class="p">,</span> <span class="mi">3</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">int64</span><span class="p">)</span>
+
+<span class="n">actual_num_selected</span> <span class="o">=</span> <span class="n">d_num_selected</span><span class="o">.</span><span class="n">get</span><span class="p">()</span>
+<span class="n">num_selected_first_part</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">actual_num_selected</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+<span class="n">num_selected_second_part</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">actual_num_selected</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+<span class="n">actual_first_part</span> <span class="o">=</span> <span class="n">d_first_part</span><span class="o">.</span><span class="n">get</span><span class="p">()[:</span><span class="n">num_selected_first_part</span><span class="p">]</span>
+<span class="n">actual_second_part</span> <span class="o">=</span> <span class="n">d_second_part</span><span class="o">.</span><span class="n">get</span><span class="p">()[:</span><span class="n">num_selected_second_part</span><span class="p">]</span>
+<span class="n">actual_unselected</span> <span class="o">=</span> <span class="n">d_unselected</span><span class="o">.</span><span class="n">get</span><span class="p">()[</span>
+    <span class="p">:</span> <span class="n">d_input</span><span class="o">.</span><span class="n">size</span> <span class="o">-</span> <span class="n">num_selected_first_part</span> <span class="o">-</span> <span class="n">num_selected_second_part</span>
+<span class="p">]</span>
+
+<span class="n">np</span><span class="o">.</span><span class="n">testing</span><span class="o">.</span><span class="n">assert_array_equal</span><span class="p">(</span><span class="n">actual_first_part</span><span class="p">,</span> <span class="n">expected_first_part</span><span class="p">)</span>
+<span class="n">np</span><span class="o">.</span><span class="n">testing</span><span class="o">.</span><span class="n">assert_array_equal</span><span class="p">(</span><span class="n">actual_second_part</span><span class="p">,</span> <span class="n">expected_second_part</span><span class="p">)</span>
+<span class="n">np</span><span class="o">.</span><span class="n">testing</span><span class="o">.</span><span class="n">assert_array_equal</span><span class="p">(</span><span class="n">actual_unselected</span><span class="p">,</span> <span class="n">expected_unselected</span><span class="p">)</span>
+<span class="n">np</span><span class="o">.</span><span class="n">testing</span><span class="o">.</span><span class="n">assert_array_equal</span><span class="p">(</span><span class="n">actual_num_selected</span><span class="p">,</span> <span class="n">expected_num_selected</span><span class="p">)</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Three way partition object example completed successfully&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
