@@ -1,2 +1,0 @@
-     CHECK: device array contains 10 values
-CHECK-NEXT: sum of values is 45
