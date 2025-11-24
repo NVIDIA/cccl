@@ -22,12 +22,13 @@
 #endif // no system header
 
 #include <cuda/std/__bit/rotate.h>
+#include <cuda/std/__limits/numeric_limits.h>
 #include <cuda/std/__random/is_seed_sequence.h>
 #include <cuda/std/__type_traits/enable_if.h>
+#include <cuda/std/__type_traits/integral_constant.h>
+#include <cuda/std/__utility/pair.h>
 #include <cuda/std/array>
 #include <cuda/std/cstdint>
-#include <cuda/std/limits>
-#include <cuda/std/utility>
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -297,13 +298,13 @@ public:
     return __x.__x_ == __y.__x_;
   }
 
-#if _CCCL_STD_VER == 2017
+#if _CCCL_STD_VER <= 2017
   //! @brief Inequality comparison for two engines.
   [[nodiscard]] _CCCL_API constexpr friend bool operator!=(const pcg64_engine& __x, const pcg64_engine& __y) noexcept
   {
     return !(__x == __y);
   }
-#endif
+#endif // _CCCL_STD_VER <= 2017
 
 #if !_CCCL_COMPILER(NVRTC)
 
@@ -381,7 +382,7 @@ public:
 //! @endcode
 //!
 using pcg64 =
-  pcg64_engine<2549297995355413924ULL, 4865540595714422341ULL, 6364136223846793005ULL, 1442695040888963407ULL>;
+  pcg64_engine<2549297995355413924ull, 4865540595714422341ull, 6364136223846793005ull, 1442695040888963407ull>;
 
 _CCCL_END_NAMESPACE_CUDA
 

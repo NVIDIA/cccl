@@ -26,9 +26,11 @@
 #  include <cuda_runtime_api.h>
 #endif // _CCCL_CUDA_COMPILER(CLANG)
 
-#include <cuda/__memory_resource/memory_resource_base.h>
+#include <cuda/__device/device_ref.h>
 #include <cuda/__memory_resource/properties.h>
+#include <cuda/__memory_resource/resource.h>
 #include <cuda/__runtime/api_wrapper.h>
+#include <cuda/__runtime/ensure_current_context.h>
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__exception/throw_error.h>
 
@@ -40,7 +42,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA
 
 //! @brief legacy_pinned_memory_resource uses `cudaMallocHost` / `cudaFreeAsync` for allocation / deallocation.
 //! @note This memory resource will be deprecated in the future. For CUDA 12.6 and above, use
-//! `cuda::experimental::pinned_memory_resource` instead, which is the long-term replacement.
+//! `cuda::pinned_memory_resource` instead, which is the long-term replacement.
 class legacy_pinned_memory_resource
 {
 public:
@@ -117,7 +119,7 @@ public:
   {}
 
   //! @brief Checks whether the passed in alignment is valid
-  static constexpr bool __is_valid_alignment(const size_t __alignment) noexcept
+  _CCCL_HOST_API static constexpr bool __is_valid_alignment(const size_t __alignment) noexcept
   {
     return __alignment <= ::cuda::mr::default_cuda_malloc_host_alignment
         && (::cuda::mr::default_cuda_malloc_host_alignment % __alignment == 0);

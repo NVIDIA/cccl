@@ -67,12 +67,12 @@ void test_host_dev(const Dims& dims, const Lambda& lambda, const Filters&... fil
     cudaLaunchAttribute attrs[1];
     config.attrs = &attrs[0];
 
-    config.blockDim = dims.extents(cudax::thread, cudax::block);
-    config.gridDim  = dims.extents(cudax::block, cudax::grid);
+    config.blockDim = dims.extents(cuda::thread, cuda::block);
+    config.gridDim  = dims.extents(cuda::block, cuda::grid);
 
-    if constexpr (cudax::has_level<cudax::cluster_level, decltype(dims)>)
+    if constexpr (cuda::has_level<cuda::cluster_level, decltype(dims)>)
     {
-      dim3 cluster_dims                            = dims.extents(cudax::block, cudax::cluster);
+      dim3 cluster_dims                            = dims.extents(cuda::block, cuda::cluster);
       config.attrs[config.numAttrs].id             = cudaLaunchAttributeClusterDimension;
       config.attrs[config.numAttrs].val.clusterDim = {cluster_dims.x, cluster_dims.y, cluster_dims.z};
       config.numAttrs                              = 1;

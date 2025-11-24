@@ -1,0 +1,2 @@
+FULL_BUILD=python packaging
+LITE_BUILD=

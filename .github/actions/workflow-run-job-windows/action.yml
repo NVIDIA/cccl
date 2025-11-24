@@ -39,12 +39,6 @@ runs:
         COMMAND: "${{inputs.command}}"
         GH_TOKEN: ${{ github.token }}
       run: |
-        # Use the job def info to setup the Github cache key:
-        pushd "${GITHUB_WORKSPACE}/${{github.event.repository.name}}" > /dev/null
-        job_hash=$(ci/util/workflow/get_stable_job_hash.sh ${{ inputs.id }} | cut -c1-8)
-        job_project=$(ci/util/workflow/get_job_project.sh ${{ inputs.id }})
-        popd > /dev/null
-
         echo "::group::️🔍 Job Vars"
         echo "Job command: ${COMMAND}" # Intentionally not passing to GITUB_ENV, arg handling is fragile.
 
@@ -61,31 +55,8 @@ runs:
         echo "SCCACHE_IDLE_TIMEOUT=0" | tee -a "${GITHUB_ENV}"
         echo "SCCACHE_S3_USE_SSL=true" | tee -a "${GITHUB_ENV}"
         echo "SCCACHE_S3_NO_CREDENTIALS=false" | tee -a "${GITHUB_ENV}"
-        echo "SCCACHE_DIR=C:\sccache\cache" | tee -a "${GITHUB_ENV}"
-
-        # Used to locate an appropriate existing cache:
-        echo "TOOLCHAIN_SLUG=${{inputs.cuda}}-${{inputs.host}}" | tee -a "${GITHUB_ENV}"
-        echo "PROJECT_SLUG=$job_project" | tee -a "${GITHUB_ENV}"
-        echo "JOB_SLUG=$job_hash" | tee -a "${GITHUB_ENV}"
-
-        # The new cache won't be uploaded unless the cache key is unique:
-        echo "UNIQUE_SLUG=${{github.run_id}}-${{github.run_attempt}}-$RANDOM" | tee -a "${GITHUB_ENV}"
-        echo "::endgroup::"
-
-    - name: Create sccache dir
-      shell: powershell
-      run: |
-        mkdir $env:SCCACHE_DIR/preprocessor -Force > $null
-
-    - name: Setup sccache preprocessor cache
-      id: sccache-preprocessor-cache
-      uses: actions/cache@v4
-      with:
-        path: ${{env.SCCACHE_DIR}}/preprocessor
-        key: sccache-preprocessor-cache-${{runner.os}}-${{env.TOOLCHAIN_SLUG}}-${{env.PROJECT_SLUG}}-${{env.JOB_SLUG}}-${{env.UNIQUE_SLUG}}
-        restore-keys: |
-          sccache-preprocessor-cache-${{runner.os}}-${{env.TOOLCHAIN_SLUG}}-${{env.PROJECT_SLUG}}-${{env.JOB_SLUG}}
-          sccache-preprocessor-cache-${{runner.os}}-${{env.TOOLCHAIN_SLUG}}-${{env.PROJECT_SLUG}}
+        echo "SCCACHE_S3_USE_PREPROCESSOR_CACHE_MODE=true" | tee -a "${GITHUB_ENV}"
+        echo "SCCACHE_S3_PREPROCESSOR_CACHE_KEY_PREFIX=cccl-preprocessor-cache" | tee -a "${GITHUB_ENV}"
 
     - name: Install GPU driver
       if: ${{ contains(inputs.runner, '-gpu-') }}
@@ -201,7 +172,6 @@ runs:
           --mount type=bind,source="${{ env.ARTIFACT_UPLOAD_STAGE_WIN }}",target="${{ env.ARTIFACT_UPLOAD_STAGE_WIN }}" \
           --mount type=bind,source="${{ env.ARTIFACT_ARCHIVES_WIN }}",target="${{ env.ARTIFACT_ARCHIVES_WIN }}" \
           --mount type=bind,source="${{ env.WORKFLOW_DIR_WIN }}",target="${{ env.WORKFLOW_DIR_WIN }}" \
-          --mount type=bind,source="$SCCACHE_DIR",target="$SCCACHE_DIR" \
           --workdir "${{steps.paths.outputs.MOUNT_REPO}}" \
           --isolation=process \
           ${{ env.ENABLE_GPU }} \
@@ -227,11 +197,12 @@ runs:
           --env "NVCC_APPEND_FLAGS=-t=100" \
           --env "RUNNER_TEMP=${{env.RUNNER_TEMP_HOST}}" \
           --env "SCCACHE_BUCKET=${{env.SCCACHE_BUCKET}}" \
-          --env "SCCACHE_DIR=${{env.SCCACHE_DIR}}" \
           --env "SCCACHE_IDLE_TIMEOUT=${{env.SCCACHE_IDLE_TIMEOUT}}" \
           --env "SCCACHE_REGION=${{env.SCCACHE_REGION}}" \
           --env "SCCACHE_S3_NO_CREDENTIALS=${{env.SCCACHE_S3_NO_CREDENTIALS}}" \
           --env "SCCACHE_S3_USE_SSL=${{env.SCCACHE_S3_USE_SSL}}" \
+          --env "SCCACHE_S3_PREPROCESSOR_CACHE_KEY_PREFIX=${{env.SCCACHE_S3_PREPROCESSOR_CACHE_KEY_PREFIX}}" \
+          --env "SCCACHE_S3_USE_PREPROCESSOR_CACHE_MODE=${{env.SCCACHE_S3_USE_PREPROCESSOR_CACHE_MODE}}" \
           --env "WORKFLOW_ARTIFACT=${{env.WORKFLOW_ARTIFACT}}" \
           --env "WORKFLOW_DIR=${{env.WORKFLOW_DIR}}" \
           ${{ inputs.image }} \

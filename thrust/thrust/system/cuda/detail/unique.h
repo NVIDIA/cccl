@@ -36,7 +36,7 @@
 #  pragma system_header
 #endif // no system header
 
-#if _CCCL_HAS_CUDA_COMPILER()
+#if _CCCL_CUDA_COMPILATION()
 
 #  include <thrust/system/cuda/config.h>
 
@@ -285,4 +285,4 @@ THRUST_NAMESPACE_END
 //
 #  include <thrust/memory.h>
 #  include <thrust/unique.h>
-#endif
+#endif // _CCCL_CUDA_COMPILATION()

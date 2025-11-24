@@ -21,7 +21,6 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__type_traits/is_constant_evaluated.h>
 #include <cuda/std/__type_traits/is_integer.h>
 #include <cuda/std/__type_traits/is_signed.h>
 #include <cuda/std/__type_traits/make_nbit_int.h>
@@ -68,7 +67,7 @@ _CCCL_API constexpr _Tp mul_hi(_Tp __lhs, _Tp __rhs) noexcept
 {
   using ::cuda::std::int64_t;
   using ::cuda::std::is_signed_v;
-  if (!::cuda::std::__cccl_default_is_constant_evaluated())
+  _CCCL_IF_NOT_CONSTEVAL_DEFAULT
   {
     if constexpr (sizeof(_Tp) == sizeof(int))
     {

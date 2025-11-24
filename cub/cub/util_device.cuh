@@ -39,7 +39,7 @@
 #endif // !_CCCL_COMPILER(NVRTC)
 
 #if defined(CUB_ENABLE_POLICY_PTX_JSON)
-#  include <cub/detail/ptx-json/json.h>
+#  include <cub/detail/ptx-json/json.cuh>
 #endif // defined(CUB_ENABLE_POLICY_PTX_JSON)
 
 #include <nv/target>
@@ -754,6 +754,6 @@ private:
 };
 CUB_NAMESPACE_END
 
-#if _CCCL_HAS_CUDA_COMPILER() && !_CCCL_COMPILER(NVRTC)
+#if _CCCL_CUDA_COMPILATION() && !_CCCL_COMPILER(NVRTC)
 #  include <cub/detail/launcher/cuda_runtime.cuh> // to complete the definition of TripleChevronFactory
-#endif // _CCCL_HAS_CUDA_COMPILER() && !_CCCL_COMPILER(NVRTC)
+#endif // _CCCL_CUDA_COMPILATION() && !_CCCL_COMPILER(NVRTC)
