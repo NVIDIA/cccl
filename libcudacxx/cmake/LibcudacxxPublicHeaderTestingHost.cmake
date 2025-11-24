@@ -27,11 +27,6 @@ file(
 set(public_host_header_cxx_compile_options)
 set(public_host_header_cxx_compile_definitions)
 
-# Specifically add libc++ testing if requested to the libcudacxx host suite
-if (CCCL_USE_LIBCXX)
-  list(APPEND public_host_header_cxx_compile_options "-stdlib=libc++")
-endif()
-
 function(
   libcudacxx_add_public_header_test_host_target
   target_name
@@ -56,6 +51,12 @@ function(
     ${target_name}
     PRIVATE ${public_host_header_cxx_compile_options}
   )
+  if (CCCL_USE_LIBCXX) # In some headers clang complains about unused -stdlib=libc++
+    target_compile_options(
+      ${target_name}
+      PRIVATE -Wno-unused-command-line-argument
+    )
+  endif()
   target_link_libraries(${target_name} PUBLIC libcudacxx.compiler_interface)
   if (with_ctk)
     target_link_libraries(${target_name} PUBLIC CUDA::cudart)
