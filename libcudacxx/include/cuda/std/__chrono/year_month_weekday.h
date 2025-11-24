@@ -154,12 +154,13 @@ public:
 #endif // _CCCL_STD_VER <= 2017
 };
 
-_CCCL_API constexpr year_month_weekday operator/(const year_month& __lhs, const weekday_indexed& __rhs) noexcept
+[[nodiscard]] _CCCL_API constexpr year_month_weekday
+operator/(const year_month& __lhs, const weekday_indexed& __rhs) noexcept
 {
   return year_month_weekday{__lhs.year(), __lhs.month(), __rhs};
 }
 
-_CCCL_API constexpr year_month_weekday operator/(const year& __lhs, const month_weekday& __rhs) noexcept
+[[nodiscard]] _CCCL_API constexpr year_month_weekday operator/(const year& __lhs, const month_weekday& __rhs) noexcept
 {
   return year_month_weekday{__lhs, __rhs.month(), __rhs.weekday_indexed()};
 }
@@ -169,62 +170,71 @@ _CCCL_API constexpr year_month_weekday operator/(int __lhs, const month_weekday&
   return year(__lhs) / __rhs;
 }
 
-_CCCL_API constexpr year_month_weekday operator/(const month_weekday& __lhs, const year& __rhs) noexcept
+[[nodiscard]] _CCCL_API constexpr year_month_weekday operator/(const month_weekday& __lhs, const year& __rhs) noexcept
 {
   return __rhs / __lhs;
 }
 
-_CCCL_API constexpr year_month_weekday operator/(const month_weekday& __lhs, int __rhs) noexcept
+[[nodiscard]] _CCCL_API constexpr year_month_weekday operator/(const month_weekday& __lhs, int __rhs) noexcept
 {
   return year(__rhs) / __lhs;
 }
 
-_CCCL_API constexpr year_month_weekday operator+(const year_month_weekday& __lhs, const months& __rhs) noexcept
+[[nodiscard]] _CCCL_API constexpr year_month_weekday
+operator+(const year_month_weekday& __lhs, const months& __rhs) noexcept
 {
   return (__lhs.year() / __lhs.month() + __rhs) / __lhs.weekday_indexed();
 }
 
-_CCCL_API constexpr year_month_weekday operator+(const months& __lhs, const year_month_weekday& __rhs) noexcept
+[[nodiscard]] _CCCL_API constexpr year_month_weekday
+operator+(const months& __lhs, const year_month_weekday& __rhs) noexcept
 {
   return __rhs + __lhs;
 }
 
-_CCCL_API constexpr year_month_weekday operator-(const year_month_weekday& __lhs, const months& __rhs) noexcept
+[[nodiscard]] _CCCL_API constexpr year_month_weekday
+operator-(const year_month_weekday& __lhs, const months& __rhs) noexcept
 {
   return __lhs + (-__rhs);
 }
 
-_CCCL_API constexpr year_month_weekday operator+(const year_month_weekday& __lhs, const years& __rhs) noexcept
+[[nodiscard]] _CCCL_API constexpr year_month_weekday
+operator+(const year_month_weekday& __lhs, const years& __rhs) noexcept
 {
   return year_month_weekday{__lhs.year() + __rhs, __lhs.month(), __lhs.weekday_indexed()};
 }
 
-_CCCL_API constexpr year_month_weekday operator+(const years& __lhs, const year_month_weekday& __rhs) noexcept
+[[nodiscard]] _CCCL_API constexpr year_month_weekday
+operator+(const years& __lhs, const year_month_weekday& __rhs) noexcept
 {
   return __rhs + __lhs;
 }
 
-_CCCL_API constexpr year_month_weekday operator-(const year_month_weekday& __lhs, const years& __rhs) noexcept
+[[nodiscard]] _CCCL_API constexpr year_month_weekday
+operator-(const year_month_weekday& __lhs, const years& __rhs) noexcept
 {
   return __lhs + (-__rhs);
 }
 
-_CCCL_API constexpr year_month_weekday& year_month_weekday::operator+=(const months& __dm) noexcept
+[[nodiscard]] _CCCL_API constexpr year_month_weekday& year_month_weekday::operator+=(const months& __dm) noexcept
 {
   *this = *this + __dm;
   return *this;
 }
-_CCCL_API constexpr year_month_weekday& year_month_weekday::operator-=(const months& __dm) noexcept
+
+[[nodiscard]] _CCCL_API constexpr year_month_weekday& year_month_weekday::operator-=(const months& __dm) noexcept
 {
   *this = *this - __dm;
   return *this;
 }
-_CCCL_API constexpr year_month_weekday& year_month_weekday::operator+=(const years& __dy) noexcept
+
+[[nodiscard]] _CCCL_API constexpr year_month_weekday& year_month_weekday::operator+=(const years& __dy) noexcept
 {
   *this = *this + __dy;
   return *this;
 }
-_CCCL_API constexpr year_month_weekday& year_month_weekday::operator-=(const years& __dy) noexcept
+
+[[nodiscard]] _CCCL_API constexpr year_month_weekday& year_month_weekday::operator-=(const years& __dy) noexcept
 {
   *this = *this - __dy;
   return *this;
@@ -311,77 +321,93 @@ public:
 };
 
 // Cannot be hidden friends, the compiler fails to find the right operator/
-_CCCL_API constexpr year_month_weekday_last operator/(const year_month& __lhs, const weekday_last& __rhs) noexcept
+[[nodiscard]] _CCCL_API constexpr year_month_weekday_last
+operator/(const year_month& __lhs, const weekday_last& __rhs) noexcept
 {
   return year_month_weekday_last{__lhs.year(), __lhs.month(), __rhs};
 }
 
-_CCCL_API constexpr year_month_weekday_last operator/(const year& __lhs, const month_weekday_last& __rhs) noexcept
+[[nodiscard]] _CCCL_API constexpr year_month_weekday_last
+operator/(const year& __lhs, const month_weekday_last& __rhs) noexcept
 {
   return year_month_weekday_last{__lhs, __rhs.month(), __rhs.weekday_last()};
 }
 
-_CCCL_API constexpr year_month_weekday_last operator/(int __lhs, const month_weekday_last& __rhs) noexcept
+[[nodiscard]] _CCCL_API constexpr year_month_weekday_last operator/(int __lhs, const month_weekday_last& __rhs) noexcept
 {
   return year(__lhs) / __rhs;
 }
 
-_CCCL_API constexpr year_month_weekday_last operator/(const month_weekday_last& __lhs, const year& __rhs) noexcept
+[[nodiscard]] _CCCL_API constexpr year_month_weekday_last
+operator/(const month_weekday_last& __lhs, const year& __rhs) noexcept
 {
   return __rhs / __lhs;
 }
 
-_CCCL_API constexpr year_month_weekday_last operator/(const month_weekday_last& __lhs, int __rhs) noexcept
+[[nodiscard]] _CCCL_API constexpr year_month_weekday_last operator/(const month_weekday_last& __lhs, int __rhs) noexcept
 {
   return year(__rhs) / __lhs;
 }
 
-_CCCL_API constexpr year_month_weekday_last operator+(const year_month_weekday_last& __lhs, const months& __rhs) noexcept
+[[nodiscard]] _CCCL_API constexpr year_month_weekday_last
+operator+(const year_month_weekday_last& __lhs, const months& __rhs) noexcept
 {
   return (__lhs.year() / __lhs.month() + __rhs) / __lhs.weekday_last();
 }
 
-_CCCL_API constexpr year_month_weekday_last operator+(const months& __lhs, const year_month_weekday_last& __rhs) noexcept
+[[nodiscard]] _CCCL_API constexpr year_month_weekday_last
+operator+(const months& __lhs, const year_month_weekday_last& __rhs) noexcept
 {
   return __rhs + __lhs;
 }
 
-_CCCL_API constexpr year_month_weekday_last operator-(const year_month_weekday_last& __lhs, const months& __rhs) noexcept
+[[nodiscard]] _CCCL_API constexpr year_month_weekday_last
+operator-(const year_month_weekday_last& __lhs, const months& __rhs) noexcept
 {
   return __lhs + (-__rhs);
 }
 
-_CCCL_API constexpr year_month_weekday_last operator+(const year_month_weekday_last& __lhs, const years& __rhs) noexcept
+[[nodiscard]] _CCCL_API constexpr year_month_weekday_last
+operator+(const year_month_weekday_last& __lhs, const years& __rhs) noexcept
 {
   return year_month_weekday_last{__lhs.year() + __rhs, __lhs.month(), __lhs.weekday_last()};
 }
 
-_CCCL_API constexpr year_month_weekday_last operator+(const years& __lhs, const year_month_weekday_last& __rhs) noexcept
+[[nodiscard]] _CCCL_API constexpr year_month_weekday_last
+operator+(const years& __lhs, const year_month_weekday_last& __rhs) noexcept
 {
   return __rhs + __lhs;
 }
 
-_CCCL_API constexpr year_month_weekday_last operator-(const year_month_weekday_last& __lhs, const years& __rhs) noexcept
+[[nodiscard]] _CCCL_API constexpr year_month_weekday_last
+operator-(const year_month_weekday_last& __lhs, const years& __rhs) noexcept
 {
   return __lhs + (-__rhs);
 }
 
-_CCCL_API constexpr year_month_weekday_last& year_month_weekday_last::operator+=(const months& __dm) noexcept
+[[nodiscard]] _CCCL_API constexpr year_month_weekday_last&
+year_month_weekday_last::operator+=(const months& __dm) noexcept
 {
   *this = *this + __dm;
   return *this;
 }
-_CCCL_API constexpr year_month_weekday_last& year_month_weekday_last::operator-=(const months& __dm) noexcept
+
+[[nodiscard]] _CCCL_API constexpr year_month_weekday_last&
+year_month_weekday_last::operator-=(const months& __dm) noexcept
 {
   *this = *this - __dm;
   return *this;
 }
-_CCCL_API constexpr year_month_weekday_last& year_month_weekday_last::operator+=(const years& __dy) noexcept
+
+[[nodiscard]] _CCCL_API constexpr year_month_weekday_last&
+year_month_weekday_last::operator+=(const years& __dy) noexcept
 {
   *this = *this + __dy;
   return *this;
 }
-_CCCL_API constexpr year_month_weekday_last& year_month_weekday_last::operator-=(const years& __dy) noexcept
+
+[[nodiscard]] _CCCL_API constexpr year_month_weekday_last&
+year_month_weekday_last::operator-=(const years& __dy) noexcept
 {
   *this = *this - __dy;
   return *this;

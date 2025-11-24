@@ -184,8 +184,8 @@ public:
   }
 
 #if _CCCL_STD_VER <= 2017
-  [[nodiscard]] friend _CCCL_API constexpr bool
-  operator!=(const month_day_last& __lhs, const month_day_last& __rhs) noexcept
+  [[nodiscard]]
+  _CCCL_API friend constexpr bool operator!=(const month_day_last& __lhs, const month_day_last& __rhs) noexcept
   {
     return __lhs.month() != __rhs.month();
   }
@@ -199,8 +199,8 @@ public:
     return __lhs.month() <=> __rhs.month();
   }
 #else // ^^^ _LIBCUDACXX_HAS_SPACESHIP_OPERATOR() ^^^ / vvv !_LIBCUDACXX_HAS_SPACESHIP_OPERATOR() vvv
-  [[nodiscard]] friend _CCCL_API constexpr bool
-  operator<(const month_day_last& __lhs, const month_day_last& __rhs) noexcept
+  [[nodiscard]]
+  _CCCL_API friend constexpr bool operator<(const month_day_last& __lhs, const month_day_last& __rhs) noexcept
   {
     return __lhs.month() < __rhs.month();
   }
