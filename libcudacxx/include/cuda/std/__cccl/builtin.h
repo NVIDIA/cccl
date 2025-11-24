@@ -110,54 +110,6 @@
 #  define _CCCL_BUILTIN_ASSUME_ALIGNED(...) __builtin_assume_aligned(__VA_ARGS__)
 #endif // _CCCL_HAS_BUILTIN(__builtin_assume_aligned)
 
-// MSVC supports __builtin_bit_cast from 19.25 on
-#if _CCCL_CHECK_BUILTIN(builtin_bit_cast) || _CCCL_COMPILER(MSVC, >, 19, 25)
-#  define _CCCL_BUILTIN_BIT_CAST(...) __builtin_bit_cast(__VA_ARGS__)
-#endif // _CCCL_CHECK_BUILTIN(builtin_bit_cast)
-
-#if _CCCL_CHECK_BUILTIN(builtin_popcount) || _CCCL_COMPILER(GCC, <, 10) || _CCCL_COMPILER(CLANG) \
-  || _CCCL_COMPILER(NVHPC)
-#  define _CCCL_BUILTIN_POPCOUNT(...)   __builtin_popcount(__VA_ARGS__)
-#  define _CCCL_BUILTIN_POPCOUNTLL(...) __builtin_popcountll(__VA_ARGS__)
-#endif // _CCCL_CHECK_BUILTIN(builtin_popcount)
-
-#if _CCCL_CHECK_BUILTIN(builtin_popcountg)
-#  define _CCCL_BUILTIN_POPCOUNTG(...) __builtin_popcountg(__VA_ARGS__)
-#endif // _CCCL_CHECK_BUILTIN(builtin_popcountg)
-
-// nvcc cannot handle __builtin_popcountg
-#if _CCCL_CUDA_COMPILER(NVCC)
-#  undef _CCCL_BUILTIN_POPCOUNTG
-#endif // _CCCL_CUDA_COMPILER(NVCC)
-
-#if _CCCL_CHECK_BUILTIN(builtin_clz) || _CCCL_COMPILER(GCC, <, 10) || _CCCL_COMPILER(CLANG) || _CCCL_COMPILER(NVHPC)
-#  define _CCCL_BUILTIN_CLZ(...)   __builtin_clz(__VA_ARGS__)
-#  define _CCCL_BUILTIN_CLZLL(...) __builtin_clzll(__VA_ARGS__)
-#endif // _CCCL_CHECK_BUILTIN(builtin_clz)
-
-#if _CCCL_CHECK_BUILTIN(builtin_clzg)
-#  define _CCCL_BUILTIN_CLZG(...) __builtin_clzg(__VA_ARGS__)
-#endif // _CCCL_CHECK_BUILTIN(builtin_clzg)
-
-// nvcc cannot handle __builtin_clzg
-#if _CCCL_CUDA_COMPILER(NVCC)
-#  undef _CCCL_BUILTIN_CLZG
-#endif // _CCCL_CUDA_COMPILER(NVCC)
-
-#if _CCCL_CHECK_BUILTIN(builtin_ctz) || _CCCL_COMPILER(GCC, <, 10) || _CCCL_COMPILER(CLANG) || _CCCL_COMPILER(NVHPC)
-#  define _CCCL_BUILTIN_CTZ(...)   __builtin_ctz(__VA_ARGS__)
-#  define _CCCL_BUILTIN_CTZLL(...) __builtin_ctzll(__VA_ARGS__)
-#endif // _CCCL_CHECK_BUILTIN(builtin_ctz)
-
-#if _CCCL_CHECK_BUILTIN(builtin_ctzg)
-#  define _CCCL_BUITLIN_CTZG(...) __builtin_ctzg(__VA_ARGS__)
-#endif // _CCCL_CHECK_BUILTIN(builtin_ctzg)
-
-// nvcc cannot handle __builtin_ctzg
-#if _CCCL_CUDA_COMPILER(NVCC)
-#  undef _CCCL_BUITLIN_CTZG
-#endif // _CCCL_CUDA_COMPILER(NVCC)
-
 #if _CCCL_CHECK_BUILTIN(builtin_constant_p) || _CCCL_COMPILER(GCC)
 #  define _CCCL_BUILTIN_CONSTANT_P(...) __builtin_constant_p(__VA_ARGS__)
 #endif // _CCCL_CHECK_BUILTIN(builtin_constant_p)
