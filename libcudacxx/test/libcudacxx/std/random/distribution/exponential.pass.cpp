@@ -41,11 +41,11 @@ struct exponential_cdf
 template <class T>
 __host__ __device__ void test()
 {
-  const bool test_constexpr     = false;
-  using D                       = cuda::std::exponential_distribution<T>;
-  using P                       = typename D::param_type;
-  using G                       = cuda::std::philox4x64;
-  cuda::std::array<P, 5> params = {P(1), P(0.5), P(2), P(0.1), P(10)};
+  [[maybe_unused]] const bool test_constexpr = false;
+  using D                                    = cuda::std::exponential_distribution<T>;
+  using P                                    = typename D::param_type;
+  using G                                    = cuda::std::philox4x64;
+  cuda::std::array<P, 5> params              = {P(T(1)), P(T(0.5)), P(T(2)), P(T(0.1)), P(T(10))};
   test_distribution<D, true, G, test_constexpr>(params, exponential_cdf<T>{});
 }
 
