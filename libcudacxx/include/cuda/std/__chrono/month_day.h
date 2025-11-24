@@ -42,7 +42,6 @@ private:
 
 public:
   _CCCL_HIDE_FROM_ABI month_day() = default;
-  [[nodiscard]]
   _CCCL_API constexpr month_day(const chrono::month& __month, const chrono::day& __day) noexcept
       : __month_{__month}
       , __day_{__day}
