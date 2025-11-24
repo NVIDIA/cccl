@@ -41,15 +41,17 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 namespace __detail
 {
 static char* __format_error(::cuda::__detail::__msg_storage& __msg_buffer,
+                            const char* __type_name,
                             const char* __msg,
                             ::cuda::std::source_location __loc = ::cuda::std::source_location::current()) noexcept
 {
   (void) ::snprintf(
     __msg_buffer.__buffer,
     __msg_buffer.__size,
-    "%s:%u: %s",
+    "%s:%u: %s: %s",
     __loc.file_name(),
     __loc.line(),
+    __type_name,
     (__msg != nullptr) ? __msg : "<unknown_error>");
   return __msg_buffer.__buffer;
 }

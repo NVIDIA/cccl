@@ -28,6 +28,7 @@
 #  include <cuda/devices> // sub headers cause circular dependency
 #  include <cuda/std/__algorithm/min.h>
 #  include <cuda/std/__cstddef/types.h>
+#  include <cuda/std/__exception/exception_macros.h>
 #  include <cuda/std/__limits/numeric_limits.h>
 #  include <cuda/std/array>
 #  include <cuda/std/cstdint>
