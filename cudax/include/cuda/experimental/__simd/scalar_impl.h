@@ -300,7 +300,7 @@ struct __mask_operations<_Tp, simd_abi::__scalar>
     return static_cast<bool>(__s.__data);
   }
 
-  [[nodiscard]] _CCCL_API static constexpr int __count(const _MaskStorage& __s) noexcept
+  [[nodiscard]] _CCCL_API static constexpr ::cuda::std::ptrdiff_t __count(const _MaskStorage& __s) noexcept
   {
     return static_cast<bool>(__s.__data) ? 1 : 0;
   }
