@@ -52,10 +52,9 @@ Example
 
     #include <cuda/cmath>
     #include <cuda/std/cassert>
-    #include <cuda/std/numbers>
 
     __global__ void sincos_kernel() {
-        auto [sin_pi, cos_pi] = cuda::sincos(cuda::std::numbers::pi_v<float>);
+        auto [sin_pi, cos_pi] = cuda::sincos(0.f);
         assert(sin_pi == 0.f);
         assert(cos_pi == 1.f);
     }
@@ -66,4 +65,4 @@ Example
         return 0;
     }
 
-`See it on Godbolt 🔗 <https://godbolt.org/z/WYfEnhGaq>`__
+`See it on Godbolt 🔗 <https://godbolt.org/z/99PP9s1z6>`__
