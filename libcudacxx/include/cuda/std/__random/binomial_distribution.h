@@ -113,7 +113,7 @@ public:
   template <class _URng>
   _CCCL_API result_type operator()(_URng& __g, const param_type& __pr)
   {
-    static_assert(__cccl_random_is_valid_urng<_URng>);
+    static_assert(__cccl_random_is_valid_urng<_URng>, "URng must meet the UniformRandomBitGenerator requirements");
     if (__pr.__t_ == 0 || __pr.__p_ == 0)
     {
       return 0;
