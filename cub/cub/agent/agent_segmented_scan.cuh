@@ -264,7 +264,7 @@ struct agent_segmented_scan
     OffsetT (&inp_idx_begin)[NumSegments], OffsetT (&inp_idx_end)[NumSegments], OffsetT (&out_idx_begin)[NumSegments])
   {
     OffsetT items_per_block{0};
-    OffsetT logical_ids[NumSegments] = {};
+    OffsetT(&logical_ids)[NumSegments] = inp_idx_end;
 
     for (int i = 0; i < NumSegments; ++i)
     {
@@ -301,17 +301,10 @@ struct agent_segmented_scan
         // reconstruct flags
         for (int i = 0; i < items_per_thread; ++i)
         {
-          flag_t is_segment_head{0};
-          OffsetT value_id = chunk_begin + items_per_thread * threadIdx.x + static_cast<OffsetT>(i);
-          for (int j = 0; j < NumSegments; ++j)
-          {
-            if (value_id == logical_ids[j])
-            {
-              is_segment_head = flag_t{1};
-            }
-          }
+          const OffsetT value_id = chunk_begin + items_per_thread * threadIdx.x + static_cast<OffsetT>(i);
+          bool is_segment_head   = is_head_of_segment<OffsetT, segments_per_block>(logical_ids, value_id);
 
-          thread_flag_values[i] = augmented_accum_t{is_segment_head, thread_values[i]};
+          thread_flag_values[i] = augmented_accum_t{static_cast<flag_t>(is_segment_head), thread_values[i]};
         }
       }
       __syncthreads();
@@ -335,7 +328,16 @@ struct agent_segmented_scan
 #pragma unroll
         for (int i = 0; i < items_per_thread; ++i)
         {
-          thread_values[i] = get_value(thread_flag_values[i]);
+          if constexpr (is_inclusive)
+          {
+            thread_values[i] = get_value(thread_flag_values[i]);
+          }
+          else
+          {
+            const OffsetT value_id = chunk_begin + items_per_thread * threadIdx.x + static_cast<OffsetT>(i);
+            bool is_segment_head   = is_head_of_segment<OffsetT, segments_per_block>(logical_ids, value_id);
+            thread_values[i]       = (is_segment_head) ? initial_value : get_value(thread_flag_values[i]);
+          }
         }
 
         const OffsetT out_offset = chunk_id * tile_items;
@@ -354,7 +356,7 @@ struct agent_segmented_scan
     int n_segments)
   {
     OffsetT items_per_block{0};
-    OffsetT logical_ids[NumSegments] = {};
+    OffsetT(&logical_ids)[NumSegments] = inp_idx_end;
 
     n_segments = ::cuda::std::min(n_segments, NumSegments);
 
@@ -370,8 +372,9 @@ struct agent_segmented_scan
     }
     const OffsetT n_chunks = ::cuda::ceil_div(items_per_block, tile_items);
 
-    using augmented_init_value_t = ::cuda::std::tuple<flag_t, InitValueT>;
-    using augmented_scan_op_t    = schwarz_scan_op<flag_t, AccumT, ScanOpT>;
+    using augmented_init_value_t =
+      ::cuda::std::conditional_t<has_init, augmented_accum_t, ::cuda::std::tuple<flag_t, InitValueT>>;
+    using augmented_scan_op_t = schwarz_scan_op<flag_t, AccumT, ScanOpT>;
 
     augmented_accum_t thread_flag_values[items_per_thread] = {};
 
@@ -397,17 +400,10 @@ struct agent_segmented_scan
         // reconstruct flags
         for (int i = 0; i < items_per_thread; ++i)
         {
-          flag_t is_segment_head{0};
-          OffsetT value_id = chunk_begin + items_per_thread * threadIdx.x + static_cast<OffsetT>(i);
-          for (int j = 0; j < n_segments; ++j)
-          {
-            if (value_id == logical_ids[j])
-            {
-              is_segment_head = flag_t{1};
-            }
-          }
+          const OffsetT value_id = chunk_begin + items_per_thread * threadIdx.x + static_cast<OffsetT>(i);
+          bool is_segment_head   = is_head_of_segment<OffsetT, segments_per_block>(logical_ids, value_id);
 
-          thread_flag_values[i] = augmented_accum_t{is_segment_head, thread_values[i]};
+          thread_flag_values[i] = augmented_accum_t{static_cast<flag_t>(is_segment_head), thread_values[i]};
         }
       }
       __syncthreads();
@@ -431,7 +427,16 @@ struct agent_segmented_scan
 #pragma unroll
         for (int i = 0; i < items_per_thread; ++i)
         {
-          thread_values[i] = get_value(thread_flag_values[i]);
+          if constexpr (is_inclusive)
+          {
+            thread_values[i] = get_value(thread_flag_values[i]);
+          }
+          else
+          {
+            const OffsetT value_id = chunk_begin + items_per_thread * threadIdx.x + static_cast<OffsetT>(i);
+            bool is_segment_head   = is_head_of_segment<OffsetT, segments_per_block>(logical_ids, value_id);
+            thread_values[i]       = (is_segment_head) ? initial_value : get_value(thread_flag_values[i]);
+          }
         }
 
         const OffsetT out_offset = chunk_id * tile_items;
@@ -455,6 +460,34 @@ private:
     return ::cuda::std::get<1>(fv);
   }
 
+  template <typename _FlagT>
+  _CCCL_DEVICE _CCCL_FORCEINLINE static _FlagT flag_or(_FlagT f1, _FlagT f2)
+  {
+    if constexpr (::cuda::std::is_same_v<_FlagT, bool>)
+    {
+      return (f1 || f2);
+    }
+    else
+    {
+      return (f1 | f2);
+    }
+  }
+
+  template <typename _OffsetT, int N>
+  _CCCL_DEVICE _CCCL_FORCEINLINE static bool
+  is_head_of_segment(const _OffsetT (&cumulative_ids)[N], const _OffsetT item_id)
+  {
+    static_assert(N > 1, "Array size should be greater than one");
+
+    bool is_segment_head{item_id == cumulative_ids[0]};
+#pragma unroll
+    for (int j = 1; j < N; ++j)
+    {
+      is_segment_head = is_segment_head || (item_id == cumulative_ids[j]);
+    }
+    return is_segment_head;
+  }
+
   template <typename _FlagT, typename _ValueT, typename _BinaryOpT>
   struct schwarz_scan_op
   {
@@ -469,44 +502,44 @@ private:
       const _ValueT res_value         = (o2_flag) ? o2_value : scan_op(o1_value, o2_value);
       return {res_flag, res_value};
     }
-
-    _CCCL_DEVICE _CCCL_FORCEINLINE static _FlagT flag_or(_FlagT f1, _FlagT f2)
-    {
-      if constexpr (::cuda::std::is_same_v<_FlagT, bool>)
-      {
-        return (f1 || f2);
-      }
-      else
-      {
-        return (f1 | f2);
-      }
-    }
   };
 
-  template <typename _Iter, typename _OffsetT, int _SegmentsPerBlock>
+  template <typename _Iter, typename _OffsetT, typename _T1, int _N1, typename _T2, int _N2>
   struct multi_segmented_iterator
   {
     _Iter m_it;
     _OffsetT m_start;
-    const _OffsetT (&m_offsets)[_SegmentsPerBlock];
-    const _OffsetT (&m_it_idx_begin)[_SegmentsPerBlock];
+    _T1 (&m_offsets)[_N1];
+    _T2 (&m_it_idx_begin)[_N2];
 
     using iterator_concept  = ::cuda::std::random_access_iterator_tag;
     using iterator_category = ::cuda::std::random_access_iterator_tag;
     using value_type        = ::cuda::std::iter_value_t<_Iter>;
-    using difference_type   = _OffsetT;
+    using difference_type   = ::cuda::std::remove_cv_t<_OffsetT>;
     using reference         = ::cuda::std::iter_reference_t<_Iter>;
     using pointer           = void;
 
-    _CCCL_DEVICE _CCCL_FORCEINLINE decltype(auto) operator[](_OffsetT n) const
-    {
-      const _OffsetT off  = m_start + n;
-      const auto begin_it = m_offsets;
-      const auto end_it   = m_offsets + _SegmentsPerBlock;
+    static_assert(::cuda::std::is_same_v<difference_type, ::cuda::std::decay_t<_T1>>, "types are inconsistent");
+    static_assert(::cuda::std::is_same_v<difference_type, ::cuda::std::decay_t<_T2>>, "types are inconsistent");
+    static_assert(_N1 == _N2, "Arrays must have equal sizes");
 
-      auto lb_it                 = ::cuda::std::upper_bound(begin_it, end_it, off);
-      const auto segment_id      = ::cuda::std::distance(begin_it, lb_it);
-      const _OffsetT shifted_off = (lb_it == begin_it) ? off : off - *(--lb_it);
+    _CCCL_DEVICE _CCCL_FORCEINLINE
+    multi_segmented_iterator(_Iter it, _OffsetT start, _T1 (&cum_sizes)[_N1], _T2 (&it_idx_begin)[_N2])
+        : m_it{it}
+        , m_start{start}
+        , m_offsets{cum_sizes}
+        , m_it_idx_begin{it_idx_begin}
+    {}
+
+    _CCCL_DEVICE _CCCL_FORCEINLINE decltype(auto) operator[](difference_type n) const
+    {
+      const difference_type off = m_start + n;
+      const auto begin_it       = m_offsets;
+      const auto end_it         = m_offsets + _N1;
+
+      auto lb_it                        = ::cuda::std::upper_bound(begin_it, end_it, off);
+      const auto segment_id             = ::cuda::std::distance(begin_it, lb_it);
+      const difference_type shifted_off = (lb_it == begin_it) ? off : off - *(--lb_it);
       return m_it[m_it_idx_begin[segment_id] + shifted_off];
     }
 
@@ -540,8 +573,8 @@ private:
     {
       if constexpr (has_init)
       {
-        block_scan_algo.InclusiveScan(items, items, initial_value, scan_op, block_aggregate);
-        block_aggregate = scan_op(initial_value, block_aggregate);
+        block_scan_algo.InclusiveScan(items, items, init_value, scan_op, block_aggregate);
+        block_aggregate = scan_op(init_value, block_aggregate);
       }
       else
       {
@@ -550,7 +583,7 @@ private:
     }
     else
     {
-      block_scan_algo.ExclusiveScan(items, items, initial_value, scan_op, block_aggregate);
+      block_scan_algo.ExclusiveScan(items, items, init_value, scan_op, block_aggregate);
       block_aggregate = scan_op(init_value, block_aggregate);
     }
   }

@@ -461,3 +461,82 @@ C2H_TEST("cub::detail::segmented_scan::agent_segmented_scan works with three seg
 
   REQUIRE(h_expected == h_output);
 }
+
+C2H_TEST("cub::detail::segmented_scan::agent_segmented_scan works for exclusive_scan with three segments per block and "
+         "tail",
+         "[agent_multiple_segments_per_block][segmented][scan]")
+{
+  using op_t   = impl::bicyclic_monoid_op<unsigned>;
+  using pair_t = typename op_t::pair_t;
+
+  unsigned num_items = 128 * 4 * 4;
+  c2h::device_vector<unsigned> offsets{0, num_items / 4, num_items / 2, num_items - (num_items / 4), num_items};
+  size_t num_segments = offsets.size() - 1;
+
+  c2h::device_vector<pair_t> input(num_items);
+  thrust::tabulate(input.begin(), input.end(), impl::populate_input<unsigned>{});
+  c2h::device_vector<pair_t> output(input.size());
+
+  pair_t* d_input     = thrust::raw_pointer_cast(input.data());
+  pair_t* d_output    = thrust::raw_pointer_cast(output.data());
+  unsigned* d_offsets = thrust::raw_pointer_cast(offsets.data());
+
+  constexpr int block_size         = 128;
+  constexpr int items_per_thread   = 4;
+  constexpr int segments_per_block = 2;
+  using chained_policy_t           = ChainedPolicy<block_size, items_per_thread, segments_per_block>;
+
+  device_segmented_scan_kernel_two_segments_per_block<
+    chained_policy_t,
+    pair_t*,
+    pair_t*,
+    unsigned*,
+    unsigned*,
+    unsigned*,
+    unsigned,
+    op_t,
+    cub::detail::InputValue<pair_t>,
+    pair_t,
+    false><<<cuda::ceil_div(num_segments, segments_per_block), block_size>>>(
+    d_input,
+    d_output,
+    d_offsets,
+    d_offsets + 1,
+    d_offsets,
+    static_cast<unsigned>(num_segments),
+    op_t{},
+    cub::detail::InputValue<pair_t>{pair_t{1, 1}});
+
+  REQUIRE(cudaSuccess == cudaGetLastError());
+
+  // transfer to host_vector is synchronizing
+  c2h::host_vector<pair_t> h_output(output);
+  c2h::host_vector<pair_t> h_input(input);
+  c2h::host_vector<pair_t> h_expected(input.size());
+  c2h::host_vector<unsigned> h_offsets(offsets);
+
+  for (unsigned segment_id = 0; segment_id < num_segments; ++segment_id)
+  {
+    compute_exclusive_scan_reference(
+      h_input.begin() + h_offsets[segment_id],
+      h_input.begin() + h_offsets[segment_id + 1],
+      h_expected.begin() + h_offsets[segment_id],
+      pair_t{1, 1},
+      op_t{});
+  }
+
+  if (h_expected != h_output)
+  {
+    for (unsigned segment_id = 0; segment_id < num_segments; ++segment_id)
+    {
+      for (std::size_t i = h_offsets[segment_id]; i < h_offsets[segment_id + 1]; ++i)
+      {
+        std::cout << "({" << h_output[i].first << ", " << h_output[i].second << "}, {" << h_expected[i].first << ", "
+                  << h_expected[i].second << "}) ";
+      }
+      std::cout << std::endl;
+    }
+  }
+
+  REQUIRE(h_expected == h_output);
+}
