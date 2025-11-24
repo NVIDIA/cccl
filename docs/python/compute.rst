@@ -102,25 +102,34 @@ Here are some important gotchas to be aware of:
 * Functions capturing by global reference may not work as intended.
   Prefer using closures in these situations.
 
-  Here is an example of a function that captures a global variable by reference.
+  Here is an example of a function that captures a global variable by reference,
+  which is then used in a loop with ``unary_transform``.
 
   .. code-block:: python
 
-     i = 1
-     def func(x):
-        return x + i  # i is captured from global scope
+     for i in range(10):
+         def func(x):
+             return x + i  # i is captured from global scope
+
+         cuda.compute.unary_transform(d_in, d_out, func, num_items)
 
   Modifications to the global variable ``i`` may not be reflected in the function
-  when the function is called multiple times.
+  when the function is called multiple times. Thus, the different calls to
+  ``unary_transform`` may not produce different results. This is true even though
+  the function is redefined each time in the loop.
 
   To avoid this, capture the variable in a closure:
 
   .. code-block:: python
 
      def make_func(i):
-        def func(x):
-              return x + i  # i is captured as a closure variable
-        return func
+         def func(x):
+            return x + i  # i is captured as a closure variable
+         return func
+
+     for i in range(10):
+         func = make_func(i)
+         cuda.compute.unary_transform(d_in, d_out, func, num_items)
 
 
 Example Collections
