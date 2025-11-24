@@ -79,8 +79,7 @@ public:
   }
 
   template <typename _Storage1, typename _Vp1>
-  friend _CCCL_API void swap(__simd_reference<_Storage1, _Vp1>&& __a,
-                             __simd_reference<_Storage1, _Vp1>&& __b) noexcept;
+  friend _CCCL_API void swap(__simd_reference<_Storage1, _Vp1>&& __a, __simd_reference<_Storage1, _Vp1>&& __b) noexcept;
 
   template <typename _Storage1, typename _Vp1>
   friend _CCCL_API void swap(_Vp1& __a, __simd_reference<_Storage1, _Vp1>&& __b) noexcept;
