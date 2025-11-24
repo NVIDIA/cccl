@@ -45,16 +45,16 @@ public:
 
   class param_type
   {
-    double __mean_;
-    double __s_;
-    double __d_;
-    double __l_;
-    double __omega_;
-    double __c0_;
-    double __c1_;
-    double __c2_;
-    double __c3_;
-    double __c_;
+    double __mean_  = 1.0;
+    double __s_     = 0.0;
+    double __d_     = 0.0;
+    double __l_     = 0.0;
+    double __omega_ = 0.0;
+    double __c0_    = 0.0;
+    double __c1_    = 0.0;
+    double __c2_    = 0.0;
+    double __c3_    = 0.0;
+    double __c_     = 0.0;
 
   public:
     using distribution_type = poisson_distribution;
@@ -67,15 +67,7 @@ public:
     {
       if (__mean_ < 10)
       {
-        __s_     = 0;
-        __d_     = 0;
-        __l_     = ::cuda::std::exp(-__mean_);
-        __omega_ = 0;
-        __c3_    = 0;
-        __c2_    = 0;
-        __c1_    = 0;
-        __c0_    = 0;
-        __c_     = 0;
+        __l_ = ::cuda::std::exp(-__mean_);
       }
       else
       {
@@ -130,15 +122,15 @@ private:
   template <class _IntT, class _RealT>
   [[nodiscard]] _CCCL_API static _IntT __clamp_to_integral(_RealT __r) noexcept
   {
-    using _Lim            = numeric_limits<_IntT>;
+    using _Limits         = numeric_limits<_IntT>;
     const _IntT __max_val = __max_representable_int_for_float<_IntT, _RealT>();
     if (__r >= ::cuda::std::nextafter(static_cast<_RealT>(__max_val), INFINITY))
     {
-      return _Lim::max();
+      return _Limits::max();
     }
-    else if (__r <= _Lim::lowest())
+    else if (__r <= _Limits::lowest())
     {
-      return _Lim::min();
+      return _Limits::min();
     }
     return static_cast<_IntT>(__r);
   }
@@ -166,11 +158,10 @@ public:
   [[nodiscard]] _CCCL_API result_type operator()(_URNG& __urng, const param_type& __pr)
   {
     static_assert(__cccl_random_is_valid_urng<_URNG>, "");
-    double __tx;
-    uniform_real_distribution<double> __urd;
+    double __tx = 0;
+    uniform_real_distribution<double> __urd{};
     if (__pr.__mean_ < 10)
     {
-      __tx = 0;
       for (double __p = __urd(__urng); __p > __pr.__l_; ++__tx)
       {
         __p *= __urd(__urng);
@@ -178,9 +169,9 @@ public:
     }
     else
     {
-      double __difmuk;
-      double __g = __pr.__mean_ + __pr.__s_ * normal_distribution<double>()(__urng);
-      double __u;
+      double __difmuk = 0;
+      double __g      = __pr.__mean_ + __pr.__s_ * normal_distribution<double>()(__urng);
+      double __u      = 0;
       if (__g > 0)
       {
         __tx = ::cuda::std::trunc(__g);
@@ -197,10 +188,10 @@ public:
       }
       for (bool __using_exp_dist = false; true; __using_exp_dist = true)
       {
-        double __e;
+        double __e = 0;
         if (__using_exp_dist || __g <= 0)
         {
-          double __t;
+          double __t = 0;
           do
           {
             // Inline exponential distribution: -log(1 - U) where U ~ Uniform(0,1)
@@ -214,8 +205,8 @@ public:
           __difmuk         = __pr.__mean_ - __tx;
           __using_exp_dist = true;
         }
-        double __px;
-        double __py;
+        double __px = 0;
+        double __py = 0;
         if (__tx < 10 && __tx >= 0)
         {
           const double __fac[] = {1, 1, 2, 6, 24, 120, 720, 5040, 40320, 362880};
@@ -328,7 +319,7 @@ public:
     const typename ios_base::fmtflags __flags = __is.flags();
     using param_type                          = typename poisson_distribution::param_type;
     __is.flags(ios_base::dec | ios_base::skipws);
-    double __mean;
+    double __mean = 0.0;
     __is >> __mean;
     if (!__is.fail())
     {
