@@ -138,7 +138,7 @@ public:
 
   _CCCL_API constexpr bool operator>(int __x) const noexcept
   {
-    return __hi_ != 0 || __lo_ > 0;
+    return __hi_ != 0 || __lo_ > static_cast<::cuda::std::uint64_t>(__x);
   }
 
   _CCCL_API constexpr friend bool operator==(__pcg_uint128_fallback __lhs, __pcg_uint128_fallback __rhs) noexcept
