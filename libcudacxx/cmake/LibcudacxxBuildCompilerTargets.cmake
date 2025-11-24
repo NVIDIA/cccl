@@ -17,11 +17,6 @@ function(libcudacxx_build_compiler_targets)
     append_option_if_available("/Zc:__cplusplus" cxx_compile_options)
   endif()
 
-  #  if (CCCL_USE_LIBCXX)
-  #    list(APPEND cxx_compile_options "-stdlib=libc++")
-  #    list(APPEND cxx_compile_definitions "_ALLOW_UNSUPPORTED_LIBCPP=1")
-  #  endif()
-
   # Set test specific flags
   list(
     APPEND cxx_compile_definitions
