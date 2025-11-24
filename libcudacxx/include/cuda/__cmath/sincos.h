@@ -23,6 +23,7 @@
 
 #include <cuda/std/__cmath/trigonometric_functions.h>
 #include <cuda/std/__concepts/concept_macros.h>
+#include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/is_extended_arithmetic.h>
 #include <cuda/std/__type_traits/is_integral.h>
 #include <cuda/std/__type_traits/is_same.h>
@@ -66,6 +67,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT sincos_result
 _CCCL_TEMPLATE(class _Tp)
 _CCCL_REQUIRES(::cuda::std::__is_extended_arithmetic_v<_Tp>)
 [[nodiscard]] _CCCL_API auto sincos(_Tp __v) noexcept
+  -> sincos_result<::cuda::std::conditional_t<::cuda::std::is_integral_v<_Tp>, double, _Tp>>
 {
   if constexpr (::cuda::std::is_integral_v<_Tp>)
   {
