@@ -72,36 +72,36 @@ struct __mask_storage<_Tp, simd_abi::__fixed_size<_Np>> : public __simd_storage<
 };
 
 // Helper macros to generate repeated fixed-size operations.
-#define _CUDAX_SIMD_FIXED_SIZE_BINARY_STORAGE_OP(_StorageType, _Name, _Op) \
-  [[nodiscard]] _CCCL_API static constexpr _StorageType _Name(             \
-    const _StorageType& __lhs, const _StorageType& __rhs) noexcept         \
-  {                                                                        \
-    _StorageType __result;                                                 \
-    _CCCL_PRAGMA_UNROLL_FULL()                                             \
-    for (int __i = 0; __i < _Np; ++__i)                                    \
-    {                                                                      \
-      __result.__data[__i] = (__lhs.__data[__i] _Op __rhs.__data[__i]);    \
-    }                                                                      \
-    return __result;                                                       \
+#define _CUDAX_SIMD_FIXED_SIZE_BINARY_STORAGE_OP(_STORAGE_TYPE, _NAME, _OP) \
+  [[nodiscard]] _CCCL_API static constexpr _STORAGE_TYPE _NAME(             \
+    const _STORAGE_TYPE& __lhs, const _STORAGE_TYPE& __rhs) noexcept        \
+  {                                                                         \
+    _STORAGE_TYPE __result;                                                 \
+    _CCCL_PRAGMA_UNROLL_FULL()                                              \
+    for (int __i = 0; __i < _Np; ++__i)                                     \
+    {                                                                       \
+      __result.__data[__i] = (__lhs.__data[__i] _OP __rhs.__data[__i]);     \
+    }                                                                       \
+    return __result;                                                        \
   }
 
-#define _CUDAX_SIMD_FIXED_SIZE_BINARY_CMP_OP(_Name, _Op)                \
-  [[nodiscard]] _CCCL_API static constexpr _MaskStorage _Name(          \
+#define _CUDAX_SIMD_FIXED_SIZE_BINARY_CMP_OP(_NAME, _OP)                \
+  [[nodiscard]] _CCCL_API static constexpr _MaskStorage _NAME(          \
     const _SimdStorage& __lhs, const _SimdStorage& __rhs) noexcept      \
   {                                                                     \
     _MaskStorage __result;                                              \
     _CCCL_PRAGMA_UNROLL_FULL()                                          \
     for (int __i = 0; __i < _Np; ++__i)                                 \
     {                                                                   \
-      __result.__data[__i] = (__lhs.__data[__i] _Op __rhs.__data[__i]); \
+      __result.__data[__i] = (__lhs.__data[__i] _OP __rhs.__data[__i]); \
     }                                                                   \
     return __result;                                                    \
   }
 
-#define _CUDAX_SIMD_FIXED_SIZE_BITWISE_OP(_StorageType, _Name, _Op) \
-  _CCCL_TEMPLATE(typename _Up = _Tp)                                \
-  _CCCL_REQUIRES(::cuda::std::is_integral_v<_Up>)                   \
-  _CUDAX_SIMD_FIXED_SIZE_BINARY_STORAGE_OP(_StorageType, _Name, _Op)
+#define _CUDAX_SIMD_FIXED_SIZE_BITWISE_OP(_STORAGE_TYPE, _NAME, _OP) \
+  _CCCL_TEMPLATE(typename _Up = _Tp)                                 \
+  _CCCL_REQUIRES(::cuda::std::is_integral_v<_Up>)                    \
+  _CUDAX_SIMD_FIXED_SIZE_BINARY_STORAGE_OP(_STORAGE_TYPE, _NAME, _OP)
 
 // *********************************************************************************************************************
 // * SIMD Arithmetic Operations
