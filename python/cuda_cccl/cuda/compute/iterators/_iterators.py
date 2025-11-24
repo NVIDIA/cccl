@@ -590,8 +590,18 @@ def make_transform_iterator(it, op: Callable, io_kind: str):
             state_type = it.state_type
 
             if io_kind == "input":
-                value_type = get_inferred_return_type(op.py_func, (underlying_it_type,))
+                # For input iterators, use annotations if available, otherwise
+                # rely on numba to infer the return type.
+                try:
+                    value_type = signature_from_annotations(op.py_func).args[0]
+                except ValueError:
+                    value_type = get_inferred_return_type(
+                        op.py_func, (underlying_it_type,)
+                    )
             else:
+                # For output iterators, always require annotations.
+                # The inferred type may not match the iterator being
+                # written to.
                 value_type = signature_from_annotations(op.py_func).args[0]
 
             super().__init__(
