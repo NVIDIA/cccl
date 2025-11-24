@@ -59,6 +59,7 @@ class CachableFunction:
             func.__code__.co_code,
             func.__code__.co_consts,
             tuple(cell.cell_contents for cell in closure),
+            tuple(func.__globals__.get(name, None) for name in func.__code__.co_names),
         )
 
     def __eq__(self, other):
