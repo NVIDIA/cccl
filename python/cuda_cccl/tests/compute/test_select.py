@@ -5,68 +5,10 @@
 import cupy as cp
 import numpy as np
 import pytest
-from llvmlite import ir
-from numba.core import types
-from numba.core.extending import intrinsic
 from numba.np.numpy_support import carray  # noqa: F401
 
 import cuda.compute
 from cuda.compute import CacheModifiedInputIterator, ZipIterator, gpu_struct
-
-
-# Helper intrinsic to perform atomic add directly on a pointer
-@intrinsic
-def atomic_add_ptr(typingctx, ptr_type, offset_type, value_type):
-    """Perform atomic add on a pointer.
-
-    Args:
-        ptr_type: Pointer type (e.g., types.CPointer(types.int32))
-        offset_type: Index offset (e.g., types.intp or types.int32)
-        value_type: Value to add (e.g., types.int32)
-
-    Returns:
-        The old value at the pointer location
-    """
-    if not isinstance(ptr_type, types.CPointer):
-        raise TypeError(f"Expected pointer type, got {ptr_type}")
-
-    elem_type = ptr_type.dtype
-    sig = elem_type(ptr_type, offset_type, value_type)
-
-    def codegen(context, builder, sig, args):
-        ptr, offset, value = args
-
-        # Calculate the address: ptr + offset
-        elem_type_llvm = context.get_value_type(elem_type)
-
-        # Use GEP (GetElementPtr) to calculate the offset address
-        addr = builder.gep(ptr, [offset])
-
-        # Cast value to match the pointer's element type if necessary
-        if value.type != elem_type_llvm:
-            if isinstance(elem_type_llvm, ir.IntType):
-                # Extend or truncate integer to match
-                if value.type.width < elem_type_llvm.width:
-                    value = builder.sext(value, elem_type_llvm)
-                elif value.type.width > elem_type_llvm.width:
-                    value = builder.trunc(value, elem_type_llvm)
-            else:
-                # For other types, bitcast
-                value = builder.bitcast(value, elem_type_llvm)
-
-        # Perform atomic add
-        # Use LLVM's atomicrmw instruction
-        old_value = builder.atomic_rmw(
-            "add",
-            addr,
-            value,
-            ordering="monotonic",  # You can use "seq_cst" for stronger ordering if needed
-        )
-
-        return old_value
-
-    return sig, codegen
-
 
 DTYPE_LIST = [
     np.uint8,
@@ -81,27 +23,6 @@ DTYPE_LIST = [
     np.float32,
     np.float64,
 ]
-
-
-@intrinsic
-def _noneptr_as_typedptr(typingctx, optr, dtype):
-    """
-    Bitcast an opaque none* (void*) back to T* using arr.dtype.
-    """
-    if not (isinstance(optr, types.CPointer) and optr.dtype is types.none):
-        return None
-    if not isinstance(dtype, types.Type):
-        return None
-
-    ret = types.CPointer(dtype)
-    sig = ret(optr, dtype)
-
-    def codegen(cgctx, builder, sig, args):
-        optr_val, _ = args
-        ret_llty = cgctx.get_value_type(sig.return_type)  # T* type
-        return builder.bitcast(optr_val, ret_llty)  # T*
-
-    return sig, codegen
 
 
 def random_array(size, dtype, max_value=None) -> np.typing.NDArray:
