@@ -10,7 +10,7 @@
 
 #include <cub/detail/choose_offset.cuh>
 #include <cub/detail/launcher/cuda_driver.cuh>
-#include <cub/detail/ptx-json-parser.h>
+#include <cub/detail/ptx-json-parser.cuh>
 #include <cub/device/dispatch/dispatch_transform.cuh>
 #include <cub/device/dispatch/tuning/tuning_transform.cuh>
 #include <cub/util_arch.cuh>
@@ -120,14 +120,15 @@ get_kernel_name(cccl_iterator_t input1_it, cccl_iterator_t input2_it, cccl_itera
 
 namespace cdt = cub::detail::transform;
 
-template <typename AgentPolicy>
-struct runtime_tuning_policy_variant
+struct runtime_tuning_policy
 {
-  using max_policy = runtime_tuning_policy_variant;
+  using max_policy = runtime_tuning_policy;
 
   cdt::Algorithm algorithm;
   int min_bif;
-  AgentPolicy algo_policy;
+  cdt::RuntimeTransformAgentPrefetchPolicy prefetch_policy;
+  cdt::RuntimeTransformAgentVectorizedPolicy vectorized_policy;
+  cdt::RuntimeTransformAgentAsyncPolicy async_policy;
 
   cdt::Algorithm Algorithm() const
   {
@@ -139,36 +140,27 @@ struct runtime_tuning_policy_variant
     return min_bif;
   }
 
-  AgentPolicy AlgorithmPolicy() const
+  auto PrefetchPolicy() const
   {
-    return algo_policy;
+    return prefetch_policy;
+  }
+
+  auto VectorizedPolicy() const
+  {
+    return vectorized_policy;
+  }
+
+  auto AsyncPolicy() const
+  {
+    return async_policy;
   }
 
   template <typename F>
   cudaError_t Invoke([[maybe_unused]] int device_ptx_version, F& op)
   {
-    return op.template Invoke<runtime_tuning_policy_variant>(*this);
+    return op.template Invoke<runtime_tuning_policy>(*this);
   }
 };
-
-using runtime_tuning_policy =
-  std::variant<runtime_tuning_policy_variant<cdt::RuntimeTransformAgentPrefetchPolicy>,
-               runtime_tuning_policy_variant<cdt::RuntimeTransformAgentVectorizedPolicy>,
-               runtime_tuning_policy_variant<cdt::RuntimeTransformAgentAsyncPolicy>>;
-
-using algo_policy_variant =
-  std::variant<cdt::RuntimeTransformAgentPrefetchPolicy,
-               cdt::RuntimeTransformAgentVectorizedPolicy,
-               cdt::RuntimeTransformAgentAsyncPolicy>;
-
-runtime_tuning_policy* make_runtime_tuning_policy(cdt::Algorithm algorithm, int min_bif, algo_policy_variant algo_policy)
-{
-  return new auto(std::visit(
-    [&](auto policy) -> runtime_tuning_policy {
-      return runtime_tuning_policy_variant{algorithm, min_bif, policy};
-    },
-    algo_policy));
-}
 
 struct cache
 {
@@ -297,7 +289,7 @@ struct __align__({3}) output_storage_t {{
 {6}
 using device_transform_policy = {7}::max_policy;
 
-#include <cub/detail/ptx-json/json.h>
+#include <cub/detail/ptx-json/json.cuh>
 __device__ consteval auto& policy_generator() {{
   return ptx_json::id<ptx_json::string("device_transform_policy")>()
     = cub::detail::transform::TransformPolicyWrapper<device_transform_policy::ActivePolicy>::EncodedPolicy();
@@ -368,34 +360,20 @@ __device__ consteval auto& policy_generator() {{
     nlohmann::json runtime_policy =
       cub::detail::ptx_json::parse("device_transform_policy", {result.data.get(), result.size});
 
-    auto algorithm = static_cast<transform::cdt::Algorithm>(runtime_policy["algorithm"].get<int>());
-    auto min_bif   = static_cast<int>(runtime_policy["min_bif"].get<int>());
-
-    auto transform_policy = [&]() -> transform::algo_policy_variant {
-      switch (algorithm)
-      {
-        case transform::cdt::Algorithm::prefetch:
-          return transform::cdt::RuntimeTransformAgentPrefetchPolicy::from_json(runtime_policy, "algo_policy");
-        case transform::cdt::Algorithm::vectorized:
-          return transform::cdt::RuntimeTransformAgentVectorizedPolicy::from_json(runtime_policy, "algo_policy");
-        case transform::cdt::Algorithm::memcpy_async:
-          [[fallthrough]];
-        case transform::cdt::Algorithm::ublkcp:
-          return transform::cdt::RuntimeTransformAgentAsyncPolicy::from_json(runtime_policy, "algo_policy");
-        default:
-          _CCCL_UNREACHABLE();
-          // Appease NVCC's #940-D on Windows
-          ::std::abort();
-          return {};
-      }
-    }();
+    const auto algorithm = static_cast<transform::cdt::Algorithm>(runtime_policy["algorithm"].get<int>());
+    const auto min_bif   = static_cast<int>(runtime_policy["min_bif"].get<int>());
 
     build_ptr->loaded_bytes_per_iteration = static_cast<int>(input_it.value_type.size);
     build_ptr->cc                         = cc;
     build_ptr->cubin                      = (void*) result.data.release();
     build_ptr->cubin_size                 = result.size;
-    build_ptr->runtime_policy             = transform::make_runtime_tuning_policy(algorithm, min_bif, transform_policy);
-    build_ptr->cache                      = new transform::cache();
+    build_ptr->runtime_policy             = new transform::runtime_tuning_policy{
+      algorithm,
+      min_bif,
+      transform::cdt::RuntimeTransformAgentPrefetchPolicy::from_json(runtime_policy, "prefetch_policy"),
+      transform::cdt::RuntimeTransformAgentVectorizedPolicy::from_json(runtime_policy, "vectorized_policy"),
+      transform::cdt::RuntimeTransformAgentAsyncPolicy::from_json(runtime_policy, "async_policy")};
+    build_ptr->cache = new transform::cache();
   }
   catch (const std::exception& exc)
   {
@@ -424,29 +402,25 @@ CUresult cccl_device_unary_transform(
 
     CUdevice cu_device;
     check(cuCtxGetDevice(&cu_device));
-    error = static_cast<CUresult>(std::visit(
-      [&]<typename Policy>(Policy policy) {
-        return transform::cdt::dispatch_t<
-          transform::cdt::requires_stable_address::no, // TODO implement yes
-          OffsetT,
-          ::cuda::std::tuple<indirect_iterator_t>,
-          indirect_iterator_t,
-          transform::cdt::always_true_predicate,
-          indirect_arg_t,
-          Policy,
-          transform::transform_kernel_source<1>,
-          cub::detail::CudaDriverLauncherFactory>::
-          dispatch(d_in,
-                   d_out,
-                   num_items,
-                   {},
-                   op,
-                   stream,
-                   {build, {{{d_in.value_type.size, d_in.value_type.alignment}}}},
-                   cub::detail::CudaDriverLauncherFactory{cu_device, build.cc},
-                   policy);
-      },
-      *reinterpret_cast<transform::runtime_tuning_policy*>(build.runtime_policy)));
+    error = static_cast<CUresult>(
+      transform::cdt::dispatch_t<transform::cdt::requires_stable_address::no, // TODO implement yes
+                                 OffsetT,
+                                 ::cuda::std::tuple<indirect_iterator_t>,
+                                 indirect_iterator_t,
+                                 transform::cdt::always_true_predicate,
+                                 indirect_arg_t,
+                                 transform::runtime_tuning_policy,
+                                 transform::transform_kernel_source<1>,
+                                 cub::detail::CudaDriverLauncherFactory>::
+        dispatch(d_in,
+                 d_out,
+                 num_items,
+                 {},
+                 op,
+                 stream,
+                 {build, {{{d_in.value_type.size, d_in.value_type.alignment}}}},
+                 cub::detail::CudaDriverLauncherFactory{cu_device, build.cc},
+                 *reinterpret_cast<transform::runtime_tuning_policy*>(build.runtime_policy)));
   }
   catch (const std::exception& exc)
   {
@@ -524,7 +498,7 @@ struct __align__({5}) output_storage_t {{
 {9}
 using device_transform_policy = {10}::max_policy;
 
-#include <cub/detail/ptx-json/json.h>
+#include <cub/detail/ptx-json/json.cuh>
 __device__ consteval auto& policy_generator() {{
   return ptx_json::id<ptx_json::string("device_transform_policy")>()
     = cub::detail::transform::TransformPolicyWrapper<device_transform_policy::ActivePolicy>::EncodedPolicy();
@@ -596,34 +570,20 @@ __device__ consteval auto& policy_generator() {{
     nlohmann::json runtime_policy =
       cub::detail::ptx_json::parse("device_transform_policy", {result.data.get(), result.size});
 
-    auto algorithm = static_cast<transform::cdt::Algorithm>(runtime_policy["algorithm"].get<int>());
-    auto min_bif   = static_cast<int>(runtime_policy["min_bif"].get<int>());
-
-    auto transform_policy = [&]() -> transform::algo_policy_variant {
-      switch (algorithm)
-      {
-        case transform::cdt::Algorithm::prefetch:
-          return transform::cdt::RuntimeTransformAgentPrefetchPolicy::from_json(runtime_policy, "algo_policy");
-        case transform::cdt::Algorithm::vectorized:
-          return transform::cdt::RuntimeTransformAgentVectorizedPolicy::from_json(runtime_policy, "algo_policy");
-        case transform::cdt::Algorithm::memcpy_async:
-          [[fallthrough]];
-        case transform::cdt::Algorithm::ublkcp:
-          return transform::cdt::RuntimeTransformAgentAsyncPolicy::from_json(runtime_policy, "algo_policy");
-        default:
-          _CCCL_UNREACHABLE();
-          // Appease NVCC's #940-D on Windows
-          ::std::abort();
-          return {};
-      }
-    }();
+    const auto algorithm = static_cast<transform::cdt::Algorithm>(runtime_policy["algorithm"].get<int>());
+    const auto min_bif   = static_cast<int>(runtime_policy["min_bif"].get<int>());
 
     build_ptr->loaded_bytes_per_iteration = static_cast<int>((input1_it.value_type.size + input2_it.value_type.size));
     build_ptr->cc                         = cc;
     build_ptr->cubin                      = (void*) result.data.release();
     build_ptr->cubin_size                 = result.size;
-    build_ptr->runtime_policy             = transform::make_runtime_tuning_policy(algorithm, min_bif, transform_policy);
-    build_ptr->cache                      = new transform::cache();
+    build_ptr->runtime_policy             = new transform::runtime_tuning_policy{
+      algorithm,
+      min_bif,
+      transform::cdt::RuntimeTransformAgentPrefetchPolicy::from_json(runtime_policy, "prefetch_policy"),
+      transform::cdt::RuntimeTransformAgentVectorizedPolicy::from_json(runtime_policy, "vectorized_policy"),
+      transform::cdt::RuntimeTransformAgentAsyncPolicy::from_json(runtime_policy, "async_policy")};
+    build_ptr->cache = new transform::cache();
   }
   catch (const std::exception& exc)
   {
@@ -654,32 +614,27 @@ CUresult cccl_device_binary_transform(
     CUdevice cu_device;
     check(cuCtxGetDevice(&cu_device));
 
-    error = static_cast<CUresult>(std::visit(
-      [&]<typename Policy>(Policy policy) {
-        return transform::cdt::dispatch_t<
-          transform::cdt::requires_stable_address::no, // TODO implement yes
-          OffsetT,
-          ::cuda::std::tuple<indirect_iterator_t, indirect_iterator_t>,
-          indirect_iterator_t,
-          transform::cdt::always_true_predicate,
-          indirect_arg_t,
-          Policy,
-          transform::transform_kernel_source<2>,
-          cub::detail::CudaDriverLauncherFactory>::
-          dispatch(
-            ::cuda::std::make_tuple<indirect_iterator_t, indirect_iterator_t>(d_in1, d_in2),
-            d_out,
-            num_items,
-            {},
-            op,
-            stream,
-            {build,
-             {{{d_in1.value_type.size, d_in1.value_type.alignment},
-               {d_in2.value_type.size, d_in2.value_type.alignment}}}},
-            cub::detail::CudaDriverLauncherFactory{cu_device, build.cc},
-            policy);
-      },
-      *reinterpret_cast<transform::runtime_tuning_policy*>(build.runtime_policy)));
+    error = static_cast<CUresult>(
+      transform::cdt::dispatch_t<transform::cdt::requires_stable_address::no, // TODO implement yes
+                                 OffsetT,
+                                 ::cuda::std::tuple<indirect_iterator_t, indirect_iterator_t>,
+                                 indirect_iterator_t,
+                                 transform::cdt::always_true_predicate,
+                                 indirect_arg_t,
+                                 transform::runtime_tuning_policy,
+                                 transform::transform_kernel_source<2>,
+                                 cub::detail::CudaDriverLauncherFactory>::
+        dispatch(
+          ::cuda::std::make_tuple<indirect_iterator_t, indirect_iterator_t>(d_in1, d_in2),
+          d_out,
+          num_items,
+          {},
+          op,
+          stream,
+          {build,
+           {{{d_in1.value_type.size, d_in1.value_type.alignment}, {d_in2.value_type.size, d_in2.value_type.alignment}}}},
+          cub::detail::CudaDriverLauncherFactory{cu_device, build.cc},
+          *reinterpret_cast<transform::runtime_tuning_policy*>(build.runtime_policy)));
   }
   catch (const std::exception& exc)
   {

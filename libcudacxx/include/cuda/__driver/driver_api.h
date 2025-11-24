@@ -339,7 +339,8 @@ _CCCL_HOST_API void __memsetAsync(void* __dst, _Tp __value, size_t __count, ::CU
   }
 }
 
-_CCCL_HOST_API inline ::cudaError_t __mempoolCreateNoThrow(::CUmemoryPool* __pool, ::CUmemPoolProps* __props)
+[[nodiscard]] _CCCL_HOST_API inline ::cudaError_t
+__mempoolCreateNoThrow(::CUmemoryPool* __pool, ::CUmemPoolProps* __props)
 {
   static auto __driver_fn = _CCCLRT_GET_DRIVER_FUNCTION(cuMemPoolCreate);
   return static_cast<::cudaError_t>(__driver_fn(__pool, __props));
@@ -412,7 +413,15 @@ __getDefaultMemPool(CUmemLocation __location, CUmemAllocationType_enum __allocat
     __driver_fn, "Failed to get default memory pool", &__result, &__location, __allocation_type);
   return __result;
 }
-#  endif // _CCCL_CTK_AT_LEAST(13, 0)
+#  else // ^^^ _CCCL_CTK_AT_LEAST(13, 0) ^^^ / vvv _CCCL_CTK_BELOW(13, 0) vvv
+_CCCL_HOST_API inline ::CUmemoryPool __deviceGetDefaultMemPool(::CUdevice __device)
+{
+  static auto __driver_fn = _CCCLRT_GET_DRIVER_FUNCTION(cuDeviceGetDefaultMemPool);
+  ::CUmemoryPool __result = nullptr;
+  ::cuda::__driver::__call_driver_fn(__driver_fn, "Failed to get default memory pool", &__result, __device);
+  return __result;
+}
+#  endif // ^^^ _CCCL_CTK_BELOW(13, 0) ^^^
 
 _CCCL_HOST_API inline ::CUdeviceptr __mallocManaged(::cuda::std::size_t __bytes, unsigned int __flags)
 {
@@ -468,6 +477,10 @@ template <::CUpointer_attribute _Attr>
   {
     return int{};
   }
+  else if constexpr (_Attr == ::CU_POINTER_ATTRIBUTE_MEMPOOL_HANDLE)
+  {
+    return ::CUmemoryPool{};
+  }
   else
   {
     static_assert(::cuda::std::__always_false_v<decltype(_Attr)>, "not implemented attribute");
@@ -495,6 +508,15 @@ __pointerGetAttributeNoThrow(__pointer_attribute_value_type_t<_Attr>& __result, 
       static_cast<::cudaError_t>(__driver_fn((void*) &__result, _Attr, reinterpret_cast<::CUdeviceptr>(__ptr)));
   }
   return __status;
+}
+
+template <::cuda::std::size_t _Np>
+[[nodiscard]] _CCCL_HOST_API inline ::cudaError_t
+__pointerGetAttributesNoThrow(::CUpointer_attribute (&__attrs)[_Np], void* (&__results)[_Np], const void* __ptr)
+{
+  static const auto __driver_fn = _CCCLRT_GET_DRIVER_FUNCTION(cuPointerGetAttributes);
+  return static_cast<::cudaError_t>(
+    __driver_fn(static_cast<unsigned>(_Np), __attrs, __results, reinterpret_cast<::CUdeviceptr>(__ptr)));
 }
 
 // Stream management
@@ -866,6 +888,36 @@ __graphKernelNodeSetAttribute(::CUgraphNode __node, ::CUkernelNodeAttrID __id, c
   return __id;
 }
 #  endif // _CCCL_CTK_AT_LEAST(13, 0)
+
+[[nodiscard]] _CCCL_HOST_API inline ::cudaError_t __tensorMapEncodeTiledNoThrow(
+  ::CUtensorMap& __tensorMap,
+  ::CUtensorMapDataType __tensorDataType,
+  ::cuda::std::uint32_t __tensorRank,
+  void* __globalAddress,
+  const ::cuda::std::uint64_t* __globalDim,
+  const ::cuda::std::uint64_t* __globalStrides,
+  const ::cuda::std::uint32_t* __boxDim,
+  const ::cuda::std::uint32_t* __elementStrides,
+  ::CUtensorMapInterleave __interleave,
+  ::CUtensorMapSwizzle __swizzle,
+  ::CUtensorMapL2promotion __l2Promotion,
+  ::CUtensorMapFloatOOBfill __oobFill) noexcept
+{
+  static auto __driver_fn = _CCCLRT_GET_DRIVER_FUNCTION(cuTensorMapEncodeTiled);
+  return static_cast<::cudaError_t>(__driver_fn(
+    &__tensorMap,
+    __tensorDataType,
+    __tensorRank,
+    __globalAddress,
+    __globalDim,
+    __globalStrides,
+    __boxDim,
+    __elementStrides,
+    __interleave,
+    __swizzle,
+    __l2Promotion,
+    __oobFill));
+}
 
 #  undef _CCCLRT_GET_DRIVER_FUNCTION
 #  undef _CCCLRT_GET_DRIVER_FUNCTION_VERSIONED

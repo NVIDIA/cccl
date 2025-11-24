@@ -16,3 +16,4 @@ CMakeUserPresets.json
 *.pyc
 __pycache__
 *.pyd
+wheelhouse/

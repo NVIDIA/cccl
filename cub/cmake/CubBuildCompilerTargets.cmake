@@ -1,36 +1,49 @@
-# This file defines the `cub_build_compiler_targets()` function, which
-# creates the following interface targets:
+# This file provides the following function which defines the following targets:
 #
 # cub.compiler_interface
-# - Interface target linked into all targets in the CUB developer build.
-#   This should not be directly used; it is only used to construct the
-#   per-dialect targets below.
-#
-# cub.compiler_interface_cppXX
-# - Interface targets providing dialect-specific compiler flags. These should
-#   be linked into the developer build targets, as they include both
-#   cub.compiler_interface and cccl.compiler_interface_cppXX.
+# - Interface target that includes all compiler settings for cub tests, etc.
 
 function(cub_build_compiler_targets)
+  find_package(
+    CUB
+    REQUIRED
+    CONFIG
+    NO_DEFAULT_PATH # Only check the explicit path in HINTS:
+    HINTS "${CCCL_SOURCE_DIR}/lib/cmake/cub/"
+  )
+
+  find_package(
+    Thrust
+    ${CUB_VERSION}
+    EXACT
+    CONFIG
+    REQUIRED
+    NO_DEFAULT_PATH # Only check the explicit path in HINTS:
+    HINTS "${CCCL_SOURCE_DIR}/lib/cmake/thrust/"
+  )
+
+  thrust_set_CUB_target(CUB::CUB)
+  thrust_create_target(cub.thrust HOST CPP DEVICE CUDA)
+
   set(cuda_compile_options)
   set(cxx_compile_options)
   set(cxx_compile_definitions)
 
   cccl_build_compiler_interface(
-    cub.compiler_interface
+    cub.compiler_flags
     "${cuda_compile_options}"
     "${cxx_compile_options}"
     "${cxx_compile_definitions}"
   )
 
-  foreach (dialect IN LISTS CCCL_KNOWN_CXX_DIALECTS)
-    add_library(cub.compiler_interface_cpp${dialect} INTERFACE)
-    target_link_libraries(
-      cub.compiler_interface_cpp${dialect}
-      INTERFACE
-        # order matters here, we need the project options to override the cccl options.
-        cccl.compiler_interface_cpp${dialect}
-        cub.compiler_interface
-    )
-  endforeach()
+  add_library(cub.compiler_interface INTERFACE)
+  target_link_libraries(
+    cub.compiler_interface
+    INTERFACE
+      # order matters here, we need the project options to override the cccl options.
+      cccl.compiler_interface
+      cub.compiler_flags
+      CUB::CUB
+      cub.thrust
+  )
 endfunction()

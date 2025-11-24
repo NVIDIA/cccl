@@ -51,11 +51,11 @@ set_target_properties(cccl.c.parallel PROPERTIES CUDA_RUNTIME_LIBRARY STATIC)
 target_link_libraries(
   cccl.c.parallel
   PRIVATE
+    cccl.compiler_interface
     CUDA::cudart_static
     CUDA::nvrtc
     CUDA::nvJitLink
     CUDA::cuda_driver
-    cccl.compiler_interface_cpp20
     cccl.c.parallel.jit_template
     CUB::CUB
     Thrust::Thrust

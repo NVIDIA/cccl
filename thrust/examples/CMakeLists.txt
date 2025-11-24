@@ -49,14 +49,6 @@ if (THRUST_ENABLE_EXAMPLE_FILECHECK)
   endif()
 endif()
 
-# Create meta targets that build all examples for a single configuration:
-foreach (thrust_target IN LISTS THRUST_TARGETS)
-  thrust_get_target_property(config_prefix ${thrust_target} PREFIX)
-  set(config_meta_target ${config_prefix}.examples)
-  add_custom_target(${config_meta_target})
-  add_dependencies(${config_prefix}.all ${config_meta_target})
-endforeach()
-
 ## thrust_add_example
 #
 # Add an example executable and register it with ctest.
@@ -91,18 +83,12 @@ function(
   set(example_target ${config_prefix}.example.${example_name})
   set(${target_name_var} ${example_target} PARENT_SCOPE)
 
-  # Related target names:
-  set(config_meta_target ${config_prefix}.examples)
-  set(example_meta_target thrust.all.example.${example_name})
-
-  add_executable(${example_target} "${real_example_src}")
-  cccl_configure_target(${example_target} DIALECT ${config_dialect})
+  cccl_add_executable(${example_target} SOURCES "${real_example_src}")
   target_link_libraries(${example_target} PRIVATE ${thrust_target})
   target_include_directories(
     ${example_target}
     PRIVATE "${Thrust_SOURCE_DIR}/examples"
   )
-  thrust_clone_target_properties(${example_target} ${thrust_target})
 
   if ("CUDA" STREQUAL "${config_device}")
     thrust_configure_cuda_target(${example_target} RDC ${THRUST_FORCE_RDC})
@@ -120,22 +106,10 @@ function(
       "$<${gx_cxx_msvc}:SHELL:/FI include/host_device.h>"
       "$<${gx_cxx_not_msvc}:SHELL:-include include/host_device.h>"
   )
-
-  # Add to the active configuration's meta target
-  add_dependencies(${config_meta_target} ${example_target})
-
-  # Meta target that builds examples with this name for all configurations:
-  if (NOT TARGET ${example_meta_target})
-    add_custom_target(${example_meta_target})
-  endif()
-  add_dependencies(${example_meta_target} ${example_target})
-
-  if (NOT "Clang" STREQUAL "${CMAKE_CUDA_COMPILER_ID}")
-    target_compile_definitions(
-      ${example_target}
-      PRIVATE THRUST_EXAMPLE_DEVICE_SIDE
-    )
-  endif()
+  target_compile_definitions(
+    ${example_target}
+    PRIVATE $<$<COMPILE_LANG_AND_ID:CUDA,NVIDIA>:THRUST_EXAMPLE_DEVICE_SIDE>
+  )
 
   # Get the name of FileCheck input by stripping out the config name.
   # (e.g. "thrust.cpp.cuda.cpp14.example.xxx" -> "thrust.example.xxx.filecheck")

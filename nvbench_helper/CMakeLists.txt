@@ -2,6 +2,8 @@ cmake_minimum_required(VERSION 3.21)
 
 project(nvbench_helper LANGUAGES CXX CUDA)
 
+include(CMakeDependentOption)
+
 find_package(
   CCCL
   CONFIG
@@ -9,6 +11,8 @@ find_package(
   NO_DEFAULT_PATH # Only check the explicit HINTS below:
   HINTS "${CCCL_SOURCE_DIR}/lib/cmake/cccl/"
 )
+
+find_package(CUDAToolkit REQUIRED)
 
 cccl_get_catch2()
 cccl_get_nvbench()
@@ -24,22 +28,24 @@ target_link_libraries(
     Thrust::Thrust
     nvbench::nvbench
   PRIVATE #
+    cccl.compiler_interface
     CUDA::curand
-    cccl.compiler_interface_cpp17
 )
 
 target_include_directories(
   cccl.nvbench_helper
   PUBLIC "${CMAKE_CURRENT_LIST_DIR}/nvbench_helper"
 )
-set_target_properties(
-  cccl.nvbench_helper
-  PROPERTIES #
-    CUDA_STANDARD 17
-    CXX_STANDARD 17
-)
 
-option(nvbench_helper_ENABLE_TESTING "Enable tests for nvbench_helper" OFF)
+# Don't enable tests when pulled in as an internal dependency.
+# Require CCCL_ENABLE_NVBENCH_HELPER to be explicitly enabled.
+cmake_dependent_option(
+  nvbench_helper_ENABLE_TESTING
+  "Enable tests for nvbench_helper"
+  ON
+  CCCL_ENABLE_NVBENCH_HELPER
+  OFF
+)
 mark_as_advanced(nvbench_helper_ENABLE_TESTING)
 
 if (nvbench_helper_ENABLE_TESTING)
@@ -62,11 +68,16 @@ if (nvbench_helper_ENABLE_TESTING)
     target_link_libraries(
       ${nvbench_helper_test_target}
       PRIVATE
+        cccl.compiler_interface
         cccl.nvbench_helper
         cccl.nvbench_helper.test.Thrust.cpp.${device_system}
         Catch2::Catch2WithMain
         Boost::math
-        cccl.compiler_interface_cpp17
+    )
+
+    add_test(
+      NAME ${nvbench_helper_test_target}
+      COMMAND ${nvbench_helper_test_target}
     )
   endfunction()
 
