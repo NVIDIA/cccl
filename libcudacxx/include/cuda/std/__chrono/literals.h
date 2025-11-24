@@ -37,14 +37,6 @@ _CCCL_BEGIN_NV_DIAG_SUPPRESS(cuda_demote_unsupported_floating_point)
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
-// GCC 5 and 6 warn (and then error) on us using the standard reserved UDL names,
-// but have no way of disabling that. Use the system_header pragma on those GCC versions
-// for the remainder of this file, even if it has been requested to disable the pragma
-// earlier.
-#if _CCCL_COMPILER(GCC, >=, 5) && _CCCL_COMPILER(GCC, <, 7)
-#  pragma GCC system_header
-#endif
-
 _CCCL_DIAG_PUSH
 _CCCL_DIAG_SUPPRESS_GCC("-Wliteral-suffix")
 _CCCL_DIAG_SUPPRESS_CLANG("-Wuser-defined-literals")
@@ -57,62 +49,62 @@ inline namespace literals
 {
 inline namespace chrono_literals
 {
-_CCCL_API constexpr chrono::hours operator""h(unsigned long long __h)
+_CCCL_API constexpr chrono::hours operator""h(unsigned long long __h) noexcept
 {
   return chrono::hours(static_cast<chrono::hours::rep>(__h));
 }
 
-_CCCL_API constexpr chrono::duration<double, ratio<3600, 1>> operator""h(long double __h)
+_CCCL_API constexpr chrono::duration<double, ratio<3600, 1>> operator""h(long double __h) noexcept
 {
   return chrono::duration<double, ratio<3600, 1>>(__h);
 }
 
-_CCCL_API constexpr chrono::minutes operator""min(unsigned long long __m)
+_CCCL_API constexpr chrono::minutes operator""min(unsigned long long __m) noexcept
 {
   return chrono::minutes(static_cast<chrono::minutes::rep>(__m));
 }
 
-_CCCL_API constexpr chrono::duration<double, ratio<60, 1>> operator""min(long double __m)
+_CCCL_API constexpr chrono::duration<double, ratio<60, 1>> operator""min(long double __m) noexcept
 {
   return chrono::duration<double, ratio<60, 1>>(__m);
 }
 
-_CCCL_API constexpr chrono::seconds operator""s(unsigned long long __s)
+_CCCL_API constexpr chrono::seconds operator""s(unsigned long long __s) noexcept
 {
   return chrono::seconds(static_cast<chrono::seconds::rep>(__s));
 }
 
-_CCCL_API constexpr chrono::duration<double> operator""s(long double __s)
+_CCCL_API constexpr chrono::duration<double> operator""s(long double __s) noexcept
 {
   return chrono::duration<double>(__s);
 }
 
-_CCCL_API constexpr chrono::milliseconds operator""ms(unsigned long long __ms)
+_CCCL_API constexpr chrono::milliseconds operator""ms(unsigned long long __ms) noexcept
 {
   return chrono::milliseconds(static_cast<chrono::milliseconds::rep>(__ms));
 }
 
-_CCCL_API constexpr chrono::duration<double, milli> operator""ms(long double __ms)
+_CCCL_API constexpr chrono::duration<double, milli> operator""ms(long double __ms) noexcept
 {
   return chrono::duration<double, milli>(__ms);
 }
 
-_CCCL_API constexpr chrono::microseconds operator""us(unsigned long long __us)
+_CCCL_API constexpr chrono::microseconds operator""us(unsigned long long __us) noexcept
 {
   return chrono::microseconds(static_cast<chrono::microseconds::rep>(__us));
 }
 
-_CCCL_API constexpr chrono::duration<double, micro> operator""us(long double __us)
+_CCCL_API constexpr chrono::duration<double, micro> operator""us(long double __us) noexcept
 {
   return chrono::duration<double, micro>(__us);
 }
 
-_CCCL_API constexpr chrono::nanoseconds operator""ns(unsigned long long __ns)
+_CCCL_API constexpr chrono::nanoseconds operator""ns(unsigned long long __ns) noexcept
 {
   return chrono::nanoseconds(static_cast<chrono::nanoseconds::rep>(__ns));
 }
 
-_CCCL_API constexpr chrono::duration<double, nano> operator""ns(long double __ns)
+_CCCL_API constexpr chrono::duration<double, nano> operator""ns(long double __ns) noexcept
 {
   return chrono::duration<double, nano>(__ns);
 }
