@@ -44,6 +44,15 @@ select_params = [
 ]
 
 
+@pytest.fixture(scope="function", autouse=True)
+def disable_sass_check(monkeypatch):
+    monkeypatch.setattr(
+        cuda.compute._cccl_interop,
+        "_check_sass",
+        False,
+    )
+
+
 def _host_select(h_in: np.ndarray, cond):
     # Vectorize condition to produce boolean mask
     mask = np.vectorize(cond, otypes=[np.uint8])(h_in).astype(bool)
@@ -137,13 +146,6 @@ def test_select_all_pass(dtype):
 
 @pytest.mark.parametrize("dtype", DTYPE_LIST)
 def test_select_none_pass(monkeypatch, dtype):
-    # Skip SASS check for this test.
-    monkeypatch.setattr(
-        cuda.compute._cccl_interop,
-        "_check_sass",
-        False,
-    )
-
     num_items = 1000
     h_in = random_array(num_items, dtype, max_value=100)
 
@@ -368,12 +370,6 @@ def test_select_with_struct(dtype):
 
 def test_select_with_zip_iterator(monkeypatch):
     """Test select with ZipIterator input and output"""
-    # Skip SASS check for this test.
-    monkeypatch.setattr(
-        cuda.compute._cccl_interop,
-        "_check_sass",
-        False,
-    )
 
     dtype = np.int32
     num_items = 10_000
