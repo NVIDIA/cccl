@@ -110,17 +110,18 @@ Here are some important gotchas to be aware of:
      def func(x):
         return x + i  # i is captured from global scope
 
-  Modifications to the global variable ``i``may not be reflected in the function.
+  Modifications to the global variable ``i`` may not be reflected in the function
+  when the function is called multiple times.
 
   To avoid this, capture the variable in a closure:
 
   .. code-block:: python
 
-     i = 1
      def make_func(i):
         def func(x):
               return x + i  # i is captured as a closure variable
         return func
+
 
 Example Collections
 -------------------
