@@ -935,6 +935,7 @@ public:
         p.scan_policy,
         p.downsweep_policy,
         launcher_factory);
+      return __init_pass_config(p);
     }
 
     CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE cudaError_t __init_pass_config(
