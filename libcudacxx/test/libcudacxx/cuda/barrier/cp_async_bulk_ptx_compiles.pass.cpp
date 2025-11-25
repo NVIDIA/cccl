@@ -15,14 +15,17 @@
 // <cuda/barrier>
 
 #include <cuda/barrier>
+#include <cuda/ptx>
 
 #include "test_macros.h" // TEST_NV_DIAG_SUPPRESS
+
+struct CUtensorMap_st;
+typedef struct CUtensorMap_st CUtensorMap;
 
 // Suppress warning about barrier in shared memory
 TEST_NV_DIAG_SUPPRESS(static_var_with_dynamic_init)
 
 using barrier = cuda::barrier<cuda::thread_scope_block>;
-namespace cde = cuda::device::experimental;
 
 // Kernels below are intended to be compiled, but not run. This is to check if
 // all generated PTX is valid.
@@ -41,17 +44,24 @@ __global__ void test_bulk_tensor(CUtensorMap* map)
   }
   __syncthreads();
 
-  cde::cp_async_bulk_tensor_1d_global_to_shared(&smem, map, 0, bar);
-  cde::cp_async_bulk_tensor_2d_global_to_shared(&smem, map, 0, 0, bar);
-  cde::cp_async_bulk_tensor_3d_global_to_shared(&smem, map, 0, 0, 0, bar);
-  cde::cp_async_bulk_tensor_4d_global_to_shared(&smem, map, 0, 0, 0, 0, bar);
-  cde::cp_async_bulk_tensor_5d_global_to_shared(&smem, map, 0, 0, 0, 0, 0, bar);
+  const int coords_1d[1]{};
+  const int coords_2d[2]{};
+  const int coords_3d[3]{};
+  const int coords_4d[4]{};
+  const int coords_5d[5]{};
 
-  cde::cp_async_bulk_tensor_1d_shared_to_global(map, 0, &smem);
-  cde::cp_async_bulk_tensor_2d_shared_to_global(map, 0, 0, &smem);
-  cde::cp_async_bulk_tensor_3d_shared_to_global(map, 0, 0, 0, &smem);
-  cde::cp_async_bulk_tensor_4d_shared_to_global(map, 0, 0, 0, 0, &smem);
-  cde::cp_async_bulk_tensor_5d_shared_to_global(map, 0, 0, 0, 0, 0, &smem);
+  auto native_bar = cuda::device::barrier_native_handle(bar);
+  cuda::ptx::cp_async_bulk_tensor(cuda::ptx::space_cluster, cuda::ptx::space_global, &smem, map, coords_1d, native_bar);
+  cuda::ptx::cp_async_bulk_tensor(cuda::ptx::space_cluster, cuda::ptx::space_global, &smem, map, coords_2d, native_bar);
+  cuda::ptx::cp_async_bulk_tensor(cuda::ptx::space_cluster, cuda::ptx::space_global, &smem, map, coords_3d, native_bar);
+  cuda::ptx::cp_async_bulk_tensor(cuda::ptx::space_cluster, cuda::ptx::space_global, &smem, map, coords_4d, native_bar);
+  cuda::ptx::cp_async_bulk_tensor(cuda::ptx::space_cluster, cuda::ptx::space_global, &smem, map, coords_5d, native_bar);
+
+  cuda::ptx::cp_async_bulk_tensor(cuda::ptx::space_global, cuda::ptx::space_shared, map, coords_1d, &smem);
+  cuda::ptx::cp_async_bulk_tensor(cuda::ptx::space_global, cuda::ptx::space_shared, map, coords_2d, &smem);
+  cuda::ptx::cp_async_bulk_tensor(cuda::ptx::space_global, cuda::ptx::space_shared, map, coords_3d, &smem);
+  cuda::ptx::cp_async_bulk_tensor(cuda::ptx::space_global, cuda::ptx::space_shared, map, coords_4d, &smem);
+  cuda::ptx::cp_async_bulk_tensor(cuda::ptx::space_global, cuda::ptx::space_shared, map, coords_5d, &smem);
 }
 
 __global__ void test_bulk(void* gmem)
@@ -65,25 +75,26 @@ __global__ void test_bulk(void* gmem)
   }
   __syncthreads();
 
-  cde::cp_async_bulk_global_to_shared(&smem, gmem, 1024, bar);
-  cde::cp_async_bulk_shared_to_global(gmem, &smem, 1024);
+  cuda::ptx::cp_async_bulk(
+    cuda::ptx::space_cluster, cuda::ptx::space_global, &smem, gmem, 1024, cuda::device::barrier_native_handle(bar));
+  cuda::ptx::cp_async_bulk(cuda::ptx::space_global, cuda::ptx::space_shared, gmem, &smem, 1024);
 }
 
 __global__ void test_fences_async_group(void*)
 {
-  cde::fence_proxy_async_shared_cta();
+  cuda::ptx::fence_proxy_async(::cuda::ptx::space_shared);
 
-  cde::cp_async_bulk_commit_group();
+  cuda::ptx::cp_async_bulk_commit_group();
   // Wait for up to 8 groups
-  cde::cp_async_bulk_wait_group_read<0>();
-  cde::cp_async_bulk_wait_group_read<1>();
-  cde::cp_async_bulk_wait_group_read<2>();
-  cde::cp_async_bulk_wait_group_read<3>();
-  cde::cp_async_bulk_wait_group_read<4>();
-  cde::cp_async_bulk_wait_group_read<5>();
-  cde::cp_async_bulk_wait_group_read<6>();
-  cde::cp_async_bulk_wait_group_read<7>();
-  cde::cp_async_bulk_wait_group_read<8>();
+  cuda::ptx::cp_async_bulk_wait_group_read<0>({});
+  cuda::ptx::cp_async_bulk_wait_group_read<1>({});
+  cuda::ptx::cp_async_bulk_wait_group_read<2>({});
+  cuda::ptx::cp_async_bulk_wait_group_read<3>({});
+  cuda::ptx::cp_async_bulk_wait_group_read<4>({});
+  cuda::ptx::cp_async_bulk_wait_group_read<5>({});
+  cuda::ptx::cp_async_bulk_wait_group_read<6>({});
+  cuda::ptx::cp_async_bulk_wait_group_read<7>({});
+  cuda::ptx::cp_async_bulk_wait_group_read<8>({});
 }
 
 int main(int, char**)

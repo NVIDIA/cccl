@@ -18,8 +18,6 @@
 #include <cuda/std/array>
 #include <cuda/std/utility> // cuda::std::move
 
-namespace ptx = cuda::ptx;
-
 #include "test_macros.h" // TEST_NV_DIAG_SUPPRESS
 
 // NVRTC does not support cuda.h (due to import of stdlib.h)
@@ -33,7 +31,6 @@ namespace ptx = cuda::ptx;
 TEST_NV_DIAG_SUPPRESS(static_var_with_dynamic_init)
 
 using barrier = cuda::barrier<cuda::thread_scope_block>;
-namespace cde = cuda::device::experimental;
 
 /*
  * This header supports the 1d, 2d, ..., 5d test of the TMA PTX wrappers.
@@ -85,55 +82,34 @@ template <size_t num_dims>
 __device__ inline void cp_tensor_global_to_shared(
   CUtensorMap* tensor_map, cuda::std::array<uint32_t, num_dims> indices, void* smem, barrier& bar)
 {
-  switch (indices.size())
+  int coords[num_dims];
+  for (int i = 0; i < num_dims; ++i)
   {
-    case 1:
-      cde::cp_async_bulk_tensor_1d_global_to_shared(smem, tensor_map, indices[0], bar);
-      break;
-    case 2:
-      cde::cp_async_bulk_tensor_2d_global_to_shared(smem, tensor_map, indices[0], indices[1], bar);
-      break;
-    case 3:
-      cde::cp_async_bulk_tensor_3d_global_to_shared(smem, tensor_map, indices[0], indices[1], indices[2], bar);
-      break;
-    case 4:
-      cde::cp_async_bulk_tensor_4d_global_to_shared(
-        smem, tensor_map, indices[0], indices[1], indices[2], indices[3], bar);
-      break;
-    case 5:
-      cde::cp_async_bulk_tensor_5d_global_to_shared(
-        smem, tensor_map, indices[0], indices[1], indices[2], indices[3], indices[4], bar);
-      break;
-    default:
-      assert(false && "Wrong number of dimensions.");
+    coords[i] = indices[i];
   }
+
+  assert(indices.size() <= 5 && "Wrong number of dimensions.");
+  cuda::ptx::cp_async_bulk_tensor(
+    cuda::ptx::space_cluster,
+    cuda::ptx::space_global,
+    smem,
+    tensor_map,
+    coords,
+    cuda::device::barrier_native_handle(bar));
 }
 
 template <size_t num_dims>
 __device__ inline void
 cp_tensor_shared_to_global(CUtensorMap* tensor_map, cuda::std::array<uint32_t, num_dims> indices, void* smem)
 {
-  switch (indices.size())
+  int coords[num_dims];
+  for (int i = 0; i < num_dims; ++i)
   {
-    case 1:
-      cde::cp_async_bulk_tensor_1d_shared_to_global(tensor_map, indices[0], smem);
-      break;
-    case 2:
-      cde::cp_async_bulk_tensor_2d_shared_to_global(tensor_map, indices[0], indices[1], smem);
-      break;
-    case 3:
-      cde::cp_async_bulk_tensor_3d_shared_to_global(tensor_map, indices[0], indices[1], indices[2], smem);
-      break;
-    case 4:
-      cde::cp_async_bulk_tensor_4d_shared_to_global(tensor_map, indices[0], indices[1], indices[2], indices[3], smem);
-      break;
-    case 5:
-      cde::cp_async_bulk_tensor_5d_shared_to_global(
-        tensor_map, indices[0], indices[1], indices[2], indices[3], indices[4], smem);
-      break;
-    default:
-      assert(false && "Wrong number of dimensions.");
+    coords[i] = indices[i];
   }
+
+  assert(indices.size() <= 5 && "Wrong number of dimensions.");
+  cuda::ptx::cp_async_bulk_tensor(cuda::ptx::space_global, cuda::ptx::space_shared, tensor_map, coords, smem);
 }
 
 // To define a tensor map in constant memory, we need a type with a size. On
@@ -180,7 +156,7 @@ test(cuda::std::array<uint32_t, num_dims> smem_coord,
   // fence.proxy.async.global should suffice, but I am keeping the threadfence
   // out of an abundance of caution.
   __threadfence();
-  ptx::fence_proxy_async(ptx::space_global);
+  cuda::ptx::fence_proxy_async(cuda::ptx::space_global);
   __syncthreads();
 
   // TEST: Add i to buffer[i]
@@ -225,21 +201,22 @@ test(cuda::std::array<uint32_t, num_dims> smem_coord,
   {
     smem_buffer[i] = 2 * smem_buffer[i] + 1;
   }
-  cde::fence_proxy_async_shared_cta();
+  cuda::ptx::fence_proxy_async(::cuda::ptx::space_shared);
   __syncthreads();
 
   // Write back to global memory:
   if (threadIdx.x == 0)
   {
     cp_tensor_shared_to_global(global_tensor_map, smem_coord, smem_buffer);
-    cde::cp_async_bulk_commit_group();
-    cde::cp_async_bulk_wait_group_read<0>();
+    cuda::ptx::cp_async_bulk_commit_group();
+    cuda::ptx::cp_async_bulk_wait_group_read<0>({});
   }
   // ahendriksen: Issuing threadfence and fence.proxy.async.global. The
   // fence.proxy.async.global should suffice, but I am keeping the threadfence
   // out of an abundance of caution.
   __threadfence();
-  ptx::fence_proxy_async(ptx::space_global);
+
+  cuda::ptx::fence_proxy_async(cuda::ptx::space_global);
   __syncthreads();
 
   // // TEAR-DOWN: check that global memory is correct
