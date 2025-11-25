@@ -56,7 +56,6 @@ def test_numba_token():
 
     with ctx.task(lX.read(), lY.rw(), token.rw()) as t:
         nb_stream = cuda.external_stream(t.stream_ptr())
-        print(nb_stream)
         dX = t.get_arg_numba(0)
         dY = t.get_arg_numba(1)
         axpy[blocks, threads_per_block, nb_stream](2.0, dX, dY)
@@ -76,10 +75,7 @@ def test_numba_token():
     assert np.allclose(Y, 5.0), (
         f"Y should be 5.0 after two axpy operations, but got {Y[0]}"
     )
-    print(f"✓ X = {X[0]} (expected 1.0)")
-    print(f"✓ Y = {Y[0]} (expected 5.0)")
 
 
 if __name__ == "__main__":
-    print("Running CUDASTF examples...")
     test_token()

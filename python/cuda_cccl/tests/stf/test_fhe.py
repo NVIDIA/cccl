@@ -164,5 +164,4 @@ def test_fhe():
 
 
 if __name__ == "__main__":
-    print("Running CUDASTF FHE example...")
     test_fhe()

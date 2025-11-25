@@ -72,5 +72,4 @@ def test_ctx3():
 
 
 if __name__ == "__main__":
-    print("Running CUDASTF examples...")
     test_ctx3()

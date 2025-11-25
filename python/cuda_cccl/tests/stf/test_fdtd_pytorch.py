@@ -2,7 +2,9 @@ import math
 from typing import Literal, Optional, Tuple
 
 import numpy as np
-import torch
+import pytest
+
+torch = pytest.importorskip("torch")
 import torch.cuda as tc
 
 from cuda.stf._stf_bindings import (
@@ -220,7 +222,6 @@ def test_fdtd_3d_pytorch(
 
 if __name__ == "__main__":
     # Run FDTD simulation
-    print("Running FDTD 3D PyTorch example...")
     output_freq = 5 if has_matplotlib else 0
     if not has_matplotlib and output_freq > 0:
         print("Warning: matplotlib not available, running without visualization")

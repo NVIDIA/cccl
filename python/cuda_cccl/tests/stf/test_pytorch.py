@@ -58,40 +58,13 @@ def test_pytorch():
     ctx.finalize()
 
     # Verify results on host after finalize
-    print("Verifying results...")
-
     # Expected values:
     # X: 1.0 -> 2.0 (multiplied by 2)
     # Y: 1.0 -> 4.0 (X * 2 = 2.0 * 2 = 4.0)
     # Z: 1.0 -> 9.0 (X * 4 + 1 = 2.0 * 4 + 1 = 9.0) -> 5.0 (Y * 2 - 3 = 4.0 * 2 - 3 = 5.0)
-
-    expected_X = 2.0
-    expected_Y = 4.0
-    expected_Z = 5.0
-
-    # Check a few values to verify correctness
-    assert np.allclose(X[:10], expected_X), (
-        f"X mismatch: got {X[:10]}, expected {expected_X}"
-    )
-    assert np.allclose(Y[:10], expected_Y), (
-        f"Y mismatch: got {Y[:10]}, expected {expected_Y}"
-    )
-    assert np.allclose(Z[:10], expected_Z), (
-        f"Z mismatch: got {Z[:10]}, expected {expected_Z}"
-    )
-
-    # Check entire arrays
-    assert np.all(X == expected_X), (
-        f"X array not uniform: min={X.min()}, max={X.max()}, expected={expected_X}"
-    )
-    assert np.all(Y == expected_Y), (
-        f"Y array not uniform: min={Y.min()}, max={Y.max()}, expected={expected_Y}"
-    )
-    assert np.all(Z == expected_Z), (
-        f"Z array not uniform: min={Z.min()}, max={Z.max()}, expected={expected_Z}"
-    )
-
-    print(f"✅ All checks passed! X={X[0]}, Y={Y[0]}, Z={Z[0]}")
+    assert np.allclose(X, 2.0)
+    assert np.allclose(Y, 4.0)
+    assert np.allclose(Z, 5.0)
 
 
 def test_pytorch_task():
@@ -132,42 +105,14 @@ def test_pytorch_task():
     ctx.finalize()
 
     # Verify results on host after finalize (same as original test)
-    print("Verifying pytorch_task results...")
-
     # Expected values:
     # X: 1.0 -> 2.0 (multiplied by 2)
     # Y: 1.0 -> 4.0 (X * 2 = 2.0 * 2 = 4.0)
     # Z: 1.0 -> 9.0 (X * 4 + 1 = 2.0 * 4 + 1 = 9.0) -> 5.0 (Y * 2 - 3 = 4.0 * 2 - 3 = 5.0)
-
-    expected_X = 2.0
-    expected_Y = 4.0
-    expected_Z = 5.0
-
-    # Check a few values to verify correctness
-    assert np.allclose(X[:10], expected_X), (
-        f"X mismatch: got {X[:10]}, expected {expected_X}"
-    )
-    assert np.allclose(Y[:10], expected_Y), (
-        f"Y mismatch: got {Y[:10]}, expected {expected_Y}"
-    )
-    assert np.allclose(Z[:10], expected_Z), (
-        f"Z mismatch: got {Z[:10]}, expected {expected_Z}"
-    )
-
-    # Check entire arrays
-    assert np.all(X == expected_X), (
-        f"X array not uniform: min={X.min()}, max={X.max()}, expected={expected_X}"
-    )
-    assert np.all(Y == expected_Y), (
-        f"Y array not uniform: min={Y.min()}, max={Y.max()}, expected={expected_Y}"
-    )
-    assert np.all(Z == expected_Z), (
-        f"Z array not uniform: min={Z.min()}, max={Z.max()}, expected={expected_Z}"
-    )
-
-    print(f"✅ All pytorch_task checks passed! X={X[0]}, Y={Y[0]}, Z={Z[0]}")
+    assert np.allclose(X, 2.0)
+    assert np.allclose(Y, 4.0)
+    assert np.allclose(Z, 5.0)
 
 
 if __name__ == "__main__":
-    print("Running CUDASTF examples...")
     test_pytorch()

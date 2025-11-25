@@ -146,5 +146,4 @@ def test_fhe_decorator():
 
 
 if __name__ == "__main__":
-    print("Running CUDASTF FHE decorator example...")
     test_fhe_decorator()

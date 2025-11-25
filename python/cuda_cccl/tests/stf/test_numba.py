@@ -41,10 +41,7 @@ def test_numba_graph():
 
     # Verify results after finalize (data written back to host)
     # Expected: scale(2.0, 1.0) = 2.0
-    if np.allclose(X, 2.0):
-        print("✅ Graph test: X values correct: all 2.0")
-    else:
-        print(f"❌ Graph test: X values incorrect: expected 2.0, got {X[:5]}...")
+    assert np.allclose(X, 2.0)
 
 
 def test_numba():
@@ -66,7 +63,6 @@ def test_numba():
 
     with ctx.task(lX.read(), lY.rw()) as t:
         nb_stream = cuda.external_stream(t.stream_ptr())
-        print(nb_stream)
         dX = t.get_arg_numba(0)
         dY = t.get_arg_numba(1)
         axpy[32, 64, nb_stream](2.0, dX, dY)
@@ -84,44 +80,13 @@ def test_numba():
     ctx.finalize()
 
     # Verify results after finalize (data written back to host)
-    print("Verifying results after finalize:")
-
     # Expected values:
     # X: scale(2.0, 1.0) = 2.0
     # Y: axpy(2.0, X=2.0, Y=1.0) = 2.0*2.0 + 1.0 = 5.0
     # Z: axpy(2.0, X=2.0, Z=1.0) = 5.0, then axpy(2.0, Y=5.0, Z=5.0) = 15.0
-    expected_X = 2.0
-    expected_Y = 5.0
-    expected_Z = 15.0
-
-    # Check X values
-    if np.allclose(X, expected_X, rtol=1e-6, atol=1e-6):
-        print(f"✅ X values correct: all {expected_X}")
-    else:
-        actual_x = X[0] if len(X) > 0 else "N/A"
-        print(
-            f"❌ X values incorrect: expected {expected_X}, got {actual_x} (diff: {abs(actual_x - expected_X):.2e})"
-        )
-
-    # Check Y values
-    if np.allclose(Y, expected_Y, rtol=1e-6, atol=1e-6):
-        print(f"✅ Y values correct: all {expected_Y}")
-    else:
-        actual_y = Y[0] if len(Y) > 0 else "N/A"
-        print(
-            f"❌ Y values incorrect: expected {expected_Y}, got {actual_y} (diff: {abs(actual_y - expected_Y):.2e})"
-        )
-
-    # Check Z values
-    if np.allclose(Z, expected_Z, rtol=1e-6, atol=1e-6):
-        print(f"✅ Z values correct: all {expected_Z}")
-    else:
-        actual_z = Z[0] if len(Z) > 0 else "N/A"
-        print(
-            f"❌ Z values incorrect: expected {expected_Z}, got {actual_z} (diff: {abs(actual_z - expected_Z):.2e})"
-        )
-
-    print(f"Sample values: X[0]={X[0]}, Y[0]={Y[0]}, Z[0]={Z[0]}")
+    assert np.allclose(X, 2.0)
+    assert np.allclose(Y, 5.0)
+    assert np.allclose(Z, 15.0)
 
 
 @cuda.jit
@@ -196,8 +161,7 @@ def test_numba2d():
     u_out_ref[:, -1] = u[:, -1]
 
     # compare with the GPU result
-    max_abs_diff = np.abs(u_out - u_out_ref).max()
-    print(f"max(|gpu - ref|) = {max_abs_diff:.3e}")
+    assert np.allclose(u_out, u_out_ref, rtol=1e-6, atol=1e-6)
 
 
 def test_numba_exec_place():
@@ -218,7 +182,6 @@ def test_numba_exec_place():
 
     with ctx.task(stf.exec_place.device(0), lX.read(), lY.rw()) as t:
         nb_stream = cuda.external_stream(t.stream_ptr())
-        print(nb_stream)
         dX = t.get_arg_numba(0)
         dY = t.get_arg_numba(1)
         axpy[32, 64, nb_stream](2.0, dX, dY)
@@ -261,7 +224,6 @@ def test_numba_places():
 
     with ctx.task(lX.read(), lY.rw()) as t:
         nb_stream = cuda.external_stream(t.stream_ptr())
-        print(nb_stream)
         dX = t.get_arg_numba(0)
         dY = t.get_arg_numba(1)
         axpy[32, 64, nb_stream](2.0, dX, dY)
@@ -280,6 +242,5 @@ def test_numba_places():
 
 
 if __name__ == "__main__":
-    print("Running CUDASTF examples...")
     test_numba_graph()
     # test_numba()

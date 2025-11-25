@@ -42,5 +42,4 @@ def test_decorator(use_graph):
 
 
 if __name__ == "__main__":
-    print("Running CUDASTF examples...")
     test_decorator(False)
