@@ -50,12 +50,12 @@ template <class MDS>
 __device__ void check_implicit_construction(MDS);
 
 template <class MDS, class Exts>
-__device__ constexpr bool check_implicit_construction_impl(...)
+constexpr bool check_implicit_construction_impl(...)
 {
   return false;
 }
 template <class MDS, class Exts>
-__device__ constexpr auto check_implicit_construction_impl(int)
+constexpr auto check_implicit_construction_impl(int)
   -> decltype(check_implicit_construction<MDS>({cuda::std::declval<typename MDS::data_handle_type>(),
                                                 cuda::std::declval<const Exts&>()}),
               true)
