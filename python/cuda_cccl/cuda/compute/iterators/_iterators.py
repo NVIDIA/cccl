@@ -434,14 +434,25 @@ class DiscardIteratorKind(IteratorKind):
 class DiscardIterator(IteratorBase):
     iterator_kind_type = DiscardIteratorKind
 
-    def __init__(self):
-        value_type = numba.from_dtype(np.uint8)
-        cvalue = to_ctypes(value_type)(0)
-        state_type = value_type
+    def __init__(self, reference_iterator=None):
+        from .._utils.temp_storage_buffer import TempStorageBuffer
+
+        if reference_iterator is None:
+            reference_iterator = TempStorageBuffer(1)
+
+        if hasattr(reference_iterator, "__cuda_array_interface__"):
+            iter = RawPointer(
+                reference_iterator.__cuda_array_interface__["data"][0],
+                numba.from_dtype(get_dtype(reference_iterator)),
+                reference_iterator,
+            )
+        else:
+            iter = reference_iterator
+
         super().__init__(
-            cvalue=cvalue,
-            state_type=state_type,
-            value_type=value_type,
+            cvalue=iter.cvalue,
+            state_type=iter.state_type,
+            value_type=iter.value_type,
         )
 
     @property
