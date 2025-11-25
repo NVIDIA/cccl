@@ -586,6 +586,7 @@
 <li class="toctree-l4"><a class="reference internal" href="../../cub/api/namespacecub_1a03d07a1e0e455128713337bc38992ec6.html">cub::StoreDirectWarpStriped</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../cub/api/namespacecub_1af987f4650f9ab899588513632a7a335c.html">cub::ThreadLoad</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../cub/api/namespacecub_1a553633b74da5b2b77992aa60c1f278f3.html">cub::ThreadStore</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../cub/api/namespacecub_1a2ed79a837d7d04fc62062a113f41819f.html">cub::operator&lt;&lt;</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../cub/api/namespacecub_1a1b6e2aaf857cfd72861cf2499bf9acb3.html">cub::MergePath</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../cub/api/namespacecub_1aed5ce3db2c0ebfafd33d5ef6a1eb71a8.html">cub::SerialMerge</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../cub/api/namespacecub_1a5bc54df3b7da4260d8c1d8579f63f0c0.html">cub::ThreadReduce</a></li>
@@ -1528,7 +1529,7 @@
 </div>
 <dl class="field-list simple">
 <dt class="field-odd">Post<span class="colon">:</span></dt>
-<dd class="field-odd"><p><code class="docutils literal notranslate"><a class="reference internal" href="#classevent__ref_1a960bb95f2fd9dd3b3a97db16b44cf5b5"><span class="std std-ref"><span class="pre">get()</span></span></a> <span class="pre">==</span> <span class="pre">__evnt</span></code></p>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><a class="reference internal" href="classtimed__event.html#classevent__ref_1a960bb95f2fd9dd3b3a97db16b44cf5b5"><span class="std std-ref"><span class="pre">get()</span></span></a> <span class="pre">==</span> <span class="pre">__evnt</span></code></p>
 </dd>
 </dl>
 </dd></dl>
@@ -1574,7 +1575,7 @@
 <dt class="sig sig-object cpp" id="_CPPv4NK9event_ref7is_doneEv">
 <span class="target" id="classevent__ref_1a90df64f59b69882007915f465095b9d4"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="kt"><span class="pre">bool</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">is_done</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">const</span></span><a class="headerlink" href="#_CPPv4NK9event_ref7is_doneEv" title="Link to this definition">#</a><br /></dt>
 <dd><p>Checks if all the work in the stream prior to the record of the event has completed. </p>
-<p>If is_done returns true, calling <a class="reference internal" href="#classevent__ref_1a770773dd43a808f32a8917707388cf39"><span class="std std-ref">sync()</span></a> on this event will return immediately</p>
+<p>If is_done returns true, calling <a class="reference internal" href="classtimed__event.html#classevent__ref_1a770773dd43a808f32a8917707388cf39"><span class="std std-ref">sync()</span></a> on this event will return immediately</p>
 <dl class="field-list simple">
 <dt class="field-odd">Throws<span class="colon">:</span></dt>
 <dd class="field-odd"><p><span><span class="cpp-expr sig sig-inline cpp"><span class="n">cuda_error</span></span></span> – if the event query fails </p>
