@@ -27,9 +27,26 @@ from cuda.pathfinder import (  # type: ignore[import-not-found]
 
 
 def _load_cuda_libraries():
-    # Load appropriate libraries for the detected CUDA version
+    """
+    Preload CUDA libraries to ensure proper symbol resolution.
+
+    These libraries are indirect dependencies pulled in via cccl.c.parallel.
+    Preloading ensures reliable symbol resolution regardless of dynamic linker behavior.
+    """
+    import warnings
+
     for libname in ("nvrtc", "nvJitLink"):
-        load_nvidia_dynamic_lib(libname)
+        try:
+            load_nvidia_dynamic_lib(libname)
+        except Exception as e:
+            # Log warning but don't fail - the extension might still work
+            # if the libraries are already loaded or available through other means
+            warnings.warn(
+                f"Failed to preload CUDA library '{libname}': {e}. "
+                f"STF bindings may fail to load if {libname} is not available.",
+                RuntimeWarning,
+                stacklevel=2,
+            )
 
 
 _load_cuda_libraries()
@@ -53,4 +70,5 @@ try:
 except ImportError as e:
     raise ImportError(
         f"Failed to import CUDA STF bindings for CUDA {cuda_version}. "
+        f"Ensure cuda-cccl is properly installed with: pip install cuda-cccl[cu{cuda_version}]"
     ) from e

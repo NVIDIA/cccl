@@ -6,24 +6,19 @@
 # Make sure to update PYI with change to Python API to ensure that Python
 # static type checker tools like mypy green-lights cuda.cccl.parallel
 
-from cpython.buffer cimport Py_buffer, PyObject_GetBuffer, PyBuffer_Release
-from cpython.buffer cimport Py_buffer, PyBUF_FORMAT, PyBUF_ND, PyObject_GetBuffer, PyBuffer_Release
-from cpython.bytes cimport PyBytes_FromStringAndSize
-from libc.stdint cimport uint8_t, uint32_t, uint64_t, int64_t, uintptr_t
-from libc.stdint cimport uintptr_t
-from libc.string cimport memset, memcpy
-import math # for math.prod
-
-# TODO remove that dependency
-import numpy as np
-
 from cpython.buffer cimport (
-    Py_buffer, PyBUF_SIMPLE, PyBUF_ANY_CONTIGUOUS,
-    PyBuffer_Release, PyObject_CheckBuffer, PyObject_GetBuffer
+    Py_buffer, PyBUF_FORMAT, PyBUF_ND, PyBUF_SIMPLE, PyBUF_ANY_CONTIGUOUS,
+    PyObject_GetBuffer, PyBuffer_Release, PyObject_CheckBuffer
 )
+from cpython.bytes cimport PyBytes_FromStringAndSize
 from cpython.pycapsule cimport (
     PyCapsule_CheckExact, PyCapsule_IsValid, PyCapsule_GetPointer
 )
+from libc.stdint cimport uint8_t, uint32_t, uint64_t, int64_t, uintptr_t
+from libc.string cimport memset, memcpy
+import math # for math.prod
+
+import numpy as np
 
 import ctypes
 from enum import IntFlag
@@ -37,9 +32,6 @@ cdef extern from "<cuda.h>":
     ctypedef OpaqueCUstream_st *CUstream
     ctypedef OpaqueCUkernel_st *CUkernel
     ctypedef OpaqueCUlibrary_st *CUlibrary
-
-#typedef struct CUstream_st* cudaStream_t;
-
 
 cdef extern from "cccl/c/experimental/stf/stf.h":
     #
@@ -132,7 +124,6 @@ cdef extern from "cccl/c/experimental/stf/stf.h":
     void stf_task_end(stf_task_handle t)
     void stf_task_enable_capture(stf_task_handle t)
     CUstream stf_task_get_custream(stf_task_handle t)
-    # cudaStream_t stf_task_get_stream(stf_task_handle t)
     void* stf_task_get(stf_task_handle t, int submitted_index)
     void stf_task_destroy(stf_task_handle t)
 
@@ -222,8 +213,6 @@ cdef class logical_data:
                     # Unknown vector type - treat as original
                     self._shape = original_shape
                     self._dtype = np.dtype(typestr)
-
-                print(f"STF: Automatically flattened vector type {typestr} -> {self._dtype} with shape {self._shape}")
             else:
                 # Regular scalar type
                 self._shape = original_shape
@@ -472,7 +461,6 @@ cdef class task:
     def __dealloc__(self):
         if self._t != NULL:
              stf_task_destroy(self._t)
-#        self._lds_args.clear()
 
     def start(self):
         # This is ignored if this is not a graph task
@@ -648,7 +636,6 @@ cdef class context:
             raise RuntimeError("cannot call borrow_from_handle on this context")
 
         self._ctx = ctx_handle
-        # print(f"borrowing ... new ctx handle = {<int>ctx_handle} self={self}")
 
     def __repr__(self):
         return f"context(handle={<int>self._ctx}, borrowed={self._borrowed})"
