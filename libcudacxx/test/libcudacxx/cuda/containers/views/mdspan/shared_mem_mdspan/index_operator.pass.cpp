@@ -163,7 +163,7 @@ __device__ void test_layout()
 
 #if _CCCL_HAS_MULTIARG_OPERATOR_BRACKETS()
   test_iteration(construct_mapping(Layout(), cuda::std::extents<int>()));
-  int data[1];
+  __shared__ int data[1];
   // Check operator constraint for number of arguments
   static_assert(check_operator_constraints(
     cuda::shared_memory_mdspan(data, construct_mapping(Layout(), cuda::std::extents<int, D>(1))), 0));
@@ -279,19 +279,7 @@ __device__ void test_layout()
 #endif // _CCCL_HAS_MULTIARG_OPERATOR_BRACKETS()
 }
 
-template <class Layout>
-__device__ constexpr void test_layout_large()
-{
-  [[maybe_unused]] constexpr size_t D = cuda::std::dynamic_extent;
-  test_iteration(construct_mapping(Layout(), cuda::std::extents<int64_t, D, 4, D, D>(3, 5, 6)));
-  test_iteration(construct_mapping(Layout(), cuda::std::extents<int64_t, D, 4, 1, D>(3, 6)));
-}
-
-// mdspan::operator[] casts to index_type before calling mapping
-// mapping requirements only require the index operator to mixed integer types not anything convertible to index_type
-__device__ constexpr void test_index_cast_happens() {}
-
-__device__ void test()
+__global__ void test()
 {
   test_layout<cuda::std::layout_left>();
   test_layout<cuda::std::layout_right>();
@@ -300,12 +288,6 @@ __device__ void test()
 
 int main(int, char**)
 {
-  NV_IF_TARGET(NV_IS_DEVICE, (test();))
-
-  // The large test iterates over ~10k loop indices.
-  // With assertions enabled this triggered the maximum default limit
-  // for steps in consteval expressions. Assertions roughly double the
-  // total number of instructions, so this was already close to the maximum.
-  // test_large();
+  NV_IF_TARGET(NV_IS_HOST, (test<<<1, 1, 1024 * sizeof(int)>>>();))
   return 0;
 }

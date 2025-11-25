@@ -188,14 +188,15 @@ public:
     _CCCL_VERIFY_DEVICE_ONLY_USAGE();
   }
 
-  [[nodiscard]] _CCCL_API constexpr bool __detectably_invalid(
-    [[maybe_unused]] data_handle_type __p, [[maybe_unused]] ::cuda::std::size_t __size_bytes) const noexcept
+  [[nodiscard]] _CCCL_API static constexpr bool __detectably_invalid(
+    [[maybe_unused]] data_handle_type __p, [[maybe_unused]] ::cuda::std::size_t __size_bytes) noexcept
   {
     NV_IF_TARGET(NV_IS_DEVICE,
                  (bool __is_shared_mem     = ::cuda::device::is_address_from(__p, device::address_space::shared);
                   bool __exceeds_smem_size = __size_bytes > ::cuda::__max_smem_allocation_bytes();
                   return __is_shared_mem || __exceeds_smem_size;))
     _CCCL_VERIFY_DEVICE_ONLY_USAGE();
+    return false; // for clang
   }
 };
 
