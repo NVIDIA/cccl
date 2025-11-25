@@ -22,9 +22,19 @@ set(_cccl_root ../..)
 set(CCCL_TOPLEVEL_PROJECT ON) # Enable the developer builds
 set(CCCL_ENABLE_C_PARALLEL ON)
 set(CCCL_ENABLE_C_EXPERIMENTAL_STF ON) # Enable C experimental STF library (triggers c/ directory)
-set(CCCL_C_PARALLEL_ENABLE_TESTING OFF) # Testing belongs in CI, not Python build
-set(CCCL_C_EXPERIMENTAL_STF_ENABLE_TESTING OFF) # Testing belongs in CI, not Python build
 set(CCCL_ENABLE_UNSTABLE ON) # Enable unstable features
+
+# Disable all testing, examples, and benchmarks - we only want the libraries
+set(CCCL_ENABLE_TESTING OFF)
+set(CCCL_ENABLE_EXAMPLES OFF)
+set(CCCL_ENABLE_BENCHMARKS OFF)
+set(CCCL_C_PARALLEL_ENABLE_TESTING OFF)
+set(CCCL_C_EXPERIMENTAL_STF_ENABLE_TESTING OFF)
+# Note: CCCL_ENABLE_CUDAX must be ON because STF depends on it (via CCCL_ENABLE_UNSTABLE)
+# But disable cudax tests, examples, and header testing
+set(cudax_ENABLE_TESTING OFF)
+set(cudax_ENABLE_EXAMPLES OFF)
+set(cudax_ENABLE_HEADER_TESTING OFF)
 set(CCCL_C_PARALLEL_LIBRARY_OUTPUT_DIRECTORY ${SKBUILD_PROJECT_NAME})
 set(CCCL_C_EXPERIMENTAL_STF_LIBRARY_OUTPUT_DIRECTORY ${SKBUILD_PROJECT_NAME})
 
@@ -41,6 +51,11 @@ set(CMAKE_INSTALL_INCLUDEDIR "cuda/cccl/headers/include")
 add_subdirectory(${_cccl_root} _parent_cccl)
 set(CMAKE_INSTALL_LIBDIR "${old_libdir}") # pop
 set(CMAKE_INSTALL_INCLUDEDIR "${old_includedir}") # pop
+
+# Create CCCL::cudax alias for STF (normally created by cccl-config.cmake)
+if (TARGET cudax::cudax AND NOT TARGET CCCL::cudax)
+  add_library(CCCL::cudax ALIAS cudax::cudax)
+endif()
 
 # ensure the destination directory exists
 file(MAKE_DIRECTORY "cuda/stf/${CUDA_VERSION_DIR}/cccl")
