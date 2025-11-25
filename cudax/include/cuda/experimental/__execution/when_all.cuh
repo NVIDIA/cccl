@@ -494,19 +494,22 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT when_all_t::__sndr_t
 
   struct _CCCL_TYPE_VISIBILITY_DEFAULT __attrs_t
   {
-    _CCCL_TEMPLATE(class... _Env)
-    _CCCL_REQUIRES((__callable<get_completion_domain_t<set_value_t>, _Sndrs, _Env...> && ...))
+    template <class _Tag, class... _Env>
+    using __when_all_domain_t = __common_domain_t<__completion_domain_of_t<set_value_t, _Sndrs, _Env...>...>;
+
+    template <class... _Env>
     [[nodiscard]] _CCCL_API constexpr auto query(get_completion_domain_t<set_value_t>, const _Env&...) const noexcept
-    {
-      if constexpr (sizeof...(_Sndrs) == 0)
-      {
-        return default_domain{};
-      }
-      else
-      {
-        return ::cuda::std::common_type_t<__completion_domain_of_t<set_value_t, _Sndrs, _Env...>...>{};
-      }
-    }
+      -> __when_all_domain_t<set_value_t, _Env...>;
+
+    template <class... _Env>
+    [[nodiscard]] _CCCL_API constexpr auto query(get_completion_domain_t<set_error_t>, const _Env&...) const noexcept
+      -> __common_domain_t<__when_all_domain_t<set_value_t, _Env...>,
+                           __when_all_domain_t<set_error_t, _Env...>,
+                           __when_all_domain_t<set_stopped_t, _Env...>>;
+
+    template <class... _Env>
+    [[nodiscard]] _CCCL_API constexpr auto query(get_completion_domain_t<set_stopped_t>, const _Env&...) const noexcept
+      -> __common_domain_t<__when_all_domain_t<set_value_t, _Env...>, __when_all_domain_t<set_stopped_t, _Env...>>;
 
     template <class... _Env>
     [[nodiscard]] _CCCL_API constexpr auto query(get_completion_behavior_t, const _Env&...) const noexcept
@@ -520,6 +523,10 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT when_all_t::__sndr_t
     return {};
   }
 };
+
+template <>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT when_all_t::__sndr_t<>::__attrs_t : __inln_attrs_t
+{};
 
 template <class... _Sndrs>
 _CCCL_API constexpr auto when_all_t::operator()(_Sndrs... __sndrs) const

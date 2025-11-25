@@ -14,7 +14,7 @@ if [ -n "${GITHUB_SHA:-}" ]; then
   CMAKE_OPTIONS="$CMAKE_OPTIONS -DCCCL_EXAMPLE_CPM_TAG=${GITHUB_SHA}"
 fi
 
-configure_preset "Packaging" "$PRESET" "$CMAKE_OPTIONS"
+configure_and_build_preset "Packaging" "$PRESET" "$CMAKE_OPTIONS"
 test_preset "Packaging" "$PRESET" "$GPU_REQUIRED"
 
 print_time_summary

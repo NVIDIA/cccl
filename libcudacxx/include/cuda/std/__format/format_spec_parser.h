@@ -31,7 +31,6 @@
 #include <cuda/std/__iterator/iterator_traits.h>
 #include <cuda/std/__memory/addressof.h>
 #include <cuda/std/__type_traits/common_type.h>
-#include <cuda/std/__type_traits/is_constant_evaluated.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/is_signed.h>
 #include <cuda/std/__type_traits/is_trivially_copyable.h>
@@ -444,9 +443,15 @@ public:
         return __begin;
       }
     }
-    else if (::cuda::std::is_constant_evaluated() && __parse_sign(__begin))
+    else
     {
-      ::cuda::std::__throw_format_error("The format specification does not allow the sign option");
+      _CCCL_IF_CONSTEVAL_DEFAULT
+      {
+        if (__parse_sign(__begin))
+        {
+          ::cuda::std::__throw_format_error("The format specification does not allow the sign option");
+        }
+      }
     }
 
     if (__fields.__alternate_form_)
@@ -456,9 +461,15 @@ public:
         return __begin;
       }
     }
-    else if (::cuda::std::is_constant_evaluated() && __parse_alternate_form(__begin))
+    else
     {
-      ::cuda::std::__throw_format_error("The format specifier does not allow the alternate form option");
+      _CCCL_IF_CONSTEVAL_DEFAULT
+      {
+        if (__parse_alternate_form(__begin))
+        {
+          ::cuda::std::__throw_format_error("The format specifier does not allow the alternate form option");
+        }
+      }
     }
 
     if (__fields.__zero_padding_)
@@ -468,9 +479,15 @@ public:
         return __begin;
       }
     }
-    else if (::cuda::std::is_constant_evaluated() && __parse_zero_padding(__begin))
+    else
     {
-      ::cuda::std::__throw_format_error("The format specifier does not allow the zero-padding option");
+      _CCCL_IF_CONSTEVAL_DEFAULT
+      {
+        if (__parse_zero_padding(__begin))
+        {
+          ::cuda::std::__throw_format_error("The format specifier does not allow the zero-padding option");
+        }
+      }
     }
 
     if (__parse_width(__begin, __end, __ctx) && __begin == __end)
@@ -485,9 +502,15 @@ public:
         return __begin;
       }
     }
-    else if (::cuda::std::is_constant_evaluated() && __parse_precision(__begin, __end, __ctx))
+    else
     {
-      ::cuda::std::__throw_format_error("The format specifier does not allow the precision option");
+      _CCCL_IF_CONSTEVAL_DEFAULT
+      {
+        if (__parse_precision(__begin, __end, __ctx))
+        {
+          ::cuda::std::__throw_format_error("The format specifier does not allow the precision option");
+        }
+      }
     }
 
     if (__fields.__locale_specific_form_)
@@ -497,9 +520,15 @@ public:
         return __begin;
       }
     }
-    else if (::cuda::std::is_constant_evaluated() && __parse_locale_specific_form(__begin))
+    else
     {
-      ::cuda::std::__throw_format_error("The format specifier does not allow the locale-specific form option");
+      _CCCL_IF_CONSTEVAL_DEFAULT
+      {
+        if (__parse_locale_specific_form(__begin))
+        {
+          ::cuda::std::__throw_format_error("The format specifier does not allow the locale-specific form option");
+        }
+      }
     }
 
     if (__fields.__clear_brackets_)
@@ -509,9 +538,15 @@ public:
         return __begin;
       }
     }
-    else if (::cuda::std::is_constant_evaluated() && __parse_clear_brackets(__begin))
+    else
     {
-      ::cuda::std::__throw_format_error("The format specifier does not allow the n option");
+      _CCCL_IF_CONSTEVAL_DEFAULT
+      {
+        if (__parse_clear_brackets(__begin))
+        {
+          ::cuda::std::__throw_format_error("The format specifier does not allow the n option");
+        }
+      }
     }
 
     if (__fields.__type_)
@@ -568,7 +603,7 @@ public:
   {
     if (!__fields.__sign_ && __fmt_spec_sign{__sign_} != __fmt_spec_sign::__default)
     {
-      if (::cuda::std::is_constant_evaluated())
+      _CCCL_IF_CONSTEVAL
       {
         ::cuda::std::__throw_format_error("The format specifier does not allow the sign option");
       }
@@ -580,7 +615,7 @@ public:
 
     if (!__fields.__alternate_form_ && __alternate_form_)
     {
-      if (::cuda::std::is_constant_evaluated())
+      _CCCL_IF_CONSTEVAL
       {
         ::cuda::std::__throw_format_error("The format specifier does not allow the alternate form option");
       }
@@ -592,7 +627,7 @@ public:
 
     if (!__fields.__zero_padding_ && __fmt_spec_alignment{__alignment_} == __fmt_spec_alignment::__zero_padding)
     {
-      if (::cuda::std::is_constant_evaluated())
+      _CCCL_IF_CONSTEVAL
       {
         ::cuda::std::__throw_format_error("The format specifier does not allow the zero-padding option");
       }
@@ -604,7 +639,7 @@ public:
 
     if (!__fields.__precision_ && __precision_ != -1)
     { // Works both when the precision has a value or an arg-id.
-      if (::cuda::std::is_constant_evaluated())
+      _CCCL_IF_CONSTEVAL
       {
         ::cuda::std::__throw_format_error("The format specifier does not allow the precision option");
       }
@@ -616,7 +651,7 @@ public:
 
     if (!__fields.__locale_specific_form_ && __locale_specific_form_)
     {
-      if (::cuda::std::is_constant_evaluated())
+      _CCCL_IF_CONSTEVAL
       {
         ::cuda::std::__throw_format_error("The format specifier does not allow the locale-specific form option");
       }
@@ -628,7 +663,7 @@ public:
 
     if ((::cuda::std::__fmt_spec_make_type_mask(__type_) & __type_mask) == 0)
     {
-      if (::cuda::std::is_constant_evaluated())
+      _CCCL_IF_CONSTEVAL
       {
         ::cuda::std::__throw_format_error("The format specifier uses an invalid value for the type option");
       }

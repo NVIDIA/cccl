@@ -33,9 +33,9 @@ target_include_directories(cccl.c2h PUBLIC "${C2H_SOURCE_DIR}/include")
 target_link_libraries(
   cccl.c2h
   PUBLIC #
+    cccl.compiler_interface
     CCCL::CCCL
     Catch2::Catch2
-    cccl.compiler_interface_cpp17
 )
 cccl_configure_target(cccl.c2h DIALECT 17)
 

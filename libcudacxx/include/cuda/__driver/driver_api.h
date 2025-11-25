@@ -413,7 +413,15 @@ __getDefaultMemPool(CUmemLocation __location, CUmemAllocationType_enum __allocat
     __driver_fn, "Failed to get default memory pool", &__result, &__location, __allocation_type);
   return __result;
 }
-#  endif // _CCCL_CTK_AT_LEAST(13, 0)
+#  else // ^^^ _CCCL_CTK_AT_LEAST(13, 0) ^^^ / vvv _CCCL_CTK_BELOW(13, 0) vvv
+_CCCL_HOST_API inline ::CUmemoryPool __deviceGetDefaultMemPool(::CUdevice __device)
+{
+  static auto __driver_fn = _CCCLRT_GET_DRIVER_FUNCTION(cuDeviceGetDefaultMemPool);
+  ::CUmemoryPool __result = nullptr;
+  ::cuda::__driver::__call_driver_fn(__driver_fn, "Failed to get default memory pool", &__result, __device);
+  return __result;
+}
+#  endif // ^^^ _CCCL_CTK_BELOW(13, 0) ^^^
 
 _CCCL_HOST_API inline ::CUdeviceptr __mallocManaged(::cuda::std::size_t __bytes, unsigned int __flags)
 {
@@ -880,6 +888,36 @@ __graphKernelNodeSetAttribute(::CUgraphNode __node, ::CUkernelNodeAttrID __id, c
   return __id;
 }
 #  endif // _CCCL_CTK_AT_LEAST(13, 0)
+
+[[nodiscard]] _CCCL_HOST_API inline ::cudaError_t __tensorMapEncodeTiledNoThrow(
+  ::CUtensorMap& __tensorMap,
+  ::CUtensorMapDataType __tensorDataType,
+  ::cuda::std::uint32_t __tensorRank,
+  void* __globalAddress,
+  const ::cuda::std::uint64_t* __globalDim,
+  const ::cuda::std::uint64_t* __globalStrides,
+  const ::cuda::std::uint32_t* __boxDim,
+  const ::cuda::std::uint32_t* __elementStrides,
+  ::CUtensorMapInterleave __interleave,
+  ::CUtensorMapSwizzle __swizzle,
+  ::CUtensorMapL2promotion __l2Promotion,
+  ::CUtensorMapFloatOOBfill __oobFill) noexcept
+{
+  static auto __driver_fn = _CCCLRT_GET_DRIVER_FUNCTION(cuTensorMapEncodeTiled);
+  return static_cast<::cudaError_t>(__driver_fn(
+    &__tensorMap,
+    __tensorDataType,
+    __tensorRank,
+    __globalAddress,
+    __globalDim,
+    __globalStrides,
+    __boxDim,
+    __elementStrides,
+    __interleave,
+    __swizzle,
+    __l2Promotion,
+    __oobFill));
+}
 
 #  undef _CCCLRT_GET_DRIVER_FUNCTION
 #  undef _CCCLRT_GET_DRIVER_FUNCTION_VERSIONED

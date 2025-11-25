@@ -13,10 +13,10 @@ from ._iterators import (
     DiscardIterator as _DiscardIterator,
 )
 from ._iterators import (
-    make_permutation_iterator,
     make_reverse_iterator,
     make_transform_iterator,
 )
+from ._permutation_iterator import make_permutation_iterator
 from ._zip_iterator import make_zip_iterator
 
 
@@ -229,6 +229,12 @@ def ZipIterator(*iterators):
         combining two device arrays:
 
         .. literalinclude:: ../../python/cuda_cccl/tests/compute/examples/iterator/zip_iterator_elementwise.py
+            :language: python
+            :start-after: # example-begin
+
+        ZipIterator can also be used with nested gpu_struct types:
+
+        .. literalinclude:: ../../python/cuda_cccl/tests/compute/examples/struct/nested_struct_zip_iterator.py
             :language: python
             :start-after: # example-begin
 

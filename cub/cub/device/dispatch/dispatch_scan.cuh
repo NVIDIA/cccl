@@ -24,6 +24,7 @@
 
 #include <cub/agent/agent_scan.cuh>
 #include <cub/detail/launcher/cuda_runtime.cuh>
+#include <cub/device/dispatch/dispatch_common.cuh>
 #include <cub/device/dispatch/kernels/kernel_scan.cuh>
 #include <cub/device/dispatch/tuning/tuning_scan.cuh>
 #include <cub/thread/thread_operators.cuh>
@@ -41,12 +42,6 @@
 #include <cuda/std/__type_traits/is_unsigned.h>
 
 CUB_NAMESPACE_BEGIN
-
-enum class ForceInclusive
-{
-  Yes,
-  No
-};
 
 namespace detail::scan
 {
@@ -254,13 +249,6 @@ struct DispatchScan
     // performance.
     policy.CheckLoadModifier();
 
-    // Get device ordinal
-    int device_ordinal;
-    if (const auto error = CubDebug(cudaGetDevice(&device_ordinal)))
-    {
-      return error;
-    }
-
     // Number of input tiles
     const int tile_size = policy.Scan().BlockThreads() * policy.Scan().ItemsPerThread();
     const int num_tiles = static_cast<int>(::cuda::ceil_div(num_items, tile_size));
@@ -303,7 +291,8 @@ struct DispatchScan
 #endif // CUB_DEBUG_LOG
 
     // Invoke init_kernel to initialize tile descriptors
-    launcher_factory(init_grid_size, INIT_KERNEL_THREADS, 0, stream).doit(init_kernel, tile_state, num_tiles);
+    launcher_factory(init_grid_size, INIT_KERNEL_THREADS, 0, stream, /* use_pdl */ true)
+      .doit(init_kernel, tile_state, num_tiles);
 
     // Check for failure to launch
     if (const auto error = CubDebug(cudaPeekAtLastError()))
@@ -349,7 +338,7 @@ struct DispatchScan
 #endif // CUB_DEBUG_LOG
 
       // Invoke scan_kernel
-      launcher_factory(scan_grid_size, policy.Scan().BlockThreads(), 0, stream)
+      launcher_factory(scan_grid_size, policy.Scan().BlockThreads(), 0, stream, /* use_pdl */ true)
         .doit(scan_kernel, d_in, d_out, tile_state, start_tile, scan_op, init_value, num_items);
 
       // Check for failure to launch
