@@ -76,33 +76,27 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::segmented_scan_policy_t::BLO
   }
   else
   {
-    OffsetT inp_begin_offsets[num_segments_per_block];
     OffsetT inp_end_offsets[num_segments_per_block];
-    OffsetT out_begin_offsets[num_segments_per_block];
 
     if (work_id + num_segments_per_block - 1 < n_segments)
     {
 #pragma unroll
       for (int i = 0; i < num_segments_per_block; ++i)
       {
-        inp_begin_offsets[i] = begin_offset_d_in[work_id + i];
-        inp_end_offsets[i]   = end_offset_d_in[work_id + i];
-        out_begin_offsets[i] = begin_offset_d_out[work_id + i];
+        inp_end_offsets[i] = end_offset_d_in[work_id + i];
       }
       agent_segmented_scan_t(temp_storage, d_in, d_out, scan_op, _init_value)
-        .consume_ranges(inp_begin_offsets, inp_end_offsets, out_begin_offsets);
+        .consume_ranges(begin_offset_d_in + work_id, inp_end_offsets, begin_offset_d_out + work_id);
     }
     else
     {
       int tail_size = n_segments - work_id;
       for (int i = 0; i < tail_size; ++i)
       {
-        inp_begin_offsets[i] = begin_offset_d_in[work_id + i];
-        inp_end_offsets[i]   = end_offset_d_in[work_id + i];
-        out_begin_offsets[i] = begin_offset_d_out[work_id + i];
+        inp_end_offsets[i] = end_offset_d_in[work_id + i];
       }
       agent_segmented_scan_t(temp_storage, d_in, d_out, scan_op, _init_value)
-        .consume_ranges(inp_begin_offsets, inp_end_offsets, out_begin_offsets, tail_size);
+        .consume_ranges(begin_offset_d_in + work_id, inp_end_offsets, begin_offset_d_out + work_id, tail_size);
     }
   }
 }

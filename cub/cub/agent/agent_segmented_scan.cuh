@@ -146,9 +146,8 @@ struct agent_segmented_scan
   static constexpr int tile_items         = block_threads * items_per_thread;
   static constexpr int segments_per_block = AgentSegmentedScanPolicyT::segments_per_block;
 
-  using flag_t = ::cuda::std::uint8_t;
   using augmented_accum_t =
-    ::cuda::std::conditional_t<segments_per_block == 1, AccumT, ::cuda::std::tuple<flag_t, AccumT>>;
+    ::cuda::std::conditional_t<segments_per_block == 1, AccumT, ::cuda::std::tuple<bool, AccumT>>;
 
   using block_load_t  = BlockLoad<AccumT, block_threads, items_per_thread, AgentSegmentedScanPolicyT::load_algorithm>;
   using block_store_t = BlockStore<AccumT, block_threads, items_per_thread, AgentSegmentedScanPolicyT::store_algorithm>;
@@ -258,23 +257,29 @@ struct agent_segmented_scan
   //! @param out_idx_begin
   //!  Index of start of the segment's prefix scan result in the output array
   //!
-  template <int NumSegments = segments_per_block, class = ::cuda::std::enable_if_t<(NumSegments > 1)>>
+  template <typename InputBeginOffsetIteratorT,
+            typename OutputBeginOffsetIteratorT,
+            int NumSegments = segments_per_block,
+            class           = ::cuda::std::enable_if_t<(NumSegments > 1)>>
   _CCCL_DEVICE _CCCL_FORCEINLINE void consume_ranges(
-    OffsetT (&inp_idx_begin)[NumSegments], OffsetT (&inp_idx_end)[NumSegments], OffsetT (&out_idx_begin)[NumSegments])
+    InputBeginOffsetIteratorT inp_idx_begin_it,
+    OffsetT (&inp_idx_end)[NumSegments],
+    OutputBeginOffsetIteratorT out_idx_begin_it)
   {
     OffsetT items_per_block{0};
-    OffsetT(&logical_ids)[NumSegments] = inp_idx_end;
+    OffsetT(&cum_sizes)[NumSegments] = inp_idx_end;
 
     for (int i = 0; i < NumSegments; ++i)
     {
-      const OffsetT segment_items = ::cuda::std::max(inp_idx_end[i], inp_idx_begin[i]) - inp_idx_begin[i];
+      const OffsetT input_segment_begin = inp_idx_begin_it[i];
+      const OffsetT segment_items       = ::cuda::std::max(inp_idx_end[i], input_segment_begin) - input_segment_begin;
       items_per_block += segment_items;
-      logical_ids[i] = items_per_block;
+      cum_sizes[i] = items_per_block;
     }
     const OffsetT n_chunks = ::cuda::ceil_div(items_per_block, tile_items);
 
-    using augmented_init_value_t = ::cuda::std::tuple<flag_t, InitValueT>;
-    using augmented_scan_op_t    = schwarz_scan_op<flag_t, AccumT, ScanOpT>;
+    using augmented_init_value_t = ::cuda::std::tuple<bool, InitValueT>;
+    using augmented_scan_op_t    = schwarz_scan_op<bool, AccumT, ScanOpT>;
 
     augmented_accum_t thread_flag_values[items_per_thread] = {};
 
@@ -294,16 +299,16 @@ struct agent_segmented_scan
       // load values, and pack them into head_flag-value pairs
       {
         AccumT thread_values[items_per_thread] = {};
-        multi_segmented_iterator it_in{d_in, chunk_begin, logical_ids, inp_idx_begin};
+        multi_segmented_iterator it_in{d_in, chunk_begin, cum_sizes, inp_idx_begin_it};
         block_load_t(temp_storage.load).Load(it_in, thread_values, chunk_size);
 
         // reconstruct flags
         for (int i = 0; i < items_per_thread; ++i)
         {
           const OffsetT value_id = chunk_begin + items_per_thread * threadIdx.x + static_cast<OffsetT>(i);
-          bool is_segment_head   = is_head_of_segment<OffsetT, segments_per_block>(logical_ids, value_id);
+          bool is_segment_head   = is_head_of_segment<OffsetT, segments_per_block>(cum_sizes, value_id);
 
-          thread_flag_values[i] = augmented_accum_t{static_cast<flag_t>(is_segment_head), thread_values[i]};
+          thread_flag_values[i] = augmented_accum_t{is_segment_head, thread_values[i]};
         }
       }
       __syncthreads();
@@ -311,7 +316,7 @@ struct agent_segmented_scan
       if (chunk_id == 0)
       {
         // Initialize exlusive_prefix, referenced from prefix_op
-        augmented_init_value_t augmented_init_value{flag_t{0}, initial_value};
+        augmented_init_value_t augmented_init_value{false, initial_value};
         scan_first_tile(thread_flag_values, augmented_init_value, augmented_scan_op, exclusive_prefix);
       }
       else
@@ -334,46 +339,50 @@ struct agent_segmented_scan
           else
           {
             const OffsetT value_id = chunk_begin + items_per_thread * threadIdx.x + static_cast<OffsetT>(i);
-            bool is_segment_head   = is_head_of_segment<OffsetT, segments_per_block>(logical_ids, value_id);
+            bool is_segment_head   = is_head_of_segment<OffsetT, segments_per_block>(cum_sizes, value_id);
             thread_values[i]       = (is_segment_head) ? initial_value : get_value(thread_flag_values[i]);
           }
         }
 
         const OffsetT out_offset = chunk_id * tile_items;
-        multi_segmented_iterator it_out{d_out, out_offset, logical_ids, out_idx_begin};
+        multi_segmented_iterator it_out{d_out, out_offset, cum_sizes, out_idx_begin_it};
         block_store_t(temp_storage.store).Store(it_out, thread_values, chunk_size);
       }
       __syncthreads();
     }
   }
 
-  template <int NumSegments = segments_per_block, class = ::cuda::std::enable_if_t<(NumSegments > 1)>>
+  template <typename InputBeginOffsetIteratorT,
+            typename OutputBeginOffsetIteratorT,
+            int NumSegments = segments_per_block,
+            class           = ::cuda::std::enable_if_t<(NumSegments > 1)>>
   _CCCL_DEVICE _CCCL_FORCEINLINE void consume_ranges(
-    OffsetT (&inp_idx_begin)[NumSegments],
+    InputBeginOffsetIteratorT inp_idx_begin_it,
     OffsetT (&inp_idx_end)[NumSegments],
-    OffsetT (&out_idx_begin)[NumSegments],
+    OutputBeginOffsetIteratorT out_idx_begin_it,
     int n_segments)
   {
     OffsetT items_per_block{0};
-    OffsetT(&logical_ids)[NumSegments] = inp_idx_end;
+    OffsetT(&cum_sizes)[NumSegments] = inp_idx_end;
 
     n_segments = ::cuda::std::min(n_segments, NumSegments);
 
     for (int i = 0; i < n_segments; ++i)
     {
-      const OffsetT segment_items = ::cuda::std::max(inp_idx_end[i], inp_idx_begin[i]) - inp_idx_begin[i];
+      const OffsetT input_segment_begin = inp_idx_begin_it[i];
+      const OffsetT segment_items       = ::cuda::std::max(inp_idx_end[i], input_segment_begin) - input_segment_begin;
       items_per_block += segment_items;
-      logical_ids[i] = items_per_block;
+      cum_sizes[i] = items_per_block;
     }
     for (int i = ::cuda::std::max(n_segments, 0); i < NumSegments; ++i)
     {
-      logical_ids[i] = items_per_block + 1;
+      cum_sizes[i] = items_per_block + 1;
     }
     const OffsetT n_chunks = ::cuda::ceil_div(items_per_block, tile_items);
 
     using augmented_init_value_t =
-      ::cuda::std::conditional_t<has_init, augmented_accum_t, ::cuda::std::tuple<flag_t, InitValueT>>;
-    using augmented_scan_op_t = schwarz_scan_op<flag_t, AccumT, ScanOpT>;
+      ::cuda::std::conditional_t<has_init, augmented_accum_t, ::cuda::std::tuple<bool, InitValueT>>;
+    using augmented_scan_op_t = schwarz_scan_op<bool, AccumT, ScanOpT>;
 
     augmented_accum_t thread_flag_values[items_per_thread] = {};
 
@@ -393,16 +402,16 @@ struct agent_segmented_scan
       // load values, and pack them into head_flag-value pairs
       {
         AccumT thread_values[items_per_thread] = {};
-        multi_segmented_iterator it_in{d_in, chunk_begin, logical_ids, inp_idx_begin};
+        multi_segmented_iterator it_in{d_in, chunk_begin, cum_sizes, inp_idx_begin_it};
         block_load_t(temp_storage.load).Load(it_in, thread_values, chunk_size);
 
         // reconstruct flags
         for (int i = 0; i < items_per_thread; ++i)
         {
           const OffsetT value_id = chunk_begin + items_per_thread * threadIdx.x + static_cast<OffsetT>(i);
-          bool is_segment_head   = is_head_of_segment<OffsetT, segments_per_block>(logical_ids, value_id);
+          bool is_segment_head   = is_head_of_segment<OffsetT, segments_per_block>(cum_sizes, value_id);
 
-          thread_flag_values[i] = augmented_accum_t{static_cast<flag_t>(is_segment_head), thread_values[i]};
+          thread_flag_values[i] = augmented_accum_t{is_segment_head, thread_values[i]};
         }
       }
       __syncthreads();
@@ -410,7 +419,7 @@ struct agent_segmented_scan
       if (chunk_id == 0)
       {
         // Initialize exlusive_prefix, referenced from prefix_op
-        augmented_init_value_t augmented_init_value{flag_t{0}, initial_value};
+        augmented_init_value_t augmented_init_value{false, initial_value};
         scan_first_tile(thread_flag_values, augmented_init_value, augmented_scan_op, exclusive_prefix);
       }
       else
@@ -433,13 +442,13 @@ struct agent_segmented_scan
           else
           {
             const OffsetT value_id = chunk_begin + items_per_thread * threadIdx.x + static_cast<OffsetT>(i);
-            bool is_segment_head   = is_head_of_segment<OffsetT, segments_per_block>(logical_ids, value_id);
+            bool is_segment_head   = is_head_of_segment<OffsetT, segments_per_block>(cum_sizes, value_id);
             thread_values[i]       = (is_segment_head) ? initial_value : get_value(thread_flag_values[i]);
           }
         }
 
         const OffsetT out_offset = chunk_id * tile_items;
-        multi_segmented_iterator it_out{d_out, out_offset, logical_ids, out_idx_begin};
+        multi_segmented_iterator it_out{d_out, out_offset, cum_sizes, out_idx_begin_it};
         block_store_t(temp_storage.store).Store(it_out, thread_values, chunk_size);
       }
       __syncthreads();
@@ -447,83 +456,68 @@ struct agent_segmented_scan
   }
 
 private:
-  template <typename _FlagT, typename _ValueT>
-  _CCCL_DEVICE _CCCL_FORCEINLINE static _FlagT get_flag(::cuda::std::tuple<_FlagT, _ValueT> fv)
+  template <typename FlagTy, typename ValueTy>
+  _CCCL_DEVICE _CCCL_FORCEINLINE static FlagTy get_flag(::cuda::std::tuple<FlagTy, ValueTy> fv)
   {
     return ::cuda::std::get<0>(fv);
   }
 
-  template <typename _FlagT, typename _ValueT>
-  _CCCL_DEVICE _CCCL_FORCEINLINE static _ValueT get_value(::cuda::std::tuple<_FlagT, _ValueT> fv)
+  template <typename FlagTy, typename ValueTy>
+  _CCCL_DEVICE _CCCL_FORCEINLINE static ValueTy get_value(::cuda::std::tuple<FlagTy, ValueTy> fv)
   {
     return ::cuda::std::get<1>(fv);
   }
 
-  template <typename _FlagT>
-  _CCCL_DEVICE _CCCL_FORCEINLINE static _FlagT flag_or(_FlagT f1, _FlagT f2)
-  {
-    if constexpr (::cuda::std::is_same_v<_FlagT, bool>)
-    {
-      return (f1 || f2);
-    }
-    else
-    {
-      return (f1 | f2);
-    }
-  }
-
-  template <typename _OffsetT, int N>
+  template <typename OffsetTy, int N>
   _CCCL_DEVICE _CCCL_FORCEINLINE static bool
-  is_head_of_segment(const _OffsetT (&cumulative_ids)[N], const _OffsetT item_id)
+  is_head_of_segment(const OffsetTy (&cumulative_sizes)[N], const OffsetTy item_id)
   {
     static_assert(N > 1, "Array size should be greater than one");
 
-    bool is_segment_head{item_id == cumulative_ids[0]};
+    bool is_segment_head{item_id == cumulative_sizes[0]};
 #pragma unroll
     for (int j = 1; j < N; ++j)
     {
-      is_segment_head = is_segment_head || (item_id == cumulative_ids[j]);
+      is_segment_head = is_segment_head || (item_id == cumulative_sizes[j]);
     }
     return is_segment_head;
   }
 
-  template <typename _FlagT, typename _ValueT, typename _BinaryOpT>
+  template <typename FlagTy, typename ValueTy, typename BinaryOpTy>
   struct schwarz_scan_op
   {
-    using fv_t = ::cuda::std::tuple<_FlagT, _ValueT>;
-    _BinaryOpT scan_op;
+    using fv_t = ::cuda::std::tuple<FlagTy, ValueTy>;
+    BinaryOpTy scan_op;
 
     _CCCL_DEVICE _CCCL_FORCEINLINE fv_t operator()(fv_t o1, fv_t o2)
     {
       const auto& [o1_flag, o1_value] = o1;
       const auto& [o2_flag, o2_value] = o2;
-      const _FlagT res_flag           = flag_or(o1_flag, o2_flag);
-      const _ValueT res_value         = (o2_flag) ? o2_value : scan_op(o1_value, o2_value);
+      const FlagTy res_flag           = (o1_flag || o2_flag);
+      const ValueTy res_value         = (o2_flag) ? o2_value : scan_op(o1_value, o2_value);
       return {res_flag, res_value};
     }
   };
 
-  template <typename _Iter, typename _OffsetT, typename _T1, int _N1, typename _T2, int _N2>
+  template <typename IterTy, typename OffsetTy, typename Ty, int N, typename BeginOffsetIterTy>
   struct multi_segmented_iterator
   {
-    _Iter m_it;
-    _OffsetT m_start;
-    _T1 (&m_offsets)[_N1];
-    _T2 (&m_it_idx_begin)[_N2];
+    IterTy m_it;
+    OffsetTy m_start;
+    Ty (&m_offsets)[N];
+    BeginOffsetIterTy m_it_idx_begin;
 
     using iterator_concept  = ::cuda::std::random_access_iterator_tag;
     using iterator_category = ::cuda::std::random_access_iterator_tag;
-    using value_type        = ::cuda::std::iter_value_t<_Iter>;
-    using difference_type   = ::cuda::std::remove_cv_t<_OffsetT>;
-    using reference         = ::cuda::std::iter_reference_t<_Iter>;
+    using value_type        = ::cuda::std::iter_value_t<IterTy>;
+    using difference_type   = ::cuda::std::remove_cv_t<OffsetTy>;
+    using reference         = ::cuda::std::iter_reference_t<IterTy>;
     using pointer           = void;
 
-    static_assert(::cuda::std::is_same_v<difference_type, ::cuda::std::decay_t<_T1>>, "types are inconsistent");
-    static_assert(::cuda::std::is_same_v<difference_type, ::cuda::std::decay_t<_T2>>, "types are inconsistent");
-    static_assert(_N1 == _N2, "Arrays must have equal sizes");
+    static_assert(::cuda::std::is_same_v<difference_type, ::cuda::std::decay_t<Ty>>, "types are inconsistent");
 
     _CCCL_DEVICE _CCCL_FORCEINLINE
-    multi_segmented_iterator(_Iter it, _OffsetT start, _T1 (&cum_sizes)[_N1], _T2 (&it_idx_begin)[_N2])
+    multi_segmented_iterator(IterTy it, OffsetTy start, Ty (&cum_sizes)[N], BeginOffsetIterTy it_idx_begin)
         : m_it{it}
         , m_start{start}
         , m_offsets{cum_sizes}
@@ -534,12 +528,12 @@ private:
     {
       const difference_type offset = m_start + n;
       const auto begin_it          = m_offsets;
-      const auto end_it            = m_offsets + _N1;
+      const auto end_it            = m_offsets + N;
 
       difference_type shifted_offset = offset;
       int segment_id                 = 0;
 #pragma unroll
-      for (int i = 0; i + 1 < _N1; ++i)
+      for (int i = 0; i + 1 < N; ++i)
       {
         if ((m_offsets[i] <= offset) && (offset < m_offsets[i + 1]))
         {
@@ -551,53 +545,53 @@ private:
     }
 
     _CCCL_DEVICE _CCCL_FORCEINLINE friend multi_segmented_iterator
-    operator+(const multi_segmented_iterator& iter, _OffsetT n)
+    operator+(const multi_segmented_iterator& iter, OffsetTy n)
     {
       return {iter.m_it, iter.m_start + n, iter.m_offsets, iter.m_it_idx_begin};
     }
   };
 
-  template <typename _PrefixT, typename _BinaryOpT>
+  template <typename PrefixTy, typename BinaryOpTy>
   struct block_prefix_callback_t
   {
-    _PrefixT& m_exclusive_prefix;
-    _BinaryOpT m_scan_op;
+    PrefixTy& m_exclusive_prefix;
+    BinaryOpTy m_scan_op;
 
-    _CCCL_DEVICE _CCCL_FORCEINLINE _PrefixT operator()(_PrefixT block_aggregate)
+    _CCCL_DEVICE _CCCL_FORCEINLINE PrefixTy operator()(PrefixTy block_aggregate)
     {
-      _PrefixT previous_prefix = m_exclusive_prefix;
+      PrefixTy previous_prefix = m_exclusive_prefix;
       m_exclusive_prefix       = m_scan_op(m_exclusive_prefix, block_aggregate);
       return previous_prefix;
     }
   };
 
-  template <typename _ItemT, typename _InitValueT, typename _ScanOpT, bool IsInclusive = is_inclusive>
+  template <typename ItemTy, typename InitValueTy, typename ScanOpTy, bool IsInclusive = is_inclusive>
   _CCCL_DEVICE _CCCL_FORCEINLINE void
-  scan_first_tile(_ItemT (&items)[items_per_thread], _InitValueT init_value, _ScanOpT scan_op, _ItemT& block_aggregate)
+  scan_first_tile(ItemTy (&items)[items_per_thread], InitValueTy init_value, ScanOpTy scan_op, ItemTy& block_aggregate)
   {
     block_scan_t block_scan_algo(temp_storage.scan);
-    if constexpr (IsInclusive)
+    if constexpr (has_init)
     {
-      if constexpr (has_init)
+      if constexpr (IsInclusive)
       {
         block_scan_algo.InclusiveScan(items, items, init_value, scan_op, block_aggregate);
-        block_aggregate = scan_op(init_value, block_aggregate);
       }
       else
       {
-        block_scan_algo.InclusiveScan(items, items, scan_op, block_aggregate);
+        block_scan_algo.ExclusiveScan(items, items, init_value, scan_op, block_aggregate);
       }
+      block_aggregate = scan_op(init_value, block_aggregate);
     }
     else
     {
-      block_scan_algo.ExclusiveScan(items, items, init_value, scan_op, block_aggregate);
-      block_aggregate = scan_op(init_value, block_aggregate);
+      static_assert(IsInclusive, "Unexpected ExclusiveScan without initial value call");
+      block_scan_algo.InclusiveScan(items, items, scan_op, block_aggregate);
     }
   }
 
-  template <typename _ItemT, typename _ScanOpT, typename PrefixCallback, bool IsInclusive = is_inclusive>
+  template <typename ItemTy, typename ScanOpTy, typename PrefixCallback, bool IsInclusive = is_inclusive>
   _CCCL_DEVICE _CCCL_FORCEINLINE void
-  scan_later_tile(_ItemT (&items)[items_per_thread], _ScanOpT scan_op, PrefixCallback& prefix_op)
+  scan_later_tile(ItemTy (&items)[items_per_thread], ScanOpTy scan_op, PrefixCallback& prefix_op)
   {
     block_scan_t block_scan_algo(temp_storage.scan);
     if constexpr (IsInclusive)
