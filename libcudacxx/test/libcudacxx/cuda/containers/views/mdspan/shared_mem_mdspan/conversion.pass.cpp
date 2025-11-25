@@ -183,30 +183,27 @@ __device__ constexpr void mixin_layout(const FromH& handle, const FromA& acc)
   mixin_extents<cuda::std::layout_right, ToA>(handle, cuda::std::layout_right(), acc);
   // Check layout policy conversion
   // different layout policies, but constructible and convertible
-  static_assert(
-    cuda::std::is_constructible_v<cuda::std::layout_left::mapping<cuda::std::dextents<int, 1>>,
-                                const cuda::std::layout_right::mapping<cuda::std::dextents<int, 1>>&>);
+  static_assert(cuda::std::is_constructible_v<cuda::std::layout_left::mapping<cuda::std::dextents<int, 1>>,
+                                              const cuda::std::layout_right::mapping<cuda::std::dextents<int, 1>>&>);
   static_assert(cuda::std::is_convertible_v<const cuda::std::layout_right::mapping<cuda::std::dextents<int, 1>>&,
-                                          cuda::std::layout_left::mapping<cuda::std::dextents<int, 1>>>);
+                                            cuda::std::layout_left::mapping<cuda::std::dextents<int, 1>>>);
   // different layout policies, not constructible
-  static_assert(
-    !cuda::std::is_constructible_v<cuda::std::layout_left::mapping<cuda::std::dextents<int, 2>>,
-                                 const cuda::std::layout_right::mapping<cuda::std::dextents<int, 2>>&>);
+  static_assert(!cuda::std::is_constructible_v<cuda::std::layout_left::mapping<cuda::std::dextents<int, 2>>,
+                                               const cuda::std::layout_right::mapping<cuda::std::dextents<int, 2>>&>);
   // different layout policies, constructible and not convertible
-  static_assert(
-    cuda::std::is_constructible_v<cuda::std::layout_left::mapping<cuda::std::dextents<int, 1>>,
-                                const cuda::std::layout_right::mapping<cuda::std::dextents<size_t, 1>>&>);
+  static_assert(cuda::std::is_constructible_v<cuda::std::layout_left::mapping<cuda::std::dextents<int, 1>>,
+                                              const cuda::std::layout_right::mapping<cuda::std::dextents<size_t, 1>>&>);
   static_assert(!cuda::std::is_convertible_v<const cuda::std::layout_right::mapping<cuda::std::dextents<size_t, 1>>&,
-                                           cuda::std::layout_left::mapping<cuda::std::dextents<int, 1>>>);
+                                             cuda::std::layout_left::mapping<cuda::std::dextents<int, 1>>>);
 
   mixin_extents<cuda::std::layout_left, ToA>(handle, cuda::std::layout_right(), acc);
   mixin_extents<layout_wrapping_integral<4>, ToA>(handle, layout_wrapping_integral<4>(), acc);
   // different layout policies, constructible and not convertible
   static_assert(
     !cuda::std::is_constructible_v<layout_wrapping_integral<8>::mapping<cuda::std::dextents<unsigned, 2>>,
-                                 const layout_wrapping_integral<8>::mapping<cuda::std::dextents<int, 2>>&>);
+                                   const layout_wrapping_integral<8>::mapping<cuda::std::dextents<int, 2>>&>);
   static_assert(cuda::std::is_constructible_v<layout_wrapping_integral<8>::mapping<cuda::std::dextents<unsigned, 2>>,
-                                            layout_wrapping_integral<8>::mapping<cuda::std::dextents<int, 2>>>);
+                                              layout_wrapping_integral<8>::mapping<cuda::std::dextents<int, 2>>>);
   mixin_extents<layout_wrapping_integral<8>, ToA>(handle, layout_wrapping_integral<8>(), acc);
 }
 
@@ -249,18 +246,16 @@ __device__ void test(FromA from_acc)
   static_assert(cuda::std::copyable<FromA>);
   static_assert(cuda::std::is_constructible_v<ToA, const FromA&> == constructible_constref_acc);
   static_assert(cuda::std::is_constructible_v<ToA, FromA> == constructible_nonconst_acc);
-  static_assert(
-    cuda::std::is_constructible_v<typename ToA::data_handle_type, const typename FromA::data_handle_type&>
-      == constructible_constref_handle);
+  static_assert(cuda::std::is_constructible_v<typename ToA::data_handle_type, const typename FromA::data_handle_type&>
+                == constructible_constref_handle);
   static_assert(cuda::std::is_constructible_v<typename ToA::data_handle_type, typename FromA::data_handle_type>
-                  == constructible_nonconst_handle);
+                == constructible_nonconst_handle);
   static_assert(cuda::std::is_convertible_v<const FromA&, ToA> == convertible_constref_acc);
   static_assert(cuda::std::is_convertible_v<FromA, ToA> == convertible_nonconst_acc);
-  static_assert(
-    cuda::std::is_convertible_v<const typename FromA::data_handle_type&, typename ToA::data_handle_type>
-      == convertible_constref_handle);
+  static_assert(cuda::std::is_convertible_v<const typename FromA::data_handle_type&, typename ToA::data_handle_type>
+                == convertible_constref_handle);
   static_assert(cuda::std::is_convertible_v<typename FromA::data_handle_type, typename ToA::data_handle_type>
-                  == convertible_nonconst_handle);
+                == convertible_nonconst_handle);
 
   test_impl<ToA>(from_acc);
 }

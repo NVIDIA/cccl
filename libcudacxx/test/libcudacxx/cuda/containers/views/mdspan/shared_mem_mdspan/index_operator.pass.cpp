@@ -178,7 +178,8 @@ __device__ void test_layout()
 
   // Check operator constraint for no-throw-constructibility of index_type from arguments
   static_assert(!check_operator_constraints(
-    cuda::shared_memory_mdspan(data, construct_mapping(Layout(), cuda::std::extents<unsigned char, D>(1))), IntType(0)));
+    cuda::shared_memory_mdspan(data, construct_mapping(Layout(), cuda::std::extents<unsigned char, D>(1))),
+    IntType(0)));
 
   // Check that mixed integrals work: note the second one tests that mdspan casts: layout_wrapping_integral does not
   // accept IntType

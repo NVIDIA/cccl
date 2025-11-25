@@ -34,7 +34,8 @@
 template <bool ac, class H, class M, class A, cuda::std::enable_if_t<ac, int> = 0>
 __device__ constexpr void test_mdspan_types(const H& handle, const M& map, const A&)
 {
-  using MDS = cuda::shared_memory_mdspan<typename A::element_type, typename M::extents_type, typename M::layout_type, A>;
+  using MDS =
+    cuda::shared_memory_mdspan<typename A::element_type, typename M::extents_type, typename M::layout_type, A>;
 
   static_assert(ac == cuda::std::is_default_constructible_v<A>);
   if (!cuda::std::__cccl_default_is_constant_evaluated())
@@ -54,7 +55,8 @@ __device__ constexpr void test_mdspan_types(const H& handle, const M& map, const
 template <bool ac, class H, class M, class A, cuda::std::enable_if_t<!ac, int> = 0>
 __device__ constexpr void test_mdspan_types(const H& handle, const M& map, const A&)
 {
-  using MDS = cuda::shared_memory_mdspan<typename A::element_type, typename M::extents_type, typename M::layout_type, A>;
+  using MDS =
+    cuda::shared_memory_mdspan<typename A::element_type, typename M::extents_type, typename M::layout_type, A>;
 
   static_assert(ac == cuda::std::is_default_constructible_v<A>);
   static_assert(!cuda::std::is_constructible_v<MDS, const H&, const M&>);

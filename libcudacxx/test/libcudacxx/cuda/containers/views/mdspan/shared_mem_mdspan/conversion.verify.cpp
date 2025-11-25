@@ -46,8 +46,9 @@
 __host__ __device__ void cant_construct_data_handle_type()
 {
   int data;
-  cuda::shared_memory_mdspan<int, cuda::std::extents<int>, cuda::std::layout_right, convertible_accessor_but_not_handle<int>>
-    m_nc(&data);
+  cuda::
+    shared_memory_mdspan<int, cuda::std::extents<int>, cuda::std::layout_right, convertible_accessor_but_not_handle<int>>
+      m_nc(&data);
   // expected-error-re@*:* {{{{.*}}no matching constructor for initialization of {{.*}} (aka
   // 'not_const_convertible_handle<const int>')}} expected-error-re@*:* {{{{(static_assert|static assertion)}} failed
   // {{.*}}mdspan: incompatible data_handle_type for mdspan construction}}

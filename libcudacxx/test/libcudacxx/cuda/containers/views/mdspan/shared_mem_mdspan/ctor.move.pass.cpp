@@ -27,14 +27,14 @@
 template <class H, class M, class A>
 __device__ constexpr void test_mdspan_types(const H& handle, const M& map, const A& acc)
 {
-  using MDS = cuda::shared_memory_mdspan<typename A::element_type, typename M::extents_type, typename M::layout_type, A>;
+  using MDS =
+    cuda::shared_memory_mdspan<typename A::element_type, typename M::extents_type, typename M::layout_type, A>;
 
   MDS m_org(handle, map, acc);
   MDS m(cuda::std::move(m_org));
-  static_assert(
-    cuda::std::is_trivially_move_constructible_v<MDS>
-      == (cuda::std::is_trivially_move_constructible_v<H> && cuda::std::is_trivially_move_constructible_v<M>
-          && cuda::std::is_trivially_move_constructible_v<A>));
+  static_assert(cuda::std::is_trivially_move_constructible_v<MDS>
+                == (cuda::std::is_trivially_move_constructible_v<H> && cuda::std::is_trivially_move_constructible_v<M>
+                    && cuda::std::is_trivially_move_constructible_v<A>) );
   assert(m.extents() == map.extents());
   test_equality_handle(m, handle);
   test_equality_mapping(m, map);
@@ -58,12 +58,12 @@ __device__ constexpr void mixin_layout(const H& handle, const A& acc)
 {
   // make sure we test a trivially copyable mapping
   static_assert(cuda::std::is_trivially_move_constructible_v<
-                  typename cuda::std::layout_left::template mapping<cuda::std::extents<int>>>);
+                typename cuda::std::layout_left::template mapping<cuda::std::extents<int>>>);
   mixin_extents(handle, cuda::std::layout_left(), acc);
   mixin_extents(handle, cuda::std::layout_right(), acc);
   // make sure we test a not trivially copyable mapping
   static_assert(!cuda::std::is_trivially_move_constructible_v<
-                  typename layout_wrapping_integral<4>::template mapping<cuda::std::extents<int>>>);
+                typename layout_wrapping_integral<4>::template mapping<cuda::std::extents<int>>>);
   mixin_extents(handle, layout_wrapping_integral<4>(), acc);
 }
 

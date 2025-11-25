@@ -40,7 +40,8 @@ template <bool hc,
           cuda::std::enable_if_t<(M::extents_type::rank_dynamic() > 0) && hc && mc && ac, int> = 0>
 __device__ constexpr void test_mdspan_types(const H&, const M&, const A&)
 {
-  using MDS = cuda::shared_memory_mdspan<typename A::element_type, typename M::extents_type, typename M::layout_type, A>;
+  using MDS =
+    cuda::shared_memory_mdspan<typename A::element_type, typename M::extents_type, typename M::layout_type, A>;
 
   static_assert(hc == cuda::std::is_default_constructible_v<H>);
   static_assert(mc == cuda::std::is_default_constructible_v<M>);
@@ -64,7 +65,8 @@ template <bool hc,
           cuda::std::enable_if_t<!((M::extents_type::rank_dynamic() > 0) && hc && mc && ac), int> = 0>
 __device__ constexpr void test_mdspan_types(const H&, const M&, const A&)
 {
-  using MDS = cuda::shared_memory_mdspan<typename A::element_type, typename M::extents_type, typename M::layout_type, A>;
+  using MDS =
+    cuda::shared_memory_mdspan<typename A::element_type, typename M::extents_type, typename M::layout_type, A>;
 
   static_assert(hc == cuda::std::is_default_constructible_v<H>);
   static_assert(mc == cuda::std::is_default_constructible_v<M>);
@@ -94,7 +96,7 @@ __device__ constexpr void mixin_layout(const H& handle, const A& acc)
   // Use weird layout, make sure it has the properties we want to test
   [[maybe_unused]] constexpr size_t D = cuda::std::dynamic_extent;
   static_assert(!cuda::std::is_default_constructible_v<
-                  typename layout_wrapping_integral<4>::template mapping<cuda::std::extents<char, D>>>);
+                typename layout_wrapping_integral<4>::template mapping<cuda::std::extents<char, D>>>);
   mixin_extents<hc, false, ac>(handle, layout_wrapping_integral<4>(), acc);
 }
 

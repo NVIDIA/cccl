@@ -70,7 +70,8 @@ template <class H, class M, class A, size_t N>
 __device__ constexpr void
 test_mdspan_ctor_array(const H& handle, const M& map, const A&, cuda::std::array<typename M::index_type, N> exts)
 {
-  using MDS = cuda::shared_memory_mdspan<typename A::element_type, typename M::extents_type, typename M::layout_type, A>;
+  using MDS =
+    cuda::shared_memory_mdspan<typename A::element_type, typename M::extents_type, typename M::layout_type, A>;
   if (!cuda::std::__cccl_default_is_constant_evaluated())
   {
     move_counted_handle<typename MDS::element_type>::move_counter() = 0;
@@ -113,7 +114,8 @@ get_exts_dynamic(const cuda::std::array<typename Extents::index_type, Extents::r
 template <bool mec, bool ac, class H, class M, class A, cuda::std::enable_if_t<mec && ac, int> = 0>
 __device__ constexpr void test_mdspan_ctor(const H& handle, const M& map, const A& acc)
 {
-  using MDS = cuda::shared_memory_mdspan<typename A::element_type, typename M::extents_type, typename M::layout_type, A>;
+  using MDS =
+    cuda::shared_memory_mdspan<typename A::element_type, typename M::extents_type, typename M::layout_type, A>;
   static_assert(mec == cuda::std::is_constructible_v<M, typename M::extents_type>);
   static_assert(ac == cuda::std::is_default_constructible_v<A>);
   // test from all extents
@@ -127,7 +129,8 @@ __device__ constexpr void test_mdspan_ctor(const H& handle, const M& map, const 
 template <bool mec, bool ac, class H, class M, class A, cuda::std::enable_if_t<!(mec && ac), int> = 0>
 __device__ constexpr void test_mdspan_ctor(const H& handle, const M& map, const A& acc)
 {
-  using MDS = cuda::shared_memory_mdspan<typename A::element_type, typename M::extents_type, typename M::layout_type, A>;
+  using MDS =
+    cuda::shared_memory_mdspan<typename A::element_type, typename M::extents_type, typename M::layout_type, A>;
   static_assert(mec == cuda::std::is_constructible_v<M, typename M::extents_type>);
   static_assert(ac == cuda::std::is_default_constructible_v<A>);
   static_assert(
@@ -156,18 +159,18 @@ __device__ constexpr void mixin_layout(const H& handle, const A& acc)
   // Sanity check that this layouts mapping is constructible from extents (via its move constructor)
   static_assert(
     cuda::std::is_constructible_v<typename layout_wrapping_integral<8>::template mapping<cuda::std::extents<int>>,
-                                cuda::std::extents<int>>);
+                                  cuda::std::extents<int>>);
   static_assert(
     !cuda::std::is_constructible_v<typename layout_wrapping_integral<8>::template mapping<cuda::std::extents<int>>,
-                                 const cuda::std::extents<int>&>);
+                                   const cuda::std::extents<int>&>);
   mixin_extents<true, ac>(handle, layout_wrapping_integral<8>(), acc);
   // Sanity check that this layouts mapping is not constructible from extents
   static_assert(
     !cuda::std::is_constructible_v<typename layout_wrapping_integral<4>::template mapping<cuda::std::extents<int>>,
-                                 cuda::std::extents<int>>);
+                                   cuda::std::extents<int>>);
   static_assert(
     !cuda::std::is_constructible_v<typename layout_wrapping_integral<4>::template mapping<cuda::std::extents<int>>,
-                                 const cuda::std::extents<int>&>);
+                                   const cuda::std::extents<int>&>);
   mixin_extents<false, ac>(handle, layout_wrapping_integral<4>(), acc);
 }
 

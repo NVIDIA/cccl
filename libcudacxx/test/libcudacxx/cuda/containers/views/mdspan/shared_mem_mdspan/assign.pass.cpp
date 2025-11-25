@@ -24,7 +24,8 @@
 template <class H, class M, class A>
 __device__ constexpr void test_mdspan_types(const H& handle, const M& map, const A& acc)
 {
-  using MDS = cuda::shared_memory_mdspan<typename A::element_type, typename M::extents_type, typename M::layout_type, A>;
+  using MDS =
+    cuda::shared_memory_mdspan<typename A::element_type, typename M::extents_type, typename M::layout_type, A>;
 
   MDS m_org(handle, map, acc);
   MDS m(handle, map, acc);
@@ -37,10 +38,10 @@ __device__ constexpr void test_mdspan_types(const H& handle, const M& map, const
   test_equality_mapping(m, map);
   test_equality_accessor(m, acc);
 
-  static_assert(cuda::std::is_trivially_assignable_v<MDS, const MDS&>
-                == ((!cuda::std::is_class_v<H> || cuda::std::is_trivially_assignable_v<H, const H&>)
-                    && cuda::std::is_trivially_assignable_v<M, const M&>
-                    && cuda::std::is_trivially_assignable_v<A, const A&>));
+  static_assert(
+    cuda::std::is_trivially_assignable_v<MDS, const MDS&>
+    == ((!cuda::std::is_class_v<H> || cuda::std::is_trivially_assignable_v<H, const H&>)
+        && cuda::std::is_trivially_assignable_v<M, const M&> && cuda::std::is_trivially_assignable_v<A, const A&>) );
 }
 
 template <class H, class L, class A>

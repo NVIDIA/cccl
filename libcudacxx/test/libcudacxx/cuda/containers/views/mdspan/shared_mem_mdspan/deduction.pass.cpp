@@ -60,7 +60,8 @@
 template <class H, class M, class A>
 __host__ __device__ constexpr void test_mdspan_types(const H& handle, const M& map, const A& acc)
 {
-  using MDS = cuda::shared_memory_mdspan<typename A::element_type, typename M::extents_type, typename M::layout_type, A>;
+  using MDS =
+    cuda::shared_memory_mdspan<typename A::element_type, typename M::extents_type, typename M::layout_type, A>;
 
   // deduction from data_handle_type (including non-pointer), mapping and accessor
   static_assert(cuda::std::is_same_v<decltype(cuda::shared_memory_mdspan(handle, map, acc)), MDS>);
@@ -110,24 +111,25 @@ __host__ __device__ constexpr bool test_no_layout_deduction_guides(const H& hand
 {
   using T = typename A::element_type;
   // deduction from pointer alone
-  static_assert(
-    cuda::std::is_same_v<decltype(cuda::shared_memory_mdspan(handle)), cuda::shared_memory_mdspan<T, cuda::std::extents<size_t>>>);
+  static_assert(cuda::std::is_same_v<decltype(cuda::shared_memory_mdspan(handle)),
+                                     cuda::shared_memory_mdspan<T, cuda::std::extents<size_t>>>);
   // deduction from pointer and integral like
   static_assert(cuda::std::is_same_v<decltype(cuda::shared_memory_mdspan(handle, 5, SizeTIntType(6))),
                                      cuda::shared_memory_mdspan<T, cuda::std::dextents<size_t, 2>>>);
 
   // P3029R1: deduction from `integral_constant`
-  static_assert(cuda::std::is_same_v<decltype(cuda::shared_memory_mdspan(handle, cuda::std::integral_constant<size_t, 5>{})),
-                                     cuda::shared_memory_mdspan<T, cuda::std::extents<size_t, 5>>>);
   static_assert(
-    cuda::std::is_same_v<
-      decltype(cuda::shared_memory_mdspan(handle, cuda::std::integral_constant<size_t, 5>{}, cuda::std::dynamic_extent)),
-      cuda::shared_memory_mdspan<T, cuda::std::extents<size_t, 5, cuda::std::dynamic_extent>>>);
+    cuda::std::is_same_v<decltype(cuda::shared_memory_mdspan(handle, cuda::std::integral_constant<size_t, 5>{})),
+                         cuda::shared_memory_mdspan<T, cuda::std::extents<size_t, 5>>>);
+  static_assert(
+    cuda::std::is_same_v<decltype(cuda::shared_memory_mdspan(
+                           handle, cuda::std::integral_constant<size_t, 5>{}, cuda::std::dynamic_extent)),
+                         cuda::shared_memory_mdspan<T, cuda::std::extents<size_t, 5, cuda::std::dynamic_extent>>>);
   static_assert(
     cuda::std::is_same_v<decltype(cuda::shared_memory_mdspan(handle,
-                                                        cuda::std::integral_constant<size_t, 5>{},
-                                                        cuda::std::dynamic_extent,
-                                                        cuda::std::integral_constant<size_t, 7>{})),
+                                                             cuda::std::integral_constant<size_t, 5>{},
+                                                             cuda::std::dynamic_extent,
+                                                             cuda::std::integral_constant<size_t, 7>{})),
                          cuda::shared_memory_mdspan<T, cuda::std::extents<size_t, 5, cuda::std::dynamic_extent, 7>>>);
 
   cuda::std::array<char, 3> exts;
@@ -154,7 +156,7 @@ __host__ __device__ constexpr void mixin_layout(const H& handle, const A& acc)
   mixin_extents(handle, layout_wrapping_integral<4>(), acc);
 
   // checking that there is no deduction happen for non-pointer handle type
-  assert((test_no_layout_deduction_guides(handle, acc) == cuda::std::is_same_v<H, typename A::element_type*>));
+  assert((test_no_layout_deduction_guides(handle, acc) == cuda::std::is_same_v<H, typename A::element_type*>) );
 }
 
 template <class T, cuda::std::enable_if_t<cuda::std::is_default_constructible_v<T>, int> = 0>

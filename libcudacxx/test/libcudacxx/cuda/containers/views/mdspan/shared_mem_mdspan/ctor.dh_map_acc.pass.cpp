@@ -31,7 +31,8 @@
 template <class H, class M, class A>
 __device__ constexpr void test_mdspan_types(const H& handle, const M& map, const A& acc)
 {
-  using MDS = cuda::shared_memory_mdspan<typename A::element_type, typename M::extents_type, typename M::layout_type, A>;
+  using MDS =
+    cuda::shared_memory_mdspan<typename A::element_type, typename M::extents_type, typename M::layout_type, A>;
 
   if (!cuda::std::__cccl_default_is_constant_evaluated())
   {
@@ -102,19 +103,17 @@ __device__ void test()
 
   // test non-constructibility from wrong accessor
   static_assert(!cuda::std::is_constructible_v<mds_t,
-                                             float*,
-                                             mapping_t<cuda::std::extents<int, 3, D, D>>,
-                                             cuda::std::default_accessor<const float>>);
+                                               float*,
+                                               mapping_t<cuda::std::extents<int, 3, D, D>>,
+                                               cuda::std::default_accessor<const float>>);
 
   // test non-constructibility from wrong mapping type
   // wrong rank
   static_assert(!cuda::std::is_constructible_v<mds_t, float*, mapping_t<cuda::std::extents<int, D, D>>, acc_t>);
-  static_assert(
-    !cuda::std::is_constructible_v<mds_t, float*, mapping_t<cuda::std::extents<int, D, D, D, D>>, acc_t>);
+  static_assert(!cuda::std::is_constructible_v<mds_t, float*, mapping_t<cuda::std::extents<int, D, D, D, D>>, acc_t>);
   // wrong type in general: note the map constructor does NOT convert, since it takes by const&
   static_assert(!cuda::std::is_constructible_v<mds_t, float*, mapping_t<cuda::std::extents<int, D, D, D>>, acc_t>);
-  static_assert(
-    !cuda::std::is_constructible_v<mds_t, float*, mapping_t<cuda::std::extents<unsigned, 3, D, D>>, acc_t>);
+  static_assert(!cuda::std::is_constructible_v<mds_t, float*, mapping_t<cuda::std::extents<unsigned, 3, D, D>>, acc_t>);
 
   // test non-constructibility from wrong handle_type
   static_assert(

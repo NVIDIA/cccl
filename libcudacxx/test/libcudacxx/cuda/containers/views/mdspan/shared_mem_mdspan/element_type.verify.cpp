@@ -46,7 +46,9 @@ __host__ __device__ void element_type_mismatch()
 {
   // expected-error-re@*:* {{{{(static_assert|static assertion)}} failed {{.*}}mdspan: ElementType template parameter
   // must match AccessorPolicy::element_type}}
-  cuda::shared_memory_mdspan<int, cuda::std::extents<int>, cuda::std::layout_right, cuda::std::default_accessor<const int>> m;
+  cuda::
+    shared_memory_mdspan<int, cuda::std::extents<int>, cuda::std::layout_right, cuda::std::default_accessor<const int>>
+      m;
   unused(m);
 }
 

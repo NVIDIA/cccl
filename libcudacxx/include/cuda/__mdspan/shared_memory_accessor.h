@@ -188,8 +188,8 @@ public:
     _CCCL_VERIFY_DEVICE_ONLY_USAGE();
   }
 
-  [[nodiscard]] _CCCL_API constexpr bool
-  __detectably_invalid([[maybe_unused]] data_handle_type __p, ::cuda::std::size_t __size_bytes) const noexcept
+  [[nodiscard]] _CCCL_API constexpr bool __detectably_invalid(
+    [[maybe_unused]] data_handle_type __p, [[maybe_unused]] ::cuda::std::size_t __size_bytes) const noexcept
   {
     NV_IF_TARGET(NV_IS_DEVICE,
                  (bool __is_shared_mem     = ::cuda::device::is_address_from(__p, device::address_space::shared);
