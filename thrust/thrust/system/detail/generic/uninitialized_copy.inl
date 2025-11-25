@@ -32,6 +32,8 @@
 #include <thrust/iterator/iterator_traits.h>
 #include <thrust/system/detail/generic/uninitialized_copy.h>
 
+#include <cuda/std/__new/device_new.h>
+
 THRUST_NAMESPACE_BEGIN
 namespace system
 {
@@ -50,7 +52,6 @@ struct uninitialized_copy_functor
   {
     const InputType& in = thrust::get<0>(t);
     OutputType& out     = thrust::get<1>(t);
-
     ::new (static_cast<void*>(&out)) OutputType(in);
   } // end operator()()
 }; // end uninitialized_copy_functor

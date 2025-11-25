@@ -40,6 +40,7 @@
 #include <cuda/std/__memory/construct_at.h>
 #include <cuda/std/__memory/uninitialized_algorithms.h>
 #include <cuda/std/__new/bad_alloc.h>
+#include <cuda/std/__new/device_new.h>
 #include <cuda/std/__new/launder.h>
 #include <cuda/std/__ranges/access.h>
 #include <cuda/std/__ranges/concepts.h>
@@ -1631,8 +1632,8 @@ public:
     return _CUDA_VSTD::equal(__lhs.begin(), __lhs.end(), __rhs.begin(), __rhs.end());
   }
 #if _CCCL_STD_VER <= 2017
-  [[nodiscard]] _CCCL_API friend constexpr bool
-  operator!=(const inplace_vector& __lhs, const inplace_vector& __rhs) noexcept(
+  [[nodiscard]]
+  _CCCL_API friend constexpr bool operator!=(const inplace_vector& __lhs, const inplace_vector& __rhs) noexcept(
     noexcept(_CUDA_VSTD::equal(__lhs.begin(), __lhs.end(), __rhs.begin(), __rhs.end())))
   {
     return !_CUDA_VSTD::equal(__lhs.begin(), __lhs.end(), __rhs.begin(), __rhs.end());
@@ -1647,8 +1648,8 @@ public:
     return _CUDA_VSTD::lexicographical_compare_three_way(__lhs.begin(), __lhs.end(), __rhs.begin(), __rhs.end());
   }
 #else // ^^^ _LIBCUDACXX_HAS_SPACESHIP_OPERATOR() ^^^ / vvv !_LIBCUDACXX_HAS_SPACESHIP_OPERATOR() vvv
-  [[nodiscard]] _CCCL_API friend constexpr bool
-  operator<(const inplace_vector& __lhs, const inplace_vector& __rhs) noexcept(
+  [[nodiscard]]
+  _CCCL_API friend constexpr bool operator<(const inplace_vector& __lhs, const inplace_vector& __rhs) noexcept(
     noexcept(_CUDA_VSTD::lexicographical_compare(__lhs.begin(), __lhs.end(), __rhs.begin(), __rhs.end())))
   {
     return _CUDA_VSTD::lexicographical_compare(__lhs.begin(), __lhs.end(), __rhs.begin(), __rhs.end());
