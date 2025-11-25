@@ -105,46 +105,41 @@ public:
     return __cc_;
   }
 
-  // clang complains about exlude_from_explicit_instantiation being ignored here.
-  _CCCL_DIAG_PUSH
-  _CCCL_DIAG_SUPPRESS_CLANG("-Wignored-attributes")
-
   //! @brief Equality operator.
-  [[nodiscard]] friend _CCCL_API constexpr bool operator==(compute_capability __lhs, compute_capability __rhs) noexcept
+  [[nodiscard]] _CCCL_API friend constexpr bool operator==(compute_capability __lhs, compute_capability __rhs) noexcept
   {
     return __lhs.__cc_ == __rhs.__cc_;
   }
 
   //! @brief Inequality operator.
-  [[nodiscard]] friend _CCCL_API constexpr bool operator!=(compute_capability __lhs, compute_capability __rhs) noexcept
+  [[nodiscard]] _CCCL_API friend constexpr bool operator!=(compute_capability __lhs, compute_capability __rhs) noexcept
   {
     return __lhs.__cc_ != __rhs.__cc_;
   }
 
   //! @brief Less than operator.
-  [[nodiscard]] friend _CCCL_API constexpr bool operator<(compute_capability __lhs, compute_capability __rhs) noexcept
+  [[nodiscard]] _CCCL_API friend constexpr bool operator<(compute_capability __lhs, compute_capability __rhs) noexcept
   {
     return __lhs.__cc_ < __rhs.__cc_;
   }
 
   //! @brief Less than or equal to operator.
-  [[nodiscard]] friend _CCCL_API constexpr bool operator<=(compute_capability __lhs, compute_capability __rhs) noexcept
+  [[nodiscard]] _CCCL_API friend constexpr bool operator<=(compute_capability __lhs, compute_capability __rhs) noexcept
   {
     return __lhs.__cc_ <= __rhs.__cc_;
   }
 
   //! @brief Greater than operator.
-  [[nodiscard]] friend _CCCL_API constexpr bool operator>(compute_capability __lhs, compute_capability __rhs) noexcept
+  [[nodiscard]] _CCCL_API friend constexpr bool operator>(compute_capability __lhs, compute_capability __rhs) noexcept
   {
     return __lhs.__cc_ > __rhs.__cc_;
   }
 
   //! @brief Greater than or equal to operator.
-  [[nodiscard]] friend _CCCL_API constexpr bool operator>=(compute_capability __lhs, compute_capability __rhs) noexcept
+  [[nodiscard]] _CCCL_API friend constexpr bool operator>=(compute_capability __lhs, compute_capability __rhs) noexcept
   {
     return __lhs.__cc_ >= __rhs.__cc_;
   }
-  _CCCL_DIAG_POP
 };
 
 _CCCL_END_NAMESPACE_CUDA
