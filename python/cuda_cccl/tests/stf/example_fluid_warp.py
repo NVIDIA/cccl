@@ -29,53 +29,13 @@ import warp.render
 import cuda.stf as cudastf
 
 
+# Add a stf-specific decorator to the wp. namespace
 def stf_kernel(pyfunc):
     # let warp decorate normally
     kernel = wp.kernel(pyfunc)
 
     # attach an STF-aware call operator
     def _stf_call(*args, dim=None, stream=None, **kwargs):
-        print(f"[STF TRACE] {pyfunc.__name__}")
-        print(f"  dim={dim}, stream={stream}")
-
-        # Enhanced arg display with logical data detection
-        if args:
-            print("  args=[")
-            for i, arg in enumerate(args):
-                # Detect if argument is or contains STF logical data
-                is_logical_data = False
-                symbol = None
-
-                # Check if arg is directly STF logical data
-                if hasattr(arg, "__class__") and "logical_data" in str(type(arg)):
-                    is_logical_data = True
-                    if hasattr(arg, "symbol") and arg.symbol:
-                        symbol = arg.symbol
-                # Check if arg has attached STF logical data (Warp array)
-                elif hasattr(arg, "_stf_ld"):
-                    is_logical_data = True
-                    if hasattr(arg._stf_ld, "symbol") and arg._stf_ld.symbol:
-                        symbol = arg._stf_ld.symbol
-                # Fallback to _name for Warp arrays
-                elif hasattr(arg, "_name") and arg._name:
-                    symbol = arg._name
-
-                if is_logical_data:
-                    if symbol:
-                        print(f"    [{i}]: '{symbol}' [logical_data]")
-                    else:
-                        print(f"    [{i}]: logical_data")
-                else:
-                    # Regular arguments (scalars, etc.)
-                    if hasattr(arg, "shape"):  # Array-like but not logical data
-                        print(f"    [{i}]: {type(arg).__name__}")
-                    else:  # Scalar value
-                        print(f"    [{i}]: {arg}")
-            print("  ]")
-        else:
-            print(f"  args={args}")
-
-        print(f"  kwargs={kwargs}")
         return wp.stf.launch(kernel, dim=dim, inputs=args, stream=stream, **kwargs)
 
     # monkey-patch a method onto the kernel object
@@ -85,49 +45,6 @@ def stf_kernel(pyfunc):
 
 
 def stf_launch(kernel, dim, inputs=None, stream=None, **kwargs):
-    print(f"[STF TRACE] launching kernel: {getattr(kernel, '__name__', kernel)}")
-    print(f"  dim     = {dim}")
-    print(f"  stream  = {stream}")
-
-    # Enhanced input display with logical data detection
-    if inputs:
-        print("  inputs  = [")
-        for i, inp in enumerate(inputs):
-            # Detect if input is or contains STF logical data
-            is_logical_data = False
-            symbol = None
-
-            # Check if inp is directly STF logical data
-            if hasattr(inp, "__class__") and "logical_data" in str(type(inp)):
-                is_logical_data = True
-                if hasattr(inp, "symbol") and inp.symbol:
-                    symbol = inp.symbol
-            # Check if inp has attached STF logical data (Warp array)
-            elif hasattr(inp, "_stf_ld"):
-                is_logical_data = True
-                if hasattr(inp._stf_ld, "symbol") and inp._stf_ld.symbol:
-                    symbol = inp._stf_ld.symbol
-            # Fallback to _name for Warp arrays
-            elif hasattr(inp, "_name") and inp._name:
-                symbol = inp._name
-
-            if is_logical_data:
-                if symbol:
-                    print(f"    [{i}]: '{symbol}' [logical_data]")
-                else:
-                    print(f"    [{i}]: logical_data")
-            else:
-                # Regular arguments (scalars, etc.)
-                if hasattr(inp, "shape"):  # Array-like but not logical data
-                    print(f"    [{i}]: {type(inp).__name__}")
-                else:  # Scalar value
-                    print(f"    [{i}]: {inp}")
-        print("  ]")
-    else:
-        print(f"  inputs  = {inputs}")
-
-    print(f"  kwargs  = {kwargs}")
-
     # just forward to warp for now
     return wp.launch(
         kernel,
@@ -387,6 +304,7 @@ class Example:
                 self.p0.zero_()
                 self.p1.zero_()
 
+                # TODO experiment with explicit capture at Warp level
                 # if self.use_cuda_graph:
                 #     wp.capture_launch(self.graph)
                 # else:
