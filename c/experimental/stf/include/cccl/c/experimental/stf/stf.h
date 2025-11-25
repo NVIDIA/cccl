@@ -487,7 +487,7 @@ cudaStream_t stf_fence(stf_ctx_handle ctx);
 void stf_logical_data(stf_ctx_handle ctx, stf_logical_data_handle* ld, void* addr, size_t sz);
 
 //!
-//! \brief Create logical data handle from address with data place specification [PRIMARY API]
+//! \brief Create logical data handle from address with data place specification
 //!
 //! Creates logical data handle from existing memory buffer, explicitly specifying where
 //! the memory is located (host, device, managed, etc.). This is the primary and recommended
