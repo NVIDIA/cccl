@@ -99,7 +99,7 @@ public:
   {
     static_assert(__cccl_random_is_valid_urng<_URng>, "URng must meet the UniformRandomBitGenerator requirements");
     return -::cuda::std::log(
-             result_type(1) - ::cuda::std::generate_canonical<result_type, numeric_limits<result_type>::digits>(__g))
+             result_type{1} - ::cuda::std::generate_canonical<result_type, numeric_limits<result_type>::digits>(__g))
          / __p.lambda();
   }
 
