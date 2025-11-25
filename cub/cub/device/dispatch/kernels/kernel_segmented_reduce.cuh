@@ -309,6 +309,54 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::ReducePolicy::BLOCK_THREADS)
     }
   }
 }
+
+template <typename ChainedPolicyT,
+          typename InputIteratorT,
+          typename OutputIteratorT,
+          typename OffsetT,
+          typename ReductionOpT,
+          typename InitT,
+          typename AccumT>
+CUB_DETAIL_KERNEL_ATTRIBUTES
+__launch_bounds__(int(ChainedPolicyT::ActivePolicy::ReducePolicy::BLOCK_THREADS)) void DeviceFixedSizeSegmentedReduceVLLKernel(
+  InputIteratorT d_in,
+  OutputIteratorT d_out,
+  OffsetT segment_size,
+  int vll_segment_size,
+  int blocks_per_segment,
+  int num_segments,
+  ReductionOpT reduction_op,
+  InitT init)
+{
+  using ActivePolicyT = typename ChainedPolicyT::ActivePolicy;
+
+  // Thread block type for reducing input tiles
+  using AgentReduceT = reduce::AgentReduce<typename ActivePolicyT::ReducePolicy, InputIteratorT, int, ReductionOpT, AccumT>;
+
+  // Shared memory storage
+  __shared__ typename AgentReduceT::TempStorage temp_storage;
+
+  const int bid = blockIdx.x;
+  const int tid = threadIdx.x;
+
+  const int segment_size_ =
+    ((segment_size % vll_segment_size != 0) && ((bid % blocks_per_segment) == (blocks_per_segment - 1))
+       ? (segment_size % vll_segment_size)
+       : vll_segment_size);
+
+  const int nth_segment           = bid / blocks_per_segment;
+  const auto segment_begin        = static_cast<::cuda::std::int64_t>(nth_segment) * segment_size;
+  const auto block_segment_offset = static_cast<::cuda::std::int64_t>(bid % blocks_per_segment) * vll_segment_size;
+
+  const auto partial_segment_begin = segment_begin + block_segment_offset;
+
+  AccumT block_aggregate = AgentReduceT(temp_storage, d_in + partial_segment_begin, reduction_op)
+                             .ConsumeRange({}, static_cast<int>(segment_size_));
+  if (tid == 0)
+  {
+    finalize_and_store_aggregate(d_out + bid, reduction_op, reduce::empty_problem_init_t<InitT>{init}, block_aggregate);
+  }
+}
 } // namespace detail::segmented_reduce
 
 CUB_NAMESPACE_END
