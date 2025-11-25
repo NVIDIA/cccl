@@ -104,7 +104,7 @@ public:
     {
       // Select a stream from the pool
       capture_stream = get_exec_place().getStream(ctx.async_resources(), true).stream;
-      cuda_safe_call(cudaStreamBeginCapture(capture_stream, cudaStreamCaptureModeThreadLocal));
+      cuda_safe_call(cudaStreamBeginCapture(capture_stream, cudaStreamCaptureModeRelaxed));
     }
 
     auto& dot = *ctx.get_dot();
@@ -365,7 +365,7 @@ public:
       capture_stream = get_exec_place().getStream(ctx.async_resources(), true).stream;
 
       cudaGraph_t childGraph = nullptr;
-      cuda_safe_call(cudaStreamBeginCapture(capture_stream, cudaStreamCaptureModeThreadLocal));
+      cuda_safe_call(cudaStreamBeginCapture(capture_stream, cudaStreamCaptureModeRelaxed));
 
       // Launch the user provided function
       f(capture_stream);
@@ -625,7 +625,7 @@ public:
       cudaStream_t capture_stream = get_exec_place().getStream(ctx.async_resources(), true).stream;
 
       cudaGraph_t childGraph = nullptr;
-      cuda_safe_call(cudaStreamBeginCapture(capture_stream, cudaStreamCaptureModeThreadLocal));
+      cuda_safe_call(cudaStreamBeginCapture(capture_stream, cudaStreamCaptureModeRelaxed));
 
       // Launch the user provided function
       if constexpr (fun_invocable_stream_deps)
