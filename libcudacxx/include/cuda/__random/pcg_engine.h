@@ -57,33 +57,34 @@ public:
       , __lo_{__lo}
   {}
 
-  _CCCL_API constexpr explicit operator ::cuda::std::uint64_t() const noexcept
+  [[nodiscard]] _CCCL_API constexpr explicit operator ::cuda::std::uint64_t() const noexcept
   {
     return __lo_;
   }
 
-  _CCCL_API constexpr explicit operator ::cuda::std::uint8_t() const noexcept
+  [[nodiscard]] _CCCL_API constexpr explicit operator ::cuda::std::uint8_t() const noexcept
   {
     return static_cast<::cuda::std::uint8_t>(__lo_);
   }
 
-  _CCCL_API constexpr __pcg_uint128_fallback operator|(::cuda::std::uint64_t __rhs) const noexcept
+  [[nodiscard]] _CCCL_API constexpr __pcg_uint128_fallback operator|(::cuda::std::uint64_t __rhs) const noexcept
   {
     return __pcg_uint128_fallback(__hi_, __lo_ | __rhs);
   }
 
-  _CCCL_API constexpr __pcg_uint128_fallback operator^(__pcg_uint128_fallback __rhs) const noexcept
+  [[nodiscard]] _CCCL_API constexpr __pcg_uint128_fallback operator^(__pcg_uint128_fallback __rhs) const noexcept
   {
     return __pcg_uint128_fallback(__hi_ ^ __rhs.__hi_, __lo_ ^ __rhs.__lo_);
   }
 
-  _CCCL_API constexpr int operator&(int __rhs) const noexcept
+  [[nodiscard]] _CCCL_API constexpr int operator&(int __rhs) const noexcept
   {
     return __lo_ & static_cast<::cuda::std::uint64_t>(__rhs);
   }
 
-  _CCCL_API constexpr __pcg_uint128_fallback operator<<(int __shift) const noexcept
+  [[nodiscard]] _CCCL_API constexpr __pcg_uint128_fallback operator<<(int __shift) const noexcept
   {
+    _CCCL_ASSERT(__shift >= 0 && __shift < 128, "shift value out of range");
     if (__shift == 0)
     {
       return *this;
@@ -99,7 +100,7 @@ public:
     return __pcg_uint128_fallback((__hi_ << __shift) | (__lo_ >> (64 - __shift)), __lo_ << __shift);
   }
 
-  _CCCL_API constexpr __pcg_uint128_fallback operator>>(int __shift) const noexcept
+  [[nodiscard]] _CCCL_API constexpr __pcg_uint128_fallback operator>>(int __shift) const noexcept
   {
     if (__shift == 0)
     {
@@ -116,14 +117,15 @@ public:
     return __pcg_uint128_fallback(__hi_ >> __shift, (__lo_ >> __shift) | (__hi_ << (64 - __shift)));
   }
 
-  _CCCL_API constexpr __pcg_uint128_fallback operator+(__pcg_uint128_fallback __rhs) const noexcept
+  [[nodiscard]] _CCCL_API constexpr __pcg_uint128_fallback operator+(__pcg_uint128_fallback __rhs) const noexcept
   {
+    // TODO: optimize with PTX add.cc
     ::cuda::std::uint64_t __new_lo = __lo_ + __rhs.__lo_;
     ::cuda::std::uint64_t __carry  = (__new_lo < __lo_) ? 1 : 0;
     return __pcg_uint128_fallback(__hi_ + __rhs.__hi_ + __carry, __new_lo);
   }
 
-  _CCCL_API constexpr __pcg_uint128_fallback operator*(__pcg_uint128_fallback __rhs) const noexcept
+  [[nodiscard]] _CCCL_API constexpr __pcg_uint128_fallback operator*(__pcg_uint128_fallback __rhs) const noexcept
   {
     __pcg_uint128_fallback __c(::cuda::mul_hi(__lo_, __rhs.__lo_), __lo_ * __rhs.__lo_);
     __c.__hi_ += __hi_ * __rhs.__lo_ + __lo_ * __rhs.__hi_;
@@ -132,24 +134,27 @@ public:
 
   _CCCL_API constexpr __pcg_uint128_fallback& operator*=(__pcg_uint128_fallback __rhs) noexcept
   {
-    *this = *this * __rhs;
-    return *this;
+    return *this = *this * __rhs;
   }
 
-  _CCCL_API constexpr bool operator>(int __x) const noexcept
+  [[nodiscard]] _CCCL_API constexpr bool operator>(int __x) const noexcept
   {
     return __hi_ != 0 || __lo_ > static_cast<::cuda::std::uint64_t>(__x);
   }
 
-  _CCCL_API constexpr friend bool operator==(__pcg_uint128_fallback __lhs, __pcg_uint128_fallback __rhs) noexcept
+  [[nodiscard]] _CCCL_API constexpr friend bool
+  operator==(__pcg_uint128_fallback __lhs, __pcg_uint128_fallback __rhs) noexcept
   {
     return __lhs.__hi_ == __rhs.__hi_ && __lhs.__lo_ == __rhs.__lo_;
   }
 
-  _CCCL_API constexpr friend bool operator!=(__pcg_uint128_fallback __lhs, __pcg_uint128_fallback __rhs) noexcept
+#if _CCCL_STD_VER <= 2017
+  [[nodiscard]] _CCCL_API constexpr friend bool
+  operator!=(__pcg_uint128_fallback __lhs, __pcg_uint128_fallback __rhs) noexcept
   {
     return !(__lhs == __rhs);
   }
+#endif // _CCCL_STD_VER <= 2017
 };
 
 //! @brief A 64-bit permuted congruential generator (PCG) random number engine.
