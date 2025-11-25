@@ -21,7 +21,6 @@
 #include <cub/block/block_store.cuh>
 #include <cub/iterator/cache_modified_input_iterator.cuh>
 
-#include <cuda/std/__algorithm/upper_bound.h>
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/is_pointer.h>
 #include <cuda/std/__type_traits/is_same.h>
@@ -533,14 +532,22 @@ private:
 
     _CCCL_DEVICE _CCCL_FORCEINLINE decltype(auto) operator[](difference_type n) const
     {
-      const difference_type off = m_start + n;
-      const auto begin_it       = m_offsets;
-      const auto end_it         = m_offsets + _N1;
+      const difference_type offset = m_start + n;
+      const auto begin_it          = m_offsets;
+      const auto end_it            = m_offsets + _N1;
 
-      auto lb_it                        = ::cuda::std::upper_bound(begin_it, end_it, off);
-      const auto segment_id             = ::cuda::std::distance(begin_it, lb_it);
-      const difference_type shifted_off = (lb_it == begin_it) ? off : off - *(--lb_it);
-      return m_it[m_it_idx_begin[segment_id] + shifted_off];
+      difference_type shifted_offset = offset;
+      int segment_id                 = 0;
+#pragma unroll
+      for (int i = 0; i + 1 < _N1; ++i)
+      {
+        if ((m_offsets[i] <= offset) && (offset < m_offsets[i + 1]))
+        {
+          segment_id     = i + 1;
+          shifted_offset = offset - m_offsets[i];
+        }
+      }
+      return m_it[m_it_idx_begin[segment_id] + shifted_offset];
     }
 
     _CCCL_DEVICE _CCCL_FORCEINLINE friend multi_segmented_iterator
