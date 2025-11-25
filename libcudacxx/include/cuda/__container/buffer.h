@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDA___CONTAINER_ASYNC_BUFFER_H
-#define _CUDA___CONTAINER_ASYNC_BUFFER_H
+#ifndef _CUDA___CONTAINER_BUFFER_H
+#define _CUDA___CONTAINER_BUFFER_H
 
 #include <cuda/std/detail/__config>
 
@@ -205,7 +205,7 @@ public:
     ::cuda::mr::synchronous_resource<::cuda::std::decay_t<_Resource>> _CCCL_AND __buffer_compatible_env<_Env>)
   _CCCL_HIDE_FROM_ABI
   buffer(::cuda::stream_ref __stream, _Resource&& __resource, [[maybe_unused]] const _Env& __env = {})
-      : __buf_(::cuda::__adapt_if_synchronous(::cuda::std::forward<_Resource>(__resource)), __stream, 0)
+      : __buf_(::cuda::mr::__adapt_if_synchronous(::cuda::std::forward<_Resource>(__resource)), __stream, 0)
   {}
 
   //! @brief Constructs a buffer of size \p __size using a memory and leaves all
@@ -226,7 +226,7 @@ public:
     const size_type __size,
     ::cuda::no_init_t,
     [[maybe_unused]] const _Env& __env = {})
-      : __buf_(cuda::__adapt_if_synchronous(::cuda::std::forward<_Resource>(__resource)), __stream, __size)
+      : __buf_(::cuda::mr::__adapt_if_synchronous(::cuda::std::forward<_Resource>(__resource)), __stream, __size)
   {}
 
   //! @brief Constructs a buffer using a memory resource and copy-constructs all
@@ -245,7 +245,7 @@ public:
          _Iter __first,
          _Iter __last,
          [[maybe_unused]] const _Env& __env = {})
-      : __buf_(::cuda::__adapt_if_synchronous(::cuda::std::forward<_Resource>(__resource)),
+      : __buf_(::cuda::mr::__adapt_if_synchronous(::cuda::std::forward<_Resource>(__resource)),
                __stream,
                static_cast<size_type>(::cuda::std::distance(__first, __last)))
   {
@@ -265,7 +265,7 @@ public:
          _Resource&& __resource,
          ::cuda::std::initializer_list<_Tp> __ilist,
          [[maybe_unused]] const _Env& __env = {})
-      : __buf_(::cuda::__adapt_if_synchronous(::cuda::std::forward<_Resource>(__resource)), __stream, __ilist.size())
+      : __buf_(::cuda::mr::__adapt_if_synchronous(::cuda::std::forward<_Resource>(__resource)), __stream, __ilist.size())
   {
     this->__copy_cross(__ilist.begin(), __ilist.end(), __unwrapped_begin(), __buf_.size());
   }
@@ -280,7 +280,7 @@ public:
       _CCCL_AND ::cuda::std::ranges::forward_range<_Range> _CCCL_AND ::cuda::std::ranges::sized_range<_Range>)
   _CCCL_HIDE_FROM_ABI
   buffer(::cuda::stream_ref __stream, _Resource&& __resource, _Range&& __range, [[maybe_unused]] const _Env& __env = {})
-      : __buf_(::cuda::__adapt_if_synchronous(::cuda::std::forward<_Resource>(__resource)),
+      : __buf_(::cuda::mr::__adapt_if_synchronous(::cuda::std::forward<_Resource>(__resource)),
                __stream,
                static_cast<size_type>(::cuda::std::ranges::size(__range)))
   {
@@ -299,7 +299,7 @@ public:
       _CCCL_AND ::cuda::std::ranges::forward_range<_Range> _CCCL_AND(!::cuda::std::ranges::sized_range<_Range>))
   _CCCL_HIDE_FROM_ABI
   buffer(::cuda::stream_ref __stream, _Resource&& __resource, _Range&& __range, [[maybe_unused]] const _Env& __env = {})
-      : __buf_(::cuda::__adapt_if_synchronous(::cuda::std::forward<_Resource>(__resource)),
+      : __buf_(::cuda::mr::__adapt_if_synchronous(::cuda::std::forward<_Resource>(__resource)),
                __stream,
                static_cast<size_type>(
                  ::cuda::std::ranges::distance(::cuda::std::ranges::begin(__range), ::cuda::std::ranges::end(__range))),
@@ -870,4 +870,4 @@ _CCCL_END_NAMESPACE_CUDA
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif //_CUDA___CONTAINER_ASYNC_BUFFER_H
+#endif //_CUDA___CONTAINER_BUFFER_H

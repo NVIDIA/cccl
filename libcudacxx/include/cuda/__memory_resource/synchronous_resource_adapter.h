@@ -28,7 +28,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_CCCL_BEGIN_NAMESPACE_CUDA
+_CCCL_BEGIN_NAMESPACE_CUDA_MR
 
 template <class _Resource>
 _CCCL_CONCEPT __has_member_allocate =
@@ -129,7 +129,7 @@ _CCCL_HOST_API auto __adapt_if_synchronous(_Resource&& __resource) noexcept
     return synchronous_resource_adapter<::cuda::std::decay_t<_Resource>>(::cuda::std::forward<_Resource>(__resource));
   }
 }
-_CCCL_END_NAMESPACE_CUDA
+_CCCL_END_NAMESPACE_CUDA_MR
 
 #include <cuda/std/__cccl/epilogue.h>
 

@@ -75,9 +75,8 @@ class __uninitialized_async_buffer
 {
 private:
   static_assert(::cuda::mr::__contains_execution_space_property<_Properties...>,
-                "The properties of cuda::__uninitialized_async_buffer must "
-                "contain at least one "
-                "execution space property!");
+                "The properties of cuda::__uninitialized_async_buffer must contain at least one execution space "
+                "property!");
 
   using __async_resource = ::cuda::mr::any_resource<_Properties...>;
 
