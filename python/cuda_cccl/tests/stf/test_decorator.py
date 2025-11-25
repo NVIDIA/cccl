@@ -4,6 +4,7 @@ import pytest
 from numba import cuda
 
 import cuda.stf as stf
+from cuda.core.experimental import Device
 
 numba.cuda.config.CUDA_LOW_OCCUPANCY_WARNINGS = 0
 
@@ -25,6 +26,10 @@ def scale(a, x):
 @pytest.mark.parametrize("use_graph", [True, False])
 def test_decorator(use_graph):
     X, Y, Z = (np.ones(16, np.float32) for _ in range(3))
+
+    # XXX Work-around to force the initialization of CUDA devices in cuda.core and
+    # avoid lazy resource init during graph capture.
+    Device().set_current()
 
     ctx = stf.context(use_graph=use_graph)
     lX = ctx.logical_data(X)
