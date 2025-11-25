@@ -34,6 +34,10 @@
 #include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/is_same.h>
 
+#if !_CCCL_COMPILER(NVRTC)
+#  include <ostream>
+#endif // !_CCCL_COMPILER(NVRTC)
+
 CUB_NAMESPACE_BEGIN
 
 /** \brief cub::RadixSortStoreAlgorithm enumerates different algorithms to write
@@ -53,6 +57,21 @@ enum RadixSortStoreAlgorithm
    * instructions and less writes in flight at a given moment. */
   RADIX_SORT_STORE_ALIGNED
 };
+
+#if !_CCCL_COMPILER(NVRTC)
+inline ::std::ostream& operator<<(::std::ostream& os, RadixSortStoreAlgorithm algo)
+{
+  switch (algo)
+  {
+    case RADIX_SORT_STORE_DIRECT:
+      return os << "RADIX_SORT_STORE_DIRECT";
+    case RADIX_SORT_STORE_ALIGNED:
+      return os << "RADIX_SORT_STORE_ALIGNED";
+    default:
+      return os << "<unknown RadixSortStoreAlgorithm: " << static_cast<int>(algo) << ">";
+  }
+}
+#endif // !_CCCL_COMPILER(NVRTC)
 
 template <int NominalBlockThreads4B,
           int NominalItemsPerThread4B,
