@@ -36,7 +36,7 @@
 template <bool mec, bool ac, class H, class M, class A, cuda::std::enable_if_t<mec && ac, int> = 0>
 __device__ constexpr void test_mdspan_types(const H& handle, const M& map, const A&)
 {
-  using MDS = cuda::shared_mem_mdspan<typename A::element_type, typename M::extents_type, typename M::layout_type, A>;
+  using MDS = cuda::shared_memory_mdspan<typename A::element_type, typename M::extents_type, typename M::layout_type, A>;
 
   static_assert(mec == cuda::std::is_constructible_v<M, const typename M::extents_type&>);
   static_assert(ac == cuda::std::is_default_constructible_v<A>);
@@ -57,7 +57,7 @@ __device__ constexpr void test_mdspan_types(const H& handle, const M& map, const
 template <bool mec, bool ac, class H, class M, class A, cuda::std::enable_if_t<!(mec && ac), int> = 0>
 __device__ constexpr void test_mdspan_types(const H& handle, const M& map, const A&)
 {
-  using MDS = cuda::shared_mem_mdspan<typename A::element_type, typename M::extents_type, typename M::layout_type, A>;
+  using MDS = cuda::shared_memory_mdspan<typename A::element_type, typename M::extents_type, typename M::layout_type, A>;
 
   static_assert(mec == cuda::std::is_constructible_v<M, const typename M::extents_type&>);
   static_assert(ac == cuda::std::is_default_constructible_v<A>);
@@ -125,7 +125,7 @@ __device__ void test()
 
   // test non-constructibility from wrong extents type
   [[maybe_unused]] constexpr size_t D = cuda::std::dynamic_extent;
-  using mds_t                         = cuda::shared_mem_mdspan<float, cuda::std::extents<int, 3, D, D>>;
+  using mds_t                         = cuda::shared_memory_mdspan<float, cuda::std::extents<int, 3, D, D>>;
   // sanity check
   static_assert(cuda::std::is_constructible_v<mds_t, float*, cuda::std::extents<int, 3, D, D>>);
   // wrong size

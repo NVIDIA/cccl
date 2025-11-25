@@ -16,7 +16,7 @@ __device__ int device_array[] = {1, 2, 3, 4};
 __device__ void access_test()
 {
   using ext_t = cuda::std::extents<int, 4>;
-  [[maybe_unused]] cuda::shared_mem_mdspan<int, ext_t> md{device_array, ext_t{}};
+  [[maybe_unused]] cuda::shared_memory_mdspan<int, ext_t> md{device_array, ext_t{}};
   unused(md[0]);
 }
 

@@ -107,7 +107,7 @@ void print() = delete;
 template <class H, class M, class A>
 __device__ constexpr void test_mdspan_types(const H& handle, const M& map, const A& acc)
 {
-  using MDS = cuda::shared_mem_mdspan<typename A::element_type, typename M::extents_type, typename M::layout_type, A>;
+  using MDS = cuda::shared_memory_mdspan<typename A::element_type, typename M::extents_type, typename M::layout_type, A>;
   MDS m(handle, map, acc);
 
   // =====================================
@@ -193,7 +193,7 @@ __device__ constexpr void test_mdspan_types(const H& handle, const M& map, const
   // =====================================
 
   // accessor()
-  static_assert(cuda::std::is_same_v<decltype(m.accessor()), const cuda::shared_mem_accessor<A>&>);
+  static_assert(cuda::std::is_same_v<decltype(m.accessor()), const cuda::shared_memory_accessor<A>&>);
   static_assert(noexcept(m.accessor()));
 }
 

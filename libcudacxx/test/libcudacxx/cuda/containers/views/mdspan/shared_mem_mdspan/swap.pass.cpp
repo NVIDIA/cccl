@@ -48,15 +48,15 @@ __device__ void test()
   float data_a[1024] = {};
   float data_b[1024] = {};
   {
-    cuda::shared_mem_mdspan<float, extents_t> a(data_a, extents_t(12));
-    cuda::shared_mem_mdspan<float, extents_t> b(data_b, extents_t(5));
+    cuda::shared_memory_mdspan<float, extents_t> a(data_a, extents_t(12));
+    cuda::shared_memory_mdspan<float, extents_t> b(data_b, extents_t(5));
     test_swap(a, b);
   }
   {
     layout_wrapping_integral<4>::template mapping<extents_t> map_a(extents_t(12), not_extents_constructible_tag()),
       map_b(extents_t(5), not_extents_constructible_tag());
-    cuda::shared_mem_mdspan<float, extents_t, layout_wrapping_integral<4>> a(data_a, map_a);
-    cuda::shared_mem_mdspan<float, extents_t, layout_wrapping_integral<4>> b(data_b, map_b);
+    cuda::shared_memory_mdspan<float, extents_t, layout_wrapping_integral<4>> a(data_a, map_a);
+    cuda::shared_memory_mdspan<float, extents_t, layout_wrapping_integral<4>> b(data_b, map_b);
     test_swap(a, b);
   }
 }

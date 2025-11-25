@@ -23,7 +23,7 @@ __host__ __device__ void not_layout_policy()
 {
   // expected-error-re@*:* {{{{(static_assert|static assertion)}} failed {{.*}}mdspan: LayoutPolicy template parameter
   // is invalid. A common mistake is to pass a layout mapping instead of a layout policy}}
-  cuda::shared_mem_mdspan<int, cuda::std::extents<int>, cuda::std::layout_left::template mapping<cuda::std::extents<int>>>
+  cuda::shared_memory_mdspan<int, cuda::std::extents<int>, cuda::std::layout_left::template mapping<cuda::std::extents<int>>>
     m;
   unused(m);
 }

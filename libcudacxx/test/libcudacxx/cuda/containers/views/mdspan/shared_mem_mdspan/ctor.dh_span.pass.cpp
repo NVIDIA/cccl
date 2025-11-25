@@ -70,7 +70,7 @@ template <class H, class M, class A, size_t N>
 __device__ constexpr void
 test_mdspan_ctor_span(const H& handle, const M& map, const A&, cuda::std::span<const typename M::index_type, N> exts)
 {
-  using MDS = cuda::shared_mem_mdspan<typename A::element_type, typename M::extents_type, typename M::layout_type, A>;
+  using MDS = cuda::shared_memory_mdspan<typename A::element_type, typename M::extents_type, typename M::layout_type, A>;
   if (!cuda::std::__cccl_default_is_constant_evaluated())
   {
     move_counted_handle<typename MDS::element_type>::move_counter() = 0;
@@ -112,7 +112,7 @@ get_exts_dynamic(const cuda::std::array<typename Extents::index_type, Extents::r
 template <bool mec, bool ac, class H, class M, class A, cuda::std::enable_if_t<mec && ac, int> = 0>
 __device__ constexpr void test_mdspan_ctor(const H& handle, const M& map, const A& acc)
 {
-  using MDS = cuda::shared_mem_mdspan<typename A::element_type, typename M::extents_type, typename M::layout_type, A>;
+  using MDS = cuda::shared_memory_mdspan<typename A::element_type, typename M::extents_type, typename M::layout_type, A>;
   static_assert(mec == cuda::std::is_constructible_v<M, typename M::extents_type>);
   static_assert(ac == cuda::std::is_default_constructible_v<A>);
   // test from all extents
@@ -128,7 +128,7 @@ __device__ constexpr void test_mdspan_ctor(const H& handle, const M& map, const 
 template <bool mec, bool ac, class H, class M, class A, cuda::std::enable_if_t<!(mec && ac), int> = 0>
 __device__ constexpr void test_mdspan_ctor(const H& handle, const M& map, const A& acc)
 {
-  using MDS = cuda::shared_mem_mdspan<typename A::element_type, typename M::extents_type, typename M::layout_type, A>;
+  using MDS = cuda::shared_memory_mdspan<typename A::element_type, typename M::extents_type, typename M::layout_type, A>;
   static_assert(mec == cuda::std::is_constructible_v<M, typename M::extents_type>);
   static_assert(ac == cuda::std::is_default_constructible_v<A>);
   static_assert(
@@ -195,7 +195,7 @@ __device__ void test()
 
   // test non-constructibility from wrong span type
   [[maybe_unused]] constexpr size_t D = cuda::std::dynamic_extent;
-  using mds_t                         = cuda::shared_mem_mdspan<float, cuda::std::extents<unsigned, 3, D, D>>;
+  using mds_t                         = cuda::shared_memory_mdspan<float, cuda::std::extents<unsigned, 3, D, D>>;
   // sanity check
   static_assert(cuda::std::is_constructible_v<mds_t, float*, cuda::std::span<int, 3>>);
   static_assert(cuda::std::is_constructible_v<mds_t, float*, cuda::std::span<int, 2>>);
@@ -208,14 +208,14 @@ __device__ void test()
   static_assert(!cuda::std::is_constructible_v<mds_t, float*, cuda::std::span<IntType, 2>>);
 
   // index_type is not nothrow constructible
-  using mds_uchar_t = cuda::shared_mem_mdspan<float, cuda::std::extents<unsigned char, 3, D, D>>;
+  using mds_uchar_t = cuda::shared_memory_mdspan<float, cuda::std::extents<unsigned char, 3, D, D>>;
   static_assert(cuda::std::is_convertible_v<IntType, unsigned char>);
   static_assert(cuda::std::is_convertible_v<const IntType&, unsigned char>);
   static_assert(!cuda::std::is_nothrow_constructible_v<unsigned char, const IntType&>);
   static_assert(!cuda::std::is_constructible_v<mds_uchar_t, float*, cuda::std::span<IntType, 2>>);
 
   // convertible from non-const to index_type but not  from const
-  using mds_int_t = cuda::shared_mem_mdspan<float, cuda::std::extents<int, 3, D, D>>;
+  using mds_int_t = cuda::shared_memory_mdspan<float, cuda::std::extents<int, 3, D, D>>;
   static_assert(cuda::std::is_convertible_v<IntTypeNC, int>);
   static_assert(!cuda::std::is_convertible_v<const IntTypeNC&, int>);
   static_assert(cuda::std::is_nothrow_constructible_v<int, IntTypeNC>);

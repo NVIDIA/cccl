@@ -31,7 +31,7 @@
 template <class H, class M, class A>
 __device__ constexpr void test_mdspan_types(const H& handle, const M& map, const A& acc)
 {
-  using MDS = cuda::shared_mem_mdspan<typename A::element_type, typename M::extents_type, typename M::layout_type, A>;
+  using MDS = cuda::shared_memory_mdspan<typename A::element_type, typename M::extents_type, typename M::layout_type, A>;
 
   if (!cuda::std::__cccl_default_is_constant_evaluated())
   {
@@ -94,7 +94,7 @@ __device__ void test()
 
   // test non-constructibility from wrong args
   [[maybe_unused]] constexpr size_t D = cuda::std::dynamic_extent;
-  using mds_t                         = cuda::shared_mem_mdspan<float, cuda::std::extents<int, 3, D, D>>;
+  using mds_t                         = cuda::shared_memory_mdspan<float, cuda::std::extents<int, 3, D, D>>;
   using acc_t                         = cuda::std::default_accessor<float>;
 
   // sanity check

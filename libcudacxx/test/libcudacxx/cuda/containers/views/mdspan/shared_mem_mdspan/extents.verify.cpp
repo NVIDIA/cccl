@@ -23,7 +23,7 @@ __host__ __device__ void not_extents()
 {
   // expected-error-re@*:* {{{{(static_assert|static assertion)}} failed {{.*}}mdspan: Extents template parameter must
   // be a specialization of extents.}}
-  cuda::shared_mem_mdspan<int, int> m;
+  cuda::shared_memory_mdspan<int, int> m;
   unused(m);
 }
 

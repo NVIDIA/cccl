@@ -65,14 +65,14 @@ __host__ __device__ constexpr void check_triviality()
 template <class T, class E, class L, class A>
 __host__ __device__ constexpr void test_mdspan_types()
 {
-  using MDS = cuda::shared_mem_mdspan<T, E, L, A>;
+  using MDS = cuda::shared_memory_mdspan<T, E, L, A>;
 
   using element_type = cuda::std::remove_pointer_t<typename A::data_handle_type>;
   using handle_type  = element_type*;
 
   static_assert(cuda::std::is_same_v<typename MDS::extents_type, E>);
   static_assert(cuda::std::is_same_v<typename MDS::layout_type, L>);
-  static_assert(cuda::std::is_same_v<typename MDS::accessor_type, cuda::shared_mem_accessor<A>>);
+  static_assert(cuda::std::is_same_v<typename MDS::accessor_type, cuda::shared_memory_accessor<A>>);
   static_assert(cuda::std::is_same_v<typename MDS::mapping_type, typename L::template mapping<E>>);
   static_assert(cuda::std::is_same_v<typename MDS::element_type, T>);
   static_assert(cuda::std::is_same_v<typename MDS::value_type, cuda::std::remove_cv_t<T>>);
@@ -84,10 +84,10 @@ __host__ __device__ constexpr void test_mdspan_types()
 
   // check default template parameters:
   static_assert(
-    cuda::std::is_same_v<cuda::shared_mem_mdspan<T, E>,
-                         cuda::shared_mem_mdspan<T, E, cuda::std::layout_right, cuda::std::default_accessor<T>>>);
-  static_assert(cuda::std::is_same_v<cuda::shared_mem_mdspan<T, E, L>,
-                                     cuda::shared_mem_mdspan<T, E, L, cuda::std::default_accessor<T>>>);
+    cuda::std::is_same_v<cuda::shared_memory_mdspan<T, E>,
+                         cuda::shared_memory_mdspan<T, E, cuda::std::layout_right, cuda::std::default_accessor<T>>>);
+  static_assert(cuda::std::is_same_v<cuda::shared_memory_mdspan<T, E, L>,
+                                     cuda::shared_memory_mdspan<T, E, L, cuda::std::default_accessor<T>>>);
 
   // check triviality
   using DH = typename MDS::data_handle_type;
@@ -139,8 +139,8 @@ __host__ __device__ constexpr bool test()
   mixin_accessor<const double>();
 
   // sanity checks for triviality
-  check_triviality<cuda::shared_mem_mdspan<int, cuda::std::extents<int>>, false, true, true, true, true, true>();
-  check_triviality<cuda::shared_mem_mdspan<int, cuda::std::dextents<int, 1>>, false, true, true, true, true, true>();
+  check_triviality<cuda::shared_memory_mdspan<int, cuda::std::extents<int>>, false, true, true, true, true, true>();
+  check_triviality<cuda::shared_memory_mdspan<int, cuda::std::dextents<int, 1>>, false, true, true, true, true, true>();
 
   return true;
 }

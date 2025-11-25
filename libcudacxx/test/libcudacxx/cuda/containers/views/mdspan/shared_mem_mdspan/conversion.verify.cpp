@@ -46,7 +46,7 @@
 __host__ __device__ void cant_construct_data_handle_type()
 {
   int data;
-  cuda::shared_mem_mdspan<int, cuda::std::extents<int>, cuda::std::layout_right, convertible_accessor_but_not_handle<int>>
+  cuda::shared_memory_mdspan<int, cuda::std::extents<int>, cuda::std::layout_right, convertible_accessor_but_not_handle<int>>
     m_nc(&data);
   // expected-error-re@*:* {{{{.*}}no matching constructor for initialization of {{.*}} (aka
   // 'not_const_convertible_handle<const int>')}} expected-error-re@*:* {{{{(static_assert|static assertion)}} failed
@@ -60,10 +60,10 @@ __host__ __device__ void cant_construct_data_handle_type()
 __host__ __device__ void mapping_constructible_despite_extents_compatibility()
 {
   int data;
-  cuda::shared_mem_mdspan<int, cuda::std::extents<int>, always_convertible_layout> m(&data);
+  cuda::shared_memory_mdspan<int, cuda::std::extents<int>, always_convertible_layout> m(&data);
   // expected-error-re@*:* {{{{(static_assert|static assertion)}} failed {{.*}}mdspan: incompatible extents for mdspan
   // construction}}
-  cuda::shared_mem_mdspan<int, cuda::std::extents<int, 5>, always_convertible_layout> m2(m);
+  cuda::shared_memory_mdspan<int, cuda::std::extents<int, 5>, always_convertible_layout> m2(m);
   unused(m2);
 }
 

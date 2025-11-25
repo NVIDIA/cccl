@@ -144,8 +144,8 @@ template <class ToL, class ToExt, class ToA, class FromH, class FromL, class Fro
 __device__ constexpr void
 construct_from_mds(const FromH& handle, const FromL& layout, const FromExt& exts, const FromA& acc)
 {
-  using ToMDS   = cuda::shared_mem_mdspan<typename ToA::element_type, ToExt, ToL, ToA>;
-  using FromMDS = cuda::shared_mem_mdspan<typename FromA::element_type, FromExt, FromL, FromA>;
+  using ToMDS   = cuda::shared_memory_mdspan<typename ToA::element_type, ToExt, ToL, ToA>;
+  using FromMDS = cuda::shared_memory_mdspan<typename FromA::element_type, FromExt, FromL, FromA>;
   test_conversion<ToMDS>(FromMDS(handle, construct_mapping(layout, exts), acc));
 }
 

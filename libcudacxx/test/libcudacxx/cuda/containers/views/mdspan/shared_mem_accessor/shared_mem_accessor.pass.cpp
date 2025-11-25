@@ -15,7 +15,7 @@ __device__ void basic_mdspan_access_test()
 {
   using ext_t = cuda::std::extents<int, 4>;
   __shared__ int smem[4];
-  [[maybe_unused]] cuda::shared_mem_mdspan<int, ext_t> md{smem, ext_t{}};
+  [[maybe_unused]] cuda::shared_memory_mdspan<int, ext_t> md{smem, ext_t{}};
   unused(md[0]);
 }
 
