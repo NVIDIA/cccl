@@ -19,6 +19,8 @@
 #endif // no system header
 
 #include <cub/detail/choose_offset.cuh>
+#include <cub/detail/device_memory_resource.cuh>
+#include <cub/detail/temporary_storage.cuh>
 #include <cub/device/dispatch/dispatch_segmented_reduce.cuh>
 #include <cub/iterator/arg_index_input_iterator.cuh>
 #include <cub/util_type.cuh>
@@ -26,12 +28,20 @@
 #include <thrust/iterator/counting_iterator.h>
 #include <thrust/iterator/transform_iterator.h>
 
+#include <cuda/__execution/determinism.h>
+#include <cuda/__execution/require.h>
 #include <cuda/__functional/maximum.h>
 #include <cuda/__functional/minimum.h>
+#include <cuda/__memory_resource/get_memory_resource.h>
+#include <cuda/__stream/get_stream.h>
+#include <cuda/__stream/stream_ref.h>
+#include <cuda/std/__execution/env.h>
 #include <cuda/std/__functional/operations.h>
 #include <cuda/std/__iterator/iterator_traits.h>
+#include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/is_integral.h>
+#include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/void_t.h>
 #include <cuda/std/__utility/pair.h>
 #include <cuda/std/cstdint>
@@ -432,8 +442,8 @@ struct DeviceSegmentedReduce
   //! .. literalinclude:: ../../../cub/test/catch2_test_device_segmented_reduce_api.cu
   //!     :language: c++
   //!     :dedent:
-  //!     :start-after: example-begin segmented-reduce-sum-env-stream
-  //!     :end-before: example-end segmented-reduce-sum-env-stream
+  //!     :start-after: example-begin segmented-reduce-sum-env
+  //!     :end-before: example-end segmented-reduce-sum-env
   //!
   //! @endrst
   //!
