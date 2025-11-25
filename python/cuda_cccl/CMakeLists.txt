@@ -18,12 +18,6 @@ message(
 # Build cccl.c.parallel and add CCCL's install rules
 set(_cccl_root ../..)
 
-include(${_cccl_root}/cmake/AppendOptionIfAvailable.cmake)
-include(${_cccl_root}/cmake/CCCLConfigureTarget.cmake)
-include(${_cccl_root}/cmake/CCCLBuildCompilerTargets.cmake)
-include(${_cccl_root}/cmake/CCCLGetDependencies.cmake)
-cccl_build_compiler_targets()
-
 # Build and install C++ library first
 set(CCCL_TOPLEVEL_PROJECT ON) # Enable the developer builds
 set(CCCL_ENABLE_C_PARALLEL ON)
