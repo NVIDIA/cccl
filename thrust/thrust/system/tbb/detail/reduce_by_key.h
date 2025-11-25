@@ -85,10 +85,10 @@ template <typename InputIterator1,
           typename OutputIterator2,
           typename BinaryPredicate,
           typename BinaryFunction>
-thrust::tuple<OutputIterator1,
-              OutputIterator2,
-              thrust::detail::it_value_t<InputIterator1>,
-              typename partial_sum_type<InputIterator2, BinaryFunction>::type>
+::cuda::std::tuple<OutputIterator1,
+                   OutputIterator2,
+                   thrust::detail::it_value_t<InputIterator1>,
+                   typename partial_sum_type<InputIterator2, BinaryFunction>::type>
 reduce_by_key_with_carry(
   InputIterator1 keys_first,
   InputIterator1 keys_last,
@@ -104,14 +104,14 @@ reduce_by_key_with_carry(
                     typename partial_sum_type<InputIterator2, BinaryFunction>::type>
     carry;
 
-  thrust::tie(keys_last, carry) =
+  ::cuda::std::tie(keys_last, carry) =
     reduce_last_segment_backward(keys_first, keys_last, values_first, binary_pred, binary_op);
 
   // finish with sequential reduce_by_key
-  thrust::tie(keys_output, values_output) = thrust::reduce_by_key(
+  ::cuda::std::tie(keys_output, values_output) = thrust::reduce_by_key(
     thrust::seq, keys_first, keys_last, values_first, keys_output, values_output, binary_pred, binary_op);
 
-  return thrust::make_tuple(keys_output, values_output, carry.first, carry.second);
+  return ::cuda::std::make_tuple(keys_output, values_output, carry.first, carry.second);
 }
 
 template <typename Iterator>
@@ -197,7 +197,7 @@ struct serial_reduce_by_key_body
     // XXX is there a way to pose this so that we don't require default construction of carry?
     ::cuda::std::pair<key_type, value_type> carry;
 
-    thrust::tie(my_keys_result, my_values_result, carry.first, carry.second) = reduce_by_key_with_carry(
+    ::cuda::std::tie(my_keys_result, my_values_result, carry.first, carry.second) = reduce_by_key_with_carry(
       my_keys_first, my_keys_last, my_values_first, my_keys_result, my_values_result, binary_pred, binary_op);
 
     // store to carry only when we actually have a carry

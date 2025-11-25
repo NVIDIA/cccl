@@ -16,8 +16,8 @@ struct is_outside_circle
   inline __host__ __device__ bool operator()(const Tuple& tuple) const
   {
     // unpack the tuple into x and y coordinates
-    const T x = thrust::get<0>(tuple);
-    const T y = thrust::get<1>(tuple);
+    const T x = cuda::std::get<0>(tuple);
+    const T y = cuda::std::get<1>(tuple);
 
     if (x * x + y * y > 1)
     {

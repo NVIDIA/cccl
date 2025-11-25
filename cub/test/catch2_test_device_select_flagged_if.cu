@@ -19,9 +19,9 @@ struct predicate_op_wrapper_t
 {
   PredOpT if_pred;
   template <typename FlagT, typename ItemT>
-  __host__ __device__ bool operator()(thrust::tuple<FlagT, ItemT> tuple) const
+  __host__ __device__ bool operator()(cuda::std::tuple<FlagT, ItemT> tuple) const
   {
-    const auto flag = thrust::get<0>(tuple);
+    const auto flag = cuda::std::get<0>(tuple);
     return static_cast<bool>(if_pred(flag));
   }
 };

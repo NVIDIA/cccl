@@ -12,16 +12,16 @@
 // into a single virtual Float3 array.
 
 // We'll use a 3-tuple to store our 3d vector type
-using Float3 = thrust::tuple<float, float, float>;
+using Float3 = cuda::std::tuple<float, float, float>;
 
 // This functor implements the dot product between 3d vectors
 struct DotProduct
 {
   __host__ __device__ float operator()(const Float3& a, const Float3& b) const
   {
-    return thrust::get<0>(a) * thrust::get<0>(b) + // x components
-           thrust::get<1>(a) * thrust::get<1>(b) + // y components
-           thrust::get<2>(a) * thrust::get<2>(b); // z components
+    return cuda::std::get<0>(a) * cuda::std::get<0>(b) + // x components
+           cuda::std::get<1>(a) * cuda::std::get<1>(b) + // y components
+           cuda::std::get<2>(a) * cuda::std::get<2>(b); // z components
   }
 };
 
@@ -73,7 +73,7 @@ int main()
   // METHOD #1
   // Defining a zip_iterator type can be a little cumbersome ...
   using FloatIterator      = thrust::device_vector<float>::iterator;
-  using FloatIteratorTuple = thrust::tuple<FloatIterator, FloatIterator, FloatIterator>;
+  using FloatIteratorTuple = cuda::std::tuple<FloatIterator, FloatIterator, FloatIterator>;
   using Float3Iterator     = thrust::zip_iterator<FloatIteratorTuple>;
 
   // Now we'll create some zip_iterators for A and B
@@ -109,9 +109,9 @@ int main()
     Float3 b  = B_first[i];
     float dot = result[i];
 
-    std::cout << "(" << thrust::get<0>(a) << "," << thrust::get<1>(a) << "," << thrust::get<2>(a) << ")";
+    std::cout << "(" << cuda::std::get<0>(a) << "," << cuda::std::get<1>(a) << "," << cuda::std::get<2>(a) << ")";
     std::cout << " * ";
-    std::cout << "(" << thrust::get<0>(b) << "," << thrust::get<1>(b) << "," << thrust::get<2>(b) << ")";
+    std::cout << "(" << cuda::std::get<0>(b) << "," << cuda::std::get<1>(b) << "," << cuda::std::get<2>(b) << ")";
     std::cout << " = ";
     std::cout << dot << std::endl;
   }

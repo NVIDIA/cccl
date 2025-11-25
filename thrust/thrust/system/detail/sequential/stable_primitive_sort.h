@@ -69,7 +69,7 @@ struct logical_not_first
   template <typename Tuple>
   _CCCL_HOST_DEVICE bool operator()(Tuple t)
   {
-    return !thrust::get<0>(t);
+    return !::cuda::std::get<0>(t);
   }
 };
 

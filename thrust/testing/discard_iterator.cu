@@ -1,5 +1,6 @@
 #include <thrust/iterator/discard_iterator.h>
 
+#include <cuda/std/tuple>
 #include <cuda/std/type_traits>
 
 #include <unittest/unittest.h>
@@ -102,12 +103,10 @@ DECLARE_UNITTEST(TestMakeDiscardIterator);
 
 void TestZippedDiscardIterator()
 {
-  using namespace thrust;
+  using IteratorTuple1 = cuda::std::tuple<thrust::discard_iterator<>>;
+  using ZipIterator1   = thrust::zip_iterator<IteratorTuple1>;
 
-  using IteratorTuple1 = tuple<discard_iterator<>>;
-  using ZipIterator1   = zip_iterator<IteratorTuple1>;
-
-  IteratorTuple1 t = thrust::make_tuple(thrust::make_discard_iterator());
+  IteratorTuple1 t = cuda::std::tuple(thrust::make_discard_iterator());
 
   ZipIterator1 z_iter1_first = thrust::make_zip_iterator(t);
   ZipIterator1 z_iter1_last  = z_iter1_first + 10;
@@ -116,10 +115,10 @@ void TestZippedDiscardIterator()
     ;
   }
 
-  ASSERT_EQUAL(10, thrust::get<0>(z_iter1_first.get_iterator_tuple()) - thrust::make_discard_iterator());
+  ASSERT_EQUAL(10, cuda::std::get<0>(z_iter1_first.get_iterator_tuple()) - thrust::make_discard_iterator());
 
-  using IteratorTuple2 = tuple<int*, discard_iterator<>>;
-  using ZipIterator2   = zip_iterator<IteratorTuple2>;
+  using IteratorTuple2 = cuda::std::tuple<int*, thrust::discard_iterator<>>;
+  using ZipIterator2   = thrust::zip_iterator<IteratorTuple2>;
 
   ZipIterator2 z_iter_first = thrust::make_zip_iterator((int*) 0, thrust::make_discard_iterator());
   ZipIterator2 z_iter_last  = z_iter_first + 10;
@@ -129,6 +128,6 @@ void TestZippedDiscardIterator()
     ;
   }
 
-  ASSERT_EQUAL(10, thrust::get<1>(z_iter_first.get_iterator_tuple()) - thrust::make_discard_iterator());
+  ASSERT_EQUAL(10, cuda::std::get<1>(z_iter_first.get_iterator_tuple()) - thrust::make_discard_iterator());
 }
 DECLARE_UNITTEST(TestZippedDiscardIterator);
