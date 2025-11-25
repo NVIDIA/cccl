@@ -3387,6 +3387,173 @@ storage allocation. For simpler usage, consider using <a class="reference intern
 </dl>
 </dd></dl>
 
+<dl class="py function">
+<dt class="sig sig-object py" id="cuda.compute.algorithms.select">
+<span class="sig-prename descclassname"><span class="pre">cuda.compute.algorithms.</span></span><span class="sig-name descname"><span class="pre">select</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">d_in</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">d_out</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">d_num_selected_out</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cond</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_items</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">stream</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#cuda.compute.algorithms.select" title="Link to this definition">#</a></dt>
+<dd><p>Performs device-wide selection of elements based on a condition.</p>
+<p>Given an input sequence, this function selects all elements for which the condition
+function <code class="docutils literal notranslate"><span class="pre">cond</span></code> returns true (non-zero) and writes them to the output in a
+compacted form. The number of selected elements is written to <code class="docutils literal notranslate"><span class="pre">d_num_selected_out[0]</span></code>.</p>
+<p>This function automatically handles temporary storage allocation and execution.</p>
+<p class="rubric">Example</p>
+<p>Below, <code class="docutils literal notranslate"><span class="pre">select</span></code> is used to select even numbers from an input array:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">cupy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">cp</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">cuda.compute.algorithms</span><span class="w"> </span><span class="kn">import</span> <span class="n">select</span>
+
+<span class="c1"># Create input data</span>
+<span class="n">d_in</span> <span class="o">=</span> <span class="n">cp</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="mi">7</span><span class="p">,</span> <span class="mi">8</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">cp</span><span class="o">.</span><span class="n">int32</span><span class="p">)</span>
+<span class="n">d_out</span> <span class="o">=</span> <span class="n">cp</span><span class="o">.</span><span class="n">empty_like</span><span class="p">(</span><span class="n">d_in</span><span class="p">)</span>
+<span class="n">d_num_selected</span> <span class="o">=</span> <span class="n">cp</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">cp</span><span class="o">.</span><span class="n">uint64</span><span class="p">)</span>
+
+
+<span class="c1"># Define select condition (keep even numbers)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">is_even</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">x</span> <span class="o">%</span> <span class="mi">2</span> <span class="o">==</span> <span class="mi">0</span>
+
+
+<span class="c1"># Execute select</span>
+<span class="n">select</span><span class="p">(</span><span class="n">d_in</span><span class="p">,</span> <span class="n">d_out</span><span class="p">,</span> <span class="n">d_num_selected</span><span class="p">,</span> <span class="n">is_even</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">d_in</span><span class="p">))</span>
+
+<span class="c1"># Get results</span>
+<span class="n">num_selected</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">d_num_selected</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+<span class="n">result</span> <span class="o">=</span> <span class="n">d_out</span><span class="p">[:</span><span class="n">num_selected</span><span class="p">]</span><span class="o">.</span><span class="n">get</span><span class="p">()</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Selected </span><span class="si">{</span><span class="n">num_selected</span><span class="si">}</span><span class="s2"> items: </span><span class="si">{</span><span class="n">result</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="c1"># Output: Selected 4 items: [2 4 6 8]</span>
+<span class="c1"># example-end</span>
+
+<span class="k">assert</span> <span class="n">num_selected</span> <span class="o">==</span> <span class="mi">4</span>
+<span class="k">assert</span> <span class="p">(</span><span class="n">result</span> <span class="o">==</span> <span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="mi">8</span><span class="p">])</span><span class="o">.</span><span class="n">all</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>You can also use iterators for more complex selection patterns:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">cupy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">cp</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">cuda.compute.algorithms</span><span class="w"> </span><span class="kn">import</span> <span class="n">select</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">cuda.compute.iterators</span><span class="w"> </span><span class="kn">import</span> <span class="n">TransformIterator</span>
+
+<span class="c1"># Create input data</span>
+<span class="n">d_in</span> <span class="o">=</span> <span class="n">cp</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="mi">7</span><span class="p">,</span> <span class="mi">8</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">cp</span><span class="o">.</span><span class="n">int32</span><span class="p">)</span>
+<span class="n">d_out</span> <span class="o">=</span> <span class="n">cp</span><span class="o">.</span><span class="n">empty_like</span><span class="p">(</span><span class="n">d_in</span><span class="p">)</span>
+<span class="n">d_num_selected</span> <span class="o">=</span> <span class="n">cp</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">cp</span><span class="o">.</span><span class="n">uint64</span><span class="p">)</span>
+
+
+<span class="c1"># Create iterator that squares each value</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">square</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">x</span> <span class="o">*</span> <span class="n">x</span>
+
+
+<span class="n">squared_iter</span> <span class="o">=</span> <span class="n">TransformIterator</span><span class="p">(</span><span class="n">d_in</span><span class="p">,</span> <span class="n">square</span><span class="p">)</span>
+
+
+<span class="c1"># Select squared values that are greater than 20</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">greater_than_20</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">x</span> <span class="o">&gt;</span> <span class="mi">20</span>
+
+
+<span class="n">select</span><span class="p">(</span><span class="n">squared_iter</span><span class="p">,</span> <span class="n">d_out</span><span class="p">,</span> <span class="n">d_num_selected</span><span class="p">,</span> <span class="n">greater_than_20</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">d_in</span><span class="p">))</span>
+
+<span class="c1"># Get results</span>
+<span class="n">num_selected</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">d_num_selected</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+<span class="n">result</span> <span class="o">=</span> <span class="n">d_out</span><span class="p">[:</span><span class="n">num_selected</span><span class="p">]</span><span class="o">.</span><span class="n">get</span><span class="p">()</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Selected </span><span class="si">{</span><span class="n">num_selected</span><span class="si">}</span><span class="s2"> items: </span><span class="si">{</span><span class="n">result</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="c1"># Output: Selected 4 items: [25 36 49 64]</span>
+<span class="c1"># (5^2=25, 6^2=36, 7^2=49, 8^2=64, all &gt; 20)</span>
+<span class="c1"># example-end</span>
+
+<span class="k">assert</span> <span class="n">num_selected</span> <span class="o">==</span> <span class="mi">4</span>
+<span class="k">assert</span> <span class="p">(</span><span class="n">result</span> <span class="o">==</span> <span class="p">[</span><span class="mi">25</span><span class="p">,</span> <span class="mi">36</span><span class="p">,</span> <span class="mi">49</span><span class="p">,</span> <span class="mi">64</span><span class="p">])</span><span class="o">.</span><span class="n">all</span><span class="p">()</span>
+</pre></div>
+</div>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>d_in</strong> (<em>DeviceArrayLike</em><em> | </em><em>IteratorBase</em>) – Device array or iterator containing the input sequence of data items.</p></li>
+<li><p><strong>d_out</strong> (<em>DeviceArrayLike</em><em> | </em><em>IteratorBase</em>) – Device array or iterator to store the selected output items.</p></li>
+<li><p><strong>d_num_selected_out</strong> (<em>DeviceArrayLike</em>) – Device array to store the number of items that passed the selection.
+The count is stored in <code class="docutils literal notranslate"><span class="pre">d_num_selected_out[0]</span></code>.</p></li>
+<li><p><strong>cond</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Callable" title="(in Python v3.14)"><em>Callable</em></a>) – Callable representing the selection condition (predicate). Should return a
+boolean-like value (typically uint8) where non-zero means the item passes the selection.</p></li>
+<li><p><strong>num_items</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a>) – Number of items in the input sequence.</p></li>
+<li><p><strong>stream</strong> – CUDA stream to use for the operation (optional).</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="cuda.compute.algorithms.make_select">
+<span class="sig-prename descclassname"><span class="pre">cuda.compute.algorithms.</span></span><span class="sig-name descname"><span class="pre">make_select</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">d_in</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">d_out</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">d_num_selected_out</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cond</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#cuda.compute.algorithms.make_select" title="Link to this definition">#</a></dt>
+<dd><p>Create a select object that can be called to select elements matching a condition.</p>
+<p>This is the object-oriented API that allows explicit control over temporary
+storage allocation. For simpler usage, consider using <a class="reference internal" href="#cuda.compute.algorithms.select" title="cuda.compute.algorithms.select"><code class="xref py py-func docutils literal notranslate"><span class="pre">select()</span></code></a>.</p>
+<p class="rubric">Example</p>
+<p>Below, <code class="docutils literal notranslate"><span class="pre">make_select</span></code> is used to create a select object that can be reused.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">cupy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">cp</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">cuda.compute.algorithms</span><span class="w"> </span><span class="kn">import</span> <span class="n">make_select</span>
+
+<span class="c1"># Create input data</span>
+<span class="n">d_in</span> <span class="o">=</span> <span class="n">cp</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="mi">7</span><span class="p">,</span> <span class="mi">8</span><span class="p">,</span> <span class="mi">9</span><span class="p">,</span> <span class="mi">10</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">cp</span><span class="o">.</span><span class="n">int32</span><span class="p">)</span>
+<span class="n">d_out</span> <span class="o">=</span> <span class="n">cp</span><span class="o">.</span><span class="n">empty_like</span><span class="p">(</span><span class="n">d_in</span><span class="p">)</span>
+<span class="n">d_num_selected</span> <span class="o">=</span> <span class="n">cp</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">cp</span><span class="o">.</span><span class="n">uint64</span><span class="p">)</span>
+
+
+<span class="c1"># Define select condition (keep values &gt; 5)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">greater_than_5</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">x</span> <span class="o">&gt;</span> <span class="mi">5</span>
+
+
+<span class="c1"># Create select object (can be reused)</span>
+<span class="n">selector</span> <span class="o">=</span> <span class="n">make_select</span><span class="p">(</span><span class="n">d_in</span><span class="p">,</span> <span class="n">d_out</span><span class="p">,</span> <span class="n">d_num_selected</span><span class="p">,</span> <span class="n">greater_than_5</span><span class="p">)</span>
+
+<span class="c1"># Get required temp storage</span>
+<span class="n">temp_storage_bytes</span> <span class="o">=</span> <span class="n">selector</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="n">d_in</span><span class="p">,</span> <span class="n">d_out</span><span class="p">,</span> <span class="n">d_num_selected</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">d_in</span><span class="p">))</span>
+<span class="n">d_temp_storage</span> <span class="o">=</span> <span class="n">cp</span><span class="o">.</span><span class="n">empty</span><span class="p">(</span><span class="n">temp_storage_bytes</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">cp</span><span class="o">.</span><span class="n">uint8</span><span class="p">)</span>
+
+<span class="c1"># Execute select</span>
+<span class="n">selector</span><span class="p">(</span><span class="n">d_temp_storage</span><span class="p">,</span> <span class="n">d_in</span><span class="p">,</span> <span class="n">d_out</span><span class="p">,</span> <span class="n">d_num_selected</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">d_in</span><span class="p">))</span>
+
+<span class="c1"># Get results</span>
+<span class="n">num_selected</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">d_num_selected</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+<span class="n">result</span> <span class="o">=</span> <span class="n">d_out</span><span class="p">[:</span><span class="n">num_selected</span><span class="p">]</span><span class="o">.</span><span class="n">get</span><span class="p">()</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Selected </span><span class="si">{</span><span class="n">num_selected</span><span class="si">}</span><span class="s2"> items: </span><span class="si">{</span><span class="n">result</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="c1"># Output: Selected 5 items: [ 6  7  8  9 10]</span>
+
+<span class="c1"># Reuse the same select object with different input</span>
+<span class="n">d_in2</span> <span class="o">=</span> <span class="n">cp</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">10</span><span class="p">,</span> <span class="mi">20</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">15</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">8</span><span class="p">,</span> <span class="mi">30</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">cp</span><span class="o">.</span><span class="n">int32</span><span class="p">)</span>
+<span class="n">d_out2</span> <span class="o">=</span> <span class="n">cp</span><span class="o">.</span><span class="n">empty_like</span><span class="p">(</span><span class="n">d_in2</span><span class="p">)</span>
+<span class="n">d_num_selected2</span> <span class="o">=</span> <span class="n">cp</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">cp</span><span class="o">.</span><span class="n">uint64</span><span class="p">)</span>
+
+<span class="n">selector</span><span class="p">(</span><span class="n">d_temp_storage</span><span class="p">,</span> <span class="n">d_in2</span><span class="p">,</span> <span class="n">d_out2</span><span class="p">,</span> <span class="n">d_num_selected2</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">d_in2</span><span class="p">))</span>
+
+<span class="n">num_selected2</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">d_num_selected2</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+<span class="n">result2</span> <span class="o">=</span> <span class="n">d_out2</span><span class="p">[:</span><span class="n">num_selected2</span><span class="p">]</span><span class="o">.</span><span class="n">get</span><span class="p">()</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Second select: </span><span class="si">{</span><span class="n">num_selected2</span><span class="si">}</span><span class="s2"> items: </span><span class="si">{</span><span class="n">result2</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="c1"># Output: Second select: 5 items: [10 20 15  8 30]</span>
+<span class="c1"># example-end</span>
+
+<span class="k">assert</span> <span class="n">num_selected</span> <span class="o">==</span> <span class="mi">5</span>
+<span class="k">assert</span> <span class="p">(</span><span class="n">result</span> <span class="o">==</span> <span class="p">[</span><span class="mi">6</span><span class="p">,</span> <span class="mi">7</span><span class="p">,</span> <span class="mi">8</span><span class="p">,</span> <span class="mi">9</span><span class="p">,</span> <span class="mi">10</span><span class="p">])</span><span class="o">.</span><span class="n">all</span><span class="p">()</span>
+</pre></div>
+</div>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>d_in</strong> (<em>DeviceArrayLike</em><em> | </em><em>IteratorBase</em>) – Device array or iterator containing the input sequence of data items.</p></li>
+<li><p><strong>d_out</strong> (<em>DeviceArrayLike</em><em> | </em><em>IteratorBase</em>) – Device array or iterator to store the selected output items.</p></li>
+<li><p><strong>d_num_selected_out</strong> (<em>DeviceArrayLike</em>) – Device array to store the number of items that passed the selection.
+The count is stored in <code class="docutils literal notranslate"><span class="pre">d_num_selected_out[0]</span></code>.</p></li>
+<li><p><strong>cond</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Callable" title="(in Python v3.14)"><em>Callable</em></a>) – Callable representing the selection condition (predicate). Should return a
+boolean-like value (typically uint8) where non-zero means the item passes the selection.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>A callable object that performs the selection operation.</p>
+</dd>
+</dl>
+</dd></dl>
+
 <dl class="py class">
 <dt class="sig sig-object py" id="cuda.compute.algorithms.DoubleBuffer">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">cuda.compute.algorithms.</span></span><span class="sig-name descname"><span class="pre">DoubleBuffer</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">d_current</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">d_alternate</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#cuda.compute.algorithms.DoubleBuffer" title="Link to this definition">#</a></dt>
@@ -3622,9 +3789,15 @@ representing the sequence <code class="docutils literal notranslate"><span class
 
 <dl class="py function">
 <dt class="sig sig-object py" id="cuda.compute.iterators.DiscardIterator">
-<span class="sig-prename descclassname"><span class="pre">cuda.compute.iterators.</span></span><span class="sig-name descname"><span class="pre">DiscardIterator</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#cuda.compute.iterators.DiscardIterator" title="Link to this definition">#</a></dt>
+<span class="sig-prename descclassname"><span class="pre">cuda.compute.iterators.</span></span><span class="sig-name descname"><span class="pre">DiscardIterator</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">reference_iterator</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#cuda.compute.iterators.DiscardIterator" title="Link to this definition">#</a></dt>
 <dd><p>Returns an Input or Output Iterator that discards all values written to it.</p>
 <p>Similar to <a class="reference external" href="https://nvidia.github.io/cccl/thrust/api/classthrust_1_1discard__iterator.html">https://nvidia.github.io/cccl/thrust/api/classthrust_1_1discard__iterator.html</a></p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>reference_iterator</strong> – Optional iterator to use as a reference for value_type and state_type.
+If not provided, defaults to uint8.</p>
+</dd>
+</dl>
 <p class="rubric">Example</p>
 <p>The code snippet below demonstrates the usage of a <code class="docutils literal notranslate"><span class="pre">DiscardIterator</span></code> to discard items in a unique by key operation:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="sd">&quot;&quot;&quot;</span>
@@ -4406,6 +4579,8 @@ Numba type can be obtained using <code class="docutils literal notranslate"><spa
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#cuda.compute.algorithms.make_segmented_sort"><code class="docutils literal notranslate"><span class="pre">make_segmented_sort()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#cuda.compute.algorithms.three_way_partition"><code class="docutils literal notranslate"><span class="pre">three_way_partition()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#cuda.compute.algorithms.make_three_way_partition"><code class="docutils literal notranslate"><span class="pre">make_three_way_partition()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#cuda.compute.algorithms.select"><code class="docutils literal notranslate"><span class="pre">select()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#cuda.compute.algorithms.make_select"><code class="docutils literal notranslate"><span class="pre">make_select()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#cuda.compute.algorithms.DoubleBuffer"><code class="docutils literal notranslate"><span class="pre">DoubleBuffer</span></code></a><ul class="nav section-nav flex-column">
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#cuda.compute.algorithms.DoubleBuffer.__init__"><code class="docutils literal notranslate"><span class="pre">__init__()</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#cuda.compute.algorithms.DoubleBuffer.current"><code class="docutils literal notranslate"><span class="pre">current()</span></code></a></li>
