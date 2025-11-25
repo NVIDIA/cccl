@@ -1,7 +1,6 @@
 import math
 from typing import Literal, Optional, Tuple
 
-import matplotlib.pyplot as plt
 import numpy as np
 import torch
 
@@ -9,10 +8,21 @@ from cuda.stf._stf_bindings import (
     context,
 )
 
+try:
+    import matplotlib.pyplot as plt
+
+    has_matplotlib = True
+except ImportError:
+    has_matplotlib = False
+
 Plane = Literal["xy", "xz", "yz"]
 
 
 def show_slice(t3d, plane="xy", index=None):
+    """Display a 2D slice of a 3D tensor (requires matplotlib)."""
+    if not has_matplotlib:
+        return
+
     # grab a 2D view
     if plane == "xy":
         idx = t3d.shape[2] // 2 if index is None else index
@@ -202,7 +212,8 @@ def test_fdtd_3d_pytorch_simplified(
         if output_freq > 0 and (n % output_freq) == 0:
             with ctx.pytorch_task(lez.read()) as (ez,):
                 print(f"{n}\t{ez[cx, cy, cz].item():.6e}")
-                show_slice(ez, plane="xy")
+                if has_matplotlib:
+                    show_slice(ez, plane="xy")
 
     ctx.finalize()
 
@@ -210,4 +221,8 @@ def test_fdtd_3d_pytorch_simplified(
 if __name__ == "__main__":
     # Run simplified FDTD simulation using pytorch_task
     print("Running FDTD simulation with pytorch_task syntax...")
-    test_fdtd_3d_pytorch_simplified(timesteps=1000, output_freq=5)
+    output_freq = 5 if has_matplotlib else 0
+    if not has_matplotlib and output_freq > 0:
+        print("Warning: matplotlib not available, running without visualization")
+        output_freq = 0
+    test_fdtd_3d_pytorch_simplified(timesteps=1000, output_freq=output_freq)
