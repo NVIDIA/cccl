@@ -109,14 +109,14 @@ private:
 
   template <class _IntT,
             class _FloatT,
-            bool _FloatBigger = (numeric_limits<_FloatT>::digits > numeric_limits<_IntT>::digits),
-            int _Bits         = (numeric_limits<_IntT>::digits - numeric_limits<_FloatT>::digits)>
+            bool _FloatBigger = (numeric_limits<_FloatT>::digits > numeric_limits<_IntT>::digits)>
   [[nodiscard]] _CCCL_API static constexpr _IntT __max_representable_int_for_float() noexcept
   {
     static_assert(::cuda::std::is_floating_point<_FloatT>::value, "must be a floating point type");
     static_assert(::cuda::std::is_integral<_IntT>::value, "must be an integral type");
     static_assert(numeric_limits<_FloatT>::radix == 2, "FloatT has incorrect radix");
-    return _FloatBigger ? numeric_limits<_IntT>::max() : (numeric_limits<_IntT>::max() >> _Bits << _Bits);
+    constexpr int _bits = cuda::std::max(numeric_limits<_IntT>::digits - numeric_limits<_FloatT>::digits, 0);
+    return _FloatBigger ? numeric_limits<_IntT>::max() : (numeric_limits<_IntT>::max() >> _bits << _bits);
   }
 
   template <class _IntT, class _RealT>

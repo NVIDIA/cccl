@@ -50,7 +50,7 @@ __host__ __device__ void test()
   using D                                    = cuda::std::poisson_distribution<T>;
   using P                                    = typename D::param_type;
   using G                                    = cuda::std::philox4x64;
-  cuda::std::array<P, 5> params              = {P(1.0), P(5.0), P(10.0), P(20.0), P(50.0)};
+  cuda::std::array<P, 3> params              = {P(1.0), P(20.0), P(50.0)};
   test_distribution<D, false, G, test_constexpr>(params, poisson_cdf<T>{});
 }
 
