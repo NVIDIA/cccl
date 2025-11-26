@@ -34,7 +34,6 @@ CUB_NAMESPACE_BEGIN
 
 namespace detail
 {
-
 template <typename ValueType, typename OutputIteratorT>
 __launch_bounds__(1) __global__
   void write_final_result_in_output_iterator_already(ValueType* d_temp_storage, OutputIteratorT d_out)
@@ -43,7 +42,7 @@ __launch_bounds__(1) __global__
 }
 
 template <typename ValueType, typename NumItemsT>
-__global__ void cuda_mem_set_async_dtemp_storage(ValueType* d_temp_storage, NumItemsT num_items)
+__launch_bounds__(1) __global__ void cuda_mem_set_async_dtemp_storage(ValueType* d_temp_storage, NumItemsT num_items)
 {
   *d_temp_storage = num_items;
 }
@@ -63,7 +62,6 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::FindPolicy::BLOCK_THREADS))
 
   agent.Process(value_temp_storage, num_items);
 }
-
 } // namespace detail
 
 template <typename InputIteratorT,
