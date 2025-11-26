@@ -193,25 +193,27 @@ public:
       : _Accessor{__acc}
   {}
 
-  _CCCL_API constexpr reference access(data_handle_type __p, size_t __i) const noexcept(__is_access_noexcept)
+  _CCCL_API constexpr reference access(data_handle_type __p, ::cuda::std::size_t __i) const
+    noexcept(__is_access_noexcept)
   {
-    NV_IF_ELSE_TARGET(
-      NV_IS_DEVICE,
-      (_CCCL_VERIFY(false, "cuda::__host_accessor cannot be used in DEVICE code");),
-      (_CCCL_ASSERT(__is_host_accessible_pointer(__p), "cuda::__host_accessor data handle is not a HOST pointer");))
+    NV_IF_TARGET(NV_IS_DEVICE, (_CCCL_VERIFY(false, "cuda::__host_accessor cannot be used in DEVICE code");))
     return _Accessor::access(__p, __i);
   }
 
-  [[nodiscard]] _CCCL_API constexpr data_handle_type offset(data_handle_type __p, size_t __i) const
+  [[nodiscard]] _CCCL_API constexpr data_handle_type offset(data_handle_type __p, ::cuda::std::size_t __i) const
     noexcept(__is_offset_noexcept)
   {
     return _Accessor::offset(__p, __i);
   }
 
   [[nodiscard]] _CCCL_API constexpr bool
-  __detectably_invalid([[maybe_unused]] data_handle_type __p, size_t) const noexcept
+  __detectably_invalid([[maybe_unused]] data_handle_type __p, ::cuda::std::size_t) const noexcept
   {
-    NV_IF_ELSE_TARGET(NV_IS_HOST, (return __is_host_accessible_pointer(__p);), (return false;))
+    _CCCL_IF_NOT_CONSTEVAL_DEFAULT
+    {
+      NV_IF_ELSE_TARGET(NV_IS_HOST, (return __is_host_accessible_pointer(__p);), (return false;))
+    }
+    return true;
   }
 };
 
@@ -263,16 +265,6 @@ class __device_accessor : public _Accessor
   }
 
 #endif // _CCCL_DEVICE_COMPILATION()
-
-  _CCCL_API static constexpr void __check_device_pointer([[maybe_unused]] __data_handle_type __p) noexcept
-  {
-    _CCCL_IF_NOT_CONSTEVAL_DEFAULT
-    {
-      NV_IF_TARGET(
-        NV_IS_HOST,
-        (_CCCL_ASSERT(__is_device_accessible_pointer_from_host(__p), "The pointer is not device accessible");))
-    }
-  }
 
 public:
   using offset_policy    = __device_accessor<typename _Accessor::offset_policy>;
@@ -347,7 +339,8 @@ public:
       : _Accessor{__acc}
   {}
 
-  _CCCL_API constexpr reference access(data_handle_type __p, size_t __i) const noexcept(__is_access_noexcept)
+  _CCCL_API constexpr reference access(data_handle_type __p, ::cuda::std::size_t __i) const
+    noexcept(__is_access_noexcept)
   {
     _CCCL_IF_NOT_CONSTEVAL_DEFAULT
     {
@@ -359,18 +352,21 @@ public:
     return _Accessor::access(__p, __i);
   }
 
-  [[nodiscard]] _CCCL_API constexpr data_handle_type offset(data_handle_type __p, size_t __i) const
+  [[nodiscard]] _CCCL_API constexpr data_handle_type offset(data_handle_type __p, ::cuda::std::size_t __i) const
     noexcept(__is_offset_noexcept)
   {
     return _Accessor::offset(__p, __i);
   }
 
-  [[nodiscard]] _CCCL_API constexpr bool __detectably_invalid(data_handle_type __p, size_t) const noexcept
+  [[nodiscard]] _CCCL_API constexpr bool __detectably_invalid(data_handle_type __p, ::cuda::std::size_t) const noexcept
   {
     _CCCL_IF_NOT_CONSTEVAL_DEFAULT
     {
-      NV_IF_ELSE_TARGET(NV_IS_HOST, (return __is_device_accessible_pointer_from_host(__p);), (return false;))
+      NV_IF_ELSE_TARGET(NV_IS_HOST,
+                        (return __is_device_accessible_pointer_from_host(__p);),
+                        (return __is_device_accessible_pointer_from_device(__p);))
     }
+    return true;
   }
 };
 
@@ -404,11 +400,6 @@ class __managed_accessor : public _Accessor
     {
       return true; // cannot be verified
     }
-  }
-
-  _CCCL_API static constexpr void __check_managed_pointer([[maybe_unused]] __data_handle_type __p) noexcept
-  {
-    _CCCL_ASSERT(__is_managed_pointer(__p), "cuda::__managed_accessor data handle is not a MANAGED pointer");
   }
 
 public:
@@ -471,22 +462,25 @@ public:
       : _Accessor{::cuda::std::move(__acc)}
   {}
 
-  _CCCL_API constexpr reference access(data_handle_type __p, size_t __i) const noexcept(__is_access_noexcept)
+  _CCCL_API constexpr reference access(data_handle_type __p, ::cuda::std::size_t __i) const
+    noexcept(__is_access_noexcept)
   {
-    NV_IF_TARGET(NV_IS_HOST, (__check_managed_pointer(__p);))
     return _Accessor::access(__p, __i);
   }
 
-  [[nodiscard]] _CCCL_API constexpr data_handle_type offset(data_handle_type __p, size_t __i) const
+  [[nodiscard]] _CCCL_API constexpr data_handle_type offset(data_handle_type __p, ::cuda::std::size_t __i) const
     noexcept(__is_offset_noexcept)
   {
     return _Accessor::offset(__p, __i);
   }
 
   [[nodiscard]] _CCCL_API constexpr bool
-  __detectably_invalid([[maybe_unused]] data_handle_type __p, size_t) const noexcept
+  __detectably_invalid([[maybe_unused]] data_handle_type __p, ::cuda::std::size_t) const noexcept
   {
-    NV_IF_ELSE_TARGET(NV_IS_HOST, (return __is_managed_pointer(__p);), (return false;))
+    _CCCL_IF_NOT_CONSTEVAL_DEFAULT
+    {
+      NV_IF_ELSE_TARGET(NV_IS_HOST, (return __is_managed_pointer(__p);), (return true;))
+    }
   }
 };
 
