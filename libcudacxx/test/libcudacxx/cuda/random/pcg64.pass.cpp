@@ -29,7 +29,7 @@ __host__ __device__ constexpr bool test_fallback_uint128(__uint128_t a, __uint12
 
   // Test bitwise OR
   {
-    compare(a | static_cast<cuda::std::uint32_t>(b), a_ | static_cast<::cuda::std::uint32_t>(b));
+    compare(a | static_cast<cuda::std::uint64_t>(b), a_ | static_cast<::cuda::std::uint64_t>(b));
   }
 
   // Test bitwise XOR

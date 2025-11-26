@@ -67,7 +67,7 @@ public:
     return static_cast<::cuda::std::uint8_t>(__lo_);
   }
 
-  [[nodiscard]] _CCCL_API constexpr __pcg_uint128_fallback operator|(::cuda::std::uint32_t __rhs) const noexcept
+  [[nodiscard]] _CCCL_API constexpr __pcg_uint128_fallback operator|(::cuda::std::uint64_t __rhs) const noexcept
   {
     return __pcg_uint128_fallback(__hi_, __lo_ | __rhs);
   }
