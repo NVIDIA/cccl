@@ -50,6 +50,30 @@
 
 CUB_NAMESPACE_BEGIN
 
+namespace detail
+{
+namespace segmented_reduce
+{
+struct get_tuning_query_t
+{};
+
+template <class Derived>
+struct tuning
+{
+  [[nodiscard]] _CCCL_NODEBUG_API constexpr auto query(const get_tuning_query_t&) const noexcept -> Derived
+  {
+    return static_cast<const Derived&>(*this);
+  }
+};
+
+struct default_tuning : tuning<default_tuning>
+{
+  template <class AccumT, class Offset, class OpT>
+  using fn = detail::reduce::policy_hub<AccumT, Offset, OpT>;
+};
+} // namespace segmented_reduce
+} // namespace detail
+
 //! @rst
 //! DeviceSegmentedReduce provides device-wide, parallel operations for
 //! computing a reduction across multiple sequences of data items
@@ -511,13 +535,31 @@ struct DeviceSegmentedReduce
     using OffsetT = detail::common_iterator_value_t<BeginOffsetIteratorT, EndOffsetIteratorT>;
     using OutputT = detail::non_void_value_t<OutputIteratorT, detail::it_value_t<InputIteratorT>>;
     using init_t  = OutputT;
+    using AccumT  = ::cuda::std::__accumulator_t<::cuda::std::plus<>, cub::detail::it_value_t<InputIteratorT>, init_t>;
+
+    using segmented_reduce_tuning_t = ::cuda::std::execution::
+      __query_result_or_t<EnvT, detail::segmented_reduce::get_tuning_query_t, detail::segmented_reduce::default_tuning>;
+
+    using policy_t = typename segmented_reduce_tuning_t::template fn<AccumT, OffsetT, ::cuda::std::plus<>>;
 
     using requirements_t = ::cuda::std::execution::
       __query_result_or_t<EnvT, ::cuda::execution::__get_requirements_t, ::cuda::std::execution::env<>>;
+
     using requested_determinism_t =
       ::cuda::std::execution::__query_result_or_t<requirements_t, //
                                                   ::cuda::execution::determinism::__get_determinism_t,
                                                   ::cuda::execution::determinism::run_to_run_t>;
+
+    using dispatch_t = DispatchSegmentedReduce<
+      InputIteratorT,
+      OutputIteratorT,
+      BeginOffsetIteratorT,
+      EndOffsetIteratorT,
+      OffsetT,
+      ::cuda::std::plus<>,
+      init_t,
+      AccumT,
+      policy_t>;
 
     // Static assert to reject gpu_to_gpu determinism since it's not properly implemented atm
     static_assert(!::cuda::std::is_same_v<requested_determinism_t, ::cuda::execution::determinism::gpu_to_gpu_t>,
@@ -534,23 +576,17 @@ struct DeviceSegmentedReduce
       size_t temp_storage_bytes = 0;
 
       // Query the required temporary storage size
-      cudaError_t error = DispatchSegmentedReduce<
-        InputIteratorT,
-        OutputIteratorT,
-        BeginOffsetIteratorT,
-        EndOffsetIteratorT,
-        OffsetT,
-        ::cuda::std::plus<>,
-        init_t>::Dispatch(d_temp_storage,
-                          temp_storage_bytes,
-                          d_in,
-                          d_out,
-                          num_segments,
-                          d_begin_offsets,
-                          d_end_offsets,
-                          ::cuda::std::plus<>{},
-                          init_t{}, // zero-initialize
-                          stream.get());
+      cudaError_t error = dispatch_t::Dispatch(
+        d_temp_storage,
+        temp_storage_bytes,
+        d_in,
+        d_out,
+        num_segments,
+        d_begin_offsets,
+        d_end_offsets,
+        ::cuda::std::plus<>{},
+        init_t{}, // zero-initialize
+        stream.get());
       if (error != cudaSuccess)
       {
         return error;
@@ -564,23 +600,17 @@ struct DeviceSegmentedReduce
       }
 
       // Run the algorithm
-      error = DispatchSegmentedReduce<
-        InputIteratorT,
-        OutputIteratorT,
-        BeginOffsetIteratorT,
-        EndOffsetIteratorT,
-        OffsetT,
-        ::cuda::std::plus<>,
-        init_t>::Dispatch(d_temp_storage,
-                          temp_storage_bytes,
-                          d_in,
-                          d_out,
-                          num_segments,
-                          d_begin_offsets,
-                          d_end_offsets,
-                          ::cuda::std::plus<>{},
-                          init_t{}, // zero-initialize
-                          stream.get());
+      error = dispatch_t::Dispatch(
+        d_temp_storage,
+        temp_storage_bytes,
+        d_in,
+        d_out,
+        num_segments,
+        d_begin_offsets,
+        d_end_offsets,
+        ::cuda::std::plus<>{},
+        init_t{}, // zero-initialize
+        stream.get());
 
       // Try to deallocate regardless of the error to avoid memory leaks
       cudaError_t deallocate_error =
