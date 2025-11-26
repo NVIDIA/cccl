@@ -130,7 +130,7 @@ template <typename ChainedPolicyT,
 CUB_DETAIL_KERNEL_ATTRIBUTES
 __launch_bounds__(int(ChainedPolicyT::ActivePolicy::ReducePolicy::BLOCK_THREADS)) void DeviceReduceKernel(
   _CCCL_GRID_CONSTANT const InputIteratorT d_in,
-  AccumT* d_out,
+  _CCCL_GRID_CONSTANT AccumT* const d_out,
   _CCCL_GRID_CONSTANT const OffsetT num_items,
   GridEvenShare<OffsetT> even_share,
   ReductionOpT reduction_op,
@@ -215,7 +215,6 @@ template <typename ChainedPolicyT,
 CUB_DETAIL_KERNEL_ATTRIBUTES __launch_bounds__(
   int(ChainedPolicyT::ActivePolicy::SingleTilePolicy::BLOCK_THREADS),
   1) void DeviceReduceSingleTileKernel(_CCCL_GRID_CONSTANT const InputIteratorT d_in,
-<<<<<<< HEAD
                                        _CCCL_GRID_CONSTANT const OutputIteratorT d_out,
                                        _CCCL_GRID_CONSTANT const OffsetT num_items,
                                        ReductionOpT reduction_op,
@@ -300,7 +299,7 @@ template <typename ChainedPolicyT, typename InputIteratorT, typename ReductionOp
 CUB_DETAIL_KERNEL_ATTRIBUTES
 __launch_bounds__(int(ChainedPolicyT::ActivePolicy::ReducePolicy::BLOCK_THREADS)) void DeterministicDeviceReduceKernel(
   _CCCL_GRID_CONSTANT const InputIteratorT d_in,
-  AccumT* d_out,
+  _CCCL_GRID_CONSTANT AccumT* const d_out,
   _CCCL_GRID_CONSTANT const int num_items,
   ReductionOpT reduction_op,
   TransformOpT transform_op,

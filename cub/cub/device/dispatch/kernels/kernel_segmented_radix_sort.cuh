@@ -99,9 +99,9 @@ __launch_bounds__(int((ALT_DIGIT_BITS) ? ChainedPolicyT::ActivePolicy::AltSegmen
                                        : ChainedPolicyT::ActivePolicy::SegmentedPolicy::BLOCK_THREADS))
   CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceSegmentedRadixSortKernel(
     _CCCL_GRID_CONSTANT const KeyT* const d_keys_in,
-    KeyT* d_keys_out,
+    _CCCL_GRID_CONSTANT KeyT* const d_keys_out,
     _CCCL_GRID_CONSTANT const ValueT* const d_values_in,
-    ValueT* d_values_out,
+    _CCCL_GRID_CONSTANT ValueT* const d_values_out,
     _CCCL_GRID_CONSTANT const BeginOffsetIteratorT d_begin_offsets,
     _CCCL_GRID_CONSTANT const EndOffsetIteratorT d_end_offsets,
     _CCCL_GRID_CONSTANT const int current_bit,

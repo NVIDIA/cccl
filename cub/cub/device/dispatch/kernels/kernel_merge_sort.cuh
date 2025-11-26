@@ -173,8 +173,8 @@ __launch_bounds__(
     _CCCL_GRID_CONSTANT const KeyIteratorT keys_out,
     _CCCL_GRID_CONSTANT const ValueIteratorT items_out,
     _CCCL_GRID_CONSTANT const OffsetT keys_count,
-    KeyT* tmp_keys_out,
-    ValueT* tmp_items_out,
+    _CCCL_GRID_CONSTANT KeyT* const tmp_keys_out,
+    _CCCL_GRID_CONSTANT ValueT* const tmp_items_out,
     CompareOpT compare_op,
     vsmem_t vsmem)
 {
@@ -223,10 +223,10 @@ template <typename KeyIteratorT, typename OffsetT, typename CompareOpT, typename
 CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceMergeSortPartitionKernel(
   _CCCL_GRID_CONSTANT const bool ping,
   _CCCL_GRID_CONSTANT const KeyIteratorT keys_ping,
-  KeyT* keys_pong,
+  _CCCL_GRID_CONSTANT KeyT* const keys_pong,
   _CCCL_GRID_CONSTANT const OffsetT keys_count,
   _CCCL_GRID_CONSTANT const OffsetT num_partitions,
-  OffsetT* merge_partitions,
+  _CCCL_GRID_CONSTANT OffsetT* const merge_partitions,
   CompareOpT compare_op,
   _CCCL_GRID_CONSTANT const OffsetT target_merged_tiles_number,
   _CCCL_GRID_CONSTANT const int items_per_tile)
@@ -276,10 +276,10 @@ __launch_bounds__(
     _CCCL_GRID_CONSTANT const KeyIteratorT keys_ping,
     _CCCL_GRID_CONSTANT const ValueIteratorT items_ping,
     _CCCL_GRID_CONSTANT const OffsetT keys_count,
-    KeyT* keys_pong,
-    ValueT* items_pong,
+    _CCCL_GRID_CONSTANT KeyT* const keys_pong,
+    _CCCL_GRID_CONSTANT ValueT* const items_pong,
     CompareOpT compare_op,
-    OffsetT* merge_partitions,
+    _CCCL_GRID_CONSTANT OffsetT* const merge_partitions,
     _CCCL_GRID_CONSTANT const OffsetT target_merged_tiles_number,
     vsmem_t vsmem)
 {

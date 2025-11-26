@@ -118,7 +118,7 @@ template <typename ChainedPolicyT,
 __launch_bounds__(int(ChainedPolicyT::ActivePolicy::ScanByKeyPolicyT::BLOCK_THREADS))
   CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceScanByKeyKernel(
     _CCCL_GRID_CONSTANT const KeysInputIteratorT d_keys_in,
-    KeyT* d_keys_prev_in,
+    _CCCL_GRID_CONSTANT KeyT* const d_keys_prev_in,
     _CCCL_GRID_CONSTANT const ValuesInputIteratorT d_values_in,
     _CCCL_GRID_CONSTANT const ValuesOutputIteratorT d_values_out,
     ScanByKeyTileStateT tile_state,

@@ -52,7 +52,7 @@ template <typename ChainedPolicyT,
           bool ReadLeft>
 CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceAdjacentDifferenceDifferenceKernel(
   _CCCL_GRID_CONSTANT const InputIteratorT input,
-  InputT* first_tile_previous,
+  _CCCL_GRID_CONSTANT InputT* const first_tile_previous,
   _CCCL_GRID_CONSTANT const OutputIteratorT result,
   DifferenceOpT difference_op,
   _CCCL_GRID_CONSTANT const OffsetT num_items)

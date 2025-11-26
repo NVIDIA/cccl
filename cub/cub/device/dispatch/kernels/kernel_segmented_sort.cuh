@@ -310,9 +310,9 @@ __launch_bounds__(ChainedPolicyT::ActivePolicy::SmallSegmentPolicy::BLOCK_THREAD
     _CCCL_GRID_CONSTANT const local_segment_index_t* const d_small_segments_indices,
     _CCCL_GRID_CONSTANT const local_segment_index_t* const d_medium_segments_indices,
     _CCCL_GRID_CONSTANT const KeyT* const d_keys_in,
-    KeyT* d_keys_out,
+    _CCCL_GRID_CONSTANT KeyT* const d_keys_out,
     _CCCL_GRID_CONSTANT const ValueT* const d_values_in,
-    ValueT* d_values_out,
+    _CCCL_GRID_CONSTANT ValueT* const d_values_out,
     _CCCL_GRID_CONSTANT const BeginOffsetIteratorT d_begin_offsets,
     _CCCL_GRID_CONSTANT const EndOffsetIteratorT d_end_offsets)
 {
