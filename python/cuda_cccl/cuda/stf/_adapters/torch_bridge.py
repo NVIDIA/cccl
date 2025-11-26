@@ -6,34 +6,11 @@ def cai_to_torch(cai: dict):
     Convert a __cuda_array_interface__ dict to a torch.Tensor
     without making PyTorch a hard dependency of the core extension.
 
-    Strategy (in order):
-      1) Try Numba -> DLPack -> torch (fast & common).
-      2) Try CuPy  -> DLPack -> torch (common on CUDA setups).
-      3) Otherwise, error with a clear message.
+    Uses Numba (a required dependency) to create a DeviceNDArray,
+    which torch.as_tensor can consume directly via __cuda_array_interface__.
     """
     import torch
+    from numba import cuda as _cuda
 
-    # 1) Numba bridge
-    try:
-        from numba import cuda as _cuda
-
-        dev_array = _cuda.from_cuda_array_interface(cai, owner=None, sync=False)
-        return torch.from_dlpack(dev_array)
-    except Exception:
-        pass
-
-    # 2) CuPy bridge
-    try:
-        import cupy as cp
-
-        class _cai_wrapper:
-            def __init__(self, d):
-                self.__cuda_array_interface__ = d
-
-        cp_arr = cp.asarray(_cai_wrapper(cai))
-        return torch.from_dlpack(cp_arr)
-    except Exception as e:
-        raise RuntimeError(
-            "Could not convert __cuda_array_interface__ to torch.Tensor. "
-            "Install numba or cupy (or expose a DLPack capsule natively)."
-        ) from e
+    dev_array = _cuda.from_cuda_array_interface(cai, owner=None, sync=False)
+    return torch.as_tensor(dev_array)
