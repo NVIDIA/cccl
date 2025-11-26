@@ -103,11 +103,7 @@ __internal_double_Tp_sqrt_unsafe(_Tp __hi, _Tp __lo) noexcept
   // optimize this to fma, same accuracy.
   __ans_hi_lo += __initial_guess * __lo + __correction_term * __hi;
 
-  __cccl_asinh_sqrt_return_hilo<_Tp> __retval_hilo;
-  __retval_hilo.__hi = __ans_hi_hi;
-  __retval_hilo.__lo = __ans_hi_lo;
-
-  return __retval_hilo;
+  return __cccl_asinh_sqrt_return_hilo<_Tp>{__ans_hi_hi, __ans_hi_lo};
 }
 
 // asinh
@@ -191,7 +187,7 @@ template <class _Tp>
   //  Check if the largest component of __x is > 2^__max_allowed_exponent:
   _Tp __x_big_factor = _Tp{0};
   const _Tp __max    = ::cuda::std::fmax(__realx, __imagx);
-  const bool __x_big = ::cuda::std::bit_cast<__uint_t>(__max) > __max_allowed_val_as_uint;
+  const bool __x_big = ::cuda::std::__fp_get_storage(__max) > __max_allowed_val_as_uint;
 
   if (__x_big)
   {
@@ -205,7 +201,7 @@ template <class _Tp>
     const __uint_t __exp_reduce_factor =
       (__uint_t((2 * __exp_max) + __max_allowed_exponent - __exp_biased) << __mant_nbits)
       | __fp_explicit_bit_mask_of_v<_Tp>;
-    const _Tp __exp_mul_factor = ::cuda::std::bit_cast<_Tp>(__exp_reduce_factor);
+    const _Tp __exp_mul_factor = ::cuda::std::__fp_from_storage<_Tp>(__exp_reduce_factor);
 
     // Scale down to a working range.
     __realx *= __exp_mul_factor;
