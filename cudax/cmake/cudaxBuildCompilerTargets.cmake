@@ -42,10 +42,6 @@ if ("MSVC" STREQUAL "${CMAKE_CXX_COMPILER_ID}")
   # C4848: support for attribute 'msvc::no_unique_address' in C++17 and earlier is a vendor extension
   append_option_if_available("/wd4848" cxx_compile_options)
 
-  # cudax requires dim3 to be usable from a constexpr context, and the CUDART headers require
-  # __cplusplus to be defined for this to work:
-  append_option_if_available("/Zc:__cplusplus" cxx_compile_options)
-
   # XXX Temporary hack for STF !
   # C4267: conversion from 'meow' to 'purr', possible loss of data
   append_option_if_available("/wd4267" cxx_compile_options)
