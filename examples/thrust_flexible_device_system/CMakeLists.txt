@@ -49,6 +49,12 @@ if (CCCL_THRUST_DEVICE_SYSTEM STREQUAL "CUDA")
   # Note that the project(...) command earlier only enables CXX by default.
   enable_language(CUDA)
 
+  # Optional: enable additional language compatibility flags for libcudacxx
+  # if enabling the CUDA language after libcudacxx has already been found.
+  # You may encounter missing compatibility flags  (eg. /Zc:__cplusplus
+  # and /Zc:preprocessor on MSVC) if you omit this and do not add them yourself.
+  libcudacxx_update_language_compat_flags()
+
   # Compile for the native CUDA arch if not specified:
   if (NOT DEFINED CMAKE_CUDA_ARCHITECTURES)
     set(CMAKE_CUDA_ARCHITECTURES native)

@@ -5,6 +5,9 @@
 # libcudacxx.
 
 if (TARGET libcudacxx::libcudacxx)
+  # This isn't the first time we've been included -- double check the enabled languages
+  # and re-run compiler checks for any new ones.
+  libcudacxx_update_language_compat_flags()
   return()
 endif()
 
@@ -103,81 +106,108 @@ target_compile_definitions(
   INTERFACE $<$<CONFIG:Debug>:CCCL_ENABLE_ASSERTIONS>
 )
 
-# Detect whether the host compiler is MSVC
-set(detected_msvc_host FALSE)
-set(detected_msvc_host_version)
+# We cannot test for MSVC version if the CXX or CUDA languages aren't enabled, because
+# the CMAKE_[CXX|CUDA_HOST]_COMPILER_[ID|VERSION] variables won't exist.
+# Just call find_package(libcudacxx) again after enabling languages to rediscover.
+function(libcudacxx_update_language_compat_flags)
+  # Track which languages have already been checked:
+  get_property(cxx_checked GLOBAL PROPERTY _libcudacxx_cxx_checked DEFINED)
+  get_property(cuda_checked GLOBAL PROPERTY _libcudacxx_cuda_checked DEFINED)
+  get_property(langs GLOBAL PROPERTY ENABLED_LANGUAGES)
+  message(VERBOSE "libcudacxx: - Enabled languages: ${langs}")
 
-if (NOT CMAKE_CUDA_COMPILER_ID STREQUAL "NVIDIA")
-  # Only nvcc uses a host compiler.
-  set(detected_msvc_host FALSE)
-elseif (
-  DEFINED CCCL_OVERRIDE_MSVC_HOST_CHECK
-  AND DEFINED CCCL_OVERRIDE_MSVC_HOST_VERSION
-)
-  # Set CCCL_OVERRIDE_MSVC_HOST_CHECK to TRUE or FALSE to force the value of
-  # detected_msvc_host. We provide this because host compiler id detection is not
-  # robustly available in all CMake versions and generator combinations and users
-  # may need an escape hatch to avoid adding incorrect flags.
-  # CCCL_OVERRIDE_MSVC_HOST_VERSION should also be set to
-  # the version number of the MSVC host compiler (e.g., 19.29).
-  set(detected_msvc_host ${CCCL_OVERRIDE_MSVC_HOST_CHECK})
-  set(detected_msvc_host_version ${CCCL_OVERRIDE_MSVC_HOST_VERSION})
-else()
-  # gersemi: off
-  if ((CMAKE_VERSION VERSION_GREATER_EQUAL 3.31) AND
-      (NOT CMAKE_GENERATOR MATCHES "Visual Studio"))
+  if (NOT CXX IN_LIST langs)
+    # gersemi: off
+    message(STATUS "libcudacxx: - CXX language not enabled.")
+    message(STATUS "libcudacxx:   /Zc:__cplusplus and /Zc:preprocessor flags will NOT be automatically to CXX targets.")
+    message(STATUS "libcudacxx:   Call find_package(libcudacxx) after enabling CXX to enable MSVC compatibility flags.")
     # gersemi: on
-    # If CMake >= 3.31 and the CMake generator is not Visual Studio,
-    # CMAKE_CUDA_HOST_COMPILER_ID is available:
-    if (CMAKE_CUDA_HOST_COMPILER_ID STREQUAL "MSVC")
-      set(detected_msvc_host TRUE)
-      set(detected_msvc_host_version ${CMAKE_CUDA_HOST_COMPILER_VERSION})
-    endif()
-  else()
-    # For CMake < 3.31 or Visual Studio generators, fall back to checking CMAKE_CXX_COMPILER_ID.
-    # Usually windows nvcc builds use MSVC so this should normally work.
-    # Use CCCL_OVERRIDE_MSVC_HOST_CHECK to override for weird edge cases.
-    if (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
-      set(detected_msvc_host TRUE)
-      set(detected_msvc_host_version ${CMAKE_CXX_COMPILER_VERSION})
+  endif()
+
+  if (NOT CUDA IN_LIST langs)
+    # gersemi: off
+    message(STATUS "libcudacxx: - CUDA language not enabled.")
+    message(STATUS "libcudacxx:   /Zc:__cplusplus and /Zc:preprocessor flags will NOT be automatically to CUDA targets.")
+    message(STATUS "libcudacxx:   Call find_package(libcudacxx) after enabling CUDA to enable MSVC compatibility flags.")
+    # gersemi: on
+  endif()
+
+  if (CXX IN_LIST langs)
+    set(msvc_cxx_id ${CMAKE_CXX_COMPILER_ID})
+    set(msvc_cxx_version ${CMAKE_CXX_COMPILER_VERSION})
+  endif()
+
+  if (CUDA IN_LIST langs)
+    option(
+      libcudacxx_MISMATCHED_MSVC_COMPILERS
+      "Set to true if cxx / cuda host compiler mix msvc versions."
+      FALSE
+    )
+    if (
+      (NOT CMAKE_GENERATOR MATCHES "Visual Studio")
+      AND (CMAKE_VERSION VERSION_GREATER_EQUAL 3.31)
+    )
+      # These aren't defined with VS gens or older cmake versions:
+      set(msvc_cuda_host_id ${CMAKE_CUDA_HOST_COMPILER_ID})
+      set(msvc_cuda_host_version ${CMAKE_CUDA_HOST_COMPILER_VERSION})
+    elseif (NOT libcudacxx_MISMATCHED_MSVC_COMPILERS)
+      # For CMake < 3.31, we cannot reliably detect the CUDA host compiler ID.
+      # Assume that the CUDA host compiler is the same as the CXX compiler.
+      # gersemi: off
+      message(STATUS "libcudacxx: - Assuming CUDA host compiler is the same as CXX compiler.")
+      message(STATUS "libcudacxx:   Set libcudacxx_MISMATCHED_MSVC_COMPILERS=TRUE to disable this.")
+      # gersemi: on
+      set(msvc_cuda_host_id ${CMAKE_CXX_COMPILER_ID})
+      set(msvc_cuda_host_version ${CMAKE_CXX_COMPILER_VERSION})
     endif()
   endif()
-endif()
 
-if (detected_msvc_host)
-  # We require the conforming __cplusplus behavior:
-  target_compile_options(
-    _libcudacxx_libcudacxx
-    INTERFACE
-      "$<$<COMPILE_LANG_AND_ID:CUDA,NVIDIA>:-Xcompiler=/Zc:__cplusplus>"
-      "$<$<COMPILE_LANG_AND_ID:CXX,MSVC>:/Zc:__cplusplus>"
-  )
+  function(_libcudacxx_get_msvc_flags_for_version out_var msvc_version)
+    set(flags "/Zc:__cplusplus")
+    if (msvc_version GREATER_EQUAL 19.25)
+      list(APPEND flags "/Zc:preprocessor")
+    elseif (msvc_version GREATER_EQUAL 19.15)
+      list(APPEND flags "/experimental:preprocessor")
+    endif()
+    set(${out_var} "${flags}" PARENT_SCOPE)
+  endfunction()
 
-  # libcudacxx requires the conforming preprocessor on MSVC builds.
-  if (detected_msvc_host_version GREATER_EQUAL 19.25)
-    target_compile_options(
-      _libcudacxx_libcudacxx
-      INTERFACE
-        "$<$<COMPILE_LANG_AND_ID:CUDA,NVIDIA>:-Xcompiler=/Zc:preprocessor>"
-        "$<$<COMPILE_LANG_AND_ID:CXX,MSVC>:/Zc:preprocessor>"
-    )
-  elseif (detected_msvc_host_version GREATER_EQUAL 19.15)
-    # Older version of this flag:
-    target_compile_options(
-      _libcudacxx_libcudacxx
-      INTERFACE
-        "$<$<COMPILE_LANG_AND_ID:CUDA,NVIDIA>:-Xcompiler=/experimental:preprocessor>"
-        "$<$<COMPILE_LANG_AND_ID:CXX,MSVC>:/experimental:preprocessor>"
-    )
-  else()
-    # Shouldn't really happen, current CCCL requires at least MSVC 19.20+ (as of CCCL 3.x).
-    # For completeness:
-    message(
-      WARNING
-      "Detected MSVC host compiler unsupported by CCCL: ${detected_msvc_host_version}."
-    )
+  if (NOT cxx_checked AND DEFINED msvc_cxx_id)
+    if (msvc_cxx_id STREQUAL "MSVC")
+      _libcudacxx_get_msvc_flags_for_version(cxx_flags "${msvc_cxx_version}")
+      foreach (flag IN LISTS cxx_flags)
+        target_compile_options(
+          _libcudacxx_libcudacxx
+          INTERFACE "$<$<COMPILE_LANG_AND_ID:CXX,MSVC>:${flag}>"
+        )
+        message(
+          STATUS
+          "libcudacxx: - Added CXX compile option for MSVC: ${flag}"
+        )
+      endforeach()
+    endif()
+    define_property(GLOBAL PROPERTY _libcudacxx_cxx_checked)
   endif()
-endif()
+
+  if (NOT cuda_checked AND DEFINED msvc_cuda_host_id)
+    if (msvc_cuda_host_id STREQUAL "MSVC")
+      _libcudacxx_get_msvc_flags_for_version(cuda_flags "${msvc_cuda_host_version}")
+      foreach (flag IN LISTS cuda_flags)
+        target_compile_options(
+          _libcudacxx_libcudacxx
+          INTERFACE "$<$<COMPILE_LANG_AND_ID:CUDA,NVIDIA>:-Xcompiler=${flag}>"
+        )
+        message(
+          STATUS
+          "libcudacxx: - Added CUDA host compile option for MSVC: ${flag}"
+        )
+      endforeach()
+    endif()
+    define_property(GLOBAL PROPERTY _libcudacxx_cuda_checked)
+  endif()
+endfunction()
+
+libcudacxx_update_language_compat_flags()
 
 #
 # Standardize version info

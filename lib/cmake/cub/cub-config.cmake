@@ -77,26 +77,20 @@ if (NOT TARGET CUB::Thrust)
 endif()
 
 if (NOT TARGET CUB::libcudacxx)
-  if (TARGET Thrust::libcudacxx)
-    # Prefer the same libcudacxx as Thrust, if available:
-    _cub_declare_interface_alias(CUB::libcudacxx _CUB_libcudacxx)
-    target_link_libraries(_CUB_libcudacxx INTERFACE Thrust::libcudacxx)
-  else()
-    if (NOT TARGET libcudacxx::libcudacxx)
-      find_package(
-        libcudacxx
-        ${CUB_VERSION}
-        EXACT
-        CONFIG
-        ${required_flag}
-        ${quiet_flag}
-        NO_DEFAULT_PATH # Only check the explicit HINTS below:
-        HINTS "${CMAKE_CURRENT_LIST_DIR}/../libcudacxx/"
-      )
-    endif()
-    _cub_declare_interface_alias(CUB::libcudacxx _CUB_libcudacxx)
-    target_link_libraries(_CUB_libcudacxx INTERFACE libcudacxx::libcudacxx)
+  if (NOT TARGET libcudacxx::libcudacxx)
+    find_package(
+      libcudacxx
+      ${CUB_VERSION}
+      EXACT
+      CONFIG
+      ${required_flag}
+      ${quiet_flag}
+      NO_DEFAULT_PATH # Only check the explicit HINTS below:
+      HINTS "${CMAKE_CURRENT_LIST_DIR}/../libcudacxx/"
+    )
   endif()
+  _cub_declare_interface_alias(CUB::libcudacxx _CUB_libcudacxx)
+  target_link_libraries(_CUB_libcudacxx INTERFACE libcudacxx::libcudacxx)
 endif()
 
 #

@@ -6,6 +6,14 @@
 #   Defines common warning flags, definitions, etc, including those defined in
 #   the global CCCL targets.
 
+find_package(
+  libcudacxx
+  REQUIRED
+  CONFIG
+  NO_DEFAULT_PATH # Only check the explicit path in HINTS:
+  HINTS "${CCCL_SOURCE_DIR}/lib/cmake/libcudacxx/"
+)
+
 function(libcudacxx_build_compiler_targets)
   set(cuda_compile_options)
   set(cxx_compile_options)

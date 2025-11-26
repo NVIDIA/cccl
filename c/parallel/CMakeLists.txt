@@ -2,6 +2,9 @@ cmake_minimum_required(VERSION 3.21)
 
 project(CCCL_C_Parallel LANGUAGES CUDA CXX C)
 
+# CUDA may not have been enabled when libcudacxx was found:
+libcudacxx_update_language_compat_flags()
+
 option(CCCL_C_Parallel_ENABLE_TESTING "Build cccl.c.parallel tests." OFF)
 option(
   CCCL_C_Parallel_ENABLE_HEADER_TESTING

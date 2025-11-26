@@ -6,6 +6,9 @@ endif()
 cmake_minimum_required(VERSION 3.21)
 project(cudax LANGUAGES CXX CUDA)
 
+# CUDA may not have been enabled when libcudacxx was found:
+libcudacxx_update_language_compat_flags()
+
 option(
   cudax_ENABLE_HEADER_TESTING
   "Test that CUDA Experimental's public headers compile."

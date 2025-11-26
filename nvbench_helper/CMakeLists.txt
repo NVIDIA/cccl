@@ -2,6 +2,11 @@ cmake_minimum_required(VERSION 3.21)
 
 project(nvbench_helper LANGUAGES CXX CUDA)
 
+if (TARGET libcudacxx::libcudacxx)
+  # CUDA may not have been enabled when libcudacxx was found:
+  libcudacxx_update_language_compat_flags()
+endif()
+
 include(CMakeDependentOption)
 
 find_package(
