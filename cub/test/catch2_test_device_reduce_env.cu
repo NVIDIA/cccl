@@ -10,7 +10,8 @@ struct stream_registry_factory_t;
 #include <cub/device/device_reduce.cuh>
 
 #include <thrust/device_vector.h>
-#include <thrust/iterator/constant_iterator.h>
+
+#include <cuda/iterator>
 
 #include "catch2_test_env_launch_helper.h"
 
@@ -73,7 +74,7 @@ TEST_CASE("Device reduce works with default environment", "[reduce][device]")
   num_items_t num_items = 1;
   c2h::device_vector<int> d_block_size(1);
   block_size_check_t block_size_check{thrust::raw_pointer_cast(d_block_size.data())};
-  auto d_in  = thrust::make_constant_iterator(value_t{1});
+  auto d_in  = cuda::constant_iterator(value_t{1});
   auto d_out = thrust::device_vector<value_t>(1);
 
   REQUIRE(cudaSuccess == cub::DeviceReduce::Reduce(d_in, d_out.begin(), num_items, block_size_check, value_t{0}));
@@ -97,7 +98,7 @@ TEST_CASE("Device sum works with default environment", "[reduce][device]")
 
   num_items_t num_items = 1;
 
-  auto d_in  = thrust::make_constant_iterator(value_t{1});
+  auto d_in  = cuda::constant_iterator(value_t{1});
   auto d_out = thrust::device_vector<value_t>(1);
 
   REQUIRE(cudaSuccess == cub::DeviceReduce::Sum(d_in, d_out.begin(), num_items));
@@ -157,7 +158,7 @@ C2H_TEST("Device reduce can be tuned", "[reduce][device]", block_sizes)
   block_size_check_t block_size_check{thrust::raw_pointer_cast(d_block_size.data())};
 
   auto num_items = 1;
-  auto d_in      = thrust::make_constant_iterator(1);
+  auto d_in      = cuda::constant_iterator(1);
   auto d_out     = thrust::device_vector<int>(1);
 
   // We are expecting that `scan_tuning` is ignored
@@ -173,7 +174,7 @@ C2H_TEST("Device sum can be tuned", "[reduce][device]", block_sizes)
   constexpr int target_block_size = c2h::get<0, TestType>::value;
 
   auto num_items = 1;
-  auto d_in      = thrust::make_constant_iterator(1);
+  auto d_in      = cuda::constant_iterator(1);
   auto d_out     = thrust::device_vector<int>(1);
 
   // We are expecting that `scan_tuning` is ignored
@@ -200,7 +201,7 @@ C2H_TEST("Device reduce uses environment", "[reduce][device]", requirements)
   using init_t        = accumulator_t;
 
   num_items_t num_items = GENERATE(1 << 4, 1 << 24);
-  auto d_in             = thrust::make_constant_iterator(1.0f);
+  auto d_in             = cuda::constant_iterator(1.0f);
   auto d_out            = thrust::device_vector<accumulator_t>(1);
 
   init_t init = 0;
@@ -242,14 +243,8 @@ C2H_TEST("Device reduce uses environment", "[reduce][device]", requirements)
     {
       using policy_t   = cub::detail::reduce::policy_hub<accumulator_t, offset_t, op_t>::MaxPolicy;
       auto* raw_ptr    = thrust::raw_pointer_cast(d_out.data());
-      using dispatch_t = cub::detail::DispatchReduceNondeterministic<
-        decltype(d_in),
-        decltype(raw_ptr),
-        offset_t,
-        op_t,
-        init_t,
-        accumulator_t,
-        transform_t>;
+      using dispatch_t = cub::detail::reduce::
+        dispatch_nondeterministic_t<decltype(d_in), decltype(raw_ptr), offset_t, op_t, init_t, accumulator_t, transform_t>;
 
       REQUIRE(
         cudaSuccess == dispatch_t::Dispatch(nullptr, expected_bytes_allocated, d_in, raw_ptr, num_items, op_t{}, init));
@@ -271,11 +266,11 @@ C2H_TEST("Device reduce uses environment", "[reduce][device]", requirements)
       using deterministic_add_t   = cub::detail::rfa::deterministic_sum_t<accumulator_t>;
       using reduction_op_t        = deterministic_add_t;
       using deterministic_accum_t = deterministic_add_t::DeterministicAcc;
-      using output_it_t = thrust::transform_output_iterator<cub::detail::rfa::rfa_float_transform_t<accumulator_t>,
-                                                            decltype(d_out.begin())>;
+      using output_it_t =
+        cuda::transform_output_iterator<cub::detail::rfa::rfa_float_transform_t<accumulator_t>, decltype(d_out.begin())>;
 
-      using dispatch_t = cub::detail::
-        DispatchReduceDeterministic<decltype(d_in), decltype(d_out.begin()), offset_t, init_t, transform_t, accumulator_t>;
+      using dispatch_t = cub::detail::rfa::
+        dispatch_t<decltype(d_in), decltype(d_out.begin()), offset_t, init_t, transform_t, accumulator_t>;
 
       REQUIRE(
         cudaSuccess == dispatch_t::Dispatch(nullptr, expected_bytes_allocated, d_in, d_out.begin(), num_items, init));
@@ -327,7 +322,7 @@ C2H_TEST("Device sum uses environment", "[reduce][device]", requirements)
   using init_t        = accumulator_t;
 
   num_items_t num_items = GENERATE(1 << 4, 1 << 24);
-  auto d_in             = thrust::make_constant_iterator(1.0f);
+  auto d_in             = cuda::constant_iterator(1.0f);
   auto d_out            = thrust::device_vector<accumulator_t>(1);
 
   size_t expected_bytes_allocated{};
@@ -366,14 +361,8 @@ C2H_TEST("Device sum uses environment", "[reduce][device]", requirements)
     {
       using policy_t   = cub::detail::reduce::policy_hub<accumulator_t, offset_t, op_t>::MaxPolicy;
       auto* raw_ptr    = thrust::raw_pointer_cast(d_out.data());
-      using dispatch_t = cub::detail::DispatchReduceNondeterministic<
-        decltype(d_in),
-        decltype(raw_ptr),
-        offset_t,
-        op_t,
-        init_t,
-        accumulator_t,
-        transform_t>;
+      using dispatch_t = cub::detail::reduce::
+        dispatch_nondeterministic_t<decltype(d_in), decltype(raw_ptr), offset_t, op_t, init_t, accumulator_t, transform_t>;
 
       REQUIRE(cudaSuccess
               == dispatch_t::Dispatch(nullptr, expected_bytes_allocated, d_in, raw_ptr, num_items, op_t{}, init_t{}));
@@ -395,11 +384,11 @@ C2H_TEST("Device sum uses environment", "[reduce][device]", requirements)
       using deterministic_add_t   = cub::detail::rfa::deterministic_sum_t<accumulator_t>;
       using reduction_op_t        = deterministic_add_t;
       using deterministic_accum_t = deterministic_add_t::DeterministicAcc;
-      using output_it_t = thrust::transform_output_iterator<cub::detail::rfa::rfa_float_transform_t<accumulator_t>,
-                                                            decltype(d_out.begin())>;
+      using output_it_t =
+        cuda::transform_output_iterator<cub::detail::rfa::rfa_float_transform_t<accumulator_t>, decltype(d_out.begin())>;
 
-      using dispatch_t = cub::detail::
-        DispatchReduceDeterministic<decltype(d_in), decltype(d_out.begin()), offset_t, init_t, transform_t, accumulator_t>;
+      using dispatch_t = cub::detail::rfa::
+        dispatch_t<decltype(d_in), decltype(d_out.begin()), offset_t, init_t, transform_t, accumulator_t>;
 
       REQUIRE(cudaSuccess
               == dispatch_t::Dispatch(nullptr, expected_bytes_allocated, d_in, d_out.begin(), num_items, init_t{}));

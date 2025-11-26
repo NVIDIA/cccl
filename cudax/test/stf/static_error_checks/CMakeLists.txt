@@ -1,4 +1,5 @@
-set(static_assert_tests
+set(
+  static_assert_tests
   static.cu
   task_prototype.cu
   stream_task_prototype.cu
@@ -11,42 +12,26 @@ set(static_assert_tests
 # triggers the compilation and checks for "static assertion" in the output.
 #
 # target_name_var: Variable name to overwrite with the name of the test
-#   target. Useful for post-processing target information.
+#   target. Useful for adding target information after creation.
 # source: The source file for the test.
-# cudax_target: The reference cudax target with configuration information.
+#
 # Additional args are passed to cudax_stf_configure_target.
-function(cudax_stf_add_static_assert_test target_name_var source cudax_target)
-  cudax_get_target_property(config_dialect ${cudax_target} DIALECT)
-  cudax_get_target_property(config_prefix ${cudax_target} PREFIX)
-
+function(cudax_stf_add_static_assert_test target_name_var source)
   get_filename_component(filename ${source} NAME_WE)
 
-  set(test_target "${config_prefix}.tests.stf.error.${filename}")
+  set(test_target cudax.tests.stf.error.${filename})
 
-  add_executable(${test_target} ${source})
-  cccl_configure_target(${test_target} DIALECT ${config_dialect})
-  cudax_clone_target_properties(${test_target} ${cudax_target})
+  cccl_add_executable(${test_target} SOURCES ${source} NO_METATARGETS)
   cudax_stf_configure_target(${test_target} ${ARGN})
-  target_link_libraries(${test_target} PRIVATE ${cudax_target})
-  set_target_properties(${test_target} PROPERTIES
-    EXCLUDE_FROM_ALL true
-    EXCLUDE_FROM_DEFAULT_BUILD true
-  )
-
-  add_test(NAME ${test_target}
-    COMMAND ${CMAKE_COMMAND} --build "${CMAKE_BINARY_DIR}"
-                             --target ${test_target}
-                             --config $<CONFIGURATION>
-  )
-  set_tests_properties(${test_target} PROPERTIES
-    PASS_REGULAR_EXPRESSION "static_assert|static assertion"
+  target_link_libraries(${test_target} PRIVATE cudax.compiler_interface)
+  cccl_add_xfail_compile_target_test(
+    ${test_target}
+    ERROR_REGEX "static_assert|static assertion"
   )
 
   set(${target_name_var} ${test_target} PARENT_SCOPE)
 endfunction()
 
-foreach(cudax_target IN LISTS cudax_TARGETS)
-  foreach(source IN LISTS static_assert_tests)
-    cudax_stf_add_static_assert_test(test_target "${source}" ${cudax_target})
-  endforeach()
+foreach (source IN LISTS static_assert_tests)
+  cudax_stf_add_static_assert_test(test_target "${source}")
 endforeach()

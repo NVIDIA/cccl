@@ -21,6 +21,10 @@
 #include <cub/util_ptx.cuh>
 #include <cub/util_type.cuh>
 
+#if !_CCCL_COMPILER(NVRTC)
+#  include <ostream>
+#endif // !_CCCL_COMPILER(NVRTC)
+
 CUB_NAMESPACE_BEGIN
 
 //! @name Blocked arrangement I/O (direct)
@@ -148,17 +152,14 @@ template <typename T, int ItemsPerThread>
 _CCCL_DEVICE _CCCL_FORCEINLINE void
 StoreDirectBlockedVectorized(int linear_tid, T* block_ptr, T (&items)[ItemsPerThread])
 {
-  enum
-  {
-    // Maximum CUDA vector size is 4 elements
-    MAX_VEC_SIZE = ::cuda::std::min(4, ItemsPerThread),
+  // Maximum CUDA vector size is 4 elements
+  static constexpr int MAX_VEC_SIZE = ::cuda::std::min(4, ItemsPerThread);
 
-    // Vector size must be a power of two and an even divisor of the items per thread
-    VEC_SIZE =
-      ((((MAX_VEC_SIZE - 1) & MAX_VEC_SIZE) == 0) && ((ItemsPerThread % MAX_VEC_SIZE) == 0)) ? MAX_VEC_SIZE : 1,
+  // Vector size must be a power of two and an even divisor of the items per thread
+  static constexpr int VEC_SIZE =
+    ((((MAX_VEC_SIZE - 1) & MAX_VEC_SIZE) == 0) && ((ItemsPerThread % MAX_VEC_SIZE) == 0)) ? MAX_VEC_SIZE : 1;
 
-    VECTORS_PER_THREAD = ItemsPerThread / VEC_SIZE,
-  };
+  static constexpr int VECTORS_PER_THREAD = ItemsPerThread / VEC_SIZE;
 
   // Vector type
   using Vector = typename CubVector<T, VEC_SIZE>::Type;
@@ -529,6 +530,29 @@ enum BlockStoreAlgorithm
   BLOCK_STORE_WARP_TRANSPOSE_TIMESLICED,
 };
 
+#if !_CCCL_COMPILER(NVRTC)
+inline ::std::ostream& operator<<(::std::ostream& os, BlockStoreAlgorithm algo)
+{
+  switch (algo)
+  {
+    case BLOCK_STORE_DIRECT:
+      return os << "BLOCK_STORE_DIRECT";
+    case BLOCK_STORE_STRIPED:
+      return os << "BLOCK_STORE_STRIPED";
+    case BLOCK_STORE_VECTORIZE:
+      return os << "BLOCK_STORE_VECTORIZE";
+    case BLOCK_STORE_TRANSPOSE:
+      return os << "BLOCK_STORE_TRANSPOSE";
+    case BLOCK_STORE_WARP_TRANSPOSE:
+      return os << "BLOCK_STORE_WARP_TRANSPOSE";
+    case BLOCK_STORE_WARP_TRANSPOSE_TIMESLICED:
+      return os << "BLOCK_STORE_WARP_TRANSPOSE_TIMESLICED";
+    default:
+      return os << "<unknown BlockStoreAlgorithm: " << static_cast<int>(algo) << ">";
+  }
+}
+#endif // !_CCCL_COMPILER(NVRTC)
+
 //! @rst
 //! The BlockStore class provides :ref:`collective <collective-primitives>` data movement
 //! methods for writing a :ref:`blocked arrangement <flexible-data-arrangement>` of items
@@ -634,11 +658,8 @@ template <typename T,
 class BlockStore
 {
 private:
-  enum
-  {
-    /// The thread block size in threads
-    BLOCK_THREADS = BlockDimX * BlockDimY * BlockDimZ,
-  };
+  /// The thread block size in threads
+  static constexpr int BLOCK_THREADS = BlockDimX * BlockDimY * BlockDimZ;
 
   /// Store helper
   template <BlockStoreAlgorithm _POLICY, int DUMMY>
@@ -891,10 +912,7 @@ private:
   template <int DUMMY>
   struct StoreInternal<BLOCK_STORE_WARP_TRANSPOSE, DUMMY>
   {
-    enum
-    {
-      WARP_THREADS = detail::warp_threads
-    };
+    static constexpr int WARP_THREADS = detail::warp_threads;
 
     // Assert BLOCK_THREADS must be a multiple of WARP_THREADS
     static_assert(int(BLOCK_THREADS) % int(WARP_THREADS) == 0, "BLOCK_THREADS must be a multiple of WARP_THREADS");
@@ -974,10 +992,7 @@ private:
   template <int DUMMY>
   struct StoreInternal<BLOCK_STORE_WARP_TRANSPOSE_TIMESLICED, DUMMY>
   {
-    enum
-    {
-      WARP_THREADS = detail::warp_threads
-    };
+    static constexpr int WARP_THREADS = detail::warp_threads;
 
     // Assert BLOCK_THREADS must be a multiple of WARP_THREADS
     static_assert(int(BLOCK_THREADS) % int(WARP_THREADS) == 0, "BLOCK_THREADS must be a multiple of WARP_THREADS");

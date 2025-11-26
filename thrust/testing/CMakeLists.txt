@@ -1,11 +1,3 @@
-# Create meta targets that build all tests for a single configuration:
-foreach(thrust_target IN LISTS THRUST_TARGETS)
-  thrust_get_target_property(config_prefix ${thrust_target} PREFIX)
-  set(config_meta_target ${config_prefix}.tests)
-  add_custom_target(${config_meta_target})
-  add_dependencies(${config_prefix}.all ${config_meta_target})
-endforeach()
-
 # Generate testing framework libraries:
 add_subdirectory(unittest)
 
@@ -71,45 +63,33 @@ function(thrust_add_test target_name_var test_name test_src thrust_target)
 
   # Related target names:
   set(config_framework_target ${config_prefix}.test.framework)
-  set(config_meta_target ${config_prefix}.tests)
-  set(test_meta_target thrust.all.test.${test_name})
 
-  add_executable(${test_target} "${real_test_src}")
-  cccl_configure_target(${test_target} DIALECT ${config_dialect})
+  cccl_add_executable(${test_target} SOURCES "${real_test_src}" ADD_CTEST)
   if (is_catch2_test)
-    target_link_libraries(${test_target} PRIVATE ${thrust_target} Catch2::Catch2WithMain)
+    target_link_libraries(
+      ${test_target}
+      PRIVATE #
+        ${thrust_target}
+        Catch2::Catch2WithMain
+    )
   else()
-    target_link_libraries(${test_target} PRIVATE ${thrust_target} ${config_framework_target})
-  endif()
-  target_include_directories(${test_target} PRIVATE "${Thrust_SOURCE_DIR}/testing")
-  thrust_clone_target_properties(${test_target} ${thrust_target})
-
-  if (NOT "Clang" STREQUAL "${CMAKE_CUDA_COMPILER_ID}")
-    target_compile_definitions(${test_target} PRIVATE THRUST_TEST_DEVICE_SIDE)
-  endif()
-
-  # Ensure that we test with assertions enabled
-  target_compile_definitions(${test_target} PRIVATE CCCL_ENABLE_ASSERTIONS)
-
-  # Add to the active configuration's meta target
-  add_dependencies(${config_meta_target} ${test_target})
-
-  # Meta target that builds tests with this name for all configurations:
-  if (NOT TARGET ${test_meta_target})
-    add_custom_target(${test_meta_target})
-  endif()
-  add_dependencies(${test_meta_target} ${test_target})
-
-  if (is_catch2_test)
-    add_test(NAME ${test_target} COMMAND "$<TARGET_FILE:${test_target}>")
-  else()
-    add_test(NAME ${test_target}
-      COMMAND "${CMAKE_COMMAND}"
-      "-DTHRUST_BINARY=$<TARGET_FILE:${test_target}>"
-      "-DTHRUST_SOURCE=${Thrust_SOURCE_DIR}"
-      -P "${Thrust_SOURCE_DIR}/cmake/ThrustRunTest.cmake"
+    target_link_libraries(
+      ${test_target}
+      PRIVATE #
+        ${thrust_target}
+        ${config_framework_target}
     )
   endif()
+  target_include_directories(
+    ${test_target}
+    PRIVATE "${Thrust_SOURCE_DIR}/testing"
+  )
+  target_compile_definitions(
+    ${test_target}
+    PRIVATE
+      $<$<COMPILE_LANG_AND_ID:CUDA,NVIDIA>:THRUST_TEST_DEVICE_SIDE>
+      CCCL_ENABLE_ASSERTIONS
+  )
 
   # Run OMP/TBB tests in serial. Multiple OMP processes will massively
   # oversubscribe the machine with GCC's OMP, and we want to test these with
@@ -124,7 +104,8 @@ function(thrust_add_test target_name_var test_name test_src thrust_target)
   get_filename_component(test_cmake_script "${test_src}" NAME_WLE)
   set(test_cmake_script "${CMAKE_CURRENT_LIST_DIR}/${test_cmake_script}.cmake")
   # Use a glob so we can detect if this changes:
-  file(GLOB test_cmake_script
+  file(
+    GLOB test_cmake_script
     RELATIVE "${CMAKE_CURRENT_LIST_DIR}"
     CONFIGURE_DEPENDS
     "${test_cmake_script}"
@@ -134,27 +115,30 @@ function(thrust_add_test target_name_var test_name test_src thrust_target)
   endif()
 endfunction()
 
-file(GLOB test_srcs
+file(
+  GLOB test_srcs
   RELATIVE "${CMAKE_CURRENT_LIST_DIR}"
   CONFIGURE_DEPENDS
-  *.cu *.cpp
+  *.cu
+  *.cpp
 )
 
 # Add common tests to all configs:
-foreach(thrust_target IN LISTS THRUST_TARGETS)
+foreach (thrust_target IN LISTS THRUST_TARGETS)
   thrust_get_target_property(config_host ${thrust_target} HOST)
   thrust_get_target_property(config_device ${thrust_target} DEVICE)
   thrust_get_target_property(config_prefix ${thrust_target} PREFIX)
 
-  foreach(test_src IN LISTS test_srcs)
+  foreach (test_src IN LISTS test_srcs)
     get_filename_component(test_name "${test_src}" NAME_WLE)
     string(REGEX REPLACE "^catch2_test_" "" test_name "${test_name}")
 
     # Is this test restricted to only certain host/device combinations?
-    if(${test_name} IN_LIST restricted_tests)
+    if (${test_name} IN_LIST restricted_tests)
       # Is the current host/device combination supported?
-      if (NOT "${config_host}.${config_device}" IN_LIST
-            ${test_name}_host.device_allowed)
+      # gersemi: off
+      if (NOT "${config_host}.${config_device}" IN_LIST ${test_name}_host.device_allowed)
+        # gersemi: on
         continue()
       endif()
     endif()

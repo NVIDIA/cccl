@@ -83,7 +83,7 @@ template <typename DerivedPolicy,
           typename OutputIterator1,
           typename OutputIterator2,
           typename StrictWeakOrdering>
-_CCCL_HOST_DEVICE thrust::pair<OutputIterator1, OutputIterator2> merge_by_key(
+_CCCL_HOST_DEVICE ::cuda::std::pair<OutputIterator1, OutputIterator2> merge_by_key(
   sequential::execution_policy<DerivedPolicy>&,
   InputIterator1 keys_first1,
   InputIterator1 keys_last1,
@@ -141,7 +141,7 @@ _CCCL_HOST_DEVICE thrust::pair<OutputIterator1, OutputIterator2> merge_by_key(
     ++values_result;
   }
 
-  return thrust::make_pair(keys_result, values_result);
+  return ::cuda::std::make_pair(keys_result, values_result);
 }
 } // namespace system::detail::sequential
 THRUST_NAMESPACE_END

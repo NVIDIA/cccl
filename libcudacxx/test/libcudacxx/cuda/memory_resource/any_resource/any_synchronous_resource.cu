@@ -97,12 +97,12 @@ TEMPLATE_TEST_CASE_METHOD(
       ++expected.move_count;
       CHECK(this->counts == expected);
 
-      void* ptr = mr.allocate_sync(bytes(50), align(8));
+      void* ptr = mr.allocate_sync(this->bytes(50), this->align(8));
       CHECK(ptr == this);
       ++expected.allocate_count;
       CHECK(this->counts == expected);
 
-      mr.deallocate_sync(ptr, bytes(50), align(8));
+      mr.deallocate_sync(ptr, this->bytes(50), this->align(8));
       ++expected.deallocate_count;
       CHECK(this->counts == expected);
     }
@@ -143,7 +143,8 @@ TEMPLATE_TEST_CASE_METHOD(
   // Reset the counters:
   this->counts = Counts();
 
-  SECTION("conversion from any_synchronous_resource to cuda::mr::synchronous_resource_ref")
+  SECTION("conversion from any_synchronous_resource to "
+          "cuda::mr::synchronous_resource_ref")
   {
     Counts expected{};
     {
@@ -153,19 +154,21 @@ TEMPLATE_TEST_CASE_METHOD(
       ++expected.move_count;
       CHECK(this->counts == expected);
 
-      // conversion from any_synchronous_resource to cuda::mr::synchronous_synchronous_resource_ref:
+      // conversion from any_synchronous_resource to
+      // cuda::mr::synchronous_synchronous_resource_ref:
       cuda::mr::synchronous_resource_ref<::cuda::mr::host_accessible, get_data> ref = mr;
 
-      // conversion from any_synchronous_resource to cuda::mr::synchronous_synchronous_resource_ref with narrowing:
+      // conversion from any_synchronous_resource to
+      // cuda::mr::synchronous_synchronous_resource_ref with narrowing:
       cuda::mr::synchronous_resource_ref<cuda::mr::host_accessible, get_data> ref2 = mr;
       CHECK(get_property(ref2, get_data{}) == 42);
 
       CHECK(this->counts == expected);
-      auto* ptr = ref.allocate_sync(bytes(100), align(8));
+      auto* ptr = ref.allocate_sync(this->bytes(100), this->align(8));
       CHECK(ptr == this);
       ++expected.allocate_count;
       CHECK(this->counts == expected);
-      ref.deallocate_sync(ptr, bytes(0), align(0));
+      ref.deallocate_sync(ptr, this->bytes(0), this->align(0));
       ++expected.deallocate_count;
       CHECK(this->counts == expected);
     }
@@ -174,7 +177,8 @@ TEMPLATE_TEST_CASE_METHOD(
     CHECK(this->counts == expected);
   }
 
-  SECTION("conversion from any_synchronous_resource to cuda::mr::synchronous_resource_ref")
+  SECTION("conversion from any_synchronous_resource to "
+          "cuda::mr::synchronous_resource_ref")
   {
     Counts expected{};
     {
@@ -184,19 +188,21 @@ TEMPLATE_TEST_CASE_METHOD(
       ++expected.move_count;
       CHECK(this->counts == expected);
 
-      // conversion from any_synchronous_resource to cuda::mr::synchronous_resource_ref:
+      // conversion from any_synchronous_resource to
+      // cuda::mr::synchronous_resource_ref:
       cuda::mr::synchronous_resource_ref<::cuda::mr::host_accessible, get_data> ref = mr;
 
-      // conversion from any_synchronous_resource to cuda::mr::synchronous_resource_ref with narrowing:
+      // conversion from any_synchronous_resource to
+      // cuda::mr::synchronous_resource_ref with narrowing:
       cuda::mr::synchronous_resource_ref<::cuda::mr::host_accessible, get_data> ref2 = mr;
       CHECK(get_property(ref2, get_data{}) == 42);
 
       CHECK(this->counts == expected);
-      auto* ptr = ref.allocate_sync(bytes(100), align(8));
+      auto* ptr = ref.allocate_sync(this->bytes(100), this->align(8));
       CHECK(ptr == this);
       ++expected.allocate_count;
       CHECK(this->counts == expected);
-      ref.deallocate_sync(ptr, bytes(0), align(0));
+      ref.deallocate_sync(ptr, this->bytes(0), this->align(0));
       ++expected.deallocate_count;
       CHECK(this->counts == expected);
     }
@@ -223,11 +229,11 @@ TEMPLATE_TEST_CASE_METHOD(
       ++expected.copy_count;
       CHECK(this->counts == expected);
 
-      auto* ptr = ref.allocate_sync(bytes(100), align(8));
+      auto* ptr = ref.allocate_sync(this->bytes(100), this->align(8));
       CHECK(ptr == this);
       ++expected.allocate_count;
       CHECK(this->counts == expected);
-      ref.deallocate_sync(ptr, bytes(0), align(0));
+      ref.deallocate_sync(ptr, this->bytes(0), this->align(0));
       ++expected.deallocate_count;
       CHECK(this->counts == expected);
     }
@@ -303,17 +309,17 @@ TEMPLATE_TEST_CASE_METHOD(
 {
   big_resource mr{42, this};
   cuda::mr::synchronous_resource_ref<::cuda::mr::host_accessible, get_data> ref{mr};
-  CHECK(ref.allocate_sync(bytes(100), align(8)) == this);
+  CHECK(ref.allocate_sync(this->bytes(100), this->align(8)) == this);
   CHECK(get_property(ref, get_data{}) == 42);
 
   big_resource mr2{43, this};
   cuda::mr::synchronous_resource_ref<::cuda::mr::host_accessible, get_data> ref2{mr2};
   ref = ref2;
-  CHECK(ref.allocate_sync(bytes(100), align(8)) == this);
+  CHECK(ref.allocate_sync(this->bytes(100), this->align(8)) == this);
   CHECK(get_property(ref, get_data{}) == 43);
 
   cuda::mr::synchronous_resource_ref<::cuda::mr::host_accessible, get_data, extra_property> ref3{mr};
   ref = ref3;
-  CHECK(ref.allocate_sync(bytes(100), align(8)) == this);
+  CHECK(ref.allocate_sync(this->bytes(100), this->align(8)) == this);
   CHECK(get_property(ref, get_data{}) == 42);
 }

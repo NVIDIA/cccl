@@ -14,7 +14,7 @@
 #include <thrust/equal.h>
 
 #include <cuda/functional>
-#include <cuda/std/__algorithm_>
+#include <cuda/std/algorithm>
 #include <cuda/std/iterator>
 #include <cuda/std/type_traits>
 
@@ -27,6 +27,8 @@
 namespace cudax = cuda::experimental;
 
 // Default data to compare against
+
+inline constexpr ::cuda::std::initializer_list<int> compare_data_initializer_list{1, 42, 1337, 0, 12, -1};
 __device__ constexpr int device_data[] = {1, 42, 1337, 0, 12, -1};
 constexpr int host_data[]              = {1, 42, 1337, 0, 12, -1};
 

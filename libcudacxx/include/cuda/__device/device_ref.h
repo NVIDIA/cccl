@@ -33,6 +33,8 @@
 
 _CCCL_BEGIN_NAMESPACE_CUDA
 
+::cuda::std::size_t __physical_devices_count();
+
 //! @brief A non-owning representation of a CUDA device
 class device_ref
 {
@@ -42,7 +44,17 @@ public:
   //! @brief Create a `device_ref` object from a native device ordinal.
   /*implicit*/ _CCCL_HOST_API constexpr device_ref(int __id) noexcept
       : __id_(__id)
-  {}
+  {
+    _CCCL_IF_CONSTEVAL_DEFAULT
+    {
+      _CCCL_VERIFY(__id >= 0, "Device ID must be a valid GPU device ordinal");
+    }
+    else
+    {
+      _CCCL_VERIFY(__id >= 0 && static_cast<::cuda::std::size_t>(__id) < ::cuda::__physical_devices_count(),
+                   "Device ID must be a valid GPU device ordinal");
+    }
+  }
 
   //! @brief Retrieve the native ordinal of the `device_ref`
   //!

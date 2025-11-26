@@ -166,7 +166,10 @@ struct __static_partial_sums
 // ------------------------------------------------------------------
 
 template <class _TStatic, _TStatic _DynTag, _TStatic... _Values>
-constexpr size_t __count_dynamic_v = (size_t{0} + ... + static_cast<size_t>(_Values == _DynTag));
+inline constexpr size_t __count_dynamic_v = (size_t{0} + ... + static_cast<size_t>(_Values == _DynTag));
+
+_CCCL_DIAG_PUSH
+_CCCL_DIAG_SUPPRESS_MSVC(4702) // Unreachable code
 
 // array like class which has a mix of static and runtime values but
 // only stores the runtime values.
@@ -280,9 +283,6 @@ public:
     return _StaticValues::__get(__i);
   }
 
-  _CCCL_DIAG_PUSH
-  _CCCL_DIAG_SUPPRESS_MSVC(4702) // Unreachable code
-
   [[nodiscard]] _CCCL_API constexpr _TDynamic __value(size_t __i) const
   {
     if constexpr (__size_ > 0)
@@ -295,10 +295,7 @@ public:
            : static_cast<_TDynamic>(__static_val);
   }
 
-  _CCCL_DIAG_POP // MSVC(4702) Unreachable code
-
-    [[nodiscard]] _CCCL_API constexpr _TDynamic
-    operator[](size_t __i) const
+  [[nodiscard]] _CCCL_API constexpr _TDynamic operator[](size_t __i) const
   {
     if constexpr (__size_ > 0)
     {
@@ -318,10 +315,12 @@ public:
   }
 };
 
-template <class _To, class _From>
-static constexpr bool __potentially_narrowing =
-  static_cast<make_unsigned_t<_To>>((numeric_limits<_To>::max)())
-  < static_cast<make_unsigned_t<_From>>((numeric_limits<_From>::max)());
+_CCCL_DIAG_POP // MSVC(4702) Unreachable code
+
+  template <class _To, class _From>
+  inline constexpr bool __potentially_narrowing =
+    static_cast<make_unsigned_t<_To>>((numeric_limits<_To>::max)())
+    < static_cast<make_unsigned_t<_From>>((numeric_limits<_From>::max)());
 
 // Function to check whether a value is representable as another type
 // value must be a positive integer otherwise returns false

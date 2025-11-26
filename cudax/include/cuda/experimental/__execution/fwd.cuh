@@ -31,6 +31,7 @@
 
 #include <cuda/experimental/__detail/utility.cuh>
 #include <cuda/experimental/__execution/exception.cuh>
+#include <cuda/experimental/__execution/meta.cuh>
 #include <cuda/experimental/__execution/type_traits.cuh>
 #include <cuda/experimental/__execution/visit.cuh>
 
@@ -182,6 +183,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT sequence_t;
 struct _CCCL_TYPE_VISIBILITY_DEFAULT write_env_t;
 struct _CCCL_TYPE_VISIBILITY_DEFAULT starts_on_t;
 struct _CCCL_TYPE_VISIBILITY_DEFAULT continues_on_t;
+struct _CCCL_TYPE_VISIBILITY_DEFAULT on_t;
 struct _CCCL_TYPE_VISIBILITY_DEFAULT schedule_from_t;
 struct _CCCL_TYPE_VISIBILITY_DEFAULT bulk_t;
 struct _CCCL_TYPE_VISIBILITY_DEFAULT bulk_chunked_t;
@@ -211,13 +213,11 @@ template <class _Env>
 using __scheduler_of_t _CCCL_NODEBUG_ALIAS = decay_t<__call_result_t<get_scheduler_t, _Env>>;
 
 template <class _Env>
-using __domain_of_t _CCCL_NODEBUG_ALIAS = decay_t<::cuda::std::__type_call<
-  ::cuda::std::__type_try_catch<::cuda::std::__type_bind_front_quote<__call_result_t, get_domain_t>,
-                                ::cuda::std::__type_always<default_domain>>,
-  _Env>>;
+using __domain_of_t _CCCL_NODEBUG_ALIAS = __type_call_or_quote<__call_result_t, default_domain, get_domain_t, _Env>;
 
 template <class _Tag, class _Sndr, class... _Env>
-using __completion_domain_of_t = __call_result_t<get_completion_domain_t<_Tag>, env_of_t<_Sndr>, _Env...>;
+using __completion_domain_of_t _CCCL_NODEBUG_ALIAS =
+  __call_result_t<get_completion_domain_t<_Tag>, env_of_t<_Sndr>, _Env...>;
 
 // get_forward_progress_guarantee:
 enum class forward_progress_guarantee
@@ -273,6 +273,40 @@ struct inline_scheduler;
 struct stream_domain;
 struct stream_context;
 struct stream_scheduler;
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+// __has_completions_for and __never_completes_with
+template <class _SetTag, class _Sndr, class... _Env>
+_CCCL_CONCEPT __has_completions_for = _CCCL_REQUIRES_EXPR((_SetTag, _Sndr, variadic _Env)) //
+  ( //
+    typename(completion_signatures_of_t<_Sndr, _Env...>),
+    requires(completion_signatures_of_t<_Sndr, _Env...>::count(_SetTag{}) != 0) //
+  );
+
+template <class _Sndr, class _SetTag, class... _Env>
+_CCCL_CONCEPT __never_completes_with = _CCCL_REQUIRES_EXPR((_SetTag, _Sndr, variadic _Env)) //
+  ( //
+    typename(completion_signatures_of_t<_Sndr, _Env...>),
+    requires(completion_signatures_of_t<_Sndr, _Env...>::count(_SetTag{}) == 0) //
+  );
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+// __receiver_archetype
+template <class _Env>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT __receiver_archetype
+{
+  using receiver_concept = receiver_t;
+
+  template <class... _As>
+  _CCCL_API constexpr void set_value(_As&&...) noexcept;
+
+  template <class _Error>
+  _CCCL_API constexpr void set_error(_Error&&) noexcept;
+
+  _CCCL_API constexpr void set_stopped() noexcept;
+
+  [[nodiscard]] _CCCL_API constexpr auto get_env() const noexcept -> _Env;
+};
 } // namespace execution
 } // namespace cuda::experimental
 

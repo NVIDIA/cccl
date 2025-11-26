@@ -263,7 +263,7 @@ template <typename DerivedPolicy,
           typename OutputIterator1,
           typename OutputIterator2,
           typename StrictWeakOrdering>
-thrust::pair<OutputIterator1, OutputIterator2> merge_by_key(
+::cuda::std::pair<OutputIterator1, OutputIterator2> merge_by_key(
   execution_policy<DerivedPolicy>&,
   InputIterator1 keys_first1,
   InputIterator1 keys_last1,
@@ -296,7 +296,7 @@ thrust::pair<OutputIterator1, OutputIterator2> merge_by_key(
   ::cuda::std::advance(values_result,
                        ::cuda::std::distance(keys_first1, keys_last1) + ::cuda::std::distance(keys_first2, keys_last2));
 
-  return thrust::make_pair(keys_result, values_result);
+  return ::cuda::std::make_pair(keys_result, values_result);
 }
 } // end namespace system::tbb::detail
 THRUST_NAMESPACE_END

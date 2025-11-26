@@ -31,11 +31,11 @@ THRUST_NAMESPACE_BEGIN
 namespace system::detail::generic
 {
 template <typename DerivedPolicy, typename InputIterator1, typename InputIterator2>
-_CCCL_HOST_DEVICE thrust::pair<InputIterator1, InputIterator2> mismatch(
+_CCCL_HOST_DEVICE ::cuda::std::pair<InputIterator1, InputIterator2> mismatch(
   thrust::execution_policy<DerivedPolicy>& exec, InputIterator1 first1, InputIterator1 last1, InputIterator2 first2);
 
 template <typename DerivedPolicy, typename InputIterator1, typename InputIterator2, typename BinaryPredicate>
-_CCCL_HOST_DEVICE thrust::pair<InputIterator1, InputIterator2> mismatch(
+_CCCL_HOST_DEVICE ::cuda::std::pair<InputIterator1, InputIterator2> mismatch(
   thrust::execution_policy<DerivedPolicy>& exec,
   InputIterator1 first1,
   InputIterator1 last1,

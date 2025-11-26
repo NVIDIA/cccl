@@ -21,9 +21,9 @@
 #  pragma system_header
 #endif // no system header
 
-#if _CCCL_HAS_CUDA_COMPILER()
+#if _CCCL_CUDA_COMPILATION()
 #  include <cub/device/device_transform.cuh>
-#endif // _CCCL_HAS_CUDA_COMPILER()
+#endif // _CCCL_CUDA_COMPILATION()
 
 #include <cuda/__container/heterogeneous_iterator.h>
 #include <cuda/__container/uninitialized_async_buffer.h>
@@ -49,6 +49,7 @@
 
 #include <cuda/experimental/__detail/utility.cuh>
 #include <cuda/experimental/__execution/policy.cuh>
+#include <cuda/experimental/__memory_resource/synchronous_resource_adapter.cuh>
 #include <cuda/experimental/__utility/ensure_current_device.cuh>
 
 #include <cuda/std/__cccl/prologue.h>
@@ -56,7 +57,28 @@
 //! @file The \c buffer class provides a container of contiguous memory
 namespace cuda::experimental
 {
-// Once we add support from options taken from the env we can list them here in addition to using is_same_v
+enum class __memory_accessability
+{
+  __device,
+  __host,
+  __device_and_host,
+};
+
+// This assumes one of host or device accessible properties is present, needs to
+// be updated when we relax that
+template <typename... _Properties>
+struct __memory_accessability_from_properties
+{
+  static constexpr __memory_accessability value =
+    ::cuda::mr::__is_device_accessible<_Properties...>
+      ? ::cuda::mr::__is_host_accessible<_Properties...>
+        ? __memory_accessability::__device_and_host
+        : __memory_accessability::__device
+      : __memory_accessability::__host;
+};
+
+// Once we add support from options taken from the env we can list them here in
+// addition to using is_same_v
 template <class _Env>
 inline constexpr bool __buffer_compatible_env = ::cuda::std::is_same_v<_Env, ::cuda::std::execution::env<>>;
 
@@ -66,14 +88,18 @@ inline constexpr bool __buffer_compatible_env = ::cuda::std::is_same_v<_Env, ::c
 //! buffer
 //! -------------
 //!
-//! ``buffer`` is a container that provides resizable typed storage allocated from a given :ref:`memory resource
-//! <libcudacxx-extended-api-memory-resources-resource>`. It handles alignment, release and growth of the allocation.
-//! The elements are initialized during construction, which may require a kernel launch.
+//! ``buffer`` is a container that provides resizable typed storage allocated
+//! from a given :ref:`memory resource
+//! <libcudacxx-extended-api-memory-resources-resource>`. It handles alignment,
+//! release and growth of the allocation. The elements are initialized during
+//! construction, which may require a kernel launch.
 //!
-//! In addition to being type-safe, ``buffer`` also takes a set of :ref:`properties
-//! <libcudacxx-extended-api-memory-resources-properties>` to ensure that e.g. execution space constraints are checked
-//! at compile time. However, only stateless properties can be forwarded. To use a stateful property,
-//! implement :ref:`get_property(const buffer&, Property) <libcudacxx-extended-api-memory-resources-properties>`.
+//! In addition to being type-safe, ``buffer`` also takes a set of
+//! :ref:`properties <libcudacxx-extended-api-memory-resources-properties>` to
+//! ensure that e.g. execution space constraints are checked at compile time.
+//! However, only stateless properties can be forwarded. To use a stateful
+//! property, implement :ref:`get_property(const buffer&, Property)
+//! <libcudacxx-extended-api-memory-resources-properties>`.
 //!
 //! @endrst
 //! @tparam _Tp the type to be stored in the buffer
@@ -108,7 +134,8 @@ public:
 
   // At least one of the properties must signal an execution space
   static_assert(::cuda::mr::__contains_execution_space_property<_Properties...>,
-                "The properties of cuda::experimental::buffer must contain at least one execution space property!");
+                "The properties of cuda::experimental::buffer must contain at "
+                "least one execution space property!");
 
 private:
   __buffer_t __buf_;
@@ -117,24 +144,27 @@ private:
   template <class _Range>
   static constexpr bool __compatible_range = (::cuda::std::ranges::__container_compatible_range<_Range, _Tp>);
 
-  //! @brief Helper to check whether a different buffer still satisfies all properties of this one
+  //! @brief Helper to check whether a different buffer still satisfies all
+  //! properties of this one
   template <class... _OtherProperties>
   static constexpr bool __properties_match =
     ::cuda::std::__type_set_contains_v<::cuda::std::__make_type_set<_OtherProperties...>, _Properties...>;
 
-  //! @brief Helper to return an resource_ref to the currently used resource. Used to grow the buffer
+  //! @brief Helper to return an resource_ref to the currently used resource.
+  //! Used to grow the buffer
   __resource_ref_t __borrow_resource() const noexcept
   {
     return const_cast<__resource_t&>(__buf_.memory_resource());
   }
 
-  //! @brief Copies \p __count elements from `[__first, __last)` to \p __dest, where \p __first and \p __dest reside in
-  //! the different memory spaces
+  //! @brief Copies \p __count elements from `[__first, __last)` to \p __dest,
+  //! where \p __first and \p __dest reside in the different memory spaces
   //! @param __first Pointer to the start of the input segment.
   //! @param __last Pointer to the end of the input segment.
   //! @param __dest Pointer to the start of the output segment.
   //! @param __count The number of elements to be copied.
-  //! @note This function is inherently asynchronous. We need to ensure that the memory pointed to by \p __first and
+  //! @note This function is inherently asynchronous. We need to ensure that the
+  //! memory pointed to by \p __first and
   //! \p __last lives long enough
   template <class _Iter>
   _CCCL_HIDE_FROM_ABI void __copy_cross(_Iter __first, [[maybe_unused]] _Iter __last, pointer __dest, size_type __count)
@@ -145,7 +175,8 @@ private:
     }
 
     static_assert(::cuda::std::contiguous_iterator<_Iter>, "Non contiguous iterators are not supported");
-    // TODO use batched memcpy for non-contiguous iterators, it allows to specify stream ordered access
+    // TODO use batched memcpy for non-contiguous iterators, it allows to
+    // specify stream ordered access
     ::cuda::__driver::__memcpyAsync(
       __dest, ::cuda::std::to_address(__first), sizeof(_Tp) * __count, __buf_.stream().get());
   }
@@ -164,8 +195,8 @@ public:
   }
 
   //! @brief Move-constructs from a buffer
-  //! @param __other The other buffer. After move construction, the other buffer can only be assigned to or
-  //! destroyed.
+  //! @param __other The other buffer. After move construction, the other buffer
+  //! can only be assigned to or destroyed.
   _CCCL_HIDE_FROM_ABI buffer(buffer&& __other) noexcept
       : __buf_(::cuda::std::move(__other.__buf_))
   {}
@@ -182,8 +213,8 @@ public:
   }
 
   //! @brief Move-constructs from a buffer with matching properties
-  //! @param __other The other buffer. After move construction, the other buffer can only be assigned to or
-  //! destroyed.
+  //! @param __other The other buffer. After move construction, the other buffer
+  //! can only be assigned to or destroyed.
   _CCCL_TEMPLATE(class... _OtherProperties)
   _CCCL_REQUIRES(__properties_match<_OtherProperties...>)
   _CCCL_HOST_API buffer(buffer<_Tp, _OtherProperties...>&& __other) noexcept
@@ -193,59 +224,74 @@ public:
   //! @brief Constructs an empty buffer using an environment
   //! @param __env The environment providing the needed information
   //! @note No memory is allocated.
-  _CCCL_TEMPLATE(class _Env = ::cuda::std::execution::env<>)
-  _CCCL_REQUIRES(__buffer_compatible_env<_Env>)
+  _CCCL_TEMPLATE(class _Resource, class _Env = ::cuda::std::execution::env<>)
+  _CCCL_REQUIRES(
+    ::cuda::mr::synchronous_resource<::cuda::std::decay_t<_Resource>> _CCCL_AND __buffer_compatible_env<_Env>)
   _CCCL_HIDE_FROM_ABI
-  buffer(::cuda::stream_ref __stream, __resource_t __resource, [[maybe_unused]] const _Env& __env = {})
-      : __buf_(__resource, __stream, 0)
+  buffer(::cuda::stream_ref __stream, _Resource&& __resource, [[maybe_unused]] const _Env& __env = {})
+      : __buf_(::cuda::experimental::__adapt_if_synchronous(::cuda::std::forward<_Resource>(__resource)), __stream, 0)
   {}
 
-  //! @brief Constructs a buffer of size \p __size using a memory and leaves all elements uninitialized
+  //! @brief Constructs a buffer of size \p __size using a memory and leaves all
+  //! elements uninitialized
   //! @param __env The environment used to query the memory resource.
   //! @param __size The size of the buffer.
-  //! @warning This constructor does *NOT* initialize any elements. It is the user's responsibility to ensure that the
-  //! elements within `[vec.begin(), vec.end())` are properly initialized, e.g with `cuda::std::uninitialized_copy`.
-  //! At the destruction of the \c buffer all elements in the range `[vec.begin(), vec.end())` will be destroyed.
-  template <class _Env = ::cuda::std::execution::env<>>
+  //! @warning This constructor does *NOT* initialize any elements. It is the
+  //! user's responsibility to ensure that the elements within `[vec.begin(),
+  //! vec.end())` are properly initialized, e.g with
+  //! `cuda::std::uninitialized_copy`. At the destruction of the \c buffer all
+  //! elements in the range `[vec.begin(), vec.end())` will be destroyed.
+  _CCCL_TEMPLATE(class _Resource, class _Env = ::cuda::std::execution::env<>)
+  _CCCL_REQUIRES(
+    ::cuda::mr::synchronous_resource<::cuda::std::decay_t<_Resource>> _CCCL_AND __buffer_compatible_env<_Env>)
   _CCCL_HIDE_FROM_ABI explicit buffer(
     ::cuda::stream_ref __stream,
-    __resource_t __resource,
+    _Resource&& __resource,
     const size_type __size,
     ::cuda::experimental::no_init_t,
     [[maybe_unused]] const _Env& __env = {})
-      : __buf_(__resource, __stream, __size)
+      : __buf_(cuda::experimental::__adapt_if_synchronous(::cuda::std::forward<_Resource>(__resource)), __stream, __size)
   {}
 
-  //! @brief Constructs a buffer using a memory resource and copy-constructs all elements from the forward range
+  //! @brief Constructs a buffer using a memory resource and copy-constructs all
+  //! elements from the forward range
   //! ``[__first, __last)``
   //! @param __env The environment used to query the memory resource.
   //! @param __first The start of the input sequence.
   //! @param __last The end of the input sequence.
   //! @note If `__first == __last` then no memory is allocated
-  _CCCL_TEMPLATE(class _Iter, class _Env = ::cuda::std::execution::env<>)
-  _CCCL_REQUIRES(::cuda::std::__has_forward_traversal<_Iter>)
+  _CCCL_TEMPLATE(class _Iter, class _Resource, class _Env = ::cuda::std::execution::env<>)
+  _CCCL_REQUIRES(::cuda::mr::synchronous_resource<::cuda::std::decay_t<_Resource>>
+                   _CCCL_AND ::cuda::std::__has_forward_traversal<_Iter>)
   _CCCL_HIDE_FROM_ABI
   buffer(::cuda::stream_ref __stream,
-         __resource_t __resource,
+         _Resource&& __resource,
          _Iter __first,
          _Iter __last,
          [[maybe_unused]] const _Env& __env = {})
-      : __buf_(__resource, __stream, static_cast<size_type>(::cuda::std::distance(__first, __last)))
+      : __buf_(::cuda::experimental::__adapt_if_synchronous(::cuda::std::forward<_Resource>(__resource)),
+               __stream,
+               static_cast<size_type>(::cuda::std::distance(__first, __last)))
   {
     this->__copy_cross<_Iter>(__first, __last, __unwrapped_begin(), __buf_.size());
   }
 
-  //! @brief Constructs a buffer using a memory resource and copy-constructs all elements from \p __ilist
+  //! @brief Constructs a buffer using a memory resource and copy-constructs all
+  //! elements from \p __ilist
   //! @param __env The environment used to query the memory resource.
   //! @param __ilist The initializer_list being copied into the buffer.
   //! @note If `__ilist.size() == 0` then no memory is allocated
-  template <class _Env = ::cuda::std::execution::env<>>
+  _CCCL_TEMPLATE(class _Resource, class _Env = ::cuda::std::execution::env<>)
+  _CCCL_REQUIRES(
+    ::cuda::mr::synchronous_resource<::cuda::std::decay_t<_Resource>> _CCCL_AND __buffer_compatible_env<_Env>)
   _CCCL_HIDE_FROM_ABI
   buffer(::cuda::stream_ref __stream,
-         __resource_t __resource,
+         _Resource&& __resource,
          ::cuda::std::initializer_list<_Tp> __ilist,
          [[maybe_unused]] const _Env& __env = {})
-      : __buf_(__resource, __stream, __ilist.size())
+      : __buf_(::cuda::experimental::__adapt_if_synchronous(::cuda::std::forward<_Resource>(__resource)),
+               __stream,
+               __ilist.size())
   {
     this->__copy_cross(__ilist.begin(), __ilist.end(), __unwrapped_begin(), __buf_.size());
   }
@@ -254,12 +300,15 @@ public:
   //! @param __env The environment used to query the memory resource.
   //! @param __range The input range to be moved into the buffer.
   //! @note If `__range.size() == 0` then no memory is allocated.
-  _CCCL_TEMPLATE(class _Range, class _Env = ::cuda::std::execution::env<>)
-  _CCCL_REQUIRES(__compatible_range<_Range> _CCCL_AND ::cuda::std::ranges::forward_range<_Range>
-                   _CCCL_AND ::cuda::std::ranges::sized_range<_Range>)
-  _CCCL_HIDE_FROM_ABI buffer(
-    ::cuda::stream_ref __stream, __resource_t __resource, _Range&& __range, [[maybe_unused]] const _Env& __env = {})
-      : __buf_(__resource, __stream, static_cast<size_type>(::cuda::std::ranges::size(__range)))
+  _CCCL_TEMPLATE(class _Range, class _Resource, class _Env = ::cuda::std::execution::env<>)
+  _CCCL_REQUIRES(
+    ::cuda::mr::synchronous_resource<::cuda::std::decay_t<_Resource>> _CCCL_AND __compatible_range<_Range>
+      _CCCL_AND ::cuda::std::ranges::forward_range<_Range> _CCCL_AND ::cuda::std::ranges::sized_range<_Range>)
+  _CCCL_HIDE_FROM_ABI
+  buffer(::cuda::stream_ref __stream, _Resource&& __resource, _Range&& __range, [[maybe_unused]] const _Env& __env = {})
+      : __buf_(::cuda::experimental::__adapt_if_synchronous(::cuda::std::forward<_Resource>(__resource)),
+               __stream,
+               static_cast<size_type>(::cuda::std::ranges::size(__range)))
   {
     using _Iter = ::cuda::std::ranges::iterator_t<_Range>;
     this->__copy_cross<_Iter>(
@@ -270,12 +319,13 @@ public:
   }
 
 #ifndef _CCCL_DOXYGEN_INVOKED // doxygen conflates the overloads
-  _CCCL_TEMPLATE(class _Range, class _Env = ::cuda::std::execution::env<>)
-  _CCCL_REQUIRES(__compatible_range<_Range> _CCCL_AND ::cuda::std::ranges::forward_range<_Range> _CCCL_AND(
-    !::cuda::std::ranges::sized_range<_Range>))
-  _CCCL_HIDE_FROM_ABI buffer(
-    ::cuda::stream_ref __stream, __resource_t __resource, _Range&& __range, [[maybe_unused]] const _Env& __env = {})
-      : __buf_(__resource,
+  _CCCL_TEMPLATE(class _Range, class _Resource, class _Env = ::cuda::std::execution::env<>)
+  _CCCL_REQUIRES(
+    ::cuda::mr::synchronous_resource<::cuda::std::decay_t<_Resource>> _CCCL_AND __compatible_range<_Range>
+      _CCCL_AND ::cuda::std::ranges::forward_range<_Range> _CCCL_AND(!::cuda::std::ranges::sized_range<_Range>))
+  _CCCL_HIDE_FROM_ABI
+  buffer(::cuda::stream_ref __stream, _Resource&& __resource, _Range&& __range, [[maybe_unused]] const _Env& __env = {})
+      : __buf_(::cuda::experimental::__adapt_if_synchronous(::cuda::std::forward<_Resource>(__resource)),
                __stream,
                static_cast<size_type>(
                  ::cuda::std::ranges::distance(::cuda::std::ranges::begin(__range), ::cuda::std::ranges::end(__range))),
@@ -293,133 +343,142 @@ public:
 
   //! @addtogroup iterators
   //! @{
-  //! @brief Returns an iterator to the first element of the buffer. If the buffer is empty, the returned
-  //! iterator will be equal to end().
+  //! @brief Returns an iterator to the first element of the buffer. If the
+  //! buffer is empty, the returned iterator will be equal to end().
   [[nodiscard]] _CCCL_HIDE_FROM_ABI iterator begin() noexcept
   {
     return iterator{__buf_.data()};
   }
 
-  //! @brief Returns an immutable iterator to the first element of the buffer. If the buffer is empty, the
-  //! returned iterator will be equal to end().
+  //! @brief Returns an immutable iterator to the first element of the buffer.
+  //! If the buffer is empty, the returned iterator will be equal to end().
   [[nodiscard]] _CCCL_HIDE_FROM_ABI const_iterator begin() const noexcept
   {
     return const_iterator{__buf_.data()};
   }
 
-  //! @brief Returns an immutable iterator to the first element of the buffer. If the buffer is empty, the
-  //! returned iterator will be equal to end().
+  //! @brief Returns an immutable iterator to the first element of the buffer.
+  //! If the buffer is empty, the returned iterator will be equal to end().
   [[nodiscard]] _CCCL_HIDE_FROM_ABI const_iterator cbegin() const noexcept
   {
     return const_iterator{__buf_.data()};
   }
 
-  //! @brief Returns an iterator to the element following the last element of the buffer. This element acts as a
-  //! placeholder; attempting to access it results in undefined behavior.
+  //! @brief Returns an iterator to the element following the last element of
+  //! the buffer. This element acts as a placeholder; attempting to access it
+  //! results in undefined behavior.
   [[nodiscard]] _CCCL_HIDE_FROM_ABI iterator end() noexcept
   {
     return iterator{__buf_.data() + __buf_.size()};
   }
 
-  //! @brief Returns an immutable iterator to the element following the last element of the buffer. This element
-  //! acts as a placeholder; attempting to access it results in undefined behavior.
+  //! @brief Returns an immutable iterator to the element following the last
+  //! element of the buffer. This element acts as a placeholder; attempting to
+  //! access it results in undefined behavior.
   [[nodiscard]] _CCCL_HIDE_FROM_ABI const_iterator end() const noexcept
   {
     return const_iterator{__buf_.data() + __buf_.size()};
   }
 
-  //! @brief Returns an immutable iterator to the element following the last element of the buffer. This element
-  //! acts as a placeholder; attempting to access it results in undefined behavior.
+  //! @brief Returns an immutable iterator to the element following the last
+  //! element of the buffer. This element acts as a placeholder; attempting to
+  //! access it results in undefined behavior.
   [[nodiscard]] _CCCL_HIDE_FROM_ABI const_iterator cend() const noexcept
   {
     return const_iterator{__buf_.data() + __buf_.size()};
   }
 
-  //! @brief Returns a reverse iterator to the first element of the reversed buffer. It corresponds to the last
-  //! element of the non-reversed buffer. If the buffer is empty, the returned iterator is equal to rend().
+  //! @brief Returns a reverse iterator to the first element of the reversed
+  //! buffer. It corresponds to the last element of the non-reversed buffer. If
+  //! the buffer is empty, the returned iterator is equal to rend().
   [[nodiscard]] _CCCL_HIDE_FROM_ABI reverse_iterator rbegin() noexcept
   {
     return reverse_iterator{end()};
   }
 
-  //! @brief Returns an immutable reverse iterator to the first element of the reversed buffer. It corresponds to
-  //! the last element of the non-reversed buffer. If the buffer is empty, the returned iterator is equal to
-  //! rend().
+  //! @brief Returns an immutable reverse iterator to the first element of the
+  //! reversed buffer. It corresponds to the last element of the non-reversed
+  //! buffer. If the buffer is empty, the returned iterator is equal to rend().
   [[nodiscard]] _CCCL_HIDE_FROM_ABI const_reverse_iterator rbegin() const noexcept
   {
     return const_reverse_iterator{end()};
   }
 
-  //! @brief Returns an immutable reverse iterator to the first element of the reversed buffer. It corresponds to
-  //! the last element of the non-reversed buffer. If the buffer is empty, the returned iterator is equal to
-  //! rend().
+  //! @brief Returns an immutable reverse iterator to the first element of the
+  //! reversed buffer. It corresponds to the last element of the non-reversed
+  //! buffer. If the buffer is empty, the returned iterator is equal to rend().
   [[nodiscard]] _CCCL_HIDE_FROM_ABI const_reverse_iterator crbegin() const noexcept
   {
     return const_reverse_iterator{end()};
   }
 
-  //! @brief Returns a reverse iterator to the element following the last element of the reversed buffer. It
-  //! corresponds to the element preceding the first element of the non-reversed buffer. This element acts as a
+  //! @brief Returns a reverse iterator to the element following the last
+  //! element of the reversed buffer. It corresponds to the element preceding
+  //! the first element of the non-reversed buffer. This element acts as a
   //! placeholder, attempting to access it results in undefined behavior.
   [[nodiscard]] _CCCL_HIDE_FROM_ABI reverse_iterator rend() noexcept
   {
     return reverse_iterator{begin()};
   }
 
-  //! @brief Returns an immutable reverse iterator to the element following the last element of the reversed
-  //! buffer. It corresponds to the element preceding the first element of the non-reversed buffer. This
-  //! element acts as a placeholder, attempting to access it results in undefined behavior.
+  //! @brief Returns an immutable reverse iterator to the element following the
+  //! last element of the reversed buffer. It corresponds to the element
+  //! preceding the first element of the non-reversed buffer. This element acts
+  //! as a placeholder, attempting to access it results in undefined behavior.
   [[nodiscard]] _CCCL_HIDE_FROM_ABI const_reverse_iterator rend() const noexcept
   {
     return const_reverse_iterator{begin()};
   }
 
-  //! @brief Returns an immutable reverse iterator to the element following the last element of the reversed
-  //! buffer. It corresponds to the element preceding the first element of the non-reversed buffer. This
-  //! element acts as a placeholder, attempting to access it results in undefined behavior.
+  //! @brief Returns an immutable reverse iterator to the element following the
+  //! last element of the reversed buffer. It corresponds to the element
+  //! preceding the first element of the non-reversed buffer. This element acts
+  //! as a placeholder, attempting to access it results in undefined behavior.
   [[nodiscard]] _CCCL_HIDE_FROM_ABI const_reverse_iterator crend() const noexcept
   {
     return const_reverse_iterator{begin()};
   }
 
-  //! @brief Returns a pointer to the first element of the buffer. If the buffer has not allocated memory
-  //! the pointer will be null.
+  //! @brief Returns a pointer to the first element of the buffer. If the buffer
+  //! has not allocated memory the pointer will be null.
   [[nodiscard]] _CCCL_HIDE_FROM_ABI pointer data() noexcept
   {
     return __buf_.data();
   }
 
-  //! @brief Returns a pointer to the first element of the buffer. If the buffer has not allocated memory
-  //! the pointer will be null.
+  //! @brief Returns a pointer to the first element of the buffer. If the buffer
+  //! has not allocated memory the pointer will be null.
   [[nodiscard]] _CCCL_HIDE_FROM_ABI const_pointer data() const noexcept
   {
     return __buf_.data();
   }
 
 #ifndef _CCCL_DOXYGEN_INVOKED
-  //! @brief Returns a pointer to the first element of the buffer. If the buffer is empty, the returned
-  //! pointer will be null.
+  //! @brief Returns a pointer to the first element of the buffer. If the buffer
+  //! is empty, the returned pointer will be null.
   [[nodiscard]] _CCCL_HIDE_FROM_ABI pointer __unwrapped_begin() noexcept
   {
     return __buf_.data();
   }
 
-  //! @brief Returns a const pointer to the first element of the buffer. If the buffer is empty, the
-  //! returned pointer will be null.
+  //! @brief Returns a const pointer to the first element of the buffer. If the
+  //! buffer is empty, the returned pointer will be null.
   [[nodiscard]] _CCCL_HIDE_FROM_ABI const_pointer __unwrapped_begin() const noexcept
   {
     return __buf_.data();
   }
 
-  //! @brief Returns a pointer to the element following the last element of the buffer. This element acts as a
-  //! placeholder; attempting to access it results in undefined behavior.
+  //! @brief Returns a pointer to the element following the last element of the
+  //! buffer. This element acts as a placeholder; attempting to access it
+  //! results in undefined behavior.
   [[nodiscard]] _CCCL_HIDE_FROM_ABI pointer __unwrapped_end() noexcept
   {
     return __buf_.data() + __buf_.size();
   }
 
-  //! @brief Returns a const pointer to the element following the last element of the buffer. This element acts as
-  //! a placeholder; attempting to access it results in undefined behavior.
+  //! @brief Returns a const pointer to the element following the last element
+  //! of the buffer. This element acts as a placeholder; attempting to access it
+  //! results in undefined behavior.
   [[nodiscard]] _CCCL_HIDE_FROM_ABI const_pointer __unwrapped_end() const noexcept
   {
     return __buf_.data() + __buf_.size();
@@ -465,8 +524,9 @@ public:
   //! @}
 
   //! @rst
-  //! Returns a \c const reference to the :ref:`any_resource <cudax-memory-resource-any-resource>`
-  //! that holds the memory resource used to allocate the buffer
+  //! Returns a \c const reference to the :ref:`any_resource
+  //! <cudax-memory-resource-any-resource>` that holds the memory resource used
+  //! to allocate the buffer
   //! @endrst
   [[nodiscard]] _CCCL_HIDE_FROM_ABI const __resource_t& memory_resource() const noexcept
   {
@@ -474,7 +534,8 @@ public:
   }
 
   //! @brief Returns the stored stream
-  //! @note Stream used to allocate the buffer is initially stored in the buffer, but can be changed with `set_stream`
+  //! @note Stream used to allocate the buffer is initially stored in the
+  //! buffer, but can be changed with `set_stream`
   [[nodiscard]] _CCCL_HIDE_FROM_ABI constexpr stream_ref stream() const noexcept
   {
     return __buf_.stream();
@@ -489,8 +550,8 @@ public:
   }
 
   //! @brief Move assignment operator
-  //! @param __other The other buffer. After move assignment, the other buffer can only be assigned to or
-  //! destroyed.
+  //! @param __other The other buffer. After move assignment, the other buffer
+  //! can only be assigned to or destroyed.
   _CCCL_HIDE_FROM_ABI void operator=(buffer&& __other)
   {
     __buf_ = ::cuda::std::move(__other.__buf_);
@@ -511,23 +572,29 @@ public:
     __lhs.swap(__rhs);
   }
 
-  //! @brief Destroys the buffer, deallocates the buffer and destroys the memory resource
+  //! @brief Destroys the buffer, deallocates the buffer and destroys the memory
+  //! resource
   //! @param __stream The stream to deallocate the buffer on.
-  //! @warning After this explicit destroy call, the buffer can only be assigned to or destroyed.
+  //! @warning After this explicit destroy call, the buffer can only be assigned
+  //! to or destroyed.
   _CCCL_HIDE_FROM_ABI void destroy(::cuda::stream_ref __stream)
   {
     __buf_.destroy(__stream);
   }
 
-  //! @brief Destroys the buffer, deallocates the buffer and destroys the memory resource
-  //! @note Uses the stored stream to deallocate the buffer, equivalent to calling buffer.destroy(buffer.stream())
-  //! @warning After this explicit destroy call, the buffer can only be assigned to or destroyed.
+  //! @brief Destroys the buffer, deallocates the buffer and destroys the memory
+  //! resource
+  //! @note Uses the stored stream to deallocate the buffer, equivalent to
+  //! calling buffer.destroy(buffer.stream())
+  //! @warning After this explicit destroy call, the buffer can only be assigned
+  //! to or destroyed.
   _CCCL_HIDE_FROM_ABI void destroy()
   {
     __buf_.destroy();
   }
 
-  //! @brief Causes the buffer to be treated as a span when passed to cudax::launch.
+  //! @brief Causes the buffer to be treated as a span when passed to
+  //! cudax::launch.
   //! @pre The buffer must have the cuda::mr::device_accessible property.
   template <class _DeviceAccessible = ::cuda::mr::device_accessible>
   [[nodiscard]] _CCCL_HIDE_FROM_ABI friend auto transform_device_argument(::cuda::stream_ref, buffer& __self) noexcept
@@ -537,7 +604,8 @@ public:
     return {__self.__unwrapped_begin(), __self.size()};
   }
 
-  //! @brief Causes the buffer to be treated as a span when passed to cudax::launch
+  //! @brief Causes the buffer to be treated as a span when passed to
+  //! cudax::launch
   //! @pre The buffer must have the cuda::mr::device_accessible property.
   template <class _DeviceAccessible = ::cuda::mr::device_accessible>
   [[nodiscard]] _CCCL_HIDE_FROM_ABI friend auto
@@ -579,7 +647,7 @@ _CCCL_BEGIN_NAMESPACE_ARCH_DEPENDENT
 //! @brief Copy-constructs elements in the range `[__first, __first + __count)`.
 //! @param __first Pointer to the first element to be initialized.
 //! @param __count The number of elements to be initialized.
-template <typename _Tp, bool _IsHostOnly>
+template <typename _Tp, __memory_accessability _Accessability>
 _CCCL_HIDE_FROM_ABI void
 __fill_n(cuda::stream_ref __stream, _Tp* __first, ::cuda::std::size_t __count, const _Tp& __value)
 {
@@ -588,7 +656,29 @@ __fill_n(cuda::stream_ref __stream, _Tp* __first, ::cuda::std::size_t __count, c
     return;
   }
 
-  if constexpr (_IsHostOnly)
+  // We don't know what to do with both device and host accessible buffers, so
+  // we need to check the attributes
+  if constexpr (_Accessability == __memory_accessability::__device_and_host)
+  {
+    __driver::__pointer_attribute_value_type_t<CU_POINTER_ATTRIBUTE_MEMORY_TYPE> __type;
+    bool __is_managed{};
+    auto __status1 = ::cuda::__driver::__pointerGetAttributeNoThrow<CU_POINTER_ATTRIBUTE_MEMORY_TYPE>(__type, __first);
+    auto __status2 =
+      ::cuda::__driver::__pointerGetAttributeNoThrow<CU_POINTER_ATTRIBUTE_IS_MANAGED>(__is_managed, __first);
+    if (__status1 != ::cudaSuccess || __status2 != ::cudaSuccess)
+    {
+      __throw_cuda_error(__status1, "Failed to get buffer memory attributes");
+    }
+    if (__type == ::CU_MEMORYTYPE_HOST && !__is_managed)
+    {
+      __fill_n<_Tp, __memory_accessability::__host>(__stream, __first, __count, __value);
+    }
+    else
+    {
+      __fill_n<_Tp, __memory_accessability::__device>(__stream, __first, __count, __value);
+    }
+  }
+  else if constexpr (_Accessability == __memory_accessability::__host)
   {
     ::cuda::host_launch(
       __stream, ::cuda::std::uninitialized_fill_n<_Tp*, ::cuda::std::size_t, _Tp>, __first, __count, __value);
@@ -601,26 +691,33 @@ __fill_n(cuda::stream_ref __stream, _Tp* __first, ::cuda::std::size_t __count, c
     }
     else
     {
-#if _CCCL_HAS_CUDA_COMPILER()
+#if _CCCL_CUDA_COMPILATION()
       ::cuda::experimental::__ensure_current_device __guard(__stream);
       ::cub::DeviceTransform::Fill(__first, __count, __value, __stream.get());
-#else
-      static_assert(0, "CUDA compiler is required to initialize a buffer with elements larger than 4 bytes");
-#endif
+#else // ^^^ _CCCL_CUDA_COMPILATION() ^^^ / vvv !_CCCL_CUDA_COMPILATION() vvv
+      static_assert(sizeof(_Tp) <= 4,
+                    "CUDA compiler is required to initialize an async_buffer with elements larger than 4 bytes");
+#endif // ^^^ !_CCCL_CUDA_COMPILATION() ^^^
     }
   }
 }
 
 _CCCL_END_NAMESPACE_ARCH_DEPENDENT
 
-template <class _Tp, class... _TargetProperties, class... _SourceProperties, class _Env = ::cuda::std::execution::env<>>
-buffer<_Tp, _TargetProperties...> make_buffer(
-  stream_ref __stream,
-  ::cuda::mr::any_resource<_TargetProperties...> __mr,
-  const buffer<_Tp, _SourceProperties...>& __source,
-  const _Env& __env = {})
+_CCCL_TEMPLATE(class _Tp,
+               class _FirstProperty,
+               class... _RestProperties,
+               class _Resource,
+               class... _SourceProperties,
+               class _Env = ::cuda::std::execution::env<>)
+_CCCL_REQUIRES(
+  ::cuda::mr::synchronous_resource_with<::cuda::std::decay_t<_Resource>, _FirstProperty, _RestProperties...> _CCCL_AND
+    __buffer_compatible_env<_Env>)
+buffer<_Tp, _FirstProperty, _RestProperties...> make_buffer(
+  stream_ref __stream, _Resource&& __mr, const buffer<_Tp, _SourceProperties...>& __source, const _Env& __env = {})
 {
-  buffer<_Tp, _TargetProperties...> __res{__stream, __mr, __source.size(), no_init, __env};
+  buffer<_Tp, _FirstProperty, _RestProperties...> __res{
+    __stream, ::cuda::std::forward<_Resource>(__mr), __source.size(), no_init, __env};
 
   __copy_cross_buffers(__stream, __res, __source);
 
@@ -628,12 +725,13 @@ buffer<_Tp, _TargetProperties...> make_buffer(
 }
 
 _CCCL_TEMPLATE(class _Tp, class _Resource, class... _SourceProperties, class _Env = ::cuda::std::execution::env<>)
-_CCCL_REQUIRES(::cuda::mr::resource<_Resource> _CCCL_AND ::cuda::mr::__has_default_queries<_Resource>)
+_CCCL_REQUIRES(::cuda::mr::synchronous_resource<::cuda::std::decay_t<_Resource>>
+                 _CCCL_AND ::cuda::mr::__has_default_queries<::cuda::std::decay_t<_Resource>>)
 auto make_buffer(
   stream_ref __stream, _Resource&& __mr, const buffer<_Tp, _SourceProperties...>& __source, const _Env& __env = {})
 {
   using __buffer_type = __buffer_type_for_props<_Tp, typename ::cuda::std::decay_t<_Resource>::default_queries>;
-  auto __res          = __buffer_type{__stream, __mr, __source.size(), uninit, __env};
+  auto __res          = __buffer_type{__stream, ::cuda::std::forward<_Resource>(__mr), __source.size(), uninit, __env};
 
   __copy_cross_buffers(__stream, __res, __source);
 
@@ -641,49 +739,55 @@ auto make_buffer(
 }
 
 // Empty buffer make function
-_CCCL_TEMPLATE(class _Tp, class... _Properties, class _Env = ::cuda::std::execution::env<>)
-_CCCL_REQUIRES(__buffer_compatible_env<_Env>)
-buffer<_Tp, _Properties...>
-make_buffer(stream_ref __stream, ::cuda::mr::any_resource<_Properties...>& __mr, const _Env& __env = {})
+_CCCL_TEMPLATE(
+  class _Tp, class _FirstProperty, class... _RestProperties, class _Resource, class _Env = ::cuda::std::execution::env<>)
+_CCCL_REQUIRES(
+  ::cuda::mr::synchronous_resource_with<::cuda::std::decay_t<_Resource>, _FirstProperty, _RestProperties...> _CCCL_AND
+    __buffer_compatible_env<_Env>)
+buffer<_Tp, _FirstProperty, _RestProperties...>
+make_buffer(stream_ref __stream, _Resource&& __mr, const _Env& __env = {})
 {
-  return buffer<_Tp, _Properties...>{__stream, __mr, __env};
+  return buffer<_Tp, _FirstProperty, _RestProperties...>{__stream, ::cuda::std::forward<_Resource>(__mr), __env};
 }
 
 _CCCL_TEMPLATE(class _Tp, class _Resource, class _Env = ::cuda::std::execution::env<>)
-_CCCL_REQUIRES(::cuda::mr::resource<_Resource> _CCCL_AND ::cuda::mr::__has_default_queries<_Resource> _CCCL_AND
-                 __buffer_compatible_env<_Env>)
+_CCCL_REQUIRES(::cuda::mr::synchronous_resource<::cuda::std::decay_t<_Resource>>
+                 _CCCL_AND ::cuda::mr::__has_default_queries<::cuda::std::decay_t<_Resource>> _CCCL_AND
+                   __buffer_compatible_env<_Env>)
 auto make_buffer(stream_ref __stream, _Resource&& __mr, const _Env& __env = {})
 {
-  using __buffer_type = __buffer_type_for_props<_Tp, typename ::cuda::std::decay_t<_Resource>::default_queries>;
-  return __buffer_type{__stream, __mr, __env};
+  using __buffer_type = __buffer_type_for_props<_Tp, typename ::std::decay_t<_Resource>::default_queries>;
+  return __buffer_type{__stream, ::cuda::std::forward<_Resource>(__mr), __env};
 }
 
 _CCCL_BEGIN_NAMESPACE_ARCH_DEPENDENT
 
 // Size and value make function
-template <class _Tp, class... _Properties, class _Env = ::cuda::std::execution::env<>>
-buffer<_Tp, _Properties...> make_buffer(
-  stream_ref __stream,
-  ::cuda::mr::any_resource<_Properties...> __mr,
-  size_t __size,
-  const _Tp& __value,
-  [[maybe_unused]] const _Env& __env = {})
+_CCCL_TEMPLATE(
+  class _Tp, class _FirstProperty, class... _RestProperties, class _Resource, class _Env = ::cuda::std::execution::env<>)
+_CCCL_REQUIRES(
+  ::cuda::mr::synchronous_resource_with<::cuda::std::decay_t<_Resource>, _FirstProperty, _RestProperties...> _CCCL_AND
+    __buffer_compatible_env<_Env>)
+buffer<_Tp, _FirstProperty, _RestProperties...> make_buffer(
+  stream_ref __stream, _Resource&& __mr, size_t __size, const _Tp& __value, [[maybe_unused]] const _Env& __env = {})
 {
-  auto __res = buffer<_Tp, _Properties...>{__stream, __mr, __size, no_init};
-  __fill_n<_Tp, !::cuda::mr::__is_device_accessible<_Properties...>>(
+  auto __res =
+    buffer<_Tp, _FirstProperty, _RestProperties...>{__stream, ::cuda::std::forward<_Resource>(__mr), __size, no_init};
+  __fill_n<_Tp, __memory_accessability_from_properties<_FirstProperty, _RestProperties...>::value>(
     __stream, __res.__unwrapped_begin(), __size, __value);
   return __res;
 }
 
 _CCCL_TEMPLATE(class _Tp, class _Resource, class _Env = ::cuda::std::execution::env<>)
-_CCCL_REQUIRES(::cuda::mr::resource<_Resource> _CCCL_AND ::cuda::mr::__has_default_queries<_Resource>)
+_CCCL_REQUIRES(::cuda::mr::synchronous_resource<::cuda::std::decay_t<_Resource>>
+                 _CCCL_AND ::cuda::mr::__has_default_queries<::cuda::std::decay_t<_Resource>>)
 auto make_buffer(
   stream_ref __stream, _Resource&& __mr, size_t __size, const _Tp& __value, [[maybe_unused]] const _Env& __env = {})
 {
   using __default_queries = typename ::cuda::std::decay_t<_Resource>::default_queries;
   using __buffer_type     = __buffer_type_for_props<_Tp, __default_queries>;
-  auto __res              = __buffer_type{__stream, __mr, __size, no_init};
-  __fill_n<_Tp, !__default_queries::has_property(::cuda::mr::device_accessible{})>(
+  auto __res              = __buffer_type{__stream, ::cuda::std::forward<_Resource>(__mr), __size, no_init};
+  __fill_n<_Tp, __default_queries::template rebind<__memory_accessability_from_properties>::value>(
     __stream, __res.__unwrapped_begin(), __size, __value);
   return __res;
 }
@@ -691,84 +795,103 @@ auto make_buffer(
 _CCCL_END_NAMESPACE_ARCH_DEPENDENT
 
 // Size with no initialization make function
-template <class _Tp, class... _Properties, class _Env = ::cuda::std::execution::env<>>
-buffer<_Tp, _Properties...> make_buffer(
-  stream_ref __stream,
-  ::cuda::mr::any_resource<_Properties...>& __mr,
-  size_t __size,
-  ::cuda::experimental::no_init_t,
-  const _Env& __env = {})
+_CCCL_TEMPLATE(
+  class _Tp, class _FirstProperty, class... _RestProperties, class _Resource, class _Env = ::cuda::std::execution::env<>)
+_CCCL_REQUIRES(
+  ::cuda::mr::synchronous_resource_with<::cuda::std::decay_t<_Resource>, _FirstProperty, _RestProperties...> _CCCL_AND
+    __buffer_compatible_env<_Env>)
+buffer<_Tp, _FirstProperty, _RestProperties...> make_buffer(
+  stream_ref __stream, _Resource&& __mr, size_t __size, ::cuda::experimental::no_init_t, const _Env& __env = {})
 {
-  return buffer<_Tp, _Properties...>{__stream, __mr, __size, ::cuda::experimental::no_init, __env};
+  return buffer<_Tp, _FirstProperty, _RestProperties...>{
+    __stream, ::cuda::std::forward<_Resource>(__mr), __size, ::cuda::experimental::no_init, __env};
 }
 
 _CCCL_TEMPLATE(class _Tp, class _Resource, class _Env = ::cuda::std::execution::env<>)
-_CCCL_REQUIRES(::cuda::mr::resource<_Resource> _CCCL_AND ::cuda::mr::__has_default_queries<_Resource>)
+_CCCL_REQUIRES(::cuda::mr::synchronous_resource<::cuda::std::decay_t<_Resource>>
+                 _CCCL_AND ::cuda::mr::__has_default_queries<_Resource>)
 auto make_buffer(
   stream_ref __stream, _Resource&& __mr, size_t __size, ::cuda::experimental::no_init_t, const _Env& __env = {})
 {
   using __buffer_type = __buffer_type_for_props<_Tp, typename ::cuda::std::decay_t<_Resource>::default_queries>;
-  return __buffer_type{__stream, __mr, __size, ::cuda::experimental::no_init, __env};
+  return __buffer_type{__stream, ::cuda::std::forward<_Resource>(__mr), __size, ::cuda::experimental::no_init, __env};
 }
 
 // Iterator range make function
-_CCCL_TEMPLATE(class _Tp, class... _Properties, class _Iter, class _Env = ::cuda::std::execution::env<>)
-_CCCL_REQUIRES(::cuda::std::__has_forward_traversal<_Iter>)
-buffer<_Tp, _Properties...> make_buffer(
-  stream_ref __stream,
-  ::cuda::mr::any_resource<_Properties...>& __mr,
-  _Iter __first,
-  _Iter __last,
-  const _Env& __env = {})
+_CCCL_TEMPLATE(class _Tp,
+               class _FirstProperty,
+               class... _RestProperties,
+               class _Resource,
+               class _Iter,
+               class _Env = ::cuda::std::execution::env<>)
+_CCCL_REQUIRES(
+  ::cuda::mr::synchronous_resource_with<::cuda::std::decay_t<_Resource>, _FirstProperty, _RestProperties...> _CCCL_AND
+    __buffer_compatible_env<_Env> _CCCL_AND ::cuda::std::__has_forward_traversal<_Iter>)
+buffer<_Tp, _FirstProperty, _RestProperties...>
+make_buffer(stream_ref __stream, _Resource&& __mr, _Iter __first, _Iter __last, const _Env& __env = {})
 {
-  return buffer<_Tp, _Properties...>{__stream, __mr, __first, __last, __env};
+  return buffer<_Tp, _FirstProperty, _RestProperties...>{
+    __stream, ::cuda::std::forward<_Resource>(__mr), __first, __last, __env};
 }
 
 _CCCL_TEMPLATE(class _Tp, class _Resource, class _Iter, class _Env = ::cuda::std::execution::env<>)
-_CCCL_REQUIRES(::cuda::mr::resource<_Resource> _CCCL_AND ::cuda::mr::__has_default_queries<_Resource>
-                 _CCCL_AND ::cuda::std::__has_forward_traversal<_Iter>)
+_CCCL_REQUIRES(
+  ::cuda::mr::synchronous_resource<::cuda::std::decay_t<_Resource>>
+    _CCCL_AND ::cuda::mr::__has_default_queries<_Resource> _CCCL_AND ::cuda::std::__has_forward_traversal<_Iter>)
 auto make_buffer(stream_ref __stream, _Resource&& __mr, _Iter __first, _Iter __last, const _Env& __env = {})
 {
   using __buffer_type = __buffer_type_for_props<_Tp, typename ::cuda::std::decay_t<_Resource>::default_queries>;
-  return __buffer_type{__stream, __mr, __first, __last, __env};
+  return __buffer_type{__stream, ::cuda::std::forward<_Resource>(__mr), __first, __last, __env};
 }
 
 // Initializer list make function
-template <class _Tp, class... _Properties, class _Env = ::cuda::std::execution::env<>>
-buffer<_Tp, _Properties...> make_buffer(
-  stream_ref __stream,
-  ::cuda::mr::any_resource<_Properties...>& __mr,
-  ::cuda::std::initializer_list<_Tp> __ilist,
-  const _Env& __env = {})
+_CCCL_TEMPLATE(
+  class _Tp, class _FirstProperty, class... _RestProperties, class _Resource, class _Env = ::cuda::std::execution::env<>)
+_CCCL_REQUIRES(
+  ::cuda::mr::synchronous_resource_with<::cuda::std::decay_t<_Resource>, _FirstProperty, _RestProperties...> _CCCL_AND
+    __buffer_compatible_env<_Env>)
+buffer<_Tp, _FirstProperty, _RestProperties...>
+make_buffer(stream_ref __stream, _Resource&& __mr, ::cuda::std::initializer_list<_Tp> __ilist, const _Env& __env = {})
 {
-  return buffer<_Tp, _Properties...>{__stream, __mr, __ilist, __env};
+  return buffer<_Tp, _FirstProperty, _RestProperties...>{
+    __stream, ::cuda::std::forward<_Resource>(__mr), __ilist, __env};
 }
 
 _CCCL_TEMPLATE(class _Tp, class _Resource, class _Env = ::cuda::std::execution::env<>)
-_CCCL_REQUIRES(::cuda::mr::resource<_Resource> _CCCL_AND ::cuda::mr::__has_default_queries<_Resource>)
+_CCCL_REQUIRES(::cuda::mr::synchronous_resource<::cuda::std::decay_t<_Resource>>
+                 _CCCL_AND ::cuda::mr::__has_default_queries<::cuda::std::decay_t<_Resource>>)
 auto make_buffer(
   stream_ref __stream, _Resource&& __mr, ::cuda::std::initializer_list<_Tp> __ilist, const _Env& __env = {})
 {
   using __buffer_type = __buffer_type_for_props<_Tp, typename ::cuda::std::decay_t<_Resource>::default_queries>;
-  return __buffer_type{__stream, __mr, __ilist, __env};
+  return __buffer_type{__stream, ::cuda::std::forward<_Resource>(__mr), __ilist, __env};
 }
 
 // Range make function for ranges
-_CCCL_TEMPLATE(class _Tp, class... _Properties, class _Range, class _Env = ::cuda::std::execution::env<>)
-_CCCL_REQUIRES(::cuda::std::ranges::forward_range<_Range>)
-buffer<_Tp, _Properties...> make_buffer(
-  stream_ref __stream, ::cuda::mr::any_resource<_Properties...> __mr, _Range&& __range, const _Env& __env = {})
+_CCCL_TEMPLATE(class _Tp,
+               class _FirstProperty,
+               class... _RestProperties,
+               class _Resource,
+               class _Range,
+               class _Env = ::cuda::std::execution::env<>)
+_CCCL_REQUIRES(
+  ::cuda::mr::synchronous_resource_with<::cuda::std::decay_t<_Resource>, _FirstProperty, _RestProperties...> _CCCL_AND
+    __buffer_compatible_env<_Env> _CCCL_AND ::cuda::std::ranges::forward_range<_Range>)
+buffer<_Tp, _FirstProperty, _RestProperties...>
+make_buffer(stream_ref __stream, _Resource&& __mr, _Range&& __range, const _Env& __env = {})
 {
-  return buffer<_Tp, _Properties...>{__stream, __mr, ::cuda::std::forward<_Range>(__range), __env};
+  return buffer<_Tp, _FirstProperty, _RestProperties...>{
+    __stream, ::cuda::std::forward<_Resource>(__mr), ::cuda::std::forward<_Range>(__range), __env};
 }
 
 _CCCL_TEMPLATE(class _Tp, class _Resource, class _Range, class _Env = ::cuda::std::execution::env<>)
-_CCCL_REQUIRES(::cuda::mr::resource<_Resource> _CCCL_AND ::cuda::mr::__has_default_queries<_Resource>
-                 _CCCL_AND ::cuda::std::ranges::forward_range<_Range>)
+_CCCL_REQUIRES(
+  ::cuda::mr::synchronous_resource<::cuda::std::decay_t<_Resource>> _CCCL_AND ::cuda::mr::__has_default_queries<
+    ::cuda::std::decay_t<_Resource>> _CCCL_AND ::cuda::std::ranges::forward_range<_Range>)
 auto make_buffer(stream_ref __stream, _Resource&& __mr, _Range&& __range, const _Env& __env = {})
 {
   using __buffer_type = __buffer_type_for_props<_Tp, typename ::cuda::std::decay_t<_Resource>::default_queries>;
-  return __buffer_type{__stream, __mr, ::cuda::std::forward<_Range>(__range), __env};
+  return __buffer_type{__stream, ::cuda::std::forward<_Resource>(__mr), ::cuda::std::forward<_Range>(__range), __env};
 }
 } // namespace cuda::experimental
 

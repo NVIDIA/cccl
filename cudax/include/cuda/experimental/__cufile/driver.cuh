@@ -23,6 +23,7 @@
 #include <cuda/std/__type_traits/always_false.h>
 #include <cuda/std/__type_traits/is_same.h>
 
+#include <cuda/experimental/__cufile/cufile_ref.cuh>
 #include <cuda/experimental/__cufile/driver_attributes.cuh>
 #include <cuda/experimental/__cufile/exception.cuh>
 
@@ -274,6 +275,38 @@ public:
         static_assert(::cuda::std::__always_false_v<_AttrEnum>, "Unsupported parameter type");
       }
     }
+  }
+
+  //! @brief Registers an OS native file handle type in the cuFile driver. The registered cuFile handle can be used with
+  //!        other cuFile APIs. The handle must be deregistered calling the \c
+  //!        cuda::cufile_driver.deregister_native_handle(...) method with the obtained cuFile handle. For each OS
+  //!        native file handle can be called once before deregistered.
+  //!
+  //! @param __native_handle The OS native file handle.
+  //!
+  //! @return \c cuda::cufile_ref handle.
+  //!
+  //! @throws cuda::cuda_error if a CUDA driver error occurs.
+  //! @throws cuda::cufile_error if a cuFile driver error occurs.
+  [[nodiscard]] _CCCL_HOST_API cufile_ref register_native_handle(__cufile_os_native_type __native_handle) const
+  {
+    ::CUfileDescr_t __desc{};
+    __desc.type      = ::CU_FILE_HANDLE_TYPE_OPAQUE_FD;
+    __desc.handle.fd = __native_handle;
+
+    ::CUfileHandle_t __handle{};
+    _CCCL_TRY_CUFILE_API(::cuFileHandleRegister, "Failed to register cuFile handle", &__handle, &__desc);
+    return __handle;
+  }
+
+  //! @brief Deregisters the previously registered cuFile handle in the driver.
+  //!
+  //! @param __file The cuFile handle.
+  //!
+  //! @note The \c cuda::cufile implementation relies on this function being \c noexcept.
+  _CCCL_HOST_API void deregister_native_handle(cufile_ref __file) const noexcept
+  {
+    ::cuFileHandleDeregister(__file.get());
   }
 };
 

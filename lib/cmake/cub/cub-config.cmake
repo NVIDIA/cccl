@@ -8,9 +8,6 @@ if (TARGET CUB::CUB)
   return()
 endif()
 
-# Minimum supported libcudacxx version:
-set(cub_libcudacxx_version "${CUB_VERSION}")
-
 function(_cub_declare_interface_alias alias_name ugly_name)
   # 1) Only IMPORTED and ALIAS targets can be placed in a namespace.
   # 2) When an IMPORTED library is linked to another target, its include
@@ -29,28 +26,55 @@ function(_cub_declare_interface_alias alias_name ugly_name)
   add_library(${alias_name} ALIAS ${ugly_name})
 endfunction()
 
+# Create the main cub target now to avoid circular dependency issues when finding deps.
+_cub_declare_interface_alias(CUB::CUB _CUB_CUB)
+
 #
 # Setup some internal cache variables
 #
 
 # Pull in the include dir detected by cub-config-version.cmake
-set(_CUB_INCLUDE_DIR "${_CUB_VERSION_INCLUDE_DIR}"
-  CACHE INTERNAL "Location of CUB headers."
+set(
+  _CUB_INCLUDE_DIR
+  "${_CUB_VERSION_INCLUDE_DIR}"
+  CACHE INTERNAL
+  "Location of CUB headers."
   FORCE
 )
 unset(_CUB_VERSION_INCLUDE_DIR CACHE) # Clear tmp variable from cache
 
+set(quiet_flag)
 if (${CMAKE_FIND_PACKAGE_NAME}_FIND_QUIETLY)
-  set(_CUB_QUIET ON CACHE INTERNAL "Quiet mode enabled for CUB find_package calls." FORCE)
-  set(_CUB_QUIET_FLAG "QUIET" CACHE INTERNAL "" FORCE)
-else()
-  set(_CUB_QUIET OFF CACHE INTERNAL "Quiet mode enabled for CUB find_package calls." FORCE)
-  set(_CUB_QUIET_FLAG "" CACHE INTERNAL "" FORCE)
+  set(quiet_flag "QUIET")
+endif()
+
+unset(required_flag)
+if (${CMAKE_FIND_PACKAGE_NAME}_FIND_REQUIRED_${component})
+  set(required_flag "REQUIRED")
 endif()
 
 #
 # Setup dependencies
 #
+
+if (NOT TARGET CUB::Thrust)
+  if (NOT TARGET Thrust::Thrust)
+    find_package(
+      Thrust
+      ${CUB_VERSION}
+      EXACT
+      CONFIG
+      ${required_flag}
+      ${quiet_flag}
+      NO_DEFAULT_PATH
+      HINTS "${CMAKE_CURRENT_LIST_DIR}/../thrust/"
+    )
+  endif()
+  _cub_declare_interface_alias(CUB::Thrust _CUB_Thrust)
+  # Just link Thrust::Thrust -- this is the minimal target that only provides
+  # headers with no host/device system setup, which is all CUB needs.
+  target_link_libraries(_CUB_Thrust INTERFACE Thrust::Thrust)
+endif()
 
 if (NOT TARGET CUB::libcudacxx)
   if (TARGET Thrust::libcudacxx)
@@ -59,19 +83,15 @@ if (NOT TARGET CUB::libcudacxx)
     target_link_libraries(_CUB_libcudacxx INTERFACE Thrust::libcudacxx)
   else()
     if (NOT TARGET libcudacxx::libcudacxx)
-      # First do a non-required search for any co-packaged versions.
-      # These are preferred.
-      find_package(libcudacxx ${cub_libcudacxx_version} CONFIG
-        ${_CUB_QUIET_FLAG}
+      find_package(
+        libcudacxx
+        ${CUB_VERSION}
+        EXACT
+        CONFIG
+        ${required_flag}
+        ${quiet_flag}
         NO_DEFAULT_PATH # Only check the explicit HINTS below:
         HINTS "${CMAKE_CURRENT_LIST_DIR}/../libcudacxx/"
-      )
-
-      # A second required search allows externally packaged to be used and fails if
-      # no suitable package exists.
-      find_package(libcudacxx ${cub_libcudacxx_version} CONFIG
-        REQUIRED
-        ${_CUB_QUIET_FLAG}
       )
     endif()
     _cub_declare_interface_alias(CUB::libcudacxx _CUB_libcudacxx)
@@ -83,7 +103,6 @@ endif()
 # Setup targets
 #
 
-_cub_declare_interface_alias(CUB::CUB _CUB_CUB)
 target_include_directories(_CUB_CUB INTERFACE "${_CUB_INCLUDE_DIR}")
 target_link_libraries(_CUB_CUB INTERFACE CUB::libcudacxx)
 
@@ -103,11 +122,41 @@ _cub_test_flag_option(IGNORE_DEPRECATED_COMPILER)
 #
 
 set(CUB_VERSION ${${CMAKE_FIND_PACKAGE_NAME}_VERSION} CACHE INTERNAL "" FORCE)
-set(CUB_VERSION_MAJOR ${${CMAKE_FIND_PACKAGE_NAME}_VERSION_MAJOR} CACHE INTERNAL "" FORCE)
-set(CUB_VERSION_MINOR ${${CMAKE_FIND_PACKAGE_NAME}_VERSION_MINOR} CACHE INTERNAL "" FORCE)
-set(CUB_VERSION_PATCH ${${CMAKE_FIND_PACKAGE_NAME}_VERSION_PATCH} CACHE INTERNAL "" FORCE)
-set(CUB_VERSION_TWEAK ${${CMAKE_FIND_PACKAGE_NAME}_VERSION_TWEAK} CACHE INTERNAL "" FORCE)
-set(CUB_VERSION_COUNT ${${CMAKE_FIND_PACKAGE_NAME}_VERSION_COUNT} CACHE INTERNAL "" FORCE)
+set(
+  CUB_VERSION_MAJOR
+  ${${CMAKE_FIND_PACKAGE_NAME}_VERSION_MAJOR}
+  CACHE INTERNAL
+  ""
+  FORCE
+)
+set(
+  CUB_VERSION_MINOR
+  ${${CMAKE_FIND_PACKAGE_NAME}_VERSION_MINOR}
+  CACHE INTERNAL
+  ""
+  FORCE
+)
+set(
+  CUB_VERSION_PATCH
+  ${${CMAKE_FIND_PACKAGE_NAME}_VERSION_PATCH}
+  CACHE INTERNAL
+  ""
+  FORCE
+)
+set(
+  CUB_VERSION_TWEAK
+  ${${CMAKE_FIND_PACKAGE_NAME}_VERSION_TWEAK}
+  CACHE INTERNAL
+  ""
+  FORCE
+)
+set(
+  CUB_VERSION_COUNT
+  ${${CMAKE_FIND_PACKAGE_NAME}_VERSION_COUNT}
+  CACHE INTERNAL
+  ""
+  FORCE
+)
 
 include(FindPackageHandleStandardArgs)
 if (NOT CUB_CONFIG)

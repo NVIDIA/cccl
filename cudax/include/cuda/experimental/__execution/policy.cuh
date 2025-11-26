@@ -44,9 +44,9 @@ struct any_execution_policy
 
   _CCCL_HIDE_FROM_ABI any_execution_policy() = default;
 
-  template <__execution_policy _Policy>
-  _CCCL_HOST_API constexpr any_execution_policy(::cuda::std::execution::__policy<_Policy>) noexcept
-      : value(_Policy)
+  template <uint32_t _Policy>
+  _CCCL_HOST_API constexpr any_execution_policy(::cuda::std::execution::__execution_policy_base<_Policy>) noexcept
+      : value(value_type{_Policy})
   {}
 
   _CCCL_HOST_API constexpr operator __execution_policy() const noexcept
@@ -54,38 +54,38 @@ struct any_execution_policy
     return value;
   }
 
-  _CCCL_HOST_API constexpr auto operator()() const noexcept -> __execution_policy
+  _CCCL_HOST_API constexpr auto operator()() const noexcept -> value_type
   {
     return value;
   }
 
-  template <__execution_policy _Policy>
+  template <uint32_t _Policy>
   [[nodiscard]] _CCCL_HOST_API friend constexpr bool
-  operator==(const any_execution_policy& pol, const ::cuda::std::execution::__policy<_Policy>&) noexcept
+  operator==(const any_execution_policy& pol, const ::cuda::std::execution::__execution_policy_base<_Policy>&) noexcept
   {
-    return pol.value == _Policy;
+    return pol.value == value_type{_Policy};
   }
 
 #if _CCCL_STD_VER <= 2017
-  template <__execution_policy _Policy>
+  template <uint32_t _Policy>
   [[nodiscard]] _CCCL_HOST_API friend constexpr bool
-  operator==(const ::cuda::std::execution::__policy<_Policy>&, const any_execution_policy& pol) noexcept
+  operator==(const ::cuda::std::execution::__execution_policy_base<_Policy>&, const any_execution_policy& pol) noexcept
   {
-    return pol.value == _Policy;
+    return pol.value == value_type{_Policy};
   }
 
-  template <__execution_policy _Policy>
+  template <uint32_t _Policy>
   [[nodiscard]] _CCCL_HOST_API friend constexpr bool
-  operator!=(const any_execution_policy& pol, const ::cuda::std::execution::__policy<_Policy>&) noexcept
+  operator!=(const any_execution_policy& pol, const ::cuda::std::execution::__execution_policy_base<_Policy>&) noexcept
   {
-    return pol.value != _Policy;
+    return pol.value != value_type{_Policy};
   }
 
-  template <__execution_policy _Policy>
+  template <uint32_t _Policy>
   [[nodiscard]] _CCCL_HOST_API friend constexpr bool
-  operator!=(const ::cuda::std::execution::__policy<_Policy>&, const any_execution_policy& pol)
+  operator!=(const ::cuda::std::execution::__execution_policy_base<_Policy>&, const any_execution_policy& pol)
   {
-    return pol.value != _Policy;
+    return pol.value != value_type{_Policy};
   }
 #endif // _CCCL_STD_VER <= 2017
 
