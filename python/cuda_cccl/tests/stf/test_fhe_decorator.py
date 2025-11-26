@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-# A toy example to illustrate how we can compose logical operations
+# Toy Fully Homomorphic Encryption (FHE) example with addition encryption
 
 import numba
 from numba import cuda
@@ -13,9 +13,9 @@ numba.config.CUDA_LOW_OCCUPANCY_WARNINGS = 0
 
 
 class Plaintext:
-    # Initialize from actual values, or from a logical data
-    def __init__(self, ctx, values=None, ld=None):
+    def __init__(self, ctx, values=None, ld=None, key=0x42):
         self.ctx = ctx
+        self.key = key
         if ld is not None:
             self.l = ld
         if values is not None:
@@ -28,8 +28,8 @@ class Plaintext:
         self.symbol = symbol
 
     def encrypt(self) -> "Ciphertext":
-        encrypted = bytearray([c ^ 0x42 for c in self.values])  # toy XOR
-        return Ciphertext(self.ctx, values=encrypted)
+        encrypted = bytearray([(c + self.key) & 0xFF for c in self.values])
+        return Ciphertext(self.ctx, values=encrypted, key=self.key)
 
     def print_values(self):
         with ctx.task(
@@ -42,36 +42,30 @@ class Plaintext:
 
 
 @cudastf.jit
-def and_kernel(a, b, out):
+def add_kernel(a, b, out):
     i = cuda.grid(1)
     if i < out.size:
-        out[i] = a[i] & b[i]
+        out[i] = (a[i] + b[i]) & 0xFF
 
 
 @cudastf.jit
-def or_kernel(a, b, out):
+def sub_kernel(a, b, out):
     i = cuda.grid(1)
     if i < out.size:
-        out[i] = a[i] | b[i]
+        out[i] = (a[i] - b[i]) & 0xFF
 
 
 @cudastf.jit
-def not_kernel(a, out):
+def sub_scalar_kernel(a, out, v):
     i = cuda.grid(1)
     if i < out.size:
-        out[i] = ~a[i]
-
-
-@cudastf.jit
-def xor_kernel(a, out, v):
-    i = cuda.grid(1)
-    if i < out.size:
-        out[i] = a[i] ^ v
+        out[i] = (a[i] - v) & 0xFF
 
 
 class Ciphertext:
-    def __init__(self, ctx, values=None, ld=None):
+    def __init__(self, ctx, values=None, ld=None, key=0x42):
         self.ctx = ctx
+        self.key = key
         if ld is not None:
             self.l = ld
         if values is not None:
@@ -79,54 +73,43 @@ class Ciphertext:
             self.l = ctx.logical_data(self.values)
         self.symbol = None
 
-    # ~ operator
-    def __invert__(self):
-        result = self.like_empty()
-        not_kernel[32, 16](self.l.read(), result.l.write())
-
-        return result
-
-    # | operator
-    def __or__(self, other):
+    def __add__(self, other):
         if not isinstance(other, Ciphertext):
             return NotImplemented
-
         result = self.like_empty()
-        or_kernel[32, 16](self.l.read(), other.l.read(), result.l.write())
-
+        add_kernel[32, 16](self.l.read(), other.l.read(), result.l.write())
         return result
 
-    # & operator
-    def __and__(self, other):
+    def __sub__(self, other):
         if not isinstance(other, Ciphertext):
             return NotImplemented
-
         result = self.like_empty()
-        and_kernel[32, 16](self.l.read(), other.l.read(), result.l.write())
-
+        sub_kernel[32, 16](self.l.read(), other.l.read(), result.l.write())
         return result
 
     def set_symbol(self, symbol: str):
         self.l.set_symbol(symbol)
         self.symbol = symbol
 
-    def decrypt(self):
+    def decrypt(self, num_operands=2):
+        """Decrypt by subtracting num_operands * key"""
         result = self.like_empty()
-        xor_kernel[32, 16](self.l.read(), result.l.write(), 0x42)
-
-        return Plaintext(self.ctx, ld=result.l)
+        total_key = (num_operands * self.key) & 0xFF
+        sub_scalar_kernel[32, 16](self.l.read(), result.l.write(), total_key)
+        return Plaintext(self.ctx, ld=result.l, key=self.key)
 
     def like_empty(self):
         return Ciphertext(self.ctx, ld=self.l.like_empty())
 
 
-def circuit(eA: Ciphertext, eB: Ciphertext) -> Ciphertext:
-    return ~((eA | ~eB) & (~eA | eB))
+def circuit(a, b):
+    """Circuit: (A + B) + (B - A) = 2*B"""
+    return (a + b) + (b - a)
 
 
 def test_fhe_decorator():
-    """Test Fully Homomorphic Encryption (FHE) example using @cudastf.jit decorators."""
-    global ctx  # Make ctx accessible to the classes
+    """Test FHE using @cudastf.jit decorators with addition encryption."""
+    global ctx
     ctx = cudastf.context(use_graph=False)
 
     vA = [3, 3, 2, 2, 17]
@@ -137,12 +120,26 @@ def test_fhe_decorator():
     pB = Plaintext(ctx, vB)
     pB.set_symbol("B")
 
+    expected = [circuit(a, b) & 0xFF for a, b in zip(vA, vB)]
+
     eA = pA.encrypt()
     eB = pB.encrypt()
-    out = circuit(eA, eB)
+    encrypted_out = circuit(eA, eB)
+    decrypted_out = encrypted_out.decrypt(num_operands=2)
 
-    out.decrypt().print_values()
+    with ctx.task(
+        cudastf.exec_place.host(), decrypted_out.l.read(cudastf.data_place.managed())
+    ) as t:
+        nb_stream = cuda.external_stream(t.stream_ptr())
+        nb_stream.synchronize()
+        hvalues = t.numba_arguments()
+        actual = [int(v) for v in hvalues]
+
     ctx.finalize()
+
+    assert actual == expected, (
+        f"Decrypted result {actual} doesn't match expected {expected}"
+    )
 
 
 if __name__ == "__main__":
