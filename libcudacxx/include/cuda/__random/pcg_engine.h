@@ -67,7 +67,7 @@ public:
     return static_cast<::cuda::std::uint8_t>(__lo_);
   }
 
-  [[nodiscard]] _CCCL_API constexpr __pcg_uint128_fallback operator|(::cuda::std::uint64_t __rhs) const noexcept
+  [[nodiscard]] _CCCL_API constexpr __pcg_uint128_fallback operator|(::cuda::std::uint32_t __rhs) const noexcept
   {
     return __pcg_uint128_fallback(__hi_, __lo_ | __rhs);
   }
@@ -188,7 +188,7 @@ private:
   static constexpr __pcg64_uint128_t __multiplier = (static_cast<__pcg64_uint128_t>(_AHi) << 64) | _ALo;
   static constexpr __pcg64_uint128_t __increment  = (static_cast<__pcg64_uint128_t>(_CHi) << 64) | _CLo;
 
-  [[nodiscard]] _CCCL_API constexpr result_type __output_transform(__pcg64_uint128_t __internal) noexcept
+  [[nodiscard]] _CCCL_API static constexpr result_type __output_transform(__pcg64_uint128_t __internal) noexcept
   {
     const int __rot = static_cast<__bitcount_t>(__internal >> 122);
     __internal      = __internal ^ (__internal >> 64);
