@@ -26,15 +26,14 @@ endif()
 
 cccl_get_json()
 
-add_executable(ptx-json-test-filter filter.cpp)
-cccl_configure_target(ptx-json-test-filter DIALECT 20)
+set(filter_target "cub.test.ptx_json.filter")
+cccl_add_executable(${filter_target} SOURCES filter.cpp)
 target_link_libraries(
-  ptx-json-test-filter
+  ${filter_target}
   PRIVATE #
+    cub.compiler_interface
     nlohmann_json::nlohmann_json
     CUDA::cudart
-    Thrust::Thrust
-    CUB::CUB
 )
 
 function(cub_detail_ptx_json_add_test target_name_var source)
@@ -63,7 +62,7 @@ function(cub_detail_ptx_json_add_test target_name_var source)
     # gersemi: off
     COMMAND
       "${CMAKE_CURRENT_SOURCE_DIR}/dump_and_check.bash"
-        $<TARGET_FILE:ptx-json-test-filter>
+        $<TARGET_FILE:${filter_target}>
         $<TARGET_OBJECTS:${target_name}>
         "${CMAKE_CURRENT_SOURCE_DIR}/${source}"
         "test-json-id"
@@ -81,3 +80,21 @@ file(
 foreach (test_src IN LISTS test_srcs)
   cub_detail_ptx_json_add_test(test_target "${test_src}")
 endforeach()
+
+if (CUB_ENABLE_HEADER_TESTING)
+  set(headertest_target cub.headers.ptx_json)
+  cccl_generate_header_tests(
+    ${headertest_target}
+    cub
+    GLOBS #
+      "cub/detail/*ptx-json*"
+      "cub/detail/ptx-json/*.cuh"
+  )
+  target_link_libraries(
+    ${headertest_target}
+    PUBLIC #
+      cub.compiler_interface
+      nlohmann_json::nlohmann_json
+      CUDA::cudart
+  )
+endif()

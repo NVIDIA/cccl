@@ -23,6 +23,8 @@
 // for backward compatibility
 #include <cub/util_temporary_storage.cuh>
 
+#include <cuda/__device/arch_id.h>
+#include <cuda/__device/compute_capability.h>
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__utility/forward.h>
 #include <cuda/std/array>
@@ -39,7 +41,7 @@
 #endif // !_CCCL_COMPILER(NVRTC)
 
 #if defined(CUB_ENABLE_POLICY_PTX_JSON)
-#  include <cub/detail/ptx-json/json.h>
+#  include <cub/detail/ptx-json/json.cuh>
 #endif // defined(CUB_ENABLE_POLICY_PTX_JSON)
 
 #include <nv/target>
@@ -373,6 +375,33 @@ CUB_RUNTIME_FUNCTION inline cudaError_t PtxVersion(int& ptx_version)
                  result = PtxVersionUncached(ptx_version);));
   return result;
 }
+
+namespace detail
+{
+//! @brief Retrieves the GPU architecture of the PTX or SASS that will be used on the current device.
+CUB_RUNTIME_FUNCTION inline cudaError_t ptx_arch_id(::cuda::arch_id& arch_id)
+{
+  int ptx_version = 0;
+  if (const auto error = PtxVersion(ptx_version))
+  {
+    return error;
+  }
+  arch_id = ::cuda::to_arch_id(::cuda::compute_capability(ptx_version / 10));
+  return cudaSuccess;
+}
+
+//! @brief Retrieves the GPU architecture of the PTX or SASS that will be used on the given device.
+_CCCL_HOST_API inline cudaError_t ptx_arch_id(::cuda::arch_id& arch_id, int device)
+{
+  int ptx_version = 0;
+  if (const auto error = PtxVersion(ptx_version, device))
+  {
+    return error;
+  }
+  arch_id = ::cuda::to_arch_id(::cuda::compute_capability(ptx_version / 10));
+  return cudaSuccess;
+}
+} // namespace detail
 
 /**
  * \brief Retrieves the SM version (i.e. compute capability) of \p device (major * 100 + minor * 10)

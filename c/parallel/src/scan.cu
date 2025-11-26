@@ -10,7 +10,7 @@
 
 #include <cub/detail/choose_offset.cuh>
 #include <cub/detail/launcher/cuda_driver.cuh>
-#include <cub/detail/ptx-json-parser.h>
+#include <cub/detail/ptx-json-parser.cuh>
 #include <cub/device/dispatch/dispatch_scan.cuh>
 #include <cub/thread/thread_load.cuh>
 #include <cub/util_arch.cuh>
@@ -270,7 +270,7 @@ struct __align__({1}) storage_t {{
 {4}
 using device_scan_policy = {5}::MaxPolicy;
 
-#include <cub/detail/ptx-json/json.h>
+#include <cub/detail/ptx-json/json.cuh>
 __device__ consteval auto& policy_generator() {{
   return ptx_json::id<ptx_json::string("device_scan_policy")>()
     = cub::detail::scan::ScanPolicyWrapper<device_scan_policy::ActivePolicy>::EncodedPolicy();

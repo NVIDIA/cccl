@@ -46,13 +46,13 @@ else
 fi
 
 if $CPU_ONLY; then
-  PRESETS=("thrust-cpu-cpp$CXX_STANDARD")
+  PRESETS=("thrust-cpu")
   GPU_REQUIRED=false
 elif $GPU_ONLY; then
-  PRESETS=("thrust-gpu-cpp$CXX_STANDARD")
+  PRESETS=("thrust-gpu")
   GPU_REQUIRED=true
 else
-  PRESETS=("thrust-cpp$CXX_STANDARD")
+  PRESETS=("thrust")
   GPU_REQUIRED=true
 fi
 
