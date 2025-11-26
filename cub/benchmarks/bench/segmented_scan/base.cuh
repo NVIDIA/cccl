@@ -94,7 +94,7 @@ struct user_policy_hub_t
   {
     using segmented_scan_policy_t =
       agent_policy_t<128,
-                     16 - ::cuda::std::min(15, SegmentsPerBlock),
+                     8 - ::cuda::std::min(7, SegmentsPerBlock),
                      AccumT,
                      base_policy_t::load_algorithm,
                      base_policy_t::load_modifier,
