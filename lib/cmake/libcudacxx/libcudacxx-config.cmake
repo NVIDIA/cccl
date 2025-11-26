@@ -103,6 +103,82 @@ target_compile_definitions(
   INTERFACE $<$<CONFIG:Debug>:CCCL_ENABLE_ASSERTIONS>
 )
 
+# Detect whether the host compiler is MSVC
+set(detected_msvc_host FALSE)
+set(detected_msvc_host_version)
+
+if (NOT CMAKE_CUDA_COMPILER_ID STREQUAL "NVIDIA")
+  # Only nvcc uses a host compiler.
+  set(detected_msvc_host FALSE)
+elseif (
+  DEFINED CCCL_OVERRIDE_MSVC_HOST_CHECK
+  AND DEFINED CCCL_OVERRIDE_MSVC_HOST_VERSION
+)
+  # Set CCCL_OVERRIDE_MSVC_HOST_CHECK to TRUE or FALSE to force the value of
+  # detected_msvc_host. We provide this because host compiler id detection is not
+  # robustly available in all CMake versions and generator combinations and users
+  # may need an escape hatch to avoid adding incorrect flags.
+  # CCCL_OVERRIDE_MSVC_HOST_VERSION should also be set to
+  # the version number of the MSVC host compiler (e.g., 19.29).
+  set(detected_msvc_host ${CCCL_OVERRIDE_MSVC_HOST_CHECK})
+  set(detected_msvc_host_version ${CCCL_OVERRIDE_MSVC_HOST_VERSION})
+else()
+  # gersemi: off
+  if ((CMAKE_VERSION VERSION_GREATER_EQUAL 3.31) AND
+      (NOT CMAKE_GENERATOR MATCHES "Visual Studio"))
+    # gersemi: on
+    # If CMake >= 3.31 and the CMake generator is not Visual Studio,
+    # CMAKE_CUDA_HOST_COMPILER_ID is available:
+    if (CMAKE_CUDA_HOST_COMPILER_ID STREQUAL "MSVC")
+      set(detected_msvc_host TRUE)
+      set(detected_msvc_host_version ${CMAKE_CUDA_HOST_COMPILER_VERSION})
+    endif()
+  else()
+    # For CMake < 3.31 or Visual Studio generators, fall back to checking CMAKE_CXX_COMPILER_ID.
+    # Usually windows nvcc builds use MSVC so this should normally work.
+    # Use CCCL_OVERRIDE_MSVC_HOST_CHECK to override for weird edge cases.
+    if (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
+      set(detected_msvc_host TRUE)
+      set(detected_msvc_host_version ${CMAKE_CXX_COMPILER_VERSION})
+    endif()
+  endif()
+endif()
+
+if (detected_msvc_host)
+  # We require the conforming __cplusplus behavior:
+  target_compile_options(
+    _libcudacxx_libcudacxx
+    INTERFACE
+      "$<$<COMPILE_LANG_AND_ID:CUDA,NVIDIA>:-Xcompiler=/Zc:__cplusplus>"
+      "$<$<COMPILE_LANG_AND_ID:CXX,MSVC>:/Zc:__cplusplus>"
+  )
+
+  # libcudacxx requires the conforming preprocessor on MSVC builds.
+  if (detected_msvc_host_version GREATER_EQUAL 19.25)
+    target_compile_options(
+      _libcudacxx_libcudacxx
+      INTERFACE
+        "$<$<COMPILE_LANG_AND_ID:CUDA,NVIDIA>:-Xcompiler=/Zc:preprocessor>"
+        "$<$<COMPILE_LANG_AND_ID:CXX,MSVC>:/Zc:preprocessor>"
+    )
+  elseif (detected_msvc_host_version GREATER_EQUAL 19.15)
+    # Older version of this flag:
+    target_compile_options(
+      _libcudacxx_libcudacxx
+      INTERFACE
+        "$<$<COMPILE_LANG_AND_ID:CUDA,NVIDIA>:-Xcompiler=/experimental:preprocessor>"
+        "$<$<COMPILE_LANG_AND_ID:CXX,MSVC>:/experimental:preprocessor>"
+    )
+  else()
+    # Shouldn't really happen, current CCCL requires at least MSVC 19.20+ (as of CCCL 3.x).
+    # For completeness:
+    message(
+      WARNING
+      "Detected MSVC host compiler unsupported by CCCL: ${detected_msvc_host_version}."
+    )
+  endif()
+endif()
+
 #
 # Standardize version info
 #
