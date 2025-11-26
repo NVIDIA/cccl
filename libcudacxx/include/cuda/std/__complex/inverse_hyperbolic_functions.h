@@ -195,7 +195,7 @@ template <class _Tp>
     // but not small enough that the asinh(x) ~ log(2x) estimate does
     // not break down. We are not able to reduce this with a single simple reduction,
     // so we do a fast/inlined frexp/ldexp:
-    const auto __exp_biased = static_cast<int32_t>(::cuda::std::bit_cast<__uint_t>(__max) >> __mant_nbits);
+    const int32_t __exp_biased = static_cast<int32_t>(::cuda::std::__fp_get_storage(__max) >> __mant_nbits);
 
     // Get a factor such that (__max * __exp_mul_factor) <= __max_allowed_exponent
     const __uint_t __exp_reduce_factor =
@@ -207,7 +207,7 @@ template <class _Tp>
     __realx *= __exp_mul_factor;
     __imagx *= __exp_mul_factor;
 
-    __x_big_factor = _Tp((__exp_biased - __exp_max) - __max_allowed_exponent) * __ln2;
+    __x_big_factor = static_cast<_Tp>((__exp_biased - __exp_max) - __max_allowed_exponent) * __ln2;
   }
 
   // let compiler pick which way to fma this, accuracy stays the same.
@@ -298,7 +298,7 @@ template <class _Tp>
   // 0.0, and some very particular values, do not survive this unsafe sqrt function.
   // This case occurs when (1 + x^2) is zero or denormal. (and rsqrt(x)*rsqrt(x) become inf).
   constexpr __uint_t __min_normal_bits = __uint_t{0x1} << __mant_nbits;
-  const _Tp __min_normal               = ::cuda::std::bit_cast<_Tp>(__min_normal_bits);
+  const _Tp __min_normal               = ::cuda::std::__fp_from_storage<_Tp>(__min_normal_bits);
 
   if (__inner_most_term_hi <= _Tp{2} * __min_normal)
   {
