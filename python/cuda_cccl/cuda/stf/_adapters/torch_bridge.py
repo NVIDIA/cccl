@@ -18,7 +18,7 @@ def cai_to_torch(cai: dict):
         from numba import cuda as _cuda
 
         dev_array = _cuda.from_cuda_array_interface(cai, owner=None, sync=False)
-        return torch.utils.dlpack.from_dlpack(dev_array.to_dlpack())
+        return torch.from_dlpack(dev_array)
     except Exception:
         pass
 
@@ -31,7 +31,7 @@ def cai_to_torch(cai: dict):
                 self.__cuda_array_interface__ = d
 
         cp_arr = cp.asarray(_cai_wrapper(cai))
-        return torch.utils.dlpack.from_dlpack(cp_arr.toDlpack())
+        return torch.from_dlpack(cp_arr)
     except Exception as e:
         raise RuntimeError(
             "Could not convert __cuda_array_interface__ to torch.Tensor. "
