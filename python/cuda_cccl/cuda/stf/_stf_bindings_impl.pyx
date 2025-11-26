@@ -194,28 +194,21 @@ cdef class logical_data:
             original_shape = cai['shape']
             typestr = cai['typestr']
 
-            # Handle vector types automatically (e.g., wp.vec2, wp.vec3)
-            # STF treats these as flat scalar arrays with an additional dimension
-            if typestr.startswith('|V'):  # Vector type (e.g., '|V8' for vec2, '|V12' for vec3)
-                vector_size = int(typestr[2:])  # Extract size from '|V8' -> 8 bytes
-
-                if vector_size == 8:  # vec2 (2 * 4 bytes float32)
-                    self._shape = original_shape + (2,)
-                    self._dtype = np.dtype('<f4')  # float32
-                elif vector_size == 12:  # vec3 (3 * 4 bytes float32)
-                    self._shape = original_shape + (3,)
-                    self._dtype = np.dtype('<f4')  # float32
-                elif vector_size == 16:  # vec4 (4 * 4 bytes float32)
-                    self._shape = original_shape + (4,)
-                    self._dtype = np.dtype('<f4')  # float32
-                else:
-                    # Unknown vector type - treat as original
+            # Handle vector types (e.g., wp.vec2, wp.vec3)
+            # Use structured dtype from descr if available
+            if typestr.startswith('|V'):
+                # Vector/structured type - use descr field if available
+                if 'descr' in cai:
+                    self._dtype = np.dtype(cai['descr'])
                     self._shape = original_shape
+                else:
+                    # No descr field - treat as opaque bytes
                     self._dtype = np.dtype(typestr)
+                    self._shape = original_shape
             else:
                 # Regular scalar type
-                self._shape = original_shape
                 self._dtype = np.dtype(typestr)
+                self._shape = original_shape
 
             self._ndim = len(self._shape)
 
