@@ -196,19 +196,15 @@ cdef class logical_data:
 
             # Handle vector types (e.g., wp.vec2, wp.vec3)
             # Use structured dtype from descr if available
-            if typestr.startswith('|V'):
-                # Vector/structured type - use descr field if available
-                if 'descr' in cai:
-                    self._dtype = np.dtype(cai['descr'])
-                    self._shape = original_shape
-                else:
-                    # No descr field - treat as opaque bytes
-                    self._dtype = np.dtype(typestr)
-                    self._shape = original_shape
+            if typestr.startswith('|V') and 'descr' in cai:
+                # Vector/structured type - use descr field
+                self._dtype = np.dtype(cai['descr'])
             else:
-                # Regular scalar type
+                # Regular scalar type or vector without descr - use typestr
                 self._dtype = np.dtype(typestr)
-                self._shape = original_shape
+
+            # Shape is always the same regardless of type
+            self._shape = original_shape
 
             self._ndim = len(self._shape)
 
@@ -624,7 +620,7 @@ cdef class context:
                 stf_ctx_create(&self._ctx)
 
     cdef borrow_from_handle(self, stf_ctx_handle ctx_handle):
-        if not self._ctx == NULL:
+        if self._ctx != NULL:
             raise RuntimeError("context already initialized")
 
         if not self._borrowed:
