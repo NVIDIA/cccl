@@ -55,27 +55,29 @@ def test_numba():
     lY = ctx.logical_data(Y)
     lZ = ctx.logical_data(Z)
 
+    threads_per_block = 256
+    blocks = (n + threads_per_block - 1) // threads_per_block
+
     with ctx.task(lX.rw()) as t:
         nb_stream = cuda.external_stream(t.stream_ptr())
         dX = t.numba_arguments()
-        # dX = cuda.from_cuda_array_interface(t.get_arg_cai(0), owner=None, sync=False)
-        scale[32, 64, nb_stream](2.0, dX)
+        scale[blocks, threads_per_block, nb_stream](2.0, dX)
 
     with ctx.task(lX.read(), lY.rw()) as t:
         nb_stream = cuda.external_stream(t.stream_ptr())
         dX = t.get_arg_numba(0)
         dY = t.get_arg_numba(1)
-        axpy[32, 64, nb_stream](2.0, dX, dY)
+        axpy[blocks, threads_per_block, nb_stream](2.0, dX, dY)
 
     with ctx.task(lX.read(), lZ.rw()) as t:
         nb_stream = cuda.external_stream(t.stream_ptr())
         dX, dZ = t.numba_arguments()
-        axpy[32, 64, nb_stream](2.0, dX, dZ)
+        axpy[blocks, threads_per_block, nb_stream](2.0, dX, dZ)
 
     with ctx.task(lY.read(), lZ.rw()) as t:
         nb_stream = cuda.external_stream(t.stream_ptr())
         dY, dZ = t.numba_arguments()
-        axpy[32, 64, nb_stream](2.0, dY, dZ)
+        axpy[blocks, threads_per_block, nb_stream](2.0, dY, dZ)
 
     ctx.finalize()
 
