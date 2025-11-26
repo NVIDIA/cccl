@@ -36,13 +36,6 @@
 
 namespace cuda::experimental::execution
 {
-// Utilities:
-template <class _Ty>
-_CCCL_API constexpr auto __is_constexpr_helper(_Ty) -> bool
-{
-  return true;
-}
-
 // Receiver concepts:
 template <class _Rcvr>
 _CCCL_CONCEPT receiver = //

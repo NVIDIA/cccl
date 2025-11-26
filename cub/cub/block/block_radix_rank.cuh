@@ -36,6 +36,10 @@
 #include <cuda/std/limits>
 #include <cuda/std/span>
 
+#if !_CCCL_COMPILER(NVRTC)
+#  include <ostream>
+#endif // !_CCCL_COMPILER(NVRTC)
+
 CUB_NAMESPACE_BEGIN
 
 //! @brief Radix ranking algorithm, the algorithm used to implement stable ranking of the
@@ -69,6 +73,27 @@ enum RadixRankAlgorithm
   //! warp lanes is high. Assumes warp-striped key arrangement and supports count callbacks.
   RADIX_RANK_MATCH_EARLY_COUNTS_ATOMIC_OR
 };
+
+#if !_CCCL_COMPILER(NVRTC)
+inline ::std::ostream& operator<<(::std::ostream& os, RadixRankAlgorithm algo)
+{
+  switch (algo)
+  {
+    case RADIX_RANK_BASIC:
+      return os << "RADIX_RANK_BASIC";
+    case RADIX_RANK_MEMOIZE:
+      return os << "RADIX_RANK_MEMOIZE";
+    case RADIX_RANK_MATCH:
+      return os << "RADIX_RANK_MATCH";
+    case RADIX_RANK_MATCH_EARLY_COUNTS_ANY:
+      return os << "RADIX_RANK_MATCH_EARLY_COUNTS_ANY";
+    case RADIX_RANK_MATCH_EARLY_COUNTS_ATOMIC_OR:
+      return os << "RADIX_RANK_MATCH_EARLY_COUNTS_ATOMIC_OR";
+    default:
+      return os << "<unknown RadixRankAlgorithm: " << static_cast<int>(algo) << ">";
+  }
+}
+#endif // !_CCCL_COMPILER(NVRTC)
 
 /** Empty callback implementation */
 template <int BINS_PER_THREAD>
