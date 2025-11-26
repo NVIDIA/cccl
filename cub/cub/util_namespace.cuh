@@ -25,6 +25,8 @@
 
 #include <cub/detail/detect_cuda_runtime.cuh>
 
+#include <cuda/std/__cccl/preprocessor.h>
+
 // Prior to 1.13.1, only the PREFIX/POSTFIX macros were used. Notify users
 // that they must now define the qualifier macro, too.
 #if (defined(CUB_NS_PREFIX) || defined(CUB_NS_POSTFIX)) && !defined(CUB_NS_QUALIFIER)
