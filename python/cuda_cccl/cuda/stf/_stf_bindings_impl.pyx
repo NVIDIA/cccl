@@ -16,7 +16,6 @@ from cpython.pycapsule cimport (
 )
 from libc.stdint cimport uint8_t, uint32_t, uint64_t, int64_t, uintptr_t
 from libc.string cimport memset, memcpy
-import math # for math.prod
 
 import numpy as np
 
@@ -333,7 +332,10 @@ cdef class logical_data:
         out._dtype = np.dtype(dtype)
         out._shape = shape
         out._ndim  = len(shape)
-        out._len   = math.prod(shape) * out._dtype.itemsize
+        cdef size_t total_items = 1
+        for dim in shape:
+            total_items *= dim
+        out._len   = total_items * out._dtype.itemsize
         out._symbol = None  # New object has no symbol initially
         out._is_token = False
         stf_logical_data_empty(ctx._ctx, out._len, &out._ld)
