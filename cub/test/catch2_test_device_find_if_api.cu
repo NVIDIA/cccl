@@ -25,13 +25,13 @@ C2H_TEST("cub::DeviceFind::FindIf works with int data elements", "[find][device]
   // example-begin device-find-if
   constexpr int num_items         = 8;
   thrust::device_vector<int> d_in = {0, 1, 2, 3, 4, 5, 6, 7};
-  thrust::device_vector<int> d_out(1);
+  thrust::device_vector<int> d_out(1, thrust::no_init);
   is_greater_than_t predicate{4};
 
   size_t temp_storage_bytes = 0;
   cub::DeviceFind::FindIf(nullptr, temp_storage_bytes, d_in.begin(), d_out.begin(), predicate, num_items);
 
-  thrust::device_vector<char> temp_storage(temp_storage_bytes);
+  thrust::device_vector<char> temp_storage(temp_storage_bytes, thrust::no_init);
 
   cub::DeviceFind::FindIf(
     thrust::raw_pointer_cast(temp_storage.data()),

@@ -55,7 +55,7 @@ struct agent_t
   // pointer to a primitive type
   static constexpr bool attempt_vectorization =
     (vector_load_length > 1) && (items_per_thread % vector_load_length == 0)
-    && (::cuda::std::is_pointer<InputIteratorT>::value) && detail::is_primitive<InputT>::value;
+    && (::cuda::std::is_pointer_v<InputIteratorT>) && detail::is_primitive_v<InputT>;
 
   static constexpr CacheLoadModifier load_modifier = AgentFindPolicy::load_modifier;
 
@@ -72,32 +72,29 @@ struct agent_t
   InputIteratorT d_in;
   ScanOpT scan_op; // Binary reduction operator
 
-  template <typename T>
+  template <typename Iterator, bool CanVectorize>
   static _CCCL_DEVICE _CCCL_FORCEINLINE bool is_aligned_and_full_tile(
-    T* d_in,
-    int tile_offset,
-    int tile_size,
-    OffsetT num_items,
-    ::cuda::std::integral_constant<bool, true> /*CAN_VECTORIZE*/)
+    Iterator d_in, int tile_offset, int tile_size, OffsetT num_items, ::cuda::std::integral_constant<bool, CanVectorize>)
   {
-    // Create an agent_t and extract these two as type member in the encapsulating struct
-    using InputT  = T;
-    using VectorT = typename CubVector<InputT, vector_load_length>::Type;
-    //
-    const bool full_tile  = (tile_offset + tile_size) <= num_items;
-    const bool is_aligned = reinterpret_cast<::cuda::std::uintptr_t>(d_in) % uintptr_t{sizeof(VectorT)} == 0;
-    return full_tile && is_aligned;
-  }
+    if constexpr (CanVectorize)
+    {
+      // Retrieve the value type from the iterator to determine the vector type
+      using InputT  = typename ::cuda::std::iterator_traits<Iterator>::value_type;
+      using VectorT = typename CubVector<InputT, vector_load_length>::Type;
 
-  template <typename Iterator>
-  static _CCCL_DEVICE _CCCL_FORCEINLINE bool is_aligned_and_full_tile(
-    Iterator /*d_in*/,
-    int /*tile_offset*/,
-    int /*tile_size*/,
-    std::size_t /*num_items*/,
-    ::cuda::std::integral_constant<bool, false> /*CAN_VECTORIZE*/)
-  {
-    return false;
+      const bool full_tile = (tile_offset + tile_size) <= num_items;
+
+      // Check alignment at the actual load position (d_in + tile_offset)
+      // when CanVectorize is true, implying d_in is a raw pointer.
+      const bool is_aligned =
+        reinterpret_cast<::cuda::std::uintptr_t>(d_in + tile_offset) % uintptr_t{sizeof(VectorT)} == 0;
+
+      return full_tile && is_aligned;
+    }
+    else
+    {
+      return false;
+    }
   }
 
   _CCCL_DEVICE _CCCL_FORCEINLINE agent_t(TempStorage& temp_storage, InputIteratorT d_in, ScanOpT scan_op)
@@ -107,8 +104,8 @@ struct agent_t
   {}
 
   template <typename Pred>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void ConsumeTile(
-    int tile_offset,
+  _CCCL_DEVICE _CCCL_FORCEINLINE bool ConsumeTile(
+    OffsetT tile_offset,
     Pred pred,
     OffsetT* result,
     OffsetT num_items,
@@ -166,12 +163,14 @@ struct agent_t
       {
         atomicMin(result, temp_storage.block_result);
       }
+      return true;
     }
+    return false;
   }
 
   template <typename Pred>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void ConsumeTile(
-    int tile_offset,
+  _CCCL_DEVICE _CCCL_FORCEINLINE bool ConsumeTile(
+    OffsetT tile_offset,
     Pred pred,
     OffsetT* result,
     OffsetT num_items,
@@ -205,7 +204,9 @@ struct agent_t
       {
         atomicMin(result, temp_storage.block_result);
       }
+      return true;
     }
+    return false;
   }
 
   _CCCL_DEVICE _CCCL_FORCEINLINE void Process(OffsetT* value_temp_storage, OffsetT num_items)
