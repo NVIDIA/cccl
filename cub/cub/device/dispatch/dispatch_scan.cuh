@@ -26,6 +26,7 @@
 #include <cub/detail/launcher/cuda_runtime.cuh>
 #include <cub/device/dispatch/dispatch_common.cuh>
 #include <cub/device/dispatch/kernels/kernel_scan.cuh>
+#include <cub/device/dispatch/kernels/kernel_scan_warpspeed.cuh>
 #include <cub/device/dispatch/tuning/tuning_scan.cuh>
 #include <cub/thread/thread_operators.cuh>
 #include <cub/util_debug.cuh>
@@ -40,6 +41,9 @@
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/is_unsigned.h>
+
+#include <cuda_runtime_api.h>
+#include <cudaTypedefs.h>
 
 CUB_NAMESPACE_BEGIN
 
@@ -358,11 +362,67 @@ struct DispatchScan
   }
 
   template <typename ActivePolicyT>
+  CUB_RUNTIME_FUNCTION _CCCL_HOST _CCCL_FORCEINLINE cudaError_t __invoke_lookahead_algorithm(ActivePolicyT = {})
+  {
+    if (d_temp_storage == nullptr)
+    {
+      // TODO: make this more accurate. For now, just massively overestimate the required temporary state.
+      temp_storage_bytes = num_items * sizeof(detail::scan::tmp_state_t);
+      return cudaSuccess;
+    }
+
+    constexpr int num_stages       = 2; // TODO(bgruber): tune this
+    constexpr int numLookbackTiles = 96;
+    constexpr int tile_size        = 63 * detail::scan::squadReduce.threadCount();
+    const int grid_dim             = (num_items + tile_size - 1) / size_t(tile_size);
+
+    detail::scan::scanKernelParams params{
+      .ptrIn     = d_in,
+      .ptrOut    = d_out,
+      .ptrTmp    = (detail::scan::tmp_state_t*) d_temp_storage,
+      .numElem   = num_items,
+      .numStages = num_stages};
+
+    auto kernel_ptr = detail::scan::scan<tile_size, numLookbackTiles>;
+
+    SyncHandler syncHandler{};
+    SmemAllocator smemAllocator{};
+    detail::scan::allocResources<tile_size>(syncHandler, smemAllocator, params);
+
+    int smem_size = smemAllocator.sizeBytes();
+    if (const auto error = cudaFuncSetAttribute(kernel_ptr, cudaFuncAttributeMaxDynamicSharedMemorySize, smem_size))
+    {
+      return error;
+    }
+
+    int block_dim    = squadCountThreads(detail::scan::scanSquads);
+    size_t num_tiles = num_items / size_t(tile_size);
+
+    detail::scan::initTmpStates<tile_size><<<int(num_tiles) / 128 + 1, 128>>>(
+      d_in,
+      (detail::scan::tmp_state_t*) d_temp_storage,
+      d_out,
+      num_items,
+      /*do_check=*/false);
+    if (const auto error = CubDebug(cudaGetLastError()))
+    {
+      return error;
+    }
+
+    kernel_ptr<<<grid_dim, block_dim, smem_size, stream>>>(params);
+    return CubDebug(cudaGetLastError());
+  }
+
+  template <typename ActivePolicyT>
   CUB_RUNTIME_FUNCTION _CCCL_HOST _CCCL_FORCEINLINE cudaError_t Invoke(ActivePolicyT active_policy = {})
   {
-    auto wrapped_policy = detail::scan::MakeScanPolicyWrapper(active_policy);
-    // Ensure kernels are instantiated.
-    return Invoke(kernel_source.InitKernel(), kernel_source.ScanKernel(), wrapped_policy);
+    // TODO(bgruber): choose between old and new algorithm based on policy
+    // auto wrapped_policy = detail::scan::MakeScanPolicyWrapper(active_policy);
+    // // Ensure kernels are instantiated.
+    // return Invoke(kernel_source.InitKernel(), kernel_source.ScanKernel(), wrapped_policy);
+
+    static_assert(::cuda::std::is_pointer_v<InputIteratorT> && ::cuda::std::is_pointer_v<OutputIteratorT>);
+    return __invoke_lookahead_algorithm(active_policy);
   }
 
   /**

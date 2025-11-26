@@ -13,7 +13,7 @@
       "binaryDir": "${sourceDir}/build/$env{CCCL_BUILD_INFIX}/${presetName}",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Release",
-        "CMAKE_CUDA_ARCHITECTURES": "all-major-cccl",
+        "CMAKE_CUDA_ARCHITECTURES": "100",
         "CCCL_ENABLE_UNSTABLE": true,
         "CCCL_ENABLE_LIBCUDACXX": false,
         "CCCL_ENABLE_CUB": false,
@@ -56,7 +56,7 @@
       "name": "all-dev",
       "inherits": "base",
       "cacheVariables": {
-        "CMAKE_CUDA_ARCHITECTURES": "native",
+        "CMAKE_CUDA_ARCHITECTURES": "100",
         "CCCL_ENABLE_LIBCUDACXX": true,
         "CCCL_ENABLE_CUB": true,
         "CCCL_ENABLE_THRUST": true,
@@ -95,7 +95,7 @@
       "displayName": "all-dev debug",
       "inherits": "all-dev",
       "cacheVariables": {
-        "CMAKE_CUDA_ARCHITECTURES": "native",
+        "CMAKE_CUDA_ARCHITECTURES": "100",
         "CMAKE_BUILD_TYPE": "Debug",
         "CMAKE_CUDA_FLAGS": "-G",
         "CCCL_ENABLE_BENCHMARKS": false,

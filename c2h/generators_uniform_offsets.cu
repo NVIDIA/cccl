@@ -13,6 +13,7 @@
 
 #include <c2h/device_policy.h>
 
+#if 0
 namespace c2h::detail
 {
 template <class T>
@@ -64,3 +65,4 @@ template std::size_t gen_uniform_offsets(
   uint64_t min_segment_size,
   uint64_t max_segment_size);
 } // namespace c2h::detail
+#endif
