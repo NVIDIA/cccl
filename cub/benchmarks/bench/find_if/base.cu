@@ -21,10 +21,13 @@ void find_if(nvbench::state& state, nvbench::type_list<T>)
   thrust::device_vector<T> dinput(elements, thrust::no_init);
   thrust::fill(dinput.begin(), dinput.begin() + mismatch_point, 0);
   thrust::fill(dinput.begin() + mismatch_point, dinput.end(), val);
-  thrust::device_vector<T> d_result(1, thrust::no_init);
+  thrust::device_vector<size_t> d_result(1, thrust::no_init);
 
   void* d_temp_storage = nullptr;
   size_t temp_storage_bytes{};
+
+  state.add_global_memory_reads<T>(mismatch_point);
+  state.add_global_memory_writes<size_t>(1);
 
   cub::DeviceFind::FindIf(
     d_temp_storage,
@@ -51,5 +54,5 @@ void find_if(nvbench::state& state, nvbench::type_list<T>)
 }
 
 NVBENCH_BENCH_TYPES(find_if, NVBENCH_TYPE_AXES(fundamental_types))
-  .add_int64_power_of_two_axis("Elements", nvbench::range(16, 28, 4))
+  .add_int64_power_of_two_axis("Elements{io}", nvbench::range(16, 28, 4))
   .add_float64_axis("MismatchAt", std::vector{1.0, 0.5, 0.0});
