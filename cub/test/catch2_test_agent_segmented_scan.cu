@@ -11,6 +11,7 @@
 
 #include <thrust/tabulate.h>
 
+#include <cuda/std/span>
 #include <cuda/std/type_traits>
 #include <cuda/std/utility>
 
@@ -208,7 +209,7 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::segmented_scan_policy_t::BLO
   OffsetT out_begin_offsets[2] = {begin_offset_d_out[2 * segment_id], begin_offset_d_out[2 * segment_id + 1]};
 
   agent_segmented_scan_t(temp_storage, d_in, d_out, scan_op, _init_value)
-    .consume_ranges(inp_begin_offsets, inp_end_offsets, out_begin_offsets);
+    .consume_ranges(inp_begin_offsets, cuda::std::span{inp_end_offsets}, out_begin_offsets);
 }
 
 template <typename ChainedPolicyT,
@@ -261,7 +262,7 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::segmented_scan_policy_t::BLO
   OffsetT inp_end_offsets[num_segments_per_block];
   OffsetT out_begin_offsets[num_segments_per_block];
 
-  if (num_segments_per_block * blockIdx.x + num_segments_per_block - 1 < n_segments)
+  if (num_segments_per_block * blockIdx.x + num_segments_per_block < n_segments)
   {
 #pragma unroll
     for (int i = 0; i < num_segments_per_block; ++i)
@@ -271,7 +272,7 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::segmented_scan_policy_t::BLO
       out_begin_offsets[i] = begin_offset_d_out[num_segments_per_block * segment_id + i];
     }
     agent_segmented_scan_t(temp_storage, d_in, d_out, scan_op, _init_value)
-      .consume_ranges(inp_begin_offsets, inp_end_offsets, out_begin_offsets);
+      .consume_ranges(inp_begin_offsets, cuda::std::span{inp_end_offsets}, out_begin_offsets);
   }
   else
   {
@@ -283,7 +284,7 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::segmented_scan_policy_t::BLO
       out_begin_offsets[i] = begin_offset_d_out[num_segments_per_block * segment_id + i];
     }
     agent_segmented_scan_t(temp_storage, d_in, d_out, scan_op, _init_value)
-      .consume_ranges(inp_begin_offsets, inp_end_offsets, out_begin_offsets, tail_size);
+      .consume_ranges(inp_begin_offsets, cuda::std::span{inp_end_offsets}, out_begin_offsets, tail_size);
   }
 }
 } // namespace
