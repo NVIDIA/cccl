@@ -76,9 +76,11 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::segmented_scan_policy_t::BLO
   }
   else
   {
-    OffsetT inp_end_offsets[num_segments_per_block];
+    OffsetT inp_end_offsets[num_segments_per_block] = {};
 
-    if (work_id + num_segments_per_block - 1 < n_segments)
+    using span_t = ::cuda::std::span<OffsetT, num_segments_per_block>;
+
+    if (work_id + num_segments_per_block < n_segments)
     {
 #pragma unroll
       for (int i = 0; i < num_segments_per_block; ++i)
@@ -86,7 +88,7 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::segmented_scan_policy_t::BLO
         inp_end_offsets[i] = end_offset_d_in[work_id + i];
       }
       agent_segmented_scan_t(temp_storage, d_in, d_out, scan_op, _init_value)
-        .consume_ranges(begin_offset_d_in + work_id, inp_end_offsets, begin_offset_d_out + work_id);
+        .consume_ranges(begin_offset_d_in + work_id, span_t{inp_end_offsets}, begin_offset_d_out + work_id);
     }
     else
     {
@@ -96,7 +98,7 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::segmented_scan_policy_t::BLO
         inp_end_offsets[i] = end_offset_d_in[work_id + i];
       }
       agent_segmented_scan_t(temp_storage, d_in, d_out, scan_op, _init_value)
-        .consume_ranges(begin_offset_d_in + work_id, inp_end_offsets, begin_offset_d_out + work_id, tail_size);
+        .consume_ranges(begin_offset_d_in + work_id, span_t{inp_end_offsets}, begin_offset_d_out + work_id, tail_size);
     }
   }
 }
