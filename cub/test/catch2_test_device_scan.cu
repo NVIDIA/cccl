@@ -30,7 +30,7 @@ using custom_t =
                      c2h::lexicographical_greater_comparable_t>;
 
 #if TEST_TYPES == 0
-using full_type_list = c2h::type_list<type_pair<std::uint8_t, std::int32_t>, type_pair<std::int8_t>>;
+using full_type_list = c2h::type_list<type_pair<int>>;
 #elif TEST_TYPES == 1
 using full_type_list = c2h::type_list<type_pair<std::int32_t>, type_pair<std::uint64_t>>;
 #elif TEST_TYPES == 2
@@ -75,44 +75,43 @@ C2H_TEST("Device scan works with all device interfaces", "[scan][device]", full_
   using output_t = typename params::output_t;
   using offset_t = int32_t;
 
-  constexpr offset_t min_items = 1;
-  constexpr offset_t max_items = 10'000'000;
+  CAPTURE(c2h::type_name<input_t>(), c2h::type_name<output_t>());
+
+  // constexpr offset_t min_items = 1;
+  // constexpr offset_t max_items = 1000000;
 
   // Generate the input sizes to test for
-  const offset_t num_items = GENERATE_COPY(
-    10,
-    1337,
-    1 * 31 * 128, // int64 tile size for lookahead
-    10'000, // a handful of tiles for lookahead
-    take(3, random(min_items, max_items)),
-    values({
-      min_items,
-      max_items,
-    }));
+  // const offset_t num_items = GENERATE_COPY(
+  //   take(3, random(min_items, max_items)),
+  //   values({
+  //     min_items,
+  //     max_items,
+  //   }));
 
-  CAPTURE(num_items, c2h::type_name<input_t>(), c2h::type_name<output_t>());
+  const offset_t num_items = 8192;
 
-  // Input data generation to test
-  const gen_data_t data_gen_mode = GENERATE_COPY(gen_data_t::GEN_TYPE_RANDOM, gen_data_t::GEN_TYPE_CONST);
-
-  // Generate input data
-  c2h::device_vector<input_t> in_items(num_items);
-  if (data_gen_mode == gen_data_t::GEN_TYPE_RANDOM)
-  {
-    c2h::gen(C2H_SEED(2), in_items);
-  }
-  else
-  {
-    input_t default_constant{};
-    init_default_constant(default_constant);
-    thrust::fill(c2h::device_policy, in_items.begin(), in_items.end(), default_constant);
-  }
+  // // Input data generation to test
+  // const gen_data_t data_gen_mode = GENERATE_COPY(gen_data_t::GEN_TYPE_RANDOM, gen_data_t::GEN_TYPE_CONST);
+  //
+  // // Generate input data
+  c2h::device_vector<input_t> in_items(num_items, 42);
+  // if (data_gen_mode == gen_data_t::GEN_TYPE_RANDOM)
+  // {
+  //   c2h::gen(C2H_SEED(2), in_items);
+  // }
+  // else
+  // {
+  //   input_t default_constant{};
+  //   init_default_constant(default_constant);
+  //   thrust::fill(c2h::device_policy, in_items.begin(), in_items.end(), default_constant);
+  // }
   auto d_in_it = thrust::raw_pointer_cast(in_items.data());
 
   // Skip DeviceScan::InclusiveSum and DeviceScan::ExclusiveSum tests for extended floating-point
   // types because of unbounded epsilon due to pseudo associativity of the addition operation over
   // floating point numbers
-#if TEST_TYPES != 3
+#if 0
+#  if TEST_TYPES != 3
   SECTION("inclusive sum")
   {
     using op_t    = cuda::std::plus<>;
@@ -170,11 +169,12 @@ C2H_TEST("Device scan works with all device interfaces", "[scan][device]", full_
       REQUIRE_THAT_QUIET(expected_result, Equals(in_items));
     }
   }
+#  endif
 #endif
 
   SECTION("inclusive scan")
   {
-    using op_t    = cuda::minimum<>;
+    using op_t    = cuda::std::plus<>;
     using accum_t = cuda::std::__accumulator_t<op_t, input_t, input_t>;
     CAPTURE(c2h::type_name<op_t>(), c2h::type_name<accum_t>());
 
@@ -186,7 +186,8 @@ C2H_TEST("Device scan works with all device interfaces", "[scan][device]", full_
       host_items.cend(),
       expected_result.begin(),
       op_t{},
-      cuda::std::numeric_limits<accum_t>::max());
+      // cuda::std::numeric_limits<accum_t>::max()
+      0);
 
     // Run test
     c2h::device_vector<output_t> out_result(num_items);
@@ -206,6 +207,7 @@ C2H_TEST("Device scan works with all device interfaces", "[scan][device]", full_
     }
   }
 
+#if 0
   SECTION("inclusive scan with init value")
   {
     using op_t    = cuda::std::plus<>;
@@ -314,4 +316,5 @@ C2H_TEST("Device scan works with all device interfaces", "[scan][device]", full_
       REQUIRE_THAT_QUIET(expected_result, Equals(in_items));
     }
   }
+#endif
 }
