@@ -211,7 +211,10 @@ struct agent_t
 
   _CCCL_DEVICE _CCCL_FORCEINLINE void Process(OffsetT* value_temp_storage, OffsetT num_items)
   {
-    for (int tile_offset = blockIdx.x * tile_items; tile_offset < num_items; tile_offset += tile_items * gridDim.x)
+    OffsetT tile_stride = static_cast<OffsetT>(tile_items) * static_cast<OffsetT>(gridDim.x);
+    for (OffsetT tile_offset = static_cast<OffsetT>(blockIdx.x) * static_cast<OffsetT>(tile_items);
+         tile_offset < num_items;
+         tile_offset += tile_stride)
     {
       // Only one thread reads atomically and propagates it to the
       // the other threads of the block through shared memory
@@ -227,15 +230,21 @@ struct agent_t
         return;
       }
 
-      is_aligned_and_full_tile(
-        d_in, tile_offset, tile_items, num_items, ::cuda::std::integral_constant<bool, attempt_vectorization>())
-        ? ConsumeTile(tile_offset,
-                      scan_op,
-                      value_temp_storage,
-                      num_items,
-                      ::cuda::std::integral_constant<bool, attempt_vectorization>())
-        : ConsumeTile(
-            tile_offset, scan_op, value_temp_storage, num_items, ::cuda::std::integral_constant<bool, false>());
+      bool found =
+        is_aligned_and_full_tile(
+          d_in, tile_offset, tile_items, num_items, ::cuda::std::integral_constant<bool, attempt_vectorization>())
+          ? ConsumeTile(tile_offset,
+                        scan_op,
+                        value_temp_storage,
+                        num_items,
+                        ::cuda::std::integral_constant<bool, attempt_vectorization>())
+          : ConsumeTile(
+              tile_offset, scan_op, value_temp_storage, num_items, ::cuda::std::integral_constant<bool, false>());
+
+      if (found)
+      {
+        return;
+      }
     }
   }
 };
