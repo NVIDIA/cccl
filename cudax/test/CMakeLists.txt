@@ -88,6 +88,10 @@ cudax_add_catch2_test(test_target misc
     utility/ensure_current_device.cu
 )
 
+cudax_add_catch2_test(test_target mdarray
+    containers/mdarray/mdarray.cu
+)
+
 cudax_add_catch2_test(test_target containers
     containers/uninitialized_buffer.cu
     containers/async_buffer/access.cu
