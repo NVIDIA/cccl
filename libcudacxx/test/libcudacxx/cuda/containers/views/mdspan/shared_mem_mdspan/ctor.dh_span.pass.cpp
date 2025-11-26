@@ -40,6 +40,12 @@
 #include "../MinimalElementType.h"
 #include "test_macros.h"
 
+#if _CCCL_CUDA_COMPILER(NVRTC)
+#  define _CCCL_NVRTC_CONCEPT_DECORATOR() __device__
+#else
+#  define _CCCL_NVRTC_CONCEPT_DECORATOR()
+#endif // _CCCL_CUDA_COMPILER(NVRTC)
+
 template <class Extents, size_t... Idxs>
 __device__ constexpr auto array_from_extents(const Extents& exts, cuda::std::index_sequence<Idxs...>)
 {
@@ -50,11 +56,13 @@ template <class MDS>
 __device__ void check_implicit_construction(MDS);
 
 template <class MDS, class Exts>
+_CCCL_NVRTC_CONCEPT_DECORATOR()
 constexpr bool check_implicit_construction_impl(...)
 {
   return false;
 }
 template <class MDS, class Exts>
+_CCCL_NVRTC_CONCEPT_DECORATOR()
 constexpr auto check_implicit_construction_impl(int)
   -> decltype(check_implicit_construction<MDS>({cuda::std::declval<typename MDS::data_handle_type>(),
                                                 cuda::std::declval<const Exts&>()}),

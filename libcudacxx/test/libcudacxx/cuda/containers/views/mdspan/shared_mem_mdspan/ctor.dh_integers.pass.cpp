@@ -40,6 +40,12 @@
 #include "../MinimalElementType.h"
 #include "test_macros.h"
 
+#if _CCCL_CUDA_COMPILER(NVRTC)
+#  define _CCCL_NVRTC_CONCEPT_DECORATOR() __device__
+#else
+#  define _CCCL_NVRTC_CONCEPT_DECORATOR()
+#endif // _CCCL_CUDA_COMPILER(NVRTC)
+
 template <class MDS, class... Args>
 _CCCL_CONCEPT check_mdspan_ctor_implicit2 =
   _CCCL_REQUIRES_EXPR((MDS, variadic Args), MDS m, Args... args)((m = {args...}));
@@ -48,11 +54,13 @@ template <class MDS>
 __device__ void check_implicit_construction(MDS);
 
 template <class MDS, class... Args>
+_CCCL_NVRTC_CONCEPT_DECORATOR()
 constexpr bool check_implicit_construction_impl(...)
 {
   return false;
 }
 template <class MDS, class... Args>
+_CCCL_NVRTC_CONCEPT_DECORATOR()
 constexpr auto check_implicit_construction_impl(int)
   -> decltype(check_implicit_construction<MDS>({cuda::std::declval<Args>()...}), true)
 {
