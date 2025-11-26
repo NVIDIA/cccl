@@ -24,6 +24,7 @@
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/is_pointer.h>
 #include <cuda/std/__type_traits/is_same.h>
+#include <cuda/std/span>
 #include <cuda/std/tuple>
 
 CUB_NAMESPACE_BEGIN
@@ -33,6 +34,10 @@ namespace detail::segmented_scan
 /******************************************************************************
  * Tuning policy types
  ******************************************************************************/
+
+template <typename ComputeT, int NumSegmentsPerBlock>
+using segmented_scan_compute_t =
+  ::cuda::std::conditional_t<NumSegmentsPerBlock == 1, ComputeT, ::cuda::std::tuple<bool, ComputeT>>;
 
 //! @brief Parameterizable tuning policy type for agent_segmented_scan
 //!
@@ -60,16 +65,17 @@ namespace detail::segmented_scan
 //! @tparam SegmentsPerBlock
 //!   The number of segments processed per block
 //!
-template <
-  int Nominal4ByteBlockThreads,
-  int Nominal4BytesItemsPerThread,
-  typename ComputeT,
-  BlockLoadAlgorithm LoadAlgorithm,
-  CacheLoadModifier LoadModifier,
-  BlockStoreAlgorithm StoreAlgorithm,
-  BlockScanAlgorithm ScanAlgorithm,
-  int SegmentsPerBlock = 1,
-  typename ScalingType = detail::MemBoundScaling<Nominal4ByteBlockThreads, Nominal4BytesItemsPerThread, ComputeT>>
+template <int Nominal4ByteBlockThreads,
+          int Nominal4BytesItemsPerThread,
+          typename ComputeT,
+          BlockLoadAlgorithm LoadAlgorithm,
+          CacheLoadModifier LoadModifier,
+          BlockStoreAlgorithm StoreAlgorithm,
+          BlockScanAlgorithm ScanAlgorithm,
+          int SegmentsPerBlock = 1,
+          typename ScalingType = detail::MemBoundScaling<Nominal4ByteBlockThreads,
+                                                         Nominal4BytesItemsPerThread,
+                                                         segmented_scan_compute_t<ComputeT, SegmentsPerBlock>>>
 struct agent_segmented_scan_policy_t : ScalingType
 {
   static_assert(SegmentsPerBlock > 0, "SegmentsPerBlock template value parameter must be positive");
@@ -146,8 +152,7 @@ struct agent_segmented_scan
   static constexpr int tile_items         = block_threads * items_per_thread;
   static constexpr int segments_per_block = AgentSegmentedScanPolicyT::segments_per_block;
 
-  using augmented_accum_t =
-    ::cuda::std::conditional_t<segments_per_block == 1, AccumT, ::cuda::std::tuple<bool, AccumT>>;
+  using augmented_accum_t = segmented_scan_compute_t<AccumT, segments_per_block>;
 
   using block_load_t  = BlockLoad<AccumT, block_threads, items_per_thread, AgentSegmentedScanPolicyT::load_algorithm>;
   using block_store_t = BlockStore<AccumT, block_threads, items_per_thread, AgentSegmentedScanPolicyT::store_algorithm>;
@@ -259,17 +264,25 @@ struct agent_segmented_scan
   //!
   template <typename InputBeginOffsetIteratorT,
             typename OutputBeginOffsetIteratorT,
-            int NumSegments = segments_per_block,
-            class           = ::cuda::std::enable_if_t<(NumSegments > 1)>>
+            typename Ty                     = OffsetT,
+            ::cuda::std::size_t NumSegments = segments_per_block,
+            class = ::cuda::std::enable_if_t<(NumSegments > 1) && (NumSegments != ::cuda::std::dynamic_extent)>>
   _CCCL_DEVICE _CCCL_FORCEINLINE void consume_ranges(
     InputBeginOffsetIteratorT inp_idx_begin_it,
-    OffsetT (&inp_idx_end)[NumSegments],
+    ::cuda::std::span<Ty, NumSegments> inp_idx_end,
     OutputBeginOffsetIteratorT out_idx_begin_it)
   {
     OffsetT items_per_block{0};
-    OffsetT(&cum_sizes)[NumSegments] = inp_idx_end;
+    ::cuda::std::span<Ty, NumSegments> cum_sizes{inp_idx_end};
 
-    for (int i = 0; i < NumSegments; ++i)
+    static_assert(::cuda::std::is_same_v<Ty, OffsetT>, "Unexpected span type");
+    static_assert(::cuda::std::is_same_v<::cuda::std::iter_value_t<InputBeginOffsetIteratorT>, OffsetT>,
+                  "Unexpected iterator type");
+    static_assert(::cuda::std::is_same_v<::cuda::std::iter_value_t<OutputBeginOffsetIteratorT>, OffsetT>,
+                  "Unexpected iterator type");
+    static_assert(NumSegments >= segments_per_block, "Span's extent is not sufficient");
+
+    for (int i = 0; i < static_cast<int>(NumSegments); ++i)
     {
       const OffsetT input_segment_begin = inp_idx_begin_it[i];
       const OffsetT segment_items       = ::cuda::std::max(inp_idx_end[i], input_segment_begin) - input_segment_begin;
@@ -354,18 +367,26 @@ struct agent_segmented_scan
 
   template <typename InputBeginOffsetIteratorT,
             typename OutputBeginOffsetIteratorT,
-            int NumSegments = segments_per_block,
-            class           = ::cuda::std::enable_if_t<(NumSegments > 1)>>
+            typename Ty                     = OffsetT,
+            ::cuda::std::size_t NumSegments = segments_per_block,
+            class = ::cuda::std::enable_if_t<(NumSegments > 1) && (NumSegments != ::cuda::std::dynamic_extent)>>
   _CCCL_DEVICE _CCCL_FORCEINLINE void consume_ranges(
     InputBeginOffsetIteratorT inp_idx_begin_it,
-    OffsetT (&inp_idx_end)[NumSegments],
+    ::cuda::std::span<Ty, NumSegments> inp_idx_end,
     OutputBeginOffsetIteratorT out_idx_begin_it,
     int n_segments)
   {
     OffsetT items_per_block{0};
-    OffsetT(&cum_sizes)[NumSegments] = inp_idx_end;
+    ::cuda::std::span<Ty, NumSegments> cum_sizes{inp_idx_end};
 
-    n_segments = ::cuda::std::min(n_segments, NumSegments);
+    static_assert(::cuda::std::is_same_v<Ty, OffsetT>, "Unexpected span type");
+    static_assert(::cuda::std::is_same_v<::cuda::std::iter_value_t<InputBeginOffsetIteratorT>, OffsetT>,
+                  "Unexpected iterator type");
+    static_assert(::cuda::std::is_same_v<::cuda::std::iter_value_t<OutputBeginOffsetIteratorT>, OffsetT>,
+                  "Unexpected iterator type");
+    static_assert(NumSegments >= segments_per_block, "Span's extent is not sufficient");
+
+    n_segments = ::cuda::std::min(n_segments, static_cast<int>(NumSegments));
 
     for (int i = 0; i < n_segments; ++i)
     {
@@ -468,15 +489,15 @@ private:
     return ::cuda::std::get<1>(fv);
   }
 
-  template <typename OffsetTy, int N>
+  template <typename OffsetTy, ::cuda::std::size_t N>
   _CCCL_DEVICE _CCCL_FORCEINLINE static bool
-  is_head_of_segment(const OffsetTy (&cumulative_sizes)[N], const OffsetTy item_id)
+  is_head_of_segment(::cuda::std::span<OffsetTy, N> cumulative_sizes, const OffsetTy item_id)
   {
     static_assert(N > 1, "Array size should be greater than one");
 
     bool is_segment_head{item_id == cumulative_sizes[0]};
 #pragma unroll
-    for (int j = 1; j < N; ++j)
+    for (int j = 1; j < static_cast<int>(N); ++j)
     {
       is_segment_head = is_segment_head || (item_id == cumulative_sizes[j]);
     }
@@ -499,12 +520,12 @@ private:
     }
   };
 
-  template <typename IterTy, typename OffsetTy, typename Ty, int N, typename BeginOffsetIterTy>
+  template <typename IterTy, typename OffsetTy, typename SpanTy, typename BeginOffsetIterTy>
   struct multi_segmented_iterator
   {
     IterTy m_it;
     OffsetTy m_start;
-    Ty (&m_offsets)[N];
+    SpanTy m_offsets;
     BeginOffsetIterTy m_it_idx_begin;
 
     using iterator_concept  = ::cuda::std::random_access_iterator_tag;
@@ -514,10 +535,10 @@ private:
     using reference         = ::cuda::std::iter_reference_t<IterTy>;
     using pointer           = void;
 
-    static_assert(::cuda::std::is_same_v<difference_type, ::cuda::std::decay_t<Ty>>, "types are inconsistent");
+    static_assert(::cuda::std::is_same_v<difference_type, typename SpanTy::value_type>, "types are inconsistent");
 
     _CCCL_DEVICE _CCCL_FORCEINLINE
-    multi_segmented_iterator(IterTy it, OffsetTy start, Ty (&cum_sizes)[N], BeginOffsetIterTy it_idx_begin)
+    multi_segmented_iterator(IterTy it, OffsetTy start, SpanTy cum_sizes, BeginOffsetIterTy it_idx_begin)
         : m_it{it}
         , m_start{start}
         , m_offsets{cum_sizes}
@@ -526,14 +547,13 @@ private:
 
     _CCCL_DEVICE _CCCL_FORCEINLINE decltype(auto) operator[](difference_type n) const
     {
-      const difference_type offset = m_start + n;
-      const auto begin_it          = m_offsets;
-      const auto end_it            = m_offsets + N;
+      static constexpr int offset_size = static_cast<int>(m_offsets.extent);
+      const difference_type offset     = m_start + n;
 
       difference_type shifted_offset = offset;
       int segment_id                 = 0;
 #pragma unroll
-      for (int i = 0; i + 1 < N; ++i)
+      for (int i = 0; i + 1 < offset_size; ++i)
       {
         if ((m_offsets[i] <= offset) && (offset < m_offsets[i + 1]))
         {
@@ -551,6 +571,7 @@ private:
     }
   };
 
+private:
   template <typename PrefixTy, typename BinaryOpTy>
   struct block_prefix_callback_t
   {
