@@ -364,11 +364,10 @@ struct DispatchScan
   template <typename ActivePolicyT>
   CUB_RUNTIME_FUNCTION _CCCL_HOST _CCCL_FORCEINLINE cudaError_t __invoke_lookahead_algorithm(ActivePolicyT = {})
   {
-
     constexpr int num_stages       = 6; // TODO(bgruber): tune this
     constexpr int numLookbackTiles = 96;
     constexpr int tile_size        = 63 * detail::scan::squadReduce.threadCount();
-    const int grid_dim             = (num_items + tile_size - 1) / size_t(tile_size);
+    const int grid_dim             = ::cuda::ceil_div(num_items, size_t(tile_size));
 
     if (d_temp_storage == nullptr)
     {
