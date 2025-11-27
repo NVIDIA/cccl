@@ -15,18 +15,15 @@
 struct Value
 {
   int mValue;
-  _CCCL_API Value(int value);
-  _CCCL_API int value() const;
+  _CCCL_API constexpr Value(int value) noexcept
+      : mValue(value)
+  {}
+
+  [[nodiscard]] _CCCL_API constexpr int value() const
+  {
+    return mValue;
+  }
 };
-
-_CCCL_API Value::Value(int value)
-    : mValue(value)
-{}
-
-_CCCL_API int Value::value() const
-{
-  return mValue;
-}
 
 struct Stages : Value
 {};
@@ -37,22 +34,22 @@ struct Warps : Value
 struct Align : Value
 {};
 
-_CCCL_API Stages stages(int value)
+[[nodiscard]] _CCCL_API Stages stages(int value)
 {
   return Stages{value};
 }
 
-_CCCL_API Elems elems(int value)
+[[nodiscard]] _CCCL_API Elems elems(int value)
 {
   return Elems{value};
 }
 
-_CCCL_API Warps warps(int value)
+[[nodiscard]] _CCCL_API Warps warps(int value)
 {
   return Warps{value};
 }
 
-_CCCL_API Align align(int value)
+[[nodiscard]] _CCCL_API Align align(int value)
 {
   return Align{value};
 }
