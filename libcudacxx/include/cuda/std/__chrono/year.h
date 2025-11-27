@@ -36,46 +36,46 @@ namespace chrono
 class year
 {
 private:
-  short __y_;
+  short __year_;
 
 public:
   _CCCL_HIDE_FROM_ABI year() = default;
-  _CCCL_API explicit constexpr year(int __val) noexcept
-      : __y_(static_cast<short>(__val))
+  _CCCL_API explicit constexpr year(int __year) noexcept
+      : __year_(static_cast<short>(__year))
   {}
 
   _CCCL_API constexpr year& operator++() noexcept
   {
-    ++__y_;
+    ++__year_;
     return *this;
   }
   _CCCL_API constexpr year operator++(int) noexcept
   {
     year __tmp = *this;
-    ++__y_;
+    ++__year_;
     return __tmp;
   }
   _CCCL_API constexpr year& operator--() noexcept
   {
-    --__y_;
+    --__year_;
     return *this;
   }
   _CCCL_API constexpr year operator--(int) noexcept
   {
     year __tmp = *this;
-    --__y_;
+    --__year_;
     return __tmp;
   }
 
   _CCCL_API constexpr year& operator+=(const years& __dy) noexcept
   {
-    __y_ = static_cast<short>(static_cast<int>(__y_) + __dy.count());
+    __year_ = static_cast<short>(static_cast<int>(__year_) + __dy.count());
     return *this;
   }
 
   _CCCL_API constexpr year& operator-=(const years& __dy) noexcept
   {
-    __y_ = static_cast<short>(static_cast<int>(__y_) - __dy.count());
+    __year_ = static_cast<short>(static_cast<int>(__year_) - __dy.count());
     return *this;
   }
 
@@ -86,22 +86,22 @@ public:
 
   [[nodiscard]] _CCCL_API constexpr year operator-() const noexcept
   {
-    return year{-__y_};
+    return year{-__year_};
   }
 
   [[nodiscard]] _CCCL_API constexpr bool is_leap() const noexcept
   {
-    return __y_ % 4 == 0 && (__y_ % 100 != 0 || __y_ % 400 == 0);
+    return __year_ % 4 == 0 && (__year_ % 100 != 0 || __year_ % 400 == 0);
   }
 
   _CCCL_API explicit constexpr operator int() const noexcept
   {
-    return __y_;
+    return __year_;
   }
 
   [[nodiscard]] _CCCL_API constexpr bool ok() const noexcept
   {
-    return static_cast<int>(min()) <= __y_ && __y_ <= static_cast<int>(max());
+    return static_cast<int>(min()) <= __year_ && __year_ <= static_cast<int>(max());
   }
 
   [[nodiscard]] _CCCL_API static constexpr year min() noexcept

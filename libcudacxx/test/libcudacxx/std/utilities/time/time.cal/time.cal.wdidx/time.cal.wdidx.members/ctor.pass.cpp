@@ -25,26 +25,24 @@
 
 #include "test_macros.h"
 
-int main(int, char**)
+__host__ __device__ constexpr bool test()
 {
   using weekday         = cuda::std::chrono::weekday;
   using weekday_indexed = cuda::std::chrono::weekday_indexed;
 
+  weekday_indexed wdi0{};
+  assert(wdi0.weekday() == weekday{});
+  assert(wdi0.index() == 0);
+  assert(!wdi0.ok());
   static_assert(noexcept(weekday_indexed{}));
+
+  weekday_indexed wdi1{cuda::std::chrono::Sunday, 2};
+  assert(wdi1.weekday() == cuda::std::chrono::Sunday);
+  assert(wdi1.index() == 2);
+  assert(wdi1.ok());
   static_assert(noexcept(weekday_indexed(weekday{1}, 1)));
 
-  constexpr weekday_indexed wdi0{};
-  static_assert(wdi0.weekday() == weekday{}, "");
-  static_assert(wdi0.index() == 0, "");
-  static_assert(!wdi0.ok(), "");
-
-  constexpr weekday_indexed wdi1{cuda::std::chrono::Sunday, 2};
-  static_assert(wdi1.weekday() == cuda::std::chrono::Sunday, "");
-  static_assert(wdi1.index() == 2, "");
-  static_assert(wdi1.ok(), "");
-
-  auto constexpr Tuesday = cuda::std::chrono::Tuesday;
-
+  constexpr auto Tuesday = cuda::std::chrono::Tuesday;
   for (unsigned i = 1; i <= 5; ++i)
   {
     weekday_indexed wdi(Tuesday, i);
@@ -58,6 +56,14 @@ int main(int, char**)
     weekday_indexed wdi(Tuesday, i);
     assert(!wdi.ok());
   }
+
+  return true;
+}
+
+int main(int, char**)
+{
+  test();
+  static_assert(test());
 
   return 0;
 }
