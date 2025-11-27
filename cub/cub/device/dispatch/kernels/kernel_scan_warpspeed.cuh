@@ -24,8 +24,9 @@
 #include <cub/warp/warp_scan.cuh>
 
 #include <cuda/ptx>
-
-#include <cassert>
+#include <cuda/std/__functional/invoke.h>
+#include <cuda/std/__utility/move.h>
+#include <cuda/std/cassert>
 
 #include <cudaTypedefs.h>
 
@@ -125,14 +126,14 @@ _CCCL_DEVICE_API inline void squadStoreSmem(Squad squad, Tp* smemBuf, const Tp (
   }
 }
 
-template <typename Tp, int elemPerThread>
-_CCCL_DEVICE_API inline Tp threadReduce(const Tp (&regInput)[elemPerThread])
+template <typename Tp, int elemPerThread, typename ScanOpT>
+_CCCL_DEVICE_API inline Tp threadReduce(const Tp (&regInput)[elemPerThread], ScanOpT& scan_op)
 {
-  return ThreadReduce(regInput, ::cuda::std::plus<>{});
+  return ThreadReduce(regInput, scan_op);
 }
 
-template <typename Tp>
-_CCCL_DEVICE_API inline Tp warpReduce(const Tp input)
+template <typename Tp, typename ScanOpT>
+_CCCL_DEVICE_API inline Tp warpReduce(const Tp input, ScanOpT& scan_op)
 {
   using warp_reduce_t = WarpReduce<Tp>;
 
@@ -141,11 +142,11 @@ _CCCL_DEVICE_API inline Tp warpReduce(const Tp input)
                 "WarpReduce with non-trivial temporary storage is not supported yet in this kernel.");
 
   typename warp_reduce_t::TempStorage temp_storage;
-  return warp_reduce_t{temp_storage}.Reduce(input, ::cuda::std::plus<>{});
+  return warp_reduce_t{temp_storage}.Reduce(input, scan_op);
 }
 
-template <typename Tp>
-_CCCL_DEVICE_API inline Tp warpScanExclusive(const Tp regInput)
+template <typename Tp, typename ScanOpT>
+_CCCL_DEVICE_API inline Tp warpScanExclusive(const Tp regInput, ScanOpT& scan_op)
 {
   using warp_scan_t = WarpScan<Tp>;
 
@@ -156,24 +157,15 @@ _CCCL_DEVICE_API inline Tp warpScanExclusive(const Tp regInput)
   Tp result;
   typename warp_scan_t::TempStorage temp_storage;
 
-  warp_scan_t{temp_storage}.ExclusiveScan(regInput, result, ::cuda::std::plus<>{});
+  warp_scan_t{temp_storage}.ExclusiveScan(regInput, result, scan_op);
 
   return result;
 }
 
-template <int elemPerThread, typename AccumT>
-_CCCL_DEVICE_API inline void threadScanInclusive(AccumT (&regArray)[elemPerThread])
+template <int elemPerThread, typename AccumT, typename ScanOpT>
+_CCCL_DEVICE_API inline void threadScanInclusive(AccumT (&regArray)[elemPerThread], ScanOpT& scan_op)
 {
-  detail::ThreadScanInclusive(regArray, regArray, ::cuda::std::plus<>{});
-}
-
-template <int elemPerThread, typename AccumT>
-_CCCL_DEVICE_API inline void threadAdd(AccumT (&reg)[elemPerThread], AccumT value)
-{
-  for (int i = 0; i < elemPerThread; ++i)
-  {
-    reg[i] += value;
-  }
+  detail::ThreadScanInclusive(regArray, regArray, scan_op);
 }
 
 template <typename AccumT>
@@ -247,13 +239,14 @@ _CCCL_DEVICE_API inline void warpLoadLookback(
 // The function must be called from a single warp. All passed arguments must be
 // warp-uniform.
 //
-template <int numTmpStatesPerThread, typename AccumT>
+template <int numTmpStatesPerThread, typename AccumT, typename ScanOpT>
 _CCCL_DEVICE_API inline AccumT warpIncrementalLookback(
   SpecialRegisters specialRegisters,
   tmp_state_t<AccumT>* ptrTmpBuffer,
   const int idxTilePrev,
   const AccumT sumExclusiveCtaPrev,
-  const int idxTileNext)
+  const int idxTileNext,
+  ScanOpT& scan_op)
 {
   const int laneIdx    = specialRegisters.laneIdx;
   const int lanemaskEq = ::cuda::ptx::get_sreg_lanemask_eq();
@@ -302,11 +295,11 @@ _CCCL_DEVICE_API inline AccumT warpIncrementalLookback(
       {
         localSum = regTmpStates[idx].value;
       }
-      localSum = warpReduce(localSum);
+      localSum = warpReduce(localSum, scan_op);
 
       if (warpIsCumSum == 0)
       {
-        sumExclusiveCtaCur += localSum;
+        sumExclusiveCtaCur = scan_op(sumExclusiveCtaCur, localSum);
       }
       else
       {
@@ -372,7 +365,7 @@ struct ScanResources
 
   SmemResource<InOutT> smemInOut;
   SmemResource<uint4> smemNextBlockIdx;
-  SmemResource<int> smemSumExclusiveCta;
+  SmemResource<AccumT> smemSumExclusiveCta;
   SmemResource<SumThreadAndWarpT> smemSumThreadAndWarp;
 };
 // Function to allocate resources.
@@ -429,9 +422,14 @@ allocResources(SyncHandler& syncHandler, SmemAllocator& smemAllocator, const Sca
 // warp-specialization dispatch is performed once at the start of the kernel and
 // not in any of the hot loops (even if that may seem the case from a first
 // glance at the code).
-template <int numLookbackTiles, int tile_size, typename ScanKernelParams, typename AccumT, typename InitValueT>
+template <int numLookbackTiles,
+          int tile_size,
+          typename ScanKernelParams,
+          typename AccumT,
+          typename ScanOpT,
+          typename InitValueT>
 _CCCL_DEVICE_API inline void
-kernelBody(Squad squad, SpecialRegisters specialRegisters, const ScanKernelParams& params, InitValueT)
+kernelBody(Squad squad, SpecialRegisters specialRegisters, const ScanKernelParams& params, ScanOpT scan_op, InitValueT)
 {
   ////////////////////////////////////////////////////////////////////////////////
   // Resources
@@ -510,21 +508,21 @@ kernelBody(Squad squad, SpecialRegisters specialRegisters, const ScanKernelParam
       ////////////////////////////////////////////////////////////////////////////////
       // Load tile from shared memory
       ////////////////////////////////////////////////////////////////////////////////
-      AccumT regThreadSum = 0;
-      AccumT regWarpSum   = 0;
+      AccumT regThreadSum{};
+      AccumT regWarpSum{};
       {
         // Acquire phaseInOutRW in this short scope
         SmemRef refInOutRW = phaseInOutRW.acquireRef();
         // Load data
         constexpr int elemPerThread    = tile_size / squadReduce.threadCount();
-        AccumT regInput[elemPerThread] = {0};
+        AccumT regInput[elemPerThread] = {AccumT{}};
         squadLoadSmem(squad, regInput, refInOutRW.data());
 
         ////////////////////////////////////////////////////////////////////////////////
         // Reduce across thread and warp
         ////////////////////////////////////////////////////////////////////////////////
-        regThreadSum = threadReduce(regInput);
-        regWarpSum   = warpReduce(regThreadSum);
+        regThreadSum = threadReduce(regInput, scan_op);
+        regWarpSum   = warpReduce(regThreadSum, scan_op);
       }
 
       ////////////////////////////////////////////////////////////////////////////////
@@ -541,10 +539,10 @@ kernelBody(Squad squad, SpecialRegisters specialRegisters, const ScanKernelParam
       ////////////////////////////////////////////////////////////////////////////////
       // Reduce across squad
       ////////////////////////////////////////////////////////////////////////////////
-      AccumT regSquadSum = 0;
+      AccumT regSquadSum{};
       for (int i = 0; i < squadReduce.warpCount(); ++i)
       {
-        regSquadSum += refSumThreadAndWarpW.data()[squadReduce.threadCount() + i];
+        regSquadSum = scan_op(regSquadSum, refSumThreadAndWarpW.data()[squadReduce.threadCount() + i]);
       }
       ////////////////////////////////////////////////////////////////////////////////
       // Store private sum for lookback
@@ -570,7 +568,7 @@ kernelBody(Squad squad, SpecialRegisters specialRegisters, const ScanKernelParam
       static_assert(numLookbackTiles % 32 == 0, "numLookbackTiles must be a multiple of 32");
 
       AccumT regSumExclusiveCta = warpIncrementalLookback<numTmpStatesPerThread>(
-        specialRegisters, params.ptrTmp, idxTilePrev, sumExclusiveCtaPrev, idxTile);
+        specialRegisters, params.ptrTmp, idxTilePrev, sumExclusiveCtaPrev, idxTile, scan_op);
       if (squad.isLeaderThread())
       {
         refSumExclusiveCtaW.data() = regSumExclusiveCta;
@@ -585,7 +583,7 @@ kernelBody(Squad squad, SpecialRegisters specialRegisters, const ScanKernelParam
       static_assert(tile_size % squadScanStore.threadCount() == 0);
 
       // Sum of all threads up to but not including this one
-      AccumT sumExclusive = 0;
+      AccumT sumExclusive{};
 
       ////////////////////////////////////////////////////////////////////////////////
       // Scan across warp and thread sums
@@ -603,15 +601,15 @@ kernelBody(Squad squad, SpecialRegisters specialRegisters, const ScanKernelParam
           // We want a predicated unrolled loop here.
           if (i < squad.warpRank())
           {
-            sumExclusive += refSumThreadAndWarpR.data()[squadReduce.threadCount() + i];
+            sumExclusive = scan_op(sumExclusive, refSumThreadAndWarpR.data()[squadReduce.threadCount() + i]);
           }
         }
         // Add the sums of preceding threads in this warp to the cumulative sum.
         // Lane 0 reads invalid data.
         AccumT regSumThread = refSumThreadAndWarpR.data()[squad.threadRank()];
         // Perform scan of thread sums
-        AccumT sumExclusiveIntraWarp = warpScanExclusive(regSumThread);
-        sumExclusive += sumExclusiveIntraWarp;
+        AccumT sumExclusiveIntraWarp = warpScanExclusive(regSumThread, scan_op);
+        sumExclusive                 = scan_op(sumExclusive, sumExclusiveIntraWarp);
       }
 
       ////////////////////////////////////////////////////////////////////////////////
@@ -622,7 +620,7 @@ kernelBody(Squad squad, SpecialRegisters specialRegisters, const ScanKernelParam
         SmemRef refSumExclusiveCtaR = phaseSumExclusiveCtaR.acquireRef();
         // Add the sums of preceding CTAs to the cumulative sum.
         AccumT regSumExclusiveCta = refSumExclusiveCtaR.data();
-        sumExclusive += regSumExclusiveCta;
+        sumExclusive              = scan_op(sumExclusive, regSumExclusiveCta);
       }
 
       ////////////////////////////////////////////////////////////////////////////////
@@ -635,8 +633,8 @@ kernelBody(Squad squad, SpecialRegisters specialRegisters, const ScanKernelParam
       squadLoadSmem(squad, regSumInclusive, refInOutRW.data());
 
       // Perform inclusive scan of register array in current thread.
-      regSumInclusive[0] += sumExclusive;
-      threadScanInclusive(regSumInclusive);
+      regSumInclusive[0] = scan_op(regSumInclusive[0], sumExclusive);
+      threadScanInclusive(regSumInclusive, scan_op);
 
       ////////////////////////////////////////////////////////////////////////////////
       // Store result to shared memory
@@ -668,17 +666,22 @@ kernelBody(Squad squad, SpecialRegisters specialRegisters, const ScanKernelParam
   }
 }
 
-template <int tile_size, int numLookbackTiles, typename ScanKernelParams, typename AccumT, typename InitValueT>
+template <int tile_size,
+          int numLookbackTiles,
+          typename ScanKernelParams,
+          typename AccumT,
+          typename ScanOpT,
+          typename InitValueT>
 __launch_bounds__(squadCountThreads(scanSquads), 1) __global__
-  void scan(const __grid_constant__ ScanKernelParams params, InitValueT init_value)
+  void scan(const __grid_constant__ ScanKernelParams params, ScanOpT scan_op, InitValueT init_value)
 {
   // Cache special registers at start of kernel
   SpecialRegisters specialRegisters = getSpecialRegisters();
 
   // Dispatch for warp-specialization
   squadDispatch(specialRegisters, scanSquads, [&](Squad squad) {
-    kernelBody<numLookbackTiles, tile_size, ScanKernelParams, AccumT, InitValueT>(
-      squad, specialRegisters, params, init_value);
+    kernelBody<numLookbackTiles, tile_size, ScanKernelParams, AccumT, ScanOpT, InitValueT>(
+      squad, specialRegisters, params, ::cuda::std::move(scan_op), init_value);
   });
 }
 
