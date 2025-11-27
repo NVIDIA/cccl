@@ -103,23 +103,23 @@ _CCCL_DEVICE_API inline void squadStoreTmaSync(const Squad& squad, int* ptrOut, 
   ::cuda::ptx::cp_async_bulk_wait_group_read(::cuda::ptx::n32_t<0>{});
 }
 
-template <int elemPerThread, int numThreads>
+template <typename Tp, int elemPerThread>
 _CCCL_DEVICE_API inline void
-loadSmem(int (&outReg)[elemPerThread], const int (&buf)[numThreads][elemPerThread], int squadThreadRank)
+squadLoadSmem(Squad squad, Tp (&outReg)[elemPerThread], const Tp * smemBuf)
 {
   for (int i = 0; i < elemPerThread; ++i)
   {
-    outReg[i] = buf[squadThreadRank][i];
+    outReg[i] = smemBuf[squad.threadRank() * elemPerThread + i];
   }
 }
 
-template <int elemPerThread, int numThreads>
+template <typename Tp, int elemPerThread>
 _CCCL_DEVICE_API inline void
-storeSmem(int (&smemBuf)[numThreads][elemPerThread], const int (&inReg)[elemPerThread], int squadThreadRank)
+squadStoreSmem(Squad squad, Tp* smemBuf, const Tp (&inReg)[elemPerThread])
 {
   for (int i = 0; i < elemPerThread; ++i)
   {
-    smemBuf[squadThreadRank][i] = inReg[i];
+    smemBuf[squad.threadRank() * elemPerThread + i] = inReg[i];
   }
 }
 
@@ -369,7 +369,7 @@ struct ScanResources
 {
   static constexpr int elemPerThread = tileSize / squadReduce.threadCount();
 
-  using InOutT            = int[squadReduce.threadCount()][elemPerThread];
+  using InOutT            = int[squadReduce.threadCount() * elemPerThread];
   using SumThreadAndWarpT = int[squadReduce.threadCount() + squadReduce.warpCount()];
 
   SmemResource<InOutT> smemInOut;
@@ -518,7 +518,7 @@ _CCCL_DEVICE_API inline void kernelBody(Squad squad, SpecialRegisters specialReg
         // Load data
         constexpr int elemPerThread = tile_size / squadReduce.threadCount();
         int regInput[elemPerThread] = {0};
-        loadSmem(regInput, refInOutRW.data(), squad.threadRank());
+        squadLoadSmem(squad, regInput, refInOutRW.data());
 
         ////////////////////////////////////////////////////////////////////////////////
         // Reduce across thread and warp
@@ -632,7 +632,7 @@ _CCCL_DEVICE_API inline void kernelBody(Squad squad, SpecialRegisters specialReg
 
       // Acquire refInOut for remainder of scope.
       SmemRef refInOutRW = phaseInOutRW.acquireRef();
-      loadSmem(regSumInclusive, refInOutRW.data(), squad.threadRank());
+      squadLoadSmem(squad, regSumInclusive, refInOutRW.data());
 
       // Perform inclusive scan of register array in current thread.
       regSumInclusive[0] += sumExclusive;
@@ -641,7 +641,7 @@ _CCCL_DEVICE_API inline void kernelBody(Squad squad, SpecialRegisters specialReg
       ////////////////////////////////////////////////////////////////////////////////
       // Store result to shared memory
       ////////////////////////////////////////////////////////////////////////////////
-      storeSmem(refInOutRW.data(), regSumInclusive, squad.threadRank());
+      squadStoreSmem(squad, refInOutRW.data(), regSumInclusive);
       // We do *not* release refSmemInOut here, because we will issue a TMA
       // instruction below. Instead, we issue a squad-local syncthreads +
       // fence.proxy.async to sync the shared memory writes with the TMA store.
