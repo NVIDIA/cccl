@@ -16,6 +16,9 @@
 
 #include <cuda/std/cstdint> // uint*_t
 
+#include <nv/target> // NV_IF_TARGET
+
+
 struct SmemAllocator
 {
   uint32_t mPtrSmem32 = 0;
