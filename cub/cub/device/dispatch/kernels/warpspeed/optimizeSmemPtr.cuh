@@ -2,8 +2,18 @@
 // SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 #pragma once
 
+#include <cub/config.cuh>
+
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
+
 template <typename T>
-static inline __device__ T* optimizeSmemPtr(const T* smemGeneric)
+static _CCCL_DEVICE_API T* optimizeSmemPtr(const T* smemGeneric)
 {
   // See https://nvbugspro.nvidia.com/bug/4907996
 

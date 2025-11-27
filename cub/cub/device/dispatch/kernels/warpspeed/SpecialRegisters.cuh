@@ -1,10 +1,20 @@
 #pragma once
 
+#include <cub/config.cuh>
+
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
+
+#include <cub/device/dispatch/kernels/warpspeed/makeWarpUniform.cuh> // makeWarpUniform.cuh
+
 #include <cuda/ptx> // cuda::ptx
+#include <cuda/std/cstdint> // uint32_t
 
-#include <cstdint> // uint32_t
-
-#include "makeWarpUniform.cuh" // makeWarpUniform.cuh
 
 namespace ptx = cuda::ptx;
 
@@ -19,7 +29,7 @@ struct SpecialRegisters
   const uint32_t laneIdx;
 };
 
-static inline __device__ SpecialRegisters getSpecialRegisters()
+static _CCCL_DEVICE_API SpecialRegisters getSpecialRegisters()
 {
   uint32_t clusterCtaRank = ptx::get_sreg_cluster_ctarank();
   uint32_t threadIdxX     = threadIdx.x;

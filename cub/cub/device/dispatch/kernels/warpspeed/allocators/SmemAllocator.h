@@ -2,16 +2,26 @@
 // SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 #pragma once
 
-#include <cstdint> // uint*_t
+#include <cub/config.cuh>
 
-#include "../optimizeSmemPtr.cuh" // optimizeSmemPtr.cuh
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
+
+#include <cub/device/dispatch/kernels/warpspeed/optimizeSmemPtr.cuh> // optimizeSmemPtr.cuh
+
+#include <cuda/std/cstdint> // uint*_t
 
 struct SmemAllocator
 {
   uint32_t mPtrSmem32 = 0;
   int mAllocatedSize  = 0;
 
-  __host__ __device__ inline SmemAllocator()
+  _CCCL_API SmemAllocator()
   {
     NV_IF_TARGET(NV_IS_DEVICE,
                  (extern __shared__ char warpSpeedDynamicSmemBase[];
@@ -25,7 +35,7 @@ struct SmemAllocator
   SmemAllocator& operator=(const SmemAllocator&)  = delete; // Delete copy assignment
   SmemAllocator& operator=(const SmemAllocator&&) = delete; // Delete move assignment
 
-  __host__ __device__ inline void* alloc(uint32_t size, uint32_t align = 0)
+  _CCCL_API void* alloc(uint32_t size, uint32_t align = 0)
   {
     // Align mPtrSmem32 to requested alignment (round-up)
     uint32_t ptrAllocation32 = (mPtrSmem32 + (align - 1)) & ~(align - 1);
@@ -44,7 +54,7 @@ struct SmemAllocator
       (return nullptr;))
   }
 
-  __host__ __device__ inline uint32_t sizeBytes() const
+  _CCCL_API uint32_t sizeBytes() const
   {
     return mAllocatedSize;
   }
