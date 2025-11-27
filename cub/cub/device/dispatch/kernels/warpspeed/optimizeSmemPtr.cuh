@@ -15,7 +15,7 @@
 CUB_NAMESPACE_BEGIN
 
 template <typename _Tp>
-_CCCL_DEVICE_API static _Tp* optimizeSmemPtr(const _Tp* smemGeneric)
+[[nodiscard]] _CCCL_DEVICE_API inline _Tp* optimizeSmemPtr(const _Tp* smemGeneric)
 {
   // See https://nvbugspro.nvidia.com/bug/4907996
 
