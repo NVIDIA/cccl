@@ -2,12 +2,20 @@
 // SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 #pragma once
 
+#include <cub/config.cuh>
+
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
+
+#include <cub/device/dispatch/kernels/warpspeed/SpecialRegisters.cuh> // SpecialRegisters
+#include <cub/device/dispatch/kernels/warpspeed/SquadDesc.h> // SquadDesc
+
 #include <cuda/ptx> // ptx::elect_sync()
-
-#include <cuda_runtime.h> // __host__, __device__
-
-#include "../SpecialRegisters.cuh" // SpecialRegisters
-#include "SquadDesc.h" // SquadDesc
 
 namespace ptx = cuda::ptx;
 // Squad - device squad instance
@@ -25,14 +33,14 @@ struct Squad : SquadDesc
   bool mIsWarpLeader = false;
   bool mIsLeaderWarp = false;
 
-  __device__ inline Squad(SquadDesc squadStatic, SpecialRegisters specialRegisters);
+  _CCCL_DEVICE_API inline Squad(SquadDesc squadStatic, SpecialRegisters specialRegisters);
 
-  __device__ inline int warpRank() const;
-  __device__ inline int threadRank() const;
-  __device__ inline bool isLeaderThread() const;
-  __device__ inline bool isLeaderWarp() const;
-  __device__ inline bool isLeaderThreadOfWarp() const;
-  __device__ inline void syncThreads();
+  _CCCL_DEVICE_API inline int warpRank() const;
+  _CCCL_DEVICE_API inline int threadRank() const;
+  _CCCL_DEVICE_API inline bool isLeaderThread() const;
+  _CCCL_DEVICE_API inline bool isLeaderWarp() const;
+  _CCCL_DEVICE_API inline bool isLeaderThreadOfWarp() const;
+  _CCCL_DEVICE_API inline void syncThreads();
 };
 // squadDispatch
 //
@@ -44,10 +52,10 @@ struct Squad : SquadDesc
 // Typically, the user will call the kernel body with the active squad.
 //
 template <int numSquads, typename F>
-__device__ inline void
+_CCCL_DEVICE_API inline void
 squadDispatch(SpecialRegisters sr, const SquadDesc (&squads)[numSquads], F f, int warpIdxStart = 0);
 // Squad
-__device__ inline Squad::Squad(SquadDesc squadStatic, SpecialRegisters specialRegisters)
+_CCCL_DEVICE_API inline Squad::Squad(SquadDesc squadStatic, SpecialRegisters specialRegisters)
     : SquadDesc(squadStatic)
     , mSpecialRegisters(specialRegisters)
 {
@@ -55,31 +63,31 @@ __device__ inline Squad::Squad(SquadDesc squadStatic, SpecialRegisters specialRe
   mIsLeaderWarp = warpRank() == 0;
 }
 
-__device__ inline int Squad::warpRank() const
+_CCCL_DEVICE_API inline int Squad::warpRank() const
 {
   return mSpecialRegisters.warpIdx % this->warpCount();
 }
 
-__device__ inline int Squad::threadRank() const
+_CCCL_DEVICE_API inline int Squad::threadRank() const
 {
   return mSpecialRegisters.threadIdxX % this->threadCount();
 }
 
-__device__ inline bool Squad::isLeaderThread() const
+_CCCL_DEVICE_API inline bool Squad::isLeaderThread() const
 {
   return mIsWarpLeader && mIsLeaderWarp;
 }
-__device__ inline bool Squad::isLeaderWarp() const
+_CCCL_DEVICE_API inline bool Squad::isLeaderWarp() const
 {
   return mIsLeaderWarp;
 }
 
-__device__ inline bool Squad::isLeaderThreadOfWarp() const
+_CCCL_DEVICE_API inline bool Squad::isLeaderThreadOfWarp() const
 {
   return mIsWarpLeader;
 }
 
-__device__ inline void Squad::syncThreads()
+_CCCL_DEVICE_API inline void Squad::syncThreads()
 {
   // barrier 0 is reserved for __syncthreads(). We use barrier ids 1, ...
   int barrierIdx = (int) this->mSquadIdx + 1;
@@ -101,7 +109,8 @@ __device__ inline void Squad::syncThreads()
 // reductions.
 //
 template <int numSquads, typename F>
-__device__ inline void squadDispatch(SpecialRegisters sr, const SquadDesc (&squads)[numSquads], F f, int warpIdxStart)
+_CCCL_DEVICE_API inline void
+squadDispatch(SpecialRegisters sr, const SquadDesc (&squads)[numSquads], F f, int warpIdxStart)
 {
   static_assert(numSquads > 0);
   if (numSquads == 1)

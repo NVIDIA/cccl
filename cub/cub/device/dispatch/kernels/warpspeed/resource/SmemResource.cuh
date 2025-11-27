@@ -2,35 +2,44 @@
 // SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 #pragma once
 
-#include <cstdint> // uint8_t
+#include <cub/config.cuh>
 
-#include "../allocators/SmemAllocator.h" // SmemAllocator
-#include "../SyncHandler.h" // SyncHandler
-#include "../values.h" // Stages, Elems
-#include "SmemResourceRaw.cuh" // SmemResourceRaw
-#include "SmemStage.cuh" // SmemStage
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
+
+#include <cub/device/dispatch/kernels/warpspeed/allocators/SmemAllocator.h> // SmemAllocator
+#include <cub/device/dispatch/kernels/warpspeed/SmemResourceRaw.cuh> // SmemResourceRaw
+#include <cub/device/dispatch/kernels/warpspeed/SmemStage.cuh> // SmemStage
+#include <cub/device/dispatch/kernels/warpspeed/SyncHandler.h> // SyncHandler
+#include <cub/device/dispatch/kernels/warpspeed/values.h> // Stages, Elems
+
+#include <cuda/std/cstdint> // uint8_t
 
 template <typename T>
 struct SmemResource : SmemResourceRaw
 {
-  __device__ SmemResource(SmemResourceRaw smemResourceRaw);
-  __device__ [[nodiscard]] SmemStage<T> popStage();
+  _CCCL_DEVICE_API SmemResource(SmemResourceRaw smemResourceRaw);
+  _CCCL_DEVICE_API [[nodiscard]] SmemStage<T> popStage();
 };
 
 template <typename T>
-__device__ SmemResource<T>::SmemResource(SmemResourceRaw smemResourceRaw)
+_CCCL_DEVICE_API SmemResource<T>::SmemResource(SmemResourceRaw smemResourceRaw)
     : SmemResourceRaw(smemResourceRaw)
 {}
 
 template <typename T>
-__device__ SmemStage<T> SmemResource<T>::popStage()
+_CCCL_DEVICE_API SmemStage<T> SmemResource<T>::popStage()
 {
   return SmemStage<T>(*this);
 }
 
 template <typename StageType, int stageCount>
-__host__ __device__ SmemResource<StageType>
-makeSmemResource(SyncHandler& syncHandler, StageType (&smemBuffer)[stageCount])
+_CCCL_API SmemResource<StageType> makeSmemResource(SyncHandler& syncHandler, StageType (&smemBuffer)[stageCount])
 {
   int sizeBytes = sizeof(smemBuffer[0]);
   int stride    = sizeof(smemBuffer[0]);
@@ -40,7 +49,7 @@ makeSmemResource(SyncHandler& syncHandler, StageType (&smemBuffer)[stageCount])
 }
 
 template <typename StageType>
-__host__ __device__ SmemResource<StageType>
+_CCCL_API SmemResource<StageType>
 makeSmemResource(SyncHandler& syncHandler, SmemAllocator& smemAllocator, Stages stages, Elems elems)
 {
   int align       = alignof(StageType);
@@ -53,8 +62,7 @@ makeSmemResource(SyncHandler& syncHandler, SmemAllocator& smemAllocator, Stages 
 }
 
 template <typename StageType>
-__host__ __device__ SmemResource<StageType>
-makeSmemResource(SyncHandler& syncHandler, SmemAllocator& smemAllocator, Stages stages)
+_CCCL_API SmemResource<StageType> makeSmemResource(SyncHandler& syncHandler, SmemAllocator& smemAllocator, Stages stages)
 {
   return makeSmemResource<StageType>(syncHandler, smemAllocator, stages, elems(1));
 }
