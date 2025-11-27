@@ -35,12 +35,12 @@ struct SquadDesc
       , mWarpCount(warpCount)
   {}
 
-  [[nodiscard]] _CCCL_API constexpr int warpCount() noexcept const
+  [[nodiscard]] _CCCL_API constexpr int warpCount() const noexcept
   {
     return mWarpCount;
   }
 
-  [[nodiscard]] _CCCL_API constexpr int threadCount() noexcept const
+  [[nodiscard]] _CCCL_API constexpr int threadCount() const noexcept
   {
     return 32 * warpCount();
   }
@@ -61,7 +61,7 @@ struct SquadDesc
 // descriptors. It is used to launch a kernel with the correct number of
 // threads.
 template <int numSquads>
-[[nodiscard]] _CCCL_API constexpr int squadCountThreads(const SquadDesc (&squads)[numSquads]);
+[[nodiscard]] _CCCL_API constexpr int squadCountThreads(const SquadDesc (&squads)[numSquads])
 {
   int sumThreads = 0;
   for (int gi = 0; gi < numSquads; ++gi)
