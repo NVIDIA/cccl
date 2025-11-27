@@ -88,7 +88,7 @@ C2H_TEST("Device scan works with all device interfaces", "[scan][device]", full_
   //     max_items,
   //   }));
 
-  const offset_t num_items = 8064;
+  const offset_t num_items = 500 * 63 * 128;
 
   // // Input data generation to test
   // const gen_data_t data_gen_mode = GENERATE_COPY(gen_data_t::GEN_TYPE_RANDOM, gen_data_t::GEN_TYPE_CONST);
