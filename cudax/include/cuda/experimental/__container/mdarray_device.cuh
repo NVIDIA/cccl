@@ -156,26 +156,21 @@ public:
     }
     //_CCCL_THROW_IF(this->extents() != __other.extents(), ::std::invalid_argument{"Extents do not match"});
     _CCCL_VERIFY(this->extents() == __other.extents(), "Extents do not match");
-    static_cast<base_type&>(*this) = static_cast<base_type>(__other);
-    if (__other.data_handle() != nullptr && this->data_handle() != nullptr)
+    if (__other.data_handle() != nullptr)
     {
       cub::detail::copy_mdspan::copy(__other.view(), view(), ::cudaStream_t{nullptr});
-    }
-    else
-    {
-      this->template __get<0>() = nullptr;
     }
     return *this;
   }
 
-  _CCCL_HOST_API device_mdarray(device_mdarray&& __other)
+  _CCCL_HOST_API device_mdarray(device_mdarray&& __other) noexcept
       : __allocator_base{__other.__device_}
       , base_type{::cuda::std::exchange(static_cast<base_type&>(__other), base_type{})}
       , __device_{__other.__device_}
   {}
 
   // only mdarray with the same extents can be moved assigned
-  _CCCL_HIDE_FROM_ABI device_mdarray& operator=(device_mdarray&& __other)
+  _CCCL_HIDE_FROM_ABI device_mdarray& operator=(device_mdarray&& __other) noexcept
   {
     if (this == &__other)
     {
