@@ -37,7 +37,7 @@ struct SmemAllocator
   SmemAllocator& operator=(const SmemAllocator&)  = delete; // Delete copy assignment
   SmemAllocator& operator=(const SmemAllocator&&) = delete; // Delete move assignment
 
-  _CCCL_API void* alloc(uint32_t size, uint32_t align = 0)
+  [[nodiscard]] _CCCL_API void* alloc(uint32_t size, uint32_t align = 0)
   {
     // Align mPtrSmem32 to requested alignment (round-up)
     uint32_t ptrAllocation32 = (mPtrSmem32 + (align - 1)) & ~(align - 1);
@@ -56,7 +56,7 @@ struct SmemAllocator
       (return nullptr;))
   }
 
-  _CCCL_API uint32_t sizeBytes() const
+  [[nodiscard]] _CCCL_API uint32_t sizeBytes() const
   {
     return mAllocatedSize;
   }
