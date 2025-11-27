@@ -20,10 +20,10 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__cmath/logarithms.h>
 #include <cuda/std/__limits/numeric_limits.h>
 #include <cuda/std/__random/is_valid.h>
 #include <cuda/std/__random/uniform_real_distribution.h>
-#include <cuda/std/cmath>
 
 #if !_CCCL_COMPILER(NVRTC)
 #  include <iosfwd>
@@ -78,17 +78,15 @@ public:
   };
 
 private:
-  param_type __p_;
+  param_type __p_{result_type{0}, result_type{1}};
 
 public:
   // constructor and reset functions
-  _CCCL_API constexpr extreme_value_distribution()
-      : extreme_value_distribution(result_type{0})
-  {}
-  _CCCL_API constexpr explicit extreme_value_distribution(result_type __a, result_type __b = result_type{1})
+  _CCCL_HIDE_FROM_ABI constexpr extreme_value_distribution() noexcept = default;
+  _CCCL_API constexpr explicit extreme_value_distribution(result_type __a, result_type __b = result_type{1}) noexcept
       : __p_{param_type{__a, __b}}
   {}
-  _CCCL_API constexpr explicit extreme_value_distribution(const param_type& __p)
+  _CCCL_API constexpr explicit extreme_value_distribution(const param_type& __p) noexcept
       : __p_{__p}
   {}
   _CCCL_API constexpr void reset() noexcept {}
@@ -105,7 +103,7 @@ public:
     static_assert(__cccl_random_is_valid_urng<_URng>, "URng must meet the UniformRandomBitGenerator requirements");
     return __p.a()
          - __p.b()
-             * ::cuda::std::log(-::cuda::std::log(result_type{1} - uniform_real_distribution<result_type>()(__g)));
+             * ::cuda::std::log(-::cuda::std::log(result_type{1} - uniform_real_distribution<result_type>{}(__g)));
   }
 
   // property functions
