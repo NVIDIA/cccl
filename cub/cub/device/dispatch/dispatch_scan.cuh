@@ -394,10 +394,7 @@ struct DispatchScan
       return error;
     }
 
-    int block_dim    = squadCountThreads(detail::scan::scanSquads);
-    size_t num_tiles = num_items / size_t(tile_size);
-
-    detail::scan::initTmpStates<tile_size><<<int(num_tiles) / 128 + 1, 128>>>(
+    detail::scan::initTmpStates<tile_size><<<::cuda::ceil_div(grid_dim, 128), 128>>>(
       (int*) d_in, // TODO(ahendriksen): HACK FIX
       (detail::scan::tmp_state_t*) d_temp_storage,
       (int*) d_out, // TODO(ahendriksen): HACK FIX
@@ -408,6 +405,7 @@ struct DispatchScan
       return error;
     }
 
+    const int block_dim = squadCountThreads(detail::scan::scanSquads);
     kernel_ptr<<<grid_dim, block_dim, smem_size, stream>>>(params);
     return CubDebug(cudaGetLastError());
   }
