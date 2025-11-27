@@ -19,6 +19,9 @@
 #include <cub/device/dispatch/kernels/warpspeed/SpecialRegisters.cuh> // SpecialRegisters
 #include <cub/device/dispatch/kernels/warpspeed/squad/Squad.h> // squadDispatch, ...
 #include <cub/device/dispatch/kernels/warpspeed/values.h> // stages
+#include <cub/thread/thread_reduce.cuh>
+#include <cub/warp/warp_reduce.cuh>
+#include <cub/warp/warp_scan.cuh>
 
 #include <cuda/ptx>
 
@@ -104,8 +107,7 @@ _CCCL_DEVICE_API inline void squadStoreTmaSync(const Squad& squad, int* ptrOut, 
 }
 
 template <typename Tp, int elemPerThread>
-_CCCL_DEVICE_API inline void
-squadLoadSmem(Squad squad, Tp (&outReg)[elemPerThread], const Tp * smemBuf)
+_CCCL_DEVICE_API inline void squadLoadSmem(Squad squad, Tp (&outReg)[elemPerThread], const Tp* smemBuf)
 {
   for (int i = 0; i < elemPerThread; ++i)
   {
@@ -114,8 +116,7 @@ squadLoadSmem(Squad squad, Tp (&outReg)[elemPerThread], const Tp * smemBuf)
 }
 
 template <typename Tp, int elemPerThread>
-_CCCL_DEVICE_API inline void
-squadStoreSmem(Squad squad, Tp* smemBuf, const Tp (&inReg)[elemPerThread])
+_CCCL_DEVICE_API inline void squadStoreSmem(Squad squad, Tp* smemBuf, const Tp (&inReg)[elemPerThread])
 {
   for (int i = 0; i < elemPerThread; ++i)
   {
@@ -123,53 +124,46 @@ squadStoreSmem(Squad squad, Tp* smemBuf, const Tp (&inReg)[elemPerThread])
   }
 }
 
-template <int elemPerThread>
-_CCCL_DEVICE_API inline int threadReduce(const int (&regInput)[elemPerThread])
+template <typename T, int elemPerThread>
+_CCCL_DEVICE_API inline T threadReduce(const T (&regInput)[elemPerThread])
 {
-  int sum = 0;
-  for (int i = 0; i < elemPerThread; ++i)
-  {
-    sum += regInput[i];
-  }
-  return sum;
+  return ThreadReduce(regInput, ::cuda::std::plus<>{});
 }
 
-_CCCL_DEVICE_API inline int warpReduce(const int input)
+template <typename T>
+_CCCL_DEVICE_API inline T warpReduce(const T input)
 {
-  int sum = __reduce_add_sync(~0, input);
-  return sum;
+  using warp_reduce_t = WarpReduce<T>;
+
+  // TODO (elstehle): Do proper temporary storage allocation in case WarpReduce may rely on it
+  static_assert(sizeof(typename warp_reduce_t::TempStorage) <= 4,
+                "WarpReduce with non-trivial temporary storage is not supported yet in this kernel.");
+
+  typename warp_reduce_t::TempStorage temp_storage;
+  return warp_reduce_t{temp_storage}.Reduce(input, ::cuda::std::plus<>{});
 }
 
-_CCCL_DEVICE_API inline int warpScanExclusive(const int regInput)
+template <typename T>
+_CCCL_DEVICE_API inline T warpScanExclusive(const T regInput)
 {
-  // Warp scan of cumsum
-  int sumInclusive = regInput;
-  for (int i = 1; i < 32; i *= 2)
-  {
-    bool shlfInRange;
-    int tmp = shfl_sync_up(shlfInRange, sumInclusive, i, 0, ~0);
-    if (shlfInRange)
-    {
-      sumInclusive += tmp;
-    }
-  }
-  // Make scan exclusive
-  bool shlfInRange;
-  int tmp          = shfl_sync_up(shlfInRange, sumInclusive, 1, 0, ~0);
-  int sumExclusive = shlfInRange ? tmp : 0;
+  using warp_scan_t = WarpScan<T>;
 
-  return sumExclusive;
+  // TODO (elstehle): Do proper temporary storage allocation in case WarpReduce may rely on it
+  static_assert(sizeof(typename warp_scan_t::TempStorage) <= 4,
+                "WarpScan with non-trivial temporary storage is not supported yet in this kernel.");
+
+  T result;
+  typename warp_scan_t::TempStorage temp_storage;
+
+  warp_scan_t{temp_storage}.ExclusiveScan(regInput, result, ::cuda::std::plus<>{});
+
+  return result;
 }
 
 template <int elemPerThread>
 _CCCL_DEVICE_API inline void threadScanInclusive(int (&regArray)[elemPerThread])
 {
-  int sumInclusive = 0;
-  for (int i = 0; i < elemPerThread; ++i)
-  {
-    sumInclusive += regArray[i];
-    regArray[i] = sumInclusive;
-  }
+  detail::ThreadScanInclusive(regArray, regArray, ::cuda::std::plus<>{});
 }
 
 template <int elemPerThread>
