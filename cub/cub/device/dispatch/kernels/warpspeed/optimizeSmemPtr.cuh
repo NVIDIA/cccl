@@ -13,7 +13,7 @@
 #endif // no system header
 
 template <typename T>
-static _CCCL_DEVICE_API T* optimizeSmemPtr(const T* smemGeneric)
+static [[nodiscard]] _CCCL_DEVICE_API T* optimizeSmemPtr(const T* smemGeneric)
 {
   // See https://nvbugspro.nvidia.com/bug/4907996
 
