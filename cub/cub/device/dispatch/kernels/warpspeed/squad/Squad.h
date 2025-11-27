@@ -13,7 +13,7 @@
 #endif // no system header
 
 #include <cub/device/dispatch/kernels/warpspeed/SpecialRegisters.cuh>
-#include <cub/device/dispatch/kernels/warpspeed/SquadDesc.h>
+#include <cub/device/dispatch/kernels/warpspeed/squad/SquadDesc.h>
 
 #include <cuda/__ptx/instructions/elect_sync.h>
 

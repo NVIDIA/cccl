@@ -13,8 +13,8 @@
 #endif // no system header
 
 #include <cub/device/dispatch/kernels/warpspeed/constantAssert.h>
-#include <cub/device/dispatch/kernels/warpspeed/SmemPhase.cuh>
-#include <cub/device/dispatch/kernels/warpspeed/SmemResourceRaw.cuh>
+#include <cub/device/dispatch/kernels/warpspeed/resource/SmemPhase.cuh>
+#include <cub/device/dispatch/kernels/warpspeed/resource/SmemResourceRaw.cuh>
 
 #include <cuda/std/__tuple_dir/structured_bindings.h>
 #include <cuda/std/cstdint>
