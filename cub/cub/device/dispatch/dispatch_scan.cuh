@@ -400,21 +400,63 @@ struct DispatchScan
     detail::scan::allocResources<tile_size, scanKernelParams, AccumT>(syncHandler, smemAllocator, params);
 
     int smem_size = smemAllocator.sizeBytes();
-    if (const auto error = cudaFuncSetAttribute(kernel_ptr, cudaFuncAttributeMaxDynamicSharedMemorySize, smem_size))
+    if (const auto error =
+          CubDebug(cudaFuncSetAttribute(kernel_ptr, cudaFuncAttributeMaxDynamicSharedMemorySize, smem_size)))
     {
       return error;
     }
 
-    detail::scan::initTmpStates<tile_size>
-      <<<::cuda::ceil_div(grid_dim, 128), 128>>>(reinterpret_cast<tmp_state_t*>(d_temp_storage), grid_dim);
-    if (const auto error = CubDebug(cudaGetLastError()))
+    // Invoke init_kernel to initialize tile descriptors
     {
-      return error;
+      const auto init_grid_size      = ::cuda::ceil_div(grid_dim, 128);
+      const auto init_kernel_threads = 128;
+
+#ifdef CUB_DEBUG_LOG
+      _CubLog(
+        "Invoking initTmpStates<<<%d, %d, 0, , %lld>>>()\n", init_grid_size, init_kernel_threads, (long long) stream);
+#endif // CUB_DEBUG_LOG
+
+      launcher_factory(init_grid_size, init_kernel_threads, 0, stream)
+        .doit(detail::scan::initTmpStates<tile_size, AccumT>, reinterpret_cast<tmp_state_t*>(d_temp_storage), grid_dim);
+
+      // Check for failure to launch
+      if (const auto error = CubDebug(cudaPeekAtLastError()))
+      {
+        return error;
+      }
+
+      // Sync the stream if specified to flush runtime errors
+      if (const auto error = CubDebug(detail::DebugSyncStream(stream)))
+      {
+        return error;
+      }
     }
 
-    const int block_dim = squadCountThreads(detail::scan::scanSquads);
-    kernel_ptr<<<grid_dim, block_dim, smem_size, stream>>>(params, ::cuda::std::move(scan_op), init_value);
-    return CubDebug(cudaGetLastError());
+    // Invoke scan_kernel
+    {
+      const int block_dim = squadCountThreads(detail::scan::scanSquads);
+
+#ifdef CUB_DEBUG_LOG
+      _CubLog("Invoking scan<<<%d, %d, %d, %lld>>>()\n", grid_dim, block_dim, smem_size, (long long) stream);
+#endif // CUB_DEBUG_LOG
+
+      launcher_factory(grid_dim, block_dim, smem_size, stream)
+        .doit(kernel_ptr, params, ::cuda::std::move(scan_op), init_value);
+
+      // Check for failure to launch
+      if (const auto error = CubDebug(cudaPeekAtLastError()))
+      {
+        return error;
+      }
+
+      // Sync the stream if specified to flush runtime errors
+      if (const auto error = CubDebug(detail::DebugSyncStream(stream)))
+      {
+        return error;
+      }
+    }
+
+    return cudaSuccess;
   }
 
   template <typename ActivePolicyT>
