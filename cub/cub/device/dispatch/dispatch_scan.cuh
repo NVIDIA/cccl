@@ -371,7 +371,7 @@ struct DispatchScan
       return cudaSuccess;
     }
 
-    constexpr int num_stages       = 2; // TODO(bgruber): tune this
+    constexpr int num_stages       = 6; // TODO(bgruber): tune this
     constexpr int numLookbackTiles = 96;
     constexpr int tile_size        = 63 * detail::scan::squadReduce.threadCount();
     const int grid_dim             = (num_items + tile_size - 1) / size_t(tile_size);
@@ -399,9 +399,9 @@ struct DispatchScan
     size_t num_tiles = num_items / size_t(tile_size);
 
     detail::scan::initTmpStates<tile_size><<<int(num_tiles) / 128 + 1, 128>>>(
-      (int*) d_in,              // TODO(ahendriksen): HACK FIX
+      (int*) d_in, // TODO(ahendriksen): HACK FIX
       (detail::scan::tmp_state_t*) d_temp_storage,
-      (int*) d_out,             // TODO(ahendriksen): HACK FIX
+      (int*) d_out, // TODO(ahendriksen): HACK FIX
       num_items,
       /*do_check=*/false);
     if (const auto error = CubDebug(cudaGetLastError()))
