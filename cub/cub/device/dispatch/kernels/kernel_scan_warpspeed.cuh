@@ -30,9 +30,7 @@ CUB_NAMESPACE_BEGIN
 
 namespace detail::scan
 {
-namespace ptx = cuda::ptx;
-
-static __device__ inline int shfl_sync_up(bool& in_range, int value, int offset, int c, int member_mask)
+_CCCL_DEVICE_API inline int shfl_sync_up(bool& in_range, int value, int offset, int c, int member_mask)
 {
   unsigned int output;
   int tmp_in_range;
@@ -62,49 +60,52 @@ struct tmp_state_t
   int value;
 };
 
-__device__ void squadGetNextBlockIdx(const Squad& squad, SmemRef<uint4>& refDestSmem)
+_CCCL_DEVICE_API inline void squadGetNextBlockIdx(const Squad& squad, SmemRef<uint4>& refDestSmem)
 {
   if (squad.isLeaderThread())
   {
-    ptx::clusterlaunchcontrol_try_cancel(&refDestSmem.data(), refDestSmem.ptrCurBarrierRelease());
+    ::cuda::ptx::clusterlaunchcontrol_try_cancel(&refDestSmem.data(), refDestSmem.ptrCurBarrierRelease());
   }
   refDestSmem.squadIncreaseTxCount(squad, refDestSmem.sizeBytes());
 }
 
 template <typename T>
-__device__ void squadLoadTma(const Squad& squad, SmemRef<T>& refDestSmem, const int* ptrIn)
+_CCCL_DEVICE_API inline void squadLoadTma(const Squad& squad, SmemRef<T>& refDestSmem, const int* ptrIn)
 {
   void* ptrSmem    = refDestSmem.data();
   uint64_t* ptrBar = refDestSmem.ptrCurBarrierRelease();
 
   if (squad.isLeaderThread())
   {
-    ptx::cp_async_bulk(ptx::space_cluster, ptx::space_global, ptrSmem, ptrIn, refDestSmem.sizeBytes(), ptrBar);
+    ::cuda::ptx::cp_async_bulk(
+      ::cuda::ptx::space_cluster, ::cuda::ptx::space_global, ptrSmem, ptrIn, refDestSmem.sizeBytes(), ptrBar);
   }
   refDestSmem.squadIncreaseTxCount(squad, refDestSmem.sizeBytes());
 }
 
 template <typename T>
-__device__ void squadStoreTmaSync(const Squad& squad, int* ptrOut, SmemRef<T>& refSrcSmem)
+_CCCL_DEVICE_API inline void squadStoreTmaSync(const Squad& squad, int* ptrOut, SmemRef<T>& refSrcSmem)
 {
   // Acquire shared memory in async proxy
   if (squad.isLeaderWarp())
   {
     // Perform fence.proxy.async with full warp to avoid BSSY+BSYNC
-    ptx::fence_proxy_async(ptx::space_shared);
+    ::cuda::ptx::fence_proxy_async(::cuda::ptx::space_shared);
   }
   if (squad.isLeaderThread())
   {
     // Issue TMA store
-    ptx::cp_async_bulk(ptx::space_global, ptx::space_shared, ptrOut, refSrcSmem.data(), refSrcSmem.sizeBytes());
+    ::cuda::ptx::cp_async_bulk(
+      ::cuda::ptx::space_global, ::cuda::ptx::space_shared, ptrOut, refSrcSmem.data(), refSrcSmem.sizeBytes());
   }
   // Commit and wait for store to have completed reading from shared memory
-  ptx::cp_async_bulk_commit_group();
-  ptx::cp_async_bulk_wait_group_read(ptx::n32_t<0>{});
+  ::cuda::ptx::cp_async_bulk_commit_group();
+  ::cuda::ptx::cp_async_bulk_wait_group_read(::cuda::ptx::n32_t<0>{});
 }
 
 template <int elemPerThread, int numThreads>
-__device__ void loadSmem(int (&outReg)[elemPerThread], const int (&buf)[numThreads][elemPerThread], int squadThreadRank)
+_CCCL_DEVICE_API inline void
+loadSmem(int (&outReg)[elemPerThread], const int (&buf)[numThreads][elemPerThread], int squadThreadRank)
 {
   for (int i = 0; i < elemPerThread; ++i)
   {
@@ -113,7 +114,7 @@ __device__ void loadSmem(int (&outReg)[elemPerThread], const int (&buf)[numThrea
 }
 
 template <int elemPerThread, int numThreads>
-__device__ void
+_CCCL_DEVICE_API inline void
 storeSmem(int (&smemBuf)[numThreads][elemPerThread], const int (&inReg)[elemPerThread], int squadThreadRank)
 {
   for (int i = 0; i < elemPerThread; ++i)
@@ -123,7 +124,7 @@ storeSmem(int (&smemBuf)[numThreads][elemPerThread], const int (&inReg)[elemPerT
 }
 
 template <int elemPerThread>
-__device__ int threadReduce(const int (&regInput)[elemPerThread])
+_CCCL_DEVICE_API inline int threadReduce(const int (&regInput)[elemPerThread])
 {
   int sum = 0;
   for (int i = 0; i < elemPerThread; ++i)
@@ -133,13 +134,13 @@ __device__ int threadReduce(const int (&regInput)[elemPerThread])
   return sum;
 }
 
-__device__ int warpReduce(const int input)
+_CCCL_DEVICE_API inline int warpReduce(const int input)
 {
   int sum = __reduce_add_sync(~0, input);
   return sum;
 }
 
-__device__ int warpScanExclusive(const int regInput)
+_CCCL_DEVICE_API inline int warpScanExclusive(const int regInput)
 {
   // Warp scan of cumsum
   int sumInclusive = regInput;
@@ -161,7 +162,7 @@ __device__ int warpScanExclusive(const int regInput)
 }
 
 template <int elemPerThread>
-__device__ void threadScanInclusive(int (&regArray)[elemPerThread])
+_CCCL_DEVICE_API inline void threadScanInclusive(int (&regArray)[elemPerThread])
 {
   int sumInclusive = 0;
   for (int i = 0; i < elemPerThread; ++i)
@@ -172,7 +173,7 @@ __device__ void threadScanInclusive(int (&regArray)[elemPerThread])
 }
 
 template <int elemPerThread>
-__device__ void threadAdd(int (&reg)[elemPerThread], int value)
+_CCCL_DEVICE_API inline void threadAdd(int (&reg)[elemPerThread], int value)
 {
   for (int i = 0; i < elemPerThread; ++i)
   {
@@ -180,7 +181,7 @@ __device__ void threadAdd(int (&reg)[elemPerThread], int value)
   }
 }
 
-__device__ void storeLookback(tmp_state_t* ptrTmpBuffer, int idxTile, scan_state scanState, int sum)
+_CCCL_DEVICE_API inline void storeLookback(tmp_state_t* ptrTmpBuffer, int idxTile, scan_state scanState, int sum)
 {
   tmp_state_t* dst = ptrTmpBuffer + idxTile;
 
@@ -210,7 +211,7 @@ __device__ void storeLookback(tmp_state_t* ptrTmpBuffer, int idxTile, scan_state
 // idxTileNext, i.e., idxTileNext <= idxTileCur + ii, then the state is not
 // loaded from memory and filled with {PRIV_SUM, 0}.
 template <int numTmpStatesPerThread>
-__device__ void warpLoadLookback(
+_CCCL_DEVICE_API inline void warpLoadLookback(
   int laneIdx,
   tmp_state_t (&outTmpStates)[numTmpStatesPerThread],
   tmp_state_t* ptrTmpBuffer,
@@ -250,7 +251,7 @@ __device__ void warpLoadLookback(
 // warp-uniform.
 //
 template <int numTmpStatesPerThread>
-__device__ int warpIncrementalLookback(
+_CCCL_DEVICE_API inline int warpIncrementalLookback(
   SpecialRegisters specialRegisters,
   tmp_state_t* ptrTmpBuffer,
   const int idxTilePrev,
@@ -258,7 +259,7 @@ __device__ int warpIncrementalLookback(
   const int idxTileNext)
 {
   const int laneIdx    = specialRegisters.laneIdx;
-  const int lanemaskEq = ptx::get_sreg_lanemask_eq();
+  const int lanemaskEq = ::cuda::ptx::get_sreg_lanemask_eq();
 
   int idxTileCur         = idxTilePrev;
   int sumExclusiveCtaCur = sumExclusiveCtaPrev;
@@ -348,18 +349,13 @@ struct scanKernelParams
 };
 // Definition of squads
 
-static constexpr __device__ SquadDesc squadReduce(/*squadIdx=*/0,
-                                                  /*numWarps=*/4);
-static constexpr __device__ SquadDesc squadScanStore(/*squadIdx=*/1,
-                                                     /*numWarps=*/4);
-static constexpr __device__ SquadDesc squadLoad(/*squadIdx=*/2,
-                                                /*numWarps=*/1);
-static constexpr __device__ SquadDesc squadSched(/*squadIdx=*/3,
-                                                 /*numWarps=*/1);
-static constexpr __device__ SquadDesc squadLookback(/*squadIdx=*/4,
-                                                    /*numWarps=*/1);
+_CCCL_GLOBAL_CONSTANT SquadDesc squadReduce{/*squadIdx=*/0, /*numWarps=*/4};
+_CCCL_GLOBAL_CONSTANT SquadDesc squadScanStore{/*squadIdx=*/1, /*numWarps=*/4};
+_CCCL_GLOBAL_CONSTANT SquadDesc squadLoad{/*squadIdx=*/2, /*numWarps=*/1};
+_CCCL_GLOBAL_CONSTANT SquadDesc squadSched{/*squadIdx=*/3, /*numWarps=*/1};
+_CCCL_GLOBAL_CONSTANT SquadDesc squadLookback{/*squadIdx=*/4, /*numWarps=*/1};
 
-static constexpr __device__ SquadDesc scanSquads[] = {
+_CCCL_GLOBAL_CONSTANT SquadDesc scanSquads[] = {
   squadReduce,
   squadScanStore,
   squadLoad,
@@ -384,7 +380,7 @@ struct ScanResources
 // Function to allocate resources.
 
 template <int tileSize>
-__host__ __device__ ScanResources<tileSize>
+_CCCL_API ScanResources<tileSize>
 allocResources(SyncHandler& syncHandler, SmemAllocator& smemAllocator, const scanKernelParams& params)
 {
   using ScanResourcesT    = ScanResources<tileSize>;
@@ -436,7 +432,7 @@ allocResources(SyncHandler& syncHandler, SmemAllocator& smemAllocator, const sca
 // not in any of the hot loops (even if that may seem the case from a first
 // glance at the code).
 template <int numLookbackTiles, int tile_size>
-static inline __device__ void kernelBody(Squad squad, SpecialRegisters specialRegisters, const scanKernelParams& params)
+_CCCL_DEVICE_API inline void kernelBody(Squad squad, SpecialRegisters specialRegisters, const scanKernelParams& params)
 {
   ////////////////////////////////////////////////////////////////////////////////
   // Resources
@@ -507,7 +503,7 @@ static inline __device__ void kernelBody(Squad squad, SpecialRegisters specialRe
       regNextBlockIdx          = refNextBlockIdxR.data();
       refNextBlockIdxR.setFenceLdsToAsyncProxy();
     }
-    bool nextIdxTileValid = ptx::clusterlaunchcontrol_query_cancel_is_canceled(regNextBlockIdx);
+    bool nextIdxTileValid = ::cuda::ptx::clusterlaunchcontrol_query_cancel_is_canceled(regNextBlockIdx);
 
     if (squad == squadReduce)
     {
@@ -668,7 +664,7 @@ static inline __device__ void kernelBody(Squad squad, SpecialRegisters specialRe
       break;
     }
     // Update idxTile
-    idxTile = ptx::clusterlaunchcontrol_query_cancel_get_first_ctaid_x<int>(regNextBlockIdx);
+    idxTile = ::cuda::ptx::clusterlaunchcontrol_query_cancel_get_first_ctaid_x<int>(regNextBlockIdx);
   }
 }
 
