@@ -144,9 +144,11 @@ struct SyncHandler
 
   _CCCL_DEVICE_API inline void clusterInitSync(SpecialRegisters sr)
   {
-    clusterInitSync(sr, SkipSync{});
-    __cluster_barrier_arrive_relaxed();
-    __cluster_barrier_wait();
+    NV_IF_TARGET(NV_PROVIDES_SM_90, ({
+                   clusterInitSync(sr, SkipSync{});
+                   __cluster_barrier_arrive_relaxed();
+                   __cluster_barrier_wait();
+                 }))
   }
 };
 
