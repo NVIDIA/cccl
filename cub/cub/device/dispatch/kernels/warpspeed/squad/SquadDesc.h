@@ -2,7 +2,16 @@
 // SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 #pragma once
 
-#include <cuda_runtime.h> // __host__, __device__
+#include <cub/config.cuh>
+
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
+
 // SquadDesc - squad descriptor
 //
 // A squad is a collection of warps that work together in a warp-specialized
@@ -18,18 +27,18 @@ struct SquadDesc
   int mSquadIdx  = -1;
   int mWarpCount = -1;
 
-  __host__ __device__ inline constexpr SquadDesc(int squadIdx, int warpCount);
+  _CCCL_API constexpr SquadDesc(int squadIdx, int warpCount);
 
   // SquadDesc is a default-constructible, copyable, and movable type.
   inline constexpr SquadDesc() = default;
-  //__host__ __device__ inline constexpr SquadDesc(const SquadDesc& other) = default;
-  //__host__ __device__ inline constexpr SquadDesc& operator=(const SquadDesc& other) = default;
-  //__host__ __device__ inline constexpr SquadDesc(SquadDesc&& other) = default;
-  //__host__ __device__ inline constexpr SquadDesc& operator=(SquadDesc&& other) = default;
+  //_CCCL_API constexpr SquadDesc(const SquadDesc& other) = default;
+  //_CCCL_API constexpr SquadDesc& operator=(const SquadDesc& other) = default;
+  //_CCCL_API constexpr SquadDesc(SquadDesc&& other) = default;
+  //_CCCL_API constexpr SquadDesc& operator=(SquadDesc&& other) = default;
 
-  __host__ __device__ inline constexpr int warpCount() const;
-  __host__ __device__ inline constexpr int threadCount() const;
-  __host__ __device__ inline bool operator==(const SquadDesc& other) const;
+  _CCCL_API constexpr int warpCount() const;
+  _CCCL_API constexpr int threadCount() const;
+  _CCCL_API bool operator==(const SquadDesc& other) const;
 };
 // squadCountThreads
 //
@@ -37,31 +46,31 @@ struct SquadDesc
 // descriptors. It is used to launch a kernel with the correct number of
 // threads.
 template <int numSquads>
-__host__ __device__ inline constexpr int squadCountThreads(const SquadDesc (&squads)[numSquads]);
+_CCCL_API constexpr int squadCountThreads(const SquadDesc (&squads)[numSquads]);
 // SquadDesc
-__host__ __device__ inline constexpr SquadDesc::SquadDesc(int squadIdx, int warpCount)
+_CCCL_API constexpr SquadDesc::SquadDesc(int squadIdx, int warpCount)
     : mSquadIdx(squadIdx)
     , mWarpCount(warpCount)
 {}
 
-__host__ __device__ inline constexpr int SquadDesc::warpCount() const
+_CCCL_API constexpr int SquadDesc::warpCount() const
 {
   return mWarpCount;
 }
 
-__host__ __device__ inline constexpr int SquadDesc::threadCount() const
+_CCCL_API constexpr int SquadDesc::threadCount() const
 {
   return 32 * warpCount();
 }
 
-__host__ __device__ inline bool SquadDesc::operator==(const SquadDesc& other) const
+_CCCL_API bool SquadDesc::operator==(const SquadDesc& other) const
 {
   return this->mSquadIdx == other.mSquadIdx;
 }
 // squadCountThreads
 //
 template <int numSquads>
-__host__ __device__ inline constexpr int squadCountThreads(const SquadDesc (&squads)[numSquads])
+_CCCL_API constexpr int squadCountThreads(const SquadDesc (&squads)[numSquads])
 {
   int sumThreads = 0;
   for (int gi = 0; gi < numSquads; ++gi)

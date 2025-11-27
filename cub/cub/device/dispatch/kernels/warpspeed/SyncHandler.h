@@ -2,14 +2,23 @@
 // SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 #pragma once
 
+#include <cub/config.cuh>
+
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
+
+#include <cub/device/dispatch/kernels/warpspeed/constantAssert.h> // constantAssert
+#include <cub/device/dispatch/kernels/warpspeed/SpecialRegisters.cuh> // SpecialRegisters
+
+#include <cuda/std/cstdint> // uint8_t
+
 #include <nv/target> // NV_IF_TARGET
 
-#include <cstdint> // uint8_t
-
-#include <cuda_runtime.h> // __device__, __host__
-
-#include "constantAssert.h" // constantAssert
-#include "SpecialRegisters.cuh" // SpecialRegisters
 
 // SkipSync is a tag type that is used to indicate that a SyncHandler.blockInit
 // should forgo syncing.
@@ -32,8 +41,8 @@ struct SyncHandler
   int mNumOwningThreads[mMaxNumResources][mMaxNumPhases];
   uint64_t* mPtrBar[mMaxNumResources][mMaxNumPhases];
 
-  __host__ __device__ inline SyncHandler();
-  __host__ __device__ inline ~SyncHandler();
+  _CCCL_API SyncHandler();
+  _CCCL_API ~SyncHandler();
 
   // SyncHandler is a non-copyable, non-movable type. It must be passed by
   // (mutable) reference to be useful.
@@ -43,15 +52,15 @@ struct SyncHandler
   SyncHandler& operator=(const SyncHandler&&) = delete; // Delete move assignment
 
   // registerResource and registerPhase can be called on host and device.
-  __host__ __device__ inline int registerResource(int numStages);
-  __host__ __device__ inline void registerPhase(int resourceHandle, int numOwningThreads, uint64_t* ptrBar);
+  _CCCL_API int registerResource(int numStages);
+  _CCCL_API void registerPhase(int resourceHandle, int numOwningThreads, uint64_t* ptrBar);
 
   // clusterInitSync can only be called on device.
-  __device__ inline void clusterInitSync(SpecialRegisters sr, SkipSync);
-  __device__ inline void clusterInitSync(SpecialRegisters sr);
+  _CCCL_DEVICE_API inline void clusterInitSync(SpecialRegisters sr, SkipSync);
+  _CCCL_DEVICE_API inline void clusterInitSync(SpecialRegisters sr);
 };
 
-__host__ __device__ inline SyncHandler::SyncHandler()
+_CCCL_API SyncHandler::SyncHandler()
 {
   for (int ri = 0; ri < mMaxNumResources; ++ri)
   {
@@ -65,12 +74,12 @@ __host__ __device__ inline SyncHandler::SyncHandler()
   }
 }
 
-__host__ __device__ inline SyncHandler::~SyncHandler()
+_CCCL_API SyncHandler::~SyncHandler()
 {
   constantAssert(mHasInitialized, "SyncHandler must have been initialized at end of kernel.");
 }
 
-__host__ __device__ inline int SyncHandler::registerResource(int numStages)
+_CCCL_API int SyncHandler::registerResource(int numStages)
 {
   constantAssert(!mHasInitialized, "Cannot register resource after SyncHandler has been initialized.");
   // Avoid exceeding the max number of stages
@@ -85,7 +94,7 @@ __host__ __device__ inline int SyncHandler::registerResource(int numStages)
   return handle;
 }
 
-__host__ __device__ inline void SyncHandler::registerPhase(int resourceHandle, int numOwningThreads, uint64_t* ptrBar)
+_CCCL_API void SyncHandler::registerPhase(int resourceHandle, int numOwningThreads, uint64_t* ptrBar)
 {
   constantAssert(!mHasInitialized, "Cannot register phase after SyncHandler has been initialized.");
   constantAssert(resourceHandle < mNextResourceHandle, "Invalid resource handle.");
@@ -100,7 +109,7 @@ __host__ __device__ inline void SyncHandler::registerPhase(int resourceHandle, i
   mNumPhases[resourceHandle]++;
 }
 
-__device__ inline void SyncHandler::clusterInitSync(SpecialRegisters sr, SkipSync)
+_CCCL_DEVICE_API inline void SyncHandler::clusterInitSync(SpecialRegisters sr, SkipSync)
 {
   constantAssert(!mHasInitialized, "Cannot initialize SyncHandler twice.");
   mHasInitialized = true;
@@ -141,7 +150,7 @@ __device__ inline void SyncHandler::clusterInitSync(SpecialRegisters sr, SkipSyn
   }
 }
 
-__device__ inline void SyncHandler::clusterInitSync(SpecialRegisters sr)
+_CCCL_DEVICE_API inline void SyncHandler::clusterInitSync(SpecialRegisters sr)
 {
   clusterInitSync(sr, SkipSync{});
   __cluster_barrier_arrive_relaxed();
