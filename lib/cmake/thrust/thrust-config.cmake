@@ -935,28 +935,23 @@ if (NOT TARGET Thrust::Thrust)
   )
   unset(_THRUST_VERSION_INCLUDE_DIR CACHE) # Clear tmp variable from cache
   target_include_directories(_Thrust_Thrust INTERFACE "${_THRUST_INCLUDE_DIR}")
-  thrust_debug_target(Thrust::Thrust "${THRUST_VERSION}" internal)
 endif()
 
 if (NOT TARGET Thrust::libcudacxx)
-  if (TARGET CUB::libcudacxx)
-    _thrust_set_libcudacxx_target(CUB::libcudacxx)
-  else()
-    if (NOT TARGET libcudacxx::libcudacxx)
-      thrust_debug("Searching for libcudacxx REQUIRED" internal)
-      find_package(
-        libcudacxx
-        ${Thrust_VERSION}
-        EXACT
-        CONFIG
-        REQUIRED
-        ${_THRUST_QUIET_FLAG}
-        NO_DEFAULT_PATH # Only check the explicit HINTS below:
-        HINTS "${_THRUST_CMAKE_DIR}/../libcudacxx/"
-      )
-    endif()
-    _thrust_set_libcudacxx_target(libcudacxx::libcudacxx)
+  if (NOT TARGET libcudacxx::libcudacxx)
+    thrust_debug("Searching for libcudacxx REQUIRED" internal)
+    find_package(
+      libcudacxx
+      ${Thrust_VERSION}
+      EXACT
+      CONFIG
+      REQUIRED
+      ${_THRUST_QUIET_FLAG}
+      NO_DEFAULT_PATH # Only check the explicit HINTS below:
+      HINTS "${_THRUST_CMAKE_DIR}/../libcudacxx/"
+    )
   endif()
+  _thrust_set_libcudacxx_target(libcudacxx::libcudacxx)
 endif()
 
 # Handle find_package COMPONENT requests:
@@ -978,6 +973,8 @@ foreach (component ${${CMAKE_FIND_PACKAGE_NAME}_FIND_COMPONENTS})
 endforeach()
 
 thrust_update_system_found_flags()
+
+thrust_debug_target(Thrust::Thrust "${THRUST_VERSION}" internal)
 
 include(FindPackageHandleStandardArgs)
 if (NOT Thrust_CONFIG)
