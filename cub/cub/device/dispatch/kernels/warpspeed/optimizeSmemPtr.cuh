@@ -12,6 +12,8 @@
 #  pragma system_header
 #endif // no system header
 
+CUB_NAMESPACE_BEGIN
+
 template <typename T>
 static [[nodiscard]] _CCCL_DEVICE_API T* optimizeSmemPtr(const T* smemGeneric)
 {
@@ -29,3 +31,5 @@ static [[nodiscard]] _CCCL_DEVICE_API T* optimizeSmemPtr(const T* smemGeneric)
   //    In our case, `x` is smem32, which is exactly what we want.
   return reinterpret_cast<T*>(__cvta_shared_to_generic(smem32));
 }
+
+CUB_NAMESPACE_END

@@ -12,6 +12,8 @@
 #  pragma system_header
 #endif // no system header
 
+CUB_NAMESPACE_BEGIN
+
 struct Value
 {
   int mValue;
@@ -53,3 +55,5 @@ struct Align : Value
 {
   return Align{value};
 }
+
+CUB_NAMESPACE_END

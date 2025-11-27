@@ -12,6 +12,8 @@
 
 #include <cuda/std/cstdint>
 
+CUB_NAMESPACE_BEGIN
+
 // Move register to uniform register
 
 // For int32_t and uint32_t, we can use the new CREDUX instruction, which is
@@ -29,3 +31,5 @@ static [[nodiscard]] _CCCL_DEVICE_API uint64_t makeWarpUniform(uint64_t x)
 {
   return __shfl_sync(~0, x, 0);
 }
+
+CUB_NAMESPACE_END
