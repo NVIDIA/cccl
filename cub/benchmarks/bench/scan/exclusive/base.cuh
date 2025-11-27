@@ -67,7 +67,7 @@ static void basic(nvbench::state& state, nvbench::type_list<T, OffsetT>)
 try
 {
   using init_t         = T;
-  using wrapped_init_t = cub::detail::InputValue<init_t>;
+  using wrapped_init_t = cub::NullType; // cub::detail::InputValue<init_t>;
   using accum_t        = ::cuda::std::__accumulator_t<op_t, init_t, T>;
   using input_it_t     = const T*;
   using output_it_t    = T*;
