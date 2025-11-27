@@ -43,6 +43,7 @@
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/is_unsigned.h>
 #include <cuda/std/__type_traits/remove_pointer.h>
+#include <cuda/std/__utility/move.h>
 
 #include <cuda_runtime_api.h>
 #include <cudaTypedefs.h>
@@ -392,7 +393,7 @@ struct DispatchScan
       .numElem   = num_items,
       .numStages = num_stages};
 
-    auto kernel_ptr = detail::scan::scan<tile_size, numLookbackTiles, scanKernelParams, AccumT, InitValueT>;
+    auto kernel_ptr = detail::scan::scan<tile_size, numLookbackTiles, scanKernelParams, AccumT, ScanOpT, InitValueT>;
 
     SyncHandler syncHandler{};
     SmemAllocator smemAllocator{};
@@ -412,7 +413,7 @@ struct DispatchScan
     }
 
     const int block_dim = squadCountThreads(detail::scan::scanSquads);
-    kernel_ptr<<<grid_dim, block_dim, smem_size, stream>>>(params, init_value);
+    kernel_ptr<<<grid_dim, block_dim, smem_size, stream>>>(params, ::cuda::std::move(scan_op), init_value);
     return CubDebug(cudaGetLastError());
   }
 
