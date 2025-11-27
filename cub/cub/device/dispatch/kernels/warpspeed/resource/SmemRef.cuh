@@ -12,10 +12,10 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cub/device/dispatch/kernels/warpspeed/SmemResourceRaw.cuh> // SmemResourceRaw
-#include <cub/device/dispatch/kernels/warpspeed/squad/Squad.h> // Squad
+#include <cub/device/dispatch/kernels/warpspeed/SmemResourceRaw.cuh>
+#include <cub/device/dispatch/kernels/warpspeed/squad/Squad.h>
 
-#include <cuda/std/cstdint> // uint8_t
+#include <cuda/std/cstdint>
 
 template <typename T>
 struct SmemRef
@@ -26,7 +26,10 @@ struct SmemRef
   int mTxCount                 = 0;
   bool mDoFenceLdsToAsyncProxy = false;
 
-  _CCCL_DEVICE_API SmemRef(SmemResourceRaw& smemResourceRaw, int phase);
+  _CCCL_DEVICE_API SmemRef(SmemResourceRaw& smemResourceRaw, int phase) noexcept
+      : mSmemResourceRaw(smemResourceRaw)
+      , mCurPhase(phase)
+  {}
   // SmemRef is a non-copyable, non-movable type. It must be passed by (mutable)
   // reference to be useful. The reason is that it in case of an accidental copy
   // or move the destructor is called twice. This leads to double-arrivals on
@@ -36,69 +39,47 @@ struct SmemRef
   SmemRef& operator=(const SmemRef&)  = delete; // Delete copy assignment
   SmemRef& operator=(const SmemRef&&) = delete; // Delete move assignment
 
-  _CCCL_DEVICE_API T& data();
-  _CCCL_DEVICE_API int sizeBytes() const;
+  [[nodiscard]] _CCCL_DEVICE_API ~SmemRef()
+  {
+    if (mDoFenceLdsToAsyncProxy)
+    {
+      mSmemResourceRaw.fenceLdsToAsyncProxy();
+    }
+    if (mTxCountIsSet)
+    {
+      mSmemResourceRaw.releaseTx(mCurPhase, mTxCount);
+    }
+    else
+    {
+      mSmemResourceRaw.release(mCurPhase);
+    }
+  }
 
-  _CCCL_DEVICE_API uint64_t* ptrCurBarrierRelease();
+  [[nodiscard]] _CCCL_DEVICE_API T& data() noexcept
+  {
+    return reinterpret_cast<T&>(*(T*) mSmemResourceRaw.data());
+  }
 
-  _CCCL_DEVICE_API void squadIncreaseTxCount(const Squad& squad, int txCount);
-  _CCCL_DEVICE_API void setFenceLdsToAsyncProxy();
+  [[nodiscard]] _CCCL_DEVICE_API int sizeBytes() const noexcept
+  {
+    return mSmemResourceRaw.mSizeBytes;
+  }
 
-  _CCCL_DEVICE_API ~SmemRef();
+  [[nodiscard]] _CCCL_DEVICE_API uint64_t* ptrCurBarrierRelease()
+  {
+    return mSmemResourceRaw.ptrCurBarrierRelease(mCurPhase);
+  }
+
+  [[nodiscard]] _CCCL_DEVICE_API void squadIncreaseTxCount(const Squad& squad, int txCount)
+  {
+    mTxCountIsSet = true;
+    // Only leader thread increments txCount
+    txCount = squad.isLeaderThread() ? txCount : 0;
+    mTxCount += txCount;
+  }
+
+  [[nodiscard]] _CCCL_DEVICE_API void setFenceLdsToAsyncProxy() noexcept
+  {
+    mDoFenceLdsToAsyncProxy = true;
+  }
 };
-
-template <typename T>
-_CCCL_DEVICE_API SmemRef<T>::SmemRef(SmemResourceRaw& smemResourceRaw, int phase)
-    : mSmemResourceRaw(smemResourceRaw)
-    , mCurPhase(phase)
-{}
-
-template <typename T>
-_CCCL_DEVICE_API T& SmemRef<T>::data()
-{
-  return reinterpret_cast<T&>(*(T*) mSmemResourceRaw.data());
-}
-
-template <typename T>
-_CCCL_DEVICE_API int SmemRef<T>::sizeBytes() const
-{
-  return mSmemResourceRaw.mSizeBytes;
-}
-
-template <typename T>
-_CCCL_DEVICE_API uint64_t* SmemRef<T>::ptrCurBarrierRelease()
-{
-  return mSmemResourceRaw.ptrCurBarrierRelease(mCurPhase);
-}
-
-template <typename T>
-_CCCL_DEVICE_API void SmemRef<T>::squadIncreaseTxCount(const Squad& squad, int txCount)
-{
-  mTxCountIsSet = true;
-  // Only leader thread increments txCount
-  txCount = squad.isLeaderThread() ? txCount : 0;
-  mTxCount += txCount;
-}
-
-template <typename T>
-_CCCL_DEVICE_API void SmemRef<T>::setFenceLdsToAsyncProxy()
-{
-  mDoFenceLdsToAsyncProxy = true;
-}
-
-template <typename T>
-_CCCL_DEVICE_API SmemRef<T>::~SmemRef()
-{
-  if (mDoFenceLdsToAsyncProxy)
-  {
-    mSmemResourceRaw.fenceLdsToAsyncProxy();
-  }
-  if (mTxCountIsSet)
-  {
-    mSmemResourceRaw.releaseTx(mCurPhase, mTxCount);
-  }
-  else
-  {
-    mSmemResourceRaw.release(mCurPhase);
-  }
-}

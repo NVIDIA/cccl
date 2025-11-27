@@ -12,11 +12,10 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cub/device/dispatch/kernels/warpspeed/SmemRef.cuh> // SmemRef
-#include <cub/device/dispatch/kernels/warpspeed/SmemResourceRaw.cuh> // SmemResourceRaw
+#include <cub/device/dispatch/kernels/warpspeed/SmemRef.cuh>
+#include <cub/device/dispatch/kernels/warpspeed/SmemResourceRaw.cuh>
 
-#include <cuda/std/cstdint> // uint8_t
-
+#include <cuda/std/cstdint>
 
 template <typename T>
 struct SmemPhase
@@ -24,21 +23,16 @@ struct SmemPhase
   SmemResourceRaw& mSmemResourceRaw;
   int mCurPhase;
 
-  _CCCL_DEVICE_API SmemPhase(SmemResourceRaw& smemResourceRaw, int phase);
-  _CCCL_DEVICE_API SmemRef<T> acquireRef();
+  _CCCL_DEVICE_API SmemPhase(SmemResourceRaw& smemResourceRaw, int phase) noexcept
+      : mSmemResourceRaw(smemResourceRaw)
+      , mCurPhase(phase)
+  {}
+
+  [[nodiscard]] _CCCL_DEVICE_API SmemRef<T> acquireRef()
+  {
+    // Wait on barrier
+    mSmemResourceRaw.acquire(mCurPhase);
+    // Return ref
+    return SmemRef<T>(mSmemResourceRaw, mCurPhase);
+  }
 };
-
-template <typename T>
-_CCCL_DEVICE_API SmemPhase<T>::SmemPhase(SmemResourceRaw& smemResourceRaw, int phase)
-    : mSmemResourceRaw(smemResourceRaw)
-    , mCurPhase(phase)
-{}
-
-template <typename T>
-_CCCL_DEVICE_API SmemRef<T> SmemPhase<T>::acquireRef()
-{
-  // Wait on barrier
-  mSmemResourceRaw.acquire(mCurPhase);
-  // Return ref
-  return SmemRef<T>(mSmemResourceRaw, mCurPhase);
-}
