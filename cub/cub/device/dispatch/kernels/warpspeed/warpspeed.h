@@ -13,7 +13,6 @@
 #include <cub/device/dispatch/kernels/warpspeed/allocators/SmemAllocator.h>
 #include <cub/device/dispatch/kernels/warpspeed/warpspeed/constantAssert.h>
 #include <cub/device/dispatch/kernels/warpspeed/warpspeed/makeWarpUniform.cuh>
-#include <cub/device/dispatch/kernels/warpspeed/warpspeed/optimizeSmemPtr.cuh>
 #include <cub/device/dispatch/kernels/warpspeed/warpspeed/SpecialRegisters.cuh>
 #include <cub/device/dispatch/kernels/warpspeed/warpspeed/SyncHandler.h>
 #include <cub/device/dispatch/kernels/warpspeed/warpspeed/values.h>
