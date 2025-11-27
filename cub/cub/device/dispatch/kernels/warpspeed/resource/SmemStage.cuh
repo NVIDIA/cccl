@@ -67,7 +67,7 @@ struct SmemPhaseStructuredBinding
 
 // The binding function
 template <size_t numPhases, typename _Tp>
-static [[nodiscard]] _CCCL_DEVICE_API SmemPhaseStructuredBinding<_Tp, numPhases> bindPhases(SmemStage<_Tp>& smemStage)
+[[nodiscard]] _CCCL_DEVICE_API static SmemPhaseStructuredBinding<_Tp, numPhases> bindPhases(SmemStage<_Tp>& smemStage)
 {
   constantAssert(smemStage.mSmemResourceRaw.mNumPhases == numPhases,
                  "Number of bound phases must match resource phases.");
@@ -81,14 +81,14 @@ CUB_NAMESPACE_END
 namespace std
 {
 template <typename _Tp, size_t numPhases>
-struct tuple_size<SmemPhaseStructuredBinding<_Tp, numPhases>>
+struct tuple_size<CUB_NS_QUALIFIER::SmemPhaseStructuredBinding<_Tp, numPhases>>
 {
   static constexpr size_t value = numPhases;
 };
 
 template <typename _Tp, size_t _Index, size_t numPhases>
-struct tuple_element<_Index, SmemPhaseStructuredBinding<_Tp, numPhases>>
+struct tuple_element<_Index, CUB_NS_QUALIFIER::SmemPhaseStructuredBinding<_Tp, numPhases>>
 {
-  using type = SmemPhase<_Tp>;
+  using type = CUB_NS_QUALIFIER::SmemPhase<_Tp>;
 };
 } // namespace std

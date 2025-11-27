@@ -111,7 +111,7 @@ struct SmemResourceRaw
     }
   }
 
-  [[nodiscard]] _CCCL_DEVICE_API void* data()
+  _CCCL_DEVICE_API void* data()
   {
     return (void*) (mPtrBase + mStageCurrent * mStride);
   }
