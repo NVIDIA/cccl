@@ -48,7 +48,7 @@ makeSmemResource(SyncHandler& syncHandler, StageType (&smemBuffer)[stageCount])
 
 template <typename StageType>
 [[nodiscard]] _CCCL_API inline SmemResource<StageType>
-makeSmemResource(SyncHandler& syncHandler, SmemAllocator& smemAllocator, Stages stages, Elems elems = elems(1))
+makeSmemResource(SyncHandler& syncHandler, SmemAllocator& smemAllocator, Stages stages, Elems elems = Elems{1})
 {
   int align       = alignof(StageType);
   int sizeBytes   = elems.value() * sizeof(StageType);
