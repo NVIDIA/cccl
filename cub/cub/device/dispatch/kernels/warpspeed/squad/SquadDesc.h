@@ -27,18 +27,31 @@ struct SquadDesc
   int mSquadIdx  = -1;
   int mWarpCount = -1;
 
-  _CCCL_API constexpr SquadDesc(int squadIdx, int warpCount);
+  _CCCL_HIDE_FROM_ABI constexpr SquadDesc() = default;
+  _CCCL_API constexpr SquadDesc(int squadIdx, int warpCount) noexcept
+      : mSquadIdx(squadIdx)
+      , mWarpCount(warpCount)
+  {}
 
-  // SquadDesc is a default-constructible, copyable, and movable type.
-  inline constexpr SquadDesc() = default;
-  //_CCCL_API constexpr SquadDesc(const SquadDesc& other) = default;
-  //_CCCL_API constexpr SquadDesc& operator=(const SquadDesc& other) = default;
-  //_CCCL_API constexpr SquadDesc(SquadDesc&& other) = default;
-  //_CCCL_API constexpr SquadDesc& operator=(SquadDesc&& other) = default;
+  [[nodiscard]] _CCCL_API constexpr int warpCount() noexcept const
+  {
+    return mWarpCount;
+  }
 
-  _CCCL_API constexpr int warpCount() const;
-  _CCCL_API constexpr int threadCount() const;
-  _CCCL_API bool operator==(const SquadDesc& other) const;
+  [[nodiscard]] _CCCL_API constexpr int threadCount() noexcept const
+  {
+    return 32 * warpCount();
+  }
+
+  [[nodiscard]] _CCCL_API friend constexpr bool operator==(const SquadDesc& lhs, const SquadDesc& rhs) noexcept
+  {
+    return lhs.mSquadIdx == rhs.mSquadIdx;
+  }
+
+  [[nodiscard]] _CCCL_API friend constexpr bool operator!=(const SquadDesc& lhs, const SquadDesc& rhs) noexcept
+  {
+    return lhs.mSquadIdx != rhs.mSquadIdx;
+  }
 };
 // squadCountThreads
 //
@@ -46,31 +59,7 @@ struct SquadDesc
 // descriptors. It is used to launch a kernel with the correct number of
 // threads.
 template <int numSquads>
-_CCCL_API constexpr int squadCountThreads(const SquadDesc (&squads)[numSquads]);
-// SquadDesc
-_CCCL_API constexpr SquadDesc::SquadDesc(int squadIdx, int warpCount)
-    : mSquadIdx(squadIdx)
-    , mWarpCount(warpCount)
-{}
-
-_CCCL_API constexpr int SquadDesc::warpCount() const
-{
-  return mWarpCount;
-}
-
-_CCCL_API constexpr int SquadDesc::threadCount() const
-{
-  return 32 * warpCount();
-}
-
-_CCCL_API bool SquadDesc::operator==(const SquadDesc& other) const
-{
-  return this->mSquadIdx == other.mSquadIdx;
-}
-// squadCountThreads
-//
-template <int numSquads>
-_CCCL_API constexpr int squadCountThreads(const SquadDesc (&squads)[numSquads])
+[[nodiscard]] _CCCL_API constexpr int squadCountThreads(const SquadDesc (&squads)[numSquads]);
 {
   int sumThreads = 0;
   for (int gi = 0; gi < numSquads; ++gi)
