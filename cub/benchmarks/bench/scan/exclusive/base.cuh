@@ -95,7 +95,14 @@ static void basic(nvbench::state& state, nvbench::type_list<T, OffsetT>)
 
   size_t tmp_size;
   dispatch_t::Dispatch(
-    nullptr, tmp_size, d_input, d_output, op_t{}, wrapped_init_t{T{}}, static_cast<offset_t>(input.size()), 0 /* stream */);
+    nullptr,
+    tmp_size,
+    d_input,
+    d_output,
+    op_t{},
+    wrapped_init_t{T{}},
+    static_cast<offset_t>(input.size()),
+    0 /* stream */);
 
   thrust::device_vector<nvbench::uint8_t> tmp(tmp_size);
   nvbench::uint8_t* d_tmp = thrust::raw_pointer_cast(tmp.data());
@@ -108,7 +115,7 @@ static void basic(nvbench::state& state, nvbench::type_list<T, OffsetT>)
       d_output,
       op_t{},
       wrapped_init_t{T{}},
-      static_cast<int>(input.size()),
+      static_cast<offset_t>(input.size()),
       launch.get_stream());
   });
 }

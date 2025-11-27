@@ -406,7 +406,7 @@ struct DispatchScan
     }
 
     detail::scan::initTmpStates<tile_size>
-      <<<::cuda::ceil_div(grid_dim, 128), 128>>>(reinterpret_cast<tmp_state_t*>(d_temp_storage), num_items);
+      <<<::cuda::ceil_div(grid_dim, 128), 128>>>(reinterpret_cast<tmp_state_t*>(d_temp_storage), grid_dim);
     if (const auto error = CubDebug(cudaGetLastError()))
     {
       return error;

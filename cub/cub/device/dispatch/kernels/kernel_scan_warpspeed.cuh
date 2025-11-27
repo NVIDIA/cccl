@@ -686,10 +686,10 @@ __launch_bounds__(squadCountThreads(scanSquads), 1) __global__
 }
 
 template <int tile_size, typename AccumT>
-__launch_bounds__(128) __global__ void initTmpStates(tmp_state_t<AccumT>* tmp, const size_t len)
+__launch_bounds__(128) __global__ void initTmpStates(tmp_state_t<AccumT>* tmp, const size_t num_temp_states)
 {
   const int tile_id = blockDim.x * blockIdx.x + threadIdx.x;
-  if (tile_id * tile_size > len)
+  if (tile_id >= num_temp_states)
   {
     return;
   }
