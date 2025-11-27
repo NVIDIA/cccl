@@ -15,6 +15,8 @@
 #include <cub/device/dispatch/kernels/warpspeed/constantAssert.h> // constantAssert
 #include <cub/device/dispatch/kernels/warpspeed/SpecialRegisters.cuh> // SpecialRegisters
 
+#include <cuda/__ptx/instructions/elect_sync.h>
+#include <cuda/__ptx/instructions/mbarrier_init.h>
 #include <cuda/std/cstdint> // uint8_t
 
 #include <nv/target> // NV_IF_TARGET
@@ -109,7 +111,7 @@ struct SyncHandler
     // block as a parameter.
 
     // TODO: This could use vectorized mbarrier initialization
-    if (sr.warpIdx == 0 && ptx::elect_sync(~0))
+    if (sr.warpIdx == 0 && ::cuda::ptx::elect_sync(~0))
     {
       for (int ri = 0; ri < mMaxNumResources; ++ri)
       {
@@ -132,7 +134,7 @@ struct SyncHandler
             int numOwningThreads = mNumOwningThreads[ri][pi];
             for (int si = 0; si < numStages; ++si)
             {
-              ptx::mbarrier_init(&ptrBar[si], numOwningThreads);
+              ::cuda::ptx::mbarrier_init(&ptrBar[si], numOwningThreads);
             }
           }
         }
