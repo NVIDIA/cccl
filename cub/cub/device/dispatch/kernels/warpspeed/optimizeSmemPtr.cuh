@@ -14,8 +14,8 @@
 
 CUB_NAMESPACE_BEGIN
 
-template <typename T>
-static [[nodiscard]] _CCCL_DEVICE_API T* optimizeSmemPtr(const T* smemGeneric)
+template <typename _Tp>
+static [[nodiscard]] _CCCL_DEVICE_API _Tp* optimizeSmemPtr(const _Tp* smemGeneric)
 {
   // See https://nvbugspro.nvidia.com/bug/4907996
 
@@ -29,7 +29,7 @@ static [[nodiscard]] _CCCL_DEVICE_API T* optimizeSmemPtr(const T* smemGeneric)
   //    optimization pass in NVVM that performs the following simplification:
   //    __cvta_generic_to_shared(__cvta_shared_to_generic(x))    => x.
   //    In our case, `x` is smem32, which is exactly what we want.
-  return reinterpret_cast<T*>(__cvta_shared_to_generic(smem32));
+  return reinterpret_cast<_Tp*>(__cvta_shared_to_generic(smem32));
 }
 
 CUB_NAMESPACE_END

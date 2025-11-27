@@ -21,7 +21,7 @@
 
 CUB_NAMESPACE_BEGIN
 
-template <typename T>
+template <typename _Tp>
 struct SmemStage
 {
   SmemResourceRaw& mSmemResourceRaw;
@@ -46,33 +46,33 @@ struct SmemStage
 };
 
 // Helper: Container to expose SmemPhase for structured binding
-template <typename T, size_t numPhases>
+template <typename _Tp, size_t numPhases>
 struct SmemPhaseStructuredBinding
 {
   SmemResourceRaw& mSmemResourceRaw;
 
-  template <size_t I>
-  [[nodiscard]] _CCCL_DEVICE_API SmemPhase<T> get() const
+  template <size_t _Index>
+  [[nodiscard]] _CCCL_DEVICE_API SmemPhase<_Tp> get() const
   {
-    return SmemPhase<T>(mSmemResourceRaw, I);
+    return SmemPhase<_Tp>(mSmemResourceRaw, _Index);
   }
-  template <size_t I>
-  [[nodiscard]] _CCCL_DEVICE_API SmemPhase<T> get()
+  template <size_t _Index>
+  [[nodiscard]] _CCCL_DEVICE_API SmemPhase<_Tp> get()
   {
-    return SmemPhase<T>(mSmemResourceRaw, I);
+    return SmemPhase<_Tp>(mSmemResourceRaw, _Index);
   }
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // The binding function
-template <size_t numPhases, typename T>
-static [[nodiscard]] _CCCL_DEVICE_API SmemPhaseStructuredBinding<T, numPhases> bindPhases(SmemStage<T>& smemStage)
+template <size_t numPhases, typename _Tp>
+static [[nodiscard]] _CCCL_DEVICE_API SmemPhaseStructuredBinding<_Tp, numPhases> bindPhases(SmemStage<_Tp>& smemStage)
 {
   constantAssert(smemStage.mSmemResourceRaw.mNumPhases == numPhases,
                  "Number of bound phases must match resource phases.");
 
-  return SmemPhaseStructuredBinding<T, numPhases>{smemStage.mSmemResourceRaw};
+  return SmemPhaseStructuredBinding<_Tp, numPhases>{smemStage.mSmemResourceRaw};
 }
 
 CUB_NAMESPACE_END
@@ -80,15 +80,15 @@ CUB_NAMESPACE_END
 // Tuple protocol specializations
 namespace std
 {
-template <typename T, size_t numPhases>
-struct tuple_size<SmemPhaseStructuredBinding<T, numPhases>>
+template <typename _Tp, size_t numPhases>
+struct tuple_size<SmemPhaseStructuredBinding<_Tp, numPhases>>
 {
   static constexpr size_t value = numPhases;
 };
 
-template <typename T, size_t I, size_t numPhases>
-struct tuple_element<I, SmemPhaseStructuredBinding<T, numPhases>>
+template <typename _Tp, size_t _Index, size_t numPhases>
+struct tuple_element<_Index, SmemPhaseStructuredBinding<_Tp, numPhases>>
 {
-  using type = SmemPhase<T>;
+  using type = SmemPhase<_Tp>;
 };
 } // namespace std
