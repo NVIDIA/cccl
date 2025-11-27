@@ -2,18 +2,28 @@
 // SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 #pragma once
 
+#include <cub/config.cuh>
+
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
+
 struct Value
 {
   int mValue;
-  __host__ __device__ inline Value(int value);
-  __host__ __device__ inline int value() const;
+  _CCCL_API Value(int value);
+  _CCCL_API int value() const;
 };
 
-__host__ __device__ inline Value::Value(int value)
+_CCCL_API Value::Value(int value)
     : mValue(value)
 {}
 
-__host__ __device__ inline int Value::value() const
+_CCCL_API int Value::value() const
 {
   return mValue;
 }
@@ -27,22 +37,22 @@ struct Warps : Value
 struct Align : Value
 {};
 
-__host__ __device__ inline Stages stages(int value)
+_CCCL_API Stages stages(int value)
 {
   return Stages{value};
 }
 
-__host__ __device__ inline Elems elems(int value)
+_CCCL_API Elems elems(int value)
 {
   return Elems{value};
 }
 
-__host__ __device__ inline Warps warps(int value)
+_CCCL_API Warps warps(int value)
 {
   return Warps{value};
 }
 
-__host__ __device__ inline Align align(int value)
+_CCCL_API Align align(int value)
 {
   return Align{value};
 }
