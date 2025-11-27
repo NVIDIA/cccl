@@ -82,9 +82,7 @@ private:
 
 public:
   // constructor and reset functions
-  _CCCL_API constexpr lognormal_distribution() noexcept
-      : lognormal_distribution(result_type{0})
-  {}
+  constexpr lognormal_distribution() noexcept = default;
   _CCCL_API constexpr explicit lognormal_distribution(result_type __m, result_type __s = result_type{1}) noexcept
       : __nd_{__m, __s}
   {}
@@ -100,14 +98,14 @@ public:
   template <class _URng>
   [[nodiscard]] _CCCL_API result_type operator()(_URng& __g)
   {
-    return cuda::std::exp(__nd_(__g));
+    return ::cuda::std::exp(__nd_(__g));
   }
 
   template <class _URng>
   [[nodiscard]] _CCCL_API result_type operator()(_URng& __g, const param_type& __p)
   {
     typename normal_distribution<result_type>::param_type __pn{__p.m(), __p.s()};
-    return cuda::std::exp(__nd_(__g, __pn));
+    return ::cuda::std::exp(__nd_(__g, __pn));
   }
 
   // property functions
