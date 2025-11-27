@@ -8,6 +8,12 @@ if (TARGET libcudacxx::libcudacxx)
   # This isn't the first time we've been included -- double check the enabled languages
   # and re-run compiler checks for any new ones.
   libcudacxx_update_language_compat_flags()
+
+  include(FindPackageHandleStandardArgs)
+  if (NOT libcudacxx_CONFIG)
+    set(libcudacxx_CONFIG "${CMAKE_CURRENT_LIST_FILE}")
+  endif()
+  find_package_handle_standard_args(libcudacxx CONFIG_MODE)
   return()
 endif()
 
