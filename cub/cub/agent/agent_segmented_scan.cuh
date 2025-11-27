@@ -512,11 +512,15 @@ private:
 
     _CCCL_DEVICE _CCCL_FORCEINLINE fv_t operator()(fv_t o1, fv_t o2)
     {
-      const auto& [o1_flag, o1_value] = o1;
-      const auto& [o2_flag, o2_value] = o2;
-      const FlagTy res_flag           = (o1_flag || o2_flag);
-      const ValueTy res_value         = (o2_flag) ? o2_value : scan_op(o1_value, o2_value);
-      return {res_flag, res_value};
+      if (get_flag(o2))
+      {
+        return o2;
+      }
+      const auto o2_value     = get_value(o2);
+      const auto o1_value     = get_value(o1);
+      const ValueTy res_value = scan_op(o1_value, o2_value);
+
+      return {get_flag(o1), res_value};
     }
   };
 
@@ -545,7 +549,7 @@ private:
         , m_it_idx_begin{it_idx_begin}
     {}
 
-    _CCCL_DEVICE _CCCL_FORCEINLINE decltype(auto) operator[](difference_type n) const
+    _CCCL_DEVICE _CCCL_FORCEINLINE decltype(auto) operator[](difference_type n)
     {
       static constexpr int offset_size = static_cast<int>(m_offsets.extent);
       const difference_type offset     = m_start + n;
