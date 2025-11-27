@@ -1,9 +1,6 @@
 project(nvrtcc CUDA)
 
-# CUDA may not have been enabled when libcudacxx was found:
-libcudacxx_update_language_compat_flags()
-
-find_package(CUDAToolkit REQUIRED)
+cccl_get_cudatoolkit()
 
 add_executable(libcudacxx.nvrtcc nvrtcc.cpp)
 

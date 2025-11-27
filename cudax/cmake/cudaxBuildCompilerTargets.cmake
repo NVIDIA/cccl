@@ -3,36 +3,10 @@
 # cudax.compiler_interface
 # - Interface target that includes all compiler settings for cudax tests, etc.
 
-find_package(
-  libcudacxx
-  CONFIG
-  REQUIRED
-  NO_DEFAULT_PATH # Only check the explicit path in HINTS:
-  HINTS "${CCCL_SOURCE_DIR}/lib/cmake/libcudacxx/"
-)
-
-find_package(
-  CUB
-  CONFIG
-  REQUIRED
-  NO_DEFAULT_PATH # Only check the explicit path in HINTS:
-  HINTS "${CCCL_SOURCE_DIR}/lib/cmake/cub/"
-)
-find_package(
-  Thrust
-  CONFIG
-  REQUIRED
-  NO_DEFAULT_PATH # Only check the explicit path in HINTS:
-  HINTS "${CCCL_SOURCE_DIR}/lib/cmake/thrust/"
-)
-
-find_package(
-  cudax
-  CONFIG
-  REQUIRED
-  NO_DEFAULT_PATH # Only check the explicit path in HINTS:
-  HINTS "${CCCL_SOURCE_DIR}/lib/cmake/cudax/"
-)
+cccl_get_cub()
+cccl_get_cudax()
+cccl_get_libcudacxx()
+cccl_get_thrust()
 
 set(cuda_compile_options)
 set(cxx_compile_options)

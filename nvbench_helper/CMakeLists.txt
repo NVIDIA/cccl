@@ -2,25 +2,14 @@ cmake_minimum_required(VERSION 3.21)
 
 project(nvbench_helper LANGUAGES CXX CUDA)
 
-if (TARGET libcudacxx::libcudacxx)
-  # CUDA may not have been enabled when libcudacxx was found:
-  libcudacxx_update_language_compat_flags()
-endif()
-
 include(CMakeDependentOption)
 
-find_package(
-  CCCL
-  CONFIG
-  REQUIRED
-  NO_DEFAULT_PATH # Only check the explicit HINTS below:
-  HINTS "${CCCL_SOURCE_DIR}/lib/cmake/cccl/"
-)
-
-find_package(CUDAToolkit REQUIRED)
-
 cccl_get_catch2()
+cccl_get_cub()
+cccl_get_cudatoolkit()
+cccl_get_libcudacxx()
 cccl_get_nvbench()
+cccl_get_thrust()
 
 add_library(cccl.nvbench_helper OBJECT nvbench_helper/nvbench_helper.cu)
 cccl_configure_target(cccl.nvbench_helper DIALECT 17)

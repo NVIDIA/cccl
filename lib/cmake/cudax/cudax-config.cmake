@@ -1,4 +1,6 @@
 if (TARGET cudax::cudax)
+  # In case new languages have been enabled:
+  libcudacxx_update_language_compat_flags()
   return()
 endif()
 

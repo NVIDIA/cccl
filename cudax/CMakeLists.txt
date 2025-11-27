@@ -6,9 +6,6 @@ endif()
 cmake_minimum_required(VERSION 3.21)
 project(cudax LANGUAGES CXX CUDA)
 
-# CUDA may not have been enabled when libcudacxx was found:
-libcudacxx_update_language_compat_flags()
-
 option(
   cudax_ENABLE_HEADER_TESTING
   "Test that CUDA Experimental's public headers compile."
@@ -46,7 +43,7 @@ if (cudax_ENABLE_CUFILE)
     )
   endif()
 
-  find_package(CUDAToolkit REQUIRED)
+  cccl_get_cudatoolkit()
 
   if (CUDAToolkit_VERSION VERSION_LESS "12.9.0")
     message(FATAL_ERROR "cuFile support requires at least CUDA 12.9.")

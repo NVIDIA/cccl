@@ -2,9 +2,6 @@ cmake_minimum_required(VERSION 3.21)
 
 project(CCCL_C_Parallel LANGUAGES CUDA CXX C)
 
-# CUDA may not have been enabled when libcudacxx was found:
-libcudacxx_update_language_compat_flags()
-
 option(CCCL_C_Parallel_ENABLE_TESTING "Build cccl.c.parallel tests." OFF)
 option(
   CCCL_C_Parallel_ENABLE_HEADER_TESTING
@@ -30,8 +27,6 @@ file(
   "src/*.cpp"
 )
 
-cccl_get_json()
-
 add_library(cccl.c.parallel SHARED ${srcs})
 set_property(TARGET cccl.c.parallel PROPERTY POSITION_INDEPENDENT_CODE ON)
 cccl_configure_target(cccl.c.parallel DIALECT 20)
@@ -47,9 +42,13 @@ if (CCCL_C_PARALLEL_LIBRARY_OUTPUT_DIRECTORY)
   )
 endif()
 
+cccl_get_cub()
+cccl_get_cudatoolkit()
+cccl_get_json()
+cccl_get_thrust()
+
 add_subdirectory(src/jit_templates)
 
-find_package(CUDAToolkit REQUIRED)
 set_target_properties(cccl.c.parallel PROPERTIES CUDA_RUNTIME_LIBRARY STATIC)
 target_link_libraries(
   cccl.c.parallel

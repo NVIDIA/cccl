@@ -1,6 +1,5 @@
 cccl_get_c2h()
-
-find_package(CUDAToolkit REQUIRED)
+cccl_get_cudatoolkit()
 
 ## cudax_add_test
 #

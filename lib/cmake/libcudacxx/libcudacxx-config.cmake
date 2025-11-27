@@ -118,17 +118,17 @@ function(libcudacxx_update_language_compat_flags)
 
   if (NOT CXX IN_LIST langs)
     # gersemi: off
-    message(STATUS "libcudacxx: - CXX language not enabled.")
-    message(STATUS "libcudacxx:   /Zc:__cplusplus and /Zc:preprocessor flags will NOT be automatically to CXX targets.")
-    message(STATUS "libcudacxx:   Call find_package(libcudacxx) after enabling CXX to enable MSVC compatibility flags.")
+    message(VERBOSE "libcudacxx: - CXX language not enabled.")
+    message(VERBOSE "libcudacxx:   /Zc:__cplusplus and /Zc:preprocessor flags will NOT be automatically to CXX targets.")
+    message(VERBOSE "libcudacxx:   Call find_package(libcudacxx) after enabling CXX to enable MSVC compatibility flags.")
     # gersemi: on
   endif()
 
   if (NOT CUDA IN_LIST langs)
     # gersemi: off
-    message(STATUS "libcudacxx: - CUDA language not enabled.")
-    message(STATUS "libcudacxx:   /Zc:__cplusplus and /Zc:preprocessor flags will NOT be automatically to CUDA targets.")
-    message(STATUS "libcudacxx:   Call find_package(libcudacxx) after enabling CUDA to enable MSVC compatibility flags.")
+    message(VERBOSE "libcudacxx: - CUDA language not enabled.")
+    message(VERBOSE "libcudacxx:   /Zc:__cplusplus and /Zc:preprocessor flags will NOT be automatically to CUDA targets.")
+    message(VERBOSE "libcudacxx:   Call find_package(libcudacxx) after enabling CUDA to enable MSVC compatibility flags.")
     # gersemi: on
   endif()
 
@@ -143,6 +143,7 @@ function(libcudacxx_update_language_compat_flags)
       "Set to true if cxx / cuda host compiler mix msvc versions."
       FALSE
     )
+    mark_as_advanced(libcudacxx_MISMATCHED_MSVC_COMPILERS)
     if (
       (NOT CMAKE_GENERATOR MATCHES "Visual Studio")
       AND (CMAKE_VERSION VERSION_GREATER_EQUAL 3.31)
