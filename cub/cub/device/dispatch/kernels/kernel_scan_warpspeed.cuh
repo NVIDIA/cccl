@@ -14,7 +14,6 @@
 #endif // no system header
 
 #include <cub/device/dispatch/kernels/warpspeed/allocators/SmemAllocator.h> // SmemAllocator
-#include <cub/device/dispatch/kernels/warpspeed/optimizeSmemPtr.cuh> // optimizeSmemPtr
 #include <cub/device/dispatch/kernels/warpspeed/resource/SmemRef.cuh> // SmemRef
 #include <cub/device/dispatch/kernels/warpspeed/resource/SmemResource.cuh> // SmemResource
 #include <cub/device/dispatch/kernels/warpspeed/SpecialRegisters.cuh> // SpecialRegisters
