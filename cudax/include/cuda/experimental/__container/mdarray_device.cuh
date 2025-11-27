@@ -92,16 +92,6 @@ private:
     return this->mapping().required_span_size() * sizeof(element_type);
   }
 
-  //[[nodiscard]] _CCCL_HOST_API void __allocate_from_mapping()
-  //{
-  //  if (this->mapping().required_span_size() == 0)
-  //  {
-  //    this->template __get<0>() = nullptr;
-  //    return;
-  //  }
-  //  this->template __get<0>() = static_cast<pointer>(this->__get_allocator().allocate_sync(__mapping_size_bytes()));
-  //}
-
   _CCCL_HOST_API void __release_storage() noexcept
   {
     if (this->data_handle() != nullptr)
@@ -166,13 +156,22 @@ public:
     }
     //_CCCL_THROW_IF(this->extents() != __other.extents(), ::std::invalid_argument{"Extents do not match"});
     _CCCL_VERIFY(this->extents() == __other.extents(), "Extents do not match");
-    cub::detail::copy_mdspan::copy(__other.view(), view(), ::cudaStream_t{nullptr});
+    static_cast<base_type&>(*this) = static_cast<base_type>(__other);
+    if (__other.data_handle() != nullptr && this->data_handle() != nullptr)
+    {
+      cub::detail::copy_mdspan::copy(__other.view(), view(), ::cudaStream_t{nullptr});
+    }
+    else
+    {
+      this->template __get<0>() = nullptr;
+    }
     return *this;
   }
 
   _CCCL_HOST_API device_mdarray(device_mdarray&& __other)
       : __allocator_base{__other.__device_}
       , base_type{::cuda::std::exchange(static_cast<base_type&>(__other), base_type{})}
+      , __device_{__other.__device_}
   {}
 
   // only mdarray with the same extents can be moved assigned
@@ -185,8 +184,7 @@ public:
     //_CCCL_THROW_IF(this->extents() != __other.extents(), ::std::invalid_argument{"Extents do not match"});
     _CCCL_VERIFY(this->extents() == __other.extents(), "Extents do not match");
     __release_storage();
-    static_cast<base_type&>(*this) = ::cuda::std::move(__other);
-    __other.template __get<0>()    = nullptr;
+    static_cast<base_type&>(*this) = ::cuda::std::exchange(static_cast<base_type&>(__other), base_type{});
     __device_                      = __other.__device_;
     return *this;
   }

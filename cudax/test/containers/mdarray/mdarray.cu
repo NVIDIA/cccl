@@ -71,17 +71,18 @@ C2H_CCCLRT_TEST("cudax::mdarray move", "[container][mdarray][move]")
     CUDAX_REQUIRE(mdarray1.data_handle() == nullptr);
   }
 
-  // Move Assignment
+  // Move Assignment (same extents required)
   {
     mdarray_type mdarray1{extents_type{2, 3}};
-    mdarray_type mdarray2{extents_type{4, 5}};
+    mdarray_type mdarray2{extents_type{2, 3}};  // Same extents as mdarray1
 
     int* ptr1 = mdarray1.data_handle();
-    // int* ptr2_old = mdarray2.data_handle();
+    int* ptr2_old = mdarray2.data_handle();
 
     mdarray2 = cuda::std::move(mdarray1);
 
     CUDAX_REQUIRE(mdarray2.data_handle() == ptr1);
+    CUDAX_REQUIRE(mdarray2.data_handle() != ptr2_old);  // Different pointer (old storage released)
     CUDAX_REQUIRE(mdarray2.extent(0) == 2);
     CUDAX_REQUIRE(mdarray2.extent(1) == 3);
     CUDAX_REQUIRE(mdarray1.data_handle() == nullptr);
@@ -93,10 +94,10 @@ C2H_CCCLRT_TEST("cudax::mdarray copy", "[container][mdarray][copy]")
   using extents_type = cuda::std::dims<2>;
   using mdarray_type = cudax::device_mdarray<int, extents_type, cuda::std::layout_right>;
 
-  // Copy Assignment with Resizing
+  // Copy Assignment (same extents required)
   {
     mdarray_type mdarray1{extents_type{2, 3}};
-    mdarray_type mdarray2{extents_type{4, 5}};
+    mdarray_type mdarray2{extents_type{2, 3}};  // Same extents as mdarray1
 
     mdarray2 = mdarray1;
 
