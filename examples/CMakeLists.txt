@@ -13,6 +13,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+enable_language(CUDA) # Ensure that CUDA compiler vars are defined
+
 string(REPLACE ";" "\\\;" arches_escaped "${CMAKE_CUDA_ARCHITECTURES}")
 
 set(
@@ -86,6 +88,7 @@ foreach (DEVICE_SYSTEM IN ITEMS CUDA OMP TBB CPP)
     cccl.example
     thrust_flexible_device_system
     "${DEVICE_SYSTEM}"
+    --log-level=VERBOSE
     "-DCCCL_THRUST_DEVICE_SYSTEM=${DEVICE_SYSTEM}"
     ${cmake_opts}
     ${cmake_cpm_opts}
