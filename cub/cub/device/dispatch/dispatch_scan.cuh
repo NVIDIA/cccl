@@ -34,6 +34,7 @@
 #include <cub/util_math.cuh>
 
 #include <thrust/system/cuda/detail/core/triple_chevron_launch.h>
+#include <thrust/type_traits/unwrap_contiguous_iterator.h>
 
 #include <cuda/__cmath/ceil_div.h>
 #include <cuda/std/__algorithm/min.h>
@@ -41,6 +42,7 @@
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/is_unsigned.h>
+#include <cuda/std/__type_traits/remove_pointer.h>
 
 #include <cuda_runtime_api.h>
 #include <cudaTypedefs.h>
@@ -364,6 +366,13 @@ struct DispatchScan
   template <typename ActivePolicyT>
   CUB_RUNTIME_FUNCTION _CCCL_HOST _CCCL_FORCEINLINE cudaError_t __invoke_lookahead_algorithm(ActivePolicyT = {})
   {
+    auto* d_in_unwrapped  = THRUST_NS_QUALIFIER::unwrap_contiguous_iterator(d_in);
+    auto* d_out_unwrapped = THRUST_NS_QUALIFIER::unwrap_contiguous_iterator(d_out);
+
+    using InputT      = ::cuda::std::remove_pointer_t<decltype(d_in_unwrapped)>;
+    using OuputT      = ::cuda::std::remove_pointer_t<decltype(d_out_unwrapped)>;
+    using tmp_state_t = detail::scan::tmp_state_t<AccumT>;
+
     constexpr int num_stages       = 6; // TODO(bgruber): tune this
     constexpr int numLookbackTiles = 96;
     constexpr int tile_size        = 63 * detail::scan::squadReduce.threadCount();
@@ -371,22 +380,23 @@ struct DispatchScan
 
     if (d_temp_storage == nullptr)
     {
-      temp_storage_bytes = grid_dim * sizeof(detail::scan::tmp_state_t);
+      temp_storage_bytes = grid_dim * sizeof(tmp_state_t);
       return cudaSuccess;
     }
 
-    detail::scan::scanKernelParams params{
-      .ptrIn     = (int*) d_in, // TODO: HACK: FIX ahendriksen
-      .ptrOut    = (int*) d_out, // TODO: HACK: FIX ahendriksen
-      .ptrTmp    = (detail::scan::tmp_state_t*) d_temp_storage,
+    using scanKernelParams = detail::scan::scanKernelParams<InputT, OuputT, AccumT>;
+    scanKernelParams params{
+      .ptrIn     = d_in_unwrapped,
+      .ptrOut    = d_out_unwrapped,
+      .ptrTmp    = reinterpret_cast<tmp_state_t*>(d_temp_storage),
       .numElem   = num_items,
       .numStages = num_stages};
 
-    auto kernel_ptr = detail::scan::scan<tile_size, numLookbackTiles>;
+    auto kernel_ptr = detail::scan::scan<tile_size, numLookbackTiles, scanKernelParams, AccumT, InitValueT>;
 
     SyncHandler syncHandler{};
     SmemAllocator smemAllocator{};
-    detail::scan::allocResources<tile_size>(syncHandler, smemAllocator, params);
+    detail::scan::allocResources<tile_size, scanKernelParams, AccumT>(syncHandler, smemAllocator, params);
 
     int smem_size = smemAllocator.sizeBytes();
     if (const auto error = cudaFuncSetAttribute(kernel_ptr, cudaFuncAttributeMaxDynamicSharedMemorySize, smem_size))
@@ -394,19 +404,15 @@ struct DispatchScan
       return error;
     }
 
-    detail::scan::initTmpStates<tile_size><<<::cuda::ceil_div(grid_dim, 128), 128>>>(
-      (int*) d_in, // TODO(ahendriksen): HACK FIX
-      (detail::scan::tmp_state_t*) d_temp_storage,
-      (int*) d_out, // TODO(ahendriksen): HACK FIX
-      num_items,
-      /*do_check=*/false);
+    detail::scan::initTmpStates<tile_size>
+      <<<::cuda::ceil_div(grid_dim, 128), 128>>>(reinterpret_cast<tmp_state_t*>(d_temp_storage), num_items);
     if (const auto error = CubDebug(cudaGetLastError()))
     {
       return error;
     }
 
     const int block_dim = squadCountThreads(detail::scan::scanSquads);
-    kernel_ptr<<<grid_dim, block_dim, smem_size, stream>>>(params);
+    kernel_ptr<<<grid_dim, block_dim, smem_size, stream>>>(params, init_value);
     return CubDebug(cudaGetLastError());
   }
 
