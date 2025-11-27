@@ -22,6 +22,7 @@
 #endif // no system header
 
 #include <cuda/std/__random/bernoulli_distribution.h>
+#include <cuda/std/__random/cauchy_distribution.h>
 #include <cuda/std/__random/exponential_distribution.h>
 #include <cuda/std/__random/linear_congruential_engine.h>
 #include <cuda/std/__random/normal_distribution.h>
