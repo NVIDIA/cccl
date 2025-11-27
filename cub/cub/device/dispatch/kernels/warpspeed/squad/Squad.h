@@ -98,7 +98,7 @@ struct Squad : SquadDesc
 //
 template <int numSquads, typename F>
 _CCCL_DEVICE_API inline void
-squadDispatch(SpecialRegisters sr, const SquadDesc (&squads)[numSquads], F f, int warpIdxStart)
+squadDispatch(SpecialRegisters sr, const SquadDesc (&squads)[numSquads], F f, int warpIdxStart = 0)
 {
   static_assert(numSquads > 0);
   if (numSquads == 1)
