@@ -113,23 +113,26 @@ function(libcudacxx_update_language_compat_flags)
   # Track which languages have already been checked:
   get_property(cxx_checked GLOBAL PROPERTY _libcudacxx_cxx_checked DEFINED)
   get_property(cuda_checked GLOBAL PROPERTY _libcudacxx_cuda_checked DEFINED)
+  get_property(cxx_warned GLOBAL PROPERTY _libcudacxx_cxx_warned DEFINED)
+  get_property(cuda_warned GLOBAL PROPERTY _libcudacxx_cuda_warned DEFINED)
   get_property(langs GLOBAL PROPERTY ENABLED_LANGUAGES)
-  message(VERBOSE "libcudacxx: - Enabled languages: ${langs}")
 
-  if (NOT CXX IN_LIST langs)
+  if (NOT cxx_warned AND NOT CXX IN_LIST langs)
     # gersemi: off
     message(VERBOSE "libcudacxx: - CXX language not enabled.")
     message(VERBOSE "libcudacxx:   /Zc:__cplusplus and /Zc:preprocessor flags will NOT be automatically to CXX targets.")
-    message(VERBOSE "libcudacxx:   Call find_package(libcudacxx) after enabling CXX to enable MSVC compatibility flags.")
+    message(VERBOSE "libcudacxx:   Call find_package(CCCL) after enabling CXX to enable MSVC compatibility flags.")
     # gersemi: on
+    define_property(GLOBAL PROPERTY _libcudacxx_cxx_warned)
   endif()
 
-  if (NOT CUDA IN_LIST langs)
+  if (NOT cuda_warned AND NOT CUDA IN_LIST langs)
     # gersemi: off
     message(VERBOSE "libcudacxx: - CUDA language not enabled.")
     message(VERBOSE "libcudacxx:   /Zc:__cplusplus and /Zc:preprocessor flags will NOT be automatically to CUDA targets.")
-    message(VERBOSE "libcudacxx:   Call find_package(libcudacxx) after enabling CUDA to enable MSVC compatibility flags.")
+    message(VERBOSE "libcudacxx:   Call find_package(CCCL) after enabling CUDA to enable MSVC compatibility flags.")
     # gersemi: on
+    define_property(GLOBAL PROPERTY _libcudacxx_cuda_warned)
   endif()
 
   if (CXX IN_LIST langs)
