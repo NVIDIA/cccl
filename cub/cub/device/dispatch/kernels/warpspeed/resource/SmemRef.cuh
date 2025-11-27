@@ -12,7 +12,7 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cub/device/dispatch/kernels/warpspeed/SmemResourceRaw.cuh>
+#include <cub/device/dispatch/kernels/warpspeed/resource/SmemResourceRaw.cuh>
 #include <cub/device/dispatch/kernels/warpspeed/squad/Squad.h>
 
 #include <cuda/std/cstdint>
