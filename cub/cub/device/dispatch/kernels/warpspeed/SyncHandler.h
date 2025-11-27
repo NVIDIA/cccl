@@ -19,6 +19,7 @@
 
 #include <nv/target> // NV_IF_TARGET
 
+CUB_NAMESPACE_BEGIN
 // SkipSync is a tag type that is used to indicate that a SyncHandler.blockInit
 // should forgo syncing.
 struct SkipSync
@@ -146,3 +147,5 @@ struct SyncHandler
     __cluster_barrier_wait();
   }
 };
+
+CUB_NAMESPACE_END
