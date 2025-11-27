@@ -12,12 +12,11 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cub/device/dispatch/kernels/warpspeed/optimizeSmemPtr.cuh> // optimizeSmemPtr.cuh
+#include <cub/device/dispatch/kernels/warpspeed/optimizeSmemPtr.cuh>
 
-#include <cuda/std/cstdint> // uint*_t
+#include <cuda/std/cstdint>
 
-#include <nv/target> // NV_IF_TARGET
-
+#include <nv/target>
 
 struct SmemAllocator
 {
