@@ -102,6 +102,7 @@ public:
 
   [[nodiscard]] _CCCL_API constexpr __pcg_uint128_fallback operator>>(int __shift) const noexcept
   {
+    _CCCL_ASSERT(__shift >= 0 && __shift < 128, "shift value out of range");
     if (__shift == 0)
     {
       return *this;
