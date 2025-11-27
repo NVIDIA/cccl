@@ -364,17 +364,17 @@ struct DispatchScan
   template <typename ActivePolicyT>
   CUB_RUNTIME_FUNCTION _CCCL_HOST _CCCL_FORCEINLINE cudaError_t __invoke_lookahead_algorithm(ActivePolicyT = {})
   {
-    if (d_temp_storage == nullptr)
-    {
-      // TODO: make this more accurate. For now, just massively overestimate the required temporary state.
-      temp_storage_bytes = num_items * sizeof(detail::scan::tmp_state_t);
-      return cudaSuccess;
-    }
 
     constexpr int num_stages       = 6; // TODO(bgruber): tune this
     constexpr int numLookbackTiles = 96;
     constexpr int tile_size        = 63 * detail::scan::squadReduce.threadCount();
     const int grid_dim             = (num_items + tile_size - 1) / size_t(tile_size);
+
+    if (d_temp_storage == nullptr)
+    {
+      temp_storage_bytes = grid_dim * sizeof(detail::scan::tmp_state_t);
+      return cudaSuccess;
+    }
 
     detail::scan::scanKernelParams params{
       .ptrIn     = (int*) d_in, // TODO: HACK: FIX ahendriksen
