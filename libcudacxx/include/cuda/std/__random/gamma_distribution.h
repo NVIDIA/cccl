@@ -84,9 +84,7 @@ private:
 
 public:
   // constructors and reset functions
-  _CCCL_API constexpr gamma_distribution() noexcept
-      : gamma_distribution(result_type{1})
-  {}
+  constexpr gamma_distribution() = default;
   _CCCL_API constexpr explicit gamma_distribution(result_type __alpha, result_type __beta = result_type{1}) noexcept
       : __p_{param_type{__alpha, __beta}}
   {}
@@ -105,7 +103,7 @@ public:
   [[nodiscard]] _CCCL_API result_type operator()(_URng& __g, const param_type& __p)
   {
     static_assert(__cccl_random_is_valid_urng<_URng>, "URng must meet the UniformRandomBitGenerator requirements");
-    result_type __a = __p.alpha();
+    const result_type __a = __p.alpha();
     uniform_real_distribution<result_type> __gen(result_type{0}, result_type{1});
     exponential_distribution<result_type> __egen;
     result_type __x;
