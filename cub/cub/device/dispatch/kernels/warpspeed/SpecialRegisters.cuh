@@ -15,6 +15,8 @@
 #include <cuda/__ptx/instructions/get_sreg.h>
 #include <cuda/std/cstdint> // uint32_t
 
+CUB_NAMESPACE_BEGIN
+
 // Commonly used special registers that we should cache in registers or uniform
 // registers.
 struct SpecialRegisters
@@ -33,3 +35,5 @@ static _CCCL_DEVICE_API SpecialRegisters getSpecialRegisters()
   uint32_t warpIdx        = makeWarpUniform(threadIdxX / 32);
   return {clusterCtaRank, blockIdx.x, threadIdxX, warpIdx, ::cuda::ptx::get_sreg_laneid()};
 }
+
+CUB_NAMESPACE_END

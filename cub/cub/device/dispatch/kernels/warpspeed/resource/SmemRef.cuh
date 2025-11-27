@@ -17,6 +17,8 @@
 
 #include <cuda/std/cstdint>
 
+CUB_NAMESPACE_BEGIN
+
 template <typename T>
 struct SmemRef
 {
@@ -83,3 +85,5 @@ struct SmemRef
     mDoFenceLdsToAsyncProxy = true;
   }
 };
+
+CUB_NAMESPACE_END
