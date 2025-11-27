@@ -22,16 +22,16 @@
 
 CUB_NAMESPACE_BEGIN
 
-template <typename T>
+template <typename _Tp>
 struct SmemResource : SmemResourceRaw
 {
   _CCCL_DEVICE_API SmemResource(SmemResourceRaw smemResourceRaw) noexcept
       : SmemResourceRaw(smemResourceRaw)
   {}
 
-  [[nodiscard]] _CCCL_DEVICE_API SmemStage<T> popStage() noexcept
+  [[nodiscard]] _CCCL_DEVICE_API SmemStage<_Tp> popStage() noexcept
   {
-    return SmemStage<T>(*this);
+    return SmemStage<_Tp>(*this);
   }
 };
 

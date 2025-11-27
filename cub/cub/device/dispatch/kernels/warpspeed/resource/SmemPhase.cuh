@@ -19,7 +19,7 @@
 
 CUB_NAMESPACE_BEGIN
 
-template <typename T>
+template <typename _Tp>
 struct SmemPhase
 {
   SmemResourceRaw& mSmemResourceRaw;
@@ -30,12 +30,12 @@ struct SmemPhase
       , mCurPhase(phase)
   {}
 
-  [[nodiscard]] _CCCL_DEVICE_API SmemRef<T> acquireRef()
+  [[nodiscard]] _CCCL_DEVICE_API SmemRef<_Tp> acquireRef()
   {
     // Wait on barrier
     mSmemResourceRaw.acquire(mCurPhase);
     // Return ref
-    return SmemRef<T>(mSmemResourceRaw, mCurPhase);
+    return SmemRef<_Tp>(mSmemResourceRaw, mCurPhase);
   }
 };
 
