@@ -11,6 +11,8 @@
 #include <cuda/devices>
 #include <cuda/memory_resource>
 #include <cuda/std/mdspan>
+#include <cuda/std/utility>
+#include <memory>
 
 #include <cuda/experimental/__container/mdarray_device.cuh>
 
@@ -26,4 +28,82 @@ C2H_CCCLRT_TEST("cudax::mdarray", "[container][mdarray]")
   CUDAX_REQUIRE(mdarray.size() == 6);
   CUDAX_REQUIRE(mdarray.extent(0) == 2);
   CUDAX_REQUIRE(mdarray.extent(1) == 3);
+}
+
+struct movable_allocator
+{
+  std::shared_ptr<cuda::device_memory_pool> pool;
+
+  explicit movable_allocator(cuda::device_ref d)
+      : pool(std::make_shared<cuda::device_memory_pool>(d))
+  {}
+
+  void* allocate_sync(std::size_t size) {
+      return pool->allocate_sync(size);
+  }
+
+  void deallocate_sync(void* ptr, std::size_t size) {
+      pool->deallocate_sync(ptr, size);
+  }
+
+  friend void get_property(const movable_allocator&, cuda::mr::device_accessible) {}
+};
+
+
+C2H_CCCLRT_TEST("cudax::mdarray move", "[container][mdarray][move]")
+{
+  using extents_type = cuda::std::dims<2>;
+  using mdarray_type = cudax::device_mdarray<int, extents_type, cuda::std::layout_right, movable_allocator>;
+
+  // Move Constructor
+  {
+    mdarray_type mdarray1{extents_type{2, 3}};
+    int* ptr1 = mdarray1.data_handle();
+    CUDAX_REQUIRE(ptr1 != nullptr);
+
+    mdarray_type mdarray2{cuda::std::move(mdarray1)};
+    int* ptr2 = mdarray2.data_handle();
+
+    CUDAX_REQUIRE(ptr1 == ptr2);
+    CUDAX_REQUIRE(mdarray2.extent(0) == 2);
+    CUDAX_REQUIRE(mdarray2.extent(1) == 3);
+    // Verify mdarray1 is empty/null (ptr is nulled out)
+    CUDAX_REQUIRE(mdarray1.data_handle() == nullptr);
+  }
+
+  // Move Assignment
+  {
+    mdarray_type mdarray1{extents_type{2, 3}};
+    mdarray_type mdarray2{extents_type{4, 5}};
+
+    int* ptr1 = mdarray1.data_handle();
+    // int* ptr2_old = mdarray2.data_handle();
+
+    mdarray2 = cuda::std::move(mdarray1);
+
+    CUDAX_REQUIRE(mdarray2.data_handle() == ptr1);
+    CUDAX_REQUIRE(mdarray2.extent(0) == 2);
+    CUDAX_REQUIRE(mdarray2.extent(1) == 3);
+    CUDAX_REQUIRE(mdarray1.data_handle() == nullptr);
+  }
+}
+
+C2H_CCCLRT_TEST("cudax::mdarray copy", "[container][mdarray][copy]")
+{
+  using extents_type = cuda::std::dims<2>;
+  using mdarray_type = cudax::device_mdarray<int, extents_type, cuda::std::layout_right>;
+
+  // Copy Assignment with Resizing
+  {
+    mdarray_type mdarray1{extents_type{2, 3}};
+    mdarray_type mdarray2{extents_type{4, 5}};
+
+    mdarray2 = mdarray1;
+
+    CUDAX_REQUIRE(mdarray2.extent(0) == 2);
+    CUDAX_REQUIRE(mdarray2.extent(1) == 3);
+    CUDAX_REQUIRE(mdarray2.size() == 6);
+    // Ensure deep copy (ptrs different)
+    CUDAX_REQUIRE(mdarray2.data_handle() != mdarray1.data_handle());
+  }
 }

@@ -103,7 +103,7 @@ struct __mdspan_constraints
 
 template <class _ElementType, class _Extents, class _LayoutPolicy, class _AccessorPolicy>
 class mdspan
-    : private __mdspan_ebco<typename _AccessorPolicy::data_handle_type,
+    : protected __mdspan_ebco<typename _AccessorPolicy::data_handle_type,
                             typename _LayoutPolicy::template mapping<_Extents>,
                             _AccessorPolicy>
 {
