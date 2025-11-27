@@ -176,12 +176,7 @@ C2H_TEST("Device scan works with all device interfaces", "[scan][device]", full_
     // Prepare verification data
     c2h::host_vector<input_t> host_items(in_items);
     c2h::host_vector<output_t> expected_result(num_items);
-    compute_inclusive_scan_reference(
-      host_items.cbegin(),
-      host_items.cend(),
-      expected_result.begin(),
-      op_t{},
-      cuda::std::numeric_limits<accum_t>::max());
+    compute_inclusive_scan_reference(host_items.cbegin(), host_items.cend(), expected_result.begin(), op_t{}, 0);
 
     // Run test
     c2h::device_vector<output_t> out_result(num_items);
