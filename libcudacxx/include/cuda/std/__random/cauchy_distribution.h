@@ -20,9 +20,9 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__cmath/trigonometric_functions.h>
 #include <cuda/std/__random/is_valid.h>
 #include <cuda/std/__random/uniform_real_distribution.h>
-#include <cuda/std/cmath>
 #include <cuda/std/limits>
 
 #include <cuda/std/__cccl/prologue.h>
@@ -46,7 +46,7 @@ public:
   public:
     using distribution_type = cauchy_distribution;
 
-    _CCCL_API explicit param_type(result_type __a = 0, result_type __b = 1)
+    _CCCL_API constexpr explicit param_type(result_type __a = 0, result_type __b = 1) noexcept
         : __a_{__a}
         , __b_{__b}
     {}
@@ -77,13 +77,11 @@ private:
 
 public:
   // constructor and reset functions
-  _CCCL_API cauchy_distribution() noexcept
-      : cauchy_distribution{0}
-  {}
-  _CCCL_API explicit cauchy_distribution(result_type __a, result_type __b = 1) noexcept
+  constexpr cauchy_distribution() noexcept = default;
+  _CCCL_API constexpr explicit cauchy_distribution(result_type __a, result_type __b = 1) noexcept
       : __p_{param_type{__a, __b}}
   {}
-  _CCCL_API explicit cauchy_distribution(const param_type& __p) noexcept
+  _CCCL_API constexpr explicit cauchy_distribution(const param_type& __p) noexcept
       : __p_{__p}
   {}
   _CCCL_API constexpr void reset() noexcept {}
