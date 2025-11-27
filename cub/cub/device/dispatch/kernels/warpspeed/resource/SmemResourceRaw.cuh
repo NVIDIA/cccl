@@ -2,12 +2,22 @@
 // SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 #pragma once
 
-#include <cstdint> // uint8_t
+#include <cub/config.cuh>
 
-#include "../allocators/SmemAllocator.h" // SmemAllocator
-#include "../constantAssert.h" // constantAssert
-#include "../squad/SquadDesc.h" // SquadDesc
-#include "../SyncHandler.h" // SyncHandler
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
+
+#include <cub/device/dispatch/kernels/warpspeed/allocators/SmemAllocator.h> // SmemAllocator
+#include <cub/device/dispatch/kernels/warpspeed/constantAssert.h> // constantAssert
+#include <cub/device/dispatch/kernels/warpspeed/squad/SquadDesc.h> // SquadDesc
+#include <cub/device/dispatch/kernels/warpspeed/SyncHandler.h> // SyncHandler
+
+#include <cuda/std/cstdint> // uint8_t
 
 struct SmemResourceRaw
 {
@@ -25,32 +35,28 @@ struct SmemResourceRaw
   uint64_t* mPtrBar[mMaxNumPhases];
   int mParity[mMaxNumPhases];
 
-  __host__ __device__ inline SmemResourceRaw(
-    SyncHandler& syncHandler, void* ptrBase, int sizeBytes, int strideBytes, int stageCount);
+  _CCCL_API SmemResourceRaw(SyncHandler& syncHandler, void* ptrBase, int sizeBytes, int strideBytes, int stageCount);
 
   template <int numSquads>
-  __host__ __device__ inline void
-  addPhase(SyncHandler& syncHandler, uint64_t* ptrBarrier, const SquadDesc (&squads)[numSquads]);
+  _CCCL_API void addPhase(SyncHandler& syncHandler, uint64_t* ptrBarrier, const SquadDesc (&squads)[numSquads]);
   template <int numSquads>
-  __host__ __device__ inline void
-  addPhase(SyncHandler& syncHandler, SmemAllocator& smemAllocator, const SquadDesc (&squads)[numSquads]);
+  _CCCL_API void addPhase(SyncHandler& syncHandler, SmemAllocator& smemAllocator, const SquadDesc (&squads)[numSquads]);
 
-  __host__ __device__ inline void addPhase(SyncHandler& syncHandler, uint64_t* ptrBarrier, const SquadDesc& squad);
-  __host__ __device__ inline void
-  addPhase(SyncHandler& syncHandler, SmemAllocator& smemAllocator, const SquadDesc& squad);
+  _CCCL_API void addPhase(SyncHandler& syncHandler, uint64_t* ptrBarrier, const SquadDesc& squad);
+  _CCCL_API void addPhase(SyncHandler& syncHandler, SmemAllocator& smemAllocator, const SquadDesc& squad);
 
-  __device__ inline void incrementStage();
-  __device__ inline void* data();
+  _CCCL_DEVICE_API inline void incrementStage();
+  _CCCL_DEVICE_API inline void* data();
 
-  __device__ inline uint64_t* ptrCurBarrierRelease(int phase);
-  __device__ inline void release(int phase);
-  __device__ inline void releaseTx(int phase, int txCount);
-  __device__ inline void fenceLdsToAsyncProxy();
-  __device__ inline void releaseLdsToAsyncProxy(int phase);
-  __device__ inline void acquire(int phase);
+  _CCCL_DEVICE_API inline uint64_t* ptrCurBarrierRelease(int phase);
+  _CCCL_DEVICE_API inline void release(int phase);
+  _CCCL_DEVICE_API inline void releaseTx(int phase, int txCount);
+  _CCCL_DEVICE_API inline void fenceLdsToAsyncProxy();
+  _CCCL_DEVICE_API inline void releaseLdsToAsyncProxy(int phase);
+  _CCCL_DEVICE_API inline void acquire(int phase);
 };
 
-__host__ __device__ inline SmemResourceRaw::SmemResourceRaw(
+_CCCL_API SmemResourceRaw::SmemResourceRaw(
   SyncHandler& syncHandler, void* ptrBase, int sizeBytes, int strideBytes, int stageCount)
     : mResourceHandle(syncHandler.registerResource(stageCount))
     , mPtrBase((uint8_t*) ptrBase)
@@ -67,7 +73,7 @@ __host__ __device__ inline SmemResourceRaw::SmemResourceRaw(
 }
 
 template <int numSquads>
-__host__ __device__ inline void
+_CCCL_API void
 SmemResourceRaw::addPhase(SyncHandler& syncHandler, uint64_t* ptrBarrier, const SquadDesc (&squads)[numSquads])
 {
   int numOwningThreads = squadCountThreads(squads);
@@ -80,7 +86,7 @@ SmemResourceRaw::addPhase(SyncHandler& syncHandler, uint64_t* ptrBarrier, const 
 }
 
 template <int numSquads>
-__host__ __device__ inline void
+_CCCL_API void
 SmemResourceRaw::addPhase(SyncHandler& syncHandler, SmemAllocator& smemAllocator, const SquadDesc (&squads)[numSquads])
 {
   uint64_t* ptrBar =
@@ -88,21 +94,19 @@ SmemResourceRaw::addPhase(SyncHandler& syncHandler, SmemAllocator& smemAllocator
   addPhase(syncHandler, ptrBar, squads);
 }
 
-__host__ __device__ inline void
-SmemResourceRaw::addPhase(SyncHandler& syncHandler, uint64_t* ptrBarrier, const SquadDesc& squad)
+_CCCL_API void SmemResourceRaw::addPhase(SyncHandler& syncHandler, uint64_t* ptrBarrier, const SquadDesc& squad)
 {
   const SquadDesc squads[] = {squad};
   addPhase(syncHandler, ptrBarrier, squads);
 }
 
-__host__ __device__ inline void
-SmemResourceRaw::addPhase(SyncHandler& syncHandler, SmemAllocator& smemAllocator, const SquadDesc& squad)
+_CCCL_API void SmemResourceRaw::addPhase(SyncHandler& syncHandler, SmemAllocator& smemAllocator, const SquadDesc& squad)
 {
   const SquadDesc squads[] = {squad};
   addPhase(syncHandler, smemAllocator, squads);
 }
 
-__device__ inline void SmemResourceRaw::incrementStage()
+_CCCL_DEVICE_API inline void SmemResourceRaw::incrementStage()
 {
   if (mStageCurrent == mStageCount - 1)
   {
@@ -124,35 +128,35 @@ __device__ inline void SmemResourceRaw::incrementStage()
   }
 }
 
-__device__ inline void* SmemResourceRaw::data()
+_CCCL_DEVICE_API inline void* SmemResourceRaw::data()
 {
   return (void*) (mPtrBase + mStageCurrent * mStride);
 }
 
-__device__ inline uint64_t* SmemResourceRaw::ptrCurBarrierRelease(int phase)
+_CCCL_DEVICE_API inline uint64_t* SmemResourceRaw::ptrCurBarrierRelease(int phase)
 {
   uint64_t* ptrBarPhase = mPtrBar[phase];
   constantAssert(phase < mNumPhases, "Phase exceeds limit.");
   return &ptrBarPhase[mStageCurrent];
 }
 
-__device__ inline void SmemResourceRaw::release(int phase)
+_CCCL_DEVICE_API inline void SmemResourceRaw::release(int phase)
 {
   ptx::mbarrier_arrive(ptrCurBarrierRelease(phase));
 }
 
-__device__ inline void SmemResourceRaw::releaseTx(int phase, int txCount)
+_CCCL_DEVICE_API inline void SmemResourceRaw::releaseTx(int phase, int txCount)
 {
   ptx::mbarrier_arrive_expect_tx(
     ptx::sem_release, ptx::scope_cta, ptx::space_shared, ptrCurBarrierRelease(phase), txCount);
 }
 
-__device__ inline void SmemResourceRaw::fenceLdsToAsyncProxy()
+_CCCL_DEVICE_API inline void SmemResourceRaw::fenceLdsToAsyncProxy()
 {
   ::cuda::ptx::fence_proxy_async(::cuda::ptx::space_shared);
 }
 
-__device__ inline void SmemResourceRaw::releaseLdsToAsyncProxy(int phase)
+_CCCL_DEVICE_API inline void SmemResourceRaw::releaseLdsToAsyncProxy(int phase)
 {
   // First fence
   fenceLdsToAsyncProxy();
@@ -160,7 +164,7 @@ __device__ inline void SmemResourceRaw::releaseLdsToAsyncProxy(int phase)
   release(phase);
 }
 
-__device__ inline void SmemResourceRaw::acquire(int phase)
+_CCCL_DEVICE_API inline void SmemResourceRaw::acquire(int phase)
 {
   constantAssert(phase < mNumPhases, "Phase exceeds limit.");
 

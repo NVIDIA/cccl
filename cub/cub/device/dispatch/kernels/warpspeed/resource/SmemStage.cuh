@@ -2,19 +2,29 @@
 // SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 #pragma once
 
-#include <cstdint> // uint8_t
+#include <cub/config.cuh>
 
-#include "../constantAssert.h"
-#include "SmemPhase.cuh" // SmemPhase
-#include "SmemResourceRaw.cuh" // SmemResource
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
+
+#include <cub/device/dispatch/kernels/warpspeed/constantAssert.h>
+#include <cub/device/dispatch/kernels/warpspeed/SmemPhase.cuh> // SmemPhase
+#include <cub/device/dispatch/kernels/warpspeed/SmemResourceRaw.cuh> // SmemResource
+
+#include <cuda/std/cstdint> // uint8_t
 
 template <typename T>
 struct SmemStage
 {
   SmemResourceRaw& mSmemResourceRaw;
 
-  __device__ SmemStage(SmemResourceRaw& smemResourceRaw);
-  __device__ ~SmemStage();
+  _CCCL_DEVICE_API SmemStage(SmemResourceRaw& smemResourceRaw);
+  _CCCL_DEVICE_API ~SmemStage();
 
   // SmemStage is a non-copyable, non-movable type. It must be passed by (mutable)
   // reference to be useful. The reason is that it in case of an accidental copy
@@ -27,12 +37,12 @@ struct SmemStage
 };
 
 template <typename T>
-__device__ SmemStage<T>::SmemStage(SmemResourceRaw& smemResourceRaw)
+_CCCL_DEVICE_API SmemStage<T>::SmemStage(SmemResourceRaw& smemResourceRaw)
     : mSmemResourceRaw(smemResourceRaw)
 {}
 
 template <typename T>
-__device__ SmemStage<T>::~SmemStage()
+_CCCL_DEVICE_API SmemStage<T>::~SmemStage()
 {
   mSmemResourceRaw.incrementStage();
 }
@@ -43,12 +53,12 @@ struct SmemPhaseStructuredBinding
   SmemResourceRaw& mSmemResourceRaw;
 
   template <size_t I>
-  __device__ SmemPhase<T> get() const
+  _CCCL_DEVICE_API SmemPhase<T> get() const
   {
     return SmemPhase<T>(mSmemResourceRaw, I);
   }
   template <size_t I>
-  __device__ SmemPhase<T> get()
+  _CCCL_DEVICE_API SmemPhase<T> get()
   {
     return SmemPhase<T>(mSmemResourceRaw, I);
   }
@@ -71,7 +81,7 @@ struct tuple_element<I, SmemPhaseStructuredBinding<T, numPhases>>
 
 // The binding function
 template <size_t numPhases, typename T>
-static inline __device__ SmemPhaseStructuredBinding<T, numPhases> bindPhases(SmemStage<T>& smemStage)
+static _CCCL_DEVICE_API SmemPhaseStructuredBinding<T, numPhases> bindPhases(SmemStage<T>& smemStage)
 {
   constantAssert(smemStage.mSmemResourceRaw.mNumPhases == numPhases,
                  "Number of bound phases must match resource phases.");

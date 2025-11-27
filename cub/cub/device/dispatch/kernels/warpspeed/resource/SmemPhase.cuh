@@ -2,10 +2,21 @@
 // SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 #pragma once
 
-#include <cstdint> // uint8_t
+#include <cub/config.cuh>
 
-#include "SmemRef.cuh" // SmemRef
-#include "SmemResourceRaw.cuh" // SmemResourceRaw
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
+
+#include <cub/device/dispatch/kernels/warpspeed/SmemRef.cuh> // SmemRef
+#include <cub/device/dispatch/kernels/warpspeed/SmemResourceRaw.cuh> // SmemResourceRaw
+
+#include <cuda/std/cstdint> // uint8_t
+
 
 template <typename T>
 struct SmemPhase
@@ -13,18 +24,18 @@ struct SmemPhase
   SmemResourceRaw& mSmemResourceRaw;
   int mCurPhase;
 
-  __device__ SmemPhase(SmemResourceRaw& smemResourceRaw, int phase);
-  __device__ SmemRef<T> acquireRef();
+  _CCCL_DEVICE_API SmemPhase(SmemResourceRaw& smemResourceRaw, int phase);
+  _CCCL_DEVICE_API SmemRef<T> acquireRef();
 };
 
 template <typename T>
-__device__ SmemPhase<T>::SmemPhase(SmemResourceRaw& smemResourceRaw, int phase)
+_CCCL_DEVICE_API SmemPhase<T>::SmemPhase(SmemResourceRaw& smemResourceRaw, int phase)
     : mSmemResourceRaw(smemResourceRaw)
     , mCurPhase(phase)
 {}
 
 template <typename T>
-__device__ SmemRef<T> SmemPhase<T>::acquireRef()
+_CCCL_DEVICE_API SmemRef<T> SmemPhase<T>::acquireRef()
 {
   // Wait on barrier
   mSmemResourceRaw.acquire(mCurPhase);
