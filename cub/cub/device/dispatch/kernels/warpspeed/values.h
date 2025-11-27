@@ -36,22 +36,22 @@ struct Warps : Value
 struct Align : Value
 {};
 
-[[nodiscard]] _CCCL_API Stages stages(int value) noexcept
+[[nodiscard]] _CCCL_API inline Stages stages(int value) noexcept
 {
   return Stages{value};
 }
 
-[[nodiscard]] _CCCL_API Elems elems(int value) noexcept
+[[nodiscard]] _CCCL_API inline Elems elems(int value) noexcept
 {
   return Elems{value};
 }
 
-[[nodiscard]] _CCCL_API Warps warps(int value) noexcept
+[[nodiscard]] _CCCL_API inline Warps warps(int value) noexcept
 {
   return Warps{value};
 }
 
-[[nodiscard]] _CCCL_API Align align(int value) noexcept
+[[nodiscard]] _CCCL_API inline Align align(int value) noexcept
 {
   return Align{value};
 }
