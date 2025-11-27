@@ -17,6 +17,8 @@
 
 #include <cuda/__ptx/instructions/elect_sync.h>
 
+CUB_NAMESPACE_BEGIN
+
 // Squad - device squad instance
 //
 // A squad is a collection of warps that work together in a warp-specialized
@@ -140,3 +142,5 @@ _CCCL_DEVICE_API void squadDispatch(SpecialRegisters sr, const SquadDesc (&squad
     }
   }
 }
+
+CUB_NAMESPACE_END
