@@ -41,7 +41,7 @@ struct SmemRef
   SmemRef& operator=(const SmemRef&)  = delete; // Delete copy assignment
   SmemRef& operator=(const SmemRef&&) = delete; // Delete move assignment
 
-  [[nodiscard]] _CCCL_DEVICE_API ~SmemRef()
+  _CCCL_DEVICE_API ~SmemRef()
   {
     if (mDoFenceLdsToAsyncProxy)
     {
@@ -72,7 +72,7 @@ struct SmemRef
     return mSmemResourceRaw.ptrCurBarrierRelease(mCurPhase);
   }
 
-  [[nodiscard]] _CCCL_DEVICE_API void squadIncreaseTxCount(const Squad& squad, int txCount)
+  _CCCL_DEVICE_API void squadIncreaseTxCount(const Squad& squad, int txCount)
   {
     mTxCountIsSet = true;
     // Only leader thread increments txCount
@@ -80,7 +80,7 @@ struct SmemRef
     mTxCount += txCount;
   }
 
-  [[nodiscard]] _CCCL_DEVICE_API void setFenceLdsToAsyncProxy() noexcept
+  _CCCL_DEVICE_API void setFenceLdsToAsyncProxy() noexcept
   {
     mDoFenceLdsToAsyncProxy = true;
   }
