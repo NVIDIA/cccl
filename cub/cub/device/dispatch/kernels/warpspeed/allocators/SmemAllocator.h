@@ -18,6 +18,8 @@
 
 #include <nv/target>
 
+CUB_NAMESPACE_BEGIN
+
 struct SmemAllocator
 {
   uint32_t mPtrSmem32 = 0;
@@ -61,3 +63,5 @@ struct SmemAllocator
     return mAllocatedSize;
   }
 };
+
+CUB_NAMESPACE_END

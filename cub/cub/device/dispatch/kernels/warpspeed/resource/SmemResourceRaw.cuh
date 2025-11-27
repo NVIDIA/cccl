@@ -24,6 +24,8 @@
 #include <cuda/__ptx/ptx_dot_variants.h>
 #include <cuda/std/cstdint>
 
+CUB_NAMESPACE_BEGIN
+
 struct SmemResourceRaw
 {
   static constexpr int mMaxNumPhases = 4;
@@ -159,3 +161,5 @@ struct SmemResourceRaw
     }
   }
 };
+
+CUB_NAMESPACE_END

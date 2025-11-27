@@ -17,6 +17,8 @@
 
 #include <cuda/std/cstdint>
 
+CUB_NAMESPACE_BEGIN
+
 template <typename T>
 struct SmemPhase
 {
@@ -36,3 +38,5 @@ struct SmemPhase
     return SmemRef<T>(mSmemResourceRaw, mCurPhase);
   }
 };
+
+CUB_NAMESPACE_END

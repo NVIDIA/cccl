@@ -19,6 +19,8 @@
 #include <cuda/std/__tuple_dir/structured_bindings.h>
 #include <cuda/std/cstdint>
 
+CUB_NAMESPACE_BEGIN
+
 template <typename T>
 struct SmemStage
 {
@@ -87,3 +89,5 @@ static [[nodiscard]] _CCCL_DEVICE_API SmemPhaseStructuredBinding<T, numPhases> b
 
   return SmemPhaseStructuredBinding<T, numPhases>{smemStage.mSmemResourceRaw};
 }
+
+CUB_NAMESPACE_END

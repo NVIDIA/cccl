@@ -20,6 +20,8 @@
 
 #include <cuda/std/cstdint>
 
+CUB_NAMESPACE_BEGIN
+
 template <typename T>
 struct SmemResource : SmemResourceRaw
 {
@@ -56,3 +58,5 @@ makeSmemResource(SyncHandler& syncHandler, SmemAllocator& smemAllocator, Stages 
   auto raw      = SmemResourceRaw(syncHandler, ptrBase, sizeBytes, strideBytes, stages.value());
   return SmemResource<StageType>(raw);
 }
+
+CUB_NAMESPACE_END

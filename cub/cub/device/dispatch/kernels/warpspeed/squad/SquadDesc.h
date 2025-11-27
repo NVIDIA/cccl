@@ -12,6 +12,8 @@
 #  pragma system_header
 #endif // no system header
 
+CUB_NAMESPACE_BEGIN
+
 // SquadDesc - squad descriptor
 //
 // A squad is a collection of warps that work together in a warp-specialized
@@ -68,3 +70,5 @@ template <int numSquads>
   }
   return sumThreads;
 }
+
+CUB_NAMESPACE_END
