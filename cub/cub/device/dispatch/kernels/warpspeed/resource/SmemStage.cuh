@@ -67,7 +67,7 @@ struct SmemPhaseStructuredBinding
 
 // The binding function
 template <size_t numPhases, typename _Tp>
-[[nodiscard]] _CCCL_DEVICE_API static SmemPhaseStructuredBinding<_Tp, numPhases> bindPhases(SmemStage<_Tp>& smemStage)
+[[nodiscard]] _CCCL_DEVICE_API inline SmemPhaseStructuredBinding<_Tp, numPhases> bindPhases(SmemStage<_Tp>& smemStage)
 {
   constantAssert(smemStage.mSmemResourceRaw.mNumPhases == numPhases,
                  "Number of bound phases must match resource phases.");

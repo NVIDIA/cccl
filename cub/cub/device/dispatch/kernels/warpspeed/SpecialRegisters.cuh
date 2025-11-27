@@ -28,7 +28,7 @@ struct SpecialRegisters
   const uint32_t laneIdx;
 };
 
-static _CCCL_DEVICE_API SpecialRegisters getSpecialRegisters()
+[[nodiscard]] _CCCL_DEVICE_API inline SpecialRegisters getSpecialRegisters()
 {
   uint32_t clusterCtaRank = ::cuda::ptx::get_sreg_cluster_ctarank();
   uint32_t threadIdxX     = threadIdx.x;

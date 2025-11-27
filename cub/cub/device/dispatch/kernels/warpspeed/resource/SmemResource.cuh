@@ -36,7 +36,7 @@ struct SmemResource : SmemResourceRaw
 };
 
 template <typename StageType, int stageCount>
-[[nodiscard]] _CCCL_API SmemResource<StageType>
+[[nodiscard]] _CCCL_API inline SmemResource<StageType>
 makeSmemResource(SyncHandler& syncHandler, StageType (&smemBuffer)[stageCount])
 {
   int sizeBytes = sizeof(smemBuffer[0]);
@@ -47,7 +47,7 @@ makeSmemResource(SyncHandler& syncHandler, StageType (&smemBuffer)[stageCount])
 }
 
 template <typename StageType>
-[[nodiscard]] _CCCL_API SmemResource<StageType>
+[[nodiscard]] _CCCL_API inline SmemResource<StageType>
 makeSmemResource(SyncHandler& syncHandler, SmemAllocator& smemAllocator, Stages stages, Elems elems = elems(1))
 {
   int align       = alignof(StageType);
