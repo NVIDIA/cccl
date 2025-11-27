@@ -19,7 +19,7 @@
 
 CUB_NAMESPACE_BEGIN
 
-template <typename T>
+template <typename _Tp>
 struct SmemRef
 {
   SmemResourceRaw& mSmemResourceRaw;
@@ -57,9 +57,9 @@ struct SmemRef
     }
   }
 
-  [[nodiscard]] _CCCL_DEVICE_API T& data() noexcept
+  [[nodiscard]] _CCCL_DEVICE_API _Tp& data() noexcept
   {
-    return reinterpret_cast<T&>(*(T*) mSmemResourceRaw.data());
+    return reinterpret_cast<_Tp&>(*(_Tp*) mSmemResourceRaw.data());
   }
 
   [[nodiscard]] _CCCL_DEVICE_API int sizeBytes() const noexcept
