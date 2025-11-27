@@ -377,8 +377,8 @@ struct DispatchScan
     const int grid_dim             = (num_items + tile_size - 1) / size_t(tile_size);
 
     detail::scan::scanKernelParams params{
-      .ptrIn     = d_in,
-      .ptrOut    = d_out,
+      .ptrIn     = (int*) d_in, // TODO: HACK: FIX ahendriksen
+      .ptrOut    = (int*) d_out, // TODO: HACK: FIX ahendriksen
       .ptrTmp    = (detail::scan::tmp_state_t*) d_temp_storage,
       .numElem   = num_items,
       .numStages = num_stages};
@@ -399,9 +399,9 @@ struct DispatchScan
     size_t num_tiles = num_items / size_t(tile_size);
 
     detail::scan::initTmpStates<tile_size><<<int(num_tiles) / 128 + 1, 128>>>(
-      d_in,
+      (int*) d_in,              // TODO(ahendriksen): HACK FIX
       (detail::scan::tmp_state_t*) d_temp_storage,
-      d_out,
+      (int*) d_out,             // TODO(ahendriksen): HACK FIX
       num_items,
       /*do_check=*/false);
     if (const auto error = CubDebug(cudaGetLastError()))
