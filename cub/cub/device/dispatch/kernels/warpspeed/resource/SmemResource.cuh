@@ -13,8 +13,8 @@
 #endif // no system header
 
 #include <cub/device/dispatch/kernels/warpspeed/allocators/SmemAllocator.h>
-#include <cub/device/dispatch/kernels/warpspeed/SmemResourceRaw.cuh>
-#include <cub/device/dispatch/kernels/warpspeed/SmemStage.cuh>
+#include <cub/device/dispatch/kernels/warpspeed/resource/SmemResourceRaw.cuh>
+#include <cub/device/dispatch/kernels/warpspeed/resource/SmemStage.cuh>
 #include <cub/device/dispatch/kernels/warpspeed/SyncHandler.h>
 #include <cub/device/dispatch/kernels/warpspeed/values.h>
 

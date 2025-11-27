@@ -12,8 +12,8 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cub/device/dispatch/kernels/warpspeed/SmemRef.cuh>
-#include <cub/device/dispatch/kernels/warpspeed/SmemResourceRaw.cuh>
+#include <cub/device/dispatch/kernels/warpspeed/resource/SmemRef.cuh>
+#include <cub/device/dispatch/kernels/warpspeed/resource/SmemResourceRaw.cuh>
 
 #include <cuda/std/cstdint>
 

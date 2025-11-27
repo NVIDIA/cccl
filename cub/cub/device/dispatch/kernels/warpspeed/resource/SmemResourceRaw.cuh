@@ -17,10 +17,9 @@
 #include <cub/device/dispatch/kernels/warpspeed/squad/SquadDesc.h>
 #include <cub/device/dispatch/kernels/warpspeed/SyncHandler.h>
 
-#include <cuda/__ptx/instructions/fence_proxy_async_generic_sync_restrict.h>
+#include <cuda/__ptx/instructions/fence.h>
 #include <cuda/__ptx/instructions/mbarrier_arrive.h>
-#include <cuda/__ptx/instructions/mbarrier_arrive_expect_tx.h>
-#include <cuda/__ptx/instructions/mbarrier_try_wait_parity.h>
+#include <cuda/__ptx/instructions/mbarrier_wait.h>
 #include <cuda/__ptx/ptx_dot_variants.h>
 #include <cuda/std/cstdint>
 
