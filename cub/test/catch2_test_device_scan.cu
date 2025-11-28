@@ -202,7 +202,6 @@ C2H_TEST("Device scan works with all device interfaces", "[scan][device]", full_
     }
   }
 
-#if 0
   SECTION("inclusive scan with init value")
   {
     using op_t    = cuda::std::plus<>;
@@ -311,5 +310,4 @@ C2H_TEST("Device scan works with all device interfaces", "[scan][device]", full_
       REQUIRE_THAT_QUIET(expected_result, Equals(in_items));
     }
   }
-#endif
 }

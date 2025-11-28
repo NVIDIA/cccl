@@ -393,7 +393,7 @@ struct DispatchScan
       .numElem   = num_items,
       .numStages = num_stages};
 
-    auto kernel_ptr = detail::scan::scan<tile_size, numLookbackTiles, InputT, OutputT, AccumT, ScanOpT, InitValueT>;
+    auto kernel_ptr = detail::scan::scan<tile_size, numLookbackTiles, InputT, OutputT, AccumT, ScanOpT, InitValueT, EnforceInclusive == ForceInclusive::Yes>;
 
     SyncHandler syncHandler{};
     SmemAllocator smemAllocator{};
