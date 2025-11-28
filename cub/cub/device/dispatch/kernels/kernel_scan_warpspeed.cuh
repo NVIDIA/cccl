@@ -28,6 +28,7 @@
 #include <cuda/__memory/align_down.h> // cuda::align_down
 
 #include <cuda/ptx>
+#include <cuda/std/__cccl/cuda_capabilities.h>
 #include <cuda/std/__functional/invoke.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__utility/move.h>
@@ -493,6 +494,7 @@ _CCCL_DEVICE_API inline void kernelBody(
   // Lookback-specific variables:
   int idxTilePrev = -1;
   AccumT sumExclusiveCtaPrev{};
+  _CCCL_PDL_GRID_DEPENDENCY_SYNC();
 
   ////////////////////////////////////////////////////////////////////////////////
   // Loop over tiles
@@ -742,6 +744,11 @@ _CCCL_DEVICE_API inline void kernelBody(
     // Update idxTile
     idxTile = ::cuda::ptx::clusterlaunchcontrol_query_cancel_get_first_ctaid_x<int>(regNextBlockIdx);
   }
+
+  if (squad == squadLoad)
+  {
+    _CCCL_PDL_TRIGGER_NEXT_LAUNCH();
+  }
 }
 
 template <int tile_size,
@@ -776,6 +783,8 @@ __launch_bounds__(128) __global__ void initTmpStates(tmp_state_t<AccumT>* tmp, c
   {
     return;
   }
+  _CCCL_PDL_GRID_DEPENDENCY_SYNC();
+  _CCCL_PDL_TRIGGER_NEXT_LAUNCH();
   tmp[tile_id] = {EMPTY, AccumT{}};
 }
 } // namespace detail::scan
