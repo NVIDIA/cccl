@@ -20,8 +20,8 @@
 #include <cub/device/dispatch/kernels/warpspeed/squad/Squad.h> // squadDispatch, ...
 #include <cub/device/dispatch/kernels/warpspeed/values.h> // stages
 #include <cub/thread/thread_reduce.cuh>
-#include <cub/warp/warp_reduce.cuh>
 #include <cub/thread/thread_scan.cuh>
+#include <cub/warp/warp_reduce.cuh>
 #include <cub/warp/warp_scan.cuh>
 
 #include <cuda/ptx>
@@ -715,14 +715,17 @@ template <int tile_size,
 __launch_bounds__(squadCountThreads(scanSquads), 1) __global__ void scan(
   const __grid_constant__ scanKernelParams<InputT, OutputT, AccumT> params, ScanOpT scan_op, InitValueT init_value)
 {
-  // Cache special registers at start of kernel
-  SpecialRegisters specialRegisters = getSpecialRegisters();
+  NV_IF_TARGET(
+    NV_PROVIDES_SM_90,
+    (
+      // Cache special registers at start of kernel
+      SpecialRegisters specialRegisters = getSpecialRegisters();
 
-  // Dispatch for warp-specialization
-  squadDispatch(specialRegisters, scanSquads, [&](Squad squad) {
-    kernelBody<numLookbackTiles, tile_size, InputT, OutputT, AccumT, ScanOpT, InitValueT, ForceInclusive>(
-      squad, specialRegisters, params, ::cuda::std::move(scan_op), init_value);
-  });
+      // Dispatch for warp-specialization
+      squadDispatch(specialRegisters, scanSquads, [&](Squad squad) {
+        kernelBody<numLookbackTiles, tile_size, InputT, OutputT, AccumT, ScanOpT, InitValueT, ForceInclusive>(
+          squad, specialRegisters, params, ::cuda::std::move(scan_op), init_value);
+      });))
 }
 
 template <int tile_size, typename AccumT>
