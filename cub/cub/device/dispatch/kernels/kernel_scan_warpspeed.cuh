@@ -21,10 +21,12 @@
 #include <cub/device/dispatch/kernels/warpspeed/values.h> // stages
 #include <cub/thread/thread_reduce.cuh>
 #include <cub/warp/warp_reduce.cuh>
+#include <cub/thread/thread_scan.cuh>
 #include <cub/warp/warp_scan.cuh>
 
 #include <cuda/ptx>
 #include <cuda/std/__functional/invoke.h>
+#include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__utility/move.h>
 #include <cuda/std/cassert>
 
@@ -429,13 +431,14 @@ template <int numLookbackTiles,
           typename OutputT,
           typename AccumT,
           typename ScanOpT,
-          typename InitValueT>
+          typename InitValueT,
+          bool ForceInclusive>
 _CCCL_DEVICE_API inline void kernelBody(
   Squad squad,
   SpecialRegisters specialRegisters,
   const scanKernelParams<InputT, OutputT, AccumT>& params,
   ScanOpT scan_op,
-  InitValueT)
+  InitValueT init_value)
 {
   ////////////////////////////////////////////////////////////////////////////////
   // Resources
@@ -447,6 +450,10 @@ _CCCL_DEVICE_API inline void kernelBody(
     allocResources<tile_size, InputT, OutputT, AccumT>(syncHandler, smemAllocator, params);
 
   syncHandler.clusterInitSync(specialRegisters);
+
+  // Inclusive scan if no init_value type is provided
+  static constexpr bool hasInit     = !::cuda::std::is_same_v<InitValueT, NullType>;
+  static constexpr bool isInclusive = ForceInclusive || !hasInit;
 
   ////////////////////////////////////////////////////////////////////////////////
   // Pre-loop
@@ -546,10 +553,19 @@ _CCCL_DEVICE_API inline void kernelBody(
       // Reduce across squad
       ////////////////////////////////////////////////////////////////////////////////
       AccumT regSquadSum{};
-      for (int i = 0; i < squadReduce.warpCount(); ++i)
+      if constexpr (hasInit)
+      {
+        if (idxTile == 0)
+        {
+          regSquadSum = scan_op(init_value, refSumThreadAndWarpW.data()[squadReduce.threadCount()]);
+        }
+      }
+
+      for (int i = (idxTile == 0) && hasInit; i < squadReduce.warpCount(); ++i)
       {
         regSquadSum = scan_op(regSquadSum, refSumThreadAndWarpW.data()[squadReduce.threadCount() + i]);
       }
+
       ////////////////////////////////////////////////////////////////////////////////
       // Store private sum for lookback
       ////////////////////////////////////////////////////////////////////////////////
@@ -629,6 +645,14 @@ _CCCL_DEVICE_API inline void kernelBody(
         sumExclusive              = scan_op(sumExclusive, regSumExclusiveCta);
       }
 
+      if constexpr (hasInit)
+      {
+        if (idxTile == 0)
+        {
+          sumExclusive = scan_op(static_cast<AccumT>(init_value), sumExclusive);
+        }
+      }
+
       ////////////////////////////////////////////////////////////////////////////////
       // Scan across elements allocated to this thread
       ////////////////////////////////////////////////////////////////////////////////
@@ -642,8 +666,14 @@ _CCCL_DEVICE_API inline void kernelBody(
       }
 
       // Perform inclusive scan of register array in current thread.
-      regSumInclusive[0] = scan_op(regSumInclusive[0], sumExclusive);
-      threadScanInclusive(regSumInclusive, scan_op);
+      if constexpr (isInclusive)
+      {
+        ThreadScanInclusive(regSumInclusive, regSumInclusive, scan_op, sumExclusive);
+      }
+      else
+      {
+        ThreadScanExclusive(regSumInclusive, regSumInclusive, scan_op, sumExclusive);
+      }
 
       ////////////////////////////////////////////////////////////////////////////////
       // Store result to shared memory
@@ -680,7 +710,8 @@ template <int tile_size,
           typename OutputT,
           typename AccumT,
           typename ScanOpT,
-          typename InitValueT>
+          typename InitValueT,
+          bool ForceInclusive>
 __launch_bounds__(squadCountThreads(scanSquads), 1) __global__ void scan(
   const __grid_constant__ scanKernelParams<InputT, OutputT, AccumT> params, ScanOpT scan_op, InitValueT init_value)
 {
@@ -689,7 +720,7 @@ __launch_bounds__(squadCountThreads(scanSquads), 1) __global__ void scan(
 
   // Dispatch for warp-specialization
   squadDispatch(specialRegisters, scanSquads, [&](Squad squad) {
-    kernelBody<numLookbackTiles, tile_size, InputT, OutputT, AccumT, ScanOpT, InitValueT>(
+    kernelBody<numLookbackTiles, tile_size, InputT, OutputT, AccumT, ScanOpT, InitValueT, ForceInclusive>(
       squad, specialRegisters, params, ::cuda::std::move(scan_op), init_value);
   });
 }
