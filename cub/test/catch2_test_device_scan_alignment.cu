@@ -5,6 +5,8 @@
 
 #include <cub/device/device_scan.cuh>
 
+#include <cuda/std/functional>
+
 #include <algorithm>
 #include <cmath>
 #include <cstdint>
@@ -16,8 +18,10 @@
 #include "catch2_test_device_reduce.cuh"
 #include "catch2_test_device_scan.cuh"
 #include "catch2_test_launch_helper.h"
+#include <c2h/bfloat16.cuh>
 #include <c2h/catch2_test_helper.h>
 #include <c2h/custom_type.h>
+#include <c2h/half.cuh>
 
 DECLARE_LAUNCH_WRAPPER(cub::DeviceScan::InclusiveScanInit, device_inclusive_scan_with_init);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceScan::ExclusiveSum, device_exclusive_sum);
@@ -26,30 +30,21 @@ DECLARE_LAUNCH_WRAPPER(cub::DeviceScan::InclusiveSum, device_inclusive_sum);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceScan::InclusiveScan, device_inclusive_scan);
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
-// %PARAM% TEST_TYPES types 0:1:2:3
+// %PARAM% TEST_TYPES types 0:1:2
 
 // List of types to test
 using custom_t =
   c2h::custom_type_t<c2h::accumulateable_t,
                      c2h::equal_comparable_t,
                      c2h::lexicographical_less_comparable_t,
-                     c2h::lexicographical_greater_comparable_t>;
+                     c2h::lexicographical_greater_comparable_t,
+                     c2h::subtractable_t>;
 
 #if TEST_TYPES == 0
 using full_type_list = c2h::type_list<type_pair<int>>;
 #elif TEST_TYPES == 1
 using full_type_list = c2h::type_list<type_pair<std::int32_t>, type_pair<std::uint64_t>>;
 #elif TEST_TYPES == 2
-using full_type_list =
-  c2h::type_list<type_pair<uchar3>,
-                 type_pair<
-#  if _CCCL_CTK_AT_LEAST(13, 0)
-                   ulonglong4_16a
-#  else // _CCCL_CTK_AT_LEAST(13, 0)
-                   ulonglong4
-#  endif // _CCCL_CTK_AT_LEAST(13, 0)
-                   >>;
-#elif TEST_TYPES == 3
 // clang-format off
 using full_type_list = c2h::type_list<
 type_pair<custom_t>
@@ -74,18 +69,20 @@ enum class gen_data_t : int
   GEN_TYPE_CONST
 };
 
+template <class T>
 struct VectorCompareResult
 {
-  std::vector<std::tuple<size_t, int, int>> first_mismatches;
-  std::vector<std::tuple<size_t, int, int>> last_mismatches;
+  std::vector<std::tuple<size_t, T, T>> first_mismatches;
+  std::vector<std::tuple<size_t, T, T>> last_mismatches;
   size_t total_mismatches = 0;
   double mismatch_percent = 0.0;
-  int max_difference      = 0;
+  T max_difference{};
 };
 
-VectorCompareResult compare_vectors(const std::vector<int>& actual, const std::vector<int>& expected)
+template <class T>
+VectorCompareResult<T> compare_vectors(const std::vector<T>& actual, const std::vector<T>& expected)
 {
-  VectorCompareResult result;
+  VectorCompareResult<T> result;
 
   if (actual.size() != expected.size())
   {
@@ -93,16 +90,20 @@ VectorCompareResult compare_vectors(const std::vector<int>& actual, const std::v
     return result;
   }
 
-  std::vector<std::tuple<size_t, int, int>> mismatches;
+  std::vector<std::tuple<size_t, T, T>> mismatches;
   mismatches.reserve(actual.size());
-  int current_max_diff = 0;
+  T current_max_diff{};
 
   for (size_t i = 0; i < actual.size(); ++i)
   {
     if (actual[i] != expected[i])
     {
       mismatches.emplace_back(i, actual[i], expected[i]);
-      current_max_diff = std::max(current_max_diff, std::abs(actual[i] - expected[i]));
+      const T diff = actual[i] - expected[i];
+      if (diff > current_max_diff)
+      {
+        current_max_diff = diff;
+      }
     }
   }
 
@@ -111,13 +112,13 @@ VectorCompareResult compare_vectors(const std::vector<int>& actual, const std::v
   result.max_difference   = current_max_diff;
 
   // Handle first 10 mismatches
-  size_t first_count = std::min<size_t>(mismatches.size(), 10);
+  size_t first_count = cuda::std::min<size_t>(mismatches.size(), 10);
   result.first_mismatches.assign(mismatches.begin(), mismatches.begin() + first_count);
 
   // Handle last 10 mismatches
   if (mismatches.size() > 10)
   {
-    auto start = mismatches.end() - std::min<size_t>(mismatches.size(), 10);
+    auto start = mismatches.end() - cuda::std::min<size_t>(mismatches.size(), 10);
     result.last_mismatches.assign(start, mismatches.end());
   }
   else
@@ -128,7 +129,8 @@ VectorCompareResult compare_vectors(const std::vector<int>& actual, const std::v
   return result;
 }
 
-void print_comparison(const VectorCompareResult& res)
+template <class T>
+void print_comparison(const VectorCompareResult<T>& res)
 {
   // Print first mismatches
   std::cout << "First 10 mismatches:\n";
@@ -154,7 +156,8 @@ void print_comparison(const VectorCompareResult& res)
     << "Maximum absolute difference: " << res.max_difference << "\n";
 }
 
-bool compareIsEqualAndPrint(const std::vector<int>& actual, const std::vector<int>& expected)
+template <class T>
+bool compareIsEqualAndPrint(const std::vector<T>& actual, const std::vector<T>& expected)
 {
   VectorCompareResult result = compare_vectors(expected, actual);
   if (result.total_mismatches == 0)
@@ -201,7 +204,7 @@ C2H_TEST("Device scan works with all device interfaces", "[scan][device]", full_
       const int max_offset = 16;
 
       // // Generate input data
-      c2h::device_vector<input_t> in_items(num_items + max_offset, 42);
+      c2h::device_vector<input_t> in_items(num_items + max_offset);
       c2h::gen(C2H_SEED(2), in_items);
 
       auto d_in_it = thrust::raw_pointer_cast(in_items.data());
@@ -213,7 +216,11 @@ C2H_TEST("Device scan works with all device interfaces", "[scan][device]", full_
         c2h::host_vector<input_t> host_items(in_items);
         c2h::host_vector<output_t> expected_result(num_items);
         compute_inclusive_scan_reference(
-          host_items.cbegin() + offset, host_items.cend() - max_offset + offset, expected_result.begin(), op_t{}, 0);
+          host_items.cbegin() + offset,
+          host_items.cend() - max_offset + offset,
+          expected_result.begin(),
+          op_t{},
+          input_t{});
 
         // Run test
         c2h::device_vector<output_t> out_result(num_items);

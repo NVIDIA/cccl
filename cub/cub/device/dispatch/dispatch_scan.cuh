@@ -447,7 +447,8 @@ struct DispatchScan
     {
       SyncHandler syncHandler{};
       SmemAllocator smemAllocator{};
-      detail::scan::allocResources<tile_size, InputT, OutputT, AccumT>(syncHandler, smemAllocator, params);
+      [[maybe_unused]] auto res =
+        detail::scan::allocResources<tile_size, InputT, OutputT, AccumT>(syncHandler, smemAllocator, params);
 
       const auto curr_smem_size = static_cast<int>(smemAllocator.sizeBytes());
       if (curr_smem_size > max_dynamic_smem_size)
