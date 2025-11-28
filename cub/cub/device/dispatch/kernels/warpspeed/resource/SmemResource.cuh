@@ -25,38 +25,31 @@ CUB_NAMESPACE_BEGIN
 template <typename _Tp>
 struct SmemResource : SmemResourceRaw
 {
-  _CCCL_DEVICE_API SmemResource(SmemResourceRaw smemResourceRaw) noexcept
-      : SmemResourceRaw(smemResourceRaw)
-  {}
+  template <int stageCount>
+ _CCCL_API SmemResource(SyncHandler& syncHandler, _Tp (&smemBuffer)[stageCount])
+  : SmemResourceRaw(syncHandler, smemBuffer, sizeof(smemBuffer[0]), sizeof(smemBuffer[0]), stageCount)
+ {}
+
+ _CCCL_API SmemResource(SyncHandler& syncHandler, SmemAllocator& smemAllocator, Stages stages, Elems elems = Elems{1})
+  : SmemResourceRaw(makeSmemResourceRaw(syncHandler, smemAllocator, stages, elems))
+ {
+ }
 
   [[nodiscard]] _CCCL_DEVICE_API SmemStage<_Tp> popStage() noexcept
   {
     return SmemStage<_Tp>(*this);
   }
+
+  private:
+    [[nodiscard]] _CCCL_API static inline SmemResourceRaw makeSmemResourceRaw(SyncHandler& syncHandler, SmemAllocator& smemAllocator, Stages stages, Elems elems = Elems{1})
+    {
+      int align       = alignof(_Tp);
+      int sizeBytes   = elems.value() * sizeof(_Tp);
+      int strideBytes = sizeBytes;
+
+      void* ptrBase = smemAllocator.alloc(stages.value() * strideBytes, align);
+      return SmemResourceRaw(syncHandler, ptrBase, sizeBytes, strideBytes, stages.value());
+    }
 };
-
-template <typename StageType, int stageCount>
-[[nodiscard]] _CCCL_API inline SmemResource<StageType>
-makeSmemResource(SyncHandler& syncHandler, StageType (&smemBuffer)[stageCount])
-{
-  int sizeBytes = sizeof(smemBuffer[0]);
-  int stride    = sizeof(smemBuffer[0]);
-
-  auto raw = SmemResourceRaw(syncHandler, smemBuffer, sizeBytes, stride, stageCount);
-  return SmemResource<StageType>(raw);
-}
-
-template <typename StageType>
-[[nodiscard]] _CCCL_API inline SmemResource<StageType>
-makeSmemResource(SyncHandler& syncHandler, SmemAllocator& smemAllocator, Stages stages, Elems elems = Elems{1})
-{
-  int align       = alignof(StageType);
-  int sizeBytes   = elems.value() * sizeof(StageType);
-  int strideBytes = sizeBytes;
-
-  void* ptrBase = smemAllocator.alloc(stages.value() * strideBytes, align);
-  auto raw      = SmemResourceRaw(syncHandler, ptrBase, sizeBytes, strideBytes, stages.value());
-  return SmemResource<StageType>(raw);
-}
 
 CUB_NAMESPACE_END
