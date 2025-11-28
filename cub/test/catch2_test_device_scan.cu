@@ -30,7 +30,7 @@ using custom_t =
                      c2h::lexicographical_greater_comparable_t>;
 
 #if TEST_TYPES == 0
-using full_type_list = c2h::type_list<type_pair<int>>;
+using full_type_list = c2h::type_list<type_pair<std::uint8_t, std::int32_t>, type_pair<std::int8_t>>;
 #elif TEST_TYPES == 1
 using full_type_list = c2h::type_list<type_pair<std::int32_t>, type_pair<std::uint64_t>>;
 #elif TEST_TYPES == 2
@@ -77,6 +77,7 @@ C2H_TEST("Device scan works with all device interfaces", "[scan][device]", full_
 
   CAPTURE(c2h::type_name<input_t>(), c2h::type_name<output_t>());
 
+  // TODO(bgruber): re-enable variable input sizes
   // constexpr offset_t min_items = 1;
   // constexpr offset_t max_items = 1000000;
 
@@ -87,31 +88,30 @@ C2H_TEST("Device scan works with all device interfaces", "[scan][device]", full_
   //     min_items,
   //     max_items,
   //   }));
+  const offset_t num_items = 1 * 63 * 128;
 
-  const offset_t num_items = 500 * 63 * 128;
+  // Input data generation to test
+  const gen_data_t data_gen_mode = GENERATE_COPY(gen_data_t::GEN_TYPE_RANDOM, gen_data_t::GEN_TYPE_CONST);
 
-  // // Input data generation to test
-  // const gen_data_t data_gen_mode = GENERATE_COPY(gen_data_t::GEN_TYPE_RANDOM, gen_data_t::GEN_TYPE_CONST);
-  //
-  // // Generate input data
-  c2h::device_vector<input_t> in_items(num_items, 42);
-  // if (data_gen_mode == gen_data_t::GEN_TYPE_RANDOM)
-  // {
-  //   c2h::gen(C2H_SEED(2), in_items);
-  // }
-  // else
-  // {
-  //   input_t default_constant{};
-  //   init_default_constant(default_constant);
-  //   thrust::fill(c2h::device_policy, in_items.begin(), in_items.end(), default_constant);
-  // }
+  // Generate input data
+  c2h::device_vector<input_t> in_items(num_items);
+  if (data_gen_mode == gen_data_t::GEN_TYPE_RANDOM)
+  {
+    c2h::gen(C2H_SEED(2), in_items);
+  }
+  else
+  {
+    input_t default_constant{};
+    init_default_constant(default_constant);
+    thrust::fill(c2h::device_policy, in_items.begin(), in_items.end(), default_constant);
+  }
   auto d_in_it = thrust::raw_pointer_cast(in_items.data());
 
   // Skip DeviceScan::InclusiveSum and DeviceScan::ExclusiveSum tests for extended floating-point
   // types because of unbounded epsilon due to pseudo associativity of the addition operation over
   // floating point numbers
-#if 0
-#  if TEST_TYPES != 3
+
+#if TEST_TYPES != 3
   SECTION("inclusive sum")
   {
     using op_t    = cuda::std::plus<>;
@@ -141,6 +141,7 @@ C2H_TEST("Device scan works with all device interfaces", "[scan][device]", full_
     }
   }
 
+#  if 0
   SECTION("exclusive sum")
   {
     using op_t    = cuda::std::plus<>;

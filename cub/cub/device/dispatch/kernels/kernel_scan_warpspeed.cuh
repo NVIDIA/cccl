@@ -88,8 +88,8 @@ _CCCL_DEVICE_API inline void squadLoadTma(const Squad& squad, SmemRef<Tp>& refDe
   refDestSmem.squadIncreaseTxCount(squad, refDestSmem.sizeBytes());
 }
 
-template <typename Tp, typename OutputT>
-_CCCL_DEVICE_API inline void squadStoreTmaSync(const Squad& squad, OutputT* ptrOut, SmemRef<Tp>& refSrcSmem)
+template <typename OutputT>
+_CCCL_DEVICE_API inline void squadStoreTmaSync(const Squad& squad, OutputT* ptrOut, OutputT* srcSmem, uint32_t sizeBytes)
 {
   // Acquire shared memory in async proxy
   if (squad.isLeaderWarp())
@@ -100,16 +100,15 @@ _CCCL_DEVICE_API inline void squadStoreTmaSync(const Squad& squad, OutputT* ptrO
   if (squad.isLeaderThread())
   {
     // Issue TMA store
-    ::cuda::ptx::cp_async_bulk(
-      ::cuda::ptx::space_global, ::cuda::ptx::space_shared, ptrOut, refSrcSmem.data(), refSrcSmem.sizeBytes());
+    ::cuda::ptx::cp_async_bulk(::cuda::ptx::space_global, ::cuda::ptx::space_shared, ptrOut, srcSmem, sizeBytes);
   }
   // Commit and wait for store to have completed reading from shared memory
   ::cuda::ptx::cp_async_bulk_commit_group();
   ::cuda::ptx::cp_async_bulk_wait_group_read(::cuda::ptx::n32_t<0>{});
 }
 
-template <typename Tp, int elemPerThread>
-_CCCL_DEVICE_API inline void squadLoadSmem(Squad squad, Tp (&outReg)[elemPerThread], const Tp* smemBuf)
+template <typename InputT, typename AccumT, int elemPerThread>
+_CCCL_DEVICE_API inline void squadLoadSmem(Squad squad, AccumT (&outReg)[elemPerThread], const InputT* smemBuf)
 {
   for (int i = 0; i < elemPerThread; ++i)
   {
@@ -117,12 +116,12 @@ _CCCL_DEVICE_API inline void squadLoadSmem(Squad squad, Tp (&outReg)[elemPerThre
   }
 }
 
-template <typename Tp, int elemPerThread>
-_CCCL_DEVICE_API inline void squadStoreSmem(Squad squad, Tp* smemBuf, const Tp (&inReg)[elemPerThread])
+template <typename OutputT, typename AccumT, int elemPerThread>
+_CCCL_DEVICE_API inline void squadStoreSmem(Squad squad, OutputT* smemBuf, const AccumT (&inReg)[elemPerThread])
 {
   for (int i = 0; i < elemPerThread; ++i)
   {
-    smemBuf[squad.threadRank() * elemPerThread + i] = inReg[i];
+    smemBuf[squad.threadRank() * elemPerThread + i] = static_cast<OutputT>(inReg[i]);
   }
 }
 
@@ -355,27 +354,28 @@ _CCCL_GLOBAL_CONSTANT SquadDesc scanSquads[] = {
 };
 // Struct holding all scan kernel resources
 
-template <int tileSize, typename AccumT>
+template <int tileSize, typename InputT, typename OutputT, typename AccumT>
 struct ScanResources
 {
   static constexpr int elemPerThread = tileSize / squadReduce.threadCount();
 
-  using InOutT            = AccumT[squadReduce.threadCount() * elemPerThread];
+  using InT               = InputT[squadReduce.threadCount() * elemPerThread];
   using SumThreadAndWarpT = AccumT[squadReduce.threadCount() + squadReduce.warpCount()];
 
-  SmemResource<InOutT> smemInOut;
+  SmemResource<InT> smemIn;
+  OutputT* smemOut;
   SmemResource<uint4> smemNextBlockIdx;
   SmemResource<AccumT> smemSumExclusiveCta;
   SmemResource<SumThreadAndWarpT> smemSumThreadAndWarp;
 };
 // Function to allocate resources.
 
-template <int tileSize, typename ScanKernelParams, typename AccumT>
-_CCCL_API ScanResources<tileSize, AccumT>
-allocResources(SyncHandler& syncHandler, SmemAllocator& smemAllocator, const ScanKernelParams& params)
+template <int tileSize, typename InputT, typename OutputT, typename AccumT>
+_CCCL_API ScanResources<tileSize, InputT, OutputT, AccumT> allocResources(
+  SyncHandler& syncHandler, SmemAllocator& smemAllocator, const scanKernelParams<InputT, OutputT, AccumT>& params)
 {
-  using ScanResourcesT    = ScanResources<tileSize, AccumT>;
-  using InOutT            = typename ScanResourcesT::InOutT;
+  using ScanResourcesT    = ScanResources<tileSize, InputT, OutputT, AccumT>;
+  using InT               = typename ScanResourcesT::InT;
   using SumThreadAndWarpT = typename ScanResourcesT::SumThreadAndWarpT;
 
   // If numBlockIdxStages is one less than the number of stages, we find a small
@@ -389,15 +389,16 @@ allocResources(SyncHandler& syncHandler, SmemAllocator& smemAllocator, const Sca
   // scanStore squad, releasing the stage.
   int numSumExclusiveCtaStages = 2;
 
-  ScanResources<tileSize, AccumT> res{
-    .smemInOut            = makeSmemResource<InOutT>(syncHandler, smemAllocator, stages(params.numStages)),
-    .smemNextBlockIdx     = makeSmemResource<uint4>(syncHandler, smemAllocator, stages(numBlockIdxStages)),
+  ScanResources<tileSize, InputT, OutputT, AccumT> res{
+    .smemIn           = makeSmemResource<InT>(syncHandler, smemAllocator, stages(params.numStages)),
+    .smemOut          = reinterpret_cast<OutputT*>(smemAllocator.alloc(sizeof(OutputT) * tileSize, alignof(OutputT))),
+    .smemNextBlockIdx = makeSmemResource<uint4>(syncHandler, smemAllocator, stages(numBlockIdxStages)),
     .smemSumExclusiveCta  = makeSmemResource<int>(syncHandler, smemAllocator, stages(numSumExclusiveCtaStages)),
     .smemSumThreadAndWarp = makeSmemResource<SumThreadAndWarpT>(syncHandler, smemAllocator, stages(params.numStages)),
   };
   // asdfasdf
-  res.smemInOut.addPhase(syncHandler, smemAllocator, squadLoad);
-  res.smemInOut.addPhase(syncHandler, smemAllocator, {squadReduce, squadScanStore});
+  res.smemIn.addPhase(syncHandler, smemAllocator, squadLoad);
+  res.smemIn.addPhase(syncHandler, smemAllocator, {squadReduce, squadScanStore});
 
   res.smemNextBlockIdx.addPhase(syncHandler, smemAllocator, squadSched);
   res.smemNextBlockIdx.addPhase(syncHandler, smemAllocator, scanSquads);
@@ -424,12 +425,17 @@ allocResources(SyncHandler& syncHandler, SmemAllocator& smemAllocator, const Sca
 // glance at the code).
 template <int numLookbackTiles,
           int tile_size,
-          typename ScanKernelParams,
+          typename InputT,
+          typename OutputT,
           typename AccumT,
           typename ScanOpT,
           typename InitValueT>
-_CCCL_DEVICE_API inline void
-kernelBody(Squad squad, SpecialRegisters specialRegisters, const ScanKernelParams& params, ScanOpT scan_op, InitValueT)
+_CCCL_DEVICE_API inline void kernelBody(
+  Squad squad,
+  SpecialRegisters specialRegisters,
+  const scanKernelParams<InputT, OutputT, AccumT>& params,
+  ScanOpT scan_op,
+  InitValueT)
 {
   ////////////////////////////////////////////////////////////////////////////////
   // Resources
@@ -437,8 +443,8 @@ kernelBody(Squad squad, SpecialRegisters specialRegisters, const ScanKernelParam
   SyncHandler syncHandler{};
   SmemAllocator smemAllocator{};
 
-  ScanResources<tile_size, AccumT> res =
-    allocResources<tile_size, ScanKernelParams, AccumT>(syncHandler, smemAllocator, params);
+  ScanResources<tile_size, InputT, OutputT, AccumT> res =
+    allocResources<tile_size, InputT, OutputT, AccumT>(syncHandler, smemAllocator, params);
 
   syncHandler.clusterInitSync(specialRegisters);
 
@@ -461,7 +467,7 @@ kernelBody(Squad squad, SpecialRegisters specialRegisters, const ScanKernelParam
     // Get stages. When these objects go out of scope, the stage of the resource
     // is automatically incremented.
     SmemStage stageNextBlockIdx     = res.smemNextBlockIdx.popStage();
-    SmemStage stageInOut            = res.smemInOut.popStage();
+    SmemStage stageInOut            = res.smemIn.popStage();
     SmemStage stageSumThreadAndWarp = res.smemSumThreadAndWarp.popStage();
     SmemStage stageSumExclusiveCta  = res.smemSumExclusiveCta.popStage();
 
@@ -629,8 +635,11 @@ kernelBody(Squad squad, SpecialRegisters specialRegisters, const ScanKernelParam
       AccumT regSumInclusive[elem_per_thread] = {{}};
 
       // Acquire refInOut for remainder of scope.
-      SmemRef refInOutRW = phaseInOutRW.acquireRef();
-      squadLoadSmem(squad, regSumInclusive, refInOutRW.data());
+      {
+        SmemRef refInOutRW = phaseInOutRW.acquireRef();
+        squadLoadSmem(squad, regSumInclusive, refInOutRW.data());
+        refInOutRW.setFenceLdsToAsyncProxy();
+      }
 
       // Perform inclusive scan of register array in current thread.
       regSumInclusive[0] = scan_op(regSumInclusive[0], sumExclusive);
@@ -639,19 +648,18 @@ kernelBody(Squad squad, SpecialRegisters specialRegisters, const ScanKernelParam
       ////////////////////////////////////////////////////////////////////////////////
       // Store result to shared memory
       ////////////////////////////////////////////////////////////////////////////////
-      squadStoreSmem(squad, refInOutRW.data(), regSumInclusive);
-      // We do *not* release refSmemInOut here, because we will issue a TMA
-      // instruction below. Instead, we issue a squad-local syncthreads +
-      // fence.proxy.async to sync the shared memory writes with the TMA store.
+      squadStoreSmem(squad, res.smemOut, regSumInclusive);
+
+      // We issue a squad-local syncthreads + fence.proxy.async to sync the shared memory writes with the TMA store.
       squad.syncThreads();
 
       ////////////////////////////////////////////////////////////////////////////////
       // Store result to global memory using TMA
       ////////////////////////////////////////////////////////////////////////////////
-      squadStoreTmaSync(squad, params.ptrOut + idxTile * size_t(tile_size), refInOutRW);
-      // Release refInOut. No need to do any cross-proxy fencing here, because
-      // the TMA store in this warp and the TMA load in the load warp are both
-      // async proxy.
+      squadStoreTmaSync(squad,
+                        params.ptrOut + idxTile * size_t(tile_size),
+                        res.smemOut,
+                        static_cast<uint32_t>(sizeof(OutputT) * tile_size));
     }
 
     ////////////////////////////////////////////////////////////////////////////////
@@ -668,19 +676,20 @@ kernelBody(Squad squad, SpecialRegisters specialRegisters, const ScanKernelParam
 
 template <int tile_size,
           int numLookbackTiles,
-          typename ScanKernelParams,
+          typename InputT,
+          typename OutputT,
           typename AccumT,
           typename ScanOpT,
           typename InitValueT>
-__launch_bounds__(squadCountThreads(scanSquads), 1) __global__
-  void scan(const __grid_constant__ ScanKernelParams params, ScanOpT scan_op, InitValueT init_value)
+__launch_bounds__(squadCountThreads(scanSquads), 1) __global__ void scan(
+  const __grid_constant__ scanKernelParams<InputT, OutputT, AccumT> params, ScanOpT scan_op, InitValueT init_value)
 {
   // Cache special registers at start of kernel
   SpecialRegisters specialRegisters = getSpecialRegisters();
 
   // Dispatch for warp-specialization
   squadDispatch(specialRegisters, scanSquads, [&](Squad squad) {
-    kernelBody<numLookbackTiles, tile_size, ScanKernelParams, AccumT, ScanOpT, InitValueT>(
+    kernelBody<numLookbackTiles, tile_size, InputT, OutputT, AccumT, ScanOpT, InitValueT>(
       squad, specialRegisters, params, ::cuda::std::move(scan_op), init_value);
   });
 }
