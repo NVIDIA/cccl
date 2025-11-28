@@ -33,7 +33,8 @@ using custom_t =
   c2h::custom_type_t<c2h::accumulateable_t,
                      c2h::equal_comparable_t,
                      c2h::lexicographical_less_comparable_t,
-                     c2h::lexicographical_greater_comparable_t>;
+                     c2h::lexicographical_greater_comparable_t,
+                     c2h::subtractable_t>;
 
 #if TEST_TYPES == 0
 using full_type_list = c2h::type_list<type_pair<int>>;
@@ -74,18 +75,20 @@ enum class gen_data_t : int
   GEN_TYPE_CONST
 };
 
+template <class T>
 struct VectorCompareResult
 {
-  std::vector<std::tuple<size_t, int, int>> first_mismatches;
-  std::vector<std::tuple<size_t, int, int>> last_mismatches;
+  std::vector<std::tuple<size_t, T, T>> first_mismatches;
+  std::vector<std::tuple<size_t, T, T>> last_mismatches;
   size_t total_mismatches = 0;
   double mismatch_percent = 0.0;
-  int max_difference      = 0;
+  T max_difference{};
 };
 
-VectorCompareResult compare_vectors(const std::vector<int>& actual, const std::vector<int>& expected)
+template <class T>
+VectorCompareResult<T> compare_vectors(const std::vector<T>& actual, const std::vector<T>& expected)
 {
-  VectorCompareResult result;
+  VectorCompareResult<T> result;
 
   if (actual.size() != expected.size())
   {
@@ -93,9 +96,9 @@ VectorCompareResult compare_vectors(const std::vector<int>& actual, const std::v
     return result;
   }
 
-  std::vector<std::tuple<size_t, int, int>> mismatches;
+  std::vector<std::tuple<size_t, T, T>> mismatches;
   mismatches.reserve(actual.size());
-  int current_max_diff = 0;
+  T current_max_diff{};
 
   for (size_t i = 0; i < actual.size(); ++i)
   {
@@ -128,7 +131,8 @@ VectorCompareResult compare_vectors(const std::vector<int>& actual, const std::v
   return result;
 }
 
-void print_comparison(const VectorCompareResult& res)
+template <class T>
+void print_comparison(const VectorCompareResult<T>& res)
 {
   // Print first mismatches
   std::cout << "First 10 mismatches:\n";
@@ -154,7 +158,8 @@ void print_comparison(const VectorCompareResult& res)
     << "Maximum absolute difference: " << res.max_difference << "\n";
 }
 
-bool compareIsEqualAndPrint(const std::vector<int>& actual, const std::vector<int>& expected)
+template <class T>
+bool compareIsEqualAndPrint(const std::vector<T>& actual, const std::vector<T>& expected)
 {
   VectorCompareResult result = compare_vectors(expected, actual);
   if (result.total_mismatches == 0)
@@ -201,7 +206,7 @@ C2H_TEST("Device scan works with all device interfaces", "[scan][device]", full_
       const int max_offset = 16;
 
       // // Generate input data
-      c2h::device_vector<input_t> in_items(num_items + max_offset, 42);
+      c2h::device_vector<input_t> in_items(num_items + max_offset);
       c2h::gen(C2H_SEED(2), in_items);
 
       auto d_in_it = thrust::raw_pointer_cast(in_items.data());
