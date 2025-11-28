@@ -108,16 +108,20 @@ _CCCL_REQUIRES(::cuda::std::__is_extended_arithmetic_v<_Tp>)
       {
         NV_IF_TARGET(NV_IS_DEVICE, (::sincos(__v, &__ret.sin, &__ret.cos); return __ret;))
       }
+#if _LIBCUDACXX_HAS_NVFP16()
       if constexpr (::cuda::std::is_same_v<_Tp, ::__half>)
       {
         const auto __result_float = ::cuda::sincos(::__half2float(__v));
         return {::__float2half(__result_float.sin), ::__float2half(__result_float.cos)};
       }
+#endif // _LIBCUDACXX_HAS_NVFP16()
+#if _LIBCUDACXX_HAS_NVBF16()
       if constexpr (::cuda::std::is_same_v<_Tp, ::__nv_bfloat16>)
       {
         const auto __result_float = ::cuda::sincos(::__bfloat162float(__v));
         return {::__float2bfloat16(__result_float.sin), ::__float2bfloat16(__result_float.cos)};
       }
+#endif // _LIBCUDACXX_HAS_NVBF16()
     }
     return {::cuda::std::sin(__v), ::cuda::std::cos(__v)};
   }
