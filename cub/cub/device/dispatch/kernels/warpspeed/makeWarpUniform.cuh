@@ -21,11 +21,11 @@ CUB_NAMESPACE_BEGIN
 // For 64-bit types, we still use __shfl_sync
 [[nodiscard]] _CCCL_DEVICE_API inline int makeWarpUniform(int x)
 {
-  return __reduce_min_sync(~0, x);
+  NV_IF_ELSE_TARGET(NV_PROVIDES_SM_90, (return __reduce_min_sync(~0, x);), (return x;));
 }
 [[nodiscard]] _CCCL_DEVICE_API inline uint32_t makeWarpUniform(uint32_t x)
 {
-  return __reduce_min_sync(~0, x);
+  NV_IF_ELSE_TARGET(NV_PROVIDES_SM_90, (return __reduce_min_sync(~0, x);), (return x;));
 }
 [[nodiscard]] _CCCL_DEVICE_API inline uint64_t makeWarpUniform(uint64_t x)
 {
