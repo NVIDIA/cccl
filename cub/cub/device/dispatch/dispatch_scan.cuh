@@ -39,10 +39,10 @@
 #include <cuda/__cmath/ceil_div.h>
 #include <cuda/std/__algorithm/min.h>
 #include <cuda/std/__functional/invoke.h>
+#include <cuda/std/__iterator/readable_traits.h>
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/is_unsigned.h>
-#include <cuda/std/__type_traits/remove_pointer.h>
 #include <cuda/std/__utility/move.h>
 
 #include <cuda_runtime_api.h>
@@ -370,8 +370,8 @@ struct DispatchScan
     auto* d_in_unwrapped  = THRUST_NS_QUALIFIER::unwrap_contiguous_iterator(d_in);
     auto* d_out_unwrapped = THRUST_NS_QUALIFIER::unwrap_contiguous_iterator(d_out);
 
-    using InputT      = ::cuda::std::remove_pointer_t<decltype(d_in_unwrapped)>;
-    using OuputT      = ::cuda::std::remove_pointer_t<decltype(d_out_unwrapped)>;
+    using InputT      = ::cuda::std::iter_value_t<InputIteratorT>;
+    using OutputT     = ::cuda::std::iter_value_t<OutputIteratorT>;
     using tmp_state_t = detail::scan::tmp_state_t<AccumT>;
 
     constexpr int num_stages       = 6; // TODO(bgruber): tune this
@@ -385,19 +385,19 @@ struct DispatchScan
       return cudaSuccess;
     }
 
-    using scanKernelParams = detail::scan::scanKernelParams<InputT, OuputT, AccumT>;
+    using scanKernelParams = detail::scan::scanKernelParams<InputT, OutputT, AccumT>;
     scanKernelParams params{
-      .ptrIn     = d_in_unwrapped,
+      .ptrIn     = const_cast<InputT*>(d_in_unwrapped), // This is fine because we only copy from global
       .ptrOut    = d_out_unwrapped,
       .ptrTmp    = reinterpret_cast<tmp_state_t*>(d_temp_storage),
       .numElem   = num_items,
       .numStages = num_stages};
 
-    auto kernel_ptr = detail::scan::scan<tile_size, numLookbackTiles, scanKernelParams, AccumT, ScanOpT, InitValueT>;
+    auto kernel_ptr = detail::scan::scan<tile_size, numLookbackTiles, InputT, OutputT, AccumT, ScanOpT, InitValueT>;
 
     SyncHandler syncHandler{};
     SmemAllocator smemAllocator{};
-    detail::scan::allocResources<tile_size, scanKernelParams, AccumT>(syncHandler, smemAllocator, params);
+    detail::scan::allocResources<tile_size, InputT, OutputT, AccumT>(syncHandler, smemAllocator, params);
 
     int smem_size = smemAllocator.sizeBytes();
     if (const auto error =
