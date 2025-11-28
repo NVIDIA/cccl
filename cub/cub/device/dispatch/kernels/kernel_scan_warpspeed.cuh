@@ -429,11 +429,11 @@ _CCCL_API ScanResources<tileSize, InputT, OutputT, AccumT> allocResources(
   int numSumExclusiveCtaStages = 2;
 
   ScanResources<tileSize, InputT, OutputT, AccumT> res{
-    .smemIn           = SmemResource<InT>(syncHandler, smemAllocator, stages(params.numStages)),
-    .smemOut          = reinterpret_cast<OutputT*>(smemAllocator.alloc(sizeof(OutputT) * tileSize, alignof(OutputT))),
-    .smemNextBlockIdx = SmemResource<uint4>(syncHandler, smemAllocator, stages(numBlockIdxStages)),
-    .smemSumExclusiveCta  = SmemResource<AccumT>(syncHandler, smemAllocator, stages(numSumExclusiveCtaStages)),
-    .smemSumThreadAndWarp = SmemResource<SumThreadAndWarpT>(syncHandler, smemAllocator, stages(params.numStages)),
+    SmemResource<InT>(syncHandler, smemAllocator, stages(params.numStages)),
+    reinterpret_cast<OutputT*>(smemAllocator.alloc(sizeof(OutputT) * tileSize, alignof(OutputT))),
+    SmemResource<uint4>(syncHandler, smemAllocator, stages(numBlockIdxStages)),
+    SmemResource<AccumT>(syncHandler, smemAllocator, stages(numSumExclusiveCtaStages)),
+    SmemResource<SumThreadAndWarpT>(syncHandler, smemAllocator, stages(params.numStages)),
   };
   // asdfasdf
   res.smemIn.addPhase(syncHandler, smemAllocator, squadLoad);
