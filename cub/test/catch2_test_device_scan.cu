@@ -141,7 +141,6 @@ C2H_TEST("Device scan works with all device interfaces", "[scan][device]", full_
     }
   }
 
-#  if 0
   SECTION("exclusive sum")
   {
     using op_t    = cuda::std::plus<>;
@@ -170,19 +169,23 @@ C2H_TEST("Device scan works with all device interfaces", "[scan][device]", full_
       REQUIRE_THAT_QUIET(expected_result, Equals(in_items));
     }
   }
-#  endif
 #endif
 
   SECTION("inclusive scan")
   {
-    using op_t    = cuda::std::plus<>;
+    using op_t    = cuda::minimum<>;
     using accum_t = cuda::std::__accumulator_t<op_t, input_t, input_t>;
     CAPTURE(c2h::type_name<op_t>(), c2h::type_name<accum_t>());
 
     // Prepare verification data
     c2h::host_vector<input_t> host_items(in_items);
     c2h::host_vector<output_t> expected_result(num_items);
-    compute_inclusive_scan_reference(host_items.cbegin(), host_items.cend(), expected_result.begin(), op_t{}, 0);
+    compute_inclusive_scan_reference(
+      host_items.cbegin(),
+      host_items.cend(),
+      expected_result.begin(),
+      op_t{},
+      cuda::std::numeric_limits<accum_t>::max());
 
     // Run test
     c2h::device_vector<output_t> out_result(num_items);
