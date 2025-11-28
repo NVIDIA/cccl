@@ -364,20 +364,61 @@ struct DispatchScan
     return cudaSuccess;
   }
 
+  CUB_RUNTIME_FUNCTION _CCCL_HOST _CCCL_FORCEINLINE cudaError_t
+  __max_dynamic_smem_size_for(int& max_dynamic_smem_size, [[maybe_unused]] const void* func)
+  {
+    NV_IF_ELSE_TARGET(
+      NV_IS_HOST,
+      ({
+        int curr_device{};
+        if (const auto error = CubDebug(cudaGetDevice(&curr_device)))
+        {
+          return error;
+        }
+
+        int max_smem_size_optin{};
+        if (const auto error = CubDebug(
+              cudaDeviceGetAttribute(&max_smem_size_optin, cudaDevAttrMaxSharedMemoryPerBlockOptin, curr_device)))
+        {
+          return error;
+        }
+
+        int reserved_smem_size{};
+        if (const auto error = CubDebug(
+              cudaDeviceGetAttribute(&reserved_smem_size, cudaDevAttrReservedSharedMemoryPerBlock, curr_device)))
+        {
+          return error;
+        }
+        max_dynamic_smem_size = max_smem_size_optin - reserved_smem_size;
+      }),
+      ({
+        cudaFuncAttributes func_attrs{};
+        if (const auto error = CubDebug(cudaFuncGetAttributes(&func_attrs, func)))
+        {
+          return error;
+        }
+        max_dynamic_smem_size = func_attrs.maxDynamicSharedSizeBytes;
+      }))
+    return cudaSuccess;
+  }
+
   template <typename ActivePolicyT>
   CUB_RUNTIME_FUNCTION _CCCL_HOST _CCCL_FORCEINLINE cudaError_t __invoke_lookahead_algorithm(ActivePolicyT = {})
   {
     auto* d_in_unwrapped  = THRUST_NS_QUALIFIER::unwrap_contiguous_iterator(d_in);
     auto* d_out_unwrapped = THRUST_NS_QUALIFIER::unwrap_contiguous_iterator(d_out);
 
-    using InputT      = ::cuda::std::iter_value_t<InputIteratorT>;
-    using OutputT     = ::cuda::std::iter_value_t<OutputIteratorT>;
-    using tmp_state_t = detail::scan::tmp_state_t<AccumT>;
+    using InputT           = ::cuda::std::iter_value_t<InputIteratorT>;
+    using OutputT          = ::cuda::std::iter_value_t<OutputIteratorT>;
+    using tmp_state_t      = detail::scan::tmp_state_t<AccumT>;
+    using scanKernelParams = detail::scan::scanKernelParams<InputT, OutputT, AccumT>;
 
-    constexpr int num_stages       = 6; // TODO(bgruber): tune this
     constexpr int numLookbackTiles = 96;
     constexpr int tile_size        = 63 * detail::scan::squadReduce.threadCount();
-    const int grid_dim             = ::cuda::ceil_div(num_items, size_t(tile_size));
+
+    auto kernel_ptr = detail::scan::scan < tile_size, numLookbackTiles, InputT, OutputT, AccumT, ScanOpT, InitValueT,
+         EnforceInclusive == ForceInclusive::Yes > ;
+    const int grid_dim = ::cuda::ceil_div(num_items, size_t(tile_size));
 
     if (d_temp_storage == nullptr)
     {
@@ -385,28 +426,48 @@ struct DispatchScan
       return cudaSuccess;
     }
 
-    using scanKernelParams = detail::scan::scanKernelParams<InputT, OutputT, AccumT>;
-    scanKernelParams params{
-      .ptrIn     = const_cast<InputT*>(d_in_unwrapped), // This is fine because we only copy from global
-      .ptrOut    = d_out_unwrapped,
-      .ptrTmp    = reinterpret_cast<tmp_state_t*>(d_temp_storage),
-      .numElem   = num_items,
-      .numStages = num_stages};
-
-    auto kernel_ptr = detail::scan::scan<tile_size, numLookbackTiles, InputT, OutputT, AccumT, ScanOpT, InitValueT, EnforceInclusive == ForceInclusive::Yes>;
-
-    SyncHandler syncHandler{};
-    SmemAllocator smemAllocator{};
-    detail::scan::allocResources<tile_size, InputT, OutputT, AccumT>(syncHandler, smemAllocator, params);
-
-    int smem_size = smemAllocator.sizeBytes();
-    if (const auto error =
-          CubDebug(cudaFuncSetAttribute(kernel_ptr, cudaFuncAttributeMaxDynamicSharedMemorySize, smem_size)))
+    // Maximum dynamic shared memory size that we can use for temporary storage.
+    int max_dynamic_smem_size{};
+    if (const auto error = __max_dynamic_smem_size_for(max_dynamic_smem_size, (const void*) kernel_ptr))
     {
       return error;
     }
 
-    // Invoke init_kernel to initialize tile descriptors
+    scanKernelParams params{};
+    params.ptrIn     = const_cast<InputT*>(d_in_unwrapped);
+    params.ptrOut    = d_out_unwrapped;
+    params.ptrTmp    = reinterpret_cast<tmp_state_t*>(d_temp_storage);
+    params.numElem   = num_items;
+    params.numStages = 0; // computed below, must be set to 0
+
+    // Maximize the number of stages that we can fit inside the shared memory.
+    int smem_size{};
+    for (params.numStages = 1; true; ++params.numStages)
+    {
+      SyncHandler syncHandler{};
+      SmemAllocator smemAllocator{};
+      detail::scan::allocResources<tile_size, InputT, OutputT, AccumT>(syncHandler, smemAllocator, params);
+
+      const auto curr_smem_size = static_cast<int>(smemAllocator.sizeBytes());
+      if (curr_smem_size > max_dynamic_smem_size)
+      {
+        // This number of stages failed, so use the previous number of stages instead.
+        --params.numStages;
+        break;
+      }
+
+      smem_size = curr_smem_size;
+    }
+
+    // todo: add static_assert check that the number of stages is > 0
+    _CCCL_VERIFY(params.numStages > 0, "at least one stage must fit into the shared memory");
+
+    // Enlarge the dynamic shared memory size for the kernel in case of the kernel being launched from host.
+    NV_IF_TARGET(NV_IS_HOST,
+                 (if (const auto error = CubDebug(cudaFuncSetAttribute(
+                        kernel_ptr, cudaFuncAttributeMaxDynamicSharedMemorySize, smem_size))) { return error; }))
+
+    // Invoke init kernel
     {
       const auto init_grid_size      = ::cuda::ceil_div(grid_dim, 128);
       const auto init_kernel_threads = 128;
@@ -432,7 +493,7 @@ struct DispatchScan
       }
     }
 
-    // Invoke scan_kernel
+    // Invoke scan kernel
     {
       const int block_dim = squadCountThreads(detail::scan::scanSquads);
 
