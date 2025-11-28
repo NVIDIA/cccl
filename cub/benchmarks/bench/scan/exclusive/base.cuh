@@ -67,7 +67,7 @@ static void basic(nvbench::state& state, nvbench::type_list<T, OffsetT>)
 try
 {
   using init_t         = T;
-  using wrapped_init_t = cub::NullType; // cub::detail::InputValue<init_t>;
+  using wrapped_init_t = cub::detail::InputValue<init_t>;
   using accum_t        = ::cuda::std::__accumulator_t<op_t, init_t, T>;
   using input_it_t     = const T*;
   using output_it_t    = T*;
@@ -129,9 +129,7 @@ catch (const std::bad_alloc&)
 }
 
 constexpr int tile_size = 63 * 128;
-using value_types       = nvbench::type_list<int>;
-
-NVBENCH_BENCH_TYPES(basic, NVBENCH_TYPE_AXES(value_types, offset_types))
+NVBENCH_BENCH_TYPES(basic, NVBENCH_TYPE_AXES(all_types, offset_types))
   .set_name("base")
   .set_type_axes_names({"T{ct}", "OffsetT{ct}"})
   //.add_int64_power_of_two_axis("Elements{io}", nvbench::range(16, 32, 4))
