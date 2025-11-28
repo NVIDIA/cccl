@@ -315,6 +315,8 @@ C2H_TEST("cub::detail::segmented_scan::agent_segmented_scan works with one segme
   const auto n_segments = static_cast<unsigned>(num_segments);
   const auto grid_size  = n_segments;
 
+  [[maybe_unused]] const auto itp = items_per_thread;
+
   device_segmented_scan_kernel_one_segment_per_block<
     chained_policy_t,
     pair_t*,
@@ -373,6 +375,11 @@ C2H_TEST("cub::detail::segmented_scan::agent_segmented_scan works with two segme
   constexpr int segments_per_block = 2;
   using chained_policy_t           = ChainedPolicy<block_size, items_per_thread, segments_per_block>;
 
+  const auto n_segments = static_cast<unsigned>(num_segments);
+  const auto grid_size  = n_segments / segments_per_block;
+
+  [[maybe_unused]] const auto itp = items_per_thread;
+
   device_segmented_scan_kernel_two_segments_per_block<
     chained_policy_t,
     pair_t*,
@@ -384,8 +391,8 @@ C2H_TEST("cub::detail::segmented_scan::agent_segmented_scan works with two segme
     op_t,
     cub::NullType,
     pair_t,
-    false><<<num_segments / segments_per_block, block_size>>>(
-    d_input, d_output, d_offsets, d_offsets + 1, d_offsets, static_cast<unsigned>(num_segments), op_t{}, cub::NullType{});
+    false><<<grid_size, block_size>>>(
+    d_input, d_output, d_offsets, d_offsets + 1, d_offsets, n_segments, op_t{}, cub::NullType{});
 
   REQUIRE(cudaSuccess == cudaGetLastError());
 
@@ -433,6 +440,8 @@ C2H_TEST("cub::detail::segmented_scan::agent_segmented_scan works with three seg
 
   const auto n_segments = static_cast<unsigned>(num_segments);
   const auto grid_size  = cuda::ceil_div(n_segments, segments_per_block);
+
+  [[maybe_unused]] const auto itp = items_per_thread;
 
   device_segmented_scan_kernel_three_segments_per_block<
     chained_policy_t,
