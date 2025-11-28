@@ -425,7 +425,7 @@ _CCCL_API ScanResources<tileSize, InputT, OutputT, AccumT> allocResources(
     .smemIn           = makeSmemResource<InT>(syncHandler, smemAllocator, stages(params.numStages)),
     .smemOut          = reinterpret_cast<OutputT*>(smemAllocator.alloc(sizeof(OutputT) * tileSize, alignof(OutputT))),
     .smemNextBlockIdx = makeSmemResource<uint4>(syncHandler, smemAllocator, stages(numBlockIdxStages)),
-    .smemSumExclusiveCta  = makeSmemResource<int>(syncHandler, smemAllocator, stages(numSumExclusiveCtaStages)),
+    .smemSumExclusiveCta  = makeSmemResource<AccumT>(syncHandler, smemAllocator, stages(numSumExclusiveCtaStages)),
     .smemSumThreadAndWarp = makeSmemResource<SumThreadAndWarpT>(syncHandler, smemAllocator, stages(params.numStages)),
   };
   // asdfasdf
