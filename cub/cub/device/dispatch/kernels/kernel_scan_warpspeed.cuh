@@ -380,6 +380,7 @@ struct scanKernelParams
 };
 // Definition of squads
 
+// TODO(bgruber): the number of warps per squad should come from the tuning
 _CCCL_GLOBAL_CONSTANT SquadDesc squadReduce{/*squadIdx=*/0, /*numWarps=*/4};
 _CCCL_GLOBAL_CONSTANT SquadDesc squadScanStore{/*squadIdx=*/1, /*numWarps=*/4};
 _CCCL_GLOBAL_CONSTANT SquadDesc squadLoad{/*squadIdx=*/2, /*numWarps=*/1};
@@ -762,8 +763,7 @@ _CCCL_DEVICE_API inline void kernelBody(
   }
 }
 
-template <int tile_size,
-          int numLookbackTiles,
+template <typename MaxPolicy,
           typename InputT,
           typename OutputT,
           typename AccumT,
@@ -775,18 +775,28 @@ __launch_bounds__(squadCountThreads(scanSquads), 1) __global__ void scan(
 {
   NV_IF_TARGET(
     NV_PROVIDES_SM_100,
-    (
-      // Cache special registers at start of kernel
-      SpecialRegisters specialRegisters = getSpecialRegisters();
+    (using ActivePolicy = typename MaxPolicy::ActivePolicy;
 
-      // Dispatch for warp-specialization
-      squadDispatch(specialRegisters, scanSquads, [&](Squad squad) {
-        kernelBody<numLookbackTiles, tile_size, InputT, OutputT, AccumT, ScanOpT, InitValueT, ForceInclusive>(
-          squad, specialRegisters, params, ::cuda::std::move(scan_op), init_value);
-      });))
+     static_assert(ActivePolicy::warpspeed_squad_reduce_thread_count == squadReduce.threadCount(),
+                   "Tuning policy and squad definition mismatch");
+
+     // Cache special registers at start of kernel
+     SpecialRegisters specialRegisters = getSpecialRegisters();
+
+     // Dispatch for warp-specialization
+     squadDispatch(specialRegisters, scanSquads, [&](Squad squad) {
+       kernelBody<ActivePolicy::warpspeed_num_lookback_tiles,
+                  ActivePolicy::warpspeed_tile_size,
+                  InputT,
+                  OutputT,
+                  AccumT,
+                  ScanOpT,
+                  InitValueT,
+                  ForceInclusive>(squad, specialRegisters, params, ::cuda::std::move(scan_op), init_value);
+     });))
 }
 
-template <int tile_size, typename AccumT>
+template <typename AccumT>
 __launch_bounds__(128) __global__ void initTmpStates(tmp_state_t<AccumT>* tmp, const size_t num_temp_states)
 {
   const int tile_id = blockDim.x * blockIdx.x + threadIdx.x;
