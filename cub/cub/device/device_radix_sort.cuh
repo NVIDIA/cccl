@@ -120,23 +120,8 @@ CUB_NAMESPACE_BEGIN
 struct DeviceRadixSort
 {
 private:
-  template <SortOrder Order, typename KeyT, typename ValueT, typename NumItemsT, typename DecomposerT>
-  CUB_RUNTIME_FUNCTION static cudaError_t custom_radix_sort(
-    ::cuda::std::false_type,
-    void* d_temp_storage,
-    size_t& temp_storage_bytes,
-    bool is_overwrite_okay,
-    DoubleBuffer<KeyT>& d_keys,
-    DoubleBuffer<ValueT>& d_values,
-    NumItemsT num_items,
-    DecomposerT decomposer,
-    int begin_bit,
-    int end_bit,
-    cudaStream_t stream);
-
   template <SortOrder Order, typename KeyT, typename ValueT, typename OffsetT, typename DecomposerT>
   CUB_RUNTIME_FUNCTION static cudaError_t custom_radix_sort(
-    ::cuda::std::true_type,
     void* d_temp_storage,
     size_t& temp_storage_bytes,
     bool is_overwrite_okay,
@@ -148,7 +133,7 @@ private:
     int end_bit,
     cudaStream_t stream)
   {
-    return DispatchRadixSort<Order, KeyT, ValueT, OffsetT, DecomposerT>::Dispatch(
+    return detail::radix_sort::dispatch<Order>(
       d_temp_storage,
       temp_storage_bytes,
       d_keys,
@@ -161,21 +146,8 @@ private:
       decomposer);
   }
 
-  template <SortOrder Order, typename KeyT, typename ValueT, typename NumItemsT, typename DecomposerT>
-  CUB_RUNTIME_FUNCTION static cudaError_t custom_radix_sort(
-    ::cuda::std::false_type,
-    void* d_temp_storage,
-    size_t& temp_storage_bytes,
-    bool is_overwrite_okay,
-    DoubleBuffer<KeyT>& d_keys,
-    DoubleBuffer<ValueT>& d_values,
-    NumItemsT num_items,
-    DecomposerT decomposer,
-    cudaStream_t stream);
-
   template <SortOrder Order, typename KeyT, typename ValueT, typename OffsetT, typename DecomposerT>
   CUB_RUNTIME_FUNCTION static cudaError_t custom_radix_sort(
-    ::cuda::std::true_type,
     void* d_temp_storage,
     size_t& temp_storage_bytes,
     bool is_overwrite_okay,
@@ -188,8 +160,7 @@ private:
     constexpr int begin_bit = 0;
     const int end_bit       = detail::radix::traits_t<KeyT>::default_end_bit(decomposer);
 
-    return DeviceRadixSort::custom_radix_sort<Order>(
-      ::cuda::std::true_type{},
+    return detail::radix_sort::dispatch<Order>(
       d_temp_storage,
       temp_storage_bytes,
       is_overwrite_okay,
@@ -341,7 +312,7 @@ public:
     DoubleBuffer<KeyT> d_keys(const_cast<KeyT*>(d_keys_in), d_keys_out);
     DoubleBuffer<ValueT> d_values(const_cast<ValueT*>(d_values_in), d_values_out);
 
-    return DispatchRadixSort<SortOrder::Ascending, KeyT, ValueT, OffsetT>::Dispatch(
+    return detail::radix_sort::dispatch<SortOrder::Ascending>(
       d_temp_storage,
       temp_storage_bytes,
       d_keys,
@@ -490,18 +461,20 @@ public:
     DoubleBuffer<KeyT> d_keys(const_cast<KeyT*>(d_keys_in), d_keys_out);
     DoubleBuffer<ValueT> d_values(const_cast<ValueT*>(d_values_in), d_values_out);
 
-    return DeviceRadixSort::custom_radix_sort<SortOrder::Ascending>(
-      decomposer_check_t{},
-      d_temp_storage,
-      temp_storage_bytes,
-      is_overwrite_okay,
-      d_keys,
-      d_values,
-      static_cast<offset_t>(num_items),
-      decomposer,
-      begin_bit,
-      end_bit,
-      stream);
+    if (decomposer_check_t::value)
+    {
+      return DeviceRadixSort::custom_radix_sort<SortOrder::Ascending>(
+        d_temp_storage,
+        temp_storage_bytes,
+        is_overwrite_okay,
+        d_keys,
+        d_values,
+        static_cast<offset_t>(num_items),
+        decomposer,
+        begin_bit,
+        end_bit,
+        stream);
+    }
   }
 
   //! @rst
@@ -628,16 +601,18 @@ public:
     DoubleBuffer<KeyT> d_keys(const_cast<KeyT*>(d_keys_in), d_keys_out);
     DoubleBuffer<ValueT> d_values(const_cast<ValueT*>(d_values_in), d_values_out);
 
-    return DeviceRadixSort::custom_radix_sort<SortOrder::Ascending>(
-      decomposer_check_t{},
-      d_temp_storage,
-      temp_storage_bytes,
-      is_overwrite_okay,
-      d_keys,
-      d_values,
-      static_cast<offset_t>(num_items),
-      decomposer,
-      stream);
+    if constexpr (decomposer_check_t::value)
+    {
+      return DeviceRadixSort::custom_radix_sort<SortOrder::Ascending>(
+        d_temp_storage,
+        temp_storage_bytes,
+        is_overwrite_okay,
+        d_keys,
+        d_values,
+        static_cast<offset_t>(num_items),
+        decomposer,
+        stream);
+    }
   }
 
   //! @rst
@@ -767,8 +742,16 @@ public:
 
     constexpr bool is_overwrite_okay = true;
 
-    return DispatchRadixSort<SortOrder::Ascending, KeyT, ValueT, OffsetT>::Dispatch(
-      d_temp_storage, temp_storage_bytes, d_keys, d_values, num_items, begin_bit, end_bit, is_overwrite_okay, stream);
+    return detail::radix_sort::dispatch<SortOrder::Ascending>(
+      d_temp_storage,
+      temp_storage_bytes,
+      d_keys,
+      d_values,
+      static_cast<OffsetT>(num_items),
+      begin_bit,
+      end_bit,
+      is_overwrite_okay,
+      stream);
   }
 
   //! @rst
@@ -891,16 +874,18 @@ public:
 
     constexpr bool is_overwrite_okay = true;
 
-    return DeviceRadixSort::custom_radix_sort<SortOrder::Ascending>(
-      decomposer_check_t{},
-      d_temp_storage,
-      temp_storage_bytes,
-      is_overwrite_okay,
-      d_keys,
-      d_values,
-      static_cast<offset_t>(num_items),
-      decomposer,
-      stream);
+    if constexpr (decomposer_check_t::value)
+    {
+      return DeviceRadixSort::custom_radix_sort<SortOrder::Ascending>(
+        d_temp_storage,
+        temp_storage_bytes,
+        is_overwrite_okay,
+        d_keys,
+        d_values,
+        static_cast<offset_t>(num_items),
+        decomposer,
+        stream);
+    }
   }
 
   //! @rst
@@ -1036,18 +1021,20 @@ public:
 
     constexpr bool is_overwrite_okay = true;
 
-    return DeviceRadixSort::custom_radix_sort<SortOrder::Ascending>(
-      decomposer_check_t{},
-      d_temp_storage,
-      temp_storage_bytes,
-      is_overwrite_okay,
-      d_keys,
-      d_values,
-      static_cast<offset_t>(num_items),
-      decomposer,
-      begin_bit,
-      end_bit,
-      stream);
+    if constexpr (decomposer_check_t::value)
+    {
+      return DeviceRadixSort::custom_radix_sort<SortOrder::Ascending>(
+        d_temp_storage,
+        temp_storage_bytes,
+        is_overwrite_okay,
+        d_keys,
+        d_values,
+        static_cast<offset_t>(num_items),
+        decomposer,
+        begin_bit,
+        end_bit,
+        stream);
+    }
   }
 
   //! @rst
@@ -1180,8 +1167,16 @@ public:
     DoubleBuffer<KeyT> d_keys(const_cast<KeyT*>(d_keys_in), d_keys_out);
     DoubleBuffer<ValueT> d_values(const_cast<ValueT*>(d_values_in), d_values_out);
 
-    return DispatchRadixSort<SortOrder::Descending, KeyT, ValueT, OffsetT>::Dispatch(
-      d_temp_storage, temp_storage_bytes, d_keys, d_values, num_items, begin_bit, end_bit, is_overwrite_okay, stream);
+    return detail::radix_sort::dispatch<SortOrder::Descending>(
+      d_temp_storage,
+      temp_storage_bytes,
+      d_keys,
+      d_values,
+      static_cast<OffsetT>(num_items),
+      begin_bit,
+      end_bit,
+      is_overwrite_okay,
+      stream);
   }
 
   //! @rst
@@ -1323,18 +1318,20 @@ public:
     DoubleBuffer<KeyT> d_keys(const_cast<KeyT*>(d_keys_in), d_keys_out);
     DoubleBuffer<ValueT> d_values(const_cast<ValueT*>(d_values_in), d_values_out);
 
-    return DeviceRadixSort::custom_radix_sort<SortOrder::Descending>(
-      decomposer_check_t{},
-      d_temp_storage,
-      temp_storage_bytes,
-      is_overwrite_okay,
-      d_keys,
-      d_values,
-      static_cast<offset_t>(num_items),
-      decomposer,
-      begin_bit,
-      end_bit,
-      stream);
+    if constexpr (decomposer_check_t::value)
+    {
+      return DeviceRadixSort::custom_radix_sort<SortOrder::Descending>(
+        d_temp_storage,
+        temp_storage_bytes,
+        is_overwrite_okay,
+        d_keys,
+        d_values,
+        static_cast<offset_t>(num_items),
+        decomposer,
+        begin_bit,
+        end_bit,
+        stream);
+    }
   }
 
   //! @rst
@@ -1463,16 +1460,18 @@ public:
     DoubleBuffer<KeyT> d_keys(const_cast<KeyT*>(d_keys_in), d_keys_out);
     DoubleBuffer<ValueT> d_values(const_cast<ValueT*>(d_values_in), d_values_out);
 
-    return DeviceRadixSort::custom_radix_sort<SortOrder::Descending>(
-      decomposer_check_t{},
-      d_temp_storage,
-      temp_storage_bytes,
-      is_overwrite_okay,
-      d_keys,
-      d_values,
-      static_cast<offset_t>(num_items),
-      decomposer,
-      stream);
+    if constexpr (decomposer_check_t::value)
+    {
+      return DeviceRadixSort::custom_radix_sort<SortOrder::Descending>(
+        d_temp_storage,
+        temp_storage_bytes,
+        is_overwrite_okay,
+        d_keys,
+        d_values,
+        static_cast<offset_t>(num_items),
+        decomposer,
+        stream);
+    }
   }
 
   //! @rst
@@ -1602,8 +1601,16 @@ public:
 
     constexpr bool is_overwrite_okay = true;
 
-    return DispatchRadixSort<SortOrder::Descending, KeyT, ValueT, OffsetT>::Dispatch(
-      d_temp_storage, temp_storage_bytes, d_keys, d_values, num_items, begin_bit, end_bit, is_overwrite_okay, stream);
+    return detail::radix_sort::dispatch<SortOrder::Descending>(
+      d_temp_storage,
+      temp_storage_bytes,
+      d_keys,
+      d_values,
+      static_cast<OffsetT>(num_items),
+      begin_bit,
+      end_bit,
+      is_overwrite_okay,
+      stream);
   }
 
   //! @rst
@@ -1727,16 +1734,18 @@ public:
 
     constexpr bool is_overwrite_okay = true;
 
-    return DeviceRadixSort::custom_radix_sort<SortOrder::Descending>(
-      decomposer_check_t{},
-      d_temp_storage,
-      temp_storage_bytes,
-      is_overwrite_okay,
-      d_keys,
-      d_values,
-      static_cast<offset_t>(num_items),
-      decomposer,
-      stream);
+    if constexpr (decomposer_check_t::value)
+    {
+      return DeviceRadixSort::custom_radix_sort<SortOrder::Descending>(
+        d_temp_storage,
+        temp_storage_bytes,
+        is_overwrite_okay,
+        d_keys,
+        d_values,
+        static_cast<offset_t>(num_items),
+        decomposer,
+        stream);
+    }
   }
 
   //! @rst
@@ -1873,18 +1882,20 @@ public:
 
     constexpr bool is_overwrite_okay = true;
 
-    return DeviceRadixSort::custom_radix_sort<SortOrder::Descending>(
-      decomposer_check_t{},
-      d_temp_storage,
-      temp_storage_bytes,
-      is_overwrite_okay,
-      d_keys,
-      d_values,
-      static_cast<offset_t>(num_items),
-      decomposer,
-      begin_bit,
-      end_bit,
-      stream);
+    if constexpr (decomposer_check_t::value)
+    {
+      return DeviceRadixSort::custom_radix_sort<SortOrder::Descending>(
+        d_temp_storage,
+        temp_storage_bytes,
+        is_overwrite_okay,
+        d_keys,
+        d_values,
+        static_cast<offset_t>(num_items),
+        decomposer,
+        begin_bit,
+        end_bit,
+        stream);
+    }
   }
 
   //! @}  end member group
@@ -2006,7 +2017,7 @@ public:
     // Null value type
     DoubleBuffer<NullType> d_values;
 
-    return DispatchRadixSort<SortOrder::Ascending, KeyT, NullType, OffsetT>::Dispatch(
+    return detail::radix_sort::dispatch<SortOrder::Ascending>(
       d_temp_storage,
       temp_storage_bytes,
       d_keys,
@@ -2142,18 +2153,20 @@ public:
     DoubleBuffer<KeyT> d_keys(const_cast<KeyT*>(d_keys_in), d_keys_out);
     DoubleBuffer<NullType> d_values;
 
-    return DeviceRadixSort::custom_radix_sort<SortOrder::Ascending>(
-      decomposer_check_t{},
-      d_temp_storage,
-      temp_storage_bytes,
-      is_overwrite_okay,
-      d_keys,
-      d_values,
-      static_cast<offset_t>(num_items),
-      decomposer,
-      begin_bit,
-      end_bit,
-      stream);
+    if constexpr (decomposer_check_t::value)
+    {
+      return DeviceRadixSort::custom_radix_sort<SortOrder::Ascending>(
+        d_temp_storage,
+        temp_storage_bytes,
+        is_overwrite_okay,
+        d_keys,
+        d_values,
+        static_cast<offset_t>(num_items),
+        decomposer,
+        begin_bit,
+        end_bit,
+        stream);
+    }
   }
 
   //! @rst
@@ -2270,16 +2283,18 @@ public:
     DoubleBuffer<KeyT> d_keys(const_cast<KeyT*>(d_keys_in), d_keys_out);
     DoubleBuffer<NullType> d_values;
 
-    return DeviceRadixSort::custom_radix_sort<SortOrder::Ascending>(
-      decomposer_check_t{},
-      d_temp_storage,
-      temp_storage_bytes,
-      is_overwrite_okay,
-      d_keys,
-      d_values,
-      static_cast<offset_t>(num_items),
-      decomposer,
-      stream);
+    if constexpr (decomposer_check_t::value)
+    {
+      return DeviceRadixSort::custom_radix_sort<SortOrder::Ascending>(
+        d_temp_storage,
+        temp_storage_bytes,
+        is_overwrite_okay,
+        d_keys,
+        d_values,
+        static_cast<offset_t>(num_items),
+        decomposer,
+        stream);
+    }
   }
 
   //! @rst
@@ -2395,8 +2410,16 @@ public:
     // Null value type
     DoubleBuffer<NullType> d_values;
 
-    return DispatchRadixSort<SortOrder::Ascending, KeyT, NullType, OffsetT>::Dispatch(
-      d_temp_storage, temp_storage_bytes, d_keys, d_values, num_items, begin_bit, end_bit, is_overwrite_okay, stream);
+    return detail::radix_sort::dispatch<SortOrder::Ascending>(
+      d_temp_storage,
+      temp_storage_bytes,
+      d_keys,
+      d_values,
+      static_cast<OffsetT>(num_items),
+      begin_bit,
+      end_bit,
+      is_overwrite_okay,
+      stream);
   }
 
   //! @rst
@@ -2507,16 +2530,18 @@ public:
     constexpr bool is_overwrite_okay = true;
     DoubleBuffer<NullType> d_values;
 
-    return DeviceRadixSort::custom_radix_sort<SortOrder::Ascending>(
-      decomposer_check_t{},
-      d_temp_storage,
-      temp_storage_bytes,
-      is_overwrite_okay,
-      d_keys,
-      d_values,
-      static_cast<offset_t>(num_items),
-      decomposer,
-      stream);
+    if constexpr (decomposer_check_t::value)
+    {
+      return DeviceRadixSort::custom_radix_sort<SortOrder::Ascending>(
+        d_temp_storage,
+        temp_storage_bytes,
+        is_overwrite_okay,
+        d_keys,
+        d_values,
+        static_cast<offset_t>(num_items),
+        decomposer,
+        stream);
+    }
   }
 
   //! @rst
@@ -2640,18 +2665,20 @@ public:
     constexpr bool is_overwrite_okay = true;
     DoubleBuffer<NullType> d_values;
 
-    return DeviceRadixSort::custom_radix_sort<SortOrder::Ascending>(
-      decomposer_check_t{},
-      d_temp_storage,
-      temp_storage_bytes,
-      is_overwrite_okay,
-      d_keys,
-      d_values,
-      static_cast<offset_t>(num_items),
-      decomposer,
-      begin_bit,
-      end_bit,
-      stream);
+    if constexpr (decomposer_check_t::value)
+    {
+      return DeviceRadixSort::custom_radix_sort<SortOrder::Ascending>(
+        d_temp_storage,
+        temp_storage_bytes,
+        is_overwrite_okay,
+        d_keys,
+        d_values,
+        static_cast<offset_t>(num_items),
+        decomposer,
+        begin_bit,
+        end_bit,
+        stream);
+    }
   }
 
   //! @rst Sorts keys into descending order using :math:`\approx 2N` auxiliary storage.
@@ -2767,8 +2794,16 @@ public:
     DoubleBuffer<KeyT> d_keys(const_cast<KeyT*>(d_keys_in), d_keys_out);
     DoubleBuffer<NullType> d_values;
 
-    return DispatchRadixSort<SortOrder::Descending, KeyT, NullType, OffsetT>::Dispatch(
-      d_temp_storage, temp_storage_bytes, d_keys, d_values, num_items, begin_bit, end_bit, is_overwrite_okay, stream);
+    return detail::radix_sort::dispatch<SortOrder::Descending>(
+      d_temp_storage,
+      temp_storage_bytes,
+      d_keys,
+      d_values,
+      static_cast<OffsetT>(num_items),
+      begin_bit,
+      end_bit,
+      is_overwrite_okay,
+      stream);
   }
 
   //! @rst
@@ -2896,18 +2931,20 @@ public:
     DoubleBuffer<KeyT> d_keys(const_cast<KeyT*>(d_keys_in), d_keys_out);
     DoubleBuffer<NullType> d_values;
 
-    return DeviceRadixSort::custom_radix_sort<SortOrder::Descending>(
-      decomposer_check_t{},
-      d_temp_storage,
-      temp_storage_bytes,
-      is_overwrite_okay,
-      d_keys,
-      d_values,
-      static_cast<offset_t>(num_items),
-      decomposer,
-      begin_bit,
-      end_bit,
-      stream);
+    if constexpr (decomposer_check_t::value)
+    {
+      return DeviceRadixSort::custom_radix_sort<SortOrder::Descending>(
+        d_temp_storage,
+        temp_storage_bytes,
+        is_overwrite_okay,
+        d_keys,
+        d_values,
+        static_cast<offset_t>(num_items),
+        decomposer,
+        begin_bit,
+        end_bit,
+        stream);
+    }
   }
 
   //! @rst
@@ -3022,16 +3059,18 @@ public:
     DoubleBuffer<KeyT> d_keys(const_cast<KeyT*>(d_keys_in), d_keys_out);
     DoubleBuffer<NullType> d_values;
 
-    return DeviceRadixSort::custom_radix_sort<SortOrder::Descending>(
-      decomposer_check_t{},
-      d_temp_storage,
-      temp_storage_bytes,
-      is_overwrite_okay,
-      d_keys,
-      d_values,
-      static_cast<offset_t>(num_items),
-      decomposer,
-      stream);
+    if constexpr (decomposer_check_t::value)
+    {
+      return DeviceRadixSort::custom_radix_sort<SortOrder::Descending>(
+        d_temp_storage,
+        temp_storage_bytes,
+        is_overwrite_okay,
+        d_keys,
+        d_values,
+        static_cast<offset_t>(num_items),
+        decomposer,
+        stream);
+    }
   }
 
   //! @rst
@@ -3146,8 +3185,16 @@ public:
     // Null value type
     DoubleBuffer<NullType> d_values;
 
-    return DispatchRadixSort<SortOrder::Descending, KeyT, NullType, OffsetT>::Dispatch(
-      d_temp_storage, temp_storage_bytes, d_keys, d_values, num_items, begin_bit, end_bit, is_overwrite_okay, stream);
+    return detail::radix_sort::dispatch<SortOrder::Descending>(
+      d_temp_storage,
+      temp_storage_bytes,
+      d_keys,
+      d_values,
+      static_cast<OffsetT>(num_items),
+      begin_bit,
+      end_bit,
+      is_overwrite_okay,
+      stream);
   }
 
   //! @rst
@@ -3259,16 +3306,18 @@ public:
     constexpr bool is_overwrite_okay = true;
     DoubleBuffer<NullType> d_values;
 
-    return DeviceRadixSort::custom_radix_sort<SortOrder::Descending>(
-      decomposer_check_t{},
-      d_temp_storage,
-      temp_storage_bytes,
-      is_overwrite_okay,
-      d_keys,
-      d_values,
-      static_cast<offset_t>(num_items),
-      decomposer,
-      stream);
+    if constexpr (decomposer_check_t::value)
+    {
+      return DeviceRadixSort::custom_radix_sort<SortOrder::Descending>(
+        d_temp_storage,
+        temp_storage_bytes,
+        is_overwrite_okay,
+        d_keys,
+        d_values,
+        static_cast<offset_t>(num_items),
+        decomposer,
+        stream);
+    }
   }
 
   //! @rst
@@ -3393,18 +3442,20 @@ public:
     constexpr bool is_overwrite_okay = true;
     DoubleBuffer<NullType> d_values;
 
-    return DeviceRadixSort::custom_radix_sort<SortOrder::Descending>(
-      decomposer_check_t{},
-      d_temp_storage,
-      temp_storage_bytes,
-      is_overwrite_okay,
-      d_keys,
-      d_values,
-      static_cast<offset_t>(num_items),
-      decomposer,
-      begin_bit,
-      end_bit,
-      stream);
+    if constexpr (decomposer_check_t::value)
+    {
+      return DeviceRadixSort::custom_radix_sort<SortOrder::Descending>(
+        d_temp_storage,
+        temp_storage_bytes,
+        is_overwrite_okay,
+        d_keys,
+        d_values,
+        static_cast<offset_t>(num_items),
+        decomposer,
+        begin_bit,
+        end_bit,
+        stream);
+    }
   }
 
   //! @}  end member group
