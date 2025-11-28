@@ -11,6 +11,7 @@
 #ifndef _CUDA_BUFFER
 #define _CUDA_BUFFER
 
+#define _CCCL_WAIVE_PROLOGUE_INCLUDE_CHECK
 #include <cuda/std/detail/__config>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
