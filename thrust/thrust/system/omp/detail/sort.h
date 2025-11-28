@@ -28,57 +28,40 @@
 #include <thrust/system/detail/generic/select_system.h>
 #include <thrust/system/omp/detail/default_decomposition.h>
 
+#include <cuda/std/__algorithm/inplace_merge.h>
+
 THRUST_NAMESPACE_BEGIN
 namespace system::omp::detail
 {
 namespace sort_detail
 {
-template <typename DerivedPolicy, typename RandomAccessIterator, typename StrictWeakOrdering>
-void inplace_merge(execution_policy<DerivedPolicy>& exec,
-                   RandomAccessIterator first,
-                   RandomAccessIterator middle,
-                   RandomAccessIterator last,
-                   StrictWeakOrdering comp)
-{
-  using value_type = thrust::detail::it_value_t<RandomAccessIterator>;
-
-  thrust::detail::temporary_array<value_type, DerivedPolicy> a(exec, first, middle);
-  thrust::detail::temporary_array<value_type, DerivedPolicy> b(exec, middle, last);
-
-  thrust::merge(thrust::seq, a.begin(), a.end(), b.begin(), b.end(), first, comp);
-}
-
-template <typename DerivedPolicy,
-          typename RandomAccessIterator1,
-          typename RandomAccessIterator2,
-          typename StrictWeakOrdering>
+template <typename RandomAccessIterator1, typename RandomAccessIterator2, typename StrictWeakOrdering>
 void inplace_merge_by_key(
-  execution_policy<DerivedPolicy>& exec,
-  RandomAccessIterator1 first1,
-  RandomAccessIterator1 middle1,
-  RandomAccessIterator1 last1,
-  RandomAccessIterator2 first2,
+  RandomAccessIterator1 k_first,
+  RandomAccessIterator1 k_middle,
+  RandomAccessIterator1 k_last,
+  RandomAccessIterator2 v_first,
   StrictWeakOrdering comp)
 {
-  using value_type1 = thrust::detail::it_value_t<RandomAccessIterator1>;
-  using value_type2 = thrust::detail::it_value_t<RandomAccessIterator2>;
+  using iterator_tuple = thrust::tuple<RandomAccessIterator1, RandomAccessIterator2>;
+  using zip_iterator   = thrust::zip_iterator<iterator_tuple>;
 
-  RandomAccessIterator2 middle2 = first2 + (middle1 - first1);
-  RandomAccessIterator2 last2   = first2 + (last1 - first1);
+  RandomAccessIterator2 v_middle = v_first + (k_middle - k_first);
+  RandomAccessIterator2 v_last   = v_first + (k_last - k_first);
 
-  thrust::detail::temporary_array<value_type1, DerivedPolicy> lhs1(exec, first1, middle1);
-  thrust::detail::temporary_array<value_type1, DerivedPolicy> rhs1(exec, middle1, last1);
-  thrust::detail::temporary_array<value_type2, DerivedPolicy> lhs2(exec, first2, middle2);
-  thrust::detail::temporary_array<value_type2, DerivedPolicy> rhs2(exec, middle2, last2);
+  zip_iterator zipped_first  = thrust::make_zip_iterator(k_first, v_first);
+  zip_iterator zipped_middle = thrust::make_zip_iterator(k_middle, v_middle);
+  zip_iterator zipped_last   = thrust::make_zip_iterator(k_last, v_last);
 
-  thrust::merge_by_key(
-    thrust::seq, lhs1.begin(), lhs1.end(), rhs1.begin(), rhs1.end(), lhs2.begin(), rhs2.begin(), first1, first2, comp);
+  thrust::detail::compare_first<StrictWeakOrdering> comp_first{comp};
+
+  ::cuda::std::inplace_merge(zipped_first, zipped_middle, zipped_last, comp_first);
 }
 } // namespace sort_detail
 
 template <typename DerivedPolicy, typename RandomAccessIterator, typename StrictWeakOrdering>
 void stable_sort(
-  execution_policy<DerivedPolicy>& exec, RandomAccessIterator first, RandomAccessIterator last, StrictWeakOrdering comp)
+  execution_policy<DerivedPolicy>&, RandomAccessIterator first, RandomAccessIterator last, StrictWeakOrdering comp)
 {
   // we're attempting to launch an omp kernel, assert we're compiling with omp support
   // ========================================================================
@@ -131,8 +114,7 @@ void stable_sort(
 
       if ((p_i % h) == 0 && c > b)
       {
-        sort_detail::inplace_merge(
-          exec, first + decomp[a].begin(), first + decomp[b].end(), first + decomp[c].end(), comp);
+        ::cuda::std::inplace_merge(first + decomp[a].begin(), first + decomp[b].end(), first + decomp[c].end(), comp);
 
         b = c;
         c += h;
@@ -155,7 +137,7 @@ template <typename DerivedPolicy,
           typename RandomAccessIterator2,
           typename StrictWeakOrdering>
 void stable_sort_by_key(
-  execution_policy<DerivedPolicy>& exec,
+  execution_policy<DerivedPolicy>&,
   RandomAccessIterator1 keys_first,
   RandomAccessIterator1 keys_last,
   RandomAccessIterator2 values_first,
@@ -219,7 +201,6 @@ void stable_sort_by_key(
       if ((p_i % h) == 0 && c > b)
       {
         sort_detail::inplace_merge_by_key(
-          exec,
           keys_first + decomp[a].begin(),
           keys_first + decomp[b].end(),
           keys_first + decomp[c].end(),
