@@ -477,7 +477,7 @@ struct DispatchScan
         "Invoking initTmpStates<<<%d, %d, 0, , %lld>>>()\n", init_grid_size, init_kernel_threads, (long long) stream);
 #endif // CUB_DEBUG_LOG
 
-      launcher_factory(init_grid_size, init_kernel_threads, 0, stream)
+      launcher_factory(init_grid_size, init_kernel_threads, 0, stream, /* use_pdl */ true)
         .doit(detail::scan::initTmpStates<tile_size, AccumT>, reinterpret_cast<tmp_state_t*>(d_temp_storage), grid_dim);
 
       // Check for failure to launch
@@ -501,7 +501,7 @@ struct DispatchScan
       _CubLog("Invoking scan<<<%d, %d, %d, %lld>>>()\n", grid_dim, block_dim, smem_size, (long long) stream);
 #endif // CUB_DEBUG_LOG
 
-      launcher_factory(grid_dim, block_dim, smem_size, stream)
+      launcher_factory(grid_dim, block_dim, smem_size, stream, /* use_pdl */ true)
         .doit(kernel_ptr, params, ::cuda::std::move(scan_op), init_value);
 
       // Check for failure to launch
