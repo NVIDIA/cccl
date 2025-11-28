@@ -13,27 +13,29 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cub/device/dispatch/kernels/warpspeed/allocators/SmemAllocator.h> // SmemAllocator
-#include <cub/device/dispatch/kernels/warpspeed/resource/SmemRef.cuh> // SmemRef
-#include <cub/device/dispatch/kernels/warpspeed/resource/SmemResource.cuh> // SmemResource
-#include <cub/device/dispatch/kernels/warpspeed/SpecialRegisters.cuh> // SpecialRegisters
-#include <cub/device/dispatch/kernels/warpspeed/squad/Squad.h> // squadDispatch, ...
-#include <cub/device/dispatch/kernels/warpspeed/values.h> // stages
-#include <cub/thread/thread_reduce.cuh>
-#include <cub/thread/thread_scan.cuh>
-#include <cub/warp/warp_reduce.cuh>
-#include <cub/warp/warp_scan.cuh>
+#if __cccl_ptx_isa >= 860
 
-#include <cuda/__memory/align_down.h> // cuda::align_down
-#include <cuda/__memory/align_up.h> // cuda::align_up
-#include <cuda/ptx>
-#include <cuda/std/__cccl/cuda_capabilities.h>
-#include <cuda/std/__functional/invoke.h>
-#include <cuda/std/__type_traits/is_same.h>
-#include <cuda/std/__utility/move.h>
-#include <cuda/std/cassert>
+#  include <cub/device/dispatch/kernels/warpspeed/allocators/SmemAllocator.h> // SmemAllocator
+#  include <cub/device/dispatch/kernels/warpspeed/resource/SmemRef.cuh> // SmemRef
+#  include <cub/device/dispatch/kernels/warpspeed/resource/SmemResource.cuh> // SmemResource
+#  include <cub/device/dispatch/kernels/warpspeed/SpecialRegisters.cuh> // SpecialRegisters
+#  include <cub/device/dispatch/kernels/warpspeed/squad/Squad.h> // squadDispatch, ...
+#  include <cub/device/dispatch/kernels/warpspeed/values.h> // stages
+#  include <cub/thread/thread_reduce.cuh>
+#  include <cub/thread/thread_scan.cuh>
+#  include <cub/warp/warp_reduce.cuh>
+#  include <cub/warp/warp_scan.cuh>
 
-#include <cudaTypedefs.h>
+#  include <cuda/__memory/align_down.h> // cuda::align_down
+#  include <cuda/__memory/align_up.h> // cuda::align_up
+#  include <cuda/ptx>
+#  include <cuda/std/__cccl/cuda_capabilities.h>
+#  include <cuda/std/__functional/invoke.h>
+#  include <cuda/std/__type_traits/is_same.h>
+#  include <cuda/std/__utility/move.h>
+#  include <cuda/std/cassert>
+
+#  include <cudaTypedefs.h>
 
 CUB_NAMESPACE_BEGIN
 
@@ -504,7 +506,7 @@ _CCCL_DEVICE_API inline void kernelBody(
   ////////////////////////////////////////////////////////////////////////////////
   // Loop over tiles
   ////////////////////////////////////////////////////////////////////////////////
-#pragma unroll 1
+#  pragma unroll 1
   while (true)
   {
     // Get stages. When these objects go out of scope, the stage of the resource
@@ -795,3 +797,5 @@ __launch_bounds__(128) __global__ void initTmpStates(tmp_state_t<AccumT>* tmp, c
 } // namespace detail::scan
 
 CUB_NAMESPACE_END
+
+#endif // __cccl_ptx_isa >= 860
