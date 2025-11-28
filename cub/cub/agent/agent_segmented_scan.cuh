@@ -539,6 +539,17 @@ private:
     using reference         = ::cuda::std::iter_reference_t<IterTy>;
     using pointer           = void;
 
+    // workaround for CTK 12.0 where span::extent is not constexpr
+    template <typename T>
+    struct extract_extend
+    {};
+
+    template <typename T, ::cuda::std::size_t N>
+    struct extract_extend<::cuda::std::span<T, N>>
+    {
+      static constexpr int extend = static_cast<int>(N);
+    };
+
     static_assert(::cuda::std::is_same_v<difference_type, typename SpanTy::value_type>, "types are inconsistent");
 
     _CCCL_DEVICE _CCCL_FORCEINLINE
@@ -551,7 +562,7 @@ private:
 
     _CCCL_DEVICE _CCCL_FORCEINLINE decltype(auto) operator[](difference_type n)
     {
-      static constexpr int offset_size = static_cast<int>(m_offsets.extent);
+      static constexpr int offset_size = extract_extend<SpanTy>::extend;
       const difference_type offset     = m_start + n;
 
       difference_type shifted_offset = offset;
