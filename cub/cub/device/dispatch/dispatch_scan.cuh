@@ -414,12 +414,17 @@ struct DispatchScan
     using tmp_state_t      = detail::scan::tmp_state_t<AccumT>;
     using scanKernelParams = detail::scan::scanKernelParams<InputT, OutputT, AccumT>;
 
-    constexpr int numLookbackTiles = 96;
-    constexpr int tile_size        = 63 * detail::scan::squadReduce.threadCount();
+    constexpr int tile_size = ActivePolicyT::warpspeed_tile_size;
 
-    auto kernel_ptr = detail::scan::scan < tile_size, numLookbackTiles, InputT, OutputT, AccumT, ScanOpT, InitValueT,
-         EnforceInclusive == ForceInclusive::Yes > ;
-    const int grid_dim = ::cuda::ceil_div(num_items, size_t(tile_size));
+    auto kernel_ptr =
+      detail::scan::scan<typename PolicyHub::MaxPolicy,
+                         InputT,
+                         OutputT,
+                         AccumT,
+                         ScanOpT,
+                         InitValueT,
+                         (EnforceInclusive == ForceInclusive::Yes)>;
+    const int grid_dim = ::cuda::ceil_div(num_items, static_cast<size_t>(tile_size));
 
     if (d_temp_storage == nullptr)
     {
@@ -429,7 +434,8 @@ struct DispatchScan
 
     // Maximum dynamic shared memory size that we can use for temporary storage.
     int max_dynamic_smem_size{};
-    if (const auto error = __max_dynamic_smem_size_for(max_dynamic_smem_size, (const void*) kernel_ptr))
+    if (const auto error =
+          __max_dynamic_smem_size_for(max_dynamic_smem_size, reinterpret_cast<const void*>(kernel_ptr)))
     {
       return error;
     }
@@ -437,7 +443,7 @@ struct DispatchScan
     scanKernelParams params{};
     params.ptrIn     = const_cast<InputT*>(d_in_unwrapped);
     params.ptrOut    = d_out_unwrapped;
-    params.ptrTmp    = reinterpret_cast<tmp_state_t*>(d_temp_storage);
+    params.ptrTmp    = static_cast<tmp_state_t*>(d_temp_storage);
     params.numElem   = num_items;
     params.numStages = 0; // computed below, must be set to 0
 
@@ -471,8 +477,8 @@ struct DispatchScan
 
     // Invoke init kernel
     {
-      const auto init_grid_size      = ::cuda::ceil_div(grid_dim, 128);
-      const auto init_kernel_threads = 128;
+      constexpr auto init_kernel_threads = 128;
+      const auto init_grid_size          = ::cuda::ceil_div(grid_dim, init_kernel_threads);
 
 #  ifdef CUB_DEBUG_LOG
       _CubLog(
@@ -480,7 +486,7 @@ struct DispatchScan
 #  endif // CUB_DEBUG_LOG
 
       launcher_factory(init_grid_size, init_kernel_threads, 0, stream, /* use_pdl */ true)
-        .doit(detail::scan::initTmpStates<tile_size, AccumT>, reinterpret_cast<tmp_state_t*>(d_temp_storage), grid_dim);
+        .doit(detail::scan::initTmpStates<AccumT>, static_cast<tmp_state_t*>(d_temp_storage), grid_dim);
 
       // Check for failure to launch
       if (const auto error = CubDebug(cudaPeekAtLastError()))
@@ -527,8 +533,7 @@ struct DispatchScan
   CUB_RUNTIME_FUNCTION _CCCL_HOST _CCCL_FORCEINLINE cudaError_t Invoke(ActivePolicyT active_policy = {})
   {
 #if __cccl_ptx_isa >= 860
-    if constexpr (ActivePolicyT::ScanPolicyT::detail::use_warpspeed
-                  && THRUST_NS_QUALIFIER::is_contiguous_iterator_v<InputIteratorT>
+    if constexpr (ActivePolicyT::use_warpspeed && THRUST_NS_QUALIFIER::is_contiguous_iterator_v<InputIteratorT>
                   && THRUST_NS_QUALIFIER::is_contiguous_iterator_v<OutputIteratorT>)
     {
       return __invoke_lookahead_algorithm(active_policy);

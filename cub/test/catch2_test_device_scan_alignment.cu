@@ -12,98 +12,59 @@
 #include <cstdint>
 #include <iomanip>
 #include <iostream>
-#include <tuple>
+#include <optional>
 #include <vector>
 
 #include "catch2_test_device_reduce.cuh"
 #include "catch2_test_device_scan.cuh"
 #include "catch2_test_launch_helper.h"
-#include <c2h/bfloat16.cuh>
 #include <c2h/catch2_test_helper.h>
 #include <c2h/custom_type.h>
-#include <c2h/half.cuh>
 
-DECLARE_LAUNCH_WRAPPER(cub::DeviceScan::InclusiveScanInit, device_inclusive_scan_with_init);
-DECLARE_LAUNCH_WRAPPER(cub::DeviceScan::ExclusiveSum, device_exclusive_sum);
-DECLARE_LAUNCH_WRAPPER(cub::DeviceScan::ExclusiveScan, device_exclusive_scan);
-DECLARE_LAUNCH_WRAPPER(cub::DeviceScan::InclusiveSum, device_inclusive_sum);
+// %PARAM% TEST_LAUNCH lid 0
+
 DECLARE_LAUNCH_WRAPPER(cub::DeviceScan::InclusiveScan, device_inclusive_scan);
 
-// %PARAM% TEST_LAUNCH lid 0:1:2
-// %PARAM% TEST_TYPES types 0:1:2
+// TODO(bgruber): the following functions implement better reporting for vector comparisons. We should generalize this.
 
-// List of types to test
-using custom_t =
-  c2h::custom_type_t<c2h::accumulateable_t,
-                     c2h::equal_comparable_t,
-                     c2h::lexicographical_less_comparable_t,
-                     c2h::lexicographical_greater_comparable_t,
-                     c2h::subtractable_t>;
-
-#if TEST_TYPES == 0
-using full_type_list = c2h::type_list<type_pair<int>>;
-#elif TEST_TYPES == 1
-using full_type_list = c2h::type_list<type_pair<std::int32_t>, type_pair<std::uint64_t>>;
-#elif TEST_TYPES == 2
-// clang-format off
-using full_type_list = c2h::type_list<
-type_pair<custom_t>
-#if TEST_HALF_T()
-, type_pair<half_t> // testing half
-#endif // TEST_HALF_T()
-#if TEST_BF_T()
-, type_pair<bfloat16_t> // testing bf16
-#endif // TEST_BF_T()
->;
-// clang-format on
-#endif
-
-/**
- * @brief Input data generation mode
- */
-enum class gen_data_t : int
+template <typename T>
+struct element_compare_result_t
 {
-  /// Uniform random data generation
-  GEN_TYPE_RANDOM,
-  /// Constant value as input data
-  GEN_TYPE_CONST
+  size_t index;
+  T actual;
+  T expected;
 };
 
-template <class T>
-struct VectorCompareResult
+template <typename T>
+struct vector_compare_result_t
 {
-  std::vector<std::tuple<size_t, T, T>> first_mismatches;
-  std::vector<std::tuple<size_t, T, T>> last_mismatches;
+  std::vector<element_compare_result_t<T>> first_mismatches;
+  std::optional<std::vector<element_compare_result_t<T>>> last_mismatches;
   size_t total_mismatches = 0;
   double mismatch_percent = 0.0;
-  T max_difference{};
+  T max_difference        = 0; // TODO(bgruber): we may want to reconsider this for a generic T
 };
 
-template <class T>
-VectorCompareResult<T> compare_vectors(const std::vector<T>& actual, const std::vector<T>& expected)
+template <typename T>
+vector_compare_result_t<T> compare_vectors(const c2h::host_vector<T>& actual, const c2h::host_vector<T>& expected)
 {
-  VectorCompareResult<T> result;
-
+  vector_compare_result_t<T> result;
   if (actual.size() != expected.size())
   {
     std::cerr << "Error: Vectors have different sizes (" << actual.size() << " vs " << expected.size() << ")\n";
     return result;
   }
 
-  std::vector<std::tuple<size_t, T, T>> mismatches;
-  mismatches.reserve(actual.size());
-  T current_max_diff{};
-
+  std::vector<element_compare_result_t<T>> mismatches;
+  mismatches.reserve(actual.size()); // TODO(bgruber): this seems excessive
+  T current_max_diff = 0;
   for (size_t i = 0; i < actual.size(); ++i)
   {
     if (actual[i] != expected[i])
     {
-      mismatches.emplace_back(i, actual[i], expected[i]);
-      const T diff = actual[i] - expected[i];
-      if (diff > current_max_diff)
-      {
-        current_max_diff = diff;
-      }
+      mismatches.emplace_back(element_compare_result_t<T>{i, actual[i], expected[i]});
+      T abs_diff       = actual[i] < expected[i] ? expected[i] - actual[i] : actual[i] - expected[i];
+      current_max_diff = cuda::std::max(current_max_diff, abs_diff);
     }
   }
 
@@ -118,19 +79,15 @@ VectorCompareResult<T> compare_vectors(const std::vector<T>& actual, const std::
   // Handle last 10 mismatches
   if (mismatches.size() > 10)
   {
-    auto start = mismatches.end() - cuda::std::min<size_t>(mismatches.size(), 10);
-    result.last_mismatches.assign(start, mismatches.end());
-  }
-  else
-  {
-    result.last_mismatches = mismatches;
+    const auto start = mismatches.end() - cuda::std::min<size_t>(mismatches.size(), 10);
+    result.last_mismatches.emplace(start, mismatches.end());
   }
 
   return result;
 }
 
-template <class T>
-void print_comparison(const VectorCompareResult<T>& res)
+template <typename T>
+void print_comparison(const vector_compare_result_t<T>& res)
 {
   // Print first mismatches
   std::cout << "First 10 mismatches:\n";
@@ -140,10 +97,10 @@ void print_comparison(const VectorCompareResult<T>& res)
   }
 
   // Print last mismatches if different from first
-  if (!res.last_mismatches.empty() && res.last_mismatches != res.first_mismatches)
+  if (res.last_mismatches)
   {
     std::cout << "\nLast 10 mismatches:\n";
-    for (const auto& [idx, a, b] : res.last_mismatches)
+    for (const auto& [idx, a, b] : *res.last_mismatches)
     {
       std::cout << "At index " << idx << ". Got " << a << ". Expected " << b << ". Difference " << a - b << "\n";
     }
@@ -156,86 +113,60 @@ void print_comparison(const VectorCompareResult<T>& res)
     << "Maximum absolute difference: " << res.max_difference << "\n";
 }
 
-template <class T>
-bool compareIsEqualAndPrint(const std::vector<T>& actual, const std::vector<T>& expected)
+template <typename T>
+bool compareIsEqualAndPrint(const c2h::host_vector<T>& actual, const c2h::host_vector<T>& expected)
 {
-  VectorCompareResult result = compare_vectors(expected, actual);
+  const vector_compare_result_t result = compare_vectors(expected, actual);
   if (result.total_mismatches == 0)
   {
     return true;
   }
-  else
-  {
-    print_comparison(result);
-    return false;
-  }
+
+  print_comparison(result);
+  return false;
 }
 
-C2H_TEST("Device scan works with all device interfaces", "[scan][device]", full_type_list)
+// TODO(bgruber): enable uint64, which exceeds the SMEM available on RTX 5090
+// We cover types of various sizes smaller than 16 byte
+using value_types = c2h::type_list<uint8_t, uint16_t, uint32_t /*, uint64_t*/>;
+
+C2H_TEST("Device scan works with all device interfaces", "[scan][device]", value_types)
 {
-  using params   = params_t<TestType>;
-  using input_t  = typename params::item_t;
-  using output_t = typename params::output_t;
+  using input_t  = c2h::get<0, TestType>;
+  using output_t = input_t;
   using offset_t = int32_t;
+  using op_t     = cuda::std::plus<>;
 
-  // constexpr offset_t min_items = 1;
-  // constexpr offset_t max_items = 1000000;
+  constexpr int max_offset = 16;
 
-  // Generate the input sizes to test for
-  // const offset_t num_items = GENERATE_COPY(
-  //   take(3, random(min_items, max_items)),
-  //   values({
-  //     min_items,
-  //     max_items,
-  //   }));
-
-  SECTION("inclusive scan")
+  for (offset_t num_items = 2 * 16; num_items < 1000 * 16; num_items += 16)
   {
-    for (int ii = 2; ii < 1000; ii += 1)
+    CAPTURE(num_items);
+
+    // Generate input data
+    c2h::device_vector<input_t> in_items(num_items + max_offset, thrust::no_init);
+    c2h::gen(C2H_SEED(1), in_items);
+    auto d_in_it = thrust::raw_pointer_cast(in_items.data());
+
+    // Prepare verification data
+    c2h::host_vector<input_t> host_items(in_items);
+    c2h::host_vector<output_t> expected_result(num_items, thrust::no_init);
+
+    for (int offset = 0; offset < max_offset; ++offset)
     {
-      const offset_t num_items = ii * 16;
-      CAPTURE(num_items);
-      // // Input data generation to test
-      // const gen_data_t data_gen_mode = GENERATE_COPY(gen_data_t::GEN_TYPE_RANDOM, gen_data_t::GEN_TYPE_CONST);
-      //
-      using op_t    = cuda::std::plus<>;
-      using accum_t = cuda::std::__accumulator_t<op_t, input_t, input_t>;
+      CAPTURE(offset);
 
-      const int max_offset = 16;
+      // Compute verification data
+      compute_inclusive_scan_reference(
+        host_items.cbegin() + offset, host_items.cend() - max_offset + offset, expected_result.begin(), op_t{}, 0);
 
-      // // Generate input data
-      c2h::device_vector<input_t> in_items(num_items + max_offset);
-      c2h::gen(C2H_SEED(2), in_items);
+      // Run test
+      c2h::device_vector<output_t> out_result(num_items, thrust::no_init);
+      auto d_out_it = thrust::raw_pointer_cast(out_result.data());
+      device_inclusive_scan(unwrap_it(d_in_it + offset), unwrap_it(d_out_it), op_t{}, num_items);
 
-      auto d_in_it = thrust::raw_pointer_cast(in_items.data());
-
-      for (int offset = 0; offset < max_offset; ++offset)
-      {
-        CAPTURE(offset);
-        // Prepare verification data
-        c2h::host_vector<input_t> host_items(in_items);
-        c2h::host_vector<output_t> expected_result(num_items);
-        compute_inclusive_scan_reference(
-          host_items.cbegin() + offset,
-          host_items.cend() - max_offset + offset,
-          expected_result.begin(),
-          op_t{},
-          input_t{});
-
-        // Run test
-        c2h::device_vector<output_t> out_result(num_items);
-        auto d_out_it = thrust::raw_pointer_cast(out_result.data());
-        device_inclusive_scan(unwrap_it(d_in_it + offset), unwrap_it(d_out_it), op_t{}, num_items);
-
-        // Verify result. Copy to a vector on the host for comparison.
-        std::vector<output_t> expected_result_vec(expected_result.size());
-        std::vector<output_t> out_result_vec(out_result.size());
-        thrust::copy(expected_result.begin(), expected_result.end(), expected_result_vec.begin());
-        thrust::copy(out_result.begin(), out_result.end(), out_result_vec.begin());
-
-        REQUIRE(compareIsEqualAndPrint(expected_result_vec, out_result_vec));
-        REQUIRE(expected_result == out_result);
-      }
+      REQUIRE(compareIsEqualAndPrint(expected_result, c2h::host_vector<output_t>(out_result)));
+      REQUIRE(expected_result == out_result);
     }
   }
 }

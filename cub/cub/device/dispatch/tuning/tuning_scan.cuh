@@ -556,13 +556,18 @@ struct policy_hub
                          Tuning::store_algorithm,
                          BLOCK_SCAN_WARP_SCANS,
                          MemBoundScaling<Tuning::threads, Tuning::items, AccumT>,
-                         typename Tuning::delay_constructor,
-                         /*use warpspeed*/ true>;
+                         typename Tuning::delay_constructor>;
     template <typename Tuning, typename IVT>
     _CCCL_HOST_DEVICE static auto select_agent_policy100(long) -> typename Policy900::ScanPolicyT;
 
     using ScanPolicyT =
       decltype(select_agent_policy100<sm100_tuning<InputValueT, AccumT, OffsetT, classify_op<ScanOpT>>, InputValueT>(0));
+
+    static constexpr bool use_warpspeed                      = true;
+    static constexpr int warpspeed_squad_reduce_thread_count = 4 * 32; // TODO(bgruber): keep in sync with squad
+                                                                       // definition
+    static constexpr int warpspeed_num_lookback_tiles = 96;
+    static constexpr int warpspeed_tile_size          = 63 * warpspeed_squad_reduce_thread_count;
   };
 
   using MaxPolicy = Policy1000;
