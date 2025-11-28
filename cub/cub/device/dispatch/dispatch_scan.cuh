@@ -416,8 +416,15 @@ struct DispatchScan
     constexpr int numLookbackTiles = 96;
     constexpr int tile_size        = 63 * detail::scan::squadReduce.threadCount();
 
-    auto kernel_ptr = detail::scan::scan < tile_size, numLookbackTiles, InputT, OutputT, AccumT, ScanOpT, InitValueT,
-         EnforceInclusive == ForceInclusive::Yes > ;
+    auto kernel_ptr =
+      detail::scan::scan<tile_size,
+                         numLookbackTiles,
+                         InputT,
+                         OutputT,
+                         AccumT,
+                         ScanOpT,
+                         InitValueT,
+                         EnforceInclusive == ForceInclusive::Yes>;
     const int grid_dim = ::cuda::ceil_div(num_items, size_t(tile_size));
 
     if (d_temp_storage == nullptr)
@@ -523,7 +530,9 @@ struct DispatchScan
   template <typename ActivePolicyT>
   CUB_RUNTIME_FUNCTION _CCCL_HOST _CCCL_FORCEINLINE cudaError_t Invoke(ActivePolicyT active_policy = {})
   {
-    if constexpr (ActivePolicyT::ScanPolicyT::detail::use_warpspeed)
+    if constexpr (ActivePolicyT::ScanPolicyT::detail::use_warpspeed
+                  && THRUST_NS_QUALIFIER::is_contiguous_iterator_v<InputIteratorT>
+                  && THRUST_NS_QUALIFIER::is_contiguous_iterator_v<OutputIteratorT>)
     {
       return __invoke_lookahead_algorithm(active_policy);
     }
