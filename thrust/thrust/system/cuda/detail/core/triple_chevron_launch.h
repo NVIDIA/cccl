@@ -15,7 +15,6 @@
 #include <thrust/system/cuda/config.h>
 
 #include <cuda/cmath>
-#include <cuda/std/__cccl/cuda_capabilities.h>
 
 THRUST_NAMESPACE_BEGIN
 

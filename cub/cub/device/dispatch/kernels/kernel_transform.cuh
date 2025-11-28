@@ -37,7 +37,6 @@
 #include <cuda/std/__algorithm/transform.h>
 #include <cuda/std/__bit/bit_cast.h>
 #include <cuda/std/__bit/has_single_bit.h>
-#include <cuda/std/__cccl/cuda_capabilities.h>
 #include <cuda/std/__cstring/memcpy.h>
 #include <cuda/std/__functional/invoke.h>
 #include <cuda/std/__memory/construct_at.h>

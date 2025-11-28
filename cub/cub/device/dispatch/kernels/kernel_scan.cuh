@@ -16,8 +16,6 @@
 #include <cub/agent/agent_scan.cuh>
 #include <cub/util_macro.cuh>
 
-#include <cuda/std/__cccl/cuda_capabilities.h>
-
 CUB_NAMESPACE_BEGIN
 
 namespace detail::scan
