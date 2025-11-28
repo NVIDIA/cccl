@@ -15,19 +15,19 @@
 
 #if __cccl_ptx_isa >= 860
 
-#  include <cub/device/dispatch/kernels/warpspeed/allocators/SmemAllocator.h> // SmemAllocator
-#  include <cub/device/dispatch/kernels/warpspeed/resource/SmemRef.cuh> // SmemRef
-#  include <cub/device/dispatch/kernels/warpspeed/resource/SmemResource.cuh> // SmemResource
-#  include <cub/device/dispatch/kernels/warpspeed/SpecialRegisters.cuh> // SpecialRegisters
-#  include <cub/device/dispatch/kernels/warpspeed/squad/Squad.h> // squadDispatch, ...
-#  include <cub/device/dispatch/kernels/warpspeed/values.h> // stages
+#  include <cub/device/dispatch/kernels/warpspeed/allocators/SmemAllocator.h>
+#  include <cub/device/dispatch/kernels/warpspeed/resource/SmemRef.cuh>
+#  include <cub/device/dispatch/kernels/warpspeed/resource/SmemResource.cuh>
+#  include <cub/device/dispatch/kernels/warpspeed/SpecialRegisters.cuh>
+#  include <cub/device/dispatch/kernels/warpspeed/squad/Squad.h>
+#  include <cub/device/dispatch/kernels/warpspeed/values.h>
 #  include <cub/thread/thread_reduce.cuh>
 #  include <cub/thread/thread_scan.cuh>
 #  include <cub/warp/warp_reduce.cuh>
 #  include <cub/warp/warp_scan.cuh>
 
-#  include <cuda/__memory/align_down.h> // cuda::align_down
-#  include <cuda/__memory/align_up.h> // cuda::align_up
+#  include <cuda/__memory/align_down.h>
+#  include <cuda/__memory/align_up.h>
 #  include <cuda/ptx>
 #  include <cuda/std/__cccl/cuda_capabilities.h>
 #  include <cuda/std/__functional/invoke.h>
@@ -276,7 +276,7 @@ _CCCL_DEVICE_API inline void warpLoadLookback(
 // warp-uniform.
 //
 template <int numTmpStatesPerThread, typename AccumT, typename ScanOpT>
-_CCCL_DEVICE_API inline AccumT warpIncrementalLookback(
+[[nodiscard]] _CCCL_DEVICE_API inline AccumT warpIncrementalLookback(
   SpecialRegisters specialRegisters,
   tmp_state_t<AccumT>* ptrTmpBuffer,
   const int idxTilePrev,
@@ -303,9 +303,13 @@ _CCCL_DEVICE_API inline AccumT warpIncrementalLookback(
       int laneIsCumSum  = lanemaskEq * (regTmpStates[idx].state == CUM_SUM);
       int laneIsPrivSum = lanemaskEq * (regTmpStates[idx].state == PRIV_SUM);
       // Bitmask with 1 bits indicating which lane has an XX state.
-      int warpIsEmpty   = __reduce_or_sync(~0, laneIsEmpty);
-      int warpIsCumSum  = __reduce_or_sync(~0, laneIsCumSum);
-      int warpIsPrivSum = __reduce_or_sync(~0, laneIsPrivSum);
+      // TODO(miscco): This requires SM80 for clang-cuda
+      int warpIsEmpty = 0;
+      NV_IF_TARGET(NV_PROVIDES_SM_80, (warpIsEmpty = __reduce_or_sync(~0, laneIsEmpty);))
+      int warpIsCumSum = 0;
+      NV_IF_TARGET(NV_PROVIDES_SM_80, (warpIsCumSum = __reduce_or_sync(~0, laneIsCumSum);))
+      int warpIsPrivSum = 0;
+      NV_IF_TARGET(NV_PROVIDES_SM_80, (warpIsPrivSum = __reduce_or_sync(~0, laneIsPrivSum);))
 
       if (warpIsEmpty != 0)
       {
@@ -410,7 +414,7 @@ struct ScanResources
 // Function to allocate resources.
 
 template <int tileSize, typename InputT, typename OutputT, typename AccumT>
-_CCCL_API ScanResources<tileSize, InputT, OutputT, AccumT> allocResources(
+[[nodiscard]] _CCCL_API ScanResources<tileSize, InputT, OutputT, AccumT> allocResources(
   SyncHandler& syncHandler, SmemAllocator& smemAllocator, const scanKernelParams<InputT, OutputT, AccumT>& params)
 {
   using ScanResourcesT    = ScanResources<tileSize, InputT, OutputT, AccumT>;
@@ -429,11 +433,11 @@ _CCCL_API ScanResources<tileSize, InputT, OutputT, AccumT> allocResources(
   int numSumExclusiveCtaStages = 2;
 
   ScanResources<tileSize, InputT, OutputT, AccumT> res{
-    .smemIn           = SmemResource<InT>(syncHandler, smemAllocator, stages(params.numStages)),
-    .smemOut          = reinterpret_cast<OutputT*>(smemAllocator.alloc(sizeof(OutputT) * tileSize, alignof(OutputT))),
-    .smemNextBlockIdx = SmemResource<uint4>(syncHandler, smemAllocator, stages(numBlockIdxStages)),
-    .smemSumExclusiveCta  = SmemResource<AccumT>(syncHandler, smemAllocator, stages(numSumExclusiveCtaStages)),
-    .smemSumThreadAndWarp = SmemResource<SumThreadAndWarpT>(syncHandler, smemAllocator, stages(params.numStages)),
+    SmemResource<InT>(syncHandler, smemAllocator, stages(params.numStages)),
+    reinterpret_cast<OutputT*>(smemAllocator.alloc(sizeof(OutputT) * tileSize, alignof(OutputT))),
+    SmemResource<uint4>(syncHandler, smemAllocator, stages(numBlockIdxStages)),
+    SmemResource<AccumT>(syncHandler, smemAllocator, stages(numSumExclusiveCtaStages)),
+    SmemResource<SumThreadAndWarpT>(syncHandler, smemAllocator, stages(params.numStages)),
   };
   // asdfasdf
   res.smemIn.addPhase(syncHandler, smemAllocator, squadLoad);
@@ -770,7 +774,7 @@ __launch_bounds__(squadCountThreads(scanSquads), 1) __global__ void scan(
   const __grid_constant__ scanKernelParams<InputT, OutputT, AccumT> params, ScanOpT scan_op, InitValueT init_value)
 {
   NV_IF_TARGET(
-    NV_PROVIDES_SM_90,
+    NV_PROVIDES_SM_100,
     (
       // Cache special registers at start of kernel
       SpecialRegisters specialRegisters = getSpecialRegisters();
