@@ -770,7 +770,7 @@ __launch_bounds__(squadCountThreads(scanSquads), 1) __global__ void scan(
   const __grid_constant__ scanKernelParams<InputT, OutputT, AccumT> params, ScanOpT scan_op, InitValueT init_value)
 {
   NV_IF_TARGET(
-    NV_PROVIDES_SM_90,
+    NV_PROVIDES_SM_100,
     (
       // Cache special registers at start of kernel
       SpecialRegisters specialRegisters = getSpecialRegisters();
