@@ -462,13 +462,15 @@ struct DispatchScan
   template <typename ActivePolicyT>
   CUB_RUNTIME_FUNCTION _CCCL_HOST _CCCL_FORCEINLINE cudaError_t Invoke(ActivePolicyT active_policy = {})
   {
-    // TODO(bgruber): choose between old and new algorithm based on policy
-    // auto wrapped_policy = detail::scan::MakeScanPolicyWrapper(active_policy);
-    // // Ensure kernels are instantiated.
-    // return Invoke(kernel_source.InitKernel(), kernel_source.ScanKernel(), wrapped_policy);
-
-    static_assert(::cuda::std::is_pointer_v<InputIteratorT> && ::cuda::std::is_pointer_v<OutputIteratorT>);
-    return __invoke_lookahead_algorithm(active_policy);
+    if constexpr (ActivePolicyT::ScanPolicyT::detail::use_warpspeed)
+    {
+      return __invoke_lookahead_algorithm(active_policy);
+    }
+    else
+    {
+      auto wrapped_policy = detail::scan::MakeScanPolicyWrapper(active_policy);
+      return Invoke(kernel_source.InitKernel(), kernel_source.ScanKernel(), wrapped_policy);
+    }
   }
 
   /**
