@@ -3,13 +3,13 @@
 #include <thrust/device_free.h>
 #include <thrust/device_malloc.h>
 #include <thrust/functional.h>
-#include <thrust/iterator/constant_iterator.h>
 #include <thrust/iterator/discard_iterator.h>
 #include <thrust/iterator/retag.h>
 #include <thrust/scan.h>
 #include <thrust/tabulate.h>
 
 #include <cuda/functional>
+#include <cuda/iterator>
 #include <cuda/std/array>
 
 #include <numeric>
@@ -600,8 +600,8 @@ _CCCL_END_NAMESPACE_CUDA_STD
 
 void TestInclusiveScanWithBigIndexesHelper(int magnitude)
 {
-  thrust::constant_iterator<long long> begin(1);
-  thrust::constant_iterator<long long> end = begin + (1ll << magnitude);
+  cuda::constant_iterator<long long> begin(1);
+  cuda::constant_iterator<long long> end = begin + (1ll << magnitude);
   ASSERT_EQUAL(::cuda::std::distance(begin, end), 1ll << magnitude);
 
   thrust::device_ptr<bool> has_executed = thrust::device_malloc<bool>(1);
@@ -631,8 +631,8 @@ DECLARE_UNITTEST(TestInclusiveScanWithBigIndexes);
 
 void TestExclusiveScanWithBigIndexesHelper(int magnitude)
 {
-  thrust::constant_iterator<long long> begin(1);
-  thrust::constant_iterator<long long> end = begin + (1ll << magnitude);
+  cuda::constant_iterator<long long> begin(1);
+  cuda::constant_iterator<long long> end = begin + (1ll << magnitude);
   ASSERT_EQUAL(::cuda::std::distance(begin, end), 1ll << magnitude);
 
   thrust::device_ptr<bool> has_executed = thrust::device_malloc<bool>(1);
