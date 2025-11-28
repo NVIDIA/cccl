@@ -37,5 +37,6 @@
 #include <cuda/__memory_resource/properties.h>
 #include <cuda/__memory_resource/resource.h>
 #include <cuda/__memory_resource/shared_resource.h>
+#include <cuda/__memory_resource/synchronous_resource_adapter.h>
 
 #endif //_CCCL_BEGIN_NAMESPACE_CUDA
