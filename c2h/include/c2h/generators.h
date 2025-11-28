@@ -84,9 +84,9 @@ void gen_values_between(seed_t seed, ::cuda::std::span<T> data, T min, T max);
 template <typename T>
 void gen_values_cyclic(modulo_t mod, ::cuda::std::span<T> data);
 
-// template <typename T>
-// std::size_t gen_uniform_offsets(
-//   seed_t seed, cuda::std::span<T> segment_offsets, T total_elements, T min_segment_size, T max_segment_size);
+template <typename T>
+std::size_t gen_uniform_offsets(
+  seed_t seed, cuda::std::span<T> segment_offsets, T total_elements, T min_segment_size, T max_segment_size);
 } // namespace detail
 
 template <template <typename> class... Ps>
@@ -126,19 +126,19 @@ void gen(modulo_t mod, device_vector<T>& data)
  * the very last offset must corresponds to `total_element`, the last segment may comprise more than
  * `max_segment_size` items.
  */
-// template <typename T>
-// device_vector<T> gen_uniform_offsets(seed_t seed, T total_elements, T min_segment_size, T max_segment_size)
-// {
-//   device_vector<T> segment_offsets(total_elements + 2);
-//   const auto new_size = detail::gen_uniform_offsets(
-//     seed,
-//     {THRUST_NS_QUALIFIER::raw_pointer_cast(segment_offsets.data()), segment_offsets.size()},
-//     total_elements,
-//     min_segment_size,
-//     max_segment_size);
-//   segment_offsets.resize(new_size);
-//   return segment_offsets;
-// }
+template <typename T>
+device_vector<T> gen_uniform_offsets(seed_t seed, T total_elements, T min_segment_size, T max_segment_size)
+{
+  device_vector<T> segment_offsets(total_elements + 2);
+  const auto new_size = detail::gen_uniform_offsets(
+    seed,
+    {THRUST_NS_QUALIFIER::raw_pointer_cast(segment_offsets.data()), segment_offsets.size()},
+    total_elements,
+    min_segment_size,
+    max_segment_size);
+  segment_offsets.resize(new_size);
+  return segment_offsets;
+}
 
 /**
  * @brief Generates key-segment ranges from an offsets-array like the one given by
