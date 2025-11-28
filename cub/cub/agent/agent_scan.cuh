@@ -77,8 +77,7 @@ template <int NominalBlockThreads4B,
           BlockStoreAlgorithm StoreAlgorithm,
           BlockScanAlgorithm ScanAlgorithm,
           typename ScalingType = detail::MemBoundScaling<NominalBlockThreads4B, NominalItemsPerThread4B, ComputeT>,
-          typename DelayConstructorT = detail::default_delay_constructor_t<ComputeT>,
-          bool UseWarpspeed          = false>
+          typename DelayConstructorT = detail::default_delay_constructor_t<ComputeT>>
 struct AgentScanPolicy : ScalingType
 {
   static constexpr BlockLoadAlgorithm LOAD_ALGORITHM   = LoadAlgorithm;
@@ -88,8 +87,7 @@ struct AgentScanPolicy : ScalingType
 
   struct detail
   {
-    using delay_constructor_t           = DelayConstructorT;
-    static constexpr bool use_warpspeed = UseWarpspeed;
+    using delay_constructor_t = DelayConstructorT;
   };
 };
 
