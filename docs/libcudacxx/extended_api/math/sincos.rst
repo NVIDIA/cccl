@@ -22,7 +22,7 @@ Defined in the ``<cuda/cmath>`` header.
 
    template <class Integral>
    [[nodiscard]] __host__ __device__
-   sincos_result<double> sincos(Integral value) noexcept; // (A)
+   sincos_result<double> sincos(Integral value) noexcept; // (2)
 
    } // namespace cuda
 
@@ -35,7 +35,7 @@ Computes :math:`\sin value` and :math:`\cos value` at the same time using more e
 **Return value**
 
 - ``cuda::sincos_result`` object with both values set to ``NaN`` if the input value is :math:`\pm\infty` or ``NaN`` and to results of :math:`\sin value` and :math:`\cos value` otherwise. (1)
-- if ``T`` is an integral type, the input value is treated as ``double``. (A)
+- if ``T`` is an integral type, the input value is treated as ``double``. (2)
 
 **Constraints**
 

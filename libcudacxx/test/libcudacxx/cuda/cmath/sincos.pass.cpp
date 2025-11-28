@@ -15,6 +15,37 @@
 #include <cuda/std/type_traits>
 #include <cuda/std/utility>
 
+__host__ __device__ bool is_about(float x, float y)
+{
+  return (cuda::std::abs((x - y) / (x + y)) < 1.e-6);
+}
+
+__host__ __device__ bool is_about(double x, double y)
+{
+  return (cuda::std::abs((x - y) / (x + y)) < 1.e-14);
+}
+
+#if _CCCL_HAS_LONG_DOUBLE()
+__host__ __device__ bool is_about(long double x, long double y)
+{
+  return (cuda::std::abs((x - y) / (x + y)) < 1.e-14);
+}
+#endif // _CCCL_HAS_LONG_DOUBLE()
+
+#if _LIBCUDACXX_HAS_NVFP16()
+__host__ __device__ bool is_about(__half x, __half y)
+{
+  return (cuda::std::fabs((x - y) / (x + y)) <= __half(1e-3));
+}
+#endif // _LIBCUDACXX_HAS_NVFP16()
+
+#if _LIBCUDACXX_HAS_NVBF16()
+__host__ __device__ bool is_about(__nv_bfloat16 x, __nv_bfloat16 y)
+{
+  return (cuda::std::fabs((x - y) / (x + y)) <= __nv_bfloat16(5e-3));
+}
+#endif // _LIBCUDACXX_HAS_NVBF16()
+
 template <class T>
 __host__ __device__ void test_type(float zero)
 {
@@ -33,7 +64,15 @@ __host__ __device__ void test_type(float zero)
     assert(result.cos == Result{1});
   }
 
-  // 3. Test sincos(+-inf)
+  // 3. Test sincos(value) to result of separate sin/cos calls.
+  {
+    const auto value = static_cast<T>(4);
+    auto result      = cuda::sincos(value);
+    assert(is_about(result.sin, cuda::std::sin(value)));
+    assert(is_about(result.cos, cuda::std::cos(value)));
+  }
+
+  // 4. Test sincos(+-inf)
   if constexpr (cuda::std::numeric_limits<T>::has_infinity && cuda::std::numeric_limits<T>::has_quiet_NaN)
   {
     auto pos_result = cuda::sincos(cuda::std::numeric_limits<T>::infinity());
@@ -45,7 +84,7 @@ __host__ __device__ void test_type(float zero)
     assert(cuda::std::isnan(neg_result.cos));
   }
 
-  // 3. Test sincos(+-nan)
+  // 5. Test sincos(+-nan)
   if constexpr (cuda::std::numeric_limits<T>::has_quiet_NaN)
   {
     auto pos_result = cuda::sincos(cuda::std::numeric_limits<T>::quiet_NaN());
