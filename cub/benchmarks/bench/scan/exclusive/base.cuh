@@ -82,6 +82,11 @@ static void basic(nvbench::state& state, nvbench::type_list<T, OffsetT>)
 #endif
 
   const auto elements = static_cast<std::size_t>(state.get_int64("Elements{io}"));
+  if (sizeof(offset_t) == 4 && elements > std::numeric_limits<offset_t>::max())
+  {
+    state.skip("Skipping: input size exceeds 32-bit offset type capacity.");
+    return;
+  }
 
   thrust::device_vector<T> input = generate(elements);
   thrust::device_vector<T> output(elements);
