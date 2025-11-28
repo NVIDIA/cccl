@@ -57,14 +57,11 @@ using ::timespec;
 #  undef clock
 #  define _LIBCUDACXX_POP_CLOCK_MACRO
 #endif // clock
-[[nodiscard]] _CCCL_API inline clock_t clock() noexcept
+using ::clock;
 #ifdef _LIBCUDACXX_POP_CLOCK_MACRO
 #  pragma pop_macro("clock")
 #  undef _LIBCUDACXX_POP_CLOCK_MACRO
 #endif // _LIBCUDACXX_POP_CLOCK_MACRO
-{
-  NV_IF_ELSE_TARGET(NV_IS_HOST, (return ::clock();), (return static_cast<clock_t>(::cuda::ptx::get_sreg_clock64());))
-}
 
 // difftime
 
