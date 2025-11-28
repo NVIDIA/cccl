@@ -24,6 +24,9 @@
 #include <cub/warp/warp_reduce.cuh>
 #include <cub/warp/warp_scan.cuh>
 
+#include <cuda/__memory/align_up.h>   // cuda::align_up
+#include <cuda/__memory/align_down.h> // cuda::align_down
+
 #include <cuda/ptx>
 #include <cuda/std/__functional/invoke.h>
 #include <cuda/std/__type_traits/is_same.h>
@@ -76,8 +79,32 @@ _CCCL_DEVICE_API inline void squadGetNextBlockIdx(const Squad& squad, SmemRef<ui
   refDestSmem.squadIncreaseTxCount(squad, refDestSmem.sizeBytes());
 }
 
-template <typename Tp, typename InputT>
-_CCCL_DEVICE_API inline void squadLoadTma(const Squad& squad, SmemRef<Tp>& refDestSmem, const InputT* ptrIn)
+struct CpAsyncOobInfo {
+  void* ptrGmemBase;
+  uint32_t copySizeBytes;
+  uint32_t smemOffsetElem;
+};
+
+
+template <typename Tp>
+_CCCL_DEVICE_API inline CpAsyncOobInfo prepareCpAsyncOob(const Tp* ptrGmem, uint32_t sizeElem)
+{
+  // We will copy from [ptrGmemBase, ptrGmemEnd). Both pointers have to be 16B
+  // aligned. We align ptrGmemBase down and ptrGmemEnd up.
+  const Tp* ptrGmemBase = cuda::align_down(ptrGmem, std::size_t(16));
+  const Tp* ptrGmemEnd = cuda::align_up(ptrGmem + sizeElem, std::size_t(16));
+
+  // Compute the final copy size in bytes. It can be either sizeElem or sizeElem + 16 / sizeof(T).
+  uint32_t copySizeBytes = static_cast<uint32_t>(sizeof(Tp) * (ptrGmemEnd - ptrGmemBase));
+  // The offset in elements to the first valid element in shared memory.
+  // ptrSmem + smemOffsetElem will point to the element copied from ptrGmem.
+  uint32_t smemOffsetElem = static_cast<uint32_t>(ptrGmem - ptrGmemBase);
+
+  return CpAsyncOobInfo {(void*) ptrGmemBase, copySizeBytes, smemOffsetElem};
+}
+
+template <typename Tp>
+_CCCL_DEVICE_API inline void squadLoadBulk(const Squad& squad, SmemRef<Tp>& refDestSmem, CpAsyncOobInfo cpAsyncOobInfo)
 {
   void* ptrSmem    = refDestSmem.data();
   uint64_t* ptrBar = refDestSmem.ptrCurBarrierRelease();
@@ -85,13 +112,13 @@ _CCCL_DEVICE_API inline void squadLoadTma(const Squad& squad, SmemRef<Tp>& refDe
   if (squad.isLeaderThread())
   {
     ::cuda::ptx::cp_async_bulk(
-      ::cuda::ptx::space_cluster, ::cuda::ptx::space_global, ptrSmem, ptrIn, refDestSmem.sizeBytes(), ptrBar);
+      ::cuda::ptx::space_cluster, ::cuda::ptx::space_global, ptrSmem, cpAsyncOobInfo.ptrGmemBase, cpAsyncOobInfo.copySizeBytes, ptrBar);
   }
-  refDestSmem.squadIncreaseTxCount(squad, refDestSmem.sizeBytes());
+  refDestSmem.squadIncreaseTxCount(squad, cpAsyncOobInfo.copySizeBytes);
 }
 
 template <typename OutputT>
-_CCCL_DEVICE_API inline void squadStoreTmaSync(const Squad& squad, OutputT* ptrOut, OutputT* srcSmem, uint32_t sizeBytes)
+_CCCL_DEVICE_API inline void squadStoreBulkSync(const Squad& squad, OutputT* ptrOut, OutputT* srcSmem, uint32_t sizeBytes)
 {
   // Acquire shared memory in async proxy
   if (squad.isLeaderWarp())
@@ -361,7 +388,9 @@ struct ScanResources
 {
   static constexpr int elemPerThread = tileSize / squadReduce.threadCount();
 
-  using InT               = InputT[squadReduce.threadCount() * elemPerThread];
+  // Handle unaligned loads. We have 16 extra bytes of padding in every stage
+  // for squadLoadBulk.
+  using InT               = InputT[squadReduce.threadCount() * elemPerThread + 16 / sizeof(InputT)];
   using SumThreadAndWarpT = AccumT[squadReduce.threadCount() + squadReduce.warpCount()];
 
   SmemResource<InT> smemIn;
@@ -496,13 +525,17 @@ _CCCL_DEVICE_API inline void kernelBody(
       squadGetNextBlockIdx(squad, refNextBlockIdxW);
     }
 
+    size_t idxTileBase = idxTile * size_t(tile_size);
+    size_t copyNumElem = cuda::std::min(params.numElem - idxTileBase, size_t(tile_size));
+    CpAsyncOobInfo loadInfo = prepareCpAsyncOob(params.ptrIn + idxTile * size_t(tile_size), copyNumElem);
+
     if (squad == squadLoad)
     {
       ////////////////////////////////////////////////////////////////////////////////
       // Load current tile
       ////////////////////////////////////////////////////////////////////////////////
       SmemRef refInOutW = phaseInOutW.acquireRef();
-      squadLoadTma(squad, refInOutW, params.ptrIn + idxTile * size_t(tile_size));
+      squadLoadBulk(squad, refInOutW, loadInfo);
     }
 
     ////////////////////////////////////////////////////////////////////////////////
@@ -529,7 +562,8 @@ _CCCL_DEVICE_API inline void kernelBody(
         // Load data
         constexpr int elemPerThread    = tile_size / squadReduce.threadCount();
         AccumT regInput[elemPerThread] = {AccumT{}};
-        squadLoadSmem(squad, regInput, refInOutRW.data());
+        // Handle unaligned refInOutRW.data() + loadInfo.smemOffsetElem points to the first element of the tile.
+        squadLoadSmem(squad, regInput, &refInOutRW.data()[0] + loadInfo.smemOffsetElem);
 
         ////////////////////////////////////////////////////////////////////////////////
         // Reduce across thread and warp
@@ -661,7 +695,9 @@ _CCCL_DEVICE_API inline void kernelBody(
       // Acquire refInOut for remainder of scope.
       {
         SmemRef refInOutRW = phaseInOutRW.acquireRef();
-        squadLoadSmem(squad, regSumInclusive, refInOutRW.data());
+        // Handle unaligned refInOutRW.data() + loadInfo.smemOffsetElem points to
+        // the first element of the tile.
+        squadLoadSmem(squad, regSumInclusive, &refInOutRW.data()[0] + loadInfo.smemOffsetElem);
         refInOutRW.setFenceLdsToAsyncProxy();
       }
 
@@ -678,18 +714,22 @@ _CCCL_DEVICE_API inline void kernelBody(
       ////////////////////////////////////////////////////////////////////////////////
       // Store result to shared memory
       ////////////////////////////////////////////////////////////////////////////////
-      squadStoreSmem(squad, res.smemOut, regSumInclusive);
+      // Sync before storing to avoid data races.
+      squad.syncThreads();
 
-      // We issue a squad-local syncthreads + fence.proxy.async to sync the shared memory writes with the TMA store.
+      squadStoreSmem(squad, res.smemOut, regSumInclusive);
+      // We do *not* release refSmemInOut here, because we will issue a TMA
+      // instruction below. Instead, we issue a squad-local syncthreads +
+      // fence.proxy.async to sync the shared memory writes with the TMA store.
       squad.syncThreads();
 
       ////////////////////////////////////////////////////////////////////////////////
       // Store result to global memory using TMA
       ////////////////////////////////////////////////////////////////////////////////
-      squadStoreTmaSync(squad,
-                        params.ptrOut + idxTile * size_t(tile_size),
-                        res.smemOut,
-                        static_cast<uint32_t>(sizeof(OutputT) * tile_size));
+      squadStoreBulkSync(squad,
+                         params.ptrOut + idxTile * size_t(tile_size),
+                         res.smemOut,
+                         static_cast<uint32_t>(sizeof(OutputT) * tile_size));
     }
 
     ////////////////////////////////////////////////////////////////////////////////
