@@ -26,30 +26,30 @@ template <typename _Tp>
 struct SmemResource : SmemResourceRaw
 {
   template <int stageCount>
- _CCCL_API SmemResource(SyncHandler& syncHandler, _Tp (&smemBuffer)[stageCount])
-  : SmemResourceRaw(syncHandler, smemBuffer, sizeof(smemBuffer[0]), sizeof(smemBuffer[0]), stageCount)
- {}
+  _CCCL_API SmemResource(SyncHandler& syncHandler, _Tp (&smemBuffer)[stageCount])
+      : SmemResourceRaw(syncHandler, smemBuffer, sizeof(smemBuffer[0]), sizeof(smemBuffer[0]), stageCount)
+  {}
 
- _CCCL_API SmemResource(SyncHandler& syncHandler, SmemAllocator& smemAllocator, Stages stages, Elems elems = Elems{1})
-  : SmemResourceRaw(makeSmemResourceRaw(syncHandler, smemAllocator, stages, elems))
- {
- }
+  _CCCL_API SmemResource(SyncHandler& syncHandler, SmemAllocator& smemAllocator, Stages stages, Elems elems = Elems{1})
+      : SmemResourceRaw(makeSmemResourceRaw(syncHandler, smemAllocator, stages, elems))
+  {}
 
   [[nodiscard]] _CCCL_DEVICE_API SmemStage<_Tp> popStage() noexcept
   {
     return SmemStage<_Tp>(*this);
   }
 
-  private:
-    [[nodiscard]] _CCCL_API static inline SmemResourceRaw makeSmemResourceRaw(SyncHandler& syncHandler, SmemAllocator& smemAllocator, Stages stages, Elems elems = Elems{1})
-    {
-      int align       = alignof(_Tp);
-      int sizeBytes   = elems.value() * sizeof(_Tp);
-      int strideBytes = sizeBytes;
+private:
+  [[nodiscard]] _CCCL_API static inline SmemResourceRaw
+  makeSmemResourceRaw(SyncHandler& syncHandler, SmemAllocator& smemAllocator, Stages stages, Elems elems = Elems{1})
+  {
+    int align       = alignof(_Tp);
+    int sizeBytes   = elems.value() * sizeof(_Tp);
+    int strideBytes = sizeBytes;
 
-      void* ptrBase = smemAllocator.alloc(stages.value() * strideBytes, align);
-      return SmemResourceRaw(syncHandler, ptrBase, sizeBytes, strideBytes, stages.value());
-    }
+    void* ptrBase = smemAllocator.alloc(stages.value() * strideBytes, align);
+    return SmemResourceRaw(syncHandler, ptrBase, sizeBytes, strideBytes, stages.value());
+  }
 };
 
 CUB_NAMESPACE_END

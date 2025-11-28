@@ -74,22 +74,22 @@ enum class gen_data_t : int
   GEN_TYPE_CONST
 };
 
-
-struct VectorCompareResult {
+struct VectorCompareResult
+{
   std::vector<std::tuple<size_t, int, int>> first_mismatches;
   std::vector<std::tuple<size_t, int, int>> last_mismatches;
   size_t total_mismatches = 0;
   double mismatch_percent = 0.0;
-  int max_difference = 0;
+  int max_difference      = 0;
 };
 
-VectorCompareResult compare_vectors(const std::vector<int>& actual,
-                                    const std::vector<int>& expected) {
+VectorCompareResult compare_vectors(const std::vector<int>& actual, const std::vector<int>& expected)
+{
   VectorCompareResult result;
 
-  if (actual.size() != expected.size()) {
-    std::cerr << "Error: Vectors have different sizes (" << actual.size() << " vs "
-              << expected.size() << ")\n";
+  if (actual.size() != expected.size())
+  {
+    std::cerr << "Error: Vectors have different sizes (" << actual.size() << " vs " << expected.size() << ")\n";
     return result;
   }
 
@@ -97,8 +97,10 @@ VectorCompareResult compare_vectors(const std::vector<int>& actual,
   mismatches.reserve(actual.size());
   int current_max_diff = 0;
 
-  for (size_t i = 0; i < actual.size(); ++i) {
-    if (actual[i] != expected[i]) {
+  for (size_t i = 0; i < actual.size(); ++i)
+  {
+    if (actual[i] != expected[i])
+    {
       mismatches.emplace_back(i, actual[i], expected[i]);
       current_max_diff = std::max(current_max_diff, std::abs(actual[i] - expected[i]));
     }
@@ -106,59 +108,65 @@ VectorCompareResult compare_vectors(const std::vector<int>& actual,
 
   result.total_mismatches = mismatches.size();
   result.mismatch_percent = (static_cast<double>(result.total_mismatches) / actual.size()) * 100.0;
-  result.max_difference = current_max_diff;
+  result.max_difference   = current_max_diff;
 
   // Handle first 10 mismatches
   size_t first_count = std::min<size_t>(mismatches.size(), 10);
   result.first_mismatches.assign(mismatches.begin(), mismatches.begin() + first_count);
 
   // Handle last 10 mismatches
-  if (mismatches.size() > 10) {
+  if (mismatches.size() > 10)
+  {
     auto start = mismatches.end() - std::min<size_t>(mismatches.size(), 10);
     result.last_mismatches.assign(start, mismatches.end());
-  } else {
+  }
+  else
+  {
     result.last_mismatches = mismatches;
   }
 
   return result;
 }
 
-void print_comparison(const VectorCompareResult& res) {
+void print_comparison(const VectorCompareResult& res)
+{
   // Print first mismatches
   std::cout << "First 10 mismatches:\n";
-  for (const auto& [idx, a, b] : res.first_mismatches) {
-    std::cout << "At index " << idx << ". Got " << a << ". Expected " << b << ". Difference "
-              << a - b << "\n";
+  for (const auto& [idx, a, b] : res.first_mismatches)
+  {
+    std::cout << "At index " << idx << ". Got " << a << ". Expected " << b << ". Difference " << a - b << "\n";
   }
 
   // Print last mismatches if different from first
-  if (!res.last_mismatches.empty() && res.last_mismatches != res.first_mismatches) {
+  if (!res.last_mismatches.empty() && res.last_mismatches != res.first_mismatches)
+  {
     std::cout << "\nLast 10 mismatches:\n";
-    for (const auto& [idx, a, b] : res.last_mismatches) {
-      std::cout << "At index " << idx << ". Got " << a << ". Expected " << b << ". Difference "
-                << a - b << "\n";
-
-
+    for (const auto& [idx, a, b] : res.last_mismatches)
+    {
+      std::cout << "At index " << idx << ". Got " << a << ". Expected " << b << ". Difference " << a - b << "\n";
     }
   }
 
   // Print summary
-  std::cout << "\nTotal mismatches: " << res.total_mismatches << " (" << std::fixed
-            << std::setprecision(2) << res.mismatch_percent << "%)\n"
-            << "Maximum absolute difference: " << res.max_difference << "\n";
+  std::cout
+    << "\nTotal mismatches: " << res.total_mismatches << " (" << std::fixed << std::setprecision(2)
+    << res.mismatch_percent << "%)\n"
+    << "Maximum absolute difference: " << res.max_difference << "\n";
 }
 
-bool compareIsEqualAndPrint(const std::vector<int>& actual, const std::vector<int>& expected) {
+bool compareIsEqualAndPrint(const std::vector<int>& actual, const std::vector<int>& expected)
+{
   VectorCompareResult result = compare_vectors(expected, actual);
-  if (result.total_mismatches == 0) {
+  if (result.total_mismatches == 0)
+  {
     return true;
-  } else {
+  }
+  else
+  {
     print_comparison(result);
     return false;
   }
 }
-
-
 
 C2H_TEST("Device scan works with all device interfaces", "[scan][device]", full_type_list)
 {
@@ -180,7 +188,8 @@ C2H_TEST("Device scan works with all device interfaces", "[scan][device]", full_
 
   SECTION("inclusive scan")
   {
-    for (int ii = 2; ii < 1000; ii += 1) {
+    for (int ii = 2; ii < 1000; ii += 1)
+    {
       const offset_t num_items = ii * 16;
       CAPTURE(num_items);
       // // Input data generation to test
@@ -197,17 +206,14 @@ C2H_TEST("Device scan works with all device interfaces", "[scan][device]", full_
 
       auto d_in_it = thrust::raw_pointer_cast(in_items.data());
 
-      for (int offset = 0; offset < max_offset; ++offset) {
+      for (int offset = 0; offset < max_offset; ++offset)
+      {
         CAPTURE(offset);
         // Prepare verification data
         c2h::host_vector<input_t> host_items(in_items);
         c2h::host_vector<output_t> expected_result(num_items);
         compute_inclusive_scan_reference(
-          host_items.cbegin() + offset,
-          host_items.cend() - max_offset + offset,
-          expected_result.begin(),
-          op_t{},
-          0);
+          host_items.cbegin() + offset, host_items.cend() - max_offset + offset, expected_result.begin(), op_t{}, 0);
 
         // Run test
         c2h::device_vector<output_t> out_result(num_items);

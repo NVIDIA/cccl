@@ -24,9 +24,8 @@
 #include <cub/warp/warp_reduce.cuh>
 #include <cub/warp/warp_scan.cuh>
 
-#include <cuda/__memory/align_up.h>   // cuda::align_up
 #include <cuda/__memory/align_down.h> // cuda::align_down
-
+#include <cuda/__memory/align_up.h> // cuda::align_up
 #include <cuda/ptx>
 #include <cuda/std/__cccl/cuda_capabilities.h>
 #include <cuda/std/__functional/invoke.h>
@@ -80,12 +79,12 @@ _CCCL_DEVICE_API inline void squadGetNextBlockIdx(const Squad& squad, SmemRef<ui
   refDestSmem.squadIncreaseTxCount(squad, refDestSmem.sizeBytes());
 }
 
-struct CpAsyncOobInfo {
+struct CpAsyncOobInfo
+{
   void* ptrGmemBase;
   uint32_t copySizeBytes;
   uint32_t smemOffsetElem;
 };
-
 
 template <typename Tp>
 _CCCL_DEVICE_API inline CpAsyncOobInfo prepareCpAsyncOob(const Tp* ptrGmem, uint32_t sizeElem)
@@ -93,7 +92,7 @@ _CCCL_DEVICE_API inline CpAsyncOobInfo prepareCpAsyncOob(const Tp* ptrGmem, uint
   // We will copy from [ptrGmemBase, ptrGmemEnd). Both pointers have to be 16B
   // aligned. We align ptrGmemBase down and ptrGmemEnd up.
   const Tp* ptrGmemBase = cuda::align_down(ptrGmem, std::size_t(16));
-  const Tp* ptrGmemEnd = cuda::align_up(ptrGmem + sizeElem, std::size_t(16));
+  const Tp* ptrGmemEnd  = cuda::align_up(ptrGmem + sizeElem, std::size_t(16));
 
   // Compute the final copy size in bytes. It can be either sizeElem or sizeElem + 16 / sizeof(T).
   uint32_t copySizeBytes = static_cast<uint32_t>(sizeof(Tp) * (ptrGmemEnd - ptrGmemBase));
@@ -101,7 +100,7 @@ _CCCL_DEVICE_API inline CpAsyncOobInfo prepareCpAsyncOob(const Tp* ptrGmem, uint
   // ptrSmem + smemOffsetElem will point to the element copied from ptrGmem.
   uint32_t smemOffsetElem = static_cast<uint32_t>(ptrGmem - ptrGmemBase);
 
-  return CpAsyncOobInfo {(void*) ptrGmemBase, copySizeBytes, smemOffsetElem};
+  return CpAsyncOobInfo{(void*) ptrGmemBase, copySizeBytes, smemOffsetElem};
 }
 
 template <typename Tp>
@@ -113,13 +112,19 @@ _CCCL_DEVICE_API inline void squadLoadBulk(const Squad& squad, SmemRef<Tp>& refD
   if (squad.isLeaderThread())
   {
     ::cuda::ptx::cp_async_bulk(
-      ::cuda::ptx::space_cluster, ::cuda::ptx::space_global, ptrSmem, cpAsyncOobInfo.ptrGmemBase, cpAsyncOobInfo.copySizeBytes, ptrBar);
+      ::cuda::ptx::space_cluster,
+      ::cuda::ptx::space_global,
+      ptrSmem,
+      cpAsyncOobInfo.ptrGmemBase,
+      cpAsyncOobInfo.copySizeBytes,
+      ptrBar);
   }
   refDestSmem.squadIncreaseTxCount(squad, cpAsyncOobInfo.copySizeBytes);
 }
 
 template <typename OutputT>
-_CCCL_DEVICE_API inline void squadStoreBulkSync(const Squad& squad, OutputT* ptrOut, OutputT* srcSmem, uint32_t sizeBytes)
+_CCCL_DEVICE_API inline void
+squadStoreBulkSync(const Squad& squad, OutputT* ptrOut, OutputT* srcSmem, uint32_t sizeBytes)
 {
   // Acquire shared memory in async proxy
   if (squad.isLeaderWarp())
@@ -527,8 +532,8 @@ _CCCL_DEVICE_API inline void kernelBody(
       squadGetNextBlockIdx(squad, refNextBlockIdxW);
     }
 
-    size_t idxTileBase = idxTile * size_t(tile_size);
-    size_t copyNumElem = cuda::std::min(params.numElem - idxTileBase, size_t(tile_size));
+    size_t idxTileBase      = idxTile * size_t(tile_size);
+    size_t copyNumElem      = cuda::std::min(params.numElem - idxTileBase, size_t(tile_size));
     CpAsyncOobInfo loadInfo = prepareCpAsyncOob(params.ptrIn + idxTile * size_t(tile_size), copyNumElem);
 
     if (squad == squadLoad)
