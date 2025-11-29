@@ -132,7 +132,8 @@ struct scan_tuning : cub::detail::scan::tuning<scan_tuning<BlockThreads>>
 
         struct detail
         {
-          using delay_constructor_t = cub::detail::default_delay_constructor_t<AccumT>;
+          using delay_constructor_t           = cub::detail::default_delay_constructor_t<AccumT>;
+          static constexpr bool use_warpspeed = false;
         };
       };
     };
