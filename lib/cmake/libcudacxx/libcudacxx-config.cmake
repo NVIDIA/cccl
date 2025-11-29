@@ -126,8 +126,8 @@ function(libcudacxx_update_language_compat_flags)
   if (NOT cxx_warned AND NOT CXX IN_LIST langs)
     # gersemi: off
     message(VERBOSE "libcudacxx: - CXX language not enabled.")
-    message(VERBOSE "libcudacxx:   /Zc:__cplusplus and /Zc:preprocessor flags will NOT be automatically to CXX targets.")
-    message(VERBOSE "libcudacxx:   Call find_package(CCCL) after enabling CXX to enable MSVC compatibility flags.")
+    message(VERBOSE "libcudacxx:   /Zc:__cplusplus and /Zc:preprocessor flags may not be automatically added to CXX targets.")
+    message(VERBOSE "libcudacxx:   Call find_package(CCCL) again after enabling CXX to enable compatibility flags.")
     # gersemi: on
     define_property(GLOBAL PROPERTY _libcudacxx_cxx_warned)
   endif()
@@ -135,8 +135,8 @@ function(libcudacxx_update_language_compat_flags)
   if (NOT cuda_warned AND NOT CUDA IN_LIST langs)
     # gersemi: off
     message(VERBOSE "libcudacxx: - CUDA language not enabled.")
-    message(VERBOSE "libcudacxx:   /Zc:__cplusplus and /Zc:preprocessor flags will NOT be automatically to CUDA targets.")
-    message(VERBOSE "libcudacxx:   Call find_package(CCCL) after enabling CUDA to enable MSVC compatibility flags.")
+    message(VERBOSE "libcudacxx:   /Zc:__cplusplus and /Zc:preprocessor flags may not be automatically added to CUDA targets.")
+    message(VERBOSE "libcudacxx:   Call find_package(CCCL) again after enabling CUDA to enable compatibility flags.")
     # gersemi: on
     define_property(GLOBAL PROPERTY _libcudacxx_cuda_warned)
   endif()
@@ -148,11 +148,11 @@ function(libcudacxx_update_language_compat_flags)
 
   if (CUDA IN_LIST langs)
     option(
-      libcudacxx_MISMATCHED_MSVC_COMPILERS
-      "Set to true if cxx / cuda host compiler mix msvc versions."
+      libcudacxx_MISMATCHED_HOST_COMPILER
+      "Set to true if CXX / CUDA_HOST compilers are different."
       FALSE
     )
-    mark_as_advanced(libcudacxx_MISMATCHED_MSVC_COMPILERS)
+    mark_as_advanced(libcudacxx_MISMATCHED_HOST_COMPILER)
     if (
       (NOT CMAKE_GENERATOR MATCHES "Visual Studio")
       AND (CMAKE_VERSION VERSION_GREATER_EQUAL 3.31)
@@ -160,16 +160,22 @@ function(libcudacxx_update_language_compat_flags)
       # These aren't defined with VS gens or older cmake versions:
       set(msvc_cuda_host_id ${CMAKE_CUDA_HOST_COMPILER_ID})
       set(msvc_cuda_host_version ${CMAKE_CUDA_HOST_COMPILER_VERSION})
-    elseif (NOT libcudacxx_MISMATCHED_MSVC_COMPILERS)
+    elseif (CMAKE_CUDA_HOST_COMPILER STREQUAL CMAKE_CXX_COMPILER)
+      # Same path, same compiler:
+      set(msvc_cuda_host_id ${msvc_cxx_id})
+      set(msvc_cuda_host_version ${msvc_cxx_version})
+      # gersemi: off
+    elseif ((NOT DEFINED CMAKE_CUDA_HOST_COMPILER) AND
+            (NOT libcudacxx_MISMATCHED_HOST_COMPILER))
       # For CMake < 3.31, we cannot reliably detect the CUDA host compiler ID.
       # Assume that the CUDA host compiler is the same as the CXX compiler.
-      # gersemi: off
+      # Usually a safe assumption but provide an escape hatch for edge cases.
       message(STATUS "libcudacxx: - Assuming CUDA host compiler is the same as CXX compiler.")
-      message(STATUS "libcudacxx:   Set libcudacxx_MISMATCHED_MSVC_COMPILERS=TRUE to disable this.")
-      # gersemi: on
+      message(STATUS "libcudacxx:   Set libcudacxx_MISMATCHED_HOST_COMPILER=TRUE to disable this.")
       set(msvc_cuda_host_id ${CMAKE_CXX_COMPILER_ID})
       set(msvc_cuda_host_version ${CMAKE_CXX_COMPILER_VERSION})
     endif()
+    # gersemi: on
   endif()
 
   function(_libcudacxx_get_msvc_flags_for_version out_var msvc_version)
