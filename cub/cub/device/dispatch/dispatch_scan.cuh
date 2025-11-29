@@ -417,8 +417,15 @@ struct DispatchScan
     constexpr int numLookbackTiles = 96;
     constexpr int tile_size        = 63 * detail::scan::squadReduce.threadCount();
 
-    auto kernel_ptr = detail::scan::scan < tile_size, numLookbackTiles, InputT, OutputT, AccumT, ScanOpT, InitValueT,
-         EnforceInclusive == ForceInclusive::Yes > ;
+    auto kernel_ptr =
+      detail::scan::scan<tile_size,
+                         numLookbackTiles,
+                         InputT,
+                         OutputT,
+                         AccumT,
+                         ScanOpT,
+                         InitValueT,
+                         EnforceInclusive == ForceInclusive::Yes>;
     const int grid_dim = ::cuda::ceil_div(num_items, size_t(tile_size));
 
     if (d_temp_storage == nullptr)
@@ -447,7 +454,8 @@ struct DispatchScan
     {
       SyncHandler syncHandler{};
       SmemAllocator smemAllocator{};
-      detail::scan::allocResources<tile_size, InputT, OutputT, AccumT>(syncHandler, smemAllocator, params);
+      [[maybe_unused]] auto res =
+        detail::scan::allocResources<tile_size, InputT, OutputT, AccumT>(syncHandler, smemAllocator, params);
 
       const auto curr_smem_size = static_cast<int>(smemAllocator.sizeBytes());
       if (curr_smem_size > max_dynamic_smem_size)
