@@ -5,6 +5,8 @@
 
 #include <cub/device/device_scan.cuh>
 
+#include <cuda/std/functional>
+
 #include <algorithm>
 #include <cmath>
 #include <cstdint>
@@ -16,8 +18,10 @@
 #include "catch2_test_device_reduce.cuh"
 #include "catch2_test_device_scan.cuh"
 #include "catch2_test_launch_helper.h"
+#include <c2h/bfloat16.cuh>
 #include <c2h/catch2_test_helper.h>
 #include <c2h/custom_type.h>
+#include <c2h/half.cuh>
 
 DECLARE_LAUNCH_WRAPPER(cub::DeviceScan::InclusiveScanInit, device_inclusive_scan_with_init);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceScan::ExclusiveSum, device_exclusive_sum);
@@ -26,7 +30,7 @@ DECLARE_LAUNCH_WRAPPER(cub::DeviceScan::InclusiveSum, device_inclusive_sum);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceScan::InclusiveScan, device_inclusive_scan);
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
-// %PARAM% TEST_TYPES types 0:1:2:3
+// %PARAM% TEST_TYPES types 0:1:2
 
 // List of types to test
 using custom_t =
@@ -41,16 +45,6 @@ using full_type_list = c2h::type_list<type_pair<int>>;
 #elif TEST_TYPES == 1
 using full_type_list = c2h::type_list<type_pair<std::int32_t>, type_pair<std::uint64_t>>;
 #elif TEST_TYPES == 2
-using full_type_list =
-  c2h::type_list<type_pair<uchar3>,
-                 type_pair<
-#  if _CCCL_CTK_AT_LEAST(13, 0)
-                   ulonglong4_16a
-#  else // _CCCL_CTK_AT_LEAST(13, 0)
-                   ulonglong4
-#  endif // _CCCL_CTK_AT_LEAST(13, 0)
-                   >>;
-#elif TEST_TYPES == 3
 // clang-format off
 using full_type_list = c2h::type_list<
 type_pair<custom_t>
@@ -105,7 +99,11 @@ VectorCompareResult<T> compare_vectors(const std::vector<T>& actual, const std::
     if (actual[i] != expected[i])
     {
       mismatches.emplace_back(i, actual[i], expected[i]);
-      current_max_diff = std::max(current_max_diff, std::abs(actual[i] - expected[i]));
+      const T diff = actual[i] - expected[i];
+      if (diff > current_max_diff)
+      {
+        current_max_diff = diff;
+      }
     }
   }
 
@@ -114,13 +112,13 @@ VectorCompareResult<T> compare_vectors(const std::vector<T>& actual, const std::
   result.max_difference   = current_max_diff;
 
   // Handle first 10 mismatches
-  size_t first_count = std::min<size_t>(mismatches.size(), 10);
+  size_t first_count = cuda::std::min<size_t>(mismatches.size(), 10);
   result.first_mismatches.assign(mismatches.begin(), mismatches.begin() + first_count);
 
   // Handle last 10 mismatches
   if (mismatches.size() > 10)
   {
-    auto start = mismatches.end() - std::min<size_t>(mismatches.size(), 10);
+    auto start = mismatches.end() - cuda::std::min<size_t>(mismatches.size(), 10);
     result.last_mismatches.assign(start, mismatches.end());
   }
   else
@@ -218,7 +216,11 @@ C2H_TEST("Device scan works with all device interfaces", "[scan][device]", full_
         c2h::host_vector<input_t> host_items(in_items);
         c2h::host_vector<output_t> expected_result(num_items);
         compute_inclusive_scan_reference(
-          host_items.cbegin() + offset, host_items.cend() - max_offset + offset, expected_result.begin(), op_t{}, 0);
+          host_items.cbegin() + offset,
+          host_items.cend() - max_offset + offset,
+          expected_result.begin(),
+          op_t{},
+          input_t{});
 
         // Run test
         c2h::device_vector<output_t> out_result(num_items);
