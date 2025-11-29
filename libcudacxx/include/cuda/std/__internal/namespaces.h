@@ -23,7 +23,7 @@
 #include <cuda/std/__internal/version.h>
 
 // During the header testing, we want to check if the code is wrapped by the prologue/epilogue
-#if defined(_CCCL_HEADER_TEST)
+#if defined(_CCCL_HEADER_TEST) && !defined(_CCCL_WAIVE_PROLOGUE_INCLUDE_CHECK)
 #  define _LIBCUDACXX_PROLOGUE_INCLUDE_CHECK() \
     static_assert(_CCCL_PROLOGUE_INCLUDED(), "missing #include <cuda/std/__cccl/prologue.h>");
 #else // ^^^ defined(_CCCL_HEADER_TEST) ^^^ / vvv !defined(_CCCL_HEADER_TEST) vvv

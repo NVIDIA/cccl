@@ -1,6 +1,6 @@
 //===----------------------------------------------------------------------===//
 //
-// Part of CUDA Experimental in CUDA C++ Core Libraries,
+// Part of libcu++, the C++ Standard Library for your entire system,
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
@@ -8,23 +8,18 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef CUDAX_TEST_CONTAINER_VECTOR_HELPER_H
-#define CUDAX_TEST_CONTAINER_VECTOR_HELPER_H
+#ifndef CUDA_TEST_CONTAINER_VECTOR_HELPER_H
+#define CUDA_TEST_CONTAINER_VECTOR_HELPER_H
 
 #include <thrust/equal.h>
 
+#include <cuda/buffer>
 #include <cuda/functional>
 #include <cuda/std/algorithm>
 #include <cuda/std/iterator>
 #include <cuda/std/type_traits>
 
-#include <cuda/experimental/container.cuh>
-#include <cuda/experimental/execution.cuh>
-#include <cuda/experimental/memory_resource.cuh>
-
 #include "test_resources.h"
-
-namespace cudax = cuda::experimental;
 
 // Default data to compare against
 
@@ -42,7 +37,7 @@ bool equal_range(const Buffer& buf)
   }
   else
   {
-    cuda::experimental::__ensure_current_device guard{cuda::device_ref{0}};
+    cuda::__ensure_current_context guard{cuda::device_ref{0}};
     return buf.size() == cuda::std::size(device_data)
         && thrust::equal(
              thrust::cuda::par.on(buf.stream().get()), buf.begin(), buf.end(), cuda::get_device_address(device_data[0]));
@@ -58,7 +53,7 @@ bool compare_value(const T& value, const T& expected)
   }
   else
   {
-    cuda::experimental::__ensure_current_device guard{cuda::device_ref{0}};
+    cuda::__ensure_current_context guard{cuda::device_ref{0}};
     // copy the value to host
     T host_value;
     _CCCL_TRY_CUDA_API(
@@ -81,7 +76,7 @@ void assign_value(T& value, const T& input)
   }
   else
   {
-    cuda::experimental::__ensure_current_device guard{cuda::device_ref{0}};
+    cuda::__ensure_current_context guard{cuda::device_ref{0}};
     // copy the input to device
     _CCCL_TRY_CUDA_API(
       ::cudaMemcpy,
@@ -123,7 +118,7 @@ bool equal_size_value(const Buffer& buf, const size_t size, const int value)
   }
   else
   {
-    cuda::experimental::__ensure_current_device guard{cuda::device_ref{0}};
+    cuda::__ensure_current_context guard{cuda::device_ref{0}};
     return buf.size() == size
         && thrust::equal(thrust::cuda::par.on(buf.stream().get()),
                          buf.begin(),
@@ -144,7 +139,7 @@ bool equal_range(const Range1& range1, const Range2& range2)
   }
   else
   {
-    cuda::experimental::__ensure_current_device guard{cuda::device_ref{0}};
+    cuda::__ensure_current_context guard{cuda::device_ref{0}};
     return range1.size() == range2.size()
         && thrust::equal(thrust::cuda::par.on(range1.stream().get()), range1.begin(), range1.end(), range2.begin());
   }
@@ -173,13 +168,13 @@ struct extract_properties<cuda::std::tuple<T, Properties...>>
     }
   }
 
-  using buffer         = cudax::buffer<T, Properties...>;
+  using buffer         = cuda::buffer<T, Properties...>;
   using resource       = decltype(get_resource());
   using iterator       = cuda::heterogeneous_iterator<T, Properties...>;
   using const_iterator = cuda::heterogeneous_iterator<const T, Properties...>;
 
-  using matching_vector   = cudax::buffer<T, other_property, Properties...>;
+  using matching_vector   = cuda::buffer<T, other_property, Properties...>;
   using matching_resource = memory_resource_wrapper<other_property, Properties...>;
 };
 
-#endif // CUDAX_TEST_CONTAINER_VECTOR_HELPER_H
+#endif // CUDA_TEST_CONTAINER_VECTOR_HELPER_H
