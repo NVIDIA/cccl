@@ -304,9 +304,12 @@ template <int numTmpStatesPerThread, typename AccumT, typename ScanOpT>
       int laneIsPrivSum = lanemaskEq * (regTmpStates[idx].state == PRIV_SUM);
       // Bitmask with 1 bits indicating which lane has an XX state.
       // TODO(miscco): This requires SM80 for clang-cuda
-      int warpIsEmpty   = NV_IF_ELSE_TARGET(NV_PROVIDES_SM_80, (__reduce_or_sync(~0, laneIsEmpty);), 0);
-      int warpIsCumSum  = NV_IF_ELSE_TARGET(NV_PROVIDES_SM_80, (__reduce_or_sync(~0, laneIsCumSum);), 0);
-      int warpIsPrivSum = NV_IF_ELSE_TARGET(NV_PROVIDES_SM_80, (__reduce_or_sync(~0, laneIsPrivSum);), 0);
+      int warpIsEmpty = 0;
+      NV_IF_TARGET(NV_PROVIDES_SM_80, (warpIsEmpty = __reduce_or_sync(~0, laneIsEmpty);))
+      int warpIsCumSum = 0;
+      NV_IF_TARGET(NV_PROVIDES_SM_80, (warpIsCumSum = __reduce_or_sync(~0, laneIsCumSum);))
+      int warpIsPrivSum = 0;
+      NV_IF_TARGET(NV_PROVIDES_SM_80, (warpIsPrivSum = __reduce_or_sync(~0, laneIsPrivSum);))
 
       if (warpIsEmpty != 0)
       {
