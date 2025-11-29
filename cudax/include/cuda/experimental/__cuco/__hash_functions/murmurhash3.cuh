@@ -19,8 +19,8 @@
  * platform, but your performance with the non-native version will be less than optimal.
  */
 
-#ifndef _CUDAX__CUCO_DETAIL_HASH_FUNCTIONS_MURMURHASH3_CUH
-#define _CUDAX__CUCO_DETAIL_HASH_FUNCTIONS_MURMURHASH3_CUH
+#ifndef _CUDAX__CUCO__HASH_FUNCTIONS__MURMURHASH3_CUH
+#define _CUDAX__CUCO__HASH_FUNCTIONS__MURMURHASH3_CUH
 
 #include <cuda/__cccl_config>
 
@@ -40,11 +40,11 @@
 #include <cuda/std/cstdint>
 #include <cuda/std/span>
 
-#include <cuda/experimental/__cuco/detail/hash_functions/utils.cuh>
+#include <cuda/experimental/__cuco/__hash_functions/utils.cuh>
 
 #include <cuda/std/__cccl/prologue.h>
 
-namespace cuda::experimental::cuco::__detail
+namespace cuda::experimental::cuco
 {
 template <typename _Key>
 [[nodiscard]] _CCCL_API constexpr ::cuda::std::uint32_t __fmix32(_Key __key, ::cuda::std::uint32_t __seed = 0) noexcept
@@ -158,7 +158,7 @@ private:
     //----------
     // finalization
     __h1 ^= ::cuda::std::uint32_t{sizeof(_Holder)};
-    __h1 = ::cuda::experimental::cuco::__detail::__fmix32(__h1);
+    __h1 = ::cuda::experimental::cuco::__fmix32(__h1);
     return __h1;
   }
 
@@ -175,8 +175,7 @@ private:
     // body
     for (::cuda::std::remove_const_t<decltype(__nblocks)> __i = 0; __i < __nblocks; __i++)
     {
-      ::cuda::std::uint32_t __k1 =
-        ::cuda::experimental::cuco::__detail::__load_chunk<::cuda::std::uint32_t>(__bytes, __i);
+      ::cuda::std::uint32_t __k1 = ::cuda::experimental::cuco::__load_chunk<::cuda::std::uint32_t>(__bytes, __i);
       __k1 *= __c1;
       __k1 = ::cuda::std::rotl(__k1, 15);
       __k1 *= __c2;
@@ -205,7 +204,7 @@ private:
     //----------
     // finalization
     __h1 ^= __size;
-    __h1 = ::cuda::experimental::cuco::__detail::__fmix32(__h1);
+    __h1 = ::cuda::experimental::cuco::__fmix32(__h1);
     return __h1;
   }
 
@@ -393,10 +392,10 @@ private:
     __h[2] += __h[0];
     __h[3] += __h[0];
 
-    __h[0] = ::cuda::experimental::cuco::__detail::__fmix32(__h[0]);
-    __h[1] = ::cuda::experimental::cuco::__detail::__fmix32(__h[1]);
-    __h[2] = ::cuda::experimental::cuco::__detail::__fmix32(__h[2]);
-    __h[3] = ::cuda::experimental::cuco::__detail::__fmix32(__h[3]);
+    __h[0] = ::cuda::experimental::cuco::__fmix32(__h[0]);
+    __h[1] = ::cuda::experimental::cuco::__fmix32(__h[1]);
+    __h[2] = ::cuda::experimental::cuco::__fmix32(__h[2]);
+    __h[3] = ::cuda::experimental::cuco::__fmix32(__h[3]);
 
     __h[0] += __h[1];
     __h[0] += __h[2];
@@ -421,14 +420,13 @@ private:
     // body
     for (::cuda::std::remove_const_t<decltype(__nchunks)> __i = 0; __size >= __chunk_size && __i < __nchunks; ++__i)
     {
-      ::cuda::std::uint32_t __k1 =
-        ::cuda::experimental::cuco::__detail::__load_chunk<::cuda::std::uint32_t>(__bytes, 4 * __i);
+      ::cuda::std::uint32_t __k1 = ::cuda::experimental::cuco::__load_chunk<::cuda::std::uint32_t>(__bytes, 4 * __i);
       ::cuda::std::uint32_t __k2 =
-        ::cuda::experimental::cuco::__detail::__load_chunk<::cuda::std::uint32_t>(__bytes, 4 * __i + 1);
+        ::cuda::experimental::cuco::__load_chunk<::cuda::std::uint32_t>(__bytes, 4 * __i + 1);
       ::cuda::std::uint32_t __k3 =
-        ::cuda::experimental::cuco::__detail::__load_chunk<::cuda::std::uint32_t>(__bytes, 4 * __i + 2);
+        ::cuda::experimental::cuco::__load_chunk<::cuda::std::uint32_t>(__bytes, 4 * __i + 2);
       ::cuda::std::uint32_t __k4 =
-        ::cuda::experimental::cuco::__detail::__load_chunk<::cuda::std::uint32_t>(__bytes, 4 * __i + 3);
+        ::cuda::experimental::cuco::__load_chunk<::cuda::std::uint32_t>(__bytes, 4 * __i + 3);
 
       __k1 *= __c1;
       __k1 = ::cuda::std::rotl(__k1, 15);
@@ -555,10 +553,10 @@ private:
     __h[2] += __h[0];
     __h[3] += __h[0];
 
-    __h[0] = ::cuda::experimental::cuco::__detail::__fmix32(__h[0]);
-    __h[1] = ::cuda::experimental::cuco::__detail::__fmix32(__h[1]);
-    __h[2] = ::cuda::experimental::cuco::__detail::__fmix32(__h[2]);
-    __h[3] = ::cuda::experimental::cuco::__detail::__fmix32(__h[3]);
+    __h[0] = ::cuda::experimental::cuco::__fmix32(__h[0]);
+    __h[1] = ::cuda::experimental::cuco::__fmix32(__h[1]);
+    __h[2] = ::cuda::experimental::cuco::__fmix32(__h[2]);
+    __h[3] = ::cuda::experimental::cuco::__fmix32(__h[3]);
 
     __h[0] += __h[1];
     __h[0] += __h[2];
@@ -712,8 +710,8 @@ private:
     __h[0] += __h[1];
     __h[1] += __h[0];
 
-    __h[0] = ::cuda::experimental::cuco::__detail::__fmix64(__h[0]);
-    __h[1] = ::cuda::experimental::cuco::__detail::__fmix64(__h[1]);
+    __h[0] = ::cuda::experimental::cuco::__fmix64(__h[0]);
+    __h[1] = ::cuda::experimental::cuco::__fmix64(__h[1]);
 
     __h[0] += __h[1];
     __h[1] += __h[0];
@@ -734,10 +732,9 @@ private:
     // body
     for (::cuda::std::remove_const_t<decltype(__nchunks)> __i = 0; __size >= __chunk_size && __i < __nchunks; ++__i)
     {
-      ::cuda::std::uint64_t __k1 =
-        ::cuda::experimental::cuco::__detail::__load_chunk<::cuda::std::uint64_t>(__bytes, 2 * __i);
+      ::cuda::std::uint64_t __k1 = ::cuda::experimental::cuco::__load_chunk<::cuda::std::uint64_t>(__bytes, 2 * __i);
       ::cuda::std::uint64_t __k2 =
-        ::cuda::experimental::cuco::__detail::__load_chunk<::cuda::std::uint64_t>(__bytes, 2 * __i + 1);
+        ::cuda::experimental::cuco::__load_chunk<::cuda::std::uint64_t>(__bytes, 2 * __i + 1);
 
       __k1 *= __c1;
       __k1 = ::cuda::std::rotl(__k1, 31);
@@ -827,8 +824,8 @@ private:
     __h[0] += __h[1];
     __h[1] += __h[0];
 
-    __h[0] = ::cuda::experimental::cuco::__detail::__fmix64(__h[0]);
-    __h[1] = ::cuda::experimental::cuco::__detail::__fmix64(__h[1]);
+    __h[0] = ::cuda::experimental::cuco::__fmix64(__h[0]);
+    __h[1] = ::cuda::experimental::cuco::__fmix64(__h[1]);
 
     __h[0] += __h[1];
     __h[1] += __h[0];
@@ -841,8 +838,8 @@ private:
 };
 
 #endif // _CCCL_HAS_INT128()
-} // namespace cuda::experimental::cuco::__detail
+} // namespace cuda::experimental::cuco
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _CUDAX__CUCO_DETAIL_HASH_FUNCTIONS_XXHASH_CUH
+#endif // _CUDAX__CUCO__HASH_FUNCTIONS__MURMURHASH3_CUH

@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDAX__CUCO_DETAIL_HASH_FUNCTIONS_UTILS_CUH
-#define _CUDAX__CUCO_DETAIL_HASH_FUNCTIONS_UTILS_CUH
+#ifndef _CUDAX__CUCO__HASH_FUNCTIONS__UTILS_CUH
+#define _CUDAX__CUCO__HASH_FUNCTIONS__UTILS_CUH
 
 #include <cuda/__cccl_config>
 
@@ -27,7 +27,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-namespace cuda::experimental::cuco::__detail
+namespace cuda::experimental::cuco
 {
 //! @brief Loads a chunk of type _Tp from a byte pointer at a given index, handling alignment
 //!
@@ -139,8 +139,8 @@ struct _Byte_holder<_KeySize, _ChunkSize, _BlockSize, _UseTailBlock, _BlockT, tr
 
   _BlockT __blocks[__num_blocks];
 };
-}; // namespace cuda::experimental::cuco::__detail
+} // namespace cuda::experimental::cuco
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _CUDAX__CUCO_DETAIL_HASH_FUNCTIONS_UTILS_CUH
+#endif // _CUDAX__CUCO__HASH_FUNCTIONS__UTILS_CUH
