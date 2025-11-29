@@ -15,19 +15,19 @@
 
 #if __cccl_ptx_isa >= 860
 
-#  include <cub/device/dispatch/kernels/warpspeed/allocators/SmemAllocator.h> // SmemAllocator
-#  include <cub/device/dispatch/kernels/warpspeed/resource/SmemRef.cuh> // SmemRef
-#  include <cub/device/dispatch/kernels/warpspeed/resource/SmemResource.cuh> // SmemResource
-#  include <cub/device/dispatch/kernels/warpspeed/SpecialRegisters.cuh> // SpecialRegisters
-#  include <cub/device/dispatch/kernels/warpspeed/squad/Squad.h> // squadDispatch, ...
-#  include <cub/device/dispatch/kernels/warpspeed/values.h> // stages
+#  include <cub/device/dispatch/kernels/warpspeed/allocators/SmemAllocator.h>
+#  include <cub/device/dispatch/kernels/warpspeed/resource/SmemRef.cuh>
+#  include <cub/device/dispatch/kernels/warpspeed/resource/SmemResource.cuh>
+#  include <cub/device/dispatch/kernels/warpspeed/SpecialRegisters.cuh> 
+#  include <cub/device/dispatch/kernels/warpspeed/squad/Squad.h>
+#  include <cub/device/dispatch/kernels/warpspeed/values.h>
 #  include <cub/thread/thread_reduce.cuh>
 #  include <cub/thread/thread_scan.cuh>
 #  include <cub/warp/warp_reduce.cuh>
 #  include <cub/warp/warp_scan.cuh>
 
-#  include <cuda/__memory/align_down.h> // cuda::align_down
-#  include <cuda/__memory/align_up.h> // cuda::align_up
+#  include <cuda/__memory/align_down.h> 
+#  include <cuda/__memory/align_up.h> 
 #  include <cuda/ptx>
 #  include <cuda/std/__cccl/cuda_capabilities.h>
 #  include <cuda/std/__functional/invoke.h>
@@ -276,7 +276,7 @@ _CCCL_DEVICE_API inline void warpLoadLookback(
 // warp-uniform.
 //
 template <int numTmpStatesPerThread, typename AccumT, typename ScanOpT>
-_CCCL_DEVICE_API inline AccumT warpIncrementalLookback(
+[[nodiscard]] _CCCL_DEVICE_API inline AccumT warpIncrementalLookback(
   SpecialRegisters specialRegisters,
   tmp_state_t<AccumT>* ptrTmpBuffer,
   const int idxTilePrev,
@@ -410,7 +410,7 @@ struct ScanResources
 // Function to allocate resources.
 
 template <int tileSize, typename InputT, typename OutputT, typename AccumT>
-_CCCL_API ScanResources<tileSize, InputT, OutputT, AccumT> allocResources(
+[[nodiscard]] _CCCL_API ScanResources<tileSize, InputT, OutputT, AccumT> allocResources(
   SyncHandler& syncHandler, SmemAllocator& smemAllocator, const scanKernelParams<InputT, OutputT, AccumT>& params)
 {
   using ScanResourcesT    = ScanResources<tileSize, InputT, OutputT, AccumT>;
