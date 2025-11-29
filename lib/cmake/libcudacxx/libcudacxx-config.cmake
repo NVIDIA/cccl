@@ -117,11 +117,28 @@ target_compile_definitions(
 # Just call find_package(libcudacxx) again after enabling languages to rediscover.
 function(libcudacxx_update_language_compat_flags)
   # Track which languages have already been checked:
+  # gersemi: off
   get_property(cxx_checked GLOBAL PROPERTY _libcudacxx_cxx_checked DEFINED)
   get_property(cuda_checked GLOBAL PROPERTY _libcudacxx_cuda_checked DEFINED)
   get_property(cxx_warned GLOBAL PROPERTY _libcudacxx_cxx_warned DEFINED)
   get_property(cuda_warned GLOBAL PROPERTY _libcudacxx_cuda_warned DEFINED)
+  get_property(mismatch_warned GLOBAL PROPERTY _libcudacxx_mismatch_warned DEFINED)
   get_property(langs GLOBAL PROPERTY ENABLED_LANGUAGES)
+
+  message(DEBUG "libcudacxx: Languages: ${langs}")
+  message(DEBUG "libcudacxx:   cxx_checked: ${cxx_checked}")
+  message(DEBUG "libcudacxx:   cuda_checked: ${cuda_checked}")
+  message(DEBUG "libcudacxx:   cxx_warned: ${cxx_warned}")
+  message(DEBUG "libcudacxx:   cuda_warned: ${cuda_warned}")
+  message(DEBUG "libcudacxx:   CMAKE_VERSION: ${CMAKE_VERSION}")
+  message(DEBUG "libcudacxx:   CMAKE_GENERATOR: ${CMAKE_GENERATOR}")
+  message(DEBUG "libcudacxx:   CMAKE_CXX_COMPILER: ${CMAKE_CXX_COMPILER}")
+  message(DEBUG "libcudacxx:   CMAKE_CXX_COMPILER_ID: ${CMAKE_CXX_COMPILER_ID}")
+  message(DEBUG "libcudacxx:   CMAKE_CXX_COMPILER_VERSION: ${CMAKE_CXX_COMPILER_VERSION}")
+  message(DEBUG "libcudacxx:   CMAKE_CUDA_HOST_COMPILER: ${CMAKE_CUDA_HOST_COMPILER}")
+  message(DEBUG "libcudacxx:   CMAKE_CUDA_HOST_COMPILER_ID: ${CMAKE_CUDA_HOST_COMPILER_ID}")
+  message(DEBUG "libcudacxx:   CMAKE_CUDA_HOST_COMPILER_VERSION: ${CMAKE_CUDA_HOST_COMPILER_VERSION}")
+  # gersemi: on
 
   if (NOT cxx_warned AND NOT CXX IN_LIST langs)
     # gersemi: off
@@ -162,16 +179,18 @@ function(libcudacxx_update_language_compat_flags)
       set(msvc_cuda_host_version ${CMAKE_CUDA_HOST_COMPILER_VERSION})
     elseif (CMAKE_CUDA_HOST_COMPILER STREQUAL CMAKE_CXX_COMPILER)
       # Same path, same compiler:
-      set(msvc_cuda_host_id ${msvc_cxx_id})
-      set(msvc_cuda_host_version ${msvc_cxx_version})
+      set(msvc_cuda_host_id ${CMAKE_CXX_COMPILER_ID})
+      set(msvc_cuda_host_version ${CMAKE_CXX_COMPILER_VERSION})
       # gersemi: off
-    elseif ((NOT DEFINED CMAKE_CUDA_HOST_COMPILER) AND
+    elseif ((NOT mismatch_warned) AND
+            (NOT CMAKE_CUDA_HOST_COMPILER) AND
             (NOT libcudacxx_MISMATCHED_HOST_COMPILER))
       # For CMake < 3.31, we cannot reliably detect the CUDA host compiler ID.
       # Assume that the CUDA host compiler is the same as the CXX compiler.
       # Usually a safe assumption but provide an escape hatch for edge cases.
       message(STATUS "libcudacxx: - Assuming CUDA host compiler is the same as CXX compiler.")
       message(STATUS "libcudacxx:   Set libcudacxx_MISMATCHED_HOST_COMPILER=TRUE to disable this.")
+      define_property(GLOBAL PROPERTY _libcudacxx_mismatch_warned)
       set(msvc_cuda_host_id ${CMAKE_CXX_COMPILER_ID})
       set(msvc_cuda_host_version ${CMAKE_CXX_COMPILER_VERSION})
     endif()
