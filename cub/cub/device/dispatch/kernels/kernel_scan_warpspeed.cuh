@@ -18,7 +18,7 @@
 #  include <cub/device/dispatch/kernels/warpspeed/allocators/SmemAllocator.h>
 #  include <cub/device/dispatch/kernels/warpspeed/resource/SmemRef.cuh>
 #  include <cub/device/dispatch/kernels/warpspeed/resource/SmemResource.cuh>
-#  include <cub/device/dispatch/kernels/warpspeed/SpecialRegisters.cuh> 
+#  include <cub/device/dispatch/kernels/warpspeed/SpecialRegisters.cuh>
 #  include <cub/device/dispatch/kernels/warpspeed/squad/Squad.h>
 #  include <cub/device/dispatch/kernels/warpspeed/values.h>
 #  include <cub/thread/thread_reduce.cuh>
@@ -26,8 +26,8 @@
 #  include <cub/warp/warp_reduce.cuh>
 #  include <cub/warp/warp_scan.cuh>
 
-#  include <cuda/__memory/align_down.h> 
-#  include <cuda/__memory/align_up.h> 
+#  include <cuda/__memory/align_down.h>
+#  include <cuda/__memory/align_up.h>
 #  include <cuda/ptx>
 #  include <cuda/std/__cccl/cuda_capabilities.h>
 #  include <cuda/std/__functional/invoke.h>
