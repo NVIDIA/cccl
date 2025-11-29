@@ -11,6 +11,7 @@
 #ifndef _CUDA___CONTAINER_BUFFER_H
 #define _CUDA___CONTAINER_BUFFER_H
 
+// Temporary workaround to not trigger issues in CUB headers missing prologue
 #define _CCCL_WAIVE_PROLOGUE_INCLUDE_CHECK
 #include <cuda/std/detail/__config>
 
@@ -469,7 +470,7 @@ public:
   [[nodiscard]] _CCCL_HIDE_FROM_ABI reference get_unsynchronized(const size_type __n) noexcept
   {
     _CCCL_ASSERT(__n < __buf_.size(), "cuda::buffer::get_unsynchronized out of range!");
-    return begin()[__n];
+    return __unwrapped_begin()[__n];
   }
 
   //! @brief Returns a reference to the \p __n 'th element of the async_vector
@@ -478,7 +479,7 @@ public:
   [[nodiscard]] _CCCL_HIDE_FROM_ABI const_reference get_unsynchronized(const size_type __n) const noexcept
   {
     _CCCL_ASSERT(__n < __buf_.size(), "cuda::buffer::get_unsynchronized out of range!");
-    return begin()[__n];
+    return __unwrapped_begin()[__n];
   }
 
   //! @}

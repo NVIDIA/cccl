@@ -88,7 +88,7 @@ C2H_CCCLRT_TEST("cuda::buffer launch transform", "[container][buffer]")
   const cuda::device_buffer<int> b = cuda::make_buffer(stream, resource, a.size(), 1);
 
   cuda::experimental::launch(
-    stream, cuda::experimental::make_config(cuda::grid_dims<1>, cuda::block_dims<32>), add_kernel{}, a, b);
+    stream, cuda::experimental::make_config(cuda::grid_dims<1>(), cuda::block_dims<32>()), add_kernel{}, a, b);
 
   std::vector<int> host_result(a.size());
   cuda::copy_bytes(stream, a, host_result);
