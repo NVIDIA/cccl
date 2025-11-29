@@ -556,7 +556,8 @@ struct policy_hub
                          Tuning::store_algorithm,
                          BLOCK_SCAN_WARP_SCANS,
                          MemBoundScaling<Tuning::threads, Tuning::items, AccumT>,
-                         typename Tuning::delay_constructor>;
+                         typename Tuning::delay_constructor,
+                         /*use warpspeed*/ true>;
     template <typename Tuning, typename IVT>
     _CCCL_HOST_DEVICE static auto select_agent_policy100(long) -> typename Policy900::ScanPolicyT;
 

@@ -138,15 +138,21 @@ struct bfloat16_t
   }
 
   /// Multiply
-  __host__ __device__ __forceinline__ bfloat16_t operator*(const bfloat16_t& other)
+  __host__ __device__ __forceinline__ bfloat16_t operator*(const bfloat16_t& other) const
   {
     return bfloat16_t(float(*this) * float(other));
   }
 
   /// Add
-  __host__ __device__ __forceinline__ bfloat16_t operator+(const bfloat16_t& other)
+  __host__ __device__ __forceinline__ bfloat16_t operator+(const bfloat16_t& other) const
   {
     return bfloat16_t(float(*this) + float(other));
+  }
+
+  /// Sub
+  __host__ __device__ __forceinline__ bfloat16_t operator-(const bfloat16_t& other) const
+  {
+    return bfloat16_t(float(*this) - float(other));
   }
 
   /// Less-than
