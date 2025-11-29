@@ -83,13 +83,13 @@ template <typename ChainedPolicyT,
 __launch_bounds__(int((ALT_DIGIT_BITS) ? int(ChainedPolicyT::ActivePolicy::AltUpsweepPolicy::BLOCK_THREADS)
                                        : int(ChainedPolicyT::ActivePolicy::UpsweepPolicy::BLOCK_THREADS)))
   CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceRadixSortUpsweepKernel(
-    const KeyT* d_keys,
-    OffsetT* d_spine,
-    OffsetT /*num_items*/,
-    int current_bit,
-    int num_bits,
+    _CCCL_GRID_CONSTANT const KeyT* const d_keys,
+    _CCCL_GRID_CONSTANT OffsetT* const d_spine,
+    _CCCL_GRID_CONSTANT const OffsetT /*num_items*/,
+    _CCCL_GRID_CONSTANT const int current_bit,
+    _CCCL_GRID_CONSTANT const int num_bits,
     GridEvenShare<OffsetT> even_share,
-    DecomposerT decomposer = {})
+    _CCCL_GRID_CONSTANT const DecomposerT decomposer = {})
 {
   using ActiveUpsweepPolicyT =
     ::cuda::std::_If<ALT_DIGIT_BITS,
@@ -144,7 +144,8 @@ __launch_bounds__(int((ALT_DIGIT_BITS) ? int(ChainedPolicyT::ActivePolicy::AltUp
  */
 template <typename ChainedPolicyT, typename OffsetT>
 __launch_bounds__(int(ChainedPolicyT::ActivePolicy::ScanPolicy::BLOCK_THREADS), 1)
-  CUB_DETAIL_KERNEL_ATTRIBUTES void RadixSortScanBinsKernel(OffsetT* d_spine, int num_counts)
+  CUB_DETAIL_KERNEL_ATTRIBUTES void RadixSortScanBinsKernel(
+    _CCCL_GRID_CONSTANT OffsetT* const d_spine, _CCCL_GRID_CONSTANT const int num_counts)
 {
   // Parameterize the AgentScan type for the current configuration
   using AgentScanT =
@@ -238,16 +239,16 @@ template <typename ChainedPolicyT,
 __launch_bounds__(int((ALT_DIGIT_BITS) ? int(ChainedPolicyT::ActivePolicy::AltDownsweepPolicy::BLOCK_THREADS)
                                        : int(ChainedPolicyT::ActivePolicy::DownsweepPolicy::BLOCK_THREADS)))
   CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceRadixSortDownsweepKernel(
-    const KeyT* d_keys_in,
-    KeyT* d_keys_out,
-    const ValueT* d_values_in,
-    ValueT* d_values_out,
-    OffsetT* d_spine,
-    OffsetT num_items,
-    int current_bit,
-    int num_bits,
+    _CCCL_GRID_CONSTANT const KeyT* const d_keys_in,
+    _CCCL_GRID_CONSTANT KeyT* const d_keys_out,
+    _CCCL_GRID_CONSTANT const ValueT* const d_values_in,
+    _CCCL_GRID_CONSTANT ValueT* const d_values_out,
+    _CCCL_GRID_CONSTANT OffsetT* const d_spine,
+    _CCCL_GRID_CONSTANT const OffsetT num_items,
+    _CCCL_GRID_CONSTANT const int current_bit,
+    _CCCL_GRID_CONSTANT const int num_bits,
     GridEvenShare<OffsetT> even_share,
-    DecomposerT decomposer = {})
+    _CCCL_GRID_CONSTANT const DecomposerT decomposer = {})
 {
   using ActiveUpsweepPolicyT =
     ::cuda::std::_If<ALT_DIGIT_BITS,
@@ -327,14 +328,14 @@ template <typename ChainedPolicyT,
           typename DecomposerT = identity_decomposer_t>
 __launch_bounds__(int(ChainedPolicyT::ActivePolicy::SingleTilePolicy::BLOCK_THREADS), 1)
   CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceRadixSortSingleTileKernel(
-    const KeyT* d_keys_in,
-    KeyT* d_keys_out,
-    const ValueT* d_values_in,
-    ValueT* d_values_out,
+    _CCCL_GRID_CONSTANT const KeyT* const d_keys_in,
+    _CCCL_GRID_CONSTANT KeyT* const d_keys_out,
+    _CCCL_GRID_CONSTANT const ValueT* const d_values_in,
+    _CCCL_GRID_CONSTANT ValueT* const d_values_out,
     OffsetT num_items,
-    int current_bit,
-    int end_bit,
-    DecomposerT decomposer = {})
+    _CCCL_GRID_CONSTANT const int current_bit,
+    _CCCL_GRID_CONSTANT const int end_bit,
+    _CCCL_GRID_CONSTANT const DecomposerT decomposer = {})
 {
   // Constants
   static constexpr int BLOCK_THREADS    = ChainedPolicyT::ActivePolicy::SingleTilePolicy::BLOCK_THREADS;
@@ -444,7 +445,12 @@ template <typename ChainedPolicyT,
           typename DecomposerT = identity_decomposer_t>
 CUB_DETAIL_KERNEL_ATTRIBUTES
 __launch_bounds__(ChainedPolicyT::ActivePolicy::HistogramPolicy::BLOCK_THREADS) void DeviceRadixSortHistogramKernel(
-  OffsetT* d_bins_out, const KeyT* d_keys_in, OffsetT num_items, int start_bit, int end_bit, DecomposerT decomposer = {})
+  _CCCL_GRID_CONSTANT OffsetT* const d_bins_out,
+  _CCCL_GRID_CONSTANT const KeyT* const d_keys_in,
+  _CCCL_GRID_CONSTANT const OffsetT num_items,
+  _CCCL_GRID_CONSTANT const int start_bit,
+  _CCCL_GRID_CONSTANT const int end_bit,
+  _CCCL_GRID_CONSTANT const DecomposerT decomposer = {})
 {
   using HistogramPolicyT = typename ChainedPolicyT::ActivePolicy::HistogramPolicy;
   using AgentT = AgentRadixSortHistogram<HistogramPolicyT, Order == SortOrder::Descending, KeyT, OffsetT, DecomposerT>;
@@ -463,18 +469,18 @@ template <typename ChainedPolicyT,
           typename DecomposerT   = identity_decomposer_t>
 CUB_DETAIL_KERNEL_ATTRIBUTES void __launch_bounds__(ChainedPolicyT::ActivePolicy::OnesweepPolicy::BLOCK_THREADS)
   DeviceRadixSortOnesweepKernel(
-    AtomicOffsetT* d_lookback,
-    AtomicOffsetT* d_ctrs,
-    OffsetT* d_bins_out,
-    const OffsetT* d_bins_in,
-    KeyT* d_keys_out,
-    const KeyT* d_keys_in,
-    ValueT* d_values_out,
-    const ValueT* d_values_in,
-    PortionOffsetT num_items,
-    int current_bit,
-    int num_bits,
-    DecomposerT decomposer = {})
+    _CCCL_GRID_CONSTANT AtomicOffsetT* const d_lookback,
+    _CCCL_GRID_CONSTANT AtomicOffsetT* const d_ctrs,
+    _CCCL_GRID_CONSTANT OffsetT* const d_bins_out,
+    _CCCL_GRID_CONSTANT const OffsetT* const d_bins_in,
+    _CCCL_GRID_CONSTANT KeyT* const d_keys_out,
+    _CCCL_GRID_CONSTANT const KeyT* const d_keys_in,
+    _CCCL_GRID_CONSTANT ValueT* const d_values_out,
+    _CCCL_GRID_CONSTANT const ValueT* const d_values_in,
+    _CCCL_GRID_CONSTANT const PortionOffsetT num_items,
+    _CCCL_GRID_CONSTANT const int current_bit,
+    _CCCL_GRID_CONSTANT const int num_bits,
+    _CCCL_GRID_CONSTANT const DecomposerT decomposer = {})
 {
   using OnesweepPolicyT = typename ChainedPolicyT::ActivePolicy::OnesweepPolicy;
   using AgentT =
@@ -508,7 +514,7 @@ CUB_DETAIL_KERNEL_ATTRIBUTES void __launch_bounds__(ChainedPolicyT::ActivePolicy
  * Exclusive sum kernel
  */
 template <typename ChainedPolicyT, typename OffsetT>
-CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceRadixSortExclusiveSumKernel(OffsetT* d_bins)
+CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceRadixSortExclusiveSumKernel(_CCCL_GRID_CONSTANT OffsetT* const d_bins)
 {
   using ExclusiveSumPolicyT     = typename ChainedPolicyT::ActivePolicy::ExclusiveSumPolicy;
   constexpr int RADIX_BITS      = ExclusiveSumPolicyT::RADIX_BITS;
