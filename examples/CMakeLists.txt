@@ -60,27 +60,23 @@ cccl_add_compile_test(
   ${cmake_cpm_opts}
 )
 
-cccl_get_cudatoolkit()
+cccl_add_compile_test(
+  test_name
+  cccl.example
+  cudax
+  "default"
+  ${cmake_opts}
+  ${cmake_cpm_opts}
+)
 
-if (CUDAToolkit_VERSION_MAJOR VERSION_GREATER_EQUAL 12)
-  cccl_add_compile_test(
-    test_name
-    cccl.example
-    cudax
-    "default"
-    ${cmake_opts}
-    ${cmake_cpm_opts}
-  )
-
-  cccl_add_compile_test(
-    test_name
-    cccl.example
-    cudax_stf
-    "default"
-    ${cmake_opts}
-    ${cmake_cpm_opts}
-  )
-endif() # CTK > 12.0
+cccl_add_compile_test(
+  test_name
+  cccl.example
+  cudax_stf
+  "default"
+  ${cmake_opts}
+  ${cmake_cpm_opts}
+)
 
 foreach (DEVICE_SYSTEM IN ITEMS CUDA OMP TBB CPP)
   cccl_add_compile_test(
