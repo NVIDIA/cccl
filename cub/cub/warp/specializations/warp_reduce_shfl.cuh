@@ -50,6 +50,10 @@ template <class T>
 inline constexpr bool reduce_add_exists<T, ::cuda::std::plus<>, decltype(__reduce_add_sync(0xFFFFFFFF, T{}))> =
   (::cuda::std::is_same_v<int, T> || ::cuda::std::is_same_v<unsigned int, T>);
 
+template <class T>
+inline constexpr bool reduce_add_exists<T, ::cuda::std::plus<T>, decltype(__reduce_add_sync(0xFFFFFFFF, T{}))> =
+  (::cuda::std::is_same_v<int, T> || ::cuda::std::is_same_v<unsigned int, T>);
+
 template <class T, class ReductionOp, class = void>
 inline constexpr bool reduce_min_exists = false;
 
@@ -57,11 +61,19 @@ template <class T>
 inline constexpr bool reduce_min_exists<T, ::cuda::minimum<>, decltype(__reduce_min_sync(0xFFFFFFFF, T{}))> =
   (::cuda::std::is_same_v<int, T> || ::cuda::std::is_same_v<unsigned int, T>);
 
+template <class T>
+inline constexpr bool reduce_min_exists<T, ::cuda::minimum<T>, decltype(__reduce_min_sync(0xFFFFFFFF, T{}))> =
+  (::cuda::std::is_same_v<int, T> || ::cuda::std::is_same_v<unsigned int, T>);
+
 template <class T, class ReductionOp, class = void>
 inline constexpr bool reduce_max_exists = false;
 
 template <class T>
 inline constexpr bool reduce_max_exists<T, ::cuda::maximum<>, decltype(__reduce_max_sync(0xFFFFFFFF, T{}))> =
+  (::cuda::std::is_same_v<int, T> || ::cuda::std::is_same_v<unsigned int, T>);
+
+template <class T>
+inline constexpr bool reduce_max_exists<T, ::cuda::maximum<T>, decltype(__reduce_max_sync(0xFFFFFFFF, T{}))> =
   (::cuda::std::is_same_v<int, T> || ::cuda::std::is_same_v<unsigned int, T>);
 
 /**
