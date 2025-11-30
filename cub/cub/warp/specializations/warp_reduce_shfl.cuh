@@ -83,6 +83,32 @@ inline constexpr bool
   reduce_max_exists<T, ::cuda::maximum<T>, ::cuda::std::void_t<decltype(__reduce_max_sync(0xFFFFFFFF, T{}))>> =
     (::cuda::std::is_same_v<int, T> || ::cuda::std::is_same_v<unsigned int, T>);
 
+template <class T, class ReductionOp, class = void>
+inline constexpr bool reduce_and_exists = false;
+
+template <class T>
+inline constexpr bool
+  reduce_and_exists<T, ::cuda::std::logical_and<>, ::cuda::std::void_t<decltype(__reduce_and_sync(0xFFFFFFFF, T{}))>> =
+    ::cuda::std::is_same_v<unsigned int, T>;
+
+template <class T>
+inline constexpr bool
+  reduce_and_exists<T, ::cuda::std::logical_and<T>, ::cuda::std::void_t<decltype(__reduce_and_sync(0xFFFFFFFF, T{}))>> =
+    ::cuda::std::is_same_v<unsigned int, T>;
+
+template <class T, class ReductionOp, class = void>
+inline constexpr bool reduce_or_exists = false;
+
+template <class T>
+inline constexpr bool
+  reduce_or_exists<T, ::cuda::std::logical_or<>, ::cuda::std::void_t<decltype(__reduce_or_sync(0xFFFFFFFF, T{}))>> =
+    ::cuda::std::is_same_v<unsigned int, T>;
+
+template <class T>
+inline constexpr bool
+  reduce_or_exists<T, ::cuda::std::logical_or<T>, ::cuda::std::void_t<decltype(__reduce_or_sync(0xFFFFFFFF, T{}))>> =
+    ::cuda::std::is_same_v<unsigned int, T>;
+
 /**
  * @brief WarpReduceShfl provides SHFL-based variants of parallel reduction of items partitioned
  *        across a CUDA thread warp.
@@ -519,6 +545,14 @@ struct WarpReduceShfl
                      else if constexpr (detail::reduce_add_exists<T, ReductionOp>)
                      {
                        return __reduce_add_sync(member_mask, input);
+                     }
+                     else if constexpr (detail::reduce_and_exists<T, ReductionOp>)
+                     {
+                       return __reduce_and_sync(member_mask, input);
+                     }
+                     else if constexpr (detail::reduce_or_exists<T, ReductionOp>)
+                     {
+                       return __reduce_or_sync(member_mask, input);
                      }
                    }))
 
