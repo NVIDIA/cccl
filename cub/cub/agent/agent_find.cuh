@@ -190,7 +190,8 @@ struct agent_t
 
       if (index < num_items)
       {
-        if (pred(*(d_in + index)))
+        // Force conversion from proxy/reference type to value type
+        if (pred(static_cast<InputT>(*(d_in + index))))
         {
           found = true;
           atomicMin(&temp_storage.block_result, index);
