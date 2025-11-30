@@ -102,9 +102,13 @@ int main(int argc, char** argv)
     };
     CUDA_CALL(err, cudaLaunchKernelEx(&config, fake_main_kernel, cuda_ret));
   }
-  else
+  else if (cuda_thread_count > 0)
   {
     fake_main_kernel<<<1, cuda_thread_count>>>(cuda_ret);
+  }
+  else
+  {
+    // Device execution explicitly disabled by the test.
   }
 
   CUDA_CALL(err, cudaGetLastError());
