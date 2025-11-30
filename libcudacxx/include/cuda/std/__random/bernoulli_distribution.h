@@ -39,7 +39,7 @@ public:
 
   class param_type
   {
-    double __p_;
+    double __p_{};
 
   public:
     using distribution_type = bernoulli_distribution;
@@ -90,7 +90,7 @@ public:
   template <class _URng>
   [[nodiscard]] _CCCL_API constexpr result_type operator()(_URng& __g, const param_type& __p) noexcept
   {
-    static_assert(__cccl_random_is_valid_urng<_URng>);
+    static_assert(__cccl_random_is_valid_urng<_URng>, "URng must meet the UniformRandomBitGenerator requirements");
     return ::cuda::std::generate_canonical<double, numeric_limits<double>::digits>(__g) < __p.p();
   }
 

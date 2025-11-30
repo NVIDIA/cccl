@@ -65,12 +65,12 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __fwd_env_;
 template <class _Env>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT __env_ref_
 {
-  _CCCL_TEMPLATE(class _Query, class... _As)
-  _CCCL_REQUIRES(__queryable_with<_Env, _Query, _As...>)
-  [[nodiscard]] _CCCL_API constexpr auto query(_Query, _As&&... __args) const
-    noexcept(__nothrow_queryable_with<_Env, _Query, _As...>) -> __query_result_t<_Env, _Query, _As...>
+  _CCCL_TEMPLATE(class _Query, class... _Args)
+  _CCCL_REQUIRES(__queryable_with<_Env, _Query, _Args...>)
+  [[nodiscard]] _CCCL_API constexpr auto query(_Query, _Args&&... __args) const
+    noexcept(__nothrow_queryable_with<_Env, _Query, _Args...>) -> __query_result_t<_Env, _Query, _Args...>
   {
-    return __env_.query(_Query{}, static_cast<_As&&>(__args)...);
+    return __env_.query(_Query{}, static_cast<_Args&&>(__args)...);
   }
 
   _Env const& __env_;
@@ -209,31 +209,6 @@ struct __mk_sch_env_t
 };
 
 _CCCL_GLOBAL_CONSTANT __mk_sch_env_t __mk_sch_env{};
-
-//////////////////////////////////////////////////////////////////////////////////////////
-// __sch_attrs
-
-//! @brief __sch_attrs_t is a utility that builds an attributes queryable from a
-//! scheduler. It defines the `get_completion_scheduler` query and provides a default for
-//! the `get_completion_domain` query.
-template <class _Sch>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT __sch_attrs_t
-{
-  [[nodiscard]] _CCCL_API constexpr auto query(get_completion_scheduler_t<set_value_t>) const noexcept -> _Sch
-  {
-    return __sch_;
-  }
-
-  [[nodiscard]] _CCCL_API constexpr auto query(get_completion_domain_t<set_value_t>) const noexcept
-  {
-    return __call_result_or_t<get_completion_domain_t<set_value_t>, default_domain, _Sch>{};
-  }
-
-  _Sch __sch_;
-};
-
-template <class _Sch>
-_CCCL_HOST_DEVICE __sch_attrs_t(_Sch) -> __sch_attrs_t<_Sch>;
 
 //////////////////////////////////////////////////////////////////////////////////////////
 // __inln_attrs

@@ -22,11 +22,13 @@
 #endif // no system header
 
 #include <cuda/__cmath/ilog.h>
+#include <cuda/__cmath/neg.h>
+#include <cuda/__cmath/pow2.h>
 #include <cuda/__cmath/uabs.h>
 #include <cuda/std/__bit/countl.h>
-#include <cuda/std/__bit/has_single_bit.h>
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__type_traits/is_integer.h>
+#include <cuda/std/__type_traits/is_signed.h>
 #include <cuda/std/__type_traits/is_unsigned.h>
 #include <cuda/std/__type_traits/make_unsigned.h>
 #include <cuda/std/__utility/cmp.h>
@@ -48,7 +50,7 @@ template <class _Tp, class _Ep>
 {
   static_assert(::cuda::std::is_unsigned_v<_Tp>);
 
-  if (::cuda::std::has_single_bit(__b))
+  if (::cuda::is_power_of_two(__b))
   {
     return ::cuda::__cccl_ipow_impl_base_pow2(__b, __e);
   }
@@ -92,10 +94,12 @@ _CCCL_REQUIRES(::cuda::std::__cccl_is_integer_v<_Tp> _CCCL_AND ::cuda::std::__cc
     return _Tp{0};
   }
   auto __res = ::cuda::__cccl_ipow_impl(::cuda::uabs(__b), ::cuda::std::__to_unsigned_like(__e));
-  if (::cuda::std::cmp_less(__b, _Tp{0}) && (__e % 2u == 1))
+  if constexpr (::cuda::std::is_signed_v<_Tp>)
   {
-    // todo: replace with ::cuda::__neg(__res) when available
-    __res = (~__res + 1);
+    if (__b < _Tp{0} && (__e % 2u == 1))
+    {
+      __res = cuda::neg(__res);
+    }
   }
   return static_cast<_Tp>(__res);
 }

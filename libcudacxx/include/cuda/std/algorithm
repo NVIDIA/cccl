@@ -49,6 +49,8 @@
 #include <cuda/std/__algorithm/generate_n.h>
 #include <cuda/std/__algorithm/half_positive.h>
 #include <cuda/std/__algorithm/includes.h>
+#include <cuda/std/__algorithm/ranges_find_if.h>
+#include <cuda/std/__algorithm/ranges_find_if_not.h>
 #ifdef _CCCL_HAS_SORTING_ALGORITHMS
 #  include <cuda/std/__algorithm/inplace_merge.h>
 #endif // _CCCL_HAS_SORTING_ALGORITHMS

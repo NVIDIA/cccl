@@ -198,18 +198,30 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __bulk_t
   struct _CCCL_TYPE_VISIBILITY_DEFAULT __closure_base_t
   {
     template <class _Sndr>
-    [[nodiscard]] _CCCL_API friend constexpr auto operator|(_Sndr&& __sndr, __closure_base_t __self)
+    [[nodiscard]] _CCCL_API constexpr auto operator()(_Sndr&& __sndr) &&
     {
       static_assert(__is_sender<_Sndr>);
 
       if constexpr (!dependent_sender<_Sndr>)
       {
         using __sndr_t = typename _BulkTag::template __sndr_t<_Sndr, _Policy, _Shape, _Fn>;
-        __assert_valid_completion_signatures(get_completion_signatures<__sndr_t>());
+        __assert_valid_completion_signatures(execution::get_completion_signatures<__sndr_t>());
       }
 
       return typename _BulkTag::template __sndr_t<_Sndr, _Policy, _Shape, _Fn>{
-        {{}, static_cast<__closure_base_t&&>(__self), static_cast<_Sndr&&>(__sndr)}};
+        {{}, static_cast<__closure_base_t&&>(*this), static_cast<_Sndr&&>(__sndr)}};
+    }
+
+    template <class _Sndr>
+    [[nodiscard]] _CCCL_API constexpr auto operator()(_Sndr&& __sndr) const&
+    {
+      return __closure_base_t(*this)(static_cast<_Sndr&&>(__sndr));
+    }
+
+    template <class _Sndr>
+    [[nodiscard]] _CCCL_API friend constexpr auto operator|(_Sndr&& __sndr, __closure_base_t __self)
+    {
+      return static_cast<__closure_base_t&&>(__self)(static_cast<_Sndr&&>(__sndr));
     }
 
     /*_CCCL_NO_UNIQUE_ADDRESS*/ _Policy __policy_;

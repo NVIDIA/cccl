@@ -1,11 +1,10 @@
-// -*- C++ -*-
 //===----------------------------------------------------------------------===//
 //
 // Part of libcu++, the C++ Standard Library for your entire system,
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -22,27 +21,28 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__exception/exception_macros.h>
+#include <cuda/std/__exception/terminate.h>
+#include <cuda/std/source_location>
+
+#include <nv/target>
+
 #if !_CCCL_COMPILER(NVRTC)
-
-#  include <cuda/std/__exception/exception_macros.h>
-#  include <cuda/std/__exception/terminate.h>
-#  include <cuda/std/source_location>
-
-#  include <nv/target>
-
 #  include <cstdio>
 #  include <stdexcept>
+#endif // !_CCCL_COMPILER(NVRTC)
 
-#  include <cuda/std/__cccl/prologue.h>
+#include <cuda/std/__cccl/prologue.h>
 
 _CCCL_BEGIN_NAMESPACE_CUDA
 
-#  if _CCCL_HAS_CTK()
+#if _CCCL_HAS_CTK()
 using __cuda_error_t = ::cudaError_t;
-#  else
+#else
 using __cuda_error_t = int;
-#  endif
+#endif
 
+#if !_CCCL_COMPILER(NVRTC)
 namespace __detail
 {
 struct __msg_storage
@@ -99,6 +99,7 @@ public:
 private:
   __cuda_error_t __status_;
 };
+#endif // !_CCCL_COMPILER(NVRTC)
 
 [[noreturn]] _CCCL_API inline void __throw_cuda_error(
   [[maybe_unused]] const __cuda_error_t __status,
@@ -111,8 +112,6 @@ private:
 
 _CCCL_END_NAMESPACE_CUDA
 
-#  include <cuda/std/__cccl/epilogue.h>
-
-#endif // !_CCCL_COMPILER(NVRTC)
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _CUDA_STD___EXCEPTION_CUDA_ERROR_H

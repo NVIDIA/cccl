@@ -165,7 +165,7 @@ def make_three_way_partition(
     Example:
         Below, ``make_three_way_partition`` is used to create a three-way partition object that can be reused.
 
-        .. literalinclude:: ../../python/cuda_cccl/tests/compute/examples/three_way_partition/three_way_partition_object.py
+        .. literalinclude:: ../../python/cuda_cccl/tests/compute/examples/partition/three_way_partition_object.py
             :language: python
             :start-after: # example-begin
 
@@ -214,7 +214,7 @@ def three_way_partition(
     Example:
         Below, ``three_way_partition`` is used to partition a sequence of integers into three parts.
 
-        .. literalinclude:: ../../python/cuda_cccl/tests/compute/examples/three_way_partition/three_way_partition_basic.py
+        .. literalinclude:: ../../python/cuda_cccl/tests/compute/examples/partition/three_way_partition_basic.py
             :language: python
             :start-after: # example-begin
 

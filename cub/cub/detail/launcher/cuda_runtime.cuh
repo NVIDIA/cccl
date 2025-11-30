@@ -34,6 +34,11 @@ struct TripleChevronFactory
     return cub::PtxVersion(version);
   }
 
+  CUB_RUNTIME_FUNCTION ::cudaError_t PtxArchId(::cuda::arch_id& arch_id) const
+  {
+    return ptx_arch_id(arch_id);
+  }
+
   _CCCL_HIDE_FROM_ABI CUB_RUNTIME_FUNCTION ::cudaError_t MultiProcessorCount(int& sm_count) const
   {
     int device_ordinal;
