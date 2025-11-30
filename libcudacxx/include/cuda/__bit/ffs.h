@@ -63,35 +63,67 @@ template <class _Tp>
   return __pos;
 }
 
+#if _CCCL_COMPILER(NVRTC)
+[[nodiscard]] inline int __ffs_host32(::cuda::std::uint32_t __v) noexcept
+{
+  return ::cuda::__detail::__ffs_constexpr_impl(__v);
+}
+#else
 [[nodiscard]] _CCCL_HOST_API inline int __ffs_host32(::cuda::std::uint32_t __v) noexcept
 {
-#if defined(_CCCL_BUILTIN_FFS)
+  if (::cuda::std::__cccl_default_is_constant_evaluated())
+  {
+    return ::cuda::__detail::__ffs_constexpr_impl(__v);
+  }
+#  if defined(_CCCL_BUILTIN_FFS)
   return _CCCL_BUILTIN_FFS(static_cast<int>(__v));
-#elif _CCCL_COMPILER(MSVC)
+#  elif _CCCL_COMPILER(MSVC)
   unsigned long __where{};
   const unsigned char __res = ::_BitScanForward(&__where, __v);
   return __res ? static_cast<int>(__where) + 1 : 0;
-#else
+#  else
   return ::cuda::__detail::__ffs_constexpr_impl(__v);
-#endif // host implementations
+#  endif // host implementations
 }
+#endif // _CCCL_COMPILER(NVRTC)
 
+#if _CCCL_COMPILER(NVRTC)
+[[nodiscard]] inline int __ffs_host64(::cuda::std::uint64_t __v) noexcept
+{
+  return ::cuda::__detail::__ffs_constexpr_impl(__v);
+}
+#else
 [[nodiscard]] _CCCL_HOST_API inline int __ffs_host64(::cuda::std::uint64_t __v) noexcept
 {
-#if defined(_CCCL_BUILTIN_FFSLL)
+  if (::cuda::std::__cccl_default_is_constant_evaluated())
+  {
+    return ::cuda::__detail::__ffs_constexpr_impl(__v);
+  }
+#  if defined(_CCCL_BUILTIN_FFSLL)
   return _CCCL_BUILTIN_FFSLL(static_cast<long long>(__v));
-#elif _CCCL_COMPILER(MSVC)
+#  elif _CCCL_COMPILER(MSVC)
   unsigned long __where{};
   const unsigned char __res = ::_BitScanForward64(&__where, __v);
   return __res ? static_cast<int>(__where) + 1 : 0;
-#else
+#  else
   return ::cuda::__detail::__ffs_constexpr_impl(__v);
-#endif // host implementations
+#  endif // host implementations
 }
+#endif // _CCCL_COMPILER(NVRTC)
 
 #if _CCCL_HAS_INT128()
+#  if _CCCL_COMPILER(NVRTC)
+[[nodiscard]] inline int __ffs_host128(__uint128_t __v) noexcept
+{
+  return ::cuda::__detail::__ffs_constexpr_impl(__v);
+}
+#  else
 [[nodiscard]] _CCCL_HOST_API inline int __ffs_host128(__uint128_t __v) noexcept
 {
+  if (::cuda::std::__cccl_default_is_constant_evaluated())
+  {
+    return ::cuda::__detail::__ffs_constexpr_impl(__v);
+  }
   const auto __lo = static_cast<::cuda::std::uint64_t>(__v);
   if (const int __result = ::cuda::__detail::__ffs_host64(__lo))
   {
@@ -104,6 +136,7 @@ template <class _Tp>
   }
   return 0;
 }
+#  endif // _CCCL_COMPILER(NVRTC)
 #endif // _CCCL_HAS_INT128()
 
 #if _CCCL_CUDA_COMPILATION()
@@ -141,19 +174,22 @@ template <class _Tp, ::cuda::std::enable_if_t<::cuda::std::__cccl_is_cv_unsigned
 {
   using _Unsigned = ::cuda::std::remove_cv_t<_Tp>;
 
+#if !defined(_CCCL_BUILTIN_IS_CONSTANT_EVALUATED)
+  return __detail::__ffs_constexpr_impl(static_cast<_Unsigned>(__v));
+#else
   if (::cuda::std::__cccl_default_is_constant_evaluated())
   {
     return __detail::__ffs_constexpr_impl(static_cast<_Unsigned>(__v));
   }
 
-#if _CCCL_HAS_INT128()
+#  if _CCCL_HAS_INT128()
   if constexpr (sizeof(_Unsigned) == sizeof(__uint128_t))
   {
     NV_IF_ELSE_TARGET(NV_IS_HOST,
                       (return __detail::__ffs_host128(static_cast<__uint128_t>(__v));),
                       (return __detail::__ffs_device128(static_cast<__uint128_t>(__v));))
   }
-#endif // _CCCL_HAS_INT128()
+#  endif // _CCCL_HAS_INT128()
 
   if constexpr (sizeof(_Unsigned) <= sizeof(::cuda::std::uint32_t))
   {
@@ -167,6 +203,7 @@ template <class _Tp, ::cuda::std::enable_if_t<::cuda::std::__cccl_is_cv_unsigned
                       (return __detail::__ffs_host64(static_cast<::cuda::std::uint64_t>(__v));),
                       (return __detail::__ffs_device64(static_cast<::cuda::std::uint64_t>(__v));))
   }
+#endif // !_CCCL_BUILTIN_IS_CONSTANT_EVALUATED
 }
 
 _CCCL_END_NAMESPACE_CUDA

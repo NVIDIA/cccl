@@ -147,6 +147,10 @@
 #  define _CCCL_BUILTIN_IS_CONSTANT_EVALUATED(...) __builtin_is_constant_evaluated(__VA_ARGS__)
 #endif // _CCCL_CHECK_BUILTIN(builtin_is_constant_evaluated)
 
+#if _CCCL_HOST_COMPILATION() && _CCCL_COMPILER(GCC, <, 9)
+#  undef _CCCL_BUILTIN_IS_CONSTANT_EVALUATED
+#endif // host GCC < 9
+
 #if _CCCL_CHECK_BUILTIN(builtin_is_corresponding_member)
 #  define _CCCL_BUILTIN_IS_CORRESPONDING_MEMBER(_C1, _C2, _MPtr1, _MPtr2) \
     __builtin_is_corresponding_member(_MPtr1, _MPtr2)
