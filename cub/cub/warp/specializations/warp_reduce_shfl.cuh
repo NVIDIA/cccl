@@ -44,26 +44,44 @@ CUB_NAMESPACE_BEGIN
 
 namespace detail
 {
-template <class T, class = void>
+template <class T, class ReductionOp, class = void>
 inline constexpr bool reduce_add_exists = false;
 
 template <class T>
-inline constexpr bool reduce_add_exists<T, ::cuda::std::void_t<decltype(__reduce_add_sync(0xFFFFFFFF, T{}))>> =
-  (::cuda::std::is_same_v<int, T> || ::cuda::std::is_same_v<unsigned int, T>);
+inline constexpr bool
+  reduce_add_exists<T, ::cuda::std::plus<>, ::cuda::std::void_t<decltype(__reduce_add_sync(0xFFFFFFFF, T{}))>> =
+    (::cuda::std::is_same_v<int, T> || ::cuda::std::is_same_v<unsigned int, T>);
 
-template <class T, class = void>
+template <class T>
+inline constexpr bool
+  reduce_add_exists<T, ::cuda::std::plus<T>, ::cuda::std::void_t<decltype(__reduce_add_sync(0xFFFFFFFF, T{}))>> =
+    (::cuda::std::is_same_v<int, T> || ::cuda::std::is_same_v<unsigned int, T>);
+
+template <class T, class ReductionOp, class = void>
 inline constexpr bool reduce_min_exists = false;
 
 template <class T>
-inline constexpr bool reduce_min_exists<T, ::cuda::std::void_t<decltype(__reduce_min_sync(0xFFFFFFFF, T{}))>> =
-  (::cuda::std::is_same_v<int, T> || ::cuda::std::is_same_v<unsigned int, T>);
+inline constexpr bool
+  reduce_min_exists<T, ::cuda::minimum<>, ::cuda::std::void_t<decltype(__reduce_min_sync(0xFFFFFFFF, T{}))>> =
+    (::cuda::std::is_same_v<int, T> || ::cuda::std::is_same_v<unsigned int, T>);
 
-template <class T, class = void>
+template <class T>
+inline constexpr bool
+  reduce_min_exists<T, ::cuda::minimum<T>, ::cuda::std::void_t<decltype(__reduce_min_sync(0xFFFFFFFF, T{}))>> =
+    (::cuda::std::is_same_v<int, T> || ::cuda::std::is_same_v<unsigned int, T>);
+
+template <class T, class ReductionOp, class = void>
 inline constexpr bool reduce_max_exists = false;
 
 template <class T>
-inline constexpr bool reduce_max_exists<T, ::cuda::std::void_t<decltype(__reduce_max_sync(0xFFFFFFFF, T{}))>> =
-  (::cuda::std::is_same_v<int, T> || ::cuda::std::is_same_v<unsigned int, T>);
+inline constexpr bool
+  reduce_max_exists<T, ::cuda::maximum<>, ::cuda::std::void_t<decltype(__reduce_max_sync(0xFFFFFFFF, T{}))>> =
+    (::cuda::std::is_same_v<int, T> || ::cuda::std::is_same_v<unsigned int, T>);
+
+template <class T>
+inline constexpr bool
+  reduce_max_exists<T, ::cuda::maximum<T>, ::cuda::std::void_t<decltype(__reduce_max_sync(0xFFFFFFFF, T{}))>> =
+    (::cuda::std::is_same_v<int, T> || ::cuda::std::is_same_v<unsigned int, T>);
 
 /**
  * @brief WarpReduceShfl provides SHFL-based variants of parallel reduction of items partitioned
@@ -469,99 +487,6 @@ struct WarpReduceShfl
   //---------------------------------------------------------------------
 
   /**
-   * @param[in] input
-   *   Calling thread's input
-   *
-   * @param[in] valid_items
-   *   Total number of valid items across the logical warp
-   *
-   * @param[in] reduction_op
-   *   Binary reduction operator
-   */
-  template <typename ReductionOp>
-  _CCCL_DEVICE _CCCL_FORCEINLINE T
-  ReduceImpl(::cuda::std::false_type /* all_lanes_valid */, T input, int valid_items, ReductionOp reduction_op)
-  {
-    int last_lane = valid_items - 1;
-
-    T output = input;
-
-    // Template-iterate reduction steps
-    ReduceStep(output, reduction_op, last_lane, constant_v<0>);
-
-    return output;
-  }
-
-  /**
-   * @param[in] input
-   *   Calling thread's input
-   *
-   * @param[in] valid_items
-   *   Total number of valid items across the logical warp
-   *
-   * @param[in] reduction_op
-   *   Binary reduction operator
-   */
-  template <typename ReductionOp>
-  _CCCL_DEVICE _CCCL_FORCEINLINE T
-  ReduceImpl(::cuda::std::true_type /* all_lanes_valid */, T input, int /* valid_items */, ReductionOp reduction_op)
-  {
-    int last_lane = LOGICAL_WARP_THREADS - 1;
-
-    T output = input;
-
-    // Template-iterate reduction steps
-    ReduceStep(output, reduction_op, last_lane, constant_v<0>);
-
-    return output;
-  }
-
-  template <class U = T>
-  _CCCL_DEVICE _CCCL_FORCEINLINE ::cuda::std::enable_if_t<detail::reduce_add_exists<U>, T> ReduceImpl(
-    ::cuda::std::true_type /* all_lanes_valid */,
-    T input,
-    int /* valid_items */,
-    ::cuda::std::plus<> /* reduction_op */)
-  {
-    T output = input;
-
-    NV_IF_TARGET(NV_PROVIDES_SM_80,
-                 (output = __reduce_add_sync(member_mask, input);),
-                 (output = ReduceImpl<::cuda::std::plus<>>(
-                    ::cuda::std::true_type{}, input, LOGICAL_WARP_THREADS, ::cuda::std::plus<>{});));
-
-    return output;
-  }
-
-  template <class U = T>
-  _CCCL_DEVICE _CCCL_FORCEINLINE ::cuda::std::enable_if_t<detail::reduce_min_exists<U>, T> ReduceImpl(
-    ::cuda::std::true_type /* all_lanes_valid */, T input, int /* valid_items */, ::cuda::minimum<> /* reduction_op */)
-  {
-    T output = input;
-
-    NV_IF_TARGET(NV_PROVIDES_SM_80,
-                 (output = __reduce_min_sync(member_mask, input);),
-                 (output = ReduceImpl<::cuda::minimum<>>(
-                    ::cuda::std::true_type{}, input, LOGICAL_WARP_THREADS, ::cuda::minimum<>{});));
-
-    return output;
-  }
-
-  template <class U = T>
-  _CCCL_DEVICE _CCCL_FORCEINLINE ::cuda::std::enable_if_t<detail::reduce_max_exists<U>, T> ReduceImpl(
-    ::cuda::std::true_type /* all_lanes_valid */, T input, int /* valid_items */, ::cuda::maximum<> /* reduction_op */)
-  {
-    T output = input;
-
-    NV_IF_TARGET(NV_PROVIDES_SM_80,
-                 (output = __reduce_max_sync(member_mask, input);),
-                 (output = ReduceImpl<::cuda::maximum<>>(
-                    ::cuda::std::true_type{}, input, LOGICAL_WARP_THREADS, ::cuda::maximum<>{});));
-
-    return output;
-  }
-
-  /**
    * @brief Reduction
    *
    * @tparam ALL_LANES_VALID
@@ -579,7 +504,38 @@ struct WarpReduceShfl
   template <bool ALL_LANES_VALID, typename ReductionOp>
   _CCCL_DEVICE _CCCL_FORCEINLINE T Reduce(T input, int valid_items, ReductionOp reduction_op)
   {
-    return ReduceImpl(bool_constant_v<ALL_LANES_VALID>, input, valid_items, reduction_op);
+    if constexpr (ALL_LANES_VALID)
+    {
+      // Dispatch to more efficient intrinsics when applicable
+      NV_IF_TARGET(NV_PROVIDES_SM_80, ({
+                     if constexpr (detail::reduce_max_exists<T, ReductionOp>)
+                     {
+                       return __reduce_max_sync(member_mask, input);
+                     }
+                     else if constexpr (detail::reduce_min_exists<T, ReductionOp>)
+                     {
+                       return __reduce_min_sync(member_mask, input);
+                     }
+                     else if constexpr (detail::reduce_add_exists<T, ReductionOp>)
+                     {
+                       return __reduce_add_sync(member_mask, input);
+                     }
+                   }))
+
+      T output = input;
+      // Template-iterate reduction steps
+      const int last_lane = LOGICAL_WARP_THREADS - 1;
+      ReduceStep(output, reduction_op, last_lane, constant_v<0>);
+      return output;
+    }
+    else
+    {
+      T output = input;
+      // Template-iterate reduction steps
+      const int last_lane = valid_items - 1;
+      ReduceStep(output, reduction_op, last_lane, constant_v<0>);
+      return output;
+    }
   }
 
   /**
