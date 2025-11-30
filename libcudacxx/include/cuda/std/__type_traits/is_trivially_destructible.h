@@ -22,8 +22,7 @@
 
 #include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/is_destructible.h>
-
-#include <cstddef>
+#include <cuda/std/cstddef>
 
 #include <cuda/std/__cccl/prologue.h>
 

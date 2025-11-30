@@ -64,7 +64,7 @@ template <class _Tp>
 }
 
 #if _CCCL_COMPILER(NVRTC)
-[[nodiscard]] inline int __ffs_host32(::cuda::std::uint32_t __v) noexcept
+[[nodiscard]] _CCCL_DEVICE inline int __ffs_host32(::cuda::std::uint32_t __v) noexcept
 {
   return ::cuda::__detail::__ffs_constexpr_impl(__v);
 }
@@ -88,7 +88,7 @@ template <class _Tp>
 #endif // _CCCL_COMPILER(NVRTC)
 
 #if _CCCL_COMPILER(NVRTC)
-[[nodiscard]] inline int __ffs_host64(::cuda::std::uint64_t __v) noexcept
+[[nodiscard]] _CCCL_DEVICE inline int __ffs_host64(::cuda::std::uint64_t __v) noexcept
 {
   return ::cuda::__detail::__ffs_constexpr_impl(__v);
 }
@@ -113,7 +113,7 @@ template <class _Tp>
 
 #if _CCCL_HAS_INT128()
 #  if _CCCL_COMPILER(NVRTC)
-[[nodiscard]] inline int __ffs_host128(__uint128_t __v) noexcept
+[[nodiscard]] _CCCL_DEVICE inline int __ffs_host128(__uint128_t __v) noexcept
 {
   return ::cuda::__detail::__ffs_constexpr_impl(__v);
 }
