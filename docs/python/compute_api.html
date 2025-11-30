@@ -3557,7 +3557,7 @@ boolean-like value (typically uint8) where non-zero means the item passes the se
 
 <dl class="py class">
 <dt class="sig sig-object py" id="cuda.compute.algorithms.DoubleBuffer">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">cuda.compute.algorithms.</span></span><span class="sig-name descname"><span class="pre">DoubleBuffer</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">d_current</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">d_alternate</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#cuda.compute.algorithms.DoubleBuffer" title="Link to this definition">#</a></dt>
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">cuda.compute.algorithms.</span></span><span class="sig-name descname"><span class="pre">DoubleBuffer</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">d_current</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">d_alternate</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#cuda.compute.algorithms.DoubleBuffer" title="Link to this definition">#</a></dt>
 <dd><dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
@@ -3580,33 +3580,20 @@ boolean-like value (typically uint8) where non-zero means the item passes the se
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="cuda.compute.algorithms.DoubleBuffer.current">
-<span class="sig-name descname"><span class="pre">current</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#cuda.compute.algorithms.DoubleBuffer.current" title="Link to this definition">#</a></dt>
+<dt class="sig sig-object py" id="cuda.compute.algorithms.DoubleBuffer.alternate">
+<span class="sig-name descname"><span class="pre">alternate</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#cuda.compute.algorithms.DoubleBuffer.alternate" title="Link to this definition">#</a></dt>
 <dd></dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="cuda.compute.algorithms.DoubleBuffer.alternate">
-<span class="sig-name descname"><span class="pre">alternate</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#cuda.compute.algorithms.DoubleBuffer.alternate" title="Link to this definition">#</a></dt>
+<dt class="sig sig-object py" id="cuda.compute.algorithms.DoubleBuffer.current">
+<span class="sig-name descname"><span class="pre">current</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#cuda.compute.algorithms.DoubleBuffer.current" title="Link to this definition">#</a></dt>
 <dd></dd></dl>
 
 </dd></dl>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="cuda.compute.algorithms.SortOrder">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">cuda.compute.algorithms.</span></span><span class="sig-name descname"><span class="pre">SortOrder</span></span><span class="sig-paren">(</span>
-
-<dl>
-<dd><em class="sig-param"><span class="n"><span class="pre">value</span></span></em>,</dd>
-<dd><em class="sig-param"><span class="n"><span class="pre">names=&lt;not</span> <span class="pre">given&gt;</span></span></em>,</dd>
-<dd><em class="sig-param"><span class="n"><span class="pre">*values</span></span></em>,</dd>
-<dd><em class="sig-param"><span class="n"><span class="pre">module=None</span></span></em>,</dd>
-<dd><em class="sig-param"><span class="n"><span class="pre">qualname=None</span></span></em>,</dd>
-<dd><em class="sig-param"><span class="n"><span class="pre">type=None</span></span></em>,</dd>
-<dd><em class="sig-param"><span class="n"><span class="pre">start=1</span></span></em>,</dd>
-<dd><em class="sig-param"><span class="n"><span class="pre">boundary=None</span></span></em>,</dd>
-</dl>
-
-<span class="sig-paren">)</span><a class="headerlink" href="#cuda.compute.algorithms.SortOrder" title="Link to this definition">#</a></dt>
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">cuda.compute.algorithms.</span></span><span class="sig-name descname"><span class="pre">SortOrder</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">values</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#cuda.compute.algorithms.SortOrder" title="Link to this definition">#</a></dt>
 <dd><dl class="py attribute">
 <dt class="sig sig-object py" id="cuda.compute.algorithms.SortOrder.ASCENDING">
 <span class="sig-name descname"><span class="pre">ASCENDING</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">0</span></em><a class="headerlink" href="#cuda.compute.algorithms.SortOrder.ASCENDING" title="Link to this definition">#</a></dt>
@@ -4253,7 +4240,7 @@ combining two device arrays:</p>
 <h2>Operators<a class="headerlink" href="#operators" title="Link to this heading">#</a></h2>
 <dl class="py class">
 <dt class="sig sig-object py" id="cuda.compute.iterators.cuda.compute.op.OpKind">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">cuda.compute.op.</span></span><span class="sig-name descname"><span class="pre">OpKind</span></span><a class="headerlink" href="#cuda.compute.iterators.cuda.compute.op.OpKind" title="Link to this definition">#</a></dt>
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">cuda.compute.op.</span></span><span class="sig-name descname"><span class="pre">OpKind</span></span><a class="headerlink" href="#cuda.compute.iterators.cuda.compute.op.OpKind" title="Link to this definition">#</a></dt>
 <dd><p>Enumeration of operator kinds for CUDA parallel algorithms.</p>
 <p>This enum defines the types of operations that can be performed
 in parallel algorithms, including arithmetic, logical, and bitwise operations.</p>
@@ -4584,8 +4571,8 @@ Numba type can be obtained using <code class="docutils literal notranslate"><spa
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#cuda.compute.algorithms.make_select"><code class="docutils literal notranslate"><span class="pre">make_select()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#cuda.compute.algorithms.DoubleBuffer"><code class="docutils literal notranslate"><span class="pre">DoubleBuffer</span></code></a><ul class="nav section-nav flex-column">
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#cuda.compute.algorithms.DoubleBuffer.__init__"><code class="docutils literal notranslate"><span class="pre">__init__()</span></code></a></li>
-<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#cuda.compute.algorithms.DoubleBuffer.current"><code class="docutils literal notranslate"><span class="pre">current()</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#cuda.compute.algorithms.DoubleBuffer.alternate"><code class="docutils literal notranslate"><span class="pre">alternate()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#cuda.compute.algorithms.DoubleBuffer.current"><code class="docutils literal notranslate"><span class="pre">current()</span></code></a></li>
 </ul>
 </li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#cuda.compute.algorithms.SortOrder"><code class="docutils literal notranslate"><span class="pre">SortOrder</span></code></a><ul class="nav section-nav flex-column">
@@ -4688,7 +4675,7 @@ Numba type can be obtained using <code class="docutils literal notranslate"><spa
         <div class="footer-item">
 
   <p class="sphinx-version">
-    Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 8.1.3.
+    Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 8.2.3.
     <br/>
   </p>
 </div>
