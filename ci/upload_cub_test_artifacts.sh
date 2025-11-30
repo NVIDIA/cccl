@@ -47,7 +47,6 @@ build_dir_regex="build${CCCL_BUILD_INFIX:+/$CCCL_BUILD_INFIX}/cub[^/]*"
 
 # Just collect the minimum set of files needed for running each ctest preset:
 for preset_variant in ${preset_variants[@]}; do
-
   # Shared across all presets:
   ci/util/artifacts/stage.sh "$artifact_prefix-$preset_variant" \
       "$build_dir_regex/build\.ninja$" \

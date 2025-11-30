@@ -82,39 +82,23 @@ change.
 Using the CMake Variant Functions
 ---------------------------------
 
-``cmake/CCCLTestParams.cmake`` provides the functions that implement this functionality.
+If using ``cccl_add_tests_from_src``, the variant parsing and test addition is
+handled automatically, and the rest of this section can be skipped.
+
+``cmake/CCCLTestParams.cmake`` provides the functions that implement parameter parsing.
 See that file for detailed documentation. An example of their usage is:
 
 ..  code-block:: cmake
 
   set(test_src <path_to_source_file>)
-  set(test_name <test_name_derived_from_test_src>)
+  set(test_basename <test_name_derived_from_test_src>)
 
-  # Parse %PARAM% comments from the source file and generate lists of labels/definitions:
-  cccl_parse_variant_params("${test_src}" num_variants variant_labels variant_defs)
-
-  if (num_variants EQUAL 0)
-    # Add test with no variants named `test_name` here. Example:
-    add_executable("${test_name}" "${test_src}")
-    add_test(NAME "${test_name}" COMMAND "${test_name}")
-  else() # Has variants:
-    # Optional: log the detected variant info to CMake's VERBOSE output stream:
-    cccl_log_variant_params("${test_name}" ${num_variants} variant_labels variant_defs)
-
-    # Subtract 1 to support the inclusive endpoint of foreach(...RANGE...):
-    math(EXPR var_range_end "${num_variants} - 1")
-    foreach(var_idx RANGE ${var_range_end})
-      # Get the variant label and definitions for the current index:
-      cccl_get_variant_data(variant_labels variant_defs ${var_idx} var_label var_defs)
-      set(var_name "${test_name}.${var_label}")
-
-      # Add the test with the current variant label and definitions.
-      # Example:
-      add_executable("${var_name}" "${test_src}")
-      target_compile_definitions("${var_name}" PRIVATE ${var_defs})
-      add_test(NAME "${var_name}" COMMAND "${var_name}")
-    endforeach()
-  endif()
+  cccl_detect_test_variants(${test_basename} "${test_src}")
+  foreach (key IN LISTS variant_KEYS)
+    add_executable(${${key}_NAME} "${test_src}")
+    target_compile_definitions(${${key}_NAME} PRIVATE ${${key}_DEFINITIONS})
+    add_test(NAME ${${key}_NAME} COMMAND ${${key}_NAME})
+  endforeach()
 
 Debugging
 ---------

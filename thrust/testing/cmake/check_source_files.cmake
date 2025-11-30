@@ -8,6 +8,7 @@
 cmake_minimum_required(VERSION 3.15)
 
 function(count_substrings input search_regex output_var)
+  # gersemi: ignore
   string(REGEX MATCHALL "${search_regex}" matches "${input}")
   list(LENGTH matches num_matches)
   set(${output_var} ${num_matches} PARENT_SCOPE)
@@ -34,7 +35,8 @@ set(
 set(bare_ns_regex "namespace[ \n\r\t]+thrust[ \n\r\t]*\\{")
 
 # Validation check for the above regex:
-count_substrings([=[
+count_substrings(
+  [=[
 namespace thrust{
 namespace thrust {
 namespace  thrust  {
@@ -45,7 +47,8 @@ namespace
 thrust
 {
 ]=]
-  ${bare_ns_regex} valid_count
+  ${bare_ns_regex}
+  valid_count
 )
 if (NOT valid_count EQUAL 6)
   message(
@@ -76,14 +79,16 @@ set(memory_regex "#[ \t]*include[ \t]+<memory>")
 set(numeric_regex "#[ \t]*include[ \t]+<numeric>")
 
 # Validation check for the above regex pattern:
-count_substrings([=[
+count_substrings(
+  [=[
 #include <algorithm>
 # include <algorithm>
 #include  <algorithm>
 # include  <algorithm>
 # include  <algorithm> // ...
 ]=]
-  ${algorithm_regex} valid_count
+  ${algorithm_regex}
+  valid_count
 )
 if (NOT valid_count EQUAL 5)
   message(
@@ -104,7 +109,10 @@ foreach (src ${thrust_srcs})
     count_substrings("${src_contents}" THRUST_NS_POSTFIX postfix_count)
     count_substrings("${src_contents}" THRUST_NAMESPACE_BEGIN begin_count)
     count_substrings("${src_contents}" THRUST_NAMESPACE_END end_count)
-    count_substrings("${src_contents}" "#include <thrust/detail/config.h>" header_count
+    count_substrings(
+      "${src_contents}"
+      "#include <thrust/detail/config.h>"
+      header_count
     )
 
     if (NOT bare_ns_count EQUAL 0)

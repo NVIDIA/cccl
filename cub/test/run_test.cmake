@@ -7,7 +7,7 @@ function(usage)
   message("  cmake -D CCCL_SOURCE_DIR=/path/to/cccl \\")
   message("        -D TEST=bin/test.exe \\")
   message("        -D ARGS=\"arg1;arg2;arg3\" \\")
-  message("        -D TYPE=Catch2 \\")
+  message("        -D TYPE=[Basic|Catch2] \\")
   message("        -D MODE=compute-sanitizer-memcheck \\")
   message("        -P cccl/cub/test/run_test.cmake")
   message("")
@@ -17,7 +17,7 @@ function(usage)
   message("  - TYPE: Optional.")
   message("    - The test framework used by the test executable.")
   message("    - Must be one of the following:")
-  message("    -  \"none\" (default)")
+  message("    -  \"Basic\" (default, no special handling)")
   message("    -  \"Catch2\"")
   message("  - MODE: Optional.")
   message("    - May be set through CCCL_TEST_MODE env var.")
@@ -61,7 +61,7 @@ if (NOT DEFINED ARGS)
 endif()
 
 if (NOT DEFINED TYPE)
-  set(TYPE "none")
+  set(TYPE "Basic")
 endif()
 
 if (NOT DEFINED MODE)
@@ -154,10 +154,12 @@ elseif (MODE MATCHES "^compute-sanitizer-(.*)$")
     set(cs_tool_args)
   endif()
 
-  run_command(compute-sanitizer
+  run_command(
+    compute-sanitizer
     ${cs_general_args}
     ${cs_tool_args}
-    ${TEST} ${ARGS}
+    ${TEST}
+    ${ARGS}
   )
 else()
   usage()

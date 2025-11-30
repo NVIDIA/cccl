@@ -83,9 +83,17 @@ function(thrust_add_header_test thrust_target label definitions)
       set(headertest_target ${headertest_target}.cuda)
     endif()
 
+    # FIXME the device-link step in the link check acts weird with rdc enabled.
+    # Need to investigate more.
+    set(no_link_check_option)
+    if (lang STREQUAL "CUDA" AND THRUST_FORCE_RDC)
+      set(no_link_check_option NO_LINK_CHECK)
+    endif()
+
     cccl_generate_header_tests(
       ${headertest_target}
       thrust
+      ${no_link_check_option}
       LANGUAGE ${lang}
       HEADERS ${headers}
       PER_HEADER_DEFINES
@@ -99,7 +107,7 @@ function(thrust_add_header_test thrust_target label definitions)
     endif()
 
     if (lang STREQUAL "CUDA")
-      thrust_configure_cuda_target(${headertest_target} RDC ${THRUST_FORCE_RDC})
+      cccl_set_rdc(${headertest_target} ${THRUST_FORCE_RDC})
     endif()
 
     if ("TBB" IN_LIST config_systems)

@@ -50,7 +50,7 @@ struct block_size_retreiver_t
   int* ptr;
 
   template <class ActivePolicyT>
-  cudaError_t Invoke()
+  CUB_RUNTIME_FUNCTION cudaError_t Invoke()
   {
     *ptr = ActivePolicyT::ScanPolicyT::BLOCK_THREADS;
     return cudaSuccess;

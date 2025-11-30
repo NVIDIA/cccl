@@ -1,3 +1,5 @@
+include(${CMAKE_CURRENT_LIST_DIR}/CCCLParseArguments.cmake)
+
 # Bring in CMAKE_INSTALL_* vars
 include(GNUInstallDirs)
 
@@ -35,11 +37,15 @@ function(cccl_generate_install_rules project_name enable_rules_by_default)
   set(oneValueArgs)
   set(multiValueArgs HEADERS_SUBDIRS HEADERS_INCLUDE HEADERS_EXCLUDE)
   cmake_parse_arguments(
-    CGIR
+    self
     "${options}"
     "${oneValueArgs}"
     "${multiValueArgs}"
     ${ARGN}
+  )
+  cccl_parse_arguments_error_checks(
+    "cccl_generate_install_rules"
+    ERROR_UNPARSED
   )
 
   string(TOLOWER ${project_name} project_name_lower)
@@ -56,8 +62,8 @@ function(cccl_generate_install_rules project_name enable_rules_by_default)
     "${CCCL_BINARY_DIR}/${project_name_lower}-header-search.cmake"
   )
 
-  if (NOT DEFINED CGIR_HEADERS_SUBDIRS)
-    set(CGIR_HEADERS_SUBDIRS "${project_name_lower}")
+  if (NOT DEFINED self_HEADERS_SUBDIRS)
+    set(self_HEADERS_SUBDIRS "${project_name_lower}")
   endif()
 
   set(flag_name ${project_name}_ENABLE_INSTALL_RULES)
@@ -68,17 +74,17 @@ function(cccl_generate_install_rules project_name enable_rules_by_default)
   )
   if (${flag_name})
     # Headers:
-    if (NOT CGIR_NO_HEADERS)
-      foreach (subdir IN LISTS CGIR_HEADERS_SUBDIRS)
+    if (NOT self_NO_HEADERS)
+      foreach (subdir IN LISTS self_HEADERS_SUBDIRS)
         set(header_globs)
-        if (DEFINED CGIR_HEADERS_INCLUDE OR DEFINED CGIR_HEADERS_EXCLUDE)
+        if (DEFINED self_HEADERS_INCLUDE OR DEFINED self_HEADERS_EXCLUDE)
           set(header_globs "FILES_MATCHING")
 
-          foreach (header_glob IN LISTS CGIR_HEADERS_INCLUDE)
+          foreach (header_glob IN LISTS self_HEADERS_INCLUDE)
             list(APPEND header_globs "PATTERN" "${header_glob}")
           endforeach()
 
-          foreach (header_glob IN LISTS CGIR_HEADERS_EXCLUDE)
+          foreach (header_glob IN LISTS self_HEADERS_EXCLUDE)
             list(APPEND header_globs "PATTERN" "${header_glob}" "EXCLUDE")
           endforeach()
         endif()
