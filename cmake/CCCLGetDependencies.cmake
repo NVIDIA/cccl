@@ -21,10 +21,22 @@ macro(cccl_get_c2h)
   endif()
 endmacro()
 
-macro(cccl_get_catch2)
-  include("${_cccl_cpm_file}")
-  CPMAddPackage("gh:catchorg/Catch2@3.8.1")
-endmacro()
+if (CCCL_USE_LIBCXX)
+  macro(cccl_get_catch2)
+    include("${_cccl_cpm_file}")
+    CPMAddPackage(
+      NAME Catch2
+      GITHUB_REPOSITORY catchorg/catch2
+      GIT_TAG v3.8.1
+      OPTIONS "-DCMAKE_CXX_FLAGS=-stdlib=libc++"
+    )
+  endmacro()
+else()
+  macro(cccl_get_catch2)
+    include("${_cccl_cpm_file}")
+    CPMAddPackage("gh:catchorg/Catch2@3.8.1")
+  endmacro()
+endif()
 
 macro(cccl_get_fmt)
   include("${_cccl_cpm_file}")
