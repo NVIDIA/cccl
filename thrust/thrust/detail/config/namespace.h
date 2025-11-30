@@ -29,6 +29,8 @@
 #include <thrust/detail/config/device_system.h>
 #include <thrust/version.h>
 
+#include <cuda/std/__cccl/preprocessor.h>
+
 /**
  * \file namespace.h
  * \brief Utilities that allow `thrust::` to be placed inside an

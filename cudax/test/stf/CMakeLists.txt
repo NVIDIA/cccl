@@ -203,7 +203,7 @@ set(
   cuda/experimental/__stf/utility/unstable_unique.cuh
 )
 
-find_package(CUDAToolkit REQUIRED)
+cccl_get_cudatoolkit()
 
 ## cudax_add_stf_test
 #

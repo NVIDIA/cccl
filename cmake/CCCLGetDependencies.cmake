@@ -26,6 +26,45 @@ macro(cccl_get_catch2)
   CPMAddPackage("gh:catchorg/Catch2@3.8.1")
 endmacro()
 
+macro(cccl_get_cccl)
+  find_package(
+    CCCL
+    CONFIG
+    REQUIRED
+    NO_DEFAULT_PATH # Only check the explicit HINTS below:
+    HINTS "${CCCL_SOURCE_DIR}/lib/cmake/cccl/"
+  )
+endmacro()
+
+macro(cccl_get_cub)
+  find_package(
+    CUB
+    CONFIG
+    REQUIRED
+    NO_DEFAULT_PATH # Only check the explicit HINTS below:
+    HINTS "${CCCL_SOURCE_DIR}/lib/cmake/cub/"
+  )
+endmacro()
+
+macro(cccl_get_cudatoolkit)
+  find_package(CUDAToolkit REQUIRED)
+endmacro()
+
+macro(cccl_get_cudax)
+  find_package(
+    cudax
+    CONFIG
+    REQUIRED
+    NO_DEFAULT_PATH # Only check the explicit HINTS below:
+    HINTS "${CCCL_SOURCE_DIR}/lib/cmake/cudax/"
+  )
+endmacro()
+
+macro(cccl_get_dlpack)
+  include("${_cccl_cpm_file}")
+  CPMAddPackage("gh:dmlc/dlpack#v1.2")
+endmacro()
+
 macro(cccl_get_fmt)
   include("${_cccl_cpm_file}")
   CPMAddPackage("gh:fmtlib/fmt#11.0.1")
@@ -36,9 +75,14 @@ macro(cccl_get_json)
   CPMAddPackage("gh:nlohmann/json@3.12.0")
 endmacro()
 
-macro(cccl_get_dlpack)
-  include("${_cccl_cpm_file}")
-  CPMAddPackage("gh:dmlc/dlpack#v1.2")
+macro(cccl_get_libcudacxx)
+  find_package(
+    libcudacxx
+    CONFIG
+    REQUIRED
+    NO_DEFAULT_PATH # Only check the explicit HINTS below:
+    HINTS "${CCCL_SOURCE_DIR}/lib/cmake/libcudacxx/"
+  )
 endmacro()
 
 set(
@@ -73,4 +117,14 @@ macro(cccl_get_nvtx)
     SYSTEM ON
   )
   include("${NVTX_SOURCE_DIR}/c/nvtxImportedTargets.cmake")
+endmacro()
+
+macro(cccl_get_thrust)
+  find_package(
+    Thrust
+    CONFIG
+    REQUIRED
+    NO_DEFAULT_PATH # Only check the explicit HINTS below:
+    HINTS "${CCCL_SOURCE_DIR}/lib/cmake/thrust/"
+  )
 endmacro()

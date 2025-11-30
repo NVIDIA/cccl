@@ -49,6 +49,10 @@ if (CCCL_THRUST_DEVICE_SYSTEM STREQUAL "CUDA")
   # Note that the project(...) command earlier only enables CXX by default.
   enable_language(CUDA)
 
+  # Optional: Call find_package(CCCL) again after enabling new languages
+  # to update compatibility flags for newly detected compilers.
+  find_package(CCCL CONFIG REQUIRED)
+
   # Compile for the native CUDA arch if not specified:
   if (NOT DEFINED CMAKE_CUDA_ARCHITECTURES)
     set(CMAKE_CUDA_ARCHITECTURES native)

@@ -13,6 +13,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+enable_language(CUDA) # Ensure that CUDA compiler vars are defined
+
 string(REPLACE ";" "\\\;" arches_escaped "${CMAKE_CUDA_ARCHITECTURES}")
 
 set(
@@ -58,27 +60,23 @@ cccl_add_compile_test(
   ${cmake_cpm_opts}
 )
 
-find_package(CUDAToolkit REQUIRED)
+cccl_add_compile_test(
+  test_name
+  cccl.example
+  cudax
+  "default"
+  ${cmake_opts}
+  ${cmake_cpm_opts}
+)
 
-if (CUDAToolkit_VERSION_MAJOR VERSION_GREATER_EQUAL 12)
-  cccl_add_compile_test(
-    test_name
-    cccl.example
-    cudax
-    "default"
-    ${cmake_opts}
-    ${cmake_cpm_opts}
-  )
-
-  cccl_add_compile_test(
-    test_name
-    cccl.example
-    cudax_stf
-    "default"
-    ${cmake_opts}
-    ${cmake_cpm_opts}
-  )
-endif() # CTK > 12.0
+cccl_add_compile_test(
+  test_name
+  cccl.example
+  cudax_stf
+  "default"
+  ${cmake_opts}
+  ${cmake_cpm_opts}
+)
 
 foreach (DEVICE_SYSTEM IN ITEMS CUDA OMP TBB CPP)
   cccl_add_compile_test(
@@ -86,6 +84,7 @@ foreach (DEVICE_SYSTEM IN ITEMS CUDA OMP TBB CPP)
     cccl.example
     thrust_flexible_device_system
     "${DEVICE_SYSTEM}"
+    --log-level=VERBOSE
     "-DCCCL_THRUST_DEVICE_SYSTEM=${DEVICE_SYSTEM}"
     ${cmake_opts}
     ${cmake_cpm_opts}

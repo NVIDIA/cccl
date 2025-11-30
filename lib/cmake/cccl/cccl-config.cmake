@@ -29,7 +29,7 @@ if (NOT TARGET CCCL::CCCL)
 endif()
 
 message(STATUS "Finding CCCL components: ${components}")
-message(STATUS "cccl_cmake_dir: ${cccl_cmake_dir}")
+message(VERBOSE "cccl_cmake_dir: ${cccl_cmake_dir}")
 
 foreach (component IN LISTS components)
   string(TOLOWER "${component}" component_lower)

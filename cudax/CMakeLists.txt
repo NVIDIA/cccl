@@ -43,7 +43,7 @@ if (cudax_ENABLE_CUFILE)
     )
   endif()
 
-  find_package(CUDAToolkit REQUIRED)
+  cccl_get_cudatoolkit()
 
   if (CUDAToolkit_VERSION VERSION_LESS "12.9.0")
     message(FATAL_ERROR "cuFile support requires at least CUDA 12.9.")
