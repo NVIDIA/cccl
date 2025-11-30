@@ -22,6 +22,7 @@
 
 #include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/is_destructible.h>
+
 #include <cstddef>
 
 #include <cuda/std/__cccl/prologue.h>
@@ -38,7 +39,6 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 namespace __detail
 {
-
 template <class _Tp, class = void>
 struct __is_trivially_destructible_base;
 
@@ -68,7 +68,6 @@ struct __is_trivially_destructible_impl<_Tp[]> : false_type
 template <class _Tp, size_t _Np>
 struct __is_trivially_destructible_impl<_Tp[_Np]> : __is_trivially_destructible_impl<_Tp>
 {};
-
 } // namespace __detail
 
 template <class _Tp>

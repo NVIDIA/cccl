@@ -13,8 +13,9 @@
 
 // constexpr S base() const;
 
-#include <cuda/std/cassert>
 #include <cuda/std/detail/__config>
+
+#include <cuda/std/cassert>
 #include <cuda/std/iterator>
 #include <cuda/std/utility>
 
