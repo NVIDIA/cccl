@@ -33,36 +33,12 @@
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/is_void.h>
 #include <cuda/std/__type_traits/nat.h>
-#include <cuda/std/__type_traits/remove_cvref.h>
 #include <cuda/std/__utility/declval.h>
 #include <cuda/std/__utility/forward.h>
 
 #include <cuda/std/__cccl/prologue.h>
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
-
-namespace __detail
-{
-#if _CCCL_CUDA_COMPILER(NVCC) && defined(__CUDACC_EXTENDED_LAMBDA__) && !_CCCL_DEVICE_COMPILATION() \
-  && (defined(__nv_is_extended_device_lambda_closure_type)                                          \
-      || defined(__nv_is_extended_host_device_lambda_closure_type))
-template <class _Fn>
-_CCCL_INLINE_VISIBILITY constexpr bool __disallow_extended_lambda_invocability_v =
-#  if defined(__nv_is_extended_device_lambda_closure_type)
-  __nv_is_extended_device_lambda_closure_type(remove_cvref_t<_Fn>) ||
-#  else
-  false ||
-#  endif
-#  if defined(__nv_is_extended_host_device_lambda_closure_type)
-  __nv_is_extended_host_device_lambda_closure_type(remove_cvref_t<_Fn>);
-#  else
-  false;
-#  endif
-#else
-template <class>
-_CCCL_INLINE_VISIBILITY constexpr bool __disallow_extended_lambda_invocability_v = false;
-#endif
-} // namespace __detail
 
 struct __any
 {
@@ -238,29 +214,11 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT invoke_result //
 
 template <class _Fn, class... _Args>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT is_invocable : bool_constant<__is_invocable<_Fn, _Args...>>
-{
-#if _CCCL_CUDA_COMPILER(NVCC) && defined(__CUDACC_EXTENDED_LAMBDA__) && !_CCCL_DEVICE_COMPILATION() \
-  && (defined(__nv_is_extended_device_lambda_closure_type)                                          \
-      || defined(__nv_is_extended_host_device_lambda_closure_type))
-  static_assert(!__detail::__disallow_extended_lambda_invocability_v<_Fn>,
-                "Attempt to use an extended __device__ or __host__ __device__ lambda in a context "
-                "that requires querying its invocability in host code. Use a named function object or "
-                "cuda::proclaim_return_type instead.");
-#endif
-};
+{};
 
 template <class _Ret, class _Fn, class... _Args>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT is_invocable_r : bool_constant<__is_invocable_r<_Ret, _Fn, _Args...>>
-{
-#if _CCCL_CUDA_COMPILER(NVCC) && defined(__CUDACC_EXTENDED_LAMBDA__) && !_CCCL_DEVICE_COMPILATION() \
-  && (defined(__nv_is_extended_device_lambda_closure_type)                                          \
-      || defined(__nv_is_extended_host_device_lambda_closure_type))
-  static_assert(!__detail::__disallow_extended_lambda_invocability_v<_Fn>,
-                "Attempt to use an extended __device__ or __host__ __device__ lambda in a context "
-                "that requires querying its invocability in host code. Use a named function object or "
-                "cuda::proclaim_return_type instead.");
-#endif
-};
+{};
 
 template <class _Fn, class... _Args>
 inline constexpr bool is_invocable_v = is_invocable<_Fn, _Args...>::value;
@@ -288,31 +246,13 @@ inline constexpr bool __nothrow_invocable_r_imp<true, true, _Ret, _Fp, _Args...>
 template <class _Fn, class... _Args>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT is_nothrow_invocable
     : bool_constant<__nothrow_invocable_r_imp<__is_invocable<_Fn, _Args...>, true, void, _Fn, _Args...>>
-{
-#if _CCCL_CUDA_COMPILER(NVCC) && defined(__CUDACC_EXTENDED_LAMBDA__) && !_CCCL_DEVICE_COMPILATION() \
-  && (defined(__nv_is_extended_device_lambda_closure_type)                                          \
-      || defined(__nv_is_extended_host_device_lambda_closure_type))
-  static_assert(!__detail::__disallow_extended_lambda_invocability_v<_Fn>,
-                "Attempt to use an extended __device__ or __host__ __device__ lambda in a context "
-                "that requires querying its invocability in host code. Use a named function object or "
-                "cuda::proclaim_return_type instead.");
-#endif
-};
+{};
 
 template <class _Ret, class _Fn, class... _Args>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT is_nothrow_invocable_r
     : bool_constant<
         __nothrow_invocable_r_imp<__is_invocable_r<_Ret, _Fn, _Args...>, is_void_v<_Ret>, _Ret, _Fn, _Args...>>
-{
-#if _CCCL_CUDA_COMPILER(NVCC) && defined(__CUDACC_EXTENDED_LAMBDA__) && !_CCCL_DEVICE_COMPILATION() \
-  && (defined(__nv_is_extended_device_lambda_closure_type)                                          \
-      || defined(__nv_is_extended_host_device_lambda_closure_type))
-  static_assert(!__detail::__disallow_extended_lambda_invocability_v<_Fn>,
-                "Attempt to use an extended __device__ or __host__ __device__ lambda in a context "
-                "that requires querying its invocability in host code. Use a named function object or "
-                "cuda::proclaim_return_type instead.");
-#endif
-};
+{};
 
 template <class _Fp, class... _Args>
 inline constexpr bool is_nothrow_invocable_v = is_nothrow_invocable<_Fp, _Args...>::value;
