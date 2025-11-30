@@ -146,6 +146,45 @@ struct DeviceScan
     return dispatch_t::Dispatch(
       d_temp_storage, temp_storage_bytes, d_in, d_out, scan_op, init, static_cast<offset_t>(num_items), stream);
   }
+
+  template <typename InputIteratorT,
+            typename OutputIteratorT,
+            typename ScanOpT,
+            typename InitValueT,
+            typename NumItemsT,
+            typename EnvT>
+  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t scan_impl_env(
+    InputIteratorT d_in, OutputIteratorT d_out, ScanOpT scan_op, InitValueT init, NumItemsT num_items, EnvT env)
+  {
+    static_assert(!::cuda::std::execution::__queryable_with<EnvT, ::cuda::execution::determinism::__get_determinism_t>,
+                  "Determinism should be used inside requires to have an effect.");
+
+    using requirements_t = ::cuda::std::execution::
+      __query_result_or_t<EnvT, ::cuda::execution::__get_requirements_t, ::cuda::std::execution::env<>>;
+
+    using requested_determinism_t =
+      ::cuda::std::execution::__query_result_or_t<requirements_t,
+                                                  ::cuda::execution::determinism::__get_determinism_t,
+                                                  ::cuda::execution::determinism::run_to_run_t>;
+
+    // Static assert to reject gpu_to_gpu determinism since it's not implemented
+    static_assert(!::cuda::std::is_same_v<requested_determinism_t, ::cuda::execution::determinism::gpu_to_gpu_t>,
+                  "gpu_to_gpu determinism is not supported");
+
+    static_assert(!::cuda::std::is_same_v<requested_determinism_t, ::cuda::execution::determinism::not_guaranteed_t>,
+                  "not_guaranteed determinism is not supported");
+
+    using determinism_t = ::cuda::execution::determinism::run_to_run_t;
+
+    // Lambda that calls scan_impl_determinism
+    auto scan_callable = [&](auto tuning, void* storage, size_t& bytes, auto... args) {
+      using tuning_t = decltype(tuning);
+      return scan_impl_determinism<tuning_t>(storage, bytes, args...);
+    };
+
+    // Dispatch with environment - handles all boilerplate
+    return detail::dispatch_with_env(env, determinism_t{}, scan_callable, d_in, d_out, scan_op, init, num_items);
+  }
   //! @endcond
 
   //! @name Exclusive scans
@@ -329,43 +368,10 @@ struct DeviceScan
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceScan::ExclusiveSum");
 
-    static_assert(!::cuda::std::execution::__queryable_with<EnvT, ::cuda::execution::determinism::__get_determinism_t>,
-                  "Determinism should be used inside requires to have an effect.");
-    using requirements_t = ::cuda::std::execution::
-      __query_result_or_t<EnvT, ::cuda::execution::__get_requirements_t, ::cuda::std::execution::env<>>;
-    using requested_determinism_t =
-      ::cuda::std::execution::__query_result_or_t<requirements_t,
-                                                  ::cuda::execution::determinism::__get_determinism_t,
-                                                  ::cuda::execution::determinism::run_to_run_t>;
-
-    // Static assert to reject gpu_to_gpu determinism since it's not implemented
-    static_assert(!::cuda::std::is_same_v<requested_determinism_t, ::cuda::execution::determinism::gpu_to_gpu_t>,
-                  "gpu_to_gpu determinism is not supported");
-
-    static_assert(!::cuda::std::is_same_v<requested_determinism_t, ::cuda::execution::determinism::not_guaranteed_t>,
-                  "not_guaranteed determinism is not supported");
-
-    using determinism_t = ::cuda::execution::determinism::run_to_run_t;
-
     using InitT = cub::detail::it_value_t<InputIteratorT>;
     InitT init_value{};
 
-    // Lambda that calls scan_impl_determinism
-    auto scan_callable = [&](auto tuning, void* storage, size_t& bytes, auto... args) {
-      using tuning_t = decltype(tuning);
-      return scan_impl_determinism<tuning_t>(storage, bytes, args...);
-    };
-
-    // Dispatch with environment - handles all boilerplate
-    return detail::dispatch_with_env(
-      env,
-      determinism_t{},
-      scan_callable,
-      d_in,
-      d_out,
-      ::cuda::std::plus<>{},
-      detail::InputValue<InitT>(init_value),
-      num_items);
+    return scan_impl_env(d_in, d_out, ::cuda::std::plus<>{}, detail::InputValue<InitT>(init_value), num_items, env);
   }
 
   //! @rst
@@ -657,33 +663,7 @@ struct DeviceScan
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceScan::ExclusiveScan");
 
-    static_assert(!::cuda::std::execution::__queryable_with<EnvT, ::cuda::execution::determinism::__get_determinism_t>,
-                  "Determinism should be used inside requires to have an effect.");
-    using requirements_t = ::cuda::std::execution::
-      __query_result_or_t<EnvT, ::cuda::execution::__get_requirements_t, ::cuda::std::execution::env<>>;
-    using requested_determinism_t =
-      ::cuda::std::execution::__query_result_or_t<requirements_t,
-                                                  ::cuda::execution::determinism::__get_determinism_t,
-                                                  ::cuda::execution::determinism::run_to_run_t>;
-
-    // Static assert to reject gpu_to_gpu determinism since it's not implemented
-    static_assert(!::cuda::std::is_same_v<requested_determinism_t, ::cuda::execution::determinism::gpu_to_gpu_t>,
-                  "gpu_to_gpu determinism is not supported");
-
-    static_assert(!::cuda::std::is_same_v<requested_determinism_t, ::cuda::execution::determinism::not_guaranteed_t>,
-                  "not_guaranteed determinism is not supported");
-
-    using determinism_t = ::cuda::execution::determinism::run_to_run_t;
-
-    // Lambda that calls scan_impl_determinism
-    auto scan_callable = [&](auto tuning, void* storage, size_t& bytes, auto... args) {
-      using tuning_t = decltype(tuning);
-      return scan_impl_determinism<tuning_t>(storage, bytes, args...);
-    };
-
-    // Dispatch with environment - handles all boilerplate
-    return detail::dispatch_with_env(
-      env, determinism_t{}, scan_callable, d_in, d_out, scan_op, detail::InputValue<InitValueT>(init_value), num_items);
+    return scan_impl_env(d_in, d_out, scan_op, detail::InputValue<InitValueT>(init_value), num_items, env);
   }
 
   //! @rst
