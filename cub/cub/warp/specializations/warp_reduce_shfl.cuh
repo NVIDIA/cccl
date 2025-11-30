@@ -43,29 +43,23 @@ CUB_NAMESPACE_BEGIN
 
 namespace detail
 {
-template <class A = int, class = A>
-struct reduce_add_exists : ::cuda::std::false_type
-{};
+template <class T, class = void>
+inline constexpr bool reduce_add_exists = false;
 
 template <class T>
-struct reduce_add_exists<T, decltype(__reduce_add_sync(0xFFFFFFFF, T{}))> : ::cuda::std::true_type
-{};
+inline constexpr bool reduce_add_exists<T, decltype(__reduce_add_sync(0xFFFFFFFF, T{}))> = true;
 
-template <class T = int, class = T>
-struct reduce_min_exists : ::cuda::std::false_type
-{};
+template <class T, class = void>
+inline constexpr bool reduce_min_exists = false;
 
 template <class T>
-struct reduce_min_exists<T, decltype(__reduce_min_sync(0xFFFFFFFF, T{}))> : ::cuda::std::true_type
-{};
+inline constexpr bool reduce_min_exists<T, decltype(__reduce_min_sync(0xFFFFFFFF, T{}))> = true;
 
-template <class T = int, class = T>
-struct reduce_max_exists : ::cuda::std::false_type
-{};
+template <class T, class = void>
+inline constexpr bool reduce_max_exists = false;
 
 template <class T>
-struct reduce_max_exists<T, decltype(__reduce_max_sync(0xFFFFFFFF, T{}))> : ::cuda::std::true_type
-{};
+inline constexpr bool reduce_max_exists<T, decltype(__reduce_max_sync(0xFFFFFFFF, T{}))> = true;
 
 /**
  * @brief WarpReduceShfl provides SHFL-based variants of parallel reduction of items partitioned
@@ -584,7 +578,7 @@ struct WarpReduceShfl
 
   template <class U = T>
   _CCCL_DEVICE _CCCL_FORCEINLINE ::cuda::std::enable_if_t<
-    (::cuda::std::is_same_v<int, U> || ::cuda::std::is_same_v<unsigned int, U>) && detail::reduce_add_exists<>::value,
+    (::cuda::std::is_same_v<int, U> || ::cuda::std::is_same_v<unsigned int, U>) && detail::reduce_add_exists<U>,
     T>
   ReduceImpl(::cuda::std::true_type /* all_lanes_valid */,
              T input,
@@ -603,7 +597,7 @@ struct WarpReduceShfl
 
   template <class U = T>
   _CCCL_DEVICE _CCCL_FORCEINLINE ::cuda::std::enable_if_t<
-    (::cuda::std::is_same_v<int, U> || ::cuda::std::is_same_v<unsigned int, U>) && detail::reduce_min_exists<>::value,
+    (::cuda::std::is_same_v<int, U> || ::cuda::std::is_same_v<unsigned int, U>) && detail::reduce_min_exists<U>,
     T>
   ReduceImpl(
     ::cuda::std::true_type /* all_lanes_valid */, T input, int /* valid_items */, ::cuda::minimum<> /* reduction_op */)
@@ -620,7 +614,7 @@ struct WarpReduceShfl
 
   template <class U = T>
   _CCCL_DEVICE _CCCL_FORCEINLINE ::cuda::std::enable_if_t<
-    (::cuda::std::is_same_v<int, U> || ::cuda::std::is_same_v<unsigned int, U>) && detail::reduce_max_exists<>::value,
+    (::cuda::std::is_same_v<int, U> || ::cuda::std::is_same_v<unsigned int, U>) && detail::reduce_max_exists<U>,
     T>
   ReduceImpl(
     ::cuda::std::true_type /* all_lanes_valid */, T input, int /* valid_items */, ::cuda::maximum<> /* reduction_op */)
