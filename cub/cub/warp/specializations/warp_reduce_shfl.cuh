@@ -43,29 +43,60 @@ CUB_NAMESPACE_BEGIN
 
 namespace detail
 {
-template <class A = int, class = A>
-struct reduce_add_exists : ::cuda::std::false_type
-{};
+template <class T, class ReductionOp, class = void>
+inline constexpr bool reduce_add_exists = false;
 
 template <class T>
-struct reduce_add_exists<T, decltype(__reduce_add_sync(0xFFFFFFFF, T{}))> : ::cuda::std::true_type
-{};
-
-template <class T = int, class = T>
-struct reduce_min_exists : ::cuda::std::false_type
-{};
+inline constexpr bool reduce_add_exists<T, ::cuda::std::plus<>, decltype(__reduce_add_sync(0xFFFFFFFF, T{}))> =
+  (::cuda::std::is_same_v<int, T> || ::cuda::std::is_same_v<unsigned int, T>);
 
 template <class T>
-struct reduce_min_exists<T, decltype(__reduce_min_sync(0xFFFFFFFF, T{}))> : ::cuda::std::true_type
-{};
+inline constexpr bool reduce_add_exists<T, ::cuda::std::plus<T>, decltype(__reduce_add_sync(0xFFFFFFFF, T{}))> =
+  (::cuda::std::is_same_v<int, T> || ::cuda::std::is_same_v<unsigned int, T>);
 
-template <class T = int, class = T>
-struct reduce_max_exists : ::cuda::std::false_type
-{};
+template <class T, class ReductionOp, class = void>
+inline constexpr bool reduce_min_exists = false;
 
 template <class T>
-struct reduce_max_exists<T, decltype(__reduce_max_sync(0xFFFFFFFF, T{}))> : ::cuda::std::true_type
-{};
+inline constexpr bool reduce_min_exists<T, ::cuda::minimum<>, decltype(__reduce_min_sync(0xFFFFFFFF, T{}))> =
+  (::cuda::std::is_same_v<int, T> || ::cuda::std::is_same_v<unsigned int, T>);
+
+template <class T>
+inline constexpr bool reduce_min_exists<T, ::cuda::minimum<T>, decltype(__reduce_min_sync(0xFFFFFFFF, T{}))> =
+  (::cuda::std::is_same_v<int, T> || ::cuda::std::is_same_v<unsigned int, T>);
+
+template <class T, class ReductionOp, class = void>
+inline constexpr bool reduce_max_exists = false;
+
+template <class T>
+inline constexpr bool reduce_max_exists<T, ::cuda::maximum<>, decltype(__reduce_max_sync(0xFFFFFFFF, T{}))> =
+  (::cuda::std::is_same_v<int, T> || ::cuda::std::is_same_v<unsigned int, T>);
+
+template <class T>
+inline constexpr bool reduce_max_exists<T, ::cuda::maximum<T>, decltype(__reduce_max_sync(0xFFFFFFFF, T{}))> =
+  (::cuda::std::is_same_v<int, T> || ::cuda::std::is_same_v<unsigned int, T>);
+
+template <class T, class ReductionOp, class = void>
+inline constexpr bool reduce_and_exists = false;
+
+template <class T>
+inline constexpr bool reduce_and_exists<T, ::cuda::std::logical_and<>, decltype(__reduce_and_sync(0xFFFFFFFF, T{}))> =
+  ::cuda::std::is_same_v<unsigned int, T>;
+
+template <class T>
+inline constexpr bool reduce_and_exists<T, ::cuda::std::logical_and<T>, decltype(__reduce_and_sync(0xFFFFFFFF, T{}))> =
+  ::cuda::std::is_same_v<unsigned int, T>;
+
+template <class T, class ReductionOp, class = void>
+inline constexpr bool reduce_or_exists = false;
+
+template <class T>
+inline constexpr bool reduce_or_exists<T, ::cuda::std::logical_or<>, decltype(__reduce_or_sync(0xFFFFFFFF, T{}))> =
+  ::cuda::std::is_same_v<unsigned int, T>;
+
+template <class T>
+inline constexpr bool reduce_or_exists<T, ::cuda::std::logical_or<T>, decltype(__reduce_or_sync(0xFFFFFFFF, T{}))> =
+  ::cuda::std::is_same_v<unsigned int, T>;
 
 /**
  * @brief WarpReduceShfl provides SHFL-based variants of parallel reduction of items partitioned
@@ -97,15 +128,6 @@ struct WarpReduceShfl
 
   /// The 5-bit SHFL mask for logically splitting warps into sub-segments starts 8-bits up
   static constexpr unsigned SHFL_C = (warp_threads - LOGICAL_WARP_THREADS) << 8;
-
-  template <typename S>
-  struct IsInteger
-  {
-    /// Whether the data type is a small (32b or less) integer for which we can use a single SHFL instruction per
-    /// exchange
-    static constexpr bool IS_SMALL_UNSIGNED =
-      ::cuda::std::is_integral_v<S> && ::cuda::std::is_unsigned_v<S> && (sizeof(S) <= sizeof(unsigned int));
-  };
 
   /// Shared memory storage layout type
   using TempStorage = NullType;
@@ -361,8 +383,7 @@ struct WarpReduceShfl
     KeyT other_key = ShuffleDown<LOGICAL_WARP_THREADS>(input.key, offset, last_lane, member_mask);
 
     output.key   = input.key;
-    output.value = ReduceStep(
-      input.value, ::cuda::std::plus<>{}, last_lane, offset, bool_constant_v<IsInteger<ValueT>::IS_SMALL_UNSIGNED>);
+    output.value = ReduceStep(input.value, ::cuda::std::plus<>{}, last_lane, offset);
 
     if (input.key != other_key)
     {
@@ -397,10 +418,8 @@ struct WarpReduceShfl
   {
     KeyValuePair<OffsetT, ValueT> output;
 
-    output.value = ReduceStep(
-      input.value, ::cuda::std::plus<>{}, last_lane, offset, bool_constant_v<IsInteger<ValueT>::IS_SMALL_UNSIGNED>);
-    output.key = ReduceStep(
-      input.key, ::cuda::std::plus<>{}, last_lane, offset, bool_constant_v<IsInteger<OffsetT>::IS_SMALL_UNSIGNED>);
+    output.value = ReduceStep(input.value, ::cuda::std::plus<>{}, last_lane, offset);
+    output.key   = ReduceStep(input.key, ::cuda::std::plus<>{}, last_lane, offset);
 
     if (input.key > 0)
     {
@@ -441,57 +460,6 @@ struct WarpReduceShfl
     return output;
   }
 
-  /**
-   * @brief Reduction step (specialized for small unsigned integers size 32b or less)
-   *
-   * @param[in] input
-   *   Calling thread's input item.
-   *
-   * @param[in] reduction_op
-   *   Binary reduction operator
-   *
-   * @param[in] last_lane
-   *   Index of last lane in segment
-   *
-   * @param[in] offset
-   *   Up-offset to pull from
-   *
-   * @param[in] is_small_unsigned
-   *   Marker type indicating whether T is a small unsigned integer
-   */
-  template <typename _Tp, typename ReductionOp>
-  _CCCL_DEVICE _CCCL_FORCEINLINE _Tp ReduceStep(
-    _Tp input, ReductionOp reduction_op, int last_lane, int offset, ::cuda::std::true_type /*is_small_unsigned*/)
-  {
-    return ReduceStep(input, reduction_op, last_lane, offset);
-  }
-
-  /**
-   * @brief Reduction step (specialized for types other than small unsigned integers size
-   *        32b or less)
-   *
-   * @param[in] input
-   *   Calling thread's input item.
-   *
-   * @param[in] reduction_op
-   *   Binary reduction operator
-   *
-   * @param[in] last_lane
-   *   Index of last lane in segment
-   *
-   * @param[in] offset
-   *   Up-offset to pull from
-   *
-   * @param[in] is_small_unsigned
-   *   Marker type indicating whether T is a small unsigned integer
-   */
-  template <typename _Tp, typename ReductionOp>
-  _CCCL_DEVICE _CCCL_FORCEINLINE _Tp ReduceStep(
-    _Tp input, ReductionOp reduction_op, int last_lane, int offset, ::cuda::std::false_type /*is_small_unsigned*/)
-  {
-    return ReduceStep(input, reduction_op, last_lane, offset);
-  }
-
   //---------------------------------------------------------------------
   // Templated reduction iteration
   //---------------------------------------------------------------------
@@ -510,8 +478,7 @@ struct WarpReduceShfl
   _CCCL_DEVICE _CCCL_FORCEINLINE void
   ReduceStep(T& input, ReductionOp reduction_op, int last_lane, constant_t<STEP> /*step*/)
   {
-    input = ReduceStep(input, reduction_op, last_lane, 1 << STEP, bool_constant_v<IsInteger<T>::IS_SMALL_UNSIGNED>);
-
+    input = ReduceStep(input, reduction_op, last_lane, 1 << STEP);
     ReduceStep(input, reduction_op, last_lane, constant_v<STEP + 1>);
   }
 
@@ -535,107 +502,6 @@ struct WarpReduceShfl
   //---------------------------------------------------------------------
 
   /**
-   * @param[in] input
-   *   Calling thread's input
-   *
-   * @param[in] valid_items
-   *   Total number of valid items across the logical warp
-   *
-   * @param[in] reduction_op
-   *   Binary reduction operator
-   */
-  template <typename ReductionOp>
-  _CCCL_DEVICE _CCCL_FORCEINLINE T
-  ReduceImpl(::cuda::std::false_type /* all_lanes_valid */, T input, int valid_items, ReductionOp reduction_op)
-  {
-    int last_lane = valid_items - 1;
-
-    T output = input;
-
-    // Template-iterate reduction steps
-    ReduceStep(output, reduction_op, last_lane, constant_v<0>);
-
-    return output;
-  }
-
-  /**
-   * @param[in] input
-   *   Calling thread's input
-   *
-   * @param[in] valid_items
-   *   Total number of valid items across the logical warp
-   *
-   * @param[in] reduction_op
-   *   Binary reduction operator
-   */
-  template <typename ReductionOp>
-  _CCCL_DEVICE _CCCL_FORCEINLINE T
-  ReduceImpl(::cuda::std::true_type /* all_lanes_valid */, T input, int /* valid_items */, ReductionOp reduction_op)
-  {
-    int last_lane = LOGICAL_WARP_THREADS - 1;
-
-    T output = input;
-
-    // Template-iterate reduction steps
-    ReduceStep(output, reduction_op, last_lane, constant_v<0>);
-
-    return output;
-  }
-
-  template <class U = T>
-  _CCCL_DEVICE _CCCL_FORCEINLINE ::cuda::std::enable_if_t<
-    (::cuda::std::is_same_v<int, U> || ::cuda::std::is_same_v<unsigned int, U>) && detail::reduce_add_exists<>::value,
-    T>
-  ReduceImpl(::cuda::std::true_type /* all_lanes_valid */,
-             T input,
-             int /* valid_items */,
-             ::cuda::std::plus<> /* reduction_op */)
-  {
-    T output = input;
-
-    NV_IF_TARGET(NV_PROVIDES_SM_80,
-                 (output = __reduce_add_sync(member_mask, input);),
-                 (output = ReduceImpl<::cuda::std::plus<>>(
-                    ::cuda::std::true_type{}, input, LOGICAL_WARP_THREADS, ::cuda::std::plus<>{});));
-
-    return output;
-  }
-
-  template <class U = T>
-  _CCCL_DEVICE _CCCL_FORCEINLINE ::cuda::std::enable_if_t<
-    (::cuda::std::is_same_v<int, U> || ::cuda::std::is_same_v<unsigned int, U>) && detail::reduce_min_exists<>::value,
-    T>
-  ReduceImpl(
-    ::cuda::std::true_type /* all_lanes_valid */, T input, int /* valid_items */, ::cuda::minimum<> /* reduction_op */)
-  {
-    T output = input;
-
-    NV_IF_TARGET(NV_PROVIDES_SM_80,
-                 (output = __reduce_min_sync(member_mask, input);),
-                 (output = ReduceImpl<::cuda::minimum<>>(
-                    ::cuda::std::true_type{}, input, LOGICAL_WARP_THREADS, ::cuda::minimum<>{});));
-
-    return output;
-  }
-
-  template <class U = T>
-  _CCCL_DEVICE _CCCL_FORCEINLINE ::cuda::std::enable_if_t<
-    (::cuda::std::is_same_v<int, U> || ::cuda::std::is_same_v<unsigned int, U>) && detail::reduce_max_exists<>::value,
-    T>
-  ReduceImpl(
-    ::cuda::std::true_type /* all_lanes_valid */, T input, int /* valid_items */, ::cuda::maximum<> /* reduction_op */)
-  {
-    T output = input;
-
-    NV_IF_TARGET(NV_PROVIDES_SM_80,
-                 (output = __reduce_max_sync(member_mask, input);),
-                 (output = ReduceImpl<::cuda::maximum<>>(
-                    ::cuda::std::true_type{}, input, LOGICAL_WARP_THREADS, ::cuda::maximum<>{});));
-
-    return output;
-  }
-
-  /**
    * @brief Reduction
    *
    * @tparam ALL_LANES_VALID
@@ -653,7 +519,46 @@ struct WarpReduceShfl
   template <bool ALL_LANES_VALID, typename ReductionOp>
   _CCCL_DEVICE _CCCL_FORCEINLINE T Reduce(T input, int valid_items, ReductionOp reduction_op)
   {
-    return ReduceImpl(bool_constant_v<ALL_LANES_VALID>, input, valid_items, reduction_op);
+    if constexpr (ALL_LANES_VALID)
+    {
+      // Dispatch to more efficient intrinsics when applicable
+      NV_IF_TARGET(NV_PROVIDES_SM_80, ({
+                     if constexpr (detail::reduce_max_exists<T, ReductionOp>)
+                     {
+                       return __reduce_max_sync(member_mask, input);
+                     }
+                     else if constexpr (detail::reduce_min_exists<T, ReductionOp>)
+                     {
+                       return __reduce_min_sync(member_mask, input);
+                     }
+                     else if constexpr (detail::reduce_add_exists<T, ReductionOp>)
+                     {
+                       return __reduce_add_sync(member_mask, input);
+                     }
+                     else if constexpr (detail::reduce_and_exists<T, ReductionOp>)
+                     {
+                       return __reduce_and_sync(member_mask, input);
+                     }
+                     else if constexpr (detail::reduce_or_exists<T, ReductionOp>)
+                     {
+                       return __reduce_or_sync(member_mask, input);
+                     }
+                   }))
+
+      T output = input;
+      // Template-iterate reduction steps
+      const int last_lane = LOGICAL_WARP_THREADS - 1;
+      ReduceStep(output, reduction_op, last_lane, constant_v<0>);
+      return output;
+    }
+    else
+    {
+      T output = input;
+      // Template-iterate reduction steps
+      const int last_lane = valid_items - 1;
+      ReduceStep(output, reduction_op, last_lane, constant_v<0>);
+      return output;
+    }
   }
 
   /**
