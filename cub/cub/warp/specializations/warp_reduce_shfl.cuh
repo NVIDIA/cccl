@@ -45,68 +45,70 @@ CUB_NAMESPACE_BEGIN
 namespace detail
 {
 template <class T, class ReductionOp, class = void>
-inline constexpr bool reduce_add_exists = false;
+inline constexpr bool can_use_reduce_add_sync = false;
 
 template <class T>
 inline constexpr bool
-  reduce_add_exists<T, ::cuda::std::plus<>, ::cuda::std::void_t<decltype(__reduce_add_sync(0xFFFFFFFF, T{}))>> =
+  can_use_reduce_add_sync<T, ::cuda::std::plus<>, ::cuda::std::void_t<decltype(__reduce_add_sync(0xFFFFFFFF, T{}))>> =
     (::cuda::std::is_same_v<int, T> || ::cuda::std::is_same_v<unsigned int, T>);
 
 template <class T>
 inline constexpr bool
-  reduce_add_exists<T, ::cuda::std::plus<T>, ::cuda::std::void_t<decltype(__reduce_add_sync(0xFFFFFFFF, T{}))>> =
-    (::cuda::std::is_same_v<int, T> || ::cuda::std::is_same_v<unsigned int, T>);
-
-template <class T, class ReductionOp, class = void>
-inline constexpr bool reduce_min_exists = false;
-
-template <class T>
-inline constexpr bool
-  reduce_min_exists<T, ::cuda::minimum<>, ::cuda::std::void_t<decltype(__reduce_min_sync(0xFFFFFFFF, T{}))>> =
-    (::cuda::std::is_same_v<int, T> || ::cuda::std::is_same_v<unsigned int, T>);
-
-template <class T>
-inline constexpr bool
-  reduce_min_exists<T, ::cuda::minimum<T>, ::cuda::std::void_t<decltype(__reduce_min_sync(0xFFFFFFFF, T{}))>> =
+  can_use_reduce_add_sync<T, ::cuda::std::plus<T>, ::cuda::std::void_t<decltype(__reduce_add_sync(0xFFFFFFFF, T{}))>> =
     (::cuda::std::is_same_v<int, T> || ::cuda::std::is_same_v<unsigned int, T>);
 
 template <class T, class ReductionOp, class = void>
-inline constexpr bool reduce_max_exists = false;
+inline constexpr bool can_use_reduce_min_sync = false;
 
 template <class T>
 inline constexpr bool
-  reduce_max_exists<T, ::cuda::maximum<>, ::cuda::std::void_t<decltype(__reduce_max_sync(0xFFFFFFFF, T{}))>> =
+  can_use_reduce_min_sync<T, ::cuda::minimum<>, ::cuda::std::void_t<decltype(__reduce_min_sync(0xFFFFFFFF, T{}))>> =
     (::cuda::std::is_same_v<int, T> || ::cuda::std::is_same_v<unsigned int, T>);
 
 template <class T>
 inline constexpr bool
-  reduce_max_exists<T, ::cuda::maximum<T>, ::cuda::std::void_t<decltype(__reduce_max_sync(0xFFFFFFFF, T{}))>> =
+  can_use_reduce_min_sync<T, ::cuda::minimum<T>, ::cuda::std::void_t<decltype(__reduce_min_sync(0xFFFFFFFF, T{}))>> =
     (::cuda::std::is_same_v<int, T> || ::cuda::std::is_same_v<unsigned int, T>);
 
 template <class T, class ReductionOp, class = void>
-inline constexpr bool reduce_and_exists = false;
+inline constexpr bool can_use_reduce_max_sync = false;
 
 template <class T>
 inline constexpr bool
-  reduce_and_exists<T, ::cuda::std::logical_and<>, ::cuda::std::void_t<decltype(__reduce_and_sync(0xFFFFFFFF, T{}))>> =
+  can_use_reduce_max_sync<T, ::cuda::maximum<>, ::cuda::std::void_t<decltype(__reduce_max_sync(0xFFFFFFFF, T{}))>> =
+    (::cuda::std::is_same_v<int, T> || ::cuda::std::is_same_v<unsigned int, T>);
+
+template <class T>
+inline constexpr bool
+  can_use_reduce_max_sync<T, ::cuda::maximum<T>, ::cuda::std::void_t<decltype(__reduce_max_sync(0xFFFFFFFF, T{}))>> =
+    (::cuda::std::is_same_v<int, T> || ::cuda::std::is_same_v<unsigned int, T>);
+
+template <class T, class ReductionOp, class = void>
+inline constexpr bool can_use_reduce_and_sync = false;
+
+template <class T>
+inline constexpr bool can_use_reduce_and_sync<T,
+                                              ::cuda::std::logical_and<>,
+                                              ::cuda::std::void_t<decltype(__reduce_and_sync(0xFFFFFFFF, T{}))>> =
+  ::cuda::std::is_same_v<unsigned int, T>;
+
+template <class T>
+inline constexpr bool can_use_reduce_and_sync<T,
+                                              ::cuda::std::logical_and<T>,
+                                              ::cuda::std::void_t<decltype(__reduce_and_sync(0xFFFFFFFF, T{}))>> =
+  ::cuda::std::is_same_v<unsigned int, T>;
+
+template <class T, class ReductionOp, class = void>
+inline constexpr bool can_use_reduce_or_sync = false;
+
+template <class T>
+inline constexpr bool
+  can_use_reduce_or_sync<T, ::cuda::std::logical_or<>, ::cuda::std::void_t<decltype(__reduce_or_sync(0xFFFFFFFF, T{}))>> =
     ::cuda::std::is_same_v<unsigned int, T>;
 
 template <class T>
 inline constexpr bool
-  reduce_and_exists<T, ::cuda::std::logical_and<T>, ::cuda::std::void_t<decltype(__reduce_and_sync(0xFFFFFFFF, T{}))>> =
-    ::cuda::std::is_same_v<unsigned int, T>;
-
-template <class T, class ReductionOp, class = void>
-inline constexpr bool reduce_or_exists = false;
-
-template <class T>
-inline constexpr bool
-  reduce_or_exists<T, ::cuda::std::logical_or<>, ::cuda::std::void_t<decltype(__reduce_or_sync(0xFFFFFFFF, T{}))>> =
-    ::cuda::std::is_same_v<unsigned int, T>;
-
-template <class T>
-inline constexpr bool
-  reduce_or_exists<T, ::cuda::std::logical_or<T>, ::cuda::std::void_t<decltype(__reduce_or_sync(0xFFFFFFFF, T{}))>> =
+  can_use_reduce_or_sync<T, ::cuda::std::logical_or<T>, ::cuda::std::void_t<decltype(__reduce_or_sync(0xFFFFFFFF, T{}))>> =
     ::cuda::std::is_same_v<unsigned int, T>;
 
 /**
@@ -534,23 +536,23 @@ struct WarpReduceShfl
     {
       // Dispatch to more efficient intrinsics when applicable
       NV_IF_TARGET(NV_PROVIDES_SM_80, ({
-                     if constexpr (detail::reduce_max_exists<T, ReductionOp>)
+                     if constexpr (detail::can_use_reduce_max_sync<T, ReductionOp>)
                      {
                        return __reduce_max_sync(member_mask, input);
                      }
-                     else if constexpr (detail::reduce_min_exists<T, ReductionOp>)
+                     else if constexpr (detail::can_use_reduce_min_sync<T, ReductionOp>)
                      {
                        return __reduce_min_sync(member_mask, input);
                      }
-                     else if constexpr (detail::reduce_add_exists<T, ReductionOp>)
+                     else if constexpr (detail::can_use_reduce_add_sync<T, ReductionOp>)
                      {
                        return __reduce_add_sync(member_mask, input);
                      }
-                     else if constexpr (detail::reduce_and_exists<T, ReductionOp>)
+                     else if constexpr (detail::can_use_reduce_and_sync<T, ReductionOp>)
                      {
                        return __reduce_and_sync(member_mask, input);
                      }
-                     else if constexpr (detail::reduce_or_exists<T, ReductionOp>)
+                     else if constexpr (detail::can_use_reduce_or_sync<T, ReductionOp>)
                      {
                        return __reduce_or_sync(member_mask, input);
                      }
