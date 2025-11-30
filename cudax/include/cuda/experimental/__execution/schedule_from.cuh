@@ -49,7 +49,6 @@ namespace cuda::experimental::execution
 {
 struct schedule_from_t
 {
-  _CUDAX_SEMI_PRIVATE:
   template <class _Sndr>
   struct __sndr_t;
 

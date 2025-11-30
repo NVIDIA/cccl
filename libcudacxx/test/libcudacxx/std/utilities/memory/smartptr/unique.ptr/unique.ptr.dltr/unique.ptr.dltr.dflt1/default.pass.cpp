@@ -9,6 +9,9 @@
 //===----------------------------------------------------------------------===//
 // <memory>
 
+// UNSUPPORTED: true
+// The test is dependent on compiler combination, it may pass or it might not
+
 // default_delete
 
 // Test that default_delete<T[]> has a working default constructor

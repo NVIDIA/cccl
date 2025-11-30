@@ -24,6 +24,10 @@
 
 #include <cuda/std/__new/device_new.h>
 
+#if !_CCCL_COMPILER(NVRTC)
+#  include <ostream>
+#endif // !_CCCL_COMPILER(NVRTC)
+
 CUB_NAMESPACE_BEGIN
 
 //! @name Blocked arrangement I/O (direct)
@@ -691,6 +695,29 @@ enum BlockLoadAlgorithm
   //! @endrst
   BLOCK_LOAD_WARP_TRANSPOSE_TIMESLICED,
 };
+
+#if !_CCCL_COMPILER(NVRTC)
+inline ::std::ostream& operator<<(::std::ostream& os, BlockLoadAlgorithm algo)
+{
+  switch (algo)
+  {
+    case BLOCK_LOAD_DIRECT:
+      return os << "BLOCK_LOAD_DIRECT";
+    case BLOCK_LOAD_STRIPED:
+      return os << "BLOCK_LOAD_STRIPED";
+    case BLOCK_LOAD_VECTORIZE:
+      return os << "BLOCK_LOAD_VECTORIZE";
+    case BLOCK_LOAD_TRANSPOSE:
+      return os << "BLOCK_LOAD_TRANSPOSE";
+    case BLOCK_LOAD_WARP_TRANSPOSE:
+      return os << "BLOCK_LOAD_WARP_TRANSPOSE";
+    case BLOCK_LOAD_WARP_TRANSPOSE_TIMESLICED:
+      return os << "BLOCK_LOAD_WARP_TRANSPOSE_TIMESLICED";
+    default:
+      return os << "<unknown BlockLoadAlgorithm: " << static_cast<int>(algo) << ">";
+  }
+}
+#endif // !_CCCL_COMPILER(NVRTC)
 
 //! @rst
 //! The BlockLoad class provides :ref:`collective <collective-primitives>` data movement methods for loading a linear

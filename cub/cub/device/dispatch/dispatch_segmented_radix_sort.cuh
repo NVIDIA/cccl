@@ -124,7 +124,7 @@ template <SortOrder Order,
           typename BeginOffsetIteratorT,
           typename EndOffsetIteratorT,
           typename SegmentSizeT,
-          typename PolicyHub    = detail::radix::policy_hub<KeyT, ValueT, SegmentSizeT>,
+          typename PolicyHub    = detail::radix_sort::policy_hub<KeyT, ValueT, SegmentSizeT>,
           typename DecomposerT  = detail::identity_decomposer_t,
           typename KernelSource = detail::radix_sort::DeviceSegmentedRadixSortKernelSource<
             typename PolicyHub::MaxPolicy,
@@ -517,7 +517,7 @@ struct DispatchSegmentedRadixSort
     // Force kernel code-generation in all compiler passes
     return InvokePasses(kernel_source.SegmentedRadixSortKernel(),
                         kernel_source.AltSegmentedRadixSortKernel(),
-                        detail::radix::MakeRadixSortPolicyWrapper(policy));
+                        detail::radix_sort::MakeRadixSortPolicyWrapper(policy));
   }
 
   //------------------------------------------------------------------------------

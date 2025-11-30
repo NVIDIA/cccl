@@ -90,7 +90,7 @@ private:
   }
 
   template <class _It>
-  friend _CCCL_API constexpr __bounded_iter<_It> __make_bounded_iter(_It, _It, _It);
+  _CCCL_API friend constexpr __bounded_iter<_It> __make_bounded_iter(_It, _It, _It);
 
 public:
   // Dereference and indexing operations.

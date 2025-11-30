@@ -439,7 +439,7 @@ public:
   }
 
   template <class _Tp2 = _Tp, class _Err2 = _Err>
-  friend _CCCL_API inline _CCCL_CONSTEXPR_CXX20 auto swap(expected& __x, expected& __y) noexcept(
+  _CCCL_API friend inline _CCCL_CONSTEXPR_CXX20 auto swap(expected& __x, expected& __y) noexcept(
     is_nothrow_move_constructible_v<_Tp2> && is_nothrow_swappable_v<_Tp2> && is_nothrow_move_constructible_v<_Err2>
     && is_nothrow_swappable_v<_Err2>) _CCCL_TRAILING_REQUIRES(void)(__expected::__can_swap<_Tp2, _Err2>)
   {
@@ -1035,7 +1035,7 @@ public:
 
   // [expected.object.eq], equality operators
   _CCCL_EXEC_CHECK_DISABLE
-  friend _CCCL_API constexpr bool operator==(const expected& __x, const expected& __y)
+  _CCCL_API friend constexpr bool operator==(const expected& __x, const expected& __y)
   {
     if (__x.__has_val_ != __y.has_value())
     {
@@ -1056,7 +1056,7 @@ public:
 
 #if _CCCL_STD_VER < 2020
   _CCCL_EXEC_CHECK_DISABLE
-  friend _CCCL_API constexpr bool operator!=(const expected& __x, const expected& __y)
+  _CCCL_API friend constexpr bool operator!=(const expected& __x, const expected& __y)
   {
     return !(__x == __y);
   }
@@ -1065,7 +1065,7 @@ public:
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _T2, class _E2)
   _CCCL_REQUIRES((!is_void_v<_T2>) )
-  friend _CCCL_API constexpr bool operator==(const expected& __x, const expected<_T2, _E2>& __y)
+  _CCCL_API friend constexpr bool operator==(const expected& __x, const expected<_T2, _E2>& __y)
   {
     if (__x.__has_val_ != __y.has_value())
     {
@@ -1088,7 +1088,7 @@ public:
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _T2, class _E2)
   _CCCL_REQUIRES((!is_void_v<_T2>) )
-  friend _CCCL_API constexpr bool operator!=(const expected& __x, const expected<_T2, _E2>& __y)
+  _CCCL_API friend constexpr bool operator!=(const expected& __x, const expected<_T2, _E2>& __y)
   {
     return !(__x == __y);
   }
@@ -1097,7 +1097,7 @@ public:
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _T2)
   _CCCL_REQUIRES((!__is_cuda_std_expected_nonvoid_v<_T2>) )
-  friend _CCCL_API constexpr bool operator==(const expected& __x, const _T2& __v)
+  _CCCL_API friend constexpr bool operator==(const expected& __x, const _T2& __v)
   {
     return __x.__has_val_ && static_cast<bool>(__x.__union_.__val_ == __v);
   }
@@ -1105,21 +1105,21 @@ public:
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _T2)
   _CCCL_REQUIRES((!__is_cuda_std_expected_nonvoid_v<_T2>) )
-  friend _CCCL_API constexpr bool operator==(const _T2& __v, const expected& __x)
+  _CCCL_API friend constexpr bool operator==(const _T2& __v, const expected& __x)
   {
     return __x.__has_val_ && static_cast<bool>(__x.__union_.__val_ == __v);
   }
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _T2)
   _CCCL_REQUIRES((!__is_cuda_std_expected_nonvoid_v<_T2>) )
-  friend _CCCL_API constexpr bool operator!=(const expected& __x, const _T2& __v)
+  _CCCL_API friend constexpr bool operator!=(const expected& __x, const _T2& __v)
   {
     return !__x.__has_val_ || static_cast<bool>(__x.__union_.__val_ != __v);
   }
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _T2)
   _CCCL_REQUIRES((!__is_cuda_std_expected_nonvoid_v<_T2>) )
-  friend _CCCL_API constexpr bool operator!=(const _T2& __v, const expected& __x)
+  _CCCL_API friend constexpr bool operator!=(const _T2& __v, const expected& __x)
   {
     return !__x.__has_val_ || static_cast<bool>(__x.__union_.__val_ != __v);
   }
@@ -1127,26 +1127,26 @@ public:
 
   _CCCL_EXEC_CHECK_DISABLE
   template <class _E2>
-  friend _CCCL_API constexpr bool operator==(const expected& __x, const unexpected<_E2>& __e)
+  _CCCL_API friend constexpr bool operator==(const expected& __x, const unexpected<_E2>& __e)
   {
     return !__x.__has_val_ && static_cast<bool>(__x.__union_.__unex_ == __e.error());
   }
 #if _CCCL_STD_VER < 2020
   _CCCL_EXEC_CHECK_DISABLE
   template <class _E2>
-  friend _CCCL_API constexpr bool operator==(const unexpected<_E2>& __e, const expected& __x)
+  _CCCL_API friend constexpr bool operator==(const unexpected<_E2>& __e, const expected& __x)
   {
     return !__x.__has_val_ && static_cast<bool>(__x.__union_.__unex_ == __e.error());
   }
   _CCCL_EXEC_CHECK_DISABLE
   template <class _E2>
-  friend _CCCL_API constexpr bool operator!=(const expected& __x, const unexpected<_E2>& __e)
+  _CCCL_API friend constexpr bool operator!=(const expected& __x, const unexpected<_E2>& __e)
   {
     return __x.__has_val_ || static_cast<bool>(__x.__union_.__unex_ != __e.error());
   }
   _CCCL_EXEC_CHECK_DISABLE
   template <class _E2>
-  friend _CCCL_API constexpr bool operator!=(const unexpected<_E2>& __e, const expected& __x)
+  _CCCL_API friend constexpr bool operator!=(const unexpected<_E2>& __e, const expected& __x)
   {
     return __x.__has_val_ || static_cast<bool>(__x.__union_.__unex_ != __e.error());
   }
@@ -1373,7 +1373,7 @@ public:
   }
 
   template <class _Err2 = _Err>
-  friend _CCCL_API inline _CCCL_CONSTEXPR_CXX20 auto
+  _CCCL_API friend inline _CCCL_CONSTEXPR_CXX20 auto
   swap(expected& __x, expected& __y) noexcept(is_nothrow_move_constructible_v<_Err2> && is_nothrow_swappable_v<_Err2>)
     _CCCL_TRAILING_REQUIRES(void)(__expected::__can_swap<void, _Err2>)
   {
@@ -1865,7 +1865,7 @@ public:
 
   // [expected.void.eq], equality operators
   _CCCL_EXEC_CHECK_DISABLE
-  friend _CCCL_API constexpr bool operator==(const expected& __x, const expected& __y) noexcept
+  _CCCL_API friend constexpr bool operator==(const expected& __x, const expected& __y) noexcept
   {
     if (__x.__has_val_ != __y.has_value())
     {
@@ -1878,7 +1878,7 @@ public:
   }
 #if _CCCL_STD_VER < 2020
   _CCCL_EXEC_CHECK_DISABLE
-  friend _CCCL_API constexpr bool operator!=(const expected& __x, const expected& __y) noexcept
+  _CCCL_API friend constexpr bool operator!=(const expected& __x, const expected& __y) noexcept
   {
     return !(__x == __y);
   }
@@ -1886,7 +1886,7 @@ public:
 
   _CCCL_EXEC_CHECK_DISABLE
   template <class _E2>
-  friend _CCCL_API constexpr bool operator==(const expected& __x, const expected<void, _E2>& __y) noexcept
+  _CCCL_API friend constexpr bool operator==(const expected& __x, const expected<void, _E2>& __y) noexcept
   {
     if (__x.__has_val_ != __y.has_value())
     {
@@ -1900,7 +1900,7 @@ public:
 #if _CCCL_STD_VER < 2020
   _CCCL_EXEC_CHECK_DISABLE
   template <class _E2>
-  friend _CCCL_API constexpr bool operator!=(const expected& __x, const expected<void, _E2>& __y) noexcept
+  _CCCL_API friend constexpr bool operator!=(const expected& __x, const expected<void, _E2>& __y) noexcept
   {
     return !(__x == __y);
   }
@@ -1908,14 +1908,14 @@ public:
 
   _CCCL_EXEC_CHECK_DISABLE
   template <class _E2>
-  friend _CCCL_API constexpr bool operator==(const expected& __x, const unexpected<_E2>& __y) noexcept
+  _CCCL_API friend constexpr bool operator==(const expected& __x, const unexpected<_E2>& __y) noexcept
   {
     return !__x.__has_val_ && static_cast<bool>(__x.__union_.__unex_ == __y.error());
   }
 #if _CCCL_STD_VER < 2020
   _CCCL_EXEC_CHECK_DISABLE
   template <class _E2>
-  friend _CCCL_API constexpr bool operator==(const unexpected<_E2>& __y, const expected& __x) noexcept
+  _CCCL_API friend constexpr bool operator==(const unexpected<_E2>& __y, const expected& __x) noexcept
   {
     return !__x.__has_val_ && static_cast<bool>(__x.__union_.__unex_ == __y.error());
   }
