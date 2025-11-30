@@ -70,9 +70,10 @@ CUB_RUNTIME_FUNCTION static cudaError_t dispatch_with_env(
   }
 
   // Allocate temporary storage
-  if (const auto error = CubDebug(detail::temporary_storage::allocate(stream, d_temp_storage, temp_storage_bytes, mr)))
+  if (const auto alloc_error =
+        CubDebug(detail::temporary_storage::allocate(stream, d_temp_storage, temp_storage_bytes, mr)))
   {
-    return error;
+    return alloc_error;
   }
 
   // Phase 2: Execute algorithm
