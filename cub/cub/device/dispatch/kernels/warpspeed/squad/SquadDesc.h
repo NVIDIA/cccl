@@ -14,6 +14,8 @@
 
 CUB_NAMESPACE_BEGIN
 
+namespace detail::scan
+{
 // SquadDesc - squad descriptor
 //
 // A squad is a collection of warps that work together in a warp-specialized
@@ -70,5 +72,6 @@ template <int numSquads>
   }
   return sumThreads;
 }
+} // namespace detail::scan
 
 CUB_NAMESPACE_END
