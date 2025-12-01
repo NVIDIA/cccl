@@ -567,7 +567,11 @@ struct policy_hub
     static constexpr int warpspeed_squad_reduce_thread_count = 4 * 32; // TODO(bgruber): keep in sync with squad
                                                                        // definition
     static constexpr int warpspeed_num_lookback_tiles = 96;
-    static constexpr int warpspeed_tile_size          = 63 * warpspeed_squad_reduce_thread_count;
+
+    // 256 / sizeof(InputValueT) - 1 should minimize bank conflicts, but 2-byte types and double needed special handling
+    static constexpr int warpspeed_tile_size =
+      (256 / (sizeof(InputValueT) == 2 ? 2 : (::cuda::std::is_same_v<InputValueT, double> ? 4 : sizeof(AccumT))) - 1)
+      * warpspeed_squad_reduce_thread_count;
   };
 
   using MaxPolicy = Policy1000;
