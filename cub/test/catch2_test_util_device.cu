@@ -8,6 +8,7 @@
 #include <thrust/detail/raw_pointer_cast.h>
 #include <thrust/device_vector.h>
 
+#include <cuda/devices>
 #include <cuda/std/__algorithm/find_if.h>
 #include <cuda/std/array>
 
@@ -272,4 +273,38 @@ C2H_TEST("ChainedPolicy invokes correct policy", "[util][dispatch]")
   {
     check_wrapper_some<policy_hub_minimal, 1>(cuda::std::array<int, 1>{500});
   }
+}
+
+__global__ void test_max_potential_dynamic_smem_bytes_kernel()
+{
+  // use inline PTX so the variable doesn't get optimized out
+  asm volatile(".shared .align 1 .b8 static_smem[4096];");
+}
+
+#if defined(CUB_RDC_ENABLED)
+__global__ void test_max_potential_dynamic_smem_bytes_device(int* result)
+{
+  // Just compile on device.
+  cub::MaxPotentialDynamicSmemBytes(*result, test_max_potential_dynamic_smem_bytes_kernel);
+}
+#endif // CUB_RDC_ENABLED
+
+C2H_TEST("MaxPotentialDynamicSmemBytes", "[util][launch]")
+{
+  cuda::device_ref device{0};
+
+  // Calculate the expected max potential dynamic shared memory size.
+  const auto max_smem_per_block_optin = device.attribute(cuda::device_attributes::max_shared_memory_per_block_optin);
+  const auto reserved_smem_per_block  = device.attribute(cuda::device_attributes::reserved_shared_memory_per_block);
+  const auto expected                 = static_cast<int>(max_smem_per_block_optin - reserved_smem_per_block - 4096);
+
+  // 1. Test positive case.
+  int dyn_smem_size{};
+  REQUIRE(
+    cub::MaxPotentialDynamicSmemBytes(dyn_smem_size, test_max_potential_dynamic_smem_bytes_kernel) == cudaSuccess);
+  REQUIRE(dyn_smem_size == expected);
+
+  // 2. Test that we return -1 if an error occurs.
+  REQUIRE(cub::MaxPotentialDynamicSmemBytes(dyn_smem_size, nullptr) != cudaSuccess);
+  REQUIRE(dyn_smem_size == -1);
 }
