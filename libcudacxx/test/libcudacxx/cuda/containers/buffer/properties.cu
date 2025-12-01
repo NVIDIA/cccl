@@ -50,7 +50,7 @@ C2H_CCCLRT_TEST("cuda::buffer properties", "[container][buffer]", test_types)
   static_assert(cuda::std::is_same_v<cuda::std::reverse_iterator<iterator>, typename Buffer::reverse_iterator>, "");
   static_assert(
     cuda::std::is_same_v<cuda::std::reverse_iterator<const_iterator>, typename Buffer::const_reverse_iterator>, "");
-    // TODO fix Clang not recongnizing device accessible buffers as contiguous range
+  // TODO fix Clang not recongnizing device accessible buffers as contiguous range
 #if !_CCCL_CUDA_COMPILER(CLANG)
   static_assert(cuda::std::ranges::contiguous_range<Buffer>);
 #endif // ^^^ !_CCCL_CUDA_COMPILER(CLANG) ^^^
