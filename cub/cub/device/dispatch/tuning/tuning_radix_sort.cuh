@@ -362,7 +362,7 @@ struct policy_hub
   static constexpr bool KEYS_ONLY = ::cuda::std::is_same_v<ValueT, NullType>;
 
   // Dominant-sized key/value type
-  using DominantT = ::cuda::std::_If<(sizeof(ValueT) > sizeof(KeyT)), ValueT, KeyT>;
+  using DominantT = ::cuda::std::conditional_t<(sizeof(ValueT) > sizeof(KeyT)), ValueT, KeyT>;
 
   //------------------------------------------------------------------------------
   // Architecture-specific tuning policies
@@ -944,7 +944,8 @@ struct policy_hub
       RADIX_SORT_STORE_DIRECT,
       ONESWEEP_RADIX_BITS>;
 
-    using OnesweepLargeKeyPolicy = ::cuda::std::_If<sizeof(KeyT) == 4, OnesweepPolicyKey32, OnesweepPolicyKey64>;
+    using OnesweepLargeKeyPolicy =
+      ::cuda::std::conditional_t<sizeof(KeyT) == 4, OnesweepPolicyKey32, OnesweepPolicyKey64>;
 
     using OnesweepSmallKeyPolicy = AgentRadixSortOnesweepPolicy<
       OnesweepSmallKeyPolicySizes::threads,
@@ -957,7 +958,7 @@ struct policy_hub
       8>;
 
   public:
-    using OnesweepPolicy = ::cuda::std::_If<sizeof(KeyT) < 4, OnesweepSmallKeyPolicy, OnesweepLargeKeyPolicy>;
+    using OnesweepPolicy = ::cuda::std::conditional_t<sizeof(KeyT) < 4, OnesweepSmallKeyPolicy, OnesweepLargeKeyPolicy>;
 
     // The Scan, Downsweep and Upsweep policies are never run on SM90, but we have to include them to prevent a
     // compilation error: When we compile e.g. for SM70 **and** SM90, the host compiler will reach calls to those

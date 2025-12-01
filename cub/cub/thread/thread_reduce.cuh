@@ -396,7 +396,7 @@ ThreadReducePartial(const Input& input, ReductionOp reduction_op, int valid_item
   }
   else
   {
-    using PromT = ::cuda::std::_If<enable_min_max_promotion_v<ReductionOp, ValueT>, int, AccumT>;
+    using PromT = ::cuda::std::conditional_t<enable_min_max_promotion_v<ReductionOp, ValueT>, int, AccumT>;
 
     return cub::detail::ThreadReduceSequentialPartial<PromT>(input, reduction_op, valid_items);
   }
@@ -422,7 +422,7 @@ template <typename Input, typename ReductionOp, typename ValueT, typename AccumT
     return static_cast<AccumT>(input[0]);
   }
 
-  using PromT = ::cuda::std::_If<enable_min_max_promotion_v<ReductionOp, ValueT>, int, AccumT>;
+  using PromT = ::cuda::std::conditional_t<enable_min_max_promotion_v<ReductionOp, ValueT>, int, AccumT>;
   // TODO: should be part of the tuning policy
   if constexpr ((!is_simd_enabled_cuda_operator<ReductionOp, ValueT> && !is_simd_operator_v<ReductionOp>)
                 || sizeof(ValueT) >= 8)

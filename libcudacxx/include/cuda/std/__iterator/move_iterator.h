@@ -63,9 +63,9 @@ template <class _Iter>
 struct __move_iter_category_base<_Iter>
 {
   using iterator_category =
-    _If<derived_from<typename iterator_traits<_Iter>::iterator_category, random_access_iterator_tag>,
-        random_access_iterator_tag,
-        typename iterator_traits<_Iter>::iterator_category>;
+    conditional_t<derived_from<typename iterator_traits<_Iter>::iterator_category, random_access_iterator_tag>,
+                  random_access_iterator_tag,
+                  typename iterator_traits<_Iter>::iterator_category>;
 };
 
 template <class _Iter, class _Sent>
@@ -85,9 +85,9 @@ template <class _Iter>
 struct __move_iter_category_base<_Iter, enable_if_t<__has_iter_category<iterator_traits<_Iter>>>>
 {
   using iterator_category =
-    _If<derived_from<typename iterator_traits<_Iter>::iterator_category, random_access_iterator_tag>,
-        random_access_iterator_tag,
-        typename iterator_traits<_Iter>::iterator_category>;
+    conditional_t<derived_from<typename iterator_traits<_Iter>::iterator_category, random_access_iterator_tag>,
+                  random_access_iterator_tag,
+                  typename iterator_traits<_Iter>::iterator_category>;
 };
 
 template <class _Iter, class _Sent>

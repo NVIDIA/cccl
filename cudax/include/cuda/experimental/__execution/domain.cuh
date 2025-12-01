@@ -409,13 +409,13 @@ struct __not_a_domain
 
 template <class... _Domains>
 using __indeterminate_domain_t =
-  ::cuda::std::_If<sizeof...(_Domains) == 1, decltype((_Domains(), ...)), indeterminate_domain<_Domains...>>;
+  ::cuda::std::conditional_t<sizeof...(_Domains) == 1, decltype((_Domains(), ...)), indeterminate_domain<_Domains...>>;
 
 template <class _DomainSet>
 using __domain_from_set_t =
-  ::cuda::std::__type_apply<::cuda::std::_If<::cuda::std::__type_set_contains_v<_DomainSet, __not_a_domain>,
-                                             ::cuda::std::__type_always<__not_a_domain>,
-                                             ::cuda::std::__type_quote<__indeterminate_domain_t>>,
+  ::cuda::std::__type_apply<::cuda::std::conditional_t<::cuda::std::__type_set_contains_v<_DomainSet, __not_a_domain>,
+                                                       ::cuda::std::__type_always<__not_a_domain>,
+                                                       ::cuda::std::__type_quote<__indeterminate_domain_t>>,
                             _DomainSet>;
 
 template <class... _Domains>
@@ -441,16 +441,17 @@ extern __call_result_or_t<get_completion_domain_t<_Tag>, indeterminate_domain<>,
   __compl_domain_v;
 
 template <class _Tag, class _Sndr>
-extern __call_result_or_t<get_completion_domain_t<_Tag>,
-                          // If we ask for the completion domain early (without an env)
-                          // and it cannot be determined, then:
-                          // - if the sender knows it can never complete with _Tag, return
-                          //   indeterminate_domain<>
-                          // - otherwise, return __not_a_domain (indicating that the
-                          //   completion domain may only be knowable later, when an env
-                          //   is available)
-                          ::cuda::std::_If<__never_completes_with<_Sndr, _Tag>, indeterminate_domain<>, __not_a_domain>,
-                          env_of_t<_Sndr>>
+extern __call_result_or_t<
+  get_completion_domain_t<_Tag>,
+  // If we ask for the completion domain early (without an env)
+  // and it cannot be determined, then:
+  // - if the sender knows it can never complete with _Tag, return
+  //   indeterminate_domain<>
+  // - otherwise, return __not_a_domain (indicating that the
+  //   completion domain may only be knowable later, when an env
+  //   is available)
+  ::cuda::std::conditional_t<__never_completes_with<_Sndr, _Tag>, indeterminate_domain<>, __not_a_domain>,
+  env_of_t<_Sndr>>
   __compl_domain_v<_Tag, _Sndr>;
 } // namespace __detail
 

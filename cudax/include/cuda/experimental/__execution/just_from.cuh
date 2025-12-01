@@ -62,9 +62,9 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __just_from_t
   {
     template <class... _Ts>
     _CCCL_API auto operator()(_Ts&&... __ts) const noexcept
-      -> ::cuda::std::_If<__detail::__signature_disposition<_SetTag(_Ts...)> != __disposition::__invalid,
-                          completion_signatures<_SetTag(_Ts...)>,
-                          __error_t<_Ts...>>;
+      -> ::cuda::std::conditional_t<__detail::__signature_disposition<_SetTag(_Ts...)> != __disposition::__invalid,
+                                    completion_signatures<_SetTag(_Ts...)>,
+                                    __error_t<_Ts...>>;
   };
 
   template <class _Rcvr>

@@ -167,9 +167,9 @@ struct AgentScan
   // Wrap the native input pointer with CacheModifiedInputIterator
   // or directly use the supplied input iterator type
   using WrappedInputIteratorT =
-    ::cuda::std::_If<::cuda::std::is_pointer_v<InputIteratorT>,
-                     CacheModifiedInputIterator<AgentScanPolicyT::LOAD_MODIFIER, InputT, OffsetT>,
-                     InputIteratorT>;
+    ::cuda::std::conditional_t<::cuda::std::is_pointer_v<InputIteratorT>,
+                               CacheModifiedInputIterator<AgentScanPolicyT::LOAD_MODIFIER, InputT, OffsetT>,
+                               InputIteratorT>;
 
   // Inclusive scan if no init_value type is provided
   static constexpr bool HAS_INIT     = !::cuda::std::is_same_v<InitValueT, NullType>;

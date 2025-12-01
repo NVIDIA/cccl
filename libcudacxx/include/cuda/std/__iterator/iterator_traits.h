@@ -149,9 +149,9 @@ using random_access_iterator_tag = ::std::random_access_iterator_tag;
 struct _CCCL_TYPE_VISIBILITY_DEFAULT __contiguous_iterator_tag_backfill : public ::std::random_access_iterator_tag
 {};
 using contiguous_iterator_tag =
-  _If<::std::__cccl_std_contiguous_iterator_tag_exists::value,
-      ::std::contiguous_iterator_tag,
-      __contiguous_iterator_tag_backfill>;
+  conditional_t<::std::__cccl_std_contiguous_iterator_tag_exists::value,
+                ::std::contiguous_iterator_tag,
+                __contiguous_iterator_tag_backfill>;
 #  else // ^^^ C++20 ^^^ / vvv C++17 vvv
 struct _CCCL_TYPE_VISIBILITY_DEFAULT contiguous_iterator_tag : public random_access_iterator_tag
 {};

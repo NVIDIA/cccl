@@ -66,7 +66,8 @@ struct __tupl<_Ty, _Ts...>
     , __tupl<_Ts...>
 {
   template <class _Uy>
-  using __maybe_insert _CCCL_NODEBUG_ALIAS = _If<__type_set_contains_v<__tupl, _Uy>, __tupl, __tupl<_Uy, _Ty, _Ts...>>;
+  using __maybe_insert _CCCL_NODEBUG_ALIAS =
+    conditional_t<__type_set_contains_v<__tupl, _Uy>, __tupl, __tupl<_Uy, _Ty, _Ts...>>;
 
   _CCCL_API static constexpr size_t __size() noexcept
   {

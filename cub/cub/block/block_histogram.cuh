@@ -171,9 +171,9 @@ private:
 
   /// Internal specialization.
   using InternalBlockHistogram =
-    ::cuda::std::_If<Algorithm == BLOCK_HISTO_SORT,
-                     detail::BlockHistogramSort<T, BlockDimX, ItemsPerThread, Bins, BlockDimY, BlockDimZ>,
-                     detail::BlockHistogramAtomic<Bins>>;
+    ::cuda::std::conditional_t<Algorithm == BLOCK_HISTO_SORT,
+                               detail::BlockHistogramSort<T, BlockDimX, ItemsPerThread, Bins, BlockDimY, BlockDimZ>,
+                               detail::BlockHistogramAtomic<Bins>>;
 
   /// Shared memory storage layout type for BlockHistogram
   using _TempStorage = typename InternalBlockHistogram::TempStorage;

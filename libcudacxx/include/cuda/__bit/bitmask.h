@@ -42,7 +42,7 @@ template <typename _Tp>
     if constexpr (sizeof(_Tp) <= sizeof(uint64_t))
     {
       NV_DISPATCH_TARGET(NV_IS_DEVICE,
-                         (using _Up = ::cuda::std::_If<sizeof(_Tp) <= sizeof(uint32_t), uint32_t, uint64_t>;
+                         (using _Up = ::cuda::std::conditional_t<sizeof(_Tp) <= sizeof(uint32_t), uint32_t, uint64_t>;
                           return ::cuda::ptx::shl(static_cast<_Up>(__value), __shift);))
     }
   }
@@ -57,7 +57,7 @@ template <typename _Tp>
     if constexpr (sizeof(_Tp) <= sizeof(uint64_t))
     {
       NV_DISPATCH_TARGET(NV_IS_DEVICE,
-                         (using _Up = ::cuda::std::_If<sizeof(_Tp) <= sizeof(uint32_t), uint32_t, uint64_t>;
+                         (using _Up = ::cuda::std::conditional_t<sizeof(_Tp) <= sizeof(uint32_t), uint32_t, uint64_t>;
                           return ::cuda::ptx::shr(static_cast<_Up>(__value), __shift);))
     }
   }

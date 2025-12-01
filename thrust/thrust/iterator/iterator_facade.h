@@ -51,9 +51,9 @@ namespace detail
 // it's legal to access IteratorFacade2::difference_type
 template <typename IteratorFacade1, typename IteratorFacade2>
 using distance_from_result =
-  ::cuda::std::_If<::cuda::std::is_convertible_v<IteratorFacade2, IteratorFacade1>,
-                   typename IteratorFacade1::difference_type,
-                   typename IteratorFacade2::difference_type>;
+  ::cuda::std::conditional_t<::cuda::std::is_convertible_v<IteratorFacade2, IteratorFacade1>,
+                             typename IteratorFacade1::difference_type,
+                             typename IteratorFacade2::difference_type>;
 } // namespace detail
 
 /*! \addtogroup iterators

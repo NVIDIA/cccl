@@ -258,14 +258,14 @@ private:
   using Raking                         = detail::BlockReduceRaking<T, BlockDimX, BlockDimY, BlockDimZ>;
 
   /// Internal specialization type
-  using InternalBlockReduce =
-    ::cuda::std::_If<Algorithm == BLOCK_REDUCE_WARP_REDUCTIONS,
-                     WarpReductions,
-                     ::cuda::std::_If<Algorithm == BLOCK_REDUCE_WARP_REDUCTIONS_NONDETERMINISTIC,
-                                      WarpReductionsNondeterministic,
-                                      ::cuda::std::_If<Algorithm == BLOCK_REDUCE_RAKING_COMMUTATIVE_ONLY,
-                                                       RakingCommutativeOnly,
-                                                       Raking>>>; // BlockReduceRaking
+  using InternalBlockReduce = ::cuda::std::conditional_t<
+    Algorithm == BLOCK_REDUCE_WARP_REDUCTIONS,
+    WarpReductions,
+    ::cuda::std::conditional_t<Algorithm == BLOCK_REDUCE_WARP_REDUCTIONS_NONDETERMINISTIC,
+                               WarpReductionsNondeterministic,
+                               ::cuda::std::conditional_t<Algorithm == BLOCK_REDUCE_RAKING_COMMUTATIVE_ONLY,
+                                                          RakingCommutativeOnly,
+                                                          Raking>>>; // BlockReduceRaking
 
   /// Shared memory storage layout type for BlockReduce
   using _TempStorage = typename InternalBlockReduce::TempStorage;

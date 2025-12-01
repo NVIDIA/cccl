@@ -40,7 +40,7 @@ struct choose_offset
                 "NumItemsT must be an integral type, but not bool");
 
   // Unsigned integer type for global offsets.
-  using type = ::cuda::std::_If<(sizeof(NumItemsT) <= 4), uint32_t, unsigned long long>;
+  using type = ::cuda::std::conditional_t<(sizeof(NumItemsT) <= 4), uint32_t, unsigned long long>;
 };
 
 /**
@@ -63,7 +63,7 @@ struct promote_small_offset
                 "NumItemsT must be an integral type, but not bool");
 
   // Unsigned integer type for global offsets.
-  using type = ::cuda::std::_If<(sizeof(NumItemsT) < 4), int32_t, NumItemsT>;
+  using type = ::cuda::std::conditional_t<(sizeof(NumItemsT) < 4), int32_t, NumItemsT>;
 };
 
 /**
@@ -90,9 +90,10 @@ struct choose_signed_offset
   // uint32 -> int64, else
   // LEQ 4B -> int32, else
   // int64
-  using type = ::cuda::std::_If<(::cuda::std::is_integral_v<NumItemsT> && ::cuda::std::is_unsigned_v<NumItemsT>),
-                                ::cuda::std::int64_t,
-                                ::cuda::std::_If<(sizeof(NumItemsT) <= 4), ::cuda::std::int32_t, ::cuda::std::int64_t>>;
+  using type = ::cuda::std::conditional_t<
+    (::cuda::std::is_integral_v<NumItemsT> && ::cuda::std::is_unsigned_v<NumItemsT>),
+    ::cuda::std::int64_t,
+    ::cuda::std::conditional_t<(sizeof(NumItemsT) <= 4), ::cuda::std::int32_t, ::cuda::std::int64_t>>;
 
   /**
    * Checks if the given num_items can be covered by the selected offset type. If not, returns cudaErrorInvalidValue,

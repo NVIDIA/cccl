@@ -103,13 +103,13 @@ struct __atomic_ref_pointer
 
 template <typename _Tp, thread_scope _Sco = thread_scope_system>
 using __atomic_ref_impl =
-  _If<is_pointer_v<_Tp>,
-      __atomic_ref_pointer<_Tp, __scope_to_tag<_Sco>>,
-      _If<is_floating_point_v<_Tp>,
-          __atomic_ref_arithmetic<_Tp, __scope_to_tag<_Sco>>,
-          _If<is_integral_v<_Tp>,
-              __atomic_ref_bitwise<_Tp, __scope_to_tag<_Sco>>,
-              __atomic_ref_common<_Tp, __scope_to_tag<_Sco>>>>>;
+  conditional_t<is_pointer_v<_Tp>,
+                __atomic_ref_pointer<_Tp, __scope_to_tag<_Sco>>,
+                conditional_t<is_floating_point_v<_Tp>,
+                              __atomic_ref_arithmetic<_Tp, __scope_to_tag<_Sco>>,
+                              conditional_t<is_integral_v<_Tp>,
+                                            __atomic_ref_bitwise<_Tp, __scope_to_tag<_Sco>>,
+                                            __atomic_ref_common<_Tp, __scope_to_tag<_Sco>>>>>;
 
 _CCCL_END_NAMESPACE_CUDA_STD
 

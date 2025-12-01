@@ -44,10 +44,10 @@ struct policy_hub_t
 #    error Policy hub does not yet implement the specified value for algorithm
 #  endif
 
-    using algo_policy =
-      ::cuda::std::_If<algorithm == cub::detail::transform::Algorithm::prefetch,
-                       cub::detail::transform::prefetch_policy_t<TUNE_THREADS>,
-                       cub::detail::transform::async_copy_policy_t<TUNE_THREADS, __CUDA_ARCH_LIST__ == 900 ? 128 : 16>>;
+    using algo_policy = ::cuda::std::conditional_t<
+      algorithm == cub::detail::transform::Algorithm::prefetch,
+      cub::detail::transform::prefetch_policy_t<TUNE_THREADS>,
+      cub::detail::transform::async_copy_policy_t<TUNE_THREADS, __CUDA_ARCH_LIST__ == 900 ? 128 : 16>>;
   };
 };
 #endif

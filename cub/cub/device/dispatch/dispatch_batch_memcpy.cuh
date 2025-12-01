@@ -387,9 +387,9 @@ struct DispatchBatchMemcpy
     auto max_num_tiles = static_cast<BlockOffsetT>(::cuda::ceil_div(max_num_buffers, TILE_SIZE));
 
     using BlevBufferSrcsOutT =
-      ::cuda::std::_If<MemcpyOpt == CopyAlg::Memcpy, const void*, cub::detail::it_value_t<InputBufferIt>>;
+      ::cuda::std::conditional_t<MemcpyOpt == CopyAlg::Memcpy, const void*, cub::detail::it_value_t<InputBufferIt>>;
     using BlevBufferDstOutT =
-      ::cuda::std::_If<MemcpyOpt == CopyAlg::Memcpy, void*, cub::detail::it_value_t<OutputBufferIt>>;
+      ::cuda::std::conditional_t<MemcpyOpt == CopyAlg::Memcpy, void*, cub::detail::it_value_t<OutputBufferIt>>;
     using BlevBufferSrcsOutItT        = BlevBufferSrcsOutT*;
     using BlevBufferDstsOutItT        = BlevBufferDstOutT*;
     using BlevBufferSizesOutItT       = BufferSizeT*;

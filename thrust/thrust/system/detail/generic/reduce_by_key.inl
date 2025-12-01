@@ -171,9 +171,9 @@ _CCCL_HOST_DEVICE ::cuda::std::pair<OutputIterator1, OutputIterator2> reduce_by_
   OutputIterator2 values_output,
   BinaryPredicate binary_pred)
 {
-  using T = ::cuda::std::_If<thrust::detail::is_output_iterator<OutputIterator2>,
-                             thrust::detail::it_value_t<InputIterator2>,
-                             thrust::detail::it_value_t<OutputIterator2>>;
+  using T = ::cuda::std::conditional_t<thrust::detail::is_output_iterator<OutputIterator2>,
+                                       thrust::detail::it_value_t<InputIterator2>,
+                                       thrust::detail::it_value_t<OutputIterator2>>;
 
   // use plus<T> as default BinaryFunction
   return thrust::reduce_by_key(

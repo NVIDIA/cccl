@@ -121,9 +121,9 @@ struct agent_segmented_scan
   // Wrap the native input pointer with CacheModifiedInputIterator
   // or directly use the supplied input iterator type
   using wrapped_input_iterator_t =
-    ::cuda::std::_If<::cuda::std::is_pointer_v<InputIteratorT>,
-                     CacheModifiedInputIterator<AgentSegmentedScanPolicyT::load_modifier, input_t, OffsetT>,
-                     InputIteratorT>;
+    ::cuda::std::conditional_t<::cuda::std::is_pointer_v<InputIteratorT>,
+                               CacheModifiedInputIterator<AgentSegmentedScanPolicyT::load_modifier, input_t, OffsetT>,
+                               InputIteratorT>;
 
   // Constants
 

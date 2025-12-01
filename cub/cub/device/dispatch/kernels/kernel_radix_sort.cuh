@@ -92,14 +92,14 @@ __launch_bounds__(int((ALT_DIGIT_BITS) ? int(ChainedPolicyT::ActivePolicy::AltUp
     DecomposerT decomposer = {})
 {
   using ActiveUpsweepPolicyT =
-    ::cuda::std::_If<ALT_DIGIT_BITS,
-                     typename ChainedPolicyT::ActivePolicy::AltUpsweepPolicy,
-                     typename ChainedPolicyT::ActivePolicy::UpsweepPolicy>;
+    ::cuda::std::conditional_t<ALT_DIGIT_BITS,
+                               typename ChainedPolicyT::ActivePolicy::AltUpsweepPolicy,
+                               typename ChainedPolicyT::ActivePolicy::UpsweepPolicy>;
 
   using ActiveDownsweepPolicyT =
-    ::cuda::std::_If<ALT_DIGIT_BITS,
-                     typename ChainedPolicyT::ActivePolicy::AltDownsweepPolicy,
-                     typename ChainedPolicyT::ActivePolicy::DownsweepPolicy>;
+    ::cuda::std::conditional_t<ALT_DIGIT_BITS,
+                               typename ChainedPolicyT::ActivePolicy::AltDownsweepPolicy,
+                               typename ChainedPolicyT::ActivePolicy::DownsweepPolicy>;
 
   static constexpr int TILE_ITEMS =
     ::cuda::std::max(ActiveUpsweepPolicyT::BLOCK_THREADS * ActiveUpsweepPolicyT::ITEMS_PER_THREAD,
@@ -250,14 +250,14 @@ __launch_bounds__(int((ALT_DIGIT_BITS) ? int(ChainedPolicyT::ActivePolicy::AltDo
     DecomposerT decomposer = {})
 {
   using ActiveUpsweepPolicyT =
-    ::cuda::std::_If<ALT_DIGIT_BITS,
-                     typename ChainedPolicyT::ActivePolicy::AltUpsweepPolicy,
-                     typename ChainedPolicyT::ActivePolicy::UpsweepPolicy>;
+    ::cuda::std::conditional_t<ALT_DIGIT_BITS,
+                               typename ChainedPolicyT::ActivePolicy::AltUpsweepPolicy,
+                               typename ChainedPolicyT::ActivePolicy::UpsweepPolicy>;
 
   using ActiveDownsweepPolicyT =
-    ::cuda::std::_If<ALT_DIGIT_BITS,
-                     typename ChainedPolicyT::ActivePolicy::AltDownsweepPolicy,
-                     typename ChainedPolicyT::ActivePolicy::DownsweepPolicy>;
+    ::cuda::std::conditional_t<ALT_DIGIT_BITS,
+                               typename ChainedPolicyT::ActivePolicy::AltDownsweepPolicy,
+                               typename ChainedPolicyT::ActivePolicy::DownsweepPolicy>;
 
   static constexpr int TILE_ITEMS =
     ::cuda::std::max(ActiveUpsweepPolicyT::BLOCK_THREADS * ActiveUpsweepPolicyT::ITEMS_PER_THREAD,

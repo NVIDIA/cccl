@@ -101,42 +101,45 @@ inline constexpr bool is_iterator_category = is_host_iterator_category<T> || is_
 
 // standard system iterators
 template <typename Traversal>
-using iterator_facade_default_category_std = ::cuda::std::_If<
+using iterator_facade_default_category_std = ::cuda::std::conditional_t<
   ::cuda::std::is_convertible_v<Traversal, forward_traversal_tag>,
-  ::cuda::std::_If<::cuda::std::is_convertible_v<Traversal, random_access_traversal_tag>,
-                   ::cuda::std::random_access_iterator_tag,
-                   ::cuda::std::_If<::cuda::std::is_convertible_v<Traversal, bidirectional_traversal_tag>,
-                                    ::cuda::std::bidirectional_iterator_tag,
-                                    ::cuda::std::forward_iterator_tag>>,
-  ::cuda::std::_If< // we differ from Boost here
+  ::cuda::std::conditional_t<
+    ::cuda::std::is_convertible_v<Traversal, random_access_traversal_tag>,
+    ::cuda::std::random_access_iterator_tag,
+    ::cuda::std::conditional_t<::cuda::std::is_convertible_v<Traversal, bidirectional_traversal_tag>,
+                               ::cuda::std::bidirectional_iterator_tag,
+                               ::cuda::std::forward_iterator_tag>>,
+  ::cuda::std::conditional_t< // we differ from Boost here
     ::cuda::std::is_convertible_v<Traversal, single_pass_traversal_tag>,
     ::cuda::std::input_iterator_tag,
     Traversal>>;
 
 // host system iterators (basically same as standard system iterators)
 template <typename Traversal>
-using iterator_facade_default_category_host = ::cuda::std::_If<
+using iterator_facade_default_category_host = ::cuda::std::conditional_t<
   ::cuda::std::is_convertible_v<Traversal, forward_traversal_tag>,
-  ::cuda::std::_If<::cuda::std::is_convertible_v<Traversal, random_access_traversal_tag>,
-                   random_access_host_iterator_tag,
-                   ::cuda::std::_If<::cuda::std::is_convertible_v<Traversal, bidirectional_traversal_tag>,
-                                    bidirectional_host_iterator_tag,
-                                    forward_host_iterator_tag>>,
-  ::cuda::std::_If< // we differ from Boost here
+  ::cuda::std::conditional_t<
+    ::cuda::std::is_convertible_v<Traversal, random_access_traversal_tag>,
+    random_access_host_iterator_tag,
+    ::cuda::std::conditional_t<::cuda::std::is_convertible_v<Traversal, bidirectional_traversal_tag>,
+                               bidirectional_host_iterator_tag,
+                               forward_host_iterator_tag>>,
+  ::cuda::std::conditional_t< // we differ from Boost here
     ::cuda::std::is_convertible_v<Traversal, single_pass_traversal_tag>,
     input_host_iterator_tag,
     Traversal>>;
 
 // device system iterators
 template <typename Traversal>
-using iterator_facade_default_category_device = ::cuda::std::_If<
+using iterator_facade_default_category_device = ::cuda::std::conditional_t<
   ::cuda::std::is_convertible_v<Traversal, forward_traversal_tag>,
-  ::cuda::std::_If<::cuda::std::is_convertible_v<Traversal, random_access_traversal_tag>,
-                   random_access_device_iterator_tag,
-                   ::cuda::std::_If<::cuda::std::is_convertible_v<Traversal, bidirectional_traversal_tag>,
-                                    bidirectional_device_iterator_tag,
-                                    forward_device_iterator_tag>>,
-  ::cuda::std::_If<
+  ::cuda::std::conditional_t<
+    ::cuda::std::is_convertible_v<Traversal, random_access_traversal_tag>,
+    random_access_device_iterator_tag,
+    ::cuda::std::conditional_t<::cuda::std::is_convertible_v<Traversal, bidirectional_traversal_tag>,
+                               bidirectional_device_iterator_tag,
+                               forward_device_iterator_tag>>,
+  ::cuda::std::conditional_t<
     // XXX note we differ from Boost here
     ::cuda::std::is_convertible_v<Traversal, single_pass_traversal_tag>,
     input_device_iterator_tag,
@@ -148,15 +151,15 @@ using iterator_facade_default_category_any =
   iterator_category_with_system_and_traversal<iterator_facade_default_category_std<Traversal>, any_system_tag, Traversal>;
 
 template <typename System, typename Traversal>
-using iterator_facade_default_category = ::cuda::std::_If<
+using iterator_facade_default_category = ::cuda::std::conditional_t<
   ::cuda::std::is_convertible_v<System, any_system_tag>,
   iterator_facade_default_category_any<Traversal>,
   // check for host system
-  ::cuda::std::_If<
+  ::cuda::std::conditional_t<
     ::cuda::std::is_convertible_v<System, host_system_tag>,
     iterator_facade_default_category_host<Traversal>,
     // check for device system
-    ::cuda::std::_If<
+    ::cuda::std::conditional_t<
       ::cuda::std::is_convertible_v<System, device_system_tag>,
       iterator_facade_default_category_device<Traversal>,
       // if we don't recognize the system, get a standard iterator category and combine it with System & Traversal
@@ -168,17 +171,17 @@ struct iterator_facade_category_impl
   using category = iterator_facade_default_category<System, Traversal>;
 
   // we must be able to deduce both Traversal & System from category, otherwise, munge them all together
-  using type =
-    ::cuda::std::_If<::cuda::std::is_same_v<Traversal, typename iterator_category_to_traversal<category>::type>&& ::
-                       cuda::std::is_same_v<System, typename iterator_category_to_system<category>::type>,
-                     category,
-                     iterator_category_with_system_and_traversal<category, System, Traversal>>;
+  using type = ::cuda::std::conditional_t<
+    ::cuda::std::is_same_v<Traversal, typename iterator_category_to_traversal<category>::type>&& ::cuda::std::
+      is_same_v<System, typename iterator_category_to_system<category>::type>,
+    category,
+    iterator_category_with_system_and_traversal<category, System, Traversal>>;
 };
 
 template <typename CategoryOrSystem, typename CategoryOrTraversal>
 using iterator_facade_category_t =
-  typename ::cuda::std::_If<is_iterator_category<CategoryOrTraversal>,
-                            ::cuda::std::type_identity<CategoryOrTraversal>,
-                            iterator_facade_category_impl<CategoryOrSystem, CategoryOrTraversal>>::type;
+  typename ::cuda::std::conditional_t<is_iterator_category<CategoryOrTraversal>,
+                                      ::cuda::std::type_identity<CategoryOrTraversal>,
+                                      iterator_facade_category_impl<CategoryOrSystem, CategoryOrTraversal>>::type;
 } // namespace detail
 THRUST_NAMESPACE_END

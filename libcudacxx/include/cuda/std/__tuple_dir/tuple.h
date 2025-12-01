@@ -146,9 +146,9 @@ public:
 
   template <class... _Up>
   using __variadic_constraints =
-    _If<!__expands_to_this_tuple<_Up...>::value && sizeof...(_Up) == sizeof...(_Tp),
-        typename __tuple_constraints<_Tp...>::template __variadic_constraints<_Up...>,
-        __invalid_tuple_constraints>;
+    conditional_t<!__expands_to_this_tuple<_Up...>::value && sizeof...(_Up) == sizeof...(_Tp),
+                  typename __tuple_constraints<_Tp...>::template __variadic_constraints<_Up...>,
+                  __invalid_tuple_constraints>;
 
   template <class... _Up,
             class _Constraints                                       = __variadic_constraints<_Up...>,
@@ -166,9 +166,9 @@ public:
 
   template <class... _Up>
   using __variadic_constraints_less_rank =
-    _If<!__expands_to_this_tuple<_Up...>::value,
-        typename __tuple_constraints<_Tp...>::template __variadic_constraints_less_rank<_Up...>,
-        __invalid_tuple_constraints>;
+    conditional_t<!__expands_to_this_tuple<_Up...>::value,
+                  typename __tuple_constraints<_Tp...>::template __variadic_constraints_less_rank<_Up...>,
+                  __invalid_tuple_constraints>;
 
   template <class... _Up,
             class _Constraints                                       = __variadic_constraints_less_rank<_Up...>,
@@ -198,9 +198,9 @@ public:
 
   template <class _Tuple>
   using __tuple_like_constraints =
-    _If<__tuple_like_with_size<_Tuple, sizeof...(_Tp)>,
-        typename __tuple_constraints<_Tp...>::template __tuple_like_constraints<_Tuple>,
-        __invalid_tuple_constraints>;
+    conditional_t<__tuple_like_with_size<_Tuple, sizeof...(_Tp)>,
+                  typename __tuple_constraints<_Tp...>::template __tuple_like_constraints<_Tuple>,
+                  __invalid_tuple_constraints>;
 
   // Horrible hack to make tuple_of_iterator_references work
   template <class _TupleOfIteratorReferences,
@@ -291,9 +291,9 @@ public:
 
   template <class... _Up>
   using __comparison_constraints =
-    _If<(sizeof...(_Tp) == sizeof...(_Up)),
-        typename __tuple_constraints<_Tp...>::template __comparison<_Up...>,
-        __invalid_tuple_constraints>;
+    conditional_t<(sizeof...(_Tp) == sizeof...(_Up)),
+                  typename __tuple_constraints<_Tp...>::template __comparison<_Up...>,
+                  __invalid_tuple_constraints>;
 
   _CCCL_EXEC_CHECK_DISABLE
   template <class... _Up, size_t... _Indices, class _Constraints = __comparison_constraints<_Up...>>

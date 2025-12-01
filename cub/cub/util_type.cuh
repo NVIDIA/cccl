@@ -82,10 +82,11 @@ struct non_void_value_impl<It, FallbackT, false>
 {
   // we consider thrust::discard_iterator's value_type (`any_assign`) as `void` as well, so users can switch from
   // cub::DiscardInputIterator to thrust::discard_iterator.
-  using type = ::cuda::std::_If<::cuda::std::is_void_v<it_value_t<It>>
-                                  || ::cuda::std::is_same_v<it_value_t<It>, THRUST_NS_QUALIFIER::detail::any_assign>,
-                                FallbackT,
-                                it_value_t<It>>;
+  using type =
+    ::cuda::std::conditional_t<::cuda::std::is_void_v<it_value_t<It>>
+                                 || ::cuda::std::is_same_v<it_value_t<It>, THRUST_NS_QUALIFIER::detail::any_assign>,
+                               FallbackT,
+                               it_value_t<It>>;
 };
 
 /**
@@ -377,20 +378,22 @@ struct UnitWord
   };
 
   /// Largest shuffle word such that sizeof(T) % sizeof(W) == 0 and alignof(W) <= alignof(T)
-  using ShuffleWord =
-    ::cuda::std::_If<IsMultiple<int>::IS_MULTIPLE,
-                     unsigned int,
-                     ::cuda::std::_If<IsMultiple<short>::IS_MULTIPLE, unsigned short, unsigned char>>;
+  using ShuffleWord = ::cuda::std::conditional_t<
+    IsMultiple<int>::IS_MULTIPLE,
+    unsigned int,
+    ::cuda::std::conditional_t<IsMultiple<short>::IS_MULTIPLE, unsigned short, unsigned char>>;
 
   /// Largest volatile word such that sizeof(T) % sizeof(W) == 0 and alignof(W) <= alignof(T)
-  using VolatileWord = ::cuda::std::_If<IsMultiple<long long>::IS_MULTIPLE, unsigned long long, ShuffleWord>;
+  using VolatileWord = ::cuda::std::conditional_t<IsMultiple<long long>::IS_MULTIPLE, unsigned long long, ShuffleWord>;
 
   /// Largest memory-access word such that sizeof(T) % sizeof(W) == 0 and alignof(W) <= alignof(T)
-  using DeviceWord = ::cuda::std::_If<IsMultiple<longlong2>::IS_MULTIPLE, ulonglong2, VolatileWord>;
+  using DeviceWord = ::cuda::std::conditional_t<IsMultiple<longlong2>::IS_MULTIPLE, ulonglong2, VolatileWord>;
 
   /// Biggest texture reference word such that sizeof(T) % sizeof(W) == 0 and alignof(W) <= alignof(T)
-  using TextureWord = ::cuda::std::
-    _If<IsMultiple<int4>::IS_MULTIPLE, uint4, ::cuda::std::_If<IsMultiple<int2>::IS_MULTIPLE, uint2, ShuffleWord>>;
+  using TextureWord =
+    ::cuda::std::conditional_t<IsMultiple<int4>::IS_MULTIPLE,
+                               uint4,
+                               ::cuda::std::conditional_t<IsMultiple<int2>::IS_MULTIPLE, uint2, ShuffleWord>>;
 };
 
 // float2 specialization workaround (for SM10-SM13)

@@ -36,7 +36,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 // manipulated by PTX without any performance overhead
 template <typename _Tp>
-using __atomic_small_proxy_t = _If<is_signed_v<_Tp>, int32_t, uint32_t>;
+using __atomic_small_proxy_t = conditional_t<is_signed_v<_Tp>, int32_t, uint32_t>;
 
 // Arithmetic conversions to/from proxy types
 template <class _Tp, enable_if_t<is_arithmetic_v<_Tp>, int> = 0>

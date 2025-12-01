@@ -348,9 +348,10 @@ _CCCL_HOST_DEVICE typename allocator_traits<Alloc>::size_type max_size([[maybe_u
 
 // TODO(bgruber): can be return decltype(auto) here?
 template <typename Alloc>
-_CCCL_HOST_DEVICE ::cuda::std::
-  _If<has_member_system<Alloc>::value, typename allocator_system<Alloc>::type&, typename allocator_system<Alloc>::type>
-  system(Alloc& a)
+_CCCL_HOST_DEVICE ::cuda::std::conditional_t<has_member_system<Alloc>::value,
+                                             typename allocator_system<Alloc>::type&,
+                                             typename allocator_system<Alloc>::type>
+system(Alloc& a)
 {
   if constexpr (has_member_system<Alloc>::value)
   {

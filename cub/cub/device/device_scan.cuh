@@ -132,9 +132,9 @@ struct DeviceScan
     using accum_t =
       ::cuda::std::__accumulator_t<ScanOpT,
                                    cub::detail::it_value_t<InputIteratorT>,
-                                   ::cuda::std::_If<::cuda::std::is_same_v<InitValueT, NullType>,
-                                                    cub::detail::it_value_t<InputIteratorT>,
-                                                    typename InitValueT::value_type>>;
+                                   ::cuda::std::conditional_t<::cuda::std::is_same_v<InitValueT, NullType>,
+                                                              cub::detail::it_value_t<InputIteratorT>,
+                                                              typename InitValueT::value_type>>;
 
     using policy_t = typename scan_tuning_t::
       template fn<detail::it_value_t<InputIteratorT>, detail::it_value_t<OutputIteratorT>, accum_t, offset_t, ScanOpT>;

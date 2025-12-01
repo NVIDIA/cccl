@@ -54,7 +54,7 @@ struct make_shuffle_iterator_base
 
   using system     = any_system_tag;
   using traversal  = random_access_traversal_tag;
-  using difference = ::cuda::std::_If<sizeof(IndexType) < sizeof(int), int, ::cuda::std::ptrdiff_t>;
+  using difference = ::cuda::std::conditional_t<sizeof(IndexType) < sizeof(int), int, ::cuda::std::ptrdiff_t>;
 
   using type =
     iterator_adaptor<shuffle_iterator<IndexType, BijectionFunc>,

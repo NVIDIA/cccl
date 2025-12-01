@@ -61,7 +61,8 @@ _CCCL_CONCEPT __integer_like_with_usable_difference_type =
   __signed_integer_like<_Tp> || (__integer_like<_Tp> && weakly_incrementable<_Tp>);
 
 template <class _Tp>
-using __repeat_view_iterator_difference_t _CCCL_NODEBUG_ALIAS = _If<__signed_integer_like<_Tp>, _Tp, _IotaDiffT<_Tp>>;
+using __repeat_view_iterator_difference_t _CCCL_NODEBUG_ALIAS =
+  conditional_t<__signed_integer_like<_Tp>, _Tp, _IotaDiffT<_Tp>>;
 
 #if _CCCL_HAS_CONCEPTS()
 template <move_constructible _Tp, semiregular _Bound = unreachable_sentinel_t>

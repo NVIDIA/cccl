@@ -119,9 +119,9 @@ template <
   typename OffsetT,
   typename AccumT                 = ::cuda::std::__accumulator_t<ScanOpT,
                                                                  cub::detail::it_value_t<InputIteratorT>,
-                                                                 ::cuda::std::_If<::cuda::std::is_same_v<InitValueT, NullType>,
-                                                                                  cub::detail::it_value_t<InputIteratorT>,
-                                                                                  typename InitValueT::value_type>>,
+                                                                 ::cuda::std::conditional_t<::cuda::std::is_same_v<InitValueT, NullType>,
+                                                                                            cub::detail::it_value_t<InputIteratorT>,
+                                                                                            typename InitValueT::value_type>>,
   ForceInclusive EnforceInclusive = ForceInclusive::No,
   typename PolicyHub              = detail::scan::
     policy_hub<detail::it_value_t<InputIteratorT>, detail::it_value_t<OutputIteratorT>, AccumT, OffsetT, ScanOpT>,

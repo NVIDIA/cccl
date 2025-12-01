@@ -151,7 +151,7 @@ _CCCL_REQUIRES(::cuda::std::__cccl_is_unsigned_integer_v<_Tp>)
 #else // ^^^ _CCCL_BUILTIN_CLZG ^^^ // vvv !_CCCL_BUILTIN_CLZG vvv
   if constexpr (sizeof(_Tp) <= sizeof(uint64_t))
   {
-    using _Sp                    = _If<sizeof(_Tp) <= sizeof(uint32_t), uint32_t, uint64_t>;
+    using _Sp                    = conditional_t<sizeof(_Tp) <= sizeof(uint32_t), uint32_t, uint64_t>;
     constexpr auto __digits_diff = numeric_limits<_Sp>::digits - numeric_limits<_Tp>::digits;
     __count                      = ::cuda::std::__cccl_countl_zero_impl(static_cast<_Sp>(__v)) - __digits_diff;
   }

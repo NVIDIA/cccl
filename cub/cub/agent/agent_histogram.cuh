@@ -175,9 +175,9 @@ struct AgentHistogram
   // Wrap the native input pointer with CacheModifiedInputIterator or directly use the supplied input iterator type
   // TODO(bgruber): we can wrap all contiguous iterators, not just pointers
   using WrappedSampleIteratorT =
-    ::cuda::std::_If<::cuda::std::is_pointer_v<SampleIteratorT>,
-                     CacheModifiedInputIterator<load_modifier, SampleT, OffsetT>,
-                     SampleIteratorT>;
+    ::cuda::std::conditional_t<::cuda::std::is_pointer_v<SampleIteratorT>,
+                               CacheModifiedInputIterator<load_modifier, SampleT, OffsetT>,
+                               SampleIteratorT>;
   using WrappedPixelIteratorT = CacheModifiedInputIterator<load_modifier, PixelT, OffsetT>;
   using WrappedVecsIteratorT  = CacheModifiedInputIterator<load_modifier, VecT, OffsetT>;
   using BlockLoadSampleT = BlockLoad<SampleT, block_threads, samples_per_thread, AgentHistogramPolicyT::LOAD_ALGORITHM>;

@@ -212,27 +212,27 @@ struct AgentReduceByKey
   // CacheModifiedValuesInputIterator or directly use the supplied input
   // iterator type
   using WrappedKeysInputIteratorT =
-    ::cuda::std::_If<::cuda::std::is_pointer_v<KeysInputIteratorT>,
-                     CacheModifiedInputIterator<AgentReduceByKeyPolicyT::LOAD_MODIFIER, KeyInputT, OffsetT>,
-                     KeysInputIteratorT>;
+    ::cuda::std::conditional_t<::cuda::std::is_pointer_v<KeysInputIteratorT>,
+                               CacheModifiedInputIterator<AgentReduceByKeyPolicyT::LOAD_MODIFIER, KeyInputT, OffsetT>,
+                               KeysInputIteratorT>;
 
   // Cache-modified Input iterator wrapper type (for applying cache modifier)
   // for values Wrap the native input pointer with
   // CacheModifiedValuesInputIterator or directly use the supplied input
   // iterator type
   using WrappedValuesInputIteratorT =
-    ::cuda::std::_If<::cuda::std::is_pointer_v<ValuesInputIteratorT>,
-                     CacheModifiedInputIterator<AgentReduceByKeyPolicyT::LOAD_MODIFIER, ValueInputT, OffsetT>,
-                     ValuesInputIteratorT>;
+    ::cuda::std::conditional_t<::cuda::std::is_pointer_v<ValuesInputIteratorT>,
+                               CacheModifiedInputIterator<AgentReduceByKeyPolicyT::LOAD_MODIFIER, ValueInputT, OffsetT>,
+                               ValuesInputIteratorT>;
 
   // Cache-modified Input iterator wrapper type (for applying cache modifier)
   // for fixup values Wrap the native input pointer with
   // CacheModifiedValuesInputIterator or directly use the supplied input
   // iterator type
   using WrappedFixupInputIteratorT =
-    ::cuda::std::_If<::cuda::std::is_pointer_v<AggregatesOutputIteratorT>,
-                     CacheModifiedInputIterator<AgentReduceByKeyPolicyT::LOAD_MODIFIER, ValueInputT, OffsetT>,
-                     AggregatesOutputIteratorT>;
+    ::cuda::std::conditional_t<::cuda::std::is_pointer_v<AggregatesOutputIteratorT>,
+                               CacheModifiedInputIterator<AgentReduceByKeyPolicyT::LOAD_MODIFIER, ValueInputT, OffsetT>,
+                               AggregatesOutputIteratorT>;
 
   // Reduce-value-by-segment scan operator
   using ReduceBySegmentOpT = ReduceBySegmentOp<ReductionOpT>;

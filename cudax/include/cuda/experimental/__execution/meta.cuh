@@ -203,9 +203,9 @@ struct __type_try_quote<_Fn, _Default>
 {
   template <class... _Ts>
   using __call _CCCL_NODEBUG_ALIAS =
-    typename ::cuda::std::_If<__is_instantiable_with<_Fn, _Ts...>, //
-                              __type_try_quote<_Fn>,
-                              ::cuda::std::__type_always<_Default>>::template __call<_Ts...>;
+    typename ::cuda::std::conditional_t<__is_instantiable_with<_Fn, _Ts...>, //
+                                        __type_try_quote<_Fn>,
+                                        ::cuda::std::__type_always<_Default>>::template __call<_Ts...>;
 };
 
 template <class _Return>
@@ -262,15 +262,15 @@ struct __type_self_or
 
 template <template <class...> class _Fn, class _Default, class... _Ts>
 using __type_call_or_quote =
-  typename ::cuda::std::_If<__is_instantiable_with<_Fn, _Ts...>,
-                            ::cuda::std::__type_quote<_Fn>,
-                            ::cuda::std::__type_always<_Default>>::template __call<_Ts...>;
+  typename ::cuda::std::conditional_t<__is_instantiable_with<_Fn, _Ts...>,
+                                      ::cuda::std::__type_quote<_Fn>,
+                                      ::cuda::std::__type_always<_Default>>::template __call<_Ts...>;
 
 template <class _Fn, class _Default, class... _Ts>
 using __type_call_or =
-  typename ::cuda::std::_If<__is_instantiable_with<_Fn::template __call, _Ts...>,
-                            _Fn,
-                            ::cuda::std::__type_always<_Default>>::template __call<_Ts...>;
+  typename ::cuda::std::conditional_t<__is_instantiable_with<_Fn::template __call, _Ts...>,
+                                      _Fn,
+                                      ::cuda::std::__type_always<_Default>>::template __call<_Ts...>;
 } // namespace cuda::experimental::execution
 
 _CCCL_DIAG_POP

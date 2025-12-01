@@ -113,9 +113,9 @@ __launch_bounds__(int((ALT_DIGIT_BITS) ? ChainedPolicyT::ActivePolicy::AltSegmen
   //
 
   using SegmentedPolicyT =
-    ::cuda::std::_If<ALT_DIGIT_BITS,
-                     typename ChainedPolicyT::ActivePolicy::AltSegmentedPolicy,
-                     typename ChainedPolicyT::ActivePolicy::SegmentedPolicy>;
+    ::cuda::std::conditional_t<ALT_DIGIT_BITS,
+                               typename ChainedPolicyT::ActivePolicy::AltSegmentedPolicy,
+                               typename ChainedPolicyT::ActivePolicy::SegmentedPolicy>;
 
   static constexpr int BLOCK_THREADS = SegmentedPolicyT::BLOCK_THREADS;
   static constexpr int RADIX_BITS    = SegmentedPolicyT::RADIX_BITS;

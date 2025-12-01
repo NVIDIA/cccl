@@ -155,8 +155,10 @@ private:
 
   /// Internal specialization.
   /// Use SHFL-based scan if LOGICAL_WARP_THREADS is a power-of-two
-  using InternalWarpScan = ::cuda::std::
-    _If<IS_POW_OF_TWO, detail::WarpScanShfl<T, LOGICAL_WARP_THREADS>, detail::WarpScanSmem<T, LOGICAL_WARP_THREADS>>;
+  using InternalWarpScan =
+    ::cuda::std::conditional_t<IS_POW_OF_TWO,
+                               detail::WarpScanShfl<T, LOGICAL_WARP_THREADS>,
+                               detail::WarpScanSmem<T, LOGICAL_WARP_THREADS>>;
 
   /// Shared memory storage layout type for WarpScan
   using _TempStorage = typename InternalWarpScan::TempStorage;

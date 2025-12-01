@@ -137,7 +137,8 @@ public:
   {
     typename BlockLoadRunItemT::TempStorage load_uniques_storage;
     typename BlockLoadRunLengthsT::TempStorage load_run_lengths_storage;
-    cuda::std::_If<TEST_RUN_OFFSETS_, typename BlockRunOffsetScanT::TempStorage, cub::NullType> run_offsets_scan_storage;
+    cuda::std::conditional_t<TEST_RUN_OFFSETS_, typename BlockRunOffsetScanT::TempStorage, cub::NullType>
+      run_offsets_scan_storage;
     struct
     {
       typename BlockRunLengthDecodeT::TempStorage run_length_decode_storage;

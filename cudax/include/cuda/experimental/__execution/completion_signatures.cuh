@@ -295,7 +295,7 @@ struct __remove_sigs
 
 template <class _Fn, class _Sig>
 _CCCL_API _CCCL_CONSTEVAL auto __filer_one() noexcept
-  -> ::cuda::std::_If<_Fn{}(static_cast<_Sig*>(nullptr)), completion_signatures<_Sig>, completion_signatures<>>
+  -> ::cuda::std::conditional_t<_Fn{}(static_cast<_Sig*>(nullptr)), completion_signatures<_Sig>, completion_signatures<>>
 {
   return {};
 }

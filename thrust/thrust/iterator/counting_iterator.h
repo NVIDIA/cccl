@@ -61,8 +61,8 @@ class counting_iterator;
 namespace detail
 {
 template <typename Number>
-using counting_iterator_difference_type =
-  ::cuda::std::_If<::cuda::std::is_integral_v<Number> && sizeof(Number) < sizeof(int), int, ::cuda::std::ptrdiff_t>;
+using counting_iterator_difference_type = ::cuda::std::
+  conditional_t<::cuda::std::is_integral_v<Number> && sizeof(Number) < sizeof(int), int, ::cuda::std::ptrdiff_t>;
 
 template <typename Incrementable, typename System, typename Traversal, typename Difference, typename StrideHolder>
 struct make_counting_iterator_base

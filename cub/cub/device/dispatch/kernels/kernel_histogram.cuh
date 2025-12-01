@@ -56,9 +56,9 @@ struct Transforms
       // Wrap the native input pointer with CacheModifiedInputIterator
       // or Directly use the supplied input iterator type
       using WrappedLevelIteratorT =
-        ::cuda::std::_If<::cuda::std::is_pointer_v<LevelIteratorT>,
-                         CacheModifiedInputIterator<LOAD_MODIFIER, LevelT, OffsetT>,
-                         LevelIteratorT>;
+        ::cuda::std::conditional_t<::cuda::std::is_pointer_v<LevelIteratorT>,
+                                   CacheModifiedInputIterator<LOAD_MODIFIER, LevelT, OffsetT>,
+                                   LevelIteratorT>;
 
       WrappedLevelIteratorT wrapped_levels(d_levels);
 
@@ -100,11 +100,11 @@ struct Transforms
     // rule: 2^l * 2^r = 2^(l + r) to determine a sufficiently large type to hold the
     // multiplication result.
     // If CommonT used to be a 128-bit wide integral type already, we use CommonT's arithmetic
-    using IntArithmeticT = ::cuda::std::_If< //
+    using IntArithmeticT = ::cuda::std::conditional_t< //
       sizeof(SampleT) + sizeof(CommonT) <= sizeof(uint32_t), //
       uint32_t, //
 #  if _CCCL_HAS_INT128()
-      ::cuda::std::_If< //
+      ::cuda::std::conditional_t< //
         (::cuda::std::is_same_v<CommonT, __int128_t> || //
          ::cuda::std::is_same_v<CommonT, __uint128_t>), //
         CommonT, //
@@ -119,9 +119,9 @@ struct Transforms
     template <typename T>
     using is_integral_excl_int128 =
 #if _CCCL_HAS_INT128()
-      ::cuda::std::_If<::cuda::std::is_same_v<T, __int128_t>&& ::cuda::std::is_same_v<T, __uint128_t>,
-                       ::cuda::std::false_type,
-                       ::cuda::std::is_integral<T>>;
+      ::cuda::std::conditional_t<::cuda::std::is_same_v<T, __int128_t>&& ::cuda::std::is_same_v<T, __uint128_t>,
+                                 ::cuda::std::false_type,
+                                 ::cuda::std::is_integral<T>>;
 #else // ^^^ _CCCL_HAS_INT128() ^^^ / vvv !_CCCL_HAS_INT128() vvv
       ::cuda::std::is_integral<T>;
 #endif // !_CCCL_HAS_INT128()

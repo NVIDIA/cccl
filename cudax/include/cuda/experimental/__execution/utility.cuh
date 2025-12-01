@@ -272,7 +272,7 @@ struct __call_or_t
 
   _CCCL_EXEC_CHECK_DISABLE
   template <class _Default = __nil,
-            class _Result  = ::cuda::std::_If<__same_as<_Default, __nil>, void, _Default>,
+            class _Result  = ::cuda::std::conditional_t<__same_as<_Default, __nil>, void, _Default>,
             class... _Args>
   [[nodiscard]] _CCCL_API constexpr auto operator()(::cuda::std::__ignore_t, _Default&& __default, _Args&&...) const
     noexcept(__nothrow_movable<_Default>) -> _Result

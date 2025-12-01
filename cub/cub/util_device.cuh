@@ -720,9 +720,9 @@ private:
 public:
   /// The policy for the active compiler pass
   using ActivePolicy =
-    typename ::cuda::std::_If<(CUB_PTX_ARCH < PolicyPtxVersion && have_previous_policy),
-                              detail::get_active_policy<PrevPolicyT>,
-                              ::cuda::std::type_identity<PolicyT>>::type;
+    typename ::cuda::std::conditional_t<(CUB_PTX_ARCH < PolicyPtxVersion && have_previous_policy),
+                                        detail::get_active_policy<PrevPolicyT>,
+                                        ::cuda::std::type_identity<PolicyT>>::type;
 
 #if !_CCCL_COMPILER(NVRTC)
   /// Specializes and dispatches op in accordance to the first policy in the chain of adequate PTX version

@@ -45,7 +45,7 @@ _CCCL_API constexpr uint32_t __bit_log2(_Tp __t) noexcept
   {
     if constexpr (sizeof(_Tp) <= 8)
     {
-      using _Up [[maybe_unused]] = _If<sizeof(_Tp) <= 4, uint32_t, uint64_t>;
+      using _Up [[maybe_unused]] = conditional_t<sizeof(_Tp) <= 4, uint32_t, uint64_t>;
       NV_IF_TARGET(NV_IS_DEVICE, (return ::cuda::ptx::bfind(static_cast<_Up>(__t));))
     }
     else
@@ -72,7 +72,7 @@ _CCCL_TEMPLATE(class _Tp)
 _CCCL_REQUIRES(::cuda::std::__cccl_is_unsigned_integer_v<_Tp>)
 [[nodiscard]] _CCCL_API constexpr _Tp bit_ceil(_Tp __t) noexcept
 {
-  using _Up = _If<sizeof(_Tp) <= 4, uint32_t, _Tp>;
+  using _Up = conditional_t<sizeof(_Tp) <= 4, uint32_t, _Tp>;
   _CCCL_ASSERT(__t <= numeric_limits<_Tp>::max() / 2, "bit_ceil overflow");
   // if __t == 0, __t - 1 == 0xFFFFFFFF, bit_width(0xFFFFFFFF) returns 32
   auto __width = ::cuda::std::bit_width(static_cast<_Up>(__t) - 1);
@@ -98,7 +98,7 @@ _CCCL_TEMPLATE(class _Tp)
 _CCCL_REQUIRES(::cuda::std::__cccl_is_unsigned_integer_v<_Tp>)
 [[nodiscard]] _CCCL_API constexpr _Tp bit_floor(_Tp __t) noexcept
 {
-  using _Up   = _If<sizeof(_Tp) <= 4, uint32_t, _Tp>;
+  using _Up   = conditional_t<sizeof(_Tp) <= 4, uint32_t, _Tp>;
   auto __log2 = ::cuda::std::__bit_log2(static_cast<_Up>(__t));
   // __bit_log2 returns 0xFFFFFFFF if __t == 0
   if constexpr (sizeof(_Tp) <= 8)

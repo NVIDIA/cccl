@@ -101,10 +101,10 @@ private:
     (max_default_size > max_smem_per_block) && (max_fallback_size <= max_smem_per_block);
 
 public:
-  using policy_t = ::cuda::std::_If<uses_fallback_policy, fallback_policy_t, DefaultPolicyT>;
+  using policy_t = ::cuda::std::conditional_t<uses_fallback_policy, fallback_policy_t, DefaultPolicyT>;
   using block_sort_agent_t =
-    ::cuda::std::_If<uses_fallback_policy, fallback_block_sort_agent_t, default_block_sort_agent_t>;
-  using merge_agent_t = ::cuda::std::_If<uses_fallback_policy, fallback_merge_agent_t, default_merge_agent_t>;
+    ::cuda::std::conditional_t<uses_fallback_policy, fallback_block_sort_agent_t, default_block_sort_agent_t>;
+  using merge_agent_t = ::cuda::std::conditional_t<uses_fallback_policy, fallback_merge_agent_t, default_merge_agent_t>;
 };
 
 // TODO: this class should be templated on `typename... Ts` to avoid repetition,

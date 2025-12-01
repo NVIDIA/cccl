@@ -147,7 +147,7 @@ _CCCL_REQUIRES(::cuda::std::__cccl_is_unsigned_integer_v<_Tp>)
 #else // ^^^ _CCCL_BUILTIN_POPCOUNTG ^^^ / vvv !_CCCL_BUILTIN_POPCOUNTG vvv
   if constexpr (sizeof(_Tp) <= sizeof(uint64_t))
   {
-    using _Sp = _If<sizeof(_Tp) <= sizeof(uint32_t), uint32_t, uint64_t>;
+    using _Sp = conditional_t<sizeof(_Tp) <= sizeof(uint32_t), uint32_t, uint64_t>;
     __count   = ::cuda::std::__cccl_popcount_impl(static_cast<_Sp>(__v));
   }
   else
