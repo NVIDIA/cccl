@@ -25,6 +25,8 @@
 
 CUB_NAMESPACE_BEGIN
 
+namespace detail::scan
+{
 struct SmemResourceRaw
 {
   static constexpr int mMaxNumPhases = 4;
@@ -160,5 +162,6 @@ struct SmemResourceRaw
     }
   }
 };
+} // namespace detail::scan
 
 CUB_NAMESPACE_END
