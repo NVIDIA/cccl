@@ -87,28 +87,39 @@ template <class T, class ReductionOp, class = void>
 inline constexpr bool can_use_reduce_and_sync = false;
 
 template <class T>
-inline constexpr bool can_use_reduce_and_sync<T,
-                                              ::cuda::std::logical_and<>,
-                                              ::cuda::std::void_t<decltype(__reduce_and_sync(0xFFFFFFFF, T{}))>> =
-  ::cuda::std::is_same_v<unsigned int, T>;
+inline constexpr bool
+  can_use_reduce_and_sync<T, ::cuda::std::bit_and<>, ::cuda::std::void_t<decltype(__reduce_and_sync(0xFFFFFFFF, T{}))>> =
+    ::cuda::std::is_same_v<unsigned int, T>;
 
 template <class T>
-inline constexpr bool can_use_reduce_and_sync<T,
-                                              ::cuda::std::logical_and<T>,
-                                              ::cuda::std::void_t<decltype(__reduce_and_sync(0xFFFFFFFF, T{}))>> =
-  ::cuda::std::is_same_v<unsigned int, T>;
+inline constexpr bool
+  can_use_reduce_and_sync<T, ::cuda::std::bit_and<T>, ::cuda::std::void_t<decltype(__reduce_and_sync(0xFFFFFFFF, T{}))>> =
+    ::cuda::std::is_same_v<unsigned int, T>;
 
 template <class T, class ReductionOp, class = void>
 inline constexpr bool can_use_reduce_or_sync = false;
 
 template <class T>
 inline constexpr bool
-  can_use_reduce_or_sync<T, ::cuda::std::logical_or<>, ::cuda::std::void_t<decltype(__reduce_or_sync(0xFFFFFFFF, T{}))>> =
+  can_use_reduce_or_sync<T, ::cuda::std::bit_or<>, ::cuda::std::void_t<decltype(__reduce_or_sync(0xFFFFFFFF, T{}))>> =
     ::cuda::std::is_same_v<unsigned int, T>;
 
 template <class T>
 inline constexpr bool
-  can_use_reduce_or_sync<T, ::cuda::std::logical_or<T>, ::cuda::std::void_t<decltype(__reduce_or_sync(0xFFFFFFFF, T{}))>> =
+  can_use_reduce_or_sync<T, ::cuda::std::bit_or<T>, ::cuda::std::void_t<decltype(__reduce_or_sync(0xFFFFFFFF, T{}))>> =
+    ::cuda::std::is_same_v<unsigned int, T>;
+
+template <class T, class ReductionOp, class = void>
+inline constexpr bool can_use_reduce_xor_sync = false;
+
+template <class T>
+inline constexpr bool
+  can_use_reduce_xor_sync<T, ::cuda::std::bit_xor<>, ::cuda::std::void_t<decltype(__reduce_xor_sync(0xFFFFFFFF, T{}))>> =
+    ::cuda::std::is_same_v<unsigned int, T>;
+
+template <class T>
+inline constexpr bool
+  can_use_reduce_xor_sync<T, ::cuda::std::bit_xor<T>, ::cuda::std::void_t<decltype(__reduce_xor_sync(0xFFFFFFFF, T{}))>> =
     ::cuda::std::is_same_v<unsigned int, T>;
 
 /**
@@ -555,6 +566,10 @@ struct WarpReduceShfl
                      else if constexpr (detail::can_use_reduce_or_sync<T, ReductionOp>)
                      {
                        return __reduce_or_sync(member_mask, input);
+                     }
+                     else if constexpr (detail::can_use_reduce_xor_sync<T, ReductionOp>)
+                     {
+                       return __reduce_xor_sync(member_mask, input);
                      }
                    }))
 
