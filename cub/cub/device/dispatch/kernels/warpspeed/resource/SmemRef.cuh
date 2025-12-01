@@ -19,6 +19,8 @@
 
 CUB_NAMESPACE_BEGIN
 
+namespace detail::scan
+{
 template <typename _Tp>
 struct SmemRef
 {
@@ -85,5 +87,6 @@ struct SmemRef
     mDoFenceLdsToAsyncProxy = true;
   }
 };
+} // namespace detail::scan
 
 CUB_NAMESPACE_END
