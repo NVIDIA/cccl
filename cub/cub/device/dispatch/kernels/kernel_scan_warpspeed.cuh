@@ -83,26 +83,64 @@ _CCCL_DEVICE_API inline void squadGetNextBlockIdx(const Squad& squad, SmemRef<ui
 
 struct CpAsyncOobInfo
 {
-  void* ptrGmemBase;
-  uint32_t copySizeBytes;
-  uint32_t smemOffsetElem;
+  char* ptrGmem;
+  char* ptrGmemStartAlignDown;
+  char* ptrGmemStartAlignUp;
+  char* ptrGmemEnd;
+  char* ptrGmemEndAlignDown;
+  char* ptrGmemEndAlignUp;
+  uint32_t overCopySizeBytes;
+  uint32_t underCopySizeBytes;
+  uint32_t origCopySizeBytes;
+  uint32_t smemStartOffsetElem;
+  uint32_t smemStartOffsetBytes;
+  uint32_t smemEndOffsetElem;
+  uint32_t smemEndOffsetBytes;
 };
 
 template <typename Tp>
 _CCCL_DEVICE_API inline CpAsyncOobInfo prepareCpAsyncOob(const Tp* ptrGmem, uint32_t sizeElem)
 {
   // We will copy from [ptrGmemBase, ptrGmemEnd). Both pointers have to be 16B
-  // aligned. We align ptrGmemBase down and ptrGmemEnd up.
-  const Tp* ptrGmemBase = cuda::align_down(ptrGmem, std::size_t(16));
-  const Tp* ptrGmemEnd  = cuda::align_up(ptrGmem + sizeElem, std::size_t(16));
+  // aligned.
+  const Tp* ptrGmemStartAlignDown = cuda::align_down(ptrGmem, std::size_t(16));
+  const Tp* ptrGmemStartAlignUp   = cuda::align_up(ptrGmem, std::size_t(16));
+  const Tp* ptrGmemEnd            = ptrGmem + sizeElem;
+  const Tp* ptrGmemEndAlignUp     = cuda::align_up(ptrGmemEnd, std::size_t(16));
+  const Tp* ptrGmemEndAlignDown   = cuda::align_down(ptrGmemEnd, std::size_t(16));
 
   // Compute the final copy size in bytes. It can be either sizeElem or sizeElem + 16 / sizeof(T).
-  uint32_t copySizeBytes = static_cast<uint32_t>(sizeof(Tp) * (ptrGmemEnd - ptrGmemBase));
+  uint32_t origCopySizeBytes  = static_cast<uint32_t>(sizeof(Tp) * sizeElem);
+  uint32_t overCopySizeBytes  = static_cast<uint32_t>(sizeof(Tp) * (ptrGmemEndAlignUp - ptrGmemStartAlignDown));
+  uint32_t underCopySizeBytes = static_cast<uint32_t>(sizeof(Tp) * (ptrGmemEndAlignDown - ptrGmemStartAlignUp));
+  if (origCopySizeBytes < underCopySizeBytes)
+  {
+    // If ptrGmemStart and ptrGmemEnd are aligned to [1, .., 15] bytes, then
+    // when we align the one up and the other down we get overflow. We check for
+    // that here. In that case, the undercopy size is zero.
+    underCopySizeBytes = 0;
+  }
   // The offset in elements to the first valid element in shared memory.
   // ptrSmem + smemOffsetElem will point to the element copied from ptrGmem.
-  uint32_t smemOffsetElem = static_cast<uint32_t>(ptrGmem - ptrGmemBase);
+  uint32_t smemStartOffsetElem = static_cast<uint32_t>(ptrGmem - ptrGmemStartAlignDown);
+  // The offset in elements between ptrGmemEnd and ptrGmemEndAlignDown
+  uint32_t smemEndOffsetElem = static_cast<uint32_t>(ptrGmemEnd - ptrGmemEndAlignDown);
 
-  return CpAsyncOobInfo{(void*) ptrGmemBase, copySizeBytes, smemOffsetElem};
+  return CpAsyncOobInfo{
+    .ptrGmem               = (char*) ptrGmem,
+    .ptrGmemStartAlignDown = (char*) ptrGmemStartAlignDown,
+    .ptrGmemStartAlignUp   = (char*) ptrGmemStartAlignUp,
+    .ptrGmemEnd            = (char*) ptrGmemEnd,
+    .ptrGmemEndAlignDown   = (char*) ptrGmemEndAlignDown,
+    .ptrGmemEndAlignUp     = (char*) ptrGmemEndAlignUp,
+    .overCopySizeBytes     = overCopySizeBytes,
+    .underCopySizeBytes    = underCopySizeBytes,
+    .origCopySizeBytes     = static_cast<uint32_t>(sizeof(Tp) * sizeElem),
+    .smemStartOffsetElem   = smemStartOffsetElem,
+    .smemStartOffsetBytes  = static_cast<uint32_t>(sizeof(Tp) * smemStartOffsetElem),
+    .smemEndOffsetElem     = smemEndOffsetElem,
+    .smemEndOffsetBytes    = static_cast<uint32_t>(sizeof(Tp) * smemEndOffsetElem),
+  };
 }
 
 template <typename Tp>
@@ -117,31 +155,111 @@ _CCCL_DEVICE_API inline void squadLoadBulk(const Squad& squad, SmemRef<Tp>& refD
       ::cuda::ptx::space_cluster,
       ::cuda::ptx::space_global,
       ptrSmem,
-      cpAsyncOobInfo.ptrGmemBase,
-      cpAsyncOobInfo.copySizeBytes,
+      cpAsyncOobInfo.ptrGmemStartAlignDown,
+      cpAsyncOobInfo.overCopySizeBytes,
       ptrBar);
   }
-  refDestSmem.squadIncreaseTxCount(squad, cpAsyncOobInfo.copySizeBytes);
+  refDestSmem.squadIncreaseTxCount(squad, cpAsyncOobInfo.overCopySizeBytes);
 }
 
 template <typename OutputT>
-_CCCL_DEVICE_API inline void
-squadStoreBulkSync(const Squad& squad, OutputT* ptrOut, OutputT* srcSmem, uint32_t sizeBytes)
+_CCCL_DEVICE_API inline void squadStoreBulkSync(const Squad& squad, CpAsyncOobInfo cpAsyncOobInfo, OutputT* srcSmem)
 {
-  // Acquire shared memory in async proxy
+  // This function performs either 1 copy, or three copies, depending on the
+  // size and alignment of the output tile in global memory.
+  //
+  // If the output tile is contained in a single 16-byte aligned region, then we
+  // only perform a single masked copy.
+  //
+  // If the output tile is larger or straddles two 16-byte aligned regions, then
+  // we perform up to three copies:
+  // - One copy for the first up to 15 bytes at the start of the region.
+  // - One copy that starts at a 16-byte aligned address and ends at the latest 16-byte aligned address.
+  // - One copy that cleans up the last up to 15 bytes.
   if (squad.isLeaderWarp())
   {
+    // Acquire shared memory in async proxy
     // Perform fence.proxy.async with full warp to avoid BSSY+BSYNC
     ::cuda::ptx::fence_proxy_async(::cuda::ptx::space_shared);
+
+    bool doStartCopy  = cpAsyncOobInfo.smemStartOffsetBytes > 0;
+    bool doEndCopy    = cpAsyncOobInfo.smemEndOffsetBytes > 0;
+    bool doMiddleCopy = cpAsyncOobInfo.ptrGmemStartAlignUp != cpAsyncOobInfo.ptrGmemEndAlignUp;
+
+    uint16_t byteMask      = 0xFFFF;
+    uint16_t byteMaskStart = byteMask << cpAsyncOobInfo.smemStartOffsetBytes;
+    uint16_t byteMaskEnd   = byteMask >> (16 - cpAsyncOobInfo.smemEndOffsetBytes);
+    // byteMaskStart contains zeroes at the left.
+    uint16_t byteMaskSmall =
+      byteMaskStart & (byteMask >> (16 - (cpAsyncOobInfo.ptrGmemEnd - cpAsyncOobInfo.ptrGmemStartAlignDown)));
+
+    char* ptrSmemMiddle = (char*) srcSmem;
+    if (doStartCopy)
+    {
+      ptrSmemMiddle += 16;
+    }
+
+    if (doMiddleCopy)
+    {
+      // Copy the middle part. Starting at byte 0 or 16 in shared memory. This
+      // is the large copy. We perform this one first, so that the compiler can
+      // (hopefully) hide all the arithmetic behind this instruction.
+      if (::cuda::ptx::elect_sync(~0))
+      {
+        ::cuda::ptx::cp_async_bulk(
+          ::cuda::ptx::space_global,
+          ::cuda::ptx::space_shared,
+          cpAsyncOobInfo.ptrGmemStartAlignUp,
+          ptrSmemMiddle,
+          cpAsyncOobInfo.underCopySizeBytes);
+      }
+      if (doStartCopy)
+      {
+        // Copy a subset of the first 16 bytes
+        if (::cuda::ptx::elect_sync(~0))
+        {
+          ::cuda::ptx::cp_async_bulk_cp_mask(
+            ::cuda::ptx::space_global,
+            ::cuda::ptx::space_shared,
+            cpAsyncOobInfo.ptrGmemStartAlignDown,
+            srcSmem,
+            /*size*/ 16,
+            byteMaskStart);
+        }
+      }
+      if (doEndCopy)
+      {
+        // Copy a subset of the last 16 bytes
+        if (::cuda::ptx::elect_sync(~0))
+        {
+          ::cuda::ptx::cp_async_bulk_cp_mask(
+            ::cuda::ptx::space_global,
+            ::cuda::ptx::space_shared,
+            ((char*) cpAsyncOobInfo.ptrGmemStartAlignUp) + cpAsyncOobInfo.underCopySizeBytes,
+            ptrSmemMiddle + cpAsyncOobInfo.underCopySizeBytes,
+            /*size*/ 16,
+            byteMaskEnd);
+        }
+      }
+    }
+    else
+    {
+      // Copy a subset of the first 16 bytes
+      if (::cuda::ptx::elect_sync(~0))
+      {
+        ::cuda::ptx::cp_async_bulk_cp_mask(
+          ::cuda::ptx::space_global,
+          ::cuda::ptx::space_shared,
+          cpAsyncOobInfo.ptrGmemStartAlignDown,
+          srcSmem,
+          /*size*/ 16,
+          byteMaskSmall);
+      }
+    }
+    // Commit and wait for store to have completed reading from shared memory
+    ::cuda::ptx::cp_async_bulk_commit_group();
+    ::cuda::ptx::cp_async_bulk_wait_group_read(::cuda::ptx::n32_t<0>{});
   }
-  if (squad.isLeaderThread())
-  {
-    // Issue TMA store
-    ::cuda::ptx::cp_async_bulk(::cuda::ptx::space_global, ::cuda::ptx::space_shared, ptrOut, srcSmem, sizeBytes);
-  }
-  // Commit and wait for store to have completed reading from shared memory
-  ::cuda::ptx::cp_async_bulk_commit_group();
-  ::cuda::ptx::cp_async_bulk_wait_group_read(::cuda::ptx::n32_t<0>{});
 }
 
 template <typename InputT, typename AccumT, int elemPerThread>
@@ -541,7 +659,7 @@ _CCCL_DEVICE_API inline void kernelBody(
 
     size_t idxTileBase      = idxTile * size_t(tile_size);
     size_t copyNumElem      = cuda::std::min(params.numElem - idxTileBase, size_t(tile_size));
-    CpAsyncOobInfo loadInfo = prepareCpAsyncOob(params.ptrIn + idxTile * size_t(tile_size), copyNumElem);
+    CpAsyncOobInfo loadInfo = prepareCpAsyncOob(params.ptrIn + idxTileBase, copyNumElem);
 
     if (squad == squadLoad)
     {
@@ -576,8 +694,8 @@ _CCCL_DEVICE_API inline void kernelBody(
         // Load data
         constexpr int elemPerThread    = tile_size / squadReduce.threadCount();
         AccumT regInput[elemPerThread] = {AccumT{}};
-        // Handle unaligned refInOutRW.data() + loadInfo.smemOffsetElem points to the first element of the tile.
-        squadLoadSmem(squad, regInput, &refInOutRW.data()[0] + loadInfo.smemOffsetElem);
+        // Handle unaligned refInOutRW.data() + loadInfo.smemStartOffsetElem points to the first element of the tile.
+        squadLoadSmem(squad, regInput, &refInOutRW.data()[0] + loadInfo.smemStartOffsetElem);
 
         ////////////////////////////////////////////////////////////////////////////////
         // Reduce across thread and warp
@@ -710,9 +828,9 @@ _CCCL_DEVICE_API inline void kernelBody(
       // Acquire refInOut for remainder of scope.
       {
         SmemRef refInOutRW = phaseInOutRW.acquireRef();
-        // Handle unaligned refInOutRW.data() + loadInfo.smemOffsetElem points to
+        // Handle unaligned refInOutRW.data() + loadInfo.smemStartOffsetElem points to
         // the first element of the tile.
-        squadLoadSmem(squad, regSumInclusive, &refInOutRW.data()[0] + loadInfo.smemOffsetElem);
+        squadLoadSmem(squad, regSumInclusive, &refInOutRW.data()[0] + loadInfo.smemStartOffsetElem);
         refInOutRW.setFenceLdsToAsyncProxy();
       }
 
@@ -731,8 +849,9 @@ _CCCL_DEVICE_API inline void kernelBody(
       ////////////////////////////////////////////////////////////////////////////////
       // Sync before storing to avoid data races.
       squad.syncThreads();
+      CpAsyncOobInfo storeInfo = prepareCpAsyncOob(params.ptrOut + idxTileBase, copyNumElem);
 
-      squadStoreSmem(squad, res.smemOut, regSumInclusive);
+      squadStoreSmem(squad, res.smemOut + storeInfo.smemStartOffsetElem, regSumInclusive);
       // We do *not* release refSmemInOut here, because we will issue a TMA
       // instruction below. Instead, we issue a squad-local syncthreads +
       // fence.proxy.async to sync the shared memory writes with the TMA store.
@@ -741,10 +860,7 @@ _CCCL_DEVICE_API inline void kernelBody(
       ////////////////////////////////////////////////////////////////////////////////
       // Store result to global memory using TMA
       ////////////////////////////////////////////////////////////////////////////////
-      squadStoreBulkSync(squad,
-                         params.ptrOut + idxTile * size_t(tile_size),
-                         res.smemOut,
-                         static_cast<uint32_t>(sizeof(OutputT) * tile_size));
+      squadStoreBulkSync(squad, storeInfo, res.smemOut);
     }
 
     ////////////////////////////////////////////////////////////////////////////////
