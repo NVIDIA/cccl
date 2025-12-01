@@ -226,11 +226,11 @@ struct column_major_transform
 }; // namespace impl
 
 #if S5_NORMAL_SCAN
-template <typename T, typename OffsetT>
-static void inclusive_scan(nvbench::state& state, nvbench::type_list<T, OffsetT>)
+template <typename T, typename OffsetT, typename StateDim>
+static void inclusive_scan(nvbench::state& state, nvbench::type_list<T, OffsetT, StateDim>)
 {
   using wrapped_init_t    = cub::NullType;
-  constexpr int state_dim = 40;
+  constexpr int state_dim = StateDim::value;
   using value_t           = T;
   using pair_t            = impl::vector_pair_t<value_t, state_dim>;
   using op_t              = impl::s5_op<value_t, state_dim>;
@@ -308,11 +308,11 @@ static void inclusive_scan(nvbench::state& state, nvbench::type_list<T, OffsetT>
 
 #endif
 
-template <typename T, typename OffsetT>
-static void segmented_scan(nvbench::state& state, nvbench::type_list<T, OffsetT>)
+template <typename T, typename OffsetT, typename StateDim>
+static void segmented_scan(nvbench::state& state, nvbench::type_list<T, OffsetT, StateDim>)
 {
   using wrapped_init_t      = cub::NullType;
-  constexpr int state_dim   = 40;
+  constexpr int state_dim   = StateDim::value;
   using value_t             = T;
   using op_t                = impl::s5_op_segmented<value_t>;
   using transformed_input_t = cuda::transform_iterator<impl::column_major_transform, cuda::counting_iterator<int>>;
@@ -434,14 +434,16 @@ using fp_types = nvbench::type_list<float, double>;
 #  endif
 #endif
 
+using state_dim_types = nvbench::type_list<std::integral_constant<int, 40>>;
+
 #if S5_NORMAL_SCAN
-NVBENCH_BENCH_TYPES(inclusive_scan, NVBENCH_TYPE_AXES(fp_types, offset_types))
+NVBENCH_BENCH_TYPES(inclusive_scan, NVBENCH_TYPE_AXES(fp_types, offset_types, state_dim_types))
   .set_name("s5-associative-scan")
   .set_type_axes_names({"T{ct}", "OffsetT{ct}"})
   .add_int64_power_of_two_axis("Elements{io}", nvbench::range(16, 24, 2));
 #endif
 
-NVBENCH_BENCH_TYPES(segmented_scan, NVBENCH_TYPE_AXES(fp_types, offset_types))
+NVBENCH_BENCH_TYPES(segmented_scan, NVBENCH_TYPE_AXES(fp_types, offset_types, state_dim_types))
   .set_name("s5-segmented-scan")
-  .set_type_axes_names({"T{ct}", "OffsetT{ct}"})
+  .set_type_axes_names({"T{ct}", "OffsetT{ct}", "StateDim{ct}"})
   .add_int64_power_of_two_axis("Elements{io}", nvbench::range(16, 24, 2));
