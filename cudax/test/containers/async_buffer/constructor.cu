@@ -310,7 +310,7 @@ C2H_CCCLRT_TEST("cudax::buffer constructors", "[container][buffer]", test_types)
 C2H_CCCLRT_TEST("cudax::buffer constructors with legacy resource", "[container][buffer]")
 {
   cudax::stream stream{cuda::device_ref{0}};
-  cuda::legacy_pinned_memory_resource resource;
+  cuda::mr::legacy_pinned_memory_resource resource;
   auto input = compare_data_initializer_list;
   cudax::buffer<int, cuda::mr::device_accessible> buffer{stream, resource, input};
   CUDAX_CHECK(equal_range(buffer));
@@ -327,7 +327,7 @@ C2H_CCCLRT_TEST("cudax::buffer constructors with legacy resource", "[container][
 #if _CCCL_CTK_AT_LEAST(12, 6)
 C2H_CCCLRT_TEST("cudax::make_buffer narrowing properties", "[container][buffer]")
 {
-  auto resource = cuda::pinned_default_memory_pool();
+  auto resource = cuda::mr::pinned_default_memory_pool();
   cudax::stream stream{cuda::device_ref{0}};
 
   auto buf = cudax::make_buffer<int>(stream, resource, 0, cudax::no_init);
