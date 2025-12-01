@@ -33,7 +33,7 @@ _CCCL_API inline void __cccl_thread_yield() {}
 
 _CCCL_API inline void __cccl_thread_sleep_for(::cuda::std::chrono::nanoseconds __ns)
 {
-  NV_IF_TARGET(NV_IS_DEVICE,
+  NV_IF_TARGET(NV_PROVIDES_SM_70,
                (auto const __step = __ns.count(); assert(__step < numeric_limits<unsigned>::max());
                 ::__nanosleep((unsigned) __step);))
 }
