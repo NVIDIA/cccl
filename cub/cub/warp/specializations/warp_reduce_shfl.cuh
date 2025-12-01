@@ -30,6 +30,7 @@
 #include <cuda/__ptx/instructions/get_sreg.h>
 #include <cuda/std/__bit/countr.h>
 #include <cuda/std/__functional/operations.h>
+#include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/is_integral.h>
@@ -50,12 +51,12 @@ inline constexpr bool can_use_reduce_add_sync = false;
 template <class T>
 inline constexpr bool
   can_use_reduce_add_sync<T, ::cuda::std::plus<>, ::cuda::std::void_t<decltype(__reduce_add_sync(0xFFFFFFFF, T{}))>> =
-    (::cuda::std::is_same_v<int, T> || ::cuda::std::is_same_v<unsigned int, T>);
+    ::cuda::std::is_integral_v<T> && sizeof(T) <= sizeof(unsigned);
 
 template <class T>
 inline constexpr bool
   can_use_reduce_add_sync<T, ::cuda::std::plus<T>, ::cuda::std::void_t<decltype(__reduce_add_sync(0xFFFFFFFF, T{}))>> =
-    (::cuda::std::is_same_v<int, T> || ::cuda::std::is_same_v<unsigned int, T>);
+    ::cuda::std::is_integral_v<T> && sizeof(T) <= sizeof(unsigned);
 
 template <class T, class ReductionOp, class = void>
 inline constexpr bool can_use_reduce_min_sync = false;
@@ -63,12 +64,12 @@ inline constexpr bool can_use_reduce_min_sync = false;
 template <class T>
 inline constexpr bool
   can_use_reduce_min_sync<T, ::cuda::minimum<>, ::cuda::std::void_t<decltype(__reduce_min_sync(0xFFFFFFFF, T{}))>> =
-    (::cuda::std::is_same_v<int, T> || ::cuda::std::is_same_v<unsigned int, T>);
+    ::cuda::std::is_integral_v<T> && sizeof(T) <= sizeof(unsigned);
 
 template <class T>
 inline constexpr bool
   can_use_reduce_min_sync<T, ::cuda::minimum<T>, ::cuda::std::void_t<decltype(__reduce_min_sync(0xFFFFFFFF, T{}))>> =
-    (::cuda::std::is_same_v<int, T> || ::cuda::std::is_same_v<unsigned int, T>);
+    ::cuda::std::is_integral_v<T> && sizeof(T) <= sizeof(unsigned);
 
 template <class T, class ReductionOp, class = void>
 inline constexpr bool can_use_reduce_max_sync = false;
@@ -76,12 +77,12 @@ inline constexpr bool can_use_reduce_max_sync = false;
 template <class T>
 inline constexpr bool
   can_use_reduce_max_sync<T, ::cuda::maximum<>, ::cuda::std::void_t<decltype(__reduce_max_sync(0xFFFFFFFF, T{}))>> =
-    (::cuda::std::is_same_v<int, T> || ::cuda::std::is_same_v<unsigned int, T>);
+    ::cuda::std::is_integral_v<T> && sizeof(T) <= sizeof(unsigned);
 
 template <class T>
 inline constexpr bool
   can_use_reduce_max_sync<T, ::cuda::maximum<T>, ::cuda::std::void_t<decltype(__reduce_max_sync(0xFFFFFFFF, T{}))>> =
-    (::cuda::std::is_same_v<int, T> || ::cuda::std::is_same_v<unsigned int, T>);
+    ::cuda::std::is_integral_v<T> && sizeof(T) <= sizeof(unsigned);
 
 template <class T, class ReductionOp, class = void>
 inline constexpr bool can_use_reduce_and_sync = false;
@@ -89,12 +90,12 @@ inline constexpr bool can_use_reduce_and_sync = false;
 template <class T>
 inline constexpr bool
   can_use_reduce_and_sync<T, ::cuda::std::bit_and<>, ::cuda::std::void_t<decltype(__reduce_and_sync(0xFFFFFFFF, T{}))>> =
-    ::cuda::std::is_same_v<unsigned int, T>;
+    ::cuda::std::is_unsigned_v<T> && sizeof(T) <= sizeof(unsigned);
 
 template <class T>
 inline constexpr bool
   can_use_reduce_and_sync<T, ::cuda::std::bit_and<T>, ::cuda::std::void_t<decltype(__reduce_and_sync(0xFFFFFFFF, T{}))>> =
-    ::cuda::std::is_same_v<unsigned int, T>;
+    ::cuda::std::is_unsigned_v<T> && sizeof(T) <= sizeof(unsigned);
 
 template <class T, class ReductionOp, class = void>
 inline constexpr bool can_use_reduce_or_sync = false;
@@ -102,12 +103,12 @@ inline constexpr bool can_use_reduce_or_sync = false;
 template <class T>
 inline constexpr bool
   can_use_reduce_or_sync<T, ::cuda::std::bit_or<>, ::cuda::std::void_t<decltype(__reduce_or_sync(0xFFFFFFFF, T{}))>> =
-    ::cuda::std::is_same_v<unsigned int, T>;
+    ::cuda::std::is_unsigned_v<T> && sizeof(T) <= sizeof(unsigned);
 
 template <class T>
 inline constexpr bool
   can_use_reduce_or_sync<T, ::cuda::std::bit_or<T>, ::cuda::std::void_t<decltype(__reduce_or_sync(0xFFFFFFFF, T{}))>> =
-    ::cuda::std::is_same_v<unsigned int, T>;
+    ::cuda::std::is_unsigned_v<T> && sizeof(T) <= sizeof(unsigned);
 
 template <class T, class ReductionOp, class = void>
 inline constexpr bool can_use_reduce_xor_sync = false;
@@ -115,12 +116,12 @@ inline constexpr bool can_use_reduce_xor_sync = false;
 template <class T>
 inline constexpr bool
   can_use_reduce_xor_sync<T, ::cuda::std::bit_xor<>, ::cuda::std::void_t<decltype(__reduce_xor_sync(0xFFFFFFFF, T{}))>> =
-    ::cuda::std::is_same_v<unsigned int, T>;
+    ::cuda::std::is_unsigned_v<T> && sizeof(T) <= sizeof(unsigned);
 
 template <class T>
 inline constexpr bool
   can_use_reduce_xor_sync<T, ::cuda::std::bit_xor<T>, ::cuda::std::void_t<decltype(__reduce_xor_sync(0xFFFFFFFF, T{}))>> =
-    ::cuda::std::is_same_v<unsigned int, T>;
+    ::cuda::std::is_unsigned_v<T> && sizeof(T) <= sizeof(unsigned);
 
 /**
  * @brief WarpReduceShfl provides SHFL-based variants of parallel reduction of items partitioned
@@ -547,29 +548,30 @@ struct WarpReduceShfl
     {
       // Dispatch to more efficient intrinsics when applicable
       NV_IF_TARGET(NV_PROVIDES_SM_80, ({
+                     using PromotedT = ::cuda::std::conditional_t<::cuda::std::is_unsigned_v<T>, unsigned, int>;
                      if constexpr (detail::can_use_reduce_max_sync<T, ReductionOp>)
                      {
-                       return __reduce_max_sync(member_mask, input);
+                       return static_cast<T>(__reduce_max_sync(member_mask, static_cast<PromotedT>(input)));
                      }
                      else if constexpr (detail::can_use_reduce_min_sync<T, ReductionOp>)
                      {
-                       return __reduce_min_sync(member_mask, input);
+                       return static_cast<T>(__reduce_min_sync(member_mask, static_cast<PromotedT>(input)));
                      }
                      else if constexpr (detail::can_use_reduce_add_sync<T, ReductionOp>)
                      {
-                       return __reduce_add_sync(member_mask, input);
+                       return static_cast<T>(__reduce_add_sync(member_mask, static_cast<PromotedT>(input)));
                      }
                      else if constexpr (detail::can_use_reduce_and_sync<T, ReductionOp>)
                      {
-                       return __reduce_and_sync(member_mask, input);
+                       return static_cast<T>(__reduce_and_sync(member_mask, static_cast<PromotedT>(input)));
                      }
                      else if constexpr (detail::can_use_reduce_or_sync<T, ReductionOp>)
                      {
-                       return __reduce_or_sync(member_mask, input);
+                       return static_cast<T>(__reduce_or_sync(member_mask, static_cast<PromotedT>(input)));
                      }
                      else if constexpr (detail::can_use_reduce_xor_sync<T, ReductionOp>)
                      {
-                       return __reduce_xor_sync(member_mask, input);
+                       return static_cast<T>(__reduce_xor_sync(member_mask, static_cast<PromotedT>(input)));
                      }
                    }))
 
