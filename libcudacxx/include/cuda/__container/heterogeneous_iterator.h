@@ -229,6 +229,8 @@ public:
       : __base(__ptr)
   {}
 
+  // TODO fix sfinae issue here for older MSVC
+#if !_CCCL_COMPILER(MSVC) || _CCCL_COMPILER(MSVC, >=, 14, 30)
   //! @brief Constructs an immutable \c heterogeneous_iterator from a mutable one
   //! @param __other The mutable \c heterogeneous_iterator
   _CCCL_TEMPLATE(class _OtherTp)
@@ -236,6 +238,7 @@ public:
   _CCCL_API constexpr heterogeneous_iterator(heterogeneous_iterator<_OtherTp, _Properties...> __other) noexcept
       : __base(__other.__ptr_)
   {}
+#endif // ^^^ !_CCCL_COMPILER(MSVC) ^^^
 
   //! @brief Increment of a \c heterogeneous_iterator
   //! @return The heterogeneous_iterator pointing to the next element
