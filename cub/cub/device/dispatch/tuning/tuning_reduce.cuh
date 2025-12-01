@@ -100,12 +100,7 @@ _CCCL_API consteval void __needs_a_constexpr_value(auto) {}
 // TODO(bgruber): bikeshed name before we make the tuning API public
 template <typename T>
 concept reduce_policy_hub = requires(T hub, ::cuda::arch_id arch) {
-// nvcc < 12.2 cannot handle a fully qualified name to a concept
-#  if _CCCL_CUDA_COMPILER(NVCC, <, 12, 2)
-  { hub(arch) } -> cuda::std::same_as<reduce_arch_policy>;
-#  else // _CCCL_CUDA_COMPILER(NVCC, <, 12, 2)
-  { hub(arch) } -> ::cuda::std::same_as<reduce_arch_policy>;
-#  endif // _CCCL_CUDA_COMPILER(NVCC, <, 12, 2)
+  { hub(arch) } -> _CCCL_CONCEPT_VSTD::same_as<reduce_arch_policy>;
   { __needs_a_constexpr_value(hub(arch)) };
 };
 #endif // _CCCL_HAS_CONCEPTS()
