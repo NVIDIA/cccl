@@ -19,6 +19,8 @@
 
 CUB_NAMESPACE_BEGIN
 
+namespace detail::scan
+{
 // Squad - device squad instance
 //
 // A squad is a collection of warps that work together in a warp-specialized
@@ -143,5 +145,6 @@ squadDispatch(SpecialRegisters sr, const SquadDesc (&squads)[numSquads], F f, in
     }
   }
 }
+} // namespace detail::scan
 
 CUB_NAMESPACE_END
