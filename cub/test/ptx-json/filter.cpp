@@ -1,4 +1,4 @@
-#include <cub/detail/ptx-json-parser.h>
+#include <cub/detail/ptx-json-parser.cuh>
 
 #include <fstream>
 #include <iostream>

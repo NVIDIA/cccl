@@ -16,7 +16,6 @@
 #include <cub/device/dispatch/dispatch_reduce.cuh>
 #include <cub/iterator/arg_index_input_iterator.cuh>
 
-#include <thrust/iterator/constant_iterator.h>
 #include <thrust/iterator/iterator_adaptor.h>
 
 #include <cuda/__iterator/tabulate_output_iterator.h>

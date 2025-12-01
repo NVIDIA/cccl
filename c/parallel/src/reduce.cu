@@ -10,7 +10,7 @@
 
 #include <cub/detail/choose_offset.cuh>
 #include <cub/detail/launcher/cuda_driver.cuh>
-#include <cub/detail/ptx-json-parser.h>
+#include <cub/detail/ptx-json-parser.cuh>
 #include <cub/device/device_reduce.cuh>
 #include <cub/grid/grid_even_share.cuh>
 #include <cub/util_device.cuh>
@@ -208,7 +208,7 @@ struct __align__({2}) storage_t {{
 {5}
 using device_reduce_policy = {6}::MaxPolicy;
 
-#include <cub/detail/ptx-json/json.h>
+#include <cub/detail/ptx-json/json.cuh>
 __device__ consteval auto& policy_generator() {{
   return ptx_json::id<ptx_json::string("device_reduce_policy")>()
     = cub::detail::reduce::ReducePolicyWrapper<device_reduce_policy::ActivePolicy>::EncodedPolicy();

@@ -4,7 +4,7 @@ option(
   ON
 )
 
-if (CMAKE_GENERATOR MATCHES "^Visual Studio")
+if (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
   if (CUB_ENABLE_RDC_TESTS)
     if ("${CMAKE_VERSION}" VERSION_LESS 3.27.5)
       # https://gitlab.kitware.com/cmake/cmake/-/merge_requests/8794
@@ -26,14 +26,6 @@ set(build_nvrtc_tests ON)
 if ("NVHPC" STREQUAL "${CMAKE_CXX_COMPILER_ID}")
   set(build_nvrtc_tests OFF)
 endif()
-
-# Create meta targets that build all tests for a single configuration:
-foreach (cub_target IN LISTS CUB_TARGETS)
-  cub_get_target_property(config_prefix ${cub_target} PREFIX)
-  set(config_meta_target ${config_prefix}.tests)
-  add_custom_target(${config_meta_target})
-  add_dependencies(${config_prefix}.all ${config_meta_target})
-endforeach()
 
 file(
   GLOB_RECURSE test_srcs
@@ -93,43 +85,39 @@ endfunction()
 # Add a test executable and register it with ctest.
 #
 # target_name_var: Variable name to overwrite with the name of the test
-#   target. Useful for post-processing target information.
+#   target. Useful for modifying the test/target after creation.
+# variant_suffix: Suffix to append to the test name to indicate variant
 # test_name: The name of the test minus "<config_prefix>.test." For example,
 #   testing/vector.cu will be "vector", and testing/cuda/copy.cu will be
 #   "cuda.copy".
 # test_src: The source file that implements the test.
-# cub_target: The reference cub target with configuration information.
+# launcher_id: The launcher variant id for this test (0=host, 1=device, 2=graph)
 #
 function(
   cub_add_test
   target_name_var
   test_name
+  variant_suffix
   test_src
-  cub_target
   launcher_id
 )
-  cub_get_target_property(config_prefix ${cub_target} PREFIX)
-  cub_get_target_property(config_dialect ${cub_target} DIALECT)
-
   _cub_is_catch2_test(is_catch2_test "${test_src}")
   _cub_launcher_requires_rdc(cdp_val "${launcher_id}")
 
   # The actual name of the test's target:
-  set(test_target ${config_prefix}.test.${test_name})
+  set(test_target cub.test.${test_name}${variant_suffix})
   set(${target_name_var} ${test_target} PARENT_SCOPE)
 
-  set(config_meta_target ${config_prefix}.tests)
+  # The metatarget path ignores the variant suffix:
+  set(metatarget_path cub.test.${test_name})
 
   if (is_catch2_test)
     # Per config helper library:
-    set(
-      config_c2h_target
-      ${config_prefix}.test.catch2_helper.lid_${launcher_id}
-    )
+    set(config_c2h_target cub.test.catch2_helper.lid_${launcher_id})
     if (NOT TARGET ${config_c2h_target})
       add_library(${config_c2h_target} INTERFACE)
-      cccl_configure_target(${config_c2h_target} DIALECT ${config_dialect})
-      cub_clone_target_properties(${config_c2h_target} ${cub_target})
+      cccl_configure_target(${config_c2h_target})
+      cccl_ensure_metatargets(${config_c2h_target})
       cub_configure_cuda_target(${config_c2h_target} RDC ${cdp_val})
       target_include_directories(
         ${config_c2h_target}
@@ -138,26 +126,27 @@ function(
       target_link_libraries(
         ${config_c2h_target}
         INTERFACE #
-          ${cub_target}
+          cub.compiler_interface
           cccl.c2h
           CUDA::nvrtc
           CUDA::cuda_driver
       )
     endif() # config_c2h_target
 
-    add_executable(${test_target} "${test_src}")
-    cccl_configure_target(${test_target} DIALECT ${config_dialect})
-    cub_clone_target_properties(${test_target} ${cub_target})
+    cccl_add_executable(
+      ${test_target}
+      SOURCES "${test_src}"
+      METATARGET_PATH ${metatarget_path}
+    )
     target_link_libraries(
       ${test_target}
       PRIVATE #
-        ${cub_target}
+        cub.compiler_interface
         ${config_c2h_target}
         cccl.c2h.main
         Catch2::Catch2
     )
     target_include_directories(${test_target} PUBLIC "${CUB_SOURCE_DIR}/test")
-    add_dependencies(${config_meta_target} ${test_target})
 
     add_test(
       NAME ${test_target}
@@ -186,19 +175,19 @@ function(
       )
     endif()
 
-    if ("${test_target}" MATCHES "test.iterator")
+    if ("${test_src}" MATCHES "test_iterator\\.cu$")
       target_compile_options(${test_target} PRIVATE -ftemplate-depth=1000) # for handling large type lists
     endif()
 
     # enable lambdas for all API examples
-    if ("${test_target}" MATCHES "test.[A-Za-z0-9_]+_api")
+    if ("${test_src}" MATCHES "test.+_api\\.cu$")
       target_compile_options(
         ${test_target}
         PRIVATE $<$<COMPILE_LANG_AND_ID:CUDA,NVIDIA>:--extended-lambda>
       )
     endif()
 
-    if ("${test_target}" MATCHES "test.segmented_scan_api")
+    if ("${test_src}" MATCHES "test_device_segmented_scan_api\\.cu$")
       if (
         "Clang" STREQUAL "${CMAKE_CXX_COMPILER_ID}"
         AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 13
@@ -215,16 +204,15 @@ function(
       endif()
     endif()
   else() # Not catch2:
-    # Related target names:
-    set(test_meta_target cub.all.test.${test_name})
-
-    add_executable(${test_target} "${test_src}")
-    cccl_configure_target(${test_target} DIALECT ${config_dialect})
-    cub_clone_target_properties(${test_target} ${cub_target})
+    cccl_add_executable(
+      ${test_target}
+      SOURCES "${test_src}"
+      NO_METATARGETS # Added manually for non-fail tests
+    )
     target_link_libraries(
       ${test_target}
       PRIVATE #
-        ${cub_target}
+        cub.compiler_interface
         cccl.c2h
     )
     target_include_directories(${test_target} PRIVATE "${CUB_SOURCE_DIR}/test")
@@ -243,14 +231,7 @@ function(
         ERROR_NUMBER_TARGET_NAME_REGEX "\\.err_([0-9]+)"
       )
     else()
-      # Add to the active configuration's meta target
-      add_dependencies(${config_meta_target} ${test_target})
-
-      # Meta target that builds tests with this name for all configurations:
-      if (NOT TARGET ${test_meta_target})
-        add_custom_target(${test_meta_target})
-      endif()
-      add_dependencies(${test_meta_target} ${test_target})
+      cccl_ensure_metatargets(${test_target} METATARGET_PATH ${metatarget_path})
 
       add_test(
         NAME ${test_target}
@@ -299,6 +280,13 @@ foreach (test_src IN LISTS test_srcs)
   string(REGEX REPLACE "^catch2_test_" "" test_name "${test_name}")
   string(REGEX REPLACE "^test_" "" test_name "${test_name}")
 
+  # Group sets of tests into metatargets based on their prefixes:
+  string(REGEX REPLACE "^thread_" "thread." test_name "${test_name}")
+  string(REGEX REPLACE "^warp_" "warp." test_name "${test_name}")
+  string(REGEX REPLACE "^block_" "block." test_name "${test_name}")
+  string(REGEX REPLACE "^device_" "device." test_name "${test_name}")
+  string(REGEX REPLACE "^util_" "util." test_name "${test_name}")
+
   if ("${test_name}" MATCHES "nvrtc")
     if (NOT build_nvrtc_tests)
       continue()
@@ -312,105 +300,87 @@ foreach (test_src IN LISTS test_srcs)
     variant_defs
   )
 
-  foreach (cub_target IN LISTS CUB_TARGETS)
-    cub_get_target_property(config_prefix ${cub_target} PREFIX)
+  if (num_variants EQUAL 0)
+    if (${CUB_FORCE_RDC})
+      set(launcher 1)
+    else()
+      set(launcher 0)
+    endif()
 
-    if (num_variants EQUAL 0)
-      if (${CUB_FORCE_RDC})
-        set(launcher 1)
+    # FIXME: There are a few remaining device algorithm tests that have not been ported to
+    # use Catch2 and lid variants. Mark these as `lid_0/1` so they'll run in the appropriate
+    # CI configs:
+    set(variant_suffix)
+    string(REGEX MATCH "^device\\." is_device_test "${test_name}")
+    _cub_is_fail_test(is_fail_test "%{test_name}")
+    if (is_device_test AND NOT is_fail_test)
+      string(APPEND variant_suffix ".lid_${launcher}")
+    endif()
+
+    # Only one version of this test.
+    cub_add_test(test_target ${test_name} "${variant_suffix}" "${test_src}" ${launcher})
+    cub_configure_cuda_target(${test_target} RDC ${CUB_FORCE_RDC})
+  else() # has variants:
+    cccl_log_variant_params(
+      "${test_name}"
+      ${num_variants}
+      variant_labels
+      variant_defs
+    )
+
+    # Subtract 1 to support the inclusive endpoint of foreach(...RANGE...):
+    math(EXPR range_end "${num_variants} - 1")
+
+    # Generate multiple tests, one per variant.
+    foreach (var_idx RANGE ${range_end})
+      cccl_get_variant_data(variant_labels variant_defs ${var_idx} label defs)
+      set(variant_suffix ".${label}")
+
+      # If a `label` is `lid`, it is assumed that the parameter is used to explicitly
+      # test variants built with different launchers. The `values` for such a
+      # parameter must be `0:1:2`, with:
+      # - `0` indicating host launch and CDP disabled (RDC off),
+      # - `1` indicating device launch and CDP enabled (RDC on),
+      # - `2` indicating graph capture launch and CDP disabled (RDC off).
+      #
+      # Tests that do not contain a variant labeled `lid` will only enable RDC if
+      # the CMake config enables them.
+      _cub_has_lid_variant(explicit_launcher "${label}")
+      _cub_launcher_id(explicit_launcher_id "${label}")
+
+      if (${explicit_launcher})
+        set(launcher_id "${explicit_launcher_id}")
       else()
-        set(launcher 0)
-      endif()
-
-      # FIXME: There are a few remaining device algorithm tests that have not been ported to
-      # use Catch2 and lid variants. Mark these as `lid_0/1` so they'll run in the appropriate
-      # CI configs:
-      string(REGEX MATCH "^device_" is_device_test "${test_name}")
-      _cub_is_fail_test(is_fail_test "%{test_name}")
-      if (is_device_test AND NOT is_fail_test)
-        string(APPEND test_name ".lid_${launcher}")
-      endif()
-
-      # Only one version of this test.
-      cub_add_test(test_target ${test_name} "${test_src}" ${cub_target} ${launcher})
-      cub_configure_cuda_target(${test_target} RDC ${CUB_FORCE_RDC})
-    else() # has variants:
-      cccl_log_variant_params(
-        "${test_name}"
-        ${num_variants}
-        variant_labels
-        variant_defs
-      )
-
-      # Meta target to build all parametrizations of the current test for the
-      # current CUB_TARGET config
-      set(variant_meta_target ${config_prefix}.test.${test_name}.all)
-      if (NOT TARGET ${variant_meta_target})
-        add_custom_target(${variant_meta_target})
-      endif()
-
-      # Meta target to build all parametrizations of the current test for all
-      # CUB_TARGET configs
-      set(cub_variant_meta_target cub.all.test.${test_name}.all)
-      if (NOT TARGET ${cub_variant_meta_target})
-        add_custom_target(${cub_variant_meta_target})
-      endif()
-
-      # Subtract 1 to support the inclusive endpoint of foreach(...RANGE...):
-      math(EXPR range_end "${num_variants} - 1")
-
-      # Generate multiple tests, one per variant.
-      foreach (var_idx RANGE ${range_end})
-        cccl_get_variant_data(variant_labels variant_defs ${var_idx} label defs)
-
-        # If a `label` is `lid`, it is assumed that the parameter is used to explicitly
-        # test variants built with different launchers. The `values` for such a
-        # parameter must be `0:1:2`, with:
-        # - `0` indicating host launch and CDP disabled (RDC off),
-        # - `1` indicating device launch and CDP enabled (RDC on),
-        # - `2` indicating graph capture launch and CDP disabled (RDC off).
-        #
-        # Tests that do not contain a variant labeled `lid` will only enable RDC if
-        # the CMake config enables them.
-        _cub_has_lid_variant(explicit_launcher "${label}")
-        _cub_launcher_id(explicit_launcher_id "${label}")
-
-        if (${explicit_launcher})
-          set(launcher_id "${explicit_launcher_id}")
+        if (${CUB_FORCE_RDC})
+          set(launcher_id 1)
         else()
-          if (${CUB_FORCE_RDC})
-            set(launcher_id 1)
-          else()
-            set(launcher_id 0)
-          endif()
+          set(launcher_id 0)
         endif()
+      endif()
 
-        _cub_launcher_requires_rdc(cdp_val "${launcher_id}")
+      _cub_launcher_requires_rdc(cdp_val "${launcher_id}")
 
-        if (cdp_val AND NOT CUB_ENABLE_RDC_TESTS)
-          continue()
-        endif()
+      if (cdp_val AND NOT CUB_ENABLE_RDC_TESTS)
+        continue()
+      endif()
 
-        if (NOT launcher_id EQUAL 0 AND NOT CUB_ENABLE_LAUNCH_VARIANTS)
-          continue()
-        endif()
+      if (NOT launcher_id EQUAL 0 AND NOT CUB_ENABLE_LAUNCH_VARIANTS)
+        continue()
+      endif()
 
-        cub_add_test(test_target ${test_name}.${label} "${test_src}" ${cub_target} ${launcher_id})
+      cub_add_test(test_target ${test_name} ${variant_suffix} "${test_src}" ${launcher_id})
+      target_compile_definitions(${test_target} PRIVATE ${defs})
 
-        # Enable RDC if the test either:
-        # 1. Explicitly requests it (lid_1 label)
-        # 2. Does not have an explicit CDP variant (no lid_0, lid_1, or lid_2) but
-        #    RDC testing is forced
-        #
-        # Tests that explicitly request no cdp (lid_0 label) should never enable
-        # RDC.
-        cub_configure_cuda_target(${test_target} RDC ${cdp_val})
-        add_dependencies(${variant_meta_target} ${test_target})
-        add_dependencies(${cub_variant_meta_target} ${test_target})
-        target_compile_definitions(${test_target} PRIVATE ${defs})
-      endforeach() # Variant
-    endif() # Has variants
-  endforeach() # CUB targets
+      # Enable RDC if the test either:
+      # 1. Explicitly requests it (lid_1 label)
+      # 2. Does not have an explicit CDP variant (no lid_0, lid_1, or lid_2) but
+      #    RDC testing is forced
+      #
+      # Tests that explicitly request no cdp (lid_0 label) should never enable
+      # RDC.
+      cub_configure_cuda_target(${test_target} RDC ${cdp_val})
+    endforeach() # Variant
+  endif() # Has variants
 endforeach() # Source file
 
 add_subdirectory(cmake)

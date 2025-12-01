@@ -23,6 +23,8 @@
 // for backward compatibility
 #include <cub/util_temporary_storage.cuh>
 
+#include <cuda/__device/arch_id.h>
+#include <cuda/__device/compute_capability.h>
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__utility/forward.h>
 #include <cuda/std/array>
@@ -39,7 +41,7 @@
 #endif // !_CCCL_COMPILER(NVRTC)
 
 #if defined(CUB_ENABLE_POLICY_PTX_JSON)
-#  include <cub/detail/ptx-json/json.h>
+#  include <cub/detail/ptx-json/json.cuh>
 #endif // defined(CUB_ENABLE_POLICY_PTX_JSON)
 
 #include <nv/target>
@@ -374,6 +376,33 @@ CUB_RUNTIME_FUNCTION inline cudaError_t PtxVersion(int& ptx_version)
   return result;
 }
 
+namespace detail
+{
+//! @brief Retrieves the GPU architecture of the PTX or SASS that will be used on the current device.
+CUB_RUNTIME_FUNCTION inline cudaError_t ptx_arch_id(::cuda::arch_id& arch_id)
+{
+  int ptx_version = 0;
+  if (const auto error = PtxVersion(ptx_version))
+  {
+    return error;
+  }
+  arch_id = ::cuda::to_arch_id(::cuda::compute_capability(ptx_version / 10));
+  return cudaSuccess;
+}
+
+//! @brief Retrieves the GPU architecture of the PTX or SASS that will be used on the given device.
+_CCCL_HOST_API inline cudaError_t ptx_arch_id(::cuda::arch_id& arch_id, int device)
+{
+  int ptx_version = 0;
+  if (const auto error = PtxVersion(ptx_version, device))
+  {
+    return error;
+  }
+  arch_id = ::cuda::to_arch_id(::cuda::compute_capability(ptx_version / 10));
+  return cudaSuccess;
+}
+} // namespace detail
+
 /**
  * \brief Retrieves the SM version (i.e. compute capability) of \p device (major * 100 + minor * 10)
  */
@@ -432,6 +461,50 @@ CUB_RUNTIME_FUNCTION inline cudaError_t SmVersion(int& sm_version, int device = 
 CUB_RUNTIME_FUNCTION inline cudaError_t SyncStream([[maybe_unused]] cudaStream_t stream)
 {
   NV_IF_TARGET(NV_IS_HOST, (return CubDebug(cudaStreamSynchronize(stream));), (return cudaErrorNotSupported;))
+}
+
+//! @brief Computes the maximum potential dynamic shared memory size per block for kernel @p kernel_ptr taking into
+//!        account the amount of kernel's static and CUDA Driver's reserved shared memory.
+//!
+//! @param[out] max_dyn_smem_bytes
+//!   Maximum dynamic shared memory that can be allocated. Set to -1 in case of error.
+//!
+//! @param[in] kernel_ptr
+//!   Kernel pointer for which to compute the maximum potential dynamic shared memory.
+template <class KernelPtr>
+CUB_RUNTIME_FUNCTION inline cudaError_t
+MaxPotentialDynamicSmemBytes(int& max_dyn_smem_bytes, KernelPtr kernel_ptr) noexcept
+{
+  max_dyn_smem_bytes = -1;
+
+  cudaFuncAttributes kernel_attrs{};
+  if (const auto error = CubDebug(cudaFuncGetAttributes(&kernel_attrs, kernel_ptr)))
+  {
+    return error;
+  }
+
+  int curr_device{};
+  if (const auto error = CubDebug(cudaGetDevice(&curr_device)))
+  {
+    return error;
+  }
+
+  int reserved_smem_size{};
+  if (const auto error =
+        CubDebug(cudaDeviceGetAttribute(&reserved_smem_size, cudaDevAttrReservedSharedMemoryPerBlock, curr_device)))
+  {
+    return error;
+  }
+
+  int max_smem_size_optin{};
+  if (const auto error =
+        CubDebug(cudaDeviceGetAttribute(&max_smem_size_optin, cudaDevAttrMaxSharedMemoryPerBlockOptin, curr_device)))
+  {
+    return error;
+  }
+
+  max_dyn_smem_bytes = max_smem_size_optin - reserved_smem_size - static_cast<int>(kernel_attrs.sharedSizeBytes);
+  return cudaSuccess;
 }
 
 namespace detail
