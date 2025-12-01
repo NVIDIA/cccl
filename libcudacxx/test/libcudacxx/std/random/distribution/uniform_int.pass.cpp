@@ -51,7 +51,12 @@ __host__ __device__ void test()
   using D                                    = cuda::std::uniform_int_distribution<T>;
   using P                                    = typename D::param_type;
   using G                                    = cuda::std::philox4x64;
-  cuda::std::array<P, 5> params              = {P(0, 10), P(1, 100), P(-50, 50), P(10, 20), P(100, 1000)};
+  cuda::std::array<P, 5> params              = {
+    P(0, 10),
+    P(1, 100),
+    P(-50, 50),
+    P(cuda::std::numeric_limits<T>::min(), cuda::std::numeric_limits<T>::max()),
+    P(100, 1000)};
   test_distribution<D, false, G, test_constexpr>(params, uniform_int_cdf<T>{});
 }
 
