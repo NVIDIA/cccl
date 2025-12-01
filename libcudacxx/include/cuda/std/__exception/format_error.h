@@ -37,8 +37,8 @@ _CCCL_DIAG_SUPPRESS_MSVC(4505)
 
 _CCCL_BEGIN_NAMESPACE_CUDA
 
-namespace __detail
-{
+#if !_CCCL_COMPILER(NVRTC)
+
 static char* __format_error(__msg_storage& __msg_buffer,
                             ::cuda::std::__string_view __type_name,
                             const char* __msg,
@@ -55,10 +55,12 @@ static char* __format_error(__msg_storage& __msg_buffer,
     (__msg != nullptr) ? __msg : "<unknown_error>");
   return __msg_buffer.__buffer;
 }
-} // namespace __detail
+
+#endif // !_CCCL_COMPILER(NVRTC)
+
 _CCCL_END_NAMESPACE_CUDA
 
-_CCCL_DIAG_POP
+_CCCL_DIAG_POP // Suppress MSVC warning C4505
 
 #include <cuda/std/__cccl/epilogue.h>
 

@@ -44,7 +44,7 @@ using __cuda_error_t = int;
 namespace __detail
 {
 static char* __format_cuda_error(
-  __msg_storage& __msg_buffer,
+  ::cuda::__msg_storage& __msg_buffer,
   const int __status,
   const char* __msg,
   const char* __api                  = nullptr,
@@ -77,9 +77,9 @@ class cuda_error : public ::std::runtime_error
 public:
   cuda_error(const __cuda_error_t __status,
              const char* __msg,
-             const char* __api                    = nullptr,
-             ::cuda::std::source_location __loc   = ::cuda::std::source_location::current(),
-             __detail::__msg_storage __msg_buffer = {}) noexcept
+             const char* __api                  = nullptr,
+             ::cuda::std::source_location __loc = ::cuda::std::source_location::current(),
+             __msg_storage __msg_buffer         = {}) noexcept
       : ::std::runtime_error(::cuda::__detail::__format_cuda_error(__msg_buffer, __status, __msg, __api, __loc))
       , __status_(__status)
   {}

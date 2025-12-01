@@ -28,14 +28,12 @@
 
 _CCCL_BEGIN_NAMESPACE_CUDA
 
-namespace __detail
-{
 struct __msg_storage
 {
   static constexpr ::cuda::std::size_t __size = 512;
   char __buffer[__size]{0};
 };
-} // namespace __detail
+
 _CCCL_END_NAMESPACE_CUDA
 
 #include <cuda/std/__cccl/epilogue.h>

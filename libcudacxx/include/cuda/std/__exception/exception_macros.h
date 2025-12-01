@@ -92,8 +92,8 @@ _CCCL_END_NAMESPACE_CUDA_STD
     do                                                                                                             \
     {                                                                                                              \
       NV_IF_TARGET(NV_IS_HOST, ({                                                                                  \
-                     ::cuda::__detail::__msg_storage __msg_buffer{};                                               \
-                     ::cuda::__detail::__format_error(                                                             \
+                     ::cuda::__msg_storage __msg_buffer{};                                                         \
+                     ::cuda::__format_error(                                                                       \
                        __msg_buffer, ::cuda::std::__pretty_nameof<decltype(__VA_ARGS__)>(), (__VA_ARGS__).what()); \
                      ::fprintf(stderr, "%s\n", __msg_buffer.__buffer);                                             \
                      ::fflush(stderr);                                                                             \
