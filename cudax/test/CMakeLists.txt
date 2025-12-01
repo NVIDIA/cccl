@@ -90,15 +90,6 @@ cudax_add_catch2_test(test_target misc
 
 cudax_add_catch2_test(test_target containers
     containers/uninitialized_buffer.cu
-    containers/async_buffer/access.cu
-    containers/async_buffer/capacity.cu
-    containers/async_buffer/constructor.cu
-    containers/async_buffer/conversion.cu
-    containers/async_buffer/copy.cu
-    containers/async_buffer/iterators.cu
-    containers/async_buffer/properties.cu
-    containers/async_buffer/swap.cu
-    containers/async_buffer/transform.cu
 )
 
 cudax_add_catch2_test(test_target cuco

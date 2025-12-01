@@ -1,6 +1,6 @@
 //===----------------------------------------------------------------------===//
 //
-// Part of CUDA Experimental in CUDA C++ Core Libraries,
+// Part of libcu++, the C++ Standard Library for your entire system,
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
@@ -8,6 +8,7 @@
 //
 //===----------------------------------------------------------------------===//
 
+#include <cuda/buffer>
 #include <cuda/devices>
 #include <cuda/memory_resource>
 #include <cuda/std/algorithm>
@@ -16,8 +17,6 @@
 #include <cuda/std/initializer_list>
 #include <cuda/std/tuple>
 #include <cuda/std/type_traits>
-
-#include <cuda/experimental/container.cuh>
 
 #include <stdexcept>
 
@@ -32,7 +31,7 @@ using test_types = c2h::type_list<cuda::std::tuple<int, cuda::mr::host_accessibl
 using test_types = c2h::type_list<cuda::std::tuple<int, cuda::mr::device_accessible>>;
 #endif // ^^^ _CCCL_CTK_BELOW(12, 6) ^^^
 
-C2H_CCCLRT_TEST("cudax::buffer access and stream", "[container][buffer]", test_types)
+C2H_CCCLRT_TEST("cuda::buffer access and stream", "[container][buffer]", test_types)
 {
   using TestT           = c2h::get<0, TestType>;
   using Resource        = typename extract_properties<TestT>::resource;
@@ -43,10 +42,10 @@ C2H_CCCLRT_TEST("cudax::buffer access and stream", "[container][buffer]", test_t
   using pointer         = typename Buffer::pointer;
   using const_pointer   = typename Buffer::const_pointer;
 
-  cudax::stream stream{cuda::device_ref{0}};
+  cuda::stream stream{cuda::device_ref{0}};
   Resource resource = extract_properties<TestT>::get_resource();
 
-  SECTION("cudax::buffer::get_unsynchronized")
+  SECTION("cuda::buffer::get_unsynchronized")
   {
     static_assert(cuda::std::is_same_v<decltype(cuda::std::declval<Buffer&>().get_unsynchronized(1ull)), reference>);
     static_assert(
@@ -56,17 +55,17 @@ C2H_CCCLRT_TEST("cudax::buffer access and stream", "[container][buffer]", test_t
       Buffer buf{stream, resource, {T(1), T(42), T(1337), T(0)}};
       buf.stream().sync();
       auto& res = buf.get_unsynchronized(2);
-      CUDAX_CHECK(compare_value<Buffer>(res, T(1337)));
-      CUDAX_CHECK(static_cast<size_t>(cuda::std::addressof(res) - buf.data()) == 2);
+      CCCLRT_CHECK(compare_value<Buffer>(res, T(1337)));
+      CCCLRT_CHECK(static_cast<size_t>(cuda::std::addressof(res) - buf.data()) == 2);
       assign_value<Buffer>(res, T(4));
 
       auto& const_res = cuda::std::as_const(buf).get_unsynchronized(2);
-      CUDAX_CHECK(compare_value<Buffer>(const_res, T(4)));
-      CUDAX_CHECK(static_cast<size_t>(cuda::std::addressof(const_res) - buf.data()) == 2);
+      CCCLRT_CHECK(compare_value<Buffer>(const_res, T(4)));
+      CCCLRT_CHECK(static_cast<size_t>(cuda::std::addressof(const_res) - buf.data()) == 2);
     }
   }
 
-  SECTION("cudax::buffer::data")
+  SECTION("cuda::buffer::data")
   {
     static_assert(cuda::std::is_same_v<decltype(cuda::std::declval<Buffer&>().data()), pointer>);
     static_assert(cuda::std::is_same_v<decltype(cuda::std::declval<const Buffer&>().data()), const_pointer>);
@@ -74,32 +73,32 @@ C2H_CCCLRT_TEST("cudax::buffer access and stream", "[container][buffer]", test_t
     { // Works without allocation
       Buffer buf{stream, resource};
       buf.stream().sync();
-      CUDAX_CHECK(buf.data() == nullptr);
-      CUDAX_CHECK(cuda::std::as_const(buf).data() == nullptr);
+      CCCLRT_CHECK(buf.data() == nullptr);
+      CCCLRT_CHECK(cuda::std::as_const(buf).data() == nullptr);
     }
 
     { // Works with allocation
       Buffer buf{stream, resource, {T(1), T(42), T(1337), T(0)}};
       buf.stream().sync();
-      CUDAX_CHECK(buf.data() != nullptr);
-      CUDAX_CHECK(cuda::std::as_const(buf).data() != nullptr);
-      CUDAX_CHECK(cuda::std::as_const(buf).data() == buf.data());
+      CCCLRT_CHECK(buf.data() != nullptr);
+      CCCLRT_CHECK(cuda::std::as_const(buf).data() != nullptr);
+      CCCLRT_CHECK(cuda::std::as_const(buf).data() == buf.data());
     }
   }
 
-  SECTION("cudax::buffer::stream")
+  SECTION("cuda::buffer::stream")
   {
     Buffer buf{stream, resource, {T(1), T(42), T(1337), T(0)}};
-    CUDAX_CHECK(buf.stream() == stream);
+    CCCLRT_CHECK(buf.stream() == stream);
 
     {
-      cudax::stream other_stream{cuda::device_ref{0}};
+      cuda::stream other_stream{cuda::device_ref{0}};
       buf.set_stream(other_stream);
-      CUDAX_CHECK(buf.stream() == other_stream);
+      CCCLRT_CHECK(buf.stream() == other_stream);
       buf.set_stream(stream);
     }
 
-    CUDAX_CHECK(buf.stream() == stream);
+    CCCLRT_CHECK(buf.stream() == stream);
     buf.destroy(stream);
   }
 }
