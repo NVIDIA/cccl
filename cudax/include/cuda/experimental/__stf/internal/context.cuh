@@ -15,6 +15,8 @@
 
 #pragma once
 
+#include <cuda/std/__concepts/concept_macros.h>
+
 #include <cuda/experimental/__stf/allocators/adapters.cuh>
 #include <cuda/experimental/__stf/allocators/buddy_allocator.cuh>
 #include <cuda/experimental/__stf/allocators/cached_allocator.cuh>
@@ -67,6 +69,16 @@ decltype(auto) operator->*(const ::std::variant<Ts...>& v, F&& f)
   return ::std::visit(::std::forward<F>(f), v);
 }
 #endif // !_CCCL_DOXYGEN_INVOKED
+
+/**
+ * @brief define the concept of context
+ */
+
+template <typename T>
+_CCCL_CONCEPT Context = _CCCL_REQUIRES_EXPR((T), T ctx, const T cctx, ::std::string s)(
+  requires(::std::is_same_v<void, decltype(ctx.finalize())>),
+  requires(::std::is_same_v<cudaStream_t, decltype(ctx.task_fence())>),
+  requires(::std::is_same_v<::std::string, decltype(ctx.get_symbol())>), );
 
 /**
  * @brief Generic context implementation
@@ -901,6 +913,8 @@ public:
 public:
   ::std::variant<stream_ctx, graph_ctx> payload;
 };
+
+static_assert(Context<context>, "Not a valid context");
 
 #ifdef UNITTESTED_FILE
 UNITTEST("context")
