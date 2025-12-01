@@ -11,6 +11,12 @@ function(libcudacxx_build_compiler_targets)
   set(cxx_compile_options)
   set(cxx_compile_definitions)
 
+  if ("MSVC" STREQUAL "${CMAKE_CXX_COMPILER_ID}")
+    # libcudacxx requires dim3 to be usable from a constexpr context, and the CUDART headers require
+    # __cplusplus to be defined for this to work:
+    append_option_if_available("/Zc:__cplusplus" cxx_compile_options)
+  endif()
+
   #  if (CCCL_USE_LIBCXX)
   #    list(APPEND cxx_compile_options "-stdlib=libc++")
   #    list(APPEND cxx_compile_definitions "_ALLOW_UNSUPPORTED_LIBCPP=1")
@@ -34,16 +40,19 @@ function(libcudacxx_build_compiler_targets)
   )
 
   cccl_build_compiler_interface(
-    libcudacxx.compiler_interface
+    libcudacxx.compiler_flags
     "${cuda_compile_options}"
     "${cxx_compile_options}"
     "${cxx_compile_definitions}"
   )
 
-  # libcudacxx only builds a single dialect at a time, so link to the currently
-  # selected dialect target from cccl:
+  add_library(libcudacxx.compiler_interface INTERFACE)
   target_link_libraries(
     libcudacxx.compiler_interface
-    INTERFACE cccl.compiler_interface_cpp${CMAKE_CUDA_STANDARD}
+    INTERFACE
+      # order matters here, we need the libcudacxx options to override the cccl options.
+      cccl.compiler_interface
+      libcudacxx.compiler_flags
+      libcudacxx::libcudacxx
   )
 endfunction()

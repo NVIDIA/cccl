@@ -148,7 +148,7 @@ malloc(const thrust::detail::execution_policy_base<DerivedPolicy>& system, std::
  *  // allocate storage for 100 ints with thrust::get_temporary_buffer
  *  const int N = 100;
  *
- *  using ptr_and_size_t = thrust::pair<
+ *  using ptr_and_size_t = cuda::std::pair<
  *    thrust::pointer<int,thrust::device_system_tag>,
  *    std::ptrdiff_t
  *  >;
@@ -170,8 +170,8 @@ malloc(const thrust::detail::execution_policy_base<DerivedPolicy>& system, std::
  *  \see return_temporary_buffer
  */
 template <typename T, typename DerivedPolicy>
-_CCCL_HOST_DEVICE
-thrust::pair<thrust::pointer<T, DerivedPolicy>, typename thrust::pointer<T, DerivedPolicy>::difference_type>
+_CCCL_HOST_DEVICE ::cuda::std::pair<thrust::pointer<T, DerivedPolicy>,
+                                    typename thrust::pointer<T, DerivedPolicy>::difference_type>
 get_temporary_buffer(const thrust::detail::execution_policy_base<DerivedPolicy>& system,
                      typename thrust::pointer<T, DerivedPolicy>::difference_type n);
 
@@ -230,7 +230,7 @@ _CCCL_HOST_DEVICE void free(const thrust::detail::execution_policy_base<DerivedP
  *  // allocate storage for 100 ints with thrust::get_temporary_buffer
  *  const int N = 100;
  *
- *  using ptr_and_size_t = thrust::pair<
+ *  using ptr_and_size_t = cuda::std::pair<
  *    thrust::pointer<int,thrust::device_system_tag>,
  *    std::ptrdiff_t
  *  >;

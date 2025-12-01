@@ -75,7 +75,7 @@ struct stream_ref : ::cuda::stream_ref
     CUcontext __stream_ctx;
     ::cuda::experimental::logical_device::kinds __ctx_kind = ::cuda::experimental::logical_device::kinds::device;
 #if _CCCL_CTK_AT_LEAST(12, 5)
-    if (__driver::__getVersion() >= 12050)
+    if (::cuda::__driver::__version_at_least(12, 5))
     {
       auto __ctx = ::cuda::__driver::__streamGetCtx_v2(__stream);
       if (__ctx.__ctx_kind_ == ::cuda::__driver::__ctx_from_stream::__kind::__green)

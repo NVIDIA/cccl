@@ -356,7 +356,7 @@ struct DispatchScanByKey
     // the necessary size of the blob)
     void* allocations[2] = {};
     if (const auto error =
-          CubDebug(detail::AliasTemporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes)))
+          CubDebug(detail::alias_temporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes)))
     {
       return error;
     }

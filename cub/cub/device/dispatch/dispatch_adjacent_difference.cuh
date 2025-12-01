@@ -142,7 +142,7 @@ struct DispatchAdjacentDifference
       void* allocations[1]       = {nullptr};
       size_t allocation_sizes[1] = {(AliasOpt == MayAlias::Yes) * first_tile_previous_size};
 
-      error = CubDebug(detail::AliasTemporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes));
+      error = CubDebug(detail::alias_temporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes));
 
       if (cudaSuccess != error)
       {

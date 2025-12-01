@@ -21,6 +21,10 @@
 #include <cub/util_ptx.cuh>
 #include <cub/util_type.cuh>
 
+#if !_CCCL_COMPILER(NVRTC)
+#  include <ostream>
+#endif // !_CCCL_COMPILER(NVRTC)
+
 CUB_NAMESPACE_BEGIN
 
 //! @name Blocked arrangement I/O (direct)
@@ -525,6 +529,29 @@ enum BlockStoreAlgorithm
   //! @endrst
   BLOCK_STORE_WARP_TRANSPOSE_TIMESLICED,
 };
+
+#if !_CCCL_COMPILER(NVRTC)
+inline ::std::ostream& operator<<(::std::ostream& os, BlockStoreAlgorithm algo)
+{
+  switch (algo)
+  {
+    case BLOCK_STORE_DIRECT:
+      return os << "BLOCK_STORE_DIRECT";
+    case BLOCK_STORE_STRIPED:
+      return os << "BLOCK_STORE_STRIPED";
+    case BLOCK_STORE_VECTORIZE:
+      return os << "BLOCK_STORE_VECTORIZE";
+    case BLOCK_STORE_TRANSPOSE:
+      return os << "BLOCK_STORE_TRANSPOSE";
+    case BLOCK_STORE_WARP_TRANSPOSE:
+      return os << "BLOCK_STORE_WARP_TRANSPOSE";
+    case BLOCK_STORE_WARP_TRANSPOSE_TIMESLICED:
+      return os << "BLOCK_STORE_WARP_TRANSPOSE_TIMESLICED";
+    default:
+      return os << "<unknown BlockStoreAlgorithm: " << static_cast<int>(algo) << ">";
+  }
+}
+#endif // !_CCCL_COMPILER(NVRTC)
 
 //! @rst
 //! The BlockStore class provides :ref:`collective <collective-primitives>` data movement
