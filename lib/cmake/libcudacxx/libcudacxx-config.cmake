@@ -33,9 +33,7 @@ function(_libcudacxx_declare_interface_alias alias_name ugly_name)
   #    configure it, and then ALIAS it into the namespace (or ALIAS and then
   #    configure, that seems to work too).
   add_library(${ugly_name} INTERFACE)
-
-  add_library(${alias_name} INTERFACE IMPORTED GLOBAL)
-  target_link_libraries(${alias_name} INTERFACE ${ugly_name})
+  add_library(${alias_name} ALIAS ${ugly_name})
 endfunction()
 
 # Create the main libcudacxx target now to avoid circular dependency issues when finding deps.
@@ -58,7 +56,7 @@ if (NOT TARGET libcudacxx::Thrust)
     )
   endif()
   _libcudacxx_declare_interface_alias(libcudacxx::Thrust _libcudacxx_Thrust)
-  target_link_libraries(libcudacxx::Thrust INTERFACE Thrust::Thrust)
+  target_link_libraries(_libcudacxx_Thrust INTERFACE Thrust::Thrust)
 endif()
 
 if (NOT TARGET libcudacxx::CUB)
@@ -74,7 +72,7 @@ if (NOT TARGET libcudacxx::CUB)
     )
   endif()
   _libcudacxx_declare_interface_alias(libcudacxx::CUB _libcudacxx_CUB)
-  target_link_libraries(libcudacxx::CUB INTERFACE CUB::CUB)
+  target_link_libraries(_libcudacxx_CUB INTERFACE CUB::CUB)
 endif()
 
 #

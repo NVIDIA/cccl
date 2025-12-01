@@ -104,7 +104,12 @@ endif()
 #
 
 target_include_directories(_CUB_CUB INTERFACE "${_CUB_INCLUDE_DIR}")
-target_link_libraries(_CUB_CUB INTERFACE CUB::libcudacxx)
+target_link_libraries(
+  _CUB_CUB
+  INTERFACE #
+    CUB::libcudacxx
+    CUB::Thrust
+)
 
 function(_cub_test_flag_option flag)
   if (CCCL_${flag} OR CUB_${flag} OR THRUST_${flag})
