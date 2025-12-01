@@ -600,12 +600,13 @@ _CCCL_DEVICE_API inline void kernelBody(
       ////////////////////////////////////////////////////////////////////////////////
       // Reduce across squad
       ////////////////////////////////////////////////////////////////////////////////
-      AccumT regSquadSum{};
+      AccumT regSquadSum{}; // TODO(bgruber): is this correct? We cannot assume 0 is the identity
       if constexpr (hasInit)
       {
         if (idxTile == 0)
         {
-          regSquadSum = scan_op(init_value, refSumThreadAndWarpW.data()[squadReduce.threadCount()]);
+          regSquadSum =
+            scan_op(static_cast<AccumT>(init_value), refSumThreadAndWarpW.data()[squadReduce.threadCount()]);
         }
       }
 
