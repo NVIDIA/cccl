@@ -98,7 +98,7 @@ struct Squad : SquadDesc
 //
 template <int numSquads, typename F>
 _CCCL_DEVICE_API inline void
-squadDispatch(SpecialRegisters sr, const SquadDesc (&squads)[numSquads], F f, int warpIdxStart = 0)
+squadDispatch(SpecialRegisters sr, const SquadArray<numSquads>& squads, F f, int warpIdxStart = 0)
 {
   static_assert(numSquads > 0);
   if (numSquads == 1)
@@ -124,7 +124,7 @@ squadDispatch(SpecialRegisters sr, const SquadDesc (&squads)[numSquads], F f, in
     {
       if constexpr (0 < mid)
       {
-        SquadDesc squadsLeft[mid];
+        SquadArray<mid> squadsLeft{};
         for (int gi = 0; gi < mid; ++gi)
         {
           squadsLeft[gi] = squads[gi];
@@ -134,7 +134,7 @@ squadDispatch(SpecialRegisters sr, const SquadDesc (&squads)[numSquads], F f, in
     }
     else
     {
-      SquadDesc squadsRight[numSquads - mid]{};
+      SquadArray<numSquads - mid> squadsRight{};
       for (int gi = 0; gi < numSquads - mid; ++gi)
       {
         squadsRight[gi] = squads[mid + gi];

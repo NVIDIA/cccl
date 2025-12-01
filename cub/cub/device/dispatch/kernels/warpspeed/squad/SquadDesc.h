@@ -55,13 +55,34 @@ struct SquadDesc
     return lhs.mSquadIdx != rhs.mSquadIdx;
   }
 };
+
+//! @brief Helper class to create an array of SquadDesc on device. We cannot return a SquadArray[NumSquads] from a
+//! function
+template <int NumSquads>
+struct SquadArray
+{
+  SquadDesc squads_[NumSquads] = {};
+
+  [[nodiscard]] _CCCL_API constexpr SquadDesc& operator[](const int idx) noexcept
+  {
+    return squads_[idx];
+  }
+
+  [[nodiscard]] _CCCL_API constexpr const SquadDesc& operator[](const int idx) const noexcept
+  {
+    return squads_[idx];
+  }
+};
+template <class... Squads>
+_CCCL_HOST_DEVICE SquadArray(Squads...) -> SquadArray<static_cast<int>(sizeof...(Squads))>;
+
 // squadCountThreads
 //
 // Utility function to count the number of threads in an array of squad
 // descriptors. It is used to launch a kernel with the correct number of
 // threads.
 template <int numSquads>
-[[nodiscard]] _CCCL_API inline constexpr int squadCountThreads(const SquadDesc (&squads)[numSquads]) noexcept
+[[nodiscard]] _CCCL_API inline constexpr int squadCountThreads(const SquadArray<numSquads>& squads) noexcept
 {
   int sumThreads = 0;
   for (int gi = 0; gi < numSquads; ++gi)

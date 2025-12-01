@@ -414,17 +414,11 @@ struct DispatchScan
     using tmp_state_t      = detail::scan::tmp_state_t<AccumT>;
     using scanKernelParams = detail::scan::scanKernelParams<InputT, OutputT, AccumT>;
 
-    constexpr int tile_size = ActivePolicyT::warpspeed_tile_size;
+    using WarpspeedPolicy = typename ActivePolicyT::WarpspeedPolicy;
 
-    auto kernel_ptr =
-      detail::scan::scan<typename PolicyHub::MaxPolicy,
-                         InputT,
-                         OutputT,
-                         AccumT,
-                         ScanOpT,
-                         InitValueT,
-                         (EnforceInclusive == ForceInclusive::Yes)>;
-    const int grid_dim = ::cuda::ceil_div(num_items, static_cast<size_t>(tile_size));
+    auto kernel_ptr = detail::scan::
+      scan<WarpspeedPolicy, InputT, OutputT, AccumT, ScanOpT, InitValueT, (EnforceInclusive == ForceInclusive::Yes)>;
+    const int grid_dim = ::cuda::ceil_div(num_items, static_cast<size_t>(WarpspeedPolicy::tile_size));
 
     if (d_temp_storage == nullptr)
     {
@@ -454,7 +448,7 @@ struct DispatchScan
       SyncHandler syncHandler{};
       SmemAllocator smemAllocator{};
       [[maybe_unused]] auto res =
-        detail::scan::allocResources<tile_size, InputT, OutputT, AccumT>(syncHandler, smemAllocator, params);
+        detail::scan::allocResources<WarpspeedPolicy, InputT, OutputT, AccumT>(syncHandler, smemAllocator, params);
 
       const auto curr_smem_size = static_cast<int>(smemAllocator.sizeBytes());
       if (curr_smem_size > max_dynamic_smem_size)
@@ -503,7 +497,7 @@ struct DispatchScan
 
     // Invoke scan kernel
     {
-      const int block_dim = squadCountThreads(detail::scan::scanSquads);
+      const int block_dim = squadCountThreads(WarpspeedPolicy::scanSquads());
 
 #  ifdef CUB_DEBUG_LOG
       _CubLog("Invoking scan<<<%d, %d, %d, %lld>>>()\n", grid_dim, block_dim, smem_size, (long long) stream);

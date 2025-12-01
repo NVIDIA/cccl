@@ -18,6 +18,7 @@
 #include <cub/block/block_load.cuh>
 #include <cub/block/block_scan.cuh>
 #include <cub/block/block_store.cuh>
+#include <cub/device/dispatch/kernels/warpspeed/squad/SquadDesc.h>
 #include <cub/device/dispatch/tuning/common.cuh>
 #include <cub/thread/thread_load.cuh>
 #include <cub/util_device.cuh>
@@ -563,11 +564,54 @@ struct policy_hub
     using ScanPolicyT =
       decltype(select_agent_policy100<sm100_tuning<InputValueT, AccumT, OffsetT, classify_op<ScanOpT>>, InputValueT>(0));
 
-    static constexpr bool use_warpspeed                      = true;
-    static constexpr int warpspeed_squad_reduce_thread_count = 4 * 32; // TODO(bgruber): keep in sync with squad
-                                                                       // definition
-    static constexpr int warpspeed_num_lookback_tiles = 96;
-    static constexpr int warpspeed_tile_size          = 63 * warpspeed_squad_reduce_thread_count;
+    struct WarpspeedPolicy
+    {
+      // Squad definitions
+      static constexpr int num_stages = 5;
+
+      // TODO(bgruber): tune this
+      static constexpr int num_reduce_warps     = 4;
+      static constexpr int num_scan_stor_warps  = 4;
+      static constexpr int num_load_warps       = 1;
+      static constexpr int num_sched_warps      = 1;
+      static constexpr int num_look_ahead_warps = 1;
+
+      [[nodiscard]] _CCCL_API static constexpr SquadDesc squadReduce() noexcept
+      {
+        return SquadDesc{0, num_reduce_warps};
+      }
+      [[nodiscard]] _CCCL_API static constexpr SquadDesc squadScanStore() noexcept
+      {
+        return SquadDesc{1, num_scan_stor_warps};
+      }
+      [[nodiscard]] _CCCL_API static constexpr SquadDesc squadLoad() noexcept
+      {
+        return SquadDesc{2, num_load_warps};
+      }
+      [[nodiscard]] _CCCL_API static constexpr SquadDesc squadSched() noexcept
+      {
+        return SquadDesc{3, num_sched_warps};
+      }
+      [[nodiscard]] _CCCL_API static constexpr SquadDesc squadLookback() noexcept
+      {
+        return SquadDesc{4, num_look_ahead_warps};
+      }
+
+      [[nodiscard]] _CCCL_API static constexpr SquadArray<num_stages> scanSquads() noexcept
+      {
+        return {
+          squadReduce(),
+          squadScanStore(),
+          squadLoad(),
+          squadSched(),
+          squadLookback(),
+        };
+      }
+
+      // Dependent constants
+      static constexpr int num_lookback_tiles = 3 * squadLookback().threadCount();
+      static constexpr int tile_size          = 63 * squadReduce().threadCount();
+    };
   };
 
   using MaxPolicy = Policy1000;
@@ -577,8 +621,7 @@ template <class Policy, class = void>
 inline constexpr bool scan_use_warpspeed = false;
 
 template <class Policy>
-inline constexpr bool scan_use_warpspeed<Policy, ::cuda::std::void_t<decltype(Policy::use_warpspeed)>> =
-  Policy::use_warpspeed;
+inline constexpr bool scan_use_warpspeed<Policy, ::cuda::std::void_t<typename Policy::WarpspeedPolicy>> = true;
 } // namespace detail::scan
 
 CUB_NAMESPACE_END
