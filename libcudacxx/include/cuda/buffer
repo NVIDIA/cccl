@@ -4,13 +4,15 @@
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDA_CMATH
-#define _CUDA_CMATH
+#ifndef _CUDA_BUFFER
+#define _CUDA_BUFFER
 
+// Temporary workaround to not trigger issues in CUB headers missing prologue
+#define _CCCL_WAIVE_PROLOGUE_INCLUDE_CHECK
 #include <cuda/std/detail/__config>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
@@ -21,18 +23,7 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/__cmath/ceil_div.h>
-#include <cuda/__cmath/fast_modulo_division.h>
-#include <cuda/__cmath/ilog.h>
-#include <cuda/__cmath/ipow.h>
-#include <cuda/__cmath/isqrt.h>
-#include <cuda/__cmath/mul_hi.h>
-#include <cuda/__cmath/neg.h>
-#include <cuda/__cmath/pow2.h>
-#include <cuda/__cmath/round_down.h>
-#include <cuda/__cmath/round_up.h>
-#include <cuda/__cmath/sincos.h>
-#include <cuda/__cmath/uabs.h>
-#include <cuda/std/cmath>
+#include <cuda/__container/buffer.h>
+#include <cuda/__container/heterogeneous_iterator.h>
 
-#endif // _CUDA_CMATH
+#endif // _CUDA_BUFFER

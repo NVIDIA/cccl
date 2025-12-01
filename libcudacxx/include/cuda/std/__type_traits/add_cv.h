@@ -31,7 +31,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT add_cv
 };
 
 template <class _Tp>
-using add_cv_t _CCCL_NODEBUG_ALIAS = typename add_cv<_Tp>::type;
+using add_cv_t _CCCL_NODEBUG_ALIAS = const volatile _Tp;
 
 _CCCL_END_NAMESPACE_CUDA_STD
 
