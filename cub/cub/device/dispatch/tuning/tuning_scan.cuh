@@ -572,6 +572,13 @@ struct policy_hub
 
   using MaxPolicy = Policy1000;
 };
+
+template <class Policy, class = void>
+inline constexpr bool scan_use_warpspeed = false;
+
+template <class Policy>
+inline constexpr bool scan_use_warpspeed<Policy, ::cuda::std::void_t<decltype(Policy::use_warpspeed)>> =
+  Policy::use_warpspeed;
 } // namespace detail::scan
 
 CUB_NAMESPACE_END
