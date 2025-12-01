@@ -3,7 +3,6 @@
 
 #include <cub/detail/choose_offset.cuh>
 #include <cub/device/device_scan.cuh>
-#include <cub/device/device_segmented_scan.cuh>
 
 #include <thrust/device_vector.h>
 #include <thrust/sequence.h>
@@ -81,7 +80,6 @@ thrust::device_vector<T> generate_data(std::size_t n)
   }
 }
 
-#if S5_NORMAL_SCAN
 /* S5 associative scan: processes pairs of vectors with elementwise operations.
  * Used in state-space models where each timestep processes vectors of state dimension.
  * Original benchmark here https://github.com/pytorch/pytorch/pull/164859.
@@ -115,7 +113,7 @@ struct s5_op
 
     auto& [A, Bu] = result;
 
-#  pragma unroll
+#pragma unroll
     for (int i = 0; i < StateDim; i++)
     {
       const auto y_A_i = y_A[i];
@@ -138,7 +136,7 @@ struct load_row_functor
     auto a_ptr            = thrust::get<0>(ptrs);
     auto bu_ptr           = thrust::get<1>(ptrs);
 
-#  pragma unroll
+#pragma unroll
     for (int i = 0; i < StateDim; i++)
     {
       a_arr[i]  = a_ptr[i];
@@ -176,7 +174,7 @@ struct vector_pair_write_proxy
   {
     const auto& [A, Bu] = val;
 
-#  pragma unroll
+#pragma unroll
     for (int i = 0; i < StateDim; i++)
     {
       a_row[i]  = A[i];
@@ -195,37 +193,8 @@ struct pointers_to_write_proxy_functor
     return {thrust::get<0>(ptrs), thrust::get<1>(ptrs)};
   }
 };
+} // namespace impl
 
-#endif
-
-template <typename T>
-struct s5_op_segmented
-{
-  __host__ __device__ cuda::std::tuple<T, T> operator()(cuda::std::tuple<T, T> x, cuda::std::tuple<T, T> y) const
-  {
-    const auto& [x_A, x_Bu] = x;
-    const auto& [y_A, y_Bu] = y;
-
-    return {y_A * x_A, y_A * x_Bu + y_Bu};
-  }
-};
-
-// Helper struct to hold the lambda functors outside the function
-struct column_major_transform
-{
-  int nrows;
-  int ncols;
-
-  __host__ __device__ int operator()(int k) const
-  {
-    int row = k % nrows;
-    int col = k / nrows;
-    return row * ncols + col;
-  }
-};
-}; // namespace impl
-
-#if S5_NORMAL_SCAN
 template <typename T, typename OffsetT, typename StateDim>
 static void inclusive_scan(nvbench::state& state, nvbench::type_list<T, OffsetT, StateDim>)
 {
@@ -252,14 +221,14 @@ static void inclusive_scan(nvbench::state& state, nvbench::type_list<T, OffsetT,
   using output_it_t =
     cuda::transform_iterator<impl::pointers_to_write_proxy_functor<value_t, state_dim>, zipped_output_ptrs_t>;
 
-#  if !TUNE_BASE
+#if !TUNE_BASE
   using policy_t   = policy_hub_t<accum_t>;
   using dispatch_t = cub::
     DispatchScan<input_it_t, output_it_t, op_t, wrapped_init_t, offset_t, accum_t, cub::ForceInclusive::Yes, policy_t>;
-#  else
+#else
   using dispatch_t =
     cub::DispatchScan<input_it_t, output_it_t, op_t, wrapped_init_t, offset_t, accum_t, cub::ForceInclusive::Yes>;
-#  endif
+#endif
 
   const auto elements       = static_cast<std::size_t>(state.get_int64("Elements{io}"));
   const auto total_size     = elements * state_dim;
@@ -306,124 +275,6 @@ static void inclusive_scan(nvbench::state& state, nvbench::type_list<T, OffsetT,
   });
 }
 
-#endif
-
-template <typename T, typename OffsetT, typename StateDim>
-static void segmented_scan(nvbench::state& state, nvbench::type_list<T, OffsetT, StateDim>)
-{
-  using wrapped_init_t      = cub::NullType;
-  constexpr int state_dim   = StateDim::value;
-  using value_t             = T;
-  using op_t                = impl::s5_op_segmented<value_t>;
-  using transformed_input_t = cuda::transform_iterator<impl::column_major_transform, cuda::counting_iterator<int>>;
-  using permuted_input_t    = cuda::permutation_iterator<value_t*, transformed_input_t>;
-  using permuted_output_t   = cuda::permutation_iterator<value_t*, transformed_input_t>;
-
-  using input_it_t  = cuda::zip_iterator<permuted_input_t, permuted_input_t>;
-  using output_it_t = cuda::zip_iterator<permuted_output_t, permuted_output_t>;
-
-  using begin_offset_it_t = OffsetT*;
-  using end_offset_it_t   = OffsetT*;
-
-  using accum_t  = cuda::std::tuple<value_t, value_t>;
-  using offset_t = cub::detail::common_iterator_value_t<begin_offset_it_t, end_offset_it_t>;
-
-#if !TUNE_BASE
-  using policy_t   = policy_hub_t<accum_t>;
-  using dispatch_t = cub::detail::segmented_scan::dispatch_segmented_scan<
-    input_it_t,
-    output_it_t,
-    begin_offset_it_t,
-    end_offset_it_t,
-    begin_offset_it_t,
-    op_t,
-    wrapped_init_t,
-    accum_t,
-    cub::ForceInclusive::Yes,
-    offset_t,
-    policy_t>;
-#else
-  using dispatch_t = cub::detail::segmented_scan::dispatch_segmented_scan<
-    input_it_t,
-    output_it_t,
-    begin_offset_it_t,
-    end_offset_it_t,
-    begin_offset_it_t,
-    op_t,
-    wrapped_init_t,
-    accum_t,
-    cub::ForceInclusive::Yes,
-    offset_t>;
-#endif
-
-  const auto elements       = static_cast<std::size_t>(state.get_int64("Elements{io}"));
-  const auto total_size     = elements * state_dim;
-  cudaStream_t bench_stream = state.get_cuda_stream().get_stream();
-
-  thrust::device_vector<value_t> input_A  = impl::generate_data<value_t>(total_size);
-  thrust::device_vector<value_t> input_Bu = impl::generate_data<value_t>(total_size);
-  thrust::device_vector<value_t> output_A(total_size, thrust::no_init);
-  thrust::device_vector<value_t> output_Bu(total_size, thrust::no_init);
-
-  const int nrows = elements;
-  const int ncols = state_dim;
-
-  auto col_major_iter =
-    cuda::make_transform_iterator(cuda::make_counting_iterator(0), impl::column_major_transform{nrows, ncols});
-
-  auto A_in_iter  = cuda::make_permutation_iterator(thrust::raw_pointer_cast(input_A.data()), col_major_iter);
-  auto Bu_in_iter = cuda::make_permutation_iterator(thrust::raw_pointer_cast(input_Bu.data()), col_major_iter);
-  auto input_iter = cuda::make_zip_iterator(A_in_iter, Bu_in_iter);
-
-  auto A_output_iter  = cuda::make_permutation_iterator(thrust::raw_pointer_cast(output_A.data()), col_major_iter);
-  auto Bu_output_iter = cuda::make_permutation_iterator(thrust::raw_pointer_cast(output_Bu.data()), col_major_iter);
-  auto output_iter    = cuda::make_zip_iterator(A_output_iter, Bu_output_iter);
-
-  thrust::device_vector<offset_t> begin_offsets(state_dim, thrust::no_init);
-  thrust::device_vector<offset_t> end_offsets(state_dim, thrust::no_init);
-
-  thrust::sequence(begin_offsets.begin(), begin_offsets.end(), 0, nrows);
-  thrust::sequence(end_offsets.begin(), end_offsets.end(), nrows, nrows);
-
-  state.add_element_count(elements);
-  state.add_global_memory_reads<value_t>(total_size, "A_in");
-  state.add_global_memory_reads<value_t>(total_size, "Bu_in");
-  state.add_global_memory_writes<value_t>(total_size, "A_out");
-  state.add_global_memory_writes<value_t>(total_size, "Bu_out");
-
-  size_t tmp_size;
-  dispatch_t::dispatch(
-    nullptr,
-    tmp_size,
-    input_iter,
-    output_iter,
-    state_dim,
-    thrust::raw_pointer_cast(begin_offsets.data()),
-    thrust::raw_pointer_cast(end_offsets.data()),
-    thrust::raw_pointer_cast(begin_offsets.data()),
-    op_t{},
-    wrapped_init_t{},
-    bench_stream);
-
-  thrust::device_vector<nvbench::uint8_t> tmp(tmp_size, thrust::no_init);
-  nvbench::uint8_t* d_tmp = thrust::raw_pointer_cast(tmp.data());
-
-  state.exec(nvbench::exec_tag::sync, [&](nvbench::launch& launch) {
-    dispatch_t::dispatch(
-      d_tmp,
-      tmp_size,
-      input_iter,
-      output_iter,
-      state_dim,
-      thrust::raw_pointer_cast(begin_offsets.data()),
-      thrust::raw_pointer_cast(end_offsets.data()),
-      thrust::raw_pointer_cast(begin_offsets.data()),
-      op_t{},
-      wrapped_init_t{},
-      launch.get_stream());
-  });
-}
-
 #ifdef TUNE_T
 using fp_types = nvbench::type_list<TUNE_T>;
 #else
@@ -436,14 +287,7 @@ using fp_types = nvbench::type_list<float, double>;
 
 using state_dim_types = nvbench::type_list<std::integral_constant<int, 40>>;
 
-#if S5_NORMAL_SCAN
 NVBENCH_BENCH_TYPES(inclusive_scan, NVBENCH_TYPE_AXES(fp_types, offset_types, state_dim_types))
   .set_name("s5-associative-scan")
   .set_type_axes_names({"T{ct}", "OffsetT{ct}"})
-  .add_int64_power_of_two_axis("Elements{io}", nvbench::range(16, 24, 2));
-#endif
-
-NVBENCH_BENCH_TYPES(segmented_scan, NVBENCH_TYPE_AXES(fp_types, offset_types, state_dim_types))
-  .set_name("s5-segmented-scan")
-  .set_type_axes_names({"T{ct}", "OffsetT{ct}", "StateDim{ct}"})
   .add_int64_power_of_two_axis("Elements{io}", nvbench::range(16, 24, 2));
