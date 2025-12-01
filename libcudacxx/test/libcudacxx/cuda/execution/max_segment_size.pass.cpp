@@ -13,11 +13,10 @@
 __host__ __device__ void test()
 {
   namespace exec = cuda::execution;
-  static_assert(cuda::std::is_base_of_v<exec::__guarantee, exec::segment_size::max_segment_size<42>>);
+  static_assert(cuda::std::is_base_of_v<exec::__guarantee, exec::max_segment_size<42>>);
 
-  static_assert(
-    cuda::std::is_same_v<decltype(exec::segment_size::__get_max_segment_size(exec::segment_size::max_segment_size<42>{})),
-                         exec::segment_size::max_segment_size<42>>);
+  static_assert(cuda::std::is_same_v<decltype(exec::__get_max_segment_size(exec::max_segment_size<42>{})),
+                                     exec::max_segment_size<42>>);
 }
 
 int main(int, char**)

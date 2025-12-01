@@ -30,8 +30,6 @@
 
 _CCCL_BEGIN_NAMESPACE_CUDA_EXECUTION
 
-namespace segment_size
-{
 struct __get_max_segment_size_t;
 
 // TODO : add dynamic extent specialization later, when stateful guarantees (env) are supported
@@ -76,7 +74,6 @@ struct __get_max_segment_size_t
 };
 
 _CCCL_GLOBAL_CONSTANT auto __get_max_segment_size = __get_max_segment_size_t{};
-} // namespace segment_size
 
 _CCCL_END_NAMESPACE_CUDA_EXECUTION
 
