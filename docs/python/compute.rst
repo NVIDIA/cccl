@@ -92,7 +92,7 @@ with a user-defined binary operation.
    :caption: Reduction with user-defined binary operations.
 
 Note that user-defined operations are compiled into device code
-using [``numba-cuda``](https://nvidia.github.io/numba-cuda/),
+using `numba-cuda <https://nvidia.github.io/numba-cuda/>`_,
 so many of the same features and restrictions of `numba` and `numba-cuda` apply.
 Here are some important gotchas to be aware of:
 
