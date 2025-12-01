@@ -32,6 +32,9 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
+_CCCL_DIAG_PUSH
+_CCCL_DIAG_SUPPRESS_MSVC(4505)
+
 _CCCL_BEGIN_NAMESPACE_CUDA
 
 namespace __detail
@@ -54,6 +57,8 @@ static char* __format_error(__msg_storage& __msg_buffer,
 }
 } // namespace __detail
 _CCCL_END_NAMESPACE_CUDA
+
+_CCCL_DIAG_POP
 
 #include <cuda/std/__cccl/epilogue.h>
 
