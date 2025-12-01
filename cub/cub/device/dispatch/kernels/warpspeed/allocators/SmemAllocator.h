@@ -20,6 +20,8 @@
 
 CUB_NAMESPACE_BEGIN
 
+namespace detail::scan
+{
 struct SmemAllocator
 {
   uint32_t mPtrSmem32 = 0;
@@ -63,5 +65,6 @@ struct SmemAllocator
     return mAllocatedSize;
   }
 };
+} // namespace detail::scan
 
 CUB_NAMESPACE_END

@@ -27,6 +27,7 @@
 #include <cub/device/dispatch/dispatch_common.cuh>
 #include <cub/device/dispatch/kernels/kernel_scan.cuh>
 #include <cub/device/dispatch/kernels/kernel_scan_warpspeed.cuh>
+#include <cub/device/dispatch/kernels/warpspeed/warpspeed.h>
 #include <cub/device/dispatch/tuning/tuning_scan.cuh>
 #include <cub/thread/thread_operators.cuh>
 #include <cub/util_debug.cuh>
@@ -451,8 +452,8 @@ struct DispatchScan
     int smem_size{};
     for (params.numStages = 1; true; ++params.numStages)
     {
-      SyncHandler syncHandler{};
-      SmemAllocator smemAllocator{};
+      detail::scan::SyncHandler syncHandler{};
+      detail::scan::SmemAllocator smemAllocator{};
       [[maybe_unused]] auto res =
         detail::scan::allocResources<tile_size, InputT, OutputT, AccumT>(syncHandler, smemAllocator, params);
 

@@ -22,6 +22,8 @@
 
 CUB_NAMESPACE_BEGIN
 
+namespace detail::scan
+{
 template <typename _Tp>
 struct SmemResource : SmemResourceRaw
 {
@@ -51,5 +53,6 @@ private:
     return SmemResourceRaw(syncHandler, ptrBase, sizeBytes, strideBytes, stages.value());
   }
 };
+} // namespace detail::scan
 
 CUB_NAMESPACE_END

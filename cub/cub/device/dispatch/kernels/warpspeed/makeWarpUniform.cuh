@@ -16,6 +16,8 @@
 
 CUB_NAMESPACE_BEGIN
 
+namespace detail::scan
+{
 // Move register to uniform register
 
 // For int32_t and uint32_t, we can use the new CREDUX instruction, which is
@@ -33,5 +35,6 @@ CUB_NAMESPACE_BEGIN
 {
   return __shfl_sync(~0, x, 0);
 }
+} // namespace detail::scan
 
 CUB_NAMESPACE_END

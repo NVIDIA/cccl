@@ -13,17 +13,17 @@
 #endif // no system header
 
 #include <cub/device/dispatch/kernels/warpspeed/allocators/SmemAllocator.h>
-#include <cub/device/dispatch/kernels/warpspeed/warpspeed/constantAssert.h>
-#include <cub/device/dispatch/kernels/warpspeed/warpspeed/makeWarpUniform.cuh>
-#include <cub/device/dispatch/kernels/warpspeed/warpspeed/SpecialRegisters.cuh>
-#include <cub/device/dispatch/kernels/warpspeed/warpspeed/SyncHandler.h>
-#include <cub/device/dispatch/kernels/warpspeed/warpspeed/values.h>
+#include <cub/device/dispatch/kernels/warpspeed/constantAssert.h>
+#include <cub/device/dispatch/kernels/warpspeed/makeWarpUniform.cuh>
+#include <cub/device/dispatch/kernels/warpspeed/SpecialRegisters.cuh>
+#include <cub/device/dispatch/kernels/warpspeed/SyncHandler.h>
+#include <cub/device/dispatch/kernels/warpspeed/values.h>
 
 // TODO: rename .cuh headers to .h
-#include <cub/device/dispatch/kernels/warpspeed/warpspeed/resource/SmemPhase.cuh>
-#include <cub/device/dispatch/kernels/warpspeed/warpspeed/resource/SmemRef.cuh>
-#include <cub/device/dispatch/kernels/warpspeed/warpspeed/resource/SmemResource.cuh>
-#include <cub/device/dispatch/kernels/warpspeed/warpspeed/resource/SmemResourceRaw.cuh>
-#include <cub/device/dispatch/kernels/warpspeed/warpspeed/resource/SmemStage.cuh>
-#include <cub/device/dispatch/kernels/warpspeed/warpspeed/squad/Squad.h>
-#include <cub/device/dispatch/kernels/warpspeed/warpspeed/squad/SquadDesc.h>
+#include <cub/device/dispatch/kernels/warpspeed/resource/SmemPhase.cuh>
+#include <cub/device/dispatch/kernels/warpspeed/resource/SmemRef.cuh>
+#include <cub/device/dispatch/kernels/warpspeed/resource/SmemResource.cuh>
+#include <cub/device/dispatch/kernels/warpspeed/resource/SmemResourceRaw.cuh>
+#include <cub/device/dispatch/kernels/warpspeed/resource/SmemStage.cuh>
+#include <cub/device/dispatch/kernels/warpspeed/squad/Squad.h>
+#include <cub/device/dispatch/kernels/warpspeed/squad/SquadDesc.h>
