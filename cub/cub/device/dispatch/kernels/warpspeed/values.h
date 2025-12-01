@@ -14,6 +14,8 @@
 
 CUB_NAMESPACE_BEGIN
 
+namespace detail::scan
+{
 struct Value
 {
   int mValue;
@@ -55,5 +57,6 @@ struct Align : Value
 {
   return Align{value};
 }
+} // namespace detail::scan
 
 CUB_NAMESPACE_END

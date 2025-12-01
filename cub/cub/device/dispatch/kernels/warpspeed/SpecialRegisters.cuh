@@ -19,6 +19,8 @@
 
 CUB_NAMESPACE_BEGIN
 
+namespace detail::scan
+{
 // Commonly used special registers that we should cache in registers or uniform
 // registers.
 struct SpecialRegisters
@@ -37,5 +39,6 @@ struct SpecialRegisters
   uint32_t warpIdx        = makeWarpUniform(threadIdxX / 32);
   return {clusterCtaRank, blockIdx.x, threadIdxX, warpIdx, ::cuda::ptx::get_sreg_laneid()};
 }
+} // namespace detail::scan
 
 CUB_NAMESPACE_END
