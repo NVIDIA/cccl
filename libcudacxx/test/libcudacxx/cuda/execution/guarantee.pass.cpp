@@ -12,10 +12,9 @@
 
 __host__ __device__ void test()
 {
-  static_assert(
-    cuda::std::is_same_v<decltype(cuda::execution::segment_size::__get_max_segment_size(cuda::execution::__get_guarantees(
-                           cuda::execution::guarantee(cuda::execution::segment_size::max_segment_size<42>{})))),
-                         cuda::execution::segment_size::max_segment_size<42>>);
+  static_assert(cuda::std::is_same_v<decltype(cuda::execution::__get_max_segment_size(cuda::execution::__get_guarantees(
+                                       cuda::execution::guarantee(cuda::execution::max_segment_size<42>{})))),
+                                     cuda::execution::max_segment_size<42>>);
 }
 
 int main(int, char**)
