@@ -213,7 +213,8 @@ struct policy_hub
                         AccumT,
                         ReducePolicy::VECTOR_LOAD_LENGTH,
                         BLOCK_REDUCE_WARP_REDUCTIONS_NONDETERMINISTIC,
-                        ReducePolicy::LOAD_MODIFIER>;
+                        ReducePolicy::LOAD_MODIFIER,
+                        NoScaling<ReducePolicy::BLOCK_THREADS, ReducePolicy::ITEMS_PER_THREAD>>;
   };
 
   struct Policy600 : ChainedPolicy<600, Policy600, Policy500>
@@ -240,7 +241,8 @@ struct policy_hub
                         AccumT,
                         ReducePolicy::VECTOR_LOAD_LENGTH,
                         BLOCK_REDUCE_WARP_REDUCTIONS_NONDETERMINISTIC,
-                        ReducePolicy::LOAD_MODIFIER>;
+                        ReducePolicy::LOAD_MODIFIER,
+                        NoScaling<ReducePolicy::BLOCK_THREADS, ReducePolicy::ITEMS_PER_THREAD>>;
   };
 
   struct Policy1000 : ChainedPolicy<1000, Policy1000, Policy600>
@@ -274,7 +276,8 @@ struct policy_hub
                         AccumT,
                         ReducePolicy::VECTOR_LOAD_LENGTH,
                         BLOCK_REDUCE_WARP_REDUCTIONS_NONDETERMINISTIC,
-                        ReducePolicy::LOAD_MODIFIER>;
+                        ReducePolicy::LOAD_MODIFIER,
+                        NoScaling<ReducePolicy::BLOCK_THREADS, ReducePolicy::ITEMS_PER_THREAD>>;
   };
 
   using MaxPolicy = Policy1000;

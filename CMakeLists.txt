@@ -9,7 +9,6 @@ endif()
 
 # Determine whether CCCL is the top-level project or included into
 # another project via add_subdirectory()
-set(CCCL_TOPLEVEL_PROJECT OFF)
 if ("${CMAKE_SOURCE_DIR}" STREQUAL "${CMAKE_CURRENT_LIST_DIR}")
   set(CCCL_TOPLEVEL_PROJECT ON)
 endif()
@@ -32,6 +31,10 @@ if (CCCL_TOPLEVEL_PROJECT)
   # Handle special CCCL values for CMAKE_CUDA_ARCHITECTURES
   include(cmake/CCCLCheckCudaArchitectures.cmake)
   cccl_check_cuda_architectures()
+
+  # Perform developer build checks
+  include(cmake/CCCLDevBuildChecks.cmake)
+  cccl_dev_build_checks()
 endif()
 
 option(CCCL_ENABLE_LIBCUDACXX "Enable the libcu++ developer build." OFF)
@@ -76,9 +79,11 @@ if (CCCL_TOPLEVEL_PROJECT)
   include(cmake/AppendOptionIfAvailable.cmake)
   include(cmake/CCCLUtilities.cmake) # include this before other CCCL helpers
 
+  include(cmake/CCCLAddExecutable.cmake)
   include(cmake/CCCLBuildCompilerTargets.cmake)
   include(cmake/CCCLClangdCompileInfo.cmake)
   include(cmake/CCCLConfigureTarget.cmake)
+  include(cmake/CCCLEnsureMetaTargets.cmake)
   include(cmake/CCCLGenerateHeaderTests.cmake)
   include(cmake/CCCLGetDependencies.cmake)
   include(cmake/CCCLTestParams.cmake)

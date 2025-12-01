@@ -7,13 +7,11 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++17
-
 // <functional>
 //
 // reference_wrapper<T>
 //
-//  where T is an incomplete type (since C++20)
+//  where T is an incomplete type
 
 // #include <cuda/std/functional>
 #include <cuda/std/cassert>

@@ -1,21 +1,10 @@
-# 3.15 is the minimum for including the project with add_subdirectory.
-# 3.21 is the minimum for the developer build.
-cmake_minimum_required(VERSION 3.15)
-
-# This must be done before any languages are enabled:
-if (CCCL_ENABLE_CUDAX)
-  cmake_minimum_required(VERSION 3.21)
-endif()
-
-project(cudax LANGUAGES CXX)
-
 if (NOT CCCL_ENABLE_CUDAX)
   include(cmake/cudaxAddSubdir.cmake)
   return()
 endif()
 
-# Enable CUDA only when required for the developer build, see #2609
-enable_language(CUDA)
+cmake_minimum_required(VERSION 3.21)
+project(cudax LANGUAGES CXX CUDA)
 
 option(
   cudax_ENABLE_HEADER_TESTING
@@ -80,13 +69,9 @@ if (
 endif()
 
 include(cmake/cudaxBuildCompilerTargets.cmake)
-include(cmake/cudaxBuildTargetList.cmake)
 if (cudax_ENABLE_CUDASTF)
   include(cmake/cudaxSTFConfigureTarget.cmake)
 endif()
-
-cudax_build_compiler_targets()
-cudax_build_target_list()
 
 if (cudax_ENABLE_HEADER_TESTING)
   include(cmake/cudaxHeaderTesting.cmake)

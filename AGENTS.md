@@ -123,7 +123,7 @@ ci/util/build_and_test_targets.sh \
 
 ```bash
 ci/util/build_and_test_targets.sh \
-  --preset cudax-cpp20 \
+  --preset cudax \
   --build-targets "cudax.cpp20.test.async_buffer" \
   --ctest-targets "cudax.cpp20.test.async_buffer"
 ```
@@ -213,7 +213,7 @@ Requirements:
 * Python 3.9+
 * CUDA Toolkit 12.x
 * NVIDIA GPU (CC 6.0+)
-* Dependencies: `numba>=0.60.0`, `numpy`, `cuda-bindings>=12.9.1`, `cuda-core`, `numba-cuda>=0.18.0`
+* Dependencies: `numba>=0.60.0`, `numpy`, `cuda-bindings>=12.9.1`, `cuda-core`, `numba-cuda>=0.18.0,<0.21.2`
 
 ### Usage Examples
 

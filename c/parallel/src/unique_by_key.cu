@@ -11,7 +11,7 @@
 #include <cub/block/block_scan.cuh>
 #include <cub/detail/choose_offset.cuh>
 #include <cub/detail/launcher/cuda_driver.cuh>
-#include <cub/detail/ptx-json-parser.h>
+#include <cub/detail/ptx-json-parser.cuh>
 #include <cub/device/device_select.cuh>
 
 #include <format>
@@ -298,7 +298,7 @@ struct device_unique_by_key_vsmem_helper {{
   }};
 }};
 
-#include <cub/detail/ptx-json/json.h>
+#include <cub/detail/ptx-json/json.cuh>
 __device__ consteval auto& policy_generator() {{
   return ptx_json::id<ptx_json::string("device_unique_by_key_policy")>()
     = cub::detail::unique_by_key::UniqueByKeyPolicyWrapper<device_unique_by_key_policy::ActivePolicy>::EncodedPolicy();
