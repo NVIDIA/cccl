@@ -954,6 +954,13 @@ if (NOT TARGET Thrust::libcudacxx)
   _thrust_set_libcudacxx_target(libcudacxx::libcudacxx)
 endif()
 
+# In case new languages have been enabled since libcudacxx was found.
+# We need to check for the availability of the function, rather than
+# the target, since libcudacxx / thrust configs call each other:
+if (COMMAND libcudacxx_update_language_compat_flags)
+  libcudacxx_update_language_compat_flags()
+endif()
+
 # Handle find_package COMPONENT requests:
 foreach (component ${${CMAKE_FIND_PACKAGE_NAME}_FIND_COMPONENTS})
   if (
