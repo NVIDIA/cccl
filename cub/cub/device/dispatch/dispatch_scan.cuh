@@ -533,7 +533,8 @@ struct DispatchScan
   CUB_RUNTIME_FUNCTION _CCCL_HOST _CCCL_FORCEINLINE cudaError_t Invoke(ActivePolicyT active_policy = {})
   {
 #if __cccl_ptx_isa >= 860
-    if constexpr (ActivePolicyT::use_warpspeed && THRUST_NS_QUALIFIER::is_contiguous_iterator_v<InputIteratorT>
+    if constexpr (detail::scan::scan_use_warpspeed<ActivePolicyT>
+                  && THRUST_NS_QUALIFIER::is_contiguous_iterator_v<InputIteratorT>
                   && THRUST_NS_QUALIFIER::is_contiguous_iterator_v<OutputIteratorT>)
     {
       return __invoke_lookahead_algorithm(active_policy);
