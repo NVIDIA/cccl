@@ -135,6 +135,7 @@ Functions
 * :doc:`LoadDirectWarpStriped <namespacecub_1aeaa261355c6637a70bfc4067ea57bb42>`
 * :doc:`LowerBound <namespacecub_1a8dac1b15322b4ce6b75df7e1ef1a98ce>`
 * :doc:`MatchAny <namespacecub_1ad69972e79ff49330e9a69ef2cc916ea3>`
+* :doc:`MaxPotentialDynamicSmemBytes <namespacecub_1a3855abd619d80468337b76cff16f4bc4>`
 * :doc:`MaxSmOccupancy <namespacecub_1a8b6177c635dcc16dd321af6da3e538db>`
 * :doc:`MergePath <namespacecub_1a1b6e2aaf857cfd72861cf2499bf9acb3>`
 * :doc:`MergePathSearch <namespacecub_1ae5dc63782e74ff9978bec0ef1d12f2f8>`
@@ -342,6 +343,7 @@ Enumerations
    namespacecub_1ad79fa34a6d206203d5a611b450c4225a
    namespacecub_1a75d6eade310f187ff42915ae82e963d0
    namespacecub_1abd7ca1c640b97afa0183c61e7970b316
+   namespacecub_1a3855abd619d80468337b76cff16f4bc4
    namespacecub_1a8b6177c635dcc16dd321af6da3e538db
    namespacecub_1a91f7ed12997a1c479e6c40039816e94c
    namespacecub_1a92146627fb9025cf631ce6894da54068

@@ -605,6 +605,7 @@
 <li class="toctree-l4"><a class="reference internal" href="../../cub/api/namespacecub_1ad79fa34a6d206203d5a611b450c4225a.html">cub::SmVersionUncached</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../cub/api/namespacecub_1a75d6eade310f187ff42915ae82e963d0.html">cub::SmVersion</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../cub/api/namespacecub_1abd7ca1c640b97afa0183c61e7970b316.html">cub::SyncStream</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../cub/api/namespacecub_1a3855abd619d80468337b76cff16f4bc4.html">cub::MaxPotentialDynamicSmemBytes</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../cub/api/namespacecub_1a8b6177c635dcc16dd321af6da3e538db.html">cub::MaxSmOccupancy</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../cub/api/namespacecub_1a91f7ed12997a1c479e6c40039816e94c.html">cub::Nominal4BItemsToItemsCombined</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../cub/api/namespacecub_1a92146627fb9025cf631ce6894da54068.html">cub::Nominal4BItemsToItems</a></li>
@@ -1560,7 +1561,7 @@
 <dd><p>Construct a new <code class="docutils literal notranslate"><a class="reference internal" href="#classtimed__event"><span class="std std-ref"><span class="pre">timed_event</span></span></a></code> object into the moved-from state. </p>
 <dl class="field-list simple">
 <dt class="field-odd">Post<span class="colon">:</span></dt>
-<dd class="field-odd"><p><code class="docutils literal notranslate"><a class="reference internal" href="#classevent__ref_1a960bb95f2fd9dd3b3a97db16b44cf5b5"><span class="std std-ref"><span class="pre">get()</span></span></a></code> returns <code class="docutils literal notranslate"><span class="pre">cudaEvent_t()</span></code>. </p>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><a class="reference internal" href="classevent__ref.html#classevent__ref_1a960bb95f2fd9dd3b3a97db16b44cf5b5"><span class="std std-ref"><span class="pre">get()</span></span></a></code> returns <code class="docutils literal notranslate"><span class="pre">cudaEvent_t()</span></code>. </p>
 </dd>
 </dl>
 </dd></dl>
@@ -1628,7 +1629,7 @@
 <dt class="sig sig-object cpp" id="_CPPv4NK11timed_event7is_doneEv">
 <span class="target" id="classevent__ref_1a90df64f59b69882007915f465095b9d4"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="kt"><span class="pre">bool</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">is_done</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">const</span></span><a class="headerlink" href="#_CPPv4NK11timed_event7is_doneEv" title="Link to this definition">#</a><br /></dt>
 <dd><p>Checks if all the work in the stream prior to the record of the event has completed. </p>
-<p>If is_done returns true, calling <a class="reference internal" href="#classevent__ref_1a770773dd43a808f32a8917707388cf39"><span class="std std-ref">sync()</span></a> on this event will return immediately</p>
+<p>If is_done returns true, calling <a class="reference internal" href="classevent__ref.html#classevent__ref_1a770773dd43a808f32a8917707388cf39"><span class="std std-ref">sync()</span></a> on this event will return immediately</p>
 <dl class="field-list simple">
 <dt class="field-odd">Throws<span class="colon">:</span></dt>
 <dd class="field-odd"><p><span><span class="cpp-expr sig sig-inline cpp"><span class="n">cuda_error</span></span></span> – if the event query fails </p>
