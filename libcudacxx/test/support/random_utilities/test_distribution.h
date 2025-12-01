@@ -24,28 +24,34 @@
 namespace detail
 {
 template <class D, class URNG, class Param>
-__host__ __device__ constexpr bool test_ctor_assign(Param param)
+__host__ __device__ constexpr bool test_ctor_assign(const Param& param)
 {
-  D d1(param);
-  D d2;
-  d2 = d1;
-  assert(d1 == d2);
-  assert(d1.param() == param);
+  if constexpr (cuda::std::is_copy_constructible_v<D>)
+  {
+    D d1(param);
+    D d2;
+    d2 = d1;
+    assert(d1 == d2);
+    assert(d1.param() == param);
+  }
   return true;
 }
 
 template <class D, class URNG, class Param>
-__host__ __device__ constexpr bool test_copy(Param param)
+__host__ __device__ constexpr bool test_copy(const Param& param)
 {
-  D d1(param);
-  D d2(d1);
-  assert(d1 == d2);
-  static_assert(noexcept(D(d1)));
+  if constexpr (cuda::std::is_copy_constructible_v<D>)
+  {
+    D d1(param);
+    D d2(d1);
+    assert(d1 == d2);
+    static_assert(noexcept(D(d1)));
+  }
   return true;
 }
 
 template <class D, class URNG, class Param>
-__host__ __device__ constexpr bool test_eq(Param param)
+__host__ __device__ constexpr bool test_eq(const Param& param)
 {
   D d1(param);
   D d2(param);
@@ -57,7 +63,7 @@ __host__ __device__ constexpr bool test_eq(Param param)
 }
 
 template <class D, class URNG, class Param>
-__host__ __device__ constexpr bool test_get_param(Param param)
+__host__ __device__ constexpr bool test_get_param(const Param& param)
 {
   D d1(param);
   assert(d1.param() == param);
@@ -67,7 +73,7 @@ __host__ __device__ constexpr bool test_get_param(Param param)
 
 #if !_CCCL_COMPILER(NVRTC)
 template <class D, class URNG, class Param>
-bool test_io(Param param)
+bool test_io(const Param& param)
 {
   D d1(param);
   std::stringstream ss;
@@ -80,7 +86,7 @@ bool test_io(Param param)
 #endif
 
 template <class D, class URNG, class Param>
-__host__ __device__ constexpr bool test_min_max(Param param)
+__host__ __device__ constexpr bool test_min_max(const Param& param)
 {
   D d1(param);
   static_assert(noexcept(d1.min()));
@@ -90,7 +96,7 @@ __host__ __device__ constexpr bool test_min_max(Param param)
 }
 
 template <class D, class URNG, class Param>
-__host__ __device__ constexpr bool test_set_param(Param param)
+__host__ __device__ constexpr bool test_set_param(const Param& param)
 {
   D d1;
   d1.param(param);
@@ -99,7 +105,7 @@ __host__ __device__ constexpr bool test_set_param(Param param)
 }
 
 template <class D, class URNG, class Param>
-__host__ __device__ constexpr bool test_types(Param param)
+__host__ __device__ constexpr bool test_types(const Param& param)
 {
   D d1(param);
   [[maybe_unused]] URNG g{};
@@ -112,19 +118,22 @@ __host__ __device__ constexpr bool test_types(Param param)
 }
 
 template <class D, class URNG, class Param>
-__host__ __device__ constexpr bool test_param(Param param)
+__host__ __device__ constexpr bool test_param(const Param& param)
 {
   static_assert(cuda::std::is_same_v<typename D::param_type, Param>);
   static_assert(cuda::std::is_same_v<typename Param::distribution_type, D>);
 
-  Param p2(param);
-  assert(p2 == param);
-  assert(!(p2 != param));
-  Param p3 = param;
-  assert(p3 == param);
-  static_assert(noexcept(p3 = p2));
-  static_assert(noexcept(p2 == p3));
-  static_assert(noexcept(p2 != p3));
+  if constexpr (cuda::std::is_copy_constructible<Param>::value)
+  {
+    Param p2(param);
+    assert(p2 == param);
+    assert(!(p2 != param));
+    Param p3 = param;
+    assert(p3 == param);
+    static_assert(noexcept(p3 = p2));
+    static_assert(noexcept(p2 == p3));
+    static_assert(noexcept(p2 != p3));
+  }
   return true;
 }
 
@@ -184,8 +193,8 @@ __host__ __device__ double ks_test_statistic_discrete(
 // Perform a kolmogorov-Smirnov test, comparing the observed and expected cumulative
 // distribution function from a continuous distribution.
 // Generates a fixed size of 10000 samples
-template <class D, bool continuous, class URNG, bool test_constexpr, class CDF>
-__host__ __device__ bool test_eval(const typename D::param_type param, CDF cdf)
+template <class D, bool continuous, class URNG, class CDF>
+__host__ __device__ bool test_eval(const typename D::param_type& param, CDF cdf)
 {
   // First check the operator with param is equivalent to the constructor param
   {
@@ -245,11 +254,11 @@ __host__ __device__ constexpr bool test_eval_constexpr()
 } // namespace detail
 
 template <class D, bool continuous, class URNG, bool test_constexpr, class CDF, cuda::std::size_t N>
-__host__ __device__ void constexpr test_distribution(cuda::std::array<typename D::param_type, N> params, CDF cdf)
+__host__ __device__ void constexpr test_distribution(const cuda::std::array<typename D::param_type, N>& params, CDF cdf)
 {
   for (cuda::std::size_t i = 0; i < N; ++i)
   {
-    detail::test_eval<D, continuous, URNG, test_constexpr>(params[i], cdf);
+    detail::test_eval<D, continuous, URNG>(params[i], cdf);
     detail::test_ctor_assign<D, URNG>(params[i]);
     detail::test_copy<D, URNG>(params[i]);
     detail::test_eq<D, URNG>(params[i]);
