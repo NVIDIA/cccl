@@ -32,14 +32,11 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_CCCL_DIAG_PUSH
-_CCCL_DIAG_SUPPRESS_MSVC(4505)
-
 _CCCL_BEGIN_NAMESPACE_CUDA
 
 #if !_CCCL_COMPILER(NVRTC)
 
-static char* __format_error(__msg_storage& __msg_buffer,
+inline char* __format_error(__msg_storage& __msg_buffer,
                             ::cuda::std::__string_view __type_name,
                             const char* __msg,
                             ::cuda::std::source_location __loc = ::cuda::std::source_location::current()) noexcept
@@ -59,8 +56,6 @@ static char* __format_error(__msg_storage& __msg_buffer,
 #endif // !_CCCL_COMPILER(NVRTC)
 
 _CCCL_END_NAMESPACE_CUDA
-
-_CCCL_DIAG_POP // Suppress MSVC warning C4505
 
 #include <cuda/std/__cccl/epilogue.h>
 
