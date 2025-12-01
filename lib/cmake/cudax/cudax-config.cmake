@@ -1,4 +1,12 @@
 if (TARGET cudax::cudax)
+  # In case new languages have been enabled:
+  libcudacxx_update_language_compat_flags()
+
+  include(FindPackageHandleStandardArgs)
+  if (NOT cudax_CONFIG)
+    set(cudax_CONFIG "${CMAKE_CURRENT_LIST_FILE}")
+  endif()
+  find_package_handle_standard_args(cudax CONFIG_MODE)
   return()
 endif()
 
