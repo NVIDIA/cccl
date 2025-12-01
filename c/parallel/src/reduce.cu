@@ -177,7 +177,7 @@ CUresult cccl_device_reduce_build_ex(
       }
       else if (accum_t.type == CCCL_FLOAT64)
       {
-        accum_type = accum_type::double32;
+        accum_type = accum_type::float64;
       }
 
       auto operation_t = op_type::unknown;

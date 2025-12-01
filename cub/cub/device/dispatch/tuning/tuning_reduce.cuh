@@ -271,7 +271,7 @@ struct sm100_tuning<double, OffsetT, op_type::plus, offset_size::_4, accum_size:
 enum class accum_type
 {
   float32,
-  double32,
+  float64,
   other,
 };
 
@@ -280,7 +280,7 @@ _CCCL_HOST_DEVICE constexpr accum_type classify_accum_type()
 {
   return ::cuda::std::is_same_v<AccumT, float> ? accum_type::float32
        : ::cuda::std::is_same_v<AccumT, double>
-         ? accum_type::double32
+         ? accum_type::float64
          : accum_type::other;
 }
 
@@ -303,7 +303,7 @@ _CCCL_API constexpr auto get_sm100_tuning(accum_type accum_t, op_type operation_
   {
     return sm100_tuning_values{16, 512, 2};
   }
-  if (accum_t == accum_type::double32 && offset_size == 4 && accum_size == 8)
+  if (accum_t == accum_type::float64 && offset_size == 4 && accum_size == 8)
   {
     return sm100_tuning_values{16, 640, 1};
   }
