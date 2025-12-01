@@ -9,7 +9,6 @@ Namespace ``cudax``
 Classes
 ~~~~~~~
 
-* :doc:`cuda::experimental::buffer <classcuda_1_1experimental_1_1buffer>`
 * :doc:`cuda::experimental::dynamic_shared_memory <classcuda_1_1experimental_1_1dynamic__shared__memory>`
 * :doc:`cuda::experimental::logical_device <classcuda_1_1experimental_1_1logical__device>`
 * :doc:`cuda::experimental::stf::algorithm <classcuda_1_1experimental_1_1stf_1_1algorithm>`
@@ -163,7 +162,6 @@ Structs
 * :doc:`structcuda_1_1experimental_1_1stf_1_1streamed__interface__of_3_01void__interface_01_4`
 * :doc:`cuda::experimental::stream <structcuda_1_1experimental_1_1stream>`
 * :doc:`cuda::experimental::stream_ref <structcuda_1_1experimental_1_1stream__ref>`
-* :doc:`cuda::experimental::synchronous_resource_adapter <structcuda_1_1experimental_1_1synchronous__resource__adapter>`
 
 Functions
 ~~~~~~~~~
@@ -172,7 +170,6 @@ Functions
 * :doc:`cuda::experimental::device::dynamic_shared_memory_view <namespacecuda_1_1experimental_1_1device_1a3df43b2f3236f232dc1d7a51545cd389>`
 * :doc:`cuda::experimental::distribute <namespacecuda_1_1experimental_1a591c99d80c8d7f96a29174492e72a859>`
 * :doc:`cuda::experimental::launch <namespacecuda_1_1experimental_1aa8263d79aa1b3db93c6b40ca61634080>`
-* :doc:`cuda::experimental::make_buffer <namespacecuda_1_1experimental_1a15d66a4607d1b265790613032220837f>`
 * :doc:`cuda::experimental::make_config <namespacecuda_1_1experimental_1afe420231beacc68eea61533757fb93fd>`
 * :doc:`cuda::experimental::operator& <namespacecuda_1_1experimental_1a1d24b80b5330c98dbf8386c0453364a8>`
 * :doc:`cuda::experimental::start_path <namespacecuda_1_1experimental_1a587013ea961cd2d72ce2255c4a665e7e>`
@@ -237,8 +234,6 @@ Functions
 Type Definitions
 ~~~~~~~~~~~~~~~~
 
-* :doc:`cuda::experimental::device_buffer <namespacecuda_1_1experimental_1ae54655ac955ae7ca93f731b0676f02ea>`
-* :doc:`cuda::experimental::host_buffer <namespacecuda_1_1experimental_1aa6269c4bd17a8918a50a7cdb60b3f38e>`
 * :doc:`cuda::experimental::stf::array_tuple <namespacecuda_1_1experimental_1_1stf_1ad79958209ea876e5dafe78f59ab52d79>`
 * :doc:`cuda::experimental::stf::blocked_partition <namespacecuda_1_1experimental_1_1stf_1aa7d4170e1a89607a1064da6257130929>`
 * :doc:`cuda::experimental::stf::event <namespacecuda_1_1experimental_1_1stf_1a57eb9d03994cae3406bf9101c62d80dd>`
@@ -291,7 +286,6 @@ Variables
    classcuda_1_1experimental_1_1stf_1_1blocked__partition__custom
    classcuda_1_1experimental_1_1stf_1_1box
    classcuda_1_1experimental_1_1stf_1_1buddy__allocator
-   classcuda_1_1experimental_1_1buffer
    classcuda_1_1experimental_1_1stf_1_1cached__block__allocator
    classcuda_1_1experimental_1_1stf_1_1cached__block__allocator__fifo
    classcuda_1_1experimental_1_1stf_1_1constant__logical__data
@@ -428,8 +422,6 @@ Variables
    structcuda_1_1experimental_1_1stf_1_1streamed__interface__of_3_01mdspan_3_01T_00_01P_8_8_8_01_4_01_4
    structcuda_1_1experimental_1_1stf_1_1streamed__interface__of_3_01scalar__view_3_01T_01_4_01_4
    structcuda_1_1experimental_1_1stf_1_1streamed__interface__of_3_01void__interface_01_4
-   structcuda_1_1experimental_1_1synchronous__resource__adapter
-   namespacecuda_1_1experimental_1a15d66a4607d1b265790613032220837f
    namespacecuda_1_1experimental_1ae52f048fec5bb8c0e028ec6ee18e0ae4
    namespacecuda_1_1experimental_1a587013ea961cd2d72ce2255c4a665e7e
    namespacecuda_1_1experimental_1a1d24b80b5330c98dbf8386c0453364a8
@@ -494,8 +486,6 @@ Variables
    namespacecuda_1_1experimental_1_1stf_1af7bbd0c16d200ff11f25a06b6f8f9f9c
    namespacecuda_1_1experimental_1_1stf_1a7769bac86e1a10e2b46241e166f27d4a
    namespacecuda_1_1experimental_1_1stf_1ab6102f1f400fb5014573fd1424e1ae0c
-   namespacecuda_1_1experimental_1ae54655ac955ae7ca93f731b0676f02ea
-   namespacecuda_1_1experimental_1aa6269c4bd17a8918a50a7cdb60b3f38e
    namespacecuda_1_1experimental_1_1stf_1ad79958209ea876e5dafe78f59ab52d79
    namespacecuda_1_1experimental_1_1stf_1aa7d4170e1a89607a1064da6257130929
    namespacecuda_1_1experimental_1_1stf_1a57eb9d03994cae3406bf9101c62d80dd
@@ -522,7 +512,3 @@ Variables
    namespacecuda_1_1experimental_1a0e77b206698879c24f721c676694fb6d
    namespacecuda_1_1experimental_1_1stf_1a03453c0becd124285de9dad062506ef6
    namespacecuda_1_1experimental_1ac2bd49a968880629779df2659e34459e
-   group__construction
-   group__iterators
-   group__access
-   group__size
