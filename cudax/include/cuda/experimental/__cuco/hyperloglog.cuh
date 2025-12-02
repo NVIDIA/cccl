@@ -63,6 +63,14 @@ public:
   using hasher        = typename ref_type<>::hasher; ///< Hash function type
   using register_type = typename ref_type<>::register_type; ///< HLL register type
 
+  //! A strong type wrapper `sketch_size_kb` of `double`, for specifying the upper-bound
+  //! sketch size of `cuda::experimental::cuco::hyperloglog(_ref)` in KB.
+  using sketch_size_kb = ::cuda::experimental::cuco::__sketch_size_kb_t;
+
+  //! A strong type wrapper `standard_deviation` of `double`, for specifying the desired
+  //! standard deviation for the cardinality estimate of `cuda::experimental::cuco::hyperloglog(_ref)`.
+  using standard_deviation = ::cuda::experimental::cuco::__standard_deviation_t;
+
   // TODO enable CTAD
   //! @brief Constructs a `hyperloglog` host object.
   //!
@@ -72,12 +80,10 @@ public:
   //! @param __sketch_size_kb Maximum sketch size in KB
   //! @param __hash The hash function used to hash items
   //! @param __stream CUDA stream used to initialize the object
-  constexpr hyperloglog(
-    _MemoryResourceRef __memory_resource_ref,
-    ::cuda::experimental::cuco::sketch_size_kb __sketch_size_kb =
-      static_cast<::cuda::experimental::cuco::sketch_size_kb>(32.0),
-    const _Hash& __hash         = {},
-    ::cuda::stream_ref __stream = ::cuda::stream_ref{cudaStream_t{nullptr}})
+  constexpr hyperloglog(_MemoryResourceRef __memory_resource_ref,
+                        sketch_size_kb __sketch_size_kb = sketch_size_kb{32.0},
+                        const _Hash& __hash             = {},
+                        ::cuda::stream_ref __stream     = ::cuda::stream_ref{cudaStream_t{nullptr}})
       : __memory_resource_ref(__memory_resource_ref)
       , __sketch_buffer{__stream,
                         __memory_resource_ref,
@@ -97,10 +103,9 @@ public:
   //! @param __sketch_size_kb Maximum sketch size in KB
   //! @param __hash The hash function used to hash items
   //! @param __stream CUDA stream used to initialize the object
-  constexpr hyperloglog(::cuda::experimental::cuco::sketch_size_kb __sketch_size_kb =
-                          static_cast<::cuda::experimental::cuco::sketch_size_kb>(32.0),
-                        const _Hash& __hash         = {},
-                        ::cuda::stream_ref __stream = ::cuda::stream_ref{cudaStream_t{nullptr}})
+  constexpr hyperloglog(sketch_size_kb __sketch_size_kb = sketch_size_kb{32.0},
+                        const _Hash& __hash             = {},
+                        ::cuda::stream_ref __stream     = ::cuda::stream_ref{cudaStream_t{nullptr}})
       : __memory_resource_ref(::cuda::device_default_memory_pool(::cuda::device_ref{0}))
       , __sketch_buffer{__stream,
                         __memory_resource_ref,
@@ -122,7 +127,7 @@ public:
   //! @param __hash The hash function used to hash items
   //! @param __stream CUDA stream used to initialize the object
   constexpr hyperloglog(_MemoryResourceRef __memory_resource_ref,
-                        ::cuda::experimental::cuco::standard_deviation __sd,
+                        standard_deviation __sd,
                         const _Hash& __hash         = {},
                         ::cuda::stream_ref __stream = ::cuda::stream_ref{cudaStream_t{nullptr}})
       : __memory_resource_ref(__memory_resource_ref)
@@ -144,7 +149,7 @@ public:
   //! @param __sd Desired standard deviation for the approximation error
   //! @param __hash The hash function used to hash items
   //! @param __stream CUDA stream used to initialize the object
-  constexpr hyperloglog(::cuda::experimental::cuco::standard_deviation __sd,
+  constexpr hyperloglog(standard_deviation __sd,
                         const _Hash& __hash         = {},
                         ::cuda::stream_ref __stream = ::cuda::stream_ref{cudaStream_t{nullptr}})
       : __memory_resource_ref(::cuda::device_default_memory_pool(::cuda::device_ref{0}))
@@ -274,8 +279,7 @@ public:
   //! @param __sketch_size_kb Upper bound sketch size in KB
   //!
   //! @return The number of bytes required for the sketch
-  [[nodiscard]] static constexpr std::size_t
-  sketch_bytes(::cuda::experimental::cuco::sketch_size_kb __sketch_size_kb) noexcept
+  [[nodiscard]] static constexpr std::size_t sketch_bytes(sketch_size_kb __sketch_size_kb) noexcept
   {
     return ref_type<>::sketch_bytes(__sketch_size_kb);
   }
@@ -285,8 +289,7 @@ public:
   //! @param __standard_deviation Upper bound standard deviation for approximation error
   //!
   //! @return The number of bytes required for the sketch
-  [[nodiscard]] static constexpr std::size_t
-  sketch_bytes(::cuda::experimental::cuco::standard_deviation __standard_deviation) noexcept
+  [[nodiscard]] static constexpr std::size_t sketch_bytes(standard_deviation __standard_deviation) noexcept
   {
     return ref_type<>::sketch_bytes(__standard_deviation);
   }

@@ -33,16 +33,6 @@
 
 namespace cuda::experimental::cuco
 {
-//! A strong type wrapper `cuda::experimental::cuco::sketch_size_kb` of `double`, for specifying the upper-bound sketch
-//! size of `cuda::experimental::cuco::hyperloglog(_ref)` in KB.
-//!
-//! Note: Values can also be specified as literals, e.g., 64.3_KB.
-using sketch_size_kb = ::cuda::experimental::cuco::__sketch_size_kb_t;
-
-//! A strong type wrapper `cuda::experimental::cuco::standard_deviation` of `double`, for specifying the desired
-//! standard deviation for the cardinality estimate of `cuda::experimental::cuco::hyperloglog(_ref)`.
-using standard_deviation = ::cuda::experimental::cuco::__standard_deviation_t;
-
 //! @brief A non-owning reference to a HyperLogLog sketch for approximating the number of distinct
 //! items in a multiset.
 //!
@@ -65,6 +55,14 @@ public:
   using value_type    = typename __impl_type::value_type; ///< Type of items to count
   using hasher        = typename __impl_type::hasher; ///< Type of hash function
   using register_type = typename __impl_type::register_type; ///< HLL register type
+
+  //! A strong type wrapper `sketch_size_kb` of `double`, for specifying the upper-bound
+  //! sketch size of `cuda::experimental::cuco::hyperloglog(_ref)` in KB.
+  using sketch_size_kb = ::cuda::experimental::cuco::__sketch_size_kb_t;
+
+  //! A strong type wrapper `standard_deviation` of `double`, for specifying the desired
+  //! standard deviation for the cardinality estimate of `cuda::experimental::cuco::hyperloglog(_ref)`.
+  using standard_deviation = ::cuda::experimental::cuco::__standard_deviation_t;
 
   template <::cuda::thread_scope _NewScope>
   using with_scope = hyperloglog_ref<_Tp, _NewScope, _Hash>; ///< Ref type with different thread scope
@@ -222,8 +220,7 @@ public:
   //! @param __sketch_size_kb Upper bound sketch size in KB
   //!
   //! @return The number of bytes required for the sketch
-  [[nodiscard]] _CCCL_API static constexpr std::size_t
-  sketch_bytes(::cuda::experimental::cuco::sketch_size_kb __sketch_size_kb) noexcept
+  [[nodiscard]] _CCCL_API static constexpr std::size_t sketch_bytes(sketch_size_kb __sketch_size_kb) noexcept
   {
     return __impl_type::__sketch_bytes(__sketch_size_kb);
   }
@@ -233,8 +230,7 @@ public:
   //! @param __standard_deviation Upper bound standard deviation for approximation error
   //!
   //! @return The number of bytes required for the sketch
-  [[nodiscard]] _CCCL_API static constexpr std::size_t
-  sketch_bytes(::cuda::experimental::cuco::standard_deviation __standard_deviation) noexcept
+  [[nodiscard]] _CCCL_API static constexpr std::size_t sketch_bytes(standard_deviation __standard_deviation) noexcept
   {
     return __impl_type::sketch_bytes(__standard_deviation);
   }

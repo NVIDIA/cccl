@@ -26,7 +26,7 @@
 namespace cudax = cuda::experimental;
 
 template <typename Ref, typename InputIt, typename OutputIt>
-__global__ void estimate_kernel(cudax::cuco::sketch_size_kb sketch_size_kb, InputIt in, size_t n, OutputIt out)
+__global__ void estimate_kernel(typename Ref::sketch_size_kb sketch_size_kb, InputIt in, size_t n, OutputIt out)
 {
   extern __shared__ cuda::std::byte local_sketch[];
 
@@ -63,8 +63,8 @@ C2H_TEST("HyperLogLog device ref", "[hyperloglog]", test_types)
   // Test parameters
   const std::size_t num_items_pow2 = GENERATE(25, 26, 28);
   const int hll_precision          = GENERATE(8, 10, 12, 13);
-  const auto sketch_size_kb        = static_cast<cudax::cuco::sketch_size_kb>(4.0 * (1ull << hll_precision) / 1024.0);
-  const std::size_t num_items      = 1ull << num_items_pow2;
+  const typename estimator_type::sketch_size_kb sketch_size_kb(4.0 * (1ull << hll_precision) / 1024.0);
+  const std::size_t num_items = 1ull << num_items_pow2;
 
   CAPTURE(num_items, hll_precision, sketch_size_kb);
 
@@ -98,8 +98,8 @@ C2H_TEST("HyperLogLog unique sequence", "[hyperloglog]", test_types)
 
   const std::size_t num_items_pow2 = GENERATE(25, 26, 28);
   const int hll_precision          = GENERATE(8, 10, 12, 13, 18, 20);
-  const auto sketch_size_kb        = static_cast<cudax::cuco::sketch_size_kb>(4.0 * (1ull << hll_precision) / 1024.0);
-  const std::size_t num_items      = 1ull << num_items_pow2;
+  const typename estimator_type::sketch_size_kb sketch_size_kb(4.0 * (1ull << hll_precision) / 1024.0);
+  const std::size_t num_items = 1ull << num_items_pow2;
 
   CAPTURE(num_items, hll_precision, sketch_size_kb);
 
@@ -159,8 +159,8 @@ C2H_TEST("HyperLogLog Spark parity deterministic", "[hyperloglog]")
 
   CAPTURE(num_items, standard_deviation, expected_hll_precision, expected_sketch_bytes);
 
-  const auto sd = static_cast<cudax::cuco::standard_deviation>(standard_deviation);
-  const auto sb = static_cast<cudax::cuco::sketch_size_kb>(expected_sketch_bytes / 1024.0);
+  const estimator_type::standard_deviation sd(standard_deviation);
+  const estimator_type::sketch_size_kb sb(expected_sketch_bytes / 1024.0);
 
   // Validate sketch size calculation
   REQUIRE(estimator_type::sketch_bytes(sd) >= 64);
