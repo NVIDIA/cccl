@@ -31,9 +31,9 @@
 #include <thrust/iterator/transform_iterator.h>
 #include <thrust/iterator/zip_iterator.h>
 #include <thrust/reduce.h>
-#include <thrust/tuple.h>
 
 #include <cuda/std/__algorithm/min.h>
+#include <cuda/std/tuple>
 
 // Contributed by Erich Elsen
 
@@ -55,11 +55,11 @@ struct find_if_functor
   _CCCL_HOST_DEVICE TupleType operator()(const TupleType& lhs, const TupleType& rhs) const
   {
     // select the smallest index among true results
-    if (thrust::get<0>(lhs) && thrust::get<0>(rhs))
+    if (::cuda::std::get<0>(lhs) && ::cuda::std::get<0>(rhs))
     {
-      return TupleType(true, (::cuda::std::min) (thrust::get<1>(lhs), thrust::get<1>(rhs)));
+      return TupleType(true, (::cuda::std::min) (::cuda::std::get<1>(lhs), ::cuda::std::get<1>(rhs)));
     }
-    else if (thrust::get<0>(lhs))
+    else if (::cuda::std::get<0>(lhs))
     {
       return lhs;
     }
@@ -75,7 +75,7 @@ _CCCL_HOST_DEVICE InputIterator
 find_if(thrust::execution_policy<DerivedPolicy>& exec, InputIterator first, InputIterator last, Predicate pred)
 {
   using difference_type = thrust::detail::it_difference_t<InputIterator>;
-  using result_type     = typename thrust::tuple<bool, difference_type>;
+  using result_type     = typename ::cuda::std::tuple<bool, difference_type>;
 
   // empty sequence
   if (first == last)
@@ -94,11 +94,11 @@ find_if(thrust::execution_policy<DerivedPolicy>& exec, InputIterator first, Inpu
 
   // force transform_iterator output to bool
   using XfrmIterator  = thrust::transform_iterator<Predicate, InputIterator, bool>;
-  using IteratorTuple = thrust::tuple<XfrmIterator, thrust::counting_iterator<difference_type>>;
+  using IteratorTuple = ::cuda::std::tuple<XfrmIterator, thrust::counting_iterator<difference_type>>;
   using ZipIterator   = thrust::zip_iterator<IteratorTuple>;
 
   IteratorTuple iter_tuple =
-    thrust::make_tuple(XfrmIterator(first, pred), thrust::counting_iterator<difference_type>(0));
+    ::cuda::std::make_tuple(XfrmIterator(first, pred), thrust::counting_iterator<difference_type>(0));
 
   ZipIterator begin = thrust::make_zip_iterator(iter_tuple);
   ZipIterator end   = begin + n;
@@ -115,9 +115,9 @@ find_if(thrust::execution_policy<DerivedPolicy>& exec, InputIterator first, Inpu
       exec, interval_begin, interval_end, result_type(false, interval_end - begin), find_if_functor<result_type>());
 
     // see if we found something
-    if (thrust::get<0>(result))
+    if (::cuda::std::get<0>(result))
     {
-      return first + thrust::get<1>(result);
+      return first + ::cuda::std::get<1>(result);
     }
   }
 

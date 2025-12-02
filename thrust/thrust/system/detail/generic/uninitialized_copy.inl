@@ -45,8 +45,8 @@ struct uninitialized_copy_functor
   template <typename Tuple>
   _CCCL_HOST_DEVICE void operator()(Tuple t)
   {
-    const InputType& in = thrust::get<0>(t);
-    OutputType& out     = thrust::get<1>(t);
+    const InputType& in = ::cuda::std::get<0>(t);
+    OutputType& out     = ::cuda::std::get<1>(t);
     ::new (static_cast<void*>(&out)) OutputType(in);
   } // end operator()()
 }; // end uninitialized_copy_functor
@@ -61,7 +61,7 @@ _CCCL_HOST_DEVICE ForwardIterator uninitialized_copy(
   thrust::detail::false_type) // ::cuda::std::is_trivially_copy_constructible
 {
   // zip up the iterators
-  using IteratorTuple = thrust::tuple<InputIterator, ForwardIterator>;
+  using IteratorTuple = ::cuda::std::tuple<InputIterator, ForwardIterator>;
   using ZipIterator   = thrust::zip_iterator<IteratorTuple>;
 
   ZipIterator begin = thrust::make_zip_iterator(first, result);
@@ -81,7 +81,7 @@ _CCCL_HOST_DEVICE ForwardIterator uninitialized_copy(
   thrust::for_each(exec, begin, end, f);
 
   // return the end of the output range
-  return thrust::get<1>(end.get_iterator_tuple());
+  return ::cuda::std::get<1>(end.get_iterator_tuple());
 } // end uninitialized_copy()
 
 // trivial copy constructor path
@@ -106,7 +106,7 @@ _CCCL_HOST_DEVICE ForwardIterator uninitialized_copy_n(
   thrust::detail::false_type) // ::cuda::std::is_trivially_copy_constructible
 {
   // zip up the iterators
-  using IteratorTuple = thrust::tuple<InputIterator, ForwardIterator>;
+  using IteratorTuple = ::cuda::std::tuple<InputIterator, ForwardIterator>;
   using ZipIterator   = thrust::zip_iterator<IteratorTuple>;
 
   ZipIterator zipped_first = thrust::make_zip_iterator(first, result);
@@ -121,7 +121,7 @@ _CCCL_HOST_DEVICE ForwardIterator uninitialized_copy_n(
   ZipIterator zipped_last = thrust::for_each_n(exec, zipped_first, n, f);
 
   // return the end of the output range
-  return thrust::get<1>(zipped_last.get_iterator_tuple());
+  return ::cuda::std::get<1>(zipped_last.get_iterator_tuple());
 } // end uninitialized_copy_n()
 
 // trivial copy constructor path

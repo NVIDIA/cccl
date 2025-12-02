@@ -188,7 +188,7 @@ void TestGenerateZipIterator()
 
   thrust::generate(thrust::make_zip_iterator(v1.begin(), v2.begin()),
                    thrust::make_zip_iterator(v1.end(), v2.end()),
-                   return_value<thrust::tuple<T, T>>(thrust::tuple<T, T>(4, 7)));
+                   return_value<cuda::std::tuple<T, T>>(cuda::std::tuple<T, T>(4, 7)));
 
   Vector ref1(3, 4);
   Vector ref2(3, 7);
@@ -200,7 +200,7 @@ DECLARE_VECTOR_UNITTEST(TestGenerateZipIterator);
 void TestGenerateTuple()
 {
   using T     = int;
-  using Tuple = thrust::tuple<T, T>;
+  using Tuple = cuda::std::tuple<T, T>;
 
   thrust::host_vector<Tuple> h(3, Tuple(0, 0));
   thrust::device_vector<Tuple> d(3, Tuple(0, 0));

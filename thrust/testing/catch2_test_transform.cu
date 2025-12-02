@@ -3,8 +3,8 @@
 #include <thrust/iterator/retag.h>
 #include <thrust/iterator/zip_iterator.h>
 #include <thrust/transform.h>
-#include <thrust/tuple.h>
 
+#include <cuda/std/tuple>
 #include <cuda/std/utility>
 
 #include "catch2_test_helper.h"
@@ -397,14 +397,14 @@ TEMPLATE_LIST_TEST_CASE("UnaryToDiscardIteratorZipped", "[transform]", variable_
     using Iterator1 = typename thrust::host_vector<T>::iterator;
     using Iterator2 = typename thrust::device_vector<T>::iterator;
 
-    using Tuple1 = thrust::tuple<Iterator1, thrust::discard_iterator<>>;
-    using Tuple2 = thrust::tuple<Iterator2, thrust::discard_iterator<>>;
+    using Tuple1 = cuda::std::tuple<Iterator1, thrust::discard_iterator<>>;
+    using Tuple2 = cuda::std::tuple<Iterator2, thrust::discard_iterator<>>;
 
     using ZipIterator1 = thrust::zip_iterator<Tuple1>;
     using ZipIterator2 = thrust::zip_iterator<Tuple2>;
 
-    ZipIterator1 z1(thrust::make_tuple(h_output.begin(), thrust::make_discard_iterator()));
-    ZipIterator2 z2(thrust::make_tuple(d_output.begin(), thrust::make_discard_iterator()));
+    ZipIterator1 z1(cuda::std::tuple(h_output.begin(), thrust::make_discard_iterator()));
+    ZipIterator2 z2(cuda::std::tuple(d_output.begin(), thrust::make_discard_iterator()));
 
     ZipIterator1 h_result = thrust::transform(h_input.begin(), h_input.end(), z1, repeat2());
 
@@ -414,8 +414,8 @@ TEMPLATE_LIST_TEST_CASE("UnaryToDiscardIteratorZipped", "[transform]", variable_
 
     CHECK(h_output == d_output);
 
-    CHECK(reference == thrust::get<1>(h_result.get_iterator_tuple()));
-    CHECK(reference == thrust::get<1>(d_result.get_iterator_tuple()));
+    CHECK(reference == cuda::std::get<1>(h_result.get_iterator_tuple()));
+    CHECK(reference == cuda::std::get<1>(d_result.get_iterator_tuple()));
   }
 }
 

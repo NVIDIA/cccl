@@ -14,8 +14,8 @@ struct TuplePlus
 {
   _CCCL_HOST_DEVICE Tuple operator()(Tuple x, Tuple y) const
   {
-    using namespace thrust;
-    return make_tuple(get<0>(x) + get<0>(y), get<1>(x) + get<1>(y));
+    return cuda::std::make_tuple(
+      cuda::std::get<0>(x) + cuda::std::get<0>(y), cuda::std::get<1>(x) + cuda::std::get<1>(y));
   }
 }; // end TuplePlus
 
@@ -24,45 +24,43 @@ struct TestZipIteratorReduceByKey
 {
   void operator()(const size_t n)
   {
-    using namespace thrust;
+    thrust::host_vector<T> h_data0 = unittest::random_integers<bool>(n);
+    thrust::host_vector<T> h_data1 = unittest::random_integers<T>(n);
+    thrust::host_vector<T> h_data2 = unittest::random_integers<T>(n);
 
-    host_vector<T> h_data0 = unittest::random_integers<bool>(n);
-    host_vector<T> h_data1 = unittest::random_integers<T>(n);
-    host_vector<T> h_data2 = unittest::random_integers<T>(n);
+    thrust::device_vector<T> d_data0 = h_data0;
+    thrust::device_vector<T> d_data1 = h_data1;
+    thrust::device_vector<T> d_data2 = h_data2;
 
-    device_vector<T> d_data0 = h_data0;
-    device_vector<T> d_data1 = h_data1;
-    device_vector<T> d_data2 = h_data2;
-
-    using Tuple = tuple<T, T>;
+    using Tuple = cuda::std::tuple<T, T>;
 
     // integer key, tuple value
     {
-      host_vector<T> h_data3(n, 0);
-      host_vector<T> h_data4(n, 0);
-      host_vector<T> h_data5(n, 0);
-      device_vector<T> d_data3(n, 0);
-      device_vector<T> d_data4(n, 0);
-      device_vector<T> d_data5(n, 0);
+      thrust::host_vector<T> h_data3(n, 0);
+      thrust::host_vector<T> h_data4(n, 0);
+      thrust::host_vector<T> h_data5(n, 0);
+      thrust::device_vector<T> d_data3(n, 0);
+      thrust::device_vector<T> d_data4(n, 0);
+      thrust::device_vector<T> d_data5(n, 0);
 
       // run on host
-      reduce_by_key(
+      thrust::reduce_by_key(
         h_data0.begin(),
         h_data0.end(),
-        make_zip_iterator(h_data1.begin(), h_data2.begin()),
+        thrust::make_zip_iterator(h_data1.begin(), h_data2.begin()),
         h_data3.begin(),
-        make_zip_iterator(h_data4.begin(), h_data5.begin()),
-        ::cuda::std::equal_to<T>(),
+        thrust::make_zip_iterator(h_data4.begin(), h_data5.begin()),
+        cuda::std::equal_to<T>(),
         TuplePlus<Tuple>());
 
       // run on device
-      reduce_by_key(
+      thrust::reduce_by_key(
         d_data0.begin(),
         d_data0.end(),
-        make_zip_iterator(d_data1.begin(), d_data2.begin()),
+        thrust::make_zip_iterator(d_data1.begin(), d_data2.begin()),
         d_data3.begin(),
-        make_zip_iterator(d_data4.begin(), d_data5.begin()),
-        ::cuda::std::equal_to<T>(),
+        thrust::make_zip_iterator(d_data4.begin(), d_data5.begin()),
+        cuda::std::equal_to<T>(),
         TuplePlus<Tuple>());
 
       ASSERT_EQUAL(h_data3, d_data3);
@@ -84,33 +82,33 @@ struct TestZipIteratorReduceByKey
 
     // tuple key, tuple value
     {
-      host_vector<T> h_data3(n, 0);
-      host_vector<T> h_data4(n, 0);
-      host_vector<T> h_data5(n, 0);
-      host_vector<T> h_data6(n, 0);
-      device_vector<T> d_data3(n, 0);
-      device_vector<T> d_data4(n, 0);
-      device_vector<T> d_data5(n, 0);
-      device_vector<T> d_data6(n, 0);
+      thrust::host_vector<T> h_data3(n, 0);
+      thrust::host_vector<T> h_data4(n, 0);
+      thrust::host_vector<T> h_data5(n, 0);
+      thrust::host_vector<T> h_data6(n, 0);
+      thrust::device_vector<T> d_data3(n, 0);
+      thrust::device_vector<T> d_data4(n, 0);
+      thrust::device_vector<T> d_data5(n, 0);
+      thrust::device_vector<T> d_data6(n, 0);
 
       // run on host
-      reduce_by_key(
-        make_zip_iterator(h_data0.begin(), h_data0.begin()),
-        make_zip_iterator(h_data0.end(), h_data0.end()),
-        make_zip_iterator(h_data1.begin(), h_data2.begin()),
-        make_zip_iterator(h_data3.begin(), h_data4.begin()),
-        make_zip_iterator(h_data5.begin(), h_data6.begin()),
-        ::cuda::std::equal_to<Tuple>(),
+      thrust::reduce_by_key(
+        thrust::make_zip_iterator(h_data0.begin(), h_data0.begin()),
+        thrust::make_zip_iterator(h_data0.end(), h_data0.end()),
+        thrust::make_zip_iterator(h_data1.begin(), h_data2.begin()),
+        thrust::make_zip_iterator(h_data3.begin(), h_data4.begin()),
+        thrust::make_zip_iterator(h_data5.begin(), h_data6.begin()),
+        cuda::std::equal_to<Tuple>(),
         TuplePlus<Tuple>());
 
       // run on device
-      reduce_by_key(
-        make_zip_iterator(d_data0.begin(), d_data0.begin()),
-        make_zip_iterator(d_data0.end(), d_data0.end()),
-        make_zip_iterator(d_data1.begin(), d_data2.begin()),
-        make_zip_iterator(d_data3.begin(), d_data4.begin()),
-        make_zip_iterator(d_data5.begin(), d_data6.begin()),
-        ::cuda::std::equal_to<Tuple>(),
+      thrust::reduce_by_key(
+        thrust::make_zip_iterator(d_data0.begin(), d_data0.begin()),
+        thrust::make_zip_iterator(d_data0.end(), d_data0.end()),
+        thrust::make_zip_iterator(d_data1.begin(), d_data2.begin()),
+        thrust::make_zip_iterator(d_data3.begin(), d_data4.begin()),
+        thrust::make_zip_iterator(d_data5.begin(), d_data6.begin()),
+        cuda::std::equal_to<Tuple>(),
         TuplePlus<Tuple>());
 
       ASSERT_EQUAL(h_data3, d_data3);
@@ -121,14 +119,14 @@ struct TestZipIteratorReduceByKey
 
     // const inputs, see #1527
     {
-      host_vector<float> h_data3(n, 0.0f);
-      host_vector<T> h_data4(n, 0);
-      host_vector<T> h_data5(n, 0);
-      host_vector<float> h_data6(n, 0.0f);
-      device_vector<float> d_data3(n, 0.0f);
-      device_vector<T> d_data4(n, 0);
-      device_vector<T> d_data5(n, 0);
-      device_vector<float> d_data6(n, 0.0f);
+      thrust::host_vector<float> h_data3(n, 0.0f);
+      thrust::host_vector<T> h_data4(n, 0);
+      thrust::host_vector<T> h_data5(n, 0);
+      thrust::host_vector<float> h_data6(n, 0.0f);
+      thrust::device_vector<float> d_data3(n, 0.0f);
+      thrust::device_vector<T> d_data4(n, 0);
+      thrust::device_vector<T> d_data5(n, 0);
+      thrust::device_vector<float> d_data6(n, 0.0f);
 
       // run on host
       const T* h_begin1     = thrust::raw_pointer_cast(h_data1.data());

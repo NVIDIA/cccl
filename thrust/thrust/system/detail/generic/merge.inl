@@ -86,9 +86,9 @@ _CCCL_HOST_DEVICE ::cuda::std::pair<OutputIterator1, OutputIterator2> merge_by_k
   OutputIterator2 values_result,
   Compare comp)
 {
-  using iterator_tuple1 = thrust::tuple<InputIterator1, InputIterator3>;
-  using iterator_tuple2 = thrust::tuple<InputIterator2, InputIterator4>;
-  using iterator_tuple3 = thrust::tuple<OutputIterator1, OutputIterator2>;
+  using iterator_tuple1 = ::cuda::std::tuple<InputIterator1, InputIterator3>;
+  using iterator_tuple2 = ::cuda::std::tuple<InputIterator2, InputIterator4>;
+  using iterator_tuple3 = ::cuda::std::tuple<OutputIterator1, OutputIterator2>;
 
   using zip_iterator1 = thrust::zip_iterator<iterator_tuple1>;
   using zip_iterator2 = thrust::zip_iterator<iterator_tuple2>;
@@ -108,7 +108,7 @@ _CCCL_HOST_DEVICE ::cuda::std::pair<OutputIterator1, OutputIterator2> merge_by_k
     thrust::merge(exec, zipped_first1, zipped_last1, zipped_first2, zipped_last2, zipped_result, comp_first)
       .get_iterator_tuple();
 
-  return ::cuda::std::make_pair(thrust::get<0>(result), thrust::get<1>(result));
+  return ::cuda::std::make_pair(::cuda::std::get<0>(result), ::cuda::std::get<1>(result));
 } // end merge_by_key()
 
 template <typename DerivedPolicy,

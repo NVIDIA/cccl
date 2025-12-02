@@ -75,11 +75,11 @@ struct functor
   _CCCL_DEVICE_API _CCCL_FORCEINLINE TupleType operator()(const TupleType& lhs, const TupleType& rhs) const
   {
     // select the smallest index among true results
-    if (thrust::get<0>(lhs) && thrust::get<0>(rhs))
+    if (::cuda::std::get<0>(lhs) && ::cuda::std::get<0>(rhs))
     {
-      return TupleType(true, (::cuda::std::min) (thrust::get<1>(lhs), thrust::get<1>(rhs)));
+      return TupleType(true, (::cuda::std::min) (::cuda::std::get<1>(lhs), ::cuda::std::get<1>(rhs)));
     }
-    else if (thrust::get<0>(lhs))
+    else if (::cuda::std::get<0>(lhs))
     {
       return lhs;
     }
@@ -130,9 +130,9 @@ find_if_n(execution_policy<Derived>& policy, InputIt first, Size num_items, Pred
       policy, interval_begin, interval_end, result_type(false, interval_end - begin), __find_if::functor<result_type>());
 
     // see if we found something
-    if (thrust::get<0>(result))
+    if (::cuda::std::get<0>(result))
     {
-      return first + thrust::get<1>(result);
+      return first + ::cuda::std::get<1>(result);
     }
   }
 

@@ -35,12 +35,12 @@
 #  pragma system_header
 #endif // no system header
 #include <thrust/detail/type_deduction.h>
-#include <thrust/tuple.h>
 
 #include <cuda/std/__type_traits/decay.h>
 #include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__utility/declval.h>
 #include <cuda/std/__utility/move.h>
+#include <cuda/std/tuple>
 
 THRUST_NAMESPACE_BEGIN
 namespace detail::functional
@@ -82,9 +82,9 @@ struct argument
 {
   template <typename... Ts>
   _CCCL_HOST_DEVICE auto eval(Ts&&... args) const
-    -> decltype(thrust::get<Pos>(thrust::tuple<Ts&&...>{THRUST_FWD(args)...}))
+    -> decltype(::cuda::std::get<Pos>(::cuda::std::tuple<Ts&&...>{THRUST_FWD(args)...}))
   {
-    return thrust::get<Pos>(thrust::tuple<Ts&&...>{THRUST_FWD(args)...});
+    return ::cuda::std::get<Pos>(::cuda::std::tuple<Ts&&...>{THRUST_FWD(args)...});
   }
 };
 

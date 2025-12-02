@@ -54,11 +54,11 @@ namespace cuda_cub
 struct __swap_f
 {
   template <typename T, typename U>
-  _CCCL_HOST_DEVICE auto operator()(T t, U u) const -> tuple<T, U>
+  _CCCL_HOST_DEVICE auto operator()(T t, U u) const -> ::cuda::std::tuple<T, U>
   {
     using ::cuda::std::swap;
     swap(t, u);
-    return tuple{t, u};
+    return ::cuda::std::tuple{t, u};
   }
 };
 
@@ -82,7 +82,7 @@ swap_ranges(execution_policy<Derived>& policy, ItemsIt1 first1, ItemsIt1 last1, 
   if constexpr (is_indirectly_trivially_relocate_to_v<ItemsIt1, ItemsIt2>
                 && is_indirectly_trivially_relocate_to_v<ItemsIt2, ItemsIt1>)
   {
-    return get<1>(
+    return ::cuda::std::get<1>(
       cuda_cub::transform(
         policy, first1, last1, first2, zip_iterator{first1, first2}, ::cuda::proclaim_copyable_arguments(__swap_f{}))
         .get_iterator_tuple());

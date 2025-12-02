@@ -22,12 +22,12 @@ struct compare_first_lt_op_t
 {
   /**
    * We need to be able to have two different types for lhs and rhs, as the call to std::stable_sort with a
-   * zip-iterator, will pass a thrust::tuple for lhs and a tuple_of_iterator_references for rhs.
+   * zip-iterator, will pass a cuda::std::tuple for lhs and a tuple_of_iterator_references for rhs.
    */
   template <typename LhsT, typename RhsT>
   __host__ __device__ bool operator()(const LhsT& lhs, const RhsT& rhs) const
   {
-    return thrust::get<0>(lhs) < thrust::get<0>(rhs);
+    return cuda::std::get<0>(lhs) < cuda::std::get<0>(rhs);
   }
 };
 

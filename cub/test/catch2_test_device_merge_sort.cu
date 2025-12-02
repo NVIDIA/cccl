@@ -93,11 +93,11 @@ template <typename CustomT>
 struct tuple_to_custom_op_t
 {
   template <typename KeyT, typename ValueT>
-  __device__ __host__ CustomT operator()(const thrust::tuple<KeyT, ValueT>& val)
+  __device__ __host__ CustomT operator()(const cuda::std::tuple<KeyT, ValueT>& val)
   {
     CustomT custom_val{};
-    custom_val.key = static_cast<std::size_t>(thrust::get<0>(val));
-    custom_val.val = static_cast<std::size_t>(thrust::get<1>(val));
+    custom_val.key = static_cast<std::size_t>(cuda::std::get<0>(val));
+    custom_val.val = static_cast<std::size_t>(cuda::std::get<1>(val));
     return custom_val;
   }
 };
