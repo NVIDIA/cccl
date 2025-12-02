@@ -20,13 +20,15 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__algorithm/copy_n.h>
 #include <cuda/std/__algorithm/upper_bound.h>
-#include <cuda/std/__memory_>
+#include <cuda/std/__iterator/distance.h>
+#include <cuda/std/__memory/unique_ptr.h>
+#include <cuda/std/__numeric/accumulate.h>
+#include <cuda/std/__numeric/partial_sum.h>
 #include <cuda/std/__random/is_valid.h>
 #include <cuda/std/__random/uniform_real_distribution.h>
-#include <cuda/std/__utility/swap.h>
 #include <cuda/std/initializer_list>
-#include <cuda/std/numeric>
 #include <cuda/std/span>
 
 #if !_CCCL_COMPILER(NVRTC)
