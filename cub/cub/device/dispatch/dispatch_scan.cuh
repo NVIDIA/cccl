@@ -371,26 +371,7 @@ struct DispatchScan
     NV_IF_ELSE_TARGET(
       NV_IS_HOST,
       ({
-        int curr_device{};
-        if (const auto error = CubDebug(cudaGetDevice(&curr_device)))
-        {
-          return error;
-        }
-
-        int max_smem_size_optin{};
-        if (const auto error = CubDebug(
-              cudaDeviceGetAttribute(&max_smem_size_optin, cudaDevAttrMaxSharedMemoryPerBlockOptin, curr_device)))
-        {
-          return error;
-        }
-
-        int reserved_smem_size{};
-        if (const auto error = CubDebug(
-              cudaDeviceGetAttribute(&reserved_smem_size, cudaDevAttrReservedSharedMemoryPerBlock, curr_device)))
-        {
-          return error;
-        }
-        max_dynamic_smem_size = max_smem_size_optin - reserved_smem_size;
+        return MaxPotentialDynamicSmemBytes(max_dynamic_smem_size, func);
       }),
       ({
         cudaFuncAttributes func_attrs{};
