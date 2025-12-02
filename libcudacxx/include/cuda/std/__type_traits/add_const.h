@@ -31,7 +31,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT add_const
 };
 
 template <class _Tp>
-using add_const_t _CCCL_NODEBUG_ALIAS = typename add_const<_Tp>::type;
+using add_const_t _CCCL_NODEBUG_ALIAS = const _Tp;
 
 _CCCL_END_NAMESPACE_CUDA_STD
 

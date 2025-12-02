@@ -21,6 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/__cmath/sincos.h>
 #include <cuda/std/__cmath/copysign.h>
 #include <cuda/std/__cmath/isfinite.h>
 #include <cuda/std/__cmath/isinf.h>
@@ -67,8 +68,9 @@ template <class _Tp>
       return complex<_Tp>(__x.real(), __i);
     }
   }
-  _Tp __e = ::cuda::std::exp(__x.real());
-  return complex<_Tp>(__e * ::cuda::std::cos(__i), __e * ::cuda::std::sin(__i));
+  _Tp __e                       = ::cuda::std::exp(__x.real());
+  const auto [__i_sin, __i_cos] = ::cuda::sincos(__i);
+  return complex<_Tp>(__e * __i_cos, __e * __i_sin);
 }
 
 // A real exp that doesn't combine the final polynomial estimate with the ldexp factor.
@@ -152,8 +154,7 @@ _CCCL_API inline complex<float> exp(const complex<float>& __x)
       // __r == +-INF
       return ::cuda::std::signbit(__r)
              ? complex<float>{}
-             : complex<float>{::cuda::std::numeric_limits<float>::infinity(),
-                              ::cuda::std::numeric_limits<float>::quiet_NaN()};
+             : complex<float>{numeric_limits<float>::infinity(), numeric_limits<float>::quiet_NaN()};
     }
     // __r NaN:
     if (::cuda::std::isnan(__r) && (__i == 0.0f))
@@ -176,12 +177,7 @@ _CCCL_API inline complex<float> exp(const complex<float>& __x)
     __exp_r_reduced = (__r < 0.0f) ? 0.0f : 1e3f;
   }
 
-  // Compile to sincos when possible:
-  float __sin_i;
-  float __cos_i;
-  NV_IF_ELSE_TARGET(NV_IS_DEVICE,
-                    (::sincosf(__i, &__sin_i, &__cos_i);),
-                    (__sin_i = ::cuda::std::sinf(__i); __cos_i = ::cuda::std::cosf(__i);))
+  const auto [__sin_i, __cos_i] = ::cuda::sincos(__i);
 
   // Our answer now is: (ldexp(__exp_r_reduced * __sin_r, __j_int), ldexp(__exp_r_reduced * __sin_r, __j_int))
   // However we don't need a full ldexp here, and if __exp_r_reduced*__sin_r is denormal we can lose bits.
@@ -246,8 +242,7 @@ _CCCL_API inline complex<double> exp<double>(const complex<double>& __x)
     {
       return ::cuda::std::signbit(__r)
              ? complex<double>{}
-             : complex<double>{::cuda::std::numeric_limits<double>::infinity(),
-                               ::cuda::std::numeric_limits<double>::quiet_NaN()};
+             : complex<double>{numeric_limits<double>::infinity(), numeric_limits<double>::quiet_NaN()};
     }
     // __r NaN:
     if (::cuda::std::isnan(__r) && (__i == 0.0))
@@ -267,12 +262,7 @@ _CCCL_API inline complex<double> exp<double>(const complex<double>& __x)
     __exp_r_reduced = (__r < 0.0) ? 0.0 : 1e10;
   }
 
-  // Compile to sincos when possible:
-  double __sin_i;
-  double __cos_i;
-  NV_IF_ELSE_TARGET(NV_IS_DEVICE,
-                    (::sincos(__i, &__sin_i, &__cos_i);),
-                    (__sin_i = ::cuda::std::sin(__i); __cos_i = ::cuda::std::cos(__i);))
+  const auto [__sin_i, __cos_i] = ::cuda::sincos(__i);
 
   // Our answer now is: (ldexp(__exp_mant * __sin_r, __j_int), ldexp(__exp_mant * __sin_r, __j_int))
   // However we don't need a full ldexp here, and if __exp_mant*__sin_r is denormal we can lose bits.

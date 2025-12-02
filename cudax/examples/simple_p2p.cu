@@ -51,7 +51,7 @@ struct simple_kernel
   __device__ void operator()(Configuration config, ::cuda::std::span<const float> src, ::cuda::std::span<float> dst)
   {
     // Just a dummy kernel, doing enough for us to verify that everything worked
-    const auto idx = config.dims.rank(cudax::thread);
+    const auto idx = config.dims.rank(cuda::thread);
     dst[idx]       = src[idx] * 2.0f;
   }
 };

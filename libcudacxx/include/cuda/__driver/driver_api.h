@@ -61,6 +61,14 @@ _CCCL_SUPPRESS_DEPRECATED_PUSH
 
 _CCCL_SUPPRESS_DEPRECATED_POP
 
+//! @brief Makes the driver version from major and minor version.
+[[nodiscard]] _CCCL_HOST_API constexpr int __make_version(int __major, int __minor) noexcept
+{
+  _CCCL_ASSERT(__major >= 12, "invalid major CUDA Driver version");
+  _CCCL_ASSERT(__minor >= 0 && __minor < 100, "invalid minor CUDA Driver version");
+  return __major * 1000 + __minor * 10;
+}
+
 //! @brief Gets the driver entry point.
 //!
 //! @param __get_proc_addr_fn Pointer to cuGetProcAddress function.
@@ -72,15 +80,12 @@ _CCCL_SUPPRESS_DEPRECATED_POP
 //!
 //! @throws @c cuda::cuda_error if the symbol cannot be obtained.
 [[nodiscard]] _CCCL_HOST_API inline void* __get_driver_entry_point_impl(
-  decltype(cuGetProcAddress)* __get_proc_addr_fn,
-  const char* __name,
-  [[maybe_unused]] int __major,
-  [[maybe_unused]] int __minor)
+  decltype(cuGetProcAddress)* __get_proc_addr_fn, const char* __name, int __major, int __minor)
 {
   void* __fn;
   ::CUdriverProcAddressQueryResult __result;
-  ::CUresult __status =
-    __get_proc_addr_fn(__name, &__fn, __major * 1000 + __minor * 10, ::CU_GET_PROC_ADDRESS_DEFAULT, &__result);
+  ::CUresult __status = __get_proc_addr_fn(
+    __name, &__fn, ::cuda::__driver::__make_version(__major, __minor), ::CU_GET_PROC_ADDRESS_DEFAULT, &__result);
   if (__status != ::CUDA_SUCCESS || __result != ::CU_GET_PROC_ADDRESS_SUCCESS)
   {
     if (__status == ::CUDA_ERROR_INVALID_VALUE)
@@ -169,6 +174,16 @@ __get_driver_entry_point(const char* __name, [[maybe_unused]] int __major = 12, 
     return __v;
   }();
   return __version;
+}
+
+[[nodiscard]] _CCCL_HOST_API inline bool __version_at_least(int __major, int __minor)
+{
+  return ::cuda::__driver::__getVersion() >= ::cuda::__driver::__make_version(__major, __minor);
+}
+
+[[nodiscard]] _CCCL_HOST_API inline bool __version_below(int __major, int __minor)
+{
+  return ::cuda::__driver::__getVersion() < ::cuda::__driver::__make_version(__major, __minor);
 }
 
 // Device management
@@ -324,7 +339,8 @@ _CCCL_HOST_API void __memsetAsync(void* __dst, _Tp __value, size_t __count, ::CU
   }
 }
 
-_CCCL_HOST_API inline ::cudaError_t __mempoolCreateNoThrow(::CUmemoryPool* __pool, ::CUmemPoolProps* __props)
+[[nodiscard]] _CCCL_HOST_API inline ::cudaError_t
+__mempoolCreateNoThrow(::CUmemoryPool* __pool, ::CUmemPoolProps* __props)
 {
   static auto __driver_fn = _CCCLRT_GET_DRIVER_FUNCTION(cuMemPoolCreate);
   return static_cast<::cudaError_t>(__driver_fn(__pool, __props));
@@ -397,7 +413,15 @@ __getDefaultMemPool(CUmemLocation __location, CUmemAllocationType_enum __allocat
     __driver_fn, "Failed to get default memory pool", &__result, &__location, __allocation_type);
   return __result;
 }
-#  endif // _CCCL_CTK_AT_LEAST(13, 0)
+#  else // ^^^ _CCCL_CTK_AT_LEAST(13, 0) ^^^ / vvv _CCCL_CTK_BELOW(13, 0) vvv
+_CCCL_HOST_API inline ::CUmemoryPool __deviceGetDefaultMemPool(::CUdevice __device)
+{
+  static auto __driver_fn = _CCCLRT_GET_DRIVER_FUNCTION(cuDeviceGetDefaultMemPool);
+  ::CUmemoryPool __result = nullptr;
+  ::cuda::__driver::__call_driver_fn(__driver_fn, "Failed to get default memory pool", &__result, __device);
+  return __result;
+}
+#  endif // ^^^ _CCCL_CTK_BELOW(13, 0) ^^^
 
 _CCCL_HOST_API inline ::CUdeviceptr __mallocManaged(::cuda::std::size_t __bytes, unsigned int __flags)
 {
@@ -453,6 +477,10 @@ template <::CUpointer_attribute _Attr>
   {
     return int{};
   }
+  else if constexpr (_Attr == ::CU_POINTER_ATTRIBUTE_MEMPOOL_HANDLE)
+  {
+    return ::CUmemoryPool{};
+  }
   else
   {
     static_assert(::cuda::std::__always_false_v<decltype(_Attr)>, "not implemented attribute");
@@ -482,6 +510,15 @@ __pointerGetAttributeNoThrow(__pointer_attribute_value_type_t<_Attr>& __result, 
   return __status;
 }
 
+template <::cuda::std::size_t _Np>
+[[nodiscard]] _CCCL_HOST_API inline ::cudaError_t
+__pointerGetAttributesNoThrow(::CUpointer_attribute (&__attrs)[_Np], void* (&__results)[_Np], const void* __ptr)
+{
+  static const auto __driver_fn = _CCCLRT_GET_DRIVER_FUNCTION(cuPointerGetAttributes);
+  return static_cast<::cudaError_t>(
+    __driver_fn(static_cast<unsigned>(_Np), __attrs, __results, reinterpret_cast<::CUdeviceptr>(__ptr)));
+}
+
 // Stream management
 
 _CCCL_HOST_API inline void
@@ -499,10 +536,19 @@ __streamAddCallback(::CUstream __stream, ::CUstreamCallback __cb, void* __data, 
   return __stream;
 }
 
-_CCCL_HOST_API inline void __streamSynchronize(::CUstream __stream)
+_CCCL_HOST_API inline ::cudaError_t __streamSynchronizeNoThrow(::CUstream __stream)
 {
   static auto __driver_fn = _CCCLRT_GET_DRIVER_FUNCTION(cuStreamSynchronize);
-  ::cuda::__driver::__call_driver_fn(__driver_fn, "Failed to synchronize a stream", __stream);
+  return static_cast<::cudaError_t>(__driver_fn(__stream));
+}
+
+_CCCL_HOST_API inline void __streamSynchronize(::CUstream __stream)
+{
+  cudaError_t __status = __streamSynchronizeNoThrow(__stream);
+  if (__status != cudaSuccess)
+  {
+    ::cuda::__throw_cuda_error(__status, "Failed to synchronize a stream");
+  }
 }
 
 [[nodiscard]] _CCCL_HOST_API inline ::CUcontext __streamGetCtx(::CUstream __stream)
@@ -842,6 +888,36 @@ __graphKernelNodeSetAttribute(::CUgraphNode __node, ::CUkernelNodeAttrID __id, c
   return __id;
 }
 #  endif // _CCCL_CTK_AT_LEAST(13, 0)
+
+[[nodiscard]] _CCCL_HOST_API inline ::cudaError_t __tensorMapEncodeTiledNoThrow(
+  ::CUtensorMap& __tensorMap,
+  ::CUtensorMapDataType __tensorDataType,
+  ::cuda::std::uint32_t __tensorRank,
+  void* __globalAddress,
+  const ::cuda::std::uint64_t* __globalDim,
+  const ::cuda::std::uint64_t* __globalStrides,
+  const ::cuda::std::uint32_t* __boxDim,
+  const ::cuda::std::uint32_t* __elementStrides,
+  ::CUtensorMapInterleave __interleave,
+  ::CUtensorMapSwizzle __swizzle,
+  ::CUtensorMapL2promotion __l2Promotion,
+  ::CUtensorMapFloatOOBfill __oobFill) noexcept
+{
+  static auto __driver_fn = _CCCLRT_GET_DRIVER_FUNCTION(cuTensorMapEncodeTiled);
+  return static_cast<::cudaError_t>(__driver_fn(
+    &__tensorMap,
+    __tensorDataType,
+    __tensorRank,
+    __globalAddress,
+    __globalDim,
+    __globalStrides,
+    __boxDim,
+    __elementStrides,
+    __interleave,
+    __swizzle,
+    __l2Promotion,
+    __oobFill));
+}
 
 #  undef _CCCLRT_GET_DRIVER_FUNCTION
 #  undef _CCCLRT_GET_DRIVER_FUNCTION_VERSIONED

@@ -124,7 +124,7 @@ template <SortOrder Order,
           typename BeginOffsetIteratorT,
           typename EndOffsetIteratorT,
           typename SegmentSizeT,
-          typename PolicyHub    = detail::radix::policy_hub<KeyT, ValueT, SegmentSizeT>,
+          typename PolicyHub    = detail::radix_sort::policy_hub<KeyT, ValueT, SegmentSizeT>,
           typename DecomposerT  = detail::identity_decomposer_t,
           typename KernelSource = detail::radix_sort::DeviceSegmentedRadixSortKernelSource<
             typename PolicyHub::MaxPolicy,
@@ -410,7 +410,7 @@ struct DispatchSegmentedRadixSort
       };
 
       // Alias the temporary allocations from the single storage blob (or compute the necessary size of the blob)
-      error = CubDebug(detail::AliasTemporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes));
+      error = CubDebug(detail::alias_temporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes));
       if (cudaSuccess != error)
       {
         break;
@@ -517,7 +517,7 @@ struct DispatchSegmentedRadixSort
     // Force kernel code-generation in all compiler passes
     return InvokePasses(kernel_source.SegmentedRadixSortKernel(),
                         kernel_source.AltSegmentedRadixSortKernel(),
-                        detail::radix::MakeRadixSortPolicyWrapper(policy));
+                        detail::radix_sort::MakeRadixSortPolicyWrapper(policy));
   }
 
   //------------------------------------------------------------------------------

@@ -21,6 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/__cmath/sincos.h>
 #include <cuda/std/__cmath/abs.h>
 #include <cuda/std/__cmath/copysign.h>
 #include <cuda/std/__cmath/hyperbolic_functions.h>
@@ -52,8 +53,8 @@ template <class _Tp>
   {
     return __x;
   }
-  return complex<_Tp>(::cuda::std::sinh(__x.real()) * ::cuda::std::cos(__x.imag()),
-                      ::cuda::std::cosh(__x.real()) * ::cuda::std::sin(__x.imag()));
+  const auto [__im_sin, __im_cos] = ::cuda::sincos(__x.imag());
+  return complex<_Tp>(::cuda::std::sinh(__x.real()) * __im_cos, ::cuda::std::cosh(__x.real()) * __im_sin);
 }
 
 // cosh
@@ -77,8 +78,8 @@ template <class _Tp>
   {
     return complex<_Tp>(::cuda::std::abs(__x.real()), __x.imag());
   }
-  return complex<_Tp>(::cuda::std::cosh(__x.real()) * ::cuda::std::cos(__x.imag()),
-                      ::cuda::std::sinh(__x.real()) * ::cuda::std::sin(__x.imag()));
+  const auto [__im_sin, __im_cos] = ::cuda::sincos(__x.imag());
+  return complex<_Tp>(::cuda::std::cosh(__x.real()) * __im_cos, ::cuda::std::sinh(__x.real()) * __im_sin);
 }
 
 // tanh
@@ -101,13 +102,14 @@ template <class _Tp>
   }
   _Tp __2r(_Tp(2) * __x.real());
   _Tp __2i(_Tp(2) * __x.imag());
-  _Tp __d(::cuda::std::cosh(__2r) + ::cuda::std::cos(__2i));
+  const auto [__2i_sin, __2i_cos] = ::cuda::sincos(__2i);
+  _Tp __d(::cuda::std::cosh(__2r) + __2i_cos);
   _Tp __2rsh(::cuda::std::sinh(__2r));
   if (::cuda::std::isinf(__2rsh) && ::cuda::std::isinf(__d))
   {
     return complex<_Tp>(__2rsh > _Tp(0) ? _Tp(1) : _Tp(-1), __2i > _Tp(0) ? _Tp(0) : _Tp(-0.));
   }
-  return complex<_Tp>(__2rsh / __d, ::cuda::std::sin(__2i) / __d);
+  return complex<_Tp>(__2rsh / __d, __2i_sin / __d);
 }
 
 _CCCL_END_NAMESPACE_CUDA_STD

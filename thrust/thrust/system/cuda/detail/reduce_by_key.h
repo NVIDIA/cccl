@@ -36,7 +36,7 @@
 #  pragma system_header
 #endif // no system header
 
-#if _CCCL_HAS_CUDA_COMPILER()
+#if _CCCL_CUDA_COMPILATION()
 
 #  include <thrust/system/cuda/config.h>
 
@@ -758,7 +758,7 @@ THRUST_RUNTIME_FUNCTION cudaError_t doit_step(
   _CUDA_CUB_RET_IF_FAIL(status);
 
   void* allocations[2] = {nullptr, nullptr};
-  status = cub::detail::AliasTemporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes);
+  status = cub::detail::alias_temporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes);
   _CUDA_CUB_RET_IF_FAIL(status);
 
   if (d_temp_storage == nullptr)
@@ -991,4 +991,4 @@ THRUST_NAMESPACE_END
 #  include <thrust/memory.h>
 #  include <thrust/reduce.h>
 
-#endif
+#endif // _CCCL_CUDA_COMPILATION()

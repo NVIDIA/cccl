@@ -6,6 +6,8 @@
 #   Defines common warning flags, definitions, etc, including those defined in
 #   the global CCCL targets.
 
+cccl_get_libcudacxx()
+
 function(libcudacxx_build_compiler_targets)
   set(cuda_compile_options)
   set(cxx_compile_options)
@@ -34,16 +36,19 @@ function(libcudacxx_build_compiler_targets)
   )
 
   cccl_build_compiler_interface(
-    libcudacxx.compiler_interface
+    libcudacxx.compiler_flags
     "${cuda_compile_options}"
     "${cxx_compile_options}"
     "${cxx_compile_definitions}"
   )
 
-  # libcudacxx only builds a single dialect at a time, so link to the currently
-  # selected dialect target from cccl:
+  add_library(libcudacxx.compiler_interface INTERFACE)
   target_link_libraries(
     libcudacxx.compiler_interface
-    INTERFACE cccl.compiler_interface_cpp${CMAKE_CUDA_STANDARD}
+    INTERFACE
+      # order matters here, we need the libcudacxx options to override the cccl options.
+      cccl.compiler_interface
+      libcudacxx.compiler_flags
+      libcudacxx::libcudacxx
   )
 endfunction()

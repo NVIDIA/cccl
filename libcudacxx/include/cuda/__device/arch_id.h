@@ -37,6 +37,7 @@ enum class arch_id : int
 {
   sm_60   = 60,
   sm_61   = 61,
+  sm_62   = 62,
   sm_70   = 70,
   sm_75   = 75,
   sm_80   = 80,
@@ -64,6 +65,7 @@ enum class arch_id : int
   {
     case ::cuda::std::to_underlying(arch_id::sm_60):
     case ::cuda::std::to_underlying(arch_id::sm_61):
+    case ::cuda::std::to_underlying(arch_id::sm_62):
     case ::cuda::std::to_underlying(arch_id::sm_70):
     case ::cuda::std::to_underlying(arch_id::sm_75):
     case ::cuda::std::to_underlying(arch_id::sm_80):
@@ -139,7 +141,7 @@ _CCCL_DEVICE_API ::cuda::arch_id __unknown_cuda_architecture();
 //!
 //! @note This API cannot be used in constexpr context when compiling with nvc++ in CUDA mode.
 template <class _Dummy = void>
-[[nodiscard]] _CCCL_DEVICE_API _CCCL_TARGET_CONSTEXPR ::cuda::arch_id current_arch_id() noexcept
+[[nodiscard]] _CCCL_DEVICE_API inline _CCCL_TARGET_CONSTEXPR ::cuda::arch_id current_arch_id() noexcept
 {
 #  if _CCCL_CUDA_COMPILER(NVHPC)
   const auto __cc = ::cuda::device::current_compute_capability();

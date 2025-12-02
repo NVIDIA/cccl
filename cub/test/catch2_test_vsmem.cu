@@ -283,7 +283,7 @@ struct dispatch_dummy_algorithm_t
     // Compute temporary storage requirements
     void* allocations[1]            = {nullptr};
     std::size_t allocation_sizes[1] = {total_vsmem};
-    error = cub::detail::AliasTemporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes);
+    error = cub::detail::alias_temporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes);
     if (cudaSuccess != error)
     {
       return error;

@@ -88,9 +88,6 @@ cmake_minimum_required(VERSION 3.15)
 cmake_policy(PUSH)
 cmake_policy(SET CMP0074 NEW)
 
-# Minimum supported libcudacxx version:
-set(thrust_libcudacxx_version "${Thrust_VERSION}")
-
 ################################################################################
 # User variables and APIs. Users can rely on these:
 #
@@ -693,6 +690,7 @@ function(_thrust_set_libcudacxx_target libcudacxx_target)
       internal
     )
   endif()
+  target_link_libraries(_Thrust_Thrust INTERFACE Thrust::libcudacxx)
 endfunction()
 
 # Use the provided tbb_target for the TBB backend. If Thrust::TBB already
@@ -937,42 +935,30 @@ if (NOT TARGET Thrust::Thrust)
   )
   unset(_THRUST_VERSION_INCLUDE_DIR CACHE) # Clear tmp variable from cache
   target_include_directories(_Thrust_Thrust INTERFACE "${_THRUST_INCLUDE_DIR}")
-  thrust_debug_target(Thrust::Thrust "${THRUST_VERSION}" internal)
 endif()
 
-# Find libcudacxx prior to locating backend-specific deps. This ensures that CUB
-# finds the same package.
 if (NOT TARGET Thrust::libcudacxx)
-  thrust_debug("Searching for libcudacxx REQUIRED" internal)
-
-  # First do a non-required search for any co-packaged versions.
-  # These are preferred.
-  find_package(
-    libcudacxx
-    ${thrust_libcudacxx_version}
-    CONFIG
-    ${_THRUST_QUIET_FLAG}
-    NO_DEFAULT_PATH # Only check the explicit HINTS below:
-    HINTS
-      "${_THRUST_CMAKE_DIR}/../libcudacxx/" # Install layout
-  )
-
-  # A second required search allows externally packaged to be used and fails if
-  # no suitable package exists.
-  find_package(
-    libcudacxx
-    ${thrust_libcudacxx_version}
-    CONFIG
-    REQUIRED ${_THRUST_QUIET_FLAG}
-  )
-
-  if (TARGET libcudacxx::libcudacxx)
-    _thrust_set_libcudacxx_target(libcudacxx::libcudacxx)
-  else()
-    thrust_debug("Expected libcudacxx::libcudacxx target not found!" internal)
+  if (NOT TARGET libcudacxx::libcudacxx)
+    thrust_debug("Searching for libcudacxx REQUIRED" internal)
+    find_package(
+      libcudacxx
+      ${Thrust_VERSION}
+      EXACT
+      CONFIG
+      REQUIRED
+      ${_THRUST_QUIET_FLAG}
+      NO_DEFAULT_PATH # Only check the explicit HINTS below:
+      HINTS "${_THRUST_CMAKE_DIR}/../libcudacxx/"
+    )
   endif()
+  _thrust_set_libcudacxx_target(libcudacxx::libcudacxx)
+endif()
 
-  target_link_libraries(_Thrust_Thrust INTERFACE Thrust::libcudacxx)
+# In case new languages have been enabled since libcudacxx was found.
+# We need to check for the availability of the function, rather than
+# the target, since libcudacxx / thrust configs call each other:
+if (COMMAND libcudacxx_update_language_compat_flags)
+  libcudacxx_update_language_compat_flags()
 endif()
 
 # Handle find_package COMPONENT requests:
@@ -994,6 +980,8 @@ foreach (component ${${CMAKE_FIND_PACKAGE_NAME}_FIND_COMPONENTS})
 endforeach()
 
 thrust_update_system_found_flags()
+
+thrust_debug_target(Thrust::Thrust "${THRUST_VERSION}" internal)
 
 include(FindPackageHandleStandardArgs)
 if (NOT Thrust_CONFIG)

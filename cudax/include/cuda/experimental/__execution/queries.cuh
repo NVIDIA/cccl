@@ -89,14 +89,14 @@ _CCCL_GLOBAL_CONSTANT struct get_stop_token_t
 _CCCL_GLOBAL_CONSTANT struct get_scheduler_t
 {
   _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_TEMPLATE(class _Env)
+  _CCCL_TEMPLATE(class _Tag = set_value_t, class _Env)
   _CCCL_REQUIRES(__queryable_with<_Env, get_scheduler_t>)
   [[nodiscard]] _CCCL_API constexpr auto operator()(const _Env& __env) const noexcept
-    -> __query_result_t<_Env, get_scheduler_t>
+    -> __call_result_t<get_completion_scheduler_t<_Tag>, __query_result_t<_Env, get_scheduler_t>, __hide_scheduler<_Env>>
   {
     static_assert(noexcept(__env.query(*this)));
     static_assert(__is_scheduler<__query_result_t<_Env, get_scheduler_t>>);
-    return __env.query(*this);
+    return get_completion_scheduler_t<_Tag>()(__env.query(*this), __hide_scheduler{__env});
   }
 
   [[nodiscard]] _CCCL_API static constexpr auto query(forwarding_query_t) noexcept -> bool
@@ -145,7 +145,7 @@ struct get_completion_scheduler_t
     _CCCL_TEMPLATE(class _Attrs, class _GetComplSch = get_completion_scheduler_t)
     _CCCL_REQUIRES(__queryable_with<_Attrs, _GetComplSch>)
     [[nodiscard]] _CCCL_API constexpr auto operator()(const _Attrs& __attrs, cuda::std::__ignore_t = {}) const noexcept
-      -> __query_result_t<_Attrs, _GetComplSch>
+      -> decay_t<__query_result_t<_Attrs, _GetComplSch>>
     {
       static_assert(noexcept(__attrs.query(_GetComplSch{})));
       static_assert(__is_scheduler<decltype(__attrs.query(_GetComplSch{}))>,
@@ -157,7 +157,7 @@ struct get_completion_scheduler_t
     _CCCL_TEMPLATE(class _Attrs, class _Env, class _GetComplSch = get_completion_scheduler_t)
     _CCCL_REQUIRES(__queryable_with<_Attrs, _GetComplSch, const _Env&>)
     [[nodiscard]] _CCCL_API constexpr auto operator()(const _Attrs& __attrs, const _Env& __env) const noexcept
-      -> __query_result_t<_Attrs, _GetComplSch, const _Env&>
+      -> decay_t<__query_result_t<_Attrs, _GetComplSch, const _Env&>>
     {
       static_assert(noexcept(__attrs.query(_GetComplSch{}, __env)));
       static_assert(__is_scheduler<decltype(__attrs.query(_GetComplSch{}, __env))>,
@@ -234,20 +234,22 @@ private:
     // for _its_ completion scheduler):
     if constexpr (__callable<__read_query_t, const _Attrs&, const _Env&...>)
     {
-      return __declfn<decltype(__recurse_query_t{}(
-        __read_query_t{}(declval<_Attrs>(), declval<_Env>()...), declval<_Env>()...))>;
+      using __result_t =
+        decltype(__recurse_query_t{}(__read_query_t{}(declval<_Attrs>(), declval<_Env>()...), declval<_Env>()...));
+      return __declfn<__result_t>;
     }
     // Otherwise, if __attrs indicates that its sender completes inline, then we can ask
     // the environment for the current scheduler and return that (after checking the
     // scheduler for _its_ completion scheduler).
     else if constexpr (__completes_inline<_Attrs, _Env...> && __callable<get_scheduler_t, const _Env&...>)
     {
-      return __declfn<decltype(__recurse_query_t{}(
-        get_scheduler(declval<_Env>()...), __hide_scheduler{declval<_Env>()}...))>;
+      using __result_t =
+        decltype(__recurse_query_t{}(get_scheduler(declval<_Env>()...), __hide_scheduler{declval<_Env>()}...));
+      return __declfn<__result_t>;
     }
-    else if constexpr (__is_scheduler<_Attrs> && sizeof...(_Env) == 0)
+    else if constexpr (__is_scheduler<_Attrs> && sizeof...(_Env) != 0)
     {
-      return __declfn<_Attrs>;
+      return __declfn<decay_t<_Attrs>>;
     }
     // Otherwise, no completion scheduler can be determined. Return void.
   }
@@ -292,6 +294,17 @@ template <>
 _CCCL_GLOBAL_CONSTANT get_completion_scheduler_t<set_error_t> get_completion_scheduler<set_error_t>{};
 template <>
 _CCCL_GLOBAL_CONSTANT get_completion_scheduler_t<set_stopped_t> get_completion_scheduler<set_stopped_t>{};
+
+//////////////////////////////////////////////////////////////////////////////////////////
+// __is_completion_query
+template <class _Query>
+inline constexpr bool __is_completion_query = false;
+template <class _Tag>
+inline constexpr bool __is_completion_query<get_completion_domain_t<_Tag>> = true;
+template <class _Tag>
+inline constexpr bool __is_completion_query<get_completion_scheduler_t<_Tag>> = true;
+template <>
+inline constexpr bool __is_completion_query<get_completion_behavior_t> = true;
 
 //////////////////////////////////////////////////////////////////////////////////////////
 // get_forward_progress_guarantee
