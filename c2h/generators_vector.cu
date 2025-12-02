@@ -125,12 +125,13 @@ VEC_SPECIALIZATION(double4_32a);
 VEC_SPECIALIZATION(double4);
 #  endif // _CCCL_CTK_AT_LEAST(13, 0)
 
-#  if TEST_HALF_T()
-VEC_SPECIALIZATION(__half2);
-#  endif // TEST_HALF_T()
-#  if TEST_BF_T()
-VEC_SPECIALIZATION(__nv_bfloat162);
-#  endif // TEST_BF_T()
+// TODO(bgruber): what about those?
+// #  if TEST_HALF_T()
+// VEC_SPECIALIZATION(__half2);
+// #  endif // TEST_HALF_T()
+// #  if TEST_BF_T()
+// VEC_SPECIALIZATION(__nv_bfloat162);
+// #  endif // TEST_BF_T()
 
 template <typename VecType, typename Type>
 struct counter_to_cyclic_vector_t
