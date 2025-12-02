@@ -30,5 +30,7 @@
 #include <cuda/__memory_resource/pinned_memory_pool.h>
 #include <cuda/__memory_resource/properties.h>
 #include <cuda/__memory_resource/resource.h>
+#include <cuda/__memory_resource/shared_resource.h>
+#include <cuda/__memory_resource/synchronous_resource_adapter.h>
 
 #endif // __CUDAX_MEMORY_RESOURCE___
