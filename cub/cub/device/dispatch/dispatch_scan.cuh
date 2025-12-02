@@ -368,19 +368,16 @@ struct DispatchScan
   CUB_RUNTIME_FUNCTION _CCCL_HOST _CCCL_FORCEINLINE cudaError_t
   __max_dynamic_smem_size_for(int& max_dynamic_smem_size, [[maybe_unused]] const void* func)
   {
-    NV_IF_ELSE_TARGET(
-      NV_IS_HOST,
-      ({
-        return MaxPotentialDynamicSmemBytes(max_dynamic_smem_size, func);
-      }),
-      ({
-        cudaFuncAttributes func_attrs{};
-        if (const auto error = CubDebug(cudaFuncGetAttributes(&func_attrs, func)))
-        {
-          return error;
-        }
-        max_dynamic_smem_size = func_attrs.maxDynamicSharedSizeBytes;
-      }))
+    NV_IF_ELSE_TARGET(NV_IS_HOST, //
+                      (return MaxPotentialDynamicSmemBytes(max_dynamic_smem_size, func);), //
+                      ({
+                        cudaFuncAttributes func_attrs{};
+                        if (const auto error = CubDebug(cudaFuncGetAttributes(&func_attrs, func)))
+                        {
+                          return error;
+                        }
+                        max_dynamic_smem_size = func_attrs.maxDynamicSharedSizeBytes;
+                      }))
     return cudaSuccess;
   }
 

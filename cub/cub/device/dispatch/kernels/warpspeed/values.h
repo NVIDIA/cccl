@@ -16,47 +16,18 @@ CUB_NAMESPACE_BEGIN
 
 namespace detail::scan
 {
-struct Value
+enum class Stages : int
 {
-  int mValue;
-  _CCCL_API constexpr Value(int value) noexcept
-      : mValue(value)
-  {}
-
-  [[nodiscard]] _CCCL_API constexpr int value() const
-  {
-    return mValue;
-  }
 };
-
-struct Stages : Value
-{};
-struct Elems : Value
-{};
-struct Warps : Value
-{};
-struct Align : Value
-{};
-
-[[nodiscard]] _CCCL_API inline Stages stages(int value) noexcept
+enum class Elems : int
 {
-  return Stages{value};
-}
-
-[[nodiscard]] _CCCL_API inline Elems elems(int value) noexcept
+};
+enum class Warps : int
 {
-  return Elems{value};
-}
-
-[[nodiscard]] _CCCL_API inline Warps warps(int value) noexcept
+};
+enum class Align : int
 {
-  return Warps{value};
-}
-
-[[nodiscard]] _CCCL_API inline Align align(int value) noexcept
-{
-  return Align{value};
-}
+};
 } // namespace detail::scan
 
 CUB_NAMESPACE_END
