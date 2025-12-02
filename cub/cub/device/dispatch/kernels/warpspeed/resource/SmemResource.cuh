@@ -18,6 +18,7 @@
 #include <cub/device/dispatch/kernels/warpspeed/SyncHandler.h>
 #include <cub/device/dispatch/kernels/warpspeed/values.h>
 
+#include <cuda/std/__utility/to_underlying.h>
 #include <cuda/std/cstdint>
 
 CUB_NAMESPACE_BEGIN
@@ -46,11 +47,11 @@ private:
   makeSmemResourceRaw(SyncHandler& syncHandler, SmemAllocator& smemAllocator, Stages stages, Elems elems = Elems{1})
   {
     int align       = alignof(_Tp);
-    int sizeBytes   = elems.value() * sizeof(_Tp);
+    int sizeBytes   = ::cuda::std::to_underlying(elems) * sizeof(_Tp);
     int strideBytes = sizeBytes;
 
-    void* ptrBase = smemAllocator.alloc(stages.value() * strideBytes, align);
-    return SmemResourceRaw(syncHandler, ptrBase, sizeBytes, strideBytes, stages.value());
+    void* ptrBase = smemAllocator.alloc(::cuda::std::to_underlying(stages) * strideBytes, align);
+    return SmemResourceRaw(syncHandler, ptrBase, sizeBytes, strideBytes, ::cuda::std::to_underlying(stages));
   }
 };
 } // namespace detail::scan
