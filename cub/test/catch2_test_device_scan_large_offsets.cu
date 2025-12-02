@@ -72,7 +72,6 @@ struct mod_op
   }
 };
 
-#if false
 C2H_TEST("DeviceScan works for very large number of items", "[scan][device]", offset_types)
 try
 {
@@ -115,7 +114,6 @@ catch (std::bad_alloc&)
 {
   // Exceeding memory is not a failure.
 }
-#endif
 
 C2H_TEST("DeviceScan works for very large number of items", "[scan][device]", offset_types)
 try
@@ -136,10 +134,6 @@ try
   // TODO (elstehle): Drop round_up once we support non-tile-size-multiple sizes
   constexpr offset_t tile_size = 63 * 128;
   num_items                    = cuda::round_down(num_items, tile_size);
-  if (num_items == 0)
-  {
-    SKIP("Problem size is zero, skipping test.");
-  }
 
   CAPTURE(num_items);
 
@@ -162,26 +156,6 @@ try
     cuda::transform_iterator(index_it, expected_inclusive_sum_op<item_t>{static_cast<index_t>(segment_size)});
   bool all_results_correct = thrust::equal(d_items_out.cbegin(), d_items_out.cend(), expected_out_it);
   REQUIRE(all_results_correct == true);
-
-// Copy over the results and expected results to host and compare
-#if false
-    c2h::device_vector<item_t> d_expected(expected_out_it, expected_out_it + num_items);
-  c2h::host_vector<item_t> h_expected(d_expected);
-  c2h::host_vector<item_t> h_items_out(d_items_out);
-  for (offset_t i = 0; i < num_items; ++i)
-  {
-    if (h_expected[i] != h_items_out[i])
-    {
-      // print the ten before and ten after the mismatch:
-      for (offset_t j = (i > 10 ? i - 10 : 0); j < (i + 10 && j < num_items ? i + 10 : num_items); ++j)
-      {
-        std::cout << "Index " << j << ": expected " << h_expected[j] << ", got " << h_items_out[j] << "\n";
-      }
-      break;
-      // std::cout << "Mismatch at index " << i << ": expected " << h_expected[i] << ", got " << h_items_out[i] << "\n";
-    }
-  }
-#endif
 }
 catch (std::bad_alloc&)
 {

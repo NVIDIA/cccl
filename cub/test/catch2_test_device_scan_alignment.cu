@@ -1,5 +1,5 @@
-// SPDX-FileCopyrightText: Copyright (c) 2025, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
-// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+// SPDX-FileCopyrightText: Copyright (c) 2025, NVIDIA CORPORATION & AFFILIATES.
+// All rights reserved. SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 #include "insert_nested_NVTX_range_guard.h"
 
@@ -25,7 +25,8 @@
 
 DECLARE_LAUNCH_WRAPPER(cub::DeviceScan::InclusiveScan, device_inclusive_scan);
 
-// TODO(bgruber): the following functions implement better reporting for vector comparisons. We should generalize this.
+// TODO(bgruber): the following functions implement better reporting for vector
+// comparisons. We should generalize this.
 
 template <typename T>
 struct element_compare_result_t
@@ -133,46 +134,41 @@ C2H_TEST("Device scan works with all device interfaces", "[scan][device]", value
 {
   using input_t  = c2h::get<0, TestType>;
   using output_t = input_t;
-  using offset_t = int32_t;
+  using offset_t = cuda::std::int32_t;
   using op_t     = cuda::std::plus<>;
 
-  constexpr offset_t max_offset    = 16;
+  constexpr offset_t max_offset    = 64;
   constexpr offset_t max_num_items = 8192;
 
-  for (offset_t num_items = 1; num_items < max_num_items; num_items++)
-  {
-    CAPTURE(num_items);
+  const auto offset    = GENERATE_COPY(values({0, 1, 3, 4, 7, 8, 11, 12, 16}), take(3, random(0, max_offset)));
+  const auto num_items = GENERATE_COPY(values({1, max_num_items}), take(64, random(0, max_num_items)));
 
-    // Generate input data
-    c2h::device_vector<input_t> in_items(num_items + max_offset + 1, thrust::no_init);
-    c2h::gen(C2H_SEED(1), in_items);
-    auto d_in_it = thrust::raw_pointer_cast(in_items.data());
+  CAPTURE(num_items, offset);
 
-    // Prepare verification data
-    c2h::host_vector<input_t> host_items(in_items);
-    c2h::host_vector<output_t> expected_result(num_items, thrust::no_init);
+  // Generate input data
+  c2h::device_vector<input_t> in_items(num_items + offset + 1, thrust::no_init);
+  c2h::gen(C2H_SEED(1), in_items);
+  auto d_in_it = thrust::raw_pointer_cast(in_items.data());
 
-    for (int offset = 0; offset < max_offset; ++offset)
-    {
-      CAPTURE(offset);
+  // Prepare verification data
+  c2h::host_vector<input_t> host_items(in_items);
+  c2h::host_vector<output_t> expected_result(num_items, thrust::no_init);
 
-      // Compute verification data
-      compute_inclusive_scan_reference(
-        host_items.cbegin() + offset, host_items.cbegin() + offset + num_items, expected_result.begin(), op_t{}, 0);
+  // Compute verification data
+  compute_inclusive_scan_reference(
+    host_items.cbegin() + offset, host_items.cbegin() + offset + num_items, expected_result.begin(), op_t{}, 0);
 
-      // Run test
-      constexpr output_t out_sentinel_value = 123;
-      c2h::device_vector<output_t> out_result(num_items + max_offset + 1, out_sentinel_value);
-      auto d_out_it = thrust::raw_pointer_cast(out_result.data());
-      device_inclusive_scan(unwrap_it(d_in_it + offset), unwrap_it(d_out_it + offset), op_t{}, num_items);
+  // Run test
+  constexpr output_t out_sentinel_value = 123;
+  c2h::device_vector<output_t> out_result(num_items + offset + 1, out_sentinel_value);
+  auto d_out_it = thrust::raw_pointer_cast(out_result.data());
+  device_inclusive_scan(unwrap_it(d_in_it + offset), unwrap_it(d_out_it + offset), op_t{}, num_items);
 
-      c2h::host_vector<output_t> out_result_vec(num_items);
-      thrust::copy_n(out_result.begin() + offset, num_items, out_result_vec.begin());
+  c2h::host_vector<output_t> out_result_vec(num_items);
+  thrust::copy_n(out_result.begin() + offset, num_items, out_result_vec.begin());
 
-      REQUIRE(compareIsEqualAndPrint(expected_result, out_result_vec));
+  REQUIRE(compareIsEqualAndPrint(expected_result, out_result_vec));
 
-      const int out_sentinel = out_result[offset + num_items];
-      REQUIRE(out_sentinel == out_sentinel_value);
-    }
-  }
+  const int out_sentinel = out_result[offset + num_items];
+  REQUIRE(out_sentinel == out_sentinel_value);
 }
