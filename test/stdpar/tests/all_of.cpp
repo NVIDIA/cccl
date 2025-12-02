@@ -14,7 +14,7 @@ int main()
   std::vector<int> v(N, 1);
 
   // All elements are 1, so this should be true
-  bool all_ones = std::all_of(std::execution::par, v.begin(), v.end(), [](int x) {
+  const bool all_ones = std::all_of(std::execution::par, v.begin(), v.end(), [](int x) {
     return x == 1;
   });
 
