@@ -32,7 +32,12 @@ C2H_TEST("cub::DeviceSegmentedReduce::Sum accepts env with stream and determinis
     cub::DeviceSegmentedReduce::Sum(d_in.begin(), d_out.begin(), num_segments, d_offsets_it, d_offsets_it + 1, env);
   thrust::device_vector<int> expected{21, 0, 17};
 
+  if (error != cudaSuccess)
+  {
+    std::cerr << "cub::DeviceSegmentedReduce::Sum failed with status: " << error << std::endl;
+  }
   // example-end segmented-reduce-reduce-sum-env
+
   REQUIRE(d_out == expected);
   REQUIRE(error == cudaSuccess);
 }
@@ -53,7 +58,12 @@ C2H_TEST("cub::DeviceSegmentedReduce::Sum accepts stream", "[segmented_reduce][e
     d_in.begin(), d_out.begin(), num_segments, d_offsets_it, d_offsets_it + 1, stream_ref);
   thrust::device_vector<int> expected{21, 0, 17};
 
+  if (error != cudaSuccess)
+  {
+    std::cerr << "cub::DeviceSegmentedReduce::Sum failed with status: " << error << std::endl;
+  }
   // example-end segmented-reduce-reduce-sum-env-stream
+
   REQUIRE(d_out == expected);
   REQUIRE(error == cudaSuccess);
 }
@@ -73,7 +83,12 @@ C2H_TEST("cub::DeviceSegmentedReduce::Sum accepts run_to_run determinism require
     cub::DeviceSegmentedReduce::Sum(d_in.begin(), d_out.begin(), num_segments, d_offsets_it, d_offsets_it + 1, env);
   thrust::device_vector<int> expected{21, 0, 17};
 
+  if (error != cudaSuccess)
+  {
+    std::cerr << "cub::DeviceSegmentedReduce::Sum failed with status: " << error << std::endl;
+  }
   // example-end segmented-reduce-reduce-sum-env-determinism
+
   REQUIRE(d_out == expected);
   REQUIRE(error == cudaSuccess);
 }
@@ -93,7 +108,12 @@ C2H_TEST("cub::DeviceSegmentedReduce::Sum accepts not_guaranteed determinism req
     cub::DeviceSegmentedReduce::Sum(d_in.begin(), d_out.begin(), num_segments, d_offsets_it, d_offsets_it + 1, env);
   thrust::device_vector<int> expected{21, 0, 17};
 
+  if (error != cudaSuccess)
+  {
+    std::cerr << "cub::DeviceSegmentedReduce::Sum failed with status: " << error << std::endl;
+  }
   // example-end segmented-reduce-reduce-sum-env-non-determinism
+
   REQUIRE(d_out == expected);
   REQUIRE(error == cudaSuccess);
 }
