@@ -885,7 +885,7 @@ _CCCL_DEVICE_API inline void kernelBody(
   }
 }
 
-template <typename WarpspeedPolicy,
+template <typename MaxPolicy,
           typename InputT,
           typename OutputT,
           typename AccumT,
@@ -895,19 +895,21 @@ template <typename WarpspeedPolicy,
 __launch_bounds__(squadCountThreads(scanSquads), 1) __global__ void scan(
   const __grid_constant__ scanKernelParams<InputT, OutputT, AccumT> params, ScanOpT scan_op, InitValueT init_value)
 {
-  NV_IF_TARGET(
-    NV_PROVIDES_SM_100,
-    (static_assert(WarpspeedPolicy::squad_reduce_thread_count == squadReduce.threadCount(),
-                   "Tuning policy and squad definition mismatch");
+  NV_IF_TARGET(NV_PROVIDES_SM_100, ({
+                 using ActivePolicy    = typename MaxPolicy::ActivePolicy;
+                 using WarpspeedPolicy = typename ActivePolicy::WarpspeedPolicy;
+                 static_assert(WarpspeedPolicy::squad_reduce_thread_count == squadReduce.threadCount(),
+                               "Tuning policy and squad definition mismatch");
 
-     // Cache special registers at start of kernel
-     SpecialRegisters specialRegisters = getSpecialRegisters();
+                 // Cache special registers at start of kernel
+                 SpecialRegisters specialRegisters = getSpecialRegisters();
 
-     // Dispatch for warp-specialization
-     squadDispatch(specialRegisters, scanSquads, [&](Squad squad) {
-       kernelBody<WarpspeedPolicy, InputT, OutputT, AccumT, ScanOpT, InitValueT, ForceInclusive>(
-         squad, specialRegisters, params, ::cuda::std::move(scan_op), init_value);
-     });))
+                 // Dispatch for warp-specialization
+                 squadDispatch(specialRegisters, scanSquads, [&](Squad squad) {
+                   kernelBody<WarpspeedPolicy, InputT, OutputT, AccumT, ScanOpT, InitValueT, ForceInclusive>(
+                     squad, specialRegisters, params, ::cuda::std::move(scan_op), init_value);
+                 });
+               }))
 }
 
 template <typename AccumT>
