@@ -66,7 +66,7 @@ public:
     if (__v > 0)
     {
       // Use linear counting for small cardinality estimates.
-      const double __h = __m * log(static_cast<double>(__m) / __v);
+      const double __h = __m * ::cuda::std::log(static_cast<double>(__m) / __v);
       // The threshold `2.5 * m` is from the original HLL algorithm.
       if (__e <= 2.5 * __m)
       {
