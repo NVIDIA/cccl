@@ -393,17 +393,11 @@ struct DispatchScan
     using tmp_state_t      = detail::scan::tmp_state_t<AccumT>;
     using scanKernelParams = detail::scan::scanKernelParams<InputT, OutputT, AccumT>;
 
-    constexpr int tile_size = ActivePolicyT::warpspeed_tile_size;
+    using WarpspeedPolicy = typename ActivePolicyT::WarpspeedPolicy;
 
-    auto kernel_ptr =
-      detail::scan::scan<typename PolicyHub::MaxPolicy,
-                         InputT,
-                         OutputT,
-                         AccumT,
-                         ScanOpT,
-                         InitValueT,
-                         (EnforceInclusive == ForceInclusive::Yes)>;
-    const int grid_dim = ::cuda::ceil_div(num_items, static_cast<size_t>(tile_size));
+    auto kernel_ptr = detail::scan::
+      scan<WarpspeedPolicy, InputT, OutputT, AccumT, ScanOpT, InitValueT, (EnforceInclusive == ForceInclusive::Yes)>;
+    const int grid_dim = ::cuda::ceil_div(num_items, static_cast<size_t>(WarpspeedPolicy::tile_size));
 
     if (d_temp_storage == nullptr)
     {
@@ -433,7 +427,7 @@ struct DispatchScan
       detail::scan::SyncHandler syncHandler{};
       detail::scan::SmemAllocator smemAllocator{};
       [[maybe_unused]] auto res =
-        detail::scan::allocResources<tile_size, InputT, OutputT, AccumT>(syncHandler, smemAllocator, params);
+        detail::scan::allocResources<WarpspeedPolicy, InputT, OutputT, AccumT>(syncHandler, smemAllocator, params);
       syncHandler.mHasInitialized = true; // avoid assertion in destructor
 
       const auto curr_smem_size = static_cast<int>(smemAllocator.sizeBytes());
