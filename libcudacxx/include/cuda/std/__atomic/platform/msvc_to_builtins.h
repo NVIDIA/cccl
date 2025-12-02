@@ -140,7 +140,7 @@ void __atomic_load(const volatile _Type* __ptr, _Type* __ret, int __memorder)
       __atomic_load_relaxed(__ptr, __ret);
       break;
     default:
-      assert(0);
+      _CCCL_ASSERT(false, "invalid memory order");
   }
 }
 
@@ -206,7 +206,7 @@ void __atomic_store(volatile _Type* __ptr, _Type* __val, int __memorder)
       __atomic_store_relaxed(__ptr, __val);
       break;
     default:
-      assert(0);
+      _CCCL_ASSERT(false, "invalid memory order");
   }
 }
 
@@ -290,7 +290,7 @@ bool __atomic_compare_exchange(
       success = __atomic_compare_exchange_relaxed(__ptr, __expected, __desired);
       break;
     default:
-      assert(0);
+      _CCCL_ASSERT(false, "invalid memory order");
   }
   return success;
 }
@@ -345,7 +345,7 @@ void __atomic_exchange(_Type volatile* __ptr, const _Type* __val, _Type* __ret, 
       __atomic_exchange_relaxed(__ptr, __val, __ret);
       break;
     default:
-      assert(0);
+      _CCCL_ASSERT(false, "invalid memory order");
   }
 }
 
@@ -402,7 +402,7 @@ _Type __atomic_fetch_add(_Type volatile* __ptr, _Delta __val, int __memorder)
       __atomic_fetch_add_relaxed(__ptr, &__val, __dest);
       break;
     default:
-      assert(0);
+      _CCCL_ASSERT(false, "invalid memory order");
   }
   return *__dest;
 }
@@ -465,7 +465,7 @@ _Type __atomic_fetch_and(_Type volatile* __ptr, _Delta __val, int __memorder)
       __atomic_fetch_and_relaxed(__ptr, &__val, __dest);
       break;
     default:
-      assert(0);
+      _CCCL_ASSERT(false, "invalid memory order");
   }
   return *__dest;
 }
@@ -523,7 +523,7 @@ _Type __atomic_fetch_xor(_Type volatile* __ptr, _Delta __val, int __memorder)
       __atomic_fetch_xor_relaxed(__ptr, &__val, __dest);
       break;
     default:
-      assert(0);
+      _CCCL_ASSERT(false, "invalid memory order");
   }
   return *__dest;
 }
@@ -581,7 +581,7 @@ _Type __atomic_fetch_or(_Type volatile* __ptr, _Delta __val, int __memorder)
       __atomic_fetch_or_relaxed(__ptr, &__val, __dest);
       break;
     default:
-      assert(0);
+      _CCCL_ASSERT(false, "invalid memory order");
   }
   return *__dest;
 }

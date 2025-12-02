@@ -7,7 +7,7 @@
 # Add regexes matching deprecated headers here to disable warnings for them:
 set(deprecated_headers_regexes "thrust/iterator/tabulate_output_iterator\\.h")
 
-find_package(CUDAToolkit)
+cccl_get_cudatoolkit()
 
 function(thrust_add_header_test thrust_target label definitions)
   thrust_get_target_property(config_host ${thrust_target} HOST)

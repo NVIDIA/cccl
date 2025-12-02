@@ -23,7 +23,6 @@ function(cccl_c_experimental_stf_add_test target_name_var source)
       CUDA::nvrtc
       cccl.c2h.main
       CUDA::cuda_driver
-      CCCL::cudax
   )
 
   add_test(NAME ${target_name} COMMAND ${target_name})
