@@ -3,10 +3,12 @@
 
 #pragma once
 
-#include <cub/device/dispatch/dispatch_topk.cuh> // topk::select::{min, max}
+#include <cub/device/dispatch/dispatch_common.cuh> // topk::select::{min, max}
 
 #include <cuda/iterator>
 #include <cuda/std/limits>
+
+#include <c2h/catch2_test_helper.h>
 
 // Function object to generate monotonically non-decreasing values for small key types
 template <typename T>
