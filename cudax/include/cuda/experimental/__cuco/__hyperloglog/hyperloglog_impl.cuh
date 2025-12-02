@@ -23,6 +23,7 @@
 
 #include <thrust/detail/raw_pointer_cast.h>
 
+#include <cuda/__memory/is_aligned.h>
 #include <cuda/__runtime/api_wrapper.h>
 #include <cuda/atomic>
 #include <cuda/std/__algorithm/max.h> // TODO #include <cuda/std/algorithm> once available
@@ -95,9 +96,7 @@ public:
   // MSVC fails with register_type*, use int* instead
   {
 #ifndef __CUDA_ARCH__
-    const auto __alignment =
-      1ull << ::cuda::std::countr_zero(reinterpret_cast<::cuda::std::uintptr_t>(sketch_span.data()));
-    _CCCL_ASSERT(__alignment >= __sketch_alignment(), "Insufficient sketch alignment");
+    _CCCL_ASSERT(::cuda::is_aligned(sketch_span.data(), __sketch_alignment()), "Insufficient sketch alignment");
 
     _CCCL_ASSERT(__precision >= 4, "Minimum required sketch size is 0.0625KB or 64B");
 #endif
