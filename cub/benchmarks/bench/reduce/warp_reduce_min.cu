@@ -26,5 +26,6 @@ using value_types = nvbench::type_list<
 #endif
   >;
 
+constexpr auto bench_name = "warp_reduce_min";
 using op_t = ::cuda::minimum<>;
 #include "warp_reduce_base.cuh"
