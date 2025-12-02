@@ -126,14 +126,10 @@ try
   // Clamp 64-bit offset type problem sizes to just slightly larger than 2^32 items
   const offset_t num_items_max = detail::make_large_offset<offset_t>();
   const offset_t num_items_min = num_items_max > 10000 ? num_items_max - 10000ULL : offset_t{0};
-  offset_t num_items           = GENERATE_COPY(
+  const offset_t num_items     = GENERATE_COPY(
     values(
       {num_items_max, static_cast<offset_t>(num_items_max - 1), static_cast<offset_t>(1), static_cast<offset_t>(3)}),
     take(2, random(num_items_min, num_items_max)));
-
-  // TODO (elstehle): Drop round_up once we support non-tile-size-multiple sizes
-  constexpr offset_t tile_size = 63 * 128;
-  num_items                    = cuda::round_down(num_items, tile_size);
 
   CAPTURE(num_items);
 
