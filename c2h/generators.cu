@@ -190,7 +190,7 @@ void init_key_segments(::cuda::std::span<const OffsetT> segment_offsets, KeyT* d
   cub::DeviceCopy::Batched(
     d_temp_storage, temp_storage_bytes, d_range_srcs, d_range_dsts, d_range_sizes, total_segments);
 
-  device_vector<std::uint8_t> temp_storage(temp_storage_bytes, thrust::no_init);
+  device_vector<std::uint8_t> temp_storage(temp_storage_bytes /*, thrust::no_init*/); // TODO(bgruber): CTK ver. check
   d_temp_storage = thrust::raw_pointer_cast(temp_storage.data());
 
   // TODO(bgruber): replace by a non-CUB implementation

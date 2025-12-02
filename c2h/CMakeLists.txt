@@ -2,10 +2,7 @@ cmake_minimum_required(VERSION 3.21)
 
 project(C2H LANGUAGES CXX CUDA)
 
-cccl_get_catch2()
-cccl_get_cccl()
-
-find_package(CUDAToolkit)
+find_package(CUDAToolkit REQUIRED)
 
 set(curand_default OFF)
 if (CUDA_curand_LIBRARY)
@@ -27,7 +24,6 @@ target_link_libraries(
   cccl.c2h
   PUBLIC #
     cccl.compiler_interface
-    CCCL::CCCL
     Catch2::Catch2
 )
 cccl_configure_target(cccl.c2h DIALECT 17)
@@ -41,3 +37,7 @@ endif()
 
 add_library(cccl.c2h.main OBJECT catch2_runner.cpp catch2_runner_helper.cu)
 target_link_libraries(cccl.c2h.main PUBLIC cccl.c2h)
+target_include_directories(
+  cccl.c2h.main
+  PUBLIC ${CUDAToolkit_INCLUDE_DIRS}/cccl
+) # TODO: does not work < CTK 13.0
