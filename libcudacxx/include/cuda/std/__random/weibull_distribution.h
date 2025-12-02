@@ -78,7 +78,7 @@ public:
   };
 
 private:
-  param_type __p_;
+  param_type __p_{};
 
 public:
   // constructor and reset functions
@@ -100,7 +100,7 @@ public:
   template <class _URng>
   [[nodiscard]] _CCCL_API result_type operator()(_URng& __g, const param_type& __p)
   {
-    return __p.b() * cuda::std::pow(exponential_distribution<result_type>{}(__g), result_type{1} / __p.a());
+    return __p.b() * ::cuda::std::pow(exponential_distribution<result_type>{}(__g), result_type{1} / __p.a());
   }
 
   // property functions
