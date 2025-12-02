@@ -229,6 +229,74 @@ public:
     __ref.add(__first, __last, __stream);
   }
 
+  //! @brief Asynchronously merges the result of `other` estimator into `*this` estimator.
+  //!
+  //! @throw If this->sketch_bytes() != other.sketch_bytes()
+  //!
+  //! @tparam _OtherScope Thread scope of `other` estimator
+  //! @tparam _OtherMemoryResourceRef Memory resource type of `other` estimator
+  //!
+  //! @param __other Other estimator to be merged into `*this`
+  //! @param __stream CUDA stream this operation is executed in
+  template <::cuda::thread_scope _OtherScope, class _OtherMemoryResourceRef>
+  constexpr void merge_async(const hyperloglog<_Tp, _OtherMemoryResourceRef, _OtherScope, _Hash>& __other,
+                             ::cuda::stream_ref __stream = ::cuda::stream_ref{cudaStream_t{nullptr}})
+  {
+    __ref.merge_async(__other.__ref, __stream);
+  }
+
+  //! @brief Merges the result of `other` estimator into `*this` estimator.
+  //!
+  //! @note This function synchronizes the given stream. For asynchronous execution use
+  //! `merge_async`.
+  //!
+  //! @throw If this->sketch_bytes() != other.sketch_bytes()
+  //!
+  //! @tparam _OtherScope Thread scope of `other` estimator
+  //! @tparam _OtherMemoryResourceRef Memory resource type of `other` estimator
+  //!
+  //! @param __other Other estimator to be merged into `*this`
+  //! @param __stream CUDA stream this operation is executed in
+  template <::cuda::thread_scope _OtherScope, class _OtherMemoryResourceRef>
+  constexpr void merge(const hyperloglog<_Tp, _OtherMemoryResourceRef, _OtherScope, _Hash>& __other,
+                       ::cuda::stream_ref __stream = ::cuda::stream_ref{cudaStream_t{nullptr}})
+  {
+    __ref.merge(__other.__ref, __stream);
+  }
+
+  //! @brief Asynchronously merges the result of `other` estimator reference into `*this` estimator.
+  //!
+  //! @throw If this->sketch_bytes() != other.sketch_bytes()
+  //!
+  //! @tparam _OtherScope Thread scope of `other` estimator
+  //!
+  //! @param __other_ref Other estimator reference to be merged into `*this`
+  //! @param __stream CUDA stream this operation is executed in
+  template <::cuda::thread_scope _OtherScope>
+  constexpr void merge_async(const ref_type<_OtherScope>& __other_ref,
+                             ::cuda::stream_ref __stream = ::cuda::stream_ref{cudaStream_t{nullptr}})
+  {
+    __ref.merge_async(__other_ref, __stream);
+  }
+
+  //! @brief Merges the result of `other` estimator reference into `*this` estimator.
+  //!
+  //! @note This function synchronizes the given stream. For asynchronous execution use
+  //! `merge_async`.
+  //!
+  //! @throw If this->sketch_bytes() != other.sketch_bytes()
+  //!
+  //! @tparam _OtherScope Thread scope of `other` estimator
+  //!
+  //! @param __other_ref Other estimator reference to be merged into `*this`
+  //! @param __stream CUDA stream this operation is executed in
+  template <::cuda::thread_scope _OtherScope>
+  constexpr void merge(const ref_type<_OtherScope>& __other_ref,
+                       ::cuda::stream_ref __stream = ::cuda::stream_ref{cudaStream_t{nullptr}})
+  {
+    __ref.merge(__other_ref, __stream);
+  }
+
   //! @brief Compute the estimated distinct items count.
   //!
   //! @note This function synchronizes the given stream.

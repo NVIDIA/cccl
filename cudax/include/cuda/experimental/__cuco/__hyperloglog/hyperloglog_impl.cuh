@@ -332,20 +332,20 @@ public:
     }
   }
 
-#if 0
   //! @brief Asynchronously merges the result of `other` estimator reference into `*this`
   //! estimator.
   //!
-  //! @throw If this->sketch_bytes() != other.sketch_bytes()
+  //! @throw If this->__sketch_bytes() != other.__sketch_bytes()
   //!
   //! @tparam _OtherScope Thread scope of `other` estimator
   //!
-  //! @param other Other estimator reference to be merged into `*this`
-  //! @param stream CUDA stream this operation is executed in
+  //! @param __other Other estimator reference to be merged into `*this`
+  //! @param __stream CUDA stream this operation is executed in
   template <::cuda::thread_scope _OtherScope>
-  _CCCL_HOST constexpr void merge_async(_HyperLogLog_Impl<_Tp, _OtherScope, const _Hash>& __other, ::cuda::stream_ref __stream)
+  _CCCL_HOST constexpr void
+  __merge_async(const _HyperLogLog_Impl<_Tp, _OtherScope, _Hash>& __other, ::cuda::stream_ref __stream)
   {
-    CUCO_EXPECTS(__other.__precision == __precision, "Cannot merge estimators with different sketch sizes");
+    _CCCL_ASSERT(__other.__precision == __precision, "Cannot merge estimators with different sketch sizes");
     auto constexpr __block_size = 1024;
     ::cuda::experimental::cuco::__hyperloglog_ns::__merge<<<1, __block_size, 0, __stream.get()>>>(__other, *this);
   }
@@ -353,21 +353,21 @@ public:
   //! @brief Merges the result of `other` estimator reference into `*this` estimator.
   //!
   //! @note This function synchronizes the given stream. For asynchronous execution use
-  //! `merge_async`.
+  //! `__merge_async`.
   //!
-  //! @throw If this->sketch_bytes() != other.sketch_bytes()
+  //! @throw If this->__sketch_bytes() != other.__sketch_bytes()
   //!
   //! @tparam _OtherScope Thread scope of `other` estimator
   //!
-  //! @param other Other estimator reference to be merged into `*this`
-  //! @param stream CUDA stream this operation is executed in
+  //! @param __other Other estimator reference to be merged into `*this`
+  //! @param __stream CUDA stream this operation is executed in
   template <::cuda::thread_scope _OtherScope>
-  _CCCL_HOST constexpr void merge(_HyperLogLog_Impl<_Tp, _OtherScope, const _Hash>& __other, ::cuda::stream_ref __stream)
+  _CCCL_HOST constexpr void
+  __merge(const _HyperLogLog_Impl<_Tp, _OtherScope, _Hash>& __other, ::cuda::stream_ref __stream)
   {
-    this->merge_async(__other, __stream);
+    this->__merge_async(__other, __stream);
     __stream.sync();
   }
-#endif
 
   //! @brief Compute the estimated distinct items count.
   //!

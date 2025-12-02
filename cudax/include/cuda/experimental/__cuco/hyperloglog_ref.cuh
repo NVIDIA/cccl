@@ -163,9 +163,43 @@ public:
   //! @param __group CUDA Cooperative group this operation is executed in
   //! @param __other Other estimator reference to be merged into `*this`
   template <class _CG, ::cuda::thread_scope _OtherScope>
-  _CCCL_DEVICE constexpr void merge(_CG __group, hyperloglog_ref<_Tp, _OtherScope, const _Hash>& __other)
+  _CCCL_DEVICE constexpr void merge(_CG __group, const hyperloglog_ref<_Tp, _OtherScope, _Hash>& __other)
   {
     __impl.__merge(__group, __other.__impl);
+  }
+
+  //! @brief Asynchronously merges the result of `other` estimator reference into `*this`
+  //! estimator.
+  //!
+  //! @throw If this->sketch_bytes() != other.sketch_bytes()
+  //!
+  //! @tparam _OtherScope Thread scope of `other` estimator
+  //!
+  //! @param __other Other estimator reference to be merged into `*this`
+  //! @param __stream CUDA stream this operation is executed in
+  template <::cuda::thread_scope _OtherScope>
+  _CCCL_HOST constexpr void merge_async(const hyperloglog_ref<_Tp, _OtherScope, _Hash>& __other,
+                                        ::cuda::stream_ref __stream = ::cuda::stream_ref{cudaStream_t{nullptr}})
+  {
+    __impl.__merge_async(__other.__impl, __stream);
+  }
+
+  //! @brief Merges the result of `other` estimator reference into `*this` estimator.
+  //!
+  //! @note This function synchronizes the given stream. For asynchronous execution use
+  //! `merge_async`.
+  //!
+  //! @throw If this->sketch_bytes() != other.sketch_bytes()
+  //!
+  //! @tparam _OtherScope Thread scope of `other` estimator
+  //!
+  //! @param __other Other estimator reference to be merged into `*this`
+  //! @param __stream CUDA stream this operation is executed in
+  template <::cuda::thread_scope _OtherScope>
+  _CCCL_HOST constexpr void merge(const hyperloglog_ref<_Tp, _OtherScope, _Hash>& __other,
+                                  ::cuda::stream_ref __stream = ::cuda::stream_ref{cudaStream_t{nullptr}})
+  {
+    __impl.__merge(__other.__impl, __stream);
   }
 
   //! @brief Compute the estimated distinct items count.
