@@ -552,11 +552,11 @@ template <int tileSize, typename InputT, typename OutputT, typename AccumT>
   int numSumExclusiveCtaStages = 2;
 
   ScanResources<tileSize, InputT, OutputT, AccumT> res{
-    SmemResource<InT>(syncHandler, smemAllocator, stages(params.numStages)),
+    SmemResource<InT>(syncHandler, smemAllocator, Stages{params.numStages}),
     reinterpret_cast<OutputT*>(smemAllocator.alloc(sizeof(OutputT) * tileSize, alignof(OutputT))),
-    SmemResource<uint4>(syncHandler, smemAllocator, stages(numBlockIdxStages)),
-    SmemResource<AccumT>(syncHandler, smemAllocator, stages(numSumExclusiveCtaStages)),
-    SmemResource<SumThreadAndWarpT>(syncHandler, smemAllocator, stages(params.numStages)),
+    SmemResource<uint4>(syncHandler, smemAllocator, Stages{numBlockIdxStages}),
+    SmemResource<AccumT>(syncHandler, smemAllocator, Stages{numSumExclusiveCtaStages}),
+    SmemResource<SumThreadAndWarpT>(syncHandler, smemAllocator, Stages{params.numStages}),
   };
   // asdfasdf
   res.smemIn.addPhase(syncHandler, smemAllocator, squadLoad);
