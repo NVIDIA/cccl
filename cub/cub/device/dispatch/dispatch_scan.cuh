@@ -395,8 +395,14 @@ struct DispatchScan
 
     using WarpspeedPolicy = typename ActivePolicyT::WarpspeedPolicy;
 
-    auto kernel_ptr = detail::scan::
-      scan<WarpspeedPolicy, InputT, OutputT, AccumT, ScanOpT, InitValueT, (EnforceInclusive == ForceInclusive::Yes)>;
+    auto kernel_ptr =
+      detail::scan::scan<typename PolicyHub::MaxPolicy,
+                         InputT,
+                         OutputT,
+                         AccumT,
+                         ScanOpT,
+                         InitValueT,
+                         (EnforceInclusive == ForceInclusive::Yes)>;
     const int grid_dim = ::cuda::ceil_div(num_items, static_cast<size_t>(WarpspeedPolicy::tile_size));
 
     if (d_temp_storage == nullptr)
