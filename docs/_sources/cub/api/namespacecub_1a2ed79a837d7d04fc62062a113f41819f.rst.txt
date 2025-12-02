@@ -27,6 +27,13 @@ Overloads
    :project: cub
    :no-link:
 
+``operator<<(os, alg)``
+^^^^^^^^^^^^^^^^^^^^^^^
+
+.. doxygenfunction:: cub::operator<<(::std::ostream &os, const BlockReduceAlgorithm &alg)
+   :project: cub
+   :no-link:
+
 ``operator<<(os, algo)``
 ^^^^^^^^^^^^^^^^^^^^^^^^
 
