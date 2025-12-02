@@ -483,7 +483,7 @@ struct DispatchScan
 
     // Invoke scan kernel
     {
-      const int block_dim = squadCountThreads(detail::scan::scanSquads);
+      constexpr int block_dim = WarpspeedPolicy::num_total_threads;
 
 #  ifdef CUB_DEBUG_LOG
       _CubLog("Invoking scan<<<%d, %d, %d, %lld>>>()\n", grid_dim, block_dim, smem_size, (long long) stream);

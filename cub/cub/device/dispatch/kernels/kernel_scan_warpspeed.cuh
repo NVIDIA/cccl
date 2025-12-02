@@ -496,33 +496,18 @@ struct scanKernelParams
   size_t numElem;
   int numStages;
 };
-// Definition of squads
 
-// TODO(bgruber): the number of warps per squad should come from the tuning
-_CCCL_GLOBAL_CONSTANT SquadDesc squadReduce{/*squadIdx=*/0, /*numWarps=*/4};
-_CCCL_GLOBAL_CONSTANT SquadDesc squadScanStore{/*squadIdx=*/1, /*numWarps=*/4};
-_CCCL_GLOBAL_CONSTANT SquadDesc squadLoad{/*squadIdx=*/2, /*numWarps=*/1};
-_CCCL_GLOBAL_CONSTANT SquadDesc squadSched{/*squadIdx=*/3, /*numWarps=*/1};
-_CCCL_GLOBAL_CONSTANT SquadDesc squadLookback{/*squadIdx=*/4, /*numWarps=*/1};
-
-_CCCL_GLOBAL_CONSTANT SquadDesc scanSquads[] = {
-  squadReduce,
-  squadScanStore,
-  squadLoad,
-  squadSched,
-  squadLookback,
-};
 // Struct holding all scan kernel resources
-
 template <typename WarpspeedPolicy, typename InputT, typename OutputT, typename AccumT>
 struct ScanResources
 {
-  static constexpr int elemPerThread = WarpspeedPolicy::tile_size / squadReduce.threadCount();
+  static constexpr int elemPerThread = WarpspeedPolicy::tile_size / WarpspeedPolicy::squadReduce().threadCount();
 
   // Handle unaligned loads. We have 16 extra bytes of padding in every stage
   // for squadLoadBulk.
-  using InT               = InputT[squadReduce.threadCount() * elemPerThread + 16 / sizeof(InputT)];
-  using SumThreadAndWarpT = AccumT[squadReduce.threadCount() + squadReduce.warpCount()];
+  using InT = InputT[WarpspeedPolicy::squadReduce().threadCount() * elemPerThread + 16 / sizeof(InputT)];
+  using SumThreadAndWarpT =
+    AccumT[WarpspeedPolicy::squadReduce().threadCount() + WarpspeedPolicy::squadReduce().warpCount()];
 
   SmemResource<InT> smemIn;
   OutputT* smemOut;
@@ -559,17 +544,25 @@ template <typename WarpspeedPolicy, typename InputT, typename OutputT, typename 
     SmemResource<SumThreadAndWarpT>(syncHandler, smemAllocator, Stages{params.numStages}),
   };
   // asdfasdf
-  res.smemIn.addPhase(syncHandler, smemAllocator, squadLoad);
-  res.smemIn.addPhase(syncHandler, smemAllocator, {squadReduce, squadScanStore});
+  static constexpr SquadDesc scanSquads[WarpspeedPolicy::num_squads] = {
+    WarpspeedPolicy::squadReduce(),
+    WarpspeedPolicy::squadScanStore(),
+    WarpspeedPolicy::squadLoad(),
+    WarpspeedPolicy::squadSched(),
+    WarpspeedPolicy::squadLookback(),
+  };
 
-  res.smemNextBlockIdx.addPhase(syncHandler, smemAllocator, squadSched);
+  res.smemIn.addPhase(syncHandler, smemAllocator, WarpspeedPolicy::squadLoad());
+  res.smemIn.addPhase(syncHandler, smemAllocator, {WarpspeedPolicy::squadReduce(), WarpspeedPolicy::squadScanStore()});
+
+  res.smemNextBlockIdx.addPhase(syncHandler, smemAllocator, WarpspeedPolicy::squadSched());
   res.smemNextBlockIdx.addPhase(syncHandler, smemAllocator, scanSquads);
 
-  res.smemSumExclusiveCta.addPhase(syncHandler, smemAllocator, squadLookback);
-  res.smemSumExclusiveCta.addPhase(syncHandler, smemAllocator, squadScanStore);
+  res.smemSumExclusiveCta.addPhase(syncHandler, smemAllocator, WarpspeedPolicy::squadLookback());
+  res.smemSumExclusiveCta.addPhase(syncHandler, smemAllocator, WarpspeedPolicy::squadScanStore());
 
-  res.smemSumThreadAndWarp.addPhase(syncHandler, smemAllocator, squadReduce);
-  res.smemSumThreadAndWarp.addPhase(syncHandler, smemAllocator, squadScanStore);
+  res.smemSumThreadAndWarp.addPhase(syncHandler, smemAllocator, WarpspeedPolicy::squadReduce());
+  res.smemSumThreadAndWarp.addPhase(syncHandler, smemAllocator, WarpspeedPolicy::squadScanStore());
 
   return res;
 }
@@ -602,6 +595,12 @@ _CCCL_DEVICE_API inline void kernelBody(
   ////////////////////////////////////////////////////////////////////////////////
   // Tuning dependent variables
   ////////////////////////////////////////////////////////////////////////////////
+  static constexpr SquadDesc squadReduce    = WarpspeedPolicy::squadReduce();
+  static constexpr SquadDesc squadScanStore = WarpspeedPolicy::squadScanStore();
+  static constexpr SquadDesc squadLoad      = WarpspeedPolicy::squadLoad();
+  static constexpr SquadDesc squadSched     = WarpspeedPolicy::squadSched();
+  static constexpr SquadDesc squadLookback  = WarpspeedPolicy::squadLookback();
+
   constexpr int tile_size          = WarpspeedPolicy::tile_size;
   constexpr int num_lookback_tiles = WarpspeedPolicy::num_lookback_tiles;
 
@@ -786,7 +785,7 @@ _CCCL_DEVICE_API inline void kernelBody(
         // Acquire refSumExclusiveCtaW briefly
         SmemRef refSumThreadAndWarpR = phaseSumThreadAndWarpR.acquireRef();
         // Add the sums of the preceding warps in this CTA to the cumulative
-        // sum. These sums have been calculated in squadReduce. We need
+        // sum. These sums have been calculated in squadReduce(). We need
         // the reduce and scan squads to be the same size to do this.
         static_assert(squadReduce.warpCount() == squadScanStore.warpCount());
 
@@ -885,6 +884,13 @@ _CCCL_DEVICE_API inline void kernelBody(
   }
 }
 
+template <typename ActivePolicy, class = void>
+inline constexpr int get_scan_block_threads = 1;
+
+template <typename ActivePolicy>
+inline constexpr int get_scan_block_threads<ActivePolicy, ::cuda::std::void_t<typename ActivePolicy::WarpspeedPolicy>> =
+  ActivePolicy::WarpspeedPolicy::num_total_threads;
+
 template <typename MaxPolicy,
           typename InputT,
           typename OutputT,
@@ -892,19 +898,25 @@ template <typename MaxPolicy,
           typename ScanOpT,
           typename InitValueT,
           bool ForceInclusive>
-__launch_bounds__(squadCountThreads(scanSquads), 1) __global__ void scan(
+__launch_bounds__(get_scan_block_threads<typename MaxPolicy::ActivePolicy>, 1) __global__ void scan(
   const __grid_constant__ scanKernelParams<InputT, OutputT, AccumT> params, ScanOpT scan_op, InitValueT init_value)
 {
   NV_IF_TARGET(NV_PROVIDES_SM_100, ({
                  using ActivePolicy    = typename MaxPolicy::ActivePolicy;
                  using WarpspeedPolicy = typename ActivePolicy::WarpspeedPolicy;
-                 static_assert(WarpspeedPolicy::squad_reduce_thread_count == squadReduce.threadCount(),
-                               "Tuning policy and squad definition mismatch");
 
                  // Cache special registers at start of kernel
                  SpecialRegisters specialRegisters = getSpecialRegisters();
 
                  // Dispatch for warp-specialization
+                 static constexpr SquadDesc scanSquads[WarpspeedPolicy::num_squads] = {
+                   WarpspeedPolicy::squadReduce(),
+                   WarpspeedPolicy::squadScanStore(),
+                   WarpspeedPolicy::squadLoad(),
+                   WarpspeedPolicy::squadSched(),
+                   WarpspeedPolicy::squadLookback(),
+                 };
+
                  squadDispatch(specialRegisters, scanSquads, [&](Squad squad) {
                    kernelBody<WarpspeedPolicy, InputT, OutputT, AccumT, ScanOpT, InitValueT, ForceInclusive>(
                      squad, specialRegisters, params, ::cuda::std::move(scan_op), init_value);
