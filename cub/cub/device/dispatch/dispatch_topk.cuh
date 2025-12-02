@@ -23,6 +23,8 @@
 #include <cub/util_math.cuh>
 #include <cub/util_temporary_storage.cuh>
 
+#include <cub/device/dispatch/dispatch_common.cuh>
+
 #include <thrust/system/cuda/detail/core/triple_chevron_launch.h>
 
 #include <cuda/cmath>
