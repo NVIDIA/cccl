@@ -163,21 +163,19 @@ def get_grid_size(device_id, block_size, kernel, sink_buffer):
 
 
 def bench_warp_reduce(state: bench.State):
-    type_id = state.get_int64("TypeID")
+    dtype_str = state.get_string("T{ct}")
 
     types_map = {
-        0: ("I8", np.int8),
-        1: ("I16", np.int16),
-        2: ("I32", np.int32),
-        3: ("I64", np.int64),
-        4: ("F16", np.float16),
-        5: ("F32", np.float32),
-        6: ("F64", np.float64),
+        "I8": np.int8,
+        "I16": np.int16,
+        "I32": np.int32,
+        "I64": np.int64,
+        "F16": np.float16,
+        "F32": np.float32,
+        "F64": np.float64,
     }
 
-    dtype_str, dtype = types_map[type_id]
-
-    state.add_summary("Type", dtype_str)
+    dtype = types_map[dtype_str]
 
     numba_dtype = numba.from_dtype(dtype)
     block_size = 256
@@ -205,5 +203,5 @@ def bench_warp_reduce(state: bench.State):
 
 if __name__ == "__main__":
     b = bench.register(bench_warp_reduce)
-    b.add_int64_axis("TypeID", range(0, 7))
+    b.add_string_axis("T{ct}", ["I8", "I16", "I32", "I64", "F16", "F32", "F64"])
     bench.run_all_benchmarks(sys.argv)
