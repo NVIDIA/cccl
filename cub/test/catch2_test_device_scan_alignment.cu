@@ -169,6 +169,6 @@ C2H_TEST("Device scan works with all device interfaces", "[scan][device]", value
 
   REQUIRE(compareIsEqualAndPrint(expected_result, out_result_vec));
 
-  const int out_sentinel = out_result[offset + num_items];
+  const output_t out_sentinel = out_result[offset + num_items];
   REQUIRE(out_sentinel == out_sentinel_value);
 }
