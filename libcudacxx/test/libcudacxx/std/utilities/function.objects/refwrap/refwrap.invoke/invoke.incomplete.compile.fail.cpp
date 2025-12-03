@@ -7,8 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++17
-
 // <functional>
 //
 // reference_wrapper
@@ -17,7 +15,7 @@
 //  cuda::std::invoke_result_t<T&, ArgTypes...>
 //      operator()(ArgTypes&&... args) const;
 //
-// Requires T to be a complete type (since C++20).
+// Requires T to be a complete type
 
 // #include <cuda/std/functional>
 #include <cuda/std/utility>

@@ -26,7 +26,9 @@ function(libcudacxx_add_test target_name_var source)
   )
   target_link_libraries(
     ${target_name}
-    PRIVATE libcudacxx::libcudacxx libcudacxx.compiler_interface cccl.c2h.main
+    PRIVATE #
+      libcudacxx.compiler_interface
+      cccl.c2h.main
   )
 
   add_dependencies(${c2h_all_target} ${target_name})
@@ -48,10 +50,9 @@ macro(pythonize_bool var)
   endif()
 endmacro()
 
-#add dlpack
+cccl_get_cudatoolkit()
 cccl_get_dlpack()
 
-find_package(CUDAToolkit REQUIRED)
 get_target_property(CUDA_INCLUDE_DIR CUDA::cudart INTERFACE_INCLUDE_DIRECTORIES)
 
 message(STATUS "Lit enabled CUDA architectures: ${CMAKE_CUDA_ARCHITECTURES}")

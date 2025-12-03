@@ -1,12 +1,16 @@
 from typing import Callable, Union
 
-import numba
 import numpy as np
 
 from .. import _bindings
 from .. import _cccl_interop as cccl
 from .._caching import CachableFunction, cache_with_key
-from .._cccl_interop import call_build, set_cccl_iterator_state, to_cccl_value_state
+from .._cccl_interop import (
+    call_build,
+    get_value_type,
+    set_cccl_iterator_state,
+    to_cccl_value_state,
+)
 from .._utils import protocols
 from .._utils.protocols import (
     get_data_pointer,
@@ -63,10 +67,7 @@ class _SegmentedReduce:
             )
 
         self.h_init_cccl = cccl.to_cccl_value(h_init)
-        if isinstance(h_init, np.ndarray):
-            value_type = numba.from_dtype(h_init.dtype)
-        else:
-            value_type = numba.typeof(h_init)
+        value_type = get_value_type(h_init)
 
         # For well-known operations, we don't need a signature
         if isinstance(op, OpKind):

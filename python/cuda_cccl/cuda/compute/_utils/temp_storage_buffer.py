@@ -76,6 +76,7 @@ class TempStorageBuffer:
             self, _finalize_buffer, self._ptr, self._stream_handle
         )
 
+    @property
     def __cuda_array_interface__(self):
         return {
             "data": (self._ptr, False),

@@ -52,13 +52,25 @@ class CachableFunction:
     """
 
     def __init__(self, func):
+        import numba.cuda.dispatcher
+
         self._func = func
 
         closure = func.__closure__ if func.__closure__ is not None else []
+        contents = []
+        # if any of the contents is a numba.cuda.dispatcher.CUDADispatcher
+        # use the function for caching purposes:
+        for cell in closure:
+            if isinstance(cell.cell_contents, numba.cuda.dispatcher.CUDADispatcher):
+                contents.append(CachableFunction(cell.cell_contents.py_func))
+            else:
+                contents.append(cell.cell_contents)
         self._identity = (
+            func.__name__,
             func.__code__.co_code,
             func.__code__.co_consts,
-            tuple(cell.cell_contents for cell in closure),
+            tuple(contents),
+            tuple(func.__globals__.get(name, None) for name in func.__code__.co_names),
         )
 
     def __eq__(self, other):
