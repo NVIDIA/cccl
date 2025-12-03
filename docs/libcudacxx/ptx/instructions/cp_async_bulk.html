@@ -1548,6 +1548,24 @@ SM_90. This has been changed to SM_90a.</p></li>
 </pre></div>
 </div>
 </section>
+<section id="cp-async-bulk-shared-cta-global-mbarrier-complete-tx-bytes-ignore-oob">
+<h3>cp.async.bulk.shared::cta.global.mbarrier::complete_tx::bytes.ignore_oob<a class="headerlink" href="#cp-async-bulk-shared-cta-global-mbarrier-complete-tx-bytes-ignore-oob" title="Link to this heading">#</a></h3>
+<div class="highlight-cuda notranslate"><div class="highlight"><pre><span></span><span class="c1">// cp.async.bulk.dst.src.mbarrier::complete_tx::bytes.ignore_oob [dstMem], [srcMem], size, ignoreBytesLeft, ignoreBytesRight, [smem_bar]; // PTX ISA 92, SM_90</span>
+<span class="c1">// .dst       = { .shared::cta }</span>
+<span class="c1">// .src       = { .global }</span>
+<span class="n">template</span><span class="w"> </span><span class="o">&lt;</span><span class="n">typename</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kt">void</span><span class="o">&gt;</span>
+<span class="kt">__device__</span><span class="w"> </span><span class="k">static</span><span class="w"> </span><span class="kr">inline</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="n">cp_async_bulk_ignore_oob</span><span class="p">(</span>
+<span class="w">  </span><span class="n">cuda</span><span class="o">::</span><span class="n">ptx</span><span class="o">::</span><span class="n">space_shared_t</span><span class="p">,</span>
+<span class="w">  </span><span class="n">cuda</span><span class="o">::</span><span class="n">ptx</span><span class="o">::</span><span class="n">space_global_t</span><span class="p">,</span>
+<span class="w">  </span><span class="kt">void</span><span class="o">*</span><span class="w"> </span><span class="n">dstMem</span><span class="p">,</span>
+<span class="w">  </span><span class="k">const</span><span class="w"> </span><span class="kt">void</span><span class="o">*</span><span class="w"> </span><span class="n">srcMem</span><span class="p">,</span>
+<span class="w">  </span><span class="k">const</span><span class="w"> </span><span class="kt">uint32_t</span><span class="o">&amp;</span><span class="w"> </span><span class="n">size</span><span class="p">,</span>
+<span class="w">  </span><span class="k">const</span><span class="w"> </span><span class="kt">uint32_t</span><span class="o">&amp;</span><span class="w"> </span><span class="n">ignoreBytesLeft</span><span class="p">,</span>
+<span class="w">  </span><span class="k">const</span><span class="w"> </span><span class="kt">uint32_t</span><span class="o">&amp;</span><span class="w"> </span><span class="n">ignoreBytesRight</span><span class="p">,</span>
+<span class="w">  </span><span class="kt">uint64_t</span><span class="o">*</span><span class="w"> </span><span class="n">smem_bar</span><span class="p">);</span>
+</pre></div>
+</div>
+</section>
 <section id="cp-async-bulk-shared-cluster-shared-cta-mbarrier-complete-tx-bytes">
 <h3>cp.async.bulk.shared::cluster.shared::cta.mbarrier::complete_tx::bytes<a class="headerlink" href="#cp-async-bulk-shared-cluster-shared-cta-mbarrier-complete-tx-bytes" title="Link to this heading">#</a></h3>
 <div class="highlight-cuda notranslate"><div class="highlight"><pre><span></span><span class="c1">// cp.async.bulk.dst.src.mbarrier::complete_tx::bytes [dstMem], [srcMem], size, [rdsmem_bar]; // PTX ISA 80, SM_90</span>
@@ -1672,6 +1690,7 @@ SM_90. This has been changed to SM_90a.</p></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#unicast">Unicast</a><ul class="visible nav section-nav flex-column">
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#cp-async-bulk-shared-cluster-global-mbarrier-complete-tx-bytes">cp.async.bulk.shared::cluster.global.mbarrier::complete_tx::bytes</a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#cp-async-bulk-shared-cta-global-mbarrier-complete-tx-bytes">cp.async.bulk.shared::cta.global.mbarrier::complete_tx::bytes</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#cp-async-bulk-shared-cta-global-mbarrier-complete-tx-bytes-ignore-oob">cp.async.bulk.shared::cta.global.mbarrier::complete_tx::bytes.ignore_oob</a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#cp-async-bulk-shared-cluster-shared-cta-mbarrier-complete-tx-bytes">cp.async.bulk.shared::cluster.shared::cta.mbarrier::complete_tx::bytes</a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#cp-async-bulk-global-shared-cta-bulk-group">cp.async.bulk.global.shared::cta.bulk_group</a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#cp-async-bulk-global-shared-cta-bulk-group-cp-mask">cp.async.bulk.global.shared::cta.bulk_group.cp_mask</a></li>
