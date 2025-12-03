@@ -220,8 +220,8 @@ C2H_TEST("cub::DeviceSegmentedScan::InclusiveSegmentedScanInit API with two offs
 {
   const std::string& algo_name = "cub::DeviceSegmentedScan::InclusiveSegmentedScanInit[2 offsets]";
   // example-begin inclusive-segmented-scan-init-two-offsets
-  unsigned prime  = 7;
-  auto input = thrust::device_vector<unsigned>{
+  unsigned prime = 7;
+  auto input     = thrust::device_vector<unsigned>{
     2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4, 4, 4, 5, 5, 5, 5, 5, 5, 5, 6, 6, 6, 6, 6, 6, 6};
 
   auto row_size    = static_cast<size_t>(prime);
