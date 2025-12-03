@@ -206,27 +206,8 @@ struct dispatch_streaming_arg_reduce_t
     // operator()(per_partition_accum_t) -> global_accum_t
     using local_to_global_op_t = local_to_global_op<GlobalOffsetT>;
 
-    // Reduction operator type that enables accumulating per-partition results to a global reduction result
-    using accumulating_transform_output_op_t =
-      accumulating_transform_output_op<global_accum_t, local_to_global_op_t, ReductionOpT, OutputIteratorT>;
-
-    // The output iterator that implements the logic to accumulate per-partition result to a global aggregate and,
-    // eventually, write to the user-provided output iterators
-    using accumulating_transform_out_it_t = ::cuda::tabulate_output_iterator<accumulating_transform_output_op_t>;
-
     // Empty problem initialization type
     using empty_problem_init_t = empty_problem_init_t<per_partition_accum_t>;
-
-    // Per-partition DispatchReduce template specialization
-    using dispatch_reduce_t =
-      DispatchReduce<arg_index_input_iterator_t,
-                     accumulating_transform_out_it_t,
-                     PerPartitionOffsetT,
-                     ReductionOpT,
-                     empty_problem_init_t,
-                     per_partition_accum_t,
-                     ::cuda::std::identity,
-                     PolicyChainT>;
 
     // The current partition's input iterator is an ArgIndex iterator that generates indices relative to the beginning
     // of the current partition, i.e., [0, partition_size) along with an OffsetIterator that offsets the user-provided
@@ -251,7 +232,11 @@ struct dispatch_streaming_arg_reduce_t
     const auto largest_partition_size =
       is_single_partition ? static_cast<PerPartitionOffsetT>(num_items) : max_partition_size;
 
-    accumulating_transform_output_op_t accumulating_out_op{
+    // Reduction operator type that enables accumulating per-partition results to a global reduction result
+    using accumulating_transform_output_op_t =
+      accumulating_transform_output_op<global_accum_t, local_to_global_op_t, ReductionOpT, OutputIteratorT>;
+
+    auto accumulating_out_op = accumulating_transform_output_op_t{
       true, is_single_partition, nullptr, nullptr, d_result_out, local_to_global_op, reduce_op};
 
     empty_problem_init_t initial_value{{PerPartitionOffsetT{1}, init}};
@@ -260,7 +245,8 @@ struct dispatch_streaming_arg_reduce_t
     size_t allocation_sizes[2] = {0, 2 * sizeof(global_accum_t)};
 
     // Query temporary storage requirements for per-partition reduction
-    dispatch_reduce_t::Dispatch(
+
+    reduce::dispatch<per_partition_accum_t>(
       nullptr,
       allocation_sizes[0],
       d_indexed_offset_in,
@@ -305,7 +291,7 @@ struct dispatch_streaming_arg_reduce_t
 
       d_indexed_offset_in = arg_index_input_iterator_t(d_in + current_partition_offset);
 
-      error = dispatch_reduce_t::Dispatch(
+      error = reduce::dispatch<per_partition_accum_t>(
         d_temp_storage,
         temp_storage_bytes,
         d_indexed_offset_in,
