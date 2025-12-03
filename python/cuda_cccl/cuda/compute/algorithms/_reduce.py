@@ -46,7 +46,7 @@ class _Reduce:
         self.h_init_cccl = cccl.to_cccl_value(h_init)
         value_type = get_value_type(h_init)
 
-        # For well-known operations, we don't neeId a signature
+        # For well-known operations, we don't need a signature
         if isinstance(op, OpKind):
             self.op_wrapper = cccl.to_cccl_op(op, None)
         else:
