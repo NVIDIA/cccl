@@ -117,10 +117,9 @@ def make_cache_key(
     else:
         op_key = CachableFunction(op)
     h_init_key = h_init.dtype
-    # Include build_config in the cache key if present
-    # Since BuildConfig now implements __hash__, we can use it directly
-    config_key = None if build_config is None else hash(build_config)
-    return (d_in_key, d_out_key, op_key, h_init_key, config_key)
+    # Include build_config directly in the cache key if present
+    # BuildConfig implements __hash__ and __eq__, so it can be used directly
+    return (d_in_key, d_out_key, op_key, h_init_key, build_config)
 
 
 # TODO Figure out `sum` without operator and initial value
