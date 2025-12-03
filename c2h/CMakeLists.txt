@@ -2,6 +2,8 @@ cmake_minimum_required(VERSION 3.21)
 
 project(C2H LANGUAGES CXX CUDA)
 
+cccl_get_catch2()
+
 find_package(CUDAToolkit REQUIRED)
 
 set(curand_default OFF)
