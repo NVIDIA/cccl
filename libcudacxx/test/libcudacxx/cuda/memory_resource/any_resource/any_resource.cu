@@ -228,8 +228,8 @@ struct host_device_resource
 static_assert(cuda::has_property<host_device_resource, cuda::mr::device_accessible>);
 static_assert(cuda::has_property<host_device_resource, cuda::mr::host_accessible>);
 
-void requires_host(cuda::mr::resource_ref<cuda::mr::host_accessible> ref) {}
-void requires_device(cuda::mr::resource_ref<cuda::mr::device_accessible> ref) {}
+void requires_host(cuda::mr::resource_ref<cuda::mr::host_accessible>) {}
+void requires_device(cuda::mr::resource_ref<cuda::mr::device_accessible>) {}
 
 bool checks_device_runtime_any_resource(cuda::mr::any_resource<cuda::mr::host_accessible> res)
 {
