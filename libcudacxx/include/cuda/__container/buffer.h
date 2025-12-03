@@ -11,8 +11,6 @@
 #ifndef _CUDA___CONTAINER_BUFFER_H
 #define _CUDA___CONTAINER_BUFFER_H
 
-// Temporary workaround to not trigger issues in CUB headers missing prologue
-#define _CCCL_WAIVE_PROLOGUE_INCLUDE_CHECK
 #include <cuda/std/detail/__config>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
