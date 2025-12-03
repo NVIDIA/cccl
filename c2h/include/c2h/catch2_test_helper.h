@@ -453,7 +453,7 @@ void print_comparison(const vector_compare_result_t<T>& res, std::ostream& os)
   // print good values
   for (const auto& [idx, v] : res.good_values)
   {
-    os << "good [" << idx << "]: " << v << " == " << v << '\n';
+    os << "good [" << idx << "]: " << CoutCast(v) << " == " << CoutCast(v) << '\n';
   }
 
   // insert dots between mismatches that are not consecutive
@@ -470,7 +470,7 @@ void print_comparison(const vector_compare_result_t<T>& res, std::ostream& os)
   for (const auto& [idx, a, b] : res.first_mismatches)
   {
     print_dots(idx);
-    os << "BAD  [" << idx << "]: " << a << " != " << b << '\n';
+    os << "BAD  [" << idx << "]: " << CoutCast(a) << " != " << CoutCast(b) << '\n';
   }
 
   // print last mismatches if we have any
@@ -479,7 +479,7 @@ void print_comparison(const vector_compare_result_t<T>& res, std::ostream& os)
     for (const auto& [idx, a, b] : *res.last_mismatches)
     {
       print_dots(idx);
-      os << "BAD  [" << idx << "]: " << a << " != " << b << '\n';
+      os << "BAD  [" << idx << "]: " << CoutCast(a) << " != " << CoutCast(b) << '\n';
     }
   }
 }
@@ -494,7 +494,8 @@ struct vector_matcher : Catch::Matchers::MatcherGenericBase
   template <typename OtherVec>
   bool match(OtherVec const& actual_vec) const // TODO(Bgruber): remove const?
   {
-    comparison_result = compare_vectors(actual_vec, expected_vec);
+    using T           = typename Vec::value_type;
+    comparison_result = compare_vectors(host_vector<T>(actual_vec), host_vector<T>(expected_vec));
     return actual_vec == expected_vec;
   }
 
