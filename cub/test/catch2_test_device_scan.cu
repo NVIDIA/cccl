@@ -128,7 +128,7 @@ C2H_TEST("Device scan works with all device interfaces", "[scan][device]", full_
     device_inclusive_sum(d_in_it, d_out_it, num_items);
 
     // Verify result
-    REQUIRE(expected_result == out_result);
+    REQUIRE_THAT_QUIET(expected_result, Equals(out_result));
 
     // Run test in-place
     if constexpr (std::is_same<input_t, output_t>::value)
@@ -136,7 +136,7 @@ C2H_TEST("Device scan works with all device interfaces", "[scan][device]", full_
       device_inclusive_sum(d_in_it, d_in_it, num_items);
 
       // Verify result
-      REQUIRE(expected_result == in_items);
+      REQUIRE_THAT_QUIET(expected_result, Equals(in_items));
     }
   }
 
@@ -156,7 +156,7 @@ C2H_TEST("Device scan works with all device interfaces", "[scan][device]", full_
     device_exclusive_sum(d_in_it, d_out_it, num_items);
 
     // Verify result
-    REQUIRE(expected_result == out_result);
+    REQUIRE_THAT_QUIET(expected_result, Equals(out_result));
 
     // Run test in-place
     if constexpr (std::is_same<input_t, output_t>::value)
@@ -164,7 +164,7 @@ C2H_TEST("Device scan works with all device interfaces", "[scan][device]", full_
       device_exclusive_sum(d_in_it, d_in_it, num_items);
 
       // Verify result
-      REQUIRE(expected_result == in_items);
+      REQUIRE_THAT_QUIET(expected_result, Equals(in_items));
     }
   }
 #endif
@@ -190,7 +190,7 @@ C2H_TEST("Device scan works with all device interfaces", "[scan][device]", full_
     device_inclusive_scan(unwrap_it(d_in_it), unwrap_it(d_out_it), op_t{}, num_items);
 
     // Verify result
-    REQUIRE(expected_result == out_result);
+    REQUIRE_THAT_QUIET(expected_result, Equals(out_result));
 
     // Run test in-place
     if constexpr (std::is_same<input_t, output_t>::value)
@@ -198,7 +198,7 @@ C2H_TEST("Device scan works with all device interfaces", "[scan][device]", full_
       device_inclusive_scan(unwrap_it(d_in_it), unwrap_it(d_in_it), op_t{}, num_items);
 
       // Verify result
-      REQUIRE(expected_result == in_items);
+      REQUIRE_THAT_QUIET(expected_result, Equals(in_items));
     }
   }
 
@@ -225,7 +225,7 @@ C2H_TEST("Device scan works with all device interfaces", "[scan][device]", full_
     device_inclusive_scan_with_init(unwrap_it(d_in_it), unwrap_it(d_out_it), scan_op, init_value, num_items);
 
     // Verify result
-    REQUIRE(expected_result == out_result);
+    REQUIRE_THAT_QUIET(expected_result, Equals(out_result));
 
     // Run test in-place
     if constexpr (std::is_same<input_t, output_t>::value)
@@ -233,7 +233,7 @@ C2H_TEST("Device scan works with all device interfaces", "[scan][device]", full_
       device_inclusive_scan_with_init(unwrap_it(d_in_it), unwrap_it(d_in_it), scan_op, init_value, num_items);
 
       // Verify result
-      REQUIRE(expected_result == in_items);
+      REQUIRE_THAT_QUIET(expected_result, Equals(in_items));
     }
   }
 
@@ -258,7 +258,7 @@ C2H_TEST("Device scan works with all device interfaces", "[scan][device]", full_
     device_exclusive_scan(unwrap_it(d_in_it), unwrap_it(d_out_it), scan_op, init_t{}, num_items);
 
     // Verify result
-    REQUIRE(expected_result == out_result);
+    REQUIRE_THAT_QUIET(expected_result, Equals(out_result));
 
     // Run test in-place
     if constexpr (std::is_same<input_t, output_t>::value)
@@ -266,7 +266,7 @@ C2H_TEST("Device scan works with all device interfaces", "[scan][device]", full_
       device_exclusive_scan(unwrap_it(d_in_it), unwrap_it(d_in_it), scan_op, init_t{}, num_items);
 
       // Verify result
-      REQUIRE(expected_result == in_items);
+      REQUIRE_THAT_QUIET(expected_result, Equals(in_items));
     }
   }
 
@@ -296,7 +296,7 @@ C2H_TEST("Device scan works with all device interfaces", "[scan][device]", full_
     device_exclusive_scan(unwrap_it(d_in_it), unwrap_it(d_out_it), scan_op, future_init_value, num_items);
 
     // Verify result
-    REQUIRE(expected_result == out_result);
+    REQUIRE_THAT_QUIET(expected_result, Equals(out_result));
 
     // Run test in-place
     if constexpr (std::is_same<input_t, output_t>::value)
@@ -304,7 +304,7 @@ C2H_TEST("Device scan works with all device interfaces", "[scan][device]", full_
       device_exclusive_scan(unwrap_it(d_in_it), unwrap_it(d_in_it), scan_op, future_init_value, num_items);
 
       // Verify result
-      REQUIRE(expected_result == in_items);
+      REQUIRE_THAT_QUIET(expected_result, Equals(in_items));
     }
   }
 }
