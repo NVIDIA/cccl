@@ -327,7 +327,7 @@ workflows:
 
 
 # The version of the devcontainer images to use from https://hub.docker.com/r/rapidsai/devcontainers
-devcontainer_version: '26.02'
+devcontainer_version: '26.04'
 
 # Compiler versions used for the cuda99.X internal builds:
 cuda99_gcc_version: 14
@@ -344,9 +344,9 @@ all_stds: [17, 20]
 # - pybuild: Selects image to use for python wheel builds' outer docker instance
 ctk_versions:
   12.0: { stds: [17, 20] }
-  12.9: { stds: [17, 20], alias: ['12.X', 'nvhpc-prev', 'pybuild', 'clang-cuda'] }
-  13.0: { stds: [17, 20], alias: ['nvhpc'] }
-  13.1: { stds: [17, 20], alias: ['13.X'] }
+  12.9: { stds: [17, 20], alias: ['12.X', 'pybuild', 'clang-cuda'] }
+  13.0: { stds: [17, 20], alias: ['nvhpc-prev'] }
+  13.1: { stds: [17, 20], alias: ['13.X', 'nvhpc'] }
 
 device_compilers:
   nvcc: # Version / stds are taken from CTK
@@ -396,8 +396,8 @@ host_compilers:
     exe: nvc++
     versions:
       # !! Update the ctk_versions 'nvhpc*' aliases when updating NVHPC versions:
-      25.7: { stds: [17, 20], alias: 'prev' }
-      25.9: { stds: [17, 20] }
+      25.11: { stds: [17, 20], alias: 'prev' }
+      26.1:  { stds: [17, 20] }
 
 # Jobs support the following properties:
 #
