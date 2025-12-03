@@ -25,108 +25,6 @@
 
 DECLARE_LAUNCH_WRAPPER(cub::DeviceScan::InclusiveScan, device_inclusive_scan);
 
-// TODO(bgruber): the following functions implement better reporting for vector
-// comparisons. We should generalize this.
-
-template <typename T>
-struct element_compare_result_t
-{
-  size_t index;
-  T actual;
-  T expected;
-};
-
-template <typename T>
-struct vector_compare_result_t
-{
-  std::vector<element_compare_result_t<T>> first_mismatches;
-  std::optional<std::vector<element_compare_result_t<T>>> last_mismatches;
-  size_t total_mismatches = 0;
-  double mismatch_percent = 0.0;
-  T max_difference        = 0; // TODO(bgruber): we may want to reconsider this for a generic T
-};
-
-template <typename T>
-vector_compare_result_t<T> compare_vectors(const c2h::host_vector<T>& actual, const c2h::host_vector<T>& expected)
-{
-  vector_compare_result_t<T> result;
-  if (actual.size() != expected.size())
-  {
-    std::cerr << "Error: Vectors have different sizes (" << actual.size() << " vs " << expected.size() << ")\n";
-    return result;
-  }
-
-  std::vector<element_compare_result_t<T>> mismatches;
-  mismatches.reserve(actual.size()); // TODO(bgruber): this seems excessive
-  T current_max_diff = 0;
-  for (size_t i = 0; i < actual.size(); ++i)
-  {
-    if (actual[i] != expected[i])
-    {
-      mismatches.emplace_back(element_compare_result_t<T>{i, actual[i], expected[i]});
-      T abs_diff       = actual[i] < expected[i] ? expected[i] - actual[i] : actual[i] - expected[i];
-      current_max_diff = cuda::std::max(current_max_diff, abs_diff);
-    }
-  }
-
-  result.total_mismatches = mismatches.size();
-  result.mismatch_percent = (static_cast<double>(result.total_mismatches) / actual.size()) * 100.0;
-  result.max_difference   = current_max_diff;
-
-  // Handle first 10 mismatches
-  size_t first_count = cuda::std::min<size_t>(mismatches.size(), 10);
-  result.first_mismatches.assign(mismatches.begin(), mismatches.begin() + first_count);
-
-  // Handle last 10 mismatches
-  if (mismatches.size() > 10)
-  {
-    const auto start = mismatches.end() - cuda::std::min<size_t>(mismatches.size(), 10);
-    result.last_mismatches.emplace(start, mismatches.end());
-  }
-
-  return result;
-}
-
-template <typename T>
-void print_comparison(const vector_compare_result_t<T>& res)
-{
-  // Print first mismatches
-  std::cout << "First 10 mismatches:\n";
-  for (const auto& [idx, a, b] : res.first_mismatches)
-  {
-    std::cout << "At index " << idx << ". Got " << a << ". Expected " << b << ". Difference " << a - b << "\n";
-  }
-
-  // Print last mismatches if different from first
-  if (res.last_mismatches)
-  {
-    std::cout << "\nLast 10 mismatches:\n";
-    for (const auto& [idx, a, b] : *res.last_mismatches)
-    {
-      std::cout << "At index " << idx << ". Got " << a << ". Expected " << b << ". Difference " << a - b << "\n";
-    }
-  }
-
-  // Print summary
-  std::cout
-    << "\nTotal mismatches: " << res.total_mismatches << " (" << std::fixed << std::setprecision(2)
-    << res.mismatch_percent << "%)\n"
-    << "Maximum absolute difference: " << res.max_difference << "\n";
-}
-
-template <typename T>
-bool compareIsEqualAndPrint(const c2h::host_vector<T>& actual, const c2h::host_vector<T>& expected)
-{
-  const vector_compare_result_t result = compare_vectors(expected, actual);
-  if (result.total_mismatches == 0)
-  {
-    return true;
-  }
-
-  print_comparison(result);
-  return false;
-}
-
 // We cover types of various sizes smaller than 16 byte
 using value_types = c2h::type_list<uint8_t, uint16_t, uint32_t, uint64_t>;
 
@@ -167,7 +65,7 @@ C2H_TEST("Device scan works with all device interfaces", "[scan][device]", value
   c2h::host_vector<output_t> out_result_vec(num_items);
   thrust::copy_n(out_result.begin() + offset, num_items, out_result_vec.begin());
 
-  REQUIRE(compareIsEqualAndPrint(expected_result, out_result_vec));
+  REQUIRE_THAT_QUIET(out_result_vec, Equals(expected_result));
 
   const output_t out_sentinel = out_result[offset + num_items];
   REQUIRE(out_sentinel == out_sentinel_value);
