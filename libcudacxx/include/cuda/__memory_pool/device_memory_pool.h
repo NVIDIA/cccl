@@ -26,8 +26,8 @@
 #  include <cuda_runtime_api.h>
 #endif // _CCCL_CUDA_COMPILER(CLANG)
 
+#include <cuda/__memory_pool/memory_pool_base.h>
 #include <cuda/__memory_resource/get_property.h>
-#include <cuda/__memory_resource/memory_pool_base.h>
 #include <cuda/__memory_resource/properties.h>
 #include <cuda/__runtime/api_wrapper.h>
 #include <cuda/std/__concepts/concept_macros.h>

@@ -8,6 +8,7 @@
 //
 //===----------------------------------------------------------------------===//
 
+#include <cuda/memory_pool>
 #include <cuda/memory_resource>
 #include <cuda/std/cstdint>
 #include <cuda/std/type_traits>
@@ -19,9 +20,9 @@
 #include "common_tests.cuh"
 
 #if _CCCL_CTK_AT_LEAST(12, 6)
-#  define TEST_TYPES cuda::legacy_pinned_memory_resource, cuda::pinned_memory_pool_ref
+#  define TEST_TYPES cuda::mr::legacy_pinned_memory_resource, cuda::pinned_memory_pool_ref
 #else // ^^^ _CCCL_CTK_AT_LEAST(12, 6) ^^^ / vvv _CCCL_CTK_BELOW(12, 6) vvv
-#  define TEST_TYPES cuda::legacy_pinned_memory_resource
+#  define TEST_TYPES cuda::mr::legacy_pinned_memory_resource
 #endif // ^^^ _CCCL_CTK_BELOW(12, 6) ^^^
 
 template <typename Resource>
@@ -34,13 +35,13 @@ void resource_static_asserts()
   static_assert(cuda::std::is_trivially_copy_assignable_v<Resource>, "");
   static_assert(cuda::std::is_trivially_move_assignable_v<Resource>, "");
   static_assert(cuda::std::is_trivially_destructible_v<Resource>, "");
-  if constexpr (cuda::std::is_same_v<Resource, cuda::legacy_pinned_memory_resource>)
+  if constexpr (cuda::std::is_same_v<Resource, cuda::mr::legacy_pinned_memory_resource>)
   {
     static_assert(cuda::std::is_default_constructible_v<Resource>, "");
   }
 }
 
-template void resource_static_asserts<cuda::legacy_pinned_memory_resource>();
+template void resource_static_asserts<cuda::mr::legacy_pinned_memory_resource>();
 #if _CCCL_CTK_AT_LEAST(12, 6)
 template void resource_static_asserts<cuda::pinned_memory_pool_ref>();
 #endif // _CCCL_CTK_AT_LEAST(12, 6)
@@ -224,7 +225,7 @@ static_assert(cuda::mr::resource<test_resource<AccessibilityType::Host>>, "");
 static_assert(cuda::mr::resource<test_resource<AccessibilityType::Device>>, "");
 
 // test for cccl#2214: https://github.com/NVIDIA/cccl/issues/2214
-struct derived_pinned_resource : cuda::legacy_pinned_memory_resource
+struct derived_pinned_resource : cuda::mr::legacy_pinned_memory_resource
 {
   using legacy_pinned_memory_resource::legacy_pinned_memory_resource;
 };

@@ -27,7 +27,7 @@
 #endif // _CCCL_CUDA_COMPILER(CLANG)
 
 #include <cuda/__device/all_devices.h>
-#include <cuda/__memory_resource/memory_pool_base.h>
+#include <cuda/__memory_pool/memory_pool_base.h>
 #include <cuda/__memory_resource/properties.h>
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__exception/throw_error.h>

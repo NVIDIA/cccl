@@ -8,6 +8,7 @@
 //
 //===----------------------------------------------------------------------===//
 
+#include <cuda/memory_pool>
 #include <cuda/memory_resource>
 #include <cuda/std/cstdint>
 #include <cuda/std/type_traits>
@@ -17,9 +18,9 @@
 #include <utility.cuh>
 
 #if _CCCL_CTK_AT_LEAST(13, 0)
-#  define TEST_TYPES cuda::legacy_managed_memory_resource, cuda::managed_memory_pool_ref
+#  define TEST_TYPES cuda::mr::legacy_managed_memory_resource, cuda::managed_memory_pool_ref
 #else // ^^^ _CCCL_CTK_AT_LEAST(13, 0) ^^^ / vvv _CCCL_CTK_BELOW(13, 0) vvv
-#  define TEST_TYPES cuda::legacy_managed_memory_resource
+#  define TEST_TYPES cuda::mr::legacy_managed_memory_resource
 #endif // ^^^ _CCCL_CTK_BELOW(13, 0) ^^^
 
 template <typename Resource>
@@ -35,7 +36,7 @@ void resource_static_asserts()
   static_assert(!cuda::std::is_empty<Resource>::value, "");
 }
 
-template void resource_static_asserts<cuda::legacy_managed_memory_resource>();
+template void resource_static_asserts<cuda::mr::legacy_managed_memory_resource>();
 #if _CCCL_CTK_AT_LEAST(13, 0)
 template void resource_static_asserts<cuda::managed_memory_pool_ref>();
 #endif // _CCCL_CTK_AT_LEAST(13, 0)
@@ -69,7 +70,7 @@ C2H_CCCLRT_TEST_LIST("managed_memory_resource construction", "[memory_resource]"
   using managed_resource = TestType;
   SECTION("Default construction")
   {
-    if constexpr (cuda::std::is_same_v<managed_resource, cuda::legacy_managed_memory_resource>)
+    if constexpr (cuda::std::is_same_v<managed_resource, cuda::mr::legacy_managed_memory_resource>)
     {
       STATIC_REQUIRE(cuda::std::is_default_constructible_v<managed_resource>);
     }
@@ -203,9 +204,9 @@ static_assert(cuda::mr::resource<test_resource<AccessibilityType::Host>>, "");
 static_assert(cuda::mr::resource<test_resource<AccessibilityType::Device>>, "");
 
 // test for cccl#2214: https://github.com/NVIDIA/cccl/issues/2214
-struct derived_managed_resource : cuda::legacy_managed_memory_resource
+struct derived_managed_resource : cuda::mr::legacy_managed_memory_resource
 {
-  using cuda::legacy_managed_memory_resource::legacy_managed_memory_resource;
+  using cuda::mr::legacy_managed_memory_resource::legacy_managed_memory_resource;
 };
 static_assert(cuda::mr::synchronous_resource<derived_managed_resource>, "");
 
@@ -219,9 +220,9 @@ C2H_CCCLRT_TEST_LIST("managed_memory_resource comparison", "[memory_resource]", 
     CHECK(!(first != second));
   }
 
-  if constexpr (cuda::std::is_same_v<managed_resource, cuda::legacy_managed_memory_resource>)
+  if constexpr (cuda::std::is_same_v<managed_resource, cuda::mr::legacy_managed_memory_resource>)
   { // comparison against a plain legacy_managed_memory_resource with a different flags
-    managed_resource second = cuda::legacy_managed_memory_resource{cudaMemAttachHost};
+    managed_resource second = cuda::mr::legacy_managed_memory_resource{cudaMemAttachHost};
     CHECK((first != second));
     CHECK(!(first == second));
   }
