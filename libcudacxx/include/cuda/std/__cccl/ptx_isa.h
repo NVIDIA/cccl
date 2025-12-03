@@ -115,6 +115,27 @@
 // TODO(bgruber): limit this workaround to NVRTC versions older than the first one shipping those macros
 #if _CCCL_COMPILER(NVRTC)
 
+// missing SM_88
+#  if !defined(NV_PROVIDES_SM_88)
+#    define _NV_TARGET_VAL_SM_88 880
+#    define NV_PROVIDES_SM_88    __NV_PROVIDES_SM_88
+#    define NV_IS_EXACTLY_SM_88  __NV_IS_EXACTLY_SM_88
+#    if (__CUDA_ARCH__ == _NV_TARGET_VAL_SM_88)
+#      define _NV_TARGET_BOOL___NV_IS_EXACTLY_SM_88 1
+#      define _NV_TARGET___NV_IS_EXACTLY_SM_88      1
+#    else
+#      define _NV_TARGET_BOOL___NV_IS_EXACTLY_SM_88 0
+#      define _NV_TARGET___NV_IS_EXACTLY_SM_88      0
+#    endif
+#    if (__CUDA_ARCH__ >= _NV_TARGET_VAL_SM_88)
+#      define _NV_TARGET___NV_PROVIDES_SM_88      1
+#      define _NV_TARGET_BOOL___NV_PROVIDES_SM_88 1
+#    else
+#      define _NV_TARGET___NV_PROVIDES_SM_88      0
+#      define _NV_TARGET_BOOL___NV_PROVIDES_SM_88 0
+#    endif
+#  endif // !NV_PROVIDES_SM_88
+
 // missing SM_90a
 #  ifndef NV_HAS_FEATURE_SM_90a
 #    define NV_HAS_FEATURE_SM_90a __NV_HAS_FEATURE_SM_90a
@@ -185,6 +206,27 @@
 #      define _NV_TARGET_BOOL___NV_HAS_FEATURE_SM_120a 0
 #    endif
 #  endif // _CCCL_COMPILER(NVRTC)
+
+// missing SM_121
+#  if !defined(NV_PROVIDES_SM_121)
+#    define _NV_TARGET_VAL_SM_121 1210
+#    define NV_PROVIDES_SM_121    __NV_PROVIDES_SM_121
+#    define NV_IS_EXACTLY_SM_121  __NV_IS_EXACTLY_SM_121
+#    if (__CUDA_ARCH__ == _NV_TARGET_VAL_SM_121)
+#      define _NV_TARGET_BOOL___NV_IS_EXACTLY_SM_121 1
+#      define _NV_TARGET___NV_IS_EXACTLY_SM_121      1
+#    else
+#      define _NV_TARGET_BOOL___NV_IS_EXACTLY_SM_121 0
+#      define _NV_TARGET___NV_IS_EXACTLY_SM_121      0
+#    endif
+#    if (__CUDA_ARCH__ >= _NV_TARGET_VAL_SM_121)
+#      define _NV_TARGET___NV_PROVIDES_SM_121      1
+#      define _NV_TARGET_BOOL___NV_PROVIDES_SM_121 1
+#    else
+#      define _NV_TARGET___NV_PROVIDES_SM_121      0
+#      define _NV_TARGET_BOOL___NV_PROVIDES_SM_121 0
+#    endif
+#  endif // !NV_PROVIDES_SM_121
 
 // missing SM_121a
 #  ifndef NV_HAS_FEATURE_SM_121a
