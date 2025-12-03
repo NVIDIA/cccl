@@ -21,10 +21,6 @@ workflows:
   #       args: '--preset libcudacxx --lit-tests "cuda/utility/basic_any.pass.cpp"' }
   #
   override:
-    - {jobs: ['test'], project: 'packaging', ctk: '12.0', cxx: ['gcc10', 'clang14'], gpu: 'rtx2080', args: '-min-cmake'}
-    - {jobs: ['test'], project: 'packaging', ctk: '12.X', cxx: ['gcc10', 'clang14'], gpu: 'rtx2080'}
-    - {jobs: ['test'], project: 'packaging', ctk: '13.0', cxx: ['gcc',   'clang'],   gpu: 'rtx2080', args: '-min-cmake'}
-    - {jobs: ['test'], project: 'packaging', ctk: '13.X', cxx: ['gcc',   'clang'],   gpu: 'rtx2080'}
 
   pull_request:
     # Old CTK: Oldest/newest supported host compilers:

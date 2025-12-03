@@ -61,8 +61,12 @@ endif()
 
 # Creates a cmake executable target for the main program
 add_executable(example_program example.cpp)
+
 # Thrust requires at least C++17:
-target_compile_features(example_program PUBLIC cuda_std_17 cxx_std_17)
+target_compile_features(example_program PUBLIC cxx_std_17)
+if (CCCL_THRUST_DEVICE_SYSTEM STREQUAL "CUDA")
+  target_compile_features(example_program PUBLIC cuda_std_17)
+endif()
 
 # By default, CMake inspects the source file extension to determine whether to use C++ or CUDA
 # compilers. We can override this behavior by using source file properties. Here, we tell CMake
