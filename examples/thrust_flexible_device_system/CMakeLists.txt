@@ -20,7 +20,7 @@
 #
 # See the accompanying README.md for more information and build instructions.
 
-cmake_minimum_required(VERSION 3.15 FATAL_ERROR)
+cmake_minimum_required(VERSION 3.18 FATAL_ERROR)
 
 project(ThrustFlexibleDeviceSystemDemo CXX)
 

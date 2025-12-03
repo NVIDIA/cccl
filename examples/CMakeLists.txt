@@ -17,6 +17,7 @@ enable_language(CUDA) # Ensure that CUDA compiler vars are defined
 
 set(
   cmake_opts
+  "--log-level=VERBOSE"
   "-DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}"
   "-DCMAKE_MAKE_PROGRAM=${CMAKE_MAKE_PROGRAM}"
   "-DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}"
