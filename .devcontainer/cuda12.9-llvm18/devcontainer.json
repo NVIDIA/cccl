@@ -4,7 +4,9 @@
   "runArgs": [
     "--init",
     "--name",
-    "${localEnv:USER:anon}-${localWorkspaceFolderBasename}-cuda12.9-llvm18"
+    "${localEnv:USER:anon}-${localWorkspaceFolderBasename}-cuda12.9-llvm18",
+    "--ulimit",
+    "nofile=500000"
   ],
   "hostRequirements": {
     "gpu": "optional"

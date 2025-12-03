@@ -4,7 +4,9 @@
   "runArgs": [
     "--init",
     "--name",
-    "${localEnv:USER:anon}-${localWorkspaceFolderBasename}-cuda13.0-gcc11"
+    "${localEnv:USER:anon}-${localWorkspaceFolderBasename}-cuda13.0-gcc11",
+    "--ulimit",
+    "nofile=500000"
   ],
   "hostRequirements": {
     "gpu": "optional"
