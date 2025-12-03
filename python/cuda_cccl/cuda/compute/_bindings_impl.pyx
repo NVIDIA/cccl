@@ -876,7 +876,7 @@ cdef class BuildConfig:
                         self.c_extra_include_dirs[i] = <const char*>dir
                     self.build_config_data.extra_include_dirs = self.c_extra_include_dirs
                     self.build_config_data.num_extra_include_dirs = len(self.encoded_include_dirs)
-        except Exception:
+        except (TypeError, MemoryError, UnicodeEncodeError):
             # Clean up any allocated memory on error
             if self.c_extra_compile_flags != NULL:
                 free(self.c_extra_compile_flags)
