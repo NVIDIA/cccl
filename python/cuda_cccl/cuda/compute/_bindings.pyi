@@ -170,6 +170,20 @@ class CommonData:
     @property
     def ctk_path(self) -> str: ...
 
+class BuildConfig:
+    """
+    Build configuration for CCCL algorithms.
+    
+    Args:
+        extra_compile_flags: Additional compilation flags to pass to NVRTC.
+        extra_include_dirs: Additional include directories for compilation.
+    """
+    def __init__(
+        self,
+        extra_compile_flags: Optional[list[str]] = None,
+        extra_include_dirs: Optional[list[str]] = None,
+    ): ...
+
 # ------------
 # DeviceReduce
 # ------------
@@ -182,6 +196,7 @@ class DeviceReduceBuildResult:
         binary_op: Op,
         h_init: Value,
         info: CommonData,
+        build_config: Optional[BuildConfig] = None,
     ): ...
     def compute(
         self,

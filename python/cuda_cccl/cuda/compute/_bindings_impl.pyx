@@ -7,6 +7,7 @@
 # static type checker tools like mypy green-lights cuda.compute
 
 from libc.string cimport memset, memcpy
+from libc.stdlib cimport malloc, free
 from libc.stdint cimport uint8_t, uint32_t, uint64_t, int64_t, uintptr_t
 from cpython.bytes cimport PyBytes_FromStringAndSize
 
@@ -124,6 +125,12 @@ cdef extern from "cccl/c/types.h":
         VALUE_INIT "CCCL_VALUE_INIT"
         FUTURE_VALUE_INIT "CCCL_FUTURE_VALUE_INIT"
         NO_INIT "CCCL_NO_INIT"
+
+    cdef struct cccl_build_config:
+        const char** extra_compile_flags
+        size_t num_extra_compile_flags
+        const char** extra_include_dirs
+        size_t num_extra_include_dirs
 
 cdef void arg_type_check(
     str arg_name,
@@ -819,6 +826,65 @@ cdef class CommonData:
     def libcudacxx_path(self):
         return self.encoded_libcudacxx_path.decode("utf-8")
 
+
+cdef class BuildConfig:
+    """
+    Build configuration for CCCL algorithms.
+    
+    Args:
+        extra_compile_flags (list[str], optional):
+            Additional compilation flags to pass to NVRTC. Example: ["-fmad=true", "-use_fast_math"]
+        extra_include_dirs (list[str], optional):
+            Additional include directories for compilation. Example: ["/path/to/headers"]
+    """
+    cdef const char** c_extra_compile_flags
+    cdef const char** c_extra_include_dirs
+    cdef list encoded_compile_flags
+    cdef list encoded_include_dirs
+    cdef cccl_build_config build_config_data
+
+    def __cinit__(self, extra_compile_flags=None, extra_include_dirs=None):
+        self.c_extra_compile_flags = NULL
+        self.c_extra_include_dirs = NULL
+        self.encoded_compile_flags = []
+        self.encoded_include_dirs = []
+        memset(&self.build_config_data, 0, sizeof(cccl_build_config))
+        
+        if extra_compile_flags is not None:
+            if not isinstance(extra_compile_flags, list):
+                raise TypeError("extra_compile_flags must be a list of strings")
+            self.encoded_compile_flags = [flag.encode("utf-8") for flag in extra_compile_flags]
+            if len(self.encoded_compile_flags) > 0:
+                self.c_extra_compile_flags = <const char**>malloc(len(self.encoded_compile_flags) * sizeof(char*))
+                if self.c_extra_compile_flags == NULL:
+                    raise MemoryError("Failed to allocate memory for compile flags")
+                for i, flag in enumerate(self.encoded_compile_flags):
+                    self.c_extra_compile_flags[i] = <const char*>flag
+                self.build_config_data.extra_compile_flags = self.c_extra_compile_flags
+                self.build_config_data.num_extra_compile_flags = len(self.encoded_compile_flags)
+        
+        if extra_include_dirs is not None:
+            if not isinstance(extra_include_dirs, list):
+                raise TypeError("extra_include_dirs must be a list of strings")
+            self.encoded_include_dirs = [dir.encode("utf-8") for dir in extra_include_dirs]
+            if len(self.encoded_include_dirs) > 0:
+                self.c_extra_include_dirs = <const char**>malloc(len(self.encoded_include_dirs) * sizeof(char*))
+                if self.c_extra_include_dirs == NULL:
+                    raise MemoryError("Failed to allocate memory for include dirs")
+                for i, dir in enumerate(self.encoded_include_dirs):
+                    self.c_extra_include_dirs[i] = <const char*>dir
+                self.build_config_data.extra_include_dirs = self.c_extra_include_dirs
+                self.build_config_data.num_extra_include_dirs = len(self.encoded_include_dirs)
+
+    def __dealloc__(self):
+        if self.c_extra_compile_flags != NULL:
+            free(self.c_extra_compile_flags)
+        if self.c_extra_include_dirs != NULL:
+            free(self.c_extra_include_dirs)
+
+    cdef cccl_build_config* get_config_ptr(self):
+        return &self.build_config_data
+
 # --------------
 #   DeviceReduce
 # --------------
@@ -835,6 +901,16 @@ cdef extern from "cccl/c/reduce.h":
         cccl_op_t,
         cccl_value_t,
         int, int, const char*, const char*, const char*, const char*
+    ) nogil
+
+    cdef CUresult cccl_device_reduce_build_ex(
+        cccl_device_reduce_build_result_t*,
+        cccl_iterator_t,
+        cccl_iterator_t,
+        cccl_op_t,
+        cccl_value_t,
+        int, int, const char*, const char*, const char*, const char*,
+        cccl_build_config*
     ) nogil
 
     cdef CUresult cccl_device_reduce(
@@ -863,7 +939,8 @@ cdef class DeviceReduceBuildResult:
         Iterator d_out,
         Op op,
         Value h_init,
-        CommonData common_data
+        CommonData common_data,
+        BuildConfig build_config = None
     ):
         cdef CUresult status = -1
         cdef int cc_major = common_data.get_cc_major()
@@ -875,19 +952,35 @@ cdef class DeviceReduceBuildResult:
         memset(&self.build_data, 0, sizeof(cccl_device_reduce_build_result_t))
 
         with nogil:
-            status = cccl_device_reduce_build(
-                &self.build_data,
-                d_in.iter_data,
-                d_out.iter_data,
-                op.op_data,
-                h_init.value_data,
-                cc_major,
-                cc_minor,
-                cub_path,
-                thrust_path,
-                libcudacxx_path,
-                ctk_path,
-            )
+            if build_config is None:
+                status = cccl_device_reduce_build(
+                    &self.build_data,
+                    d_in.iter_data,
+                    d_out.iter_data,
+                    op.op_data,
+                    h_init.value_data,
+                    cc_major,
+                    cc_minor,
+                    cub_path,
+                    thrust_path,
+                    libcudacxx_path,
+                    ctk_path,
+                )
+            else:
+                status = cccl_device_reduce_build_ex(
+                    &self.build_data,
+                    d_in.iter_data,
+                    d_out.iter_data,
+                    op.op_data,
+                    h_init.value_data,
+                    cc_major,
+                    cc_minor,
+                    cub_path,
+                    thrust_path,
+                    libcudacxx_path,
+                    ctk_path,
+                    build_config.get_config_ptr()
+                )
         if status != 0:
             raise RuntimeError(
                 f"Failed building reduce, error code: {status}"

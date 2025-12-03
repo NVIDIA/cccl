@@ -40,6 +40,7 @@ class _Reduce:
         d_out: DeviceArrayLike | IteratorBase,
         op: Callable | OpKind,
         h_init: np.ndarray | GpuStruct,
+        build_config: _bindings.BuildConfig | None = None,
     ):
         self.d_in_cccl = cccl.to_cccl_input_iter(d_in)
         self.d_out_cccl = cccl.to_cccl_output_iter(d_out)
@@ -57,6 +58,7 @@ class _Reduce:
             self.d_out_cccl,
             self.op_wrapper,
             self.h_init_cccl,
+            build_config=build_config,
         )
 
     def __call__(
@@ -100,6 +102,7 @@ def make_cache_key(
     d_out: DeviceArrayLike | IteratorBase,
     op: Callable | OpKind,
     h_init: np.ndarray,
+    build_config: _bindings.BuildConfig | None = None,
 ):
     d_in_key = (
         d_in.kind if isinstance(d_in, IteratorBase) else protocols.get_dtype(d_in)
@@ -114,7 +117,14 @@ def make_cache_key(
     else:
         op_key = CachableFunction(op)
     h_init_key = h_init.dtype
-    return (d_in_key, d_out_key, op_key, h_init_key)
+    # Include build_config in the cache key if present
+    # We use a tuple representation of the config
+    config_key = None
+    if build_config is not None:
+        # Since build_config is a Cython object, we can't directly use it in cache key
+        # We'll use id(build_config) to distinguish different configs
+        config_key = id(build_config)
+    return (d_in_key, d_out_key, op_key, h_init_key, config_key)
 
 
 # TODO Figure out `sum` without operator and initial value
@@ -125,6 +135,7 @@ def make_reduce_into(
     d_out: DeviceArrayLike | IteratorBase,
     op: Callable | OpKind,
     h_init: np.ndarray,
+    build_config: _bindings.BuildConfig | None = None,
 ):
     """Computes a device-wide reduction using the specified binary ``op`` and initial value ``init``.
 
@@ -141,11 +152,12 @@ def make_reduce_into(
         d_out: Device array (of size 1) that will store the result of the reduction
         op: Callable or OpKind representing the binary operator to apply
         init: Numpy array storing initial value of the reduction
+        build_config: Optional BuildConfig for additional compilation options
 
     Returns:
         A callable object that can be used to perform the reduction
     """
-    return _Reduce(d_in, d_out, op, h_init)
+    return _Reduce(d_in, d_out, op, h_init, build_config)
 
 
 def reduce_into(
@@ -155,6 +167,7 @@ def reduce_into(
     num_items: int,
     h_init: np.ndarray | GpuStruct,
     stream=None,
+    build_config: _bindings.BuildConfig | None = None,
 ):
     """
     Performs device-wide reduction.
@@ -176,8 +189,9 @@ def reduce_into(
         num_items: Number of items to reduce
         h_init: Initial value for the reduction
         stream: CUDA stream for the operation (optional)
+        build_config: Optional BuildConfig for additional compilation options
     """
-    reducer = make_reduce_into(d_in, d_out, op, h_init)
+    reducer = make_reduce_into(d_in, d_out, op, h_init, build_config)
     tmp_storage_bytes = reducer(None, d_in, d_out, num_items, h_init, stream)
     tmp_storage = TempStorageBuffer(tmp_storage_bytes, stream)
     reducer(tmp_storage, d_in, d_out, num_items, h_init, stream)

@@ -2,6 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+from ._bindings import BuildConfig
 from .algorithms import (
     DoubleBuffer,
     SortOrder,
@@ -48,6 +49,7 @@ from .struct import gpu_struct
 
 __all__ = [
     "binary_transform",
+    "BuildConfig",
     "CacheModifiedInputIterator",
     "ConstantIterator",
     "CountingIterator",
