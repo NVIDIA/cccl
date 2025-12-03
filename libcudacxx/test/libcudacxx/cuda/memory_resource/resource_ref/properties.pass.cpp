@@ -135,6 +135,18 @@ void test_property_forwarding()
   static_assert(cuda::mr::synchronous_resource_with<res, cuda::mr::host_accessible, property_with_value<short>>, "");
 }
 
+void test_empty_property_set()
+{
+  auto res       = test_resource<property_with_value<int>>{42};
+  auto ref       = cuda::mr::synchronous_resource_ref<property_with_value<int>>{res};
+  auto ref_empty = cuda::mr::synchronous_resource_ref<>{ref};
+
+  CHECK(try_get_property(ref, property_with_value<int>{}).value() == 42);
+  CHECK(try_get_property(ref_empty, property_with_value<int>{}).value() == 42);
+  CHECK(!try_get_property(ref, property_without_value<int>{}));
+  CHECK(!try_get_property(ref_empty, property_without_value<int>{}));
+}
+
 void test_resource_ref()
 {
   // Test some basic combinations of properties w/o state
@@ -149,6 +161,8 @@ void test_resource_ref()
 
   // Ensure we only forward requested properties
   test_property_forwarding();
+
+  test_empty_property_set();
 }
 } // namespace resource_test
 
