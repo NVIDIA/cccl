@@ -830,7 +830,7 @@ cdef class CommonData:
 cdef class BuildConfig:
     """
     Build configuration for CCCL algorithms.
-    
+
     Args:
         extra_compile_flags (list[str], optional):
             Additional compilation flags to pass to NVRTC. Example: ["-fmad=true", "-use_fast_math"]
@@ -849,7 +849,7 @@ cdef class BuildConfig:
         self.encoded_compile_flags = []
         self.encoded_include_dirs = []
         memset(&self.build_config_data, 0, sizeof(cccl_build_config))
-        
+
         if extra_compile_flags is not None:
             if not isinstance(extra_compile_flags, list):
                 raise TypeError("extra_compile_flags must be a list of strings")
@@ -862,7 +862,7 @@ cdef class BuildConfig:
                     self.c_extra_compile_flags[i] = <const char*>flag
                 self.build_config_data.extra_compile_flags = self.c_extra_compile_flags
                 self.build_config_data.num_extra_compile_flags = len(self.encoded_compile_flags)
-        
+
         if extra_include_dirs is not None:
             if not isinstance(extra_include_dirs, list):
                 raise TypeError("extra_include_dirs must be a list of strings")

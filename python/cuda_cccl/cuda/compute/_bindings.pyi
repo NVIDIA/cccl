@@ -173,7 +173,7 @@ class CommonData:
 class BuildConfig:
     """
     Build configuration for CCCL algorithms.
-    
+
     Args:
         extra_compile_flags: Additional compilation flags to pass to NVRTC.
         extra_include_dirs: Additional include directories for compilation.
