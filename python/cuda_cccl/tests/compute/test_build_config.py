@@ -45,6 +45,41 @@ def test_build_config_type_validation():
         BuildConfig(extra_include_dirs="/path/to/headers")
 
 
+def test_build_config_equality():
+    """Test that BuildConfig equality works correctly."""
+    # Identical configs should be equal
+    config1 = BuildConfig(extra_compile_flags=["-fmad=true"])
+    config2 = BuildConfig(extra_compile_flags=["-fmad=true"])
+    assert config1 == config2
+    assert hash(config1) == hash(config2)
+
+    # Different flags should not be equal
+    config3 = BuildConfig(extra_compile_flags=["-use_fast_math"])
+    assert config1 != config3
+    assert hash(config1) != hash(config3)
+
+    # Different include dirs should not be equal
+    config4 = BuildConfig(extra_include_dirs=["/path1"])
+    config5 = BuildConfig(extra_include_dirs=["/path2"])
+    assert config4 != config5
+    assert hash(config4) != hash(config5)
+
+    # Configs with both flags and dirs should be equal if both match
+    config6 = BuildConfig(
+        extra_compile_flags=["-fmad=true"], extra_include_dirs=["/path"]
+    )
+    config7 = BuildConfig(
+        extra_compile_flags=["-fmad=true"], extra_include_dirs=["/path"]
+    )
+    assert config6 == config7
+    assert hash(config6) == hash(config7)
+
+    # Order matters for equality
+    config8 = BuildConfig(extra_compile_flags=["-fmad=true", "-g"])
+    config9 = BuildConfig(extra_compile_flags=["-g", "-fmad=true"])
+    assert config8 != config9
+
+
 @pytest.mark.parametrize("dtype", [np.uint32, np.float32])
 def test_reduce_with_build_config(dtype):
     """Test that reduce works with BuildConfig."""
@@ -101,6 +136,38 @@ def test_make_reduce_into_with_build_config(dtype):
 
 
 def test_build_config_caching():
+    """Test that identical BuildConfigs share cached objects."""
+    num_items = 100
+    dtype = np.uint32
+    h_init = np.array([0], dtype=dtype)
+    d_output1 = numba.cuda.device_array(1, dtype=dtype)
+    d_output2 = numba.cuda.device_array(1, dtype=dtype)
+
+    h_input = np.arange(num_items, dtype=dtype)
+    d_input = numba.cuda.to_device(h_input)
+
+    # Create two BuildConfigs with the same settings
+    config1 = BuildConfig(extra_compile_flags=["-lineinfo"])
+    config2 = BuildConfig(extra_compile_flags=["-lineinfo"])
+
+    # These should be equal and have the same hash
+    assert config1 == config2
+    assert hash(config1) == hash(config2)
+
+    # Create two reducers with identical configs
+    reducer1 = cuda.compute.make_reduce_into(
+        d_input, d_output1, OpKind.PLUS, h_init, build_config=config1
+    )
+    reducer2 = cuda.compute.make_reduce_into(
+        d_input, d_output2, OpKind.PLUS, h_init, build_config=config2
+    )
+
+    # Both should work and should use the same cached build
+    # (they should be the same object due to caching)
+    assert reducer1 is reducer2
+
+
+def test_build_config_different_caching():
     """Test that different BuildConfigs create different cached objects."""
     num_items = 100
     dtype = np.uint32
@@ -114,6 +181,10 @@ def test_build_config_caching():
     # Create two different BuildConfigs
     config1 = BuildConfig(extra_compile_flags=["-lineinfo"])
     config2 = BuildConfig(extra_compile_flags=["-g"])
+
+    # These should not be equal and should have different hashes
+    assert config1 != config2
+    assert hash(config1) != hash(config2)
 
     # Create two reducers with different configs
     reducer1 = cuda.compute.make_reduce_into(

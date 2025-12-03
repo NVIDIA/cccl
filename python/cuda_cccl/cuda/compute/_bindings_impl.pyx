@@ -850,37 +850,63 @@ cdef class BuildConfig:
         self.encoded_include_dirs = []
         memset(&self.build_config_data, 0, sizeof(cccl_build_config))
 
-        if extra_compile_flags is not None:
-            if not isinstance(extra_compile_flags, list):
-                raise TypeError("extra_compile_flags must be a list of strings")
-            self.encoded_compile_flags = [flag.encode("utf-8") for flag in extra_compile_flags]
-            if len(self.encoded_compile_flags) > 0:
-                self.c_extra_compile_flags = <const char**>malloc(len(self.encoded_compile_flags) * sizeof(char*))
-                if self.c_extra_compile_flags == NULL:
-                    raise MemoryError("Failed to allocate memory for compile flags")
-                for i, flag in enumerate(self.encoded_compile_flags):
-                    self.c_extra_compile_flags[i] = <const char*>flag
-                self.build_config_data.extra_compile_flags = self.c_extra_compile_flags
-                self.build_config_data.num_extra_compile_flags = len(self.encoded_compile_flags)
+        try:
+            if extra_compile_flags is not None:
+                if not isinstance(extra_compile_flags, list):
+                    raise TypeError("extra_compile_flags must be a list of strings")
+                self.encoded_compile_flags = [flag.encode("utf-8") for flag in extra_compile_flags]
+                if len(self.encoded_compile_flags) > 0:
+                    self.c_extra_compile_flags = <const char**>malloc(len(self.encoded_compile_flags) * sizeof(char*))
+                    if self.c_extra_compile_flags == NULL:
+                        raise MemoryError("Failed to allocate memory for compile flags")
+                    for i, flag in enumerate(self.encoded_compile_flags):
+                        self.c_extra_compile_flags[i] = <const char*>flag
+                    self.build_config_data.extra_compile_flags = self.c_extra_compile_flags
+                    self.build_config_data.num_extra_compile_flags = len(self.encoded_compile_flags)
 
-        if extra_include_dirs is not None:
-            if not isinstance(extra_include_dirs, list):
-                raise TypeError("extra_include_dirs must be a list of strings")
-            self.encoded_include_dirs = [dir.encode("utf-8") for dir in extra_include_dirs]
-            if len(self.encoded_include_dirs) > 0:
-                self.c_extra_include_dirs = <const char**>malloc(len(self.encoded_include_dirs) * sizeof(char*))
-                if self.c_extra_include_dirs == NULL:
-                    raise MemoryError("Failed to allocate memory for include dirs")
-                for i, dir in enumerate(self.encoded_include_dirs):
-                    self.c_extra_include_dirs[i] = <const char*>dir
-                self.build_config_data.extra_include_dirs = self.c_extra_include_dirs
-                self.build_config_data.num_extra_include_dirs = len(self.encoded_include_dirs)
+            if extra_include_dirs is not None:
+                if not isinstance(extra_include_dirs, list):
+                    raise TypeError("extra_include_dirs must be a list of strings")
+                self.encoded_include_dirs = [dir.encode("utf-8") for dir in extra_include_dirs]
+                if len(self.encoded_include_dirs) > 0:
+                    self.c_extra_include_dirs = <const char**>malloc(len(self.encoded_include_dirs) * sizeof(char*))
+                    if self.c_extra_include_dirs == NULL:
+                        raise MemoryError("Failed to allocate memory for include dirs")
+                    for i, dir in enumerate(self.encoded_include_dirs):
+                        self.c_extra_include_dirs[i] = <const char*>dir
+                    self.build_config_data.extra_include_dirs = self.c_extra_include_dirs
+                    self.build_config_data.num_extra_include_dirs = len(self.encoded_include_dirs)
+        except:
+            # Clean up any allocated memory on error
+            if self.c_extra_compile_flags != NULL:
+                free(self.c_extra_compile_flags)
+                self.c_extra_compile_flags = NULL
+            if self.c_extra_include_dirs != NULL:
+                free(self.c_extra_include_dirs)
+                self.c_extra_include_dirs = NULL
+            raise
 
     def __dealloc__(self):
         if self.c_extra_compile_flags != NULL:
             free(self.c_extra_compile_flags)
         if self.c_extra_include_dirs != NULL:
             free(self.c_extra_include_dirs)
+
+    def __eq__(self, other):
+        if not isinstance(other, BuildConfig):
+            return False
+        # Decode bytes back to strings for comparison
+        self_flags = [flag.decode('utf-8') for flag in self.encoded_compile_flags]
+        other_flags = [flag.decode('utf-8') for flag in other.encoded_compile_flags]
+        self_dirs = [dir.decode('utf-8') for dir in self.encoded_include_dirs]
+        other_dirs = [dir.decode('utf-8') for dir in other.encoded_include_dirs]
+        return self_flags == other_flags and self_dirs == other_dirs
+
+    def __hash__(self):
+        # Hash based on the configuration values
+        flags_tuple = tuple(flag.decode('utf-8') for flag in self.encoded_compile_flags)
+        dirs_tuple = tuple(dir.decode('utf-8') for dir in self.encoded_include_dirs)
+        return hash((flags_tuple, dirs_tuple))
 
     cdef cccl_build_config* get_config_ptr(self):
         return &self.build_config_data

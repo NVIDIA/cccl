@@ -118,12 +118,8 @@ def make_cache_key(
         op_key = CachableFunction(op)
     h_init_key = h_init.dtype
     # Include build_config in the cache key if present
-    # We use a tuple representation of the config
-    config_key = None
-    if build_config is not None:
-        # Since build_config is a Cython object, we can't directly use it in cache key
-        # We'll use id(build_config) to distinguish different configs
-        config_key = id(build_config)
+    # Since BuildConfig now implements __hash__, we can use it directly
+    config_key = None if build_config is None else hash(build_config)
     return (d_in_key, d_out_key, op_key, h_init_key, config_key)
 
 

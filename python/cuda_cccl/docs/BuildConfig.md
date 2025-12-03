@@ -121,6 +121,7 @@ The Python bindings expose this functionality through the `BuildConfig` class, w
 1. Wraps the C `cccl_build_config` struct
 2. Manages memory for the compile flags and include directories
 3. Is passed through the algorithm build pipeline
+4. Implements equality and hashing based on configuration values
 
 ### Caching
 
@@ -128,9 +129,18 @@ Build results are cached based on:
 - Input/output types
 - Operation type
 - Initial value type
-- **BuildConfig identity** (using `id(build_config)`)
+- **BuildConfig content** (using hash of configuration values)
 
-This means that using the same `BuildConfig` object will use cached kernels, while different `BuildConfig` objects will trigger new compilations even if they have the same flags.
+This means that `BuildConfig` objects with identical flags and include directories will share cached kernels, even if they are different Python objects. For example:
+
+```python
+config1 = BuildConfig(extra_compile_flags=["-fmad=true"])
+config2 = BuildConfig(extra_compile_flags=["-fmad=true"])
+
+# These will use the same cached kernel
+reducer1 = make_reduce_into(..., build_config=config1)
+reducer2 = make_reduce_into(..., build_config=config2)  # Uses cached build
+```
 
 ## Supported Algorithms
 
