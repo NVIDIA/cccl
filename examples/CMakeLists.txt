@@ -15,8 +15,6 @@
 
 enable_language(CUDA) # Ensure that CUDA compiler vars are defined
 
-string(REPLACE ";" "\\\;" arches_escaped "${CMAKE_CUDA_ARCHITECTURES}")
-
 set(
   cmake_opts
   "-DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}"
@@ -24,7 +22,7 @@ set(
   "-DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}"
   "-DCMAKE_CUDA_COMPILER=${CMAKE_CUDA_COMPILER}"
   "-DCMAKE_CUDA_HOST_COMPILER=${CMAKE_CUDA_HOST_COMPILER}"
-  "-DCMAKE_CUDA_ARCHITECTURES=${arches_escaped}"
+  "-DCMAKE_CUDA_ARCHITECTURES=75"
 )
 
 set(
@@ -38,6 +36,12 @@ set(
   "HEAD"
   CACHE STRING
   "Git tag/branch used for CPM examples."
+)
+set(
+  CCCL_EXAMPLE_CTEST_COMMAND
+  "${CMAKE_CTEST_COMMAND}"
+  CACHE STRING
+  "CTest command used for CCCL example build-and-tests."
 )
 
 set(
@@ -56,6 +60,7 @@ cccl_add_compile_test(
   cccl.example
   basic
   "default"
+  CTEST_COMMAND "${CCCL_EXAMPLE_CTEST_COMMAND}"
   ${cmake_opts}
   ${cmake_cpm_opts}
 )
@@ -65,6 +70,7 @@ cccl_add_compile_test(
   cccl.example
   cudax
   "default"
+  CTEST_COMMAND "${CCCL_EXAMPLE_CTEST_COMMAND}"
   ${cmake_opts}
   ${cmake_cpm_opts}
 )
@@ -74,6 +80,7 @@ cccl_add_compile_test(
   cccl.example
   cudax_stf
   "default"
+  CTEST_COMMAND "${CCCL_EXAMPLE_CTEST_COMMAND}"
   ${cmake_opts}
   ${cmake_cpm_opts}
 )
@@ -84,7 +91,7 @@ foreach (DEVICE_SYSTEM IN ITEMS CUDA OMP TBB CPP)
     cccl.example
     thrust_flexible_device_system
     "${DEVICE_SYSTEM}"
-    --log-level=VERBOSE
+    CTEST_COMMAND "${CCCL_EXAMPLE_CTEST_COMMAND}"
     "-DCCCL_THRUST_DEVICE_SYSTEM=${DEVICE_SYSTEM}"
     ${cmake_opts}
     ${cmake_cpm_opts}
