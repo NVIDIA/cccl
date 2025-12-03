@@ -55,6 +55,12 @@
 #    endif // ^^^ !defined(__CUDA_ARCH_SPECIFIC__)
 #  endif // ^^^ !defined(_LIBCUDA_PTX_ARCH_SPECIFIC)
 
+#  if !defined(__CUDA_HAS_ARCH_FAMILY_SPECIFIC)
+
+#    define __CUDA_HAS_ARCH_FAMILY_SPECIFIC(N) false
+
+#  endif // !defined(__CUDA_HAS_ARCH_FAMILY_SPECIFIC)
+
 _CCCL_BEGIN_NAMESPACE_CUDA_PTX
 
 #  if _CUDA_PTX_CUDACC_MAJOR() < 13
