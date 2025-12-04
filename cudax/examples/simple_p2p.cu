@@ -130,7 +130,7 @@ void test_cross_device_access_from_kernel(
   dev1_stream.wait(dev0_stream);
 
   // Kernel launch configuration
-  auto config = cudax::distribute<512>(dev0_buffer.size());
+  auto config = cuda::distribute<512>(dev0_buffer.size());
 
   // Run kernel on GPU 1, reading input from the GPU 0 buffer, writing output to the GPU 1 buffer
   printf("Run kernel on GPU%d, taking source data from GPU%d and writing to "

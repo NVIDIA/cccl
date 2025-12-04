@@ -25,6 +25,7 @@ _CCCL_SUPPRESS_DEPRECATED_PUSH
 #include <cuda/std/__memory/allocator.h>
 _CCCL_SUPPRESS_DEPRECATED_POP
 
+#include <cuda/__launch/configuration.h>
 #include <cuda/std/__execution/env.h>
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/is_callable.h>
@@ -39,7 +40,6 @@ _CCCL_SUPPRESS_DEPRECATED_POP
 #include <cuda/experimental/__execution/stop_token.cuh>
 #include <cuda/experimental/__execution/type_traits.cuh>
 #include <cuda/experimental/__execution/utility.cuh>
-#include <cuda/experimental/__launch/configuration.cuh>
 
 #include <cuda/experimental/__execution/prologue.cuh>
 
@@ -314,14 +314,14 @@ _CCCL_GLOBAL_CONSTANT struct get_forward_progress_guarantee_t
 } get_forward_progress_guarantee{};
 
 // By default, CUDA kernels are launched with a single thread and a single block.
-using __single_threaded_config_base_t = decltype(experimental::make_config(grid_dims<1>(), block_dims<1>()));
+using __single_threaded_config_base_t = decltype(make_config(grid_dims<1>(), block_dims<1>()));
 
 // We hide the complicated type of the default launch configuration so diagnositics are
 // easier to read.
 struct __single_threaded_config_t : __single_threaded_config_base_t
 {
   _CCCL_HOST_API constexpr __single_threaded_config_t() noexcept
-      : __single_threaded_config_base_t{experimental::make_config(grid_dims<1>(), block_dims<1>())}
+      : __single_threaded_config_base_t{make_config(grid_dims<1>(), block_dims<1>())}
   {}
 };
 

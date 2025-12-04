@@ -22,6 +22,7 @@
 #endif // no system header
 
 #include <cuda/__cmath/ceil_div.h>
+#include <cuda/__launch/configuration.h>
 #include <cuda/__utility/immovable.h>
 #include <cuda/std/__concepts/arithmetic.h>
 #include <cuda/std/__concepts/same_as.h>
@@ -45,7 +46,6 @@
 #include <cuda/experimental/__execution/transform_completion_signatures.cuh>
 #include <cuda/experimental/__execution/transform_sender.cuh>
 #include <cuda/experimental/__execution/type_traits.cuh>
-#include <cuda/experimental/__launch/configuration.cuh>
 
 #include <cuda/experimental/__execution/prologue.cuh>
 
@@ -73,7 +73,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __attrs_t
   {
     constexpr int __block_threads = 256;
     const int __grid_blocks       = ::cuda::ceil_div(static_cast<int>(__shape), __block_threads);
-    return experimental::make_config(block_dims<__block_threads>(), grid_dims(__grid_blocks));
+    return make_config(block_dims<__block_threads>(), grid_dims(__grid_blocks));
   }
 
   using __launch_config_t = decltype(__get_launch_config(_Shape()));
