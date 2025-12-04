@@ -41,7 +41,8 @@ struct segmented_scan_policy_wrapper : PolicyT
 template <typename StaticPolicyT>
 struct segmented_scan_policy_wrapper<
   StaticPolicyT,
-  ::cuda::std::void_t<decltype(StaticPolicyT::segmented_scan_policy_t::load_modifier)>> : StaticPolicyT
+  ::cuda::std::void_t<decltype(StaticPolicyT::segmented_scan_policy_t::load_modifier),
+                      decltype(StaticPolicyT::segmented_scan_policy_t::segments_per_block)>> : StaticPolicyT
 {
   CUB_RUNTIME_FUNCTION segmented_scan_policy_wrapper(StaticPolicyT base)
       : StaticPolicyT(base)
@@ -55,6 +56,11 @@ struct segmented_scan_policy_wrapper<
   CUB_RUNTIME_FUNCTION static constexpr CacheLoadModifier LoadModifier()
   {
     return StaticPolicyT::segmented_scan_policy_t::load_modifier;
+  }
+
+  CUB_RUNTIME_FUNCTION static constexpr int SegmentsPerBlock()
+  {
+    return StaticPolicyT::segmented_scan_policy_t::segments_per_block;
   }
 
   CUB_RUNTIME_FUNCTION constexpr void CheckLoadModifier()
