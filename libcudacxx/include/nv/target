@@ -12,27 +12,41 @@
 // CUDA C++ development with NVC++, NVCC, and supported host compilers.
 // These interfaces are not guaranteed to be stable.
 
-#ifndef __NV_TARGET_H
-#define __NV_TARGET_H
+// If compiling with nvrtc and there is another <nv/target> in the include path and comes from newer cccl, we skip the
+// builtin header and use the newer <nv/target> instead.
+#if !defined(__NV_TARGET_H) && !defined(_NV_TARGET_SKIPPING_NVRTC_BUILTIN_HEADER)
+#  if defined(__CUDACC_RTC__) && __has_include(<cuda/std/__cccl/version.h>) && __has_include(<nv/target>)
+#    include <cuda/std/__cccl/version.h>
+#    if (CCCL_MAJOR_VERSION > (__CUDACC_VER_MAJOR__ - 10)) \
+      || (CCCL_MAJOR_VERSION == (__CUDACC_VER_MAJOR__ - 10) && CCCL_MINOR_VERSION > __CUDACC_VER_MINOR__)
+#      define _NV_TARGET_SKIPPING_NVRTC_BUILTIN_HEADER
+#      include <nv/target>
+#      undef _NV_TARGET_SKIPPING_NVRTC_BUILTIN_HEADER
+#    endif // ^^^ use <nv/target> include ^^^
+#  endif // nvrtc && cccl in include path
+#endif // !__NV_TARGET_H && !_NV_TARGET_SKIPPING_NVRTC_BUILTIN_HEADER
 
-#if defined(__NVCC__) || defined(__CUDACC_RTC__)
-#  define _NV_COMPILER_NVCC
-#elif defined(__NVCOMPILER) && __cplusplus >= 201103L
-#  define _NV_COMPILER_NVCXX
-#elif defined(__clang__) && defined(__CUDA__) && defined(__CUDA_ARCH__)
+#ifndef __NV_TARGET_H
+#  define __NV_TARGET_H
+
+#  if defined(__NVCC__) || defined(__CUDACC_RTC__)
+#    define _NV_COMPILER_NVCC
+#  elif defined(__NVCOMPILER) && __cplusplus >= 201103L
+#    define _NV_COMPILER_NVCXX
+#  elif defined(__clang__) && defined(__CUDA__) && defined(__CUDA_ARCH__)
 // clang compiling CUDA code, device mode.
-#  define _NV_COMPILER_CLANG_CUDA
-#endif
+#    define _NV_COMPILER_CLANG_CUDA
+#  endif
 
 // Hide `if target` support from NVRTC and C
 // Some toolkit headers use <nv/target> in true C contexts
-#if !defined(__CUDACC_RTC__) && defined(__cplusplus)
+#  if !defined(__CUDACC_RTC__) && defined(__cplusplus)
 
-#  if defined(_NV_COMPILER_NVCXX)
-#    define _NV_BITSET_ATTRIBUTE [[nv::__target_bitset]]
-#  else
-#    define _NV_BITSET_ATTRIBUTE
-#  endif
+#    if defined(_NV_COMPILER_NVCXX)
+#      define _NV_BITSET_ATTRIBUTE [[nv::__target_bitset]]
+#    else
+#      define _NV_BITSET_ATTRIBUTE
+#    endif
 
 namespace nv::target
 {
@@ -234,8 +248,8 @@ using detail::is_exactly;
 using detail::provides;
 } // namespace nv::target
 
-#endif // C++  && !defined(__CUDACC_RTC__)
+#  endif // C++  && !defined(__CUDACC_RTC__)
 
-#include <nv/detail/__target_macros>
+#  include <nv/detail/__target_macros>
 
 #endif // __NV_TARGET_H
