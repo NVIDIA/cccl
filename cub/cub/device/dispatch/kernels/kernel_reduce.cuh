@@ -15,10 +15,12 @@
 
 #include <cub/agent/agent_reduce.cuh>
 #include <cub/detail/rfa.cuh>
+#include <cub/device/dispatch/tuning/tuning_reduce.cuh>
 #include <cub/grid/grid_even_share.cuh>
 
 #include <thrust/type_traits/unwrap_contiguous_iterator.h>
 
+#include <cuda/__device/arch_id.h>
 #include <cuda/atomic>
 
 CUB_NAMESPACE_BEGIN
@@ -86,8 +88,8 @@ finalize_and_store_aggregate(OutputIteratorT d_out, ReductionOpT, empty_problem_
  * @brief Reduce region kernel entry point (multi-block). Computes privatized
  *        reductions, one per thread block.
  *
- * @tparam ChainedPolicyT
- *   Chained tuning policy
+ * @tparam ArchPolicies
+ *   The tuning polices
  *
  * @tparam InputIteratorT
  *   Random-access input iterator type for reading input items @iterator
@@ -121,29 +123,37 @@ finalize_and_store_aggregate(OutputIteratorT d_out, ReductionOpT, empty_problem_
  * @param[in] reduction_op
  *   Binary reduction functor
  */
-template <typename ChainedPolicyT,
+template <typename ArchPolicies,
           typename InputIteratorT,
           typename OffsetT,
           typename ReductionOpT,
           typename AccumT,
           typename TransformOpT>
-CUB_DETAIL_KERNEL_ATTRIBUTES
-__launch_bounds__(int(ChainedPolicyT::ActivePolicy::ReducePolicy::BLOCK_THREADS)) void DeviceReduceKernel(
-  _CCCL_GRID_CONSTANT const InputIteratorT d_in,
-  _CCCL_GRID_CONSTANT AccumT* const d_out,
-  _CCCL_GRID_CONSTANT const OffsetT num_items,
-  GridEvenShare<OffsetT> even_share,
-  ReductionOpT reduction_op,
-  TransformOpT transform_op)
+#if _CCCL_HAS_CONCEPTS()
+  requires reduce_policy_hub<ArchPolicies>
+#endif // _CCCL_HAS_CONCEPTS()
+CUB_DETAIL_KERNEL_ATTRIBUTES __launch_bounds__(int(
+  ArchPolicies{}(::cuda::arch_id{CUB_PTX_ARCH / 10})
+    .reduce_policy.block_threads)) void DeviceReduceKernel(InputIteratorT d_in,
+                                                           AccumT* d_out,
+                                                           OffsetT num_items,
+                                                           GridEvenShare<OffsetT> even_share,
+                                                           ReductionOpT reduction_op,
+                                                           TransformOpT transform_op)
 {
+  static constexpr agent_reduce_policy policy = ArchPolicies{}(::cuda::arch_id{CUB_PTX_ARCH / 10}).reduce_policy;
+  // TODO(bgruber): pass policy directly as template argument to AgentReduce in C++20
+  using agent_policy_t =
+    AgentReducePolicy<policy.block_threads,
+                      policy.items_per_thread,
+                      AccumT,
+                      policy.vector_load_length,
+                      policy.block_algorithm,
+                      policy.load_modifier,
+                      NoScaling<policy.block_threads, policy.items_per_thread, AccumT>>;
+
   // Thread block type for reducing input tiles
-  using AgentReduceT =
-    AgentReduce<typename ChainedPolicyT::ActivePolicy::ReducePolicy,
-                InputIteratorT,
-                OffsetT,
-                ReductionOpT,
-                AccumT,
-                TransformOpT>;
+  using AgentReduceT = AgentReduce<agent_policy_t, InputIteratorT, OffsetT, ReductionOpT, AccumT, TransformOpT>;
 
   static_assert(sizeof(typename AgentReduceT::TempStorage) <= max_smem_per_block,
                 "cub::DeviceReduce ran out of CUDA shared memory, which we judged to be extremely unlikely. Please "
@@ -167,8 +177,8 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::ReducePolicy::BLOCK_THREADS)
  *        to aggregate privatized thread block reductions from a previous
  *        multi-block reduction pass.
  *
- * @tparam ChainedPolicyT
- *   Chained tuning policy
+ * @tparam ArchPolicies
+ *   The tuning polices
  *
  * @tparam InputIteratorT
  *   Random-access input iterator type for reading input items @iterator
@@ -204,7 +214,7 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::ReducePolicy::BLOCK_THREADS)
  * @param[in] init
  *   The initial value of the reduction
  */
-template <typename ChainedPolicyT,
+template <typename ArchPolicies,
           typename InputIteratorT,
           typename OutputIteratorT,
           typename OffsetT,
@@ -212,23 +222,31 @@ template <typename ChainedPolicyT,
           typename InitT,
           typename AccumT,
           typename TransformOpT = ::cuda::std::identity>
+#if _CCCL_HAS_CONCEPTS()
+  requires reduce_policy_hub<ArchPolicies>
+#endif // _CCCL_HAS_CONCEPTS()
 CUB_DETAIL_KERNEL_ATTRIBUTES __launch_bounds__(
-  int(ChainedPolicyT::ActivePolicy::SingleTilePolicy::BLOCK_THREADS),
-  1) void DeviceReduceSingleTileKernel(_CCCL_GRID_CONSTANT const InputIteratorT d_in,
-                                       _CCCL_GRID_CONSTANT const OutputIteratorT d_out,
-                                       _CCCL_GRID_CONSTANT const OffsetT num_items,
+  int(ArchPolicies{}(::cuda::arch_id{CUB_PTX_ARCH / 10}).single_tile_policy.block_threads),
+  1) void DeviceReduceSingleTileKernel(InputIteratorT d_in,
+                                       OutputIteratorT d_out,
+                                       OffsetT num_items,
                                        ReductionOpT reduction_op,
                                        _CCCL_GRID_CONSTANT const InitT init,
                                        TransformOpT transform_op)
 {
+  static constexpr agent_reduce_policy policy = ArchPolicies{}(::cuda::arch_id{CUB_PTX_ARCH / 10}).single_tile_policy;
+  // TODO(bgruber): pass policy directly as template argument to AgentReduce in C++20
+  using agent_policy_t =
+    AgentReducePolicy<policy.block_threads,
+                      policy.items_per_thread,
+                      AccumT,
+                      policy.vector_load_length,
+                      policy.block_algorithm,
+                      policy.load_modifier,
+                      NoScaling<policy.block_threads, policy.items_per_thread, AccumT>>;
+
   // Thread block type for reducing input tiles
-  using AgentReduceT =
-    AgentReduce<typename ChainedPolicyT::ActivePolicy::SingleTilePolicy,
-                InputIteratorT,
-                OffsetT,
-                ReductionOpT,
-                AccumT,
-                TransformOpT>;
+  using AgentReduceT = AgentReduce<agent_policy_t, InputIteratorT, OffsetT, ReductionOpT, AccumT, TransformOpT>;
 
   static_assert(sizeof(typename AgentReduceT::TempStorage) <= max_smem_per_block,
                 "cub::DeviceReduce ran out of CUDA shared memory, which we judged to be extremely unlikely. Please "
@@ -488,7 +506,7 @@ CUB_DETAIL_KERNEL_ATTRIBUTES __launch_bounds__(
   }
 }
 
-template <typename ChainedPolicyT,
+template <typename ArchPolicies,
           typename InputIteratorT,
           typename OutputIteratorT,
           typename OffsetT,
@@ -496,15 +514,19 @@ template <typename ChainedPolicyT,
           typename AccumT,
           typename InitT,
           typename TransformOpT>
+#if _CCCL_HAS_CONCEPTS()
+  requires reduce_policy_hub<ArchPolicies>
+#endif // _CCCL_HAS_CONCEPTS()
 CUB_DETAIL_KERNEL_ATTRIBUTES __launch_bounds__(int(
-  ChainedPolicyT::ActivePolicy::ReduceNondeterministicPolicy::
-    BLOCK_THREADS)) void NondeterministicDeviceReduceAtomicKernel(_CCCL_GRID_CONSTANT const InputIteratorT d_in,
-                                                                  _CCCL_GRID_CONSTANT const OutputIteratorT d_out,
-                                                                  _CCCL_GRID_CONSTANT const OffsetT num_items,
-                                                                  GridEvenShare<OffsetT> even_share,
-                                                                  ReductionOpT reduction_op,
-                                                                  _CCCL_GRID_CONSTANT const InitT init,
-                                                                  TransformOpT transform_op)
+  ArchPolicies{}(::cuda::arch_id{CUB_PTX_ARCH / 10})
+    .reduce_nondeterministic_policy
+    .block_threads)) void NondeterministicDeviceReduceAtomicKernel(InputIteratorT d_in,
+                                                                   OutputIteratorT d_out,
+                                                                   OffsetT num_items,
+                                                                   GridEvenShare<OffsetT> even_share,
+                                                                   ReductionOpT reduction_op,
+                                                                   InitT init,
+                                                                   TransformOpT transform_op)
 {
   NV_IF_TARGET(NV_PROVIDES_SM_60,
                (),
@@ -526,13 +548,18 @@ CUB_DETAIL_KERNEL_ATTRIBUTES __launch_bounds__(int(
   }
 
   // Thread block type for reducing input tiles
-  using AgentReduceT =
-    AgentReduce<typename ChainedPolicyT::ActivePolicy::ReduceNondeterministicPolicy,
-                InputIteratorT,
-                OffsetT,
-                ReductionOpT,
-                AccumT,
-                TransformOpT>;
+  static constexpr agent_reduce_policy policy =
+    ArchPolicies{}(::cuda::arch_id{CUB_PTX_ARCH / 10}).reduce_nondeterministic_policy;
+  // TODO(bgruber): pass policy directly as template argument to AgentReduce in C++20
+  using agent_policy_t =
+    AgentReducePolicy<policy.block_threads,
+                      policy.items_per_thread,
+                      AccumT,
+                      policy.vector_load_length,
+                      policy.block_algorithm,
+                      policy.load_modifier,
+                      NoScaling<policy.block_threads, policy.items_per_thread, AccumT>>;
+  using AgentReduceT = AgentReduce<agent_policy_t, InputIteratorT, OffsetT, ReductionOpT, AccumT, TransformOpT>;
 
   // Shared memory storage
   __shared__ typename AgentReduceT::TempStorage temp_storage;

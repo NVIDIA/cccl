@@ -1,4 +1,12 @@
 if (TARGET cudax::cudax)
+  # In case new languages have been enabled:
+  libcudacxx_update_language_compat_flags()
+
+  include(FindPackageHandleStandardArgs)
+  if (NOT cudax_CONFIG)
+    set(cudax_CONFIG "${CMAKE_CURRENT_LIST_FILE}")
+  endif()
+  find_package_handle_standard_args(cudax CONFIG_MODE)
   return()
 endif()
 
@@ -34,21 +42,15 @@ if (NOT TARGET cudax::libcudacxx)
       ${cudax_VERSION}
       CONFIG
       ${cudax_quiet_flag}
+      REQUIRED
       NO_DEFAULT_PATH # Only check the explicit HINTS below:
       HINTS "${cudax_cmake_dir}/../libcudacxx"
     )
-
-    # A second required search allows externally packaged to be used and fails if
-    # no suitable package exists.
-    find_package(
-      libcudacxx
-      ${cudax_VERSION}
-      CONFIG
-      REQUIRED
-      ${cudax_quiet_flag}
-    )
   endif()
-  add_library(cudax::libcudacxx ALIAS libcudacxx::libcudacxx)
+  # WAR target aliasing restrictions:
+  add_library(_cudax_libcudacxx INTERFACE)
+  add_library(cudax::libcudacxx ALIAS _cudax_libcudacxx)
+  target_link_libraries(_cudax_libcudacxx INTERFACE libcudacxx::libcudacxx)
 endif()
 
 # Allow non-imported targets to be used. This treats cudax headers as non-system includes,
