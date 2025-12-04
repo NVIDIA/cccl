@@ -3,14 +3,7 @@ cmake_minimum_required(VERSION 3.21)
 project(C2H LANGUAGES CXX CUDA)
 
 cccl_get_catch2()
-
-find_package(
-  CCCL
-  CONFIG
-  REQUIRED
-  NO_DEFAULT_PATH # Only check the explicit HINTS below:
-  HINTS "${CCCL_SOURCE_DIR}/lib/cmake/cccl/"
-)
+cccl_get_cccl()
 
 find_package(CUDAToolkit)
 
@@ -33,9 +26,9 @@ target_include_directories(cccl.c2h PUBLIC "${C2H_SOURCE_DIR}/include")
 target_link_libraries(
   cccl.c2h
   PUBLIC #
+    cccl.compiler_interface
     CCCL::CCCL
     Catch2::Catch2
-    cccl.compiler_interface_cpp17
 )
 cccl_configure_target(cccl.c2h DIALECT 17)
 
