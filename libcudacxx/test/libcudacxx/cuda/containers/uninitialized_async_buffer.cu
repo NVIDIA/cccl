@@ -13,6 +13,7 @@
 #include <thrust/reduce.h>
 
 #include <cuda/__container/uninitialized_async_buffer.h>
+#include <cuda/memory_pool>
 #include <cuda/memory_resource>
 #include <cuda/std/cassert>
 #include <cuda/std/cstdint>

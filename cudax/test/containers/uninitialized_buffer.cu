@@ -12,6 +12,7 @@
 #include <thrust/fill.h>
 #include <thrust/reduce.h>
 
+#include <cuda/memory_pool>
 #include <cuda/std/cstdint>
 #include <cuda/std/functional>
 #include <cuda/std/span>
@@ -123,7 +124,7 @@ C2H_TEST_LIST("uninitialized_buffer", "[container]", char, short, int, long, lon
   {
     static_assert(!cuda::std::is_copy_assignable<uninitialized_buffer>::value, "");
     {
-      cuda::legacy_pinned_memory_resource other_resource{};
+      cuda::mr::legacy_pinned_memory_resource other_resource{};
       uninitialized_buffer input{other_resource, 42};
       uninitialized_buffer buf{resource, 1337};
       const auto* old_ptr       = buf.data();
