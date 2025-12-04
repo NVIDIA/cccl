@@ -1,5 +1,3 @@
-enable_language(CUDA)
-
 #
 # Architecture options:
 #

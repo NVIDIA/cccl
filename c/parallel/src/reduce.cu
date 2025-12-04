@@ -10,9 +10,7 @@
 
 #include <cub/detail/choose_offset.cuh>
 #include <cub/detail/launcher/cuda_driver.cuh>
-#include <cub/detail/ptx-json-parser.h>
 #include <cub/device/device_reduce.cuh>
-#include <cub/grid/grid_even_share.cuh>
 #include <cub/util_device.cuh>
 
 #include <cuda/std/algorithm>
@@ -44,29 +42,6 @@ static_assert(std::is_same_v<cub::detail::choose_offset_t<OffsetT>, OffsetT>, "O
 
 namespace reduce
 {
-struct reduce_runtime_tuning_policy
-{
-  cub::detail::RuntimeReduceAgentPolicy single_tile;
-  cub::detail::RuntimeReduceAgentPolicy reduce;
-
-  auto SingleTile() const
-  {
-    return single_tile;
-  }
-  auto Reduce() const
-  {
-    return reduce;
-  }
-
-  using MaxPolicy = reduce_runtime_tuning_policy;
-
-  template <typename F>
-  cudaError_t Invoke(int, F& op)
-  {
-    return op.template Invoke<reduce_runtime_tuning_policy>(*this);
-  }
-};
-
 static cccl_type_info get_accumulator_type(cccl_op_t /*op*/, cccl_iterator_t /*input_it*/, cccl_value_t init)
 {
   // TODO Should be decltype(op(init, *input_it)) but haven't implemented type arithmetic yet
@@ -179,7 +154,6 @@ CUresult cccl_device_reduce_build_ex(
   {
     const char* name = "device_reduce";
 
-    const int cc                 = cc_major * 10 + cc_minor;
     const cccl_type_info accum_t = reduce::get_accumulator_type(op, input_it, init);
     const auto accum_cpp         = cccl_type_enum_to_name(accum_t.type);
 
@@ -193,7 +167,43 @@ CUresult cccl_device_reduce_build_ex(
 
     const auto offset_t = cccl_type_enum_to_name(cccl_type_enum::CCCL_UINT64);
 
-    auto policy_hub_expr = std::format("cub::detail::reduce::policy_hub<{}, {}, {}>", accum_cpp, offset_t, op_name);
+    const auto cub_arch_policies = [&] {
+      using namespace cub::detail::reduce;
+
+      auto accum_type = accum_type::other;
+      if (accum_t.type == CCCL_FLOAT32)
+      {
+        accum_type = accum_type::float32;
+      }
+      else if (accum_t.type == CCCL_FLOAT64)
+      {
+        accum_type = accum_type::float64;
+      }
+
+      auto operation_t = op_type::unknown;
+      switch (op.type)
+      {
+        case CCCL_PLUS:
+          operation_t = op_type::plus;
+          break;
+        case CCCL_MINIMUM:
+        case CCCL_MAXIMUM:
+          operation_t = op_type::min_or_max;
+          break;
+        default:
+          break;
+      }
+
+      const int offset_size = int{sizeof(OffsetT)};
+      return arch_policies{accum_type, operation_t, offset_size, static_cast<int>(accum_t.size)};
+    }();
+
+    // TODO(bgruber): drop this if tuning policies become formattable
+    std::stringstream cub_arch_policies_str;
+    cub_arch_policies_str << cub_arch_policies(cuda::to_arch_id(cuda::compute_capability{cc_major, cc_minor}));
+
+    auto policy_hub_expr =
+      std::format("cub::detail::reduce::arch_policies_from_types<{}, {}, {}>", accum_cpp, offset_t, op_name);
 
     std::string final_src = std::format(
       R"XXX(
@@ -206,13 +216,10 @@ struct __align__({2}) storage_t {{
 {3}
 {4}
 {5}
-using device_reduce_policy = {6}::MaxPolicy;
-
-#include <cub/detail/ptx-json/json.h>
-__device__ consteval auto& policy_generator() {{
-  return ptx_json::id<ptx_json::string("device_reduce_policy")>()
-    = cub::detail::reduce::ReducePolicyWrapper<device_reduce_policy::ActivePolicy>::EncodedPolicy();
-}};
+using device_reduce_policy = {6};
+using namespace cub;
+using namespace cub::detail::reduce;
+static_assert(device_reduce_policy()(::cuda::arch_id{{CUB_PTX_ARCH / 10}}) == {7}, "Host generated and JIT compiled policy mismatch");
 )XXX",
       jit_template_header_contents, // 0
       input_it.value_type.size, // 1
@@ -220,7 +227,8 @@ __device__ consteval auto& policy_generator() {{
       input_iterator_src, // 3
       output_iterator_src, // 4
       op_src, // 5
-      policy_hub_expr); // 6
+      policy_hub_expr, // 6
+      cub_arch_policies_str.view()); // 7
 
 #if false // CCCL_DEBUGGING_SWITCH
     fflush(stderr);
@@ -249,7 +257,6 @@ __device__ consteval auto& policy_generator() {{
       "-rdc=true",
       "-dlto",
       "-DCUB_DISABLE_CDP",
-      "-DCUB_ENABLE_POLICY_PTX_JSON",
       "-std=c++20"};
 
     // Add user's extra flags if config is provided
@@ -286,18 +293,11 @@ __device__ consteval auto& policy_generator() {{
       &build->single_tile_second_kernel, build->library, single_tile_second_kernel_lowered_name.c_str()));
     check(cuLibraryGetKernel(&build->reduction_kernel, build->library, reduction_kernel_lowered_name.c_str()));
 
-    nlohmann::json runtime_policy =
-      cub::detail::ptx_json::parse("device_reduce_policy", {result.data.get(), result.size});
-
-    using cub::detail::RuntimeReduceAgentPolicy;
-    auto reduce_policy = RuntimeReduceAgentPolicy::from_json(runtime_policy, "ReducePolicy");
-    auto st_policy     = RuntimeReduceAgentPolicy::from_json(runtime_policy, "SingleTilePolicy");
-
-    build->cc               = cc;
+    build->cc               = cc_major * 10 + cc_minor;
     build->cubin            = (void*) result.data.release();
     build->cubin_size       = result.size;
     build->accumulator_size = accum_t.size;
-    build->runtime_policy   = new reduce::reduce_runtime_tuning_policy{st_policy, reduce_policy};
+    build->runtime_policy   = new cub::detail::reduce::arch_policies{cub_arch_policies};
   }
   catch (const std::exception& exc)
   {
@@ -330,30 +330,19 @@ CUresult cccl_device_reduce(
     CUdevice cu_device;
     check(cuCtxGetDevice(&cu_device));
 
-    auto exec_status = cub::DispatchReduce<
-      indirect_arg_t, // InputIteratorT
-      indirect_arg_t, // OutputIteratorT
-      ::cuda::std::size_t, // OffsetT
-      indirect_arg_t, // ReductionOpT
-      indirect_arg_t, // InitT
-      void, // AccumT
-      ::cuda::std::identity, // TransformOpT
-      reduce::reduce_runtime_tuning_policy, // PolicyHub
-      reduce::reduce_kernel_source, // KernelSource
-      cub::detail::CudaDriverLauncherFactory>:: // KernelLauncherFactory
-      Dispatch(
-        d_temp_storage,
-        *temp_storage_bytes,
-        d_in,
-        d_out,
-        num_items,
-        op,
-        init,
-        stream,
-        {},
-        {build},
-        cub::detail::CudaDriverLauncherFactory{cu_device, build.cc},
-        *reinterpret_cast<reduce::reduce_runtime_tuning_policy*>(build.runtime_policy));
+    auto exec_status = cub::detail::reduce::dispatch<void>(
+      d_temp_storage,
+      *temp_storage_bytes,
+      indirect_arg_t{d_in}, // could be indirect_iterator_t, but CUB does not need to increment it
+      indirect_arg_t{d_out}, // could be indirect_iterator_t, but CUB does not need to increment it
+      static_cast<OffsetT>(num_items),
+      indirect_arg_t{op},
+      indirect_arg_t{init},
+      stream,
+      ::cuda::std::identity{},
+      *static_cast<cub::detail::reduce::arch_policies*>(build.runtime_policy),
+      reduce::reduce_kernel_source{build},
+      cub::detail::CudaDriverLauncherFactory{cu_device, build.cc});
 
     error = static_cast<CUresult>(exec_status);
   }
@@ -383,8 +372,9 @@ CUresult cccl_device_reduce_cleanup(cccl_device_reduce_build_result_t* build_ptr
       return CUDA_ERROR_INVALID_VALUE;
     }
 
-    std::unique_ptr<char[]> cubin(reinterpret_cast<char*>(build_ptr->cubin));
-    std::unique_ptr<char[]> policy(reinterpret_cast<char*>(build_ptr->runtime_policy));
+    using namespace cub::detail::reduce;
+    std::unique_ptr<char[]> cubin(static_cast<char*>(build_ptr->cubin));
+    std::unique_ptr<arch_policies> policy(static_cast<arch_policies*>(build_ptr->runtime_policy));
     check(cuLibraryUnload(build_ptr->library));
   }
   catch (const std::exception& exc)

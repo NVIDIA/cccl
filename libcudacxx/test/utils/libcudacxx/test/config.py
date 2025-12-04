@@ -1049,9 +1049,13 @@ class Configuration(object):
         #    self.cxx.compile_flags += ['-nostdinc++']
         if cxx_headers is None:
             cxx_headers = os.path.join(self.libcudacxx_src_root, "include")
+            thrust_headers = os.path.join(self.libcudacxx_src_root, "../thrust/")
+            cub_headers = os.path.join(self.libcudacxx_src_root, "../cub/")
         if not os.path.isdir(cxx_headers):
             self.lit_config.fatal("cxx_headers='%s' is not a directory." % cxx_headers)
         self.cxx.compile_flags += ["-I" + cxx_headers]
+        self.cxx.compile_flags += ["-I" + thrust_headers]
+        self.cxx.compile_flags += ["-I" + cub_headers]
         if self.libcudacxx_obj_root is not None:
             cxxabi_headers = os.path.join(
                 self.libcudacxx_obj_root, "include", "c++build"

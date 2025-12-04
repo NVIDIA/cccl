@@ -26,9 +26,11 @@
 #  include <cuda_runtime_api.h>
 #endif // _CCCL_CUDA_COMPILER(CLANG)
 
-#include <cuda/__memory_resource/memory_resource_base.h>
+#include <cuda/__device/device_ref.h>
 #include <cuda/__memory_resource/properties.h>
+#include <cuda/__memory_resource/resource.h>
 #include <cuda/__runtime/api_wrapper.h>
+#include <cuda/__runtime/ensure_current_context.h>
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__exception/throw_error.h>
 
@@ -36,7 +38,7 @@
 
 //! @file
 //! The \c legacy_pinned_memory_resource class provides a memory resource that allocates pinned memory.
-_CCCL_BEGIN_NAMESPACE_CUDA
+_CCCL_BEGIN_NAMESPACE_CUDA_MR
 
 //! @brief legacy_pinned_memory_resource uses `cudaMallocHost` / `cudaFreeAsync` for allocation / deallocation.
 //! @note This memory resource will be deprecated in the future. For CUDA 12.6 and above, use
@@ -132,7 +134,7 @@ private:
 static_assert(::cuda::mr::synchronous_resource_with<legacy_pinned_memory_resource, ::cuda::mr::device_accessible>, "");
 static_assert(::cuda::mr::synchronous_resource_with<legacy_pinned_memory_resource, ::cuda::mr::host_accessible>, "");
 
-_CCCL_END_NAMESPACE_CUDA
+_CCCL_END_NAMESPACE_CUDA_MR
 
 #include <cuda/std/__cccl/epilogue.h>
 

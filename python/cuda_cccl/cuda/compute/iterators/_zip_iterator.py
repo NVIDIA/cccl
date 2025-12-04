@@ -9,6 +9,7 @@ from numba import cuda, types  # noqa: F401
 from numba.core.datamodel.registry import default_manager  # noqa: F401
 from numba.core.extending import as_numba_type, intrinsic  # noqa: F401
 
+from .._caching import cache_with_key
 from ..struct import make_struct_type
 from ._iterators import (
     IteratorBase,
@@ -49,6 +50,13 @@ def _get_zip_iterator_metadata(iterators):
     return cvalue, state_type, value_type, ZipValue
 
 
+def _make_cache_key(iterators):
+    return tuple(
+        it.kind if isinstance(it, IteratorBase) else it.dtype for it in iterators
+    )
+
+
+@cache_with_key(_make_cache_key)
 def _get_advance_and_dereference_functions(iterators):
     # Generate the advance and dereference functions for the zip iterator
     # composed of the input iterators
@@ -232,7 +240,7 @@ def make_zip_iterator(*iterators):
                 state_type=state_type,
                 value_type=value_type,
             )
-            self.kind_ = self.__class__.iterator_kind_type(
+            self._kind = self.__class__.iterator_kind_type(
                 (value_type, *kinds), self.state_type
             )
 

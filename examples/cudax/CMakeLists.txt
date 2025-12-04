@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-cmake_minimum_required(VERSION 3.15 FATAL_ERROR)
+cmake_minimum_required(VERSION 3.18 FATAL_ERROR)
 
 project(CUDAX_SAMPLES CUDA CXX)
 
@@ -58,16 +58,6 @@ target_link_libraries(cudax_samples_interface INTERFACE CCCL::CCCL CCCL::cudax)
 if ("MSVC" STREQUAL "${CMAKE_CXX_COMPILER_ID}")
   # mdspan on windows only works in C++20 mode
   target_compile_features(cudax_samples_interface INTERFACE cxx_std_20)
-
-  # Require the conforming preprocessor
-  target_compile_options(
-    cudax_samples_interface
-    INTERFACE
-      $<$<COMPILE_LANGUAGE:CXX>:/Zc:__cplusplus>
-      $<$<COMPILE_LANGUAGE:CXX>:/Zc:preprocessor>
-      $<$<COMPILE_LANG_AND_ID:CUDA,NVIDIA>:-Xcompiler=/Zc:__cplusplus>
-      $<$<COMPILE_LANG_AND_ID:CUDA,NVIDIA>:-Xcompiler=/Zc:preprocessor>
-  )
 
   if (MSVC_TOOLSET_VERSION LESS 143)
     # winbase.h(9572): warning C5105: macro expansion producing 'defined' has undefined behavior
