@@ -381,6 +381,17 @@ struct DispatchScan
     return cudaSuccess;
   }
 
+  template <typename WarpspeedPolicy, typename InputT, typename OutputT>
+  CUB_RUNTIME_FUNCTION _CCCL_HOST static constexpr auto smem_for_stages(int num_stages) -> int
+  {
+    detail::scan::SyncHandler syncHandler{};
+    detail::scan::SmemAllocator smemAllocator{};
+    (void) detail::scan::allocResources<WarpspeedPolicy, InputT, OutputT, AccumT>(
+      syncHandler, smemAllocator, num_stages);
+    syncHandler.mHasInitialized = true; // avoid assertion in destructor
+    return static_cast<int>(smemAllocator.sizeBytes());
+  }
+
 #if __cccl_ptx_isa >= 860
   template <typename ActivePolicyT>
   CUB_RUNTIME_FUNCTION _CCCL_HOST _CCCL_FORCEINLINE cudaError_t __invoke_lookahead_algorithm(ActivePolicyT = {})
@@ -426,17 +437,15 @@ struct DispatchScan
     params.numElem   = num_items;
     params.numStages = 0; // computed below, must be set to 0
 
+    // TODO(bgruber): this fires
+    // static_assert(smem_for_stages<WarpspeedPolicy, InputT, OutputT>(1) <= detail::max_smem_per_block,
+    //              "Single stage configuration exceeds architecture independent SMEM (48KiB)");
+
     // Maximize the number of stages that we can fit inside the shared memory.
     int smem_size{};
     for (params.numStages = 1; true; ++params.numStages)
     {
-      detail::scan::SyncHandler syncHandler{};
-      detail::scan::SmemAllocator smemAllocator{};
-      [[maybe_unused]] auto res =
-        detail::scan::allocResources<WarpspeedPolicy, InputT, OutputT, AccumT>(syncHandler, smemAllocator, params);
-      syncHandler.mHasInitialized = true; // avoid assertion in destructor
-
-      const auto curr_smem_size = static_cast<int>(smemAllocator.sizeBytes());
+      const auto curr_smem_size = smem_for_stages<WarpspeedPolicy, InputT, OutputT>(params.numStages);
       if (curr_smem_size > max_dynamic_smem_size)
       {
         // This number of stages failed, so use the previous number of stages instead.
