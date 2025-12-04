@@ -303,7 +303,7 @@ public:
    *
    * @param[in,out] temp_storage_bytes
    *   Reference to size in bytes of `d_temp_storage` allocation
-   *
+   :
    * @param[in] d_input_keys
    *   Pointer to the input sequence of unsorted input keys
    *
