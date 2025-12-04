@@ -100,6 +100,46 @@ _CCCL_REQUIRES(__any_castable_to<__basic_any<_SrcInterface> const*, __basic_any<
   return __dst;
 }
 
+#if _CCCL_COMPILER(GCC, <, 11)
+// Older versions of GCC have trouble deducing __basic_any<T&> from a type derived from
+// it, because __basic_any<T&> itself inherits from __basic_any<__ireference<T>>. GCC
+// cannot choose between the two base classes when deducing from a derived class.
+_CCCL_TEMPLATE(class _DstInterface, class _SrcAny)
+_CCCL_REQUIRES(__any_castable_to<typename _SrcAny::__basic_any, __basic_any<_DstInterface>>)
+[[nodiscard]] _CCCL_TRIVIAL_API auto __dynamic_any_cast(_SrcAny&& __src) -> __basic_any<_DstInterface>
+{
+  return ::cuda::__dynamic_any_cast<_DstInterface>(static_cast<typename _SrcAny::__basic_any&&>(__src));
+}
+
+_CCCL_TEMPLATE(class _DstInterface, class _SrcAny)
+_CCCL_REQUIRES(__any_castable_to<typename _SrcAny::__basic_any&, __basic_any<_DstInterface>>)
+[[nodiscard]] _CCCL_TRIVIAL_API auto __dynamic_any_cast(_SrcAny& __src) -> __basic_any<_DstInterface>
+{
+  return ::cuda::__dynamic_any_cast<_DstInterface>(static_cast<typename _SrcAny::__basic_any&>(__src));
+}
+
+_CCCL_TEMPLATE(class _DstInterface, class _SrcAny)
+_CCCL_REQUIRES(__any_castable_to<typename _SrcAny::__basic_any const&, __basic_any<_DstInterface>>)
+[[nodiscard]] _CCCL_TRIVIAL_API auto __dynamic_any_cast(_SrcAny const& __src) -> __basic_any<_DstInterface>
+{
+  return ::cuda::__dynamic_any_cast<_DstInterface>(static_cast<typename _SrcAny::__basic_any const&>(__src));
+}
+
+_CCCL_TEMPLATE(class _DstInterface, class _SrcAny)
+_CCCL_REQUIRES(__any_castable_to<typename _SrcAny::__basic_any*, __basic_any<_DstInterface>>)
+[[nodiscard]] _CCCL_TRIVIAL_API auto __dynamic_any_cast(_SrcAny* __src) -> __basic_any<_DstInterface>
+{
+  return ::cuda::__dynamic_any_cast<_DstInterface>(static_cast<typename _SrcAny::__basic_any*>(__src));
+}
+
+_CCCL_TEMPLATE(class _DstInterface, class _SrcAny)
+_CCCL_REQUIRES(__any_castable_to<typename _SrcAny::__basic_any const*, __basic_any<_DstInterface>>)
+[[nodiscard]] _CCCL_TRIVIAL_API auto __dynamic_any_cast(_SrcAny const* __src) -> __basic_any<_DstInterface>
+{
+  return ::cuda::__dynamic_any_cast<_DstInterface>(static_cast<typename _SrcAny::__basic_any const*>(__src));
+}
+#endif
+
 _CCCL_END_NAMESPACE_CUDA
 
 #include <cuda/std/__cccl/epilogue.h>
