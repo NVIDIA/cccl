@@ -8,13 +8,13 @@ int main()
 {
   constexpr std::size_t N = 1 << 16;
 
+  auto all_one = [](const int val) {
+    return val == 1;
+  };
+
   std::vector<int> in(N);
   std::vector<int> out(N);
-
-  for (std::size_t i = 0; i < N; i++)
-  {
-    in[i] = static_cast<int>(i);
-  }
+  std::iota(in.begin(), in.end(), 0);
 
   // Default op (difference)
   std::adjacent_difference(std::execution::par, in.begin(), in.end(), out.begin());
@@ -23,28 +23,18 @@ int main()
   {
     return 1;
   }
-
-  for (std::size_t i = 1; i < N; ++i)
+  if (!std::all_of(out.begin() + 1, out.end(), all_one))
   {
-    if (out[i] != 1)
-    {
-      return 1;
-    }
+    return 1;
   }
 
   // Custom binary op: sum of neighbors: out[0] = in[0]
   std::fill(out.begin(), out.end(), 0);
+  std::adjacent_difference(std::execution::par, in.begin(), in.env(), out.begin(), [](int x, int y) {
+    return x + y;
+  });
 
-  std::adjacent_difference(
-    std::execution::par,
-    in.begin(),
-    in.env(),
-    out.begin(),
-    [](int x, int y) {
-      return x + y;
-    })
-
-    if (out[0] != in[0])
+  if (out[0] != in[0])
   {
     return 1;
   }
