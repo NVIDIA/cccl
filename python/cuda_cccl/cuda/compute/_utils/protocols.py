@@ -27,7 +27,7 @@ def get_dtype(arr: DeviceArrayLike | GpuStruct | np.ndarray) -> np.dtype:
     # Try the fast path via .dtype attribute (works for np.ndarray, GpuStruct, and most device arrays)
     try:
         return np.dtype(arr.dtype)  # type: ignore
-    except AttributeError:
+    except (AttributeError, TypeError):
         pass
 
     # Fall back to __cuda_array_interface__ for DeviceArrayLike
