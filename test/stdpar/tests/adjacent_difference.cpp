@@ -30,7 +30,7 @@ int main()
 
   // Custom binary op: sum of neighbors: out[0] = in[0]
   std::fill(out.begin(), out.end(), 0);
-  std::adjacent_difference(std::execution::par, in.begin(), in.env(), out.begin(), [](int x, int y) {
+  std::adjacent_difference(std::execution::par, in.begin(), in.end(), out.begin(), [](int x, int y) {
     return x + y;
   });
 
