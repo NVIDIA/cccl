@@ -141,10 +141,10 @@ void test_empty_property_set()
   auto ref       = cuda::mr::synchronous_resource_ref<property_with_value<int>>{res};
   auto ref_empty = cuda::mr::synchronous_resource_ref<>{ref};
 
-  CHECK(try_get_property(ref, property_with_value<int>{}).value() == 42);
-  CHECK(try_get_property(ref_empty, property_with_value<int>{}).value() == 42);
-  CHECK(!try_get_property(ref, property_without_value<int>{}));
-  CHECK(!try_get_property(ref_empty, property_without_value<int>{}));
+  assert(try_get_property(ref, property_with_value<int>{}).value() == 42);
+  assert(try_get_property(ref_empty, property_with_value<int>{}).value() == 42);
+  assert(!try_get_property(ref, property_without_value<int>{}));
+  assert(!try_get_property(ref_empty, property_without_value<int>{}));
 }
 
 void test_resource_ref()
