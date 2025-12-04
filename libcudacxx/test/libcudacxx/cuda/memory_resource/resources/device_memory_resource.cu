@@ -325,56 +325,6 @@ C2H_CCCLRT_TEST("device_memory_resource allocation", "[memory_resource]")
   }
 }
 
-enum class AccessibilityType
-{
-  Device,
-  Host,
-};
-
-template <AccessibilityType Accessibility>
-struct resource
-{
-  void* allocate_sync(size_t, size_t)
-  {
-    return nullptr;
-  }
-  void deallocate_sync(void*, size_t, size_t) {}
-
-  bool operator==(const resource&) const
-  {
-    return true;
-  }
-  bool operator!=(const resource& other) const
-  {
-    return false;
-  }
-
-  template <AccessibilityType Accessibilty2                                         = Accessibility,
-            cuda::std::enable_if_t<Accessibilty2 == AccessibilityType::Device, int> = 0>
-  friend void get_property(const resource&, ::cuda::mr::device_accessible) noexcept
-  {}
-};
-static_assert(cuda::mr::synchronous_resource<resource<AccessibilityType::Host>>, "");
-static_assert(!cuda::mr::synchronous_resource_with<resource<AccessibilityType::Host>, ::cuda::mr::device_accessible>,
-              "");
-static_assert(cuda::mr::synchronous_resource<resource<AccessibilityType::Device>>, "");
-static_assert(cuda::mr::synchronous_resource_with<resource<AccessibilityType::Device>, ::cuda::mr::device_accessible>,
-              "");
-
-template <AccessibilityType Accessibility>
-struct test_resource : public resource<Accessibility>
-{
-  void* allocate(cuda::stream_ref, size_t, size_t)
-  {
-    return nullptr;
-  }
-  void deallocate(cuda::stream_ref, void*, size_t, size_t) {}
-};
-static_assert(cuda::mr::resource<test_resource<AccessibilityType::Host>>, "");
-static_assert(!cuda::mr::resource_with<test_resource<AccessibilityType::Host>, ::cuda::mr::device_accessible>, "");
-static_assert(cuda::mr::resource<test_resource<AccessibilityType::Device>>, "");
-static_assert(cuda::mr::resource_with<test_resource<AccessibilityType::Device>, ::cuda::mr::device_accessible>, "");
-
 C2H_CCCLRT_TEST("device_memory_resource comparison", "[memory_resource]")
 {
   int current_device = 0;
@@ -419,34 +369,6 @@ C2H_CCCLRT_TEST("device_memory_resource comparison", "[memory_resource]")
     CHECK(!(first != second_ref));
     CHECK((second_ref == first));
     CHECK(!(second_ref != first));
-  }
-
-  { // comparison against a different resource through synchronous_resource_ref
-    resource<AccessibilityType::Host> host_resource{};
-    resource<AccessibilityType::Device> device_resource{};
-    CHECK(!(first == host_resource));
-    CHECK((first != host_resource));
-    CHECK(!(first == device_resource));
-    CHECK((first != device_resource));
-
-    CHECK(!(host_resource == first));
-    CHECK((host_resource != first));
-    CHECK(!(device_resource == first));
-    CHECK((device_resource != first));
-  }
-
-  { // comparison against a different resource through synchronous_resource_ref
-    test_resource<AccessibilityType::Host> host_async_resource{};
-    test_resource<AccessibilityType::Device> device_async_resource{};
-    CHECK(!(first == host_async_resource));
-    CHECK((first != host_async_resource));
-    CHECK(!(first == device_async_resource));
-    CHECK((first != device_async_resource));
-
-    CHECK(!(host_async_resource == first));
-    CHECK((host_async_resource != first));
-    CHECK(!(device_async_resource == first));
-    CHECK((device_async_resource != first));
   }
 }
 

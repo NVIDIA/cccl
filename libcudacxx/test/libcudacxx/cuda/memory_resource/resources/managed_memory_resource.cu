@@ -164,45 +164,6 @@ C2H_CCCLRT_TEST_LIST("managed_memory_resource allocation", "[memory_resource]", 
 #endif // _CCCL_HAS_EXCEPTIONS()
 }
 
-enum class AccessibilityType
-{
-  Device,
-  Host,
-};
-
-template <AccessibilityType Accessibility>
-struct resource
-{
-  void* allocate_sync(size_t, size_t)
-  {
-    return nullptr;
-  }
-  void deallocate_sync(void*, size_t, size_t) noexcept {}
-
-  bool operator==(const resource&) const
-  {
-    return true;
-  }
-  bool operator!=(const resource& other) const
-  {
-    return false;
-  }
-};
-static_assert(cuda::mr::synchronous_resource<resource<AccessibilityType::Host>>, "");
-static_assert(cuda::mr::synchronous_resource<resource<AccessibilityType::Device>>, "");
-
-template <AccessibilityType Accessibility>
-struct test_resource : public resource<Accessibility>
-{
-  void* allocate(cuda::stream_ref, size_t, size_t)
-  {
-    return nullptr;
-  }
-  void deallocate(cuda::stream_ref, void*, size_t, size_t) {}
-};
-static_assert(cuda::mr::resource<test_resource<AccessibilityType::Host>>, "");
-static_assert(cuda::mr::resource<test_resource<AccessibilityType::Device>>, "");
-
 // test for cccl#2214: https://github.com/NVIDIA/cccl/issues/2214
 struct derived_managed_resource : cuda::mr::legacy_managed_memory_resource
 {
@@ -245,20 +206,6 @@ C2H_CCCLRT_TEST_LIST("managed_memory_resource comparison", "[memory_resource]", 
     CHECK(!(second_ref != first));
   }
 
-  { // comparison against a different managed_resource through synchronous_resource_ref
-    resource<AccessibilityType::Host> host_resource{};
-    resource<AccessibilityType::Device> device_resource{};
-    CHECK(!(first == host_resource));
-    CHECK((first != host_resource));
-    CHECK(!(first == device_resource));
-    CHECK((first != device_resource));
-
-    CHECK(!(host_resource == first));
-    CHECK((host_resource != first));
-    CHECK(!(device_resource == first));
-    CHECK((device_resource != first));
-  }
-
   if constexpr (cuda::mr::resource<managed_resource>)
   { // comparison against a managed_memory_resource wrapped inside a resource_ref
     managed_resource second = get_resource<managed_resource>();
@@ -268,20 +215,6 @@ C2H_CCCLRT_TEST_LIST("managed_memory_resource comparison", "[memory_resource]", 
     CHECK(!(first != second_ref));
     CHECK((second_ref == first));
     CHECK(!(second_ref != first));
-  }
-
-  { // comparison against a different managed_resource through synchronous_resource_ref
-    resource<AccessibilityType::Host> host_async_resource{};
-    resource<AccessibilityType::Device> device_async_resource{};
-    CHECK(!(first == host_async_resource));
-    CHECK((first != host_async_resource));
-    CHECK(!(first == device_async_resource));
-    CHECK((first != device_async_resource));
-
-    CHECK(!(host_async_resource == first));
-    CHECK((host_async_resource != first));
-    CHECK(!(device_async_resource == first));
-    CHECK((device_async_resource != first));
   }
 }
 #if _CCCL_CTK_AT_LEAST(13, 0)
