@@ -8,6 +8,7 @@
 #include <thrust/tabulate.h>
 
 #include <cuda/std/__functional/invoke.h>
+#include <cuda/std/type_traits>
 
 #include <nvbench_helper.cuh>
 
@@ -65,7 +66,11 @@ struct policy_hub_t
 };
 #else
 
-template <typename AccumT, int SegmentsPerBlock>
+template <typename ComputeT, int NumSegmentsPerBlock>
+using segmented_scan_compute_t =
+  ::cuda::std::conditional_t<NumSegmentsPerBlock == 1, ComputeT, ::cuda::std::tuple<bool, ComputeT>>;
+
+template <typename AccumT, int SegmentsPerBlock, int ItemsPerThread>
 struct user_policy_hub_t
 {
   template <int Nominal4ByteBlockThreads,
@@ -85,7 +90,9 @@ struct user_policy_hub_t
     StoreAlgorithm,
     ScanAlgorithm,
     _SegmentsPerBlock,
-    cub::detail::MemBoundScaling<Nominal4ByteBlockThreads, Nominal4ByteItemsPerThread, ComputeT>>;
+    cub::detail::MemBoundScaling<Nominal4ByteBlockThreads,
+                                 Nominal4ByteItemsPerThread,
+                                 segmented_scan_compute_t<ComputeT, SegmentsPerBlock>>>;
 
   using base_policy_t =
     typename cub::detail::segmented_scan::policy_hub<void, void, AccumT, void, void>::MaxPolicy::segmented_scan_policy_t;
@@ -94,7 +101,7 @@ struct user_policy_hub_t
   {
     using segmented_scan_policy_t =
       agent_policy_t<128,
-                     8 - ::cuda::std::min(7, SegmentsPerBlock),
+                     ItemsPerThread + 1 - ::cuda::std::min(ItemsPerThread, SegmentsPerBlock),
                      AccumT,
                      base_policy_t::load_algorithm,
                      base_policy_t::load_modifier,
@@ -120,9 +127,11 @@ struct to_offsets_functor
   }
 };
 
-template <typename T, typename OffsetT, int segments_per_block>
-static void basic(nvbench::state& state,
-                  nvbench::type_list<T, OffsetT, std::integral_constant<int, segments_per_block>>)
+template <typename T, typename OffsetT, int segments_per_block, int items_per_thread>
+static void basic(
+  nvbench::state& state,
+  nvbench::
+    type_list<T, OffsetT, std::integral_constant<int, segments_per_block>, std::integral_constant<int, items_per_thread>>)
 {
   using init_t         = T;
   using wrapped_init_t = cub::detail::InputValue<init_t>;
@@ -143,7 +152,7 @@ static void basic(nvbench::state& state,
     op_t,
     wrapped_init_t,
     accum_t,
-    cub::ForceInclusive::No,
+    cub::ForceInclusive::Yes,
     offset_t,
     policy_t>;
 #else
@@ -156,9 +165,9 @@ static void basic(nvbench::state& state,
     op_t,
     wrapped_init_t,
     accum_t,
-    cub::ForceInclusive::No,
+    cub::ForceInclusive::Yes,
     offset_t,
-    user_policy_hub_t<accum_t, segments_per_block>>;
+    user_policy_hub_t<accum_t, segments_per_block, items_per_thread>>;
 #endif
 
   const auto elements     = static_cast<offset_t>(state.get_int64("Elements{io}"));
@@ -229,8 +238,19 @@ using segments_per_block =
                      std::integral_constant<int, 8>,
                      std::integral_constant<int, 16>>;
 
-NVBENCH_BENCH_TYPES(basic, NVBENCH_TYPE_AXES(bench_types, offset_types, segments_per_block))
+using itps =
+  nvbench::type_list<std::integral_constant<int, 15>,
+                     std::integral_constant<int, 13>,
+                     std::integral_constant<int, 11>,
+                     std::integral_constant<int, 9>,
+                     std::integral_constant<int, 7>,
+                     std::integral_constant<int, 5>,
+                     std::integral_constant<int, 4>,
+                     std::integral_constant<int, 3>,
+                     std::integral_constant<int, 1>>;
+
+NVBENCH_BENCH_TYPES(basic, NVBENCH_TYPE_AXES(bench_types, offset_types, segments_per_block, itps))
   .set_name("base")
-  .set_type_axes_names({"T{ct}", "OffsetT{ct}", "SegmentsPerBlock{ct}"})
+  .set_type_axes_names({"T{ct}", "OffsetT{ct}", "SegmentsPerBlock{ct}", "ItemsPerThread{ct}"})
   .add_int64_power_of_two_axis("Elements{io}", nvbench::range(18, 26, 4))
   .add_int64_axis("SegmentSize{io}", {51, 123, 233, 513, 1337, 4417});
