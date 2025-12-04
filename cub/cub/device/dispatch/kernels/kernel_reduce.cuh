@@ -134,9 +134,9 @@ template <typename ArchPolicies,
 #endif // _CCCL_HAS_CONCEPTS()
 CUB_DETAIL_KERNEL_ATTRIBUTES __launch_bounds__(int(
   ArchPolicies{}(::cuda::arch_id{CUB_PTX_ARCH / 10})
-    .reduce_policy.block_threads)) void DeviceReduceKernel(InputIteratorT d_in,
-                                                           AccumT* d_out,
-                                                           OffsetT num_items,
+    .reduce_policy.block_threads)) void DeviceReduceKernel(_CCCL_GRID_CONSTANT const InputIteratorT d_in,
+                                                           _CCCL_GRID_CONSTANT AccumT* const d_out,
+                                                           _CCCL_GRID_CONSTANT const OffsetT num_items,
                                                            GridEvenShare<OffsetT> even_share,
                                                            ReductionOpT reduction_op,
                                                            TransformOpT transform_op)
@@ -227,9 +227,9 @@ template <typename ArchPolicies,
 #endif // _CCCL_HAS_CONCEPTS()
 CUB_DETAIL_KERNEL_ATTRIBUTES __launch_bounds__(
   int(ArchPolicies{}(::cuda::arch_id{CUB_PTX_ARCH / 10}).single_tile_policy.block_threads),
-  1) void DeviceReduceSingleTileKernel(InputIteratorT d_in,
-                                       OutputIteratorT d_out,
-                                       OffsetT num_items,
+  1) void DeviceReduceSingleTileKernel(_CCCL_GRID_CONSTANT const InputIteratorT d_in,
+                                       _CCCL_GRID_CONSTANT const OutputIteratorT d_out,
+                                       _CCCL_GRID_CONSTANT const OffsetT num_items,
                                        ReductionOpT reduction_op,
                                        _CCCL_GRID_CONSTANT const InitT init,
                                        TransformOpT transform_op)
@@ -520,12 +520,12 @@ template <typename ArchPolicies,
 CUB_DETAIL_KERNEL_ATTRIBUTES __launch_bounds__(int(
   ArchPolicies{}(::cuda::arch_id{CUB_PTX_ARCH / 10})
     .reduce_nondeterministic_policy
-    .block_threads)) void NondeterministicDeviceReduceAtomicKernel(InputIteratorT d_in,
-                                                                   OutputIteratorT d_out,
-                                                                   OffsetT num_items,
+    .block_threads)) void NondeterministicDeviceReduceAtomicKernel(_CCCL_GRID_CONSTANT const InputIteratorT d_in,
+                                                                   _CCCL_GRID_CONSTANT const OutputIteratorT d_out,
+                                                                   _CCCL_GRID_CONSTANT const OffsetT num_items,
                                                                    GridEvenShare<OffsetT> even_share,
                                                                    ReductionOpT reduction_op,
-                                                                   InitT init,
+                                                                   _CCCL_GRID_CONSTANT const InitT init,
                                                                    TransformOpT transform_op)
 {
   NV_IF_TARGET(NV_PROVIDES_SM_60,
