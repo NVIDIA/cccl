@@ -10,7 +10,7 @@
 
 #include <cub/detail/choose_offset.cuh>
 #include <cub/detail/launcher/cuda_driver.cuh>
-#include <cub/detail/ptx-json-parser.h>
+#include <cub/detail/ptx-json-parser.cuh>
 #include <cub/device/device_merge_sort.cuh>
 
 #include <format>
@@ -324,7 +324,7 @@ struct device_merge_sort_vsmem_helper {{
   }};
 }};
 
-#include <cub/detail/ptx-json/json.h>
+#include <cub/detail/ptx-json/json.cuh>
 __device__ consteval auto& policy_generator() {{
   return ptx_json::id<ptx_json::string("device_merge_sort_policy")>()
     = cub::detail::merge_sort::MergeSortPolicyWrapper<device_merge_sort_policy::ActivePolicy>::EncodedPolicy();
