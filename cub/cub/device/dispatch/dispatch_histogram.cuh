@@ -51,7 +51,13 @@ CUB_NAMESPACE_BEGIN
 
 namespace detail::histogram
 {
-template <int NUM_CHANNELS, int NUM_ACTIVE_CHANNELS, typename SampleIteratorT, typename CounterT, typename OffsetT>
+template <int NUM_CHANNELS,
+          int NUM_ACTIVE_CHANNELS,
+          typename SampleIteratorT,
+          typename CounterT,
+          typename LevelT,
+          typename OffsetT,
+          typename SampleT>
 struct DeviceHistogramKernelSource
 {
   // We define this differently than the other kernel getters because there are
@@ -81,6 +87,23 @@ struct DeviceHistogramKernelSource
   CUB_RUNTIME_FUNCTION static constexpr size_t CounterSize()
   {
     return sizeof(CounterT);
+  }
+
+  CUB_RUNTIME_FUNCTION static constexpr bool MayOverflow(int num_bins, LevelT max_level, LevelT min_level)
+  {
+    using CommonT = typename detail::histogram::Transforms<LevelT, OffsetT, SampleT>::ScaleTransform::CommonT;
+    using IntArithmeticT =
+      typename detail::histogram::Transforms<LevelT, OffsetT, SampleT>::ScaleTransform::IntArithmeticT;
+
+    if constexpr (::cuda::std::is_integral_v<CommonT>)
+    {
+      return static_cast<IntArithmeticT>(max_level - min_level)
+           > (::cuda::std::numeric_limits<IntArithmeticT>::max() / static_cast<IntArithmeticT>(num_bins));
+    }
+    else
+    {
+      return false;
+    }
   }
 };
 
@@ -330,18 +353,19 @@ struct dispatch_histogram
  *   Implementation detail, do not specify directly, requirements on the
  *   content of this type are subject to breaking change.
  */
-template <int NUM_CHANNELS,
-          int NUM_ACTIVE_CHANNELS,
-          typename SampleIteratorT,
-          typename CounterT,
-          typename LevelT,
-          typename OffsetT,
-          typename PolicyHub    = void, // if user passes a custom Policy this should not be void
-          typename KernelSource = detail::histogram::
-            DeviceHistogramKernelSource<NUM_CHANNELS, NUM_ACTIVE_CHANNELS, SampleIteratorT, CounterT, OffsetT>,
-          typename KernelLauncherFactory = CUB_DETAIL_DEFAULT_KERNEL_LAUNCHER_FACTORY,
-          typename SampleT = cub::detail::it_value_t<SampleIteratorT>, /// The sample value type of the input iterator
-          typename TransformsT = detail::histogram::Transforms<LevelT, OffsetT, SampleT>>
+template <
+  int NUM_CHANNELS,
+  int NUM_ACTIVE_CHANNELS,
+  typename SampleIteratorT,
+  typename CounterT,
+  typename LevelT,
+  typename OffsetT,
+  typename PolicyHub    = void, // if user passes a custom Policy this should not be void
+  typename SampleT      = cub::detail::it_value_t<SampleIteratorT>, /// The sample value type of the input iterator
+  typename TransformsT  = detail::histogram::Transforms<LevelT, OffsetT, SampleT>,
+  typename KernelSource = detail::histogram::
+    DeviceHistogramKernelSource<NUM_CHANNELS, NUM_ACTIVE_CHANNELS, SampleIteratorT, CounterT, LevelT, OffsetT, SampleT>,
+  typename KernelLauncherFactory = CUB_DETAIL_DEFAULT_KERNEL_LAUNCHER_FACTORY>
 struct DispatchHistogram
 {
   static_assert(NUM_CHANNELS <= 4, "Histograms only support up to 4 channels");
@@ -770,9 +794,8 @@ public:
 
       for (int channel = 0; channel < NUM_ACTIVE_CHANNELS; ++channel)
       {
-        error = CubDebug(
-          privatized_decode_op[channel].Init(num_output_levels[channel], upper_level[channel], lower_level[channel]));
-        if (error != cudaSuccess)
+        int num_levels = num_output_levels[channel];
+        if (kernel_source.MayOverflow(num_levels - 1, upper_level[channel], lower_level[channel]))
         {
           // Make sure to also return a reasonable value for `temp_storage_bytes` in case of
           // an overflow of the bin computation, in which case a subsequent algorithm
@@ -781,12 +804,14 @@ public:
           {
             temp_storage_bytes = 1U;
           }
-          return error;
+          return cudaErrorInvalidValue;
         }
 
-        if (num_output_levels[channel] > max_levels)
+        privatized_decode_op[channel].Init(num_levels, upper_level[channel], lower_level[channel]);
+
+        if (num_levels > max_levels)
         {
-          max_levels = num_output_levels[channel];
+          max_levels = num_levels;
         }
       }
       int max_num_output_bins = max_levels - 1;

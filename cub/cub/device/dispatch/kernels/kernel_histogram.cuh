@@ -77,7 +77,6 @@ struct Transforms
   // Scales samples to evenly-spaced bins
   struct ScaleTransform
   {
-  private:
     using CommonT = ::cuda::std::common_type_t<LevelT, SampleT>;
     static_assert(::cuda::std::is_convertible_v<CommonT, int>,
                   "The common type of `LevelT` and `SampleT` must be "
@@ -86,14 +85,6 @@ struct Transforms
                   "The common type of `LevelT` and `SampleT` must be "
                   "trivially copyable.");
 
-// We currently don't have a way to get sizeof(SampleT) from c.parallel, so we just default to large sizes
-#ifdef CCCL_C_EXPERIMENTAL
-#  if _CCCL_HAS_INT128()
-    using IntArithmeticT = __uint128_t;
-#  else
-    using IntArithmeticT = uint64_t;
-#  endif
-#else
     // An arithmetic type that's used for bin computation of integral types, guaranteed to not
     // overflow for (max_level - min_level) * scale.fraction.bins. Since we drop invalid samples
     // of less than min_level, (sample - min_level) is guaranteed to be non-negative. We use the
@@ -103,18 +94,18 @@ struct Transforms
     using IntArithmeticT = ::cuda::std::_If< //
       sizeof(SampleT) + sizeof(CommonT) <= sizeof(uint32_t), //
       uint32_t, //
-#  if _CCCL_HAS_INT128()
+#if _CCCL_HAS_INT128()
       ::cuda::std::_If< //
         (::cuda::std::is_same_v<CommonT, __int128_t> || //
          ::cuda::std::is_same_v<CommonT, __uint128_t>), //
         CommonT, //
         uint64_t> //
-#  else // ^^^ _CCCL_HAS_INT128() ^^^ / vvv !_CCCL_HAS_INT128() vvv
+#else // ^^^ _CCCL_HAS_INT128() ^^^ / vvv !_CCCL_HAS_INT128() vvv
       uint64_t
-#  endif // !_CCCL_HAS_INT128()
+#endif // !_CCCL_HAS_INT128()
       >;
-#endif // CCCL_C_EXPERIMENTAL
 
+  private:
     // Alias template that excludes __[u]int128 from the integral types
     template <typename T>
     using is_integral_excl_int128 =
@@ -239,38 +230,14 @@ struct Transforms
     }
 #endif // _CCCL_HAS_NVFP16()
 
-    //! @brief Returns true if the bin computation for a given combination of range `(max_level - min_level)` and number
-    //! of bins may overflow.
-    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE bool MayOverflow([[maybe_unused]] CommonT num_bins)
-    {
-      if constexpr (::cuda::std::is_integral_v<CommonT>)
-      {
-        return static_cast<IntArithmeticT>(m_max - m_min)
-             > (::cuda::std::numeric_limits<IntArithmeticT>::max() / static_cast<IntArithmeticT>(num_bins));
-      }
-      else
-      {
-        return false;
-      }
-    }
-
   public:
     //! @brief Initializes the ScaleTransform for the given parameters
-    //! @return cudaErrorInvalidValue if the ScaleTransform for the given values may overflow,
-    //! cudaSuccess otherwise
-    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE cudaError_t Init(int num_levels, LevelT max_level, LevelT min_level)
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE void Init(int num_levels, LevelT max_level, LevelT min_level)
     {
       m_max = static_cast<CommonT>(max_level);
       m_min = static_cast<CommonT>(min_level);
 
-      // Check whether accurate bin computation for an integral sample type may overflow
-      if (MayOverflow(static_cast<CommonT>(num_levels - 1)))
-      {
-        return cudaErrorInvalidValue;
-      }
-
       m_scale = this->ComputeScale(num_levels, m_max, m_min);
-      return cudaSuccess;
     }
 
     // Method for converting samples to bin-ids
