@@ -38,6 +38,7 @@ _CCCL_DIAG_POP
 #  include <cuda/std/__iterator/distance.h>
 #  include <cuda/std/__iterator/iterator_traits.h>
 #  include <cuda/std/__memory/addressof.h>
+#  include <cuda/std/__memory/construct_at.h>
 #  include <cuda/std/__new/bad_alloc.h>
 #  include <cuda/std/__numeric/reduce.h>
 #  include <cuda/std/__pstl/dispatch.h>
@@ -55,38 +56,75 @@ _CCCL_BEGIN_NAMESPACE_ARCH_DEPENDENT
 template <>
 struct __pstl_dispatch<__pstl_algorithm::__reduce, __execution_backend::__cuda>
 {
+  //! Ensures we properly deallocate the memory allocated for the result
+  template <class _Tp>
+  struct __allocation_guard
+  {
+    //! This helper struct ensures that we can properly assign types with a nontrivial assignment operator
+    struct __construct_result
+    {
+      _Tp* __ptr_;
+
+      _CCCL_HOST_API __construct_result(_Tp* __ptr = nullptr) noexcept
+          : __ptr_(__ptr)
+      {}
+
+      template <class _Index, class _Up>
+      _CCCL_DEVICE_API void operator()(_Index, _Up&& __value)
+      {
+        ::cuda::std::__construct_at(__ptr_, ::cuda::std::forward<_Up>(__value));
+      }
+    };
+
+    _Tp* __ptr_;
+
+    _CCCL_HOST_API __allocation_guard()
+        : __ptr_(nullptr)
+    {
+      _CCCL_TRY_CUDA_API(
+        ::cudaMalloc, "__pstl_cuda_reduce: allocation failed", reinterpret_cast<void**>(&__ptr_), sizeof(_Tp));
+    }
+
+    _CCCL_HOST_API ~__allocation_guard()
+    {
+      _CCCL_TRY_CUDA_API(::cudaFree, "__pstl_cuda_reduce: deallocate failed", __ptr_);
+    }
+
+    [[nodiscard]] _CCCL_HOST_API auto __get_result_iter()
+    {
+      return ::cuda::tabulate_output_iterator{__construct_result{__ptr_}};
+    }
+  };
+
   template <class _Policy, class _Iter, class _Tp, class _BinaryOp>
   [[nodiscard]] _CCCL_HOST_API static _Tp
   __par_impl(_Policy __policy, _Iter __first, _Iter __last, _Tp __init, _BinaryOp __func)
   {
-    // Allocate memory for result
-    _Tp* __device_ret_ptr = nullptr;
-
-    _CCCL_TRY_CUDA_API(
-      ::cudaMalloc, "__pstl_cuda_reduce: allocation failed", reinterpret_cast<void**>(&__device_ret_ptr), sizeof(_Tp));
-
-    const auto __count = ::cuda::std::distance(__first, __last);
     _Tp __ret;
 
-    _CCCL_TRY_CUDA_API(
-      ::cub::DeviceReduce::Reduce,
-      "__pstl_cuda_reduce: cub::DeviceReduce::Reduce failed",
-      ::cuda::std::move(__first),
-      __device_ret_ptr,
-      __count,
-      ::cuda::std::move(__func),
-      ::cuda::std::move(__init),
-      ::cuda::std::move(__policy));
+    {
+      // Allocate memory for result
+      __allocation_guard<_Tp> __guard{};
 
-    _CCCL_TRY_CUDA_API(
-      ::cudaMemcpy,
-      "__pstl_cuda_reduce: copy of result from device to host failed",
-      ::cuda::std::addressof(__ret),
-      __device_ret_ptr,
-      sizeof(_Tp),
-      ::cudaMemcpyDeviceToHost);
+      const auto __count = ::cuda::std::distance(__first, __last);
+      _CCCL_TRY_CUDA_API(
+        ::cub::DeviceReduce::Reduce,
+        "__pstl_cuda_reduce: cub::DeviceReduce::Reduce failed",
+        ::cuda::std::move(__first),
+        __guard.__get_result_iter(),
+        __count,
+        ::cuda::std::move(__func),
+        ::cuda::std::move(__init),
+        ::cuda::std::move(__policy));
 
-    _CCCL_TRY_CUDA_API(::cudaFree, "__pstl_cuda_reduce: deallocate failed", __device_ret_ptr);
+      _CCCL_TRY_CUDA_API(
+        ::cudaMemcpy,
+        "__pstl_cuda_reduce: copy of result from device to host failed",
+        ::cuda::std::addressof(__ret),
+        __guard.__ptr_,
+        sizeof(_Tp),
+        ::cudaMemcpyDeviceToHost);
+    }
 
     return __ret;
   }
