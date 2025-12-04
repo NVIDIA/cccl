@@ -21,39 +21,6 @@ workflows:
   #       args: '--preset libcudacxx --lit-tests "cuda/utility/basic_any.pass.cpp"' }
   #
   override:
-  # pull_request_lite:
-    # libcudacxx - Specialized, testing default SM
-    - {project: 'libcudacxx', jobs: ['test'], std: 'max', cxx: ['gcc', 'msvc'], gpu: 'rtx2080', sm: 'gpu'}
-    - {project: 'libcudacxx', jobs: ['build'], std: 'max', cxx: 'clang'}
-    - {project: 'libcudacxx', jobs: ['build'], std: 'max', ctk: 'nvhpc', cxx: 'nvhpc'}
-    - {project: 'libcudacxx', jobs: ['build'], std: 'max', cudacxx: 'clang', ctk: 'clang-cuda', cxx: 'clang-cuda', sm: '70;80;90;100'}
-    - {project: 'libcudacxx', jobs: ['nvrtc'], std: 'max', gpu: 'rtx2080', sm: 'gpu'}
-    - {project: 'libcudacxx', jobs: ['verify_codegen']}
-    # CUB - Specialized, testing default SM
-    - {project: 'cub', jobs: ['test_nolid', 'test_lid0'], std: 'max', cxx: ['gcc', 'msvc'], gpu: 'rtxa6000', sm: 'gpu', cmake_options: '-DCUB_ENABLE_LAUNCH_VARIANTS=OFF'}
-    - {project: 'cub', jobs: ['build'], std: 'max', cxx: 'clang', cmake_options: '-DCUB_ENABLE_LAUNCH_VARIANTS=OFF'}
-    - {project: 'cub', jobs: ['build'], std: 'max', ctk: 'nvhpc', cxx: 'nvhpc', cmake_options: '-DCUB_ENABLE_LAUNCH_VARIANTS=OFF'}
-    - {project: 'cub', jobs: ['build'], std: 'max', cudacxx: 'clang', ctk: 'clang-cuda', cxx: 'clang-cuda', sm: '75;80;90;100', cmake_options: '-DCUB_ENABLE_LAUNCH_VARIANTS=OFF'}
-    # Thrust - Keep number of sm small. Kernel coverage is in CUB. This just tests dispatch / glue in lite mode:
-    - {project: 'thrust', jobs: ['test'], std: 'max', cxx: ['gcc', 'msvc'], gpu: 'rtx4090', sm: 'gpu'}
-    - {project: 'thrust', jobs: ['build'], std: 'max', cxx: 'clang', sm: '75;120'}
-    - {project: 'thrust', jobs: ['build'], std: 'max', ctk: 'nvhpc', cxx: 'nvhpc', sm: '75;120'}
-    - {project: 'thrust', jobs: ['build'], std: 'max', cudacxx: 'clang', ctk: 'clang-cuda', cxx: 'clang-cuda', sm: '75;100'}
-    # cudax
-    - {project: 'cudax', jobs: ['test'], std: 'max', cxx: ['gcc', 'msvc'], gpu: 'rtx2080', sm: 'gpu'}
-    - {project: 'cudax', jobs: ['build'], std: 'max', cxx: 'clang', sm: '75;120'}
-    - {project: 'cudax', jobs: ['build'], std: 'max', ctk: 'nvhpc', cxx: 'nvhpc', sm: '75;120'}
-    # stdpar
-    - {project: 'stdpar', jobs: ['build'], std: 'max', ctk: 'nvhpc', cxx: 'nvhpc'}
-    # Python + support
-    - {project: 'cccl_c_parallel', jobs: ['test'], ctk: '13.X', cxx: ['gcc13', 'msvc'], gpu: 'rtx2080', sm: 'gpu'}
-    - {project: 'cccl_c_stf',      jobs: ['test'], ctk: '13.X', cxx: 'gcc13',           gpu: 'rtx2080', sm: 'gpu'}
-    - {project: 'python', jobs: ['test'], ctk: '13.X', py_version: '3.13', gpu: 'l4', cxx: ['gcc13', 'msvc']}
-    # Packaging / install
-    - {project: 'packaging', jobs: ['test'], ctk: '13.X', cxx: ['gcc', 'clang'], gpu: 'rtx2080', sm: 'gpu'}
-    - {project: 'packaging', jobs: ['install']}
-    # NVBench Helper testing:
-    - {project: 'nvbench_helper', jobs: ['test'], ctk: '13.X', cxx: ['gcc', 'clang'], gpu: 'rtx2080'}
 
   pull_request:
     # Old CTK: Oldest/newest supported host compilers:
