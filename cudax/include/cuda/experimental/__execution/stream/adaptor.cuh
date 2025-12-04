@@ -411,7 +411,7 @@ _CCCL_API constexpr auto __adapt(_Sndr&& __sndr, _GetStream __get_stream) noexce
 } // namespace __stream
 
 template <class _Sndr, class _GetStream>
-inline constexpr size_t structured_binding_size<__stream::__sndr_t<_Sndr, _GetStream>> = 3;
+inline constexpr int structured_binding_size<__stream::__sndr_t<_Sndr, _GetStream>> = 3;
 } // namespace cuda::experimental::execution
 
 _CCCL_DIAG_POP
