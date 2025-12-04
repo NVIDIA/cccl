@@ -6,7 +6,7 @@
 #include <cub/device/device_reduce.cuh>
 
 #include <cuda/__device/all_devices.h>
-#include <cuda/__memory_resource/device_memory_pool.h>
+#include <cuda/__memory_pool/device_memory_pool.h>
 
 #include <nvbench_helper.cuh>
 
