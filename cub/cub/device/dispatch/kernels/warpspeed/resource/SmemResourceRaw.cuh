@@ -21,6 +21,7 @@
 #include <cuda/__ptx/instructions/mbarrier_arrive.h>
 #include <cuda/__ptx/instructions/mbarrier_wait.h>
 #include <cuda/__ptx/ptx_dot_variants.h>
+#include <cuda/std/__type_traits/is_constant_evaluated.h>
 #include <cuda/std/cstdint>
 
 CUB_NAMESPACE_BEGIN
@@ -38,29 +39,33 @@ struct SmemResourceRaw
   int mSizeBytes;
   int mStride;
   int mStageCount;
-  int mNumPhases;
+  int mNumPhases = 0;
 
-  uint64_t* mPtrBar[mMaxNumPhases];
-  int mParity[mMaxNumPhases];
+  uint64_t* mPtrBar[mMaxNumPhases]{};
+  int mParity[mMaxNumPhases]{};
 
-  _CCCL_API
-  SmemResourceRaw(SyncHandler& syncHandler, void* ptrBase, int sizeBytes, int strideBytes, int stageCount) noexcept
+  _CCCL_API constexpr SmemResourceRaw(
+    SyncHandler& syncHandler, void* ptrBase, int sizeBytes, int strideBytes, int stageCount) noexcept
       : mResourceHandle(syncHandler.registerResource(stageCount))
-      , mPtrBase((uint8_t*) ptrBase)
+      , mPtrBase(nullptr)
       , mSizeBytes(sizeBytes)
       , mStride(strideBytes)
       , mStageCount(stageCount)
-      , mNumPhases(0)
   {
+    // we don't need the pointer during constant evaluation (and casting is not allowed)
+    if (!::cuda::std::is_constant_evaluated())
+    {
+      mPtrBase = static_cast<uint8_t*>(ptrBase);
+    }
+
     for (int pi = 0; pi < mMaxNumPhases; ++pi)
     {
-      mPtrBar[pi] = nullptr;
       mParity[pi] = pi == 0 ? 1 : 0;
     }
   }
 
   template <int numSquads>
-  _CCCL_API void addPhase(SyncHandler& syncHandler, uint64_t* ptrBarrier, const SquadDesc (&squads)[numSquads])
+  _CCCL_API constexpr void addPhase(SyncHandler& syncHandler, uint64_t* ptrBarrier, const SquadDesc (&squads)[numSquads])
   {
     int numOwningThreads = squadCountThreads(squads);
 
@@ -72,10 +77,16 @@ struct SmemResourceRaw
   }
 
   template <int numSquads>
-  _CCCL_API void addPhase(SyncHandler& syncHandler, SmemAllocator& smemAllocator, const SquadDesc (&squads)[numSquads])
+  _CCCL_API constexpr void
+  addPhase(SyncHandler& syncHandler, SmemAllocator& smemAllocator, const SquadDesc (&squads)[numSquads])
   {
-    uint64_t* ptrBar =
-      reinterpret_cast<uint64_t*>(smemAllocator.alloc(mStageCount * sizeof(uint64_t), alignof(uint64_t)));
+    void* ptrBar_raw = smemAllocator.alloc(mStageCount * sizeof(uint64_t), alignof(uint64_t));
+    // we don't need the pointer during constant evaluation (and casting is not allowed)
+    uint64_t* ptrBar = nullptr;
+    if (!::cuda::std::is_constant_evaluated())
+    {
+      ptrBar = static_cast<uint64_t*>(ptrBar_raw);
+    }
     addPhase(syncHandler, ptrBar, squads);
   }
 
@@ -85,7 +96,7 @@ struct SmemResourceRaw
     addPhase(syncHandler, ptrBarrier, squads);
   }
 
-  _CCCL_API void addPhase(SyncHandler& syncHandler, SmemAllocator& smemAllocator, const SquadDesc& squad)
+  _CCCL_API constexpr void addPhase(SyncHandler& syncHandler, SmemAllocator& smemAllocator, const SquadDesc& squad)
   {
     const SquadDesc squads[] = {squad};
     addPhase(syncHandler, smemAllocator, squads);

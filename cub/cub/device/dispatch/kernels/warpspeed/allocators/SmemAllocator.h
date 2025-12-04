@@ -14,6 +14,7 @@
 
 #include <cub/device/dispatch/kernels/warpspeed/optimizeSmemPtr.cuh>
 
+#include <cuda/std/__type_traits/is_constant_evaluated.h>
 #include <cuda/std/cstdint>
 
 #include <nv/target>
@@ -27,11 +28,19 @@ struct SmemAllocator
   uint32_t mPtrSmem32 = 0;
   int mAllocatedSize  = 0;
 
-  _CCCL_API SmemAllocator()
+  _CCCL_API constexpr SmemAllocator()
   {
-    NV_IF_TARGET(NV_IS_DEVICE,
-                 (extern __shared__ char warpSpeedDynamicSmemBase[];
-                  mPtrSmem32 = __cvta_generic_to_shared(warpSpeedDynamicSmemBase);))
+    // we only need the real pointer at runtime in device code
+    if (!::cuda::std::is_constant_evaluated())
+    {
+      NV_IF_TARGET(NV_IS_DEVICE, mPtrSmem32 = dynamic_smem_base();)
+    }
+  }
+
+  [[nodiscard]] _CCCL_DEVICE_API static uint32_t dynamic_smem_base() noexcept
+  {
+    extern __shared__ char warpSpeedDynamicSmemBase[];
+    return __cvta_generic_to_shared(warpSpeedDynamicSmemBase);
   }
 
   // SmemAllocator is a non-copyable, non-movable type. It must be passed by
@@ -41,7 +50,7 @@ struct SmemAllocator
   SmemAllocator& operator=(const SmemAllocator&)  = delete; // Delete copy assignment
   SmemAllocator& operator=(const SmemAllocator&&) = delete; // Delete move assignment
 
-  [[nodiscard]] _CCCL_API void* alloc(uint32_t size, uint32_t align = 0)
+  [[nodiscard]] _CCCL_API constexpr void* alloc(uint32_t size, uint32_t align = 0)
   {
     // Align mPtrSmem32 to requested alignment (round-up)
     uint32_t ptrAllocation32 = (mPtrSmem32 + (align - 1)) & ~(align - 1);
@@ -50,17 +59,21 @@ struct SmemAllocator
     mAllocatedSize += size + ptrAllocation32 - mPtrSmem32;
     mPtrSmem32 = ptrAllocation32 + size;
 
-    NV_IF_ELSE_TARGET(
-      NV_IS_DEVICE,
-      (
-        // Convert allocated smem address to generic pointer
-        void* mPtrAllocation = __cvta_shared_to_generic(ptrAllocation32);
-        // Ensure alignment calculation does not move down into rest of kernel code.
-        return optimizeSmemPtr(mPtrAllocation);),
-      (return nullptr;))
+    // we only need the pointer at runtime in device code
+    if (!::cuda::std::is_constant_evaluated())
+    {
+      NV_IF_TARGET(
+        NV_IS_DEVICE,
+        (
+          // Convert allocated smem address to generic pointer
+          void* mPtrAllocation = __cvta_shared_to_generic(ptrAllocation32);
+          // Ensure alignment calculation does not move down into rest of kernel code.
+          return optimizeSmemPtr(mPtrAllocation);))
+    }
+    return nullptr;
   }
 
-  [[nodiscard]] _CCCL_API uint32_t sizeBytes() const
+  [[nodiscard]] _CCCL_API constexpr uint32_t sizeBytes() const
   {
     return mAllocatedSize;
   }
