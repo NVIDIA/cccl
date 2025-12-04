@@ -301,13 +301,13 @@ workflows:
   # This is just used to ensure that we generate devcontainers for all images we build.
   # These do not map to any actual jobs.
   devcontainers:
-    - {jobs: ['dc'],     ctk: ['12.0', '12.9'        ], cxx: ['clang14']}
-    - {jobs: ['dc'],     ctk: ['12.0', '12.9'        ], cxx: ['gcc7', 'gcc8', 'gcc9', 'gcc10']}
-    - {jobs: ['dc'],     ctk: ['12.0', '12.9', '13.0'], cxx: ['gcc11', 'gcc12']}
-    - {jobs: ['dc'],     ctk: [        '12.9', '13.0'], cxx: ['gcc13', 'gcc14']}
+    - {jobs: ['dc'],     ctk: ['12.0', '12.X'                ], cxx: ['clang14']}
+    - {jobs: ['dc'],     ctk: ['12.0', '12.X'                ], cxx: ['gcc7', 'gcc8', 'gcc9', 'gcc10']}
+    - {jobs: ['dc'],     ctk: ['12.0', '12.X', '13.0', '13.X'], cxx: ['gcc11', 'gcc12']}
+    - {jobs: ['dc'],     ctk: [        '12.X', '13.0', '13.X'], cxx: ['gcc13', 'gcc14']}
     # Clang20+CTK12.9 is currently only used for cuda-clang testing. nvcc 12.9 doesn't support clang20.
-    - {jobs: ['dc'],     ctk: [        '12.9', '13.0'], cxx: ['clang15', 'clang16', 'clang17', 'clang18', 'clang19', 'clang20']}
-    - {jobs: ['dc_ext'], ctk: [        '12.9', '13.0'], cxx: ['gcc14', 'clang20']}
+    - {jobs: ['dc'],     ctk: [        '12.X', '13.0', '13.X'], cxx: ['clang15', 'clang16', 'clang17', 'clang18', 'clang19', 'clang20']}
+    - {jobs: ['dc_ext'], ctk: [        '12.X', '13.0', '13.X'], cxx: ['gcc14', 'clang20']}
     # 12.0 python image, pinned at gcc13 for simplicity. CTK 12.0 doesn't really play nice with gcc13, but
     # that doesn't matter for running python tests.
     - {jobs: ['dc'], ctk: ['12.0'], cxx: 'gcc13'}
@@ -327,7 +327,7 @@ workflows:
 
 
 # The version of the devcontainer images to use from https://hub.docker.com/r/rapidsai/devcontainers
-devcontainer_version: '25.12'
+devcontainer_version: '26.02'
 
 # Compiler versions used for the cuda99.X internal builds:
 cuda99_gcc_version: 14
