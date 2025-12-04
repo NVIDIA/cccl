@@ -1,14 +1,16 @@
-// SPDX-FileCopyrightText: Copyright (c) 2025, NVIDIA CORPORATION. All rights reserved.
-// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+// SPDX-FileCopyrightText: Copyright (c) 2025, NVIDIA CORPORATION. All rights reserved. SPDX-License-Identifier:
+// Apache-2.0 WITH LLVM-exception
 
 //! @file
-//! cub::DeviceTopK provides device-wide, parallel operations for finding the K largest (or smallest) items
-//! from sequences of unordered data items residing within device-accessible memory.
+//! cub::DeviceTopK provides device-wide, parallel operations for finding the K largest (or smallest) items from
+//! sequences of unordered data items residing within device-accessible memory.
 
 #pragma once
 
 #include <cub/config.cuh>
 
+#include "cub/block/block_store.cuh"
+#include "cuda/__iterator/counting_iterator.h"
 #include "cuda/std/__limits/numeric_limits.h"
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
@@ -30,16 +32,42 @@
 #include <thrust/system/cuda/detail/core/triple_chevron_launch.h>
 
 #include <cuda/cmath>
+#include <cuda/std/cstdint>
+#include <cuda/std/limits>
 
 CUB_NAMESPACE_BEGIN
 
 namespace detail::topk
 {
+// ------------ Helper to create segment iterators ------------
 
-#include <cuda/std/cstdint>
-#include <cuda/std/limits>
+template <typename SegmentSizeT, typename ItT>
+struct segment_index_to_offset_op
+{
+  ItT base_ptr;
+  SegmentSizeT segment_size;
 
-#include <type_traits>
+  template <typename SegmentIndexT>
+  _CCCL_HOST_DEVICE ItT operator()(SegmentIndexT segment_index)
+  {
+    return base_ptr + (segment_index * segment_size);
+  }
+};
+
+template <typename SegmentIndexT, typename SegmentSizeT, typename ItT>
+auto make_segment_iterator(ItT raw_ptr, SegmentSizeT segment_size)
+{
+  auto counting_it = ::cuda::make_counting_iterator(SegmentIndexT{0});
+
+  // We transform that count into a pointer
+  segment_index_to_offset_op<SegmentSizeT, ItT> functor{raw_ptr, segment_size};
+
+  return cuda::make_transform_iterator(counting_it, functor);
+}
+
+// -----------------------------------------------------------------------------
+// [PARAMETER MIXINS AND HELPERS]
+// -----------------------------------------------------------------------------
 
 // Allows constraining static bounds for parameters
 template <typename T, T Min = ::cuda::std::numeric_limits<T>::min(), T Max = ::cuda::std::numeric_limits<T>::max()>
@@ -53,6 +81,40 @@ struct static_bounds_mixin
   // Indicates that there's only one possible value
   static constexpr bool is_exact = (Min == Max);
 };
+
+template <typename T, T... Options>
+struct supported_options
+{
+  static constexpr size_t count = sizeof...(Options);
+};
+
+// Helper to peel the supported_values pack
+template <typename T, T... Opts, typename Param, typename Functor>
+_CCCL_HOST_DEVICE void dispatch_impl(Param p, supported_options<T, Opts...>, Functor&& f)
+{
+  // Fold expression over the supported options.
+  // This generates code equivalent to:
+  // if (p.value == Opt1) f(integral_constant<Opt1>);
+  // else if (p.value == Opt2) f(integral_constant<Opt2>);
+  // ...
+
+  bool match_found = ((p.value == Opts ? (f(::cuda::std::integral_constant<T, Opts>{}), true) : false) || ...);
+
+  // Optional: Handling cases where the runtime value was not in the supported
+  // list. In a release build, we assume the user respected the contract.
+  // (void)match_found;
+}
+
+template <typename Param, typename Functor>
+_CCCL_HOST_DEVICE void dispatch_discrete(Param p, Functor&& f)
+{
+  using supported_list = typename Param::supported_options_t;
+  dispatch_impl(p, supported_list{}, ::cuda::std::forward<Functor>(f));
+}
+
+// -----------------------------------------------------------------------------
+// [FUNDAMENTAL PARAMETER TYPES]
+// -----------------------------------------------------------------------------
 
 struct tag_static
 {};
@@ -68,19 +130,38 @@ struct static_constant_param : public static_bounds_mixin<T, Value, Value>
   using value_type = T;
   using param_tag  = tag_static;
 };
-
-// Runtime value applicable to all segments
-template <typename T, T Min, T Max>
+// -----------------------------------------------------------------------------
+// 1. Uniform Param
+// -----------------------------------------------------------------------------
+// Added default template args so CTAD can deduce T and default Min/Max
+template <typename T, T Min = ::cuda::std::numeric_limits<T>::min(), T Max = ::cuda::std::numeric_limits<T>::max()>
 struct uniform_param : public static_bounds_mixin<T, Min, Max>
 {
   using value_type = T;
   using param_tag  = tag_uniform;
 
   T value;
+
+  _CCCL_HOST_DEVICE constexpr uniform_param(T v)
+      : value(v)
+  {}
+
+  uniform_param() = default;
 };
 
-// Per-segment value (provided by an iterator)
-template <typename IteratorT, typename T, T Min, T Max>
+// Deduction Guide:
+// Allows: uniform_param{5} -> uniform_param<int, INT_MIN, INT_MAX>
+template <typename T>
+uniform_param(T) -> uniform_param<T>;
+
+// -----------------------------------------------------------------------------
+// 2. Per-Segment Param
+// -----------------------------------------------------------------------------
+// Added defaults for T, Min, and Max based on the Iterator's value_type
+template <typename IteratorT,
+          typename T = typename ::cuda::std::iterator_traits<IteratorT>::value_type,
+          T Min      = ::cuda::std::numeric_limits<T>::min(),
+          T Max      = ::cuda::std::numeric_limits<T>::max()>
 struct per_segment_param : public static_bounds_mixin<T, Min, Max>
 {
   using iterator_type = IteratorT;
@@ -90,63 +171,72 @@ struct per_segment_param : public static_bounds_mixin<T, Min, Max>
   IteratorT iterator;
   T min_value = Min;
   T max_value = Max;
+
+  // Constructor 1: Implicit bounds (from template args)
+  _CCCL_HOST_DEVICE constexpr per_segment_param(IteratorT iter)
+      : iterator(iter)
+  {}
+
+  // Constructor 2: Explicit runtime bounds
+  _CCCL_HOST_DEVICE constexpr per_segment_param(IteratorT iter, T min_v, T max_v)
+      : iterator(iter)
+      , min_value(min_v)
+      , max_value(max_v)
+  {}
+
+  per_segment_param() = default;
 };
 
+// Deduction Guide:
+// Allows: per_segment_param{iter} -> per_segment_param<IteratorT, ValueT, Min,
+// Max>
+template <typename IteratorT>
+per_segment_param(IteratorT) -> per_segment_param<IteratorT>;
 
-template<typename T, T... Options>
-struct supported_options
-{
-  static constexpr size_t count = sizeof...(Options);
-};
-
-// Runtime value (from a discrete set of values) applicable to all segments
+// -----------------------------------------------------------------------------
+// 3. Uniform Discrete Param
+// -----------------------------------------------------------------------------
+// Note: CTAD is not provided for Options... because specific integer values
+// cannot be deduced from a runtime constructor argument.
 template <typename T, T... Options>
 struct uniform_discrete_param
 {
-  using value_type = T;
-  using param_tag  = tag_uniform;
+  using value_type          = T;
+  using param_tag           = tag_uniform;
   using supported_options_t = supported_options<T, Options...>;
 
   T value;
+
+  _CCCL_HOST_DEVICE constexpr uniform_discrete_param(T v)
+      : value(v)
+  {}
+
+  uniform_discrete_param() = default;
 };
 
-// Per-segment value (provided by an iterator) of discrete values
+// -----------------------------------------------------------------------------
+// 4. Per-Segment Discrete Param
+// -----------------------------------------------------------------------------
 template <typename IteratorT, typename T, T... Options>
 struct per_segment_discrete_param
 {
-  using iterator_type = IteratorT;
-  using value_type    = T;
-  using param_tag     = tag_per_segment;
+  using iterator_type       = IteratorT;
+  using value_type          = T;
+  using param_tag           = tag_per_segment;
   using supported_options_t = supported_options<T, Options...>;
 
   IteratorT iterator;
+
+  _CCCL_HOST_DEVICE constexpr per_segment_discrete_param(IteratorT iter)
+      : iterator(iter)
+  {}
+
+  per_segment_discrete_param() = default;
 };
 
-
-// Helper to peel the supported_values pack
-template <typename T, T... Opts, typename Param, typename Functor>
-_CCCL_HOST_DEVICE
-void dispatch_impl(Param p, supported_options<T, Opts...>, Functor&& f) {
-    
-    // Fold expression over the supported options.
-    // This generates code equivalent to:
-    // if (p.value == Opt1) f(integral_constant<Opt1>);
-    // else if (p.value == Opt2) f(integral_constant<Opt2>);
-    // ...
-    
-    bool match_found = ((p.value == Opts ? (f(::cuda::std::integral_constant<T, Opts>{}), true) : false) || ...);
-    
-    // Optional: Handling cases where the runtime value was not in the supported list.
-    // In a release build, we assume the user respected the contract.
-    // (void)match_found; 
-}
-
-template <typename Param, typename Functor>
-_CCCL_HOST_DEVICE
-void dispatch_discrete(Param p, Functor&& f) {
-    using supported_list = typename Param::supported_options_t;
-    dispatch_impl(p, supported_list{}, ::cuda::std::forward<Functor>(f));
-}
+// -----------------------------------------------------------------------------
+// [PARAMETER TYPE TRAITS AND HELPERS]
+// -----------------------------------------------------------------------------
 
 template <typename T>
 using is_static_param = ::cuda::std::is_same<typename T::param_tag, tag_static>;
@@ -166,30 +256,33 @@ using is_per_segment_param = ::cuda::std::is_same<typename T::param_tag, tag_per
 template <typename T>
 inline constexpr bool is_per_segment_param_v = is_per_segment_param<T>::value;
 
-// Helper function to statically determine if a parameter always is below a given threshold
+// Helper function to statically determine if a parameter always is below a
+// given threshold
 template <typename ParamT, typename T>
 constexpr _CCCL_HOST_DEVICE bool max_le(const ParamT&, T threshold)
 {
-  return ParamT::max_value <= threshold;
+  return ParamT::static_max_value <= threshold;
 }
 
-// Helper function to statically determine if a parameter always is above a given threshold
+// Helper function to statically determine if a parameter always is above a
+// given threshold
 template <typename ParamT, typename T>
 constexpr _CCCL_HOST_DEVICE bool min_ge(const ParamT&, T threshold)
 {
-  return ParamT::min_value >= threshold;
+  return ParamT::static_min_value >= threshold;
 }
 
 // Get max value (works for all types inheriting bounds_mixin)
 template <typename T>
-inline constexpr auto static_max_value_v = T::max_value;
+inline constexpr auto static_max_value_v = T::static_max_value;
 
 // Get min value
 template <typename T>
-inline constexpr auto static_min_value_v = T::min_value;
+inline constexpr auto static_min_value_v = T::static_min_value;
 
+//! Resolve parameter value for a given segment index
 template <typename ParamT, typename SegmentIndexT>
-constexpr _CCCL_HOST_DEVICE auto resolve_param(ParamT const& p, SegmentIndexT segment_id)
+constexpr _CCCL_HOST_DEVICE auto resolve_param(ParamT const& p, [[maybe_unused]] SegmentIndexT segment_id)
 {
   if constexpr (is_static_param_v<ParamT>)
   {
@@ -209,86 +302,78 @@ constexpr _CCCL_HOST_DEVICE auto resolve_param(ParamT const& p, SegmentIndexT se
   }
 }
 
+// -----------------------------------------------------------------------------
+// [ALGORITHM-SPECIFIC PARAMETER TYPES]
+// -----------------------------------------------------------------------------
+
+// ------------ SELECTION DIRECTION PARAMETER TYPES ------------
+
 // Selection direction known at compile time, same value applies to all segments
 template <select SelectDirection>
-struct select_direction_static
-{
-  static constexpr select select_direction = SelectDirection;
-};
+using select_direction_static = uniform_discrete_param<select, SelectDirection>;
 
 // Selection direction is a runtime value, same value applies to all segments
-struct select_direction_uniform
-{
-  select select_direction;
-};
+using select_direction_uniform = uniform_discrete_param<select, select::max, select::min>;
 
 // Per-segment selection direction via iterator
-template <typename SelectionDirectionIt>
-struct select_direction_per_segment
-{
-  SelectionDirectionIt select_directions;
-};
+template <typename SelectionDirectionIt, select... SelectDirectionOptions>
+using select_direction_per_segment =
+  per_segment_discrete_param<SelectionDirectionIt, select, SelectDirectionOptions...>;
+
+// ------------ SEGMENT SIZE PARAMETER TYPES ------------
 
 // Segment size known at compile time, same value applies to all segments
 template <::cuda::std::int64_t SegmentSize>
-struct segment_size_static
-{
-  static constexpr ::cuda::std::int64_t segment_size = SegmentSize;
-};
+using segment_size_static = static_constant_param<::cuda::std::int64_t, SegmentSize>;
 
 // Segment size is a runtime value, same value applies to all segments
-template <::cuda::std::int64_t MaxSegmentSize = ::cuda::std::numeric_limits<::cuda::std::int64_t>::max(),
-          ::cuda::std::int64_t MinSegmentSize = 0>
-struct segment_size_uniform
-{
-  ::cuda::std::int64_t value;
-  static constexpr ::cuda::std::int64_t min_segment_size = MinSegmentSize;
-  static constexpr ::cuda::std::int64_t max_segment_size = MaxSegmentSize;
-};
+template <::cuda::std::int64_t MinSegmentSize = 0,
+          ::cuda::std::int64_t MaxSegmentSize = ::cuda::std::numeric_limits<::cuda::std::int64_t>::max()>
+using segment_size_uniform = uniform_param<::cuda::std::int64_t, MinSegmentSize, MaxSegmentSize>;
 
 // Segment size via iterator
 template <typename SegmentSizesItT,
-          ::cuda::std::int64_t MaxSegmentSize = ::cuda::std::numeric_limits<::cuda::std::int64_t>::max(),
-          ::cuda::std::int64_t MinSegmentSize = 0>
-struct segment_size_per_segment
-{
-  SegmentSizesItT segment_size_it;
-  static constexpr ::cuda::std::int64_t min_segment_size = MinSegmentSize;
-  static constexpr ::cuda::std::int64_t max_segment_size = MaxSegmentSize;
-};
+          ::cuda::std::int64_t MinSegmentSize = 1,
+          ::cuda::std::int64_t MaxSegmentSize = ::cuda::std::numeric_limits<::cuda::std::int64_t>::max()>
+using segment_size_per_segment =
+  per_segment_param<SegmentSizesItT, ::cuda::std::int64_t, MinSegmentSize, MaxSegmentSize>;
+
+// ------------ K PARAMETER TYPES ------------
 
 // K known at compile time, same value applies to all segments
 template <::cuda::std::int64_t StaticK>
-struct k_static
-{
-  static constexpr ::cuda::std::int64_t K = StaticK;
-};
+using k_static = static_constant_param<::cuda::std::int64_t, StaticK>;
 
 // K is a runtime value, same value applies to all segments
-template <::cuda::std::int64_t MaxK = ::cuda::std::numeric_limits<::cuda::std::int64_t>::max(),
-          ::cuda::std::int64_t MinK = 1>
-struct k_uniform
-{
-  static constexpr ::cuda::std::int64_t min_k = MinK;
-  static constexpr ::cuda::std::int64_t max_k = MaxK;
-
-  ::cuda::std::int64_t value;
-};
+template <::cuda::std::int64_t MinK = 1,
+          ::cuda::std::int64_t MaxK = ::cuda::std::numeric_limits<::cuda::std::int64_t>::max()>
+struct k_uniform : public uniform_param<::cuda::std::int64_t, MinK, MaxK>
+{};
 
 // K via iterator
-// TODO (elstehle): should we consider moving the iterator template parameter the end, as it may be implicit from CTAD?
 template <typename KItT,
-          ::cuda::std::int64_t MaxK = ::cuda::std::numeric_limits<::cuda::std::int64_t>::max(),
-          ::cuda::std::int64_t MinK = 1>
-struct k_per_segment
-{
-  static constexpr ::cuda::std::int64_t static_min_k = MinK;
-  static constexpr ::cuda::std::int64_t static_max_k = MaxK;
+          ::cuda::std::int64_t MinK = 1,
+          ::cuda::std::int64_t MaxK = ::cuda::std::numeric_limits<::cuda::std::int64_t>::max()>
+using k_per_segment = per_segment_param<KItT, ::cuda::std::int64_t, MinK, MaxK>;
 
-  KItT k_it;
-  static constexpr ::cuda::std::int64_t min_k = MinK;
-  static constexpr ::cuda::std::int64_t max_k = MaxK;
-};
+// ------------ TOTAL NUMBER OF SEGMENTS ------------
+// Number of segments known at compile time
+template <::cuda::std::int64_t StaticNumSegments>
+using num_segments_static = static_constant_param<::cuda::std::int64_t, StaticNumSegments>;
+
+// Number of segments is a runtime value
+template <::cuda::std::int64_t MinNumSegments = 1,
+          ::cuda::std::int64_t MaxNumSegments = ::cuda::std::numeric_limits<::cuda::std::int64_t>::max()>
+using num_segments_uniform = uniform_param<::cuda::std::int64_t, MinNumSegments, MaxNumSegments>;
+
+// Number of segments via iterator
+template <typename NumSegmentsItT,
+          ::cuda::std::int64_t MinNumSegments = 1,
+          ::cuda::std::int64_t MaxNumSegments = ::cuda::std::numeric_limits<::cuda::std::int64_t>::max()>
+using num_segments_per_segment =
+  per_segment_param<NumSegmentsItT, ::cuda::std::int64_t, MinNumSegments, MaxNumSegments>;
+
+// ------------ TOTAL NUMBER OF ITEMS PARAMETER TYPES ------------
 
 // Number of items guarantee
 template <::cuda::std::int64_t MaxNumItems  = ::cuda::std::numeric_limits<::cuda::std::int64_t>::max(),
@@ -298,101 +383,111 @@ struct total_num_items_guarantee
   static constexpr ::cuda::std::int64_t static_min_num_items = MinNumItemsT;
   static constexpr ::cuda::std::int64_t static_max_num_items = MaxNumItems;
 
-  static constexpr ::cuda::std::int64_t min_num_items = MinNumItemsT;
-  static constexpr ::cuda::std::int64_t max_num_items = MaxNumItems;
+  ::cuda::std::int64_t min_num_items = MinNumItemsT;
+  ::cuda::std::int64_t max_num_items = MaxNumItems;
+
+  // Create default ctor, 1 param ctor taking min, 2 param ctor taking min/max
+  total_num_items_guarantee() = default;
+  total_num_items_guarantee(::cuda::std::int64_t num_items)
+      : min_num_items(num_items)
+      , max_num_items(num_items)
+  {}
+  total_num_items_guarantee(::cuda::std::int64_t min_items, ::cuda::std::int64_t max_items)
+      : min_num_items(min_items)
+      , max_num_items(max_items)
+  {}
 };
 
-template <
-    typename KeyT,
-    int BLOCK_DIM_X,
-    int ITEMS_PER_THREAD,
-    typename ValueT = cub::NullType
->
+template <typename KeyT, int BLOCK_DIM_X, int ITEMS_PER_THREAD, typename ValueT = cub::NullType>
 class BlockTopK
 {
 private:
-    // Internal CUB primitive
-    using BlockRadixSortT = cub::BlockRadixSort<KeyT, BLOCK_DIM_X, ITEMS_PER_THREAD, ValueT>;
+  // Internal CUB primitive
+  using BlockRadixSortT = cub::BlockRadixSort<KeyT, BLOCK_DIM_X, ITEMS_PER_THREAD, ValueT>;
 
 public:
-    // Expose TempStorage requirements
-    struct TempStorage {
-        typename BlockRadixSortT::TempStorage sort_storage;
-    };
+  // Expose TempStorage requirements
+  struct TempStorage
+  {
+    typename BlockRadixSortT::TempStorage sort_storage;
+  };
 
 private:
-    TempStorage& temp_storage;
-    int linear_tid;
+  TempStorage& temp_storage;
+  int linear_tid;
 
 public:
-    __device__ __forceinline__ BlockTopK(TempStorage& temp_storage)
-        : temp_storage(temp_storage),
-          linear_tid(threadIdx.x)
-    {}
+  __device__ __forceinline__ BlockTopK(TempStorage& temp_storage)
+      : temp_storage(temp_storage)
+      , linear_tid(threadIdx.x)
+  {}
 
-    /**
-     * @brief Sorts the block such that the Top K elements are in the first K positions.
-     * * After this call:
-     * - The data across all threads is sorted.
-     * - The item at BlockRank `i` is located at:
-     * Thread `i / ITEMS_PER_THREAD`, Register index `i % ITEMS_PER_THREAD`
-     * - Valid Top-K items are those where BlockRank < K.
-     *
-     * @param keys           [In/Out] Thread-local array of keys
-     * @param values         [In/Out] Thread-local array of values
-     * @param k              [In] Number of top elements to select
-     * @param is_descending  [In] If true, largest elements are first (default: true)
-     * @param valid_items    [In] Number of valid items in the block (default: full block)
-     * @param begin_bit      [In] Least significant bit index for radix sort (default: 0)
-     * @param end_bit        [In] Most significant bit index for radix sort (default: sizeof(KeyT)*8)
-     */
-    __device__ __forceinline__ void Select(
-        KeyT (&keys)[ITEMS_PER_THREAD],
-        ValueT (&values)[ITEMS_PER_THREAD],
-        int k,
-        bool is_descending = true,
-        int valid_items = BLOCK_DIM_X * ITEMS_PER_THREAD,
-        int begin_bit = 0,
-        int end_bit = sizeof(KeyT) * 8
-    ) {
-        // Delegate to CUB BlockRadixSort
-        // Note: BlockRadixSort produces a BLOCKED arrangement.
-        // Thread 0 has items [0 .. IPT-1], Thread 1 has [IPT .. 2*IPT-1], etc.
-        
-        if (is_descending) {
-            // Sort Descending: Largest items move to Rank 0 (Thread 0)
-            BlockRadixSortT(temp_storage.sort_storage).SortDescending(
-                keys, values, begin_bit, end_bit, valid_items
-            );
-        } else {
-            // Sort Ascending: Smallest items move to Rank 0 (Thread 0)
-            BlockRadixSortT(temp_storage.sort_storage).Sort(
-                keys, values, begin_bit, end_bit, valid_items
-            );
-        }
+  /**
+   * @brief Sorts the block such that the Top K elements are in the first K
+   * positions.
+   * * After this call:
+   * - The data across all threads is sorted.
+   * - The item at BlockRank `i` is located at:
+   * Thread `i / ITEMS_PER_THREAD`, Register index `i % ITEMS_PER_THREAD`
+   * - Valid Top-K items are those where BlockRank < K.
+   *
+   * @param keys           [In/Out] Thread-local array of keys
+   * @param values         [In/Out] Thread-local array of values
+   * @param k              [In] Number of top elements to select
+   * @param is_descending  [In] If true, largest elements are first (default:
+   * true)
+   * @param valid_items    [In] Number of valid items in the block (default:
+   * full block)
+   * @param begin_bit      [In] Least significant bit index for radix sort
+   * (default: 0)
+   * @param end_bit        [In] Most significant bit index for radix sort
+   * (default: sizeof(KeyT)*8)
+   */
+  __device__ __forceinline__ void Select(
+    KeyT (&keys)[ITEMS_PER_THREAD],
+    ValueT (&values)[ITEMS_PER_THREAD],
+    int k,
+    bool is_descending = true,
+    int valid_items    = BLOCK_DIM_X * ITEMS_PER_THREAD,
+    int begin_bit      = 0,
+    int end_bit        = sizeof(KeyT) * 8)
+  {
+    // Delegate to CUB BlockRadixSort
+    // Note: BlockRadixSort produces a BLOCKED arrangement.
+    // Thread 0 has items [0 .. IPT-1], Thread 1 has [IPT .. 2*IPT-1], etc.
 
-        // Logic barrier implicit in CUB sort
+    if (is_descending)
+    {
+      // Sort Descending: Largest items move to Rank 0 (Thread 0)
+      BlockRadixSortT(temp_storage.sort_storage).SortDescending(keys, values, begin_bit, end_bit);
+    }
+    else
+    {
+      // Sort Ascending: Smallest items move to Rank 0 (Thread 0)
+      BlockRadixSortT(temp_storage.sort_storage).Sort(keys, values, begin_bit, end_bit);
     }
 
-    // Overload for Keys only
-    __device__ __forceinline__ void Select(
-        KeyT (&keys)[ITEMS_PER_THREAD],
-        int k,
-        bool is_descending = true,
-        int valid_items = BLOCK_DIM_X * ITEMS_PER_THREAD,
-        int begin_bit = 0,
-        int end_bit = sizeof(KeyT) * 8
-    ) {
-        if (is_descending) {
-            BlockRadixSortT(temp_storage.sort_storage).SortDescending(
-                keys, begin_bit, end_bit, valid_items
-            );
-        } else {
-            BlockRadixSortT(temp_storage.sort_storage).Sort(
-                keys, begin_bit, end_bit, valid_items
-            );
-        }
+    // Logic barrier implicit in CUB sort
+  }
+
+  // Overload for Keys only
+  __device__ __forceinline__ void Select(
+    KeyT (&keys)[ITEMS_PER_THREAD],
+    int k,
+    bool is_descending = true,
+    int valid_items    = BLOCK_DIM_X * ITEMS_PER_THREAD,
+    int begin_bit      = 0,
+    int end_bit        = sizeof(KeyT) * 8)
+  {
+    if (is_descending)
+    {
+      BlockRadixSortT(temp_storage.sort_storage).SortDescending(keys, begin_bit, end_bit);
     }
+    else
+    {
+      BlockRadixSortT(temp_storage.sort_storage).Sort(keys, begin_bit, end_bit);
+    }
+  }
 };
 
 template <typename ChainedPolicyT,
@@ -413,32 +508,35 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::topk_policy_t::block_threads
     SegmentSizeParameterT segment_sizes,
     KParameterT k_it,
     SelectDirectionParameterT select_directions,
-    NumSegmentsParameterT num_segments,
-    cudaStream_t stream)
+    NumSegmentsParameterT num_segments)
 {
   using active_policy_t = typename ChainedPolicyT::ActivePolicy;
   using topk_policy_t   = typename active_policy_t::topk_policy_t;
 
   // TODO (elstehle): infer the offset types
-  using segment_size_t   = ::cuda::std::int64_t;
-  using k_index_t   = ::cuda::std::int64_t;
+  using segment_size_t  = ::cuda::std::int64_t;
+  using k_index_t       = ::cuda::std::int64_t;
   using segment_index_t = ::cuda::std::int64_t;
 
   constexpr int block_threads    = topk_policy_t::block_threads;
   constexpr int items_per_thread = topk_policy_t::items_per_thread;
+  constexpr int tile_size        = block_threads * items_per_thread;
 
-  using key_t = it_value_t<it_value_t<KeyInputItItT>>;
+  static_assert(tile_size >= static_max_value_v<SegmentSizeParameterT>,
+                "Block size exceeds maximum segment size supported by SegmentSizeParameterT");
+
+  using key_t   = it_value_t<it_value_t<KeyInputItItT>>;
   using value_t = it_value_t<it_value_t<ValueInputItItT>>;
 
   // Use Striped loading for non-deterministic results
-  using block_load_keys_t = cub::BlockLoad<key_t, block_threads, items_per_thread, cub::BLOCK_LOAD_STRIPED>;
-  using block_load_vals_t = cub::BlockLoad<value_t, block_threads, items_per_thread, cub::BLOCK_LOAD_STRIPED>;
+  using block_load_keys_t = cub::BlockLoad<key_t, block_threads, items_per_thread, cub::BLOCK_LOAD_WARP_TRANSPOSE>;
+  using block_load_vals_t = cub::BlockLoad<value_t, block_threads, items_per_thread, cub::BLOCK_LOAD_WARP_TRANSPOSE>;
   // Use your custom BlockTopK
   using block_topk_t = BlockTopK<key_t, block_threads, items_per_thread, value_t>;
 
   // Use Striped storage to write the top-k results coalesced
-  using block_store_keys_t = cub::BlockStore<key_t, block_threads, items_per_thread, cub::BLOCK_STORE_STRIPED>;
-  using block_store_vals_t = cub::BlockStore<value_t, block_threads, items_per_thread, cub::BLOCK_STORE_STRIPED>;
+  using block_store_keys_t = cub::BlockStore<key_t, block_threads, items_per_thread, cub::BLOCK_STORE_WARP_TRANSPOSE>;
+  using block_store_vals_t = cub::BlockStore<value_t, block_threads, items_per_thread, cub::BLOCK_STORE_WARP_TRANSPOSE>;
 
   // Shared memory union to save space
   __shared__ union
@@ -454,32 +552,51 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::topk_policy_t::block_threads
 
   // Calculate Segment Offsets
   int segment_id = blockIdx.x;
-  if (segment_id >= num_segments)
+  if (segment_id >= resolve_param(num_segments, 0))
   {
     return;
   }
 
-  segment_size_t segment_size = resolve_param(segment_sizes, segment_id);
-  block_load_keys_t(temp_storage.load_keys).Load(d_key_segments_it[segment_id], thread_keys, segment_size);
+  key_t padding_key = key_t{};
+  if (resolve_param(select_directions, segment_id) == select::max)
+  {
+    // padding_key = cub::detail::Traits<key_t>::LOWEST_KEY;
+    padding_key = ::cuda::std::numeric_limits<key_t>::lowest();
+  }
+  else
+  {
+    // padding_key = cub::detail::Traits<key_t>::MAX_KEY;
+    padding_key = ::cuda::std::numeric_limits<key_t>::max();
+  }
 
-  value_t thread_values[items_per_thread];
+  segment_size_t segment_size = resolve_param(segment_sizes, segment_id);
+  block_load_keys_t(temp_storage.load_keys).Load(d_key_segments_it[segment_id], thread_keys, segment_size, padding_key);
+
+  // value_t thread_values[items_per_thread];
   // if constexpr ()
   // {
   //   // Make sure we can reuse shared memory for value loading
   //   __syncthreads();
 
-  //   block_load_vals_t(temp_storage.load_vals).Load(d_value_segments_it[segment_id], thread_values, segment_size);
+  //   block_load_vals_t(temp_storage.load_vals).Load(d_value_segments_it[segment_id],
+  //   thread_values, segment_size);
   // }
 
   // Make sure we can reuse shared memory for top-k selection
   __syncthreads();
 
+  // if(threadIdx.x <= 5 && blockIdx.x <=1){
+  //   for(int i=0; i<items_per_thread; i++){
+  //     printf("BID#%d.%d: TopK INPUT Key[%d]: %u\n", blockIdx.x, threadIdx.x,i, thread_keys[i]);
+  //   }
+  //   printf("Reading from: %p \n", d_key_segments_it[segment_id]);
+  // }
+
   // This sorts the *entire* block in registers.
   // The top k items will end up in the first K positions
-  k_index_t k               = resolve_param(k_it, segment_id);
-  block_topk_t(temp_storage.topk).Select(thread_keys, thread_values, k, 
-                                          resolve_param(select_directions, segment_id) == select::max,
-                                          segment_size);
+  k_index_t k = resolve_param(k_it, segment_id);
+  block_topk_t(temp_storage.topk)
+    .Select(thread_keys, k, resolve_param(select_directions, segment_id) == select::max, segment_size);
 
   // Make sure we can reuse shared memory for storing back the results
   __syncthreads();
@@ -487,11 +604,14 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::topk_policy_t::block_threads
   // We only want to write the first K items.
   // BlockStore accepts a 'valid_items' count. It will write the first
   // 'valid_items' logical ranks to the output pointer.
-  block_store_keys_t(temp_storage.store_keys)
-    .Store(d_key_segments_out_it[segment_id],
-           thread_keys,
-           k
-    );
+  // if(threadIdx.x == 0 && blockIdx.x <=1){
+  //   for(int i=0; i<k; i++){
+  //     printf("BID#%d: TopK Key[%d]: %u\n", blockIdx.x, i, thread_keys[i]);
+  //   }
+  //   printf("Writing to: %p \n", d_key_segments_out_it[segment_id]);
+  // }
+
+  block_store_keys_t(temp_storage.store_keys).Store(d_key_segments_out_it[segment_id], thread_keys, k);
 
   __syncthreads();
 
@@ -520,11 +640,13 @@ struct DispatchSegmentedTopK
   using offset_t = ::cuda::std::int64_t;
 
   // TODO (elstehle): consider making this part of the env-based API
-  // The algorithm allocates a double-buffer for intermediate results of size num_items/coefficient_for_candidate_buffer
+  // The algorithm allocates a double-buffer for intermediate results of size
+  // num_items/coefficient_for_candidate_buffer
   static constexpr offset_t coefficient_for_candidate_buffer = 128;
 
   /// Device-accessible allocation of temporary storage.
-  /// When `nullptr`, the required allocation size is written to `temp_storage_bytes` and no work is done.
+  /// When `nullptr`, the required allocation size is written to
+  /// `temp_storage_bytes` and no work is done.
   void* d_temp_storage;
 
   /// Reference to size in bytes of `d_temp_storage` allocation
@@ -564,7 +686,8 @@ struct DispatchSegmentedTopK
   using key_in_t =
     typename ::cuda::std::iterator_traits<typename ::cuda::std::iterator_traits<KeyInputItItT>::value_type>::value_type;
 
-  // We pass ValueInputItItT itself as cub::NullType** when only keys are processed
+  // We pass ValueInputItItT itself as cub::NullType** when only keys are
+  // processed
   static constexpr bool keys_only = ::cuda::std::is_same_v<ValueInputItItT, NullType**>;
 
   DispatchSegmentedTopK(
@@ -601,11 +724,56 @@ struct DispatchSegmentedTopK
   {
     using max_policy_t = typename SelectedPolicy::max_policy;
 
+    // Only unfiorm segment sizes are supported here
     static_assert(!is_per_segment_param_v<SegmentSizeParameterT>,
                   "Only uniform segment sizes are currently supported.");
 
-    // Instantiate the kernel with the selected policy and check shared memory requirements
+    // Instantiate the kernel with the selected policy and check shared memory
+    // requirements
     using topk_policy_t = typename ActivePolicyT::topk_policy_t;
+
+    constexpr int block_dim = topk_policy_t::block_threads;
+
+    if (d_temp_storage == nullptr)
+    {
+      temp_storage_bytes = 1; // TODO (elstehle): calculate real storage size, if needed
+      return cudaSuccess;
+    }
+
+    // TODO (elstehle): support number of segments provided by device-accessible iterator
+    // Only uniform number of segments are supported currently (i.e., we
+    // need to be able to resolve the number of segments on the host side)
+    static_assert(!is_per_segment_param_v<NumSegmentsParameterT>,
+                  "Only uniform segment sizes are currently supported.");
+    int grid_dim = resolve_param(num_segments, 0);
+
+    THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(grid_dim, block_dim, 0, stream)
+      .doit(
+        DeviceSegmentedTopKKernel<max_policy_t,
+                                  KeyInputItItT,
+                                  KeyOutputItItT,
+                                  ValueInputItItT,
+                                  ValueOutputItItT,
+                                  SegmentSizeParameterT,
+                                  KParameterT,
+                                  SelectDirectionParameterT,
+                                  NumSegmentsParameterT>,
+        d_key_segments_it,
+        d_key_segments_out_it,
+        d_value_segments_it,
+        d_value_segments_out_it,
+        segment_sizes,
+        k,
+        select_directions,
+        num_segments);
+
+    // Check for failure to launch
+    if (const auto error = CubDebug(cudaPeekAtLastError()))
+    {
+      return error;
+    }
+
+    return cudaSuccess;
   }
 
   template <typename ActivePolicyT>
@@ -613,11 +781,12 @@ struct DispatchSegmentedTopK
   {
     using max_policy_t = typename SelectedPolicy::max_policy;
 
-    // Currently, we only support fixed-size segments that fit into shared memory
+    // Currently, we only support fixed-size segments that fit into shared
+    // memory
     // TODO (elstehle): extend support for variable-size segments
-    if constexpr (is_per_segment_param_v<SegmentSizeParameterT>)
+    if constexpr (!is_per_segment_param_v<SegmentSizeParameterT>)
     {
-      InvokeFixedSegmentSize<ActivePolicyT>();
+      return InvokeFixedSegmentSize<ActivePolicyT>();
     }
     else
     {
@@ -665,7 +834,6 @@ struct DispatchSegmentedTopK
     return CubDebug(max_policy_t::Invoke(ptx_version, dispatch));
   }
 };
-
 } // namespace detail::topk
 
 CUB_NAMESPACE_END

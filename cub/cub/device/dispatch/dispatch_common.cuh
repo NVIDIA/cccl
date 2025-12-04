@@ -48,7 +48,8 @@ enum class ForceInclusive
 };
 
 // Options for specifying selection direction (e.g., for top-k selection).
-namespace detail::topk{
+namespace detail::topk
+{
 enum class select
 {
   // Select the elements with the lowest values
