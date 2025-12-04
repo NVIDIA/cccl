@@ -16,9 +16,13 @@
 // builtin header and use the newer <nv/target> instead.
 #if !defined(__NV_TARGET_H) && !defined(_NV_TARGET_SKIPPING_NVRTC_BUILTIN_HEADER)
 #  if defined(__CUDACC_RTC__) && __has_include(<cuda/std/__cccl/version.h>) && __has_include(<nv/target>)
+// Include just the cccl version header, if we would include the whole <cuda/__cccl_config>, we would include
+// <nv/target> as well as current workarounds for missing nvrtc nv target macros.
 #    include <cuda/std/__cccl/version.h>
+// nvrtc major version is 10 less than the cccl version.
 #    if (CCCL_MAJOR_VERSION > (__CUDACC_VER_MAJOR__ - 10)) \
       || (CCCL_MAJOR_VERSION == (__CUDACC_VER_MAJOR__ - 10) && CCCL_MINOR_VERSION > __CUDACC_VER_MINOR__)
+// _NV_TARGET_SKIPPING_NVRTC_BUILTIN_HEADER forces this prologue for nvrtc to be skipped.
 #      define _NV_TARGET_SKIPPING_NVRTC_BUILTIN_HEADER
 #      include <nv/target>
 #      undef _NV_TARGET_SKIPPING_NVRTC_BUILTIN_HEADER
