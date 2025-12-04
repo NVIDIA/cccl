@@ -33,7 +33,8 @@ struct SmemResource : SmemResourceRaw
       : SmemResourceRaw(syncHandler, smemBuffer, sizeof(smemBuffer[0]), sizeof(smemBuffer[0]), stageCount)
   {}
 
-  _CCCL_API SmemResource(SyncHandler& syncHandler, SmemAllocator& smemAllocator, Stages stages, Elems elems = Elems{1})
+  _CCCL_API constexpr SmemResource(
+    SyncHandler& syncHandler, SmemAllocator& smemAllocator, Stages stages, Elems elems = Elems{1})
       : SmemResourceRaw(makeSmemResourceRaw(syncHandler, smemAllocator, stages, elems))
   {}
 
@@ -43,7 +44,7 @@ struct SmemResource : SmemResourceRaw
   }
 
 private:
-  [[nodiscard]] _CCCL_API static inline SmemResourceRaw
+  [[nodiscard]] _CCCL_API static constexpr inline SmemResourceRaw
   makeSmemResourceRaw(SyncHandler& syncHandler, SmemAllocator& smemAllocator, Stages stages, Elems elems = Elems{1})
   {
     int align       = alignof(_Tp);

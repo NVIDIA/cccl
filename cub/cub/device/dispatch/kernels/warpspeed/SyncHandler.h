@@ -41,29 +41,20 @@ struct SyncHandler
 
   // Arrays of barrier locations, number of stages, number of owning threads.
   int mNextResourceHandle = 0;
-  int mNumStages[mMaxNumResources];
-  int mNumPhases[mMaxNumResources];
-  int mNumOwningThreads[mMaxNumResources][mMaxNumPhases];
-  uint64_t* mPtrBar[mMaxNumResources][mMaxNumPhases];
+  int mNumStages[mMaxNumResources]{};
+  int mNumPhases[mMaxNumResources]{};
+  int mNumOwningThreads[mMaxNumResources][mMaxNumPhases]{};
+  uint64_t* mPtrBar[mMaxNumResources][mMaxNumPhases]{};
 
-  _CCCL_API SyncHandler()
-  {
-    for (int ri = 0; ri < mMaxNumResources; ++ri)
-    {
-      mNumStages[ri] = 0;
-      mNumPhases[ri] = 0;
-      for (int pi = 0; pi < mMaxNumPhases; ++pi)
-      {
-        mNumOwningThreads[ri][pi] = 0;
-        mPtrBar[ri][pi]           = nullptr;
-      }
-    }
-  }
+  constexpr SyncHandler() = default;
 
-  _CCCL_API ~SyncHandler()
+  // we need constant destruction for the host side single stage SMEM amount, which is only possible in C++20
+#if _CCCL_STD_VER >= 2020
+  _CCCL_API constexpr ~SyncHandler()
   {
     constantAssert(mHasInitialized, "SyncHandler must have been initialized at end of kernel.");
   }
+#endif // _CCCL_STD_VER >= 2020
 
   // SyncHandler is a non-copyable, non-movable type. It must be passed by
   // (mutable) reference to be useful.
@@ -73,7 +64,7 @@ struct SyncHandler
   SyncHandler& operator=(const SyncHandler&&) = delete; // Delete move assignment
 
   // registerResource and registerPhase can be called on host and device.
-  [[nodiscard]] _CCCL_API int registerResource(int numStages)
+  [[nodiscard]] _CCCL_API constexpr int registerResource(int numStages)
   {
     constantAssert(!mHasInitialized, "Cannot register resource after SyncHandler has been initialized.");
     // Avoid exceeding the max number of stages
@@ -88,7 +79,7 @@ struct SyncHandler
     return handle;
   }
 
-  _CCCL_API void registerPhase(int resourceHandle, int numOwningThreads, uint64_t* ptrBar)
+  _CCCL_API void constexpr registerPhase(int resourceHandle, int numOwningThreads, uint64_t* ptrBar)
   {
     constantAssert(!mHasInitialized, "Cannot register phase after SyncHandler has been initialized.");
     constantAssert(resourceHandle < mNextResourceHandle, "Invalid resource handle.");
