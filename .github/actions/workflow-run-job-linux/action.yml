@@ -181,7 +181,7 @@ runs:
         if ! grep -q '\-cuda "clang' <<< "$COMMAND"; then
           if ! grep -q '_python.sh' <<< "$COMMAND"; then
             extra_launch_args+=(
-              --env "PARALLEL_LEVEL=$(ulimit -Hn)"
+              --env "PARALLEL_LEVEL=$(($(nproc) * 4))"
             )
           fi
         fi
