@@ -31,6 +31,7 @@
 #  include <cuda/ptx>
 #  include <cuda/std/__cccl/cuda_capabilities.h>
 #  include <cuda/std/__functional/invoke.h>
+#  include <cuda/std/__type_traits/is_constant_evaluated.h>
 #  include <cuda/std/__type_traits/is_same.h>
 #  include <cuda/std/__utility/move.h>
 #  include <cuda/std/cassert>
@@ -518,8 +519,8 @@ struct ScanResources
 // Function to allocate resources.
 
 template <typename WarpspeedPolicy, typename InputT, typename OutputT, typename AccumT>
-[[nodiscard]] _CCCL_API ScanResources<WarpspeedPolicy, InputT, OutputT, AccumT> allocResources(
-  SyncHandler& syncHandler, SmemAllocator& smemAllocator, const scanKernelParams<InputT, OutputT, AccumT>& params)
+[[nodiscard]] _CCCL_API constexpr ScanResources<WarpspeedPolicy, InputT, OutputT, AccumT>
+allocResources(SyncHandler& syncHandler, SmemAllocator& smemAllocator, int numStages)
 {
   using ScanResourcesT    = ScanResources<WarpspeedPolicy, InputT, OutputT, AccumT>;
   using InT               = typename ScanResourcesT::InT;
@@ -527,7 +528,7 @@ template <typename WarpspeedPolicy, typename InputT, typename OutputT, typename 
 
   // If numBlockIdxStages is one less than the number of stages, we find a small
   // speedup compared to setting it equal to num_stages. Not sure why.
-  int numBlockIdxStages = params.numStages - 1;
+  int numBlockIdxStages = numStages - 1;
   // Ensure we have at least 1 stage
   numBlockIdxStages = numBlockIdxStages < 1 ? 1 : numBlockIdxStages;
 
@@ -536,15 +537,26 @@ template <typename WarpspeedPolicy, typename InputT, typename OutputT, typename 
   // scanStore squad, releasing the stage.
   int numSumExclusiveCtaStages = 2;
 
-  ScanResourcesT res{
-    SmemResource<InT>(syncHandler, smemAllocator, Stages{params.numStages}),
-    reinterpret_cast<OutputT*>(smemAllocator.alloc(sizeof(OutputT) * WarpspeedPolicy::tile_size, alignof(OutputT))),
+  auto make_output_buffer = [&] {
+    void* output_buffer_raw = smemAllocator.alloc(sizeof(OutputT) * WarpspeedPolicy::tile_size, alignof(OutputT));
+    // we don't need the pointer during constant evaluation (and casting is not allowed)
+    OutputT* output_buffer = nullptr;
+    if (!::cuda::std::is_constant_evaluated())
+    {
+      output_buffer = static_cast<OutputT*>(output_buffer_raw);
+    }
+    return output_buffer;
+  };
+
+  ScanResourcesT res = {
+    SmemResource<InT>(syncHandler, smemAllocator, Stages{numStages}),
+    make_output_buffer(),
     SmemResource<uint4>(syncHandler, smemAllocator, Stages{numBlockIdxStages}),
     SmemResource<AccumT>(syncHandler, smemAllocator, Stages{numSumExclusiveCtaStages}),
-    SmemResource<SumThreadAndWarpT>(syncHandler, smemAllocator, Stages{params.numStages}),
+    SmemResource<SumThreadAndWarpT>(syncHandler, smemAllocator, Stages{numStages}),
   };
   // asdfasdf
-  static constexpr SquadDesc scanSquads[WarpspeedPolicy::num_squads] = {
+  constexpr SquadDesc scanSquads[WarpspeedPolicy::num_squads] = {
     WarpspeedPolicy::squadReduce(),
     WarpspeedPolicy::squadScanStore(),
     WarpspeedPolicy::squadLoad(),
@@ -611,7 +623,7 @@ _CCCL_DEVICE_API inline void kernelBody(
   SmemAllocator smemAllocator{};
 
   ScanResources<WarpspeedPolicy, InputT, OutputT, AccumT> res =
-    allocResources<WarpspeedPolicy, InputT, OutputT, AccumT>(syncHandler, smemAllocator, params);
+    allocResources<WarpspeedPolicy, InputT, OutputT, AccumT>(syncHandler, smemAllocator, params.numStages);
 
   syncHandler.clusterInitSync(specialRegisters);
 
