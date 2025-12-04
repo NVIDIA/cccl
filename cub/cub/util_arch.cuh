@@ -110,8 +110,9 @@ inline constexpr int log2_smem_banks   = CUB_PTX_LOG_SMEM_BANKS;
 inline constexpr int subscription_factor           = CUB_PTX_SUBSCRIPTION_FACTOR;
 inline constexpr bool prefer_conflict_over_padding = CUB_PTX_PREFER_CONFLICT_OVER_PADDING;
 
-// The maximum amount of static shared memory available per thread block
-// Note that in contrast to dynamic shared memory, static shared memory is still limited to 48 KB
+// The maximum amount of shared memory available per thread block for eternity. Every current and future CUDA
+// architecture has and will have at least this amount of shared memory. This is also the maximum size of total static
+// shared memory in a kernel. Note that dynamic shared memory may be larger than this amount.
 static constexpr ::cuda::std::size_t max_smem_per_block = 48 * 1024;
 
 struct scaling_result
