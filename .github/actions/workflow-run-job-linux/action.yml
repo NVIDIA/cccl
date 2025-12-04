@@ -181,6 +181,7 @@ runs:
             ${cuda_ext_request:-} \
             "${gpu_request[@]}" \
             ${aws_arn:-} \
+            --env "SCCACHE_RECACHE=1" \
             --env "CI=true" \
             --env "COMMAND=$COMMAND" \
             --env "GH_TOKEN=$GH_TOKEN" \

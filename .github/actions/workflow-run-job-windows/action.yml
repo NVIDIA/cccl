@@ -175,6 +175,7 @@ runs:
           --workdir "${{steps.paths.outputs.MOUNT_REPO}}" \
           --isolation=process \
           ${{ env.ENABLE_GPU }} \
+          --env "SCCACHE_RECACHE=1" \
           --env COMMAND='& ${{inputs.command}}' \
           --env "ARTIFACT_ARCHIVES=${{env.ARTIFACT_ARCHIVES}}" \
           --env "ARTIFACT_UPLOAD_REGISTERY=${{env.ARTIFACT_UPLOAD_REGISTERY}}" \
