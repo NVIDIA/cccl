@@ -509,7 +509,7 @@ _CCCL_API constexpr auto launch(kernel_config<_Dimensions, _Config...> __config,
 namespace execution
 {
 template <class _Config, class _Fn, class... _Args>
-inline constexpr size_t structured_binding_size<__kernel_t::__sndr_t<_Config, _Fn, _Args...>> = 2;
+inline constexpr int structured_binding_size<__kernel_t::__sndr_t<_Config, _Fn, _Args...>> = 2;
 } // namespace execution
 } // namespace cuda::experimental
 

@@ -452,13 +452,13 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT bulk_t : __bulk_t<bulk_t>
 _CCCL_GLOBAL_CONSTANT auto bulk = bulk_t{};
 
 template <class _Sndr, class _Policy, class _Shape, class _Fn>
-inline constexpr size_t structured_binding_size<bulk_t::__sndr_t<_Sndr, _Policy, _Shape, _Fn>> = 3;
+inline constexpr int structured_binding_size<bulk_t::__sndr_t<_Sndr, _Policy, _Shape, _Fn>> = 3;
 
 template <class _Sndr, class _Policy, class _Shape, class _Fn>
-inline constexpr size_t structured_binding_size<bulk_chunked_t::__sndr_t<_Sndr, _Policy, _Shape, _Fn>> = 3;
+inline constexpr int structured_binding_size<bulk_chunked_t::__sndr_t<_Sndr, _Policy, _Shape, _Fn>> = 3;
 
 template <class _Sndr, class _Policy, class _Shape, class _Fn>
-inline constexpr size_t structured_binding_size<bulk_unchunked_t::__sndr_t<_Sndr, _Policy, _Shape, _Fn>> = 3;
+inline constexpr int structured_binding_size<bulk_unchunked_t::__sndr_t<_Sndr, _Policy, _Shape, _Fn>> = 3;
 } // namespace cuda::experimental::execution
 
 _CCCL_DIAG_POP
