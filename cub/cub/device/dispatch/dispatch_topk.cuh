@@ -18,12 +18,11 @@
 #endif // no system header
 
 #include <cub/agent/agent_topk.cuh>
+#include <cub/device/dispatch/dispatch_common.cuh>
 #include <cub/device/dispatch/tuning/tuning_topk.cuh>
 #include <cub/util_device.cuh>
 #include <cub/util_math.cuh>
 #include <cub/util_temporary_storage.cuh>
-
-#include <cub/device/dispatch/dispatch_common.cuh>
 
 #include <thrust/system/cuda/detail/core/triple_chevron_launch.h>
 
