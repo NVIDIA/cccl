@@ -8,15 +8,14 @@
 //! include all the tests into a single executable, this file is only included into catch2_runner_helper.cu. When CMake
 //! is configured to compile each test as a separate binary, this file is included into each test.
 
-#include <cuda/__runtime/api_wrapper.h>
-
 #include <iostream>
 
 int device_guard(int device_id)
 {
   int device_count{};
-  if (_CCCL_LOG_CUDA_API(cudaGetDeviceCount, "Failed getting number of devices", &device_count) != cudaSuccess)
+  if (cudaGetDeviceCount(&device_count) != cudaSuccess)
   {
+    std::cerr << "Failed getting number of devices" << std::endl;
     std::exit(-1);
   }
 
@@ -31,7 +30,7 @@ int device_guard(int device_id)
 
 void set_device(int device_id)
 {
-  if (_CCCL_LOG_CUDA_API(cudaSetDevice, "Failed to set requested device", device_guard(device_id)) != cudaSuccess)
+  if (cudaSetDevice(device_guard(device_id)) != cudaSuccess)
   {
     std::cerr << "Failed to set device ID: " << device_id << std::endl;
     std::exit(-1);
