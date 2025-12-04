@@ -14,6 +14,7 @@
 #include <cuda/std/algorithm>
 
 #include <format>
+#include <limits>
 #include <vector>
 
 #include "cccl/c/types.h"
@@ -91,6 +92,14 @@ struct histogram_kernel_source
   {
     return build.counter_type.size;
   }
+
+  // Overflow check is performed before type erasure in
+  // cccl_device_histogram_even_impl and stored in build.may_overflow. We return
+  // this here to have a similar execution path to the CUB implementation.
+  bool MayOverflow(int /*num_bins*/, LevelT /*max_level*/, LevelT /*min_level*/) const
+  {
+    return build.may_overflow;
+  }
 };
 
 histogram_runtime_tuning_policy get_policy(int /*cc*/, cccl_type_info sample_t, int num_active_channels)
@@ -162,6 +171,76 @@ std::string get_sweep_kernel_name(
     privatized_decode_op_t,
     output_decode_op_t,
     offset_t);
+}
+
+template <typename T>
+uint64_t compute_level_range(const void* lower, const void* upper)
+{
+  T lower_val = *static_cast<const T*>(lower);
+  T upper_val = *static_cast<const T*>(upper);
+  return static_cast<uint64_t>(upper_val - lower_val);
+}
+
+uint64_t get_integral_range(cccl_type_enum type, const void* lower, const void* upper)
+{
+  switch (type)
+  {
+    case CCCL_INT8:
+      return compute_level_range<int8_t>(lower, upper);
+    case CCCL_UINT8:
+      return compute_level_range<uint8_t>(lower, upper);
+    case CCCL_INT16:
+      return compute_level_range<int16_t>(lower, upper);
+    case CCCL_UINT16:
+      return compute_level_range<uint16_t>(lower, upper);
+    case CCCL_INT32:
+      return compute_level_range<int32_t>(lower, upper);
+    case CCCL_UINT32:
+      return compute_level_range<uint32_t>(lower, upper);
+    case CCCL_INT64:
+      return compute_level_range<int64_t>(lower, upper);
+    case CCCL_UINT64:
+      return compute_level_range<uint64_t>(lower, upper);
+    default:
+      return 0; // Floating-point types - shouldn't reach here
+  }
+}
+
+// Check for overflow before type erasure, using actual integer values
+// Returns true if overflow may occur
+bool check_histogram_overflow(
+  const cccl_device_histogram_build_result_t& build,
+  int num_bins,
+  const cccl_value_t& lower_level,
+  const cccl_value_t& upper_level)
+{
+  auto is_fp = [](cccl_type_enum t) {
+    return t == CCCL_FLOAT16 || t == CCCL_FLOAT32 || t == CCCL_FLOAT64;
+  };
+
+  if (is_fp(build.level_type.type) || is_fp(build.sample_type.type))
+  {
+    return false;
+  }
+
+  uint64_t range = get_integral_range(build.level_type.type, lower_level.state, upper_level.state);
+
+  // TODO: revisit this when we add support for int128.
+  // Mirror IntArithmeticT selection logic:
+  // If sizeof(SampleT) + sizeof(CommonT) <= 4, use 32-bit, else 64-bit
+  // CommonT size ≈ max(level_size, sample_size) for integral types
+  size_t sample_size = build.sample_type.size;
+  size_t level_size  = build.level_type.size;
+  size_t common_size = (sample_size > level_size) ? sample_size : level_size;
+
+  if (sample_size + common_size <= 4)
+  {
+    return range > (std::numeric_limits<uint32_t>::max() / static_cast<uint64_t>(num_bins));
+  }
+  else
+  {
+    return range > (std::numeric_limits<uint64_t>::max() / static_cast<uint64_t>(num_bins));
+  }
 }
 } // namespace histogram
 
@@ -313,7 +392,11 @@ struct {5} {{
     build_ptr->cubin               = (void*) result.data.release();
     build_ptr->cubin_size          = result.size;
     build_ptr->counter_type        = d_output_histograms.value_type;
+    build_ptr->level_type          = lower_level.type;
+    build_ptr->sample_type         = d_samples.value_type;
     build_ptr->num_active_channels = num_active_channels;
+    build_ptr->may_overflow = false; // This is set in cccl_device_histogram_even_impl so that kernel source can access
+                                     // it later.
   }
   catch (const std::exception& exc)
   {
@@ -361,6 +444,10 @@ CUresult cccl_device_histogram_even_impl(
     constexpr int NUM_CHANNELS        = 1;
     constexpr int NUM_ACTIVE_CHANNELS = 1;
 
+    // Check for overflow before type erasure (while we still have access to actual types)
+    int num_bins       = *static_cast<int*>(num_output_levels.state) - 1;
+    build.may_overflow = histogram::check_histogram_overflow(build, num_bins, lower_level, upper_level);
+
     ::cuda::std::array<indirect_arg_t*, NUM_ACTIVE_CHANNELS> d_output_histogram_arr{
       static_cast<indirect_arg_t*>(d_output_histograms.state)};
     ::cuda::std::array<int, NUM_ACTIVE_CHANNELS> num_output_levels_arr{*static_cast<int*>(num_output_levels.state)};
@@ -372,32 +459,28 @@ CUresult cccl_device_histogram_even_impl(
       NUM_ACTIVE_CHANNELS,
       indirect_arg_t, // SampleIteratorT
       indirect_arg_t, // CounterT
-      LevelT, // not indirect_arg_t because used on the host
+      LevelT, // LevelT - not indirect_arg_t because used on the host
       OffsetT, // OffsetT
-      histogram::dynamic_histogram_policy_t<&histogram::get_policy>,
-      histogram::histogram_kernel_source,
-      cub::detail::CudaDriverLauncherFactory,
-      indirect_arg_t,
-      cub::detail::histogram::Transforms<LevelT, // LevelT
-                                         OffsetT, // OffsetT
-                                         LevelT // SampleT
-                                         >>::
-      DispatchEven(
-        d_temp_storage,
-        *temp_storage_bytes,
-        d_samples,
-        d_output_histogram_arr,
-        num_output_levels_arr,
-        lower_level_arr,
-        upper_level_arr,
-        num_row_pixels,
-        num_rows,
-        row_stride_samples,
-        stream,
-        is_byte_sample{},
-        {build},
-        cub::detail::CudaDriverLauncherFactory{cu_device, build.cc},
-        {d_samples.value_type, build.num_active_channels});
+      histogram::dynamic_histogram_policy_t<&histogram::get_policy>, // PolicyHub
+      indirect_arg_t, // SampleT
+      cub::detail::histogram::Transforms<LevelT, OffsetT, LevelT>, // TransformsT
+      histogram::histogram_kernel_source, // KernelSource
+      cub::detail::CudaDriverLauncherFactory // KernelLauncherFactory
+      >::DispatchEven(d_temp_storage,
+                      *temp_storage_bytes,
+                      d_samples,
+                      d_output_histogram_arr,
+                      num_output_levels_arr,
+                      lower_level_arr,
+                      upper_level_arr,
+                      num_row_pixels,
+                      num_rows,
+                      row_stride_samples,
+                      stream,
+                      is_byte_sample{},
+                      {build},
+                      cub::detail::CudaDriverLauncherFactory{cu_device, build.cc},
+                      {d_samples.value_type, build.num_active_channels});
 
     error = static_cast<CUresult>(exec_status);
   }
