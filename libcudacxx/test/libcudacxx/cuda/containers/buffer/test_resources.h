@@ -1,6 +1,6 @@
 //===----------------------------------------------------------------------===//
 //
-// Part of CUDA Experimental in CUDA C++ Core Libraries,
+// Part of libcu++, the C++ Standard Library for your entire system,
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
@@ -8,14 +8,12 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef CUDAX_TEST_CONTAINER_VECTOR_TEST_RESOURCES_H
-#define CUDAX_TEST_CONTAINER_VECTOR_TEST_RESOURCES_H
+#ifndef CUDA_TEST_CONTAINER_VECTOR_TEST_RESOURCES_H
+#define CUDA_TEST_CONTAINER_VECTOR_TEST_RESOURCES_H
 
 #include <cuda/__stream/stream_ref.h>
 #include <cuda/memory_resource>
 #include <cuda/std/type_traits>
-
-#include <cuda/experimental/memory_resource.cuh>
 
 #include <cstdint>
 #include <unordered_map>
@@ -35,8 +33,8 @@ inline void get_property(const cuda::legacy_pinned_memory_resource&, other_prope
 inline void get_property(const cuda::pinned_memory_pool_ref&, other_property) {}
 #endif // _CCCL_CTK_AT_LEAST(12, 6)
 
-//! @brief Simple wrapper around a memory resource to ensure that it compares differently and we can test those code
-//! paths
+//! @brief Simple wrapper around a memory resource to ensure that it compares
+//! differently and we can test those code paths
 template <class... Properties>
 struct memory_resource_wrapper
 {
@@ -77,4 +75,4 @@ struct memory_resource_wrapper
   friend void get_property(const memory_resource_wrapper&, other_property) noexcept {}
 };
 
-#endif // CUDAX_TEST_CONTAINER_VECTOR_TEST_RESOURCES_H
+#endif // CUDA_TEST_CONTAINER_VECTOR_TEST_RESOURCES_H

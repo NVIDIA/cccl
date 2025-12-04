@@ -1,6 +1,6 @@
 //===----------------------------------------------------------------------===//
 //
-// Part of CUDA Experimental in CUDA C++ Core Libraries,
+// Part of libcu++, the C++ Standard Library for your entire system,
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
@@ -8,9 +8,11 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef __CUDAX__CONTAINER_ASYNC_BUFFER__
-#define __CUDAX__CONTAINER_ASYNC_BUFFER__
+#ifndef _CUDA___CONTAINER_BUFFER_H
+#define _CUDA___CONTAINER_BUFFER_H
 
+// Temporary workaround to not trigger issues in CUB headers missing prologue
+#define _CCCL_WAIVE_PROLOGUE_INCLUDE_CHECK
 #include <cuda/std/detail/__config>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
@@ -31,6 +33,8 @@
 #include <cuda/__memory_resource/any_resource.h>
 #include <cuda/__memory_resource/get_memory_resource.h>
 #include <cuda/__memory_resource/properties.h>
+#include <cuda/__memory_resource/synchronous_resource_adapter.h>
+#include <cuda/__runtime/ensure_current_context.h>
 #include <cuda/__stream/get_stream.h>
 #include <cuda/std/__execution/env.h>
 #include <cuda/std/__iterator/concepts.h>
@@ -47,35 +51,10 @@
 #include <cuda/std/cstdint>
 #include <cuda/std/initializer_list>
 
-#include <cuda/experimental/__detail/utility.cuh>
-#include <cuda/experimental/__execution/policy.cuh>
-#include <cuda/experimental/__memory_resource/synchronous_resource_adapter.cuh>
-#include <cuda/experimental/__utility/ensure_current_device.cuh>
-
 #include <cuda/std/__cccl/prologue.h>
 
 //! @file The \c buffer class provides a container of contiguous memory
-namespace cuda::experimental
-{
-enum class __memory_accessability
-{
-  __device,
-  __host,
-  __device_and_host,
-};
-
-// This assumes one of host or device accessible properties is present, needs to
-// be updated when we relax that
-template <typename... _Properties>
-struct __memory_accessability_from_properties
-{
-  static constexpr __memory_accessability value =
-    ::cuda::mr::__is_device_accessible<_Properties...>
-      ? ::cuda::mr::__is_host_accessible<_Properties...>
-        ? __memory_accessability::__device_and_host
-        : __memory_accessability::__device
-      : __memory_accessability::__host;
-};
+_CCCL_BEGIN_NAMESPACE_CUDA
 
 // Once we add support from options taken from the env we can list them here in
 // addition to using is_same_v
@@ -129,12 +108,11 @@ public:
   friend class buffer;
 
   // For now we require trivially copyable type to simplify the implementation
-  static_assert(::cuda::std::is_trivially_copyable_v<_Tp>,
-                "cuda::experimental::buffer requires T to be trivially copyable.");
+  static_assert(::cuda::std::is_trivially_copyable_v<_Tp>, "cuda::buffer requires T to be trivially copyable.");
 
   // At least one of the properties must signal an execution space
   static_assert(::cuda::mr::__contains_execution_space_property<_Properties...>,
-                "The properties of cuda::experimental::buffer must contain at "
+                "The properties of cuda::buffer must contain at "
                 "least one execution space property!");
 
 private:
@@ -229,7 +207,7 @@ public:
     ::cuda::mr::synchronous_resource<::cuda::std::decay_t<_Resource>> _CCCL_AND __buffer_compatible_env<_Env>)
   _CCCL_HIDE_FROM_ABI
   buffer(::cuda::stream_ref __stream, _Resource&& __resource, [[maybe_unused]] const _Env& __env = {})
-      : __buf_(::cuda::experimental::__adapt_if_synchronous(::cuda::std::forward<_Resource>(__resource)), __stream, 0)
+      : __buf_(::cuda::mr::__adapt_if_synchronous(::cuda::std::forward<_Resource>(__resource)), __stream, 0)
   {}
 
   //! @brief Constructs a buffer of size \p __size using a memory and leaves all
@@ -248,9 +226,9 @@ public:
     ::cuda::stream_ref __stream,
     _Resource&& __resource,
     const size_type __size,
-    ::cuda::experimental::no_init_t,
+    ::cuda::no_init_t,
     [[maybe_unused]] const _Env& __env = {})
-      : __buf_(cuda::experimental::__adapt_if_synchronous(::cuda::std::forward<_Resource>(__resource)), __stream, __size)
+      : __buf_(::cuda::mr::__adapt_if_synchronous(::cuda::std::forward<_Resource>(__resource)), __stream, __size)
   {}
 
   //! @brief Constructs a buffer using a memory resource and copy-constructs all
@@ -269,7 +247,7 @@ public:
          _Iter __first,
          _Iter __last,
          [[maybe_unused]] const _Env& __env = {})
-      : __buf_(::cuda::experimental::__adapt_if_synchronous(::cuda::std::forward<_Resource>(__resource)),
+      : __buf_(::cuda::mr::__adapt_if_synchronous(::cuda::std::forward<_Resource>(__resource)),
                __stream,
                static_cast<size_type>(::cuda::std::distance(__first, __last)))
   {
@@ -289,9 +267,7 @@ public:
          _Resource&& __resource,
          ::cuda::std::initializer_list<_Tp> __ilist,
          [[maybe_unused]] const _Env& __env = {})
-      : __buf_(::cuda::experimental::__adapt_if_synchronous(::cuda::std::forward<_Resource>(__resource)),
-               __stream,
-               __ilist.size())
+      : __buf_(::cuda::mr::__adapt_if_synchronous(::cuda::std::forward<_Resource>(__resource)), __stream, __ilist.size())
   {
     this->__copy_cross(__ilist.begin(), __ilist.end(), __unwrapped_begin(), __buf_.size());
   }
@@ -306,7 +282,7 @@ public:
       _CCCL_AND ::cuda::std::ranges::forward_range<_Range> _CCCL_AND ::cuda::std::ranges::sized_range<_Range>)
   _CCCL_HIDE_FROM_ABI
   buffer(::cuda::stream_ref __stream, _Resource&& __resource, _Range&& __range, [[maybe_unused]] const _Env& __env = {})
-      : __buf_(::cuda::experimental::__adapt_if_synchronous(::cuda::std::forward<_Resource>(__resource)),
+      : __buf_(::cuda::mr::__adapt_if_synchronous(::cuda::std::forward<_Resource>(__resource)),
                __stream,
                static_cast<size_type>(::cuda::std::ranges::size(__range)))
   {
@@ -325,7 +301,7 @@ public:
       _CCCL_AND ::cuda::std::ranges::forward_range<_Range> _CCCL_AND(!::cuda::std::ranges::sized_range<_Range>))
   _CCCL_HIDE_FROM_ABI
   buffer(::cuda::stream_ref __stream, _Resource&& __resource, _Range&& __range, [[maybe_unused]] const _Env& __env = {})
-      : __buf_(::cuda::experimental::__adapt_if_synchronous(::cuda::std::forward<_Resource>(__resource)),
+      : __buf_(::cuda::mr::__adapt_if_synchronous(::cuda::std::forward<_Resource>(__resource)),
                __stream,
                static_cast<size_type>(
                  ::cuda::std::ranges::distance(::cuda::std::ranges::begin(__range), ::cuda::std::ranges::end(__range))),
@@ -493,8 +469,8 @@ public:
   //! @note Does not synchronize with the stored stream
   [[nodiscard]] _CCCL_HIDE_FROM_ABI reference get_unsynchronized(const size_type __n) noexcept
   {
-    _CCCL_ASSERT(__n < __buf_.size(), "cuda::experimental::buffer::get_unsynchronized out of range!");
-    return begin()[__n];
+    _CCCL_ASSERT(__n < __buf_.size(), "cuda::buffer::get_unsynchronized out of range!");
+    return __unwrapped_begin()[__n];
   }
 
   //! @brief Returns a reference to the \p __n 'th element of the async_vector
@@ -502,8 +478,8 @@ public:
   //! @note Does not synchronize with the stored stream
   [[nodiscard]] _CCCL_HIDE_FROM_ABI const_reference get_unsynchronized(const size_type __n) const noexcept
   {
-    _CCCL_ASSERT(__n < __buf_.size(), "cuda::experimental::buffer::get_unsynchronized out of range!");
-    return begin()[__n];
+    _CCCL_ASSERT(__n < __buf_.size(), "cuda::buffer::get_unsynchronized out of range!");
+    return __unwrapped_begin()[__n];
   }
 
   //! @}
@@ -525,7 +501,7 @@ public:
 
   //! @rst
   //! Returns a \c const reference to the :ref:`any_resource
-  //! <cudax-memory-resource-any-resource>` that holds the memory resource used
+  //! <cuda-memory-resource-any-resource>` that holds the memory resource used
   //! to allocate the buffer
   //! @endrst
   [[nodiscard]] _CCCL_HIDE_FROM_ABI const __resource_t& memory_resource() const noexcept
@@ -594,7 +570,7 @@ public:
   }
 
   //! @brief Causes the buffer to be treated as a span when passed to
-  //! cudax::launch.
+  //! cuda::launch.
   //! @pre The buffer must have the cuda::mr::device_accessible property.
   template <class _DeviceAccessible = ::cuda::mr::device_accessible>
   [[nodiscard]] _CCCL_HIDE_FROM_ABI friend auto transform_device_argument(::cuda::stream_ref, buffer& __self) noexcept
@@ -605,7 +581,7 @@ public:
   }
 
   //! @brief Causes the buffer to be treated as a span when passed to
-  //! cudax::launch
+  //! cuda::launch
   //! @pre The buffer must have the cuda::mr::device_accessible property.
   template <class _DeviceAccessible = ::cuda::mr::device_accessible>
   [[nodiscard]] _CCCL_HIDE_FROM_ABI friend auto
@@ -647,7 +623,7 @@ _CCCL_BEGIN_NAMESPACE_ARCH_DEPENDENT
 //! @brief Copy-constructs elements in the range `[__first, __first + __count)`.
 //! @param __first Pointer to the first element to be initialized.
 //! @param __count The number of elements to be initialized.
-template <typename _Tp, __memory_accessability _Accessability>
+template <typename _Tp, mr::__memory_accessability _Accessability>
 _CCCL_HIDE_FROM_ABI void
 __fill_n(cuda::stream_ref __stream, _Tp* __first, ::cuda::std::size_t __count, const _Tp& __value)
 {
@@ -658,7 +634,7 @@ __fill_n(cuda::stream_ref __stream, _Tp* __first, ::cuda::std::size_t __count, c
 
   // We don't know what to do with both device and host accessible buffers, so
   // we need to check the attributes
-  if constexpr (_Accessability == __memory_accessability::__device_and_host)
+  if constexpr (_Accessability == mr::__memory_accessability::__host_device)
   {
     __driver::__pointer_attribute_value_type_t<CU_POINTER_ATTRIBUTE_MEMORY_TYPE> __type;
     bool __is_managed{};
@@ -671,14 +647,14 @@ __fill_n(cuda::stream_ref __stream, _Tp* __first, ::cuda::std::size_t __count, c
     }
     if (__type == ::CU_MEMORYTYPE_HOST && !__is_managed)
     {
-      __fill_n<_Tp, __memory_accessability::__host>(__stream, __first, __count, __value);
+      __fill_n<_Tp, mr::__memory_accessability::__host>(__stream, __first, __count, __value);
     }
     else
     {
-      __fill_n<_Tp, __memory_accessability::__device>(__stream, __first, __count, __value);
+      __fill_n<_Tp, mr::__memory_accessability::__device>(__stream, __first, __count, __value);
     }
   }
-  else if constexpr (_Accessability == __memory_accessability::__host)
+  else if constexpr (_Accessability == mr::__memory_accessability::__host)
   {
     ::cuda::host_launch(
       __stream, ::cuda::std::uninitialized_fill_n<_Tp*, ::cuda::std::size_t, _Tp>, __first, __count, __value);
@@ -692,7 +668,7 @@ __fill_n(cuda::stream_ref __stream, _Tp* __first, ::cuda::std::size_t __count, c
     else
     {
 #if _CCCL_HAS_CUDA_COMPILER()
-      ::cuda::experimental::__ensure_current_device __guard(__stream);
+      ::cuda::__ensure_current_context __guard(__stream);
       ::cub::DeviceTransform::Fill(__first, __count, __value, __stream.get());
 #else
       static_assert(0,
@@ -732,7 +708,7 @@ auto make_buffer(
   stream_ref __stream, _Resource&& __mr, const buffer<_Tp, _SourceProperties...>& __source, const _Env& __env = {})
 {
   using __buffer_type = __buffer_type_for_props<_Tp, typename ::cuda::std::decay_t<_Resource>::default_queries>;
-  auto __res          = __buffer_type{__stream, ::cuda::std::forward<_Resource>(__mr), __source.size(), uninit, __env};
+  auto __res          = __buffer_type{__stream, ::cuda::std::forward<_Resource>(__mr), __source.size(), no_init, __env};
 
   __copy_cross_buffers(__stream, __res, __source);
 
@@ -774,7 +750,7 @@ buffer<_Tp, _FirstProperty, _RestProperties...> make_buffer(
 {
   auto __res =
     buffer<_Tp, _FirstProperty, _RestProperties...>{__stream, ::cuda::std::forward<_Resource>(__mr), __size, no_init};
-  __fill_n<_Tp, __memory_accessability_from_properties<_FirstProperty, _RestProperties...>::value>(
+  __fill_n<_Tp, mr::__memory_accessability_from_properties<_FirstProperty, _RestProperties...>::value>(
     __stream, __res.__unwrapped_begin(), __size, __value);
   return __res;
 }
@@ -788,7 +764,7 @@ auto make_buffer(
   using __default_queries = typename ::cuda::std::decay_t<_Resource>::default_queries;
   using __buffer_type     = __buffer_type_for_props<_Tp, __default_queries>;
   auto __res              = __buffer_type{__stream, ::cuda::std::forward<_Resource>(__mr), __size, no_init};
-  __fill_n<_Tp, __default_queries::template rebind<__memory_accessability_from_properties>::value>(
+  __fill_n<_Tp, __default_queries::template rebind<mr::__memory_accessability_from_properties>::value>(
     __stream, __res.__unwrapped_begin(), __size, __value);
   return __res;
 }
@@ -801,21 +777,20 @@ _CCCL_TEMPLATE(
 _CCCL_REQUIRES(
   ::cuda::mr::synchronous_resource_with<::cuda::std::decay_t<_Resource>, _FirstProperty, _RestProperties...> _CCCL_AND
     __buffer_compatible_env<_Env>)
-buffer<_Tp, _FirstProperty, _RestProperties...> make_buffer(
-  stream_ref __stream, _Resource&& __mr, size_t __size, ::cuda::experimental::no_init_t, const _Env& __env = {})
+buffer<_Tp, _FirstProperty, _RestProperties...>
+make_buffer(stream_ref __stream, _Resource&& __mr, size_t __size, ::cuda::no_init_t, const _Env& __env = {})
 {
   return buffer<_Tp, _FirstProperty, _RestProperties...>{
-    __stream, ::cuda::std::forward<_Resource>(__mr), __size, ::cuda::experimental::no_init, __env};
+    __stream, ::cuda::std::forward<_Resource>(__mr), __size, ::cuda::no_init, __env};
 }
 
 _CCCL_TEMPLATE(class _Tp, class _Resource, class _Env = ::cuda::std::execution::env<>)
 _CCCL_REQUIRES(::cuda::mr::synchronous_resource<::cuda::std::decay_t<_Resource>>
                  _CCCL_AND ::cuda::mr::__has_default_queries<_Resource>)
-auto make_buffer(
-  stream_ref __stream, _Resource&& __mr, size_t __size, ::cuda::experimental::no_init_t, const _Env& __env = {})
+auto make_buffer(stream_ref __stream, _Resource&& __mr, size_t __size, ::cuda::no_init_t, const _Env& __env = {})
 {
   using __buffer_type = __buffer_type_for_props<_Tp, typename ::cuda::std::decay_t<_Resource>::default_queries>;
-  return __buffer_type{__stream, ::cuda::std::forward<_Resource>(__mr), __size, ::cuda::experimental::no_init, __env};
+  return __buffer_type{__stream, ::cuda::std::forward<_Resource>(__mr), __size, ::cuda::no_init, __env};
 }
 
 // Iterator range make function
@@ -894,8 +869,8 @@ auto make_buffer(stream_ref __stream, _Resource&& __mr, _Range&& __range, const 
   using __buffer_type = __buffer_type_for_props<_Tp, typename ::cuda::std::decay_t<_Resource>::default_queries>;
   return __buffer_type{__stream, ::cuda::std::forward<_Resource>(__mr), ::cuda::std::forward<_Range>(__range), __env};
 }
-} // namespace cuda::experimental
+_CCCL_END_NAMESPACE_CUDA
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif //__CUDAX__CONTAINER_ASYNC_BUFFER__
+#endif //_CUDA___CONTAINER_BUFFER_H
