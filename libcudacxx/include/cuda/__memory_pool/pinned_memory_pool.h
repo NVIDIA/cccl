@@ -155,7 +155,10 @@ struct pinned_memory_pool : pinned_memory_pool_ref
 
   ~pinned_memory_pool() noexcept
   {
-    ::cuda::__driver::__mempoolDestroy(__pool_);
+    if (__pool_ != nullptr)
+    {
+      ::cuda::__driver::__mempoolDestroy(__pool_);
+    }
   }
 
   _CCCL_HOST_API static pinned_memory_pool from_native_handle(::cudaMemPool_t __pool) noexcept
@@ -190,11 +193,13 @@ static_assert(::cuda::mr::resource_with<pinned_memory_pool, ::cuda::mr::host_acc
     return __pool;
   }();
 
-  return __default_pool;
 #  else // ^^^ _CCCL_CTK_AT_LEAST(13, 0) ^^^ / vvv _CCCL_CTK_BELOW(13, 0) vvv
-  static pinned_memory_pool __default_pool(0);
-  return __default_pool.get();
+  static ::cudaMemPool_t __default_pool = []() {
+    cuda::pinned_memory_pool __pool(0);
+    return __pool.release();
+  }();
 #  endif // ^^^ _CCCL_CTK_BELOW(13, 0) ^^^
+  return __default_pool;
 }
 
 #endif // _CCCL_CTK_AT_LEAST(12, 6)
