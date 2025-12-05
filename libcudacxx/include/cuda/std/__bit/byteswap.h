@@ -151,10 +151,20 @@ template <class _Tp>
 #else // ^^^ _CCCL_BUILTIN_BSWAP32 ^^^ / vvv !_CCCL_BUILTIN_BSWAP32 vvv
   _CCCL_IF_NOT_CONSTEVAL_DEFAULT
   {
+    // clang-format off
+
+    _CCCL_IF_TARGET(is_host)
+    (
 #  if _CCCL_COMPILER(MSVC)
-    NV_IF_TARGET(NV_IS_HOST, return ::_byteswap_ulong(__val);)
+      return ::_byteswap_ulong(__val);
 #  endif // _CCCL_COMPILER(MSVC)
-    NV_IF_TARGET(NV_IS_DEVICE, return ::cuda::std::__byteswap_impl_device(__val);)
+    )
+    (else)
+    (
+      return ::cuda::ptx::prmt(__val, uint32_t{0}, uint32_t{0x0123});
+    )
+
+    // clang-format on
   }
   return ::cuda::std::__byteswap_impl_recursive(__val);
 #endif // !_CCCL_BUILTIN_BSWAP32
