@@ -229,13 +229,12 @@ def target_contents() -> str:
 
     def make_bit_exact(var_name: str) -> str:
         return "".join(
-            f"\n    to_int({var_name}) == {arch} ? sm_{arch}_bit :"
-            for arch in ARCH_LIST
+            f"\n    toint({var_name}) == {arch} ? sm_{arch}_bit :" for arch in ARCH_LIST
         )
 
     def make_bitrounddown(var_name: str) -> str:
         return "".join(
-            f"\n    to_int({var_name}) >= {arch} ? sm_{arch}_bit :"
+            f"\n    toint({var_name}) >= {arch} ? sm_{arch}_bit :"
             for arch in reversed(ARCH_LIST)
         )
 
@@ -493,6 +492,30 @@ def target_macros_contents() -> str:
 #elif defined(_NV_COMPILER_NVCC) || defined(_NV_COMPILER_CLANG_CUDA)
 
 {make_val_sms_nvcc_clang()}
+
+#  if defined(__CUDA_ARCH__)
+#    define _NV_TARGET_VAL                __CUDA_ARCH__
+#    define NV_TARGET_MINIMUM_SM_SELECTOR _NV_CONCAT_EVAL(_NV_TARGET_ARCH_TO_SELECTOR_, __CUDA_ARCH__)
+#    define NV_TARGET_MINIMUM_SM_INTEGER  _NV_CONCAT_EVAL(_NV_TARGET_ARCH_TO_SM_, __CUDA_ARCH__)
+#    define __CUDA_MINIMUM_ARCH__         __CUDA_ARCH__
+#  endif
+
+#  if defined(__CUDA_ARCH__)
+#    define _NV_TARGET_IS_HOST   0
+#    define _NV_TARGET_IS_DEVICE 1
+#  else
+#    define _NV_TARGET_IS_HOST   1
+#    define _NV_TARGET_IS_DEVICE 0
+#  endif
+
+#  if defined(_NV_TARGET_VAL)
+#    define _NV_DEVICE_CHECK(q) (q)
+#  else
+#    define _NV_DEVICE_CHECK(q) (0)
+#  endif
+
+#  define _NV_TARGET_PROVIDES(q)   _NV_DEVICE_CHECK(_NV_TARGET_VAL >= q)
+#  define _NV_TARGET_IS_EXACTLY(q) _NV_DEVICE_CHECK(_NV_TARGET_VAL == q)
 
 // NVCC/NVCXX not being used, only host dispatches allowed
 #else

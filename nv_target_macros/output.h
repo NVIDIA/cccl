@@ -199,15 +199,15 @@ This tests a variety of conditions for determining what the incoming statement i
 #if !defined(__NV_TARGET_H)
 
 // Hardcoded version. We cannot use something like __NV_TARGET_VERSION_CURRENT, because there would be collisions.
-#define __NV_TARGET_VERSION_03_01 301
+#define __NV_TARGET_VERSION_03_02 302
 
 // Update the max version. If this is the first include, set it to the current version.
 #if !defined(__NV_TARGET_VERSION_MAX)
 #  define __NV_TARGET_FIRST_INCLUDE
-#  define __NV_TARGET_VERSION_MAX __NV_TARGET_VERSION_03_01
-#elif __NV_TARGET_VERSION_MAX <= __NV_TARGET_VERSION_03_01
+#  define __NV_TARGET_VERSION_MAX __NV_TARGET_VERSION_03_02
+#elif __NV_TARGET_VERSION_MAX <= __NV_TARGET_VERSION_03_02
 #  undef __NV_TARGET_VERSION_MAX
-#  define __NV_TARGET_VERSION_MAX __NV_TARGET_VERSION_03_01
+#  define __NV_TARGET_VERSION_MAX __NV_TARGET_VERSION_03_02
 #endif
 
 // Clear versioned header definition before including next header.
@@ -239,7 +239,7 @@ This tests a variety of conditions for determining what the incoming statement i
 #endif
 
 // If this header version and the max version don't match, skip this include.
-#if __NV_TARGET_VERSION_MAX != __NV_TARGET_VERSION_03_01
+#if __NV_TARGET_VERSION_MAX != __NV_TARGET_VERSION_03_02
 #  define __NV_SKIP_THIS_INCLUDE
 #endif
 
@@ -349,56 +349,56 @@ constexpr base_int_t toint(sm_selector a)
 
 constexpr base_int_t bitexact(sm_selector a)
 {
-  return to_int(a) == 35  ? sm_35_bit
-       : to_int(a) == 37  ? sm_37_bit
-       : to_int(a) == 50  ? sm_50_bit
-       : to_int(a) == 52  ? sm_52_bit
-       : to_int(a) == 53  ? sm_53_bit
-       : to_int(a) == 60  ? sm_60_bit
-       : to_int(a) == 61  ? sm_61_bit
-       : to_int(a) == 62  ? sm_62_bit
-       : to_int(a) == 70  ? sm_70_bit
-       : to_int(a) == 72  ? sm_72_bit
-       : to_int(a) == 75  ? sm_75_bit
-       : to_int(a) == 80  ? sm_80_bit
-       : to_int(a) == 86  ? sm_86_bit
-       : to_int(a) == 87  ? sm_87_bit
-       : to_int(a) == 88  ? sm_88_bit
-       : to_int(a) == 89  ? sm_89_bit
-       : to_int(a) == 90  ? sm_90_bit
-       : to_int(a) == 100 ? sm_100_bit
-       : to_int(a) == 103 ? sm_103_bit
-       : to_int(a) == 110 ? sm_110_bit
-       : to_int(a) == 120 ? sm_120_bit
-       : to_int(a) == 121 ? sm_121_bit
-                          : 0;
+  return toint(a) == 35  ? sm_35_bit
+       : toint(a) == 37  ? sm_37_bit
+       : toint(a) == 50  ? sm_50_bit
+       : toint(a) == 52  ? sm_52_bit
+       : toint(a) == 53  ? sm_53_bit
+       : toint(a) == 60  ? sm_60_bit
+       : toint(a) == 61  ? sm_61_bit
+       : toint(a) == 62  ? sm_62_bit
+       : toint(a) == 70  ? sm_70_bit
+       : toint(a) == 72  ? sm_72_bit
+       : toint(a) == 75  ? sm_75_bit
+       : toint(a) == 80  ? sm_80_bit
+       : toint(a) == 86  ? sm_86_bit
+       : toint(a) == 87  ? sm_87_bit
+       : toint(a) == 88  ? sm_88_bit
+       : toint(a) == 89  ? sm_89_bit
+       : toint(a) == 90  ? sm_90_bit
+       : toint(a) == 100 ? sm_100_bit
+       : toint(a) == 103 ? sm_103_bit
+       : toint(a) == 110 ? sm_110_bit
+       : toint(a) == 120 ? sm_120_bit
+       : toint(a) == 121 ? sm_121_bit
+                         : 0;
 }
 
 constexpr base_int_t bitrounddown(sm_selector a)
 {
-  return to_int(a) >= 121 ? sm_121_bit
-       : to_int(a) >= 120 ? sm_120_bit
-       : to_int(a) >= 110 ? sm_110_bit
-       : to_int(a) >= 103 ? sm_103_bit
-       : to_int(a) >= 100 ? sm_100_bit
-       : to_int(a) >= 90  ? sm_90_bit
-       : to_int(a) >= 89  ? sm_89_bit
-       : to_int(a) >= 88  ? sm_88_bit
-       : to_int(a) >= 87  ? sm_87_bit
-       : to_int(a) >= 86  ? sm_86_bit
-       : to_int(a) >= 80  ? sm_80_bit
-       : to_int(a) >= 75  ? sm_75_bit
-       : to_int(a) >= 72  ? sm_72_bit
-       : to_int(a) >= 70  ? sm_70_bit
-       : to_int(a) >= 62  ? sm_62_bit
-       : to_int(a) >= 61  ? sm_61_bit
-       : to_int(a) >= 60  ? sm_60_bit
-       : to_int(a) >= 53  ? sm_53_bit
-       : to_int(a) >= 52  ? sm_52_bit
-       : to_int(a) >= 50  ? sm_50_bit
-       : to_int(a) >= 37  ? sm_37_bit
-       : to_int(a) >= 35  ? sm_35_bit
-                          : 0;
+  return toint(a) >= 121 ? sm_121_bit
+       : toint(a) >= 120 ? sm_120_bit
+       : toint(a) >= 110 ? sm_110_bit
+       : toint(a) >= 103 ? sm_103_bit
+       : toint(a) >= 100 ? sm_100_bit
+       : toint(a) >= 90  ? sm_90_bit
+       : toint(a) >= 89  ? sm_89_bit
+       : toint(a) >= 88  ? sm_88_bit
+       : toint(a) >= 87  ? sm_87_bit
+       : toint(a) >= 86  ? sm_86_bit
+       : toint(a) >= 80  ? sm_80_bit
+       : toint(a) >= 75  ? sm_75_bit
+       : toint(a) >= 72  ? sm_72_bit
+       : toint(a) >= 70  ? sm_70_bit
+       : toint(a) >= 62  ? sm_62_bit
+       : toint(a) >= 61  ? sm_61_bit
+       : toint(a) >= 60  ? sm_60_bit
+       : toint(a) >= 53  ? sm_53_bit
+       : toint(a) >= 52  ? sm_52_bit
+       : toint(a) >= 50  ? sm_50_bit
+       : toint(a) >= 37  ? sm_37_bit
+       : toint(a) >= 35  ? sm_35_bit
+                         : 0;
 }
 
 // Public API for NVIDIA GPUs
@@ -581,6 +581,30 @@ using detail::provides;
 #      define _NV_TARGET_VAL_SM_110 1100
 #      define _NV_TARGET_VAL_SM_120 1200
 #      define _NV_TARGET_VAL_SM_121 1210
+
+#      if defined(__CUDA_ARCH__)
+#        define _NV_TARGET_VAL                __CUDA_ARCH__
+#        define NV_TARGET_MINIMUM_SM_SELECTOR _NV_CONCAT_EVAL(_NV_TARGET_ARCH_TO_SELECTOR_, __CUDA_ARCH__)
+#        define NV_TARGET_MINIMUM_SM_INTEGER  _NV_CONCAT_EVAL(_NV_TARGET_ARCH_TO_SM_, __CUDA_ARCH__)
+#        define __CUDA_MINIMUM_ARCH__         __CUDA_ARCH__
+#      endif
+
+#      if defined(__CUDA_ARCH__)
+#        define _NV_TARGET_IS_HOST   0
+#        define _NV_TARGET_IS_DEVICE 1
+#      else
+#        define _NV_TARGET_IS_HOST   1
+#        define _NV_TARGET_IS_DEVICE 0
+#      endif
+
+#      if defined(_NV_TARGET_VAL)
+#        define _NV_DEVICE_CHECK(q) (q)
+#      else
+#        define _NV_DEVICE_CHECK(q) (0)
+#      endif
+
+#      define _NV_TARGET_PROVIDES(q)   _NV_DEVICE_CHECK(_NV_TARGET_VAL >= q)
+#      define _NV_TARGET_IS_EXACTLY(q) _NV_DEVICE_CHECK(_NV_TARGET_VAL == q)
 
 // NVCC/NVCXX not being used, only host dispatches allowed
 #    else
