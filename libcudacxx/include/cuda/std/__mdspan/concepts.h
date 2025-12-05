@@ -38,16 +38,15 @@
 #include <cuda/std/__tuple_dir/tuple_like.h>
 #include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/is_convertible.h>
-#include <cuda/std/__type_traits/is_integral.h>
+#include <cuda/std/__type_traits/is_move_assignable.h>
 #include <cuda/std/__type_traits/is_nothrow_constructible.h>
-#include <cuda/std/__type_traits/is_nothrow_move_assignable.h>
 #include <cuda/std/__type_traits/is_nothrow_move_constructible.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/is_signed.h>
 #include <cuda/std/__type_traits/is_swappable.h>
 #include <cuda/std/__type_traits/is_unsigned.h>
-#include <cuda/std/__type_traits/remove_const.h>
-#include <cuda/std/__type_traits/remove_cvref.h>
+#include <cuda/std/__type_traits/void_t.h>
+#include <cuda/std/__utility/declval.h>
 #include <cuda/std/span>
 
 #include <cuda/std/__cccl/prologue.h>
@@ -129,6 +128,33 @@ _CCCL_CONCEPT __index_pair_like = _CCCL_REQUIRES_EXPR((_Tp, _IndexType))(
 
 template <class _Tp>
 _CCCL_CONCEPT __index_like = is_signed_v<_Tp> || is_unsigned_v<_Tp> || __integral_constant_like<_Tp>;
+
+#if _CCCL_HAS_CONCEPTS()
+
+template <class _AccessorPolicy>
+_CCCL_CONCEPT __has_detect_invalidity = requires(_AccessorPolicy __ap) {
+  __ap.__has_detect_invalidity(
+    ::cuda::std::declval<typename _AccessorPolicy::data_handle_type>(), ::cuda::std::declval<size_t>());
+};
+
+#else // ^^^ _CCCL_HAS_CONCEPTS() ^^^ / vvv !_CCCL_HAS_CONCEPTS() vvv
+
+template <typename, typename = void>
+struct __has_detect_invalidity_s : ::cuda::std::false_type
+{};
+
+template <typename _AccessorPolicy>
+struct __has_detect_invalidity_s<
+  _AccessorPolicy,
+  ::cuda::std::void_t<decltype(::cuda::std::declval<_AccessorPolicy>().__has_detect_invalidity(
+    ::cuda::std::declval<typename _AccessorPolicy::data_handle_type>(), ::cuda::std::declval<size_t>()))>>
+    : ::cuda::std::true_type
+{};
+
+template <typename _AccessorPolicy>
+inline constexpr bool __has_detect_invalidity = __has_detect_invalidity_s<_AccessorPolicy>::value;
+
+#endif // ^^^ _CCCL_HAS_CONCEPTS() ^^^ / vvv !_CCCL_HAS_CONCEPTS() vvv
 
 _CCCL_END_NAMESPACE_CUDA_STD
 
