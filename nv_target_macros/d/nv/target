@@ -1,0 +1,7 @@
+
+#ifndef __NV_TARGET_H
+#define __NV_TARGET_H
+
+static_assert(false);
+
+#endif // __NV_TARGET_H
