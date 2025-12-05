@@ -17,8 +17,8 @@ void test_launch_kernel_replacement(CUlaunchConfig& config, CUfunction kernel, v
 // matches the expected configuration and calls the original launch kernel
 // function if it does. If the configuration does not match, it will fail the
 // test.
-#define _CUDAX_LAUNCH_CONFIG_TEST
-#include <cuda/experimental/launch.cuh>
+#define _CCCLRT_LAUNCH_CONFIG_TEST
+#include <cuda/launch>
 
 #include <host_device.cuh>
 
@@ -30,15 +30,15 @@ void test_launch_kernel_replacement(CUlaunchConfig& config, CUfunction kernel, v
   replacementCalled = true;
   bool has_cluster  = false;
 
-  CUDAX_CHECK(expectedConfig.gridDimX == config.gridDimX);
-  CUDAX_CHECK(expectedConfig.gridDimY == config.gridDimY);
-  CUDAX_CHECK(expectedConfig.gridDimZ == config.gridDimZ);
-  CUDAX_CHECK(expectedConfig.blockDimX == config.blockDimX);
-  CUDAX_CHECK(expectedConfig.blockDimY == config.blockDimY);
-  CUDAX_CHECK(expectedConfig.blockDimZ == config.blockDimZ);
-  CUDAX_CHECK(expectedConfig.sharedMemBytes == config.sharedMemBytes);
-  CUDAX_CHECK(expectedConfig.hStream == config.hStream);
-  CUDAX_CHECK(expectedConfig.numAttrs == config.numAttrs);
+  CCCLRT_CHECK(expectedConfig.gridDimX == config.gridDimX);
+  CCCLRT_CHECK(expectedConfig.gridDimY == config.gridDimY);
+  CCCLRT_CHECK(expectedConfig.gridDimZ == config.gridDimZ);
+  CCCLRT_CHECK(expectedConfig.blockDimX == config.blockDimX);
+  CCCLRT_CHECK(expectedConfig.blockDimY == config.blockDimY);
+  CCCLRT_CHECK(expectedConfig.blockDimZ == config.blockDimZ);
+  CCCLRT_CHECK(expectedConfig.sharedMemBytes == config.sharedMemBytes);
+  CCCLRT_CHECK(expectedConfig.hStream == config.hStream);
+  CCCLRT_CHECK(expectedConfig.numAttrs == config.numAttrs);
 
   for (unsigned int i = 0; i < expectedConfig.numAttrs; ++i)
   {
@@ -52,26 +52,26 @@ void test_launch_kernel_replacement(CUlaunchConfig& config, CUfunction kernel, v
         switch (expectedAttr.id)
         {
           case CU_LAUNCH_ATTRIBUTE_CLUSTER_DIMENSION:
-            CUDAX_CHECK(expectedAttr.value.clusterDim.x == actualAttr.value.clusterDim.x);
-            CUDAX_CHECK(expectedAttr.value.clusterDim.y == actualAttr.value.clusterDim.y);
-            CUDAX_CHECK(expectedAttr.value.clusterDim.z == actualAttr.value.clusterDim.z);
+            CCCLRT_CHECK(expectedAttr.value.clusterDim.x == actualAttr.value.clusterDim.x);
+            CCCLRT_CHECK(expectedAttr.value.clusterDim.y == actualAttr.value.clusterDim.y);
+            CCCLRT_CHECK(expectedAttr.value.clusterDim.z == actualAttr.value.clusterDim.z);
             has_cluster = true;
             break;
           case CU_LAUNCH_ATTRIBUTE_COOPERATIVE:
-            CUDAX_CHECK(expectedAttr.value.cooperative == actualAttr.value.cooperative);
+            CCCLRT_CHECK(expectedAttr.value.cooperative == actualAttr.value.cooperative);
             break;
           case CU_LAUNCH_ATTRIBUTE_PRIORITY:
-            CUDAX_CHECK(expectedAttr.value.priority == actualAttr.value.priority);
+            CCCLRT_CHECK(expectedAttr.value.priority == actualAttr.value.priority);
             break;
           default:
-            CUDAX_CHECK(false);
+            CCCLRT_CHECK(false);
             break;
         }
         break;
       }
     }
     INFO("Searched attribute is " << expectedAttr.id);
-    CUDAX_CHECK(j != expectedConfig.numAttrs);
+    CCCLRT_CHECK(j != expectedConfig.numAttrs);
   }
 
   if (!has_cluster || !skip_device_exec(arch_filter<std::less<int>, 90>))
@@ -128,7 +128,7 @@ auto configuration_test(
   SECTION("Simple cooperative launch")
   {
     CUlaunchAttribute attrs[2];
-    auto config                               = cudax::make_config(dims, cudax::cooperative_launch());
+    auto config                               = cuda::make_config(dims, cuda::cooperative_launch());
     expectedConfig.numAttrs                   = 1 + HasCluster;
     expectedConfig.attrs                      = &attrs[0];
     expectedConfig.attrs[0].id                = CU_LAUNCH_ATTRIBUTE_COOPERATIVE;
@@ -137,7 +137,7 @@ auto configuration_test(
     {
       add_cluster(cluster_dims, expectedConfig.attrs[1]);
     }
-    cudax::launch(stream, config, empty_kernel, 0);
+    cuda::launch(stream, config, empty_kernel, 0);
   }
 
   SECTION("Priority and dynamic smem")
@@ -146,7 +146,7 @@ auto configuration_test(
     constexpr int priority = 42;
     constexpr int num_ints = 128;
     auto config =
-      cudax::make_config(dims, cudax::launch_priority(priority), cudax::dynamic_shared_memory<int[num_ints]>());
+      cuda::make_config(dims, cuda::launch_priority(priority), cuda::dynamic_shared_memory<int[num_ints]>());
     expectedConfig.sharedMemBytes          = num_ints * sizeof(int);
     expectedConfig.numAttrs                = 1 + HasCluster;
     expectedConfig.attrs                   = &attrs[0];
@@ -156,7 +156,7 @@ auto configuration_test(
     {
       add_cluster(cluster_dims, expectedConfig.attrs[1]);
     }
-    cudax::launch(stream, config, empty_kernel, 0);
+    cuda::launch(stream, config, empty_kernel, 0);
   }
 
   SECTION("Large dynamic smem")
@@ -168,7 +168,7 @@ auto configuration_test(
       int arr[13 * 1024];
     };
     CUlaunchAttribute attrs[1];
-    auto config                   = cudax::make_config(dims, cudax::dynamic_shared_memory<S>(cudax::non_portable));
+    auto config                   = cuda::make_config(dims, cuda::dynamic_shared_memory<S>(cuda::non_portable));
     expectedConfig.sharedMemBytes = sizeof(S);
     expectedConfig.numAttrs       = HasCluster;
     expectedConfig.attrs          = &attrs[0];
@@ -176,7 +176,7 @@ auto configuration_test(
     {
       add_cluster(cluster_dims, expectedConfig.attrs[0]);
     }
-    cudax::launch(stream, config, empty_kernel, 0);
+    cuda::launch(stream, config, empty_kernel, 0);
   }
   stream.sync();
 }
@@ -195,21 +195,21 @@ C2H_TEST("Launch configuration", "[launch]")
   }
 
   CUDART(cudaStreamDestroy(stream));
-  CUDAX_CHECK(replacementCalled);
+  CCCLRT_CHECK(replacementCalled);
 }
 
 C2H_TEST("Hierarchy construction in config", "[launch]")
 {
-  auto config = cudax::make_config(cuda::grid_dims<2>(), cudax::cooperative_launch());
+  auto config = cuda::make_config(cuda::grid_dims<2>(), cuda::cooperative_launch());
   static_assert(config.dims.count(cuda::block) == 2);
 
-  auto config_larger = cudax::make_config(cuda::grid_dims<2>(), cuda::block_dims(256), cudax::cooperative_launch());
-  CUDAX_REQUIRE(config_larger.dims.count(cuda::thread) == 512);
+  auto config_larger = cuda::make_config(cuda::grid_dims<2>(), cuda::block_dims(256), cuda::cooperative_launch());
+  CCCLRT_REQUIRE(config_larger.dims.count(cuda::thread) == 512);
 
-  auto config_no_options = cudax::make_config(cuda::grid_dims(2), cuda::block_dims<128>());
-  CUDAX_REQUIRE(config_no_options.dims.count(cuda::thread) == 256);
+  auto config_no_options = cuda::make_config(cuda::grid_dims(2), cuda::block_dims<128>());
+  CCCLRT_REQUIRE(config_no_options.dims.count(cuda::thread) == 256);
 
-  [[maybe_unused]] auto config_no_dims = cudax::make_config(cudax::cooperative_launch());
+  [[maybe_unused]] auto config_no_dims = cuda::make_config(cuda::cooperative_launch());
   static_assert(cuda::std::is_same_v<decltype(config_no_dims.dims), cuda::__empty_hierarchy>);
 }
 
@@ -220,33 +220,32 @@ C2H_TEST("Configuration combine", "[launch]")
   auto block   = cuda::block_dims(256);
   SECTION("Combine with no overlap")
   {
-    auto config_part1                         = cudax::make_config(grid);
-    auto config_part2                         = cudax::make_config(block, cudax::launch_priority(2));
+    auto config_part1                         = cuda::make_config(grid);
+    auto config_part2                         = cuda::make_config(block, cuda::launch_priority(2));
     auto combined                             = config_part1.combine(config_part2);
     [[maybe_unused]] auto combined_other_way  = config_part2.combine(config_part1);
-    [[maybe_unused]] auto combined_with_empty = combined.combine(cudax::make_config());
-    [[maybe_unused]] auto empty_with_combined = cudax::make_config().combine(combined);
+    [[maybe_unused]] auto combined_with_empty = combined.combine(cuda::make_config());
+    [[maybe_unused]] auto empty_with_combined = cuda::make_config().combine(combined);
     static_assert(
-      cuda::std::is_same_v<decltype(combined), decltype(cudax::make_config(grid, block, cudax::launch_priority(2)))>);
+      cuda::std::is_same_v<decltype(combined), decltype(cuda::make_config(grid, block, cuda::launch_priority(2)))>);
     static_assert(cuda::std::is_same_v<decltype(combined), decltype(combined_other_way)>);
     static_assert(cuda::std::is_same_v<decltype(combined), decltype(combined_with_empty)>);
     static_assert(cuda::std::is_same_v<decltype(combined), decltype(empty_with_combined)>);
-    CUDAX_REQUIRE(combined.dims.count(cuda::thread) == 512);
+    CCCLRT_REQUIRE(combined.dims.count(cuda::thread) == 512);
   }
   SECTION("Combine with overlap")
   {
-    auto config_part1 = make_config(grid, cluster, cudax::launch_priority(2));
-    auto config_part2 = make_config(cuda::cluster_dims<256>, block, cudax::launch_priority(42));
+    auto config_part1 = make_config(grid, cluster, cuda::launch_priority(2));
+    auto config_part2 = make_config(cuda::cluster_dims<256>(), block, cuda::launch_priority(42));
     auto combined     = config_part1.combine(config_part2);
-    CUDAX_REQUIRE(combined.dims.count(cuda::thread) == 2048);
-    CUDAX_REQUIRE(cuda::std::get<0>(combined.options).priority == 2);
+    CCCLRT_REQUIRE(combined.dims.count(cuda::thread) == 2048);
+    CCCLRT_REQUIRE(cuda::std::get<0>(combined.options).priority == 2);
 
-    auto replaced_one_option = cudax::make_config(cudax::launch_priority(3)).combine(combined);
-    CUDAX_REQUIRE(replaced_one_option.dims.count(cuda::thread) == 2048);
-    CUDAX_REQUIRE(cuda::std::get<0>(replaced_one_option.options).priority == 3);
+    auto replaced_one_option = cuda::make_config(cuda::launch_priority(3)).combine(combined);
+    CCCLRT_REQUIRE(replaced_one_option.dims.count(cuda::thread) == 2048);
+    CCCLRT_REQUIRE(cuda::std::get<0>(replaced_one_option.options).priority == 3);
 
-    [[maybe_unused]] auto combined_with_extra_option =
-      combined.combine(cudax::make_config(cudax::cooperative_launch()));
+    [[maybe_unused]] auto combined_with_extra_option = combined.combine(cuda::make_config(cuda::cooperative_launch()));
     static_assert(cuda::std::is_same_v<decltype(combined.dims), decltype(combined_with_extra_option.dims)>);
     static_assert(cuda::std::tuple_size_v<decltype(combined_with_extra_option.options)> == 2);
   }

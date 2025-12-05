@@ -1,6 +1,6 @@
 //===----------------------------------------------------------------------===//
 //
-// Part of CUDA Experimental in CUDA C++ Core Libraries,
+// Part of libcu++, the C++ Standard Library for your entire system,
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
@@ -8,28 +8,37 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDAX__LAUNCH_CONFIGURATION_CUH
-#define _CUDAX__LAUNCH_CONFIGURATION_CUH
+#ifndef _CUDA___LAUNCH_CONFIGURATION_H
+#define _CUDA___LAUNCH_CONFIGURATION_H
 
-#include <cuda/__driver/driver_api.h>
-#include <cuda/__hierarchy/hierarchy_dimensions.h>
-#include <cuda/__numeric/overflow_cast.h>
-#include <cuda/__ptx/instructions/get_sreg.h>
-#include <cuda/std/__cstddef/types.h>
-#include <cuda/std/__type_traits/is_const.h>
-#include <cuda/std/__type_traits/is_reference.h>
-#include <cuda/std/__type_traits/is_unbounded_array.h>
-#include <cuda/std/__type_traits/rank.h>
-#include <cuda/std/span>
-#include <cuda/std/tuple>
+#include <cuda/std/detail/__config>
 
-#include <cuda/experimental/__detail/utility.cuh>
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 
-#include <cuda/std/__cccl/prologue.h>
+#if _CCCL_HAS_CTK() && !_CCCL_COMPILER(NVRTC)
 
-#if _CCCL_STD_VER >= 2017
-namespace cuda::experimental
-{
+#  include <cuda/__driver/driver_api.h>
+#  include <cuda/__hierarchy/hierarchy_dimensions.h>
+#  include <cuda/__numeric/overflow_cast.h>
+#  include <cuda/__ptx/instructions/get_sreg.h>
+#  include <cuda/std/__cstddef/types.h>
+#  include <cuda/std/__type_traits/is_const.h>
+#  include <cuda/std/__type_traits/is_reference.h>
+#  include <cuda/std/__type_traits/is_unbounded_array.h>
+#  include <cuda/std/__type_traits/rank.h>
+#  include <cuda/std/span>
+#  include <cuda/std/tuple>
+
+#  include <cuda/std/__cccl/prologue.h>
+
+_CCCL_BEGIN_NAMESPACE_CUDA
+
 template <typename Dimensions, typename... Options>
 struct kernel_config;
 
@@ -103,7 +112,7 @@ inline constexpr bool no_duplicate_options<Option, Rest...> =
  *
  * @par Snippet
  * @code
- * #include <cudax/launch.cuh>
+ * #include <cuda/launch>
  * #include <cooperative_groups.h>
  *
  * template <typename Configuration>
@@ -114,10 +123,10 @@ inline constexpr bool no_duplicate_options<Option, Rest...> =
  * }
  *
  * void kernel_launch(cuda::stream_ref stream) {
- *     auto dims = cudax::make_hierarchy(cudax::block<128>(), cudax::grid(4));
- *     auto conf = cudax::make_configuration(dims, cooperative_launch());
+ *     auto dims = cuda::make_hierarchy(cuda::block<128>(), cuda::grid(4));
+ *     auto conf = cuda::make_configuration(dims, cooperative_launch());
  *
- *     cudax::launch(stream, conf, kernel);
+ *     cuda::launch(stream, conf, kernel);
  * }
  * @endcode
  */
@@ -188,8 +197,8 @@ inline constexpr ::cuda::std::size_t __max_portable_dyn_smem_size = 48 * 1024;
  *
  * When launch configuration contains this option, that configuration can be
  * then passed to dynamic_shared_memory_view to get the view_type over the
- * dynamic shared memory. It is also possible to obtain that memory through the
- * original extern __shared__ variable[] declaration.
+ * dynamic shared memory. It is also possible to obtain that memory through
+ * the original extern __shared__ variable[] declaration.
  *
  * CUDA guarantees that each device has at least 48kB of shared memory
  * per block, but most devices have more than that.
@@ -199,21 +208,21 @@ inline constexpr ::cuda::std::size_t __max_portable_dyn_smem_size = 48 * 1024;
  *
  * @par Snippet
  * @code
- * #include <cudax/launch.cuh>
+ * #include <cuda/launch>
  *
  * template <typename Configuration>
  * __global__ void kernel(Configuration conf)
  * {
- *     auto dynamic_shared = cudax::dynamic_shared_memory_view(conf);
+ *     auto dynamic_shared = cuda::dynamic_shared_memory_view(conf);
  *     dynamic_shared[0] = 1;
  * }
  *
  * void kernel_launch(cuda::stream_ref stream) {
- *     auto dims = cudax::make_hierarchy(cudax::block<128>(), cudax::grid(4));
- *     auto conf = cudax::make_configuration(dims,
+ *     auto dims = cuda::make_hierarchy(cuda::block<128>(), cuda::grid(4));
+ *     auto conf = cuda::make_configuration(dims,
  * dynamic_shared_memory<int[128]>());
  *
- *     cudax::launch(stream, conf, kernel);
+ *     cuda::launch(stream, conf, kernel);
  * }
  * @endcode
  * @par
@@ -246,10 +255,10 @@ public:
   bool __non_portable_{}; //!< \c true if the object was created with
                           //!< non_portable flag.
 
-  using typename __base_type::value_type; //!< Value type of the dynamic shared
-                                          //!< memory elements.
+  using typename __base_type::value_type; //!< Value type of the dynamic
+                                          //!< shared memory elements.
   using typename __base_type::view_type; //!< The view type returned by the
-                                         //!< cuda::device::dynamic_shared_memory_view(config).
+                                         //!< cuda::dynamic_shared_memory_view(config).
 
   static constexpr bool is_relevant_on_device        = true;
   static constexpr __detail::launch_option_kind kind = __detail::launch_option_kind::dynamic_shared_memory;
@@ -327,8 +336,8 @@ template <class _Tp>
 {
   ::cudaError_t __status = ::cudaSuccess;
 
-  // Since CUDA 12.4, querying CU_FUNC_ATTRIBUTE_SHARED_SIZE_BYTES requires the
-  // function to be loaded.
+  // Since CUDA 12.4, querying CU_FUNC_ATTRIBUTE_SHARED_SIZE_BYTES requires
+  // the function to be loaded.
   if (::cuda::__driver::__version_at_least(12, 4))
   {
     __status = ::cuda::__driver::__functionLoadNoThrow(__kernel);
@@ -452,11 +461,11 @@ _CCCL_CONCEPT __kernel_has_default_config =
 /**
  * @brief Type describing a kernel launch configuration
  *
- * This type should not be constructed directly and make_config helper function
- * should be used instead
+ * This type should not be constructed directly and make_config helper
+ * function should be used instead
  *
  * @tparam Dimensions
- * cuda::experimental::hierarchy_dimensions instance that describes dimensions
+ * cuda::hierarchy_dimensions instance that describes dimensions
  * of thread hierarchy in this configuration object
  *
  * @tparam Options
@@ -501,13 +510,13 @@ struct kernel_config
    * and the configuration from argument. It contains dimensions that are
    * combination of dimensions in this object and the other configuration. The
    * resulting hierarchy holds levels present in both hierarchies. In case of
-   * overlap of levels hierarchy from this configuration is prioritized, so the
-   * result always holds all levels from this hierarchy and non-overlapping
-   * levels from the other hierarchy. This behavior is the same as `combine()`
-   * member function of the hierarchy type. The result also contains
-   * configuration options from both configurations. In case the same type of a
-   * configuration option is present in both configuration this configuration is
-   * copied into the resulting configuration.
+   * overlap of levels hierarchy from this configuration is prioritized, so
+   * the result always holds all levels from this hierarchy and
+   * non-overlapping levels from the other hierarchy. This behavior is the
+   * same as `combine()` member function of the hierarchy type. The result
+   * also contains configuration options from both configurations. In case the
+   * same type of a configuration option is present in both configuration this
+   * configuration is copied into the resulting configuration.
    *
    * @param __other_config
    * Other configuration to combine with this configuration
@@ -527,12 +536,12 @@ struct kernel_config
    * functor
    *
    * Returns a new `kernel_config` that is a combination of this configuration
-   * and a default configuration from the kernel argument. Default configuration
-   * is a `kernel_config` object returned from `default_config()` member
-   * function of the kernel type. The configurations are combined using the
-   * `combine()` member function of this configuration. If the kernel has no
-   * default configuration, a copy of this configuration is returned without any
-   * changes.
+   * and a default configuration from the kernel argument. Default
+   * configuration is a `kernel_config` object returned from
+   * `default_config()` member function of the kernel type. The configurations
+   * are combined using the `combine()` member function of this configuration.
+   * If the kernel has no default configuration, a copy of this configuration
+   * is returned without any changes.
    *
    * @param __kernel
    * Kernel functor to search for the default configuration
@@ -550,22 +559,19 @@ struct kernel_config
     }
   }
 };
-} // namespace cuda::experimental
-
-_CCCL_BEGIN_NAMESPACE_CUDA
 
 // We can consider removing the operator&, but its convenient for in-line
 // construction
 template <typename Dimensions, typename... Options, typename NewLevel>
 _CCCL_HOST_API constexpr auto
-operator&(const experimental::kernel_config<Dimensions, Options...>& config, const NewLevel& new_level) noexcept
+operator&(const kernel_config<Dimensions, Options...>& config, const NewLevel& new_level) noexcept
 {
   return kernel_config(hierarchy_add_level(config.dims, new_level), config.options);
 }
 
 template <typename NewLevel, typename Dimensions, typename... Options>
 _CCCL_HOST_API constexpr auto
-operator&(const NewLevel& new_level, const experimental::kernel_config<Dimensions, Options...>& config) noexcept
+operator&(const NewLevel& new_level, const kernel_config<Dimensions, Options...>& config) noexcept
 {
   return kernel_config(hierarchy_add_level(config.dims, new_level), config.options);
 }
@@ -574,13 +580,9 @@ template <typename L1, typename Dims1, typename L2, typename Dims2>
 _CCCL_HOST_API constexpr auto
 operator&(const level_dimensions<L1, Dims1>& l1, const level_dimensions<L2, Dims2>& l2) noexcept
 {
-  return experimental::kernel_config(cuda::make_hierarchy(l1, l2));
+  return kernel_config(::cuda::make_hierarchy(l1, l2));
 }
 
-_CCCL_END_NAMESPACE_CUDA
-
-namespace cuda::experimental
-{
 template <typename _Dimensions, typename... _Options>
 auto __make_config_from_tuple(const _Dimensions& __dims, const ::cuda::std::tuple<_Options...>& __opts)
 {
@@ -634,8 +636,8 @@ make_config(const hierarchy_dimensions<BottomUnit, Levels...>& dims, const Opts&
  *
  * @par Snippet
  * @code
- * #include <cudax/hierarchy_dimensions.cuh>
- * using namespace cuda::experimental;
+ * #include <cuda/hierarchy_dimensions.cuh>
+ * using namespace cuda;
  *
  * constexpr int threadsPerBlock = 256;
  * auto dims = distribute<threadsPerBlock>(numElements);
@@ -708,47 +710,28 @@ inline unsigned int constexpr kernel_config_count_attr_space(const kernel_config
 
 template <typename Dimensions, typename... Options>
 [[nodiscard]] cudaError_t apply_kernel_config(
-  const kernel_config<Dimensions, Options...>& config, cudaLaunchConfig_t& cuda_config, void* kernel) noexcept
-{
-  cudaError_t status = cudaSuccess;
-
-  ::cuda::std::apply(
-    [&](auto&... config_options) {
-      // Use short-cutting && to skip the rest on error, is this too
-      // convoluted?
-      (void) (... && [&](cudaError_t call_status) {
-        status = call_status;
-        return call_status == cudaSuccess;
-      }(config_options.apply(cuda_config, kernel)));
-    },
-    config.options);
-
-  return status;
-}
-
-template <typename Dimensions, typename... Options>
-[[nodiscard]] cudaError_t apply_kernel_config(
   const kernel_config<Dimensions, Options...>& config, CUlaunchConfig& cuda_config, CUfunction kernel) noexcept
 {
-  cudaError_t status = cudaSuccess;
-
-  ::cuda::std::apply(
+  return ::cuda::std::apply(
     [&](auto&... config_options) {
+      cudaError_t __status = cudaSuccess;
+
       // Use short-cutting && to skip the rest on error, is this too
       // convoluted?
-      (void) (... && [&](cudaError_t call_status) {
-        status = call_status;
+      // For some reason gcc 7 complains about __status capture, so we pass it as a reference
+      (void) (... && [](cudaError_t call_status, cudaError_t& __status_out) {
+        __status_out = call_status;
         return call_status == cudaSuccess;
-      }(::cuda::experimental::__apply_launch_option(config_options, cuda_config, kernel)));
+      }(::cuda::__apply_launch_option(config_options, cuda_config, kernel), __status));
+
+      return __status;
     },
     config.options);
-
-  return status;
 }
 } // namespace __detail
 
-namespace device
-{
+#  if _CCCL_CUDA_COMPILATION()
+
 template <class _Dims, class... _Opts>
 _CCCL_DEVICE_API decltype(auto) dynamic_shared_memory_view(const kernel_config<_Dims, _Opts...>& __config) noexcept
 {
@@ -759,10 +742,13 @@ _CCCL_DEVICE_API decltype(auto) dynamic_shared_memory_view(const kernel_config<_
   extern __shared__ unsigned char __cccl_device_dyn_smem[];
   return __opt.__make_view(reinterpret_cast<typename _Opt::value_type*>(__cccl_device_dyn_smem));
 }
-} // namespace device
-} // namespace cuda::experimental
-#endif // _CCCL_STD_VER >= 2017
 
-#include <cuda/std/__cccl/epilogue.h>
+#  endif // _CCCL_CUDA_COMPILATION()
 
-#endif // _CUDAX__LAUNCH_CONFIGURATION_CUH
+_CCCL_END_NAMESPACE_CUDA
+
+#  include <cuda/std/__cccl/epilogue.h>
+
+#endif // _CCCL_HAS_CTK() && !_CCCL_COMPILER(NVRTC)
+
+#endif // _CUDA___LAUNCH_CONFIGURATION_H
