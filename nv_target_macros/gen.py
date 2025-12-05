@@ -683,15 +683,15 @@ def main(version_major: int, version_minor: int, filename: int):
 // errors, because #include_next can be only used inside an included header.
 #  if defined(__NV_TARGET_FIRST_INCLUDE)
 #    undef __NV_TARGET_FIRST_INCLUDE
-#    if __has_include(<nv/target>)
+#    if _NV_HAS_INCLUDE(<nv/target>)
 #      define __NV_TARGET_H
 #      include <nv/target>
 #      undef __NV_TARGET_H
 #      if defined(__NV_TARGET_VERSIONED)
 #        include <nv/target>
 #      endif // __NV_TARGET_VERSIONED
-#    endif // __has_include(<nv/target>)
-#  elif __has_include_next(<nv/target>)
+#    endif // _NV_HAS_INCLUDE(<nv/target>)
+#  elif _NV_HAS_INCLUDE_NEXT(<nv/target>)
 #    define __NV_TARGET_H
 #    include_next <nv/target>
 #    undef __NV_TARGET_H
