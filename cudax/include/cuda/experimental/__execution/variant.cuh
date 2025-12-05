@@ -30,6 +30,7 @@
 #include <cuda/std/__type_traits/decay.h>
 #include <cuda/std/__type_traits/type_set.h>
 #include <cuda/std/__utility/integer_sequence.h>
+#include <cuda/std/__utility/monostate.h>
 
 #include <cuda/experimental/__detail/type_traits.cuh>
 #include <cuda/experimental/__execution/meta.cuh>
