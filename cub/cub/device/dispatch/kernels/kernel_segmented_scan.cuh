@@ -35,14 +35,14 @@ template <typename ChainedPolicyT,
           typename ActualInitValueT = typename InitValueT::value_type>
 __launch_bounds__(int(ChainedPolicyT::ActivePolicy::segmented_scan_policy_t::BLOCK_THREADS))
   CUB_DETAIL_KERNEL_ATTRIBUTES void device_segmented_scan_kernel(
-    InputIteratorT d_in,
-    OutputIteratorT d_out,
-    BeginOffsetIteratorInputT begin_offset_d_in,
-    EndOffsetIteratorInputT end_offset_d_in,
-    BeginOffsetIteratorOutputT begin_offset_d_out,
-    OffsetT n_segments,
-    ScanOpT scan_op,
-    InitValueT init_value)
+    _CCCL_GRID_CONSTANT const InputIteratorT d_in,
+    _CCCL_GRID_CONSTANT const OutputIteratorT d_out,
+    _CCCL_GRID_CONSTANT const BeginOffsetIteratorInputT begin_offset_d_in,
+    _CCCL_GRID_CONSTANT const EndOffsetIteratorInputT end_offset_d_in,
+    _CCCL_GRID_CONSTANT const BeginOffsetIteratorOutputT begin_offset_d_out,
+    _CCCL_GRID_CONSTANT const OffsetT n_segments,
+    _CCCL_GRID_CONSTANT const ScanOpT scan_op,
+    _CCCL_GRID_CONSTANT const InitValueT init_value)
 {
   using segmented_scan_policy_t = typename ChainedPolicyT::ActivePolicy::segmented_scan_policy_t;
 
