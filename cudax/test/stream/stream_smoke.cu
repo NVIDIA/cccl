@@ -28,7 +28,7 @@ C2H_CCCLRT_TEST("Can create a stream and launch work into it", "[stream]")
 
 C2H_CCCLRT_TEST("From native handle", "[stream]")
 {
-  cudax::__ensure_current_device guard(cuda::device_ref{0});
+  cuda::__ensure_current_context guard(cuda::device_ref{0});
   cudaStream_t handle;
   CUDART(cudaStreamCreate(&handle));
   {
