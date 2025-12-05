@@ -392,6 +392,14 @@ struct DispatchScan
     return static_cast<int>(smemAllocator.sizeBytes());
   }
 
+  // we check the required shared memory inside a template, so the error message shows the amount in case of failure
+  template <int RequiredSharedMemory>
+  CUB_RUNTIME_FUNCTION _CCCL_HOST static constexpr void verify_smem()
+  {
+    static_assert(RequiredSharedMemory <= detail::max_smem_per_block,
+                  "Single stage configuration exceeds architecture independent SMEM (48KiB)");
+  }
+
 #if __cccl_ptx_isa >= 860
   template <typename ActivePolicyT>
   CUB_RUNTIME_FUNCTION _CCCL_HOST _CCCL_FORCEINLINE cudaError_t __invoke_lookahead_algorithm(ActivePolicyT = {})
@@ -437,9 +445,7 @@ struct DispatchScan
     params.numElem   = num_items;
     params.numStages = 0; // computed below, must be set to 0
 
-    // TODO(bgruber): this fires
-    // static_assert(smem_for_stages<WarpspeedPolicy, InputT, OutputT>(1) <= detail::max_smem_per_block,
-    //              "Single stage configuration exceeds architecture independent SMEM (48KiB)");
+    verify_smem<smem_for_stages<WarpspeedPolicy, InputT, OutputT>(1)>();
 
     // Maximize the number of stages that we can fit inside the shared memory.
     int smem_size{};
