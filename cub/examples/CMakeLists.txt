@@ -19,7 +19,7 @@ function(cub_add_example target_name_var example_name example_src)
   set(${target_name_var} ${example_target} PARENT_SCOPE)
 
   cccl_add_executable(${example_target} SOURCES "${example_src}" ADD_CTEST)
-  cub_configure_cuda_target(${example_target} RDC ${CUB_FORCE_RDC})
+  cccl_set_rdc(${example_target} ${CUB_FORCE_RDC})
   target_link_libraries(
     ${example_target}
     PRIVATE #
