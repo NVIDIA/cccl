@@ -27,10 +27,32 @@
 #  include <cuda/std/__internal/namespaces.h>
 #  include <cuda/std/__type_traits/always_false.h>
 #  include <cuda/std/__type_traits/is_same.h>
+#  if !_CCCL_OS(WINDOWS)
+#    include <dlfcn.h>
+#  endif
 
 #  include <cuda.h>
 
 #  include <cuda/std/__cccl/prologue.h>
+
+#  if _CCCL_OS(WINDOWS)
+#    pragma comment(lib, "kernel32.lib")
+
+#    ifdef __cplusplus
+extern "C" {
+#    endif
+
+struct HINSTANCE__;
+
+__declspec(dllimport) struct HINSTANCE__* LoadLibraryExA(const char*, void*, unsigned long);
+
+typedef int64_t (*__get_proc_address_return_type)(void);
+__declspec(dllimport) __get_proc_address_return_type GetProcAddress(struct HINSTANCE__*, const char*);
+
+#    ifdef __cplusplus
+}
+#    endif
+#  endif // ^^^ _CCCL_OS(WINDOWS) ^^^
 
 _CCCL_BEGIN_NAMESPACE_CUDA_DRIVER
 
@@ -48,19 +70,35 @@ _CCCL_SUPPRESS_DEPRECATED_PUSH
 //! @brief Gets the cuGetProcAddress function pointer.
 [[nodiscard]] _CCCL_HOST_API inline auto __getProcAddressFn() -> decltype(cuGetProcAddress)*
 {
-  // TODO switch to dlopen of libcuda.so instead of the below
-  void* __fn;
-  ::cudaDriverEntryPointQueryResult __result;
-#  if _CCCL_CTK_AT_LEAST(13, 0)
-  ::cudaError_t __status =
-    ::cudaGetDriverEntryPointByVersion("cuGetProcAddress", &__fn, 13000, ::cudaEnableDefault, &__result);
-#  else
-  ::cudaError_t __status = ::cudaGetDriverEntryPoint("cuGetProcAddress", &__fn, ::cudaEnableDefault, &__result);
-#  endif
-  if (__status != ::cudaSuccess || __result != ::cudaDriverEntryPointSuccess)
+#  if _CCCL_OS(WINDOWS)
+  unsigned long flag = 0x00000800;
+  auto m_cudaDriverLibrary = LoadLibraryExA("nvcuda.dll", nullptr, flag);
+  if (m_cudaDriverLibrary == nullptr)
   {
-    ::cuda::__throw_cuda_error(::cudaErrorUnknown, "Failed to get cuGetProcAddress");
+    ::cuda::__throw_cuda_error(::cudaErrorUnknown, "Failed to load nvcuda.dll");
   }
+  void* __fn = GetProcAddress(m_cudaDriverLibrary, "cuGetProcAddress_v2");
+  if (__fn == nullptr)
+  {
+    ::cuda::__throw_cuda_error(::cudaErrorUnknown, "Failed to get cuGetProcAddress_v2 from nvcuda.dll");
+  }
+#  else
+#    if _CCCL_OS(ANDROID)
+  const char* m_cudaDriverLibraryName = "libcuda.so";
+#    else
+  const char* m_cudaDriverLibraryName = "libcuda.so.1";
+#    endif
+  void* m_cudaDriverLibrary = dlopen(m_cudaDriverLibraryName, RTLD_NOW);
+  if (m_cudaDriverLibrary == nullptr)
+  {
+    ::cuda::__throw_cuda_error(::cudaErrorUnknown, "Failed to load libcuda.so.1");
+  }
+  void* __fn = dlsym(m_cudaDriverLibrary, "cuGetProcAddress_v2");
+  if (__fn == nullptr)
+  {
+    ::cuda::__throw_cuda_error(::cudaErrorUnknown, "Failed to get cuGetProcAddress_v2 from libcuda.so.1");
+  }
+#  endif
   return reinterpret_cast<decltype(cuGetProcAddress)*>(__fn);
 }
 
