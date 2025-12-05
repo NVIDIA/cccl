@@ -7,12 +7,13 @@ function(cccl_configure_target target_name)
   set(oneValueArgs DIALECT)
   set(multiValueArgs)
   cmake_parse_arguments(
-    CCT
+    self
     "${options}"
     "${oneValueArgs}"
     "${multiValueArgs}"
     ${ARGN}
   )
+  cccl_parse_arguments_error_checks("cccl_configure_target" ERROR_UNPARSED)
 
   get_target_property(type ${target_name} TYPE)
 
@@ -24,9 +25,9 @@ function(cccl_configure_target target_name)
       CUDA_EXTENSIONS OFF
   )
 
-  if (DEFINED CCT_DIALECT)
-    set(CMAKE_CXX_STANDARD ${CCT_DIALECT})
-    set(CMAKE_CUDA_STANDARD ${CCT_DIALECT})
+  if (DEFINED self_DIALECT)
+    set(CMAKE_CXX_STANDARD ${self_DIALECT})
+    set(CMAKE_CUDA_STANDARD ${self_DIALECT})
   endif()
 
   set_target_properties(

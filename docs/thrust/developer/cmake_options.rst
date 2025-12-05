@@ -70,11 +70,6 @@ Generic CMake Options
    -  Toggles single-config and multi-config modes. Default is ``OFF``
       (single config).
 
--  ``THRUST_ENABLE_EXAMPLE_FILECHECK={ON, OFF}``
-
-   -  Enable validation of example outputs using the LLVM FileCheck
-      utility. Default is ``OFF``.
-
 -  ``THRUST_ENABLE_INSTALL_RULES={ON, OFF}``
 
    -  If true, installation rules will be generated for thrust. Default
@@ -104,21 +99,10 @@ Single Config CMake Options
 
    -  Selects the device system. Default: ``CUDA``
 
--  ``THRUST_CPP_DIALECT={17, 20}``
-
-   -  Selects the C++ standard dialect to use. Default is ``14``
-      (C++14).
-
 .. _cmake-multi-config-options:
 
 Multi Config CMake Options
 --------------------------
-
--  ``THRUST_MULTICONFIG_ENABLE_DIALECT_CPPXX={ON, OFF}``
-
-   -  Toggle whether a specific C++ dialect will be targeted.
-   -  Possible values of ``XX`` are ``{17, 20}``.
-   -  By default, only C++14 is enabled.
 
 -  ``THRUST_MULTICONFIG_ENABLE_SYSTEM_XXXX={ON, OFF}``
 

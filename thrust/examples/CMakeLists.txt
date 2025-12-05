@@ -1,54 +1,3 @@
-# Setup FileCheck if requested and available:
-option(
-  THRUST_ENABLE_EXAMPLE_FILECHECK
-  "Check example output with the LLVM FileCheck utility."
-  OFF
-)
-set(filecheck_data_path "${Thrust_SOURCE_DIR}/internal/test")
-
-if (THRUST_ENABLE_EXAMPLE_FILECHECK)
-  # TODO this should go into a find module
-  find_program(
-    THRUST_FILECHECK_EXECUTABLE
-    DOC "Path to the LLVM FileCheck utility."
-    NAMES
-      FileCheck
-      FileCheck-3.9
-      FileCheck-4.0
-      FileCheck-5.0
-      FileCheck-6.0
-      FileCheck-7
-      FileCheck-8
-      FileCheck-9
-  )
-
-  if (NOT THRUST_FILECHECK_EXECUTABLE)
-    message(
-      FATAL_ERROR
-      "Could not find the LLVM FileCheck utility. Set THRUST_FILECHECK_EXECUTABLE manually, "
-      "or disable THRUST_ENABLE_EXAMPLE_FILECHECK."
-    )
-  endif()
-
-  execute_process(
-    COMMAND
-      "${THRUST_FILECHECK_EXECUTABLE}"
-      "${filecheck_data_path}/thrust.smoke.filecheck"
-    INPUT_FILE "${Thrust_SOURCE_DIR}/cmake/filecheck_smoke_test"
-    RESULT_VARIABLE exit_code
-  )
-
-  if (0 EQUAL exit_code)
-    message(STATUS "FileCheck enabled: ${THRUST_FILECHECK_EXECUTABLE}")
-  else()
-    message(
-      FATAL_ERROR
-      "The current THRUST_FILECHECK_EXECUTABLE ('${THRUST_FILECHECK_EXECUTABLE}') "
-      "does not seem to be a valid FileCheck executable."
-    )
-  endif()
-endif()
-
 ## thrust_add_example
 #
 # Add an example executable and register it with ctest.
@@ -83,7 +32,8 @@ function(
   set(example_target ${config_prefix}.example.${example_name})
   set(${target_name_var} ${example_target} PARENT_SCOPE)
 
-  cccl_add_executable(${example_target} SOURCES "${real_example_src}")
+  cccl_add_executable(${example_target} SOURCES "${real_example_src}" ADD_CTEST)
+  thrust_add_all_config_metatarget(${example_target})
   target_link_libraries(${example_target} PRIVATE ${thrust_target})
   target_include_directories(
     ${example_target}
@@ -91,7 +41,7 @@ function(
   )
 
   if ("CUDA" STREQUAL "${config_device}")
-    thrust_configure_cuda_target(${example_target} RDC ${THRUST_FORCE_RDC})
+    cccl_set_rdc(${example_target} ${THRUST_FORCE_RDC})
   endif()
 
   # We do not want to explicitly include `host_device.h` if not needed,
@@ -109,29 +59,6 @@ function(
   target_compile_definitions(
     ${example_target}
     PRIVATE $<$<COMPILE_LANG_AND_ID:CUDA,NVIDIA>:THRUST_EXAMPLE_DEVICE_SIDE>
-  )
-
-  # Get the name of FileCheck input by stripping out the config name.
-  # (e.g. "thrust.cpp.cuda.cpp14.example.xxx" -> "thrust.example.xxx.filecheck")
-  string(
-    REPLACE
-    "${config_prefix}"
-    "thrust"
-    filecheck_reference_file
-    "${example_target}.filecheck"
-  )
-
-  add_test(
-    NAME ${example_target}
-    # gersemi: off
-    COMMAND
-      "${CMAKE_COMMAND}"
-        "-DEXAMPLE_EXECUTABLE=$<TARGET_FILE:${example_target}>"
-        "-DFILECHECK_ENABLED=${THRUST_ENABLE_EXAMPLE_FILECHECK}"
-        "-DFILECHECK_EXECUTABLE=${THRUST_FILECHECK_EXECUTABLE}"
-        "-DREFERENCE_FILE=${filecheck_data_path}/${filecheck_reference_file}"
-        -P "${Thrust_SOURCE_DIR}/cmake/ThrustRunExample.cmake"
-    # gersemi: on
   )
 
   # Run OMP/TBB tests in serial. Multiple OMP processes will massively

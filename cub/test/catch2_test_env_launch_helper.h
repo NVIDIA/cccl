@@ -5,7 +5,10 @@
 
 #include <thrust/system/cuda/detail/core/triple_chevron_launch.h>
 
+#include <cuda/std/__exception/terminate.h>
 #include <cuda/std/optional>
+
+#include <nv/target>
 
 #include <c2h/catch2_test_helper.h>
 
@@ -179,25 +182,31 @@ struct device_memory_resource : cub::detail::device_memory_resource
   size_t* bytes_allocated    = nullptr;
   size_t* bytes_deallocated  = nullptr;
 
-  void* allocate_sync(size_t /* bytes */, size_t /* alignment */)
+  CUB_RUNTIME_FUNCTION void* allocate_sync(size_t /* bytes */, size_t /* alignment */)
   {
-    FAIL("CUB shouldn't use synchronous allocation");
+    NV_IF_TARGET(NV_IS_HOST, //
+                 (FAIL("CUB shouldn't use synchronous allocation");),
+                 _CubLog("%s\n", "CUB shouldn't use synchronous allocation");
+                 cuda::std::terminate(););
     return nullptr;
   }
 
-  void deallocate_sync(void* /* ptr */, size_t /* bytes */)
+  CUB_RUNTIME_FUNCTION void deallocate_sync(void* /* ptr */, size_t /* bytes */)
   {
-    FAIL("CUB shouldn't use synchronous deallocation");
+    NV_IF_TARGET(NV_IS_HOST, //
+                 (FAIL("CUB shouldn't use synchronous deallocation");),
+                 _CubLog("%s\n", "CUB shouldn't use synchronous deallocation");
+                 cuda::std::terminate(););
   }
 
-  void* allocate(cuda::stream_ref stream, size_t bytes, size_t /* alignment */)
+  CUB_RUNTIME_FUNCTION void* allocate(cuda::stream_ref stream, size_t bytes, size_t /* alignment */)
   {
     return allocate(stream, bytes);
   }
 
-  void* allocate(cuda::stream_ref stream, size_t bytes)
+  CUB_RUNTIME_FUNCTION void* allocate(cuda::stream_ref stream, size_t bytes)
   {
-    REQUIRE(target_stream == stream.get());
+    NV_IF_TARGET(NV_IS_HOST, REQUIRE(target_stream == stream.get()););
 
     if (bytes_allocated)
     {
@@ -206,9 +215,9 @@ struct device_memory_resource : cub::detail::device_memory_resource
     return cub::detail::device_memory_resource::allocate(stream, bytes);
   }
 
-  void deallocate(const cuda::stream_ref stream, void* ptr, size_t bytes)
+  CUB_RUNTIME_FUNCTION void deallocate(const cuda::stream_ref stream, void* ptr, size_t bytes)
   {
-    REQUIRE(target_stream == stream.get());
+    NV_IF_TARGET(NV_IS_HOST, REQUIRE(target_stream == stream.get()););
 
     if (bytes_deallocated)
     {
@@ -220,30 +229,45 @@ struct device_memory_resource : cub::detail::device_memory_resource
 
 struct throwing_memory_resource
 {
-  void* allocate(size_t /* bytes */, size_t /* alignment */)
+  CUB_RUNTIME_FUNCTION void* allocate(size_t /* bytes */, size_t /* alignment */)
   {
-    FAIL("CUB shouldn't use synchronous allocation");
+    NV_IF_TARGET(NV_IS_HOST, //
+                 (FAIL("CUB shouldn't use synchronous allocation");),
+                 _CubLog("%s\n", "CUB shouldn't use synchronous allocation");
+                 cuda::std::terminate(););
     return nullptr;
   }
 
-  void deallocate(void* /* ptr */, size_t /* bytes */)
+  CUB_RUNTIME_FUNCTION void deallocate(void* /* ptr */, size_t /* bytes */)
   {
-    FAIL("CUB shouldn't use synchronous deallocation");
+    NV_IF_TARGET(NV_IS_HOST, //
+                 (FAIL("CUB shouldn't use synchronous deallocation");),
+                 _CubLog("%s\n", "CUB shouldn't use synchronous deallocation");
+                 cuda::std::terminate(););
   }
 
-  void* allocate(cuda::stream_ref /* stream */, size_t /* bytes */, size_t /* alignment */)
+  CUB_RUNTIME_FUNCTION void* allocate(cuda::stream_ref /* stream */, size_t /* bytes */, size_t /* alignment */)
   {
-    throw "test";
+    NV_IF_TARGET(NV_IS_HOST, //
+                 (throw "test";),
+                 _CubLog("%s\n", "throwing_memory_resource not supported on device");
+                 cuda::std::terminate(););
   }
 
-  void* allocate(cuda::stream_ref /* stream */, size_t /* bytes */)
+  CUB_RUNTIME_FUNCTION void* allocate(cuda::stream_ref /* stream */, size_t /* bytes */)
   {
-    throw "test";
+    NV_IF_TARGET(NV_IS_HOST, //
+                 (throw "test";),
+                 _CubLog("%s\n", "throwing_memory_resource not supported on device");
+                 cuda::std::terminate(););
   }
 
-  void deallocate(const cuda::stream_ref /* stream */, void* /* ptr */, size_t /* bytes */)
+  CUB_RUNTIME_FUNCTION void deallocate(const cuda::stream_ref /* stream */, void* /* ptr */, size_t /* bytes */)
   {
-    throw "test";
+    NV_IF_TARGET(NV_IS_HOST, //
+                 (throw "test";),
+                 _CubLog("%s\n", "throwing_memory_resource not supported on device");
+                 cuda::std::terminate(););
   }
 };
 
