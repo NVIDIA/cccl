@@ -35,6 +35,7 @@
 #include <cuda/std/cstdint>
 
 #include <cuda/experimental/__execution/completion_signatures.cuh>
+#include <cuda/experimental/__execution/concepts.cuh>
 #include <cuda/experimental/__execution/cpos.cuh>
 #include <cuda/experimental/__execution/env.cuh>
 #include <cuda/experimental/__execution/fwd.cuh>
