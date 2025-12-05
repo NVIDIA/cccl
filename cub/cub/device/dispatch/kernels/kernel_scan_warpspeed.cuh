@@ -281,6 +281,20 @@ _CCCL_DEVICE_API inline void squadStoreSmem(Squad squad, OutputT* smemBuf, const
   }
 }
 
+template <typename OutputT, typename AccumT, int elemPerThread>
+_CCCL_DEVICE_API inline void
+squadStoreSmemPartial(Squad squad, OutputT* smemBuf, const AccumT (&inReg)[elemPerThread], int beginIndex, int endIndex)
+{
+  for (int i = 0; i < elemPerThread; ++i)
+  {
+    const int elem_idx = squad.threadRank() * elemPerThread + i;
+    if (beginIndex <= elem_idx && elem_idx < beginIndex + endIndex)
+    {
+      smemBuf[elem_idx - beginIndex] = static_cast<OutputT>(inReg[i]);
+    }
+  }
+}
+
 template <typename Tp, int elemPerThread, typename ScanOpT>
 _CCCL_DEVICE_API inline Tp threadReduce(const Tp (&regInput)[elemPerThread], ScanOpT& scan_op)
 {
@@ -502,16 +516,13 @@ struct scanKernelParams
 template <typename WarpspeedPolicy, typename InputT, typename OutputT, typename AccumT>
 struct ScanResources
 {
-  static constexpr int elemPerThread = WarpspeedPolicy::tile_size / WarpspeedPolicy::squadReduce().threadCount();
-
   // Handle unaligned loads. We have 16 extra bytes of padding in every stage
   // for squadLoadBulk.
-  using InT = InputT[WarpspeedPolicy::squadReduce().threadCount() * elemPerThread + 16 / sizeof(InputT)];
+  using InT = InputT[WarpspeedPolicy::tile_size + 16 / sizeof(InputT)];
   using SumThreadAndWarpT =
     AccumT[WarpspeedPolicy::squadReduce().threadCount() + WarpspeedPolicy::squadReduce().warpCount()];
 
-  SmemResource<InT> smemIn;
-  OutputT* smemOut;
+  SmemResource<InT> smemInOut; // will also be used to stage the output (as OutputT) for the bulk copy
   SmemResource<uint4> smemNextBlockIdx;
   SmemResource<AccumT> smemSumExclusiveCta;
   SmemResource<SumThreadAndWarpT> smemSumThreadAndWarp;
@@ -537,20 +548,8 @@ allocResources(SyncHandler& syncHandler, SmemAllocator& smemAllocator, int numSt
   // scanStore squad, releasing the stage.
   int numSumExclusiveCtaStages = 2;
 
-  auto make_output_buffer = [&] {
-    void* output_buffer_raw = smemAllocator.alloc(sizeof(OutputT) * WarpspeedPolicy::tile_size, alignof(OutputT));
-    // we don't need the pointer during constant evaluation (and casting is not allowed)
-    OutputT* output_buffer = nullptr;
-    if (!::cuda::std::is_constant_evaluated())
-    {
-      output_buffer = static_cast<OutputT*>(output_buffer_raw);
-    }
-    return output_buffer;
-  };
-
   ScanResourcesT res = {
     SmemResource<InT>(syncHandler, smemAllocator, Stages{numStages}),
-    make_output_buffer(),
     SmemResource<uint4>(syncHandler, smemAllocator, Stages{numBlockIdxStages}),
     SmemResource<AccumT>(syncHandler, smemAllocator, Stages{numSumExclusiveCtaStages}),
     SmemResource<SumThreadAndWarpT>(syncHandler, smemAllocator, Stages{numStages}),
@@ -564,8 +563,9 @@ allocResources(SyncHandler& syncHandler, SmemAllocator& smemAllocator, int numSt
     WarpspeedPolicy::squadLookback(),
   };
 
-  res.smemIn.addPhase(syncHandler, smemAllocator, WarpspeedPolicy::squadLoad());
-  res.smemIn.addPhase(syncHandler, smemAllocator, {WarpspeedPolicy::squadReduce(), WarpspeedPolicy::squadScanStore()});
+  res.smemInOut.addPhase(syncHandler, smemAllocator, WarpspeedPolicy::squadLoad());
+  res.smemInOut.addPhase(
+    syncHandler, smemAllocator, {WarpspeedPolicy::squadReduce(), WarpspeedPolicy::squadScanStore()});
 
   res.smemNextBlockIdx.addPhase(syncHandler, smemAllocator, WarpspeedPolicy::squadSched());
   res.smemNextBlockIdx.addPhase(syncHandler, smemAllocator, scanSquads);
@@ -616,6 +616,8 @@ _CCCL_DEVICE_API inline void kernelBody(
   constexpr int tile_size          = WarpspeedPolicy::tile_size;
   constexpr int num_lookback_tiles = WarpspeedPolicy::num_lookback_tiles;
 
+  constexpr int elemPerThread = tile_size / squadReduce.threadCount();
+
   ////////////////////////////////////////////////////////////////////////////////
   // Resources
   ////////////////////////////////////////////////////////////////////////////////
@@ -651,7 +653,7 @@ _CCCL_DEVICE_API inline void kernelBody(
     // Get stages. When these objects go out of scope, the stage of the resource
     // is automatically incremented.
     SmemStage stageNextBlockIdx     = res.smemNextBlockIdx.popStage();
-    SmemStage stageInOut            = res.smemIn.popStage();
+    SmemStage stageInOut            = res.smemInOut.popStage();
     SmemStage stageSumThreadAndWarp = res.smemSumThreadAndWarp.popStage();
     SmemStage stageSumExclusiveCta  = res.smemSumExclusiveCta.popStage();
 
@@ -708,7 +710,6 @@ _CCCL_DEVICE_API inline void kernelBody(
         // Acquire phaseInOutRW in this short scope
         SmemRef refInOutRW = phaseInOutRW.acquireRef();
         // Load data
-        constexpr int elemPerThread    = tile_size / squadReduce.threadCount();
         AccumT regInput[elemPerThread] = {AccumT{}};
         // Handle unaligned refInOutRW.data() + loadInfo.smemStartOffsetElem points to the first element of the tile.
         squadLoadSmem(squad, regInput, &refInOutRW.data()[0] + loadInfo.smemStartOffsetElem);
@@ -842,13 +843,10 @@ _CCCL_DEVICE_API inline void kernelBody(
       AccumT regSumInclusive[elem_per_thread] = {{}};
 
       // Acquire refInOut for remainder of scope.
-      {
-        SmemRef refInOutRW = phaseInOutRW.acquireRef();
-        // Handle unaligned refInOutRW.data() + loadInfo.smemStartOffsetElem points to
-        // the first element of the tile.
-        squadLoadSmem(squad, regSumInclusive, &refInOutRW.data()[0] + loadInfo.smemStartOffsetElem);
-        refInOutRW.setFenceLdsToAsyncProxy();
-      }
+      SmemRef refInOutRW = phaseInOutRW.acquireRef();
+      // Handle unaligned refInOutRW.data() + loadInfo.smemStartOffsetElem points to
+      // the first element of the tile.
+      squadLoadSmem(squad, regSumInclusive, &refInOutRW.data()[0] + loadInfo.smemStartOffsetElem);
 
       // Perform inclusive scan of register array in current thread.
       if constexpr (isInclusive)
@@ -863,20 +861,62 @@ _CCCL_DEVICE_API inline void kernelBody(
       ////////////////////////////////////////////////////////////////////////////////
       // Store result to shared memory
       ////////////////////////////////////////////////////////////////////////////////
-      // Sync before storing to avoid data races.
-      squad.syncThreads();
-      CpAsyncOobInfo storeInfo = prepareCpAsyncOob(params.ptrOut + idxTileBase, copyNumElem);
-
-      squadStoreSmem(squad, res.smemOut + storeInfo.smemStartOffsetElem, regSumInclusive);
-      // We do *not* release refSmemInOut here, because we will issue a TMA
-      // instruction below. Instead, we issue a squad-local syncthreads +
-      // fence.proxy.async to sync the shared memory writes with the TMA store.
+      // Sync before storing to avoid data races on SMEM
       squad.syncThreads();
 
-      ////////////////////////////////////////////////////////////////////////////////
-      // Store result to global memory using TMA
-      ////////////////////////////////////////////////////////////////////////////////
-      squadStoreBulkSync(squad, storeInfo, res.smemOut);
+      // if the output types fit into the input type tile, we can alias it
+      OutputT* smem_output_tile = reinterpret_cast<OutputT*>(refInOutRW.data());
+      if constexpr (sizeof(OutputT) <= sizeof(InputT))
+      {
+        CpAsyncOobInfo storeInfo = prepareCpAsyncOob(params.ptrOut + idxTileBase, copyNumElem);
+
+        squadStoreSmem(squad, smem_output_tile + storeInfo.smemStartOffsetElem, regSumInclusive);
+        // We do *not* release refSmemInOut here, because we will issue a TMA
+        // instruction below. Instead, we issue a squad-local syncthreads +
+        // fence.proxy.async to sync the shared memory writes with the TMA store.
+        squad.syncThreads();
+
+        ////////////////////////////////////////////////////////////////////////////////
+        // Store result to global memory using TMA
+        ////////////////////////////////////////////////////////////////////////////////
+        squadStoreBulkSync(squad, storeInfo, smem_output_tile);
+      }
+      else
+      {
+        // otherwise, issue multiple bulk copies in chunks of the input tile size
+        // TODO(bgruber): I am sure this could be implemented a lot more efficiently
+        static constexpr int elem_per_chunk = (WarpspeedPolicy::tile_size * sizeof(InputT)) / sizeof(OutputT);
+        for (int chunk_offset = 0; chunk_offset < static_cast<int>(copyNumElem); chunk_offset += elem_per_chunk)
+        {
+          const int chunk_size     = ::cuda::std::min(static_cast<int>(copyNumElem) - chunk_offset, elem_per_chunk);
+          CpAsyncOobInfo storeInfo = prepareCpAsyncOob(params.ptrOut + idxTileBase + chunk_offset, chunk_size);
+          OutputT* smemBuf         = smem_output_tile + storeInfo.smemStartOffsetElem;
+
+          // only stage elements of the current chunk to SMEM
+          squadStoreSmemPartial(
+            squad,
+            smem_output_tile + storeInfo.smemStartOffsetElem,
+            regSumInclusive,
+            chunk_offset,
+            chunk_offset + chunk_size);
+
+          // We do *not* release refSmemInOut here, because we will issue a TMA
+          // instruction below. Instead, we issue a squad-local syncthreads +
+          // fence.proxy.async to sync the shared memory writes with the TMA store.
+          squad.syncThreads();
+
+          ////////////////////////////////////////////////////////////////////////////////
+          // Store result to global memory using TMA
+          ////////////////////////////////////////////////////////////////////////////////
+          squadStoreBulkSync(squad, storeInfo, smem_output_tile);
+
+          squad.syncThreads();
+        }
+      }
+
+      // Release refInOut. No need to do any cross-proxy fencing here, because
+      // the TMA store in this warp and the TMA load in the load warp are both
+      // async proxy.
     }
 
     ////////////////////////////////////////////////////////////////////////////////
