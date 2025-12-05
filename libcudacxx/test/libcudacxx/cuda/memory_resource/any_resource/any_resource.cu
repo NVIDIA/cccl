@@ -265,4 +265,24 @@ TEST_CASE("resource_ref regression test for cccl#6839", "[container][resource]")
   CHECK(checks_device_runtime_resource_ref(ref)); // Test that we are device accessible
 }
 
+TEMPLATE_TEST_CASE_METHOD(test_fixture, "Empty property set", "[container][resource]", big_resource, small_resource)
+{
+  using TestResource = TestType;
+  {
+    cuda::mr::any_resource<> mr{TestResource{42, this}};
+    CHECK(mr.allocate_sync(this->bytes(100), this->align(8)) == this);
+    CHECK(!try_get_property(mr, get_data{}));
+    CHECK(!try_get_property(mr, extra_property{}));
+    mr.deallocate_sync(this, this->bytes(0), this->align(0));
+  }
+
+  {
+    cuda::mr::any_resource<get_data> mr{TestResource{42, this}};
+    cuda::mr::any_resource<> mr_sliced_off_to_empty{mr};
+    CHECK(mr.allocate_sync(this->bytes(100), this->align(8)) == this);
+    CHECK(try_get_property(mr, get_data{}).value() == 42);
+    CHECK(!try_get_property(mr, extra_property{}));
+    mr.deallocate_sync(this, this->bytes(0), this->align(0));
+  }
+}
 #endif // __CUDA_ARCH__

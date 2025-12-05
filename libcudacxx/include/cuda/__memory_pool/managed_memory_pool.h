@@ -119,7 +119,10 @@ struct managed_memory_pool : managed_memory_pool_ref
 
   ~managed_memory_pool() noexcept
   {
-    ::cuda::__driver::__mempoolDestroy(__pool_);
+    if (__pool_ != nullptr)
+    {
+      ::cuda::__driver::__mempoolDestroy(__pool_);
+    }
   }
 
   _CCCL_HOST_API static managed_memory_pool from_native_handle(::cudaMemPool_t __pool) noexcept

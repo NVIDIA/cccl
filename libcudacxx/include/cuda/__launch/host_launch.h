@@ -21,15 +21,17 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/__driver/driver_api.h>
-#include <cuda/__stream/stream_ref.h>
-#include <cuda/std/__functional/reference_wrapper.h>
-#include <cuda/std/__type_traits/decay.h>
-#include <cuda/std/__type_traits/is_move_constructible.h>
-#include <cuda/std/__utility/forward.h>
-#include <cuda/std/tuple>
+#if _CCCL_HAS_CTK() && !_CCCL_COMPILER(NVRTC)
 
-#include <cuda/std/__cccl/prologue.h>
+#  include <cuda/__driver/driver_api.h>
+#  include <cuda/__stream/stream_ref.h>
+#  include <cuda/std/__functional/reference_wrapper.h>
+#  include <cuda/std/__type_traits/decay.h>
+#  include <cuda/std/__type_traits/is_move_constructible.h>
+#  include <cuda/std/__utility/forward.h>
+#  include <cuda/std/tuple>
+
+#  include <cuda/std/__cccl/prologue.h>
 
 _CCCL_BEGIN_NAMESPACE_CUDA
 
@@ -106,6 +108,8 @@ _CCCL_HOST_API void host_launch(stream_ref __stream, ::cuda::std::reference_wrap
 }
 _CCCL_END_NAMESPACE_CUDA
 
-#include <cuda/std/__cccl/epilogue.h>
+#  include <cuda/std/__cccl/epilogue.h>
+
+#endif // _CCCL_HAS_CTK() && !_CCCL_COMPILER(NVRTC)
 
 #endif // !_CUDA___LAUNCH_HOST_LAUNCH_H
