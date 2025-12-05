@@ -21,8 +21,11 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/functional>
-#include <cuda/std/cmath>
+#include <cuda/std/__algorithm/max.h>
+#include <cuda/std/__algorithm/min.h>
+#include <cuda/std/__cmath/abs.h>
+#include <cuda/std/__cmath/logarithms.h>
+#include <cuda/std/__cmath/rounding_functions.h>
 #include <cuda/std/cstddef>
 #include <cuda/std/limits>
 

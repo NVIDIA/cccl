@@ -27,8 +27,9 @@
 #include <cuda/__runtime/api_wrapper.h>
 #include <cuda/atomic>
 #include <cuda/std/__algorithm/max.h> // TODO #include <cuda/std/algorithm> once available
+#include <cuda/std/__bit/countr.h>
+#include <cuda/std/__bit/integral.h>
 #include <cuda/std/__iterator/concepts.h>
-#include <cuda/std/bit>
 #include <cuda/std/cstddef>
 #include <cuda/std/span>
 #include <cuda/std/utility>
