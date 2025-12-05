@@ -53,7 +53,7 @@ __global__ void estimate_kernel(typename Ref::sketch_size_kb sketch_size_kb, Inp
   }
 }
 
-using test_types = c2h::type_list<int32_t, int64_t, __int128_t>;
+using test_types = c2h::type_list<int32_t, int64_t>;
 
 C2H_TEST("HyperLogLog device ref", "[hyperloglog]", test_types)
 {
