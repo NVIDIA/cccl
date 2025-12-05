@@ -99,6 +99,7 @@ public:
   template <class _Sch, class _Sndr>
   struct _CCCL_TYPE_VISIBILITY_DEFAULT __sndr_t;
 
+  _CCCL_EXEC_CHECK_DISABLE
   template <class _Sndr>
   [[nodiscard]] static _CCCL_API constexpr auto transform_sender(start_t, _Sndr&& __sndr, ::cuda::std::__ignore_t)
   {
@@ -106,6 +107,7 @@ public:
     return sequence(continues_on(just(), __sch), ::cuda::std::forward_like<_Sndr>(__child));
   }
 
+  _CCCL_EXEC_CHECK_DISABLE
   template <class _Sch, class _Sndr>
   _CCCL_API constexpr auto operator()(_Sch __sch, _Sndr __sndr) const;
 };
@@ -130,6 +132,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT starts_on_t::__sndr_t
   {
     // If the sender has a _SetTag completion, then the completion scheduler for _SetTag
     // is the sender's.
+    _CCCL_EXEC_CHECK_DISABLE
     template <class _SetTag, class... _Env>
     [[nodiscard]] _CCCL_API constexpr auto query(get_completion_scheduler_t<_SetTag>, _Env&&... __env) const noexcept
       -> __call_result_t<get_completion_scheduler_t<_SetTag>, env_of_t<_Sndr>, __env2_t<_Sch, _Env>...>
@@ -195,6 +198,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT starts_on_t::__sndr_t
   _Sndr __sndr_;
 };
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class _Sch, class _Sndr>
 [[nodiscard]] _CCCL_API constexpr auto starts_on_t::operator()(_Sch __sch, _Sndr __sndr) const
 {
