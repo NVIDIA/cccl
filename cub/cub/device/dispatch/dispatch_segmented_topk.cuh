@@ -69,7 +69,7 @@ auto make_segment_iterator(ItT raw_ptr, SegmentSizeT segment_size)
 // [PARAMETER MIXINS AND HELPERS]
 // -----------------------------------------------------------------------------
 
-// Allows constraining static bounds for parameters
+// Allows providing constrains on parameter values at compile time
 template <typename T, T Min = ::cuda::std::numeric_limits<T>::min(), T Max = ::cuda::std::numeric_limits<T>::max()>
 struct static_bounds_mixin
 {
@@ -82,15 +82,16 @@ struct static_bounds_mixin
   static constexpr bool is_exact = (Min == Max);
 };
 
+// Allows specifying a list of supported options for a parameter. E.g., the orders (ascending, descending) that are supported by a sorting algorithm.
 template <typename T, T... Options>
 struct supported_options
 {
   static constexpr size_t count = sizeof...(Options);
 };
 
-// Helper to peel the supported_values pack
+// Helper that translates a runtime parameter value into a compile-time constant by matching against a list of supported options.
 template <typename T, T... Opts, typename Param, typename Functor>
-_CCCL_HOST_DEVICE void dispatch_impl(Param p, supported_options<T, Opts...>, Functor&& f)
+_CCCL_HOST_DEVICE bool dispatch_impl(Param p, supported_options<T, Opts...>, Functor&& f)
 {
   // Fold expression over the supported options.
   // This generates code equivalent to:
@@ -102,9 +103,10 @@ _CCCL_HOST_DEVICE void dispatch_impl(Param p, supported_options<T, Opts...>, Fun
 
   // Optional: Handling cases where the runtime value was not in the supported
   // list. In a release build, we assume the user respected the contract.
-  // (void)match_found;
+  return match_found;
 }
 
+// Dispatcher that matches a runtime parameter value against a list of supported options and invokes a functor with the matched option as a compile-time constant.
 template <typename Param, typename Functor>
 _CCCL_HOST_DEVICE void dispatch_discrete(Param p, Functor&& f)
 {
@@ -296,7 +298,7 @@ constexpr _CCCL_HOST_DEVICE auto resolve_param(ParamT const& p, [[maybe_unused]]
   }
   else
   {
-    // Case 3: Per-segment (per_segment).
+    // Case 3: Per-segment.
     static_assert(is_per_segment_param_v<ParamT>, "Unknown parameter type");
     return p.iterator[segment_id];
   }
@@ -490,6 +492,15 @@ public:
   }
 };
 
+// get_next_block_id()
+
+// segment_sizes: static bounds are limiting to invocations of BlockTopK or ClusterTopK
+// -> true: Specialize Agent to be of AgentSegmentedTopKOneWorkerPerSegment
+// -> else: Use AgentSegmentedTopK
+// segment_sizes: runtime bounds are limiting to invocations of BlockTopK or ClusterTopK
+// -> AgentSegmentedTopK: TBD
+
+
 template <typename ChainedPolicyT,
           typename KeyInputItItT,
           typename KeyOutputItItT,
@@ -506,7 +517,7 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::topk_policy_t::block_threads
     ValueInputItItT d_value_segments_it,
     ValueOutputItItT d_value_segments_out_it,
     SegmentSizeParameterT segment_sizes,
-    KParameterT k_it,
+    KParameterT k_values,
     SelectDirectionParameterT select_directions,
     NumSegmentsParameterT num_segments)
 {
@@ -528,9 +539,11 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::topk_policy_t::block_threads
   using key_t   = it_value_t<it_value_t<KeyInputItItT>>;
   using value_t = it_value_t<it_value_t<ValueInputItItT>>;
 
-  // Use Striped loading for non-deterministic results
+  constexpr bool is_keys_only = ::cuda::std::is_same<value_t, cub::NullType>::value;
+
   using block_load_keys_t = cub::BlockLoad<key_t, block_threads, items_per_thread, cub::BLOCK_LOAD_WARP_TRANSPOSE>;
   using block_load_vals_t = cub::BlockLoad<value_t, block_threads, items_per_thread, cub::BLOCK_LOAD_WARP_TRANSPOSE>;
+
   // Use your custom BlockTopK
   using block_topk_t = BlockTopK<key_t, block_threads, items_per_thread, value_t>;
 
@@ -560,69 +573,54 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::topk_policy_t::block_threads
   key_t padding_key = key_t{};
   if (resolve_param(select_directions, segment_id) == select::max)
   {
-    // padding_key = cub::detail::Traits<key_t>::LOWEST_KEY;
     padding_key = ::cuda::std::numeric_limits<key_t>::lowest();
   }
   else
   {
-    // padding_key = cub::detail::Traits<key_t>::MAX_KEY;
     padding_key = ::cuda::std::numeric_limits<key_t>::max();
   }
 
   segment_size_t segment_size = resolve_param(segment_sizes, segment_id);
   block_load_keys_t(temp_storage.load_keys).Load(d_key_segments_it[segment_id], thread_keys, segment_size, padding_key);
 
-  // value_t thread_values[items_per_thread];
-  // if constexpr ()
-  // {
-  //   // Make sure we can reuse shared memory for value loading
-  //   __syncthreads();
+  value_t thread_values[items_per_thread];
+  if constexpr (!is_keys_only)
+  {
+    // Make sure we can reuse shared memory for value loading
+    __syncthreads();
 
-  //   block_load_vals_t(temp_storage.load_vals).Load(d_value_segments_it[segment_id],
-  //   thread_values, segment_size);
-  // }
+    block_load_vals_t(temp_storage.load_vals).Load(d_value_segments_it[segment_id], thread_values, segment_size);
+  }
 
   // Make sure we can reuse shared memory for top-k selection
   __syncthreads();
 
-  // if(threadIdx.x <= 5 && blockIdx.x <=1){
-  //   for(int i=0; i<items_per_thread; i++){
-  //     printf("BID#%d.%d: TopK INPUT Key[%d]: %u\n", blockIdx.x, threadIdx.x,i, thread_keys[i]);
-  //   }
-  //   printf("Reading from: %p \n", d_key_segments_it[segment_id]);
-  // }
-
   // This sorts the *entire* block in registers.
   // The top k items will end up in the first K positions
-  k_index_t k = resolve_param(k_it, segment_id);
-  block_topk_t(temp_storage.topk)
-    .Select(thread_keys, k, resolve_param(select_directions, segment_id) == select::max, segment_size);
+  k_index_t k = resolve_param(k_values, segment_id);
+
+  if constexpr (!is_keys_only)
+  {
+    block_topk_t(temp_storage.topk)
+      .Select(thread_keys, k, resolve_param(select_directions, segment_id) == select::max, segment_size);
+  }
+  else
+  {
+    block_topk_t(temp_storage.topk)
+      .Select(thread_keys, thread_values, k, resolve_param(select_directions, segment_id) == select::max, segment_size);
+  }
 
   // Make sure we can reuse shared memory for storing back the results
   __syncthreads();
-
-  // We only want to write the first K items.
-  // BlockStore accepts a 'valid_items' count. It will write the first
-  // 'valid_items' logical ranks to the output pointer.
-  // if(threadIdx.x == 0 && blockIdx.x <=1){
-  //   for(int i=0; i<k; i++){
-  //     printf("BID#%d: TopK Key[%d]: %u\n", blockIdx.x, i, thread_keys[i]);
-  //   }
-  //   printf("Writing to: %p \n", d_key_segments_out_it[segment_id]);
-  // }
 
   block_store_keys_t(temp_storage.store_keys).Store(d_key_segments_out_it[segment_id], thread_keys, k);
 
   __syncthreads();
 
-  // if constexpr ()
-  // {
-  //   block_store_vals_t(temp_storage.store_vals)
-  //     .Store(d_value_segments_out_it[segment_id],
-  //            thread_values,
-  //            k
-  //     );
-  // }
+  if constexpr (!is_keys_only)
+  {
+    block_store_vals_t(temp_storage.store_vals).Store(d_value_segments_out_it[segment_id], thread_values, k);
+  }
 }
 
 template <typename KeyInputItItT,
@@ -676,6 +674,7 @@ struct DispatchSegmentedTopK
   /// Number of segments
   NumSegmentsParameterT num_segments;
 
+  // Allows the user to provide a guarantee on the upper bound of the total number of items
   TotalNumItemsGuaranteeT total_num_items_guarantee;
 
   /// CUDA stream to launch kernels within. Default is stream<sub>0</sub>.
@@ -698,7 +697,7 @@ struct DispatchSegmentedTopK
     ValueInputItItT d_value_segments_it,
     ValueOutputItItT d_value_segments_out_it,
     SegmentSizeParameterT segment_sizes,
-    KParameterT k_it,
+    KParameterT k,
     SelectDirectionParameterT select_directions,
     NumSegmentsParameterT num_segments,
     TotalNumItemsGuaranteeT total_num_items_guarantee,
@@ -711,7 +710,7 @@ struct DispatchSegmentedTopK
       , d_value_segments_it(d_value_segments_it)
       , d_value_segments_out_it(d_value_segments_out_it)
       , segment_sizes(segment_sizes)
-      , k(k_it)
+      , k(k)
       , select_directions(select_directions)
       , num_segments(num_segments)
       , total_num_items_guarantee(total_num_items_guarantee)
@@ -781,8 +780,7 @@ struct DispatchSegmentedTopK
   {
     using max_policy_t = typename SelectedPolicy::max_policy;
 
-    // Currently, we only support fixed-size segments that fit into shared
-    // memory
+    // Currently, we only support fixed-size segments that fit into shared memory
     // TODO (elstehle): extend support for variable-size segments
     if constexpr (!is_per_segment_param_v<SegmentSizeParameterT>)
     {
@@ -802,7 +800,7 @@ struct DispatchSegmentedTopK
     ValueInputItItT d_value_segments_it,
     ValueOutputItItT d_value_segments_out_it,
     SegmentSizeParameterT segment_sizes,
-    KParameterT k_it,
+    KParameterT k,
     SelectDirectionParameterT select_directions,
     NumSegmentsParameterT num_segments,
     TotalNumItemsGuaranteeT total_num_items_guarantee,
@@ -824,7 +822,7 @@ struct DispatchSegmentedTopK
       d_value_segments_it,
       d_value_segments_out_it,
       segment_sizes,
-      k_it,
+      k,
       select_directions,
       num_segments,
       total_num_items_guarantee,
