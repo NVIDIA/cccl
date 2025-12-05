@@ -82,14 +82,16 @@ struct static_bounds_mixin
   static constexpr bool is_exact = (Min == Max);
 };
 
-// Allows specifying a list of supported options for a parameter. E.g., the orders (ascending, descending) that are supported by a sorting algorithm.
+// Allows specifying a list of supported options for a parameter. E.g., the orders (ascending, descending) that are
+// supported by a sorting algorithm.
 template <typename T, T... Options>
 struct supported_options
 {
   static constexpr size_t count = sizeof...(Options);
 };
 
-// Helper that translates a runtime parameter value into a compile-time constant by matching against a list of supported options.
+// Helper that translates a runtime parameter value into a compile-time constant by matching against a list of supported
+// options.
 template <typename T, T... Opts, typename Param, typename Functor>
 _CCCL_HOST_DEVICE bool dispatch_impl(Param p, supported_options<T, Opts...>, Functor&& f)
 {
@@ -106,7 +108,8 @@ _CCCL_HOST_DEVICE bool dispatch_impl(Param p, supported_options<T, Opts...>, Fun
   return match_found;
 }
 
-// Dispatcher that matches a runtime parameter value against a list of supported options and invokes a functor with the matched option as a compile-time constant.
+// Dispatcher that matches a runtime parameter value against a list of supported options and invokes a functor with the
+// matched option as a compile-time constant.
 template <typename Param, typename Functor>
 _CCCL_HOST_DEVICE void dispatch_discrete(Param p, Functor&& f)
 {
@@ -400,12 +403,12 @@ struct total_num_items_guarantee
   {}
 };
 
-template <typename KeyT, int BLOCK_DIM_X, int ITEMS_PER_THREAD, typename ValueT = cub::NullType>
+template <typename KeyT, int BLOCK_DIM_X, int items_per_thread, typename ValueT = cub::NullType>
 class BlockTopK
 {
 private:
   // Internal CUB primitive
-  using BlockRadixSortT = cub::BlockRadixSort<KeyT, BLOCK_DIM_X, ITEMS_PER_THREAD, ValueT>;
+  using BlockRadixSortT = cub::BlockRadixSort<KeyT, BLOCK_DIM_X, items_per_thread, ValueT>;
 
 public:
   // Expose TempStorage requirements
@@ -430,7 +433,7 @@ public:
    * * After this call:
    * - The data across all threads is sorted.
    * - The item at BlockRank `i` is located at:
-   * Thread `i / ITEMS_PER_THREAD`, Register index `i % ITEMS_PER_THREAD`
+   * Thread `i / items_per_thread`, Register index `i % items_per_thread`
    * - Valid Top-K items are those where BlockRank < K.
    *
    * @param keys           [In/Out] Thread-local array of keys
@@ -446,11 +449,11 @@ public:
    * (default: sizeof(KeyT)*8)
    */
   __device__ __forceinline__ void Select(
-    KeyT (&keys)[ITEMS_PER_THREAD],
-    ValueT (&values)[ITEMS_PER_THREAD],
+    KeyT (&keys)[items_per_thread],
+    ValueT (&values)[items_per_thread],
     int k,
     bool is_descending = true,
-    int valid_items    = BLOCK_DIM_X * ITEMS_PER_THREAD,
+    int valid_items    = BLOCK_DIM_X * items_per_thread,
     int begin_bit      = 0,
     int end_bit        = sizeof(KeyT) * 8)
   {
@@ -474,10 +477,10 @@ public:
 
   // Overload for Keys only
   __device__ __forceinline__ void Select(
-    KeyT (&keys)[ITEMS_PER_THREAD],
+    KeyT (&keys)[items_per_thread],
     int k,
     bool is_descending = true,
-    int valid_items    = BLOCK_DIM_X * ITEMS_PER_THREAD,
+    int valid_items    = BLOCK_DIM_X * items_per_thread,
     int begin_bit      = 0,
     int end_bit        = sizeof(KeyT) * 8)
   {
@@ -500,6 +503,194 @@ public:
 // segment_sizes: runtime bounds are limiting to invocations of BlockTopK or ClusterTopK
 // -> AgentSegmentedTopK: TBD
 
+template <typename ActivePolicyT,
+          typename KeyInputItItT,
+          typename KeyOutputItItT,
+          typename ValueInputItItT,
+          typename ValueOutputItItT,
+          typename SegmentSizeParameterT,
+          typename KParameterT,
+          typename SelectDirectionParameterT,
+          typename NumSegmentsParameterT>
+struct AgentSegmentedTopkWorkerPerSegment
+{
+  // -------------------------------------------------------------------------
+  // Types and Constants
+  // -------------------------------------------------------------------------
+
+  // Derive inner types from Iterator of Iterators
+  using key_it_t   = typename ::cuda::std::iterator_traits<KeyInputItItT>::value_type;
+  using value_it_t = typename ::cuda::std::iterator_traits<ValueInputItItT>::value_type;
+
+  using key_t   = typename ::cuda::std::iterator_traits<key_it_t>::value_type;
+  using value_t = typename ::cuda::std::iterator_traits<value_it_t>::value_type;
+
+  static constexpr int block_threads    = ActivePolicyT::block_threads;
+  static constexpr int items_per_thread = ActivePolicyT::items_per_thread;
+  static constexpr int tile_size        = block_threads * items_per_thread;
+
+  // Check if we are dealing with Keys-Only or Keys-Values
+  static constexpr bool is_keys_only = ::cuda::std::is_same<value_t, cub::NullType>::value;
+
+  // -------------------------------------------------------------------------
+  // Primitive Types
+  // -------------------------------------------------------------------------
+
+  using BlockLoadKeysT = BlockLoad<key_t, block_threads, items_per_thread, BLOCK_LOAD_WARP_TRANSPOSE>;
+  using BlockLoadValsT = BlockLoad<value_t, block_threads, items_per_thread, BLOCK_LOAD_WARP_TRANSPOSE>;
+
+  using BlockTopkT = BlockTopK<key_t, block_threads, items_per_thread, value_t>;
+
+  using BlockStoreKeysT = BlockStore<key_t, block_threads, items_per_thread, BLOCK_STORE_WARP_TRANSPOSE>;
+  using BlockStoreValsT = BlockStore<value_t, block_threads, items_per_thread, BLOCK_STORE_WARP_TRANSPOSE>;
+
+  // -------------------------------------------------------------------------
+  // Shared Memory Storage
+  // -------------------------------------------------------------------------
+
+  struct TempStorage
+  {
+    union
+    {
+      typename BlockLoadKeysT::TempStorage load_keys;
+      typename BlockLoadValsT::TempStorage load_vals;
+      typename BlockTopkT::TempStorage topk;
+      typename BlockStoreKeysT::TempStorage store_keys;
+      typename BlockStoreValsT::TempStorage store_vals;
+    };
+  };
+
+  // -------------------------------------------------------------------------
+  // Members
+  // -------------------------------------------------------------------------
+
+  TempStorage& temp_storage;
+  KeyInputItItT d_key_segments_it;
+  KeyOutputItItT d_key_segments_out_it;
+  ValueInputItItT d_value_segments_it;
+  ValueOutputItItT d_value_segments_out_it;
+  SegmentSizeParameterT segment_sizes;
+  KParameterT k_param;
+  SelectDirectionParameterT select_directions;
+  NumSegmentsParameterT num_segments;
+
+  // -------------------------------------------------------------------------
+  // Constructor
+  // -------------------------------------------------------------------------
+
+  __device__ __forceinline__ AgentSegmentedTopkWorkerPerSegment(
+    TempStorage& temp_storage,
+    KeyInputItItT d_key_segments_it,
+    KeyOutputItItT d_key_segments_out_it,
+    ValueInputItItT d_value_segments_it,
+    ValueOutputItItT d_value_segments_out_it,
+    SegmentSizeParameterT segment_sizes,
+    KParameterT k_param,
+    SelectDirectionParameterT select_directions,
+    NumSegmentsParameterT num_segments)
+      : temp_storage(temp_storage)
+      , d_key_segments_it(d_key_segments_it)
+      , d_key_segments_out_it(d_key_segments_out_it)
+      , d_value_segments_it(d_value_segments_it)
+      , d_value_segments_out_it(d_value_segments_out_it)
+      , segment_sizes(segment_sizes)
+      , k_param(k_param)
+      , select_directions(select_directions)
+      , num_segments(num_segments)
+  {}
+
+  // -------------------------------------------------------------------------
+  // Processing Logic
+  // -------------------------------------------------------------------------
+
+  __device__ __forceinline__ void Process()
+  {
+    // 1. Identify Segment
+    int segment_id = blockIdx.x;
+
+    // Boundary check
+    // Note: Using resolve_param to handle various parameter types safely
+    if (segment_id >= resolve_param(num_segments, 0))
+    {
+      return;
+    }
+
+    // 2. Resolve Segment Parameters
+    auto segment_size = resolve_param(segment_sizes, segment_id);
+    auto k            = resolve_param(k_param, segment_id);
+    auto direction    = resolve_param(select_directions, segment_id);
+
+    // Determine padding key based on direction (Max-K needs Lowest(), Min-K needs Max())
+    // Assuming 'select' enum has ::max or ::min. Adjust as per your specific Enum definition.
+    key_t padding_key = (direction == select::max) ? ::cuda::std::numeric_limits<key_t>::lowest()
+                                                   : ::cuda::std::numeric_limits<key_t>::max();
+
+    // 3. Load Keys
+    key_t thread_keys[items_per_thread];
+
+    // Dereference iterator-of-iterators to get the segment specific iterator
+    auto block_keys_in = d_key_segments_it[segment_id];
+
+    BlockLoadKeysT(temp_storage.load_keys).Load(block_keys_in, thread_keys, segment_size, padding_key);
+
+    // 4. Load Values (if applicable)
+    value_t thread_values[items_per_thread];
+
+    if constexpr (!is_keys_only)
+    {
+      __syncthreads(); // Barrier for smem reuse
+      auto block_vals_in = d_value_segments_it[segment_id];
+
+      BlockLoadValsT(temp_storage.load_vals).Load(block_vals_in, thread_values, segment_size);
+    }
+
+    // 5. Perform Block Top-K
+    __syncthreads(); // Barrier for smem reuse
+
+    if constexpr (!is_keys_only)
+    {
+      // Pass both keys and values
+      BlockTopkT(temp_storage.topk)
+        .Select(thread_keys,
+                thread_values,
+                k,
+                (direction == select::max), // is_descending
+                segment_size);
+    }
+    else
+    {
+      // Keys only
+      BlockTopkT(temp_storage.topk)
+        .Select(thread_keys,
+                k,
+                (direction == select::max), // is_descending
+                segment_size);
+    }
+
+    // 6. Store Results
+    __syncthreads(); // Barrier for smem reuse
+
+    auto block_keys_out = d_key_segments_out_it[segment_id];
+
+    BlockStoreKeysT(temp_storage.store_keys)
+      .Store(block_keys_out,
+             thread_keys,
+             k // Only store K items
+      );
+
+    if constexpr (!is_keys_only)
+    {
+      __syncthreads(); // Barrier for smem reuse
+      auto block_vals_out = d_value_segments_out_it[segment_id];
+
+      BlockStoreValsT(temp_storage.store_vals).Store(block_vals_out, thread_values, k);
+    }
+  }
+};
+
+// -----------------------------------------------------------------------------
+// Global Kernel Entry Point
+// -----------------------------------------------------------------------------
 
 template <typename ChainedPolicyT,
           typename KeyInputItItT,
@@ -510,117 +701,51 @@ template <typename ChainedPolicyT,
           typename KParameterT,
           typename SelectDirectionParameterT,
           typename NumSegmentsParameterT>
-__launch_bounds__(int(ChainedPolicyT::ActivePolicy::topk_policy_t::block_threads))
-  CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceSegmentedTopKKernel(
+__launch_bounds__(int(ChainedPolicyT::ActivePolicy::topk_policy_t::block_threads)) __global__
+  void DeviceSegmentedTopKKernel(
     KeyInputItItT d_key_segments_it,
     KeyOutputItItT d_key_segments_out_it,
     ValueInputItItT d_value_segments_it,
     ValueOutputItItT d_value_segments_out_it,
     SegmentSizeParameterT segment_sizes,
-    KParameterT k_values,
+    KParameterT k,
     SelectDirectionParameterT select_directions,
     NumSegmentsParameterT num_segments)
 {
-  using active_policy_t = typename ChainedPolicyT::ActivePolicy;
-  using topk_policy_t   = typename active_policy_t::topk_policy_t;
+  using ActivePolicyT = typename ChainedPolicyT::ActivePolicy;
+  using TopKPolicyT   = typename ActivePolicyT::topk_policy_t;
 
-  // TODO (elstehle): infer the offset types
-  using segment_size_t  = ::cuda::std::int64_t;
-  using k_index_t       = ::cuda::std::int64_t;
-  using segment_index_t = ::cuda::std::int64_t;
+  using AgentT = AgentSegmentedTopkWorkerPerSegment<
+    TopKPolicyT,
+    KeyInputItItT,
+    KeyOutputItItT,
+    ValueInputItItT,
+    ValueOutputItItT,
+    SegmentSizeParameterT,
+    KParameterT,
+    SelectDirectionParameterT,
+    NumSegmentsParameterT>;
 
-  constexpr int block_threads    = topk_policy_t::block_threads;
-  constexpr int items_per_thread = topk_policy_t::items_per_thread;
-  constexpr int tile_size        = block_threads * items_per_thread;
-
-  static_assert(tile_size >= static_max_value_v<SegmentSizeParameterT>,
+  // 3. Static Assertions (Constraints)
+  static_assert(AgentT::tile_size >= static_max_value_v<SegmentSizeParameterT>,
                 "Block size exceeds maximum segment size supported by SegmentSizeParameterT");
 
-  using key_t   = it_value_t<it_value_t<KeyInputItItT>>;
-  using value_t = it_value_t<it_value_t<ValueInputItItT>>;
+  __shared__ typename AgentT::TempStorage temp_storage;
 
-  constexpr bool is_keys_only = ::cuda::std::is_same<value_t, cub::NullType>::value;
+  // Instantiate agent
+  AgentT agent(
+    temp_storage,
+    d_key_segments_it,
+    d_key_segments_out_it,
+    d_value_segments_it,
+    d_value_segments_out_it,
+    segment_sizes,
+    k,
+    select_directions,
+    num_segments);
 
-  using block_load_keys_t = cub::BlockLoad<key_t, block_threads, items_per_thread, cub::BLOCK_LOAD_WARP_TRANSPOSE>;
-  using block_load_vals_t = cub::BlockLoad<value_t, block_threads, items_per_thread, cub::BLOCK_LOAD_WARP_TRANSPOSE>;
-
-  // Use your custom BlockTopK
-  using block_topk_t = BlockTopK<key_t, block_threads, items_per_thread, value_t>;
-
-  // Use Striped storage to write the top-k results coalesced
-  using block_store_keys_t = cub::BlockStore<key_t, block_threads, items_per_thread, cub::BLOCK_STORE_WARP_TRANSPOSE>;
-  using block_store_vals_t = cub::BlockStore<value_t, block_threads, items_per_thread, cub::BLOCK_STORE_WARP_TRANSPOSE>;
-
-  // Shared memory union to save space
-  __shared__ union
-  {
-    typename block_load_keys_t::TempStorage load_keys;
-    typename block_load_vals_t::TempStorage load_vals;
-    typename block_topk_t::TempStorage topk;
-    typename block_store_keys_t::TempStorage store_keys;
-    typename block_store_vals_t::TempStorage store_vals;
-  } temp_storage;
-
-  key_t thread_keys[items_per_thread];
-
-  // Calculate Segment Offsets
-  int segment_id = blockIdx.x;
-  if (segment_id >= resolve_param(num_segments, 0))
-  {
-    return;
-  }
-
-  key_t padding_key = key_t{};
-  if (resolve_param(select_directions, segment_id) == select::max)
-  {
-    padding_key = ::cuda::std::numeric_limits<key_t>::lowest();
-  }
-  else
-  {
-    padding_key = ::cuda::std::numeric_limits<key_t>::max();
-  }
-
-  segment_size_t segment_size = resolve_param(segment_sizes, segment_id);
-  block_load_keys_t(temp_storage.load_keys).Load(d_key_segments_it[segment_id], thread_keys, segment_size, padding_key);
-
-  value_t thread_values[items_per_thread];
-  if constexpr (!is_keys_only)
-  {
-    // Make sure we can reuse shared memory for value loading
-    __syncthreads();
-
-    block_load_vals_t(temp_storage.load_vals).Load(d_value_segments_it[segment_id], thread_values, segment_size);
-  }
-
-  // Make sure we can reuse shared memory for top-k selection
-  __syncthreads();
-
-  // This sorts the *entire* block in registers.
-  // The top k items will end up in the first K positions
-  k_index_t k = resolve_param(k_values, segment_id);
-
-  if constexpr (!is_keys_only)
-  {
-    block_topk_t(temp_storage.topk)
-      .Select(thread_keys, k, resolve_param(select_directions, segment_id) == select::max, segment_size);
-  }
-  else
-  {
-    block_topk_t(temp_storage.topk)
-      .Select(thread_keys, thread_values, k, resolve_param(select_directions, segment_id) == select::max, segment_size);
-  }
-
-  // Make sure we can reuse shared memory for storing back the results
-  __syncthreads();
-
-  block_store_keys_t(temp_storage.store_keys).Store(d_key_segments_out_it[segment_id], thread_keys, k);
-
-  __syncthreads();
-
-  if constexpr (!is_keys_only)
-  {
-    block_store_vals_t(temp_storage.store_vals).Store(d_value_segments_out_it[segment_id], thread_values, k);
-  }
+  // Process segments
+  agent.Process();
 }
 
 template <typename KeyInputItItT,
@@ -685,8 +810,7 @@ struct DispatchSegmentedTopK
   using key_in_t =
     typename ::cuda::std::iterator_traits<typename ::cuda::std::iterator_traits<KeyInputItItT>::value_type>::value_type;
 
-  // We pass ValueInputItItT itself as cub::NullType** when only keys are
-  // processed
+  // We pass ValueInputItItT itself as cub::NullType** when only keys are processed
   static constexpr bool keys_only = ::cuda::std::is_same_v<ValueInputItItT, NullType**>;
 
   DispatchSegmentedTopK(
