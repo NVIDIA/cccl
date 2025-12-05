@@ -17,7 +17,6 @@ endif()
 
 include(cmake/CubBuildCompilerTargets.cmake)
 include(cmake/CubCudaConfig.cmake)
-include(cmake/CubUtilities.cmake)
 
 cub_build_compiler_targets()
 
