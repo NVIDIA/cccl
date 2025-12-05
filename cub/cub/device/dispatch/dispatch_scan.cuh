@@ -26,6 +26,8 @@
 #include <cub/detail/launcher/cuda_runtime.cuh>
 #include <cub/device/dispatch/dispatch_common.cuh>
 #include <cub/device/dispatch/kernels/kernel_scan.cuh>
+#include <cub/device/dispatch/kernels/kernel_scan_warpspeed.cuh>
+#include <cub/device/dispatch/kernels/warpspeed/warpspeed.h>
 #include <cub/device/dispatch/tuning/tuning_scan.cuh>
 #include <cub/thread/thread_operators.cuh>
 #include <cub/util_debug.cuh>
@@ -33,13 +35,19 @@
 #include <cub/util_math.cuh>
 
 #include <thrust/system/cuda/detail/core/triple_chevron_launch.h>
+#include <thrust/type_traits/unwrap_contiguous_iterator.h>
 
 #include <cuda/__cmath/ceil_div.h>
 #include <cuda/std/__algorithm/min.h>
 #include <cuda/std/__functional/invoke.h>
+#include <cuda/std/__iterator/readable_traits.h>
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/is_unsigned.h>
+#include <cuda/std/__utility/move.h>
+
+#include <cuda_runtime_api.h>
+#include <cudaTypedefs.h>
 
 CUB_NAMESPACE_BEGIN
 
@@ -357,12 +365,181 @@ struct DispatchScan
     return cudaSuccess;
   }
 
+  CUB_RUNTIME_FUNCTION _CCCL_HOST _CCCL_FORCEINLINE cudaError_t
+  __max_dynamic_smem_size_for(int& max_dynamic_smem_size, [[maybe_unused]] const void* func)
+  {
+    NV_IF_ELSE_TARGET(NV_IS_HOST, //
+                      (return MaxPotentialDynamicSmemBytes(max_dynamic_smem_size, func);), //
+                      ({
+                        cudaFuncAttributes func_attrs{};
+                        if (const auto error = CubDebug(cudaFuncGetAttributes(&func_attrs, func)))
+                        {
+                          return error;
+                        }
+                        max_dynamic_smem_size = func_attrs.maxDynamicSharedSizeBytes;
+                      }))
+    return cudaSuccess;
+  }
+
+  template <typename WarpspeedPolicy, typename InputT, typename OutputT>
+  CUB_RUNTIME_FUNCTION _CCCL_HOST static constexpr auto smem_for_stages(int num_stages) -> int
+  {
+    detail::scan::SyncHandler syncHandler{};
+    detail::scan::SmemAllocator smemAllocator{};
+    (void) detail::scan::allocResources<WarpspeedPolicy, InputT, OutputT, AccumT>(
+      syncHandler, smemAllocator, num_stages);
+    syncHandler.mHasInitialized = true; // avoid assertion in destructor
+    return static_cast<int>(smemAllocator.sizeBytes());
+  }
+
+  // we check the required shared memory inside a template, so the error message shows the amount in case of failure
+  template <int RequiredSharedMemory>
+  CUB_RUNTIME_FUNCTION _CCCL_HOST static constexpr void verify_smem()
+  {
+    static_assert(RequiredSharedMemory <= detail::max_smem_per_block,
+                  "Single stage configuration exceeds architecture independent SMEM (48KiB)");
+  }
+
+#if __cccl_ptx_isa >= 860
+  template <typename ActivePolicyT>
+  CUB_RUNTIME_FUNCTION _CCCL_HOST _CCCL_FORCEINLINE cudaError_t __invoke_lookahead_algorithm(ActivePolicyT = {})
+  {
+    auto* d_in_unwrapped  = THRUST_NS_QUALIFIER::unwrap_contiguous_iterator(d_in);
+    auto* d_out_unwrapped = THRUST_NS_QUALIFIER::unwrap_contiguous_iterator(d_out);
+
+    using InputT           = ::cuda::std::iter_value_t<InputIteratorT>;
+    using OutputT          = ::cuda::std::iter_value_t<OutputIteratorT>;
+    using tmp_state_t      = detail::scan::tmp_state_t<AccumT>;
+    using scanKernelParams = detail::scan::scanKernelParams<InputT, OutputT, AccumT>;
+
+    using WarpspeedPolicy = typename ActivePolicyT::WarpspeedPolicy;
+
+    auto kernel_ptr =
+      detail::scan::scan<typename PolicyHub::MaxPolicy,
+                         InputT,
+                         OutputT,
+                         AccumT,
+                         ScanOpT,
+                         InitValueT,
+                         (EnforceInclusive == ForceInclusive::Yes)>;
+    const int grid_dim = ::cuda::ceil_div(num_items, static_cast<size_t>(WarpspeedPolicy::tile_size));
+
+    if (d_temp_storage == nullptr)
+    {
+      temp_storage_bytes = grid_dim * sizeof(tmp_state_t);
+      return cudaSuccess;
+    }
+
+    // Maximum dynamic shared memory size that we can use for temporary storage.
+    int max_dynamic_smem_size{};
+    if (const auto error =
+          __max_dynamic_smem_size_for(max_dynamic_smem_size, reinterpret_cast<const void*>(kernel_ptr)))
+    {
+      return error;
+    }
+
+    scanKernelParams params{};
+    params.ptrIn     = const_cast<InputT*>(d_in_unwrapped);
+    params.ptrOut    = d_out_unwrapped;
+    params.ptrTmp    = static_cast<tmp_state_t*>(d_temp_storage);
+    params.numElem   = num_items;
+    params.numStages = 0; // computed below, must be set to 0
+
+    verify_smem<smem_for_stages<WarpspeedPolicy, InputT, OutputT>(1)>();
+
+    // Maximize the number of stages that we can fit inside the shared memory.
+    int smem_size{};
+    for (params.numStages = 1; true; ++params.numStages)
+    {
+      const auto curr_smem_size = smem_for_stages<WarpspeedPolicy, InputT, OutputT>(params.numStages);
+      if (curr_smem_size > max_dynamic_smem_size)
+      {
+        // This number of stages failed, so use the previous number of stages instead.
+        --params.numStages;
+        break;
+      }
+
+      smem_size = curr_smem_size;
+    }
+
+    // todo: add static_assert check that the number of stages is > 0
+    _CCCL_VERIFY(params.numStages > 0, "at least one stage must fit into the shared memory");
+
+    // Enlarge the dynamic shared memory size for the kernel in case of the kernel being launched from host.
+    NV_IF_TARGET(NV_IS_HOST,
+                 (if (const auto error = CubDebug(cudaFuncSetAttribute(
+                        kernel_ptr, cudaFuncAttributeMaxDynamicSharedMemorySize, smem_size))) { return error; }))
+
+    // Invoke init kernel
+    {
+      constexpr auto init_kernel_threads = 128;
+      const auto init_grid_size          = ::cuda::ceil_div(grid_dim, init_kernel_threads);
+
+#  ifdef CUB_DEBUG_LOG
+      _CubLog(
+        "Invoking initTmpStates<<<%d, %d, 0, , %lld>>>()\n", init_grid_size, init_kernel_threads, (long long) stream);
+#  endif // CUB_DEBUG_LOG
+
+      launcher_factory(init_grid_size, init_kernel_threads, 0, stream, /* use_pdl */ true)
+        .doit(detail::scan::initTmpStates<AccumT>, static_cast<tmp_state_t*>(d_temp_storage), grid_dim);
+
+      // Check for failure to launch
+      if (const auto error = CubDebug(cudaPeekAtLastError()))
+      {
+        return error;
+      }
+
+      // Sync the stream if specified to flush runtime errors
+      if (const auto error = CubDebug(detail::DebugSyncStream(stream)))
+      {
+        return error;
+      }
+    }
+
+    // Invoke scan kernel
+    {
+      constexpr int block_dim = WarpspeedPolicy::num_total_threads;
+
+#  ifdef CUB_DEBUG_LOG
+      _CubLog("Invoking scan<<<%d, %d, %d, %lld>>>()\n", grid_dim, block_dim, smem_size, (long long) stream);
+#  endif // CUB_DEBUG_LOG
+
+      launcher_factory(grid_dim, block_dim, smem_size, stream, /* use_pdl */ true)
+        .doit(kernel_ptr, params, ::cuda::std::move(scan_op), init_value);
+
+      // Check for failure to launch
+      if (const auto error = CubDebug(cudaPeekAtLastError()))
+      {
+        return error;
+      }
+
+      // Sync the stream if specified to flush runtime errors
+      if (const auto error = CubDebug(detail::DebugSyncStream(stream)))
+      {
+        return error;
+      }
+    }
+
+    return cudaSuccess;
+  }
+#endif // __cccl_ptx_isa >= 860
+
   template <typename ActivePolicyT>
   CUB_RUNTIME_FUNCTION _CCCL_HOST _CCCL_FORCEINLINE cudaError_t Invoke(ActivePolicyT active_policy = {})
   {
-    auto wrapped_policy = detail::scan::MakeScanPolicyWrapper(active_policy);
-    // Ensure kernels are instantiated.
-    return Invoke(kernel_source.InitKernel(), kernel_source.ScanKernel(), wrapped_policy);
+#if __cccl_ptx_isa >= 860
+    if constexpr (detail::scan::scan_use_warpspeed<ActivePolicyT>
+                  && THRUST_NS_QUALIFIER::is_contiguous_iterator_v<InputIteratorT>
+                  && THRUST_NS_QUALIFIER::is_contiguous_iterator_v<OutputIteratorT>)
+    {
+      return __invoke_lookahead_algorithm(active_policy);
+    }
+    else
+#endif // __cccl_ptx_isa >= 860
+    {
+      auto wrapped_policy = detail::scan::MakeScanPolicyWrapper(active_policy);
+      return Invoke(kernel_source.InitKernel(), kernel_source.ScanKernel(), wrapped_policy);
+    }
   }
 
   /**
