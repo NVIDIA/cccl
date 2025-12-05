@@ -41,8 +41,6 @@ def preprocessor_contents() -> str:
 #endif
 
 // For all compilers and dialects this header defines:
-//  _NV_HAS_INCLUDE
-//  _NV_HAS_INCLUDE_NEXT
 //  _NV_EVAL
 //  _NV_IF
 //  _NV_CONCAT_EVAL
@@ -51,18 +49,6 @@ def preprocessor_contents() -> str:
 //  _NV_DISPATCH_N_ARY
 //  _NV_FIRST_ARG
 //  _NV_REMOVE_PAREN
-
-#if defined(__has_include)
-#  define _NV_HAS_INCLUDE(...) __has_include(__VA_ARGS__)
-#else
-#  define _NV_HAS_INCLUDE(...) 0
-#endif
-
-#if defined(__has_include_next)
-#  define _NV_HAS_INCLUDE_NEXT(...) __has_include_next(__VA_ARGS__)
-#else
-#  define _NV_HAS_INCLUDE_NEXT(...) 0
-#endif
 
 #define _NV_EVAL1(...) __VA_ARGS__
 #define _NV_EVAL(...)  _NV_EVAL1(__VA_ARGS__)
@@ -651,8 +637,6 @@ def main(version_major: int, version_minor: int, filename: int):
 // CUDA C++ development with NVC++, NVCC, and supported host compilers.
 // These interfaces are not guaranteed to be stable.
 
-{preprocessor_contents()}
-
 // Identifies this header as versioned nv target header.
 #define __NV_TARGET_VERSIONED
 
@@ -672,6 +656,18 @@ def main(version_major: int, version_minor: int, filename: int):
 #    define __NV_TARGET_VERSION_MAX __NV_TARGET_VERSION_{version_major:02d}_{version_minor:02d}
 #  endif
 
+#if defined(__has_include)
+#  define _NV_HAS_INCLUDE(...) __has_include(__VA_ARGS__)
+#else
+#  define _NV_HAS_INCLUDE(...) 0
+#endif
+
+#if defined(__has_include_next)
+#  define _NV_HAS_INCLUDE_NEXT(...) __has_include_next(__VA_ARGS__)
+#else
+#  define _NV_HAS_INCLUDE_NEXT(...) 0
+#endif
+
 // Clear versioned header definition before including next header.
 #  undef __NV_TARGET_VERSIONED
 
@@ -681,34 +677,40 @@ def main(version_major: int, version_minor: int, filename: int):
 //
 // We use __has_include for the first time to prevent cases when this file is prepended to a .cpp file. It would cause
 // errors, because #include_next can be only used inside an included header.
-#  if defined(__NV_TARGET_FIRST_INCLUDE)
-#    undef __NV_TARGET_FIRST_INCLUDE
-#    if _NV_HAS_INCLUDE(<nv/target>)
+//
+// The user can define NV_TARGET_DISABLE_NEWEST_HEADER_SEARCH to disable the search for the newest header.
+#  if !defined(NV_TARGET_DISABLE_NEWEST_HEADER_SEARCH)
+#    if defined(__NV_TARGET_FIRST_INCLUDE)
+#      undef __NV_TARGET_FIRST_INCLUDE
+#      if _NV_HAS_INCLUDE(<nv/target>)
+#        define __NV_TARGET_H
+#        include <nv/target>
+#        undef __NV_TARGET_H
+#        if defined(__NV_TARGET_VERSIONED)
+#          include <nv/target>
+#        endif // __NV_TARGET_VERSIONED
+#      endif // _NV_HAS_INCLUDE(<nv/target>)
+#    elif _NV_HAS_INCLUDE_NEXT(<nv/target>)
 #      define __NV_TARGET_H
-#      include <nv/target>
+#      include_next <nv/target>
 #      undef __NV_TARGET_H
 #      if defined(__NV_TARGET_VERSIONED)
-#        include <nv/target>
+#        include_next <nv/target>
 #      endif // __NV_TARGET_VERSIONED
-#    endif // _NV_HAS_INCLUDE(<nv/target>)
-#  elif _NV_HAS_INCLUDE_NEXT(<nv/target>)
-#    define __NV_TARGET_H
-#    include_next <nv/target>
-#    undef __NV_TARGET_H
-#    if defined(__NV_TARGET_VERSIONED)
-#      include_next <nv/target>
-#    endif // __NV_TARGET_VERSIONED
-#  endif
+#    endif
 
-// If this header version and the max version don't match, skip this include.
-#  if __NV_TARGET_VERSION_MAX != __NV_TARGET_VERSION_{version_major:02d}_{version_minor:02d}
-#    define __NV_SKIP_THIS_INCLUDE
-#  endif
+  // If this header version and the max version don't match, skip this include.
+#    if __NV_TARGET_VERSION_MAX != __NV_TARGET_VERSION_{version_major:02d}_{version_minor:02d}
+#      define __NV_SKIP_THIS_INCLUDE
+#    endif
+#endif // !NV_TARGET_DISABLE_NEWEST_HEADER_SEARCH
 
 #  ifndef __NV_SKIP_THIS_INCLUDE
 
 #    ifndef __NV_TARGET_H
 #    define __NV_TARGET_H
+
+{preprocessor_contents()}
 
 {target_contents()}
 
