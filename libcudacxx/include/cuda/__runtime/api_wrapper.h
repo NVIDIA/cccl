@@ -50,7 +50,7 @@
     const ::cudaError_t __status = _NAME(__VA_ARGS__);                             \
     if (__status != ::cudaSuccess)                                                 \
     {                                                                              \
-      ::cuda::__detail::__msg_storage __msg_buffer;                                \
+      ::cuda::__msg_storage __msg_buffer;                                          \
       ::cuda::__detail::__format_cuda_error(__msg_buffer, __status, _MSG, #_NAME); \
       ::fprintf(stderr, "%s\n", __msg_buffer.__buffer);                            \
       ::fflush(stderr);                                                            \

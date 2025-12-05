@@ -8,7 +8,6 @@
 //===----------------------------------------------------------------------===//
 // UNSUPPORTED: nvrtc
 // UNSUPPORTED: pre-sm-90
-
 #include <dlpack/dlpack.h> // to include before the make_from_dlpack.h
 //
 #include <cuda/std/array>
