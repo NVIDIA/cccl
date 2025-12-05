@@ -44,11 +44,11 @@ namespace cuda::experimental::cuco
 //! https://static.googleusercontent.com/media/research.google.com/de//pubs/archive/40671.pdf.
 //!
 //! @tparam _Tp Type of items to count
-//! @tparam _MemoryResourceRef Type of non-owning memory resource used for device storage
+//! @tparam _MemoryResource Type of memory resource used for device storage
 //! @tparam _Scope The scope in which operations will be performed by individual threads
 //! @tparam _Hash Hash function used to hash items
 template <class _Tp,
-          class _MemoryResourceRef    = ::cuda::device_memory_pool_ref,
+          class _MemoryResource       = ::cuda::device_memory_pool_ref,
           ::cuda::thread_scope _Scope = ::cuda::thread_scope_device,
           class _Hash = ::cuda::experimental::cuco::hash<_Tp, ::cuda::experimental::cuco::hash_algorithm::xxhash_64>>
 class hyperloglog
@@ -76,17 +76,17 @@ public:
   //!
   //! @note This function synchronizes the given stream.
   //!
-  //! @param __memory_resource_ref A non-owning memory resource used for allocating device storage
+  //! @param __memory_resource A memory resource used for allocating device storage
   //! @param __sketch_size_kb Maximum sketch size in KB
   //! @param __hash The hash function used to hash items
   //! @param __stream CUDA stream used to initialize the object
-  constexpr hyperloglog(_MemoryResourceRef __memory_resource_ref,
+  template <typename _MemoryResource_ = _MemoryResource>
+  constexpr hyperloglog(_MemoryResource_&& __memory_resource,
                         sketch_size_kb __sketch_size_kb = sketch_size_kb{32.0},
                         const _Hash& __hash             = {},
                         ::cuda::stream_ref __stream     = ::cuda::stream_ref{cudaStream_t{nullptr}})
-      : __memory_resource_ref(__memory_resource_ref)
-      , __sketch_buffer{__stream,
-                        __memory_resource_ref,
+      : __sketch_buffer{__stream,
+                        ::cuda::std::forward<_MemoryResource_>(__memory_resource),
                         ref_type<>::sketch_bytes(__sketch_size_kb) / sizeof(register_type),
                         ::cuda::experimental::no_init}
       , __ref{::cuda::std::span{reinterpret_cast<::cuda::std::byte*>(__sketch_buffer.data()),
@@ -106,9 +106,8 @@ public:
   constexpr hyperloglog(sketch_size_kb __sketch_size_kb = sketch_size_kb{32.0},
                         const _Hash& __hash             = {},
                         ::cuda::stream_ref __stream     = ::cuda::stream_ref{cudaStream_t{nullptr}})
-      : __memory_resource_ref(::cuda::device_default_memory_pool(::cuda::device_ref{0}))
-      , __sketch_buffer{__stream,
-                        __memory_resource_ref,
+      : __sketch_buffer{__stream,
+                        ::cuda::device_default_memory_pool(::cuda::device_ref{0}),
                         ref_type<>::sketch_bytes(__sketch_size_kb) / sizeof(register_type),
                         ::cuda::experimental::no_init}
       , __ref{::cuda::std::span{reinterpret_cast<::cuda::std::byte*>(__sketch_buffer.data()),
@@ -122,17 +121,17 @@ public:
   //!
   //! @note This function synchronizes the given stream.
   //!
-  //! @param __memory_resource_ref A non-owning memory resource used for allocating device storage
+  //! @param __memory_resource A memory resource used for allocating device storage
   //! @param __sd Desired standard deviation for the approximation error
   //! @param __hash The hash function used to hash items
   //! @param __stream CUDA stream used to initialize the object
-  constexpr hyperloglog(_MemoryResourceRef __memory_resource_ref,
+  template <typename _MemoryResource_ = _MemoryResource>
+  constexpr hyperloglog(_MemoryResource_&& __memory_resource,
                         standard_deviation __sd,
                         const _Hash& __hash         = {},
                         ::cuda::stream_ref __stream = ::cuda::stream_ref{cudaStream_t{nullptr}})
-      : __memory_resource_ref(__memory_resource_ref)
-      , __sketch_buffer{__stream,
-                        __memory_resource_ref,
+      : __sketch_buffer{__stream,
+                        ::cuda::std::forward<_MemoryResource_>(__memory_resource),
                         ref_type<>::sketch_bytes(__sd) / sizeof(register_type),
                         ::cuda::experimental::no_init}
       , __ref{::cuda::std::span{reinterpret_cast<::cuda::std::byte*>(__sketch_buffer.data()),
@@ -152,9 +151,8 @@ public:
   constexpr hyperloglog(standard_deviation __sd,
                         const _Hash& __hash         = {},
                         ::cuda::stream_ref __stream = ::cuda::stream_ref{cudaStream_t{nullptr}})
-      : __memory_resource_ref(::cuda::device_default_memory_pool(::cuda::device_ref{0}))
-      , __sketch_buffer{__stream,
-                        __memory_resource_ref,
+      : __sketch_buffer{__stream,
+                        ::cuda::device_default_memory_pool(::cuda::device_ref{0}),
                         ref_type<>::sketch_bytes(__sd) / sizeof(register_type),
                         ::cuda::experimental::no_init}
       , __ref{::cuda::std::span{reinterpret_cast<::cuda::std::byte*>(__sketch_buffer.data()),
@@ -234,12 +232,12 @@ public:
   //! @throw If this->sketch_bytes() != other.sketch_bytes()
   //!
   //! @tparam _OtherScope Thread scope of `other` estimator
-  //! @tparam _OtherMemoryResourceRef Memory resource type of `other` estimator
+  //! @tparam _OtherMemoryResource Memory resource type of `other` estimator
   //!
   //! @param __other Other estimator to be merged into `*this`
   //! @param __stream CUDA stream this operation is executed in
-  template <::cuda::thread_scope _OtherScope, class _OtherMemoryResourceRef>
-  constexpr void merge_async(const hyperloglog<_Tp, _OtherMemoryResourceRef, _OtherScope, _Hash>& __other,
+  template <::cuda::thread_scope _OtherScope, class _OtherMemoryResource>
+  constexpr void merge_async(const hyperloglog<_Tp, _OtherMemoryResource, _OtherScope, _Hash>& __other,
                              ::cuda::stream_ref __stream = ::cuda::stream_ref{cudaStream_t{nullptr}})
   {
     __ref.merge_async(__other.__ref, __stream);
@@ -253,12 +251,12 @@ public:
   //! @throw If this->sketch_bytes() != other.sketch_bytes()
   //!
   //! @tparam _OtherScope Thread scope of `other` estimator
-  //! @tparam _OtherMemoryResourceRef Memory resource type of `other` estimator
+  //! @tparam _OtherMemoryResource Memory resource type of `other` estimator
   //!
   //! @param __other Other estimator to be merged into `*this`
   //! @param __stream CUDA stream this operation is executed in
-  template <::cuda::thread_scope _OtherScope, class _OtherMemoryResourceRef>
-  constexpr void merge(const hyperloglog<_Tp, _OtherMemoryResourceRef, _OtherScope, _Hash>& __other,
+  template <::cuda::thread_scope _OtherScope, class _OtherMemoryResource>
+  constexpr void merge(const hyperloglog<_Tp, _OtherMemoryResource, _OtherScope, _Hash>& __other,
                        ::cuda::stream_ref __stream = ::cuda::stream_ref{cudaStream_t{nullptr}})
   {
     __ref.merge(__other.__ref, __stream);
@@ -371,13 +369,12 @@ public:
   }
 
 private:
-  _MemoryResourceRef __memory_resource_ref; ///< Memory resource used to allocate device-accessible storage
   ::cuda::experimental::device_buffer<register_type> __sketch_buffer; ///< Storage for sketch
   ref_type<> __ref; ///< Device ref of the current `hyperloglog` object
 
   // Needs to be friends with other instantiations of this class template to have access to their
   // storage
-  template <class _Tp_, class _MemoryResourceRef_, ::cuda::thread_scope _Scope_, class _Hash_>
+  template <class _Tp_, class _MemoryResource_, ::cuda::thread_scope _Scope_, class _Hash_>
   friend class hyperloglog;
 };
 } // namespace cuda::experimental::cuco
