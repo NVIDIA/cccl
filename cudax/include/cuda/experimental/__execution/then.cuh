@@ -391,11 +391,11 @@ _CCCL_API constexpr auto __upon_t<_UponTag, _SetTag>::operator()(_Fn __fn) const
 }
 
 template <class _Sndr, class _Fn>
-inline constexpr size_t structured_binding_size<then_t::__sndr_t<_Sndr, _Fn>> = 3;
+inline constexpr int structured_binding_size<then_t::__sndr_t<_Sndr, _Fn>> = 3;
 template <class _Sndr, class _Fn>
-inline constexpr size_t structured_binding_size<upon_error_t::__sndr_t<_Sndr, _Fn>> = 3;
+inline constexpr int structured_binding_size<upon_error_t::__sndr_t<_Sndr, _Fn>> = 3;
 template <class _Sndr, class _Fn>
-inline constexpr size_t structured_binding_size<upon_stopped_t::__sndr_t<_Sndr, _Fn>> = 3;
+inline constexpr int structured_binding_size<upon_stopped_t::__sndr_t<_Sndr, _Fn>> = 3;
 
 _CCCL_GLOBAL_CONSTANT auto then         = then_t{};
 _CCCL_GLOBAL_CONSTANT auto upon_error   = upon_error_t{};

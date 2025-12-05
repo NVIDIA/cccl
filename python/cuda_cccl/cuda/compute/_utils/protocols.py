@@ -11,33 +11,46 @@ from typing import List, Optional, Tuple
 
 import numpy as np
 
-from ..typing import DeviceArrayLike
+from ..typing import DeviceArrayLike, GpuStruct
 
 
 def get_data_pointer(arr: DeviceArrayLike) -> int:
+    # TODO: these are fast paths for CuPy and PyTorch until
+    # we have a more general solution.
+
+    # Fast path for PyTorch (arr.data_ptr())
     try:
-        # TODO: this is a fast path for CuPy until
-        # we have a more general solution.
+        return arr.data_ptr()  # type: ignore
+    except AttributeError:
+        pass
+
+    # Fast path for CuPy (arr.data.ptr)
+    try:
         return arr.data.ptr  # type: ignore
     except AttributeError:
-        return arr.__cuda_array_interface__["data"][0]
+        pass
+
+    # Fall back to __cuda_array_interface__
+    return arr.__cuda_array_interface__["data"][0]
 
 
-def get_dtype(arr: DeviceArrayLike) -> np.dtype:
+def get_dtype(arr: DeviceArrayLike | GpuStruct | np.ndarray) -> np.dtype:
+    # Try the fast path via .dtype attribute (works for np.ndarray, GpuStruct, and most device arrays)
     try:
-        # TODO: this is a fast path for CuPy until
-        # we have a more general solution.
         return np.dtype(arr.dtype)  # type: ignore
-    except Exception:
-        cai = arr.__cuda_array_interface__
-        typestr = cai["typestr"]
+    except (AttributeError, TypeError):
+        pass
 
-        if typestr.startswith("|V"):
-            # it's a structured dtype, use the descr field:
-            return np.dtype(cai["descr"])
-        else:
-            # a simple dtype, use the typestr field:
-            return np.dtype(typestr)
+    # Fall back to __cuda_array_interface__ for DeviceArrayLike
+    cai = arr.__cuda_array_interface__  # type: ignore
+    typestr = cai["typestr"]
+
+    if typestr.startswith("|V"):
+        # it's a structured dtype, use the descr field:
+        return np.dtype(cai["descr"])
+    else:
+        # a simple dtype, use the typestr field:
+        return np.dtype(typestr)
 
 
 def get_shape(arr: DeviceArrayLike) -> Tuple[int]:

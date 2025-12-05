@@ -1,5 +1,10 @@
 enable_language(CUDA)
 
+if (TARGET libcudacxx::libcudacxx)
+  # CUDA may not have been enabled when libcudacxx was found:
+  libcudacxx_update_language_compat_flags()
+endif()
+
 #
 # Architecture options:
 #

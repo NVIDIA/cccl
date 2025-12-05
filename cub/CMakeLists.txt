@@ -4,7 +4,7 @@ if (NOT CCCL_ENABLE_CUB)
 endif()
 
 cmake_minimum_required(VERSION 3.21)
-project(CUB LANGUAGES CXX)
+project(CUB LANGUAGES CXX CUDA)
 
 option(CUB_ENABLE_HEADER_TESTING "Test that all public headers compile." ON)
 option(CUB_ENABLE_TESTING "Build CUB testing suite." ON)

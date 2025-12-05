@@ -223,7 +223,7 @@ struct stream_domain::__apply_t<schedule_from_t> : __stream::__schedule_from_t
 {};
 
 template <class _Sndr>
-inline constexpr size_t structured_binding_size<__stream::__schedule_from_t::__sndr_t<_Sndr>> = 3;
+inline constexpr int structured_binding_size<__stream::__schedule_from_t::__sndr_t<_Sndr>> = 3;
 } // namespace cuda::experimental::execution
 
 #include <cuda/experimental/__execution/epilogue.cuh>

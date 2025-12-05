@@ -260,7 +260,9 @@ function configure_preset()
 {
     local BUILD_NAME=$1
     local PRESET=$2
-    local CMAKE_OPTIONS=$3
+    shift 2
+    local CMAKE_OPTIONS=$@
+
     local GROUP_NAME="🛠️  CMake Configure ${BUILD_NAME}"
 
     symlink_latest_preset "$PRESET"
@@ -384,7 +386,8 @@ function configure_and_build_preset()
 {
     local BUILD_NAME=$1
     local PRESET=$2
-    local CMAKE_OPTIONS=$3
+    shift 2
+    local CMAKE_OPTIONS=$@
 
     configure_preset "$BUILD_NAME" "$PRESET" "$CMAKE_OPTIONS"
 

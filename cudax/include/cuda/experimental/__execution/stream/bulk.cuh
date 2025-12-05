@@ -209,14 +209,13 @@ struct stream_domain::__apply_t<bulk_t> : __stream::__bulk_t
 {};
 
 template <class _Sndr, class _Policy, class _Shape, class _Fn>
-inline constexpr size_t structured_binding_size<__stream::__bulk_chunked_t::__sndr_t<_Sndr, _Policy, _Shape, _Fn>> = 3;
+inline constexpr int structured_binding_size<__stream::__bulk_chunked_t::__sndr_t<_Sndr, _Policy, _Shape, _Fn>> = 3;
 
 template <class _Sndr, class _Policy, class _Shape, class _Fn>
-inline constexpr size_t structured_binding_size<__stream::__bulk_unchunked_t::__sndr_t<_Sndr, _Policy, _Shape, _Fn>> =
-  3;
+inline constexpr int structured_binding_size<__stream::__bulk_unchunked_t::__sndr_t<_Sndr, _Policy, _Shape, _Fn>> = 3;
 
 template <class _Sndr, class _Policy, class _Shape, class _Fn>
-inline constexpr size_t structured_binding_size<__stream::__bulk_t::__sndr_t<_Sndr, _Policy, _Shape, _Fn>> = 3;
+inline constexpr int structured_binding_size<__stream::__bulk_t::__sndr_t<_Sndr, _Policy, _Shape, _Fn>> = 3;
 } // namespace cuda::experimental::execution
 
 #include <cuda/experimental/__execution/epilogue.cuh>

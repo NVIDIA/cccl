@@ -21,6 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/__launch/configuration.h>
 #include <cuda/__utility/immovable.h>
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__memory/unique_ptr.h>
@@ -36,7 +37,6 @@
 #include <cuda/experimental/__execution/utility.cuh>
 #include <cuda/experimental/__execution/variant.cuh>
 #include <cuda/experimental/__execution/visit.cuh>
-#include <cuda/experimental/__launch/configuration.cuh>
 #include <cuda/experimental/__launch/launch.cuh>
 #include <cuda/experimental/__stream/stream_ref.cuh>
 
@@ -411,7 +411,7 @@ _CCCL_API constexpr auto __adapt(_Sndr&& __sndr, _GetStream __get_stream) noexce
 } // namespace __stream
 
 template <class _Sndr, class _GetStream>
-inline constexpr size_t structured_binding_size<__stream::__sndr_t<_Sndr, _GetStream>> = 3;
+inline constexpr int structured_binding_size<__stream::__sndr_t<_Sndr, _GetStream>> = 3;
 } // namespace cuda::experimental::execution
 
 _CCCL_DIAG_POP

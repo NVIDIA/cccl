@@ -52,6 +52,7 @@ using ::timespec;
 
 // clock
 
+// We cannot just do `using ::clock` here, for clang-cuda the signature doesn't match.
 #if defined(clock)
 #  pragma push_macro("clock")
 #  undef clock

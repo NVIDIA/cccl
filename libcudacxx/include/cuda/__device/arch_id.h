@@ -141,7 +141,7 @@ _CCCL_DEVICE_API ::cuda::arch_id __unknown_cuda_architecture();
 //!
 //! @note This API cannot be used in constexpr context when compiling with nvc++ in CUDA mode.
 template <class _Dummy = void>
-[[nodiscard]] _CCCL_DEVICE_API _CCCL_TARGET_CONSTEXPR ::cuda::arch_id current_arch_id() noexcept
+[[nodiscard]] _CCCL_DEVICE_API inline _CCCL_TARGET_CONSTEXPR ::cuda::arch_id current_arch_id() noexcept
 {
 #  if _CCCL_CUDA_COMPILER(NVHPC)
   const auto __cc = ::cuda::device::current_compute_capability();

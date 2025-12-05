@@ -24,6 +24,7 @@
 #include <cuda/__utility/__basic_any/basic_any_fwd.h>
 #include <cuda/__utility/__basic_any/interfaces.h>
 #include <cuda/std/__concepts/convertible_to.h>
+#include <cuda/std/__type_traits/add_pointer.h>
 #include <cuda/std/__type_traits/is_convertible.h>
 #include <cuda/std/__type_traits/remove_reference.h>
 #include <cuda/std/__type_traits/type_list.h>
@@ -101,13 +102,13 @@ extern _Interface& __interface_from<__basic_any<_Interface>&>;
 template <class _Interface>
 extern _Interface const& __interface_from<__basic_any<_Interface> const&>;
 template <class _Interface>
-extern _Interface* __interface_from<__basic_any<_Interface>*>;
+extern ::cuda::std::add_pointer_t<_Interface> __interface_from<__basic_any<_Interface>*>;
 template <class _Interface>
-extern _Interface const* __interface_from<__basic_any<_Interface> const*>;
+extern ::cuda::std::add_pointer_t<_Interface const> __interface_from<__basic_any<_Interface> const*>;
 template <class _Interface>
-extern _Interface* __interface_from<__basic_any<__ireference<_Interface>>*>;
+extern ::cuda::std::add_pointer_t<_Interface> __interface_from<__basic_any<__ireference<_Interface>>*>;
 template <class _Interface>
-extern _Interface* __interface_from<__basic_any<__ireference<_Interface>> const*>;
+extern ::cuda::std::add_pointer_t<_Interface const> __interface_from<__basic_any<__ireference<_Interface>> const*>;
 
 // Used to map a normalized interface type to an archetype for conversion testing:
 template <class _Interface>

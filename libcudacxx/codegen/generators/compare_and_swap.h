@@ -31,7 +31,7 @@ static inline _CCCL_DEVICE bool __cuda_atomic_compare_swap_memory_order_dispatch
         case __ATOMIC_ACQ_REL: __res = __cuda_cas(__atomic_cuda_acq_rel{}); break;
         case __ATOMIC_RELEASE: __res = __cuda_cas(__atomic_cuda_release{}); break;
         case __ATOMIC_RELAXED: __res = __cuda_cas(__atomic_cuda_relaxed{}); break;
-        default: assert(0);
+        default: _CCCL_ASSERT(false, "invalid memory order");
       }
     ),
     NV_IS_DEVICE, (
@@ -42,7 +42,7 @@ static inline _CCCL_DEVICE bool __cuda_atomic_compare_swap_memory_order_dispatch
         case __ATOMIC_ACQUIRE: __res = __cuda_cas(__atomic_cuda_volatile{}); __cuda_atomic_membar(_Sco{}); break;
         case __ATOMIC_RELEASE: __cuda_atomic_membar(_Sco{}); __res = __cuda_cas(__atomic_cuda_volatile{}); break;
         case __ATOMIC_RELAXED: __res = __cuda_cas(__atomic_cuda_volatile{}); break;
-        default: assert(0);
+        default: _CCCL_ASSERT(false, "invalid memory order");
       }
     )
   )

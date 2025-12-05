@@ -454,11 +454,13 @@ def to_cccl_op(op: Callable | OpKind, sig: Signature | None) -> Op:
     )
 
 
-def get_value_type(d_in: IteratorBase | DeviceArrayLike):
-    from .struct import gpu_struct
+def get_value_type(d_in: IteratorBase | DeviceArrayLike | GpuStruct | np.ndarray):
+    from .struct import _Struct, gpu_struct
 
     if isinstance(d_in, IteratorBase):
         return d_in.value_type
+    if isinstance(d_in, _Struct):
+        return numba.typeof(d_in)
     dtype = get_dtype(d_in)
     if dtype.type == np.void:
         # we can't use the numba type corresponding to numpy struct

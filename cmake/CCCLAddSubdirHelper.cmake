@@ -1,6 +1,6 @@
 # project_name: The name of the project when calling `find_package`. Case sensitive.
 # `PACKAGE_FILEBASE` the name of the project in the config files, ie. ${PACKAGE_FILEBASE}-config.cmake.
-# `PACKAGE_PATH` the path to the project's CMake package config files.
+# `PACKAGE_PATH` the absolute path to the project's CMake package config files.
 function(cccl_add_subdir_helper project_name)
   set(options)
   set(
@@ -19,20 +19,21 @@ function(cccl_add_subdir_helper project_name)
     ${ARGN}
   )
 
-  if (DEFINED CCCL_SUBDIR_PACKAGE_FILEBASE)
-    set(package_filebase "${CCCL_SUBDIR_PACKAGE_FILEBASE}")
-  else()
-    string(TOLOWER "${project_name}" package_filebase)
+  if (NOT DEFINED CCCL_SUBDIR_PACKAGE_FILEBASE)
+    string(TOLOWER "${project_name}" CCCL_SUBDIR_PACKAGE_FILEBASE)
   endif()
 
-  if (DEFINED CCCL_SUBDIR_PACKAGE_PATH)
-    set(package_prefix "${CCCL_SUBDIR_PACKAGE_PATH}/${package_filebase}")
-  else()
+  if (NOT DEFINED CCCL_SUBDIR_PACKAGE_PATH)
     set(
-      package_prefix
-      "${CCCL_SOURCE_DIR}/lib/cmake/${package_filebase}/${package_filebase}"
+      CCCL_SUBDIR_PACKAGE_PATH
+      "${CCCL_SOURCE_DIR}/lib/cmake/${CCCL_SUBDIR_PACKAGE_FILEBASE}"
     )
   endif()
+
+  set(
+    package_prefix
+    "${CCCL_SUBDIR_PACKAGE_PATH}/${CCCL_SUBDIR_PACKAGE_FILEBASE}"
+  )
 
   set(CMAKE_FIND_PACKAGE_NAME ${project_name})
   set(${CMAKE_FIND_PACKAGE_NAME}_FIND_COMPONENTS)
@@ -61,4 +62,14 @@ function(cccl_add_subdir_helper project_name)
   # https://github.com/NVIDIA/libcudacxx/pull/242#discussion_r794003857
   include("${package_prefix}-config-version.cmake")
   include("${package_prefix}-config.cmake")
+
+  if (${project_name}_FOUND)
+    # Set the dir var so that later `find_package` calls work as expected.
+    set(
+      ${project_name}_DIR
+      "${CCCL_SUBDIR_PACKAGE_PATH}"
+      CACHE PATH
+      "Path to ${project_name} package"
+    )
+  endif()
 endfunction()

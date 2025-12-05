@@ -182,11 +182,11 @@ _CCCL_API constexpr auto __just_from_t<_JustFromTag, _SetTag>::operator()(_Fn __
 }
 
 template <class _Fn>
-inline constexpr size_t structured_binding_size<just_from_t::__sndr_t<_Fn>> = 2;
+inline constexpr int structured_binding_size<just_from_t::__sndr_t<_Fn>> = 2;
 template <class _Fn>
-inline constexpr size_t structured_binding_size<just_error_from_t::__sndr_t<_Fn>> = 2;
+inline constexpr int structured_binding_size<just_error_from_t::__sndr_t<_Fn>> = 2;
 template <class _Fn>
-inline constexpr size_t structured_binding_size<just_stopped_from_t::__sndr_t<_Fn>> = 2;
+inline constexpr int structured_binding_size<just_stopped_from_t::__sndr_t<_Fn>> = 2;
 
 _CCCL_GLOBAL_CONSTANT auto just_from         = just_from_t{};
 _CCCL_GLOBAL_CONSTANT auto just_error_from   = just_error_from_t{};

@@ -296,13 +296,13 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT on_t::__sndr_t<_Sch, _Sndr, _Closure>
 _CCCL_GLOBAL_CONSTANT on_t on{};
 
 template <class _Sch, class _Sndr>
-inline constexpr size_t structured_binding_size<on_t::__sndr_t<_Sch, _Sndr>> = 3;
+inline constexpr int structured_binding_size<on_t::__sndr_t<_Sch, _Sndr>> = 3;
 
 template <class _Sch, class _Sndr, class _Closure>
-inline constexpr size_t structured_binding_size<on_t::__sndr_t<_Sch, _Sndr, _Closure>> = 3;
+inline constexpr int structured_binding_size<on_t::__sndr_t<_Sch, _Sndr, _Closure>> = 3;
 
 template <class _Sndr, class _NewSch, class _OldSch, class... _Closure>
-inline constexpr size_t structured_binding_size<on_t::__lowered_sndr_t<_Sndr, _NewSch, _OldSch, _Closure...>> = 3;
+inline constexpr int structured_binding_size<on_t::__lowered_sndr_t<_Sndr, _NewSch, _OldSch, _Closure...>> = 3;
 } // namespace cuda::experimental::execution
 
 #include <cuda/experimental/__execution/epilogue.cuh>

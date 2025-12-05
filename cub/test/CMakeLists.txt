@@ -18,9 +18,8 @@ if (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
 endif()
 
 cccl_get_c2h()
+cccl_get_cudatoolkit()
 cccl_get_nvtx()
-
-find_package(CUDAToolkit)
 
 set(build_nvrtc_tests ON)
 if ("NVHPC" STREQUAL "${CMAKE_CXX_COMPILER_ID}")

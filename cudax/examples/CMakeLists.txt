@@ -38,7 +38,7 @@ file(
   *.cpp
 )
 
-find_package(CUDAToolkit REQUIRED) # for CUDAToolkit_VERSION
+cccl_get_cudatoolkit()
 
 # Example requires pinned_memory_resource.
 if (CUDAToolkit_VERSION VERSION_LESS 12.6)

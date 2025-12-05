@@ -80,14 +80,9 @@ class _Scan:
                 init_value_type_info = self.init_value_cccl.value_type
 
             case _bindings.InitKind.VALUE_INIT:
-                self.init_value_cccl = cccl.to_cccl_value(
-                    cast(np.ndarray | GpuStruct, init_value)
-                )
-                value_type = (
-                    numba.from_dtype(init_value.dtype)
-                    if isinstance(init_value, np.ndarray)
-                    else numba.typeof(init_value)
-                )
+                init_value_typed = cast(np.ndarray | GpuStruct, init_value)
+                self.init_value_cccl = cccl.to_cccl_value(init_value_typed)
+                value_type = get_value_type(init_value_typed)
                 init_value_type_info = self.init_value_cccl.type
 
         # For well-known operations, we don't need a signature

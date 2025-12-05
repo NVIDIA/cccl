@@ -88,7 +88,7 @@ static inline _CCCL_DEVICE void __atomic_thread_fence_cuda(int __memorder, _Sco)
         case __ATOMIC_ACQ_REL: [[fallthrough]];
         case __ATOMIC_RELEASE: __cuda_atomic_fence(_Sco{}, __atomic_cuda_acq_rel{}); break;
         case __ATOMIC_RELAXED: break;
-        default: assert(0);
+        default: _CCCL_ASSERT(false, "invalid memory order");
       }
     ),
     NV_IS_DEVICE, (
@@ -99,7 +99,7 @@ static inline _CCCL_DEVICE void __atomic_thread_fence_cuda(int __memorder, _Sco)
         case __ATOMIC_ACQ_REL: [[fallthrough]];
         case __ATOMIC_RELEASE: __cuda_atomic_membar(_Sco{}); break;
         case __ATOMIC_RELAXED: break;
-        default: assert(0);
+        default: _CCCL_ASSERT(false, "invalid memory order");
       }
     )
   )

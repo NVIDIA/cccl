@@ -65,10 +65,10 @@ _CCCL_CONCEPT_FRAGMENT(
   requires(__make_const_lvalue_ref<_Tp> __t, __make_const_lvalue_ref<_Up> __u)(
     requires(_With_lvalue_reference<_Tp>),
     requires(_With_lvalue_reference<_Up>),
-    requires(__boolean_testable<decltype(__t == __u)>),
-    requires(__boolean_testable<decltype(__t != __u)>),
-    requires(__boolean_testable<decltype(__u == __t)>),
-    requires(__boolean_testable<decltype(__u != __t)>)));
+    _Satisfies(__boolean_testable) __t == __u,
+    _Satisfies(__boolean_testable) __t != __u,
+    _Satisfies(__boolean_testable) __u == __t,
+    _Satisfies(__boolean_testable) __u != __t));
 
 template <class _Tp, class _Up>
 _CCCL_CONCEPT __weakly_equality_comparable_with = _CCCL_FRAGMENT(__weakly_equality_comparable_with_, _Tp, _Up);

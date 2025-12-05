@@ -81,7 +81,7 @@ static inline _CCCL_DEVICE void __atomic_thread_fence_cuda(int __memorder, _Sco)
         case __ATOMIC_ACQ_REL: [[fallthrough]];
         case __ATOMIC_RELEASE: __cuda_atomic_fence(_Sco{}, __atomic_cuda_acq_rel{}); break;
         case __ATOMIC_RELAXED: break;
-        default: assert(0);
+        default: _CCCL_ASSERT(false, "invalid memory order");
       }
     ),
     NV_IS_DEVICE, (
@@ -92,7 +92,7 @@ static inline _CCCL_DEVICE void __atomic_thread_fence_cuda(int __memorder, _Sco)
         case __ATOMIC_ACQ_REL: [[fallthrough]];
         case __ATOMIC_RELEASE: __cuda_atomic_membar(_Sco{}); break;
         case __ATOMIC_RELAXED: break;
-        default: assert(0);
+        default: _CCCL_ASSERT(false, "invalid memory order");
       }
     )
   )
@@ -107,7 +107,7 @@ static inline _CCCL_DEVICE void __cuda_atomic_load_memory_order_dispatch(_Fn &__
         case __ATOMIC_CONSUME: [[fallthrough]];
         case __ATOMIC_ACQUIRE: __cuda_load(__atomic_cuda_acquire{}); break;
         case __ATOMIC_RELAXED: __cuda_load(__atomic_cuda_relaxed{}); break;
-        default: assert(0);
+        default: _CCCL_ASSERT(false, "invalid memory order");
       }
     ),
     NV_IS_DEVICE, (
@@ -116,7 +116,7 @@ static inline _CCCL_DEVICE void __cuda_atomic_load_memory_order_dispatch(_Fn &__
         case __ATOMIC_CONSUME: [[fallthrough]];
         case __ATOMIC_ACQUIRE: __cuda_load(__atomic_cuda_volatile{}); __cuda_atomic_membar(_Sco{}); break;
         case __ATOMIC_RELAXED: __cuda_load(__atomic_cuda_volatile{}); break;
-        default: assert(0);
+        default: _CCCL_ASSERT(false, "invalid memory order");
       }
     )
   )
@@ -957,7 +957,7 @@ static inline _CCCL_DEVICE void __cuda_atomic_store_memory_order_dispatch(_Fn &_
         case __ATOMIC_RELEASE: __cuda_store(__atomic_cuda_release{}); break;
         case __ATOMIC_SEQ_CST: __cuda_atomic_fence(_Sco{}, __atomic_cuda_seq_cst{}); [[fallthrough]];
         case __ATOMIC_RELAXED: __cuda_store(__atomic_cuda_relaxed{}); break;
-        default: assert(0);
+        default: _CCCL_ASSERT(false, "invalid memory order");
       }
     ),
     NV_IS_DEVICE, (
@@ -965,7 +965,7 @@ static inline _CCCL_DEVICE void __cuda_atomic_store_memory_order_dispatch(_Fn &_
         case __ATOMIC_RELEASE: [[fallthrough]];
         case __ATOMIC_SEQ_CST: __cuda_atomic_membar(_Sco{}); [[fallthrough]];
         case __ATOMIC_RELAXED: __cuda_store(__atomic_cuda_volatile{}); break;
-        default: assert(0);
+        default: _CCCL_ASSERT(false, "invalid memory order");
       }
     )
   )
@@ -1394,7 +1394,7 @@ static inline _CCCL_DEVICE bool __cuda_atomic_compare_swap_memory_order_dispatch
         case __ATOMIC_ACQ_REL: __res = __cuda_cas(__atomic_cuda_acq_rel{}); break;
         case __ATOMIC_RELEASE: __res = __cuda_cas(__atomic_cuda_release{}); break;
         case __ATOMIC_RELAXED: __res = __cuda_cas(__atomic_cuda_relaxed{}); break;
-        default: assert(0);
+        default: _CCCL_ASSERT(false, "invalid memory order");
       }
     ),
     NV_IS_DEVICE, (
@@ -1405,7 +1405,7 @@ static inline _CCCL_DEVICE bool __cuda_atomic_compare_swap_memory_order_dispatch
         case __ATOMIC_ACQUIRE: __res = __cuda_cas(__atomic_cuda_volatile{}); __cuda_atomic_membar(_Sco{}); break;
         case __ATOMIC_RELEASE: __cuda_atomic_membar(_Sco{}); __res = __cuda_cas(__atomic_cuda_volatile{}); break;
         case __ATOMIC_RELAXED: __res = __cuda_cas(__atomic_cuda_volatile{}); break;
-        default: assert(0);
+        default: _CCCL_ASSERT(false, "invalid memory order");
       }
     )
   )
@@ -2002,7 +2002,7 @@ static inline _CCCL_DEVICE void __cuda_atomic_exchange_memory_order_dispatch(_Fn
         case __ATOMIC_ACQ_REL: __cuda_exch(__atomic_cuda_acq_rel{}); break;
         case __ATOMIC_RELEASE: __cuda_exch(__atomic_cuda_release{}); break;
         case __ATOMIC_RELAXED: __cuda_exch(__atomic_cuda_relaxed{}); break;
-        default: assert(0);
+        default: _CCCL_ASSERT(false, "invalid memory order");
       }
     ),
     NV_IS_DEVICE, (
@@ -2013,7 +2013,7 @@ static inline _CCCL_DEVICE void __cuda_atomic_exchange_memory_order_dispatch(_Fn
         case __ATOMIC_ACQUIRE: __cuda_exch(__atomic_cuda_volatile{}); __cuda_atomic_membar(_Sco{}); break;
         case __ATOMIC_RELEASE: __cuda_atomic_membar(_Sco{}); __cuda_exch(__atomic_cuda_volatile{}); break;
         case __ATOMIC_RELAXED: __cuda_exch(__atomic_cuda_volatile{}); break;
-        default: assert(0);
+        default: _CCCL_ASSERT(false, "invalid memory order");
       }
     )
   )
@@ -2607,7 +2607,7 @@ static inline _CCCL_DEVICE void __cuda_atomic_fetch_memory_order_dispatch(_Fn& _
         case __ATOMIC_ACQ_REL: __cuda_fetch(__atomic_cuda_acq_rel{}); break;
         case __ATOMIC_RELEASE: __cuda_fetch(__atomic_cuda_release{}); break;
         case __ATOMIC_RELAXED: __cuda_fetch(__atomic_cuda_relaxed{}); break;
-        default: assert(0);
+        default: _CCCL_ASSERT(false, "invalid memory order");
       }
     ),
     NV_IS_DEVICE, (
@@ -2618,7 +2618,7 @@ static inline _CCCL_DEVICE void __cuda_atomic_fetch_memory_order_dispatch(_Fn& _
         case __ATOMIC_ACQUIRE: __cuda_fetch(__atomic_cuda_volatile{}); __cuda_atomic_membar(_Sco{}); break;
         case __ATOMIC_RELEASE: __cuda_atomic_membar(_Sco{}); __cuda_fetch(__atomic_cuda_volatile{}); break;
         case __ATOMIC_RELAXED: __cuda_fetch(__atomic_cuda_volatile{}); break;
-        default: assert(0);
+        default: _CCCL_ASSERT(false, "invalid memory order");
       }
     )
   )

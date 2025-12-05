@@ -20,7 +20,7 @@
 #
 # See the accompanying README.md for more information and build instructions.
 
-cmake_minimum_required(VERSION 3.15 FATAL_ERROR)
+cmake_minimum_required(VERSION 3.18 FATAL_ERROR)
 
 project(ThrustFlexibleDeviceSystemDemo CXX)
 
@@ -49,6 +49,10 @@ if (CCCL_THRUST_DEVICE_SYSTEM STREQUAL "CUDA")
   # Note that the project(...) command earlier only enables CXX by default.
   enable_language(CUDA)
 
+  # Optional: Call find_package(CCCL) again after enabling new languages
+  # to update compatibility flags for newly detected compilers.
+  find_package(CCCL CONFIG REQUIRED)
+
   # Compile for the native CUDA arch if not specified:
   if (NOT DEFINED CMAKE_CUDA_ARCHITECTURES)
     set(CMAKE_CUDA_ARCHITECTURES native)
@@ -57,8 +61,12 @@ endif()
 
 # Creates a cmake executable target for the main program
 add_executable(example_program example.cpp)
+
 # Thrust requires at least C++17:
-target_compile_features(example_program PUBLIC cuda_std_17 cxx_std_17)
+target_compile_features(example_program PUBLIC cxx_std_17)
+if (CCCL_THRUST_DEVICE_SYSTEM STREQUAL "CUDA")
+  target_compile_features(example_program PUBLIC cuda_std_17)
+endif()
 
 # By default, CMake inspects the source file extension to determine whether to use C++ or CUDA
 # compilers. We can override this behavior by using source file properties. Here, we tell CMake

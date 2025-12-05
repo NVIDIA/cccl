@@ -77,13 +77,13 @@
 # thrust_update_system_found_flags()
 #
 # # View verbose log with target and dependency information:
-# $ cmake . --log-level=VERBOSE (CMake 3.15.7 and above)
+# $ cmake . --log-level=VERBOSE
 #
 # # Print debugging output to status channel:
 # thrust_debug_internal_targets()
 # thrust_debug_target(TargetName "${THRUST_VERSION}")
 
-cmake_minimum_required(VERSION 3.15)
+cmake_minimum_required(VERSION 3.18)
 
 cmake_policy(PUSH)
 cmake_policy(SET CMP0074 NEW)
@@ -425,16 +425,7 @@ function(thrust_debug msg)
   # Use the VERBOSE channel when called internally
   # Run `cmake . --log-level=VERBOSE` to view.
   if ("${ARGN}" STREQUAL "internal")
-    # If CMake is too old to know about the VERBOSE channel, just be silent.
-    # Users reproduce much the same output on the STATUS channel by using:
-    # thrust_create_target(Thrust [...])
-    # thrust_debug_internal_targets()
-    # thrust_debug_target(Thrust)
-    if (CMAKE_VERSION VERSION_GREATER_EQUAL "3.15.7")
-      set(channel VERBOSE)
-    else()
-      return()
-    endif()
+    set(channel VERBOSE)
   else()
     set(channel STATUS)
   endif()
@@ -952,6 +943,13 @@ if (NOT TARGET Thrust::libcudacxx)
     )
   endif()
   _thrust_set_libcudacxx_target(libcudacxx::libcudacxx)
+endif()
+
+# In case new languages have been enabled since libcudacxx was found.
+# We need to check for the availability of the function, rather than
+# the target, since libcudacxx / thrust configs call each other:
+if (COMMAND libcudacxx_update_language_compat_flags)
+  libcudacxx_update_language_compat_flags()
 endif()
 
 # Handle find_package COMPONENT requests:

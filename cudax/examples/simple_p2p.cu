@@ -32,6 +32,7 @@
 
 #include <cuda/algorithm>
 #include <cuda/devices>
+#include <cuda/memory_pool>
 #include <cuda/memory_resource>
 
 #include <cuda/experimental/container.cuh>
@@ -120,7 +121,7 @@ void test_cross_device_access_from_kernel(
 
   // This will be a pinned memory vector once available
   cudax::uninitialized_buffer<float, cuda::mr::host_accessible> host_buffer(
-    cuda::legacy_pinned_memory_resource(), dev0_buffer.size());
+    cuda::mr::legacy_pinned_memory_resource(), dev0_buffer.size());
   std::generate(host_buffer.begin(), host_buffer.end(), []() {
     static int i = 0;
     return static_cast<float>((i++) % 4096);
@@ -130,7 +131,7 @@ void test_cross_device_access_from_kernel(
   dev1_stream.wait(dev0_stream);
 
   // Kernel launch configuration
-  auto config = cudax::distribute<512>(dev0_buffer.size());
+  auto config = cuda::distribute<512>(dev0_buffer.size());
 
   // Run kernel on GPU 1, reading input from the GPU 0 buffer, writing output to the GPU 1 buffer
   printf("Run kernel on GPU%d, taking source data from GPU%d and writing to "

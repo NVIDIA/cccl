@@ -9,6 +9,7 @@
 //===----------------------------------------------------------------------===//
 
 #include <cuda/__device/all_devices.h>
+#include <cuda/memory_pool>
 #include <cuda/memory_resource>
 #include <cuda/std/cstdint>
 #include <cuda/std/type_traits>
