@@ -207,7 +207,7 @@ public:
   //! @param __group CUDA thread block group this operation is executed in
   //!
   //! @return Approximate distinct items count
-  [[nodiscard]] _CCCL_DEVICE std::size_t estimate(const cooperative_groups::thread_block& __group) const noexcept
+  [[nodiscard]] _CCCL_DEVICE ::cuda::std::size_t estimate(const cooperative_groups::thread_block& __group) const noexcept
   {
     return __impl.__estimate(__group);
   }
@@ -219,7 +219,7 @@ public:
   //! @param __stream CUDA stream this operation is executed in
   //!
   //! @return Approximate distinct items count
-  [[nodiscard]] _CCCL_HOST constexpr std::size_t
+  [[nodiscard]] _CCCL_HOST constexpr ::cuda::std::size_t
   estimate(::cuda::stream_ref __stream = ::cuda::stream_ref{cudaStream_t{nullptr}}) const
   {
     return __impl.__estimate(__stream);
@@ -244,7 +244,7 @@ public:
   //! @brief Gets the number of bytes required for the sketch storage.
   //!
   //! @return The number of bytes required for the sketch
-  [[nodiscard]] _CCCL_API constexpr std::size_t sketch_bytes() const noexcept
+  [[nodiscard]] _CCCL_API constexpr ::cuda::std::size_t sketch_bytes() const noexcept
   {
     return __impl.__sketch_bytes();
   }
@@ -254,7 +254,7 @@ public:
   //! @param __sketch_size_kb Upper bound sketch size in KB
   //!
   //! @return The number of bytes required for the sketch
-  [[nodiscard]] _CCCL_API static constexpr std::size_t sketch_bytes(sketch_size_kb __sketch_size_kb) noexcept
+  [[nodiscard]] _CCCL_API static constexpr ::cuda::std::size_t sketch_bytes(sketch_size_kb __sketch_size_kb) noexcept
   {
     return __impl_type::__sketch_bytes(__sketch_size_kb);
   }
@@ -264,7 +264,8 @@ public:
   //! @param __standard_deviation Upper bound standard deviation for approximation error
   //!
   //! @return The number of bytes required for the sketch
-  [[nodiscard]] _CCCL_API static constexpr std::size_t sketch_bytes(standard_deviation __standard_deviation) noexcept
+  [[nodiscard]] _CCCL_API static constexpr ::cuda::std::size_t
+  sketch_bytes(standard_deviation __standard_deviation) noexcept
   {
     return __impl_type::sketch_bytes(__standard_deviation);
   }
@@ -272,7 +273,7 @@ public:
   //! @brief Gets the alignment required for the sketch storage.
   //!
   //! @return The required alignment
-  [[nodiscard]] _CCCL_API static constexpr std::size_t sketch_alignment() noexcept
+  [[nodiscard]] _CCCL_API static constexpr ::cuda::std::size_t sketch_alignment() noexcept
   {
     return __impl_type::__sketch_alignment();
   }

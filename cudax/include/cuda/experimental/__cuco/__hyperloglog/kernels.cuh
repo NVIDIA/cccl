@@ -22,9 +22,8 @@
 #endif // no system header
 
 #include <cuda/std/array>
+#include <cuda/std/cstddef>
 #include <cuda/std/span>
-
-#include <cstddef>
 
 #include <cooperative_groups.h>
 
@@ -169,7 +168,7 @@ CCCL_DETAIL_KERNEL_ATTRIBUTES void __merge(OtherRefType __other_ref, RefType __r
 
 // TODO this kernel currently isn't being used
 template <class RefType>
-CCCL_DETAIL_KERNEL_ATTRIBUTES void __estimate(std::size_t* __cardinality, RefType __ref)
+CCCL_DETAIL_KERNEL_ATTRIBUTES void __estimate(::cuda::std::size_t* __cardinality, RefType __ref)
 {
   const auto __block = cooperative_groups::this_thread_block();
   if (__block.group_index().x == 0)

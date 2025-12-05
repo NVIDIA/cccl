@@ -23,11 +23,10 @@
 
 #include <cuda/functional>
 #include <cuda/std/cmath>
+#include <cuda/std/cstddef>
 #include <cuda/std/limits>
 
 #include <cuda/experimental/__cuco/__hyperloglog/tuning.cuh>
-
-#include <cstddef>
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -59,7 +58,7 @@ public:
   //! @param v Number of 0 registers
   //!
   //! @return Bias-corrected cardinality estimate
-  _CCCL_API std::size_t operator()(double __z, int __v) const noexcept
+  [[nodiscard]] _CCCL_API ::cuda::std::size_t operator()(double __z, int __v) const noexcept
   {
     double __e = __alpha_mm() / __z;
 
@@ -70,7 +69,7 @@ public:
       // The threshold `2.5 * m` is from the original HLL algorithm.
       if (__e <= 2.5 * __m)
       {
-        return static_cast<std::size_t>(::cuda::std::round(__h));
+        return static_cast<::cuda::std::size_t>(::cuda::std::round(__h));
       }
 
       if (__precision < 19)
@@ -87,11 +86,11 @@ public:
       }
     }
 
-    return static_cast<std::size_t>(::cuda::std::round(__e));
+    return static_cast<::cuda::std::size_t>(::cuda::std::round(__e));
   }
 
 private:
-  _CCCL_API constexpr double __alpha_mm() const noexcept
+  [[nodiscard]] _CCCL_API constexpr double __alpha_mm() const noexcept
   {
     switch (__m)
     {
@@ -106,12 +105,12 @@ private:
     }
   }
 
-  _CCCL_API constexpr double __bias_corrected_estimate(double __e) const noexcept
+  [[nodiscard]] _CCCL_API constexpr double __bias_corrected_estimate(double __e) const noexcept
   {
     return (__e < 5.0 * __m) ? __e - __bias(__e) : __e;
   }
 
-  _CCCL_API constexpr double __bias(double __e) const noexcept
+  [[nodiscard]] _CCCL_API constexpr double __bias(double __e) const noexcept
   {
     const auto __anchor_index = __interpolation_anchor_index(__e);
     const int __n             = __raw_estimate_data_size(__precision);
@@ -136,13 +135,13 @@ private:
     return __bias_sum / (__high - __low);
   }
 
-  _CCCL_API constexpr double __distance(double __e, int __i) const noexcept
+  [[nodiscard]] _CCCL_API constexpr double __distance(double __e, int __i) const noexcept
   {
     const auto __diff = __e - __raw_estimate_data(__precision)[__i];
     return __diff * __diff;
   }
 
-  _CCCL_API constexpr int __interpolation_anchor_index(double __e) const noexcept
+  [[nodiscard]] _CCCL_API constexpr int __interpolation_anchor_index(double __e) const noexcept
   {
     auto __estimates      = __raw_estimate_data(__precision);
     const int __n         = __raw_estimate_data_size(__precision);

@@ -302,7 +302,7 @@ public:
   //! @param __stream CUDA stream this operation is executed in
   //!
   //! @return Approximate distinct items count
-  [[nodiscard]] constexpr std::size_t
+  [[nodiscard]] constexpr ::cuda::std::size_t
   estimate(::cuda::stream_ref __stream = ::cuda::stream_ref{cudaStream_t{nullptr}}) const
   {
     return __ref.estimate(__stream);
@@ -335,7 +335,7 @@ public:
   //! @brief Gets the number of bytes required for the sketch storage.
   //!
   //! @return The number of bytes required for the sketch
-  [[nodiscard]] constexpr std::size_t sketch_bytes() const noexcept
+  [[nodiscard]] constexpr ::cuda::std::size_t sketch_bytes() const noexcept
   {
     return __ref.sketch_bytes();
   }
@@ -345,7 +345,7 @@ public:
   //! @param __sketch_size_kb Upper bound sketch size in KB
   //!
   //! @return The number of bytes required for the sketch
-  [[nodiscard]] static constexpr std::size_t sketch_bytes(sketch_size_kb __sketch_size_kb) noexcept
+  [[nodiscard]] static constexpr ::cuda::std::size_t sketch_bytes(sketch_size_kb __sketch_size_kb) noexcept
   {
     return ref_type<>::sketch_bytes(__sketch_size_kb);
   }
@@ -355,7 +355,7 @@ public:
   //! @param __standard_deviation Upper bound standard deviation for approximation error
   //!
   //! @return The number of bytes required for the sketch
-  [[nodiscard]] static constexpr std::size_t sketch_bytes(standard_deviation __standard_deviation) noexcept
+  [[nodiscard]] static constexpr ::cuda::std::size_t sketch_bytes(standard_deviation __standard_deviation) noexcept
   {
     return ref_type<>::sketch_bytes(__standard_deviation);
   }
@@ -363,7 +363,7 @@ public:
   //! @brief Gets the alignment required for the sketch storage.
   //!
   //! @return The required alignment
-  [[nodiscard]] static constexpr std::size_t sketch_alignment() noexcept
+  [[nodiscard]] static constexpr ::cuda::std::size_t sketch_alignment() noexcept
   {
     return ref_type<>::sketch_alignment();
   }

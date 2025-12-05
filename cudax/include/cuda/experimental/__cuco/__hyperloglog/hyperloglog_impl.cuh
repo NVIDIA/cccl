@@ -374,11 +374,12 @@ public:
   //! @param group CUDA thread block group this operation is executed in
   //!
   //! @return Approximate distinct items count
-  [[nodiscard]] _CCCL_DEVICE size_t __estimate(const cooperative_groups::thread_block& __group) const noexcept
+  [[nodiscard]] _CCCL_DEVICE ::cuda::std::size_t
+  __estimate(const cooperative_groups::thread_block& __group) const noexcept
   {
     __shared__ ::cuda::atomic<__fp_type, ::cuda::std::thread_scope_block> __block_sum;
     __shared__ ::cuda::atomic<int, ::cuda::std::thread_scope_block> __block_zeroes;
-    __shared__ size_t __estimate;
+    __shared__ ::cuda::std::size_t __estimate;
 
     if (__group.thread_rank() == 0)
     {
@@ -435,7 +436,7 @@ public:
   //! @param stream CUDA stream this operation is executed in
   //!
   //! @return Approximate distinct items count
-  [[nodiscard]] _CCCL_HOST size_t __estimate(::cuda::stream_ref __stream) const
+  [[nodiscard]] _CCCL_HOST ::cuda::std::size_t __estimate(::cuda::stream_ref __stream) const
   {
     const auto __num_regs = 1ull << __precision;
     ::std::vector<register_type> __host_sketch(__num_regs);
@@ -489,7 +490,7 @@ public:
   //! @brief Gets the number of bytes required for the sketch storage.
   //!
   //! @return The number of bytes required for the sketch
-  [[nodiscard]] _CCCL_API constexpr size_t __sketch_bytes() const noexcept
+  [[nodiscard]] _CCCL_API constexpr ::cuda::std::size_t __sketch_bytes() const noexcept
   {
     return (1ull << __precision) * sizeof(register_type);
   }
@@ -499,12 +500,12 @@ public:
   //! @param sketch_size_kb Upper bound sketch size in KB
   //!
   //! @return The number of bytes required for the sketch
-  [[nodiscard]] _CCCL_API static constexpr size_t
+  [[nodiscard]] _CCCL_API static constexpr ::cuda::std::size_t
   __sketch_bytes(::cuda::experimental::cuco::__sketch_size_kb_t __sketch_size_kb) noexcept
   {
     // minimum precision is 4 or 64 bytes
-    return ::cuda::std::max(static_cast<size_t>(sizeof(register_type) * 1ull << 4),
-                            ::cuda::std::bit_floor(static_cast<size_t>(__sketch_size_kb * 1024)));
+    return ::cuda::std::max(static_cast<::cuda::std::size_t>(sizeof(register_type) * 1ull << 4),
+                            ::cuda::std::bit_floor(static_cast<::cuda::std::size_t>(__sketch_size_kb * 1024)));
   }
 
   //! @brief Gets the number of bytes required for the sketch storage.
@@ -512,7 +513,7 @@ public:
   //! @param __standard_deviation Upper bound standard deviation for approximation error
   //!
   //! @return The number of bytes required for the sketch
-  [[nodiscard]] _CCCL_API static constexpr std::size_t
+  [[nodiscard]] _CCCL_API static constexpr ::cuda::std::size_t
   sketch_bytes(::cuda::experimental::cuco::__standard_deviation_t __standard_deviation) noexcept
   {
     // implementation taken from
@@ -533,7 +534,7 @@ public:
   //! @brief Gets the alignment required for the sketch storage.
   //!
   //! @return The required alignment
-  [[nodiscard]] _CCCL_API static constexpr size_t __sketch_alignment() noexcept
+  [[nodiscard]] _CCCL_API static constexpr ::cuda::std::size_t __sketch_alignment() noexcept
   {
     return alignof(register_type);
   }

@@ -22,6 +22,7 @@
 #endif // no system header
 
 #include <cuda/std/array>
+#include <cuda/std/cstddef>
 
 #include <vector>
 
@@ -42,7 +43,7 @@ CUDAX_CUCO_HLL_TUNING_ARR_DECL __threshold_data{10.0, 20.0, 40.0, 80.0, 220.0, 4
 //!
 //! @param __precision The precision value (4-18)
 //! @return The threshold value for the given precision
-_CCCL_API constexpr auto __threshold(int32_t __precision) noexcept {
+[[nodiscard]] _CCCL_API constexpr auto __threshold(int32_t __precision) noexcept {
   return __threshold_data[__precision - 4];
 }
 
@@ -69,7 +70,7 @@ CUDAX_CUCO_HLL_TUNING_ARR_DECL __raw_estimate_data_p18{189084.0, 192250.913, 195
 //!
 //! @param __precision The precision value (4-18)
 //! @return Pointer to the raw estimate data array for the given precision
-_CCCL_API constexpr const double* __raw_estimate_data(int32_t __precision) noexcept {
+[[nodiscard]] _CCCL_API constexpr const double* __raw_estimate_data(int32_t __precision) noexcept {
   switch (__precision) {
     case 4:  return __raw_estimate_data_p4.data();
     case 5:  return __raw_estimate_data_p5.data();
@@ -94,7 +95,7 @@ _CCCL_API constexpr const double* __raw_estimate_data(int32_t __precision) noexc
 //!
 //! @param __precision The precision value (4-18)
 //! @return Size of the raw estimate data array for the given precision
-_CCCL_API constexpr size_t __raw_estimate_data_size(int32_t __precision) noexcept {
+[[nodiscard]] _CCCL_API constexpr ::cuda::std::size_t __raw_estimate_data_size(int32_t __precision) noexcept {
   switch (__precision) {
     case 4:  return __raw_estimate_data_p4.size();
     case 5:  return __raw_estimate_data_p5.size();
@@ -135,7 +136,7 @@ CUDAX_CUCO_HLL_TUNING_ARR_DECL __bias_data_p18{189083.0, 185696.913, 182348.774,
 //!
 //! @param __precision The precision value (4-18)
 //! @return Pointer to the bias data array for the given precision
-_CCCL_API constexpr const double* __bias_data(int32_t __precision) noexcept {
+[[nodiscard]] _CCCL_API constexpr const double* __bias_data(int32_t __precision) noexcept {
   switch (__precision) {
     case 4:  return __bias_data_p4.data();
     case 5:  return __bias_data_p5.data();
@@ -160,7 +161,7 @@ _CCCL_API constexpr const double* __bias_data(int32_t __precision) noexcept {
 //!
 //! @param __precision The precision value (4-18)
 //! @return Size of the bias data array for the given precision
-_CCCL_API constexpr size_t ____bias_data_size(int32_t __precision) noexcept {
+[[nodiscard]] _CCCL_API constexpr ::cuda::std::size_t ____bias_data_size(int32_t __precision) noexcept {
   switch (__precision) {
     case 4:  return __bias_data_p4.size();
     case 5:  return __bias_data_p5.size();
