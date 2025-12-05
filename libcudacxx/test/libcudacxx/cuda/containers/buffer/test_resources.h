@@ -28,7 +28,7 @@ struct other_property
 
 // make the cudax resources have that property for tests
 inline void get_property(const cuda::device_memory_pool_ref&, other_property) {}
-inline void get_property(const cuda::legacy_pinned_memory_resource&, other_property) {}
+inline void get_property(const cuda::mr::legacy_pinned_memory_resource&, other_property) {}
 #if _CCCL_CTK_AT_LEAST(12, 6)
 inline void get_property(const cuda::pinned_memory_pool_ref&, other_property) {}
 #endif // _CCCL_CTK_AT_LEAST(12, 6)
