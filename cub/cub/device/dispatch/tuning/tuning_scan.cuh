@@ -585,11 +585,27 @@ struct policy_hub
       static constexpr int squad_reduce_thread_count = num_reduce_warps * num_threads_per_warp;
       static constexpr int num_lookback_tiles        = 3 * num_look_ahead_warps * num_threads_per_warp;
 
-      // 256 / sizeof(InputValueT) - 1 should minimize bank conflicts
+      // 256 / sizeof(InputValueT) - 1 should minimize bank conflicts (and fits into 48KiB SMEM)
       // 2-byte types and double needed special handling
-      static constexpr int tile_size =
-        (256 / (sizeof(InputValueT) == 2 ? 2 : (::cuda::std::is_same_v<InputValueT, double> ? 4 : sizeof(AccumT))) - 1)
-        * squad_reduce_thread_count;
+      static constexpr int items_per_thread = (256 / (sizeof(InputValueT) == 2 ? 2 : sizeof(AccumT)) - 1);
+      // TODO(bgruber): the special handling of double below is a LOT faster, but exceeds 48KiB SMEM
+      // clang-format off
+      // |   F64   |      I32      |     72576      |  11.295 us |       2.44% |  11.917 us |       8.02% |     0.622 us |   5.50% |   SLOW   |
+      // |   F64   |      I32      |    1056384     |  16.162 us |       6.24% |  15.847 us |       5.57% |    -0.315 us |  -1.95% |   SAME   |
+      // |   F64   |      I32      |    16781184    |  65.696 us |       1.64% |  60.650 us |       3.37% |    -5.046 us |  -7.68% |   FAST   |
+      // |   F64   |      I32      |   268442496    | 863.896 us |       0.22% | 679.100 us |       0.93% |  -184.796 us | -21.39% |   FAST   |
+      // |   F64   |      I32      |   1073745792   |   3.418 ms |       0.12% |   2.662 ms |       0.46% |  -755.740 us | -22.11% |   FAST   |
+      // |   F64   |      I64      |     72576      |  12.301 us |       8.18% |  12.987 us |       5.75% |     0.686 us |   5.58% |   SAME   |
+      // |   F64   |      I64      |    1056384     |  16.775 us |       5.70% |  16.091 us |       6.14% |    -0.684 us |  -4.08% |   SAME   |
+      // |   F64   |      I64      |    16781184    |  66.970 us |       1.41% |  58.024 us |       3.17% |    -8.946 us | -13.36% |   FAST   |
+      // |   F64   |      I64      |   268442496    | 863.826 us |       0.23% | 676.465 us |       0.98% |  -187.360 us | -21.69% |   FAST   |
+      // |   F64   |      I64      |   1073745792   |   3.419 ms |       0.11% |   2.664 ms |       0.48% |  -755.409 us | -22.09% |   FAST   |
+      // |   F64   |      I64      |   4294975104   |  13.641 ms |       0.05% |  10.575 ms |       0.24% | -3065.815 us | -22.48% |   FAST   |
+      // clang-format on
+      // (256 / (sizeof(InputValueT) == 2 ? 2 : (::cuda::std::is_same_v<InputValueT, double> ? 4 : sizeof(AccumT))) -
+      // 1);
+
+      static constexpr int tile_size = items_per_thread * squad_reduce_thread_count;
 
       // The squads cannot be static constexpr variables, as those are not device accessible
       [[nodiscard]] _CCCL_API _CCCL_FORCEINLINE static constexpr SquadDesc squadReduce() noexcept
