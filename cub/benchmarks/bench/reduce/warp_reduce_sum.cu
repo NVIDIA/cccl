@@ -7,6 +7,7 @@ using value_types = nvbench::type_list<
   int8_t,
   int16_t,
   int32_t,
+  int64_t,
 #if NVBENCH_HELPER_HAS_I128
   int128_t,
 #endif
@@ -18,6 +19,9 @@ using value_types = nvbench::type_list<
 #endif
   float,
   double,
+#if _CCCL_HAS_FLOAT128()
+  __float128,
+#endif
 #if _CCCL_HAS_NVFP16() && _CCCL_CTK_AT_LEAST(12, 2)
   cuda::std::complex<__half>,
 #endif
