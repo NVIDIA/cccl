@@ -91,7 +91,7 @@ function(
   )
 
   if ("CUDA" STREQUAL "${config_device}")
-    thrust_configure_cuda_target(${example_target} RDC ${THRUST_FORCE_RDC})
+    cccl_set_rdc(${example_target} ${THRUST_FORCE_RDC})
   endif()
 
   # We do not want to explicitly include `host_device.h` if not needed,
