@@ -183,6 +183,27 @@
 #  endif // !NV_HAS_FEATURE_SM_100a
 
 // missing SM_103
+#  ifndef NV_PROVIDES_SM_103
+#    define _NV_TARGET_VAL_SM_103 1030
+#    define NV_PROVIDES_SM_103    __NV_PROVIDES_SM_103
+#    define NV_IS_EXACTLY_SM_103  __NV_IS_EXACTLY_SM_103
+#    if (__CUDA_ARCH__ == _NV_TARGET_VAL_SM_103)
+#      define _NV_TARGET_BOOL___NV_IS_EXACTLY_SM_103 1
+#      define _NV_TARGET___NV_IS_EXACTLY_SM_103      1
+#    else
+#      define _NV_TARGET_BOOL___NV_IS_EXACTLY_SM_103 0
+#      define _NV_TARGET___NV_IS_EXACTLY_SM_103      0
+#    endif
+#    if (__CUDA_ARCH__ >= _NV_TARGET_VAL_SM_103)
+#      define _NV_TARGET___NV_PROVIDES_SM_103      1
+#      define _NV_TARGET_BOOL___NV_PROVIDES_SM_103 1
+#    else
+#      define _NV_TARGET___NV_PROVIDES_SM_103      0
+#      define _NV_TARGET_BOOL___NV_PROVIDES_SM_103 0
+#    endif
+#  endif // !NV_PROVIDES_SM_103
+
+// missing SM_103
 #  ifndef NV_HAS_FEATURE_SM_103a
 #    define NV_HAS_FEATURE_SM_103a __NV_HAS_FEATURE_SM_103a
 #    if defined(__CUDA_ARCH_FEAT_SM103_ALL) || (defined(__CUDA_ARCH_SPECIFIC__) && (__CUDA_ARCH_SPECIFIC__ == 1030))
@@ -191,6 +212,27 @@
 #      define _NV_TARGET_BOOL___NV_HAS_FEATURE_SM_103a 0
 #    endif
 #  endif // !NV_HAS_FEATURE_SM_103a
+
+// missing SM_110
+#  ifndef NV_PROVIDES_SM_110
+#    define _NV_TARGET_VAL_SM_110 1100
+#    define NV_PROVIDES_SM_110    __NV_PROVIDES_SM_110
+#    define NV_IS_EXACTLY_SM_110  __NV_IS_EXACTLY_SM_110
+#    if (__CUDA_ARCH__ == _NV_TARGET_VAL_SM_110)
+#      define _NV_TARGET_BOOL___NV_IS_EXACTLY_SM_110 1
+#      define _NV_TARGET___NV_IS_EXACTLY_SM_110      1
+#    else
+#      define _NV_TARGET_BOOL___NV_IS_EXACTLY_SM_110 0
+#      define _NV_TARGET___NV_IS_EXACTLY_SM_110      0
+#    endif
+#    if (__CUDA_ARCH__ >= _NV_TARGET_VAL_SM_110)
+#      define _NV_TARGET___NV_PROVIDES_SM_110      1
+#      define _NV_TARGET_BOOL___NV_PROVIDES_SM_110 1
+#    else
+#      define _NV_TARGET___NV_PROVIDES_SM_110      0
+#      define _NV_TARGET_BOOL___NV_PROVIDES_SM_110 0
+#    endif
+#  endif // !NV_PROVIDES_SM_110
 
 // missing SM_110a
 #  ifndef NV_HAS_FEATURE_SM_110a
@@ -201,6 +243,27 @@
 #      define _NV_TARGET_BOOL___NV_HAS_FEATURE_SM_110a 0
 #    endif
 #  endif // NV_HAS_FEATURE_SM_110a
+
+// missing SM_120
+#  ifndef NV_PROVIDES_SM_120
+#    define _NV_TARGET_VAL_SM_120 1200
+#    define NV_PROVIDES_SM_120    __NV_PROVIDES_SM_120
+#    define NV_IS_EXACTLY_SM_120  __NV_IS_EXACTLY_SM_120
+#    if (__CUDA_ARCH__ == _NV_TARGET_VAL_SM_120)
+#      define _NV_TARGET_BOOL___NV_IS_EXACTLY_SM_120 1
+#      define _NV_TARGET___NV_IS_EXACTLY_SM_120      1
+#    else
+#      define _NV_TARGET_BOOL___NV_IS_EXACTLY_SM_120 0
+#      define _NV_TARGET___NV_IS_EXACTLY_SM_120      0
+#    endif
+#    if (__CUDA_ARCH__ >= _NV_TARGET_VAL_SM_120)
+#      define _NV_TARGET___NV_PROVIDES_SM_120      1
+#      define _NV_TARGET_BOOL___NV_PROVIDES_SM_120 1
+#    else
+#      define _NV_TARGET___NV_PROVIDES_SM_120      0
+#      define _NV_TARGET_BOOL___NV_PROVIDES_SM_120 0
+#    endif
+#  endif // !NV_PROVIDES_SM_120
 
 // missing SM_120a
 #  ifndef NV_HAS_FEATURE_SM_120a
