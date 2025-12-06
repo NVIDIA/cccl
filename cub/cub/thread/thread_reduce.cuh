@@ -156,31 +156,25 @@ template <typename Input,
 namespace detail
 {
 template <typename PreferredT, typename ValueT, typename ReductionOp, typename L, typename R>
-_CCCL_DEVICE _CCCL_FORCEINLINE auto thread_reduce_apply(ReductionOp&& reduction_op, L&& lhs, R&& rhs)
+_CCCL_DEVICE _CCCL_FORCEINLINE auto thread_reduce_apply(ReductionOp reduction_op, L lhs, R rhs)
 {
-  using _ReductionOpRef = ReductionOp&;
-  auto&& _op            = ::cuda::std::forward<ReductionOp>(reduction_op);
+  using ReductionOpRef = ReductionOp&;
 
-  if constexpr (::cuda::std::is_invocable_v<_ReductionOpRef, PreferredT, PreferredT>)
+  if constexpr (::cuda::std::is_invocable_v<ReductionOpRef, PreferredT, PreferredT>)
   {
-    return ::cuda::std::invoke(_op,
-                               static_cast<PreferredT>(::cuda::std::forward<L>(lhs)),
-                               static_cast<PreferredT>(::cuda::std::forward<R>(rhs)));
+    return ::cuda::std::invoke(reduction_op, static_cast<PreferredT>(lhs), static_cast<PreferredT>(rhs));
   }
-  else if constexpr (::cuda::std::is_invocable_v<_ReductionOpRef, PreferredT, ValueT>)
+  else if constexpr (::cuda::std::is_invocable_v<ReductionOpRef, PreferredT, ValueT>)
   {
-    return ::cuda::std::invoke(
-      _op, static_cast<PreferredT>(::cuda::std::forward<L>(lhs)), static_cast<ValueT>(::cuda::std::forward<R>(rhs)));
+    return ::cuda::std::invoke(reduction_op, static_cast<PreferredT>(lhs), static_cast<ValueT>(rhs));
   }
-  else if constexpr (::cuda::std::is_invocable_v<_ReductionOpRef, ValueT, PreferredT>)
+  else if constexpr (::cuda::std::is_invocable_v<ReductionOpRef, ValueT, PreferredT>)
   {
-    return ::cuda::std::invoke(
-      _op, static_cast<ValueT>(::cuda::std::forward<L>(lhs)), static_cast<PreferredT>(::cuda::std::forward<R>(rhs)));
+    return ::cuda::std::invoke(reduction_op, static_cast<ValueT>(lhs), static_cast<PreferredT>(rhs));
   }
   else
   {
-    return ::cuda::std::invoke(
-      _op, static_cast<ValueT>(::cuda::std::forward<L>(lhs)), static_cast<ValueT>(::cuda::std::forward<R>(rhs)));
+    return ::cuda::std::invoke(reduction_op, static_cast<ValueT>(lhs), static_cast<ValueT>(rhs));
   }
 }
 /***********************************************************************************************************************

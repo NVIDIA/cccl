@@ -11,42 +11,13 @@ function Install-Driver {
     # This driver is picked to support Windows 11 & CUDA 12.8
     $version = '581.15'
 
+    # extract gpu type from gha runner label:
+    # Labels are in the form: <os>-<cpu>-gpu-<gpu>-<driver>-<n>
+    $gha_runner_label=$env:JOB_RUNNER
+    $gpu_type = $gha_runner_label.Split('-')[3]
+
     $data_center_gpus = @('a100', 'h100', 'l4', 't4', 'v100', 'rtxa6000', 'rtx6000ada')
     $desktop_gpus = @('rtx2080', 'rtx4090')
-
-    # Extract the gpu type from JOB_RUNNER (preferred) or the legacy RUNNER host name.
-    # Labels are in the form: <os>-<cpu>-gpu-<gpu>-<driver>-<n>
-    $gha_runner_label = if ($env:JOB_RUNNER) { $env:JOB_RUNNER } elseif ($env:RUNNER) { $env:RUNNER } else { $null }
-
-    if (-not $gha_runner_label)
-    {
-        Write-Output "Unable to determine GPU type: neither JOB_RUNNER nor RUNNER is set."
-        exit 1
-    }
-
-    $segments = $gha_runner_label.Split('-', [System.StringSplitOptions]::RemoveEmptyEntries)
-    $gpu_type = $null
-
-    foreach ($segment in $segments)
-    {
-        $normalized = $segment.ToLowerInvariant()
-        if ($data_center_gpus -contains $normalized -or $desktop_gpus -contains $normalized)
-        {
-            $gpu_type = $normalized
-            break
-        }
-    }
-
-    if (-not $gpu_type -and $segments.Length -gt 3)
-    {
-        $gpu_type = $segments[3].ToLowerInvariant()
-    }
-
-    if (-not $gpu_type)
-    {
-        Write-Output "Unknown GPU type in runner label: $gha_runner_label"
-        exit 1
-    }
 
     if ($data_center_gpus -contains $gpu_type) {
         Write-Output "Data center GPU detected: $gpu_type"
