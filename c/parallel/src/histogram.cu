@@ -31,10 +31,6 @@
 // instantiate the kernels below with int32 or int64, but we set this to int64
 // here because it's needed for host computation as well.
 using OffsetT = int64_t;
-// Largest type we support for now. Tricky to make this an indirect_arg_t since
-// we are passing in cuda::std::arrays holding the values of the levels which
-// are used to do host computation.
-using LevelT = double;
 
 struct samples_iterator_t;
 
@@ -82,7 +78,12 @@ struct histogram_kernel_source
     return build.init_kernel;
   }
 
-  template <typename PolicyT, int PRIVATIZED_SMEM_BINS, typename PrivatizedDecodeOpT, typename OutputDecodeOpT>
+  template <typename PolicyT,
+            int PRIVATIZED_SMEM_BINS,
+            typename FirstLevelArrayT,
+            typename SecondLevelArrayT,
+            bool IsEven,
+            bool IsByteSample>
   CUkernel HistogramSweepKernel() const
   {
     return build.sweep_kernel;
@@ -96,7 +97,9 @@ struct histogram_kernel_source
   // Overflow check is performed before type erasure in
   // cccl_device_histogram_even_impl and stored in build.may_overflow. We return
   // this here to have a similar execution path to the CUB implementation.
-  bool MayOverflow(int /*num_bins*/, LevelT /*max_level*/, LevelT /*min_level*/) const
+  template <typename UpperLevelArrayT, typename LowerLevelArrayT>
+  bool MayOverflow(
+    int /*num_bins*/, const UpperLevelArrayT& /*upper*/, const LowerLevelArrayT& /*lower*/, int /*channel*/) const
   {
     return build.may_overflow;
   }
@@ -160,17 +163,29 @@ std::string get_sweep_kernel_name(
     std::swap(privatized_decode_op_t, output_decode_op_t);
   }
 
+  const std::string first_level_array_t =
+    is_evenly_segmented
+      ? std::format("cuda::std::array<{0}, {1}>", level_t, num_active_channels)
+      : std::format("cuda::std::array<int, {0}>", num_active_channels);
+  const std::string second_level_array_t =
+    is_evenly_segmented
+      ? std::format("cuda::std::array<{0}, {1}>", level_t, num_active_channels)
+      : std::format("cuda::std::array<const {0}*, {1}>", level_t, num_active_channels);
+
   return std::format(
-    "cub::detail::histogram::DeviceHistogramSweepKernel<{0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}, {8}>",
+    "cub::detail::histogram::DeviceHistogramSweepKernel<{0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}, {8}, {9}, {10}, {11}>",
     chained_policy_t,
     privatized_smem_bins,
     num_channels,
     num_active_channels,
     samples_iterator_t,
     counter_t,
+    first_level_array_t,
+    second_level_array_t,
     privatized_decode_op_t,
     output_decode_op_t,
-    offset_t);
+    offset_t,
+    is_evenly_segmented ? "true" : "false");
 }
 
 template <typename T>
@@ -202,7 +217,7 @@ uint64_t get_integral_range(cccl_type_enum type, const void* lower, const void* 
     case CCCL_UINT64:
       return compute_level_range<uint64_t>(lower, upper);
     default:
-      return 0; // Floating-point types - shouldn't reach here
+      throw std::runtime_error("get_integral_range: unsupported type");
   }
 }
 
@@ -335,7 +350,7 @@ struct {5} {{
     // value greater than 0 (see dispatch_histogram.cuh), but we don't have this
     // information here.
     const int privatized_smem_bins =
-      num_output_levels_val - 1 > cub::detail::histogram::Transforms<int, int, int>::MAX_PRIVATIZED_SMEM_BINS ? 0 : 256;
+      num_output_levels_val - 1 > cub::detail::histogram::MAX_PRIVATIZED_SMEM_BINS ? 0 : 256;
 
     const bool is_byte_sample = d_samples.value_type.size == 1;
 
@@ -451,19 +466,18 @@ CUresult cccl_device_histogram_even_impl(
     ::cuda::std::array<indirect_arg_t*, NUM_ACTIVE_CHANNELS> d_output_histogram_arr{
       static_cast<indirect_arg_t*>(d_output_histograms.state)};
     ::cuda::std::array<int, NUM_ACTIVE_CHANNELS> num_output_levels_arr{*static_cast<int*>(num_output_levels.state)};
-    ::cuda::std::array<LevelT, NUM_ACTIVE_CHANNELS> lower_level_arr{*static_cast<LevelT*>(lower_level.state)};
-    ::cuda::std::array<LevelT, NUM_ACTIVE_CHANNELS> upper_level_arr{*static_cast<LevelT*>(upper_level.state)};
+    indirect_arg_t upper_level_arg{upper_level};
+    indirect_arg_t lower_level_arg{lower_level};
 
     auto exec_status = cub::DispatchHistogram<
       NUM_CHANNELS,
       NUM_ACTIVE_CHANNELS,
       indirect_arg_t, // SampleIteratorT
       indirect_arg_t, // CounterT
-      LevelT, // LevelT - not indirect_arg_t because used on the host
+      indirect_arg_t, // LevelT
       OffsetT, // OffsetT
       histogram::dynamic_histogram_policy_t<&histogram::get_policy>, // PolicyHub
       indirect_arg_t, // SampleT
-      cub::detail::histogram::Transforms<LevelT, OffsetT, LevelT>, // TransformsT
       histogram::histogram_kernel_source, // KernelSource
       cub::detail::CudaDriverLauncherFactory // KernelLauncherFactory
       >::DispatchEven(d_temp_storage,
@@ -471,8 +485,8 @@ CUresult cccl_device_histogram_even_impl(
                       d_samples,
                       d_output_histogram_arr,
                       num_output_levels_arr,
-                      lower_level_arr,
-                      upper_level_arr,
+                      lower_level_arg,
+                      upper_level_arg,
                       num_row_pixels,
                       num_rows,
                       row_stride_samples,
