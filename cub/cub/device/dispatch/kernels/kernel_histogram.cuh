@@ -340,7 +340,6 @@ CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceHistogramInitKernel(
 //! Histogram privatized sweep kernel entry point (multi-block).
 //! Computes privatized histograms, one per thread block.
 //!
-//!
 //! @tparam ChainedPolicyT
 //!   Max policy from a policy hub containing the AgentHistogramPolicy policy
 //!
@@ -360,6 +359,14 @@ CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceHistogramInitKernel(
 //! @tparam CounterT
 //!   Integer type for counting sample occurrences per histogram bin
 //!
+//! @tparam FirstLevelArrayT
+//!   For DispatchEven: array of upper level bounds per channel.
+//!   For DispatchRange: array of number of output levels per channel.
+//!
+//! @tparam SecondLevelArrayT
+//!   For DispatchEven: array of lower level bounds per channel.
+//!   For DispatchRange: array of level pointers per channel.
+//!
 //! @tparam PrivatizedDecodeOpT
 //!   The transform operator type for determining privatized counter indices from samples,
 //!   one for each channel
@@ -369,16 +376,20 @@ CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceHistogramInitKernel(
 //!   one for each channel
 //!
 //! @tparam OffsetT
-//!   integer type for global offsets
+//!   Integer type for global offsets
+//!
+//! @tparam IsEven
+//!   Whether this is a HistogramEven dispatch (true) or HistogramRange dispatch (false).
+//!   Affects how decode operators are initialized from the level arrays.
 //!
 //! @param d_samples
 //!   Input data to reduce
 //!
 //! @param num_output_bins_wrapper
-//!   The number bins per final output histogram
+//!   The number of bins per final output histogram
 //!
 //! @param num_privatized_bins_wrapper
-//!   The number bins per privatized histogram
+//!   The number of bins per privatized histogram
 //!
 //! @param d_output_histograms_wrapper
 //!   Reference to final output histograms
@@ -386,13 +397,13 @@ CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceHistogramInitKernel(
 //! @param d_privatized_histograms_wrapper
 //!   Reference to privatized histograms
 //!
-//! @param output_decode_op_wrapper
-//!   The transform operator for determining output bin-ids from privatized counter indices,
-//!   one for each channel
+//! @param first_level_array
+//!   For DispatchEven: upper level bounds per channel.
+//!   For DispatchRange: number of output levels per channel.
 //!
-//! @param privatized_decode_op_wrapper
-//!   The transform operator for determining privatized counter indices from samples,
-//!   one for each channel
+//! @param second_level_array
+//!   For DispatchEven: lower level bounds per channel.
+//!   For DispatchRange: level pointers per channel.
 //!
 //! @param num_row_pixels
 //!   The number of multi-channel pixels per row in the region of interest
