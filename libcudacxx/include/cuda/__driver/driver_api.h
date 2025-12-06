@@ -27,8 +27,8 @@
 #  include <cuda/std/__internal/namespaces.h>
 #  include <cuda/std/__type_traits/always_false.h>
 #  include <cuda/std/__type_traits/is_same.h>
-#  if defined(_WIN32)
-#    include <libloaderapi.h>
+#  if _CCCL_OS(WINDOWS)
+#    include <windows.h>
 #  else
 #    include <dlfcn.h>
 #  endif
@@ -53,7 +53,7 @@ _CCCL_SUPPRESS_DEPRECATED_PUSH
 //! @brief Gets the cuGetProcAddress function pointer.
 [[nodiscard]] _CCCL_HOST_API inline auto __getProcAddressFn() -> decltype(cuGetProcAddress)*
 {
-#  if defined(_WIN32)
+#  if _CCCL_OS(WINDOWS)
   HMODULE m_cudaDriverLibrary = LoadLibraryEx("nvcuda.dll", nullptr, LOAD_LIBRARY_SEARCH_SYSTEM32);
   if (m_cudaDriverLibrary == nullptr)
   {
@@ -65,7 +65,7 @@ _CCCL_SUPPRESS_DEPRECATED_PUSH
     ::cuda::__throw_cuda_error(::cudaErrorUnknown, "Failed to get cuGetProcAddress_v2 from nvcuda.dll");
   }
 #  else
-#    if defined(__ANDROID__)
+#    if _CCCL_OS(ANDROID)
   const char* m_cudaDriverLibraryName = "libcuda.so";
 #    else
   const char* m_cudaDriverLibraryName = "libcuda.so.1";
