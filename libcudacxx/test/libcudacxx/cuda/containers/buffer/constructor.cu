@@ -309,7 +309,7 @@ C2H_CCCLRT_TEST("cuda::buffer constructors", "[container][buffer]", test_types)
 C2H_CCCLRT_TEST("cuda::buffer constructors with legacy resource", "[container][buffer]")
 {
   cuda::stream stream{cuda::device_ref{0}};
-  cuda::legacy_pinned_memory_resource resource;
+  cuda::mr::legacy_pinned_memory_resource resource;
   auto input = compare_data_initializer_list;
   cuda::buffer<int, cuda::mr::device_accessible> buffer{stream, resource, input};
   CCCLRT_CHECK(equal_range(buffer));
