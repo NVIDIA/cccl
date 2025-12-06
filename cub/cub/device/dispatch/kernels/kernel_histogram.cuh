@@ -24,9 +24,6 @@ namespace detail::histogram
 template <typename LevelT, typename OffsetT, typename SampleT>
 struct Transforms
 {
-  // Maximum number of bins per channel for which we will use a privatized smem strategy
-  static constexpr int MAX_PRIVATIZED_SMEM_BINS = 256;
-
   //---------------------------------------------------------------------
   // Transform functors for converting samples to bin-ids
   //---------------------------------------------------------------------

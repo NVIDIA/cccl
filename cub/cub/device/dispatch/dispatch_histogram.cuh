@@ -53,6 +53,9 @@ CUB_NAMESPACE_BEGIN
 
 namespace detail::histogram
 {
+// Maximum number of bins per channel for which we will use a privatized smem strategy
+static constexpr int MAX_PRIVATIZED_SMEM_BINS = 256;
+
 template <int NUM_CHANNELS,
           int NUM_ACTIVE_CHANNELS,
           typename SampleIteratorT,
@@ -62,8 +65,7 @@ template <int NUM_CHANNELS,
           typename SampleT>
 struct DeviceHistogramKernelSource
 {
-  // We define this differently than the other kernel getters because there are
-  // different dispatch paths which affect which policy is used and the decode operators.
+  using TransformsT = detail::histogram::Transforms<LevelT, OffsetT, SampleT>;
 
   template <typename PolicyT>
   _CCCL_HIDE_FROM_ABI CUB_RUNTIME_FUNCTION static constexpr auto HistogramInitKernel()
@@ -73,13 +75,29 @@ struct DeviceHistogramKernelSource
 
   template <typename PolicyT,
             int PRIVATIZED_SMEM_BINS,
-            typename PrivatizedDecodeOpT,
-            typename OutputDecodeOpT,
             typename FirstLevelArrayT,
             typename SecondLevelArrayT,
-            bool IsEven>
+            bool IsEven,
+            bool IsByteSample>
   _CCCL_HIDE_FROM_ABI CUB_RUNTIME_FUNCTION static constexpr auto HistogramSweepKernel()
   {
+    // For DispatchEven, we use the scale transform to convert samples to
+    // privatized bins and pass-thru transform to convert privatized bins to
+    // output bins, vice verse for byte samples.
+
+    // For DispatchRange, we use the search transform to convert samples to
+    // privatized bins and scale transform to convert privatized bins to output bins,
+    // vice verse for byte samples.
+
+    using DecodeOpT = ::cuda::std::conditional_t<IsEven,
+                                                 typename TransformsT::ScaleTransform,
+                                                 typename TransformsT::template SearchTransform<const LevelT*>>;
+
+    using PrivatizedDecodeOpT =
+      ::cuda::std::conditional_t<IsByteSample, typename TransformsT::PassThruTransform, DecodeOpT>;
+    using OutputDecodeOpT =
+      ::cuda::std::conditional_t<IsByteSample, DecodeOpT, typename TransformsT::PassThruTransform>;
+
     return &DeviceHistogramSweepKernel<
       PolicyT,
       PRIVATIZED_SMEM_BINS,
@@ -104,9 +122,8 @@ struct DeviceHistogramKernelSource
   CUB_RUNTIME_FUNCTION static constexpr bool
   MayOverflow(int num_bins, const UpperLevelArrayT& upper_level, const LowerLevelArrayT& lower_level, int channel)
   {
-    using CommonT = typename detail::histogram::Transforms<LevelT, OffsetT, SampleT>::ScaleTransform::CommonT;
-    using IntArithmeticT =
-      typename detail::histogram::Transforms<LevelT, OffsetT, SampleT>::ScaleTransform::IntArithmeticT;
+    using CommonT        = typename TransformsT::ScaleTransform::CommonT;
+    using IntArithmeticT = typename TransformsT::ScaleTransform::IntArithmeticT;
 
     if constexpr (::cuda::std::is_integral_v<CommonT>)
     {
@@ -127,10 +144,9 @@ template <int NUM_CHANNELS,
           typename CounterT,
           typename FirstLevelArrayT,
           typename SecondLevelArrayT,
-          typename PrivatizedDecodeOpT,
-          typename OutputDecodeOpT,
           typename OffsetT,
           bool IsEven,
+          bool IsByteSample,
           typename MaxPolicyT,
           typename KernelSource,
           typename KernelLauncherFactory>
@@ -334,11 +350,10 @@ struct dispatch_histogram
       kernel_source.template HistogramSweepKernel<
         MaxPolicyT,
         PRIVATIZED_SMEM_BINS,
-        PrivatizedDecodeOpT,
-        OutputDecodeOpT,
         FirstLevelArrayT,
         SecondLevelArrayT,
-        IsEven>(),
+        IsEven,
+        IsByteSample>(),
       active_policy);
   }
 };
@@ -383,7 +398,6 @@ template <
   typename OffsetT,
   typename PolicyHub    = void, // if user passes a custom Policy this should not be void
   typename SampleT      = cub::detail::it_value_t<SampleIteratorT>, /// The sample value type of the input iterator
-  typename TransformsT  = detail::histogram::Transforms<LevelT, OffsetT, SampleT>,
   typename KernelSource = detail::histogram::
     DeviceHistogramKernelSource<NUM_CHANNELS, NUM_ACTIVE_CHANNELS, SampleIteratorT, CounterT, LevelT, OffsetT, SampleT>,
   typename KernelLauncherFactory = CUB_DETAIL_DEFAULT_KERNEL_LAUNCHER_FACTORY>
@@ -477,14 +491,6 @@ public:
         break;
       }
 
-      // Use the search transform op for converting samples to privatized bins
-      using PrivatizedDecodeOpT = typename TransformsT::template SearchTransform<const LevelT*>;
-
-      // Use the pass-thru transform op for converting privatized bins to output bins
-      using OutputDecodeOpT = typename TransformsT::PassThruTransform;
-
-      ::cuda::std::array<PrivatizedDecodeOpT, NUM_ACTIVE_CHANNELS> privatized_decode_op{};
-      ::cuda::std::array<OutputDecodeOpT, NUM_ACTIVE_CHANNELS> output_decode_op{};
       int max_levels = num_output_levels[0];
 
       for (int channel = 0; channel < NUM_ACTIVE_CHANNELS; ++channel)
@@ -497,7 +503,7 @@ public:
       int max_num_output_bins = max_levels - 1;
 
       // Dispatch
-      if (max_num_output_bins > TransformsT::MAX_PRIVATIZED_SMEM_BINS)
+      if (max_num_output_bins > detail::histogram::MAX_PRIVATIZED_SMEM_BINS)
       {
         // Too many bins to keep in shared memory.
         constexpr int PRIVATIZED_SMEM_BINS = 0;
@@ -510,10 +516,9 @@ public:
           CounterT,
           NumOutputLevelsArrayT,
           LevelsArrayT,
-          PrivatizedDecodeOpT,
-          OutputDecodeOpT,
           OffsetT,
-          false,
+          false, // IsEven
+          false, // IsByteSample
           MaxPolicyT,
           KernelSource,
           KernelLauncherFactory>
@@ -543,7 +548,7 @@ public:
       else
       {
         // Dispatch shared-privatized approach
-        constexpr int PRIVATIZED_SMEM_BINS = TransformsT::MAX_PRIVATIZED_SMEM_BINS;
+        constexpr int PRIVATIZED_SMEM_BINS = detail::histogram::MAX_PRIVATIZED_SMEM_BINS;
 
         detail::histogram::dispatch_histogram<
           NUM_CHANNELS,
@@ -553,10 +558,9 @@ public:
           CounterT,
           NumOutputLevelsArrayT,
           LevelsArrayT,
-          PrivatizedDecodeOpT,
-          OutputDecodeOpT,
           OffsetT,
-          false,
+          false, // IsEven
+          false, // IsByteSample
           MaxPolicyT,
           KernelSource,
           KernelLauncherFactory>
@@ -668,15 +672,7 @@ public:
         break;
       }
 
-      // Use the pass-thru transform op for converting samples to privatized bins
-      using PrivatizedDecodeOpT = typename TransformsT::PassThruTransform;
-
-      // Use the search transform op for converting privatized bins to output bins
-      using OutputDecodeOpT = typename TransformsT::template SearchTransform<const LevelT*>;
-
       ::cuda::std::array<int, NUM_ACTIVE_CHANNELS> num_privatized_levels;
-      ::cuda::std::array<PrivatizedDecodeOpT, NUM_ACTIVE_CHANNELS> privatized_decode_op{};
-      ::cuda::std::array<OutputDecodeOpT, NUM_ACTIVE_CHANNELS> output_decode_op{};
       int max_levels = num_output_levels[0]; // Maximum number of levels in any channel
 
       for (int channel = 0; channel < NUM_ACTIVE_CHANNELS; ++channel)
@@ -700,10 +696,9 @@ public:
         CounterT,
         NumOutputLevelsArrayT,
         LevelsArrayT,
-        PrivatizedDecodeOpT,
-        OutputDecodeOpT,
         OffsetT,
-        false,
+        false, // IsEven
+        true, // IsByteSample
         MaxPolicyT,
         KernelSource,
         KernelLauncherFactory>
@@ -816,14 +811,6 @@ public:
         break;
       }
 
-      // Use the scale transform op for converting samples to privatized bins
-      using PrivatizedDecodeOpT = typename TransformsT::ScaleTransform;
-
-      // Use the pass-thru transform op for converting privatized bins to output bins
-      using OutputDecodeOpT = typename TransformsT::PassThruTransform;
-
-      ::cuda::std::array<PrivatizedDecodeOpT, NUM_ACTIVE_CHANNELS> privatized_decode_op{};
-      ::cuda::std::array<OutputDecodeOpT, NUM_ACTIVE_CHANNELS> output_decode_op{};
       int max_levels = num_output_levels[0];
 
       for (int channel = 0; channel < NUM_ACTIVE_CHANNELS; ++channel)
@@ -848,7 +835,7 @@ public:
       }
       int max_num_output_bins = max_levels - 1;
 
-      if (max_num_output_bins > TransformsT::MAX_PRIVATIZED_SMEM_BINS)
+      if (max_num_output_bins > detail::histogram::MAX_PRIVATIZED_SMEM_BINS)
       {
         // Dispatch shared-privatized approach
         constexpr int PRIVATIZED_SMEM_BINS = 0;
@@ -861,10 +848,9 @@ public:
           CounterT,
           UpperLevelArrayT,
           LowerLevelArrayT,
-          PrivatizedDecodeOpT,
-          OutputDecodeOpT,
           OffsetT,
-          true,
+          true, // IsEven
+          false, // IsByteSample
           MaxPolicyT,
           KernelSource,
           KernelLauncherFactory>
@@ -894,7 +880,7 @@ public:
       else
       {
         // Dispatch shared-privatized approach
-        constexpr int PRIVATIZED_SMEM_BINS = TransformsT::MAX_PRIVATIZED_SMEM_BINS;
+        constexpr int PRIVATIZED_SMEM_BINS = detail::histogram::MAX_PRIVATIZED_SMEM_BINS;
 
         detail::histogram::dispatch_histogram<
           NUM_CHANNELS,
@@ -904,10 +890,9 @@ public:
           CounterT,
           UpperLevelArrayT,
           LowerLevelArrayT,
-          PrivatizedDecodeOpT,
-          OutputDecodeOpT,
           OffsetT,
-          true,
+          true, // IsEven
+          false, // IsByteSample
           MaxPolicyT,
           KernelSource,
           KernelLauncherFactory>
@@ -1022,15 +1007,7 @@ public:
         break;
       }
 
-      // Use the pass-thru transform op for converting samples to privatized bins
-      using PrivatizedDecodeOpT = typename TransformsT::PassThruTransform;
-
-      // Use the scale transform op for converting privatized bins to output bins
-      using OutputDecodeOpT = typename TransformsT::ScaleTransform;
-
       ::cuda::std::array<int, NUM_ACTIVE_CHANNELS> num_privatized_levels;
-      ::cuda::std::array<PrivatizedDecodeOpT, NUM_ACTIVE_CHANNELS> privatized_decode_op{};
-      ::cuda::std::array<OutputDecodeOpT, NUM_ACTIVE_CHANNELS> output_decode_op{};
       int max_levels = num_output_levels[0];
 
       for (int channel = 0; channel < NUM_ACTIVE_CHANNELS; ++channel)
@@ -1044,9 +1021,6 @@ public:
       }
       int max_num_output_bins = max_levels - 1;
 
-      // Type alias for the level arrays tuple (DispatchEven path)
-      using LevelArraysTuple = ::cuda::std::tuple<UpperLevelArrayT, LowerLevelArrayT>;
-
       constexpr int PRIVATIZED_SMEM_BINS = 256;
 
       detail::histogram::dispatch_histogram<
@@ -1057,10 +1031,9 @@ public:
         CounterT,
         UpperLevelArrayT,
         LowerLevelArrayT,
-        PrivatizedDecodeOpT,
-        OutputDecodeOpT,
         OffsetT,
-        true,
+        true, // IsEven
+        true, // IsByteSample
         MaxPolicyT,
         KernelSource,
         KernelLauncherFactory>
