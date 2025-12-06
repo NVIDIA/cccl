@@ -417,11 +417,13 @@ template <typename ChainedPolicyT,
           int NumActiveChannels,
           typename SampleIteratorT,
           typename CounterT,
+          typename FirstLevelArrayT, // Upper level array for DispatchEven; Number of output levels array for
+                                     // DispatchRange
+          typename SecondLevelArrayT, // Lower level array for DispatchEven; Levels array for DispatchRange
           typename PrivatizedDecodeOpT,
           typename OutputDecodeOpT,
           typename OffsetT,
-          bool IsEven,
-          typename... LevelArrays>
+          bool IsEven>
 __launch_bounds__(int(ChainedPolicyT::ActivePolicy::AgentHistogramPolicyT::BLOCK_THREADS))
   CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceHistogramSweepKernel(
     SampleIteratorT d_samples,
@@ -429,35 +431,35 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::AgentHistogramPolicyT::BLOCK
     ::cuda::std::array<int, NumActiveChannels> num_privatized_bins_wrapper,
     ::cuda::std::array<CounterT*, NumActiveChannels> d_output_histograms_wrapper,
     ::cuda::std::array<CounterT*, NumActiveChannels> d_privatized_histograms_wrapper,
-    ::cuda::std::array<OutputDecodeOpT, NumActiveChannels> output_decode_op_wrapper,
-    ::cuda::std::array<PrivatizedDecodeOpT, NumActiveChannels> privatized_decode_op_wrapper,
+    FirstLevelArrayT first_level_array,
+    SecondLevelArrayT second_level_array,
     OffsetT num_row_pixels,
     OffsetT num_rows,
     OffsetT row_stride_samples,
     int tiles_per_row,
-    GridQueue<int> tile_queue,
-    LevelArrays... level_arrays)
+    GridQueue<int> tile_queue)
 {
+  OutputDecodeOpT output_decode_op[NumActiveChannels];
+  PrivatizedDecodeOpT privatized_decode_op[NumActiveChannels];
   if constexpr (IsEven)
   {
-    static_assert(sizeof...(LevelArrays) == 2, "LevelArrays must have 2 elements");
-    const auto& [upper_level, lower_level] = ::cuda::std::tie(level_arrays...);
-
     for (int channel = 0; channel < NumActiveChannels; ++channel)
     {
-      int num_levels = num_output_bins_wrapper[channel] + 1;
-      privatized_decode_op_wrapper[channel].Init(num_levels, upper_level[channel], lower_level[channel]);
-      output_decode_op_wrapper[channel].Init(num_levels, upper_level[channel], lower_level[channel]);
+      const int num_levels   = num_output_bins_wrapper[channel] + 1;
+      const auto upper_level = first_level_array[channel];
+      const auto lower_level = second_level_array[channel];
+      privatized_decode_op[channel].Init(num_levels, upper_level, lower_level);
+      output_decode_op[channel].Init(num_levels, upper_level, lower_level);
     }
   }
   else
   {
-    static_assert(sizeof...(LevelArrays) == 2, "LevelArrays must have 2 element");
-    const auto& [num_output_levels, levels] = ::cuda::std::tie(level_arrays...);
     for (int channel = 0; channel < NumActiveChannels; ++channel)
     {
-      privatized_decode_op_wrapper[channel].Init(levels[channel], num_output_levels[channel]);
-      output_decode_op_wrapper[channel].Init(levels[channel], num_output_levels[channel]);
+      const auto num_output_levels = first_level_array[channel];
+      const auto levels            = second_level_array[channel];
+      privatized_decode_op[channel].Init(levels, num_output_levels);
+      output_decode_op[channel].Init(levels, num_output_levels);
     }
   }
 
@@ -484,8 +486,8 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::AgentHistogramPolicyT::BLOCK
     num_privatized_bins_wrapper.data(),
     d_output_histograms_wrapper.data(),
     d_privatized_histograms_wrapper.data(),
-    output_decode_op_wrapper.data(),
-    privatized_decode_op_wrapper.data());
+    output_decode_op,
+    privatized_decode_op);
 
   // Initialize counters
   agent.InitBinCounters();

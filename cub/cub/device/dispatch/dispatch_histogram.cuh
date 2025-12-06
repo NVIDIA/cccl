@@ -75,48 +75,24 @@ struct DeviceHistogramKernelSource
             int PRIVATIZED_SMEM_BINS,
             typename PrivatizedDecodeOpT,
             typename OutputDecodeOpT,
-            bool IsEven,
-            typename LevelArraysTupleT>
+            typename FirstLevelArrayT,
+            typename SecondLevelArrayT,
+            bool IsEven>
   _CCCL_HIDE_FROM_ABI CUB_RUNTIME_FUNCTION static constexpr auto HistogramSweepKernel()
   {
-    if constexpr (IsEven)
-    {
-      static_assert(::cuda::std::tuple_size_v<LevelArraysTupleT> == 2, "LevelArraysTupleT must have 2 elements");
-      using UpperLevelArrayT = ::cuda::std::tuple_element_t<0, LevelArraysTupleT>;
-      using LowerLevelArrayT = ::cuda::std::tuple_element_t<1, LevelArraysTupleT>;
-      return &DeviceHistogramSweepKernel<
-        PolicyT,
-        PRIVATIZED_SMEM_BINS,
-        NUM_CHANNELS,
-        NUM_ACTIVE_CHANNELS,
-        SampleIteratorT,
-        CounterT,
-        PrivatizedDecodeOpT,
-        OutputDecodeOpT,
-        OffsetT,
-        IsEven,
-        UpperLevelArrayT,
-        LowerLevelArrayT>;
-    }
-    else
-    {
-      static_assert(::cuda::std::tuple_size_v<LevelArraysTupleT> == 2, "LevelArraysTupleT must have 1 element");
-      using NumOutputLevelsArrayT = ::cuda::std::tuple_element_t<0, LevelArraysTupleT>;
-      using LevelsArrayT          = ::cuda::std::tuple_element_t<1, LevelArraysTupleT>;
-      return &DeviceHistogramSweepKernel<
-        PolicyT,
-        PRIVATIZED_SMEM_BINS,
-        NUM_CHANNELS,
-        NUM_ACTIVE_CHANNELS,
-        SampleIteratorT,
-        CounterT,
-        PrivatizedDecodeOpT,
-        OutputDecodeOpT,
-        OffsetT,
-        IsEven,
-        NumOutputLevelsArrayT,
-        LevelsArrayT>;
-    }
+    return &DeviceHistogramSweepKernel<
+      PolicyT,
+      PRIVATIZED_SMEM_BINS,
+      NUM_CHANNELS,
+      NUM_ACTIVE_CHANNELS,
+      SampleIteratorT,
+      CounterT,
+      FirstLevelArrayT,
+      SecondLevelArrayT,
+      PrivatizedDecodeOpT,
+      OutputDecodeOpT,
+      OffsetT,
+      IsEven>;
   }
 
   CUB_RUNTIME_FUNCTION static constexpr size_t CounterSize()
@@ -149,14 +125,15 @@ template <int NUM_CHANNELS,
           int PRIVATIZED_SMEM_BINS,
           typename SampleIteratorT,
           typename CounterT,
+          typename FirstLevelArrayT,
+          typename SecondLevelArrayT,
           typename PrivatizedDecodeOpT,
           typename OutputDecodeOpT,
           typename OffsetT,
+          bool IsEven,
           typename MaxPolicyT,
           typename KernelSource,
-          typename KernelLauncherFactory,
-          bool IsEven,
-          typename LevelArraysTupleT>
+          typename KernelLauncherFactory>
 struct dispatch_histogram
 {
   void* d_temp_storage;
@@ -164,9 +141,9 @@ struct dispatch_histogram
   SampleIteratorT d_samples;
   ::cuda::std::array<CounterT*, NUM_ACTIVE_CHANNELS> d_output_histograms;
   ::cuda::std::array<int, NUM_ACTIVE_CHANNELS> num_privatized_levels;
-  ::cuda::std::array<PrivatizedDecodeOpT, NUM_ACTIVE_CHANNELS> privatized_decode_op;
   ::cuda::std::array<int, NUM_ACTIVE_CHANNELS> num_output_levels;
-  ::cuda::std::array<OutputDecodeOpT, NUM_ACTIVE_CHANNELS> output_decode_op;
+  FirstLevelArrayT first_level_array;
+  SecondLevelArrayT second_level_array;
   int max_num_output_bins;
   OffsetT num_row_pixels;
   OffsetT num_rows;
@@ -174,7 +151,6 @@ struct dispatch_histogram
   cudaStream_t stream;
   KernelSource kernel_source;
   KernelLauncherFactory launcher_factory;
-  LevelArraysTupleT level_arrays;
 
   template <typename ActivePolicyT, typename DeviceHistogramInitKernelT, typename DeviceHistogramSweepKernelT>
   CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE cudaError_t
@@ -317,24 +293,20 @@ struct dispatch_histogram
               histogram_sweep_sm_occupancy);
 #endif // CUB_DEBUG_LOG
 
-      auto do_launch = [&](auto&... extra_args) {
-        launcher_factory(sweep_grid_dims, block_threads, 0, stream, true)
-          .doit(histogram_sweep_kernel,
-                d_samples,
-                num_output_bins_wrapper,
-                num_privatized_bins_wrapper,
-                d_output_histograms,
-                d_privatized_histograms_wrapper,
-                output_decode_op,
-                privatized_decode_op,
-                num_row_pixels,
-                num_rows,
-                row_stride_samples,
-                tiles_per_row,
-                tile_queue,
-                extra_args...);
-      };
-      ::cuda::std::apply(do_launch, level_arrays);
+      launcher_factory(sweep_grid_dims, block_threads, 0, stream, true)
+        .doit(histogram_sweep_kernel,
+              d_samples,
+              num_output_bins_wrapper,
+              num_privatized_bins_wrapper,
+              d_output_histograms,
+              d_privatized_histograms_wrapper,
+              first_level_array,
+              second_level_array,
+              num_row_pixels,
+              num_rows,
+              row_stride_samples,
+              tiles_per_row,
+              tile_queue);
 
       // Check for failure to launch
       error = CubDebug(cudaPeekAtLastError());
@@ -364,8 +336,9 @@ struct dispatch_histogram
         PRIVATIZED_SMEM_BINS,
         PrivatizedDecodeOpT,
         OutputDecodeOpT,
-        IsEven,
-        LevelArraysTupleT>(),
+        FirstLevelArrayT,
+        SecondLevelArrayT,
+        IsEven>(),
       active_policy);
   }
 };
@@ -504,8 +477,6 @@ public:
         break;
       }
 
-      using LevelArraysTuple = ::cuda::std::tuple<NumOutputLevelsArrayT, LevelsArrayT>;
-
       // Use the search transform op for converting samples to privatized bins
       using PrivatizedDecodeOpT = typename TransformsT::template SearchTransform<const LevelT*>;
 
@@ -537,31 +508,31 @@ public:
           PRIVATIZED_SMEM_BINS,
           SampleIteratorT,
           CounterT,
+          NumOutputLevelsArrayT,
+          LevelsArrayT,
           PrivatizedDecodeOpT,
           OutputDecodeOpT,
           OffsetT,
+          false,
           MaxPolicyT,
           KernelSource,
-          KernelLauncherFactory,
-          false,
-          LevelArraysTuple>
+          KernelLauncherFactory>
           dispatch{
             d_temp_storage,
             temp_storage_bytes,
             d_samples,
             d_output_histograms,
             num_output_levels,
-            privatized_decode_op,
             num_output_levels,
-            output_decode_op,
+            num_output_levels,
+            d_levels,
             max_num_output_bins,
             num_row_pixels,
             num_rows,
             row_stride_samples,
             stream,
             kernel_source,
-            launcher_factory,
-            ::cuda::std::make_tuple(num_output_levels, d_levels)};
+            launcher_factory};
 
         error = CubDebug(max_policy.Invoke(ptx_version, dispatch));
         if (cudaSuccess != error)
@@ -580,31 +551,31 @@ public:
           PRIVATIZED_SMEM_BINS,
           SampleIteratorT,
           CounterT,
+          NumOutputLevelsArrayT,
+          LevelsArrayT,
           PrivatizedDecodeOpT,
           OutputDecodeOpT,
           OffsetT,
+          false,
           MaxPolicyT,
           KernelSource,
-          KernelLauncherFactory,
-          false,
-          LevelArraysTuple>
+          KernelLauncherFactory>
           dispatch{
             d_temp_storage,
             temp_storage_bytes,
             d_samples,
             d_output_histograms,
             num_output_levels,
-            privatized_decode_op,
             num_output_levels,
-            output_decode_op,
+            num_output_levels,
+            d_levels,
             max_num_output_bins,
             num_row_pixels,
             num_rows,
             row_stride_samples,
             stream,
             kernel_source,
-            launcher_factory,
-            ::cuda::std::make_tuple(num_output_levels, d_levels)};
+            launcher_factory};
 
         error = CubDebug(max_policy.Invoke(ptx_version, dispatch));
         if (cudaSuccess != error)
@@ -697,8 +668,6 @@ public:
         break;
       }
 
-      using LevelArraysTuple = ::cuda::std::tuple<NumOutputLevelsArrayT, LevelsArrayT>;
-
       // Use the pass-thru transform op for converting samples to privatized bins
       using PrivatizedDecodeOpT = typename TransformsT::PassThruTransform;
 
@@ -729,31 +698,31 @@ public:
         PRIVATIZED_SMEM_BINS,
         SampleIteratorT,
         CounterT,
+        NumOutputLevelsArrayT,
+        LevelsArrayT,
         PrivatizedDecodeOpT,
         OutputDecodeOpT,
         OffsetT,
+        false,
         MaxPolicyT,
         KernelSource,
-        KernelLauncherFactory,
-        false,
-        LevelArraysTuple>
+        KernelLauncherFactory>
         dispatch{
           d_temp_storage,
           temp_storage_bytes,
           d_samples,
           d_output_histograms,
           num_privatized_levels,
-          privatized_decode_op,
           num_output_levels,
-          output_decode_op,
+          num_output_levels,
+          d_levels,
           max_num_output_bins,
           num_row_pixels,
           num_rows,
           row_stride_samples,
           stream,
           kernel_source,
-          launcher_factory,
-          ::cuda::std::make_tuple(num_output_levels, d_levels)};
+          launcher_factory};
 
       error = CubDebug(max_policy.Invoke(ptx_version, dispatch));
       if (cudaSuccess != error)
@@ -879,9 +848,6 @@ public:
       }
       int max_num_output_bins = max_levels - 1;
 
-      // Type alias for the level arrays tuple (DispatchEven path)
-      using LevelArraysTuple = ::cuda::std::tuple<UpperLevelArrayT, LowerLevelArrayT>;
-
       if (max_num_output_bins > TransformsT::MAX_PRIVATIZED_SMEM_BINS)
       {
         // Dispatch shared-privatized approach
@@ -893,31 +859,31 @@ public:
           PRIVATIZED_SMEM_BINS,
           SampleIteratorT,
           CounterT,
+          UpperLevelArrayT,
+          LowerLevelArrayT,
           PrivatizedDecodeOpT,
           OutputDecodeOpT,
           OffsetT,
+          true,
           MaxPolicyT,
           KernelSource,
-          KernelLauncherFactory,
-          true,
-          LevelArraysTuple>
+          KernelLauncherFactory>
           dispatch{
             d_temp_storage,
             temp_storage_bytes,
             d_samples,
             d_output_histograms,
             num_output_levels,
-            privatized_decode_op,
             num_output_levels,
-            output_decode_op,
+            upper_level,
+            lower_level,
             max_num_output_bins,
             num_row_pixels,
             num_rows,
             row_stride_samples,
             stream,
             kernel_source,
-            launcher_factory,
-            ::cuda::std::make_tuple(upper_level, lower_level)};
+            launcher_factory};
 
         error = CubDebug(max_policy.Invoke(ptx_version, dispatch));
         if (cudaSuccess != error)
@@ -936,31 +902,31 @@ public:
           PRIVATIZED_SMEM_BINS,
           SampleIteratorT,
           CounterT,
+          UpperLevelArrayT,
+          LowerLevelArrayT,
           PrivatizedDecodeOpT,
           OutputDecodeOpT,
           OffsetT,
+          true,
           MaxPolicyT,
           KernelSource,
-          KernelLauncherFactory,
-          true,
-          LevelArraysTuple>
+          KernelLauncherFactory>
           dispatch{
             d_temp_storage,
             temp_storage_bytes,
             d_samples,
             d_output_histograms,
             num_output_levels,
-            privatized_decode_op,
             num_output_levels,
-            output_decode_op,
+            upper_level,
+            lower_level,
             max_num_output_bins,
             num_row_pixels,
             num_rows,
             row_stride_samples,
             stream,
             kernel_source,
-            launcher_factory,
-            ::cuda::std::make_tuple(upper_level, lower_level)};
+            launcher_factory};
 
         error = CubDebug(max_policy.Invoke(ptx_version, dispatch));
         if (cudaSuccess != error)
@@ -1089,31 +1055,31 @@ public:
         PRIVATIZED_SMEM_BINS,
         SampleIteratorT,
         CounterT,
+        UpperLevelArrayT,
+        LowerLevelArrayT,
         PrivatizedDecodeOpT,
         OutputDecodeOpT,
         OffsetT,
+        true,
         MaxPolicyT,
         KernelSource,
-        KernelLauncherFactory,
-        true,
-        LevelArraysTuple>
+        KernelLauncherFactory>
         dispatch{
           d_temp_storage,
           temp_storage_bytes,
           d_samples,
           d_output_histograms,
           num_privatized_levels,
-          privatized_decode_op,
           num_output_levels,
-          output_decode_op,
+          upper_level,
+          lower_level,
           max_num_output_bins,
           num_row_pixels,
           num_rows,
           row_stride_samples,
           stream,
           kernel_source,
-          launcher_factory,
-          ::cuda::std::make_tuple(upper_level, lower_level)};
+          launcher_factory};
 
       error = CubDebug(max_policy.Invoke(ptx_version, dispatch));
       if (cudaSuccess != error)
