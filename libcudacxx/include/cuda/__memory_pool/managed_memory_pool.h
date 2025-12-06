@@ -130,6 +130,13 @@ struct managed_memory_pool : managed_memory_pool_ref
     return managed_memory_pool(__pool);
   }
 
+  //! @brief Returns a \c managed_memory_pool_ref for this \c managed_memory_pool.
+  //! The result is the same as if this object was cast to a \c managed_memory_pool_ref.
+  _CCCL_HOST_API managed_memory_pool_ref as_ref() noexcept
+  {
+    return managed_memory_pool_ref(__pool_);
+  }
+
   managed_memory_pool(const managed_memory_pool&)            = delete;
   managed_memory_pool& operator=(const managed_memory_pool&) = delete;
 
