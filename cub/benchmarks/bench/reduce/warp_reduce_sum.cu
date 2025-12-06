@@ -31,6 +31,5 @@ using value_types = nvbench::type_list<
   cuda::std::complex<float>,
   cuda::std::complex<double>>;
 
-constexpr auto bench_name = "warp_reduce_sum";
 using op_t = ::cuda::std::plus<>;
 #include "warp_reduce_base.cuh"
