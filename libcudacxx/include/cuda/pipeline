@@ -28,6 +28,7 @@
 #include <cuda/__ptx/instructions/get_sreg.h>
 #include <cuda/atomic>
 #include <cuda/barrier>
+#include <cuda/bit>
 #include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__bit/popcount.h>
 #include <cuda/std/__chrono/duration.h>
@@ -111,7 +112,7 @@ public:
       NV_IS_DEVICE,
       const uint32_t __match_mask =
         ::__match_any_sync(::__activemask(), reinterpret_cast<uintptr_t>(__shared_state_get_refcount()));
-      const uint32_t __elected_id = ::__ffs(__match_mask) - 1;
+      const uint32_t __elected_id = ::cuda::ffs(__match_mask) - 1;
       __elected                   = (::cuda::ptx::get_sreg_laneid() == __elected_id);
       __sub_count                 = ::cuda::std::popcount(__match_mask);
       , __elected = true;
@@ -300,7 +301,7 @@ make_pipeline(const _Group& __group, pipeline_shared_state<_Scope, _Stages_count
       NV_IS_DEVICE,
       const uint32_t __match_mask =
         ::__match_any_sync(::__activemask(), reinterpret_cast<uintptr_t>(&__shared_state->__refcount));
-      const uint32_t __elected_id = ::__ffs(__match_mask) - 1;
+      const uint32_t __elected_id = ::cuda::ffs(__match_mask) - 1;
       __elected                   = (::cuda::ptx::get_sreg_laneid() == __elected_id);
       __add_count                 = ::cuda::std::popcount(__match_mask);
       , __elected = true;
