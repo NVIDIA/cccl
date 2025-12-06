@@ -13,8 +13,6 @@
 
 #include <cuda/std/detail/__config>
 
-#include <cuda/__bit/ffs.h>
-
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
@@ -23,12 +21,12 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/__bit/ffs.h>
 #include <cuda/__fwd/barrier.h>
 #if _CCCL_CUDA_COMPILATION()
 #  include <cuda/__ptx/instructions/get_sreg.h>
 #  include <cuda/__ptx/instructions/mbarrier_arrive.h>
 #  include <cuda/__ptx/instructions/mbarrier_init.h>
+#  include <cuda/__ptx/instructions/mbarrier_inval.h>
 #  include <cuda/__ptx/instructions/mbarrier_wait.h>
 #  include <cuda/__ptx/ptx_dot_variants.h>
 #  include <cuda/__ptx/ptx_helper_functions.h>
@@ -103,10 +101,7 @@ public:
   {
     NV_IF_TARGET(NV_PROVIDES_SM_80,
                  (if (::cuda::device::is_object_from(__barrier, ::cuda::device::address_space::shared)) {
-                   // TODO(bgruber): expose mbarrier.inval.shared in cuda::ptx
-                   asm volatile("mbarrier.inval.shared.b64 [%0];" ::"r"(static_cast<::cuda::std::uint32_t>(
-                     ::__cvta_generic_to_shared(&__barrier)))
-                                : "memory");
+                   ::cuda::ptx::mbarrier_inval(__native_handle());
                    return;
                  }))
 
@@ -118,7 +113,7 @@ public:
 
   _CCCL_API inline friend void init(barrier* __b,
                                     ::cuda::std::ptrdiff_t __expected,
-                                    ::cuda::std::__empty_completion __completion = ::cuda::std::__empty_completion())
+                                    ::cuda::std::__empty_completion = ::cuda::std::__empty_completion())
   {
     NV_IF_TARGET(NV_PROVIDES_SM_80,
                  (if (::cuda::device::is_object_from(__b->__barrier, ::cuda::device::address_space::shared)) {
@@ -131,21 +126,7 @@ public:
       (_CCCL_ASSERT(!::cuda::device::is_object_from(__b->__barrier, ::cuda::device::address_space::cluster_shared),
                     "barrier must not be in cluster shared memory");))
 
-    new (&__b->__barrier) __barrier_base(__expected, __completion);
-  }
-
-  [[nodiscard]] _CCCL_API inline arrival_token arrive(::cuda::std::ptrdiff_t __update = 1)
-  {
-    _CCCL_ASSERT(__update >= 0, "Arrival count update must be non-negative.");
-    NV_DISPATCH_TARGET(
-      NV_PROVIDES_SM_90,
-      (return __arrive_sm90(__update);),
-      NV_PROVIDES_SM_80,
-      (return __arrive_sm80(__update);),
-      NV_PROVIDES_SM_70,
-      (return __arrive_sm70(__update);),
-      NV_IS_HOST,
-      (return __barrier.arrive(__update);))
+    new (&__b->__barrier) __barrier_base(__expected);
   }
 
 private:
@@ -188,7 +169,7 @@ private:
     unsigned int __active  = __activeA & __activeB;
     int __inc              = ::cuda::std::popcount(__active) * __update;
 
-    int __leader = ::cuda::ffs(__active) - 1;
+    int __leader = ::__ffs(__active) - 1;
     // All threads in mask synchronize here, establishing cummulativity to the __leader:
     ::__syncwarp(__mask);
     arrival_token __token = {};
@@ -199,6 +180,21 @@ private:
     return ::__shfl_sync(__active, __token, __leader);
   }
 #endif // _CCCL_CUDA_COMPILATION()
+
+public:
+  [[nodiscard]] _CCCL_API inline arrival_token arrive(::cuda::std::ptrdiff_t __update = 1)
+  {
+    _CCCL_ASSERT(__update >= 0, "Arrival count update must be non-negative.");
+    NV_DISPATCH_TARGET(
+      NV_PROVIDES_SM_90,
+      (return __arrive_sm90(__update);),
+      NV_PROVIDES_SM_80,
+      (return __arrive_sm80(__update);),
+      NV_PROVIDES_SM_70,
+      (return __arrive_sm70(__update);),
+      NV_IS_HOST,
+      (return __barrier.arrive(__update);))
+  }
 
 private:
 #if _CCCL_CUDA_COMPILATION()

@@ -43,6 +43,16 @@ __host__ __device__ constexpr bool constexpr_test()
   assert(cuda::ffs(T(4)) == cuda::std::countr_zero(T(4)) + 1);
   assert(cuda::ffs(T(8)) == cuda::std::countr_zero(T(8)) + 1);
 
+  // Test MSB for different sizes (compile-time)
+  if constexpr (sizeof(T) >= 4)
+  {
+    assert(cuda::ffs(T(0x80000000u)) == 32);
+  }
+  if constexpr (sizeof(T) >= 8)
+  {
+    assert(cuda::ffs(T(0x8000000000000000ull)) == 64);
+  }
+
   return true;
 }
 
@@ -76,6 +86,11 @@ __host__ __device__ void runtime_test()
   if constexpr (sizeof(T) >= 4)
   {
     assert_ffs(T(0x80000000u), 32);
+  }
+
+  if constexpr (sizeof(T) >= 8)
+  {
+    assert_ffs(T(0x8000000000000000ull), 64);
   }
 }
 

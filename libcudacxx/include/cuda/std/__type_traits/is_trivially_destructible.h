@@ -22,7 +22,6 @@
 
 #include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/is_destructible.h>
-#include <cuda/std/cstddef>
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -36,41 +35,17 @@
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
-namespace __detail
-{
-template <class _Tp, class = void>
-struct __is_trivially_destructible_base;
-
 #if defined(_CCCL_BUILTIN_IS_TRIVIALLY_DESTRUCTIBLE)
 
-template <class _Tp, class>
-struct __is_trivially_destructible_base : bool_constant<_CCCL_BUILTIN_IS_TRIVIALLY_DESTRUCTIBLE(_Tp)>
-{};
+template <class _Tp>
+inline constexpr bool is_trivially_destructible_v = _CCCL_BUILTIN_IS_TRIVIALLY_DESTRUCTIBLE(_Tp);
 
 #else // ^^^ _CCCL_BUILTIN_IS_TRIVIALLY_DESTRUCTIBLE ^^^ / vvv !_CCCL_BUILTIN_IS_TRIVIALLY_DESTRUCTIBLE vvv
 
-template <class _Tp, class>
-struct __is_trivially_destructible_base
-    : bool_constant<is_destructible_v<_Tp> && _CCCL_BUILTIN_HAS_TRIVIAL_DESTRUCTOR(_Tp)>
-{};
+template <class _Tp>
+inline constexpr bool is_trivially_destructible_v = is_destructible_v<_Tp> && _CCCL_BUILTIN_HAS_TRIVIAL_DESTRUCTOR(_Tp);
 
 #endif // ^^^ !_CCCL_BUILTIN_IS_TRIVIALLY_DESTRUCTIBLE ^^^
-
-template <class _Tp>
-struct __is_trivially_destructible_impl : __is_trivially_destructible_base<_Tp>
-{};
-
-template <class _Tp>
-struct __is_trivially_destructible_impl<_Tp[]> : false_type
-{};
-
-template <class _Tp, size_t _Np>
-struct __is_trivially_destructible_impl<_Tp[_Np]> : __is_trivially_destructible_impl<_Tp>
-{};
-} // namespace __detail
-
-template <class _Tp>
-inline constexpr bool is_trivially_destructible_v = __detail::__is_trivially_destructible_impl<_Tp>::value;
 
 template <class _Tp>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT is_trivially_destructible : bool_constant<is_trivially_destructible_v<_Tp>>
