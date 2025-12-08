@@ -112,6 +112,16 @@ target_compile_definitions(
   INTERFACE $<$<CONFIG:Debug>:CCCL_ENABLE_ASSERTIONS>
 )
 
+function(_libcudacxx_define_internal_global_property prop_name)
+  # Need to define docs options for CMake < 3.23 (optional in later versions)
+  define_property(
+    GLOBAL
+    PROPERTY ${prop_name}
+    BRIEF_DOCS "Internal libcudacxx property: ${prop_name}."
+    FULL_DOCS "Internal libcudacxx property: ${prop_name}."
+  )
+endfunction()
+
 # We cannot test for MSVC version if the CXX or CUDA languages aren't enabled, because
 # the CMAKE_[CXX|CUDA_HOST]_COMPILER_[ID|VERSION] variables won't exist.
 # Just call find_package(libcudacxx) again after enabling languages to rediscover.
@@ -146,7 +156,7 @@ function(libcudacxx_update_language_compat_flags)
     message(VERBOSE "libcudacxx:   /Zc:__cplusplus and /Zc:preprocessor flags may not be automatically added to CXX targets.")
     message(VERBOSE "libcudacxx:   Call find_package(CCCL) again after enabling CXX to enable compatibility flags.")
     # gersemi: on
-    define_property(GLOBAL PROPERTY _libcudacxx_cxx_warned)
+    _libcudacxx_define_internal_global_property(_libcudacxx_cxx_warned)
   endif()
 
   if (NOT cuda_warned AND NOT CUDA IN_LIST langs)
@@ -155,7 +165,7 @@ function(libcudacxx_update_language_compat_flags)
     message(VERBOSE "libcudacxx:   /Zc:__cplusplus and /Zc:preprocessor flags may not be automatically added to CUDA targets.")
     message(VERBOSE "libcudacxx:   Call find_package(CCCL) again after enabling CUDA to enable compatibility flags.")
     # gersemi: on
-    define_property(GLOBAL PROPERTY _libcudacxx_cuda_warned)
+    _libcudacxx_define_internal_global_property(_libcudacxx_cuda_warned)
   endif()
 
   if (CXX IN_LIST langs)
@@ -190,7 +200,7 @@ function(libcudacxx_update_language_compat_flags)
       # Usually a safe assumption but provide an escape hatch for edge cases.
       message(STATUS "libcudacxx: - Assuming CUDA host compiler is the same as CXX compiler.")
       message(STATUS "libcudacxx:   Set libcudacxx_MISMATCHED_HOST_COMPILER=TRUE to disable this.")
-      define_property(GLOBAL PROPERTY _libcudacxx_mismatch_warned)
+      _libcudacxx_define_internal_global_property(_libcudacxx_mismatch_warned)
       set(msvc_cuda_host_id ${CMAKE_CXX_COMPILER_ID})
       set(msvc_cuda_host_version ${CMAKE_CXX_COMPILER_VERSION})
     endif()
@@ -221,7 +231,7 @@ function(libcudacxx_update_language_compat_flags)
         )
       endforeach()
     endif()
-    define_property(GLOBAL PROPERTY _libcudacxx_cxx_checked)
+    _libcudacxx_define_internal_global_property(_libcudacxx_cxx_checked)
   endif()
 
   if (NOT cuda_checked AND DEFINED msvc_cuda_host_id)
@@ -238,7 +248,7 @@ function(libcudacxx_update_language_compat_flags)
         )
       endforeach()
     endif()
-    define_property(GLOBAL PROPERTY _libcudacxx_cuda_checked)
+    _libcudacxx_define_internal_global_property(_libcudacxx_cuda_checked)
   endif()
 endfunction()
 

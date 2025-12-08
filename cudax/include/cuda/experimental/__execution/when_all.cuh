@@ -559,7 +559,7 @@ _CCCL_API constexpr auto when_all_t::operator()(_Sndrs... __sndrs) const
 }
 
 template <class... _Sndrs>
-inline constexpr size_t structured_binding_size<when_all_t::__sndr_t<_Sndrs...>> = sizeof...(_Sndrs) + 2;
+inline constexpr int structured_binding_size<when_all_t::__sndr_t<_Sndrs...>> = sizeof...(_Sndrs) + 2;
 
 _CCCL_GLOBAL_CONSTANT when_all_t when_all{};
 } // namespace cuda::experimental::execution

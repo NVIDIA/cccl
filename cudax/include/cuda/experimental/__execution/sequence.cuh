@@ -281,7 +281,7 @@ _CCCL_API constexpr auto sequence_t::operator()(_Sndr1 __sndr1, _Sndr2 __sndr2) 
 }
 
 template <class _Sndr1, class _Sndr2>
-inline constexpr size_t structured_binding_size<sequence_t::__sndr_t<_Sndr1, _Sndr2>> = 4;
+inline constexpr int structured_binding_size<sequence_t::__sndr_t<_Sndr1, _Sndr2>> = 4;
 
 _CCCL_GLOBAL_CONSTANT sequence_t sequence{};
 } // namespace cuda::experimental::execution
