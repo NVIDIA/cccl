@@ -202,7 +202,7 @@ template <class _Sch, class _Sndr>
 }
 
 template <class _Sch, class _Sndr>
-inline constexpr size_t structured_binding_size<starts_on_t::__sndr_t<_Sch, _Sndr>> = 3;
+inline constexpr int structured_binding_size<starts_on_t::__sndr_t<_Sch, _Sndr>> = 3;
 
 _CCCL_GLOBAL_CONSTANT starts_on_t starts_on{};
 } // namespace cuda::experimental::execution

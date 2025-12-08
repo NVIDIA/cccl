@@ -159,7 +159,7 @@ _CCCL_API constexpr read_env_t::__sndr_t<_Query> read_env_t::operator()(_Query _
 }
 
 template <class _Query>
-inline constexpr size_t structured_binding_size<read_env_t::__sndr_t<_Query>> = 2;
+inline constexpr int structured_binding_size<read_env_t::__sndr_t<_Query>> = 2;
 
 _CCCL_GLOBAL_CONSTANT read_env_t read_env{};
 } // namespace cuda::experimental::execution

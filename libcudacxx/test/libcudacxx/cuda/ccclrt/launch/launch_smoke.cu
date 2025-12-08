@@ -1,6 +1,6 @@
 //===----------------------------------------------------------------------===//
 //
-// Part of CUDA Experimental in CUDA C++ Core Libraries,
+// Part of libcu++, the C++ Standard Library for your entire system,
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
@@ -8,22 +8,21 @@
 //
 //===----------------------------------------------------------------------===//
 #include <cuda/atomic>
+#include <cuda/launch>
 #include <cuda/memory>
-
-#include <cuda/experimental/graph.cuh>
-#include <cuda/experimental/kernel.cuh>
-#include <cuda/experimental/launch.cuh>
-#include <cuda/experimental/stream.cuh>
+#include <cuda/stream>
 
 #include <cooperative_groups.h>
 #include <testing.cuh>
+
+#if !_CCCL_CUDA_COMPILER(CLANG)
 
 __managed__ bool kernel_run_proof = false;
 
 void check_kernel_run(cudaStream_t stream)
 {
   CUDART(cudaStreamSynchronize(stream));
-  CUDAX_CHECK(kernel_run_proof);
+  CCCLRT_CHECK(kernel_run_proof);
   kernel_run_proof = false;
 }
 
@@ -31,15 +30,10 @@ struct kernel_run_proof_check
 {
   __device__ void operator()()
   {
-    CUDAX_CHECK(kernel_run_proof);
+    CCCLRT_CHECK_DEVICE(kernel_run_proof);
     kernel_run_proof = false;
   }
 };
-
-void check_kernel_run(cudax::path_builder& pb)
-{
-  cudax::launch(pb, cuda::make_config(cuda::block_dims<1>, cuda::grid_dims<1>), kernel_run_proof_check{});
-}
 
 struct functor_int_argument
 {
@@ -56,7 +50,7 @@ struct functor_taking_config
   __device__ void operator()(Config config, int grid_size)
   {
     static_assert(config.dims.static_count(cuda::thread, cuda::block) == BlockSize);
-    CUDAX_REQUIRE(config.dims.count(cuda::block, cuda::grid) == grid_size);
+    CCCLRT_REQUIRE_DEVICE(config.dims.count(cuda::block, cuda::grid) == grid_size);
     kernel_run_proof = true;
   }
 };
@@ -90,7 +84,7 @@ struct dynamic_smem_single
   {
     decltype(auto) dynamic_smem = cuda::dynamic_shared_memory_view(config);
     static_assert(::cuda::std::is_same_v<SmemType&, decltype(dynamic_smem)>);
-    CUDAX_REQUIRE(::cuda::device::is_object_from(dynamic_smem, ::cuda::device::address_space::shared));
+    CCCLRT_REQUIRE_DEVICE(::cuda::device::is_object_from(dynamic_smem, ::cuda::device::address_space::shared));
     kernel_run_proof = true;
   }
 };
@@ -104,8 +98,8 @@ struct dynamic_smem_span
     auto dynamic_smem = cuda::dynamic_shared_memory_view(config);
     static_assert(decltype(dynamic_smem)::extent == Extent);
     static_assert(::cuda::std::is_same_v<SmemType&, decltype(dynamic_smem[1])>);
-    CUDAX_REQUIRE(dynamic_smem.size() == size);
-    CUDAX_REQUIRE(::cuda::device::is_object_from(dynamic_smem[1], ::cuda::device::address_space::shared));
+    CCCLRT_REQUIRE_DEVICE(dynamic_smem.size() == size);
+    CCCLRT_REQUIRE_DEVICE(::cuda::device::is_object_from(dynamic_smem[1], ::cuda::device::address_space::shared));
     kernel_run_proof = true;
   }
 };
@@ -137,7 +131,7 @@ struct launch_transform_to_int_convertible
       // Check that the destructor runs after the kernel is launched
       // Disabled for now because we don't handle it with graphs
       // CUDART(cudaStreamSynchronize(stream_));
-      // CUDAX_CHECK(kernel_run_proof);
+      // CCCLRT_CHECK(kernel_run_proof);
     }
 
     // This is the value that will be passed to the kernel
@@ -155,15 +149,16 @@ struct launch_transform_to_int_convertible
 };
 
 // Needs a separate function for Windows extended lambda
-template <typename StreamOrPathBuilder>
-void launch_smoke_test(StreamOrPathBuilder& dst)
+void launch_smoke_test(cudaStream_t dst)
 {
-  cudax::__ensure_current_device guard(cuda::device_ref{0});
-  // Use raw stream to make sure it can be implicitly converted on call to launch
+  cuda::__ensure_current_context guard(cuda::device_ref{0});
+  // Use raw stream to make sure it can be implicitly converted on call to
+  // launch
   cudaStream_t stream;
 
   CUDART(cudaStreamCreate(&stream));
-  // Spell out all overloads to make sure they compile, include a check for implicit conversions
+  // Spell out all overloads to make sure they compile, include a check for
+  // implicit conversions
   {
     const int grid_size      = 4;
     constexpr int block_size = 256;
@@ -172,37 +167,26 @@ void launch_smoke_test(StreamOrPathBuilder& dst)
 
     // Not taking dims
     {
-      cudax::launch(dst, config, kernel_no_arguments);
+      cuda::launch(dst, config, kernel_no_arguments);
       check_kernel_run(dst);
 
       const int dummy = 1;
-      cudax::launch(dst, config, kernel_int_argument, dummy);
+      cuda::launch(dst, config, kernel_int_argument, dummy);
       check_kernel_run(dst);
-      cudax::launch(dst, config, kernel_int_argument, 1);
+      cuda::launch(dst, config, kernel_int_argument, 1);
       check_kernel_run(dst);
-      cudax::launch(dst, config, kernel_int_argument, launch_transform_to_int_convertible{1});
+      cuda::launch(dst, config, kernel_int_argument, launch_transform_to_int_convertible{1});
       check_kernel_run(dst);
-      cudax::launch(dst, config, kernel_int_argument, 1U);
+      cuda::launch(dst, config, kernel_int_argument, 1U);
       check_kernel_run(dst);
 
-#if _CCCL_CTK_AT_LEAST(12, 1)
-      cudax::launch(dst, config, cudax::kernel_ref{kernel_int_argument}, dummy);
+      cuda::launch(dst, config, functor_int_argument(), dummy);
       check_kernel_run(dst);
-      cudax::launch(dst, config, cudax::kernel_ref{kernel_int_argument}, 1);
+      cuda::launch(dst, config, functor_int_argument(), 1);
       check_kernel_run(dst);
-      cudax::launch(dst, config, cudax::kernel_ref{kernel_int_argument}, launch_transform_to_int_convertible{1});
+      cuda::launch(dst, config, functor_int_argument(), launch_transform_to_int_convertible{1});
       check_kernel_run(dst);
-      cudax::launch(dst, config, cudax::kernel_ref{kernel_int_argument}, 1U);
-      check_kernel_run(dst);
-#endif // _CCCL_CTK_AT_LEAST(12, 1)
-
-      cudax::launch(dst, config, functor_int_argument(), dummy);
-      check_kernel_run(dst);
-      cudax::launch(dst, config, functor_int_argument(), 1);
-      check_kernel_run(dst);
-      cudax::launch(dst, config, functor_int_argument(), launch_transform_to_int_convertible{1});
-      check_kernel_run(dst);
-      cudax::launch(dst, config, functor_int_argument(), 1U);
+      cuda::launch(dst, config, functor_int_argument(), 1U);
       check_kernel_run(dst);
     }
 
@@ -210,52 +194,40 @@ void launch_smoke_test(StreamOrPathBuilder& dst)
     {
       auto functor_instance = functor_taking_config<block_size>();
       auto kernel_instance  = kernel_taking_config<decltype(config), block_size>;
-#if _CCCL_CTK_AT_LEAST(12, 1)
-      cudax::kernel_ref kernel_ref_instance = kernel_instance;
-#endif // _CCCL_CTK_AT_LEAST(12, 1)
 
-      cudax::launch(dst, config, functor_instance, grid_size);
+      cuda::launch(dst, config, functor_instance, grid_size);
       check_kernel_run(dst);
-      cudax::launch(dst, config, functor_instance, ::cuda::std::move(grid_size));
+      cuda::launch(dst, config, functor_instance, ::cuda::std::move(grid_size));
       check_kernel_run(dst);
-      cudax::launch(dst, config, functor_instance, launch_transform_to_int_convertible{grid_size});
+      cuda::launch(dst, config, functor_instance, launch_transform_to_int_convertible{grid_size});
       check_kernel_run(dst);
-      cudax::launch(dst, config, functor_instance, static_cast<unsigned int>(grid_size));
+      cuda::launch(dst, config, functor_instance, static_cast<unsigned int>(grid_size));
       check_kernel_run(dst);
 
-      cudax::launch(dst, config, kernel_instance, grid_size);
+      cuda::launch(dst, config, kernel_instance, grid_size);
       check_kernel_run(dst);
-      cudax::launch(dst, config, kernel_instance, ::cuda::std::move(grid_size));
+      cuda::launch(dst, config, kernel_instance, ::cuda::std::move(grid_size));
       check_kernel_run(dst);
-      cudax::launch(dst, config, kernel_instance, launch_transform_to_int_convertible{grid_size});
+      cuda::launch(dst, config, kernel_instance, launch_transform_to_int_convertible{grid_size});
       check_kernel_run(dst);
-      cudax::launch(dst, config, kernel_instance, static_cast<unsigned int>(grid_size));
+      cuda::launch(dst, config, kernel_instance, static_cast<unsigned int>(grid_size));
       check_kernel_run(dst);
-
-#if _CCCL_CTK_AT_LEAST(12, 1)
-      cudax::launch(dst, config, kernel_ref_instance, grid_size);
-      check_kernel_run(dst);
-      cudax::launch(dst, config, kernel_ref_instance, ::cuda::std::move(grid_size));
-      check_kernel_run(dst);
-      cudax::launch(dst, config, kernel_ref_instance, launch_transform_to_int_convertible{grid_size});
-      check_kernel_run(dst);
-      cudax::launch(dst, config, kernel_ref_instance, static_cast<unsigned int>(grid_size));
-      check_kernel_run(dst);
-#endif // _CCCL_CTK_AT_LEAST(12, 1)
     }
   }
 
+  /* Comment out for now until I figure how to enable extended lambda for only this file
   // Lambda
   {
-    cudax::launch(dst, cuda::block_dims<256>() & cuda::grid_dims(1), [] __device__(auto config) {
-      if (config.dims.rank(cuda::thread, cuda::block) == 0)
-      {
-        printf("Hello from the GPU\n");
-        kernel_run_proof = true;
-      }
-    });
+    cuda::launch(dst, cuda::block_dims<256>() & cuda::grid_dims(1),
+                  [] __device__(auto config) {
+                    if (config.dims.rank(cuda::thread, cuda::block) == 0) {
+                      printf("Hello from the GPU\n");
+                      kernel_run_proof = true;
+                    }
+                  });
     check_kernel_run(dst);
   }
+  */
 
   // Dynamic shared memory option
   {
@@ -266,7 +238,7 @@ void launch_smoke_test(StreamOrPathBuilder& dst)
       {
         auto config = input_config.add(cuda::dynamic_shared_memory<my_dynamic_smem_t>());
 
-        cudax::launch(dst, config, dynamic_smem_single<my_dynamic_smem_t>());
+        cuda::launch(dst, config, dynamic_smem_single<my_dynamic_smem_t>());
         check_kernel_run(dst);
       }
 
@@ -274,7 +246,7 @@ void launch_smoke_test(StreamOrPathBuilder& dst)
       {
         const int size = 2;
         auto config    = input_config.add(cuda::dynamic_shared_memory<my_dynamic_smem_t[]>(size));
-        cudax::launch(dst, config, dynamic_smem_span<my_dynamic_smem_t, ::cuda::std::dynamic_extent>(), size);
+        cuda::launch(dst, config, dynamic_smem_span<my_dynamic_smem_t, ::cuda::std::dynamic_extent>(), size);
         check_kernel_run(dst);
       }
 
@@ -282,7 +254,7 @@ void launch_smoke_test(StreamOrPathBuilder& dst)
       {
         constexpr int size = 3;
         auto config        = input_config.add(cuda::dynamic_shared_memory<my_dynamic_smem_t[size]>());
-        cudax::launch(dst, config, dynamic_smem_span<my_dynamic_smem_t, size>(), size);
+        cuda::launch(dst, config, dynamic_smem_span<my_dynamic_smem_t, size>(), size);
         check_kernel_run(dst);
       }
     };
@@ -294,7 +266,8 @@ void launch_smoke_test(StreamOrPathBuilder& dst)
 
 C2H_TEST("Launch smoke stream", "[launch]")
 {
-  // Use raw stream to make sure it can be implicitly converted on call to launch
+  // Use raw stream to make sure it can be implicitly converted on call to
+  // launch
   cudaStream_t stream;
 
   CUDART(cudaStreamCreate(&stream));
@@ -304,27 +277,7 @@ C2H_TEST("Launch smoke stream", "[launch]")
   CUDART(cudaStreamSynchronize(stream));
   CUDART(cudaStreamDestroy(stream));
 }
-
-C2H_TEST("Launch smoke path builder", "[launch]")
-{
-  // Use raw stream to make sure it can be implicitly converted on call to launch
-  cudax::graph_builder g;
-  cudax::path_builder pb = cudax::start_path(g);
-
-  launch_smoke_test(pb);
-
-  // In CUDA 12.0 we don't test kernel_ref launches, so the node count is lower
-#if _CCCL_CTK_BELOW(12, 1)
-  CUDAX_REQUIRE(g.node_count() == 48);
-#else // ^^^ _CCCL_CTK_BELOW(12, 1) ^^^ / vvv _CCCL_CTK_AT_LEAST(12, 1) vvv
-  CUDAX_REQUIRE(g.node_count() == 64);
-#endif // _CCCL_CTK_BELOW(12, 1)
-
-  auto exec = g.instantiate();
-  cudax::stream s{cuda::device_ref{0}};
-  exec.launch(s);
-  s.sync();
-}
+#endif // !_CCCL_CUDA_COMPILER(CLANG)
 
 template <typename DefaultConfig>
 struct kernel_with_default_config
@@ -347,42 +300,42 @@ struct kernel_with_default_config
   }
 };
 
-void test_default_config()
-{
-  cudax::stream stream{cuda::device_ref{0}};
-  auto grid  = cuda::grid_dims(4);
+/* Comment out for now until I figure how to enable extended lambda for only this file
+void test_default_config() {
+  cuda::stream stream{cuda::device_ref{0}};
+  auto grid = cuda::grid_dims(4);
   auto block = cuda::block_dims<256>;
 
   auto verify_lambda = [] __device__(auto config) {
     static_assert(config.dims.count(cuda::thread, cuda::block) == 256);
-    CUDAX_REQUIRE(config.dims.count(cuda::block) == 4);
+    CCCLRT_REQUIRE(config.dims.count(cuda::block) == 4);
     cooperative_groups::this_grid().sync();
   };
 
-  SECTION("Combine with empty")
-  {
-    kernel_with_default_config kernel{cuda::make_config(block, grid, cuda::cooperative_launch())};
+  SECTION("Combine with empty") {
+    kernel_with_default_config kernel{
+        cuda::make_config(block, grid, cuda::cooperative_launch())};
     static_assert(cuda::__is_kernel_config<decltype(kernel.default_config())>);
     static_assert(cuda::__kernel_has_default_config<decltype(kernel)>);
 
-    cudax::launch(stream, cuda::make_config(), kernel, verify_lambda);
+    cuda::launch(stream, cuda::make_config(), kernel, verify_lambda);
     stream.sync();
   }
-  SECTION("Combine with no overlap")
-  {
+  SECTION("Combine with no overlap") {
     kernel_with_default_config kernel{cuda::make_config(block)};
-    cudax::launch(stream, cuda::make_config(grid, cuda::cooperative_launch()), kernel, verify_lambda);
+    cuda::launch(stream, cuda::make_config(grid, cuda::cooperative_launch()),
+                  kernel, verify_lambda);
     stream.sync();
   }
-  SECTION("Combine with overlap")
-  {
-    kernel_with_default_config kernel{cuda::make_config(cuda::block_dims<1>, cuda::cooperative_launch())};
-    cudax::launch(stream, cuda::make_config(block, grid, cuda::cooperative_launch()), kernel, verify_lambda);
+  SECTION("Combine with overlap") {
+    kernel_with_default_config kernel{
+        cuda::make_config(cuda::block_dims<1>, cuda::cooperative_launch())};
+    cuda::launch(stream,
+                  cuda::make_config(block, grid, cuda::cooperative_launch()),
+                  kernel, verify_lambda);
     stream.sync();
   }
 }
 
-C2H_TEST("Launch with default config", "")
-{
-  test_default_config();
-}
+C2H_TEST("Launch with default config", "") { test_default_config(); }
+*/
