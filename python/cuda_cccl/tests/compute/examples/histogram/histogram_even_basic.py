@@ -20,8 +20,8 @@ h_samples = np.array(
 d_samples = cp.asarray(h_samples)
 num_levels = 7
 d_histogram = cp.empty(num_levels - 1, dtype="int32")
-lower_level = np.float64(0)
-upper_level = np.float64(12)
+lower_level = np.float32(0)
+upper_level = np.float32(12)
 
 # Perform the histogram even.
 cuda.compute.histogram_even(
