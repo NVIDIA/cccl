@@ -11,6 +11,7 @@ from .. import _bindings
 from .. import _cccl_interop as cccl
 from .._caching import CachableFunction, cache_with_key
 from .._cccl_interop import call_build, set_cccl_iterator_state
+from .._nvtx import annotate
 from .._utils import protocols
 from .._utils.temp_storage_buffer import TempStorageBuffer
 from ..iterators._iterators import IteratorBase
@@ -108,6 +109,7 @@ class _ThreeWayPartition:
             self.select_second_part_op_wrapper,
         )
 
+    @annotate(message="_ThreeWayPartition.__call__")
     def __call__(
         self,
         temp_storage,
@@ -149,6 +151,7 @@ class _ThreeWayPartition:
         return temp_storage_bytes
 
 
+@annotate()
 @cache_with_key(make_cache_key)
 def make_three_way_partition(
     d_in: DeviceArrayLike | IteratorBase,
@@ -192,6 +195,7 @@ def make_three_way_partition(
     )
 
 
+@annotate()
 def three_way_partition(
     d_in: DeviceArrayLike | IteratorBase,
     d_first_part_out: DeviceArrayLike | IteratorBase,

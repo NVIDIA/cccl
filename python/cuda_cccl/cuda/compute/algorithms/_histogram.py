@@ -11,6 +11,7 @@ from .. import _bindings
 from .. import _cccl_interop as cccl
 from .._caching import cache_with_key
 from .._cccl_interop import call_build, set_cccl_iterator_state, to_cccl_value_state
+from .._nvtx import annotate
 from .._utils.protocols import get_data_pointer, get_dtype, validate_and_get_stream
 from .._utils.temp_storage_buffer import TempStorageBuffer
 from ..iterators._iterators import IteratorBase
@@ -90,6 +91,7 @@ class _Histogram:
             is_evenly_segmented,
         )
 
+    @annotate(message="_Histogram.__call__")
     def __call__(
         self,
         temp_storage,
@@ -134,6 +136,7 @@ class _Histogram:
         return temp_storage_bytes
 
 
+@annotate()
 @cache_with_key(make_cache_key)
 def make_histogram_even(
     d_samples: DeviceArrayLike | IteratorBase,
@@ -173,6 +176,7 @@ def make_histogram_even(
     )
 
 
+@annotate()
 def histogram_even(
     d_samples: DeviceArrayLike | IteratorBase,
     d_histogram: DeviceArrayLike,

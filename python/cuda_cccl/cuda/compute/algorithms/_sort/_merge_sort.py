@@ -11,6 +11,7 @@ from ... import _bindings
 from ... import _cccl_interop as cccl
 from ..._caching import CachableFunction, cache_with_key
 from ..._cccl_interop import call_build, set_cccl_iterator_state
+from ..._nvtx import annotate
 from ..._utils import protocols
 from ..._utils.protocols import (
     get_data_pointer,
@@ -107,6 +108,7 @@ class _MergeSort:
             self.op_wrapper,
         )
 
+    @annotate(message="_MergeSort.__call__")
     def __call__(
         self,
         temp_storage,
@@ -153,6 +155,7 @@ class _MergeSort:
         return temp_storage_bytes
 
 
+@annotate()
 @cache_with_key(make_cache_key)
 def make_merge_sort(
     d_in_keys: DeviceArrayLike | IteratorBase,
@@ -184,6 +187,7 @@ def make_merge_sort(
     return _MergeSort(d_in_keys, d_in_items, d_out_keys, d_out_items, op)
 
 
+@annotate()
 def merge_sort(
     d_in_keys: DeviceArrayLike | IteratorBase,
     d_in_items: DeviceArrayLike | IteratorBase | None,

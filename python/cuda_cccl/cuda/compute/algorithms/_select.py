@@ -6,6 +6,7 @@
 from typing import Callable
 
 from .._caching import CachableFunction, cache_with_key
+from .._nvtx import annotate
 from .._utils import protocols
 from ..iterators._factories import DiscardIterator
 from ..iterators._iterators import IteratorBase
@@ -60,6 +61,7 @@ class _Select:
             _cccl_always_false,  # select_second_part_op - always false
         )
 
+    @annotate(message="_Select.__call__")
     def __call__(
         self,
         temp_storage,
@@ -81,6 +83,7 @@ class _Select:
         )
 
 
+@annotate()
 @cache_with_key(make_cache_key)
 def make_select(
     d_in: DeviceArrayLike | IteratorBase,
@@ -115,6 +118,7 @@ def make_select(
     return _Select(d_in, d_out, d_num_selected_out, cond)
 
 
+@annotate()
 def select(
     d_in: DeviceArrayLike | IteratorBase,
     d_out: DeviceArrayLike | IteratorBase,

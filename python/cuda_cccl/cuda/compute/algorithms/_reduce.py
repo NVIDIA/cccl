@@ -16,6 +16,7 @@ from .._cccl_interop import (
     set_cccl_iterator_state,
     to_cccl_value_state,
 )
+from .._nvtx import annotate
 from .._utils import protocols
 from .._utils.protocols import get_data_pointer, validate_and_get_stream
 from .._utils.temp_storage_buffer import TempStorageBuffer
@@ -59,6 +60,7 @@ class _Reduce:
             self.h_init_cccl,
         )
 
+    @annotate(message="_Reduce.__call__")
     def __call__(
         self,
         temp_storage,
@@ -119,6 +121,7 @@ def make_cache_key(
 
 # TODO Figure out `sum` without operator and initial value
 # TODO Accept stream
+@annotate()
 @cache_with_key(make_cache_key)
 def make_reduce_into(
     d_in: DeviceArrayLike | IteratorBase,
@@ -148,6 +151,7 @@ def make_reduce_into(
     return _Reduce(d_in, d_out, op, h_init)
 
 
+@annotate()
 def reduce_into(
     d_in: DeviceArrayLike | IteratorBase,
     d_out: DeviceArrayLike | IteratorBase,
