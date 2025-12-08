@@ -1014,9 +1014,22 @@ public:
       {
         num_privatized_levels[channel] = 257;
 
-        if (num_output_levels[channel] > max_levels)
+        int num_levels = num_output_levels[channel];
+        if (kernel_source.MayOverflow(num_levels - 1, upper_level, lower_level, channel))
         {
-          max_levels = num_output_levels[channel];
+          // Make sure to also return a reasonable value for `temp_storage_bytes` in case of
+          // an overflow of the bin computation, in which case a subsequent algorithm
+          // invocation will also fail
+          if (!d_temp_storage)
+          {
+            temp_storage_bytes = 1U;
+          }
+          return cudaErrorInvalidValue;
+        }
+
+        if (num_levels > max_levels)
+        {
+          max_levels = num_levels;
         }
       }
       int max_num_output_bins = max_levels - 1;
