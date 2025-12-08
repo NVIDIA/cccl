@@ -1,4 +1,4 @@
-find_package(CUDAToolkit REQUIRED)
+cccl_get_cudatoolkit()
 
 set(cccl_revision "")
 find_package(Git)

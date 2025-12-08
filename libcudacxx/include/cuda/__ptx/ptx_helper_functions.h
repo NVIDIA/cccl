@@ -37,6 +37,30 @@
 #    define _CUDA_PTX_CUDACC_MAJOR() (CUDA_VERSION / 1000)
 #  endif // ^^^ has cuda compiler ^^^
 
+#  if !defined(_LIBCUDA_PTX_ARCH_SPECIFIC)
+#    if defined(__CUDA_ARCH_SPECIFIC__)
+#      define _LIBCUDA_PTX_ARCH_SPECIFIC() __CUDA_ARCH_SPECIFIC__
+#    else
+#      if defined(__CUDA_ARCH_FEAT_SM90_ALL)
+#        define _LIBCUDA_PTX_ARCH_SPECIFIC() 900
+#      elif defined(__CUDA_ARCH_FEAT_SM100_ALL)
+#        define _LIBCUDA_PTX_ARCH_SPECIFIC() 1000
+#      elif defined(__CUDA_ARCH_FEAT_SM103_ALL)
+#        define _LIBCUDA_PTX_ARCH_SPECIFIC() 1030
+#      elif defined(__CUDA_ARCH_FEAT_SM120_ALL)
+#        define _LIBCUDA_PTX_ARCH_SPECIFIC() 1200
+#      else
+#        define _LIBCUDA_PTX_ARCH_SPECIFIC() 0
+#      endif
+#    endif // ^^^ !defined(__CUDA_ARCH_SPECIFIC__)
+#  endif // ^^^ !defined(_LIBCUDA_PTX_ARCH_SPECIFIC)
+
+#  if !defined(__CUDA_HAS_ARCH_FAMILY_SPECIFIC)
+
+#    define __CUDA_HAS_ARCH_FAMILY_SPECIFIC(N) false
+
+#  endif // !defined(__CUDA_HAS_ARCH_FAMILY_SPECIFIC)
+
 _CCCL_BEGIN_NAMESPACE_CUDA_PTX
 
 #  if _CUDA_PTX_CUDACC_MAJOR() < 13
@@ -72,7 +96,6 @@ inline _CCCL_DEVICE ::cuda::std::uint32_t __as_ptr_smem(const void* __ptr)
 inline _CCCL_DEVICE ::cuda::std::uint32_t __as_ptr_dsmem(const void* __ptr)
 {
   // No difference in implementation to __as_ptr_smem.
-  // Consider adding debug asserts here.
   return __as_ptr_smem(__ptr);
 }
 
@@ -120,27 +143,6 @@ inline _CCCL_DEVICE _Tp* __from_ptr_gmem(::cuda::std::size_t __ptr)
 {
   // Consider adding debug asserts here.
   return reinterpret_cast<_Tp*>(::__cvta_global_to_generic(__ptr));
-}
-
-/*************************************************************
- *
- * Conversion from template type -> concrete binary type
- *
- **************************************************************/
-template <typename _Tp>
-inline _CCCL_DEVICE ::cuda::std::uint32_t __as_b32(_Tp __val)
-{
-  static_assert(sizeof(_Tp) == 4, "");
-  // Consider using std::bitcast
-  return *reinterpret_cast<::cuda::std::uint32_t*>(&__val);
-}
-
-template <typename _Tp>
-inline _CCCL_DEVICE ::cuda::std::uint64_t __as_b64(_Tp __val)
-{
-  static_assert(sizeof(_Tp) == 8, "");
-  // Consider using std::bitcast
-  return *reinterpret_cast<::cuda::std::uint64_t*>(&__val);
 }
 
 /*************************************************************
