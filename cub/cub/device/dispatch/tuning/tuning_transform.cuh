@@ -75,15 +75,55 @@ struct prefetch_policy
   int min_items_per_thread      = 1;
   int max_items_per_thread      = 32;
 
-  // TODO: operator==, !=, <<
+  _CCCL_API constexpr friend bool operator==(const prefetch_policy& lhs, const prefetch_policy& rhs)
+  {
+    return lhs.block_threads == rhs.block_threads && lhs.items_per_thread_no_input == rhs.items_per_thread_no_input
+        && lhs.min_items_per_thread == rhs.min_items_per_thread && lhs.max_items_per_thread == rhs.max_items_per_thread;
+  }
+
+  _CCCL_API constexpr friend bool operator!=(const prefetch_policy& lhs, const prefetch_policy& rhs)
+  {
+    return !(lhs == rhs);
+  }
+
+#if !_CCCL_COMPILER(NVRTC)
+  friend ::std::ostream& operator<<(::std::ostream& os, const prefetch_policy& policy)
+  {
+    os << "prefetch_policy { .block_threads = " << policy.block_threads << ", .items_per_thread_no_input = "
+       << policy.items_per_thread_no_input << ", .min_items_per_thread = " << policy.min_items_per_thread
+       << ", .max_items_per_thread = " << policy.max_items_per_thread << " }";
+    return os;
+  }
+#endif // !_CCCL_COMPILER(NVRTC)
 };
 
+// TODO(bgruber): maybe make base class a member instead
 struct vectorized_policy : prefetch_policy
 {
   int items_per_thread_vectorized;
   int vec_size;
 
-  // TODO: operator==, !=, <<
+  _CCCL_API constexpr friend bool operator==(const vectorized_policy& lhs, const vectorized_policy& rhs)
+  {
+    return static_cast<const prefetch_policy&>(lhs) == static_cast<const prefetch_policy&>(rhs)
+        && lhs.items_per_thread_vectorized == rhs.items_per_thread_vectorized && lhs.vec_size == rhs.vec_size;
+  }
+
+  _CCCL_API constexpr friend bool operator!=(const vectorized_policy& lhs, const vectorized_policy& rhs)
+  {
+    return !(lhs == rhs);
+  }
+
+#if !_CCCL_COMPILER(NVRTC)
+  friend ::std::ostream& operator<<(::std::ostream& os, const vectorized_policy& policy)
+  {
+    os << "vectorized_policy { .block_threads = " << policy.block_threads << ", .items_per_thread_no_input = "
+       << policy.items_per_thread_no_input << ", .min_items_per_thread = " << policy.min_items_per_thread
+       << ", .max_items_per_thread = " << policy.max_items_per_thread << ", .items_per_thread_vectorized = "
+       << policy.items_per_thread_vectorized << ", .vec_size = " << policy.vec_size << " }";
+    return os;
+  }
+#endif // !_CCCL_COMPILER(NVRTC)
 };
 
 struct async_copy_policy
@@ -94,7 +134,26 @@ struct async_copy_policy
   int min_items_per_thread = 1;
   int max_items_per_thread = 32;
 
-  // TODO: operator==, !=, <<
+  _CCCL_API constexpr friend bool operator==(const async_copy_policy& lhs, const async_copy_policy& rhs)
+  {
+    return lhs.block_threads == rhs.block_threads && lhs.bulk_copy_alignment == rhs.bulk_copy_alignment
+        && lhs.min_items_per_thread == rhs.min_items_per_thread && lhs.max_items_per_thread == rhs.max_items_per_thread;
+  }
+
+  _CCCL_API constexpr friend bool operator!=(const async_copy_policy& lhs, const async_copy_policy& rhs)
+  {
+    return !(lhs == rhs);
+  }
+
+#if !_CCCL_COMPILER(NVRTC)
+  friend ::std::ostream& operator<<(::std::ostream& os, const async_copy_policy& policy)
+  {
+    os << "async_copy_policy { .block_threads = " << policy.block_threads << ", .bulk_copy_alignment = "
+       << policy.bulk_copy_alignment << ", .min_items_per_thread = " << policy.min_items_per_thread
+       << ", .max_items_per_thread = " << policy.max_items_per_thread << " }";
+    return os;
+  }
+#endif // !_CCCL_COMPILER(NVRTC)
 };
 
 struct transform_arch_policy
@@ -105,7 +164,27 @@ struct transform_arch_policy
   vectorized_policy vectorized_policy;
   async_copy_policy async_copy_policy;
 
-  // TODO: operator==, !=, <<
+  _CCCL_API constexpr friend bool operator==(const transform_arch_policy& lhs, const transform_arch_policy& rhs)
+  {
+    return lhs.min_bif == rhs.min_bif && lhs.algorithm == rhs.algorithm && lhs.prefetch_policy == rhs.prefetch_policy
+        && lhs.vectorized_policy == rhs.vectorized_policy && lhs.async_copy_policy == rhs.async_copy_policy;
+  }
+
+  _CCCL_API constexpr friend bool operator!=(const transform_arch_policy& lhs, const transform_arch_policy& rhs)
+  {
+    return !(lhs == rhs);
+  }
+
+#if !_CCCL_COMPILER(NVRTC)
+  friend ::std::ostream& operator<<(::std::ostream& os, const transform_arch_policy& policy)
+  {
+    os << "transform_arch_policy { .min_bif = " << policy.min_bif
+       << ", .algorithm = " << static_cast<int>(policy.algorithm) << ", .prefetch_policy = " << policy.prefetch_policy
+       << ", .vectorized_policy = " << policy.vectorized_policy << ", .async_copy_policy = " << policy.async_copy_policy
+       << " }";
+    return os;
+  }
+#endif // !_CCCL_COMPILER(NVRTC)
 };
 
 #if _CCCL_HAS_CONCEPTS()
@@ -375,7 +454,7 @@ struct arch_policies
 };
 
 #if _CCCL_HAS_CONCEPTS()
-static_assert(transform_policy_hub<arch_policies>);
+static_assert(transform_policy_hub<arch_policies<1>>);
 #endif // _CCCL_HAS_CONCEPTS()
 
 // stateless version which can be passed to kernels

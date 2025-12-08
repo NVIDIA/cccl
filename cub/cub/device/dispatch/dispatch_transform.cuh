@@ -177,10 +177,10 @@ spread_out_items_per_thread(Offset num_items, Policy policy, int items_per_threa
   return items_per_thread_clamped;
 }
 
-template <const transform_arch_policy* policy,
-          bool NoInputs,
+template <bool NoInputs,
           typename Offset,
           typename SMemFunc,
+          typename PolicyPtrGetter,
           typename KernelSource,
           typename KernelLauncherFactory>
 CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto configure_async_kernel(
@@ -188,17 +188,18 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto configure_as
   int alignment,
   SMemFunc dyn_smem_for_tile_size,
   cudaStream_t stream,
+  PolicyPtrGetter policy_ptr_getter,
   KernelSource kernel_source,
   KernelLauncherFactory launcher_factory)
   -> cuda_expected<
     ::cuda::std::tuple<decltype(launcher_factory(0, 0, 0, 0)), decltype(kernel_source.TransformKernel()), int>>
 {
-  const int block_threads = policy->async_copy_policy.block_threads;
+  CUB_DETAIL_CONSTEXPR_ISH const transform_arch_policy* policy = policy_ptr_getter();
+  CUB_DETAIL_CONSTEXPR_ISH int block_threads                   = policy->async_copy_policy.block_threads;
 
   _CCCL_ASSERT(block_threads % alignment == 0, "block_threads needs to be a multiple of the copy alignment");
   // ^ then tile_size is a multiple of it
 
-  // TODO(bgruber): static dispatch
   CUB_DETAIL_CONSTEXPR_ISH auto min_items_per_thread = policy->async_copy_policy.min_items_per_thread;
   CUB_DETAIL_CONSTEXPR_ISH auto max_items_per_thread = policy->async_copy_policy.max_items_per_thread;
 
@@ -270,14 +271,14 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto configure_as
     launcher_factory(grid_dim, block_threads, dyn_smem_size, stream, true), kernel_source.TransformKernel(), ipt);
 }
 
-template <const transform_arch_policy* policy,
-          typename Offset,
+template <typename Offset,
           typename... RandomAccessIteratorsIn,
           typename RandomAccessIteratorOut,
           typename Predicate,
           typename TransformOp,
           typename SMemFunc,
           std::size_t... Is,
+          typename PolicyPtrGetter,
           typename KernelSource,
           typename KernelLauncherFactory>
 CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t invoke_async_algorithm(
@@ -290,50 +291,52 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t invoke_async_algorithm(
   int alignment,
   SMemFunc dyn_smem_for_tile_size,
   cuda::std::index_sequence<Is...>,
+  PolicyPtrGetter policy_ptr_getter,
   KernelSource kernel_source,
   KernelLauncherFactory launcher_factory)
 {
-  auto ret = configure_async_kernel<policy, (sizeof...(RandomAccessIteratorsIn) == 0)>(
-    num_items, alignment, dyn_smem_for_tile_size, stream, kernel_source, launcher_factory);
+  auto ret = configure_async_kernel<(sizeof...(RandomAccessIteratorsIn) == 0)>(
+    num_items, alignment, dyn_smem_for_tile_size, stream, policy_ptr_getter, kernel_source, launcher_factory);
   if (!ret)
   {
     return ret.error();
   }
-#if defined(CUB_DEFINE_RUNTIME_POLICIES)
-  // Normally, this check is handled by the if constexpr(ish) in Invoke. However, when runtime policies are
-  // defined (like by c.parallel), that if constexpr becomes a plain if, so we need to check the actual compile time
-  // condition again, this time asserting at runtime if we hit this point during dispatch.
-  if constexpr ((is_valid_aligned_base_ptr_arg<RandomAccessIteratorsIn> && ...))
-  {
-#endif // CUB_DEFINE_RUNTIME_POLICIES
-    auto [launcher, kernel, items_per_thread] = *ret;
-    return launcher.doit(
-      kernel,
-      num_items,
-      items_per_thread,
-      false,
-      pred,
-      op,
-      THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator(out),
-      kernel_source.MakeAlignedBasePtrKernelArg(
-        THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator(::cuda::std::get<Is>(in)), alignment)...);
-#if defined(CUB_DEFINE_RUNTIME_POLICIES)
-  }
-  else
-  {
-    _CCCL_ASSERT_HOST(false, "ublkcp algorithm requires all input iterators to be contiguous");
-    _CCCL_UNREACHABLE();
-  }
-#endif // CUB_DEFINE_RUNTIME_POLICIES
+  // #if defined(CUB_DEFINE_RUNTIME_POLICIES)
+  //   // Normally, this check is handled by the if constexpr(ish) in Invoke. However, when runtime policies are
+  //   // defined (like by c.parallel), that if constexpr becomes a plain if, so we need to check the actual compile
+  //   time
+  //   // condition again, this time asserting at runtime if we hit this point during dispatch.
+  //   if constexpr ((is_valid_aligned_base_ptr_arg<RandomAccessIteratorsIn> && ...))
+  //   {
+  // #endif // CUB_DEFINE_RUNTIME_POLICIES
+  auto [launcher, kernel, items_per_thread] = *ret;
+  return launcher.doit(
+    kernel,
+    num_items,
+    items_per_thread,
+    false,
+    pred,
+    op,
+    THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator(out),
+    kernel_source.MakeAlignedBasePtrKernelArg(
+      THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator(::cuda::std::get<Is>(in)), alignment)...);
+  // #if defined(CUB_DEFINE_RUNTIME_POLICIES)
+  //   }
+  //   else
+  //   {
+  //     _CCCL_ASSERT_HOST(false, "ublkcp algorithm requires all input iterators to be contiguous");
+  //     _CCCL_UNREACHABLE();
+  //   }
+  // #endif // CUB_DEFINE_RUNTIME_POLICIES
 }
 
-template <const transform_arch_policy* policy,
-          typename... RandomAccessIteratorsIn,
+template <typename... RandomAccessIteratorsIn,
           typename RandomAccessIteratorOut,
           typename Offset,
           typename Predicate,
           typename TransformOp,
           size_t... Is,
+          typename PolicyPtrGetter,
           typename KernelSource,
           typename KernelLauncherFactory>
 CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t invoke_prefetch_or_vectorized_algorithm(
@@ -344,10 +347,12 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t invoke_prefetch_or_vectorized
   TransformOp op,
   cudaStream_t stream,
   ::cuda::std::index_sequence<Is...>,
+  PolicyPtrGetter policy_ptr_getter,
   KernelSource kernel_source,
   KernelLauncherFactory launcher_factory)
 {
-  const int block_threads =
+  CUB_DETAIL_CONSTEXPR_ISH const transform_arch_policy* policy = policy_ptr_getter();
+  CUB_DETAIL_CONSTEXPR_ISH const int block_threads =
     policy->algorithm == Algorithm::vectorized
       ? policy->vectorized_policy.block_threads
       : policy->prefetch_policy.block_threads;
@@ -399,7 +404,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t invoke_prefetch_or_vectorized
     // otherwise, set up the prefetch kernel
 
     auto loaded_bytes_per_iter = kernel_source.LoadedBytesPerIteration();
-    const auto items_per_thread_no_input =
+    CUB_DETAIL_CONSTEXPR_ISH const auto items_per_thread_no_input =
       policy->algorithm == Algorithm::vectorized
         ? policy->vectorized_policy.items_per_thread_no_input
         : policy->prefetch_policy.items_per_thread_no_input;
@@ -482,9 +487,10 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t dispatch(
   const auto bulk_copy_align = bulk_copy_alignment(arch_id);
   const auto seq             = ::cuda::std::index_sequence_for<RandomAccessIteratorsIn...>{};
 
-  return dispatch_arch(arch_policies, arch_id, [&](auto policy_ptr_ic) {
-    // via the public CUB API, we get a constexpr active policy, via CCCL.C we get a runtime one
-    static constexpr const transform_arch_policy* active_policy = policy_ptr_ic();
+  return dispatch_arch(arch_policies, arch_id, [&](auto policy_ptr_getter) {
+    // policy_ptr_getter is an integral constant returning a constexpr pointer to the selected compile-time policy, for
+    // CCCL.C it's a lambda retuning a pointer to a (runtime) policy.
+    CUB_DETAIL_CONSTEXPR_ISH const transform_arch_policy* active_policy = policy_ptr_getter();
 
 #if !_CCCL_COMPILER(NVRTC) && defined(CUB_DEBUG_LOG)
     NV_IF_TARGET(
@@ -495,7 +501,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t dispatch(
 
     if CUB_DETAIL_CONSTEXPR_ISH (Algorithm::ublkcp == active_policy->algorithm)
     {
-      return invoke_async_algorithm<active_policy>(
+      return invoke_async_algorithm(
         ::cuda::std::move(in),
         ::cuda::std::move(out),
         num_items,
@@ -508,12 +514,13 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t dispatch(
             kernel_source.InputIteratorInfos(), tile_size, alignment);
         },
         seq,
+        policy_ptr_getter,
         kernel_source,
         launcher_factory);
     }
     else if CUB_DETAIL_CONSTEXPR_ISH (Algorithm::memcpy_async == active_policy->algorithm)
     {
-      return invoke_async_algorithm<active_policy>(
+      return invoke_async_algorithm(
         ::cuda::std::move(in),
         ::cuda::std::move(out),
         num_items,
@@ -526,12 +533,13 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t dispatch(
             kernel_source.InputIteratorInfos(), tile_size, alignment);
         },
         seq,
+        policy_ptr_getter,
         kernel_source,
         launcher_factory);
     }
     else
     {
-      return invoke_prefetch_or_vectorized_algorithm<active_policy>(
+      return invoke_prefetch_or_vectorized_algorithm(
         ::cuda::std::move(in),
         ::cuda::std::move(out),
         num_items,
@@ -539,6 +547,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t dispatch(
         ::cuda::std::move(op),
         stream,
         seq,
+        policy_ptr_getter,
         kernel_source,
         launcher_factory);
     }

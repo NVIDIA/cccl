@@ -261,7 +261,7 @@ struct __align__({3}) output_storage_t {{
 {4}
 {5}
 {6}
-using device_transform_policy = {7}::max_policy;
+using device_transform_policy = {7};
 using namespace cub;
 using namespace cub::detail::transform;
 static_assert(device_transform_policy()(::cuda::arch_id{{CUB_PTX_ARCH / 10}}) == {8}, "Host generated and JIT compiled policy mismatch");
@@ -364,7 +364,7 @@ CUresult cccl_device_unary_transform(
     check(cuCtxGetDevice(&cu_device));
     error = static_cast<CUresult>(transform::cdt::dispatch<transform::cdt::requires_stable_address::no>(
       ::cuda::std::tuple<indirect_iterator_t>{d_in},
-      d_out,
+      indirect_iterator_t{d_out},
       static_cast<OffsetT>(num_items),
       transform::cdt::always_true_predicate{},
       op,
@@ -565,7 +565,7 @@ CUresult cccl_device_binary_transform(
 
     error = static_cast<CUresult>(transform::cdt::dispatch<transform::cdt::requires_stable_address::no>(
       ::cuda::std::make_tuple<indirect_iterator_t, indirect_iterator_t>(d_in1, d_in2),
-      d_out,
+      indirect_iterator_t{d_out},
       static_cast<OffsetT>(num_items),
       transform::cdt::always_true_predicate{},
       op,
