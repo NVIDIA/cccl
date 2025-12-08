@@ -169,25 +169,33 @@ __to_cutensor_map_size(::cuda::std::size_t __num_items, ::CUtensorMapDataType __
     case ::CU_TENSOR_MAP_DATA_TYPE_UINT16:
     case ::CU_TENSOR_MAP_DATA_TYPE_BFLOAT16:
     case ::CU_TENSOR_MAP_DATA_TYPE_FLOAT16:
-      _CCCL_THROW_IF(__num_items > __max_size_t / 2,
-                     ::std::invalid_argument{"Number of items must be less than or equal to 2^64 / 2"});
+      if (__num_items > __max_size_t / 2)
+      {
+        _CCCL_THROW(::std::invalid_argument{"Number of items must be less than or equal to 2^64 / 2"});
+      }
       return __num_items * 2;
     case ::CU_TENSOR_MAP_DATA_TYPE_INT32:
     case ::CU_TENSOR_MAP_DATA_TYPE_UINT32:
     case ::CU_TENSOR_MAP_DATA_TYPE_FLOAT32:
-      _CCCL_THROW_IF(__num_items > __max_size_t / 4,
-                     ::std::invalid_argument{"Number of items must be less than or equal to 2^64 / 4"});
+      if (__num_items > __max_size_t / 4)
+      {
+        _CCCL_THROW(::std::invalid_argument{"Number of items must be less than or equal to 2^64 / 4"});
+      }
       return __num_items * 4;
     case ::CU_TENSOR_MAP_DATA_TYPE_INT64:
     case ::CU_TENSOR_MAP_DATA_TYPE_UINT64:
     case ::CU_TENSOR_MAP_DATA_TYPE_FLOAT64:
-      _CCCL_THROW_IF(__num_items > __max_size_t / 8,
-                     ::std::invalid_argument{"Number of items must be less than or equal to 2^64 / 8"});
+      if (__num_items > __max_size_t / 8)
+      {
+        _CCCL_THROW(::std::invalid_argument{"Number of items must be less than or equal to 2^64 / 8"});
+      }
       return __num_items * 8;
 #  if _CCCL_CTK_AT_LEAST(12, 8)
     case ::CU_TENSOR_MAP_DATA_TYPE_16U4_ALIGN8B:
-      _CCCL_THROW_IF(__num_items % 2 != 0,
-                     ::std::invalid_argument{"Number of items must be a multiple of 2 for U4x16"});
+      if (__num_items % 2 != 0)
+      {
+        _CCCL_THROW(::std::invalid_argument{"Number of items must be a multiple of 2 for U4x16"});
+      }
       return __num_items / 2;
 #  endif // _CCCL_CTK_AT_LEAST(12, 8)
     default:
@@ -201,24 +209,28 @@ __to_cutensor_map_size(::cuda::std::size_t __num_items, ::CUtensorMapDataType __
 
 _CCCL_HOST_API inline void __check_device(const ::DLTensor& __tensor, tma_swizzle __swizzle)
 {
-  _CCCL_THROW_IF(__tensor.device.device_type != ::kDLCUDA && __tensor.device.device_type != ::kDLCUDAManaged,
-                 ::std::invalid_argument{"Device type must be kDLCUDA or kDLCUDAManaged"});
+  if (__tensor.device.device_type != ::kDLCUDA && __tensor.device.device_type != ::kDLCUDAManaged)
+  {
+    _CCCL_THROW(::std::invalid_argument{"Device type must be kDLCUDA or kDLCUDAManaged"});
+  }
   const auto __current_device     = ::cuda::device_ref(__tensor.device.device_id);
   const auto __compute_capability = __current_device.attribute<::cudaDevAttrComputeCapabilityMajor>();
-  _CCCL_THROW_IF(__compute_capability < 9, ::std::runtime_error{"Compute capability 9.0 or higher is required"});
+  if (__compute_capability < 9)
+  {
+    _CCCL_THROW(::std::runtime_error{"Compute capability 9.0 or higher is required"});
+  }
   if (__compute_capability == 9)
   {
 #  if _CCCL_CTK_AT_LEAST(12, 8)
     if (__swizzle == tma_swizzle::bytes128_atom_32B || __swizzle == tma_swizzle::bytes128_atom_32B_flip_8B
         || __swizzle == tma_swizzle::bytes128_atom_64B)
     {
-      _CCCL_THROW_IF(
-        true, ::std::invalid_argument{"tma_swizzle::bytes128_atom* are not supported with compute capability 9"});
+      _CCCL_THROW(::std::invalid_argument{"tma_swizzle::bytes128_atom* are not supported with compute capability 9"});
     }
 #  endif // _CCCL_CTK_AT_LEAST(12, 8)
     if (__tensor.dtype.code == ::kDLUInt && __tensor.dtype.bits == 4 && __tensor.dtype.lanes == 16)
     {
-      _CCCL_THROW_IF(true, ::std::invalid_argument{"U4x16 is not supported with compute capability 9"});
+      _CCCL_THROW(::std::invalid_argument{"U4x16 is not supported with compute capability 9"});
     }
   }
 }
@@ -230,56 +242,93 @@ __get_tensor_map_data_type(const ::DLTensor& __tensor, tma_oob_fill __oobfill)
   switch (__type)
   {
     case ::kDLInt:
-      _CCCL_THROW_IF(__tensor.dtype.lanes != 1, ::std::invalid_argument{"Int data type must be 1 lane"});
-      _CCCL_THROW_IF(__tensor.dtype.bits != 32 && __tensor.dtype.bits != 64,
-                     ::std::invalid_argument{"Int data type must be 32 or 64 bits"});
-      _CCCL_THROW_IF(__oobfill != tma_oob_fill::none,
-                     ::std::invalid_argument{"tma_oob_fill::nan is only supported for floating-point data types"});
+      if (__tensor.dtype.lanes != 1)
+      {
+        _CCCL_THROW(::std::invalid_argument{"Int data type must be 1 lane"});
+      }
+      if (__tensor.dtype.bits != 32 && __tensor.dtype.bits != 64)
+      {
+        _CCCL_THROW(::std::invalid_argument{"Int data type must be 32 or 64 bits"});
+      }
+      if (__oobfill != tma_oob_fill::none)
+      {
+        _CCCL_THROW(::std::invalid_argument{"tma_oob_fill::nan is only supported for floating-point data types"});
+      }
       return (__tensor.dtype.bits == 32) ? ::CU_TENSOR_MAP_DATA_TYPE_INT32 : ::CU_TENSOR_MAP_DATA_TYPE_INT64;
     case ::kDLUInt: {
-      _CCCL_THROW_IF(__oobfill != tma_oob_fill::none,
-                     ::std::invalid_argument{"tma_oob_fill::nan is only supported for floating-point data types"});
+      if (__oobfill != tma_oob_fill::none)
+      {
+        _CCCL_THROW(::std::invalid_argument{"tma_oob_fill::nan is only supported for floating-point data types"});
+      }
       switch (__tensor.dtype.bits)
       {
         case 4: {
-          _CCCL_THROW_IF(__tensor.dtype.lanes != 16, ::std::invalid_argument{"uint4 data type must be 16 lanes"});
+          if (__tensor.dtype.lanes != 16)
+          {
+            _CCCL_THROW(::std::invalid_argument{"uint4 data type must be 16 lanes"});
+          }
 #  if _CCCL_CTK_AT_LEAST(12, 8)
           return ::CU_TENSOR_MAP_DATA_TYPE_16U4_ALIGN8B;
 #  else
-          _CCCL_THROW_IF(true, ::std::invalid_argument{"U4x16 is not supported for compute capability 9"});
+          _CCCL_THROW(::std::invalid_argument{"U4x16 is not supported for compute capability 9"});
 #  endif // _CCCL_CTK_AT_LEAST(12, 8)
         }
         case 8:
-          _CCCL_THROW_IF(__tensor.dtype.lanes != 1, ::std::invalid_argument{"uint8 data type must be 1 lane"});
+          if (__tensor.dtype.lanes != 1)
+          {
+            _CCCL_THROW(::std::invalid_argument{"uint8 data type must be 1 lane"});
+          }
           return ::CU_TENSOR_MAP_DATA_TYPE_UINT8;
         case 16:
-          _CCCL_THROW_IF(__tensor.dtype.lanes != 1, ::std::invalid_argument{"uint16 data type must be 1 lane"});
+          if (__tensor.dtype.lanes != 1)
+          {
+            _CCCL_THROW(::std::invalid_argument{"uint16 data type must be 1 lane"});
+          }
           return ::CU_TENSOR_MAP_DATA_TYPE_UINT16;
         case 32:
-          _CCCL_THROW_IF(__tensor.dtype.lanes != 1, ::std::invalid_argument{"uint32 data type must be 1 lane"});
+          if (__tensor.dtype.lanes != 1)
+          {
+            _CCCL_THROW(::std::invalid_argument{"uint32 data type must be 1 lane"});
+          }
           return ::CU_TENSOR_MAP_DATA_TYPE_UINT32;
         case 64:
-          _CCCL_THROW_IF(__tensor.dtype.lanes != 1, ::std::invalid_argument{"uint64 data type must be 1 lane"});
+          if (__tensor.dtype.lanes != 1)
+          {
+            _CCCL_THROW(::std::invalid_argument{"uint64 data type must be 1 lane"});
+          }
           return ::CU_TENSOR_MAP_DATA_TYPE_UINT64;
         default:
-          _CCCL_THROW_IF(true, ::std::invalid_argument{"UInt data type must be 4, 8, 16, 32, or 64 bits"});
+          _CCCL_THROW(::std::invalid_argument{"UInt data type must be 4, 8, 16, 32, or 64 bits"});
       }
     }
     case ::kDLFloat:
-      _CCCL_THROW_IF(__tensor.dtype.lanes != 1, ::std::invalid_argument{"Float data type must be 1 lane"});
-      _CCCL_THROW_IF(__tensor.dtype.bits != 16 && __tensor.dtype.bits != 32 && __tensor.dtype.bits != 64,
-                     ::std::invalid_argument{"Float data type must be 16, 32, or 64 bits"});
+      if (__tensor.dtype.lanes != 1)
+      {
+        _CCCL_THROW(::std::invalid_argument{"Float data type must be 1 lane"});
+      }
+      if (__tensor.dtype.bits != 16 && __tensor.dtype.bits != 32 && __tensor.dtype.bits != 64)
+      {
+        _CCCL_THROW(::std::invalid_argument{"Float data type must be 16, 32, or 64 bits"});
+      }
       return (__tensor.dtype.bits == 16) ? ::CU_TENSOR_MAP_DATA_TYPE_FLOAT16
            : (__tensor.dtype.bits == 32)
              ? ::CU_TENSOR_MAP_DATA_TYPE_FLOAT32
              : ::CU_TENSOR_MAP_DATA_TYPE_FLOAT64;
     case ::kDLBfloat:
-      _CCCL_THROW_IF(__tensor.dtype.lanes != 1, ::std::invalid_argument{"Bfloat16 data type must be 1 lane"});
-      _CCCL_THROW_IF(__tensor.dtype.bits != 16, ::std::invalid_argument{"Bfloat16 data type must be 16 bits"});
+      if (__tensor.dtype.lanes != 1)
+      {
+        _CCCL_THROW(::std::invalid_argument{"Bfloat16 data type must be 1 lane"});
+      }
+      if (__tensor.dtype.bits != 16)
+      {
+        _CCCL_THROW(::std::invalid_argument{"Bfloat16 data type must be 16 bits"});
+      }
       return ::CU_TENSOR_MAP_DATA_TYPE_BFLOAT16;
     case ::kDLBool:
-      _CCCL_THROW_IF(__oobfill != tma_oob_fill::none,
-                     ::std::invalid_argument{"tma_oob_fill::nan is only supported for floating-point data types"});
+      if (__oobfill != tma_oob_fill::none)
+      {
+        _CCCL_THROW(::std::invalid_argument{"tma_oob_fill::nan is only supported for floating-point data types"});
+      }
       [[fallthrough]];
     case ::kDLFloat8_e3m4:
     case ::kDLFloat8_e4m3:
@@ -291,15 +340,21 @@ __get_tensor_map_data_type(const ::DLTensor& __tensor, tma_oob_fill __oobfill)
     case ::kDLFloat8_e8m0fnu:
       return ::CU_TENSOR_MAP_DATA_TYPE_UINT8;
     case ::kDLFloat4_e2m1fn:
-      _CCCL_THROW_IF(__tensor.dtype.lanes != 16, ::std::invalid_argument{"Float4_e2m1fn data type must be 16 lanes"});
-      _CCCL_THROW_IF(__tensor.dtype.bits != 4, ::std::invalid_argument{"Float4_e2m1fn data type must be 4 bits"});
+      if (__tensor.dtype.lanes != 16)
+      {
+        _CCCL_THROW(::std::invalid_argument{"Float4_e2m1fn data type must be 16 lanes"});
+      }
+      if (__tensor.dtype.bits != 4)
+      {
+        _CCCL_THROW(::std::invalid_argument{"Float4_e2m1fn data type must be 4 bits"});
+      }
 #  if _CCCL_CTK_AT_LEAST(12, 8)
       return ::CU_TENSOR_MAP_DATA_TYPE_16U4_ALIGN8B;
 #  else
-      _CCCL_THROW_IF(true, ::std::invalid_argument{"U4x16 (Float4_e2m1fn) is not supported for compute capability 9"});
+      _CCCL_THROW(::std::invalid_argument{"U4x16 (Float4_e2m1fn) is not supported for compute capability 9"});
 #  endif // _CCCL_CTK_AT_LEAST(12, 8)
     default:
-      _CCCL_THROW_IF(true, ::std::invalid_argument{"Unsupported data type"});
+      _CCCL_THROW(::std::invalid_argument{"Unsupported data type"});
   }
   _CCCL_UNREACHABLE();
 }
@@ -309,13 +364,17 @@ __get_tensor_map_rank(const ::DLTensor& __tensor, tma_interleave_layout __interl
 {
   const auto __rank         = __tensor.ndim;
   constexpr auto __max_rank = 5;
-  _CCCL_THROW_IF(__rank <= 0 || __rank > __max_rank,
-                 ::std::invalid_argument{"tensor.ndim (rank) must be between 1 and 5"});
+  if (__rank <= 0 || __rank > __max_rank)
+  {
+    _CCCL_THROW(::std::invalid_argument{"tensor.ndim (rank) must be between 1 and 5"});
+  }
   if (__interleave_layout != tma_interleave_layout::none)
   {
-    _CCCL_THROW_IF(__rank <= 3,
-                   ::std::invalid_argument{"tensor.ndim (rank) must be greater than or equal to 3 for interleaved "
-                                           "layout"});
+    if (__rank <= 3)
+    {
+      _CCCL_THROW(::std::invalid_argument{"tensor.ndim (rank) must be greater than or equal to 3 for interleaved "
+                                          "layout"});
+    }
   }
   return __rank;
 }
@@ -324,14 +383,21 @@ __get_tensor_map_rank(const ::DLTensor& __tensor, tma_interleave_layout __interl
 __get_tensor_address(const ::DLTensor& __tensor, tma_interleave_layout __interleave_layout)
 {
   using ::cuda::std::size_t;
-  _CCCL_THROW_IF(__tensor.data == nullptr, ::std::invalid_argument{"Address is null"});
+  if (__tensor.data == nullptr)
+  {
+    _CCCL_THROW(::std::invalid_argument{"Address is null"});
+  }
   // note: byte_offset is 0 for most cases.
   const auto __address   = reinterpret_cast<char*>(__tensor.data) + __tensor.byte_offset;
   const auto __alignment = (__interleave_layout == tma_interleave_layout::bytes32) ? 32 : 16;
-  _CCCL_THROW_IF(!::cuda::is_aligned(__address, __alignment),
-                 ::std::invalid_argument{"tensor.data (address) is not sufficiently aligned"});
-  _CCCL_THROW_IF(!::cuda::is_device_accessible(__address, __tensor.device.device_id),
-                 ::std::invalid_argument{"Address is not a valid GPU global address"});
+  if (!::cuda::is_aligned(__address, __alignment))
+  {
+    _CCCL_THROW(::std::invalid_argument{"tensor.data (address) is not sufficiently aligned"});
+  }
+  if (!::cuda::is_device_accessible(__address, __tensor.device.device_id))
+  {
+    _CCCL_THROW(::std::invalid_argument{"Address is not a valid GPU global address"});
+  }
   return static_cast<void*>(__address);
 }
 
@@ -347,20 +413,27 @@ __get_tensor_sizes(const ::DLTensor& __tensor, int __rank, ::CUtensorMapDataType
   using ::cuda::std::uint64_t;
   __tma_sizes_array_t __tensor_sizes_array{};
   const auto __tensor_sizes = __tensor.shape;
-  _CCCL_THROW_IF(__tensor.shape == nullptr, ::std::invalid_argument{"__tensor.shape is null"});
+  if (__tensor.shape == nullptr)
+  {
+    _CCCL_THROW(::std::invalid_argument{"__tensor.shape is null"});
+  }
 #  if _CCCL_CTK_AT_LEAST(12, 8)
   if (__data_type == ::CU_TENSOR_MAP_DATA_TYPE_16U4_ALIGN8B)
   {
-    _CCCL_THROW_IF(__tensor_sizes[__rank - 1] % 2 != 0,
-                   ::std::invalid_argument{"The innermost tensor dimension size must be a multiple of 2 for U4x16 or "
-                                           "Float4_e2m1fn"});
+    if (__tensor_sizes[__rank - 1] % 2 != 0)
+    {
+      _CCCL_THROW(::std::invalid_argument{"The innermost tensor dimension size must be a multiple of 2 for U4x16 or "
+                                          "Float4_e2m1fn"});
+    }
   }
 #  endif // _CCCL_CTK_AT_LEAST(12, 8)
   for (int __i = 0; __i < __rank; ++__i)
   {
     constexpr auto __max_allowed_size = int64_t{1} << 32; // 2^32
-    _CCCL_THROW_IF(__tensor_sizes[__i] <= 0 || __tensor_sizes[__i] > __max_allowed_size,
-                   ::std::invalid_argument{"tensor.shape[i] must be greater than 0 and less than or equal to 2^32"});
+    if (__tensor_sizes[__i] <= 0 || __tensor_sizes[__i] > __max_allowed_size)
+    {
+      _CCCL_THROW(::std::invalid_argument{"tensor.shape[i] must be greater than 0 and less than or equal to 2^32"});
+    }
     __tensor_sizes_array[__rank - 1 - __i] = __tensor_sizes[__i];
   }
   return __tensor_sizes_array;
@@ -390,10 +463,14 @@ __get_tensor_sizes(const ::DLTensor& __tensor, int __rank, ::CUtensorMapDataType
       // TODO(fbusato): check mul overflow
       __cumulative_size *= __tensor_sizes[__i];
       const auto __stride_bytes = ::cuda::__to_cutensor_map_size(__cumulative_size, __data_type);
-      _CCCL_THROW_IF(__stride_bytes % __alignment != 0,
-                     ::std::invalid_argument{"Stride in bytes is not a multiple of the alignment (32 or 16)"});
-      _CCCL_THROW_IF(__stride_bytes >= __max_allowed_stride_bytes,
-                     ::std::invalid_argument{"Stride in bytes is greater than or equal to 2^40"});
+      if (__stride_bytes % __alignment != 0)
+      {
+        _CCCL_THROW(::std::invalid_argument{"Stride in bytes is not a multiple of the alignment (32 or 16)"});
+      }
+      if (__stride_bytes >= __max_allowed_stride_bytes)
+      {
+        _CCCL_THROW(::std::invalid_argument{"Stride in bytes is greater than or equal to 2^40"});
+      }
       __output_strides[__i] = __stride_bytes;
     }
     return __output_strides;
@@ -403,15 +480,22 @@ __get_tensor_sizes(const ::DLTensor& __tensor, int __rank, ::CUtensorMapDataType
   {
     const auto __next_stride = (__i == __rank - 2) ? int64_t{1} : __input_strides[__i + 1];
     // TODO(fbusato): check mul overflow
-    _CCCL_THROW_IF(__input_strides[__i] != 0 && (__input_strides[__i] < __input_sizes[__i + 1] * __next_stride),
-                   ::std::invalid_argument{"Stride must be 0 or greater than or equal to the product of the next "
-                                           "stride and the size of the next "
-                                           "dimension"});
+    if (__input_strides[__i] != 0 && (__input_strides[__i] < __input_sizes[__i + 1] * __next_stride))
+    {
+      _CCCL_THROW(::std::invalid_argument{
+        "Stride must be 0 or greater than or equal to the product of the next "
+        "stride and the size of the next "
+        "dimension"});
+    }
     const auto __input_stride_bytes = ::cuda::__to_cutensor_map_size(__input_strides[__i], __data_type);
-    _CCCL_THROW_IF(__input_stride_bytes % __alignment != 0,
-                   ::std::invalid_argument{"Stride in bytes is not a multiple of the alignment (32 or 16)"});
-    _CCCL_THROW_IF(__input_stride_bytes >= __max_allowed_stride_bytes,
-                   ::std::invalid_argument{"Stride in bytes is greater than or equal to 2^40"});
+    if (__input_stride_bytes % __alignment != 0)
+    {
+      _CCCL_THROW(::std::invalid_argument{"Stride in bytes is not a multiple of the alignment (32 or 16)"});
+    }
+    if (__input_stride_bytes >= __max_allowed_stride_bytes)
+    {
+      _CCCL_THROW(::std::invalid_argument{"Stride in bytes is greater than or equal to 2^40"});
+    }
     __output_strides[__rank - 2 - __i] = __input_stride_bytes;
   }
   return __output_strides;
@@ -430,60 +514,81 @@ _CCCL_HOST_API inline __tma_box_sizes_array_t __get_box_sizes(
   using ::cuda::std::size_t;
   using ::cuda::std::uint64_t;
   __tma_box_sizes_array_t __box_sizes_output{};
-  _CCCL_THROW_IF(__box_sizes.size() != static_cast<size_t>(__rank), ::std::invalid_argument{"Box sizes size mismatch"});
+  if (__box_sizes.size() != static_cast<size_t>(__rank))
+  {
+    _CCCL_THROW(::std::invalid_argument{"Box sizes size mismatch"});
+  }
   size_t __total_size = 1;
   for (int __i = 0; __i < __rank; ++__i)
   {
     const auto __max_box_size = static_cast<int>(::cuda::std::min(__tensor_sizes[__i], uint64_t{256}));
     const auto __box_size     = __box_sizes[__rank - 1 - __i];
-    _CCCL_THROW_IF(__box_size <= 0 || __box_size > __max_box_size,
-                   ::std::invalid_argument{"box_sizes[i] must be between 1 and min(tensor.shape[rank - 1 - i], 256)"});
+    if (__box_size <= 0 || __box_size > __max_box_size)
+    {
+      _CCCL_THROW(::std::invalid_argument{"box_sizes[i] must be between 1 and min(tensor.shape[rank - 1 - i], 256)"});
+    }
     __total_size *= __box_size;
     __box_sizes_output[__i] = __box_size;
   }
   const auto __inner_dimension_bytes = ::cuda::__to_cutensor_map_size(__box_sizes_output[__rank - 1], __data_type);
   if (__interleave_layout == tma_interleave_layout::none)
   {
-    _CCCL_THROW_IF(__inner_dimension_bytes % 16 != 0,
-                   ::std::invalid_argument{"tma_interleave_layout::none requires box_sizes innermost dimension "
-                                           "(box_sizes[__rank - 1]) in bytes to be a "
-                                           "multiple of 16"});
+    if (__inner_dimension_bytes % 16 != 0)
+    {
+      _CCCL_THROW(::std::invalid_argument{
+        "tma_interleave_layout::none requires box_sizes innermost dimension "
+        "(box_sizes[__rank - 1]) in bytes to be a "
+        "multiple of 16"});
+    }
     if (__swizzle == tma_swizzle::bytes32)
     {
-      _CCCL_THROW_IF(__inner_dimension_bytes > 32,
-                     ::std::invalid_argument{"tma_swizzle::bytes32 requires box_sizes innermost dimension "
-                                             "(box_sizes[__rank - 1]) in bytes to be "
-                                             "less than or equal to 32"});
+      if (__inner_dimension_bytes > 32)
+      {
+        _CCCL_THROW(::std::invalid_argument{
+          "tma_swizzle::bytes32 requires box_sizes innermost dimension "
+          "(box_sizes[__rank - 1]) in bytes to be "
+          "less than or equal to 32"});
+      }
     }
     if (__swizzle == tma_swizzle::bytes64)
     {
-      _CCCL_THROW_IF(__inner_dimension_bytes > 64,
-                     ::std::invalid_argument{"tma_swizzle::bytes64 requires box_sizes innermost dimension "
-                                             "(box_sizes[__rank - 1]) in bytes to be "
-                                             "less than or equal to 64"});
+      if (__inner_dimension_bytes > 64)
+      {
+        _CCCL_THROW(::std::invalid_argument{
+          "tma_swizzle::bytes64 requires box_sizes innermost dimension "
+          "(box_sizes[__rank - 1]) in bytes to be "
+          "less than or equal to 64"});
+      }
     }
     if (__swizzle == tma_swizzle::bytes128)
     {
-      _CCCL_THROW_IF(__inner_dimension_bytes > 128,
-                     ::std::invalid_argument{"tma_swizzle::bytes128 requires box_sizes innermost dimension "
-                                             "(box_sizes[__rank - 1]) in bytes to be "
-                                             "less than or equal to 128"});
+      if (__inner_dimension_bytes > 128)
+      {
+        _CCCL_THROW(::std::invalid_argument{
+          "tma_swizzle::bytes128 requires box_sizes innermost dimension "
+          "(box_sizes[__rank - 1]) in bytes to be "
+          "less than or equal to 128"});
+      }
     }
 #  if _CCCL_CTK_AT_LEAST(12, 8)
     if (__swizzle == tma_swizzle::bytes128_atom_32B || __swizzle == tma_swizzle::bytes128_atom_32B_flip_8B
         || __swizzle == tma_swizzle::bytes128_atom_64B)
     {
-      _CCCL_THROW_IF(__inner_dimension_bytes > 128,
-                     ::std::invalid_argument{
-                       "tma_swizzle::bytes128_atom* requires box_sizes innermost dimension (box_sizes[__rank - "
-                       "1]) in bytes to be less than or equal to 128"});
+      if (__inner_dimension_bytes > 128)
+      {
+        _CCCL_THROW(::std::invalid_argument{
+          "tma_swizzle::bytes128_atom* requires box_sizes innermost dimension (box_sizes[__rank - "
+          "1]) in bytes to be less than or equal to 128"});
+      }
     }
 #  endif // _CCCL_CTK_AT_LEAST(12, 8)
   }
   const auto __max_shmem =
     ::cuda::__driver::__deviceGetAttribute(::CU_DEVICE_ATTRIBUTE_MAX_SHARED_MEMORY_PER_BLOCK_OPTIN, __device_id);
-  _CCCL_THROW_IF(::cuda::__to_cutensor_map_size(__total_size, __data_type) > static_cast<size_t>(__max_shmem),
-                 ::std::invalid_argument{"Box sizes do not fit in shared memory"});
+  if (::cuda::__to_cutensor_map_size(__total_size, __data_type) > static_cast<size_t>(__max_shmem))
+  {
+    _CCCL_THROW(::std::invalid_argument{"Box sizes do not fit in shared memory"});
+  }
   return __box_sizes_output;
 }
 
@@ -496,8 +601,10 @@ _CCCL_HOST_API inline __tma_elem_strides_array_t __get_elem_strides(
 {
   using ::cuda::std::size_t;
   using ::cuda::std::uint64_t;
-  _CCCL_THROW_IF(__elem_strides.size() != static_cast<size_t>(__rank),
-                 ::std::invalid_argument{"Elem strides size mismatch"});
+  if (__elem_strides.size() != static_cast<size_t>(__rank))
+  {
+    _CCCL_THROW(::std::invalid_argument{"Elem strides size mismatch"});
+  }
   __tma_elem_strides_array_t __elem_strides_array{1};
   // tma_interleave_layout::none ignores the innermost elem stride (implicitly 1).
   const int __init_index = (__interleave_layout == tma_interleave_layout::none) ? 1 : 0;
@@ -505,10 +612,12 @@ _CCCL_HOST_API inline __tma_elem_strides_array_t __get_elem_strides(
   {
     const auto __max_elem_stride = static_cast<int>(::cuda::std::min(__tensor_sizes[__i], uint64_t{8}));
     const auto __elem_stride     = __elem_strides[__rank - 1 - __i];
-    _CCCL_THROW_IF(__elem_stride <= 0 || __elem_stride > __max_elem_stride,
-                   ::std::invalid_argument{
-                     "elem_strides[i] must be greater than 0 and less than or equal to min(tensor.shape[rank - 1 - i], "
-                     "8)"});
+    if (__elem_stride <= 0 || __elem_stride > __max_elem_stride)
+    {
+      _CCCL_THROW(::std::invalid_argument{
+        "elem_strides[i] must be greater than 0 and less than or equal to min(tensor.shape[rank - 1 - i], "
+        "8)"});
+    }
     __elem_strides_array[__i] = __elem_stride;
   }
   return __elem_strides_array;
@@ -518,8 +627,10 @@ _CCCL_HOST_API inline void __check_swizzle(tma_interleave_layout __interleave_la
 {
   if (__interleave_layout == tma_interleave_layout::bytes32)
   {
-    _CCCL_THROW_IF(__swizzle != tma_swizzle::bytes32,
-                   ::std::invalid_argument{"tma_interleave_layout::bytes32 requires tma_swizzle::bytes32"});
+    if (__swizzle != tma_swizzle::bytes32)
+    {
+      _CCCL_THROW(::std::invalid_argument{"tma_interleave_layout::bytes32 requires tma_swizzle::bytes32"});
+    }
   }
 }
 
@@ -567,7 +678,10 @@ _CCCL_HOST_API inline void __check_swizzle(tma_interleave_layout __interleave_la
     __raw_swizzle,
     __raw_l2_fetch_size,
     __raw_oobfill);
-  _CCCL_THROW_IF(__status != ::cudaSuccess, ::std::runtime_error{"Failed to encode TMA descriptor"});
+  if (__status != ::cudaSuccess)
+  {
+    _CCCL_THROW(::std::runtime_error{"Failed to encode TMA descriptor"});
+  }
   return __tensorMap;
 }
 
