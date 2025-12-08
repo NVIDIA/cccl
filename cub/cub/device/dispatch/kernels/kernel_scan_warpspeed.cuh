@@ -662,6 +662,9 @@ _CCCL_DEVICE_API inline void kernelBody(
     auto [phaseSumThreadAndWarpW, phaseSumThreadAndWarpR] = bindPhases<2>(stageSumThreadAndWarp);
     auto [phaseSumExclusiveCtaW, phaseSumExclusiveCtaR]   = bindPhases<2>(stageSumExclusiveCta);
 
+    // We need to handle the first and the last -partial- tile differently
+    const bool is_first_tile = idxTile == 0;
+
     if (squad == squadSched)
     {
       ////////////////////////////////////////////////////////////////////////////////
@@ -700,13 +703,13 @@ _CCCL_DEVICE_API inline void kernelBody(
       ////////////////////////////////////////////////////////////////////////////////
       // Load tile from shared memory
       ////////////////////////////////////////////////////////////////////////////////
-      AccumT regThreadSum{};
-      AccumT regWarpSum{};
+      AccumT regThreadSum;
+      AccumT regWarpSum;
       {
         // Acquire phaseInOutRW in this short scope
         SmemRef refInOutRW = phaseInOutRW.acquireRef();
         // Load data
-        AccumT regInput[elemPerThread] = {AccumT{}};
+        AccumT regInput[elemPerThread];
         // Handle unaligned refInOutRW.data() + loadInfo.smemStartOffsetElem points to the first element of the tile.
         squadLoadSmem(squad, regInput, &refInOutRW.data()[0] + loadInfo.smemStartOffsetElem);
 
@@ -731,17 +734,26 @@ _CCCL_DEVICE_API inline void kernelBody(
       ////////////////////////////////////////////////////////////////////////////////
       // Reduce across squad
       ////////////////////////////////////////////////////////////////////////////////
-      AccumT regSquadSum{}; // TODO(bgruber): is this correct? We cannot assume 0 is the identity
+      // We need to accumulate the first element by hand because of the potential initial element and partial tiles
+      AccumT regSquadSum;
       if constexpr (hasInit)
       {
-        if (idxTile == 0)
+        if (is_first_tile)
         {
-          regSquadSum =
-            scan_op(static_cast<AccumT>(init_value), refSumThreadAndWarpW.data()[squadReduce.threadCount()]);
+          regSquadSum = scan_op(init_value, refSumThreadAndWarpW.data()[squadReduce.threadCount()]);
+        }
+        else
+        {
+          regSquadSum = refSumThreadAndWarpW.data()[squadReduce.threadCount()];
         }
       }
+      else
+      {
+        regSquadSum = refSumThreadAndWarpW.data()[squadReduce.threadCount()];
+      }
 
-      for (int i = (idxTile == 0) && hasInit; i < squadReduce.warpCount(); ++i)
+      _CCCL_PRAGMA_UNROLL_FULL()
+      for (int i = 1; i < squadReduce.warpCount(); ++i)
       {
         regSquadSum = scan_op(regSquadSum, refSumThreadAndWarpW.data()[squadReduce.threadCount() + i]);
       }
@@ -785,6 +797,7 @@ _CCCL_DEVICE_API inline void kernelBody(
       static_assert(tile_size % squadScanStore.threadCount() == 0);
 
       // Sum of all threads up to but not including this one
+      // BUG(miscco) this is wrong, we should not need to initialize here, but otherwise we get garbage
       AccumT sumExclusive{};
 
       ////////////////////////////////////////////////////////////////////////////////
@@ -798,14 +811,24 @@ _CCCL_DEVICE_API inline void kernelBody(
         // the reduce and scan squads to be the same size to do this.
         static_assert(squadReduce.warpCount() == squadScanStore.warpCount());
 
-        for (int i = 0; i < squad.warpCount(); ++i)
+        _CCCL_PRAGMA_UNROLL_FULL()
+        for (int i = 0; i < squadScanStore.warpCount(); ++i)
         {
           // We want a predicated unrolled loop here.
           if (i < squad.warpRank())
           {
-            sumExclusive = scan_op(sumExclusive, refSumThreadAndWarpR.data()[squadReduce.threadCount() + i]);
+            // First warp has nothing to add
+            if (i == 0)
+            {
+              sumExclusive = refSumThreadAndWarpR.data()[squadReduce.threadCount()];
+            }
+            else
+            {
+              sumExclusive = scan_op(sumExclusive, refSumThreadAndWarpR.data()[squadReduce.threadCount() + i]);
+            }
           }
         }
+
         // Add the sums of preceding threads in this warp to the cumulative sum.
         // Lane 0 reads invalid data.
         AccumT regSumThread = refSumThreadAndWarpR.data()[squad.threadRank()];
@@ -827,9 +850,17 @@ _CCCL_DEVICE_API inline void kernelBody(
 
       if constexpr (hasInit)
       {
-        if (idxTile == 0)
+        if (is_first_tile)
         {
-          sumExclusive = scan_op(static_cast<AccumT>(init_value), sumExclusive);
+          // There first thread cannot use scan_op because sumExclusive holds garbage data
+          if (squad.threadRank() == 0)
+          {
+            sumExclusive = static_cast<AccumT>(init_value);
+          }
+          else
+          {
+            sumExclusive = scan_op(static_cast<AccumT>(init_value), sumExclusive);
+          }
         }
       }
 
@@ -845,13 +876,41 @@ _CCCL_DEVICE_API inline void kernelBody(
       squadLoadSmem(squad, regSumInclusive, &refInOutRW.data()[0] + loadInfo.smemStartOffsetElem);
 
       // Perform inclusive scan of register array in current thread.
-      if constexpr (isInclusive)
+      if constexpr (hasInit)
       {
-        ThreadScanInclusive(regSumInclusive, regSumInclusive, scan_op, sumExclusive);
+        if constexpr (isInclusive)
+        {
+          ThreadScanInclusive(regSumInclusive, regSumInclusive, scan_op, sumExclusive);
+        }
+        else
+        {
+          ThreadScanExclusive(regSumInclusive, regSumInclusive, scan_op, sumExclusive);
+        }
       }
       else
       {
-        ThreadScanExclusive(regSumInclusive, regSumInclusive, scan_op, sumExclusive);
+        if (is_first_tile && squad.threadRank() == 0)
+        {
+          if constexpr (isInclusive)
+          {
+            ThreadScanInclusive(regSumInclusive, regSumInclusive, scan_op);
+          }
+          else
+          {
+            ThreadScanExclusive(regSumInclusive, regSumInclusive, scan_op);
+          }
+        }
+        else
+        {
+          if constexpr (isInclusive)
+          {
+            ThreadScanInclusive(regSumInclusive, regSumInclusive, scan_op, sumExclusive);
+          }
+          else
+          {
+            ThreadScanExclusive(regSumInclusive, regSumInclusive, scan_op, sumExclusive);
+          }
+        }
       }
 
       ////////////////////////////////////////////////////////////////////////////////
