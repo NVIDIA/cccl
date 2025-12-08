@@ -11,7 +11,7 @@ import functools
 
 import nvtx
 
-# NVIDIA green color (76B900) converted to RGB values
+# NVIDIA green color hex value (76B900)
 NVIDIA_GREEN = 0x76B900
 
 # Domain name for cuda.compute annotations
