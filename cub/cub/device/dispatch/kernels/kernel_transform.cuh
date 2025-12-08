@@ -97,7 +97,7 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void prefetch_tile(It begin, int items)
 // This kernel guarantees that objects passed as arguments to the user-provided transformation function f reside in
 // global memory. No intermediate copies are taken. If the parameter type of f is a reference, taking the address of the
 // parameter yields a global memory address.
-template <const transform_arch_policy* Policy,
+template <int BlockThreads,
           typename Offset,
           typename Predicate,
           typename F,
@@ -111,7 +111,7 @@ _CCCL_DEVICE void transform_kernel_prefetch(
   RandomAccessIteratorOut out,
   RandomAccessIteratorIn... ins)
 {
-  constexpr int block_threads = Policy->prefetch_policy.block_threads;
+  constexpr int block_threads = BlockThreads;
   const int tile_size         = block_threads * num_elem_per_thread;
   const Offset offset         = static_cast<Offset>(blockIdx.x) * tile_size;
   const int valid_items       = static_cast<int>((::cuda::std::min) (num_items - offset, Offset{tile_size}));
@@ -226,7 +226,7 @@ _CCCL_DEVICE void transform_kernel_vectorized(
   // if we cannot vectorize or don't have a full tile, fall back to prefetch kernel
   if (!can_vectorize || valid_items != tile_size)
   {
-    transform_kernel_prefetch<Policy>(
+    transform_kernel_prefetch<block_threads>(
       num_items,
       num_elem_per_thread_prefetch,
       always_true_predicate{},
@@ -1001,7 +1001,7 @@ __launch_bounds__(get_block_threads<ArchPolicies>) CUB_DETAIL_KERNEL_ATTRIBUTES 
 
   if constexpr (policy.algorithm == Algorithm::prefetch)
   {
-    transform_kernel_prefetch<&policy>(
+    transform_kernel_prefetch<policy.prefetch_policy.block_threads>(
       num_items,
       num_elem_per_thread,
       ::cuda::std::move(pred),

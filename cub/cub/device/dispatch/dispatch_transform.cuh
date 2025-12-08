@@ -402,12 +402,16 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t invoke_prefetch_or_vectorized
   if (!ipt_found)
   {
     // otherwise, set up the prefetch kernel
+    const auto fallback_prefetch_policy = prefetch_policy{
+      policy->vectorized_policy.block_threads,
+      policy->vectorized_policy.prefetch_items_per_thread_no_input,
+      policy->vectorized_policy.prefetch_min_items_per_thread,
+      policy->vectorized_policy.prefetch_max_items_per_thread};
+    const auto prefetch_policy =
+      policy->algorithm == Algorithm::prefetch ? policy->prefetch_policy : fallback_prefetch_policy;
 
-    auto loaded_bytes_per_iter = kernel_source.LoadedBytesPerIteration();
-    CUB_DETAIL_CONSTEXPR_ISH const auto items_per_thread_no_input =
-      policy->algorithm == Algorithm::vectorized
-        ? policy->vectorized_policy.items_per_thread_no_input
-        : policy->prefetch_policy.items_per_thread_no_input;
+    auto loaded_bytes_per_iter           = kernel_source.LoadedBytesPerIteration();
+    const auto items_per_thread_no_input = prefetch_policy.items_per_thread_no_input;
     // choose items per thread to reach minimum bytes in flight
     const int items_per_thread =
       loaded_bytes_per_iter == 0
@@ -415,16 +419,8 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t invoke_prefetch_or_vectorized
         : ::cuda::ceil_div(policy->min_bif, config->max_occupancy * block_threads * loaded_bytes_per_iter);
 
     // but also generate enough blocks for full occupancy to optimize small problem sizes, e.g., 2^16/2^20 elements
-    if CUB_DETAIL_CONSTEXPR_ISH (policy->algorithm == Algorithm::vectorized)
-    {
-      ipt = spread_out_items_per_thread(
-        num_items, policy->vectorized_policy, items_per_thread, config->sm_count, config->max_occupancy);
-    }
-    else
-    {
-      ipt = spread_out_items_per_thread(
-        num_items, policy->prefetch_policy, items_per_thread, config->sm_count, config->max_occupancy);
-    }
+    ipt = spread_out_items_per_thread(
+      num_items, prefetch_policy, items_per_thread, config->sm_count, config->max_occupancy);
   }
   const int tile_size = block_threads * ipt;
   const auto grid_dim = static_cast<unsigned int>(::cuda::ceil_div(num_items, Offset{tile_size}));

@@ -433,7 +433,7 @@ CUresult cccl_device_binary_transform_build_ex(
     cub_arch_policies_str << cub_arch_policies(cuda::to_arch_id(cuda::compute_capability{cc_major, cc_minor}));
 
     const auto policy_hub_expr = std::format(
-      "cub::detail::transform::policy_hub<false, true, ::cuda::std::tuple<{0}, {1}>, {2}>",
+      "cub::detail::transform::arch_policies_from_types<false, true, ::cuda::std::tuple<{0}, {1}>, {2}>",
       transform::get_iterator_name<input1_storage_t>(input1_it, transform::input1_iterator_name),
       transform::get_iterator_name<input2_storage_t>(input2_it, transform::input2_iterator_name),
       transform::get_iterator_name<output_storage_t>(output_it, transform::output_iterator_name));
@@ -455,11 +455,10 @@ struct __align__({5}) output_storage_t {{
 {7}
 {8}
 {9}
-using device_transform_policy = {10}::max_policy;
+using device_transform_policy = {10};
 using namespace cub;
 using namespace cub::detail::transform;
-static_assert(device_transform_policy()(::cuda::arch_id{{CUB_PTX_ARCH / 10}}) == {8}, "Host generated and JIT compiled policy mismatch");
-}};
+static_assert(device_transform_policy()(::cuda::arch_id{{CUB_PTX_ARCH / 10}}) == {11}, "Host generated and JIT compiled policy mismatch");
 )XXX",
       input1_it.value_type.size, // 0
       input1_it.value_type.alignment, // 1

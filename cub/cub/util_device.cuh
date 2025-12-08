@@ -882,7 +882,8 @@ dispatch_arch(ArchPolicies arch_policies, ::cuda::arch_id device_arch, F&& f)
     ::cuda::std::make_index_sequence<::cuda::std::size(::cuda::__all_arch_ids)>{});
 #  endif
 }
-#else // !defined(UB_DEFINE_RUNTIME_POLICIES) && !_CCCL_COMPILER(NVRTC)
+#else // !defined(CUB_DEFINE_RUNTIME_POLICIES) && !_CCCL_COMPILER(NVRTC)
+_CCCL_EXEC_CHECK_DISABLE
 template <typename ArchPolicies, typename F>
 _CCCL_API _CCCL_FORCEINLINE cudaError_t dispatch_arch(ArchPolicies arch_policies, ::cuda::arch_id device_arch, F&& f)
 {
@@ -890,7 +891,7 @@ _CCCL_API _CCCL_FORCEINLINE cudaError_t dispatch_arch(ArchPolicies arch_policies
     return &policy;
   });
 }
-#endif // !defined(UB_DEFINE_RUNTIME_POLICIES) && !_CCCL_COMPILER(NVRTC)
+#endif // !defined(CUB_DEFINE_RUNTIME_POLICIES) && !_CCCL_COMPILER(NVRTC)
 
 CUB_NAMESPACE_END
 
