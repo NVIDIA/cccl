@@ -34,10 +34,6 @@ function(libcudacxx_create_public_header_test header_name headertest_src)
   # Create the default target for that file
   add_library(public_headertest_${header_name} SHARED "${headertest_src}.cu")
   cccl_configure_target(public_headertest_${header_name})
-  target_include_directories(
-    public_headertest_${header_name}
-    PRIVATE "${libcudacxx_SOURCE_DIR}/include"
-  )
   target_compile_definitions(
     public_headertest_${header_name}
     PRIVATE _CCCL_HEADER_TEST

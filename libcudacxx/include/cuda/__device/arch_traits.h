@@ -533,7 +533,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_DEVICE
 //!
 //! @note This API cannot be used in constexpr context when compiling with nvc++ in CUDA mode.
 template <class _Dummy = void>
-[[nodiscard]] _CCCL_DEVICE_API _CCCL_TARGET_CONSTEXPR ::cuda::arch_traits_t current_arch_traits() noexcept
+[[nodiscard]] _CCCL_DEVICE_API inline _CCCL_TARGET_CONSTEXPR ::cuda::arch_traits_t current_arch_traits() noexcept
 {
 #    if _CCCL_DEVICE_COMPILATION()
   return ::cuda::arch_traits_for(::cuda::device::current_arch_id<_Dummy>());

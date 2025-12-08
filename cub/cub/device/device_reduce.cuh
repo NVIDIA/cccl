@@ -69,13 +69,7 @@ struct tuning
   }
 };
 
-struct default_tuning : tuning<default_tuning>
-{
-  template <class AccumT, class Offset, class OpT>
-  using fn = policy_hub<AccumT, Offset, OpT>;
-};
-
-struct default_rfa_tuning : tuning<default_tuning>
+struct default_rfa_tuning : tuning<default_rfa_tuning>
 {
   template <class AccumT, class Offset, class OpT>
   using fn = detail::rfa::policy_hub<AccumT, Offset, OpT>;
@@ -146,18 +140,15 @@ private:
     ::cuda::execution::determinism::__determinism_holder_t<Determinism>,
     cudaStream_t stream)
   {
-    using offset_t        = detail::choose_offset_t<NumItemsT>;
-    using reduce_tuning_t = ::cuda::std::execution::
-      __query_result_or_t<TuningEnvT, detail::reduce::get_tuning_query_t, detail::reduce::default_tuning>;
-
-    using accum_t = ::cuda::std::
+    using offset_t = detail::choose_offset_t<NumItemsT>;
+    using accum_t  = ::cuda::std::
       __accumulator_t<ReductionOpT, ::cuda::std::invoke_result_t<TransformOpT, detail::it_value_t<InputIteratorT>>, T>;
-    using policy_t = typename reduce_tuning_t::template fn<accum_t, offset_t, ReductionOpT>;
+    using reduce_tuning_t = ::cuda::std::execution::__query_result_or_t<
+      TuningEnvT,
+      detail::reduce::get_tuning_query_t,
+      detail::reduce::arch_policies_from_types<accum_t, offset_t, ReductionOpT>>;
 
-    using dispatch_t =
-      DispatchTransformReduce<InputIteratorT, OutputIteratorT, offset_t, ReductionOpT, TransformOpT, T, accum_t, policy_t>;
-
-    return dispatch_t::Dispatch(
+    return detail::reduce::dispatch<accum_t>(
       d_temp_storage,
       temp_storage_bytes,
       d_in,
@@ -166,7 +157,8 @@ private:
       reduction_op,
       init,
       stream,
-      transform_op);
+      transform_op,
+      reduce_tuning_t{});
   }
 
   template <typename TuningEnvT,
@@ -227,11 +219,19 @@ private:
 
     using output_t = THRUST_NS_QUALIFIER::unwrap_contiguous_iterator_t<OutputIteratorT>;
 
-    using reduce_tuning_t = ::cuda::std::execution::
-      __query_result_or_t<TuningEnvT, detail::reduce::get_tuning_query_t, detail::reduce::default_tuning>;
-    using policy_t   = typename reduce_tuning_t::template fn<accum_t, offset_t, ReductionOpT>;
-    using dispatch_t = detail::reduce::
-      dispatch_nondeterministic_t<InputIteratorT, output_t, offset_t, ReductionOpT, T, accum_t, TransformOpT, policy_t>;
+    using reduce_tuning_t = ::cuda::std::execution::__query_result_or_t<
+      TuningEnvT,
+      detail::reduce::get_tuning_query_t,
+      detail::reduce::arch_policies_from_types<accum_t, offset_t, ReductionOpT>>;
+    using dispatch_t = detail::reduce::dispatch_nondeterministic_t<
+      InputIteratorT,
+      output_t,
+      offset_t,
+      ReductionOpT,
+      T,
+      accum_t,
+      TransformOpT,
+      reduce_tuning_t>;
 
     return dispatch_t::Dispatch(
       d_temp_storage,
@@ -365,7 +365,7 @@ public:
     // Signed integer type for global offsets
     using OffsetT = detail::choose_offset_t<NumItemsT>;
 
-    return DispatchReduce<InputIteratorT, OutputIteratorT, OffsetT, ReductionOpT, T>::Dispatch(
+    return detail::reduce::dispatch(
       d_temp_storage, temp_storage_bytes, d_in, d_out, static_cast<OffsetT>(num_items), reduction_op, init, stream);
   }
 
@@ -816,7 +816,7 @@ public:
 
     using InitT = OutputT;
 
-    return DispatchReduce<InputIteratorT, OutputIteratorT, OffsetT, ::cuda::std::plus<>, InitT>::Dispatch(
+    return detail::reduce::dispatch(
       d_temp_storage,
       temp_storage_bytes,
       d_in,
@@ -926,7 +926,7 @@ public:
                   "CCCL_SUPPRESS_NUMERIC_LIMITS_CHECK_IN_CUB_DEVICE_REDUCE_MIN_MAX to suppress this check.");
 #endif // CCCL_SUPPRESS_NUMERIC_LIMITS_CHECK_IN_CUB_DEVICE_REDUCE_MIN_MAX
 
-    return DispatchReduce<InputIteratorT, OutputIteratorT, OffsetT, ::cuda::minimum<>, InitT>::Dispatch(
+    return detail::reduce::dispatch(
       d_temp_storage,
       temp_storage_bytes,
       d_in,
@@ -1491,8 +1491,8 @@ public:
     // Initial value
     InitT initial_value{AccumT(1, ::cuda::std::numeric_limits<InputValueT>::max())};
 
-    return DispatchReduce<ArgIndexInputIteratorT, OutputIteratorT, OffsetT, cub::ArgMin, InitT, AccumT>::Dispatch(
-      d_temp_storage, temp_storage_bytes, d_indexed_in, d_out, num_items, cub::ArgMin(), initial_value, stream);
+    return detail::reduce::dispatch<AccumT>(
+      d_temp_storage, temp_storage_bytes, d_indexed_in, d_out, OffsetT{num_items}, cub::ArgMin(), initial_value, stream);
   }
 
   //! @rst
@@ -1592,7 +1592,7 @@ public:
                   "CCCL_SUPPRESS_NUMERIC_LIMITS_CHECK_IN_CUB_DEVICE_REDUCE_MIN_MAX to suppress this check.");
 #endif // CCCL_SUPPRESS_NUMERIC_LIMITS_CHECK_IN_CUB_DEVICE_REDUCE_MIN_MAX
 
-    return DispatchReduce<InputIteratorT, OutputIteratorT, OffsetT, ::cuda::maximum<>, InitT>::Dispatch(
+    return detail::reduce::dispatch(
       d_temp_storage,
       temp_storage_bytes,
       d_in,
@@ -1999,8 +1999,8 @@ public:
     // Initial value
     InitT initial_value{AccumT(1, ::cuda::std::numeric_limits<InputValueT>::lowest())};
 
-    return DispatchReduce<ArgIndexInputIteratorT, OutputIteratorT, OffsetT, cub::ArgMax, InitT, AccumT>::Dispatch(
-      d_temp_storage, temp_storage_bytes, d_indexed_in, d_out, num_items, cub::ArgMax(), initial_value, stream);
+    return detail::reduce::dispatch<AccumT>(
+      d_temp_storage, temp_storage_bytes, d_indexed_in, d_out, OffsetT{num_items}, cub::ArgMax(), initial_value, stream);
   }
 
   //! @rst
@@ -2292,7 +2292,7 @@ public:
 
     using OffsetT = detail::choose_offset_t<NumItemsT>;
 
-    return DispatchTransformReduce<InputIteratorT, OutputIteratorT, OffsetT, ReductionOpT, TransformOpT, T>::Dispatch(
+    return detail::reduce::dispatch(
       d_temp_storage,
       temp_storage_bytes,
       d_in,

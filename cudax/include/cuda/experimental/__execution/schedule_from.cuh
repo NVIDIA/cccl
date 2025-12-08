@@ -93,7 +93,7 @@ struct schedule_from_t::__sndr_t
 };
 
 template <class _Sndr>
-inline constexpr size_t structured_binding_size<schedule_from_t::__sndr_t<_Sndr>> = 3;
+inline constexpr int structured_binding_size<schedule_from_t::__sndr_t<_Sndr>> = 3;
 
 _CCCL_GLOBAL_CONSTANT schedule_from_t schedule_from{};
 } // namespace cuda::experimental::execution
