@@ -129,7 +129,9 @@ catch (const std::bad_alloc&)
 }
 
 constexpr int tile_size = 63 * 128;
-NVBENCH_BENCH_TYPES(basic, NVBENCH_TYPE_AXES(all_types, offset_types))
+// FIXME(bgruber): revert back to all_types, when we implemented atomic load/store for >16 byte types
+using scan_types = nvbench::type_list<int8_t, int16_t, int32_t, int64_t, float, double>;
+NVBENCH_BENCH_TYPES(basic, NVBENCH_TYPE_AXES(scan_types, offset_types))
   .set_name("base")
   .set_type_axes_names({"T{ct}", "OffsetT{ct}"})
   //.add_int64_power_of_two_axis("Elements{io}", nvbench::range(16, 32, 4))
