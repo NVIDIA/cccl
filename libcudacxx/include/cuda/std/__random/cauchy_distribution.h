@@ -169,7 +169,6 @@ public:
   {
     using istream_type                        = ::std::basic_istream<_CharT, _Traits>;
     using ios_base                            = typename istream_type::ios_base;
-    using result_type                         = typename cauchy_distribution::result_type;
     using param_type                          = typename cauchy_distribution::param_type;
     const typename ios_base::fmtflags __flags = __is.flags();
     __is.flags(ios_base::dec | ios_base::skipws);
