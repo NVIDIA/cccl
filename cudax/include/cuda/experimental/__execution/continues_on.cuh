@@ -455,7 +455,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT continues_on_t::__sndr_t
 };
 
 template <class _Sch, class _Sndr>
-inline constexpr size_t structured_binding_size<continues_on_t::__sndr_t<_Sch, _Sndr>> = 3;
+inline constexpr int structured_binding_size<continues_on_t::__sndr_t<_Sch, _Sndr>> = 3;
 
 _CCCL_GLOBAL_CONSTANT continues_on_t continues_on{};
 } // namespace cuda::experimental::execution

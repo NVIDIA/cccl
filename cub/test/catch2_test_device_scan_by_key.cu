@@ -14,6 +14,7 @@
 #include <c2h/catch2_test_helper.h>
 #include <c2h/custom_type.h>
 #include <c2h/extended_types.h>
+#include <c2h/generators.h>
 
 DECLARE_LAUNCH_WRAPPER(cub::DeviceScan::ExclusiveSumByKey, device_exclusive_sum_by_key);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceScan::ExclusiveScanByKey, device_exclusive_scan_by_key);
