@@ -20,11 +20,11 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__limits/numeric_limits.h>
 #include <cuda/std/__random/bernoulli_distribution.h>
 #include <cuda/std/__random/gamma_distribution.h>
 #include <cuda/std/__random/is_valid.h>
 #include <cuda/std/__random/poisson_distribution.h>
-#include <cuda/std/limits>
 #if !_CCCL_COMPILER(NVRTC)
 #  include <ios>
 #endif // !_CCCL_COMPILER(NVRTC)
@@ -101,8 +101,8 @@ public:
   [[nodiscard]] _CCCL_API result_type operator()(_URng& __urng, const param_type& __pr)
   {
     static_assert(__cccl_random_is_valid_urng<_URng>, "URng must meet the UniformRandomBitGenerator requirements");
-    result_type __k = __pr.k();
-    double __p      = __pr.p();
+    const result_type __k = __pr.k();
+    const double __p      = __pr.p();
     // When the number of bits in _IntType is small, we are too likely to
     // overflow __f below to use this technique.
     if (__k <= 21 * __p && sizeof(_IntType) > 1)
