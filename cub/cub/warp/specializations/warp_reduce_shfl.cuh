@@ -474,6 +474,11 @@ struct WarpReduceShfl
     {
       return static_cast<T>(::__reduce_xor_sync(member_mask, static_cast<PromotedT>(input)));
     }
+    else
+    {
+      _CCCL_UNREACHABLE();
+      return T{};
+    }
   }
 
   /**
