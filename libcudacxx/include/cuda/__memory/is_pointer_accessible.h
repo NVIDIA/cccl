@@ -104,6 +104,49 @@ _CCCL_HOST_API inline bool is_host_accessible(const void* __p)
  * @brief Checks if a pointer is a device accessible pointer.
  *
  * @param __p The pointer to check.
+ * @return `true` if the pointer is a device accessible pointer, `false` otherwise.
+ */
+[[nodiscard]]
+_CCCL_HOST_API inline bool is_device_accessible(const void* __p)
+{
+  if (__p == nullptr)
+  {
+    return false;
+  }
+  ::CUpointer_attribute __attrs[4] = {
+    ::CU_POINTER_ATTRIBUTE_MEMORY_TYPE,
+    ::CU_POINTER_ATTRIBUTE_IS_MANAGED,
+    ::CU_POINTER_ATTRIBUTE_DEVICE_ORDINAL,
+    ::CU_POINTER_ATTRIBUTE_MEMPOOL_HANDLE};
+  auto __memory_type       = static_cast<::CUmemorytype>(0);
+  int __is_managed         = 0;
+  int __ptr_dev_id         = 0;
+  ::CUmemoryPool __mempool = nullptr;
+  void* __results[4]       = {&__memory_type, &__is_managed, &__ptr_dev_id, &__mempool};
+  const auto __status      = ::cuda::__driver::__pointerGetAttributesNoThrow(__attrs, __results, __p);
+  if (__status != ::cudaSuccess)
+  {
+    ::cuda::__throw_cuda_error(__status, "is_device_accessible() failed", _CCCL_BUILTIN_PRETTY_FUNCTION());
+  }
+  // (1) check if the pointer is unregistered
+  if (__memory_type == static_cast<::CUmemorytype>(0))
+  {
+    return false;
+  }
+  // (2) check if the pointer is a device accessible pointer or managed memory
+  if (__mempool != nullptr)
+  {
+    ::CUmemLocation __prop{::CU_MEM_LOCATION_TYPE_DEVICE, __ptr_dev_id};
+    const unsigned __pool_flags = ::cuda::__driver::__mempoolGetAccess(__mempool, &__prop);
+    return __pool_flags & unsigned{::CU_MEM_ACCESS_FLAGS_PROT_READ};
+  }
+  return __is_managed || __memory_type == ::CU_MEMORYTYPE_DEVICE;
+}
+
+/**
+ * @brief Checks if a pointer is a device accessible pointer.
+ *
+ * @param __p The pointer to check.
  * @param __device The device to check.
  * @return `true` if the pointer is a device accessible pointer, `false` otherwise.
  */
