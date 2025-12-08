@@ -342,10 +342,8 @@ _CCCL_DEVICE_API inline void
 storeLookback(tmp_state_t<AccumT>* ptrTmpBuffer, int idxTile, scan_state scanState, AccumT sum)
 {
   tmp_state_t<AccumT>* dst = ptrTmpBuffer + idxTile;
-
   tmp_state_t<AccumT> tmp{scanState, sum};
-  uint64_t data = *reinterpret_cast<uint64_t*>(&tmp);
-  asm("st.relaxed.gpu.global.b64 [%0], %1;" : : "l"(__cvta_generic_to_global(dst)), "l"(data) : "memory");
+  __nv_atomic_store(dst, &tmp , __NV_ATOMIC_RELAXED, __NV_THREAD_SCOPE_DEVICE);
 }
 
 // warpLoadLookback loads tmp states
@@ -382,9 +380,7 @@ _CCCL_DEVICE_API inline void warpLoadLookback(
     if (idxTileLookback < idxTileNext)
     {
       tmp_state_t<AccumT>* src = ptrTmpBuffer + idxTileLookback;
-      uint64_t data;
-      asm("ld.relaxed.gpu.global.b64 %0, [%1];" : "=l"(data) : "l"(__cvta_generic_to_global(src)) : "memory");
-      outTmpStates[i] = *reinterpret_cast<tmp_state_t<AccumT>*>(&data);
+      __nv_atomic_load(src, outTmpStates + i , __NV_ATOMIC_RELAXED, __NV_THREAD_SCOPE_DEVICE);
     }
     else
     {
