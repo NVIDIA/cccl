@@ -56,7 +56,10 @@ Operators
    .. py:attribute:: BIT_OR
    .. py:attribute:: BIT_XOR
    .. py:attribute:: BIT_NOT
+   .. py:attribute:: IDENTITY
    .. py:attribute:: NEGATE
+   .. py:attribute:: MINIMUM
+   .. py:attribute:: MAXIMUM
 
 Utilities
 ---------
