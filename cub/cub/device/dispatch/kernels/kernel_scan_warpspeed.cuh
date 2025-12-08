@@ -753,7 +753,7 @@ _CCCL_DEVICE_API inline void kernelBody(
       ////////////////////////////////////////////////////////////////////////////////
       // Store private sum for lookback
       ////////////////////////////////////////////////////////////////////////////////
-      if (squad.isLeaderThread() == 0)
+      if (squad.isLeaderThread())
       {
         storeLookback(params.ptrTmp, idxTile, PRIV_SUM, regSquadSum);
       }
