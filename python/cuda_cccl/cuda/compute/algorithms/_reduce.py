@@ -16,6 +16,7 @@ from .._cccl_interop import (
     set_cccl_iterator_state,
     to_cccl_value_state,
 )
+from .._nvtx import annotate
 from .._utils import protocols
 from .._utils.protocols import get_data_pointer, validate_and_get_stream
 from .._utils.temp_storage_buffer import TempStorageBuffer
@@ -114,10 +115,12 @@ def _make_cache_key(
     **kwargs,
 ):
     d_in_key = (
-        d_in.kind if isinstance(d_in, IteratorBase) else protocols.get_dtype(d_in)
+        d_in.kind if isinstance(
+            d_in, IteratorBase) else protocols.get_dtype(d_in)
     )
     d_out_key = (
-        d_out.kind if isinstance(d_out, IteratorBase) else protocols.get_dtype(d_out)
+        d_out.kind if isinstance(
+            d_out, IteratorBase) else protocols.get_dtype(d_out)
     )
     h_init_key = h_init.dtype
     determinism = kwargs.get("determinism", Determinism.RUN_TO_RUN)
@@ -134,12 +137,14 @@ def _make_reduce_into_cached(
 ):
     """Internal cached factory for _Reduce."""
     return _Reduce(
-        d_in, d_out, op, h_init, kwargs.get("determinism", Determinism.RUN_TO_RUN)
+        d_in, d_out, op, h_init, kwargs.get(
+            "determinism", Determinism.RUN_TO_RUN)
     )
 
 
 # TODO Figure out `sum` without operator and initial value
 # TODO Accept stream
+@annotate()
 def make_reduce_into(
     d_in: DeviceArrayLike | IteratorBase,
     d_out: DeviceArrayLike | IteratorBase,
@@ -170,6 +175,7 @@ def make_reduce_into(
     return _make_reduce_into_cached(d_in, d_out, op_adapter, h_init, **kwargs)
 
 
+@annotate()
 def reduce_into(
     d_in: DeviceArrayLike | IteratorBase,
     d_out: DeviceArrayLike | IteratorBase,

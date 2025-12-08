@@ -32,6 +32,7 @@ dependencies = [
   "cuda-pathfinder>=1.2.3",
   "cuda-core",
   "typing_extensions",
+  "nvtx",
 ]
 
 dynamic = ["version"]

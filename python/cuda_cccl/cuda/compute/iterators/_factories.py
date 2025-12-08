@@ -1,5 +1,6 @@
 import numba
 
+from .._nvtx import annotate
 from ._iterators import (
     CacheModifiedPointer as _CacheModifiedPointer,
 )
@@ -20,6 +21,7 @@ from ._permutation_iterator import make_permutation_iterator
 from ._zip_iterator import make_zip_iterator
 
 
+@annotate()
 def CacheModifiedInputIterator(device_array, modifier):
     """Random Access Cache Modified Iterator that wraps a native device pointer.
 
@@ -50,6 +52,7 @@ def CacheModifiedInputIterator(device_array, modifier):
     )
 
 
+@annotate()
 def ConstantIterator(value):
     """Returns an Iterator representing a sequence of constant values.
 
@@ -73,6 +76,7 @@ def ConstantIterator(value):
     return _ConstantIterator(value)
 
 
+@annotate()
 def CountingIterator(offset):
     """Returns an Iterator representing a sequence of incrementing values.
 
@@ -96,6 +100,7 @@ def CountingIterator(offset):
     return _CountingIterator(offset)
 
 
+@annotate()
 def DiscardIterator(reference_iterator=None):
     """Returns an Input or Output Iterator that discards all values written to it.
 
@@ -119,6 +124,7 @@ def DiscardIterator(reference_iterator=None):
     return _DiscardIterator(reference_iterator)
 
 
+@annotate()
 def ReverseIterator(sequence):
     """Returns an Iterator over an array or another iterator in reverse.
 
@@ -147,6 +153,7 @@ def ReverseIterator(sequence):
     return make_reverse_iterator(sequence)
 
 
+@annotate()
 def TransformIterator(it, op):
     """An iterator that applies a user-defined unary function to the elements of an underlying iterator as they are read.
 
@@ -169,6 +176,7 @@ def TransformIterator(it, op):
     return make_transform_iterator(it, op, "input")
 
 
+@annotate()
 def TransformOutputIterator(it, op):
     """An iterator that applies a user-defined unary function to values before writing them to an underlying iterator.
 
@@ -192,6 +200,7 @@ def TransformOutputIterator(it, op):
     return make_transform_iterator(it, op, "output")
 
 
+@annotate()
 def PermutationIterator(values, indices):
     """Returns an Iterator that accesses values through an index mapping.
 
@@ -219,6 +228,7 @@ def PermutationIterator(values, indices):
     return make_permutation_iterator(values, indices)
 
 
+@annotate()
 def ZipIterator(*iterators):
     """Returns an Iterator representing a zipped sequence of values from N iterators.
 

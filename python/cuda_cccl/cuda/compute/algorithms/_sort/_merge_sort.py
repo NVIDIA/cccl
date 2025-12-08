@@ -11,6 +11,7 @@ from ... import _bindings
 from ... import _cccl_interop as cccl
 from ..._caching import cache_with_key
 from ..._cccl_interop import call_build, set_cccl_iterator_state
+from ..._nvtx import annotate
 from ..._utils import protocols
 from ..._utils.protocols import (
     get_data_pointer,
@@ -103,6 +104,7 @@ class _MergeSort:
             self.op_cccl,
         )
 
+    @annotate(message="_MergeSort.__call__")
     def __call__(
         self,
         temp_storage,
@@ -161,6 +163,7 @@ def _make_merge_sort_cached(
     return _MergeSort(d_in_keys, d_in_items, d_out_keys, d_out_items, op)
 
 
+@annotate()
 def make_merge_sort(
     d_in_keys: DeviceArrayLike | IteratorBase,
     d_in_items: DeviceArrayLike | IteratorBase | None,
@@ -194,6 +197,7 @@ def make_merge_sort(
     )
 
 
+@annotate()
 def merge_sort(
     d_in_keys: DeviceArrayLike | IteratorBase,
     d_in_items: DeviceArrayLike | IteratorBase | None,
@@ -225,7 +229,8 @@ def merge_sort(
         num_items: Number of items to sort
         stream: CUDA stream for the operation (optional)
     """
-    sorter = make_merge_sort(d_in_keys, d_in_items, d_out_keys, d_out_items, op)
+    sorter = make_merge_sort(d_in_keys, d_in_items,
+                             d_out_keys, d_out_items, op)
     tmp_storage_bytes = sorter(
         None, d_in_keys, d_in_items, d_out_keys, d_out_items, num_items, stream
     )

@@ -11,6 +11,7 @@ from .. import _bindings
 from .. import _cccl_interop as cccl
 from .._caching import cache_with_key
 from .._cccl_interop import call_build, set_cccl_iterator_state
+from .._nvtx import annotate
 from .._utils import protocols
 from .._utils.temp_storage_buffer import TempStorageBuffer
 from ..iterators._iterators import IteratorBase
@@ -28,7 +29,8 @@ def _make_cache_key(
     select_second_part_op: OpAdapter,
 ):
     d_in_key = (
-        d_in.kind if isinstance(d_in, IteratorBase) else protocols.get_dtype(d_in)
+        d_in.kind if isinstance(
+            d_in, IteratorBase) else protocols.get_dtype(d_in)
     )
     d_first_part_out_key = (
         d_first_part_out.kind
@@ -88,9 +90,11 @@ class _ThreeWayPartition:
     ):
         self.d_in_cccl = cccl.to_cccl_input_iter(d_in)
         self.d_first_part_out_cccl = cccl.to_cccl_output_iter(d_first_part_out)
-        self.d_second_part_out_cccl = cccl.to_cccl_output_iter(d_second_part_out)
+        self.d_second_part_out_cccl = cccl.to_cccl_output_iter(
+            d_second_part_out)
         self.d_unselected_out_cccl = cccl.to_cccl_output_iter(d_unselected_out)
-        self.d_num_selected_out_cccl = cccl.to_cccl_output_iter(d_num_selected_out)
+        self.d_num_selected_out_cccl = cccl.to_cccl_output_iter(
+            d_num_selected_out)
 
         # Compile ops - partition predicates return uint8 (boolean)
         value_type = cccl.get_value_type(d_in)
@@ -112,6 +116,7 @@ class _ThreeWayPartition:
             self.select_second_part_op_cccl,
         )
 
+    @annotate(message="_ThreeWayPartition.__call__")
     def __call__(
         self,
         temp_storage,
@@ -127,7 +132,8 @@ class _ThreeWayPartition:
         set_cccl_iterator_state(self.d_first_part_out_cccl, d_first_part_out)
         set_cccl_iterator_state(self.d_second_part_out_cccl, d_second_part_out)
         set_cccl_iterator_state(self.d_unselected_out_cccl, d_unselected_out)
-        set_cccl_iterator_state(self.d_num_selected_out_cccl, d_num_selected_out)
+        set_cccl_iterator_state(
+            self.d_num_selected_out_cccl, d_num_selected_out)
 
         stream_handle = protocols.validate_and_get_stream(stream)
 
@@ -176,6 +182,7 @@ def _make_three_way_partition_cached(
     )
 
 
+@annotate()
 def make_three_way_partition(
     d_in: DeviceArrayLike | IteratorBase,
     d_first_part_out: DeviceArrayLike | IteratorBase,
@@ -223,6 +230,7 @@ def make_three_way_partition(
     )
 
 
+@annotate()
 def three_way_partition(
     d_in: DeviceArrayLike | IteratorBase,
     d_first_part_out: DeviceArrayLike | IteratorBase,

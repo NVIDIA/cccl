@@ -5,7 +5,12 @@
 
 from typing import Callable
 
+<<<<<<< HEAD
 from .._caching import cache_with_key
+=======
+from .._caching import CachableFunction, cache_with_key
+from .._nvtx import annotate
+>>>>>>> 7b88310463 (Add NVTX annotations to all cuda.compute functions and iterators)
 from .._utils import protocols
 from .._utils.temp_storage_buffer import TempStorageBuffer
 from ..iterators._factories import DiscardIterator
@@ -62,6 +67,7 @@ class _Select:
             _cccl_always_false,  # select_second_part_op - always false
         )
 
+    @annotate(message="_Select.__call__")
     def __call__(
         self,
         temp_storage,
@@ -83,6 +89,7 @@ class _Select:
         )
 
 
+<<<<<<< HEAD
 @cache_with_key(_make_cache_key)
 def _make_select_cached(
     d_in: DeviceArrayLike | IteratorBase,
@@ -97,6 +104,10 @@ def _make_select_cached(
     return _Select(d_in, d_out, d_num_selected_out, cond)
 
 
+=======
+@annotate()
+@cache_with_key(make_cache_key)
+>>>>>>> 7b88310463 (Add NVTX annotations to all cuda.compute functions and iterators)
 def make_select(
     d_in: DeviceArrayLike | IteratorBase,
     d_out: DeviceArrayLike | IteratorBase,
@@ -131,6 +142,7 @@ def make_select(
     return _make_select_cached(d_in, d_out, d_num_selected_out, cond_adapter)
 
 
+@annotate()
 def select(
     d_in: DeviceArrayLike | IteratorBase,
     d_out: DeviceArrayLike | IteratorBase,

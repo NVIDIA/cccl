@@ -1,0 +1,51 @@
+# Copyright (c) 2025, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
+#
+# SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+
+"""
+NVTX annotation utilities for cuda.compute module.
+Uses NVIDIA green (76B900) color and cuda.compute domain.
+"""
+
+import functools
+
+import nvtx
+
+
+# NVIDIA green color (76B900) converted to RGB values
+NVIDIA_GREEN = 0x76B900
+
+# Create a domain for cuda.compute annotations
+COMPUTE_DOMAIN = nvtx.Domain("cuda.compute")
+
+
+def annotate(message=None, domain=None, category=None, color=None):
+    """
+    Decorator to annotate functions with NVTX markers.
+    
+    Args:
+        message: Optional message to display. If None, uses the function name.
+        domain: Optional NVTX domain. Defaults to cuda.compute domain.
+        category: Optional category for the annotation.
+        color: Optional color in RGB format. Defaults to NVIDIA green.
+    
+    Returns:
+        Decorated function with NVTX annotations.
+    """
+    def decorator(func):
+        # Use function name if no message is provided
+        annotation_message = message if message is not None else func.__name__
+        annotation_domain = domain if domain is not None else COMPUTE_DOMAIN
+        annotation_color = color if color is not None else NVIDIA_GREEN
+        
+        @functools.wraps(func)
+        def wrapper(*args, **kwargs):
+            with nvtx.annotate(
+                annotation_message,
+                domain=annotation_domain,
+                color=annotation_color,
+                category=category
+            ):
+                return func(*args, **kwargs)
+        return wrapper
+    return decorator

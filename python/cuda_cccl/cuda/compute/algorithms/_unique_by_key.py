@@ -11,6 +11,7 @@ from .. import _bindings
 from .. import _cccl_interop as cccl
 from .._caching import cache_with_key
 from .._cccl_interop import call_build, set_cccl_iterator_state
+from .._nvtx import annotate
 from .._utils import protocols
 from .._utils.protocols import (
     get_data_pointer,
@@ -87,7 +88,8 @@ class _UniqueByKey:
         self.d_in_items_cccl = cccl.to_cccl_input_iter(d_in_items)
         self.d_out_keys_cccl = cccl.to_cccl_output_iter(d_out_keys)
         self.d_out_items_cccl = cccl.to_cccl_output_iter(d_out_items)
-        self.d_out_num_selected_cccl = cccl.to_cccl_output_iter(d_out_num_selected)
+        self.d_out_num_selected_cccl = cccl.to_cccl_output_iter(
+            d_out_num_selected)
 
         # Compile the op - unique_by_key expects bool return (comparison)
         value_type = cccl.get_value_type(d_in_keys)
@@ -103,6 +105,7 @@ class _UniqueByKey:
             self.op_cccl,
         )
 
+    @annotate(message="_UniqueByKey.__call__")
     def __call__(
         self,
         temp_storage,
@@ -118,7 +121,8 @@ class _UniqueByKey:
         set_cccl_iterator_state(self.d_in_items_cccl, d_in_items)
         set_cccl_iterator_state(self.d_out_keys_cccl, d_out_keys)
         set_cccl_iterator_state(self.d_out_items_cccl, d_out_items)
-        set_cccl_iterator_state(self.d_out_num_selected_cccl, d_out_num_selected)
+        set_cccl_iterator_state(
+            self.d_out_num_selected_cccl, d_out_num_selected)
 
         stream_handle = validate_and_get_stream(stream)
         if temp_storage is None:
@@ -160,6 +164,7 @@ def _make_unique_by_key_cached(
     )
 
 
+@annotate()
 def make_unique_by_key(
     d_in_keys: DeviceArrayLike | IteratorBase,
     d_in_items: DeviceArrayLike | IteratorBase,
@@ -200,6 +205,7 @@ def make_unique_by_key(
     )
 
 
+@annotate()
 def unique_by_key(
     d_in_keys: DeviceArrayLike | IteratorBase,
     d_in_items: DeviceArrayLike | IteratorBase,
