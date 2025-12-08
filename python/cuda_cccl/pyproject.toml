@@ -110,6 +110,7 @@ module = [
   "cuda.bindings.*",
   "cuda.core.*",
   "cuda.pathfinder.*",
+  "nvtx",
 ]
 ignore_missing_imports = true
 follow_imports = "skip"
