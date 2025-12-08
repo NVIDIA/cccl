@@ -705,6 +705,67 @@ C2H_TEST_LIST("DeviceHistogram::HistogramEven bin computation does not overflow"
   // Ensure we do not return an error on querying temporary storage requirements
   CHECK(error2 == (num_bins == 1 || sizeof(sample_t) <= 4UL ? cudaSuccess : cudaErrorInvalidValue));
 }
+
+// When the number of bins exceeds what LevelT can represent, the bin computation will overflow
+// during the cast to CommonT. We expect cudaErrorInvalidValue to be returned.
+C2H_TEST_LIST(
+  "DeviceHistogram::HistogramEven num_bins exceeds LevelT range", "[histogram_even][device]", int8_t, int16_t)
+{
+  using level_t   = TestType;
+  using sample_t  = level_t; // Common case: LevelT == SampleT
+  using counter_t = uint32_t;
+
+  // Set up levels within a valid range for the type
+  constexpr level_t lower_level = 0;
+  constexpr level_t upper_level = 100; // Arbitrary valid range
+  constexpr auto num_samples    = 1000;
+
+  auto d_samples   = cuda::counting_iterator<sample_t>{0};
+  auto d_histo_out = c2h::device_vector<counter_t>(4096);
+
+  // Test with num_bins that exceeds what LevelT can represent
+  // int8_t max = 127, so 128 bins will overflow
+  // int16_t max = 32767, so 32768 bins will overflow
+  const int num_bins_overflow = static_cast<int>(cs::numeric_limits<level_t>::max()) + 1;
+  const int num_levels        = num_bins_overflow + 1;
+
+  // Verify temp_storage_bytes is always initialized even on error
+  constexpr size_t canary_bytes = 3;
+  size_t temp_storage_bytes     = canary_bytes;
+
+  const auto error1 = cub::DeviceHistogram::HistogramEven(
+    nullptr,
+    temp_storage_bytes,
+    d_samples,
+    raw_pointer_cast(d_histo_out.data()),
+    num_levels,
+    lower_level,
+    upper_level,
+    num_samples);
+
+  // Should return error because num_bins overflows LevelT
+  CHECK(error1 == cudaErrorInvalidValue);
+  // Should still initialize temp_storage_bytes to a valid value
+  CHECK(temp_storage_bytes != canary_bytes);
+
+  // Also verify that valid num_bins works
+  const int valid_num_bins   = static_cast<int>(cs::numeric_limits<level_t>::max());
+  const int valid_num_levels = valid_num_bins + 1;
+
+  temp_storage_bytes = canary_bytes;
+  const auto error2  = cub::DeviceHistogram::HistogramEven(
+    nullptr,
+    temp_storage_bytes,
+    d_samples,
+    raw_pointer_cast(d_histo_out.data()),
+    valid_num_levels,
+    lower_level,
+    static_cast<level_t>(valid_num_bins), // upper_level must accommodate all bins
+    num_samples);
+
+  CHECK(error2 == cudaSuccess);
+  CHECK(temp_storage_bytes != canary_bytes);
+}
 #endif // TEST_LAUNCH == 0
 
 // Regression test for https://github.com/NVIDIA/cub/issues/489: integer rounding errors lead to incorrect bin detection
