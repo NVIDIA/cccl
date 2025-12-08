@@ -26,7 +26,7 @@ def annotate(message=None, domain=None, category=None, color=None):
         message: Optional message to display. If None, uses the function name.
         domain: Optional NVTX domain string. Defaults to "cuda.compute".
         category: Optional category for the annotation.
-        color: Optional color in RGB format. Defaults to NVIDIA green.
+        color: Optional color in hexadecimal format (0xRRGGBB). Defaults to NVIDIA green (0x76B900).
 
     Returns:
         Decorated function with NVTX annotations.
