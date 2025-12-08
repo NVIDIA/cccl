@@ -105,7 +105,7 @@ class __host_accessor : public _Accessor
 
 #if !_CCCL_COMPILER(NVRTC)
   [[nodiscard]]
-  _CCCL_HOST_API static constexpr bool __is_host_accessible_pointer([[maybe_unused]] __data_handle_type __p) noexcept
+  _CCCL_HOST_API static bool __is_host_accessible_pointer([[maybe_unused]] __data_handle_type __p) noexcept
   {
 #  if _CCCL_HAS_CTK()
     if constexpr (::cuda::std::contiguous_iterator<__data_handle_type>)
