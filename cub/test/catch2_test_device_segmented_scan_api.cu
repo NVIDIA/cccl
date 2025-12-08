@@ -220,24 +220,24 @@ C2H_TEST("cub::DeviceSegmentedScan::InclusiveSegmentedScanInit API with two offs
 {
   const std::string& algo_name = "cub::DeviceSegmentedScan::InclusiveSegmentedScanInit[2 offsets]";
   // example-begin inclusive-segmented-scan-init-two-offsets
-  int prime  = 7;
-  auto input = thrust::device_vector<int>{
+  unsigned prime = 7;
+  auto input     = thrust::device_vector<unsigned>{
     2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4, 4, 4, 5, 5, 5, 5, 5, 5, 5, 6, 6, 6, 6, 6, 6, 6};
 
   auto row_size    = static_cast<size_t>(prime);
   auto row_offsets = thrust::device_vector<size_t>{0, row_size, 2 * row_size, 3 * row_size, 4 * row_size, 5 * row_size};
   size_t num_segments = row_offsets.size() - 1;
 
-  thrust::device_vector<int> output(input.size(), thrust::no_init);
+  thrust::device_vector<unsigned> output(input.size(), thrust::no_init);
 
   auto m_p = cuda::fast_mod_div(prime);
   // Binary operator to multiply arguments using modular arithmetic
-  auto scan_op = [=] __host__ __device__(int v1, int v2) -> int {
+  auto scan_op = [m_p] __host__ __device__(unsigned v1, unsigned v2) -> unsigned {
     const auto proj_v1 = (v1 % m_p);
     const auto proj_v2 = (v2 % m_p);
     return (proj_v1 * proj_v2) % m_p;
   };
-  int init_value = 1;
+  unsigned init_value = 1;
 
   auto d_in  = input.begin();
   auto d_out = output.begin();
@@ -261,16 +261,16 @@ C2H_TEST("cub::DeviceSegmentedScan::InclusiveSegmentedScanInit API with two offs
     temp_storage, temp_storage_bytes, d_in, d_out, d_in_beg_offsets, d_in_end_offsets, num_segments, scan_op, init_value);
   check_execution_status(status, algo_name);
 
-  std::vector<int> h_expected{};
+  std::vector<unsigned> h_expected{};
   h_expected.reserve(output.size());
-  std::vector<std::vector<int>> expected_rows{
+  std::vector<std::vector<unsigned>> expected_rows{
     {2, 4, 1, 2, 4, 1, 2}, {3, 2, 6, 4, 5, 1, 3}, {4, 2, 1, 4, 2, 1, 4}, {5, 4, 6, 2, 3, 1, 5}, {6, 1, 6, 1, 6, 1, 6}};
   for (const auto& row : expected_rows)
   {
     h_expected.insert(h_expected.end(), row.begin(), row.end());
   }
 
-  auto expected = thrust::device_vector<int>{h_expected};
+  auto expected = thrust::device_vector<unsigned>{h_expected};
   // example-end inclusive-segmented-scan-init-two-offsets
 
   REQUIRE(status == cudaSuccess);

@@ -304,7 +304,7 @@ _CCCL_API constexpr auto conditional_t::operator()(_Pred __pred, _Then __then, _
 }
 
 template <class _Params, class _Sndr>
-inline constexpr size_t structured_binding_size<conditional_t::__sndr_t<_Params, _Sndr>> = 3;
+inline constexpr int structured_binding_size<conditional_t::__sndr_t<_Params, _Sndr>> = 3;
 
 _CCCL_GLOBAL_CONSTANT conditional_t conditional{};
 } // namespace cuda::experimental::execution

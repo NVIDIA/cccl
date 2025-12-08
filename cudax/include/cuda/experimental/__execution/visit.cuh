@@ -23,6 +23,7 @@
 
 #include <cuda/std/__tuple_dir/ignore.h>
 #include <cuda/std/__type_traits/copy_cvref.h>
+#include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/is_aggregate.h>
 #include <cuda/std/__utility/pod_tuple.h>
 
@@ -39,8 +40,26 @@ namespace cuda::experimental::execution
 {
 #if _CCCL_HAS_BUILTIN(__builtin_structured_binding_size)
 
+#  if _CCCL_HAS_CONCEPTS()
+
 template <class _Sndr>
-inline constexpr size_t structured_binding_size = __builtin_structured_binding_size(_Sndr);
+inline constexpr int structured_binding_size = -1;
+
+template <class _Sndr>
+  requires(__builtin_structured_binding_size(_Sndr) >= 0)
+inline constexpr int structured_binding_size<_Sndr> = __builtin_structured_binding_size(_Sndr);
+
+#  else // ^^^ _CCCL_HAS_CONCEPTS() ^^^ / !_CCCL_HAS_CONCEPTS() vvv
+
+template <class _Sndr, class _Enable = void>
+inline constexpr int structured_binding_size = -1;
+
+template <class _Sndr>
+inline constexpr int
+  structured_binding_size<_Sndr, ::cuda::std::enable_if_t<__builtin_structured_binding_size(_Sndr) >= 0>> =
+    static_cast<int>(__builtin_structured_binding_size(_Sndr));
+
+#  endif // _CCCL_HAS_CONCEPTS()
 
 #else // ^^^ _CCCL_HAS_BUILTIN(__builtin_structured_binding_size) ^^^ /
       // vvv !_CCCL_HAS_BUILTIN(__builtin_structured_binding_size) vvv
@@ -76,18 +95,18 @@ _CCCL_DIAG_POP
 
 // Specialize this for each sender type that can be used to initialize a structured binding.
 template <class _Sndr>
-inline constexpr size_t structured_binding_size = sizeof(*__arity_of_t<_Sndr>{}()) - 2ul;
+inline constexpr int structured_binding_size = static_cast<int>(sizeof(*__arity_of_t<_Sndr>{}())) - 2;
 
 #endif // _CCCL_HAS_BUILTIN(__builtin_structured_binding_size)
 
 template <class _Sndr>
-inline constexpr size_t structured_binding_size<_Sndr&> = structured_binding_size<_Sndr>;
+inline constexpr int structured_binding_size<_Sndr&> = structured_binding_size<_Sndr>;
 
 template <class _Sndr>
-inline constexpr size_t structured_binding_size<_Sndr const&> = structured_binding_size<_Sndr>;
+inline constexpr int structured_binding_size<_Sndr const&> = structured_binding_size<_Sndr>;
 
 // If structured bindings can be used to introduce a pack, then `visit` has a very simple
-// implementation. Otherwise, we need an `__unpack` function template specialized for
+// implementation.
 #if __cpp_structured_bindings >= 202411L
 
 _CCCL_DIAG_PUSH
@@ -98,7 +117,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT visit_t
 {
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Visitor, class _CvSndr, class _Context)
-  _CCCL_REQUIRES((static_cast<int>(structured_binding_size<_CvSndr>) >= 2))
+  _CCCL_REQUIRES((structured_binding_size<_CvSndr> >= 2))
   _CCCL_NODEBUG_API constexpr auto operator()(_Visitor& __visitor, _CvSndr&& __sndr, _Context& __context) const
     -> decltype(auto)
   {
@@ -111,6 +130,8 @@ _CCCL_DIAG_POP
 
 #else // ^^^ __cpp_structured_bindings >= 202411L / !__cpp_structured_bindings >= 202411L vvv
 
+// When structured bindings cannot introduce a pack, we need to manually unroll for a
+// fixed maximum arity.
 template <size_t _Arity>
 struct __sender_type_cannot_be_used_to_initialize_a_structured_binding;
 
@@ -150,14 +171,14 @@ _CCCL_UNPACK_SENDER(7);
 struct _CCCL_TYPE_VISIBILITY_DEFAULT visit_t
 {
   _CCCL_TEMPLATE(class _Visitor, class _Sndr, class _Context)
-  _CCCL_REQUIRES((static_cast<int>(structured_binding_size<_Sndr>) >= 2))
+  _CCCL_REQUIRES((structured_binding_size<_Sndr> >= 2))
   _CCCL_API constexpr auto operator()(_Visitor& __visitor, _Sndr&& __sndr, _Context& __context) const -> decltype(auto)
   {
     // This `if constexpr` shouldn't be needed given the `requires` clause above. It is
     // here because nvcc 12.0 has a bug where the full signature of the function template
     // -- including the return type -- is instantiated before the `requires` clause is
     // checked.
-    if constexpr (static_cast<int>(structured_binding_size<_Sndr>) >= 2)
+    if constexpr (structured_binding_size<_Sndr> >= 2)
     {
       return __unpack<structured_binding_size<_Sndr>>{}(__visitor, static_cast<_Sndr&&>(__sndr), __context);
     }
