@@ -50,7 +50,7 @@ public:
   public:
     using distribution_type = fisher_f_distribution;
 
-    _CCCL_API constexpr explicit param_type(result_type __m = result_type{1}, result_type __n = result_type{1})
+    _CCCL_API constexpr explicit param_type(result_type __m = result_type{1}, result_type __n = result_type{1}) noexcept
         : __m_{__m}
         , __n_{__n}
     {}
@@ -101,8 +101,8 @@ public:
   [[nodiscard]] _CCCL_API result_type operator()(_URng& __g, const param_type& __p)
   {
     static_assert(__cccl_random_is_valid_urng<_URng>);
-    gamma_distribution<result_type> __gdm(__p.m() * result_type{.5});
-    gamma_distribution<result_type> __gdn(__p.n() * result_type{.5});
+    gamma_distribution<result_type> __gdm{__p.m() * result_type{.5}};
+    gamma_distribution<result_type> __gdn{__p.n() * result_type{.5}};
     return __p.n() * __gdm(__g) / (__p.m() * __gdn(__g));
   }
 
