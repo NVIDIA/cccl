@@ -512,6 +512,7 @@ struct WarpReduceShfl
       ReduceStep(output, reduction_op, last_lane, constant_v<0>);
       return output;
     }
+    _CCCL_UNREACHABLE();
   }
 
   /**
