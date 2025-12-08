@@ -130,11 +130,9 @@ template <class _Tp>
 _CCCL_CONCEPT __index_like = is_signed_v<_Tp> || is_unsigned_v<_Tp> || __integral_constant_like<_Tp>;
 
 template <class _AccessorPolicy>
-_CCCL_CONCEPT __has_detect_invalidity = _CCCL_REQUIRES_EXPR((_AccessorPolicy), _AccessorPolicy __ap)
-{
-  __ap.__has_detect_invalidity(
-    ::cuda::std::declval<typename _AccessorPolicy::data_handle_type>(), ::cuda::std::declval<::cuda::std::size_t>());
-};
+_CCCL_CONCEPT __has_detect_invalidity =
+  _CCCL_REQUIRES_EXPR((_AccessorPolicy), _AccessorPolicy __ap)(__ap.__has_detect_invalidity(
+    ::cuda::std::declval<typename _AccessorPolicy::data_handle_type>(), ::cuda::std::declval<::cuda::std::size_t>()));
 
 _CCCL_END_NAMESPACE_CUDA_STD
 
