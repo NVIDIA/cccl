@@ -45,9 +45,9 @@ public:
   public:
     using distribution_type = chi_squared_distribution;
 
-    constexpr param_type() = default;
+    constexpr param_type() noexcept = default;
 
-    _CCCL_API constexpr explicit param_type(result_type __n)
+    _CCCL_API constexpr explicit param_type(result_type __n) noexcept
         : __n_{__n}
     {}
 
