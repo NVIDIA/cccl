@@ -65,11 +65,9 @@ _CCCL_DIAG_SUPPRESS_NVHPC(attribute_requires_external_linkage)
 #if defined(CUB_DEFINE_RUNTIME_POLICIES)
 #  define CUB_DETAIL_STATIC_ISH_ASSERT(expr, msg) _CCCL_ASSERT(expr, msg)
 #  define CUB_DETAIL_CONSTEXPR_ISH
-#  define CUB_DETAIL_STATIC_CONSTEXPR_ISH
 #else // ^^^ CUB_DEFINE_RUNTIME_POLICIES ^^^ / vvv !CUB_DEFINE_RUNTIME_POLICIES vvv
 #  define CUB_DETAIL_STATIC_ISH_ASSERT(expr, msg) static_assert(expr, msg);
 #  define CUB_DETAIL_CONSTEXPR_ISH                constexpr
-#  define CUB_DETAIL_STATIC_CONSTEXPR_ISH         static constexpr
 #endif // !(CUB_DEFINE_RUNTIME_POLICIES)
 
 CUB_NAMESPACE_END
