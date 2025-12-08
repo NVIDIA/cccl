@@ -831,6 +831,59 @@ private:
   }
 #endif // !_CCCL_COMPILER(NVRTC)
 };
+
+#if !_CCCL_COMPILER(NVRTC)
+
+template <::cuda::arch_id ArchId, typename ArchPolicies, typename FunctorT>
+CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t call_for_arch(ArchPolicies arch_policies, FunctorT&& f)
+{
+  // this function is instantiated per ArchId, but we instantiate f only for each distinct policy
+  static constexpr auto policy = arch_policies(ArchId);
+  // a policy cannot be passed as NTTP, but its pointer can :-D, TODO(bgruber): pass policy by value in C++20
+  return f(::cuda::std::integral_constant<decltype(&policy), &policy>{});
+}
+
+template <int ArchMult, int... CudaArches, typename ArchPolicies, typename FunctorT>
+CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t
+dispatch_compiled_for_arches(ArchPolicies arch_policies, ::cuda::arch_id device_arch, FunctorT&& f)
+{
+  cudaError_t e = cudaErrorInvalidDeviceFunction;
+  (...,
+   (device_arch == ::cuda::arch_id{(CudaArches * ArchMult) / 10}
+      ? (e = call_for_arch<::cuda::arch_id{(CudaArches * ArchMult) / 10}>(arch_policies, f))
+      : cudaSuccess));
+  return e;
+}
+
+template <typename ArchPolicies, typename FunctorT, size_t... Is>
+CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_all_arches(
+  ArchPolicies arch_policies, ::cuda::arch_id device_arch, FunctorT&& f, ::cuda::std::index_sequence<Is...>)
+{
+  static constexpr auto all_arches = ::cuda::__all_arch_ids();
+  cudaError_t e         = cudaErrorInvalidDeviceFunction;
+  (..., (device_arch == all_arches[Is] ? (e = call_for_arch<all_arches[Is]>(arch_policies, f)) : cudaSuccess));
+  return e;
+}
+
+template <typename ArchPolicies, typename F>
+CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t
+dispatch_arch(ArchPolicies arch_policies, ::cuda::arch_id device_arch, F&& f)
+{
+#  ifdef __CUDA_ARCH_LIST__
+  return dispatch_compiled_for_arches<1, __CUDA_ARCH_LIST__>(arch_policies, device_arch, ::cuda::std::forward<F>(f));
+#  elif defined(NV_TARGET_SM_INTEGER_LIST)
+  return dispatch_compiled_for_arches<10, NV_TARGET_SM_INTEGER_LIST>(
+    arch_policies, device_arch, ::cuda::std::forward<F>(f));
+#  else
+  return dispatch_all_arches(
+    arch_policies,
+    device_arch,
+    ::cuda::std::forward<F>(f),
+    ::cuda::std::make_index_sequence<::cuda::__all_arch_ids.size()>{});
+#  endif
+}
+#endif // !_CCCL_COMPILER(NVRTC)
+
 CUB_NAMESPACE_END
 
 #if _CCCL_CUDA_COMPILATION() && !_CCCL_COMPILER(NVRTC)
