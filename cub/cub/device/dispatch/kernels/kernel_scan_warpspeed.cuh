@@ -342,8 +342,16 @@ _CCCL_DEVICE_API inline void
 storeLookback(tmp_state_t<AccumT>* ptrTmpBuffer, int idxTile, scan_state scanState, AccumT sum)
 {
   tmp_state_t<AccumT>* dst = ptrTmpBuffer + idxTile;
-  tmp_state_t<AccumT> tmp{scanState, sum};
-  __nv_atomic_store(dst, &tmp , __NV_ATOMIC_RELAXED, __NV_THREAD_SCOPE_DEVICE);
+  if constexpr (sizeof(tmp_state_t<AccumT>) <= 16)
+  {
+    tmp_state_t<AccumT> tmp{scanState, sum};
+    __nv_atomic_store(dst, &tmp, __NV_ATOMIC_RELAXED, __NV_THREAD_SCOPE_DEVICE);
+  }
+  else
+  {
+    ThreadStore<STORE_CG>(&dst->value, sum);
+    detail::store_release(&dst->state, scanState);
+  }
 }
 
 // warpLoadLookback loads tmp states
@@ -380,7 +388,15 @@ _CCCL_DEVICE_API inline void warpLoadLookback(
     if (idxTileLookback < idxTileNext)
     {
       tmp_state_t<AccumT>* src = ptrTmpBuffer + idxTileLookback;
-      __nv_atomic_load(src, outTmpStates + i , __NV_ATOMIC_RELAXED, __NV_THREAD_SCOPE_DEVICE);
+      if constexpr (sizeof(tmp_state_t<AccumT>) <= 16)
+      {
+        __nv_atomic_load(src, outTmpStates + i, __NV_ATOMIC_RELAXED, __NV_THREAD_SCOPE_DEVICE);
+      }
+      else
+      {
+        outTmpStates[i].state = detail::load_acquire(&src->state);
+        outTmpStates[i].value = ThreadLoad<LOAD_CG>(&src->value);
+      }
     }
     else
     {
