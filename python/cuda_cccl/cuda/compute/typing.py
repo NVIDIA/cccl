@@ -5,8 +5,6 @@
 
 from typing import Protocol, runtime_checkable
 
-import numpy as np
-
 
 @runtime_checkable
 class DeviceArrayLike(Protocol):
@@ -24,13 +22,3 @@ class StreamLike(Protocol):
     """
 
     def __cuda_stream__(self) -> tuple[int, int]: ...
-
-
-class GpuStruct(Protocol):
-    """
-    Type of instances of structs created with gpu_struct().
-    """
-
-    _data: np.ndarray
-    __array_interface__: dict
-    dtype: np.dtype

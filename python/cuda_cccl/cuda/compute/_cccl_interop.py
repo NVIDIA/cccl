@@ -44,7 +44,7 @@ from ._bindings import (
 from ._utils.protocols import get_data_pointer, get_dtype, is_contiguous
 from .iterators._iterators import IteratorBase
 from .op import OpKind
-from .typing import DeviceArrayLike, GpuStruct
+from .typing import DeviceArrayLike
 
 _TYPE_TO_ENUM = {
     types.int8: TypeEnum.INT8,
@@ -92,10 +92,21 @@ def _numpy_type_to_info(numpy_type: np.dtype) -> TypeInfo:
     return _numba_type_to_info(numba_type)
 
 
+def _check_struct_dtype_aligned(dtype: np.dtype) -> None:
+    """Check that a numpy struct dtype is aligned and raise ValueError if not."""
+    if dtype.type == np.void and not dtype.isalignedstruct:
+        raise ValueError(
+            f"Structured dtype {dtype} must be created with align=True. "
+            f"Use np.dtype([...], align=True) to ensure proper memory layout for GPU operations."
+        )
+
+
 def _device_array_to_cccl_iter(array: DeviceArrayLike) -> Iterator:
     if not is_contiguous(array):
         raise ValueError("Non-contiguous arrays are not supported.")
-    info = _numpy_type_to_info(get_dtype(array))
+    dtype = get_dtype(array)
+    _check_struct_dtype_aligned(dtype)
+    info = _numpy_type_to_info(dtype)
     state_info = _numpy_type_to_info(np.intp)
     return Iterator(
         state_info.alignment,
@@ -207,30 +218,34 @@ _GPU_STRUCT_DEPRECATION_MSG = (
 
 
 def to_cccl_value_state(
-    array_or_struct: np.ndarray | np.void | GpuStruct,
+    array_or_struct: np.ndarray | np.void,
 ) -> memoryview:
     if isinstance(array_or_struct, np.ndarray):
+        _check_struct_dtype_aligned(array_or_struct.dtype)
         assert array_or_struct.flags.contiguous
         data = array_or_struct.data.cast("B")
         return data
     elif isinstance(array_or_struct, np.void):
         # np.void is a scalar struct value - convert to array first
+        _check_struct_dtype_aligned(array_or_struct.dtype)
         return to_cccl_value_state(np.asarray(array_or_struct))
     else:
-        # it's a GpuStruct, use the array underlying it
+        # it's a GpuStruct, use the array underlying it (deprecated)
         warnings.warn(_GPU_STRUCT_DEPRECATION_MSG, DeprecationWarning, stacklevel=2)
         return to_cccl_value_state(array_or_struct._data)
 
 
-def to_cccl_value(array_or_struct: np.ndarray | np.void | GpuStruct) -> Value:
+def to_cccl_value(array_or_struct: np.ndarray | np.void) -> Value:
     if isinstance(array_or_struct, np.ndarray):
+        _check_struct_dtype_aligned(array_or_struct.dtype)
         info = _numpy_type_to_info(array_or_struct.dtype)
         return Value(info, array_or_struct.data.cast("B"))
     elif isinstance(array_or_struct, np.void):
         # np.void is a scalar struct value - convert to array first
+        _check_struct_dtype_aligned(array_or_struct.dtype)
         return to_cccl_value(np.asarray(array_or_struct))
     else:
-        # it's a GpuStruct, use the array underlying it
+        # it's a GpuStruct, use the array underlying it (deprecated)
         warnings.warn(_GPU_STRUCT_DEPRECATION_MSG, DeprecationWarning, stacklevel=2)
         return to_cccl_value(array_or_struct._data)
 
@@ -472,7 +487,7 @@ def to_cccl_op(op: Callable | OpKind, sig: Signature | None) -> Op:
 
 
 def get_value_type(
-    d_in: IteratorBase | DeviceArrayLike | GpuStruct | np.ndarray | np.void,
+    d_in: IteratorBase | DeviceArrayLike | np.ndarray | np.void,
 ):
     from .struct import _Struct, gpu_struct
 
@@ -487,6 +502,7 @@ def get_value_type(
         # types directly, as those are passed by pointer to device
         # functions. Instead, we create an anonymous struct type
         # which has the appropriate pass-by-value semantics.
+        _check_struct_dtype_aligned(dtype)
         return as_numba_type(gpu_struct(dtype))
     return numba.from_dtype(dtype)
 

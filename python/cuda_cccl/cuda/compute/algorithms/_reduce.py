@@ -21,7 +21,7 @@ from .._utils.protocols import get_data_pointer, validate_and_get_stream
 from .._utils.temp_storage_buffer import TempStorageBuffer
 from ..iterators._iterators import IteratorBase
 from ..op import OpKind
-from ..typing import DeviceArrayLike, GpuStruct
+from ..typing import DeviceArrayLike
 
 
 class _Reduce:
@@ -39,7 +39,7 @@ class _Reduce:
         d_in: DeviceArrayLike | IteratorBase,
         d_out: DeviceArrayLike | IteratorBase,
         op: Callable | OpKind,
-        h_init: np.ndarray | np.void | GpuStruct,
+        h_init: np.ndarray | np.void,
     ):
         self.d_in_cccl = cccl.to_cccl_input_iter(d_in)
         self.d_out_cccl = cccl.to_cccl_output_iter(d_out)
@@ -50,8 +50,7 @@ class _Reduce:
         if isinstance(op, OpKind):
             self.op_wrapper = cccl.to_cccl_op(op, None)
         else:
-            self.op_wrapper = cccl.to_cccl_op(
-                op, value_type(value_type, value_type))
+            self.op_wrapper = cccl.to_cccl_op(op, value_type(value_type, value_type))
         self.build_result = call_build(
             _bindings.DeviceReduceBuildResult,
             self.d_in_cccl,
@@ -66,7 +65,7 @@ class _Reduce:
         d_in,
         d_out,
         num_items: int,
-        h_init: np.ndarray | np.void | GpuStruct,
+        h_init: np.ndarray | np.void,
         stream=None,
     ):
         set_cccl_iterator_state(self.d_in_cccl, d_in)
@@ -103,12 +102,10 @@ def make_cache_key(
     h_init: np.ndarray,
 ):
     d_in_key = (
-        d_in.kind if isinstance(
-            d_in, IteratorBase) else protocols.get_dtype(d_in)
+        d_in.kind if isinstance(d_in, IteratorBase) else protocols.get_dtype(d_in)
     )
     d_out_key = (
-        d_out.kind if isinstance(
-            d_out, IteratorBase) else protocols.get_dtype(d_out)
+        d_out.kind if isinstance(d_out, IteratorBase) else protocols.get_dtype(d_out)
     )
     # Handle well-known operations differently
     op_key: Union[tuple[str, int], CachableFunction]
@@ -156,7 +153,7 @@ def reduce_into(
     d_out: DeviceArrayLike | IteratorBase,
     op: Callable | OpKind,
     num_items: int,
-    h_init: np.ndarray | np.void | GpuStruct,
+    h_init: np.ndarray | np.void,
     stream=None,
 ):
     """

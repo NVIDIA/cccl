@@ -6,17 +6,24 @@ from numba import cuda
 from numba.core.extending import as_numba_type
 from numpy.typing import DTypeLike
 
-from .typing import GpuStruct
-
 
 def get_inferred_return_type(op, args: tuple):
     _, return_type = cuda.compile(op, args)
     return return_type
 
 
-def to_numba_type(tp: GpuStruct | DTypeLike) -> numba.types.Type:
+def _check_struct_dtype_aligned(dtype: np.dtype) -> None:
+    """Check that a numpy struct dtype is aligned and raise ValueError if not."""
+    if dtype.type == np.void and not dtype.isalignedstruct:
+        raise ValueError(
+            f"Structured dtype {dtype} must be created with align=True. "
+            f"Use np.dtype([...], align=True) to ensure proper memory layout for GPU operations."
+        )
+
+
+def to_numba_type(tp: DTypeLike) -> numba.types.Type:
     """
-    Convert a GpuStruct, numpy dtype, or DtypeLike to a numba type.
+    Convert a numpy dtype or DtypeLike to a numba type.
 
     For numpy structured dtypes (record types), this creates an anonymous
     gpu_struct type with pass-by-value semantics, rather than using Numba's
@@ -29,6 +36,7 @@ def to_numba_type(tp: GpuStruct | DTypeLike) -> numba.types.Type:
     if isinstance(tp, np.dtype) and tp.type == np.void:
         from .struct import gpu_struct
 
+        _check_struct_dtype_aligned(tp)
         return as_numba_type(gpu_struct(tp))
     return numba.from_dtype(tp)
 
