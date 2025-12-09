@@ -527,6 +527,16 @@ public:
     return __pool_;
   }
 
+  //! @brief Retrieve the native `cudaMemPool_t` handle and give up ownership.
+  //!
+  //! @return cudaMemPool_t The native handle being held by the `memory_pool_base` object.
+  //!
+  //! @post The memory pool object is in a moved-from state.
+  _CCCL_HOST_API constexpr cudaMemPool_t release() noexcept
+  {
+    return ::cuda::std::exchange(__pool_, nullptr);
+  }
+
   //! @brief Deallocate memory pointed to by \p __ptr.
   //! @param __ptr Pointer to be deallocated. Must have been allocated through a
   //! call to `allocate`.

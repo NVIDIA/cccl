@@ -55,8 +55,24 @@ endfunction()
 # - subdir is the relative path to the test project directory.
 # - test_id is used to generate a unique name for this test, allowing the
 #   subdir to be reused.
+# - CTEST_COMMAND is the command to use for running CTest [optional]
 # - Any additional args will be passed to the project configure step.
 function(cccl_add_compile_test full_test_name_var name_prefix subdir test_id)
+  set(options)
+  set(oneValueArgs CTEST_COMMAND)
+  set(multiValueArgs)
+  cmake_parse_arguments(
+    cccl_compile_test
+    "${options}"
+    "${oneValueArgs}"
+    "${multiValueArgs}"
+    ${ARGN}
+  )
+
+  if (NOT DEFINED cccl_compile_test_CTEST_COMMAND)
+    set(cccl_compile_test_CTEST_COMMAND "${CMAKE_CTEST_COMMAND}")
+  endif()
+
   set(test_name ${name_prefix}.${subdir}.${test_id})
   set(src_dir "${CMAKE_CURRENT_SOURCE_DIR}/${subdir}")
   set(build_dir "${CMAKE_CURRENT_BINARY_DIR}/${subdir}/${test_id}")
@@ -64,11 +80,11 @@ function(cccl_add_compile_test full_test_name_var name_prefix subdir test_id)
     NAME ${test_name}
     # gersemi: off
     COMMAND
-      "${CMAKE_CTEST_COMMAND}"
+      "${cccl_compile_test_CTEST_COMMAND}"
         --build-and-test "${src_dir}" "${build_dir}"
         --build-generator "${CMAKE_GENERATOR}"
-        --build-options ${ARGN}
-        --test-command "${CMAKE_CTEST_COMMAND}" --output-on-failure
+        --build-options ${cccl_compile_test_UNPARSED_ARGUMENTS}
+        --test-command "${cccl_compile_test_CTEST_COMMAND}" --output-on-failure
     # gersemi: on
   )
   set(${full_test_name_var} ${test_name} PARENT_SCOPE)

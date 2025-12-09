@@ -15,18 +15,12 @@ __cuda_ptx_setmaxnreg_inc_is_only_supported_on_SM_90a_100a_100f_103a_103f_110a_1
 template <int _N32>
 _CCCL_DEVICE static inline void setmaxnreg_inc(::cuda::ptx::n32_t<_N32> __imm_reg_count)
 {
-#  if _CCCL_CUDA_COMPILER(NVHPC)                                                                                      \
-    || (defined(__CUDA_ARCH_FEAT_SM90_ALL) || (defined(__CUDA_ARCH_SPECIFIC__) && (__CUDA_ARCH_SPECIFIC__ == 900)))   \
-    || (defined(__CUDA_ARCH_FEAT_SM100_ALL) || (defined(__CUDA_ARCH_SPECIFIC__) && (__CUDA_ARCH_SPECIFIC__ == 1000))) \
-    || (defined(__CUDA_ARCH_FEAT_SM103_ALL) || (defined(__CUDA_ARCH_SPECIFIC__) && (__CUDA_ARCH_SPECIFIC__ == 1030))) \
-    || (defined(__CUDA_ARCH_FEAT_SM110_ALL) || (defined(__CUDA_ARCH_SPECIFIC__) && (__CUDA_ARCH_SPECIFIC__ == 1100))) \
-    || (defined(__CUDA_ARCH_FEAT_SM120_ALL) || (defined(__CUDA_ARCH_SPECIFIC__) && (__CUDA_ARCH_SPECIFIC__ == 1200))) \
-    || (defined(__CUDA_ARCH_FEAT_SM121_ALL) || (defined(__CUDA_ARCH_SPECIFIC__) && (__CUDA_ARCH_SPECIFIC__ == 1210))) \
-    || (defined(__CUDA_ARCH_FAMILY_SPECIFIC__) && (__CUDA_ARCH_FAMILY_SPECIFIC__ == 1000))                            \
-    || (defined(__CUDA_ARCH_FAMILY_SPECIFIC__) && (__CUDA_ARCH_FAMILY_SPECIFIC__ == 1030))                            \
-    || (defined(__CUDA_ARCH_FAMILY_SPECIFIC__) && (__CUDA_ARCH_FAMILY_SPECIFIC__ == 1100))                            \
-    || (defined(__CUDA_ARCH_FAMILY_SPECIFIC__) && (__CUDA_ARCH_FAMILY_SPECIFIC__ == 1200))                            \
-    || (defined(__CUDA_ARCH_FAMILY_SPECIFIC__) && (__CUDA_ARCH_FAMILY_SPECIFIC__ == 1210))
+#  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 900) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) \
+    || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100)                             \
+    || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1200) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1210)                             \
+    || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(100) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(103)                                 \
+    || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(110) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(120)                                 \
+    || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(121)
   asm volatile("setmaxnreg.inc.sync.aligned.u32 %0;" : : "n"(__imm_reg_count.value) :);
 #  else
   // Unsupported architectures will have a linker error with a semi-decent error message
@@ -47,18 +41,12 @@ __cuda_ptx_setmaxnreg_dec_is_only_supported_on_SM_90a_100a_100f_103a_103f_110a_1
 template <int _N32>
 _CCCL_DEVICE static inline void setmaxnreg_dec(::cuda::ptx::n32_t<_N32> __imm_reg_count)
 {
-#  if _CCCL_CUDA_COMPILER(NVHPC)                                                                                      \
-    || (defined(__CUDA_ARCH_FEAT_SM90_ALL) || (defined(__CUDA_ARCH_SPECIFIC__) && (__CUDA_ARCH_SPECIFIC__ == 900)))   \
-    || (defined(__CUDA_ARCH_FEAT_SM100_ALL) || (defined(__CUDA_ARCH_SPECIFIC__) && (__CUDA_ARCH_SPECIFIC__ == 1000))) \
-    || (defined(__CUDA_ARCH_FEAT_SM103_ALL) || (defined(__CUDA_ARCH_SPECIFIC__) && (__CUDA_ARCH_SPECIFIC__ == 1030))) \
-    || (defined(__CUDA_ARCH_FEAT_SM110_ALL) || (defined(__CUDA_ARCH_SPECIFIC__) && (__CUDA_ARCH_SPECIFIC__ == 1100))) \
-    || (defined(__CUDA_ARCH_FEAT_SM120_ALL) || (defined(__CUDA_ARCH_SPECIFIC__) && (__CUDA_ARCH_SPECIFIC__ == 1200))) \
-    || (defined(__CUDA_ARCH_FEAT_SM121_ALL) || (defined(__CUDA_ARCH_SPECIFIC__) && (__CUDA_ARCH_SPECIFIC__ == 1210))) \
-    || (defined(__CUDA_ARCH_FAMILY_SPECIFIC__) && (__CUDA_ARCH_FAMILY_SPECIFIC__ == 1000))                            \
-    || (defined(__CUDA_ARCH_FAMILY_SPECIFIC__) && (__CUDA_ARCH_FAMILY_SPECIFIC__ == 1030))                            \
-    || (defined(__CUDA_ARCH_FAMILY_SPECIFIC__) && (__CUDA_ARCH_FAMILY_SPECIFIC__ == 1100))                            \
-    || (defined(__CUDA_ARCH_FAMILY_SPECIFIC__) && (__CUDA_ARCH_FAMILY_SPECIFIC__ == 1200))                            \
-    || (defined(__CUDA_ARCH_FAMILY_SPECIFIC__) && (__CUDA_ARCH_FAMILY_SPECIFIC__ == 1210))
+#  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 900) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) \
+    || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100)                             \
+    || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1200) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1210)                             \
+    || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(100) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(103)                                 \
+    || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(110) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(120)                                 \
+    || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(121)
   asm volatile("setmaxnreg.dec.sync.aligned.u32 %0;" : : "n"(__imm_reg_count.value) :);
 #  else
   // Unsupported architectures will have a linker error with a semi-decent error message

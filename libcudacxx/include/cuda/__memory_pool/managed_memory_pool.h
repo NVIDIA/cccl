@@ -23,7 +23,7 @@
 
 #if _CCCL_CTK_AT_LEAST(13, 0)
 
-#  include <cuda/__memory_resource/memory_pool_base.h>
+#  include <cuda/__memory_pool/memory_pool_base.h>
 #  include <cuda/__memory_resource/properties.h>
 #  include <cuda/std/__concepts/concept_macros.h>
 #  include <cuda/std/__exception/throw_error.h>
@@ -119,12 +119,22 @@ struct managed_memory_pool : managed_memory_pool_ref
 
   ~managed_memory_pool() noexcept
   {
-    ::cuda::__driver::__mempoolDestroy(__pool_);
+    if (__pool_ != nullptr)
+    {
+      ::cuda::__driver::__mempoolDestroy(__pool_);
+    }
   }
 
   _CCCL_HOST_API static managed_memory_pool from_native_handle(::cudaMemPool_t __pool) noexcept
   {
     return managed_memory_pool(__pool);
+  }
+
+  //! @brief Returns a \c managed_memory_pool_ref for this \c managed_memory_pool.
+  //! The result is the same as if this object was cast to a \c managed_memory_pool_ref.
+  [[nodiscard]] _CCCL_HOST_API managed_memory_pool_ref as_ref() noexcept
+  {
+    return managed_memory_pool_ref(__pool_);
   }
 
   managed_memory_pool(const managed_memory_pool&)            = delete;
