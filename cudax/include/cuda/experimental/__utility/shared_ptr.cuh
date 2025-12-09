@@ -259,7 +259,7 @@ private:
     _Deleter __deleter_;
   };
 
-  struct alignas(_Ty) _CCCL_DECLSPEC_EMPTY_BASES __control_block : __shared_ptr_base::__control_block
+  struct _CCCL_DECLSPEC_EMPTY_BASES __control_block : __shared_ptr_base::__control_block
   {
     using __destroy_vfn_t = void(__control_block*) noexcept;
 
@@ -321,9 +321,10 @@ private:
         : _Alloc{alloc}
     {}
 
-    _CCCL_API void operator()(_Ty*) noexcept
+    _CCCL_API void operator()([[maybe_unused]] _Ty* __ptr) noexcept
     {
       __control_block_t* __cb_ptr = static_cast<__control_block_t*>(this);
+      _CCCL_ASSERT(::cuda::std::addressof(__cb_ptr->__value_) == __ptr, "Pointer mismatch in allocator deleter");
 
       using __cb_alloc_t = __detail::__rebind_alloc_t<_Alloc, __control_block_t>;
       __cb_alloc_t __cb_alloc{static_cast<_Alloc&>(*__cb_ptr)};

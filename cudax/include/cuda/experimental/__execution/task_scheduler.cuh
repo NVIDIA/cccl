@@ -348,6 +348,28 @@ __get_execute_bulk_fn(bulk_unchunked_t, _Fn& __fn, size_t __shape, size_t __begi
   };
 }
 
+template <bool _Parallelize, class _Fn>
+struct __apply_bulk_execute
+{
+  _CCCL_EXEC_CHECK_DISABLE
+  template <class... _As>
+  _CCCL_API void operator()(_As&... __as) const noexcept(__nothrow_callable<_Fn&, size_t, _As&...>)
+  {
+    if constexpr (_Parallelize)
+    {
+      __fn_(__begin_, __end_, __as...);
+    }
+    else
+    {
+      // If we are not parallelizing, we need to pass the entire range to the functor.
+      __fn_(size_t(0), __shape_, __as...);
+    }
+  }
+
+  size_t __begin_, __end_, __shape_;
+  _Fn& __fn_;
+};
+
 //! Returns a visitor (callable) used to invoke the bulk (chunked) function with the
 //! predecessor's values, which are stored in a variant in the bulk operation state.
 template <bool _Parallelize, class _Fn>
@@ -360,12 +382,7 @@ __get_execute_bulk_fn(bulk_chunked_t, _Fn& __fn, size_t __shape, size_t __begin,
 
     if constexpr (__valid_args)
     {
-      ::cuda::std::__apply(
-        [&](auto&... __as) -> void {
-          // If we are not parallelizing, we need to pass the entire range to the functor.
-          _Parallelize ? __fn(__begin, __end, __as...) : __fn(0, __shape, __as...);
-        },
-        __args);
+      ::cuda::std::__apply(__apply_bulk_execute<_Parallelize, _Fn>{__begin, __end, __shape, __fn}, __args);
     }
   };
 }
