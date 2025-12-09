@@ -163,6 +163,13 @@ struct pinned_memory_pool : pinned_memory_pool_ref
     return pinned_memory_pool(__pool);
   }
 
+  //! @brief Returns a \c pinned_memory_pool_ref for this \c pinned_memory_pool.
+  //! The result is the same as if this object was cast to a \c pinned_memory_pool_ref.
+  _CCCL_HOST_API pinned_memory_pool_ref as_ref() noexcept
+  {
+    return pinned_memory_pool_ref(__pool_);
+  }
+
   pinned_memory_pool(const pinned_memory_pool&)            = delete;
   pinned_memory_pool& operator=(const pinned_memory_pool&) = delete;
 
