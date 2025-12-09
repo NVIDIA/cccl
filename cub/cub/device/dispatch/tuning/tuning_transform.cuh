@@ -115,7 +115,6 @@ struct prefetch_policy
 #endif // !_CCCL_COMPILER(NVRTC)
 };
 
-// TODO(bgruber): maybe make base class a member instead
 struct vectorized_policy
 {
   int block_threads;
