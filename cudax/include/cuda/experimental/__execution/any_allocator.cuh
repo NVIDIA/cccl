@@ -100,7 +100,7 @@ struct any_allocator : private __detail::__any_allocator
   {}
 
   _CCCL_TEMPLATE(class _Allocator)
-  _CCCL_REQUIRES((!__is_specialization_of_v<_Allocator, any_allocator>) //
+  _CCCL_REQUIRES((!__is_specialization_of_v<_Allocator, execution::any_allocator>) //
                  _CCCL_AND(!::cuda::std::__is_cuda_std_optional_v<_Allocator>)
                    _CCCL_AND ::cuda::__satisfies<_Allocator, __detail::__iallocator<>>)
   _CCCL_API any_allocator(_Allocator __alloc)
@@ -128,8 +128,7 @@ private:
   friend struct any_allocator;
 
   template <class _Allocator>
-  using __byte_allocator_t =
-    typename ::cuda::std::allocator_traits<_Allocator>::template rebind_alloc<::cuda::std::byte>;
+  using __byte_allocator_t = ::cuda::std::__rebind_alloc<::cuda::std::allocator_traits<_Allocator>, ::cuda::std::byte>;
 };
 
 template <class _Allocator>
