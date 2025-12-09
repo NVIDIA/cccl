@@ -194,14 +194,14 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto configure_as
   -> cuda_expected<
     ::cuda::std::tuple<decltype(launcher_factory(0, 0, 0, 0)), decltype(kernel_source.TransformKernel()), int>>
 {
-  CUB_DETAIL_CONSTEXPR_ISH const transform_arch_policy* policy = policy_ptr_getter();
-  CUB_DETAIL_CONSTEXPR_ISH int block_threads                   = policy->async_copy_policy.block_threads;
+  CUB_DETAIL_CONSTEXPR_ISH const transform_arch_policy& policy = policy_ptr_getter();
+  CUB_DETAIL_CONSTEXPR_ISH int block_threads                   = policy.async_copy_policy.block_threads;
 
   _CCCL_ASSERT(block_threads % alignment == 0, "block_threads needs to be a multiple of the copy alignment");
   // ^ then tile_size is a multiple of it
 
-  CUB_DETAIL_CONSTEXPR_ISH auto min_items_per_thread = policy->async_copy_policy.min_items_per_thread;
-  CUB_DETAIL_CONSTEXPR_ISH auto max_items_per_thread = policy->async_copy_policy.max_items_per_thread;
+  CUB_DETAIL_CONSTEXPR_ISH auto min_items_per_thread = policy.async_copy_policy.min_items_per_thread;
+  CUB_DETAIL_CONSTEXPR_ISH auto max_items_per_thread = policy.async_copy_policy.max_items_per_thread;
 
   // ensures the loop below runs at least once
   // pulled outside of the lambda below to make MSVC happy
@@ -241,7 +241,7 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto configure_as
       const auto config = async_config{items_per_thread, max_occupancy, sm_count};
 
       const int bytes_in_flight_SM = max_occupancy * tile_size * kernel_source.LoadedBytesPerIteration();
-      if (policy->min_bif <= bytes_in_flight_SM)
+      if (policy.min_bif <= bytes_in_flight_SM)
       {
         return config;
       }
@@ -259,7 +259,7 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto configure_as
   _CCCL_ASSERT((config->items_per_thread * block_threads) % alignment == 0, "");
 
   const int ipt = spread_out_items_per_thread(
-    num_items, policy->async_copy_policy, config->items_per_thread, config->sm_count, config->max_occupancy);
+    num_items, policy.async_copy_policy, config->items_per_thread, config->sm_count, config->max_occupancy);
   const int tile_size     = block_threads * ipt;
   const int dyn_smem_size = dyn_smem_for_tile_size(tile_size, alignment);
   _CCCL_ASSERT(NoInputs != (dyn_smem_size != 0), ""); // logical xor
@@ -351,11 +351,11 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t invoke_prefetch_or_vectorized
   KernelSource kernel_source,
   KernelLauncherFactory launcher_factory)
 {
-  CUB_DETAIL_CONSTEXPR_ISH const transform_arch_policy* policy = policy_ptr_getter();
+  CUB_DETAIL_CONSTEXPR_ISH const transform_arch_policy& policy = policy_ptr_getter();
   CUB_DETAIL_CONSTEXPR_ISH const int block_threads =
-    policy->algorithm == Algorithm::vectorized
-      ? policy->vectorized_policy.block_threads
-      : policy->prefetch_policy.block_threads;
+    policy.algorithm == Algorithm::vectorized
+      ? policy.vectorized_policy.block_threads
+      : policy.prefetch_policy.block_threads;
 
   auto determine_config = [&]() -> cuda_expected<prefetch_config> {
     int max_occupancy = 0;
@@ -382,19 +382,19 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t invoke_prefetch_or_vectorized
 
   auto can_vectorize = false;
   // the policy already handles the compile-time checks if we can vectorize. Do the remaining alignment check here
-  if CUB_DETAIL_CONSTEXPR_ISH (Algorithm::vectorized == policy->algorithm)
+  if CUB_DETAIL_CONSTEXPR_ISH (Algorithm::vectorized == policy.algorithm)
   {
-    const int vs  = policy->vectorized_policy.vec_size;
+    const int vs  = policy.vectorized_policy.vec_size;
     can_vectorize = kernel_source.CanVectorize(vs, out, ::cuda::std::get<Is>(in)...);
   }
 
   int ipt        = 0;
   bool ipt_found = false;
-  if CUB_DETAIL_CONSTEXPR_ISH (Algorithm::vectorized == policy->algorithm)
+  if CUB_DETAIL_CONSTEXPR_ISH (Algorithm::vectorized == policy.algorithm)
   {
     if (can_vectorize)
     {
-      ipt       = policy->vectorized_policy.items_per_thread_vectorized;
+      ipt       = policy.vectorized_policy.items_per_thread_vectorized;
       ipt_found = true;
     }
   }
@@ -403,12 +403,12 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t invoke_prefetch_or_vectorized
   {
     // otherwise, set up the prefetch kernel
     const auto fallback_prefetch_policy = prefetch_policy{
-      policy->vectorized_policy.block_threads,
-      policy->vectorized_policy.prefetch_items_per_thread_no_input,
-      policy->vectorized_policy.prefetch_min_items_per_thread,
-      policy->vectorized_policy.prefetch_max_items_per_thread};
+      policy.vectorized_policy.block_threads,
+      policy.vectorized_policy.prefetch_items_per_thread_no_input,
+      policy.vectorized_policy.prefetch_min_items_per_thread,
+      policy.vectorized_policy.prefetch_max_items_per_thread};
     const auto prefetch_policy =
-      policy->algorithm == Algorithm::prefetch ? policy->prefetch_policy : fallback_prefetch_policy;
+      policy.algorithm == Algorithm::prefetch ? policy.prefetch_policy : fallback_prefetch_policy;
 
     auto loaded_bytes_per_iter           = kernel_source.LoadedBytesPerIteration();
     const auto items_per_thread_no_input = prefetch_policy.items_per_thread_no_input;
@@ -416,7 +416,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t invoke_prefetch_or_vectorized
     const int items_per_thread =
       loaded_bytes_per_iter == 0
         ? items_per_thread_no_input
-        : ::cuda::ceil_div(policy->min_bif, config->max_occupancy * block_threads * loaded_bytes_per_iter);
+        : ::cuda::ceil_div(policy.min_bif, config->max_occupancy * block_threads * loaded_bytes_per_iter);
 
     // but also generate enough blocks for full occupancy to optimize small problem sizes, e.g., 2^16/2^20 elements
     ipt = spread_out_items_per_thread(
@@ -486,7 +486,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t dispatch(
   return dispatch_arch(arch_policies, arch_id, [&](auto policy_ptr_getter) {
     // policy_ptr_getter is an integral constant returning a constexpr pointer to the selected compile-time policy, for
     // CCCL.C it's a lambda retuning a pointer to a (runtime) policy.
-    CUB_DETAIL_CONSTEXPR_ISH const transform_arch_policy* active_policy = policy_ptr_getter();
+    CUB_DETAIL_CONSTEXPR_ISH const transform_arch_policy& active_policy = policy_ptr_getter();
 
 #if !_CCCL_COMPILER(NVRTC) && defined(CUB_DEBUG_LOG)
     NV_IF_TARGET(
@@ -495,7 +495,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t dispatch(
        _CubLog("Dispatching DeviceTransform to arch %d with tuning: %s\n", (int) arch_id, ss.str().c_str());))
 #endif // !_CCCL_COMPILER(NVRTC) && defined(CUB_DEBUG_LOG)
 
-    if CUB_DETAIL_CONSTEXPR_ISH (Algorithm::ublkcp == active_policy->algorithm)
+    if CUB_DETAIL_CONSTEXPR_ISH (Algorithm::ublkcp == active_policy.algorithm)
     {
       return invoke_async_algorithm(
         ::cuda::std::move(in),
@@ -514,7 +514,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t dispatch(
         kernel_source,
         launcher_factory);
     }
-    else if CUB_DETAIL_CONSTEXPR_ISH (Algorithm::memcpy_async == active_policy->algorithm)
+    else if CUB_DETAIL_CONSTEXPR_ISH (Algorithm::memcpy_async == active_policy.algorithm)
     {
       return invoke_async_algorithm(
         ::cuda::std::move(in),

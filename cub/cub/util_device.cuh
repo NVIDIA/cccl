@@ -839,8 +839,9 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t call_for_arch(ArchPolicies ar
 {
   // this function is instantiated per ArchId, but we instantiate f only for each distinct policy
   static constexpr auto policy = arch_policies(ArchId);
-  // a policy cannot be passed as NTTP, but its pointer can :-D, TODO(bgruber): pass policy by value in C++20
-  return f(::cuda::std::integral_constant<decltype(&policy), &policy>{});
+  return f([]() -> const auto& {
+    return policy;
+  });
 }
 
 template <int ArchMult, int... CudaArches, typename ArchPolicies, typename FunctorT>
@@ -887,8 +888,8 @@ _CCCL_EXEC_CHECK_DISABLE
 template <typename ArchPolicies, typename F>
 _CCCL_API _CCCL_FORCEINLINE cudaError_t dispatch_arch(ArchPolicies arch_policies, ::cuda::arch_id device_arch, F&& f)
 {
-  return f([policy = arch_policies(device_arch)] {
-    return &policy;
+  return f([policy = arch_policies(device_arch)]() -> const auto& {
+    return policy;
   });
 }
 #endif // !defined(CUB_DEFINE_RUNTIME_POLICIES) && !_CCCL_COMPILER(NVRTC)
