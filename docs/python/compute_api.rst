@@ -60,9 +60,3 @@ Operators
    .. py:attribute:: NEGATE
    .. py:attribute:: MINIMUM
    .. py:attribute:: MAXIMUM
-
-Utilities
----------
-
-.. automodule:: cuda.compute.struct
-   :members:

@@ -70,9 +70,9 @@ of a reduction before writing to the underlying array.
 Custom Types
 ------------
 
-The ``cuda.compute`` library supports defining custom data types,
-using the :func:`gpu_struct <cuda.compute.struct.gpu_struct>` decorator.
-Here are some examples showing how to define and use custom types:
+The ``cuda.compute`` library supports custom data types using NumPy structured
+dtypes. Use ``align=True`` when creating the dtype to ensure proper memory
+layout for GPU operations. Here's an example:
 
 .. literalinclude:: ../../python/cuda_cccl/tests/compute/examples/struct/struct_reduction.py
    :language: python
