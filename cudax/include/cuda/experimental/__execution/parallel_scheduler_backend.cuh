@@ -53,7 +53,7 @@ struct __env_proxy : __immovable
 class receiver_proxy : __detail::__env_proxy
 {
 public:
-  _CCCL_HIDE_FROM_ABI virtual ~receiver_proxy() = default;
+  _CCCL_API virtual ~receiver_proxy() = 0;
 
   _CCCL_API virtual void set_value() noexcept                = 0;
   _CCCL_API virtual void set_error(exception_ptr&&) noexcept = 0;
@@ -77,6 +77,8 @@ public:
   // }
 };
 
+inline receiver_proxy::~receiver_proxy() = default;
+
 struct bulk_item_receiver_proxy : receiver_proxy
 {
   _CCCL_API virtual void execute(size_t, size_t) noexcept = 0;
@@ -84,7 +86,7 @@ struct bulk_item_receiver_proxy : receiver_proxy
 
 struct parallel_scheduler_backend
 {
-  _CCCL_HIDE_FROM_ABI virtual ~parallel_scheduler_backend() = default;
+  _CCCL_API virtual ~parallel_scheduler_backend() = 0;
 
   _CCCL_API virtual void schedule(receiver_proxy&, ::cuda::std::span<::cuda::std::byte>) noexcept = 0;
 
@@ -94,6 +96,8 @@ struct parallel_scheduler_backend
   _CCCL_API virtual void
   schedule_bulk_unchunked(size_t, bulk_item_receiver_proxy&, ::cuda::std::span<::cuda::std::byte>) noexcept = 0;
 };
+
+inline parallel_scheduler_backend::~parallel_scheduler_backend() = default;
 
 namespace __detail
 {
