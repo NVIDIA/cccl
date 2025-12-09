@@ -21,21 +21,25 @@
 #  pragma system_header
 #endif // no system header
 
-#if _CCCL_HAS_CTK() && !_CCCL_COMPILER(NVRTC)
+#if _CCCL_HAS_CTK()
 
 #  include <cuda/__device/device_ref.h>
 #  include <cuda/__device/physical_device.h>
 #  include <cuda/__driver/driver_api.h>
 #  include <cuda/__fwd/devices.h>
+#  include <cuda/__runtime/device_api.h>
 #  include <cuda/std/__cstddef/types.h>
 #  include <cuda/std/span>
 
-#  include <vector>
+#  if !_CCCL_COMPILER(NVRTC)
+#    include <vector>
+#  endif // !_CCCL_COMPILER(NVRTC)
 
 #  include <cuda/std/__cccl/prologue.h>
 
 _CCCL_BEGIN_NAMESPACE_CUDA
 
+#  if !_CCCL_COMPILER(NVRTC)
 [[nodiscard]] _CCCL_HOST_API inline ::std::vector<device_ref> __make_devices()
 {
   ::std::vector<device_ref> __ret{};
@@ -52,6 +56,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA
   static const auto __devices = ::cuda::__make_devices();
   return ::cuda::std::span<const device_ref>{__devices.data(), __devices.size()};
 }
+#  endif // !_CCCL_COMPILER(NVRTC)
 
 //! @brief A random-access range of all available CUDA devices
 class __all_devices
@@ -67,20 +72,31 @@ public:
   __all_devices& operator=(const __all_devices&) = delete;
   __all_devices& operator=(__all_devices&&)      = delete;
 
-  [[nodiscard]] _CCCL_HOST_API device_ref operator[](size_type __i) const
+  [[nodiscard]] _CCCL_API device_ref operator[](size_type __i) const
   {
     if (__i >= size())
     {
       ::cuda::std::__throw_out_of_range("device index out of range");
     }
-    return ::cuda::__devices()[__i];
+    NV_IF_ELSE_TARGET(NV_IS_HOST, (return ::cuda::__devices()[__i];), (return device_ref{static_cast<int>(__i)};))
   }
 
-  [[nodiscard]] _CCCL_HOST_API size_type size() const
+  //! @brief Gets the device count.
+  //!
+  //! @return The number of CUDA devices.
+  //!
+  //! @note When called on device, this function requires libcudadevrt to be linked.
+  [[nodiscard]] _CCCL_API size_type size() const
   {
-    return ::cuda::__devices().size();
+    NV_IF_ELSE_TARGET(
+      NV_IS_HOST, (return ::cuda::__devices().size();), ({
+        int __dev_count{};
+        _CCCL_TRY_CUDA_API(::cudaGetDeviceCount, "Failed to query the number of CUDA devices.", &__dev_count);
+        return __dev_count;
+      }))
   }
 
+#  if !_CCCL_COMPILER(NVRTC)
   [[nodiscard]] _CCCL_HOST_API iterator begin() const
   {
     return ::cuda::__devices().begin();
@@ -90,6 +106,7 @@ public:
   {
     return ::cuda::__devices().end();
   }
+#  endif // !_CCCL_COMPILER(NVRTC)
 };
 
 //! @brief A range of all available CUDA devices
@@ -129,12 +146,32 @@ public:
 //! @sa
 //! * device
 //! * device_ref
-inline constexpr __all_devices devices{};
+_CCCL_GLOBAL_CONSTANT __all_devices devices{};
 
 _CCCL_END_NAMESPACE_CUDA
 
+#  if _CCCL_CUDA_COMPILATION()
+
+_CCCL_BEGIN_NAMESPACE_CUDA_DEVICE
+
+//! @brief Gets the device on which the current thread is executing.
+//!
+//! @return \c cuda::device_ref object representing the current device.
+//!
+//! @note When called on device, this function requires libcudadevrt to be linked.
+[[nodiscard]] _CCCL_DEVICE_API inline device_ref current_device() noexcept
+{
+  int __id;
+  _CCCL_TRY_CUDA_API(::cudaGetDevice, "Failed to query the current device.", &__id);
+  return device_ref{__id};
+}
+
+_CCCL_END_NAMESPACE_CUDA_DEVICE
+
+#  endif // _CCCL_CUDA_COMPILATION()
+
 #  include <cuda/std/__cccl/epilogue.h>
 
-#endif // _CCCL_HAS_CTK() && !_CCCL_COMPILER(NVRTC)
+#endif // _CCCL_HAS_CTK()
 
 #endif // _CUDA___DEVICE_ALL_DEVICES_H

@@ -4,12 +4,12 @@
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDA___RUNTIME_TYPES_H
-#define _CUDA___RUNTIME_TYPES_H
+#ifndef _CUDA___RUNTIME_DEVICE_API_H
+#define _CUDA___RUNTIME_DEVICE_API_H
 
 #include <cuda/std/detail/__config>
 
@@ -21,21 +21,10 @@
 #  pragma system_header
 #endif // no system header
 
-#if _CCCL_HAS_CTK() && !_CCCL_COMPILER(NVRTC)
+_CCCL_DIAG_PUSH
+_CCCL_BEGIN_NV_DIAG_SUPPRESS(1105)
+#include <cuda_device_runtime_api.h>
+_CCCL_END_NV_DIAG_SUPPRESS()
+_CCCL_DIAG_POP
 
-#  include <cuda/std/__cccl/prologue.h>
-
-_CCCL_BEGIN_NAMESPACE_CUDA
-
-using memory_location = ::cudaMemLocation;
-#  if _CCCL_CTK_AT_LEAST(12, 2)
-inline constexpr memory_location host_memory_location = {::cudaMemLocationTypeHost, 0};
-#  endif // _CCCL_CTK_AT_LEAST(12, 2)
-
-_CCCL_END_NAMESPACE_CUDA
-
-#  include <cuda/std/__cccl/epilogue.h>
-
-#endif // _CCCL_HAS_CTK() && !_CCCL_COMPILER(NVRTC)
-
-#endif // __CUDA___RUNTIME_TYPES_H
+#endif //_CUDA___RUNTIME_DEVICE_API_H

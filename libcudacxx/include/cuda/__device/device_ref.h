@@ -21,10 +21,11 @@
 #  pragma system_header
 #endif // no system header
 
-#if _CCCL_HAS_CTK() && !_CCCL_COMPILER(NVRTC)
+#if _CCCL_HAS_CTK()
 
 #  include <cuda/__driver/driver_api.h>
 #  include <cuda/__fwd/devices.h>
+#  include <cuda/__runtime/api_wrapper.h>
 #  include <cuda/__runtime/types.h>
 #  include <cuda/std/span>
 #  include <cuda/std/string_view>
@@ -33,7 +34,9 @@
 
 _CCCL_BEGIN_NAMESPACE_CUDA
 
+#  if !_CCCL_COMPILER(NVRTC)
 ::cuda::std::size_t __physical_devices_count();
+#  endif // !_CCCL_COMPILER(NVRTC)
 
 //! @brief A non-owning representation of a CUDA device
 class device_ref
@@ -42,24 +45,22 @@ class device_ref
 
 public:
   //! @brief Create a `device_ref` object from a native device ordinal.
-  /*implicit*/ _CCCL_HOST_API constexpr device_ref(int __id) noexcept
+  /*implicit*/ _CCCL_API constexpr device_ref(int __id) noexcept
       : __id_(__id)
   {
-    _CCCL_IF_CONSTEVAL_DEFAULT
+    _CCCL_VERIFY(__id >= 0, "Device ID must be a valid GPU device ordinal");
+    _CCCL_IF_NOT_CONSTEVAL_DEFAULT
     {
-      _CCCL_VERIFY(__id >= 0, "Device ID must be a valid GPU device ordinal");
-    }
-    else
-    {
-      _CCCL_VERIFY(__id >= 0 && static_cast<::cuda::std::size_t>(__id) < ::cuda::__physical_devices_count(),
-                   "Device ID must be a valid GPU device ordinal");
+      NV_IF_TARGET(NV_IS_HOST,
+                   (_CCCL_VERIFY(static_cast<::cuda::std::size_t>(__id) < ::cuda::__physical_devices_count(),
+                                 "Device ID must be a valid GPU device ordinal");))
     }
   }
 
   //! @brief Retrieve the native ordinal of the `device_ref`
   //!
   //! @return int The native device ordinal held by the `device_ref` object
-  [[nodiscard]] _CCCL_HOST_API constexpr int get() const noexcept
+  [[nodiscard]] _CCCL_API constexpr int get() const noexcept
   {
     return __id_;
   }
@@ -72,7 +73,7 @@ public:
   //! @param __lhs The first `device_ref` to compare
   //! @param __rhs The second `device_ref` to compare
   //! @return true if `lhs` and `rhs` refer to the same device ordinal
-  [[nodiscard]] friend _CCCL_HOST_API constexpr bool operator==(device_ref __lhs, device_ref __rhs) noexcept
+  [[nodiscard]] friend _CCCL_API constexpr bool operator==(device_ref __lhs, device_ref __rhs) noexcept
   {
     return __lhs.__id_ == __rhs.__id_;
   }
@@ -86,7 +87,7 @@ public:
   //! @param __lhs The first `device_ref` to compare
   //! @param __rhs The second `device_ref` to compare
   //! @return true if `lhs` and `rhs` refer to different device ordinal
-  [[nodiscard]] friend _CCCL_HOST_API constexpr bool operator!=(device_ref __lhs, device_ref __rhs) noexcept
+  [[nodiscard]] friend _CCCL_API constexpr bool operator!=(device_ref __lhs, device_ref __rhs) noexcept
   {
     return __lhs.__id_ != __rhs.__id_;
   }
@@ -99,20 +100,23 @@ public:
   //!
   //! @throws cuda_error if the attribute query fails
   //!
+  //! @note When called on device, this function requires libcudadevrt to be linked.
+  //!
   //! @sa device::attrs
   template <typename _Attr>
-  [[nodiscard]] _CCCL_HOST_API auto attribute(_Attr __attr) const
+  [[nodiscard]] _CCCL_API auto attribute(_Attr __attr) const
   {
     return __attr(*this);
   }
 
   //! @overload
   template <::cudaDeviceAttr _Attr>
-  [[nodiscard]] _CCCL_HOST_API auto attribute() const
+  [[nodiscard]] _CCCL_API auto attribute() const
   {
     return attribute(__dev_attr<_Attr>());
   }
 
+#  if !_CCCL_COMPILER(NVRTC)
   //! @brief Retrieve the memory location of this device
   //!
   //! @return The memory location of this device
@@ -157,12 +161,13 @@ public:
   [[nodiscard]] _CCCL_HOST_API ::cuda::std::span<const device_ref> peers() const; // implemented in
                                                                                   // <cuda/__device/physical_device.h>
                                                                                   // to avoid circular dependency
+#  endif // !_CCCL_COMPILER(NVRTC)
 };
 
 _CCCL_END_NAMESPACE_CUDA
 
 #  include <cuda/std/__cccl/epilogue.h>
 
-#endif // _CCCL_HAS_CTK() && !_CCCL_COMPILER(NVRTC)
+#endif // _CCCL_HAS_CTK()
 
 #endif // _CUDA___DEVICE_DEVICE_REF_H

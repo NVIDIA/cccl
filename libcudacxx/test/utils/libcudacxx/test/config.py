@@ -851,6 +851,7 @@ class Configuration(object):
                 if mode.count("virtual"):
                     arch_flag = virt_arch_format.format(str(arch) + subarchitecture)
                 self.cxx.compile_flags += [arch_flag]
+                self.cxx.link_flags += [arch_flag]
         if pre_sm_32:
             self.config.available_features.add("pre-sm-32")
         if pre_sm_60:
