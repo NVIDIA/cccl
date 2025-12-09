@@ -32,17 +32,20 @@ _CCCL_BEGIN_NAMESPACE_CUDA_EXECUTION
 
 struct __get_max_segment_size_t;
 
-// TODO : add dynamic extent specialization later, when stateful guarantees (env) are supported
+_CCCL_GLOBAL_CONSTANT auto dynamic_max_segment_size = static_cast<size_t>(-1);
 
 //! A class template that can be used to specify the maximum segment size
 //! for segmented algorithms.
 //! \tparam _Size The maximum segment size.
-template <size_t _Size>
+template <size_t _Size = dynamic_max_segment_size>
 struct max_segment_size : __guarantee
 {
-  using value_type = size_t;
+  using value_type             = size_t;
+  static constexpr size_t size = _Size;
 
   constexpr max_segment_size() = default;
+
+  _CCCL_API constexpr max_segment_size(size_t) noexcept {}
 
   _CCCL_API constexpr operator value_type() const noexcept
   {
@@ -53,6 +56,31 @@ struct max_segment_size : __guarantee
   {
     return *this;
   }
+};
+
+template <>
+struct max_segment_size<dynamic_max_segment_size> : __guarantee
+{
+  using value_type = size_t;
+
+  static constexpr size_t size = dynamic_max_segment_size;
+
+  _CCCL_API constexpr max_segment_size(size_t __s)
+      : __val(__s)
+  {}
+
+  _CCCL_API constexpr operator value_type() const noexcept
+  {
+    return __val;
+  }
+
+  [[nodiscard]] _CCCL_NODEBUG_API constexpr auto query(const __get_max_segment_size_t&) const noexcept
+  {
+    return *this;
+  }
+
+private:
+  size_t __val;
 };
 
 struct __get_max_segment_size_t

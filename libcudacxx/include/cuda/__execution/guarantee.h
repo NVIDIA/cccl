@@ -54,16 +54,13 @@ struct __get_guarantees_t
 _CCCL_GLOBAL_CONSTANT auto __get_guarantees = __get_guarantees_t{};
 
 template <class... _Guarantees>
-[[nodiscard]] _CCCL_NODEBUG_API auto guarantee(_Guarantees...)
+[[nodiscard]] _CCCL_NODEBUG_API constexpr auto guarantee(_Guarantees... __guarantees_args) noexcept
 {
   static_assert((::cuda::std::is_base_of_v<__guarantee, _Guarantees> && ...),
-                "Only guarantees can be passed to require");
-  static_assert((::cuda::std::is_empty_v<_Guarantees> && ...), "Stateful guarantees are not implemented");
+                "Only guarantees can be passed to guarantee");
+  // static_assert((::cuda::std::is_empty_v<_Guarantees> && ...), "Stateful guarantees are not implemented");
 
-  // clang < 19 doesn't like this code
-  // since the only guarantees we currently allow are in max_segment_size.h and
-  // all of them are stateless, let's ignore incoming parameters
-  ::cuda::std::execution::env<_Guarantees...> __env{};
+  ::cuda::std::execution::env<_Guarantees...> __env{__guarantees_args...};
 
   return ::cuda::std::execution::prop{__get_guarantees_t{}, __env};
 }
