@@ -356,7 +356,7 @@ private:
     scope_exit __on_exit([__cb_ptr, &__cb_alloc]() noexcept {
       __traits_t::deallocate(__cb_alloc, __cb_ptr, 1);
     });
-    __traits_t::construct(__cb_alloc, __cb_ptr, __allocator_deleter{__alloc}, static_cast<_Args&&>(__args)...);
+    __traits_t::construct(__cb_alloc, __cb_ptr, __allocator_deleter<_Alloc>{__alloc}, static_cast<_Args&&>(__args)...);
     __on_exit.release();
 
     return __shared_ptr{__cb_ptr, ::cuda::std::addressof(__cb_ptr->__value_)};
