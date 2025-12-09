@@ -108,6 +108,36 @@ std::string get_device_reduce_kernel_name(
     transform_op_t);
 }
 
+std::string get_device_reduce_nondeterministic_kernel_name(
+  std::string_view input_iterator_t,
+  std::string_view output_iterator_t,
+  std::string_view reduction_op_t,
+  std::string_view accum_t,
+  cccl_value_t init)
+{
+  std::string chained_policy_t;
+  check(cccl_type_name_from_nvrtc<device_reduce_policy>(&chained_policy_t));
+
+  std::string offset_t;
+  check(cccl_type_name_from_nvrtc<OffsetT>(&offset_t));
+
+  std::string transform_op_t;
+  check(cccl_type_name_from_nvrtc<cuda::std::identity>(&transform_op_t));
+
+  const std::string init_t = cccl_type_enum_to_name(init.type.type);
+
+  return std::format(
+    "cub::detail::reduce::NondeterministicDeviceReduceAtomicKernel<{0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}>",
+    chained_policy_t,
+    input_iterator_t,
+    output_iterator_t,
+    offset_t,
+    reduction_op_t,
+    accum_t,
+    init_t,
+    transform_op_t);
+}
+
 struct reduce_kernel_source
 {
   cccl_device_reduce_build_result_t& build;
@@ -128,6 +158,14 @@ struct reduce_kernel_source
   {
     return build.reduction_kernel;
   }
+  CUkernel NondeterministicAtomicKernel() const
+  {
+    return build.nondeterministic_atomic_kernel;
+  }
+  size_t InitSize() const
+  {
+    return build.accumulator_size;
+  }
 };
 } // namespace reduce
 
@@ -140,6 +178,7 @@ CUresult cccl_device_reduce_build_ex(
   cccl_iterator_t output_it,
   cccl_op_t op,
   cccl_value_t init,
+  cccl_determinism_t determinism,
   int cc_major,
   int cc_minor,
   const char* cub_path,
@@ -148,6 +187,23 @@ CUresult cccl_device_reduce_build_ex(
   const char* ctk_path,
   cccl_build_config* config)
 {
+  if (determinism == CCCL_NOT_GUARANTEED && (op.type != CCCL_PLUS || output_it.type != CCCL_POINTER))
+  {
+    fflush(stderr);
+    printf("\nERROR in cccl_device_reduce_build(): non-deterministic reduce with non-plus operator or non-pointer "
+           "output iterator is not supported\n");
+    fflush(stdout);
+    return CUDA_ERROR_INVALID_VALUE;
+  }
+
+  if (determinism == CCCL_GPU_TO_GPU)
+  {
+    fflush(stderr);
+    printf("\nERROR in cccl_device_reduce_build(): gpu-to-gpu determinism is not supported\n");
+    fflush(stdout);
+    return CUDA_ERROR_INVALID_VALUE;
+  }
+
   CUresult error = CUDA_SUCCESS;
 
   try
@@ -244,6 +300,16 @@ static_assert(device_reduce_policy()(::cuda::arch_id{{CUB_PTX_ARCH / 10}}) == {7
     std::string single_tile_kernel_lowered_name;
     std::string single_tile_second_kernel_lowered_name;
     std::string reduction_kernel_lowered_name;
+    std::string nondeterministic_kernel_lowered_name;
+
+    // Only build nondeterministic kernel for CCCL_NOT_GUARANTEED (which requires plus op)
+    const bool build_nondeterministic = (determinism == CCCL_NOT_GUARANTEED);
+    std::string nondeterministic_kernel_name;
+    if (build_nondeterministic)
+    {
+      nondeterministic_kernel_name = reduce::get_device_reduce_nondeterministic_kernel_name(
+        input_iterator_name, output_iterator_name, op_name, accum_cpp, init);
+    }
 
     const std::string arch = std::format("-arch=sm_{0}{1}", cc_major, cc_minor);
 
@@ -279,10 +345,12 @@ static_assert(device_reduce_policy()(::cuda::arch_id{{CUB_PTX_ARCH / 10}}) == {7
         ->add_expression({single_tile_kernel_name})
         ->add_expression({single_tile_second_kernel_name})
         ->add_expression({reduction_kernel_name})
+        ->add_expression_if(build_nondeterministic, {nondeterministic_kernel_name})
         ->compile_program({args.data(), args.size()})
         ->get_name({single_tile_kernel_name, single_tile_kernel_lowered_name})
         ->get_name({single_tile_second_kernel_name, single_tile_second_kernel_lowered_name})
         ->get_name({reduction_kernel_name, reduction_kernel_lowered_name})
+        ->get_name_if(build_nondeterministic, {nondeterministic_kernel_name, nondeterministic_kernel_lowered_name})
         ->link_program()
         ->add_link_list(linkable_list)
         ->finalize_program();
@@ -292,11 +360,17 @@ static_assert(device_reduce_policy()(::cuda::arch_id{{CUB_PTX_ARCH / 10}}) == {7
     check(cuLibraryGetKernel(
       &build->single_tile_second_kernel, build->library, single_tile_second_kernel_lowered_name.c_str()));
     check(cuLibraryGetKernel(&build->reduction_kernel, build->library, reduction_kernel_lowered_name.c_str()));
+    if (build_nondeterministic)
+    {
+      check(cuLibraryGetKernel(
+        &build->nondeterministic_atomic_kernel, build->library, nondeterministic_kernel_lowered_name.c_str()));
+    }
 
     build->cc               = cc_major * 10 + cc_minor;
     build->cubin            = (void*) result.data.release();
     build->cubin_size       = result.size;
     build->accumulator_size = accum_t.size;
+    build->determinism      = determinism;
     build->runtime_policy   = new cub::detail::reduce::arch_policies{cub_arch_policies};
   }
   catch (const std::exception& exc)
@@ -321,6 +395,8 @@ CUresult cccl_device_reduce(
   cccl_value_t init,
   CUstream stream)
 {
+  assert(build.determinism == CCCL_RUN_TO_RUN);
+
   bool pushed    = false;
   CUresult error = CUDA_SUCCESS;
   try
@@ -331,6 +407,61 @@ CUresult cccl_device_reduce(
     check(cuCtxGetDevice(&cu_device));
 
     auto exec_status = cub::detail::reduce::dispatch<void>(
+      d_temp_storage,
+      *temp_storage_bytes,
+      indirect_arg_t{d_in}, // could be indirect_iterator_t, but CUB does not need to increment it
+      indirect_arg_t{d_out}, // could be indirect_iterator_t, but CUB does not need to increment it
+      static_cast<OffsetT>(num_items),
+      indirect_arg_t{op},
+      indirect_arg_t{init},
+      stream,
+      ::cuda::std::identity{},
+      *static_cast<cub::detail::reduce::arch_policies*>(build.runtime_policy),
+      reduce::reduce_kernel_source{build},
+      cub::detail::CudaDriverLauncherFactory{cu_device, build.cc});
+
+    error = static_cast<CUresult>(exec_status);
+  }
+  catch (const std::exception& exc)
+  {
+    fflush(stderr);
+    printf("\nEXCEPTION in cccl_device_reduce(): %s\n", exc.what());
+    fflush(stdout);
+    error = CUDA_ERROR_UNKNOWN;
+  }
+
+  if (pushed)
+  {
+    CUcontext dummy;
+    cuCtxPopCurrent(&dummy);
+  }
+
+  return error;
+}
+
+CUresult cccl_device_reduce_not_guaranteed_determinism(
+  cccl_device_reduce_build_result_t build,
+  void* d_temp_storage,
+  size_t* temp_storage_bytes,
+  cccl_iterator_t d_in,
+  cccl_iterator_t d_out,
+  uint64_t num_items,
+  cccl_op_t op,
+  cccl_value_t init,
+  CUstream stream)
+{
+  assert(build.determinism == CCCL_NOT_GUARANTEED);
+
+  bool pushed    = false;
+  CUresult error = CUDA_SUCCESS;
+  try
+  {
+    pushed = try_push_context();
+
+    CUdevice cu_device;
+    check(cuCtxGetDevice(&cu_device));
+
+    auto exec_status = cub::detail::reduce::dispatch_nondeterministic<void>(
       d_temp_storage,
       *temp_storage_bytes,
       indirect_arg_t{d_in}, // could be indirect_iterator_t, but CUB does not need to increment it
@@ -395,6 +526,7 @@ CUresult cccl_device_reduce_build(
   cccl_iterator_t d_out,
   cccl_op_t op,
   cccl_value_t init,
+  cccl_determinism_t determinism,
   int cc_major,
   int cc_minor,
   const char* cub_path,
@@ -403,5 +535,17 @@ CUresult cccl_device_reduce_build(
   const char* ctk_path)
 {
   return cccl_device_reduce_build_ex(
-    build, d_in, d_out, op, init, cc_major, cc_minor, cub_path, thrust_path, libcudacxx_path, ctk_path, nullptr);
+    build,
+    d_in,
+    d_out,
+    op,
+    init,
+    determinism,
+    cc_major,
+    cc_minor,
+    cub_path,
+    thrust_path,
+    libcudacxx_path,
+    ctk_path,
+    nullptr);
 }
