@@ -132,7 +132,7 @@ public:
       : __backend_(experimental::__allocate_shared<__backend_for<_Sch, _Alloc>>(alloc, _CCCL_MOVE(sch), alloc))
   {}
 
-  [[nodiscard]] _CCCL_API auto schedule() const noexcept;
+  [[nodiscard]] _CCCL_API auto schedule() const noexcept -> __detail::__task_sender;
 
   [[nodiscard]] _CCCL_API friend bool operator==(const task_scheduler& __lhs, const task_scheduler& __rhs) noexcept
   {
@@ -622,7 +622,7 @@ private:
 };
 } // namespace __detail
 
-[[nodiscard]] _CCCL_API inline auto task_scheduler::schedule() const noexcept
+[[nodiscard]] _CCCL_API inline auto task_scheduler::schedule() const noexcept -> __detail::__task_sender
 {
   return __detail::__task_sender{*this};
 }
