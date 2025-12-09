@@ -27,7 +27,6 @@
 #  include <cuda/__device/physical_device.h>
 #  include <cuda/__driver/driver_api.h>
 #  include <cuda/__fwd/devices.h>
-#  include <cuda/__runtime/device_api.h>
 #  include <cuda/std/__cstddef/types.h>
 #  include <cuda/std/span>
 
@@ -72,7 +71,7 @@ public:
   __all_devices& operator=(const __all_devices&) = delete;
   __all_devices& operator=(__all_devices&&)      = delete;
 
-  [[nodiscard]] _CCCL_API device_ref operator[](size_type __i) const
+  [[nodiscard]] _CCCL_DEVICE_IF_RDC _CCCL_HOST_API device_ref operator[](size_type __i) const
   {
     if (__i >= size())
     {
@@ -86,7 +85,7 @@ public:
   //! @return The number of CUDA devices.
   //!
   //! @note When called on device, this function requires libcudadevrt to be linked.
-  [[nodiscard]] _CCCL_API size_type size() const
+  [[nodiscard]] _CCCL_DEVICE_IF_RDC _CCCL_HOST_API size_type size() const
   {
     NV_IF_ELSE_TARGET(
       NV_IS_HOST, (return ::cuda::__devices().size();), ({
@@ -150,7 +149,7 @@ _CCCL_GLOBAL_CONSTANT __all_devices devices{};
 
 _CCCL_END_NAMESPACE_CUDA
 
-#  if _CCCL_CUDA_COMPILATION()
+#  if _CCCL_CUDA_COMPILATION() && _CCCL_HAS_RDC()
 
 _CCCL_BEGIN_NAMESPACE_CUDA_DEVICE
 
@@ -168,7 +167,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_DEVICE
 
 _CCCL_END_NAMESPACE_CUDA_DEVICE
 
-#  endif // _CCCL_CUDA_COMPILATION()
+#  endif // _CCCL_CUDA_COMPILATION() && _CCCL_HAS_RDC()
 
 #  include <cuda/std/__cccl/epilogue.h>
 

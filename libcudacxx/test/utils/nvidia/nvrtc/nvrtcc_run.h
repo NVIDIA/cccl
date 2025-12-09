@@ -50,7 +50,7 @@ static ExecutionConfig load_execution_config_from_file(const std::string& file)
   return {parse_run_config(config), builds};
 }
 
-static void load_and_run_gpu_code(const std::string inputFile, const RunConfig& rc)
+inline void load_and_run_gpu_code(const std::string inputFile, const RunConfig& rc)
 {
   std::ifstream istr(inputFile, std::ios::binary);
   assert(!!istr);
@@ -60,6 +60,7 @@ static void load_and_run_gpu_code(const std::string inputFile, const RunConfig& 
 
   CUdevice cuDevice;
   CUcontext context;
+
   CUmodule module;
   CUfunction kernel;
 
@@ -67,7 +68,28 @@ static void load_and_run_gpu_code(const std::string inputFile, const RunConfig& 
   CUDA_SAFE_CALL(cuDeviceGet(&cuDevice, 0));
   CUDA_SAFE_CALL(cuDevicePrimaryCtxRetain(&context, cuDevice));
   CUDA_SAFE_CALL(cuCtxSetCurrent(context));
-  CUDA_SAFE_CALL(cuModuleLoadDataEx(&module, code.data(), 0, 0, 0));
+
+  if (!link_libraries.empty())
+  {
+    CUlinkState linkState;
+    CUDA_SAFE_CALL(cuLinkCreate(0, 0, 0, &linkState));
+    CUDA_SAFE_CALL(cuLinkAddData(linkState, CU_JIT_INPUT_PTX, code.data(), code.size(), "ptx_in.ptx", 0, 0, 0));
+
+    for (const auto& lib : link_libraries)
+    {
+      CUDA_SAFE_CALL(cuLinkAddFile(linkState, CU_JIT_INPUT_LIBRARY, lib.c_str(), 0, 0, 0));
+    }
+
+    size_t cubinSize;
+    void* cubin;
+    CUDA_SAFE_CALL(cuLinkComplete(linkState, &cubin, &cubinSize));
+    CUDA_SAFE_CALL(cuModuleLoadData(&module, cubin));
+  }
+  else
+  {
+    CUDA_SAFE_CALL(cuModuleLoadData(&module, code.data()));
+  }
+
   CUDA_SAFE_CALL(cuModuleGetFunction(&kernel, module, "main_kernel"));
   CUDA_SAFE_CALL(cuLaunchKernel(kernel, 1, 1, 1, rc.threadCount, 1, 1, rc.shmemSize, nullptr, nullptr, 0));
 

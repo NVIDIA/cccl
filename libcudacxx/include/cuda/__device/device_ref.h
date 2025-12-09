@@ -104,14 +104,14 @@ public:
   //!
   //! @sa device::attrs
   template <typename _Attr>
-  [[nodiscard]] _CCCL_API auto attribute(_Attr __attr) const
+  [[nodiscard]] _CCCL_DEVICE_IF_RDC _CCCL_HOST_API auto attribute(_Attr __attr) const
   {
     return __attr(*this);
   }
 
   //! @overload
   template <::cudaDeviceAttr _Attr>
-  [[nodiscard]] _CCCL_API auto attribute() const
+  [[nodiscard]] _CCCL_DEVICE_IF_RDC _CCCL_HOST_API auto attribute() const
   {
     return attribute(__dev_attr<_Attr>());
   }

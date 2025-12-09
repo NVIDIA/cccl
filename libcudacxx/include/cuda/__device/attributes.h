@@ -28,7 +28,6 @@
 #  include <cuda/__driver/driver_api.h>
 #  include <cuda/__fwd/devices.h>
 #  include <cuda/__runtime/api_wrapper.h>
-#  include <cuda/__runtime/device_api.h>
 #  include <cuda/std/__cstddef/types.h>
 
 #  include <cuda/std/__cccl/prologue.h>
@@ -40,12 +39,12 @@ struct __dev_attr_impl
 {
   using type = _Type;
 
-  [[nodiscard]] _CCCL_API constexpr operator ::cudaDeviceAttr() const noexcept
+  [[nodiscard]] _CCCL_DEVICE_API constexpr operator ::cudaDeviceAttr() const noexcept
   {
     return _Attr;
   }
 
-  [[nodiscard]] _CCCL_API type operator()(device_ref __dev) const
+  [[nodiscard]] _CCCL_DEVICE_IF_RDC _CCCL_HOST_API type operator()(device_ref __dev) const
   {
     NV_IF_ELSE_TARGET(
       NV_IS_HOST,
@@ -717,8 +716,8 @@ _CCCL_GLOBAL_CONSTANT gpu_direct_rdma_supported_t gpu_direct_rdma_supported{};
 
 // bitmask to be interpreted according to the
 // cudaFlushGPUDirectRDMAWritesOptions enum
-using gpu_direct_rdma_flush_writes_options_t = __dev_attr<::cudaDevAttrGPUDirectRDMAFlushWritesOptions>;
-_CCCL_GLOBAL_CONSTANT gpu_direct_rdma_flush_writes_options_t gpu_direct_rdma_flush_writes_options{};
+// using gpu_direct_rdma_flush_writes_options_t = __dev_attr<::cudaDevAttrGPUDirectRDMAFlushWritesOptions>;
+// _CCCL_GLOBAL_CONSTANT gpu_direct_rdma_flush_writes_options_t gpu_direct_rdma_flush_writes_options{};
 
 // see the cudaGPUDirectRDMAWritesOrdering enum for numerical values
 using gpu_direct_rdma_writes_ordering_t = __dev_attr<::cudaDevAttrGPUDirectRDMAWritesOrdering>;
@@ -753,7 +752,7 @@ struct compute_capability_t
 {
   using type = ::cuda::compute_capability;
 
-  [[nodiscard]] _CCCL_API type operator()(device_ref __dev_id) const
+  [[nodiscard]] _CCCL_DEVICE_IF_RDC _CCCL_HOST_API type operator()(device_ref __dev_id) const
   {
     return type{::cuda::device_attributes::compute_capability_major(__dev_id),
                 ::cuda::device_attributes::compute_capability_minor(__dev_id)};
