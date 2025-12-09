@@ -202,7 +202,7 @@ auto make_iterator_info(cccl_iterator_t input_it) -> cdt::iterator_info
   return {static_cast<int>(input_it.value_type.size),
           static_cast<int>(input_it.value_type.alignment),
           /* trivially_relocatable */ true, // TODO(bgruber): how to check this properly?
-          input_it.type == CCCL_POINTER}; // TODO(bgruber): how to check this properly?
+          /* is contiguous */ input_it.type == CCCL_POINTER}; // TODO(bgruber): how to check this properly?
 }
 } // namespace transform
 

@@ -212,14 +212,9 @@ struct transform_arch_policy
 };
 
 #if _CCCL_HAS_CONCEPTS()
-_CCCL_API consteval void __needs_a_constexpr_value(auto) {}
-
 // TODO(bgruber): bikeshed name before we make the tuning API public
 template <typename T>
-concept transform_policy_hub = requires(T hub, ::cuda::arch_id arch) {
-  { hub(arch) } -> _CCCL_CONCEPT_VSTD::same_as<transform_arch_policy>;
-  { __needs_a_constexpr_value(hub(arch)) };
-};
+concept transform_policy_hub = policy_hub<T, transform_arch_policy>;
 #endif // _CCCL_HAS_CONCEPTS()
 
 struct iterator_info

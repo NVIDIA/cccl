@@ -202,7 +202,7 @@ _CCCL_HOST_DEVICE _CCCL_CONSTEVAL auto load_store_type()
   }
 }
 
-template <const transform_arch_policy* Policy,
+template <const transform_arch_policy& Policy,
           typename Offset,
           typename F,
           typename RandomAccessIteratorOut,
@@ -215,9 +215,9 @@ _CCCL_DEVICE void transform_kernel_vectorized(
   RandomAccessIteratorOut out,
   RandomAccessIteratorsIn... ins)
 {
-  constexpr int block_threads    = Policy->vectorized_policy.block_threads;
-  constexpr int items_per_thread = Policy->vectorized_policy.items_per_thread_vectorized;
-  constexpr int vec_size         = Policy->vectorized_policy.vec_size;
+  constexpr int block_threads    = Policy.vectorized_policy.block_threads;
+  constexpr int items_per_thread = Policy.vectorized_policy.items_per_thread_vectorized;
+  constexpr int vec_size         = Policy.vectorized_policy.vec_size;
   _CCCL_ASSERT(!can_vectorize || (items_per_thread == num_elem_per_thread_prefetch), "");
   constexpr int tile_size = block_threads * items_per_thread;
   const Offset offset     = static_cast<Offset>(blockIdx.x) * tile_size;
@@ -541,7 +541,7 @@ _CCCL_DEVICE auto copy_and_return_smem_dst_fallback(
 }
 
 // note: there is no PDL in this kernel since PDL is not supported below Hopper and this kernel is intended for Ampere
-template <const transform_arch_policy* Policy,
+template <const transform_arch_policy& Policy,
           typename Offset,
           typename Predicate,
           typename F,
@@ -560,7 +560,7 @@ _CCCL_DEVICE void transform_kernel_ldgsts(
   static_assert(ldgsts_size_and_align <= 16);
   _CCCL_ASSERT(reinterpret_cast<uintptr_t>(smem) % ldgsts_size_and_align == 0, "");
 
-  constexpr int block_threads = Policy->async_copy_policy.block_threads;
+  constexpr int block_threads = Policy.async_copy_policy.block_threads;
   const int tile_size         = block_threads * num_elem_per_thread;
   const Offset offset         = static_cast<Offset>(blockIdx.x) * tile_size;
   const int valid_items       = static_cast<int>(::cuda::std::min(num_items - offset, Offset{tile_size}));
@@ -685,7 +685,7 @@ _CCCL_DEVICE void bulk_copy_maybe_unaligned(
 // Note: we tried implementing work stealing, aka. cluster launch control, aka. UGETNEXTWORKID, (see PR:
 // https://github.com/NVIDIA/cccl/pull/5099) and the slowdowns on some benchmarks outweighed the benefits on B200. So we
 // didn't merge the changes. The problem was mostly a 25% increase in integer instructions, as shown by ncu.
-template <const transform_arch_policy* Policy,
+template <const transform_arch_policy& Policy,
           typename Offset,
           typename Predicate,
           typename F,
@@ -699,8 +699,8 @@ _CCCL_DEVICE void transform_kernel_ublkcp(
   RandomAccessIteratorOut out,
   aligned_base_ptr<InTs>... aligned_ptrs)
 {
-  constexpr int block_threads       = Policy->async_copy_policy.block_threads;
-  constexpr int bulk_copy_alignment = Policy->async_copy_policy.bulk_copy_alignment;
+  constexpr int block_threads       = Policy.async_copy_policy.block_threads;
+  constexpr int bulk_copy_alignment = Policy.async_copy_policy.bulk_copy_alignment;
 
   // add padding after a tile in shared memory to make space for the next tile's head padding, and retain alignment
   constexpr int max_alignment = ::cuda::std::max({int{alignof(InTs)}...});
@@ -1013,7 +1013,7 @@ __launch_bounds__(get_block_threads<ArchPolicies>) CUB_DETAIL_KERNEL_ATTRIBUTES 
   {
     static_assert(::cuda::std::is_same_v<Predicate, always_true_predicate>,
                   "Cannot vectorize transform with a predicate");
-    transform_kernel_vectorized<&policy>(
+    transform_kernel_vectorized<policy>(
       num_items,
       num_elem_per_thread,
       can_vectorize,
@@ -1025,7 +1025,7 @@ __launch_bounds__(get_block_threads<ArchPolicies>) CUB_DETAIL_KERNEL_ATTRIBUTES 
   {
     NV_IF_TARGET(
       NV_PROVIDES_SM_80,
-      (transform_kernel_ldgsts<&policy>(
+      (transform_kernel_ldgsts<policy>(
          num_items,
          num_elem_per_thread,
          ::cuda::std::move(pred),
@@ -1037,7 +1037,7 @@ __launch_bounds__(get_block_threads<ArchPolicies>) CUB_DETAIL_KERNEL_ATTRIBUTES 
   {
     NV_IF_TARGET(
       NV_PROVIDES_SM_90,
-      (transform_kernel_ublkcp<&policy>(
+      (transform_kernel_ublkcp<policy>(
          num_items,
          num_elem_per_thread,
          ::cuda::std::move(pred),

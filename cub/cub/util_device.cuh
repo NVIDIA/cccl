@@ -30,6 +30,10 @@
 #include <cuda/std/array>
 #include <cuda/std/cassert>
 
+#if _CCCL_HAS_CONCEPTS()
+#  include <cuda/std/concepts>
+#endif // _CCCL_HAS_CONCEPTS()
+
 #if !_CCCL_COMPILER(NVRTC)
 #  include <atomic> // saves 146ms compile-time over <cuda/std/atomic> (CCCL 3.1)
 #  if defined(CUB_DEFINE_RUNTIME_POLICIES)
@@ -832,12 +836,14 @@ private:
 #endif // !_CCCL_COMPILER(NVRTC)
 };
 
+namespace detail
+{
 #if !defined(CUB_DEFINE_RUNTIME_POLICIES) && !_CCCL_COMPILER(NVRTC)
 
 template <::cuda::arch_id ArchId, typename ArchPolicies, typename FunctorT>
 CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t call_for_arch(ArchPolicies arch_policies, FunctorT&& f)
 {
-  // this function is instantiated per ArchId, but we instantiate f only for each distinct policy
+  // this function is instantiated per ArchId, but we instantiate f only for each distinct policy (!!)
   static constexpr auto policy = arch_policies(ArchId);
   return f([]() -> const auto& {
     return policy;
@@ -876,6 +882,7 @@ dispatch_arch(ArchPolicies arch_policies, ::cuda::arch_id device_arch, F&& f)
   return dispatch_compiled_for_arches<10, NV_TARGET_SM_INTEGER_LIST>(
     arch_policies, device_arch, ::cuda::std::forward<F>(f));
 #  else
+  // some compilers don't tell us what arches we are compiling for, so we use all of them
   return dispatch_all_arches(
     arch_policies,
     device_arch,
@@ -893,6 +900,18 @@ _CCCL_API _CCCL_FORCEINLINE cudaError_t dispatch_arch(ArchPolicies arch_policies
   });
 }
 #endif // !defined(CUB_DEFINE_RUNTIME_POLICIES) && !_CCCL_COMPILER(NVRTC)
+
+#if _CCCL_HAS_CONCEPTS()
+_CCCL_API consteval void __needs_a_constexpr_value(auto) {}
+
+// TODO(bgruber): bikeshed name before we make the tuning API public
+template <typename T, typename ArchPolicy>
+concept policy_hub = requires(T hub, ::cuda::arch_id arch) {
+  { hub(arch) } -> _CCCL_CONCEPT_VSTD::same_as<ArchPolicy>;
+  { __needs_a_constexpr_value(hub(arch)) };
+};
+#endif // _CCCL_HAS_CONCEPTS()
+} // namespace detail
 
 CUB_NAMESPACE_END
 

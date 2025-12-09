@@ -43,6 +43,10 @@
 #include <cuda/std/expected>
 #include <cuda/std/tuple>
 
+#if !_CCCL_COMPILER(NVRTC) && defined(CUB_DEBUG_LOG)
+#  include <sstream>
+#endif
+
 // On Windows, the `if CUB_DETAIL_CONSTEXPR_ISH` results in `warning C4702: unreachable code`.
 _CCCL_DIAG_PUSH
 _CCCL_DIAG_SUPPRESS_MSVC(4702)
@@ -67,27 +71,30 @@ struct prefetch_config
   int sm_count;
 };
 
-template <typename Offset,
+template <typename ArchPolicies,
+          typename Offset,
           typename RandomAccessIteratorsIn,
           typename RandomAccessIteratorOut,
           typename Predicate,
-          typename TransformOp,
-          typename ArchPolicies>
+          typename TransformOp>
 struct TransformKernelSource;
 
-template <typename Offset,
+template <typename ArchPolicies,
+          typename Offset,
           typename... RandomAccessIteratorsIn,
           typename RandomAccessIteratorOut,
           typename Predicate,
-          typename TransformOp,
-          typename ArchPolicies>
-struct TransformKernelSource<Offset,
+          typename TransformOp>
+struct TransformKernelSource<ArchPolicies,
+                             Offset,
                              ::cuda::std::tuple<RandomAccessIteratorsIn...>,
                              RandomAccessIteratorOut,
                              Predicate,
-                             TransformOp,
-                             ArchPolicies>
+                             TransformOp>
 {
+  // ArchPolicies must be stateless, so we can pass the type to the kernel
+  static_assert(::cuda::std::is_empty_v<ArchPolicies>);
+
   CUB_DEFINE_KERNEL_GETTER(
     TransformKernel,
     transform_kernel<ArchPolicies,
@@ -301,14 +308,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t invoke_async_algorithm(
   {
     return ret.error();
   }
-  // #if defined(CUB_DEFINE_RUNTIME_POLICIES)
-  //   // Normally, this check is handled by the if constexpr(ish) in Invoke. However, when runtime policies are
-  //   // defined (like by c.parallel), that if constexpr becomes a plain if, so we need to check the actual compile
-  //   time
-  //   // condition again, this time asserting at runtime if we hit this point during dispatch.
-  //   if constexpr ((is_valid_aligned_base_ptr_arg<RandomAccessIteratorsIn> && ...))
-  //   {
-  // #endif // CUB_DEFINE_RUNTIME_POLICIES
+
   auto [launcher, kernel, items_per_thread] = *ret;
   return launcher.doit(
     kernel,
@@ -320,14 +320,6 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t invoke_async_algorithm(
     THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator(out),
     kernel_source.MakeAlignedBasePtrKernelArg(
       THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator(::cuda::std::get<Is>(in)), alignment)...);
-  // #if defined(CUB_DEFINE_RUNTIME_POLICIES)
-  //   }
-  //   else
-  //   {
-  //     _CCCL_ASSERT_HOST(false, "ublkcp algorithm requires all input iterators to be contiguous");
-  //     _CCCL_UNREACHABLE();
-  //   }
-  // #endif // CUB_DEFINE_RUNTIME_POLICIES
 }
 
 template <typename... RandomAccessIteratorsIn,
@@ -447,13 +439,16 @@ template <requires_stable_address StableAddress,
                                                                     ::cuda::std::is_same_v<Predicate, always_true_predicate>,
                                                                     ::cuda::std::tuple<RandomAccessIteratorsIn...>,
                                                                     RandomAccessIteratorOut>,
-          typename KernelSource          = TransformKernelSource<Offset,
+          typename KernelSource          = TransformKernelSource<ArchPolicies,
+                                                                 Offset,
                                                                  ::cuda::std::tuple<RandomAccessIteratorsIn...>,
                                                                  RandomAccessIteratorOut,
                                                                  Predicate,
-                                                                 TransformOp,
-                                                                 ArchPolicies>,
+                                                                 TransformOp>,
           typename KernelLauncherFactory = CUB_DETAIL_DEFAULT_KERNEL_LAUNCHER_FACTORY>
+#if _CCCL_HAS_CONCEPTS()
+  requires transform_policy_hub<ArchPolicies>
+#endif // _CCCL_HAS_CONCEPTS()
 CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t dispatch(
   ::cuda::std::tuple<RandomAccessIteratorsIn...> in,
   RandomAccessIteratorOut out,
