@@ -1,6 +1,7 @@
 import inspect
 
 import numba
+import numpy as np
 from numba import cuda
 from numba.core.extending import as_numba_type
 from numpy.typing import DTypeLike
@@ -15,10 +16,20 @@ def get_inferred_return_type(op, args: tuple):
 
 def to_numba_type(tp: GpuStruct | DTypeLike) -> numba.types.Type:
     """
-    Convert a GpuStruct or DtypeLike to a numba type.
+    Convert a GpuStruct, numpy dtype, or DtypeLike to a numba type.
+
+    For numpy structured dtypes (record types), this creates an anonymous
+    gpu_struct type with pass-by-value semantics, rather than using Numba's
+    native record type which has pass-by-reference semantics.
     """
     if value := as_numba_type.lookup.get(tp):
         return value
+    # Handle numpy struct dtypes specially - convert to gpu_struct for
+    # pass-by-value semantics
+    if isinstance(tp, np.dtype) and tp.type == np.void:
+        from .struct import gpu_struct
+
+        return as_numba_type(gpu_struct(tp))
     return numba.from_dtype(tp)
 
 

@@ -6,8 +6,8 @@ import cuda.compute
 from cuda.compute import (
     CountingIterator,
     OpKind,
-    gpu_struct,
 )
+from cuda.compute.struct import gpu_struct
 
 
 def scan_pointer(input_array, build_only, scan_type):

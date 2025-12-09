@@ -4,47 +4,39 @@
 
 # example-begin
 """
-Example showing ZipIterator with nested gpu_struct types.
+Example showing ZipIterator with nested struct types.
 
 This example demonstrates combining separate arrays of nested structs using
 ZipIterator, then performing a reduction that operates on the combined data.
 This is useful when you have related data stored in separate arrays that need
 to be processed together.
+
+Struct types are defined using numpy structured dtypes.
 """
 
 import cupy as cp
 import numpy as np
 
 import cuda.compute
-from cuda.compute import ZipIterator, gpu_struct
+from cuda.compute import ZipIterator
 
-
-# Define nested structs for geometric and color data
-@gpu_struct
-class Point:
-    x: np.int32
-    y: np.int32
-
-
-@gpu_struct
-class Color:
-    r: np.uint8
-    g: np.uint8
-    b: np.uint8
-
-
-@gpu_struct
-class Pixel:
-    position: Point
-    color: Color
+# Define nested structs using numpy structured dtypes
+point_dtype = np.dtype([("x", np.int32), ("y", np.int32)])
+color_dtype = np.dtype([("r", np.uint8), ("g", np.uint8), ("b", np.uint8)])
+pixel_dtype = np.dtype([("position", point_dtype), ("color", color_dtype)])
 
 
 def sum_pixels(p1, p2):
-    """Reduction operation that sums all fields of two pixels."""
-    return Pixel(
-        Point(p1.position.x + p2.position.x, p1.position.y + p2.position.y),
-        Color(
-            p1.color.r + p2.color.r, p1.color.g + p2.color.g, p1.color.b + p2.color.b
+    """Reduction operation that sums all fields of two pixels.
+
+    Returns nested tuples which are implicitly converted to struct type.
+    """
+    return (
+        (p1.position.x + p2.position.x, p1.position.y + p2.position.y),
+        (
+            p1.color.r + p2.color.r,
+            p1.color.g + p2.color.g,
+            p1.color.b + p2.color.b,
         ),
     )
 
@@ -52,24 +44,24 @@ def sum_pixels(p1, p2):
 # Prepare separate arrays for points and colors
 num_items = 100
 
-h_points = np.array([(i, i * 2) for i in range(num_items)], dtype=Point.dtype)
+h_points = np.array([(i, i * 2) for i in range(num_items)], dtype=point_dtype)
 h_colors = np.array(
     [(i % 256, (i * 2) % 256, (i * 3) % 256) for i in range(num_items)],
-    dtype=Color.dtype,
+    dtype=color_dtype,
 )
 
-d_points = cp.empty(num_items, dtype=Point.dtype)
+d_points = cp.empty(num_items, dtype=point_dtype)
 d_points.set(h_points)
 
-d_colors = cp.empty(num_items, dtype=Color.dtype)
+d_colors = cp.empty(num_items, dtype=color_dtype)
 d_colors.set(h_colors)
 
 # Create a zip iterator to combine the points and colors
 zip_it = ZipIterator(d_points, d_colors)
 
-# Prepare output and initial value
-d_output = cp.empty(1, dtype=Pixel.dtype)
-h_init = Pixel(Point(0, 0), Color(0, 0, 0))
+# Prepare output and initial value using np.void with nested tuples
+d_output = cp.empty(1, dtype=pixel_dtype)
+h_init = np.void(((0, 0), (0, 0, 0)), dtype=pixel_dtype)
 
 # Perform the reduction on the zipped data
 cuda.compute.reduce_into(zip_it, d_output, sum_pixels, num_items, h_init)

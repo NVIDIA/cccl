@@ -40,7 +40,7 @@ class _SegmentedReduce:
         start_offsets_in: DeviceArrayLike | IteratorBase,
         end_offsets_in: DeviceArrayLike | IteratorBase,
         op: Callable | OpKind,
-        h_init: np.ndarray | GpuStruct,
+        h_init: np.ndarray | np.void | GpuStruct,
     ):
         self.d_in_cccl = cccl.to_cccl_input_iter(d_in)
         self.d_out_cccl = cccl.to_cccl_output_iter(d_out)
@@ -205,7 +205,7 @@ def segmented_reduce(
     start_offsets_in: DeviceArrayLike | IteratorBase,
     end_offsets_in: DeviceArrayLike | IteratorBase,
     op: Callable | OpKind,
-    h_init: np.ndarray | GpuStruct,
+    h_init: np.ndarray | np.void | GpuStruct,
     num_segments: int,
     stream=None,
 ):

@@ -8,7 +8,8 @@ import pytest
 from numba.np.numpy_support import carray  # noqa: F401
 
 import cuda.compute
-from cuda.compute import CacheModifiedInputIterator, ZipIterator, gpu_struct
+from cuda.compute import CacheModifiedInputIterator, ZipIterator
+from cuda.compute.struct import gpu_struct
 
 DTYPE_LIST = [
     np.uint8,

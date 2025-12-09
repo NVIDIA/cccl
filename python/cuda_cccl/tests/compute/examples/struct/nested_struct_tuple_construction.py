@@ -4,62 +4,53 @@
 
 # example-begin
 """
-Example showing tuple syntax for constructing nested gpu_struct types.
+Example showing tuple syntax for constructing nested struct types.
 
-When working with nested structs in device functions, you can use tuple syntax
-as a convenient shorthand for constructing the nested struct values. This can
-make code more concise while maintaining the same functionality.
+When working with nested structs in device functions, you use tuple syntax
+to construct return values. The tuples are implicitly converted to the
+expected struct type. This is the standard approach when using numpy
+structured dtypes.
 """
 
 import cupy as cp
 import numpy as np
 
 import cuda.compute
-from cuda.compute import gpu_struct
 
-
-# Define nested structs
-@gpu_struct
-class Stats:
-    count: np.int32
-    sum: np.float32
-
-
-@gpu_struct
-class DataPoint:
-    value: np.int64
-    stats: Stats
+# Define nested structs using numpy structured dtypes
+stats_dtype = np.dtype([("count", np.int32), ("sum", np.float32)])
+datapoint_dtype = np.dtype([("value", np.int64), ("stats", stats_dtype)])
 
 
 def sum_with_tuples(d1, d2):
     """
-    Reduction operation using tuple syntax for nested struct construction.
+    Reduction operation using tuple syntax for struct construction.
 
-    Instead of writing: Stats(d1.stats.count + d2.stats.count, ...)
-    We can use tuple syntax: (d1.stats.count + d2.stats.count, ...)
+    Return tuples which are implicitly converted to struct types.
+    For nested structs, use nested tuples.
     """
-    return DataPoint(
+    return (
         d1.value + d2.value,
-        # Tuple syntax for constructing the nested Stats struct
+        # Nested tuple for the stats field
         (d1.stats.count + d2.stats.count, d1.stats.sum + d2.stats.sum),
     )
 
 
 # Prepare the input data
 num_items = 10
-h_data = np.zeros(num_items, dtype=DataPoint.dtype)
+h_data = np.zeros(num_items, dtype=datapoint_dtype)
 for i in range(num_items):
     h_data[i]["value"] = i * 10
     h_data[i]["stats"]["count"] = 1
     h_data[i]["stats"]["sum"] = float(i)
 
 # Copy to device
-d_input = cp.empty(num_items, dtype=DataPoint.dtype)
+d_input = cp.empty(num_items, dtype=datapoint_dtype)
 d_input.set(h_data)
 
-# Prepare output and initial value
-d_output = cp.empty(1, dtype=DataPoint.dtype)
-h_init = DataPoint(0, Stats(0, 0.0))
+# Prepare output and initial value using np.void with nested tuples
+d_output = cp.empty(1, dtype=datapoint_dtype)
+h_init = np.void((0, (0, 0.0)), dtype=datapoint_dtype)
 
 # Perform the reduction
 cuda.compute.reduce_into(d_input, d_output, sum_with_tuples, num_items, h_init)

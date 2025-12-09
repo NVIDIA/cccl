@@ -11,6 +11,7 @@ from cuda.compute.iterators import (
     TransformIterator,
     ZipIterator,
 )
+from cuda.compute.struct import gpu_struct
 
 
 def test_permutation_iterator_equality():
@@ -68,7 +69,7 @@ def test_permutation_iterator_with_iterator_values():
 
 
 def test_permutation_iterator_of_zip_iterator():
-    @cuda.compute.gpu_struct
+    @gpu_struct
     class Pair:
         value_0: np.int32
         value_1: np.int32
@@ -93,7 +94,7 @@ def test_permutation_iterator_of_zip_iterator():
 
 
 def test_zip_iterator_of_permutation_iterators():
-    @cuda.compute.gpu_struct
+    @gpu_struct
     class Pair:
         value_0: np.int32
         value_1: np.int32

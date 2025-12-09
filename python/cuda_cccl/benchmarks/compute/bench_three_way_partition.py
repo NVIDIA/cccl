@@ -3,7 +3,8 @@ import numpy as np
 import pytest
 
 import cuda.compute
-from cuda.compute import CountingIterator, gpu_struct
+from cuda.compute import CountingIterator
+from cuda.compute.struct import gpu_struct
 
 
 def three_way_partition_pointer(

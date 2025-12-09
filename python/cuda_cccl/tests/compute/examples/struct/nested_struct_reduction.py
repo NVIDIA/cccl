@@ -4,57 +4,50 @@
 
 # example-begin
 """
-Example demonstrating reductions with nested gpu_struct types.
+Example demonstrating reductions with nested struct types.
 
-This example shows how to define nested structs and use them in reduction
-operations. The reduction combines values from both the outer and inner
-struct fields.
+This example shows how to define nested structs using numpy structured dtypes
+and use them in reduction operations. The reduction combines values from both
+the outer and inner struct fields.
 """
 
 import cupy as cp
 import numpy as np
 
 import cuda.compute
-from cuda.compute import gpu_struct
 
-
-# Define an inner struct to hold coordinate data
-@gpu_struct
-class Point:
-    x: np.int32
-    y: np.int32
-
-
-# Define an outer struct that contains the inner struct
-@gpu_struct
-class Particle:
-    id: np.int64
-    position: Point
+# Define nested struct types using numpy structured dtypes
+point_dtype = np.dtype([("x", np.int32), ("y", np.int32)])
+particle_dtype = np.dtype([("id", np.int64), ("position", point_dtype)])
 
 
 def sum_particles(p1, p2):
-    """Reduction operation that sums all fields of two particles."""
-    return Particle(
+    """Reduction operation that sums all fields of two particles.
+
+    Returns a tuple which is implicitly converted to the struct type.
+    For nested structs, use nested tuples.
+    """
+    return (
         p1.id + p2.id,
-        Point(p1.position.x + p2.position.x, p1.position.y + p2.position.y),
+        (p1.position.x + p2.position.x, p1.position.y + p2.position.y),
     )
 
 
 # Prepare the input data
 num_items = 10
-h_data = np.zeros(num_items, dtype=Particle.dtype)
+h_data = np.zeros(num_items, dtype=particle_dtype)
 for i in range(num_items):
     h_data[i]["id"] = i * 10
     h_data[i]["position"]["x"] = i
     h_data[i]["position"]["y"] = i * 2
 
 # Copy to device
-d_input = cp.empty(num_items, dtype=Particle.dtype)
+d_input = cp.empty(num_items, dtype=particle_dtype)
 d_input.set(h_data)
 
-# Prepare output and initial value
-d_output = cp.empty(1, dtype=Particle.dtype)
-h_init = Particle(0, Point(0, 0))
+# Prepare output and initial value using np.void with nested tuples
+d_output = cp.empty(1, dtype=particle_dtype)
+h_init = np.void((0, (0, 0)), dtype=particle_dtype)
 
 # Perform the reduction
 cuda.compute.reduce_into(d_input, d_output, sum_particles, num_items, h_init)

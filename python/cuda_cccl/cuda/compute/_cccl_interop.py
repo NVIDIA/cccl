@@ -199,20 +199,26 @@ def to_cccl_output_iter(array_or_iterator) -> Iterator:
     return _to_cccl_iter(array_or_iterator, _IteratorIO.OUTPUT)
 
 
-def to_cccl_value_state(array_or_struct: np.ndarray | GpuStruct) -> memoryview:
+def to_cccl_value_state(array_or_struct: np.ndarray | np.void | GpuStruct) -> memoryview:
     if isinstance(array_or_struct, np.ndarray):
         assert array_or_struct.flags.contiguous
         data = array_or_struct.data.cast("B")
         return data
+    elif isinstance(array_or_struct, np.void):
+        # np.void is a scalar struct value - convert to array first
+        return to_cccl_value_state(np.asarray(array_or_struct))
     else:
         # it's a GpuStruct, use the array underlying it
         return to_cccl_value_state(array_or_struct._data)
 
 
-def to_cccl_value(array_or_struct: np.ndarray | GpuStruct) -> Value:
+def to_cccl_value(array_or_struct: np.ndarray | np.void | GpuStruct) -> Value:
     if isinstance(array_or_struct, np.ndarray):
         info = _numpy_type_to_info(array_or_struct.dtype)
         return Value(info, array_or_struct.data.cast("B"))
+    elif isinstance(array_or_struct, np.void):
+        # np.void is a scalar struct value - convert to array first
+        return to_cccl_value(np.asarray(array_or_struct))
     else:
         # it's a GpuStruct, use the array underlying it
         return to_cccl_value(array_or_struct._data)
@@ -454,7 +460,7 @@ def to_cccl_op(op: Callable | OpKind, sig: Signature | None) -> Op:
     )
 
 
-def get_value_type(d_in: IteratorBase | DeviceArrayLike | GpuStruct | np.ndarray):
+def get_value_type(d_in: IteratorBase | DeviceArrayLike | GpuStruct | np.ndarray | np.void):
     from .struct import _Struct, gpu_struct
 
     if isinstance(d_in, IteratorBase):

@@ -44,7 +44,10 @@ from .iterators import (
     ZipIterator,
 )
 from .op import OpKind
-from .struct import gpu_struct
+
+# Note: gpu_struct is intentionally not exported in the public API.
+# Users should define struct types using numpy structured dtypes.
+# For internal use only, import from cuda.compute.struct directly.
 
 __all__ = [
     "binary_transform",
@@ -55,7 +58,6 @@ __all__ = [
     "DoubleBuffer",
     "exclusive_scan",
     "select",
-    "gpu_struct",
     "histogram_even",
     "inclusive_scan",
     "make_binary_transform",

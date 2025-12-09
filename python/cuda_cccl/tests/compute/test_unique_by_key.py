@@ -13,8 +13,8 @@ from cuda.compute import (
     CacheModifiedInputIterator,
     DiscardIterator,
     OpKind,
-    gpu_struct,
 )
+from cuda.compute.struct import gpu_struct
 
 DTYPE_LIST = [
     np.uint8,

@@ -5,28 +5,25 @@
 # example-begin
 """
 Example showing how to use zip_iterator to simultaneously perform a reduction
-operation on two arrays.
+operation on two arrays, using numpy structured dtypes.
 """
 
 import cupy as cp
 import numpy as np
 
 import cuda.compute
-from cuda.compute import (
-    ZipIterator,
-    gpu_struct,
-)
+from cuda.compute import ZipIterator
 
-
-@gpu_struct
-class Pair:
-    first: np.int32
-    second: np.float32
+# Define struct type using numpy structured dtype
+pair_dtype = np.dtype([("first", np.int32), ("second", np.float32)])
 
 
 def sum_pairs(p1, p2):
-    """Reduction operation that adds corresponding elements of pairs."""
-    return Pair(p1[0] + p2[0], p1[1] + p2[1])
+    """Reduction operation that adds corresponding elements of pairs.
+
+    Returns tuple which is implicitly converted to struct type.
+    """
+    return (p1[0] + p2[0], p1[1] + p2[1])
 
 
 # Prepare the input arrays.
@@ -36,11 +33,11 @@ d_input2 = cp.array([1.0, 2.0, 3.0, 4.0, 5.0], dtype=np.float32)
 # Create the zip iterator.
 zip_it = ZipIterator(d_input1, d_input2)
 
-# Prepare the initial value for the reduction.
-h_init = Pair(0, 0.0)
+# Prepare the initial value for the reduction using np.void.
+h_init = np.void((0, 0.0), dtype=pair_dtype)
 
 # Prepare the output array.
-d_output = cp.empty(1, dtype=Pair.dtype)
+d_output = cp.empty(1, dtype=pair_dtype)
 
 # Perform the reduction.
 cuda.compute.reduce_into(zip_it, d_output, sum_pairs, len(d_input1), h_init)

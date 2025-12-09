@@ -10,8 +10,8 @@ from cuda.compute import (
     CountingIterator,
     TransformIterator,
     ZipIterator,
-    gpu_struct,
 )
+from cuda.compute.struct import gpu_struct
 
 
 @pytest.mark.parametrize("num_items", [10, 1_000, 100_000])

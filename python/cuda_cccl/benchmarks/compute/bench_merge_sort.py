@@ -6,8 +6,8 @@ import cuda.compute
 from cuda.compute import (
     CountingIterator,
     OpKind,
-    gpu_struct,
 )
+from cuda.compute.struct import gpu_struct
 
 
 def merge_sort_pointer(keys, vals, output_keys, output_vals, build_only):

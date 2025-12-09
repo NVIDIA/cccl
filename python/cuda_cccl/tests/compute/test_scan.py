@@ -14,8 +14,8 @@ from cuda.compute import (
     OpKind,
     ReverseIterator,
     TransformOutputIterator,
-    gpu_struct,
 )
+from cuda.compute.struct import gpu_struct
 
 
 def scan_host(h_input: np.ndarray, op, h_init, force_inclusive):

@@ -5,16 +5,15 @@
 # example-begin
 """
 Implement segmented scan using zip iterator and ordinary scan.
+
+This example uses numpy structured dtypes for the value-flag pair type.
 """
 
 import cupy as cp
 import numpy as np
 
 import cuda.compute
-from cuda.compute import (
-    ZipIterator,
-    gpu_struct,
-)
+from cuda.compute import ZipIterator
 
 # Prepare the input data and head flags.
 # Segmented inclusive sum on array of values and head-flags
@@ -31,27 +30,25 @@ from cuda.compute import (
 data = cp.asarray([1, 1, 1, 1, 1, 1, 1, 1], dtype=cp.int64)
 hflg = cp.asarray([0, 0, 1, 0, 0, 1, 1, 0], dtype=cp.int32)
 
-# Define the custom data type and binary operation.
+# Define the custom data type using numpy structured dtype
+value_flag_dtype = np.dtype([("value", np.int64), ("flag", np.int32)])
 
 
-@gpu_struct
-class ValueFlag:
-    value: cp.int64
-    flag: cp.int32
-
-
-def schwartz_sum(op1: ValueFlag, op2: ValueFlag) -> ValueFlag:
+# Type annotations use the numpy dtype; return tuple is implicitly converted
+def schwartz_sum(
+    op1: value_flag_dtype, op2: value_flag_dtype
+) -> value_flag_dtype:
     f1: cp.int32 = 1 if op1.flag else 0
     f2: cp.int32 = 1 if op2.flag else 0
     f: cp.int32 = f1 | f2
     v: cp.int64 = op2.value if f2 else op1.value + op2.value
-    return ValueFlag(v, f)
+    return (v, f)
 
 
 # Prepare the output array and initial value.
 zip_it = ZipIterator(data, hflg)
-d_output = cp.empty(data.shape, dtype=ValueFlag.dtype)
-h_init = ValueFlag(0, 0)
+d_output = cp.empty(data.shape, dtype=value_flag_dtype)
+h_init = np.void((0, 0), dtype=value_flag_dtype)
 
 # Perform the segmented scan.
 cuda.compute.inclusive_scan(zip_it, d_output, schwartz_sum, h_init, data.size)

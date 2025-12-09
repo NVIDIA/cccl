@@ -3,6 +3,11 @@
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 # example-begin
+"""
+Exponential moving average using inclusive scan.
+
+This example uses numpy structured dtypes for the value-scale pair type.
+"""
 
 import cupy as cp
 import numpy as np
@@ -12,7 +17,6 @@ from cuda.compute import (
     CountingIterator,
     TransformIterator,
     ZipIterator,
-    gpu_struct,
 )
 
 # Given input vector u and smoothing parameter 0<alpha<1
@@ -37,21 +41,19 @@ alpha = 0.05
 
 assert 0.0 < alpha < 1.0
 
-
-@gpu_struct
-class ValueScale:
-    value: cp.float64
-    scale: cp.int64
+# Define struct type using numpy structured dtype
+value_scale_dtype = np.dtype([("value", np.float64), ("scale", np.int64)])
 
 
-def add_op(v1: ValueScale, v2: ValueScale) -> ValueScale:
+# Type annotations use the numpy dtype; return tuple is implicitly converted
+def add_op(v1: value_scale_dtype, v2: value_scale_dtype) -> value_scale_dtype:
     if v1.scale > v2.scale:
         s = v2.scale
         v = v2.value + v1.value * (alpha ** (v1.scale - v2.scale))
     else:
         s = v1.scale
         v = v1.value + v2.value * (alpha ** (v2.scale - v1.scale))
-    return ValueScale(v, s)
+    return (v, s)
 
 
 def negative_op(i: cp.int64) -> cp.int64:
@@ -62,8 +64,8 @@ seq_it = CountingIterator(cp.int64(0))
 negative_exponents_it = TransformIterator(seq_it, negative_op)
 d_inp = ZipIterator(u, negative_exponents_it)
 
-d_cumsum = cp.empty(u.shape, dtype=ValueScale.dtype)
-h_init = ValueScale(0.0, 0)
+d_cumsum = cp.empty(u.shape, dtype=value_scale_dtype)
+h_init = np.void((0.0, 0), dtype=value_scale_dtype)
 
 cuda.compute.inclusive_scan(d_inp, d_cumsum, add_op, h_init, u.size)
 
@@ -71,7 +73,7 @@ it_seq = CountingIterator(cp.int64(0))
 d_ema = cp.empty_like(u)
 
 
-def combine_op(v: ValueScale, t: cp.int64) -> cp.float64:
+def combine_op(v: value_scale_dtype, t: cp.int64) -> cp.float64:
     return (1 - alpha) * v.value * alpha ** (t + v.scale)
 
 

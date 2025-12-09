@@ -13,8 +13,8 @@ from cuda.compute import (
     OpKind,
     TransformIterator,
     TransformOutputIterator,
-    gpu_struct,
 )
+from cuda.compute.struct import gpu_struct
 
 
 @pytest.fixture(params=["i4", "u4", "i8", "u8"])

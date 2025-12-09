@@ -10,32 +10,32 @@ When working with struct inputs in transform operations, you need to provide
 type annotations to help Numba infer the correct types. Unlike reduce_into
 which can infer types from h_init, transform operations require explicit
 annotations when using struct inputs.
+
+Type annotations can use numpy structured dtypes directly.
 """
 
 import cupy as cp
 import numpy as np
 
 import cuda.compute
-from cuda.compute import gpu_struct
+
+# Define struct type using numpy structured dtype
+point2d_dtype = np.dtype([("x", np.float32), ("y", np.float32)])
 
 
-@gpu_struct
-class Point2D:
-    x: np.float32
-    y: np.float32
-
-
-def add_points(p1: Point2D, p2: Point2D) -> Point2D:
-    return Point2D(p1.x + p2.x, p1.y + p2.y)
+# Type annotations use the numpy dtype - return a tuple which is implicitly
+# converted to the struct type.
+def add_points(p1: point2d_dtype, p2: point2d_dtype) -> point2d_dtype:
+    return (p1.x + p2.x, p1.y + p2.y)
 
 
 num_items = 1000
 
-h_in1 = np.empty(num_items, dtype=Point2D.dtype)
+h_in1 = np.empty(num_items, dtype=point2d_dtype)
 h_in1["x"] = np.random.rand(num_items).astype(np.float32)
 h_in1["y"] = np.random.rand(num_items).astype(np.float32)
 
-h_in2 = np.empty(num_items, dtype=Point2D.dtype)
+h_in2 = np.empty(num_items, dtype=point2d_dtype)
 h_in2["x"] = np.random.rand(num_items).astype(np.float32)
 h_in2["y"] = np.random.rand(num_items).astype(np.float32)
 

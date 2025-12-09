@@ -18,8 +18,8 @@ from cuda.compute import (
     OpKind,
     TransformIterator,
     TransformOutputIterator,
-    gpu_struct,
 )
+from cuda.compute.struct import gpu_struct
 
 
 def random_int(shape, dtype):

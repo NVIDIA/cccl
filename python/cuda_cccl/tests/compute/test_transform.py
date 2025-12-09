@@ -10,8 +10,8 @@ import cuda.compute
 from cuda.compute import (
     CountingIterator,
     OpKind,
-    gpu_struct,
 )
+from cuda.compute.struct import gpu_struct
 
 
 def unary_transform_host(h_input: np.ndarray, op):

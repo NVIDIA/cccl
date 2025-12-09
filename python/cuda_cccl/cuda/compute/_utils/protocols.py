@@ -34,7 +34,7 @@ def get_data_pointer(arr: DeviceArrayLike) -> int:
     return arr.__cuda_array_interface__["data"][0]
 
 
-def get_dtype(arr: DeviceArrayLike | GpuStruct | np.ndarray) -> np.dtype:
+def get_dtype(arr: DeviceArrayLike | GpuStruct | np.ndarray | np.void) -> np.dtype:
     # Try the fast path via .dtype attribute (works for np.ndarray, GpuStruct, and most device arrays)
     try:
         return np.dtype(arr.dtype)  # type: ignore

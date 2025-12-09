@@ -5,7 +5,8 @@ import cupy as cp
 import numpy as np
 
 import cuda.compute
-from cuda.compute import ZipIterator, gpu_struct
+from cuda.compute import ZipIterator
+from cuda.compute.struct import gpu_struct
 
 
 def test_reduce_nested_struct_direct():
