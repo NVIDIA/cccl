@@ -4,7 +4,15 @@ project(C2H LANGUAGES CXX CUDA)
 
 cccl_get_catch2()
 
-find_package(CUDAToolkit REQUIRED)
+# when CCCL is used from the CTK, C2H does not need to be rebuilt when making local changes to CCCL (faster iteration)
+option(C2H_USE_CCCL_FROM_CTK "Use CCCL from the CTK in c2h." OFF)
+
+if (C2H_USE_CCCL_FROM_CTK)
+  find_package(CUDAToolkit REQUIRED)
+else()
+  cccl_get_cccl()
+  find_package(CUDAToolkit)
+endif()
 
 set(curand_default OFF)
 if (CUDA_curand_LIBRARY)
@@ -28,6 +36,9 @@ target_link_libraries(
     cccl.compiler_interface
     Catch2::Catch2
 )
+if (NOT C2H_USE_CCCL_FROM_CTK)
+  target_link_libraries(cccl.c2h PUBLIC CCCL::CCCL)
+endif()
 cccl_configure_target(cccl.c2h DIALECT 17)
 
 if (C2H_ENABLE_CURAND)
