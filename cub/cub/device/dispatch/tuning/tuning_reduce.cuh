@@ -147,6 +147,37 @@ _CCCL_HOST_DEVICE ReducePolicyWrapper<PolicyT> MakeReducePolicyWrapper(PolicyT p
   return ReducePolicyWrapper<PolicyT>{policy};
 }
 
+template <typename PolicyT, typename = void>
+struct FixedSizeSegmentedReducePolicyWrapper : PolicyT
+{
+  _CCCL_HOST_DEVICE FixedSizeSegmentedReducePolicyWrapper(PolicyT base)
+      : PolicyT(base)
+  {}
+};
+
+template <typename StaticPolicyT>
+struct FixedSizeSegmentedReducePolicyWrapper<StaticPolicyT,
+                                             ::cuda::std::void_t<typename StaticPolicyT::ReducePolicy,
+                                                                 typename StaticPolicyT::SmallReducePolicy,
+                                                                 typename StaticPolicyT::MediumReducePolicy>>
+    : StaticPolicyT
+{
+  _CCCL_HOST_DEVICE FixedSizeSegmentedReducePolicyWrapper(StaticPolicyT base)
+      : StaticPolicyT(base)
+  {}
+
+  CUB_DEFINE_SUB_POLICY_GETTER(Reduce)
+  CUB_DEFINE_SUB_POLICY_GETTER(SmallReduce)
+  CUB_DEFINE_SUB_POLICY_GETTER(MediumReduce)
+};
+
+template <typename PolicyT>
+_CCCL_HOST_DEVICE FixedSizeSegmentedReducePolicyWrapper<PolicyT>
+MakeFixedSizeSegmentedReducePolicyWrapper(PolicyT policy)
+{
+  return FixedSizeSegmentedReducePolicyWrapper<PolicyT>{policy};
+}
+
 enum class offset_size
 {
   _4,

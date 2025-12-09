@@ -17,6 +17,8 @@
 #include <cub/device/dispatch/kernels/kernel_reduce.cuh> // finalize_and_store_aggregate
 #include <cub/iterator/arg_index_input_iterator.cuh>
 
+#include <cuda/__execution/max_segment_size.h>
+
 CUB_NAMESPACE_BEGIN
 
 namespace detail::reduce
@@ -98,45 +100,165 @@ template <typename ChainedPolicyT,
           typename OffsetT,
           typename ReductionOpT,
           typename InitT,
-          typename AccumT>
+          typename AccumT,
+          // TODO: replace with enum classes consisting (small, medium large) to reduce number of instantiations when
+          // using static max segment size
+          typename MaxSegmentSizeT>
 CUB_DETAIL_KERNEL_ATTRIBUTES
 __launch_bounds__(int(ChainedPolicyT::ActivePolicy::ReducePolicy::BLOCK_THREADS)) void DeviceSegmentedReduceKernel(
   InputIteratorT d_in,
   OutputIteratorT d_out,
   BeginOffsetIteratorT d_begin_offsets,
   EndOffsetIteratorT d_end_offsets,
+  ::cuda::std::int64_t num_segments,
   ReductionOpT reduction_op,
-  InitT init)
+  InitT init,
+  MaxSegmentSizeT max_segment_size)
 {
+  using ActivePolicyT = typename ChainedPolicyT::ActivePolicy;
+
   // Thread block type for reducing input tiles
-  using AgentReduceT =
-    AgentReduce<typename ChainedPolicyT::ActivePolicy::ReducePolicy, InputIteratorT, OffsetT, ReductionOpT, AccumT>;
+  // Use OffsetT for offset calculations to support 64-bit offsets
+  using AgentReduceT = AgentReduce<typename ActivePolicyT::ReducePolicy, InputIteratorT, OffsetT, ReductionOpT, AccumT>;
+
+  // TOOD: use only int as offset type in medium and small reduce as segment sizes are small enough to fit in int
+  using AgentMediumReduceT =
+    AgentWarpReduce<typename ActivePolicyT::MediumReducePolicy, InputIteratorT, OffsetT, ReductionOpT, AccumT>;
+
+  using AgentSmallReduceT =
+    AgentWarpReduce<typename ActivePolicyT::SmallReducePolicy, InputIteratorT, OffsetT, ReductionOpT, AccumT>;
+
+  constexpr auto segments_per_medium_block = ActivePolicyT::MediumReducePolicy::SEGMENTS_PER_BLOCK;
+  constexpr auto medium_threads_per_warp   = ActivePolicyT::MediumReducePolicy::WARP_THREADS;
+  constexpr auto medium_items_per_tile     = ActivePolicyT::MediumReducePolicy::ITEMS_PER_TILE;
+
+  constexpr auto segments_per_small_block = ActivePolicyT::SmallReducePolicy::SEGMENTS_PER_BLOCK;
+  constexpr auto small_threads_per_warp   = ActivePolicyT::SmallReducePolicy::WARP_THREADS;
+  constexpr auto small_items_per_tile     = ActivePolicyT::SmallReducePolicy::ITEMS_PER_TILE;
 
   // Shared memory storage
-  __shared__ typename AgentReduceT::TempStorage temp_storage;
-
-  OffsetT segment_begin = d_begin_offsets[blockIdx.x];
-  OffsetT segment_end   = d_end_offsets[blockIdx.x];
-
-  // Check if empty problem
-  if (segment_begin == segment_end)
+  __shared__ union
   {
-    if (threadIdx.x == 0)
+    typename AgentReduceT::TempStorage large_storage;
+    typename AgentMediumReduceT::TempStorage medium_storage[segments_per_medium_block];
+    typename AgentSmallReduceT::TempStorage small_storage[segments_per_small_block];
+  } temp_storage;
+
+  const int bid = blockIdx.x;
+  const int tid = threadIdx.x;
+
+  constexpr auto compile_time_known_segment_size = MaxSegmentSizeT::size != ::cuda::execution::dynamic_max_segment_size;
+
+  auto small_medium_reduction =
+    [&](auto agent_tag, auto& storage, auto threads_per_warp_tag, auto segments_per_block_tag) {
+      using AgentWarpReduceT           = typename decltype(agent_tag)::type;
+      constexpr int threads_per_warp   = decltype(threads_per_warp_tag)::value;
+      constexpr int segments_per_block = decltype(segments_per_block_tag)::value;
+      const int sid_within_block       = tid / threads_per_warp;
+      const int lane_id                = tid % threads_per_warp;
+      const int global_segment_id      = bid * segments_per_block + sid_within_block;
+
+      const auto segment_begin = static_cast<OffsetT>(d_begin_offsets[global_segment_id]);
+      const auto segment_end   = static_cast<OffsetT>(d_end_offsets[global_segment_id]);
+
+      if (global_segment_id < num_segments)
+      {
+        // If empty segment, write out the initial value
+        if (segment_begin == segment_end)
+        {
+          if (lane_id == 0)
+          {
+            *(d_out + global_segment_id) = detail::reduce::unwrap_empty_problem_init(init);
+          }
+          return;
+        }
+        // Consume input tiles
+        AccumT warp_aggregate =
+          AgentWarpReduceT(storage[sid_within_block], d_in, reduction_op).ConsumeRange(segment_begin, segment_end);
+
+        // Normalize as needed
+        NormalizeReductionOutput(warp_aggregate, segment_begin, d_in);
+
+        if (lane_id == 0)
+        {
+          finalize_and_store_aggregate(d_out + global_segment_id, reduction_op, init, warp_aggregate);
+        }
+      }
+    };
+
+  auto small_segment_reduction = [&]() {
+    small_medium_reduction(
+      ::cuda::std::type_identity<AgentSmallReduceT>{},
+      temp_storage.small_storage,
+      ::cuda::std::integral_constant<int, small_threads_per_warp>{},
+      ::cuda::std::integral_constant<int, segments_per_small_block>{});
+  };
+
+  auto medium_segment_reduction = [&]() {
+    small_medium_reduction(
+      ::cuda::std::type_identity<AgentMediumReduceT>{},
+      temp_storage.medium_storage,
+      ::cuda::std::integral_constant<int, medium_threads_per_warp>{},
+      ::cuda::std::integral_constant<int, segments_per_medium_block>{});
+  };
+
+  auto large_segment_reduction = [&]() {
+    const auto segment_begin = static_cast<OffsetT>(d_begin_offsets[bid]);
+    const auto segment_end   = static_cast<OffsetT>(d_end_offsets[bid]);
+
+    // If empty segment, write out the initial value
+    if (segment_begin == segment_end)
     {
-      *(d_out + blockIdx.x) = init;
+      if (tid == 0)
+      {
+        *(d_out + bid) = detail::reduce::unwrap_empty_problem_init(init);
+      }
+      return;
     }
-    return;
-  }
 
-  // Consume input tiles
-  AccumT block_aggregate = AgentReduceT(temp_storage, d_in, reduction_op).ConsumeRange(segment_begin, segment_end);
+    // Consume input tiles
+    AccumT block_aggregate =
+      AgentReduceT(temp_storage.large_storage, d_in, reduction_op).ConsumeRange(segment_begin, segment_end);
 
-  // Normalize as needed
-  NormalizeReductionOutput(block_aggregate, segment_begin, d_in);
+    // Normalize as needed
+    NormalizeReductionOutput(block_aggregate, segment_begin, d_in);
 
-  if (threadIdx.x == 0)
+    if (tid == 0)
+    {
+      finalize_and_store_aggregate(d_out + bid, reduction_op, init, block_aggregate);
+    }
+  };
+
+  if constexpr (compile_time_known_segment_size)
   {
-    finalize_and_store_aggregate(d_out + blockIdx.x, reduction_op, init, block_aggregate);
+    constexpr auto ct_max_segment_size = MaxSegmentSizeT{};
+    if constexpr (ct_max_segment_size != 0 && ct_max_segment_size <= small_items_per_tile)
+    {
+      small_segment_reduction();
+    }
+    else if constexpr (ct_max_segment_size != 0 && ct_max_segment_size <= medium_items_per_tile)
+    {
+      medium_segment_reduction();
+    }
+    else
+    {
+      large_segment_reduction();
+    }
+  }
+  else
+  {
+    if (max_segment_size != 0 && max_segment_size <= small_items_per_tile)
+    {
+      small_segment_reduction();
+    }
+    else if (max_segment_size != 0 && max_segment_size <= medium_items_per_tile)
+    {
+      medium_segment_reduction();
+    }
+    else
+    {
+      large_segment_reduction();
+    }
   }
 }
 
