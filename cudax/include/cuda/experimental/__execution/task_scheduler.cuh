@@ -25,7 +25,6 @@
 #include <cuda/std/__exception/terminate.h>
 #include <cuda/std/__memory/addressof.h>
 #include <cuda/std/__memory/allocator.h>
-#include <cuda/std/__memory/construct_at.h>
 #include <cuda/std/__tuple_dir/ignore.h>
 #include <cuda/std/__utility/pod_tuple.h>
 
@@ -592,7 +591,7 @@ template <class _OpState>
 _CCCL_API static void __delete_small(void* __ptr) noexcept
 {
   auto* __opstate = static_cast<_OpState*>(__ptr);
-  ::cuda::std::__destroy_at(__opstate);
+  __opstate->~_OpState();
 }
 
 template <class _OpState>
