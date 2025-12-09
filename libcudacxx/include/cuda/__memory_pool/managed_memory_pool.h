@@ -132,7 +132,7 @@ struct managed_memory_pool : managed_memory_pool_ref
 
   //! @brief Returns a \c managed_memory_pool_ref for this \c managed_memory_pool.
   //! The result is the same as if this object was cast to a \c managed_memory_pool_ref.
-  _CCCL_HOST_API managed_memory_pool_ref as_ref() noexcept
+  [[nodiscard]] _CCCL_HOST_API managed_memory_pool_ref as_ref() noexcept
   {
     return managed_memory_pool_ref(__pool_);
   }
