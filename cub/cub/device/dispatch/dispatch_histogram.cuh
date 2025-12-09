@@ -972,7 +972,16 @@ public:
       {
         num_privatized_levels[channel] = 257;
 
-        output_decode_op[channel].Init(num_output_levels[channel], upper_level[channel], lower_level[channel]);
+        error = CubDebug(
+          output_decode_op[channel].Init(num_output_levels[channel], upper_level[channel], lower_level[channel]));
+        if (error != cudaSuccess)
+        {
+          if (!d_temp_storage)
+          {
+            temp_storage_bytes = 1U;
+          }
+          return error;
+        }
 
         if (num_output_levels[channel] > max_levels)
         {

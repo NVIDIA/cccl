@@ -31,13 +31,18 @@
  * https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#release-notes
  */
 
-// PTX ISA 9.0 is available from CUDA 13.0
 // The first define is for future major versions of CUDACC.
 // We make sure that these get the highest known PTX ISA version.
-// For clang cuda check https://github.com/llvm/llvm-project/blob/release/<VER>.x/clang/lib/Driver/ToolChains/Cuda.cpp
-// getNVPTXTargetFeatures
-#if _CCCL_CUDACC_AT_LEAST(13, 1) && !_CCCL_CUDA_COMPILER(CLANG)
-#  define __cccl_ptx_isa 900ULL
+// For clang cuda check
+// https://github.com/llvm/llvm-project/blob/release/<VER>.x/clang/lib/Driver/ToolChains/Cuda.cpp getNVPTXTargetFeatures
+#if _CCCL_CUDACC_AT_LEAST(14, 0) && !_CCCL_CUDA_COMPILER(CLANG)
+#  define __cccl_ptx_isa 920ULL
+// PTX ISA 9.2 is available from CUDA 13.2
+#elif _CCCL_CUDACC_AT_LEAST(13, 2) && !_CCCL_CUDA_COMPILER(CLANG)
+#  define __cccl_ptx_isa 920ULL
+// PTX ISA 9.1 is available from CUDA 13.1
+#elif _CCCL_CUDACC_AT_LEAST(13, 1) && !_CCCL_CUDA_COMPILER(CLANG)
+#  define __cccl_ptx_isa 910ULL
 // PTX ISA 9.0 is available from CUDA 13.0, driver r580
 #elif _CCCL_CUDACC_AT_LEAST(13, 0) && !_CCCL_CUDA_COMPILER(CLANG)
 #  define __cccl_ptx_isa 900ULL

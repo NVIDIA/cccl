@@ -23,12 +23,16 @@
 
 #include <cuda/std/__random/bernoulli_distribution.h>
 #include <cuda/std/__random/binomial_distribution.h>
+#include <cuda/std/__random/cauchy_distribution.h>
 #include <cuda/std/__random/exponential_distribution.h>
+#include <cuda/std/__random/extreme_value_distribution.h>
+#include <cuda/std/__random/fisher_f_distribution.h>
 #include <cuda/std/__random/gamma_distribution.h>
 #include <cuda/std/__random/linear_congruential_engine.h>
 #include <cuda/std/__random/lognormal_distribution.h>
 #include <cuda/std/__random/normal_distribution.h>
 #include <cuda/std/__random/philox_engine.h>
+#include <cuda/std/__random/poisson_distribution.h>
 #include <cuda/std/__random/seed_seq.h>
 #include <cuda/std/__random/student_t_distribution.h>
 #include <cuda/std/__random/uniform_int_distribution.h>
