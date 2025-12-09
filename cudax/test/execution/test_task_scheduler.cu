@@ -20,27 +20,27 @@ namespace ex = cuda::experimental::execution;
 
 namespace
 {
-// C2H_TEST("simple task_scheduler test", "[scheduler][task_scheduler]")
-// {
-//   ex::task_scheduler sched{dummy_scheduler{}};
-//   STATIC_CHECK(ex::scheduler<decltype(sched)>);
-//   auto sndr = sched.schedule();
-//   STATIC_CHECK(ex::sender<decltype(sndr)>);
-//   auto op = ex::connect(cuda::std::move(sndr), checked_value_receiver{});
-//   ex::start(op);
-//   // The receiver checks that it's called
-// }
+C2H_TEST("simple task_scheduler test", "[scheduler][task_scheduler]")
+{
+  ex::task_scheduler sched{dummy_scheduler{}};
+  STATIC_CHECK(ex::scheduler<decltype(sched)>);
+  auto sndr = sched.schedule();
+  STATIC_CHECK(ex::sender<decltype(sndr)>);
+  auto op = ex::connect(cuda::std::move(sndr), checked_value_receiver{});
+  ex::start(op);
+  // The receiver checks that it's called
+}
 
-// C2H_TEST("task_scheduler starts work on the correct execution context", "[scheduler][task_scheduler]")
-// {
-//   ex::thread_context ctx;
-//   ex::task_scheduler sched{ctx.get_scheduler()};
-//   auto sndr  = ex::starts_on(sched, ex::just() | ex::then([] {
-//                                      return ::std::this_thread::get_id();
-//                                    }));
-//   auto [tid] = ex::sync_wait(cuda::std::move(sndr)).value();
-//   CHECK(tid == ctx.get_id());
-// }
+C2H_TEST("task_scheduler starts work on the correct execution context", "[scheduler][task_scheduler]")
+{
+  ex::thread_context ctx;
+  ex::task_scheduler sched{ctx.get_scheduler()};
+  auto sndr  = ex::starts_on(sched, ex::just() | ex::then([] {
+                                     return ::std::this_thread::get_id();
+                                   }));
+  auto [tid] = ex::sync_wait(cuda::std::move(sndr)).value();
+  CHECK(tid == ctx.get_id());
+}
 
 #if !_CCCL_HOST_COMPILATION()
 static __device__ bool g_called = false;

@@ -82,6 +82,9 @@ struct __iallocator : __basic_interface<__iallocator, ::cuda::__extends<::cuda::
 };
 
 using __any_allocator = ::cuda::__basic_any<__iallocator<>>;
+
+template <class _Allocator>
+_CCCL_CONCEPT __is_any_allocator = __is_specialization_of_v<_Allocator, execution::any_allocator>;
 } // namespace __detail
 
 template <class _Value>
@@ -100,7 +103,7 @@ struct any_allocator : private __detail::__any_allocator
   {}
 
   _CCCL_TEMPLATE(class _Allocator)
-  _CCCL_REQUIRES((!__is_specialization_of_v<_Allocator, execution::any_allocator>) //
+  _CCCL_REQUIRES((!__detail::__is_any_allocator<_Allocator>) //
                  _CCCL_AND(!::cuda::std::__is_cuda_std_optional_v<_Allocator>)
                    _CCCL_AND ::cuda::__satisfies<_Allocator, __detail::__iallocator<>>)
   _CCCL_API any_allocator(_Allocator __alloc)
