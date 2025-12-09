@@ -34,8 +34,8 @@ struct movable_allocator
 {
   std::shared_ptr<cuda::device_memory_pool> pool;
 
-  explicit movable_allocator(cuda::device_ref d)
-      : pool(std::make_shared<cuda::device_memory_pool>(d))
+  explicit movable_allocator()
+      : pool(std::make_shared<cuda::device_memory_pool>(0))
   {}
 
   void* allocate_sync(std::size_t size) {
