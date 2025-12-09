@@ -27,7 +27,7 @@
 #endif // _CCCL_CUDA_COMPILER(CLANG)
 
 #include <cuda/__device/all_devices.h>
-#include <cuda/__memory_resource/memory_pool_base.h>
+#include <cuda/__memory_pool/memory_pool_base.h>
 #include <cuda/__memory_resource/properties.h>
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__exception/throw_error.h>
@@ -155,12 +155,22 @@ struct pinned_memory_pool : pinned_memory_pool_ref
 
   ~pinned_memory_pool() noexcept
   {
-    ::cuda::__driver::__mempoolDestroy(__pool_);
+    if (__pool_ != nullptr)
+    {
+      ::cuda::__driver::__mempoolDestroy(__pool_);
+    }
   }
 
   _CCCL_HOST_API static pinned_memory_pool from_native_handle(::cudaMemPool_t __pool) noexcept
   {
     return pinned_memory_pool(__pool);
+  }
+
+  //! @brief Returns a \c pinned_memory_pool_ref for this \c pinned_memory_pool.
+  //! The result is the same as if this object was cast to a \c pinned_memory_pool_ref.
+  _CCCL_HOST_API pinned_memory_pool_ref as_ref() noexcept
+  {
+    return pinned_memory_pool_ref(__pool_);
   }
 
   pinned_memory_pool(const pinned_memory_pool&)            = delete;
@@ -190,11 +200,13 @@ static_assert(::cuda::mr::resource_with<pinned_memory_pool, ::cuda::mr::host_acc
     return __pool;
   }();
 
-  return __default_pool;
 #  else // ^^^ _CCCL_CTK_AT_LEAST(13, 0) ^^^ / vvv _CCCL_CTK_BELOW(13, 0) vvv
-  static pinned_memory_pool __default_pool(0);
-  return __default_pool.get();
+  static ::cudaMemPool_t __default_pool = []() {
+    cuda::pinned_memory_pool __pool(0);
+    return __pool.release();
+  }();
 #  endif // ^^^ _CCCL_CTK_BELOW(13, 0) ^^^
+  return __default_pool;
 }
 
 #endif // _CCCL_CTK_AT_LEAST(12, 6)
