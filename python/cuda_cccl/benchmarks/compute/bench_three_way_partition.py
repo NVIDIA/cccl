@@ -4,7 +4,8 @@ import pytest
 
 import cuda.compute
 from cuda.compute import CountingIterator
-from cuda.compute.struct import gpu_struct
+
+MyStruct_dtype = np.dtype([("x", np.int32), ("y", np.int32)], align=True)
 
 
 def three_way_partition_pointer(
@@ -97,21 +98,15 @@ def three_way_partition_iterator(
     cp.cuda.runtime.deviceSynchronize()
 
 
-@gpu_struct
-class MyStruct:
-    x: np.int32
-    y: np.int32
-
-
 def three_way_partition_struct(
     inp, first_out, second_out, unselected_out, num_selected, build_only
 ):
     size = len(inp)
 
-    def less_than_op(a: MyStruct):
+    def less_than_op(a: MyStruct_dtype):
         return (a.x < 42) & (a.y < 42)
 
-    def greater_equal_op(a: MyStruct):
+    def greater_equal_op(a: MyStruct_dtype):
         return (a.x >= 42) & (a.y >= 42)
 
     partitioner = cuda.compute.make_three_way_partition(
@@ -202,7 +197,7 @@ def bench_three_way_partition_iterator(bench_fixture, request, size):
 @pytest.mark.parametrize("bench_fixture", ["compile_benchmark", "benchmark"])
 def bench_three_way_partition_struct(bench_fixture, request, size):
     actual_size = 100 if bench_fixture == "compile_benchmark" else size
-    d_in = cp.random.randint(0, 100, (actual_size, 2)).view(MyStruct.dtype)
+    d_in = cp.random.randint(0, 100, (actual_size, 2)).view(MyStruct_dtype)
     d_first = cp.empty_like(d_in)
     d_second = cp.empty_like(d_in)
     d_unselected = cp.empty_like(d_in)
@@ -278,16 +273,16 @@ def three_way_partition_iterator_single_phase(size):
 
 
 def three_way_partition_struct_single_phase(size):
-    d_in = cp.random.randint(0, 100, (size, 2)).view(MyStruct.dtype)
+    d_in = cp.random.randint(0, 100, (size, 2)).view(MyStruct_dtype)
     d_first = cp.empty_like(d_in)
     d_second = cp.empty_like(d_in)
     d_unselected = cp.empty_like(d_in)
     d_num_selected = cp.empty(2, dtype=np.int32)
 
-    def less_than_op(a: MyStruct):
+    def less_than_op(a: MyStruct_dtype):
         return (a.x < 42) & (a.y < 42)
 
-    def greater_equal_op(a: MyStruct):
+    def greater_equal_op(a: MyStruct_dtype):
         return (a.x >= 42) & (a.y >= 42)
 
     cuda.compute.three_way_partition(

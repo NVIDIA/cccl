@@ -9,7 +9,6 @@ from numba.np.numpy_support import carray  # noqa: F401
 
 import cuda.compute
 from cuda.compute import CacheModifiedInputIterator, ZipIterator
-from cuda.compute.struct import gpu_struct
 
 DTYPE_LIST = [
     np.uint8,
@@ -325,24 +324,20 @@ def test_select_reuse_object(dtype):
 @pytest.mark.parametrize("dtype", [np.int32, np.float32])
 def test_select_with_struct(dtype):
     """Test selection with custom struct types"""
-
-    @gpu_struct
-    class Point:
-        x: dtype
-        y: dtype
+    point_dtype = np.dtype([("x", dtype), ("y", dtype)], align=True)
 
     num_items = 1000
     h_x = random_array(num_items, dtype, max_value=100)
     h_y = random_array(num_items, dtype, max_value=100)
 
-    h_in = np.empty(num_items, dtype=Point.dtype)
+    h_in = np.empty(num_items, dtype=point_dtype)
     h_in["x"] = h_x
     h_in["y"] = h_y
 
-    def in_first_quadrant(p: Point) -> np.uint8:
+    def in_first_quadrant(p: point_dtype) -> np.uint8:
         return (p.x > 50) and (p.y > 50)
 
-    d_in = cp.empty(num_items, dtype=Point.dtype)
+    d_in = cp.empty(num_items, dtype=point_dtype)
     d_in.set(h_in)
     d_out = cp.empty_like(d_in)
     d_num_selected = cp.empty(2, dtype=np.uint64)

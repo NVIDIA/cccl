@@ -14,7 +14,6 @@ from cuda.compute import (
     TransformIterator,
     TransformOutputIterator,
 )
-from cuda.compute.struct import gpu_struct
 
 
 @pytest.fixture(params=["i4", "u4", "i8", "u8"])
@@ -70,11 +69,9 @@ def test_segmented_reduce_struct_type():
     import cupy as cp
     import numpy as np
 
-    @gpu_struct
-    class Pixel:
-        r: np.int32
-        g: np.int32
-        b: np.int32
+    pixel_dtype = np.dtype(
+        [("r", np.int32), ("g", np.int32), ("b", np.int32)], align=True
+    )
 
     def max_g_value(x, y):
         return x if x.g > y.g else y
@@ -89,10 +86,10 @@ def test_segmented_reduce_struct_type():
     end_offsets = offsets[1:]
     n_segments = start_offsets.size
 
-    d_rgb = cp.random.randint(0, 256, (n_pixels, 3), dtype=np.int32).view(Pixel.dtype)
-    d_out = cp.empty(n_segments, Pixel.dtype)
+    d_rgb = cp.random.randint(0, 256, (n_pixels, 3), dtype=np.int32).view(pixel_dtype)
+    d_out = cp.empty(n_segments, pixel_dtype)
 
-    h_init = Pixel(0, 0, 0)
+    h_init = np.void((0, 0, 0), dtype=pixel_dtype)
 
     # Call single-phase API directly with n_segments parameter
     cuda.compute.segmented_reduce(

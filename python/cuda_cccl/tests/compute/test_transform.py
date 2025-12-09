@@ -11,7 +11,6 @@ from cuda.compute import (
     CountingIterator,
     OpKind,
 )
-from cuda.compute.struct import gpu_struct
 
 
 def unary_transform_host(h_input: np.ndarray, op):
@@ -72,17 +71,14 @@ def test_binary_transform(input_array):
 def test_unary_transform_struct_type():
     import numpy as np
 
-    @gpu_struct
-    class MyStruct:
-        x: np.int16
-        y: np.uint64
+    my_struct_dtype = np.dtype([("x", np.int16), ("y", np.uint64)], align=True)
 
-    def op(a):
-        return MyStruct(a.x * 2, a.y + 10)
+    def op(a) -> my_struct_dtype:
+        return (a.x * 2, a.y + 10)
 
     num_values = 10_000
 
-    h_in = np.empty(num_values, dtype=MyStruct.dtype)
+    h_in = np.empty(num_values, dtype=my_struct_dtype)
     h_in["x"] = np.arange(num_values)
     h_in["y"] = 1
     d_in = cp.empty_like(h_in)
@@ -107,21 +103,18 @@ def test_unary_transform_struct_type():
 def test_binary_transform_struct_type():
     import numpy as np
 
-    @gpu_struct
-    class MyStruct:
-        x: np.int16
-        y: np.uint64
+    my_struct_dtype = np.dtype([("x", np.int16), ("y", np.uint64)], align=True)
 
-    def op(a, b):
-        return MyStruct(a.x + b.x, a.y + b.y)
+    def op(a, b) -> my_struct_dtype:
+        return (a.x + b.x, a.y + b.y)
 
     num_values = 10_000
 
-    h_in1 = np.empty(num_values, dtype=MyStruct.dtype)
+    h_in1 = np.empty(num_values, dtype=my_struct_dtype)
     h_in1["x"] = np.random.randint(0, num_values, num_values, dtype="int16")
     h_in1["y"] = np.random.randint(0, num_values, num_values, dtype="uint64")
 
-    h_in2 = np.empty(num_values, dtype=MyStruct.dtype)
+    h_in2 = np.empty(num_values, dtype=my_struct_dtype)
     h_in2["x"] = np.random.randint(0, num_values, num_values, dtype="int16")
     h_in2["y"] = np.random.randint(0, num_values, num_values, dtype="uint64")
 
@@ -320,17 +313,14 @@ def test_binary_transform_well_known_multiplies():
 
 
 def test_unary_transform_struct_type_with_annotations():
-    @gpu_struct
-    class Point:
-        x: np.float32
-        y: np.float32
+    point_dtype = np.dtype([("x", np.float32), ("y", np.float32)], align=True)
 
-    def scale_op(p: Point) -> Point:
-        return Point(p.x * 2.0, p.y * 3.0)
+    def scale_op(p: point_dtype) -> point_dtype:
+        return (p.x * 2.0, p.y * 3.0)
 
     num_items = 100
 
-    h_in = np.empty(num_items, dtype=Point.dtype)
+    h_in = np.empty(num_items, dtype=point_dtype)
     h_in["x"] = np.random.rand(num_items).astype(np.float32)
     h_in["y"] = np.random.rand(num_items).astype(np.float32)
 
@@ -348,21 +338,18 @@ def test_unary_transform_struct_type_with_annotations():
 
 
 def test_binary_transform_struct_type_with_annotations():
-    @gpu_struct
-    class Vec2D:
-        x: np.int32
-        y: np.int32
+    vec2d_dtype = np.dtype([("x", np.int32), ("y", np.int32)], align=True)
 
-    def add_vectors(v1: Vec2D, v2: Vec2D) -> Vec2D:
-        return Vec2D(v1.x + v2.x, v1.y + v2.y)
+    def add_vectors(v1: vec2d_dtype, v2: vec2d_dtype) -> vec2d_dtype:
+        return (v1.x + v2.x, v1.y + v2.y)
 
     num_items = 100
 
-    h_in1 = np.empty(num_items, dtype=Vec2D.dtype)
+    h_in1 = np.empty(num_items, dtype=vec2d_dtype)
     h_in1["x"] = np.random.randint(-100, 100, num_items, dtype=np.int32)
     h_in1["y"] = np.random.randint(-100, 100, num_items, dtype=np.int32)
 
-    h_in2 = np.empty(num_items, dtype=Vec2D.dtype)
+    h_in2 = np.empty(num_items, dtype=vec2d_dtype)
     h_in2["x"] = np.random.randint(-100, 100, num_items, dtype=np.int32)
     h_in2["y"] = np.random.randint(-100, 100, num_items, dtype=np.int32)
 

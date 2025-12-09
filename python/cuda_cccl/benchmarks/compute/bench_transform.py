@@ -7,7 +7,8 @@ from cuda.compute import (
     CountingIterator,
     OpKind,
 )
-from cuda.compute.struct import gpu_struct
+
+MyStruct_dtype = np.dtype([("x", np.int32), ("y", np.int32)], align=True)
 
 
 def unary_transform_pointer(inp, out, build_only):
@@ -36,17 +37,11 @@ def unary_transform_iterator(size, out, build_only):
     cp.cuda.runtime.deviceSynchronize()
 
 
-@gpu_struct
-class MyStruct:
-    x: np.int32
-    y: np.int32
-
-
 def unary_transform_struct(inp, out, build_only):
     size = len(inp)
 
-    def op(a):
-        return MyStruct(a.x + 1, a.y + 1)
+    def op(a) -> MyStruct_dtype:
+        return (a.x + 1, a.y + 1)
 
     transform = cuda.compute.make_unary_transform(inp, out, op)
 
@@ -94,8 +89,8 @@ def binary_transform_iterator(size, out, build_only):
 def binary_transform_struct(inp1, inp2, out, build_only):
     size = len(inp1)
 
-    def op(a, b):
-        return MyStruct(a.x + b.x, a.y + b.y)
+    def op(a, b) -> MyStruct_dtype:
+        return (a.x + b.x, a.y + b.y)
 
     transform = cuda.compute.make_binary_transform(inp1, inp2, out, op)
     if not build_only:
@@ -145,7 +140,7 @@ def bench_unary_transform_iterator(bench_fixture, request, size):
 def bench_unary_transform_struct(bench_fixture, request, size):
     # Use small size for compile benchmarks, parameterized size for runtime benchmarks
     actual_size = 100 if bench_fixture == "compile_benchmark" else size
-    inp = cp.random.randint(0, 10, (actual_size, 2)).view(MyStruct.dtype)
+    inp = cp.random.randint(0, 10, (actual_size, 2)).view(MyStruct_dtype)
     out = cp.empty_like(inp)
 
     def run():
@@ -202,8 +197,8 @@ def bench_binary_transform_iterator(bench_fixture, request, size):
 def bench_binary_transform_struct(bench_fixture, request, size):
     # Use small size for compile benchmarks, parameterized size for runtime benchmarks
     actual_size = 100 if bench_fixture == "compile_benchmark" else size
-    inp1 = cp.random.randint(0, 10, (actual_size, 2)).view(MyStruct.dtype)
-    inp2 = cp.random.randint(0, 10, (actual_size, 2)).view(MyStruct.dtype)
+    inp1 = cp.random.randint(0, 10, (actual_size, 2)).view(MyStruct_dtype)
+    inp2 = cp.random.randint(0, 10, (actual_size, 2)).view(MyStruct_dtype)
     out = cp.empty_like(inp1)
 
     def run():

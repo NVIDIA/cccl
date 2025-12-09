@@ -199,7 +199,16 @@ def to_cccl_output_iter(array_or_iterator) -> Iterator:
     return _to_cccl_iter(array_or_iterator, _IteratorIO.OUTPUT)
 
 
-def to_cccl_value_state(array_or_struct: np.ndarray | np.void | GpuStruct) -> memoryview:
+_GPU_STRUCT_DEPRECATION_MSG = (
+    "Passing gpu_struct instances is deprecated. "
+    "Use numpy structured dtypes with align=True instead. "
+    "For example: np.void((val1, val2), dtype=np.dtype([...], align=True))"
+)
+
+
+def to_cccl_value_state(
+    array_or_struct: np.ndarray | np.void | GpuStruct,
+) -> memoryview:
     if isinstance(array_or_struct, np.ndarray):
         assert array_or_struct.flags.contiguous
         data = array_or_struct.data.cast("B")
@@ -209,6 +218,7 @@ def to_cccl_value_state(array_or_struct: np.ndarray | np.void | GpuStruct) -> me
         return to_cccl_value_state(np.asarray(array_or_struct))
     else:
         # it's a GpuStruct, use the array underlying it
+        warnings.warn(_GPU_STRUCT_DEPRECATION_MSG, DeprecationWarning, stacklevel=2)
         return to_cccl_value_state(array_or_struct._data)
 
 
@@ -221,6 +231,7 @@ def to_cccl_value(array_or_struct: np.ndarray | np.void | GpuStruct) -> Value:
         return to_cccl_value(np.asarray(array_or_struct))
     else:
         # it's a GpuStruct, use the array underlying it
+        warnings.warn(_GPU_STRUCT_DEPRECATION_MSG, DeprecationWarning, stacklevel=2)
         return to_cccl_value(array_or_struct._data)
 
 
@@ -460,12 +471,15 @@ def to_cccl_op(op: Callable | OpKind, sig: Signature | None) -> Op:
     )
 
 
-def get_value_type(d_in: IteratorBase | DeviceArrayLike | GpuStruct | np.ndarray | np.void):
+def get_value_type(
+    d_in: IteratorBase | DeviceArrayLike | GpuStruct | np.ndarray | np.void,
+):
     from .struct import _Struct, gpu_struct
 
     if isinstance(d_in, IteratorBase):
         return d_in.value_type
     if isinstance(d_in, _Struct):
+        warnings.warn(_GPU_STRUCT_DEPRECATION_MSG, DeprecationWarning, stacklevel=2)
         return numba.typeof(d_in)
     dtype = get_dtype(d_in)
     if dtype.type == np.void:

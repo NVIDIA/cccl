@@ -11,26 +11,22 @@ from cuda.compute import (
     TransformIterator,
     ZipIterator,
 )
-from cuda.compute.struct import gpu_struct
 
 
 @pytest.mark.parametrize("num_items", [10, 1_000, 100_000])
 def test_zip_iterator_basic(num_items):
-    @gpu_struct
-    class Pair:
-        first: np.int64
-        second: np.float32
+    pair_dtype = np.dtype([("first", np.int64), ("second", np.float32)], align=True)
 
     def sum_pairs(p1, p2):
-        return Pair(p1[0] + p2[0], p1[1] + p2[1])
+        return (p1[0] + p2[0], p1[1] + p2[1])
 
     d_input1 = cp.arange(num_items, dtype=np.int64)
     d_input2 = cp.arange(num_items, dtype=np.float32)
 
     zip_it = ZipIterator(d_input1, d_input2)
 
-    d_output = cp.empty(1, dtype=Pair.dtype)
-    h_init = Pair(0, 0.0)
+    d_output = cp.empty(1, dtype=pair_dtype)
+    h_init = np.void((0, 0.0), dtype=pair_dtype)
 
     cuda.compute.reduce_into(zip_it, d_output, sum_pairs, num_items, h_init)
 
@@ -73,10 +69,7 @@ def test_zip_iterator_with_counting_iterator(num_items):
 
 @pytest.mark.parametrize("num_items", [10, 1_000, 100_000])
 def test_zip_iterator_with_counting_iterator_and_transform(num_items):
-    @gpu_struct
-    class IndexValuePair:
-        index: np.int32
-        value: np.int64
+    index_value_dtype = np.dtype([("index", np.int32), ("value", np.int64)], align=True)
 
     def max_by_value(p1, p2):
         return p1 if p1[1] > p2[1] else p2
@@ -91,10 +84,10 @@ def test_zip_iterator_with_counting_iterator_and_transform(num_items):
 
     zip_it = ZipIterator(counting_it, transform_it)
 
-    d_output = cp.empty(1, dtype=IndexValuePair.dtype)
+    d_output = cp.empty(1, dtype=index_value_dtype)
 
     result = d_output.get()[0]
-    h_init = IndexValuePair(-1, -1)
+    h_init = np.void((-1, -1), dtype=index_value_dtype)
 
     cuda.compute.reduce_into(zip_it, d_output, max_by_value, num_items, h_init)
 
@@ -110,15 +103,12 @@ def test_zip_iterator_with_counting_iterator_and_transform(num_items):
 @pytest.mark.parametrize("num_items", [10, 1_000, 100_000])
 def test_zip_iterator_n_iterators(num_items):
     """Test generalized ZipIterator with N iterators (3 in this case)."""
-
-    @gpu_struct
-    class Triple:
-        first: np.int64
-        second: np.float32
-        third: np.int64
+    triple_dtype = np.dtype(
+        [("first", np.int64), ("second", np.float32), ("third", np.int64)], align=True
+    )
 
     def sum_triples(t1, t2):
-        return Triple(t1[0] + t2[0], t1[1] + t2[1], t1[2] + t2[2])
+        return (t1[0] + t2[0], t1[1] + t2[1], t1[2] + t2[2])
 
     d_input1 = cp.arange(num_items, dtype=np.int64)
     d_input2 = cp.arange(num_items, dtype=np.float32)
@@ -126,8 +116,8 @@ def test_zip_iterator_n_iterators(num_items):
 
     zip_it = ZipIterator(d_input1, d_input2, counting_it)
 
-    d_output = cp.empty(1, dtype=Triple.dtype)
-    h_init = Triple(0, 0.0, 0)
+    d_output = cp.empty(1, dtype=triple_dtype)
+    h_init = np.void((0, 0.0, 0), dtype=triple_dtype)
 
     cuda.compute.reduce_into(zip_it, d_output, sum_triples, num_items, h_init)
 
@@ -145,20 +135,17 @@ def test_zip_iterator_n_iterators(num_items):
 @pytest.mark.parametrize("num_items", [10, 1_000, 100_000])
 def test_zip_iterator_single_iterator(num_items):
     """Test ZipIterator with a single iterator."""
-
-    @gpu_struct
-    class Single:
-        value: np.int64
+    single_dtype = np.dtype([("value", np.int64)], align=True)
 
     def sum_singles(s1, s2):
-        return Single(s1[0] + s2[0])
+        return (s1[0] + s2[0],)
 
     d_input = cp.arange(num_items, dtype=np.int64)
 
     zip_it = ZipIterator(d_input)
 
-    d_output = cp.empty(1, dtype=Single.dtype)
-    h_init = Single(0)
+    d_output = cp.empty(1, dtype=single_dtype)
+    h_init = np.void((0,), dtype=single_dtype)
 
     cuda.compute.reduce_into(zip_it, d_output, sum_singles, num_items, h_init)
 
@@ -170,13 +157,12 @@ def test_zip_iterator_single_iterator(num_items):
 
 @pytest.mark.parametrize("num_items", [10, 1_000])
 def test_zip_iterator_with_transform(num_items):
-    @gpu_struct
-    class TransformedPair:
-        sum_indices: np.int32
-        product_values: np.int64
+    transformed_pair_dtype = np.dtype(
+        [("sum_indices", np.int32), ("product_values", np.int64)], align=True
+    )
 
-    def binary_transform(pair1, pair2):
-        return TransformedPair(pair1[0] + pair2[0], pair1[1] * pair2[1])
+    def binary_transform(pair1, pair2) -> transformed_pair_dtype:
+        return (pair1[0] + pair2[0], pair1[1] * pair2[1])
 
     counting_it1 = CountingIterator(np.int32(0))
     arr1 = cp.arange(num_items, dtype=np.int32)
@@ -186,7 +172,7 @@ def test_zip_iterator_with_transform(num_items):
     arr2 = cp.arange(num_items, dtype=np.int32)
     zip_it2 = ZipIterator(counting_it2, arr2)
 
-    d_output = cp.empty(num_items, dtype=TransformedPair.dtype)
+    d_output = cp.empty(num_items, dtype=transformed_pair_dtype)
 
     cuda.compute.binary_transform(
         zip_it1, zip_it2, d_output, binary_transform, num_items
@@ -205,16 +191,14 @@ def test_zip_iterator_with_transform(num_items):
 @pytest.mark.parametrize("num_items", [10, 1_000])
 def test_zip_iterator_with_scan(num_items):
     """Test ZipIterator with scan operations."""
-
-    @gpu_struct
-    class Pair:
-        first_min: np.int64
-        second_min: np.int64
+    pair_dtype = np.dtype(
+        [("first_min", np.int64), ("second_min", np.int64)], align=True
+    )
 
     def min_pairs(p1, p2):
         # p1 is the accumulated result, p2 is the current input
         # Compute running minimums for both arrays
-        return Pair(min(p1[0], p2[0]), min(p1[1], p2[1]))
+        return (min(p1[0], p2[0]), min(p1[1], p2[1]))
 
     # Create two randomized arrays to make min operations interesting
     arr1 = cp.random.randint(0, 1000, num_items, dtype=np.int64)
@@ -222,8 +206,8 @@ def test_zip_iterator_with_scan(num_items):
 
     zip_it = ZipIterator(arr1, arr2)
 
-    d_output = cp.empty(num_items, dtype=Pair.dtype)
-    h_init = Pair(cp.iinfo(np.int64).max, cp.iinfo(np.int64).max)
+    d_output = cp.empty(num_items, dtype=pair_dtype)
+    h_init = np.void((cp.iinfo(np.int64).max, cp.iinfo(np.int64).max), dtype=pair_dtype)
 
     cuda.compute.inclusive_scan(zip_it, d_output, min_pairs, h_init, num_items)
 
@@ -289,15 +273,14 @@ def test_nested_zip_iterators():
     This creates a structure like: ZipIterator(ZipIterator(a, b), c)
     which should produce values with a nested structure.
     """
-
-    InnerPair = gpu_struct({"first": np.int32, "second": np.int64})
-    OuterTriple = gpu_struct({"inner": InnerPair, "third": np.float32})
+    inner_pair_dtype = np.dtype([("first", np.int32), ("second", np.int64)], align=True)
+    outer_triple_dtype = np.dtype(
+        [("inner", inner_pair_dtype), ("third", np.float32)], align=True
+    )
 
     def sum_nested_zips(v1, v2):
-        return OuterTriple(
-            InnerPair(
-                v1.inner.first + v2.inner.first, v1.inner.second + v2.inner.second
-            ),
+        return (
+            (v1.inner.first + v2.inner.first, v1.inner.second + v2.inner.second),
             v1.third + v2.third,
         )
 
@@ -315,8 +298,8 @@ def test_nested_zip_iterators():
     outer_zip = ZipIterator(inner_zip, d_input_c)
 
     # Perform reduction
-    d_output = cp.empty(1, dtype=OuterTriple.dtype)
-    h_init = OuterTriple(InnerPair(0, 0), 0.0)
+    d_output = cp.empty(1, dtype=outer_triple_dtype)
+    h_init = np.void(((0, 0), 0.0), dtype=outer_triple_dtype)
 
     cuda.compute.reduce_into(outer_zip, d_output, sum_nested_zips, num_items, h_init)
 
@@ -343,12 +326,14 @@ def test_deeply_nested_zip_iterators():
     """Test 3 levels of nested zip iterators."""
     # outer_zip produces a struct like: {value_0: {value_0: int32, value_1: float32}, value_1: int64}
     # Define matching struct types with our own names
-    InnerPair = gpu_struct({"a": np.int32, "b": np.float32})
-    OuterPair = gpu_struct({"inner": InnerPair, "c": np.int64})
+    inner_pair_dtype = np.dtype([("a", np.int32), ("b", np.float32)], align=True)
+    outer_pair_dtype = np.dtype(
+        [("inner", inner_pair_dtype), ("c", np.int64)], align=True
+    )
 
     def sum_nested_zips(v1, v2):
-        return OuterPair(
-            InnerPair(v1.inner.a + v2.inner.a, v1.inner.b + v2.inner.b),
+        return (
+            (v1.inner.a + v2.inner.a, v1.inner.b + v2.inner.b),
             v1.c + v2.c,
         )
 
@@ -361,8 +346,8 @@ def test_deeply_nested_zip_iterators():
     inner_zip = ZipIterator(d_input_a, d_input_b)
     outer_zip = ZipIterator(inner_zip, d_input_c)
 
-    d_output = cp.empty(1, dtype=OuterPair.dtype)
-    h_init = OuterPair(InnerPair(0, 0.0), 0)
+    d_output = cp.empty(1, dtype=outer_pair_dtype)
+    h_init = np.void(((0, 0.0), 0), dtype=outer_pair_dtype)
 
     cuda.compute.reduce_into(outer_zip, d_output, sum_nested_zips, num_items, h_init)
 
@@ -398,18 +383,18 @@ def test_nested_output_zip_iterator_with_scan(monkeypatch, num_items, dtype_map)
             False,
         )
 
-    Vec2 = gpu_struct(dtype_map)
+    vec2_dtype = np.dtype(list(dtype_map.items()), align=True)
 
-    h_in1 = np.zeros(num_items, dtype=Vec2.dtype)
-    h_in2 = np.zeros(num_items, dtype=Vec2.dtype)
+    h_in1 = np.zeros(num_items, dtype=vec2_dtype)
+    h_in2 = np.zeros(num_items, dtype=vec2_dtype)
     for i in range(num_items):
         h_in1[i]["x"] = float(i)
         h_in1[i]["y"] = float(i * 2)
         h_in2[i]["x"] = float(i * 10)
         h_in2[i]["y"] = float(i * 20)
 
-    d_in1 = cp.empty(num_items, dtype=Vec2.dtype)
-    d_in2 = cp.empty(num_items, dtype=Vec2.dtype)
+    d_in1 = cp.empty(num_items, dtype=vec2_dtype)
+    d_in2 = cp.empty(num_items, dtype=vec2_dtype)
     d_in1.set(h_in1)
     d_in2.set(h_in2)
 
@@ -420,10 +405,10 @@ def test_nested_output_zip_iterator_with_scan(monkeypatch, num_items, dtype_map)
 
     zip_out_it = ZipIterator(d_out1, d_out2)
 
-    def add_vec2_pairs(v1, v2):
+    def add_vec2_pairs(v1, v2) -> vec2_dtype:
         result1 = (v1[0].x + v2[0].x, v1[0].y + v2[0].y)
         result2 = (v1[1].x + v2[1].x, v1[1].y + v2[1].y)
-        return Vec2(result1[0], result1[1]), Vec2(result2[0], result2[1])
+        return result1, result2
 
     cuda.compute.inclusive_scan(zip_it, zip_out_it, add_vec2_pairs, None, num_items)
 

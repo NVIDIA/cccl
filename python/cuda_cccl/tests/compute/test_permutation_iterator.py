@@ -11,7 +11,6 @@ from cuda.compute.iterators import (
     TransformIterator,
     ZipIterator,
 )
-from cuda.compute.struct import gpu_struct
 
 
 def test_permutation_iterator_equality():
@@ -69,10 +68,7 @@ def test_permutation_iterator_with_iterator_values():
 
 
 def test_permutation_iterator_of_zip_iterator():
-    @gpu_struct
-    class Pair:
-        value_0: np.int32
-        value_1: np.int32
+    pair_dtype = np.dtype([("value_0", np.int32), ("value_1", np.int32)], align=True)
 
     d_values1 = cp.asarray([10, 20, 30, 40, 50], dtype="int32")
     d_values2 = cp.asarray([1, 2, 3, 4, 5], dtype="int32")
@@ -81,10 +77,10 @@ def test_permutation_iterator_of_zip_iterator():
     perm_it = PermutationIterator(zip_it, indices)
 
     def sum_both_fields(a, b):
-        return Pair(a.value_0 + b.value_0, a.value_1 + b.value_1)
+        return (a.value_0 + b.value_0, a.value_1 + b.value_1)
 
-    h_init = Pair(0, 0)
-    d_output = cp.empty(1, dtype=Pair.dtype)
+    h_init = np.void((0, 0), dtype=pair_dtype)
+    d_output = cp.empty(1, dtype=pair_dtype)
 
     cuda.compute.reduce_into(perm_it, d_output, sum_both_fields, len(indices), h_init)
 
@@ -94,10 +90,7 @@ def test_permutation_iterator_of_zip_iterator():
 
 
 def test_zip_iterator_of_permutation_iterators():
-    @gpu_struct
-    class Pair:
-        value_0: np.int32
-        value_1: np.int32
+    pair_dtype = np.dtype([("value_0", np.int32), ("value_1", np.int32)], align=True)
 
     d_values1 = cp.asarray([10, 20, 30, 40, 50], dtype="int32")
     d_values2 = cp.asarray([100, 200, 300, 400, 500], dtype="int32")
@@ -109,10 +102,10 @@ def test_zip_iterator_of_permutation_iterators():
     zip_it = ZipIterator(perm_it1, perm_it2)
 
     def sum_both_fields(a, b):
-        return Pair(a.value_0 + b.value_0, a.value_1 + b.value_1)
+        return (a.value_0 + b.value_0, a.value_1 + b.value_1)
 
-    h_init = Pair(0, 0)
-    d_output = cp.empty(1, dtype=Pair.dtype)
+    h_init = np.void((0, 0), dtype=pair_dtype)
+    d_output = cp.empty(1, dtype=pair_dtype)
 
     num_items = len(indices1)
     cuda.compute.reduce_into(zip_it, d_output, sum_both_fields, num_items, h_init)

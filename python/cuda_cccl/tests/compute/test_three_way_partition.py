@@ -8,7 +8,6 @@ import pytest
 
 import cuda.compute
 from cuda.compute import CacheModifiedInputIterator
-from cuda.compute.struct import gpu_struct
 
 DTYPE_LIST = [
     np.uint8,
@@ -185,24 +184,21 @@ def test_three_way_partition_with_iterators():
 
 
 def test_three_way_partition_struct_type():
-    @gpu_struct
-    class pair_type:
-        a: np.int32
-        b: np.uint64
+    pair_dtype = np.dtype([("a", np.int32), ("b", np.uint64)], align=True)
 
     comparison_value = np.int32(42)
 
-    def less_than_op(x: pair_type):
+    def less_than_op(x: pair_dtype):
         return (x.a < 42) & (x.b < 42)
 
-    def greater_equal_op(x: pair_type):
+    def greater_equal_op(x: pair_dtype):
         return (x.a >= 42) & (x.b >= 42)
 
     num_items = 20_000
     a_vals = random_array(num_items, np.int32, max_value=100)
     b_vals = a_vals.astype(np.uint64)
 
-    h_in = np.empty(num_items, dtype=pair_type.dtype)
+    h_in = np.empty(num_items, dtype=pair_dtype)
     h_in["a"] = a_vals
     h_in["b"] = b_vals
 
@@ -217,7 +213,7 @@ def test_three_way_partition_struct_type():
     expected_unselected = h_in[remaining_mask][~expected_second_mask]
 
     h_in_i32 = h_in.view(np.int32).reshape(num_items, 4)
-    d_in = cp.asarray(h_in_i32).view(pair_type.dtype).reshape(num_items)
+    d_in = cp.asarray(h_in_i32).view(pair_dtype).reshape(num_items)
     d_first = cp.empty_like(d_in)
     d_second = cp.empty_like(d_in)
     d_unselected = cp.empty_like(d_in)

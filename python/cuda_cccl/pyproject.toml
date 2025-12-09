@@ -129,3 +129,7 @@ markers = [
   "no_verify_sass: skip SASS verification check",
   "large: tests requiring large device memory allocations",
 ]
+filterwarnings = [
+  # Treat gpu_struct deprecation warnings as errors to catch API misuse
+  "error:Passing gpu_struct instances is deprecated:DeprecationWarning",
+]

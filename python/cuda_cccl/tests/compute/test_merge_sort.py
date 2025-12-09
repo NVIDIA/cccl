@@ -14,7 +14,6 @@ from cuda.compute import (
     CacheModifiedInputIterator,
     OpKind,
 )
-from cuda.compute.struct import gpu_struct
 
 DTYPE_LIST = [
     np.uint8,
@@ -150,15 +149,8 @@ def test_merge_sort_pairs_copy(dtype, num_items, op):
 
 
 def test_merge_sort_pairs_struct_type():
-    @gpu_struct
-    class key_pair:
-        a: np.int16
-        b: np.uint64
-
-    @gpu_struct
-    class item_pair:
-        a: np.int32
-        b: np.float32
+    key_pair_dtype = np.dtype([("a", np.int16), ("b", np.uint64)], align=True)
+    item_pair_dtype = np.dtype([("a", np.int32), ("b", np.float32)], align=True)
 
     def struct_compare_op(lhs, rhs):
         return np.uint8(lhs.b < rhs.b) if lhs.a == rhs.a else np.uint8(lhs.a < rhs.a)
@@ -171,8 +163,8 @@ def test_merge_sort_pairs_struct_type():
     a_items = np.random.randint(0, 100, num_items, dtype=np.int32)
     b_items = np.random.rand(num_items).astype(np.float32)
 
-    h_in_keys = np.empty(num_items, dtype=key_pair.dtype)
-    h_in_items = np.empty(num_items, dtype=item_pair.dtype)
+    h_in_keys = np.empty(num_items, dtype=key_pair_dtype)
+    h_in_items = np.empty(num_items, dtype=item_pair_dtype)
 
     h_in_keys["a"] = a_keys
     h_in_keys["b"] = b_keys
@@ -181,9 +173,9 @@ def test_merge_sort_pairs_struct_type():
     h_in_items["b"] = b_items
 
     d_in_keys = numba.cuda.to_device(h_in_keys)
-    d_in_keys = cp.asarray(d_in_keys).view(key_pair.dtype)
+    d_in_keys = cp.asarray(d_in_keys).view(key_pair_dtype)
     d_in_items = numba.cuda.to_device(h_in_items)
-    d_in_items = cp.asarray(d_in_items).view(item_pair.dtype)
+    d_in_items = cp.asarray(d_in_items).view(item_pair_dtype)
 
     merge_sort_device(
         d_in_keys, d_in_items, d_in_keys, d_in_items, struct_compare_op, num_items

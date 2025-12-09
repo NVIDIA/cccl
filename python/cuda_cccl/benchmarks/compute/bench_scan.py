@@ -7,7 +7,8 @@ from cuda.compute import (
     CountingIterator,
     OpKind,
 )
-from cuda.compute.struct import gpu_struct
+
+MyStruct_dtype = np.dtype([("x", np.int32), ("y", np.int32)], align=True)
 
 
 def scan_pointer(input_array, build_only, scan_type):
@@ -52,10 +53,10 @@ def scan_pointer_custom_op(input_array, build_only, scan_type):
 def scan_struct(input_array, build_only, scan_type):
     size = len(input_array)
     res = cp.empty_like(input_array)
-    h_init = MyStruct(0, 0)
+    h_init = np.void((0, 0), dtype=MyStruct_dtype)
 
     def my_add(a, b):
-        return MyStruct(a.x + b.x, a.y + b.y)
+        return (a.x + b.x, a.y + b.y)
 
     if scan_type == "exclusive":
         alg = cuda.compute.make_exclusive_scan(input_array, res, my_add, h_init)
@@ -85,12 +86,6 @@ def scan_iterator(inp, size, build_only, scan_type):
         alg(temp_storage, inp, res, size, h_init)
 
     cp.cuda.runtime.deviceSynchronize()
-
-
-@gpu_struct
-class MyStruct:
-    x: np.int32
-    y: np.int32
 
 
 @pytest.mark.parametrize("scan_type", ["exclusive", "inclusive"])
@@ -160,7 +155,7 @@ def bench_scan_struct(bench_fixture, request, size, scan_type):
     # Use small size for compile benchmarks, parameterized size for runtime benchmarks
     actual_size = 10 if bench_fixture == "compile_benchmark" else size
     input_array = cp.random.randint(0, 10, (actual_size, 2), dtype="int32").view(
-        MyStruct
+        MyStruct_dtype
     )
 
     def run():
@@ -199,10 +194,10 @@ def scan_pointer_single_phase(input_array, build_only, scan_type):
 def scan_struct_single_phase(input_array, build_only, scan_type):
     size = len(input_array)
     res = cp.empty_like(input_array)
-    h_init = MyStruct(0, 0)
+    h_init = np.void((0, 0), dtype=MyStruct_dtype)
 
     def my_add(a, b):
-        return MyStruct(a.x + b.x, a.y + b.y)
+        return (a.x + b.x, a.y + b.y)
 
     if scan_type == "exclusive":
         cuda.compute.exclusive_scan(input_array, res, my_add, h_init, size)
@@ -262,7 +257,9 @@ def bench_scan_iterator_single_phase(bench_fixture, request, size, scan_type):
 @pytest.mark.parametrize("scan_type", ["exclusive", "inclusive"])
 @pytest.mark.parametrize("bench_fixture", ["benchmark"])
 def bench_scan_struct_single_phase(bench_fixture, request, size, scan_type):
-    input_array = cp.random.randint(0, 10, (size, 2), dtype="int32").view(MyStruct)
+    input_array = cp.random.randint(0, 10, (size, 2), dtype="int32").view(
+        MyStruct_dtype
+    )
 
     # warm up run
     scan_struct_single_phase(input_array, build_only=False, scan_type=scan_type)

@@ -7,7 +7,8 @@ from cuda.compute import (
     CountingIterator,
     OpKind,
 )
-from cuda.compute.struct import gpu_struct
+
+MyStruct_dtype = np.dtype([("x", np.int32), ("y", np.int32)], align=True)
 
 
 def reduce_pointer(input_array, build_only):
@@ -44,10 +45,10 @@ def reduce_pointer_custom_op(input_array, build_only):
 def reduce_struct(input_array, build_only):
     size = len(input_array)
     res = cp.empty(1, dtype=input_array.dtype)
-    h_init = MyStruct(0, 0)
+    h_init = np.void((0, 0), dtype=MyStruct_dtype)
 
     def my_add(a, b):
-        return MyStruct(a.x + b.x, a.y + b.y)
+        return (a.x + b.x, a.y + b.y)
 
     alg = cuda.compute.make_reduce_into(input_array, res, my_add, h_init)
     if not build_only:
@@ -73,12 +74,6 @@ def reduce_iterator(inp, size, build_only):
         alg(temp_storage, inp, res, size, h_init)
 
     cp.cuda.runtime.deviceSynchronize()
-
-
-@gpu_struct
-class MyStruct:
-    x: np.int32
-    y: np.int32
 
 
 @pytest.mark.parametrize("bench_fixture", ["compile_benchmark", "benchmark"])
@@ -120,7 +115,7 @@ def bench_reduce_struct(bench_fixture, request, size):
     # Use small size for compile benchmarks, parameterized size for runtime benchmarks
     actual_size = 10 if bench_fixture == "compile_benchmark" else size
     input_array = cp.random.randint(0, 10, (actual_size, 2), dtype="int32").view(
-        MyStruct
+        MyStruct_dtype
     )
 
     def run():
@@ -174,7 +169,9 @@ def bench_reduce_iterator_single_phase(benchmark, size):
 
 
 def bench_reduce_struct_single_phase(benchmark, size):
-    input_array = cp.random.randint(0, 10, (size, 2), dtype="int32").view(MyStruct)
+    input_array = cp.random.randint(0, 10, (size, 2), dtype="int32").view(
+        MyStruct_dtype
+    )
 
     # warm up run
     reduce_struct_single_phase(input_array, build_only=False)
@@ -201,10 +198,10 @@ def reduce_struct_single_phase(input_array, build_only):
     """Single-phase API that automatically manages temporary storage for structs."""
     size = len(input_array)
     res = cp.empty(1, dtype=input_array.dtype)
-    h_init = MyStruct(0, 0)
+    h_init = np.void((0, 0), dtype=MyStruct_dtype)
 
     def my_add(a, b):
-        return MyStruct(a.x + b.x, a.y + b.y)
+        return (a.x + b.x, a.y + b.y)
 
     cuda.compute.reduce_into(input_array, res, my_add, size, h_init)
 

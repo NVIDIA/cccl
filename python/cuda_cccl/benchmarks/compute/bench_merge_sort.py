@@ -7,7 +7,8 @@ from cuda.compute import (
     CountingIterator,
     OpKind,
 )
-from cuda.compute.struct import gpu_struct
+
+MyStruct_dtype = np.dtype([("x", np.int32), ("y", np.int32)], align=True)
 
 
 def merge_sort_pointer(keys, vals, output_keys, output_vals, build_only):
@@ -51,16 +52,10 @@ def merge_sort_iterator(size, keys, vals, output_keys, output_vals, build_only):
     cp.cuda.runtime.deviceSynchronize()
 
 
-@gpu_struct
-class MyStruct:
-    x: np.int32
-    y: np.int32
-
-
 def merge_sort_struct(size, keys, vals, output_keys, output_vals, build_only):
     size = len(keys)
 
-    def my_cmp(a: MyStruct, b: MyStruct) -> np.int8:
+    def my_cmp(a: MyStruct_dtype, b: MyStruct_dtype) -> np.int8:
         return np.int8(a.x < b.x)
 
     alg = cuda.compute.make_merge_sort(keys, vals, output_keys, output_vals, my_cmp)
@@ -151,8 +146,8 @@ def bench_merge_sort_iterator(bench_fixture, request, size):
 def bench_merge_sort_struct(bench_fixture, request, size):
     # Use small size for compile benchmarks, parameterized size for runtime benchmarks
     actual_size = 100 if bench_fixture == "compile_benchmark" else size
-    keys = cp.random.randint(0, 10, (actual_size, 2)).view(MyStruct.dtype)
-    vals = cp.random.randint(0, 10, (actual_size, 2)).view(MyStruct.dtype)
+    keys = cp.random.randint(0, 10, (actual_size, 2)).view(MyStruct_dtype)
+    vals = cp.random.randint(0, 10, (actual_size, 2)).view(MyStruct_dtype)
     output_keys = cp.empty_like(keys)
     output_vals = cp.empty_like(vals)
 

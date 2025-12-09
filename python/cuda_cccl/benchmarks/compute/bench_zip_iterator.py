@@ -7,30 +7,21 @@ from cuda.compute import (
     CountingIterator,
     ZipIterator,
 )
-from cuda.compute.struct import gpu_struct
 
-
-@gpu_struct
-class Single:
-    value: np.int32
-
-
-@gpu_struct
-class Pair:
-    first: np.int32
-    second: np.int32
+Single_dtype = np.dtype([("value", np.int32)], align=True)
+Pair_dtype = np.dtype([("first", np.int32), ("second", np.int32)], align=True)
 
 
 def reduce_zip_array(input_array, build_only):
     size = len(input_array)
-    res = cp.empty(1, dtype=Single.dtype)
-    h_init = Single(0)
+    res = cp.empty(1, dtype=Single_dtype)
+    h_init = np.void((0,), dtype=Single_dtype)
 
     # Create zip iterator with single array - wraps each element in Single struct
     zip_iter = ZipIterator(input_array)
 
     def my_add(a, b):
-        return Single(a.value + b.value)
+        return (a.value + b.value,)
 
     alg = cuda.compute.make_reduce_into(zip_iter, res, my_add, h_init)
     if not build_only:
@@ -42,14 +33,14 @@ def reduce_zip_array(input_array, build_only):
 
 
 def reduce_zip_iterator(inp, size, build_only):
-    res = cp.empty(1, dtype=Single.dtype)
-    h_init = Single(0)
+    res = cp.empty(1, dtype=Single_dtype)
+    h_init = np.void((0,), dtype=Single_dtype)
 
     # Create zip iterator with single iterator - wraps each element in Single struct
     zip_iter = ZipIterator(inp)
 
     def my_add(a, b):
-        return Single(a.value + b.value)
+        return (a.value + b.value,)
 
     alg = cuda.compute.make_reduce_into(zip_iter, res, my_add, h_init)
     if not build_only:
@@ -61,15 +52,15 @@ def reduce_zip_iterator(inp, size, build_only):
 
 
 def reduce_zip_array_iterator(input_array, size, build_only):
-    res = cp.empty(1, dtype=Pair.dtype)
-    h_init = Pair(0, 0)
+    res = cp.empty(1, dtype=Pair_dtype)
+    h_init = np.void((0, 0), dtype=Pair_dtype)
 
     # Create a counting iterator to zip with the array
     inp = CountingIterator(np.int32(0))
     zip_iter = ZipIterator(input_array, inp)
 
     def my_add(a, b):
-        return Pair(a.first + b.first, a.second + b.second)
+        return (a.first + b.first, a.second + b.second)
 
     alg = cuda.compute.make_reduce_into(zip_iter, res, my_add, h_init)
     if not build_only:
@@ -81,14 +72,14 @@ def reduce_zip_array_iterator(input_array, size, build_only):
 
 
 def transform_zip_array_iterator(zip_iter1, zip_iter2, size, build_only):
-    # Create output array with Pair.dtype to store the transformed results
-    res = cp.empty(size, dtype=Pair.dtype)
+    # Create output array with Pair_dtype to store the transformed results
+    res = cp.empty(size, dtype=Pair_dtype)
 
-    def my_transform(a, b):
+    def my_transform(a, b) -> Pair_dtype:
         # The transform function should handle the zip iterator values
         # Since we're working with zip iterators, a and b will be structs
         # We need to extract the values and create a new Pair
-        return Pair(a[0] + b[0], a[1] + b[1])
+        return (a[0] + b[0], a[1] + b[1])
 
     alg = cuda.compute.make_binary_transform(zip_iter1, zip_iter2, res, my_transform)
 

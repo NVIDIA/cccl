@@ -15,7 +15,6 @@ from cuda.compute import (
     ReverseIterator,
     TransformOutputIterator,
 )
-from cuda.compute.struct import gpu_struct
 
 
 def scan_host(h_input: np.ndarray, op, h_init, force_inclusive):
@@ -155,27 +154,30 @@ def test_scan_reverse_counting_iterator_input(force_inclusive):
 )
 @pytest.mark.no_verify_sass(reason="LDL/STL instructions emitted for this test.")
 def test_scan_struct_type(force_inclusive):
-    @gpu_struct
-    class XY:
-        x: np.int32
-        y: np.int32
+    xy_dtype = np.dtype([("x", np.int32), ("y", np.int32)], align=True)
 
     def op(a, b):
-        return XY(a.x + b.x, a.y + b.y)
+        return (a.x + b.x, a.y + b.y)
 
-    d_input = cp.random.randint(0, 256, (10, 2), dtype=np.int32).view(XY.dtype)
+    d_input = cp.random.randint(0, 256, (10, 2), dtype=np.int32).view(xy_dtype)
     d_output = cp.empty_like(d_input)
 
-    h_init = XY(0, 0)
+    h_init = np.void((0, 0), dtype=xy_dtype)
 
     scan_device(d_input, d_output, len(d_input), op, h_init, force_inclusive)
 
     got = d_output.get()
     expected_x = scan_host(
-        d_input.get()["x"], lambda a, b: a + b, np.asarray([h_init.x]), force_inclusive
+        d_input.get()["x"],
+        lambda a, b: a + b,
+        np.asarray([0], dtype=np.int32),
+        force_inclusive,
     )
     expected_y = scan_host(
-        d_input.get()["y"], lambda a, b: a + b, np.asarray([h_init.y]), force_inclusive
+        d_input.get()["y"],
+        lambda a, b: a + b,
+        np.asarray([0], dtype=np.int32),
+        force_inclusive,
     )
 
     np.testing.assert_allclose(expected_x, got["x"], rtol=1e-5)

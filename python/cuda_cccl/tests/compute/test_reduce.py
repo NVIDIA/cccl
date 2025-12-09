@@ -19,7 +19,6 @@ from cuda.compute import (
     TransformIterator,
     TransformOutputIterator,
 )
-from cuda.compute.struct import gpu_struct
 
 
 def random_int(shape, dtype):
@@ -726,19 +725,17 @@ def test_transform_iterator():
 
 
 def test_reduce_struct_type():
-    @gpu_struct
-    class Pixel:
-        r: np.int32
-        g: np.int32
-        b: np.int32
+    pixel_dtype = np.dtype(
+        [("r", np.int32), ("g", np.int32), ("b", np.int32)], align=True
+    )
 
     def max_g_value(x, y):
         return x if x.g > y.g else y
 
-    d_rgb = cp.random.randint(0, 256, (10, 3), dtype=np.int32).view(Pixel.dtype)
-    d_out = cp.empty(1, Pixel.dtype)
+    d_rgb = cp.random.randint(0, 256, (10, 3), dtype=np.int32).view(pixel_dtype)
+    d_out = cp.empty(1, pixel_dtype)
 
-    h_init = Pixel(0, 0, 0)
+    h_init = np.void((0, 0, 0), dtype=pixel_dtype)
 
     cuda.compute.reduce_into(d_rgb, d_out, max_g_value, d_rgb.size, h_init)
 
@@ -750,19 +747,18 @@ def test_reduce_struct_type():
 
 @pytest.mark.no_verify_sass(reason="LDL/STL instructions emitted for this test.")
 def test_reduce_struct_type_minmax():
-    @gpu_struct
-    class MinMax:
-        min_val: np.float64
-        max_val: np.float64
+    minmax_dtype = np.dtype(
+        [("min_val", np.float64), ("max_val", np.float64)], align=True
+    )
 
-    def minmax_op(v1: MinMax, v2: MinMax):
+    def minmax_op(v1: minmax_dtype, v2: minmax_dtype) -> minmax_dtype:
         c_min = min(v1.min_val, v2.min_val)
         c_max = max(v1.max_val, v2.max_val)
-        return MinMax(c_min, c_max)
+        return (c_min, c_max)
 
-    def transform_op(v):
+    def transform_op(v) -> minmax_dtype:
         av = abs(v)
-        return MinMax(av, av)
+        return (av, av)
 
     nelems = 4096
 
@@ -773,11 +769,11 @@ def test_reduce_struct_type_minmax():
     # with both operands having the same type.
     tr_it = TransformIterator(d_in, transform_op)
 
-    d_out = cp.empty(tuple(), dtype=MinMax.dtype)
+    d_out = cp.empty(tuple(), dtype=minmax_dtype)
 
     # initial value set with identity elements of
     # minimum and maximum operators
-    h_init = MinMax(np.inf, -np.inf)
+    h_init = np.void((np.inf, -np.inf), dtype=minmax_dtype)
 
     # run the reduction algorithm
     cuda.compute.reduce_into(tr_it, d_out, minmax_op, nelems, h_init)
@@ -786,7 +782,7 @@ def test_reduce_struct_type_minmax():
     actual = d_out.get()
 
     h = np.abs(d_in.get())
-    expected = np.asarray([(h.min(), h.max())], dtype=MinMax.dtype)
+    expected = np.asarray([(h.min(), h.max())], dtype=minmax_dtype)
 
     assert actual == expected
 

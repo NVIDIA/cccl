@@ -14,7 +14,6 @@ from cuda.compute import (
     DiscardIterator,
     OpKind,
 )
-from cuda.compute.struct import gpu_struct
 
 DTYPE_LIST = [
     np.uint8,
@@ -297,15 +296,8 @@ def test_unique_by_key_complex():
 
 
 def test_unique_by_key_struct_types():
-    @gpu_struct
-    class key_pair:
-        a: np.int16
-        b: np.uint64
-
-    @gpu_struct
-    class item_pair:
-        a: np.int32
-        b: np.float32
+    key_pair_dtype = np.dtype([("a", np.int16), ("b", np.uint64)], align=True)
+    item_pair_dtype = np.dtype([("a", np.int32), ("b", np.float32)], align=True)
 
     def struct_compare_op(lhs, rhs):
         return np.uint8((lhs.a == rhs.a) and (lhs.b == rhs.b))
@@ -318,8 +310,8 @@ def test_unique_by_key_struct_types():
     a_items = np.random.randint(0, 20, num_items, dtype=np.int32)
     b_items = np.random.rand(num_items).astype(np.float32)
 
-    h_in_keys = np.empty(num_items, dtype=key_pair.dtype)
-    h_in_items = np.empty(num_items, dtype=item_pair.dtype)
+    h_in_keys = np.empty(num_items, dtype=key_pair_dtype)
+    h_in_items = np.empty(num_items, dtype=item_pair_dtype)
     h_out_num_selected = np.empty(1, np.int64)
 
     h_in_keys["a"] = a_keys
@@ -329,9 +321,9 @@ def test_unique_by_key_struct_types():
     h_in_items["b"] = b_items
 
     d_in_keys = numba.cuda.to_device(h_in_keys)
-    d_in_keys = cp.asarray(d_in_keys).view(key_pair.dtype)
+    d_in_keys = cp.asarray(d_in_keys).view(key_pair_dtype)
     d_in_items = numba.cuda.to_device(h_in_items)
-    d_in_items = cp.asarray(d_in_items).view(item_pair.dtype)
+    d_in_items = cp.asarray(d_in_items).view(item_pair_dtype)
 
     d_out_keys = cp.empty_like(d_in_keys)
     d_out_items = cp.empty_like(d_in_items)
