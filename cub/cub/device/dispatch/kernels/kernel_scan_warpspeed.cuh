@@ -609,14 +609,14 @@ template <typename WarpspeedPolicy,
           typename OutputT,
           typename AccumT,
           typename ScanOpT,
-          typename InitValueT,
+          typename RealInitValueT,
           bool ForceInclusive>
 _CCCL_DEVICE_API inline void kernelBody(
   Squad squad,
   SpecialRegisters specialRegisters,
   const scanKernelParams<InputT, OutputT, AccumT>& params,
   ScanOpT scan_op,
-  InitValueT init_value)
+  RealInitValueT real_init_value)
 {
   ////////////////////////////////////////////////////////////////////////////////
   // Tuning dependent variables
@@ -644,7 +644,7 @@ _CCCL_DEVICE_API inline void kernelBody(
   syncHandler.clusterInitSync(specialRegisters);
 
   // Inclusive scan if no init_value type is provided
-  static constexpr bool hasInit     = !::cuda::std::is_same_v<InitValueT, NullType>;
+  static constexpr bool hasInit     = !::cuda::std::is_same_v<RealInitValueT, NullType>;
   static constexpr bool isInclusive = ForceInclusive || !hasInit;
 
   ////////////////////////////////////////////////////////////////////////////////
@@ -758,7 +758,7 @@ _CCCL_DEVICE_API inline void kernelBody(
       {
         if (is_first_tile)
         {
-          regSquadSum = scan_op(init_value, refSumThreadAndWarpW.data()[squadReduce.threadCount()]);
+          regSquadSum = scan_op(real_init_value, refSumThreadAndWarpW.data()[squadReduce.threadCount()]);
         }
         else
         {
@@ -873,11 +873,11 @@ _CCCL_DEVICE_API inline void kernelBody(
           // There first thread cannot use scan_op because sumExclusive holds garbage data
           if (squad.threadRank() == 0)
           {
-            sumExclusive = static_cast<AccumT>(init_value);
+            sumExclusive = static_cast<AccumT>(real_init_value);
           }
           else
           {
-            sumExclusive = scan_op(static_cast<AccumT>(init_value), sumExclusive);
+            sumExclusive = scan_op(static_cast<AccumT>(real_init_value), sumExclusive);
           }
         }
       }
@@ -1026,27 +1026,30 @@ template <typename MaxPolicy,
 __launch_bounds__(get_scan_block_threads<typename MaxPolicy::ActivePolicy>, 1) __global__ void scan(
   const __grid_constant__ scanKernelParams<InputT, OutputT, AccumT> params, ScanOpT scan_op, InitValueT init_value)
 {
-  NV_IF_TARGET(NV_PROVIDES_SM_100, ({
-                 using ActivePolicy    = typename MaxPolicy::ActivePolicy;
-                 using WarpspeedPolicy = typename ActivePolicy::WarpspeedPolicy;
+  NV_IF_TARGET(
+    NV_PROVIDES_SM_100, ({
+      using ActivePolicy    = typename MaxPolicy::ActivePolicy;
+      using WarpspeedPolicy = typename ActivePolicy::WarpspeedPolicy;
 
-                 // Cache special registers at start of kernel
-                 SpecialRegisters specialRegisters = getSpecialRegisters();
+      // Cache special registers at start of kernel
+      SpecialRegisters specialRegisters = getSpecialRegisters();
 
-                 // Dispatch for warp-specialization
-                 static constexpr SquadDesc scanSquads[WarpspeedPolicy::num_squads] = {
-                   WarpspeedPolicy::squadReduce(),
-                   WarpspeedPolicy::squadScanStore(),
-                   WarpspeedPolicy::squadLoad(),
-                   WarpspeedPolicy::squadSched(),
-                   WarpspeedPolicy::squadLookback(),
-                 };
+      // Dispatch for warp-specialization
+      static constexpr SquadDesc scanSquads[WarpspeedPolicy::num_squads] = {
+        WarpspeedPolicy::squadReduce(),
+        WarpspeedPolicy::squadScanStore(),
+        WarpspeedPolicy::squadLoad(),
+        WarpspeedPolicy::squadSched(),
+        WarpspeedPolicy::squadLookback(),
+      };
 
-                 squadDispatch(specialRegisters, scanSquads, [&](Squad squad) {
-                   kernelBody<WarpspeedPolicy, InputT, OutputT, AccumT, ScanOpT, InitValueT, ForceInclusive>(
-                     squad, specialRegisters, params, ::cuda::std::move(scan_op), init_value);
-                 });
-               }))
+      using real_init_value_t = typename InitValueT::value_type;
+
+      squadDispatch(specialRegisters, scanSquads, [&](Squad squad) {
+        kernelBody<WarpspeedPolicy, InputT, OutputT, AccumT, ScanOpT, real_init_value_t, ForceInclusive>(
+          squad, specialRegisters, params, ::cuda::std::move(scan_op), static_cast<real_init_value_t>(init_value));
+      });
+    }))
 }
 
 template <typename AccumT>
