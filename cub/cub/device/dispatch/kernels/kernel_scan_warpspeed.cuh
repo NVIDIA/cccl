@@ -59,7 +59,7 @@ _CCCL_DEVICE_API inline int shfl_sync_up(bool& in_range, int value, int offset, 
   return output;
 }
 
-enum scan_state
+enum scan_state : uint32_t
 {
   EMPTY    = 0,
   PRIV_SUM = 1,
@@ -350,7 +350,8 @@ storeLookback(tmp_state_t<AccumT>* ptrTmpBuffer, int idxTile, scan_state scanSta
   else
   {
     ThreadStore<STORE_CG>(&dst->value, sum);
-    detail::store_release(&dst->state, scanState);
+    using state_int = ::cuda::std::underlying_type_t<scan_state>;
+    store_release(reinterpret_cast<state_int*>(&dst->state), scanState);
   }
 }
 
@@ -394,7 +395,8 @@ _CCCL_DEVICE_API inline void warpLoadLookback(
       }
       else
       {
-        outTmpStates[i].state = detail::load_acquire(&src->state);
+        using state_int       = ::cuda::std::underlying_type_t<scan_state>;
+        outTmpStates[i].state = static_cast<scan_state>(load_acquire(reinterpret_cast<const state_int*>(&src->state)));
         outTmpStates[i].value = ThreadLoad<LOAD_CG>(&src->value);
       }
     }
