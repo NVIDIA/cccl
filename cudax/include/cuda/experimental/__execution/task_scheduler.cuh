@@ -70,7 +70,7 @@ struct __task_bulk_receiver;
 struct __task_scheduler_backend : parallel_scheduler_backend
 {
   _CCCL_API virtual auto query(get_forward_progress_guarantee_t) const noexcept -> forward_progress_guarantee = 0;
-  _CCCL_API virtual auto equal_to(const void* __other, ::cuda::std::__type_info_ref __type) -> bool           = 0;
+  _CCCL_API virtual auto __equal_to(const void* __other, ::cuda::std::__type_info_ref __type) -> bool         = 0;
 };
 
 using __backend_ptr_t = __shared_ptr<__task_scheduler_backend>;
@@ -141,14 +141,14 @@ public:
 
   [[nodiscard]] _CCCL_API friend bool operator!=(const task_scheduler& __lhs, const task_scheduler& __rhs) noexcept
   {
-    return !(__lhs == __rhs);
+    return !(__lhs.__backend_ == __rhs.__backend_);
   }
 
   template <class _Sch>
   [[nodiscard]] _CCCL_API friend auto operator==(const task_scheduler& __lhs, const _Sch& __rhs) noexcept
     _CCCL_TRAILING_REQUIRES(bool)(__detail::__non_task_scheduler<_Sch>)
   {
-    return __lhs.__backend_->equal_to(::cuda::std::addressof(__rhs), _CCCL_TYPEID(_Sch));
+    return __lhs.__backend_->__equal_to(::cuda::std::addressof(__rhs), _CCCL_TYPEID(_Sch));
   }
 
   template <class _Sch>
@@ -705,7 +705,7 @@ public:
   }
 
   [[nodiscard]]
-  _CCCL_API bool equal_to(const void* __other, ::cuda::std::__type_info_ref __type) final override
+  _CCCL_API bool __equal_to(const void* __other, ::cuda::std::__type_info_ref __type) final override
   {
     if (__type == _CCCL_TYPEID(_Sch))
     {
