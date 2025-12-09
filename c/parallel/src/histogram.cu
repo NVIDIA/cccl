@@ -84,7 +84,7 @@ struct histogram_kernel_source
             typename SecondLevelArrayT,
             bool IsEven,
             bool IsByteSample>
-  CUkernel HistogramSweepKernel() const
+  CUkernel HistogramSweepKernelDeviceInit() const
   {
     return build.sweep_kernel;
   }
@@ -173,7 +173,8 @@ std::string get_sweep_kernel_name(
       : std::format("cuda::std::array<const {0}*, {1}>", level_t, num_active_channels);
 
   return std::format(
-    "cub::detail::histogram::DeviceHistogramSweepKernel<{0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}, {8}, {9}, {10}, {11}>",
+    "cub::detail::histogram::DeviceHistogramSweepKernelDeviceInit<{0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}, {8}, {9}, "
+    "{10}, {11}>",
     chained_policy_t,
     privatized_smem_bins,
     num_channels,
@@ -480,21 +481,23 @@ CUresult cccl_device_histogram_even_impl(
       indirect_arg_t, // SampleT
       histogram::histogram_kernel_source, // KernelSource
       cub::detail::CudaDriverLauncherFactory // KernelLauncherFactory
-      >::DispatchEven(d_temp_storage,
-                      *temp_storage_bytes,
-                      d_samples,
-                      d_output_histogram_arr,
-                      num_output_levels_arr,
-                      lower_level_arg,
-                      upper_level_arg,
-                      num_row_pixels,
-                      num_rows,
-                      row_stride_samples,
-                      stream,
-                      is_byte_sample{},
-                      {build},
-                      cub::detail::CudaDriverLauncherFactory{cu_device, build.cc},
-                      {d_samples.value_type, build.num_active_channels});
+      >::
+      DispatchEvenDeviceInit(
+        d_temp_storage,
+        *temp_storage_bytes,
+        d_samples,
+        d_output_histogram_arr,
+        num_output_levels_arr,
+        lower_level_arg,
+        upper_level_arg,
+        num_row_pixels,
+        num_rows,
+        row_stride_samples,
+        stream,
+        is_byte_sample{},
+        {build},
+        cub::detail::CudaDriverLauncherFactory{cu_device, build.cc},
+        {d_samples.value_type, build.num_active_channels});
 
     error = static_cast<CUresult>(exec_status);
   }
