@@ -511,8 +511,8 @@ def _check_compile_result(cubin: bytes):
         sass = "nvdiasm not found, skipping SASS validation"
         warnings.warn(sass)
 
-    # assert "LDL" not in sass, "LDL instruction found in SASS"
-    # assert "STL" not in sass, "STL instruction found in SASS"
+    assert "LDL" not in sass, "LDL instruction found in SASS"
+    assert "STL" not in sass, "STL instruction found in SASS"
     return temp_cubin_file.name
 
 
