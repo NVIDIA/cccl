@@ -38,6 +38,9 @@
 
 #include <cuda/experimental/__execution/prologue.cuh>
 
+_CCCL_DIAG_PUSH
+_CCCL_DIAG_SUPPRESS_MSVC(4702) // warning C4702: unreachable code
+
 namespace cuda::experimental::execution
 {
 namespace __detail
@@ -133,7 +136,7 @@ protected:
         return get_stop_token(get_env(__rcvr_));
       }
     }
-    return inplace_stop_token{};
+    return inplace_stop_token{}; // MSVC thinks this is unreachable. :-?
   }
 
   _CCCL_API auto query(const get_allocator_t&) const noexcept -> any_allocator<::cuda::std::byte> final override
@@ -199,6 +202,8 @@ struct __proxy_receiver
 };
 } // namespace __detail
 } // namespace cuda::experimental::execution
+
+_CCCL_DIAG_POP
 
 #include <cuda/experimental/__execution/epilogue.cuh>
 
