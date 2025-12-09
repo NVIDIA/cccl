@@ -205,11 +205,17 @@ _CCCL_API constexpr overflow_result<_ActualResult> add_overflow(const _Lhs __lhs
   _CCCL_IF_NOT_CONSTEVAL_DEFAULT
 #  endif // _CCCL_CUDA_COMPILATION()
   {
-    NV_IF_TARGET(NV_IS_HOST, ({
-                   overflow_result<_ActualResult> __result{};
-                   __result.overflow = _CCCL_BUILTIN_ADD_OVERFLOW(__lhs, __rhs, &__result.value);
-                   return __result;
-                 }))
+    // nvc++ doesn't implement the builtins for int128.
+#  if _CCCL_COMPILER(NVHPC)
+    if constexpr (sizeof(_Lhs) != 16 && sizeof(_Rhs) != 16 && sizeof(_ActualResult) != 16)
+#  endif // _CCCL_COMPILER(NVHPC)
+    {
+      NV_IF_TARGET(NV_IS_HOST, ({
+                     overflow_result<_ActualResult> __result{};
+                     __result.overflow = _CCCL_BUILTIN_ADD_OVERFLOW(__lhs, __rhs, &__result.value);
+                     return __result;
+                   }))
+    }
   }
 #endif // _CCCL_BUILTIN_ADD_OVERFLOW
 
