@@ -229,9 +229,8 @@ private:
 };
 
 //! @brief A type-erased sender returned by task_scheduler::schedule().
-class __task_sender
+struct __task_sender
 {
-public:
   using sender_concept = sender_t;
   using __completions_t =
     completion_signatures<set_value_t(), //
