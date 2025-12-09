@@ -31,13 +31,12 @@ data = cp.asarray([1, 1, 1, 1, 1, 1, 1, 1], dtype=cp.int64)
 hflg = cp.asarray([0, 0, 1, 0, 0, 1, 1, 0], dtype=cp.int32)
 
 # Define the custom data type using numpy structured dtype
-value_flag_dtype = np.dtype([("value", np.int64), ("flag", np.int32)])
+# Note: align=True is important for GPU pass-by-value semantics
+value_flag_dtype = np.dtype([("value", np.int64), ("flag", np.int32)], align=True)
 
 
 # Type annotations use the numpy dtype; return tuple is implicitly converted
-def schwartz_sum(
-    op1: value_flag_dtype, op2: value_flag_dtype
-) -> value_flag_dtype:
+def schwartz_sum(op1: value_flag_dtype, op2: value_flag_dtype) -> value_flag_dtype:
     f1: cp.int32 = 1 if op1.flag else 0
     f2: cp.int32 = 1 if op2.flag else 0
     f: cp.int32 = f1 | f2

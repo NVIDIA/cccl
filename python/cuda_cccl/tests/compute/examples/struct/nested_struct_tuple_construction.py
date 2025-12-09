@@ -18,8 +18,8 @@ import numpy as np
 import cuda.compute
 
 # Define nested structs using numpy structured dtypes
-stats_dtype = np.dtype([("count", np.int32), ("sum", np.float32)])
-datapoint_dtype = np.dtype([("value", np.int64), ("stats", stats_dtype)])
+stats_dtype = np.dtype([("count", np.int32), ("sum", np.float32)], align=True)
+datapoint_dtype = np.dtype([("value", np.int64), ("stats", stats_dtype)], align=True)
 
 
 def sum_with_tuples(d1, d2):

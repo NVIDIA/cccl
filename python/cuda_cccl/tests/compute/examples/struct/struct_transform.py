@@ -20,7 +20,7 @@ import numpy as np
 import cuda.compute
 
 # Define struct type using numpy structured dtype
-point2d_dtype = np.dtype([("x", np.float32), ("y", np.float32)])
+point2d_dtype = np.dtype([("x", np.float32), ("y", np.float32)], align=True)
 
 
 # Type annotations use the numpy dtype - return a tuple which is implicitly

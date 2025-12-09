@@ -16,14 +16,12 @@ This example shows how to use numpy structured dtypes with type annotations.
 """
 
 # Define struct type using numpy structured dtype
-sum_and_count_dtype = np.dtype([("sum", np.float32), ("count", np.int32)])
+sum_and_count_dtype = np.dtype([("sum", np.float32), ("count", np.int32)], align=True)
 
 
 # binary operation for the scan computes the running sum and running count
 # Type annotations use the numpy dtype; return tuple is implicitly converted
-def add_op(
-    x1: sum_and_count_dtype, x2: sum_and_count_dtype
-) -> sum_and_count_dtype:
+def add_op(x1: sum_and_count_dtype, x2: sum_and_count_dtype) -> sum_and_count_dtype:
     return (x1.sum + x2.sum, x1.count + x2.count)
 
 

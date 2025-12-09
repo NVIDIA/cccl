@@ -42,7 +42,7 @@ alpha = 0.05
 assert 0.0 < alpha < 1.0
 
 # Define struct type using numpy structured dtype
-value_scale_dtype = np.dtype([("value", np.float64), ("scale", np.int64)])
+value_scale_dtype = np.dtype([("value", np.float64), ("scale", np.int64)], align=True)
 
 
 # Type annotations use the numpy dtype; return tuple is implicitly converted

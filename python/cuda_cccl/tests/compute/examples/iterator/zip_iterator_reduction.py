@@ -15,7 +15,7 @@ import cuda.compute
 from cuda.compute import ZipIterator
 
 # Define struct type using numpy structured dtype
-pair_dtype = np.dtype([("first", np.int32), ("second", np.float32)])
+pair_dtype = np.dtype([("first", np.int32), ("second", np.float32)], align=True)
 
 
 def sum_pairs(p1, p2):

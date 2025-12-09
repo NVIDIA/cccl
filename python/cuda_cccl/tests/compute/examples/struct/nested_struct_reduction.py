@@ -17,8 +17,8 @@ import numpy as np
 import cuda.compute
 
 # Define nested struct types using numpy structured dtypes
-point_dtype = np.dtype([("x", np.int32), ("y", np.int32)])
-particle_dtype = np.dtype([("id", np.int64), ("position", point_dtype)])
+point_dtype = np.dtype([("x", np.int32), ("y", np.int32)], align=True)
+particle_dtype = np.dtype([("id", np.int64), ("position", point_dtype)], align=True)
 
 
 def sum_particles(p1, p2):

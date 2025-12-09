@@ -15,7 +15,7 @@ import cuda.compute
 from cuda.compute import TransformIterator
 
 # Define a custom data type for the accumulator using numpy structured dtype.
-minmax_dtype = np.dtype([("min_val", np.float64), ("max_val", np.float64)])
+minmax_dtype = np.dtype([("min_val", np.float64), ("max_val", np.float64)], align=True)
 
 
 # Define the binary operation for the reduction.

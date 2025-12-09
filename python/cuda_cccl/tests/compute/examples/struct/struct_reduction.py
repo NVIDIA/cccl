@@ -14,7 +14,7 @@ import numpy as np
 import cuda.compute
 
 # Define a custom data type to store the pixel values using numpy structured dtype.
-pixel_dtype = np.dtype([("r", np.int32), ("g", np.int32), ("b", np.int32)])
+pixel_dtype = np.dtype([("r", np.int32), ("g", np.int32), ("b", np.int32)], align=True)
 
 
 # Define a reduction operation that returns the pixel with the maximum green value.

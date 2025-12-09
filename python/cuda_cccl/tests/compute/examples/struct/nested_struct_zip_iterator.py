@@ -21,9 +21,9 @@ import cuda.compute
 from cuda.compute import ZipIterator
 
 # Define nested structs using numpy structured dtypes
-point_dtype = np.dtype([("x", np.int32), ("y", np.int32)])
-color_dtype = np.dtype([("r", np.uint8), ("g", np.uint8), ("b", np.uint8)])
-pixel_dtype = np.dtype([("position", point_dtype), ("color", color_dtype)])
+point_dtype = np.dtype([("x", np.int32), ("y", np.int32)], align=True)
+color_dtype = np.dtype([("r", np.uint8), ("g", np.uint8), ("b", np.uint8)], align=True)
+pixel_dtype = np.dtype([("position", point_dtype), ("color", color_dtype)], align=True)
 
 
 def sum_pixels(p1, p2):
