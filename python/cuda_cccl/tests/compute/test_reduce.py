@@ -15,7 +15,6 @@ from cuda.compute import (
     CacheModifiedInputIterator,
     ConstantIterator,
     CountingIterator,
-    Determinism,
     OpKind,
     TransformIterator,
     TransformOutputIterator,
@@ -810,20 +809,3 @@ def test_reduce_transform_output_iterator(floating_array):
 
     expected = cp.sqrt(cp.sum(d_input))
     np.testing.assert_allclose(d_output.get(), expected.get(), atol=1e-6)
-
-
-def test_reduce_with_not_guaranteed_determinism(floating_array):
-    dtype = floating_array.dtype
-    h_init = np.array([0], dtype=dtype)
-
-    d_input = floating_array
-    d_output = cp.empty(1, dtype=dtype)
-
-    cuda.compute.reduce_into(
-        d_input,
-        d_output,
-        OpKind.PLUS,
-        len(d_input),
-        h_init,
-        determinism=Determinism.NOT_GUARANTEED,
-    )
