@@ -307,7 +307,7 @@ C2H_TEST("Device sum uses environment", "[reduce][device]", requirements)
   auto d_in             = cuda::constant_iterator(1.0f);
   auto d_out            = thrust::device_vector<accumulator_t>(1);
 
-  init_t init = 0;
+  [[maybe_unused]] init_t init = 0;
   size_t expected_bytes_allocated{};
 
   // To check if a given algorithm implementation is used, we check if associated kernels are invoked.
