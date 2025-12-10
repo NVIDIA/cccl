@@ -41,6 +41,7 @@
 #include <cuda/std/cassert>
 #include <cuda/std/cstdint>
 #include <cuda/std/expected>
+#include <cuda/std/optional>
 #include <cuda/std/tuple>
 
 #if !_CCCL_COMPILER(NVRTC) && defined(CUB_DEBUG_LOG)
@@ -373,25 +374,20 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t invoke_prefetch_or_vectorized
   }
 
   auto can_vectorize = false;
+  ::cuda::std::optional<int> ipt;
+
   // the policy already handles the compile-time checks if we can vectorize. Do the remaining alignment check here
   if CUB_DETAIL_CONSTEXPR_ISH (Algorithm::vectorized == policy.algorithm)
   {
     const int vs  = policy.vectorized_policy.vec_size;
     can_vectorize = kernel_source.CanVectorize(vs, out, ::cuda::std::get<Is>(in)...);
-  }
-
-  int ipt        = 0;
-  bool ipt_found = false;
-  if CUB_DETAIL_CONSTEXPR_ISH (Algorithm::vectorized == policy.algorithm)
-  {
     if (can_vectorize)
     {
-      ipt       = policy.vectorized_policy.items_per_thread_vectorized;
-      ipt_found = true;
+      ipt = policy.vectorized_policy.items_per_thread_vectorized;
     }
   }
 
-  if (!ipt_found)
+  if (!ipt)
   {
     // otherwise, set up the prefetch kernel
     const auto fallback_prefetch_policy = prefetch_policy{
@@ -414,13 +410,14 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t invoke_prefetch_or_vectorized
     ipt = spread_out_items_per_thread(
       num_items, prefetch_policy, items_per_thread, config->sm_count, config->max_occupancy);
   }
-  const int tile_size = block_threads * ipt;
+  _CCCL_ASSERT(ipt, "");
+  const int tile_size = block_threads * ipt.value();
   const auto grid_dim = static_cast<unsigned int>(::cuda::ceil_div(num_items, Offset{tile_size}));
   return CubDebug(
     launcher_factory(grid_dim, block_threads, 0, stream, true)
       .doit(kernel_source.TransformKernel(),
             num_items,
-            ipt,
+            ipt.value(),
             can_vectorize,
             pred,
             op,
