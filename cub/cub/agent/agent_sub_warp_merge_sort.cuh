@@ -127,7 +127,7 @@ class AgentSubWarpSort
 #if _CCCL_HAS_NVBF16()
     _CCCL_DEVICE bool operator()(__nv_bfloat16 lhs, __nv_bfloat16 rhs) const noexcept
     {
-      // Need to explicitly cast to float for SM <= 52.
+      // Need to explicitly cast to float for SM <= 80.
       if constexpr (IS_DESCENDING)
       {
         NV_IF_TARGET(
@@ -154,7 +154,7 @@ class AgentSubWarpSort
 #if _CCCL_HAS_NVBF16()
   _CCCL_DEVICE static bool equal(__nv_bfloat16 lhs, __nv_bfloat16 rhs)
   {
-    // Need to explicitly cast to float for SM <= 52.
+    // Need to explicitly cast to float for SM <= 80.
     NV_IF_TARGET(NV_PROVIDES_SM_80, (return __heq(lhs, rhs);), (return __bfloat162float(lhs) == __bfloat162float(rhs);));
   }
 #endif // _CCCL_HAS_NVBF16()
