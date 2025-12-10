@@ -127,8 +127,8 @@ public:
 
   _CCCL_TEMPLATE(class _Sch, class _Alloc = ::cuda::std::allocator<::cuda::std::byte>)
   _CCCL_REQUIRES(__detail::__non_task_scheduler<_Sch>)
-  _CCCL_API explicit task_scheduler(_Sch sch, _Alloc alloc = {})
-      : __backend_(experimental::__allocate_shared<__backend_for<_Sch, _Alloc>>(alloc, _CCCL_MOVE(sch), alloc))
+  _CCCL_API explicit task_scheduler(_Sch __sch, _Alloc __alloc = {})
+      : __backend_(experimental::__allocate_shared<__backend_for<_Sch, _Alloc>>(__alloc, _CCCL_MOVE(__sch), __alloc))
   {}
 
   [[nodiscard]] _CCCL_API auto schedule() const noexcept -> __detail::__task_sender;
@@ -242,13 +242,13 @@ struct __task_sender
   {}
 
   template <class _Rcvr>
-  _CCCL_API auto connect(_Rcvr __rcvr) const noexcept -> __task_opstate_t<_Rcvr>
+  [[nodiscard]] _CCCL_API auto connect(_Rcvr __rcvr) const noexcept -> __task_opstate_t<_Rcvr>
   {
     return __task_opstate_t<_Rcvr>(get_completion_scheduler<set_value_t>(__attrs_).__backend_, _CCCL_MOVE(__rcvr));
   }
 
   template <class _Self>
-  _CCCL_API static _CCCL_CONSTEVAL auto get_completion_signatures() noexcept -> __completions_t
+  [[nodiscard]] _CCCL_API static _CCCL_CONSTEVAL auto get_completion_signatures() noexcept -> __completions_t
   {
     return {};
   }
@@ -467,9 +467,8 @@ struct __task_bulk_opstate
 private:
   using __values_t =
     value_types_of_t<_Sndr, __fwd_env_t<env_of_t<_Rcvr>>, ::cuda::std::__decayed_tuple, __nullable_variant>;
-  using __rcvr_t                       = __task_bulk_receiver<_BulkTag, _Policy, _Fn, _Rcvr, __values_t>;
-  using __opstate1_t                   = connect_result_t<_Sndr, __rcvr_t>;
-  constexpr static bool __parallelize_ = _Policy() == par || _Policy() == par_unseq;
+  using __rcvr_t     = __task_bulk_receiver<_BulkTag, _Policy, _Fn, _Rcvr, __values_t>;
+  using __opstate1_t = connect_result_t<_Sndr, __rcvr_t>;
 
   __task_bulk_state<_BulkTag, _Policy, _Fn, _Rcvr, __values_t> __state_;
   __opstate1_t __opstate1_;
@@ -684,9 +683,9 @@ class _CCCL_DECLSPEC_EMPTY_BASES task_scheduler::__backend_for
   }
 
 public:
-  _CCCL_API explicit __backend_for(_Sch sch, _Alloc alloc)
-      : _Alloc(_CCCL_MOVE(alloc))
-      , __sch_(_CCCL_MOVE(sch))
+  _CCCL_API explicit __backend_for(_Sch __sch, _Alloc __alloc)
+      : _Alloc(_CCCL_MOVE(__alloc))
+      , __sch_(_CCCL_MOVE(__sch))
   {}
 
   _CCCL_API void schedule(receiver_proxy& __rcvr_proxy,

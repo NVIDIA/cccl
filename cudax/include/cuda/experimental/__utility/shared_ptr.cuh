@@ -54,9 +54,9 @@ _CCCL_API __shared_ptr<_Ty> __make_shared(_Args&&... __args)
 }
 
 template <class _Ty, class _Alloc, class... _Args>
-_CCCL_API __shared_ptr<_Ty> __allocate_shared(const _Alloc& alloc, _Args&&... __args)
+_CCCL_API __shared_ptr<_Ty> __allocate_shared(const _Alloc& __alloc, _Args&&... __args)
 {
-  return __shared_ptr<_Ty>::__allocate_shared(alloc, static_cast<_Args&&>(__args)...);
+  return __shared_ptr<_Ty>::__allocate_shared(__alloc, static_cast<_Args&&>(__args)...);
 }
 
 namespace __detail
@@ -157,7 +157,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT _CCCL_DECLSPEC_EMPTY_BASES __shared_ptr //
 
   _CCCL_API ~__shared_ptr()
   {
-    __reset();
+    reset();
   }
 
   _CCCL_API void swap(__shared_ptr& __other) noexcept
@@ -171,47 +171,55 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT _CCCL_DECLSPEC_EMPTY_BASES __shared_ptr //
     __lhs.swap(__rhs);
   }
 
-  _CCCL_API _Ty* operator->() const noexcept
+  [[nodiscard]] _CCCL_API _Ty* operator->() const noexcept
   {
     return __val_ptr_;
   }
 
-  _CCCL_API _Ty& operator*() const noexcept
+  [[nodiscard]] _CCCL_API _Ty& operator*() const noexcept
   {
     return *__val_ptr_;
   }
 
-  _CCCL_API _Ty* get() const noexcept
+  [[nodiscard]] _CCCL_API _Ty* get() const noexcept
   {
     return __val_ptr_;
   }
 
   _CCCL_API void reset() noexcept
   {
-    __reset();
+    if (__cb_ptr_)
+    {
+      if (__cb_ptr_->__ref_count_.fetch_sub(1, ::cuda::std::memory_order_acq_rel) == 1)
+      {
+        __cb_ptr_->__destroy_vfn_(__cb_ptr_, __val_ptr_);
+      }
+      __cb_ptr_  = nullptr;
+      __val_ptr_ = nullptr;
+    }
   }
 
-  _CCCL_API size_t use_count() const noexcept
+  [[nodiscard]] _CCCL_API size_t use_count() const noexcept
   {
     return __cb_ptr_ ? __cb_ptr_->__ref_count_.load(::cuda::std::memory_order_acquire) : 0;
   }
 
-  _CCCL_API explicit operator bool() const noexcept
+  [[nodiscard]] _CCCL_API explicit operator bool() const noexcept
   {
     return __cb_ptr_ != nullptr;
   }
 
-  _CCCL_API bool operator!() const noexcept
+  [[nodiscard]] _CCCL_API bool operator!() const noexcept
   {
     return __cb_ptr_ == nullptr;
   }
 
-  _CCCL_API bool operator==(const __shared_ptr& __other) const noexcept
+  [[nodiscard]] _CCCL_API bool operator==(const __shared_ptr& __other) const noexcept
   {
     return __cb_ptr_ == __other.__cb_ptr_;
   }
 
-  _CCCL_API bool operator!=(const __shared_ptr& __other) const noexcept
+  [[nodiscard]] _CCCL_API bool operator!=(const __shared_ptr& __other) const noexcept
   {
     return !(*this == __other);
   }
@@ -230,19 +238,6 @@ private:
       : __detail::__shared_ptr_base{__cb_ptr}
       , __val_ptr_{__val_ptr}
   {}
-
-  _CCCL_API void __reset() noexcept
-  {
-    if (__cb_ptr_)
-    {
-      if (__cb_ptr_->__ref_count_.fetch_sub(1, ::cuda::std::memory_order_acq_rel) == 1)
-      {
-        __cb_ptr_->__destroy_vfn_(__cb_ptr_, __val_ptr_);
-      }
-      __cb_ptr_  = nullptr;
-      __val_ptr_ = nullptr;
-    }
-  }
 
   template <class _Deleter>
   struct __deleter_wrapper
@@ -317,8 +312,8 @@ private:
     using __control_block_t = __control_block_with_deleter<__allocator_deleter>;
     static_assert(::cuda::std::is_nothrow_copy_constructible_v<_Alloc>, "Allocator must be nothrow copyable");
 
-    _CCCL_API explicit __allocator_deleter(const _Alloc& alloc) noexcept
-        : _Alloc{alloc}
+    _CCCL_API explicit __allocator_deleter(const _Alloc& __alloc) noexcept
+        : _Alloc{__alloc}
     {}
 
     _CCCL_API void operator()([[maybe_unused]] _Ty* __ptr) noexcept
