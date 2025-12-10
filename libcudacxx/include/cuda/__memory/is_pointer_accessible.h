@@ -100,6 +100,10 @@ _CCCL_HOST_API inline bool is_host_accessible(const void* __p)
   return false;
 }
 
+_CCCL_DIAG_PUSH
+_CCCL_DIAG_SUPPRESS_CLANG("-Wmissing-braces")
+// clang complains about missing braces in CUmemLocation constructor but GCC complains if we add them
+
 /**
  * @brief Checks if a pointer is a device accessible pointer.
  *
@@ -154,6 +158,8 @@ _CCCL_HOST_API inline bool is_device_accessible(const void* __p, device_ref __de
   // (5) check if the pointer is peer accessible from the specified device
   return ::cuda::__driver::__deviceCanAccessPeer(__device.get(), __ptr_dev_id);
 }
+
+_CCCL_DIAG_POP
 
 #endif // _CCCL_HAS_CTK() && !_CCCL_COMPILER(NVRTC)
 
