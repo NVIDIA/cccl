@@ -155,7 +155,7 @@ struct vectorized_policy
 struct async_copy_policy
 {
   int block_threads;
-  int bulk_copy_alignment;
+  int bulk_copy_alignment; // TODO(bgruber): this should probably be removed from the tuning policy
   // items per tile are determined at runtime. these (inclusive) bounds allow overriding that value via a tuning policy
   int min_items_per_thread = 1;
   int max_items_per_thread = 32;

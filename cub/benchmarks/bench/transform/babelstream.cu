@@ -4,8 +4,12 @@
 // Because CUB cannot inspect the transformation function, we cannot add any tunings based on the results of this
 // benchmark. Its main use is to detect regressions.
 
+// %RANGE% TUNE_ALGORITHM alg 1:4:1
 // %RANGE% TUNE_THREADS tpb 128:1024:128
-// %RANGE% TUNE_ALGORITHM alg 0:2:1
+
+// TODO(bgruber): those parameters only apply if TUNE_ALGORITHM == 1 (vectorized)
+// %RANGE% TUNE_VEC_SIZE ipt 1:32:1
+// %RANGE% TUNE_VECTORS_PER_THREAD vpt 1:4:1
 
 #include "common.h"
 
