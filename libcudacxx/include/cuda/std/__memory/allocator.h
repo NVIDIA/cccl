@@ -41,6 +41,8 @@
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
+_CCCL_SUPPRESS_DEPRECATED_PUSH
+
 #if _CCCL_STD_VER <= 2017
 // These specializations shouldn't be marked CCCL_DEPRECATED.
 // Specializing allocator<void> is deprecated, but not using it.
@@ -311,6 +313,8 @@ _CCCL_API inline _CCCL_CONSTEXPR_CXX20 bool operator!=(const allocator<_Tp>&, co
 {
   return false;
 }
+
+_CCCL_SUPPRESS_DEPRECATED_POP
 
 _CCCL_END_NAMESPACE_CUDA_STD
 
