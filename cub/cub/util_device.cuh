@@ -867,7 +867,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_all_arches(
   ArchPolicies arch_policies, ::cuda::arch_id device_arch, FunctorT&& f, ::cuda::std::index_sequence<Is...>)
 {
   static constexpr auto all_arches = ::cuda::__all_arch_ids();
-  cudaError_t e         = cudaErrorInvalidDeviceFunction;
+  cudaError_t e                    = cudaErrorInvalidDeviceFunction;
   (..., (device_arch == all_arches[Is] ? (e = call_for_arch<all_arches[Is]>(arch_policies, f)) : cudaSuccess));
   return e;
 }
@@ -887,7 +887,7 @@ dispatch_arch(ArchPolicies arch_policies, ::cuda::arch_id device_arch, F&& f)
     arch_policies,
     device_arch,
     ::cuda::std::forward<F>(f),
-    ::cuda::std::make_index_sequence<::cuda::std::size(::cuda::__all_arch_ids)>{});
+    ::cuda::std::make_index_sequence<::cuda::__all_arch_ids().size()>{});
 #  endif
 }
 #else // !defined(CUB_DEFINE_RUNTIME_POLICIES) && !_CCCL_COMPILER(NVRTC)
