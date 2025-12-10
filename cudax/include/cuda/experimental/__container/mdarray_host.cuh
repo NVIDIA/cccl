@@ -23,11 +23,9 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/__device/all_devices.h>
 #include <cuda/__mdspan/host_device_mdspan.h>
-#include <cuda/__memory_resource/device_memory_pool.h>
-#include <cuda/__memory_resource/shared_resource.h>
 #include <cuda/__stream/stream_ref.h>
+#include <cuda/std/__memory/allocator.h>
 #include <cuda/std/__utility/delegate_constructors.h>
 
 #include <cuda/experimental/__container/mdarray_base.cuh>
@@ -40,21 +38,19 @@ namespace cuda::experimental
 template <typename _ElementType,
           typename _Extents,
           typename _LayoutPolicy,
-          typename _Allocator = ::cuda::mr::shared_resource<::cuda::device_memory_pool>>
-class device_mdarray
-    : public __base_mdarray<device_mdarray<_ElementType, _Extents, _LayoutPolicy, _Allocator>,
+          typename _Allocator = ::cuda::std::allocator<_ElementType>>
+class host_mdarray
+    : public __base_mdarray<host_mdarray<_ElementType, _Extents, _LayoutPolicy, _Allocator>,
                             _Allocator,
-                            ::cuda::device_mdspan,
+                            ::cuda::host_mdspan,
                             _ElementType,
                             _Extents,
                             _LayoutPolicy>
 {
-  static_assert(::cuda::has_property<_Allocator, ::cuda::mr::device_accessible>);
-
   using __base_class =
-    __base_mdarray<device_mdarray<_ElementType, _Extents, _LayoutPolicy, _Allocator>,
+    __base_mdarray<host_mdarray<_ElementType, _Extents, _LayoutPolicy, _Allocator>,
                    _Allocator,
-                   ::cuda::device_mdspan,
+                   ::cuda::host_mdspan,
                    _ElementType,
                    _Extents,
                    _LayoutPolicy>;
@@ -63,50 +59,39 @@ class device_mdarray
 
   _CCCL_HOST_API static _Allocator __get_default_allocator()
   {
-    static auto __allocator = __construct_allocator<_Allocator>::__do(::cuda::__devices()[0]);
-    return __allocator;
+    return ::cuda::std::allocator<_ElementType>{};
   }
 
   _CCCL_HOST_API void __init()
   {
-    ::cuda::experimental::__init_device_impl(this->view(), ::cudaStream_t{nullptr});
+    ::cuda::experimental::__init_host_impl(this->view(), ::cuda::std::make_index_sequence<_Extents::rank()>{});
   }
 
   template <typename _ElementType2, typename _Extents2, typename _LayoutPolicy2, typename _Accessor2>
-  _CCCL_HOST_API void
-  __copy_from(::cuda::device_mdspan<_ElementType2, _Extents2, _LayoutPolicy2, _Accessor2> __mdspan_in)
+  _CCCL_HOST_API void __copy_from(::cuda::host_mdspan<_ElementType2, _Extents2, _LayoutPolicy2, _Accessor2> __mdspan_in)
   {
-    auto __temp_storage         = reinterpret_cast<void*>(0x1);
-    size_t __temp_storage_bytes = 0;
-    cub::DeviceCopy::Copy(__temp_storage, __temp_storage_bytes, __mdspan_in, this->view(), ::cudaStream_t{nullptr});
+    ::cuda::experimental::__for_each_in_layout_host(__mdspan_in.mapping(), _CopyOp{__mdspan_in, this->view()});
   }
 
   template <typename _Extents2, typename _LayoutPolicy2>
-  _CCCL_HOST_API void __copy_from(::cuda::host_mdspan<_ElementType, _Extents2, _LayoutPolicy2> __mdspan_in)
+  _CCCL_HOST_API void __copy_from(::cuda::device_mdspan<_ElementType, _Extents2, _LayoutPolicy2> __mdspan_in)
   {
     ::cuda::experimental::__copy_host_device(__mdspan_in, this->view(), ::cudaStream_t{nullptr});
   }
 
 public:
-  using view_type       = ::cuda::device_mdspan<_ElementType, _Extents, _LayoutPolicy>;
-  using const_view_type = ::cuda::device_mdspan<const _ElementType, _Extents, _LayoutPolicy>;
+  using view_type       = ::cuda::host_mdspan<_ElementType, _Extents, _LayoutPolicy>;
+  using const_view_type = ::cuda::host_mdspan<const _ElementType, _Extents, _LayoutPolicy>;
 
   _CCCL_DELEGATE_CONSTRUCTORS(
-    device_mdarray,
-    __base_mdarray,
-    device_mdarray,
-    _Allocator,
-    ::cuda::device_mdspan,
-    _ElementType,
-    _Extents,
-    _LayoutPolicy);
+    host_mdarray, __base_mdarray, host_mdarray, _Allocator, ::cuda::host_mdspan, _ElementType, _Extents, _LayoutPolicy);
 
-  _CCCL_HIDE_FROM_ABI device_mdarray(const device_mdarray&) = default;
-  _CCCL_HIDE_FROM_ABI device_mdarray(device_mdarray&&)      = default;
-  _CCCL_HIDE_FROM_ABI ~device_mdarray() noexcept            = default;
+  _CCCL_HIDE_FROM_ABI host_mdarray(const host_mdarray&) = default;
+  _CCCL_HIDE_FROM_ABI host_mdarray(host_mdarray&&)      = default;
+  _CCCL_HIDE_FROM_ABI ~host_mdarray() noexcept          = default;
 
-  _CCCL_HIDE_FROM_ABI device_mdarray& operator=(const device_mdarray&)     = default;
-  _CCCL_HIDE_FROM_ABI device_mdarray& operator=(device_mdarray&&) noexcept = default;
+  _CCCL_HIDE_FROM_ABI host_mdarray& operator=(const host_mdarray&)     = default;
+  _CCCL_HIDE_FROM_ABI host_mdarray& operator=(host_mdarray&&) noexcept = default;
 };
 } // namespace cuda::experimental
 

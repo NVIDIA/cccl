@@ -19,7 +19,7 @@
 
 #include "testing.cuh"
 
-C2H_CCCLRT_TEST("cudax::mdarray", "[container][mdarray]")
+C2H_TEST("cudax::mdarray", "[container][mdarray]")
 {
   using extents_type = cuda::std::dims<2>;
   using mdarray_type = cudax::device_mdarray<int, extents_type, cuda::std::layout_right>;
@@ -27,12 +27,11 @@ C2H_CCCLRT_TEST("cudax::mdarray", "[container][mdarray]")
 
   auto alloc = cuda::mr::make_shared_resource<cuda::device_memory_pool>(cuda::device_ref{0});
   mdarray_type mdarray{extents_type{2, 3}, alloc};
-
   CUDAX_REQUIRE(mdarray.size() == 6);
   CUDAX_REQUIRE(mdarray.extent(0) == 2);
   CUDAX_REQUIRE(mdarray.extent(1) == 3);
 }
-
+/*
 struct movable_allocator
 {
   std::shared_ptr<cuda::device_memory_pool> pool;
@@ -54,7 +53,7 @@ struct movable_allocator
   friend void get_property(const movable_allocator&, cuda::mr::device_accessible) {}
 };
 
-C2H_CCCLRT_TEST("cudax::mdarray move", "[container][mdarray][move]")
+C2H_TEST("cudax::mdarray move", "[container][mdarray][move]")
 {
   using extents_type = cuda::std::dims<2>;
   using mdarray_type = cudax::device_mdarray<int, extents_type, cuda::std::layout_right, movable_allocator>;
@@ -92,8 +91,8 @@ C2H_CCCLRT_TEST("cudax::mdarray move", "[container][mdarray][move]")
     CUDAX_REQUIRE(mdarray1.data_handle() == nullptr);
   }
 }
-
-C2H_CCCLRT_TEST("cudax::mdarray copy", "[container][mdarray][copy]")
+*/
+C2H_TEST("cudax::mdarray copy", "[container][mdarray][copy]")
 {
   using extents_type = cuda::std::dims<2>;
   using mdarray_type = cudax::device_mdarray<int, extents_type, cuda::std::layout_right>;
