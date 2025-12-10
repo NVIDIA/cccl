@@ -1588,7 +1588,7 @@ The API is subject to change without notice.</p>
 <li><p><strong>d_out</strong> (<em>DeviceArrayLike</em><em> | </em><em>IteratorBase</em>) – Device array (of size 1) that will store the result of the reduction</p></li>
 <li><p><strong>op</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Callable" title="(in Python v3.14)"><em>Callable</em></a><em> | </em><em>cuda.compute._bindings.OpKind</em>) – Callable or OpKind representing the binary operator to apply</p></li>
 <li><p><strong>init</strong> – Numpy array storing initial value of the reduction</p></li>
-<li><p><strong>h_init</strong> (<a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.3)"><em>ndarray</em></a>)</p></li>
+<li><p><strong>h_init</strong> (<a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.3)"><em>ndarray</em></a><em> | </em><em>GpuStruct</em>)</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
@@ -1817,6 +1817,8 @@ The API is subject to change without notice.</p>
 <span class="sig-prename descclassname"><span class="pre">cuda.compute.algorithms.</span></span><span class="sig-name descname"><span class="pre">unary_transform</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">d_in</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">d_out</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">op</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_items</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">stream</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#cuda.compute.algorithms.unary_transform" title="Link to this definition">#</a></dt>
 <dd><p>Performs device-wide unary transform.</p>
 <p>This function automatically handles temporary storage allocation and execution.</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">op</span></code> function can reference device arrays as globals or closures - they will
+be automatically captured as state arrays, enabling stateful operations like counting.</p>
 <p class="rubric">Example</p>
 <p>Below, <code class="docutils literal notranslate"><span class="pre">unary_transform</span></code> is used to apply a transformation to each element of the input.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="sd">&quot;&quot;&quot;</span>
@@ -1912,7 +1914,8 @@ to help with type inference. See the binary transform struct example for referen
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>d_in</strong> (<em>DeviceArrayLike</em><em> | </em><em>IteratorBase</em>) – Device array or iterator containing the input sequence of data items.</p></li>
 <li><p><strong>d_out</strong> (<em>DeviceArrayLike</em><em> | </em><em>IteratorBase</em>) – Device array or iterator to store the result of the transformation.</p></li>
-<li><p><strong>op</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Callable" title="(in Python v3.14)"><em>Callable</em></a><em> | </em><em>cuda.compute._bindings.OpKind</em>) – Callable or OpKind representing the unary operation to apply to each element of the input.</p></li>
+<li><p><strong>op</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Callable" title="(in Python v3.14)"><em>Callable</em></a><em> | </em><em>cuda.compute._bindings.OpKind</em>) – Callable or OpKind representing the unary operation to apply to each element of the input.
+Can reference device arrays as globals/closures - they will be automatically captured.</p></li>
 <li><p><strong>num_items</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a>) – Number of items to transform.</p></li>
 <li><p><strong>stream</strong> – CUDA stream to use for the operation.</p></li>
 </ul>
@@ -2076,7 +2079,8 @@ to help with type inference. See the following example:</p>
 <li><p><strong>d_in1</strong> (<em>DeviceArrayLike</em><em> | </em><em>IteratorBase</em>) – Device array or iterator containing the first input sequence of data items.</p></li>
 <li><p><strong>d_in2</strong> (<em>DeviceArrayLike</em><em> | </em><em>IteratorBase</em>) – Device array or iterator containing the second input sequence of data items.</p></li>
 <li><p><strong>d_out</strong> (<em>DeviceArrayLike</em><em> | </em><em>IteratorBase</em>) – Device array or iterator to store the result of the transformation.</p></li>
-<li><p><strong>op</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Callable" title="(in Python v3.14)"><em>Callable</em></a><em> | </em><em>cuda.compute._bindings.OpKind</em>) – Callable or OpKind representing the binary operation to apply to each pair of items from the input sequences.</p></li>
+<li><p><strong>op</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Callable" title="(in Python v3.14)"><em>Callable</em></a><em> | </em><em>cuda.compute._bindings.OpKind</em>) – Callable or OpKind representing the binary operation to apply to each pair of items from the input sequences.
+Can reference device arrays as globals/closures - they will be automatically captured.</p></li>
 <li><p><strong>num_items</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a>) – Number of items to transform.</p></li>
 <li><p><strong>stream</strong> – CUDA stream to use for the operation.</p></li>
 </ul>
@@ -2874,7 +2878,7 @@ storage allocation. For simpler usage, consider using <a class="reference intern
 <li><p><strong>end_offsets_in</strong> (<em>DeviceArrayLike</em><em> | </em><em>IteratorBase</em>) – Device array or iterator containing offsets to end of segments</p></li>
 <li><p><strong>op</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Callable" title="(in Python v3.14)"><em>Callable</em></a><em> | </em><em>cuda.compute._bindings.OpKind</em>) – Callable or OpKind representing the binary operator to apply</p></li>
 <li><p><strong>init</strong> – Numpy array storing initial value of the reduction</p></li>
-<li><p><strong>h_init</strong> (<a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.3)"><em>ndarray</em></a>)</p></li>
+<li><p><strong>h_init</strong> (<a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.3)"><em>ndarray</em></a><em> | </em><em>GpuStruct</em>)</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
@@ -3360,8 +3364,10 @@ storage allocation. For simpler usage, consider using <a class="reference intern
 <li><p><strong>d_second_part_out</strong> (<em>DeviceArrayLike</em><em> | </em><em>IteratorBase</em>) – Device array or iterator to store the second part of the output</p></li>
 <li><p><strong>d_unselected_out</strong> (<em>DeviceArrayLike</em><em> | </em><em>IteratorBase</em>) – Device array or iterator to store the unselected items</p></li>
 <li><p><strong>d_num_selected_out</strong> (<em>DeviceArrayLike</em><em> | </em><em>IteratorBase</em>) – Device array to store the number of items selected. The total number of items selected by <code class="docutils literal notranslate"><span class="pre">select_first_part_op</span></code> and <code class="docutils literal notranslate"><span class="pre">select_second_part_op</span></code> is stored in <code class="docutils literal notranslate"><span class="pre">d_num_selected_out[0]</span></code> and <code class="docutils literal notranslate"><span class="pre">d_num_selected_out[1]</span></code>, respectively.</p></li>
-<li><p><strong>select_first_part_op</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Callable" title="(in Python v3.14)"><em>Callable</em></a>) – Callable representing the unary operator to select the first part</p></li>
-<li><p><strong>select_second_part_op</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Callable" title="(in Python v3.14)"><em>Callable</em></a>) – Callable representing the unary operator to select the second part</p></li>
+<li><p><strong>select_first_part_op</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Callable" title="(in Python v3.14)"><em>Callable</em></a><em> | </em><em>_OpAdapter</em>) – Callable representing the unary operator to select the first part.
+Can reference device arrays as globals/closures - they will be automatically captured.</p></li>
+<li><p><strong>select_second_part_op</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Callable" title="(in Python v3.14)"><em>Callable</em></a><em> | </em><em>_OpAdapter</em>) – Callable representing the unary operator to select the second part.
+Can reference device arrays as globals/closures - they will be automatically captured.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
@@ -3378,6 +3384,8 @@ storage allocation. For simpler usage, consider using <a class="reference intern
 function <code class="docutils literal notranslate"><span class="pre">cond</span></code> returns true (non-zero) and writes them to the output in a
 compacted form. The number of selected elements is written to <code class="docutils literal notranslate"><span class="pre">d_num_selected_out[0]</span></code>.</p>
 <p>This function automatically handles temporary storage allocation and execution.</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">cond</span></code> function can reference device arrays as globals or closures - they will
+be automatically captured as state arrays, enabling stateful operations like counting.</p>
 <p class="rubric">Example</p>
 <p>Below, <code class="docutils literal notranslate"><span class="pre">select</span></code> is used to select even numbers from an input array:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">cupy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">cp</span>
@@ -3456,7 +3464,8 @@ compacted form. The number of selected elements is written to <code class="docut
 <li><p><strong>d_num_selected_out</strong> (<em>DeviceArrayLike</em>) – Device array to store the number of items that passed the selection.
 The count is stored in <code class="docutils literal notranslate"><span class="pre">d_num_selected_out[0]</span></code>.</p></li>
 <li><p><strong>cond</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Callable" title="(in Python v3.14)"><em>Callable</em></a>) – Callable representing the selection condition (predicate). Should return a
-boolean-like value (typically uint8) where non-zero means the item passes the selection.</p></li>
+boolean-like value (typically uint8) where non-zero means the item passes the selection.
+Can reference device arrays as globals/closures - they will be automatically captured.</p></li>
 <li><p><strong>num_items</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a>) – Number of items in the input sequence.</p></li>
 <li><p><strong>stream</strong> – CUDA stream to use for the operation (optional).</p></li>
 </ul>
