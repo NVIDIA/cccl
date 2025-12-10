@@ -1,10 +1,10 @@
-from typing import Callable, Union
+from typing import Callable
 
 import numpy as np
 
 from .. import _bindings
 from .. import _cccl_interop as cccl
-from .._caching import CachableFunction, cache_with_key
+from .._caching import cache_with_key
 from .._cccl_interop import (
     call_build,
     get_value_type,
@@ -18,7 +18,7 @@ from .._utils.protocols import (
 )
 from .._utils.temp_storage_buffer import TempStorageBuffer
 from ..iterators._iterators import IteratorBase
-from ..op import OpKind
+from ..op import OpAdapter, OpKind, make_op_adapter
 from ..typing import DeviceArrayLike, GpuStruct
 
 
@@ -30,7 +30,8 @@ class _SegmentedReduce:
         "start_offsets_in_cccl",
         "end_offsets_in_cccl",
         "h_init_cccl",
-        "op_wrapper",
+        "op",
+        "op_cccl",
     ]
 
     def __init__(
@@ -39,13 +40,15 @@ class _SegmentedReduce:
         d_out: DeviceArrayLike | IteratorBase,
         start_offsets_in: DeviceArrayLike | IteratorBase,
         end_offsets_in: DeviceArrayLike | IteratorBase,
-        op: Callable | OpKind,
+        op: OpAdapter,
         h_init: np.ndarray | GpuStruct,
     ):
         self.d_in_cccl = cccl.to_cccl_input_iter(d_in)
         self.d_out_cccl = cccl.to_cccl_output_iter(d_out)
         self.start_offsets_in_cccl = cccl.to_cccl_input_iter(start_offsets_in)
         self.end_offsets_in_cccl = cccl.to_cccl_input_iter(end_offsets_in)
+        self.op = op
+
         # set host advance functions
         cccl.cccl_iterator_set_host_advance(self.d_out_cccl, d_out)
         cccl.cccl_iterator_set_host_advance(
@@ -67,20 +70,18 @@ class _SegmentedReduce:
             )
 
         self.h_init_cccl = cccl.to_cccl_value(h_init)
-        value_type = get_value_type(h_init)
 
-        # For well-known operations, we don't need a signature
-        if isinstance(op, OpKind):
-            self.op_wrapper = cccl.to_cccl_op(op, None)
-        else:
-            self.op_wrapper = cccl.to_cccl_op(op, value_type(value_type, value_type))
+        # Compile the op with value types
+        value_type = get_value_type(h_init)
+        self.op_cccl = self.op.compile((value_type, value_type), value_type)
+
         self.build_result = call_build(
             _bindings.DeviceSegmentedReduceBuildResult,
             self.d_in_cccl,
             self.d_out_cccl,
             self.start_offsets_in_cccl,
             self.end_offsets_in_cccl,
-            self.op_wrapper,
+            self.op_cccl,
             self.h_init_cccl,
         )
 
@@ -118,7 +119,7 @@ class _SegmentedReduce:
             num_segments,
             self.start_offsets_in_cccl,
             self.end_offsets_in_cccl,
-            self.op_wrapper,
+            self.op_cccl,
             self.h_init_cccl,
             stream_handle,
         )
@@ -133,13 +134,13 @@ def _to_key(d_in: DeviceArrayLike | IteratorBase):
     return d_in_key
 
 
-def make_cache_key(
+def _make_cache_key(
     d_in: DeviceArrayLike | IteratorBase,
     d_out: DeviceArrayLike | IteratorBase,
     start_offsets_in: DeviceArrayLike | IteratorBase,
     end_offsets_in: DeviceArrayLike | IteratorBase,
-    op: Callable | OpKind,
-    h_init: np.ndarray,
+    op: OpAdapter,
+    h_init: np.ndarray | GpuStruct,
 ):
     d_in_key = _to_key(d_in)
     d_out_key = (
@@ -147,33 +148,37 @@ def make_cache_key(
     )
     start_offsets_in_key = _to_key(start_offsets_in)
     end_offsets_in_key = _to_key(end_offsets_in)
-
-    # Handle well-known operations differently
-    op_key: Union[tuple[str, int], CachableFunction]
-    if isinstance(op, OpKind):
-        op_key = (op.name, op.value)
-    else:
-        op_key = CachableFunction(op)
-
     h_init_key = h_init.dtype
     return (
         d_in_key,
         d_out_key,
         start_offsets_in_key,
         end_offsets_in_key,
-        op_key,
+        op.get_cache_key(),
         h_init_key,
     )
 
 
-@cache_with_key(make_cache_key)
+@cache_with_key(_make_cache_key)
+def _make_segmented_reduce_cached(
+    d_in: DeviceArrayLike | IteratorBase,
+    d_out: DeviceArrayLike | IteratorBase,
+    start_offsets_in: DeviceArrayLike | IteratorBase,
+    end_offsets_in: DeviceArrayLike | IteratorBase,
+    op: OpAdapter,
+    h_init: np.ndarray | GpuStruct,
+):
+    """Internal cached factory for _SegmentedReduce."""
+    return _SegmentedReduce(d_in, d_out, start_offsets_in, end_offsets_in, op, h_init)
+
+
 def make_segmented_reduce(
     d_in: DeviceArrayLike | IteratorBase,
     d_out: DeviceArrayLike | IteratorBase,
     start_offsets_in: DeviceArrayLike | IteratorBase,
     end_offsets_in: DeviceArrayLike | IteratorBase,
     op: Callable | OpKind,
-    h_init: np.ndarray,
+    h_init: np.ndarray | GpuStruct,
 ):
     """Computes a device-wide segmented reduction using the specified binary ``op`` and initial value ``init``.
 
@@ -196,7 +201,10 @@ def make_segmented_reduce(
     Returns:
         A callable object that can be used to perform the reduction
     """
-    return _SegmentedReduce(d_in, d_out, start_offsets_in, end_offsets_in, op, h_init)
+    op_adapter = make_op_adapter(op)
+    return _make_segmented_reduce_cached(
+        d_in, d_out, start_offsets_in, end_offsets_in, op_adapter, h_init
+    )
 
 
 def segmented_reduce(

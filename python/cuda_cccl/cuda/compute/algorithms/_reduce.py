@@ -3,13 +3,13 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-from typing import Callable, Union
+from typing import Callable
 
 import numpy as np
 
 from .. import _bindings
 from .. import _cccl_interop as cccl
-from .._caching import CachableFunction, cache_with_key
+from .._caching import cache_with_key
 from .._cccl_interop import (
     call_build,
     get_value_type,
@@ -20,7 +20,7 @@ from .._utils import protocols
 from .._utils.protocols import get_data_pointer, validate_and_get_stream
 from .._utils.temp_storage_buffer import TempStorageBuffer
 from ..iterators._iterators import IteratorBase
-from ..op import OpKind
+from ..op import OpAdapter, OpKind, make_op_adapter
 from ..typing import DeviceArrayLike, GpuStruct
 
 
@@ -29,7 +29,8 @@ class _Reduce:
         "d_in_cccl",
         "d_out_cccl",
         "h_init_cccl",
-        "op_wrapper",
+        "op",
+        "op_cccl",
         "build_result",
     ]
 
@@ -38,24 +39,23 @@ class _Reduce:
         self,
         d_in: DeviceArrayLike | IteratorBase,
         d_out: DeviceArrayLike | IteratorBase,
-        op: Callable | OpKind,
+        op: OpAdapter,
         h_init: np.ndarray | GpuStruct,
     ):
         self.d_in_cccl = cccl.to_cccl_input_iter(d_in)
         self.d_out_cccl = cccl.to_cccl_output_iter(d_out)
         self.h_init_cccl = cccl.to_cccl_value(h_init)
-        value_type = get_value_type(h_init)
+        self.op = op
 
-        # For well-known operations, we don't need a signature
-        if isinstance(op, OpKind):
-            self.op_wrapper = cccl.to_cccl_op(op, None)
-        else:
-            self.op_wrapper = cccl.to_cccl_op(op, value_type(value_type, value_type))
+        # Compile the op with value types
+        value_type = get_value_type(h_init)
+        self.op_cccl = self.op.compile((value_type, value_type), value_type)
+
         self.build_result = call_build(
             _bindings.DeviceReduceBuildResult,
             self.d_in_cccl,
             self.d_out_cccl,
-            self.op_wrapper,
+            self.op_cccl,
             self.h_init_cccl,
         )
 
@@ -88,18 +88,18 @@ class _Reduce:
             self.d_in_cccl,
             self.d_out_cccl,
             num_items,
-            self.op_wrapper,
+            self.op_cccl,
             self.h_init_cccl,
             stream_handle,
         )
         return temp_storage_bytes
 
 
-def make_cache_key(
+def _make_cache_key(
     d_in: DeviceArrayLike | IteratorBase,
     d_out: DeviceArrayLike | IteratorBase,
-    op: Callable | OpKind,
-    h_init: np.ndarray,
+    op: OpAdapter,
+    h_init: np.ndarray | GpuStruct,
 ):
     d_in_key = (
         d_in.kind if isinstance(d_in, IteratorBase) else protocols.get_dtype(d_in)
@@ -107,24 +107,28 @@ def make_cache_key(
     d_out_key = (
         d_out.kind if isinstance(d_out, IteratorBase) else protocols.get_dtype(d_out)
     )
-    # Handle well-known operations differently
-    op_key: Union[tuple[str, int], CachableFunction]
-    if isinstance(op, OpKind):
-        op_key = (op.name, op.value)
-    else:
-        op_key = CachableFunction(op)
     h_init_key = h_init.dtype
-    return (d_in_key, d_out_key, op_key, h_init_key)
+    return (d_in_key, d_out_key, op.get_cache_key(), h_init_key)
+
+
+@cache_with_key(_make_cache_key)
+def _make_reduce_into_cached(
+    d_in: DeviceArrayLike | IteratorBase,
+    d_out: DeviceArrayLike | IteratorBase,
+    op: OpAdapter,
+    h_init: np.ndarray | GpuStruct,
+):
+    """Internal cached factory for _Reduce."""
+    return _Reduce(d_in, d_out, op, h_init)
 
 
 # TODO Figure out `sum` without operator and initial value
 # TODO Accept stream
-@cache_with_key(make_cache_key)
 def make_reduce_into(
     d_in: DeviceArrayLike | IteratorBase,
     d_out: DeviceArrayLike | IteratorBase,
     op: Callable | OpKind,
-    h_init: np.ndarray,
+    h_init: np.ndarray | GpuStruct,
 ):
     """Computes a device-wide reduction using the specified binary ``op`` and initial value ``init``.
 
@@ -145,7 +149,8 @@ def make_reduce_into(
     Returns:
         A callable object that can be used to perform the reduction
     """
-    return _Reduce(d_in, d_out, op, h_init)
+    op_adapter = make_op_adapter(op)
+    return _make_reduce_into_cached(d_in, d_out, op_adapter, h_init)
 
 
 def reduce_into(
@@ -167,7 +172,6 @@ def reduce_into(
         .. literalinclude:: ../../python/cuda_cccl/tests/compute/examples/reduction/sum_reduction.py
             :language: python
             :start-after: # example-begin
-
 
     Args:
         d_in: Device array or iterator containing the input sequence of data items
