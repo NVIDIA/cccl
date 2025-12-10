@@ -1053,7 +1053,7 @@ struct BlockRadixRankMatchEarlyCounts
       UnsignedBits (&keys)[KEYS_PER_THREAD], int (&ranks)[KEYS_PER_THREAD], detail::constant_t<WARP_MATCH_ATOMIC_OR>)
     {
       // compute key ranks
-      auto lane_mask                     = 1u << lane;
+      ::cuda::std::uint32_t lane_mask    = 1u << lane;
       int* warp_offsets                  = &s.warp_offsets[warp][0];
       ::cuda::std::uint32_t* match_masks = &s.match_masks[warp][0];
 
