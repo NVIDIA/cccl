@@ -104,6 +104,7 @@ CompileFlags:
     - "--expt-relaxed-constexpr"
     - "-forward-unknown-to-host-compiler"
     - "-Werror=cross-execution-space-call"
+    - "-allow-unsupported-compiler"
 Diagnostics:
   Suppress:
     - "variadic_device_fn"
