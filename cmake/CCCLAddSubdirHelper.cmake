@@ -1,7 +1,14 @@
 # project_name: The name of the project when calling `find_package`. Case sensitive.
-# `PACKAGE_FILEBASE` the name of the project in the config files, ie. ${PACKAGE_FILEBASE}-config.cmake.
+# `PACKAGE_FILEBASE` the name of the project in the config files,
+#   ie. ${PACKAGE_FILEBASE}-config.cmake.
+#   Defaults to the lower case version of `project_name`.
 # `PACKAGE_PATH` the absolute path to the project's CMake package config files.
+#   Defaults to "${CCCL_SOURCE_DIR}/lib/cmake/${PACKAGE_FILEBASE}".
+# `REQUIRED_COMPONENTS` list of components to mark as required when finding the package.
+# `OPTIONAL_COMPONENTS` list of components to mark as optional when finding the package.
+#
 function(cccl_add_subdir_helper project_name)
+  string(TOLOWER "${project_name}" project_name_lower)
   set(options)
   set(
     oneValueArgs
@@ -12,45 +19,38 @@ function(cccl_add_subdir_helper project_name)
   )
   set(multiValueArgs)
   cmake_parse_arguments(
-    CCCL_SUBDIR
+    self
     "${options}"
     "${oneValueArgs}"
     "${multiValueArgs}"
     ${ARGN}
   )
-
-  if (NOT DEFINED CCCL_SUBDIR_PACKAGE_FILEBASE)
-    string(TOLOWER "${project_name}" CCCL_SUBDIR_PACKAGE_FILEBASE)
-  endif()
-
-  if (NOT DEFINED CCCL_SUBDIR_PACKAGE_PATH)
-    set(
-      CCCL_SUBDIR_PACKAGE_PATH
-      "${CCCL_SOURCE_DIR}/lib/cmake/${CCCL_SUBDIR_PACKAGE_FILEBASE}"
-    )
-  endif()
-
-  set(
-    package_prefix
-    "${CCCL_SUBDIR_PACKAGE_PATH}/${CCCL_SUBDIR_PACKAGE_FILEBASE}"
+  cccl_parse_arguments_error_checks(
+    "cccl_add_subdir_helper"
+    ERROR_UNPARSED
+    DEFAULT_VALUES #
+      PACKAGE_FILEBASE ${project_name_lower}
+      PACKAGE_PATH "${CCCL_SOURCE_DIR}/lib/cmake/${project_name_lower}"
   )
+
+  set(package_prefix "${self_PACKAGE_PATH}/${self_PACKAGE_FILEBASE}")
 
   set(CMAKE_FIND_PACKAGE_NAME ${project_name})
   set(${CMAKE_FIND_PACKAGE_NAME}_FIND_COMPONENTS)
-  if (DEFINED CCCL_SUBDIR_REQUIRED_COMPONENTS)
+  if (DEFINED self_REQUIRED_COMPONENTS)
     list(
       APPEND ${CMAKE_FIND_PACKAGE_NAME}_FIND_COMPONENTS
-      ${CCCL_SUBDIR_REQUIRED_COMPONENTS}
+      ${self_REQUIRED_COMPONENTS}
     )
-    foreach (component IN LISTS CCCL_SUBDIR_REQUIRED_COMPONENTS)
+    foreach (component IN LISTS self_REQUIRED_COMPONENTS)
       set(${CMAKE_FIND_PACKAGE_NAME}_FIND_REQUIRED_${component} TRUE)
     endforeach()
   endif()
 
-  if (DEFINED CCCL_SUBDIR_OPTIONAL_COMPONENTS)
+  if (DEFINED self_OPTIONAL_COMPONENTS)
     list(
       APPEND ${CMAKE_FIND_PACKAGE_NAME}_FIND_COMPONENTS
-      ${CCCL_SUBDIR_OPTIONAL_COMPONENTS}
+      ${self_OPTIONAL_COMPONENTS}
     )
   endif()
 
@@ -67,7 +67,7 @@ function(cccl_add_subdir_helper project_name)
     # Set the dir var so that later `find_package` calls work as expected.
     set(
       ${project_name}_DIR
-      "${CCCL_SUBDIR_PACKAGE_PATH}"
+      "${self_PACKAGE_PATH}"
       CACHE PATH
       "Path to ${project_name} package"
     )

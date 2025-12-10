@@ -191,7 +191,7 @@ struct dispatch_nondeterministic_t
 
 // Log nondeterministic_device_reduce_atomic_kernel configuration
 #ifdef CUB_DEBUG_LOG
-    _CubLog("Invoking NondeterministicDeviceReduceAtomicKernel<<<%llu, %d, 0, %p>>>(), %d items "
+    _CubLog("Invoking NondeterministicDeviceReduceAtomicKernel<<<%llu, %d, 0, %lld>>>(), %d items "
             "per thread, %d SM occupancy\n",
             (unsigned long long) reduce_grid_size,
             active_policy.reduce_nondeterministic_policy.block_threads,

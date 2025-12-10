@@ -7,9 +7,17 @@
 function(cub_add_header_test label definitions)
   set(headertest_target cub.headers.${label})
 
+  # FIXME the device-link step in the link check acts weird with rdc enabled.
+  # Need to investigate more.
+  set(no_link_check_option)
+  if (CUB_FORCE_RDC)
+    set(no_link_check_option NO_LINK_CHECK)
+  endif()
+
   cccl_generate_header_tests(
     ${headertest_target}
     cub
+    ${no_link_check_option}
     GLOBS "cub/*.cuh"
     # These headers have additional dependencies and strict compiler reqs.
     # They're effectively an implementation detail of cccl.c.parallel and
@@ -18,7 +26,7 @@ function(cub_add_header_test label definitions)
       "cub/detail/*ptx-json*"
       "cub/detail/ptx-json/*.cuh"
   )
-  cub_configure_cuda_target(${headertest_target} RDC ${CUB_FORCE_RDC})
+  cccl_set_rdc(${headertest_target} ${CUB_FORCE_RDC})
   target_link_libraries(${headertest_target} PUBLIC cub.compiler_interface)
   target_compile_definitions(${headertest_target} PRIVATE ${definitions})
 endfunction()

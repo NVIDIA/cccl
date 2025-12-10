@@ -41,6 +41,7 @@
 #  pragma system_header
 #endif // no system header
 #include <thrust/detail/type_traits.h>
+#include <thrust/detail/type_traits/minimum_type.h>
 #include <thrust/iterator/detail/iterator_facade_category.h>
 
 THRUST_NAMESPACE_BEGIN
@@ -49,11 +50,8 @@ namespace detail
 {
 // since both arguments are known to be specializations of iterator_facade,
 // it's legal to access IteratorFacade2::difference_type
-template <typename IteratorFacade1, typename IteratorFacade2>
-using distance_from_result =
-  ::cuda::std::_If<::cuda::std::is_convertible_v<IteratorFacade2, IteratorFacade1>,
-                   typename IteratorFacade1::difference_type,
-                   typename IteratorFacade2::difference_type>;
+template <typename Facade1, typename Facade2>
+using distance_from_result = detail::minimum_type<typename Facade1::difference_type, typename Facade2::difference_type>;
 } // namespace detail
 
 /*! \addtogroup iterators
@@ -243,31 +241,22 @@ class iterator_core_access
     f.advance(n);
   }
 
-  // Facade2 is convertible to Facade1,
-  // so return Facade1's difference_type
-  template <class Facade1, class Facade2>
-  _CCCL_HOST_DEVICE static typename Facade1::difference_type
-  distance_from(Facade1 const& f1, Facade2 const& f2, thrust::detail::true_type)
-  {
-    return -f1.distance_to(f2);
-  }
-
-  // Facade2 is not convertible to Facade1,
-  // so return Facade2's difference_type
-  template <class Facade1, class Facade2>
-  _CCCL_HOST_DEVICE static typename Facade2::difference_type
-  distance_from(Facade1 const& f1, Facade2 const& f2, thrust::detail::false_type)
-  {
-    return f2.distance_to(f1);
-  }
-
   template <class Facade1, class Facade2>
   _CCCL_HOST_DEVICE static typename detail::distance_from_result<Facade1, Facade2>
   distance_from(Facade1 const& f1, Facade2 const& f2)
   {
-    // dispatch the implementation of this method upon whether or not
-    // Facade2 is convertible to Facade1
-    return distance_from(f1, f2, typename ::cuda::std::is_convertible<Facade2, Facade1>::type());
+    using difference_type_2_t  = typename Facade2::difference_type;
+    using minimum_difference_t = typename detail::distance_from_result<Facade1, Facade2>;
+
+    // Prefer to perform the distance calculation as requested if types match:
+    if constexpr (::cuda::std::is_same_v<difference_type_2_t, minimum_difference_t>)
+    {
+      return f2.distance_to(f1);
+    }
+    else
+    {
+      return -f1.distance_to(f2);
+    }
   }
 
   //
