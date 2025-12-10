@@ -35,35 +35,6 @@
 // see also https://github.com/rapidsai/raft/blob/main/cpp/include/raft/core/mdarray.hpp
 namespace cuda::experimental
 {
-template <typename T, typename R>
-void __copy(T&& src, R&& dst, ::cudaStream_t stream)
-{
-  // TODO: implementation
-  cub::detail::copy_mdspan::copy(src, dst, stream);
-}
-
-template <typename _Alloc>
-struct __construct_allocator
-{
-  [[nodiscard]] _CCCL_HOST_API static _Alloc __do()
-  {
-    return _Alloc{};
-  }
-
-  [[nodiscard]] _CCCL_HOST_API static _Alloc __do(::cuda::device_ref)
-  {
-    return _Alloc{};
-  }
-};
-
-template <typename _Resource>
-struct __construct_allocator<::cuda::mr::shared_resource<_Resource>>
-{
-  [[nodiscard]] _CCCL_HOST_API static ::cuda::mr::shared_resource<_Resource> __do(::cuda::device_ref __device)
-  {
-    return ::cuda::mr::make_shared_resource<_Resource>(__device);
-  }
-};
 
 // __mdarray_allocator_wrapper allows to initialize the allocator before allocating the memory
 template <typename _Allocator>
