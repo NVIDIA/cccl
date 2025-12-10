@@ -89,6 +89,7 @@ def compute_reference_histogram(h_samples, num_levels, lower_level, upper_level)
     return histogram.astype(np.int32)
 
 
+@pytest.mark.no_verify_sass(reason="LDL/STL instructions emitted for this test.")
 @pytest.mark.parametrize("dtype,num_samples", dtype_size_pairs)
 def test_device_histogram_basic_use(dtype, num_samples):
     if dtype in [np.uint8, np.int8]:
