@@ -28,7 +28,7 @@ struct arch_policies
 {
   _CCCL_API constexpr auto operator()(cuda::arch_id) const -> cub::detail::transform::transform_arch_policy
   {
-    const int min_bif = cub::detail::transform::arch_to_min_bytes_in_flight(__CUDA_ARCH_LIST__);
+    const int min_bif = cub::detail::transform::arch_to_min_bytes_in_flight(__CUDA_ARCH_LIST__) + TUNE_BIF_BIAS;
 #  if TUNE_ALGORITHM == 0
     const auto algorithm = cub::detail::transform::Algorithm::prefetch;
     const auto policy    = prefetch_policy{
