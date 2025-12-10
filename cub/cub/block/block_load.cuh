@@ -720,6 +720,7 @@ inline ::std::ostream& operator<<(::std::ostream& os, BlockLoadAlgorithm algo)
 #endif // !_CCCL_COMPILER(NVRTC)
 
 //! @rst
+
 //! The BlockLoad class provides :ref:`collective <collective-primitives>` data movement methods for loading a linear
 //! segment of items from memory into a :ref:`blocked arrangement <flexible-data-arrangement>` across a CUDA thread
 //! block.
