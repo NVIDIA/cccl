@@ -22,10 +22,12 @@ def _make_cache_key(
     cond: OpAdapter,
 ):
     d_in_key = (
-        d_in.kind if isinstance(d_in, IteratorBase) else protocols.get_dtype(d_in)
+        d_in.kind if isinstance(
+            d_in, IteratorBase) else protocols.get_dtype(d_in)
     )
     d_out_key = (
-        d_out.kind if isinstance(d_out, IteratorBase) else protocols.get_dtype(d_out)
+        d_out.kind if isinstance(
+            d_out, IteratorBase) else protocols.get_dtype(d_out)
     )
     d_num_selected_out_key = protocols.get_dtype(d_num_selected_out)
 

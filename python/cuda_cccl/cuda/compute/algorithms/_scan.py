@@ -60,6 +60,7 @@ class _Scan:
     ):
         self.d_in_cccl = cccl.to_cccl_input_iter(d_in)
         self.d_out_cccl = cccl.to_cccl_output_iter(d_out)
+        self.op = op
 
         self.init_kind = get_init_kind(init_value)
 
@@ -112,7 +113,8 @@ class _Scan:
             case (False, _bindings.InitKind.VALUE_INIT):
                 self.device_scan_fn = self.build_result.compute_exclusive
             case (False, _bindings.InitKind.NO_INIT):
-                raise ValueError("Exclusive scan with No init value is not supported")
+                raise ValueError(
+                    "Exclusive scan with No init value is not supported")
 
     def __call__(
         self,
@@ -133,11 +135,13 @@ class _Scan:
                 # which makes it better than isinstance() since this is a hot path
                 # and we have to minimize the work we do prior to calling the
                 # kernel.
-                self.init_value_cccl = cast(_bindings.Iterator, self.init_value_cccl)
+                self.init_value_cccl = cast(
+                    _bindings.Iterator, self.init_value_cccl)
                 set_cccl_iterator_state(self.init_value_cccl, init_value)
 
             case _bindings.InitKind.VALUE_INIT:
-                self.init_value_cccl = cast(_bindings.Value, self.init_value_cccl)
+                self.init_value_cccl = cast(
+                    _bindings.Value, self.init_value_cccl)
                 self.init_value_cccl.state = to_cccl_value_state(
                     cast(np.ndarray | GpuStruct, init_value)
                 )
@@ -171,10 +175,12 @@ def _make_cache_key(
     init_value: np.ndarray | DeviceArrayLike | GpuStruct | None,
 ):
     d_in_key = (
-        d_in.kind if isinstance(d_in, IteratorBase) else protocols.get_dtype(d_in)
+        d_in.kind if isinstance(
+            d_in, IteratorBase) else protocols.get_dtype(d_in)
     )
     d_out_key = (
-        d_out.kind if isinstance(d_out, IteratorBase) else protocols.get_dtype(d_out)
+        d_out.kind if isinstance(
+            d_out, IteratorBase) else protocols.get_dtype(d_out)
     )
 
     init_kind_key = get_init_kind(init_value)
@@ -182,7 +188,8 @@ def _make_cache_key(
         case _bindings.InitKind.NO_INIT:
             init_value_key = None
         case _bindings.InitKind.FUTURE_VALUE_INIT:
-            init_value_key = protocols.get_dtype(cast(DeviceArrayLike, init_value))
+            init_value_key = protocols.get_dtype(
+                cast(DeviceArrayLike, init_value))
         case _bindings.InitKind.VALUE_INIT:
             init_value = cast(np.ndarray | GpuStruct, init_value)
             init_value_key = init_value.dtype
@@ -273,7 +280,8 @@ def exclusive_scan(
         stream: CUDA stream for the operation (optional)
     """
     scanner = make_exclusive_scan(d_in, d_out, op, init_value)
-    tmp_storage_bytes = scanner(None, d_in, d_out, num_items, init_value, stream)
+    tmp_storage_bytes = scanner(
+        None, d_in, d_out, num_items, init_value, stream)
     tmp_storage = TempStorageBuffer(tmp_storage_bytes, stream)
     scanner(tmp_storage, d_in, d_out, num_items, init_value, stream)
 
@@ -339,6 +347,7 @@ def inclusive_scan(
         stream: CUDA stream for the operation (optional)
     """
     scanner = make_inclusive_scan(d_in, d_out, op, init_value)
-    tmp_storage_bytes = scanner(None, d_in, d_out, num_items, init_value, stream)
+    tmp_storage_bytes = scanner(
+        None, d_in, d_out, num_items, init_value, stream)
     tmp_storage = TempStorageBuffer(tmp_storage_bytes, stream)
     scanner(tmp_storage, d_in, d_out, num_items, init_value, stream)

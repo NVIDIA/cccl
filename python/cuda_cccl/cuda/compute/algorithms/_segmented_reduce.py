@@ -72,6 +72,7 @@ class _SegmentedReduce:
 
         # Compile the op with value types
         value_type = get_value_type(h_init)
+
         self.op_cccl = op.compile((value_type, value_type), value_type)
 
         self.build_result = call_build(
@@ -128,7 +129,8 @@ class _SegmentedReduce:
 def _to_key(d_in: DeviceArrayLike | IteratorBase):
     "Return key for an input array-like argument or an iterator"
     d_in_key = (
-        d_in.kind if isinstance(d_in, IteratorBase) else protocols.get_dtype(d_in)
+        d_in.kind if isinstance(
+            d_in, IteratorBase) else protocols.get_dtype(d_in)
     )
     return d_in_key
 
@@ -143,7 +145,8 @@ def _make_cache_key(
 ):
     d_in_key = _to_key(d_in)
     d_out_key = (
-        d_out.kind if isinstance(d_out, IteratorBase) else protocols.get_dtype(d_out)
+        d_out.kind if isinstance(
+            d_out, IteratorBase) else protocols.get_dtype(d_out)
     )
     start_offsets_in_key = _to_key(start_offsets_in)
     end_offsets_in_key = _to_key(end_offsets_in)
