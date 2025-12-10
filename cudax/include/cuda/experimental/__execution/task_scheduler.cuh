@@ -544,81 +544,30 @@ template <class _Ty, class _Alloc, class... _Args>
 _CCCL_API auto __emplace_into(::cuda::std::span<::cuda::std::byte> __storage, _Alloc& __alloc, _Args&&... __args)
   -> _Ty&
 {
-  if (__storage.size() >= sizeof(_Ty))
-  {
-    auto* __ty_ptr = ::new ((void*) __storage.data()) _Ty{static_cast<_Args&&>(__args)...};
-    return *__ty_ptr;
-  }
-  else
-  {
-    using __ty_allocator_t = typename ::cuda::std::allocator_traits<_Alloc>::template rebind_alloc<_Ty>;
-    __ty_allocator_t __alloc_copy{__alloc};
+  using __traits_t = ::cuda::std::allocator_traits<__rebind_alloc_t<_Alloc, _Ty>>;
+  __rebind_alloc_t<_Alloc, _Ty> __alloc_copy{__alloc};
 
-    auto* __ty_ptr = ::cuda::std::allocator_traits<__ty_allocator_t>::allocate(__alloc_copy, 1);
-    ::cuda::std::allocator_traits<__ty_allocator_t>::construct(__alloc_copy, __ty_ptr, static_cast<_Args&&>(__args)...);
-    return *__ty_ptr;
-  }
-}
-
-template <class _Alloc, class _Fn, class... _Args>
-_CCCL_API auto
-__emplace_into_from(::cuda::std::span<::cuda::std::byte> __storage, _Alloc& __alloc, _Fn&& __fn, _Args&&... __args)
-  -> __call_result_t<_Fn, _Args...>&
-{
-  using _Ty    = __call_result_t<_Fn, _Args...>;
-  auto __mk_ty = [&] {
-    return static_cast<_Fn&&>(__fn)(static_cast<_Args&&>(__args)...);
-  };
-
-  if (__storage.size() >= sizeof(_Ty))
-  {
-    auto* __ty_ptr = ::new ((void*) __storage.data()) _Ty(__mk_ty());
-    return *__ty_ptr;
-  }
-  else
-  {
-    using __ty_allocator_t = typename ::cuda::std::allocator_traits<_Alloc>::template rebind_alloc<_Ty>;
-    __ty_allocator_t __alloc_copy{__alloc};
-
-    auto* __ty_ptr = ::cuda::std::allocator_traits<__ty_allocator_t>::allocate(__alloc_copy, 1);
-    ::cuda::std::allocator_traits<__ty_allocator_t>::construct(__alloc_copy, __ty_ptr, __emplace_from{__mk_ty});
-    return *__ty_ptr;
-  }
-}
-
-template <class _OpState>
-_CCCL_API static void __delete_small(void* __ptr) noexcept
-{
-  auto* __opstate = static_cast<_OpState*>(__ptr);
-  __opstate->~_OpState();
-}
-
-template <class _OpState>
-_CCCL_API static void __delete_large(void* __ptr) noexcept
-{
-  auto* __opstate = static_cast<_OpState*>(__ptr);
-
-  using __alloc_t         = typename _OpState::allocator_type;
-  using __opstate_alloc_t = __rebind_alloc_t<__alloc_t, _OpState>;
-  __opstate_alloc_t __alloc(get_allocator(*__opstate));
-  ::cuda::std::allocator_traits<__opstate_alloc_t>::destroy(__alloc, __opstate);
-  ::cuda::std::allocator_traits<__opstate_alloc_t>::deallocate(__alloc, __opstate, 1);
+  const bool __in_situ = __storage.size() >= sizeof(_Ty);
+  auto* __ty_ptr       = __in_situ ? reinterpret_cast<_Ty*>(__storage.data()) : __traits_t::allocate(__alloc_copy, 1);
+  __traits_t::construct(__alloc_copy, __ty_ptr, static_cast<_Args&&>(__args)...);
+  return *::cuda::std::launder(__ty_ptr);
 }
 
 template <class _Alloc, class _Sndr>
-class __opstate_with_allocator : _Alloc
+class __opstate_t : _Alloc
 {
 public:
   using allocator_type = _Alloc;
 
   _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_API __opstate_with_allocator(_Alloc __alloc, _Sndr __sndr, receiver_proxy& __rcvr_proxy)
+  _CCCL_API __opstate_t(_Alloc __alloc, _Sndr __sndr, receiver_proxy& __rcvr_proxy, bool __in_situ)
       : _Alloc(_CCCL_MOVE(__alloc))
       , __opstate_(execution::connect(
           _CCCL_MOVE(__sndr),
-          __detail::__proxy_receiver<receiver_proxy>{__rcvr_proxy, this, &__delete_large<__opstate_with_allocator>}))
+          __detail::__proxy_receiver<receiver_proxy>{
+            __rcvr_proxy, this, __in_situ ? __delete_opstate<true> : __delete_opstate<false>}))
   {}
-  __opstate_with_allocator(__opstate_with_allocator&&) = delete;
+  __opstate_t(__opstate_t&&) = delete;
 
   _CCCL_API void start() noexcept
   {
@@ -631,8 +580,22 @@ public:
   }
 
 private:
-  using __opstate_t = connect_result_t<_Sndr, __detail::__proxy_receiver<receiver_proxy>>;
-  __opstate_t __opstate_;
+  template <bool _InSitu>
+  _CCCL_API static void __delete_opstate(void* __ptr) noexcept
+  {
+    using __traits_t = ::cuda::std::allocator_traits<__rebind_alloc_t<_Alloc, __opstate_t>>;
+    auto* __opstate  = static_cast<__opstate_t*>(__ptr);
+    __rebind_alloc_t<_Alloc, __opstate_t> __alloc_copy{get_allocator(*__opstate)};
+
+    __traits_t::destroy(__alloc_copy, __opstate);
+    if constexpr (!_InSitu)
+    {
+      __traits_t::deallocate(__alloc_copy, __opstate, 1);
+    }
+  }
+
+  using __child_opstate_t = connect_result_t<_Sndr, __detail::__proxy_receiver<receiver_proxy>>;
+  __child_opstate_t __opstate_;
 };
 } // namespace __detail
 
@@ -655,26 +618,12 @@ class _CCCL_DECLSPEC_EMPTY_BASES task_scheduler::__backend_for
   {
     _CCCL_TRY
     {
-      using __opstate_t = connect_result_t<_Sndr, __detail::__proxy_receiver<_RcvrProxy>>;
-      if (__storage.size() >= sizeof(__opstate_t))
-      {
-        auto& __opstate = __detail::__emplace_into_from(
-          __storage,
-          static_cast<_Alloc&>(*this),
-          execution::connect,
-          static_cast<_Sndr&&>(__sndr),
-          __detail::__proxy_receiver<receiver_proxy>{
-            __rcvr_proxy, __storage.data(), &__detail::__delete_small<__opstate_t>});
-        execution::start(__opstate);
-      }
-      else
-      {
-        using __opstate_t = __detail::__opstate_with_allocator<_Alloc, _Sndr>;
-        _Alloc& __alloc   = *this;
-        auto& __opstate   = __detail::__emplace_into<__opstate_t>(
-          __storage, __alloc, __alloc, static_cast<_Sndr&&>(__sndr), __rcvr_proxy);
-        execution::start(__opstate);
-      }
+      using __opstate_t    = connect_result_t<_Sndr, __detail::__proxy_receiver<_RcvrProxy>>;
+      const bool __in_situ = __storage.size() >= sizeof(__opstate_t);
+      _Alloc& __alloc      = *this;
+      auto& __opstate      = __detail::__emplace_into<__detail::__opstate_t<_Alloc, _Sndr>>(
+        __storage, __alloc, __alloc, static_cast<_Sndr&&>(__sndr), __rcvr_proxy, __in_situ);
+      execution::start(__opstate);
     }
     _CCCL_CATCH_ALL
     {
