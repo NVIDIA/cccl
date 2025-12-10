@@ -94,13 +94,13 @@ struct prefetch_policy
   int min_items_per_thread      = 1;
   int max_items_per_thread      = 32;
 
-  _CCCL_API constexpr friend bool operator==(const prefetch_policy& lhs, const prefetch_policy& rhs)
+  [[nodiscard]] _CCCL_API constexpr friend bool operator==(const prefetch_policy& lhs, const prefetch_policy& rhs)
   {
     return lhs.block_threads == rhs.block_threads && lhs.items_per_thread_no_input == rhs.items_per_thread_no_input
         && lhs.min_items_per_thread == rhs.min_items_per_thread && lhs.max_items_per_thread == rhs.max_items_per_thread;
   }
 
-  _CCCL_API constexpr friend bool operator!=(const prefetch_policy& lhs, const prefetch_policy& rhs)
+  [[nodiscard]] _CCCL_API constexpr friend bool operator!=(const prefetch_policy& lhs, const prefetch_policy& rhs)
   {
     return !(lhs == rhs);
   }
@@ -125,7 +125,7 @@ struct vectorized_policy
   int prefetch_min_items_per_thread      = 1;
   int prefetch_max_items_per_thread      = 32;
 
-  _CCCL_API constexpr friend bool operator==(const vectorized_policy& lhs, const vectorized_policy& rhs)
+  [[nodiscard]] _CCCL_API constexpr friend bool operator==(const vectorized_policy& lhs, const vectorized_policy& rhs)
   {
     return lhs.block_threads == rhs.block_threads && lhs.items_per_thread_vectorized == rhs.items_per_thread_vectorized
         && lhs.vec_size == rhs.vec_size
@@ -134,7 +134,7 @@ struct vectorized_policy
         && lhs.prefetch_max_items_per_thread == rhs.prefetch_max_items_per_thread;
   }
 
-  _CCCL_API constexpr friend bool operator!=(const vectorized_policy& lhs, const vectorized_policy& rhs)
+  [[nodiscard]] _CCCL_API constexpr friend bool operator!=(const vectorized_policy& lhs, const vectorized_policy& rhs)
   {
     return !(lhs == rhs);
   }
@@ -160,13 +160,13 @@ struct async_copy_policy
   int min_items_per_thread = 1;
   int max_items_per_thread = 32;
 
-  _CCCL_API constexpr friend bool operator==(const async_copy_policy& lhs, const async_copy_policy& rhs)
+  [[nodiscard]] _CCCL_API constexpr friend bool operator==(const async_copy_policy& lhs, const async_copy_policy& rhs)
   {
     return lhs.block_threads == rhs.block_threads && lhs.bulk_copy_alignment == rhs.bulk_copy_alignment
         && lhs.min_items_per_thread == rhs.min_items_per_thread && lhs.max_items_per_thread == rhs.max_items_per_thread;
   }
 
-  _CCCL_API constexpr friend bool operator!=(const async_copy_policy& lhs, const async_copy_policy& rhs)
+  [[nodiscard]] _CCCL_API constexpr friend bool operator!=(const async_copy_policy& lhs, const async_copy_policy& rhs)
   {
     return !(lhs == rhs);
   }
@@ -189,13 +189,15 @@ struct transform_arch_policy
   vectorized_policy vectorized_policy;
   async_copy_policy async_copy_policy;
 
-  _CCCL_API constexpr friend bool operator==(const transform_arch_policy& lhs, const transform_arch_policy& rhs)
+  [[nodiscard]] _CCCL_API constexpr friend bool
+  operator==(const transform_arch_policy& lhs, const transform_arch_policy& rhs)
   {
     return lhs.min_bif == rhs.min_bif && lhs.algorithm == rhs.algorithm && lhs.prefetch_policy == rhs.prefetch_policy
         && lhs.vectorized_policy == rhs.vectorized_policy && lhs.async_copy_policy == rhs.async_copy_policy;
   }
 
-  _CCCL_API constexpr friend bool operator!=(const transform_arch_policy& lhs, const transform_arch_policy& rhs)
+  [[nodiscard]] _CCCL_API constexpr friend bool
+  operator!=(const transform_arch_policy& lhs, const transform_arch_policy& rhs)
   {
     return !(lhs == rhs);
   }
@@ -238,7 +240,7 @@ template <>
 inline constexpr size_t align_of<void> = 0;
 
 template <typename It>
-_CCCL_API constexpr auto make_iterator_info() -> iterator_info
+[[nodiscard]] _CCCL_API constexpr auto make_iterator_info() -> iterator_info
 {
   using vt = it_value_t<It>;
   return iterator_info{
@@ -304,7 +306,7 @@ _CCCL_HOST_DEVICE constexpr auto bulk_copy_dyn_smem_for_tile_size(
   return smem_size;
 }
 
-_CCCL_HOST_DEVICE constexpr int arch_to_min_bytes_in_flight(::cuda::arch_id arch)
+[[nodiscard]] _CCCL_API constexpr int arch_to_min_bytes_in_flight(::cuda::arch_id arch)
 {
   if (arch >= ::cuda::arch_id::sm_100)
   {
@@ -429,8 +431,7 @@ struct arch_policies
         async,
       };
     }
-
-    if (arch >= ::cuda::arch_id::sm_80)
+    else if (arch >= ::cuda::arch_id::sm_80)
     {
       const int block_threads = 256;
       const auto prefetch     = prefetch_policy{block_threads};

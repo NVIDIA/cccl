@@ -997,7 +997,7 @@ __launch_bounds__(get_block_threads<ArchPolicies>) CUB_DETAIL_KERNEL_ATTRIBUTES 
 {
   _CCCL_ASSERT(blockDim.y == 1 && blockDim.z == 1, "transform_kernel only supports 1D blocks");
 
-  static constexpr const transform_arch_policy policy = ArchPolicies{}(::cuda::arch_id{CUB_PTX_ARCH / 10});
+  static constexpr transform_arch_policy policy = ArchPolicies{}(::cuda::arch_id{CUB_PTX_ARCH / 10});
 
   if constexpr (policy.algorithm == Algorithm::prefetch)
   {
