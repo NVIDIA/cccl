@@ -118,7 +118,7 @@ struct weird_buffer
     }
   };
 
-  [[nodiscard]] friend transform_result transform_device_argument(cuda::stream_ref, const weird_buffer& self) noexcept
+  [[nodiscard]] friend transform_result transform_launch_argument(cuda::stream_ref, const weird_buffer& self) noexcept
   {
     return {self.data, self.size};
   }
