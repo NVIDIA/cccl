@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDA_STD___RANDOM_CAUCHY_DISTRIBUTION_H
-#define _CUDA_STD___RANDOM_CAUCHY_DISTRIBUTION_H
+#ifndef _CUDA_STD___CHI_SQUARED_DISTRIBUTION_H
+#define _CUDA_STD___CHI_SQUARED_DISTRIBUTION_H
 
 #include <cuda/std/detail/__config>
 
@@ -20,17 +20,16 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__cmath/trigonometric_functions.h>
 #include <cuda/std/__limits/numeric_limits.h>
+#include <cuda/std/__random/gamma_distribution.h>
 #include <cuda/std/__random/is_valid.h>
-#include <cuda/std/__random/uniform_real_distribution.h>
 
 #include <cuda/std/__cccl/prologue.h>
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 template <class _RealType = double>
-class cauchy_distribution
+class chi_squared_distribution
 {
   static_assert(__libcpp_random_is_valid_realtype<_RealType>, "RealType must be a supported floating-point type");
 
@@ -40,29 +39,26 @@ public:
 
   class param_type
   {
-    result_type __a_ = result_type{0};
-    result_type __b_ = result_type{1};
+  private:
+    result_type __n_ = result_type{1};
 
   public:
-    using distribution_type = cauchy_distribution;
+    using distribution_type = chi_squared_distribution;
 
-    _CCCL_API constexpr explicit param_type(result_type __a = 0, result_type __b = 1) noexcept
-        : __a_{__a}
-        , __b_{__b}
+    constexpr param_type() noexcept = default;
+
+    _CCCL_API constexpr explicit param_type(result_type __n) noexcept
+        : __n_{__n}
     {}
 
-    [[nodiscard]] _CCCL_API constexpr result_type a() const noexcept
+    [[nodiscard]] _CCCL_API constexpr result_type n() const noexcept
     {
-      return __a_;
-    }
-    [[nodiscard]] _CCCL_API constexpr result_type b() const noexcept
-    {
-      return __b_;
+      return __n_;
     }
 
     [[nodiscard]] friend _CCCL_API constexpr bool operator==(const param_type& __x, const param_type& __y) noexcept
     {
-      return __x.__a_ == __y.__a_ && __x.__b_ == __y.__b_;
+      return __x.__n_ == __y.__n_;
     }
 #if _CCCL_STD_VER <= 2017
     [[nodiscard]] friend _CCCL_API constexpr bool operator!=(const param_type& __x, const param_type& __y) noexcept
@@ -73,18 +69,19 @@ public:
   };
 
 private:
-  param_type __p_;
+  param_type __p_{};
 
 public:
   // constructor and reset functions
-  constexpr cauchy_distribution() noexcept = default;
-  _CCCL_API constexpr explicit cauchy_distribution(result_type __a, result_type __b = 1) noexcept
-      : __p_{param_type{__a, __b}}
+  constexpr chi_squared_distribution() noexcept = default;
+
+  _CCCL_API constexpr explicit chi_squared_distribution(result_type __n) noexcept
+      : __p_{param_type{__n}}
   {}
-  _CCCL_API constexpr explicit cauchy_distribution(const param_type& __p) noexcept
+  _CCCL_API constexpr explicit chi_squared_distribution(const param_type& __p) noexcept
       : __p_{__p}
   {}
-  _CCCL_API constexpr void reset() noexcept {}
+  _CCCL_API void reset() noexcept {}
 
   // generating functions
   template <class _URng>
@@ -96,19 +93,13 @@ public:
   [[nodiscard]] _CCCL_API result_type operator()(_URng& __g, const param_type& __p)
   {
     static_assert(__cccl_random_is_valid_urng<_URng>, "URng must meet the UniformRandomBitGenerator requirements");
-    uniform_real_distribution<result_type> __gen;
-    // purposefully let tan arg get as close to pi/2 as it wants, tan will return a finite
-    return __p.a() + __p.b() * ::cuda::std::tan(result_type{3.1415926535897932384626433832795} * __gen(__g));
+    return gamma_distribution<result_type>(__p.n() / 2, 2)(__g);
   }
 
   // property functions
-  [[nodiscard]] _CCCL_API constexpr result_type a() const noexcept
+  [[nodiscard]] _CCCL_API constexpr result_type n() const noexcept
   {
-    return __p_.a();
-  }
-  [[nodiscard]] _CCCL_API constexpr result_type b() const noexcept
-  {
-    return __p_.b();
+    return __p_.n();
   }
 
   [[nodiscard]] _CCCL_API constexpr param_type param() const noexcept
@@ -122,7 +113,7 @@ public:
 
   [[nodiscard]] _CCCL_API static constexpr result_type min() noexcept
   {
-    return -numeric_limits<result_type>::infinity();
+    return result_type{0};
   }
   [[nodiscard]] _CCCL_API static constexpr result_type max() noexcept
   {
@@ -130,13 +121,13 @@ public:
   }
 
   [[nodiscard]] friend _CCCL_API constexpr bool
-  operator==(const cauchy_distribution& __x, const cauchy_distribution& __y) noexcept
+  operator==(const chi_squared_distribution& __x, const chi_squared_distribution& __y) noexcept
   {
     return __x.__p_ == __y.__p_;
   }
 #if _CCCL_STD_VER <= 2017
   [[nodiscard]] friend _CCCL_API constexpr bool
-  operator!=(const cauchy_distribution& __x, const cauchy_distribution& __y) noexcept
+  operator!=(const chi_squared_distribution& __x, const chi_squared_distribution& __y) noexcept
   {
     return !(__x == __y);
   }
@@ -145,7 +136,7 @@ public:
 #if !_CCCL_COMPILER(NVRTC)
   template <class _CharT, class _Traits>
   friend ::std::basic_ostream<_CharT, _Traits>&
-  operator<<(::std::basic_ostream<_CharT, _Traits>& __os, const cauchy_distribution& __x)
+  operator<<(::std::basic_ostream<_CharT, _Traits>& __os, const chi_squared_distribution& __x)
   {
     using ostream_type                        = ::std::basic_ostream<_CharT, _Traits>;
     using ios_base                            = typename ostream_type::ios_base;
@@ -153,10 +144,8 @@ public:
     const _CharT __fill                       = __os.fill();
     const ::std::streamsize __precision       = __os.precision();
     __os.flags(ios_base::dec | ios_base::left | ios_base::scientific);
-    _CharT __sp = __os.widen(' ');
-    __os.fill(__sp);
     __os.precision(numeric_limits<result_type>::max_digits10);
-    __os << __x.a() << __sp << __x.b();
+    __os << __x.n();
     __os.flags(__flags);
     __os.fill(__fill);
     __os.precision(__precision);
@@ -165,19 +154,17 @@ public:
 
   template <class _CharT, class _Traits>
   friend ::std::basic_istream<_CharT, _Traits>&
-  operator>>(::std::basic_istream<_CharT, _Traits>& __is, cauchy_distribution& __x)
+  operator>>(::std::basic_istream<_CharT, _Traits>& __is, chi_squared_distribution& __x)
   {
     using istream_type                        = ::std::basic_istream<_CharT, _Traits>;
     using ios_base                            = typename istream_type::ios_base;
-    using param_type                          = typename cauchy_distribution::param_type;
     const typename ios_base::fmtflags __flags = __is.flags();
     __is.flags(ios_base::dec | ios_base::skipws);
-    result_type __a;
-    result_type __b;
-    __is >> __a >> __b;
+    result_type __n;
+    __is >> __n;
     if (!__is.fail())
     {
-      __x.param(param_type{__a, __b});
+      __x.param(param_type{__n});
     }
     __is.flags(__flags);
     return __is;
@@ -189,4 +176,4 @@ _CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _CUDA_STD___RANDOM_CAUCHY_DISTRIBUTION_H
+#endif // _CUDA_STD___CHI_SQUARED_DISTRIBUTION_H
