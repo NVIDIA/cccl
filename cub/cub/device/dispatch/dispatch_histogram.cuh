@@ -456,684 +456,6 @@ public:
   // Dispatch entrypoints
   //---------------------------------------------------------------------
 
-  /**
-   * Dispatch routine for HistogramRange with device-side decode operator initialization,
-   * specialized for sample types larger than 8bit.
-   * This variant initializes the decode operators inside the kernel from level arrays.
-   *
-   * @param d_temp_storage
-   *   Device-accessible allocation of temporary storage.
-   *   When nullptr, the required allocation size is written to `temp_storage_bytes` and
-   *   no work is done.
-   *
-   * @param temp_storage_bytes
-   *   Reference to size in bytes of `d_temp_storage` allocation
-   *
-   * @param d_samples
-   *   The pointer to the multi-channel input sequence of data samples.
-   *   The samples from different channels are assumed to be interleaved
-   *   (e.g., an array of 32-bit pixels where each pixel consists of four RGBA 8-bit samples).
-   *
-   * @param d_output_histograms
-   *   The pointers to the histogram counter output arrays, one for each active channel.
-   *   For channel<sub><em>i</em></sub>, the allocation length of `d_histograms[i]` should be
-   *   `num_output_levels[i] - 1`.
-   *
-   * @param num_output_levels
-   *   The number of boundaries (levels) for delineating histogram samples in each active channel.
-   *   Implies that the number of bins for channel<sub><em>i</em></sub> is
-   *   `num_output_levels[i] - 1`.
-   *
-   * @param d_levels
-   *   The pointers to the arrays of boundaries (levels), one for each active channel.
-   *   Bin ranges are defined by consecutive boundary pairings: lower sample value boundaries are
-   *   inclusive and upper sample value boundaries are exclusive.
-   *
-   * @param num_row_pixels
-   *   The number of multi-channel pixels per row in the region of interest
-   *
-   * @param num_rows
-   *   The number of rows in the region of interest
-   *
-   * @param row_stride_samples
-   *   The number of samples between starts of consecutive rows in the region of interest
-   *
-   * @param stream
-   *   CUDA stream to launch kernels within. Default is stream<sub>0</sub>.
-   */
-  template <typename MaxPolicyT = typename ::cuda::std::_If<
-              ::cuda::std::is_void_v<PolicyHub>,
-              /* fallback_policy_hub */
-              detail::histogram::policy_hub<SampleT, CounterT, NUM_CHANNELS, NUM_ACTIVE_CHANNELS, /* isEven */ 0>,
-              PolicyHub>::MaxPolicy,
-            typename NumOutputLevelsArrayT = ::cuda::std::array<int, NUM_ACTIVE_CHANNELS>,
-            typename LevelsArrayT          = ::cuda::std::array<const LevelT*, NUM_ACTIVE_CHANNELS>>
-  CUB_RUNTIME_FUNCTION static cudaError_t DispatchRangeDeviceInit(
-    void* d_temp_storage,
-    size_t& temp_storage_bytes,
-    SampleIteratorT d_samples,
-    ::cuda::std::array<CounterT*, NUM_ACTIVE_CHANNELS> d_output_histograms,
-    NumOutputLevelsArrayT num_output_levels,
-    LevelsArrayT d_levels,
-    OffsetT num_row_pixels,
-    OffsetT num_rows,
-    OffsetT row_stride_samples,
-    cudaStream_t stream,
-    ::cuda::std::false_type /*is_byte_sample*/,
-    KernelSource kernel_source             = {},
-    KernelLauncherFactory launcher_factory = {},
-    MaxPolicyT max_policy                  = {})
-  {
-    cudaError error = cudaSuccess;
-
-    do
-    {
-      // Get PTX version
-      int ptx_version = 0;
-      error           = CubDebug(launcher_factory.PtxVersion(ptx_version));
-      if (cudaSuccess != error)
-      {
-        break;
-      }
-
-      int max_levels = num_output_levels[0];
-
-      for (int channel = 0; channel < NUM_ACTIVE_CHANNELS; ++channel)
-      {
-        if (num_output_levels[channel] > max_levels)
-        {
-          max_levels = num_output_levels[channel];
-        }
-      }
-      int max_num_output_bins = max_levels - 1;
-
-      // Dispatch
-      if (max_num_output_bins > detail::histogram::MAX_PRIVATIZED_SMEM_BINS)
-      {
-        // Too many bins to keep in shared memory.
-        constexpr int PRIVATIZED_SMEM_BINS = 0;
-
-        detail::histogram::dispatch_histogram<
-          NUM_CHANNELS,
-          NUM_ACTIVE_CHANNELS,
-          PRIVATIZED_SMEM_BINS,
-          SampleIteratorT,
-          CounterT,
-          NumOutputLevelsArrayT,
-          LevelsArrayT,
-          OffsetT,
-          true, // IsDeviceInit
-          false, // IsEven
-          false, // IsByteSample
-          MaxPolicyT,
-          KernelSource,
-          KernelLauncherFactory>
-          dispatch{
-            d_temp_storage,
-            temp_storage_bytes,
-            d_samples,
-            d_output_histograms,
-            num_output_levels,
-            num_output_levels,
-            num_output_levels,
-            d_levels,
-            max_num_output_bins,
-            num_row_pixels,
-            num_rows,
-            row_stride_samples,
-            stream,
-            kernel_source,
-            launcher_factory};
-
-        error = CubDebug(max_policy.Invoke(ptx_version, dispatch));
-        if (cudaSuccess != error)
-        {
-          break;
-        }
-      }
-      else
-      {
-        // Dispatch shared-privatized approach
-        constexpr int PRIVATIZED_SMEM_BINS = detail::histogram::MAX_PRIVATIZED_SMEM_BINS;
-
-        detail::histogram::dispatch_histogram<
-          NUM_CHANNELS,
-          NUM_ACTIVE_CHANNELS,
-          PRIVATIZED_SMEM_BINS,
-          SampleIteratorT,
-          CounterT,
-          NumOutputLevelsArrayT,
-          LevelsArrayT,
-          OffsetT,
-          true, // IsDeviceInit
-          false, // IsEven
-          false, // IsByteSample
-          MaxPolicyT,
-          KernelSource,
-          KernelLauncherFactory>
-          dispatch{
-            d_temp_storage,
-            temp_storage_bytes,
-            d_samples,
-            d_output_histograms,
-            num_output_levels,
-            num_output_levels,
-            num_output_levels,
-            d_levels,
-            max_num_output_bins,
-            num_row_pixels,
-            num_rows,
-            row_stride_samples,
-            stream,
-            kernel_source,
-            launcher_factory};
-
-        error = CubDebug(max_policy.Invoke(ptx_version, dispatch));
-        if (cudaSuccess != error)
-        {
-          break;
-        }
-      }
-    } while (0);
-
-    return error;
-  }
-
-  /**
-   * Dispatch routine for HistogramRange with device-side decode operator initialization,
-   * specialized for 8-bit sample types
-   * (computes 256-bin privatized histograms and then reduces to user-specified levels).
-   * This variant initializes the decode operators inside the kernel from level arrays.
-   *
-   * @param d_temp_storage
-   *   Device-accessible allocation of temporary storage.
-   *   When nullptr, the required allocation size is written to `temp_storage_bytes` and
-   *   no work is done.
-   *
-   * @param temp_storage_bytes
-   *   Reference to size in bytes of `d_temp_storage` allocation
-   *
-   * @param d_samples
-   *   The pointer to the multi-channel input sequence of data samples.
-   *   The samples from different channels are assumed to be interleaved
-   *   (e.g., an array of 32-bit pixels where each pixel consists of four RGBA 8-bit samples).
-   *
-   * @param d_output_histograms
-   *   The pointers to the histogram counter output arrays, one for each active channel.
-   *   For channel<sub><em>i</em></sub>, the allocation length of
-   *   `d_histograms[i]` should be `num_output_levels[i] - 1`.
-   *
-   * @param num_output_levels
-   *   The number of boundaries (levels) for delineating histogram samples in each active channel.
-   *   Implies that the number of bins for channel<sub><em>i</em></sub> is
-   *   `num_output_levels[i] - 1`.
-   *
-   * @param d_levels
-   *   The pointers to the arrays of boundaries (levels), one for each active channel.
-   *   Bin ranges are defined by consecutive boundary pairings: lower sample value boundaries are
-   *   inclusive and upper sample value boundaries are exclusive.
-   *
-   * @param num_row_pixels
-   *   The number of multi-channel pixels per row in the region of interest
-   *
-   * @param num_rows
-   *   The number of rows in the region of interest
-   *
-   * @param row_stride_samples
-   *   The number of samples between starts of consecutive rows in the region of interest
-   *
-   * @param stream
-   *   CUDA stream to launch kernels within.  Default is stream<sub>0</sub>.
-   *
-   */
-  template <typename MaxPolicyT = typename ::cuda::std::_If<
-              ::cuda::std::is_void_v<PolicyHub>,
-              /* fallback_policy_hub */
-              detail::histogram::policy_hub<SampleT, CounterT, NUM_CHANNELS, NUM_ACTIVE_CHANNELS, /* isEven */ 0>,
-              PolicyHub>::MaxPolicy,
-            typename NumOutputLevelsArrayT = ::cuda::std::array<int, NUM_ACTIVE_CHANNELS>,
-            typename LevelsArrayT          = ::cuda::std::array<const LevelT*, NUM_ACTIVE_CHANNELS>>
-  CUB_RUNTIME_FUNCTION static cudaError_t DispatchRangeDeviceInit(
-    void* d_temp_storage,
-    size_t& temp_storage_bytes,
-    SampleIteratorT d_samples,
-    ::cuda::std::array<CounterT*, NUM_ACTIVE_CHANNELS> d_output_histograms,
-    NumOutputLevelsArrayT num_output_levels,
-    LevelsArrayT d_levels,
-    OffsetT num_row_pixels,
-    OffsetT num_rows,
-    OffsetT row_stride_samples,
-    cudaStream_t stream,
-    ::cuda::std::true_type /*is_byte_sample*/,
-    KernelSource kernel_source             = {},
-    KernelLauncherFactory launcher_factory = {},
-    MaxPolicyT max_policy                  = {})
-  {
-    cudaError error = cudaSuccess;
-
-    do
-    {
-      // Get PTX version
-      int ptx_version = 0;
-      error           = CubDebug(launcher_factory.PtxVersion(ptx_version));
-      if (cudaSuccess != error)
-      {
-        break;
-      }
-
-      ::cuda::std::array<int, NUM_ACTIVE_CHANNELS> num_privatized_levels;
-      int max_levels = num_output_levels[0]; // Maximum number of levels in any channel
-
-      for (int channel = 0; channel < NUM_ACTIVE_CHANNELS; ++channel)
-      {
-        num_privatized_levels[channel] = 257;
-
-        if (num_output_levels[channel] > max_levels)
-        {
-          max_levels = num_output_levels[channel];
-        }
-      }
-      int max_num_output_bins = max_levels - 1;
-
-      constexpr int PRIVATIZED_SMEM_BINS = 256;
-
-      detail::histogram::dispatch_histogram<
-        NUM_CHANNELS,
-        NUM_ACTIVE_CHANNELS,
-        PRIVATIZED_SMEM_BINS,
-        SampleIteratorT,
-        CounterT,
-        NumOutputLevelsArrayT,
-        LevelsArrayT,
-        OffsetT,
-        true, // IsDeviceInit
-        false, // IsEven
-        true, // IsByteSample
-        MaxPolicyT,
-        KernelSource,
-        KernelLauncherFactory>
-        dispatch{
-          d_temp_storage,
-          temp_storage_bytes,
-          d_samples,
-          d_output_histograms,
-          num_privatized_levels,
-          num_output_levels,
-          num_output_levels,
-          d_levels,
-          max_num_output_bins,
-          num_row_pixels,
-          num_rows,
-          row_stride_samples,
-          stream,
-          kernel_source,
-          launcher_factory};
-
-      error = CubDebug(max_policy.Invoke(ptx_version, dispatch));
-      if (cudaSuccess != error)
-      {
-        break;
-      }
-    } while (0);
-
-    return error;
-  }
-
-  /**
-   * Dispatch routine for HistogramEven with device-side decode operator initialization,
-   * specialized for sample types larger than 8-bit.
-   * This variant initializes the decode operators inside the kernel from level bounds.
-   *
-   * @param d_temp_storage
-   *   Device-accessible allocation of temporary storage.
-   *   When nullptr, the required allocation size is written to
-   *   `temp_storage_bytes` and no work is done.
-   *
-   * @param temp_storage_bytes
-   *   Reference to size in bytes of `d_temp_storage` allocation
-   *
-   * @param d_samples
-   *   The pointer to the input sequence of sample items.
-   *   The samples from different channels are assumed to be interleaved
-   *   (e.g., an array of 32-bit pixels where each pixel consists of four RGBA 8-bit samples).
-   *
-   * @param d_output_histograms
-   *   The pointers to the histogram counter output arrays, one for each active channel.
-   *   For channel<sub><em>i</em></sub>, the allocation length of `d_histograms[i]` should be
-   *   `num_output_levels[i] - 1`.
-   *
-   * @param num_output_levels
-   *   The number of bin level boundaries for delineating histogram samples in each active channel.
-   *   Implies that the number of bins for channel<sub><em>i</em></sub> is
-   *   `num_output_levels[i] - 1`.
-   *
-   * @param lower_level
-   *   The lower sample value bound (inclusive) for the lowest histogram bin in each active channel.
-   *
-   * @param upper_level
-   *   The upper sample value bound (exclusive) for the highest histogram bin in each active
-   * channel.
-   *
-   * @param num_row_pixels
-   *   The number of multi-channel pixels per row in the region of interest
-   *
-   * @param num_rows
-   *   The number of rows in the region of interest
-   *
-   * @param row_stride_samples
-   *   The number of samples between starts of consecutive rows in the region of interest
-   *
-   * @param stream
-   *   CUDA stream to launch kernels within.  Default is stream<sub>0</sub>.
-   *
-   */
-  template <typename MaxPolicyT = typename ::cuda::std::_If<
-              ::cuda::std::is_void_v<PolicyHub>,
-              /* fallback_policy_hub */
-              detail::histogram::policy_hub<SampleT, CounterT, NUM_CHANNELS, NUM_ACTIVE_CHANNELS, /* isEven */ 1>,
-              PolicyHub>::MaxPolicy,
-            typename LowerLevelArrayT = ::cuda::std::array<LevelT, NUM_ACTIVE_CHANNELS>,
-            typename UpperLevelArrayT = ::cuda::std::array<LevelT, NUM_ACTIVE_CHANNELS>>
-  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t DispatchEvenDeviceInit(
-    void* d_temp_storage,
-    size_t& temp_storage_bytes,
-    SampleIteratorT d_samples,
-    ::cuda::std::array<CounterT*, NUM_ACTIVE_CHANNELS> d_output_histograms,
-    ::cuda::std::array<int, NUM_ACTIVE_CHANNELS> num_output_levels,
-    LowerLevelArrayT lower_level,
-    UpperLevelArrayT upper_level,
-    OffsetT num_row_pixels,
-    OffsetT num_rows,
-    OffsetT row_stride_samples,
-    cudaStream_t stream,
-    ::cuda::std::false_type /*is_byte_sample*/,
-    KernelSource kernel_source             = {},
-    KernelLauncherFactory launcher_factory = {},
-    MaxPolicyT max_policy                  = {})
-  {
-    cudaError error = cudaSuccess;
-
-    do
-    {
-      // Get PTX version
-      int ptx_version = 0;
-      error           = CubDebug(launcher_factory.PtxVersion(ptx_version));
-      if (cudaSuccess != error)
-      {
-        break;
-      }
-
-      int max_levels = num_output_levels[0];
-
-      for (int channel = 0; channel < NUM_ACTIVE_CHANNELS; ++channel)
-      {
-        int num_levels = num_output_levels[channel];
-        if (kernel_source.MayOverflow(num_levels - 1, upper_level, lower_level, channel))
-        {
-          // Make sure to also return a reasonable value for `temp_storage_bytes` in case of
-          // an overflow of the bin computation, in which case a subsequent algorithm
-          // invocation will also fail
-          if (!d_temp_storage)
-          {
-            temp_storage_bytes = 1U;
-          }
-          return cudaErrorInvalidValue;
-        }
-
-        if (num_levels > max_levels)
-        {
-          max_levels = num_levels;
-        }
-      }
-      int max_num_output_bins = max_levels - 1;
-
-      if (max_num_output_bins > detail::histogram::MAX_PRIVATIZED_SMEM_BINS)
-      {
-        // Dispatch shared-privatized approach
-        constexpr int PRIVATIZED_SMEM_BINS = 0;
-
-        detail::histogram::dispatch_histogram<
-          NUM_CHANNELS,
-          NUM_ACTIVE_CHANNELS,
-          PRIVATIZED_SMEM_BINS,
-          SampleIteratorT,
-          CounterT,
-          UpperLevelArrayT,
-          LowerLevelArrayT,
-          OffsetT,
-          true, // IsDeviceInit
-          true, // IsEven
-          false, // IsByteSample
-          MaxPolicyT,
-          KernelSource,
-          KernelLauncherFactory>
-          dispatch{
-            d_temp_storage,
-            temp_storage_bytes,
-            d_samples,
-            d_output_histograms,
-            num_output_levels,
-            num_output_levels,
-            upper_level,
-            lower_level,
-            max_num_output_bins,
-            num_row_pixels,
-            num_rows,
-            row_stride_samples,
-            stream,
-            kernel_source,
-            launcher_factory};
-
-        error = CubDebug(max_policy.Invoke(ptx_version, dispatch));
-        if (cudaSuccess != error)
-        {
-          break;
-        }
-      }
-      else
-      {
-        // Dispatch shared-privatized approach
-        constexpr int PRIVATIZED_SMEM_BINS = detail::histogram::MAX_PRIVATIZED_SMEM_BINS;
-
-        detail::histogram::dispatch_histogram<
-          NUM_CHANNELS,
-          NUM_ACTIVE_CHANNELS,
-          PRIVATIZED_SMEM_BINS,
-          SampleIteratorT,
-          CounterT,
-          UpperLevelArrayT,
-          LowerLevelArrayT,
-          OffsetT,
-          true, // IsDeviceInit
-          true, // IsEven
-          false, // IsByteSample
-          MaxPolicyT,
-          KernelSource,
-          KernelLauncherFactory>
-          dispatch{
-            d_temp_storage,
-            temp_storage_bytes,
-            d_samples,
-            d_output_histograms,
-            num_output_levels,
-            num_output_levels,
-            upper_level,
-            lower_level,
-            max_num_output_bins,
-            num_row_pixels,
-            num_rows,
-            row_stride_samples,
-            stream,
-            kernel_source,
-            launcher_factory};
-
-        error = CubDebug(max_policy.Invoke(ptx_version, dispatch));
-        if (cudaSuccess != error)
-        {
-          break;
-        }
-      }
-    } while (0);
-
-    return error;
-  }
-
-  /**
-   * Dispatch routine for HistogramEven with device-side decode operator initialization,
-   * specialized for 8-bit sample types
-   * (computes 256-bin privatized histograms and then reduces to user-specified levels).
-   * This variant initializes the decode operators inside the kernel from level bounds.
-   *
-   * @param d_temp_storage
-   *   Device-accessible allocation of temporary storage.
-   *   When nullptr, the required allocation size is written to `temp_storage_bytes` and
-   *   no work is done.
-   *
-   * @param temp_storage_bytes
-   *   Reference to size in bytes of `d_temp_storage` allocation
-   *
-   * @param d_samples
-   *   The pointer to the input sequence of sample items. The samples from different channels are
-   *   assumed to be interleaved (e.g., an array of 32-bit pixels where each pixel consists of
-   *   four RGBA 8-bit samples).
-   *
-   * @param d_output_histograms
-   *   The pointers to the histogram counter output arrays, one for each active channel.
-   *   For channel<sub><em>i</em></sub>, the allocation length of `d_histograms[i]` should be
-   *   `num_output_levels[i] - 1`.
-   *
-   * @param num_output_levels
-   *   The number of bin level boundaries for delineating histogram samples in each active channel.
-   *   Implies that the number of bins for channel<sub><em>i</em></sub> is
-   *   `num_output_levels[i] - 1`.
-   *
-   * @param lower_level
-   *   The lower sample value bound (inclusive) for the lowest histogram bin in each active channel.
-   *
-   * @param upper_level
-   *   The upper sample value bound (exclusive) for the highest histogram bin in each active
-   * channel.
-   *
-   * @param num_row_pixels
-   *   The number of multi-channel pixels per row in the region of interest
-   *
-   * @param num_rows
-   *   The number of rows in the region of interest
-   *
-   * @param row_stride_samples
-   *   The number of samples between starts of consecutive rows in the region of interest
-   *
-   * @param stream
-   *   CUDA stream to launch kernels within.  Default is stream<sub>0</sub>.
-   *
-   */
-  template <typename MaxPolicyT = typename ::cuda::std::_If<
-              ::cuda::std::is_void_v<PolicyHub>,
-              /* fallback_policy_hub */
-              detail::histogram::policy_hub<SampleT, CounterT, NUM_CHANNELS, NUM_ACTIVE_CHANNELS, /* isEven */ 1>,
-              PolicyHub>::MaxPolicy,
-            typename LowerLevelArrayT = ::cuda::std::array<LevelT, NUM_ACTIVE_CHANNELS>,
-            typename UpperLevelArrayT = ::cuda::std::array<LevelT, NUM_ACTIVE_CHANNELS>>
-  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t DispatchEvenDeviceInit(
-    void* d_temp_storage,
-    size_t& temp_storage_bytes,
-    SampleIteratorT d_samples,
-    ::cuda::std::array<CounterT*, NUM_ACTIVE_CHANNELS> d_output_histograms,
-    ::cuda::std::array<int, NUM_ACTIVE_CHANNELS> num_output_levels,
-    LowerLevelArrayT lower_level,
-    UpperLevelArrayT upper_level,
-    OffsetT num_row_pixels,
-    OffsetT num_rows,
-    OffsetT row_stride_samples,
-    cudaStream_t stream,
-    ::cuda::std::true_type /*is_byte_sample*/,
-    KernelSource kernel_source             = {},
-    KernelLauncherFactory launcher_factory = {},
-    MaxPolicyT max_policy                  = {})
-  {
-    cudaError error = cudaSuccess;
-
-    do
-    {
-      // Get PTX version
-      int ptx_version = 0;
-      error           = CubDebug(launcher_factory.PtxVersion(ptx_version));
-      if (cudaSuccess != error)
-      {
-        break;
-      }
-
-      ::cuda::std::array<int, NUM_ACTIVE_CHANNELS> num_privatized_levels;
-      int max_levels = num_output_levels[0];
-
-      for (int channel = 0; channel < NUM_ACTIVE_CHANNELS; ++channel)
-      {
-        num_privatized_levels[channel] = 257;
-
-        int num_levels = num_output_levels[channel];
-        if (kernel_source.MayOverflow(num_levels - 1, upper_level, lower_level, channel))
-        {
-          // Make sure to also return a reasonable value for `temp_storage_bytes` in case of
-          // an overflow of the bin computation, in which case a subsequent algorithm
-          // invocation will also fail
-          if (!d_temp_storage)
-          {
-            temp_storage_bytes = 1U;
-          }
-          return cudaErrorInvalidValue;
-        }
-
-        if (num_levels > max_levels)
-        {
-          max_levels = num_levels;
-        }
-      }
-      int max_num_output_bins = max_levels - 1;
-
-      constexpr int PRIVATIZED_SMEM_BINS = 256;
-
-      detail::histogram::dispatch_histogram<
-        NUM_CHANNELS,
-        NUM_ACTIVE_CHANNELS,
-        PRIVATIZED_SMEM_BINS,
-        SampleIteratorT,
-        CounterT,
-        UpperLevelArrayT,
-        LowerLevelArrayT,
-        OffsetT,
-        true, // IsDeviceInit
-        true, // IsEven
-        true, // IsByteSample
-        MaxPolicyT,
-        KernelSource,
-        KernelLauncherFactory>
-        dispatch{
-          d_temp_storage,
-          temp_storage_bytes,
-          d_samples,
-          d_output_histograms,
-          num_privatized_levels,
-          num_output_levels,
-          upper_level,
-          lower_level,
-          max_num_output_bins,
-          num_row_pixels,
-          num_rows,
-          row_stride_samples,
-          stream,
-          kernel_source,
-          launcher_factory};
-
-      error = CubDebug(max_policy.Invoke(ptx_version, dispatch));
-      if (cudaSuccess != error)
-      {
-        break;
-      }
-    } while (0);
-
-    return error;
-  }
-
   //---------------------------------------------------------------------
   // Default (host-init) dispatch entrypoints
   // These methods initialize decode operators on the host before kernel launch.
@@ -1841,6 +1163,700 @@ public:
           num_output_levels,
           output_decode_op,
           privatized_decode_op,
+          max_num_output_bins,
+          num_row_pixels,
+          num_rows,
+          row_stride_samples,
+          stream,
+          kernel_source,
+          launcher_factory};
+
+      error = CubDebug(max_policy.Invoke(ptx_version, dispatch));
+      if (cudaSuccess != error)
+      {
+        break;
+      }
+    } while (0);
+
+    return error;
+  }
+
+  // Dispatch routines for device-side decode operator initialization. These
+  // differ from the default dispatch routines in that they initialize the
+  // decode operators inside the kernel from level arrays, instead of
+  // initializing them on the host, but they are otherwise the same. This is
+  // needed for c.parallel, since we cannot instantiate the Transforms class on
+  // the host, as SampleT and LevelT are type erased. Another change needed is
+  // that the level arrays are now templates instead of concrete
+  // ::cuda::std::array types, since we are passing indirect_args from
+  // c.parallel.
+  //
+  // Initializing the decode operators inside the kernel results in some
+  // regressions (and some performance improvements) in the benchmark, which
+  // indicates that we need to re-tune the algorithm. This is why we kept the
+  // two dispatch paths (host init and device init) separate. We should think
+  // about merging them back together later on.
+
+  /**
+   * Dispatch routine for HistogramRange with device-side decode operator initialization,
+   * specialized for sample types larger than 8bit.
+   * This variant initializes the decode operators inside the kernel from level arrays.
+   *
+   * @param d_temp_storage
+   *   Device-accessible allocation of temporary storage.
+   *   When nullptr, the required allocation size is written to `temp_storage_bytes` and
+   *   no work is done.
+   *
+   * @param temp_storage_bytes
+   *   Reference to size in bytes of `d_temp_storage` allocation
+   *
+   * @param d_samples
+   *   The pointer to the multi-channel input sequence of data samples.
+   *   The samples from different channels are assumed to be interleaved
+   *   (e.g., an array of 32-bit pixels where each pixel consists of four RGBA 8-bit samples).
+   *
+   * @param d_output_histograms
+   *   The pointers to the histogram counter output arrays, one for each active channel.
+   *   For channel<sub><em>i</em></sub>, the allocation length of `d_histograms[i]` should be
+   *   `num_output_levels[i] - 1`.
+   *
+   * @param num_output_levels
+   *   The number of boundaries (levels) for delineating histogram samples in each active channel.
+   *   Implies that the number of bins for channel<sub><em>i</em></sub> is
+   *   `num_output_levels[i] - 1`.
+   *
+   * @param d_levels
+   *   The pointers to the arrays of boundaries (levels), one for each active channel.
+   *   Bin ranges are defined by consecutive boundary pairings: lower sample value boundaries are
+   *   inclusive and upper sample value boundaries are exclusive.
+   *
+   * @param num_row_pixels
+   *   The number of multi-channel pixels per row in the region of interest
+   *
+   * @param num_rows
+   *   The number of rows in the region of interest
+   *
+   * @param row_stride_samples
+   *   The number of samples between starts of consecutive rows in the region of interest
+   *
+   * @param stream
+   *   CUDA stream to launch kernels within. Default is stream<sub>0</sub>.
+   */
+  template <typename MaxPolicyT = typename ::cuda::std::_If<
+              ::cuda::std::is_void_v<PolicyHub>,
+              /* fallback_policy_hub */
+              detail::histogram::policy_hub<SampleT, CounterT, NUM_CHANNELS, NUM_ACTIVE_CHANNELS, /* isEven */ 0>,
+              PolicyHub>::MaxPolicy,
+            typename NumOutputLevelsArrayT = ::cuda::std::array<int, NUM_ACTIVE_CHANNELS>,
+            typename LevelsArrayT          = ::cuda::std::array<const LevelT*, NUM_ACTIVE_CHANNELS>>
+  CUB_RUNTIME_FUNCTION static cudaError_t __dispatch_range_device_init(
+    void* d_temp_storage,
+    size_t& temp_storage_bytes,
+    SampleIteratorT d_samples,
+    ::cuda::std::array<CounterT*, NUM_ACTIVE_CHANNELS> d_output_histograms,
+    NumOutputLevelsArrayT num_output_levels,
+    LevelsArrayT d_levels,
+    OffsetT num_row_pixels,
+    OffsetT num_rows,
+    OffsetT row_stride_samples,
+    cudaStream_t stream,
+    ::cuda::std::false_type /*is_byte_sample*/,
+    KernelSource kernel_source             = {},
+    KernelLauncherFactory launcher_factory = {},
+    MaxPolicyT max_policy                  = {})
+  {
+    cudaError error = cudaSuccess;
+
+    do
+    {
+      // Get PTX version
+      int ptx_version = 0;
+      error           = CubDebug(launcher_factory.PtxVersion(ptx_version));
+      if (cudaSuccess != error)
+      {
+        break;
+      }
+
+      int max_levels = num_output_levels[0];
+
+      for (int channel = 0; channel < NUM_ACTIVE_CHANNELS; ++channel)
+      {
+        if (num_output_levels[channel] > max_levels)
+        {
+          max_levels = num_output_levels[channel];
+        }
+      }
+      int max_num_output_bins = max_levels - 1;
+
+      // Dispatch
+      if (max_num_output_bins > detail::histogram::MAX_PRIVATIZED_SMEM_BINS)
+      {
+        // Too many bins to keep in shared memory.
+        constexpr int PRIVATIZED_SMEM_BINS = 0;
+
+        detail::histogram::dispatch_histogram<
+          NUM_CHANNELS,
+          NUM_ACTIVE_CHANNELS,
+          PRIVATIZED_SMEM_BINS,
+          SampleIteratorT,
+          CounterT,
+          NumOutputLevelsArrayT,
+          LevelsArrayT,
+          OffsetT,
+          true, // IsDeviceInit
+          false, // IsEven
+          false, // IsByteSample
+          MaxPolicyT,
+          KernelSource,
+          KernelLauncherFactory>
+          dispatch{
+            d_temp_storage,
+            temp_storage_bytes,
+            d_samples,
+            d_output_histograms,
+            num_output_levels,
+            num_output_levels,
+            num_output_levels,
+            d_levels,
+            max_num_output_bins,
+            num_row_pixels,
+            num_rows,
+            row_stride_samples,
+            stream,
+            kernel_source,
+            launcher_factory};
+
+        error = CubDebug(max_policy.Invoke(ptx_version, dispatch));
+        if (cudaSuccess != error)
+        {
+          break;
+        }
+      }
+      else
+      {
+        // Dispatch shared-privatized approach
+        constexpr int PRIVATIZED_SMEM_BINS = detail::histogram::MAX_PRIVATIZED_SMEM_BINS;
+
+        detail::histogram::dispatch_histogram<
+          NUM_CHANNELS,
+          NUM_ACTIVE_CHANNELS,
+          PRIVATIZED_SMEM_BINS,
+          SampleIteratorT,
+          CounterT,
+          NumOutputLevelsArrayT,
+          LevelsArrayT,
+          OffsetT,
+          true, // IsDeviceInit
+          false, // IsEven
+          false, // IsByteSample
+          MaxPolicyT,
+          KernelSource,
+          KernelLauncherFactory>
+          dispatch{
+            d_temp_storage,
+            temp_storage_bytes,
+            d_samples,
+            d_output_histograms,
+            num_output_levels,
+            num_output_levels,
+            num_output_levels,
+            d_levels,
+            max_num_output_bins,
+            num_row_pixels,
+            num_rows,
+            row_stride_samples,
+            stream,
+            kernel_source,
+            launcher_factory};
+
+        error = CubDebug(max_policy.Invoke(ptx_version, dispatch));
+        if (cudaSuccess != error)
+        {
+          break;
+        }
+      }
+    } while (0);
+
+    return error;
+  }
+
+  /**
+   * Dispatch routine for HistogramRange with device-side decode operator initialization,
+   * specialized for 8-bit sample types
+   * (computes 256-bin privatized histograms and then reduces to user-specified levels).
+   * This variant initializes the decode operators inside the kernel from level arrays.
+   *
+   * @param d_temp_storage
+   *   Device-accessible allocation of temporary storage.
+   *   When nullptr, the required allocation size is written to `temp_storage_bytes` and
+   *   no work is done.
+   *
+   * @param temp_storage_bytes
+   *   Reference to size in bytes of `d_temp_storage` allocation
+   *
+   * @param d_samples
+   *   The pointer to the multi-channel input sequence of data samples.
+   *   The samples from different channels are assumed to be interleaved
+   *   (e.g., an array of 32-bit pixels where each pixel consists of four RGBA 8-bit samples).
+   *
+   * @param d_output_histograms
+   *   The pointers to the histogram counter output arrays, one for each active channel.
+   *   For channel<sub><em>i</em></sub>, the allocation length of
+   *   `d_histograms[i]` should be `num_output_levels[i] - 1`.
+   *
+   * @param num_output_levels
+   *   The number of boundaries (levels) for delineating histogram samples in each active channel.
+   *   Implies that the number of bins for channel<sub><em>i</em></sub> is
+   *   `num_output_levels[i] - 1`.
+   *
+   * @param d_levels
+   *   The pointers to the arrays of boundaries (levels), one for each active channel.
+   *   Bin ranges are defined by consecutive boundary pairings: lower sample value boundaries are
+   *   inclusive and upper sample value boundaries are exclusive.
+   *
+   * @param num_row_pixels
+   *   The number of multi-channel pixels per row in the region of interest
+   *
+   * @param num_rows
+   *   The number of rows in the region of interest
+   *
+   * @param row_stride_samples
+   *   The number of samples between starts of consecutive rows in the region of interest
+   *
+   * @param stream
+   *   CUDA stream to launch kernels within.  Default is stream<sub>0</sub>.
+   *
+   */
+  template <typename MaxPolicyT = typename ::cuda::std::_If<
+              ::cuda::std::is_void_v<PolicyHub>,
+              /* fallback_policy_hub */
+              detail::histogram::policy_hub<SampleT, CounterT, NUM_CHANNELS, NUM_ACTIVE_CHANNELS, /* isEven */ 0>,
+              PolicyHub>::MaxPolicy,
+            typename NumOutputLevelsArrayT = ::cuda::std::array<int, NUM_ACTIVE_CHANNELS>,
+            typename LevelsArrayT          = ::cuda::std::array<const LevelT*, NUM_ACTIVE_CHANNELS>>
+  CUB_RUNTIME_FUNCTION static cudaError_t __dispatch_range_device_init(
+    void* d_temp_storage,
+    size_t& temp_storage_bytes,
+    SampleIteratorT d_samples,
+    ::cuda::std::array<CounterT*, NUM_ACTIVE_CHANNELS> d_output_histograms,
+    NumOutputLevelsArrayT num_output_levels,
+    LevelsArrayT d_levels,
+    OffsetT num_row_pixels,
+    OffsetT num_rows,
+    OffsetT row_stride_samples,
+    cudaStream_t stream,
+    ::cuda::std::true_type /*is_byte_sample*/,
+    KernelSource kernel_source             = {},
+    KernelLauncherFactory launcher_factory = {},
+    MaxPolicyT max_policy                  = {})
+  {
+    cudaError error = cudaSuccess;
+
+    do
+    {
+      // Get PTX version
+      int ptx_version = 0;
+      error           = CubDebug(launcher_factory.PtxVersion(ptx_version));
+      if (cudaSuccess != error)
+      {
+        break;
+      }
+
+      ::cuda::std::array<int, NUM_ACTIVE_CHANNELS> num_privatized_levels;
+      int max_levels = num_output_levels[0]; // Maximum number of levels in any channel
+
+      for (int channel = 0; channel < NUM_ACTIVE_CHANNELS; ++channel)
+      {
+        num_privatized_levels[channel] = 257;
+
+        if (num_output_levels[channel] > max_levels)
+        {
+          max_levels = num_output_levels[channel];
+        }
+      }
+      int max_num_output_bins = max_levels - 1;
+
+      constexpr int PRIVATIZED_SMEM_BINS = 256;
+
+      detail::histogram::dispatch_histogram<
+        NUM_CHANNELS,
+        NUM_ACTIVE_CHANNELS,
+        PRIVATIZED_SMEM_BINS,
+        SampleIteratorT,
+        CounterT,
+        NumOutputLevelsArrayT,
+        LevelsArrayT,
+        OffsetT,
+        true, // IsDeviceInit
+        false, // IsEven
+        true, // IsByteSample
+        MaxPolicyT,
+        KernelSource,
+        KernelLauncherFactory>
+        dispatch{
+          d_temp_storage,
+          temp_storage_bytes,
+          d_samples,
+          d_output_histograms,
+          num_privatized_levels,
+          num_output_levels,
+          num_output_levels,
+          d_levels,
+          max_num_output_bins,
+          num_row_pixels,
+          num_rows,
+          row_stride_samples,
+          stream,
+          kernel_source,
+          launcher_factory};
+
+      error = CubDebug(max_policy.Invoke(ptx_version, dispatch));
+      if (cudaSuccess != error)
+      {
+        break;
+      }
+    } while (0);
+
+    return error;
+  }
+
+  /**
+   * Dispatch routine for HistogramEven with device-side decode operator initialization,
+   * specialized for sample types larger than 8-bit.
+   * This variant initializes the decode operators inside the kernel from level bounds.
+   *
+   * @param d_temp_storage
+   *   Device-accessible allocation of temporary storage.
+   *   When nullptr, the required allocation size is written to
+   *   `temp_storage_bytes` and no work is done.
+   *
+   * @param temp_storage_bytes
+   *   Reference to size in bytes of `d_temp_storage` allocation
+   *
+   * @param d_samples
+   *   The pointer to the input sequence of sample items.
+   *   The samples from different channels are assumed to be interleaved
+   *   (e.g., an array of 32-bit pixels where each pixel consists of four RGBA 8-bit samples).
+   *
+   * @param d_output_histograms
+   *   The pointers to the histogram counter output arrays, one for each active channel.
+   *   For channel<sub><em>i</em></sub>, the allocation length of `d_histograms[i]` should be
+   *   `num_output_levels[i] - 1`.
+   *
+   * @param num_output_levels
+   *   The number of bin level boundaries for delineating histogram samples in each active channel.
+   *   Implies that the number of bins for channel<sub><em>i</em></sub> is
+   *   `num_output_levels[i] - 1`.
+   *
+   * @param lower_level
+   *   The lower sample value bound (inclusive) for the lowest histogram bin in each active channel.
+   *
+   * @param upper_level
+   *   The upper sample value bound (exclusive) for the highest histogram bin in each active
+   * channel.
+   *
+   * @param num_row_pixels
+   *   The number of multi-channel pixels per row in the region of interest
+   *
+   * @param num_rows
+   *   The number of rows in the region of interest
+   *
+   * @param row_stride_samples
+   *   The number of samples between starts of consecutive rows in the region of interest
+   *
+   * @param stream
+   *   CUDA stream to launch kernels within.  Default is stream<sub>0</sub>.
+   *
+   */
+  template <typename MaxPolicyT = typename ::cuda::std::_If<
+              ::cuda::std::is_void_v<PolicyHub>,
+              /* fallback_policy_hub */
+              detail::histogram::policy_hub<SampleT, CounterT, NUM_CHANNELS, NUM_ACTIVE_CHANNELS, /* isEven */ 1>,
+              PolicyHub>::MaxPolicy,
+            typename LowerLevelArrayT = ::cuda::std::array<LevelT, NUM_ACTIVE_CHANNELS>,
+            typename UpperLevelArrayT = ::cuda::std::array<LevelT, NUM_ACTIVE_CHANNELS>>
+  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t __dispatch_even_device_init(
+    void* d_temp_storage,
+    size_t& temp_storage_bytes,
+    SampleIteratorT d_samples,
+    ::cuda::std::array<CounterT*, NUM_ACTIVE_CHANNELS> d_output_histograms,
+    ::cuda::std::array<int, NUM_ACTIVE_CHANNELS> num_output_levels,
+    LowerLevelArrayT lower_level,
+    UpperLevelArrayT upper_level,
+    OffsetT num_row_pixels,
+    OffsetT num_rows,
+    OffsetT row_stride_samples,
+    cudaStream_t stream,
+    ::cuda::std::false_type /*is_byte_sample*/,
+    KernelSource kernel_source             = {},
+    KernelLauncherFactory launcher_factory = {},
+    MaxPolicyT max_policy                  = {})
+  {
+    cudaError error = cudaSuccess;
+
+    do
+    {
+      // Get PTX version
+      int ptx_version = 0;
+      error           = CubDebug(launcher_factory.PtxVersion(ptx_version));
+      if (cudaSuccess != error)
+      {
+        break;
+      }
+
+      int max_levels = num_output_levels[0];
+
+      for (int channel = 0; channel < NUM_ACTIVE_CHANNELS; ++channel)
+      {
+        int num_levels = num_output_levels[channel];
+        if (kernel_source.MayOverflow(num_levels - 1, upper_level, lower_level, channel))
+        {
+          // Make sure to also return a reasonable value for `temp_storage_bytes` in case of
+          // an overflow of the bin computation, in which case a subsequent algorithm
+          // invocation will also fail
+          if (!d_temp_storage)
+          {
+            temp_storage_bytes = 1U;
+          }
+          return cudaErrorInvalidValue;
+        }
+
+        if (num_levels > max_levels)
+        {
+          max_levels = num_levels;
+        }
+      }
+      int max_num_output_bins = max_levels - 1;
+
+      if (max_num_output_bins > detail::histogram::MAX_PRIVATIZED_SMEM_BINS)
+      {
+        // Dispatch shared-privatized approach
+        constexpr int PRIVATIZED_SMEM_BINS = 0;
+
+        detail::histogram::dispatch_histogram<
+          NUM_CHANNELS,
+          NUM_ACTIVE_CHANNELS,
+          PRIVATIZED_SMEM_BINS,
+          SampleIteratorT,
+          CounterT,
+          UpperLevelArrayT,
+          LowerLevelArrayT,
+          OffsetT,
+          true, // IsDeviceInit
+          true, // IsEven
+          false, // IsByteSample
+          MaxPolicyT,
+          KernelSource,
+          KernelLauncherFactory>
+          dispatch{
+            d_temp_storage,
+            temp_storage_bytes,
+            d_samples,
+            d_output_histograms,
+            num_output_levels,
+            num_output_levels,
+            upper_level,
+            lower_level,
+            max_num_output_bins,
+            num_row_pixels,
+            num_rows,
+            row_stride_samples,
+            stream,
+            kernel_source,
+            launcher_factory};
+
+        error = CubDebug(max_policy.Invoke(ptx_version, dispatch));
+        if (cudaSuccess != error)
+        {
+          break;
+        }
+      }
+      else
+      {
+        // Dispatch shared-privatized approach
+        constexpr int PRIVATIZED_SMEM_BINS = detail::histogram::MAX_PRIVATIZED_SMEM_BINS;
+
+        detail::histogram::dispatch_histogram<
+          NUM_CHANNELS,
+          NUM_ACTIVE_CHANNELS,
+          PRIVATIZED_SMEM_BINS,
+          SampleIteratorT,
+          CounterT,
+          UpperLevelArrayT,
+          LowerLevelArrayT,
+          OffsetT,
+          true, // IsDeviceInit
+          true, // IsEven
+          false, // IsByteSample
+          MaxPolicyT,
+          KernelSource,
+          KernelLauncherFactory>
+          dispatch{
+            d_temp_storage,
+            temp_storage_bytes,
+            d_samples,
+            d_output_histograms,
+            num_output_levels,
+            num_output_levels,
+            upper_level,
+            lower_level,
+            max_num_output_bins,
+            num_row_pixels,
+            num_rows,
+            row_stride_samples,
+            stream,
+            kernel_source,
+            launcher_factory};
+
+        error = CubDebug(max_policy.Invoke(ptx_version, dispatch));
+        if (cudaSuccess != error)
+        {
+          break;
+        }
+      }
+    } while (0);
+
+    return error;
+  }
+
+  /**
+   * Dispatch routine for HistogramEven with device-side decode operator initialization,
+   * specialized for 8-bit sample types
+   * (computes 256-bin privatized histograms and then reduces to user-specified levels).
+   * This variant initializes the decode operators inside the kernel from level bounds.
+   *
+   * @param d_temp_storage
+   *   Device-accessible allocation of temporary storage.
+   *   When nullptr, the required allocation size is written to `temp_storage_bytes` and
+   *   no work is done.
+   *
+   * @param temp_storage_bytes
+   *   Reference to size in bytes of `d_temp_storage` allocation
+   *
+   * @param d_samples
+   *   The pointer to the input sequence of sample items. The samples from different channels are
+   *   assumed to be interleaved (e.g., an array of 32-bit pixels where each pixel consists of
+   *   four RGBA 8-bit samples).
+   *
+   * @param d_output_histograms
+   *   The pointers to the histogram counter output arrays, one for each active channel.
+   *   For channel<sub><em>i</em></sub>, the allocation length of `d_histograms[i]` should be
+   *   `num_output_levels[i] - 1`.
+   *
+   * @param num_output_levels
+   *   The number of bin level boundaries for delineating histogram samples in each active channel.
+   *   Implies that the number of bins for channel<sub><em>i</em></sub> is
+   *   `num_output_levels[i] - 1`.
+   *
+   * @param lower_level
+   *   The lower sample value bound (inclusive) for the lowest histogram bin in each active channel.
+   *
+   * @param upper_level
+   *   The upper sample value bound (exclusive) for the highest histogram bin in each active
+   * channel.
+   *
+   * @param num_row_pixels
+   *   The number of multi-channel pixels per row in the region of interest
+   *
+   * @param num_rows
+   *   The number of rows in the region of interest
+   *
+   * @param row_stride_samples
+   *   The number of samples between starts of consecutive rows in the region of interest
+   *
+   * @param stream
+   *   CUDA stream to launch kernels within.  Default is stream<sub>0</sub>.
+   *
+   */
+  template <typename MaxPolicyT = typename ::cuda::std::_If<
+              ::cuda::std::is_void_v<PolicyHub>,
+              /* fallback_policy_hub */
+              detail::histogram::policy_hub<SampleT, CounterT, NUM_CHANNELS, NUM_ACTIVE_CHANNELS, /* isEven */ 1>,
+              PolicyHub>::MaxPolicy,
+            typename LowerLevelArrayT = ::cuda::std::array<LevelT, NUM_ACTIVE_CHANNELS>,
+            typename UpperLevelArrayT = ::cuda::std::array<LevelT, NUM_ACTIVE_CHANNELS>>
+  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t __dispatch_even_device_init(
+    void* d_temp_storage,
+    size_t& temp_storage_bytes,
+    SampleIteratorT d_samples,
+    ::cuda::std::array<CounterT*, NUM_ACTIVE_CHANNELS> d_output_histograms,
+    ::cuda::std::array<int, NUM_ACTIVE_CHANNELS> num_output_levels,
+    LowerLevelArrayT lower_level,
+    UpperLevelArrayT upper_level,
+    OffsetT num_row_pixels,
+    OffsetT num_rows,
+    OffsetT row_stride_samples,
+    cudaStream_t stream,
+    ::cuda::std::true_type /*is_byte_sample*/,
+    KernelSource kernel_source             = {},
+    KernelLauncherFactory launcher_factory = {},
+    MaxPolicyT max_policy                  = {})
+  {
+    cudaError error = cudaSuccess;
+
+    do
+    {
+      // Get PTX version
+      int ptx_version = 0;
+      error           = CubDebug(launcher_factory.PtxVersion(ptx_version));
+      if (cudaSuccess != error)
+      {
+        break;
+      }
+
+      ::cuda::std::array<int, NUM_ACTIVE_CHANNELS> num_privatized_levels;
+      int max_levels = num_output_levels[0];
+
+      for (int channel = 0; channel < NUM_ACTIVE_CHANNELS; ++channel)
+      {
+        num_privatized_levels[channel] = 257;
+
+        int num_levels = num_output_levels[channel];
+        if (kernel_source.MayOverflow(num_levels - 1, upper_level, lower_level, channel))
+        {
+          // Make sure to also return a reasonable value for `temp_storage_bytes` in case of
+          // an overflow of the bin computation, in which case a subsequent algorithm
+          // invocation will also fail
+          if (!d_temp_storage)
+          {
+            temp_storage_bytes = 1U;
+          }
+          return cudaErrorInvalidValue;
+        }
+
+        if (num_levels > max_levels)
+        {
+          max_levels = num_levels;
+        }
+      }
+      int max_num_output_bins = max_levels - 1;
+
+      constexpr int PRIVATIZED_SMEM_BINS = 256;
+
+      detail::histogram::dispatch_histogram<
+        NUM_CHANNELS,
+        NUM_ACTIVE_CHANNELS,
+        PRIVATIZED_SMEM_BINS,
+        SampleIteratorT,
+        CounterT,
+        UpperLevelArrayT,
+        LowerLevelArrayT,
+        OffsetT,
+        true, // IsDeviceInit
+        true, // IsEven
+        true, // IsByteSample
+        MaxPolicyT,
+        KernelSource,
+        KernelLauncherFactory>
+        dispatch{
+          d_temp_storage,
+          temp_storage_bytes,
+          d_samples,
+          d_output_histograms,
+          num_privatized_levels,
+          num_output_levels,
+          upper_level,
+          lower_level,
           max_num_output_bins,
           num_row_pixels,
           num_rows,

@@ -482,7 +482,7 @@ CUresult cccl_device_histogram_even_impl(
       histogram::histogram_kernel_source, // KernelSource
       cub::detail::CudaDriverLauncherFactory // KernelLauncherFactory
       >::
-      DispatchEvenDeviceInit(
+      __dispatch_even_device_init(
         d_temp_storage,
         *temp_storage_bytes,
         d_samples,
