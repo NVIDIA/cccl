@@ -144,33 +144,11 @@ struct on_t
   };
 
   template <class _Sch, class _Sndr, class... _Closure>
-  struct _CCCL_TYPE_VISIBILITY_DEFAULT __attrs_t;
-
-  template <class _Sch, class _Sndr>
-  struct _CCCL_TYPE_VISIBILITY_DEFAULT __attrs_t<_Sch, _Sndr>
-  {
-    template <class _Env>
-    using __new_sndr_t = __call_result_t<__lower_sndr_fn, __sndr_ref<const _Sndr&>, _Sch, __scheduler_of_t<_Env>>;
-
-    _CCCL_EXEC_CHECK_DISABLE
-    _CCCL_TEMPLATE(class _Tag, class _Env)
-    _CCCL_REQUIRES(__queryable_with<env_of_t<__new_sndr_t<_Env>>, _Tag, _Env>)
-    [[nodiscard]] _CCCL_API constexpr auto query(_Tag, const _Env& __env) const
-      noexcept(__nothrow_queryable_with<env_of_t<__new_sndr_t<_Env>>, _Tag, _Env>) -> decltype(auto)
-    {
-      auto __tmp_sndr = __lower_sndr_fn()(__sndr_ref(__self_->__sndr_), __self_->__sch_, get_scheduler(__env));
-      return execution::get_env(__tmp_sndr).query(_Tag(), __env);
-    }
-
-    const __sndr_t<_Sch, _Sndr>* __self_;
-  };
-
-  template <class _Sch, class _Sndr, class _Closure>
-  struct _CCCL_TYPE_VISIBILITY_DEFAULT __attrs_t<_Sch, _Sndr, _Closure>
+  struct _CCCL_TYPE_VISIBILITY_DEFAULT __attrs_t
   {
     template <class _Env>
     using __new_sndr_t =
-      __call_result_t<__lower_sndr_fn, __sndr_ref<const _Sndr&>, _Sch, __scheduler_of_t<_Env>, const _Closure&>;
+      __call_result_t<__lower_sndr_fn, __sndr_ref<const _Sndr&>, _Sch, __scheduler_of_t<_Env>, const _Closure&...>;
 
     _CCCL_EXEC_CHECK_DISABLE
     _CCCL_TEMPLATE(class _Tag, class _Env)
@@ -178,15 +156,20 @@ struct on_t
     [[nodiscard]] _CCCL_API constexpr auto query(_Tag, const _Env& __env) const
       noexcept(__nothrow_queryable_with<env_of_t<__new_sndr_t<_Env>>, _Tag, _Env>) -> decltype(auto)
     {
-      auto __tmp_sndr = __lower_sndr_fn()(
-        __sndr_ref(__self_->__sndr_),
-        __self_->__sch_closure_.__sch_,
-        get_scheduler(__env),
-        __self_->__sch_closure_.__closure_);
-      return execution::get_env(__tmp_sndr).query(_Tag(), __env);
+      if constexpr (sizeof...(_Closure) == 0)
+      {
+        auto __tmp_sndr = __lower_sndr_fn()(__sndr_ref(__self_->__sndr_), __self_->__sch_, get_scheduler(__env));
+        return execution::get_env(__tmp_sndr).query(_Tag(), __env);
+      }
+      else
+      {
+        auto& [__sch, __closure] = __self_->__sch_closure_;
+        auto __tmp_sndr = __lower_sndr_fn()(__sndr_ref(__self_->__sndr_), __sch, get_scheduler(__env), __closure);
+        return execution::get_env(__tmp_sndr).query(_Tag(), __env);
+      }
     }
 
-    const __sndr_t<_Sch, _Sndr, _Closure>* __self_;
+    const __sndr_t<_Sch, _Sndr, _Closure...>* __self_;
   };
 
 public:
