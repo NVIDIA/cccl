@@ -500,7 +500,9 @@ struct WarpReduceShfl
   _CCCL_DEVICE _CCCL_FORCEINLINE T Reduce(T input, int valid_items, ReductionOp reduction_op)
   {
     // Dispatch to more efficient intrinsics when applicable
-    if constexpr (ALL_LANES_VALID && ::cuda::std::is_integral_v<T> && sizeof(T) <= sizeof(unsigned))
+    if constexpr (ALL_LANES_VALID && ::cuda::std::is_integral_v<T> && sizeof(T) <= sizeof(unsigned)
+                  && (is_cuda_minimum_maximum_v<ReductionOp, T> || is_cuda_std_plus_v<ReductionOp, T>
+                      || is_cuda_std_bitwise_v<ReductionOp, T>) )
     {
       NV_IF_TARGET(NV_PROVIDES_SM_80, (return reduce_op_sync(input, reduction_op);))
     }
