@@ -158,7 +158,7 @@ public:
   CUB_RUNTIME_FUNCTION constexpr static bool
   CanVectorize(int vec_size, const RandomAccessIteratorOut& out, const RandomAccessIteratorsIn&... in)
   {
-    return is_pointer_aligned(out, sizeof(it_value_t<RandomAccessIteratorOut>) * vec_size)
+    return is_pointer_aligned(out, size_of<it_value_t<RandomAccessIteratorOut>> * vec_size)
         && (is_pointer_aligned(in, sizeof(it_value_t<RandomAccessIteratorsIn>) * vec_size) && ...);
   }
 };

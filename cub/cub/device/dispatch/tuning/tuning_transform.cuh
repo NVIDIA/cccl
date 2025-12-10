@@ -358,7 +358,7 @@ struct arch_policies
     bool all_inputs_contiguous                  = true;
     bool all_input_values_trivially_reloc       = true;
     bool can_memcpy_contiguous_inputs           = true;
-    bool all_value_types_have_power_of_two_size = ::cuda::is_power_of_two(output.value_type_size);
+    bool all_value_types_have_power_of_two_size = ::cuda::is_power_of_two(::cuda::std::max(1, output.value_type_size));
     for (const auto& input : inputs)
     {
       all_inputs_contiguous &= input.is_contiguous;
@@ -378,7 +378,7 @@ struct arch_policies
       const int alignment        = bulk_copy_alignment(arch);
 
       const auto prefetch   = prefetch_policy{256};
-      const auto vectorized = vectorized_policy_for_filling(arch, output.value_type_size);
+      const auto vectorized = vectorized_policy_for_filling(arch, ::cuda::std::max(1, output.value_type_size));
       const auto async      = async_copy_policy{async_block_size, alignment};
 
       // We cannot use the architecture-specific amount of SMEM here instead of max_smem_per_block, because this is not
@@ -434,7 +434,7 @@ struct arch_policies
     {
       const int block_threads = 256;
       const auto prefetch     = prefetch_policy{block_threads};
-      const auto vectorized   = vectorized_policy_for_filling(arch, output.value_type_size);
+      const auto vectorized   = vectorized_policy_for_filling(arch, ::cuda::std::max(1, output.value_type_size));
       const auto async        = async_copy_policy{block_threads, ldgsts_size_and_align};
 
       // We cannot use the architecture-specific amount of SMEM here instead of max_smem_per_block, because this is not
@@ -466,7 +466,7 @@ struct arch_policies
       min_bif,
       fallback_to_prefetch ? Algorithm::prefetch : Algorithm::vectorized,
       prefetch_policy{256},
-      vectorized_policy_for_filling(::cuda::arch_id::sm_60, output.value_type_size),
+      vectorized_policy_for_filling(::cuda::arch_id::sm_60, ::cuda::std::max(1, output.value_type_size)),
       async_copy_policy{}, // never used
     };
   }
