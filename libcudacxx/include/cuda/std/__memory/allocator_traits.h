@@ -332,7 +332,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT allocator_traits
   }
 
   [[nodiscard]] _CCCL_API inline _CCCL_CONSTEXPR_CXX20 static pointer
-  allocate(allocator_type& __a, size_type __n, const_void_pointer __hint)
+  allocate(allocator_type& __a, size_type __n, [[maybe_unused]] const_void_pointer __hint)
   {
     if constexpr (__has_allocate_hint<_Alloc, size_type, const_void_pointer>)
     {
@@ -350,7 +350,8 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT allocator_traits
   }
 
   template <class _Tp, class... _Args>
-  _CCCL_API inline _CCCL_CONSTEXPR_CXX20 static void construct(allocator_type& __a, _Tp* __p, _Args&&... __args)
+  _CCCL_API inline _CCCL_CONSTEXPR_CXX20 static void
+  construct([[maybe_unused]] allocator_type& __a, _Tp* __p, _Args&&... __args)
   {
     if constexpr (__has_construct<allocator_type, _Tp*, _Args...>)
     {
@@ -363,7 +364,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT allocator_traits
   }
 
   template <class _Tp>
-  _CCCL_API inline _CCCL_CONSTEXPR_CXX20 static void destroy(allocator_type& __a, _Tp* __p) noexcept
+  _CCCL_API inline _CCCL_CONSTEXPR_CXX20 static void destroy([[maybe_unused]] allocator_type& __a, _Tp* __p) noexcept
   {
     if constexpr (__has_destroy<allocator_type, _Tp*>)
     {
@@ -375,7 +376,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT allocator_traits
     }
   }
 
-  _CCCL_API inline _CCCL_CONSTEXPR_CXX20 static size_type max_size(const allocator_type& __a) noexcept
+  _CCCL_API inline _CCCL_CONSTEXPR_CXX20 static size_type max_size([[maybe_unused]] const allocator_type& __a) noexcept
   {
     if constexpr (__has_max_size<const _Alloc>)
     {
