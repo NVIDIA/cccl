@@ -72,7 +72,6 @@ class _SegmentedReduce:
 
         # Compile the op with value types
         value_type = get_value_type(h_init)
-
         self.op_cccl = op.compile((value_type, value_type), value_type)
 
         self.build_result = call_build(

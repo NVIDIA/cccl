@@ -26,7 +26,6 @@ class _UnaryTransform:
     ):
         self.d_in_cccl = cccl.to_cccl_input_iter(d_in)
         self.d_out_cccl = cccl.to_cccl_output_iter(d_out)
-        self.op = op
 
         # Compile the op with input/output types
         in_type = cccl.get_value_type(d_in)

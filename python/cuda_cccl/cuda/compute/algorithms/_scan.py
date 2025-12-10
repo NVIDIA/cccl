@@ -60,7 +60,6 @@ class _Scan:
     ):
         self.d_in_cccl = cccl.to_cccl_input_iter(d_in)
         self.d_out_cccl = cccl.to_cccl_output_iter(d_out)
-        self.op = op
 
         self.init_kind = get_init_kind(init_value)
 
