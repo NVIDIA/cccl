@@ -22,12 +22,12 @@
 
 #include <cuda/std/__bit/countl.h>
 #include <cuda/std/__bit/integral.h>
+#include <cuda/std/__limits/numeric_limits.h>
 #include <cuda/std/__random/is_valid.h>
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/make_unsigned.h>
 #include <cuda/std/cstddef>
 #include <cuda/std/cstdint>
-#include <cuda/std/limits>
 
 #include <cuda/std/__cccl/prologue.h>
 
