@@ -14,7 +14,6 @@
 #include <cuda/std/detail/__config>
 
 #include <cuda/__cccl_config>
-#include <cuda/__driver/driver_api.h>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -24,6 +23,8 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/__device/all_devices.h>
+#include <cuda/__device/device_ref.h>
 #include <cuda/__mdspan/host_device_mdspan.h>
 #include <cuda/__memory_resource/device_memory_pool.h>
 #include <cuda/__memory_resource/shared_resource.h>

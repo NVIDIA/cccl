@@ -26,11 +26,6 @@
 
 #include <cub/device/dispatch/dispatch_copy_mdspan.cuh>
 
-#include <cuda/__device/all_devices.h>
-#include <cuda/__device/device_ref.h>
-#include <cuda/__mdspan/host_device_mdspan.h>
-#include <cuda/__memory_resource/device_memory_pool.h>
-#include <cuda/__memory_resource/shared_resource.h>
 #include <cuda/std/__utility/exchange.h>
 #include <cuda/std/array>
 #include <cuda/std/span>
@@ -50,6 +45,11 @@ void __copy(T&& src, R&& dst, ::cudaStream_t stream)
 template <typename _Alloc>
 struct __construct_allocator
 {
+  [[nodiscard]] _CCCL_HOST_API static _Alloc __do()
+  {
+    return _Alloc{};
+  }
+
   [[nodiscard]] _CCCL_HOST_API static _Alloc __do(::cuda::device_ref)
   {
     return _Alloc{};
@@ -65,7 +65,7 @@ struct __construct_allocator<::cuda::mr::shared_resource<_Resource>>
   }
 };
 
-// allocator wrapper to allow initializing the allocator before allocating the memory
+// __mdarray_allocator_wrapper allows to initialize the allocator before allocating the memory
 template <typename _Allocator>
 struct __mdarray_allocator_wrapper
 {
