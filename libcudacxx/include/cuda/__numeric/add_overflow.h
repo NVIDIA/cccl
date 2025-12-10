@@ -209,7 +209,7 @@ _CCCL_API constexpr overflow_result<_ActualResult> add_overflow(const _Lhs __lhs
   // file, we can use it all the time.
 #if defined(_CCCL_BUILTIN_ADD_OVERFLOW)
 #  if _CCCL_CUDA_COMPILATION()
-  _CCCL_IF_NOT_CONSTEVAL_DEFAULT
+  if (!::cuda::std::__cccl_default_is_constant_evaluated())
 #  endif // _CCCL_CUDA_COMPILATION()
   {
     NV_IF_TARGET(NV_IS_HOST, ({
