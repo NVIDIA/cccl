@@ -50,7 +50,7 @@ public:
   public:
     using distribution_type = negative_binomial_distribution;
 
-    [[nodiscard]] _CCCL_API constexpr explicit param_type(result_type __k = 1, double __p = 0.5) noexcept
+    _CCCL_API constexpr explicit param_type(result_type __k = 1, double __p = 0.5) noexcept
         : __k_{__k}
         , __p_{__p}
     {}
