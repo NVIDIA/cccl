@@ -503,13 +503,17 @@ struct WarpReduceShfl
     if constexpr (ALL_LANES_VALID && ::cuda::std::is_integral_v<T> && sizeof(T) <= sizeof(unsigned))
     {
       NV_IF_TARGET(NV_PROVIDES_SM_80, (return reduce_op_sync(input, reduction_op);))
+
+      T output = input;
+      // Template-iterate reduction steps
+      ReduceStep(output, reduction_op, LOGICAL_WARP_THREADS - 1, constant_v<0>);
+      return output;
     }
     else
     {
       T output = input;
       // Template-iterate reduction steps
-      const int last_lane = (ALL_LANES_VALID) ? LOGICAL_WARP_THREADS - 1 : valid_items - 1;
-      ReduceStep(output, reduction_op, last_lane, constant_v<0>);
+      ReduceStep(output, reduction_op, valid_items - 1, constant_v<0>);
       return output;
     }
     _CCCL_UNREACHABLE();
