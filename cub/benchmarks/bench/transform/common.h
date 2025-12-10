@@ -31,11 +31,25 @@ struct arch_policies
     const int min_bif = cub::detail::transform::arch_to_min_bytes_in_flight(__CUDA_ARCH_LIST__);
 #  if TUNE_ALGORITHM == 0
     const auto algorithm = cub::detail::transform::Algorithm::prefetch;
-    const auto policy    = prefetch_policy{TUNE_THREADS};
+    const auto policy    = prefetch_policy{
+      TUNE_THREADS
+#    ifdef TUNE_ITEMS_PER_THREAD_NO_INPUT
+      ,
+      TUNE_ITEMS_PER_THREAD_NO_INPUT
+#    endif
+    };
     return {min_bif, algorithm, policy, {}, {}};
 #  elif TUNE_ALGORITHM == 1
     const auto algorithm = cub::detail::transform::Algorithm::vectorized;
-    const auto policy    = vectorized_policy{TUNE_THREADS, TUNE_VEC_SIZE * TUNE_VECTORS_PER_THREAD, TUNE_VEC_SIZE};
+    const auto policy    = vectorized_policy{
+      TUNE_THREADS,
+      TUNE_VEC_SIZE * TUNE_VECTORS_PER_THREAD,
+      TUNE_VEC_SIZE
+#    ifdef TUNE_ITEMS_PER_THREAD_NO_INPUT
+      ,
+      TUNE_ITEMS_PER_THREAD_NO_INPUT
+#    endif
+    };
     return {min_bif, algorithm, {}, policy, {}};
 #  elif TUNE_ALGORITHM == 2
     const auto algorithm = cub::detail::transform::Algorithm::memcpy_async;
