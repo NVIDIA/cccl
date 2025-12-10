@@ -433,9 +433,8 @@ struct policy_hub<RequiresStableAddress,
         alignment)
       > int{max_smem_per_block};
 
-    static constexpr bool is_fp16_workload =
-      (::cuda::std::is_same_v<it_value_t<RandomAccessIteratorsIn>, __half> && ...)
-      && ::cuda::std::is_same_v<it_value_t<RandomAccessIteratorOut>, __half>;
+    // static constexpr bool is_2B_workload =
+    //   ((sizeof(it_value_t<RandomAccessIteratorsIn>) == 2) && ...) && sizeof(it_value_t<RandomAccessIteratorOut>);
 
     // if each tile size is a multiple of the bulk copy and maximum value type alignments, the alignment is retained if
     // the base pointer is sufficiently aligned (the correct check would be if it's a multiple of all value types
@@ -448,7 +447,7 @@ struct policy_hub<RequiresStableAddress,
     static constexpr bool enough_threads_for_peeling = AsyncBlockSize >= alignment; // head and tail bytes
     static constexpr bool fallback_to_vectorized =
       exhaust_smem || !tile_sizes_retain_alignment || !enough_threads_for_peeling || no_input_streams
-      || !can_memcpy_all_inputs || (PtxVersion == 900 && is_fp16_workload /* vectorized kernel works better */);
+      || !can_memcpy_all_inputs || (PtxVersion == 900 && true /* vectorized kernel works better */);
 
   public:
     static constexpr auto algorithm =
