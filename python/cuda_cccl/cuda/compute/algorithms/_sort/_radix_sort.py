@@ -7,6 +7,7 @@ from ... import _bindings
 from ... import _cccl_interop as cccl
 from ..._caching import cache_with_key
 from ..._cccl_interop import call_build, set_cccl_iterator_state
+from ..._nvtx import annotate
 from ..._utils.protocols import (
     get_data_pointer,
     get_dtype,
@@ -94,6 +95,7 @@ class _RadixSort:
             decomposer_return_type,
         )
 
+    @annotate(message="_RadixSort.__call__")
     def __call__(
         self,
         temp_storage,
@@ -164,6 +166,7 @@ class _RadixSort:
         return temp_storage_bytes
 
 
+@annotate()
 @cache_with_key(make_cache_key)
 def make_radix_sort(
     d_in_keys: DeviceArrayLike | DoubleBuffer,
@@ -195,6 +198,7 @@ def make_radix_sort(
     return _RadixSort(d_in_keys, d_out_keys, d_in_values, d_out_values, order)
 
 
+@annotate()
 def radix_sort(
     d_in_keys: DeviceArrayLike | DoubleBuffer,
     d_out_keys: DeviceArrayLike | None,

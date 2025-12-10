@@ -33,6 +33,7 @@ dependencies = [
   "cuda-core",
   "numba-cuda>=0.20.0,!=0.21.2",
   "typing_extensions",
+  "nvtx",
 ]
 
 dynamic = ["version"]
@@ -109,6 +110,7 @@ module = [
   "cuda.bindings.*",
   "cuda.core.*",
   "cuda.pathfinder.*",
+  "nvtx",
 ]
 ignore_missing_imports = true
 follow_imports = "skip"
