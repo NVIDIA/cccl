@@ -154,7 +154,7 @@ public:
 } // namespace c2h
 
 template <template <typename> class... Policies>
-class ::cuda::std::numeric_limits<c2h::custom_type_t<Policies...>>
+class cuda::std::numeric_limits<c2h::custom_type_t<Policies...>>
 {
 public:
   static constexpr bool is_specialized = true;
