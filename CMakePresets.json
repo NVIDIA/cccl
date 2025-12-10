@@ -200,6 +200,7 @@
       "displayName": "Thrust",
       "inherits": "base",
       "cacheVariables": {
+        "CMAKE_CUDA_ARCHITECTURES": "minmax-major-cccl",
         "CCCL_ENABLE_THRUST": true,
         "THRUST_ENABLE_MULTICONFIG": true,
         "THRUST_MULTICONFIG_ENABLE_SYSTEM_CPP": true,
