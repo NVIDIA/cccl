@@ -124,6 +124,9 @@ class _MergeSort:
         if present_out_values:
             set_cccl_iterator_state(self.d_out_items_cccl, d_out_items)
 
+        # Update stateful op state if needed
+        self.op_adapter.update_state(self.op_cccl)
+
         stream_handle = validate_and_get_stream(stream)
         if temp_storage is None:
             temp_storage_bytes = 0

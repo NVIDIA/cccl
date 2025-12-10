@@ -73,6 +73,9 @@ class _Reduce:
 
         self.h_init_cccl.state = to_cccl_value_state(h_init)
 
+        # Update stateful op state if needed
+        self.op_adapter.update_state(self.op_cccl)
+
         stream_handle = validate_and_get_stream(stream)
 
         if temp_storage is None:

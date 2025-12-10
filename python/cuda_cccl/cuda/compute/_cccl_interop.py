@@ -7,6 +7,7 @@ from __future__ import annotations
 import enum
 import functools
 import os
+import struct
 import subprocess
 import tempfile
 import textwrap
@@ -59,6 +60,9 @@ _TYPE_TO_ENUM = {
     types.float32: TypeEnum.FLOAT32,
     types.float64: TypeEnum.FLOAT64,
 }
+
+# Global dict to keep device array structs alive for stateful ops
+_stateful_op_device_structs: dict[str, tuple] = {}
 
 
 if TYPE_CHECKING:
@@ -280,6 +284,137 @@ def _create_void_ptr_wrapper(op, sig):
     return wrapper_func, void_sig
 
 
+def _create_stateful_void_ptr_wrapper(op, sig, state_array_types, state_arrays):
+    """Creates a wrapper function for a stateful operator with void* arguments.
+
+    The user function expects arrays (for atomics), so we construct array
+    structs from the pointers that C++ gives us.
+
+    Args:
+        op: The user's callable operator
+        sig: The signature of the operator (regular_arg, state_array1, state_array2, ...) -> return_type
+        state_array_types: List/tuple of numba Array types for the state parameters
+        state_arrays: List/tuple of actual state arrays (to get shape/itemsize)
+
+    Returns:
+        Tuple of (wrapper_func, wrapper_sig)
+    """
+    import llvmlite.ir as ir
+    from numba.core import cgutils
+    from numba.cuda import jit as cuda_jit
+
+    # Wrap the user's op as a device function
+    op_device = cuda_jit(device=True)(op)
+
+    # Get shape and itemsize from each state array
+    state_info = []
+    for state_array in state_arrays:
+        state_info.append(
+            {
+                "shape": len(state_array),
+                "itemsize": get_dtype(state_array).itemsize,
+                "strides": get_dtype(state_array).itemsize,
+            }
+        )
+
+    num_states = len(state_arrays)
+
+    # Generate argument names: states_ptr + inputs + result
+    # Note: sig.args = (regular_arg, state1, state2, ...) so regular args are before states
+    num_regular_args = len(sig.args) - num_states
+    input_args = [f"arg_{i}" for i in range(num_regular_args)]
+    all_args = ["states_ptr"] + input_args + ["ret"]
+    arg_str = ", ".join(all_args)
+    void_sig = types.void(*(types.voidptr for _ in all_args))
+
+    # Create unique wrapper name to avoid symbol collisions
+    unique_suffix = hex(id(op))[2:]
+    wrapper_name = f"wrapped_{op.__name__}_{unique_suffix}"
+
+    # Create the wrapper function source code
+    wrapper_src = textwrap.dedent(f"""
+    @intrinsic
+    def impl(typingctx, {arg_str}):
+        def codegen(context, builder, impl_sig, args):
+            # Get LLVM types for regular arguments
+            regular_arg_types = [context.get_value_type(t) for t in sig.args[:{num_regular_args}]]
+            ret_type = context.get_value_type(sig.return_type)
+
+            # args[0] is a void* pointing to packed array of data pointers
+            # Cast to pointer-to-pointer-array
+            ptr_type = ir.IntType(64).as_pointer()  # Pointer size
+            states_base_ptr = builder.bitcast(args[0], ptr_type.as_pointer())
+
+            # Load each state pointer and construct array struct
+            state_vals = []
+            for i in range({num_states}):
+                state_array_type = state_array_types[i]
+                state_dtype_llvm_type = context.get_value_type(state_array_type.dtype)
+
+                # Get pointer to i-th data pointer
+                state_ptr_ptr = builder.gep(states_base_ptr, [ir.Constant(ir.IntType(32), i)])
+                # Cast to correct pointer type
+                typed_ptr_ptr = builder.bitcast(state_ptr_ptr, state_dtype_llvm_type.as_pointer().as_pointer())
+                # Load the actual data pointer
+                data_ptr_val = builder.load(typed_ptr_ptr)
+
+                # Construct array struct
+                state_val = cgutils.create_struct_proxy(state_array_type)(context, builder)
+                state_val.data = data_ptr_val
+                state_val.parent = cgutils.get_null_value(state_val.parent.type)
+                state_val.nitems = ir.Constant(ir.IntType(64), state_info[i]['shape'])
+                state_val.itemsize = ir.Constant(ir.IntType(64), state_info[i]['itemsize'])
+                state_val.meminfo = cgutils.get_null_value(state_val.meminfo.type)
+                state_val.shape = cgutils.pack_array(builder, [ir.Constant(ir.IntType(64), state_info[i]['shape'])])
+                state_val.strides = cgutils.pack_array(builder, [ir.Constant(ir.IntType(64), state_info[i]['strides'])])
+
+                state_vals.append(state_val._getvalue())
+
+            # Bitcast regular input pointers and load values
+            input_ptrs = [builder.bitcast(p, t.as_pointer())
+                         for p, t in zip(args[1:-1], regular_arg_types)]
+            input_vals = [builder.load(p) for p in input_ptrs]
+
+            # Bitcast result pointer
+            ret_ptr = builder.bitcast(args[-1], ret_type.as_pointer())
+
+            # Call the original operator with regular args + state arrays
+            all_vals = input_vals + state_vals
+            cres = context.compile_subroutine(builder, op_device, sig, caching=False)
+            result = context.call_internal(builder, cres.fndesc, sig, all_vals)
+
+            # Store the result
+            builder.store(result, ret_ptr)
+
+            return context.get_dummy_value()
+        return void_sig, codegen
+
+    # intrinsics cannot directly be compiled by numba, so we make a trivial wrapper:
+    def {wrapper_name}({arg_str}):
+        return impl({arg_str})
+    """)
+
+    # Create namespace and compile the wrapper
+    local_dict = {
+        "types": types,
+        "sig": sig,
+        "state_array_types": state_array_types,
+        "op_device": op_device,
+        "intrinsic": intrinsic,
+        "void_sig": void_sig,
+        "cgutils": cgutils,
+        "ir": ir,
+        "state_info": state_info,
+        "num_states": num_states,
+    }
+    exec(wrapper_src, globals(), local_dict)
+
+    wrapper_func = local_dict[wrapper_name]
+    wrapper_func.__globals__.update(local_dict)
+
+    return wrapper_func, void_sig
+
+
 def _create_advance_wrapper(advance_fn, state_ptr_type):
     """Creates a wrapper function for iterator advance that takes void* arguments.
 
@@ -417,6 +552,54 @@ def _create_output_dereference_wrapper(deref_fn, state_ptr_type, value_type):
     wrapper_func.__globals__.update(local_dict)
 
     return wrapper_func, void_sig
+
+
+def to_stateful_cccl_op(func, state_arrays, sig: "Signature") -> Op:
+    # Validate all state arrays are contiguous
+    for i, state_array in enumerate(state_arrays):
+        if not is_contiguous(state_array):
+            raise ValueError(f"StatefulOp state array {i} must be contiguous")
+
+    # Get state pointers - pointers to the device array data
+    state_ptrs = [get_data_pointer(arr) for arr in state_arrays]
+
+    # Get the array types from the signature
+    # For StatefulOp: sig.args = (regular_arg, state_array1, state_array2, ...)
+    # So state types are sig.args[1:]
+    state_array_types = sig.args[1:]
+
+    # Calculate alignment from the largest pointer alignment
+    context = cuda.descriptor.cuda_target.target_context
+    state_alignment = 1
+    for state_array in state_arrays:
+        state_dtype_numba = numba.from_dtype(get_dtype(state_array))
+        state_ptr_type = types.CPointer(state_dtype_numba)
+        state_llvm_type = context.get_value_type(state_ptr_type)
+        alignment = state_llvm_type.get_abi_alignment(context.target_data)
+        state_alignment = max(state_alignment, alignment)
+
+    # Create the stateful wrapper (constructs arrays from pointers)
+    wrapped_op, wrapper_sig = _create_stateful_void_ptr_wrapper(
+        func, sig, state_array_types, state_arrays
+    )
+
+    # Compile the wrapper to LTOIR
+    ltoir, _ = cuda.compile(wrapped_op, sig=wrapper_sig, output="ltoir")
+
+    # Pack all data pointers as bytes (sequentially)
+    state_bytes = struct.pack(f"{len(state_ptrs)}P", *state_ptrs)
+
+    # Keep the state arrays alive by storing them
+    _stateful_op_device_structs[wrapped_op.__name__] = state_arrays
+
+    # Return Op with STATEFUL kind and packed pointers
+    return Op(
+        operator_type=OpKind.STATEFUL,
+        name=wrapped_op.__name__,
+        ltoir=ltoir,
+        state_alignment=state_alignment,
+        state=state_bytes,
+    )
 
 
 def to_stateless_cccl_op(op, sig: "Signature") -> Op:

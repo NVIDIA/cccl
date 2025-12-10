@@ -2,10 +2,14 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+import struct
 from typing import Callable, Hashable
+
+import numba
 
 from ._bindings import Op, OpKind
 from ._caching import CachableFunction
+from ._stateful import maybe_transform_to_stateful
 
 
 def _is_well_known_op(op: OpKind) -> bool:
@@ -17,6 +21,7 @@ class _OpAdapter:
     Provides a unified interface for operators, whether they are:
     - Well-known operations (OpKind.PLUS, OpKind.MAXIMUM, etc.)
     - Stateless user-provided callables
+    - Stateful user-provided callables
     """
 
     def get_cache_key(self) -> Hashable:
@@ -35,6 +40,22 @@ class _OpAdapter:
             Compiled Op object for C++ interop
         """
         raise NotImplementedError("Subclasses must implement this method")
+
+    def update_state(self, op: Op) -> None:
+        """
+        Update state pointers in a compiled Op.
+
+        This is a no-op for stateless operators. For stateful operators,
+        this updates the device pointers to ensure they point to current memory.
+
+        Args:
+            op: The Op to update
+        """
+        pass
+
+    @property
+    def is_stateful(self) -> bool:
+        return False
 
     @property
     def func(self) -> Callable | None:
@@ -108,7 +129,91 @@ class _StatelessOp(_OpAdapter):
         return self._func
 
 
+class _StatefulOp(_OpAdapter):
+    """
+    Operator with one or more state arrays that can be read and modified
+    during algorithm execution.
+
+    Args:
+        func: Callable that takes regular arguments followed by state arguments.
+            For example, a stateful binary operator would be
+            ``func(lhs, rhs, state1, state2, ...) -> result``.
+        *state_arrays: One or more device arrays containing state.
+            Must be device arrays.
+    """
+
+    __slots__ = ["_func", "_state_arrays", "_cachable"]
+
+    def __init__(self, func, *state_arrays):
+        self._func = func
+        self._state_arrays = state_arrays
+        self._cachable = CachableFunction(func)
+
+    def get_cache_key(self) -> Hashable:
+        from ._utils import protocols
+
+        state_info = tuple((protocols.get_dtype(s), s.size) for s in self._state_arrays)
+        return (self.__class__.__name__, self._cachable, state_info)
+
+    def compile(self, input_types, output_type=None) -> Op:
+        from . import _cccl_interop as cccl
+        from ._utils import protocols
+        from .numba_utils import get_inferred_return_type
+
+        # Infer output type if needed
+        if output_type is None or (
+            hasattr(output_type, "is_internal") and not output_type.is_internal
+        ):
+            output_type = get_inferred_return_type(self._func, input_types)
+
+        # Build signature including state arrays
+        state_array_types = [
+            numba.types.Array(numba.from_dtype(protocols.get_dtype(s)), 1, "A")
+            for s in self._state_arrays
+        ]
+        sig = output_type(*input_types, *state_array_types)
+        return cccl.to_stateful_cccl_op(self._func, self._state_arrays, sig)
+
+    def update_state(self, compiled_op: Op) -> None:
+        from ._utils import protocols
+
+        # Get current state pointers
+        state_ptrs = [protocols.get_data_pointer(s) for s in self._state_arrays]
+
+        # Repack the state bytes with new pointers
+        state_bytes = struct.pack(f"{len(state_ptrs)}P", *state_ptrs)
+
+        # Update the Op's state
+        compiled_op.state = state_bytes
+
+    @property
+    def is_stateful(self) -> bool:
+        return True
+
+    @property
+    def func(self) -> Callable:
+        """Access the wrapped callable."""
+        return self._func
+
+    @property
+    def state(self):
+        """Access the device state array(for single-state ops) or tuple of arrays."""
+        if len(self._state_arrays) == 1:
+            return self._state_arrays[0]
+        return self._state_arrays
+
+    def set_state(self, *state_arrays):
+        """Set the state arrays."""
+        self._state_arrays = state_arrays
+
+    @property
+    def state_arrays(self):
+        """Access all state arrays as a tuple."""
+        return self._state_arrays
+
+
 # Public aliases
+StatefulOp = _StatefulOp
 OpAdapter = _OpAdapter
 
 
@@ -130,11 +235,17 @@ def make_op_adapter(op) -> OpAdapter:
     if isinstance(op, OpKind):
         return _WellKnownOp(op)
 
-    return _StatelessOp(op)
+    transformed_func, state_arrays = maybe_transform_to_stateful(op)
+    if state_arrays:
+        return _StatefulOp(transformed_func, *state_arrays)
+    else:
+        # no state arrays, return as stateless op
+        return _StatelessOp(transformed_func)
 
 
 __all__ = [
     "OpAdapter",
     "OpKind",
+    "StatefulOp",
     "make_op_adapter",
 ]

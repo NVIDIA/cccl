@@ -143,6 +143,9 @@ class _Scan:
                     cast(np.ndarray | GpuStruct, init_value)
                 )
 
+        # Update stateful op state if needed
+        self.op_adapter.update_state(self.op_cccl)
+
         stream_handle = validate_and_get_stream(stream)
 
         if temp_storage is None:
