@@ -22,21 +22,26 @@ struct return_constant
 
 template <typename T>
 static void fill(nvbench::state& state, nvbench::type_list<T>)
+try
 {
   // A 32-bit offset type or the value 0 or 0xFF... have <1% performance impact
   using offset_t   = int64_t;
   const auto value = T{42};
-  const auto n     = cuda::narrow<offset_t>(state.get_int64("Elements{io}"));
+  const auto n     = state.get_int64("Elements{io}");
   thrust::device_vector<T> out(n);
 
   state.add_element_count(n);
   state.add_global_memory_reads<T>(0);
   state.add_global_memory_writes<T>(n);
 
-  bench_transform(state, ::cuda::std::tuple{}, out.begin(), n, return_constant<T>{value});
+  bench_transform(state, ::cuda::std::tuple{}, out.begin(), cuda::narrow<offset_t>(n), return_constant<T>{value});
+}
+catch (const std::bad_alloc&)
+{
+  state.skip("Skipping: out of memory.");
 }
 
 NVBENCH_BENCH_TYPES(fill, NVBENCH_TYPE_AXES(integral_types))
   .set_name("fill")
   .set_type_axes_names({"T{ct}"})
-  .add_int64_power_of_two_axis("Elements{io}", nvbench::range(16, 28, 4));
+  .add_int64_power_of_two_axis("Elements{io}", nvbench::range(16, 32, 4));
