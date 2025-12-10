@@ -48,6 +48,12 @@
 #  define _CCCL_BUILTIN_ADD_OVERFLOW(...) __builtin_add_overflow(__VA_ARGS__)
 #endif // _CCCL_CHECK_BUILTIN(builtin_add_overflow)
 
+// nvc++ doesn't support 128-bit integers and crashes when certain type combinations are used (nvbug 5730860), so let's
+// just disable the builtin for now.
+#if _CCCL_COMPILER(NVHPC)
+#  undef _CCCL_BUILTIN_ADD_OVERFLOW
+#endif // _CCCL_COMPILER(NVHPC)
+
 _CCCL_BEGIN_NAMESPACE_CUDA
 
 template <class _Tp>
@@ -205,17 +211,11 @@ _CCCL_API constexpr overflow_result<_ActualResult> add_overflow(const _Lhs __lhs
   _CCCL_IF_NOT_CONSTEVAL_DEFAULT
 #  endif // _CCCL_CUDA_COMPILATION()
   {
-    // nvc++ doesn't implement the builtins for int128.
-#  if _CCCL_COMPILER(NVHPC)
-    if constexpr (sizeof(_Lhs) != 16 && sizeof(_Rhs) != 16 && sizeof(_ActualResult) != 16)
-#  endif // _CCCL_COMPILER(NVHPC)
-    {
-      NV_IF_TARGET(NV_IS_HOST, ({
-                     overflow_result<_ActualResult> __result{};
-                     __result.overflow = _CCCL_BUILTIN_ADD_OVERFLOW(__lhs, __rhs, &__result.value);
-                     return __result;
-                   }))
-    }
+    NV_IF_TARGET(NV_IS_HOST, ({
+                   overflow_result<_ActualResult> __result{};
+                   __result.overflow = _CCCL_BUILTIN_ADD_OVERFLOW(__lhs, __rhs, &__result.value);
+                   return __result;
+                 }))
   }
 #endif // _CCCL_BUILTIN_ADD_OVERFLOW
 
