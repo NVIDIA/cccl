@@ -40,7 +40,7 @@ class _Select:
         d_in: DeviceArrayLike | IteratorBase,
         d_out: DeviceArrayLike | IteratorBase,
         d_num_selected_out: DeviceArrayLike,
-        cond: Callable | OpAdapter,  # Raw callable or Operator
+        cond: OpAdapter,
     ):
         # Create discard iterators for unused outputs, using d_out as reference
         # to match the input/output type

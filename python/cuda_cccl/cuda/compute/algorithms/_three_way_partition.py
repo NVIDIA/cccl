@@ -92,15 +92,12 @@ class _ThreeWayPartition:
         self.d_unselected_out_cccl = cccl.to_cccl_output_iter(d_unselected_out)
         self.d_num_selected_out_cccl = cccl.to_cccl_output_iter(d_num_selected_out)
 
-        self.select_first_part_op = select_first_part_op
-        self.select_second_part_op = select_second_part_op
-
         # Compile ops - partition predicates return uint8 (boolean)
         value_type = cccl.get_value_type(d_in)
-        self.select_first_part_op_cccl = self.select_first_part_op.compile(
+        self.select_first_part_op_cccl = select_first_part_op.compile(
             (value_type,), numba.types.uint8
         )
-        self.select_second_part_op_cccl = self.select_second_part_op.compile(
+        self.select_second_part_op_cccl = select_second_part_op.compile(
             (value_type,), numba.types.uint8
         )
 

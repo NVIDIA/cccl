@@ -56,7 +56,7 @@ class _WellKnownOp(_OpAdapter):
         self._kind = kind
 
     def get_cache_key(self) -> Hashable:
-        return (self.__class__.__name__, self._kind.name, self._kind.value)
+        return (self._kind.name, self._kind.value)
 
     def compile(self, input_types, output_type=None) -> Op:
         return Op(
@@ -83,7 +83,7 @@ class _StatelessOp(_OpAdapter):
         self._cachable = CachableFunction(func)
 
     def get_cache_key(self) -> Hashable:
-        return (self.__class__.__name__, self._cachable)
+        return self._cachable
 
     def compile(self, input_types, output_type=None) -> Op:
         from . import _cccl_interop as cccl

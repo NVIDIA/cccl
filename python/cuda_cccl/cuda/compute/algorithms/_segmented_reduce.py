@@ -47,7 +47,6 @@ class _SegmentedReduce:
         self.d_out_cccl = cccl.to_cccl_output_iter(d_out)
         self.start_offsets_in_cccl = cccl.to_cccl_input_iter(start_offsets_in)
         self.end_offsets_in_cccl = cccl.to_cccl_input_iter(end_offsets_in)
-        self.op = op
 
         # set host advance functions
         cccl.cccl_iterator_set_host_advance(self.d_out_cccl, d_out)
@@ -73,7 +72,7 @@ class _SegmentedReduce:
 
         # Compile the op with value types
         value_type = get_value_type(h_init)
-        self.op_cccl = self.op.compile((value_type, value_type), value_type)
+        self.op_cccl = op.compile((value_type, value_type), value_type)
 
         self.build_result = call_build(
             _bindings.DeviceSegmentedReduceBuildResult,

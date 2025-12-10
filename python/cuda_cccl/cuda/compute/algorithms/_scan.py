@@ -60,7 +60,6 @@ class _Scan:
     ):
         self.d_in_cccl = cccl.to_cccl_input_iter(d_in)
         self.d_out_cccl = cccl.to_cccl_output_iter(d_out)
-        self.op = op
 
         self.init_kind = get_init_kind(init_value)
 
@@ -88,7 +87,7 @@ class _Scan:
                 init_value_type_info = self.init_value_cccl.type
 
         # Compile the op with value types
-        self.op_cccl = self.op.compile((value_type, value_type), value_type)
+        self.op_cccl = op.compile((value_type, value_type), value_type)
 
         self.build_result = call_build(
             _bindings.DeviceScanBuildResult,

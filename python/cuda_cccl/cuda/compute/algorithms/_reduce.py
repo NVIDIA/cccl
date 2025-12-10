@@ -45,11 +45,10 @@ class _Reduce:
         self.d_in_cccl = cccl.to_cccl_input_iter(d_in)
         self.d_out_cccl = cccl.to_cccl_output_iter(d_out)
         self.h_init_cccl = cccl.to_cccl_value(h_init)
-        self.op = op
 
         # Compile the op with value types
         value_type = get_value_type(h_init)
-        self.op_cccl = self.op.compile((value_type, value_type), value_type)
+        self.op_cccl = op.compile((value_type, value_type), value_type)
 
         self.build_result = call_build(
             _bindings.DeviceReduceBuildResult,

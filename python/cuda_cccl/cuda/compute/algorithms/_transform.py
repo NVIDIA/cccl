@@ -26,12 +26,11 @@ class _UnaryTransform:
     ):
         self.d_in_cccl = cccl.to_cccl_input_iter(d_in)
         self.d_out_cccl = cccl.to_cccl_output_iter(d_out)
-        self.op = op
 
         # Compile the op with input/output types
         in_type = cccl.get_value_type(d_in)
         out_type = cccl.get_value_type(d_out)
-        self.op_cccl = self.op.compile((in_type,), out_type)
+        self.op_cccl = op.compile((in_type,), out_type)
 
         self.build_result = cccl.call_build(
             _bindings.DeviceUnaryTransform,
@@ -81,13 +80,12 @@ class _BinaryTransform:
         self.d_in1_cccl = cccl.to_cccl_input_iter(d_in1)
         self.d_in2_cccl = cccl.to_cccl_input_iter(d_in2)
         self.d_out_cccl = cccl.to_cccl_output_iter(d_out)
-        self.op = op
 
         # Compile the op with input/output types
         in1_type = cccl.get_value_type(d_in1)
         in2_type = cccl.get_value_type(d_in2)
         out_type = cccl.get_value_type(d_out)
-        self.op_cccl = self.op.compile((in1_type, in2_type), out_type)
+        self.op_cccl = op.compile((in1_type, in2_type), out_type)
 
         self.build_result = cccl.call_build(
             _bindings.DeviceBinaryTransform,
