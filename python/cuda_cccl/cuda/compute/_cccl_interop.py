@@ -218,209 +218,205 @@ def to_cccl_value(array_or_struct: np.ndarray | GpuStruct) -> Value:
         return to_cccl_value(array_or_struct._data)
 
 
-def _create_void_ptr_wrapper(op, sig):
-    """Creates a wrapper function that takes all void* arguments and calls the original operator.
+class _ArgMode(enum.Enum):
+    """How a void* argument should be handled in wrapper codegen."""
 
-    The wrapper takes N+1 arguments where N is the number of input arguments to `op`, the last
-    argument is a pointer to the result.
+    LOAD = "load"  # Cast to typed pointer, load value
+    PTR = "ptr"  # Cast to typed pointer, pass pointer directly
+    STORE = "store"  # Cast to typed pointer, store return value here
+    STATE_ARRAYS = "states"  # Packed array of data pointers -> build array structs
+
+
+class _ArgSpec:
+    """Specification for a wrapper argument."""
+
+    __slots__ = ("numba_type", "mode", "state_info")
+
+    def __init__(self, numba_type, mode: _ArgMode, state_info=None):
+        self.numba_type = numba_type
+        self.mode = mode
+        # For STATE_ARRAYS: list of {shape, itemsize, strides}
+        self.state_info = state_info
+
+
+def _codegen_void_ptr_wrapper(
+    context, builder, args, arg_specs, func_device, inner_sig
+):
+    """Generate LLVM IR for a void* wrapper function.
+
+    This is the codegen implementation shared by all void* wrappers.
+    It processes each argument according to its _ArgSpec mode, calls
+    the inner function, and stores the result if needed.
+
+    Args:
+        context: Numba codegen context
+        builder: LLVM IR builder
+        args: LLVM values for the void* arguments
+        arg_specs: List of _ArgSpec describing each argument
+        func_device: The device function to call
+        inner_sig: Numba signature for the inner function
+
+    Returns:
+        LLVM dummy value (for void return)
     """
-    # Generate argument names for both inputs and output
-    input_args = [f"arg_{i}" for i in range(len(sig.args))]
-    all_args = input_args + ["ret"]  # ret is the output pointer
-    arg_str = ", ".join(all_args)
-    void_sig = types.void(*(types.voidptr for _ in all_args))
 
-    # Create the wrapper function source code
+    input_vals = []
+    ret_ptr = None
+
+    for i, spec in enumerate(arg_specs):
+        arg = args[i]
+
+        if spec.mode == _ArgMode.LOAD:
+            # Cast void* to typed pointer and load value
+            llvm_type = context.get_value_type(spec.numba_type)
+            typed_ptr = builder.bitcast(arg, llvm_type.as_pointer())
+            val = builder.load(typed_ptr)
+            input_vals.append(val)
+
+        elif spec.mode == _ArgMode.PTR:
+            # Cast void* to typed pointer, pass pointer directly
+            llvm_type = context.get_value_type(spec.numba_type.dtype)
+            typed_ptr = builder.bitcast(arg, llvm_type.as_pointer())
+            input_vals.append(typed_ptr)
+
+        elif spec.mode == _ArgMode.STORE:
+            # Cast void* to typed pointer for storing result
+            llvm_type = context.get_value_type(spec.numba_type)
+            ret_ptr = builder.bitcast(arg, llvm_type.as_pointer())
+
+    # Call the inner function
+    cres = context.compile_subroutine(builder, func_device, inner_sig, caching=False)
+    result = context.call_internal(builder, cres.fndesc, inner_sig, input_vals)
+
+    # Store result if needed
+    if ret_ptr is not None:
+        builder.store(result, ret_ptr)
+
+    return context.get_dummy_value()
+
+
+def _create_void_ptr_wrapper_unified(func, name: str, arg_specs: list, inner_sig):
+    """Unified wrapper creation for void* argument functions.
+
+    Args:
+        func: The function to wrap (will be compiled as device function)
+        name: Base name for the wrapper function
+        arg_specs: List of _ArgSpec describing each void* argument
+        inner_sig: Numba signature for the inner function call
+
+    Returns:
+        Tuple of (wrapper_func, wrapper_sig)
+    """
+    from numba.cuda import jit as cuda_jit
+
+    # Wrap function as device function
+    func_device = cuda_jit(device=True)(func)
+
+    # Generate argument names and signature
+    arg_names = [f"arg_{i}" for i in range(len(arg_specs))]
+    arg_str = ", ".join(arg_names)
+    void_sig = types.void(*(types.voidptr for _ in arg_specs))
+
+    # Create unique wrapper name
+    unique_suffix = hex(id(func))[2:]
+    wrapper_name = f"wrapped_{name}_{unique_suffix}"
+
+    # We need exec() here because Numba's @intrinsic decorator requires:
+    # 1. A function with a specific signature visible at parse time
+    # 2. The number of arguments must match the wrapper signature
+    # The actual codegen logic is in _codegen_void_ptr_wrapper - this just
+    # creates the minimal intrinsic shell that delegates to it.
     wrapper_src = textwrap.dedent(f"""
     @intrinsic
     def impl(typingctx, {arg_str}):
         def codegen(context, builder, impl_sig, args):
-            # Get LLVM types for all arguments
-            arg_types = [context.get_value_type(t) for t in sig.args]
-            ret_type = context.get_value_type(sig.return_type)
-
-            # Bitcast from void* to the appropriate pointer types
-            input_ptrs = [builder.bitcast(p, t.as_pointer())
-                                          for p, t in zip(args[:-1], arg_types)]
-            ret_ptr = builder.bitcast(args[-1], ret_type.as_pointer())
-
-            # Load input values from pointers
-            input_vals = [builder.load(p) for p in input_ptrs]
-
-            # Call the original operator
-            # See NVIDIA/numba-cuda#590 for why we need compile_subroutine
-            # vs compile_internal here:
-            cres = context.compile_subroutine(builder, op, sig, caching=False)
-            result = context.call_internal(builder, cres.fndesc, sig, input_vals)
-
-            # Store the result
-            builder.store(result, ret_ptr)
-
-            return context.get_dummy_value()
+            return codegen_helper(context, builder, args, arg_specs, func_device, inner_sig)
         return void_sig, codegen
 
-    # intrinsics cannot directly be compiled by numba, so we make a trivial wrapper:
-    def wrapped_{op.__name__}({arg_str}):
+    def {wrapper_name}({arg_str}):
         return impl({arg_str})
     """)
 
-    # Create namespace and compile the wrapper
     local_dict = {
-        "types": types,
-        "sig": sig,
-        "op": op,
         "intrinsic": intrinsic,
         "void_sig": void_sig,
+        "arg_specs": arg_specs,
+        "func_device": func_device,
+        "inner_sig": inner_sig,
+        "codegen_helper": _codegen_void_ptr_wrapper,
     }
     exec(wrapper_src, globals(), local_dict)
 
-    wrapper_func = local_dict[f"wrapped_{op.__name__}"]
+    wrapper_func = local_dict[wrapper_name]
     wrapper_func.__globals__.update(local_dict)
 
     return wrapper_func, void_sig
 
 
-def _create_advance_wrapper(advance_fn, state_ptr_type):
+def _create_op_void_ptr_wrapper(op, sig):
+    """Creates a wrapper function that takes all void* arguments and calls the original operator.
+
+    The wrapper takes N+1 arguments where N is the number of input arguments to `op`, the last
+    argument is a pointer to the result.
+    """
+    arg_specs = [_ArgSpec(t, _ArgMode.LOAD) for t in sig.args]
+    arg_specs.append(_ArgSpec(sig.return_type, _ArgMode.STORE))
+    return _create_void_ptr_wrapper_unified(op, op.__name__, arg_specs, sig)
+
+
+def _create_advance_void_ptr_wrapper(advance_fn, state_ptr_type):
     """Creates a wrapper function for iterator advance that takes void* arguments.
 
     The wrapper takes 2 void* arguments:
     - state pointer
     - offset pointer (points to uint64 value)
     """
-    void_sig = types.void(types.voidptr, types.voidptr)
-
-    wrapper_src = textwrap.dedent(f"""
-    @intrinsic
-    def impl(typingctx, state_arg, offset_arg):
-        def codegen(context, builder, impl_sig, args):
-            state_type_llvm = context.get_value_type(state_ptr_type.dtype)
-            offset_type_llvm = context.get_value_type(types.uint64)
-
-            state_ptr = builder.bitcast(args[0], state_type_llvm.as_pointer())
-            offset_ptr = builder.bitcast(args[1], offset_type_llvm.as_pointer())
-            offset_val = builder.load(offset_ptr)
-
-            sig = types.void(state_ptr_type, types.uint64)
-            cres = context.compile_subroutine(builder, advance_fn, sig, caching=False)
-            result = context.call_internal(builder, cres.fndesc, sig, [state_ptr, offset_val])
-
-            return context.get_dummy_value()
-        return void_sig, codegen
-
-    def wrapped_{advance_fn.__name__}(state_arg, offset_arg):
-        return impl(state_arg, offset_arg)
-    """)
-
-    local_dict = {
-        "types": types,
-        "state_ptr_type": state_ptr_type,
-        "advance_fn": advance_fn,
-        "intrinsic": intrinsic,
-        "void_sig": void_sig,
-    }
-    exec(wrapper_src, globals(), local_dict)
-
-    wrapper_func = local_dict[f"wrapped_{advance_fn.__name__}"]
-    wrapper_func.__globals__.update(local_dict)
-
-    return wrapper_func, void_sig
+    arg_specs = [
+        _ArgSpec(state_ptr_type, _ArgMode.PTR),
+        _ArgSpec(types.uint64, _ArgMode.LOAD),
+    ]
+    inner_sig = types.void(state_ptr_type, types.uint64)
+    return _create_void_ptr_wrapper_unified(
+        advance_fn, advance_fn.__name__, arg_specs, inner_sig
+    )
 
 
-def _create_input_dereference_wrapper(deref_fn, state_ptr_type, value_type):
+def _create_input_dereference_void_ptr_wrapper(deref_fn, state_ptr_type, value_type):
     """Creates a wrapper function for input iterator dereference that takes void* arguments.
 
     The wrapper takes 2 void* arguments:
     - state pointer
-    - result pointer
+    - result pointer (function writes result here)
     """
-    void_sig = types.void(types.voidptr, types.voidptr)
-
-    wrapper_src = textwrap.dedent(f"""
-    @intrinsic
-    def impl(typingctx, state_arg, result_arg):
-        def codegen(context, builder, impl_sig, args):
-            state_type_llvm = context.get_value_type(state_ptr_type.dtype)
-            value_type_llvm = context.get_value_type(value_type)
-
-            state_ptr = builder.bitcast(args[0], state_type_llvm.as_pointer())
-            result_ptr = builder.bitcast(args[1], value_type_llvm.as_pointer())
-
-            sig = types.void(state_ptr_type, types.CPointer(value_type))
-            cres = context.compile_subroutine(builder, deref_fn, sig, caching=False)
-            result = context.call_internal(builder, cres.fndesc, sig, [state_ptr, result_ptr])
-
-            return context.get_dummy_value()
-        return void_sig, codegen
-
-    def wrapped_{deref_fn.__name__}(state_arg, result_arg):
-        return impl(state_arg, result_arg)
-    """)
-
-    local_dict = {
-        "types": types,
-        "state_ptr_type": state_ptr_type,
-        "value_type": value_type,
-        "deref_fn": deref_fn,
-        "intrinsic": intrinsic,
-        "void_sig": void_sig,
-    }
-    exec(wrapper_src, globals(), local_dict)
-
-    wrapper_func = local_dict[f"wrapped_{deref_fn.__name__}"]
-    wrapper_func.__globals__.update(local_dict)
-
-    return wrapper_func, void_sig
+    arg_specs = [
+        _ArgSpec(state_ptr_type, _ArgMode.PTR),
+        _ArgSpec(types.CPointer(value_type), _ArgMode.PTR),
+    ]
+    inner_sig = types.void(state_ptr_type, types.CPointer(value_type))
+    return _create_void_ptr_wrapper_unified(
+        deref_fn, deref_fn.__name__, arg_specs, inner_sig
+    )
 
 
-def _create_output_dereference_wrapper(deref_fn, state_ptr_type, value_type):
+def _create_output_dereference_void_ptr_wrapper(deref_fn, state_ptr_type, value_type):
     """Creates a wrapper function for output iterator dereference that takes void* arguments.
 
     The wrapper takes 2 void* arguments:
     - state pointer
-    - value pointer (points to value)
+    - value pointer (value to write)
     """
-    void_sig = types.void(types.voidptr, types.voidptr)
-
-    wrapper_src = textwrap.dedent(f"""
-    @intrinsic
-    def impl(typingctx, state_arg, value_arg):
-        def codegen(context, builder, impl_sig, args):
-            state_type_llvm = context.get_value_type(state_ptr_type.dtype)
-            value_type_llvm = context.get_value_type(value_type)
-
-            state_ptr = builder.bitcast(args[0], state_type_llvm.as_pointer())
-            value_ptr = builder.bitcast(args[1], value_type_llvm.as_pointer())
-            value_val = builder.load(value_ptr)
-
-            sig = types.void(state_ptr_type, value_type)
-            cres = context.compile_subroutine(builder, deref_fn, sig, caching=False)
-            result = context.call_internal(builder, cres.fndesc, sig, [state_ptr, value_val])
-
-            return context.get_dummy_value()
-        return void_sig, codegen
-
-    def wrapped_{deref_fn.__name__}(state_arg, value_arg):
-        return impl(state_arg, value_arg)
-    """)
-
-    local_dict = {
-        "types": types,
-        "state_ptr_type": state_ptr_type,
-        "value_type": value_type,
-        "deref_fn": deref_fn,
-        "intrinsic": intrinsic,
-        "void_sig": void_sig,
-    }
-    exec(wrapper_src, globals(), local_dict)
-
-    wrapper_func = local_dict[f"wrapped_{deref_fn.__name__}"]
-    wrapper_func.__globals__.update(local_dict)
-
-    return wrapper_func, void_sig
+    arg_specs = [
+        _ArgSpec(state_ptr_type, _ArgMode.PTR),
+        _ArgSpec(value_type, _ArgMode.LOAD),
+    ]
+    inner_sig = types.void(state_ptr_type, value_type)
+    return _create_void_ptr_wrapper_unified(
+        deref_fn, deref_fn.__name__, arg_specs, inner_sig
+    )
 
 
 def to_stateless_cccl_op(op, sig: "Signature") -> Op:
-    wrapped_op, wrapper_sig = _create_void_ptr_wrapper(op, sig)
+    wrapped_op, wrapper_sig = _create_op_void_ptr_wrapper(op, sig)
 
     ltoir, _ = cuda.compile(wrapped_op, sig=wrapper_sig, output="ltoir")
     return Op(
