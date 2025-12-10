@@ -102,7 +102,7 @@ public:
   {
     static_assert(__cccl_random_is_valid_urng<_URng>, "URng must meet the UniformRandomBitGenerator requirements");
     gamma_distribution<result_type> __gd{__p.n() * result_type{.5}, result_type{2}};
-    return __nd_(__g) * cuda::std::sqrt(__p.n() / __gd(__g));
+    return __nd_(__g) * ::cuda::std::sqrt(__p.n() / __gd(__g));
   }
 
   // property functions
