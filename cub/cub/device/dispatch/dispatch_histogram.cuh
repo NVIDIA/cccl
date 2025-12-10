@@ -138,9 +138,9 @@ struct DeviceHistogramKernelSource
   template <typename NumBinsT, typename UpperLevelArrayT, typename LowerLevelArrayT>
   CUB_RUNTIME_FUNCTION static constexpr bool MayOverflow(
     [[maybe_unused]] NumBinsT num_bins,
-    const UpperLevelArrayT& upper_level,
-    const LowerLevelArrayT& lower_level,
-    int channel)
+    [[maybe_unused]] const UpperLevelArrayT& upper_level,
+    [[maybe_unused]] const LowerLevelArrayT& lower_level,
+    [[maybe_unused]] int channel)
   {
     using CommonT        = typename TransformsT::ScaleTransform::CommonT;
     using IntArithmeticT = typename TransformsT::ScaleTransform::IntArithmeticT;
