@@ -163,7 +163,7 @@ public:
 
   //! @brief Copy-constructs from a buffer
   //! @param __other The other buffer.
-  _CCCL_HIDE_FROM_ABI buffer(const buffer& __other)
+  _CCCL_HIDE_FROM_ABI explicit buffer(const buffer& __other)
       : __buf_(__other.memory_resource(), __other.stream(), __other.size())
   {
     this->__copy_cross<const_pointer>(
@@ -206,7 +206,11 @@ public:
   _CCCL_HIDE_FROM_ABI
   buffer(::cuda::stream_ref __stream, _Resource&& __resource, [[maybe_unused]] const _Env& __env = {})
       : __buf_(::cuda::mr::__adapt_if_synchronous(::cuda::std::forward<_Resource>(__resource)), __stream, 0)
-  {}
+  {
+    static_assert(::cuda::std::is_copy_constructible_v<::cuda::std::decay_t<_Resource>>,
+                  "Buffer owns a copy of the memory resource, which means it must be copy constructible. "
+                  "cuda::mr::shared_resource can be used to attach shared ownership to a resource type.");
+  }
 
   //! @brief Constructs a buffer of size \p __size using a memory and leaves all
   //! elements uninitialized
@@ -227,7 +231,11 @@ public:
     ::cuda::no_init_t,
     [[maybe_unused]] const _Env& __env = {})
       : __buf_(::cuda::mr::__adapt_if_synchronous(::cuda::std::forward<_Resource>(__resource)), __stream, __size)
-  {}
+  {
+    static_assert(::cuda::std::is_copy_constructible_v<::cuda::std::decay_t<_Resource>>,
+                  "Buffer owns a copy of the memory resource, which means it must be copy constructible. "
+                  "cuda::mr::shared_resource can be used to attach shared ownership to a resource type.");
+  }
 
   //! @brief Constructs a buffer using a memory resource and copy-constructs all
   //! elements from the forward range
@@ -249,6 +257,9 @@ public:
                __stream,
                static_cast<size_type>(::cuda::std::distance(__first, __last)))
   {
+    static_assert(::cuda::std::is_copy_constructible_v<::cuda::std::decay_t<_Resource>>,
+                  "Buffer owns a copy of the memory resource, which means it must be copy constructible. "
+                  "cuda::mr::shared_resource can be used to attach shared ownership to a resource type.");
     this->__copy_cross<_Iter>(__first, __last, __unwrapped_begin(), __buf_.size());
   }
 
@@ -267,6 +278,9 @@ public:
          [[maybe_unused]] const _Env& __env = {})
       : __buf_(::cuda::mr::__adapt_if_synchronous(::cuda::std::forward<_Resource>(__resource)), __stream, __ilist.size())
   {
+    static_assert(::cuda::std::is_copy_constructible_v<::cuda::std::decay_t<_Resource>>,
+                  "Buffer owns a copy of the memory resource, which means it must be copy constructible. "
+                  "cuda::mr::shared_resource can be used to attach shared ownership to a resource type.");
     this->__copy_cross(__ilist.begin(), __ilist.end(), __unwrapped_begin(), __buf_.size());
   }
 
@@ -284,6 +298,9 @@ public:
                __stream,
                static_cast<size_type>(::cuda::std::ranges::size(__range)))
   {
+    static_assert(::cuda::std::is_copy_constructible_v<::cuda::std::decay_t<_Resource>>,
+                  "Buffer owns a copy of the memory resource, which means it must be copy constructible. "
+                  "cuda::mr::shared_resource can be used to attach shared ownership to a resource type.");
     using _Iter = ::cuda::std::ranges::iterator_t<_Range>;
     this->__copy_cross<_Iter>(
       ::cuda::std::ranges::begin(__range),
@@ -305,6 +322,9 @@ public:
                  ::cuda::std::ranges::distance(::cuda::std::ranges::begin(__range), ::cuda::std::ranges::end(__range))),
                __env)
   {
+    static_assert(::cuda::std::is_copy_constructible_v<::cuda::std::decay_t<_Resource>>,
+                  "Buffer owns a copy of the memory resource, which means it must be copy constructible. "
+                  "cuda::mr::shared_resource can be used to attach shared ownership to a resource type.");
     using _Iter = ::cuda::std::ranges::iterator_t<_Range>;
     this->__copy_cross<_Iter>(
       ::cuda::std::ranges::begin(__range),
