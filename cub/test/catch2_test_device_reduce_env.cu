@@ -223,13 +223,12 @@ C2H_TEST("Device reduce uses environment", "[reduce][device]", requirements)
     }
     else if constexpr (cub::detail::is_non_deterministic_v<determinism_t>)
     {
-      using policy_t   = cub::detail::reduce::arch_policies_from_types<accumulator_t, offset_t, op_t>;
-      auto* raw_ptr    = thrust::raw_pointer_cast(d_out.data());
-      using dispatch_t = cub::detail::reduce::
-        dispatch_nondeterministic_t<decltype(d_in), decltype(raw_ptr), offset_t, op_t, init_t, accumulator_t, transform_t>;
+      using policy_t = cub::detail::reduce::arch_policies_from_types<accumulator_t, offset_t, op_t>;
+      auto* raw_ptr  = thrust::raw_pointer_cast(d_out.data());
 
-      REQUIRE(
-        cudaSuccess == dispatch_t::Dispatch(nullptr, expected_bytes_allocated, d_in, raw_ptr, num_items, op_t{}, init));
+      REQUIRE(cudaSuccess
+              == cub::detail::reduce::dispatch_nondeterministic(
+                nullptr, expected_bytes_allocated, d_in, raw_ptr, num_items, op_t{}, init_t{}, 0, transform_t{}));
 
       return cuda::std::array<void*, 1>{reinterpret_cast<void*>(
         cub::detail::reduce::NondeterministicDeviceReduceAtomicKernel<
@@ -341,13 +340,12 @@ C2H_TEST("Device sum uses environment", "[reduce][device]", requirements)
     }
     else if constexpr (cub::detail::is_non_deterministic_v<determinism_t>)
     {
-      using policy_t   = cub::detail::reduce::arch_policies_from_types<accumulator_t, offset_t, op_t>;
-      auto* raw_ptr    = thrust::raw_pointer_cast(d_out.data());
-      using dispatch_t = cub::detail::reduce::
-        dispatch_nondeterministic_t<decltype(d_in), decltype(raw_ptr), offset_t, op_t, init_t, accumulator_t, transform_t>;
+      using policy_t = cub::detail::reduce::arch_policies_from_types<accumulator_t, offset_t, op_t>;
+      auto* raw_ptr  = thrust::raw_pointer_cast(d_out.data());
 
       REQUIRE(cudaSuccess
-              == dispatch_t::Dispatch(nullptr, expected_bytes_allocated, d_in, raw_ptr, num_items, op_t{}, init_t{}));
+              == cub::detail::reduce::dispatch_nondeterministic(
+                nullptr, expected_bytes_allocated, d_in, raw_ptr, num_items, op_t{}, init_t{}, 0, transform_t{}));
 
       return cuda::std::array<void*, 1>{reinterpret_cast<void*>(
         cub::detail::reduce::NondeterministicDeviceReduceAtomicKernel<
