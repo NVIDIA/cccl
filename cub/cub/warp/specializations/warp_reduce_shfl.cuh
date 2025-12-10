@@ -449,7 +449,7 @@ struct WarpReduceShfl
   {
     static_assert(::cuda::std::is_integral_v<T>, "T must be an integral type");
     static_assert(sizeof(T) <= sizeof(unsigned), "T must be less than or equal to unsigned");
-    using PromotedT = ::cuda::std::conditional_t<::cuda::std::is_unsigned_v<T>, unsigned, int>;
+    using promoted_t = ::cuda::std::conditional_t<::cuda::std::is_unsigned_v<T>, unsigned, int>;
     if constexpr (is_cuda_maximum_v<ReductionOp, T>)
     {
       return static_cast<T>(__reduce_max_sync(member_mask, static_cast<PromotedT>(input)));
