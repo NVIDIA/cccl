@@ -452,27 +452,27 @@ struct WarpReduceShfl
     using promoted_t = ::cuda::std::conditional_t<::cuda::std::is_unsigned_v<T>, unsigned, int>;
     if constexpr (is_cuda_maximum_v<ReductionOp, T>)
     {
-      return static_cast<T>(__reduce_max_sync(member_mask, static_cast<PromotedT>(input)));
+      return static_cast<T>(__reduce_max_sync(member_mask, static_cast<promoted_t>(input)));
     }
     else if constexpr (is_cuda_minimum_v<ReductionOp, T>)
     {
-      return static_cast<T>(__reduce_min_sync(member_mask, static_cast<PromotedT>(input)));
+      return static_cast<T>(__reduce_min_sync(member_mask, static_cast<promoted_t>(input)));
     }
     else if constexpr (is_cuda_std_plus_v<ReductionOp, T>)
     {
-      return static_cast<T>(__reduce_add_sync(member_mask, static_cast<PromotedT>(input)));
+      return static_cast<T>(__reduce_add_sync(member_mask, static_cast<promoted_t>(input)));
     }
-    else if constexpr (is_cuda_std_bit_and_v<ReductionOp, T> && ::cuda::std::is_unsigned_v<T>)
+    else if constexpr (is_cuda_std_bit_and_v<ReductionOp, T>)
     {
-      return static_cast<T>(__reduce_and_sync(member_mask, static_cast<PromotedT>(input)));
+      return static_cast<T>(__reduce_and_sync(member_mask, static_cast<promoted_t>(input)));
     }
-    else if constexpr (is_cuda_std_bit_or_v<ReductionOp, T> && ::cuda::std::is_unsigned_v<T>)
+    else if constexpr (is_cuda_std_bit_or_v<ReductionOp, T>)
     {
-      return static_cast<T>(__reduce_or_sync(member_mask, static_cast<PromotedT>(input)));
+      return static_cast<T>(__reduce_or_sync(member_mask, static_cast<promoted_t>(input)));
     }
-    else if constexpr (is_cuda_std_bit_xor_v<ReductionOp, T> && ::cuda::std::is_unsigned_v<T>)
+    else if constexpr (is_cuda_std_bit_xor_v<ReductionOp, T>)
     {
-      return static_cast<T>(__reduce_xor_sync(member_mask, static_cast<PromotedT>(input)));
+      return static_cast<T>(__reduce_xor_sync(member_mask, static_cast<promoted_t>(input)));
     }
     else
     {
@@ -503,20 +503,12 @@ struct WarpReduceShfl
     if constexpr (ALL_LANES_VALID && ::cuda::std::is_integral_v<T> && sizeof(T) <= sizeof(unsigned))
     {
       NV_IF_TARGET(NV_PROVIDES_SM_80, (return reduce_op_sync(input, reduction_op);))
-
-      T output = input;
-      // Template-iterate reduction steps
-      ReduceStep(output, reduction_op, LOGICAL_WARP_THREADS - 1, constant_v<0>);
-      return output;
     }
-    else
-    {
-      T output = input;
-      // Template-iterate reduction steps
-      ReduceStep(output, reduction_op, valid_items - 1, constant_v<0>);
-      return output;
-    }
-    _CCCL_UNREACHABLE();
+    T output = input;
+    // Template-iterate reduction steps
+    const int last_lane = (ALL_LANES_VALID) ? LOGICAL_WARP_THREADS - 1 : valid_items - 1;
+    ReduceStep(output, reduction_op, last_lane, constant_v<0>);
+    return output;
   }
 
   /**
