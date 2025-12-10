@@ -435,8 +435,8 @@ struct policy_hub<RequiresStableAddress,
 
     // on Hopper, the vectorized kernel performs better for 1 and 2 byte values
     static constexpr bool use_vector_kernel_on_hopper =
-      ((sizeof(it_value_t<RandomAccessIteratorsIn>) < 4) && ...) && sizeof...(RandomAccessIteratorsIn) > 1
-      && sizeof(it_value_t<RandomAccessIteratorOut>) < 4;
+      ((size_of<it_value_t<RandomAccessIteratorsIn>> < 4) && ...) && sizeof...(RandomAccessIteratorsIn) > 1
+      && size_of<it_value_t<RandomAccessIteratorOut>> < 4;
 
     // if each tile size is a multiple of the bulk copy and maximum value type alignments, the alignment is retained if
     // the base pointer is sufficiently aligned (the correct check would be if it's a multiple of all value types
