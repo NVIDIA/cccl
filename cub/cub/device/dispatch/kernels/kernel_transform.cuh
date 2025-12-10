@@ -202,11 +202,18 @@ _CCCL_HOST_DEVICE _CCCL_CONSTEVAL auto load_store_type()
   }
 }
 
-template <const transform_arch_policy& Policy,
-          typename Offset,
-          typename F,
-          typename RandomAccessIteratorOut,
-          typename... RandomAccessIteratorsIn>
+// FIXME(bgruber): nvcc 12.0 - 13.1 crash with `error: Internal Compiler Error (codegen): "unexpected error in codegen
+// for function: found previous definition of same function!"` when we pass a const& as template parameter (and the
+// function template body contains a lambda). As a workaround, we pass the parts of the policy by value.
+// TODO(bgruber): In C++20, we should just pass transform_arch_policy by value.
+template < // const transform_arch_policy& Policy,
+  int block_threads,
+  int items_per_thread,
+  int vec_size,
+  typename Offset,
+  typename F,
+  typename RandomAccessIteratorOut,
+  typename... RandomAccessIteratorsIn>
 _CCCL_DEVICE void transform_kernel_vectorized(
   Offset num_items,
   int num_elem_per_thread_prefetch,
@@ -215,9 +222,9 @@ _CCCL_DEVICE void transform_kernel_vectorized(
   RandomAccessIteratorOut out,
   RandomAccessIteratorsIn... ins)
 {
-  constexpr int block_threads    = Policy.vectorized_policy.block_threads;
-  constexpr int items_per_thread = Policy.vectorized_policy.items_per_thread_vectorized;
-  constexpr int vec_size         = Policy.vectorized_policy.vec_size;
+  // constexpr int block_threads    = Policy.vectorized_policy.block_threads;
+  // constexpr int items_per_thread = Policy.vectorized_policy.items_per_thread_vectorized;
+  // constexpr int vec_size         = Policy.vectorized_policy.vec_size;
   _CCCL_ASSERT(!can_vectorize || (items_per_thread == num_elem_per_thread_prefetch), "");
   constexpr int tile_size = block_threads * items_per_thread;
   const Offset offset     = static_cast<Offset>(blockIdx.x) * tile_size;
@@ -1013,7 +1020,10 @@ __launch_bounds__(get_block_threads<ArchPolicies>) CUB_DETAIL_KERNEL_ATTRIBUTES 
   {
     static_assert(::cuda::std::is_same_v<Predicate, always_true_predicate>,
                   "Cannot vectorize transform with a predicate");
-    transform_kernel_vectorized<policy>(
+
+    transform_kernel_vectorized</*policy*/ policy.vectorized_policy.block_threads,
+                                policy.vectorized_policy.items_per_thread_vectorized,
+                                policy.vectorized_policy.vec_size>(
       num_items,
       num_elem_per_thread,
       can_vectorize,
