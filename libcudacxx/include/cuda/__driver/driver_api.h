@@ -53,16 +53,17 @@ _CCCL_SUPPRESS_DEPRECATED_PUSH
 //! @brief Gets the cuGetProcAddress function pointer.
 [[nodiscard]] _CCCL_PUBLIC_HOST_API inline auto __getProcAddressFn() -> decltype(cuGetProcAddress)*
 {
+  const char* __fn_name = "cuGetProcAddress_v2";
 #  if _CCCL_OS(WINDOWS)
   static auto __driver_library = ::LoadLibraryExA("nvcuda.dll", nullptr, LOAD_LIBRARY_SEARCH_SYSTEM32);
   if (__driver_library == nullptr)
   {
     ::cuda::__throw_cuda_error(::cudaErrorUnknown, "Failed to load nvcuda.dll");
   }
-  static void* __fn = ::GetProcAddress(__driver_library, "cuGetProcAddress_v2");
+  static void* __fn = ::GetProcAddress(__driver_library, __fn_name);
   if (__fn == nullptr)
   {
-    ::cuda::__throw_cuda_error(::cudaErrorUnknown, "Failed to get cuGetProcAddress_v2 from nvcuda.dll");
+    ::cuda::__throw_cuda_error(::cudaErrorInitializationError, "Failed to get cuGetProcAddress from nvcuda.dll");
   }
 #  else // ^^^ _CCCL_OS(WINDOWS) ^^^ / vvv !_CCCL_OS(WINDOWS) vvv
 #    if _CCCL_OS(ANDROID)
@@ -75,10 +76,10 @@ _CCCL_SUPPRESS_DEPRECATED_PUSH
   {
     ::cuda::__throw_cuda_error(::cudaErrorUnknown, "Failed to load libcuda.so.1");
   }
-  static void* __fn = ::dlsym(__driver_library, "cuGetProcAddress_v2");
+  static void* __fn = ::dlsym(__driver_library, __fn_name);
   if (__fn == nullptr)
   {
-    ::cuda::__throw_cuda_error(::cudaErrorUnknown, "Failed to get cuGetProcAddress_v2 from libcuda.so.1");
+    ::cuda::__throw_cuda_error(::cudaErrorInitializationError, "Failed to get cuGetProcAddress from libcuda.so.1");
   }
 #  endif // ^^^ !_CCCL_OS(WINDOWS) ^^^
   return reinterpret_cast<decltype(cuGetProcAddress)*>(__fn);
