@@ -107,7 +107,7 @@ _CCCL_HOST_API inline bool is_host_accessible(const void* __p)
  * @return `true` if the pointer is a device pointer, `false` otherwise.
  */
 [[nodiscard]]
-_CCCL_HOST_API inline bool __is_device_memory(const void* __p)
+_CCCL_HOST_API inline bool __is_device_memory(const void* __p) noexcept
 {
   if (__p == nullptr)
   {
@@ -126,7 +126,7 @@ _CCCL_HOST_API inline bool __is_device_memory(const void* __p)
   const auto __status      = ::cuda::__driver::__pointerGetAttributesNoThrow(__attrs, __results, __p);
   if (__status != ::cudaSuccess)
   {
-    ::cuda::__throw_cuda_error(__status, "is_device_accessible() failed", _CCCL_BUILTIN_PRETTY_FUNCTION());
+    return false;
   }
   // (1) check if the pointer is unregistered
   if (__memory_type == static_cast<::CUmemorytype>(0))
