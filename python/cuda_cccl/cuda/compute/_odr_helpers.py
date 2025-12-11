@@ -36,6 +36,7 @@ if TYPE_CHECKING:
 
 __all__ = [
     "create_op_void_ptr_wrapper",
+    "create_stateful_op_void_ptr_wrapper",
     "create_advance_void_ptr_wrapper",
     "create_input_dereference_void_ptr_wrapper",
     "create_output_dereference_void_ptr_wrapper",
@@ -48,6 +49,8 @@ class _ArgMode(enum.Enum):
     LOAD = "load"  # Cast to typed pointer, load value
     PTR = "ptr"  # Cast to typed pointer, pass pointer directly
     STORE = "store"  # Cast to typed pointer, store return value here
+    # Unpack packed data pointers into array structs
+    PACKED_STATE_ARRAYS = "packed_state_arrays"
 
 
 class _ArgSpec:
@@ -58,6 +61,71 @@ class _ArgSpec:
     def __init__(self, numba_type, mode: _ArgMode):
         self.numba_type = numba_type
         self.mode = mode
+
+
+def _build_numba_array_struct(context, builder, array_type, data_ptr, info):
+    """Build a numba array struct from a data pointer and array info.
+
+    Args:
+        context: Numba codegen context
+        builder: LLVM IR builder
+        array_type: Numba Array type for the array
+        data_ptr: LLVM value for the data pointer
+        info: Dict with 'shape', 'itemsize', 'strides' for the array
+
+    Returns:
+        LLVM value representing the array struct
+    """
+    import llvmlite.ir as ir
+    from numba.cuda.np.arrayobj import make_array, populate_array
+
+    out_ary = make_array(array_type)(context, builder)
+
+    populate_array(
+        out_ary,
+        data=data_ptr,
+        shape=[ir.Constant(ir.IntType(64), info["shape"])],
+        strides=[ir.Constant(ir.IntType(64), info["strides"])],
+        itemsize=info["itemsize"],
+        meminfo=None,
+    )
+
+    return out_ary._getvalue()
+
+
+def _unpack_state_arrays(context, builder, packed_ptr, type_info_pairs):
+    """Unpack packed data pointers into numba array structs.
+
+    Args:
+        context: Numba codegen context
+        builder: LLVM IR builder
+        packed_ptr: void* pointing to an array of data pointers
+        type_info_pairs: List of (array_type, info) tuples
+
+    Returns:
+        List of LLVM values representing the unpacked array structs
+    """
+    import llvmlite.ir as ir
+
+    # Cast void* to pointer-to-pointer (array of pointers)
+    ptr_type = ir.IntType(64).as_pointer()
+    base_ptr = builder.bitcast(packed_ptr, ptr_type.as_pointer())
+
+    result = []
+    for j, (array_type, info) in enumerate(type_info_pairs):
+        # Load j-th pointer from the array and cast to correct type
+        elem_ptr = builder.gep(base_ptr, [ir.Constant(ir.IntType(32), j)])
+        dtype_llvm = context.get_value_type(array_type.dtype)
+        typed_ptr_ptr = builder.bitcast(elem_ptr, dtype_llvm.as_pointer().as_pointer())
+        data_ptr = builder.load(typed_ptr_ptr)
+
+        # Build array struct from pointer
+        array_val = _build_numba_array_struct(
+            context, builder, array_type, data_ptr, info
+        )
+        result.append(array_val)
+
+    return result
 
 
 def _codegen_void_ptr_wrapper(
@@ -82,6 +150,7 @@ def _codegen_void_ptr_wrapper(
     """
 
     input_vals = []
+    state_array_vals = []  # Collected separately, appended at end
     ret_ptr = None
 
     for i, (arg, spec) in enumerate(zip(args, arg_specs)):
@@ -101,8 +170,19 @@ def _codegen_void_ptr_wrapper(
                 # Cast void* to typed pointer for storing result
                 llvm_type = context.get_value_type(spec.numba_type)
                 ret_ptr = builder.bitcast(arg, llvm_type.as_pointer())
+            case _ArgMode.PACKED_STATE_ARRAYS:
+                # Unpack packed data pointers and construct array structs
+                # numba_type is a list of (array_type, info) tuples
+                # State arrays go at the END of input_vals (after regular args)
+                array_vals = _unpack_state_arrays(
+                    context, builder, arg, spec.numba_type
+                )
+                state_array_vals.extend(array_vals)
             case _:
                 raise ValueError(f"Invalid arg mode: {spec.mode}")
+
+    # Append state arrays at the end (inner_sig expects regular args first)
+    input_vals.extend(state_array_vals)
 
     # Call the inner function
     cres = context.compile_subroutine(builder, func_device, inner_sig, caching=False)
@@ -188,6 +268,43 @@ def create_op_void_ptr_wrapper(op, sig: "Signature"):
     """
     arg_specs = [_ArgSpec(t, _ArgMode.LOAD) for t in sig.args]
     arg_specs.append(_ArgSpec(sig.return_type, _ArgMode.STORE))
+    return _create_void_ptr_wrapper(op, op.__name__, arg_specs, sig)
+
+
+def create_stateful_op_void_ptr_wrapper(
+    op, sig: "Signature", state_array_types, state_info
+):
+    """Creates a wrapper function for a stateful operator with void* arguments.
+
+    The user function expects arrays (for atomics), so we construct array
+    structs from the pointers that C++ gives us.
+
+    The wrapper takes N+2 void* arguments:
+    - states_ptr: pointer to packed array of data pointers for state arrays
+    - input args: one for each regular input argument
+    - result: pointer where result is stored
+
+    Args:
+        op: The user's callable operator
+        sig: The signature of the operator (regular_arg, state_array1, state_array2, ...) -> return_type
+        state_array_types: List/tuple of numba Array types for the state parameters
+        state_info: List/tuple of dicts with 'shape', 'itemsize', 'strides' for each state array
+
+    Returns:
+        Tuple of (wrapper_func, wrapper_sig)
+    """
+    num_states = len(state_array_types)
+    num_regular_args = len(sig.args) - num_states
+
+    # Build arg_specs: states_ptr + regular inputs + result
+    # The packed state arrays spec goes first, then regular LOAD args, then STORE for result
+    # numba_type is a list of (array_type, info) tuples for PACKED_STATE_ARRAYS
+    type_info_pairs = list(zip(state_array_types, state_info))
+    arg_specs = [_ArgSpec(type_info_pairs, _ArgMode.PACKED_STATE_ARRAYS)]
+    for i in range(num_regular_args):
+        arg_specs.append(_ArgSpec(sig.args[i], _ArgMode.LOAD))
+    arg_specs.append(_ArgSpec(sig.return_type, _ArgMode.STORE))
+
     return _create_void_ptr_wrapper(op, op.__name__, arg_specs, sig)
 
 

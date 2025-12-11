@@ -7,6 +7,7 @@ from __future__ import annotations
 import enum
 import functools
 import os
+import struct
 import subprocess
 import tempfile
 import warnings
@@ -229,6 +230,57 @@ def to_stateless_cccl_op(op, sig: "Signature") -> Op:
         ltoir=ltoir,
         state_alignment=1,
         state=None,
+    )
+
+
+def to_stateful_cccl_op(func, state_arrays, sig: "Signature") -> Op:
+    from ._odr_helpers import create_stateful_op_void_ptr_wrapper
+
+    # Validate all state arrays are contiguous
+    for i, state_array in enumerate(state_arrays):
+        if not is_contiguous(state_array):
+            raise ValueError(f"state array {i} must be contiguous")
+
+    # Get state pointers - pointers to the device array data
+    state_ptrs = [get_data_pointer(arr) for arr in state_arrays]
+
+    # Get the array types from the signature
+    # For StatefulOp: sig.args = (regular_arg, state_array1, state_array2, ...)
+    # So state types are sig.args[-len(state_arrays):]
+    state_array_types = sig.args[-len(state_arrays) :]
+
+    # Get shape and itemsize from each state array
+    state_info = []
+    for state_array in state_arrays:
+        state_info.append(
+            {
+                "shape": len(state_array),
+                "itemsize": get_dtype(state_array).itemsize,
+                "strides": get_dtype(state_array).itemsize,
+            }
+        )
+
+    # All pointers have the same alignment, use pointer-sized int alignment
+    state_alignment = _numba_type_to_info(types.intp).alignment
+
+    # Create the stateful wrapper (constructs arrays from pointers)
+    wrapped_op, wrapper_sig = create_stateful_op_void_ptr_wrapper(
+        func, sig, state_array_types, state_info
+    )
+
+    # Compile the wrapper to LTOIR
+    ltoir, _ = cuda.compile(wrapped_op, sig=wrapper_sig, output="ltoir")
+
+    # Pack all data pointers as bytes (sequentially)
+    state_bytes = struct.pack(f"{len(state_ptrs)}P", *state_ptrs)
+
+    # Return Op with STATEFUL kind and packed pointers
+    return Op(
+        operator_type=OpKind.STATEFUL,
+        name=wrapped_op.__name__,
+        ltoir=ltoir,
+        state_alignment=state_alignment,
+        state=state_bytes,
     )
 
 
