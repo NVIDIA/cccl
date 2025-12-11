@@ -21,7 +21,7 @@ void find_if(nvbench::state& state, nvbench::type_list<T>)
   thrust::fill(dinput.begin(), dinput.begin() + mismatch_point, T{0});
   thrust::fill(dinput.begin() + mismatch_point, dinput.end(), val);
 
-  state.add_global_memory_reads<T>(mismatch_point);
+  state.add_global_memory_reads<T>(mismatch_point + 1);
   state.add_global_memory_writes<size_t>(1);
 
   caching_allocator_t alloc;
