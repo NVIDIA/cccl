@@ -69,7 +69,7 @@ struct string
 };
 
 template <typename... Ts>
-string(Ts&&...) -> string<(0 + ... + string_part_len<cuda::std::remove_cvref_t<Ts>>) +1>;
+_CCCL_DEDUCTION_GUIDE_EXSPACE string(Ts&&...) -> string<(0 + ... + string_part_len<cuda::std::remove_cvref_t<Ts>>) +1>;
 #pragma nv_diag_default 177
 
 __device__ consteval auto comma()

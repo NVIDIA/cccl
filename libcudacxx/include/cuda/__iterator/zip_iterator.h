@@ -519,10 +519,10 @@ public:
 };
 
 template <class... _Iterators>
-_CCCL_HOST_DEVICE zip_iterator(::cuda::std::tuple<_Iterators...>) -> zip_iterator<_Iterators...>;
+_CCCL_DEDUCTION_GUIDE_EXSPACE zip_iterator(::cuda::std::tuple<_Iterators...>) -> zip_iterator<_Iterators...>;
 
 template <class... _Iterators>
-_CCCL_HOST_DEVICE zip_iterator(_Iterators...) -> zip_iterator<_Iterators...>;
+_CCCL_DEDUCTION_GUIDE_EXSPACE zip_iterator(_Iterators...) -> zip_iterator<_Iterators...>;
 
 //! @brief Creates a @c zip_iterator from a tuple of iterators.
 //! @param __t The tuple of iterators to wrap

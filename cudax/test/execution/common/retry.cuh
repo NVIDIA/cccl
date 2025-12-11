@@ -40,7 +40,7 @@ struct _conv
 };
 
 template <class F>
-_conv(F) -> _conv<F>;
+_CCCL_DEDUCTION_GUIDE_EXSPACE _conv(F) -> _conv<F>;
 
 ///////////////////////////////////////////////////////////////////////////////
 // retry algorithm:

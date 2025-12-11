@@ -32,6 +32,13 @@
 #  define _CCCL_HOST_DEVICE
 #endif // !_CCCL_CUDA_COMPILATION
 
+// clang-cuda before version 22 requires __host__ __device__ annotations on deduction guides
+#if _CCCL_CUDA_COMPILER(CLANG, <, 22)
+#  define _CCCL_DEDUCTION_GUIDE_EXSPACE _CCCL_HOST_DEVICE
+#else // ^^^ _CCCL_CUDA_COMPILER(CLANG, <, 22) ^^^ / vvv !_CCCL_CUDA_COMPILER(CLANG, <, 22) vvv
+#  define _CCCL_DEDUCTION_GUIDE_EXSPACE
+#endif // ^^ !_CCCL_CUDA_COMPILER(CLANG, <, 22) ^^^
+
 // Global variables of non builtin types are only device accessible if they are marked as `__device__`
 #if _CCCL_DEVICE_COMPILATION() && !_CCCL_CUDA_COMPILER(NVHPC)
 #  define _CCCL_GLOBAL_VARIABLE _CCCL_DEVICE

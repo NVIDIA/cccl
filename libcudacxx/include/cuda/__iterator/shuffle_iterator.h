@@ -308,11 +308,12 @@ public:
 
 _CCCL_TEMPLATE(class _Bijection)
 _CCCL_REQUIRES(__is_bijection<_Bijection>)
-_CCCL_HOST_DEVICE shuffle_iterator(_Bijection) -> shuffle_iterator<typename _Bijection::index_type, _Bijection>;
+_CCCL_DEDUCTION_GUIDE_EXSPACE shuffle_iterator(_Bijection)
+  -> shuffle_iterator<typename _Bijection::index_type, _Bijection>;
 
 _CCCL_TEMPLATE(class _Bijection, typename _Integral)
 _CCCL_REQUIRES(__is_bijection<_Bijection> _CCCL_AND ::cuda::std::is_integral_v<_Integral>)
-_CCCL_HOST_DEVICE shuffle_iterator(_Bijection, _Integral)
+_CCCL_DEDUCTION_GUIDE_EXSPACE shuffle_iterator(_Bijection, _Integral)
   -> shuffle_iterator<typename _Bijection::index_type, _Bijection>;
 
 //! @brief make_shuffle_iterator creates a @c shuffle_iterator from an integer and a bijection function

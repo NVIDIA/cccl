@@ -526,7 +526,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT pair : public __pair_base<_T1, _T2>
 };
 
 template <class _T1, class _T2>
-_CCCL_HOST_DEVICE pair(_T1, _T2) -> pair<_T1, _T2>;
+_CCCL_DEDUCTION_GUIDE_EXSPACE pair(_T1, _T2) -> pair<_T1, _T2>;
 
 // [pairs.spec], specialized algorithms
 

@@ -290,11 +290,11 @@ public:
 };
 
 template <class _Tp>
-_CCCL_HOST_DEVICE constant_iterator(_Tp) -> constant_iterator<_Tp, ::cuda::std::ptrdiff_t>;
+_CCCL_DEDUCTION_GUIDE_EXSPACE constant_iterator(_Tp) -> constant_iterator<_Tp, ::cuda::std::ptrdiff_t>;
 
 _CCCL_TEMPLATE(class _Tp, typename _Index)
 _CCCL_REQUIRES(::cuda::std::__integer_like<_Index>)
-_CCCL_HOST_DEVICE constant_iterator(_Tp, _Index) -> constant_iterator<_Tp, _Index>;
+_CCCL_DEDUCTION_GUIDE_EXSPACE constant_iterator(_Tp, _Index) -> constant_iterator<_Tp, _Index>;
 
 //! @brief Creates a @c constant_iterator from a value and an index
 //! @param __value The value to be stored

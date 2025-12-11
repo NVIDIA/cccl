@@ -180,7 +180,7 @@ public:
 };
 
 template <class _Range>
-_CCCL_HOST_DEVICE drop_view(_Range&&, range_difference_t<_Range>)
+_CCCL_DEDUCTION_GUIDE_EXSPACE drop_view(_Range&&, range_difference_t<_Range>)
   -> drop_view<::cuda::std::ranges::views::all_t<_Range>>;
 
 template <class _Tp>
