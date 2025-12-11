@@ -384,6 +384,13 @@ static_assert(device_reduce_policy()(::cuda::arch_id{{CUB_PTX_ARCH / 10}}) == {7
   return error;
 }
 
+// c.parallel provides two separate reduce functions, one for each determinism
+// level, rather than a single function with a runtime switch. This mirrors CUB's
+// design, which uses distinct dispatch functions because the host-side logic
+// differs between determinism levels. Keeping the functions separate avoids
+// branching at runtime to select the appropriate one; cuda.compute selects the
+// appropriate function to call at build time.
+
 CUresult cccl_device_reduce(
   cccl_device_reduce_build_result_t build,
   void* d_temp_storage,
