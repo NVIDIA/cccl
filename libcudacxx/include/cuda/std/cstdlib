@@ -21,6 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__cmath/abs.h> // cuda::std::abs overloads for floating point types
 #include <cuda/std/__cstdlib/abs.h>
 #include <cuda/std/__cstdlib/aligned_alloc.h>
 #include <cuda/std/__cstdlib/div.h>
