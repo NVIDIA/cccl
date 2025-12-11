@@ -30,7 +30,8 @@ def select_iterator(size, d_in, out, num_selected, build_only):
     def less_than_50(x):
         return x < 50
 
-    selector = cuda.compute.make_select(d_in_iter, out, num_selected, less_than_50)
+    selector = cuda.compute.make_select(
+        d_in_iter, out, num_selected, less_than_50)
     if not build_only:
         temp_bytes = selector(None, d_in_iter, out, num_selected, size)
         temp_storage = cp.empty(temp_bytes, dtype=np.uint8)
@@ -51,7 +52,8 @@ def select_struct(inp, out, num_selected, build_only):
     def in_first_quadrant(p: Point) -> np.uint8:
         return (p.x > 50) and (p.y > 50)
 
-    selector = cuda.compute.make_select(inp, out, num_selected, in_first_quadrant)
+    selector = cuda.compute.make_select(
+        inp, out, num_selected, in_first_quadrant)
     if not build_only:
         temp_bytes = selector(None, inp, out, num_selected, size)
         temp_storage = cp.empty(temp_bytes, dtype=np.uint8)
@@ -66,7 +68,8 @@ def select_stateful(inp, out, num_selected, threshold_state, build_only):
     def threshold_select(x):
         return x > threshold_state[0]
 
-    selector = cuda.compute.make_select(inp, out, num_selected, threshold_select)
+    selector = cuda.compute.make_select(
+        inp, out, num_selected, threshold_select)
     if not build_only:
         temp_bytes = selector(None, inp, out, num_selected, size)
         temp_storage = cp.empty(temp_bytes, dtype=np.uint8)
@@ -84,7 +87,8 @@ def bench_select_pointer(bench_fixture, request, size):
 
     def run():
         select_pointer(
-            inp, out, num_selected, build_only=(bench_fixture == "compile_benchmark")
+            inp, out, num_selected, build_only=(
+                bench_fixture == "compile_benchmark")
         )
 
     fixture = request.getfixturevalue(bench_fixture)
@@ -114,13 +118,15 @@ def bench_select_iterator(bench_fixture, request, size):
 @pytest.mark.parametrize("bench_fixture", ["compile_benchmark", "benchmark"])
 def bench_select_struct(bench_fixture, request, size):
     actual_size = 100 if bench_fixture == "compile_benchmark" else size
-    inp = cp.random.randint(0, 100, (actual_size, 2), dtype=np.int32).view(Point.dtype)
+    inp = cp.random.randint(0, 100, (actual_size, 2),
+                            dtype=np.int32).view(Point.dtype)
     out = cp.empty_like(inp)
     num_selected = cp.empty(2, dtype=np.uint64)
 
     def run():
         select_struct(
-            inp, out, num_selected, build_only=(bench_fixture == "compile_benchmark")
+            inp, out, num_selected, build_only=(
+                bench_fixture == "compile_benchmark")
         )
 
     fixture = request.getfixturevalue(bench_fixture)
