@@ -202,8 +202,8 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto configure_as
   -> cuda_expected<
     ::cuda::std::tuple<decltype(launcher_factory(0, 0, 0, 0)), decltype(kernel_source.TransformKernel()), int>>
 {
-  CUB_DETAIL_CONSTEXPR_ISH const transform_arch_policy& policy = policy_getter();
-  CUB_DETAIL_CONSTEXPR_ISH int block_threads                   = policy.async_copy_policy.block_threads;
+  CUB_DETAIL_CONSTEXPR_ISH const transform_arch_policy policy = policy_getter();
+  CUB_DETAIL_CONSTEXPR_ISH int block_threads                  = policy.async_copy_policy.block_threads;
 
   _CCCL_ASSERT(block_threads % alignment == 0, "block_threads needs to be a multiple of the copy alignment");
   // ^ then tile_size is a multiple of it
@@ -344,7 +344,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t invoke_prefetch_or_vectorized
   KernelSource kernel_source,
   KernelLauncherFactory launcher_factory)
 {
-  CUB_DETAIL_CONSTEXPR_ISH const transform_arch_policy& policy = policy_getter();
+  CUB_DETAIL_CONSTEXPR_ISH const transform_arch_policy policy = policy_getter();
   CUB_DETAIL_CONSTEXPR_ISH const int block_threads =
     policy.algorithm == Algorithm::vectorized
       ? policy.vectorized_policy.block_threads
@@ -464,7 +464,7 @@ struct invoke_for_arch<::cuda::std::tuple<RandomAccessIteratorsIn...>,
   template <typename PolicyGetter>
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t operator()(PolicyGetter policy_getter) const
   {
-    CUB_DETAIL_CONSTEXPR_ISH const transform_arch_policy& active_policy = policy_getter();
+    CUB_DETAIL_CONSTEXPR_ISH transform_arch_policy active_policy = policy_getter();
     const auto seq = ::cuda::std::index_sequence_for<RandomAccessIteratorsIn...>{};
 
 #if !_CCCL_COMPILER(NVRTC) && defined(CUB_DEBUG_LOG)

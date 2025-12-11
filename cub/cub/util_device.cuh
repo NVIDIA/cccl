@@ -843,11 +843,15 @@ namespace detail
 template <::cuda::arch_id ArchId, typename ArchPolicies, typename FunctorT>
 CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t call_for_arch(ArchPolicies arch_policies, FunctorT&& f)
 {
-  // this function is instantiated per ArchId, but we instantiate f only for each distinct policy (!!)
   static constexpr auto policy = arch_policies(ArchId);
-  return f([]() -> const auto& {
+#  if _CCCL_STD_VER >= 2020
+  // we instantiate f only for each distinct policy (!!)
+  return f(::cuda::std::integral_constant<decltype(policy), policy>{});
+#  else
+  return f([] {
     return policy;
   });
+#  endif
 }
 
 template <int ArchMult, int... CudaArches, typename ArchPolicies, typename FunctorT>
@@ -895,8 +899,8 @@ _CCCL_EXEC_CHECK_DISABLE
 template <typename ArchPolicies, typename F>
 _CCCL_API _CCCL_FORCEINLINE cudaError_t dispatch_arch(ArchPolicies arch_policies, ::cuda::arch_id device_arch, F&& f)
 {
-  return f([policy = arch_policies(device_arch)]() -> const auto& {
-    return policy;
+  return f([&] {
+    return arch_policies(device_arch);
   });
 }
 #endif // !defined(CUB_DEFINE_RUNTIME_POLICIES) && !_CCCL_COMPILER(NVRTC)
