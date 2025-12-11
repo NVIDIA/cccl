@@ -57,7 +57,7 @@ template <typename InputIt, typename OutputIt, typename BinaryOp>
 void compute_find_if_reference(InputIt first, InputIt last, OutputIt& result, BinaryOp op)
 {
   auto pos = std::find_if(first, last, op); // not thrust::find_if because it will rely on cub::FindIf
-  result   = static_cast<OutputIt>(pos - first);
+  result   = static_cast<OutputIt>(std::distance(first, pos));
 }
 
 template <typename T>
@@ -65,7 +65,8 @@ struct equals
 {
   T val;
 
-  __device__ __host__ bool operator()(T i) const
+  template <typename U>
+  __device__ __host__ bool operator()(const U& i) const
   {
     return i == val;
   }
@@ -78,7 +79,7 @@ C2H_TEST("Device find_if works", "[device]", value_types, offset_types)
   using offset_t = output_t;
 
   constexpr offset_t min_items = 1;
-  constexpr offset_t max_items = std::numeric_limits<offset_t>::max() / 5; // forces test to run faster
+  constexpr offset_t max_items = 10000000; // 10M items for reasonable test time
 
   // Generate the input sizes to test for
   const offset_t num_items = GENERATE_COPY(
@@ -132,6 +133,8 @@ C2H_TEST("Device find_if works", "[device]", value_types, offset_types)
   else
   {
     // For vector types, use a default constant value
+    // Note: find_scenario is not used here because we always use the default constant
+    (void) find_scenario;
     init_default_constant(val_to_find);
   }
 
@@ -202,7 +205,7 @@ C2H_TEST("Device find_if works with non primitive iterator",
   using offset_t = output_t;
 
   constexpr offset_t min_items = 1;
-  constexpr offset_t max_items = std::numeric_limits<offset_t>::max() / 5; // make test run faster
+  constexpr offset_t max_items = 10000000; // 10M items for reasonable test time
 
   using op_t          = equals<input_t>;
   input_t val_to_find = static_cast<input_t>(GENERATE_COPY(take(1, random(min_items, max_items))));
