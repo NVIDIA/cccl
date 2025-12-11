@@ -31,9 +31,11 @@ struct policy_hub
     // This list will be examined whether they can be used in one-worker-per-segment approach without exceeding shared
     // memory. The sequence must be ordered by segment size in descending order
     using worker_per_segment_policies =
-      ::cuda::std::tuple<AgentSegmentedTopkWorkerPerSegmentPolicy<512, 8>,
-                         AgentSegmentedTopkWorkerPerSegmentPolicy<512, 4>,
+      ::cuda::std::tuple<AgentSegmentedTopkWorkerPerSegmentPolicy<256, 64>,
+                         AgentSegmentedTopkWorkerPerSegmentPolicy<256, 32>,
+                         AgentSegmentedTopkWorkerPerSegmentPolicy<256, 16>,
                          AgentSegmentedTopkWorkerPerSegmentPolicy<256, 8>,
+                         AgentSegmentedTopkWorkerPerSegmentPolicy<256, 4>,
                          AgentSegmentedTopkWorkerPerSegmentPolicy<128, 2>>;
   };
 

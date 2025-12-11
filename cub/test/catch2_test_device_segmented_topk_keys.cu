@@ -82,7 +82,7 @@ using key_types = c2h::type_list<cuda::std::uint32_t>;
 #else
 
 // Total segment size
-using max_segment_size_list = c2h::enum_type_list<cuda::std::size_t, 1024>;
+using max_segment_size_list = c2h::enum_type_list<cuda::std::size_t, 4 * 1024>;
 
 // Segment size: static, uniform
 using max_num_k_list = c2h::enum_type_list<cuda::std::size_t, 1, 8, 32, 128, 45056>;
