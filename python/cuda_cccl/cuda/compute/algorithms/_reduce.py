@@ -101,12 +101,10 @@ def _make_cache_key(
     h_init: np.ndarray | GpuStruct,
 ):
     d_in_key = (
-        d_in.kind if isinstance(
-            d_in, IteratorBase) else protocols.get_dtype(d_in)
+        d_in.kind if isinstance(d_in, IteratorBase) else protocols.get_dtype(d_in)
     )
     d_out_key = (
-        d_out.kind if isinstance(
-            d_out, IteratorBase) else protocols.get_dtype(d_out)
+        d_out.kind if isinstance(d_out, IteratorBase) else protocols.get_dtype(d_out)
     )
     h_init_key = h_init.dtype
     return (d_in_key, d_out_key, op.get_cache_key(), h_init_key)

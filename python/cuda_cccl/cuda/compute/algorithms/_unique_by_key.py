@@ -87,8 +87,7 @@ class _UniqueByKey:
         self.d_in_items_cccl = cccl.to_cccl_input_iter(d_in_items)
         self.d_out_keys_cccl = cccl.to_cccl_output_iter(d_out_keys)
         self.d_out_items_cccl = cccl.to_cccl_output_iter(d_out_items)
-        self.d_out_num_selected_cccl = cccl.to_cccl_output_iter(
-            d_out_num_selected)
+        self.d_out_num_selected_cccl = cccl.to_cccl_output_iter(d_out_num_selected)
         self.op = op
 
         # Compile the op - unique_by_key expects bool return (comparison)
@@ -120,8 +119,7 @@ class _UniqueByKey:
         set_cccl_iterator_state(self.d_in_items_cccl, d_in_items)
         set_cccl_iterator_state(self.d_out_keys_cccl, d_out_keys)
         set_cccl_iterator_state(self.d_out_items_cccl, d_out_items)
-        set_cccl_iterator_state(
-            self.d_out_num_selected_cccl, d_out_num_selected)
+        set_cccl_iterator_state(self.d_out_num_selected_cccl, d_out_num_selected)
 
         stream_handle = validate_and_get_stream(stream)
         if temp_storage is None:

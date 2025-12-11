@@ -125,12 +125,10 @@ def _make_unary_transform_cache_key(
     op: OpAdapter,
 ):
     d_in_key = (
-        d_in.kind if isinstance(
-            d_in, IteratorBase) else protocols.get_dtype(d_in)
+        d_in.kind if isinstance(d_in, IteratorBase) else protocols.get_dtype(d_in)
     )
     d_out_key = (
-        d_out.kind if isinstance(
-            d_out, IteratorBase) else protocols.get_dtype(d_out)
+        d_out.kind if isinstance(d_out, IteratorBase) else protocols.get_dtype(d_out)
     )
     return (d_in_key, d_out_key, op.get_cache_key())
 
@@ -142,16 +140,13 @@ def _make_binary_transform_cache_key(
     op: OpAdapter,
 ):
     d_in1_key = (
-        d_in1.kind if isinstance(
-            d_in1, IteratorBase) else protocols.get_dtype(d_in1)
+        d_in1.kind if isinstance(d_in1, IteratorBase) else protocols.get_dtype(d_in1)
     )
     d_in2_key = (
-        d_in2.kind if isinstance(
-            d_in2, IteratorBase) else protocols.get_dtype(d_in2)
+        d_in2.kind if isinstance(d_in2, IteratorBase) else protocols.get_dtype(d_in2)
     )
     d_out_key = (
-        d_out.kind if isinstance(
-            d_out, IteratorBase) else protocols.get_dtype(d_out)
+        d_out.kind if isinstance(d_out, IteratorBase) else protocols.get_dtype(d_out)
     )
     return (d_in1_key, d_in2_key, d_out_key, op.get_cache_key())
 
