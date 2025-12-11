@@ -323,25 +323,29 @@ _CCCL_HOST_DEVICE constexpr auto bulk_copy_dyn_smem_for_tile_size(
   return 12 * 1024; // V100 and below
 }
 
-[[nodiscard]] _CCCL_API constexpr auto vectorized_policy_for_filling(::cuda::arch_id arch, int store_size)
+[[nodiscard]] _CCCL_API constexpr auto tuned_vectorized_policy(::cuda::arch_id arch, int store_size, bool is_filling)
 {
-  // manually tuned fill on RTX 5090
-  // TODO(bgruber): re-enable this later! It's disabled to avoid SASS changes in PR #6914
-  // if (arch >= ::cuda::arch_id::sm_120)
-  // {
-  //   return vectorized_policy{256, 8, 4};
-  // }
-  // manually tuned fill on B200, same as H200
-  if (arch >= ::cuda::arch_id::sm_90)
+  if (is_filling)
   {
-    return vectorized_policy{
-      store_size > 4 ? 128 : 256, 16, ::cuda::std::max(8 / store_size, 1) /* 64-bit instructions */};
+    // manually tuned fill on RTX 5090
+    // TODO(bgruber): re-enable this later! It's disabled to avoid SASS changes in PR #6914
+    // if (arch >= ::cuda::arch_id::sm_120)
+    // {
+    //   return vectorized_policy{256, 8, 4};
+    // }
+    // manually tuned fill on B200, same as H200
+    if (arch >= ::cuda::arch_id::sm_90)
+    {
+      return vectorized_policy{
+        store_size > 4 ? 128 : 256, 16, ::cuda::std::max(8 / store_size, 1) /* 64-bit instructions */};
+    }
+    // manually tuned fill on A100
+    if (arch >= ::cuda::arch_id::sm_90)
+    {
+      return vectorized_policy{256, 8, ::cuda::std::max(8 / store_size, 1) /* 64-bit instructions */};
+    }
   }
-  // manually tuned fill on A100
-  if (arch >= ::cuda::arch_id::sm_90)
-  {
-    return vectorized_policy{256, 8, ::cuda::std::max(8 / store_size, 1) /* 64-bit instructions */};
-  }
+
   // defaults from fill on RTX 5090, but can be changed
   return vectorized_policy{256, 8, 4};
 }
@@ -380,9 +384,10 @@ struct arch_policies
       const int async_block_size = arch < ::cuda::arch_id::sm_100 ? 256 : 128;
       const int alignment        = bulk_copy_alignment(arch);
 
-      const auto prefetch   = prefetch_policy{256};
-      const auto vectorized = vectorized_policy_for_filling(arch, ::cuda::std::max(1, output.value_type_size));
-      const auto async      = async_copy_policy{async_block_size, alignment};
+      const auto prefetch = prefetch_policy{256};
+      const auto vectorized =
+        tuned_vectorized_policy(arch, ::cuda::std::max(1, output.value_type_size), InputCount == 0);
+      const auto async = async_copy_policy{async_block_size, alignment};
 
       // We cannot use the architecture-specific amount of SMEM here instead of max_smem_per_block, because this is not
       // forward compatible. If a user compiled for sm_xxx and we assume the available SMEM for that architecture, but
@@ -436,8 +441,9 @@ struct arch_policies
     {
       const int block_threads = 256;
       const auto prefetch     = prefetch_policy{block_threads};
-      const auto vectorized   = vectorized_policy_for_filling(arch, ::cuda::std::max(1, output.value_type_size));
-      const auto async        = async_copy_policy{block_threads, ldgsts_size_and_align};
+      const auto vectorized =
+        tuned_vectorized_policy(arch, ::cuda::std::max(1, output.value_type_size), InputCount == 0);
+      const auto async = async_copy_policy{block_threads, ldgsts_size_and_align};
 
       // We cannot use the architecture-specific amount of SMEM here instead of max_smem_per_block, because this is not
       // forward compatible. If a user compiled for sm_xxx and we assume the available SMEM for that architecture, but
@@ -468,7 +474,7 @@ struct arch_policies
       min_bif,
       fallback_to_prefetch ? Algorithm::prefetch : Algorithm::vectorized,
       prefetch_policy{256},
-      vectorized_policy_for_filling(::cuda::arch_id::sm_60, ::cuda::std::max(1, output.value_type_size)),
+      tuned_vectorized_policy(::cuda::arch_id::sm_60, ::cuda::std::max(1, output.value_type_size), InputCount == 0),
       async_copy_policy{}, // never used
     };
   }
