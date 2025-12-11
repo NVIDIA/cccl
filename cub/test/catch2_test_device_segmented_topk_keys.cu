@@ -46,7 +46,7 @@ CUB_RUNTIME_FUNCTION static cudaError_t dispatch_segmented_topk_keys(
   using value_it_t = cub::NullType**;
 
   auto values_it = static_cast<cub::NullType**>(nullptr);
-  return cub::detail::topk::DispatchSegmentedTopK<
+  return cub::detail::segmented_topk::DispatchSegmentedTopK<
     KeyInputItItT,
     KeyOutputItItT,
     value_it_t,
@@ -255,12 +255,11 @@ C2H_TEST("DeviceSegmentedTopK::{Min,Max}Keys work with small fixed-size segments
   segmented_topk_keys(
     d_keys_in,
     d_keys_out,
-    cub::detail::topk::segment_size_uniform<1, max_segment_size>{segment_size},
-    cub::detail::topk::k_uniform<1, static_max_k>{k},
-    cub::detail::topk::select_direction_uniform{direction},
-    cub::detail::topk::num_segments_uniform<>{num_segments},
-    cub::detail::topk::total_num_items_guarantee{num_segments * segment_size});
-
+    cub::detail::segmented_topk::segment_size_uniform<1, max_segment_size>{segment_size},
+    cub::detail::segmented_topk::k_uniform<1, static_max_k>{k},
+    cub::detail::segmented_topk::select_direction_uniform{direction},
+    cub::detail::segmented_topk::num_segments_uniform<>{num_segments},
+    cub::detail::segmented_topk::total_num_items_guarantee{num_segments * segment_size});
   // Prepare expected results
   segmented_sort_keys(expected_keys, num_segments, segment_size, direction);
   compact_sorted_keys_to_topk(expected_keys, segment_size, k);

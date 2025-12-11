@@ -25,7 +25,7 @@
 #include <cub/agent/agent_topk.cuh>
 #include <cub/block/block_radix_sort.cuh>
 #include <cub/device/dispatch/dispatch_common.cuh>
-#include <cub/device/dispatch/tuning/tuning_topk.cuh>
+#include <cub/device/dispatch/tuning/tuning_segmented_topk.cuh>
 #include <cub/util_device.cuh>
 #include <cub/util_math.cuh>
 #include <cub/util_temporary_storage.cuh>
@@ -283,7 +283,7 @@ constexpr _CCCL_HOST_DEVICE auto resolve_param(ParamT const& p, [[maybe_unused]]
 }
 } // namespace detail::params
 
-namespace detail::topk
+namespace detail::segmented_topk
 {
 // ------------ Helper to create segment iterators ------------
 
@@ -318,16 +318,17 @@ auto make_segment_iterator(ItT raw_ptr, SegmentSizeT segment_size)
 // ------------ SELECTION DIRECTION PARAMETER TYPES ------------
 
 // Selection direction known at compile time, same value applies to all segments
-template <select SelectDirection>
-using select_direction_static = params::uniform_discrete_param<select, SelectDirection>;
+template <detail::topk::select SelectDirection>
+using select_direction_static = params::uniform_discrete_param<detail::topk::select, SelectDirection>;
 
 // Selection direction is a runtime value, same value applies to all segments
-using select_direction_uniform = params::uniform_discrete_param<select, select::max, select::min>;
+using select_direction_uniform =
+  params::uniform_discrete_param<detail::topk::select, detail::topk::select::max, detail::topk::select::min>;
 
 // Per-segment selection direction via iterator
-template <typename SelectionDirectionIt, select... SelectDirectionOptions>
+template <typename SelectionDirectionIt, detail::topk::select... SelectDirectionOptions>
 using select_direction_per_segment =
-  params::per_segment_discrete_param<SelectionDirectionIt, select, SelectDirectionOptions...>;
+  params::per_segment_discrete_param<SelectionDirectionIt, detail::topk::select, SelectDirectionOptions...>;
 
 // ------------ SEGMENT SIZE PARAMETER TYPES ------------
 
@@ -407,7 +408,76 @@ struct total_num_items_guarantee
   {}
 };
 
-// get_next_block_id()
+template <typename PoliciesT,
+          ::cuda::std::int64_t Index,
+          ::cuda::std::int64_t Count,
+          template <typename...> class WorkerPerSegmentAgentT,
+          typename... AgentParamsT>
+struct find_valid_policy_impl;
+
+// Base case: End of policy chain reached: If we reach Index == Count, it means we checked all with no match
+template <typename PoliciesT,
+          ::cuda::std::int64_t Count,
+          template <typename...> class WorkerPerSegmentAgentT,
+          typename... AgentParamsT>
+struct find_valid_policy_impl<PoliciesT, Count, Count, WorkerPerSegmentAgentT, AgentParamsT...>
+{
+  using policy_t                         = void;
+  static constexpr bool has_valid_policy = false;
+};
+
+template <typename PoliciesT,
+          ::cuda::std::int64_t Index,
+          ::cuda::std::int64_t Count,
+          template <typename...> class WorkerPerSegmentAgentT,
+          typename... AgentParamsT>
+struct find_valid_policy_impl
+{
+  // Inspect the current policy
+  using current_policy_t = ::cuda::std::tuple_element_t<Index, PoliciesT>;
+
+  // Instantiate agent to check temporary storage size
+  using current_agent_t      = WorkerPerSegmentAgentT<current_policy_t, AgentParamsT...>;
+  static constexpr bool fits = (sizeof(typename current_agent_t::TempStorage) <= 48 * 1024);
+
+  // The 'next' policy in the chain
+  using next_step = find_valid_policy_impl<PoliciesT, Index + 1, Count, WorkerPerSegmentAgentT, AgentParamsT...>;
+
+  // Select result:
+  // If 'fits' is true, we stop here.
+  // If 'fits' is false, we take the result from 'next_step'.
+  using policy_t = ::cuda::std::conditional_t<fits, current_policy_t, typename next_step::policy_t>;
+
+  // Whether there's a valid policy that we can instantiate the agent with such that the agent's shared memory doesn't
+  // exceed the static shared memory limimt
+  static constexpr bool has_valid_policy = fits ? true : next_step::has_valid_policy;
+};
+
+template <typename SegmentedTopKPolicy, template <typename...> class WorkerPerSegmentAgentT, typename... AgentParamsT>
+struct find_valid_policy
+{
+  // The list of policies for the one-worker-per-segment approach
+  using worker_per_segment_policies = typename SegmentedTopKPolicy::worker_per_segment_policies;
+
+  // Helper to find a valid policy that we can successfully instantiate the agent with
+  using find_valid_policy_impl_t =
+    find_valid_policy_impl<worker_per_segment_policies,
+                           0,
+                           ::cuda::std::tuple_size<worker_per_segment_policies>::value,
+                           WorkerPerSegmentAgentT,
+                           AgentParamsT...>;
+
+  // Whether there's a valid policy for one-worker-per-segment approach
+  static constexpr bool supports_one_worker_per_segment = find_valid_policy_impl_t::has_valid_policy;
+
+  // Policy selected for one-worker-per-segment approach, if there is a valid policy
+  using worker_per_segment_policy_t = typename find_valid_policy_impl_t::policy_t;
+  // Agent for the one-worker-per-segment approach, if there is a valid policy
+  using worker_per_segment_agent_t =
+    ::cuda::std::conditional_t<supports_one_worker_per_segment,
+                               WorkerPerSegmentAgentT<worker_per_segment_policy_t, AgentParamsT...>,
+                               void>;
+};
 
 // segment_sizes: static bounds are limiting to invocations of BlockTopK or ClusterTopK
 // -> true: Specialize Agent to be of AgentSegmentedTopKOneWorkerPerSegment
@@ -427,22 +497,21 @@ template <typename ChainedPolicyT,
           typename KParameterT,
           typename SelectDirectionParameterT,
           typename NumSegmentsParameterT>
-__launch_bounds__(int(ChainedPolicyT::ActivePolicy::topk_policy_t::block_threads)) __global__
-  void DeviceSegmentedTopKKernel(
-    KeyInputItItT d_key_segments_it,
-    KeyOutputItItT d_key_segments_out_it,
-    ValueInputItItT d_value_segments_it,
-    ValueOutputItItT d_value_segments_out_it,
-    SegmentSizeParameterT segment_sizes,
-    KParameterT k,
-    SelectDirectionParameterT select_directions,
-    NumSegmentsParameterT num_segments)
+__launch_bounds__(int()) __global__ void DeviceSegmentedTopKKernel(
+  KeyInputItItT d_key_segments_it,
+  KeyOutputItItT d_key_segments_out_it,
+  ValueInputItItT d_value_segments_it,
+  ValueOutputItItT d_value_segments_out_it,
+  SegmentSizeParameterT segment_sizes,
+  KParameterT k,
+  SelectDirectionParameterT select_directions,
+  NumSegmentsParameterT num_segments)
 {
-  using ActivePolicyT = typename ChainedPolicyT::ActivePolicy;
-  using TopKPolicyT   = typename ActivePolicyT::topk_policy_t;
+  using active_policy_t = typename ChainedPolicyT::ActivePolicy;
 
-  using AgentT = AgentSegmentedTopkWorkerPerSegment<
-    TopKPolicyT,
+  using find_valid_policy_t = find_valid_policy<
+    active_policy_t,
+    AgentSegmentedTopkWorkerPerSegment,
     KeyInputItItT,
     KeyOutputItItT,
     ValueInputItItT,
@@ -451,6 +520,10 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::topk_policy_t::block_threads
     KParameterT,
     SelectDirectionParameterT,
     NumSegmentsParameterT>;
+
+  using TopKPolicyT = typename find_valid_policy_t::worker_per_segment_policy_t;
+
+  using AgentT = typename find_valid_policy_t::worker_per_segment_agent_t;
 
   // 3. Static Assertions (Constraints)
   static_assert(AgentT::tile_size >= params::static_max_value_v<SegmentSizeParameterT>,
@@ -475,18 +548,6 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::topk_policy_t::block_threads
   agent.Process();
 }
 
-// template<typename ActivePolicyT,
-//          typename FallbackPolicyT,
-//          template <typename...> class AgentT,
-//          typename... AgentParamsT>
-//          struct segmented_topk_policy_helper
-//          {
-// static constexpr bool supports_one_worker_per_segment = 2;
-
-// // The amount of shared memory or virtual shared memory required by the algorithm's agent
-// static constexpr ::cuda::std::size_t required_smem = sizeof(typename AgentT::TempStorage);
-// };
-
 template <typename KeyInputItItT,
           typename KeyOutputItItT,
           typename ValueInputItItT,
@@ -496,7 +557,10 @@ template <typename KeyInputItItT,
           typename SelectDirectionParameterT,
           typename NumSegmentsParameterT,
           typename TotalNumItemsGuaranteeT,
-          typename SelectedPolicy = policy_hub<it_value_t<KeyInputItItT>, ::cuda::std::int64_t>>
+          typename SelectedPolicy = policy_hub<it_value_t<it_value_t<KeyInputItItT>>,
+                                               it_value_t<it_value_t<ValueInputItItT>>,
+                                               ::cuda::std::int64_t,
+                                               params::static_max_value_v<KParameterT>>>
 struct DispatchSegmentedTopK
 {
   using offset_t = ::cuda::std::int64_t;
@@ -574,7 +638,7 @@ struct DispatchSegmentedTopK
       , ptx_version(ptx_version)
   {}
 
-  template <typename ActivePolicyT>
+  template <typename ActiveWorkerPerSegmentPolicyTPolicyT>
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t InvokeFixedSegmentSize()
   {
     using max_policy_t = typename SelectedPolicy::max_policy;
@@ -584,9 +648,9 @@ struct DispatchSegmentedTopK
                   "Only uniform segment sizes are currently supported.");
 
     // Instantiate the kernel with the selected policy and check shared memory requirements
-    using topk_policy_t = typename ActivePolicyT::topk_policy_t;
+    using topk_policy_t = ActiveWorkerPerSegmentPolicyTPolicyT;
 
-    constexpr int block_dim = topk_policy_t::block_threads;
+    constexpr int block_dim = topk_policy_t::BLOCK_THREADS;
 
     if (d_temp_storage == nullptr)
     {
@@ -634,11 +698,26 @@ struct DispatchSegmentedTopK
   {
     using max_policy_t = typename SelectedPolicy::max_policy;
 
+    // Helper that determines (a) whether there's any one-worker-per-segment policy supporting the range of segment
+    // sizes and k, and (b) if so, which set of one-worker-per-segment policies to use
+    using find_valid_policy_t = find_valid_policy<
+      ActivePolicyT,
+      AgentSegmentedTopkWorkerPerSegment,
+      KeyInputItItT,
+      KeyOutputItItT,
+      ValueInputItItT,
+      ValueOutputItItT,
+      SegmentSizeParameterT,
+      KParameterT,
+      SelectDirectionParameterT,
+      NumSegmentsParameterT>;
+
     // Currently, we only support fixed-size segments that fit into shared memory
     // TODO (elstehle): extend support for variable-size segments
-    if constexpr (!params::is_per_segment_param_v<SegmentSizeParameterT>)
+    if constexpr (!params::is_per_segment_param_v<SegmentSizeParameterT>
+                  && find_valid_policy_t::supports_one_worker_per_segment)
     {
-      return InvokeFixedSegmentSize<ActivePolicyT>();
+      return InvokeFixedSegmentSize<typename find_valid_policy_t::worker_per_segment_policy_t>();
     }
     else
     {
@@ -686,6 +765,6 @@ struct DispatchSegmentedTopK
     return CubDebug(max_policy_t::Invoke(ptx_version, dispatch));
   }
 };
-} // namespace detail::topk
+} // namespace detail::segmented_topk
 
 CUB_NAMESPACE_END

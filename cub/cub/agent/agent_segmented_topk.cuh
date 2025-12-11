@@ -25,8 +25,17 @@
 
 CUB_NAMESPACE_BEGIN
 
-namespace detail::topk
+namespace detail::segmented_topk
 {
+template <int BlockThreads, int ItemsPerThread>
+struct AgentSegmentedTopkWorkerPerSegmentPolicy
+{
+  /// Threads per thread block
+  static constexpr int BLOCK_THREADS = BlockThreads;
+
+  /// Items per thread (per tile of input)
+  static constexpr int ITEMS_PER_THREAD = ItemsPerThread;
+};
 
 template <typename ActivePolicyT,
           typename KeyInputItItT,
@@ -49,8 +58,8 @@ struct AgentSegmentedTopkWorkerPerSegment
   using key_t   = typename ::cuda::std::iterator_traits<key_it_t>::value_type;
   using value_t = typename ::cuda::std::iterator_traits<value_it_t>::value_type;
 
-  static constexpr int block_threads    = ActivePolicyT::block_threads;
-  static constexpr int items_per_thread = ActivePolicyT::items_per_thread;
+  static constexpr int block_threads    = ActivePolicyT::BLOCK_THREADS;
+  static constexpr int items_per_thread = ActivePolicyT::ITEMS_PER_THREAD;
   static constexpr int tile_size        = block_threads * items_per_thread;
 
   // Check if we are dealing with Keys-Only or Keys-Values
@@ -142,8 +151,9 @@ struct AgentSegmentedTopkWorkerPerSegment
 
     // Determine padding key based on direction (Max-K needs Lowest(), Min-K needs Max())
     // Assuming 'select' enum has ::max or ::min. Adjust as per your specific Enum definition.
-    key_t padding_key = (direction == select::max) ? ::cuda::std::numeric_limits<key_t>::lowest()
-                                                   : ::cuda::std::numeric_limits<key_t>::max();
+    key_t padding_key = (direction == detail::topk::select::max)
+                        ? ::cuda::std::numeric_limits<key_t>::lowest()
+                        : ::cuda::std::numeric_limits<key_t>::max();
 
     // 3. Load Keys
     key_t thread_keys[items_per_thread];
@@ -174,7 +184,7 @@ struct AgentSegmentedTopkWorkerPerSegment
         .Select(thread_keys,
                 thread_values,
                 k,
-                (direction == select::max), // is_descending
+                (direction == detail::topk::select::max), // is_descending
                 segment_size);
     }
     else
@@ -183,7 +193,7 @@ struct AgentSegmentedTopkWorkerPerSegment
       BlockTopkT(temp_storage.topk)
         .Select(thread_keys,
                 k,
-                (direction == select::max), // is_descending
+                (direction == detail::topk::select::max), // is_descending
                 segment_size);
     }
 
@@ -207,6 +217,5 @@ struct AgentSegmentedTopkWorkerPerSegment
     }
   }
 };
-
-} // namespace detail::topk
+} // namespace detail::segmented_topk
 CUB_NAMESPACE_END
