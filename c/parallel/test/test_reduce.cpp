@@ -123,7 +123,7 @@ struct reduce_run
   {
     if (determinism == CCCL_NOT_GUARANTEED)
     {
-      return cccl_device_reduce_not_guaranteed_determinism(build, d_temp_storage, temp_storage_bytes, args...);
+      return cccl_device_reduce_nondeterministic(build, d_temp_storage, temp_storage_bytes, args...);
     }
     else
     {
