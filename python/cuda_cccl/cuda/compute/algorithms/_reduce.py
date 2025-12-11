@@ -66,9 +66,7 @@ class _Reduce:
             case Determinism.RUN_TO_RUN:
                 self.device_reduce_fn = self.build_result.compute
             case Determinism.NOT_GUARANTEED:
-                self.device_reduce_fn = (
-                    self.build_result.compute_not_guaranteed_determinism
-                )
+                self.device_reduce_fn = self.build_result.compute_nondeterministic
             case _:
                 raise ValueError(f"Invalid determinism: {determinism}")
 

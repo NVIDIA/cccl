@@ -79,7 +79,7 @@ CCCL_C_API CUresult cccl_device_reduce(
   cccl_value_t init,
   CUstream stream);
 
-CCCL_C_API CUresult cccl_device_reduce_not_guaranteed_determinism(
+CCCL_C_API CUresult cccl_device_reduce_nondeterministic(
   cccl_device_reduce_build_result_t build,
   void* d_temp_storage,
   size_t* temp_storage_bytes,

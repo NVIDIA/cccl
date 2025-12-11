@@ -856,7 +856,7 @@ cdef extern from "cccl/c/reduce.h":
         CUstream
     ) nogil
 
-    cdef CUresult cccl_device_reduce_not_guaranteed_determinism(
+    cdef CUresult cccl_device_reduce_nondeterministic(
         cccl_device_reduce_build_result_t,
         void *,
         size_t *,
@@ -955,7 +955,7 @@ cdef class DeviceReduceBuildResult:
             )
         return storage_sz
 
-    cpdef int compute_not_guaranteed_determinism(
+    cpdef int compute_nondeterministic(
         DeviceReduceBuildResult self,
         temp_storage_ptr,
         temp_storage_bytes,
@@ -972,7 +972,7 @@ cdef class DeviceReduceBuildResult:
         cdef CUstream c_stream = <CUstream><uintptr_t>(stream) if stream else NULL
 
         with nogil:
-            status = cccl_device_reduce_not_guaranteed_determinism(
+            status = cccl_device_reduce_nondeterministic(
                 self.build_data,
                 storage_ptr,
                 &storage_sz,

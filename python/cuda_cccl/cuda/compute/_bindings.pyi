@@ -201,7 +201,7 @@ class DeviceReduceBuildResult:
         h_init: Value,
         stream,
     ) -> int: ...
-    def compute_not_guaranteed_determinism(
+    def compute_nondeterministic(
         self,
         temp_storage_ptr: int | None,
         temp_storage_nbytes: int,
