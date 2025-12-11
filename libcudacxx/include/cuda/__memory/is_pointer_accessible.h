@@ -137,8 +137,7 @@ _CCCL_HOST_API inline bool __is_device_memory(const void* __p) noexcept
   if (__mempool != nullptr)
   {
     ::CUmemLocation __prop{::CU_MEM_LOCATION_TYPE_DEVICE, __ptr_dev_id};
-    const unsigned __pool_flags = ::cuda::__driver::__mempoolGetAccess(__mempool, &__prop);
-    return __pool_flags & unsigned{::CU_MEM_ACCESS_FLAGS_PROT_READ};
+    return static_cast<bool>(::cuda::__driver::__mempoolGetAccess(__mempool, &__prop));
   }
   // (3) check if the pointer is a device accessible pointer or managed memory
   return __is_managed || __memory_type == ::CU_MEMORYTYPE_DEVICE;
