@@ -77,7 +77,11 @@ class CachableFunction:
         return self._identity == other._identity
 
     def __hash__(self):
-        return hash(self._identity)
+        try:
+            return hash(self._identity)
+        except TypeError:
+            # if we can't hash the identity, use its id
+            return id(self._identity)
 
     def __repr__(self):
         return str(self._func)

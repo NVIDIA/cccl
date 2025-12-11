@@ -89,3 +89,7 @@ __all__ = [
     "unique_by_key",
     "ZipIterator",
 ]
+
+# import extensions to numba CUDA enabling global capture of
+# device arrays.
+from . import _device_array_capture  # noqa: F403, F401
