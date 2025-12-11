@@ -13,6 +13,9 @@ except ImportError:
 # Central registry of all algorithm caches
 _cache_registry: dict[str, object] = {}
 
+# Central registry of all algorithm caches
+_cache_registry: dict[str, object] = {}
+
 
 def cache_with_key(key):
     """
