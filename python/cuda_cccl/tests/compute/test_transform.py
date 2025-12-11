@@ -19,8 +19,7 @@ def unary_transform_host(h_input: np.ndarray, op):
 
 
 def unary_transform_device(d_input, d_output, num_items, op, stream=None):
-    cuda.compute.unary_transform(
-        d_input, d_output, op, num_items, stream=stream)
+    cuda.compute.unary_transform(d_input, d_output, op, num_items, stream=stream)
 
 
 def binary_transform_host(h_input1: np.ndarray, h_input2: np.ndarray, op):
@@ -265,8 +264,7 @@ def test_unary_transform_well_known_negate():
     d_output = cp.empty_like(d_input, dtype=dtype)
 
     # Run unary transform with well-known NEGATE operation
-    cuda.compute.unary_transform(
-        d_input, d_output, OpKind.NEGATE, len(d_input))
+    cuda.compute.unary_transform(d_input, d_output, OpKind.NEGATE, len(d_input))
 
     # Check the result is correct
     expected = np.array([-1, 2, -3, 4, -5])
@@ -280,8 +278,7 @@ def test_unary_transform_well_known_identity():
     d_output = cp.empty_like(d_input, dtype=dtype)
 
     # Run unary transform with well-known IDENTITY operation
-    cuda.compute.unary_transform(
-        d_input, d_output, OpKind.IDENTITY, len(d_input))
+    cuda.compute.unary_transform(d_input, d_output, OpKind.IDENTITY, len(d_input))
 
     # Check the result is correct
     expected = np.array([1, 2, 3, 4, 5])

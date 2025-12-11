@@ -296,8 +296,7 @@ def test_select_reuse_object(dtype):
     )
 
     # First execution
-    temp_storage_bytes = selector(
-        None, d_in1, d_out, d_num_selected, num_items)
+    temp_storage_bytes = selector(None, d_in1, d_out, d_num_selected, num_items)
     d_temp_storage = cp.empty(temp_storage_bytes, dtype=np.uint8)
     selector(d_temp_storage, d_in1, d_out, d_num_selected, num_items)
 
