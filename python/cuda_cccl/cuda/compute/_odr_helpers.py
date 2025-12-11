@@ -84,9 +84,7 @@ def _codegen_void_ptr_wrapper(
     input_vals = []
     ret_ptr = None
 
-    for i, spec in enumerate(arg_specs):
-        arg = args[i]
-
+    for i, (arg, spec) in enumerate(zip(args, arg_specs)):
         match spec.mode:
             case _ArgMode.LOAD:
                 # Cast void* to typed pointer and load value
@@ -202,7 +200,7 @@ def create_advance_void_ptr_wrapper(advance_fn, state_ptr_type):
     """
     arg_specs = [
         _ArgSpec(state_ptr_type, _ArgMode.PTR),
-        _ArgSpec(types.uint64, _ArgMode.LOAD),
+        _ArgSpec(types.uint64, _ArgMode.LOAD),  # uint64 is the offset type
     ]
     inner_sig = types.void(state_ptr_type, types.uint64)
     return _create_void_ptr_wrapper(
