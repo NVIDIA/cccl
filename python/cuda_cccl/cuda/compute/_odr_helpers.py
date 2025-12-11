@@ -5,26 +5,21 @@
 """
 ODR (One Definition Rule) Helpers for CCCL Python Interop.
 
-This module provides utilities to create void* wrapper functions for device functions
-provided by the user. The wrappers are necessary because on the C++ side, these
-are declared as `extern "C"` functions with void* parameters - the arguments are not
-known at C++ compile time.
+This module provides utilities to create wrapper functions for
+device functions that are defined in Python and JIT compiled by Numba.
 
-Thus, the helpers in this module generate wrapper functions that:
+On the C++ side, these functions are declared as `extern "C"` functions with
+void* parameters - the arguments types can not be known at C++ compile time.
 
-- Accept void* arguments (matching C++ declarations)
-- Cast them to the correct typed arguments
-- Load/store values as needed
-- Call the actual user function with properly typed arguments
+Thus, the helpers in this module generate wrapper device functions that accept
+void* arguments (matching C++ declarations), cast them to the correct
+typed arguments, load/store values as needed, and call the original
+function with properly typed arguments.
 
 Example flow:
     User provides: def add(x: int32, y: int32) -> int32
     Wrapper signature: void(void*, void*, void*)  # x_ptr, y_ptr, result_ptr
     C++ sees: extern "C" void wrapped_add(void*, void*, void*);
-
-Note that iterator advance/dereference functions must be treated similar
-to user-provided functions; their types cannot be known at C++ compile time
-either.
 """
 
 from __future__ import annotations
@@ -127,9 +122,10 @@ def _create_void_ptr_wrapper(
 ):
     """
     Given a function and a list of _ArgSpec, create a wrapper function
-    that takes all void* arguments. This is done to avoid ODR violations --
-    on the C++ side, the corresponding 'extern "C"' declarations are
-    all void* functions because types cannot be known at compile time.
+    that takes all void* arguments, bitcasts them to the
+    appropriate typed pointers, and calls the inner function with
+    the typed arguments. Each void* argument is handled according
+    to its _ArgSpec.
 
     Args:
         func: The function to wrap (will be compiled as device function)
@@ -187,7 +183,7 @@ def _create_void_ptr_wrapper(
 
 
 def create_op_void_ptr_wrapper(op, sig: "Signature"):
-    """Creates a wrapper function that takes all void* arguments and calls the original operator.
+    """Creates a wrapper function for user-defined operators like unary or binary operators.
 
     The wrapper takes N+1 arguments where N is the number of input arguments to `op`, the last
     argument is a pointer to the result.
@@ -198,7 +194,7 @@ def create_op_void_ptr_wrapper(op, sig: "Signature"):
 
 
 def create_advance_void_ptr_wrapper(advance_fn, state_ptr_type):
-    """Creates a wrapper function for iterator advance that takes void* arguments.
+    """Creates a wrapper function for iterator advance method.
 
     The wrapper takes 2 void* arguments:
     - state pointer
@@ -215,7 +211,7 @@ def create_advance_void_ptr_wrapper(advance_fn, state_ptr_type):
 
 
 def create_input_dereference_void_ptr_wrapper(deref_fn, state_ptr_type, value_type):
-    """Creates a wrapper function for input iterator dereference that takes void* arguments.
+    """Creates a wrapper function for input iterator dereference method.
 
     The wrapper takes 2 void* arguments:
     - state pointer
@@ -230,7 +226,7 @@ def create_input_dereference_void_ptr_wrapper(deref_fn, state_ptr_type, value_ty
 
 
 def create_output_dereference_void_ptr_wrapper(deref_fn, state_ptr_type, value_type):
-    """Creates a wrapper function for output iterator dereference that takes void* arguments.
+    """Creates a wrapper function for output iterator dereference method.
 
     The wrapper takes 2 void* arguments:
     - state pointer
