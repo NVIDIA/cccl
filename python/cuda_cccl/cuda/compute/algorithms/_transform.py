@@ -16,7 +16,7 @@ from ..typing import DeviceArrayLike
 
 
 class _UnaryTransform:
-    __slots__ = ["d_in_cccl", "d_out_cccl", "op", "op_cccl", "build_result"]
+    __slots__ = ["d_in_cccl", "d_out_cccl", "op_cccl", "build_result"]
 
     def __init__(
         self,
@@ -65,7 +65,6 @@ class _BinaryTransform:
         "d_in1_cccl",
         "d_in2_cccl",
         "d_out_cccl",
-        "op",
         "op_cccl",
         "build_result",
     ]

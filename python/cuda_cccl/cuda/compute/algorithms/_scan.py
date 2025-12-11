@@ -43,7 +43,6 @@ class _Scan:
         "d_in_cccl",
         "d_out_cccl",
         "init_value_cccl",
-        "op",
         "op_cccl",
         "device_scan_fn",
         "init_kind",
