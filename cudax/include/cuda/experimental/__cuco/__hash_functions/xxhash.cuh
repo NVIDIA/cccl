@@ -42,8 +42,8 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef _CUDAX__CUCO_DETAIL_HASH_FUNCTIONS_XXHASH_CUH
-#define _CUDAX__CUCO_DETAIL_HASH_FUNCTIONS_XXHASH_CUH
+#ifndef _CUDAX__CUCO__HASH_FUNCTIONS__XXHASH_CUH
+#define _CUDAX__CUCO__HASH_FUNCTIONS__XXHASH_CUH
 
 #include <cuda/__cccl_config>
 
@@ -63,11 +63,11 @@
 #include <cuda/std/cstdint>
 #include <cuda/std/span>
 
-#include <cuda/experimental/__cuco/detail/hash_functions/utils.cuh>
+#include <cuda/experimental/__cuco/__hash_functions/utils.cuh>
 
 #include <cuda/std/__cccl/prologue.h>
 
-namespace cuda::experimental::cuco::__detail
+namespace cuda::experimental::cuco
 {
 //! @brief A `_XXHash_32` hash function to hash the given argument on host and device.
 //!
@@ -205,9 +205,8 @@ private:
         // pipeline 4*4byte computations
         const auto __pipeline_offset = __offset / 4;
         ::cuda::static_for<4>([&](auto i) {
-          __v[i] +=
-            ::cuda::experimental::cuco::__detail::__load_chunk<::cuda::std::uint32_t>(__bytes, __pipeline_offset + i)
-            * __prime2;
+          __v[i] += ::cuda::experimental::cuco::__load_chunk<::cuda::std::uint32_t>(__bytes, __pipeline_offset + i)
+                  * __prime2;
           __v[i] = ::cuda::std::rotl(__v[i], 13);
           __v[i] *= __prime1;
         });
@@ -229,8 +228,7 @@ private:
       _CCCL_PRAGMA_UNROLL(4)
       for (; __offset <= __size - 4; __offset += 4)
       {
-        __h32 += ::cuda::experimental::cuco::__detail::__load_chunk<::cuda::std::uint32_t>(__bytes, __offset / 4)
-               * __prime3;
+        __h32 += ::cuda::experimental::cuco::__load_chunk<::cuda::std::uint32_t>(__bytes, __offset / 4) * __prime3;
         __h32 = ::cuda::std::rotl(__h32, 17) * __prime4;
       }
     }
@@ -342,9 +340,8 @@ private:
         // pipeline 4*8byte computations
         const auto __pipeline_offset = __offset / 8;
         ::cuda::static_for<4>([&](auto i) {
-          __v[i] +=
-            ::cuda::experimental::cuco::__detail::__load_chunk<::cuda::std::uint64_t>(__bytes, __pipeline_offset + i)
-            * __prime2;
+          __v[i] += ::cuda::experimental::cuco::__load_chunk<::cuda::std::uint64_t>(__bytes, __pipeline_offset + i)
+                  * __prime2;
           __v[i] = ::cuda::std::rotl(__v[i], 31);
           __v[i] *= __prime1;
         });
@@ -375,7 +372,7 @@ private:
       for (; __offset <= __size - 8; __offset += 8)
       {
         ::cuda::std::uint64_t __k1 =
-          ::cuda::experimental::cuco::__detail::__load_chunk<::cuda::std::uint64_t>(__bytes, __offset / 8) * __prime2;
+          ::cuda::experimental::cuco::__load_chunk<::cuda::std::uint64_t>(__bytes, __offset / 8) * __prime2;
         __k1 = ::cuda::std::rotl(__k1, 31) * __prime1;
         __h64 ^= __k1;
         __h64 = ::cuda::std::rotl(__h64, 27) * __prime1 + __prime4;
@@ -387,8 +384,7 @@ private:
     {
       for (; __offset <= __size - 4; __offset += 4)
       {
-        __h64 ^= (::cuda::experimental::cuco::__detail::__load_chunk<::cuda::std::uint32_t>(__bytes, __offset / 4))
-               * __prime1;
+        __h64 ^= (::cuda::experimental::cuco::__load_chunk<::cuda::std::uint32_t>(__bytes, __offset / 4)) * __prime1;
         __h64 = ::cuda::std::rotl(__h64, 23) * __prime2 + __prime3;
       }
     }
@@ -420,8 +416,8 @@ private:
 
   ::cuda::std::uint64_t __seed_;
 };
-} // namespace cuda::experimental::cuco::__detail
+} // namespace cuda::experimental::cuco
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _CUDAX__CUCO_DETAIL_HASH_FUNCTIONS_XXHASH_CUH
+#endif // _CUDAX__CUCO__HASH_FUNCTIONS__XXHASH_CUH
