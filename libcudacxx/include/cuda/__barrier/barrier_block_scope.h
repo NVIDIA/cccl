@@ -385,9 +385,9 @@ private:
 
     NV_DISPATCH_TARGET(
       NV_PROVIDES_SM_90,
-      (__try_wait_parity_sm90(__phase_parity, __nanosec);),
+      (return __try_wait_parity_sm90(__phase_parity, __nanosec);),
       NV_PROVIDES_SM_80,
-      (__try_wait_parity_sm80(__phase_parity, __nanosec);),
+      (return __try_wait_parity_sm80(__phase_parity, __nanosec);),
       NV_ANY_TARGET,
       (return ::cuda::std::__cccl_thread_poll_with_backoff(
                 ::cuda::std::__barrier_poll_tester_parity<barrier>(this, __phase_parity), __nanosec);))
