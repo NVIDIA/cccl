@@ -106,10 +106,7 @@ def bench_zip_array(bench_fixture, request):
         reduce_zip_array(input_array, build_only=(bench_fixture == "compile_benchmark"))
 
     fixture = request.getfixturevalue(bench_fixture)
-    if bench_fixture == "compile_benchmark":
-        fixture(cuda.compute.make_reduce_into, run)
-    else:
-        fixture(run)
+    fixture(run)
 
 
 @pytest.mark.parametrize("bench_fixture", ["compile_benchmark", "benchmark"])
@@ -122,10 +119,7 @@ def bench_zip_iterator(bench_fixture, request):
         )
 
     fixture = request.getfixturevalue(bench_fixture)
-    if bench_fixture == "compile_benchmark":
-        fixture(cuda.compute.make_reduce_into, run)
-    else:
-        fixture(run)
+    fixture(run)
 
 
 @pytest.mark.parametrize("bench_fixture", ["compile_benchmark", "benchmark"])
@@ -138,10 +132,7 @@ def bench_zip_array_iterator(bench_fixture, request):
         )
 
     fixture = request.getfixturevalue(bench_fixture)
-    if bench_fixture == "compile_benchmark":
-        fixture(cuda.compute.make_reduce_into, run)
-    else:
-        fixture(run)
+    fixture(run)
 
 
 @pytest.mark.parametrize("bench_fixture", ["compile_benchmark", "benchmark"])
@@ -163,7 +154,4 @@ def bench_transform_zip_array_iterator(bench_fixture, request):
         )
 
     fixture = request.getfixturevalue(bench_fixture)
-    if bench_fixture == "compile_benchmark":
-        fixture(cuda.compute.make_binary_transform, run)
-    else:
-        fixture(run)
+    fixture(run)
