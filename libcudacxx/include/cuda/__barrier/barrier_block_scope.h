@@ -55,7 +55,7 @@
 #include <cuda/std/__cccl/prologue.h>
 
 _CCCL_BEGIN_NAMESPACE_CUDA_DEVICE
-_CCCL_DEVICE inline ::cuda::std::uint64_t* barrier_native_handle(barrier<thread_scope_block>& __b);
+[[nodiscard]] _CCCL_DEVICE ::cuda::std::uint64_t* barrier_native_handle(barrier<thread_scope_block>& __b);
 _CCCL_END_NAMESPACE_CUDA_DEVICE
 
 _CCCL_BEGIN_NAMESPACE_CUDA
@@ -112,7 +112,7 @@ public:
                     "barrier must not be in cluster shared memory");))
   }
 
-  _CCCL_API friend inline void init(barrier* __b,
+  _CCCL_API inline friend void init(barrier* __b,
                                     ::cuda::std::ptrdiff_t __expected,
                                     ::cuda::std::__empty_completion = ::cuda::std::__empty_completion())
   {

@@ -107,7 +107,7 @@ public:
   _CCCL_API void arrive_and_drop()
   {
     __expected.fetch_sub(1, memory_order_relaxed);
-    (void) arrive();
+    arrive();
   }
 
   [[nodiscard]] _CCCL_API static constexpr ptrdiff_t max() noexcept
@@ -175,7 +175,7 @@ public:
   __barrier_base(__barrier_base const&)            = delete;
   __barrier_base& operator=(__barrier_base const&) = delete;
 
-  [[nodiscard]] _CCCL_API arrival_token arrive(ptrdiff_t __update = 1)
+  /*discard*/ _CCCL_API arrival_token arrive(ptrdiff_t __update = 1)
   {
     auto const __inc = __arrived_unit * __update;
     auto const __old = __phase_arrived_expected.fetch_add(__inc, memory_order_acq_rel);
@@ -202,7 +202,7 @@ public:
   _CCCL_API void arrive_and_drop()
   {
     __phase_arrived_expected.fetch_add(__expected_unit, memory_order_relaxed);
-    (void) arrive();
+    arrive();
   }
 
   [[nodiscard]] _CCCL_API static constexpr ptrdiff_t max() noexcept
