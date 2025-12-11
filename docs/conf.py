@@ -23,13 +23,17 @@ copyright = f"{datetime.now().year}, NVIDIA Corporation"
 author = "NVIDIA Corporation"
 
 # Version information
-try:
-    with open("VERSION.md", "r") as f:
-        version = f.read().strip()
-except Exception:
-    version = "latest"
+_env_version = os.environ.get("SPHINX_CCCL_VER")
+if _env_version:
+    release = _env_version
+else:
+    try:
+        with open("VERSION.md", "r", encoding="utf-8") as f:
+            release = f.read().strip()
+    except Exception:
+        release = "unstable"
 
-release = version
+version = release
 
 # -- General configuration ---------------------------------------------------
 
@@ -116,7 +120,6 @@ exclude_patterns = [
 html_theme = "nvidia_sphinx_theme"
 
 html_logo = "_static/nvidia-logo.png"
-version_match = "unstable"
 
 html_baseurl = (
     os.environ.get("CCCL_DOCS_BASE_URL", "https://nvidia.github.io/cccl/").rstrip("/")
@@ -135,14 +138,14 @@ html_theme_options = {
     "navigation_depth": 4,
     "show_toc_level": 2,
     "navbar_start": ["navbar-logo"],
-    "navbar_end": ["theme-switcher", "navbar-icon-links"],
+    "navbar_end": ["version-switcher", "theme-switcher", "navbar-icon-links"],
     "footer_start": ["copyright"],
     "footer_end": ["sphinx-version"],
     "sidebar_includehidden": True,
     "collapse_navigation": False,
     "switcher": {
         "json_url": f"{html_baseurl}nv-versions.json",
-        "version_match": version_match,
+        "version_match": release,
     },
 }
 
