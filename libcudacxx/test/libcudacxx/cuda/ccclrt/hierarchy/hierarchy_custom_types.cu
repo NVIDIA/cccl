@@ -13,7 +13,7 @@
 #include <cooperative_groups.h>
 #include <host_device.cuh>
 
-struct custom_level : public cuda::hierarchy_level
+struct custom_level : public cuda::hierarchy_level_base<custom_level>
 {
   using product_type  = unsigned int;
   using allowed_above = cuda::allowed_levels<cuda::grid_level>;
@@ -51,7 +51,7 @@ struct custom_level_test
     auto custom_block_back = custom_dims.level(cuda::block);
     CCCLRT_REQUIRE(custom_block_back.dummy == 2);
 
-    auto custom_dims_fragment = custom_dims.fragment(cuda::thread, cuda::block);
+    auto custom_dims_fragment = custom_dims.fragment(cuda::gpu_thread, cuda::block);
     auto custom_block_back2   = custom_dims_fragment.level(cuda::block);
     CCCLRT_REQUIRE(custom_block_back2.dummy == 2);
 
@@ -62,8 +62,8 @@ struct custom_level_test
       cuda::level_dimensions<custom_level, decltype(custom_level_dims)>(custom_level_dims),
       cuda::block_dims<256>());
 
-    static_assert(custom_hierarchy.extents(cuda::thread, custom_level()) == dim3(512, 2, 2));
-    static_assert(custom_hierarchy.count(cuda::thread, custom_level()) == 2048);
+    static_assert(custom_hierarchy.extents(cuda::gpu_thread, custom_level()) == dim3(512, 2, 2));
+    static_assert(custom_hierarchy.count(cuda::gpu_thread, custom_level()) == 2048);
 
     test_host_dev(custom_hierarchy, *this);
   }
