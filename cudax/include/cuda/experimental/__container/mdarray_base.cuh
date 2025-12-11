@@ -151,7 +151,10 @@ public:
           static_cast<pointer>(__allocator.allocate_sync(__mapping.required_span_size() * sizeof(element_type))),
           __mapping}
   {
-    static_cast<_Derived&>(*this).__init();
+    if (this->size() > 0)
+    {
+      static_cast<_Derived&>(*this).__init();
+    }
   }
 
   _CCCL_TEMPLATE(typename _Mapping2 = mapping_type)

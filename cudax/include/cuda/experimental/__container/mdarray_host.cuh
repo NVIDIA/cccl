@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef __CUDAX__CONTAINER_MDARRAY_DEVICE_CUH
-#define __CUDAX__CONTAINER_MDARRAY_DEVICE_CUH
+#ifndef __CUDAX__CONTAINER_MDARRAY_HOST_CUH
+#define __CUDAX__CONTAINER_MDARRAY_HOST_CUH
 
 #include <cuda/std/detail/__config>
 
@@ -97,4 +97,4 @@ public:
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif //__CUDAX__CONTAINER_MDARRAY_DEVICE_CUH
+#endif //__CUDAX__CONTAINER_MDARRAY_HOST_CUH
