@@ -7,6 +7,9 @@ import functools
 
 from cuda.core.experimental import Device
 
+# Central registry of all algorithm caches
+_cache_registry: dict[str, object] = {}
+
 
 def cache_with_key(key):
     """
@@ -18,6 +21,9 @@ def cache_with_key(key):
     -----
     The CUDA compute capability of the current device is appended to
     the cache key returned by `key`.
+
+    The decorated function is automatically registered in the central
+    cache registry for easy cache management.
     """
 
     def deco(func):
@@ -36,9 +42,31 @@ def cache_with_key(key):
             cache.clear()
 
         inner.cache_clear = cache_clear
+
+        # Register the cache in the central registry
+        cache_name = func.__qualname__
+        _cache_registry[cache_name] = inner
+
         return inner
 
     return deco
+
+
+def clear_all_caches():
+    """
+    Clear all algorithm caches.
+
+    This function clears all cached algorithm build results, forcing
+    recompilation on the next invocation. Useful for benchmarking
+    compilation time.
+
+    Example
+    -------
+    >>> import cuda.compute
+    >>> cuda.compute.clear_all_caches()
+    """
+    for cached_func in _cache_registry.values():
+        cached_func.cache_clear()
 
 
 class CachableFunction:

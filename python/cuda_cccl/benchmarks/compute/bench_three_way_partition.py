@@ -167,10 +167,7 @@ def bench_three_way_partition_pointer(bench_fixture, request, size):
         )
 
     fixture = request.getfixturevalue(bench_fixture)
-    if bench_fixture == "compile_benchmark":
-        fixture(cuda.compute.make_three_way_partition, run)
-    else:
-        fixture(run)
+    fixture(run)
 
 
 @pytest.mark.parametrize("bench_fixture", ["compile_benchmark", "benchmark"])
@@ -192,10 +189,7 @@ def bench_three_way_partition_iterator(bench_fixture, request, size):
         )
 
     fixture = request.getfixturevalue(bench_fixture)
-    if bench_fixture == "compile_benchmark":
-        fixture(cuda.compute.make_three_way_partition, run)
-    else:
-        fixture(run)
+    fixture(run)
 
 
 @pytest.mark.parametrize("bench_fixture", ["compile_benchmark", "benchmark"])
@@ -218,10 +212,7 @@ def bench_three_way_partition_struct(bench_fixture, request, size):
         )
 
     fixture = request.getfixturevalue(bench_fixture)
-    if bench_fixture == "compile_benchmark":
-        fixture(cuda.compute.make_three_way_partition, run)
-    else:
-        fixture(run)
+    fixture(run)
 
 
 def three_way_partition_pointer_single_phase(inp):

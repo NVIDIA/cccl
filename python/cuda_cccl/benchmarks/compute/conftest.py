@@ -1,5 +1,7 @@
 import pytest
 
+import cuda.compute
+
 
 @pytest.fixture(params=[True, False])
 def build_only(request):
@@ -13,11 +15,11 @@ def size(request):
 
 @pytest.fixture
 def compile_benchmark(benchmark):
-    def run_compile_benchmark(algorithm, function):
+    def run_compile_benchmark(function):
         def setup():
             # This function is called once before the benchmark runs
             # to set up the environment.
-            algorithm.cache_clear()
+            cuda.compute.clear_all_caches()
 
         benchmark.pedantic(
             function,
