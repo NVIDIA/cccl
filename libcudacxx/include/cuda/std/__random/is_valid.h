@@ -37,15 +37,15 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 // cv-unqualified and is one of float, double, or long double.
 
 template <class>
-inline constexpr bool __libcpp_random_is_valid_realtype = false;
+inline constexpr bool __cccl_random_is_valid_realtype = false;
 
 template <>
-inline constexpr bool __libcpp_random_is_valid_realtype<float> = true;
+inline constexpr bool __cccl_random_is_valid_realtype<float> = true;
 template <>
-inline constexpr bool __libcpp_random_is_valid_realtype<double> = true;
+inline constexpr bool __cccl_random_is_valid_realtype<double> = true;
 #if _CCCL_HAS_LONG_DOUBLE()
 template <>
-inline constexpr bool __libcpp_random_is_valid_realtype<long double> = true;
+inline constexpr bool __cccl_random_is_valid_realtype<long double> = true;
 #endif // _CCCL_HAS_LONG_DOUBLE()
 
 // [rand.req.genl]/1.5:
@@ -55,32 +55,32 @@ inline constexpr bool __libcpp_random_is_valid_realtype<long double> = true;
 // unsigned int, unsigned long, or unsigned long long.
 
 template <class>
-inline constexpr bool __libcpp_random_is_valid_inttype = false;
+inline constexpr bool __cccl_random_is_valid_inttype = false;
 template <> // extension
-inline constexpr bool __libcpp_random_is_valid_inttype<int8_t> = true;
+inline constexpr bool __cccl_random_is_valid_inttype<int8_t> = true;
 template <>
-inline constexpr bool __libcpp_random_is_valid_inttype<short> = true;
+inline constexpr bool __cccl_random_is_valid_inttype<short> = true;
 template <>
-inline constexpr bool __libcpp_random_is_valid_inttype<int> = true;
+inline constexpr bool __cccl_random_is_valid_inttype<int> = true;
 template <>
-inline constexpr bool __libcpp_random_is_valid_inttype<long> = true;
+inline constexpr bool __cccl_random_is_valid_inttype<long> = true;
 template <>
-inline constexpr bool __libcpp_random_is_valid_inttype<long long> = true;
+inline constexpr bool __cccl_random_is_valid_inttype<long long> = true;
 template <> // extension
-inline constexpr bool __libcpp_random_is_valid_inttype<uint8_t> = true;
+inline constexpr bool __cccl_random_is_valid_inttype<uint8_t> = true;
 template <>
-inline constexpr bool __libcpp_random_is_valid_inttype<unsigned short> = true;
+inline constexpr bool __cccl_random_is_valid_inttype<unsigned short> = true;
 template <>
-inline constexpr bool __libcpp_random_is_valid_inttype<unsigned int> = true;
+inline constexpr bool __cccl_random_is_valid_inttype<unsigned int> = true;
 template <>
-inline constexpr bool __libcpp_random_is_valid_inttype<unsigned long> = true;
+inline constexpr bool __cccl_random_is_valid_inttype<unsigned long> = true;
 template <>
-inline constexpr bool __libcpp_random_is_valid_inttype<unsigned long long> = true;
+inline constexpr bool __cccl_random_is_valid_inttype<unsigned long long> = true;
 #if _CCCL_HAS_INT128()
 template <> // extension
-inline constexpr bool __libcpp_random_is_valid_inttype<__int128_t> = true;
+inline constexpr bool __cccl_random_is_valid_inttype<__int128_t> = true;
 template <> // extension
-inline constexpr bool __libcpp_random_is_valid_inttype<__uint128_t> = true;
+inline constexpr bool __cccl_random_is_valid_inttype<__uint128_t> = true;
 #endif // _CCCL_HAS_INT128()
 
 // [rand.req.urng]/3:
