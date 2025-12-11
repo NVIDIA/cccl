@@ -188,7 +188,7 @@ spread_out_items_per_thread(Offset num_items, Policy policy, int items_per_threa
 template <bool NoInputs,
           typename Offset,
           typename SMemFunc,
-          typename PolicyPtrGetter,
+          typename PolicyGetter,
           typename KernelSource,
           typename KernelLauncherFactory>
 CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto configure_async_kernel(
@@ -196,13 +196,13 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto configure_as
   int alignment,
   SMemFunc dyn_smem_for_tile_size,
   cudaStream_t stream,
-  PolicyPtrGetter policy_ptr_getter,
+  PolicyGetter policy_getter,
   KernelSource kernel_source,
   KernelLauncherFactory launcher_factory)
   -> cuda_expected<
     ::cuda::std::tuple<decltype(launcher_factory(0, 0, 0, 0)), decltype(kernel_source.TransformKernel()), int>>
 {
-  CUB_DETAIL_CONSTEXPR_ISH const transform_arch_policy& policy = policy_ptr_getter();
+  CUB_DETAIL_CONSTEXPR_ISH const transform_arch_policy& policy = policy_getter();
   CUB_DETAIL_CONSTEXPR_ISH int block_threads                   = policy.async_copy_policy.block_threads;
 
   _CCCL_ASSERT(block_threads % alignment == 0, "block_threads needs to be a multiple of the copy alignment");
@@ -286,7 +286,7 @@ template <typename Offset,
           typename TransformOp,
           typename SMemFunc,
           std::size_t... Is,
-          typename PolicyPtrGetter,
+          typename PolicyGetter,
           typename KernelSource,
           typename KernelLauncherFactory>
 CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t invoke_async_algorithm(
@@ -299,12 +299,12 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t invoke_async_algorithm(
   int alignment,
   SMemFunc dyn_smem_for_tile_size,
   cuda::std::index_sequence<Is...>,
-  PolicyPtrGetter policy_ptr_getter,
+  PolicyGetter policy_getter,
   KernelSource kernel_source,
   KernelLauncherFactory launcher_factory)
 {
   auto ret = configure_async_kernel<(sizeof...(RandomAccessIteratorsIn) == 0)>(
-    num_items, alignment, dyn_smem_for_tile_size, stream, policy_ptr_getter, kernel_source, launcher_factory);
+    num_items, alignment, dyn_smem_for_tile_size, stream, policy_getter, kernel_source, launcher_factory);
   if (!ret)
   {
     return ret.error();
@@ -329,7 +329,7 @@ template <typename... RandomAccessIteratorsIn,
           typename Predicate,
           typename TransformOp,
           size_t... Is,
-          typename PolicyPtrGetter,
+          typename PolicyGetter,
           typename KernelSource,
           typename KernelLauncherFactory>
 CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t invoke_prefetch_or_vectorized_algorithm(
@@ -340,11 +340,11 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t invoke_prefetch_or_vectorized
   TransformOp op,
   cudaStream_t stream,
   ::cuda::std::index_sequence<Is...>,
-  PolicyPtrGetter policy_ptr_getter,
+  PolicyGetter policy_getter,
   KernelSource kernel_source,
   KernelLauncherFactory launcher_factory)
 {
-  CUB_DETAIL_CONSTEXPR_ISH const transform_arch_policy& policy = policy_ptr_getter();
+  CUB_DETAIL_CONSTEXPR_ISH const transform_arch_policy& policy = policy_getter();
   CUB_DETAIL_CONSTEXPR_ISH const int block_threads =
     policy.algorithm == Algorithm::vectorized
       ? policy.vectorized_policy.block_threads
@@ -475,10 +475,10 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t dispatch(
   const auto bulk_copy_align = bulk_copy_alignment(arch_id);
   const auto seq             = ::cuda::std::index_sequence_for<RandomAccessIteratorsIn...>{};
 
-  return dispatch_arch(arch_policies, arch_id, [&](auto policy_ptr_getter) {
-    // policy_ptr_getter is an integral constant returning a constexpr pointer to the selected compile-time policy, for
-    // CCCL.C it's a lambda retuning a pointer to a (runtime) policy.
-    CUB_DETAIL_CONSTEXPR_ISH const transform_arch_policy& active_policy = policy_ptr_getter();
+  return dispatch_arch(arch_policies, arch_id, [&](auto policy_getter) {
+    // policy_getter returns a reference to a constexpr (CUB C++ API) or const run-time policy (CCCL.C)
+    // the static is needed for MSVC inside a lambda due to a bug in MSVC's lambda processor
+    CUB_DETAIL_STATIC_CONSTEXPR_ISH const transform_arch_policy& active_policy = policy_getter();
 
 #if !_CCCL_COMPILER(NVRTC) && defined(CUB_DEBUG_LOG)
     NV_IF_TARGET(
@@ -502,7 +502,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t dispatch(
             kernel_source.InputIteratorInfos(), tile_size, alignment);
         },
         seq,
-        policy_ptr_getter,
+        policy_getter,
         kernel_source,
         launcher_factory);
     }
@@ -521,7 +521,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t dispatch(
             kernel_source.InputIteratorInfos(), tile_size, alignment);
         },
         seq,
-        policy_ptr_getter,
+        policy_getter,
         kernel_source,
         launcher_factory);
     }
@@ -535,7 +535,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t dispatch(
         ::cuda::std::move(op),
         stream,
         seq,
-        policy_ptr_getter,
+        policy_getter,
         kernel_source,
         launcher_factory);
     }
