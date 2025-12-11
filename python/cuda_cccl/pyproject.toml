@@ -46,7 +46,7 @@ cu12 = [
 ]
 cu13 = [
   "cuda-bindings>=13.0.0,<14.0.0",
-  "cuda-toolkit[nvrtc,nvjitlink,cudart,nvcc]==13.*",
+  "cuda-toolkit[nvrtc,nvjitlink,cudart,nvcc,nvvm]==13.*",
   "numba-cuda[cu13]>=0.20.0,!=0.21.2",
 ]
 test-cu12 = [
