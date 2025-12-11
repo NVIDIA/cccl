@@ -52,12 +52,15 @@ inline constexpr int structured_binding_size<_Sndr> = __builtin_structured_bindi
 #  else // ^^^ _CCCL_HAS_CONCEPTS() ^^^ / !_CCCL_HAS_CONCEPTS() vvv
 
 template <class _Sndr, class _Enable = void>
-inline constexpr int structured_binding_size = -1;
+inline constexpr int __structured_binding_size_impl = -1;
 
 template <class _Sndr>
 inline constexpr int
-  structured_binding_size<_Sndr, ::cuda::std::enable_if_t<__builtin_structured_binding_size(_Sndr) >= 0>> =
+  __structured_binding_size_impl<_Sndr, ::cuda::std::enable_if_t<__builtin_structured_binding_size(_Sndr) >= 0>> =
     static_cast<int>(__builtin_structured_binding_size(_Sndr));
+
+template <class _Sndr, class _Enable = void>
+inline constexpr int structured_binding_size = __structured_binding_size_impl<_Sndr>;
 
 #  endif // _CCCL_HAS_CONCEPTS()
 

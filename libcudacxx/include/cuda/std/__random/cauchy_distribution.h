@@ -21,9 +21,9 @@
 #endif // no system header
 
 #include <cuda/std/__cmath/trigonometric_functions.h>
+#include <cuda/std/__limits/numeric_limits.h>
 #include <cuda/std/__random/is_valid.h>
 #include <cuda/std/__random/uniform_real_distribution.h>
-#include <cuda/std/limits>
 
 #include <cuda/std/__cccl/prologue.h>
 

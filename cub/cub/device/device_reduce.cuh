@@ -217,23 +217,12 @@ private:
     using offset_t = detail::choose_offset_t<NumItemsT>;
     using accum_t  = ::cuda::std::__accumulator_t<ReductionOpT, detail::it_value_t<InputIteratorT>, T>;
 
-    using output_t = THRUST_NS_QUALIFIER::unwrap_contiguous_iterator_t<OutputIteratorT>;
-
     using reduce_tuning_t = ::cuda::std::execution::__query_result_or_t<
       TuningEnvT,
       detail::reduce::get_tuning_query_t,
       detail::reduce::arch_policies_from_types<accum_t, offset_t, ReductionOpT>>;
-    using dispatch_t = detail::reduce::dispatch_nondeterministic_t<
-      InputIteratorT,
-      output_t,
-      offset_t,
-      ReductionOpT,
-      T,
-      accum_t,
-      TransformOpT,
-      reduce_tuning_t>;
 
-    return dispatch_t::Dispatch(
+    return detail::reduce::dispatch_nondeterministic<accum_t>(
       d_temp_storage,
       temp_storage_bytes,
       d_in,
@@ -242,7 +231,8 @@ private:
       reduction_op,
       init,
       stream,
-      transform_op);
+      transform_op,
+      reduce_tuning_t{});
   }
 
 public:
