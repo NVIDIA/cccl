@@ -476,9 +476,12 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t dispatch(
   const auto seq             = ::cuda::std::index_sequence_for<RandomAccessIteratorsIn...>{};
 
   return dispatch_arch(arch_policies, arch_id, [&](auto policy_getter) {
-    // policy_getter returns a reference to a constexpr (CUB C++ API) or const run-time policy (CCCL.C)
-    // the static is needed for MSVC inside a lambda due to a bug in MSVC's lambda processor
-    CUB_DETAIL_STATIC_CONSTEXPR_ISH const transform_arch_policy& active_policy = policy_getter();
+  // policy_getter returns a reference to a constexpr (CUB C++ API) or const run-time policy (CCCL.C)
+
+  // TODO(bgruber): ideally, we would just create a variable here for the policy, but MSVC ICEs on that. By adding
+  // `static`, at least MSVC 14.44 accepts it. But to work for all MSVC versions, we will just call policy_getter() at
+  // each place.
+  // CUB_DETAIL_CONSTEXPR_ISH const transform_arch_policy& active_policy = policy_getter();
 
 #if !_CCCL_COMPILER(NVRTC) && defined(CUB_DEBUG_LOG)
     NV_IF_TARGET(
@@ -487,7 +490,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t dispatch(
        _CubLog("Dispatching DeviceTransform to arch %d with tuning: %s\n", (int) arch_id, ss.str().c_str());))
 #endif // !_CCCL_COMPILER(NVRTC) && defined(CUB_DEBUG_LOG)
 
-    if CUB_DETAIL_CONSTEXPR_ISH (Algorithm::ublkcp == active_policy.algorithm)
+    if CUB_DETAIL_CONSTEXPR_ISH (Algorithm::ublkcp == policy_getter().algorithm)
     {
       return invoke_async_algorithm(
         ::cuda::std::move(in),
@@ -506,7 +509,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t dispatch(
         kernel_source,
         launcher_factory);
     }
-    else if CUB_DETAIL_CONSTEXPR_ISH (Algorithm::memcpy_async == active_policy.algorithm)
+    else if CUB_DETAIL_CONSTEXPR_ISH (Algorithm::memcpy_async == policy_getter().algorithm)
     {
       return invoke_async_algorithm(
         ::cuda::std::move(in),
