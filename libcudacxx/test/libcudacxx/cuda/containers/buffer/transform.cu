@@ -27,7 +27,7 @@
 #include "helper.h"
 #include "types.h"
 
-C2H_TEST("DeviceTransform::Transform cuda::device_buffer", "[device][device_transform]")
+C2H_TEST("DeviceTransform::Transform cuda::device_buffer", "[device][launch_transform]")
 {
   using type          = int;
   const int num_items = 1 << 24;
