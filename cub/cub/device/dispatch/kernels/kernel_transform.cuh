@@ -547,13 +547,18 @@ _CCCL_DEVICE auto copy_and_return_smem_dst_fallback(
   return reinterpret_cast<T*>(dst);
 }
 
+// FIXME(bgruber): nvcc 12.0 - 13.1 crash with `error: Internal Compiler Error (codegen): "unexpected error in codegen
+// for function: found previous definition of same function!"` when we pass a const& as template parameter (and the
+// function template body contains a lambda). As a workaround, we pass the parts of the policy by value.
+// TODO(bgruber): In C++20, we should just pass transform_arch_policy by value.
 // note: there is no PDL in this kernel since PDL is not supported below Hopper and this kernel is intended for Ampere
-template <const transform_arch_policy& Policy,
-          typename Offset,
-          typename Predicate,
-          typename F,
-          typename RandomAccessIteratorOut,
-          typename... InTs>
+template < // const transform_arch_policy& Policy,
+  int block_threads,
+  typename Offset,
+  typename Predicate,
+  typename F,
+  typename RandomAccessIteratorOut,
+  typename... InTs>
 _CCCL_DEVICE void transform_kernel_ldgsts(
   Offset num_items,
   int num_elem_per_thread,
@@ -567,10 +572,10 @@ _CCCL_DEVICE void transform_kernel_ldgsts(
   static_assert(ldgsts_size_and_align <= 16);
   _CCCL_ASSERT(reinterpret_cast<uintptr_t>(smem) % ldgsts_size_and_align == 0, "");
 
-  constexpr int block_threads = Policy.async_copy_policy.block_threads;
-  const int tile_size         = block_threads * num_elem_per_thread;
-  const Offset offset         = static_cast<Offset>(blockIdx.x) * tile_size;
-  const int valid_items       = static_cast<int>(::cuda::std::min(num_items - offset, Offset{tile_size}));
+  // constexpr int block_threads = Policy.async_copy_policy.block_threads;
+  const int tile_size   = block_threads * num_elem_per_thread;
+  const Offset offset   = static_cast<Offset>(blockIdx.x) * tile_size;
+  const int valid_items = static_cast<int>(::cuda::std::min(num_items - offset, Offset{tile_size}));
 
   [[maybe_unused]] int smem_offset = 0;
   // TODO(bgruber): drop checking first block, since gmem buffers are always sufficiently aligned. But this would not
@@ -688,16 +693,26 @@ _CCCL_DEVICE void bulk_copy_maybe_unaligned(
     dst_ptr[bytes_to_copy - tail_bytes + threadIdx.x] = tail_byte;
   }
 }
-
+// FIXME(bgruber): nvcc 12.0 - 13.1 error with `function "void
+// cub::_V_300300_SM_750_800_900_1000_1200::detail::transform::transform_kernel_ublkcp< ::policy, int,
+// ::cub::_V_300300_SM_750_800_900_1000_1200::detail::transform::always_true_predicate,
+// ::cuda::std::__4::logical_and<int> , bool *, int, int > (T2, int, T3, T4, T5,
+// ::cub::_V_300300_SM_750_800_900_1000_1200::detail::transform::aligned_base_ptr<T6> ...)::[lambda(T1) (instance
+// 3)]::operator ()< ::cuda::std::__4::integral_constant<bool, (bool)1> >  const" has already been defined` when we pass
+// a const& as template parameter (and the function template body contains a lambda). As a workaround, we pass the parts
+// of the policy by value.
+// TODO(bgruber): In C++20, we should just pass transform_arch_policy by value.
 // Note: we tried implementing work stealing, aka. cluster launch control, aka. UGETNEXTWORKID, (see PR:
 // https://github.com/NVIDIA/cccl/pull/5099) and the slowdowns on some benchmarks outweighed the benefits on B200. So we
 // didn't merge the changes. The problem was mostly a 25% increase in integer instructions, as shown by ncu.
-template <const transform_arch_policy& Policy,
-          typename Offset,
-          typename Predicate,
-          typename F,
-          typename RandomAccessIteratorOut,
-          typename... InTs>
+template < // const transform_arch_policy& Policy,
+  int block_threads,
+  int bulk_copy_alignment,
+  typename Offset,
+  typename Predicate,
+  typename F,
+  typename RandomAccessIteratorOut,
+  typename... InTs>
 _CCCL_DEVICE void transform_kernel_ublkcp(
   Offset num_items,
   int num_elem_per_thread,
@@ -706,8 +721,8 @@ _CCCL_DEVICE void transform_kernel_ublkcp(
   RandomAccessIteratorOut out,
   aligned_base_ptr<InTs>... aligned_ptrs)
 {
-  constexpr int block_threads       = Policy.async_copy_policy.block_threads;
-  constexpr int bulk_copy_alignment = Policy.async_copy_policy.bulk_copy_alignment;
+  // constexpr int block_threads       = Policy.async_copy_policy.block_threads;
+  // constexpr int bulk_copy_alignment = Policy.async_copy_policy.bulk_copy_alignment;
 
   // add padding after a tile in shared memory to make space for the next tile's head padding, and retain alignment
   constexpr int max_alignment = ::cuda::std::max({int{alignof(InTs)}...});
@@ -1035,7 +1050,7 @@ __launch_bounds__(get_block_threads<ArchPolicies>) CUB_DETAIL_KERNEL_ATTRIBUTES 
   {
     NV_IF_TARGET(
       NV_PROVIDES_SM_80,
-      (transform_kernel_ldgsts<policy>(
+      (transform_kernel_ldgsts</*policy*/ policy.async_copy_policy.block_threads>(
          num_items,
          num_elem_per_thread,
          ::cuda::std::move(pred),
@@ -1047,7 +1062,8 @@ __launch_bounds__(get_block_threads<ArchPolicies>) CUB_DETAIL_KERNEL_ATTRIBUTES 
   {
     NV_IF_TARGET(
       NV_PROVIDES_SM_90,
-      (transform_kernel_ublkcp<policy>(
+      (transform_kernel_ublkcp</*policy*/ policy.async_copy_policy.block_threads,
+                               policy.async_copy_policy.bulk_copy_alignment>(
          num_items,
          num_elem_per_thread,
          ::cuda::std::move(pred),
