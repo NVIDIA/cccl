@@ -333,7 +333,7 @@ template <typename... RandomAccessIteratorsIn,
           typename KernelSource,
           typename KernelLauncherFactory>
 CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t invoke_prefetch_or_vectorized_algorithm(
-  ::cuda::std::tuple<RandomAccessIteratorsIn...> in,
+  [[maybe_unused]] ::cuda::std::tuple<RandomAccessIteratorsIn...> in,
   RandomAccessIteratorOut out,
   Offset num_items,
   Predicate pred,
