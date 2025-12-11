@@ -263,19 +263,13 @@ public:
   }
 
   template <typename _OtherElementType, typename _OtherExtents, typename _OtherLayoutPolicy>
-  _CCCL_HOST_API __base_mdarray&
-  operator=(const _ViewType<_OtherElementType, _OtherExtents, _OtherLayoutPolicy>& __other_view)
-  {
-    return __assign_from(__other_view.view(), this->__get_allocator());
-  }
-
-  template <typename _OtherElementType, typename _OtherExtents, typename _OtherLayoutPolicy>
   _CCCL_HOST_API __base_mdarray& __assign_from(
     const _ViewType<_OtherElementType, _OtherExtents, _OtherLayoutPolicy>& __other_view, _Allocator __other_allocator)
   {
     const auto __size_other   = ::cuda::experimental::__mapping_size_bytes(__other_view);
     const auto __size_current = ::cuda::experimental::__mapping_size_bytes(this->view());
     const bool __realloc      = __size_current != __size_other || this->__get_allocator() != __other_allocator;
+    const auto __new_mapping  = mapping_type{extents_type{__other_view.extents()}};
     if (__realloc)
     {
       __release_storage();
@@ -283,11 +277,11 @@ public:
       if (__other_view.data_handle() != nullptr)
       {
         auto __new_data                  = static_cast<pointer>(this->__get_allocator().allocate_sync(__size_other));
-        static_cast<mdspan_type&>(*this) = mdspan_type{__new_data, __other_view.mapping()};
+        static_cast<mdspan_type&>(*this) = mdspan_type{__new_data, __new_mapping};
       }
       else
       {
-        static_cast<mdspan_type&>(*this) = mdspan_type{nullptr, __other_view.mapping()};
+        static_cast<mdspan_type&>(*this) = mdspan_type{nullptr, __new_mapping};
       }
     }
     else // no reallocation needed
@@ -302,7 +296,7 @@ public:
       {
         __new_data = static_cast<pointer>(this->__get_allocator().allocate_sync(__size_other));
       }
-      static_cast<mdspan_type&>(*this) = mdspan_type{__new_data, __other_view.mapping()};
+      static_cast<mdspan_type&>(*this) = mdspan_type{__new_data, __new_mapping};
     }
     if (__other_view.data_handle() != nullptr)
     {
@@ -310,12 +304,6 @@ public:
     }
     return *this;
   }
-
-  _CCCL_HOST_API
-  __base_mdarray(__base_mdarray&& __other, const ::cuda::std::type_identity_t<allocator_type> __allocator) noexcept
-      : __allocator_base{__allocator}
-      , mdspan_type{::cuda::std::exchange(static_cast<mdspan_type&>(__other), mdspan_type{})}
-  {}
 
   _CCCL_HIDE_FROM_ABI __base_mdarray& operator=(__base_mdarray&& __other) noexcept
   {
@@ -332,6 +320,11 @@ public:
   _CCCL_HOST_API ~__base_mdarray() noexcept
   {
     __release_storage();
+  }
+
+  [[nodiscard]] _CCCL_HOST_API allocator_type get_allocator() const noexcept
+  {
+    return this->__get_allocator();
   }
 
   [[nodiscard]] _CCCL_HOST_API view_type view() noexcept

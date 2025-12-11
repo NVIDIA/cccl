@@ -201,7 +201,15 @@ _CCCL_HOST_API void
 __init_device_impl(device_mdspan<_ElementType, _Extents, _LayoutPolicy> __mdspan, ::cuda::stream_ref __stream)
 {
   using _View = device_mdspan<_ElementType, _Extents, _LayoutPolicy>;
-  cub::DeviceFor::ForEachInLayout(__mdspan.mapping(), _InitOp<_View, _ElementType>{__mdspan}, __stream.get());
+  if constexpr (::cuda::std::is_same_v<_LayoutPolicy, ::cuda::std::layout_right>
+                || ::cuda::std::is_same_v<_LayoutPolicy, ::cuda::std::layout_left>)
+  {
+    cub::DeviceFor::ForEachInLayout(__mdspan.mapping(), _InitOp<_View, _ElementType>{__mdspan}, __stream.get());
+  }
+  else
+  {
+    cub::DeviceFor::ForEachInExtents(__mdspan.extents(), _InitOp<_View, _ElementType>{__mdspan}, __stream.get());
+  }
 }
 
 template <typename _ElementType, typename _Extents, typename _LayoutPolicy, typename... IndicesType>

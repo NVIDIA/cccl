@@ -64,7 +64,7 @@ class host_mdarray
 
   _CCCL_HOST_API void __init()
   {
-    ::cuda::experimental::__init_host_impl(this->view(), ::cuda::std::make_index_sequence<_Extents::rank()>{});
+    ::cuda::experimental::__init_host_impl(this->view());
   }
 
   template <typename _ElementType2, typename _Extents2, typename _LayoutPolicy2, typename _Accessor2>
@@ -82,6 +82,9 @@ class host_mdarray
 public:
   using view_type       = ::cuda::host_mdspan<_ElementType, _Extents, _LayoutPolicy>;
   using const_view_type = ::cuda::host_mdspan<const _ElementType, _Extents, _LayoutPolicy>;
+
+  // Re-expose __base_mdarray assignment operators (e.g. assignment from view_type).
+  using __base_class::operator=;
 
   _CCCL_DELEGATE_CONSTRUCTORS(
     host_mdarray, __base_mdarray, host_mdarray, _Allocator, ::cuda::host_mdspan, _ElementType, _Extents, _LayoutPolicy);

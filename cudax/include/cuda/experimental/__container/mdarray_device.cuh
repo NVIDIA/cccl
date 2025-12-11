@@ -91,6 +91,9 @@ public:
   using view_type       = ::cuda::device_mdspan<_ElementType, _Extents, _LayoutPolicy>;
   using const_view_type = ::cuda::device_mdspan<const _ElementType, _Extents, _LayoutPolicy>;
 
+  // Re-expose __base_mdarray assignment operators (e.g. assignment from view_type).
+  using __base_class::operator=;
+
   _CCCL_DELEGATE_CONSTRUCTORS(
     device_mdarray,
     __base_mdarray,
