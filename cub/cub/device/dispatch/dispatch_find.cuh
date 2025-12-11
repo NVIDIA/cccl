@@ -17,6 +17,9 @@
 #include <cub/util_math.cuh>
 
 #include <thrust/system/cuda/detail/core/triple_chevron_launch.h>
+#include <thrust/type_traits/unwrap_contiguous_iterator.h>
+
+#include <cuda/__iterator/transform_iterator.h>
 
 #include "cub/util_type.cuh"
 
@@ -47,18 +50,17 @@ __launch_bounds__(1) __global__ void cuda_mem_set_async_dtemp_storage(ValueType*
   *d_temp_storage = num_items;
 }
 
-template <typename ChainedPolicyT, typename InputIteratorT, typename OutputIteratorT, typename OffsetT, typename ScanOpT>
+template <typename ChainedPolicyT, typename TransformedIteratorT, typename OutputIteratorT, typename OffsetT>
 __launch_bounds__(int(ChainedPolicyT::ActivePolicy::FindPolicy::BLOCK_THREADS))
   CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceFindKernel(
-    InputIteratorT d_in, OutputIteratorT d_out, OffsetT num_items, OffsetT* value_temp_storage, ScanOpT scan_op)
+    TransformedIteratorT d_in, OutputIteratorT d_out, OffsetT num_items, OffsetT* value_temp_storage)
 {
   using agent_find_t =
-    find::agent_t<typename ChainedPolicyT::ActivePolicy::FindPolicy, InputIteratorT, OutputIteratorT, OffsetT, ScanOpT>;
+    find::agent_t<typename ChainedPolicyT::ActivePolicy::FindPolicy, TransformedIteratorT, OutputIteratorT, OffsetT>;
 
   __shared__ typename agent_find_t::TempStorage sresult;
   // Process tiles
-  agent_find_t agent(sresult, d_in, scan_op); // Seems like sresult can be defined and initialized in agent_find.cuh
-                                              // directly without having to pass it here as an argument.
+  agent_find_t agent(sresult, d_in);
 
   agent.Process(value_temp_storage, num_items);
 }
@@ -181,10 +183,20 @@ struct DispatchFind : SelectedPolicy
       THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(1, 1, 0, stream)
         .doit(detail::cuda_mem_set_async_dtemp_storage<OffsetT, OffsetT>, value_temp_storage, num_items);
 
-      // Invoke FindIfKernel
+      // Unwrap the input iterator to convert device_ptr<T> to T* (raw pointer).
+      // This ensures that dereferencing yields T& instead of device_reference<T>,
+      // which is necessary for predicates that don't accept proxy types.
+      auto d_in_unwrapped = THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator(d_in);
+
+      // Create a transform_iterator that applies the predicate during iteration and returns bool.
+      // This way the agent only sees bool values, avoiding materialization of
+      // potentially non-device-compatible input types (e.g., types with host-only destructors).
+      auto transformed_in = ::cuda::make_transform_iterator(d_in_unwrapped, scan_op);
+
+      // Invoke FindIfKernel with transformed iterator
       THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(
         findif_grid_size, ActivePolicyT::FindPolicy::BLOCK_THREADS, 0, stream)
-        .doit(find_kernel, d_in, d_out, num_items, value_temp_storage, scan_op);
+        .doit(find_kernel, transformed_in, d_out, num_items, value_temp_storage);
 
       THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(1, 1, 0, stream)
         .doit(
@@ -212,11 +224,11 @@ struct DispatchFind : SelectedPolicy
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t Invoke()
   {
     using MaxPolicyT = typename SelectedPolicy::MaxPolicy;
-    return Invoke<ActivePolicyT>(
-      detail::DeviceFindKernel<MaxPolicyT, InputIteratorT, OutputIteratorT, OffsetT, ScanOpT>); // include the
-                                                                                                // surrounding two init
-                                                                                                // and write back
-                                                                                                // kernels here.
+    // First unwrap the iterator (converts device_ptr<T> to T*), then create transform_iterator
+    using UnwrappedIteratorT = THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator_t<InputIteratorT>;
+    using TransformedIteratorT =
+      decltype(::cuda::make_transform_iterator(::cuda::std::declval<UnwrappedIteratorT>(), scan_op));
+    return Invoke<ActivePolicyT>(detail::DeviceFindKernel<MaxPolicyT, TransformedIteratorT, OutputIteratorT, OffsetT>);
   }
 
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t Dispatch(
