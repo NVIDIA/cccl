@@ -38,6 +38,10 @@ struct _opstate_t : cuda::__immovable
 {
   using operation_state_concept = ex::operation_state_t;
 
+  _CCCL_HOST_DEVICE constexpr _opstate_t(Rcvr rcvr) noexcept
+      : _rcvr(static_cast<Rcvr&&>(rcvr))
+  {}
+
   _CCCL_HOST_DEVICE constexpr void start() noexcept
   {
     ex::set_value(static_cast<Rcvr&&>(_rcvr));
@@ -60,7 +64,7 @@ struct _sndr_t
   template <class Rcvr>
   _CCCL_HOST_DEVICE constexpr auto connect(Rcvr rcvr) const noexcept -> _opstate_t<Rcvr>
   {
-    return {{}, static_cast<Rcvr&&>(rcvr)};
+    return _opstate_t<Rcvr>(static_cast<Rcvr&&>(rcvr));
   }
 
   [[nodiscard]] _CCCL_HOST_DEVICE constexpr auto get_env() const noexcept
