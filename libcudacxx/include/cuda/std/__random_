@@ -29,6 +29,7 @@
 #include <cuda/std/__random/extreme_value_distribution.h>
 #include <cuda/std/__random/fisher_f_distribution.h>
 #include <cuda/std/__random/gamma_distribution.h>
+#include <cuda/std/__random/geometric_distribution.h>
 #include <cuda/std/__random/linear_congruential_engine.h>
 #include <cuda/std/__random/lognormal_distribution.h>
 #include <cuda/std/__random/negative_binomial_distribution.h>
