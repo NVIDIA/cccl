@@ -29,7 +29,7 @@ struct AgentFindPolicy : ScalingType
   static constexpr CacheLoadModifier load_modifier = LoadModifier;
 };
 
-template <typename AgentFindPolicy, typename InputIteratorT, typename OutputIteratorT, typename OffsetT, typename ScanOpT>
+template <typename AgentFindPolicy, typename InputIteratorT, typename OutputIteratorT, typename OffsetT>
 struct agent_t
 {
   // The input value type
@@ -70,7 +70,6 @@ struct agent_t
 
   _TempStorage& temp_storage;
   InputIteratorT d_in;
-  ScanOpT scan_op; // Binary reduction operator
 
   template <typename Iterator, bool CanVectorize>
   static _CCCL_DEVICE _CCCL_FORCEINLINE bool is_aligned_and_full_tile(
@@ -97,16 +96,13 @@ struct agent_t
     }
   }
 
-  _CCCL_DEVICE _CCCL_FORCEINLINE agent_t(TempStorage& temp_storage, InputIteratorT d_in, ScanOpT scan_op)
+  _CCCL_DEVICE _CCCL_FORCEINLINE agent_t(TempStorage& temp_storage, InputIteratorT d_in)
       : temp_storage(temp_storage.Alias())
       , d_in(d_in)
-      , scan_op(scan_op)
   {}
 
-  template <typename Pred>
   _CCCL_DEVICE _CCCL_FORCEINLINE bool ConsumeTile(
     OffsetT tile_offset,
-    Pred pred,
     OffsetT* result,
     OffsetT num_items,
     ::cuda::std::integral_constant<bool, true> /*CAN_VECTORIZE*/)
@@ -147,7 +143,7 @@ struct agent_t
 
       OffsetT index = tile_offset + vector_of_tile * vector_load_length + element_in_vector;
 
-      if (index < num_items && pred(input_items[i]))
+      if (index < num_items && input_items[i])
       {
         found = true;
         atomicMin(&temp_storage.block_result, index);
@@ -168,10 +164,8 @@ struct agent_t
     return false;
   }
 
-  template <typename Pred>
   _CCCL_DEVICE _CCCL_FORCEINLINE bool ConsumeTile(
     OffsetT tile_offset,
-    Pred pred,
     OffsetT* result,
     OffsetT num_items,
     ::cuda::std::integral_constant<bool, false> /*CAN_VECTORIZE*/)
@@ -190,8 +184,10 @@ struct agent_t
 
       if (index < num_items)
       {
-        // Force conversion from proxy/reference type to value type
-        if (pred(static_cast<InputT>(*(d_in + index))))
+        // Load into local variable to handle proxy types (e.g., device_reference)
+        // and avoid issues with non-device-compatible destructors (e.g., tuple)
+        InputT value = d_in[index];
+        if (value)
         {
           found = true;
           atomicMin(&temp_storage.block_result, index);
@@ -234,13 +230,9 @@ struct agent_t
       bool found =
         is_aligned_and_full_tile(
           d_in, tile_offset, tile_items, num_items, ::cuda::std::integral_constant<bool, attempt_vectorization>())
-          ? ConsumeTile(tile_offset,
-                        scan_op,
-                        value_temp_storage,
-                        num_items,
-                        ::cuda::std::integral_constant<bool, attempt_vectorization>())
-          : ConsumeTile(
-              tile_offset, scan_op, value_temp_storage, num_items, ::cuda::std::integral_constant<bool, false>());
+          ? ConsumeTile(
+              tile_offset, value_temp_storage, num_items, ::cuda::std::integral_constant<bool, attempt_vectorization>())
+          : ConsumeTile(tile_offset, value_temp_storage, num_items, ::cuda::std::integral_constant<bool, false>());
 
       if (found)
       {
