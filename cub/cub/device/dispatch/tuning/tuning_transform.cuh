@@ -326,10 +326,11 @@ _CCCL_HOST_DEVICE constexpr auto bulk_copy_dyn_smem_for_tile_size(
 [[nodiscard]] _CCCL_API constexpr auto vectorized_policy_for_filling(::cuda::arch_id arch, int store_size)
 {
   // manually tuned fill on RTX 5090
-  if (arch >= ::cuda::arch_id::sm_120)
-  {
-    return vectorized_policy{256, 8, 4};
-  }
+  // TODO(bgruber): re-enable this later! It's disabled to avoid SASS changes in PR #6914
+  // if (arch >= ::cuda::arch_id::sm_120)
+  // {
+  //   return vectorized_policy{256, 8, 4};
+  // }
   // manually tuned fill on B200, same as H200
   if (arch >= ::cuda::arch_id::sm_90)
   {
