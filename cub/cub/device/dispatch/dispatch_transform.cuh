@@ -426,6 +426,109 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t invoke_prefetch_or_vectorized
               THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator(::cuda::std::get<Is>(in)))...));
 }
 
+// This should ideally have been a lambda, but MSVC < 14.44 ICEs if we put a `(static) constexpr` variable inside
+template <typename RandomAccessIteratorTupleIn,
+          typename RandomAccessIteratorOut,
+          typename Offset,
+          typename Predicate,
+          typename TransformOp,
+          typename KernelSource,
+          typename KernelLauncherFactory>
+struct invoke_for_arch;
+
+template <typename... RandomAccessIteratorsIn,
+          typename RandomAccessIteratorOut,
+          typename Offset,
+          typename Predicate,
+          typename TransformOp,
+          typename KernelSource,
+          typename KernelLauncherFactory>
+struct invoke_for_arch<::cuda::std::tuple<RandomAccessIteratorsIn...>,
+                       RandomAccessIteratorOut,
+                       Offset,
+                       Predicate,
+                       TransformOp,
+                       KernelSource,
+                       KernelLauncherFactory>
+{
+  ::cuda::std::tuple<RandomAccessIteratorsIn...> in;
+  RandomAccessIteratorOut out;
+  Offset num_items;
+  Predicate pred;
+  TransformOp op;
+  cudaStream_t stream;
+  KernelSource kernel_source;
+  KernelLauncherFactory launcher_factory;
+  ::cuda::arch_id arch_id;
+
+  template <typename PolicyGetter>
+  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t operator()(PolicyGetter policy_getter) const
+  {
+    CUB_DETAIL_CONSTEXPR_ISH const transform_arch_policy& active_policy = policy_getter();
+    const auto seq = ::cuda::std::index_sequence_for<RandomAccessIteratorsIn...>{};
+
+#if !_CCCL_COMPILER(NVRTC) && defined(CUB_DEBUG_LOG)
+    NV_IF_TARGET(
+      NV_IS_HOST,
+      (std::stringstream ss; ss << active_policy;
+       _CubLog("Dispatching DeviceTransform to arch %d with tuning: %s\n", (int) arch_id, ss.str().c_str());))
+#endif // !_CCCL_COMPILER(NVRTC) && defined(CUB_DEBUG_LOG)
+
+    if CUB_DETAIL_CONSTEXPR_ISH (Algorithm::ublkcp == active_policy.algorithm)
+    {
+      return invoke_async_algorithm(
+        ::cuda::std::move(in),
+        ::cuda::std::move(out),
+        num_items,
+        ::cuda::std::move(pred),
+        ::cuda::std::move(op),
+        stream,
+        bulk_copy_alignment(arch_id),
+        [&](int tile_size, int alignment) {
+          return bulk_copy_dyn_smem_for_tile_size<sizeof...(RandomAccessIteratorsIn)>(
+            kernel_source.InputIteratorInfos(), tile_size, alignment);
+        },
+        seq,
+        policy_getter,
+        kernel_source,
+        launcher_factory);
+    }
+    else if CUB_DETAIL_CONSTEXPR_ISH (Algorithm::memcpy_async == active_policy.algorithm)
+    {
+      return invoke_async_algorithm(
+        ::cuda::std::move(in),
+        ::cuda::std::move(out),
+        num_items,
+        ::cuda::std::move(pred),
+        ::cuda::std::move(op),
+        stream,
+        ldgsts_size_and_align,
+        [&](int tile_size, int alignment) {
+          return memcpy_async_dyn_smem_for_tile_size<sizeof...(RandomAccessIteratorsIn)>(
+            kernel_source.InputIteratorInfos(), tile_size, alignment);
+        },
+        seq,
+        policy_getter,
+        kernel_source,
+        launcher_factory);
+    }
+    else
+    {
+      return invoke_prefetch_or_vectorized_algorithm(
+        ::cuda::std::move(in),
+        ::cuda::std::move(out),
+        num_items,
+        ::cuda::std::move(pred),
+        ::cuda::std::move(op),
+        stream,
+        seq,
+        policy_getter,
+        kernel_source,
+        launcher_factory);
+    }
+  }
+};
+
 template <requires_stable_address StableAddress,
           typename... RandomAccessIteratorsIn,
           typename RandomAccessIteratorOut,
@@ -472,77 +575,25 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t dispatch(
     return error;
   }
 
-  const auto bulk_copy_align = bulk_copy_alignment(arch_id);
-  const auto seq             = ::cuda::std::index_sequence_for<RandomAccessIteratorsIn...>{};
-
-  return dispatch_arch(arch_policies, arch_id, [&](auto policy_getter) {
-  // policy_getter returns a reference to a constexpr (CUB C++ API) or const run-time policy (CCCL.C)
-
-  // TODO(bgruber): ideally, we would just create a variable here for the policy, but MSVC ICEs on that. By adding
-  // `static`, at least MSVC 14.44 accepts it. But to work for all MSVC versions, we will just call policy_getter() at
-  // each place.
-  // CUB_DETAIL_CONSTEXPR_ISH const transform_arch_policy& active_policy = policy_getter();
-
-#if !_CCCL_COMPILER(NVRTC) && defined(CUB_DEBUG_LOG)
-    NV_IF_TARGET(
-      NV_IS_HOST,
-      (std::stringstream ss; ss << active_policy;
-       _CubLog("Dispatching DeviceTransform to arch %d with tuning: %s\n", (int) arch_id, ss.str().c_str());))
-#endif // !_CCCL_COMPILER(NVRTC) && defined(CUB_DEBUG_LOG)
-
-    if CUB_DETAIL_CONSTEXPR_ISH (Algorithm::ublkcp == policy_getter().algorithm)
-    {
-      return invoke_async_algorithm(
-        ::cuda::std::move(in),
-        ::cuda::std::move(out),
-        num_items,
-        ::cuda::std::move(pred),
-        ::cuda::std::move(op),
-        stream,
-        bulk_copy_align,
-        [&](int tile_size, int alignment) {
-          return bulk_copy_dyn_smem_for_tile_size<sizeof...(RandomAccessIteratorsIn)>(
-            kernel_source.InputIteratorInfos(), tile_size, alignment);
-        },
-        seq,
-        policy_getter,
-        kernel_source,
-        launcher_factory);
-    }
-    else if CUB_DETAIL_CONSTEXPR_ISH (Algorithm::memcpy_async == policy_getter().algorithm)
-    {
-      return invoke_async_algorithm(
-        ::cuda::std::move(in),
-        ::cuda::std::move(out),
-        num_items,
-        ::cuda::std::move(pred),
-        ::cuda::std::move(op),
-        stream,
-        ldgsts_size_and_align,
-        [&](int tile_size, int alignment) {
-          return memcpy_async_dyn_smem_for_tile_size<sizeof...(RandomAccessIteratorsIn)>(
-            kernel_source.InputIteratorInfos(), tile_size, alignment);
-        },
-        seq,
-        policy_getter,
-        kernel_source,
-        launcher_factory);
-    }
-    else
-    {
-      return invoke_prefetch_or_vectorized_algorithm(
-        ::cuda::std::move(in),
-        ::cuda::std::move(out),
-        num_items,
-        ::cuda::std::move(pred),
-        ::cuda::std::move(op),
-        stream,
-        seq,
-        policy_getter,
-        kernel_source,
-        launcher_factory);
-    }
-  });
+  return dispatch_arch(
+    arch_policies,
+    arch_id,
+    invoke_for_arch<::cuda::std::tuple<RandomAccessIteratorsIn...>,
+                    RandomAccessIteratorOut,
+                    Offset,
+                    Predicate,
+                    TransformOp,
+                    KernelSource,
+                    KernelLauncherFactory>{
+      ::cuda::std::move(in),
+      ::cuda::std::move(out),
+      num_items,
+      ::cuda::std::move(pred),
+      ::cuda::std::move(op),
+      stream,
+      kernel_source,
+      launcher_factory,
+      arch_id});
 }
 } // namespace detail::transform
 CUB_NAMESPACE_END
