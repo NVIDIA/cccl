@@ -9,6 +9,8 @@
 #include <cub/util_arch.cuh>
 #include <cub/util_type.cuh>
 
+#include <thrust/type_traits/is_trivially_relocatable.h>
+
 #include <cuda/std/__type_traits/integral_constant.h>
 
 CUB_NAMESPACE_BEGIN
@@ -19,8 +21,8 @@ template <int NominalBlockThreads4B,
           typename ComputeT,
           int VectorLoadLength,
           CacheLoadModifier LoadModifier,
-          typename ScalingType = cub::detail::MemBoundScaling<NominalBlockThreads4B, NominalItemsPerThread4B, ComputeT>>
-struct AgentFindPolicy : ScalingType
+          typename ScalingType = MemBoundScaling<NominalBlockThreads4B, NominalItemsPerThread4B, ComputeT>>
+struct agent_find_policy_t : ScalingType
 {
   // Number of items per vectorized load
   static constexpr int vector_load_length = VectorLoadLength;
@@ -29,7 +31,7 @@ struct AgentFindPolicy : ScalingType
   static constexpr CacheLoadModifier load_modifier = LoadModifier;
 };
 
-template <typename AgentFindPolicy, typename InputIteratorT, typename OutputIteratorT, typename OffsetT>
+template <typename AgentFindPolicy, typename InputIteratorT, typename OffsetT>
 struct agent_t
 {
   // The input value type
@@ -42,7 +44,7 @@ struct agent_t
   // Wrap the native input pointer with CacheModifiedInputIterator
   // or directly use the supplied input iterator type
   using WrappedInputIteratorT =
-    ::cuda::std::_If<::cuda::std::is_pointer_v<InputIteratorT>,
+    ::cuda::std::_If<::cuda::std::contiguous_iterator<InputIteratorT>,
                      CacheModifiedInputIterator<AgentFindPolicy::load_modifier, InputT, OffsetT>,
                      InputIteratorT>;
 
@@ -55,7 +57,7 @@ struct agent_t
   // pointer to a primitive type
   static constexpr bool attempt_vectorization =
     (vector_load_length > 1) && (items_per_thread % vector_load_length == 0)
-    && (::cuda::std::is_pointer_v<InputIteratorT>) && detail::is_primitive_v<InputT>;
+    && (::cuda::std::contiguous_iterator<InputIteratorT>) && THRUST_NS_QUALIFIER::is_trivially_relocatable_v<InputT>;
 
   static constexpr CacheLoadModifier load_modifier = AgentFindPolicy::load_modifier;
 
@@ -71,9 +73,9 @@ struct agent_t
   _TempStorage& temp_storage;
   InputIteratorT d_in;
 
-  template <typename Iterator, bool CanVectorize>
-  static _CCCL_DEVICE _CCCL_FORCEINLINE bool is_aligned_and_full_tile(
-    Iterator d_in, int tile_offset, int tile_size, OffsetT num_items, ::cuda::std::integral_constant<bool, CanVectorize>)
+  template <typename Iterator, bool CanVectorize = attempt_vectorization>
+  static _CCCL_DEVICE _CCCL_FORCEINLINE bool
+  is_aligned_and_full_tile(Iterator d_in, int tile_offset, int tile_size, OffsetT num_items)
   {
     if constexpr (CanVectorize)
     {
@@ -103,7 +105,7 @@ struct agent_t
 
   _CCCL_DEVICE _CCCL_FORCEINLINE bool ConsumeTile(
     OffsetT tile_offset,
-    OffsetT* result,
+    OffsetT* found_pos_ptr,
     OffsetT num_items,
     ::cuda::std::integral_constant<bool, true> /*CAN_VECTORIZE*/)
   {
@@ -117,16 +119,14 @@ struct agent_t
 
     __syncthreads();
 
-    constexpr int number_of_vectors = items_per_thread / vector_load_length;
     // vectorized loads begin
-    InputT* d_in_unqualified = const_cast<InputT*>(d_in) + tile_offset + (threadIdx.x * vector_load_length);
-
-    cub::CacheModifiedInputIterator<AgentFindPolicy::load_modifier, VectorT> d_vec_in(
-      reinterpret_cast<VectorT*>(d_in_unqualified));
+    auto load_ptr = reinterpret_cast<const VectorT*>(d_in + tile_offset + (threadIdx.x * vector_load_length));
+    CacheModifiedInputIterator<AgentFindPolicy::load_modifier, VectorT> d_vec_in(load_ptr);
 
     InputT input_items[items_per_thread];
-    VectorT* vec_items = reinterpret_cast<VectorT*>(input_items);
+    auto* vec_items = reinterpret_cast<VectorT*>(input_items);
 
+    constexpr int number_of_vectors = items_per_thread / vector_load_length;
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int i = 0; i < number_of_vectors; ++i)
     {
@@ -157,7 +157,7 @@ struct agent_t
     {
       if (threadIdx.x == 0 && temp_storage.block_result < num_items)
       {
-        atomicMin(result, temp_storage.block_result);
+        atomicMin(found_pos_ptr, temp_storage.block_result);
       }
       return true;
     }
@@ -166,7 +166,7 @@ struct agent_t
 
   _CCCL_DEVICE _CCCL_FORCEINLINE bool ConsumeTile(
     OffsetT tile_offset,
-    OffsetT* result,
+    OffsetT* found_pos_ptr,
     OffsetT num_items,
     ::cuda::std::integral_constant<bool, false> /*CAN_VECTORIZE*/)
   {
@@ -174,14 +174,12 @@ struct agent_t
     {
       temp_storage.block_result = num_items;
     }
-
     __syncthreads();
 
     bool found = false;
     for (int i = 0; i < items_per_thread; ++i)
     {
-      auto index = tile_offset + threadIdx.x + i * blockDim.x;
-
+      const auto index = tile_offset + threadIdx.x + i * blockDim.x;
       if (index < num_items)
       {
         // Load into local variable to handle proxy types (e.g., device_reference)
@@ -199,25 +197,25 @@ struct agent_t
     {
       if (threadIdx.x == 0 && temp_storage.block_result < num_items)
       {
-        atomicMin(result, temp_storage.block_result);
+        atomicMin(found_pos_ptr, temp_storage.block_result);
       }
       return true;
     }
     return false;
   }
 
-  _CCCL_DEVICE _CCCL_FORCEINLINE void Process(OffsetT* value_temp_storage, OffsetT num_items)
+  _CCCL_DEVICE _CCCL_FORCEINLINE void Process(OffsetT* found_pos_ptr, OffsetT num_items)
   {
-    OffsetT tile_stride = static_cast<OffsetT>(tile_items) * static_cast<OffsetT>(gridDim.x);
+    // use a grid strided loop
+    OffsetT grid_stride = static_cast<OffsetT>(tile_items) * static_cast<OffsetT>(gridDim.x);
     for (OffsetT tile_offset = static_cast<OffsetT>(blockIdx.x) * static_cast<OffsetT>(tile_items);
          tile_offset < num_items;
-         tile_offset += tile_stride)
+         tile_offset += grid_stride)
     {
-      // Only one thread reads atomically and propagates it to the
-      // the other threads of the block through shared memory
+      // Only one thread reads atomically and propagates it to other threads of the block through shared memory
       if (threadIdx.x == 0)
       {
-        temp_storage.block_result = atomicAdd(value_temp_storage, 0);
+        temp_storage.block_result = atomicAdd(found_pos_ptr, 0); // TODO(bgruber): should be atomic load relaxed
       }
       __syncthreads();
 
@@ -227,12 +225,10 @@ struct agent_t
         return;
       }
 
-      bool found =
-        is_aligned_and_full_tile(
-          d_in, tile_offset, tile_items, num_items, ::cuda::std::integral_constant<bool, attempt_vectorization>())
-          ? ConsumeTile(
-              tile_offset, value_temp_storage, num_items, ::cuda::std::integral_constant<bool, attempt_vectorization>())
-          : ConsumeTile(tile_offset, value_temp_storage, num_items, ::cuda::std::integral_constant<bool, false>());
+      const bool found =
+        is_aligned_and_full_tile(d_in, tile_offset, tile_items, num_items)
+          ? ConsumeTile(tile_offset, found_pos_ptr, num_items, ::cuda::std::bool_constant<attempt_vectorization>{})
+          : ConsumeTile(tile_offset, found_pos_ptr, num_items, ::cuda::std::false_type{});
 
       if (found)
       {

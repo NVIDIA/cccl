@@ -106,7 +106,7 @@ struct DeviceFind
     // Signed integer type for global offsets
     using OffsetT = detail::choose_offset_t<NumItemsT>;
 
-    return DispatchFind<InputIteratorT, OutputIteratorT, OffsetT, ScanOpT>::Dispatch(
+    return detail::find::dispatch_t<InputIteratorT, OutputIteratorT, OffsetT, ScanOpT>::Dispatch(
       d_temp_storage, temp_storage_bytes, d_in, d_out, static_cast<OffsetT>(num_items), scan_op, stream);
   }
 };

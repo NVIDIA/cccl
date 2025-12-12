@@ -34,14 +34,11 @@ struct policy_hub_t
 
     // FindPolicy (GTX670: 154.0 @ 48M 4B items)
     using FindPolicy =
-      AgentFindPolicy<threads_per_block,
-                      items_per_thread,
-                      typename ::cuda::std::iterator_traits<InputIt>::value_type,
-                      items_per_vec_load,
-                      LOAD_LDG>;
-
-    // // SingleTilePolicy
-    // using SingleTilePolicy = FindPolicy;
+      agent_find_policy_t<threads_per_block,
+                          items_per_thread,
+                          typename ::cuda::std::iterator_traits<InputIt>::value_type,
+                          items_per_vec_load,
+                          LOAD_LDG>;
   };
 
   using MaxPolicy = policy_300_t;
