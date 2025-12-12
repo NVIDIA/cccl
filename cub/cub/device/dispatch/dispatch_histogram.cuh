@@ -115,7 +115,7 @@ struct DeviceHistogramKernelSource
     using OutputDecodeOpT =
       ::cuda::std::conditional_t<IsByteSample, DecodeOpT, typename TransformsT::PassThruTransform>;
 
-    return &DeviceHistogramSweepKernelDeviceInit<
+    return &DeviceHistogramSweepDeviceInitKernel<
       PolicyT,
       PRIVATIZED_SMEM_BINS,
       NUM_CHANNELS,
