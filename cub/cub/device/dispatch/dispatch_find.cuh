@@ -104,7 +104,7 @@ struct dispatch_t
   // offsets), then we can just atomically write to the output pointer directly.
   static constexpr bool can_write_to_output_direclty =
     THRUST_NS_QUALIFIER::is_contiguous_iterator_v<OutputIteratorT> && ::cuda::std::is_integral_v<OutputT>
-    && sizeof(OutputT) == sizeof(OffsetT);
+    && size_of<OutputT> == sizeof(OffsetT);
 
   template <typename ActivePolicyT>
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t Invoke()

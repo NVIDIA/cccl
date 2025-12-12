@@ -271,12 +271,6 @@ _CCCL_HOST_DEVICE constexpr int arch_to_min_bytes_in_flight(int sm_arch)
   return 12 * 1024; // V100 and below
 }
 
-template <typename T>
-inline constexpr size_t size_of = sizeof(T);
-
-template <>
-inline constexpr size_t size_of<void> = 0;
-
 template <typename... RandomAccessIteratorsIn>
 _CCCL_HOST_DEVICE static constexpr auto make_sizes_alignments()
 {
