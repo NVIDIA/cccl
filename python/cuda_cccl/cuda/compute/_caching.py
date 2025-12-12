@@ -69,6 +69,14 @@ def clear_all_caches():
         cached_func.cache_clear()
 
 
+def _hash_device_array_like(value):
+    # hash based on pointer, shape, and dtype
+    ptr = value.__cuda_array_interface__["data"][0]
+    shape = value.__cuda_array_interface__["shape"]
+    dtype = value.__cuda_array_interface__["typestr"]
+    return hash((ptr, shape, dtype))
+
+
 def _make_hashable(value):
     import numba.cuda.dispatcher
 
@@ -77,7 +85,7 @@ def _make_hashable(value):
     if isinstance(value, numba.cuda.dispatcher.CUDADispatcher):
         return CachableFunction(value.py_func)
     elif isinstance(value, DeviceArrayLike):
-        return id(value)
+        return _hash_device_array_like(value)
     elif isinstance(value, (list, tuple)):
         return tuple(_make_hashable(v) for v in value)
     elif isinstance(value, dict):
