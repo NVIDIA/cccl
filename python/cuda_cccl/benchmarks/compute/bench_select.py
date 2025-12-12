@@ -88,10 +88,7 @@ def bench_select_pointer(bench_fixture, request, size):
         )
 
     fixture = request.getfixturevalue(bench_fixture)
-    if bench_fixture == "compile_benchmark":
-        fixture(cuda.compute.make_three_way_partition, run)
-    else:
-        fixture(run)
+    fixture(run)
 
 
 @pytest.mark.parametrize("bench_fixture", ["compile_benchmark", "benchmark"])
@@ -111,10 +108,7 @@ def bench_select_iterator(bench_fixture, request, size):
         )
 
     fixture = request.getfixturevalue(bench_fixture)
-    if bench_fixture == "compile_benchmark":
-        fixture(cuda.compute.make_select, run)
-    else:
-        fixture(run)
+    fixture(run)
 
 
 @pytest.mark.parametrize("bench_fixture", ["compile_benchmark", "benchmark"])
@@ -130,10 +124,7 @@ def bench_select_struct(bench_fixture, request, size):
         )
 
     fixture = request.getfixturevalue(bench_fixture)
-    if bench_fixture == "compile_benchmark":
-        fixture(cuda.compute.make_select, run)
-    else:
-        fixture(run)
+    fixture(run)
 
 
 @pytest.mark.parametrize("bench_fixture", ["compile_benchmark", "benchmark"])
@@ -154,7 +145,4 @@ def bench_select_stateful(bench_fixture, request, size):
         )
 
     fixture = request.getfixturevalue(bench_fixture)
-    if bench_fixture == "compile_benchmark":
-        fixture(cuda.compute.make_select, run)
-    else:
-        fixture(run)
+    fixture(run)
