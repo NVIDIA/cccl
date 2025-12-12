@@ -149,7 +149,15 @@ def lower_device_array(context, builder, ty, pyval):
     """
     Lower DeviceArrayLike objects by embedding the device pointer as a constant.
     """
+
     interface = pyval.__cuda_array_interface__
+
+    # hold on to the device-array-like object
+    lib = context.active_code_library
+    referenced_objects = getattr(lib, "referenced_objects", None)
+    if referenced_objects is None:
+        lib.referenced_objects = referenced_objects = {}
+    referenced_objects[id(pyval)] = pyval
 
     shape = interface["shape"]
     strides = interface.get("strides")
