@@ -169,6 +169,20 @@ struct Transforms
     }
 #endif // _CCCL_HAS_NVFP16()
 
+#if _CCCL_HAS_NVBF16()
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE ScaleT
+    ComputeScale(int num_levels, __nv_bfloat16 max_level, __nv_bfloat16 min_level)
+    {
+      ScaleT result;
+      NV_IF_TARGET(
+        NV_PROVIDES_SM_80,
+        (result.reciprocal = __hdiv(__float2bfloat16(num_levels - 1), __hsub(max_level, min_level));),
+        (result.reciprocal = __float2bfloat16(
+           static_cast<float>(num_levels - 1) / (__bfloat162float(max_level) - __bfloat162float(min_level)));))
+      return result;
+    }
+#endif // _CCCL_HAS_NVBF16()
+
     // All types but __half:
     template <typename T>
     _CCCL_HOST_DEVICE _CCCL_FORCEINLINE int SampleIsValid(T sample, T max_level, T min_level)
@@ -185,6 +199,17 @@ struct Transforms
         (return __half2float(sample) >= __half2float(min_level) && __half2float(sample) < __half2float(max_level);));
     }
 #endif // _CCCL_HAS_NVFP16()
+
+#if _CCCL_HAS_NVBF16()
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE int
+    SampleIsValid(__nv_bfloat16 sample, __nv_bfloat16 max_level, __nv_bfloat16 min_level)
+    {
+      NV_IF_TARGET(NV_PROVIDES_SM_80,
+                   (return __hge(sample, min_level) && __hlt(sample, max_level);),
+                   (return __bfloat162float(sample) >= __bfloat162float(min_level)
+                          && __bfloat162float(sample) < __bfloat162float(max_level);));
+    }
+#endif // _CCCL_HAS_NVBF16()
 
     //! @brief Bin computation for floating point (and extended floating point) types
     template <typename T>
@@ -565,24 +590,25 @@ template <typename ChainedPolicyT,
           typename OffsetT,
           bool IsEven>
 __launch_bounds__(int(ChainedPolicyT::ActivePolicy::AgentHistogramPolicyT::BLOCK_THREADS))
-  CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceHistogramSweepKernelDeviceInit(
-    SampleIteratorT d_samples,
+  CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceHistogramSweepDeviceInitKernel(
+    _CCCL_GRID_CONSTANT const SampleIteratorT d_samples,
     ::cuda::std::array<int, NumActiveChannels> num_output_bins_wrapper,
     ::cuda::std::array<int, NumActiveChannels> num_privatized_bins_wrapper,
     ::cuda::std::array<CounterT*, NumActiveChannels> d_output_histograms_wrapper,
     ::cuda::std::array<CounterT*, NumActiveChannels> d_privatized_histograms_wrapper,
-    FirstLevelArrayT first_level_array,
-    SecondLevelArrayT second_level_array,
-    OffsetT num_row_pixels,
-    OffsetT num_rows,
-    OffsetT row_stride_samples,
-    int tiles_per_row,
-    GridQueue<int> tile_queue)
+    _CCCL_GRID_CONSTANT const FirstLevelArrayT first_level_array,
+    _CCCL_GRID_CONSTANT const SecondLevelArrayT second_level_array,
+    _CCCL_GRID_CONSTANT const OffsetT num_row_pixels,
+    _CCCL_GRID_CONSTANT const OffsetT num_rows,
+    _CCCL_GRID_CONSTANT const OffsetT row_stride_samples,
+    _CCCL_GRID_CONSTANT const int tiles_per_row,
+    _CCCL_GRID_CONSTANT const GridQueue<int> tile_queue)
 {
   OutputDecodeOpT output_decode_op[NumActiveChannels];
   PrivatizedDecodeOpT privatized_decode_op[NumActiveChannels];
   if constexpr (IsEven)
   {
+    _CCCL_PRAGMA_UNROLL_FULL()
     for (int channel = 0; channel < NumActiveChannels; ++channel)
     {
       const int num_levels   = num_output_bins_wrapper[channel] + 1;
@@ -594,6 +620,7 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::AgentHistogramPolicyT::BLOCK
   }
   else
   {
+    _CCCL_PRAGMA_UNROLL_FULL()
     for (int channel = 0; channel < NumActiveChannels; ++channel)
     {
       const auto num_output_levels = first_level_array[channel];

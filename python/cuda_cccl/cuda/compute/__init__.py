@@ -32,6 +32,7 @@ from .algorithms import (
     unary_transform,
     unique_by_key,
 )
+from .determinism import Determinism
 from .iterators import (
     CacheModifiedInputIterator,
     ConstantIterator,
@@ -73,6 +74,7 @@ __all__ = [
     "make_unique_by_key",
     "merge_sort",
     "OpKind",
+    "Determinism",
     "PermutationIterator",
     "radix_sort",
     "reduce_into",

@@ -157,7 +157,7 @@ std::string get_sweep_kernel_name(
       : std::format("cuda::std::array<const {0}*, {1}>", level_t, num_active_channels);
 
   return std::format(
-    "cub::detail::histogram::DeviceHistogramSweepKernelDeviceInit<{0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}, {8}, {9}, "
+    "cub::detail::histogram::DeviceHistogramSweepDeviceInitKernel<{0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}, {8}, {9}, "
     "{10}, {11}>",
     chained_policy_t,
     privatized_smem_bins,
@@ -328,7 +328,7 @@ __device__ consteval auto& policy_generator() {{
     // value greater than 0 (see dispatch_histogram.cuh), but we don't have this
     // information here.
     const int privatized_smem_bins =
-      num_output_levels_val - 1 > cub::detail::histogram::MAX_PRIVATIZED_SMEM_BINS ? 0 : 256;
+      num_output_levels_val - 1 > cub::detail::histogram::max_privatized_smem_bins ? 0 : 256;
 
     const bool is_byte_sample = d_samples.value_type.size == 1;
 

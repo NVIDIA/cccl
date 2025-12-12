@@ -30,6 +30,7 @@
 #include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/is_arithmetic.h>
 #include <cuda/std/__type_traits/is_array.h>
+#include <cuda/std/__type_traits/is_constructible.h>
 #include <cuda/std/__type_traits/is_trivially_constructible.h>
 #include <cuda/std/__type_traits/is_trivially_destructible.h>
 #include <cuda/std/__type_traits/is_trivially_move_assignable.h>
@@ -102,9 +103,8 @@ _CCCL_CONCEPT __can_optimize_construct_at = _CCCL_REQUIRES_EXPR((_Tp, variadic _
 #if _CCCL_STD_VER >= 2020
 
 _CCCL_EXEC_CHECK_DISABLE
-template <class _Tp,
-          class... _Args,
-          class = decltype(::new(::cuda::std::declval<void*>()) _Tp(::cuda::std::declval<_Args>()...))>
+_CCCL_TEMPLATE(class _Tp, class... _Args)
+_CCCL_REQUIRES(is_constructible_v<_Tp, _Args...>)
 _CCCL_API inline _CCCL_CONSTEXPR_CXX20 _Tp* construct_at(_Tp* __location, _Args&&... __args)
 {
   _CCCL_ASSERT(__location != nullptr, "null pointer given to construct_at");

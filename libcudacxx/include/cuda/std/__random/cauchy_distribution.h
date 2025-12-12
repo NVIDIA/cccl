@@ -21,9 +21,9 @@
 #endif // no system header
 
 #include <cuda/std/__cmath/trigonometric_functions.h>
+#include <cuda/std/__limits/numeric_limits.h>
 #include <cuda/std/__random/is_valid.h>
 #include <cuda/std/__random/uniform_real_distribution.h>
-#include <cuda/std/limits>
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -32,7 +32,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 template <class _RealType = double>
 class cauchy_distribution
 {
-  static_assert(__libcpp_random_is_valid_realtype<_RealType>, "RealType must be a supported floating-point type");
+  static_assert(__cccl_random_is_valid_realtype<_RealType>, "RealType must be a supported floating-point type");
 
 public:
   // types

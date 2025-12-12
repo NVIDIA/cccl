@@ -23,6 +23,7 @@
 
 #if _CCCL_HAS_CTK() && !_CCCL_COMPILER(NVRTC)
 
+#  include <cuda/std/__cstddef/types.h>
 #  include <cuda/std/__exception/cuda_error.h>
 #  include <cuda/std/__internal/namespaces.h>
 #  include <cuda/std/__type_traits/always_false.h>
@@ -285,7 +286,8 @@ _CCCL_HOST_API inline ::CUcontext __ctxPop()
 
 // Memory management
 
-_CCCL_HOST_API inline void __memcpyAsync(void* __dst, const void* __src, size_t __count, ::CUstream __stream)
+_CCCL_HOST_API inline void
+__memcpyAsync(void* __dst, const void* __src, ::cuda::std::size_t __count, ::CUstream __stream)
 {
   static auto __driver_fn = _CCCLRT_GET_DRIVER_FUNCTION(cuMemcpyAsync);
   ::cuda::__driver::__call_driver_fn(
@@ -299,10 +301,10 @@ _CCCL_HOST_API inline void __memcpyAsync(void* __dst, const void* __src, size_t 
 
 #  if _CCCL_CTK_AT_LEAST(13, 0)
 _CCCL_HOST_API inline void __memcpyAsyncWithAttributes(
-  void* __dst, const void* __src, size_t __count, ::CUstream __stream, ::CUmemcpyAttributes __attributes)
+  void* __dst, const void* __src, ::cuda::std::size_t __count, ::CUstream __stream, ::CUmemcpyAttributes __attributes)
 {
-  static auto __driver_fn = _CCCLRT_GET_DRIVER_FUNCTION_VERSIONED(cuMemcpyBatchAsync, cuMemcpyBatchAsync, 13, 0);
-  size_t __zero           = 0;
+  static auto __driver_fn    = _CCCLRT_GET_DRIVER_FUNCTION_VERSIONED(cuMemcpyBatchAsync, cuMemcpyBatchAsync, 13, 0);
+  ::cuda::std::size_t __zero = 0;
   ::cuda::__driver::__call_driver_fn(
     __driver_fn,
     "Failed to perform a memcpy with attributes",
@@ -318,7 +320,7 @@ _CCCL_HOST_API inline void __memcpyAsyncWithAttributes(
 #  endif // _CCCL_CTK_AT_LEAST(13, 0)
 
 template <typename _Tp>
-_CCCL_HOST_API void __memsetAsync(void* __dst, _Tp __value, size_t __count, ::CUstream __stream)
+_CCCL_HOST_API void __memsetAsync(void* __dst, _Tp __value, ::cuda::std::size_t __count, ::CUstream __stream)
 {
   if constexpr (sizeof(_Tp) == 1)
   {
@@ -357,10 +359,10 @@ _CCCL_HOST_API inline void __mempoolSetAttribute(::CUmemoryPool __pool, ::CUmemP
   ::cuda::__driver::__call_driver_fn(__driver_fn, "Failed to set attribute for a memory pool", __pool, __attr, __value);
 }
 
-_CCCL_HOST_API inline size_t __mempoolGetAttribute(::CUmemoryPool __pool, ::CUmemPool_attribute __attr)
+_CCCL_HOST_API inline ::cuda::std::size_t __mempoolGetAttribute(::CUmemoryPool __pool, ::CUmemPool_attribute __attr)
 {
-  size_t __value          = 0;
-  static auto __driver_fn = _CCCLRT_GET_DRIVER_FUNCTION(cuMemPoolGetAttribute);
+  ::cuda::std::size_t __value = 0;
+  static auto __driver_fn     = _CCCLRT_GET_DRIVER_FUNCTION(cuMemPoolGetAttribute);
   ::cuda::__driver::__call_driver_fn(__driver_fn, "Failed to get attribute for a memory pool", __pool, __attr, &__value);
   return __value;
 }
@@ -393,7 +395,8 @@ _CCCL_HOST_API inline ::cudaError_t __freeAsyncNoThrow(::CUdeviceptr __dptr, ::C
   return static_cast<::cudaError_t>(__driver_fn(__dptr, __stream));
 }
 
-_CCCL_HOST_API inline void __mempoolSetAccess(::CUmemoryPool __pool, ::CUmemAccessDesc* __descs, ::size_t __count)
+_CCCL_HOST_API inline void
+__mempoolSetAccess(::CUmemoryPool __pool, ::CUmemAccessDesc* __descs, ::cuda::std::size_t __count)
 {
   static auto __driver_fn = _CCCLRT_GET_DRIVER_FUNCTION(cuMemPoolSetAccess);
   ::cuda::__driver::__call_driver_fn(__driver_fn, "Failed to set access of a memory pool", __pool, __descs, __count);

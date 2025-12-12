@@ -191,7 +191,6 @@ public:
     {
       return __sentinel{__bound_sentinel_};
     }
-    _CCCL_UNREACHABLE();
   }
 
   _CCCL_TEMPLATE(class _BoundSentinel2 = _BoundSentinel)
@@ -215,7 +214,6 @@ public:
     {
       return ::cuda::std::__to_unsigned_like(__bound_sentinel_ - __value_);
     }
-    _CCCL_UNREACHABLE();
   }
 };
 
