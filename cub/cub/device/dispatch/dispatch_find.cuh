@@ -92,6 +92,10 @@ struct dispatch_t
   int ptx_version;
 
   using OutputT = it_value_t<OutputIteratorT>;
+
+  // if the output iterator can be turned into a pointer, the value type is integral, and has the same size as OffsetT
+  // (we tolerate a sign mismatch, because both the output value type and the offset type must be able to represent all
+  // offsets), then we can just atomically write to the output pointer directly.
   static constexpr bool can_write_to_output_direclty =
     THRUST_NS_QUALIFIER::is_contiguous_iterator_v<OutputIteratorT> && ::cuda::std::is_integral_v<OutputT>
     && sizeof(OutputT) == sizeof(OffsetT);
@@ -160,8 +164,6 @@ struct dispatch_t
 
     // use d_temp_storage as the intermediate device result to read and write from. Then store the final result in the
     // output iterator.
-    // TODO(bgruber): if the OutputIteratorT is contiguous, we can turn it into a pointer and avoid using temporary
-    // storage. Since this is common, we should implement this optimization.
     THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(1, 1, 0, stream)
       .doit(init_found_pos_pointer<OffsetT, OffsetT>, found_pos_ptr, num_items);
 

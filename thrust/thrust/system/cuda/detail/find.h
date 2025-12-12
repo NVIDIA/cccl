@@ -78,35 +78,32 @@ THRUST_RUNTIME_FUNCTION Size
 find_if_n_impl(execution_policy<Derived>& policy, InputIt first, Size num_items, Predicate predicate)
 {
   cudaStream_t stream = cuda_cub::stream(policy);
-  cudaError_t status;
 
-  // Determine temporary device storage requirements.
-  size_t tmp_size = 0;
-  THRUST_INDEX_TYPE_DISPATCH(
-    status,
-    cub::DeviceFind::FindIf,
-    num_items,
-    (nullptr, tmp_size, first, static_cast<Size*>(nullptr), predicate, num_items_fixed, stream));
-  cuda_cub::throw_on_error(status, "find_if: failed to get temp storage size");
+  auto call_with_adjusted_size_type = [&](auto num_items_fixed) -> Size {
+    // we use the same offset type that CUB uses internally for writing the result. avoids an extra kernel
+    using adjusted_size_type = cub::detail::choose_offset_t<decltype(num_items_fixed)>;
 
-  // Allocate temporary storage for both the algorithm and the result.
-  thrust::detail::temporary_array<std::uint8_t, Derived> tmp(policy, tmp_size + sizeof(Size));
+    size_t tmp_size = 0;
+    auto status     = cub::DeviceFind::FindIf(
+      nullptr, tmp_size, first, static_cast<adjusted_size_type*>(nullptr), predicate, num_items_fixed, stream);
+    cuda_cub::throw_on_error(status, "find_if: failed to get temp storage size");
 
-  // Run find_if.
-  Size* result_ptr = thrust::detail::aligned_reinterpret_cast<Size*>(tmp.data().get());
-  void* tmp_ptr    = static_cast<void*>((tmp.data() + sizeof(Size)).get());
-  THRUST_INDEX_TYPE_DISPATCH(
-    status,
-    cub::DeviceFind::FindIf,
-    num_items,
-    (tmp_ptr, tmp_size, first, result_ptr, predicate, num_items_fixed, stream));
-  cuda_cub::throw_on_error(status, "find_if: failed to run algorithm");
+    // Allocate temporary storage for both the algorithm and the result.
+    thrust::detail::temporary_array<std::uint8_t, Derived> tmp(policy, sizeof(adjusted_size_type) + tmp_size);
 
-  // Synchronize and get the result.
-  status = cuda_cub::synchronize(policy);
-  cuda_cub::throw_on_error(status, "find_if: failed to synchronize");
+    // Run find_if.
+    adjusted_size_type* result_ptr = thrust::detail::aligned_reinterpret_cast<adjusted_size_type*>(tmp.data().get());
+    void* tmp_ptr                  = static_cast<void*>((tmp.data() + sizeof(adjusted_size_type)).get());
 
-  return cuda_cub::get_value(policy, result_ptr);
+    status = cub::DeviceFind::FindIf(tmp_ptr, tmp_size, first, result_ptr, predicate, num_items_fixed, stream);
+    cuda_cub::throw_on_error(status, "find_if: failed to run algorithm");
+
+    return static_cast<Size>(cuda_cub::get_value(policy, result_ptr));
+  };
+
+  Size result;
+  THRUST_INDEX_TYPE_DISPATCH(result, call_with_adjusted_size_type, num_items, (num_items_fixed));
+  return result;
 }
 } // namespace detail
 
