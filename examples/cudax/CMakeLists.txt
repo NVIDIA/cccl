@@ -48,11 +48,6 @@ endif()
 
 add_library(cudax_samples_interface INTERFACE)
 
-target_compile_definitions(
-  cudax_samples_interface
-  INTERFACE LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE
-)
-
 target_link_libraries(cudax_samples_interface INTERFACE CCCL::CCCL CCCL::cudax)
 
 if ("MSVC" STREQUAL "${CMAKE_CXX_COMPILER_ID}")
