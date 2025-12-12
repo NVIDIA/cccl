@@ -99,7 +99,7 @@ GpuProg nvrtc_build_prog(const std::string& testCu, const ArchConfig& config, co
   size_t codeSize;
   GpuProg code;
 
-  if (isArchReal(config))
+  if (isArchReal(config) && link_libraries.empty())
   {
     NVRTC_SAFE_CALL(nvrtcGetCUBINSize(prog, &codeSize));
     code.resize(codeSize);
