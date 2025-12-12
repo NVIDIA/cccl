@@ -48,22 +48,22 @@ __launch_bounds__(1) __global__ void init_found_pos_pointer(ValueType* found_pos
   *found_pos_ptr = num_items;
 }
 
-template <typename ChainedPolicyT, typename TransformedIteratorT, typename OffsetT>
+template <typename ChainedPolicyT, typename IteratorT, typename OffsetT, typename PredicateT>
 __launch_bounds__(int(ChainedPolicyT::ActivePolicy::FindPolicy::BLOCK_THREADS))
   CUB_DETAIL_KERNEL_ATTRIBUTES void find_kernel(
-    TransformedIteratorT d_in, OffsetT num_items, OffsetT* value_temp_storage)
+    IteratorT d_in, OffsetT num_items, OffsetT* value_temp_storage, PredicateT predicate)
 {
   using find_policy_t = typename ChainedPolicyT::ActivePolicy::FindPolicy;
-  using agent_find_t  = agent_t<find_policy_t, TransformedIteratorT, OffsetT>;
+  using agent_find_t  = agent_t<find_policy_t, IteratorT, OffsetT, PredicateT>;
 
   __shared__ typename agent_find_t::TempStorage sresult;
-  agent_find_t(sresult, d_in).Process(value_temp_storage, num_items);
+  agent_find_t{sresult.Alias(), d_in, predicate, value_temp_storage, num_items}.Process();
 }
 
 template <typename InputIteratorT,
           typename OutputIteratorT,
           typename OffsetT,
-          typename ScanOpT,
+          typename PredicateT,
           typename PolicyHub = policy_hub_t<InputIteratorT>>
 struct dispatch_t
 {
@@ -84,7 +84,7 @@ struct dispatch_t
   OffsetT num_items;
 
   /// Unary search functor
-  ScanOpT predicate;
+  PredicateT predicate;
 
   /// CUDA stream to launch kernels within. Default is stream<sub>0</sub>.
   cudaStream_t stream;
@@ -98,9 +98,7 @@ struct dispatch_t
 
     // First unwrap the iterator (converts device_ptr<T> to T*), then create transform_iterator
     using UnwrappedIteratorT = THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator_t<InputIteratorT>;
-    using TransformedIteratorT =
-      decltype(::cuda::make_transform_iterator(::cuda::std::declval<UnwrappedIteratorT>(), predicate));
-    auto kernel_ptr = find_kernel<typename PolicyHub::MaxPolicy, TransformedIteratorT, OffsetT>;
+    auto kernel_ptr          = find_kernel<typename PolicyHub::MaxPolicy, UnwrappedIteratorT, OffsetT, PredicateT>;
 
     // Number of input tiles
     constexpr int tile_size = Policy::BLOCK_THREADS * Policy::ITEMS_PER_THREAD;
@@ -157,18 +155,10 @@ struct dispatch_t
     // instead of device_reference<T>, which is necessary for predicates that don't accept proxy types.
     auto d_in_unwrapped = THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator(d_in);
 
-    // Create a transform_iterator that applies the predicate during iteration and returns bool. This way the agent only
-    // sees bool values, avoiding materialization of potentially non-device-compatible input types (e.g., types with
-    // host-only destructors).
-    // TODO(bgruber): while the above comment is correct, it inhibits the use of vectorization and later bulk copying.
-    // We should branch in the kernel on whether InputT is trivially relocatable and only use a transform iterator, if
-    // it's not.
-    auto transformed_in = ::cuda::make_transform_iterator(d_in_unwrapped, predicate);
-
     // Invoke FindIfKernel with transformed iterator
     THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(
       findif_grid_size, ActivePolicyT::FindPolicy::BLOCK_THREADS, 0, stream)
-      .doit(kernel_ptr, transformed_in, num_items, found_pos_ptr);
+      .doit(kernel_ptr, d_in_unwrapped, num_items, found_pos_ptr, predicate);
 
     THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(1, 1, 0, stream)
       .doit(copy_final_result_to_output_iterator<OffsetT, OutputIteratorT>, found_pos_ptr, d_out);
@@ -189,7 +179,7 @@ struct dispatch_t
     InputIteratorT d_in,
     OutputIteratorT d_out,
     OffsetT num_items,
-    ScanOpT predicate,
+    PredicateT predicate,
     cudaStream_t stream)
   {
     int ptx_version = 0;
