@@ -21,7 +21,6 @@
 #endif // no system header
 
 #include <cuda/std/__type_traits/enable_if.h>
-#include <cuda/std/__type_traits/is_const.h>
 #include <cuda/std/__type_traits/is_floating_point.h>
 #include <cuda/std/__type_traits/is_integer.h>
 #include <cuda/std/__type_traits/is_same.h>
