@@ -13,9 +13,6 @@
 
 #include <cuda/std/detail/__config>
 
-#include <cuda/__cccl_config>
-#include <cuda/__driver/driver_api.h>
-
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
@@ -24,11 +21,14 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cub/device/dispatch/dispatch_copy_mdspan.cuh>
-
-#include <cuda/__stream/stream_ref.h>
+#include <cuda/std/__mdspan/concepts.h>
+#include <cuda/std/__type_traits/is_constructible.h>
+#include <cuda/std/__type_traits/is_convertible.h>
+#include <cuda/std/__type_traits/is_nothrow_constructible.h>
+#include <cuda/std/__type_traits/type_identity.h>
 #include <cuda/std/__utility/exchange.h>
 #include <cuda/std/array>
+#include <cuda/std/cstddef>
 #include <cuda/std/span>
 
 #include <cuda/experimental/__container/mdarray_utils.cuh>
@@ -71,29 +71,6 @@ struct __mdarray_constraints
     ::cuda::std::is_convertible_v<const typename _OtherLayoutPolicy::template mapping<_OtherExtents>&, mapping_type>;
 };
 
-// __mdarray_allocator_wrapper allows to initialize the allocator before allocating the memory
-template <typename _Allocator>
-struct __mdarray_allocator_wrapper
-{
-  _Allocator __allocator_;
-
-  _CCCL_HIDE_FROM_ABI __mdarray_allocator_wrapper() = default;
-
-  _CCCL_HOST_API explicit __mdarray_allocator_wrapper(const _Allocator& __allocator)
-      : __allocator_{__allocator}
-  {}
-
-  [[nodiscard]] _CCCL_HOST_API _Allocator& __get_allocator() noexcept
-  {
-    return __allocator_;
-  }
-
-  [[nodiscard]] _CCCL_HOST_API const _Allocator& __get_allocator() const noexcept
-  {
-    return __allocator_;
-  }
-};
-
 struct no_init_t
 {};
 
@@ -103,9 +80,7 @@ template <typename _Derived,
           typename _ElementType,
           typename _Extents,
           typename _LayoutPolicy>
-class __base_mdarray
-    : private __mdarray_allocator_wrapper<_Allocator>
-    , public _ViewType<_ElementType, _Extents, _LayoutPolicy>
+class __base_mdarray : public _ViewType<_ElementType, _Extents, _LayoutPolicy>
 {
 public:
   using mdspan_type    = _ViewType<_ElementType, _Extents, _LayoutPolicy>;
@@ -115,19 +90,22 @@ public:
   using layout_type    = _LayoutPolicy;
   using element_type   = _ElementType;
   using pointer        = element_type*;
+  using index_type     = typename extents_type::index_type;
+  using reference      = typename mdspan_type::reference;
+  using value_type     = typename mdspan_type::value_type;
 
   using view_type       = _ViewType<_ElementType, _Extents, _LayoutPolicy>;
   using const_view_type = _ViewType<const _ElementType, _Extents, _LayoutPolicy>;
 
 private:
-  using __allocator_base = __mdarray_allocator_wrapper<allocator_type>;
+  allocator_type __allocator_;
 
   _CCCL_HOST_API void __release_storage() noexcept
   {
     if (this->data_handle() != nullptr)
     {
       const auto __size = ::cuda::experimental::__mapping_size_bytes(this->view());
-      (this->__get_allocator().deallocate_sync(this->data_handle(), __size));
+      __allocator_.deallocate_sync(this->data_handle(), __size);
       static_cast<mdspan_type&>(*this) = mdspan_type{nullptr, this->mapping()};
     }
   }
@@ -146,10 +124,10 @@ public:
   {}
 
   _CCCL_HOST_API __base_mdarray(mapping_type __mapping, allocator_type __allocator)
-      : __allocator_base{__allocator}
-      , mdspan_type{
-          static_cast<pointer>(__allocator.allocate_sync(__mapping.required_span_size() * sizeof(element_type))),
-          __mapping}
+      : mdspan_type{static_cast<pointer>(
+                      __allocator.allocate_sync(__mapping.required_span_size() * sizeof(element_type))),
+                    __mapping}
+      , __allocator_{__allocator}
   {
     if (this->size() > 0)
     {
@@ -232,25 +210,36 @@ public:
   {}
 
   _CCCL_HOST_API __base_mdarray(const __base_mdarray& __other)
-      : __base_mdarray{__other, __other.__get_allocator()}
+      : __base_mdarray{__other, __other.__allocator_}
   {}
 
+  // TODO: add constraints
+  template <typename _OtherViewType>
+  _CCCL_HOST_API __base_mdarray(const _OtherViewType& __other_view)
+      : __base_mdarray{__other_view.mapping(), _Derived::__get_default_allocator()}
+  {
+    if (__other_view.data_handle() != nullptr)
+    {
+      static_cast<_Derived&>(*this).__copy_from(__other_view);
+    }
+  }
+
   _CCCL_HOST_API __base_mdarray(const __base_mdarray& __other, ::cuda::std::type_identity_t<allocator_type> __allocator)
-      : __allocator_base{__allocator}
-      , mdspan_type{nullptr, __other.mapping()}
+      : mdspan_type{nullptr, __other.mapping()}
+      , __allocator_{__allocator}
   {
     if (__other.data_handle() != nullptr)
     {
       const auto __size                = ::cuda::experimental::__mapping_size_bytes(__other.view());
-      auto __new_data                  = static_cast<pointer>(this->__get_allocator().allocate_sync(__size));
+      auto __new_data                  = static_cast<pointer>(__allocator_.allocate_sync(__size));
       static_cast<mdspan_type&>(*this) = mdspan_type{__new_data, __other.mapping()};
       static_cast<_Derived&>(*this).__copy_from(__other.view());
     }
   }
 
   _CCCL_HOST_API __base_mdarray(__base_mdarray&& __other) noexcept
-      : __allocator_base{::cuda::std::move(static_cast<__allocator_base&>(__other))}
-      , mdspan_type{::cuda::std::exchange(static_cast<mdspan_type&>(__other), mdspan_type{})}
+      : mdspan_type{::cuda::std::exchange(static_cast<mdspan_type&>(__other), mdspan_type{})}
+      , __allocator_{::cuda::std::move(__other.__allocator_)}
   {}
 
   _CCCL_HOST_API __base_mdarray& operator=(const __base_mdarray& __other)
@@ -259,24 +248,25 @@ public:
     {
       return *this;
     }
-    return __assign_from(__other.view(), __other.__get_allocator());
+    return __assign_from(__other.view(), __other.__allocator_);
   }
 
   template <typename _OtherElementType, typename _OtherExtents, typename _OtherLayoutPolicy>
-  _CCCL_HOST_API __base_mdarray& __assign_from(
-    const _ViewType<_OtherElementType, _OtherExtents, _OtherLayoutPolicy>& __other_view, _Allocator __other_allocator)
+  _CCCL_HOST_API __base_mdarray&
+  __assign_from(const _ViewType<_OtherElementType, _OtherExtents, _OtherLayoutPolicy>& __other_view,
+                allocator_type __other_allocator)
   {
     const auto __size_other   = ::cuda::experimental::__mapping_size_bytes(__other_view);
     const auto __size_current = ::cuda::experimental::__mapping_size_bytes(this->view());
-    const bool __realloc      = __size_current != __size_other || this->__get_allocator() != __other_allocator;
+    const bool __realloc      = __size_current != __size_other || __allocator_ != __other_allocator;
     const auto __new_mapping  = mapping_type{extents_type{__other_view.extents()}};
     if (__realloc)
     {
       __release_storage();
-      this->__get_allocator() = __other_allocator;
+      __allocator_ = __other_allocator;
       if (__other_view.data_handle() != nullptr)
       {
-        auto __new_data                  = static_cast<pointer>(this->__get_allocator().allocate_sync(__size_other));
+        auto __new_data                  = static_cast<pointer>(__allocator_.allocate_sync(__size_other));
         static_cast<mdspan_type&>(*this) = mdspan_type{__new_data, __new_mapping};
       }
       else
@@ -294,7 +284,7 @@ public:
       }
       else if (this->data_handle() == nullptr)
       {
-        __new_data = static_cast<pointer>(this->__get_allocator().allocate_sync(__size_other));
+        __new_data = static_cast<pointer>(__allocator_.allocate_sync(__size_other));
       }
       static_cast<mdspan_type&>(*this) = mdspan_type{__new_data, __new_mapping};
     }
@@ -313,7 +303,7 @@ public:
     }
     __release_storage();
     static_cast<mdspan_type&>(*this) = ::cuda::std::exchange(static_cast<mdspan_type&>(__other), mdspan_type{});
-    this->__get_allocator()          = ::cuda::std::move(__other.__get_allocator());
+    __allocator_                     = ::cuda::std::move(__other.__allocator_);
     return *this;
   }
 
@@ -324,7 +314,7 @@ public:
 
   [[nodiscard]] _CCCL_HOST_API allocator_type get_allocator() const noexcept
   {
-    return this->__get_allocator();
+    return __allocator_;
   }
 
   [[nodiscard]] _CCCL_HOST_API view_type view() noexcept
@@ -345,6 +335,14 @@ public:
   [[nodiscard]] _CCCL_HOST_API operator const_view_type() const noexcept
   {
     return static_cast<const_view_type>(static_cast<const view_type&>(*this));
+  }
+
+  _CCCL_TEMPLATE(typename... _Indices)
+  _CCCL_REQUIRES(::cuda::std::__mdspan_detail::__all_convertible_to_index_type<index_type, _Indices...>)
+  [[nodiscard]] _CCCL_API value_type operator()(_Indices... __indices)
+  {
+    value_type& __ref = static_cast<mdspan_type*>(this)->operator()(__indices...);
+    return static_cast<_Derived&>(*this).__access_single_element(__ref);
   }
 };
 } // namespace cuda::experimental

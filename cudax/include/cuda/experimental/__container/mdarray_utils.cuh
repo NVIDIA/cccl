@@ -30,7 +30,9 @@
 #include <cuda/__mdspan/host_device_mdspan.h>
 #include <cuda/__memory_resource/shared_resource.h>
 #include <cuda/__stream/stream_ref.h>
+#include <cuda/std/__cstdlib/aligned_alloc.h>
 #include <cuda/std/__utility/integer_sequence.h>
+#include <cuda/std/__utility/typeid.h>
 
 #if _CCCL_HAS_EXCEPTIONS()
 #  include <stdexcept>
@@ -78,29 +80,92 @@ __mapping_size_bytes(const ::cuda::device_mdspan<_ElementType, _Extents, _Layout
 }
 
 template <int K, int Rank, typename _LayoutMapping, typename _OpType, typename... IndicesType>
-_CCCL_HOST_API void
-__for_each_in_layout_host(const _LayoutMapping& __layout_mapping, _OpType __op, IndicesType... __indices)
+_CCCL_HOST_API void __for_each_in_layout_host(
+  const _LayoutMapping& __layout_mapping, _OpType __op, ::cuda::std::size_t& __index, IndicesType... __indices)
 {
   // TODO: static_assert that the layout mapping is a valid layout mapping
   if constexpr (K == Rank)
   {
-    __op(__indices...);
-  }
-  else if constexpr (::cuda::std::is_same_v<_LayoutMapping, ::cuda::std::layout_right>)
-  {
-    for (int i = 0; i < __layout_mapping.extent(K); ++i)
-    {
-      ::cuda::experimental::__for_each_in_layout_host<K + 1, Rank>(__layout_mapping, __op, __indices..., i);
-    }
+    __op(__index++, __indices...);
   }
   else if constexpr (::cuda::std::is_same_v<_LayoutMapping, ::cuda::std::layout_left>)
   {
-    for (int i = 0; i < __layout_mapping.extent(K); ++i)
+    for (int i = 0; i < __layout_mapping.extents().extent(K); ++i)
     {
-      ::cuda::experimental::__for_each_in_layout_host<K + 1, Rank>(__layout_mapping, __op, i, __indices...);
+      ::cuda::experimental::__for_each_in_layout_host<K + 1, Rank>(__layout_mapping, __op, __index, i, __indices...);
+    }
+  }
+  else
+  {
+    for (int i = 0; i < __layout_mapping.extents().extent(K); ++i)
+    {
+      ::cuda::experimental::__for_each_in_layout_host<K + 1, Rank>(__layout_mapping, __op, __index, __indices..., i);
     }
   }
 }
+
+class __host_allocator
+{
+public:
+  __host_allocator()                        = default;
+  __host_allocator(const __host_allocator&) = default;
+  __host_allocator(__host_allocator&&)      = default;
+  ~__host_allocator()                       = default;
+
+  [[nodiscard]] friend bool operator==(const __host_allocator& __lhs, const __host_allocator& __rhs) noexcept
+  {
+    return &__lhs == &__rhs;
+  }
+
+  [[nodiscard]] void* allocate_sync(::cuda::std::size_t __size,
+                                    ::cuda::std::size_t __align = alignof(cuda::std::max_align_t)) const
+  {
+    //_CCCL_ASSERT(__size % __align == 0, "Size must be divisible by alignment");
+    //_CCCL_ASSERT(::cuda::is_power_of_two(__align), "Alignment must be a power of two");
+    //_CCCL_ASSERT(__align % sizeof(void*) == 0, "Alignment must be a multiple of the size of void*");
+    // auto __ptr = ::cuda::std::aligned_alloc(__align, __size);
+    auto __ptr = ::cuda::std::malloc(__size);
+    if (__ptr == nullptr)
+    {
+      _CCCL_THROW(::std::bad_alloc{});
+    }
+    return __ptr;
+  }
+
+  void
+  deallocate_sync(void* __pv, ::cuda::std::size_t, ::cuda::std::size_t = alignof(cuda::std::max_align_t)) const noexcept
+  {
+    ::cuda::std::free(__pv);
+  }
+
+  [[nodiscard]] void* allocate(cuda::stream_ref, ::cuda::std::size_t __size, ::cuda::std::size_t __align) const
+  {
+    return allocate_sync(__size, __align);
+  }
+
+  [[nodiscard]] void* allocate(cuda::stream_ref, ::cuda::std::size_t __size) const
+  {
+    auto __ptr = ::cuda::std::malloc(__size);
+    if (__ptr == nullptr)
+    {
+      _CCCL_THROW(::std::bad_alloc{});
+    }
+    return __ptr;
+  }
+
+  void deallocate(cuda::stream_ref, void* __pv, ::cuda::std::size_t __size, ::cuda::std::size_t __align) const noexcept
+  {
+    deallocate_sync(__pv, __size, __align);
+  }
+
+  void deallocate(cuda::stream_ref, void* __pv, ::cuda::std::size_t __size) const noexcept
+  {
+    deallocate_sync(__pv, __size);
+  }
+
+  _CCCL_HOST_API friend constexpr void get_property(const __host_allocator& __res, ::cuda::mr::host_accessible) noexcept
+  {}
+};
 
 //----------------------------------------------------------------------------------------------------------------------
 // Copy
@@ -121,15 +186,15 @@ struct _CopyOp
 template <typename _View1, typename _View2>
 struct _CopyOpHostDevice
 {
-  using _LayoutPolicy1 = typename _View1::layout_policy;
-  using _LayoutPolicy2 = typename _View2::layout_policy;
+  using _LayoutPolicy1 = typename _View1::layout_type;
+  using _LayoutPolicy2 = typename _View2::layout_type;
 
   _View1 __view1_;
   _View2 __view2_;
   ::cuda::stream_ref __stream_;
 
   template <typename... _Indices>
-  _CCCL_HOST_API void operator()(_Indices... __indices)
+  _CCCL_HOST_API void operator()(::cuda::std::size_t, _Indices... __indices)
   {
     using _ElementType1 = typename _View1::element_type;
     using _Extents1     = typename _View1::extents_type;
@@ -150,16 +215,21 @@ struct _CopyOpHostDevice
   }
 };
 
-template <typename _ElementType1,
-          typename _Extents1,
-          typename _LayoutPolicy1,
-          typename _ElementType2,
-          typename _Extents2,
-          typename _LayoutPolicy2>
-_CCCL_HOST_API void __copy_host_device(::cuda::host_mdspan<_ElementType1, _Extents1, _LayoutPolicy1> __mdspan_in,
-                                       ::cuda::device_mdspan<_ElementType2, _Extents2, _LayoutPolicy2> __mdspan_out,
+_CCCL_TEMPLATE(typename _ElementType1,
+               typename _Extents1,
+               typename _LayoutPolicy1,
+               typename _ElementType2,
+               typename _Extents2,
+               typename _LayoutPolicy2)
+_CCCL_REQUIRES(::cuda::std::is_same_v<::cuda::std::remove_const_t<_ElementType1>, _ElementType2>)
+_CCCL_HOST_API void __copy_host_device(::cuda::std::mdspan<_ElementType1, _Extents1, _LayoutPolicy1> __mdspan_in,
+                                       ::cuda::std::mdspan<_ElementType2, _Extents2, _LayoutPolicy2> __mdspan_out,
                                        ::cuda::stream_ref __stream = ::cudaStream_t{nullptr})
 {
+  if (!__mdspan_in.is_exhaustive())
+  {
+    _CCCL_THROW(::std::invalid_argument("Source and destination mdspans must be exhaustive"));
+  }
   if (__mdspan_in.mapping() != __mdspan_out.mapping())
   {
     _CCCL_THROW(::std::invalid_argument("Source and destination mappings must be the same"));
@@ -167,17 +237,22 @@ _CCCL_HOST_API void __copy_host_device(::cuda::host_mdspan<_ElementType1, _Exten
   if (__mdspan_in.is_exhaustive() && __mdspan_out.is_exhaustive())
   {
     ::cuda::__driver::__memcpyAsync(
-      __mdspan_out.data_handle(), __mdspan_in.data_handle(), __mdspan_in.mapping().required_span_size(), __stream.get());
+      __mdspan_out.data_handle(),
+      __mdspan_in.data_handle(),
+      __mdspan_in.mapping().required_span_size() * sizeof(_ElementType1),
+      __stream.get());
   }
   else if constexpr (::cuda::std::is_same_v<_LayoutPolicy1, ::cuda::std::layout_right>)
   {
+    ::cuda::std::size_t __index = 0;
     ::cuda::experimental::__for_each_in_layout_host<0, _Extents1::rank() - 1>(
-      __mdspan_in.mapping(), _CopyOpHostDevice{__mdspan_in, __mdspan_out, __stream});
+      __mdspan_in.mapping(), _CopyOpHostDevice{__mdspan_in, __mdspan_out, __stream}, __index);
   }
   else if constexpr (::cuda::std::is_same_v<_LayoutPolicy1, ::cuda::std::layout_left>)
   {
+    ::cuda::std::size_t __index = 0;
     ::cuda::experimental::__for_each_in_layout_host<1, _Extents1::rank()>(
-      __mdspan_in.mapping(), _CopyOpHostDevice{__mdspan_in, __mdspan_out, __stream});
+      __mdspan_in.mapping(), _CopyOpHostDevice{__mdspan_in, __mdspan_out, __stream}, __index);
   }
 }
 
@@ -215,7 +290,10 @@ __init_device_impl(device_mdspan<_ElementType, _Extents, _LayoutPolicy> __mdspan
 template <typename _ElementType, typename _Extents, typename _LayoutPolicy, typename... IndicesType>
 _CCCL_HOST_API void __init_host_impl(host_mdspan<_ElementType, _Extents, _LayoutPolicy> __mdspan)
 {
-  ::cuda::experimental::__for_each_in_layout_host<0, _Extents::rank()>(__mdspan.mapping(), _InitOp{__mdspan});
+  using __view_type           = host_mdspan<_ElementType, _Extents, _LayoutPolicy>;
+  ::cuda::std::size_t __index = 0;
+  ::cuda::experimental::__for_each_in_layout_host<0, _Extents::rank()>(
+    __mdspan.mapping(), _InitOp<__view_type, _ElementType>{__mdspan}, __index);
 }
 } // namespace cuda::experimental
 

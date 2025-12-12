@@ -24,9 +24,11 @@
 #endif // no system header
 
 #include <cuda/__mdspan/host_device_mdspan.h>
-#include <cuda/__stream/stream_ref.h>
-#include <cuda/std/__memory/allocator.h>
+#include <cuda/std/__concepts/concept_macros.h>
+#include <cuda/std/__type_traits/is_same.h>
+#include <cuda/std/__type_traits/remove_const.h>
 #include <cuda/std/__utility/delegate_constructors.h>
+#include <cuda/std/__utility/integer_sequence.h>
 
 #include <cuda/experimental/__container/mdarray_base.cuh>
 #include <cuda/experimental/__container/mdarray_utils.cuh>
@@ -38,7 +40,7 @@ namespace cuda::experimental
 template <typename _ElementType,
           typename _Extents,
           typename _LayoutPolicy,
-          typename _Allocator = ::cuda::std::allocator<_ElementType>>
+          typename _Allocator = ::cuda::experimental::__host_allocator>
 class host_mdarray
     : public __base_mdarray<host_mdarray<_ElementType, _Extents, _LayoutPolicy, _Allocator>,
                             _Allocator,
@@ -47,6 +49,8 @@ class host_mdarray
                             _Extents,
                             _LayoutPolicy>
 {
+  static_assert(::cuda::has_property<_Allocator, ::cuda::mr::host_accessible>);
+
   using __base_class =
     __base_mdarray<host_mdarray<_ElementType, _Extents, _LayoutPolicy, _Allocator>,
                    _Allocator,
@@ -55,11 +59,14 @@ class host_mdarray
                    _Extents,
                    _LayoutPolicy>;
 
+  using reference  = typename ::cuda::host_mdspan<_ElementType, _Extents, _LayoutPolicy>::reference;
+  using value_type = typename ::cuda::host_mdspan<_ElementType, _Extents, _LayoutPolicy>::value_type;
+
   friend __base_class;
 
   _CCCL_HOST_API static _Allocator __get_default_allocator()
   {
-    return ::cuda::std::allocator<_ElementType>{};
+    return ::cuda::experimental::__host_allocator{};
   }
 
   _CCCL_HOST_API void __init()
@@ -73,18 +80,21 @@ class host_mdarray
     ::cuda::experimental::__for_each_in_layout_host(__mdspan_in.mapping(), _CopyOp{__mdspan_in, this->view()});
   }
 
-  template <typename _Extents2, typename _LayoutPolicy2>
-  _CCCL_HOST_API void __copy_from(::cuda::device_mdspan<_ElementType, _Extents2, _LayoutPolicy2> __mdspan_in)
+  _CCCL_TEMPLATE(typename _ElementType2, typename _Extents2)
+  _CCCL_REQUIRES(::cuda::std::is_same_v<::cuda::std::remove_const_t<_ElementType2>, _ElementType>)
+  _CCCL_HOST_API void __copy_from(::cuda::device_mdspan<_ElementType2, _Extents2, _LayoutPolicy> __mdspan_in)
   {
     ::cuda::experimental::__copy_host_device(__mdspan_in, this->view(), ::cudaStream_t{nullptr});
+  }
+
+  [[nodiscard]] _CCCL_API value_type __access_single_element(reference __ref)
+  {
+    return __ref;
   }
 
 public:
   using view_type       = ::cuda::host_mdspan<_ElementType, _Extents, _LayoutPolicy>;
   using const_view_type = ::cuda::host_mdspan<const _ElementType, _Extents, _LayoutPolicy>;
-
-  // Re-expose __base_mdarray assignment operators (e.g. assignment from view_type).
-  using __base_class::operator=;
 
   _CCCL_DELEGATE_CONSTRUCTORS(
     host_mdarray, __base_mdarray, host_mdarray, _Allocator, ::cuda::host_mdspan, _ElementType, _Extents, _LayoutPolicy);

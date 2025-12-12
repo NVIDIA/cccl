@@ -15,6 +15,7 @@
 #include <cuda/memory_resource>
 #include <cuda/std/algorithm>
 #include <cuda/std/mdspan>
+#include <cuda/std/numeric>
 #include <cuda/std/utility>
 
 #include <cuda/experimental/__container/mdarray_device.cuh>
@@ -265,6 +266,32 @@ C2H_TEST("cudax::mdarray", "[mdarray][constructor][copy]")
   CUDAX_REQUIRE(check_sequence(d_mdarray3.view()));
 }
 
+C2H_TEST("cudax::mdarray", "[mdarray][constructor][copy host/device]")
+{
+  {
+    using extents_type = cuda::std::dims<2>;
+    using d_mdarray_t  = cudax::device_mdarray<int, extents_type, cuda::std::layout_right>;
+    using h_mdarray_t  = cudax::host_mdarray<int, extents_type, cuda::std::layout_right>;
+    using mdspan_t     = cuda::std::mdspan<int, extents_type, cuda::std::layout_right>;
+    h_mdarray_t h_mdarray{5, 7};
+    ::cuda::std::iota(h_mdarray.data_handle(), h_mdarray.data_handle() + h_mdarray.size(), 0);
+    d_mdarray_t d_mdarray = h_mdarray.view();
+    CUDAX_REQUIRE(are_mdspan_equal(static_cast<mdspan_t>(d_mdarray), static_cast<mdspan_t>(h_mdarray), true));
+    CUDAX_REQUIRE(check_sequence(d_mdarray.view()));
+  }
+  {
+    using extents_type = cuda::std::dims<3>;
+    using d_mdarray_t  = cudax::device_mdarray<int, extents_type, cuda::std::layout_left>;
+    using h_mdarray_t  = cudax::host_mdarray<int, extents_type, cuda::std::layout_left>;
+    using mdspan_t     = cuda::std::mdspan<int, extents_type, cuda::std::layout_left>;
+    h_mdarray_t h_mdarray{3, 4, 7};
+    ::cuda::std::iota(h_mdarray.data_handle(), h_mdarray.data_handle() + h_mdarray.size(), 0);
+    d_mdarray_t d_mdarray = h_mdarray.view();
+    CUDAX_REQUIRE(are_mdspan_equal(static_cast<mdspan_t>(d_mdarray), static_cast<mdspan_t>(h_mdarray), true));
+    CUDAX_REQUIRE(check_sequence(d_mdarray.view()));
+  }
+}
+
 C2H_TEST("cudax::mdarray", "[mdarray][constructor][move]")
 {
   using extents_type = cuda::std::dims<2>;
@@ -328,6 +355,21 @@ C2H_TEST("cudax::mdarray", "[mdarray][move assignment]")
 
   CUDAX_REQUIRE(are_mdspan_equal(static_cast<mdspan_t>(d_mdarray1), mdspan_t{}));
   CUDAX_REQUIRE(d_mdarray1.data_handle() == nullptr);
+}
+
+C2H_TEST("cudax::mdarray", "[mdarray][access single element]")
+{
+  using extents_type = cuda::std::dims<2>;
+  using d_mdarray_t  = cudax::device_mdarray<int, extents_type, cuda::std::layout_right>;
+  using mdspan_t     = cuda::std::mdspan<int, extents_type, cuda::std::layout_right>;
+  d_mdarray_t d_mdarray{5, 7};
+  CUDAX_REQUIRE(
+    cub::DeviceFor::ForEachInLayout(d_mdarray.mapping(), SequenceOp<mdspan_t>{d_mdarray.view()}) == cudaSuccess);
+printf("data_handle: %p\n", d_mdarray.data_handle());
+  CUDAX_REQUIRE(d_mdarray(0, 0) == 0);
+  CUDAX_REQUIRE(d_mdarray(0, 1) == 1);
+  CUDAX_REQUIRE(d_mdarray(1, 0) == 2);
+  CUDAX_REQUIRE(d_mdarray(1, 1) == 3);
 }
 
 C2H_TEST("cudax::mdarray", "[mdarray][other methods]")
