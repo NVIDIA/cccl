@@ -29,12 +29,6 @@ function(cudax_add_header_test label definitions)
       "cuda/experimental/__stf/*"
   )
   target_link_libraries(${headertest_target} PUBLIC cudax.compiler_interface)
-  target_compile_definitions(
-    ${headertest_target}
-    PRIVATE #
-      ${definitions}
-      "-DLIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE"
-  )
 
   if (cudax_ENABLE_CUFILE)
     ###############
