@@ -87,7 +87,9 @@ C2H_TEST("Device scan works with all device interfaces", "[scan][device]", full_
     1000,
     1337,
     3000,
-    1 * 31 * 128 // tile_size for int64s
+    1 * 31 * 128, // tile_size for int64s
+    10000,
+    100000
     //   take(3, random(min_items, max_items)),
     //   values({
     //     min_items,
