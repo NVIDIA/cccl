@@ -119,7 +119,6 @@ struct agent_t
     }
     // vectorized loads end
 
-    bool found = false;
     for (int i = 0; i < items_per_thread; ++i)
     {
       OffsetT nth_vector_of_thread = i / vector_load_length;
@@ -130,22 +129,13 @@ struct agent_t
 
       if (index < num_items && predicate(input_items[i]))
       {
-        found = true;
         atomicMin(&temp_storage.block_result, index);
-        break; // every thread goes over multiple elements per thread
-               // for every tile. If a thread finds a local minimum it doesn't
-               // need to proceed further (inner early exit).
+        // every thread goes over multiple elements per thread for every tile. If a thread finds a local minimum it
+        // doesn't need to proceed further (inner early exit).
+        return true;
       }
     }
 
-    if (syncthreads_or(found))
-    {
-      if (threadIdx.x == 0 && temp_storage.block_result < num_items)
-      {
-        atomicMin(found_pos_ptr, temp_storage.block_result);
-      }
-      return true;
-    }
     return false;
   }
 
@@ -158,7 +148,6 @@ struct agent_t
     }
     __syncthreads();
 
-    bool found = false;
     for (int i = 0; i < items_per_thread; ++i)
     {
       const auto index = tile_offset + threadIdx.x + i * blockDim.x;
@@ -168,20 +157,12 @@ struct agent_t
         // bugs like: http://github.com/NVIDIA/cccl/issues/3591
         if (predicate(THRUST_NS_QUALIFIER::raw_reference_cast(d_in[index])))
         {
-          found = true;
           atomicMin(&temp_storage.block_result, index);
-          break;
+          return true;
         }
       }
     }
-    if (syncthreads_or(found))
-    {
-      if (threadIdx.x == 0 && temp_storage.block_result < num_items)
-      {
-        atomicMin(found_pos_ptr, temp_storage.block_result);
-      }
-      return true;
-    }
+
     return false;
   }
 
@@ -206,12 +187,19 @@ struct agent_t
         return;
       }
 
-      const bool found = is_aligned_and_full_tile(tile_offset)
-                         ? ConsumeTile(tile_offset, ::cuda::std::bool_constant<attempt_vectorization>{})
-                         : ConsumeTile(tile_offset, ::cuda::std::false_type{});
+      const bool found_thread =
+        is_aligned_and_full_tile(tile_offset)
+          ? ConsumeTile(tile_offset, ::cuda::std::bool_constant<attempt_vectorization>{})
+          : ConsumeTile(tile_offset, ::cuda::std::false_type{});
 
-      if (found)
+      const bool found_block = syncthreads_or(found_thread);
+      if (found_block)
       {
+        // our block found it, update global position and exit
+        if (threadIdx.x == 0 && temp_storage.block_result < num_items)
+        {
+          atomicMin(found_pos_ptr, temp_storage.block_result);
+        }
         return;
       }
     }
