@@ -182,11 +182,14 @@ _CCCL_HOST_API auto launch(_Submitter&& __submitter,
                            const _Kernel& __kernel,
                            _Args&&... __args)
 {
+#    if _CCCL_CTK_BELOW(13, 0)
   __ensure_current_context __dev_setter{__submitter};
+#    endif // _CCCL_CTK_BELOW(13, 0)
   auto __combined = __conf.combine_with_default(__kernel);
   if constexpr (::cuda::std::is_invocable_v<_Kernel,
                                             kernel_config<_Dimensions, _Config...>,
-                                            ::cuda::std::decay_t<transformed_device_argument_t<_Args>>...>)
+                                            ::cuda::std::decay_t<transformed_device_argument_t<_Args>>...>
+                && !__nv_is_extended_device_lambda_closure_type(_Kernel))
   {
     auto __launcher =
       __kernel_launcher<decltype(__combined), _Kernel, ::cuda::std::decay_t<transformed_device_argument_t<_Args>>...>;
@@ -261,7 +264,9 @@ _CCCL_HOST_API auto launch(_Submitter&& __submitter,
                            void (*__kernel)(kernel_config<_Dimensions, _Config...>, _ExpArgs...),
                            _ActArgs&&... __args)
 {
+#  if _CCCL_CTK_BELOW(13, 0)
   __ensure_current_context __dev_setter{__submitter};
+#  endif // _CCCL_CTK_BELOW(13, 0)
   return ::cuda::__launch_impl<kernel_config<_Dimensions, _Config...>,
                                _ExpArgs...>(
     cuda::__forward_or_cast_to_stream_ref<_Submitter>(__submitter), //
@@ -317,7 +322,9 @@ _CCCL_HOST_API auto launch(_Submitter&& __submitter,
                            void (*__kernel)(_ExpArgs...),
                            _ActArgs&&... __args)
 {
+#  if _CCCL_CTK_BELOW(13, 0)
   __ensure_current_context __dev_setter{__submitter};
+#  endif // _CCCL_CTK_BELOW(13, 0)
   return ::cuda::__launch_impl<_ExpArgs...>(
     cuda::__forward_or_cast_to_stream_ref<_Submitter>(::cuda::std::forward<_Submitter>(__submitter)), //
     __conf,
