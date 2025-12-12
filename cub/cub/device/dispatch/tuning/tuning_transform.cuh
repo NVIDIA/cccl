@@ -48,11 +48,10 @@ struct always_true_predicate
 } // namespace detail::transform
 CUB_NAMESPACE_END
 
-_CCCL_BEGIN_NAMESPACE_CUDA
 template <>
-struct proclaims_copyable_arguments<CUB_NS_QUALIFIER::detail::transform::always_true_predicate> : ::cuda::std::true_type
+struct ::cuda::proclaims_copyable_arguments<CUB_NS_QUALIFIER::detail::transform::always_true_predicate>
+    : ::cuda::std::true_type
 {};
-_CCCL_END_NAMESPACE_CUDA
 
 CUB_NAMESPACE_BEGIN
 namespace detail::transform
@@ -434,6 +433,11 @@ struct policy_hub<RequiresStableAddress,
         alignment)
       > int{max_smem_per_block};
 
+    // on Hopper, the vectorized kernel performs better for 1 and 2 byte values
+    static constexpr bool use_vector_kernel_on_hopper =
+      ((size_of<it_value_t<RandomAccessIteratorsIn>> < 4) && ...) && sizeof...(RandomAccessIteratorsIn) > 1
+      && size_of<it_value_t<RandomAccessIteratorOut>> < 4;
+
     // if each tile size is a multiple of the bulk copy and maximum value type alignments, the alignment is retained if
     // the base pointer is sufficiently aligned (the correct check would be if it's a multiple of all value types
     // following the current tile). we would otherwise need to realign every SMEM tile individually, which is costly and
@@ -445,7 +449,7 @@ struct policy_hub<RequiresStableAddress,
     static constexpr bool enough_threads_for_peeling = AsyncBlockSize >= alignment; // head and tail bytes
     static constexpr bool fallback_to_vectorized =
       exhaust_smem || !tile_sizes_retain_alignment || !enough_threads_for_peeling || no_input_streams
-      || !can_memcpy_all_inputs;
+      || !can_memcpy_all_inputs || (PtxVersion == 900 && use_vector_kernel_on_hopper);
 
   public:
     static constexpr auto algorithm =

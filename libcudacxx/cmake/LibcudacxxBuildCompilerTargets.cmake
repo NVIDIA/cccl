@@ -6,16 +6,12 @@
 #   Defines common warning flags, definitions, etc, including those defined in
 #   the global CCCL targets.
 
+cccl_get_libcudacxx()
+
 function(libcudacxx_build_compiler_targets)
   set(cuda_compile_options)
   set(cxx_compile_options)
   set(cxx_compile_definitions)
-
-  if ("MSVC" STREQUAL "${CMAKE_CXX_COMPILER_ID}")
-    # libcudacxx requires dim3 to be usable from a constexpr context, and the CUDART headers require
-    # __cplusplus to be defined for this to work:
-    append_option_if_available("/Zc:__cplusplus" cxx_compile_options)
-  endif()
 
   #  if (CCCL_USE_LIBCXX)
   #    list(APPEND cxx_compile_options "-stdlib=libc++")
@@ -23,10 +19,6 @@ function(libcudacxx_build_compiler_targets)
   #  endif()
 
   # Set test specific flags
-  list(
-    APPEND cxx_compile_definitions
-    "LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE"
-  )
   list(APPEND cxx_compile_definitions "CCCL_ENABLE_ASSERTIONS")
   list(APPEND cxx_compile_definitions "CCCL_IGNORE_DEPRECATED_CPP_DIALECT")
   list(APPEND cxx_compile_definitions "CCCL_ENABLE_OPTIONAL_REF")
@@ -53,5 +45,6 @@ function(libcudacxx_build_compiler_targets)
       # order matters here, we need the libcudacxx options to override the cccl options.
       cccl.compiler_interface
       libcudacxx.compiler_flags
+      libcudacxx::libcudacxx
   )
 endfunction()

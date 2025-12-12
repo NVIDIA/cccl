@@ -95,7 +95,6 @@ struct __get_wider_signed
       return ::cuda::std::type_identity<long long>{};
     }
 #endif // _CCCL_HAS_INT128()
-    _CCCL_UNREACHABLE();
   }
 
   using type = typename decltype(__call())::type;
@@ -390,7 +389,6 @@ public:
     {
       return __x.__value_ - __y.__value_;
     }
-    _CCCL_UNREACHABLE();
   }
 
   //! @brief Compares two @c counting_iterator for equality.

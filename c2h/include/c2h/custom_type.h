@@ -153,9 +153,8 @@ public:
 };
 } // namespace c2h
 
-_CCCL_BEGIN_NAMESPACE_CUDA_STD
 template <template <typename> class... Policies>
-class numeric_limits<c2h::custom_type_t<Policies...>>
+class cuda::std::numeric_limits<c2h::custom_type_t<Policies...>>
 {
 public:
   static constexpr bool is_specialized = true;
@@ -184,4 +183,3 @@ public:
     return val;
   }
 };
-_CCCL_END_NAMESPACE_CUDA_STD

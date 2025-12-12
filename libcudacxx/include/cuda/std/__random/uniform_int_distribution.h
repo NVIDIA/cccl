@@ -22,12 +22,12 @@
 
 #include <cuda/std/__bit/countl.h>
 #include <cuda/std/__bit/integral.h>
+#include <cuda/std/__limits/numeric_limits.h>
 #include <cuda/std/__random/is_valid.h>
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/make_unsigned.h>
 #include <cuda/std/cstddef>
 #include <cuda/std/cstdint>
-#include <cuda/std/limits>
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -160,7 +160,7 @@ public:
 template <class _IntType = int>
 class uniform_int_distribution
 {
-  static_assert(__libcpp_random_is_valid_inttype<_IntType>, "IntType must be a supported integer type");
+  static_assert(__cccl_random_is_valid_inttype<_IntType>, "IntType must be a supported integer type");
 
 public:
   // types
@@ -168,8 +168,9 @@ public:
 
   class param_type
   {
-    result_type __a_;
-    result_type __b_;
+  private:
+    result_type __a_ = result_type{0};
+    result_type __b_ = numeric_limits<result_type>::max();
 
   public:
     using distribution_type = uniform_int_distribution;
@@ -193,10 +194,12 @@ public:
     {
       return __x.__a_ == __y.__a_ && __x.__b_ == __y.__b_;
     }
+#if _CCCL_STD_VER <= 2017
     [[nodiscard]] _CCCL_API friend constexpr bool operator!=(const param_type& __x, const param_type& __y) noexcept
     {
       return !(__x == __y);
     }
+#endif // _CCCL_STD_VER <= 2017
   };
 
 private:
@@ -204,9 +207,7 @@ private:
 
 public:
   // constructors and reset functions
-  _CCCL_API constexpr uniform_int_distribution() noexcept
-      : uniform_int_distribution(0)
-  {}
+  constexpr uniform_int_distribution() noexcept = default;
   _CCCL_API explicit constexpr uniform_int_distribution(
     result_type __a, result_type __b = numeric_limits<result_type>::max()) noexcept
       : __p_(param_type(__a, __b))
@@ -289,46 +290,49 @@ public:
   {
     return __x.__p_ == __y.__p_;
   }
+#if _CCCL_STD_VER <= 2017
   [[nodiscard]] _CCCL_API friend constexpr bool
   operator!=(const uniform_int_distribution& __x, const uniform_int_distribution& __y) noexcept
   {
     return !(__x == __y);
   }
-};
+#endif // _CCCL_STD_VER <= 2017
 
-#if 0 // Implement stream operators
-template <class _CharT, class _Traits, class _IT>
-_CCCL_API basic_ostream<_CharT, _Traits>&
-operator<<(basic_ostream<_CharT, _Traits>& __os, const uniform_int_distribution<_IT>& __x)
-{
-  __save_flags<_CharT, _Traits> __lx(__os);
-  using _Ostream = basic_ostream<_CharT, _Traits>;
-  __os.flags(_Ostream::dec | _Ostream::left);
-  _CharT __sp = __os.widen(' ');
-  __os.fill(__sp);
-  return __os << __x.a() << __sp << __x.b();
-}
-
-template <class _CharT, class _Traits, class _IT>
-_CCCL_API basic_istream<_CharT, _Traits>&
-operator>>(basic_istream<_CharT, _Traits>& __is, uniform_int_distribution<_IT>& __x)
-{
-  using _Eng = uniform_int_distribution<_IT>;
-  using result_type = typename _Eng::result_type;
-  using param_type = typename _Eng::param_type;
-  __save_flags<_CharT, _Traits> __lx(__is);
-  using _Istream = basic_istream<_CharT, _Traits>;
-  __is.flags(_Istream::dec | _Istream::skipws);
-  result_type __a;
-  result_type __b;
-  __is >> __a >> __b;
-  if (!__is.fail())
+#if !_CCCL_COMPILER(NVRTC)
+  template <class _CharT, class _Traits>
+  friend ::std::basic_ostream<_CharT, _Traits>&
+  operator<<(::std::basic_ostream<_CharT, _Traits>& __os, const uniform_int_distribution& __x)
   {
-    __x.param(param_type(__a, __b));
+    using _Ostream = ::std::basic_ostream<_CharT, _Traits>;
+    auto __flags   = __os.flags();
+    __os.flags(_Ostream::dec | _Ostream::left);
+    _CharT __sp   = __os.widen(' ');
+    _CharT __fill = __os.fill(__sp);
+    __os << __x.a() << __sp << __x.b();
+    __os.fill(__fill);
+    __os.flags(__flags);
+    return __os;
   }
-  return __is;
-}
-#endif // Implement stream operators
+
+  template <class _CharT, class _Traits>
+  friend ::std::basic_istream<_CharT, _Traits>&
+  operator>>(::std::basic_istream<_CharT, _Traits>& __is, uniform_int_distribution& __x)
+  {
+    using _Istream = ::std::basic_istream<_CharT, _Traits>;
+    auto __flags   = __is.flags();
+    __is.flags(_Istream::skipws);
+    result_type __a;
+    result_type __b;
+    __is >> __a >> __b;
+    if (!__is.fail())
+    {
+      __x.param(param_type(__a, __b));
+    }
+    __is.flags(__flags);
+    return __is;
+  }
+#endif // !_CCCL_COMPILER(NVRTC)
+};
 
 _CCCL_END_NAMESPACE_CUDA_STD
 

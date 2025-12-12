@@ -83,10 +83,9 @@ _CCCL_DEVICE inline async_contract_fulfillment memcpy_async_tx(
           static_cast<uint32_t>(__size),
           ::cuda::device::barrier_native_handle(__b));
       } else {
-        // memcpy_async_tx only supports copying from global to shared
-        // or from shared to remote cluster dsmem. To copy to remote
-        // is not yet implemented. So we trap in this case as well.
-        _CCCL_UNREACHABLE();
+        _CCCL_VERIFY(false,
+                     "memcpy_async_tx only supports copying from global to shared or from shared to remote cluster "
+                     "dsmem. To copy to remote is not yet implemented.");
       }),
     (::cuda::device::__cuda_ptx_memcpy_async_tx_is_not_supported_before_SM_90__();));
 

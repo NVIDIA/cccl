@@ -77,7 +77,6 @@ CompileFlags:
     - -Wno-pragma-system-header-outside-header
     - --no-cuda-version-check
     - -stdlib=libc++
-    - "-DLIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE"
     # report all errors
     - "-ferror-limit=0"
     - "-ftemplate-backtrace-limit=0"
@@ -104,6 +103,7 @@ CompileFlags:
     - "--expt-relaxed-constexpr"
     - "-forward-unknown-to-host-compiler"
     - "-Werror=cross-execution-space-call"
+    - "-allow-unsupported-compiler"
 Diagnostics:
   Suppress:
     - "variadic_device_fn"
