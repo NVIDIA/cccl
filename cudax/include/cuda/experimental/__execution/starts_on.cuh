@@ -35,6 +35,9 @@
 
 namespace cuda::experimental::execution
 {
+template <class _Query>
+_CCCL_CONCEPT __forwarding_starts_on_query = __forwarding_query<_Query> && !__is_completion_query<_Query>;
+
 //! @brief Execution algorithm that starts a given sender on a specified scheduler.
 //!
 //! The `starts_on` algorithm takes a scheduler and a sender, and returns a new sender
@@ -85,6 +88,9 @@ namespace cuda::experimental::execution
 //! @see receiver
 struct starts_on_t
 {
+  template <class _Sch, class _Sndr>
+  struct _CCCL_TYPE_VISIBILITY_DEFAULT __sndr_t;
+
 private:
   template <class _Sch, class... _Env>
   [[nodiscard]] _CCCL_API static constexpr auto __mk_env2(_Sch __sch, _Env&&... __env)
@@ -95,41 +101,12 @@ private:
   template <class _Sch, class... _Env>
   using __env2_t = decltype(__mk_env2(declval<_Sch>(), declval<_Env>()...));
 
-public:
   template <class _Sch, class _Sndr>
-  struct _CCCL_TYPE_VISIBILITY_DEFAULT __sndr_t;
-
-  template <class _Sndr>
-  [[nodiscard]] static _CCCL_API constexpr auto transform_sender(start_t, _Sndr&& __sndr, ::cuda::std::__ignore_t)
-  {
-    auto&& [__ign, __sch, __child] = __sndr;
-    return sequence(continues_on(just(), __sch), ::cuda::std::forward_like<_Sndr>(__child));
-  }
-
-  template <class _Sch, class _Sndr>
-  _CCCL_API constexpr auto operator()(_Sch __sch, _Sndr __sndr) const;
-};
-
-template <class _Query>
-_CCCL_CONCEPT __forwarding_starts_on_query =
-  __forwarding_query<_Query>
-  && __none_of<_Query,
-               get_completion_scheduler_t<set_value_t>,
-               get_completion_scheduler_t<set_error_t>,
-               get_completion_scheduler_t<set_stopped_t>,
-               get_completion_domain_t<set_value_t>,
-               get_completion_domain_t<set_error_t>,
-               get_completion_domain_t<set_stopped_t>>;
-
-template <class _Sch, class _Sndr>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT starts_on_t::__sndr_t
-{
-  using sender_concept = sender_t;
-
   struct _CCCL_TYPE_VISIBILITY_DEFAULT __attrs_t
   {
     // If the sender has a _SetTag completion, then the completion scheduler for _SetTag
     // is the sender's.
+    _CCCL_EXEC_CHECK_DISABLE
     template <class _SetTag, class... _Env>
     [[nodiscard]] _CCCL_API constexpr auto query(get_completion_scheduler_t<_SetTag>, _Env&&... __env) const noexcept
       -> __call_result_t<get_completion_scheduler_t<_SetTag>, env_of_t<_Sndr>, __env2_t<_Sch, _Env>...>
@@ -164,8 +141,25 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT starts_on_t::__sndr_t
       return execution::get_env(__self_->__sndr_).query(_Query{}, static_cast<_Args&&>(__args)...);
     }
 
-    const __sndr_t* __self_;
+    const __sndr_t<_Sch, _Sndr>* __self_;
   };
+
+public:
+  template <class _Sndr>
+  [[nodiscard]] static _CCCL_API constexpr auto transform_sender(start_t, _Sndr&& __sndr, ::cuda::std::__ignore_t)
+  {
+    auto&& [__ign, __sch, __child] = __sndr;
+    return sequence(continues_on(just(), __sch), ::cuda::std::forward_like<_Sndr>(__child));
+  }
+
+  template <class _Sch, class _Sndr>
+  _CCCL_API constexpr auto operator()(_Sch __sch, _Sndr __sndr) const;
+};
+
+template <class _Sch, class _Sndr>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT starts_on_t::__sndr_t
+{
+  using sender_concept = sender_t;
 
   template <class _Self, class... _Env>
   [[nodiscard]] _CCCL_API static _CCCL_CONSTEVAL auto get_completion_signatures()
@@ -185,9 +179,9 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT starts_on_t::__sndr_t
     _CCCL_UNREACHABLE();
   }
 
-  [[nodiscard]] _CCCL_API constexpr auto get_env() const noexcept -> __attrs_t
+  [[nodiscard]] _CCCL_API constexpr auto get_env() const noexcept -> __attrs_t<_Sch, _Sndr>
   {
-    return __attrs_t{this};
+    return __attrs_t<_Sch, _Sndr>{this};
   }
 
   /*_CCCL_NO_UNIQUE_ADDRESS*/ starts_on_t __tag_;
@@ -195,14 +189,17 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT starts_on_t::__sndr_t
   _Sndr __sndr_;
 };
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class _Sch, class _Sndr>
 [[nodiscard]] _CCCL_API constexpr auto starts_on_t::operator()(_Sch __sch, _Sndr __sndr) const
 {
+  static_assert(__is_scheduler<_Sch>, "starts_on requires a scheduler as the first argument");
+  static_assert(__is_sender<_Sndr>, "starts_on requires a sender as the second argument");
   return __sndr_t<_Sch, _Sndr>{{}, static_cast<_Sch&&>(__sch), static_cast<_Sndr&&>(__sndr)};
 }
 
 template <class _Sch, class _Sndr>
-inline constexpr size_t structured_binding_size<starts_on_t::__sndr_t<_Sch, _Sndr>> = 3;
+inline constexpr int structured_binding_size<starts_on_t::__sndr_t<_Sch, _Sndr>> = 3;
 
 _CCCL_GLOBAL_CONSTANT starts_on_t starts_on{};
 } // namespace cuda::experimental::execution

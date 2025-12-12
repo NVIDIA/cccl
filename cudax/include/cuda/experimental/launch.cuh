@@ -11,9 +11,9 @@
 #ifndef __CUDAX_LAUNCH___
 #define __CUDAX_LAUNCH___
 
-#include <cuda/__stream/device_transform.h>
+#include <cuda/__launch/configuration.h>
+#include <cuda/__stream/launch_transform.h>
 
-#include <cuda/experimental/__launch/configuration.cuh>
 #include <cuda/experimental/__launch/launch.cuh>
 #include <cuda/experimental/__launch/param_kind.cuh>
 

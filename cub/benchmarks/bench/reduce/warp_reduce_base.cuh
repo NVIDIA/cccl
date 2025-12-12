@@ -38,4 +38,4 @@ void warp_reduce(nvbench::state& state, nvbench::type_list<T>)
   });
 }
 
-NVBENCH_BENCH_TYPES(warp_reduce, NVBENCH_TYPE_AXES(value_types)).set_name("warp_reduce").set_type_axes_names({"T{ct}"});
+NVBENCH_BENCH_TYPES(warp_reduce, NVBENCH_TYPE_AXES(value_types)).set_name("base").set_type_axes_names({"T{ct}"});

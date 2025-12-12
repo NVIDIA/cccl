@@ -9,14 +9,13 @@ import functools
 import os
 import subprocess
 import tempfile
-import textwrap
 import warnings
 from typing import TYPE_CHECKING, Callable, List
 
 import numba
 import numpy as np
 from numba import cuda, types
-from numba.core.extending import as_numba_type, intrinsic
+from numba.core.extending import as_numba_type
 
 # TODO: adding a type-ignore here because `cuda` being a
 # namespace package confuses mypy when `cuda.<something_else>`
@@ -218,89 +217,10 @@ def to_cccl_value(array_or_struct: np.ndarray | GpuStruct) -> Value:
         return to_cccl_value(array_or_struct._data)
 
 
-def _create_void_ptr_wrapper(op, sig):
-    """Creates a wrapper function that takes all void* arguments and calls the original operator.
+def to_stateless_cccl_op(op, sig: "Signature") -> Op:
+    from ._odr_helpers import create_op_void_ptr_wrapper
 
-    The wrapper takes N+1 arguments where N is the number of input arguments to `op`, the last
-    argument is a pointer to the result.
-    """
-    # Generate argument names for both inputs and output
-    input_args = [f"arg_{i}" for i in range(len(sig.args))]
-    all_args = input_args + ["ret"]  # ret is the output pointer
-    arg_str = ", ".join(all_args)
-    void_sig = types.void(*(types.voidptr for _ in all_args))
-
-    # Create the wrapper function source code
-    wrapper_src = textwrap.dedent(f"""
-    @intrinsic
-    def impl(typingctx, {arg_str}):
-        def codegen(context, builder, impl_sig, args):
-            # Get LLVM types for all arguments
-            arg_types = [context.get_value_type(t) for t in sig.args]
-            ret_type = context.get_value_type(sig.return_type)
-
-            # Bitcast from void* to the appropriate pointer types
-            input_ptrs = [builder.bitcast(p, t.as_pointer())
-                                          for p, t in zip(args[:-1], arg_types)]
-            ret_ptr = builder.bitcast(args[-1], ret_type.as_pointer())
-
-            # Load input values from pointers
-            input_vals = [builder.load(p) for p in input_ptrs]
-
-            # Call the original operator
-            result = context.compile_internal(builder, op, sig, input_vals)
-
-            # Store the result
-            builder.store(result, ret_ptr)
-
-            return context.get_dummy_value()
-        return void_sig, codegen
-
-    # intrinsics cannot directly be compiled by numba, so we make a trivial wrapper:
-    def wrapped_{op.__name__}({arg_str}):
-        return impl({arg_str})
-    """)
-
-    # Create namespace and compile the wrapper
-    local_dict = {
-        "types": types,
-        "sig": sig,
-        "op": op,
-        "intrinsic": intrinsic,
-        "void_sig": void_sig,
-    }
-    exec(wrapper_src, globals(), local_dict)
-
-    wrapper_func = local_dict[f"wrapped_{op.__name__}"]
-    wrapper_func.__globals__.update(local_dict)
-
-    return wrapper_func, void_sig
-
-
-def to_cccl_op(op: Callable | OpKind, sig: Signature | None) -> Op:
-    """Return an `Op` object corresponding to the given callable or well-known operation.
-
-    For well-known operations (Ops), returns an Op with the appropriate
-    kind and empty ltoir/state.
-
-    For callables, wraps the callable in a device function that takes void* arguments
-    and a void* return value. This is the only way to match the corresponding "extern"
-    declaration of the device function in the C code, which knows nothing about the types
-    of the arguments and return value. The two functions must have the same signature in
-    order to link correctly without violating ODR.
-    """
-    # Check if op is a well-known operation
-    if isinstance(op, OpKind):
-        return Op(
-            operator_type=op,
-            name="",
-            ltoir=b"",
-            state_alignment=1,
-            state=b"",
-        )
-
-    # op is a callable:
-    wrapped_op, wrapper_sig = _create_void_ptr_wrapper(op, sig)
+    wrapped_op, wrapper_sig = create_op_void_ptr_wrapper(op, sig)
 
     ltoir, _ = cuda.compile(wrapped_op, sig=wrapper_sig, output="ltoir")
     return Op(
@@ -312,11 +232,13 @@ def to_cccl_op(op: Callable | OpKind, sig: Signature | None) -> Op:
     )
 
 
-def get_value_type(d_in: IteratorBase | DeviceArrayLike):
-    from .struct import gpu_struct
+def get_value_type(d_in: IteratorBase | DeviceArrayLike | GpuStruct | np.ndarray):
+    from .struct import _Struct, gpu_struct
 
     if isinstance(d_in, IteratorBase):
         return d_in.value_type
+    if isinstance(d_in, _Struct):
+        return numba.typeof(d_in)
     dtype = get_dtype(d_in)
     if dtype.type == np.void:
         # we can't use the numba type corresponding to numpy struct

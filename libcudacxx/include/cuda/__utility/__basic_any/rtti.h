@@ -247,7 +247,6 @@ template <class _SrcInterface, class _DstInterface>
     }
     return __dst_vptr;
   }
-  _CCCL_UNREACHABLE();
 }
 
 _CCCL_END_NAMESPACE_CUDA

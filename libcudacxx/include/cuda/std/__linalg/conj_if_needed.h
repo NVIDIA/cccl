@@ -58,7 +58,6 @@ struct __conj_if_needed
     {
       return ::cuda::std::conj(__t);
     }
-    _CCCL_UNREACHABLE();
   }
 };
 

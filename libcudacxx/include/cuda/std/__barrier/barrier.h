@@ -51,15 +51,15 @@ private:
   template <typename _Barrier>
   friend class __barrier_poll_tester_parity;
   template <typename _Barrier>
-  _CCCL_API inline friend bool __call_try_wait(const _Barrier& __b, typename _Barrier::arrival_token&& __phase);
+  _CCCL_API friend bool __call_try_wait(const _Barrier& __b, typename _Barrier::arrival_token&& __phase);
   template <typename _Barrier>
-  _CCCL_API inline friend bool __call_try_wait_parity(const _Barrier& __b, bool __parity);
+  _CCCL_API friend bool __call_try_wait_parity(const _Barrier& __b, bool __parity);
 
-  [[nodiscard]] _CCCL_API inline bool __try_wait(arrival_token __old) const
+  [[nodiscard]] _CCCL_API bool __try_wait(arrival_token __old) const
   {
     return __phase.load(memory_order_acquire) != __old;
   }
-  [[nodiscard]] _CCCL_API inline bool __try_wait_parity(bool __parity) const
+  [[nodiscard]] _CCCL_API bool __try_wait_parity(bool __parity) const
   {
     return __try_wait(__parity);
   }
@@ -67,7 +67,7 @@ private:
 public:
   _CCCL_HIDE_FROM_ABI __barrier_base() = default;
 
-  _CCCL_API inline __barrier_base(ptrdiff_t __expected, _CompletionF __completion = _CompletionF())
+  _CCCL_API __barrier_base(ptrdiff_t __expected, _CompletionF __completion = _CompletionF())
       : __expected(__expected)
       , __arrived(__expected)
       , __completion(__completion)
@@ -79,7 +79,7 @@ public:
   __barrier_base(__barrier_base const&)            = delete;
   __barrier_base& operator=(__barrier_base const&) = delete;
 
-  [[nodiscard]] _CCCL_API inline arrival_token arrive(ptrdiff_t __update = 1)
+  /*discard*/ _CCCL_API arrival_token arrive(ptrdiff_t __update = 1)
   {
     auto const __old_phase    = __phase.load(memory_order_relaxed);
     auto const __result       = __arrived.fetch_sub(__update, memory_order_acq_rel) - __update;
@@ -96,18 +96,18 @@ public:
     }
     return __old_phase;
   }
-  _CCCL_API inline void wait(arrival_token&& __old_phase) const
+  _CCCL_API void wait(arrival_token&& __old_phase) const
   {
     __phase.wait(__old_phase, memory_order_acquire);
   }
-  _CCCL_API inline void arrive_and_wait()
+  _CCCL_API void arrive_and_wait()
   {
     wait(arrive());
   }
-  _CCCL_API inline void arrive_and_drop()
+  _CCCL_API void arrive_and_drop()
   {
     __expected.fetch_sub(1, memory_order_relaxed);
-    (void) arrive();
+    arrive();
   }
 
   [[nodiscard]] _CCCL_API static constexpr ptrdiff_t max() noexcept
@@ -138,25 +138,25 @@ private:
   template <typename _Barrier>
   friend class __barrier_poll_tester_parity;
   template <typename _Barrier>
-  _CCCL_API inline friend bool __call_try_wait(const _Barrier& __b, typename _Barrier::arrival_token&& __phase);
+  _CCCL_API friend bool __call_try_wait(const _Barrier& __b, typename _Barrier::arrival_token&& __phase);
   template <typename _Barrier>
-  _CCCL_API inline friend bool __call_try_wait_parity(const _Barrier& __b, bool __parity);
+  _CCCL_API friend bool __call_try_wait_parity(const _Barrier& __b, bool __parity);
 
   static _CCCL_API constexpr uint64_t __init(ptrdiff_t __count) noexcept
   {
     _CCCL_ASSERT(__count >= 0, "Count must be non-negative.");
     return (((1u << 31) - __count) << 32) | ((1u << 31) - __count);
   }
-  [[nodiscard]] _CCCL_API inline bool __try_wait_phase(uint64_t __phase) const
+  [[nodiscard]] _CCCL_API bool __try_wait_phase(uint64_t __phase) const
   {
     uint64_t const __current = __phase_arrived_expected.load(memory_order_acquire);
     return ((__current & __phase_bit) != __phase);
   }
-  [[nodiscard]] _CCCL_API inline bool __try_wait(arrival_token __old) const
+  [[nodiscard]] _CCCL_API bool __try_wait(arrival_token __old) const
   {
     return __try_wait_phase(__old & __phase_bit);
   }
-  [[nodiscard]] _CCCL_API inline bool __try_wait_parity(bool __parity) const
+  [[nodiscard]] _CCCL_API bool __try_wait_parity(bool __parity) const
   {
     return __try_wait_phase(__parity ? __phase_bit : 0);
   }
@@ -175,7 +175,7 @@ public:
   __barrier_base(__barrier_base const&)            = delete;
   __barrier_base& operator=(__barrier_base const&) = delete;
 
-  [[nodiscard]] _CCCL_API inline arrival_token arrive(ptrdiff_t __update = 1)
+  /*discard*/ _CCCL_API arrival_token arrive(ptrdiff_t __update = 1)
   {
     auto const __inc = __arrived_unit * __update;
     auto const __old = __phase_arrived_expected.fetch_add(__inc, memory_order_acq_rel);
@@ -186,23 +186,23 @@ public:
     }
     return __old & __phase_bit;
   }
-  _CCCL_API inline void wait(arrival_token&& __phase) const
+  _CCCL_API void wait(arrival_token&& __phase) const
   {
     ::cuda::std::__cccl_thread_poll_with_backoff(
       __barrier_poll_tester_phase<__barrier_base>(this, ::cuda::std::move(__phase)));
   }
-  _CCCL_API inline void wait_parity(bool __parity) const
+  _CCCL_API void wait_parity(bool __parity) const
   {
     ::cuda::std::__cccl_thread_poll_with_backoff(__barrier_poll_tester_parity<__barrier_base>(this, __parity));
   }
-  _CCCL_API inline void arrive_and_wait()
+  _CCCL_API void arrive_and_wait()
   {
     wait(arrive());
   }
-  _CCCL_API inline void arrive_and_drop()
+  _CCCL_API void arrive_and_drop()
   {
     __phase_arrived_expected.fetch_add(__expected_unit, memory_order_relaxed);
-    (void) arrive();
+    arrive();
   }
 
   [[nodiscard]] _CCCL_API static constexpr ptrdiff_t max() noexcept

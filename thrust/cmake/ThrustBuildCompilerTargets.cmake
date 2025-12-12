@@ -2,14 +2,8 @@
 # creates the following interface targets:
 #
 # thrust.compiler_interface
-# - Interface target linked into all targets in the thrust developer build.
-#   This should not be directly used; it is only used to construct the
-#   per-dialect targets below.
-#
-# thrust.compiler_interface_cppXX
-# - Interface targets providing dialect-specific compiler flags. These should
-#   be linked into the developer build targets, as they include both
-#   thrust.compiler_interface and cccl.compiler_interface_cppXX.
+# Provides compiler settings for all thrust tests, examples, etc. This should not be used
+# directly, as it is linked to by all thrust configuration targets in THRUST_TARGETS.
 
 function(thrust_build_compiler_targets)
   set(cuda_compile_options)
@@ -27,20 +21,18 @@ function(thrust_build_compiler_targets)
   endif()
 
   cccl_build_compiler_interface(
-    thrust.compiler_interface
+    thrust.compiler_flags
     "${cuda_compile_options}"
     "${cxx_compile_options}"
     "${cxx_compile_definitions}"
   )
 
-  foreach (dialect IN LISTS CCCL_KNOWN_CXX_DIALECTS)
-    add_library(thrust.compiler_interface_cpp${dialect} INTERFACE)
-    target_link_libraries(
-      thrust.compiler_interface_cpp${dialect}
-      INTERFACE
-        # order matters here, we need the project options to override the cccl options.
-        cccl.compiler_interface_cpp${dialect}
-        thrust.compiler_interface
-    )
-  endforeach()
+  add_library(thrust.compiler_interface INTERFACE)
+  target_link_libraries(
+    thrust.compiler_interface
+    INTERFACE
+      # order matters here, we need the project options to override the cccl options.
+      cccl.compiler_interface
+      thrust.compiler_flags
+  )
 endfunction()

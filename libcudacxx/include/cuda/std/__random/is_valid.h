@@ -21,11 +21,11 @@
 #endif // no system header
 
 #include <cuda/std/__type_traits/enable_if.h>
-#include <cuda/std/__type_traits/integral_constant.h>
+#include <cuda/std/__type_traits/is_floating_point.h>
+#include <cuda/std/__type_traits/is_integer.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/is_unsigned.h>
 #include <cuda/std/__utility/declval.h>
-#include <cuda/std/cstdint>
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -36,52 +36,16 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 // named RealType is undefined unless the corresponding template argument is
 // cv-unqualified and is one of float, double, or long double.
 
-template <class>
-inline constexpr bool __libcpp_random_is_valid_realtype = false;
-
-template <>
-inline constexpr bool __libcpp_random_is_valid_realtype<float> = true;
-template <>
-inline constexpr bool __libcpp_random_is_valid_realtype<double> = true;
-#if _CCCL_HAS_LONG_DOUBLE()
-template <>
-inline constexpr bool __libcpp_random_is_valid_realtype<long double> = true;
-#endif // _CCCL_HAS_LONG_DOUBLE()
+template <class _Type>
+inline constexpr bool __cccl_random_is_valid_realtype = ::cuda::std::__cccl_is_floating_point_v<_Type>;
 
 // [rand.req.genl]/1.5:
 // The effect of instantiating a template that has a template type parameter
 // named IntType is undefined unless the corresponding template argument is
 // cv-unqualified and is one of short, int, long, long long, unsigned short,
 // unsigned int, unsigned long, or unsigned long long.
-
-template <class>
-inline constexpr bool __libcpp_random_is_valid_inttype = false;
-template <> // extension
-inline constexpr bool __libcpp_random_is_valid_inttype<int8_t> = true;
-template <>
-inline constexpr bool __libcpp_random_is_valid_inttype<short> = true;
-template <>
-inline constexpr bool __libcpp_random_is_valid_inttype<int> = true;
-template <>
-inline constexpr bool __libcpp_random_is_valid_inttype<long> = true;
-template <>
-inline constexpr bool __libcpp_random_is_valid_inttype<long long> = true;
-template <> // extension
-inline constexpr bool __libcpp_random_is_valid_inttype<uint8_t> = true;
-template <>
-inline constexpr bool __libcpp_random_is_valid_inttype<unsigned short> = true;
-template <>
-inline constexpr bool __libcpp_random_is_valid_inttype<unsigned int> = true;
-template <>
-inline constexpr bool __libcpp_random_is_valid_inttype<unsigned long> = true;
-template <>
-inline constexpr bool __libcpp_random_is_valid_inttype<unsigned long long> = true;
-#if _CCCL_HAS_INT128()
-template <> // extension
-inline constexpr bool __libcpp_random_is_valid_inttype<__int128_t> = true;
-template <> // extension
-inline constexpr bool __libcpp_random_is_valid_inttype<__uint128_t> = true;
-#endif // _CCCL_HAS_INT128()
+template <class _Type>
+inline constexpr bool __cccl_random_is_valid_inttype = ::cuda::std::__cccl_is_integer_v<_Type>;
 
 // [rand.req.urng]/3:
 // A class G meets the uniform random bit generator requirements if G models

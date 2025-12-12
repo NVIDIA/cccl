@@ -443,9 +443,11 @@ struct {0} {{
     /* 2 */ index_type_name);
 
   static constexpr std::string_view it_advance_fn_def_src_tmpl = R"XXX(
-extern "C" __device__ void {0}({1}* state, {2} offset)
+extern "C" __device__ void {0}(void* state, const void* offset)
 {{
-  state->linear_id += offset;
+  auto* typed_state = static_cast<{1}*>(state);
+  auto offset_val = *static_cast<const {2}*>(offset);
+  typed_state->linear_id += offset_val;
 }}
 )XXX";
 
@@ -453,10 +455,11 @@ extern "C" __device__ void {0}({1}* state, {2} offset)
     std::format(it_advance_fn_def_src_tmpl, /*0*/ advance_fn_name, state_name, index_type_name);
 
   static constexpr std::string_view it_dereference_fn_src_tmpl = R"XXX(
-extern "C" __device__ void {0}({2} *state, {1}* result) {{
-  unsigned long long col_id = (state->linear_id) / (state->n_rows);
-  unsigned long long row_id = (state->linear_id) - col_id * (state->n_rows);
-  *result = *(state->ptr + row_id * (state->n_cols) + col_id);
+extern "C" __device__ void {0}(const void* state, {1}* result) {{
+  auto* typed_state = static_cast<const {2}*>(state);
+  unsigned long long col_id = (typed_state->linear_id) / (typed_state->n_rows);
+  unsigned long long row_id = (typed_state->linear_id) - col_id * (typed_state->n_rows);
+  *result = *(typed_state->ptr + row_id * (typed_state->n_cols) + col_id);
 }}
 )XXX";
 
@@ -676,18 +679,29 @@ struct reduce_build
 {
   template <typename... Ts>
   CUresult operator()(
-    BuildResultT* build_ptr, cccl_iterator_t input, cccl_iterator_t output, uint64_t, Ts... args) const noexcept
+    BuildResultT* build_ptr,
+    cccl_determinism_t determinism,
+    cccl_iterator_t input,
+    cccl_iterator_t output,
+    uint64_t,
+    cccl_op_t op,
+    cccl_value_t init,
+    Ts... args) const noexcept
   {
-    return cccl_device_reduce_build(build_ptr, input, output, args...);
+    return cccl_device_reduce_build(build_ptr, input, output, op, init, determinism, args...);
   }
 };
 
 struct reduce_run
 {
   template <typename... Ts>
-  CUresult operator()(Ts... args) const noexcept
+  CUresult operator()(cccl_device_reduce_build_result_t build,
+                      void* d_temp_storage,
+                      size_t* temp_storage_bytes,
+                      cccl_determinism_t /*determinism*/,
+                      Ts... args) const noexcept
   {
-    return cccl_device_reduce(args...);
+    return cccl_device_reduce(build, d_temp_storage, temp_storage_bytes, args...);
   }
 };
 
@@ -710,7 +724,7 @@ void reduce_for_pointer_inputs(
   const auto& test_key = make_key<Ts...>();
 
   AlgorithmExecute<BuildResultT, reduce_build, reduce_cleanup, reduce_run>(
-    build_cache, test_key, input, output, num_items, op, init);
+    build_cache, test_key, CCCL_RUN_TO_RUN, input, output, num_items, op, init);
 }
 } // namespace validate
 
