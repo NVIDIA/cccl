@@ -103,7 +103,6 @@ struct DeviceFind
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceFind::FindIf");
 
-    // Signed integer type for global offsets
     using OffsetT = detail::choose_offset_t<NumItemsT>;
 
     return detail::find::dispatch_t<InputIteratorT, OutputIteratorT, OffsetT, ScanOpT>::Dispatch(

@@ -51,13 +51,13 @@ __launch_bounds__(1) __global__ void init_found_pos_pointer(ValueType* found_pos
 template <typename ChainedPolicyT, typename IteratorT, typename OffsetT, typename PredicateT>
 __launch_bounds__(int(ChainedPolicyT::ActivePolicy::FindPolicy::BLOCK_THREADS))
   CUB_DETAIL_KERNEL_ATTRIBUTES void find_kernel(
-    IteratorT d_in, OffsetT num_items, OffsetT* value_temp_storage, PredicateT predicate)
+    IteratorT d_in, OffsetT num_items, OffsetT* found_pos_ptr, PredicateT predicate)
 {
   using find_policy_t = typename ChainedPolicyT::ActivePolicy::FindPolicy;
   using agent_find_t  = agent_t<find_policy_t, IteratorT, OffsetT, PredicateT>;
 
   __shared__ typename agent_find_t::TempStorage sresult;
-  agent_find_t{sresult.Alias(), d_in, predicate, value_temp_storage, num_items}.Process();
+  agent_find_t{sresult.Alias(), d_in, predicate, found_pos_ptr, num_items}.Process();
 }
 
 template <typename InputIteratorT,
@@ -90,6 +90,11 @@ struct dispatch_t
   cudaStream_t stream;
 
   int ptx_version;
+
+  using OutputT = it_value_t<OutputIteratorT>;
+  static constexpr bool can_write_to_output_direclty =
+    THRUST_NS_QUALIFIER::is_contiguous_iterator_v<OutputIteratorT> && ::cuda::std::is_integral_v<OutputT>
+    && sizeof(OutputT) == sizeof(OffsetT);
 
   template <typename ActivePolicyT>
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t Invoke()
@@ -142,7 +147,16 @@ struct dispatch_t
       return cudaSuccess;
     }
 
-    auto* found_pos_ptr = static_cast<OffsetT*>(allocations[0]);
+    auto found_pos_ptr = [&] {
+      if constexpr (can_write_to_output_direclty)
+      {
+        return reinterpret_cast<OffsetT*>(THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator(d_out));
+      }
+      else
+      {
+        return static_cast<OffsetT*>(allocations[0]);
+      }
+    }();
 
     // use d_temp_storage as the intermediate device result to read and write from. Then store the final result in the
     // output iterator.
@@ -160,8 +174,11 @@ struct dispatch_t
       findif_grid_size, ActivePolicyT::FindPolicy::BLOCK_THREADS, 0, stream)
       .doit(kernel_ptr, d_in_unwrapped, num_items, found_pos_ptr, predicate);
 
-    THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(1, 1, 0, stream)
-      .doit(copy_final_result_to_output_iterator<OffsetT, OutputIteratorT>, found_pos_ptr, d_out);
+    if constexpr (!can_write_to_output_direclty)
+    {
+      THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(1, 1, 0, stream)
+        .doit(copy_final_result_to_output_iterator<OffsetT, OutputIteratorT>, found_pos_ptr, d_out);
+    }
 
     // Check for failure to launch
     if (const auto error = CubDebug(cudaPeekAtLastError()))
