@@ -20,10 +20,6 @@
 #include <cuda/__device/arch_id.h>
 #include <cuda/std/optional>
 
-#if _CCCL_HAS_CONCEPTS()
-#  include <cuda/std/concepts>
-#endif // _CCCL_HAS_CONCEPTS()
-
 #if !_CCCL_COMPILER(NVRTC)
 #  include <ostream>
 #endif
@@ -95,14 +91,9 @@ struct reduce_arch_policy // equivalent of a policy for a single CUDA architectu
 };
 
 #if _CCCL_HAS_CONCEPTS()
-_CCCL_API consteval void __needs_a_constexpr_value(auto) {}
-
 // TODO(bgruber): bikeshed name before we make the tuning API public
 template <typename T>
-concept reduce_policy_hub = requires(T hub, ::cuda::arch_id arch) {
-  { hub(arch) } -> _CCCL_CONCEPT_VSTD::same_as<reduce_arch_policy>;
-  { __needs_a_constexpr_value(hub(arch)) };
-};
+concept reduce_policy_hub = policy_hub<T, reduce_arch_policy>;
 #endif // _CCCL_HAS_CONCEPTS()
 
 template <typename PolicyT, typename = void>

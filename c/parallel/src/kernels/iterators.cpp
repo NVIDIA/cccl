@@ -114,7 +114,7 @@ struct {0}_proxy_t {{
 struct {0} {{
   using iterator_category = cuda::std::random_access_iterator_tag;
   using difference_type   = DIFF_T;
-  using value_type        = void;
+  using value_type        = VALUE_T;
   using pointer           = {0}_proxy_t*;
   using reference         = {0}_proxy_t;
   __device__ {0}_proxy_t operator*() const {{ return {{state}}; }}
