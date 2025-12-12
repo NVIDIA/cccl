@@ -21,10 +21,13 @@
 #endif // no system header
 
 #include <cuda/__cmath/uabs.h>
+#include <cuda/std/__charconv/chars_format.h>
 #include <cuda/std/__charconv/to_chars_result.h>
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__cstddef/types.h>
+#include <cuda/std/__type_traits/always_false.h>
 #include <cuda/std/__type_traits/conditional.h>
+#include <cuda/std/__type_traits/is_floating_point.h>
 #include <cuda/std/__type_traits/is_integer.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/is_signed.h>
@@ -140,6 +143,47 @@ to_chars(char* __first, char* __last, char __value, int __base = 10) noexcept
 }
 
 _CCCL_API constexpr to_chars_result to_chars(char*, char*, bool, int = 10) noexcept = delete;
+
+_CCCL_TEMPLATE(class _Tp)
+_CCCL_REQUIRES(is_floating_point_v<_Tp>)
+[[nodiscard]] _CCCL_API constexpr to_chars_result to_chars(char* __first, char* __last, _Tp __value) noexcept
+{
+  static_assert(::cuda::std::__always_false_v<_Tp>,
+                "cuda::std::to_chars for floating point types is not yet implemented");
+  (void) __first;
+  (void) __last;
+  (void) __value;
+  return {};
+}
+
+_CCCL_TEMPLATE(class _Tp)
+_CCCL_REQUIRES(is_floating_point_v<_Tp>)
+[[nodiscard]] _CCCL_API constexpr to_chars_result
+to_chars(char* __first, char* __last, _Tp __value, chars_format __fmt) noexcept
+{
+  static_assert(::cuda::std::__always_false_v<_Tp>,
+                "cuda::std::to_chars for floating point types is not yet implemented");
+  (void) __first;
+  (void) __last;
+  (void) __value;
+  (void) __fmt;
+  return {};
+}
+
+_CCCL_TEMPLATE(class _Tp)
+_CCCL_REQUIRES(is_floating_point_v<_Tp>)
+[[nodiscard]] _CCCL_API constexpr to_chars_result
+to_chars(char* __first, char* __last, _Tp __value, chars_format __fmt, int __prec) noexcept
+{
+  static_assert(::cuda::std::__always_false_v<_Tp>,
+                "cuda::std::to_chars for floating point types is not yet implemented");
+  (void) __first;
+  (void) __last;
+  (void) __value;
+  (void) __fmt;
+  (void) __prec;
+  return {};
+}
 
 _CCCL_END_NAMESPACE_CUDA_STD
 

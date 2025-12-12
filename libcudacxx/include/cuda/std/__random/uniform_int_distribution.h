@@ -22,12 +22,12 @@
 
 #include <cuda/std/__bit/countl.h>
 #include <cuda/std/__bit/integral.h>
+#include <cuda/std/__limits/numeric_limits.h>
 #include <cuda/std/__random/is_valid.h>
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/make_unsigned.h>
 #include <cuda/std/cstddef>
 #include <cuda/std/cstdint>
-#include <cuda/std/limits>
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -160,7 +160,7 @@ public:
 template <class _IntType = int>
 class uniform_int_distribution
 {
-  static_assert(__libcpp_random_is_valid_inttype<_IntType>, "IntType must be a supported integer type");
+  static_assert(__cccl_random_is_valid_inttype<_IntType>, "IntType must be a supported integer type");
 
 public:
   // types

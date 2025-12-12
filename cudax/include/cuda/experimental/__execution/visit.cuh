@@ -36,9 +36,17 @@
 #define _CCCL_FWD_CHILD(_Ord)  , _CCCL_FWD_LIKE(_Sndr, _CCCL_PP_CAT(__child, _Ord))
 #define _CCCL_FWD_LIKE(_X, _Y) static_cast<::cuda::std::__copy_cvref_t<_X&&, decltype(_Y)>>(_Y)
 
+#if _CCCL_HAS_BUILTIN(__builtin_structured_binding_size)
+#  define _CCCL_BUILTIN_STRUCTURED_BINDING_SIZE(...) __builtin_structured_binding_size(__VA_ARGS__)
+#endif // _CCCL_HAS_BUILTIN(__builtin_structured_binding_size)
+
+#if _CCCL_CUDA_COMPILER(NVCC)
+#  undef _CCCL_BUILTIN_STRUCTURED_BINDING_SIZE
+#endif // _CCCL_CUDA_COMPILER(NVCC)
+
 namespace cuda::experimental::execution
 {
-#if _CCCL_HAS_BUILTIN(__builtin_structured_binding_size)
+#if defined(_CCCL_BUILTIN_STRUCTURED_BINDING_SIZE)
 
 #  if _CCCL_HAS_CONCEPTS()
 
@@ -46,23 +54,25 @@ template <class _Sndr>
 inline constexpr int structured_binding_size = -1;
 
 template <class _Sndr>
-  requires(__builtin_structured_binding_size(_Sndr) >= 0)
-inline constexpr int structured_binding_size<_Sndr> = __builtin_structured_binding_size(_Sndr);
+  requires(_CCCL_BUILTIN_STRUCTURED_BINDING_SIZE(_Sndr) >= 0)
+inline constexpr int structured_binding_size<_Sndr> = _CCCL_BUILTIN_STRUCTURED_BINDING_SIZE(_Sndr);
 
 #  else // ^^^ _CCCL_HAS_CONCEPTS() ^^^ / !_CCCL_HAS_CONCEPTS() vvv
 
 template <class _Sndr, class _Enable = void>
-inline constexpr int structured_binding_size = -1;
+inline constexpr int __structured_binding_size_impl = -1;
 
 template <class _Sndr>
 inline constexpr int
-  structured_binding_size<_Sndr, ::cuda::std::enable_if_t<__builtin_structured_binding_size(_Sndr) >= 0>> =
-    static_cast<int>(__builtin_structured_binding_size(_Sndr));
+  __structured_binding_size_impl<_Sndr, ::cuda::std::enable_if_t<_CCCL_BUILTIN_STRUCTURED_BINDING_SIZE(_Sndr) >= 0>> =
+    static_cast<int>(_CCCL_BUILTIN_STRUCTURED_BINDING_SIZE(_Sndr));
+
+template <class _Sndr, class _Enable = void>
+inline constexpr int structured_binding_size = __structured_binding_size_impl<_Sndr>;
 
 #  endif // _CCCL_HAS_CONCEPTS()
 
-#else // ^^^ _CCCL_HAS_BUILTIN(__builtin_structured_binding_size) ^^^ /
-      // vvv !_CCCL_HAS_BUILTIN(__builtin_structured_binding_size) vvv
+#else // ^^^ _CCCL_BUILTIN_STRUCTURED_BINDING_SIZE ^^^ / vvv !_CCCL_BUILTIN_STRUCTURED_BINDING_SIZE vvv
 
 struct __any_t
 {
@@ -97,7 +107,7 @@ _CCCL_DIAG_POP
 template <class _Sndr>
 inline constexpr int structured_binding_size = static_cast<int>(sizeof(*__arity_of_t<_Sndr>{}())) - 2;
 
-#endif // _CCCL_HAS_BUILTIN(__builtin_structured_binding_size)
+#endif // ^^^ !_CCCL_BUILTIN_STRUCTURED_BINDING_SIZE ^^^
 
 template <class _Sndr>
 inline constexpr int structured_binding_size<_Sndr&> = structured_binding_size<_Sndr>;

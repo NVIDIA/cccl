@@ -131,7 +131,6 @@ public:
     {
       return ::cuda::std::ranges::next(::cuda::std::ranges::begin(__base_), __count_, ::cuda::std::ranges::end(__base_));
     }
-    _CCCL_UNREACHABLE();
   }
 
   _CCCL_TEMPLATE(class _View2 = _View)

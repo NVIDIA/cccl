@@ -21,6 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__cstddef/byte.h>
 #include <cuda/std/__memory/addressof.h>
 #include <cuda/std/__memory/construct_at.h>
 #include <cuda/std/__new/device_new.h>
@@ -31,6 +32,7 @@
 #include <cuda/experimental/__detail/type_traits.cuh>
 #include <cuda/experimental/__execution/meta.cuh>
 #include <cuda/experimental/__execution/type_traits.cuh>
+#include <cuda/experimental/__utility/manual_lifetime.cuh>
 
 #include <cuda/experimental/__execution/prologue.cuh>
 
@@ -38,37 +40,7 @@ namespace cuda::experimental::execution
 {
 /// @brief A lazy type that can be used to delay the construction of a type.
 template <class _Ty>
-struct __lazy
-{
-  _CCCL_API __lazy() noexcept {}
-
-  _CCCL_API ~__lazy() {}
-
-  template <class... _Ts>
-  _CCCL_API auto construct(_Ts&&... __ts) noexcept(__nothrow_constructible<_Ty, _Ts...>) -> _Ty&
-  {
-    _Ty* __value_ = ::new (static_cast<void*>(::cuda::std::addressof(__value_))) _Ty{static_cast<_Ts&&>(__ts)...};
-    return *::cuda::std::launder(__value_);
-  }
-
-  template <class _Fn, class... _Ts>
-  _CCCL_API auto construct_from(_Fn&& __fn, _Ts&&... __ts) noexcept(__nothrow_callable<_Fn, _Ts...>) -> _Ty&
-  {
-    _Ty* __value_ = ::new (static_cast<void*>(::cuda::std::addressof(__value_)))
-      _Ty{static_cast<_Fn&&>(__fn)(static_cast<_Ts&&>(__ts)...)};
-    return *::cuda::std::launder(__value_);
-  }
-
-  _CCCL_API void destroy() noexcept
-  {
-    ::cuda::std::destroy_at(&__value_);
-  }
-
-  union
-  {
-    _Ty __value_;
-  };
-};
+using __lazy = ::cuda::experimental::__manual_lifetime<_Ty>;
 
 namespace __detail
 {
@@ -76,7 +48,7 @@ template <size_t _Idx, size_t _Size, size_t _Align>
 struct __lazy_box_
 {
   static_assert(_Size != 0);
-  alignas(_Align) unsigned char __data_[_Size];
+  alignas(_Align)::cuda::std::byte __data_[_Size];
 };
 
 template <size_t _Idx, class _Ty>
