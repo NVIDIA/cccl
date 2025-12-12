@@ -162,7 +162,6 @@ PREDEFINED             = __device__= \
                         "CUB_DISABLE_NAMESPACE_MAGIC" \
                         "CUB_IGNORE_NAMESPACE_MAGIC_ERROR" \
                         "CUB_RUNTIME_FUNCTION=" \
-                        "LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE" \
                         "THRUST_FWD(x)=x" \
                         "THRUST_NAMESPACE_BEGIN=namespace thrust {" \
                         "THRUST_NAMESPACE_END=}" \
