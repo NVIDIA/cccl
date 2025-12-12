@@ -44,23 +44,6 @@ CUB_NAMESPACE_BEGIN
 
 namespace detail::scan
 {
-_CCCL_DEVICE_API inline int shfl_sync_up(bool& in_range, int value, int offset, int c, int member_mask)
-{
-  unsigned int output;
-  int tmp_in_range;
-  asm volatile(
-    "{"
-    "  .reg .pred p;"
-    "  shfl.sync.up.b32 %0|p, %2, %3, %4, %5;"
-    "  selp.b32 %1, 1, 0, p;\n"
-    "  "
-    "}"
-    : "=r"(output), "=r"(tmp_in_range)
-    : "r"(value), "r"(offset), "r"(c), "r"(member_mask));
-  in_range = bool(tmp_in_range);
-  return output;
-}
-
 enum scan_state : uint32_t
 {
   EMPTY    = 0,
