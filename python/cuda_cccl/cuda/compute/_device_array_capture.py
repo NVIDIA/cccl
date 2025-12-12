@@ -116,9 +116,12 @@ def _patched_generic(val, c):
     """
     Patched generic typeof handler that checks for DeviceArrayLike objects.
     """
-    # Check for CAI FIRST
+    # Check for CAI objects that we should handle (constants only)
     if isinstance(val, DeviceArrayLike):
-        return _typeof_device_array(val, c)
+        result = _typeof_device_array(val, c)
+        if result is not None:
+            return result
+        # Fall through to original handler for arguments
 
     # Fall back to original behavior
     return _original_generic(val, c)
