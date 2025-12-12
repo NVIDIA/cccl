@@ -31,10 +31,12 @@ class DeviceArrayType(types.Array):
     we ensure these arrays remain mutable when captured from globals.
     """
 
-    def __init__(self, dtype, ndim, layout, readonly=False, aligned=True):
+    def __init__(self, dtype, ndim, layout, readonly=False, aligned=False):
         type_name = "device_array"
         if readonly:
             type_name = "readonly " + type_name
+        if not aligned:
+            type_name = "unaligned " + type_name
         name = f"{type_name}({dtype}, {ndim}d, {layout})"
         super().__init__(
             dtype, ndim, layout, readonly=readonly, name=name, aligned=aligned
