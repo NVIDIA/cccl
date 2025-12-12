@@ -175,9 +175,11 @@ template <class _Tp>
 #if _CCCL_HAS_INT128()
 [[nodiscard]] _CCCL_API constexpr __uint128_t __byteswap_impl(__uint128_t __val) noexcept
 {
-  // nvcc fails to use this builtin in constexpr context
 #  if defined(_CCCL_BUILTIN_BSWAP128)
+  // nvcc fails to use this builtin in constexpr context
+#    if _CCCL_CUDA_COMPILER(NVCC)
   _CCCL_IF_NOT_CONSTEVAL_DEFAULT
+#    endif // _CCCL_CUDA_COMPILER(NVCC)
   {
     return _CCCL_BUILTIN_BSWAP128(__val);
   }
