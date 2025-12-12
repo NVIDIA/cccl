@@ -103,11 +103,15 @@ _CCCL_HOST_API inline bool is_host_accessible(const void* __p)
 /**
  * @brief Checks if a pointer is a device pointer.
  *
+ * This internal-only function can be used when the device id is not known.
+ * The main difference between this function and is_device_accessible() is that this function does not check if the
+ * pointer is peer accessible from a specified device.
+ *
  * @param __p The pointer to check.
  * @return `true` if the pointer is a device pointer, `false` otherwise.
  */
 [[nodiscard]]
-_CCCL_HOST_API inline bool __is_device_memory(const void* __p) noexcept
+_CCCL_HOST_API inline bool __is_device_or_managed_memory(const void* __p) noexcept
 {
   if (__p == nullptr)
   {
