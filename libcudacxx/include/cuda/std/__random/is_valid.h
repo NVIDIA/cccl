@@ -38,8 +38,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 // cv-unqualified and is one of float, double, or long double.
 
 template <class _Type>
-inline constexpr bool __cccl_random_is_valid_realtype =
-  ::cuda::std::is_floating_point_v<_Type> && !::cuda::std::is_const_v<_Type>;
+inline constexpr bool __cccl_random_is_valid_realtype = ::cuda::std::__cccl_is_floating_point_v<_Type>;
 
 // [rand.req.genl]/1.5:
 // The effect of instantiating a template that has a template type parameter
@@ -47,8 +46,7 @@ inline constexpr bool __cccl_random_is_valid_realtype =
 // cv-unqualified and is one of short, int, long, long long, unsigned short,
 // unsigned int, unsigned long, or unsigned long long.
 template <class _Type>
-inline constexpr bool __cccl_random_is_valid_inttype =
-  ::cuda::std::__cccl_is_integer_v<_Type> && !::cuda::std::is_const_v<_Type>;
+inline constexpr bool __cccl_random_is_valid_inttype = ::cuda::std::__cccl_is_integer_v<_Type>;
 
 // [rand.req.urng]/3:
 // A class G meets the uniform random bit generator requirements if G models
