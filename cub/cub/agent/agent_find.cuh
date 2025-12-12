@@ -13,6 +13,7 @@
 #include <thrust/type_traits/is_trivially_relocatable.h>
 
 #include <cuda/__memory/is_aligned.h>
+#include <cuda/atomic>
 #include <cuda/std/__type_traits/integral_constant.h>
 
 CUB_NAMESPACE_BEGIN
@@ -57,6 +58,7 @@ struct agent_t
   // Shared memory type required by this thread block
   struct _TempStorage
   {
+    OffsetT global_result;
     OffsetT block_result;
   };
 
@@ -97,13 +99,6 @@ struct agent_t
     using InputT  = typename ::cuda::std::iterator_traits<InputIteratorT>::value_type;
     using VectorT = typename CubVector<InputT, vector_load_length>::Type;
 
-    if (threadIdx.x == 0)
-    {
-      temp_storage.block_result = num_items;
-    }
-
-    __syncthreads();
-
     // vectorized loads begin
     auto load_ptr = reinterpret_cast<const VectorT*>(d_in + tile_offset + (threadIdx.x * vector_load_length));
     CacheModifiedInputIterator<AgentFindPolicy::load_modifier, VectorT> d_vec_in(load_ptr);
@@ -142,12 +137,6 @@ struct agent_t
   _CCCL_DEVICE _CCCL_FORCEINLINE bool
   ConsumeTile(OffsetT tile_offset, ::cuda::std::integral_constant<bool, false> /*CAN_VECTORIZE*/)
   {
-    if (threadIdx.x == 0)
-    {
-      temp_storage.block_result = num_items;
-    }
-    __syncthreads();
-
     for (int i = 0; i < items_per_thread; ++i)
     {
       const auto index = tile_offset + threadIdx.x + i * blockDim.x;
@@ -168,6 +157,12 @@ struct agent_t
 
   _CCCL_DEVICE _CCCL_FORCEINLINE void Process()
   {
+    if (threadIdx.x == 0)
+    {
+      temp_storage.block_result = num_items;
+    }
+    __syncthreads();
+
     // use a grid strided loop
     OffsetT grid_stride = static_cast<OffsetT>(tile_items) * static_cast<OffsetT>(gridDim.x);
     for (OffsetT tile_offset = static_cast<OffsetT>(blockIdx.x) * static_cast<OffsetT>(tile_items);
@@ -177,12 +172,18 @@ struct agent_t
       // Only one thread reads atomically and propagates it to other threads of the block through shared memory
       if (threadIdx.x == 0)
       {
-        temp_storage.block_result = atomicAdd(found_pos_ptr, 0); // TODO(bgruber): should be atomic load relaxed
+        // __nv_atomic_load is a compiler build-in and compiles a lot faster
+#if _CCCL_CTK_AT_LEAST(12, 8)
+        __nv_atomic_load(found_pos_ptr, &temp_storage.global_result, __NV_ATOMIC_RELAXED, __NV_THREAD_SCOPE_DEVICE);
+#else
+        temp_storage.global_result = ::cuda::atomic_ref<OffsetT, ::cuda::std::thread_scope_device>{*found_pos_ptr}.load(
+          ::cuda::std::memory_order_relaxed);
+#endif
       }
       __syncthreads();
 
       // early exit
-      if (temp_storage.block_result < tile_offset)
+      if (temp_storage.global_result < tile_offset)
       {
         return;
       }
