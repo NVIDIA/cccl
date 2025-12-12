@@ -566,23 +566,24 @@ template <typename ChainedPolicyT,
           bool IsEven>
 __launch_bounds__(int(ChainedPolicyT::ActivePolicy::AgentHistogramPolicyT::BLOCK_THREADS))
   CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceHistogramSweepDeviceInitKernel(
-    SampleIteratorT d_samples,
+    _CCCL_GRID_CONSTANT const SampleIteratorT d_samples,
     ::cuda::std::array<int, NumActiveChannels> num_output_bins_wrapper,
     ::cuda::std::array<int, NumActiveChannels> num_privatized_bins_wrapper,
     ::cuda::std::array<CounterT*, NumActiveChannels> d_output_histograms_wrapper,
     ::cuda::std::array<CounterT*, NumActiveChannels> d_privatized_histograms_wrapper,
-    FirstLevelArrayT first_level_array,
-    SecondLevelArrayT second_level_array,
-    OffsetT num_row_pixels,
-    OffsetT num_rows,
-    OffsetT row_stride_samples,
-    int tiles_per_row,
-    GridQueue<int> tile_queue)
+    _CCCL_GRID_CONSTANT const FirstLevelArrayT first_level_array,
+    _CCCL_GRID_CONSTANT const SecondLevelArrayT second_level_array,
+    _CCCL_GRID_CONSTANT const OffsetT num_row_pixels,
+    _CCCL_GRID_CONSTANT const OffsetT num_rows,
+    _CCCL_GRID_CONSTANT const OffsetT row_stride_samples,
+    _CCCL_GRID_CONSTANT const int tiles_per_row,
+    _CCCL_GRID_CONSTANT const GridQueue<int> tile_queue)
 {
   OutputDecodeOpT output_decode_op[NumActiveChannels];
   PrivatizedDecodeOpT privatized_decode_op[NumActiveChannels];
   if constexpr (IsEven)
   {
+    _CCCL_PRAGMA_UNROLL_FULL()
     for (int channel = 0; channel < NumActiveChannels; ++channel)
     {
       const int num_levels   = num_output_bins_wrapper[channel] + 1;
@@ -594,6 +595,7 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::AgentHistogramPolicyT::BLOCK
   }
   else
   {
+    _CCCL_PRAGMA_UNROLL_FULL()
     for (int channel = 0; channel < NumActiveChannels; ++channel)
     {
       const auto num_output_levels = first_level_array[channel];

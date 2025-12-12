@@ -351,7 +351,7 @@ struct {5} {{
     // value greater than 0 (see dispatch_histogram.cuh), but we don't have this
     // information here.
     const int privatized_smem_bins =
-      num_output_levels_val - 1 > cub::detail::histogram::MAX_PRIVATIZED_SMEM_BINS ? 0 : 256;
+      num_output_levels_val - 1 > cub::detail::histogram::max_privatized_smem_bins ? 0 : 256;
 
     const bool is_byte_sample = d_samples.value_type.size == 1;
 
