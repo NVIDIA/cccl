@@ -11,7 +11,7 @@ HOW IT WORKS:
 import numpy as np
 from numba.cuda import types
 from numba.cuda.core.imputils import builtin_registry
-from numba.cuda.datamodel.models import StructModel
+from numba.cuda.datamodel.models import ArrayModel
 from numba.cuda.datamodel.registry import register_default
 from numba.cuda.np import numpy_support
 from numba.cuda.typing import typeof as typeof_module
@@ -58,7 +58,12 @@ class DeviceArrayType(types.Array):
 
 
 def _typeof_device_array(val, c):
-    """Type of a DevieArrayLike object."""
+    """Type of a DeviceArrayLike object when captured as a constant."""
+
+    # don't affect typing of arguments:
+    if c.purpose == typeof_module.Purpose.argument:
+        return None
+
     interface = val.__cuda_array_interface__
 
     dtype = numpy_support.from_dtype(np.dtype(interface["typestr"]))
@@ -128,24 +133,7 @@ _original_typeof_impl.register(object)(_patched_generic)
 # =============================================================================
 
 
-@register_default(DeviceArrayType)
-class DeviceArrayModel(StructModel):
-    """Data model for DeviceArrayType - same as regular Array."""
-
-    def __init__(self, dmm, fe_type):
-        ndim = fe_type.ndim
-        members = [
-            ("meminfo", types.MemInfoPointer(fe_type.dtype)),
-            ("parent", types.pyobject),
-            ("nitems", types.intp),
-            ("itemsize", types.intp),
-            ("data", types.CPointer(fe_type.dtype)),
-            ("shape", types.UniTuple(types.intp, ndim)),
-            ("strides", types.UniTuple(types.intp, ndim)),
-        ]
-        super().__init__(dmm, fe_type, members)
-
-
+register_default(DeviceArrayType)(ArrayModel)
 # =============================================================================
 # Step 5: Register lower_constant for our type
 # =============================================================================

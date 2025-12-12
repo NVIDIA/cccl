@@ -74,9 +74,7 @@ def _make_hashable(value):
 
     from .typing import DeviceArrayLike
 
-    if callable(value):
-        return CachableFunction(value)
-    elif isinstance(value, numba.cuda.dispatcher.CUDADispatcher):
+    if isinstance(value, numba.cuda.dispatcher.CUDADispatcher):
         return CachableFunction(value.py_func)
     elif isinstance(value, DeviceArrayLike):
         return id(value)
