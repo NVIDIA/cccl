@@ -194,7 +194,6 @@ struct _CCCL_DECLSPEC_EMPTY_BASES __mdspan_ebco<_Elem1, _Elem2>
     {
       return static_cast<__base2*>(this)->__get();
     }
-    _CCCL_UNREACHABLE();
   }
 
   _CCCL_TEMPLATE(size_t _Index)
@@ -209,7 +208,6 @@ struct _CCCL_DECLSPEC_EMPTY_BASES __mdspan_ebco<_Elem1, _Elem2>
     {
       return static_cast<const __base2*>(this)->__get();
     }
-    _CCCL_UNREACHABLE();
   }
 
   _CCCL_EXEC_CHECK_DISABLE
@@ -314,7 +312,6 @@ struct _CCCL_DECLSPEC_EMPTY_BASES __mdspan_ebco<_Elem1, _Elem2, _Elem3>
     {
       return static_cast<__base3*>(this)->__get();
     }
-    _CCCL_UNREACHABLE();
   }
 
   _CCCL_TEMPLATE(size_t _Index)
@@ -333,7 +330,6 @@ struct _CCCL_DECLSPEC_EMPTY_BASES __mdspan_ebco<_Elem1, _Elem2, _Elem3>
     {
       return static_cast<const __base3*>(this)->__get();
     }
-    _CCCL_UNREACHABLE();
   }
 
   _CCCL_EXEC_CHECK_DISABLE

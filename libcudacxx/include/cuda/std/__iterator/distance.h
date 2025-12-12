@@ -93,7 +93,6 @@ struct __fn
     {
       return __last - decay_t<_Ip>(__first);
     }
-    _CCCL_UNREACHABLE();
   }
 
   _CCCL_EXEC_CHECK_DISABLE
@@ -109,7 +108,6 @@ struct __fn
     {
       return operator()(::cuda::std::ranges::begin(__r), ::cuda::std::ranges::end(__r));
     }
-    _CCCL_UNREACHABLE();
   }
 };
 _CCCL_END_NAMESPACE_CPO

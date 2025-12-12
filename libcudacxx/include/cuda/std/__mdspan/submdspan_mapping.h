@@ -166,7 +166,6 @@ _CCCL_API constexpr bool __is_unit_stride_slice()
   {
     return false;
   }
-  _CCCL_UNREACHABLE();
 }
 
 // [mdspan.sub.map.left]
@@ -192,7 +191,6 @@ _CCCL_API constexpr bool __can_layout_left()
   {
     return false;
   }
-  _CCCL_UNREACHABLE();
 }
 
 _CCCL_TEMPLATE(class _Extents, class... _Slices)
@@ -227,7 +225,6 @@ __submdspan_mapping_impl(const typename layout_left::mapping<_Extents>& __mappin
       return submdspan_mapping_result<__sub_mapping_t>{__sub_mapping_t{__sub_ext, __sub_strides}, __offset};
     }
   }
-  _CCCL_UNREACHABLE();
 }
 
 template <class _LayoutMapping, class _SubExtents, class _Slice, class... _OtherSlices>
@@ -252,7 +249,6 @@ _CCCL_API constexpr bool __can_layout_right()
   {
     return false;
   }
-  _CCCL_UNREACHABLE();
 }
 
 _CCCL_TEMPLATE(class _Extents, class... _Slices)
@@ -287,7 +283,6 @@ __submdspan_mapping_impl(const typename layout_right::mapping<_Extents>& __mappi
       return submdspan_mapping_result<__sub_mapping_t>{__sub_mapping_t{__sub_ext, __sub_strides}, __offset};
     }
   }
-  _CCCL_UNREACHABLE();
 }
 
 _CCCL_TEMPLATE(class _Extents, class... _Slices)
