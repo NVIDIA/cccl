@@ -89,7 +89,6 @@ template <class... _Iterators>
   {
     return ::cuda::std::input_iterator_tag();
   }
-  _CCCL_UNREACHABLE();
 }
 
 //! @note Not static functions because nvc++ sometimes has issues with class static functions in device code

@@ -125,6 +125,11 @@ cdef extern from "cccl/c/types.h":
         FUTURE_VALUE_INIT "CCCL_FUTURE_VALUE_INIT"
         NO_INIT "CCCL_NO_INIT"
 
+    cpdef enum cccl_determinism_t:
+        NOT_GUARANTEED "CCCL_NOT_GUARANTEED"
+        RUN_TO_RUN "CCCL_RUN_TO_RUN"
+        GPU_TO_GPU "CCCL_GPU_TO_GPU"
+
 cdef void arg_type_check(
     str arg_name,
     object expected_type,
@@ -141,6 +146,7 @@ TypeEnum = cccl_type_enum
 IteratorKind = cccl_iterator_kind_t
 SortOrder = cccl_sort_order_t
 InitKind = cccl_init_kind_t
+Determinism = cccl_determinism_t
 
 cdef void _validate_alignment(int alignment) except *:
     """
@@ -834,10 +840,23 @@ cdef extern from "cccl/c/reduce.h":
         cccl_iterator_t,
         cccl_op_t,
         cccl_value_t,
+        cccl_determinism_t,
         int, int, const char*, const char*, const char*, const char*
     ) nogil
 
     cdef CUresult cccl_device_reduce(
+        cccl_device_reduce_build_result_t,
+        void *,
+        size_t *,
+        cccl_iterator_t,
+        cccl_iterator_t,
+        uint64_t,
+        cccl_op_t,
+        cccl_value_t,
+        CUstream
+    ) nogil
+
+    cdef CUresult cccl_device_reduce_nondeterministic(
         cccl_device_reduce_build_result_t,
         void *,
         size_t *,
@@ -863,6 +882,7 @@ cdef class DeviceReduceBuildResult:
         Iterator d_out,
         Op op,
         Value h_init,
+        cccl_determinism_t determinism,
         CommonData common_data
     ):
         cdef CUresult status = -1
@@ -881,6 +901,7 @@ cdef class DeviceReduceBuildResult:
                 d_out.iter_data,
                 op.op_data,
                 h_init.value_data,
+                determinism,
                 cc_major,
                 cc_minor,
                 cub_path,
@@ -931,6 +952,40 @@ cdef class DeviceReduceBuildResult:
         if status != 0:
             raise RuntimeError(
                 f"Failed executing reduce, error code: {status}"
+            )
+        return storage_sz
+
+    cpdef int compute_nondeterministic(
+        DeviceReduceBuildResult self,
+        temp_storage_ptr,
+        temp_storage_bytes,
+        Iterator d_in,
+        Iterator d_out,
+        size_t num_items,
+        Op op,
+        Value h_init,
+        stream
+    ):
+        cdef CUresult status = -1
+        cdef void *storage_ptr = (<void *><uintptr_t>temp_storage_ptr) if temp_storage_ptr else NULL
+        cdef size_t storage_sz = <size_t>temp_storage_bytes
+        cdef CUstream c_stream = <CUstream><uintptr_t>(stream) if stream else NULL
+
+        with nogil:
+            status = cccl_device_reduce_nondeterministic(
+                self.build_data,
+                storage_ptr,
+                &storage_sz,
+                d_in.iter_data,
+                d_out.iter_data,
+                <uint64_t>num_items,
+                op.op_data,
+                h_init.value_data,
+                c_stream
+            )
+        if status != 0:
+            raise RuntimeError(
+                f"Failed executing reduce not guaranteed determinism, error code: {status}"
             )
         return storage_sz
 
