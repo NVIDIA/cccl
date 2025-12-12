@@ -45,7 +45,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 // Helper for lightweight test checking that one did pass a layout policy as LayoutPolicy template argument
 template <class _Extents>
-class layout_left::mapping : private __mdspan_ebco<_Extents>
+class _CCCL_DECLSPEC_EMPTY_BASES layout_left::mapping : private __mdspan_ebco<_Extents>
 {
 public:
   static_assert(__mdspan_detail::__is_extents<_Extents>::value,
