@@ -103,15 +103,6 @@ _CCCL_END_NAMESPACE_CUDA_STD
 #  define _CCCL_RETHROW ::cuda::std::terminate()
 #endif // ^^^ no exceptions ^^^
 
-#define _CCCL_THROW_IF(_CONDITION, _ERROR) \
-  do                                       \
-  {                                        \
-    if (_CONDITION)                        \
-    {                                      \
-      _CCCL_THROW(_ERROR);                 \
-    }                                      \
-  } while (false)
-
 #include <cuda/std/__cccl/epilogue.h>
 
 #endif // _CUDA_STD___EXCEPTION_EXCEPTION_MACROS_H

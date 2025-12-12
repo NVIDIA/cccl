@@ -357,8 +357,6 @@ CUDA doesn't support exceptions in device code, however, sometimes we need to wr
 +-----------------------------+-----------------------------------------------------------------------+
 | ``_CCCL_THROW``             | Replacement for the ``throw /*arg*/`` expression                      |
 +-----------------------------+-----------------------------------------------------------------------+
-| ``_CCCL_THROW_IF(COND, X)`` | Replacement for the ``throw /*arg*/`` expression if ``COND`` is true  |
-+-----------------------------+-----------------------------------------------------------------------+
 | ``_CCCL_RETHROW``           | Replacement for the plain ``throw`` expression                        |
 +-----------------------------+-----------------------------------------------------------------------+
 
