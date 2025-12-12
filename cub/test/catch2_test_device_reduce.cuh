@@ -201,34 +201,37 @@ inline constexpr OpT unwrap_op(std::integral_constant<bool, V> /* base case */, 
  * @brief Initializes the given item type with a constant non-zero value.
  */
 template <typename T>
-inline void init_default_constant(T& val)
+inline void init_default_constant(T& val, int element_val = 2)
 {
-  val = T{2};
+  val = T{static_cast<T>(element_val)};
 }
 
 template <template <typename> class... Policies>
-inline void init_default_constant(c2h::custom_type_t<Policies...>& val)
+inline void init_default_constant(c2h::custom_type_t<Policies...>& val, int element_val = 2)
 {
-  val.key = 2;
-  val.val = 2;
+  val.key = static_cast<size_t>(element_val);
+  val.val = static_cast<size_t>(element_val);
 }
 
-inline void init_default_constant(uchar3& val)
+inline void init_default_constant(uchar3& val, int element_val = 2)
 {
-  val = uchar3{2, 2, 2};
+  const auto element_init = static_cast<unsigned char>(element_val);
+  val                     = uchar3{element_init, element_init, element_init};
 }
 
 _CCCL_SUPPRESS_DEPRECATED_PUSH
-inline void init_default_constant(ulonglong4& val)
+inline void init_default_constant(ulonglong4& val, int element_val = 2)
 {
-  val = ulonglong4{2, 2, 2, 2};
+  const auto element_init = static_cast<unsigned long long>(element_val);
+  val                     = ulonglong4{element_init, element_init, element_init, element_init};
 }
 _CCCL_SUPPRESS_DEPRECATED_POP
 
 #if _CCCL_CTK_AT_LEAST(13, 0)
-inline void init_default_constant(ulonglong4_16a& val)
+inline void init_default_constant(ulonglong4_16a& val, int element_val = 2)
 {
-  val = ulonglong4_16a{2, 2, 2, 2};
+  const auto element_init = static_cast<unsigned long long>(element_val);
+  val                     = ulonglong4_16a{element_init, element_init, element_init, element_init};
 }
 #endif // _CCCL_CTK_AT_LEAST(13, 0)
 
