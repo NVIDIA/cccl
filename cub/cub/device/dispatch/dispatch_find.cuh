@@ -35,16 +35,12 @@ CUB_NAMESPACE_BEGIN
 
 namespace detail::find
 {
-template <typename ValueType, typename OutputIteratorT>
-__launch_bounds__(1) __global__
-  void copy_final_result_to_output_iterator(ValueType* found_pos_ptr, OutputIteratorT d_out)
-{
-  *d_out = *found_pos_ptr;
-}
-
 template <typename ValueType, typename OffsetT>
 __launch_bounds__(1) __global__ void init_found_pos_pointer(ValueType* found_pos_ptr, OffsetT num_items)
 {
+  // we immediately trigger launching the find kernel, before waiting for a previous kernel
+  _CCCL_PDL_TRIGGER_NEXT_LAUNCH();
+  _CCCL_PDL_GRID_DEPENDENCY_SYNC();
   *found_pos_ptr = num_items;
 }
 
@@ -57,7 +53,17 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::FindPolicy::BLOCK_THREADS))
   using agent_find_t  = agent_t<find_policy_t, IteratorT, OffsetT, PredicateT>;
 
   __shared__ typename agent_find_t::TempStorage sresult;
+
+  _CCCL_PDL_GRID_DEPENDENCY_SYNC();
   agent_find_t{sresult.Alias(), d_in, predicate, found_pos_ptr, num_items}.Process();
+}
+
+template <typename ValueType, typename OutputIteratorT>
+__launch_bounds__(1) __global__
+  void copy_final_result_to_output_iterator(ValueType* found_pos_ptr, OutputIteratorT d_out)
+{
+  _CCCL_PDL_GRID_DEPENDENCY_SYNC();
+  *d_out = *found_pos_ptr;
 }
 
 template <typename InputIteratorT,
@@ -164,7 +170,7 @@ struct dispatch_t
 
     // use d_temp_storage as the intermediate device result to read and write from. Then store the final result in the
     // output iterator.
-    THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(1, 1, 0, stream)
+    THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(1, 1, 0, stream, true)
       .doit(init_found_pos_pointer<OffsetT, OffsetT>, found_pos_ptr, num_items);
 
     // Unwrap the input iterator to convert device_ptr<T> to T* (raw pointer). This ensures that dereferencing yields T&
@@ -173,12 +179,12 @@ struct dispatch_t
 
     // Invoke FindIfKernel with transformed iterator
     THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(
-      findif_grid_size, ActivePolicyT::FindPolicy::BLOCK_THREADS, 0, stream)
+      findif_grid_size, ActivePolicyT::FindPolicy::BLOCK_THREADS, 0, stream, true)
       .doit(kernel_ptr, d_in_unwrapped, num_items, found_pos_ptr, predicate);
 
     if constexpr (!can_write_to_output_direclty)
     {
-      THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(1, 1, 0, stream)
+      THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(1, 1, 0, stream, true)
         .doit(copy_final_result_to_output_iterator<OffsetT, OutputIteratorT>, found_pos_ptr, d_out);
     }
 
