@@ -19,6 +19,7 @@
 #include <cub/block/block_scan.cuh>
 #include <cub/block/block_store.cuh>
 #include <cub/block/block_topk.cuh>
+#include <cub/detail/segmented_params.cuh>
 #include <cub/util_type.cuh>
 
 #include <cuda/atomic>
@@ -62,7 +63,7 @@ struct AgentSegmentedTopkWorkerPerSegment
   static constexpr int items_per_thread = ActivePolicyT::ITEMS_PER_THREAD;
   static constexpr int tile_size        = block_threads * items_per_thread;
 
-  // Check if we are dealing with Keys-Only or Keys-Values
+  // Check if we are dealing with keys-only or key-value pairs
   static constexpr bool is_keys_only = ::cuda::std::is_same<value_t, cub::NullType>::value;
 
   // -------------------------------------------------------------------------
@@ -107,7 +108,7 @@ struct AgentSegmentedTopkWorkerPerSegment
   // -------------------------------------------------------------------------
   // Constructor
   // -------------------------------------------------------------------------
-  __device__ __forceinline__ AgentSegmentedTopkWorkerPerSegment(
+  _CCCL_DEVICE _CCCL_FORCEINLINE AgentSegmentedTopkWorkerPerSegment(
     TempStorage& temp_storage,
     KeyInputItItT d_key_segments_it,
     KeyOutputItItT d_key_segments_out_it,
@@ -131,31 +132,59 @@ struct AgentSegmentedTopkWorkerPerSegment
   // -------------------------------------------------------------------------
   // Processing Logic
   // -------------------------------------------------------------------------
-
-  __device__ __forceinline__ void Process()
+  template <typename KValueT, detail::topk::select Direction>
+  _CCCL_DEVICE _CCCL_FORCEINLINE void select_topk_keys(
+    key_t (&keys)[items_per_thread], KValueT k, ::cuda::std::integral_constant<detail::topk::select, Direction>)
   {
-    // 1. Identify Segment
+    if constexpr (Direction == detail::topk::select::max)
+    {
+      BlockTopkT(temp_storage.topk).Max(keys, k);
+    }
+    else
+    {
+      BlockTopkT(temp_storage.topk).Min(keys, k);
+    }
+  }
+
+  template <typename KValueT, detail::topk::select Direction>
+  _CCCL_DEVICE _CCCL_FORCEINLINE void select_topk_pairs(
+    key_t (&keys)[items_per_thread],
+    value_t (&values)[items_per_thread],
+    KValueT k,
+    ::cuda::std::integral_constant<detail::topk::select, Direction>)
+  {
+    if constexpr (Direction == detail::topk::select::max)
+    {
+      BlockTopkT(temp_storage.topk).Max(keys, values, k);
+    }
+    else
+    {
+      BlockTopkT(temp_storage.topk).Min(keys, values, k);
+    }
+  }
+
+  _CCCL_DEVICE _CCCL_FORCEINLINE void Process()
+  {
+    // Identify Segment
     int segment_id = blockIdx.x;
 
     // Boundary check
-    // Note: Using resolve_param to handle various parameter types safely
     if (segment_id >= resolve_param(num_segments, 0))
     {
       return;
     }
 
-    // 2. Resolve Segment Parameters
+    // Resolve Segment Parameters
     auto segment_size = resolve_param(segment_sizes, segment_id);
     auto k            = resolve_param(k_param, segment_id);
     auto direction    = resolve_param(select_directions, segment_id);
 
-    // Determine padding key based on direction (Max-K needs Lowest(), Min-K needs Max())
-    // Assuming 'select' enum has ::max or ::min. Adjust as per your specific Enum definition.
+    // Determine padding key based on direction
     key_t padding_key = (direction == detail::topk::select::max)
                         ? ::cuda::std::numeric_limits<key_t>::lowest()
                         : ::cuda::std::numeric_limits<key_t>::max();
 
-    // 3. Load Keys
+    // Load Keys
     key_t thread_keys[items_per_thread];
 
     // Dereference iterator-of-iterators to get the segment specific iterator
@@ -163,42 +192,39 @@ struct AgentSegmentedTopkWorkerPerSegment
 
     BlockLoadKeysT(temp_storage.load_keys).Load(block_keys_in, thread_keys, segment_size, padding_key);
 
-    // 4. Load Values (if applicable)
+    // Load Values (if applicable)
     value_t thread_values[items_per_thread];
 
     if constexpr (!is_keys_only)
     {
-      __syncthreads(); // Barrier for smem reuse
+      __syncthreads();
       auto block_vals_in = d_value_segments_it[segment_id];
 
       BlockLoadValsT(temp_storage.load_vals).Load(block_vals_in, thread_values, segment_size);
     }
 
-    // 5. Perform Block Top-K
-    __syncthreads(); // Barrier for smem reuse
+    // Perform Block Top-K
+    __syncthreads();
 
     if constexpr (!is_keys_only)
     {
       // Pass both keys and values
-      BlockTopkT(temp_storage.topk)
-        .Select(thread_keys,
-                thread_values,
-                k,
-                (direction == detail::topk::select::max), // is_descending
-                segment_size);
+      bool is_successful_dispatch = detail::params::dispatch_discrete(
+        select_directions, segment_id, [this, &thread_keys, &thread_values, k](auto direction_tag) {
+          select_topk_pairs(thread_keys, thread_values, k, direction_tag);
+        });
+      _CCCL_ASSERT(is_successful_dispatch, "Error: Unsupported select direction");
     }
     else
     {
-      // Keys only
-      BlockTopkT(temp_storage.topk)
-        .Select(thread_keys,
-                k,
-                (direction == detail::topk::select::max), // is_descending
-                segment_size);
+      bool is_successful_dispatch =
+        detail::params::dispatch_discrete(select_directions, segment_id, [this, &thread_keys, k](auto direction_tag) {
+          select_topk_keys(thread_keys, k, direction_tag);
+        });
+      _CCCL_ASSERT(is_successful_dispatch, "Error: Unsupported select direction");
     }
 
-    // 6. Store Results
-    __syncthreads(); // Barrier for smem reuse
+    __syncthreads();
 
     auto block_keys_out = d_key_segments_out_it[segment_id];
 
@@ -210,7 +236,7 @@ struct AgentSegmentedTopkWorkerPerSegment
 
     if constexpr (!is_keys_only)
     {
-      __syncthreads(); // Barrier for smem reuse
+      __syncthreads();
       auto block_vals_out = d_value_segments_out_it[segment_id];
 
       BlockStoreValsT(temp_storage.store_vals).Store(block_vals_out, thread_values, k);

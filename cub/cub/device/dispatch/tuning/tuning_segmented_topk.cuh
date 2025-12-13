@@ -13,11 +13,8 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cub/agent/agent_topk.cuh>
-#include <cub/block/block_load.cuh>
+#include <cub/agent/agent_segmented_topk.cuh>
 #include <cub/util_device.cuh>
-
-#include <cuda/std/__algorithm/clamp.h>
 
 CUB_NAMESPACE_BEGIN
 namespace detail::segmented_topk
@@ -27,9 +24,9 @@ struct policy_hub
 {
   struct Policy900 : ChainedPolicy<900, Policy900, Policy900>
   {
-    // This is a sequence of policies that turned out to hit some optimum performance for a certain segment size
-    // This list will be examined whether they can be used in one-worker-per-segment approach without exceeding shared
-    // memory. The sequence must be ordered by segment size in descending order
+    // Policies selected based on optimal performance for different segment sizes
+    // The list below will be checked to determine if each policy can support the one-worker-per-segment approach
+    // within available shared memory limits. Policies must be ordered by decreasing segment size
     using worker_per_segment_policies =
       ::cuda::std::tuple<AgentSegmentedTopkWorkerPerSegmentPolicy<256, 64>,
                          AgentSegmentedTopkWorkerPerSegmentPolicy<256, 32>,

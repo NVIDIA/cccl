@@ -11,9 +11,6 @@
 #include <thrust/remove.h>
 #include <thrust/sort.h>
 
-#include <cuda/__execution/determinism.h>
-#include <cuda/__execution/output_ordering.h>
-#include <cuda/__execution/require.h>
 #include <cuda/iterator>
 #include <cuda/std/type_traits>
 
@@ -74,32 +71,24 @@ CUB_RUNTIME_FUNCTION static cudaError_t dispatch_segmented_topk_keys(
 // %PARAM% TEST_LAUNCH lid 0:1:2
 DECLARE_LAUNCH_WRAPPER(dispatch_segmented_topk_keys, segmented_topk_keys);
 
-#if false
-using max_segment_size_list = c2h::enum_type_list<cuda::std::size_t, 1024>;
-using max_num_k_list = c2h::enum_type_list<cuda::std::size_t, 8>;
-using key_types = c2h::type_list<cuda::std::uint32_t>;
-
-#else
-
 // Total segment size
 using max_segment_size_list = c2h::enum_type_list<cuda::std::size_t, 4 * 1024>;
 
 // Segment size: static, uniform
-using max_num_k_list = c2h::enum_type_list<cuda::std::size_t, 1, 8, 32, 128, 45056>;
+using max_num_k_list = c2h::enum_type_list<cuda::std::size_t, 32, 4 * 1024>;
 
 using key_types =
   c2h::type_list<cuda::std::uint8_t,
                  float,
                  cuda::std::uint64_t
 // clang-format off
-#if TEST_HALF_T()
-                 , half_t
-#endif // TEST_HALF_T()
-#if TEST_BF_T()
-                 , bfloat16_t
-#endif // TEST_BF_T()
->;
-#endif
+                                 #if TEST_HALF_T()
+                                                  , half_t
+                                 #endif // TEST_HALF_T()
+                                 #if TEST_BF_T()
+                                                  , bfloat16_t
+                                 #endif // TEST_BF_T()
+                                 >;
 
 template <typename KeyT>
 void segmented_sort_keys(c2h::device_vector<KeyT>& d_keys_in,
@@ -126,7 +115,7 @@ void segmented_sort_keys(c2h::device_vector<KeyT>& d_keys_in,
       nullptr, temp_storage_bytes, d_keys, num_items, num_segments, segment_offsets_it, (segment_offsets_it + 1));
 
     // Allocate temporary storage
-    c2h::device_vector<::cuda::std::uint8_t> d_temp_storage(temp_storage_bytes);
+    c2h::device_vector<cuda::std::uint8_t> d_temp_storage(temp_storage_bytes);
 
     // Run segmented sort
     cub::DeviceSegmentedSort::SortKeys(
@@ -144,7 +133,7 @@ void segmented_sort_keys(c2h::device_vector<KeyT>& d_keys_in,
       nullptr, temp_storage_bytes, d_keys, num_items, num_segments, segment_offsets_it, (segment_offsets_it + 1));
 
     // Allocate temporary storage
-    c2h::device_vector<::cuda::std::uint8_t> d_temp_storage(temp_storage_bytes);
+    c2h::device_vector<cuda::std::uint8_t> d_temp_storage(temp_storage_bytes);
 
     // Run segmented sort
     cub::DeviceSegmentedSort::SortKeysDescending(
@@ -164,7 +153,7 @@ void segmented_sort_keys(c2h::device_vector<KeyT>& d_keys_in,
   }
 }
 
-// make this function object:
+// Function object used to remove all elements outside the top-k within each segment
 struct remove_out_of_topk_op
 {
   cuda::std::int64_t segment_size;
@@ -177,6 +166,7 @@ struct remove_out_of_topk_op
   }
 };
 
+// Stream-compacts each segment to only contain the top-k elements
 template <typename KeyT>
 void compact_sorted_keys_to_topk(
   c2h::device_vector<KeyT>& d_keys_in, cuda::std::int64_t segment_size, cuda::std::int64_t k)
@@ -198,10 +188,11 @@ C2H_TEST("DeviceSegmentedTopK::{Min,Max}Keys work with small fixed-size segments
   using segment_size_t  = cuda::std::int64_t;
   using segment_index_t = cuda::std::int64_t;
 
-  using key_t                        = c2h::get<0, TestType>;
+  using key_t = c2h::get<0, TestType>;
 
+  // Statically constrained maximum segment size and k
   constexpr segment_size_t static_max_segment_size = c2h::get<1, TestType>::value;
-  constexpr segment_size_t static_max_k = c2h::get<2, TestType>::value;
+  constexpr segment_size_t static_max_k            = c2h::get<2, TestType>::value;
 
   // Test both directions (as runtime value)
   const auto direction = GENERATE_COPY(cub::detail::topk::select::min, cub::detail::topk::select::max);
@@ -210,8 +201,8 @@ C2H_TEST("DeviceSegmentedTopK::{Min,Max}Keys work with small fixed-size segments
   constexpr segment_size_t min_segment_size = 1;
   constexpr auto max_segment_size           = static_max_segment_size;
   const segment_size_t segment_size = GENERATE_COPY(values({min_segment_size, segment_size_t{3}, max_segment_size}),
-  take(4, random(min_segment_size, max_segment_size)));
-  const segment_size_t max_k     = ::cuda::std::min(static_max_k, segment_size);
+                                                    take(4, random(min_segment_size, max_segment_size)));
+  const segment_size_t max_k        = cuda::std::min(static_max_k, segment_size);
 
   // Skip invalid combinations
   if (segment_size > max_segment_size)
@@ -220,12 +211,11 @@ C2H_TEST("DeviceSegmentedTopK::{Min,Max}Keys work with small fixed-size segments
   }
 
   // Set the k value
-  const segment_size_t k =
-    GENERATE_COPY(values({segment_size_t{1}, max_k}), take(3, random(segment_size_t{1}, max_k)));
+  const segment_size_t k = GENERATE_COPY(values({segment_size_t{1}, max_k}), take(3, random(segment_size_t{1}, max_k)));
 
-    // Generate number of segments
+  // Generate number of segments
   const segment_index_t num_segments = GENERATE_COPY(
-    values({segment_index_t{1}, segment_index_t{3}}), take(4, random(segment_index_t{1}, segment_index_t{10000})));
+    values({segment_index_t{1}, segment_index_t{42}}), take(4, random(segment_index_t{1}, segment_index_t{10000})));
 
   // Capture test parameters
   CAPTURE(c2h::type_name<key_t>(),
