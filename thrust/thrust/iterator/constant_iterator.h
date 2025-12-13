@@ -186,7 +186,7 @@ private: // Core iterator interface
 
 #ifndef _CCCL_DOXYGEN_INVOKED
 template <class ValueT>
-_CCCL_HOST_DEVICE constant_iterator(ValueT) -> constant_iterator<ValueT>;
+_CCCL_DEDUCTION_GUIDE_EXSPACE constant_iterator(ValueT) -> constant_iterator<ValueT>;
 #endif // _CCCL_DOXYGEN_INVOKED
 
 //! This version of \p make_constant_iterator creates a \p constant_iterator from values given for both value and index.

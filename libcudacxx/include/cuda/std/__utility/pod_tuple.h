@@ -229,7 +229,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __tuple<_Tp0, _Tp1, _Tp2, _Tp3, _Tp4, _Tp5,
 };
 
 template <class... _Ts>
-_CCCL_HOST_DEVICE __tuple(_Ts...) -> __tuple<_Ts...>;
+_CCCL_DEDUCTION_GUIDE_EXSPACE __tuple(_Ts...) -> __tuple<_Ts...>;
 
 //
 // __apply(fn, tuple, extra...)
@@ -380,7 +380,7 @@ struct __pair
 };
 
 template <class _First, class _Second>
-_CCCL_HOST_DEVICE __pair(_First, _Second) -> __pair<_First, _Second>;
+_CCCL_DEDUCTION_GUIDE_EXSPACE __pair(_First, _Second) -> __pair<_First, _Second>;
 
 //
 // __tuple_size_v

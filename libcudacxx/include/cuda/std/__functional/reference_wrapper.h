@@ -76,7 +76,7 @@ public:
 };
 
 template <class _Tp>
-_CCCL_HOST_DEVICE reference_wrapper(_Tp&) -> reference_wrapper<_Tp>;
+_CCCL_DEDUCTION_GUIDE_EXSPACE reference_wrapper(_Tp&) -> reference_wrapper<_Tp>;
 
 template <class _Tp>
 [[nodiscard]] _CCCL_API constexpr reference_wrapper<_Tp> ref(_Tp& __t) noexcept

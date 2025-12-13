@@ -32,6 +32,7 @@ AttributeMacros: [
                   '_CCCL_FORCEINLINE',
                   '_CCCL_HIDE_FROM_ABI',
                   '_CCCL_HOST_DEVICE',
+                  '_CCCL_DEDUCTION_GUIDE_EXSPACE',
                   '_CCCL_HOST',
                   '_CCCL_NO_UNIQUE_ADDRESS',
                   '_CCCL_TYPE_VISIBILITY_DEFAULT',

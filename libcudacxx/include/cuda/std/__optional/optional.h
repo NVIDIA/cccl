@@ -571,7 +571,7 @@ public:
 };
 
 template <class _Tp>
-_CCCL_HOST_DEVICE optional(_Tp) -> optional<_Tp>;
+_CCCL_DEDUCTION_GUIDE_EXSPACE optional(_Tp) -> optional<_Tp>;
 
 // Comparisons between optionals
 _CCCL_EXEC_CHECK_DISABLE
