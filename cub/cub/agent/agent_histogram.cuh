@@ -203,12 +203,12 @@ struct AgentHistogram
   _TempStorage& temp_storage;
   WrappedSampleIteratorT d_wrapped_samples; // with cache modifier applied, if possible
   SampleT* d_native_samples; // possibly nullptr if unavailable
-  int* num_output_bins; // one for each channel
-  int* num_privatized_bins; // one for each channel
+  const int* num_output_bins; // one for each channel (read-only)
+  const int* num_privatized_bins; // one for each channel (read-only)
   CounterT* d_privatized_histograms[NumActiveChannels]; // one for each channel
   CounterT** d_output_histograms; // in global memory
-  OutputDecodeOpT* output_decode_op; // determines output bin-id from privatized counter index, one for each channel
-  PrivatizedDecodeOpT* privatized_decode_op; // determines privatized counter index from sample, one for each channel
+  const OutputDecodeOpT* output_decode_op; // determines output bin-id from privatized counter index, one for each channel (read-only)
+  const PrivatizedDecodeOpT* privatized_decode_op; // determines privatized counter index from sample, one for each channel (read-only)
   bool prefer_smem; // for privatized counterss
 
   template <typename TwoDimSubscriptableCounterT>
@@ -564,12 +564,12 @@ struct AgentHistogram
   _CCCL_DEVICE _CCCL_FORCEINLINE AgentHistogram(
     TempStorage& temp_storage,
     SampleIteratorT d_samples,
-    int* num_output_bins,
-    int* num_privatized_bins,
+    const int* num_output_bins,
+    const int* num_privatized_bins,
     CounterT** d_output_histograms,
     CounterT** d_privatized_histograms,
-    OutputDecodeOpT* output_decode_op,
-    PrivatizedDecodeOpT* privatized_decode_op)
+    const OutputDecodeOpT* output_decode_op,
+    const PrivatizedDecodeOpT* privatized_decode_op)
       : temp_storage(temp_storage.Alias())
       , d_wrapped_samples(d_samples)
       , d_native_samples(NativePointer(d_wrapped_samples))
