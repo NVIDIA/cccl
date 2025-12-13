@@ -137,7 +137,6 @@ private:
     {
       return false;
     }
-    _CCCL_UNREACHABLE();
   }
 
   template <class _OtherIndexType>
@@ -199,7 +198,6 @@ private:
     {
       return static_cast<index_type>(__mapping());
     }
-    _CCCL_UNREACHABLE();
   }
 
   static_assert((extents_type::rank_dynamic() > 0) || __required_span_size_is_representable(extents_type()),
@@ -245,7 +243,6 @@ public:
     {
       return ((static_cast<index_type>(__strides[_Pos]) > index_type{0}) && ... && true);
     }
-    _CCCL_UNREACHABLE();
   }
 
   // compute the permutation for sorting the stride array
@@ -516,7 +513,6 @@ public:
         return __span_size == __total_size;
       }
     }
-    _CCCL_UNREACHABLE();
   }
 
   [[nodiscard]] _CCCL_API static constexpr bool is_strided() noexcept
@@ -557,7 +553,6 @@ public:
     {
       return (!__offset(__rhs));
     }
-    _CCCL_UNREACHABLE();
   }
 
   template <class _OtherMapping, class _OtherExtents = typename _OtherMapping::extents_type>

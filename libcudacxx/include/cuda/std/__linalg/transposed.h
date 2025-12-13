@@ -85,7 +85,6 @@ _CCCL_API constexpr __transpose_extents_t<_Extents> __transpose_extents(const _E
       return __transpose_extents_t<_Extents>{}; // all extents are static
     }
   }
-  _CCCL_UNREACHABLE(); // GCC9 workaround
 }
 } // namespace __detail
 

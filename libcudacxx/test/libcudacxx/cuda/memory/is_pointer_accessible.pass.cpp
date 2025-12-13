@@ -28,11 +28,13 @@ void test_accessible_pointer(
 {
   assert(cuda::is_host_accessible(ptr) == is_host_accessible);
   assert(cuda::is_device_accessible(ptr, device) == is_device_accessible);
+  assert(cuda::__is_device_or_managed_memory(ptr) == is_device_accessible);
   assert(cuda::is_managed(ptr) == is_managed_accessible);
   if constexpr (!cuda::std::is_same_v<Pointer, const void*> && !cuda::std::is_same_v<Pointer, void*>)
   {
     assert(cuda::is_host_accessible(ptr + 1) == is_host_accessible);
     assert(cuda::is_device_accessible(ptr + 1, device) == is_device_accessible);
+    assert(cuda::__is_device_or_managed_memory(ptr + 1) == is_device_accessible);
     assert(cuda::is_managed(ptr + 1) == is_managed_accessible);
   }
 }
@@ -149,6 +151,7 @@ bool test_multiple_devices()
 
   /// DEVICE 1 CONTEXT
   cuda::__ensure_current_context ctx1(dev1);
+  assert(cuda::__is_device_or_managed_memory(device_ptr0) == true);
   assert(cuda::is_device_accessible(device_ptr0, dev0) == true);
   assert(cuda::is_device_accessible(device_ptr0, dev1) == false);
 
@@ -158,6 +161,7 @@ bool test_multiple_devices()
   {
     return true;
   }
+  assert(cuda::__is_device_or_managed_memory(device_ptr0) == true);
   assert(cuda::is_device_accessible(device_ptr0, dev1) == false);
 
   assert(cudaDeviceEnablePeerAccess(dev1.get(), 0) == cudaSuccess);
@@ -186,6 +190,7 @@ bool test_multiple_devices_from_pool()
     return true;
   }
   assert(cuda::is_device_accessible(ptr, dev1) == false);
+  assert(cuda::__is_device_or_managed_memory(ptr) == true);
 
   assert(cudaDeviceEnablePeerAccess(dev1.get(), 0) == cudaSuccess);
   assert(cuda::is_device_accessible(ptr, dev0) == true);
