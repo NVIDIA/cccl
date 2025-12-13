@@ -27,7 +27,7 @@
 #  include <cuda/__launch/configuration.h>
 #  include <cuda/__runtime/api_wrapper.h>
 #  include <cuda/__runtime/ensure_current_context.h>
-#  include <cuda/__stream/device_transform.h>
+#  include <cuda/__stream/launch_transform.h>
 #  include <cuda/__stream/stream_ref.h>
 #  include <cuda/std/__exception/cuda_error.h>
 #  include <cuda/std/__type_traits/is_function.h>
@@ -196,7 +196,7 @@ _CCCL_HOST_API auto launch(_Submitter&& __submitter,
       ::cuda::__get_cufunction_of(__launcher),
       __combined,
       __kernel,
-      device_transform(::cuda::__stream_or_invalid(__submitter), ::cuda::std::forward<_Args>(__args))...);
+      launch_transform(::cuda::__stream_or_invalid(__submitter), ::cuda::std::forward<_Args>(__args))...);
   }
   else
   {
@@ -208,7 +208,7 @@ _CCCL_HOST_API auto launch(_Submitter&& __submitter,
       __combined,
       ::cuda::__get_cufunction_of(__launcher),
       __kernel,
-      device_transform(::cuda::__stream_or_invalid(__submitter), ::cuda::std::forward<_Args>(__args))...);
+      launch_transform(::cuda::__stream_or_invalid(__submitter), ::cuda::std::forward<_Args>(__args))...);
   }
 }
 
@@ -268,7 +268,7 @@ _CCCL_HOST_API auto launch(_Submitter&& __submitter,
     __conf,
     ::cuda::__get_cufunction_of(__kernel),
     __conf,
-    device_transform(::cuda::__stream_or_invalid(__submitter), ::cuda::std::forward<_ActArgs>(__args))...);
+    launch_transform(::cuda::__stream_or_invalid(__submitter), ::cuda::std::forward<_ActArgs>(__args))...);
 }
 
 //! @brief Launch a kernel function with specified configuration and arguments
@@ -322,7 +322,7 @@ _CCCL_HOST_API auto launch(_Submitter&& __submitter,
     cuda::__forward_or_cast_to_stream_ref<_Submitter>(::cuda::std::forward<_Submitter>(__submitter)), //
     __conf,
     ::cuda::__get_cufunction_of(__kernel),
-    device_transform(::cuda::__stream_or_invalid(__submitter), ::cuda::std::forward<_ActArgs>(__args))...);
+    launch_transform(::cuda::__stream_or_invalid(__submitter), ::cuda::std::forward<_ActArgs>(__args))...);
 }
 
 _CCCL_END_NAMESPACE_CUDA
