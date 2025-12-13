@@ -33,7 +33,12 @@ _CCCL_BEGIN_NAMESPACE_CUDA
 //! should ever be pushed into it
 inline ::cuda::stream_ref __cccl_allocation_stream()
 {
-  static ::cuda::stream __stream{device_ref{0}};
+  // Intentionally leak the stream here to avoid stream destruction when the program exits, which is not guaraneed to
+  // work.
+  static ::cuda::stream_ref __stream = []() {
+    ::cuda::stream __str{::cuda::device_ref{0}};
+    return __str.release();
+  }();
   return __stream;
 }
 
