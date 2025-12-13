@@ -189,7 +189,6 @@ struct getBegin
     {
       return rng.begin();
     }
-    _CCCL_UNREACHABLE();
   }
 };
 
@@ -207,7 +206,6 @@ struct getEnd
     {
       return rng.end();
     }
-    _CCCL_UNREACHABLE();
   }
 };
 
