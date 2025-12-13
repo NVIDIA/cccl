@@ -206,8 +206,8 @@ struct dispatch_histogram
 
     auto wrapped_policy = detail::histogram::MakeHistogramPolicyWrapper(policy);
 
-    const int block_threads     = wrapped_policy.BlockThreads();
-    const int pixels_per_thread = wrapped_policy.PixelsPerThread();
+    const int block_threads     = wrapped_policy.Histogram().BlockThreads();
+    const int pixels_per_thread = wrapped_policy.Histogram().PixelsPerThread();
 
     do
     {
