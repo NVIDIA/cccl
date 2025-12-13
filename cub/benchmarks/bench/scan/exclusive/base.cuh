@@ -101,7 +101,14 @@ try
 
   size_t tmp_size;
   dispatch_t::Dispatch(
-    nullptr, tmp_size, d_input, d_output, op_t{}, wrapped_init_t{T{}}, static_cast<int>(input.size()), 0 /* stream */);
+    nullptr,
+    tmp_size,
+    d_input,
+    d_output,
+    op_t{},
+    wrapped_init_t{T{}},
+    static_cast<offset_t>(input.size()),
+    0 /* stream */);
 
   thrust::device_vector<nvbench::uint8_t> tmp(tmp_size);
   state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch, [&](nvbench::launch& launch) {
@@ -121,7 +128,18 @@ catch (const std::bad_alloc&)
   state.skip("Skipping: out of memory.");
 }
 
-NVBENCH_BENCH_TYPES(basic, NVBENCH_TYPE_AXES(all_types, offset_types))
+constexpr int tile_size = 63 * 128;
+// FIXME(bgruber): revert back to all_types, when we implemented atomic load/store for >16 byte types
+using scan_types = nvbench::type_list<int8_t, int16_t, int32_t, int64_t, float, double>;
+NVBENCH_BENCH_TYPES(basic, NVBENCH_TYPE_AXES(scan_types, offset_types))
   .set_name("base")
   .set_type_axes_names({"T{ct}", "OffsetT{ct}"})
-  .add_int64_power_of_two_axis("Elements{io}", nvbench::range(16, 32, 4));
+  //.add_int64_power_of_two_axis("Elements{io}", nvbench::range(16, 32, 4))
+  .add_int64_axis(
+    "Elements{io}",
+    {cuda::round_up(int64_t{1} << 16, tile_size),
+     cuda::round_up(int64_t{1} << 20, tile_size),
+     cuda::round_up(int64_t{1} << 24, tile_size),
+     cuda::round_up(int64_t{1} << 28, tile_size),
+     cuda::round_up(int64_t{1} << 30, tile_size),
+     cuda::round_up(int64_t{1} << 32, tile_size)});
