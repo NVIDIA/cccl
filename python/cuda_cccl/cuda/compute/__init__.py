@@ -2,6 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+from ._caching import clear_all_caches
 from .algorithms import (
     DoubleBuffer,
     SortOrder,
@@ -49,13 +50,13 @@ from .struct import gpu_struct
 
 __all__ = [
     "binary_transform",
+    "clear_all_caches",
     "CacheModifiedInputIterator",
     "ConstantIterator",
     "CountingIterator",
     "DiscardIterator",
     "DoubleBuffer",
     "exclusive_scan",
-    "select",
     "gpu_struct",
     "histogram_even",
     "inclusive_scan",
@@ -81,6 +82,7 @@ __all__ = [
     "ReverseIterator",
     "segmented_reduce",
     "segmented_sort",
+    "select",
     "SortOrder",
     "TransformIterator",
     "TransformOutputIterator",
@@ -89,3 +91,7 @@ __all__ = [
     "unique_by_key",
     "ZipIterator",
 ]
+
+# import extensions to numba CUDA enabling global capture of
+# device arrays.
+from . import _device_array_capture  # noqa: F403, F401

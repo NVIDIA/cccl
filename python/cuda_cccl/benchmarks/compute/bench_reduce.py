@@ -91,10 +91,7 @@ def bench_reduce_pointer(bench_fixture, request, size):
         reduce_pointer(input_array, build_only=(bench_fixture == "compile_benchmark"))
 
     fixture = request.getfixturevalue(bench_fixture)
-    if bench_fixture == "compile_benchmark":
-        fixture(cuda.compute.make_reduce_into, run)
-    else:
-        fixture(run)
+    fixture(run)
 
 
 @pytest.mark.parametrize("bench_fixture", ["compile_benchmark", "benchmark"])
@@ -109,10 +106,7 @@ def bench_reduce_iterator(bench_fixture, request, size):
         )
 
     fixture = request.getfixturevalue(bench_fixture)
-    if bench_fixture == "compile_benchmark":
-        fixture(cuda.compute.make_reduce_into, run)
-    else:
-        fixture(run)
+    fixture(run)
 
 
 @pytest.mark.parametrize("bench_fixture", ["compile_benchmark", "benchmark"])
@@ -127,10 +121,7 @@ def bench_reduce_struct(bench_fixture, request, size):
         reduce_struct(input_array, build_only=(bench_fixture == "compile_benchmark"))
 
     fixture = request.getfixturevalue(bench_fixture)
-    if bench_fixture == "compile_benchmark":
-        fixture(cuda.compute.make_reduce_into, run)
-    else:
-        fixture(run)
+    fixture(run)
 
 
 @pytest.mark.parametrize("bench_fixture", ["compile_benchmark", "benchmark"])
@@ -141,10 +132,7 @@ def bench_reduce_pointer_custom_op(bench_fixture, request, size):
         reduce_pointer_custom_op(input_array, build_only=False)
 
     fixture = request.getfixturevalue(bench_fixture)
-    if bench_fixture == "compile_benchmark":
-        fixture(cuda.compute.make_reduce_into, run)
-    else:
-        fixture(run)
+    fixture(run)
 
 
 def bench_reduce_pointer_single_phase(benchmark, size):

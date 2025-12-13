@@ -108,13 +108,7 @@ def bench_scan_pointer(bench_fixture, request, size, scan_type):
         )
 
     fixture = request.getfixturevalue(bench_fixture)
-    if bench_fixture == "compile_benchmark":
-        if scan_type == "exclusive":
-            fixture(cuda.compute.make_exclusive_scan, run)
-        else:
-            fixture(cuda.compute.make_inclusive_scan, run)
-    else:
-        fixture(run)
+    fixture(run)
 
 
 @pytest.mark.parametrize("scan_type", ["exclusive", "inclusive"])
@@ -145,13 +139,7 @@ def bench_scan_iterator(bench_fixture, request, size, scan_type):
         )
 
     fixture = request.getfixturevalue(bench_fixture)
-    if bench_fixture == "compile_benchmark":
-        if scan_type == "exclusive":
-            fixture(cuda.compute.make_exclusive_scan, run)
-        else:
-            fixture(cuda.compute.make_inclusive_scan, run)
-    else:
-        fixture(run)
+    fixture(run)
 
 
 @pytest.mark.parametrize("scan_type", ["exclusive", "inclusive"])
@@ -171,13 +159,7 @@ def bench_scan_struct(bench_fixture, request, size, scan_type):
         )
 
     fixture = request.getfixturevalue(bench_fixture)
-    if bench_fixture == "compile_benchmark":
-        if scan_type == "exclusive":
-            fixture(cuda.compute.make_exclusive_scan, run)
-        else:
-            fixture(cuda.compute.make_inclusive_scan, run)
-    else:
-        fixture(run)
+    fixture(run)
 
 
 def scan_pointer_single_phase(input_array, build_only, scan_type):
