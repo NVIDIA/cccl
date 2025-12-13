@@ -220,6 +220,8 @@ struct test_resource
   {
     return self.data;
   }
+
+  using default_queries = cuda::mr::properties_list<>;
 };
 
 using big_resource   = test_resource<uintptr_t>;

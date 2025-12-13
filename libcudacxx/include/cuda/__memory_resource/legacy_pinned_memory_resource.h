@@ -61,7 +61,7 @@ public:
   //! @throw std::invalid_argument in case of invalid alignment or \c cuda::cuda_error of the returned error code.
   //! @return Pointer to the newly allocated memory
   [[nodiscard]] _CCCL_HOST_API void*
-  allocate_sync(const size_t __bytes, const size_t __alignment = ::cuda::mr::default_cuda_malloc_host_alignment)
+  allocate_sync(const size_t __bytes, const size_t __alignment = ::cuda::mr::default_cuda_malloc_alignment)
   {
     // We need to ensure that the provided alignment matches the minimal provided alignment
     if (!__is_valid_alignment(__alignment))
@@ -83,7 +83,7 @@ public:
   _CCCL_HOST_API void deallocate_sync(
     void* __ptr,
     const size_t,
-    [[maybe_unused]] const size_t __alignment = ::cuda::mr::default_cuda_malloc_host_alignment) noexcept
+    [[maybe_unused]] const size_t __alignment = ::cuda::mr::default_cuda_malloc_alignment) noexcept
   {
     // We need to ensure that the provided alignment matches the minimal provided alignment
     _CCCL_ASSERT(__is_valid_alignment(__alignment),
@@ -121,8 +121,8 @@ public:
   //! @brief Checks whether the passed in alignment is valid
   _CCCL_HOST_API static constexpr bool __is_valid_alignment(const size_t __alignment) noexcept
   {
-    return __alignment <= ::cuda::mr::default_cuda_malloc_host_alignment
-        && (::cuda::mr::default_cuda_malloc_host_alignment % __alignment == 0);
+    return __alignment <= ::cuda::mr::default_cuda_malloc_alignment
+        && (::cuda::mr::default_cuda_malloc_alignment % __alignment == 0);
   }
 
   using default_queries = ::cuda::mr::properties_list<::cuda::mr::device_accessible, ::cuda::mr::host_accessible>;
