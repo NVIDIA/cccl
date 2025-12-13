@@ -11,6 +11,20 @@
 #ifndef _CUDA___HIERARCHY_LEVEL_DIMENSIONS_H
 #define _CUDA___HIERARCHY_LEVEL_DIMENSIONS_H
 
+#include <cuda/std/detail/__config>
+
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
+
+#include <cuda/__fwd/hierarchy.h>
+#include <cuda/__hierarchy/block_level.h>
+#include <cuda/__hierarchy/cluster_level.h>
+#include <cuda/__hierarchy/grid_level.h>
 #include <cuda/__hierarchy/hierarchy_levels.h>
 #include <cuda/std/span>
 #include <cuda/std/type_traits>
@@ -111,7 +125,7 @@ struct __dimensions_handler<::cuda::std::integral_constant<_Dims, _Val>>
 template <class _Level, class _Dimensions>
 struct level_dimensions
 {
-  static_assert(::cuda::std::is_base_of_v<hierarchy_level, _Level>);
+  static_assert(__is_hierarchy_level_v<_Level>);
   using level_type = _Level;
 
   // Needs alignas to work around an issue with tuple
