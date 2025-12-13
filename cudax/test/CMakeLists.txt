@@ -24,10 +24,6 @@ function(cudax_add_catch2_test target_name_var test_name) # ARGN=test sources
       cccl.c2h.main
       cudart
   )
-  target_compile_definitions(
-    ${test_target}
-    PRIVATE LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE
-  )
   target_compile_options(
     ${test_target}
     PRIVATE $<$<COMPILE_LANG_AND_ID:CUDA,NVIDIA>:--extended-lambda>
@@ -40,15 +36,7 @@ cudax_add_catch2_test(test_target launch
     launch/launch_smoke.cu
 )
 
-cudax_add_catch2_test(test_target launch_configuration
-    launch/configuration.cu
-)
-
-cudax_add_catch2_test(test_target launch_config_dynamic_smem
-    launch/dynamic_shared_memory.cu
-)
-
-cudax_add_catch2_test(test_target execution
+cudax_add_catch2_test(test_target execution ${cudax_target}
     execution/env.cu
     execution/policies/policies.cu
     execution/policies/get_execution_policy.cu

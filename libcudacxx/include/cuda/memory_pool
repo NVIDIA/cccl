@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDA_MEMORY_RESOURCE
-#define _CUDA_MEMORY_RESOURCE
+#ifndef _CUDA_MEMORY_POOL
+#define _CUDA_MEMORY_POOL
 
 #include <cuda/std/detail/__config>
 
@@ -20,22 +20,8 @@
 #  pragma system_header
 #endif // no system header
 
-//!@rst
-//! @file
-//! Defines facilities to allocate and deallocate memory in a type safe manner
-//!
-//!@endrst
-
 #include <cuda/__memory_pool/device_memory_pool.h>
 #include <cuda/__memory_pool/managed_memory_pool.h>
 #include <cuda/__memory_pool/pinned_memory_pool.h>
-#include <cuda/__memory_resource/any_resource.h>
-#include <cuda/__memory_resource/get_memory_resource.h>
-#include <cuda/__memory_resource/get_property.h>
-#include <cuda/__memory_resource/legacy_managed_memory_resource.h>
-#include <cuda/__memory_resource/legacy_pinned_memory_resource.h>
-#include <cuda/__memory_resource/properties.h>
-#include <cuda/__memory_resource/resource.h>
-#include <cuda/__memory_resource/shared_resource.h>
 
-#endif //_CCCL_BEGIN_NAMESPACE_CUDA
+#endif //_CUDA_MEMORY_POOL

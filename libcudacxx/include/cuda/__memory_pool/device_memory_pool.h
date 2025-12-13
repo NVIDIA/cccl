@@ -26,8 +26,8 @@
 #  include <cuda_runtime_api.h>
 #endif // _CCCL_CUDA_COMPILER(CLANG)
 
+#include <cuda/__memory_pool/memory_pool_base.h>
 #include <cuda/__memory_resource/get_property.h>
-#include <cuda/__memory_resource/memory_pool_base.h>
 #include <cuda/__memory_resource/properties.h>
 #include <cuda/__runtime/api_wrapper.h>
 #include <cuda/std/__concepts/concept_macros.h>
@@ -128,12 +128,22 @@ struct device_memory_pool : device_memory_pool_ref
 
   ~device_memory_pool() noexcept
   {
-    ::cuda::__driver::__mempoolDestroy(__pool_);
+    if (__pool_ != nullptr)
+    {
+      ::cuda::__driver::__mempoolDestroy(__pool_);
+    }
   }
 
   _CCCL_HOST_API static device_memory_pool from_native_handle(::cudaMemPool_t __pool) noexcept
   {
     return device_memory_pool(__pool);
+  }
+
+  //! @brief Returns a \c device_memory_pool_ref for this \c device_memory_pool.
+  //! The result is the same as if this object was cast to a \c device_memory_pool_ref.
+  [[nodiscard]] _CCCL_HOST_API device_memory_pool_ref as_ref() noexcept
+  {
+    return device_memory_pool_ref(__pool_);
   }
 
   device_memory_pool(const device_memory_pool&)            = delete;

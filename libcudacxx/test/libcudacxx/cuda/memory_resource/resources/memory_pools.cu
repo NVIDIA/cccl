@@ -9,6 +9,7 @@
 //===----------------------------------------------------------------------===//
 
 #include <cuda/__device/all_devices.h>
+#include <cuda/memory_pool>
 #include <cuda/memory_resource>
 #include <cuda/std/cstdint>
 #include <cuda/std/type_traits>
@@ -559,6 +560,15 @@ C2H_CCCLRT_TEST_LIST("device_memory_pool accessors", "[memory_resource]", TEST_T
 
     auto still_no_backing = pool.attribute(cuda::memory_pool_attributes::reserved_mem_current);
     CHECK(still_no_backing == new_backing_size);
+  }
+
+  SECTION("memory_pool::as_ref")
+  {
+    memory_pool pool = construct_pool<memory_pool>(current_device);
+    auto ref         = pool.as_ref();
+    static_assert(!cuda::std::copyable<memory_pool>);
+    static_assert(cuda::std::copyable<decltype(ref)>);
+    CHECK(ref == pool);
   }
 }
 

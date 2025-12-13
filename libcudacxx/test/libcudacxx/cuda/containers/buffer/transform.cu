@@ -27,7 +27,7 @@
 #include "helper.h"
 #include "types.h"
 
-C2H_TEST("DeviceTransform::Transform cuda::device_buffer", "[device][device_transform]")
+C2H_TEST("DeviceTransform::Transform cuda::device_buffer", "[device][launch_transform]")
 {
   using type          = int;
   const int num_items = 1 << 24;
@@ -87,8 +87,7 @@ C2H_CCCLRT_TEST("cuda::buffer launch transform", "[container][buffer]")
   cuda::device_buffer<int> a       = cuda::make_buffer<int>(stream, resource, array);
   const cuda::device_buffer<int> b = cuda::make_buffer(stream, resource, a.size(), 1);
 
-  cuda::experimental::launch(
-    stream, cuda::experimental::make_config(cuda::grid_dims<1>(), cuda::block_dims<32>()), add_kernel{}, a, b);
+  cuda::launch(stream, cuda::make_config(cuda::grid_dims<1>(), cuda::block_dims<32>()), add_kernel{}, a, b);
 
   std::vector<int> host_result(a.size());
   cuda::copy_bytes(stream, a, host_result);
