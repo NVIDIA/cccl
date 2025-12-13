@@ -365,11 +365,13 @@ C2H_TEST("cudax::mdarray", "[mdarray][access single element]")
   d_mdarray_t d_mdarray{5, 7};
   CUDAX_REQUIRE(
     cub::DeviceFor::ForEachInLayout(d_mdarray.mapping(), SequenceOp<mdspan_t>{d_mdarray.view()}) == cudaSuccess);
-printf("data_handle: %p\n", d_mdarray.data_handle());
-  CUDAX_REQUIRE(d_mdarray(0, 0) == 0);
-  CUDAX_REQUIRE(d_mdarray(0, 1) == 1);
-  CUDAX_REQUIRE(d_mdarray(1, 0) == 2);
-  CUDAX_REQUIRE(d_mdarray(1, 1) == 3);
+  for (int i = 0; i < 5; i++)
+  {
+    for (int j = 0; j < 7; j++)
+    {
+      CUDAX_REQUIRE(d_mdarray(i, j) == i * 7 + j);
+    }
+  }
 }
 
 C2H_TEST("cudax::mdarray", "[mdarray][other methods]")

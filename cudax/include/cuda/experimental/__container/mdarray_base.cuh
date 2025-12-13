@@ -25,6 +25,7 @@
 #include <cuda/std/__type_traits/is_constructible.h>
 #include <cuda/std/__type_traits/is_convertible.h>
 #include <cuda/std/__type_traits/is_nothrow_constructible.h>
+#include <cuda/std/__type_traits/is_pointer.h>
 #include <cuda/std/__type_traits/type_identity.h>
 #include <cuda/std/__utility/exchange.h>
 #include <cuda/std/array>
@@ -71,6 +72,7 @@ struct __mdarray_constraints
     ::cuda::std::is_convertible_v<const typename _OtherLayoutPolicy::template mapping<_OtherExtents>&, mapping_type>;
 };
 
+// TODO: allow non-initialized construction
 struct no_init_t
 {};
 
@@ -83,19 +85,22 @@ template <typename _Derived,
 class __base_mdarray : public _ViewType<_ElementType, _Extents, _LayoutPolicy>
 {
 public:
-  using mdspan_type    = _ViewType<_ElementType, _Extents, _LayoutPolicy>;
-  using allocator_type = _Allocator;
-  using extents_type   = _Extents;
-  using mapping_type   = _LayoutPolicy::template mapping<extents_type>;
-  using layout_type    = _LayoutPolicy;
-  using element_type   = _ElementType;
-  using pointer        = element_type*;
-  using index_type     = typename extents_type::index_type;
-  using reference      = typename mdspan_type::reference;
-  using value_type     = typename mdspan_type::value_type;
+  using base_type        = _ViewType<_ElementType, _Extents, _LayoutPolicy>;
+  using allocator_type   = _Allocator;
+  using extents_type     = _Extents;
+  using mapping_type     = _LayoutPolicy::template mapping<extents_type>;
+  using layout_type      = _LayoutPolicy;
+  using element_type     = _ElementType;
+  using pointer          = element_type*;
+  using index_type       = typename extents_type::index_type;
+  using reference        = typename base_type::reference;
+  using value_type       = typename base_type::value_type;
+  using data_handle_type = typename base_type::data_handle_type;
 
   using view_type       = _ViewType<_ElementType, _Extents, _LayoutPolicy>;
   using const_view_type = _ViewType<const _ElementType, _Extents, _LayoutPolicy>;
+
+  static_assert(::cuda::std::is_pointer_v<data_handle_type>, "data_handle_type must be a pointer");
 
 private:
   allocator_type __allocator_;
@@ -106,7 +111,7 @@ private:
     {
       const auto __size = ::cuda::experimental::__mapping_size_bytes(this->view());
       __allocator_.deallocate_sync(this->data_handle(), __size);
-      static_cast<mdspan_type&>(*this) = mdspan_type{nullptr, this->mapping()};
+      static_cast<base_type&>(*this) = base_type{nullptr, this->mapping()};
     }
   }
 
@@ -124,9 +129,8 @@ public:
   {}
 
   _CCCL_HOST_API __base_mdarray(mapping_type __mapping, allocator_type __allocator)
-      : mdspan_type{static_cast<pointer>(
-                      __allocator.allocate_sync(__mapping.required_span_size() * sizeof(element_type))),
-                    __mapping}
+      : base_type{static_cast<pointer>(__allocator.allocate_sync(__mapping.required_span_size() * sizeof(element_type))),
+                  __mapping}
       , __allocator_{__allocator}
   {
     if (this->size() > 0)
@@ -225,20 +229,20 @@ public:
   }
 
   _CCCL_HOST_API __base_mdarray(const __base_mdarray& __other, ::cuda::std::type_identity_t<allocator_type> __allocator)
-      : mdspan_type{nullptr, __other.mapping()}
+      : base_type{nullptr, __other.mapping()}
       , __allocator_{__allocator}
   {
     if (__other.data_handle() != nullptr)
     {
-      const auto __size                = ::cuda::experimental::__mapping_size_bytes(__other.view());
-      auto __new_data                  = static_cast<pointer>(__allocator_.allocate_sync(__size));
-      static_cast<mdspan_type&>(*this) = mdspan_type{__new_data, __other.mapping()};
+      const auto __size              = ::cuda::experimental::__mapping_size_bytes(__other.view());
+      auto __new_data                = static_cast<pointer>(__allocator_.allocate_sync(__size));
+      static_cast<base_type&>(*this) = base_type{__new_data, __other.mapping()};
       static_cast<_Derived&>(*this).__copy_from(__other.view());
     }
   }
 
   _CCCL_HOST_API __base_mdarray(__base_mdarray&& __other) noexcept
-      : mdspan_type{::cuda::std::exchange(static_cast<mdspan_type&>(__other), mdspan_type{})}
+      : base_type{::cuda::std::exchange(static_cast<base_type&>(__other), base_type{})}
       , __allocator_{::cuda::std::move(__other.__allocator_)}
   {}
 
@@ -266,12 +270,12 @@ public:
       __allocator_ = __other_allocator;
       if (__other_view.data_handle() != nullptr)
       {
-        auto __new_data                  = static_cast<pointer>(__allocator_.allocate_sync(__size_other));
-        static_cast<mdspan_type&>(*this) = mdspan_type{__new_data, __new_mapping};
+        auto __new_data                = static_cast<pointer>(__allocator_.allocate_sync(__size_other));
+        static_cast<base_type&>(*this) = base_type{__new_data, __new_mapping};
       }
       else
       {
-        static_cast<mdspan_type&>(*this) = mdspan_type{nullptr, __new_mapping};
+        static_cast<base_type&>(*this) = base_type{nullptr, __new_mapping};
       }
     }
     else // no reallocation needed
@@ -286,7 +290,7 @@ public:
       {
         __new_data = static_cast<pointer>(__allocator_.allocate_sync(__size_other));
       }
-      static_cast<mdspan_type&>(*this) = mdspan_type{__new_data, __new_mapping};
+      static_cast<base_type&>(*this) = base_type{__new_data, __new_mapping};
     }
     if (__other_view.data_handle() != nullptr)
     {
@@ -302,8 +306,8 @@ public:
       return *this;
     }
     __release_storage();
-    static_cast<mdspan_type&>(*this) = ::cuda::std::exchange(static_cast<mdspan_type&>(__other), mdspan_type{});
-    __allocator_                     = ::cuda::std::move(__other.__allocator_);
+    static_cast<base_type&>(*this) = ::cuda::std::exchange(static_cast<base_type&>(__other), base_type{});
+    __allocator_                   = ::cuda::std::move(__other.__allocator_);
     return *this;
   }
 
@@ -337,12 +341,53 @@ public:
     return static_cast<const_view_type>(static_cast<const view_type&>(*this));
   }
 
+#if _CCCL_HAS_MULTIARG_OPERATOR_BRACKETS()
+  _CCCL_TEMPLATE(class... _OtherIndexTypes)
+  _CCCL_REQUIRES(
+    (sizeof...(_OtherIndexTypes) == extents_type::rank())
+      _CCCL_AND ::cuda::std::__mdspan_detail::__all_convertible_to_index_type<index_type, _OtherIndexTypes...>)
+  [[nodiscard]] _CCCL_HOST_API decltype(auto) operator[](_OtherIndexTypes... __indices) const
+  {
+    auto& __ref = static_cast<base_type*>(this)->operator[](__indices...);
+    return static_cast<const _Derived&>(*this).__access_single_element(__ref);
+  }
+#else
+  _CCCL_TEMPLATE(class _OtherIndexType)
+  _CCCL_REQUIRES((extents_type::rank() == 1) _CCCL_AND ::cuda::std::is_convertible_v<_OtherIndexType, index_type>
+                   _CCCL_AND ::cuda::std::is_nothrow_constructible_v<index_type, _OtherIndexType>)
+  [[nodiscard]] _CCCL_HOST_API decltype(auto) operator[](_OtherIndexType __index) const
+  {
+    auto& __ref = static_cast<const base_type*>(this)->operator[](__index);
+    return static_cast<const _Derived&>(*this).__access_single_element(__ref);
+  }
+#endif // _CCCL_HAS_MULTIARG_OPERATOR_BRACKETS
+
+  _CCCL_TEMPLATE(class _OtherIndexType)
+  _CCCL_REQUIRES(::cuda::std::is_convertible_v<const _OtherIndexType&, index_type>
+                   _CCCL_AND ::cuda::std::is_nothrow_constructible_v<index_type, const _OtherIndexType&>)
+  [[nodiscard]] _CCCL_HOST_API decltype(auto)
+  operator[](const ::cuda::std::array<_OtherIndexType, extents_type::rank()>& __indices) const
+  {
+    auto& __ref = static_cast<const base_type*>(this)->operator[](__indices);
+    return static_cast<const _Derived&>(*this).__access_single_element(__ref);
+  }
+
+  _CCCL_TEMPLATE(class _OtherIndexType)
+  _CCCL_REQUIRES(::cuda::std::is_convertible_v<const _OtherIndexType&, index_type>
+                   _CCCL_AND ::cuda::std::is_nothrow_constructible_v<index_type, const _OtherIndexType&>)
+  [[nodiscard]] _CCCL_HOST_API decltype(auto)
+  operator[](::cuda::std::span<_OtherIndexType, extents_type::rank()> __indices) const
+  {
+    auto& __ref = static_cast<const base_type*>(this)->operator[](__indices);
+    return static_cast<const _Derived&>(*this).__access_single_element(__ref);
+  }
+
   _CCCL_TEMPLATE(typename... _Indices)
   _CCCL_REQUIRES(::cuda::std::__mdspan_detail::__all_convertible_to_index_type<index_type, _Indices...>)
-  [[nodiscard]] _CCCL_API value_type operator()(_Indices... __indices)
+  [[nodiscard]] _CCCL_HOST_API decltype(auto) operator()(_Indices... __indices) const
   {
-    value_type& __ref = static_cast<mdspan_type*>(this)->operator()(__indices...);
-    return static_cast<_Derived&>(*this).__access_single_element(__ref);
+    auto& __ref = static_cast<const base_type*>(this)->operator()(__indices...);
+    return static_cast<const _Derived&>(*this).__access_single_element(__ref);
   }
 };
 } // namespace cuda::experimental

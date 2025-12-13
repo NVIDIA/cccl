@@ -23,16 +23,12 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cub/device/device_copy.cuh>
 #include <cub/device/device_for.cuh>
 
 #include <cuda/__device/device_ref.h>
 #include <cuda/__mdspan/host_device_mdspan.h>
 #include <cuda/__memory_resource/shared_resource.h>
 #include <cuda/__stream/stream_ref.h>
-#include <cuda/std/__cstdlib/aligned_alloc.h>
-#include <cuda/std/__utility/integer_sequence.h>
-#include <cuda/std/__utility/typeid.h>
 
 #if _CCCL_HAS_EXCEPTIONS()
 #  include <stdexcept>
@@ -83,7 +79,7 @@ template <int K, int Rank, typename _LayoutMapping, typename _OpType, typename..
 _CCCL_HOST_API void __for_each_in_layout_host(
   const _LayoutMapping& __layout_mapping, _OpType __op, ::cuda::std::size_t& __index, IndicesType... __indices)
 {
-  // TODO: static_assert that the layout mapping is a valid layout mapping
+  // TODO: static_assert: layout mapping is a valid
   if constexpr (K == Rank)
   {
     __op(__index++, __indices...);
@@ -120,10 +116,11 @@ public:
   [[nodiscard]] void* allocate_sync(::cuda::std::size_t __size,
                                     ::cuda::std::size_t __align = alignof(cuda::std::max_align_t)) const
   {
-    //_CCCL_ASSERT(__size % __align == 0, "Size must be divisible by alignment");
-    //_CCCL_ASSERT(::cuda::is_power_of_two(__align), "Alignment must be a power of two");
-    //_CCCL_ASSERT(__align % sizeof(void*) == 0, "Alignment must be a multiple of the size of void*");
-    // auto __ptr = ::cuda::std::aligned_alloc(__align, __size);
+    // we should use "cuda::std::aligned_alloc(__align, __size)" here but it is not possible because of the following
+    // constraints:
+    //   _CCCL_ASSERT(__size % __align == 0, "Size must be divisible by alignment");
+    //   _CCCL_ASSERT(::cuda::is_power_of_two(__align), "Alignment must be a power of two");
+    //   _CCCL_ASSERT(__align % sizeof(void*) == 0, "Alignment must be a multiple of the size of void*");
     auto __ptr = ::cuda::std::malloc(__size);
     if (__ptr == nullptr)
     {
@@ -183,77 +180,28 @@ struct _CopyOp
   }
 };
 
-template <typename _View1, typename _View2>
-struct _CopyOpHostDevice
-{
-  using _LayoutPolicy1 = typename _View1::layout_type;
-  using _LayoutPolicy2 = typename _View2::layout_type;
-
-  _View1 __view1_;
-  _View2 __view2_;
-  ::cuda::stream_ref __stream_;
-
-  template <typename... _Indices>
-  _CCCL_HOST_API void operator()(::cuda::std::size_t, _Indices... __indices)
-  {
-    using _ElementType1 = typename _View1::element_type;
-    using _Extents1     = typename _View1::extents_type;
-    if constexpr (::cuda::std::is_same_v<_LayoutPolicy1, ::cuda::std::layout_right>)
-    {
-      auto __data_handle1 = &__view1_(__indices..., 0);
-      auto __data_handle2 = &__view2_(__indices..., 0);
-      ::cuda::__driver::__memcpyAsync(
-        __data_handle2, __data_handle1, __view1_.extent(_Extents1::rank() - 1) * sizeof(_ElementType1), __stream_.get());
-    }
-    else if constexpr (::cuda::std::is_same_v<_LayoutPolicy1, ::cuda::std::layout_left>)
-    {
-      auto __data_handle1 = &__view1_(0, __indices...);
-      auto __data_handle2 = &__view2_(0, __indices...);
-      ::cuda::__driver::__memcpyAsync(
-        __data_handle2, __data_handle1, __view1_.extent(0) * sizeof(_ElementType1), __stream_.get());
-    }
-  }
-};
-
-_CCCL_TEMPLATE(typename _ElementType1,
-               typename _Extents1,
-               typename _LayoutPolicy1,
-               typename _ElementType2,
-               typename _Extents2,
-               typename _LayoutPolicy2)
+// (almost) equivalent to cuda::copy_bytes
+_CCCL_TEMPLATE(
+  typename _ElementType1, typename _Extents1, typename _ElementType2, typename _Extents2, typename _LayoutPolicy)
 _CCCL_REQUIRES(::cuda::std::is_same_v<::cuda::std::remove_const_t<_ElementType1>, _ElementType2>)
-_CCCL_HOST_API void __copy_host_device(::cuda::std::mdspan<_ElementType1, _Extents1, _LayoutPolicy1> __mdspan_in,
-                                       ::cuda::std::mdspan<_ElementType2, _Extents2, _LayoutPolicy2> __mdspan_out,
+_CCCL_HOST_API void __copy_host_device(::cuda::std::mdspan<_ElementType1, _Extents1, _LayoutPolicy> __mdspan_in,
+                                       ::cuda::std::mdspan<_ElementType2, _Extents2, _LayoutPolicy> __mdspan_out,
                                        ::cuda::stream_ref __stream = ::cudaStream_t{nullptr})
 {
-  if (!__mdspan_in.is_exhaustive())
+  if (!__mdspan_in.is_exhaustive() || !__mdspan_out.is_exhaustive())
   {
     _CCCL_THROW(::std::invalid_argument("Source and destination mdspans must be exhaustive"));
   }
   if (__mdspan_in.mapping() != __mdspan_out.mapping())
   {
-    _CCCL_THROW(::std::invalid_argument("Source and destination mappings must be the same"));
+    _CCCL_THROW(::std::invalid_argument("Source and destination mappings must have the same mapping"));
   }
-  if (__mdspan_in.is_exhaustive() && __mdspan_out.is_exhaustive())
-  {
-    ::cuda::__driver::__memcpyAsync(
-      __mdspan_out.data_handle(),
-      __mdspan_in.data_handle(),
-      __mdspan_in.mapping().required_span_size() * sizeof(_ElementType1),
-      __stream.get());
-  }
-  else if constexpr (::cuda::std::is_same_v<_LayoutPolicy1, ::cuda::std::layout_right>)
-  {
-    ::cuda::std::size_t __index = 0;
-    ::cuda::experimental::__for_each_in_layout_host<0, _Extents1::rank() - 1>(
-      __mdspan_in.mapping(), _CopyOpHostDevice{__mdspan_in, __mdspan_out, __stream}, __index);
-  }
-  else if constexpr (::cuda::std::is_same_v<_LayoutPolicy1, ::cuda::std::layout_left>)
-  {
-    ::cuda::std::size_t __index = 0;
-    ::cuda::experimental::__for_each_in_layout_host<1, _Extents1::rank()>(
-      __mdspan_in.mapping(), _CopyOpHostDevice{__mdspan_in, __mdspan_out, __stream}, __index);
-  }
+  // TODO: extend to other cases
+  ::cuda::__driver::__memcpyAsync(
+    __mdspan_out.data_handle(),
+    __mdspan_in.data_handle(),
+    __mdspan_in.mapping().required_span_size() * sizeof(_ElementType1),
+    __stream.get());
 }
 
 //----------------------------------------------------------------------------------------------------------------------
