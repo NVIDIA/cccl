@@ -321,6 +321,7 @@
 <li class="toctree-l3 has-children"><a class="reference internal" href="../../libcudacxx/extended_api.html">Extended API</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
 <li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/extended_api/bit.html">Bit</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/extended_api/execution_model.html">Execution model</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/extended_api/exceptions.html">Exception Handling</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/extended_api/memory_model.html">Memory model</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/extended_api/thread_groups.html">Thread Groups</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/extended_api/synchronization_primitives.html">Synchronization Primitives</a></li>
@@ -1943,13 +1944,10 @@ file. Use <code class="docutils literal notranslate"><span class="pre">_CCCL_CUD
 <tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">_CCCL_CATCH_ALL</span></code></p></td>
 <td><p>Replacement for the <code class="docutils literal notranslate"><span class="pre">catch</span> <span class="pre">(...)</span></code> statement</p></td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">_CCCL_CATCH_FALLTHOUGH</span></code></p></td>
-<td><p>End of <code class="docutils literal notranslate"><span class="pre">try</span></code>/<code class="docutils literal notranslate"><span class="pre">catch</span></code> block if <code class="docutils literal notranslate"><span class="pre">_CCCL_CATCH_ALL</span></code> is not used</p></td>
-</tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">_CCCL_THROW</span></code></p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">_CCCL_THROW</span></code></p></td>
 <td><p>Replacement for the <code class="docutils literal notranslate"><span class="pre">throw</span> <span class="pre">/*arg*/</span></code> expression</p></td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">_CCCL_RETHROW</span></code></p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">_CCCL_RETHROW</span></code></p></td>
 <td><p>Replacement for the plain <code class="docutils literal notranslate"><span class="pre">throw</span></code> expression</p></td>
 </tr>
 </tbody>
@@ -1963,22 +1961,20 @@ file. Use <code class="docutils literal notranslate"><span class="pre">_CCCL_CUD
 <span class="w">    </span><span class="p">{</span>
 <span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="n">ptr</span><span class="p">;</span>
 <span class="w">    </span><span class="p">}</span>
-<span class="w">    </span><span class="n">_CCCL_THROW</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">bad_alloc</span><span class="p">{};</span><span class="w"> </span><span class="c1">// on device calls cuda::std::terminate()</span>
+<span class="w">    </span><span class="n">_CCCL_THROW</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">bad_alloc</span><span class="p">{});</span><span class="w"> </span><span class="c1">// on device calls cuda::std::terminate()</span>
 <span class="p">}</span>
 
 <span class="n">__host__</span><span class="w"> </span><span class="n">__device__</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="n">do_something</span><span class="p">(</span><span class="kt">int</span><span class="o">*</span><span class="w"> </span><span class="n">buff</span><span class="p">)</span>
 <span class="p">{</span>
-<span class="w">    </span><span class="n">_CCCL_THROW</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">runtime_error</span><span class="p">{</span><span class="s">&quot;Something went wrong&quot;</span><span class="p">};</span><span class="w"> </span><span class="c1">// on device calls cuda::std::terminate()</span>
+<span class="w">    </span><span class="n">_CCCL_THROW</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">runtime_error</span><span class="p">{</span><span class="s">&quot;Something went wrong&quot;</span><span class="p">});</span><span class="w"> </span><span class="c1">// on device calls cuda::std::terminate()</span>
 <span class="p">}</span>
 
 <span class="n">__host__</span><span class="w"> </span><span class="n">__device__</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="n">fn</span><span class="p">(</span><span class="n">cuda</span><span class="o">::</span><span class="n">std</span><span class="o">::</span><span class="kt">size_t</span><span class="w"> </span><span class="n">n</span><span class="p">)</span>
 <span class="p">{</span>
 <span class="w">    </span><span class="kt">int</span><span class="o">*</span><span class="w"> </span><span class="n">buff</span><span class="p">{};</span>
-
 <span class="w">    </span><span class="n">_CCCL_TRY</span>
 <span class="w">    </span><span class="p">{</span>
 <span class="w">        </span><span class="n">buff</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">reinterpret_cast</span><span class="o">&lt;</span><span class="kt">int</span><span class="o">*&gt;</span><span class="p">(</span><span class="n">alloc</span><span class="p">(</span><span class="n">n</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="k">sizeof</span><span class="p">(</span><span class="kt">int</span><span class="p">)));</span>
-
 <span class="w">        </span><span class="n">do_something</span><span class="p">(</span><span class="n">buff</span><span class="p">);</span>
 <span class="w">    </span><span class="p">}</span>
 <span class="w">    </span><span class="n">_CCCL_CATCH</span><span class="w"> </span><span class="p">([[</span><span class="n">maybe_unused</span><span class="p">]]</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">bad_alloc</span><span class="o">&amp;</span><span class="w"> </span><span class="n">e</span><span class="p">)</span><span class="w"> </span><span class="c1">// must be always named</span>
@@ -2042,6 +2038,29 @@ file. Use <code class="docutils literal notranslate"><span class="pre">_CCCL_CUD
 <hr class="docutils" />
 <section id="debugging-macros">
 <h2>Debugging Macros<a class="headerlink" href="#debugging-macros" title="Link to this heading">#</a></h2>
+<div class="pst-scrollable-table-container"><table class="table">
+<tbody>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">_CCCL_ASSERT(COND,</span> <span class="pre">MSG)</span></code></p></td>
+<td><p>Portable, conditional CCCL <cite>assert()</cite> macro. Requires (<code class="docutils literal notranslate"><span class="pre">CCCL_ENABLE_ASSERTIONS</span></code> or a debug build)</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">_CCCL_VERIFY(COND,</span> <span class="pre">MSG)</span></code></p></td>
+<td><p>Portable, always-on <cite>assert()</cite> reserved for critical checks that are always required</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">_CCCL_ENABLE_ASSERTIONS</span></code></p></td>
+<td><p>Enable assertions</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">CCCL_ENABLE_HOST_ASSERTIONS</span></code></p></td>
+<td><p>Enable host-side assertions</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">CCCL_ENABLE_DEVICE_ASSERTIONS</span></code></p></td>
+<td><p>Enable device-side assertions</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">_CCCL_ENABLE_DEBUG_MODE</span></code></p></td>
+<td><p>Enable debug mode (and assertions)</p></td>
+</tr>
+</tbody>
+</table>
+</div>
 </section>
 <hr class="docutils" />
 <section id="warning-suppression-macros">
