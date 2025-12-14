@@ -13,8 +13,6 @@
 
 // constexpr S base() const;
 
-#include <cuda/std/detail/__config>
-
 #include <cuda/std/cassert>
 #include <cuda/std/iterator>
 #include <cuda/std/utility>
@@ -56,7 +54,6 @@ __host__ __device__ constexpr bool test()
 
 int main(int, char**)
 {
-  NV_IF_TARGET(NV_IS_HOST, cuda_thread_count = 0;);
   test();
   static_assert(test());
 
