@@ -15,6 +15,8 @@
 
 #if __cccl_ptx_isa >= 860
 
+#  include <cub/detail/strong_load.cuh>
+#  include <cub/detail/strong_store.cuh>
 #  include <cub/device/dispatch/kernels/warpspeed/allocators/SmemAllocator.h>
 #  include <cub/device/dispatch/kernels/warpspeed/resource/SmemRef.cuh>
 #  include <cub/device/dispatch/kernels/warpspeed/resource/SmemResource.cuh>
