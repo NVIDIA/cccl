@@ -56,20 +56,21 @@ _CCCL_DEVICE_API inline void storeLookbackTile(tmp_state_t<AccumT>* dst, scan_st
   }
 }
 
-template <typename AccumT, int numTmpStatesPerThread>
-_CCCL_DEVICE_API inline void
-loadLookbackTile(tmp_state_t<AccumT>* src, tmp_state_t<AccumT> (&outTmpStates)[numTmpStatesPerThread], const int index)
+template <typename AccumT>
+_CCCL_DEVICE_API inline tmp_state_t<AccumT> loadLookbackTile(tmp_state_t<AccumT>* src)
 {
+  tmp_state_t<AccumT> res;
   if constexpr (sizeof(tmp_state_t<AccumT>) <= 16)
   {
-    __nv_atomic_load(src, outTmpStates + index, __NV_ATOMIC_RELAXED, __NV_THREAD_SCOPE_DEVICE);
+    __nv_atomic_load(src, &res, __NV_ATOMIC_RELAXED, __NV_THREAD_SCOPE_DEVICE);
   }
   else
   {
-    using state_int           = ::cuda::std::underlying_type_t<scan_state>;
-    outTmpStates[index].state = static_cast<scan_state>(load_acquire(reinterpret_cast<const state_int*>(&src->state)));
-    outTmpStates[index].value = ThreadLoad<LOAD_CG>(&src->value);
+    using state_int = ::cuda::std::underlying_type_t<scan_state>;
+    res.state       = static_cast<scan_state>(load_acquire(reinterpret_cast<const state_int*>(&src->state)));
+    res.value       = ThreadLoad<LOAD_CG>(&src->value);
   }
+  return res;
 }
 
 // warpLoadLookback loads tmp states
@@ -105,7 +106,7 @@ _CCCL_DEVICE_API inline void warpLoadLookback(
     const int idxTileLookback = idxTileCur + 32 * (i + 1) - laneIdx;
     if (idxTileLookback < idxTileNext)
     {
-      loadLookbackTile(ptrTmpBuffer + idxTileLookback, outTmpStates, i);
+      outTmpStates[i] = loadLookbackTile(ptrTmpBuffer + idxTileLookback);
     }
     else
     {
