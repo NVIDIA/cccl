@@ -593,10 +593,9 @@ public:
   //! cuda::launch.
   //! @pre The buffer must have the cuda::mr::device_accessible property.
   template <class _DeviceAccessible = ::cuda::mr::device_accessible>
-  [[nodiscard]] _CCCL_HIDE_FROM_ABI friend auto transform_device_argument(::cuda::stream_ref, buffer& __self) noexcept
+  [[nodiscard]] _CCCL_HIDE_FROM_ABI friend auto transform_launch_argument(::cuda::stream_ref, buffer& __self) noexcept
     _CCCL_TRAILING_REQUIRES(::cuda::std::span<_Tp>)(::cuda::std::__is_included_in_v<_DeviceAccessible, _Properties...>)
   {
-    // TODO add auto synchronization
     return {__self.__unwrapped_begin(), __self.size()};
   }
 
@@ -605,10 +604,9 @@ public:
   //! @pre The buffer must have the cuda::mr::device_accessible property.
   template <class _DeviceAccessible = ::cuda::mr::device_accessible>
   [[nodiscard]] _CCCL_HIDE_FROM_ABI friend auto
-  transform_device_argument(::cuda::stream_ref, const buffer& __self) noexcept _CCCL_TRAILING_REQUIRES(
+  transform_launch_argument(::cuda::stream_ref, const buffer& __self) noexcept _CCCL_TRAILING_REQUIRES(
     ::cuda::std::span<const _Tp>)(::cuda::std::__is_included_in_v<_DeviceAccessible, _Properties...>)
   {
-    // TODO add auto synchronization
     return {__self.__unwrapped_begin(), __self.size()};
   }
 
