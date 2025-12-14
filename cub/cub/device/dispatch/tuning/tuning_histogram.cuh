@@ -163,6 +163,17 @@ struct HistogramPolicyWrapper<StaticPolicyT,
   {
     return cub::detail::MakePolicyWrapper(typename StaticPolicyT::AgentHistogramPolicyT());
   }
+
+  _CCCL_HOST_DEVICE static constexpr int BlockThreads()
+  {
+    return StaticPolicyT::AgentHistogramPolicyT::BLOCK_THREADS;
+  }
+
+  _CCCL_HOST_DEVICE static constexpr int PixelsPerThread()
+  {
+    return StaticPolicyT::AgentHistogramPolicyT::PIXELS_PER_THREAD;
+  }
+
 #if defined(CUB_ENABLE_POLICY_PTX_JSON)
   _CCCL_DEVICE static constexpr auto EncodedPolicy()
   {

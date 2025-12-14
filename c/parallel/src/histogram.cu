@@ -48,6 +48,16 @@ struct histogram_runtime_tuning_policy
     return histogram;
   }
 
+  CUB_RUNTIME_FUNCTION int BlockThreads() const
+  {
+    return histogram.BlockThreads();
+  }
+
+  CUB_RUNTIME_FUNCTION int PixelsPerThread() const
+  {
+    return histogram.PixelsPerThread();
+  }
+
   using HistogramPolicy = cub::detail::RuntimeHistogramAgentPolicy;
   using MaxPolicy       = histogram_runtime_tuning_policy;
 
