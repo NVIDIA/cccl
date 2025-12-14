@@ -929,47 +929,21 @@ _CCCL_DEVICE_API inline void kernelBody(
 
       // Acquire refInOut for remainder of scope.
       SmemRef refInOutRW = phaseInOutRW.acquireRef();
-      // Handle unaligned refInOutRW.data() + loadInfo.smemStartOffsetElem points to
-      // the first element of the tile.
+
+      // We are always loading a full tile even for the last one. That will call scan_op on invalid data
+      // loading partial tiles here regresses perf for about 10-15%
       squadLoadSmem(squad, regSumInclusive, &refInOutRW.data()[0] + loadInfo.smemStartOffsetElem);
 
       // Perform inclusive scan of register array in current thread.
-      if constexpr (hasInit)
+      // warp_0/thread_0 in the first tile when there is no initial value, we MUST NOT use sumExclusive
+      const bool use_prefix = hasInit ? true : !(is_first_tile && squad.threadRank() == 0);
+      if constexpr (isInclusive)
       {
-        if constexpr (isInclusive)
-        {
-          ThreadScanInclusive(regSumInclusive, regSumInclusive, scan_op, sumExclusive);
-        }
-        else
-        {
-          ThreadScanExclusive(regSumInclusive, regSumInclusive, scan_op, sumExclusive);
-        }
+        ThreadScanInclusive(regSumInclusive, regSumInclusive, scan_op, sumExclusive, use_prefix);
       }
       else
       {
-        if (is_first_tile && squad.threadRank() == 0)
-        {
-          // warp_0/thread_0 in the first tile when there is no initial value, we MUST NOT use sumExclusive
-          if constexpr (isInclusive)
-          {
-            ThreadScanInclusive(regSumInclusive, regSumInclusive, scan_op);
-          }
-          else
-          {
-            ThreadScanExclusive(regSumInclusive, regSumInclusive, scan_op);
-          }
-        }
-        else
-        {
-          if constexpr (isInclusive)
-          {
-            ThreadScanInclusive(regSumInclusive, regSumInclusive, scan_op, sumExclusive);
-          }
-          else
-          {
-            ThreadScanExclusive(regSumInclusive, regSumInclusive, scan_op, sumExclusive);
-          }
-        }
+        ThreadScanExclusive(regSumInclusive, regSumInclusive, scan_op, sumExclusive, use_prefix);
       }
 
       ////////////////////////////////////////////////////////////////////////////////
