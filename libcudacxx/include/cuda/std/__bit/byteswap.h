@@ -179,7 +179,7 @@ template <class _Tp>
 #  if defined(_CCCL_BUILTIN_BSWAP128)
   // nvcc fails to use this builtin in constexpr context
 #    if _CCCL_CUDA_COMPILER(NVCC)
-  _CCCL_IF_NOT_CONSTEVAL_DEFAULT
+  if (!::cuda::std::__cccl_default_is_constant_evaluated())
 #    endif // _CCCL_CUDA_COMPILER(NVCC)
   {
     return _CCCL_BUILTIN_BSWAP128(__val);
