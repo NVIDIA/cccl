@@ -173,7 +173,7 @@ struct agent_t
       if (threadIdx.x == 0)
       {
         // __nv_atomic_load is a compiler build-in and compiles a lot faster
-#if _CCCL_CTK_AT_LEAST(12, 8)
+#if _CCCL_CUDA_COMPILER(NVCC, >=, 12, 8)
         __nv_atomic_load(found_pos_ptr, &temp_storage.global_result, __NV_ATOMIC_RELAXED, __NV_THREAD_SCOPE_DEVICE);
 #else
         temp_storage.global_result = ::cuda::atomic_ref<OffsetT, ::cuda::std::thread_scope_device>{*found_pos_ptr}.load(
