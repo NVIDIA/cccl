@@ -922,7 +922,7 @@ __graphKernelNodeSetAttribute(::CUgraphNode __node, ::CUkernelNodeAttrID __id, c
 [[nodiscard]] _CCCL_HOST_API inline ::cuda::std::size_t
 __cutensormap_size_bytes(::cuda::std::size_t __num_items, ::CUtensorMapDataType __data_type)
 {
-  constexpr auto __max_size_t = ::cuda::std::numeric_limits<::cuda::std::size_t>::max();
+  constexpr auto __max_size = ::cuda::std::numeric_limits<::cuda::std::size_t>::max();
   switch (__data_type)
   {
     case ::CU_TENSOR_MAP_DATA_TYPE_UINT8:
@@ -933,7 +933,7 @@ __cutensormap_size_bytes(::cuda::std::size_t __num_items, ::CUtensorMapDataType 
     case ::CU_TENSOR_MAP_DATA_TYPE_UINT16:
     case ::CU_TENSOR_MAP_DATA_TYPE_BFLOAT16:
     case ::CU_TENSOR_MAP_DATA_TYPE_FLOAT16:
-      if (__num_items > __max_size_t / 2)
+      if (__num_items > __max_size / 2)
       {
         _CCCL_THROW(::std::invalid_argument{"Number of items must be less than or equal to 2^64 / 2"});
       }
@@ -944,7 +944,7 @@ __cutensormap_size_bytes(::cuda::std::size_t __num_items, ::CUtensorMapDataType 
     case ::CU_TENSOR_MAP_DATA_TYPE_FLOAT32_FTZ:
     case ::CU_TENSOR_MAP_DATA_TYPE_TFLOAT32:
     case ::CU_TENSOR_MAP_DATA_TYPE_TFLOAT32_FTZ:
-      if (__num_items > __max_size_t / 4)
+      if (__num_items > __max_size / 4)
       {
         _CCCL_THROW(::std::invalid_argument{"Number of items must be less than or equal to 2^64 / 4"});
       }
@@ -952,7 +952,7 @@ __cutensormap_size_bytes(::cuda::std::size_t __num_items, ::CUtensorMapDataType 
     case ::CU_TENSOR_MAP_DATA_TYPE_INT64:
     case ::CU_TENSOR_MAP_DATA_TYPE_UINT64:
     case ::CU_TENSOR_MAP_DATA_TYPE_FLOAT64:
-      if (__num_items > __max_size_t / 8)
+      if (__num_items > __max_size / 8)
       {
         _CCCL_THROW(::std::invalid_argument{"Number of items must be less than or equal to 2^64 / 8"});
       }
