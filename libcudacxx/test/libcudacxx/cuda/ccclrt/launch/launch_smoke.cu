@@ -215,20 +215,6 @@ void launch_smoke_test(cudaStream_t dst)
     }
   }
 
-  /* Comment out for now until I figure how to enable extended lambda for only this file
-  // Lambda
-  {
-    cuda::launch(dst, cuda::block_dims<256>() & cuda::grid_dims(1),
-                  [] __device__(auto config) {
-                    if (config.dims.rank(cuda::thread, cuda::block) == 0) {
-                      printf("Hello from the GPU\n");
-                      kernel_run_proof = true;
-                    }
-                  });
-    check_kernel_run(dst);
-  }
-  */
-
   // Dynamic shared memory option
   {
     auto config = cuda::block_dims<32>() & cuda::grid_dims<1>();
@@ -264,20 +250,25 @@ void launch_smoke_test(cudaStream_t dst)
   }
 }
 
-C2H_TEST("Launch smoke stream", "[launch]")
+C2H_CCCLRT_TEST("Launch smoke stream", "[launch]")
 {
   // Use raw stream to make sure it can be implicitly converted on call to
   // launch
   cudaStream_t stream;
 
-  CUDART(cudaStreamCreate(&stream));
+  {
+    ::cuda::__ensure_current_context guard(cuda::device_ref{0});
+    CUDART(cudaStreamCreate(&stream));
+  }
 
   launch_smoke_test(stream);
 
-  CUDART(cudaStreamSynchronize(stream));
-  CUDART(cudaStreamDestroy(stream));
+  {
+    ::cuda::__ensure_current_context guard(cuda::device_ref{0});
+    CUDART(cudaStreamSynchronize(stream));
+    CUDART(cudaStreamDestroy(stream));
+  }
 }
-#endif // !_CCCL_CUDA_COMPILER(CLANG)
 
 template <typename DefaultConfig>
 struct kernel_with_default_config
@@ -300,42 +291,44 @@ struct kernel_with_default_config
   }
 };
 
-/* Comment out for now until I figure how to enable extended lambda for only this file
-void test_default_config() {
-  cuda::stream stream{cuda::device_ref{0}};
-  auto grid = cuda::grid_dims(4);
-  auto block = cuda::block_dims<256>;
-
-  auto verify_lambda = [] __device__(auto config) {
+struct verify_callable
+{
+  template <typename Config>
+  __device__ void operator()(Config config)
+  {
     static_assert(config.dims.count(cuda::thread, cuda::block) == 256);
     CCCLRT_REQUIRE(config.dims.count(cuda::block) == 4);
     cooperative_groups::this_grid().sync();
-  };
+  }
+};
 
-  SECTION("Combine with empty") {
-    kernel_with_default_config kernel{
-        cuda::make_config(block, grid, cuda::cooperative_launch())};
+C2H_CCCLRT_TEST("Launch with default config", "")
+{
+  cuda::stream stream{cuda::device_ref{0}};
+  auto grid  = cuda::grid_dims(4);
+  auto block = cuda::block_dims<256>;
+
+  SECTION("Combine with empty")
+  {
+    kernel_with_default_config kernel{cuda::make_config(block, grid, cuda::cooperative_launch())};
     static_assert(cuda::__is_kernel_config<decltype(kernel.default_config())>);
     static_assert(cuda::__kernel_has_default_config<decltype(kernel)>);
 
-    cuda::launch(stream, cuda::make_config(), kernel, verify_lambda);
+    cuda::launch(stream, cuda::make_config(), kernel, verify_callable{});
     stream.sync();
   }
-  SECTION("Combine with no overlap") {
+  SECTION("Combine with no overlap")
+  {
     kernel_with_default_config kernel{cuda::make_config(block)};
-    cuda::launch(stream, cuda::make_config(grid, cuda::cooperative_launch()),
-                  kernel, verify_lambda);
+    cuda::launch(stream, cuda::make_config(grid, cuda::cooperative_launch()), kernel, verify_callable{});
     stream.sync();
   }
-  SECTION("Combine with overlap") {
-    kernel_with_default_config kernel{
-        cuda::make_config(cuda::block_dims<1>, cuda::cooperative_launch())};
-    cuda::launch(stream,
-                  cuda::make_config(block, grid, cuda::cooperative_launch()),
-                  kernel, verify_lambda);
+  SECTION("Combine with overlap")
+  {
+    kernel_with_default_config kernel{cuda::make_config(cuda::block_dims<1>, cuda::cooperative_launch())};
+    cuda::launch(stream, cuda::make_config(block, grid, cuda::cooperative_launch()), kernel, verify_callable{});
     stream.sync();
   }
 }
 
-C2H_TEST("Launch with default config", "") { test_default_config(); }
-*/
+#endif // !_CCCL_CUDA_COMPILER(CLANG)

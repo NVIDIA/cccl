@@ -20,30 +20,10 @@
 #include <exception> // IWYU pragma: keep
 #include <sstream>
 
+#include "utility.cuh"
 #include <c2h/catch2_test_helper.h>
 
 #define CUDART(call) REQUIRE((call) == cudaSuccess)
-
-__device__ inline void ccclrt_require_impl(
-  bool condition, const char* condition_text, const char* filename, unsigned int linenum, const char* funcname)
-{
-  if (!condition)
-  {
-    // TODO do warp aggregate prints for easier readability?
-    printf("%s:%u: %s: block: [%d,%d,%d], thread: [%d,%d,%d] Condition `%s` failed.\n",
-           filename,
-           linenum,
-           funcname,
-           blockIdx.x,
-           blockIdx.y,
-           blockIdx.z,
-           threadIdx.x,
-           threadIdx.y,
-           threadIdx.z,
-           condition_text);
-    __trap();
-  }
-}
 
 // There is a problem with clang-cuda and nv/target, but we don't need the device side macros yet,
 // disable them for now
