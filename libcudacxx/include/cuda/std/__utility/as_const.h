@@ -22,6 +22,21 @@
 
 #include <cuda/std/__type_traits/add_const.h>
 
+#if _CCCL_COMPILER(CLANG, >=, 15) || _CCCL_COMPILER(GCC, >=, 12)
+#  define _CCCL_HAS_BUILTIN_STD_AS_CONST() 1
+#else // ^^^ has builtin std::as_const ^^^ / vvv no builtin std::as_const vvv
+#  define _CCCL_HAS_BUILTIN_STD_AS_CONST() 0
+#endif // ^^^ no builtin std::as_const ^^^
+
+// include minimal std:: headers
+#if _CCCL_HAS_BUILTIN_STD_AS_CONST()
+#  if _CCCL_HOST_STD_LIB(LIBCXX) && _CCCL_HAS_INCLUDE(<__utility/as_const.h>)
+#    include <__utility/as_const.h>
+#  elif !_CCCL_COMPILER(NVRTC)
+#    include <utility>
+#  endif
+#endif // _CCCL_HAS_BUILTIN_STD_AS_CONST()
+
 #include <cuda/std/__cccl/prologue.h>
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
@@ -43,7 +58,7 @@ template <class _Tp>
 template <class _Tp>
 void as_const(const _Tp&&) = delete;
 
-#endif // _CCCL_HAS_BUILTIN_STD_AS_CONST()
+#endif // ^^^ !_CCCL_HAS_BUILTIN_STD_AS_CONST() ^^^
 
 _CCCL_END_NAMESPACE_CUDA_STD
 

@@ -26,6 +26,29 @@
 #include <cuda/std/__type_traits/is_nothrow_move_constructible.h>
 #include <cuda/std/__type_traits/remove_reference.h>
 
+#if _CCCL_COMPILER(CLANG, >=, 15) || _CCCL_COMPILER(GCC, >=, 12) || _CCCL_COMPILER(NVRTC)
+#  define _CCCL_HAS_BUILTIN_STD_MOVE() 1
+#else // ^^^ has builtin std::move ^^^ / vvv no builtin std::move vvv
+#  define _CCCL_HAS_BUILTIN_STD_MOVE() 0
+#endif // ^^^ no builtin std::move ^^^
+
+#if _CCCL_COMPILER(CLANG, >=, 15)
+#  define _CCCL_HAS_BUILTIN_STD_MOVE_IF_NOEXCEPT() 1
+#else // ^^^ has builtin std::move_if_noexcept ^^^ / vvv no builtin std::move_if_noexcept vvv
+#  define _CCCL_HAS_BUILTIN_STD_MOVE_IF_NOEXCEPT() 0
+#endif // ^^^ no builtin std::move_if_noexcept ^^^
+
+// include minimal std:: headers
+#if _CCCL_HAS_BUILTIN_STD_MOVE()
+#  if _CCCL_HOST_STD_LIB(LIBSTDCXX) && _CCCL_HAS_INCLUDE(<bits/move.h>)
+#    include <bits/move.h>
+#  elif _CCCL_HOST_STD_LIB(LIBCXX) && _CCCL_HAS_INCLUDE(<__utility/move.h>)
+#    include <__utility/move.h> // includes std::move_if_noexcept, too
+#  elif !_CCCL_COMPILER(NVRTC)
+#    include <utility>
+#  endif
+#endif // _CCCL_HAS_BUILTIN_STD_MOVE()
+
 // When _CCCL_HAS_BUILTIN_STD_MOVE() is 1, the compiler treats ::std::move as a builtin
 // function so it never needs to be instantiated and will be compiled away even at -O0. We
 // would prefer to bring the ::std:: function into the ::cuda::std:: namespace with a using
@@ -44,7 +67,7 @@
 #  define _CCCL_MOVE(...) ::std::move(__VA_ARGS__)
 #else // ^^^ _CCCL_HAS_BUILTIN_STD_MOVE() ^^^ / vvv !_CCCL_HAS_BUILTIN_STD_MOVE() vvv
 #  define _CCCL_MOVE(...) ::cuda::std::move(__VA_ARGS__)
-#endif // _CCCL_HAS_BUILTIN_STD_MOVE()
+#endif // ^^^ !_CCCL_HAS_BUILTIN_STD_MOVE() ^^^
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -57,6 +80,14 @@ template <class _Tp>
   return static_cast<_Up&&>(__t);
 }
 
+#if _CCCL_HAS_BUILTIN_STD_MOVE_IF_NOEXCEPT()
+
+// The compiler treats ::std::move_if_noexcept as a builtin function so it does not need to be
+// instantiated and will be compiled away even at -O0.
+using ::std::move_if_noexcept;
+
+#else // ^^^ _CCCL_HAS_BUILTIN_STD_MOVE_IF_NOEXCEPT() ^^^ / vvv !_CCCL_HAS_BUILTIN_STD_MOVE_IF_NOEXCEPT() vvv
+
 template <class _Tp>
 using __move_if_noexcept_result_t =
   conditional_t<!is_nothrow_move_constructible_v<_Tp> && is_copy_constructible_v<_Tp>, const _Tp&, _Tp&&>;
@@ -66,6 +97,8 @@ template <class _Tp>
 {
   return ::cuda::std::move(__x);
 }
+
+#endif // ^^^ !_CCCL_HAS_BUILTIN_STD_MOVE_IF_NOEXCEPT() ^^^
 
 _CCCL_END_NAMESPACE_CUDA_STD
 
