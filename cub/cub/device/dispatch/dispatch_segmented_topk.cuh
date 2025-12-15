@@ -75,8 +75,8 @@ using segment_size_per_segment =
 // ------------ K PARAMETER TYPES ------------
 
 // K known at compile time, same value applies to all segments
-template <::cuda::std::int64_t StaticK>
-using k_static = params::static_constant_param<::cuda::std::int64_t, StaticK>;
+template <::cuda::std::int64_t K>
+using k_static = params::static_constant_param<::cuda::std::int64_t, K>;
 
 // K is a runtime value, same value applies to all segments
 template <::cuda::std::int64_t MinK = 1,
@@ -122,11 +122,13 @@ struct total_num_items_guarantee
 
   // Create default ctor, 1 param ctor taking min, 2 param ctor taking min/max
   total_num_items_guarantee() = default;
-  total_num_items_guarantee(::cuda::std::int64_t num_items)
+
+  _CCCL_HOST_DEVICE total_num_items_guarantee(::cuda::std::int64_t num_items)
       : min_num_items(num_items)
       , max_num_items(num_items)
   {}
-  total_num_items_guarantee(::cuda::std::int64_t min_items, ::cuda::std::int64_t max_items)
+
+  _CCCL_HOST_DEVICE total_num_items_guarantee(::cuda::std::int64_t min_items, ::cuda::std::int64_t max_items)
       : min_num_items(min_items)
       , max_num_items(max_items)
   {}
