@@ -35,6 +35,12 @@
 #  define _CCCL_HAS_BUILTIN_STD_FORWARD_LIKE() 0
 #endif // ^^^ no builtin std::forward_like ^^^
 
+// nvcc warns about host only std::forward_like being used in device code
+#if _CCCL_CUDA_COMPILER(NVCC) && _CCCL_DEVICE_COMPILATION()
+#  undef _CCCL_HAS_BUILTIN_STD_FORWARD_LIKE
+#  define _CCCL_HAS_BUILTIN_STD_FORWARD_LIKE() 0
+#endif // _CCCL_CUDA_COMPILER(NVCC) && _CCCL_DEVICE_COMPILATION()
+
 // include minimal std:: headers
 #if _CCCL_HAS_BUILTIN_STD_FORWARD_LIKE()
 #  if _CCCL_HOST_STD_LIB(LIBSTDCXX) && _CCCL_HAS_INCLUDE(<bits/move.h>)
