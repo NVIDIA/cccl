@@ -78,9 +78,11 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 #if _CCCL_HAS_BUILTIN_STD_MOVE() && (_CCCL_HAS_CONCEPTS() || _CCCL_COMPILER(NVRTC))
 
 // Forward declare move algorithm decorated with `requires true` to override the imported move algorithm.
+#  if _CCCL_HAS_CONCEPTS()
 template <class _InputIterator, class _OutputIterator>
   requires true
 _CCCL_API constexpr _OutputIterator move(_InputIterator __first, _InputIterator __last, _OutputIterator __result);
+#  endif // _CCCL_HAS_CONCEPTS()
 
 // The compiler treats ::std::move as a builtin function so it does not need to be instantiated and will be compiled
 // away even at -O0.
