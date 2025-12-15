@@ -32,14 +32,6 @@ CUB_NAMESPACE_BEGIN
 
 namespace detail::topk
 {
-enum class select
-{
-  // Select the K elements with the lowest values
-  min,
-  // Select the K elements with the highest values
-  max
-};
-
 // Get the bin ID from the value of element
 template <typename T, select SelectDirection, int BitsPerPass>
 struct extract_bin_op_t
