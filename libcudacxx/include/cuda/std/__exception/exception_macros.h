@@ -21,9 +21,13 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__exception/format_error.h>
 #include <cuda/std/__exception/terminate.h>
+#include <cuda/std/__utility/typeid.h>
 
-#include <nv/target>
+#if !_CCCL_COMPILER(NVRTC)
+#  include <cstdio>
+#endif // !_CCCL_COMPILER(NVRTC)
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -84,8 +88,19 @@ _CCCL_END_NAMESPACE_CUDA_STD
     else                          \
     {                             \
     }
-#  define _CCCL_THROW(...) ::cuda::std::terminate()
-#  define _CCCL_RETHROW    ::cuda::std::terminate()
+#  define _CCCL_THROW(...)                                                                                         \
+    do                                                                                                             \
+    {                                                                                                              \
+      NV_IF_TARGET(NV_IS_HOST, ({                                                                                  \
+                     ::cuda::__msg_storage __msg_buffer{};                                                         \
+                     ::cuda::__format_error(                                                                       \
+                       __msg_buffer, ::cuda::std::__pretty_nameof<decltype(__VA_ARGS__)>(), (__VA_ARGS__).what()); \
+                     ::fprintf(stderr, "%s\n", __msg_buffer.__buffer);                                             \
+                     ::fflush(stderr);                                                                             \
+                   }));                                                                                            \
+      ::cuda::std::terminate();                                                                                    \
+    } while (0)
+#  define _CCCL_RETHROW ::cuda::std::terminate()
 #endif // ^^^ no exceptions ^^^
 
 #include <cuda/std/__cccl/epilogue.h>

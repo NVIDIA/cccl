@@ -9,6 +9,7 @@
 //===----------------------------------------------------------------------===//
 
 #include <cub/detail/launcher/cuda_driver.cuh>
+#include <cub/detail/ptx-json-parser.cuh>
 #include <cub/device/device_histogram.cuh>
 
 #include <cuda/std/algorithm>
@@ -27,6 +28,8 @@
 #include <nvrtc/ltoir_list_appender.h>
 #include <util/build_utils.h>
 
+struct device_histogram_policy;
+
 // int32_t is generally faster. Depending on the number of samples we
 // instantiate the kernels below with int32 or int64, but we set this to int64
 // here because it's needed for host computation as well.
@@ -38,34 +41,31 @@ namespace histogram
 {
 struct histogram_runtime_tuning_policy
 {
-  int block_threads;
-  int pixels_per_thread;
+  cub::detail::RuntimeHistogramAgentPolicy histogram;
 
-  int BlockThreads() const
+  auto Histogram() const
   {
-    return block_threads;
+    return histogram;
   }
 
-  int PixelsPerThread() const
+  CUB_RUNTIME_FUNCTION int BlockThreads() const
   {
-    return pixels_per_thread;
+    return histogram.BlockThreads();
   }
-};
 
-template <auto* GetPolicy>
-struct dynamic_histogram_policy_t
-{
-  using MaxPolicy = dynamic_histogram_policy_t;
+  CUB_RUNTIME_FUNCTION int PixelsPerThread() const
+  {
+    return histogram.PixelsPerThread();
+  }
+
+  using HistogramPolicy = cub::detail::RuntimeHistogramAgentPolicy;
+  using MaxPolicy       = histogram_runtime_tuning_policy;
 
   template <typename F>
-  cudaError_t Invoke(int device_ptx_version, F& op)
+  cudaError_t Invoke(int, F& op)
   {
-    return op.template Invoke<histogram_runtime_tuning_policy>(
-      GetPolicy(device_ptx_version, sample_t, num_active_channels));
+    return op.template Invoke<histogram_runtime_tuning_policy>(*this);
   }
-
-  cccl_type_info sample_t;
-  int num_active_channels;
 };
 
 struct histogram_kernel_source
@@ -105,19 +105,11 @@ struct histogram_kernel_source
   }
 };
 
-histogram_runtime_tuning_policy get_policy(int /*cc*/, cccl_type_info sample_t, int num_active_channels)
+std::string get_init_kernel_name(int num_active_channels, std::string_view counter_t, std::string_view offset_t)
 {
-  const int v_scale                      = static_cast<int>(cuda::ceil_div(sample_t.size, sizeof(int)));
-  constexpr int nominal_items_per_thread = 16;
+  std::string chained_policy_t;
+  check(cccl_type_name_from_nvrtc<device_histogram_policy>(&chained_policy_t));
 
-  int pixels_per_thread = (::cuda::std::max) (nominal_items_per_thread / num_active_channels / v_scale, 1);
-
-  return {384, pixels_per_thread};
-}
-
-std::string get_init_kernel_name(
-  std::string_view chained_policy_t, int num_active_channels, std::string_view counter_t, std::string_view offset_t)
-{
   return std::format(
     "cub::detail::histogram::DeviceHistogramInitKernel<{0}, {1}, {2}, {3}>",
     chained_policy_t,
@@ -127,7 +119,6 @@ std::string get_init_kernel_name(
 }
 
 std::string get_sweep_kernel_name(
-  std::string_view chained_policy_t,
   int privatized_smem_bins,
   int num_channels,
   int num_active_channels,
@@ -138,6 +129,9 @@ std::string get_sweep_kernel_name(
   bool is_evenly_segmented,
   bool is_byte_sample)
 {
+  std::string chained_policy_t;
+  check(cccl_type_name_from_nvrtc<device_histogram_policy>(&chained_policy_t));
+
   std::string samples_iterator_name;
   check(cccl_type_name_from_nvrtc<samples_iterator_t>(&samples_iterator_name));
 
@@ -286,7 +280,6 @@ CUresult cccl_device_histogram_build_ex(
     const char* name = "test";
 
     const int cc           = cc_major * 10 + cc_minor;
-    const auto policy      = histogram::get_policy(cc, d_samples.value_type, num_active_channels);
     const auto sample_cpp  = cccl_type_enum_to_name(d_samples.value_type.type);
     const auto counter_cpp = cccl_type_enum_to_name(d_output_histograms.value_type.type);
     const auto level_cpp   = cccl_type_enum_to_name(lower_level.type.type);
@@ -302,48 +295,42 @@ CUresult cccl_device_histogram_build_ex(
     const std::string samples_iterator_src =
       make_kernel_input_iterator(offset_cpp, samples_iterator_name, sample_cpp, d_samples);
 
-    constexpr std::string_view chained_policy_t = "device_histogram_policy";
+    std::string policy_hub_expr = std::format(
+      "cub::detail::histogram::policy_hub<{}, {}, {}, {}, {}>",
+      sample_cpp,
+      counter_cpp,
+      num_channels,
+      num_active_channels,
+      is_evenly_segmented ? "true" : "false");
 
-    constexpr std::string_view src_template = R"XXX(
+    std::string final_src = std::format(
+      R"XXX(
 #include <cub/agent/agent_histogram.cuh>
 #include <cub/block/block_load.cuh>
 #include <cub/device/dispatch/kernels/kernel_histogram.cuh>
+#include <cub/device/dispatch/tuning/tuning_histogram.cuh>
 
 struct __align__({1}) storage_t {{
   char data[{0}];
 }};
 {2}
-struct agent_policy_t {{
-  static constexpr int BLOCK_THREADS = {3};
-  static constexpr int PIXELS_PER_THREAD = {4};
-  static constexpr bool IS_RLE_COMPRESS = true;
-  static constexpr cub::BlockHistogramMemoryPreference MEM_PREFERENCE = cub::SMEM;
-  static constexpr bool IS_WORK_STEALING = false;
-  static constexpr int VEC_SIZE = 4;
-  static constexpr cub::BlockLoadAlgorithm LOAD_ALGORITHM = cub::BLOCK_LOAD_DIRECT;
-  static constexpr cub::CacheLoadModifier LOAD_MODIFIER = cub::LOAD_LDG;
-}};
-struct {5} {{
-  struct ActivePolicy {{
-    using AgentHistogramPolicyT = agent_policy_t;
-    static constexpr int pdl_trigger_next_launch_in_init_kernel_max_bin_count = 2048;
-  }};
-}};
-)XXX";
+using device_histogram_policy = {3}::MaxPolicy;
 
-    const std::string src = std::format(
-      src_template,
+#include <cub/detail/ptx-json/json.cuh>
+__device__ consteval auto& policy_generator() {{
+  return ptx_json::id<ptx_json::string("device_histogram_policy")>()
+    = cub::detail::histogram::HistogramPolicyWrapper<device_histogram_policy::ActivePolicy>::EncodedPolicy();
+}}
+)XXX",
       d_samples.value_type.size, // 0
       d_samples.value_type.alignment, // 1
       samples_iterator_src, // 2
-      policy.block_threads, // 3
-      policy.pixels_per_thread, // 4
-      chained_policy_t // 5
+      policy_hub_expr // 3
     );
 
 #if false // CCCL_DEBUGGING_SWITCH
     fflush(stderr);
-    printf("\nCODE4NVRTC BEGIN\n%sCODE4NVRTC END\n", src.c_str());
+    printf("\nCODE4NVRTC BEGIN\n%sCODE4NVRTC END\n", final_src.c_str());
     fflush(stdout);
 #endif
 
@@ -355,10 +342,8 @@ struct {5} {{
 
     const bool is_byte_sample = d_samples.value_type.size == 1;
 
-    std::string init_kernel_name =
-      histogram::get_init_kernel_name(chained_policy_t, num_active_channels, counter_cpp, offset_cpp);
+    std::string init_kernel_name  = histogram::get_init_kernel_name(num_active_channels, counter_cpp, offset_cpp);
     std::string sweep_kernel_name = histogram::get_sweep_kernel_name(
-      chained_policy_t,
       privatized_smem_bins,
       num_channels,
       num_active_channels,
@@ -374,8 +359,20 @@ struct {5} {{
 
     const std::string arch = std::format("-arch=sm_{0}{1}", cc_major, cc_minor);
 
+    // Note: `-default-device` is needed because of the constexpr functions in
+    // tuning_histogram.cuh
     std::vector<const char*> args = {
-      arch.c_str(), cub_path, thrust_path, libcudacxx_path, ctk_path, "-rdc=true", "-dlto", "-DCUB_DISABLE_CDP"};
+      arch.c_str(),
+      cub_path,
+      thrust_path,
+      libcudacxx_path,
+      ctk_path,
+      "-rdc=true",
+      "-dlto",
+      "-default-device",
+      "-DCUB_DISABLE_CDP",
+      "-DCUB_ENABLE_POLICY_PTX_JSON",
+      "-std=c++20"};
 
     cccl::detail::extend_args_with_build_config(args, config);
 
@@ -390,7 +387,7 @@ struct {5} {{
 
     nvrtc_link_result result =
       begin_linking_nvrtc_program(num_lto_args, lopts)
-        ->add_program(nvrtc_translation_unit({src.c_str(), name}))
+        ->add_program(nvrtc_translation_unit({final_src.c_str(), name}))
         ->add_expression({init_kernel_name})
         ->add_expression({sweep_kernel_name})
         ->compile_program({args.data(), args.size()})
@@ -404,6 +401,12 @@ struct {5} {{
     check(cuLibraryGetKernel(&build_ptr->init_kernel, build_ptr->library, init_kernel_lowered_name.c_str()));
     check(cuLibraryGetKernel(&build_ptr->sweep_kernel, build_ptr->library, sweep_kernel_lowered_name.c_str()));
 
+    nlohmann::json runtime_policy =
+      cub::detail::ptx_json::parse("device_histogram_policy", {result.data.get(), result.size});
+
+    using cub::detail::RuntimeHistogramAgentPolicy;
+    auto histogram_policy = RuntimeHistogramAgentPolicy::from_json(runtime_policy, "HistogramPolicy");
+
     build_ptr->cc                  = cc;
     build_ptr->cubin               = (void*) result.data.release();
     build_ptr->cubin_size          = result.size;
@@ -413,6 +416,7 @@ struct {5} {{
     build_ptr->num_active_channels = num_active_channels;
     build_ptr->may_overflow = false; // This is set in cccl_device_histogram_even_impl so that kernel source can access
                                      // it later.
+    build_ptr->runtime_policy = new histogram::histogram_runtime_tuning_policy{histogram_policy};
   }
   catch (const std::exception& exc)
   {
@@ -477,7 +481,7 @@ CUresult cccl_device_histogram_even_impl(
       indirect_arg_t, // CounterT
       indirect_arg_t, // LevelT
       OffsetT, // OffsetT
-      histogram::dynamic_histogram_policy_t<&histogram::get_policy>, // PolicyHub
+      histogram::histogram_runtime_tuning_policy, // PolicyHub
       indirect_arg_t, // SampleT
       histogram::histogram_kernel_source, // KernelSource
       cub::detail::CudaDriverLauncherFactory // KernelLauncherFactory
@@ -497,7 +501,7 @@ CUresult cccl_device_histogram_even_impl(
         is_byte_sample{},
         {build},
         cub::detail::CudaDriverLauncherFactory{cu_device, build.cc},
-        {d_samples.value_type, build.num_active_channels});
+        *reinterpret_cast<histogram::histogram_runtime_tuning_policy*>(build.runtime_policy));
 
     error = static_cast<CUresult>(exec_status);
   }
@@ -598,6 +602,7 @@ CUresult cccl_device_histogram_cleanup(cccl_device_histogram_build_result_t* bui
     }
 
     std::unique_ptr<char[]> cubin(reinterpret_cast<char*>(build_ptr->cubin));
+    std::unique_ptr<char[]> policy(reinterpret_cast<char*>(build_ptr->runtime_policy));
     check(cuLibraryUnload(build_ptr->library));
   }
   catch (const std::exception& exc)
