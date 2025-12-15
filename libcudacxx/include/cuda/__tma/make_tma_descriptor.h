@@ -29,7 +29,6 @@
 #  include <cuda/std/__algorithm/min.h>
 #  include <cuda/std/__cstddef/types.h>
 #  include <cuda/std/__exception/exception_macros.h>
-#  include <cuda/std/__limits/numeric_limits.h>
 #  include <cuda/std/array>
 #  include <cuda/std/cstdint>
 #  include <cuda/std/span>
@@ -152,51 +151,6 @@ __to_cutensor_map(tma_interleave_layout __interleave_layout) noexcept
       return ::CU_TENSOR_MAP_SWIZZLE_128B_ATOM_32B_FLIP_8B;
     case tma_swizzle::bytes128_atom_64B:
       return ::CU_TENSOR_MAP_SWIZZLE_128B_ATOM_64B;
-#  endif // _CCCL_CTK_AT_LEAST(12, 8)
-    default:
-      _CCCL_UNREACHABLE();
-  }
-}
-
-[[nodiscard]] _CCCL_HOST_API inline ::cuda::std::size_t
-__to_cutensor_map_size(::cuda::std::size_t __num_items, ::CUtensorMapDataType __data_type)
-{
-  constexpr auto __max_size_t = ::cuda::std::numeric_limits<::cuda::std::size_t>::max();
-  switch (__data_type)
-  {
-    case ::CU_TENSOR_MAP_DATA_TYPE_UINT8:
-      return __num_items;
-    case ::CU_TENSOR_MAP_DATA_TYPE_UINT16:
-    case ::CU_TENSOR_MAP_DATA_TYPE_BFLOAT16:
-    case ::CU_TENSOR_MAP_DATA_TYPE_FLOAT16:
-      if (__num_items > __max_size_t / 2)
-      {
-        _CCCL_THROW(::std::invalid_argument{"Number of items must be less than or equal to 2^64 / 2"});
-      }
-      return __num_items * 2;
-    case ::CU_TENSOR_MAP_DATA_TYPE_INT32:
-    case ::CU_TENSOR_MAP_DATA_TYPE_UINT32:
-    case ::CU_TENSOR_MAP_DATA_TYPE_FLOAT32:
-      if (__num_items > __max_size_t / 4)
-      {
-        _CCCL_THROW(::std::invalid_argument{"Number of items must be less than or equal to 2^64 / 4"});
-      }
-      return __num_items * 4;
-    case ::CU_TENSOR_MAP_DATA_TYPE_INT64:
-    case ::CU_TENSOR_MAP_DATA_TYPE_UINT64:
-    case ::CU_TENSOR_MAP_DATA_TYPE_FLOAT64:
-      if (__num_items > __max_size_t / 8)
-      {
-        _CCCL_THROW(::std::invalid_argument{"Number of items must be less than or equal to 2^64 / 8"});
-      }
-      return __num_items * 8;
-#  if _CCCL_CTK_AT_LEAST(12, 8)
-    case ::CU_TENSOR_MAP_DATA_TYPE_16U4_ALIGN8B:
-      if (__num_items % 2 != 0)
-      {
-        _CCCL_THROW(::std::invalid_argument{"Number of items must be a multiple of 2 for U4x16"});
-      }
-      return __num_items / 2;
 #  endif // _CCCL_CTK_AT_LEAST(12, 8)
     default:
       _CCCL_UNREACHABLE();
@@ -462,7 +416,7 @@ __get_tensor_sizes(const ::DLTensor& __tensor, int __rank, ::CUtensorMapDataType
     {
       // TODO(fbusato): check mul overflow
       __cumulative_size *= __tensor_sizes[__i];
-      const auto __stride_bytes = ::cuda::__to_cutensor_map_size(__cumulative_size, __data_type);
+      const auto __stride_bytes = ::cuda::__driver::cutensormap_size_bytes(__cumulative_size, __data_type);
       if (__stride_bytes % __alignment != 0)
       {
         _CCCL_THROW(::std::invalid_argument{"Stride in bytes is not a multiple of the alignment (32 or 16)"});
@@ -487,7 +441,7 @@ __get_tensor_sizes(const ::DLTensor& __tensor, int __rank, ::CUtensorMapDataType
         "stride and the size of the next "
         "dimension"});
     }
-    const auto __input_stride_bytes = ::cuda::__to_cutensor_map_size(__input_strides[__i], __data_type);
+    const auto __input_stride_bytes = ::cuda::__driver::cutensormap_size_bytes(__input_strides[__i], __data_type);
     if (__input_stride_bytes % __alignment != 0)
     {
       _CCCL_THROW(::std::invalid_argument{"Stride in bytes is not a multiple of the alignment (32 or 16)"});
@@ -530,7 +484,8 @@ _CCCL_HOST_API inline __tma_box_sizes_array_t __get_box_sizes(
     __total_size *= __box_size;
     __box_sizes_output[__i] = __box_size;
   }
-  const auto __inner_dimension_bytes = ::cuda::__to_cutensor_map_size(__box_sizes_output[__rank - 1], __data_type);
+  const auto __inner_dimension_bytes =
+    ::cuda::__driver::cutensormap_size_bytes(__box_sizes_output[__rank - 1], __data_type);
   if (__interleave_layout == tma_interleave_layout::none)
   {
     if (__inner_dimension_bytes % 16 != 0)
@@ -585,7 +540,7 @@ _CCCL_HOST_API inline __tma_box_sizes_array_t __get_box_sizes(
   }
   const auto __max_shmem =
     ::cuda::__driver::__deviceGetAttribute(::CU_DEVICE_ATTRIBUTE_MAX_SHARED_MEMORY_PER_BLOCK_OPTIN, __device_id);
-  if (::cuda::__to_cutensor_map_size(__total_size, __data_type) > static_cast<size_t>(__max_shmem))
+  if (::cuda::__driver::cutensormap_size_bytes(__total_size, __data_type) > static_cast<size_t>(__max_shmem))
   {
     _CCCL_THROW(::std::invalid_argument{"Box sizes do not fit in shared memory"});
   }
