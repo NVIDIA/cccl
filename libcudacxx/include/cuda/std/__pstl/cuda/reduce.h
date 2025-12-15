@@ -31,6 +31,7 @@ _CCCL_DIAG_SUPPRESS_CLANG("-Wshadow")
 _CCCL_DIAG_POP
 
 #  include <cuda/__execution/policy.h>
+#  include <cuda/__memory_resource/get_memory_resource.h>
 #  include <cuda/__runtime/api_wrapper.h>
 #  include <cuda/__stream/get_stream.h>
 #  include <cuda/std/__exception/cuda_error.h>
@@ -58,7 +59,7 @@ template <>
 struct __pstl_dispatch<__pstl_algorithm::__reduce, __execution_backend::__cuda>
 {
   //! Ensures we properly deallocate the memory allocated for the result
-  template <class _Tp>
+  template <class _Tp, class _Resource>
   struct __allocation_guard
   {
     //! This helper struct ensures that we can properly assign types with a nontrivial assignment operator
@@ -78,24 +79,18 @@ struct __pstl_dispatch<__pstl_algorithm::__reduce, __execution_backend::__cuda>
     };
 
     ::cuda::stream_ref __stream_;
+    _Resource& __resource_;
     _Tp* __ptr_;
 
-    _CCCL_HOST_API __allocation_guard(::cuda::stream_ref __stream)
+    _CCCL_HOST_API __allocation_guard(::cuda::stream_ref __stream, _Resource& __resource)
         : __stream_(__stream)
-        , __ptr_(nullptr)
-    {
-      _CCCL_TRY_CUDA_API(
-        ::cudaMallocAsync,
-        "__pstl_cuda_reduce: allocation failed",
-        reinterpret_cast<void**>(&__ptr_),
-        sizeof(_Tp),
-        __stream_.get());
-    }
+        , __resource_(__resource)
+        , __ptr_(static_cast<_Tp*>(__resource_.allocate(__stream_, sizeof(_Tp), alignof(_Tp))))
+    {}
 
     _CCCL_HOST_API ~__allocation_guard()
     {
-      _CCCL_TRY_CUDA_API(::cudaFreeAsync, "__pstl_cuda_reduce: deallocate failed", __ptr_, __stream_.get());
-
+      __resource_.deallocate(__stream_, __ptr_, sizeof(_Tp), alignof(_Tp));
       __stream_.sync();
     }
 
@@ -113,8 +108,9 @@ struct __pstl_dispatch<__pstl_algorithm::__reduce, __execution_backend::__cuda>
 
     {
       // Allocate memory for result
-      auto __stream = __policy.query(::cuda::get_stream);
-      __allocation_guard<_Tp> __guard{__stream};
+      auto __stream   = __policy.query(::cuda::get_stream);
+      auto __resource = __policy.query(::cuda::mr::get_memory_resource);
+      __allocation_guard<_Tp, decltype(__resource)> __guard{__stream, __resource};
 
       const auto __count = ::cuda::std::distance(__first, __last);
       _CCCL_TRY_CUDA_API(
