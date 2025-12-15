@@ -15,9 +15,8 @@
 
 #if __cccl_ptx_isa >= 860
 
-#  include <cub/detail/strong_load.cuh>
-#  include <cub/detail/strong_store.cuh>
 #  include <cub/device/dispatch/kernels/warpspeed/allocators/SmemAllocator.h>
+#  include <cub/device/dispatch/kernels/warpspeed/look_ahead.h>
 #  include <cub/device/dispatch/kernels/warpspeed/resource/SmemRef.cuh>
 #  include <cub/device/dispatch/kernels/warpspeed/resource/SmemResource.cuh>
 #  include <cub/device/dispatch/kernels/warpspeed/SpecialRegisters.cuh>
@@ -46,20 +45,6 @@ CUB_NAMESPACE_BEGIN
 
 namespace detail::scan
 {
-enum scan_state : uint32_t
-{
-  EMPTY    = 0,
-  PRIV_SUM = 1,
-  CUM_SUM  = 2
-};
-
-template <typename AccumT>
-struct tmp_state_t
-{
-  scan_state state;
-  AccumT value;
-};
-
 _CCCL_DEVICE_API inline void squadGetNextBlockIdx(const Squad& squad, SmemRef<uint4>& refDestSmem)
 {
   if (squad.isLeaderThread())
@@ -335,183 +320,6 @@ template <int elemPerThread, typename AccumT, typename ScanOpT>
 _CCCL_DEVICE_API inline void threadScanInclusive(AccumT (&regArray)[elemPerThread], ScanOpT& scan_op)
 {
   detail::ThreadScanInclusive(regArray, regArray, scan_op);
-}
-
-template <typename AccumT>
-_CCCL_DEVICE_API inline void
-storeLookback(tmp_state_t<AccumT>* ptrTmpBuffer, int idxTile, scan_state scanState, AccumT sum)
-{
-  tmp_state_t<AccumT>* dst = ptrTmpBuffer + idxTile;
-  if constexpr (sizeof(tmp_state_t<AccumT>) <= 16)
-  {
-    tmp_state_t<AccumT> tmp{scanState, sum};
-    __nv_atomic_store(dst, &tmp, __NV_ATOMIC_RELAXED, __NV_THREAD_SCOPE_DEVICE);
-  }
-  else
-  {
-    ThreadStore<STORE_CG>(&dst->value, sum);
-    using state_int = ::cuda::std::underlying_type_t<scan_state>;
-    store_release(reinterpret_cast<state_int*>(&dst->state), scanState);
-  }
-}
-
-// warpLoadLookback loads tmp states
-//
-//   idxTileCur + 1, idxTileCur + 2, ..., idxTileCur + 32 * (numTmpStatesPerThread + 1)
-//
-// The states are loaded in reverse-laneId order, i.e.,
-//
-// outTmpStates[0] contains:
-//   Lane 0:  idxTileCur + 32
-//   Lane 1:  idxTileCur + 31
-//   ...
-//   Lane 31: idxTileCur + 1
-//
-// outTmpStates[1] contains:
-//   Lane 0: idxTileCur + 64
-//   ...
-//   Lane 31 idxTileCur + 33
-//
-// If the index idxTileCur + ii of the loaded state is equal to or exceeds
-// idxTileNext, i.e., idxTileNext <= idxTileCur + ii, then the state is not
-// loaded from memory and filled with {PRIV_SUM, 0}.
-template <int numTmpStatesPerThread, typename AccumT>
-_CCCL_DEVICE_API inline void warpLoadLookback(
-  int laneIdx,
-  tmp_state_t<AccumT> (&outTmpStates)[numTmpStatesPerThread],
-  tmp_state_t<AccumT>* ptrTmpBuffer,
-  int idxTileCur,
-  int idxTileNext)
-{
-  for (int i = 0; i < numTmpStatesPerThread; ++i)
-  {
-    int idxTileLookback = idxTileCur + 32 * (i + 1) - laneIdx;
-    if (idxTileLookback < idxTileNext)
-    {
-      tmp_state_t<AccumT>* src = ptrTmpBuffer + idxTileLookback;
-      if constexpr (sizeof(tmp_state_t<AccumT>) <= 16)
-      {
-        __nv_atomic_load(src, outTmpStates + i, __NV_ATOMIC_RELAXED, __NV_THREAD_SCOPE_DEVICE);
-      }
-      else
-      {
-        using state_int       = ::cuda::std::underlying_type_t<scan_state>;
-        outTmpStates[i].state = static_cast<scan_state>(load_acquire(reinterpret_cast<const state_int*>(&src->state)));
-        outTmpStates[i].value = ThreadLoad<LOAD_CG>(&src->value);
-      }
-    }
-    else
-    {
-      // If we are looking ahead of idxTileNext, then set state to a private sum
-      // of zero to simplify handling later on.
-      outTmpStates[i] = {PRIV_SUM, 0};
-    }
-  }
-}
-
-// warpIncrementalLookback takes the latest current known sumExclusiveCtaPrev
-// and its tile index, idxTilePrev, and computes the sumExclusiveCta for the
-// next tile of interest, idxTileNext.
-//
-// It does so by loading states in chunks of 32 * numTmpStatesPerThread
-// elements, starting from idxTilePrev + 1. From the chunk of states, it tries
-// to advance its knowledge of sumExclusiveCta as much as possible. It loops
-// until it can calculate the value of sumExclusiveCta from the preceding
-// states.
-//
-// The function must be called from a single warp. All passed arguments must be
-// warp-uniform.
-//
-template <int numTmpStatesPerThread, typename AccumT, typename ScanOpT>
-[[nodiscard]] _CCCL_DEVICE_API inline AccumT warpIncrementalLookback(
-  SpecialRegisters specialRegisters,
-  tmp_state_t<AccumT>* ptrTmpBuffer,
-  const int idxTilePrev,
-  const AccumT sumExclusiveCtaPrev,
-  const int idxTileNext,
-  ScanOpT& scan_op)
-{
-  const int laneIdx    = specialRegisters.laneIdx;
-  const int lanemaskEq = ::cuda::ptx::get_sreg_lanemask_eq();
-
-  int idxTileCur            = idxTilePrev;
-  AccumT sumExclusiveCtaCur = sumExclusiveCtaPrev;
-
-  while (idxTileCur < idxTileNext)
-  {
-    tmp_state_t<AccumT> regTmpStates[numTmpStatesPerThread] = {{EMPTY, AccumT{}}};
-    warpLoadLookback(laneIdx, regTmpStates, ptrTmpBuffer, idxTileCur, idxTileNext);
-
-    for (int idx = 0; idx < numTmpStatesPerThread; ++idx)
-    {
-      // Bitmask with a 1 bit in the position of the current lane if current
-      // lane has an XXX state;
-      int laneIsEmpty   = lanemaskEq * (regTmpStates[idx].state == EMPTY);
-      int laneIsCumSum  = lanemaskEq * (regTmpStates[idx].state == CUM_SUM);
-      int laneIsPrivSum = lanemaskEq * (regTmpStates[idx].state == PRIV_SUM);
-      // Bitmask with 1 bits indicating which lane has an XX state.
-      // TODO(miscco): This requires SM80 for clang-cuda
-      int warpIsEmpty = 0;
-      NV_IF_TARGET(NV_PROVIDES_SM_80, (warpIsEmpty = __reduce_or_sync(~0, laneIsEmpty);))
-      int warpIsCumSum = 0;
-      NV_IF_TARGET(NV_PROVIDES_SM_80, (warpIsCumSum = __reduce_or_sync(~0, laneIsCumSum);))
-      int warpIsPrivSum = 0;
-      NV_IF_TARGET(NV_PROVIDES_SM_80, (warpIsPrivSum = __reduce_or_sync(~0, laneIsPrivSum);))
-
-      if (warpIsEmpty != 0)
-      {
-        break;
-      }
-      // Now we have either all private sums, or a mix of private sums and
-      // cumulative sums.
-
-      // Bitmask with a 1 bit indicating the position of the right-most
-      // CUM_SUM state. If no CUM_SUM state present, value is zero.
-      int warpRightMostCumSum = warpIsCumSum & -warpIsCumSum;
-      // Bitmask with 1 bits to the right of the right-most CUM_SUM state.
-      // If no CUM_SUM state present, value is all ones.
-      int maskRightOfCumSum = warpRightMostCumSum - 1;
-
-      // Sum all values of lanes containing either
-      // (a) the right-most CUM_SUM, or
-      // (b) subsequent PRIV_SUMs.
-      AccumT localSum{};
-      int maskSumParticipants = warpRightMostCumSum | maskRightOfCumSum;
-
-      if ((maskSumParticipants & lanemaskEq) != 0)
-      {
-        localSum = regTmpStates[idx].value;
-      }
-      localSum = warpReduce(localSum, scan_op);
-
-      if (warpIsCumSum == 0)
-      {
-        sumExclusiveCtaCur = scan_op(sumExclusiveCtaCur, localSum);
-      }
-      else
-      {
-        sumExclusiveCtaCur = localSum;
-      }
-      // idxTileCur can go beyond idxTileNext.
-      idxTileCur += __popc(maskSumParticipants);
-    }
-  }
-
-  // We are not storing CUM_SUM states, because it makes updating idxTileCur
-  // difficult. Storing CUM_SUM states is the more robust approach though: if
-  // for whatever reason GETNEXTWORKID fails at some point, any freshly launched
-  // block must look back many iterations to figure out the current
-  // sumExclusiveCta.
-  //
-  // Just for future reference, the following commented code is kept around.
-
-  // if (idxTileNext > 0) {
-  //   if (specialRegisters.laneIdx == 0) {
-  //     storeLookback(ptrTmpBuffer, idxTileNext - 1, CUM_SUM, sumExclusiveCtaCur);
-  //   }
-  // }
-
-  return sumExclusiveCtaCur;
 }
 
 namespace ptx = cuda::ptx;
@@ -809,7 +617,7 @@ _CCCL_DEVICE_API inline void kernelBody(
       ////////////////////////////////////////////////////////////////////////////////
       if (squad.isLeaderThread())
       {
-        storeLookback(params.ptrTmp, idxTile, PRIV_SUM, regSquadSum);
+        storeLookbackTile(params.ptrTmp + idxTile, PRIV_SUM, regSquadSum);
       }
       ////////////////////////////////////////////////////////////////////////////////
       // Store thread sum
