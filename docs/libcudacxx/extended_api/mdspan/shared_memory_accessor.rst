@@ -68,7 +68,7 @@ Example
         extern __shared__ int shmem[];
 
         // Create a shared_memory_mdspan over the dynamic shared memory
-        cuda::shared_memory_mdspan<int, cuda:std::dims<2>> md(shmem, 32, 32);
+        cuda::shared_memory_mdspan md(shmem, cuda:std::dims<2>{32, 32});
 
         if (threadIdx.x < 32) {
              md[threadIdx.x][threadIdx.x] = threadIdx.x; // write on the diagonal
