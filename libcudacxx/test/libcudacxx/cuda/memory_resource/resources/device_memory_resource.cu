@@ -421,7 +421,9 @@ C2H_CCCLRT_TEST("Async memory resource access", "")
 
       // Check if enable can include the device on which the pool resides
       {
-        std::vector peers_ext(peers.begin(), peers.end());
+        // Separate insert call because GCC 7 doesn't like the constructor from iterators
+        std::vector<cuda::device_ref> peers_ext;
+        peers_ext.insert(peers_ext.end(), peers.begin(), peers.end());
         peers_ext.push_back(cuda::devices[0]);
         pool.enable_access_from(peers_ext);
 
