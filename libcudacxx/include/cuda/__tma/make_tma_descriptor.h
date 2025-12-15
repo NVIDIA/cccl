@@ -416,7 +416,7 @@ __get_tensor_sizes(const ::DLTensor& __tensor, int __rank, ::CUtensorMapDataType
     {
       // TODO(fbusato): check mul overflow
       __cumulative_size *= __tensor_sizes[__i];
-      const auto __stride_bytes = ::cuda::__driver::cutensormap_size_bytes(__cumulative_size, __data_type);
+      const auto __stride_bytes = ::cuda::__driver::__cutensormap_size_bytes(__cumulative_size, __data_type);
       if (__stride_bytes % __alignment != 0)
       {
         _CCCL_THROW(::std::invalid_argument{"Stride in bytes is not a multiple of the alignment (32 or 16)"});
@@ -441,7 +441,7 @@ __get_tensor_sizes(const ::DLTensor& __tensor, int __rank, ::CUtensorMapDataType
         "stride and the size of the next "
         "dimension"});
     }
-    const auto __input_stride_bytes = ::cuda::__driver::cutensormap_size_bytes(__input_strides[__i], __data_type);
+    const auto __input_stride_bytes = ::cuda::__driver::__cutensormap_size_bytes(__input_strides[__i], __data_type);
     if (__input_stride_bytes % __alignment != 0)
     {
       _CCCL_THROW(::std::invalid_argument{"Stride in bytes is not a multiple of the alignment (32 or 16)"});
@@ -485,7 +485,7 @@ _CCCL_HOST_API inline __tma_box_sizes_array_t __get_box_sizes(
     __box_sizes_output[__i] = __box_size;
   }
   const auto __inner_dimension_bytes =
-    ::cuda::__driver::cutensormap_size_bytes(__box_sizes_output[__rank - 1], __data_type);
+    ::cuda::__driver::__cutensormap_size_bytes(__box_sizes_output[__rank - 1], __data_type);
   if (__interleave_layout == tma_interleave_layout::none)
   {
     if (__inner_dimension_bytes % 16 != 0)
@@ -540,7 +540,7 @@ _CCCL_HOST_API inline __tma_box_sizes_array_t __get_box_sizes(
   }
   const auto __max_shmem =
     ::cuda::__driver::__deviceGetAttribute(::CU_DEVICE_ATTRIBUTE_MAX_SHARED_MEMORY_PER_BLOCK_OPTIN, __device_id);
-  if (::cuda::__driver::cutensormap_size_bytes(__total_size, __data_type) > static_cast<size_t>(__max_shmem))
+  if (::cuda::__driver::__cutensormap_size_bytes(__total_size, __data_type) > static_cast<size_t>(__max_shmem))
   {
     _CCCL_THROW(::std::invalid_argument{"Box sizes do not fit in shared memory"});
   }

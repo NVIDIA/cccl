@@ -920,7 +920,7 @@ __graphKernelNodeSetAttribute(::CUgraphNode __node, ::CUkernelNodeAttrID __id, c
 #  endif // _CCCL_CTK_AT_LEAST(13, 0)
 
 [[nodiscard]] _CCCL_HOST_API inline ::cuda::std::size_t
-cutensormap_size_bytes(::cuda::std::size_t __num_items, ::CUtensorMapDataType __data_type)
+__cutensormap_size_bytes(::cuda::std::size_t __num_items, ::CUtensorMapDataType __data_type)
 {
   constexpr auto __max_size_t = ::cuda::std::numeric_limits<::cuda::std::size_t>::max();
   switch (__data_type)
@@ -1000,7 +1000,7 @@ cutensormap_size_bytes(::cuda::std::size_t __num_items, ::CUtensorMapDataType __
   if (::cuda::__driver::__version_below(13, 2))
   {
     const auto __tensor_req_size       = __globalDim[__tensorRank - 1] * __globalStrides[__tensorRank - 1];
-    const auto __tensor_req_size_bytes = ::cuda::__driver::cutensormap_size_bytes(__tensor_req_size, __tensorDataType);
+    const auto __tensor_req_size_bytes = ::cuda::__driver::__cutensormap_size_bytes(__tensor_req_size, __tensorDataType);
     const auto __tensorMapPtr          = reinterpret_cast<::cuda::std::uint64_t*>(static_cast<void*>(&__tensorMap));
     if (__tensor_req_size_bytes < 128 * 1024) // 128 KiB
     {
