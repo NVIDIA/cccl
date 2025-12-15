@@ -46,13 +46,13 @@ void rbegin(const _Tp&) = delete;
 #if _CCCL_HAS_CONCEPTS()
 template <class _Tp>
 concept __member_rbegin = __can_borrow<_Tp> && __workaround_52970<_Tp> && requires(_Tp&& __t) {
-  { _LIBCUDACXX_AUTO_CAST(__t.rbegin()) } -> input_or_output_iterator;
+  { _CCCL_AUTO_CAST(__t.rbegin()) } -> input_or_output_iterator;
 };
 
 template <class _Tp>
 concept __unqualified_rbegin =
   !__member_rbegin<_Tp> && __can_borrow<_Tp> && __class_or_enum<remove_cvref_t<_Tp>> && requires(_Tp&& __t) {
-    { _LIBCUDACXX_AUTO_CAST(rbegin(__t)) } -> input_or_output_iterator;
+    { _CCCL_AUTO_CAST(rbegin(__t)) } -> input_or_output_iterator;
   };
 
 template <class _Tp>
@@ -67,7 +67,7 @@ _CCCL_CONCEPT_FRAGMENT(
   __member_rbegin_,
   requires(_Tp&& __t)(requires(__can_borrow<_Tp>),
                       requires(__workaround_52970<_Tp>),
-                      requires(input_or_output_iterator<decltype(_LIBCUDACXX_AUTO_CAST(__t.rbegin()))>)));
+                      requires(input_or_output_iterator<decltype(_CCCL_AUTO_CAST(__t.rbegin()))>)));
 
 template <class _Tp>
 _CCCL_CONCEPT __member_rbegin = _CCCL_FRAGMENT(__member_rbegin_, _Tp);
@@ -78,7 +78,7 @@ _CCCL_CONCEPT_FRAGMENT(
   requires(_Tp&& __t)(requires(!__member_rbegin<_Tp>),
                       requires(__can_borrow<_Tp>),
                       requires(__class_or_enum<remove_cvref_t<_Tp>>),
-                      requires(input_or_output_iterator<decltype(_LIBCUDACXX_AUTO_CAST(rbegin(__t)))>)));
+                      requires(input_or_output_iterator<decltype(_CCCL_AUTO_CAST(rbegin(__t)))>)));
 
 template <class _Tp>
 _CCCL_CONCEPT __unqualified_rbegin = _CCCL_FRAGMENT(__unqualified_rbegin_, _Tp);
@@ -102,19 +102,17 @@ struct __fn
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Tp)
   _CCCL_REQUIRES(__member_rbegin<_Tp>)
-  [[nodiscard]] _CCCL_API constexpr auto operator()(_Tp&& __t) const
-    noexcept(noexcept(_LIBCUDACXX_AUTO_CAST(__t.rbegin())))
+  [[nodiscard]] _CCCL_API constexpr auto operator()(_Tp&& __t) const noexcept(noexcept(_CCCL_AUTO_CAST(__t.rbegin())))
   {
-    return _LIBCUDACXX_AUTO_CAST(__t.rbegin());
+    return _CCCL_AUTO_CAST(__t.rbegin());
   }
 
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Tp)
   _CCCL_REQUIRES(__unqualified_rbegin<_Tp>)
-  [[nodiscard]] _CCCL_API constexpr auto operator()(_Tp&& __t) const
-    noexcept(noexcept(_LIBCUDACXX_AUTO_CAST(rbegin(__t))))
+  [[nodiscard]] _CCCL_API constexpr auto operator()(_Tp&& __t) const noexcept(noexcept(_CCCL_AUTO_CAST(rbegin(__t))))
   {
-    return _LIBCUDACXX_AUTO_CAST(rbegin(__t));
+    return _CCCL_AUTO_CAST(rbegin(__t));
   }
 
   _CCCL_EXEC_CHECK_DISABLE

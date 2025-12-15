@@ -282,9 +282,9 @@ struct __fn
   _CCCL_TEMPLATE(class _Range, class _Np, class _RawRange = remove_cvref_t<_Range>)
   _CCCL_REQUIRES(__use_empty<_Range, _Np>)
   [[nodiscard]] _CCCL_API constexpr auto operator()(_Range&& __range, _Np&&) const
-    noexcept(noexcept(/**/ _LIBCUDACXX_AUTO_CAST(::cuda::std::forward<_Range>(__range)))) -> _RawRange
+    noexcept(noexcept(/**/ _CCCL_AUTO_CAST(::cuda::std::forward<_Range>(__range)))) -> _RawRange
   {
-    return /*-----------*/ _LIBCUDACXX_AUTO_CAST(::cuda::std::forward<_Range>(__range));
+    return /*-----------*/ _CCCL_AUTO_CAST(::cuda::std::forward<_Range>(__range));
   }
 
   // [range.drop.overview]: the `span | basic_string_view | iota_view | subrange (StoreSize == false)` case.
@@ -351,9 +351,9 @@ struct __fn
   _CCCL_REQUIRES(convertible_to<_Np, range_difference_t<_Range>> _CCCL_AND
                    __is_repeat_specialization<_RawRange> _CCCL_AND(!sized_range<_RawRange>))
   [[nodiscard]] _CCCL_API constexpr auto operator()(_Range&& __range, _Np&&) const
-    noexcept(noexcept(/**/ _LIBCUDACXX_AUTO_CAST(::cuda::std::forward<_Range>(__range)))) -> _RawRange
+    noexcept(noexcept(/**/ _CCCL_AUTO_CAST(::cuda::std::forward<_Range>(__range)))) -> _RawRange
   {
-    return /*-----------*/ _LIBCUDACXX_AUTO_CAST(::cuda::std::forward<_Range>(__range));
+    return /*-----------*/ _CCCL_AUTO_CAST(::cuda::std::forward<_Range>(__range));
   }
 
   // [range.drop.overview]: the "otherwise" case.

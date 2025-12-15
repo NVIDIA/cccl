@@ -48,14 +48,14 @@ void rend(const _Tp&) = delete;
 template <class _Tp>
 concept __member_rend = __can_borrow<_Tp> && __workaround_52970<_Tp> && requires(_Tp&& __t) {
   ::cuda::std::ranges::rbegin(__t);
-  { _LIBCUDACXX_AUTO_CAST(__t.rend()) } -> sentinel_for<decltype(::cuda::std::ranges::rbegin(__t))>;
+  { _CCCL_AUTO_CAST(__t.rend()) } -> sentinel_for<decltype(::cuda::std::ranges::rbegin(__t))>;
 };
 
 template <class _Tp>
 concept __unqualified_rend =
   !__member_rend<_Tp> && __can_borrow<_Tp> && __class_or_enum<remove_cvref_t<_Tp>> && requires(_Tp&& __t) {
     ::cuda::std::ranges::rbegin(__t);
-    { _LIBCUDACXX_AUTO_CAST(rend(__t)) } -> sentinel_for<decltype(::cuda::std::ranges::rbegin(__t))>;
+    { _CCCL_AUTO_CAST(rend(__t)) } -> sentinel_for<decltype(::cuda::std::ranges::rbegin(__t))>;
   };
 
 template <class _Tp>
@@ -71,7 +71,7 @@ _CCCL_CONCEPT_FRAGMENT(
     requires(__can_borrow<_Tp>),
     requires(__workaround_52970<_Tp>),
     typename(decltype(::cuda::std::ranges::rbegin(__t))),
-    requires(sentinel_for<decltype(_LIBCUDACXX_AUTO_CAST(__t.rend())), decltype(::cuda::std::ranges::rbegin(__t))>)));
+    requires(sentinel_for<decltype(_CCCL_AUTO_CAST(__t.rend())), decltype(::cuda::std::ranges::rbegin(__t))>)));
 
 template <class _Tp>
 _CCCL_CONCEPT __member_rend = _CCCL_FRAGMENT(__member_rend_, _Tp);
@@ -84,7 +84,7 @@ _CCCL_CONCEPT_FRAGMENT(
     requires(__can_borrow<_Tp>),
     requires(__class_or_enum<remove_cvref_t<_Tp>>),
     typename(decltype(::cuda::std::ranges::rbegin(__t))),
-    requires(sentinel_for<decltype(_LIBCUDACXX_AUTO_CAST(rend(__t))), decltype(::cuda::std::ranges::rbegin(__t))>)));
+    requires(sentinel_for<decltype(_CCCL_AUTO_CAST(rend(__t))), decltype(::cuda::std::ranges::rbegin(__t))>)));
 
 template <class _Tp>
 _CCCL_CONCEPT __unqualified_rend = _CCCL_FRAGMENT(__unqualified_rend_, _Tp);
@@ -109,19 +109,17 @@ public:
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Tp)
   _CCCL_REQUIRES(__member_rend<_Tp>)
-  [[nodiscard]] _CCCL_API constexpr auto operator()(_Tp&& __t) const
-    noexcept(noexcept(_LIBCUDACXX_AUTO_CAST(__t.rend())))
+  [[nodiscard]] _CCCL_API constexpr auto operator()(_Tp&& __t) const noexcept(noexcept(_CCCL_AUTO_CAST(__t.rend())))
   {
-    return _LIBCUDACXX_AUTO_CAST(__t.rend());
+    return _CCCL_AUTO_CAST(__t.rend());
   }
 
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Tp)
   _CCCL_REQUIRES(__unqualified_rend<_Tp>)
-  [[nodiscard]] _CCCL_API constexpr auto operator()(_Tp&& __t) const
-    noexcept(noexcept(_LIBCUDACXX_AUTO_CAST(rend(__t))))
+  [[nodiscard]] _CCCL_API constexpr auto operator()(_Tp&& __t) const noexcept(noexcept(_CCCL_AUTO_CAST(rend(__t))))
   {
-    return _LIBCUDACXX_AUTO_CAST(rend(__t));
+    return _CCCL_AUTO_CAST(rend(__t));
   }
 
   _CCCL_EXEC_CHECK_DISABLE

@@ -288,25 +288,27 @@ _CCCL_NV_DIAG_PUSH()
 // warning C4996: 'meow': was declared deprecated
 _CCCL_DIAG_SUPPRESS_MSVC(4100 4127 4180 4197 4296 4324 4455 4503 4522 4668 4800 4996)
 
-// disable warnings about using C++23 features in C++20 (needed for if consteval)
-#if _CCCL_HAS_IF_CONSTEVAL_IN_CXX20()
-#  if _CCCL_COMPILER(GCC, >=, 12)
+// suppress warnings about using C++23 features in C++20 (needed for if consteval and other features)
+#if _CCCL_COMPILER(GCC, >=, 12)
 _CCCL_DIAG_SUPPRESS_GCC("-Wc++23-extensions")
-#  endif // _CCCL_COMPILER(GCC, >=, 12)
-#  if _CCCL_COMPILER(CLANG, >=, 17)
+#endif // _CCCL_COMPILER(GCC, >=, 12)
+
+#if _CCCL_COMPILER(CLANG, >=, 17)
 _CCCL_DIAG_SUPPRESS_CLANG("-Wc++23-extensions")
-#  else // ^^^ _CCCL_COMPILER(CLANG, >=, 17) ^^^ / vvv _CCCL_COMPILER(CLANG, <, 17) vvv
+#else // ^^^ _CCCL_COMPILER(CLANG, >=, 17) ^^^ / vvv _CCCL_COMPILER(CLANG, <, 17) vvv
 _CCCL_DIAG_SUPPRESS_CLANG("-Wc++2b-extensions")
-#  endif // ^^^ _CCCL_COMPILER(CLANG, <, 17) ^^^
+#endif // ^^^ _CCCL_COMPILER(CLANG, <, 17) ^^^
+
+// suppress warnings about if consteval
 _CCCL_DIAG_SUPPRESS_NVHPC(if_consteval_nonstandard)
-
-_CCCL_DIAG_SUPPRESS_NVCC(3215) // "if consteval" and "if not consteval" are not standard in this mode
-#endif // _CCCL_HAS_IF_CONSTEVAL_IN_CXX20()
-
 _CCCL_DIAG_SUPPRESS_NVHPC(is_constant_evaluated_in_nonconstexpr_context)
 
+_CCCL_DIAG_SUPPRESS_NVCC(3215) // "if consteval" and "if not consteval" are not standard in this mode
 _CCCL_DIAG_SUPPRESS_NVCC(3206) // "if consteval" and "if not consteval" are meaningless in a non-constexpr function
 _CCCL_DIAG_SUPPRESS_NVCC(3060) // call to __builtin_is_constant_evaluated appearing in a non-constexpr function always
                                // produces "false"
+
+// suppress warnings about auto(expr)
+_CCCL_DIAG_SUPPRESS_NVHPC(auto_cast_is_cpp23)
 
 // NO include guards here (this file is included multiple times)
