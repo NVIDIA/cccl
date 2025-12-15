@@ -907,7 +907,6 @@ public:
 
     using InitT    = OutputT;
     using limits_t = ::cuda::std::numeric_limits<InitT>;
-
     // Dispatch with environment - handles all boilerplate
     return detail::dispatch_with_env(env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, auto stream) {
       using tuning_t = decltype(tuning);

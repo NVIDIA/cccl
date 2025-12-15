@@ -46,14 +46,21 @@ CUB_RUNTIME_FUNCTION static cudaError_t dispatch_with_env(EnvT env, AlgorithmCal
     ::cuda::std::execution::__query_or(env, ::cuda::mr::__get_memory_resource, detail::device_memory_resource{});
 
   // Query tuning from environment
-  using tuning_t =
-    ::cuda::std::execution::__query_result_or_t<EnvT, ::cuda::execution::__get_tuning_t, ::cuda::std::execution::env<>>;
+
+  // clang 15-19 ICE when using __query_result_or_t, so we just use the underlying machinery as a workaround
+#if _CCCL_COMPILER(CLANG, >=, 15) && _CCCL_COMPILER(CLANG, <, 19)
+  const auto tuning = ::cuda::std::execution::__detail::__query_or_t{}(
+    env, ::cuda::execution::__get_tuning_t{}, ::cuda::std::execution::env<>{});
+#else
+  const auto tuning =
+    ::cuda::std::execution::__query_result_or_t<EnvT, ::cuda::execution::__get_tuning_t, ::cuda::std::execution::env<>>{};
+#endif
 
   void* d_temp_storage      = nullptr;
   size_t temp_storage_bytes = 0;
 
   // Phase 1: Query temporary storage size
-  if (const auto error = algorithm_callable(tuning_t{}, d_temp_storage, temp_storage_bytes, stream.get()))
+  if (const auto error = algorithm_callable(tuning, d_temp_storage, temp_storage_bytes, stream.get()))
   {
     return error;
   }
@@ -65,7 +72,7 @@ CUB_RUNTIME_FUNCTION static cudaError_t dispatch_with_env(EnvT env, AlgorithmCal
   }
 
   // Phase 2: Execute algorithm
-  const auto error = algorithm_callable(tuning_t{}, d_temp_storage, temp_storage_bytes, stream.get());
+  const auto error = algorithm_callable(tuning, d_temp_storage, temp_storage_bytes, stream.get());
 
   // Deallocate temporary storage (always attempt, even on error)
   const auto deallocate_error =
