@@ -61,20 +61,7 @@
 #  endif
 #endif // _CCCL_HAS_BUILTIN_STD_MOVE()
 
-// When _CCCL_HAS_BUILTIN_STD_MOVE() is 1, the compiler treats ::std::move as a builtin
-// function so it never needs to be instantiated and will be compiled away even at -O0. We
-// would prefer to bring the ::std:: function into the ::cuda::std:: namespace with a using
-// declaration, like this:
-//
-//   _CCCL_BEGIN_NAMESPACE_CUDA_STD
-//   using ::std::move;
-//   _CCCL_END_NAMESPACE_CUDA_STD
-//
-// But "using ::std::move;" would also drag in the algorithm ::std::move(In, In, Out),
-// which would conflict with ::cuda::std::move algorithm in <cuda/std/algorithm.h>.
-//
-// So instead, we define a _CCCL_MOVE macro that can be used in place of ::cuda::std::move
-
+// _CCCL_MOVE macro always expands to std::move builtin, if available, and fallbacks to cuda::std::move otherwise.
 #if _CCCL_HAS_BUILTIN_STD_MOVE()
 #  define _CCCL_MOVE(...) ::std::move(__VA_ARGS__)
 #else // ^^^ _CCCL_HAS_BUILTIN_STD_MOVE() ^^^ / vvv !_CCCL_HAS_BUILTIN_STD_MOVE() vvv
@@ -85,12 +72,30 @@
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
+// We cannot simply use ::std::move here because it would drag in the move algorithm. This can work only if either/
+// compiling with nvrtc or decorating the move algorithm with `requires true` which overrides the imported move
+// algorithm. But this solution requires concepts.
+#if _CCCL_HAS_BUILTIN_STD_MOVE() && (_CCCL_HAS_CONCEPTS() || _CCCL_COMPILER(NVRTC))
+
+// Forward declare move algorithm decorated with `requires true` to override the imported move algorithm.
+template <class _InputIterator, class _OutputIterator>
+  requires true
+_CCCL_API constexpr _OutputIterator move(_InputIterator __first, _InputIterator __last, _OutputIterator __result);
+
+// The compiler treats ::std::move as a builtin function so it does not need to be instantiated and will be compiled
+// away even at -O0.
+using ::std::move;
+
+#else // ^^^ _CCCL_HAS_BUILTIN_STD_MOVE() && (_CCCL_HAS_CONCEPTS() || _CCCL_COMPILER(NVRTC)) ^^^ /
+      // vvv !_CCCL_HAS_BUILTIN_STD_MOVE() || !(_CCCL_HAS_CONCEPTS() || _CCCL_COMPILER(NVRTC)) vvv
+
 template <class _Tp>
 [[nodiscard]] _CCCL_INTRINSIC _CCCL_API constexpr remove_reference_t<_Tp>&& move(_Tp&& __t) noexcept
 {
-  using _Up _CCCL_NODEBUG_ALIAS = remove_reference_t<_Tp>;
-  return static_cast<_Up&&>(__t);
+  return static_cast<remove_reference_t<_Tp>&&>(__t);
 }
+
+#endif // ^^^ !_CCCL_HAS_BUILTIN_STD_MOVE() || !(_CCCL_HAS_CONCEPTS() || _CCCL_COMPILER(NVRTC)) ^^^
 
 #if _CCCL_HAS_BUILTIN_STD_MOVE_IF_NOEXCEPT()
 
