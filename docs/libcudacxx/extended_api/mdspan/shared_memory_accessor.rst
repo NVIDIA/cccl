@@ -81,7 +81,7 @@ Example
     }
 
     int main() {
-        kernel<<<1, 1, 32 * 32 * sizeof(int)>>>();
+        kernel<<<1, 32, 32 * 32 * sizeof(int)>>>();
         cudaDeviceSynchronize();
     }
 
