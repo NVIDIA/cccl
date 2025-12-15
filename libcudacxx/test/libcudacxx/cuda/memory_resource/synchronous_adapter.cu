@@ -54,14 +54,18 @@ C2H_CCCLRT_TEST("synchronous_resource_adapter", "[memory_resource]")
   }
   SECTION("test property passing through")
   {
+#if _CCCL_CTK_AT_LEAST(12, 6)
     STATIC_CHECK(same_properties<cuda::pinned_memory_pool_ref>);
+#endif // _CCCL_CTK_AT_LEAST(12, 6)
     STATIC_CHECK(same_properties<cuda::device_memory_pool_ref>);
     STATIC_CHECK(same_properties<cuda::mr::legacy_pinned_memory_resource>);
     STATIC_CHECK(same_properties<small_resource>);
   }
   SECTION("test default queries")
   {
+#if _CCCL_CTK_AT_LEAST(12, 6)
     STATIC_CHECK(same_default_queries<cuda::pinned_memory_pool_ref>);
+#endif // _CCCL_CTK_AT_LEAST(12, 6)
     STATIC_CHECK(same_default_queries<cuda::device_memory_pool_ref>);
     STATIC_CHECK(same_default_queries<cuda::mr::legacy_pinned_memory_resource>);
     STATIC_CHECK(same_default_queries<small_resource>);
