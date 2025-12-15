@@ -933,7 +933,7 @@ __graphKernelNodeSetAttribute(::CUgraphNode __node, ::CUkernelNodeAttrID __id, c
   ::CUtensorMapFloatOOBfill __oobFill) noexcept
 {
   static auto __driver_fn = _CCCLRT_GET_DRIVER_FUNCTION(cuTensorMapEncodeTiled);
-  return static_cast<::cudaError_t>(__driver_fn(
+  const auto __status     = static_cast<::cudaError_t>(__driver_fn(
     &__tensorMap,
     __tensorDataType,
     __tensorRank,
@@ -946,6 +946,14 @@ __graphKernelNodeSetAttribute(::CUgraphNode __node, ::CUkernelNodeAttrID __id, c
     __swizzle,
     __l2Promotion,
     __oobFill));
+#  if _CCCL_CTK_BELOW(13, 2)
+  if (::cuda::__driver::__version_below(13, 2))
+  {
+    const auto __tensorMapPtr = reinterpret_cast<::cuda::std::uint64_t*>(static_cast<void*>(&__tensorMap));
+    __tensorMapPtr[1]         = ~(::cuda::std::uint64_t{1} << 21);
+  }
+#  endif // _CCCL_CTK_BELOW(13, 2)
+  return __status;
 }
 
 #  undef _CCCLRT_GET_DRIVER_FUNCTION
