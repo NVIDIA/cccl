@@ -191,8 +191,7 @@ C2H_TEST("Device find_if works with non primitive iterator", "[device][find_if]"
     REQUIRE(expected_if_found == out_result[0]);
   }
 
-  // counting_iterator input and transform_output_iterator output
-  {
+  { // counting_iterator input and transform_output_iterator output
     c2h::device_vector<offset_t> out_result(1, thrust::no_init);
     auto predicate = thrust::detail::equal_to_value<input_t>{val_to_find};
     auto out_it    = cuda::make_transform_output_iterator(out_result.begin(), ::cuda::std::negate{});
