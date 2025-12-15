@@ -311,4 +311,6 @@ _CCCL_DIAG_SUPPRESS_NVCC(3060) // call to __builtin_is_constant_evaluated appear
 // suppress warnings about auto(expr)
 _CCCL_DIAG_SUPPRESS_NVHPC(auto_cast_is_cpp23)
 
+_CCCL_DIAG_SUPPRESS_NVCC(3347)
+
 // NO include guards here (this file is included multiple times)
