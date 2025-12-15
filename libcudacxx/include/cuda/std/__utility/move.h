@@ -32,6 +32,12 @@
 #  define _CCCL_HAS_BUILTIN_STD_MOVE() 0
 #endif // ^^^ no builtin std::move ^^^
 
+// nvcc always supports std::move in device code.
+#if _CCCL_CUDA_COMPILER(NVCC) && _CCCL_DEVICE_COMPILATION()
+#  undef _CCCL_HAS_BUILTIN_STD_MOVE
+#  define _CCCL_HAS_BUILTIN_STD_MOVE() 1
+#endif // _CCCL_CUDA_COMPILER(NVCC) && _CCCL_DEVICE_COMPILATION()
+
 #if _CCCL_COMPILER(CLANG, >=, 15)
 #  define _CCCL_HAS_BUILTIN_STD_MOVE_IF_NOEXCEPT() 1
 #else // ^^^ has builtin std::move_if_noexcept ^^^ / vvv no builtin std::move_if_noexcept vvv
@@ -44,8 +50,8 @@
 #  define _CCCL_HAS_BUILTIN_STD_MOVE_IF_NOEXCEPT() 0
 #endif // _CCCL_CUDA_COMPILER(NVCC) && _CCCL_DEVICE_COMPILATION()
 
-// include minimal std:: headers
-#if _CCCL_HAS_BUILTIN_STD_MOVE()
+// include minimal std:: headers, nvcc in device mode doesn't need the std:: header
+#if _CCCL_HAS_BUILTIN_STD_MOVE() && !(_CCCL_CUDA_COMPILER(NVCC) && _CCCL_DEVICE_COMPILATION())
 #  if _CCCL_HOST_STD_LIB(LIBSTDCXX) && _CCCL_HAS_INCLUDE(<bits/move.h>)
 #    include <bits/move.h>
 #  elif _CCCL_HOST_STD_LIB(LIBCXX) && _CCCL_HAS_INCLUDE(<__utility/move.h>)
