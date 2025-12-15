@@ -51,7 +51,7 @@
 #endif // _CCCL_CUDA_COMPILER(NVCC) && _CCCL_DEVICE_COMPILATION()
 
 // include minimal std:: headers, nvcc in device mode doesn't need the std:: header
-#if _CCCL_HAS_BUILTIN_STD_MOVE() && !(_CCCL_CUDA_COMPILER(NVCC) && _CCCL_DEVICE_COMPILATION())
+#if _CCCL_HAS_BUILTIN_STD_MOVE() || _CCCL_HAS_BUILTIN_STD_MOVE_IF_NOEXCEPT()
 #  if _CCCL_HOST_STD_LIB(LIBSTDCXX) && _CCCL_HAS_INCLUDE(<bits/move.h>)
 #    include <bits/move.h>
 #  elif _CCCL_HOST_STD_LIB(LIBCXX) && _CCCL_HAS_INCLUDE(<__utility/move.h>)
@@ -59,7 +59,7 @@
 #  elif !_CCCL_COMPILER(NVRTC)
 #    include <utility>
 #  endif
-#endif // _CCCL_HAS_BUILTIN_STD_MOVE()
+#endif // _CCCL_HAS_BUILTIN_STD_MOVE() || _CCCL_HAS_BUILTIN_STD_MOVE_IF_NOEXCEPT()
 
 // _CCCL_MOVE macro always expands to std::move builtin, if available, and fallbacks to cuda::std::move otherwise.
 #if _CCCL_HAS_BUILTIN_STD_MOVE()
