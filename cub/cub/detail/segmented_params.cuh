@@ -1,8 +1,6 @@
 // SPDX-FileCopyrightText: Copyright (c) 2025, NVIDIA CORPORATION. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-CUB_NAMESPACE_BEGIN
-
 #pragma once
 
 #include <cub/config.cuh>
@@ -18,6 +16,8 @@ CUB_NAMESPACE_BEGIN
 #include <cuda/std/cstdint>
 #include <cuda/std/iterator>
 #include <cuda/std/limits>
+
+CUB_NAMESPACE_BEGIN
 
 namespace detail::params
 {
