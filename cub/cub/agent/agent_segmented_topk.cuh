@@ -20,6 +20,7 @@
 #include <cub/block/block_store.cuh>
 #include <cub/block/block_topk.cuh>
 #include <cub/detail/segmented_params.cuh>
+#include <cub/device/dispatch/dispatch_common.cuh>
 #include <cub/util_type.cuh>
 
 #include <cuda/atomic>

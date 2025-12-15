@@ -334,7 +334,7 @@ struct DispatchSegmentedTopK
   // We pass ValueInputItItT itself as cub::NullType** when only keys are processed
   static constexpr bool keys_only = ::cuda::std::is_same_v<ValueInputItItT, NullType**>;
 
-  DispatchSegmentedTopK(
+  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE DispatchSegmentedTopK(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
     KeyInputItItT d_key_segments_it,
