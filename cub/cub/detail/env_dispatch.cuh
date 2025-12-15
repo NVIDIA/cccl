@@ -34,12 +34,9 @@ namespace detail
 //! - Memory resource querying from environment
 //!
 //! @param env The execution environment
-//! @param determinism Pre-computed determinism type (algorithm-specific)
 //! @param algorithm_callable Callable that invokes the algorithm implementation with determinism specified
-//! @param algorithm_args Arguments to forward to the algorithm implementation
-template <typename EnvT, typename DeterminismT, typename AlgorithmCallable, typename... AlgorithmArgs>
-CUB_RUNTIME_FUNCTION static cudaError_t dispatch_with_env(
-  EnvT env, DeterminismT determinism, AlgorithmCallable algorithm_callable, AlgorithmArgs&&... algorithm_args)
+template <typename EnvT, typename AlgorithmCallable>
+CUB_RUNTIME_FUNCTION static cudaError_t dispatch_with_env(EnvT env, AlgorithmCallable&& algorithm_callable)
 {
   // Query stream from environment
   auto stream = ::cuda::std::execution::__query_or(env, ::cuda::get_stream, ::cuda::stream_ref{cudaStream_t{}});
@@ -56,37 +53,22 @@ CUB_RUNTIME_FUNCTION static cudaError_t dispatch_with_env(
   size_t temp_storage_bytes = 0;
 
   // Phase 1: Query temporary storage size
-  cudaError_t error = algorithm_callable(
-    tuning_t{},
-    d_temp_storage,
-    temp_storage_bytes,
-    ::cuda::std::forward<AlgorithmArgs>(algorithm_args)...,
-    determinism,
-    stream.get());
-
-  if (error != cudaSuccess)
+  if (const auto error = algorithm_callable(tuning_t{}, d_temp_storage, temp_storage_bytes, stream.get()))
   {
     return error;
   }
 
   // Allocate temporary storage
-  if (const auto alloc_error =
-        CubDebug(detail::temporary_storage::allocate(stream, d_temp_storage, temp_storage_bytes, mr)))
+  if (const auto error = CubDebug(detail::temporary_storage::allocate(stream, d_temp_storage, temp_storage_bytes, mr)))
   {
-    return alloc_error;
+    return error;
   }
 
   // Phase 2: Execute algorithm
-  error = algorithm_callable(
-    tuning_t{},
-    d_temp_storage,
-    temp_storage_bytes,
-    ::cuda::std::forward<AlgorithmArgs>(algorithm_args)...,
-    determinism,
-    stream.get());
+  const auto error = algorithm_callable(tuning_t{}, d_temp_storage, temp_storage_bytes, stream.get());
 
   // Deallocate temporary storage (always attempt, even on error)
-  cudaError_t deallocate_error =
+  const auto deallocate_error =
     CubDebug(detail::temporary_storage::deallocate(stream, d_temp_storage, temp_storage_bytes, mr));
 
   // Algorithm error takes precedence over deallocation error

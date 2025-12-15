@@ -176,14 +176,12 @@ struct DeviceScan
 
     using determinism_t = ::cuda::execution::determinism::run_to_run_t;
 
-    // Lambda that calls scan_impl_determinism
-    auto scan_callable = [&](auto tuning, void* storage, size_t& bytes, auto... args) {
-      using tuning_t = decltype(tuning);
-      return scan_impl_determinism<tuning_t>(storage, bytes, args...);
-    };
-
     // Dispatch with environment - handles all boilerplate
-    return detail::dispatch_with_env(env, determinism_t{}, scan_callable, d_in, d_out, scan_op, init, num_items);
+    return detail::dispatch_with_env(env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, auto stream) {
+      using tuning_t = decltype(tuning);
+      return scan_impl_determinism<tuning_t>(
+        storage, bytes, d_in, d_out, scan_op, init, num_items, determinism_t{}, stream);
+    });
   }
   //! @endcond
 

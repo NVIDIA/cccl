@@ -497,15 +497,12 @@ public:
         ::cuda::execution::determinism::run_to_run_t,
         default_determinism_t>;
 
-      // Lambda that calls reduce_impl with the right overload based on determinism
-      auto reduce_callable = [](auto tuning, void* storage, size_t& bytes, auto... args) {
-        using tuning_t = decltype(tuning);
-        return reduce_impl<tuning_t>(storage, bytes, args...);
-      };
-
       // Dispatch with environment - handles all boilerplate
-      return detail::dispatch_with_env(
-        env, determinism_t{}, reduce_callable, d_in, d_out, num_items, reduction_op, ::cuda::std::identity{}, init);
+      return detail::dispatch_with_env(env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, auto stream) {
+        using tuning_t = decltype(tuning);
+        return reduce_impl<tuning_t>(
+          storage, bytes, d_in, d_out, num_items, reduction_op, ::cuda::std::identity{}, init, determinism_t{}, stream);
+      });
     }
   }
 
@@ -601,23 +598,21 @@ public:
 
     using InitT = OutputT;
 
-    // Lambda that calls reduce_impl
-    auto reduce_callable = [](auto tuning, void* storage, size_t& bytes, auto... args) {
-      using tuning_t = decltype(tuning);
-      return reduce_impl<tuning_t>(storage, bytes, args...);
-    };
-
     // Dispatch with environment - handles all boilerplate
-    return detail::dispatch_with_env(
-      env,
-      determinism_t{},
-      reduce_callable,
-      d_in,
-      d_out,
-      num_items,
-      ::cuda::std::plus<>{},
-      ::cuda::std::identity{},
-      InitT{});
+    return detail::dispatch_with_env(env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, auto stream) {
+      using tuning_t = decltype(tuning);
+      return reduce_impl<tuning_t>(
+        storage,
+        bytes,
+        d_in,
+        d_out,
+        num_items,
+        ::cuda::std::plus<>{},
+        ::cuda::std::identity{},
+        InitT{},
+        determinism_t{},
+        stream);
+    });
   }
 
   //! @rst
@@ -913,23 +908,21 @@ public:
     using InitT    = OutputT;
     using limits_t = ::cuda::std::numeric_limits<InitT>;
 
-    // Lambda that calls reduce_impl
-    auto reduce_callable = [](auto tuning, void* storage, size_t& bytes, auto... args) {
-      using tuning_t = decltype(tuning);
-      return reduce_impl<tuning_t>(storage, bytes, args...);
-    };
-
     // Dispatch with environment - handles all boilerplate
-    return detail::dispatch_with_env(
-      env,
-      determinism_t{},
-      reduce_callable,
-      d_in,
-      d_out,
-      num_items,
-      ::cuda::minimum<>{},
-      ::cuda::std::identity{},
-      limits_t::max());
+    return detail::dispatch_with_env(env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, auto stream) {
+      using tuning_t = decltype(tuning);
+      return reduce_impl<tuning_t>(
+        storage,
+        bytes,
+        d_in,
+        d_out,
+        num_items,
+        ::cuda::minimum<>{},
+        ::cuda::std::identity{},
+        limits_t::max(),
+        determinism_t{},
+        stream);
+    });
   }
 
   //! @rst
@@ -1540,23 +1533,21 @@ public:
     using InitT    = OutputT;
     using limits_t = ::cuda::std::numeric_limits<InitT>;
 
-    // Lambda that calls reduce_impl
-    auto reduce_callable = [](auto tuning, void* storage, size_t& bytes, auto... args) {
-      using tuning_t = decltype(tuning);
-      return reduce_impl<tuning_t>(storage, bytes, args...);
-    };
-
     // Dispatch with environment - handles all boilerplate
-    return detail::dispatch_with_env(
-      env,
-      determinism_t{},
-      reduce_callable,
-      d_in,
-      d_out,
-      num_items,
-      ::cuda::maximum<>{},
-      ::cuda::std::identity{},
-      limits_t::lowest());
+    return detail::dispatch_with_env(env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, auto stream) {
+      using tuning_t = decltype(tuning);
+      return reduce_impl<tuning_t>(
+        storage,
+        bytes,
+        d_in,
+        d_out,
+        num_items,
+        ::cuda::maximum<>{},
+        ::cuda::std::identity{},
+        limits_t::lowest(),
+        determinism_t{},
+        stream);
+    });
   }
 
   //! @rst
