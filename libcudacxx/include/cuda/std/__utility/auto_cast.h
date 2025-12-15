@@ -28,8 +28,8 @@
 #  define _CCCL_HAS_AUTO_CAST_BEFORE_CXX23() 0
 #endif // ^^^ no auto(expr) before c++23 ^^^
 
-// nvcc < 13 does not support auto(expr)
-#if _CCCL_CUDA_COMPILER(NVCC, <, 13)
+// nvcc < 13 does not support auto(expr), nvhpc fails to use auto(expr) in noexcept(noexcept(...)) (nvbug 5742468)
+#if _CCCL_CUDA_COMPILER(NVCC, <, 13) || _CCCL_COMPILER(NVHPC)
 #  undef _CCCL_HAS_AUTO_CAST_BEFORE_CXX23
 #  define _CCCL_HAS_AUTO_CAST_BEFORE_CXX23() 0
 #endif // _CCCL_CUDA_COMPILER(NVCC, <, 13)
