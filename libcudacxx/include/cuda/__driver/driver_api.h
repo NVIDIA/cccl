@@ -431,6 +431,13 @@ _CCCL_HOST_API inline ::CUmemAccess_flags __mempoolGetAccess(::CUmemoryPool __po
   return __flags;
 }
 
+_CCCL_HOST_API inline ::cudaError_t
+__mempoolGetAccessNoThrow(::CUmemAccess_flags& __flags, ::CUmemoryPool __pool, ::CUmemLocation* __location) noexcept
+{
+  static auto __driver_fn = _CCCLRT_GET_DRIVER_FUNCTION(cuMemPoolGetAccess);
+  return static_cast<::cudaError_t>(__driver_fn(&__flags, __pool, __location));
+}
+
 #  if _CCCL_CTK_AT_LEAST(13, 0)
 _CCCL_HOST_API inline ::CUmemoryPool
 __getDefaultMemPool(CUmemLocation __location, CUmemAllocationType_enum __allocation_type)
@@ -878,6 +885,12 @@ __graphKernelNodeSetAttribute(::CUgraphNode __node, ::CUkernelNodeAttrID __id, c
   ::cuda::__driver::__call_driver_fn(
     __driver_fn, "Failed to query if device can access peer's memory", &__result, __dev, __peer_dev);
   return static_cast<bool>(__result);
+}
+
+[[nodiscard]] _CCCL_HOST_API inline ::cudaError_t __deviceCanAccessPeerNoThrow(int& __result, ::CUdevice __dev, ::CUdevice __peer_dev) noexcept
+{
+  static auto __driver_fn = _CCCLRT_GET_DRIVER_FUNCTION(cuDeviceCanAccessPeer);
+  return static_cast<::cudaError_t>(__driver_fn(&__result, __dev, __peer_dev));
 }
 
 // Green contexts
