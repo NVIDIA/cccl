@@ -23,6 +23,8 @@
 // for backward compatibility
 #include <cub/util_temporary_storage.cuh>
 
+#include <cuda/__device/arch_id.h>
+#include <cuda/__device/compute_capability.h>
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__utility/forward.h>
 #include <cuda/std/array>
@@ -374,6 +376,33 @@ CUB_RUNTIME_FUNCTION inline cudaError_t PtxVersion(int& ptx_version)
   return result;
 }
 
+namespace detail
+{
+//! @brief Retrieves the GPU architecture of the PTX or SASS that will be used on the current device.
+CUB_RUNTIME_FUNCTION inline cudaError_t ptx_arch_id(::cuda::arch_id& arch_id)
+{
+  int ptx_version = 0;
+  if (const auto error = PtxVersion(ptx_version))
+  {
+    return error;
+  }
+  arch_id = ::cuda::to_arch_id(::cuda::compute_capability(ptx_version / 10));
+  return cudaSuccess;
+}
+
+//! @brief Retrieves the GPU architecture of the PTX or SASS that will be used on the given device.
+_CCCL_HOST_API inline cudaError_t ptx_arch_id(::cuda::arch_id& arch_id, int device)
+{
+  int ptx_version = 0;
+  if (const auto error = PtxVersion(ptx_version, device))
+  {
+    return error;
+  }
+  arch_id = ::cuda::to_arch_id(::cuda::compute_capability(ptx_version / 10));
+  return cudaSuccess;
+}
+} // namespace detail
+
 /**
  * \brief Retrieves the SM version (i.e. compute capability) of \p device (major * 100 + minor * 10)
  */
@@ -432,6 +461,50 @@ CUB_RUNTIME_FUNCTION inline cudaError_t SmVersion(int& sm_version, int device = 
 CUB_RUNTIME_FUNCTION inline cudaError_t SyncStream([[maybe_unused]] cudaStream_t stream)
 {
   NV_IF_TARGET(NV_IS_HOST, (return CubDebug(cudaStreamSynchronize(stream));), (return cudaErrorNotSupported;))
+}
+
+//! @brief Computes the maximum potential dynamic shared memory size per block for kernel @p kernel_ptr taking into
+//!        account the amount of kernel's static and CUDA Driver's reserved shared memory.
+//!
+//! @param[out] max_dyn_smem_bytes
+//!   Maximum dynamic shared memory that can be allocated. Set to -1 in case of error.
+//!
+//! @param[in] kernel_ptr
+//!   Kernel pointer for which to compute the maximum potential dynamic shared memory.
+template <class KernelPtr>
+CUB_RUNTIME_FUNCTION inline cudaError_t
+MaxPotentialDynamicSmemBytes(int& max_dyn_smem_bytes, KernelPtr kernel_ptr) noexcept
+{
+  max_dyn_smem_bytes = -1;
+
+  cudaFuncAttributes kernel_attrs{};
+  if (const auto error = CubDebug(cudaFuncGetAttributes(&kernel_attrs, kernel_ptr)))
+  {
+    return error;
+  }
+
+  int curr_device{};
+  if (const auto error = CubDebug(cudaGetDevice(&curr_device)))
+  {
+    return error;
+  }
+
+  int reserved_smem_size{};
+  if (const auto error =
+        CubDebug(cudaDeviceGetAttribute(&reserved_smem_size, cudaDevAttrReservedSharedMemoryPerBlock, curr_device)))
+  {
+    return error;
+  }
+
+  int max_smem_size_optin{};
+  if (const auto error =
+        CubDebug(cudaDeviceGetAttribute(&max_smem_size_optin, cudaDevAttrMaxSharedMemoryPerBlockOptin, curr_device)))
+  {
+    return error;
+  }
+
+  max_dyn_smem_bytes = max_smem_size_optin - reserved_smem_size - static_cast<int>(kernel_attrs.sharedSizeBytes);
+  return cudaSuccess;
 }
 
 namespace detail
@@ -700,14 +773,14 @@ public:
   template <typename FunctorT>
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t Invoke(int device_ptx_version, FunctorT& op)
   {
-    // __CUDA_ARCH_LIST__ is only available from CTK 11.5 onwards
+    // __CUDA_ARCH_LIST__ is available from CTK 11.5 onwards and contains values like 860
+    // NV_TARGET_SM_INTEGER_LIST is defined by NVHPC and contains values like 86, so we need to scale by 10
 #  ifdef __CUDA_ARCH_LIST__
-    return runtime_to_compiletime<1, __CUDA_ARCH_LIST__>(device_ptx_version, op);
-    // NV_TARGET_SM_INTEGER_LIST is defined by NVHPC. The values need to be multiplied by 10 to match
-    // __CUDA_ARCH_LIST__. E.g. arch 860 from __CUDA_ARCH_LIST__ corresponds to arch 86 from NV_TARGET_SM_INTEGER_LIST.
+    return runtime_arch_to_compiletime<1, __CUDA_ARCH_LIST__>(device_ptx_version, op);
 #  elif defined(NV_TARGET_SM_INTEGER_LIST)
-    return runtime_to_compiletime<10, NV_TARGET_SM_INTEGER_LIST>(device_ptx_version, op);
+    return runtime_arch_to_compiletime<10, NV_TARGET_SM_INTEGER_LIST>(device_ptx_version, op);
 #  else
+    // some compilers, like clang in CUDA mode, do not have a macro, so we have to include a fallback
     if constexpr (have_previous_policy)
     {
       if (device_ptx_version < PolicyPtxVersion)
@@ -722,28 +795,34 @@ public:
 
 private:
   template <int, typename, typename>
-  friend struct ChainedPolicy; // let us call invoke_static of other ChainedPolicy instantiations
+  friend struct ChainedPolicy; // let us call find_and_invoke_policy of other ChainedPolicy instantiations
 
 #if !_CCCL_COMPILER(NVRTC)
   template <int ArchMult, int... CudaArches, typename FunctorT>
-  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t runtime_to_compiletime(int device_ptx_version, FunctorT& op)
+  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t
+  runtime_arch_to_compiletime(int device_ptx_version, FunctorT& op)
   {
-    // We instantiate invoke_static for each CudaArches, but only call the one matching device_ptx_version.
+    // We instantiate find_and_invoke_policy for each CudaArches (the arches we are compiling for), but only call the
+    // one matching device_ptx_version.
     // If there's no exact match of the architectures in __CUDA_ARCH_LIST__/NV_TARGET_SM_INTEGER_LIST and the runtime
-    // queried ptx version (i.e., the closest ptx version to the current device's architecture that the EmptyKernel was
-    // compiled for), we return cudaErrorInvalidDeviceFunction. Such a scenario may arise if CUB_DISABLE_NAMESPACE_MAGIC
-    // is set and different TUs are compiled for different sets of architecture.
+    // queried ptx version (i.e., the closest lower or equal ptx version to the current device's architecture that the
+    // EmptyKernel was compiled for), we return cudaErrorInvalidDeviceFunction. Such a scenario is a bug and may arise
+    // if CUB_DISABLE_NAMESPACE_MAGIC is set and different TUs are compiled for different sets of architecture.
     cudaError_t e = cudaErrorInvalidDeviceFunction;
-    (..., (device_ptx_version == CudaArches * ArchMult ? (e = invoke_static<CudaArches * ArchMult>(op)) : cudaSuccess));
+    (...,
+     (device_ptx_version == CudaArches * ArchMult
+        ? (e = find_and_invoke_policy<CudaArches * ArchMult>(op))
+        : cudaSuccess));
     return e;
   }
 
   template <int DevicePtxVersion, typename FunctorT>
-  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t invoke_static(FunctorT& op)
+  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t find_and_invoke_policy(FunctorT& op)
   {
+    // find the first policy we can use on DevicePtxVersion
     if constexpr (DevicePtxVersion < PolicyPtxVersion && have_previous_policy)
     {
-      return PrevPolicyT::template invoke_static<DevicePtxVersion>(op);
+      return PrevPolicyT::template find_and_invoke_policy<DevicePtxVersion>(op);
     }
     else
     {

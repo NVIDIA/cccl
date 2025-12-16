@@ -110,60 +110,6 @@
 #  define _CCCL_BUILTIN_ASSUME_ALIGNED(...) __builtin_assume_aligned(__VA_ARGS__)
 #endif // _CCCL_HAS_BUILTIN(__builtin_assume_aligned)
 
-// MSVC supports __builtin_bit_cast from 19.25 on
-#if _CCCL_CHECK_BUILTIN(builtin_bit_cast) || _CCCL_COMPILER(MSVC, >, 19, 25)
-#  define _CCCL_BUILTIN_BIT_CAST(...) __builtin_bit_cast(__VA_ARGS__)
-#endif // _CCCL_CHECK_BUILTIN(builtin_bit_cast)
-
-#if _CCCL_CHECK_BUILTIN(builtin_popcount) || _CCCL_COMPILER(GCC, <, 10) || _CCCL_COMPILER(CLANG) \
-  || _CCCL_COMPILER(NVHPC)
-#  define _CCCL_BUILTIN_POPCOUNT(...)   __builtin_popcount(__VA_ARGS__)
-#  define _CCCL_BUILTIN_POPCOUNTLL(...) __builtin_popcountll(__VA_ARGS__)
-#endif // _CCCL_CHECK_BUILTIN(builtin_popcount)
-
-#if _CCCL_CHECK_BUILTIN(builtin_popcountg)
-#  define _CCCL_BUILTIN_POPCOUNTG(...) __builtin_popcountg(__VA_ARGS__)
-#endif // _CCCL_CHECK_BUILTIN(builtin_popcountg)
-
-// nvcc cannot handle __builtin_popcountg
-#if _CCCL_CUDA_COMPILER(NVCC)
-#  undef _CCCL_BUILTIN_POPCOUNTG
-#endif // _CCCL_CUDA_COMPILER(NVCC)
-
-#if _CCCL_CHECK_BUILTIN(builtin_clz) || _CCCL_COMPILER(GCC, <, 10) || _CCCL_COMPILER(CLANG) || _CCCL_COMPILER(NVHPC)
-#  define _CCCL_BUILTIN_CLZ(...)   __builtin_clz(__VA_ARGS__)
-#  define _CCCL_BUILTIN_CLZLL(...) __builtin_clzll(__VA_ARGS__)
-#endif // _CCCL_CHECK_BUILTIN(builtin_clz)
-
-#if _CCCL_CHECK_BUILTIN(builtin_clzg)
-#  define _CCCL_BUILTIN_CLZG(...) __builtin_clzg(__VA_ARGS__)
-#endif // _CCCL_CHECK_BUILTIN(builtin_clzg)
-
-// nvcc cannot handle __builtin_clzg
-#if _CCCL_CUDA_COMPILER(NVCC)
-#  undef _CCCL_BUILTIN_CLZG
-#endif // _CCCL_CUDA_COMPILER(NVCC)
-
-#if _CCCL_CHECK_BUILTIN(builtin_ctz) || _CCCL_COMPILER(GCC, <, 10) || _CCCL_COMPILER(CLANG) || _CCCL_COMPILER(NVHPC)
-#  define _CCCL_BUILTIN_CTZ(...)   __builtin_ctz(__VA_ARGS__)
-#  define _CCCL_BUILTIN_CTZLL(...) __builtin_ctzll(__VA_ARGS__)
-#endif // _CCCL_CHECK_BUILTIN(builtin_ctz)
-
-#if _CCCL_CHECK_BUILTIN(builtin_ctzg)
-#  define _CCCL_BUITLIN_CTZG(...) __builtin_ctzg(__VA_ARGS__)
-#endif // _CCCL_CHECK_BUILTIN(builtin_ctzg)
-
-// nvcc cannot handle __builtin_ctzg
-#if _CCCL_CUDA_COMPILER(NVCC)
-#  undef _CCCL_BUITLIN_CTZG
-#endif // _CCCL_CUDA_COMPILER(NVCC)
-
-#if _CCCL_HAS_BUILTIN(__builtin_COLUMN) || _CCCL_COMPILER(MSVC, >=, 19, 27)
-#  define _CCCL_BUILTIN_COLUMN() __builtin_COLUMN()
-#else // ^^^ _CCCL_HAS_BUILTIN(__builtin_COLUMN) ^^^ / vvv !_CCCL_HAS_BUILTIN(__builtin_COLUMN) vvv
-#  define _CCCL_BUILTIN_COLUMN() 0
-#endif // !_CCCL_HAS_BUILTIN(__builtin_COLUMN)
-
 #if _CCCL_CHECK_BUILTIN(builtin_constant_p) || _CCCL_COMPILER(GCC)
 #  define _CCCL_BUILTIN_CONSTANT_P(...) __builtin_constant_p(__VA_ARGS__)
 #endif // _CCCL_CHECK_BUILTIN(builtin_constant_p)
@@ -171,18 +117,6 @@
 #if _CCCL_CHECK_BUILTIN(builtin_expect) || _CCCL_COMPILER(MSVC) || _CCCL_COMPILER(GCC)
 #  define _CCCL_BUILTIN_EXPECT(...) __builtin_expect(__VA_ARGS__)
 #endif // _CCCL_CHECK_BUILTIN(builtin_expect)
-
-#if _CCCL_HAS_BUILTIN(__builtin_FILE) || _CCCL_COMPILER(GCC) || _CCCL_COMPILER(MSVC, >=, 19, 27)
-#  define _CCCL_BUILTIN_FILE() __builtin_FILE()
-#else // ^^^ _CCCL_HAS_BUILTIN(__builtin_FILE) ^^^ / vvv !_CCCL_HAS_BUILTIN(__builtin_FILE) vvv
-#  define _CCCL_BUILTIN_FILE() __FILE__
-#endif // !_CCCL_HAS_BUILTIN(__builtin_LINE)
-
-#if _CCCL_HAS_BUILTIN(__builtin_FUNCTION) || _CCCL_COMPILER(GCC) || _CCCL_COMPILER(MSVC, >=, 19, 27)
-#  define _CCCL_BUILTIN_FUNCTION() __builtin_FUNCTION()
-#else // ^^^ _CCCL_HAS_BUILTIN(__builtin_FUNCTION) ^^^ / vvv !_CCCL_HAS_BUILTIN(__builtin_FUNCTION) vvv
-#  define _CCCL_BUILTIN_FUNCTION() "__builtin_FUNCTION is unsupported"
-#endif // !_CCCL_HAS_BUILTIN(__builtin_FUNCTION)
 
 #if _CCCL_CHECK_BUILTIN(builtin_huge_valf) || _CCCL_COMPILER(MSVC) || _CCCL_COMPILER(GCC, <, 10)
 #  define _CCCL_BUILTIN_HUGE_VALF() __builtin_huge_valf()
@@ -232,12 +166,6 @@
 // #  define _CCCL_BUILTIN_IS_POINTER_INTERCONVERTIBLE_WITH_CLASS(_S, _MPtr)
 // __is_pointer_interconvertible_with_class(_S, _MPtr)
 #endif // ^^^ _CCCL_COMPILER(MSVC, >=, 19, 29) ^^^
-
-#if _CCCL_HAS_BUILTIN(__builtin_LINE) || _CCCL_COMPILER(GCC) || _CCCL_COMPILER(MSVC, >=, 19, 27)
-#  define _CCCL_BUILTIN_LINE() __builtin_LINE()
-#else // ^^^ _CCCL_HAS_BUILTIN(__builtin_LINE) ^^^ / vvv !_CCCL_HAS_BUILTIN(__builtin_LINE) vvv
-#  define _CCCL_BUILTIN_LINE() __LINE__
-#endif // !_CCCL_HAS_BUILTIN(__builtin_LINE)
 
 #if _CCCL_CHECK_BUILTIN(builtin_nanf) || _CCCL_COMPILER(MSVC) || _CCCL_COMPILER(GCC, <, 10)
 #  define _CCCL_BUILTIN_NANF(...) __builtin_nanf(__VA_ARGS__)
@@ -305,11 +233,11 @@
 #  undef _CCCL_BUILTIN_MEMMOVE
 #endif // _CCCL_CUDA_COMPILER(NVCC)
 
-#if _CCCL_CHECK_BUILTIN(__builtin_operator_new) && _CCCL_CHECK_BUILTIN(__builtin_operator_delete) \
+#if _CCCL_CHECK_BUILTIN(builtin_operator_new) && _CCCL_CHECK_BUILTIN(builtin_operator_delete) \
   && _CCCL_CUDA_COMPILER(CLANG)
 #  define _CCCL_BUILTIN_OPERATOR_DELETE(...) __builtin_operator_delete(__VA_ARGS__)
 #  define _CCCL_BUILTIN_OPERATOR_NEW(...)    __builtin_operator_new(__VA_ARGS__)
-#endif // _CCCL_CHECK_BUILTIN(__builtin_operator_new) && _CCCL_CHECK_BUILTIN(__builtin_operator_delete)
+#endif // _CCCL_CHECK_BUILTIN(builtin_operator_new) && _CCCL_CHECK_BUILTIN(builtin_operator_delete)
 
 #if _CCCL_CHECK_BUILTIN(builtin_prefetch) || _CCCL_COMPILER(GCC)
 #  define _CCCL_BUILTIN_PREFETCH(...) NV_IF_TARGET(NV_IS_HOST, __builtin_prefetch(__VA_ARGS__);)
@@ -561,68 +489,6 @@
 // NVRTC does not expose builtin_strlen
 #if !_CCCL_COMPILER(GCC) && !_CCCL_COMPILER(NVRTC)
 #  define _CCCL_BUILTIN_STRLEN(...) __builtin_strlen(__VA_ARGS__)
-#endif
-
-// todo: re-enable std builtins
-
-// // Some compilers provide std::move/std::forward/etc as builtins
-// #if defined(__cplusplus)
-// // Bring in the bits of the STL we need
-// #  if _CCCL_HOST_STD_LIB(LIBSTDCXX)
-// #    include <bits/move.h> // for move, forward, forward_like, and addressof
-// #  elif _CCCL_HOST_STD_LIB(LIBCXX)
-// #    include <__memory/addressof.h>
-// #    include <__utility/as_const.h>
-// #    include <__utility/forward.h>
-// #    if __cpp_lib_forward_like >= 202217L
-// #      include <__utility/forward_like.h>
-// #    endif // __cpp_lib_forward_like >= 202217L
-// #    include <__utility/move.h>
-// #  endif
-
-// #  if _CCCL_HOST_STD_LIB(LIBSTDCXX) || _CCCL_HOST_STD_LIB(LIBCXX)
-// // std::move builtin
-// #    if _CCCL_COMPILER(CLANG, >=, 15) || _CCCL_COMPILER(GCC, >=, 15)
-// #      define _CCCL_HAS_BUILTIN_STD_MOVE() 1
-// #    endif
-
-// // std::forward builtin
-// #    if _CCCL_COMPILER(CLANG, >=, 15) || _CCCL_COMPILER(GCC, >=, 15)
-// #      define _CCCL_HAS_BUILTIN_STD_FORWARD() 1
-// #    endif
-
-// // std::addressof builtin
-// #    if _CCCL_COMPILER(CLANG, >=, 15) || _CCCL_COMPILER(GCC, >=, 15)
-// #      define _CCCL_HAS_BUILTIN_STD_ADDRESSOF() 1
-// #    endif
-
-// // std::as_const builtin
-// #    if _CCCL_COMPILER(CLANG, >=, 15)
-// #      define _CCCL_HAS_BUILTIN_STD_AS_CONST() 1
-// #    endif
-
-// // std::forward_like builtin
-// // Leaving out MSVC for now because it is hard for forward-declare std::forward_like.
-// #    if (_CCCL_COMPILER(CLANG, >=, 17) || _CCCL_COMPILER(GCC, >=, 15)) && __cpp_lib_forward_like >= 202217L
-// #      define _CCCL_HAS_BUILTIN_STD_FORWARD_LIKE() 1
-// #    endif
-// #  endif // _CCCL_HOST_STD_LIB(LIBSTDCXX) || _CCCL_HOST_STD_LIB(LIBCXX)
-// #endif // defined(__cplusplus)
-
-#ifndef _CCCL_HAS_BUILTIN_STD_MOVE
-#  define _CCCL_HAS_BUILTIN_STD_MOVE() 0
-#endif
-#ifndef _CCCL_HAS_BUILTIN_STD_FORWARD
-#  define _CCCL_HAS_BUILTIN_STD_FORWARD() 0
-#endif
-#ifndef _CCCL_HAS_BUILTIN_STD_ADDRESSOF
-#  define _CCCL_HAS_BUILTIN_STD_ADDRESSOF() 0
-#endif
-#ifndef _CCCL_HAS_BUILTIN_STD_AS_CONST
-#  define _CCCL_HAS_BUILTIN_STD_AS_CONST() 0
-#endif
-#ifndef _CCCL_HAS_BUILTIN_STD_FORWARD_LIKE
-#  define _CCCL_HAS_BUILTIN_STD_FORWARD_LIKE() 0
 #endif
 
 #endif // __CCCL_BUILTIN_H

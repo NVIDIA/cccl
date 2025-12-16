@@ -21,6 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/__cmath/mul_hi.h>
 #include <cuda/std/__bit/rotate.h>
 #include <cuda/std/__limits/numeric_limits.h>
 #include <cuda/std/__random/is_seed_sequence.h>
@@ -34,7 +35,129 @@
 
 _CCCL_BEGIN_NAMESPACE_CUDA
 
-#if _CCCL_HAS_INT128()
+// Keep this here even when we have __int128 support, so that we can test it against native __int128
+class __pcg_uint128_fallback
+{
+private:
+  ::cuda::std::uint64_t __hi_;
+  ::cuda::std::uint64_t __lo_;
+
+public:
+  _CCCL_API constexpr __pcg_uint128_fallback() noexcept
+      : __hi_{0}
+      , __lo_{0}
+  {}
+
+  _CCCL_API constexpr __pcg_uint128_fallback(::cuda::std::uint64_t __val) noexcept
+      : __hi_{0}
+      , __lo_{__val}
+  {}
+
+  _CCCL_API constexpr __pcg_uint128_fallback(::cuda::std::uint64_t __hi, ::cuda::std::uint64_t __lo) noexcept
+      : __hi_{__hi}
+      , __lo_{__lo}
+  {}
+
+  [[nodiscard]] _CCCL_API constexpr explicit operator ::cuda::std::uint64_t() const noexcept
+  {
+    return __lo_;
+  }
+
+  [[nodiscard]] _CCCL_API constexpr explicit operator ::cuda::std::uint8_t() const noexcept
+  {
+    return static_cast<::cuda::std::uint8_t>(__lo_);
+  }
+
+  [[nodiscard]] _CCCL_API constexpr __pcg_uint128_fallback operator|(::cuda::std::uint64_t __rhs) const noexcept
+  {
+    return __pcg_uint128_fallback(__hi_, __lo_ | __rhs);
+  }
+
+  [[nodiscard]] _CCCL_API constexpr __pcg_uint128_fallback operator^(__pcg_uint128_fallback __rhs) const noexcept
+  {
+    return __pcg_uint128_fallback(__hi_ ^ __rhs.__hi_, __lo_ ^ __rhs.__lo_);
+  }
+
+  [[nodiscard]] _CCCL_API constexpr int operator&(int __rhs) const noexcept
+  {
+    return __lo_ & static_cast<::cuda::std::uint64_t>(__rhs);
+  }
+
+  [[nodiscard]] _CCCL_API constexpr __pcg_uint128_fallback operator<<(int __shift) const noexcept
+  {
+    _CCCL_ASSERT(__shift >= 0 && __shift < 128, "shift value out of range");
+    if (__shift == 0)
+    {
+      return *this;
+    }
+    if (__shift >= 128)
+    {
+      return __pcg_uint128_fallback(0, 0);
+    }
+    if (__shift >= 64)
+    {
+      return __pcg_uint128_fallback(__lo_ << (__shift - 64), 0);
+    }
+    return __pcg_uint128_fallback((__hi_ << __shift) | (__lo_ >> (64 - __shift)), __lo_ << __shift);
+  }
+
+  [[nodiscard]] _CCCL_API constexpr __pcg_uint128_fallback operator>>(int __shift) const noexcept
+  {
+    _CCCL_ASSERT(__shift >= 0 && __shift < 128, "shift value out of range");
+    if (__shift == 0)
+    {
+      return *this;
+    }
+    if (__shift >= 128)
+    {
+      return __pcg_uint128_fallback(0, 0);
+    }
+    if (__shift >= 64)
+    {
+      return __pcg_uint128_fallback(0, __hi_ >> (__shift - 64));
+    }
+    return __pcg_uint128_fallback(__hi_ >> __shift, (__lo_ >> __shift) | (__hi_ << (64 - __shift)));
+  }
+
+  [[nodiscard]] _CCCL_API constexpr __pcg_uint128_fallback operator+(__pcg_uint128_fallback __rhs) const noexcept
+  {
+    // TODO: optimize with PTX add.cc
+    ::cuda::std::uint64_t __new_lo = __lo_ + __rhs.__lo_;
+    ::cuda::std::uint64_t __carry  = (__new_lo < __lo_) ? 1 : 0;
+    return __pcg_uint128_fallback(__hi_ + __rhs.__hi_ + __carry, __new_lo);
+  }
+
+  [[nodiscard]] _CCCL_API constexpr __pcg_uint128_fallback operator*(__pcg_uint128_fallback __rhs) const noexcept
+  {
+    __pcg_uint128_fallback __c(::cuda::mul_hi(__lo_, __rhs.__lo_), __lo_ * __rhs.__lo_);
+    __c.__hi_ += __hi_ * __rhs.__lo_ + __lo_ * __rhs.__hi_;
+    return __c;
+  }
+
+  _CCCL_API constexpr __pcg_uint128_fallback& operator*=(__pcg_uint128_fallback __rhs) noexcept
+  {
+    return *this = *this * __rhs;
+  }
+
+  [[nodiscard]] _CCCL_API constexpr bool operator>(int __x) const noexcept
+  {
+    return __hi_ != 0 || __lo_ > static_cast<::cuda::std::uint64_t>(__x);
+  }
+
+  [[nodiscard]] _CCCL_API constexpr friend bool
+  operator==(__pcg_uint128_fallback __lhs, __pcg_uint128_fallback __rhs) noexcept
+  {
+    return __lhs.__hi_ == __rhs.__hi_ && __lhs.__lo_ == __rhs.__lo_;
+  }
+
+#if _CCCL_STD_VER <= 2017
+  [[nodiscard]] _CCCL_API constexpr friend bool
+  operator!=(__pcg_uint128_fallback __lhs, __pcg_uint128_fallback __rhs) noexcept
+  {
+    return !(__lhs == __rhs);
+  }
+#endif // _CCCL_STD_VER <= 2017
+};
 
 //! @brief A 64-bit permuted congruential generator (PCG) random number engine.
 //!
@@ -49,8 +172,6 @@ _CCCL_BEGIN_NAMESPACE_CUDA
 //! @tparam _CHi The high 64 bits of the increment constant for the LCG.
 //! @tparam _CLo The low 64 bits of the increment constant for the LCG.
 //!
-//! @note This class requires compiler support for 128-bit integers.
-//!
 //! @see https://www.pcg-random.org/ for details on the PCG family of generators.
 template <::cuda::std::uint64_t _AHi, ::cuda::std::uint64_t _ALo, ::cuda::std::uint64_t _CHi, ::cuda::std::uint64_t _CLo>
 class pcg64_engine
@@ -59,25 +180,30 @@ public:
   using result_type = ::cuda::std::uint64_t;
 
 private:
+#if _CCCL_HAS_INT128()
+  using __pcg64_uint128_t = __uint128_t;
+#else
+  using __pcg64_uint128_t = __pcg_uint128_fallback;
+#endif
   using __bitcount_t = ::cuda::std::uint8_t;
 
-  static constexpr __uint128_t __multiplier = (static_cast<__uint128_t>(_AHi) << 64) | _ALo;
-  static constexpr __uint128_t __increment  = (static_cast<__uint128_t>(_CHi) << 64) | _CLo;
+  static constexpr __pcg64_uint128_t __multiplier = (static_cast<__pcg64_uint128_t>(_AHi) << 64) | _ALo;
+  static constexpr __pcg64_uint128_t __increment  = (static_cast<__pcg64_uint128_t>(_CHi) << 64) | _CLo;
 
-  [[nodiscard]] _CCCL_API static constexpr result_type __output_transform(__uint128_t __internal) noexcept
+  [[nodiscard]] _CCCL_API static constexpr result_type __output_transform(__pcg64_uint128_t __internal) noexcept
   {
-    const auto __rot = static_cast<__bitcount_t>(__internal >> 122);
-    __internal ^= __internal >> 64;
+    const int __rot = static_cast<__bitcount_t>(__internal >> 122);
+    __internal      = __internal ^ (__internal >> 64);
     return ::cuda::std::rotr(result_type(__internal), __rot);
   }
 
-  [[nodiscard]] _CCCL_API static constexpr ::cuda::std::pair<__uint128_t, __uint128_t>
-  __power_mod(__uint128_t __delta) noexcept
+  [[nodiscard]] _CCCL_API constexpr ::cuda::std::pair<__pcg64_uint128_t, __pcg64_uint128_t>
+  __power_mod(__pcg64_uint128_t __delta) noexcept
   {
-    __uint128_t __acc_mult = 1;
-    __uint128_t __acc_plus = 0;
-    __uint128_t __cur_mult = __multiplier;
-    __uint128_t __cur_plus = __increment;
+    __pcg64_uint128_t __acc_mult = 1;
+    __pcg64_uint128_t __acc_plus = 0;
+    __pcg64_uint128_t __cur_mult = __multiplier;
+    __pcg64_uint128_t __cur_plus = __increment;
     while (__delta > 0)
     {
       if (__delta & 1)
@@ -87,11 +213,11 @@ private:
       }
       __cur_plus = (__cur_mult + 1) * __cur_plus;
       __cur_mult *= __cur_mult;
-      __delta >>= 1;
+      __delta = __delta >> 1;
     }
     return ::cuda::std::pair{__acc_mult, __acc_plus};
   }
-  __uint128_t __x_{};
+  __pcg64_uint128_t __x_{};
 
 public:
   static constexpr result_type default_seed = 0xcafef00dd15ea5e5ULL;
@@ -134,7 +260,7 @@ public:
   //! @param __seed The seed value; defaults to `default_seed`.
   _CCCL_API constexpr void seed(result_type __seed = default_seed) noexcept
   {
-    __x_ = (__seed + __increment) * __multiplier + __increment;
+    __x_ = (__pcg64_uint128_t(__seed) + __increment) * __multiplier + __increment;
   }
 
   //! @brief Seed the engine from a SeedSequence-like object.
@@ -146,11 +272,11 @@ public:
   {
     ::cuda::std::array<::cuda::std::uint32_t, 4> data = {};
     __seq.generate(data.begin(), data.end());
-    __uint128_t seed_val = data[0];
-    seed_val             = (seed_val << 32) | data[1];
-    seed_val             = (seed_val << 32) | data[2];
-    seed_val             = (seed_val << 32) | data[3];
-    __x_                 = (seed_val + __increment) * __multiplier + __increment;
+    __pcg64_uint128_t seed_val = data[0];
+    seed_val                   = (seed_val << 32) | data[1];
+    seed_val                   = (seed_val << 32) | data[2];
+    seed_val                   = (seed_val << 32) | data[3];
+    __x_                       = (seed_val + __increment) * __multiplier + __increment;
   }
 
   //! @brief Generate the next pseudo-random value.
@@ -179,15 +305,15 @@ public:
     return __x.__x_ == __y.__x_;
   }
 
-#  if _CCCL_STD_VER <= 2017
+#if _CCCL_STD_VER <= 2017
   //! @brief Inequality comparison for two engines.
   [[nodiscard]] _CCCL_API constexpr friend bool operator!=(const pcg64_engine& __x, const pcg64_engine& __y) noexcept
   {
     return !(__x == __y);
   }
-#  endif // _CCCL_STD_VER <= 2017
+#endif // _CCCL_STD_VER <= 2017
 
-#  if !_CCCL_COMPILER(NVRTC)
+#if !_CCCL_COMPILER(NVRTC)
 
   template <typename _CharT, typename _Traits>
   _CCCL_API friend ::std::basic_ostream<_CharT, _Traits>&
@@ -232,13 +358,13 @@ public:
     __is >> __low;
     __is >> __hi;
     // Read engine state from stream: low 64 bits then high 64 bits.
-    __e.__x_ = (static_cast<__uint128_t>(__hi) << 64) | __low;
+    __e.__x_ = (static_cast<__pcg64_uint128_t>(__hi) << 64) | __low;
     // restore flags
     __is.flags(__flags);
 
     return __is;
   }
-#  endif // !_CCCL_COMPILER(NVRTC)
+#endif // !_CCCL_COMPILER(NVRTC)
 };
 
 //! @class pcg64
@@ -262,11 +388,9 @@ public:
 //!   eng.discard(10);                        // skip 10 outputs
 //! @endcode
 //!
-//! @note This class requires compiler support for 128-bit integers.
 using pcg64 =
   pcg64_engine<2549297995355413924ull, 4865540595714422341ull, 6364136223846793005ull, 1442695040888963407ull>;
 
-#endif // _CCCL_HAS_INT128()
 _CCCL_END_NAMESPACE_CUDA
 
 #include <cuda/std/__cccl/epilogue.h>

@@ -21,6 +21,29 @@
 #  pragma system_header
 #endif // no system header
 
+#if _CCCL_COMPILER(CLANG, >=, 15) || _CCCL_COMPILER(GCC, >=, 12)
+#  define _CCCL_HAS_BUILTIN_STD_ADDRESSOF() 1
+#else // ^^^ has builtin std::addressof ^^^ / vvv no builtin std::addressof vvv
+#  define _CCCL_HAS_BUILTIN_STD_ADDRESSOF() 0
+#endif // ^^^ no builtin std::addressof ^^^
+
+// nvcc warns about host only std::addressof being used in device code
+#if _CCCL_CUDA_COMPILER(NVCC) && _CCCL_DEVICE_COMPILATION()
+#  undef _CCCL_HAS_BUILTIN_STD_ADDRESSOF
+#  define _CCCL_HAS_BUILTIN_STD_ADDRESSOF() 0
+#endif // _CCCL_CUDA_COMPILER(NVCC) && _CCCL_DEVICE_COMPILATION()
+
+// include minimal std:: headers
+#if _CCCL_HAS_BUILTIN_STD_ADDRESSOF()
+#  if _CCCL_HOST_STD_LIB(LIBSTDCXX) && _CCCL_HAS_INCLUDE(<bits/move.h>)
+#    include <bits/move.h>
+#  elif _CCCL_HOST_STD_LIB(LIBCXX) && _CCCL_HAS_INCLUDE(<__memory/addressof.h>)
+#    include <__memory/addressof.h>
+#  elif !_CCCL_COMPILER(NVRTC)
+#    include <cuda/std/__cccl/memory_wrapper.h>
+#  endif
+#endif // _CCCL_HAS_BUILTIN_STD_ADDRESSOF()
+
 #include <cuda/std/__cccl/prologue.h>
 
 _CCCL_DIAG_PUSH
@@ -37,7 +60,7 @@ using ::std::addressof;
 #elif defined(_CCCL_BUILTIN_ADDRESSOF)
 
 template <class _Tp>
-[[nodiscard]] _CCCL_API inline _CCCL_NO_CFI constexpr _Tp* addressof(_Tp& __x) noexcept
+[[nodiscard]] _CCCL_API _CCCL_NO_CFI constexpr _Tp* addressof(_Tp& __x) noexcept
 {
   return _CCCL_BUILTIN_ADDRESSOF(__x);
 }
@@ -48,7 +71,7 @@ _Tp* addressof(const _Tp&&) noexcept = delete;
 #else
 
 template <class _Tp>
-[[nodiscard]] _CCCL_API inline _CCCL_NO_CFI _Tp* addressof(_Tp& __x) noexcept
+[[nodiscard]] _CCCL_API _CCCL_NO_CFI _Tp* addressof(_Tp& __x) noexcept
 {
   return reinterpret_cast<_Tp*>(const_cast<char*>(&reinterpret_cast<const volatile char&>(__x)));
 }

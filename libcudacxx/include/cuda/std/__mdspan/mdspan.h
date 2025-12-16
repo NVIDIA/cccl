@@ -516,8 +516,8 @@ public:
     return mapping_type::is_always_strided();
   }
 
-  [[nodiscard]] _CCCL_API constexpr bool is_unique() const
-    noexcept(noexcept(::cuda::std::declval<const mapping_type&>().is_unique()))
+  [[nodiscard]]
+  _CCCL_API constexpr bool is_unique() const noexcept(noexcept(::cuda::std::declval<const mapping_type&>().is_unique()))
   {
     const auto __tmp = mapping(); // workaround for clang with nodiscard
     return __tmp.is_unique();

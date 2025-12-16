@@ -22,7 +22,6 @@
 
 #include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__algorithm/min.h>
-#include <cuda/std/__cccl/cuda_capabilities.h>
 
 CUB_NAMESPACE_BEGIN
 

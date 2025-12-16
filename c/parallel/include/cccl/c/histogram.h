@@ -30,9 +30,13 @@ typedef struct cccl_device_histogram_build_result_t
   size_t cubin_size;
   CUlibrary library;
   cccl_type_info counter_type;
+  cccl_type_info level_type;
+  cccl_type_info sample_type;
   int num_active_channels;
+  bool may_overflow;
   CUkernel init_kernel;
   CUkernel sweep_kernel;
+  void* runtime_policy;
 } cccl_device_histogram_build_result_t;
 
 CCCL_C_API CUresult cccl_device_histogram_build(

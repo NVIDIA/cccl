@@ -114,7 +114,7 @@ _CCCL_REQUIRES(__is_extended_arithmetic_v<_Tp>)
 // abs
 
 _CCCL_TEMPLATE(class _Tp)
-_CCCL_REQUIRES(__is_extended_arithmetic_v<_Tp>)
+_CCCL_REQUIRES(__is_fp_v<_Tp>)
 [[nodiscard]] _CCCL_API constexpr auto abs(_Tp __x) noexcept
 {
   return ::cuda::std::fabs(__x);

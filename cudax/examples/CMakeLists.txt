@@ -14,10 +14,6 @@ function(cudax_add_example target_name_var example_src)
       cudax.compiler_interface
       cudax.examples.thrust
   )
-  target_compile_definitions(
-    ${example_target}
-    PRIVATE LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE
-  )
   target_compile_options(
     ${example_target}
     PRIVATE
@@ -38,7 +34,7 @@ file(
   *.cpp
 )
 
-find_package(CUDAToolkit REQUIRED) # for CUDAToolkit_VERSION
+cccl_get_cudatoolkit()
 
 # Example requires pinned_memory_resource.
 if (CUDAToolkit_VERSION VERSION_LESS 12.6)
