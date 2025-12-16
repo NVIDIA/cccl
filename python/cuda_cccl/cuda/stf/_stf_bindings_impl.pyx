@@ -506,7 +506,7 @@ cdef class task:
 
     def get_arg_cai(self, index):
         ptr = self.get_arg(index)
-        return stf_arg_cai(ptr, self._lds_args[index].shape, self._lds_args[index].dtype, stream=0).__cuda_array_interface__
+        return stf_arg_cai(ptr, self._lds_args[index].shape, self._lds_args[index].dtype, stream=self.stream_ptr()).__cuda_array_interface__
 
     def get_arg_numba(self, index):
         cai = self.get_arg_cai(index)

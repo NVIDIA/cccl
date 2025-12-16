@@ -108,7 +108,6 @@ endif()
 set(CYTHON_FLAGS "-3 -M -t -w \"${cuda_cccl_SOURCE_DIR}\"")
 string(REGEX REPLACE " " ";" CYTHON_FLAGS_LIST "${CYTHON_FLAGS}")
 
-# Only building STF bindings - parallel bindings not needed
 message(STATUS "Using Cython ${CYTHON_VERSION}")
 set(pyx_source_file "${cuda_cccl_SOURCE_DIR}/cuda/compute/_bindings_impl.pyx")
 
@@ -199,5 +198,5 @@ set_target_properties(
   PROPERTIES INSTALL_RPATH "$ORIGIN/cccl"
 )
 
-install(TARGETS _stf_bindings_impl DESTINATION cuda/stf/${CUDA_VERSION_DIR})
 install(TARGETS _bindings_impl DESTINATION cuda/compute/${CUDA_VERSION_DIR})
+install(TARGETS _stf_bindings_impl DESTINATION cuda/stf/${CUDA_VERSION_DIR})
