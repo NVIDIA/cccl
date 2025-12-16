@@ -260,7 +260,7 @@ squadStoreSmemPartial(Squad squad, OutputT* smemBuf, const AccumT (&inReg)[elemP
   for (int i = 0; i < elemPerThread; ++i)
   {
     const int elem_idx = squad.threadRank() * elemPerThread + i;
-    if (beginIndex <= elem_idx && elem_idx < beginIndex + endIndex)
+    if (beginIndex <= elem_idx && elem_idx < endIndex)
     {
       smemBuf[elem_idx - beginIndex] = static_cast<OutputT>(inReg[i]);
     }
@@ -340,7 +340,8 @@ struct ScanResources
 {
   // Handle unaligned loads. We have 16 extra bytes of padding in every stage
   // for squadLoadBulk.
-  using InT = InputT[WarpspeedPolicy::tile_size + 16 / sizeof(InputT)];
+  using InT = InputT[WarpspeedPolicy::tile_size + 16 / sizeof(InputT)]; // TODO(bgruber): what if InputT = int3?
+                                                                        // Should this be a ceil_div?
   using SumThreadAndWarpT =
     AccumT[WarpspeedPolicy::squadReduce().threadCount() + WarpspeedPolicy::squadReduce().warpCount()];
 
@@ -793,6 +794,9 @@ _CCCL_DEVICE_API inline void kernelBody(
           OutputT* smemBuf         = smem_output_tile + storeInfo.smemStartOffsetElem;
 
           // only stage elements of the current chunk to SMEM
+          // storeInfo.smemStartOffsetElem < 16 and smem_output_tile contains extra 16 bytes, so we should fit
+          _CCCL_ASSERT((storeInfo.smemStartOffsetElem + elem_per_chunk) * sizeof(OutputT) <= res.smemInOut.mSizeBytes,
+                       "");
           squadStoreSmemPartial(
             squad,
             smem_output_tile + storeInfo.smemStartOffsetElem,
