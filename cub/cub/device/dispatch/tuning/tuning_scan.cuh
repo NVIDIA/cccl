@@ -577,13 +577,15 @@ struct policy_hub
       static constexpr int num_sched_warps      = 1;
       static constexpr int num_look_ahead_warps = 1;
 
+      // TODO(bgruber): 5 is a bit better for complex<float>
+      static constexpr int num_look_ahead_items = sizeof(AccumT) == 2 ? 3 : 4;
+
       // Deduced definitions
       static constexpr int num_total_warps =
         num_reduce_warps + num_scan_stor_warps + num_load_warps + num_sched_warps + num_look_ahead_warps;
       static constexpr int num_total_threads = num_total_warps * num_threads_per_warp;
 
       static constexpr int squad_reduce_thread_count = num_reduce_warps * num_threads_per_warp;
-      static constexpr int num_lookback_tiles        = 3 * num_look_ahead_warps * num_threads_per_warp;
 
       // 256 / sizeof(InputValueT) - 1 should minimize bank conflicts (and fits into 48KiB SMEM)
       // 2-byte types and double needed special handling
