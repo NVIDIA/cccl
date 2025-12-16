@@ -325,7 +325,7 @@ C2H_CCCLRT_TEST("Launch with default config", "")
   }
   SECTION("Combine with overlap")
   {
-    kernel_with_default_config kernel{cuda::make_config(cuda::block_dims<1>, cuda::cooperative_launch())};
+    kernel_with_default_config kernel{cuda::make_config(cuda::block_dims<1>(), cuda::cooperative_launch())};
     cuda::launch(stream, cuda::make_config(block, grid, cuda::cooperative_launch()), kernel, verify_callable{});
     stream.sync();
   }

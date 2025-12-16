@@ -187,7 +187,10 @@ _CCCL_HOST_API auto launch(_Submitter&& __submitter,
   if constexpr (::cuda::std::is_invocable_v<_Kernel,
                                             kernel_config<_Dimensions, _Config...>,
                                             ::cuda::std::decay_t<transformed_device_argument_t<_Args>>...>
-                && !__nv_is_extended_device_lambda_closure_type(_Kernel))
+#    if _CCCL_CUDA_COMPILER(NVCC)
+                && !__nv_is_extended_device_lambda_closure_type(_Kernel)
+#    endif
+  )
   {
     auto __launcher =
       __kernel_launcher<decltype(__combined), _Kernel, ::cuda::std::decay_t<transformed_device_argument_t<_Args>>...>;
