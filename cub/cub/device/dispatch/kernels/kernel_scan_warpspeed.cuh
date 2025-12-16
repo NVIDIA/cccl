@@ -329,7 +329,7 @@ struct scanKernelParams
 {
   InputT* ptrIn;
   OutputT* ptrOut;
-  tmp_state_t<AccumT>* ptrTmp;
+  tile_state_t<AccumT>* ptrTileStates;
   size_t numElem;
   int numStages;
 };
@@ -462,8 +462,8 @@ _CCCL_DEVICE_API inline void kernelBody(
   // Start with the tile indicated by blockIdx.x
   int idxTile = specialRegisters.blockIdxX;
   // Lookback-specific variables:
-  int idxTilePrev = -1;
-  AccumT sumExclusiveCtaPrev{};
+  int idxTilePrev = 0;
+  AccumT sumExclusiveCtaPrev; // only valid in squadLookback lane_0
   _CCCL_PDL_GRID_DEPENDENCY_SYNC();
 
   ////////////////////////////////////////////////////////////////////////////////
@@ -598,9 +598,13 @@ _CCCL_DEVICE_API inline void kernelBody(
 
       if (is_last_tile)
       {
-        for (int i = 1; i < valid_warps; ++i)
+        _CCCL_PRAGMA_UNROLL_FULL()
+        for (int i = 1; i < squadReduce.warpCount(); ++i)
         {
-          regSquadSum = scan_op(regSquadSum, refSumThreadAndWarpW.data()[squadReduce.threadCount() + i]);
+          if (i < valid_warps)
+          {
+            regSquadSum = scan_op(regSquadSum, refSumThreadAndWarpW.data()[squadReduce.threadCount() + i]);
+          }
         }
       }
       else
@@ -617,7 +621,7 @@ _CCCL_DEVICE_API inline void kernelBody(
       ////////////////////////////////////////////////////////////////////////////////
       if (squad.isLeaderThread())
       {
-        storeLookbackTile(params.ptrTmp + idxTile, PRIV_SUM, regSquadSum);
+        storeTileAggregate(params.ptrTileStates + idxTile, TILE_AGGREGATE, regSquadSum);
       }
       ////////////////////////////////////////////////////////////////////////////////
       // Store thread sum
@@ -632,17 +636,20 @@ _CCCL_DEVICE_API inline void kernelBody(
       ////////////////////////////////////////////////////////////////////////////////
       SmemRef refSumExclusiveCtaW = phaseSumExclusiveCtaW.acquireRef();
 
-      constexpr int numTmpStatesPerThread = num_lookback_tiles / 32;
-      static_assert(num_lookback_tiles % 32 == 0, "num_lookback_tiles must be a multiple of 32");
-
-      AccumT regSumExclusiveCta = warpIncrementalLookback<numTmpStatesPerThread>(
-        specialRegisters, params.ptrTmp, idxTilePrev, sumExclusiveCtaPrev, idxTile, scan_op);
-      if (squad.isLeaderThread())
+      if (!is_first_tile)
       {
-        refSumExclusiveCtaW.data() = regSumExclusiveCta;
+        constexpr int numTileStatesPerThread = num_lookback_tiles / 32;
+        static_assert(num_lookback_tiles % 32 == 0, "num_lookback_tiles must be a multiple of 32");
+
+        AccumT regSumExclusiveCta = warpIncrementalLookback<numTileStatesPerThread>(
+          specialRegisters, params.ptrTileStates, idxTilePrev, sumExclusiveCtaPrev, idxTile, scan_op);
+        if (squad.isLeaderThread())
+        {
+          refSumExclusiveCtaW.data() = regSumExclusiveCta;
+        }
+        sumExclusiveCtaPrev = regSumExclusiveCta;
+        idxTilePrev         = idxTile;
       }
-      sumExclusiveCtaPrev = regSumExclusiveCta;
-      idxTilePrev         = idxTile - 1;
     }
 
     if (squad == squadScanStore)
@@ -705,7 +712,7 @@ _CCCL_DEVICE_API inline void kernelBody(
         if (!is_first_tile)
         {
           // Add the sums of preceding CTAs to the cumulative sum.
-          AccumT regSumExclusiveCta = refSumExclusiveCtaR.data(); // this valid would be invalid in the first tile
+          AccumT regSumExclusiveCta = refSumExclusiveCtaR.data();
           // sumExclusive is invalid in warp_0/thread_0, so only include it in other threads/warps
           sumExclusive = squad.threadRank() == 0 ? regSumExclusiveCta : scan_op(sumExclusive, regSumExclusiveCta);
         }
@@ -876,7 +883,7 @@ __launch_bounds__(get_scan_block_threads<typename MaxPolicy::ActivePolicy>, 1) _
 }
 
 template <typename AccumT>
-__launch_bounds__(128) __global__ void initTmpStates(tmp_state_t<AccumT>* tmp, const size_t num_temp_states)
+__launch_bounds__(128) __global__ void initTileStates(tile_state_t<AccumT>* tile_states, const size_t num_temp_states)
 {
   const int tile_id = blockDim.x * blockIdx.x + threadIdx.x;
   if (tile_id >= num_temp_states)
@@ -885,7 +892,7 @@ __launch_bounds__(128) __global__ void initTmpStates(tmp_state_t<AccumT>* tmp, c
   }
   _CCCL_PDL_GRID_DEPENDENCY_SYNC();
   _CCCL_PDL_TRIGGER_NEXT_LAUNCH();
-  tmp[tile_id] = {EMPTY, AccumT{}};
+  tile_states[tile_id] = {EMPTY, AccumT{}};
 }
 } // namespace detail::scan
 

@@ -409,7 +409,7 @@ struct DispatchScan
 
     using InputT           = ::cuda::std::iter_value_t<InputIteratorT>;
     using OutputT          = ::cuda::std::iter_value_t<OutputIteratorT>;
-    using tmp_state_t      = detail::scan::tmp_state_t<AccumT>;
+    using tile_state_t     = detail::scan::tile_state_t<AccumT>;
     using scanKernelParams = detail::scan::scanKernelParams<InputT, OutputT, AccumT>;
 
     using WarpspeedPolicy = typename ActivePolicyT::WarpspeedPolicy;
@@ -426,7 +426,7 @@ struct DispatchScan
 
     if (d_temp_storage == nullptr)
     {
-      temp_storage_bytes = grid_dim * sizeof(tmp_state_t);
+      temp_storage_bytes = grid_dim * sizeof(tile_state_t);
       return cudaSuccess;
     }
 
@@ -439,11 +439,11 @@ struct DispatchScan
     }
 
     scanKernelParams params{};
-    params.ptrIn     = const_cast<InputT*>(d_in_unwrapped);
-    params.ptrOut    = d_out_unwrapped;
-    params.ptrTmp    = static_cast<tmp_state_t*>(d_temp_storage);
-    params.numElem   = num_items;
-    params.numStages = 0; // computed below, must be set to 0
+    params.ptrIn         = const_cast<InputT*>(d_in_unwrapped);
+    params.ptrOut        = d_out_unwrapped;
+    params.ptrTileStates = static_cast<tile_state_t*>(d_temp_storage);
+    params.numElem       = num_items;
+    params.numStages     = 0; // computed below, must be set to 0
 
     verify_smem<smem_for_stages<WarpspeedPolicy, InputT, OutputT>(1)>();
 
@@ -477,11 +477,11 @@ struct DispatchScan
 
 #  ifdef CUB_DEBUG_LOG
       _CubLog(
-        "Invoking initTmpStates<<<%d, %d, 0, , %lld>>>()\n", init_grid_size, init_kernel_threads, (long long) stream);
+        "Invoking initTileStates<<<%d, %d, 0, , %lld>>>()\n", init_grid_size, init_kernel_threads, (long long) stream);
 #  endif // CUB_DEBUG_LOG
 
       launcher_factory(init_grid_size, init_kernel_threads, 0, stream, /* use_pdl */ true)
-        .doit(detail::scan::initTmpStates<AccumT>, static_cast<tmp_state_t*>(d_temp_storage), grid_dim);
+        .doit(detail::scan::initTileStates<AccumT>, static_cast<tile_state_t*>(d_temp_storage), grid_dim);
 
       // Check for failure to launch
       if (const auto error = CubDebug(cudaPeekAtLastError()))

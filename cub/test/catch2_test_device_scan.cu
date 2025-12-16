@@ -75,11 +75,9 @@ C2H_TEST("Device scan works with all device interfaces", "[scan][device]", full_
   using output_t = typename params::output_t;
   using offset_t = int32_t;
 
-  CAPTURE(c2h::type_name<input_t>(), c2h::type_name<output_t>());
-
   // TODO(bgruber): re-enable variable input sizes
   // constexpr offset_t min_items = 1;
-  // constexpr offset_t max_items = 1000000;
+  // constexpr offset_t max_items = 1'000'000;
 
   // Generate the input sizes to test for
   const offset_t num_items = GENERATE_COPY(
@@ -88,14 +86,19 @@ C2H_TEST("Device scan works with all device interfaces", "[scan][device]", full_
     1337,
     3000,
     1 * 31 * 128, // tile_size for int64s
-    10000,
-    100000
+    10'000,
+    100'000,
+    1'000'000,
+    10'000'000,
+    100'000'000
     //   take(3, random(min_items, max_items)),
     //   values({
     //     min_items,
     //     max_items,
     //   })
   );
+
+  CAPTURE(num_items, c2h::type_name<input_t>(), c2h::type_name<output_t>());
 
   // Input data generation to test
   const gen_data_t data_gen_mode = GENERATE_COPY(gen_data_t::GEN_TYPE_RANDOM, gen_data_t::GEN_TYPE_CONST);

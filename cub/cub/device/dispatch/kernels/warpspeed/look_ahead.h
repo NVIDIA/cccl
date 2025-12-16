@@ -16,6 +16,7 @@
 #include <cub/detail/strong_store.cuh>
 #include <cub/device/dispatch/kernels/warpspeed/SpecialRegisters.cuh>
 #include <cub/thread/thread_store.cuh>
+#include <cub/warp/specializations/warp_reduce_shfl.cuh>
 #include <cub/warp/warp_reduce.cuh>
 
 #include <cuda/__ptx/instructions/get_sreg.h>
@@ -28,24 +29,23 @@ namespace detail::scan
 {
 enum scan_state : uint32_t
 {
-  EMPTY    = 0,
-  PRIV_SUM = 1,
-  CUM_SUM  = 2
+  EMPTY          = 0,
+  TILE_AGGREGATE = 1,
 };
 
 template <typename AccumT>
-struct tmp_state_t
+struct alignas(2 * ::cuda::std::max(sizeof(scan_state), sizeof(AccumT))) tile_state_t
 {
   scan_state state;
   AccumT value;
 };
 
 template <typename AccumT>
-_CCCL_DEVICE_API inline void storeLookbackTile(tmp_state_t<AccumT>* dst, scan_state scanState, AccumT sum)
+_CCCL_DEVICE_API inline void storeTileAggregate(tile_state_t<AccumT>* dst, scan_state scanState, AccumT sum)
 {
-  if constexpr (sizeof(tmp_state_t<AccumT>) <= 16)
+  if constexpr (sizeof(tile_state_t<AccumT>) <= 16)
   {
-    tmp_state_t<AccumT> tmp{scanState, sum};
+    tile_state_t<AccumT> tmp{scanState, sum};
     __nv_atomic_store(dst, &tmp, __NV_ATOMIC_RELAXED, __NV_THREAD_SCOPE_DEVICE);
   }
   else
@@ -57,10 +57,10 @@ _CCCL_DEVICE_API inline void storeLookbackTile(tmp_state_t<AccumT>* dst, scan_st
 }
 
 template <typename AccumT>
-_CCCL_DEVICE_API inline tmp_state_t<AccumT> loadLookbackTile(tmp_state_t<AccumT>* src)
+_CCCL_DEVICE_API inline tile_state_t<AccumT> loadTileAggregate(tile_state_t<AccumT>* src)
 {
-  tmp_state_t<AccumT> res;
-  if constexpr (sizeof(tmp_state_t<AccumT>) <= 16)
+  tile_state_t<AccumT> res;
+  if constexpr (sizeof(tile_state_t<AccumT>) <= 16)
   {
     __nv_atomic_load(src, &res, __NV_ATOMIC_RELAXED, __NV_THREAD_SCOPE_DEVICE);
   }
@@ -73,55 +73,52 @@ _CCCL_DEVICE_API inline tmp_state_t<AccumT> loadLookbackTile(tmp_state_t<AccumT>
   return res;
 }
 
-// warpLoadLookback loads tmp states
+// warpLoadLookback loads tmp states:
+//   idxTileCur + [0; 32 * numTileStatesPerThread[
 //
-//   idxTileCur + 1, idxTileCur + 2, ..., idxTileCur + 32 * (numTmpStatesPerThread + 1)
-//
-// The states are loaded in reverse-laneId order, i.e.,
+// The states are loaded in laneId order and warp-strided:
 //
 // outTmpStates[0] contains:
-//   Lane 0:  idxTileCur + 32
-//   Lane 1:  idxTileCur + 31
+//   Lane 0:  idxTileCur + 0
+//   Lane 1:  idxTileCur + 1
 //   ...
-//   Lane 31: idxTileCur + 1
+//   Lane 31: idxTileCur + 31
 //
 // outTmpStates[1] contains:
-//   Lane 0: idxTileCur + 64
+//   Lane 0: idxTileCur + 32
 //   ...
-//   Lane 31 idxTileCur + 33
+//   Lane 31 idxTileCur + 63
 //
-// If the index idxTileCur + ii of the loaded state is equal to or exceeds
-// idxTileNext, i.e., idxTileNext <= idxTileCur + ii, then the state is not
-// loaded from memory and filled with {PRIV_SUM, 0}.
-template <int numTmpStatesPerThread, typename AccumT>
+// If the index idxTileCur + ii of the loaded state is equal to or exceeds idxTileNext, i.e., idxTileCur + ii >=
+// idxTileNext, then the state is not loaded from memory and set to EMPTY.
+template <int numTileStatesPerThread, typename AccumT>
 _CCCL_DEVICE_API inline void warpLoadLookback(
   int laneIdx,
-  tmp_state_t<AccumT> (&outTmpStates)[numTmpStatesPerThread],
-  tmp_state_t<AccumT>* ptrTmpBuffer,
+  tile_state_t<AccumT> (&outTileStates)[numTileStatesPerThread],
+  tile_state_t<AccumT>* ptrTileStates,
   int idxTileCur,
   int idxTileNext)
 {
-  for (int i = 0; i < numTmpStatesPerThread; ++i)
+  for (int i = 0; i < numTileStatesPerThread; ++i)
   {
-    const int idxTileLookback = idxTileCur + 32 * (i + 1) - laneIdx;
+    const int idxTileLookback = idxTileCur + 32 * i + laneIdx;
     if (idxTileLookback < idxTileNext)
     {
-      outTmpStates[i] = loadLookbackTile(ptrTmpBuffer + idxTileLookback);
+      outTileStates[i] = loadTileAggregate(ptrTileStates + idxTileLookback);
     }
     else
     {
-      // If we are looking ahead of idxTileNext, then set state to a private sum
-      // of zero to simplify handling later on.
-      outTmpStates[i] = {PRIV_SUM, 0};
+      // If we are looking ahead of idxTileNext, then set state to EMPTY
+      outTileStates[i].state = EMPTY;
     }
   }
 }
 
-// warpIncrementalLookback takes the latest current known sumExclusiveCtaPrev
-// and its tile index, idxTilePrev, and computes the sumExclusiveCta for the
-// next tile of interest, idxTileNext.
+// warpIncrementalLookback takes the latest known sumExclusiveCtaPrev and its tile index, idxTilePrev (which's sum is
+// NOT included in sumExclusiveCtaPrev), and computes the sumExclusiveCta for the next tile of interest, idxTileNext
+// (where the returned value will NOT include the sum of idxTileNext).
 //
-// It does so by loading states in chunks of 32 * numTmpStatesPerThread
+// It does so by loading states in chunks of 32 * numTileStatesPerThread
 // elements, starting from idxTilePrev + 1. From the chunk of states, it tries
 // to advance its knowledge of sumExclusiveCta as much as possible. It loops
 // until it can calculate the value of sumExclusiveCta from the preceding
@@ -130,10 +127,10 @@ _CCCL_DEVICE_API inline void warpLoadLookback(
 // The function must be called from a single warp. All passed arguments must be
 // warp-uniform.
 //
-template <int numTmpStatesPerThread, typename AccumT, typename ScanOpT>
+template <int numTileStatesPerThread, typename AccumT, typename ScanOpT>
 [[nodiscard]] _CCCL_DEVICE_API inline AccumT warpIncrementalLookback(
   SpecialRegisters specialRegisters,
-  tmp_state_t<AccumT>* ptrTmpBuffer,
+  tile_state_t<AccumT>* ptrTileStates,
   const int idxTilePrev,
   const AccumT sumExclusiveCtaPrev,
   const int idxTileNext,
@@ -157,75 +154,57 @@ template <int numTmpStatesPerThread, typename AccumT, typename ScanOpT>
 
   while (idxTileCur < idxTileNext)
   {
-    tmp_state_t<AccumT> regTmpStates[numTmpStatesPerThread];
-    warpLoadLookback(laneIdx, regTmpStates, ptrTmpBuffer, idxTileCur, idxTileNext);
+    tile_state_t<AccumT> regTmpStates[numTileStatesPerThread];
+    warpLoadLookback(laneIdx, regTmpStates, ptrTileStates, idxTileCur, idxTileNext);
 
-    for (int idx = 0; idx < numTmpStatesPerThread; ++idx)
+    for (int idx = 0; idx < numTileStatesPerThread; ++idx)
     {
-      // Bitmask with a 1 bit in the position of the current lane if current lane has an XXX state;
-      const uint32_t laneIsEmpty   = lanemaskEq * (regTmpStates[idx].state == EMPTY);
-      const uint32_t laneIsCumSum  = lanemaskEq * (regTmpStates[idx].state == CUM_SUM);
-      const uint32_t laneIsPrivSum = lanemaskEq * (regTmpStates[idx].state == PRIV_SUM);
+      // Bitmask with a 1 bit in the position of the current lane if current lane has a tile aggregate
+      const uint32_t lane_has_aggregate = lanemaskEq * (regTmpStates[idx].state == TILE_AGGREGATE);
 
-      // Bitmask with 1 bits indicating which lane has an XX state.
-      const uint32_t warpIsEmpty   = warp_reduce_or.Reduce(laneIsEmpty, or_op);
-      const uint32_t warpIsCumSum  = warp_reduce_or.Reduce(laneIsCumSum, or_op);
-      const uint32_t warpIsPrivSum = warp_reduce_or.Reduce(laneIsPrivSum, or_op);
+      // Bitmask with 1 bits indicating which lane has a tile aggregate
+      const uint32_t warp_has_aggregate_mask = warp_reduce_or.Reduce(lane_has_aggregate, or_op);
 
-      if (warpIsEmpty != 0)
+      // Bitmask with 1 bits for all rightmost lanes having a tile aggregate
+      const uint32_t warp_right_aggregates_mask = warp_has_aggregate_mask & (~warp_has_aggregate_mask - 1);
+
+      // Cannot reduce if no rightmost tile aggregates
+      if (warp_right_aggregates_mask == 0)
       {
         break;
       }
-      // Now we have either all private sums, or a mix of private sums and
-      // cumulative sums.
 
-      // Bitmask with a 1 bit indicating the position of the right-most
-      // CUM_SUM state. If no CUM_SUM state present, value is zero.
-      const uint32_t warpRightMostCumSum = warpIsCumSum & -warpIsCumSum;
-      // Bitmask with 1 bits to the right of the right-most CUM_SUM state.
-      // If no CUM_SUM state present, value is all ones.
-      const uint32_t maskRightOfCumSum = warpRightMostCumSum - 1;
+      const uint32_t warp_right_aggregates_count = ::cuda::std::popcount(warp_right_aggregates_mask);
 
-      // Sum all values of lanes containing either
-      // (a) the right-most CUM_SUM, or
-      // (b) subsequent PRIV_SUMs.
-      AccumT localSum;
-      const uint32_t maskSumParticipants = warpRightMostCumSum | maskRightOfCumSum;
+      // Accumulate the rightmost tile aggregates
+      AccumT local_sum;
+      NV_IF_ELSE_TARGET(
+        NV_PROVIDES_SM_80,
+        ({ // NOTE: Inlined from warp_reduce_shfl
+          if constexpr (::cuda::std::is_integral_v<AccumT> && sizeof(AccumT) <= sizeof(unsigned)
+                        && (is_cuda_std_plus_v<ScanOpT, AccumT> || is_cuda_minimum_maximum_v<ScanOpT, AccumT>
+                            || is_cuda_std_bitwise_v<ScanOpT, AccumT>) )
+          {
+            const bool use_value = lanemaskEq & warp_right_aggregates_mask;
+            const AccumT value   = use_value ? regTmpStates[idx].value : identity_v<ScanOpT, AccumT>;
+            local_sum            = reduce_op_sync(value, ~0, scan_op);
+          }
+          else
+          {
+            // TODO(bgruber): this generates a LOT of SASS. I think it can do better.
+            local_sum =
+              warp_reduce_t{temp_storage}.Reduce(regTmpStates[idx].value, scan_op, warp_right_aggregates_count);
+          }
+        }),
+        (local_sum = warp_reduce_t{temp_storage}.Reduce(regTmpStates[idx].value, scan_op, warp_right_aggregates_count);))
 
-      if ((maskSumParticipants & lanemaskEq) != 0)
-      {
-        localSum = regTmpStates[idx].value;
-      }
-      localSum = warp_reduce_t{temp_storage}.Reduce(localSum, scan_op);
-
-      if (warpIsCumSum == 0)
-      {
-        sumExclusiveCtaCur = scan_op(sumExclusiveCtaCur, localSum);
-      }
-      else
-      {
-        sumExclusiveCtaCur = localSum;
-      }
-      // idxTileCur can go beyond idxTileNext.
-      idxTileCur += ::cuda::std::popcount(maskSumParticipants);
+      // We never initialized sumExclusiveCtaCur when starting look ahead at tile 0
+      sumExclusiveCtaCur = idxTileCur == 0 ? local_sum : scan_op(sumExclusiveCtaCur, local_sum);
+      idxTileCur += warp_right_aggregates_count;
     }
   }
 
-  // We are not storing CUM_SUM states, because it makes updating idxTileCur
-  // difficult. Storing CUM_SUM states is the more robust approach though: if
-  // for whatever reason GETNEXTWORKID fails at some point, any freshly launched
-  // block must look back many iterations to figure out the current
-  // sumExclusiveCta.
-  //
-  // Just for future reference, the following commented code is kept around.
-
-  // if (idxTileNext > 0) {
-  //   if (specialRegisters.laneIdx == 0) {
-  //     storeLookbackTile(ptrTmpBuffer, idxTileNext - 1, CUM_SUM, sumExclusiveCtaCur);
-  //   }
-  // }
-
-  return sumExclusiveCtaCur;
+  return sumExclusiveCtaCur; // must only be valid in lane_0
 }
 } // namespace detail::scan
 
