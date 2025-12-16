@@ -438,6 +438,9 @@ struct DispatchScan
       return error;
     }
 
+    // TODO(bgruber): we probably need to ensure alignment of d_temp_storage
+    _CCCL_ASSERT(::cuda::is_aligned(d_temp_storage, alignof(tile_state_t)), "");
+
     scanKernelParams params{};
     params.ptrIn         = const_cast<InputT*>(d_in_unwrapped);
     params.ptrOut        = d_out_unwrapped;
