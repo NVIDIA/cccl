@@ -9,6 +9,7 @@
 //===----------------------------------------------------------------------===//
 
 // ADDITIONAL_COMPILE_FLAGS: --extended-lambda
+// UNSUPPORTED: nvrtc
 
 #include <cuda/devices>
 #include <cuda/launch>
