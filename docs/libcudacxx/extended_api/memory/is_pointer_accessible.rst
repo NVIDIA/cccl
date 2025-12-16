@@ -13,23 +13,14 @@ Defined in the ``<cuda/memory>`` header.
    bool is_host_accessible(const void* ptr); // (1)
 
    [[nodiscard]] inline
-   bool is_host_accessible(const void* ptr, cuda::std::nothrow_t) noexcept; // (2)
+   bool is_device_accessible(const void* ptr, device_ref device); // (2)
 
    [[nodiscard]] inline
-   bool is_device_accessible(const void* ptr, device_ref device); // (3)
-
-   [[nodiscard]] inline
-   bool is_device_accessible(const void* ptr, device_ref device, cuda::std::nothrow_t) noexcept; // (4)
-
-   [[nodiscard]] inline
-   bool is_managed(const void* ptr); // (5)
-
-   [[nodiscard]] inline
-   bool is_managed(const void* ptr, cuda::std::nothrow_t) noexcept; // (6)
+   bool is_managed(const void* ptr); // (3)
 
    } // namespace cuda
 
-Determines whether the memory referenced by ``ptr`` is accessible from the host (1), (2), from the specified ``device`` (3), (4), or is backed by Unified Memory (managed memory) (4), (5).
+Determines whether the memory referenced by ``ptr`` is accessible from the host (1), from the specified ``device`` (2), or is backed by Unified Memory (managed memory) (3).
 
 - ``is_device_accessible()`` also checks whether the memory is peer-accessible or allocated from a memory pool accessible to the specified ``device``.
 - ``is_host_accessible()`` also checks whether the memory is allocated from a memory pool accessible to the host.
@@ -39,7 +30,7 @@ Determines whether the memory referenced by ``ptr`` is accessible from the host 
 **Parameters**
 
 - ``ptr``: A pointer to the memory location to query.
-- ``device``: A ``device_ref`` that denotes the device to query. (3), (4)
+- ``device``: A ``device_ref`` that denotes the device to query. (2)
 
 **Return value**
 
@@ -86,9 +77,9 @@ Example
         assert(cuda::is_device_accessible(device_ptr, dev));
         assert(!cuda::is_host_accessible(device_ptr));
 
-        assert(cuda::is_host_accessible(managed_ptr, cuda::std::nothrow_t{}));
-        assert(cuda::is_device_accessible(managed_ptr, dev, cuda::std::nothrow_t{}));
-        assert(cuda::is_managed(managed_ptr, cuda::std::nothrow_t{}));
+        assert(cuda::is_host_accessible(managed_ptr));
+        assert(cuda::is_device_accessible(managed_ptr, dev));
+        assert(cuda::is_managed(managed_ptr));
 
         cudaFreeHost(host_ptr);
         cudaFree(device_ptr);
