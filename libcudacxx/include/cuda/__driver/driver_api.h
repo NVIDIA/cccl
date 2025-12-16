@@ -962,9 +962,8 @@ __cutensormap_size_bytes(::cuda::std::size_t __num_items, ::CUtensorMapDataType 
     case ::CU_TENSOR_MAP_DATA_TYPE_16U4_ALIGN16B:
       return __num_items / 2;
 #  endif // _CCCL_CTK_AT_LEAST(12, 8)
-    default:
-      _CCCL_UNREACHABLE();
   }
+  return 0; // MSVC workaround
 }
 
 [[nodiscard]] _CCCL_HOST_API inline ::CUtensorMap __tensorMapEncodeTiled(
