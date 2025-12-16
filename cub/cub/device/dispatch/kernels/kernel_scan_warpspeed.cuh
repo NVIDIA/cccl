@@ -327,7 +327,7 @@ namespace ptx = cuda::ptx;
 template <typename InputT, typename OutputT, typename AccumT>
 struct scanKernelParams
 {
-  InputT* ptrIn;
+  const InputT* ptrIn;
   OutputT* ptrOut;
   tile_state_t<AccumT>* ptrTileStates;
   size_t numElem;
@@ -420,7 +420,7 @@ template <typename WarpspeedPolicy,
           typename ScanOpT,
           typename RealInitValueT,
           bool ForceInclusive>
-_CCCL_DEVICE_API inline void kernelBody(
+_CCCL_DEVICE_API _CCCL_FORCEINLINE void kernelBody(
   Squad squad,
   SpecialRegisters specialRegisters,
   const scanKernelParams<InputT, OutputT, AccumT>& params,
@@ -847,44 +847,39 @@ template <typename ActivePolicy>
 inline constexpr int get_scan_block_threads<ActivePolicy, ::cuda::std::void_t<typename ActivePolicy::WarpspeedPolicy>> =
   ActivePolicy::WarpspeedPolicy::num_total_threads;
 
-template <typename MaxPolicy,
+template <typename WarpspeedPolicy,
+          bool ForceInclusive,
           typename InputT,
           typename OutputT,
           typename AccumT,
           typename ScanOpT,
-          typename InitValueT,
-          bool ForceInclusive>
-__launch_bounds__(get_scan_block_threads<typename MaxPolicy::ActivePolicy>, 1) __global__ void scan(
-  const __grid_constant__ scanKernelParams<InputT, OutputT, AccumT> params, ScanOpT scan_op, InitValueT init_value)
+          typename InitValueT>
+_CCCL_DEVICE_API _CCCL_FORCEINLINE void device_scan_lookahead_body(
+  const scanKernelParams<InputT, OutputT, AccumT> params, ScanOpT scan_op, const InitValueT& init_value)
 {
-  NV_IF_TARGET(
-    NV_PROVIDES_SM_100, ({
-      using ActivePolicy    = typename MaxPolicy::ActivePolicy;
-      using WarpspeedPolicy = typename ActivePolicy::WarpspeedPolicy;
+  // Cache special registers at start of kernel
+  SpecialRegisters specialRegisters = getSpecialRegisters();
 
-      // Cache special registers at start of kernel
-      SpecialRegisters specialRegisters = getSpecialRegisters();
+  // Dispatch for warp-specialization
+  static constexpr SquadDesc scanSquads[WarpspeedPolicy::num_squads] = {
+    WarpspeedPolicy::squadReduce(),
+    WarpspeedPolicy::squadScanStore(),
+    WarpspeedPolicy::squadLoad(),
+    WarpspeedPolicy::squadSched(),
+    WarpspeedPolicy::squadLookback(),
+  };
 
-      // Dispatch for warp-specialization
-      static constexpr SquadDesc scanSquads[WarpspeedPolicy::num_squads] = {
-        WarpspeedPolicy::squadReduce(),
-        WarpspeedPolicy::squadScanStore(),
-        WarpspeedPolicy::squadLoad(),
-        WarpspeedPolicy::squadSched(),
-        WarpspeedPolicy::squadLookback(),
-      };
+  using real_init_value_t = typename InitValueT::value_type;
 
-      using real_init_value_t = typename InitValueT::value_type;
-
-      squadDispatch(specialRegisters, scanSquads, [&](Squad squad) {
-        kernelBody<WarpspeedPolicy, InputT, OutputT, AccumT, ScanOpT, real_init_value_t, ForceInclusive>(
-          squad, specialRegisters, params, ::cuda::std::move(scan_op), static_cast<real_init_value_t>(init_value));
-      });
-    }))
+  squadDispatch(specialRegisters, scanSquads, [&](Squad squad) {
+    kernelBody<WarpspeedPolicy, InputT, OutputT, AccumT, ScanOpT, real_init_value_t, ForceInclusive>(
+      squad, specialRegisters, params, ::cuda::std::move(scan_op), static_cast<real_init_value_t>(init_value));
+  });
 }
 
 template <typename AccumT>
-__launch_bounds__(128) __global__ void initTileStates(tile_state_t<AccumT>* tile_states, const size_t num_temp_states)
+_CCCL_DEVICE_API _CCCL_FORCEINLINE void
+device_scan_init_lookahead_body(tile_state_t<AccumT>* tile_states, const size_t num_temp_states)
 {
   const int tile_id = blockDim.x * blockIdx.x + threadIdx.x;
   if (tile_id >= num_temp_states)
