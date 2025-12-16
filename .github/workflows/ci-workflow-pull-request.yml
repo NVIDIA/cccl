@@ -62,7 +62,7 @@ jobs:
           output matx_enabled    "${{ !contains(github.event.head_commit.message, '[skip-matx]') && !fromJSON(env.skip_tpt) }}"
           output pytorch_enabled "${{ !contains(github.event.head_commit.message, '[skip-pytorch]') && !fromJSON(env.skip_tpt) }}"
       - name: Checkout repo
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           persist-credentials: false
       - name: Lookup PR info
@@ -182,7 +182,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repo
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           persist-credentials: false
 
