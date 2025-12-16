@@ -4,6 +4,7 @@
 
 #include <cub/config.cuh>
 
+#include <cuda/__cmath/pow2.h>
 #include <cuda/__memory/is_aligned.h>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
@@ -36,11 +37,16 @@ enum scan_state : uint32_t
 };
 
 template <typename AccumT>
-struct alignas(2 * ::cuda::std::max(sizeof(scan_state), sizeof(AccumT))) tile_state_t
+struct tile_state_unaligned_t
 {
   scan_state state;
   AccumT value;
 };
+
+template <typename AccumT>
+struct alignas(::cuda::next_power_of_two(sizeof(tile_state_unaligned_t<AccumT>)))
+  tile_state_t : tile_state_unaligned_t<AccumT>
+{};
 
 template <typename AccumT>
 _CCCL_DEVICE_API inline void
