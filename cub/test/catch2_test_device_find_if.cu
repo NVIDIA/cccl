@@ -62,11 +62,14 @@ C2H_TEST("Device find_if works", "[device][find_if]", value_types, offset_types)
   CAPTURE(c2h::type_name<input_t>(), c2h::type_name<offset_t>(), num_items, data_gen_mode, value_exists);
 
   constexpr bool is_custom_t = cuda::std::is_same_v<input_t, custom_t>;
-  if (is_custom_t && data_gen_mode == gen_data_t::GEN_TYPE_RANDOM && !value_exists)
+  if constexpr (is_custom_t)
   {
-    //  min/max handling is not implemented for c2h::gen and custom_t, so we cannot pick a value that does not exist in
-    //  the input sequence
-    return;
+    if (data_gen_mode == gen_data_t::GEN_TYPE_RANDOM && !value_exists)
+    {
+      //  min/max handling is not implemented for c2h::gen and custom_t, so we cannot pick a value that does not exist
+      //  in the input sequence
+      return;
+    }
   }
 
   // Generate input data
