@@ -24,9 +24,9 @@ using value_types =
                  std::int16_t,
                  std::int32_t,
                  std::int64_t,
-#if _CCCL_HAS_INT128()
+#if TEST_INT128()
                  __int128_t,
-#endif // _CCCL_HAS_INT128()
+#endif // TEST_INT128()
                  custom_t>;
 using offset_types = c2h::type_list<int32_t, int64_t>;
 
