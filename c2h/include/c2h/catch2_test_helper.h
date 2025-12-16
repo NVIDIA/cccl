@@ -408,7 +408,7 @@ auto compare_vectors(const host_vector<T>& actual, const host_vector<T>& expecte
   {
     if (actual[i] != expected[i])
     {
-      if (result.good_values.empty())
+      if (mismatches.empty()) // at the first mismatch
       {
         // store up to 3 good values before the first mismatch
         const size_t count = ::cuda::std::min(good_values_before_mismatch, i);
@@ -462,8 +462,8 @@ void print_comparison(const vector_compare_result_t<T>& res, std::ostream& os)
     if (last_printed_idx + 1 != idx)
     {
       os << "...\n";
-      last_printed_idx = idx;
     }
+    last_printed_idx = idx;
   };
 
   // print first mismatches
