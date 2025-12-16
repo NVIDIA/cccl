@@ -69,7 +69,12 @@ _CCCL_API constexpr pair<_Tp*, _Up*> __move(_Tp* __first, _Tp* __last, _Up* __re
   return {__last, __result + __n};
 }
 
+// `requires true` overrides the imported ::std::move algorithm, this function is forward declared in
+// <cuda/std/__utility/move.h>
 template <class _InputIterator, class _OutputIterator>
+#if _CCCL_HAS_CONCEPTS()
+  requires true
+#endif // _CCCL_HAS_CONCEPTS()
 _CCCL_API constexpr _OutputIterator move(_InputIterator __first, _InputIterator __last, _OutputIterator __result)
 {
   static_assert(is_copy_constructible_v<_InputIterator>, "Iterators has to be copy constructible.");

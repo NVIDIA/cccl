@@ -20,6 +20,11 @@
 
 #include "common.h"
 
+#if _CCCL_COMPILER(GCC, >=, 13)
+_CCCL_DIAG_SUPPRESS_GCC("-Wself-move")
+#endif // _CCCL_COMPILER(GCC, >=, 13)
+_CCCL_DIAG_SUPPRESS_CLANG("-Wself-move")
+
 // todo: test error states and resetting errno
 
 C2H_CCCLRT_TEST("cuFile cufile", "[cufile][cufile]")
