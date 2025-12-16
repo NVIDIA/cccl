@@ -145,8 +145,8 @@ template <
     policy_hub<detail::it_value_t<InputIteratorT>, detail::it_value_t<OutputIteratorT>, AccumT, OffsetT, ScanOpT>,
   typename KernelSource = detail::scan::DeviceScanKernelSource<
     typename PolicyHub::MaxPolicy,
-    THRUST_NS_QUALIFIER::unwrap_contiguous_iterator_t<InputIteratorT>,
-    THRUST_NS_QUALIFIER::unwrap_contiguous_iterator_t<OutputIteratorT>,
+    THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator_t<InputIteratorT>,
+    THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator_t<OutputIteratorT>,
     ScanOpT,
     InitValueT,
     OffsetT,
@@ -358,8 +358,8 @@ struct DispatchScan
       // Invoke scan_kernel
       launcher_factory(scan_grid_size, policy.Scan().BlockThreads(), 0, stream, /* use_pdl */ true)
         .doit(scan_kernel,
-              THRUST_NS_QUALIFIER::unwrap_contiguous_iterator(d_in),
-              THRUST_NS_QUALIFIER::unwrap_contiguous_iterator(d_out),
+              THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator(d_in),
+              THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator(d_out),
               kernel_source.make_tile_state_kernel_arg(tile_state),
               start_tile,
               scan_op,
@@ -514,8 +514,8 @@ struct DispatchScan
 
       launcher_factory(grid_dim, block_dim, smem_size, stream, /* use_pdl */ true)
         .doit(scan_kernel,
-              THRUST_NS_QUALIFIER::unwrap_contiguous_iterator(d_in),
-              THRUST_NS_QUALIFIER::unwrap_contiguous_iterator(d_out),
+              THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator(d_in),
+              THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator(d_out),
               kernel_source.make_tile_state_kernel_arg(static_cast<tile_state_t*>(d_temp_storage)),
               /* start_tile, unused */ 0,
               ::cuda::std::move(scan_op),
