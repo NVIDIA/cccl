@@ -73,7 +73,8 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __attrs_t
   {
     constexpr int __block_threads = 256;
     const int __grid_blocks       = ::cuda::ceil_div(static_cast<int>(__shape), __block_threads);
-    return make_config(block_dims<__block_threads>(), grid_dims(__grid_blocks));
+    auto __dims                   = ::cuda::make_hierarchy(block_dims<__block_threads>(), grid_dims(__grid_blocks));
+    return make_config(__dims, cooperative_launch());
   }
 
   using __launch_config_t = decltype(__get_launch_config(_Shape()));
