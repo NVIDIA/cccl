@@ -24,6 +24,7 @@
 #include <cuda/__device/device_ref.h>
 #include <cuda/__driver/driver_api.h>
 #include <cuda/std/__exception/cuda_error.h>
+#include <cuda/std/__new/nothrow_t.h>
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -56,6 +57,17 @@ _CCCL_HOST_API inline bool is_managed(const void* __p)
     default:
       ::cuda::__throw_cuda_error(__status, "is_managed() failed", _CCCL_BUILTIN_PRETTY_FUNCTION());
   }
+}
+
+[[nodiscard]]
+_CCCL_HOST_API inline bool is_managed(const void* __p, ::cuda::std::nothrow_t) noexcept
+try
+{
+  return ::cuda::is_managed(__p);
+}
+catch (...)
+{
+  return false;
 }
 
 /**
@@ -97,6 +109,17 @@ _CCCL_HOST_API inline bool is_host_accessible(const void* __p)
     return __pool_flags & unsigned{::CU_MEM_ACCESS_FLAGS_PROT_READ};
   }
 #  endif // _CCCL_CTK_AT_LEAST(12, 2)
+  return false;
+}
+
+[[nodiscard]]
+_CCCL_HOST_API inline bool is_host_accessible(const void* __p, ::cuda::std::nothrow_t) noexcept
+try
+{
+  return ::cuda::is_host_accessible(__p);
+}
+catch (...)
+{
   return false;
 }
 
@@ -204,6 +227,17 @@ _CCCL_HOST_API inline bool is_device_accessible(const void* __p, device_ref __de
   }
   // (5) check if the pointer is peer accessible from the specified device
   return ::cuda::__driver::__deviceCanAccessPeer(__device.get(), __ptr_dev_id);
+}
+
+[[nodiscard]]
+_CCCL_HOST_API inline bool is_device_accessible(const void* __p, device_ref __device, ::cuda::std::nothrow_t) noexcept
+try
+{
+  return ::cuda::is_device_accessible(__p, __device);
+}
+catch (...)
+{
+  return false;
 }
 
 _CCCL_DIAG_POP
