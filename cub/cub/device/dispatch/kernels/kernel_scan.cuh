@@ -18,6 +18,8 @@
 #include <cub/device/dispatch/tuning/tuning_scan.cuh>
 #include <cub/util_macro.cuh>
 
+#include <thrust/type_traits/is_contiguous_iterator.h>
+
 CUB_NAMESPACE_BEGIN
 
 namespace detail::scan
@@ -165,7 +167,9 @@ __launch_bounds__(detail::scan::scan_use_warpspeed<typename ChainedPolicyT::Acti
     __grid_constant__ const int num_stages)
 {
   using ActivePolicy = typename ChainedPolicyT::ActivePolicy;
-  if constexpr (detail::scan::scan_use_warpspeed<ActivePolicy>)
+  if constexpr (detail::scan::scan_use_warpspeed<ActivePolicy>
+                && THRUST_NS_QUALIFIER::is_contiguous_iterator_v<InputIteratorT>
+                && THRUST_NS_QUALIFIER::is_contiguous_iterator_v<OutputIteratorT>)
   {
     NV_IF_TARGET(NV_PROVIDES_SM_100, ({
                    auto scan_params = scanKernelParams<it_value_t<InputIteratorT>, it_value_t<OutputIteratorT>, AccumT>{
