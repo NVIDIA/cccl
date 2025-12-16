@@ -435,8 +435,8 @@ _CCCL_DEVICE_API inline void kernelBody(
   static constexpr SquadDesc squadSched     = WarpspeedPolicy::squadSched();
   static constexpr SquadDesc squadLookback  = WarpspeedPolicy::squadLookback();
 
-  constexpr int tile_size          = WarpspeedPolicy::tile_size;
-  constexpr int num_lookback_tiles = WarpspeedPolicy::num_lookback_tiles;
+  constexpr int tile_size            = WarpspeedPolicy::tile_size;
+  constexpr int num_look_ahead_items = WarpspeedPolicy::num_look_ahead_items;
 
   constexpr int elemPerThread = tile_size / squadReduce.threadCount();
 
@@ -621,7 +621,7 @@ _CCCL_DEVICE_API inline void kernelBody(
       ////////////////////////////////////////////////////////////////////////////////
       if (squad.isLeaderThread())
       {
-        storeTileAggregate(params.ptrTileStates + idxTile, TILE_AGGREGATE, regSquadSum);
+        storeTileAggregate(params.ptrTileStates, TILE_AGGREGATE, regSquadSum, idxTile);
       }
       ////////////////////////////////////////////////////////////////////////////////
       // Store thread sum
@@ -638,10 +638,7 @@ _CCCL_DEVICE_API inline void kernelBody(
 
       if (!is_first_tile)
       {
-        constexpr int numTileStatesPerThread = num_lookback_tiles / 32;
-        static_assert(num_lookback_tiles % 32 == 0, "num_lookback_tiles must be a multiple of 32");
-
-        AccumT regSumExclusiveCta = warpIncrementalLookback<numTileStatesPerThread>(
+        AccumT regSumExclusiveCta = warpIncrementalLookback<num_look_ahead_items>(
           specialRegisters, params.ptrTileStates, idxTilePrev, sumExclusiveCtaPrev, idxTile, scan_op);
         if (squad.isLeaderThread())
         {
