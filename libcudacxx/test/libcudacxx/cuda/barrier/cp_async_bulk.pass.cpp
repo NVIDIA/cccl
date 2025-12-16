@@ -15,6 +15,7 @@
 // <cuda/barrier>
 
 #include <cuda/barrier>
+#include <cuda/ptx>
 #include <cuda/std/utility> // cuda::std::move
 
 #include "test_macros.h" // TEST_NV_DIAG_SUPPRESS
@@ -23,7 +24,6 @@
 TEST_NV_DIAG_SUPPRESS(static_var_with_dynamic_init)
 
 using barrier = cuda::barrier<cuda::thread_scope_block>;
-namespace cde = cuda::device::experimental;
 
 static constexpr int buf_len = 1024;
 __device__ alignas(128) int gmem_buffer[buf_len];
@@ -58,7 +58,13 @@ __device__ void test()
   uint64_t token;
   if (threadIdx.x == 0)
   {
-    cde::cp_async_bulk_global_to_shared(smem_buffer, gmem_buffer, sizeof(smem_buffer), bar);
+    cuda::ptx::cp_async_bulk(
+      cuda::ptx::space_cluster,
+      cuda::ptx::space_global,
+      smem_buffer,
+      gmem_buffer,
+      sizeof(smem_buffer),
+      cuda::device::barrier_native_handle(bar));
     token = cuda::device::barrier_arrive_tx(bar, 1, sizeof(smem_buffer));
   }
   else
@@ -72,15 +78,16 @@ __device__ void test()
   {
     smem_buffer[i] += i;
   }
-  cde::fence_proxy_async_shared_cta();
+  cuda::ptx::fence_proxy_async(::cuda::ptx::space_shared);
   __syncthreads();
 
   // Write back to global memory:
   if (threadIdx.x == 0)
   {
-    cde::cp_async_bulk_shared_to_global(gmem_buffer, smem_buffer, sizeof(smem_buffer));
-    cde::cp_async_bulk_commit_group();
-    cde::cp_async_bulk_wait_group_read<0>();
+    cuda::ptx::cp_async_bulk(
+      cuda::ptx::space_global, cuda::ptx::space_shared, gmem_buffer, smem_buffer, sizeof(smem_buffer));
+    cuda::ptx::cp_async_bulk_commit_group();
+    cuda::ptx::cp_async_bulk_wait_group_read<0>({});
   }
   __threadfence();
   __syncthreads();
