@@ -4,6 +4,8 @@
 
 #include <cub/config.cuh>
 
+#include <cuda/__memory/is_aligned.h>
+
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
@@ -41,34 +43,41 @@ struct alignas(2 * ::cuda::std::max(sizeof(scan_state), sizeof(AccumT))) tile_st
 };
 
 template <typename AccumT>
-_CCCL_DEVICE_API inline void storeTileAggregate(tile_state_t<AccumT>* dst, scan_state scanState, AccumT sum)
+_CCCL_DEVICE_API inline void
+storeTileAggregate(tile_state_t<AccumT>* ptrTileStates, scan_state scanState, AccumT sum, int index)
 {
+  _CCCL_ASSERT(::cuda::is_aligned(ptrTileStates, alignof(tile_state_t<AccumT>)), "");
+  _CCCL_ASSERT(index >= 0 && index < gridDim.x, "Reading out of bounds tile state");
+
   if constexpr (sizeof(tile_state_t<AccumT>) <= 16)
   {
     tile_state_t<AccumT> tmp{scanState, sum};
-    __nv_atomic_store(dst, &tmp, __NV_ATOMIC_RELAXED, __NV_THREAD_SCOPE_DEVICE);
+    __nv_atomic_store(ptrTileStates + index, &tmp, __NV_ATOMIC_RELAXED, __NV_THREAD_SCOPE_DEVICE);
   }
   else
   {
-    ThreadStore<STORE_CG>(&dst->value, sum);
+    ThreadStore<STORE_CG>(&ptrTileStates[index].value, sum);
     using state_int = ::cuda::std::underlying_type_t<scan_state>;
-    store_release(reinterpret_cast<state_int*>(&dst->state), scanState);
+    store_release(reinterpret_cast<state_int*>(&ptrTileStates[index].state), scanState);
   }
 }
 
 template <typename AccumT>
-_CCCL_DEVICE_API inline tile_state_t<AccumT> loadTileAggregate(tile_state_t<AccumT>* src)
+_CCCL_DEVICE_API inline tile_state_t<AccumT> loadTileAggregate(tile_state_t<AccumT>* ptrTileStates, int index)
 {
+  _CCCL_ASSERT(::cuda::is_aligned(ptrTileStates, alignof(tile_state_t<AccumT>)), "");
+  _CCCL_ASSERT(index >= 0 && index < gridDim.x, "Reading out of bounds tile state");
+
   tile_state_t<AccumT> res;
   if constexpr (sizeof(tile_state_t<AccumT>) <= 16)
   {
-    __nv_atomic_load(src, &res, __NV_ATOMIC_RELAXED, __NV_THREAD_SCOPE_DEVICE);
+    __nv_atomic_load(ptrTileStates + index, &res, __NV_ATOMIC_RELAXED, __NV_THREAD_SCOPE_DEVICE);
   }
   else
   {
     using state_int = ::cuda::std::underlying_type_t<scan_state>;
-    res.state       = static_cast<scan_state>(load_acquire(reinterpret_cast<const state_int*>(&src->state)));
-    res.value       = ThreadLoad<LOAD_CG>(&src->value);
+    res.state = static_cast<scan_state>(load_acquire(reinterpret_cast<const state_int*>(&ptrTileStates[index].state)));
+    res.value = ThreadLoad<LOAD_CG>(&ptrTileStates[index].value);
   }
   return res;
 }
@@ -104,7 +113,7 @@ _CCCL_DEVICE_API inline void warpLoadLookback(
     const int idxTileLookback = idxTileCur + 32 * i + laneIdx;
     if (idxTileLookback < idxTileNext)
     {
-      outTileStates[i] = loadTileAggregate(ptrTileStates + idxTileLookback);
+      outTileStates[i] = loadTileAggregate(ptrTileStates, idxTileLookback);
     }
     else
     {
@@ -201,6 +210,12 @@ template <int numTileStatesPerThread, typename AccumT, typename ScanOpT>
       // We never initialized sumExclusiveCtaCur when starting look ahead at tile 0
       sumExclusiveCtaCur = idxTileCur == 0 ? local_sum : scan_op(sumExclusiveCtaCur, local_sum);
       idxTileCur += warp_right_aggregates_count;
+
+      // we can only continue on the next 32 tile states, if we consumed all 32 of this iteration
+      if (warp_right_aggregates_count < 32)
+      {
+        break;
+      }
     }
   }
 
