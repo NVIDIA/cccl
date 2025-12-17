@@ -888,7 +888,29 @@ device_scan_init_lookahead_body(tile_state_t<AccumT>* tile_states, const size_t 
   }
   _CCCL_PDL_GRID_DEPENDENCY_SYNC();
   _CCCL_PDL_TRIGGER_NEXT_LAUNCH();
-  tile_states[tile_id] = {EMPTY, AccumT{}};
+  // we strive to initialize the padding bits to avoid compute-sanitizer's initcheck to report reading uninitialized
+  // data when reading the tile state. We use a single atomic load/store up until 16 bytes.
+  static_assert(EMPTY == 0); // so we can zero init each tile state
+  if constexpr (sizeof(tile_state_t<AccumT>) == 2)
+  {
+    *reinterpret_cast<uint16_t*>(tile_states + tile_id) = 0;
+  }
+  else if constexpr (sizeof(tile_state_t<AccumT>) == 4)
+  {
+    *reinterpret_cast<uint32_t*>(tile_states + tile_id) = 0;
+  }
+  else if constexpr (sizeof(tile_state_t<AccumT>) == 8)
+  {
+    *reinterpret_cast<uint64_t*>(tile_states + tile_id) = 0;
+  }
+  else if constexpr (sizeof(tile_state_t<AccumT>) == 16)
+  {
+    *reinterpret_cast<uint4*>(tile_states + tile_id) = {};
+  }
+  else
+  {
+    tile_states[tile_id] = tile_state_t<AccumT>{};
+  }
 }
 } // namespace detail::scan
 
