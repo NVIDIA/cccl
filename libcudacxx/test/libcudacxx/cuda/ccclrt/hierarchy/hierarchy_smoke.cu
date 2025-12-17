@@ -8,6 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
+#include <cuda/launch>
+
 #include <iostream>
 
 #include <cooperative_groups.h>
@@ -566,16 +568,12 @@ C2H_TEST("Trivially constructable", "[hierarchy]")
 
 C2H_TEST("cuda::distribute", "[hierarchy]")
 {
-  /*
   int numElements               = 50000;
   constexpr int threadsPerBlock = 256;
-  auto config                   =
-  cuda::distribute<threadsPerBlock>(numElements);
+  auto config                   = cuda::distribute<threadsPerBlock>(numElements);
 
   CCCLRT_REQUIRE(config.dims.count(cuda::thread, cuda::block) == 256);
-  CCCLRT_REQUIRE(config.dims.count(cuda::block, cuda::grid) == (numElements +
-  threadsPerBlock - 1) / threadsPerBlock);
-  */
+  CCCLRT_REQUIRE(config.dims.count(cuda::block, cuda::grid) == (numElements + threadsPerBlock - 1) / threadsPerBlock);
 }
 
 C2H_TEST("hierarchy merge", "[hierarchy]")
