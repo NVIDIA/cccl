@@ -643,8 +643,12 @@ struct policy_hub
 template <class Policy, class = void>
 inline constexpr bool scan_use_warpspeed = false;
 
+// detect for the use via CCCL.C (pre-compiled dispatch and JIT pass) and disable the new kernel.
+// See https://github.com/NVIDIA/cccl/issues/6821 for more details.
+#if !defined(CUB_ENABLE_POLICY_PTX_JSON) && !defined(CUB_DEFINE_RUNTIME_POLICIES)
 template <class Policy>
 inline constexpr bool scan_use_warpspeed<Policy, ::cuda::std::void_t<typename Policy::WarpspeedPolicy>> = true;
+#endif // !defined(CUB_ENABLE_POLICY_PTX_JSON) && !defined(CUB_DEFINE_RUNTIME_POLICIES)
 } // namespace detail::scan
 
 CUB_NAMESPACE_END
