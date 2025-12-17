@@ -43,9 +43,10 @@ struct tile_state_unaligned_t
   AccumT value;
 };
 
-template <typename AccumT>
-struct alignas(::cuda::next_power_of_two(sizeof(tile_state_unaligned_t<AccumT>)))
-  tile_state_t : tile_state_unaligned_t<AccumT>
+// some older nvcc versions do not evaluate next_power_of_two() at compile time when called inside an attribute, so we
+// have to force constant evaluation by assigning the result to a template parameter
+template <typename AccumT, size_t _Alignment = ::cuda::next_power_of_two(sizeof(tile_state_unaligned_t<AccumT>))>
+struct alignas(_Alignment) tile_state_t : tile_state_unaligned_t<AccumT>
 {};
 
 template <typename AccumT>
