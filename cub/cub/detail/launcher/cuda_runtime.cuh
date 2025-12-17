@@ -111,8 +111,8 @@ struct TripleChevronFactory
                           return error;
                         }
                         max_dynamic_smem_size = func_attrs.maxDynamicSharedSizeBytes;
+                        return cudaSuccess;
                       }))
-    return cudaSuccess;
   }
 
   template <typename Kernel>
