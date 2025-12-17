@@ -13,34 +13,111 @@
 #  pragma system_header
 #endif // no system header
 
-#if __cccl_ptx_isa >= 860
+#include <cub/device/dispatch/kernels/warpspeed/allocators/SmemAllocator.h>
+#include <cub/device/dispatch/kernels/warpspeed/look_ahead.h>
+#include <cub/device/dispatch/kernels/warpspeed/resource/SmemRef.cuh>
+#include <cub/device/dispatch/kernels/warpspeed/resource/SmemResource.cuh>
+#include <cub/device/dispatch/kernels/warpspeed/SpecialRegisters.cuh>
+#include <cub/device/dispatch/kernels/warpspeed/squad/Squad.h>
+#include <cub/device/dispatch/kernels/warpspeed/values.h>
+#include <cub/thread/thread_reduce.cuh>
+#include <cub/thread/thread_scan.cuh>
+#include <cub/warp/warp_reduce.cuh>
+#include <cub/warp/warp_scan.cuh>
 
-#  include <cub/device/dispatch/kernels/warpspeed/allocators/SmemAllocator.h>
-#  include <cub/device/dispatch/kernels/warpspeed/look_ahead.h>
-#  include <cub/device/dispatch/kernels/warpspeed/resource/SmemRef.cuh>
-#  include <cub/device/dispatch/kernels/warpspeed/resource/SmemResource.cuh>
-#  include <cub/device/dispatch/kernels/warpspeed/SpecialRegisters.cuh>
-#  include <cub/device/dispatch/kernels/warpspeed/squad/Squad.h>
-#  include <cub/device/dispatch/kernels/warpspeed/values.h>
-#  include <cub/thread/thread_reduce.cuh>
-#  include <cub/thread/thread_scan.cuh>
-#  include <cub/warp/warp_reduce.cuh>
-#  include <cub/warp/warp_scan.cuh>
-
-#  include <cuda/__cmath/ceil_div.h>
-#  include <cuda/__memory/align_down.h>
-#  include <cuda/__memory/align_up.h>
-#  include <cuda/ptx>
-#  include <cuda/std/__algorithm/clamp.h>
-#  include <cuda/std/__cccl/cuda_capabilities.h>
-#  include <cuda/std/__type_traits/is_same.h>
-#  include <cuda/std/__utility/move.h>
-
+#include <cuda/__cmath/ceil_div.h>
+#include <cuda/__memory/align_down.h>
+#include <cuda/__memory/align_up.h>
+#include <cuda/ptx>
+#include <cuda/std/__algorithm/clamp.h>
+#include <cuda/std/__cccl/cuda_capabilities.h>
+#include <cuda/std/__type_traits/is_same.h>
+#include <cuda/std/__utility/move.h>
 
 CUB_NAMESPACE_BEGIN
 
 namespace detail::scan
 {
+template <typename InputT, typename OutputT, typename AccumT>
+struct scanKernelParams
+{
+  const InputT* ptrIn;
+  OutputT* ptrOut;
+  tile_state_t<AccumT>* ptrTileStates;
+  size_t numElem;
+  int numStages;
+};
+
+// Struct holding all scan kernel resources
+template <typename WarpspeedPolicy, typename InputT, typename OutputT, typename AccumT>
+struct ScanResources
+{
+  // Handle unaligned loads. We have 16 extra bytes of padding in every stage
+  // for squadLoadBulk.
+  using InT = InputT[WarpspeedPolicy::tile_size + 16 / sizeof(InputT)]; // TODO(bgruber): what if InputT = int3?
+                                                                        // Should this be a ceil_div?
+  using SumThreadAndWarpT =
+    AccumT[WarpspeedPolicy::squadReduce().threadCount() + WarpspeedPolicy::squadReduce().warpCount()];
+
+  SmemResource<InT> smemInOut; // will also be used to stage the output (as OutputT) for the bulk copy
+  SmemResource<uint4> smemNextBlockIdx;
+  SmemResource<AccumT> smemSumExclusiveCta;
+  SmemResource<SumThreadAndWarpT> smemSumThreadAndWarp;
+};
+// Function to allocate resources.
+
+template <typename WarpspeedPolicy, typename InputT, typename OutputT, typename AccumT>
+[[nodiscard]] _CCCL_API constexpr ScanResources<WarpspeedPolicy, InputT, OutputT, AccumT>
+allocResources(SyncHandler& syncHandler, SmemAllocator& smemAllocator, int numStages)
+{
+  using ScanResourcesT    = ScanResources<WarpspeedPolicy, InputT, OutputT, AccumT>;
+  using InT               = typename ScanResourcesT::InT;
+  using SumThreadAndWarpT = typename ScanResourcesT::SumThreadAndWarpT;
+
+  // If numBlockIdxStages is one less than the number of stages, we find a small
+  // speedup compared to setting it equal to num_stages. Not sure why.
+  int numBlockIdxStages = numStages - 1;
+  // Ensure we have at least 1 stage
+  numBlockIdxStages = numBlockIdxStages < 1 ? 1 : numBlockIdxStages;
+
+  // We do not need too many sumExclusiveCta stages. The lookback warp is the
+  // bottleneck. As soon as it produces a new value, it will be consumed by the
+  // scanStore squad, releasing the stage.
+  int numSumExclusiveCtaStages = 2;
+
+  ScanResourcesT res = {
+    SmemResource<InT>(syncHandler, smemAllocator, Stages{numStages}),
+    SmemResource<uint4>(syncHandler, smemAllocator, Stages{numBlockIdxStages}),
+    SmemResource<AccumT>(syncHandler, smemAllocator, Stages{numSumExclusiveCtaStages}),
+    SmemResource<SumThreadAndWarpT>(syncHandler, smemAllocator, Stages{numStages}),
+  };
+  // asdfasdf
+  constexpr SquadDesc scanSquads[WarpspeedPolicy::num_squads] = {
+    WarpspeedPolicy::squadReduce(),
+    WarpspeedPolicy::squadScanStore(),
+    WarpspeedPolicy::squadLoad(),
+    WarpspeedPolicy::squadSched(),
+    WarpspeedPolicy::squadLookback(),
+  };
+
+  res.smemInOut.addPhase(syncHandler, smemAllocator, WarpspeedPolicy::squadLoad());
+  res.smemInOut.addPhase(
+    syncHandler, smemAllocator, {WarpspeedPolicy::squadReduce(), WarpspeedPolicy::squadScanStore()});
+
+  res.smemNextBlockIdx.addPhase(syncHandler, smemAllocator, WarpspeedPolicy::squadSched());
+  res.smemNextBlockIdx.addPhase(syncHandler, smemAllocator, scanSquads);
+
+  res.smemSumExclusiveCta.addPhase(syncHandler, smemAllocator, WarpspeedPolicy::squadLookback());
+  res.smemSumExclusiveCta.addPhase(syncHandler, smemAllocator, WarpspeedPolicy::squadScanStore());
+
+  res.smemSumThreadAndWarp.addPhase(syncHandler, smemAllocator, WarpspeedPolicy::squadReduce());
+  res.smemSumThreadAndWarp.addPhase(syncHandler, smemAllocator, WarpspeedPolicy::squadScanStore());
+
+  return res;
+}
+
+#if __cccl_ptx_isa >= 860
+
 _CCCL_DEVICE_API inline void squadGetNextBlockIdx(const Squad& squad, SmemRef<uint4>& refDestSmem)
 {
   if (squad.isLeaderThread())
@@ -319,84 +396,6 @@ _CCCL_DEVICE_API inline void threadScanInclusive(AccumT (&regArray)[elemPerThrea
 }
 
 namespace ptx = cuda::ptx;
-
-template <typename InputT, typename OutputT, typename AccumT>
-struct scanKernelParams
-{
-  const InputT* ptrIn;
-  OutputT* ptrOut;
-  tile_state_t<AccumT>* ptrTileStates;
-  size_t numElem;
-  int numStages;
-};
-
-// Struct holding all scan kernel resources
-template <typename WarpspeedPolicy, typename InputT, typename OutputT, typename AccumT>
-struct ScanResources
-{
-  // Handle unaligned loads. We have 16 extra bytes of padding in every stage
-  // for squadLoadBulk.
-  using InT = InputT[WarpspeedPolicy::tile_size + 16 / sizeof(InputT)]; // TODO(bgruber): what if InputT = int3?
-                                                                        // Should this be a ceil_div?
-  using SumThreadAndWarpT =
-    AccumT[WarpspeedPolicy::squadReduce().threadCount() + WarpspeedPolicy::squadReduce().warpCount()];
-
-  SmemResource<InT> smemInOut; // will also be used to stage the output (as OutputT) for the bulk copy
-  SmemResource<uint4> smemNextBlockIdx;
-  SmemResource<AccumT> smemSumExclusiveCta;
-  SmemResource<SumThreadAndWarpT> smemSumThreadAndWarp;
-};
-// Function to allocate resources.
-
-template <typename WarpspeedPolicy, typename InputT, typename OutputT, typename AccumT>
-[[nodiscard]] _CCCL_API constexpr ScanResources<WarpspeedPolicy, InputT, OutputT, AccumT>
-allocResources(SyncHandler& syncHandler, SmemAllocator& smemAllocator, int numStages)
-{
-  using ScanResourcesT    = ScanResources<WarpspeedPolicy, InputT, OutputT, AccumT>;
-  using InT               = typename ScanResourcesT::InT;
-  using SumThreadAndWarpT = typename ScanResourcesT::SumThreadAndWarpT;
-
-  // If numBlockIdxStages is one less than the number of stages, we find a small
-  // speedup compared to setting it equal to num_stages. Not sure why.
-  int numBlockIdxStages = numStages - 1;
-  // Ensure we have at least 1 stage
-  numBlockIdxStages = numBlockIdxStages < 1 ? 1 : numBlockIdxStages;
-
-  // We do not need too many sumExclusiveCta stages. The lookback warp is the
-  // bottleneck. As soon as it produces a new value, it will be consumed by the
-  // scanStore squad, releasing the stage.
-  int numSumExclusiveCtaStages = 2;
-
-  ScanResourcesT res = {
-    SmemResource<InT>(syncHandler, smemAllocator, Stages{numStages}),
-    SmemResource<uint4>(syncHandler, smemAllocator, Stages{numBlockIdxStages}),
-    SmemResource<AccumT>(syncHandler, smemAllocator, Stages{numSumExclusiveCtaStages}),
-    SmemResource<SumThreadAndWarpT>(syncHandler, smemAllocator, Stages{numStages}),
-  };
-  // asdfasdf
-  constexpr SquadDesc scanSquads[WarpspeedPolicy::num_squads] = {
-    WarpspeedPolicy::squadReduce(),
-    WarpspeedPolicy::squadScanStore(),
-    WarpspeedPolicy::squadLoad(),
-    WarpspeedPolicy::squadSched(),
-    WarpspeedPolicy::squadLookback(),
-  };
-
-  res.smemInOut.addPhase(syncHandler, smemAllocator, WarpspeedPolicy::squadLoad());
-  res.smemInOut.addPhase(
-    syncHandler, smemAllocator, {WarpspeedPolicy::squadReduce(), WarpspeedPolicy::squadScanStore()});
-
-  res.smemNextBlockIdx.addPhase(syncHandler, smemAllocator, WarpspeedPolicy::squadSched());
-  res.smemNextBlockIdx.addPhase(syncHandler, smemAllocator, scanSquads);
-
-  res.smemSumExclusiveCta.addPhase(syncHandler, smemAllocator, WarpspeedPolicy::squadLookback());
-  res.smemSumExclusiveCta.addPhase(syncHandler, smemAllocator, WarpspeedPolicy::squadScanStore());
-
-  res.smemSumThreadAndWarp.addPhase(syncHandler, smemAllocator, WarpspeedPolicy::squadReduce());
-  res.smemSumThreadAndWarp.addPhase(syncHandler, smemAllocator, WarpspeedPolicy::squadScanStore());
-
-  return res;
-}
 
 // The kernelBody device function is a straight-line implementation of the
 // warp-specialized kernel.
@@ -708,15 +707,18 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void kernelBody(
         // If the warp contains partial data, we pass invalid elements to
         // scan_op, and sumExclusiveIntraWarp is invalid when the inputs were
         // invalid.
-        AccumT regSumThread = refSumThreadAndWarpR.data()[squad.threadRank()];
+        AccumT regSumThread          = refSumThreadAndWarpR.data()[squad.threadRank()];
         AccumT sumExclusiveIntraWarp = warpScanExclusive(regSumThread, scan_op);
 
-        if (squad.warpRank() == 0) {
+        if (squad.warpRank() == 0)
+        {
           // Warp0 does not yet have a valid value for sumExclusive. We set it
           // here. This ensures that lane1,..,31 of tile0::warp0 have a valid
           // value for sumExclusive.
           sumExclusive = sumExclusiveIntraWarp;
-        } else if (specialRegisters.laneIdx != 0){
+        }
+        else if (specialRegisters.laneIdx != 0)
+        {
           // lane0 has an undefined value for sumIntraWarp. Other lanes update
           // sumExclusive using sumIntraWarp.
           sumExclusive = scan_op(sumExclusive, sumExclusiveIntraWarp);
@@ -879,6 +881,8 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void kernelBody(
   }
 }
 
+#endif // __cccl_ptx_isa >= 860
+
 template <typename ActivePolicy, class = void>
 inline constexpr int get_scan_block_threads = 1;
 
@@ -897,6 +901,7 @@ template <typename WarpspeedPolicy,
 _CCCL_DEVICE_API _CCCL_FORCEINLINE void device_scan_lookahead_body(
   const scanKernelParams<InputT, OutputT, AccumT> params, ScanOpT scan_op, const InitValueT& init_value)
 {
+#if __cccl_ptx_isa >= 860
   // Cache special registers at start of kernel
   SpecialRegisters specialRegisters = getSpecialRegisters();
 
@@ -913,6 +918,7 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void device_scan_lookahead_body(
     kernelBody<WarpspeedPolicy, InputT, OutputT, AccumT, ScanOpT, RealInitValueT, ForceInclusive>(
       squad, specialRegisters, params, ::cuda::std::move(scan_op), static_cast<RealInitValueT>(init_value));
   });
+#endif // __cccl_ptx_isa >= 860
 }
 
 template <typename AccumT>
@@ -953,5 +959,3 @@ device_scan_init_lookahead_body(tile_state_t<AccumT>* tile_states, const size_t 
 } // namespace detail::scan
 
 CUB_NAMESPACE_END
-
-#endif // __cccl_ptx_isa >= 860
