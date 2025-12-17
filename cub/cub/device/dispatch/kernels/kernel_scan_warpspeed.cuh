@@ -658,50 +658,82 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void kernelBody(
       AccumT sumExclusive;
 
       ////////////////////////////////////////////////////////////////////////////////
-      // Scan across warp and thread sums
+      // Include warp and thread sum of current tile
       ////////////////////////////////////////////////////////////////////////////////
       {
-        // Acquire refSumExclusiveCtaW briefly
+        // Acquire refSumThread briefly
         SmemRef refSumThreadAndWarpR = phaseSumThreadAndWarpR.acquireRef();
         // Add the sums of the preceding warps in this CTA to the cumulative
         // sum. These sums have been calculated in squadReduce(). We need
         // the reduce and scan squads to be the same size to do this.
         static_assert(squadReduce.warpCount() == squadScanStore.warpCount());
 
+        // Include warp sums
         _CCCL_PRAGMA_UNROLL_FULL()
         for (int i = 0; i < squadScanStore.warpCount(); ++i)
         {
           // We want a predicated unrolled loop here.
           if (i < squad.warpRank())
           {
-            // First warp has nothing to add
             if (i == 0)
             {
+              // The first iteration initializes sumExclusive
               sumExclusive = refSumThreadAndWarpR.data()[squadReduce.threadCount()];
             }
             else
             {
+              // If loaded value belongs to previous warp, include it in sumExclusive.
               sumExclusive = scan_op(sumExclusive, refSumThreadAndWarpR.data()[squadReduce.threadCount() + i]);
             }
           }
         }
+        // sumExclusive contains the sum of previous warps.
+        // It has a valid value in
+        // - tile*::warp{1,2, ..}      (sum of previous warps)
+        //
+        // It it not yet initialized in
+        // - tile*::warp0
 
         // Add the sums of preceding threads in this warp to the cumulative sum.
-        // Lane 0 reads invalid data.
+        // We perform an exclusive scan of:
+        //
+        //   {sumT0, sumT1, ..., sumT30, sumT31 }
+        //
+        // As a result:
+        // - lane0 has undefined value
+        // - lane1 has sumT0
+        // - ...
+        // - lane31 has sumT0 + ... + sumT30
+        //
+        // For lane1, ..., 31, we add the result to sumExclusive.
+        //
+        // If the warp contains partial data, we pass invalid elements to
+        // scan_op, and sumExclusiveIntraWarp is invalid when the inputs were
+        // invalid.
         AccumT regSumThread = refSumThreadAndWarpR.data()[squad.threadRank()];
-
-        // Perform scan of thread sums. If the warp contains partial data, we pass invalid elements to scan_op, and
-        // sumExclusiveIntraWarp is invalid when the inputs were invalid and for warp_0/thread_0
         AccumT sumExclusiveIntraWarp = warpScanExclusive(regSumThread, scan_op);
 
-        // warp_0 does not hold a valid value in sumExclusive, so only include it in other warps
-        sumExclusive = squad.warpRank() == 0 ? sumExclusiveIntraWarp : scan_op(sumExclusive, sumExclusiveIntraWarp);
+        if (squad.warpRank() == 0) {
+          // Warp0 does not yet have a valid value for sumExclusive. We set it
+          // here. This ensures that lane1,..,31 of tile0::warp0 have a valid
+          // value for sumExclusive.
+          sumExclusive = sumExclusiveIntraWarp;
+        } else if (specialRegisters.laneIdx != 0){
+          // lane0 has an undefined value for sumIntraWarp. Other lanes update
+          // sumExclusive using sumIntraWarp.
+          sumExclusive = scan_op(sumExclusive, sumExclusiveIntraWarp);
+        }
       }
-
-      // sumExclusive is valid except for warp_0/thread_0
+      // sumExclusive contains the sum of previous warps and sum of previous threads.
+      //
+      // - tile*::warp0::lane{1, .., 31}  (sum of previous threads)
+      // - tile*::warp{1,2, ..}           (sum of previous warps + sum of previous threads)
+      //
+      // It has an undefined value in
+      // - tile*::warp0::lane0
 
       ////////////////////////////////////////////////////////////////////////////////
-      // Include sum of previous CTAs
+      // Include sum of previous tiles
       ////////////////////////////////////////////////////////////////////////////////
       {
         // Briefly acquire refSumExclusiveCtaR (we have to do this for the first tile as well to prevent a hang)
@@ -715,8 +747,6 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void kernelBody(
           sumExclusive = squad.threadRank() == 0 ? regSumExclusiveCta : scan_op(sumExclusive, regSumExclusiveCta);
         }
       }
-
-      // sumExclusive is valid except for warp_0/thread_0 in the first tile
 
       // TODO(bgruber): consider merging the below branch into the next block of branches with `hasInit`
       if constexpr (hasInit)
@@ -734,6 +764,17 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void kernelBody(
           }
         }
       }
+      // sumExclusive contains the following values:
+      //
+      // - tile0::warp0::lane0            (init_value)
+      // - tile0::warp0::lane{1, .., 31}  (init_value + sum of previous threads)
+      // - tile0::warp{1,2, ..}           (init_value + sum of previous warps + sum of previous threads)
+      // - tile*::warp0::lane0            (sum of previous CTAs)
+      // - tile*::warp0::lane{1, .., 31}  (sum of previous CTAs + sum of previous threads)
+      // - tile*::warp{1,2, ..}           (sum of previous CTAs + sum of previous warps + sum of previous threads)
+      //
+      // If no init value is provided, then sumExclusive has an undefined value in
+      // - tile0::warp0::lane0
 
       ////////////////////////////////////////////////////////////////////////////////
       // Scan across elements allocated to this thread
