@@ -26,6 +26,7 @@
 #  include <cuda/std/__cstddef/types.h>
 #  include <cuda/std/__exception/cuda_error.h>
 #  include <cuda/std/__internal/namespaces.h>
+#  include <cuda/std/__limits/numeric_limits.h>
 #  include <cuda/std/__type_traits/always_false.h>
 #  include <cuda/std/__type_traits/is_same.h>
 #  if _CCCL_OS(WINDOWS)
@@ -932,8 +933,54 @@ __deviceCanAccessPeerNoThrow(int& __result, ::CUdevice __dev, ::CUdevice __peer_
 }
 #  endif // _CCCL_CTK_AT_LEAST(13, 0)
 
-[[nodiscard]] _CCCL_HOST_API inline ::cudaError_t __tensorMapEncodeTiledNoThrow(
-  ::CUtensorMap& __tensorMap,
+[[nodiscard]] _CCCL_HOST_API inline ::cuda::std::size_t
+__cutensormap_size_bytes(::cuda::std::size_t __num_items, ::CUtensorMapDataType __data_type)
+{
+  constexpr auto __max_size = ::cuda::std::numeric_limits<::cuda::std::size_t>::max();
+  switch (__data_type)
+  {
+    case ::CU_TENSOR_MAP_DATA_TYPE_UINT8:
+#  if _CCCL_CTK_AT_LEAST(12, 8)
+    case ::CU_TENSOR_MAP_DATA_TYPE_16U6_ALIGN16B:
+#  endif // _CCCL_CTK_AT_LEAST(12, 8)
+      return __num_items;
+    case ::CU_TENSOR_MAP_DATA_TYPE_UINT16:
+    case ::CU_TENSOR_MAP_DATA_TYPE_BFLOAT16:
+    case ::CU_TENSOR_MAP_DATA_TYPE_FLOAT16:
+      if (__num_items > __max_size / 2)
+      {
+        _CCCL_THROW(::std::invalid_argument{"Number of items must be less than or equal to 2^64 / 2"});
+      }
+      return __num_items * 2;
+    case ::CU_TENSOR_MAP_DATA_TYPE_INT32:
+    case ::CU_TENSOR_MAP_DATA_TYPE_UINT32:
+    case ::CU_TENSOR_MAP_DATA_TYPE_FLOAT32:
+    case ::CU_TENSOR_MAP_DATA_TYPE_FLOAT32_FTZ:
+    case ::CU_TENSOR_MAP_DATA_TYPE_TFLOAT32:
+    case ::CU_TENSOR_MAP_DATA_TYPE_TFLOAT32_FTZ:
+      if (__num_items > __max_size / 4)
+      {
+        _CCCL_THROW(::std::invalid_argument{"Number of items must be less than or equal to 2^64 / 4"});
+      }
+      return __num_items * 4;
+    case ::CU_TENSOR_MAP_DATA_TYPE_INT64:
+    case ::CU_TENSOR_MAP_DATA_TYPE_UINT64:
+    case ::CU_TENSOR_MAP_DATA_TYPE_FLOAT64:
+      if (__num_items > __max_size / 8)
+      {
+        _CCCL_THROW(::std::invalid_argument{"Number of items must be less than or equal to 2^64 / 8"});
+      }
+      return __num_items * 8;
+#  if _CCCL_CTK_AT_LEAST(12, 8)
+    case ::CU_TENSOR_MAP_DATA_TYPE_16U4_ALIGN8B:
+    case ::CU_TENSOR_MAP_DATA_TYPE_16U4_ALIGN16B:
+      return __num_items / 2;
+#  endif // _CCCL_CTK_AT_LEAST(12, 8)
+  }
+  return 0; // MSVC workaround
+}
+
+[[nodiscard]] _CCCL_HOST_API inline ::CUtensorMap __tensorMapEncodeTiled(
   ::CUtensorMapDataType __tensorDataType,
   ::cuda::std::uint32_t __tensorRank,
   void* __globalAddress,
@@ -944,10 +991,13 @@ __deviceCanAccessPeerNoThrow(int& __result, ::CUdevice __dev, ::CUdevice __peer_
   ::CUtensorMapInterleave __interleave,
   ::CUtensorMapSwizzle __swizzle,
   ::CUtensorMapL2promotion __l2Promotion,
-  ::CUtensorMapFloatOOBfill __oobFill) noexcept
+  ::CUtensorMapFloatOOBfill __oobFill)
 {
+  ::CUtensorMap __tensorMap{};
   static auto __driver_fn = _CCCLRT_GET_DRIVER_FUNCTION(cuTensorMapEncodeTiled);
-  return static_cast<::cudaError_t>(__driver_fn(
+  __call_driver_fn(
+    __driver_fn,
+    "Failed to encode TMA descriptor",
     &__tensorMap,
     __tensorDataType,
     __tensorRank,
@@ -959,7 +1009,24 @@ __deviceCanAccessPeerNoThrow(int& __result, ::CUdevice __dev, ::CUdevice __peer_
     __interleave,
     __swizzle,
     __l2Promotion,
-    __oobFill));
+    __oobFill);
+  // workaround for nvbug 5736804
+  if (::cuda::__driver::__version_below(13, 2))
+  {
+    const auto __tensor_req_size                = __globalDim[__tensorRank - 1] * __globalStrides[__tensorRank - 1];
+    ::cuda::std::size_t __tensor_req_size_bytes = 0;
+    __tensor_req_size_bytes   = ::cuda::__driver::__cutensormap_size_bytes(__tensor_req_size, __tensorDataType);
+    const auto __tensorMapPtr = reinterpret_cast<::cuda::std::uint64_t*>(static_cast<void*>(&__tensorMap));
+    if (__tensor_req_size_bytes < 128 * 1024) // 128 KiB
+    {
+      __tensorMapPtr[1] &= ~(::cuda::std::uint64_t{1} << 21); // clear the bit
+    }
+    else
+    {
+      __tensorMapPtr[1] |= ::cuda::std::uint64_t{1} << 21; // set the bit
+    }
+  }
+  return __tensorMap;
 }
 
 #  undef _CCCLRT_GET_DRIVER_FUNCTION
