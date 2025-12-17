@@ -196,7 +196,7 @@ inline constexpr ::cuda::std::size_t __max_portable_dyn_smem_size = 48 * 1024;
  * This type can be constructed with dynamic_shared_memory helper function.
  *
  * When launch configuration contains this option, that configuration can be
- * then passed to dynamic_shared_memory_view to get the view_type over the
+ * then passed to dynamic_shared_memory to get the view_type over the
  * dynamic shared memory. It is also possible to obtain that memory through
  * the original extern __shared__ variable[] declaration.
  *
@@ -213,14 +213,14 @@ inline constexpr ::cuda::std::size_t __max_portable_dyn_smem_size = 48 * 1024;
  * template <typename Configuration>
  * __global__ void kernel(Configuration conf)
  * {
- *     auto dynamic_shared = cuda::dynamic_shared_memory_view(conf);
+ *     auto dynamic_shared = cuda::dynamic_shared_memory(conf);
  *     dynamic_shared[0] = 1;
  * }
  *
  * void kernel_launch(cuda::stream_ref stream) {
  *     auto dims = cuda::make_hierarchy(cuda::block<128>(), cuda::grid(4));
  *     auto conf = cuda::make_configuration(dims,
- * dynamic_shared_memory<int[128]>());
+ * cuda::dynamic_shared_memory<int[128]>());
  *
  *     cuda::launch(stream, conf, kernel);
  * }
@@ -239,7 +239,7 @@ inline constexpr ::cuda::std::size_t __max_portable_dyn_smem_size = 48 * 1024;
  * per block
  */
 template <class _Tp>
-class _CCCL_DECLSPEC_EMPTY_BASES dynamic_shared_memory
+class _CCCL_DECLSPEC_EMPTY_BASES dynamic_shared_memory_option
     : __dyn_smem_option_base<_Tp>
     , public __detail::launch_option
 {
@@ -258,47 +258,10 @@ public:
   using typename __base_type::value_type; //!< Value type of the dynamic
                                           //!< shared memory elements.
   using typename __base_type::view_type; //!< The view type returned by the
-                                         //!< cuda::dynamic_shared_memory_view(config).
+                                         //!< cuda::dynamic_shared_memory(config).
 
   static constexpr bool is_relevant_on_device        = true;
   static constexpr __detail::launch_option_kind kind = __detail::launch_option_kind::dynamic_shared_memory;
-
-  _CCCL_HIDE_FROM_ABI constexpr dynamic_shared_memory() noexcept = default;
-
-  _CCCL_HOST_API constexpr dynamic_shared_memory(non_portable_t) noexcept
-      : __non_portable_{true}
-  {}
-
-  _CCCL_TEMPLATE(class _Tp2 = _Tp)
-  _CCCL_REQUIRES((!::cuda::std::is_unbounded_array_v<_Tp2>) )
-  _CCCL_HOST_API constexpr dynamic_shared_memory() noexcept
-  {
-    static_assert(sizeof(_Tp2) <= __max_portable_dyn_smem_size, "portable dynamic shared memory limit exceeded");
-  }
-
-  _CCCL_TEMPLATE(class _Tp2 = _Tp)
-  _CCCL_REQUIRES((!::cuda::std::is_unbounded_array_v<_Tp2>) )
-  _CCCL_HOST_API constexpr dynamic_shared_memory(non_portable_t) noexcept
-      : __non_portable_{true}
-  {}
-
-  _CCCL_TEMPLATE(class _Tp2 = _Tp)
-  _CCCL_REQUIRES(::cuda::std::is_unbounded_array_v<_Tp2>)
-  _CCCL_HOST_API constexpr dynamic_shared_memory(::cuda::std::size_t __n)
-      : __base_type{__n}
-  {
-    if (__n * sizeof(value_type) > __max_portable_dyn_smem_size)
-    {
-      ::cuda::std::__throw_invalid_argument("portable dynamic shared memory limit exceeded");
-    }
-  }
-
-  _CCCL_TEMPLATE(class _Tp2 = _Tp)
-  _CCCL_REQUIRES(::cuda::std::is_unbounded_array_v<_Tp2>)
-  _CCCL_HOST_API constexpr dynamic_shared_memory(::cuda::std::size_t __n, non_portable_t) noexcept
-      : __base_type{__n}
-      , __non_portable_{true}
-  {}
 
   //! @brief Gets the size of the dynamic shared memory in bytes.
   [[nodiscard]] _CCCL_API constexpr ::cuda::std::size_t size_bytes() const noexcept
@@ -328,11 +291,32 @@ public:
       return view_type{__ptr, __base_type::__n_};
     }
   }
+
+  // Helper function to access private constructors
+  static constexpr dynamic_shared_memory_option __create(bool __non_portable = false) noexcept
+  {
+    return dynamic_shared_memory_option{__non_portable};
+  }
+
+  static constexpr dynamic_shared_memory_option __create(::cuda::std::size_t __n, bool __non_portable = false) noexcept
+  {
+    return dynamic_shared_memory_option{__n, __non_portable};
+  }
+
+private:
+  _CCCL_HOST_API constexpr dynamic_shared_memory_option(bool __non_portable = false) noexcept
+      : __non_portable_{__non_portable}
+  {}
+
+  _CCCL_HOST_API constexpr dynamic_shared_memory_option(::cuda::std::size_t __n, bool __non_portable = false) noexcept
+      : __base_type{__n}
+      , __non_portable_{__non_portable}
+  {}
 };
 
 template <class _Tp>
 [[nodiscard]] ::cudaError_t __apply_launch_option(
-  const dynamic_shared_memory<_Tp>& __opt, ::CUlaunchConfig& __config, ::CUfunction __kernel) noexcept
+  const dynamic_shared_memory_option<_Tp>& __opt, ::CUlaunchConfig& __config, ::CUfunction __kernel) noexcept
 {
   ::cudaError_t __status = ::cudaSuccess;
 
@@ -387,6 +371,69 @@ template <class _Tp>
 
   __config.sharedMemBytes = static_cast<unsigned>(__dyn_smem_size.value);
   return ::cudaSuccess;
+}
+
+/**
+ * @brief Function that creates dynamic_shared_memory_option for non-unbounded array types
+ *
+ * @tparam _Tp Type intended to be stored in dynamic shared memory (must not be an unbounded array)
+ * @return dynamic_shared_memory_option<_Tp> instance
+ */
+_CCCL_TEMPLATE(class _Tp)
+_CCCL_REQUIRES((!::cuda::std::is_unbounded_array_v<_Tp>) )
+[[nodiscard]] _CCCL_HOST_API constexpr dynamic_shared_memory_option<_Tp> dynamic_shared_memory() noexcept
+{
+  static_assert(sizeof(_Tp) <= __max_portable_dyn_smem_size, "portable dynamic shared memory limit exceeded");
+  return dynamic_shared_memory_option<_Tp>::__create(false);
+}
+
+/**
+ * @brief Function that creates dynamic_shared_memory_option for non-unbounded array types with non-portable flag
+ *
+ * @tparam _Tp Type intended to be stored in dynamic shared memory (must not be an unbounded array)
+ * @param __non_portable Flag indicating non-portable size
+ * @return dynamic_shared_memory_option<_Tp> instance
+ */
+_CCCL_TEMPLATE(class _Tp)
+_CCCL_REQUIRES((!::cuda::std::is_unbounded_array_v<_Tp>) )
+[[nodiscard]] _CCCL_HOST_API constexpr dynamic_shared_memory_option<_Tp> dynamic_shared_memory(non_portable_t) noexcept
+{
+  return dynamic_shared_memory_option<_Tp>::__create(true);
+}
+
+/**
+ * @brief Function that creates dynamic_shared_memory_option for unbounded array types
+ *
+ * @tparam _Tp Unbounded array type
+ * @param __n Number of elements in the dynamic shared memory
+ * @return dynamic_shared_memory_option<_Tp> instance
+ */
+_CCCL_TEMPLATE(class _Tp)
+_CCCL_REQUIRES(::cuda::std::is_unbounded_array_v<_Tp>)
+[[nodiscard]] _CCCL_HOST_API constexpr dynamic_shared_memory_option<_Tp> dynamic_shared_memory(::cuda::std::size_t __n)
+{
+  using value_type = typename dynamic_shared_memory_option<_Tp>::value_type;
+  if (__n * sizeof(value_type) > __max_portable_dyn_smem_size)
+  {
+    ::cuda::std::__throw_invalid_argument("portable dynamic shared memory limit exceeded");
+  }
+  return dynamic_shared_memory_option<_Tp>::__create(__n, false);
+}
+
+/**
+ * @brief Function that creates dynamic_shared_memory_option for unbounded array types with non-portable flag
+ *
+ * @tparam _Tp Unbounded array type
+ * @param __n Number of elements in the dynamic shared memory
+ * @param __non_portable Flag indicating non-portable size
+ * @return dynamic_shared_memory_option<_Tp> instance
+ */
+_CCCL_TEMPLATE(class _Tp)
+_CCCL_REQUIRES(::cuda::std::is_unbounded_array_v<_Tp>)
+[[nodiscard]] _CCCL_HOST_API constexpr dynamic_shared_memory_option<_Tp>
+dynamic_shared_memory(::cuda::std::size_t __n, non_portable_t) noexcept
+{
+  return dynamic_shared_memory_option<_Tp>::__create(__n, true);
 }
 
 /**
@@ -733,7 +780,7 @@ template <typename Dimensions, typename... Options>
 #  if _CCCL_CUDA_COMPILATION()
 
 template <class _Dims, class... _Opts>
-_CCCL_DEVICE_API decltype(auto) dynamic_shared_memory_view(const kernel_config<_Dims, _Opts...>& __config) noexcept
+_CCCL_DEVICE_API decltype(auto) dynamic_shared_memory(const kernel_config<_Dims, _Opts...>& __config) noexcept
 {
   auto& __opt = __detail::find_option_in_tuple<__detail::launch_option_kind::dynamic_shared_memory>(__config.options);
   using _Opt  = ::cuda::std::remove_reference_t<decltype(__opt)>;

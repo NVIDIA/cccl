@@ -82,7 +82,7 @@ struct dynamic_smem_single
   template <typename Config>
   __device__ void operator()(Config config)
   {
-    decltype(auto) dynamic_smem = cuda::dynamic_shared_memory_view(config);
+    decltype(auto) dynamic_smem = cuda::dynamic_shared_memory(config);
     static_assert(::cuda::std::is_same_v<SmemType&, decltype(dynamic_smem)>);
     CCCLRT_REQUIRE_DEVICE(::cuda::device::is_object_from(dynamic_smem, ::cuda::device::address_space::shared));
     kernel_run_proof = true;
@@ -95,7 +95,7 @@ struct dynamic_smem_span
   template <typename Config>
   __device__ void operator()(Config config, int size)
   {
-    auto dynamic_smem = cuda::dynamic_shared_memory_view(config);
+    auto dynamic_smem = cuda::dynamic_shared_memory(config);
     static_assert(decltype(dynamic_smem)::extent == Extent);
     static_assert(::cuda::std::is_same_v<SmemType&, decltype(dynamic_smem[1])>);
     CCCLRT_REQUIRE_DEVICE(dynamic_smem.size() == size);
