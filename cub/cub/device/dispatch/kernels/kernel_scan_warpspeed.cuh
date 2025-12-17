@@ -39,8 +39,6 @@
 #  include <cuda/std/__utility/move.h>
 #  include <cuda/std/cassert>
 
-#  include <cudaTypedefs.h>
-
 CUB_NAMESPACE_BEGIN
 
 namespace detail::scan
