@@ -32,6 +32,7 @@
 #  include <cuda/__memory/align_up.h>
 #  include <cuda/ptx>
 #  include <cuda/std/__algorithm/clamp.h>
+#  include <cuda/std/__algorithm/max.h>
 #  include <cuda/std/__cccl/cuda_capabilities.h>
 #  include <cuda/std/__functional/invoke.h>
 #  include <cuda/std/__type_traits/is_constant_evaluated.h>
@@ -437,7 +438,8 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void kernelBody(
   constexpr int tile_size            = WarpspeedPolicy::tile_size;
   constexpr int num_look_ahead_items = WarpspeedPolicy::num_look_ahead_items;
 
-  constexpr int elemPerThread = ::cuda::ceil_div(tile_size, squadReduce.threadCount());
+  // We might try to instantiate the kernel with hughe types which would lead to a small tile size. Ensure its never 0
+  constexpr int elemPerThread = ::cuda::std::max(tile_size / squadReduce.threadCount(), 1);
 
   ////////////////////////////////////////////////////////////////////////////////
   // Resources
