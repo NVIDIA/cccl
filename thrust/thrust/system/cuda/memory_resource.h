@@ -67,12 +67,7 @@ public:
 
   void do_deallocate(Pointer p, [[maybe_unused]] std::size_t bytes, [[maybe_unused]] std::size_t alignment) override
   {
-    cudaError_t status = Dealloc(thrust::detail::pointer_traits<Pointer>::get(p));
-
-    if (status != cudaSuccess)
-    {
-      thrust::cuda_cub::throw_on_error(status, "CUDA free failed");
-    }
+    [[maybe_unused]] auto status = Dealloc(thrust::detail::pointer_traits<Pointer>::get(p));
   }
 };
 
