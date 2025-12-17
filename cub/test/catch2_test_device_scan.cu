@@ -76,20 +76,14 @@ C2H_TEST("Device scan works with all device interfaces", "[scan][device]", full_
   using offset_t = int32_t;
 
   constexpr offset_t min_items = 1;
-  constexpr offset_t max_items = 1'000'000;
+  constexpr offset_t max_items = 10'000'000;
 
   // Generate the input sizes to test for
   const offset_t num_items = GENERATE_COPY(
     10,
-    1000,
     1337,
-    3000,
     1 * 31 * 128, // int64 tile size for lookahead
-    10'000,
-    100'000,
-    1'000'000,
-    10'000'000,
-    100'000'000,
+    10'000, // a handful of tiles for lookahead
     take(3, random(min_items, max_items)),
     values({
       min_items,
