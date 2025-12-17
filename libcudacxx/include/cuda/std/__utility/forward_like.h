@@ -25,10 +25,6 @@
 #include <cuda/std/__type_traits/copy_cvref.h>
 #include <cuda/std/__type_traits/remove_reference.h>
 
-#if !_CCCL_COMPILER(NVRTC)
-#  include <version>
-#endif // !_CCCL_COMPILER(NVRTC)
-
 #if (_CCCL_COMPILER(CLANG, >=, 17) || _CCCL_COMPILER(GCC, >=, 15)) && __cpp_lib_forward_like >= 202217L
 #  define _CCCL_HAS_BUILTIN_STD_FORWARD_LIKE() 1
 #else // ^^^ has builtin std::forward_like ^^^ / vvv no builtin std::forward_like vvv

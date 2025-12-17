@@ -62,8 +62,6 @@ file. Use ``_CCCL_CUDA_COMPILATION()`` to check for the compilation of a CUDA so
 **CUDA identification/version macros**:
 
 +----------------------------------+------------------------------------------------------------------------------------------------+
-| ``_CCCL_HAS_CUDA_COMPILER()``    | CUDA compiler is available                                                                     |
-+----------------------------------+------------------------------------------------------------------------------------------------+
 | ``_CCCL_CUDA_COMPILATION()``     | CUDA code is being compiled                                                                    |
 +----------------------------------+------------------------------------------------------------------------------------------------+
 | ``_CCCL_HOST_COMPILATION()``     | Compiling host code, ``true`` when executing the CUDA host pass or compiling a C++ source file |
