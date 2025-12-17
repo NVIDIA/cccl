@@ -62,13 +62,16 @@ template <typename MaxPolicyT,
           ForceInclusive EnforceInclusive>
 struct DeviceScanKernelSource
 {
-  CUB_DEFINE_KERNEL_GETTER(InitKernel, DeviceScanInitKernel<MaxPolicyT, AccumT>)
+  using ScanTileStateT = ScanTileState<AccumT>;
+
+  CUB_DEFINE_KERNEL_GETTER(InitKernel, DeviceScanInitKernel<MaxPolicyT, ScanTileStateT, AccumT>)
 
   CUB_DEFINE_KERNEL_GETTER(
     ScanKernel,
     DeviceScanKernel<MaxPolicyT,
                      InputIteratorT,
                      OutputIteratorT,
+                     ScanTileStateT,
                      ScanOpT,
                      InitValueT,
                      OffsetT,
@@ -80,22 +83,32 @@ struct DeviceScanKernelSource
     return sizeof(AccumT);
   }
 
-  CUB_RUNTIME_FUNCTION static ScanTileState<AccumT> TileState()
+  CUB_RUNTIME_FUNCTION static ScanTileStateT TileState()
   {
     return {};
   }
 
-  CUB_RUNTIME_FUNCTION static constexpr auto make_tile_state_kernel_arg(ScanTileState<AccumT> ts)
+  CUB_RUNTIME_FUNCTION static constexpr size_t look_ahead_tile_state_size()
   {
-    tile_state_kernel_arg_t<AccumT> arg;
+    return sizeof(tile_state_t<AccumT>);
+  }
+
+  CUB_RUNTIME_FUNCTION static constexpr size_t look_ahead_tile_state_alignment()
+  {
+    return alignof(tile_state_t<AccumT>);
+  }
+
+  CUB_RUNTIME_FUNCTION static constexpr auto make_tile_state_kernel_arg(ScanTileStateT ts)
+  {
+    tile_state_kernel_arg_t<ScanTileStateT, AccumT> arg;
     ::cuda::std::__construct_at(&arg.lookback, ::cuda::std::move(ts));
     return arg;
   }
 
-  CUB_RUNTIME_FUNCTION static constexpr auto make_tile_state_kernel_arg(tile_state_t<AccumT>* ts)
+  CUB_RUNTIME_FUNCTION static constexpr auto look_ahead_make_tile_state_kernel_arg(void* ts)
   {
-    tile_state_kernel_arg_t<AccumT> arg;
-    ::cuda::std::__construct_at(&arg.lookahead, ::cuda::std::move(ts));
+    tile_state_kernel_arg_t<ScanTileStateT, AccumT> arg;
+    ::cuda::std::__construct_at(&arg.lookahead, static_cast<tile_state_t<AccumT>*>(ts));
     return arg;
   }
 };
@@ -425,28 +438,26 @@ struct DispatchScan
   {
     using InputT          = ::cuda::std::iter_value_t<InputIteratorT>;
     using OutputT         = ::cuda::std::iter_value_t<OutputIteratorT>;
-    using tile_state_t    = detail::scan::tile_state_t<AccumT>;
     using WarpspeedPolicy = typename ActivePolicyT::WarpspeedPolicy;
 
     const int grid_dim = ::cuda::ceil_div(num_items, static_cast<size_t>(WarpspeedPolicy::tile_size));
 
     if (d_temp_storage == nullptr)
     {
-      temp_storage_bytes = grid_dim * sizeof(tile_state_t);
+      temp_storage_bytes = grid_dim * kernel_source.look_ahead_tile_state_size();
       return cudaSuccess;
     }
 
     // Maximum dynamic shared memory size that we can use for temporary storage.
     int max_dynamic_smem_size{};
-    // TODO(bgruber): call via launcher factory
     if (const auto error =
-          __max_dynamic_smem_size_for(max_dynamic_smem_size, reinterpret_cast<const void*>(kernel_source.ScanKernel())))
+          launcher_factory.max_dynamic_smem_size_for(max_dynamic_smem_size, kernel_source.ScanKernel()))
     {
       return error;
     }
 
     // TODO(bgruber): we probably need to ensure alignment of d_temp_storage
-    _CCCL_ASSERT(::cuda::is_aligned(d_temp_storage, alignof(tile_state_t)), "");
+    _CCCL_ASSERT(::cuda::is_aligned(d_temp_storage, kernel_source.look_ahead_tile_state_alignment()), "");
 
     auto scan_kernel = kernel_source.ScanKernel();
     int num_stages   = 1;
@@ -467,8 +478,7 @@ struct DispatchScan
                      ++num_stages;
                    }
 
-                   if (const auto error = CubDebug(
-                         cudaFuncSetAttribute(scan_kernel, cudaFuncAttributeMaxDynamicSharedMemorySize, smem_size)))
+                   if (const auto error = launcher_factory.set_max_dynamic_smem_size_for(scan_kernel, smem_size))
                    {
                      return error;
                    }
@@ -487,9 +497,7 @@ struct DispatchScan
 #  endif // CUB_DEBUG_LOG
 
       launcher_factory(init_grid_size, init_kernel_threads, 0, stream, /* use_pdl */ true)
-        .doit(kernel_source.InitKernel(),
-              kernel_source.make_tile_state_kernel_arg(static_cast<tile_state_t*>(d_temp_storage)),
-              grid_dim);
+        .doit(kernel_source.InitKernel(), kernel_source.look_ahead_make_tile_state_kernel_arg(d_temp_storage), grid_dim);
 
       // Check for failure to launch
       if (const auto error = CubDebug(cudaPeekAtLastError()))
@@ -516,7 +524,7 @@ struct DispatchScan
         .doit(scan_kernel,
               THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator(d_in),
               THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator(d_out),
-              kernel_source.make_tile_state_kernel_arg(static_cast<tile_state_t*>(d_temp_storage)),
+              kernel_source.look_ahead_make_tile_state_kernel_arg(d_temp_storage),
               /* start_tile, unused */ 0,
               ::cuda::std::move(scan_op),
               init_value,

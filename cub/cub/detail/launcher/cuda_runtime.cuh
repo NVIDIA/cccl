@@ -97,6 +97,29 @@ struct TripleChevronFactory
 
     return cudaDeviceGetAttribute(&max_shared_memory, cudaDevAttrMaxSharedMemoryPerBlock, device);
   }
+
+  template <typename Kernel>
+  _CCCL_HIDE_FROM_ABI CUB_RUNTIME_FUNCTION cudaError_t
+  max_dynamic_smem_size_for(int& max_dynamic_smem_size, [[maybe_unused]] Kernel kernel_ptr)
+  {
+    NV_IF_ELSE_TARGET(NV_IS_HOST, //
+                      ({ return MaxPotentialDynamicSmemBytes(max_dynamic_smem_size, kernel_ptr); }),
+                      ({
+                        cudaFuncAttributes func_attrs{};
+                        if (const auto error = CubDebug(cudaFuncGetAttributes(&func_attrs, kernel_ptr)))
+                        {
+                          return error;
+                        }
+                        max_dynamic_smem_size = func_attrs.maxDynamicSharedSizeBytes;
+                      }))
+    return cudaSuccess;
+  }
+
+  template <typename Kernel>
+  _CCCL_HIDE_FROM_ABI CUB_RUNTIME_FUNCTION cudaError_t set_max_dynamic_smem_size_for(Kernel kernel_ptr, int smem_size)
+  {
+    return CubDebug(cudaFuncSetAttribute(kernel_ptr, cudaFuncAttributeMaxDynamicSharedMemorySize, smem_size));
+  }
 };
 } // namespace detail
 

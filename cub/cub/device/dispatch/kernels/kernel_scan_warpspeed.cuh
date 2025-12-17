@@ -34,11 +34,9 @@
 #  include <cuda/std/__algorithm/clamp.h>
 #  include <cuda/std/__algorithm/max.h>
 #  include <cuda/std/__cccl/cuda_capabilities.h>
-#  include <cuda/std/__functional/invoke.h>
-#  include <cuda/std/__type_traits/is_constant_evaluated.h>
 #  include <cuda/std/__type_traits/is_same.h>
 #  include <cuda/std/__utility/move.h>
-#  include <cuda/std/cassert>
+
 
 CUB_NAMESPACE_BEGIN
 
@@ -75,11 +73,11 @@ _CCCL_DEVICE_API inline CpAsyncOobInfo prepareCpAsyncOob(const Tp* ptrGmem, uint
 {
   // We will copy from [ptrGmemBase, ptrGmemEnd). Both pointers have to be 16B
   // aligned.
-  const Tp* ptrGmemStartAlignDown = cuda::align_down(ptrGmem, std::size_t(16));
-  const Tp* ptrGmemStartAlignUp   = cuda::align_up(ptrGmem, std::size_t(16));
+  const Tp* ptrGmemStartAlignDown = cuda::align_down(ptrGmem, ::cuda::std::size_t(16));
+  const Tp* ptrGmemStartAlignUp   = cuda::align_up(ptrGmem, ::cuda::std::size_t(16));
   const Tp* ptrGmemEnd            = ptrGmem + sizeElem;
-  const Tp* ptrGmemEndAlignUp     = cuda::align_up(ptrGmemEnd, std::size_t(16));
-  const Tp* ptrGmemEndAlignDown   = cuda::align_down(ptrGmemEnd, std::size_t(16));
+  const Tp* ptrGmemEndAlignUp     = cuda::align_up(ptrGmemEnd, ::cuda::std::size_t(16));
+  const Tp* ptrGmemEndAlignDown   = cuda::align_down(ptrGmemEnd, ::cuda::std::size_t(16));
 
   // Compute the final copy size in bytes. It can be either sizeElem or sizeElem + 16 / sizeof(T).
   uint32_t origCopySizeBytes  = static_cast<uint32_t>(sizeof(Tp) * sizeElem);
@@ -890,6 +888,7 @@ inline constexpr int get_scan_block_threads<ActivePolicy, ::cuda::std::void_t<ty
 
 template <typename WarpspeedPolicy,
           bool ForceInclusive,
+          typename RealInitValueT,
           typename InputT,
           typename OutputT,
           typename AccumT,
@@ -910,11 +909,9 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void device_scan_lookahead_body(
     WarpspeedPolicy::squadLookback(),
   };
 
-  using real_init_value_t = typename InitValueT::value_type;
-
   squadDispatch(specialRegisters, scanSquads, [&](Squad squad) {
-    kernelBody<WarpspeedPolicy, InputT, OutputT, AccumT, ScanOpT, real_init_value_t, ForceInclusive>(
-      squad, specialRegisters, params, ::cuda::std::move(scan_op), static_cast<real_init_value_t>(init_value));
+    kernelBody<WarpspeedPolicy, InputT, OutputT, AccumT, ScanOpT, RealInitValueT, ForceInclusive>(
+      squad, specialRegisters, params, ::cuda::std::move(scan_op), static_cast<RealInitValueT>(init_value));
   });
 }
 
