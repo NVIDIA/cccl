@@ -1,29 +1,5 @@
-/******************************************************************************
- * Copyright (c) 2023, NVIDIA CORPORATION.  All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *     * Redistributions of source code must retain the above copyright
- *       notice, this list of conditions and the following disclaimer.
- *     * Redistributions in binary form must reproduce the above copyright
- *       notice, this list of conditions and the following disclaimer in the
- *       documentation and/or other materials provided with the distribution.
- *     * Neither the name of the NVIDIA CORPORATION nor the
- *       names of its contributors may be used to endorse or promote products
- *       derived from this software without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
- * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
- * DISCLAIMED. IN NO EVENT SHALL NVIDIA CORPORATION BE LIABLE FOR ANY
- * DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
- * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
- * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
- * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- *
- ******************************************************************************/
+// SPDX-FileCopyrightText: Copyright (c) 2023, NVIDIA CORPORATION. All rights reserved.
+// SPDX-License-Identifier: BSD-3
 
 #pragma once
 
@@ -49,7 +25,6 @@ CUB_NAMESPACE_BEGIN
 
 namespace detail::unique_by_key
 {
-
 enum class primitive_key
 {
   no,
@@ -80,19 +55,19 @@ enum class val_size
 };
 
 template <class T>
-constexpr primitive_key is_primitive_key()
+_CCCL_HOST_DEVICE constexpr primitive_key is_primitive_key()
 {
   return is_primitive<T>::value ? primitive_key::yes : primitive_key::no;
 }
 
 template <class T>
-constexpr primitive_val is_primitive_val()
+_CCCL_HOST_DEVICE constexpr primitive_val is_primitive_val()
 {
   return is_primitive<T>::value ? primitive_val::yes : primitive_val::no;
 }
 
 template <class KeyT>
-constexpr key_size classify_key_size()
+_CCCL_HOST_DEVICE constexpr key_size classify_key_size()
 {
   return sizeof(KeyT) == 1 ? key_size::_1
        : sizeof(KeyT) == 2 ? key_size::_2
@@ -104,7 +79,7 @@ constexpr key_size classify_key_size()
 }
 
 template <class ValueT>
-constexpr val_size classify_val_size()
+_CCCL_HOST_DEVICE constexpr val_size classify_val_size()
 {
   return sizeof(ValueT) == 1 ? val_size::_1
        : sizeof(ValueT) == 2 ? val_size::_2
@@ -770,7 +745,7 @@ struct sm100_tuning<KeyT, ValueT, primitive_key::yes, primitive_val::yes, key_si
 template <typename PolicyT, typename = void>
 struct UniqueByKeyPolicyWrapper : PolicyT
 {
-  CUB_RUNTIME_FUNCTION UniqueByKeyPolicyWrapper(PolicyT base)
+  _CCCL_HOST_DEVICE UniqueByKeyPolicyWrapper(PolicyT base)
       : PolicyT(base)
   {}
 };
@@ -780,18 +755,28 @@ struct UniqueByKeyPolicyWrapper<StaticPolicyT,
                                 ::cuda::std::void_t<decltype(StaticPolicyT::UniqueByKeyPolicyT::LOAD_MODIFIER)>>
     : StaticPolicyT
 {
-  CUB_RUNTIME_FUNCTION UniqueByKeyPolicyWrapper(StaticPolicyT base)
+  _CCCL_HOST_DEVICE UniqueByKeyPolicyWrapper(StaticPolicyT base)
       : StaticPolicyT(base)
   {}
 
-  CUB_RUNTIME_FUNCTION static constexpr auto UniqueByKey()
+  _CCCL_HOST_DEVICE static constexpr auto UniqueByKey()
   {
     return cub::detail::MakePolicyWrapper(typename StaticPolicyT::UniqueByKeyPolicyT());
   }
+
+#if defined(CUB_ENABLE_POLICY_PTX_JSON)
+  _CCCL_DEVICE static constexpr auto EncodedPolicy()
+  {
+    using namespace ptx_json;
+    return object<key<"UniqueByKeyPolicyT">() = UniqueByKey().EncodedPolicy(),
+                  key<"DelayConstructor">() =
+                    StaticPolicyT::UniqueByKeyPolicyT::detail::delay_constructor_t::EncodedConstructor()>();
+  }
+#endif
 };
 
 template <typename PolicyT>
-CUB_RUNTIME_FUNCTION UniqueByKeyPolicyWrapper<PolicyT> MakeUniqueByKeyPolicyWrapper(PolicyT policy)
+_CCCL_HOST_DEVICE UniqueByKeyPolicyWrapper<PolicyT> MakeUniqueByKeyPolicyWrapper(PolicyT policy)
 {
   return UniqueByKeyPolicyWrapper<PolicyT>{policy};
 }
@@ -819,7 +804,7 @@ struct policy_hub
 
   // Use values from tuning if a specialization exists, otherwise pick the default
   template <typename Tuning>
-  static auto select_agent_policy(int)
+  static _CCCL_HOST_DEVICE auto select_agent_policy(int)
     -> AgentUniqueByKeyPolicy<Tuning::threads,
                               Tuning::items,
                               Tuning::load_algorithm,
@@ -827,7 +812,7 @@ struct policy_hub
                               BLOCK_SCAN_WARP_SCANS,
                               typename Tuning::delay_constructor>;
   template <typename Tuning>
-  static auto select_agent_policy(long) -> typename DefaultPolicy<11, 64>::UniqueByKeyPolicyT;
+  static _CCCL_HOST_DEVICE auto select_agent_policy(long) -> typename DefaultPolicy<11, 64>::UniqueByKeyPolicyT;
 
   struct Policy520
       : DefaultPolicy<11, 64>
@@ -853,7 +838,7 @@ struct policy_hub
   {
     // Use values from tuning if a specialization exists, otherwise pick Policy900
     template <typename Tuning>
-    static auto select_agent_policy100(int)
+    static _CCCL_HOST_DEVICE auto select_agent_policy100(int)
       -> AgentUniqueByKeyPolicy<Tuning::threads,
                                 Tuning::items,
                                 Tuning::load_algorithm,
@@ -861,14 +846,13 @@ struct policy_hub
                                 BLOCK_SCAN_WARP_SCANS,
                                 typename Tuning::delay_constructor>;
     template <typename Tuning>
-    static auto select_agent_policy100(long) -> typename Policy900::UniqueByKeyPolicyT;
+    static _CCCL_HOST_DEVICE auto select_agent_policy100(long) -> typename Policy900::UniqueByKeyPolicyT;
 
     using UniqueByKeyPolicyT = decltype(select_agent_policy100<sm100_tuning<KeyT, ValueT>>(0));
   };
 
   using MaxPolicy = Policy1000;
 };
-
 } // namespace detail::unique_by_key
 
 CUB_NAMESPACE_END

@@ -36,7 +36,7 @@
 #  pragma system_header
 #endif // no system header
 
-#if _CCCL_HAS_CUDA_COMPILER()
+#if _CCCL_CUDA_COMPILATION()
 
 #  include <thrust/system/cuda/config.h>
 
@@ -44,7 +44,6 @@
 #  include <cub/util_type.cuh>
 
 #  include <thrust/detail/temporary_array.h>
-#  include <thrust/distance.h>
 #  include <thrust/functional.h>
 #  include <thrust/iterator/iterator_traits.h>
 #  include <thrust/system/cuda/detail/cdp_dispatch.h>
@@ -54,6 +53,8 @@
 #  include <thrust/type_traits/is_contiguous_iterator.h>
 #  include <thrust/type_traits/unwrap_contiguous_iterator.h>
 
+#  include <cuda/std/__functional/operations.h>
+#  include <cuda/std/__iterator/distance.h>
 #  include <cuda/std/cstdint>
 
 THRUST_NAMESPACE_BEGIN
@@ -61,7 +62,6 @@ namespace cuda_cub
 {
 namespace detail
 {
-
 _CCCL_EXEC_CHECK_DISABLE
 template <typename Derived,
           typename KeysInIt,
@@ -278,7 +278,6 @@ _CCCL_HOST_DEVICE ValuesOutIt exclusive_scan_by_key_n(
 
   return result + num_items;
 }
-
 } // namespace detail
 
 //-------------------------
@@ -405,10 +404,9 @@ ValOutputIt _CCCL_HOST_DEVICE exclusive_scan_by_key(
   using value_type = thrust::detail::it_value_t<ValInputIt>;
   return cuda_cub::exclusive_scan_by_key(policy, key_first, key_last, value_first, value_result, value_type{});
 }
-
 } // namespace cuda_cub
 THRUST_NAMESPACE_END
 
 #  include <thrust/scan.h>
 
-#endif // NVCC
+#endif // _CCCL_CUDA_COMPILATION()

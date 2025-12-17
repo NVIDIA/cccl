@@ -32,10 +32,8 @@ _CCCL_DEVICE static inline void cp_async_bulk(
 {
 // __space == space_cluster (due to parameter type constraint)
 // __space == space_global (due to parameter type constraint)
-#  if _CCCL_CUDA_COMPILER(NVHPC)                                                                                      \
-    || (defined(__CUDA_ARCH_FEAT_SM90_ALL) || (defined(__CUDA_ARCH_SPECIFIC__) && (__CUDA_ARCH_SPECIFIC__ == 900)))   \
-    || (defined(__CUDA_ARCH_FEAT_SM100_ALL) || (defined(__CUDA_ARCH_SPECIFIC__) && (__CUDA_ARCH_SPECIFIC__ == 1000))) \
-    || (defined(__CUDA_ARCH_FEAT_SM110_ALL) || (defined(__CUDA_ARCH_SPECIFIC__) && (__CUDA_ARCH_SPECIFIC__ == 1100)))
+#  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 900) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) \
+    || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100)
   asm("cp.async.bulk.shared::cluster.global.mbarrier::complete_tx::bytes.multicast::cluster [%0], [%1], %2, [%3], %4;"
       :
       : "r"(__as_ptr_smem(__dstMem)),

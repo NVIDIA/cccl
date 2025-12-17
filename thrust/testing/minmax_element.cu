@@ -63,10 +63,11 @@ void TestMinMaxElement(const size_t n)
 DECLARE_VARIABLE_UNITTEST(TestMinMaxElement);
 
 template <typename ForwardIterator>
-thrust::pair<ForwardIterator, ForwardIterator> minmax_element(my_system& system, ForwardIterator first, ForwardIterator)
+cuda::std::pair<ForwardIterator, ForwardIterator>
+minmax_element(my_system& system, ForwardIterator first, ForwardIterator)
 {
   system.validate_dispatch();
-  return thrust::make_pair(first, first);
+  return cuda::std::make_pair(first, first);
 }
 
 void TestMinMaxElementDispatchExplicit()
@@ -81,10 +82,10 @@ void TestMinMaxElementDispatchExplicit()
 DECLARE_UNITTEST(TestMinMaxElementDispatchExplicit);
 
 template <typename ForwardIterator>
-thrust::pair<ForwardIterator, ForwardIterator> minmax_element(my_tag, ForwardIterator first, ForwardIterator)
+cuda::std::pair<ForwardIterator, ForwardIterator> minmax_element(my_tag, ForwardIterator first, ForwardIterator)
 {
   *first = 13;
-  return thrust::make_pair(first, first);
+  return cuda::std::make_pair(first, first);
 }
 
 void TestMinMaxElementDispatchImplicit()
@@ -104,7 +105,7 @@ void TestMinMaxElementWithBigIndexesHelper(int magnitude)
   Iter end = begin + (1ll << magnitude);
   ASSERT_EQUAL(::cuda::std::distance(begin, end), 1ll << magnitude);
 
-  thrust::pair<Iter, Iter> result = thrust::minmax_element(thrust::device, begin, end);
+  cuda::std::pair<Iter, Iter> result = thrust::minmax_element(thrust::device, begin, end);
   ASSERT_EQUAL(*result.first, 1);
   ASSERT_EQUAL(*result.second, (1ll << magnitude));
 

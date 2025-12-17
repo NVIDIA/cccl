@@ -17,7 +17,7 @@
 //    indirect_strict_weak_order<projected<iterator_t<R>, Proj>> Comp = ranges::less>
 //  constexpr borrowed_iterator_t<R> ranges::min_element(R&& r, Comp comp = {}, Proj proj = {});
 
-#include <cuda/std/__algorithm_>
+#include <cuda/std/algorithm>
 #include <cuda/std/array>
 #include <cuda/std/cassert>
 #include <cuda/std/functional>

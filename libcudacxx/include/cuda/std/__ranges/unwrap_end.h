@@ -27,7 +27,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_CCCL_BEGIN_NAMESPACE_RANGES
+_CCCL_BEGIN_NAMESPACE_CUDA_STD_RANGES
 
 _CCCL_TEMPLATE(class _Range)
 _CCCL_REQUIRES(forward_range<_Range>)
@@ -43,10 +43,9 @@ _CCCL_REQUIRES(forward_range<_Range>)
     ::cuda::std::ranges::advance(__ret, ::cuda::std::ranges::end(__range));
     return __ret;
   }
-  _CCCL_UNREACHABLE();
 }
 
-_CCCL_END_NAMESPACE_RANGES
+_CCCL_END_NAMESPACE_CUDA_STD_RANGES
 
 #include <cuda/std/__cccl/epilogue.h>
 

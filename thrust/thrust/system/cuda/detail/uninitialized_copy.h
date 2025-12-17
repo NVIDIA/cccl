@@ -36,14 +36,18 @@
 #  pragma system_header
 #endif // no system header
 
-#if _CCCL_HAS_CUDA_COMPILER()
+#if _CCCL_CUDA_COMPILATION()
 #  include <thrust/system/cuda/detail/execution_policy.h>
 #  include <thrust/system/cuda/detail/parallel_for.h>
 #  include <thrust/system/cuda/detail/transform.h>
 #  include <thrust/system/cuda/detail/util.h>
 #  include <thrust/type_traits/is_trivially_relocatable.h>
 
-#  include <cuda/std/iterator>
+#  include <cuda/std/__iterator/distance.h>
+#  include <cuda/std/__iterator/incrementable_traits.h>
+#  include <cuda/std/__new/device_new.h>
+#  include <cuda/std/__type_traits/is_trivially_copy_assignable.h>
+#  include <cuda/std/__type_traits/is_trivially_copy_constructible.h>
 
 THRUST_NAMESPACE_BEGIN
 
@@ -70,13 +74,7 @@ struct functor
   {
     InputType const& in = raw_reference_cast(input[idx]);
     OutputType& out     = raw_reference_cast(output[idx]);
-
-#  if _CCCL_CUDA_COMPILER(CLANG)
-    // XXX unsafe, but clang is seemngly unable to call in-place new
-    out = in;
-#  else
     ::new (static_cast<void*>(&out)) OutputType(in);
-#  endif
   }
 };
 } // namespace __uninitialized_copy
@@ -110,8 +108,7 @@ uninitialized_copy(execution_policy<Derived>& policy, InputIt first, InputIt las
 {
   return cuda_cub::uninitialized_copy_n(policy, first, ::cuda::std::distance(first, last), result);
 }
-
 } // namespace cuda_cub
 
 THRUST_NAMESPACE_END
-#endif
+#endif // _CCCL_CUDA_COMPILATION()

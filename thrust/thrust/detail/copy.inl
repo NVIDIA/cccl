@@ -26,9 +26,22 @@
 #  pragma system_header
 #endif // no system header
 #include <thrust/detail/copy.h>
-#include <thrust/system/detail/adl/copy.h>
-#include <thrust/system/detail/generic/copy.h>
+#include <thrust/detail/nvtx_policy.h>
 #include <thrust/system/detail/generic/select_system.h>
+
+// Include all active backend system implementations (generic, sequential, host and device)
+#include <thrust/system/detail/generic/copy.h>
+#include <thrust/system/detail/sequential/copy.h>
+#include __THRUST_HOST_SYSTEM_ALGORITH_DETAIL_HEADER_INCLUDE(copy.h)
+#include __THRUST_DEVICE_SYSTEM_ALGORITH_DETAIL_HEADER_INCLUDE(copy.h)
+
+// Some build systems need a hint to know which files we could include
+#if 0
+#  include <thrust/system/cpp/detail/copy.h>
+#  include <thrust/system/cuda/detail/copy.h>
+#  include <thrust/system/omp/detail/copy.h>
+#  include <thrust/system/tbb/detail/copy.h>
+#endif
 
 THRUST_NAMESPACE_BEGIN
 
@@ -40,7 +53,7 @@ copy(const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
      InputIterator last,
      OutputIterator result)
 {
-  _CCCL_NVTX_RANGE_SCOPE("thrust::copy");
+  _CCCL_NVTX_RANGE_SCOPE_IF(detail::should_enable_nvtx_for_policy<DerivedPolicy>(), "thrust::copy");
   using thrust::system::detail::generic::copy;
   return copy(thrust::detail::derived_cast(thrust::detail::strip_const(exec)), first, last, result);
 } // end copy()
@@ -50,14 +63,13 @@ template <typename DerivedPolicy, typename InputIterator, typename Size, typenam
 _CCCL_HOST_DEVICE OutputIterator copy_n(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec, InputIterator first, Size n, OutputIterator result)
 {
-  _CCCL_NVTX_RANGE_SCOPE("thrust::copy_n");
+  _CCCL_NVTX_RANGE_SCOPE_IF(detail::should_enable_nvtx_for_policy<DerivedPolicy>(), "thrust::copy_n");
   using thrust::system::detail::generic::copy_n;
   return copy_n(thrust::detail::derived_cast(thrust::detail::strip_const(exec)), first, n, result);
 } // end copy_n()
 
 namespace detail
 {
-
 _CCCL_EXEC_CHECK_DISABLE // because we might call e.g. std::ostream_iterator's constructor
 template <typename System1, typename System2, typename InputIterator, typename OutputIterator>
 _CCCL_HOST_DEVICE OutputIterator two_system_copy(
@@ -67,7 +79,8 @@ _CCCL_HOST_DEVICE OutputIterator two_system_copy(
   InputIterator last,
   OutputIterator result)
 {
-  _CCCL_NVTX_RANGE_SCOPE("thrust::two_system_copy");
+  _CCCL_NVTX_RANGE_SCOPE_IF(should_enable_nvtx_for_policy<System1>() || should_enable_nvtx_for_policy<System2>(),
+                            "thrust::two_system_copy");
   using thrust::system::detail::generic::select_system;
 
   return thrust::copy(
@@ -87,7 +100,8 @@ _CCCL_HOST_DEVICE OutputIterator two_system_copy_n(
   Size n,
   OutputIterator result)
 {
-  _CCCL_NVTX_RANGE_SCOPE("thrust::two_system_copy_n");
+  _CCCL_NVTX_RANGE_SCOPE_IF(should_enable_nvtx_for_policy<System1>() || should_enable_nvtx_for_policy<System2>(),
+                            "thrust::two_system_copy_n");
   using thrust::system::detail::generic::select_system;
 
   return thrust::copy_n(
@@ -97,15 +111,16 @@ _CCCL_HOST_DEVICE OutputIterator two_system_copy_n(
     n,
     result);
 } // end two_system_copy_n()
-
 } // namespace detail
 
 template <typename InputIterator, typename OutputIterator>
 OutputIterator copy(InputIterator first, InputIterator last, OutputIterator result)
 {
-  _CCCL_NVTX_RANGE_SCOPE("thrust::copy");
   using System1 = typename thrust::iterator_system<InputIterator>::type;
   using System2 = typename thrust::iterator_system<OutputIterator>::type;
+  _CCCL_NVTX_RANGE_SCOPE_IF(
+    detail::should_enable_nvtx_for_policy<System1>() || detail::should_enable_nvtx_for_policy<System2>(),
+    "thrust::copy");
 
   System1 system1;
   System2 system2;
@@ -116,9 +131,11 @@ OutputIterator copy(InputIterator first, InputIterator last, OutputIterator resu
 template <typename InputIterator, typename Size, typename OutputIterator>
 OutputIterator copy_n(InputIterator first, Size n, OutputIterator result)
 {
-  _CCCL_NVTX_RANGE_SCOPE("thrust::copy_n");
   using System1 = typename thrust::iterator_system<InputIterator>::type;
   using System2 = typename thrust::iterator_system<OutputIterator>::type;
+  _CCCL_NVTX_RANGE_SCOPE_IF(
+    detail::should_enable_nvtx_for_policy<System1>() || detail::should_enable_nvtx_for_policy<System2>(),
+    "thrust::copy_n");
 
   System1 system1;
   System2 system2;

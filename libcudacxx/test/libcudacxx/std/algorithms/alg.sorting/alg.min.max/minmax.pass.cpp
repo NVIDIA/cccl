@@ -14,7 +14,7 @@
 //   pair<const T&, const T&>
 //   minmax(const T& a, const T& b);
 
-#include <cuda/std/__algorithm_>
+#include <cuda/std/algorithm>
 #include <cuda/std/cassert>
 #include <cuda/std/utility>
 

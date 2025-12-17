@@ -70,7 +70,7 @@ public:
     using __execute_fn_t _CCCL_NODEBUG_ALIAS = void(__task*) noexcept;
 
     _CCCL_HIDE_FROM_ABI __task() = default;
-    _CCCL_NODEBUG_API explicit __task(__execute_fn_t* __execute_fn) noexcept
+    _CCCL_API explicit __task(__execute_fn_t* __execute_fn) noexcept
         : __execute_fn_(__execute_fn)
     {}
 
@@ -250,12 +250,14 @@ public:
   }
 
 private:
-  _CCCL_NO_UNIQUE_ADDRESS _Env __env_;
+  /*_CCCL_NO_UNIQUE_ADDRESS*/ _Env __env_;
 };
 
+// A run_loop with an empty environment. This is a struct instead of a type alias to give
+// it a simpler type name that is easier to read in diagnostics.
 struct _CCCL_TYPE_VISIBILITY_DEFAULT run_loop : basic_run_loop<env<>>
 {
-  _CCCL_API constexpr run_loop() noexcept
+  _CCCL_HIDE_FROM_ABI constexpr run_loop() noexcept
       : basic_run_loop<env<>>{env{}}
   {}
 };
@@ -297,7 +299,6 @@ _CCCL_API constexpr auto basic_run_loop<_Env>::__attrs_t::query(get_completion_d
 {
   return query(get_completion_domain<set_value_t>);
 }
-
 } // namespace cuda::experimental::execution
 
 #include <cuda/experimental/__execution/epilogue.cuh>

@@ -18,16 +18,15 @@
 #  pragma system_header
 #endif // no system header
 #include <thrust/detail/allocator/allocator_traits.h>
-#include <thrust/detail/memory_wrapper.h>
 #include <thrust/detail/type_traits.h>
 #include <thrust/iterator/iterator_traits.h>
 
+#include <cuda/std/__cccl/memory_wrapper.h>
 #include <cuda/std/__memory/addressof.h>
-#include <cuda/std/utility>
+#include <cuda/std/__new/device_new.h>
+#include <cuda/std/__type_traits/remove_cvref.h>
 
 #include <nv/target>
-
-#include <new>
 
 THRUST_NAMESPACE_BEGIN
 

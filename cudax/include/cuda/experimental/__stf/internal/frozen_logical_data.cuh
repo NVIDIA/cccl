@@ -30,7 +30,6 @@
 
 namespace cuda::experimental::stf
 {
-
 template <typename T>
 class logical_data;
 
@@ -290,5 +289,4 @@ inline frozen_logical_data_untyped backend_ctx<Engine>::freeze(
 {
   return frozen_logical_data_untyped(*this, mv(d), m, mv(where), user_freeze);
 }
-
 } // namespace cuda::experimental::stf

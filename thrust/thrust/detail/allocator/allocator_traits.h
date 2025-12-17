@@ -30,25 +30,37 @@
 #  pragma system_header
 #endif // no system header
 
-#include <thrust/detail/memory_wrapper.h>
+#include <thrust/detail/allocator/allocator_traits.h>
+#include <thrust/detail/type_deduction.h>
 #include <thrust/detail/type_traits.h>
 #include <thrust/detail/type_traits/has_member_function.h>
 #include <thrust/detail/type_traits/has_nested_type.h>
+#include <thrust/detail/type_traits/is_call_possible.h>
 #include <thrust/detail/type_traits/pointer_traits.h>
 
-#include <cuda/std/type_traits>
+#include <cuda/std/__cccl/memory_wrapper.h>
+#include <cuda/std/__type_traits/add_lvalue_reference.h>
+#include <cuda/std/__type_traits/conditional.h>
+#include <cuda/std/__type_traits/is_empty.h>
+#include <cuda/std/__type_traits/make_unsigned.h>
+#include <cuda/std/__type_traits/type_identity.h>
+#include <cuda/std/__type_traits/void_t.h>
+#include <cuda/std/limits>
+
+#include <new>
 
 THRUST_NAMESPACE_BEGIN
 namespace detail
 {
-
 // forward declaration for has_member_system
 template <typename Alloc>
 struct allocator_system;
 
+template <typename Alloc>
+struct allocator_traits;
+
 namespace allocator_traits_detail
 {
-
 __THRUST_DEFINE_HAS_NESTED_TYPE(has_value_type, value_type)
 __THRUST_DEFINE_HAS_NESTED_TYPE(has_pointer, pointer)
 __THRUST_DEFINE_HAS_NESTED_TYPE(has_const_pointer, const_pointer)
@@ -65,21 +77,11 @@ __THRUST_DEFINE_HAS_NESTED_TYPE(has_system_type, system_type)
 __THRUST_DEFINE_HAS_NESTED_TYPE(has_is_always_equal, is_always_equal)
 __THRUST_DEFINE_HAS_MEMBER_FUNCTION(has_member_system_impl, system)
 
+template <typename Alloc, typename U, typename = void>
+inline constexpr bool has_rebind = false;
+
 template <typename Alloc, typename U>
-struct has_rebind
-{
-  using yes_type = char;
-  using no_type  = int;
-
-  template <typename S>
-  static yes_type test(typename S::template rebind<U>::other*);
-  template <typename S>
-  static no_type test(...);
-
-  static bool const value = sizeof(test<U>(0)) == sizeof(yes_type);
-
-  using type = thrust::detail::integral_constant<bool, value>;
-};
+inline constexpr bool has_rebind<Alloc, U, ::cuda::std::void_t<decltype(U::template rebind<U>::other)>> = true;
 
 _CCCL_SUPPRESS_DEPRECATED_PUSH
 
@@ -99,8 +101,7 @@ THRUST_SPECIALIZE_DEPRECATED(has_const_reference)
 #undef THRUST_SPECIALIZE_DEPRECATED
 
 template <typename T, typename U>
-struct has_rebind<std::allocator<T>, U> : false_type
-{};
+inline constexpr bool has_rebind<std::allocator<T>, U, void> = false;
 
 template <typename T>
 struct nested_pointer
@@ -191,7 +192,7 @@ struct has_member_system
 
 _CCCL_SUPPRESS_DEPRECATED_POP
 
-template <class Alloc, class U, bool = has_rebind<Alloc, U>::value>
+template <class Alloc, class U, bool = has_rebind<Alloc, U>>
 struct rebind_alloc
 {
   using type = typename Alloc::template rebind<U>::other;
@@ -209,6 +210,159 @@ struct rebind_alloc<Alloc<T, Args...>, U, false>
   using type = Alloc<U, Args...>;
 };
 
+__THRUST_DEFINE_IS_CALL_POSSIBLE(has_member_allocate_with_hint_impl, allocate)
+
+template <typename Alloc>
+class has_member_allocate_with_hint
+{
+  using pointer            = typename allocator_traits<Alloc>::pointer;
+  using size_type          = typename allocator_traits<Alloc>::size_type;
+  using const_void_pointer = typename allocator_traits<Alloc>::const_void_pointer;
+
+public:
+  using type = typename has_member_allocate_with_hint_impl<Alloc, pointer(size_type, const_void_pointer)>::type;
+  static const bool value = type::value;
+};
+
+template <typename Alloc>
+_CCCL_HOST_DEVICE typename allocator_traits<Alloc>::pointer
+allocate(Alloc& a,
+         typename allocator_traits<Alloc>::size_type n,
+         [[maybe_unused]] typename allocator_traits<Alloc>::const_void_pointer hint)
+{
+  if constexpr (has_member_allocate_with_hint<Alloc>::value)
+  {
+    return a.allocate(n, hint);
+  }
+  else
+  {
+    return a.allocate(n);
+  }
+}
+
+__THRUST_DEFINE_IS_CALL_POSSIBLE(has_member_construct1_impl, construct)
+
+template <typename Alloc, typename T>
+struct has_member_construct1 : has_member_construct1_impl<Alloc, void(T*)>
+{};
+
+_CCCL_EXEC_CHECK_DISABLE
+template <typename Alloc, typename T>
+_CCCL_HOST_DEVICE void construct(Alloc& a, T* p)
+{
+  if constexpr (has_member_construct1<Alloc, T>::value)
+  {
+    a.construct(p);
+  }
+  else
+  {
+    ::new (static_cast<void*>(p)) T();
+  }
+}
+
+__THRUST_DEFINE_IS_CALL_POSSIBLE(has_member_construct2_impl, construct)
+
+template <typename Alloc, typename T, typename Arg1>
+struct has_member_construct2 : has_member_construct2_impl<Alloc, void(T*, const Arg1&)>
+{};
+
+_CCCL_EXEC_CHECK_DISABLE
+template <typename Alloc, typename T, typename Arg1>
+_CCCL_HOST_DEVICE void construct(Alloc& a, T* p, const Arg1& arg1)
+{
+  if constexpr (has_member_construct2<Alloc, T, Arg1>::value)
+  {
+    a.construct(p, arg1);
+  }
+  else
+  {
+    ::new (static_cast<void*>(p)) T(arg1);
+  }
+}
+
+__THRUST_DEFINE_IS_CALL_POSSIBLE(has_member_constructN_impl, construct)
+
+template <typename Alloc, typename T, typename... Args>
+struct has_member_constructN : has_member_constructN_impl<Alloc, void(T*, Args...)>
+{};
+
+_CCCL_EXEC_CHECK_DISABLE
+template <typename Alloc, typename T, typename... Args>
+inline _CCCL_HOST_DEVICE void construct([[maybe_unused]] Alloc& a, T* p, Args&&... args)
+{
+  if constexpr (has_member_constructN<Alloc, T, Args...>::value)
+  {
+    a.construct(p, THRUST_FWD(args)...);
+  }
+  else
+  {
+    ::new (static_cast<void*>(p)) T(THRUST_FWD(args)...);
+  }
+}
+
+__THRUST_DEFINE_IS_CALL_POSSIBLE(has_member_destroy_impl, destroy)
+
+template <typename Alloc, typename T>
+struct has_member_destroy : has_member_destroy_impl<Alloc, void(T*)>
+{};
+
+_CCCL_EXEC_CHECK_DISABLE
+template <typename Alloc, typename T>
+_CCCL_HOST_DEVICE void destroy([[maybe_unused]] Alloc& a, T* p)
+{
+  if constexpr (has_member_destroy<Alloc, T>::value)
+  {
+    a.destroy(p);
+  }
+  else
+  {
+    p->~T();
+  }
+}
+
+__THRUST_DEFINE_IS_CALL_POSSIBLE(has_member_max_size_impl, max_size)
+
+template <typename Alloc>
+class has_member_max_size
+{
+  using size_type = typename allocator_traits<Alloc>::size_type;
+
+public:
+  using type              = typename has_member_max_size_impl<Alloc, size_type()>::type;
+  static const bool value = type::value;
+};
+
+template <typename Alloc>
+_CCCL_HOST_DEVICE typename allocator_traits<Alloc>::size_type max_size([[maybe_unused]] const Alloc& a)
+{
+  if constexpr (has_member_max_size<Alloc>::value)
+  {
+    return a.max_size();
+  }
+  else
+  {
+    using size_type = typename allocator_traits<Alloc>::size_type;
+    return ::cuda::std::numeric_limits<size_type>::max();
+  }
+}
+
+// TODO(bgruber): can be return decltype(auto) here?
+template <typename Alloc>
+_CCCL_HOST_DEVICE ::cuda::std::
+  _If<has_member_system<Alloc>::value, typename allocator_system<Alloc>::type&, typename allocator_system<Alloc>::type>
+  system(Alloc& a)
+{
+  if constexpr (has_member_system<Alloc>::value)
+  {
+    // return the allocator's system
+    return a.system();
+  }
+  else
+  {
+    // return a copy of a value-initialized system
+    return typename allocator_system<Alloc>::type{};
+  }
+}
 } // namespace allocator_traits_detail
 
 template <typename Alloc>
@@ -293,31 +447,156 @@ public:
   using other = allocator_traits;
 
   // Deprecated std::allocator aliases that we need:
-  using reference       = typename thrust::detail::pointer_traits<pointer>::reference;
-  using const_reference = typename thrust::detail::pointer_traits<const_pointer>::reference;
+  using reference       = typename pointer_traits<pointer>::reference;
+  using const_reference = typename pointer_traits<const_pointer>::reference;
 
-  inline _CCCL_HOST_DEVICE static pointer allocate(allocator_type& a, size_type n);
+  inline _CCCL_HOST_DEVICE static pointer allocate(allocator_type& a, size_type n)
+  {
+    struct workaround_warnings
+    {
+      _CCCL_EXEC_CHECK_DISABLE
+      static _CCCL_HOST_DEVICE pointer allocate(Alloc& a, size_type n)
+      {
+        return a.allocate(n);
+      }
+    };
 
-  inline _CCCL_HOST_DEVICE static pointer allocate(allocator_type& a, size_type n, const_void_pointer hint);
+    return workaround_warnings::allocate(a, n);
+  }
 
-  inline _CCCL_HOST_DEVICE static void deallocate(allocator_type& a, pointer p, size_type n) noexcept;
+  inline _CCCL_HOST_DEVICE static pointer allocate(allocator_type& a, size_type n, const_void_pointer hint)
+  {
+    return allocator_traits_detail::allocate(a, n, hint);
+  }
+
+  inline _CCCL_HOST_DEVICE static void deallocate(allocator_type& a, pointer p, size_type n) noexcept
+  {
+    struct workaround_warnings
+    {
+      _CCCL_EXEC_CHECK_DISABLE
+      static _CCCL_HOST_DEVICE void deallocate(Alloc& a, pointer p, size_type n) noexcept
+      {
+        return a.deallocate(p, n);
+      }
+    };
+
+    return workaround_warnings::deallocate(a, p, n);
+  }
 
   // XXX should probably change T* to pointer below and then relax later
 
   template <typename T>
-  inline _CCCL_HOST_DEVICE static void construct(allocator_type& a, T* p);
+  _CCCL_HOST_DEVICE static void construct(allocator_type& a, T* p)
+  {
+    return allocator_traits_detail::construct(a, p);
+  }
 
   template <typename T, typename Arg1>
-  inline _CCCL_HOST_DEVICE static void construct(allocator_type& a, T* p, const Arg1& arg1);
+  _CCCL_HOST_DEVICE static void construct(allocator_type& a, T* p, const Arg1& arg1)
+  {
+    return allocator_traits_detail::construct(a, p, arg1);
+  }
 
   template <typename T, typename... Args>
-  inline _CCCL_HOST_DEVICE static void construct(allocator_type& a, T* p, Args&&... args);
+  _CCCL_HOST_DEVICE static void construct(allocator_type& a, T* p, Args&&... args)
+  {
+    return allocator_traits_detail::construct(a, p, THRUST_FWD(args)...);
+  }
 
   template <typename T>
-  inline _CCCL_HOST_DEVICE static void destroy(allocator_type& a, T* p) noexcept;
+  _CCCL_HOST_DEVICE static void destroy(allocator_type& a, T* p) noexcept
+  {
+    return allocator_traits_detail::destroy(a, p);
+  }
 
-  inline _CCCL_HOST_DEVICE static size_type max_size(const allocator_type& a);
+  _CCCL_HOST_DEVICE static size_type max_size(const allocator_type& a)
+  {
+    return allocator_traits_detail::max_size(a);
+  }
 }; // end allocator_traits
+
+// std::allocator's member functions are deprecated in C++17 and removed in
+// C++20, so we can't just use the generic implementation for allocator_traits
+// that calls the allocator's member functions.
+// Instead, specialize allocator_traits for std::allocator and defer to
+// std::allocator_traits<std::allocator> and let the STL do whatever it needs
+// to for the current c++ version. Manually forward the calls to suppress
+// host/device warnings.
+template <typename T>
+struct allocator_traits<std::allocator<T>> : public std::allocator_traits<std::allocator<T>>
+{
+private:
+  using superclass = std::allocator_traits<std::allocator<T>>;
+
+public:
+  using allocator_type                         = typename superclass::allocator_type;
+  using value_type                             = typename superclass::value_type;
+  using pointer                                = typename superclass::pointer;
+  using const_pointer                          = typename superclass::const_pointer;
+  using void_pointer                           = typename superclass::void_pointer;
+  using const_void_pointer                     = typename superclass::const_void_pointer;
+  using difference_type                        = typename superclass::difference_type;
+  using size_type                              = typename superclass::size_type;
+  using propagate_on_container_swap            = typename superclass::propagate_on_container_swap;
+  using propagate_on_container_copy_assignment = typename superclass::propagate_on_container_copy_assignment;
+  using propagate_on_container_move_assignment = typename superclass::propagate_on_container_move_assignment;
+
+  // std::allocator_traits added this in C++17, but thrust::allocator_traits defines
+  // it unconditionally.
+  using is_always_equal =
+    typename eval_if<allocator_traits_detail::has_is_always_equal<allocator_type>::value,
+                     allocator_traits_detail::nested_is_always_equal<allocator_type>,
+                     ::cuda::std::is_empty<allocator_type>>::type;
+
+  // std::allocator_traits doesn't provide these, but
+  // thrust::detail::allocator_traits does. These used to be part of the
+  // std::allocator API but were deprecated in C++17.
+  using reference       = typename pointer_traits<pointer>::reference;
+  using const_reference = typename pointer_traits<const_pointer>::reference;
+
+  template <typename U>
+  using rebind_alloc = std::allocator<U>;
+  template <typename U>
+  using rebind_traits = allocator_traits<std::allocator<U>>;
+
+  _CCCL_EXEC_CHECK_DISABLE
+  _CCCL_HOST_DEVICE static pointer allocate(allocator_type& a, size_type n)
+  {
+    return superclass::allocate(a, n);
+  }
+
+  _CCCL_EXEC_CHECK_DISABLE
+  _CCCL_HOST_DEVICE static pointer allocate(allocator_type& a, size_type n, const_void_pointer hint)
+  {
+    return superclass::allocate(a, n, hint);
+  }
+
+  _CCCL_EXEC_CHECK_DISABLE
+  _CCCL_HOST_DEVICE static void deallocate(allocator_type& a, pointer p, size_type n) noexcept
+  {
+    superclass::deallocate(a, p, n);
+  }
+
+  _CCCL_EXEC_CHECK_DISABLE
+  template <typename U, typename... Args>
+  _CCCL_HOST_DEVICE static void construct(allocator_type& a, U* p, Args&&... args)
+  {
+    superclass::construct(a, p, THRUST_FWD(args)...);
+  }
+
+  _CCCL_EXEC_CHECK_DISABLE
+  template <typename U>
+  _CCCL_HOST_DEVICE static void destroy(allocator_type& a, U* p) noexcept
+  {
+    superclass::destroy(a, p);
+  }
+
+  _CCCL_EXEC_CHECK_DISABLE
+  _CCCL_HOST_DEVICE static size_type max_size(const allocator_type& a)
+  {
+    return superclass::max_size(a);
+  }
+};
 
 // we consider a type an allocator if T::value_type exists
 // it doesn't make much sense (containers, which are not allocators, will fulfill this requirement),
@@ -341,10 +620,10 @@ struct allocator_system
                      ::cuda::std::add_lvalue_reference<type>,
                      ::cuda::std::type_identity<type>>::type;
 
-  _CCCL_HOST_DEVICE inline static get_result_type get(Alloc& a);
+  _CCCL_HOST_DEVICE inline static get_result_type get(Alloc& a)
+  {
+    return allocator_traits_detail::system(a);
+  }
 };
-
 } // namespace detail
 THRUST_NAMESPACE_END
-
-#include <thrust/detail/allocator/allocator_traits.inl>

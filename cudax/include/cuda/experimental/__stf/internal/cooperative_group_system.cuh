@@ -27,7 +27,6 @@
 
 namespace cuda::experimental::stf::reserved
 {
-
 /**
  * This class implements a synchronization mechanism at system scale, in particular to mimic an implementation of
  * multi-device cooperative kernels.
@@ -115,10 +114,9 @@ private:
   {
     NV_IF_ELSE_TARGET(NV_PROVIDES_SM_70,
                       ([[maybe_unused]] unsigned int reg_val = val;
-                       asm volatile("st.release.sys.global.u8 [%1], %0;" ::"r"(reg_val) "l"(arrived) : "memory");),
+                       asm volatile("st.release.sys.global.u8 [%1], %0;" ::"r"(reg_val), "l"(arrived) : "memory");),
                       (*(volatile unsigned char*) arrived = val;))
   }
 #endif // _CCCL_CUDA_COMPILATION()
 };
-
 } // end namespace cuda::experimental::stf::reserved

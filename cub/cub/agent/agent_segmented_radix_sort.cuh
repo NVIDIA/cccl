@@ -1,29 +1,5 @@
-/******************************************************************************
- * Copyright (c) 2011-2021, NVIDIA CORPORATION.  All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *     * Redistributions of source code must retain the above copyright
- *       notice, this list of conditions and the following disclaimer.
- *     * Redistributions in binary form must reproduce the above copyright
- *       notice, this list of conditions and the following disclaimer in the
- *       documentation and/or other materials provided with the distribution.
- *     * Neither the name of the NVIDIA CORPORATION nor the
- *       names of its contributors may be used to endorse or promote products
- *       derived from this software without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
- * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
- * DISCLAIMED. IN NO EVENT SHALL NVIDIA CORPORATION BE LIABLE FOR ANY
- * DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
- * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
- * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
- * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- *
- ******************************************************************************/
+// SPDX-FileCopyrightText: Copyright (c) 2011-2021, NVIDIA CORPORATION. All rights reserved.
+// SPDX-License-Identifier: BSD-3
 
 #pragma once
 
@@ -45,16 +21,13 @@
 
 CUB_NAMESPACE_BEGIN
 
-namespace detail
+namespace detail::radix_sort
 {
-namespace radix_sort
-{
-
 /**
  * This agent will be implementing the `DeviceSegmentedRadixSort` when the
  * https://github.com/NVIDIA/cub/issues/383 is addressed.
  *
- * @tparam IS_DESCENDING
+ * @tparam IsDescending
  *   Whether or not the sorted-order is high-to-low
  *
  * @tparam SegmentedPolicyT
@@ -69,7 +42,7 @@ namespace radix_sort
  * @tparam OffsetT
  *   Signed integer type for global offsets
  */
-template <bool IS_DESCENDING,
+template <bool IsDescending,
           typename SegmentedPolicyT,
           typename KeyT,
           typename ValueT,
@@ -91,7 +64,7 @@ struct AgentSegmentedRadixSort
   // Huge segment handlers
   using BlockUpsweepT   = AgentRadixSortUpsweep<SegmentedPolicyT, KeyT, OffsetT, DecomposerT>;
   using DigitScanT      = BlockScan<OffsetT, BLOCK_THREADS>;
-  using BlockDownsweepT = AgentRadixSortDownsweep<SegmentedPolicyT, IS_DESCENDING, KeyT, ValueT, OffsetT, DecomposerT>;
+  using BlockDownsweepT = AgentRadixSortDownsweep<SegmentedPolicyT, IsDescending, KeyT, ValueT, OffsetT, DecomposerT>;
 
   /// Number of bin-starting offsets tracked per thread
   static constexpr int BINS_TRACKED_PER_THREAD = BlockDownsweepT::BINS_TRACKED_PER_THREAD;
@@ -152,7 +125,7 @@ struct AgentSegmentedRadixSort
     // LOWEST   -> -nan          = 11...11b -> TwiddleIn ->  0 = 00...00b
 
     bit_ordered_type default_key_bits =
-      IS_DESCENDING ? traits::min_raw_binary_key(decomposer) : traits::max_raw_binary_key(decomposer);
+      IsDescending ? traits::min_raw_binary_key(decomposer) : traits::max_raw_binary_key(decomposer);
     KeyT oob_default = reinterpret_cast<KeyT&>(default_key_bits);
 
     if (!KEYS_ONLY)
@@ -174,7 +147,7 @@ struct AgentSegmentedRadixSort
         thread_values,
         begin_bit,
         end_bit,
-        bool_constant_v<IS_DESCENDING>,
+        bool_constant_v<IsDescending>,
         bool_constant_v<KEYS_ONLY>,
         decomposer);
 
@@ -206,7 +179,7 @@ struct AgentSegmentedRadixSort
 
     __syncthreads();
 
-    if (IS_DESCENDING)
+    if (IsDescending)
     {
       // Reverse bin counts
       _CCCL_PRAGMA_UNROLL_FULL()
@@ -240,7 +213,7 @@ struct AgentSegmentedRadixSort
     OffsetT bin_offset[BINS_TRACKED_PER_THREAD];
     DigitScanT(temp_storage.unbound_sort.scan).ExclusiveSum(bin_count, bin_offset);
 
-    if (IS_DESCENDING)
+    if (IsDescending)
     {
       // Reverse bin offsets
       _CCCL_PRAGMA_UNROLL_FULL()
@@ -285,8 +258,6 @@ struct AgentSegmentedRadixSort
     downsweep.ProcessRegion(OffsetT{}, num_items);
   }
 };
-
-} // namespace radix_sort
-} // namespace detail
+} // namespace detail::radix_sort
 
 CUB_NAMESPACE_END

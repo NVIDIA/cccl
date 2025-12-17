@@ -22,7 +22,6 @@
 #endif // no system header
 
 #include <cuda/__barrier/barrier_block_scope.h>
-#include <cuda/__barrier/barrier_native_handle.h>
 #include <cuda/std/__atomic/scopes.h>
 #include <cuda/std/__barrier/barrier.h>
 #include <cuda/std/__barrier/empty_completion.h>
@@ -49,7 +48,6 @@ __try_get_barrier_handle<::cuda::thread_scope_block, ::cuda::std::__empty_comple
 {
   NV_DISPATCH_TARGET(
     NV_IS_DEVICE, (return ::cuda::device::barrier_native_handle(__barrier);), NV_ANY_TARGET, (return nullptr;));
-  _CCCL_UNREACHABLE();
 }
 
 _CCCL_END_NAMESPACE_CUDA

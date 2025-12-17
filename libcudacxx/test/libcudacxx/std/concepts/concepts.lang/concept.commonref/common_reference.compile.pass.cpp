@@ -282,9 +282,7 @@ struct BadBasicCommonReference
 static_assert(cuda::std::convertible_to<BadBasicCommonReference, int>, "");
 static_assert(cuda::std::convertible_to<BadBasicCommonReference, int&>, "");
 
-namespace cuda
-{
-namespace std
+namespace cuda::std
 {
 template <template <class> class X, template <class> class Y>
 struct basic_common_reference<BadBasicCommonReference, int, X, Y>
@@ -297,8 +295,8 @@ struct basic_common_reference<int, BadBasicCommonReference, X, Y>
 {
   using type = int&;
 };
-} // namespace std
-} // namespace cuda
+} // namespace cuda::std
+
 static_assert(!common_reference_with<BadBasicCommonReference, int>, "");
 
 #if TEST_STD_VER > 2017
@@ -308,9 +306,7 @@ struct StructNotConvertibleToCommonReference
 };
 static_assert(cuda::std::convertible_to<int, StructNotConvertibleToCommonReference>, "");
 
-namespace cuda
-{
-namespace std
+namespace cuda::std
 {
 template <template <class> class X, template <class> class Y>
 struct basic_common_reference<StructNotConvertibleToCommonReference, int, X, Y>
@@ -323,8 +319,7 @@ struct basic_common_reference<int, StructNotConvertibleToCommonReference, X, Y>
 {
   using type = int&;
 };
-} // namespace std
-} // namespace cuda
+} // namespace cuda::std
 static_assert(!common_reference_with<StructNotConvertibleToCommonReference, int>, "");
 #endif // TEST_STD_VER > 2017
 
@@ -333,9 +328,7 @@ struct IntNotConvertibleToCommonReference
   __host__ __device__ operator int&() const;
 };
 
-namespace cuda
-{
-namespace std
+namespace cuda::std
 {
 template <template <class> class X, template <class> class Y>
 struct basic_common_reference<IntNotConvertibleToCommonReference, int, X, Y>
@@ -348,8 +341,8 @@ struct basic_common_reference<int, IntNotConvertibleToCommonReference, X, Y>
 {
   using type = int&;
 };
-} // namespace std
-} // namespace cuda
+} // namespace cuda::std
+
 static_assert(!common_reference_with<IntNotConvertibleToCommonReference, int>, "");
 
 #if TEST_STD_VER > 2017
@@ -359,9 +352,7 @@ struct HasCommonReference
   __host__ __device__ operator int&() const;
 };
 
-namespace cuda
-{
-namespace std
+namespace cuda::std
 {
 template <template <class> class X, template <class> class Y>
 struct basic_common_reference<HasCommonReference, int, X, Y>
@@ -374,8 +365,7 @@ struct basic_common_reference<int, HasCommonReference, X, Y>
 {
   using type = int&;
 };
-} // namespace std
-} // namespace cuda
+} // namespace cuda::std
 
 static_assert(!common_reference_with<HasCommonReference, int>, "");
 static_assert(common_reference_with<HasCommonReference, int&>, "");

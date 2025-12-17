@@ -28,10 +28,9 @@
 #include <cuda/std/__floating_point/fp.h>
 #include <cuda/std/__type_traits/is_integral.h>
 
-// MSVC and clang cuda need the host side functions included
-#if _CCCL_COMPILER(MSVC) || _CCCL_CUDA_COMPILER(CLANG)
+#if !_CCCL_COMPILER(NVRTC)
 #  include <math.h>
-#endif // _CCCL_COMPILER(MSVC) || _CCCL_CUDA_COMPILER(CLANG)
+#endif // !_CCCL_COMPILER(NVRTC)
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -45,7 +44,7 @@ template <class _Tp>
 [[nodiscard]] _CCCL_API constexpr bool __isfinite_impl(_Tp __x) noexcept
 {
   static_assert(is_floating_point_v<_Tp>, "Only standard floating-point types are supported");
-  if (!::cuda::std::__cccl_default_is_constant_evaluated())
+  _CCCL_IF_NOT_CONSTEVAL_DEFAULT
   {
     return ::isfinite(__x);
   }
@@ -57,7 +56,7 @@ template <class _Tp>
 #if defined(_CCCL_BUILTIN_ISFINITE)
   return _CCCL_BUILTIN_ISFINITE(__x);
 #else // ^^^ _CCCL_BUILTIN_ISFINITE ^^^ / vvv !_CCCL_BUILTIN_ISFINITE vvv
-  if (!::cuda::std::__cccl_default_is_constant_evaluated())
+  _CCCL_IF_NOT_CONSTEVAL_DEFAULT
   {
     return ::isfinite(__x);
   }
@@ -74,7 +73,7 @@ template <class _Tp>
 #if defined(_CCCL_BUILTIN_ISFINITE)
   return _CCCL_BUILTIN_ISFINITE(__x);
 #else // ^^^ _CCCL_BUILTIN_ISFINITE ^^^ / vvv !_CCCL_BUILTIN_ISFINITE vvv
-  if (!::cuda::std::__cccl_default_is_constant_evaluated())
+  _CCCL_IF_NOT_CONSTEVAL_DEFAULT
   {
     return ::isfinite(__x);
   }

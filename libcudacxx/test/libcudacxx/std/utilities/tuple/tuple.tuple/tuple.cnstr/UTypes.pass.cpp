@@ -68,7 +68,7 @@ __host__ __device__ void test_default_constructible_extension_sfinae()
     static_assert(cuda::std::is_constructible<NestedTuple, MoveOnly, Tuple, MoveOnly, MoveOnly>::value, "");
   }
   // testing extensions
-#ifdef _LIBCUDACXX_VERSION
+#ifdef _CUDA_STD_VERSION
   {
     using Tuple       = cuda::std::tuple<MoveOnly, int>;
     using NestedTuple = cuda::std::tuple<MoveOnly, Tuple, MoveOnly, MoveOnly>;
@@ -98,7 +98,7 @@ int main(int, char**)
     assert(cuda::std::get<2>(t) == 2);
   }
   // extensions, MSVC issues
-#if defined(_LIBCUDACXX_VERSION) && !TEST_COMPILER(MSVC)
+#if defined(_CUDA_STD_VERSION) && !TEST_COMPILER(MSVC)
   {
     using E   = MoveOnly;
     using Tup = cuda::std::tuple<E, E, E>;

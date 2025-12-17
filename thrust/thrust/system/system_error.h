@@ -39,7 +39,6 @@ THRUST_NAMESPACE_BEGIN
 
 namespace system
 {
-
 // [19.5.5] Class system_error
 
 // [19.5.5.1] Class system_error overview
@@ -174,7 +173,6 @@ private:
 /*!
  * \} end group system_diagnostics
  */
-
 } // namespace system
 
 // import names into thrust::

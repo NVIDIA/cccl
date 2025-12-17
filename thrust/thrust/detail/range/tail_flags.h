@@ -34,7 +34,6 @@
 THRUST_NAMESPACE_BEGIN
 namespace detail
 {
-
 template <typename RandomAccessIterator,
           typename BinaryPredicate = ::cuda::std::equal_to<detail::it_value_t<RandomAccessIterator>>,
           typename ValueType       = bool,
@@ -125,6 +124,5 @@ _CCCL_HOST_DEVICE tail_flags<RandomAccessIterator> make_tail_flags(RandomAccessI
 {
   return tail_flags<RandomAccessIterator>(first, last);
 }
-
 } // namespace detail
 THRUST_NAMESPACE_END

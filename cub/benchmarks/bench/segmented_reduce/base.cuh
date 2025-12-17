@@ -1,33 +1,11 @@
-/******************************************************************************
- * Copyright (c) 2025, NVIDIA CORPORATION.  All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *     * Redistributions of source code must retain the above copyright
- *       notice, this list of conditions and the following disclaimer.
- *     * Redistributions in binary form must reproduce the above copyright
- *       notice, this list of conditions and the following disclaimer in the
- *       documentation and/or other materials provided with the distribution.
- *     * Neither the name of the NVIDIA CORPORATION nor the
- *       names of its contributors may be used to endorse or promote products
- *       derived from this software without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
- * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
- * DISCLAIMED. IN NO EVENT SHALL NVIDIA CORPORATION BE LIABLE FOR ANY
- * DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
- * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
- * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
- * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- *
- ******************************************************************************/
+// SPDX-FileCopyrightText: Copyright (c) 2025, NVIDIA CORPORATION. All rights reserved.
+// SPDX-License-Identifier: BSD-3
 
 #pragma once
 
 #include <cub/device/device_reduce.cuh>
+
+#include <cuda/std/type_traits>
 
 #ifndef TUNE_BASE
 #  define TUNE_ITEMS_PER_VEC_LOAD (1 << TUNE_ITEMS_PER_VEC_LOAD_POW2)
@@ -82,13 +60,49 @@ struct policy_hub_t
 template <typename T>
 void fixed_size_segmented_reduce(nvbench::state& state, nvbench::type_list<T>)
 {
-  using accum_t     = T;
+  static constexpr bool is_argmin = std::is_same_v<op_t, cub::detail::arg_min>;
+
   using input_it_t  = const T*;
-  using output_it_t = T*;
-  using init_t      = T;
+  using output_t    = cuda::std::conditional_t<is_argmin, cuda::std::pair<int, T>, T>;
+  using output_it_t = output_t*;
+  using accum_t     = output_t;
+  using init_t      = cuda::std::conditional_t<is_argmin, cub::detail::reduce::empty_problem_init_t<accum_t>, T>;
+
+  // Retrieve axis parameters
+  const size_t num_elements = static_cast<size_t>(state.get_int64("Elements{io}"));
+  const size_t segment_size = static_cast<size_t>(state.get_int64("SegmentSize"));
+  const size_t num_segments = std::max<std::size_t>(1, (num_elements / segment_size));
+  const size_t elements     = num_segments * segment_size;
+
+  thrust::device_vector<T> in = generate(elements);
+  thrust::device_vector<output_t> out(num_segments);
+
+  input_it_t d_in   = thrust::raw_pointer_cast(in.data());
+  output_it_t d_out = thrust::raw_pointer_cast(out.data());
+
+  // Enable throughput calculations and add "Size" column to results.
+  state.add_element_count(elements);
+  state.add_global_memory_reads<T>(elements, "Size");
+  state.add_global_memory_writes<output_t>(num_segments);
+
+  [[maybe_unused]] auto d_indexed_in = thrust::make_transform_iterator(
+    thrust::counting_iterator<::cuda::std::int64_t>{0},
+    cub::detail::reduce::generate_idx_value<input_it_t, T>(d_in, segment_size));
+  using arg_index_input_iterator_t = decltype(d_indexed_in);
+
+  auto select_in = [&] {
+    if constexpr (is_argmin)
+    {
+      return d_indexed_in;
+    }
+    else
+    {
+      return d_in;
+    }
+  };
 
   using dispatch_t = cub::detail::reduce::DispatchFixedSizeSegmentedReduce<
-    input_it_t,
+    cuda::std::conditional_t<is_argmin, arg_index_input_iterator_t, input_it_t>,
     output_it_t,
     int,
     op_t,
@@ -100,27 +114,18 @@ void fixed_size_segmented_reduce(nvbench::state& state, nvbench::type_list<T>)
 #endif // TUNE_BASE
     >;
 
-  // Retrieve axis parameters
-  const size_t num_elements = static_cast<size_t>(state.get_int64("Elements{io}"));
-  const size_t segment_size = static_cast<size_t>(state.get_int64("SegmentSize"));
-  const size_t num_segments = std::max<std::size_t>(1, (num_elements / segment_size));
-  const size_t elements     = num_segments * segment_size;
-
-  thrust::device_vector<T> in = generate(elements);
-  thrust::device_vector<T> out(num_segments);
-
-  input_it_t d_in   = thrust::raw_pointer_cast(in.data());
-  output_it_t d_out = thrust::raw_pointer_cast(out.data());
-
-  // Enable throughput calculations and add "Size" column to results.
-  state.add_element_count(elements);
-  state.add_global_memory_reads<T>(elements, "Size");
-  state.add_global_memory_writes<T>(num_segments);
-
   // Allocate temporary storage:
   std::size_t temp_size;
   dispatch_t::Dispatch(
-    nullptr, temp_size, d_in, d_out, num_segments, static_cast<int>(segment_size), op_t{}, init_t{}, 0 /* stream */);
+    nullptr,
+    temp_size,
+    select_in(),
+    d_out,
+    num_segments,
+    static_cast<int>(segment_size),
+    op_t{},
+    init_t{},
+    0 /* stream */);
 
   thrust::device_vector<nvbench::uint8_t> temp(temp_size);
   auto* temp_storage = thrust::raw_pointer_cast(temp.data());
@@ -129,7 +134,7 @@ void fixed_size_segmented_reduce(nvbench::state& state, nvbench::type_list<T>)
     dispatch_t::Dispatch(
       temp_storage,
       temp_size,
-      d_in,
+      select_in(),
       d_out,
       num_segments,
       static_cast<int>(segment_size),

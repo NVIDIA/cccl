@@ -31,7 +31,6 @@
 
 namespace cuda::experimental::stf
 {
-
 /**
  * @brief pos4 class defining a position within a multidimensional object (default value 0 in each axis)
  */
@@ -717,5 +716,4 @@ struct hash<dim4>
     return hash_all(s.x, s.y, s.z, s.t);
   }
 };
-
 } // end namespace cuda::experimental::stf

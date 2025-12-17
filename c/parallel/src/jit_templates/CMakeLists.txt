@@ -10,16 +10,17 @@ set(PP_CMD ${CMAKE_CXX_COMPILER})
 set(PP_DEPFILE_KW)
 set(PP_ARGS)
 
-if(MSVC)
+if (MSVC)
   list(APPEND PP_ARGS /D_CCCL_C_PARALLEL_JIT_TEMPLATES_PREPROCESS)
 else()
   list(APPEND PP_ARGS -D_CCCL_C_PARALLEL_JIT_TEMPLATES_PREPROCESS)
 endif()
 
-if(MSVC)
+if (MSVC)
   file(TO_NATIVE_PATH "${jit_template}" JIT_TEMPLATE_NATIVE)
 
-  list(APPEND PP_ARGS
+  list(
+    APPEND PP_ARGS
     /nologo
     /TP
     /P
@@ -27,11 +28,14 @@ if(MSVC)
     "${cpp_entry}"
   )
 else()
-  list(APPEND PP_ARGS
+  list(
+    APPEND PP_ARGS
+    # gersemi: off
     -E "${cpp_entry}"
     -o "${jit_template}"
     -MD -MT "${jit_template}"
     -MF "${jit_template_depfile}"
+    # gersemi: on
   )
   set(PP_DEPFILE_KW DEPFILE "${jit_template_depfile}")
 endif()
@@ -39,8 +43,7 @@ endif()
 add_custom_command(
   OUTPUT "${jit_template}"
   DEPENDS "${cpp_entry}"
-  COMMAND "${PP_CMD}" ${PP_ARGS}
-  ${PP_DEPFILE_KW}
+  COMMAND "${PP_CMD}" ${PP_ARGS} ${PP_DEPFILE_KW}
   VERBATIM
   COMMENT "Generated ${jit_template}."
 )
@@ -48,16 +51,18 @@ add_custom_command(
 add_custom_command(
   OUTPUT "${jit_template_src}"
   DEPENDS
-  "${jit_template}"
-  "${CMAKE_CURRENT_LIST_DIR}/template_pre.h.in"
-  "${CMAKE_CURRENT_LIST_DIR}/template_post.h.in"
-
-  COMMAND ${CMAKE_COMMAND} -DOUT:FILEPATH=${jit_template_src}
-   -DTEMPLATE_PRE:FILEPATH=${CMAKE_CURRENT_LIST_DIR}/template_pre.h.in
-   -DJIT_TEMPLATE:FILEPATH=${jit_template}
-   -DTEMPLATE_POST:FILEPATH=${CMAKE_CURRENT_LIST_DIR}/template_post.h.in
-   -P ${CMAKE_CURRENT_LIST_DIR}/concat_templates.cmake
-
+    "${jit_template}"
+    "${CMAKE_CURRENT_LIST_DIR}/template_pre.h.in"
+    "${CMAKE_CURRENT_LIST_DIR}/template_post.h.in"
+  # gersemi: off
+  COMMAND
+    ${CMAKE_COMMAND}
+      -DOUT:FILEPATH=${jit_template_src}
+      -DTEMPLATE_PRE:FILEPATH=${CMAKE_CURRENT_LIST_DIR}/template_pre.h.in
+      -DJIT_TEMPLATE:FILEPATH=${jit_template}
+      -DTEMPLATE_POST:FILEPATH=${CMAKE_CURRENT_LIST_DIR}/template_post.h.in
+      -P ${CMAKE_CURRENT_LIST_DIR}/concat_templates.cmake
+  # gersemi: on
   VERBATIM
   COMMENT "Generated ${jit_template_src}."
 )

@@ -39,7 +39,6 @@
 
 namespace cuda::experimental::stf
 {
-
 class logical_data_untyped;
 class data_place;
 class task;
@@ -51,7 +50,6 @@ struct owning_container_of;
 
 namespace reserved
 {
-
 // Helper `struct` for deducing read-only types
 template <typename T>
 struct readonly_type_of
@@ -83,7 +81,6 @@ struct rw_type_of<mdspan<const T, Extents, Layout, Accessor<const T>>>
 
 template <class T>
 inline constexpr bool always_false = false;
-
 } // namespace reserved
 
 /**
@@ -483,5 +480,4 @@ inline _CCCL_HOST_DEVICE shape_of<T> shape(const T& inst)
 {
   return shape_of<T>(inst);
 }
-
 } // namespace cuda::experimental::stf

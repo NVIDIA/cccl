@@ -28,7 +28,8 @@
 
 #include <thrust/for_each.h>
 
-#include <cuda/std/utility>
+#include <cuda/std/__utility/forward.h>
+#include <cuda/std/__utility/move.h>
 
 THRUST_NAMESPACE_BEGIN
 namespace system::detail::generic

@@ -26,15 +26,35 @@
 #  pragma system_header
 #endif // no system header
 
-#include <thrust/detail/integer_math.h>
 #include <thrust/detail/preprocessor.h>
 
+#include <cuda/std/__concepts/concept_macros.h>
+#include <cuda/std/__exception/throw_error.h>
+#include <cuda/std/__type_traits/is_arithmetic.h>
+#include <cuda/std/__type_traits/is_unsigned.h>
 #include <cuda/std/cstdint>
-#include <cuda/std/detail/libcxx/include/stdexcept>
 #include <cuda/std/limits>
-#include <cuda/std/type_traits>
 
 #include <string>
+
+THRUST_NAMESPACE_BEGIN
+namespace detail
+{
+_CCCL_TEMPLATE(typename T)
+_CCCL_REQUIRES(::cuda::std::is_arithmetic_v<T>)
+[[nodiscard]] _CCCL_API constexpr bool is_negative([[maybe_unused]] T x) noexcept
+{
+  if constexpr (::cuda::std::is_unsigned_v<T>)
+  {
+    return false;
+  }
+  else
+  {
+    return x < 0;
+  }
+}
+} // namespace detail
+THRUST_NAMESPACE_END
 
 #if defined(THRUST_FORCE_32_BIT_OFFSET_TYPE) && defined(THRUST_FORCE_64_BIT_OFFSET_TYPE)
 #  error "Only THRUST_FORCE_32_BIT_OFFSET_TYPE or THRUST_FORCE_64_BIT_OFFSET_TYPE may be defined!"

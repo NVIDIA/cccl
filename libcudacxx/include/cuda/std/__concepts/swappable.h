@@ -43,7 +43,7 @@
 _CCCL_BEGIN_NV_DIAG_SUPPRESS(461) // nonstandard cast to array type ignored
 #endif // _CCCL_COMPILER(MSVC)
 
-_CCCL_BEGIN_NAMESPACE_RANGES
+_CCCL_BEGIN_NAMESPACE_CUDA_STD_RANGES
 
 // [concept.swappable]
 
@@ -159,7 +159,7 @@ inline namespace __cpo
 {
 _CCCL_GLOBAL_CONSTANT auto swap = __swap::__fn{};
 } // namespace __cpo
-_CCCL_END_NAMESPACE_RANGES
+_CCCL_END_NAMESPACE_CUDA_STD_RANGES
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 

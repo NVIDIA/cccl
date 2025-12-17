@@ -24,6 +24,7 @@ _CCCL_DIAG_PUSH
 _CCCL_DIAG_SUPPRESS_GCC("-Wsubobject-linkage")
 _CCCL_DIAG_SUPPRESS_CLANG("-Wunused-value")
 _CCCL_DIAG_SUPPRESS_MSVC(4848) // [[no_unique_address]] prior to C++20 as a vendor extension
+_CCCL_DIAG_SUPPRESS_MSVC(4714) // function 'foo' marked as __forceinline not inlined
 
 _CCCL_DIAG_SUPPRESS_GCC("-Wmissing-braces")
 _CCCL_DIAG_SUPPRESS_CLANG("-Wmissing-braces")

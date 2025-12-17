@@ -14,7 +14,7 @@
 //   const T&
 //   clamp(const T& v, const T& lo, const T& hi);
 
-#include <cuda/std/__algorithm_>
+#include <cuda/std/algorithm>
 #include <cuda/std/cassert>
 
 #include "test_macros.h"

@@ -15,7 +15,7 @@
 //   shift_right(ForwardIterator first, ForwardIterator last,
 //               typename iterator_traits<ForwardIterator>::difference_type n);
 
-#include <cuda/std/__algorithm_>
+#include <cuda/std/algorithm>
 #include <cuda/std/cassert>
 
 #include "MoveOnly.h"

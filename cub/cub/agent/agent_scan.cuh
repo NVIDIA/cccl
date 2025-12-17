@@ -1,30 +1,6 @@
-/******************************************************************************
- * Copyright (c) 2011, Duane Merrill.  All rights reserved.
- * Copyright (c) 2011-2022, NVIDIA CORPORATION.  All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *     * Redistributions of source code must retain the above copyright
- *       notice, this list of conditions and the following disclaimer.
- *     * Redistributions in binary form must reproduce the above copyright
- *       notice, this list of conditions and the following disclaimer in the
- *       documentation and/or other materials provided with the distribution.
- *     * Neither the name of the NVIDIA CORPORATION nor the
- *       names of its contributors may be used to endorse or promote products
- *       derived from this software without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
- * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED. IN NO EVENT SHALL NVIDIA CORPORATION BE LIABLE FOR ANY
- * DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
- * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
- * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
- * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- *
- ******************************************************************************/
+// SPDX-FileCopyrightText: Copyright (c) 2011, Duane Merrill. All rights reserved.
+// SPDX-FileCopyrightText: Copyright (c) 2011-2022, NVIDIA CORPORATION. All rights reserved.
+// SPDX-License-Identifier: BSD-3
 
 /**
  * @file cub::AgentScan implements a stateful abstraction of CUDA thread blocks
@@ -51,6 +27,10 @@
 #include <cub/iterator/cache_modified_input_iterator.cuh>
 #include <cub/util_device.cuh>
 
+#if defined(CUB_DEFINE_RUNTIME_POLICIES) || defined(CUB_ENABLE_POLICY_PTX_JSON)
+#  include <cub/agent/agent_unique_by_key.cuh> // for UniqueByKeyAgentPolicy
+#endif
+
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/is_pointer.h>
 #include <cuda/std/__type_traits/is_same.h>
@@ -64,47 +44,46 @@ CUB_NAMESPACE_BEGIN
 /**
  * @brief Parameterizable tuning policy type for AgentScan
  *
- * @tparam NOMINAL_BLOCK_THREADS_4B
+ * @tparam NominalBlockThreads4B
  *   Threads per thread block
  *
- * @tparam NOMINAL_ITEMS_PER_THREAD_4B
+ * @tparam NominalItemsPerThread4B
  *   Items per thread (per tile of input)
  *
  * @tparam ComputeT
  *   Dominant compute type
  *
- * @tparam _LOAD_ALGORITHM
+ * @tparam LoadAlgorithm
  *   The BlockLoad algorithm to use
  *
- * @tparam _LOAD_MODIFIER
+ * @tparam LoadModifier
  *   Cache load modifier for reading input elements
  *
- * @tparam _STORE_ALGORITHM
+ * @tparam StoreAlgorithm
  *   The BlockStore algorithm to use
  *
- * @tparam _SCAN_ALGORITHM
+ * @tparam ScanAlgorithm
  *   The BlockScan algorithm to use
  *
  * @tparam DelayConstructorT
  *   Implementation detail, do not specify directly, requirements on the
  *   content of this type are subject to breaking change.
  */
-template <
-  int NOMINAL_BLOCK_THREADS_4B,
-  int NOMINAL_ITEMS_PER_THREAD_4B,
-  typename ComputeT,
-  BlockLoadAlgorithm _LOAD_ALGORITHM,
-  CacheLoadModifier _LOAD_MODIFIER,
-  BlockStoreAlgorithm _STORE_ALGORITHM,
-  BlockScanAlgorithm _SCAN_ALGORITHM,
-  typename ScalingType       = detail::MemBoundScaling<NOMINAL_BLOCK_THREADS_4B, NOMINAL_ITEMS_PER_THREAD_4B, ComputeT>,
-  typename DelayConstructorT = detail::default_delay_constructor_t<ComputeT>>
+template <int NominalBlockThreads4B,
+          int NominalItemsPerThread4B,
+          typename ComputeT,
+          BlockLoadAlgorithm LoadAlgorithm,
+          CacheLoadModifier LoadModifier,
+          BlockStoreAlgorithm StoreAlgorithm,
+          BlockScanAlgorithm ScanAlgorithm,
+          typename ScalingType = detail::MemBoundScaling<NominalBlockThreads4B, NominalItemsPerThread4B, ComputeT>,
+          typename DelayConstructorT = detail::default_delay_constructor_t<ComputeT>>
 struct AgentScanPolicy : ScalingType
 {
-  static constexpr BlockLoadAlgorithm LOAD_ALGORITHM   = _LOAD_ALGORITHM;
-  static constexpr CacheLoadModifier LOAD_MODIFIER     = _LOAD_MODIFIER;
-  static constexpr BlockStoreAlgorithm STORE_ALGORITHM = _STORE_ALGORITHM;
-  static constexpr BlockScanAlgorithm SCAN_ALGORITHM   = _SCAN_ALGORITHM;
+  static constexpr BlockLoadAlgorithm LOAD_ALGORITHM   = LoadAlgorithm;
+  static constexpr CacheLoadModifier LOAD_MODIFIER     = LoadModifier;
+  static constexpr BlockStoreAlgorithm STORE_ALGORITHM = StoreAlgorithm;
+  static constexpr BlockScanAlgorithm SCAN_ALGORITHM   = ScanAlgorithm;
 
   struct detail
   {
@@ -123,7 +102,7 @@ namespace detail
 // TODO: enable this unconditionally once concepts are always available
 CUB_DETAIL_POLICY_WRAPPER_DEFINE(
   ScanAgentPolicy,
-  (GenericAgentPolicy),
+  (UniqueByKeyAgentPolicy),
   (BLOCK_THREADS, BlockThreads, int),
   (ITEMS_PER_THREAD, ItemsPerThread, int),
   (LOAD_ALGORITHM, LoadAlgorithm, cub::BlockLoadAlgorithm),
@@ -139,7 +118,6 @@ CUB_DETAIL_POLICY_WRAPPER_DEFINE(
 
 namespace detail::scan
 {
-
 /**
  * @brief AgentScan implements a stateful abstraction of CUDA thread blocks for
  *        participating in device-wide prefix scan.
@@ -171,7 +149,8 @@ template <typename AgentScanPolicyT,
           typename InitValueT,
           typename OffsetT,
           typename AccumT,
-          bool ForceInclusive = false>
+          bool ForceInclusive = false,
+          bool UsePDL         = false>
 struct AgentScan
 {
   //---------------------------------------------------------------------
@@ -192,18 +171,14 @@ struct AgentScan
                      CacheModifiedInputIterator<AgentScanPolicyT::LOAD_MODIFIER, InputT, OffsetT>,
                      InputIteratorT>;
 
-  // Constants
-  enum
-  {
-    // Inclusive scan if no init_value type is provided
-    HAS_INIT     = !::cuda::std::is_same_v<InitValueT, NullType>,
-    IS_INCLUSIVE = ForceInclusive || !HAS_INIT, // We are relying on either initial value not being `NullType`
-                                                // or the ForceInclusive tag to be true for inclusive scan
-                                                // to get picked up.
-    BLOCK_THREADS    = AgentScanPolicyT::BLOCK_THREADS,
-    ITEMS_PER_THREAD = AgentScanPolicyT::ITEMS_PER_THREAD,
-    TILE_ITEMS       = BLOCK_THREADS * ITEMS_PER_THREAD,
-  };
+  // Inclusive scan if no init_value type is provided
+  static constexpr bool HAS_INIT     = !::cuda::std::is_same_v<InitValueT, NullType>;
+  static constexpr bool IS_INCLUSIVE = ForceInclusive || !HAS_INIT; // We are relying on either initial value not being
+                                                                    // `NullType` or the ForceInclusive tag to be true
+                                                                    // for inclusive scan to get picked up.
+  static constexpr int BLOCK_THREADS    = AgentScanPolicyT::BLOCK_THREADS;
+  static constexpr int ITEMS_PER_THREAD = AgentScanPolicyT::ITEMS_PER_THREAD;
+  static constexpr int TILE_ITEMS       = BLOCK_THREADS * ITEMS_PER_THREAD;
 
   // Parameterized BlockLoad type
   using BlockLoadT =
@@ -397,6 +372,11 @@ struct AgentScan
 
     __syncthreads();
 
+    if constexpr (UsePDL)
+    {
+      _CCCL_PDL_TRIGGER_NEXT_LAUNCH(); // omitting makes almost no difference in cub.bench.scan.exclusive.sum.base
+    }
+
     // Store items
     if constexpr (IS_LAST_TILE)
     {
@@ -579,7 +559,6 @@ struct AgentScan
     }
   }
 };
-
 } // namespace detail::scan
 
 CUB_NAMESPACE_END

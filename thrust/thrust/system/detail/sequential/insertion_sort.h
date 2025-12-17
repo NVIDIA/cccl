@@ -33,7 +33,6 @@
 THRUST_NAMESPACE_BEGIN
 namespace system::detail::sequential
 {
-
 _CCCL_EXEC_CHECK_DISABLE
 template <typename RandomAccessIterator, typename StrictWeakOrdering>
 _CCCL_HOST_DEVICE void insertion_sort(RandomAccessIterator first, RandomAccessIterator last, StrictWeakOrdering comp)
@@ -136,6 +135,5 @@ _CCCL_HOST_DEVICE void insertion_sort_by_key(
     }
   }
 }
-
 } // namespace system::detail::sequential
 THRUST_NAMESPACE_END

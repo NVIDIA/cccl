@@ -45,7 +45,7 @@ std::string make_kernel_input_iterator(
 {
   const std::string iter_def = std::format(R"XXX(
 extern "C" __device__ void DEREF(const void *self_ptr, VALUE_T* result);
-extern "C" __device__ void ADVANCE(void *self_ptr, DIFF_T offset);
+extern "C" __device__ void ADVANCE(void *self_ptr, const void* offset);
 struct __align__(OP_ALIGNMENT) {0} {{
   using iterator_category = cuda::std::random_access_iterator_tag;
   using value_type = VALUE_T;
@@ -58,7 +58,7 @@ struct __align__(OP_ALIGNMENT) {0} {{
     return result;
   }}
   __device__ inline {0}& operator+=(difference_type diff) {{
-      ADVANCE(data, diff);
+      ADVANCE(data, &diff);
       return *this;
   }}
   __device__ inline value_type operator[](difference_type diff) const {{
@@ -99,14 +99,14 @@ std::string make_kernel_output_iterator(
   std::string_view advance)
 {
   const std::string iter_def = std::format(R"XXX(
-extern "C" __device__ void DEREF(const void *self_ptr, VALUE_T x);
-extern "C" __device__ void ADVANCE(void *self_ptr, DIFF_T offset);
+extern "C" __device__ void DEREF(const void *self_ptr, const void* x);
+extern "C" __device__ void ADVANCE(void *self_ptr, const void* offset);
 struct __align__(OP_ALIGNMENT) {0}_state_t {{
   char data[OP_SIZE];
 }};
 struct {0}_proxy_t {{
   __device__ {0}_proxy_t operator=(VALUE_T x) {{
-    DEREF(&state, x);
+    DEREF(&state, &x);
     return *this;
   }}
   {0}_state_t state;
@@ -119,7 +119,7 @@ struct {0} {{
   using reference         = {0}_proxy_t;
   __device__ {0}_proxy_t operator*() const {{ return {{state}}; }}
   __device__ {0}& operator+=(difference_type diff) {{
-      ADVANCE(&state, diff);
+      ADVANCE(&state, &diff);
       return *this;
   }}
   __device__ {0}_proxy_t operator[](difference_type diff) const {{

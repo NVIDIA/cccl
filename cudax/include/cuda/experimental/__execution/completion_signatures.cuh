@@ -128,13 +128,13 @@ using __partition_completion_signatures_t _CCCL_NODEBUG_ALIAS = //
     (declval<::cuda::std::__undefined<__partitioned_completions<>>&>() * ... * static_cast<_Sigs*>(nullptr))));
 
 template <class _Completions>
-using __partitioned_completions_of _CCCL_NODEBUG_ALIAS = typename _Completions::__partitioned::type;
+using __partitioned_completions_of_t _CCCL_NODEBUG_ALIAS = typename _Completions::__partitioned::type;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 // completion signatures type traits
 template <class _Sigs, template <class...> class _Tuple, template <class...> class _Variant>
 using __value_types _CCCL_NODEBUG_ALIAS =
-  typename __partitioned_completions_of<_Sigs>::template __value_types<_Tuple, _Variant>;
+  typename __partitioned_completions_of_t<_Sigs>::template __value_types<_Tuple, _Variant>;
 
 template <class _Sndr, class _Env, template <class...> class _Tuple, template <class...> class _Variant>
 using value_types_of_t _CCCL_NODEBUG_ALIAS =
@@ -146,7 +146,7 @@ template <class _Sigs,
           template <class...> class _Variant,
           template <class...> class _Transform = ::cuda::std::__type_self_t>
 using __error_types _CCCL_NODEBUG_ALIAS =
-  typename __partitioned_completions_of<_Sigs>::template __error_types<_Variant, _Transform>;
+  typename __partitioned_completions_of_t<_Sigs>::template __error_types<_Variant, _Transform>;
 
 template <class _Sndr, class _Env, template <class...> class _Variant>
 using error_types_of_t _CCCL_NODEBUG_ALIAS =
@@ -154,10 +154,10 @@ using error_types_of_t _CCCL_NODEBUG_ALIAS =
 
 template <class _Sigs, template <class...> class _Variant, class _Type = set_stopped_t()>
 using __stopped_types _CCCL_NODEBUG_ALIAS =
-  typename __partitioned_completions_of<_Sigs>::template __stopped_types<_Variant, _Type>;
+  typename __partitioned_completions_of_t<_Sigs>::template __stopped_types<_Variant, _Type>;
 
 template <class _Sigs>
-inline constexpr bool __sends_stopped = __partitioned_completions_of<_Sigs>::__count_stopped::value != 0;
+inline constexpr bool __sends_stopped = __partitioned_completions_of_t<_Sigs>::__count_stopped::value != 0;
 
 template <class _Sndr, class... _Env>
 inline constexpr bool sends_stopped = __sends_stopped<completion_signatures_of_t<_Sndr, _Env...>>;
@@ -189,7 +189,7 @@ using __make_completion_signatures_t _CCCL_NODEBUG_ALIAS =
   decltype(execution::__make_unique(execution::__normalize(static_cast<_Sigs*>(nullptr))...));
 
 template <class... _ExplicitSigs, class... _DeducedSigs>
-[[nodiscard]] _CCCL_NODEBUG_API _CCCL_CONSTEVAL auto make_completion_signatures(_DeducedSigs*...) noexcept
+[[nodiscard]] _CCCL_API _CCCL_CONSTEVAL auto make_completion_signatures(_DeducedSigs*...) noexcept
   -> __make_completion_signatures_t<_ExplicitSigs..., _DeducedSigs...>
 {
   return {};
@@ -206,7 +206,7 @@ using __concat_completion_signatures_t _CCCL_NODEBUG_ALIAS =
 struct __concat_completion_signatures_fn
 {
   template <class... _Sigs>
-  _CCCL_NODEBUG_API _CCCL_CONSTEVAL auto operator()(const _Sigs&...) const noexcept
+  _CCCL_API _CCCL_CONSTEVAL auto operator()(const _Sigs&...) const noexcept
     -> __concat_completion_signatures_t<_Sigs...>
   {
     return {};
@@ -217,13 +217,13 @@ extern const completion_signatures<>& __empty_completion_signatures;
 
 struct __concat_completion_signatures_impl
 {
-  _CCCL_NODEBUG_API _CCCL_CONSTEVAL auto operator()() const noexcept -> completion_signatures<> (*)()
+  _CCCL_API _CCCL_CONSTEVAL auto operator()() const noexcept -> completion_signatures<> (*)()
   {
     return nullptr;
   }
 
   template <class... _Sigs>
-  _CCCL_NODEBUG_API _CCCL_CONSTEVAL auto operator()(const completion_signatures<_Sigs...>&) const noexcept
+  _CCCL_API _CCCL_CONSTEVAL auto operator()(const completion_signatures<_Sigs...>&) const noexcept
     -> __make_completion_signatures_t<_Sigs...> (*)()
   {
     return nullptr;
@@ -235,7 +235,7 @@ struct __concat_completion_signatures_impl
             class... _Cs,
             class... _Ds,
             class... _Rest>
-  _CCCL_NODEBUG_API _CCCL_CONSTEVAL auto operator()(
+  _CCCL_API _CCCL_CONSTEVAL auto operator()(
     const completion_signatures<_As...>&,
     const completion_signatures<_Bs...>&,
     const completion_signatures<_Cs...>& = __empty_completion_signatures,
@@ -252,7 +252,7 @@ struct __concat_completion_signatures_impl
             class _Cp = ::cuda::std::__ignore_t,
             class _Dp = ::cuda::std::__ignore_t,
             class... _Rest>
-  _CCCL_NODEBUG_API _CCCL_CONSTEVAL auto
+  _CCCL_API _CCCL_CONSTEVAL auto
   operator()(const _Ap&, const _Bp& = {}, const _Cp& = {}, const _Dp& = {}, const _Rest&...) const noexcept
   {
     if constexpr (!__valid_completion_signatures<_Ap>)
@@ -597,7 +597,7 @@ using __gather_completion_signatures _CCCL_NODEBUG_ALIAS =
 #if _CCCL_HAS_EXCEPTIONS()
 [[nodiscard]] _CCCL_API inline _CCCL_CONSTEVAL auto __eptr_completion() noexcept
 {
-  return completion_signatures<set_error_t(::std::exception_ptr)>{};
+  return completion_signatures<set_error_t(exception_ptr)>{};
 }
 #else // ^^^ _CCCL_HAS_EXCEPTIONS() ^^^ / vvv !_CCCL_HAS_EXCEPTIONS() vvv
 [[nodiscard]] _CCCL_API inline _CCCL_CONSTEVAL auto __eptr_completion() noexcept
@@ -645,13 +645,12 @@ template <class... _What, class... _Values>
 #else // ^^^ constexpr exceptions ^^^ / vvv no constexpr exceptions vvv
 
 template <class... _What, class... _Values>
-[[nodiscard]] _CCCL_NODEBUG_API _CCCL_CONSTEVAL auto invalid_completion_signature(_Values...)
+[[nodiscard]] _CCCL_API _CCCL_CONSTEVAL auto invalid_completion_signature(_Values...)
 {
   return _ERROR<_What...>{};
 }
 
 #endif // ^^^ no constexpr exceptions ^^^
-
 } // namespace cuda::experimental::execution
 
 _CCCL_DIAG_POP

@@ -14,11 +14,11 @@
 #include <cuda_runtime_api.h>
 // cuda_runtime_api needs to come first
 
+#include <cuda/__runtime/api_wrapper.h>
 #include <cuda/__runtime/ensure_current_context.h>
+#include <cuda/__stream/stream_ref.h>
 #include <cuda/atomic>
-#include <cuda/std/__cuda/api_wrapper.h>
 #include <cuda/std/utility>
-#include <cuda/stream_ref>
 
 #include <new> // IWYU pragma: keep (needed for placement new)
 
@@ -28,7 +28,6 @@ namespace
 {
 namespace test
 {
-
 struct _malloc_pinned
 {
 private:
@@ -160,7 +159,6 @@ void launch_kernel_single_thread(cuda::stream_ref stream, Fn fn, Args... args)
   kernel_launcher<<<1, 1, 0, stream.get()>>>(fn, args...);
   CUDART(cudaGetLastError());
 }
-
 } // namespace test
 } // namespace
 #endif // __COMMON_UTILITY_H__

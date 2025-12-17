@@ -28,8 +28,10 @@
 
 #include <thrust/detail/temporary_array.h>
 #include <thrust/detail/type_traits.h>
-#include <thrust/distance.h>
 #include <thrust/system/detail/generic/select_system.h>
+
+#include <cuda/std/__iterator/distance.h>
+#include <cuda/std/__type_traits/is_trivially_copy_constructible.h>
 
 THRUST_NAMESPACE_BEGIN
 
@@ -114,7 +116,6 @@ _CCCL_HOST_DEVICE temporary_array<T, System>::~temporary_array()
   // note that super_t::destroy will ignore trivial destructors automatically
   super_t::destroy(super_t::begin(), super_t::end());
 } // end temporary_array::~temporary_array()
-
 } // namespace detail
 
 THRUST_NAMESPACE_END

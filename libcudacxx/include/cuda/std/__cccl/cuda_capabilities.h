@@ -11,7 +11,7 @@
 #ifndef __CCCL_CUDA_CAPABILITIES
 #define __CCCL_CUDA_CAPABILITIES
 
-#include <cuda/std/detail/__config>
+#include <cuda/std/__cccl/system_header.h>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -39,10 +39,10 @@
 #if _CCCL_HAS_PDL()
 // Waits for the previous kernel to complete (when it reaches its final membar). Should be put before the first global
 // memory access in a kernel.
-#  define _CCCL_PDL_GRID_DEPENDENCY_SYNC() NV_IF_TARGET(NV_PROVIDES_SM_90, cudaGridDependencySynchronize();)
+#  define _CCCL_PDL_GRID_DEPENDENCY_SYNC() NV_IF_TARGET(NV_PROVIDES_SM_90, ::cudaGridDependencySynchronize();)
 // Allows the subsequent kernel in the same stream to launch. Can be put anywhere in a kernel.
 // Heuristic(ahendriksen): put it after the last load.
-#  define _CCCL_PDL_TRIGGER_NEXT_LAUNCH() NV_IF_TARGET(NV_PROVIDES_SM_90, cudaTriggerProgrammaticLaunchCompletion();)
+#  define _CCCL_PDL_TRIGGER_NEXT_LAUNCH() NV_IF_TARGET(NV_PROVIDES_SM_90, ::cudaTriggerProgrammaticLaunchCompletion();)
 #else // _CCCL_HAS_PDL()
 #  define _CCCL_PDL_GRID_DEPENDENCY_SYNC()
 #  define _CCCL_PDL_TRIGGER_NEXT_LAUNCH()

@@ -30,7 +30,8 @@
 #include <thrust/detail/execution_policy.h>
 #include <thrust/iterator/detail/normal_iterator.h>
 
-#include <cuda/std/utility>
+#include <cuda/std/__utility/move.h>
+#include <cuda/std/__utility/swap.h>
 
 #include <stdexcept>
 
@@ -38,7 +39,6 @@ THRUST_NAMESPACE_BEGIN
 
 namespace detail
 {
-
 struct copy_allocator_t
 {};
 
@@ -220,7 +220,6 @@ private:
     lhs.swap(rhs);
   }
 }; // end contiguous_storage
-
 } // namespace detail
 
 THRUST_NAMESPACE_END

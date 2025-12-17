@@ -54,7 +54,6 @@ __host__ __device__ constexpr T construct_from_int([[maybe_unused]] int val) noe
   {
     return static_cast<T>(val);
   }
-  _CCCL_UNREACHABLE();
 }
 
 template <class OffsetType, class ExtentType, class StrideType>

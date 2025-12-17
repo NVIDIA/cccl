@@ -16,7 +16,7 @@
 //
 //  Complexity: At most (3/2) * t.size() applications of the corresponding predicate.
 
-#include <cuda/std/__algorithm_>
+#include <cuda/std/algorithm>
 #include <cuda/std/cassert>
 #include <cuda/std/functional>
 

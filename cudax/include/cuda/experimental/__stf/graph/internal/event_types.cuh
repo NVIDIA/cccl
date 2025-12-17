@@ -27,7 +27,6 @@
 
 namespace cuda::experimental::stf::reserved
 {
-
 class graph_event_impl;
 
 using graph_event = reserved::handle<graph_event_impl, reserved::handle_flags::non_null>;
@@ -193,5 +192,4 @@ inline void fork_from_graph_node(
 
   previous_prereqs = event_list(gnp);
 }
-
 } // namespace cuda::experimental::stf::reserved

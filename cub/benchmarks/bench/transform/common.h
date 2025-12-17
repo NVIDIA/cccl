@@ -16,6 +16,7 @@
 
 #include <cub/util_namespace.cuh>
 
+#include <cuda/__numeric/narrow.h>
 #include <cuda/std/type_traits>
 
 #include <stdexcept>
@@ -70,27 +71,4 @@ void bench_transform(nvbench::state& state,
       dispatch(
         inputs, output, num_items, cub::detail::transform::always_true_predicate{}, transform_op, launch.get_stream());
   });
-}
-
-// TODO(bgruber): we should put those somewhere into libcu++:
-// from C++ GSL
-struct narrowing_error : std::runtime_error
-{
-  narrowing_error()
-      : std::runtime_error("Narrowing error")
-  {}
-};
-
-// from C++ GSL
-// implementation insipired by: https://github.com/microsoft/GSL/blob/main/include/gsl/narrow
-template <typename DstT, typename SrcT, ::cuda::std::enable_if_t<::cuda::std::is_arithmetic_v<SrcT>, int> = 0>
-constexpr DstT narrow(SrcT value)
-{
-  constexpr bool is_different_signedness = ::cuda::std::is_signed_v<SrcT> != ::cuda::std::is_signed_v<DstT>;
-  const auto converted                   = static_cast<DstT>(value);
-  if (static_cast<SrcT>(converted) != value || (is_different_signedness && ((converted < DstT{}) != (value < SrcT{}))))
-  {
-    throw narrowing_error{};
-  }
-  return converted;
 }

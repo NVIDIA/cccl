@@ -111,7 +111,7 @@ public:
     return __bit_iterator<_Cp, false>(__seg_, static_cast<unsigned>(::cuda::std::countr_zero(__mask_)));
   }
 
-  friend _CCCL_API constexpr void swap(__bit_reference<_Cp> __x, __bit_reference<_Cp> __y) noexcept
+  _CCCL_API friend constexpr void swap(__bit_reference<_Cp> __x, __bit_reference<_Cp> __y) noexcept
   {
     bool __t = __x;
     __x      = __y;
@@ -119,21 +119,21 @@ public:
   }
 
   template <class _Dp>
-  friend _CCCL_API constexpr void swap(__bit_reference<_Cp> __x, __bit_reference<_Dp> __y) noexcept
+  _CCCL_API friend constexpr void swap(__bit_reference<_Cp> __x, __bit_reference<_Dp> __y) noexcept
   {
     bool __t = __x;
     __x      = __y;
     __y      = __t;
   }
 
-  friend _CCCL_API constexpr void swap(__bit_reference<_Cp> __x, bool& __y) noexcept
+  _CCCL_API friend constexpr void swap(__bit_reference<_Cp> __x, bool& __y) noexcept
   {
     bool __t = __x;
     __x      = __y;
     __y      = __t;
   }
 
-  friend _CCCL_API constexpr void swap(bool& __x, __bit_reference<_Cp> __y) noexcept
+  _CCCL_API friend constexpr void swap(bool& __x, __bit_reference<_Cp> __y) noexcept
   {
     bool __t = __x;
     __x      = __y;
@@ -275,10 +275,10 @@ _CCCL_API constexpr __bit_iterator<_Cp, false> __copy_aligned(
     // do first word
     if (__first.__ctz_ != 0)
     {
-      unsigned __clz       = __bits_per_word - __first.__ctz_;
-      difference_type __dn = ::cuda::std::min(static_cast<difference_type>(__clz), __n);
+      unsigned __clz_f     = __bits_per_word - __first.__ctz_;
+      difference_type __dn = ::cuda::std::min(static_cast<difference_type>(__clz_f), __n);
       __n -= __dn;
-      __storage_type __m = (~__storage_type(0) << __first.__ctz_) & (~__storage_type(0) >> (__clz - __dn));
+      __storage_type __m = (~__storage_type(0) << __first.__ctz_) & (~__storage_type(0) >> (__clz_f - __dn));
       __storage_type __b = *__first.__seg_ & __m;
       *__result.__seg_ &= ~__m;
       *__result.__seg_ |= __b;
@@ -420,8 +420,8 @@ _CCCL_API constexpr __bit_iterator<_Cp, false> __copy_backward_aligned(
     {
       difference_type __dn = ::cuda::std::min(static_cast<difference_type>(__last.__ctz_), __n);
       __n -= __dn;
-      unsigned __clz     = __bits_per_word - __last.__ctz_;
-      __storage_type __m = (~__storage_type(0) << (__last.__ctz_ - __dn)) & (~__storage_type(0) >> __clz);
+      unsigned __clz_f   = __bits_per_word - __last.__ctz_;
+      __storage_type __m = (~__storage_type(0) << (__last.__ctz_ - __dn)) & (~__storage_type(0) >> __clz_f);
       __storage_type __b = *__last.__seg_ & __m;
       *__result.__seg_ &= ~__m;
       *__result.__seg_ |= __b;
@@ -635,10 +635,10 @@ _CCCL_API inline __bit_iterator<_Cr, false> __swap_ranges_aligned(
     // do first word
     if (__first.__ctz_ != 0)
     {
-      unsigned __clz       = __bits_per_word - __first.__ctz_;
-      difference_type __dn = ::cuda::std::min(static_cast<difference_type>(__clz), __n);
+      unsigned __clz_f     = __bits_per_word - __first.__ctz_;
+      difference_type __dn = ::cuda::std::min(static_cast<difference_type>(__clz_f), __n);
       __n -= __dn;
-      __storage_type __m  = (~__storage_type(0) << __first.__ctz_) & (~__storage_type(0) >> (__clz - __dn));
+      __storage_type __m  = (~__storage_type(0) << __first.__ctz_) & (~__storage_type(0) >> (__clz_f - __dn));
       __storage_type __b1 = *__first.__seg_ & __m;
       *__first.__seg_ &= ~__m;
       __storage_type __b2 = *__result.__seg_ & __m;
@@ -806,7 +806,7 @@ struct __bit_array
   _CCCL_API constexpr explicit __bit_array(difference_type __s)
       : __size_(__s)
   {
-    if (::cuda::std::is_constant_evaluated())
+    _CCCL_IF_CONSTEVAL
     {
       for (size_t __i = 0; __i != __bit_array<_Cp>::_Np; ++__i)
       {
@@ -988,10 +988,10 @@ _CCCL_API constexpr bool __equal_aligned(
     // do first word
     if (__first1.__ctz_ != 0)
     {
-      unsigned __clz       = __bits_per_word - __first1.__ctz_;
-      difference_type __dn = ::cuda::std::min(static_cast<difference_type>(__clz), __n);
+      unsigned __clz_f     = __bits_per_word - __first1.__ctz_;
+      difference_type __dn = ::cuda::std::min(static_cast<difference_type>(__clz_f), __n);
       __n -= __dn;
-      __storage_type __m = (~__storage_type(0) << __first1.__ctz_) & (~__storage_type(0) >> (__clz - __dn));
+      __storage_type __m = (~__storage_type(0) << __first1.__ctz_) & (~__storage_type(0) >> (__clz_f - __dn));
       if ((*__first2.__seg_ & __m) != (*__first1.__seg_ & __m))
       {
         return false;

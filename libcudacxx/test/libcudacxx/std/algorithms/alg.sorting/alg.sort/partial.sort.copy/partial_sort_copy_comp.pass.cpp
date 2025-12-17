@@ -20,7 +20,7 @@
 //   partial_sort_copy(InIter first, InIter last,
 //                     RAIter result_first, RAIter result_last, Compare comp);
 
-#include <cuda/std/__algorithm_>
+#include <cuda/std/algorithm>
 #include <cuda/std/cassert>
 #include <cuda/std/functional>
 #include <cuda/std/utility>

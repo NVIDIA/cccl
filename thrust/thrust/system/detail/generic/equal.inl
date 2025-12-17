@@ -29,12 +29,11 @@
 #include <thrust/mismatch.h>
 #include <thrust/system/detail/generic/equal.h>
 
-#include <cuda/std/functional>
+#include <cuda/std/__functional/operations.h>
 
 THRUST_NAMESPACE_BEGIN
 namespace system::detail::generic
 {
-
 template <typename DerivedPolicy, typename InputIterator1, typename InputIterator2>
 _CCCL_HOST_DEVICE bool
 equal(thrust::execution_policy<DerivedPolicy>& exec, InputIterator1 first1, InputIterator1 last1, InputIterator2 first2)
@@ -55,6 +54,5 @@ equal(thrust::execution_policy<DerivedPolicy>& exec,
 {
   return thrust::mismatch(exec, first1, last1, first2, binary_pred).first == last1;
 }
-
 } // namespace system::detail::generic
 THRUST_NAMESPACE_END

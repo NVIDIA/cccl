@@ -34,7 +34,6 @@
 THRUST_NAMESPACE_BEGIN
 namespace system::detail::generic
 {
-
 template <typename DerivedPolicy, typename InputIterator, typename OutputIterator>
 _CCCL_HOST_DEVICE OutputIterator adjacent_difference(
   thrust::execution_policy<DerivedPolicy>& exec, InputIterator first, InputIterator last, OutputIterator result);
@@ -46,7 +45,6 @@ _CCCL_HOST_DEVICE OutputIterator adjacent_difference(
   InputIterator last,
   OutputIterator result,
   BinaryFunction binary_op);
-
 } // namespace system::detail::generic
 THRUST_NAMESPACE_END
 

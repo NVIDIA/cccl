@@ -11,7 +11,7 @@
 #ifndef __CUDA___ALGORITHM_COPY_H
 #define __CUDA___ALGORITHM_COPY_H
 
-#include <cuda/__cccl_config>
+#include <cuda/std/detail/__config>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -24,6 +24,7 @@
 #if _CCCL_HAS_CTK() && !_CCCL_COMPILER(NVRTC)
 
 #  include <cuda/__algorithm/common.h>
+#  include <cuda/__stream/launch_transform.h>
 #  include <cuda/__stream/stream_ref.h>
 #  include <cuda/std/__concepts/concept_macros.h>
 #  include <cuda/std/mdspan>
@@ -38,11 +39,11 @@ enum class source_access_order
 {
 #  if _CCCL_CTK_AT_LEAST(13, 0)
   //! @brief Access source in stream order
-  stream = cudaMemcpySrcAccessOrderStream,
+  stream = ::cudaMemcpySrcAccessOrderStream,
   //! @brief Access source during the copy call, source can be destroyed after the API returns
-  during_api_call = cudaMemcpySrcAccessOrderDuringApiCall,
+  during_api_call = ::cudaMemcpySrcAccessOrderDuringApiCall,
   //! @brief Access source in any order, the order can change across CUDA releases
-  any = cudaMemcpySrcAccessOrderAny,
+  any = ::cudaMemcpySrcAccessOrderAny,
 #  else
   any = 0x3,
 #  endif // _CCCL_CTK_BELOW(13, 0)
@@ -89,7 +90,7 @@ _CCCL_HOST_API void __copy_bytes_impl(
   __attributes.dstLocHint.type    = static_cast<::CUmemLocationType>(__config.dst_location_hint.type);
 
   ::cuda::__ensure_current_context guard(__stream);
-  _CUDA_DRIVER::__memcpyAsyncWithAttributes(
+  ::cuda::__driver::__memcpyAsyncWithAttributes(
     __dst.data(), __src.data(), __src.size_bytes(), __stream.get(), __attributes);
 #  else
   ::cuda::__driver::__memcpyAsync(__dst.data(), __src.data(), __src.size_bytes(), __stream.get());
@@ -149,13 +150,14 @@ _CCCL_HOST_API void __copy_bytes_impl(
 //! @param __dst Destination to copy into
 //! @param __config Configuration for the copy
 _CCCL_TEMPLATE(typename _SrcTy, typename _DstTy)
-_CCCL_REQUIRES(__spannable<_SrcTy> _CCCL_AND __spannable<_DstTy>)
+_CCCL_REQUIRES(
+  __spannable<transformed_device_argument_t<_SrcTy>> _CCCL_AND __spannable<transformed_device_argument_t<_DstTy>>)
 _CCCL_HOST_API void copy_bytes(stream_ref __stream, _SrcTy&& __src, _DstTy&& __dst, copy_configuration __config = {})
 {
   ::cuda::__detail::__copy_bytes_impl(
     __stream,
-    ::cuda::std::span(::cuda::std::forward<_SrcTy>(__src)),
-    ::cuda::std::span(::cuda::std::forward<_DstTy>(__dst)),
+    ::cuda::std::span(launch_transform(__stream, ::cuda::std::forward<_SrcTy>(__src))),
+    ::cuda::std::span(launch_transform(__stream, ::cuda::std::forward<_DstTy>(__dst))),
     __config);
 }
 
@@ -177,13 +179,14 @@ _CCCL_HOST_API void copy_bytes(stream_ref __stream, _SrcTy&& __src, _DstTy&& __d
 //! @param __dst Destination to copy into
 //! @param __config Configuration for the copy
 _CCCL_TEMPLATE(typename _SrcTy, typename _DstTy)
-_CCCL_REQUIRES(__mdspannable<_SrcTy> _CCCL_AND __mdspannable<_DstTy>)
+_CCCL_REQUIRES(
+  __mdspannable<transformed_device_argument_t<_SrcTy>> _CCCL_AND __mdspannable<transformed_device_argument_t<_DstTy>>)
 _CCCL_HOST_API void copy_bytes(stream_ref __stream, _SrcTy&& __src, _DstTy&& __dst, copy_configuration __config = {})
 {
   ::cuda::__detail::__copy_bytes_impl(
     __stream,
-    ::cuda::__as_mdspan(::cuda::std::forward<_SrcTy>(__src)),
-    ::cuda::__as_mdspan(::cuda::std::forward<_DstTy>(__dst)),
+    ::cuda::__as_mdspan(launch_transform(__stream, ::cuda::std::forward<_SrcTy>(__src))),
+    ::cuda::__as_mdspan(launch_transform(__stream, ::cuda::std::forward<_DstTy>(__dst))),
     __config);
 }
 

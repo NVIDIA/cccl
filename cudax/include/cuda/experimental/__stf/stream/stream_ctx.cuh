@@ -43,7 +43,6 @@
 
 namespace cuda::experimental::stf
 {
-
 template <typename T>
 struct streamed_interface_of;
 
@@ -852,9 +851,7 @@ UNITTEST("logical_data_untyped moveable")
 #  if _CCCL_CUDA_COMPILATION()
 namespace reserved
 {
-
 static __global__ void dummy() {}
-
 } // namespace reserved
 
 UNITTEST("copyable stream_ctx")
@@ -1327,10 +1324,8 @@ UNITTEST("basic launch test")
 {
   unit_test_launch();
 };
-
 } // end namespace reserved
 #  endif // !defined(CUDASTF_DISABLE_CODE_GENERATION) && _CCCL_CUDA_COMPILATION()
 
 #endif // UNITTESTED_FILE
-
 } // namespace cuda::experimental::stf

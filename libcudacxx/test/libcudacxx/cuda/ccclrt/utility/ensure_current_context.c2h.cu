@@ -9,6 +9,7 @@
 //===----------------------------------------------------------------------===//
 
 #include <cuda/__runtime/ensure_current_context.h>
+#include <cuda/devices>
 
 #include <testing.cuh>
 

@@ -41,6 +41,7 @@
 #include <cuda/std/__ranges/enable_borrowed_range.h>
 #include <cuda/std/__ranges/movable_box.h>
 #include <cuda/std/__ranges/view_interface.h>
+#include <cuda/std/__type_traits/always_false.h>
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/is_constructible.h>
@@ -79,14 +80,21 @@ struct __get_wider_signed
     {
       return ::cuda::std::type_identity<long>{};
     }
-    else
+#if _CCCL_HAS_INT128()
+    else if constexpr (sizeof(_Int) < sizeof(long long))
     {
       return ::cuda::std::type_identity<long long>{};
     }
-
-    static_assert(sizeof(_Int) <= sizeof(long long),
-                  "Found integer-like type that is bigger than largest integer like type.");
-    _CCCL_UNREACHABLE();
+    else // if constexpr (sizeof(_Int) < sizeof(__int128_t))
+    {
+      return ::cuda::std::type_identity<__int128_t>{};
+    }
+#else // ^^^ _CCCL_HAS_INT128() ^^^ / vvv !_CCCL_HAS_INT128() vvv
+    else // if constexpr (sizeof(_Int) < sizeof(long long))
+    {
+      return ::cuda::std::type_identity<long long>{};
+    }
+#endif // _CCCL_HAS_INT128()
   }
 
   using type = typename decltype(__call())::type;
@@ -381,7 +389,6 @@ public:
     {
       return __x.__value_ - __y.__value_;
     }
-    _CCCL_UNREACHABLE();
   }
 
   //! @brief Compares two @c counting_iterator for equality.

@@ -66,7 +66,6 @@ struct stream_domain::__apply_t<let_stopped_t>
                   "algorithms.");
   }
 };
-
 } // namespace cuda::experimental::execution
 
 #include <cuda/experimental/__execution/epilogue.cuh>

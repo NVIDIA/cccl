@@ -22,7 +22,6 @@
 
 namespace cuda::experimental::stf
 {
-
 /**
  * @brief Algorithms are a mechanism to implement reusable task sequences implemented by the means of CUDA graphs nested
  * within a task.
@@ -368,5 +367,4 @@ private:
 
   ::std::string symbol;
 };
-
 } // end namespace cuda::experimental::stf

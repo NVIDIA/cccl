@@ -22,7 +22,6 @@
 #endif // no system header
 
 #include <cuda/std/__cstddef/types.h>
-#include <cuda/std/__type_traits/is_constant_evaluated.h>
 #include <cuda/std/__type_traits/make_nbit_int.h>
 #include <cuda/std/__type_traits/remove_const.h>
 #include <cuda/std/climits>
@@ -67,7 +66,7 @@ __cccl_strcpy_impl_host(_CharT* _CCCL_RESTRICT __dst, const _CharT* _CCCL_RESTRI
 template <class _CharT>
 _CCCL_API constexpr _CharT* __cccl_strcpy(_CharT* _CCCL_RESTRICT __dst, const _CharT* _CCCL_RESTRICT __src) noexcept
 {
-  if (!::cuda::std::__cccl_default_is_constant_evaluated())
+  _CCCL_IF_NOT_CONSTEVAL_DEFAULT
   {
     NV_IF_TARGET(NV_IS_HOST, (return ::cuda::std::__cccl_strcpy_impl_host(__dst, __src);))
   }
@@ -116,7 +115,7 @@ template <class _CharT>
 _CCCL_API constexpr _CharT*
 __cccl_strncpy(_CharT* _CCCL_RESTRICT __dst, const _CharT* _CCCL_RESTRICT __src, size_t __n) noexcept
 {
-  if (!::cuda::std::__cccl_default_is_constant_evaluated())
+  _CCCL_IF_NOT_CONSTEVAL_DEFAULT
   {
     NV_IF_TARGET(NV_IS_HOST, (return ::cuda::std::__cccl_strncpy_impl_host(__dst, __src, __n);))
   }
@@ -154,7 +153,7 @@ template <class _CharT>
 template <class _CharT>
 [[nodiscard]] _CCCL_API constexpr size_t __cccl_strlen(const _CharT* __ptr) noexcept
 {
-  if (!::cuda::std::__cccl_default_is_constant_evaluated())
+  _CCCL_IF_NOT_CONSTEVAL_DEFAULT
   {
     NV_IF_TARGET(NV_IS_HOST, (return ::cuda::std::__cccl_strlen_impl_host(__ptr);))
   }
@@ -200,7 +199,7 @@ __cccl_strcmp_impl_host(const _CharT* __lhs, const _CharT* __rhs) noexcept
 template <class _CharT>
 [[nodiscard]] _CCCL_API constexpr int __cccl_strcmp(const _CharT* __lhs, const _CharT* __rhs) noexcept
 {
-  if (!::cuda::std::__cccl_default_is_constant_evaluated())
+  _CCCL_IF_NOT_CONSTEVAL_DEFAULT
   {
     NV_IF_TARGET(NV_IS_HOST, (return ::cuda::std::__cccl_strcmp_impl_host(__lhs, __rhs);))
   }
@@ -252,7 +251,7 @@ __cccl_strncmp_impl_host(const _CharT* __lhs, const _CharT* __rhs, size_t __n) n
 template <class _CharT>
 [[nodiscard]] _CCCL_API constexpr int __cccl_strncmp(const _CharT* __lhs, const _CharT* __rhs, size_t __n) noexcept
 {
-  if (!::cuda::std::__cccl_default_is_constant_evaluated())
+  _CCCL_IF_NOT_CONSTEVAL_DEFAULT
   {
     NV_IF_TARGET(NV_IS_HOST, (return ::cuda::std::__cccl_strncmp_impl_host(__lhs, __rhs, __n);))
   }
@@ -295,7 +294,7 @@ template <class _CharT>
 template <class _CharT>
 [[nodiscard]] _CCCL_API constexpr _CharT* __cccl_strchr(_CharT* __ptr, _CharT __c) noexcept
 {
-  if (!::cuda::std::__cccl_default_is_constant_evaluated())
+  _CCCL_IF_NOT_CONSTEVAL_DEFAULT
   {
     NV_IF_TARGET(NV_IS_HOST, (return ::cuda::std::__cccl_strchr_impl_host<_CharT>(__ptr, __c);))
   }
@@ -344,7 +343,7 @@ template <class _CharT>
 template <class _CharT>
 [[nodiscard]] _CCCL_API constexpr _CharT* __cccl_strrchr(_CharT* __ptr, _CharT __c) noexcept
 {
-  if (!::cuda::std::__cccl_default_is_constant_evaluated())
+  _CCCL_IF_NOT_CONSTEVAL_DEFAULT
   {
     NV_IF_TARGET(NV_IS_HOST, (return ::cuda::std::__cccl_strrchr_impl_host<_CharT>(__ptr, __c);))
   }
@@ -386,7 +385,7 @@ template <class _Tp>
 template <class _Tp>
 [[nodiscard]] _CCCL_API constexpr _Tp* __cccl_memchr(_Tp* __ptr, _Tp __c, size_t __n) noexcept
 {
-  if (!::cuda::std::__cccl_default_is_constant_evaluated())
+  _CCCL_IF_NOT_CONSTEVAL_DEFAULT
   {
     NV_IF_TARGET(NV_IS_HOST, (return ::cuda::std::__cccl_memchr_impl_host<_Tp>(__ptr, __c, __n);))
   }
@@ -432,7 +431,7 @@ __cccl_memmove_impl_host(_Tp* __dst, const _Tp* __src, size_t __n) noexcept
 template <class _Tp>
 _CCCL_API constexpr _Tp* __cccl_memmove(_Tp* __dst, const _Tp* __src, size_t __n) noexcept
 {
-  if (!::cuda::std::__cccl_default_is_constant_evaluated())
+  _CCCL_IF_NOT_CONSTEVAL_DEFAULT
   {
 #if defined(_CCCL_BUILTIN_MEMMOVE)
     return reinterpret_cast<_Tp*>(_CCCL_BUILTIN_MEMMOVE(__dst, __src, __n * sizeof(_Tp)));
@@ -482,7 +481,7 @@ __cccl_memcmp_impl_host(const _Tp* __lhs, const _Tp* __rhs, size_t __n) noexcept
 template <class _Tp>
 [[nodiscard]] _CCCL_API constexpr int __cccl_memcmp(const _Tp* __lhs, const _Tp* __rhs, size_t __n) noexcept
 {
-  if (!::cuda::std::__cccl_default_is_constant_evaluated())
+  _CCCL_IF_NOT_CONSTEVAL_DEFAULT
   {
 #if defined(_CCCL_BUILTIN_MEMCMP)
     return _CCCL_BUILTIN_MEMCMP(__lhs, __rhs, __n * sizeof(_Tp));
@@ -520,7 +519,7 @@ __cccl_memcpy_impl_host(_Tp* _CCCL_RESTRICT __dst, const _Tp* _CCCL_RESTRICT __s
 template <class _Tp>
 _CCCL_API constexpr _Tp* __cccl_memcpy(_Tp* _CCCL_RESTRICT __dst, const _Tp* _CCCL_RESTRICT __src, size_t __n) noexcept
 {
-  if (!::cuda::std::__cccl_default_is_constant_evaluated())
+  _CCCL_IF_NOT_CONSTEVAL_DEFAULT
   {
 #if defined(_CCCL_BUILTIN_MEMCPY)
     return reinterpret_cast<_Tp*>(_CCCL_BUILTIN_MEMCPY(__dst, __src, __n * sizeof(_Tp)));
@@ -563,7 +562,7 @@ template <class _Tp>
 template <class _Tp>
 _CCCL_API constexpr _Tp* __cccl_memset(_Tp* __ptr, _Tp __c, size_t __n) noexcept
 {
-  if (!::cuda::std::__cccl_default_is_constant_evaluated())
+  _CCCL_IF_NOT_CONSTEVAL_DEFAULT
   {
 #if defined(_CCCL_BUILTIN_MEMSET)
     return reinterpret_cast<_Tp*>(_CCCL_BUILTIN_MEMSET(__ptr, __c, __n * sizeof(_Tp)));

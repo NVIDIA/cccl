@@ -20,7 +20,7 @@ if [ "$#" -ne 1 ]; then
 fi
 
 readonly artifact_name="$1"
-readonly artifact_archive="$ARTIFACT_UPLOAD_STAGE/${artifact_name}/${artifact_name}.tar.bz2"
+readonly artifact_archive="$ARTIFACT_UPLOAD_STAGE/${artifact_name}/${artifact_name}.tar.zst"
 
 start=$SECONDS
 "$ci_dir/util/artifacts/upload/pack.sh" "$artifact_name"

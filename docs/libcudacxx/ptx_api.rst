@@ -15,6 +15,7 @@ available.
 
    ptx/examples
    ptx/instructions
+   ptx/pragmas
 
 Versions and compatibility
 ---------------------------

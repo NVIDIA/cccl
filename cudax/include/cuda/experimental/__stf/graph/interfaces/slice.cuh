@@ -30,7 +30,6 @@
 
 namespace cuda::experimental::stf
 {
-
 /**
  * @brief Slice data interface implementation over CUDA graphs.
  *
@@ -305,5 +304,4 @@ struct graphed_interface_of<mdspan<T, P...>>
 {
   using type = slice_graph_interface<T, mdspan<T, P...>::rank()>;
 };
-
 } // namespace cuda::experimental::stf

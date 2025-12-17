@@ -32,10 +32,8 @@
 
 namespace cuda::experimental::stf
 {
-
 namespace reserved
 {
-
 /* A very simple hash function to give the impression of a random distribution of indices */
 inline size_t customHash(size_t value)
 {
@@ -48,7 +46,6 @@ inline size_t customHash(size_t value)
 
   return hash;
 }
-
 } // end namespace reserved
 
 #ifndef _CCCL_DOXYGEN_INVOKED // Do not document
@@ -169,5 +166,4 @@ inline void loop_dispatch(context_t ctx, size_t start, size_t end, ::std::functi
   }
 }
 #endif // _CCCL_DOXYGEN_INVOKED
-
 } // end namespace cuda::experimental::stf

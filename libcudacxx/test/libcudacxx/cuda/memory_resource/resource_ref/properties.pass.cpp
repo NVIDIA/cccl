@@ -33,22 +33,21 @@ static_assert(!cuda::property_with_value<property_without_value<someStruct>>, ""
 
 namespace resource_test
 {
-
 // Ensure we have the right size
 static_assert(
   sizeof(
     cuda::mr::synchronous_resource_ref<cuda::mr::host_accessible, property_with_value<short>, property_with_value<int>>)
-    == (4 * sizeof(void*)),
+    == (2 * sizeof(void*)),
   "");
 static_assert(
   sizeof(cuda::mr::
            synchronous_resource_ref<cuda::mr::host_accessible, property_with_value<short>, property_without_value<int>>)
-    == (3 * sizeof(void*)),
+    == (2 * sizeof(void*)),
   "");
 static_assert(
   sizeof(cuda::mr::
            synchronous_resource_ref<cuda::mr::host_accessible, property_without_value<short>, property_with_value<int>>)
-    == (3 * sizeof(void*)),
+    == (2 * sizeof(void*)),
   "");
 static_assert(sizeof(cuda::mr::synchronous_resource_ref<cuda::mr::host_accessible,
                                                         property_without_value<short>,
@@ -136,6 +135,18 @@ void test_property_forwarding()
   static_assert(cuda::mr::synchronous_resource_with<res, cuda::mr::host_accessible, property_with_value<short>>, "");
 }
 
+void test_empty_property_set()
+{
+  auto res       = resource<property_with_value<int>>{42};
+  auto ref       = cuda::mr::synchronous_resource_ref<property_with_value<int>>{res};
+  auto ref_empty = cuda::mr::synchronous_resource_ref<>{ref};
+
+  assert(try_get_property(ref, property_with_value<int>{}).value() == 42);
+  assert(try_get_property(ref_empty, property_with_value<int>{}).value() == 42);
+  assert(!try_get_property(ref, property_without_value<int>{}));
+  assert(!try_get_property(ref_empty, property_without_value<int>{}));
+}
+
 void test_resource_ref()
 {
   // Test some basic combinations of properties w/o state
@@ -150,8 +161,9 @@ void test_resource_ref()
 
   // Ensure we only forward requested properties
   test_property_forwarding();
-}
 
+  test_empty_property_set();
+}
 } // namespace resource_test
 
 int main(int, char**)

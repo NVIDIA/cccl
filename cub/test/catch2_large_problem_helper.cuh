@@ -6,11 +6,8 @@
 #include <cub/util_type.cuh>
 
 #include <thrust/equal.h>
-#include <thrust/iterator/constant_iterator.h>
-#include <thrust/iterator/counting_iterator.h>
-#include <thrust/iterator/tabulate_output_iterator.h>
-#include <thrust/iterator/transform_iterator.h>
 
+#include <cuda/iterator>
 #include <cuda/std/__algorithm/clamp.h>
 #include <cuda/std/__cccl/execution_space.h>
 #include <cuda/std/limits>
@@ -19,7 +16,6 @@
 
 namespace detail
 {
-
 // Helper that concatenates two iterators into a single iterator
 template <typename FirstSegmentItT, typename SecondSegmentItT>
 struct concat_iterators_op
@@ -44,8 +40,8 @@ struct concat_iterators_op
 template <typename FirstSegmentItT, typename SecondSegmentItT>
 auto make_concat_iterators_op(FirstSegmentItT first_it, SecondSegmentItT second_it, ::cuda::std::int64_t num_first_items)
 {
-  return thrust::make_transform_iterator(
-    thrust::make_counting_iterator(::cuda::std::int64_t{0}),
+  return cuda::make_transform_iterator(
+    cuda::counting_iterator(::cuda::std::int64_t{0}),
     concat_iterators_op<FirstSegmentItT, SecondSegmentItT>{first_it, second_it, num_first_items});
 }
 
@@ -97,11 +93,11 @@ struct large_problem_test_helper
   // Prepares and returns a tabulate_output_iterator that checks whether the correct result has been written at each
   // index
   template <typename ExpectedValuesItT>
-  thrust::tabulate_output_iterator<flag_correct_writes_op<ExpectedValuesItT>>
+  cuda::tabulate_output_iterator<flag_correct_writes_op<ExpectedValuesItT>>
   get_flagging_output_iterator(ExpectedValuesItT expected_it)
   {
     auto check_op = make_checking_write_op(expected_it, thrust::raw_pointer_cast(correctness_flags.data()));
-    return thrust::make_tabulate_output_iterator(check_op);
+    return cuda::make_tabulate_output_iterator(check_op);
   }
 
   // Checks whether all results have been written correctly
@@ -109,7 +105,7 @@ struct large_problem_test_helper
   {
     auto correctness_flags_end = correctness_flags.cbegin() + (num_elements / bits_per_element);
     const bool all_correct =
-      thrust::equal(correctness_flags.cbegin(), correctness_flags_end, thrust::make_constant_iterator(0xFFFFFFFFU));
+      thrust::equal(correctness_flags.cbegin(), correctness_flags_end, cuda::constant_iterator(0xFFFFFFFFU));
 
     if (!all_correct)
     {
@@ -154,5 +150,4 @@ auto make_large_offset(::cuda::std::size_t num_extra_items = 2000000ULL) -> Offs
     ::cuda::std::numeric_limits<::cuda::std::uint32_t>::max() + num_extra_items);
   return static_cast<Offset>(num_items_max_ull);
 }
-
 } // namespace detail

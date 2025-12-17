@@ -36,8 +36,8 @@
 #include <thrust/random/detail/random_core_access.h>
 #include <thrust/random/detail/xor_combine_engine_max.h>
 
+#include <cuda/std/__type_traits/type_identity.h>
 #include <cuda/std/cstddef> // for size_t
-#include <cuda/std/type_traits>
 
 #include <iostream>
 
@@ -45,7 +45,6 @@ THRUST_NAMESPACE_BEGIN
 
 namespace random
 {
-
 /*! \addtogroup random_number_engine_adaptors
  *  \{
  */
@@ -244,7 +243,6 @@ operator>>(std::basic_istream<CharT, Traits>& is, xor_combine_engine<Engine1_, s
 
 /*! \} // end random_number_engine_adaptors
  */
-
 } // namespace random
 
 // import names into thrust::

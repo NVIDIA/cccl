@@ -47,8 +47,7 @@ public:
 
   // invoke
   template <class... _ArgTypes>
-  _CCCL_API inline _CCCL_CONSTEXPR_CXX20 typename __invoke_return<type, _ArgTypes...>::type
-  operator()(_ArgTypes&&... __args) const
+  _CCCL_API inline _CCCL_CONSTEXPR_CXX20 invoke_result_t<type, _ArgTypes...> operator()(_ArgTypes&&... __args) const
   {
     return ::cuda::std::__invoke(__f_, ::cuda::std::forward<_ArgTypes>(__args)...);
   }

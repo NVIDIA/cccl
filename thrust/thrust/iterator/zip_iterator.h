@@ -38,7 +38,6 @@
 #  pragma system_header
 #endif // no system header
 
-#include <thrust/advance.h>
 #include <thrust/detail/type_traits.h>
 #include <thrust/iterator/detail/minimum_system.h>
 #include <thrust/iterator/detail/tuple_of_iterator_references.h>
@@ -46,6 +45,13 @@
 #include <thrust/iterator/iterator_traits.h>
 #include <thrust/type_traits/integer_sequence.h>
 
+#include <cuda/std/__iterator/advance.h>
+#include <cuda/std/__type_traits/conditional.h>
+#include <cuda/std/__type_traits/enable_if.h>
+#include <cuda/std/__type_traits/is_constructible.h>
+#include <cuda/std/__type_traits/is_same.h>
+#include <cuda/std/__utility/declval.h>
+#include <cuda/std/__utility/forward.h>
 #include <cuda/std/tuple>
 
 THRUST_NAMESPACE_BEGIN

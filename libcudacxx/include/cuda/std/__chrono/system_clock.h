@@ -35,15 +35,14 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 namespace chrono
 {
-
 class _CCCL_TYPE_VISIBILITY_DEFAULT system_clock
 {
 public:
-  using duration                        = ::cuda::std::chrono::nanoseconds;
-  using rep                             = duration::rep;
-  using period                          = duration::period;
-  using time_point                      = ::cuda::std::chrono::time_point<system_clock>;
-  static constexpr const bool is_steady = false;
+  using duration                  = ::cuda::std::chrono::nanoseconds;
+  using rep                       = duration::rep;
+  using period                    = duration::period;
+  using time_point                = ::cuda::std::chrono::time_point<system_clock>;
+  static constexpr bool is_steady = false;
 
   [[nodiscard]] _CCCL_API inline static time_point now() noexcept
   {
@@ -70,7 +69,6 @@ template <class _Duration>
 using sys_time    = time_point<system_clock, _Duration>;
 using sys_seconds = sys_time<seconds>;
 using sys_days    = sys_time<days>;
-
 } // namespace chrono
 
 _CCCL_END_NAMESPACE_CUDA_STD

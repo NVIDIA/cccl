@@ -30,7 +30,6 @@
 
 namespace cuda::experimental::stf
 {
-
 /**
  * @brief Acquires necessary resources and dependencies for a task to run.
  *
@@ -316,5 +315,4 @@ inline void task::release(backend_ctx_untyped& ctx, event_list& done_prereqs)
   ctx.increment_finished_task_count();
 #endif
 }
-
 } // namespace cuda::experimental::stf

@@ -12,7 +12,23 @@ if [ -z "${GITHUB_ACTIONS:-}" ]; then
   exit 1
 fi
 
+to_posix_path() {
+  local path="$1"
+
+  if [[ "$path" =~ ^([A-Za-z]):([\\/]?.*)$ ]]; then
+    local drive="${BASH_REMATCH[1]}"
+    local rest="${BASH_REMATCH[2]}"
+    rest="${rest//\\/\/}"
+    printf '/%s%s\n' "${drive,,}" "$rest"
+    return
+  fi
+
+  printf '%s\n' "$path"
+}
+
+runner_temp_posix="$(to_posix_path "${RUNNER_TEMP:-/tmp}")"
+
 export WORKFLOW_ARTIFACT="workflow"
-export WORKFLOW_DIR="/tmp/workflow"
+export WORKFLOW_DIR="${runner_temp_posix}/workflow"
 
 mkdir -p "$WORKFLOW_DIR"

@@ -29,6 +29,17 @@ The easiest way to install ``cuda-cccl`` is using pip:
 
 This will install ``cuda-cccl`` along with all required dependencies.
 
+Install from conda-forge
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Alternatively, you can install ``cuda-cccl`` using conda:
+
+.. code-block:: bash
+
+   conda install -c conda-forge cccl-python
+
+This will install the CCCL Python libraries and their dependencies from the conda-forge channel.
+
 Install from Source
 ~~~~~~~~~~~~~~~~~~~
 
@@ -63,5 +74,5 @@ Next Steps
 
 Now that you have ``cuda-cccl`` installed, check out:
 
-* :doc:`parallel` - Device-level parallel algorithms
-* :doc:`cooperative` - Block and warp-level cooperative primitives
+* :doc:`compute` - Parallel computing primitives for operations on arrays or data ranges
+* :doc:`coop` - Block and warp-level cooperative algorithms for building custom CUDA kernels with Numba

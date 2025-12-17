@@ -25,13 +25,15 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
+#include <thrust/detail/allocator/tagged_allocator.h>
 #include <thrust/detail/type_traits/pointer_traits.h>
 #include <thrust/iterator/iterator_traits.h>
+
+#include <cuda/std/limits>
 
 THRUST_NAMESPACE_BEGIN
 namespace detail
 {
-
 template <typename T, typename Tag, typename Pointer>
 class tagged_allocator;
 
@@ -72,31 +74,40 @@ public:
     using other = tagged_allocator<U, Tag, Pointer>;
   }; // end rebind
 
-  _CCCL_HOST_DEVICE inline tagged_allocator();
+  tagged_allocator() = default;
 
-  _CCCL_HOST_DEVICE inline tagged_allocator(const tagged_allocator&);
+  tagged_allocator(const tagged_allocator&) = default;
 
   template <typename U, typename OtherPointer>
-  _CCCL_HOST_DEVICE inline tagged_allocator(const tagged_allocator<U, Tag, OtherPointer>&);
+  _CCCL_HOST_DEVICE tagged_allocator(const tagged_allocator<U, Tag, OtherPointer>&)
+  {}
 
-  _CCCL_HOST_DEVICE inline ~tagged_allocator();
+  ~tagged_allocator() = default;
 
-  _CCCL_HOST_DEVICE pointer address(reference x) const;
+  _CCCL_HOST_DEVICE pointer address(reference x) const
+  {
+    return &x;
+  }
 
-  _CCCL_HOST_DEVICE const_pointer address(const_reference x) const;
+  _CCCL_HOST_DEVICE const_pointer address(const_reference x) const
+  {
+    return &x;
+  }
 
-  size_type max_size() const;
+  size_type max_size() const
+  {
+    return (::cuda::std::numeric_limits<size_type>::max)() / sizeof(T);
+  }
+
+  _CCCL_HOST_DEVICE friend bool operator==(const tagged_allocator&, const tagged_allocator&)
+  {
+    return true;
+  }
+
+  _CCCL_HOST_DEVICE friend bool operator!=(const tagged_allocator&, const tagged_allocator&)
+  {
+    return false;
+  }
 };
-
-template <typename T1, typename Pointer1, typename T2, typename Pointer2, typename Tag>
-_CCCL_HOST_DEVICE bool
-operator==(const tagged_allocator<T1, Pointer1, Tag>&, const tagged_allocator<T2, Pointer2, Tag>&);
-
-template <typename T1, typename Pointer1, typename T2, typename Pointer2, typename Tag>
-_CCCL_HOST_DEVICE bool
-operator!=(const tagged_allocator<T1, Pointer1, Tag>&, const tagged_allocator<T2, Pointer2, Tag>&);
-
 } // namespace detail
 THRUST_NAMESPACE_END
-
-#include <thrust/detail/allocator/tagged_allocator.inl>

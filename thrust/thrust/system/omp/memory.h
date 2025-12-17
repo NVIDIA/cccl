@@ -29,18 +29,43 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
+
 #include <thrust/detail/type_traits.h>
 #include <thrust/memory.h>
 #include <thrust/mr/allocator.h>
+#include <thrust/system/cpp/detail/execution_policy.h>
+#include <thrust/system/cpp/memory.h>
 #include <thrust/system/omp/memory_resource.h>
+
+#include <cuda/std/limits>
 
 #include <ostream>
 
 THRUST_NAMESPACE_BEGIN
-namespace system
+namespace system::omp
 {
-namespace omp
+namespace detail
 {
+// XXX circular #inclusion problems cause the compiler to believe that cpp::malloc
+//     is not defined
+//     WAR the problem by using adl to call cpp::malloc, which requires it to depend
+//     on a template parameter
+template <typename Tag>
+pointer<void> malloc_workaround(Tag t, std::size_t n)
+{
+  return pointer<void>(malloc(t, n));
+} // end malloc_workaround()
+
+// XXX circular #inclusion problems cause the compiler to believe that cpp::free
+//     is not defined
+//     WAR the problem by using adl to call cpp::free, which requires it to depend
+//     on a template parameter
+template <typename Tag>
+void free_workaround(Tag t, pointer<void> ptr)
+{
+  free(t, ptr.get());
+} // end free_workaround()
+} // namespace detail
 
 /*! Allocates an area of memory available to Thrust's <tt>omp</tt> system.
  *  \param n Number of bytes to allocate.
@@ -52,7 +77,15 @@ namespace omp
  *  \see omp::free
  *  \see std::malloc
  */
-inline pointer<void> malloc(std::size_t n);
+inline pointer<void> malloc(std::size_t n)
+{
+  // XXX this is how we'd like to implement this function,
+  //     if not for circular #inclusion problems:
+  //
+  // return pointer<void>(thrust::system::cpp::malloc(n))
+  //
+  return detail::malloc_workaround(cpp::tag(), n);
+} // end malloc()
 
 /*! Allocates a typed area of memory available to Thrust's <tt>omp</tt> system.
  *  \param n Number of elements to allocate.
@@ -65,7 +98,11 @@ inline pointer<void> malloc(std::size_t n);
  *  \see std::malloc
  */
 template <typename T>
-inline pointer<T> malloc(std::size_t n);
+inline pointer<T> malloc(std::size_t n)
+{
+  pointer<void> raw_ptr = thrust::system::omp::malloc(sizeof(T) * n);
+  return pointer<T>(reinterpret_cast<T*>(raw_ptr.get()));
+} // end malloc()
 
 /*! Deallocates an area of memory previously allocated by <tt>omp::malloc</tt>.
  *  \param ptr A <tt>omp::pointer<void></tt> pointing to the beginning of an area
@@ -73,7 +110,15 @@ inline pointer<T> malloc(std::size_t n);
  *  \see omp::malloc
  *  \see std::free
  */
-inline void free(pointer<void> ptr);
+inline void free(pointer<void> ptr)
+{
+  // XXX this is how we'd like to implement this function,
+  //     if not for circular #inclusion problems:
+  //
+  // thrust::system::cpp::free(ptr)
+  //
+  detail::free_workaround(cpp::tag(), ptr);
+} // end free()
 
 /*! \p omp::allocator is the default allocator used by the \p omp system's
  *  containers such as <tt>omp::vector</tt> if no user-specified allocator is
@@ -91,8 +136,7 @@ using universal_allocator = thrust::mr::stateless_resource_allocator<T, thrust::
 template <typename T>
 using universal_host_pinned_allocator =
   thrust::mr::stateless_resource_allocator<T, thrust::system::omp::universal_host_pinned_memory_resource>;
-} // namespace omp
-} // namespace system
+} // namespace system::omp
 
 /*! \namespace thrust::omp
  *  \brief \p thrust::omp is a top-level alias for thrust::system::omp.
@@ -107,5 +151,3 @@ using thrust::system::omp::universal_host_pinned_allocator;
 } // namespace omp
 
 THRUST_NAMESPACE_END
-
-#include <thrust/system/omp/detail/memory.inl>

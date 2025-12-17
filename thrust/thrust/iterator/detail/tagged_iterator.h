@@ -70,7 +70,6 @@ auto make_tagged_iterator(Iterator iter) -> tagged_iterator<Iterator, Tag>
 {
   return tagged_iterator<Iterator, Tag>(iter);
 }
-
 } // namespace detail
 
 // tagged_iterator is trivial if its base iterator is.

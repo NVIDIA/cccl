@@ -1,9 +1,10 @@
 #include <thrust/generate.h>
 #include <thrust/host_vector.h>
-#include <thrust/pair.h>
 #include <thrust/sort.h>
 #include <thrust/system/cuda/execution_policy.h>
 #include <thrust/system/cuda/vector.h>
+
+#include <cuda/std/utility>
 
 #include <cassert>
 #include <cstdlib>

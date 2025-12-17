@@ -26,7 +26,6 @@
 
 namespace c2h::detail
 {
-
 #if !C2H_HAS_CURAND
 struct i_to_rnd_t
 {
@@ -191,7 +190,12 @@ void init_key_segments(::cuda::std::span<const OffsetT> segment_offsets, KeyT* d
   cub::DeviceCopy::Batched(
     d_temp_storage, temp_storage_bytes, d_range_srcs, d_range_dsts, d_range_sizes, total_segments);
 
+#  if THRUST_VERSION >= 300100
   device_vector<std::uint8_t> temp_storage(temp_storage_bytes, thrust::no_init);
+#  else
+  device_vector<std::uint8_t> temp_storage(temp_storage_bytes);
+#  endif // THRUST_VERSION >= 300100
+
   d_temp_storage = thrust::raw_pointer_cast(temp_storage.data());
 
   // TODO(bgruber): replace by a non-CUB implementation
@@ -234,5 +238,4 @@ init_key_segments(::cuda::std::span<const std::uint32_t> segment_offsets, half_t
 template void
 init_key_segments(::cuda::std::span<const std::uint32_t> segment_offsets, bfloat16_t* out, std::size_t element_size);
 #endif // TEST_BF_T()
-
 } // namespace c2h::detail

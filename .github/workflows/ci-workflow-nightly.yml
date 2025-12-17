@@ -23,7 +23,7 @@ defaults:
 on:
   workflow_dispatch:
   schedule:
-    - cron: '0 3 * * *' # 3AM UTC, 11PM EST, 8PM PST
+    - cron: '0 3 * * 1-5' # 3AM UTC, 11PM EST, 8PM PST, Mon-Fri
 
 concurrency:
   group: ${{ github.workflow }}-on-${{ github.event_name }}-from-${{ github.ref_name }}
@@ -33,6 +33,7 @@ jobs:
   build-workflow:
     name: Build workflow from matrix
     runs-on: ubuntu-latest
+    if: ${{ github.repository == 'NVIDIA/cccl' }}
     permissions:
       contents: read
     outputs:
@@ -140,6 +141,7 @@ jobs:
 
   build-rapids:
     name: Build RAPIDS
+    if: ${{ github.repository == 'NVIDIA/cccl' }}
     secrets: inherit
     permissions:
       actions: read
@@ -153,10 +155,22 @@ jobs:
 
   build-matx:
     name: Build MatX
+    if: ${{ github.repository == 'NVIDIA/cccl' }}
     secrets: inherit
     permissions:
       id-token: write
       contents: read
     uses: ./.github/workflows/build-matx.yml
+    with:
+      enable_slack_alerts: true
+
+  build-pytorch:
+    name: Build PyTorch
+    if: ${{ github.repository == 'NVIDIA/cccl' }}
+    secrets: inherit
+    permissions:
+      id-token: write
+      contents: read
+    uses: ./.github/workflows/build-pytorch.yml
     with:
       enable_slack_alerts: true

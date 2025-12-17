@@ -20,6 +20,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__fwd/tuple.h>
 #include <cuda/std/__tuple_dir/tuple_indices.h>
 #include <cuda/std/__tuple_dir/tuple_types.h>
 #include <cuda/std/__type_traits/add_const.h>
@@ -61,6 +62,12 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT tuple_element<_Ip, __tuple_types<_Types...>
 {
   static_assert(_Ip < sizeof...(_Types), "tuple_element index out of range");
   using type _CCCL_NODEBUG_ALIAS = __type_index_c<_Ip, _Types...>;
+};
+
+template <size_t _Ip, class... _Tp>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT tuple_element<_Ip, tuple<_Tp...>>
+{
+  using type _CCCL_NODEBUG_ALIAS = tuple_element_t<_Ip, __tuple_types<_Tp...>>;
 };
 
 _CCCL_END_NAMESPACE_CUDA_STD

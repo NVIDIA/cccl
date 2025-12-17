@@ -32,7 +32,6 @@
 
 namespace cuda::experimental::stf::reducer
 {
-
 /**
  * @brief sum operator for the reduce access mode
  */
@@ -194,5 +193,4 @@ public:
     dst = dst || src;
   }
 };
-
 } // end namespace cuda::experimental::stf::reducer

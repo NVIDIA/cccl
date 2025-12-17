@@ -76,7 +76,8 @@ public:
   //! @brief Applies a tuple to the stored functor
   //! @param __tuple The tuple of arguments to be passed
   _CCCL_EXEC_CHECK_DISABLE
-  template <class _Tuple>
+  _CCCL_TEMPLATE(class _Tuple)
+  _CCCL_REQUIRES(::cuda::std::__can_apply<const _Fn&, _Tuple>)
   [[nodiscard]] _CCCL_API constexpr decltype(auto) operator()(_Tuple&& __tuple) const
     noexcept(__is_nothrow_invocable<const _Fn&, _Tuple>)
   {
@@ -85,7 +86,8 @@ public:
 
   //! @brief Applies a tuple to the stored functor
   _CCCL_EXEC_CHECK_DISABLE
-  template <class _Tuple>
+  _CCCL_TEMPLATE(class _Tuple)
+  _CCCL_REQUIRES(::cuda::std::__can_apply<_Fn&, _Tuple>)
   [[nodiscard]] _CCCL_API constexpr decltype(auto)
   operator()(_Tuple&& __tuple) noexcept(__is_nothrow_invocable<_Fn&, _Tuple>)
   {

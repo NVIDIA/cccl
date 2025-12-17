@@ -1,29 +1,5 @@
-/******************************************************************************
- * Copyright (c) 2024, NVIDIA CORPORATION.  All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *     * Redistributions of source code must retain the above copyright
- *       notice, this list of conditions and the following disclaimer.
- *     * Redistributions in binary form must reproduce the above copyright
- *       notice, this list of conditions and the following disclaimer in the
- *       documentation and/or other materials provided with the distribution.
- *     * Neither the name of the NVIDIA CORPORATION nor the
- *       names of its contributors may be used to endorse or promote products
- *       derived from this software without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
- * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
- * DISCLAIMED. IN NO EVENT SHALL NVIDIA CORPORATION BE LIABLE FOR ANY
- * DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
- * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
- * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
- * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- *
- ******************************************************************************/
+// SPDX-FileCopyrightText: Copyright (c) 2024, NVIDIA CORPORATION. All rights reserved.
+// SPDX-License-Identifier: BSD-3
 
 #include <cub/util_arch.cuh>
 #include <cub/util_device.cuh>
@@ -32,6 +8,7 @@
 #include <thrust/detail/raw_pointer_cast.h>
 #include <thrust/device_vector.h>
 
+#include <cuda/devices>
 #include <cuda/std/__algorithm/find_if.h>
 #include <cuda/std/array>
 
@@ -124,7 +101,8 @@ C2H_TEST("PtxVersion returns a value from __CUDA_ARCH_LIST__/NV_TARGET_SM_INTEGE
 // actual architectures the tests are compiled for should match to one of those
 struct policy_hub_all
 {
-  // for the list of supported architectures, see libcudacxx/include/nv/target
+  // for the list of supported architectures,
+  // see libcudacxx/include/nv/target or libcudacxx/include/cuda/__device/arch_id.h
   GEN_POLICY(500, 500);
   GEN_POLICY(520, 500);
   GEN_POLICY(530, 520);
@@ -137,24 +115,26 @@ struct policy_hub_all
   GEN_POLICY(800, 750);
   GEN_POLICY(860, 800);
   GEN_POLICY(870, 860);
-  GEN_POLICY(890, 870);
+  GEN_POLICY(880, 870);
+  GEN_POLICY(890, 880);
   GEN_POLICY(900, 890);
   GEN_POLICY(1000, 900);
   GEN_POLICY(1010, 1000);
   GEN_POLICY(1030, 1010);
   GEN_POLICY(1100, 1030);
   GEN_POLICY(1200, 1100);
+  GEN_POLICY(1210, 1200);
   // add more policies here when new architectures emerge
-  GEN_POLICY(2000, 1200); // non-existing architecture, just to test pruning
+  GEN_POLICY(2000, 1210); // non-existing architecture, just to test pruning
 
   using max_policy = policy2000;
 };
 
-// Check that selected is one of (scaled) arches
-template <int Selected, int... ArchList>
+// check that the selected policy exactly matches one of (scaled) arches we compile for
+template <int SelectedPolicyArch, int... ArchList>
 struct check
 {
-  static_assert(cuda::std::_Or<cuda::std::bool_constant<Selected == ArchList * CUDA_SM_LIST_SCALE>...>::value, "");
+  static_assert(((SelectedPolicyArch == ArchList * CUDA_SM_LIST_SCALE) || ...));
   using type = cudaError_t;
 };
 
@@ -162,12 +142,10 @@ struct closure_all
 {
   int ptx_version;
 
-  // We need to fail template instantiation if ActivePolicy::value is not one from the
-  // __CUDA_ARCH_LIST__/NV_TARGET_SM_INTEGER_LIST
   template <typename ActivePolicy>
   CUB_RUNTIME_FUNCTION auto Invoke() const -> typename check<ActivePolicy::value, CUDA_SM_LIST>::type
   {
-    // policy_hub_all must list all PTX virtual architectures, so we can do an exact comparison here
+    // since policy_hub_all lists all PTX virtual architectures, we can do an exact comparison here
 #  if TEST_LAUNCH == 0
     REQUIRE(+ActivePolicy::value == ptx_version);
 #  endif // TEST_LAUNCH == 0
@@ -295,4 +273,38 @@ C2H_TEST("ChainedPolicy invokes correct policy", "[util][dispatch]")
   {
     check_wrapper_some<policy_hub_minimal, 1>(cuda::std::array<int, 1>{500});
   }
+}
+
+__global__ void test_max_potential_dynamic_smem_bytes_kernel()
+{
+  // use inline PTX so the variable doesn't get optimized out
+  asm volatile(".shared .align 1 .b8 static_smem[4096];");
+}
+
+#if defined(CUB_RDC_ENABLED)
+__global__ void test_max_potential_dynamic_smem_bytes_device(int* result)
+{
+  // Just compile on device.
+  cub::MaxPotentialDynamicSmemBytes(*result, test_max_potential_dynamic_smem_bytes_kernel);
+}
+#endif // CUB_RDC_ENABLED
+
+C2H_TEST("MaxPotentialDynamicSmemBytes", "[util][launch]")
+{
+  cuda::device_ref device{0};
+
+  // Calculate the expected max potential dynamic shared memory size.
+  const auto max_smem_per_block_optin = device.attribute(cuda::device_attributes::max_shared_memory_per_block_optin);
+  const auto reserved_smem_per_block  = device.attribute(cuda::device_attributes::reserved_shared_memory_per_block);
+  const auto expected                 = static_cast<int>(max_smem_per_block_optin - reserved_smem_per_block - 4096);
+
+  // 1. Test positive case.
+  int dyn_smem_size{};
+  REQUIRE(
+    cub::MaxPotentialDynamicSmemBytes(dyn_smem_size, test_max_potential_dynamic_smem_bytes_kernel) == cudaSuccess);
+  REQUIRE(dyn_smem_size == expected);
+
+  // 2. Test that we return -1 if an error occurs.
+  REQUIRE(cub::MaxPotentialDynamicSmemBytes(dyn_smem_size, nullptr) != cudaSuccess);
+  REQUIRE(dyn_smem_size == -1);
 }

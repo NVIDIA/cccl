@@ -86,17 +86,11 @@ struct BorrowedRange
   __host__ __device__ BorrowedRange(BorrowedRange&&) = delete;
 };
 
-namespace cuda
-{
-namespace std
-{
-namespace ranges
+namespace cuda::std::ranges
 {
 template <>
 inline constexpr bool enable_borrowed_range<BorrowedRange> = true;
-} // namespace ranges
-} // namespace std
-} // namespace cuda
+} // namespace cuda::std::ranges
 
 static_assert(!cuda::std::ranges::view<BorrowedRange>, "");
 static_assert(cuda::std::ranges::borrowed_range<BorrowedRange>, "");

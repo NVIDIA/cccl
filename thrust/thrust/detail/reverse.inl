@@ -27,9 +27,21 @@
 #endif // no system header
 #include <thrust/iterator/iterator_traits.h>
 #include <thrust/reverse.h>
-#include <thrust/system/detail/adl/reverse.h>
-#include <thrust/system/detail/generic/reverse.h>
 #include <thrust/system/detail/generic/select_system.h>
+
+// Include all active backend system implementations (generic, sequential, host and device)
+#include <thrust/system/detail/generic/reverse.h>
+#include <thrust/system/detail/sequential/reverse.h>
+#include __THRUST_HOST_SYSTEM_ALGORITH_DETAIL_HEADER_INCLUDE(reverse.h)
+#include __THRUST_DEVICE_SYSTEM_ALGORITH_DETAIL_HEADER_INCLUDE(reverse.h)
+
+// Some build systems need a hint to know which files we could include
+#if 0
+#  include <thrust/system/cpp/detail/reverse.h>
+#  include <thrust/system/cuda/detail/reverse.h>
+#  include <thrust/system/omp/detail/reverse.h>
+#  include <thrust/system/tbb/detail/reverse.h>
+#endif
 
 THRUST_NAMESPACE_BEGIN
 

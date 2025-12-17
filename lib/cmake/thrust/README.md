@@ -4,7 +4,7 @@ Thrust provides configuration files that simplify using Thrust
 from other CMake projects. Requirements:
 
 - Thrust >= 1.9.10
-- CMake >= 3.15
+- CMake >= 3.18
 
 See the [Fixing Legacy FindThrust.cmake](#fixing-legacy-findthrustcmake)
 section for solutions that work on older Thrust versions.
@@ -28,7 +28,7 @@ assembles a complete interface to the Thrust library:
 ```cmake
 find_package(Thrust REQUIRED CONFIG)
 thrust_create_target(Thrust)
-target_link_libraries(MyProgram Thrust)
+target_link_libraries(MyProgram PRIVATE Thrust)
 ```
 
 The first argument is the name of the interface target to create, and any
@@ -184,7 +184,7 @@ thrust_update_system_found_flags()
 #### Debugging
 
 Thrust will produce a detailed log describing its targets, cache options, and
-interfaces when `--log-level=VERBOSE` is passed to CMake 3.15.7 or newer:
+interfaces when `--log-level=VERBOSE` is passed to CMake:
 
 ```
 $ cmake . --log-level=VERBOSE

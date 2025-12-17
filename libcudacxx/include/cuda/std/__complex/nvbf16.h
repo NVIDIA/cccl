@@ -31,8 +31,9 @@
 #  include <cuda/std/__type_traits/enable_if.h>
 #  include <cuda/std/__type_traits/is_constructible.h>
 
+// todo: find a way to get rid of this include
 #  if !_CCCL_COMPILER(NVRTC)
-#    include <sstream> // for std::basic_ostringstream
+#    include <complex> // for std::complex stream operators
 #  endif // !_CCCL_COMPILER(NVRTC)
 
 #  include <cuda/std/__cccl/prologue.h>

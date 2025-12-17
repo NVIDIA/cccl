@@ -20,11 +20,20 @@
 #  pragma system_header
 #endif // no system header
 
-#if !_CCCL_COMPILER(NVRTC)
-#  include <complex>
-#endif // !_CCCL_COMPILER(NVRTC)
-
 #include <cuda/std/__cccl/prologue.h>
+
+// std:: forward declarations
+
+#if _CCCL_HAS_HOST_STD_LIB()
+_CCCL_BEGIN_NAMESPACE_STD
+
+template <class>
+class complex;
+
+_CCCL_END_NAMESPACE_STD
+#endif // _CCCL_HAS_HOST_STD_LIB()
+
+// cuda::std:: forward declarations
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 

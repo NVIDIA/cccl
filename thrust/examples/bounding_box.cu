@@ -1,8 +1,9 @@
 #include <thrust/device_vector.h>
 #include <thrust/extrema.h>
-#include <thrust/pair.h>
 #include <thrust/random.h>
 #include <thrust/transform_reduce.h>
+
+#include <cuda/std/utility>
 
 // This example shows how to compute a bounding box
 // for a set of points in two dimensions.

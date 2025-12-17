@@ -31,7 +31,7 @@ static inline _CCCL_DEVICE bool __cuda_atomic_compare_swap_memory_order_dispatch
         case __ATOMIC_ACQ_REL: __res = __cuda_cas(__atomic_cuda_acq_rel{}); break;
         case __ATOMIC_RELEASE: __res = __cuda_cas(__atomic_cuda_release{}); break;
         case __ATOMIC_RELAXED: __res = __cuda_cas(__atomic_cuda_relaxed{}); break;
-        default: assert(0);
+        default: _CCCL_ASSERT(false, "invalid memory order");
       }
     ),
     NV_IS_DEVICE, (
@@ -42,7 +42,7 @@ static inline _CCCL_DEVICE bool __cuda_atomic_compare_swap_memory_order_dispatch
         case __ATOMIC_ACQUIRE: __res = __cuda_cas(__atomic_cuda_volatile{}); __cuda_atomic_membar(_Sco{}); break;
         case __ATOMIC_RELEASE: __cuda_atomic_membar(_Sco{}); __res = __cuda_cas(__atomic_cuda_volatile{}); break;
         case __ATOMIC_RELAXED: __res = __cuda_cas(__atomic_cuda_volatile{}); break;
-        default: assert(0);
+        default: _CCCL_ASSERT(false, "invalid memory order");
       }
     )
   )
@@ -63,14 +63,21 @@ template <class _Type>
 static inline _CCCL_DEVICE bool __cuda_atomic_compare_exchange(
   _Type* __ptr, _Type& __dst, _Type __cmp, _Type __op, {4}, __atomic_cuda_operand_{0}{1}, {6})
 {{
+  static_assert(__cccl_ptx_isa >= 840 && (sizeof(_Type) == 16), "128b CAS is not supported until PTX ISA version 840");
+  NV_DISPATCH_TARGET(
+    NV_PROVIDES_SM_90, (),
+    NV_ANY_TARGET, (__atomic_cas_128b_unsupported_before_SM_90();)
+  )
   asm volatile(R"YYY(
-.reg .b128 _d;
-.reg .b128 _v;
-mov.b128 {{%0, %1}}, _d;
-mov.b128 {{%4, %5}}, _v;
-atom.cas{3}{5}.b128 _d,[%2],_d,_v;
-mov.b128 _d, {{%0, %1}};
-)YYY" : "=l"(__dst.__x),"=l"(__dst.__y) : "l"(__ptr), "l"(__cmp.__x),"l"(__cmp.__y), "l"(__op.__x),"l"(__op.__y) : "memory"); return __dst.x == __cmp.x && __dst.y == __cmp.y; }})XXX";
+    {{
+      .reg .b128 _d;
+      .reg .b128 _v;
+      mov.b128 _d, {{%0, %1}};
+      mov.b128 _v, {{%4, %5}};
+      atom.cas{3}{5}.b128 _d,[%2],_d,_v;
+      mov.b128 {{%0, %1}}, _d;
+    }}
+  )YYY" : "=l"(__dst.__x),"=l"(__dst.__y) : "l"(__ptr), "l"(__cmp.__x),"l"(__cmp.__y), "l"(__op.__x),"l"(__op.__y) : "memory"); return __dst.__x == __cmp.__x && __dst.__y == __cmp.__y; }})XXX";
 
   const std::string asm_intrinsic_format = R"XXX(
 template <class _Type>

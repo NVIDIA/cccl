@@ -25,19 +25,18 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
-#include <thrust/advance.h>
 #include <thrust/detail/copy.h>
-#include <thrust/distance.h>
 #include <thrust/iterator/iterator_traits.h>
 #include <thrust/swap.h>
 #include <thrust/system/detail/generic/reverse.h>
 
-#include <cuda/std/iterator>
+#include <cuda/std/__iterator/advance.h>
+#include <cuda/std/__iterator/distance.h>
+#include <cuda/std/__iterator/reverse_iterator.h>
 
 THRUST_NAMESPACE_BEGIN
 namespace system::detail::generic
 {
-
 template <typename ExecutionPolicy, typename BidirectionalIterator>
 _CCCL_HOST_DEVICE void
 reverse(thrust::execution_policy<ExecutionPolicy>& exec, BidirectionalIterator first, BidirectionalIterator last)
@@ -62,6 +61,5 @@ _CCCL_HOST_DEVICE OutputIterator reverse_copy(
 {
   return thrust::copy(exec, ::cuda::std::reverse_iterator{last}, ::cuda::std::reverse_iterator{first}, result);
 } // end reverse_copy()
-
 } // namespace system::detail::generic
 THRUST_NAMESPACE_END

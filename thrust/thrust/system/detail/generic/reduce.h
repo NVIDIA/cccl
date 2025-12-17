@@ -31,7 +31,6 @@
 THRUST_NAMESPACE_BEGIN
 namespace system::detail::generic
 {
-
 template <typename DerivedPolicy, typename InputIterator>
 _CCCL_HOST_DEVICE thrust::detail::it_value_t<InputIterator>
 reduce(thrust::execution_policy<DerivedPolicy>& exec, InputIterator first, InputIterator last);
@@ -64,7 +63,6 @@ _CCCL_HOST_DEVICE void reduce_into(
   OutputIterator output,
   T init,
   BinaryFunction binary_op);
-
 } // namespace system::detail::generic
 THRUST_NAMESPACE_END
 

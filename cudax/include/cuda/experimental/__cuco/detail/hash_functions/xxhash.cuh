@@ -69,7 +69,6 @@
 
 namespace cuda::experimental::cuco::__detail
 {
-
 //! @brief A `_XXHash_32` hash function to hash the given argument on host and device.
 //!
 //! @tparam Key The type of the values to hash

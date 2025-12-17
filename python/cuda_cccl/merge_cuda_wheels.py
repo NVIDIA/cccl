@@ -6,13 +6,13 @@ This script takes wheels built for different CUDA versions (cu12, cu13) and merg
 into a single wheel that supports both CUDA versions.
 
 In particular, each wheel contains a CUDA-specific build of the `cccl.c.parallel` library
-and the associated bindings. These are present in the directory `parallel/experimental/cu<version>`.
-For example, for a wheel built with CUDA 12, the directory is `parallel/experimental/cu12`,
-and for a wheel built with CUDA 13, the directory is `parallel/experimental/cu13`.
+and the associated bindings. These are present in the directory `compute/cu<version>`.
+For example, for a wheel built with CUDA 12, the directory is `compute/cu12`,
+and for a wheel built with CUDA 13, the directory is `compute/cu13`.
 This script merges these directories into a single wheel that supports both CUDA versions, i.e.,
-containing both `parallel/experimental/cu12` and `parallel/experimental/cu13`.
-At runtime, a shim module `parallel/experimental/_bindings.py` is used to import the appropriate
-CUDA-specific bindings. See `parallel/experimental/_bindings.py` for more details.
+containing both `compute/cu12` and `compute/cu13`.
+At runtime, a shim module `compute/_bindings.py` is used to import the appropriate
+CUDA-specific bindings. See `compute/_bindings.py` for more details.
 """
 
 import argparse
@@ -108,13 +108,7 @@ def merge_wheels(wheels: List[Path], output_dir: Path) -> Path:
                 # For base wheel, do nothing
                 continue
             else:
-                version_dir = (
-                    Path("cuda")
-                    / "cccl"
-                    / "parallel"
-                    / "experimental"
-                    / f"cu{cuda_version}"
-                )
+                version_dir = Path("cuda") / "compute" / f"cu{cuda_version}"
                 # Copy from other wheels
                 print(f"  Copying {version_dir} to {base_wheel}")
                 shutil.copytree(wheel_dir / version_dir, base_wheel / version_dir)

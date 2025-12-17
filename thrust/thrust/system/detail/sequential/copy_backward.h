@@ -29,7 +29,6 @@
 THRUST_NAMESPACE_BEGIN
 namespace system::detail::sequential
 {
-
 _CCCL_EXEC_CHECK_DISABLE
 template <typename BidirectionalIterator1, typename BidirectionalIterator2>
 _CCCL_HOST_DEVICE BidirectionalIterator2
@@ -44,6 +43,5 @@ copy_backward(BidirectionalIterator1 first, BidirectionalIterator1 last, Bidirec
 
   return result;
 }
-
 } // namespace system::detail::sequential
 THRUST_NAMESPACE_END

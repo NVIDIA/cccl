@@ -97,7 +97,6 @@
 
 namespace unittest
 {
-
 size_t const MAX_OUTPUT_LINES = 10;
 
 double const DEFAULT_RELATIVE_TOL = 1e-4;
@@ -312,7 +311,6 @@ bool almost_equal(double a, double b, double a_tol, double r_tol)
 
 namespace
 { // anonymous namespace
-
 template <typename>
 struct is_complex : public THRUST_NS_QUALIFIER::false_type
 {};
@@ -324,7 +322,6 @@ struct is_complex<THRUST_NS_QUALIFIER::complex<T>> : public THRUST_NS_QUALIFIER:
 template <typename T>
 struct is_complex<std::complex<T>> : public THRUST_NS_QUALIFIER::true_type
 {};
-
 } // namespace
 
 template <typename T1, typename T2>
@@ -767,5 +764,4 @@ void check_assert_throws(
     }
   }
 }
-
 }; // end namespace unittest

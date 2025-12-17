@@ -29,7 +29,6 @@
 
 namespace cuda::experimental::cuco::__detail
 {
-
 //! @brief Loads a chunk of type _Tp from a byte pointer at a given index, handling alignment
 //!
 //! @tparam _Tp The type of the chunk to load (must be 4 or 8 bytes)
@@ -140,7 +139,6 @@ struct _Byte_holder<_KeySize, _ChunkSize, _BlockSize, _UseTailBlock, _BlockT, tr
 
   _BlockT __blocks[__num_blocks];
 };
-
 }; // namespace cuda::experimental::cuco::__detail
 
 #include <cuda/std/__cccl/epilogue.h>

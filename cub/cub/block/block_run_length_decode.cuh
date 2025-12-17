@@ -1,29 +1,5 @@
-/******************************************************************************
- * Copyright (c) 2011-2021, NVIDIA CORPORATION.  All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *     * Redistributions of source code must retain the above copyright
- *       notice, this list of conditions and the following disclaimer.
- *     * Redistributions in binary form must reproduce the above copyright
- *       notice, this list of conditions and the following disclaimer in the
- *       documentation and/or other materials provided with the distribution.
- *     * Neither the name of the NVIDIA CORPORATION nor the
- *       names of its contributors may be used to endorse or promote products
- *       derived from this software without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
- *AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- *IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
- * DISCLAIMED. IN NO EVENT SHALL NVIDIA CORPORATION BE LIABLE FOR ANY
- * DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
- * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
- * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
- * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- *
- ******************************************************************************/
+// SPDX-FileCopyrightText: Copyright (c) 2011-2021, NVIDIA CORPORATION. All rights reserved.
+// SPDX-License-Identifier: BSD-3
 
 #pragma once
 
@@ -55,7 +31,7 @@ CUB_NAMESPACE_BEGIN
 //! ("decompression"), the output size of the run-length decoded array is runtime-dependent and
 //! potentially without any upper bound. To address this, BlockRunLengthDecode allows retrieving a
 //! "window" from the run-length decoded array. The window's offset can be specified and
-//! BLOCK_THREADS * DECODED_ITEMS_PER_THREAD (i.e., referred to as window_size) decoded items from
+//! BLOCK_THREADS * DecodedItemsPerThread (i.e., referred to as window_size) decoded items from
 //! the specified window will be returned.
 //!
 //! .. note::
@@ -73,22 +49,22 @@ CUB_NAMESPACE_BEGIN
 //!      using RunLengthT = uint32_t;
 //!
 //!      // Specialising BlockRunLengthDecode for a 1D block of 128 threads
-//!      constexpr int BLOCK_DIM_X = 128;
+//!      constexpr int BlockDimX = 128;
 //!      // Specialising BlockRunLengthDecode to have each thread contribute 2 run-length encoded runs
-//!      constexpr int RUNS_PER_THREAD = 2;
+//!      constexpr int RunsPerThread = 2;
 //!      // Specialising BlockRunLengthDecode to have each thread hold 4 run-length decoded items
-//!      constexpr int DECODED_ITEMS_PER_THREAD = 4;
+//!      constexpr int DecodedItemsPerThread = 4;
 //!
 //!      // Specialize BlockRunLengthDecode for a 1D block of 128 threads owning 4 integer items each
 //!      using BlockRunLengthDecodeT =
-//!        cub::BlockRunLengthDecode<RunItemT, BLOCK_DIM_X, RUNS_PER_THREAD, DECODED_ITEMS_PER_THREAD>;
+//!        cub::BlockRunLengthDecode<RunItemT, BlockDimX, RunsPerThread, DecodedItemsPerThread>;
 //!
 //!      // Allocate shared memory for BlockRunLengthDecode
 //!      __shared__ typename BlockRunLengthDecodeT::TempStorage temp_storage;
 //!
 //!      // The run-length encoded items and how often they shall be repeated in the run-length decoded output
-//!      RunItemT run_values[RUNS_PER_THREAD];
-//!      RunLengthT run_lengths[RUNS_PER_THREAD];
+//!      RunItemT run_values[RunsPerThread];
+//!      RunLengthT run_lengths[RunsPerThread];
 //!      ...
 //!
 //!      // Initialize the BlockRunLengthDecode with the runs that we want to run-length decode
@@ -101,14 +77,14 @@ CUB_NAMESPACE_BEGIN
 //!      uint32_t decoded_window_offset = 0U;
 //!      while (decoded_window_offset < total_decoded_size)
 //!      {
-//!        RunLengthT relative_offsets[DECODED_ITEMS_PER_THREAD];
-//!        RunItemT decoded_items[DECODED_ITEMS_PER_THREAD];
+//!        RunLengthT relative_offsets[DecodedItemsPerThread];
+//!        RunItemT decoded_items[DecodedItemsPerThread];
 //!
 //!        // The number of decoded items that are valid within this window (aka pass) of run-length decoding
 //!        uint32_t num_valid_items = total_decoded_size - decoded_window_offset;
 //!        block_rld.RunLengthDecode(decoded_items, relative_offsets, decoded_window_offset);
 //!
-//!        decoded_window_offset += BLOCK_DIM_X * DECODED_ITEMS_PER_THREAD;
+//!        decoded_window_offset += BlockDimX * DecodedItemsPerThread;
 //!
 //!        ...
 //!      }
@@ -128,31 +104,31 @@ CUB_NAMESPACE_BEGIN
 //! @tparam ItemT
 //!   The data type of the items being run-length decoded
 //!
-//! @tparam BLOCK_DIM_X
+//! @tparam BlockDimX
 //!   The thread block length in threads along the X dimension
 //!
-//! @tparam RUNS_PER_THREAD
+//! @tparam RunsPerThread
 //!   The number of consecutive runs that each thread contributes
 //!
-//! @tparam DECODED_ITEMS_PER_THREAD
+//! @tparam DecodedItemsPerThread
 //!   The maximum number of decoded items that each thread holds
 //!
 //! @tparam DecodedOffsetT
 //!   Type used to index into the block's decoded items (large enough to hold the sum over all the
 //!   runs' lengths)
 //!
-//! @tparam BLOCK_DIM_Y
+//! @tparam BlockDimY
 //!   The thread block length in threads along the Y dimension
 //!
-//! @tparam BLOCK_DIM_Z
+//! @tparam BlockDimZ
 //!   The thread block length in threads along the Z dimension
 template <typename ItemT,
-          int BLOCK_DIM_X,
-          int RUNS_PER_THREAD,
-          int DECODED_ITEMS_PER_THREAD,
+          int BlockDimX,
+          int RunsPerThread,
+          int DecodedItemsPerThread,
           typename DecodedOffsetT = uint32_t,
-          int BLOCK_DIM_Y         = 1,
-          int BLOCK_DIM_Z         = 1>
+          int BlockDimY           = 1,
+          int BlockDimZ           = 1>
 class BlockRunLengthDecode
 {
   //---------------------------------------------------------------------
@@ -161,13 +137,13 @@ class BlockRunLengthDecode
 
 private:
   /// The thread block size in threads
-  static constexpr int BLOCK_THREADS = BLOCK_DIM_X * BLOCK_DIM_Y * BLOCK_DIM_Z;
+  static constexpr int BLOCK_THREADS = BlockDimX * BlockDimY * BlockDimZ;
 
   /// The number of runs that the block decodes (out-of-bounds items may be padded with run lengths of '0')
-  static constexpr int BLOCK_RUNS = BLOCK_THREADS * RUNS_PER_THREAD;
+  static constexpr int BLOCK_RUNS = BLOCK_THREADS * RunsPerThread;
 
   /// BlockScan used to determine the beginning of each run (i.e., prefix sum over the runs' length)
-  using RunOffsetScanT = BlockScan<DecodedOffsetT, BLOCK_DIM_X, BLOCK_SCAN_RAKING_MEMOIZE, BLOCK_DIM_Y, BLOCK_DIM_Z>;
+  using RunOffsetScanT = BlockScan<DecodedOffsetT, BlockDimX, BLOCK_SCAN_RAKING_MEMOIZE, BlockDimY, BlockDimZ>;
 
   /// Type used to index into the block's runs
   using RunOffsetT = uint32_t;
@@ -212,11 +188,11 @@ public:
   template <typename RunLengthT, typename TotalDecodedSizeT>
   _CCCL_DEVICE _CCCL_FORCEINLINE BlockRunLengthDecode(
     TempStorage& temp_storage,
-    ItemT (&run_values)[RUNS_PER_THREAD],
-    RunLengthT (&run_lengths)[RUNS_PER_THREAD],
+    ItemT (&run_values)[RunsPerThread],
+    RunLengthT (&run_lengths)[RunsPerThread],
     TotalDecodedSizeT& total_decoded_size)
       : temp_storage(temp_storage.Alias())
-      , linear_tid(RowMajorTid(BLOCK_DIM_X, BLOCK_DIM_Y, BLOCK_DIM_Z))
+      , linear_tid(RowMajorTid(BlockDimX, BlockDimY, BlockDimZ))
   {
     InitWithRunLengths(run_values, run_lengths, total_decoded_size);
   }
@@ -226,9 +202,9 @@ public:
   //!        `RunLengthDecode` calls.
   template <typename UserRunOffsetT>
   _CCCL_DEVICE _CCCL_FORCEINLINE BlockRunLengthDecode(
-    TempStorage& temp_storage, ItemT (&run_values)[RUNS_PER_THREAD], UserRunOffsetT (&run_offsets)[RUNS_PER_THREAD])
+    TempStorage& temp_storage, ItemT (&run_values)[RunsPerThread], UserRunOffsetT (&run_offsets)[RunsPerThread])
       : temp_storage(temp_storage.Alias())
-      , linear_tid(RowMajorTid(BLOCK_DIM_X, BLOCK_DIM_Y, BLOCK_DIM_Z))
+      , linear_tid(RowMajorTid(BlockDimX, BlockDimY, BlockDimZ))
   {
     InitWithRunOffsets(run_values, run_offsets);
   }
@@ -238,11 +214,9 @@ public:
    */
   template <typename RunLengthT, typename TotalDecodedSizeT>
   _CCCL_DEVICE _CCCL_FORCEINLINE BlockRunLengthDecode(
-    ItemT (&run_values)[RUNS_PER_THREAD],
-    RunLengthT (&run_lengths)[RUNS_PER_THREAD],
-    TotalDecodedSizeT& total_decoded_size)
+    ItemT (&run_values)[RunsPerThread], RunLengthT (&run_lengths)[RunsPerThread], TotalDecodedSizeT& total_decoded_size)
       : temp_storage(PrivateStorage())
-      , linear_tid(RowMajorTid(BLOCK_DIM_X, BLOCK_DIM_Y, BLOCK_DIM_Z))
+      , linear_tid(RowMajorTid(BlockDimX, BlockDimY, BlockDimZ))
   {
     InitWithRunLengths(run_values, run_lengths, total_decoded_size);
   }
@@ -252,9 +226,9 @@ public:
    */
   template <typename UserRunOffsetT>
   _CCCL_DEVICE _CCCL_FORCEINLINE
-  BlockRunLengthDecode(ItemT (&run_values)[RUNS_PER_THREAD], UserRunOffsetT (&run_offsets)[RUNS_PER_THREAD])
+  BlockRunLengthDecode(ItemT (&run_values)[RunsPerThread], UserRunOffsetT (&run_offsets)[RunsPerThread])
       : temp_storage(PrivateStorage())
-      , linear_tid(RowMajorTid(BLOCK_DIM_X, BLOCK_DIM_Y, BLOCK_DIM_Z))
+      , linear_tid(RowMajorTid(BlockDimX, BlockDimY, BlockDimZ))
   {
     InitWithRunOffsets(run_values, run_offsets);
   }
@@ -301,13 +275,13 @@ private:
 
   template <typename RunOffsetT>
   _CCCL_DEVICE _CCCL_FORCEINLINE void
-  InitWithRunOffsets(ItemT (&run_values)[RUNS_PER_THREAD], RunOffsetT (&run_offsets)[RUNS_PER_THREAD])
+  InitWithRunOffsets(ItemT (&run_values)[RunsPerThread], RunOffsetT (&run_offsets)[RunsPerThread])
   {
     // Keep the runs' items and the offsets of each run's beginning in the temporary storage
-    RunOffsetT thread_dst_offset = static_cast<RunOffsetT>(linear_tid) * static_cast<RunOffsetT>(RUNS_PER_THREAD);
+    RunOffsetT thread_dst_offset = static_cast<RunOffsetT>(linear_tid) * static_cast<RunOffsetT>(RunsPerThread);
 
     _CCCL_PRAGMA_UNROLL_FULL()
-    for (int i = 0; i < RUNS_PER_THREAD; i++)
+    for (int i = 0; i < RunsPerThread; i++)
     {
       temp_storage.runs.run_values[thread_dst_offset]  = run_values[i];
       temp_storage.runs.run_offsets[thread_dst_offset] = run_offsets[i];
@@ -320,15 +294,13 @@ private:
 
   template <typename RunLengthT, typename TotalDecodedSizeT>
   _CCCL_DEVICE _CCCL_FORCEINLINE void InitWithRunLengths(
-    ItemT (&run_values)[RUNS_PER_THREAD],
-    RunLengthT (&run_lengths)[RUNS_PER_THREAD],
-    TotalDecodedSizeT& total_decoded_size)
+    ItemT (&run_values)[RunsPerThread], RunLengthT (&run_lengths)[RunsPerThread], TotalDecodedSizeT& total_decoded_size)
   {
     // Compute the offset for the beginning of each run
-    DecodedOffsetT run_offsets[RUNS_PER_THREAD];
+    DecodedOffsetT run_offsets[RunsPerThread];
 
     _CCCL_PRAGMA_UNROLL_FULL()
-    for (int i = 0; i < RUNS_PER_THREAD; i++)
+    for (int i = 0; i < RunsPerThread; i++)
     {
       run_offsets[i] = static_cast<DecodedOffsetT>(run_lengths[i]);
     }
@@ -346,7 +318,7 @@ public:
   /**
    * \brief Run-length decodes the runs previously passed via a call to Init(...) and returns the run-length decoded
    * items in a blocked arrangement to \p decoded_items. If the number of run-length decoded items exceeds the
-   * run-length decode buffer (i.e., `DECODED_ITEMS_PER_THREAD * BLOCK_THREADS`), only the items that fit within
+   * run-length decode buffer (i.e., `DecodedItemsPerThread * BLOCK_THREADS`), only the items that fit within
    * the buffer are returned. Subsequent calls to `RunLengthDecode` adjusting \p from_decoded_offset can be
    * used to retrieve the remaining run-length decoded items. Calling __syncthreads() between any two calls to
    * `RunLengthDecode` is not required.
@@ -362,12 +334,12 @@ public:
    */
   template <typename RelativeOffsetT>
   _CCCL_DEVICE _CCCL_FORCEINLINE void RunLengthDecode(
-    ItemT (&decoded_items)[DECODED_ITEMS_PER_THREAD],
-    RelativeOffsetT (&item_offsets)[DECODED_ITEMS_PER_THREAD],
+    ItemT (&decoded_items)[DecodedItemsPerThread],
+    RelativeOffsetT (&item_offsets)[DecodedItemsPerThread],
     DecodedOffsetT from_decoded_offset = 0)
   {
     // The (global) offset of the first item decoded by this thread
-    DecodedOffsetT thread_decoded_offset = from_decoded_offset + linear_tid * DECODED_ITEMS_PER_THREAD;
+    DecodedOffsetT thread_decoded_offset = from_decoded_offset + linear_tid * DecodedItemsPerThread;
 
     // The run that the first decoded item of this thread belongs to
     // If this thread's <thread_decoded_offset> is already beyond the total decoded size, it will be assigned to the
@@ -381,19 +353,19 @@ public:
     // If this thread is getting assigned the last run, we make sure it will not fetch any other run after this
     DecodedOffsetT assigned_run_end =
       (assigned_run == BLOCK_RUNS - 1)
-        ? thread_decoded_offset + DECODED_ITEMS_PER_THREAD
+        ? thread_decoded_offset + DecodedItemsPerThread
         : temp_storage.runs.run_offsets[assigned_run + 1];
 
     ItemT val = temp_storage.runs.run_values[assigned_run];
 
     _CCCL_PRAGMA_UNROLL_FULL()
-    for (DecodedOffsetT i = 0; i < DECODED_ITEMS_PER_THREAD; i++)
+    for (DecodedOffsetT i = 0; i < DecodedItemsPerThread; i++)
     {
       decoded_items[i] = val;
       item_offsets[i]  = thread_decoded_offset - assigned_run_begin;
 
       // A thread only needs to fetch the next run if this was not the last loop iteration
-      const bool is_final_loop_iteration = (i + 1 >= DECODED_ITEMS_PER_THREAD);
+      const bool is_final_loop_iteration = (i + 1 >= DecodedItemsPerThread);
       if (!is_final_loop_iteration && (thread_decoded_offset == assigned_run_end - 1))
       {
         // We make sure that a thread is not re-entering this conditional when being assigned to the last run already by
@@ -403,7 +375,7 @@ public:
 
         // If this thread is getting assigned the last run, we make sure it will not fetch any other run after this
         assigned_run_end = (assigned_run == BLOCK_RUNS - 1)
-                           ? thread_decoded_offset + DECODED_ITEMS_PER_THREAD
+                           ? thread_decoded_offset + DecodedItemsPerThread
                            : temp_storage.runs.run_offsets[assigned_run + 1];
         val              = temp_storage.runs.run_values[assigned_run];
       }
@@ -414,7 +386,7 @@ public:
   /**
    * \brief Run-length decodes the runs previously passed via a call to Init(...) and returns the run-length decoded
    * items in a blocked arrangement to `decoded_items`. If the number of run-length decoded items exceeds the
-   * run-length decode buffer (i.e., `DECODED_ITEMS_PER_THREAD * BLOCK_THREADS`), only the items that fit within
+   * run-length decode buffer (i.e., `DecodedItemsPerThread * BLOCK_THREADS`), only the items that fit within
    * the buffer are returned. Subsequent calls to `RunLengthDecode` adjusting `from_decoded_offset` can be
    * used to retrieve the remaining run-length decoded items. Calling __syncthreads() between any two calls to
    * `RunLengthDecode` is not required.
@@ -424,9 +396,9 @@ public:
    * in undefined behavior.
    */
   _CCCL_DEVICE _CCCL_FORCEINLINE void
-  RunLengthDecode(ItemT (&decoded_items)[DECODED_ITEMS_PER_THREAD], DecodedOffsetT from_decoded_offset = 0)
+  RunLengthDecode(ItemT (&decoded_items)[DecodedItemsPerThread], DecodedOffsetT from_decoded_offset = 0)
   {
-    DecodedOffsetT item_offsets[DECODED_ITEMS_PER_THREAD];
+    DecodedOffsetT item_offsets[DecodedItemsPerThread];
     RunLengthDecode(decoded_items, item_offsets, from_decoded_offset);
   }
 };

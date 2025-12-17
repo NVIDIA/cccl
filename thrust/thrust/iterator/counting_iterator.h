@@ -46,9 +46,12 @@
 #include <thrust/iterator/iterator_traits.h>
 #include <thrust/iterator/strided_iterator.h>
 
+#include <cuda/__type_traits/is_floating_point.h>
+#include <cuda/std/__type_traits/conditional.h>
+#include <cuda/std/__type_traits/is_integral.h>
+#include <cuda/std/__type_traits/is_same.h>
+#include <cuda/std/__type_traits/type_identity.h>
 #include <cuda/std/cstddef>
-#include <cuda/std/type_traits>
-#include <cuda/type_traits>
 
 THRUST_NAMESPACE_BEGIN
 
@@ -64,7 +67,7 @@ using counting_iterator_difference_type =
 template <typename Incrementable, typename System, typename Traversal, typename Difference, typename StrideHolder>
 struct make_counting_iterator_base
 {
-  using system = typename eval_if<::cuda::std::is_same<System, use_default>::value,
+  using system = typename eval_if<::cuda::std::is_same_v<System, use_default>,
                                   ::cuda::std::type_identity<any_system_tag>,
                                   ::cuda::std::type_identity<System>>::type;
 
@@ -281,7 +284,7 @@ private:
   _CCCL_HOST_DEVICE difference_type distance_to(
     counting_iterator<Incrementable, OtherSystem, OtherTraversal, OtherDifference, StrideHolder> const& y) const
   {
-    if constexpr (::cuda::std::is_integral<Incrementable>::value)
+    if constexpr (::cuda::std::is_integral_v<Incrementable>)
     {
       return static_cast<difference_type>(y.base()) - static_cast<difference_type>(this->base());
     }

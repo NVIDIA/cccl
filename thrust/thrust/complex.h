@@ -34,7 +34,8 @@
 #include <thrust/detail/type_traits.h>
 #include <thrust/type_traits/is_trivially_relocatable.h>
 
-#include <cuda/std/cmath>
+#include <cuda/std/__type_traits/common_type.h>
+#include <cuda/std/__type_traits/remove_reference.h>
 
 #if !_CCCL_COMPILER(NVRTC)
 #  include <complex>

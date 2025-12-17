@@ -36,7 +36,7 @@
 #  pragma system_header
 #endif // no system header
 
-#if _CCCL_HAS_CUDA_COMPILER()
+#if _CCCL_CUDA_COMPILATION()
 
 #  include <thrust/system/cuda/config.h>
 
@@ -45,17 +45,17 @@
 #  include <cub/util_temporary_storage.cuh>
 #  include <cub/util_type.cuh>
 
-#  include <thrust/advance.h>
 #  include <thrust/detail/alignment.h>
 #  include <thrust/detail/function.h>
 #  include <thrust/detail/temporary_array.h>
-#  include <thrust/distance.h>
 #  include <thrust/system/cuda/detail/cdp_dispatch.h>
 #  include <thrust/system/cuda/detail/core/util.h>
 #  include <thrust/system/cuda/detail/dispatch.h>
 #  include <thrust/system/cuda/detail/execution_policy.h>
 #  include <thrust/system/cuda/detail/util.h>
 
+#  include <cuda/std/__iterator/advance.h>
+#  include <cuda/std/__iterator/distance.h>
 #  include <cuda/std/cstdint>
 
 THRUST_NAMESPACE_BEGIN
@@ -84,10 +84,8 @@ _CCCL_HOST_DEVICE OutputIterator copy_if(
 
 namespace cuda_cub
 {
-
 namespace detail
 {
-
 template <cub::SelectImpl SelectionOpt,
           typename Derived,
           typename InputIt,
@@ -132,7 +130,7 @@ struct DispatchCopyIf
           stream);
     _CUDA_CUB_RET_IF_FAIL(status);
 
-    status = cub::detail::AliasTemporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes);
+    status = cub::detail::alias_temporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes);
     _CUDA_CUB_RET_IF_FAIL(status);
 
     // Return if we're only querying temporary storage requirements
@@ -218,7 +216,6 @@ THRUST_RUNTIME_FUNCTION OutputIt copy_if(
 
   return output;
 }
-
 } // namespace detail
 
 //-------------------------
@@ -247,9 +244,8 @@ OutputIterator _CCCL_HOST_DEVICE copy_if(
   THRUST_CDP_DISPATCH((return detail::copy_if<cub::SelectImpl::Select>(policy, first, last, stencil, result, pred);),
                       (return thrust::copy_if(cvt_to_seq(derived_cast(policy)), first, last, stencil, result, pred);));
 }
-
 } // namespace cuda_cub
 THRUST_NAMESPACE_END
 
 #  include <thrust/copy.h>
-#endif
+#endif // _CCCL_CUDA_COMPILATION()

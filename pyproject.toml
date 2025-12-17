@@ -1,4 +1,4 @@
-# Copyright (c) 2024, NVIDIA CORPORATION.
+# Copyright (c) 2024-2025, NVIDIA CORPORATION.
 
 [tool.ruff]
 target-version = "py310"
@@ -19,6 +19,6 @@ extend-select = ["I"]
 skip = "./.git,./build,./CITATION.md"
 # ignore short words, and typename parameters like OffsetT
 ignore-regex = "\\b(.{1,4}|[A-Z]\\w*T)\\b"
-ignore-words-list = "inout,imovable,optionN,aCount,quitted,Invocable,countr,unexpect,numer,euclidian,couldn,OffsetT,FromM,Collet"
+ignore-words-list = "inout,imovable,optionN,aCount,quitted,Invocable,countr,unexpect,numer,euclidian,couldn,OffsetT,FromM,Collet,NotIn"
 builtin = "clear"
 quiet-level = 3

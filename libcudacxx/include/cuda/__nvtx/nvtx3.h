@@ -653,8 +653,9 @@
 #ifndef NVTX3_CPP_DEFINITIONS_V1_0
 #  define NVTX3_CPP_DEFINITIONS_V1_0
 
+#  include <cuda/std/__cccl/memory_wrapper.h>
+
 #  include <cstddef>
-#  include <memory>
 #  include <string>
 #  include <type_traits>
 #  include <utility>
@@ -663,12 +664,10 @@
 
 namespace nvtx3
 {
-
 NVTX3_INLINE_IF_REQUESTED namespace NVTX3_VERSION_NAMESPACE
 {
   namespace detail
   {
-
   template <typename Unused>
   struct always_false : std::false_type
   {};
@@ -705,7 +704,6 @@ NVTX3_INLINE_IF_REQUESTED namespace NVTX3_VERSION_NAMESPACE
 
   template <typename T>
   using is_uint32 = std::is_same<typename std::decay<T>::type, uint32_t>;
-
   } // namespace detail
 
   /**
@@ -2216,7 +2214,6 @@ NVTX3_INLINE_IF_REQUESTED namespace NVTX3_VERSION_NAMESPACE
 
   namespace detail
   {
-
   /// @cond internal
   template <typename D = domain::global>
   class NVTX3_MAYBE_UNUSED optional_scoped_range_in
@@ -2263,7 +2260,6 @@ NVTX3_INLINE_IF_REQUESTED namespace NVTX3_VERSION_NAMESPACE
 #  endif
   };
   /// @endcond
-
   } // namespace detail
 
   /**
@@ -2810,7 +2806,6 @@ NVTX3_INLINE_IF_REQUESTED namespace NVTX3_VERSION_NAMESPACE
   }
 
 } // namespace NVTX3_VERSION_NAMESPACE
-
 } // namespace nvtx3
 
 #  ifndef NVTX_DISABLE

@@ -107,7 +107,6 @@ _CCCL_HOST_DEVICE ForwardIterator transform_if(
 
 namespace system::detail::generic
 {
-
 template <typename DerivedPolicy, typename InputIterator, typename OutputIterator, typename UnaryFunction>
 _CCCL_HOST_DEVICE OutputIterator transform(
   thrust::execution_policy<DerivedPolicy>& exec,
@@ -390,6 +389,5 @@ ForwardIterator transform_if_n(
 {
   return thrust::transform_if(first1, first1 + count, first2, stencil, result, binary_op, pred);
 }
-
 } // namespace system::detail::generic
 THRUST_NAMESPACE_END

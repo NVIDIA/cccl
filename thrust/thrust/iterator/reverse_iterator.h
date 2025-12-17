@@ -40,7 +40,7 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/iterator>
+#include <cuda/std/__iterator/reverse_iterator.h>
 
 THRUST_NAMESPACE_BEGIN
 

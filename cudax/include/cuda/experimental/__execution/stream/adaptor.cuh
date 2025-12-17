@@ -21,10 +21,10 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/__utility/immovable.h>
+#include <cuda/__launch/configuration.h>
+#include <cuda/__launch/launch.h>
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__memory/unique_ptr.h>
-#include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/remove_cvref.h>
 #include <cuda/std/__utility/pod_tuple.h>
 
@@ -36,7 +36,6 @@
 #include <cuda/experimental/__execution/utility.cuh>
 #include <cuda/experimental/__execution/variant.cuh>
 #include <cuda/experimental/__execution/visit.cuh>
-#include <cuda/experimental/__launch/configuration.cuh>
 #include <cuda/experimental/__launch/launch.cuh>
 #include <cuda/experimental/__stream/stream_ref.cuh>
 
@@ -48,6 +47,7 @@
 
 _CCCL_DIAG_PUSH
 _CCCL_DIAG_SUPPRESS_GCC("-Wattributes")
+_CCCL_DIAG_SUPPRESS_NVHPC(attribute_requires_external_linkage)
 
 // This header provides a sender adaptor that adapts a non-stream sender to a stream
 // sender. The adaptor does several things:
@@ -68,28 +68,22 @@ namespace cuda::experimental::execution
 {
 namespace __stream
 {
-template <class _Rcvr>
-struct __completion_fn
+struct __complete_rcvr
 {
-  template <class _Tag, class... _Args>
-  _CCCL_API void operator()(_Tag, _Args&&... __args) const noexcept
+  template <class _Rcvr, class _Tag, class... _Args>
+  _CCCL_API void operator()(_Rcvr& __rcvr, _Tag, _Args&&... __args) const noexcept
   {
-    _Tag{}(static_cast<_Rcvr&&>(__rcvr_), static_cast<_Args&&>(__args)...);
+    _Tag{}(static_cast<_Rcvr&&>(__rcvr), static_cast<_Args&&>(__args)...);
   }
-
-  _Rcvr& __rcvr_;
 };
 
-template <class _Rcvr>
-struct __results_visitor
+struct __visit_results
 {
-  template <class _Tuple>
-  _CCCL_API void operator()(_Tuple&& __tuple) const noexcept
+  template <class _Rcvr, class _Tuple>
+  _CCCL_API void operator()(_Rcvr& __rcvr, _Tuple&& __tuple) const noexcept
   {
-    ::cuda::std::__apply(__completion_fn<_Rcvr>{__rcvr_}, static_cast<_Tuple&&>(__tuple));
+    ::cuda::std::__apply(__complete_rcvr{}, static_cast<_Tuple&&>(__tuple), __rcvr);
   }
-
-  _Rcvr& __rcvr_;
 };
 
 // __state_t lives in managed memory. It stores everything the operation state needs,
@@ -128,7 +122,7 @@ _CCCL_VISIBILITY_HIDDEN __launch_bounds__(_BlockThreads) __global__
   void __completion_kernel(__state_base_t<_Rcvr, _Variant>* __state)
 {
   _CCCL_ASSERT(__state->__results_.__index() != __npos, "__completion_kernel called with empty results");
-  _Variant::__visit(__results_visitor<_Rcvr>{__state->__rcvr_}, __state->__results_);
+  _Variant::__visit(__visit_results{}, __state->__results_, __state->__rcvr_);
 }
 
 // This is the environment of the inner receiver that is used to connect the child sender.
@@ -156,7 +150,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __env_t
   }
 
   _Env __env_;
-  _CCCL_NO_UNIQUE_ADDRESS _Config __launch_config_;
+  /*_CCCL_NO_UNIQUE_ADDRESS*/ _Config __launch_config_;
 };
 
 // This is the inner receiver that is used to connect the child sender.
@@ -178,16 +172,16 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __rcvr_t
   }
 
   template <class... _Args>
-  _CCCL_NODEBUG_API constexpr void set_value(_Args&&... __args) noexcept
+  _CCCL_API constexpr void set_value(_Args&&... __args) noexcept
   {
     __complete(execution::set_value, static_cast<_Args&&>(__args)...);
   }
 
   template <class _Error>
-  _CCCL_NODEBUG_API constexpr void set_error(_Error&& __err) noexcept
+  _CCCL_API constexpr void set_error(_Error&& __err) noexcept
   {
     // Map any exception_ptr error completions to cudaErrorUnknown:
-    if constexpr (__same_as<::cuda::std::remove_cvref_t<_Error>, ::std::exception_ptr>)
+    if constexpr (__same_as<::cuda::std::remove_cvref_t<_Error>, exception_ptr>)
     {
       __complete(execution::set_error, cudaErrorUnknown);
     }
@@ -197,7 +191,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __rcvr_t
     }
   }
 
-  _CCCL_NODEBUG_API constexpr void set_stopped() noexcept
+  _CCCL_API constexpr void set_stopped() noexcept
   {
     __complete(execution::set_stopped);
   }
@@ -227,14 +221,14 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __opstate_t
 
   _CCCL_API constexpr void start() noexcept
   {
-    NV_IF_TARGET(NV_IS_HOST, (__host_start();), (__device_start();));
+    NV_IF_TARGET(NV_IS_HOST, ({ __host_start(); }), ({ __device_start(); }));
   }
 
   // This is called by the continues_on adaptor after it has sync'ed the stream.
   template <class _Rcvr2>
-  _CCCL_HOST_API auto __set_results(_Rcvr2& __rcvr) noexcept
+  _CCCL_API auto __set_results(_Rcvr2& __rcvr) noexcept
   {
-    __results_t::__visit(__results_visitor<_Rcvr2&>{__rcvr}, __get_state().__state_.__results_);
+    __results_t::__visit(__visit_results{}, __get_state().__state_.__results_, __rcvr);
   }
 
 private:
@@ -275,26 +269,25 @@ private:
     // the receiver tell us how to launch the kernel.
     auto const __launch_config    = get_launch_config(execution::get_env(__state.__state_.__rcvr_));
     using __launch_dims_t         = decltype(__launch_config.dims);
-    constexpr int __block_threads = __launch_dims_t::static_count(experimental::thread, experimental::block);
-    int const __grid_blocks       = __launch_config.dims.count(experimental::block, experimental::grid);
-    static_assert(__block_threads != ::cuda::std::dynamic_extent);
+    constexpr int __block_threads = __launch_dims_t::static_count(thread, block);
 
     // Start the child operation state. This will launch kernels for all the predecessors
     // of this operation.
     execution::start(__state.__opstate_);
 
-    // printf("Launching completion kernel for %s with %d block threads and %d grid blocks\n",
-    //        __name,
-    //        __block_threads,
-    //        __grid_blocks);
-
-    // launch a kernel to pass the results to the receiver.
-    __completion_kernel<__block_threads><<<__grid_blocks, __block_threads, 0, __stream_.get()>>>(&__state.__state_);
-
-    // Check for errors in the kernel launch.
-    if (auto __status = cudaGetLastError(); __status != cudaSuccess)
+    _CCCL_TRY
     {
-      execution::set_error(static_cast<_Rcvr&&>(__state.__state_.__rcvr_), cudaError_t(__status));
+      // launch a kernel to pass the results to the receiver.
+      auto* __kernel = &__completion_kernel<__block_threads, _Rcvr, __results_t>;
+      ::cuda::launch(__stream_, __launch_config, __kernel, &__state.__state_);
+    }
+    _CCCL_CATCH (::cuda::cuda_error & __error) // Check for errors in the kernel launch.
+    {
+      execution::set_error(static_cast<_Rcvr&&>(__state.__state_.__rcvr_), __error.status());
+    }
+    _CCCL_CATCH_ALL
+    {
+      execution::set_error(static_cast<_Rcvr&&>(__state.__state_.__rcvr_), cudaErrorUnknown);
     }
   }
 
@@ -302,7 +295,7 @@ private:
   _CCCL_DEVICE_API void __device_start() noexcept
   {
     using __launch_dims_t         = __dims_of_t<__rcvr_config_t>;
-    constexpr int __block_threads = __launch_dims_t::static_count(experimental::thread, experimental::block);
+    constexpr int __block_threads = __launch_dims_t::static_count(thread, block);
     auto& __state                 = __get_state();
 
     // without the following, the kernel in __host_start will fail to launch with
@@ -315,7 +308,7 @@ private:
   // This is the part of the operation state that is stored in managed memory.
   struct __state_t
   {
-    _CCCL_HOST_API constexpr explicit __state_t(_CvSndr&& __sndr, _Rcvr __rcvr)
+    _CCCL_API constexpr explicit __state_t(_CvSndr&& __sndr, _Rcvr __rcvr)
         : __state_{{static_cast<_Rcvr&&>(__rcvr), {}, false}, get_launch_config(execution::get_env(__sndr))}
         , __opstate_(execution::connect(static_cast<_CvSndr&&>(__sndr), __rcvr_t{&__state_}))
     {}
@@ -341,13 +334,6 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __sndr_t;
 template <class _Sndr, class _GetStream>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT __attrs_t
 {
-  // This makes sure that when `connect` calls `transform_sender`, it will use the stream
-  // domain to find a customization.
-  [[nodiscard]] _CCCL_NODEBUG_API constexpr auto query(get_domain_override_t) const noexcept -> stream_domain
-  {
-    return {};
-  }
-
   // If the child sender knows how to provide a stream, make it available via the stream
   // adapter's attributes.
   _CCCL_TEMPLATE(class _GetStream2 = _GetStream)
@@ -367,12 +353,13 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __attrs_t
   // sender adaptor, like `then` or `let_value`. A stream sender adaptor is an
   // implementation detail that is not visible to the user. It should be as transparent as
   // possible.
-  _CCCL_TEMPLATE(class _Query)
-  _CCCL_REQUIRES(__queryable_with<env_of_t<_Sndr>, _Query>)
-  [[nodiscard]] _CCCL_API constexpr auto query(_Query) const noexcept(__nothrow_queryable_with<env_of_t<_Sndr>, _Query>)
-    -> __query_result_t<env_of_t<_Sndr>, _Query>
+  _CCCL_TEMPLATE(class _Query, class... _Args)
+  _CCCL_REQUIRES(__queryable_with<env_of_t<_Sndr>, _Query, _Args...>)
+  [[nodiscard]] _CCCL_API constexpr auto query(_Query, _Args&&... __args) const
+    noexcept(__nothrow_queryable_with<env_of_t<_Sndr>, _Query, _Args...>)
+      -> __query_result_t<env_of_t<_Sndr>, _Query, _Args...>
   {
-    return execution::get_env(__sndr_.__sndr_).query(_Query{});
+    return execution::get_env(__sndr_.__sndr_).query(_Query{}, static_cast<_Args&&>(__args)...);
   }
 
   const __sndr_t<_Sndr, _GetStream>& __sndr_;
@@ -414,8 +401,8 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __sndr_t
     return __attrs_t<_Sndr, _GetStream>{*this};
   }
 
-  _CCCL_NO_UNIQUE_ADDRESS __tag_t<__stream::__tag_of_t<_Sndr>> __tag_;
-  _CCCL_NO_UNIQUE_ADDRESS _GetStream __get_stream_;
+  /*_CCCL_NO_UNIQUE_ADDRESS*/ __tag_t<__stream::__tag_of_t<_Sndr>> __tag_;
+  /*_CCCL_NO_UNIQUE_ADDRESS*/ _GetStream __get_stream_;
   _Sndr __sndr_;
 };
 
@@ -427,8 +414,7 @@ _CCCL_API constexpr auto __adapt(_Sndr&& __sndr, _GetStream __get_stream) noexce
 } // namespace __stream
 
 template <class _Sndr, class _GetStream>
-inline constexpr size_t structured_binding_size<__stream::__sndr_t<_Sndr, _GetStream>> = 3;
-
+inline constexpr int structured_binding_size<__stream::__sndr_t<_Sndr, _GetStream>> = 3;
 } // namespace cuda::experimental::execution
 
 _CCCL_DIAG_POP

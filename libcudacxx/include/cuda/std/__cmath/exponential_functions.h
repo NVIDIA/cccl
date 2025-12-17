@@ -33,10 +33,9 @@
 #include <cuda/std/cstdint>
 #include <cuda/std/limits>
 
-// MSVC and clang cuda need the host side functions included
-#if _CCCL_COMPILER(MSVC) || _CCCL_CUDA_COMPILER(CLANG)
+#if !_CCCL_COMPILER(NVRTC)
 #  include <math.h>
-#endif // _CCCL_COMPILER(MSVC) || _CCCL_CUDA_COMPILER(CLANG)
+#endif // !_CCCL_COMPILER(NVRTC)
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -640,7 +639,7 @@ template <class _Integer, enable_if_t<is_integral_v<_Integer>, int> = 0>
 template <class _Tp>
 _CCCL_API inline constexpr _Tp __constexpr_scalbn(_Tp __x, int __exp)
 {
-  if (::cuda::std::is_constant_evaluated())
+  _CCCL_IF_CONSTEVAL
   {
     if (__x == _Tp(0))
     {

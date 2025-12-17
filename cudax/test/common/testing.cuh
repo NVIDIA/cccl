@@ -92,7 +92,6 @@ struct StringMaker<dim3>
     return oss.str();
   }
 };
-
 } // namespace Catch
 
 namespace
@@ -140,7 +139,6 @@ struct ccclrt_test_fixture
     CUDAX_CHECK(count_driver_stack() == 0);
   }
 };
-
 } // namespace test
 } // namespace
 
@@ -150,5 +148,8 @@ struct ccclrt_test_fixture
 // we don't accidentally initialize device 0 through CUDART usage and makes sure
 // our APIs work with empty driver stack.
 #define C2H_CCCLRT_TEST(NAME, TAGS, ...) C2H_TEST_WITH_FIXTURE(::test::ccclrt_test_fixture, NAME, TAGS, __VA_ARGS__)
+
+#define C2H_CCCLRT_TEST_LIST(NAME, TAGS, ...) \
+  C2H_TEST_LIST_WITH_FIXTURE(::test::ccclrt_test_fixture, NAME, TAGS, __VA_ARGS__)
 
 #endif // __COMMON_TESTING_H__

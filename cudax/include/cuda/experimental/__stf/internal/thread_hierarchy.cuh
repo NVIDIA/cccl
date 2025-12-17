@@ -36,7 +36,6 @@
 
 namespace cuda::experimental::stf
 {
-
 /**
  * @brief This describes a hierarchy of threads used to implement a launch construct.
  *
@@ -509,5 +508,4 @@ UNITTEST("thread hierarchy inner sync")
 
 #  endif // !defined(CUDASTF_DISABLE_CODE_GENERATION) && _CCCL_CUDA_COMPILATION()
 #endif // UNITTESTED_FILE
-
 } // end namespace cuda::experimental::stf

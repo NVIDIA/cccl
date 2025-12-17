@@ -30,10 +30,13 @@
 #  pragma system_header
 #endif // no system header
 
-// #include this for size_t
+#include <thrust/detail/allocator/value_initialize_range.h>
+#include <thrust/device_allocator.h>
+#include <thrust/device_malloc.h>
+#include <thrust/device_new.h>
 #include <thrust/device_ptr.h>
-
-#include <cuda/std/cstddef>
+#include <thrust/execution_policy.h>
+#include <thrust/uninitialized_fill.h>
 
 THRUST_NAMESPACE_BEGIN
 
@@ -55,7 +58,15 @@ THRUST_NAMESPACE_BEGIN
  *  \see device_ptr
  */
 template <typename T>
-device_ptr<T> device_new(device_ptr<void> p, const size_t n = 1);
+device_ptr<T> device_new(device_ptr<void> p, const size_t n = 1)
+{
+  auto* dev_ptr = static_cast<T*>(p.get());
+  // TODO(bgruber): ideally, we would have an thrust::uninitialized_default_construct. Until then, use vector's
+  // infrastructure
+  device_allocator<T> alloc; // not needed for allocation, just for construct() called in value_initialize_range()
+  detail::value_initialize_range(alloc, dev_ptr, n);
+  return device_ptr<T>{dev_ptr};
+}
 
 /*! \p device_new implements the placement new operator for types
  *  resident in device memory. \p device_new calls <tt>T</tt>'s copy
@@ -72,7 +83,15 @@ device_ptr<T> device_new(device_ptr<void> p, const size_t n = 1);
  *  \see fill
  */
 template <typename T>
-device_ptr<T> device_new(device_ptr<void> p, const T& exemplar, const size_t n = 1);
+device_ptr<T> device_new(device_ptr<void> p, const T& exemplar, const size_t n = 1)
+{
+  device_ptr<T> result(static_cast<T*>(p.get()));
+
+  // run copy constructors at p here
+  thrust::uninitialized_fill(device, result, result + n, exemplar);
+
+  return result;
+}
 
 /*! \p device_new implements the new operator for types resident in device memory.
  *  It allocates device memory large enough to hold \p n new objects of type \c T.
@@ -81,11 +100,13 @@ device_ptr<T> device_new(device_ptr<void> p, const T& exemplar, const size_t n =
  *  \return A \p device_ptr to the newly allocated region of device memory.
  */
 template <typename T>
-device_ptr<T> device_new(const size_t n = 1);
+device_ptr<T> device_new(const size_t n = 1)
+{
+  // call placement new version of device_new
+  return device_new<T>(thrust::device_malloc<T>(n));
+}
 
 /*! \} // memory_management
  */
 
 THRUST_NAMESPACE_END
-
-#include <thrust/detail/device_new.inl>

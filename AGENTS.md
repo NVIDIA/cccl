@@ -36,7 +36,7 @@ All CCCL subprojects are computationally expensive to build and test. Use the pr
 
 ### CMake Presets
 
-Presets are defined in `CMakePresets.json`. Names follow a `<project>-cxx<std>` format, such as `cub-cpp20`, `thrust-cpp17`, or `libcudacxx-cpp20`. Use `cmake --list-presets` to view available options. Build trees are placed under `build/${CCCL_BUILD_INFIX}/${PRESET}`.
+Presets are defined in `CMakePresets.json`. Names follow a `project` or `<project>-cxx<std>` format, such as `cub-cpp20`, `thrust-cpp17`, or `libcudacxx`. Use `cmake --list-presets` to view available options. Build trees are placed under `build/${CCCL_BUILD_INFIX}/${PRESET}`.
 
 ### `.devcontainer/launch.sh`
 
@@ -114,7 +114,7 @@ ci/util/build_and_test_targets.sh \
 
 ```bash
 ci/util/build_and_test_targets.sh \
-  --preset libcudacxx-cpp20 \
+  --preset libcudacxx \
   --lit-precompile-tests "std/algorithms/alg.nonmodifying/alg.any_of/any_of.pass.cpp" \
   --lit-tests "std/algorithms/alg.nonmodifying/alg.any_of/any_of.pass.cpp"
 ```
@@ -123,7 +123,7 @@ ci/util/build_and_test_targets.sh \
 
 ```bash
 ci/util/build_and_test_targets.sh \
-  --preset cudax-cpp20 \
+  --preset cudax \
   --build-targets "cudax.cpp20.test.async_buffer" \
   --ctest-targets "cudax.cpp20.test.async_buffer"
 ```
@@ -188,8 +188,8 @@ Supported versions: `3.10`, `3.11`, `3.12`, `3.13`
 
 ### Modules
 
-* **cuda.cccl.parallel** — Device-level algorithms, iterators, custom GPU types
-* **cuda.cccl.cooperative** — Block/warp-level primitives
+* **cuda.compute** — Device-level algorithms, iterators, custom GPU types
+* **cuda.coop** — Block/warp-level primitives
 * **cuda.cccl.headers** — Programmatic access to headers
 
 ### Installation
@@ -213,18 +213,18 @@ Requirements:
 * Python 3.9+
 * CUDA Toolkit 12.x
 * NVIDIA GPU (CC 6.0+)
-* Dependencies: `numba>=0.60.0`, `numpy`, `cuda-bindings>=12.9.1`, `cuda-core`, `numba-cuda>=0.18.0`
+* Dependencies: `numba>=0.60.0`, `numpy`, `cuda-bindings>=12.9.1`, `cuda-core`, `numba-cuda>=0.18.0,<0.21.2`
 
 ### Usage Examples
 
 ```python
-import cuda.cccl.parallel.experimental as parallel
-result = parallel.reduce_into(input_array, output_scalar, init_val, binary_op)
+import cuda.compute
+result = cuda.compute.reduce_into(input_array, output_scalar, init_val, binary_op)
 
-import cuda.cccl.cooperative.experimental as cooperative
+from cuda import coop
 @cuda.jit
 def kernel(data):
-    cooperative.block.reduce(data, binary_op)
+    coop.block.reduce(data, binary_op)
 
 import cuda.cccl.headers as headers
 include_paths = headers.get_include_paths()
@@ -262,7 +262,7 @@ CCCL's CI is built on GitHub Actions and relies on a dynamically generated job m
   * Declares build and test jobs for `pull_request`, `nightly`, and `weekly` workflows.
   * Pull request (PR) runs typically spawn ~250 jobs.
   * To reduce overhead, you can add an override matrix in `workflows.override`. This limits the PR CI run to a targeted subset of jobs. Overrides are recommended when:
-    * Changes touch high-dependency areas (e.g. top-level CI/devcontainers, libcudacxx, thrust, CUB). See `ci/inspect_changes.sh` for dependency information.
+    * Changes touch high-dependency areas (e.g. top-level CI/devcontainers, libcudacxx, thrust, CUB). See `ci/inspect_changes.py` for dependency information.
     * A smaller subset of jobs is enough to validate the change (e.g. infra changes, targeted fixes).
   * Important rules:
     * PR merges are blocked while an override matrix is active.
@@ -272,7 +272,7 @@ CCCL's CI is built on GitHub Actions and relies on a dynamically generated job m
 * **`.github/actions/workflow-build/`**
 
   * Runs `build-workflow.py`.
-  * Reads `ci/matrix.yaml` and prunes jobs using `ci/inspect_changes.sh`.
+  * Reads `ci/matrix.yaml` and prunes jobs using `ci/inspect_changes.py`.
   * Calls `prepare-workflow-dispatch.py` to produce a formatted job matrix for dispatch.
 
 * **`.github/actions/workflow-run-job-{linux,windows}/`**
@@ -288,7 +288,7 @@ CCCL's CI is built on GitHub Actions and relies on a dynamically generated job m
 
   * Top-level GitHub Actions workflows invoking CI.
 
-* **`ci/inspect_changes.sh`**
+* **`ci/inspect_changes.py`**
 
   * Detects which subprojects changed between commits.
   * Defines internal dependencies between CCCL projects. If a project is marked dirty, all dependent projects are also marked dirty and tested.
@@ -303,7 +303,9 @@ Tags appended to the commit summary (case-sensitive) control CI behavior:
 * `[skip-matrix]`: Skip CCCL project build/test jobs. (Docs, devcontainers, and third-party builds still run.)
 * `[skip-vdc]`: Skip "Verify Devcontainer" jobs. Safe unless CI or devcontainer infra is modified.
 * `[skip-docs]`: Skip doc tests/previews. Safe if docs are unaffected.
+* `[skip-third-party-testing]` / `[skip-tpt]`: Skip third-party smoke tests (MatX, PyTorch, RAPIDS).
 * `[skip-matx]`: Skip building the MatX third-party smoke test.
+* `[skip-pytorch]`: Skip building the PyTorch third-party smoke test.
 
 > ⚠️ All of these tags block merging until removed and a full CI run (with no overrides) succeeds.
 

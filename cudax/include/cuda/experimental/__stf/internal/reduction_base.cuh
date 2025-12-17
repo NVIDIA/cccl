@@ -68,5 +68,4 @@ private:
   // not used for now ...
   // bool is_commutative;
 };
-
 } // end namespace cuda::experimental::stf

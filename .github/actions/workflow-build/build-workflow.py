@@ -115,6 +115,11 @@ def error_message_with_matrix_job(matrix_job, message):
 
 
 @memoize_result
+def workflow_exists(workflow_name):
+    return workflow_name in matrix_yaml["workflows"]
+
+
+@memoize_result
 def canonicalize_ctk_version(ctk_string):
     if ctk_string in matrix_yaml["ctk_versions"]:
         return ctk_string
@@ -922,7 +927,7 @@ def get_matrix_job_origin(matrix_job, workflow_name, workflow_location):
 
 @static_result
 def get_excluded_matrix_jobs():
-    return parse_workflow_matrix_jobs(None, "exclude")
+    return parse_workflow_matrix_jobs("exclude")
 
 
 def apply_matrix_job_exclusion(matrix_job, exclusion):
@@ -1134,7 +1139,7 @@ def preprocess_matrix_jobs(matrix_jobs, is_exclusion_matrix=False):
     return result
 
 
-def parse_workflow_matrix_jobs(args, workflow_name):
+def parse_workflow_matrix_jobs(workflow_name, filter_projects=None):
     # Special handling for exclusion matrix: don't validate, add default, etc. Only explode.
     is_exclusion_matrix = workflow_name == "exclude"
 
@@ -1165,10 +1170,8 @@ def parse_workflow_matrix_jobs(args, workflow_name):
     # Fill in default values, explode lists.
     matrix_jobs = preprocess_matrix_jobs(matrix_jobs, is_exclusion_matrix)
 
-    if args and args.dirty_projects is not None and workflow_name != "override":
-        matrix_jobs = [
-            job for job in matrix_jobs if job["project"] in args.dirty_projects
-        ]
+    if filter_projects is not None and workflow_name != "override":
+        matrix_jobs = [job for job in matrix_jobs if job["project"] in filter_projects]
 
     # Don't remove excluded jobs if we're currently parsing them:
     if not is_exclusion_matrix:
@@ -1185,9 +1188,26 @@ def parse_workflow_matrix_jobs(args, workflow_name):
 
 
 def parse_workflow_dispatch_groups(args, workflow_name):
+    full_build_projects = args.full_build_projects
+    lite_build_projects = args.lite_build_projects
+    lite_workflow_name = f"{workflow_name}_lite"
+
+    # If no lite workflow exists, pull all projects from the full workflow:
+    if (
+        full_build_projects
+        and lite_build_projects
+        and not workflow_exists(lite_workflow_name)
+    ):
+        full_build_projects += lite_build_projects
+        lite_build_projects = []
+
     # Add origin information to each matrix job, explode, filter, add defaults, etc.
     # The resulting matrix_jobs list is a complete and standardized list of jobs for the dispatch_group builder.
-    matrix_jobs = parse_workflow_matrix_jobs(args, workflow_name)
+    matrix_jobs = parse_workflow_matrix_jobs(workflow_name, full_build_projects)
+    if lite_build_projects:
+        matrix_jobs += parse_workflow_matrix_jobs(
+            lite_workflow_name, lite_build_projects
+        )
 
     # If we're printing multiple workflows, add a prefix to the group name to differentiate them.
     group_prefix = f"[{workflow_name}] " if len(args.workflows) > 1 else ""
@@ -1295,7 +1315,7 @@ def print_devcontainer_info(args):
         key for key in matrix_yaml["workflows"].keys() if key not in ignored_matrix_keys
     ]
     for workflow_name in workflow_names:
-        matrix_jobs.extend(parse_workflow_matrix_jobs(args, workflow_name))
+        matrix_jobs.extend(parse_workflow_matrix_jobs(workflow_name))
 
     # Explode jobs to ensure that the cuda_ext tags are correctly handled:
     exploded_jobs = []
@@ -1378,7 +1398,18 @@ def main():
         help="Print devcontainer info instead of GHA workflows.",
     )
     parser.add_argument(
-        "--dirty-projects", nargs="*", help="Filter jobs to only these projects"
+        "--full-build-projects",
+        nargs="*",
+        help="Run jobs in the requested workflows for these projects.",
+    )
+    parser.add_argument(
+        "--lite-build-projects",
+        nargs="*",
+        help=(
+            "If a '_lite' version of a workflow exists, run jobs in that workflow for these projects. "
+            "Otherwise use the full workflow. Used to reduce testing for unchanged projects with "
+            "modified dependencies."
+        ),
     )
     parser.add_argument(
         "--allow-override",

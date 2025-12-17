@@ -38,11 +38,6 @@
 #include <cuda/std/__iterator/prev.h>
 #include <cuda/std/__iterator/readable_traits.h>
 #include <cuda/std/__memory/addressof.h>
-#ifdef _LIBCUDACXX_HAS_RANGES
-#  include <cuda/std/__ranges/access.h>
-#  include <cuda/std/__ranges/concepts.h>
-#  include <cuda/std/__ranges/subrange.h>
-#endif // _LIBCUDACXX_HAS_RANGES
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/is_assignable.h>

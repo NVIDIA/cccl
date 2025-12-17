@@ -24,7 +24,7 @@ __global__ void test_kernel(const _CCCL_GRID_CONSTANT MyStruct grid_constant_var
   using cuda::device::is_address_from;
   using cuda::device::is_object_from;
   __shared__ int shared_var;
-  int local_var;
+  int local_var{};
 
   // 1. Test non-volatile pointers/objects
   {

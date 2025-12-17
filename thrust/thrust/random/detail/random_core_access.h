@@ -28,12 +28,8 @@
 
 THRUST_NAMESPACE_BEGIN
 
-namespace random
+namespace random::detail
 {
-
-namespace detail
-{
-
 struct random_core_access
 {
   template <typename OStream, typename EngineOrDistribution>
@@ -55,9 +51,6 @@ struct random_core_access
   }
 
 }; // end random_core_access
-
-} // namespace detail
-
-} // namespace random
+} // namespace random::detail
 
 THRUST_NAMESPACE_END

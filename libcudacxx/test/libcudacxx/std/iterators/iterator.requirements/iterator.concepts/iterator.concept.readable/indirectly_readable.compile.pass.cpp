@@ -88,9 +88,7 @@ struct unrelated_lvalue_ref_and_rvalue_ref
 
 struct iter_ref1
 {};
-namespace cuda
-{
-namespace std
+namespace cuda::std
 {
 template <>
 struct common_reference<iter_ref1&, iter_ref1&&>
@@ -99,8 +97,7 @@ struct common_reference<iter_ref1&, iter_ref1&&>
 template <>
 struct common_reference<iter_ref1&&, iter_ref1&>
 {};
-} // namespace std
-} // namespace cuda
+} // namespace cuda::std
 static_assert(!cuda::std::common_reference_with<iter_ref1&, iter_ref1&&>, "");
 
 struct bad_iter_reference_t
@@ -127,9 +124,7 @@ struct iter_ref3
 {
   __host__ __device__ operator iter_rvalue_ref() const;
 };
-namespace cuda
-{
-namespace std
+namespace cuda::std
 {
 template <template <class> class XQual, template <class> class YQual>
 struct basic_common_reference<iter_ref3, iter_rvalue_ref, XQual, YQual>
@@ -141,8 +136,7 @@ struct basic_common_reference<iter_rvalue_ref, iter_ref3, XQual, YQual>
 {
   using type = iter_rvalue_ref;
 };
-} // namespace std
-} // namespace cuda
+} // namespace cuda::std
 static_assert(cuda::std::common_reference_with<iter_ref3&&, iter_rvalue_ref&&>, "");
 
 struct different_reference_types_with_common_reference
@@ -157,9 +151,7 @@ struct iter_ref4
 {
   __host__ __device__ operator iter_rvalue_ref() const;
 };
-namespace cuda
-{
-namespace std
+namespace cuda::std
 {
 template <template <class> class XQual, template <class> class YQual>
 struct basic_common_reference<iter_ref4, iter_rvalue_ref, XQual, YQual>
@@ -178,8 +170,7 @@ struct common_reference<iter_ref4 const&, iter_rvalue_ref&&>
 template <>
 struct common_reference<iter_rvalue_ref&&, iter_ref4 const&>
 {};
-} // namespace std
-} // namespace cuda
+} // namespace cuda::std
 static_assert(cuda::std::common_reference_with<iter_ref4&&, iter_rvalue_ref&&>, "");
 static_assert(!cuda::std::common_reference_with<iter_ref4 const&, iter_rvalue_ref&&>, "");
 

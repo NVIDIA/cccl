@@ -29,7 +29,6 @@
 
 namespace cuda::experimental::stf
 {
-
 /**
  * @brief Encodes an access mode (read, write, redux, ...)
  */
@@ -99,5 +98,4 @@ inline const char* access_mode_string(access_mode mode)
  */
 class no_init
 {};
-
 } // namespace cuda::experimental::stf

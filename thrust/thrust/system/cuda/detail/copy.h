@@ -48,6 +48,13 @@
 #include <thrust/system/cuda/detail/util.h>
 #include <thrust/type_traits/is_trivially_relocatable.h>
 
+#if _CCCL_CUDA_COMPILATION()
+#  include <cub/device/dispatch/tuning/tuning_transform.cuh>
+#endif // _CCCL_CUDA_COMPILATION()
+
+#include <cuda/__fwd/zip_iterator.h>
+#include <cuda/std/tuple>
+
 THRUST_NAMESPACE_BEGIN
 namespace cuda_cub
 {
@@ -60,6 +67,21 @@ copy_n(execution_policy<System>& system, InputIterator first, Size n, OutputIter
 template <class Derived, class InputIt, class OutputIt, class TransformOp>
 OutputIt _CCCL_API _CCCL_FORCEINLINE
 transform(execution_policy<Derived>& policy, InputIt first, InputIt last, OutputIt result, TransformOp transform_op);
+
+// Forward declare to work around a cyclic include, since "cuda/detail/transform.h" includes this header
+// We want this to unwrap zip_transform_iterator
+namespace __transform
+{
+_CCCL_EXEC_CHECK_DISABLE
+template <class Derived, class Offset, class... InputIts, class OutputIt, class TransformOp, class Predicate>
+OutputIt _CCCL_API _CCCL_FORCEINLINE cub_transform_many(
+  execution_policy<Derived>& policy,
+  ::cuda::std::tuple<InputIts...> firsts,
+  OutputIt result,
+  Offset num_items,
+  TransformOp transform_op,
+  Predicate pred);
+} // namespace __transform
 
 namespace __copy
 {
@@ -109,7 +131,7 @@ OutputIt _CCCL_HOST non_trivial_cross_system_copy_n(
   return ret;
 }
 
-#if _CCCL_HAS_CUDA_COMPILER()
+#if _CCCL_CUDA_COMPILATION()
 // non-trivial copy D->H, only supported with NVCC compiler
 // because copy ctor must have  __device__ annotations, which is nvcc-only
 // feature
@@ -136,7 +158,7 @@ OutputIt _CCCL_HOST non_trivial_cross_system_copy_n(
   OutputIt ret = thrust::copy_n(host_s, temp_host.data(), num_items, result);
   return ret;
 }
-#endif // _CCCL_HAS_CUDA_COMPILER()
+#endif // _CCCL_CUDA_COMPILATION()
 
 template <class System1, class System2, class InputIt, class Size, class OutputIt>
 OutputIt _CCCL_HOST cross_system_copy_n(cross_system<System1, System2> systems, InputIt begin, Size n, OutputIt result)
@@ -166,7 +188,7 @@ OutputIt _CCCL_HOST cross_system_copy_n(cross_system<System1, System2> systems, 
   }
 }
 
-#if _CCCL_HAS_CUDA_COMPILER()
+#if _CCCL_CUDA_COMPILATION()
 template <class Derived, class InputIt, class OutputIt>
 OutputIt THRUST_RUNTIME_FUNCTION
 device_to_device(execution_policy<Derived>& policy, InputIt first, InputIt last, OutputIt result)
@@ -190,16 +212,27 @@ device_to_device(execution_policy<Derived>& policy, InputIt first, InputIt last,
 
     return result + n;
   }
+  else if constexpr (::cuda::__is_zip_transform_iterator<InputIt>)
+  {
+    const auto n = ::cuda::std::distance(first, last);
+    return cuda_cub::__transform::cub_transform_many(
+      policy,
+      ::cuda::std::move(first).__base(),
+      result,
+      n,
+      ::cuda::std::move(first).__pred(),
+      cub::detail::transform::always_true_predicate{});
+  }
   else
   {
     return cuda_cub::transform(
       policy, first, last, result, ::cuda::proclaim_copyable_arguments(::cuda::std::identity{}));
   }
 }
-#endif // _CCCL_HAS_CUDA_COMPILER()
+#endif // _CCCL_CUDA_COMPILATION()
 } // namespace __copy
 
-#if _CCCL_HAS_CUDA_COMPILER()
+#if _CCCL_CUDA_COMPILATION()
 
 _CCCL_EXEC_CHECK_DISABLE
 template <class System, class InputIterator, class OutputIterator>
@@ -220,7 +253,7 @@ copy_n(execution_policy<System>& system, InputIterator first, Size n, OutputIter
                       (result = thrust::copy_n(cvt_to_seq(derived_cast(system)), first, n, result);));
   return result;
 }
-#endif // _CCCL_HAS_CUDA_COMPILER()
+#endif // _CCCL_CUDA_COMPILATION()
 
 template <class System1, class System2, class InputIterator, class OutputIterator>
 OutputIterator _CCCL_HOST
@@ -235,6 +268,5 @@ copy_n(cross_system<System1, System2> systems, InputIterator first, Size n, Outp
 {
   return __copy::cross_system_copy_n(systems, first, n, result);
 }
-
 } // namespace cuda_cub
 THRUST_NAMESPACE_END

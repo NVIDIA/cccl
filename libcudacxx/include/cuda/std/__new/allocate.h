@@ -28,6 +28,11 @@
 #  include <new> // for align_val_t
 #endif // _LIBCUDACXX_HAS_ALIGNED_ALLOCATION() !_CCCL_COMPILER(NVRTC)
 
+// clang-cuda only provides device flavors of operator new, so we need to pull in <new> here
+#if _CCCL_CUDA_COMPILER(CLANG)
+#  include <new>
+#endif // _CCCL_CUDA_COMPILER(CLANG)
+
 #if !defined(__cpp_sized_deallocation) || __cpp_sized_deallocation < 201309L
 #  define _LIBCUDACXX_HAS_SIZED_DEALLOCATION() 0
 #else

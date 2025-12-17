@@ -5,7 +5,7 @@ set -euo pipefail
 # The /workspace pathnames are hard-wired here.
 
 # Install GCC 13 toolset (needed for the build)
-dnf -y install gcc-toolset-13-gcc gcc-toolset-13-gcc-c++
+/workspace/ci/util/retry.sh 5 30 dnf -y install gcc-toolset-13-gcc gcc-toolset-13-gcc-c++
 echo -e "#!/bin/bash\nsource /opt/rh/gcc-toolset-13/enable" >/etc/profile.d/enable_devtools.sh
 source /etc/profile.d/enable_devtools.sh
 
@@ -32,12 +32,16 @@ echo "Using package version ${package_version}"
 # Override the version used by setuptools_scm to the custom version
 export SETUPTOOLS_SCM_PRETEND_VERSION_FOR_CUDA_CCCL="${package_version}"
 
-
 cd /workspace/python/cuda_cccl
 
 # Determine CUDA version from nvcc
 cuda_version=$(nvcc --version | grep -oP 'release \K[0-9]+\.[0-9]+' | cut -d. -f1)
 echo "Detected CUDA version: ${cuda_version}"
+
+# Configure compilers:
+export CXX="$(which g++)"
+export CUDACXX="$(which nvcc)"
+export CUDAHOSTCXX="$(which g++)"
 
 # Build the wheel
 python -m pip wheel --no-deps --verbose --wheel-dir dist .

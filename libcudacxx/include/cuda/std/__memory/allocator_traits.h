@@ -26,6 +26,7 @@
 #include <cuda/std/__fwd/allocator.h>
 #include <cuda/std/__memory/construct_at.h>
 #include <cuda/std/__memory/pointer_traits.h>
+#include <cuda/std/__new/device_new.h>
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/is_copy_constructible.h>
 #include <cuda/std/__type_traits/is_empty.h>
@@ -280,13 +281,6 @@ _CCCL_API inline auto __to_raw_pointer(const _Pointer& __p, _None...) noexcept
 }
 #endif // _CCCL_STD_VER >= 2020
 
-// __is_default_allocator
-template <class _Tp>
-inline constexpr bool __is_default_allocator = false;
-
-template <class _Tp>
-inline constexpr bool __is_default_allocator<allocator<_Tp>> = true;
-
 // __is_cpp17_move_insertable
 template <class _Alloc, class = void>
 inline constexpr bool __is_cpp17_move_insertable = is_move_constructible_v<typename _Alloc::value_type>;
@@ -294,7 +288,7 @@ inline constexpr bool __is_cpp17_move_insertable = is_move_constructible_v<typen
 template <class _Alloc>
 inline constexpr bool __is_cpp17_move_insertable<
   _Alloc,
-  enable_if_t<__is_default_allocator<_Alloc>
+  enable_if_t<__is_cuda_std_allocator_v<_Alloc>
               && __has_construct<_Alloc, typename _Alloc::value_type*, typename _Alloc::value_type&&>>> = true;
 
 // __is_cpp17_copy_insertable
@@ -305,7 +299,7 @@ inline constexpr bool __is_cpp17_copy_insertable =
 template <class _Alloc>
 inline constexpr bool __is_cpp17_copy_insertable<
   _Alloc,
-  enable_if_t<!__is_default_allocator<_Alloc>
+  enable_if_t<!__is_cuda_std_allocator_v<_Alloc>
               && __has_construct<_Alloc, typename _Alloc::value_type*, const typename _Alloc::value_type&>>> =
   __is_cpp17_move_insertable<_Alloc>;
 
@@ -337,19 +331,17 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT allocator_traits
     return __a.allocate(__n);
   }
 
-  template <class _Ap = _Alloc, enable_if_t<__has_allocate_hint<_Ap, size_type, const_void_pointer>, int> = 0>
   [[nodiscard]] _CCCL_API inline _CCCL_CONSTEXPR_CXX20 static pointer
-  allocate(allocator_type& __a, size_type __n, const_void_pointer __hint)
+  allocate(allocator_type& __a, size_type __n, [[maybe_unused]] const_void_pointer __hint)
   {
-    return __a.allocate(__n, __hint);
-  }
-  template <class _Ap                                                                  = _Alloc,
-            class                                                                      = void,
-            enable_if_t<!__has_allocate_hint<_Ap, size_type, const_void_pointer>, int> = 0>
-  [[nodiscard]] _CCCL_API inline _CCCL_CONSTEXPR_CXX20 static pointer
-  allocate(allocator_type& __a, size_type __n, const_void_pointer)
-  {
-    return __a.allocate(__n);
+    if constexpr (__has_allocate_hint<_Alloc, size_type, const_void_pointer>)
+    {
+      return __a.allocate(__n, __hint);
+    }
+    else
+    {
+      return __a.allocate(__n);
+    }
   }
 
   _CCCL_API inline _CCCL_CONSTEXPR_CXX20 static void deallocate(allocator_type& __a, pointer __p, size_type __n) noexcept
@@ -357,60 +349,56 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT allocator_traits
     __a.deallocate(__p, __n);
   }
 
-  template <class _Tp, class... _Args, enable_if_t<__has_construct<allocator_type, _Tp*, _Args...>, int> = 0>
-  _CCCL_API inline _CCCL_CONSTEXPR_CXX20 static void construct(allocator_type& __a, _Tp* __p, _Args&&... __args)
+  template <class _Tp, class... _Args>
+  _CCCL_API inline _CCCL_CONSTEXPR_CXX20 static void
+  construct([[maybe_unused]] allocator_type& __a, _Tp* __p, _Args&&... __args)
   {
-    __a.construct(__p, ::cuda::std::forward<_Args>(__args)...);
-  }
-  template <class _Tp, class... _Args, class = void, enable_if_t<!__has_construct<allocator_type, _Tp*, _Args...>, int> = 0>
-  _CCCL_API inline _CCCL_CONSTEXPR_CXX20 static void construct(allocator_type&, _Tp* __p, _Args&&... __args)
-  {
-#if _CCCL_STD_VER >= 2020
-    ::cuda::std::construct_at(__p, ::cuda::std::forward<_Args>(__args)...);
-#else
-    ::new ((void*) __p) _Tp(::cuda::std::forward<_Args>(__args)...);
-#endif
-  }
-
-  template <class _Tp, enable_if_t<__has_destroy<allocator_type, _Tp*>, int> = 0>
-  _CCCL_API inline _CCCL_CONSTEXPR_CXX20 static void destroy(allocator_type& __a, _Tp* __p) noexcept
-  {
-    __a.destroy(__p);
-  }
-  template <class _Tp, class = void, enable_if_t<!__has_destroy<allocator_type, _Tp*>, int> = 0>
-  _CCCL_API inline _CCCL_CONSTEXPR_CXX20 static void destroy(allocator_type&, _Tp* __p) noexcept
-  {
-#if _CCCL_STD_VER >= 2020
-    ::cuda::std::destroy_at(__p);
-#else
-    __p->~_Tp();
-#endif
+    if constexpr (__has_construct<allocator_type, _Tp*, _Args...>)
+    {
+      __a.construct(__p, ::cuda::std::forward<_Args>(__args)...);
+    }
+    else
+    {
+      ::cuda::std::__construct_at(__p, ::cuda::std::forward<_Args>(__args)...);
+    }
   }
 
-  template <class _Ap = _Alloc, enable_if_t<__has_max_size<const _Ap>, int> = 0>
-  _CCCL_API inline _CCCL_CONSTEXPR_CXX20 static size_type max_size(const allocator_type& __a) noexcept
+  template <class _Tp>
+  _CCCL_API inline _CCCL_CONSTEXPR_CXX20 static void destroy([[maybe_unused]] allocator_type& __a, _Tp* __p) noexcept
   {
-    return __a.max_size();
-  }
-  template <class _Ap = _Alloc, class = void, enable_if_t<!__has_max_size<const _Ap>, int> = 0>
-  _CCCL_API inline _CCCL_CONSTEXPR_CXX20 static size_type max_size(const allocator_type&) noexcept
-  {
-    return numeric_limits<size_type>::max() / sizeof(value_type);
+    if constexpr (__has_destroy<allocator_type, _Tp*>)
+    {
+      __a.destroy(__p);
+    }
+    else
+    {
+      ::cuda::std::__destroy_at(__p);
+    }
   }
 
-  template <class _Ap = _Alloc, enable_if_t<__has_select_on_container_copy_construction<const _Ap>, int> = 0>
+  _CCCL_API inline _CCCL_CONSTEXPR_CXX20 static size_type max_size([[maybe_unused]] const allocator_type& __a) noexcept
+  {
+    if constexpr (__has_max_size<const _Alloc>)
+    {
+      return __a.max_size();
+    }
+    else
+    {
+      return numeric_limits<size_type>::max() / sizeof(value_type);
+    }
+  }
+
   _CCCL_API inline _CCCL_CONSTEXPR_CXX20 static allocator_type
   select_on_container_copy_construction(const allocator_type& __a)
   {
-    return __a.select_on_container_copy_construction();
-  }
-  template <class _Ap                                                                 = _Alloc,
-            class                                                                     = void,
-            enable_if_t<!__has_select_on_container_copy_construction<const _Ap>, int> = 0>
-  _CCCL_API inline _CCCL_CONSTEXPR_CXX20 static allocator_type
-  select_on_container_copy_construction(const allocator_type& __a)
-  {
-    return __a;
+    if constexpr (__has_select_on_container_copy_construction<const _Alloc>)
+    {
+      return __a.select_on_container_copy_construction();
+    }
+    else
+    {
+      return __a;
+    }
   }
 
   template <class _Ptr>
@@ -432,11 +420,10 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT allocator_traits
     }
   }
 
-  template <class _Tp>
-  _CCCL_API inline static enable_if_t<
-    (__is_default_allocator<allocator_type> || !__has_construct<allocator_type, _Tp*, _Tp>)
-      && is_trivially_move_constructible_v<_Tp>,
-    void>
+  _CCCL_TEMPLATE(class _Tp)
+  _CCCL_REQUIRES((__is_cuda_std_allocator_v<allocator_type>
+                  || !__has_construct<allocator_type, _Tp*, _Tp>) _CCCL_AND is_trivially_move_constructible_v<_Tp>)
+  _CCCL_API inline static void
   __construct_forward_with_exception_guarantees(allocator_type&, _Tp* __begin1, _Tp* __end1, _Tp*& __begin2)
   {
     ptrdiff_t _Np = __end1 - __begin1;
@@ -457,14 +444,13 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT allocator_traits
     }
   }
 
-  template <class _SourceTp,
-            class _DestTp,
-            class _RawSourceTp = remove_const_t<_SourceTp>,
-            class _RawDestTp   = remove_const_t<_DestTp>>
-  _CCCL_API inline static enable_if_t<
-    is_trivially_move_constructible_v<_DestTp> && is_same_v<_RawSourceTp, _RawDestTp>
-      && (__is_default_allocator<allocator_type> || !__has_construct<allocator_type, _DestTp*, _SourceTp&>),
-    void>
+  _CCCL_TEMPLATE(class _SourceTp,
+                 class _DestTp,
+                 class _RawSourceTp = remove_const_t<_SourceTp>,
+                 class _RawDestTp   = remove_const_t<_DestTp>)
+  _CCCL_REQUIRES(is_trivially_move_constructible_v<_DestTp> _CCCL_AND is_same_v<_RawSourceTp, _RawDestTp> _CCCL_AND(
+    __is_cuda_std_allocator_v<allocator_type> || !__has_construct<allocator_type, _DestTp*, _SourceTp&>))
+  _CCCL_API inline static void
   __construct_range_forward(allocator_type&, _SourceTp* __begin1, _SourceTp* __end1, _DestTp*& __begin2)
   {
     ptrdiff_t _Np = __end1 - __begin1;
@@ -495,11 +481,10 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT allocator_traits
     }
   }
 
-  template <class _Tp>
-  _CCCL_API inline static enable_if_t<
-    (__is_default_allocator<allocator_type> || !__has_construct<allocator_type, _Tp*, _Tp>)
-      && is_trivially_move_constructible_v<_Tp>,
-    void>
+  _CCCL_TEMPLATE(class _Tp)
+  _CCCL_REQUIRES((__is_cuda_std_allocator_v<allocator_type>
+                  || !__has_construct<allocator_type, _Tp*, _Tp>) _CCCL_AND is_trivially_move_constructible_v<_Tp>)
+  _CCCL_API inline static void
   __construct_backward_with_exception_guarantees(allocator_type&, _Tp* __begin1, _Tp* __end1, _Tp*& __end2)
   {
     ptrdiff_t _Np = __end1 - __begin1;

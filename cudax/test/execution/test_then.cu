@@ -200,11 +200,7 @@ C2H_TEST("then keeps error_types from input sender", "[adaptors][then]")
 
   check_error_types(ex::just() | ex::continues_on(sched1) | ex::then([]() noexcept {}));
   check_error_types<error_code>(ex::just() | ex::continues_on(sched2) | ex::then([]() noexcept {}));
-#if _CCCL_HAS_EXCEPTIONS() && _CCCL_HOST_COMPILATION()
-  check_error_types<std::exception_ptr, int>(ex::just() | ex::continues_on(sched3) | ex::then([] {}));
-#else
-  check_error_types<int>(ex::just() | ex::continues_on(sched3) | ex::then([] {}));
-#endif
+  check_error_types<ex::exception_ptr, int>(ex::just() | ex::continues_on(sched3) | ex::then([] {}));
 }
 
 C2H_TEST("then keeps sends_stopped from input sender", "[adaptors][then]")

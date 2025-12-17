@@ -19,8 +19,7 @@
 
 #include <thrust/detail/preprocessor.h>
 
-#include <cuda/std/type_traits>
-#include <cuda/std/utility>
+#include <cuda/std/__utility/forward.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 

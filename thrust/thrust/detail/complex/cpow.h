@@ -20,7 +20,12 @@
 #include <thrust/detail/config.h>
 
 #include <thrust/complex.h>
-#include <thrust/detail/type_traits.h>
+#include <thrust/detail/complex/cexp.h>
+#include <thrust/detail/complex/clog.h>
+
+#include <cuda/std/__cmath/exponential_functions.h>
+#include <cuda/std/__cmath/logarithms.h>
+#include <cuda/std/__type_traits/common_type.h>
 
 THRUST_NAMESPACE_BEGIN
 
@@ -42,9 +47,7 @@ template <typename T0, typename T1>
 _CCCL_HOST_DEVICE complex<::cuda::std::common_type_t<T0, T1>> pow(const T0& x, const complex<T1>& y)
 {
   using T = ::cuda::std::common_type_t<T0, T1>;
-  // Find `log` by ADL.
-  using std::log;
-  return exp(log(T(x)) * complex<T>(y));
+  return exp(::cuda::std::log(T(x)) * complex<T>(y));
 }
 
 THRUST_NAMESPACE_END

@@ -26,6 +26,7 @@
 #include <cuda/std/__fwd/format.h>
 #include <cuda/std/__iterator/back_insert_iterator.h>
 #include <cuda/std/__iterator/concepts.h>
+#include <cuda/std/__utility/ctad_support.h>
 #include <cuda/std/__utility/move.h>
 
 #include <cuda/std/__cccl/prologue.h>
@@ -76,7 +77,7 @@ private:
   basic_format_args<basic_format_context> __args_;
 };
 
-_LIBCUDACXX_CTAD_SUPPORTED_FOR_TYPE(basic_format_context);
+_CCCL_CTAD_SUPPORTED_FOR_TYPE(basic_format_context);
 
 template <class _OutIt, class _CharT>
 [[nodiscard]] _CCCL_API basic_format_context<_OutIt, _CharT>

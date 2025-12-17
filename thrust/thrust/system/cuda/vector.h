@@ -38,7 +38,6 @@
 THRUST_NAMESPACE_BEGIN
 namespace cuda_cub
 {
-
 /*! \p cuda::vector is a container that supports random access to elements,
  *  constant time removal of elements at the end, and linear time insertion
  *  and removal of elements at the beginning or in the middle. The number of
@@ -88,15 +87,12 @@ template <typename T>
 using universal_host_pinned_vector = thrust::detail::vector_base<T, universal_host_pinned_allocator<T>>;
 } // namespace cuda_cub
 
-namespace system
-{
-namespace cuda
+namespace system::cuda
 {
 using thrust::cuda_cub::universal_host_pinned_vector;
 using thrust::cuda_cub::universal_vector;
 using thrust::cuda_cub::vector;
-} // namespace cuda
-} // namespace system
+} // namespace system::cuda
 
 namespace cuda
 {

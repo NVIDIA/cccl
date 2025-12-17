@@ -39,13 +39,11 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 namespace chrono
 {
-
 // [time.clock.file], type file_clock
 using file_clock = ::cuda::std::__fs::filesystem::_FilesystemClock;
 
 template <class _Duration>
 using file_time = time_point<file_clock, _Duration>;
-
 } // namespace chrono
 
 _CCCL_END_NAMESPACE_CUDA_STD

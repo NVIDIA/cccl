@@ -7,7 +7,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-// REQUIRES: c++03 || c++11 || c++14 || c++17
+// REQUIRES: c++17
 
 // ADDITIONAL_COMPILE_DEFINITIONS: CCCL_IGNORE_DEPRECATED_API
 

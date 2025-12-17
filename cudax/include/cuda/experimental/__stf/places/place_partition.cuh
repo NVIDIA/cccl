@@ -32,7 +32,6 @@
 
 namespace cuda::experimental::stf
 {
-
 /**
  * @brief Defines a partitioning granularity
  *
@@ -210,5 +209,4 @@ private:
   /** A vector with all subplaces (computed once in compute_subplaces) */
   ::std::vector<exec_place> sub_places;
 };
-
 } // end namespace cuda::experimental::stf

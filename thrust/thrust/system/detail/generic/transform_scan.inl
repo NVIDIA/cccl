@@ -30,12 +30,11 @@
 #include <thrust/scan.h>
 #include <thrust/system/detail/generic/transform_scan.h>
 
-#include <cuda/std/type_traits>
+#include <cuda/std/__type_traits/remove_cvref.h>
 
 THRUST_NAMESPACE_BEGIN
 namespace system::detail::generic
 {
-
 template <typename ExecutionPolicy,
           typename InputIterator,
           typename OutputIterator,
@@ -108,6 +107,5 @@ _CCCL_HOST_DEVICE OutputIterator transform_exclusive_scan(
 
   return thrust::exclusive_scan(exec, _first, _last, result, init, binary_op);
 } // end transform_exclusive_scan()
-
 } // namespace system::detail::generic
 THRUST_NAMESPACE_END

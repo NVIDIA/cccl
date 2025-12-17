@@ -49,7 +49,6 @@ THRUST_NAMESPACE_BEGIN
 
 namespace random
 {
-
 /*! \addtogroup random_number_engine_templates
  *  \{
  */
@@ -206,7 +205,6 @@ operator>>(std::basic_istream<CharT, Traits>& is, linear_feedback_shift_engine<U
 
 /*! \} // end random_number_engine_templates
  */
-
 } // namespace random
 
 // import names into thrust::

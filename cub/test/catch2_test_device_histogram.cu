@@ -1,30 +1,6 @@
-/******************************************************************************
- * Copyright (c) 2011, Duane Merrill.  All rights reserved.
- * Copyright (c) 2011-2022, NVIDIA CORPORATION.  All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *     * Redistributions of source code must retain the above copyright
- *       notice, this list of conditions and the following disclaimer.
- *     * Redistributions in binary form must reproduce the above copyright
- *       notice, this list of conditions and the following disclaimer in the
- *       documentation and/or other materials provided with the distribution.
- *     * Neither the name of the NVIDIA CORPORATION nor the
- *       names of its contributors may be used to endorse or promote products
- *       derived from this software without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
- * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
- * DISCLAIMED. IN NO EVENT SHALL NVIDIA CORPORATION BE LIABLE FOR ANY
- * DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
- * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
- * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
- * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- *
- ******************************************************************************/
+// SPDX-FileCopyrightText: Copyright (c) 2011, Duane Merrill. All rights reserved.
+// SPDX-FileCopyrightText: Copyright (c) 2011-2022, NVIDIA CORPORATION. All rights reserved.
+// SPDX-License-Identifier: BSD-3
 
 // FIXME(bgruber): I found no way to suppress the deprecations for the _lid_1 build
 #if TEST_LAUNCH == 1
@@ -33,9 +9,8 @@
 
 #include <cub/device/device_histogram.cuh>
 
-#include <thrust/iterator/counting_iterator.h>
-
-#include <cuda/std/__algorithm_>
+#include <cuda/iterator>
+#include <cuda/std/algorithm>
 #include <cuda/std/array>
 #include <cuda/std/bit>
 #include <cuda/std/type_traits>
@@ -610,7 +585,7 @@ C2H_TEST("DeviceHistogram::HistogramEven sample iterator", "[histogram_even][dev
   const auto lower_level = array<int, active_channels>{0, -10, cs::numeric_limits<int>::lowest()};
   const auto upper_level = array<int, active_channels>{total_values, 10, cs::numeric_limits<int>::max()};
 
-  auto sample_iterator = thrust::counting_iterator<sample_t>(0);
+  auto sample_iterator = cuda::counting_iterator<sample_t>(0);
 
   // Channel #0: 0, 4,  8, 12
   // Channel #1: 1, 5,  9, 13
@@ -692,7 +667,7 @@ C2H_TEST_LIST("DeviceHistogram::HistogramEven bin computation does not overflow"
   constexpr sample_t lower_level = 0;
   constexpr sample_t upper_level = cs::numeric_limits<sample_t>::max();
   constexpr auto num_samples     = 1000;
-  auto d_samples                 = thrust::counting_iterator<sample_t>{0UL};
+  auto d_samples                 = cuda::counting_iterator<sample_t>{0UL};
   auto d_histo_out               = c2h::device_vector<counter_t>(1024);
   const auto num_bins            = GENERATE(1, 2);
 
@@ -729,6 +704,67 @@ C2H_TEST_LIST("DeviceHistogram::HistogramEven bin computation does not overflow"
   // types, hence we expect cudaErrorInvalidValue to be returned to indicate of a potential overflow
   // Ensure we do not return an error on querying temporary storage requirements
   CHECK(error2 == (num_bins == 1 || sizeof(sample_t) <= 4UL ? cudaSuccess : cudaErrorInvalidValue));
+}
+
+// When the number of bins exceeds what LevelT can represent, the bin computation will overflow
+// during the cast to CommonT. We expect cudaErrorInvalidValue to be returned.
+C2H_TEST_LIST(
+  "DeviceHistogram::HistogramEven num_bins exceeds LevelT range", "[histogram_even][device]", int8_t, int16_t)
+{
+  using level_t   = TestType;
+  using sample_t  = level_t; // Common case: LevelT == SampleT
+  using counter_t = uint32_t;
+
+  // Set up levels within a valid range for the type
+  constexpr level_t lower_level = 0;
+  constexpr level_t upper_level = 100; // Arbitrary valid range
+  constexpr auto num_samples    = 1000;
+
+  auto d_samples   = cuda::counting_iterator<sample_t>{0};
+  auto d_histo_out = c2h::device_vector<counter_t>(4096);
+
+  // Test with num_bins that exceeds what LevelT can represent
+  // int8_t max = 127, so 128 bins will overflow
+  // int16_t max = 32767, so 32768 bins will overflow
+  const int num_bins_overflow = static_cast<int>(cs::numeric_limits<level_t>::max()) + 1;
+  const int num_levels        = num_bins_overflow + 1;
+
+  // Verify temp_storage_bytes is always initialized even on error
+  constexpr size_t canary_bytes = 3;
+  size_t temp_storage_bytes     = canary_bytes;
+
+  const auto error1 = cub::DeviceHistogram::HistogramEven(
+    nullptr,
+    temp_storage_bytes,
+    d_samples,
+    raw_pointer_cast(d_histo_out.data()),
+    num_levels,
+    lower_level,
+    upper_level,
+    num_samples);
+
+  // Should return error because num_bins overflows LevelT
+  CHECK(error1 == cudaErrorInvalidValue);
+  // Should still initialize temp_storage_bytes to a valid value
+  CHECK(temp_storage_bytes != canary_bytes);
+
+  // Also verify that valid num_bins works
+  const int valid_num_bins   = static_cast<int>(cs::numeric_limits<level_t>::max());
+  const int valid_num_levels = valid_num_bins + 1;
+
+  temp_storage_bytes = canary_bytes;
+  const auto error2  = cub::DeviceHistogram::HistogramEven(
+    nullptr,
+    temp_storage_bytes,
+    d_samples,
+    raw_pointer_cast(d_histo_out.data()),
+    valid_num_levels,
+    lower_level,
+    static_cast<level_t>(valid_num_bins), // upper_level must accommodate all bins
+    num_samples);
+
+  CHECK(error2 == cudaSuccess);
+  CHECK(temp_storage_bytes != canary_bytes);
 }
 #endif // TEST_LAUNCH == 0
 

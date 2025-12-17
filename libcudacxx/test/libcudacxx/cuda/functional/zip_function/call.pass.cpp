@@ -164,6 +164,13 @@ __host__ __device__ constexpr bool test()
     test<true>(fn, cuda::std::pair{1, 3.14});
     test<false>(fn, cuda::std::tuple{1});
   }
+
+  { // Ensure that we can instantiate a zip_function that is not invocable
+    static_assert(!cuda::std::is_invocable_v<const zip_function<Mutable>, cuda::std::tuple<int, double, foo>>);
+    static_assert(!cuda::std::is_invocable_v<const zip_function<Mutable>, cuda::std::pair<int, double>>);
+    static_assert(!cuda::std::is_invocable_v<const zip_function<Mutable>, cuda::std::tuple<int>>);
+  }
+
   return true;
 };
 

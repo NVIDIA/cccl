@@ -1,29 +1,5 @@
-/******************************************************************************
- * Copyright (c) 2011-2021, NVIDIA CORPORATION.  All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *     * Redistributions of source code must retain the above copyright
- *       notice, this list of conditions and the following disclaimer.
- *     * Redistributions in binary form must reproduce the above copyright
- *       notice, this list of conditions and the following disclaimer in the
- *       documentation and/or other materials provided with the distribution.
- *     * Neither the name of the NVIDIA CORPORATION nor the
- *       names of its contributors may be used to endorse or promote products
- *       derived from this software without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
- * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
- * DISCLAIMED. IN NO EVENT SHALL NVIDIA CORPORATION BE LIABLE FOR ANY
- * DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
- * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
- * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
- * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- *
- ******************************************************************************/
+// SPDX-FileCopyrightText: Copyright (c) 2011-2021, NVIDIA CORPORATION. All rights reserved.
+// SPDX-License-Identifier: BSD-3
 
 #pragma once
 
@@ -43,6 +19,7 @@
 #include <cub/util_ptx.cuh>
 #include <cub/util_type.cuh>
 
+#include <cuda/__cmath/pow2.h>
 #include <cuda/std/__algorithm/min.h>
 #include <cuda/std/__type_traits/is_same.h>
 
@@ -83,7 +60,7 @@ MergePath(KeyIt1 keys1, KeyIt2 keys2, OffsetT keys1_count, OffsetT keys2_count, 
 }
 
 //! Merges elements from two sorted sequences
-//! \tparam ITEMS_PER_THREAD The number of elements to merge and write to \c output
+//! \tparam ItemsPerThread The number of elements to merge and write to \c output
 //! \param keys_shared An iterator to shared memory containing from which both sequences are reachable
 //! \param keys1_beg The index into \c keys_shared where the first sequence starts
 //! \param keys2_beg The index into \c keys_shared where the second sequence starts
@@ -93,15 +70,15 @@ MergePath(KeyIt1 keys1, KeyIt2 keys2, OffsetT keys1_count, OffsetT keys2_count, 
 //! used.
 //! \param output The output array
 //! \param indices The shared memory indices relative to \c keys_shared of the elements written to \c output
-template <typename KeyIt, typename KeyT, typename CompareOp, int ITEMS_PER_THREAD>
+template <typename KeyIt, typename KeyT, typename CompareOp, int ItemsPerThread>
 _CCCL_DEVICE _CCCL_FORCEINLINE void SerialMerge(
   KeyIt keys_shared,
   int keys1_beg,
   int keys2_beg,
   int keys1_count,
   int keys2_count,
-  KeyT (&output)[ITEMS_PER_THREAD],
-  int (&indices)[ITEMS_PER_THREAD],
+  KeyT (&output)[ItemsPerThread],
+  int (&indices)[ItemsPerThread],
   CompareOp compare_op,
   KeyT oob_default)
 {
@@ -112,7 +89,7 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void SerialMerge(
   KeyT key2 = keys2_count != 0 ? keys_shared[keys2_beg] : oob_default;
 
   _CCCL_SORT_MAYBE_UNROLL()
-  for (int item = 0; item < ITEMS_PER_THREAD; ++item)
+  for (int item = 0; item < ItemsPerThread; ++item)
   {
     const bool p  = (keys2_beg < keys2_end) && ((keys1_beg >= keys1_end) || compare_op(key2, key1));
     output[item]  = p ? key2 : key1;
@@ -128,15 +105,15 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void SerialMerge(
   }
 }
 
-template <typename KeyIt, typename KeyT, typename CompareOp, int ITEMS_PER_THREAD>
+template <typename KeyIt, typename KeyT, typename CompareOp, int ItemsPerThread>
 _CCCL_DEVICE _CCCL_FORCEINLINE void SerialMerge(
   KeyIt keys_shared,
   int keys1_beg,
   int keys2_beg,
   int keys1_count,
   int keys2_count,
-  KeyT (&output)[ITEMS_PER_THREAD],
-  int (&indices)[ITEMS_PER_THREAD],
+  KeyT (&output)[ItemsPerThread],
+  int (&indices)[ItemsPerThread],
   CompareOp compare_op)
 {
   SerialMerge(keys_shared, keys1_beg, keys2_beg, keys1_count, keys2_count, output, indices, compare_op, output[0]);
@@ -157,19 +134,19 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void SerialMerge(
  * #include <cub/cub.cuh> // or equivalently <cub/block/block_merge_sort.cuh>
  *
  * constexpr int BLOCK_THREADS = 256;
- * constexpr int ITEMS_PER_THREAD = 9;
+ * constexpr int ItemsPerThread = 9;
  *
  * class BlockMergeSort : public BlockMergeSortStrategy<int,
  *                                                      cub::NullType,
  *                                                      BLOCK_THREADS,
- *                                                      ITEMS_PER_THREAD,
+ *                                                      ItemsPerThread,
  *                                                      BlockMergeSort>
  * {
  *   using BlockMergeSortStrategyT =
  *     BlockMergeSortStrategy<int,
  *                            cub::NullType,
  *                            BLOCK_THREADS,
- *                            ITEMS_PER_THREAD,
+ *                            ItemsPerThread,
  *                            BlockMergeSort>;
  * public:
  *   __device__ __forceinline__ explicit BlockMergeSort(
@@ -194,13 +171,13 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void SerialMerge(
  *   Provides a way of synchronizing threads. Should be derived from
  *   `BlockMergeSortStrategy`.
  */
-template <typename KeyT, typename ValueT, int NUM_THREADS, int ITEMS_PER_THREAD, typename SynchronizationPolicy>
+template <typename KeyT, typename ValueT, int NumThreads, int ItemsPerThread, typename SynchronizationPolicy>
 class BlockMergeSortStrategy
 {
-  static_assert(PowerOfTwo<NUM_THREADS>::VALUE, "NUM_THREADS must be a power of two");
+  static_assert(::cuda::is_power_of_two(NumThreads), "NumThreads must be a power of two");
 
 private:
-  static constexpr int ITEMS_PER_TILE = ITEMS_PER_THREAD * NUM_THREADS;
+  static constexpr int ITEMS_PER_TILE = ItemsPerThread * NumThreads;
 
   // Whether or not there are values to be trucked along with keys
   static constexpr bool KEYS_ONLY = ::cuda::std::is_same_v<ValueT, NullType>;
@@ -270,9 +247,9 @@ public:
    * [Strict Weak Ordering]: https://en.cppreference.com/w/cpp/concepts/strict_weak_order
    */
   template <typename CompareOp>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void Sort(KeyT (&keys)[ITEMS_PER_THREAD], CompareOp compare_op)
+  _CCCL_DEVICE _CCCL_FORCEINLINE void Sort(KeyT (&keys)[ItemsPerThread], CompareOp compare_op)
   {
-    ValueT items[ITEMS_PER_THREAD];
+    ValueT items[ItemsPerThread];
     Sort<CompareOp, false>(keys, items, compare_op, ITEMS_PER_TILE, keys[0]);
   }
 
@@ -288,7 +265,7 @@ public:
    *   `valid_items` boundaries. It's expected that `oob_default` is ordered
    *   after any value in the `valid_items` boundaries. The algorithm always
    *   sorts a fixed amount of elements, which is equal to
-   *   `ITEMS_PER_THREAD * BLOCK_THREADS`. If there is a value that is ordered
+   *   `ItemsPerThread * BLOCK_THREADS`. If there is a value that is ordered
    *   after `oob_default`, it won't be placed within `valid_items` boundaries.
    *
    * @tparam CompareOp
@@ -312,9 +289,9 @@ public:
    */
   template <typename CompareOp>
   _CCCL_DEVICE _CCCL_FORCEINLINE void
-  Sort(KeyT (&keys)[ITEMS_PER_THREAD], CompareOp compare_op, int valid_items, KeyT oob_default)
+  Sort(KeyT (&keys)[ItemsPerThread], CompareOp compare_op, int valid_items, KeyT oob_default)
   {
-    ValueT items[ITEMS_PER_THREAD];
+    ValueT items[ItemsPerThread];
     Sort<CompareOp, true>(keys, items, compare_op, valid_items, oob_default);
   }
 
@@ -344,7 +321,7 @@ public:
    */
   template <typename CompareOp>
   _CCCL_DEVICE _CCCL_FORCEINLINE void
-  Sort(KeyT (&keys)[ITEMS_PER_THREAD], ValueT (&items)[ITEMS_PER_THREAD], CompareOp compare_op)
+  Sort(KeyT (&keys)[ItemsPerThread], ValueT (&items)[ItemsPerThread], CompareOp compare_op)
   {
     Sort<CompareOp, false>(keys, items, compare_op, ITEMS_PER_TILE, keys[0]);
   }
@@ -361,7 +338,7 @@ public:
    *   `valid_items` boundaries. It's expected that `oob_default` is ordered
    *   after any value in the `valid_items` boundaries. The algorithm always
    *   sorts a fixed amount of elements, which is equal to
-   *   `ITEMS_PER_THREAD * BLOCK_THREADS`. If there is a value that is ordered
+   *   `ItemsPerThread * BLOCK_THREADS`. If there is a value that is ordered
    *   after `oob_default`, it won't be placed within `valid_items` boundaries.
    *
    * @tparam CompareOp
@@ -391,8 +368,8 @@ public:
    */
   template <typename CompareOp, bool IS_LAST_TILE = true>
   _CCCL_DEVICE _CCCL_FORCEINLINE void
-  Sort(KeyT (&keys)[ITEMS_PER_THREAD],
-       ValueT (&items)[ITEMS_PER_THREAD],
+  Sort(KeyT (&keys)[ItemsPerThread],
+       ValueT (&items)[ItemsPerThread],
        CompareOp compare_op,
        int valid_items,
        KeyT oob_default)
@@ -405,9 +382,9 @@ public:
       KeyT max_key = oob_default;
 
       _CCCL_SORT_MAYBE_UNROLL()
-      for (int item = 1; item < ITEMS_PER_THREAD; ++item)
+      for (int item = 1; item < ItemsPerThread; ++item)
       {
-        if (ITEMS_PER_THREAD * linear_tid + item < valid_items)
+        if (ItemsPerThread * linear_tid + item < valid_items)
         {
           max_key = compare_op(max_key, keys[item]) ? keys[item] : max_key;
         }
@@ -420,7 +397,7 @@ public:
 
     // if first element of thread is in input range, stable sort items
     //
-    if (!IS_LAST_TILE || ITEMS_PER_THREAD * linear_tid < valid_items)
+    if (!IS_LAST_TILE || ItemsPerThread * linear_tid < valid_items)
     {
       StableOddEvenSort(keys, items, compare_op);
     }
@@ -428,7 +405,7 @@ public:
     // each thread has sorted keys
     // merge sort keys in shared memory
     //
-    for (int target_merged_threads_number = 2; target_merged_threads_number <= NUM_THREADS;
+    for (int target_merged_threads_number = 2; target_merged_threads_number <= NumThreads;
          target_merged_threads_number *= 2)
     {
       const int merged_threads_number = target_merged_threads_number / 2;
@@ -439,23 +416,23 @@ public:
       // store keys in shmem
       //
       _CCCL_PRAGMA_UNROLL_FULL()
-      for (int item = 0; item < ITEMS_PER_THREAD; ++item)
+      for (int item = 0; item < ItemsPerThread; ++item)
       {
-        int idx                       = ITEMS_PER_THREAD * linear_tid + item;
+        int idx                       = ItemsPerThread * linear_tid + item;
         temp_storage.keys_shared[idx] = keys[item];
       }
 
       Sync();
 
-      int indices[ITEMS_PER_THREAD];
+      int indices[ItemsPerThread];
 
       const int first_thread_idx_in_thread_group_being_merged = ~mask & linear_tid;
-      const int start = ITEMS_PER_THREAD * first_thread_idx_in_thread_group_being_merged;
-      const int size  = ITEMS_PER_THREAD * merged_threads_number;
+      const int start = ItemsPerThread * first_thread_idx_in_thread_group_being_merged;
+      const int size  = ItemsPerThread * merged_threads_number;
 
       const int thread_idx_in_thread_group_being_merged = mask & linear_tid;
 
-      const int diag = (::cuda::std::min) (valid_items, ITEMS_PER_THREAD * thread_idx_in_thread_group_being_merged);
+      const int diag = (::cuda::std::min) (valid_items, ItemsPerThread * thread_idx_in_thread_group_being_merged);
 
       const int keys1_beg = (::cuda::std::min) (valid_items, start);
       const int keys1_end = (::cuda::std::min) (valid_items, keys1_beg + size);
@@ -497,9 +474,9 @@ public:
         // store keys in shmem
         //
         _CCCL_PRAGMA_UNROLL_FULL()
-        for (int item = 0; item < ITEMS_PER_THREAD; ++item)
+        for (int item = 0; item < ItemsPerThread; ++item)
         {
-          int idx                        = ITEMS_PER_THREAD * linear_tid + item;
+          int idx                        = ItemsPerThread * linear_tid + item;
           temp_storage.items_shared[idx] = items[item];
         }
 
@@ -508,7 +485,7 @@ public:
         // gather items from shmem
         //
         _CCCL_PRAGMA_UNROLL_FULL()
-        for (int item = 0; item < ITEMS_PER_THREAD; ++item)
+        for (int item = 0; item < ItemsPerThread; ++item)
         {
           items[item] = temp_storage.items_shared[indices[item]];
         }
@@ -540,7 +517,7 @@ public:
    * [Strict Weak Ordering]: https://en.cppreference.com/w/cpp/concepts/strict_weak_order
    */
   template <typename CompareOp>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void StableSort(KeyT (&keys)[ITEMS_PER_THREAD], CompareOp compare_op)
+  _CCCL_DEVICE _CCCL_FORCEINLINE void StableSort(KeyT (&keys)[ItemsPerThread], CompareOp compare_op)
   {
     Sort(keys, compare_op);
   }
@@ -573,7 +550,7 @@ public:
    */
   template <typename CompareOp>
   _CCCL_DEVICE _CCCL_FORCEINLINE void
-  StableSort(KeyT (&keys)[ITEMS_PER_THREAD], ValueT (&items)[ITEMS_PER_THREAD], CompareOp compare_op)
+  StableSort(KeyT (&keys)[ItemsPerThread], ValueT (&items)[ItemsPerThread], CompareOp compare_op)
   {
     Sort(keys, items, compare_op);
   }
@@ -591,7 +568,7 @@ public:
    *   `valid_items` boundaries. It's expected that `oob_default` is ordered
    *   after any value in the `valid_items` boundaries. The algorithm always
    *   sorts a fixed amount of elements, which is equal to
-   *   `ITEMS_PER_THREAD * BLOCK_THREADS`.
+   *   `ItemsPerThread * BLOCK_THREADS`.
    *   If there is a value that is ordered after `oob_default`, it won't be
    *   placed within `valid_items` boundaries.
    *
@@ -616,7 +593,7 @@ public:
    */
   template <typename CompareOp>
   _CCCL_DEVICE _CCCL_FORCEINLINE void
-  StableSort(KeyT (&keys)[ITEMS_PER_THREAD], CompareOp compare_op, int valid_items, KeyT oob_default)
+  StableSort(KeyT (&keys)[ItemsPerThread], CompareOp compare_op, int valid_items, KeyT oob_default)
   {
     Sort(keys, compare_op, valid_items, oob_default);
   }
@@ -634,7 +611,7 @@ public:
    *   `valid_items` boundaries. It's expected that `oob_default` is ordered
    *   after any value in the `valid_items` boundaries. The algorithm always
    *   sorts a fixed amount of elements, which is equal to
-   *   `ITEMS_PER_THREAD * BLOCK_THREADS`. If there is a value that is ordered
+   *   `ItemsPerThread * BLOCK_THREADS`. If there is a value that is ordered
    *   after `oob_default`, it won't be placed within `valid_items` boundaries.
    *
    * @tparam CompareOp
@@ -664,8 +641,8 @@ public:
    */
   template <typename CompareOp, bool IS_LAST_TILE = true>
   _CCCL_DEVICE _CCCL_FORCEINLINE void StableSort(
-    KeyT (&keys)[ITEMS_PER_THREAD],
-    ValueT (&items)[ITEMS_PER_THREAD],
+    KeyT (&keys)[ItemsPerThread],
+    ValueT (&items)[ItemsPerThread],
     CompareOp compare_op,
     int valid_items,
     KeyT oob_default)
@@ -690,7 +667,7 @@ private:
  * @tparam BLOCK_DIM_X
  *   The thread block length in threads along the X dimension
  *
- * @tparam ITEMS_PER_THREAD
+ * @tparam ItemsPerThread
  *   The number of items per thread
  *
  * @tparam ValueT
@@ -758,34 +735,28 @@ private:
  *
  * This example can be easily adapted to the storage required by BlockMergeSort.
  */
-template <typename KeyT,
-          int BLOCK_DIM_X,
-          int ITEMS_PER_THREAD,
-          typename ValueT = NullType,
-          int BLOCK_DIM_Y = 1,
-          int BLOCK_DIM_Z = 1>
+template <typename KeyT, int BlockDimX, int ItemsPerThread, typename ValueT = NullType, int BlockDimY = 1, int BlockDimZ = 1>
 class BlockMergeSort
-    : public BlockMergeSortStrategy<
-        KeyT,
-        ValueT,
-        BLOCK_DIM_X * BLOCK_DIM_Y * BLOCK_DIM_Z,
-        ITEMS_PER_THREAD,
-        BlockMergeSort<KeyT, BLOCK_DIM_X, ITEMS_PER_THREAD, ValueT, BLOCK_DIM_Y, BLOCK_DIM_Z>>
+    : public BlockMergeSortStrategy<KeyT,
+                                    ValueT,
+                                    BlockDimX * BlockDimY * BlockDimZ,
+                                    ItemsPerThread,
+                                    BlockMergeSort<KeyT, BlockDimX, ItemsPerThread, ValueT, BlockDimY, BlockDimZ>>
 {
 private:
   // The thread block size in threads
-  static constexpr int BLOCK_THREADS  = BLOCK_DIM_X * BLOCK_DIM_Y * BLOCK_DIM_Z;
-  static constexpr int ITEMS_PER_TILE = ITEMS_PER_THREAD * BLOCK_THREADS;
+  static constexpr int BLOCK_THREADS  = BlockDimX * BlockDimY * BlockDimZ;
+  static constexpr int ITEMS_PER_TILE = ItemsPerThread * BLOCK_THREADS;
 
-  using BlockMergeSortStrategyT = BlockMergeSortStrategy<KeyT, ValueT, BLOCK_THREADS, ITEMS_PER_THREAD, BlockMergeSort>;
+  using BlockMergeSortStrategyT = BlockMergeSortStrategy<KeyT, ValueT, BLOCK_THREADS, ItemsPerThread, BlockMergeSort>;
 
 public:
   _CCCL_DEVICE _CCCL_FORCEINLINE BlockMergeSort()
-      : BlockMergeSortStrategyT(RowMajorTid(BLOCK_DIM_X, BLOCK_DIM_Y, BLOCK_DIM_Z))
+      : BlockMergeSortStrategyT(RowMajorTid(BlockDimX, BlockDimY, BlockDimZ))
   {}
 
   _CCCL_DEVICE _CCCL_FORCEINLINE explicit BlockMergeSort(typename BlockMergeSortStrategyT::TempStorage& temp_storage)
-      : BlockMergeSortStrategyT(temp_storage, RowMajorTid(BLOCK_DIM_X, BLOCK_DIM_Y, BLOCK_DIM_Z))
+      : BlockMergeSortStrategyT(temp_storage, RowMajorTid(BlockDimX, BlockDimY, BlockDimZ))
   {}
 
 private:

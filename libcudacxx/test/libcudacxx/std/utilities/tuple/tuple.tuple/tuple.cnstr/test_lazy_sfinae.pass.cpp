@@ -65,7 +65,7 @@ struct AllowAssertT
 // will cause a static assertion.
 __host__ __device__ void test_tuple_like_lazy_sfinae()
 {
-#if defined(_LIBCUDACXX_VERSION)
+#if defined(_CUDA_STD_VERSION)
   // This test requires libc++'s reduced arity initialization.
   using T1 = ConstructibleFromT<cuda::std::pair<int, int>>;
   using T2 = CtorAssertsT<int>;

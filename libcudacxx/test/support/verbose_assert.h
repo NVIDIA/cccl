@@ -10,7 +10,6 @@
 
 namespace verbose_assert
 {
-
 typedef std::basic_ostream<char>&(EndLType) (std::basic_ostream<char>&);
 
 template <class Stream, class Tp, class = decltype(std::declval<Stream&>() << std::declval<Tp const&>())>

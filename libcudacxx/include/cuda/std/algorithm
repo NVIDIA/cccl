@@ -1,0 +1,138 @@
+//===----------------------------------------------------------------------===//
+//
+// Part of libcu++, the C++ Standard Library for your entire system,
+// under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+// SPDX-FileCopyrightText: Copyright (c) 2023-25 NVIDIA CORPORATION & AFFILIATES.
+//
+//===----------------------------------------------------------------------===//
+
+#ifndef _CUDA_STD_ALGORITHM
+#define _CUDA_STD_ALGORITHM
+
+#include <cuda/std/detail/__config>
+
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
+
+#include <cuda/std/__algorithm/adjacent_find.h>
+#include <cuda/std/__algorithm/all_of.h>
+#include <cuda/std/__algorithm/any_of.h>
+#include <cuda/std/__algorithm/binary_search.h>
+#include <cuda/std/__algorithm/clamp.h>
+#include <cuda/std/__algorithm/comp.h>
+#include <cuda/std/__algorithm/comp_ref_type.h>
+#include <cuda/std/__algorithm/copy.h>
+#include <cuda/std/__algorithm/copy_backward.h>
+#include <cuda/std/__algorithm/copy_if.h>
+#include <cuda/std/__algorithm/copy_n.h>
+#include <cuda/std/__algorithm/count.h>
+#include <cuda/std/__algorithm/count_if.h>
+#include <cuda/std/__algorithm/equal.h>
+#include <cuda/std/__algorithm/equal_range.h>
+#include <cuda/std/__algorithm/fill.h>
+#include <cuda/std/__algorithm/fill_n.h>
+#include <cuda/std/__algorithm/find.h>
+#include <cuda/std/__algorithm/find_end.h>
+#include <cuda/std/__algorithm/find_first_of.h>
+#include <cuda/std/__algorithm/find_if.h>
+#include <cuda/std/__algorithm/find_if_not.h>
+#include <cuda/std/__algorithm/for_each.h>
+#include <cuda/std/__algorithm/for_each_n.h>
+#include <cuda/std/__algorithm/generate.h>
+#include <cuda/std/__algorithm/generate_n.h>
+#include <cuda/std/__algorithm/half_positive.h>
+#include <cuda/std/__algorithm/includes.h>
+#include <cuda/std/__algorithm/ranges_find_if.h>
+#include <cuda/std/__algorithm/ranges_find_if_not.h>
+#ifdef _CCCL_HAS_SORTING_ALGORITHMS
+#  include <cuda/std/__algorithm/inplace_merge.h>
+#endif // _CCCL_HAS_SORTING_ALGORITHMS
+#include <cuda/std/__algorithm/is_heap.h>
+#include <cuda/std/__algorithm/is_heap_until.h>
+#include <cuda/std/__algorithm/is_partitioned.h>
+#include <cuda/std/__algorithm/is_permutation.h>
+#include <cuda/std/__algorithm/is_sorted.h>
+#include <cuda/std/__algorithm/is_sorted_until.h>
+#include <cuda/std/__algorithm/iter_swap.h>
+#include <cuda/std/__algorithm/iterator_operations.h>
+#include <cuda/std/__algorithm/lexicographical_compare.h>
+#include <cuda/std/__algorithm/lower_bound.h>
+#include <cuda/std/__algorithm/make_heap.h>
+#include <cuda/std/__algorithm/make_projected.h>
+#include <cuda/std/__algorithm/max.h>
+#include <cuda/std/__algorithm/max_element.h>
+#include <cuda/std/__algorithm/merge.h>
+#include <cuda/std/__algorithm/min.h>
+#include <cuda/std/__algorithm/min_element.h>
+#include <cuda/std/__algorithm/minmax.h>
+#include <cuda/std/__algorithm/minmax_element.h>
+#include <cuda/std/__algorithm/mismatch.h>
+#include <cuda/std/__algorithm/move.h>
+#include <cuda/std/__algorithm/move_backward.h>
+#include <cuda/std/__algorithm/next_permutation.h>
+#include <cuda/std/__algorithm/none_of.h>
+#ifdef _CCCL_HAS_SORTING_ALGORITHMS
+#  include <cuda/std/__algorithm/nth_element.h>
+#endif // _CCCL_HAS_SORTING_ALGORITHMS
+#include <cuda/std/__algorithm/partial_sort.h>
+#include <cuda/std/__algorithm/partial_sort_copy.h>
+#include <cuda/std/__algorithm/partition.h>
+#include <cuda/std/__algorithm/partition_copy.h>
+#include <cuda/std/__algorithm/partition_point.h>
+#include <cuda/std/__algorithm/pop_heap.h>
+#include <cuda/std/__algorithm/prev_permutation.h>
+#include <cuda/std/__algorithm/push_heap.h>
+#include <cuda/std/__algorithm/ranges_for_each.h>
+#include <cuda/std/__algorithm/ranges_for_each_n.h>
+#include <cuda/std/__algorithm/ranges_iterator_concept.h>
+#include <cuda/std/__algorithm/ranges_min.h>
+#include <cuda/std/__algorithm/ranges_min_element.h>
+#include <cuda/std/__algorithm/remove.h>
+#include <cuda/std/__algorithm/remove_copy.h>
+#include <cuda/std/__algorithm/remove_copy_if.h>
+#include <cuda/std/__algorithm/remove_if.h>
+#include <cuda/std/__algorithm/replace.h>
+#include <cuda/std/__algorithm/replace_copy.h>
+#include <cuda/std/__algorithm/replace_copy_if.h>
+#include <cuda/std/__algorithm/replace_if.h>
+#include <cuda/std/__algorithm/reverse.h>
+#include <cuda/std/__algorithm/reverse_copy.h>
+#include <cuda/std/__algorithm/rotate.h>
+#include <cuda/std/__algorithm/rotate_copy.h>
+#include <cuda/std/__algorithm/sample.h>
+#include <cuda/std/__algorithm/search.h>
+#include <cuda/std/__algorithm/search_n.h>
+#include <cuda/std/__algorithm/set_difference.h>
+#include <cuda/std/__algorithm/set_intersection.h>
+#include <cuda/std/__algorithm/set_symmetric_difference.h>
+#include <cuda/std/__algorithm/set_union.h>
+#include <cuda/std/__algorithm/shift_left.h>
+#include <cuda/std/__algorithm/shift_right.h>
+#include <cuda/std/__algorithm/shuffle.h>
+#include <cuda/std/__algorithm/sift_down.h>
+#ifdef _CCCL_HAS_SORTING_ALGORITHMS
+#  include <cuda/std/__algorithm/sort.h>
+#endif // _CCCL_HAS_SORTING_ALGORITHMS
+#include <cuda/std/__algorithm/sort_heap.h>
+#ifdef _CCCL_HAS_SORTING_ALGORITHMS
+#  include <cuda/std/__algorithm/stable_partition.h>
+#  include <cuda/std/__algorithm/stable_sort.h>
+#endif // _CCCL_HAS_SORTING_ALGORITHMS
+#include <cuda/std/__algorithm/swap_ranges.h>
+#include <cuda/std/__algorithm/transform.h>
+#include <cuda/std/__algorithm/unique.h>
+#include <cuda/std/__algorithm/unique_copy.h>
+#include <cuda/std/__algorithm/upper_bound.h>
+
+// [algorithm.syn]
+#include <cuda/std/initializer_list>
+#include <cuda/std/version>
+
+#endif // _CUDA_STD_ALGORITHM

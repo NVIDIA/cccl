@@ -13,6 +13,7 @@
 
 #include <cuda/__execution/determinism.h>
 #include <cuda/__execution/require.h>
+#include <cuda/iterator>
 
 #include <numeric>
 
@@ -132,7 +133,7 @@ C2H_TEST("Nondeterministic Device reduce works with float and double on gpu with
     {
       const type nan_val = i == 0 ? limits_t::signaling_NaN() : limits_t::quiet_NaN();
 
-      auto begin = thrust::make_constant_iterator(nan_val);
+      auto begin = cuda::constant_iterator(nan_val);
       auto end   = begin + num_indices;
 
       // sprinkle some NaNs randomly throughout the input
@@ -193,7 +194,7 @@ C2H_TEST("Nondeterministic Device reduce works with float and double on gpu with
 
   SECTION("constant iterator")
   {
-    thrust::constant_iterator<type> input(1.0f);
+    cuda::constant_iterator<type> input(1.0f);
     c2h::device_vector<type> d_output(1);
 
     REQUIRE(cudaSuccess
@@ -233,27 +234,27 @@ C2H_TEST("Nondeterministic Device reduce works with float and double on gpu with
   using accum_t     = type;
   using transform_t = square_t<type>;
 
-  using nondeterministic_dispatch_t = cub::detail::
-    DispatchReduceNondeterministic<input_it_t, output_it_t, int, cuda::std::plus<type>, init_t, accum_t, transform_t>;
-
   std::size_t temp_storage_bytes{};
 
-  auto error = nondeterministic_dispatch_t::Dispatch(
-    nullptr, temp_storage_bytes, input, raw_ptr, num_items, cuda::std::plus<type>{});
+  auto error = cub::detail::reduce::dispatch_nondeterministic(
+    nullptr, temp_storage_bytes, input, raw_ptr, num_items, cuda::std::plus<type>{}, init_t{}, 0, transform_t{});
   REQUIRE(error == cudaSuccess);
 
   c2h::device_vector<std::uint8_t> temp_storage(temp_storage_bytes, thrust::no_init);
 
-  error = nondeterministic_dispatch_t::Dispatch(
+  error = cub::detail::reduce::dispatch_nondeterministic(
     thrust::raw_pointer_cast(temp_storage.data()),
     temp_storage_bytes,
     input,
     raw_ptr,
     num_items,
-    cuda::std::plus<type>{});
+    cuda::std::plus<type>{},
+    init_t{},
+    0,
+    transform_t{});
   REQUIRE(error == cudaSuccess);
 
-  auto h_input = thrust::make_transform_iterator(input, transform_t{});
+  auto h_input = cuda::transform_iterator(input, transform_t{});
 
   c2h::host_vector<type> h_expected(1);
   // TODO: Use std::reduce once we drop support for GCC 7 and 8

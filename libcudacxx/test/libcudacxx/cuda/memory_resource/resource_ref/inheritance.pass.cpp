@@ -129,32 +129,6 @@ void test_resource_ref()
   assert(ref_second.allocate_sync(0, 0) == first.allocate_sync(0, 0));
 }
 
-template <class... Properties>
-cuda::mr::synchronous_resource_ref<cuda::mr::host_accessible, Properties...>
-indirection(resource_base<cuda::mr::host_accessible, Properties...>* res)
-{
-  return {res};
-}
-
-template <class... Properties>
-void test_resource_ref_from_pointer()
-{
-  some_data input{1337};
-  resource_derived_first<cuda::mr::host_accessible, Properties...> first{42};
-  resource_derived_second<cuda::mr::host_accessible, Properties...> second{&input};
-
-  cuda::mr::synchronous_resource_ref<cuda::mr::host_accessible, Properties...> ref_first  = indirection(&first);
-  cuda::mr::synchronous_resource_ref<cuda::mr::host_accessible, Properties...> ref_second = indirection(&second);
-
-  // Ensure that we properly pass on the allocate function
-  assert(ref_first.allocate_sync(0, 0) == first.allocate_sync(0, 0));
-  assert(ref_second.allocate_sync(0, 0) == second.allocate_sync(0, 0));
-
-  // Ensure that assignment still works
-  ref_second = ref_first;
-  assert(ref_second.allocate_sync(0, 0) == first.allocate_sync(0, 0));
-}
-
 // clang complains about pure virtual functions being called, so ensure that we properly crash if so
 extern "C" void __cxa_pure_virtual()
 {
@@ -170,11 +144,6 @@ int main(int, char**)
       // Test some basic combinations of properties w/o state
       test_resource_ref<property_with_value<short>, property_with_value<int>>();
       test_resource_ref<property_with_value<short>, property_without_value<int>>();
-      test_resource_ref<property_without_value<short>, property_without_value<int>>();
-
-      test_resource_ref_from_pointer<property_with_value<short>, property_with_value<int>>();
-      test_resource_ref_from_pointer<property_with_value<short>, property_without_value<int>>();
-      test_resource_ref_from_pointer<property_without_value<short>, property_without_value<int>>();))
-
+      test_resource_ref<property_without_value<short>, property_without_value<int>>();))
   return 0;
 }

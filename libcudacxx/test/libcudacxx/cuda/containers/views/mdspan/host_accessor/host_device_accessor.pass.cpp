@@ -19,8 +19,8 @@ using ext_t = cuda::std::extents<int, 4>;
 __host__ __device__ void basic_mdspan_access_test()
 {
   int array[] = {1, 2, 3, 4};
-  cuda::host_mdspan<int, ext_t> h_md{array, ext_t{}};
-  cuda::device_mdspan<int, ext_t> d_md{device_array, ext_t{}};
+  [[maybe_unused]] cuda::host_mdspan<int, ext_t> h_md{array, ext_t{}};
+  [[maybe_unused]] cuda::device_mdspan<int, ext_t> d_md{device_array, ext_t{}};
   cuda::managed_mdspan<int, ext_t> m_md{managed_array, ext_t{}};
   NV_IF_ELSE_TARGET(NV_IS_HOST, (unused(h_md[0]);), unused(d_md[0]);)
   unused(m_md[0]);

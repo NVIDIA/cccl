@@ -37,9 +37,11 @@
 #include <thrust/iterator/iterator_traits.h>
 
 #include <cuda/std/__iterator/iterator_traits.h>
+#include <cuda/std/__iterator/reverse_iterator.h>
+#include <cuda/std/__type_traits/enable_if.h>
+#include <cuda/std/__utility/move.h>
+#include <cuda/std/__utility/swap.h>
 #include <cuda/std/initializer_list>
-#include <cuda/std/iterator>
-#include <cuda/std/utility>
 
 #include <vector>
 
@@ -58,7 +60,6 @@ inline constexpr no_init_t no_init;
 
 namespace detail
 {
-
 template <typename T, typename Alloc>
 class vector_base
 {
@@ -605,7 +606,6 @@ bool operator!=(const vector_base<T1, Alloc1>& lhs, const std::vector<T2, Alloc2
 
 template <typename T1, typename Alloc1, typename T2, typename Alloc2>
 bool operator!=(const std::vector<T1, Alloc1>& lhs, const vector_base<T2, Alloc2>& rhs);
-
 } // namespace detail
 
 THRUST_NAMESPACE_END

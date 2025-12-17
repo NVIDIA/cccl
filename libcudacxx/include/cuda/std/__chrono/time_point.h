@@ -36,11 +36,11 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 namespace chrono
 {
-
 template <class _Clock, class _Duration = typename _Clock::duration>
 class _CCCL_TYPE_VISIBILITY_DEFAULT time_point
 {
-  static_assert(__is_duration_v<_Duration>, "Second template parameter of time_point must be a std::chrono::duration");
+  static_assert(__is_cuda_std_duration_v<_Duration>,
+                "Second template parameter of time_point must be a std::chrono::duration");
 
 public:
   using clock    = _Clock;
@@ -208,7 +208,6 @@ public:
   }
 #endif // !_LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
 };
-
 } // namespace chrono
 
 template <class _Clock, class _Duration1, class _Duration2>
@@ -220,7 +219,6 @@ common_type<chrono::time_point<_Clock, _Duration1>, chrono::time_point<_Clock, _
 
 namespace chrono
 {
-
 template <class _ToDuration, class _Clock, class _Duration>
 [[nodiscard]] _CCCL_API constexpr time_point<_Clock, _ToDuration>
 time_point_cast(const time_point<_Clock, _Duration>& __t)
@@ -229,26 +227,25 @@ time_point_cast(const time_point<_Clock, _Duration>& __t)
 }
 
 _CCCL_TEMPLATE(class _ToDuration, class _Clock, class _Duration)
-_CCCL_REQUIRES(__is_duration_v<_ToDuration>)
+_CCCL_REQUIRES(__is_cuda_std_duration_v<_ToDuration>)
 [[nodiscard]] _CCCL_API constexpr time_point<_Clock, _ToDuration> floor(const time_point<_Clock, _Duration>& __t)
 {
   return time_point<_Clock, _ToDuration>{::cuda::std::chrono::floor<_ToDuration>(__t.time_since_epoch())};
 }
 
 _CCCL_TEMPLATE(class _ToDuration, class _Clock, class _Duration)
-_CCCL_REQUIRES(__is_duration_v<_ToDuration>)
+_CCCL_REQUIRES(__is_cuda_std_duration_v<_ToDuration>)
 [[nodiscard]] _CCCL_API constexpr time_point<_Clock, _ToDuration> ceil(const time_point<_Clock, _Duration>& __t)
 {
   return time_point<_Clock, _ToDuration>{::cuda::std::chrono::ceil<_ToDuration>(__t.time_since_epoch())};
 }
 
 _CCCL_TEMPLATE(class _ToDuration, class _Clock, class _Duration)
-_CCCL_REQUIRES(__is_duration_v<_ToDuration>)
+_CCCL_REQUIRES(__is_cuda_std_duration_v<_ToDuration>)
 [[nodiscard]] _CCCL_API constexpr time_point<_Clock, _ToDuration> round(const time_point<_Clock, _Duration>& __t)
 {
   return time_point<_Clock, _ToDuration>{::cuda::std::chrono::round<_ToDuration>(__t.time_since_epoch())};
 }
-
 } // namespace chrono
 
 _CCCL_END_NAMESPACE_CUDA_STD
