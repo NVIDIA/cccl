@@ -437,7 +437,7 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void kernelBody(
   constexpr int tile_size            = WarpspeedPolicy::tile_size;
   constexpr int num_look_ahead_items = WarpspeedPolicy::num_look_ahead_items;
 
-  constexpr int elemPerThread = tile_size / squadReduce.threadCount();
+  constexpr int elemPerThread = ::cuda::ceil_div(tile_size, squadReduce.threadCount());
 
   ////////////////////////////////////////////////////////////////////////////////
   // Resources
