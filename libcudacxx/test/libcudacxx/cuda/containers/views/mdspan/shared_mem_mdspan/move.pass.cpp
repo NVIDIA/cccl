@@ -71,11 +71,9 @@ __device__ constexpr void mixin_layout(const H& handle, const A& acc)
 }
 
 template <class T, cuda::std::enable_if_t<cuda::std::is_default_constructible_v<T>, int> = 0>
-__device__ void mixin_accessor()
+__device__ constexpr void mixin_accessor()
 {
-  __shared__ cuda::std::array<T, 1024> elements;
-  elements[0] = 42;
-  asm volatile("" : : "l"((size_t) elements.data()) : "memory");
+  cuda::std::array<T, 1024> elements{42};
   // make sure we test trivially constructible accessor and data_handle
   static_assert(cuda::std::is_trivially_copyable_v<cuda::std::default_accessor<T>>);
   static_assert(cuda::std::is_trivially_copyable_v<typename cuda::std::default_accessor<T>::data_handle_type>);
@@ -85,8 +83,7 @@ __device__ void mixin_accessor()
 template <class T, cuda::std::enable_if_t<!cuda::std::is_default_constructible_v<T>, int> = 0>
 __device__ void mixin_accessor()
 {
-  __shared__ ElementPool<T, 1024> elements;
-  asm volatile("" : : "l"((size_t) elements.get_ptr()) : "memory");
+  ElementPool<T, 1024> elements;
   // make sure we test trivially constructible accessor and data_handle
   static_assert(cuda::std::is_trivially_copyable_v<cuda::std::default_accessor<T>>);
   static_assert(cuda::std::is_trivially_copyable_v<typename cuda::std::default_accessor<T>::data_handle_type>);
@@ -96,12 +93,15 @@ __device__ void mixin_accessor()
 __device__ void test()
 {
   mixin_accessor<int>();
+  mixin_accessor<const int>();
   mixin_accessor<double>();
+  mixin_accessor<const double>();
 }
 
 __device__ void test_evil()
 {
   mixin_accessor<MinimalElementType>();
+  mixin_accessor<const MinimalElementType>();
 }
 
 int main(int, char**)

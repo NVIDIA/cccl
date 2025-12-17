@@ -38,7 +38,7 @@ template <bool hc,
           class M,
           class A,
           cuda::std::enable_if_t<(M::extents_type::rank_dynamic() > 0) && hc && mc && ac, int> = 0>
-__device__ void test_mdspan_types(const H&, const M&, const A&)
+__device__ constexpr void test_mdspan_types(const H&, const M&, const A&)
 {
   using MDS =
     cuda::shared_memory_mdspan<typename A::element_type, typename M::extents_type, typename M::layout_type, A>;
@@ -47,13 +47,12 @@ __device__ void test_mdspan_types(const H&, const M&, const A&)
   static_assert(mc == cuda::std::is_default_constructible_v<M>);
   static_assert(ac == cuda::std::is_default_constructible_v<A>);
 
-  __shared__ typename A::element_type array[8];
-  MDS m{array, typename MDS::extents_type()};
+  MDS m;
 #if !TEST_COMPILER(GCC)
   static_assert(noexcept(MDS()) == (noexcept(H()) && noexcept(M()) && noexcept(A())));
 #endif // !TEST_COMPILER(GCC)
   assert(m.extents() == typename MDS::extents_type());
-  test_equality_handle(m, H{array});
+  test_equality_handle(m, H{});
   test_equality_mapping(m, M{});
   test_equality_accessor(m, A{});
 }
@@ -102,30 +101,35 @@ __device__ constexpr void mixin_layout(const H& handle, const A& acc)
 }
 
 template <class T, cuda::std::enable_if_t<cuda::std::is_default_constructible_v<T>, int> = 0>
-__device__ void mixin_accessor()
+__device__ constexpr void mixin_accessor()
 {
-  __shared__ cuda::std::array<T, 1024> elements;
-  elements[0] = 42;
-  asm volatile("" : : "l"((size_t) elements.data()) : "memory");
+  cuda::std::array<T, 1024> elements{42};
   mixin_layout<true, true>(elements.data(), cuda::std::default_accessor<T>());
 }
 
 template <class T, cuda::std::enable_if_t<!cuda::std::is_default_constructible_v<T>, int> = 0>
 __device__ void mixin_accessor()
 {
-  __shared__ ElementPool<T, 1024> elements;
-  asm volatile("" : : "l"((size_t) elements.get_ptr()) : "memory");
+  ElementPool<T, 1024> elements;
   mixin_layout<true, true>(elements.get_ptr(), cuda::std::default_accessor<T>());
 }
 
 __device__ void test()
 {
   mixin_accessor<int>();
+  mixin_accessor<const int>();
   mixin_accessor<double>();
+  mixin_accessor<const double>();
+}
+
+__device__ void test_evil()
+{
+  mixin_accessor<MinimalElementType>();
+  mixin_accessor<const MinimalElementType>();
 }
 
 int main(int, char**)
 {
-  NV_IF_TARGET(NV_IS_DEVICE, (test();))
+  NV_IF_TARGET(NV_IS_DEVICE, (test(); test_evil();))
   return 0;
 }

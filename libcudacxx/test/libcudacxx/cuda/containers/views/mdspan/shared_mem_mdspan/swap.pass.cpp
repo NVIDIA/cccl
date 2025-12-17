@@ -45,10 +45,8 @@ __device__ void test_swap(MDS a, MDS b)
 __device__ void test()
 {
   using extents_t    = cuda::std::extents<int, 4, cuda::std::dynamic_extent>;
-  __shared__ float data_a[1024];
-  __shared__ float data_b[1024];
-  asm volatile("" : : "l"((size_t) data_a) : "memory");
-  asm volatile("" : : "l"((size_t) data_b) : "memory");
+  float data_a[1024] = {};
+  float data_b[1024] = {};
   {
     cuda::shared_memory_mdspan<float, extents_t> a(data_a, extents_t(12));
     cuda::shared_memory_mdspan<float, extents_t> b(data_b, extents_t(5));
