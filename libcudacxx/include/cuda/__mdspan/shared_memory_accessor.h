@@ -185,6 +185,7 @@ public:
     return _Accessor::offset(__p, __i);
   }
 
+#if !defined(_CCCL_DISABLE_MDSPAN_ACCESSOR_DETECT_INVALIDITY)
   [[nodiscard]] _CCCL_API static bool __detectably_invalid(
     [[maybe_unused]] data_handle_type __p, [[maybe_unused]] ::cuda::std::size_t __size_bytes) noexcept
   {
@@ -197,6 +198,7 @@ public:
     _CCCL_VERIFY_DEVICE_ONLY_USAGE();
     return !__is_valid;
   }
+#endif // !defined(_CCCL_DISABLE_MDSPAN_ACCESSOR_DETECT_INVALIDITY)
 };
 
 _CCCL_END_NAMESPACE_CUDA
