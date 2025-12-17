@@ -91,10 +91,7 @@ def bench_merge_sort_pointer(bench_fixture, request, size):
         )
 
     fixture = request.getfixturevalue(bench_fixture)
-    if bench_fixture == "compile_benchmark":
-        fixture(cuda.compute.make_merge_sort, run)
-    else:
-        fixture(run)
+    fixture(run)
 
 
 @pytest.mark.parametrize("bench_fixture", ["compile_benchmark", "benchmark"])
@@ -115,10 +112,7 @@ def bench_merge_sort_pointer_custom_op(bench_fixture, request, size):
         )
 
     fixture = request.getfixturevalue(bench_fixture)
-    if bench_fixture == "compile_benchmark":
-        fixture(cuda.compute.make_merge_sort, run)
-    else:
-        fixture(run)
+    fixture(run)
 
 
 @pytest.mark.parametrize("bench_fixture", ["compile_benchmark", "benchmark"])
@@ -141,10 +135,7 @@ def bench_merge_sort_iterator(bench_fixture, request, size):
         )
 
     fixture = request.getfixturevalue(bench_fixture)
-    if bench_fixture == "compile_benchmark":
-        fixture(cuda.compute.make_merge_sort, run)
-    else:
-        fixture(run)
+    fixture(run)
 
 
 @pytest.mark.parametrize("bench_fixture", ["compile_benchmark", "benchmark"])
@@ -167,7 +158,4 @@ def bench_merge_sort_struct(bench_fixture, request, size):
         )
 
     fixture = request.getfixturevalue(bench_fixture)
-    if bench_fixture == "compile_benchmark":
-        fixture(cuda.compute.make_merge_sort, run)
-    else:
-        fixture(run)
+    fixture(run)
