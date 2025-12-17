@@ -24,6 +24,7 @@
 #include <cub/util_device.cuh>
 #include <cub/util_type.cuh>
 
+#include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__functional/invoke.h>
 #include <cuda/std/__functional/operations.h>
 #include <cuda/std/__type_traits/enable_if.h>
@@ -589,7 +590,8 @@ struct policy_hub
 
       // 256 / sizeof(InputValueT) - 1 should minimize bank conflicts (and fits into 48KiB SMEM)
       // 2-byte types and double needed special handling
-      static constexpr int items_per_thread = (256 / (sizeof(InputValueT) == 2 ? 2 : sizeof(AccumT)) - 1);
+      static constexpr int items_per_thread =
+        ::cuda::std::max(256 / (sizeof(InputValueT) == 2 ? 2 : int{sizeof(AccumT)}) - 1, 1);
       // TODO(bgruber): the special handling of double below is a LOT faster, but exceeds 48KiB SMEM
       // clang-format off
       // |   F64   |      I32      |     72576      |  11.295 us |       2.44% |  11.917 us |       8.02% |     0.622 us |   5.50% |   SLOW   |
