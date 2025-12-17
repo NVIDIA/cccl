@@ -57,12 +57,7 @@ inline constexpr bool is_shared_memory_accessor_v = false;
 template <typename _Accessor>
 inline constexpr bool is_shared_memory_accessor_v<__shared_memory_accessor<_Accessor>> = true;
 
-#define _CCCL_VERIFY_DEVICE_ONLY_USAGE(_VALUE) \
-  NV_IF_TARGET(                                \
-    NV_IS_HOST,                                \
-    (_CCCL_VERIFY(false, "the function cannot be used in HOST code"); _CCCL_UNREACHABLE(); return (_VALUE);))
-
-#define _CCCL_VERIFY_DEVICE_ONLY_USAGE_CTOR() \
+#define _CCCL_VERIFY_DEVICE_ONLY_USAGE() \
   NV_IF_TARGET(NV_IS_HOST, (_CCCL_VERIFY(false, "the function cannot be used in HOST code");))
 
 /***********************************************************************************************************************
@@ -107,21 +102,21 @@ public:
   _CCCL_API constexpr __shared_memory_accessor() noexcept(::cuda::std::is_nothrow_default_constructible_v<_Accessor2>)
       : _Accessor{}
   {
-    _CCCL_VERIFY_DEVICE_ONLY_USAGE_CTOR();
+    _CCCL_VERIFY_DEVICE_ONLY_USAGE();
   }
 
   _CCCL_API constexpr __shared_memory_accessor(const _Accessor& __acc) noexcept(
     ::cuda::std::is_nothrow_copy_constructible_v<_Accessor>)
       : _Accessor{__acc}
   {
-    _CCCL_VERIFY_DEVICE_ONLY_USAGE_CTOR();
+    _CCCL_VERIFY_DEVICE_ONLY_USAGE();
   }
 
   _CCCL_API constexpr __shared_memory_accessor(_Accessor&& __acc) noexcept(
     ::cuda::std::is_nothrow_move_constructible_v<_Accessor>)
       : _Accessor{::cuda::std::move(__acc)}
   {
-    _CCCL_VERIFY_DEVICE_ONLY_USAGE_CTOR();
+    _CCCL_VERIFY_DEVICE_ONLY_USAGE();
   }
 
   _CCCL_TEMPLATE(typename _OtherAccessor)
@@ -131,7 +126,7 @@ public:
     ::cuda::std::is_nothrow_constructible_v<_Accessor, const _OtherAccessor&>)
       : _Accessor{__acc}
   {
-    _CCCL_VERIFY_DEVICE_ONLY_USAGE_CTOR();
+    _CCCL_VERIFY_DEVICE_ONLY_USAGE();
   }
 
   _CCCL_TEMPLATE(typename _OtherAccessor)
@@ -141,7 +136,7 @@ public:
     ::cuda::std::is_nothrow_constructible_v<_Accessor, const _OtherAccessor&>)
       : _Accessor{__acc}
   {
-    _CCCL_VERIFY_DEVICE_ONLY_USAGE_CTOR();
+    _CCCL_VERIFY_DEVICE_ONLY_USAGE();
   }
 
   _CCCL_TEMPLATE(typename _OtherAccessor)
@@ -151,7 +146,7 @@ public:
     ::cuda::std::is_nothrow_constructible_v<_Accessor, _OtherAccessor>)
       : _Accessor{::cuda::std::move(__acc)}
   {
-    _CCCL_VERIFY_DEVICE_ONLY_USAGE_CTOR();
+    _CCCL_VERIFY_DEVICE_ONLY_USAGE();
   }
 
   _CCCL_TEMPLATE(typename _OtherAccessor)
@@ -161,7 +156,7 @@ public:
     ::cuda::std::is_nothrow_constructible_v<_Accessor, _OtherAccessor>)
       : _Accessor{::cuda::std::move(__acc)}
   {
-    _CCCL_VERIFY_DEVICE_ONLY_USAGE_CTOR();
+    _CCCL_VERIFY_DEVICE_ONLY_USAGE();
   }
 
   _CCCL_API reference access(__element_type* __p, ::cuda::std::size_t __i) const noexcept(__is_access_noexcept)
@@ -172,9 +167,9 @@ public:
        _CCCL_ASSERT(__is_shared_mem, "__p is not a shared memory pointer");
        _CCCL_ASSERT(__i <= ::cuda::__max_smem_allocation_bytes() / sizeof(__element_type),
                     "__i exceeds the maximum shared memory allocation size");
-       _CCCL_ASSUME(__is_shared_mem);
-       return _Accessor::access(__p, __i);))
-    _CCCL_VERIFY_DEVICE_ONLY_USAGE(_Accessor::access(__p, __i));
+       _CCCL_ASSUME(__is_shared_mem);))
+    _CCCL_VERIFY_DEVICE_ONLY_USAGE();
+    return _Accessor::access(__p, __i);
   }
 
   _CCCL_API data_handle_type offset(__element_type* __p, ::cuda::std::size_t __i) const noexcept(__is_offset_noexcept)
@@ -185,19 +180,22 @@ public:
        _CCCL_ASSERT(__is_shared_mem, "__p is not a shared memory pointer");
        _CCCL_ASSERT(__i <= ::cuda::__max_smem_allocation_bytes() / sizeof(__element_type),
                     "__i exceeds the maximum shared memory allocation size");
-       _CCCL_ASSUME(__is_shared_mem);
-       return _Accessor::offset(__p, __i);))
-    _CCCL_VERIFY_DEVICE_ONLY_USAGE(_Accessor::offset(__p, __i));
+       _CCCL_ASSUME(__is_shared_mem);))
+    _CCCL_VERIFY_DEVICE_ONLY_USAGE();
+    return _Accessor::offset(__p, __i);
   }
 
   [[nodiscard]] _CCCL_API static bool __detectably_invalid(
     [[maybe_unused]] data_handle_type __p, [[maybe_unused]] ::cuda::std::size_t __size_bytes) noexcept
   {
+    [[maybe_unused]] bool __is_valid = true;
     NV_IF_TARGET(NV_IS_DEVICE,
                  (bool __is_shared_mem     = ::cuda::device::is_address_from(__p, device::address_space::shared);
                   bool __exceeds_smem_size = __size_bytes > ::cuda::__max_smem_allocation_bytes();
-                  return !__is_shared_mem || __exceeds_smem_size;))
-    _CCCL_VERIFY_DEVICE_ONLY_USAGE(false);
+                  __is_valid               = __is_shared_mem && !__exceeds_smem_size;))
+    _CCCL_ASSERT(__is_valid, "shared_memory_accessor (mdspan): data handle doesn't point to a valid shared memory");
+    _CCCL_VERIFY_DEVICE_ONLY_USAGE();
+    return !__is_valid;
   }
 };
 
