@@ -169,7 +169,7 @@ public:
     if constexpr (::cuda::std::__has_detect_invalidity<accessor_type>)
     {
       [[maybe_unused]] const auto __tmp = mapping(); // workaround for clang with nodiscard
-      _CCCL_ASSERT(!accessor().__has_detect_invalidity(data_handle(), __tmp.required_span_size()),
+      _CCCL_ASSERT(!accessor().__detectably_invalid(data_handle(), __tmp.required_span_size()),
                    "mdspan: invalid data handle");
     }
   }
@@ -185,7 +185,7 @@ public:
     if constexpr (::cuda::std::__has_detect_invalidity<accessor_type>)
     {
       const auto __tmp = mapping(); // workaround for clang with nodiscard
-      _CCCL_ASSERT(!accessor().__has_detect_invalidity(data_handle(), __tmp.required_span_size()),
+      _CCCL_ASSERT(!accessor().__detectably_invalid(data_handle(), __tmp.required_span_size()),
                    "mdspan: invalid data handle");
     }
   }
@@ -199,7 +199,7 @@ public:
     if constexpr (::cuda::std::__has_detect_invalidity<accessor_type>)
     {
       const auto __tmp = mapping(); // workaround for clang with nodiscard
-      _CCCL_ASSERT(!accessor().__has_detect_invalidity(data_handle(), __tmp.required_span_size()),
+      _CCCL_ASSERT(!accessor().__detectably_invalid(data_handle(), __tmp.required_span_size()),
                    "mdspan: invalid data handle");
     }
   }
@@ -213,7 +213,7 @@ public:
     if constexpr (::cuda::std::__has_detect_invalidity<accessor_type>)
     {
       const auto __tmp = mapping(); // workaround for clang with nodiscard
-      _CCCL_ASSERT(!accessor().__has_detect_invalidity(data_handle(), __tmp.required_span_size()),
+      _CCCL_ASSERT(!accessor().__detectably_invalid(data_handle(), __tmp.required_span_size()),
                    "mdspan: invalid data handle");
     }
   }
@@ -226,7 +226,7 @@ public:
   {
     if constexpr (::cuda::std::__has_detect_invalidity<accessor_type>)
     {
-      _CCCL_ASSERT(!accessor().__has_detect_invalidity(data_handle(), mapping().required_span_size()),
+      _CCCL_ASSERT(!accessor().__detectably_invalid(data_handle(), mapping().required_span_size()),
                    "mdspan: invalid data handle");
     }
   }
@@ -239,7 +239,7 @@ public:
   {
     if constexpr (::cuda::std::__has_detect_invalidity<accessor_type>)
     {
-      _CCCL_ASSERT(!accessor().__has_detect_invalidity(data_handle(), mapping().required_span_size()),
+      _CCCL_ASSERT(!accessor().__detectably_invalid(data_handle(), mapping().required_span_size()),
                    "mdspan: invalid data handle");
     }
   }
@@ -253,7 +253,7 @@ public:
     if constexpr (::cuda::std::__has_detect_invalidity<accessor_type>)
     {
       const auto __tmp = mapping(); // workaround for clang with nodiscard
-      _CCCL_ASSERT(!accessor().__has_detect_invalidity(data_handle(), __tmp.required_span_size()),
+      _CCCL_ASSERT(!accessor().__detectably_invalid(data_handle(), __tmp.required_span_size()),
                    "mdspan: invalid data handle");
     }
   }
@@ -266,7 +266,7 @@ public:
     if constexpr (::cuda::std::__has_detect_invalidity<accessor_type>)
     {
       const auto __tmp = mapping(); // workaround for clang with nodiscard
-      _CCCL_ASSERT(!accessor().__has_detect_invalidity(data_handle(), __tmp.required_span_size()),
+      _CCCL_ASSERT(!accessor().__detectably_invalid(data_handle(), __tmp.required_span_size()),
                    "mdspan: invalid data handle");
     }
   }
@@ -277,7 +277,7 @@ public:
     if constexpr (::cuda::std::__has_detect_invalidity<accessor_type>)
     {
       const auto __tmp = mapping(); // workaround for clang with nodiscard
-      _CCCL_ASSERT(!accessor().__has_detect_invalidity(data_handle(), __tmp.required_span_size()),
+      _CCCL_ASSERT(!accessor().__detectably_invalid(data_handle(), __tmp.required_span_size()),
                    "mdspan: invalid data handle");
     }
   }
@@ -297,7 +297,7 @@ public:
     if constexpr (::cuda::std::__has_detect_invalidity<accessor_type>)
     {
       const auto __tmp = mapping(); // workaround for clang with nodiscard
-      _CCCL_ASSERT(!accessor().__has_detect_invalidity(data_handle(), __tmp.required_span_size()),
+      _CCCL_ASSERT(!accessor().__detectably_invalid(data_handle(), __tmp.required_span_size()),
                    "mdspan: invalid data handle");
     }
     if constexpr (extents_type::rank() != 0)
@@ -334,7 +334,7 @@ public:
     if constexpr (::cuda::std::__has_detect_invalidity<accessor_type>)
     {
       const auto __tmp = mapping(); // workaround for clang with nodiscard
-      _CCCL_ASSERT(!accessor().__has_detect_invalidity(data_handle(), __tmp.required_span_size()),
+      _CCCL_ASSERT(!accessor().__detectably_invalid(data_handle(), __tmp.required_span_size()),
                    "mdspan: invalid data handle");
     }
     if constexpr (extents_type::rank() != 0)

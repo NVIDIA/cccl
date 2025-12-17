@@ -110,7 +110,7 @@ class __host_accessor : public _Accessor
 #  if _CCCL_HAS_CTK()
     if constexpr (::cuda::std::contiguous_iterator<__data_handle_type>)
     {
-      return ::cuda::is_host_accessible(::cuda::std::to_address(__p));
+      return ::cuda::__is_host_accessible_nothrow(::cuda::std::to_address(__p));
     }
     else
 #  endif // _CCCL_HAS_CTK()
@@ -211,7 +211,10 @@ public:
   {
     _CCCL_IF_NOT_CONSTEVAL_DEFAULT
     {
-      NV_IF_ELSE_TARGET(NV_IS_HOST, (return __is_host_accessible_pointer(__p);), (return false;))
+      bool __is_valid = true;
+      NV_IF_TARGET(NV_IS_HOST, (__is_valid = __is_host_accessible_pointer(__p);), (__is_valid = false;))
+      _CCCL_ASSERT(__is_valid, "host_accessor (mdspan): data handle doesn't point to a valid host memory");
+      return !__is_valid;
     }
     return true;
   }
@@ -241,8 +244,7 @@ class __device_accessor : public _Accessor
 #if _CCCL_HAS_CTK() && !_CCCL_COMPILER(NVRTC)
     if constexpr (::cuda::std::contiguous_iterator<__data_handle_type>)
     {
-      static const auto __dev_id = static_cast<int>(::cuda::__driver::__ctxGetDevice());
-      return ::cuda::is_device_accessible(::cuda::std::to_address(__p), ::cuda::device_ref{__dev_id});
+      return ::cuda::__is_device_or_managed_memory(::cuda::std::to_address(__p));
     }
     else
 #endif // _CCCL_HAS_CTK() && !_CCCL_COMPILER(NVRTC)
@@ -250,21 +252,6 @@ class __device_accessor : public _Accessor
       return true; // cannot be verified
     }
   }
-
-#if _CCCL_DEVICE_COMPILATION()
-
-  [[nodiscard]]
-  _CCCL_DEVICE_API static constexpr bool __is_device_accessible_pointer_from_device(__data_handle_type __p) noexcept
-  {
-    return ::cuda::device::is_address_from(__p, ::cuda::device::address_space::global)
-        || ::cuda::device::is_address_from(__p, ::cuda::device::address_space::shared)
-        || ::cuda::device::is_address_from(__p, ::cuda::device::address_space::constant)
-        || ::cuda::device::is_address_from(__p, ::cuda::device::address_space::local)
-        || ::cuda::device::is_address_from(__p, ::cuda::device::address_space::grid_constant)
-        || ::cuda::device::is_address_from(__p, ::cuda::device::address_space::cluster_shared);
-  }
-
-#endif // _CCCL_DEVICE_COMPILATION()
 
 public:
   using offset_policy    = __device_accessor<typename _Accessor::offset_policy>;
@@ -342,13 +329,6 @@ public:
   _CCCL_API constexpr reference access(data_handle_type __p, ::cuda::std::size_t __i) const
     noexcept(__is_access_noexcept)
   {
-    _CCCL_IF_NOT_CONSTEVAL_DEFAULT
-    {
-      NV_IF_ELSE_TARGET(
-        NV_IS_DEVICE,
-        (_CCCL_ASSERT(__is_device_accessible_pointer_from_device(__p), "The pointer is not device accessible");),
-        (_CCCL_VERIFY(false, "cuda::device_accessor cannot be used in HOST code");))
-    }
     return _Accessor::access(__p, __i);
   }
 
@@ -362,9 +342,11 @@ public:
   {
     _CCCL_IF_NOT_CONSTEVAL_DEFAULT
     {
-      NV_IF_ELSE_TARGET(NV_IS_HOST,
-                        (return __is_device_accessible_pointer_from_host(__p);),
-                        (return __is_device_accessible_pointer_from_device(__p);))
+      bool __is_valid = true;
+      NV_IF_TARGET(NV_IS_HOST, (__is_valid = __is_device_accessible_pointer_from_host(__p);))
+      _CCCL_ASSERT(__is_valid,
+                   "device_accessor (mdspan): data handle doesn't point to a valid device or managed memory");
+      return !__is_valid;
     }
     return true;
   }
@@ -393,7 +375,7 @@ class __managed_accessor : public _Accessor
 #if _CCCL_HAS_CTK() && !_CCCL_COMPILER(NVRTC)
     if constexpr (::cuda::std::contiguous_iterator<__data_handle_type>)
     {
-      return ::cuda::is_managed(::cuda::std::to_address(__p));
+      return ::cuda::__is_managed_nothrow(::cuda::std::to_address(__p));
     }
     else
 #endif // _CCCL_HAS_CTK() && !_CCCL_COMPILER(NVRTC)
@@ -479,8 +461,12 @@ public:
   {
     _CCCL_IF_NOT_CONSTEVAL_DEFAULT
     {
-      NV_IF_ELSE_TARGET(NV_IS_HOST, (return __is_managed_pointer(__p);), (return true;))
+      bool __is_valid = true;
+      NV_IF_ELSE_TARGET(NV_IS_HOST, (__is_valid = __is_managed_pointer(__p);), (return true;))
+      _CCCL_ASSERT(__is_valid, "managed_accessor (mdspan): data handle doesn't point to a valid managed memory");
+      return !__is_valid;
     }
+    return true;
   }
 };
 

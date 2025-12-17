@@ -196,7 +196,7 @@ public:
     NV_IF_TARGET(NV_IS_DEVICE,
                  (bool __is_shared_mem     = ::cuda::device::is_address_from(__p, device::address_space::shared);
                   bool __exceeds_smem_size = __size_bytes > ::cuda::__max_smem_allocation_bytes();
-                  return __is_shared_mem || __exceeds_smem_size;))
+                  return !__is_shared_mem || __exceeds_smem_size;))
     _CCCL_VERIFY_DEVICE_ONLY_USAGE(false);
   }
 };
