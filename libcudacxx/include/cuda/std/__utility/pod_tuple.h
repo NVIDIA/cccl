@@ -245,11 +245,7 @@ __apply(_Fn&& __fn, _Tuple&& __tupl, _Us&&... __us) noexcept(__detail::__nothrow
 {
   constexpr size_t __size = remove_reference_t<_Tuple>::__size;
 
-  if constexpr (__size >= 8)
-  {
-    return __tupl.__apply(static_cast<_Fn&&>(__fn), static_cast<_Tuple&&>(__tupl), static_cast<_Us&&>(__us)...);
-  }
-  else if constexpr (__size == 0)
+  if constexpr (__size == 0)
   {
     return static_cast<_Fn&&>(__fn)(static_cast<_Us&&>(__us)...);
   }
@@ -277,9 +273,17 @@ __apply(_Fn&& __fn, _Tuple&& __tupl, _Us&&... __us) noexcept(__detail::__nothrow
   {
     return static_cast<_Fn&&>(__fn)(static_cast<_Us&&>(__us)... _CCCL_PP_REPEAT(6, _CCCL_TUPLE_GET));
   }
-  else // if constexpr (__size == 7)
+  else if constexpr (__size == 7)
   {
     return static_cast<_Fn&&>(__fn)(static_cast<_Us&&>(__us)... _CCCL_PP_REPEAT(7, _CCCL_TUPLE_GET));
+  }
+  else if constexpr (__size == 8)
+  {
+    return static_cast<_Fn&&>(__fn)(static_cast<_Us&&>(__us)... _CCCL_PP_REPEAT(8, _CCCL_TUPLE_GET));
+  }
+  else
+  {
+    return __tupl.__apply(static_cast<_Fn&&>(__fn), static_cast<_Tuple&&>(__tupl), static_cast<_Us&&>(__us)...);
   }
 }
 
@@ -325,11 +329,7 @@ _CCCL_TRIVIAL_API constexpr auto __get(_Tuple&& __tupl) noexcept -> auto&&
   constexpr auto __size = remove_reference_t<_Tuple>::__size;
   static_assert(_Index < __size, "Index out of bounds in __get");
 
-  if constexpr (__size >= 8)
-  {
-    return __detail::__get<_Index>(static_cast<_Tuple&&>(__tupl));
-  }
-  else if constexpr (_Index == 0)
+  if constexpr (_Index == 0)
   {
     return static_cast<_Tuple&&>(__tupl).__val0;
   }
@@ -357,9 +357,17 @@ _CCCL_TRIVIAL_API constexpr auto __get(_Tuple&& __tupl) noexcept -> auto&&
   {
     return static_cast<_Tuple&&>(__tupl).__val6;
   }
-  else // if constexpr (_Index == 7)
+  else if constexpr (_Index == 7)
   {
     return static_cast<_Tuple&&>(__tupl).__val7;
+  }
+  else if constexpr (_Index == 8)
+  {
+    return static_cast<_Tuple&&>(__tupl).__val8;
+  }
+  else
+  {
+    return __detail::__get<_Index>(static_cast<_Tuple&&>(__tupl));
   }
 }
 
