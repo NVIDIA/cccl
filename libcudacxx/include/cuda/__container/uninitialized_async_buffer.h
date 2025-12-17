@@ -203,7 +203,7 @@ public:
       : __mr_(::cuda::std::move(__mr))
       , __stream_(__stream)
       , __count_(__count)
-      , __buf_(__count_ == 0 ? nullptr : __mr_.allocate(__stream_, __get_allocation_size(__count_)))
+      , __buf_(__count_ == 0 ? nullptr : __mr_.allocate(__stream_, __get_allocation_size(__count_), alignof(_Tp)))
   {}
 
   _CCCL_HIDE_FROM_ABI __uninitialized_async_buffer(const __uninitialized_async_buffer&)            = delete;
