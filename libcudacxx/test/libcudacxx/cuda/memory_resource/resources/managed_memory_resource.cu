@@ -17,7 +17,7 @@
 #include <testing.cuh>
 #include <utility.cuh>
 
-#if _CCCL_CTK_AT_LEAST(13, 0)
+#if _CCCL_CTK_AT_LEAST(13, 0) && !_CCCL_OS(WINDOWS)
 #  define TEST_TYPES cuda::mr::legacy_managed_memory_resource, cuda::managed_memory_pool_ref
 #else // ^^^ _CCCL_CTK_AT_LEAST(13, 0) ^^^ / vvv _CCCL_CTK_BELOW(13, 0) vvv
 #  define TEST_TYPES cuda::mr::legacy_managed_memory_resource

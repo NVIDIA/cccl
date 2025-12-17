@@ -28,20 +28,49 @@ inline constexpr ::cuda::std::initializer_list<int> compare_data_initializer_lis
 __device__ constexpr int device_data[] = {1, 42, 1337, 0, 12, -1};
 constexpr int host_data[]              = {1, 42, 1337, 0, 12, -1};
 
+template <typename Iter>
+__global__ void check_equal_kernel(Iter ptr)
+{
+  for (int i = 0; i < cuda::std::size(device_data); i++)
+  {
+    if (ptr[i] != device_data[i])
+    {
+      __trap();
+    }
+  }
+}
+
+template <typename Iter, typename Val>
+__global__ void check_equal_value_kernel(Iter ptr, size_t size, Val value)
+{
+  for (size_t i = 0; i < size; i++)
+  {
+    if (ptr[i] != value)
+    {
+      __trap();
+    }
+  }
+}
+
 template <class Buffer>
 bool equal_range(const Buffer& buf)
 {
-  if constexpr (!Buffer::properties_list::has_property(cuda::mr::device_accessible{}))
+  if constexpr (Buffer::properties_list::has_property(cuda::mr::host_accessible{}))
   {
     buf.stream().sync();
     return cuda::std::equal(buf.begin(), buf.end(), cuda::std::begin(host_data), cuda::std::end(host_data));
   }
   else
   {
+    if (buf.size() != cuda::std::size(device_data))
+    {
+      return false;
+    }
     cuda::__ensure_current_context guard{cuda::device_ref{0}};
-    return buf.size() == cuda::std::size(device_data)
-        && thrust::equal(
-             thrust::cuda::par.on(buf.stream().get()), buf.begin(), buf.end(), cuda::get_device_address(device_data[0]));
+    check_equal_kernel<<<1, 1, 0, buf.stream().get()>>>(buf.begin());
+    CCCLRT_CHECK(cudaGetLastError() == cudaSuccess);
+    buf.stream().sync();
+    return true;
   }
 }
 
@@ -108,7 +137,7 @@ struct equal_to_value
 template <class Buffer>
 bool equal_size_value(const Buffer& buf, const size_t size, const int value)
 {
-  if constexpr (!Buffer::properties_list::has_property(cuda::mr::device_accessible{}))
+  if constexpr (Buffer::properties_list::has_property(cuda::mr::host_accessible{}))
   {
     buf.stream().sync();
     return buf.size() == size
@@ -119,13 +148,15 @@ bool equal_size_value(const Buffer& buf, const size_t size, const int value)
   }
   else
   {
+    if (buf.size() != size)
+    {
+      return false;
+    }
     cuda::__ensure_current_context guard{cuda::device_ref{0}};
-    return buf.size() == size
-        && thrust::equal(thrust::cuda::par.on(buf.stream().get()),
-                         buf.begin(),
-                         buf.end(),
-                         cuda::std::begin(device_data),
-                         equal_to_value{static_cast<typename Buffer::value_type>(value)});
+    check_equal_value_kernel<<<1, 1, 0, buf.stream().get()>>>(buf.begin(), size, value);
+    CCCLRT_CHECK(cudaGetLastError() == cudaSuccess);
+    buf.stream().sync();
+    return true;
   }
 }
 
