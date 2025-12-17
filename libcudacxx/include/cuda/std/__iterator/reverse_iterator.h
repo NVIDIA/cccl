@@ -138,8 +138,7 @@ public:
   _CCCL_EXEC_CHECK_DISABLE
   [[nodiscard]] _CCCL_API constexpr reference operator*() const
   {
-    _Iter __tmp = current;
-    return *--__tmp;
+    return *::cuda::std::prev(current);
   }
 
   _CCCL_EXEC_CHECK_DISABLE

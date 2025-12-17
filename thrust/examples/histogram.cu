@@ -4,7 +4,6 @@
 #include <thrust/device_vector.h>
 #include <thrust/host_vector.h>
 #include <thrust/inner_product.h>
-#include <thrust/iterator/constant_iterator.h>
 #include <thrust/iterator/counting_iterator.h>
 #include <thrust/random.h>
 #include <thrust/sort.h>
@@ -128,11 +127,7 @@ void sparse_histogram(const Vector1& input, Vector2& histogram_values, Vector3& 
 
   // compact find the end of each bin of values
   thrust::reduce_by_key(
-    data.begin(),
-    data.end(),
-    thrust::constant_iterator<IndexType>(1),
-    histogram_values.begin(),
-    histogram_counts.begin());
+    data.begin(), data.end(), cuda::constant_iterator<IndexType>(1), histogram_values.begin(), histogram_counts.begin());
 
   // print the sparse histogram
   print_vector("histogram values", histogram_values);
