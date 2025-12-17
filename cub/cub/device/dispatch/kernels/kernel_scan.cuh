@@ -24,11 +24,11 @@ CUB_NAMESPACE_BEGIN
 
 namespace detail::scan
 {
-template <typename AccumT>
+template <typename ScanTileState, typename AccumT>
 union tile_state_kernel_arg_t
 {
   tile_state_t<AccumT>* lookahead;
-  ScanTileState<AccumT> lookback;
+  ScanTileState lookback;
 
   // ScanTileState<AccumT> is not trivially [default|copy]-constructible, so because of
   // https://eel.is/c++draft/class.union#general-note-3, tile_state_kernel_arg_t's special members are deleted. We work
@@ -49,9 +49,9 @@ union tile_state_kernel_arg_t
  * @param[in] num_tiles
  *   Number of tiles
  */
-template <typename ChainedPolicyT, typename AccumT>
-CUB_DETAIL_KERNEL_ATTRIBUTES
-__launch_bounds__(128) void DeviceScanInitKernel(tile_state_kernel_arg_t<AccumT> tile_state, int num_tiles)
+template <typename ChainedPolicyT, typename ScanTileState, typename AccumT>
+CUB_DETAIL_KERNEL_ATTRIBUTES __launch_bounds__(128) void DeviceScanInitKernel(
+  tile_state_kernel_arg_t<ScanTileState, AccumT> tile_state, int num_tiles)
 {
   if constexpr (detail::scan::scan_use_warpspeed<typename ChainedPolicyT::ActivePolicy>)
   {
@@ -147,11 +147,13 @@ DeviceCompactInitKernel(ScanTileStateT tile_state, int num_tiles, NumSelectedIte
 template <typename ChainedPolicyT,
           typename InputIteratorT,
           typename OutputIteratorT,
+          typename ScanTileState,
           typename ScanOpT,
           typename InitValueT,
           typename OffsetT,
           typename AccumT,
-          bool ForceInclusive>
+          bool ForceInclusive,
+          typename RealInitValueT = typename InitValueT::value_type>
 __launch_bounds__(detail::scan::scan_use_warpspeed<typename ChainedPolicyT::ActivePolicy>
                     ? get_scan_block_threads<typename ChainedPolicyT::ActivePolicy>
                     : int(ChainedPolicyT::ActivePolicy::ScanPolicyT::BLOCK_THREADS),
@@ -159,7 +161,7 @@ __launch_bounds__(detail::scan::scan_use_warpspeed<typename ChainedPolicyT::Acti
   CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceScanKernel(
     __grid_constant__ const InputIteratorT d_in,
     __grid_constant__ const OutputIteratorT d_out,
-    tile_state_kernel_arg_t<AccumT> tile_state,
+    tile_state_kernel_arg_t<ScanTileState, AccumT> tile_state,
     __grid_constant__ const int start_tile,
     ScanOpT scan_op,
     __grid_constant__ const InitValueT init_value,
@@ -174,14 +176,12 @@ __launch_bounds__(detail::scan::scan_use_warpspeed<typename ChainedPolicyT::Acti
     NV_IF_TARGET(NV_PROVIDES_SM_100, ({
                    auto scan_params = scanKernelParams<it_value_t<InputIteratorT>, it_value_t<OutputIteratorT>, AccumT>{
                      d_in, d_out, tile_state.lookahead, num_items, num_stages};
-                   device_scan_lookahead_body<typename ActivePolicy::WarpspeedPolicy, ForceInclusive>(
+                   device_scan_lookahead_body<typename ActivePolicy::WarpspeedPolicy, ForceInclusive, RealInitValueT>(
                      scan_params, scan_op, init_value);
                  }));
   }
   else
   {
-    using RealInitValueT = typename InitValueT::value_type;
-
     // Thread block type for scanning input tiles
     using AgentScanT = detail::scan::AgentScan<
       typename ActivePolicy::ScanPolicyT,
