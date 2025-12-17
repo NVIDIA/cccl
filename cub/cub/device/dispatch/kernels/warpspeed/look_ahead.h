@@ -49,6 +49,8 @@ template <typename AccumT, size_t _Alignment = ::cuda::next_power_of_two(sizeof(
 struct alignas(_Alignment) tile_state_t : tile_state_unaligned_t<AccumT>
 {};
 
+#if __cccl_ptx_isa >= 860
+
 template <typename AccumT>
 _CCCL_DEVICE_API inline void
 storeTileAggregate(tile_state_t<AccumT>* ptrTileStates, scan_state scanState, AccumT sum, int index)
@@ -228,6 +230,8 @@ template <int numTileStatesPerThread, typename AccumT, typename ScanOpT>
 
   return sumExclusiveCtaCur; // must only be valid in lane_0
 }
+
+#endif // __cccl_ptx_isa >= 860
 } // namespace detail::scan
 
 CUB_NAMESPACE_END

@@ -565,6 +565,7 @@ struct policy_hub
     using ScanPolicyT =
       decltype(select_agent_policy100<sm100_tuning<InputValueT, AccumT, OffsetT, classify_op<ScanOpT>>, InputValueT>(0));
 
+#if __cccl_ptx_isa >= 860
     struct WarpspeedPolicy
     {
       // Squad definitions
@@ -633,6 +634,7 @@ struct policy_hub
         return SquadDesc{4, num_look_ahead_warps};
       }
     };
+#endif // __cccl_ptx_isa >= 860
   };
 
   using MaxPolicy = Policy1000;
