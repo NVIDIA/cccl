@@ -75,7 +75,7 @@ template <class MDS, class Exts>
 _CCCL_CONCEPT check_mdspan_ctor_implicit = check_implicit_construction_impl<MDS, Exts>(0);
 
 template <class H, class M, class A, size_t N>
-__device__ constexpr void
+__device__ void
 test_mdspan_ctor_array(const H& handle, const M& map, const A&, cuda::std::array<typename M::index_type, N> exts)
 {
   using MDS =
@@ -98,7 +98,7 @@ test_mdspan_ctor_array(const H& handle, const M& map, const A&, cuda::std::array
 }
 
 template <class MDS, class Extents, cuda::std::enable_if_t<(MDS::rank() > 0), int> = 0>
-__device__ constexpr cuda::std::array<typename MDS::index_type, MDS::rank_dynamic()>
+__device__ cuda::std::array<typename MDS::index_type, MDS::rank_dynamic()>
 get_exts_dynamic(const cuda::std::array<typename Extents::index_type, Extents::rank()>& exts)
 {
   cuda::std::array<typename MDS::index_type, MDS::rank_dynamic()> exts_dynamic{};
@@ -113,14 +113,14 @@ get_exts_dynamic(const cuda::std::array<typename Extents::index_type, Extents::r
   return exts_dynamic;
 }
 template <class MDS, class Extents, cuda::std::enable_if_t<(MDS::rank() == 0), int> = 0>
-__device__ constexpr cuda::std::array<typename MDS::index_type, MDS::rank_dynamic()>
+__device__ cuda::std::array<typename MDS::index_type, MDS::rank_dynamic()>
 get_exts_dynamic(const cuda::std::array<typename Extents::index_type, Extents::rank()>&)
 {
   return cuda::std::array<typename MDS::index_type, MDS::rank_dynamic()>{};
 }
 
 template <bool mec, bool ac, class H, class M, class A, cuda::std::enable_if_t<mec && ac, int> = 0>
-__device__ constexpr void test_mdspan_ctor(const H& handle, const M& map, const A& acc)
+__device__ void test_mdspan_ctor(const H& handle, const M& map, const A& acc)
 {
   using MDS =
     cuda::shared_memory_mdspan<typename A::element_type, typename M::extents_type, typename M::layout_type, A>;
@@ -135,7 +135,7 @@ __device__ constexpr void test_mdspan_ctor(const H& handle, const M& map, const 
   test_mdspan_ctor_array(handle, map, acc, exts_dynamic);
 }
 template <bool mec, bool ac, class H, class M, class A, cuda::std::enable_if_t<!(mec && ac), int> = 0>
-__device__ constexpr void test_mdspan_ctor(const H& handle, const M& map, const A& acc)
+__device__ void test_mdspan_ctor(const H& handle, const M& map, const A& acc)
 {
   using MDS =
     cuda::shared_memory_mdspan<typename A::element_type, typename M::extents_type, typename M::layout_type, A>;
@@ -146,7 +146,7 @@ __device__ constexpr void test_mdspan_ctor(const H& handle, const M& map, const 
 }
 
 template <bool mec, bool ac, class H, class L, class A>
-__device__ constexpr void mixin_extents(const H& handle, const L& layout, const A& acc)
+__device__ void mixin_extents(const H& handle, const L& layout, const A& acc)
 {
   [[maybe_unused]] constexpr size_t D = cuda::std::dynamic_extent;
   test_mdspan_ctor<mec, ac>(handle, construct_mapping(layout, cuda::std::extents<int>()), acc);
@@ -159,7 +159,7 @@ __device__ constexpr void mixin_extents(const H& handle, const L& layout, const 
 }
 
 template <bool ac, class H, class A>
-__device__ constexpr void mixin_layout(const H& handle, const A& acc)
+__device__ void mixin_layout(const H& handle, const A& acc)
 {
   mixin_extents<true, ac>(handle, cuda::std::layout_left(), acc);
   mixin_extents<true, ac>(handle, cuda::std::layout_right(), acc);
@@ -183,25 +183,26 @@ __device__ constexpr void mixin_layout(const H& handle, const A& acc)
 }
 
 template <class T, cuda::std::enable_if_t<cuda::std::is_default_constructible_v<T>, int> = 0>
-__device__ constexpr void mixin_accessor()
+__device__ void mixin_accessor()
 {
-  cuda::std::array<T, 1024> elements{42};
+  __shared__ cuda::std::array<T, 1024> elements;
+  elements[0] = 42;
+  asm volatile("" : : "l"((size_t) elements.data()) : "memory");
   mixin_layout<true>(elements.data(), cuda::std::default_accessor<T>());
 }
 
 template <class T, cuda::std::enable_if_t<!cuda::std::is_default_constructible_v<T>, int> = 0>
 __device__ void mixin_accessor()
 {
-  ElementPool<T, 1024> elements;
+  __shared__ ElementPool<T, 1024> elements;
+  asm volatile("" : : "l"((size_t) elements.get_ptr()) : "memory");
   mixin_layout<true>(elements.get_ptr(), cuda::std::default_accessor<T>());
 }
 
 __device__ void test()
 {
   mixin_accessor<int>();
-  mixin_accessor<const int>();
   mixin_accessor<double>();
-  mixin_accessor<const double>();
 
   // test non-constructibility from wrong array type
   [[maybe_unused]] constexpr size_t D = cuda::std::dynamic_extent;
@@ -241,7 +242,6 @@ __device__ void test()
 __device__ void test_evil()
 {
   mixin_accessor<MinimalElementType>();
-  mixin_accessor<const MinimalElementType>();
 }
 
 int main(int, char**)

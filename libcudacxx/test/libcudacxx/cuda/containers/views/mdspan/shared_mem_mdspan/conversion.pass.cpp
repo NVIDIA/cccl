@@ -213,9 +213,11 @@ template <class ToA,
           cuda::std::enable_if_t<!cuda::std::is_same_v<typename FromA::element_type, MinimalElementType>
                                    && !cuda::std::is_same_v<typename ToA::element_type, MinimalElementType>,
                                  int> = 0>
-__device__ constexpr void test_impl(FromA from_acc)
+__device__ void test_impl(FromA from_acc)
 {
-  cuda::std::array<typename FromA::element_type, 1024> elements = {42};
+  __shared__ cuda::std::array<typename FromA::element_type, 1024> elements;
+  elements[0] = 42;
+  asm volatile("" : : "l"((size_t) elements.data()) : "memory");
   mixin_layout<ToA>(typename FromA::data_handle_type(elements.data()), from_acc);
 }
 
@@ -226,7 +228,8 @@ template <class ToA,
                                  int> = 0>
 __device__ void test_impl(FromA from_acc)
 {
-  ElementPool<typename FromA::element_type, 1024> elements;
+  __shared__ ElementPool<typename FromA::element_type, 1024> elements;
+  asm volatile("" : : "l"((size_t) elements.get_ptr()) : "memory");
   mixin_layout<ToA>(typename FromA::data_handle_type(elements.get_ptr()), from_acc);
 }
 

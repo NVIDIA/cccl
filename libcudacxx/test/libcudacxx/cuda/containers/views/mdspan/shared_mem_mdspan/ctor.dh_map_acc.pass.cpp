@@ -70,16 +70,19 @@ __device__ constexpr void mixin_layout(const H& handle, const A& acc)
 }
 
 template <class T, cuda::std::enable_if_t<cuda::std::is_default_constructible_v<T>, int> = 0>
-__device__ constexpr void mixin_accessor()
+__device__ void mixin_accessor()
 {
-  cuda::std::array<T, 1024> elements{42};
+  __shared__ cuda::std::array<T, 1024> elements;
+  elements[0] = 42;
+  asm volatile("" : : "l"((size_t) elements.data()) : "memory");
   mixin_layout(elements.data(), cuda::std::default_accessor<T>());
 }
 
 template <class T, cuda::std::enable_if_t<!cuda::std::is_default_constructible_v<T>, int> = 0>
 __device__ void mixin_accessor()
 {
-  ElementPool<T, 1024> elements;
+  __shared__ ElementPool<T, 1024> elements;
+  asm volatile("" : : "l"((size_t) elements.get_ptr()) : "memory");
   mixin_layout(elements.get_ptr(), cuda::std::default_accessor<T>());
 }
 
@@ -89,9 +92,7 @@ using mapping_t = typename cuda::std::layout_right::template mapping<E>;
 __device__ void test()
 {
   mixin_accessor<int>();
-  mixin_accessor<const int>();
   mixin_accessor<double>();
-  mixin_accessor<const double>();
 
   // test non-constructibility from wrong args
   [[maybe_unused]] constexpr size_t D = cuda::std::dynamic_extent;
@@ -123,7 +124,6 @@ __device__ void test()
 __device__ void test_evil()
 {
   mixin_accessor<MinimalElementType>();
-  mixin_accessor<const MinimalElementType>();
 }
 
 int main(int, char**)
