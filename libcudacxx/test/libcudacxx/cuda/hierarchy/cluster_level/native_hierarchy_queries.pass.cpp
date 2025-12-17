@@ -64,6 +64,10 @@ void test()
   // thread block clusters require compute capability at least 9.0
   const bool enable_clusters = cc_major >= 9;
 
+  test_kernel<<<1, 128>>>();
+  test_kernel<<<128, 1>>>();
+  test_kernel<<<dim3{2, 3}, dim3{4, 2}>>>();
+  test_kernel<<<dim3{2, 3, 4}, dim3{4, 2, 8}>>>();
   if (enable_clusters)
   {
     cudaLaunchAttribute attribute[1]{};
