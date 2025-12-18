@@ -36,6 +36,7 @@ typedef struct cccl_device_histogram_build_result_t
   bool may_overflow;
   CUkernel init_kernel;
   CUkernel sweep_kernel;
+  void* runtime_policy;
 } cccl_device_histogram_build_result_t;
 
 CCCL_C_API CUresult cccl_device_histogram_build(

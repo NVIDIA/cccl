@@ -145,7 +145,7 @@ struct sm100_tuning<false, SampleT, 1, 1, counter_size::_4, primitive_sample::ye
 template <typename PolicyT, typename = void>
 struct HistogramPolicyWrapper : PolicyT
 {
-  CUB_RUNTIME_FUNCTION HistogramPolicyWrapper(PolicyT base)
+  _CCCL_HOST_DEVICE HistogramPolicyWrapper(PolicyT base)
       : PolicyT(base)
   {}
 };
@@ -155,23 +155,36 @@ struct HistogramPolicyWrapper<StaticPolicyT,
                               ::cuda::std::void_t<decltype(StaticPolicyT::AgentHistogramPolicyT::LOAD_MODIFIER)>>
     : StaticPolicyT
 {
-  CUB_RUNTIME_FUNCTION HistogramPolicyWrapper(StaticPolicyT base)
+  _CCCL_HOST_DEVICE HistogramPolicyWrapper(StaticPolicyT base)
       : StaticPolicyT(base)
   {}
 
-  CUB_RUNTIME_FUNCTION static constexpr int BlockThreads()
+  _CCCL_HOST_DEVICE static constexpr auto Histogram()
+  {
+    return cub::detail::MakePolicyWrapper(typename StaticPolicyT::AgentHistogramPolicyT());
+  }
+
+  _CCCL_HOST_DEVICE static constexpr int BlockThreads()
   {
     return StaticPolicyT::AgentHistogramPolicyT::BLOCK_THREADS;
   }
 
-  CUB_RUNTIME_FUNCTION static constexpr int PixelsPerThread()
+  _CCCL_HOST_DEVICE static constexpr int PixelsPerThread()
   {
     return StaticPolicyT::AgentHistogramPolicyT::PIXELS_PER_THREAD;
   }
+
+#if defined(CUB_ENABLE_POLICY_PTX_JSON)
+  _CCCL_DEVICE static constexpr auto EncodedPolicy()
+  {
+    using namespace ptx_json;
+    return object<key<"HistogramPolicy">() = Histogram().EncodedPolicy()>();
+  }
+#endif
 };
 
 template <typename PolicyT>
-CUB_RUNTIME_FUNCTION HistogramPolicyWrapper<PolicyT> MakeHistogramPolicyWrapper(PolicyT policy)
+_CCCL_HOST_DEVICE HistogramPolicyWrapper<PolicyT> MakeHistogramPolicyWrapper(PolicyT policy)
 {
   return HistogramPolicyWrapper<PolicyT>{policy};
 }
