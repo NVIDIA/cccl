@@ -186,8 +186,17 @@ struct hierarchy_level_base
     static_assert(has_unit_or_level_v<_Level, _Hierarchy>, "_Hierarchy doesn't contain _Level");
     static_assert(has_level_v<_InLevel, _Hierarchy>, "_Hierarchy doesn't contain _InLevel");
 
-    using _NextLevel       = __next_hierarchy_level_t<_Level, _Hierarchy>;
-    const auto __curr_exts = ::cuda::__hierarchy_extents_cast<_Tp>(__hier.extents(_Level{}, _NextLevel{}));
+    using _NextLevel = __next_hierarchy_level_t<_Level, _Hierarchy>;
+    using _CurrExts  = decltype(::cuda::__hierarchy_extents_cast<_Tp>(__hier.level(_NextLevel{}).dims));
+
+    // Remove dependency on runtime storage. This makes the queries work for hierarchy levels with all static extents
+    // in constant evaluated context.
+    _CurrExts __curr_exts{};
+    if constexpr (_CurrExts::rank_dynamic() > 0)
+    {
+      __curr_exts = ::cuda::__hierarchy_extents_cast<_Tp>(__hier.level(_NextLevel{}).dims);
+    }
+
     if constexpr (!::cuda::std::is_same_v<_NextLevel, _InLevel>)
     {
       const auto __next_exts = _NextLevel::template extents_as<_Tp>(__in_level, __hier);
