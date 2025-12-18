@@ -18,23 +18,36 @@
 
 #include "test_macros.h"
 
-int main(int, char**)
+__host__ __device__ constexpr bool test()
 {
   using weekday         = cuda::std::chrono::weekday;
   using weekday_indexed = cuda::std::chrono::weekday_indexed;
 
-  static_assert(noexcept(cuda::std::declval<const weekday_indexed>().weekday()));
-  static_assert(
-    cuda::std::is_same_v<cuda::std::chrono::weekday, decltype(cuda::std::declval<const weekday_indexed>().weekday())>);
+  {
+    weekday_indexed defaulted{};
+    assert(defaulted.weekday() == weekday{});
+  }
 
-  static_assert(weekday_indexed{}.weekday() == weekday{}, "");
-  static_assert(weekday_indexed{cuda::std::chrono::Tuesday, 0}.weekday() == cuda::std::chrono::Tuesday, "");
+  {
+    weekday_indexed from_day_index{cuda::std::chrono::Tuesday, 0};
+    assert(from_day_index.weekday() == cuda::std::chrono::Tuesday);
+  }
 
   for (unsigned i = 0; i <= 6; ++i)
   {
-    weekday_indexed wdi(weekday{i}, 2);
+    const weekday_indexed wdi(weekday{i}, 2);
     assert(wdi.weekday().c_encoding() == i);
+    static_assert(noexcept(wdi.weekday()));
+    static_assert(cuda::std::is_same_v<cuda::std::chrono::weekday, decltype(wdi.weekday())>);
   }
+
+  return true;
+}
+
+int main(int, char**)
+{
+  test();
+  static_assert(test());
 
   return 0;
 }

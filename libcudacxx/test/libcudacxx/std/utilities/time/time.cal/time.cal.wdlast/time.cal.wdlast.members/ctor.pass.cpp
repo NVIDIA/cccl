@@ -22,26 +22,26 @@
 
 #include "test_macros.h"
 
-int main(int, char**)
+__host__ __device__ constexpr bool test()
 {
   using weekday      = cuda::std::chrono::weekday;
   using weekday_last = cuda::std::chrono::weekday_last;
-
-  static_assert(noexcept(weekday_last{weekday{}}));
-
-  constexpr weekday_last wdl0{weekday{}};
-  static_assert(wdl0.weekday() == weekday{}, "");
-  static_assert(wdl0.ok(), "");
-
-  constexpr weekday_last wdl1{weekday{1}};
-  static_assert(wdl1.weekday() == weekday{1}, "");
-  static_assert(wdl1.ok(), "");
 
   for (unsigned i = 0; i <= 255; ++i)
   {
     weekday_last wdl{weekday{i}};
     assert(wdl.weekday() == weekday{i});
+    assert(wdl.ok() == weekday{i}.ok());
+    static_assert(noexcept(weekday_last{weekday{i}}));
   }
+
+  return true;
+}
+
+int main(int, char**)
+{
+  test();
+  static_assert(test());
 
   return 0;
 }

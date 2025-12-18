@@ -19,7 +19,7 @@
 #include "test_comparisons.h"
 #include "test_macros.h"
 
-int main(int, char**)
+__host__ __device__ constexpr bool test()
 {
   using weekday      = cuda::std::chrono::weekday;
   using weekday_last = cuda::std::chrono::weekday_last;
@@ -27,12 +27,12 @@ int main(int, char**)
   AssertEqualityAreNoexcept<weekday_last>();
   AssertEqualityReturnBool<weekday_last>();
 
-  static_assert(testEqualityValues<weekday_last>(weekday{0}, weekday{0}), "");
-  static_assert(testEqualityValues<weekday_last>(weekday{0}, weekday{1}), "");
+  assert(testEqualityValues<weekday_last>(weekday{0}, weekday{0}));
+  assert(testEqualityValues<weekday_last>(weekday{0}, weekday{1}));
 
   //  Some 'ok' values as well
-  static_assert(testEqualityValues<weekday_last>(weekday{2}, weekday{2}), "");
-  static_assert(testEqualityValues<weekday_last>(weekday{2}, weekday{3}), "");
+  assert(testEqualityValues<weekday_last>(weekday{2}, weekday{2}));
+  assert(testEqualityValues<weekday_last>(weekday{2}, weekday{3}));
 
   for (unsigned i = 0; i < 6; ++i)
   {
@@ -41,6 +41,14 @@ int main(int, char**)
       assert(testEqualityValues<weekday_last>(weekday{i}, weekday{j}));
     }
   }
+
+  return true;
+}
+
+int main(int, char**)
+{
+  test();
+  static_assert(test());
 
   return 0;
 }

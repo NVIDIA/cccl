@@ -18,21 +18,29 @@
 
 #include "test_macros.h"
 
-int main(int, char**)
+__host__ __device__ constexpr bool test()
 {
   using weekday         = cuda::std::chrono::weekday;
   using weekday_indexed = cuda::std::chrono::weekday_indexed;
 
-  static_assert(noexcept(cuda::std::declval<const weekday_indexed>().index()));
-  static_assert(cuda::std::is_same_v<unsigned, decltype(cuda::std::declval<const weekday_indexed>().index())>);
-
-  static_assert(weekday_indexed{}.index() == 0, "");
+  assert(weekday_indexed{}.index() == 0);
 
   for (unsigned i = 1; i <= 5; ++i)
   {
-    weekday_indexed wdi(weekday{2}, i);
+    const weekday_indexed wdi(weekday{2}, i);
     assert(static_cast<unsigned>(wdi.index()) == i);
+
+    static_assert(noexcept(wdi.index()));
+    static_assert(cuda::std::is_same_v<unsigned, decltype(wdi.index())>);
   }
+
+  return true;
+}
+
+int main(int, char**)
+{
+  test();
+  static_assert(test());
 
   return 0;
 }
