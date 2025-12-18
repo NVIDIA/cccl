@@ -18,8 +18,6 @@
 
 CUB_NAMESPACE_BEGIN
 
-namespace detail::find
-{
 struct DeviceFind
 {
   //! @rst
@@ -188,6 +186,5 @@ struct DeviceFind
       stream);
   }
 };
-} // namespace detail::find
 
 CUB_NAMESPACE_END
