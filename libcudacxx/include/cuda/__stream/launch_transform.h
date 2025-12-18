@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDA__STREAM_DEVICE_TRANSFORM_H
-#define _CUDA__STREAM_DEVICE_TRANSFORM_H
+#ifndef _CUDA__STREAM_LAUNCH_TRANSFORM_H
+#define _CUDA__STREAM_LAUNCH_TRANSFORM_H
 
 #include <cuda/__cccl_config>
 
@@ -53,30 +53,30 @@ using __remove_rvalue_reference_t = decltype(__detail::__ixnay_xvalue(::cuda::st
 
 namespace __tfx
 {
-// Device transform:
+// Launch transform:
 //
-// The device transform is a mechanism to transform arguments passed to the
+// The launch transform is a mechanism to transform arguments passed to the
 // algorithms prior to actually enqueueing work on a stream. This is useful for
 // example, to automatically convert contiguous ranges into spans. It is also
 // useful for executing per-argument actions before and after the kernel launch.
 // A host_vector might want a pre-launch action to copy data from host to device
 // and a post-launch action to copy data back from device to host.
 //
-// The expression `device_transform(stream, arg)` is expression-equivalent to
+// The expression `launch_transform(stream, arg)` is expression-equivalent to
 // the first of the following expressions that is valid:
 //
-// 1. `transform_device_argument(stream, arg).transformed_argument()`
-// 2. `transform_device_argument(stream, arg)`
+// 1. `transform_launch_argument(stream, arg).transformed_argument()`
+// 2. `transform_launch_argument(stream, arg)`
 // 3. `arg.transformed_argument()`
 // 4. `arg`
-_CCCL_HOST_API void transform_device_argument();
+_CCCL_HOST_API void transform_launch_argument();
 
-struct _CCCL_TYPE_VISIBILITY_DEFAULT __device_transform_t
+struct _CCCL_TYPE_VISIBILITY_DEFAULT __launch_transform_t
 {
-  // Types that want to customize `device_transform` should define overloads of
-  // transform_device_argument that are find-able by ADL.
+  // Types that want to customize `launch_transform` should define overloads of
+  // transform_launch_argument that are find-able by ADL.
   template <typename _Arg>
-  using __transform_result_t = __remove_rvalue_reference_t<decltype(transform_device_argument(
+  using __transform_result_t = __remove_rvalue_reference_t<decltype(transform_launch_argument(
     ::cuda::stream_ref{::cudaStream_t{}}, ::cuda::std::declval<_Arg>()))>;
 
   template <typename _Arg>
@@ -84,23 +84,23 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __device_transform_t
     __remove_rvalue_reference_t<decltype(::cuda::std::declval<_Arg>().transformed_argument())>;
 
   // The use of `optional` here is to move the destruction of the object returned from
-  // transform_device_argument into the caller's stack frame. Objects created for default arguments
-  // are located in the caller's stack frame. This is so that a use of `device_transform`
+  // transform_launch_argument into the caller's stack frame. Objects created for default arguments
+  // are located in the caller's stack frame. This is so that a use of `launch_transform`
   // such as:
   //
-  //   kernel<<<grid, block, 0, stream>>>(device_transform(stream, arg));
+  //   kernel<<<grid, block, 0, stream>>>(launch_transform(stream, arg));
   //
   // is equivalent to:
   //
-  //   kernel<<<grid, block, 0, stream>>>(transform_device_argument(stream, arg).transformed_argument());
+  //   kernel<<<grid, block, 0, stream>>>(transform_launch_argument(stream, arg).transformed_argument());
   //
-  // where the object returned from `transform_device_argument` is destroyed *after* the kernel
+  // where the object returned from `transform_launch_argument` is destroyed *after* the kernel
   // launch.
   //
   // What I really wanted to do was:
   //
   //   template <typename Arg>
-  //   auto operator()(::cuda::stream_ref stream, Arg&& arg, auto&& action = transform_device_argument(arg))
+  //   auto operator()(::cuda::stream_ref stream, Arg&& arg, auto&& action = transform_launch_argument(arg))
   //
   // but sadly that is not valid C++.
   // TODO move to use __variant type once cuda/experimental/execution/__variant is moved to libcudacxx
@@ -130,38 +130,38 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __device_transform_t
     _Arg&& __arg,
     __optional_with_a_destructor<__transform_result_t<_Arg>> __storage = cuda::std::nullopt) const -> decltype(auto)
   {
-    // Calls to transform_device_argument are intentionally unqualified so as to use ADL.
+    // Calls to transform_launch_argument are intentionally unqualified so as to use ADL.
     if constexpr (__is_instantiable_with<__transformed_argument_t, __transform_result_t<_Arg>>)
     {
       return _CCCL_MOVE(__storage.__emplace_from_fn([&]() {
-               return transform_device_argument(__stream, ::cuda::std::forward<_Arg>(__arg));
+               return transform_launch_argument(__stream, ::cuda::std::forward<_Arg>(__arg));
              }))
         .transformed_argument();
     }
     else
     {
       return _CCCL_MOVE(__storage.__emplace_from_fn([&]() {
-        return transform_device_argument(__stream, ::cuda::std::forward<_Arg>(__arg));
+        return transform_launch_argument(__stream, ::cuda::std::forward<_Arg>(__arg));
       }));
     }
   }
 
-  // If transform_device_argument returns a reference type, then there are no pre- and
+  // If transform_launch_argument returns a reference type, then there are no pre- and
   // post-launch actions. (References types don't have ctors/dtors.) There is no need to
-  // store the result of transform_device_argument.
+  // store the result of transform_launch_argument.
   _CCCL_TEMPLATE(typename _Stream, typename _Arg)
   _CCCL_REQUIRES(::cuda::std::convertible_to<_Stream, ::cuda::stream_ref>
                    _CCCL_AND ::cuda::std::is_reference_v<__transform_result_t<_Arg>>)
   [[nodiscard]] _CCCL_HOST_API auto operator()(_Stream&& __stream, _Arg&& __arg) const -> decltype(auto)
   {
-    // Calls to transform_device_argument are intentionally unqualified so as to use ADL.
+    // Calls to transform_launch_argument are intentionally unqualified so as to use ADL.
     if constexpr (__is_instantiable_with<__transformed_argument_t, __transform_result_t<_Arg>>)
     {
-      return transform_device_argument(__stream, ::cuda::std::forward<_Arg>(__arg)).transformed_argument();
+      return transform_launch_argument(__stream, ::cuda::std::forward<_Arg>(__arg)).transformed_argument();
     }
     else
     {
-      return transform_device_argument(__stream, ::cuda::std::forward<_Arg>(__arg));
+      return transform_launch_argument(__stream, ::cuda::std::forward<_Arg>(__arg));
     }
   }
 
@@ -180,14 +180,14 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __device_transform_t
 };
 } // namespace __tfx
 
-_CCCL_GLOBAL_CONSTANT auto device_transform = __tfx::__device_transform_t{};
+_CCCL_GLOBAL_CONSTANT auto launch_transform = __tfx::__launch_transform_t{};
 
 template <typename _Arg>
 using transformed_device_argument_t _CCCL_NODEBUG_ALIAS =
-  __remove_rvalue_reference_t<::cuda::std::__call_result_t<__tfx::__device_transform_t, ::cuda::stream_ref, _Arg>>;
+  __remove_rvalue_reference_t<::cuda::std::__call_result_t<__tfx::__launch_transform_t, ::cuda::stream_ref, _Arg>>;
 
 _CCCL_END_NAMESPACE_CUDA
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _CUDA__STREAM_DEVICE_TRANSFORM_H
+#endif // _CUDA__STREAM_LAUNCH_TRANSFORM_H

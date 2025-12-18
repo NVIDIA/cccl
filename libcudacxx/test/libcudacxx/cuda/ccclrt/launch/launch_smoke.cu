@@ -122,7 +122,7 @@ struct launch_transform_to_int_convertible
       // CUDAX_CHECK_FALSE(kernel_run_proof);
     }
 
-    // Immovable to ensure that device_transform doesn't copy the returned
+    // Immovable to ensure that launch_transform doesn't copy the returned
     // object
     int_convertible(int_convertible&&) noexcept = delete;
 
@@ -142,7 +142,7 @@ struct launch_transform_to_int_convertible
   };
 
   [[nodiscard]] friend int_convertible
-  transform_device_argument(::cuda::stream_ref stream, launch_transform_to_int_convertible self) noexcept
+  transform_launch_argument(::cuda::stream_ref stream, launch_transform_to_int_convertible self) noexcept
   {
     return int_convertible(stream.get(), self.value_);
   }

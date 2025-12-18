@@ -65,7 +65,6 @@ template <class _Tp, size_t... _Extents>
   {
     return __ex;
   }
-  _CCCL_UNREACHABLE();
 }
 
 template <class _QueryLevel, class _Hierarchy>
@@ -98,7 +97,6 @@ struct __get_level_helper
     {
       return (*this)(__levels...);
     }
-    _CCCL_UNREACHABLE();
   }
 };
 } // namespace __detail
@@ -163,8 +161,8 @@ struct __make_hierarchy
       static_assert(__can_stack<_UnitOrDefault, _Levels2...>,
                     "Provided levels can't create a valid hierarchy when "
                     "stacked in the provided order or reversed");
+      _CCCL_UNREACHABLE();
     }
-    _CCCL_UNREACHABLE();
   }
 };
 

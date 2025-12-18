@@ -164,6 +164,16 @@ struct nvrtc2_post_build
     return {std::move(context)};
   }
 
+  // Conditionally get name - only queries if condition is true
+  inline nvrtc2_post_build_nl get_name_if(bool condition, nvrtc_get_name gn)
+  {
+    if (condition)
+    {
+      return get_name(std::move(gn));
+    }
+    return {std::move(context)};
+  }
+
   inline nvrtc_ptx get_program_ptx()
   {
     nvrtc_ptx ret;
@@ -221,6 +231,17 @@ struct nvrtc2_pre_build
     check(nvrtcAddNameExpression(context.program, arg.expression.data()));
     return nvrtc2_pre_build_nl{std::move(context)};
   }
+
+  // Conditionally add expression - only adds if condition is true
+  inline nvrtc2_pre_build_nl add_expression_if(bool condition, nvrtc_expression arg)
+  {
+    if (condition)
+    {
+      return add_expression(arg);
+    }
+    return nvrtc2_pre_build_nl{std::move(context)};
+  }
+
   // Compile program
   inline nvrtc2_post_build_nl compile_program(nvrtc_compile compile_args)
   {

@@ -408,7 +408,7 @@ auto compare_vectors(const host_vector<T>& actual, const host_vector<T>& expecte
   {
     if (actual[i] != expected[i])
     {
-      if (result.good_values.empty())
+      if (mismatches.empty()) // at the first mismatch
       {
         // store up to 3 good values before the first mismatch
         const size_t count = ::cuda::std::min(good_values_before_mismatch, i);
@@ -453,7 +453,7 @@ void print_comparison(const vector_compare_result_t<T>& res, std::ostream& os)
   // print good values
   for (const auto& [idx, v] : res.good_values)
   {
-    os << "good [" << idx << "]: " << v << " == " << v << '\n';
+    os << "good [" << idx << "]: " << CoutCast(v) << " == " << CoutCast(v) << '\n';
   }
 
   // insert dots between mismatches that are not consecutive
@@ -462,15 +462,15 @@ void print_comparison(const vector_compare_result_t<T>& res, std::ostream& os)
     if (last_printed_idx + 1 != idx)
     {
       os << "...\n";
-      last_printed_idx = idx;
     }
+    last_printed_idx = idx;
   };
 
   // print first mismatches
   for (const auto& [idx, a, b] : res.first_mismatches)
   {
     print_dots(idx);
-    os << "BAD  [" << idx << "]: " << a << " != " << b << '\n';
+    os << "BAD  [" << idx << "]: " << CoutCast(a) << " != " << CoutCast(b) << '\n';
   }
 
   // print last mismatches if we have any
@@ -479,7 +479,7 @@ void print_comparison(const vector_compare_result_t<T>& res, std::ostream& os)
     for (const auto& [idx, a, b] : *res.last_mismatches)
     {
       print_dots(idx);
-      os << "BAD  [" << idx << "]: " << a << " != " << b << '\n';
+      os << "BAD  [" << idx << "]: " << CoutCast(a) << " != " << CoutCast(b) << '\n';
     }
   }
 }
@@ -494,7 +494,8 @@ struct vector_matcher : Catch::Matchers::MatcherGenericBase
   template <typename OtherVec>
   bool match(OtherVec const& actual_vec) const // TODO(Bgruber): remove const?
   {
-    comparison_result = compare_vectors(actual_vec, expected_vec);
+    using T           = typename Vec::value_type;
+    comparison_result = compare_vectors(host_vector<T>(actual_vec), host_vector<T>(expected_vec));
     return actual_vec == expected_vec;
   }
 

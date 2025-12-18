@@ -91,6 +91,7 @@ __host__ __device__ constexpr bool test()
   static_assert(cuda::std::is_same_v<cuda::std::underlying_type_t<cuda::arch_id>, int>);
   static_assert(cuda::std::to_underlying(cuda::arch_id::sm_60) == 60);
   static_assert(cuda::std::to_underlying(cuda::arch_id::sm_61) == 61);
+  static_assert(cuda::std::to_underlying(cuda::arch_id::sm_62) == 62);
   static_assert(cuda::std::to_underlying(cuda::arch_id::sm_70) == 70);
   static_assert(cuda::std::to_underlying(cuda::arch_id::sm_75) == 75);
   static_assert(cuda::std::to_underlying(cuda::arch_id::sm_80) == 80);

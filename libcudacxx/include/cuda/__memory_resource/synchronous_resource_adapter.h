@@ -118,11 +118,11 @@ private:
 };
 
 template <class _Resource>
-_CCCL_HOST_API auto __adapt_if_synchronous(_Resource&& __resource) noexcept
+_CCCL_HOST_API decltype(auto) __adapt_if_synchronous(_Resource&& __resource) noexcept
 {
   if constexpr (::cuda::mr::resource<::cuda::std::decay_t<_Resource>>)
   {
-    return __resource;
+    return ::cuda::std::forward<_Resource>(__resource);
   }
   else
   {

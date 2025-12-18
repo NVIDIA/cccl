@@ -44,9 +44,15 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-#if _CCCL_CHECK_BUILTIN(__builtin_add_overflow) || _CCCL_COMPILER(GCC)
+#if _CCCL_CHECK_BUILTIN(builtin_add_overflow) || _CCCL_COMPILER(GCC)
 #  define _CCCL_BUILTIN_ADD_OVERFLOW(...) __builtin_add_overflow(__VA_ARGS__)
-#endif // _CCCL_CHECK_BUILTIN(__builtin_add_overflow)
+#endif // _CCCL_CHECK_BUILTIN(builtin_add_overflow)
+
+// nvc++ doesn't support 128-bit integers and crashes when certain type combinations are used (nvbug 5730860), so let's
+// just disable the builtin for now.
+#if _CCCL_COMPILER(NVHPC)
+#  undef _CCCL_BUILTIN_ADD_OVERFLOW
+#endif // _CCCL_COMPILER(NVHPC)
 
 _CCCL_BEGIN_NAMESPACE_CUDA
 
@@ -197,14 +203,24 @@ _CCCL_REQUIRES((::cuda::std::is_void_v<_Result> || ::cuda::std::__cccl_is_intege
 [[nodiscard]]
 _CCCL_API constexpr overflow_result<_ActualResult> add_overflow(const _Lhs __lhs, const _Rhs __rhs) noexcept
 {
-// (1) __builtin_add_overflow is not available in a constant expression with gcc + nvcc
-// (2) __builtin_add_overflow generates suboptimal code with nvc++ and clang-cuda for device code
-#if defined(_CCCL_BUILTIN_ADD_OVERFLOW) && _CCCL_HOST_COMPILATION() \
-  && !(_CCCL_COMPILER(GCC) && _CCCL_CUDA_COMPILER(NVCC))
-  overflow_result<_ActualResult> __result;
-  __result.overflow = _CCCL_BUILTIN_ADD_OVERFLOW(__lhs, __rhs, &__result.value);
-  return __result;
-#else
+  // We want to use __builtin_add_overflow only in host code. When compiling CUDA source file, we cannot use it in
+  // constant expressions, because it doesn't work before nvcc 13.1 and is buggy in 13.1. When compiling C++ source
+  // file, we can use it all the time.
+#if defined(_CCCL_BUILTIN_ADD_OVERFLOW)
+#  if _CCCL_CUDA_COMPILATION()
+  _CCCL_IF_NOT_CONSTEVAL_DEFAULT
+#  endif // _CCCL_CUDA_COMPILATION()
+  {
+    NV_IF_TARGET(NV_IS_HOST, ({
+                   overflow_result<_ActualResult> __result{};
+                   __result.overflow = _CCCL_BUILTIN_ADD_OVERFLOW(__lhs, __rhs, &__result.value);
+                   return __result;
+                 }))
+  }
+#endif // _CCCL_BUILTIN_ADD_OVERFLOW
+
+  // Host fallback + device implementation.
+#if _CCCL_CUDA_COMPILATION() || !defined(_CCCL_BUILTIN_ADD_OVERFLOW)
   using ::cuda::std::__make_nbit_int_t;
   using ::cuda::std::__make_nbit_uint_t;
   using ::cuda::std::__num_bits_v;
@@ -294,7 +310,7 @@ _CCCL_API constexpr overflow_result<_ActualResult> add_overflow(const _Lhs __lhs
     }
     return overflow_result<_ActualResult>{static_cast<_ActualResult>(__sum), false}; // because of opposite signs
   }
-#endif // defined(_CCCL_BUILTIN_ADD_OVERFLOW) && !_CCCL_CUDA_COMPILER(NVCC)
+#endif // _CCCL_CUDA_COMPILATION() || !defined(_CCCL_BUILTIN_ADD_OVERFLOW)
 }
 
 //! @brief Adds two numbers \p __lhs and \p __rhs with overflow detection

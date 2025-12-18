@@ -10,9 +10,30 @@ function(cub_build_compiler_targets)
 
   thrust_create_target(cub.thrust HOST CPP DEVICE CUDA)
 
+  set(ptxas_compile_options)
+  if (CCCL_ENABLE_PTXAS_WARNINGS)
+    list(
+      APPEND ptxas_compile_options
+      "--warn-on-spills"
+      "--warn-on-local-memory-usage"
+    )
+  endif()
+
   set(cuda_compile_options)
   set(cxx_compile_options)
   set(cxx_compile_definitions)
+
+  # append ptxas compile options to cuda_compile_options with compiler specific prefix
+  foreach (ptxas_compile_option ${ptxas_compile_options})
+    if (
+      "${CMAKE_CUDA_COMPILER_ID}" STREQUAL "NVIDIA"
+      OR "${CMAKE_CUDA_COMPILER_ID}" STREQUAL "NVHPC"
+    )
+      list(APPEND cuda_compile_options "-Xptxas=${ptxas_compile_option}")
+    elseif ("${CMAKE_CUDA_COMPILER_ID}" STREQUAL "CLANG")
+      list(APPEND cuda_compile_options "-Xcuda-ptxas ${ptxas_compile_option}")
+    endif()
+  endforeach()
 
   cccl_build_compiler_interface(
     cub.compiler_flags

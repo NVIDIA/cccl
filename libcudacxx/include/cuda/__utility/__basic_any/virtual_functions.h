@@ -95,7 +95,6 @@ template <class _Tp, auto _Fn, class _Ret, bool _IsConst, bool _IsNothrow, class
     __value_type& __obj = *static_cast<__value_type*>(__pv);
     return (*_Fn)(__obj, static_cast<_Args&&>(__args)...);
   }
-  _CCCL_UNREACHABLE();
 }
 
 _CCCL_DIAG_POP

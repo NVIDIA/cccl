@@ -281,7 +281,6 @@ template <typename _Unit, typename _Level>
     return ::cuda::__detail::__dims_product<typename _Level::product_type>(
       __extents_impl<_SplitLevel, _Level>(), __extents_impl<_Unit, _SplitLevel>());
   }
-  _CCCL_UNREACHABLE();
 }
 
 template <typename _Unit, typename _Level>
@@ -299,7 +298,6 @@ template <typename _Unit, typename _Level>
         __index_impl<_SplitLevel, _Level>(), __extents_impl<_Unit, _SplitLevel>()),
       __index_impl<_Unit, _SplitLevel>());
   }
-  _CCCL_UNREACHABLE();
 }
 } // namespace __detail
 

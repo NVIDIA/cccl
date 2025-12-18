@@ -347,3 +347,23 @@ C2H_CCCLRT_TEST("cuda::make_buffer narrowing properties", "[container][buffer]")
   CCCLRT_CHECK(buf_device.size() == 2);
 }
 #endif // ^^^ _CCCL_CTK_AT_LEAST(12, 6) ^^^
+
+C2H_CCCLRT_TEST("cuda::make_buffer with memory_pool_ref", "[container][buffer]")
+{
+  cuda::stream stream{cuda::device_ref{0}};
+  cuda::device_memory_pool pool{cuda::device_ref{0}};
+  auto buf = cuda::make_buffer(stream, pool.as_ref(), 10, 42);
+  CCCLRT_CHECK(buf.size() == 10);
+  static_assert(decltype(buf)::properties_list::has_property(cuda::mr::device_accessible{}));
+  static_assert(!decltype(buf)::properties_list::has_property(cuda::mr::host_accessible{}));
+}
+
+C2H_CCCLRT_TEST("cuda::make_buffer with shared_resource", "[container][buffer]")
+{
+  cuda::stream stream{cuda::device_ref{0}};
+  auto shared_res = cuda::mr::make_shared_resource<cuda::device_memory_pool>(cuda::device_ref{0});
+  auto buf        = cuda::make_buffer(stream, shared_res, 10, 42);
+  CCCLRT_CHECK(buf.size() == 10);
+  static_assert(decltype(buf)::properties_list::has_property(cuda::mr::device_accessible{}));
+  static_assert(!decltype(buf)::properties_list::has_property(cuda::mr::host_accessible{}));
+}

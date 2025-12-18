@@ -12,6 +12,7 @@ set(CMAKE_MSVC_DEBUG_INFORMATION_FORMAT Embedded)
 option(CCCL_ENABLE_EXCEPTIONS "Enable exceptions within CCCL libraries." ON)
 option(CCCL_ENABLE_RTTI "Enable RTTI within CCCL libraries." ON)
 option(CCCL_ENABLE_WERROR "Treat warnings as errors for CCCL targets." ON)
+option(CCCL_ENABLE_PTXAS_WARNINGS "Enable ptxas warnings" OFF) # currently used only in CUB
 
 function(
   cccl_build_compiler_interface

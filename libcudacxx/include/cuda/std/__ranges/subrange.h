@@ -433,7 +433,6 @@ _CCCL_API constexpr auto get(const subrange<_Iter, _Sent, _Kind>& __subrange)
   {
     return __subrange.end();
   }
-  _CCCL_UNREACHABLE();
 }
 
 #if _CCCL_HAS_CONCEPTS()
@@ -456,7 +455,6 @@ _CCCL_API constexpr auto get(subrange<_Iter, _Sent, _Kind>&& __subrange)
   {
     return __subrange.end();
   }
-  _CCCL_UNREACHABLE();
 }
 
 template <class _Ip, class _Sp, subrange_kind _Kp>

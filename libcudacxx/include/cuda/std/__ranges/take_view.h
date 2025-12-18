@@ -196,7 +196,6 @@ public:
     {
       return counted_iterator(::cuda::std::ranges::begin(__base_), __count_);
     }
-    _CCCL_UNREACHABLE();
   }
 
   _CCCL_TEMPLATE(class _View2 = _View)
@@ -220,7 +219,6 @@ public:
     {
       return counted_iterator(::cuda::std::ranges::begin(__base_), __count_);
     }
-    _CCCL_UNREACHABLE();
   }
 
   _CCCL_TEMPLATE(class _View2 = _View)
@@ -242,7 +240,6 @@ public:
     {
       return __sentinel<false>{::cuda::std::ranges::end(__base_)};
     }
-    _CCCL_UNREACHABLE();
   }
 
   _CCCL_TEMPLATE(class _View2 = _View)
@@ -264,7 +261,6 @@ public:
     {
       return __sentinel<true>{::cuda::std::ranges::end(__base_)};
     }
-    _CCCL_UNREACHABLE();
   }
 
   _CCCL_TEMPLATE(class _View2 = _View)
