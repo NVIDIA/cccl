@@ -12,6 +12,7 @@ fi
 if [[ -n "${GITHUB_ACTIONS:-}" ]]; then
     echo "::group::Initializing devcontainer..."
 fi
+
 devcontainer-utils-post-create-command;
 devcontainer-utils-init-git;
 devcontainer-utils-post-attach-command;
