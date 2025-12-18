@@ -176,21 +176,20 @@ struct AgentSegmentedTopkWorkerPerSegment
     }
 
     // Resolve Segment Parameters
-    auto segment_size = resolve_param(segment_sizes, segment_id);
-    auto k            = resolve_param(k_param, segment_id);
-    auto direction    = resolve_param(select_directions, segment_id);
+    const auto segment_size = resolve_param(segment_sizes, segment_id);
+    const auto k            = resolve_param(k_param, segment_id);
+    const auto direction    = resolve_param(select_directions, segment_id);
 
     // Determine padding key based on direction
     key_t padding_key = (direction == detail::topk::select::max)
                         ? ::cuda::std::numeric_limits<key_t>::lowest()
                         : ::cuda::std::numeric_limits<key_t>::max();
 
-    // Load Keys
-    key_t thread_keys[items_per_thread];
-
     // Dereference iterator-of-iterators to get the segment specific iterator
     auto block_keys_in = d_key_segments_it[segment_id];
 
+    // Load Keys
+    key_t thread_keys[items_per_thread];
     BlockLoadKeysT(temp_storage.load_keys).Load(block_keys_in, thread_keys, segment_size, padding_key);
 
     // Load Values (if applicable)
@@ -204,9 +203,9 @@ struct AgentSegmentedTopkWorkerPerSegment
       BlockLoadValsT(temp_storage.load_vals).Load(block_vals_in, thread_values, segment_size);
     }
 
-    // Perform Block Top-K
     __syncthreads();
 
+    // Perform Block Top-K
     if constexpr (!is_keys_only)
     {
       // Pass both keys and values
