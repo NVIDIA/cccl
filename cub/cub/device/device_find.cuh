@@ -188,5 +188,6 @@ struct DeviceFind
       stream);
   }
 };
+} // namespace detail::find
 
 CUB_NAMESPACE_END
