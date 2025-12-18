@@ -74,11 +74,19 @@ struct input_iterator_traits
 
   static const constexpr auto name = "input_iterator_t";
 
-  template <typename>
+  template <typename Tag>
   static cuda::std::optional<specialization> special(cccl_iterator_t it)
   {
     if (it.type == cccl_iterator_kind_t::CCCL_POINTER)
     {
+      if (it.value_type.type == cccl_type_enum::CCCL_STORAGE)
+      {
+        std::string tag_name;
+        check(cccl_type_name_from_nvrtc<Tag>(&tag_name));
+        return cuda::std::make_optional(specialization{
+          std::format("input_iterator_state_t<{}, {}, {}> *", tag_name, it.value_type.size, it.value_type.alignment),
+          std::format("struct {};", tag_name)});
+      }
       return cuda::std::make_optional(specialization{cccl_type_enum_to_name(it.value_type.type, true), ""});
     }
 

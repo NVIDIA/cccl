@@ -158,4 +158,10 @@ typedef enum cccl_init_kind_t
   CCCL_NO_INIT           = 2,
 } cccl_init_kind_t;
 
+typedef enum cccl_binary_search_mode_t
+{
+  CCCL_BINARY_SEARCH_LOWER_BOUND = 0,
+  CCCL_BINARY_SEARCH_UPPER_BOUND = 1,
+} cccl_binary_search_mode_t;
+
 CCCL_C_EXTERN_C_END

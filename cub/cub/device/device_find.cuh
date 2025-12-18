@@ -13,56 +13,13 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cub/detail/binary_search_helpers.cuh>
 #include <cub/device/device_for.cuh>
-
-#include <cuda/std/__algorithm/lower_bound.h>
-#include <cuda/std/__algorithm/upper_bound.h>
 
 CUB_NAMESPACE_BEGIN
 
 namespace detail::find
 {
-template <typename RangeIteratorT, typename CompareOpT, typename Mode>
-struct comp_wrapper_t
-{
-  RangeIteratorT first;
-  RangeIteratorT last;
-  CompareOpT op;
-
-  template <typename Value, typename Output>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void operator()(cuda::std::tuple<Value, Output> args)
-  {
-    cuda::std::get<1>(args) = Mode::Invoke(first, last, cuda::std::get<0>(args), op);
-  }
-};
-
-template <typename Mode, typename RangeIteratorT, typename CompareOpT>
-CUB_RUNTIME_FUNCTION auto make_comp_wrapper(RangeIteratorT first, RangeIteratorT last, CompareOpT comp)
-{
-  return comp_wrapper_t<RangeIteratorT, CompareOpT, Mode>(first, last, comp);
-}
-
-struct lower_bound
-{
-  template <typename RangeIteratorT, typename T, typename CompareOpT>
-  _CCCL_DEVICE _CCCL_FORCEINLINE static RangeIteratorT
-  Invoke(RangeIteratorT first, RangeIteratorT last, const T& value, CompareOpT comp)
-  {
-    return cuda::std::lower_bound(first, last, value, comp);
-  }
-};
-
-struct upper_bound
-{
-  template <typename RangeIteratorT, typename T, typename CompareOpT>
-  _CCCL_DEVICE _CCCL_FORCEINLINE static RangeIteratorT
-  Invoke(RangeIteratorT first, RangeIteratorT last, const T& value, CompareOpT comp)
-  {
-    return cuda::std::upper_bound(first, last, value, comp);
-  }
-};
-} // namespace detail::find
-
 struct DeviceFind
 {
   //! @rst
