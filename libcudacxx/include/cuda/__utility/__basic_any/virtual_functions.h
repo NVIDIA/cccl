@@ -72,7 +72,7 @@ _CCCL_NODEBUG_API auto __c_style_cast(_Src* __ptr) noexcept -> _DstPtr
 // Helper function to not use a function pointer as a template parameter, which breaks MSVC in some cases.
 template <class _Tp, class _FnType, class _Ret, bool _IsConst, bool _IsNothrow, class... _Args>
 [[nodiscard]] _CCCL_API auto __override_fn_dispatch_impl(
-  _FnType __fn,
+  [[maybe_unused]] _FnType __fn,
   [[maybe_unused]] ::cuda::std::__maybe_const<_IsConst, void>* __pv,
   [[maybe_unused]] _Args... __args) noexcept(_IsNothrow) -> _Ret
 {
