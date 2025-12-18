@@ -118,7 +118,6 @@ C2H_TEST("Device scan works with all device interfaces", "[scan][device]", full_
   // Skip DeviceScan::InclusiveSum and DeviceScan::ExclusiveSum tests for extended floating-point
   // types because of unbounded epsilon due to pseudo associativity of the addition operation over
   // floating point numbers
-
 #if TEST_TYPES != 3
   SECTION("inclusive sum")
   {
