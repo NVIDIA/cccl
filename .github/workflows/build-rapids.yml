@@ -117,6 +117,8 @@ jobs:
           #! /usr/bin/env bash
           set -eo pipefail
 
+          ulimit -n $(ulimit -Hn)
+
           declare -a failures
 
           _print_err_exit_msg() {
