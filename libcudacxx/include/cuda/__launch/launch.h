@@ -190,7 +190,7 @@ _CCCL_HOST_API auto launch(_Submitter&& __submitter,
   {
     auto __launcher =
       __kernel_launcher<decltype(__combined), _Kernel, ::cuda::std::decay_t<transformed_device_argument_t<_Args>>...>;
-    return __launch_impl(
+    return ::cuda::__launch_impl(
       cuda::__forward_or_cast_to_stream_ref<_Submitter>(::cuda::std::forward<_Submitter>(__submitter)),
       __combined,
       ::cuda::__get_cufunction_of(__launcher),
