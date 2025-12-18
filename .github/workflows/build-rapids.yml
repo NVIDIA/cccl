@@ -58,7 +58,7 @@ jobs:
     name: "${{ matrix.libs }}"
     if: needs.check-event.outputs.ok == 'true'
     needs: check-event
-    runs-on: ${{ fromJSON(github.repository != 'NVIDIA/cccl' && '"ubuntu-latest"' || '"linux-amd64-cpu32"') }}
+    runs-on: ${{ fromJSON(github.repository != 'NVIDIA/cccl' && '"ubuntu-latest"' || '"linux-amd64-cpu16"') }}
     strategy:
       fail-fast: false
       matrix:
