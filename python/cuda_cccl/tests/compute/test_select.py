@@ -518,8 +518,8 @@ def test_select_stateful_atomic():
     )
 
 
-def test_select_stateful_counting_rejects():
-    """Test select that counts rejected items using state"""
+def test_select_with_side_effect_counting_rejects():
+    """Select with side effect that counts rejected items"""
     from numba import cuda as numba_cuda
 
     d_in = cp.arange(100, dtype=np.int32)
