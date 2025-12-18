@@ -5,7 +5,7 @@
 
 import functools
 
-from cuda.core.experimental import Device
+from cuda.core import Device
 
 
 def cache_with_key(key):

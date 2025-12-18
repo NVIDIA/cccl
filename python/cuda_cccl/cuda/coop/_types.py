@@ -15,7 +15,7 @@ from numba.core import cgutils
 from numba.core.extending import intrinsic, overload
 from numba.core.typing import signature
 
-from cuda.core.experimental import Linker, LinkerOptions, ObjectCode
+from cuda.core import Linker, LinkerOptions, ObjectCode
 
 from . import _nvrtc as nvrtc
 from ._common import find_unsigned
