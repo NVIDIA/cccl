@@ -245,7 +245,7 @@ public:
 
     if (__buf_)
     {
-      __mr_.deallocate(__stream_, __buf_, __get_allocation_size(__count_));
+      __mr_.deallocate(__stream_, __buf_, __get_allocation_size(__count_), alignof(_Tp));
     }
     __mr_     = ::cuda::std::move(__other.__mr_);
     __stream_ = ::cuda::std::exchange(__other.__stream_, ::cuda::stream_ref{::cudaStream_t{}});
@@ -265,7 +265,7 @@ public:
   {
     if (__buf_)
     {
-      __mr_.deallocate(__stream, __buf_, __get_allocation_size(__count_));
+      __mr_.deallocate(__stream, __buf_, __get_allocation_size(__count_), alignof(_Tp));
       __buf_   = nullptr;
       __count_ = 0;
     }
