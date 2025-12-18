@@ -133,7 +133,11 @@ CUresult cccl_device_binary_search_build_ex(
 #include <cub/detail/binary_search_helpers.cuh>
 #include <cuda/__iterator/zip_iterator.h>
 
-{9}
+{11}
+
+struct __align__({10}) storage_t {{
+  char data[{9}];
+}};
 
 {0}
 {2}
@@ -205,6 +209,8 @@ __launch_bounds__(device_for_policy::ActivePolicy::for_policy_t::block_threads)
       op_src,
       op_name,
       mode_t,
+      d_out.value_type.size,
+      d_out.value_type.alignment,
       jit_template_header_contents);
 
     const std::string arch = std::format("-arch=sm_{0}{1}", cc_major, cc_minor);
