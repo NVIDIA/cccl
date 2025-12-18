@@ -633,11 +633,11 @@ template <>
 constexpr set_stopped_t __let_t::__set_tag<let_stopped_t>{};
 
 template <class _Sndr, class _Fn>
-inline constexpr size_t structured_binding_size<let_value_t::__sndr_t<_Sndr, _Fn>> = 3;
+inline constexpr int structured_binding_size<let_value_t::__sndr_t<_Sndr, _Fn>> = 3;
 template <class _Sndr, class _Fn>
-inline constexpr size_t structured_binding_size<let_error_t::__sndr_t<_Sndr, _Fn>> = 3;
+inline constexpr int structured_binding_size<let_error_t::__sndr_t<_Sndr, _Fn>> = 3;
 template <class _Sndr, class _Fn>
-inline constexpr size_t structured_binding_size<let_stopped_t::__sndr_t<_Sndr, _Fn>> = 3;
+inline constexpr int structured_binding_size<let_stopped_t::__sndr_t<_Sndr, _Fn>> = 3;
 
 _CCCL_GLOBAL_CONSTANT auto let_value   = let_value_t{};
 _CCCL_GLOBAL_CONSTANT auto let_error   = let_error_t{};

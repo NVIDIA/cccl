@@ -15,14 +15,7 @@ import cuda.compute
 from cuda.compute import (
     CountingIterator,
     ZipIterator,
-    gpu_struct,
 )
-
-
-@gpu_struct
-class IndexValuePair:
-    index: np.int32
-    value: np.int32
 
 
 def max_by_value(p1, p2):
@@ -40,8 +33,12 @@ arr = cp.asarray([0, 1, 2, 4, 7, 3, 5, 6], dtype=np.int32)
 zip_it = ZipIterator(counting_it, arr)
 
 num_items = 8
-h_init = IndexValuePair(-1, -1)
-d_output = cp.empty(1, dtype=IndexValuePair.dtype)
+
+# Note: initial value passed as a numpy struct
+dtype = np.dtype([("index", np.int32), ("value", np.int32)], align=True)
+h_init = np.asarray([(-1, -1)], dtype=dtype)
+
+d_output = cp.empty(1, dtype=dtype)
 
 # Perform the reduction.
 cuda.compute.reduce_into(zip_it, d_output, max_by_value, num_items, h_init)

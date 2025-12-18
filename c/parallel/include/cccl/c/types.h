@@ -158,6 +158,13 @@ typedef enum cccl_init_kind_t
   CCCL_NO_INIT           = 2,
 } cccl_init_kind_t;
 
+typedef enum cccl_determinism_t
+{
+  CCCL_NOT_GUARANTEED = 0,
+  CCCL_RUN_TO_RUN     = 1,
+  CCCL_GPU_TO_GPU     = 2,
+} cccl_determinism_t;
+
 typedef enum cccl_binary_search_mode_t
 {
   CCCL_BINARY_SEARCH_LOWER_BOUND = 0,

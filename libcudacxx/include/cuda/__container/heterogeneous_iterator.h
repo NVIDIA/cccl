@@ -231,8 +231,8 @@ public:
 
   //! @brief Constructs an immutable \c heterogeneous_iterator from a mutable one
   //! @param __other The mutable \c heterogeneous_iterator
-  _CCCL_TEMPLATE(class _OtherTp)
-  _CCCL_REQUIRES((::cuda::std::is_same_v<_OtherTp, value_type>) _CCCL_AND(::cuda::std::is_const_v<_CvTp>))
+  _CCCL_TEMPLATE(class _OtherTp, class _CvTp2 = _CvTp)
+  _CCCL_REQUIRES((::cuda::std::is_same_v<_OtherTp, value_type>) _CCCL_AND(::cuda::std::is_const_v<_CvTp2>))
   _CCCL_API constexpr heterogeneous_iterator(heterogeneous_iterator<_OtherTp, _Properties...> __other) noexcept
       : __base(__other.__ptr_)
   {}

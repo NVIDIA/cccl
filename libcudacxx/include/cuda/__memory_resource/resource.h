@@ -130,30 +130,6 @@ _CCCL_CONCEPT __non_polymorphic_resources = _CCCL_REQUIRES_EXPR((_Resource, _Oth
 
 _CCCL_END_NAMESPACE_CUDA_MR
 
-_CCCL_BEGIN_NAMESPACE_CUDA
-
-//! @brief Equality comparison between two resources of different types. Always returns false.
-_CCCL_TEMPLATE(class _Resource, class _OtherResource)
-_CCCL_REQUIRES((!::cuda::std::is_same_v<_Resource, _OtherResource>)
-                 _CCCL_AND ::cuda::mr::__non_polymorphic_resources<_Resource, _OtherResource>)
-[[nodiscard]] bool operator==(_Resource const&, _OtherResource const&) noexcept
-{
-  return false;
-}
-
-#if _CCCL_STD_VER <= 2017
-//! @brief Inequality comparison between two resources of different types. Always returns true.
-_CCCL_TEMPLATE(class _Resource, class _OtherResource)
-_CCCL_REQUIRES((!::cuda::std::is_same_v<_Resource, _OtherResource>)
-                 _CCCL_AND ::cuda::mr::__non_polymorphic_resources<_Resource, _OtherResource>)
-[[nodiscard]] bool operator!=(_Resource const&, _OtherResource const&) noexcept
-{
-  return true;
-}
-#endif // _CCCL_STD_VER <= 2017
-
-_CCCL_END_NAMESPACE_CUDA
-
 #include <cuda/std/__cccl/epilogue.h>
 
 #endif //_CUDA___MEMORY_RESOURCE_RESOURCE_H

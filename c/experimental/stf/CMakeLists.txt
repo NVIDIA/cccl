@@ -26,6 +26,9 @@ file(
   "src/*.cuh"
 )
 
+cccl_get_cudatoolkit()
+cccl_get_cudax()
+
 add_library(cccl.c.experimental.stf SHARED ${srcs})
 set_property(
   TARGET cccl.c.experimental.stf
@@ -45,15 +48,6 @@ if (CCCL_C_EXPERIMENTAL_STF_LIBRARY_OUTPUT_DIRECTORY)
   )
 endif()
 
-find_package(
-  cudax
-  REQUIRED
-  CONFIG
-  NO_DEFAULT_PATH # Only check the explicit path in HINTS:
-  HINTS "${CCCL_SOURCE_DIR}/lib/cmake/cudax/"
-)
-
-find_package(CUDAToolkit REQUIRED)
 set_target_properties(
   cccl.c.experimental.stf
   PROPERTIES CUDA_RUNTIME_LIBRARY STATIC
@@ -64,7 +58,7 @@ target_link_libraries(
   PRIVATE #
     CUDA::cudart_static
     CUDA::cuda_driver
-    CCCL::cudax
+    cudax::cudax
 )
 
 target_compile_options(

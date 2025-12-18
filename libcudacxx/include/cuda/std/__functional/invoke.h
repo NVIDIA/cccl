@@ -33,6 +33,7 @@
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/is_void.h>
 #include <cuda/std/__type_traits/nat.h>
+#include <cuda/std/__type_traits/remove_cvref.h>
 #include <cuda/std/__utility/declval.h>
 #include <cuda/std/__utility/forward.h>
 
@@ -192,15 +193,16 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT invoke_result //
 {
 #if _CCCL_CUDA_COMPILER(NVCC) && defined(__CUDACC_EXTENDED_LAMBDA__) && !_CCCL_DEVICE_COMPILATION()
 #  if _CCCL_CUDACC_BELOW(12, 3)
-  static_assert(!__nv_is_extended_device_lambda_closure_type(_Fp),
+  static_assert(!__nv_is_extended_device_lambda_closure_type(remove_cvref_t<_Fp>),
                 "Attempt to use an extended __device__ lambda in a context "
                 "that requires querying its return type in host code. Use a "
                 "named function object, an extended __host__ __device__ lambda, or "
                 "cuda::proclaim_return_type instead.");
 #  else // ^^^ _CCCL_CUDACC_BELOW(12, 3) ^^^ / vvv _CCCL_CUDACC_AT_LEAST(12, 3) vvv
   static_assert(
-    !__nv_is_extended_device_lambda_closure_type(_Fp) || __nv_is_extended_host_device_lambda_closure_type(_Fp)
-      || __nv_is_extended_device_lambda_with_preserved_return_type(_Fp),
+    !__nv_is_extended_device_lambda_closure_type(remove_cvref_t<_Fp>)
+      || __nv_is_extended_host_device_lambda_closure_type(remove_cvref_t<_Fp>)
+      || __nv_is_extended_device_lambda_with_preserved_return_type(remove_cvref_t<_Fp>),
     "Attempt to use an extended __device__ lambda in a context "
     "that requires querying its return type in host code. Use a "
     "named function object, an extended __host__ __device__ lambda, "

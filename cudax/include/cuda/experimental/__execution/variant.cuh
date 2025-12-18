@@ -30,6 +30,7 @@
 #include <cuda/std/__type_traits/decay.h>
 #include <cuda/std/__type_traits/type_set.h>
 #include <cuda/std/__utility/integer_sequence.h>
+#include <cuda/std/__utility/monostate.h>
 
 #include <cuda/experimental/__detail/type_traits.cuh>
 #include <cuda/experimental/__execution/meta.cuh>
@@ -49,8 +50,7 @@ namespace cuda::experimental::execution
 /* the need for a default constructor for each alternative type.                */
 /********************************************************************************/
 
-struct __monostate
-{};
+using __monostate = ::cuda::std::monostate;
 
 template <class _Idx, class... _Ts>
 class __variant_impl;

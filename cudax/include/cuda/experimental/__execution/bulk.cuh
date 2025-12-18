@@ -22,6 +22,7 @@
 #endif // no system header
 
 #include <cuda/__cmath/ceil_div.h>
+#include <cuda/__launch/configuration.h>
 #include <cuda/__utility/immovable.h>
 #include <cuda/std/__concepts/arithmetic.h>
 #include <cuda/std/__concepts/same_as.h>
@@ -45,7 +46,6 @@
 #include <cuda/experimental/__execution/transform_completion_signatures.cuh>
 #include <cuda/experimental/__execution/transform_sender.cuh>
 #include <cuda/experimental/__execution/type_traits.cuh>
-#include <cuda/experimental/__launch/configuration.cuh>
 
 #include <cuda/experimental/__execution/prologue.cuh>
 
@@ -73,7 +73,8 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __attrs_t
   {
     constexpr int __block_threads = 256;
     const int __grid_blocks       = ::cuda::ceil_div(static_cast<int>(__shape), __block_threads);
-    return experimental::make_config(block_dims<__block_threads>(), grid_dims(__grid_blocks));
+    auto __dims                   = ::cuda::make_hierarchy(block_dims<__block_threads>(), grid_dims(__grid_blocks));
+    return make_config(__dims, cooperative_launch());
   }
 
   using __launch_config_t = decltype(__get_launch_config(_Shape()));
@@ -452,13 +453,13 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT bulk_t : __bulk_t<bulk_t>
 _CCCL_GLOBAL_CONSTANT auto bulk = bulk_t{};
 
 template <class _Sndr, class _Policy, class _Shape, class _Fn>
-inline constexpr size_t structured_binding_size<bulk_t::__sndr_t<_Sndr, _Policy, _Shape, _Fn>> = 3;
+inline constexpr int structured_binding_size<bulk_t::__sndr_t<_Sndr, _Policy, _Shape, _Fn>> = 3;
 
 template <class _Sndr, class _Policy, class _Shape, class _Fn>
-inline constexpr size_t structured_binding_size<bulk_chunked_t::__sndr_t<_Sndr, _Policy, _Shape, _Fn>> = 3;
+inline constexpr int structured_binding_size<bulk_chunked_t::__sndr_t<_Sndr, _Policy, _Shape, _Fn>> = 3;
 
 template <class _Sndr, class _Policy, class _Shape, class _Fn>
-inline constexpr size_t structured_binding_size<bulk_unchunked_t::__sndr_t<_Sndr, _Policy, _Shape, _Fn>> = 3;
+inline constexpr int structured_binding_size<bulk_unchunked_t::__sndr_t<_Sndr, _Policy, _Shape, _Fn>> = 3;
 } // namespace cuda::experimental::execution
 
 _CCCL_DIAG_POP

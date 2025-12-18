@@ -306,7 +306,7 @@ CUresult cccl_device_radix_sort_build_ex(
     check(cccl_type_name_from_nvrtc<OffsetT>(&offset_t));
 
     const auto policy_hub_expr =
-      std::format("cub::detail::radix::policy_hub<{}, {}, {}>", key_cpp, value_cpp, offset_t);
+      std::format("cub::detail::radix_sort::policy_hub<{}, {}, {}>", key_cpp, value_cpp, offset_t);
 
     const std::string final_src = std::format(
       R"XXX(
@@ -326,7 +326,7 @@ using {5} = {6}::MaxPolicy;
 #include <cub/detail/ptx-json/json.cuh>
 __device__ consteval auto& policy_generator() {{
   return ptx_json::id<ptx_json::string("device_radix_sort_policy")>()
-    = cub::detail::radix::RadixSortPolicyWrapper<{5}::ActivePolicy>::EncodedPolicy();
+    = cub::detail::radix_sort::RadixSortPolicyWrapper<{5}::ActivePolicy>::EncodedPolicy();
 }}
 )XXX",
       input_keys_it.value_type.size, // 0

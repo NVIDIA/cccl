@@ -10,7 +10,7 @@ add_custom_target(libcudacxx.test.internal_headers)
 if ("NVHPC" STREQUAL "${CMAKE_CXX_COMPILER_ID}")
   find_package(NVHPC)
 else()
-  find_package(CUDAToolkit)
+  cccl_get_cudatoolkit()
 endif()
 
 # We need to handle atomic headers differently as they do not compile on architectures below sm70
@@ -43,36 +43,26 @@ list(FILTER internal_headers EXCLUDE REGEX "__cuda/*")
 # generated cuda::ptx headers are not standalone
 list(FILTER internal_headers EXCLUDE REGEX "__ptx/instructions/generated")
 
+if ("NVHPC" STREQUAL "${CMAKE_CXX_COMPILER_ID}")
+  set(cudart_name NVHPC::CUDART)
+else()
+  set(cudart_name CUDA::cudart)
+endif()
+
 function(libcudacxx_create_internal_header_test header_name headertest_src)
   # Create the default target for that file
   add_library(internal_headertest_${header_name} SHARED "${headertest_src}.cu")
   cccl_configure_target(internal_headertest_${header_name})
-  target_include_directories(
-    internal_headertest_${header_name}
-    PRIVATE "${libcudacxx_SOURCE_DIR}/include"
-  )
   target_compile_definitions(
     internal_headertest_${header_name}
     PRIVATE _CCCL_HEADER_TEST
   )
-
-  # Bring in the global CCCL compile definitions
-  # Link against the right cuda runtime
-  if ("NVHPC" STREQUAL "${CMAKE_CXX_COMPILER_ID}")
-    target_link_libraries(
-      internal_headertest_${header_name}
-      PUBLIC #
-        libcudacxx.compiler_interface
-        NVHPC::CUDART
-    )
-  else()
-    target_link_libraries(
-      internal_headertest_${header_name}
-      PUBLIC #
-        libcudacxx.compiler_interface
-        CUDA::cudart
-    )
-  endif()
+  target_link_libraries(
+    internal_headertest_${header_name}
+    PUBLIC #
+      libcudacxx.compiler_interface
+      ${cudart_name}
+  )
 
   # Ensure that if this is an atomic header, we only include the right architectures
   string(

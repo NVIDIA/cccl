@@ -48,6 +48,7 @@ namespace cuda::experimental::execution
 {
 namespace __detail
 {
+_CCCL_EXEC_CHECK_DISABLE
 template <class _Attrs, class... _Env>
 [[nodiscard]] _CCCL_API constexpr auto __mk_seq_env_next(const _Attrs& __attrs, const _Env&... __env) noexcept
 {
@@ -98,6 +99,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT sequence_t
   template <class _Attrs, class... _Env>
   using __env2_t = __join_env_t<__detail::__seq_env_next_t<_Attrs, __fwd_env_t<_Env>...>, __fwd_env_t<_Env>...>;
 
+  _CCCL_EXEC_CHECK_DISABLE
   template <class _Attrs, class... _Env>
   [[nodiscard]] _CCCL_API static constexpr auto __mk_env2(const _Attrs& __attrs, const _Env&... __env) noexcept
     -> __env2_t<_Attrs, _Env...>
@@ -154,11 +156,13 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT sequence_t
     using __env2_t _CCCL_NODEBUG_ALIAS = __detail::__seq_env_next_t<env_of_t<_Sndr1>, env_of_t<_Rcvr>>;
 
     // The moves from lvalues here is intentional:
+    _CCCL_EXEC_CHECK_DISABLE
     _CCCL_API constexpr __opstate_t(_Sndr1& __sndr1, _Sndr2& __sndr2, _Rcvr& __rcvr, __env2_t __env2)
         : __state_(static_cast<_Rcvr&&>(__rcvr), static_cast<__env2_t&&>(__env2), static_cast<_Sndr2&&>(__sndr2))
         , __opstate1_(execution::connect(static_cast<_Sndr1&&>(__sndr1), __rcvr_t<_Rcvr, __env2_t, _Sndr2>{&__state_}))
     {}
 
+    _CCCL_EXEC_CHECK_DISABLE
     _CCCL_API constexpr __opstate_t(_Sndr1&& __sndr1, _Sndr2&& __sndr2, _Rcvr&& __rcvr)
         : __opstate_t(__sndr1, __sndr2, __rcvr, __detail::__mk_seq_env_next(get_env(__sndr1), get_env(__rcvr)))
     {}
@@ -181,6 +185,7 @@ public:
   template <class _Sndr1, class _Sndr2>
   struct _CCCL_TYPE_VISIBILITY_DEFAULT __sndr_t;
 
+  _CCCL_EXEC_CHECK_DISABLE
   template <class _Sndr1, class _Sndr2>
   _CCCL_API constexpr auto operator()(_Sndr1 __sndr1, _Sndr2 __sndr2) const;
 };
@@ -207,6 +212,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT sequence_t::__sndr_t
     _CCCL_UNREACHABLE();
   }
 
+  _CCCL_EXEC_CHECK_DISABLE
   template <class _Rcvr>
   [[nodiscard]] _CCCL_API constexpr auto connect(_Rcvr __rcvr) && //
     -> sequence_t::__opstate_t<_Rcvr, _Sndr1, _Sndr2>
@@ -215,6 +221,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT sequence_t::__sndr_t
     return __opstate_t{static_cast<_Sndr1&&>(__sndr1_), static_cast<_Sndr2>(__sndr2_), static_cast<_Rcvr&&>(__rcvr)};
   }
 
+  _CCCL_EXEC_CHECK_DISABLE
   template <class _Rcvr>
   [[nodiscard]] _CCCL_API constexpr auto connect(_Rcvr __rcvr) const& //
     -> sequence_t::__opstate_t<_Rcvr, const _Sndr1&, const _Sndr2&>
@@ -273,6 +280,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT sequence_t::__sndr_t
   _Sndr2 __sndr2_;
 };
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class _Sndr1, class _Sndr2>
 _CCCL_API constexpr auto sequence_t::operator()(_Sndr1 __sndr1, _Sndr2 __sndr2) const
 {
@@ -281,7 +289,7 @@ _CCCL_API constexpr auto sequence_t::operator()(_Sndr1 __sndr1, _Sndr2 __sndr2) 
 }
 
 template <class _Sndr1, class _Sndr2>
-inline constexpr size_t structured_binding_size<sequence_t::__sndr_t<_Sndr1, _Sndr2>> = 4;
+inline constexpr int structured_binding_size<sequence_t::__sndr_t<_Sndr1, _Sndr2>> = 4;
 
 _CCCL_GLOBAL_CONSTANT sequence_t sequence{};
 } // namespace cuda::experimental::execution

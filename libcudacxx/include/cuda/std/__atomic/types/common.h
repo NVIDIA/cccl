@@ -94,7 +94,6 @@ _CCCL_HOST_DEVICE inline int __atomic_memcmp(void const* __lhs, void const* __rh
      } return 0;),
     NV_IS_HOST,
     (return ::cuda::std::memcmp(__lhs, __rhs, __count);))
-  _CCCL_UNREACHABLE();
 }
 
 _CCCL_END_NAMESPACE_CUDA_STD

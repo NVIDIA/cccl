@@ -77,17 +77,17 @@ def test_func_caching_with_global_variable():
 def test_func_caching_wrapped_cuda_jit_function():
     import numba.cuda
 
-    @numba.cuda.jit
-    def inner(x):
-        return x
+    def make_func():
+        @numba.cuda.jit
+        def inner(x):
+            return x
 
-    def func(x):
-        return inner(x) + 1
+        def func(x):
+            return inner(x) + 1
 
-    wrapped_func1 = numba.cuda.jit(func)
+        return func
 
-    def func(x):
-        return inner(x) + 1
+    func1 = make_func()
+    func2 = make_func()
 
-    wrapped_func2 = numba.cuda.jit(func)
-    assert CachableFunction(wrapped_func1) == CachableFunction(wrapped_func2)
+    assert CachableFunction(func1) == CachableFunction(func2)

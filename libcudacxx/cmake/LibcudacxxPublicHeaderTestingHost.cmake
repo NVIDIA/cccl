@@ -43,10 +43,6 @@ function(libcudacxx_create_public_header_test_host header_name headertest_src)
     "${headertest_src}.cpp"
   )
   cccl_configure_target(public_headers_host_only_${header_name})
-  target_include_directories(
-    public_headers_host_only_${header_name}
-    PRIVATE "${libcudacxx_SOURCE_DIR}/include"
-  )
   target_compile_definitions(
     public_headers_host_only_${header_name}
     PRIVATE #
@@ -57,8 +53,6 @@ function(libcudacxx_create_public_header_test_host header_name headertest_src)
     public_headers_host_only_${header_name}
     PRIVATE ${public_host_header_cxx_compile_options}
   )
-
-  # Bring in the global CCCL compile definitions
   target_link_libraries(
     public_headers_host_only_${header_name}
     PUBLIC libcudacxx.compiler_interface

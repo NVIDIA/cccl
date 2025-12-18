@@ -1,6 +1,6 @@
-# 3.15 is the minimum for including the project with add_subdirectory.
+# 3.18 is the minimum for including the project with add_subdirectory.
 # 3.21 is the minimum for the developer build.
-cmake_minimum_required(VERSION 3.15)
+cmake_minimum_required(VERSION 3.18)
 
 # sccache cannot handle the -Fd option generating pdb files:
 if (POLICY CMP0141)

@@ -3,36 +3,10 @@
 # cudax.compiler_interface
 # - Interface target that includes all compiler settings for cudax tests, etc.
 
-find_package(
-  libcudacxx
-  CONFIG
-  REQUIRED
-  NO_DEFAULT_PATH # Only check the explicit path in HINTS:
-  HINTS "${CCCL_SOURCE_DIR}/lib/cmake/libcudacxx/"
-)
-
-find_package(
-  CUB
-  CONFIG
-  REQUIRED
-  NO_DEFAULT_PATH # Only check the explicit path in HINTS:
-  HINTS "${CCCL_SOURCE_DIR}/lib/cmake/cub/"
-)
-find_package(
-  Thrust
-  CONFIG
-  REQUIRED
-  NO_DEFAULT_PATH # Only check the explicit path in HINTS:
-  HINTS "${CCCL_SOURCE_DIR}/lib/cmake/thrust/"
-)
-
-find_package(
-  cudax
-  CONFIG
-  REQUIRED
-  NO_DEFAULT_PATH # Only check the explicit path in HINTS:
-  HINTS "${CCCL_SOURCE_DIR}/lib/cmake/cudax/"
-)
+cccl_get_cub()
+cccl_get_cudax()
+cccl_get_libcudacxx()
+cccl_get_thrust()
 
 set(cuda_compile_options)
 set(cxx_compile_options)
@@ -41,10 +15,6 @@ set(cxx_compile_definitions)
 if ("MSVC" STREQUAL "${CMAKE_CXX_COMPILER_ID}")
   # C4848: support for attribute 'msvc::no_unique_address' in C++17 and earlier is a vendor extension
   append_option_if_available("/wd4848" cxx_compile_options)
-
-  # cudax requires dim3 to be usable from a constexpr context, and the CUDART headers require
-  # __cplusplus to be defined for this to work:
-  append_option_if_available("/Zc:__cplusplus" cxx_compile_options)
 
   # XXX Temporary hack for STF !
   # C4267: conversion from 'meow' to 'purr', possible loss of data

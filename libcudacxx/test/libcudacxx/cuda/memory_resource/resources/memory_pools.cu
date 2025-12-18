@@ -9,6 +9,7 @@
 //===----------------------------------------------------------------------===//
 
 #include <cuda/__device/all_devices.h>
+#include <cuda/memory_pool>
 #include <cuda/memory_resource>
 #include <cuda/std/cstdint>
 #include <cuda/std/type_traits>
@@ -18,7 +19,7 @@
 
 #include <testing.cuh>
 
-#if _CCCL_CTK_AT_LEAST(13, 0)
+#if _CCCL_CTK_AT_LEAST(13, 0) && !_CCCL_OS(WINDOWS)
 #  define TEST_TYPES cuda::managed_memory_pool, cuda::device_memory_pool, cuda::pinned_memory_pool
 #elif _CCCL_CTK_AT_LEAST(12, 6)
 #  define TEST_TYPES cuda::device_memory_pool, cuda::pinned_memory_pool
@@ -560,6 +561,15 @@ C2H_CCCLRT_TEST_LIST("device_memory_pool accessors", "[memory_resource]", TEST_T
     auto still_no_backing = pool.attribute(cuda::memory_pool_attributes::reserved_mem_current);
     CHECK(still_no_backing == new_backing_size);
   }
+
+  SECTION("memory_pool::as_ref")
+  {
+    memory_pool pool = construct_pool<memory_pool>(current_device);
+    auto ref         = pool.as_ref();
+    static_assert(!cuda::std::copyable<memory_pool>);
+    static_assert(cuda::std::copyable<decltype(ref)>);
+    CHECK(ref == pool);
+  }
 }
 
 C2H_CCCLRT_TEST("device_memory_pool::enable_access", "[memory_resource]")
@@ -601,6 +611,7 @@ C2H_CCCLRT_TEST("pinned_memory_pool::enable_access", "[memory_resource]")
 }
 #endif // _CCCL_CTK_AT_LEAST(12, 6)
 
+#if !_CCCL_OS(WINDOWS)
 C2H_CCCLRT_TEST("device_memory_pool with allocation handle", "[memory_resource]")
 {
   cuda::memory_pool_properties props              = {20, 42, ::cudaMemHandleTypePosixFileDescriptor};
@@ -625,7 +636,7 @@ C2H_CCCLRT_TEST("device_memory_pool with allocation handle", "[memory_resource]"
   CHECK(ensure_export_handle(get, static_cast<cudaMemAllocationHandleType>(props.allocation_handle_type)));
 }
 
-#if _CCCL_CTK_AT_LEAST(12, 6)
+#  if _CCCL_CTK_AT_LEAST(12, 6)
 C2H_CCCLRT_TEST("pinned_memory_pool with allocation handle", "[memory_resource]")
 {
   cuda::memory_pool_properties props              = {20, 42, ::cudaMemHandleTypePosixFileDescriptor};
@@ -643,6 +654,7 @@ C2H_CCCLRT_TEST("pinned_memory_pool with allocation handle", "[memory_resource]"
   // Ensure that we disable export
   CHECK(ensure_export_handle(get, static_cast<cudaMemAllocationHandleType>(props.allocation_handle_type)));
 }
-#endif // _CCCL_CTK_AT_LEAST(12, 6)
+#  endif // _CCCL_CTK_AT_LEAST(12, 6)
 
 // managed memory pool does not support allocation handles yet.
+#endif // !_CCCL_OS(WINDOWS)
