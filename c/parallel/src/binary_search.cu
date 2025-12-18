@@ -124,7 +124,7 @@ CUresult cccl_device_binary_search_build_ex(
         case CCCL_BINARY_SEARCH_UPPER_BOUND:
           return "cub::detail::find::upper_bound";
       }
-      _CCCL_UNREACHABLE();
+      throw std::runtime_error(std::format("Invalid binary search mode ({})", static_cast<int>(mode)));
     }();
 
     const std::string src = std::format(
