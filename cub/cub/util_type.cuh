@@ -243,7 +243,7 @@ struct InputValue
 {
   using value_type    = T;
   using iterator_type = IterT;
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE operator T()
+  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE operator T() const
   {
     if (m_is_future)
     {
