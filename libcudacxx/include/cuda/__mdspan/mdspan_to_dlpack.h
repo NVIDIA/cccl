@@ -58,60 +58,10 @@ template <typename _ElementType>
   }
   //--------------------------------------------------------------------------------------------------------------------
   // Signed integer types
-  else if constexpr (::cuda::std::is_same_v<_ElementType, ::cuda::std::int8_t>)
+  else if constexpr (::cuda::std::__cccl_is_integer_v<_ElementType>)
   {
-    return ::DLDataType{::kDLInt, 8, 1};
+    return ::DLDataType{(::cuda::std::is_signed_v<_ElementType>) ? ::kDLInt : ::kDLUInt, ::cuda::std::__num_bits_v<_ElementType>, 1};
   }
-  else if constexpr (::cuda::std::is_same_v<_ElementType, ::cuda::std::int16_t>)
-  {
-    return ::DLDataType{::kDLInt, 16, 1};
-  }
-  else if constexpr (::cuda::std::is_same_v<_ElementType, ::cuda::std::int32_t>)
-  {
-    return ::DLDataType{::kDLInt, 32, 1};
-  }
-  else if constexpr (::cuda::std::is_same_v<_ElementType, long>)
-  {
-    return ::DLDataType{::kDLInt, ::cuda::std::__num_bits_v<long>, 1};
-  }
-  else if constexpr (::cuda::std::is_same_v<_ElementType, long long>)
-  {
-    return ::DLDataType{::kDLInt, 64, 1};
-  }
-#  if _CCCL_HAS_INT128()
-  else if constexpr (::cuda::std::is_same_v<_ElementType, __int128_t>)
-  {
-    return ::DLDataType{::kDLInt, 128, 1};
-  }
-#  endif // _CCCL_HAS_INT128()
-  //--------------------------------------------------------------------------------------------------------------------
-  // Unsigned integer types
-  else if constexpr (::cuda::std::is_same_v<_ElementType, ::cuda::std::uint8_t>)
-  {
-    return ::DLDataType{::kDLUInt, 8, 1};
-  }
-  else if constexpr (::cuda::std::is_same_v<_ElementType, ::cuda::std::uint16_t>)
-  {
-    return ::DLDataType{::kDLUInt, 16, 1};
-  }
-  else if constexpr (::cuda::std::is_same_v<_ElementType, ::cuda::std::uint32_t>)
-  {
-    return ::DLDataType{::kDLUInt, 32, 1};
-  }
-  else if constexpr (::cuda::std::is_same_v<_ElementType, unsigned long>)
-  {
-    return ::DLDataType{::kDLUInt, ::cuda::std::__num_bits_v<unsigned long>, 1};
-  }
-  else if constexpr (::cuda::std::is_same_v<_ElementType, unsigned long long>)
-  {
-    return ::DLDataType{::kDLUInt, 64, 1};
-  }
-#  if _CCCL_HAS_INT128()
-  else if constexpr (::cuda::std::is_same_v<_ElementType, __uint128_t>)
-  {
-    return ::DLDataType{::kDLUInt, 128, 1};
-  }
-#  endif // _CCCL_HAS_INT128()
   //--------------------------------------------------------------------------------------------------------------------
   // Floating-point types
 #  if _CCCL_HAS_NVFP16()
