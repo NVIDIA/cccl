@@ -26,6 +26,10 @@
 #include <cuda/std/__bit/popcount.h>
 #include <cuda/std/__type_traits/underlying_type.h>
 
+#if _CCCL_CUDA_COMPILER(NVCC, >=, 12, 8)
+#  include <cuda/atomic>
+#endif // _CCCL_CUDA_COMPILER(NVCC, >=, 12, 8)
+
 CUB_NAMESPACE_BEGIN
 
 namespace detail::scan
@@ -61,7 +65,12 @@ storeTileAggregate(tile_state_t<AccumT>* ptrTileStates, scan_state scanState, Ac
   if constexpr (sizeof(tile_state_t<AccumT>) <= 16)
   {
     tile_state_t<AccumT> tmp{scanState, sum};
+#  if _CCCL_CUDA_COMPILER(NVCC, >=, 12, 8)
     __nv_atomic_store(ptrTileStates + index, &tmp, __NV_ATOMIC_RELAXED, __NV_THREAD_SCOPE_DEVICE);
+#  else // _CCCL_CUDA_COMPILER(NVCC, >=, 12, 8)
+    ::cuda::atomic_ref<tile_state_t<AccumT>, ::cuda::std::thread_scope_device>{ptrTileStates[index]}.store(
+      tmp, ::cuda::std::memory_order_relaxed);
+#  endif // _CCCL_CUDA_COMPILER(NVCC, >=, 12, 8)
   }
   else
   {
@@ -80,7 +89,12 @@ _CCCL_DEVICE_API inline tile_state_t<AccumT> loadTileAggregate(tile_state_t<Accu
   tile_state_t<AccumT> res;
   if constexpr (sizeof(tile_state_t<AccumT>) <= 16)
   {
+#  if _CCCL_CUDA_COMPILER(NVCC, >=, 12, 8)
     __nv_atomic_load(ptrTileStates + index, &res, __NV_ATOMIC_RELAXED, __NV_THREAD_SCOPE_DEVICE);
+#  else // _CCCL_CUDA_COMPILER(NVCC, >=, 12, 8)
+    res = ::cuda::atomic_ref<tile_state_t<AccumT>, ::cuda::std::thread_scope_device>{ptrTileStates[index]}.load(
+      ::cuda::std::memory_order_relaxed);
+#  endif // _CCCL_CUDA_COMPILER(NVCC, >=, 12, 8)
   }
   else
   {
