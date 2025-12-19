@@ -21,17 +21,19 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/__fwd/hierarchy.h>
-#include <cuda/__hierarchy/block_level.h>
-#include <cuda/__hierarchy/hierarchy_query_result.h>
-#include <cuda/__hierarchy/native_hierarchy_level_base.h>
-#include <cuda/__hierarchy/thread_level.h>
-#include <cuda/__ptx/instructions/get_sreg.h>
-#include <cuda/std/__concepts/concept_macros.h>
-#include <cuda/std/__mdspan/extents.h>
-#include <cuda/std/__type_traits/is_integer.h>
+#if _CCCL_HAS_CTK()
 
-#include <cuda/std/__cccl/prologue.h>
+#  include <cuda/__fwd/hierarchy.h>
+#  include <cuda/__hierarchy/block_level.h>
+#  include <cuda/__hierarchy/hierarchy_query_result.h>
+#  include <cuda/__hierarchy/native_hierarchy_level_base.h>
+#  include <cuda/__hierarchy/thread_level.h>
+#  include <cuda/__ptx/instructions/get_sreg.h>
+#  include <cuda/std/__concepts/concept_macros.h>
+#  include <cuda/std/__mdspan/extents.h>
+#  include <cuda/std/__type_traits/is_integer.h>
+
+#  include <cuda/std/__cccl/prologue.h>
 
 _CCCL_BEGIN_NAMESPACE_CUDA
 
@@ -41,6 +43,8 @@ struct warp_level : __native_hierarchy_level_base<warp_level>
 
   using __base_type = __native_hierarchy_level_base<warp_level>;
   using __base_type::extents_as;
+
+#  if _CCCL_CUDA_COMPILATION()
   using __base_type::index_as;
 
   _CCCL_TEMPLATE(class _Tp)
@@ -56,12 +60,15 @@ struct warp_level : __native_hierarchy_level_base<warp_level>
   {
     return {static_cast<_Tp>(gpu_thread.rank(block) / 32), 0, 0};
   }
+#  endif // _CCCL_CUDA_COMPILATION()
 };
 
 _CCCL_GLOBAL_CONSTANT warp_level warp;
 
 _CCCL_END_NAMESPACE_CUDA
 
-#include <cuda/std/__cccl/epilogue.h>
+#  include <cuda/std/__cccl/epilogue.h>
+
+#endif // _CCCL_HAS_CTK()
 
 #endif // _CUDA___HIERARCHY_WARP_LEVEL_H
