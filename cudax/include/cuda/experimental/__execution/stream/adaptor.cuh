@@ -22,10 +22,10 @@
 #endif // no system header
 
 #include <cuda/__launch/configuration.h>
-#include <cuda/__utility/immovable.h>
+#include <cuda/__launch/launch.h>
+#include <cuda/hierarchy>
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__memory/unique_ptr.h>
-#include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/remove_cvref.h>
 #include <cuda/std/__utility/pod_tuple.h>
 
@@ -270,21 +270,25 @@ private:
     // the receiver tell us how to launch the kernel.
     auto const __launch_config    = get_launch_config(execution::get_env(__state.__state_.__rcvr_));
     using __launch_dims_t         = decltype(__launch_config.dims);
-    constexpr int __block_threads = __launch_dims_t::static_count(thread, block);
-    int const __grid_blocks       = __launch_config.dims.count(block, grid);
-    static_assert(__block_threads != ::cuda::std::dynamic_extent);
+    constexpr int __block_threads = __launch_dims_t::static_count(gpu_thread, block);
 
     // Start the child operation state. This will launch kernels for all the predecessors
     // of this operation.
     execution::start(__state.__opstate_);
 
-    // launch a kernel to pass the results to the receiver.
-    __completion_kernel<__block_threads><<<__grid_blocks, __block_threads, 0, __stream_.get()>>>(&__state.__state_);
-
-    // Check for errors in the kernel launch.
-    if (auto __status = cudaGetLastError(); __status != cudaSuccess)
+    _CCCL_TRY
     {
-      execution::set_error(static_cast<_Rcvr&&>(__state.__state_.__rcvr_), cudaError_t(__status));
+      // launch a kernel to pass the results to the receiver.
+      auto* __kernel = &__completion_kernel<__block_threads, _Rcvr, __results_t>;
+      ::cuda::launch(__stream_, __launch_config, __kernel, &__state.__state_);
+    }
+    _CCCL_CATCH (::cuda::cuda_error & __error) // Check for errors in the kernel launch.
+    {
+      execution::set_error(static_cast<_Rcvr&&>(__state.__state_.__rcvr_), __error.status());
+    }
+    _CCCL_CATCH_ALL
+    {
+      execution::set_error(static_cast<_Rcvr&&>(__state.__state_.__rcvr_), cudaErrorUnknown);
     }
   }
 
@@ -292,7 +296,7 @@ private:
   _CCCL_DEVICE_API void __device_start() noexcept
   {
     using __launch_dims_t         = __dims_of_t<__rcvr_config_t>;
-    constexpr int __block_threads = __launch_dims_t::static_count(thread, block);
+    constexpr int __block_threads = __launch_dims_t::static_count(gpu_thread, block);
     auto& __state                 = __get_state();
 
     // without the following, the kernel in __host_start will fail to launch with

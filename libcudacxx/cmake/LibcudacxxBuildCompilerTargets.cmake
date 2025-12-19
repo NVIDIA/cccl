@@ -19,10 +19,6 @@ function(libcudacxx_build_compiler_targets)
   #  endif()
 
   # Set test specific flags
-  list(
-    APPEND cxx_compile_definitions
-    "LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE"
-  )
   list(APPEND cxx_compile_definitions "CCCL_ENABLE_ASSERTIONS")
   list(APPEND cxx_compile_definitions "CCCL_IGNORE_DEPRECATED_CPP_DIALECT")
   list(APPEND cxx_compile_definitions "CCCL_ENABLE_OPTIONAL_REF")

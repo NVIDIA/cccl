@@ -14,9 +14,8 @@
 #include <cuda/std/detail/__config>
 
 // Use the CCCL compiler detection
-#define TEST_COMPILER(...)       _CCCL_COMPILER(__VA_ARGS__)
-#define TEST_CUDA_COMPILER(...)  _CCCL_CUDA_COMPILER(__VA_ARGS__)
-#define TEST_HAS_CUDA_COMPILER() _CCCL_HAS_CUDA_COMPILER()
+#define TEST_COMPILER(...)      _CCCL_COMPILER(__VA_ARGS__)
+#define TEST_CUDA_COMPILER(...) _CCCL_CUDA_COMPILER(__VA_ARGS__)
 
 // Use the CCCL diagnostic suppression
 #define TEST_DIAG_SUPPRESS_CLANG(...) _CCCL_DIAG_SUPPRESS_CLANG(__VA_ARGS__)

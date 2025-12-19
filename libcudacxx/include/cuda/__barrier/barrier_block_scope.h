@@ -391,7 +391,6 @@ private:
       NV_ANY_TARGET,
       (return ::cuda::std::__cccl_thread_poll_with_backoff(
                 ::cuda::std::__barrier_poll_tester_parity<barrier>(this, __phase_parity), __nanosec);))
-    _CCCL_UNREACHABLE();
   }
 
 public:

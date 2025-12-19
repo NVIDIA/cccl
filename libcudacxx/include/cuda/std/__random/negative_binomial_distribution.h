@@ -36,7 +36,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 template <class _IntType = int>
 class negative_binomial_distribution
 {
-  static_assert(__libcpp_random_is_valid_inttype<_IntType>, "IntType must be a supported integer type");
+  static_assert(__cccl_random_is_valid_inttype<_IntType>, "IntType must be a supported integer type");
 
 public:
   // types

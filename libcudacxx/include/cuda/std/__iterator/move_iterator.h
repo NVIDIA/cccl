@@ -132,7 +132,6 @@ private:
     {
       return input_iterator_tag{};
     }
-    _CCCL_UNREACHABLE();
   }
 
 public:

@@ -373,7 +373,6 @@ _CCCL_REQUIRES(integral<_To>)
       return true;
     }
   }
-  _CCCL_UNREACHABLE();
 }
 
 _CCCL_TEMPLATE(class _To, class... _From)
@@ -530,6 +529,7 @@ private:
       else
       {
         static_assert(_DynCount == __rank_dynamic_, "Constructor of invalid extents passed to extent::extent");
+        _CCCL_UNREACHABLE();
       }
     }
     else // _Idx < __rank_
@@ -549,7 +549,6 @@ private:
           integral_constant<size_t, _DynCount>(), integral_constant<size_t, _Idx + 1>(), __exts, __dynamic_values...);
       }
     }
-    _CCCL_UNREACHABLE();
   }
 
   template <class _OtherIndexType, size_t... _OtherExtents>
@@ -631,7 +630,6 @@ public:
     {
       return true;
     }
-    _CCCL_UNREACHABLE();
   }
 
 #if _CCCL_STD_VER <= 2017
@@ -727,7 +725,6 @@ _CCCL_REQUIRES(integral<_IndexType>)
       return static_cast<_IndexType>(__value) < __extent;
     }
   }
-  _CCCL_UNREACHABLE();
 }
 
 template <size_t... _Idxs, class _Extents, class... _From>

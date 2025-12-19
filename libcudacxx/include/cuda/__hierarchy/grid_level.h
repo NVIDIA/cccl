@@ -4,12 +4,12 @@
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDA_STD_CHARCONV
-#define _CUDA_STD_CHARCONV
+#ifndef _CUDA___HIERARCHY_GRID_LEVEL_H
+#define _CUDA___HIERARCHY_GRID_LEVEL_H
 
 #include <cuda/std/detail/__config>
 
@@ -21,11 +21,24 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__charconv/chars_format.h>
-#include <cuda/std/__charconv/from_chars.h>
-#include <cuda/std/__charconv/from_chars_result.h>
-#include <cuda/std/__charconv/to_chars.h>
-#include <cuda/std/__charconv/to_chars_result.h>
-#include <cuda/std/version>
+#include <cuda/__fwd/hierarchy.h>
+#include <cuda/__hierarchy/native_hierarchy_level_base.h>
 
-#endif // _CUDA_STD_NEW
+#include <cuda/std/__cccl/prologue.h>
+
+_CCCL_BEGIN_NAMESPACE_CUDA
+
+struct grid_level : __native_hierarchy_level_base<grid_level>
+{
+  using product_type  = unsigned long long;
+  using allowed_above = allowed_levels<>;
+  using allowed_below = allowed_levels<block_level, cluster_level>;
+};
+
+_CCCL_GLOBAL_CONSTANT grid_level grid;
+
+_CCCL_END_NAMESPACE_CUDA
+
+#include <cuda/std/__cccl/epilogue.h>
+
+#endif // _CUDA___HIERARCHY_GRID_LEVEL_H

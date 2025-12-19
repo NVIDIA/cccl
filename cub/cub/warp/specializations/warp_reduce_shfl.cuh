@@ -41,6 +41,43 @@ CUB_NAMESPACE_BEGIN
 
 namespace detail
 {
+template <typename T, typename ReductionOp>
+_CCCL_DEVICE _CCCL_FORCEINLINE T reduce_op_sync(T input, const uint32_t mask, ReductionOp)
+{
+  static_assert(::cuda::std::is_integral_v<T>, "T must be an integral type");
+  static_assert(sizeof(T) <= sizeof(unsigned), "T must be less than or equal to unsigned");
+  using promoted_t = ::cuda::std::conditional_t<::cuda::std::is_unsigned_v<T>, unsigned, int>;
+  if constexpr (is_cuda_maximum_v<ReductionOp, T>)
+  {
+    return static_cast<T>(__reduce_max_sync(mask, static_cast<promoted_t>(input)));
+  }
+  else if constexpr (is_cuda_minimum_v<ReductionOp, T>)
+  {
+    return static_cast<T>(__reduce_min_sync(mask, static_cast<promoted_t>(input)));
+  }
+  else if constexpr (is_cuda_std_plus_v<ReductionOp, T>)
+  {
+    return static_cast<T>(__reduce_add_sync(mask, static_cast<promoted_t>(input)));
+  }
+  else if constexpr (is_cuda_std_bit_and_v<ReductionOp, T>)
+  {
+    return static_cast<T>(__reduce_and_sync(mask, static_cast<promoted_t>(input)));
+  }
+  else if constexpr (is_cuda_std_bit_or_v<ReductionOp, T>)
+  {
+    return static_cast<T>(__reduce_or_sync(mask, static_cast<promoted_t>(input)));
+  }
+  else if constexpr (is_cuda_std_bit_xor_v<ReductionOp, T>)
+  {
+    return static_cast<T>(__reduce_xor_sync(mask, static_cast<promoted_t>(input)));
+  }
+  else
+  {
+    _CCCL_UNREACHABLE();
+    return T{};
+  }
+}
+
 /**
  * @brief WarpReduceShfl provides SHFL-based variants of parallel reduction of items partitioned
  *        across a CUDA thread warp.
@@ -444,43 +481,6 @@ struct WarpReduceShfl
   // Reduction operations
   //---------------------------------------------------------------------
 
-  template <typename ReductionOp>
-  _CCCL_DEVICE _CCCL_FORCEINLINE T reduce_op_sync(T input, ReductionOp)
-  {
-    static_assert(::cuda::std::is_integral_v<T>, "T must be an integral type");
-    static_assert(sizeof(T) <= sizeof(unsigned), "T must be less than or equal to unsigned");
-    using promoted_t = ::cuda::std::conditional_t<::cuda::std::is_unsigned_v<T>, unsigned, int>;
-    if constexpr (is_cuda_maximum_v<ReductionOp, T>)
-    {
-      return static_cast<T>(__reduce_max_sync(member_mask, static_cast<promoted_t>(input)));
-    }
-    else if constexpr (is_cuda_minimum_v<ReductionOp, T>)
-    {
-      return static_cast<T>(__reduce_min_sync(member_mask, static_cast<promoted_t>(input)));
-    }
-    else if constexpr (is_cuda_std_plus_v<ReductionOp, T>)
-    {
-      return static_cast<T>(__reduce_add_sync(member_mask, static_cast<promoted_t>(input)));
-    }
-    else if constexpr (is_cuda_std_bit_and_v<ReductionOp, T>)
-    {
-      return static_cast<T>(__reduce_and_sync(member_mask, static_cast<promoted_t>(input)));
-    }
-    else if constexpr (is_cuda_std_bit_or_v<ReductionOp, T>)
-    {
-      return static_cast<T>(__reduce_or_sync(member_mask, static_cast<promoted_t>(input)));
-    }
-    else if constexpr (is_cuda_std_bit_xor_v<ReductionOp, T>)
-    {
-      return static_cast<T>(__reduce_xor_sync(member_mask, static_cast<promoted_t>(input)));
-    }
-    else
-    {
-      _CCCL_UNREACHABLE();
-      return T{};
-    }
-  }
-
   /**
    * @brief Reduction
    *
@@ -504,7 +504,7 @@ struct WarpReduceShfl
                   && (is_cuda_minimum_maximum_v<ReductionOp, T> || is_cuda_std_plus_v<ReductionOp, T>
                       || is_cuda_std_bitwise_v<ReductionOp, T>) )
     {
-      NV_IF_TARGET(NV_PROVIDES_SM_80, (return reduce_op_sync(input, reduction_op);))
+      NV_IF_TARGET(NV_PROVIDES_SM_80, (return reduce_op_sync(input, member_mask, reduction_op);))
     }
     T output = input;
     // Template-iterate reduction steps
