@@ -52,14 +52,18 @@ struct scanKernelParams
 template <typename WarpspeedPolicy, typename InputT, typename OutputT, typename AccumT>
 struct ScanResources
 {
-  // Handle unaligned loads. We have 16 extra bytes of padding in every stage
-  // for squadLoadBulk.
-  using InT = InputT[WarpspeedPolicy::tile_size + 16 / sizeof(InputT)]; // TODO(bgruber): what if InputT = int3?
-                                                                        // Should this be a ceil_div?
+  union InOutT
+  {
+    // Handle unaligned loads. We have at least 16 extra bytes of padding in every stage for squadLoadBulk.
+    InputT in[WarpspeedPolicy::tile_size + ::cuda::ceil_div(16, sizeof(InputT))];
+    OutputT out[sizeof(in) / sizeof(OutputT)];
+  };
+  static_assert(alignof(InOutT) >= alignof(InputT));
+  static_assert(alignof(InOutT) >= alignof(OutputT));
   using SumThreadAndWarpT =
     AccumT[WarpspeedPolicy::squadReduce().threadCount() + WarpspeedPolicy::squadReduce().warpCount()];
 
-  SmemResource<InT> smemInOut; // will also be used to stage the output (as OutputT) for the bulk copy
+  SmemResource<InOutT> smemInOut; // will also be used to stage the output (as OutputT) for the bulk copy
   SmemResource<uint4> smemNextBlockIdx;
   SmemResource<AccumT> smemSumExclusiveCta;
   SmemResource<SumThreadAndWarpT> smemSumThreadAndWarp;
@@ -71,7 +75,7 @@ template <typename WarpspeedPolicy, typename InputT, typename OutputT, typename 
 allocResources(SyncHandler& syncHandler, SmemAllocator& smemAllocator, int numStages)
 {
   using ScanResourcesT    = ScanResources<WarpspeedPolicy, InputT, OutputT, AccumT>;
-  using InT               = typename ScanResourcesT::InT;
+  using InOutT            = typename ScanResourcesT::InOutT;
   using SumThreadAndWarpT = typename ScanResourcesT::SumThreadAndWarpT;
 
   // If numBlockIdxStages is one less than the number of stages, we find a small
@@ -86,7 +90,7 @@ allocResources(SyncHandler& syncHandler, SmemAllocator& smemAllocator, int numSt
   int numSumExclusiveCtaStages = 2;
 
   ScanResourcesT res = {
-    SmemResource<InT>(syncHandler, smemAllocator, Stages{numStages}),
+    SmemResource<InOutT>(syncHandler, smemAllocator, Stages{numStages}),
     SmemResource<uint4>(syncHandler, smemAllocator, Stages{numBlockIdxStages}),
     SmemResource<AccumT>(syncHandler, smemAllocator, Stages{numSumExclusiveCtaStages}),
     SmemResource<SumThreadAndWarpT>(syncHandler, smemAllocator, Stages{numStages}),
@@ -192,7 +196,7 @@ _CCCL_DEVICE_API inline CpAsyncOobInfo prepareCpAsyncOob(const Tp* ptrGmem, uint
 template <typename Tp>
 _CCCL_DEVICE_API inline void squadLoadBulk(const Squad& squad, SmemRef<Tp>& refDestSmem, CpAsyncOobInfo cpAsyncOobInfo)
 {
-  void* ptrSmem    = refDestSmem.data();
+  void* ptrSmem    = refDestSmem.data().in;
   uint64_t* ptrBar = refDestSmem.ptrCurBarrierRelease();
 
   if (squad.isLeaderThread())
@@ -545,7 +549,7 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void kernelBody(
         AccumT regInput[elemPerThread];
         // Handle unaligned refInOutRW.data() + loadInfo.smemStartOffsetElem points to the first element of the tile.
         // in the last tile, we load some invalid elements, but don't process them later
-        squadLoadSmem(squad, regInput, &refInOutRW.data()[0] + loadInfo.smemStartOffsetElem);
+        squadLoadSmem(squad, regInput, &refInOutRW.data().in[0] + loadInfo.smemStartOffsetElem);
 
         ////////////////////////////////////////////////////////////////////////////////
         // Reduce across thread and warp
@@ -786,7 +790,7 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void kernelBody(
 
       // We are always loading a full tile even for the last one. That will call scan_op on invalid data
       // loading partial tiles here regresses perf for about 10-15%
-      squadLoadSmem(squad, regSumInclusive, &refInOutRW.data()[0] + loadInfo.smemStartOffsetElem);
+      squadLoadSmem(squad, regSumInclusive, &refInOutRW.data().in[0] + loadInfo.smemStartOffsetElem);
 
       // Perform inclusive scan of register array in current thread.
       // warp_0/thread_0 in the first tile when there is no initial value, we MUST NOT use sumExclusive
@@ -806,8 +810,7 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void kernelBody(
       // Sync before storing to avoid data races on SMEM
       squad.syncThreads();
 
-      // if the output types fit into the input type tile, we can alias it
-      OutputT* smem_output_tile = reinterpret_cast<OutputT*>(refInOutRW.data());
+      OutputT* smem_output_tile = refInOutRW.data().out;
       if constexpr (sizeof(OutputT) <= sizeof(InputT))
       {
         CpAsyncOobInfo storeInfo = prepareCpAsyncOob(params.ptrOut + idxTileBase, valid_items);
@@ -827,7 +830,7 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void kernelBody(
       {
         // otherwise, issue multiple bulk copies in chunks of the input tile size
         // TODO(bgruber): I am sure this could be implemented a lot more efficiently
-        static constexpr int elem_per_chunk = (WarpspeedPolicy::tile_size * sizeof(InputT)) / sizeof(OutputT);
+        static constexpr int elem_per_chunk = ::cuda::std::size(refInOutRW.data().out);
         for (int chunk_offset = 0; chunk_offset < static_cast<int>(valid_items); chunk_offset += elem_per_chunk)
         {
           const int chunk_size     = ::cuda::std::min(static_cast<int>(valid_items) - chunk_offset, elem_per_chunk);
