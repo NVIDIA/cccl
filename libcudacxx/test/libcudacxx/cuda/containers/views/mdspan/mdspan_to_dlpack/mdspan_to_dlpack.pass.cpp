@@ -29,20 +29,21 @@ bool test_mdspan_to_dlpack_host_layout_right()
   using extents_t = cuda::std::extents<size_t, 2, 3>;
   int data[6]     = {0, 1, 2, 3, 4, 5};
   cuda::host_mdspan<int, extents_t> md{data, extents_t{}};
-  auto dlpack_wrapper = cuda::mdspan_to_dlpack(md);
+  auto dlpack_wrapper  = cuda::to_dlpack(md);
+  const auto& dltensor = dlpack_wrapper.get();
 
-  assert(dlpack_wrapper->device.device_type == kDLCPU);
-  assert(dlpack_wrapper->device.device_id == 0);
-  assert(dlpack_wrapper->ndim == 2);
-  check_datatype(dlpack_wrapper->dtype, kDLInt, 32, 1);
-  assert(dlpack_wrapper->shape != nullptr);
-  assert(dlpack_wrapper->strides != nullptr);
-  assert(dlpack_wrapper->shape[0] == 2);
-  assert(dlpack_wrapper->shape[1] == 3);
-  assert(dlpack_wrapper->strides[0] == 3);
-  assert(dlpack_wrapper->strides[1] == 1);
-  assert(dlpack_wrapper->byte_offset == 0);
-  assert(dlpack_wrapper->data == data);
+  assert(dltensor.device.device_type == kDLCPU);
+  assert(dltensor.device.device_id == 0);
+  assert(dltensor.ndim == 2);
+  check_datatype(dltensor.dtype, kDLInt, 32, 1);
+  assert(dltensor.shape != nullptr);
+  assert(dltensor.strides != nullptr);
+  assert(dltensor.shape[0] == 2);
+  assert(dltensor.shape[1] == 3);
+  assert(dltensor.strides[0] == 3);
+  assert(dltensor.strides[1] == 1);
+  assert(dltensor.byte_offset == 0);
+  assert(dltensor.data == data);
   return true;
 }
 
@@ -51,20 +52,21 @@ bool test_mdspan_to_dlpack_host_layout_left()
   using extents_t = cuda::std::extents<size_t, 2, 3>;
   int data[6]     = {0, 1, 2, 3, 4, 5};
   cuda::host_mdspan<int, extents_t, cuda::std::layout_left> md{data, extents_t{}};
-  auto dlpack_wrapper = cuda::mdspan_to_dlpack(md);
+  auto dlpack_wrapper  = cuda::to_dlpack(md);
+  const auto& dltensor = dlpack_wrapper.get();
 
-  assert(dlpack_wrapper->device.device_type == kDLCPU);
-  assert(dlpack_wrapper->device.device_id == 0);
-  check_datatype(dlpack_wrapper->dtype, kDLInt, 32, 1);
-  assert(dlpack_wrapper->ndim == 2);
-  assert(dlpack_wrapper->shape != nullptr);
-  assert(dlpack_wrapper->strides != nullptr);
-  assert(dlpack_wrapper->shape[0] == 2);
-  assert(dlpack_wrapper->shape[1] == 3);
-  assert(dlpack_wrapper->strides[0] == 1);
-  assert(dlpack_wrapper->strides[1] == 2);
-  assert(dlpack_wrapper->byte_offset == 0);
-  assert(dlpack_wrapper->data == data);
+  assert(dltensor.device.device_type == kDLCPU);
+  assert(dltensor.device.device_id == 0);
+  check_datatype(dltensor.dtype, kDLInt, 32, 1);
+  assert(dltensor.ndim == 2);
+  assert(dltensor.shape != nullptr);
+  assert(dltensor.strides != nullptr);
+  assert(dltensor.shape[0] == 2);
+  assert(dltensor.shape[1] == 3);
+  assert(dltensor.strides[0] == 1);
+  assert(dltensor.strides[1] == 2);
+  assert(dltensor.byte_offset == 0);
+  assert(dltensor.data == data);
   return true;
 }
 
@@ -73,18 +75,19 @@ bool test_mdspan_to_dlpack_empty_size()
   using extents_t = cuda::std::dims<2>;
   int data[1]     = {42};
   cuda::host_mdspan<int, extents_t> m{data, extents_t{0, 3}};
-  auto dlpack_wrapper = cuda::mdspan_to_dlpack(m);
+  auto dlpack_wrapper  = cuda::to_dlpack(m);
+  const auto& dltensor = dlpack_wrapper.get();
 
-  assert(dlpack_wrapper->device.device_type == kDLCPU);
-  assert(dlpack_wrapper->device.device_id == 0);
-  check_datatype(dlpack_wrapper->dtype, kDLInt, 32, 1);
-  assert(dlpack_wrapper->ndim == 2);
-  assert(dlpack_wrapper->shape[0] == 0);
-  assert(dlpack_wrapper->shape[1] == 3);
-  assert(dlpack_wrapper->strides[0] == 3);
-  assert(dlpack_wrapper->strides[1] == 1);
-  assert(dlpack_wrapper->byte_offset == 0);
-  assert(dlpack_wrapper->data == nullptr); // size() == 0 => nullptr
+  assert(dltensor.device.device_type == kDLCPU);
+  assert(dltensor.device.device_id == 0);
+  check_datatype(dltensor.dtype, kDLInt, 32, 1);
+  assert(dltensor.ndim == 2);
+  assert(dltensor.shape[0] == 0);
+  assert(dltensor.shape[1] == 3);
+  assert(dltensor.strides[0] == 3);
+  assert(dltensor.strides[1] == 1);
+  assert(dltensor.byte_offset == 0);
+  assert(dltensor.data == nullptr); // size() == 0 => nullptr
   return true;
 }
 
@@ -93,16 +96,17 @@ bool test_mdspan_to_dlpack_rank_0()
   using extents_t = cuda::std::extents<size_t>;
   int data[1]     = {7};
   cuda::host_mdspan<int, extents_t> md{data, extents_t{}};
-  auto dlpack_wrapper = cuda::mdspan_to_dlpack(md);
+  auto dlpack_wrapper  = cuda::to_dlpack(md);
+  const auto& dltensor = dlpack_wrapper.get();
 
-  assert(dlpack_wrapper->device.device_type == kDLCPU);
-  assert(dlpack_wrapper->device.device_id == 0);
-  check_datatype(dlpack_wrapper->dtype, kDLInt, 32, 1);
-  assert(dlpack_wrapper->ndim == 0);
-  assert(dlpack_wrapper->shape == nullptr);
-  assert(dlpack_wrapper->strides == nullptr);
-  assert(dlpack_wrapper->byte_offset == 0);
-  assert(dlpack_wrapper->data == data); // rank-0 mdspan has size() == 1
+  assert(dltensor.device.device_type == kDLCPU);
+  assert(dltensor.device.device_id == 0);
+  check_datatype(dltensor.dtype, kDLInt, 32, 1);
+  assert(dltensor.ndim == 0);
+  assert(dltensor.shape == nullptr);
+  assert(dltensor.strides == nullptr);
+  assert(dltensor.byte_offset == 0);
+  assert(dltensor.data == data); // rank-0 mdspan has size() == 1
   return true;
 }
 
@@ -111,20 +115,21 @@ bool test_mdspan_to_dlpack_const_pointer()
   using extents_t   = cuda::std::dims<3>;
   const int data[6] = {0, 1, 2, 3, 4, 5};
   cuda::host_mdspan<const int, extents_t> md{data, extents_t{2, 3, 4}};
-  auto dlpack_wrapper = cuda::mdspan_to_dlpack(md);
+  auto dlpack_wrapper  = cuda::to_dlpack(md);
+  const auto& dltensor = dlpack_wrapper.get();
 
-  assert(dlpack_wrapper->device.device_type == kDLCPU);
-  assert(dlpack_wrapper->device.device_id == 0);
-  check_datatype(dlpack_wrapper->dtype, kDLInt, 32, 1);
-  assert(dlpack_wrapper->ndim == 3);
-  assert(dlpack_wrapper->shape[0] == 2);
-  assert(dlpack_wrapper->shape[1] == 3);
-  assert(dlpack_wrapper->shape[2] == 4);
-  assert(dlpack_wrapper->strides[0] == 12);
-  assert(dlpack_wrapper->strides[1] == 4);
-  assert(dlpack_wrapper->strides[2] == 1);
-  assert(dlpack_wrapper->byte_offset == 0);
-  assert(dlpack_wrapper->data == data); // rank-0 mdspan has size() == 1
+  assert(dltensor.device.device_type == kDLCPU);
+  assert(dltensor.device.device_id == 0);
+  check_datatype(dltensor.dtype, kDLInt, 32, 1);
+  assert(dltensor.ndim == 3);
+  assert(dltensor.shape[0] == 2);
+  assert(dltensor.shape[1] == 3);
+  assert(dltensor.shape[2] == 4);
+  assert(dltensor.strides[0] == 12);
+  assert(dltensor.strides[1] == 4);
+  assert(dltensor.strides[2] == 1);
+  assert(dltensor.byte_offset == 0);
+  assert(dltensor.data == data); // rank-0 mdspan has size() == 1
   return true;
 }
 
@@ -134,18 +139,19 @@ bool test_mdspan_to_dlpack_device()
   float* data     = nullptr;
   assert(cudaMalloc(&data, 6 * sizeof(float)) == cudaSuccess);
   cuda::device_mdspan<float, extents_t> md{data, extents_t{}};
-  auto dlpack_wrapper = cuda::mdspan_to_dlpack(md, cuda::device_ref{0});
+  auto dlpack_wrapper  = cuda::to_dlpack(md, cuda::device_ref{0});
+  const auto& dltensor = dlpack_wrapper.get();
 
-  assert(dlpack_wrapper->device.device_type == kDLCUDA);
-  assert(dlpack_wrapper->device.device_id == 0);
-  assert(dlpack_wrapper->ndim == 2);
-  check_datatype(dlpack_wrapper->dtype, kDLFloat, 32, 1);
-  assert(dlpack_wrapper->shape[0] == 2);
-  assert(dlpack_wrapper->shape[1] == 3);
-  assert(dlpack_wrapper->strides[0] == 3);
-  assert(dlpack_wrapper->strides[1] == 1);
-  assert(dlpack_wrapper->byte_offset == 0);
-  assert(dlpack_wrapper->data == data);
+  assert(dltensor.device.device_type == kDLCUDA);
+  assert(dltensor.device.device_id == 0);
+  assert(dltensor.ndim == 2);
+  check_datatype(dltensor.dtype, kDLFloat, 32, 1);
+  assert(dltensor.shape[0] == 2);
+  assert(dltensor.shape[1] == 3);
+  assert(dltensor.strides[0] == 3);
+  assert(dltensor.strides[1] == 1);
+  assert(dltensor.byte_offset == 0);
+  assert(dltensor.data == data);
   return true;
 }
 
@@ -155,18 +161,19 @@ bool test_mdspan_to_dlpack_managed()
   float* data     = nullptr;
   assert(cudaMallocManaged(&data, 6 * sizeof(float)) == cudaSuccess);
   cuda::managed_mdspan<float, extents_t> md{data, extents_t{}};
-  auto dlpack_wrapper = cuda::mdspan_to_dlpack(md);
+  auto dlpack_wrapper  = cuda::to_dlpack(md);
+  const auto& dltensor = dlpack_wrapper.get();
 
-  assert(dlpack_wrapper->device.device_type == kDLCUDAManaged);
-  assert(dlpack_wrapper->device.device_id == 0);
-  assert(dlpack_wrapper->ndim == 2);
-  check_datatype(dlpack_wrapper->dtype, kDLFloat, 32, 1);
-  assert(dlpack_wrapper->shape[0] == 2);
-  assert(dlpack_wrapper->shape[1] == 3);
-  assert(dlpack_wrapper->strides[0] == 3);
-  assert(dlpack_wrapper->strides[1] == 1);
-  assert(dlpack_wrapper->byte_offset == 0);
-  assert(dlpack_wrapper->data == data);
+  assert(dltensor.device.device_type == kDLCUDAManaged);
+  assert(dltensor.device.device_id == 0);
+  assert(dltensor.ndim == 2);
+  check_datatype(dltensor.dtype, kDLFloat, 32, 1);
+  assert(dltensor.shape[0] == 2);
+  assert(dltensor.shape[1] == 3);
+  assert(dltensor.strides[0] == 3);
+  assert(dltensor.strides[1] == 1);
+  assert(dltensor.byte_offset == 0);
+  assert(dltensor.data == data);
   return true;
 }
 
@@ -184,10 +191,11 @@ struct test_mdspan_to_dlpack_types_fn
     using extents_t = cuda::std::extents<size_t, 2, 3>;
     T* data         = nullptr;
     cuda::host_mdspan<T, extents_t> md{data, extents_t{}};
-    auto dlpack_wrapper = cuda::mdspan_to_dlpack(md);
+    auto dlpack_wrapper  = cuda::to_dlpack(md);
+    const auto& dltensor = dlpack_wrapper.get();
 
     auto type = expected_types[index];
-    check_datatype(dlpack_wrapper->dtype, type.code, type.bits, type.lanes);
+    check_datatype(dltensor.dtype, type.code, type.bits, type.lanes);
   }
 
   template <size_t... Indices>
