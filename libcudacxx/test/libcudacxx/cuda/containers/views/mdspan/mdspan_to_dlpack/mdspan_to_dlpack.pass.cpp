@@ -197,7 +197,7 @@ struct test_mdspan_to_dlpack_types_fn
   }
 };
 
-bool test_mdspan_to_dlpack_types()
+bool test_mdspan_to_dlpack_basic_types()
 {
   using list_t = cuda::std::__type_list<
     bool,
@@ -220,7 +220,47 @@ bool test_mdspan_to_dlpack_types()
 #endif
     // Floating-point types
     float,
-    double,
+    double
+#if _CCCL_HAS_FLOAT128()
+    ,
+    __float128
+#endif
+    >;
+  cuda::std::array<DLDataType, list_t::__size> expected_types = {
+    DLDataType{kDLBool, 8, 1},
+    // Signed integer types
+    DLDataType{kDLInt, 8, 1},
+    DLDataType{kDLInt, 16, 1},
+    DLDataType{kDLInt, 32, 1},
+    DLDataType{kDLInt, sizeof(long) * 8, 1},
+    DLDataType{kDLInt, 64, 1},
+#if _CCCL_HAS_INT128()
+    DLDataType{kDLInt, 128, 1},
+#endif
+    // Unsigned integer types
+    DLDataType{kDLUInt, 8, 1},
+    DLDataType{kDLUInt, 16, 1},
+    DLDataType{kDLUInt, 32, 1},
+    DLDataType{kDLUInt, sizeof(unsigned long) * 8, 1},
+    DLDataType{kDLUInt, 64, 1},
+#if _CCCL_HAS_INT128()
+    DLDataType{kDLUInt, 128, 1},
+#endif
+    // Floating-point types
+    DLDataType{kDLFloat, 32, 1},
+    DLDataType{kDLFloat, 64, 1},
+#if _CCCL_HAS_FLOAT128()
+    DLDataType{kDLFloat, 128, 1},
+#endif
+  };
+  test_mdspan_to_dlpack_types_fn<list_t> test_fn{expected_types};
+  test_fn.call(cuda::std::make_index_sequence<list_t::__size - 1>{});
+  return true;
+}
+
+bool test_mdspan_to_dlpack_extended_fp_and_complex_types()
+{
+  using list_t = cuda::std::__type_list<
 #if _CCCL_HAS_NVFP16()
     ::__half,
 #endif
@@ -254,79 +294,8 @@ bool test_mdspan_to_dlpack_types()
     cuda::std::complex<::__half>,
 #endif
     cuda::std::complex<float>,
-    cuda::std::complex<double>,
-  // Vector types (CUDA built-in vector types)
-#if _CCCL_HAS_CTK()
-    ::char2,
-    ::char4,
-    ::uchar2,
-    ::uchar4,
-    ::short2,
-    ::short4,
-    ::ushort2,
-    ::ushort4,
-    ::int2,
-    ::int4,
-    ::uint2,
-    ::uint4,
-    ::long2,
-#  if _CCCL_CTK_AT_LEAST(13, 0)
-    ::long4_32a,
-#  else
-    ::long4,
-#  endif
-    ::ulong2,
-#  if _CCCL_CTK_AT_LEAST(13, 0)
-    ::ulong4_32a,
-#  else
-    ::ulong4,
-#  endif
-    ::longlong2,
-#  if _CCCL_CTK_AT_LEAST(13, 0)
-    ::longlong4_32a,
-#  else
-    ::longlong4,
-#  endif
-    ::ulonglong2,
-#  if _CCCL_CTK_AT_LEAST(13, 0)
-    ::ulonglong4_32a,
-#  else
-    ::ulonglong4,
-#  endif
-    ::float2,
-    ::float4,
-    ::double2,
-#  if _CCCL_CTK_AT_LEAST(13, 0)
-    ::double4_32a
-#  else
-    ::double4
-#  endif
-#endif // _CCCL_HAS_CTK()
-    >;
+    cuda::std::complex<double>>;
   cuda::std::array<DLDataType, list_t::__size> expected_types = {
-    DLDataType{kDLBool, 8, 1},
-    // Signed integer types
-    DLDataType{kDLInt, 8, 1},
-    DLDataType{kDLInt, 16, 1},
-    DLDataType{kDLInt, 32, 1},
-
-    DLDataType{kDLInt, sizeof(long) * 8, 1},
-    DLDataType{kDLInt, 64, 1},
-#if _CCCL_HAS_INT128()
-    DLDataType{kDLInt, 128, 1},
-#endif
-    // Unsigned integer types
-    DLDataType{kDLUInt, 8, 1},
-    DLDataType{kDLUInt, 16, 1},
-    DLDataType{kDLUInt, 32, 1},
-    DLDataType{kDLUInt, sizeof(unsigned long) * 8, 1},
-    DLDataType{kDLUInt, 64, 1},
-#if _CCCL_HAS_INT128()
-    DLDataType{kDLUInt, 128, 1},
-#endif
-    // Floating-point types
-    DLDataType{kDLFloat, 32, 1},
-    DLDataType{kDLFloat, 64, 1},
 #if _CCCL_HAS_NVFP16()
     DLDataType{kDLFloat, 16, 1},
 #endif
@@ -360,9 +329,76 @@ bool test_mdspan_to_dlpack_types()
     DLDataType{kDLComplex, 32, 1},
 #endif
     DLDataType{kDLComplex, 64, 1},
-    DLDataType{kDLComplex, 128, 1},
-  // Vector types (CUDA built-in vector types)
+    DLDataType{kDLComplex, 128, 1}};
+  test_mdspan_to_dlpack_types_fn<list_t> test_fn{expected_types};
+  test_fn.call(cuda::std::make_index_sequence<list_t::__size>{});
+  return true;
+}
+
 #if _CCCL_HAS_CTK()
+bool test_mdspan_to_dlpack_vector_types()
+{
+  using list_t = cuda::std::__type_list<
+    ::char2,
+    ::char4,
+    ::uchar2,
+    ::uchar4,
+    ::short2,
+    ::short4,
+    ::ushort2,
+    ::ushort4,
+    ::int2,
+    ::int4,
+    ::uint2,
+    ::uint4,
+    ::long2
+#  if _CCCL_CTK_AT_LEAST(13, 0)
+    ,
+    ::long4_32a
+#  else
+    ,
+    ::long4
+#  endif
+    ,
+    ::ulong2
+#  if _CCCL_CTK_AT_LEAST(13, 0)
+    ,
+    ::ulong4_32a
+#  else
+    ,
+    ::ulong4
+#  endif
+    ,
+    ::longlong2
+#  if _CCCL_CTK_AT_LEAST(13, 0)
+    ,
+    ::longlong4_32a
+#  else
+    ,
+    ::longlong4
+#  endif
+    ,
+    ::ulonglong2
+#  if _CCCL_CTK_AT_LEAST(13, 0)
+    ,
+    ::ulonglong4_32a
+#  else
+    ,
+    ::ulonglong4
+#  endif
+    ,
+    ::float2,
+    ::float4,
+    ::double2
+#  if _CCCL_CTK_AT_LEAST(13, 0)
+    ,
+    ::double4_32a
+#  else
+    ,
+    ::double4
+#  endif
+    >;
+  cuda::std::array<DLDataType, list_t::__size> expected_types = {
     DLDataType{kDLInt, 8, 2},
     DLDataType{kDLInt, 8, 4},
     DLDataType{kDLUInt, 8, 2},
@@ -386,11 +422,81 @@ bool test_mdspan_to_dlpack_types()
     DLDataType{kDLFloat, 32, 2},
     DLDataType{kDLFloat, 32, 4},
     DLDataType{kDLFloat, 64, 2},
-    DLDataType{kDLFloat, 64, 4},
+    DLDataType{kDLFloat, 64, 4}};
+  test_mdspan_to_dlpack_types_fn<list_t> test_fn{expected_types};
+  test_fn.call(cuda::std::make_index_sequence<list_t::__size - 1>{});
+  return true;
+}
 #endif // _CCCL_HAS_CTK()
+
+bool test_mdspan_to_dlpack_extended_fp_vector_types()
+{
+  using list_t = cuda::std::__type_list<
+#if _CCCL_HAS_NVFP16()
+    ::__half2,
+#endif
+#if _CCCL_HAS_NVBF16()
+    ::__nv_bfloat162,
+#endif
+#if _CCCL_HAS_NVFP8_E4M3()
+    ::__nv_fp8x2_e4m3,
+    ::__nv_fp8x4_e4m3,
+#endif
+#if _CCCL_HAS_NVFP8_E5M2()
+    ::__nv_fp8x2_e5m2,
+    ::__nv_fp8x4_e5m2,
+#endif
+#if _CCCL_HAS_NVFP8_E8M0()
+    ::__nv_fp8x2_e8m0,
+    ::__nv_fp8x4_e8m0,
+#endif
+#if _CCCL_HAS_NVFP6_E2M3()
+    ::__nv_fp6x2_e2m3,
+    ::__nv_fp6x4_e2m3,
+#endif
+#if _CCCL_HAS_NVFP6_E3M2()
+    ::__nv_fp6x2_e3m2,
+    ::__nv_fp6x4_e3m2,
+#endif
+#if _CCCL_HAS_NVFP4_E2M1()
+    ::__nv_fp4x2_e2m1,
+    ::__nv_fp4x4_e2m1,
+#endif
+    void* /* dummy to allow trailing commas */>;
+  cuda::std::array<DLDataType, list_t::__size> expected_types = {
+#if _CCCL_HAS_NVFP16()
+    DLDataType{kDLFloat, 16, 2},
+#endif
+#if _CCCL_HAS_NVBF16()
+    DLDataType{kDLBfloat, 16, 2},
+#endif
+#if _CCCL_HAS_NVFP8_E4M3()
+    DLDataType{kDLFloat8_e4m3fn, 8, 2},
+    DLDataType{kDLFloat8_e4m3fn, 8, 4},
+#endif
+#if _CCCL_HAS_NVFP8_E5M2()
+    DLDataType{kDLFloat8_e5m2, 8, 2},
+    DLDataType{kDLFloat8_e5m2, 8, 4},
+#endif
+#if _CCCL_HAS_NVFP8_E8M0()
+    DLDataType{kDLFloat8_e8m0fnu, 8, 2},
+    DLDataType{kDLFloat8_e8m0fnu, 8, 4},
+#endif
+#if _CCCL_HAS_NVFP6_E2M3()
+    DLDataType{kDLFloat6_e2m3fn, 6, 2},
+    DLDataType{kDLFloat6_e2m3fn, 6, 4},
+#endif
+#if _CCCL_HAS_NVFP6_E3M2()
+    DLDataType{kDLFloat6_e3m2fn, 6, 2},
+    DLDataType{kDLFloat6_e3m2fn, 6, 4},
+#endif
+#if _CCCL_HAS_NVFP4_E2M1()
+    DLDataType{kDLFloat4_e2m1fn, 4, 2},
+    DLDataType{kDLFloat4_e2m1fn, 4, 4},
+#endif
   };
   test_mdspan_to_dlpack_types_fn<list_t> test_fn{expected_types};
-  test_fn.call(cuda::std::make_index_sequence<list_t::__size>{});
+  test_fn.call(cuda::std::make_index_sequence<list_t::__size - 1>{});
   return true;
 }
 
@@ -403,6 +509,11 @@ int main(int, char**)
   NV_IF_TARGET(NV_IS_HOST, (assert(test_mdspan_to_dlpack_const_pointer());))
   NV_IF_TARGET(NV_IS_HOST, (assert(test_mdspan_to_dlpack_device());))
   NV_IF_TARGET(NV_IS_HOST, (assert(test_mdspan_to_dlpack_managed());))
-  NV_IF_TARGET(NV_IS_HOST, (assert(test_mdspan_to_dlpack_types());))
+  NV_IF_TARGET(NV_IS_HOST, (assert(test_mdspan_to_dlpack_basic_types());))
+  NV_IF_TARGET(NV_IS_HOST, (assert(test_mdspan_to_dlpack_extended_fp_and_complex_types());))
+#if _CCCL_HAS_CTK()
+  NV_IF_TARGET(NV_IS_HOST, (assert(test_mdspan_to_dlpack_vector_types());))
+#endif // _CCCL_HAS_CTK()
+  NV_IF_TARGET(NV_IS_HOST, (assert(test_mdspan_to_dlpack_extended_fp_vector_types());))
   return 0;
 }

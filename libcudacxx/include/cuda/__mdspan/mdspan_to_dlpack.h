@@ -23,9 +23,12 @@
 #if !_CCCL_COMPILER(NVRTC) && _CCCL_HAS_INCLUDE(<dlpack/dlpack.h>)
 
 #  include <cuda/__mdspan/host_device_mdspan.h>
+#  include <cuda/__type_traits/is_floating_point.h>
+#  include <cuda/__type_traits/vector_type.h>
 #  include <cuda/devices>
 #  include <cuda/std/__cstddef/types.h>
 #  include <cuda/std/__exception/exception_macros.h>
+#  include <cuda/std/__fwd/complex.h>
 #  include <cuda/std/__limits/numeric_limits.h>
 #  include <cuda/std/__type_traits/always_false.h>
 #  include <cuda/std/__type_traits/is_pointer.h>
@@ -35,7 +38,6 @@
 #  include <cuda/std/__utility/cmp.h>
 #  include <cuda/std/__utility/move.h>
 #  include <cuda/std/array>
-#  include <cuda/std/complex>
 #  include <cuda/std/cstdint>
 #  include <cuda/std/mdspan>
 
@@ -60,38 +62,19 @@ template <typename _ElementType>
   // Signed integer types
   else if constexpr (::cuda::std::__cccl_is_integer_v<_ElementType>)
   {
-    return ::DLDataType{(::cuda::std::is_signed_v<_ElementType>) ? ::kDLInt : ::kDLUInt, ::cuda::std::__num_bits_v<_ElementType>, 1};
+    return ::DLDataType{
+      (::cuda::std::is_signed_v<_ElementType>) ? ::kDLInt : ::kDLUInt, ::cuda::std::__num_bits_v<_ElementType>, 1};
   }
   //--------------------------------------------------------------------------------------------------------------------
-  // Floating-point types
-#  if _CCCL_HAS_NVFP16()
-  else if constexpr (::cuda::std::is_same_v<_ElementType, ::__half>)
-  {
-    return ::DLDataType{::kDLFloat, 16, 1};
-  }
-#  endif // _CCCL_HAS_NVFP16()
+  // bfloat16 (must come before general floating-point)
 #  if _CCCL_HAS_NVBF16()
   else if constexpr (::cuda::std::is_same_v<_ElementType, ::__nv_bfloat16>)
   {
     return ::DLDataType{::kDLBfloat, 16, 1};
   }
 #  endif // _CCCL_HAS_NVBF16()
-  else if constexpr (::cuda::std::is_same_v<_ElementType, float>)
-  {
-    return ::DLDataType{::kDLFloat, 32, 1};
-  }
-  else if constexpr (::cuda::std::is_same_v<_ElementType, double>)
-  {
-    return ::DLDataType{::kDLFloat, 64, 1};
-  }
-#  if _CCCL_HAS_FLOAT128()
-  else if constexpr (::cuda::std::is_same_v<_ElementType, __float128>)
-  {
-    return ::DLDataType{::kDLFloat, 128, 1};
-  }
-#  endif // _CCCL_HAS_FLOAT128()
   //--------------------------------------------------------------------------------------------------------------------
-  // Low-precision Floating-point types
+  // Low-precision Floating-point types (must come before general floating-point)
 #  if _CCCL_HAS_NVFP8_E4M3()
   else if constexpr (::cuda::std::is_same_v<_ElementType, ::__nv_fp8_e4m3>)
   {
@@ -129,156 +112,38 @@ template <typename _ElementType>
   }
 #  endif // _CCCL_HAS_NVFP4_E2M1()
   //--------------------------------------------------------------------------------------------------------------------
-  // Complex types
-#  if _CCCL_HAS_NVFP16()
-  else if constexpr (::cuda::std::is_same_v<_ElementType, ::cuda::std::complex<::__half>>)
+  // Floating-point types (after specific types)
+  else if constexpr (::cuda::is_floating_point_v<_ElementType>)
   {
-    return ::DLDataType{::kDLComplex, 32, 1};
+    return ::DLDataType{::kDLFloat, ::cuda::std::__num_bits_v<_ElementType>, 1};
   }
-#  endif // _CCCL_HAS_NVFP16()
-  else if constexpr (::cuda::std::is_same_v<_ElementType, ::cuda::std::complex<float>>)
-  {
-    return ::DLDataType{::kDLComplex, 64, 1};
-  }
-  else if constexpr (::cuda::std::is_same_v<_ElementType, ::cuda::std::complex<double>>)
-  {
-    return ::DLDataType{::kDLComplex, 128, 1};
-  }
-  // 256-bit data types are not supported in DLPack, e.g. cuda::std::complex<__float128>
   //--------------------------------------------------------------------------------------------------------------------
-  // Vector types (CUDA built-in vector types)
+  // Complex types
+  // 256-bit data types are not supported in DLPack, e.g. cuda::std::complex<__float128>
+  else if constexpr (::cuda::std::__is_cuda_std_complex_v<_ElementType> && sizeof(_ElementType) <= sizeof(double) * 2)
+  {
+    // DLPack encodes complex numbers as a compact struct of two scalar values, and `bits` stores
+    // the size of the full complex number (e.g. std::complex<float> => bits=64).
+    return ::DLDataType{::kDLComplex, sizeof(_ElementType) * CHAR_BIT, 1};
+  }
+  //--------------------------------------------------------------------------------------------------------------------
+  // CUDA built-in vector types
 #  if _CCCL_HAS_CTK()
-  else if constexpr (::cuda::std::is_same_v<_ElementType, ::char2>)
+  else if constexpr (::cuda::__is_vector_type_v<_ElementType> || ::cuda::__is_extended_fp_vector_type_v<_ElementType>)
   {
-    return ::DLDataType{::kDLInt, 8, 2};
+    constexpr ::cuda::std::uint16_t __lanes = ::cuda::std::tuple_size_v<_ElementType>;
+    if constexpr (__lanes == 2 || __lanes == 4)
+    {
+      using __scalar_t = ::cuda::std::remove_cv_t<::cuda::std::tuple_element_t<0, _ElementType>>;
+      auto __scalar    = ::cuda::__data_type_to_dlpack<__scalar_t>();
+      __scalar.lanes   = __lanes;
+      return __scalar;
+    }
+    else
+    {
+      static_assert(::cuda::std::__always_false_v<_ElementType>, "Unsupported vector type");
+    }
   }
-  else if constexpr (::cuda::std::is_same_v<_ElementType, ::char4>)
-  {
-    return ::DLDataType{::kDLInt, 8, 4};
-  }
-  else if constexpr (::cuda::std::is_same_v<_ElementType, ::uchar2>)
-  {
-    return ::DLDataType{::kDLUInt, 8, 2};
-  }
-  else if constexpr (::cuda::std::is_same_v<_ElementType, ::uchar4>)
-  {
-    return ::DLDataType{::kDLUInt, 8, 4};
-  }
-  else if constexpr (::cuda::std::is_same_v<_ElementType, ::short2>)
-  {
-    return ::DLDataType{::kDLInt, 16, 2};
-  }
-  else if constexpr (::cuda::std::is_same_v<_ElementType, ::short4>)
-  {
-    return ::DLDataType{::kDLInt, 16, 4};
-  }
-  else if constexpr (::cuda::std::is_same_v<_ElementType, ::ushort2>)
-  {
-    return ::DLDataType{::kDLUInt, 16, 2};
-  }
-  else if constexpr (::cuda::std::is_same_v<_ElementType, ::ushort4>)
-  {
-    return ::DLDataType{::kDLUInt, 16, 4};
-  }
-  else if constexpr (::cuda::std::is_same_v<_ElementType, ::int2>)
-  {
-    return ::DLDataType{::kDLInt, 32, 2};
-  }
-  else if constexpr (::cuda::std::is_same_v<_ElementType, ::int4>)
-  {
-    return ::DLDataType{::kDLInt, 32, 4};
-  }
-  else if constexpr (::cuda::std::is_same_v<_ElementType, ::uint2>)
-  {
-    return ::DLDataType{::kDLUInt, 32, 2};
-  }
-  else if constexpr (::cuda::std::is_same_v<_ElementType, ::uint4>)
-  {
-    return ::DLDataType{::kDLUInt, 32, 4};
-  }
-  else if constexpr (::cuda::std::is_same_v<_ElementType, ::long2>)
-  {
-    return ::DLDataType{::kDLInt, ::cuda::std::__num_bits_v<long>, 2};
-  }
-#    if _CCCL_CTK_AT_LEAST(13, 0)
-  else if constexpr (::cuda::std::is_same_v<_ElementType, ::long4_32a>)
-  {
-    return ::DLDataType{::kDLInt, ::cuda::std::__num_bits_v<long>, 4};
-  }
-#    else // ^^^ _CCCL_CTK_AT_LEAST(13, 0) ^^^ / vvv _CCCL_CTK_BELOW(13, 0) vvv
-  else if constexpr (::cuda::std::is_same_v<_ElementType, ::long4>)
-  {
-    return ::DLDataType{::kDLInt, ::cuda::std::__num_bits_v<long>, 4};
-  }
-#    endif // _CCCL_CTK_BELOW(13, 0)
-  else if constexpr (::cuda::std::is_same_v<_ElementType, ::ulong2>)
-  {
-    return ::DLDataType{::kDLUInt, ::cuda::std::__num_bits_v<unsigned long>, 2};
-  }
-#    if _CCCL_CTK_AT_LEAST(13, 0)
-  else if constexpr (::cuda::std::is_same_v<_ElementType, ::ulong4_32a>)
-  {
-    return ::DLDataType{::kDLUInt, ::cuda::std::__num_bits_v<unsigned long>, 4};
-  }
-#    else // ^^^ _CCCL_CTK_AT_LEAST(13, 0) ^^^ / vvv _CCCL_CTK_BELOW(13, 0) vvv
-  else if constexpr (::cuda::std::is_same_v<_ElementType, ::ulong4>)
-  {
-    return ::DLDataType{::kDLUInt, ::cuda::std::__num_bits_v<unsigned long>, 4};
-  }
-#    endif // _CCCL_CTK_BELOW(13, 0)
-  else if constexpr (::cuda::std::is_same_v<_ElementType, ::longlong2>)
-  {
-    return ::DLDataType{::kDLInt, 64, 2};
-  }
-#    if _CCCL_CTK_AT_LEAST(13, 0)
-  else if constexpr (::cuda::std::is_same_v<_ElementType, ::longlong4_32a>)
-  {
-    return ::DLDataType{::kDLInt, 64, 4};
-  }
-#    else // ^^^ _CCCL_CTK_AT_LEAST(13, 0) ^^^ / vvv _CCCL_CTK_BELOW(13, 0) vvv
-  else if constexpr (::cuda::std::is_same_v<_ElementType, ::longlong4>)
-  {
-    return ::DLDataType{::kDLInt, 64, 4};
-  }
-#    endif // _CCCL_CTK_BELOW(13, 0)
-  else if constexpr (::cuda::std::is_same_v<_ElementType, ::ulonglong2>)
-  {
-    return ::DLDataType{::kDLUInt, 64, 2};
-  }
-#    if _CCCL_CTK_AT_LEAST(13, 0)
-  else if constexpr (::cuda::std::is_same_v<_ElementType, ::ulonglong4_32a>)
-  {
-    return ::DLDataType{::kDLUInt, 64, 4};
-  }
-#    else // ^^^ _CCCL_CTK_AT_LEAST(13, 0) ^^^ / vvv _CCCL_CTK_BELOW(13, 0) vvv
-  else if constexpr (::cuda::std::is_same_v<_ElementType, ::ulonglong4>)
-  {
-    return ::DLDataType{::kDLUInt, 64, 4};
-  }
-#    endif // _CCCL_CTK_BELOW(13, 0)
-  else if constexpr (::cuda::std::is_same_v<_ElementType, ::float2>)
-  {
-    return ::DLDataType{::kDLFloat, 32, 2};
-  }
-  else if constexpr (::cuda::std::is_same_v<_ElementType, ::float4>)
-  {
-    return ::DLDataType{::kDLFloat, 32, 4};
-  }
-  else if constexpr (::cuda::std::is_same_v<_ElementType, ::double2>)
-  {
-    return ::DLDataType{::kDLFloat, 64, 2};
-  }
-#    if _CCCL_CTK_AT_LEAST(13, 0)
-  else if constexpr (::cuda::std::is_same_v<_ElementType, ::double4_32a>)
-  {
-    return ::DLDataType{::kDLFloat, 64, 4};
-  }
-#    else // ^^^ _CCCL_CTK_AT_LEAST(13, 0) ^^^ / vvv _CCCL_CTK_BELOW(13, 0) vvv
-  else if constexpr (::cuda::std::is_same_v<_ElementType, ::double4>)
-  {
-    return ::DLDataType{::kDLFloat, 64, 4};
-  }
-#    endif // _CCCL_CTK_BELOW(13, 0)
 #  endif // _CCCL_HAS_CTK()
   //--------------------------------------------------------------------------------------------------------------------
   // Unsupported types
@@ -286,6 +151,7 @@ template <typename _ElementType>
   {
     static_assert(::cuda::std::__always_false_v<_ElementType>, "Unsupported type");
   }
+  return ::DLDataType{};
 }
 
 template <::cuda::std::size_t _Rank>
