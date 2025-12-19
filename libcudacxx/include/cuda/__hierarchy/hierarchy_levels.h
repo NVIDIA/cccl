@@ -21,13 +21,15 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/__fwd/hierarchy.h>
-#include <cuda/__hierarchy/dimensions.h>
-#include <cuda/std/__type_traits/type_list.h>
+#if _CCCL_HAS_CTK()
 
-#include <nv/target>
+#  include <cuda/__fwd/hierarchy.h>
+#  include <cuda/__hierarchy/dimensions.h>
+#  include <cuda/std/__type_traits/type_list.h>
 
-#include <cuda/std/__cccl/prologue.h>
+#  include <nv/target>
+
+#  include <cuda/std/__cccl/prologue.h>
 
 _CCCL_BEGIN_NAMESPACE_CUDA
 
@@ -119,6 +121,7 @@ namespace __detail
 template <typename _Unit, typename _Level>
 struct __dims_helper;
 
+#  if _CCCL_CUDA_COMPILATION()
 template <typename _Level>
 struct __dims_helper<_Level, _Level>
 {
@@ -188,6 +191,7 @@ struct __dims_helper<cluster_level, grid_level>
     NV_IF_ELSE_TARGET(NV_PROVIDES_SM_90, (return __clusterIdx();), (return ::dim3(0, 0, 0);));
   }
 };
+#  endif // _CCCL_CUDA_COMPILATION()
 
 // Seems like a compiler bug, where NODISCARD is marked as ignored due to void
 // return type, while its not possible to ever have void return type here
@@ -412,6 +416,8 @@ _CCCL_DEVICE auto index(const _Unit&, const _Level&)
 } // namespace hierarchy
 _CCCL_END_NAMESPACE_CUDA
 
-#include <cuda/std/__cccl/epilogue.h>
+#  include <cuda/std/__cccl/epilogue.h>
+
+#endif // _CCCL_HAS_CTK()
 
 #endif // _CUDA___HIERARCHY_HIERARCHY_LEVELS_H

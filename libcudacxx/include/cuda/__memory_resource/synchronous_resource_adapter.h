@@ -21,13 +21,15 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/__memory_resource/get_property.h>
-#include <cuda/__memory_resource/properties.h>
-#include <cuda/__memory_resource/resource.h>
-#include <cuda/std/__concepts/concept_macros.h>
-#include <cuda/stream>
+#if _CCCL_HAS_CTK()
 
-#include <cuda/std/__cccl/prologue.h>
+#  include <cuda/__memory_resource/get_property.h>
+#  include <cuda/__memory_resource/properties.h>
+#  include <cuda/__memory_resource/resource.h>
+#  include <cuda/std/__concepts/concept_macros.h>
+#  include <cuda/stream>
+
+#  include <cuda/std/__cccl/prologue.h>
 
 _CCCL_BEGIN_NAMESPACE_CUDA_MR
 
@@ -103,12 +105,12 @@ struct synchronous_resource_adapter
     return __resource == __rhs.__resource;
   }
 
-#if _CCCL_STD_VER <= 2017
+#  if _CCCL_STD_VER <= 2017
   [[nodiscard]] _CCCL_HOST_API bool operator!=(const synchronous_resource_adapter& __rhs) const noexcept
   {
     return __resource != __rhs.__resource;
   }
-#endif // _CCCL_STD_VER <= 2017
+#  endif // _CCCL_STD_VER <= 2017
 
   _CCCL_HOST_API _Resource& upstream_resource() noexcept
   {
@@ -138,6 +140,8 @@ _CCCL_HOST_API decltype(auto) __adapt_if_synchronous(_Resource&& __resource) noe
 }
 _CCCL_END_NAMESPACE_CUDA_MR
 
-#include <cuda/std/__cccl/epilogue.h>
+#  include <cuda/std/__cccl/epilogue.h>
+
+#endif // _CCCL_HAS_CTK()
 
 #endif //_CUDA___MEMORY_RESOURCE_SYNCHRONOUS_RESOURCE_ADAPTER_H

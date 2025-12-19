@@ -21,14 +21,16 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/__hierarchy/block_level.h>
-#include <cuda/__hierarchy/cluster_level.h>
-#include <cuda/__hierarchy/grid_level.h>
-#include <cuda/__hierarchy/thread_level.h>
-#include <cuda/__hierarchy/traits.h>
-#include <cuda/std/tuple>
+#if _CCCL_HAS_CTK()
 
-#include <cuda/std/__cccl/prologue.h>
+#  include <cuda/__hierarchy/block_level.h>
+#  include <cuda/__hierarchy/cluster_level.h>
+#  include <cuda/__hierarchy/grid_level.h>
+#  include <cuda/__hierarchy/thread_level.h>
+#  include <cuda/__hierarchy/traits.h>
+#  include <cuda/std/tuple>
+
+#  include <cuda/std/__cccl/prologue.h>
 
 _CCCL_BEGIN_NAMESPACE_CUDA
 
@@ -85,6 +87,8 @@ constexpr auto _CCCL_HOST get_launch_dimensions(const hierarchy_dimensions<_Leve
 
 _CCCL_END_NAMESPACE_CUDA
 
-#include <cuda/std/__cccl/epilogue.h>
+#  include <cuda/std/__cccl/epilogue.h>
+
+#endif // _CCCL_HAS_CTK()
 
 #endif // _CUDA___HIERARCHY_GET_LAUNCH_DIMENSIONS_H
