@@ -1,0 +1,97 @@
+//===----------------------------------------------------------------------===//
+//
+// Part of the libcu++ Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
+//
+//===----------------------------------------------------------------------===//
+
+// todo: enable with nvrtc
+// UNSUPPORTED: nvrtc
+
+#include <cuda/hierarchy>
+#include <cuda/std/cassert>
+#include <cuda/std/cstddef>
+#include <cuda/std/mdspan>
+#include <cuda/std/type_traits>
+
+#include "hierarchy_queries.h"
+
+__device__ void test_cluster()
+{
+  constexpr cuda::std::size_t dext = cuda::std::dynamic_extent;
+
+  uint3 dims = gridDim;
+  NV_IF_TARGET(NV_PROVIDES_SM_90, (dims = __clusterGridDimInClusters();))
+
+  uint3 index = blockIdx;
+  NV_IF_TARGET(NV_PROVIDES_SM_90, (index = __clusterIdx();))
+
+  // 1. Test cuda::cluster.dims(x)
+  test_dims(dims, cuda::cluster, cuda::grid);
+
+  // 2. Test cuda::cluster.static_dims(x)
+  test_static_dims(ulonglong3{dext, dext, dext}, cuda::cluster, cuda::grid);
+
+  // 3. Test cuda::cluster.extents(x)
+  test_extents(cuda::std::dims<3, unsigned>{dims.x, dims.y, dims.z}, cuda::cluster, cuda::grid);
+
+  // 4. Test cuda::cluster.count(x)
+  test_count(cuda::std::size_t{dims.z} * dims.y * dims.x, cuda::cluster, cuda::grid);
+
+  // 5. test cuda::cluster.index(x)
+  test_index(index, cuda::cluster, cuda::grid);
+
+  // 6. Test cuda::cluster.rank(x)
+  {
+    const cuda::std::size_t exp = (index.z * dims.y + index.y) * dims.x + index.x;
+    test_rank(exp, cuda::cluster, cuda::grid);
+  }
+}
+
+#if !_CCCL_COMPILER(NVRTC)
+__global__ void test_kernel()
+{
+  test_cluster();
+}
+
+void test()
+{
+  int cc_major{};
+  assert(cudaDeviceGetAttribute(&cc_major, cudaDevAttrComputeCapabilityMajor, 0) == cudaSuccess);
+
+  // thread block clusters require compute capability at least 9.0
+  const bool enable_clusters = cc_major >= 9;
+
+  test_kernel<<<1, 128>>>();
+  test_kernel<<<128, 1>>>();
+  test_kernel<<<dim3{2, 3}, dim3{4, 2}>>>();
+  test_kernel<<<dim3{2, 3, 4}, dim3{4, 2, 8}>>>();
+  if (enable_clusters)
+  {
+    cudaLaunchAttribute attribute[1]{};
+    attribute[0].id               = cudaLaunchAttributeClusterDimension;
+    attribute[0].val.clusterDim.x = 4;
+    attribute[0].val.clusterDim.y = 2;
+    attribute[0].val.clusterDim.z = 1;
+
+    cudaLaunchConfig_t config{};
+    config.gridDim  = {12, 10, 3};
+    config.blockDim = {2, 8, 4};
+    config.attrs    = attribute;
+    config.numAttrs = 1;
+
+    void* pargs[1]{};
+    assert(cudaLaunchKernelExC(&config, (const void*) test_kernel, pargs) == cudaSuccess);
+  }
+
+  assert(cudaDeviceSynchronize() == cudaSuccess);
+}
+#endif // !_CCCL_COMPILER(NVRTC)
+
+int main(int, char**)
+{
+  NV_IF_ELSE_TARGET(NV_IS_HOST, (test();), (test_cluster();))
+  return 0;
+}

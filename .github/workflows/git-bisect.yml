@@ -222,7 +222,7 @@ jobs:
 
       - name: Get AWS credentials for sccache bucket
         if: ${{ github.repository == 'NVIDIA/cccl' }}
-        uses: aws-actions/configure-aws-credentials@v4
+        uses: aws-actions/configure-aws-credentials@v5
         with:
           role-to-assume: arn:aws:iam::279114543810:role/gha-oidc-NVIDIA
           aws-region: us-east-2

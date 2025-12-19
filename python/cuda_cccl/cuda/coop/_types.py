@@ -14,8 +14,11 @@ from numba import cuda, types
 from numba.core import cgutils
 from numba.core.extending import intrinsic, overload
 from numba.core.typing import signature
-from numba.cuda import LTOIR
-from numba.cuda.cudadrv import driver as cuda_driver
+
+try:
+    from cuda.core import Linker, LinkerOptions, ObjectCode
+except ImportError:
+    from cuda.core.experimental import Linker, LinkerOptions, ObjectCode
 
 from . import _nvrtc as nvrtc
 from ._common import find_unsigned
@@ -765,16 +768,15 @@ class Algorithm:
 
         # Convert the LTO into PTX in order to extract the size and alignment
         # variables.
-        obj = LTOIR(name=self.c_name, data=blob)
-        linker = cuda_driver._Linker.new(
-            cc=device.compute_capability,
-            additional_flags=["-ptx"],
-            lto=obj,
+        ltoir_obj = ObjectCode.from_ltoir(blob, name=self.c_name)
+        linker_options = LinkerOptions(
+            arch=f"sm_{cc}",
+            link_time_optimization=True,
+            ptx=True,
         )
-        ltoir_bytes = obj.data
-        linker.add_ltoir(ltoir_bytes)
-        ptx = linker.get_linked_ptx()
-        ptx = ptx.decode("utf-8")
+        linker = Linker(ltoir_obj, options=linker_options)
+        linked_ptx = linker.link("ptx")
+        ptx = linked_ptx.code.decode("utf-8")
         self._temp_storage_bytes = find_unsigned("temp_storage_bytes", ptx)
         self._temp_storage_alignment = find_unsigned("temp_storage_alignment", ptx)
 

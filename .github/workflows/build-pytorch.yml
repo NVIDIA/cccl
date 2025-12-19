@@ -41,7 +41,7 @@ jobs:
           persist-credentials: false
       - name: Add NVCC problem matcher
         run: echo "::add-matcher::$(pwd)/.github/problem-matchers/problem-matcher.json"
-      - uses: aws-actions/configure-aws-credentials@v4
+      - uses: aws-actions/configure-aws-credentials@v5
         if: ${{ github.repository == 'NVIDIA/cccl' }}
         with:
           role-to-assume: arn:aws:iam::279114543810:role/gha-oidc-NVIDIA

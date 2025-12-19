@@ -5,7 +5,10 @@
 
 import functools
 
-from cuda.core.experimental import Device
+try:
+    from cuda.core import Device
+except ImportError:
+    from cuda.core.experimental import Device
 
 
 def cache_with_key(key):

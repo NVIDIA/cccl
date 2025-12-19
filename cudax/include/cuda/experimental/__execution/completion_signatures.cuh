@@ -356,7 +356,8 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT completion_signatures
   //! @tparam _Fn The callable metafunction to apply.
   //! @tparam _Continuation The template to collect results into.
   template <class _Fn, class _Continuation = ::cuda::std::__type_quote<__completion_signatures>>
-  using __transform _CCCL_NODEBUG_ALIAS = __transform_q<_Fn::template __call, _Continuation::template __call>;
+  using __transform _CCCL_NODEBUG_ALIAS =
+    ::cuda::std::__type_call<_Continuation, ::cuda::std::__type_apply<_Fn, _Sigs>...>;
 
   //! @brief Calls a metafunction with the signatures as arguments.
   //! @tparam _Fn The metafunction to call.

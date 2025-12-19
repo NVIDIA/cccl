@@ -11,6 +11,17 @@
 #ifndef _CUDA___HIERARCHY_HIERARCHY_LEVELS_H
 #define _CUDA___HIERARCHY_HIERARCHY_LEVELS_H
 
+#include <cuda/std/detail/__config>
+
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
+
+#include <cuda/__fwd/hierarchy.h>
 #include <cuda/__hierarchy/dimensions.h>
 #include <cuda/std/__type_traits/type_list.h>
 
@@ -97,94 +108,6 @@ inline constexpr bool __legal_unit_for_level =
 template <class _Unit>
 inline constexpr bool __legal_unit_for_level<_Unit, void> = false;
 } // namespace __detail
-
-// Base type for all hierarchy levels
-struct hierarchy_level
-{};
-
-struct grid_level;
-struct cluster_level;
-struct block_level;
-struct thread_level;
-
-/*
-  Types to represent CUDA threads hierarchy levels
-  All metadata about the hierarchy level goes here including certain forward
-  progress information or what adjacent levels are valid in the hierarchy for
-  validation.
-*/
-
-/**
- * @brief Type representing the grid level in CUDA thread hierarchy
- *
- * This type can be used in hierarchy queries to refer to the
- * grid level or to get that level from the hierarchy.
- * There is a constexpr variable of this type available for convenience
- * named grid.
- */
-struct grid_level
-    : public hierarchy_level
-    , public __detail::__dimensions_query<grid_level>
-{
-  using product_type  = unsigned long long;
-  using allowed_above = allowed_levels<>;
-  using allowed_below = allowed_levels<block_level, cluster_level>;
-};
-_CCCL_GLOBAL_CONSTANT grid_level grid;
-
-/**
- * @brief Type representing the cluster level in CUDA thread hierarchy
- *
- * This type can be used in hierarchy queries to refer to the
- * cluster level or to get that level from the hierarchy.
- * There is a constexpr variable of this type available for convenience
- * named cluster.
- */
-struct cluster_level
-    : public hierarchy_level
-    , public __detail::__dimensions_query<cluster_level>
-{
-  using product_type  = unsigned int;
-  using allowed_above = allowed_levels<grid_level>;
-  using allowed_below = allowed_levels<block_level>;
-};
-_CCCL_GLOBAL_CONSTANT cluster_level cluster;
-
-/**
- * @brief Type representing the block level in CUDA thread hierarchy
- *
- * This type can be used in hierarchy queries to refer to the
- * block level or to get that level from the hierarchy.
- * There is a constexpr variable of this type available for convenience
- * named block.
- */
-struct block_level
-    : public hierarchy_level
-    , public __detail::__dimensions_query<block_level>
-{
-  using product_type  = unsigned int;
-  using allowed_above = allowed_levels<grid_level, cluster_level>;
-  using allowed_below = allowed_levels<thread_level>;
-};
-_CCCL_GLOBAL_CONSTANT block_level block;
-
-/**
- * @brief Type representing the thread level in CUDA thread hierarchy
- *
- * This type can be used in hierarchy queries to specify threads as a
- * unit of the query.
- * There is a constexpr variable of this type available for convenience
- * named thread.
- */
-struct thread_level
-    : public hierarchy_level
-    , public __detail::__dimensions_query<thread_level>
-{
-  using product_type  = unsigned int;
-  using allowed_above = allowed_levels<block_level>;
-  using allowed_below = allowed_levels<>;
-};
-_CCCL_GLOBAL_CONSTANT thread_level thread;
 
 template <typename _Level>
 constexpr bool is_core_cuda_hierarchy_level =
