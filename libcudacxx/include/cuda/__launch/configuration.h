@@ -471,21 +471,28 @@ _CCCL_CONCEPT __kernel_has_default_config =
  * @tparam Options
  * Types of options that were added to this configuration object
  */
-template <typename Dimensions, typename... Options>
+template <typename Hierarchy, typename... Options>
 struct kernel_config
 {
-  Dimensions dims;
-  ::cuda::std::tuple<Options...> options;
-
   static_assert(::cuda::std::_And<::cuda::std::is_base_of<__detail::launch_option, Options>...>::value);
   static_assert(__detail::no_duplicate_options<Options...>);
 
-  constexpr kernel_config(const Dimensions& dims, const Options&... opts)
-      : dims(dims)
-      , options(opts...) {};
-  constexpr kernel_config(const Dimensions& dims, const ::cuda::std::tuple<Options...>& opts)
-      : dims(dims)
-      , options(opts) {};
+  constexpr kernel_config(const Hierarchy& hierarchy, const Options&... opts)
+      : __hierarchy(hierarchy)
+      , __options(opts...) {};
+  constexpr kernel_config(const Hierarchy& hierarchy, const ::cuda::std::tuple<Options...>& opts)
+      : __hierarchy(hierarchy)
+      , __options(opts) {};
+
+  [[nodiscard]] _CCCL_API constexpr const Hierarchy& hierarchy() const noexcept
+  {
+    return __hierarchy;
+  }
+
+  [[nodiscard]] _CCCL_API constexpr const ::cuda::std::tuple<Options...>& options() const noexcept
+  {
+    return __options;
+  }
 
   /**
    * @brief Add a new option to this configuration
@@ -499,8 +506,8 @@ struct kernel_config
   template <typename... NewOptions>
   [[nodiscard]] auto add(const NewOptions&... new_options) const
   {
-    return kernel_config<Dimensions, Options..., NewOptions...>(
-      dims, ::cuda::std::tuple_cat(options, ::cuda::std::make_tuple(new_options...)));
+    return kernel_config<Hierarchy, Options..., NewOptions...>(
+      __hierarchy, ::cuda::std::tuple_cat(__options, ::cuda::std::make_tuple(new_options...)));
   }
 
   /**
@@ -527,8 +534,8 @@ struct kernel_config
     // can't use fully qualified kernel_config name here because of nvcc bug,
     // TODO remove __make_config_from_tuple once fixed
     return __make_config_from_tuple(
-      dims.combine(__other_config.dims),
-      ::cuda::std::tuple_cat(options, ::cuda::std::apply(__filter_options<Options...>{}, __other_config.options)));
+      __hierarchy.combine(__other_config.hierarchy()),
+      ::cuda::std::tuple_cat(__options, ::cuda::std::apply(__filter_options<Options...>{}, __other_config.options())));
   }
 
   /**
@@ -558,6 +565,10 @@ struct kernel_config
       return *this;
     }
   }
+
+private:
+  Hierarchy __hierarchy;
+  ::cuda::std::tuple<Options...> __options;
 };
 
 // We can consider removing the operator&, but its convenient for in-line
@@ -566,14 +577,14 @@ template <typename Dimensions, typename... Options, typename NewLevel>
 _CCCL_HOST_API constexpr auto
 operator&(const kernel_config<Dimensions, Options...>& config, const NewLevel& new_level) noexcept
 {
-  return kernel_config(hierarchy_add_level(config.dims, new_level), config.options);
+  return kernel_config(hierarchy_add_level(config.hierarchy(), new_level), config.options());
 }
 
 template <typename NewLevel, typename Dimensions, typename... Options>
 _CCCL_HOST_API constexpr auto
 operator&(const NewLevel& new_level, const kernel_config<Dimensions, Options...>& config) noexcept
 {
-  return kernel_config(hierarchy_add_level(config.dims, new_level), config.options);
+  return kernel_config(hierarchy_add_level(config.hierarchy(), new_level), config.options());
 }
 
 template <typename L1, typename Dims1, typename L2, typename Dims2>
@@ -726,7 +737,7 @@ template <typename Dimensions, typename... Options>
 
       return __status;
     },
-    config.options);
+    config.options());
 }
 } // namespace __detail
 
@@ -735,7 +746,7 @@ template <typename Dimensions, typename... Options>
 template <class _Dims, class... _Opts>
 _CCCL_DEVICE_API decltype(auto) dynamic_shared_memory_view(const kernel_config<_Dims, _Opts...>& __config) noexcept
 {
-  auto& __opt = __detail::find_option_in_tuple<__detail::launch_option_kind::dynamic_shared_memory>(__config.options);
+  auto& __opt = __detail::find_option_in_tuple<__detail::launch_option_kind::dynamic_shared_memory>(__config.options());
   using _Opt  = ::cuda::std::remove_reference_t<decltype(__opt)>;
   static_assert(!::cuda::std::is_same_v<_Opt, __detail::option_not_found>,
                 "Dynamic shared memory option not found in the kernel configuration");
