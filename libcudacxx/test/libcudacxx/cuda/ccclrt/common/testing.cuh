@@ -27,35 +27,17 @@
 
 // There is a problem with clang-cuda and nv/target.
 // #if _CCCL_CUDA_COMPILER(CLANG)
-#if _CCCL_DEVICE_COMPILATION()
-#  define CCCLRT_REQUIRE(...) ccclrt_require_impl(__VA_ARGS__, #__VA_ARGS__, __FILE__, __LINE__, __PRETTY_FUNCTION__)
-#  define CCCLRT_CHECK(...)   ccclrt_require_impl(__VA_ARGS__, #__VA_ARGS__, __FILE__, __LINE__, __PRETTY_FUNCTION__)
-#  define CCCLRT_FAIL(...)    ccclrt_require_impl(false, __VA_ARGS__, __FILE__, __LINE__, __PRETTY_FUNCTION__)
+#if defined(__CUDA_ARCH__)
+#  define CCCLRT_REQUIRE(...)     ccclrt_require_impl(__VA_ARGS__, #__VA_ARGS__, __FILE__, __LINE__, __PRETTY_FUNCTION__)
+#  define CCCLRT_CHECK(...)       ccclrt_require_impl(__VA_ARGS__, #__VA_ARGS__, __FILE__, __LINE__, __PRETTY_FUNCTION__)
+#  define CCCLRT_FAIL(...)        ccclrt_require_impl(false, __VA_ARGS__, __FILE__, __LINE__, __PRETTY_FUNCTION__)
+#  define CCCLRT_CHECK_FALSE(...) CCCLRT_CHECK(!(__VA_ARGS__))
 #else
-#  define CCCLRT_REQUIRE(...) REQUIRE(__VA_ARGS__)
-#  define CCCLRT_CHECK(...)   CHECK(__VA_ARGS__)
-#  define CCCLRT_FAIL(...)    FAIL(__VA_ARGS__)
+#  define CCCLRT_REQUIRE(...)     REQUIRE(__VA_ARGS__)
+#  define CCCLRT_CHECK(...)       CHECK(__VA_ARGS__)
+#  define CCCLRT_FAIL(...)        FAIL(__VA_ARGS__)
+#  define CCCLRT_CHECK_FALSE(...) CCCLRT_CHECK(!(__VA_ARGS__))
 #endif
-// #else // _CCCL_CUDA_COMPILER(CLANG)
-// #  define CCCLRT_REQUIRE(condition)                                                                           \
-//     NV_IF_ELSE_TARGET(NV_IS_DEVICE,                                                                           \
-//                       (ccclrt_require_impl(condition, #condition, __FILE__, __LINE__, __PRETTY_FUNCTION__);), \
-//                       (REQUIRE(condition);))
-
-// #  define CCCLRT_CHECK(condition)                                                                             \
-//     NV_IF_ELSE_TARGET(NV_IS_DEVICE,                                                                           \
-//                       (ccclrt_require_impl(condition, #condition, __FILE__, __LINE__, __PRETTY_FUNCTION__);), \
-//                       (CHECK(condition);))
-
-// #  define CCCLRT_FAIL(message) /*                                                                   */ \
-//     NV_IF_ELSE_TARGET(NV_IS_DEVICE, /*                                                             */  \
-//                       (ccclrt_require_impl(false, message, __FILE__, __LINE__, __PRETTY_FUNCTION__);), \
-//                       (FAIL(message);))
-
-// #  define CCCLRT_CHECK_FALSE(condition) CCCLRT_CHECK(!(condition))
-// #endif // _CCCL_CUDA_COMPILER(CLANG)
-
-#define CCCLRT_CHECK_FALSE(...) CCCLRT_CHECK(!(__VA_ARGS__))
 
 __host__ __device__ constexpr bool operator==(const dim3& lhs, const dim3& rhs) noexcept
 {
