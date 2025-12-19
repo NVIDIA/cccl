@@ -25,7 +25,7 @@
 #include <cstdlib>
 #include <new> // IWYU pragma: keep (needed for placement new)
 
-__device__ __device__ inline void ccclrt_require_impl(
+__host__ __device__ inline void ccclrt_require_impl(
   bool condition, const char* condition_text, const char* filename, unsigned int linenum, const char* funcname)
 {
   if (!condition)
