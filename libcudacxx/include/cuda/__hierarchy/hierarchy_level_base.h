@@ -108,7 +108,7 @@ __hierarchy_extents_cast(::cuda::std::extents<_OrgIndex, _StaticExts...> __org_e
     }
     else
     {
-      __ret[__i] = _OrgExts::static_extent(__i);
+      __ret[__i] = static_cast<_Index>(_OrgExts::static_extent(__i));
     }
   }
   return ::cuda::std::extents<_Index, _StaticExts...>{__ret};
