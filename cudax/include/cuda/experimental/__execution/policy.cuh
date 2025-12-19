@@ -21,6 +21,8 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/__stream/get_stream.h>
+#include <cuda/__stream/stream_ref.h>
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__execution/env.h>
 #include <cuda/std/__execution/policy.h>
@@ -45,8 +47,10 @@ struct any_execution_policy
   _CCCL_HIDE_FROM_ABI any_execution_policy() = default;
 
   template <uint32_t _Policy>
-  _CCCL_HOST_API constexpr any_execution_policy(::cuda::std::execution::__execution_policy_base<_Policy>) noexcept
+  _CCCL_HOST_API constexpr any_execution_policy(
+    const ::cuda::std::execution::__execution_policy_base<_Policy>& __pol) noexcept
       : value(value_type{_Policy})
+      , stream(::cuda::std::execution::__query_or(__pol, ::cuda::get_stream, ::cuda::stream_ref{cudaStreamPerThread}))
   {}
 
   _CCCL_HOST_API constexpr operator __execution_policy() const noexcept
@@ -89,7 +93,15 @@ struct any_execution_policy
   }
 #endif // _CCCL_STD_VER <= 2017
 
-  __execution_policy value = __execution_policy::__invalid_execution_policy;
+#if _CCCL_HAS_CTK() && !_CCCL_COMPILER(NVRTC)
+  [[nodiscard]] _CCCL_HOST_API ::cuda::stream_ref get_stream() const noexcept
+  {
+    return stream;
+  }
+#endif // _CCCL_HAS_CTK() && !_CCCL_COMPILER(NVRTC)
+
+  __execution_policy value  = __execution_policy::__invalid_execution_policy;
+  ::cuda::stream_ref stream = ::cuda::stream_ref{cudaStreamPerThread};
 };
 
 struct get_execution_policy_t;
