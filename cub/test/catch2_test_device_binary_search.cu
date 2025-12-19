@@ -34,7 +34,7 @@ struct std_upper_bound_t
 } std_upper_bound;
 
 template <typename Value, typename Variant, typename HostVariant, typename CompareOp = cuda::std::less<Value>>
-void test_vectorized(Variant variant, HostVariant host_variant, int num_items = 7492, CompareOp compare_op = {})
+void test_vectorized(Variant variant, HostVariant host_variant, std::size_t num_items = 7492, CompareOp compare_op = {})
 {
   c2h::device_vector<Value> target_values_d(num_items / 100, thrust::default_init);
   c2h::gen(C2H_SEED(1), target_values_d);
