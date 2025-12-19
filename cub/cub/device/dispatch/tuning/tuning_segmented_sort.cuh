@@ -360,7 +360,7 @@ struct policy_hub
                                   LOAD_LDG>;
     using MediumSegmentPolicy =
       AgentSubWarpMergeSortPolicy<BLOCK_THREADS,
-                                  16 /* Threads per segment */,
+                                  32 /* Threads per segment */,
                                   ITEMS_PER_MEDIUM_THREAD,
                                   WARP_LOAD_TRANSPOSE,
                                   LOAD_LDG>;
