@@ -178,7 +178,8 @@ C2H_CCCLRT_TEST("device_memory_resource construction", "[memory_resource]")
     CHECK(ensure_export_handle(get, ::cudaMemHandleTypeNone));
   }
 
-  // Allocation handles are only supported after 11.2
+  // Allocation handles are only supported after 11.2 and not on Windows
+#if !_CCCL_OS(WINDOWS)
   SECTION("Construct with allocation handle")
   {
     cuda::memory_pool_properties props = {
@@ -200,6 +201,7 @@ C2H_CCCLRT_TEST("device_memory_resource construction", "[memory_resource]")
     // Ensure that we disable export
     CHECK(ensure_export_handle(get, props.allocation_handle_type));
   }
+#endif // !_CCCL_OS(WINDOWS)
 }
 
 static void ensure_device_ptr(void* ptr)
