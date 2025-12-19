@@ -17,16 +17,16 @@ Conversion functions
    template <typename T, typename Extents, typename Layout, typename Accessor>
    [[nodiscard]] dlpack_tensor<Extents::rank()>
    to_dlpack(const cuda::host_mdspan<T, Extents, Layout, Accessor>& mdspan);
- 
+
    template <typename T, typename Extents, typename Layout, typename Accessor>
    [[nodiscard]] dlpack_tensor<Extents::rank()>
    to_dlpack(const cuda::device_mdspan<T, Extents, Layout, Accessor>& mdspan,
                     cuda::device_ref device = cuda::device_ref{0});
- 
+
    template <typename T, typename Extents, typename Layout, typename Accessor>
    [[nodiscard]] dlpack_tensor<Extents::rank()>
    to_dlpack(const cuda::managed_mdspan<T, Extents, Layout, Accessor>& mdspan);
- 
+
    } // namespace cuda
 
 Types
