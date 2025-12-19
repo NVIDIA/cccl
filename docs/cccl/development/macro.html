@@ -1951,6 +1951,10 @@ file. Use <code class="docutils literal notranslate"><span class="pre">_CCCL_CUD
 </table>
 </div>
 <p><em>Note</em>: The <code class="docutils literal notranslate"><span class="pre">_CCCL_CATCH</span></code> clause must always introduce a named variable, like: <code class="docutils literal notranslate"><span class="pre">_CCCL_CATCH(const</span> <span class="pre">exception_type&amp;</span> <span class="pre">var)</span></code>.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p><code class="docutils literal notranslate"><span class="pre">_CCCL_THROW</span></code> requires to include the <code class="docutils literal notranslate"><span class="pre">&lt;stdexcept&gt;</span></code> header, regardless exceptions are enabled or not.</p>
+</div>
 <p>Example:</p>
 <div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="n">__host__</span><span class="w"> </span><span class="n">__device__</span><span class="w"> </span><span class="kt">void</span><span class="o">*</span><span class="w"> </span><span class="n">alloc</span><span class="p">(</span><span class="n">cuda</span><span class="o">::</span><span class="n">std</span><span class="o">::</span><span class="kt">size_t</span><span class="w"> </span><span class="n">nbytes</span><span class="p">)</span>
 <span class="p">{</span>
