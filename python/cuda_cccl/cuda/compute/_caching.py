@@ -10,8 +10,6 @@ try:
 except ImportError:
     from cuda.core.experimental import Device
 
-# Central registry of all algorithm caches
-_cache_registry: dict[str, object] = {}
 
 # Central registry of all algorithm caches
 _cache_registry: dict[str, object] = {}
