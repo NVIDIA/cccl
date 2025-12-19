@@ -58,7 +58,7 @@ jobs:
     name: "${{ matrix.libs }}"
     if: needs.check-event.outputs.ok == 'true'
     needs: check-event
-    runs-on: ${{ fromJSON(github.repository != 'NVIDIA/cccl' && '"ubuntu-latest"' || '"linux-amd64-cpu32"') }}
+    runs-on: ${{ fromJSON(github.repository != 'NVIDIA/cccl' && '"ubuntu-latest"' || '"linux-amd64-cpu16"') }}
     strategy:
       fail-fast: false
       matrix:
@@ -89,6 +89,7 @@ jobs:
           CCCL_VERSION: ${{ inputs.override_cccl_version }}
           CI: true
           CONDA_ENV_CREATE_QUIET: true
+          GH_TOKEN: ${{ github.token }}
           RAPIDS_LIBS: ${{ matrix.libs }}
           # Build cluster auth
           SCCACHE_DIST_TOKEN: "${{ secrets.SCCACHE_DIST_TOKEN }}"
@@ -111,10 +112,20 @@ jobs:
           # RAPIDS_raft_GIT_REPO: '{"upstream": "rapidsai", "tag": "main"}'
           # RAPIDS_rmm_GIT_REPO: '{"upstream": "rapidsai", "tag": "main"}'
           # RAPIDS_ucxx_GIT_REPO: '{"upstream": "rapidsai", "tag": "main"}'
+          # Build cluster auth
+          SCCACHE_DIST_TOKEN: "${{ secrets.SCCACHE_DIST_TOKEN }}"
+          SCCACHE_DIST_AUTH_TOKEN_VAR: "SCCACHE_DIST_TOKEN"
+          # Retry intermittent failures
+          SCCACHE_DIST_MAX_RETRIES: "inf"
+          # Never fallback to building locally, fail instead
+          SCCACHE_DIST_FALLBACK_TO_LOCAL_COMPILE: "false"
+          SCCACHE_IDLE_TIMEOUT: 0
         run: |
           cat <<"EOF" > "$RUNNER_TEMP/ci.sh"
           #! /usr/bin/env bash
           set -eo pipefail
+
+          ulimit -n $(ulimit -Hn)
 
           declare -a failures
 
@@ -176,14 +187,9 @@ jobs:
             --env "AWS_SESSION_TOKEN=${AWS_SESSION_TOKEN:-}" \
             --env "AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY:-}" \
             --env "CONDA_ENV_CREATE_QUIET=true" \
-            --env "CCCL_TAG=${CCCL_TAG}" \
-            --env "CCCL_VERSION=${CCCL_VERSION}" \
-            --env "DEVCONTAINER_UTILS_ENABLE_SCCACHE_DIST=true" \
-            --env "INFER_NUM_DEVICE_ARCHITECTURES=true" \
-            --env "MAX_DEVICE_OBJ_TO_COMPILE_IN_PARALLEL=100" \
-            --env "SCCACHE_BUCKET=${SCCACHE_BUCKET:-}" \
-            --env "SCCACHE_REGION=${SCCACHE_REGION:-}" \
-            --env "SCCACHE_IDLE_TIMEOUT=0" \
+            --env "CCCL_TAG=$CCCL_TAG" \
+            --env "CCCL_VERSION=$CCCL_VERSION" \
+            --env "GH_TOKEN=$GH_TOKEN" \
             --env "GITHUB_ACTIONS=$GITHUB_ACTIONS" \
             --env "GITHUB_SHA=$GITHUB_SHA" \
             --env "GITHUB_REF_NAME=$GITHUB_REF_NAME" \

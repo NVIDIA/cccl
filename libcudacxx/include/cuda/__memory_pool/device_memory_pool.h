@@ -21,18 +21,15 @@
 #  pragma system_header
 #endif // no system header
 
-#if _CCCL_CUDA_COMPILER(CLANG)
-#  include <cuda_runtime.h>
-#  include <cuda_runtime_api.h>
-#endif // _CCCL_CUDA_COMPILER(CLANG)
+#if _CCCL_HAS_CTK()
 
-#include <cuda/__memory_pool/memory_pool_base.h>
-#include <cuda/__memory_resource/get_property.h>
-#include <cuda/__memory_resource/properties.h>
-#include <cuda/__runtime/api_wrapper.h>
-#include <cuda/std/__concepts/concept_macros.h>
+#  include <cuda/__memory_pool/memory_pool_base.h>
+#  include <cuda/__memory_resource/get_property.h>
+#  include <cuda/__memory_resource/properties.h>
+#  include <cuda/__runtime/api_wrapper.h>
+#  include <cuda/std/__concepts/concept_macros.h>
 
-#include <cuda/std/__cccl/prologue.h>
+#  include <cuda/std/__cccl/prologue.h>
 
 //! @file
 //! The \c device_memory_pool class provides an asynchronous memory resource
@@ -161,6 +158,8 @@ static_assert(::cuda::mr::resource_with<device_memory_pool, ::cuda::mr::device_a
 
 _CCCL_END_NAMESPACE_CUDA
 
-#include <cuda/std/__cccl/epilogue.h>
+#  include <cuda/std/__cccl/epilogue.h>
+
+#endif // _CCCL_HAS_CTK()
 
 #endif //_CUDA___MEMORY_RESOURCE_DEVICE_MEMORY_POOL_H

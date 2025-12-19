@@ -21,19 +21,21 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/__memory_resource/get_property.h>
-#include <cuda/__memory_resource/properties.h>
-#include <cuda/__memory_resource/resource.h>
-#include <cuda/__utility/basic_any.h>
-#include <cuda/std/__concepts/concept_macros.h>
-#include <cuda/std/__utility/delegate_constructors.h>
-#include <cuda/std/__utility/forward.h>
-#include <cuda/std/optional>
+#if _CCCL_HAS_CTK()
 
-#include <cuda/std/__cccl/prologue.h>
+#  include <cuda/__memory_resource/get_property.h>
+#  include <cuda/__memory_resource/properties.h>
+#  include <cuda/__memory_resource/resource.h>
+#  include <cuda/__utility/basic_any.h>
+#  include <cuda/std/__concepts/concept_macros.h>
+#  include <cuda/std/__utility/delegate_constructors.h>
+#  include <cuda/std/__utility/forward.h>
+#  include <cuda/std/optional>
+
+#  include <cuda/std/__cccl/prologue.h>
 
 _CCCL_BEGIN_NAMESPACE_CUDA_MR
-#ifndef _CCCL_DOXYGEN_INVOKED // Do not document this
+#  ifndef _CCCL_DOXYGEN_INVOKED // Do not document this
 
 template <class _Property>
 using __property_result_t _CCCL_NODEBUG_ALIAS = ::cuda::std::__type_call1< //
@@ -376,7 +378,7 @@ synchronous_resource_ref<_Properties...> __as_resource_ref(resource_ref<_Propert
   return __mr;
 }
 
-#else // ^^^ !_CCCL_DOXYGEN_INVOKED ^^^ / vvv _CCCL_DOXYGEN_INVOKED vvv
+#  else // ^^^ !_CCCL_DOXYGEN_INVOKED ^^^ / vvv _CCCL_DOXYGEN_INVOKED vvv
 
 enum class _ResourceKind
 {
@@ -821,7 +823,7 @@ using synchronous_resource_ref = basic_resource_ref<_ResourceKind::_Synchronous,
 template <class... _Properties>
 using resource_ref = basic_resource_ref<_ResourceKind::_Asynchronous, _Properties...>;
 
-#endif // _CCCL_DOXYGEN_INVOKED
+#  endif // _CCCL_DOXYGEN_INVOKED
 
 //! @rst
 //! .. _cudax-memory-resource-make-any-resource:
@@ -877,6 +879,8 @@ auto make_any_resource(_Args&&... __args) -> any_resource<_Properties...>
 
 _CCCL_END_NAMESPACE_CUDA_MR
 
-#include <cuda/std/__cccl/epilogue.h>
+#  include <cuda/std/__cccl/epilogue.h>
+
+#endif // _CCCL_HAS_CTK()
 
 #endif // _CUDA___MEMORY_RESOURCE_ANY_RESOURCE_H

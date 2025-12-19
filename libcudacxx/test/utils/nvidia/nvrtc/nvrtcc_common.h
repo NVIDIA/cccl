@@ -95,6 +95,9 @@ static int parse_int_assignment(const std::string& input, std::string var, int d
     return std::stoi(match[1].str(), nullptr);
   }
 
+  fprintf(stderr, "ERROR: Could not find an integer literal for '%s' on line '%s':\r\n", var.c_str(), line.c_str());
+  exit(1);
+
   return def;
 }
 
