@@ -88,7 +88,7 @@ __hierarchy_extents_mul(const ::cuda::std::extents<_Index, _LhsExts...>& __lhs,
     }
     else
     {
-      __ret[__i] = _Ret::static_extent(__i);
+      __ret[__i] = static_cast<_Index>(_Ret::static_extent(__i));
     }
   }
   return _Ret{__ret};
