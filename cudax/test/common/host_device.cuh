@@ -70,7 +70,7 @@ void test_host_dev(const Dims& dims, const Lambda& lambda, const Filters&... fil
     config.blockDim = dims.extents(cuda::gpu_thread, cuda::block);
     config.gridDim  = dims.extents(cuda::block, cuda::grid);
 
-    if constexpr (dims.has_level(cluster))
+    if constexpr (Dims::has_level(cluster))
     {
       dim3 cluster_dims                            = dims.extents(cuda::block, cuda::cluster);
       config.attrs[config.numAttrs].id             = cudaLaunchAttributeClusterDimension;
