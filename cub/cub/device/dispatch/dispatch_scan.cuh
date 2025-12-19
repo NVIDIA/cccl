@@ -440,13 +440,22 @@ struct DispatchScan
     using OutputT         = ::cuda::std::iter_value_t<OutputIteratorT>;
     using WarpspeedPolicy = typename ActivePolicyT::WarpspeedPolicy;
 
-    const int grid_dim = ::cuda::ceil_div(num_items, static_cast<size_t>(WarpspeedPolicy::tile_size));
+    const int grid_dim = ::cuda::ceil_div(num_items, static_cast<OffsetT>(WarpspeedPolicy::tile_size));
 
     if (d_temp_storage == nullptr)
     {
       temp_storage_bytes = grid_dim * kernel_source.look_ahead_tile_state_size();
       return cudaSuccess;
     }
+
+    int sm_count = 0;
+    if (const auto error = CubDebug(launcher_factory.MultiProcessorCount(sm_count)))
+    {
+      return error;
+    }
+    // number of stages to have an even workload across all SMs (improves small problem sizes), assuming 1 CTA per SM
+    const int max_stages_for_even_workload =
+      ::cuda::ceil_div(num_items, static_cast<OffsetT>(sm_count * WarpspeedPolicy::tile_size));
 
     // Maximum dynamic shared memory size that we can use for temporary storage.
     int max_dynamic_smem_size{};
@@ -465,7 +474,7 @@ struct DispatchScan
 
     // When launched from the host, maximize the number of stages that we can fit inside the shared memory.
     NV_IF_TARGET(NV_IS_HOST, ({
-                   while (true)
+                   while (num_stages <= max_stages_for_even_workload)
                    {
                      const auto next_smem_size = smem_for_stages<WarpspeedPolicy, InputT, OutputT>(num_stages + 1);
                      if (next_smem_size > max_dynamic_smem_size)
