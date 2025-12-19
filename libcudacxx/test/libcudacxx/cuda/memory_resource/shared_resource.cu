@@ -133,7 +133,7 @@ TEMPLATE_TEST_CASE_METHOD(test_fixture, "shared_resource", "[container][resource
   SECTION("basic sanity test about shared resource handling")
   {
     Counts expected{};
-    align(alignof(int) * 4);
+    align(alignof(cuda::std::max_align_t));
     {
       bytes(42 * sizeof(int));
       cuda::stream stream{cuda::device_ref{0}};
@@ -153,7 +153,8 @@ TEMPLATE_TEST_CASE_METHOD(test_fixture, "shared_resource", "[container][resource
         CHECK(this->counts == expected);
       }
 
-      // The original resource is still alive, but the second allocation was released
+      // The original resource is still alive, but the second allocation was
+      // released
       bytes(42 * sizeof(int));
       ++expected.deallocate_async_count;
       CHECK(this->counts == expected);
@@ -164,7 +165,8 @@ TEMPLATE_TEST_CASE_METHOD(test_fixture, "shared_resource", "[container][resource
         CHECK(this->counts == expected);
       }
 
-      // The original shared_resource has been moved from so everything is gone already
+      // The original shared_resource has been moved from so everything is gone
+      // already
       --expected.object_count;
       ++expected.deallocate_async_count;
       CHECK(this->counts == expected);
