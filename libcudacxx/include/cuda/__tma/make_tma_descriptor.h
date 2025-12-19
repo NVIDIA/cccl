@@ -33,6 +33,8 @@
 #  include <cuda/std/cstdint>
 #  include <cuda/std/span>
 
+#  include <stdexcept>
+
 #  include <driver_types.h>
 
 #  include <dlpack/dlpack.h>
