@@ -21,19 +21,21 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/__memory_resource/any_resource.h>
-#include <cuda/__memory_resource/properties.h>
-#include <cuda/__stream/stream_ref.h>
-#include <cuda/std/__memory/addressof.h>
-#include <cuda/std/__memory/align.h>
-#include <cuda/std/__new/launder.h>
-#include <cuda/std/__type_traits/type_set.h>
-#include <cuda/std/__utility/exchange.h>
-#include <cuda/std/__utility/move.h>
-#include <cuda/std/__utility/swap.h>
-#include <cuda/std/span>
+#if _CCCL_HAS_CTK()
 
-#include <cuda/std/__cccl/prologue.h>
+#  include <cuda/__memory_resource/any_resource.h>
+#  include <cuda/__memory_resource/properties.h>
+#  include <cuda/__stream/stream_ref.h>
+#  include <cuda/std/__memory/addressof.h>
+#  include <cuda/std/__memory/align.h>
+#  include <cuda/std/__new/launder.h>
+#  include <cuda/std/__type_traits/type_set.h>
+#  include <cuda/std/__utility/exchange.h>
+#  include <cuda/std/__utility/move.h>
+#  include <cuda/std/__utility/swap.h>
+#  include <cuda/std/span>
+
+#  include <cuda/std/__cccl/prologue.h>
 
 //! @file
 //! The \c __uninitialized_async_buffer class provides a typed buffer allocated
@@ -138,7 +140,7 @@ private:
     return {__self.__get_data(), __self.size()};
   }
 
-#ifndef _CCCL_DOXYGEN_INVOKED
+#  ifndef _CCCL_DOXYGEN_INVOKED
   // This is needed to ensure that we do not do a deep copy in
   // __replace_allocation
   struct __fake_resource_ref
@@ -179,7 +181,7 @@ private:
     _CCCL_REQUIRES(::cuda::std::__is_included_in_v<_Property, _Properties...>)
     _CCCL_HIDE_FROM_ABI friend constexpr void get_property(const __fake_resource_ref&, _Property) noexcept {}
   };
-#endif // _CCCL_DOXYGEN_INVOKED
+#  endif // _CCCL_DOXYGEN_INVOKED
 
 public:
   using value_type      = _Tp;
@@ -203,7 +205,7 @@ public:
       : __mr_(::cuda::std::move(__mr))
       , __stream_(__stream)
       , __count_(__count)
-      , __buf_(__count_ == 0 ? nullptr : __mr_.allocate(__stream_, __get_allocation_size(__count_)))
+      , __buf_(__count_ == 0 ? nullptr : __mr_.allocate(__stream_, __get_allocation_size(__count_), alignof(_Tp)))
   {}
 
   _CCCL_HIDE_FROM_ABI __uninitialized_async_buffer(const __uninitialized_async_buffer&)            = delete;
@@ -245,7 +247,7 @@ public:
 
     if (__buf_)
     {
-      __mr_.deallocate(__stream_, __buf_, __get_allocation_size(__count_));
+      __mr_.deallocate(__stream_, __buf_, __get_allocation_size(__count_), alignof(_Tp));
     }
     __mr_     = ::cuda::std::move(__other.__mr_);
     __stream_ = ::cuda::std::exchange(__other.__stream_, ::cuda::stream_ref{::cudaStream_t{}});
@@ -265,7 +267,7 @@ public:
   {
     if (__buf_)
     {
-      __mr_.deallocate(__stream, __buf_, __get_allocation_size(__count_));
+      __mr_.deallocate(__stream, __buf_, __get_allocation_size(__count_), alignof(_Tp));
       __buf_   = nullptr;
       __count_ = 0;
     }
@@ -411,6 +413,8 @@ template <class _Tp>
 using uninitialized_async_device_buffer = __uninitialized_async_buffer<_Tp, ::cuda::mr::device_accessible>;
 _CCCL_END_NAMESPACE_CUDA
 
-#include <cuda/std/__cccl/epilogue.h>
+#  include <cuda/std/__cccl/epilogue.h>
+
+#endif // _CCCL_HAS_CTK()
 
 #endif //__CUDAX__CONTAINERS_UNINITIALIZED_ASYNC_BUFFER_H
