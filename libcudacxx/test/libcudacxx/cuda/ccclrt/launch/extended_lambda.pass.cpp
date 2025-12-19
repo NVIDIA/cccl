@@ -30,7 +30,7 @@ __host__ void test_extended_lambda()
   assert(*i == 42);
 
   auto assign_1337_lambda = [] __device__(auto config, int* pi) {
-    static_assert(config.dims.count(cuda::thread, cuda::block) == 32);
+    static_assert(config.dims.count(cuda::gpu_thread, cuda::block) == 32);
     static_assert(config.dims.count(cuda::block) == 1);
     *pi = 1337;
   };
