@@ -12,8 +12,6 @@
 
 #include <cuda/std/detail/__config>
 
-#include <cuda/std/__type_traits/num_bits.h>
-
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
@@ -24,8 +22,8 @@
 
 #if !_CCCL_COMPILER(NVRTC) && _CCCL_HAS_INCLUDE(<dlpack/dlpack.h>)
 
-#  include <cuda/__device/device_ref.h>
 #  include <cuda/__mdspan/host_device_mdspan.h>
+#  include <cuda/devices>
 #  include <cuda/std/__cstddef/types.h>
 #  include <cuda/std/__exception/exception_macros.h>
 #  include <cuda/std/__limits/numeric_limits.h>
@@ -41,12 +39,10 @@
 #  include <cuda/std/cstdint>
 #  include <cuda/std/mdspan>
 
+#  include <stdexcept>
+
 #  include <dlpack/dlpack.h>
-
-#  if _CCCL_HAS_EXCEPTIONS()
-#    include <stdexcept>
-#  endif // _CCCL_HAS_EXCEPTIONS()
-
+//
 #  include <cuda/std/__cccl/prologue.h>
 
 _CCCL_BEGIN_NAMESPACE_CUDA
@@ -149,7 +145,7 @@ template <typename _ElementType>
 #  if _CCCL_HAS_NVFP8_E4M3()
   else if constexpr (::cuda::std::is_same_v<_ElementType, ::__nv_fp8_e4m3>)
   {
-    return ::DLDataType{::kDLFloat8_e4m3, 8, 1};
+    return ::DLDataType{::kDLFloat8_e4m3fn, 8, 1};
   }
 #  endif // _CCCL_HAS_NVFP8_E4M3()
 #  if _CCCL_HAS_NVFP8_E5M2()
@@ -198,12 +194,7 @@ template <typename _ElementType>
   {
     return ::DLDataType{::kDLComplex, 128, 1};
   }
-#  if _CCCL_HAS_FLOAT128()
-  else if constexpr (::cuda::std::is_same_v<_ElementType, ::cuda::std::complex<__float128>>)
-  {
-    return ::DLDataType{::kDLComplex, 256, 1};
-  }
-#  endif // _CCCL_HAS_FLOAT128()
+  // 256-bit data types are not supported in DLPack, e.g. cuda::std::complex<__float128>
   //--------------------------------------------------------------------------------------------------------------------
   // Vector types (CUDA built-in vector types)
 #  if _CCCL_HAS_CTK()
@@ -255,36 +246,6 @@ template <typename _ElementType>
   {
     return ::DLDataType{::kDLUInt, 32, 4};
   }
-  else if constexpr (::cuda::std::is_same_v<_ElementType, ::long2>)
-  {
-    return ::DLDataType{::kDLInt, ::cuda::std::__num_bits_v<long>, 2};
-  }
-#    if _CCCL_CTK_AT_LEAST(13, 0)
-  else if constexpr (::cuda::std::is_same_v<_ElementType, ::long4_32a>)
-  {
-    return ::DLDataType{::kDLInt, ::cuda::std::__num_bits_v<long>, 4};
-  }
-#    else // ^^^ _CCCL_CTK_AT_LEAST(13, 0) ^^^ / vvv _CCCL_CTK_BELOW(13, 0) vvv
-  else if constexpr (::cuda::std::is_same_v<_ElementType, ::long4>)
-  {
-    return ::DLDataType{::kDLInt, ::cuda::std::__num_bits_v<long>, 4};
-  }
-#    endif // _CCCL_CTK_BELOW(13, 0)
-  else if constexpr (::cuda::std::is_same_v<_ElementType, ::ulong2>)
-  {
-    return ::DLDataType{::kDLUInt, ::cuda::std::__num_bits_v<unsigned long>, 2};
-  }
-#    if _CCCL_CTK_AT_LEAST(13, 0)
-  else if constexpr (::cuda::std::is_same_v<_ElementType, ::ulong4_32a>)
-  {
-    return ::DLDataType{::kDLUInt, ::cuda::std::__num_bits_v<unsigned long>, 4};
-  }
-#    else // ^^^ _CCCL_CTK_AT_LEAST(13, 0) ^^^ / vvv _CCCL_CTK_BELOW(13, 0) vvv
-  else if constexpr (::cuda::std::is_same_v<_ElementType, ::ulong4>)
-  {
-    return ::DLDataType{::kDLUInt, ::cuda::std::__num_bits_v<unsigned long>, 4};
-  }
-#    endif // _CCCL_CTK_BELOW(13, 0)
   else if constexpr (::cuda::std::is_same_v<_ElementType, ::long2>)
   {
     return ::DLDataType{::kDLInt, ::cuda::std::__num_bits_v<long>, 2};
@@ -452,12 +413,12 @@ public:
     return &__tensor;
   }
 
-  _CCCL_HOST_API ::DLTensor& get() noexcept
+  [[nodiscard]] _CCCL_HOST_API ::DLTensor& get() noexcept
   {
     return __tensor;
   }
 
-  _CCCL_HOST_API const ::DLTensor& get() const noexcept
+  [[nodiscard]] _CCCL_HOST_API const ::DLTensor& get() const noexcept
   {
     return __tensor;
   }
