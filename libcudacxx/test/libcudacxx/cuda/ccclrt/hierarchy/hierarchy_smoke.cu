@@ -329,49 +329,49 @@ __global__ void kernel(Hierarchy hierarchy)
   auto grid  = cg::this_grid();
   auto block = cg::this_thread_block();
 
-  CCCLRT_REQUIRE_DEVICE(grid.thread_rank() == (cuda::hierarchy::rank(cuda::gpu_thread, cuda::grid)));
-  CCCLRT_REQUIRE_DEVICE(grid.block_rank() == (cuda::hierarchy::rank(cuda::block, cuda::grid)));
-  CCCLRT_REQUIRE_DEVICE(grid.thread_rank() == cuda::gpu_thread.rank(cuda::grid));
-  CCCLRT_REQUIRE_DEVICE(grid.block_rank() == cuda::block.rank(cuda::grid));
+  CCCLRT_REQUIRE(grid.thread_rank() == (cuda::hierarchy::rank(cuda::gpu_thread, cuda::grid)));
+  CCCLRT_REQUIRE(grid.block_rank() == (cuda::hierarchy::rank(cuda::block, cuda::grid)));
+  CCCLRT_REQUIRE(grid.thread_rank() == cuda::gpu_thread.rank(cuda::grid));
+  CCCLRT_REQUIRE(grid.block_rank() == cuda::block.rank(cuda::grid));
 
-  CCCLRT_REQUIRE_DEVICE(grid.block_index() == (cuda::hierarchy::index(cuda::block, cuda::grid)));
-  CCCLRT_REQUIRE_DEVICE(grid.block_index() == cuda::block.index(cuda::grid));
+  CCCLRT_REQUIRE(grid.block_index() == (cuda::hierarchy::index(cuda::block, cuda::grid)));
+  CCCLRT_REQUIRE(grid.block_index() == cuda::block.index(cuda::grid));
 
-  CCCLRT_REQUIRE_DEVICE(grid.num_threads() == (cuda::hierarchy::count(cuda::gpu_thread, cuda::grid)));
-  CCCLRT_REQUIRE_DEVICE(grid.num_blocks() == (cuda::hierarchy::count(cuda::block, cuda::grid)));
+  CCCLRT_REQUIRE(grid.num_threads() == (cuda::hierarchy::count(cuda::gpu_thread, cuda::grid)));
+  CCCLRT_REQUIRE(grid.num_blocks() == (cuda::hierarchy::count(cuda::block, cuda::grid)));
 
-  CCCLRT_REQUIRE_DEVICE(grid.num_threads() == (cuda::gpu_thread.count(cuda::grid)));
-  CCCLRT_REQUIRE_DEVICE(grid.num_blocks() == cuda::block.count(cuda::grid));
+  CCCLRT_REQUIRE(grid.num_threads() == (cuda::gpu_thread.count(cuda::grid)));
+  CCCLRT_REQUIRE(grid.num_blocks() == cuda::block.count(cuda::grid));
 
-  CCCLRT_REQUIRE_DEVICE(grid.dim_blocks() == (cuda::hierarchy::extents<cuda::block_level, cuda::grid_level>()));
-  CCCLRT_REQUIRE_DEVICE(grid.dim_blocks() == dim3{cuda::block.dims(cuda::grid)});
+  CCCLRT_REQUIRE(grid.dim_blocks() == (cuda::hierarchy::extents<cuda::block_level, cuda::grid_level>()));
+  CCCLRT_REQUIRE(grid.dim_blocks() == dim3{cuda::block.dims(cuda::grid)});
 
-  CCCLRT_REQUIRE_DEVICE(block.thread_rank() == (cuda::hierarchy::rank<cuda::thread_level, cuda::block_level>()));
-  CCCLRT_REQUIRE_DEVICE(block.thread_index() == (cuda::hierarchy::index<cuda::thread_level, cuda::block_level>()));
-  CCCLRT_REQUIRE_DEVICE(block.num_threads() == (cuda::hierarchy::count<cuda::thread_level, cuda::block_level>()));
-  CCCLRT_REQUIRE_DEVICE(block.dim_threads() == (cuda::hierarchy::extents<cuda::thread_level, cuda::block_level>()));
+  CCCLRT_REQUIRE(block.thread_rank() == (cuda::hierarchy::rank<cuda::thread_level, cuda::block_level>()));
+  CCCLRT_REQUIRE(block.thread_index() == (cuda::hierarchy::index<cuda::thread_level, cuda::block_level>()));
+  CCCLRT_REQUIRE(block.num_threads() == (cuda::hierarchy::count<cuda::thread_level, cuda::block_level>()));
+  CCCLRT_REQUIRE(block.dim_threads() == (cuda::hierarchy::extents<cuda::thread_level, cuda::block_level>()));
 
-  CCCLRT_REQUIRE_DEVICE(block.thread_rank() == cuda::gpu_thread.rank(cuda::block));
-  CCCLRT_REQUIRE_DEVICE(block.thread_index() == cuda::gpu_thread.index(cuda::block));
-  CCCLRT_REQUIRE_DEVICE(block.num_threads() == cuda::gpu_thread.count(cuda::block));
-  CCCLRT_REQUIRE_DEVICE(block.dim_threads() == dim3{cuda::gpu_thread.dims(cuda::block)});
+  CCCLRT_REQUIRE(block.thread_rank() == cuda::gpu_thread.rank(cuda::block));
+  CCCLRT_REQUIRE(block.thread_index() == cuda::gpu_thread.index(cuda::block));
+  CCCLRT_REQUIRE(block.num_threads() == cuda::gpu_thread.count(cuda::block));
+  CCCLRT_REQUIRE(block.dim_threads() == dim3{cuda::gpu_thread.dims(cuda::block)});
 
   auto block_index = hierarchy.index(cuda::gpu_thread, cuda::block);
-  CCCLRT_REQUIRE_DEVICE(block_index == block.thread_index());
+  CCCLRT_REQUIRE(block_index == block.thread_index());
   auto grid_index = hierarchy.index();
-  CCCLRT_REQUIRE_DEVICE(
+  CCCLRT_REQUIRE(
     grid_index.x
     == static_cast<unsigned long long>(grid.block_index().x) * block.dim_threads().x + block.thread_index().x);
-  CCCLRT_REQUIRE_DEVICE(
+  CCCLRT_REQUIRE(
     grid_index.y
     == static_cast<unsigned long long>(grid.block_index().y) * block.dim_threads().y + block.thread_index().y);
-  CCCLRT_REQUIRE_DEVICE(
+  CCCLRT_REQUIRE(
     grid_index.z
     == static_cast<unsigned long long>(grid.block_index().z) * block.dim_threads().z + block.thread_index().z);
 
-  CCCLRT_REQUIRE_DEVICE(hierarchy.rank(cuda::block) == grid.block_rank());
-  CCCLRT_REQUIRE_DEVICE(hierarchy.rank(cuda::gpu_thread, cuda::block) == block.thread_rank());
-  CCCLRT_REQUIRE_DEVICE(hierarchy.rank() == grid.thread_rank());
+  CCCLRT_REQUIRE(hierarchy.rank(cuda::block) == grid.block_rank());
+  CCCLRT_REQUIRE(hierarchy.rank(cuda::gpu_thread, cuda::block) == block.thread_rank());
+  CCCLRT_REQUIRE(hierarchy.rank() == grid.thread_rank());
 }
 
 C2H_TEST("Dims queries indexing and ambient hierarchy", "[hierarchy]")
@@ -439,9 +439,9 @@ __global__ void examples_kernel(Hierarchy hierarchy)
 {
   {
     auto thread_index_in_block = hierarchy.index(cuda::gpu_thread, cuda::block);
-    CCCLRT_REQUIRE_DEVICE(thread_index_in_block == threadIdx);
+    CCCLRT_REQUIRE(thread_index_in_block == threadIdx);
     auto block_index_in_grid = hierarchy.index(cuda::block);
-    CCCLRT_REQUIRE_DEVICE(block_index_in_grid == blockIdx);
+    CCCLRT_REQUIRE(block_index_in_grid == blockIdx);
   }
   {
     int thread_rank_in_block = hierarchy.rank(cuda::gpu_thread, cuda::block);
@@ -466,9 +466,9 @@ __global__ void examples_kernel(Hierarchy hierarchy)
   {
     // Can be called with the instances of level types
     auto block_dims = cuda::hierarchy::extents(cuda::gpu_thread, cuda::block);
-    CCCLRT_REQUIRE_DEVICE(block_dims == blockDim);
+    CCCLRT_REQUIRE(block_dims == blockDim);
     dim3 grid_dims{cuda::block.dims(cuda::grid)};
-    CCCLRT_REQUIRE_DEVICE(grid_dims == gridDim);
+    CCCLRT_REQUIRE(grid_dims == gridDim);
 
     // Or using the level types as template arguments
     auto grid_dims_in_threads = cuda::hierarchy::extents<cuda::thread_level, cuda::grid_level>();
@@ -476,9 +476,9 @@ __global__ void examples_kernel(Hierarchy hierarchy)
   {
     // Can be called with the instances of level types
     auto thread_index_in_block = cuda::gpu_thread.index(cuda::block);
-    CCCLRT_REQUIRE_DEVICE(static_cast<uint3>(thread_index_in_block) == threadIdx);
+    CCCLRT_REQUIRE(static_cast<uint3>(thread_index_in_block) == threadIdx);
     auto block_index_in_grid = cuda::block.index(cuda::grid);
-    CCCLRT_REQUIRE_DEVICE(static_cast<uint3>(block_index_in_grid) == blockIdx);
+    CCCLRT_REQUIRE(static_cast<uint3>(block_index_in_grid) == blockIdx);
 
     // Or using the level types as template arguments
     auto thread_index_in_grid = cuda::hierarchy::index<cuda::thread_level, cuda::grid_level>();
