@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDA_HIERARCHY
-#define _CUDA_HIERARCHY
+#ifndef _CUDA___HIERARCHY_GRID_LEVEL_H
+#define _CUDA___HIERARCHY_GRID_LEVEL_H
 
 #include <cuda/std/detail/__config>
 
@@ -21,18 +21,24 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/__hierarchy/block_level.h>
-#include <cuda/__hierarchy/cluster_level.h>
-#include <cuda/__hierarchy/get_launch_dimensions.h>
-#include <cuda/__hierarchy/grid_level.h>
-#include <cuda/__hierarchy/hierarchy_dimensions.h>
-#include <cuda/__hierarchy/hierarchy_level_base.h>
-#include <cuda/__hierarchy/hierarchy_levels.h>
-#include <cuda/__hierarchy/hierarchy_query_result.h>
-#include <cuda/__hierarchy/level_dimensions.h>
+#include <cuda/__fwd/hierarchy.h>
 #include <cuda/__hierarchy/native_hierarchy_level_base.h>
-#include <cuda/__hierarchy/thread_level.h>
-#include <cuda/__hierarchy/traits.h>
-#include <cuda/__hierarchy/warp_level.h>
 
-#endif // _CUDA_HIERARCHY
+#include <cuda/std/__cccl/prologue.h>
+
+_CCCL_BEGIN_NAMESPACE_CUDA
+
+struct grid_level : __native_hierarchy_level_base<grid_level>
+{
+  using product_type  = unsigned long long;
+  using allowed_above = allowed_levels<>;
+  using allowed_below = allowed_levels<block_level, cluster_level>;
+};
+
+_CCCL_GLOBAL_CONSTANT grid_level grid;
+
+_CCCL_END_NAMESPACE_CUDA
+
+#include <cuda/std/__cccl/epilogue.h>
+
+#endif // _CUDA___HIERARCHY_GRID_LEVEL_H
