@@ -204,10 +204,10 @@ C2H_TEST("Hierarchy construction in config", "[launch]")
   static_assert(config.dims.count(cuda::block) == 2);
 
   auto config_larger = cuda::make_config(cuda::grid_dims<2>(), cuda::block_dims(256), cuda::cooperative_launch());
-  CCCLRT_REQUIRE(config_larger.dims.count(cuda::thread) == 512);
+  CCCLRT_REQUIRE(config_larger.dims.count(cuda::gpu_thread) == 512);
 
   auto config_no_options = cuda::make_config(cuda::grid_dims(2), cuda::block_dims<128>());
-  CCCLRT_REQUIRE(config_no_options.dims.count(cuda::thread) == 256);
+  CCCLRT_REQUIRE(config_no_options.dims.count(cuda::gpu_thread) == 256);
 
   [[maybe_unused]] auto config_no_dims = cuda::make_config(cuda::cooperative_launch());
   static_assert(cuda::std::is_same_v<decltype(config_no_dims.dims), cuda::__empty_hierarchy>);
@@ -231,18 +231,18 @@ C2H_TEST("Configuration combine", "[launch]")
     static_assert(cuda::std::is_same_v<decltype(combined), decltype(combined_other_way)>);
     static_assert(cuda::std::is_same_v<decltype(combined), decltype(combined_with_empty)>);
     static_assert(cuda::std::is_same_v<decltype(combined), decltype(empty_with_combined)>);
-    CCCLRT_REQUIRE(combined.dims.count(cuda::thread) == 512);
+    CCCLRT_REQUIRE(combined.dims.count(cuda::gpu_thread) == 512);
   }
   SECTION("Combine with overlap")
   {
     auto config_part1 = make_config(grid, cluster, cuda::launch_priority(2));
     auto config_part2 = make_config(cuda::cluster_dims<256>(), block, cuda::launch_priority(42));
     auto combined     = config_part1.combine(config_part2);
-    CCCLRT_REQUIRE(combined.dims.count(cuda::thread) == 2048);
+    CCCLRT_REQUIRE(combined.dims.count(cuda::gpu_thread) == 2048);
     CCCLRT_REQUIRE(cuda::std::get<0>(combined.options).priority == 2);
 
     auto replaced_one_option = cuda::make_config(cuda::launch_priority(3)).combine(combined);
-    CCCLRT_REQUIRE(replaced_one_option.dims.count(cuda::thread) == 2048);
+    CCCLRT_REQUIRE(replaced_one_option.dims.count(cuda::gpu_thread) == 2048);
     CCCLRT_REQUIRE(cuda::std::get<0>(replaced_one_option.options).priority == 3);
 
     [[maybe_unused]] auto combined_with_extra_option = combined.combine(cuda::make_config(cuda::cooperative_launch()));

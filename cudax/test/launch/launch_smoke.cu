@@ -55,7 +55,7 @@ struct functor_taking_config
   template <typename Config>
   __device__ void operator()(Config config, int grid_size)
   {
-    static_assert(config.dims.static_count(cuda::thread, cuda::block) == BlockSize);
+    static_assert(config.dims.static_count(cuda::gpu_thread, cuda::block) == BlockSize);
     CUDAX_REQUIRE(config.dims.count(cuda::block, cuda::grid) == grid_size);
     kernel_run_proof = true;
   }
@@ -88,7 +88,7 @@ struct dynamic_smem_single
   template <typename Config>
   __device__ void operator()(Config config)
   {
-    decltype(auto) dynamic_smem = cuda::dynamic_shared_memory_view(config);
+    decltype(auto) dynamic_smem = cuda::dynamic_shared_memory(config);
     static_assert(::cuda::std::is_same_v<SmemType&, decltype(dynamic_smem)>);
     CUDAX_REQUIRE(::cuda::device::is_object_from(dynamic_smem, ::cuda::device::address_space::shared));
     kernel_run_proof = true;
@@ -101,7 +101,7 @@ struct dynamic_smem_span
   template <typename Config>
   __device__ void operator()(Config config, int size)
   {
-    auto dynamic_smem = cuda::dynamic_shared_memory_view(config);
+    auto dynamic_smem = cuda::dynamic_shared_memory(config);
     static_assert(decltype(dynamic_smem)::extent == Extent);
     static_assert(::cuda::std::is_same_v<SmemType&, decltype(dynamic_smem[1])>);
     CUDAX_REQUIRE(dynamic_smem.size() == size);
@@ -248,7 +248,7 @@ void launch_smoke_test(StreamOrPathBuilder& dst)
   // Lambda
   {
     cudax::launch(dst, cuda::block_dims<256>() & cuda::grid_dims(1), [] __device__(auto config) {
-      if (config.dims.rank(cuda::thread, cuda::block) == 0)
+      if (config.dims.rank(cuda::gpu_thread, cuda::block) == 0)
       {
         printf("Hello from the GPU\n");
         kernel_run_proof = true;
@@ -354,7 +354,7 @@ void test_default_config()
   auto block = cuda::block_dims<256>;
 
   auto verify_lambda = [] __device__(auto config) {
-    static_assert(config.dims.count(cuda::thread, cuda::block) == 256);
+    static_assert(config.dims.count(cuda::gpu_thread, cuda::block) == 256);
     CUDAX_REQUIRE(config.dims.count(cuda::block) == 4);
     cooperative_groups::this_grid().sync();
   };
