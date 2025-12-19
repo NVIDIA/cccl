@@ -144,7 +144,12 @@ __device__ __noinline__ void test_select_source()
 
 int main(int argc, char** argv)
 {
-  NV_IF_TARGET(NV_IS_HOST, (cuda_thread_count = thread_block_size;), (test_select_source<int32_t>();))
+  // important: `cuda__thread__count =` (typo on purpose) needs to be followed by an integer literal, otherwise nvrtcc
+  // cannot regex-match it
+  NV_IF_TARGET(NV_IS_HOST, (cuda_thread_count = 64;), ({
+                 assert(blockDim.x == thread_block_size);
+                 test_select_source<int32_t>();
+               }))
 
   return 0;
 }
