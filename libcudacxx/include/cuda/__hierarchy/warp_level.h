@@ -37,7 +37,7 @@
 
 _CCCL_BEGIN_NAMESPACE_CUDA
 
-struct warp_level : __native_hierarchy_level_base<warp_level>
+struct _CCCL_DECLSPEC_EMPTY_BASES warp_level : __native_hierarchy_level_base<warp_level>
 {
   using __next_native_level = block_level;
 

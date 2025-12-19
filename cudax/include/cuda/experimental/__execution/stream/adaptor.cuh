@@ -269,8 +269,7 @@ private:
     // the completion kernel, we will be completing the parent's receiver, so we must let
     // the receiver tell us how to launch the kernel.
     auto const __launch_config    = get_launch_config(execution::get_env(__state.__state_.__rcvr_));
-    using __launch_dims_t         = decltype(__launch_config.dims);
-    constexpr int __block_threads = __launch_dims_t::static_count(gpu_thread, block);
+    constexpr int __block_threads = gpu_thread(block, __launch_config.dims);
 
     // Start the child operation state. This will launch kernels for all the predecessors
     // of this operation.

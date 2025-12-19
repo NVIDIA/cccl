@@ -49,8 +49,8 @@ struct functor_taking_config
   template <typename Config>
   __device__ void operator()(Config config, int grid_size)
   {
-    static_assert(config.dims.static_count(cuda::gpu_thread, cuda::block) == BlockSize);
-    CCCLRT_REQUIRE_DEVICE(config.dims.count(cuda::block, cuda::grid) == grid_size);
+    static_assert(cuda::gpu_thread.count(cuda::block, config.dims) == BlockSize);
+    CCCLRT_REQUIRE_DEVICE(cuda::block.count(cuda::grid, config.dims) == grid_size);
     kernel_run_proof = true;
   }
 };
@@ -296,8 +296,8 @@ struct verify_callable
   template <typename Config>
   __device__ void operator()(Config config)
   {
-    static_assert(config.dims.count(cuda::gpu_thread, cuda::block) == 256);
-    CCCLRT_REQUIRE(config.dims.count(cuda::block) == 4);
+    static_assert(cuda::gpu_thread.count(cuda::block, config.dims) == 256);
+    CCCLRT_REQUIRE(cuda::block.count(cuda::grid, config.dims) == 4);
     cooperative_groups::this_grid().sync();
   }
 };
