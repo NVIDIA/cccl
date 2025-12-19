@@ -1547,13 +1547,13 @@ memory location pointed to by <code class="docutils literal notranslate"><span c
 to by <code class="docutils literal notranslate"><span class="pre">destination</span></code>. Both objects are reinterpreted as arrays of
 <code class="docutils literal notranslate"><span class="pre">unsigned</span> <span class="pre">char</span></code>.</p>
 <ol class="arabic simple">
-<li><p>Binds the asynchronous copy completion to <code class="docutils literal notranslate"><span class="pre">cuda::barrier</span></code> and
+<li><p>Non-group version. Binds the asynchronous copy completion to <code class="docutils literal notranslate"><span class="pre">cuda::barrier</span></code> and
 issues the copy in the current thread.</p></li>
-<li><p>Binds the asynchronous copy completion to <code class="docutils literal notranslate"><span class="pre">cuda::barrier</span></code> and
+<li><p>Group version. Binds the asynchronous copy completion to <code class="docutils literal notranslate"><span class="pre">cuda::barrier</span></code> and
 cooperatively issues the copy across all threads in <code class="docutils literal notranslate"><span class="pre">group</span></code>.</p></li>
-<li><p>Binds the asynchronous copy completion to <code class="docutils literal notranslate"><span class="pre">cuda::pipeline</span></code> and
+<li><p>Non-group version. Binds the asynchronous copy completion to <code class="docutils literal notranslate"><span class="pre">cuda::pipeline</span></code> and
 issues the copy in the current thread.</p></li>
-<li><p>Binds the asynchronous copy completion to <code class="docutils literal notranslate"><span class="pre">cuda::pipeline</span></code> and
+<li><p>Group version. Binds the asynchronous copy completion to <code class="docutils literal notranslate"><span class="pre">cuda::pipeline</span></code> and
 cooperatively issues the copy across all threads in <code class="docutils literal notranslate"><span class="pre">group</span></code>.</p></li>
 <li><p>5-8: convenience wrappers using <code class="docutils literal notranslate"><span class="pre">cuda::annotated_ptr</span></code> where
 <code class="docutils literal notranslate"><span class="pre">Sync</span></code> is either <code class="docutils literal notranslate"><span class="pre">cuda::barrier</span></code> or <code class="docutils literal notranslate"><span class="pre">cuda::pipeline</span></code>.</p></li>
@@ -1571,14 +1571,26 @@ namely:</p>
 the behavior is undefined.</p></li>
 <li><p>If the objects are not of <a class="reference external" href="https://en.cppreference.com/w/cpp/named_req/TriviallyCopyable">TriviallyCopyable</a>
 type the program is ill-formed, no diagnostic required.</p></li>
+</ul>
+</div></blockquote>
+<p>Additionally:</p>
+<blockquote>
+<div><ul class="simple">
 <li><p>If <em>Shape</em> is <a class="reference internal" href="../memory/aligned_size.html#libcudacxx-extended-api-memory-aligned-size"><span class="std std-ref">cuda::aligned_size_t</span></a>, <code class="docutils literal notranslate"><span class="pre">source</span></code>
 and <code class="docutils literal notranslate"><span class="pre">destination</span></code> are both required to be aligned on <code class="docutils literal notranslate"><span class="pre">cuda::aligned_size_t::align</span></code>, else the behavior is
 undefined.</p></li>
 <li><p>If <code class="docutils literal notranslate"><span class="pre">cuda::pipeline</span></code> is in a <em>quitted state</em>
 (see <a class="reference internal" href="../synchronization_primitives/pipeline/quit.html#libcudacxx-extended-api-synchronization-pipeline-pipeline-quit"><span class="std std-ref">cuda::pipeline::quit</span></a>),
 the behavior is undefined.</p></li>
-<li><p>For cooperative variants, if the parameters are not the same across all threads in <code class="docutils literal notranslate"><span class="pre">group</span></code>, the behavior is
-undefined.</p></li>
+<li><p>For cooperative overloads (with a group parameter),
+if the parameters are not the same across all threads in <code class="docutils literal notranslate"><span class="pre">group</span></code>,
+or not all threads represented by <code class="docutils literal notranslate"><span class="pre">group</span></code> call the overload, the behavior is undefined.</p></li>
+<li><p>The group of a cooperative overload can also represent a partition of the active threads calling the overload,
+in which case a copy is cooperatively issued per partition of the active threads described by <code class="docutils literal notranslate"><span class="pre">group</span></code>.
+For example, if <code class="docutils literal notranslate"><span class="pre">group</span></code> is a <code class="docutils literal notranslate"><span class="pre">cooperative_groups::thread_block_tile&lt;32,</span> <span class="pre">...&gt;</span></code>
+and the overload is called with 128 threads active, 4 copies will be issued, one cooperatively per warp.</p></li>
+<li><p>If a non-group overload is called with multiple threads active,
+each thread issues its own copy and thus must have different arguments and the copies must not overlap.</p></li>
 </ul>
 </div></blockquote>
 </section>
@@ -1631,6 +1643,23 @@ or <a class="reference internal" href="../memory/aligned_size.html#libcudacxx-ex
 </table>
 </div>
 </section>
+<section id="related-traits">
+<h2>Related traits<a class="headerlink" href="#related-traits" title="Link to this heading">#</a></h2>
+<div class="highlight-cuda notranslate"><div class="highlight"><pre><span></span><span class="n">template</span><span class="w"> </span><span class="o">&lt;</span><span class="n">typename</span><span class="w"> </span><span class="n">Group</span><span class="o">&gt;</span>
+<span class="n">constexpr</span><span class="w"> </span><span class="kr">inline</span><span class="w"> </span><span class="kt">bool</span><span class="w"> </span><span class="n">is_thread_block_group_v</span><span class="p">;</span>
+</pre></div>
+</div>
+<p>This trait is <code class="docutils literal notranslate"><span class="pre">true</span></code> if <code class="docutils literal notranslate"><span class="pre">Group</span></code> represents the full CUDA thread block.
+For example, <code class="docutils literal notranslate"><span class="pre">cooperative_groups::thread_block</span></code> satisfies this trait.
+Users are encouraged to specialize this trait for their own groups.</p>
+<div class="highlight-cuda notranslate"><div class="highlight"><pre><span></span><span class="n">template</span><span class="w"> </span><span class="o">&lt;</span><span class="n">typename</span><span class="w"> </span><span class="n">Group</span><span class="o">&gt;</span>
+<span class="n">constexpr</span><span class="w"> </span><span class="kr">inline</span><span class="w"> </span><span class="kt">bool</span><span class="w"> </span><span class="n">is_warp_group_v</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">false</span><span class="p">;</span>
+</pre></div>
+</div>
+<p>This trait is <code class="docutils literal notranslate"><span class="pre">true</span></code> if <code class="docutils literal notranslate"><span class="pre">Group</span></code> represents a full CUDA warp.
+For example, <code class="docutils literal notranslate"><span class="pre">cooperative_groups::thread_block_tile&lt;32,</span> <span class="pre">...&gt;</span></code> satisfies this trait.
+Users are encouraged to specialize this trait for their own groups.</p>
+</section>
 <section id="implementation-notes">
 <h2>Implementation notes<a class="headerlink" href="#implementation-notes" title="Link to this heading">#</a></h2>
 <p>On Hopper+ GPUs, the overloads taking a barrier may use the Tensor Memory Accelerator (TMA)
@@ -1638,7 +1667,10 @@ via the <code class="docutils literal notranslate"><span class="pre">cp.async.bu
 - the barrier resides in shared memory,
 - the data is aligned to 16 bytes,
 - the source is global memory,
-- the destination is shared memory.</p>
+- the destination is shared memory.
+Additionally, the cooperative overload (taking a group) can generate more efficient code
+if the group satisfies the trait <code class="docutils literal notranslate"><span class="pre">cuda::is_thread_block_group_v</span></code> or <code class="docutils literal notranslate"><span class="pre">cuda::is_warp_group_v</span></code>.
+In those cases, a uniform data path is generated for the bulk copy and thread peeling is avoided.</p>
 <p>On Ampere+ GPUs, the <code class="docutils literal notranslate"><span class="pre">cp.async</span></code> instruction may be used to perform the copy if:
 - the data is aligned to at least 4 bytes,
 - the source is global memory,
@@ -1715,8 +1747,15 @@ a custom group can be defined like:</p>
 <span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="nb">threadIdx</span><span class="p">.</span><span class="n">x</span><span class="p">;</span>
 <span class="w">  </span><span class="p">}</span>
 <span class="p">};</span>
+
+<span class="n">template</span><span class="w"> </span><span class="o">&lt;&gt;</span>
+<span class="kr">inline</span><span class="w"> </span><span class="n">constexpr</span><span class="w"> </span><span class="kt">bool</span><span class="w"> </span><span class="n">cuda</span><span class="o">::</span><span class="n">is_thread_block_group_v</span><span class="o">&lt;</span><span class="n">this_thread_block_1D</span><span class="o">&gt;</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">true</span><span class="p">;</span>
 </pre></div>
 </div>
+<p>Such a group will emit the least amount of code when used with <code class="docutils literal notranslate"><span class="pre">cuda::memcpy_async</span></code>,
+since the <code class="docutils literal notranslate"><span class="pre">thread_rank()</span></code> is easily computed (because the block is 1D)
+and we declared the group as representing the whole thread block,
+which allows emit a uniform data path on Hopper+ GPUs in certain conditions.</p>
 <p><a class="reference external" href="https://godbolt.org/z/aM9cbabcW">See it on Godbolt</a></p>
 </section>
 </section>
@@ -1773,6 +1812,7 @@ a custom group can be defined like:</p>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#notes">Notes</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#template-parameters">Template Parameters</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#parameters">Parameters</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#related-traits">Related traits</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#implementation-notes">Implementation notes</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#examples">Examples</a></li>
 </ul>
