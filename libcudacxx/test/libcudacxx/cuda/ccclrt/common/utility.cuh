@@ -20,9 +20,12 @@
 #include <cuda/atomic>
 #include <cuda/std/utility>
 
+#include <nv/target>
+
+#include <cstdlib>
 #include <new> // IWYU pragma: keep (needed for placement new)
 
-__device__ inline void ccclrt_require_impl(
+__device__ __device__ inline void ccclrt_require_impl(
   bool condition, const char* condition_text, const char* filename, unsigned int linenum, const char* funcname)
 {
   if (!condition)
@@ -39,7 +42,7 @@ __device__ inline void ccclrt_require_impl(
            threadIdx.y,
            threadIdx.z,
            condition_text);
-    __trap();
+    NV_IF_ELSE_TARGET(NV_IS_DEVICE, (__trap();), (std::abort();));
   }
 }
 
