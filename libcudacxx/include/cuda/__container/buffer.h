@@ -21,35 +21,37 @@
 #  pragma system_header
 #endif // no system header
 
-#if _CCCL_HAS_CUDA_COMPILER()
-#  include <cub/device/device_transform.cuh>
-#endif // _CCCL_HAS_CUDA_COMPILER()
+#if _CCCL_HAS_CTK()
 
-#include <cuda/__container/heterogeneous_iterator.h>
-#include <cuda/__container/uninitialized_async_buffer.h>
-#include <cuda/__launch/host_launch.h>
-#include <cuda/__memory_resource/any_resource.h>
-#include <cuda/__memory_resource/get_memory_resource.h>
-#include <cuda/__memory_resource/properties.h>
-#include <cuda/__memory_resource/synchronous_resource_adapter.h>
-#include <cuda/__runtime/ensure_current_context.h>
-#include <cuda/__stream/get_stream.h>
-#include <cuda/std/__execution/env.h>
-#include <cuda/std/__iterator/concepts.h>
-#include <cuda/std/__iterator/distance.h>
-#include <cuda/std/__iterator/reverse_iterator.h>
-#include <cuda/std/__memory/uninitialized_algorithms.h>
-#include <cuda/std/__ranges/access.h>
-#include <cuda/std/__ranges/concepts.h>
-#include <cuda/std/__ranges/size.h>
-#include <cuda/std/__ranges/unwrap_end.h>
-#include <cuda/std/__type_traits/is_trivially_copyable.h>
-#include <cuda/std/__utility/forward.h>
-#include <cuda/std/__utility/move.h>
-#include <cuda/std/cstdint>
-#include <cuda/std/initializer_list>
+#  if _CCCL_HAS_CUDA_COMPILER()
+#    include <cub/device/device_transform.cuh>
+#  endif // _CCCL_HAS_CUDA_COMPILER()
 
-#include <cuda/std/__cccl/prologue.h>
+#  include <cuda/__container/heterogeneous_iterator.h>
+#  include <cuda/__container/uninitialized_async_buffer.h>
+#  include <cuda/__launch/host_launch.h>
+#  include <cuda/__memory_resource/any_resource.h>
+#  include <cuda/__memory_resource/get_memory_resource.h>
+#  include <cuda/__memory_resource/properties.h>
+#  include <cuda/__memory_resource/synchronous_resource_adapter.h>
+#  include <cuda/__runtime/ensure_current_context.h>
+#  include <cuda/__stream/get_stream.h>
+#  include <cuda/std/__execution/env.h>
+#  include <cuda/std/__iterator/concepts.h>
+#  include <cuda/std/__iterator/distance.h>
+#  include <cuda/std/__iterator/reverse_iterator.h>
+#  include <cuda/std/__memory/uninitialized_algorithms.h>
+#  include <cuda/std/__ranges/access.h>
+#  include <cuda/std/__ranges/concepts.h>
+#  include <cuda/std/__ranges/size.h>
+#  include <cuda/std/__ranges/unwrap_end.h>
+#  include <cuda/std/__type_traits/is_trivially_copyable.h>
+#  include <cuda/std/__utility/forward.h>
+#  include <cuda/std/__utility/move.h>
+#  include <cuda/std/cstdint>
+#  include <cuda/std/initializer_list>
+
+#  include <cuda/std/__cccl/prologue.h>
 
 //! @file The \c buffer class provides a container of contiguous memory
 _CCCL_BEGIN_NAMESPACE_CUDA
@@ -309,7 +311,7 @@ public:
       __buf_.size());
   }
 
-#ifndef _CCCL_DOXYGEN_INVOKED // doxygen conflates the overloads
+#  ifndef _CCCL_DOXYGEN_INVOKED // doxygen conflates the overloads
   _CCCL_TEMPLATE(class _Range, class _Resource, class _Env = ::cuda::std::execution::env<>)
   _CCCL_REQUIRES(
     ::cuda::mr::synchronous_resource<::cuda::std::decay_t<_Resource>> _CCCL_AND __compatible_range<_Range>
@@ -332,7 +334,7 @@ public:
       __unwrapped_begin(),
       __buf_.size());
   }
-#endif // _CCCL_DOXYGEN_INVOKED
+#  endif // _CCCL_DOXYGEN_INVOKED
   //! @}
 
   //! @addtogroup iterators
@@ -447,7 +449,7 @@ public:
     return __buf_.data();
   }
 
-#ifndef _CCCL_DOXYGEN_INVOKED
+#  ifndef _CCCL_DOXYGEN_INVOKED
   //! @brief Returns a pointer to the first element of the buffer. If the buffer
   //! is empty, the returned pointer will be null.
   [[nodiscard]] _CCCL_HIDE_FROM_ABI pointer __unwrapped_begin() noexcept
@@ -477,7 +479,7 @@ public:
   {
     return __buf_.data() + __buf_.size();
   }
-#endif // _CCCL_DOXYGEN_INVOKED
+#  endif // _CCCL_DOXYGEN_INVOKED
 
   //! @}
 
@@ -683,14 +685,14 @@ __fill_n(cuda::stream_ref __stream, _Tp* __first, ::cuda::std::size_t __count, c
     }
     else
     {
-#if _CCCL_HAS_CUDA_COMPILER()
+#  if _CCCL_HAS_CUDA_COMPILER()
       ::cuda::__ensure_current_context __guard(__stream);
       ::cub::DeviceTransform::Fill(__first, __count, __value, __stream.get());
-#else
+#  else
       static_assert(0,
                     "CUDA compiler is required to initialize a buffer with "
                     "elements larger than 4 bytes");
-#endif
+#  endif
     }
   }
 }
@@ -887,6 +889,8 @@ auto make_buffer(stream_ref __stream, _Resource&& __mr, _Range&& __range, const 
 }
 _CCCL_END_NAMESPACE_CUDA
 
-#include <cuda/std/__cccl/epilogue.h>
+#  include <cuda/std/__cccl/epilogue.h>
+
+#endif // _CCCL_HAS_CTK()
 
 #endif //_CUDA___CONTAINER_BUFFER_H

@@ -473,15 +473,15 @@ _CCCL_API inline pipeline<thread_scope_thread> make_pipeline()
 }
 
 template <uint8_t _Prior>
-_CCCL_API inline void pipeline_consumer_wait_prior(pipeline<thread_scope_thread>& __pipeline)
+_CCCL_API inline void pipeline_consumer_wait_prior([[maybe_unused]] pipeline<thread_scope_thread>& __pipeline)
 {
   NV_IF_TARGET(NV_PROVIDES_SM_80, ::cuda::device::__pipeline_consumer_wait<_Prior>(__pipeline);
                __pipeline.__tail = __pipeline.__head - _Prior;)
 }
 
 template <thread_scope _Scope>
-_CCCL_API inline void
-pipeline_producer_commit([[maybe_unused]] pipeline<thread_scope_thread>& __pipeline, barrier<_Scope>& __barrier)
+_CCCL_API inline void pipeline_producer_commit([[maybe_unused]] pipeline<thread_scope_thread>& __pipeline,
+                                               [[maybe_unused]] barrier<_Scope>& __barrier)
 {
   NV_IF_TARGET(NV_PROVIDES_SM_80,
                ((void) __memcpy_completion_impl::__defer(
