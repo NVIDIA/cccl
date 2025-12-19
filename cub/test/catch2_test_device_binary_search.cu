@@ -92,7 +92,7 @@ C2H_TEST("DeviceFind::LowerBound really large input",
   {
     using value_type = char;
     const auto size  = std::int64_t{1} << GENERATE(30, 31, 32, 33);
-    test_vectorized<value_type>(lower_bound, std_lower_bound);
+    test_vectorized<value_type>(lower_bound, std_lower_bound, size);
   }
   catch (const std::bad_alloc&)
   {
@@ -108,7 +108,7 @@ C2H_TEST("DeviceFind::UpperBound really large input",
   {
     using value_type = char;
     const auto size  = std::int64_t{1} << GENERATE(30, 31, 32, 33);
-    test_vectorized<value_type>(upper_bound, std_upper_bound);
+    test_vectorized<value_type>(upper_bound, std_upper_bound, size);
   }
   catch (const std::bad_alloc&)
   {
