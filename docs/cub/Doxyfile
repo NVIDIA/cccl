@@ -14,7 +14,6 @@ INPUT                  = ../../cub/cub \
                          ../../cub/cub/warp \
                          ../../cub/cub/block \
                          ../../cub/cub/device \
-                         ../../cub/cub/device/device_find.cuh \
                          ../../cub/cub/grid \
                          ../../cub/cub/iterator
 

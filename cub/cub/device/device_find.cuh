@@ -97,8 +97,8 @@ struct DeviceFind
     return DeviceFor::ForEach(
       d_temp_storage,
       temp_storage_bytes,
-      cuda::make_zip_iterator(values_first, output),
-      cuda::make_zip_iterator(values_last, output + cuda::std::distance(values_first, values_last)),
+      ::cuda::make_zip_iterator(values_first, output),
+      ::cuda::make_zip_iterator(values_last, output + ::cuda::std::distance(values_first, values_last)),
       detail::find::make_comp_wrapper<detail::find::lower_bound>(first, last, comp),
       stream);
   }
@@ -180,8 +180,8 @@ struct DeviceFind
     return DeviceFor::ForEach(
       d_temp_storage,
       temp_storage_bytes,
-      cuda::make_zip_iterator(values_first, output),
-      cuda::make_zip_iterator(values_last, output + cuda::std::distance(values_first, values_last)),
+      ::cuda::make_zip_iterator(values_first, output),
+      ::cuda::make_zip_iterator(values_last, output + ::cuda::std::distance(values_first, values_last)),
       detail::find::make_comp_wrapper<detail::find::upper_bound>(first, last, comp),
       stream);
   }

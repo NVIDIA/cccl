@@ -29,9 +29,9 @@ struct comp_wrapper_t
   CompareOpT op;
 
   template <typename Value, typename Output>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void operator()(cuda::std::tuple<Value, Output> args) const
+  _CCCL_DEVICE _CCCL_FORCEINLINE void operator()(::cuda::std::tuple<Value, Output> args) const
   {
-    cuda::std::get<1>(args) = Mode::Invoke(first, last, cuda::std::get<0>(args), op);
+    ::cuda::std::get<1>(args) = Mode::Invoke(first, last, ::cuda::std::get<0>(args), op);
   }
 };
 
@@ -47,7 +47,7 @@ struct lower_bound
   _CCCL_DEVICE _CCCL_FORCEINLINE static RangeIteratorT
   Invoke(RangeIteratorT first, RangeIteratorT last, const T& value, CompareOpT comp)
   {
-    return cuda::std::lower_bound(first, last, value, comp);
+    return ::cuda::std::lower_bound(first, last, value, comp);
   }
 };
 
@@ -57,7 +57,7 @@ struct upper_bound
   _CCCL_DEVICE _CCCL_FORCEINLINE static RangeIteratorT
   Invoke(RangeIteratorT first, RangeIteratorT last, const T& value, CompareOpT comp)
   {
-    return cuda::std::upper_bound(first, last, value, comp);
+    return ::cuda::std::upper_bound(first, last, value, comp);
   }
 };
 } // namespace detail::find

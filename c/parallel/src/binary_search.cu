@@ -224,8 +224,7 @@ __launch_bounds__(device_for_policy::ActivePolicy::for_policy_t::block_threads)
       "-std=c++20",
       "-rdc=true",
       "-dlto",
-      "-DCUB_DISABLE_CDP",
-      "-G"};
+      "-DCUB_DISABLE_CDP"};
 
     cccl::detail::extend_args_with_build_config(args, config);
 
