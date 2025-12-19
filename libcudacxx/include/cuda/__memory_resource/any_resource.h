@@ -221,10 +221,6 @@ struct _CCCL_DECLSPEC_EMPTY_BASES any_synchronous_resource
   using default_queries = ::cuda::mr::properties_list<_Properties...>;
 
 private:
-  static_assert(::cuda::mr::__contains_execution_space_property<_Properties...>,
-                "The properties of any_synchronous_resource must contain at least one execution "
-                "space "
-                "property!");
   using __base::interface;
 };
 
@@ -244,10 +240,6 @@ struct _CCCL_DECLSPEC_EMPTY_BASES any_resource
   using default_queries = ::cuda::mr::properties_list<_Properties...>;
 
 private:
-  static_assert(::cuda::mr::__contains_execution_space_property<_Properties...>,
-                "The properties of any_resource must contain at least one execution space "
-                "property!");
-
   template <class...>
   friend struct any_synchronous_resource;
 
@@ -304,11 +296,6 @@ struct _CCCL_DECLSPEC_EMPTY_BASES synchronous_resource_ref
   using default_queries = ::cuda::mr::properties_list<_Properties...>;
 
 private:
-  static_assert(::cuda::mr::__contains_execution_space_property<_Properties...>,
-                "The properties of synchronous_resource_ref must contain at least one execution "
-                "space "
-                "property!");
-
   template <class...>
   friend struct synchronous_resource_ref;
 
@@ -357,10 +344,6 @@ struct _CCCL_DECLSPEC_EMPTY_BASES resource_ref
   using default_queries = ::cuda::mr::properties_list<_Properties...>;
 
 private:
-  static_assert(::cuda::mr::__contains_execution_space_property<_Properties...>,
-                "The properties of resource_ref must contain at least one execution space "
-                "property!");
-
   template <class...>
   friend struct synchronous_resource_ref;
   template <class...>
