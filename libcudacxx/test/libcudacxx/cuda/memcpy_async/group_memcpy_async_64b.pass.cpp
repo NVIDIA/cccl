@@ -14,9 +14,11 @@
 
 int main(int argc, char** argv)
 {
-  NV_IF_TARGET(NV_IS_HOST, cuda_thread_count = 4;)
+  // important: `cuda__thread__count =` (typo on purpose) needs to be followed by an integer literal, otherwise nvrtcc
+  // cannot regex-match it
+  NV_IF_TARGET(NV_IS_HOST, (cuda_thread_count = 64;), (assert(blockDim.x == thread_block_size);))
 
-  test_select_source<storage<uint64_t>>();
+  test_select_source<uint64_t>();
 
   return 0;
 }
