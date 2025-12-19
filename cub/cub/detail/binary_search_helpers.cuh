@@ -38,7 +38,7 @@ struct comp_wrapper_t
 template <typename Mode, typename RangeIteratorT, typename CompareOpT>
 _CCCL_HOST_DEVICE auto make_comp_wrapper(RangeIteratorT first, RangeIteratorT last, CompareOpT comp)
 {
-  return comp_wrapper_t<RangeIteratorT, CompareOpT, Mode>(first, last, comp);
+  return comp_wrapper_t<RangeIteratorT, CompareOpT, Mode>{first, last, comp};
 }
 
 struct lower_bound
