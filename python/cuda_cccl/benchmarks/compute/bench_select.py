@@ -125,3 +125,24 @@ def bench_select_struct(bench_fixture, request, size):
 
     fixture = request.getfixturevalue(bench_fixture)
     fixture(run)
+
+
+@pytest.mark.parametrize("bench_fixture", ["compile_benchmark", "benchmark"])
+def bench_select_stateful(bench_fixture, request, size):
+    actual_size = 100 if bench_fixture == "compile_benchmark" else size
+    inp = cp.random.randint(0, 100, actual_size, dtype=np.int32)
+    out = cp.empty_like(inp)
+    num_selected = cp.empty(2, dtype=np.uint64)
+    threshold_state = cp.array([50], dtype=np.int32)
+
+    def run():
+        select_stateful(
+            inp,
+            out,
+            num_selected,
+            threshold_state,
+            build_only=(bench_fixture == "compile_benchmark"),
+        )
+
+    fixture = request.getfixturevalue(bench_fixture)
+    fixture(run)

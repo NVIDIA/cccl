@@ -10,6 +10,7 @@ try:
 except ImportError:
     from cuda.core.experimental import Device
 
+
 # Central registry of all algorithm caches
 _cache_registry: dict[str, object] = {}
 
@@ -55,6 +56,33 @@ def cache_with_key(key):
     return deco
 
 
+def _hash_device_array_like(value):
+    # hash based on pointer, shape, and dtype
+    ptr = value.__cuda_array_interface__["data"][0]
+    shape = value.__cuda_array_interface__["shape"]
+    dtype = value.__cuda_array_interface__["typestr"]
+    return hash((ptr, shape, dtype))
+
+
+def _make_hashable(value):
+    import numba.cuda.dispatcher
+
+    from .typing import DeviceArrayLike
+
+    if isinstance(value, numba.cuda.dispatcher.CUDADispatcher):
+        return CachableFunction(value.py_func)
+    elif isinstance(value, DeviceArrayLike):
+        return _hash_device_array_like(value)
+    elif isinstance(value, (list, tuple)):
+        return tuple(_make_hashable(v) for v in value)
+    elif isinstance(value, dict):
+        return tuple(
+            sorted((_make_hashable(k), _make_hashable(v)) for k, v in value.items())
+        )
+    else:
+        return id(value)
+
+
 def clear_all_caches():
     """
     Clear all algorithm caches.
@@ -83,8 +111,6 @@ class CachableFunction:
     """
 
     def __init__(self, func):
-        import numba.cuda.dispatcher
-
         self._func = func
 
         closure = func.__closure__ if func.__closure__ is not None else []
@@ -92,16 +118,16 @@ class CachableFunction:
         # if any of the contents is a numba.cuda.dispatcher.CUDADispatcher
         # use the function for caching purposes:
         for cell in closure:
-            if isinstance(cell.cell_contents, numba.cuda.dispatcher.CUDADispatcher):
-                contents.append(CachableFunction(cell.cell_contents.py_func))
-            else:
-                contents.append(cell.cell_contents)
+            contents.append(_make_hashable(cell.cell_contents))
         self._identity = (
             func.__name__,
             func.__code__.co_code,
             func.__code__.co_consts,
             tuple(contents),
-            tuple(func.__globals__.get(name, None) for name in func.__code__.co_names),
+            tuple(
+                _make_hashable(func.__globals__.get(name, None))
+                for name in func.__code__.co_names
+            ),
         )
 
     def __eq__(self, other):
