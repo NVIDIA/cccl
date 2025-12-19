@@ -99,7 +99,7 @@ struct Squad : SquadDesc
 // reductions.
 //
 template <int numSquads, typename F>
-_CCCL_DEVICE_API inline void
+_CCCL_DEVICE_API _CCCL_FORCEINLINE void
 squadDispatch(SpecialRegisters sr, const SquadDesc (&squads)[numSquads], F f, int warpIdxStart = 0)
 {
   static_assert(numSquads > 0);
