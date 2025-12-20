@@ -242,7 +242,7 @@ __to_dlpack(const ::cuda::std::mdspan<_ElementType, _Extents, _Layout, _Accessor
   auto& __tensor  = __wrapper.get();
   __tensor.data   = __mdspan.size() > 0 ? const_cast<__element_type*>(__mdspan.data_handle()) : nullptr;
   __tensor.device = ::DLDevice{__device_type, __device_id};
-  __tensor.ndim   = __mdspan.rank();
+  __tensor.ndim   = static_cast<int>(__mdspan.rank());
   __tensor.dtype  = ::cuda::__data_type_to_dlpack<::cuda::std::remove_cv_t<_ElementType>>();
   if constexpr (_Extents::rank() > 0)
   {
