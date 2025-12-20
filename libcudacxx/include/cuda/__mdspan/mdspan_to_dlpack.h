@@ -151,6 +151,7 @@ template <typename _ElementType>
   {
     static_assert(::cuda::std::__always_false_v<_ElementType>, "Unsupported type");
   }
+  _CCCL_UNREACHABLE();
   return ::DLDataType{};
 }
 
