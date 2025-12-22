@@ -22,18 +22,11 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__fwd/new.h>
+#include <cuda/std/__new/device_new.h>
 #include <cuda/std/cstddef>
 
-#if _LIBCUDACXX_HAS_ALIGNED_ALLOCATION() && !_CCCL_COMPILER(NVRTC)
-#  include <new> // for align_val_t
-#endif // _LIBCUDACXX_HAS_ALIGNED_ALLOCATION() !_CCCL_COMPILER(NVRTC)
-
-// clang-cuda only provides device flavors of operator new, so we need to pull in <new> here
-#if _CCCL_CUDA_COMPILER(CLANG)
-#  include <new>
-#endif // _CCCL_CUDA_COMPILER(CLANG)
-
-#if !defined(__cpp_sized_deallocation) || __cpp_sized_deallocation < 201309L
+#if __cpp_sized_deallocation < 201309L
 #  define _LIBCUDACXX_HAS_SIZED_DEALLOCATION() 0
 #else
 #  define _LIBCUDACXX_HAS_SIZED_DEALLOCATION() 1
@@ -42,15 +35,6 @@
 #include <cuda/std/__cccl/prologue.h>
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
-
-_CCCL_API constexpr bool __is_overaligned_for_new(size_t __align) noexcept
-{
-#ifdef __STDCPP_DEFAULT_NEW_ALIGNMENT__
-  return __align > __STDCPP_DEFAULT_NEW_ALIGNMENT__;
-#else // ^^^ __STDCPP_DEFAULT_NEW_ALIGNMENT__ ^^^ / vvv !__STDCPP_DEFAULT_NEW_ALIGNMENT__ vvv
-  return __align > alignof(max_align_t);
-#endif // !__STDCPP_DEFAULT_NEW_ALIGNMENT__
-}
 
 template <class... _Args>
 _CCCL_API inline void* __cccl_operator_new(_Args... __args)
@@ -74,19 +58,13 @@ _CCCL_API inline void __cccl_operator_delete(_Args... __args)
 #endif // !_CCCL_BUILTIN_OPERATOR_DELETE
 }
 
-#if _LIBCUDACXX_HAS_ALIGNED_ALLOCATION()
-using ::std::align_val_t;
-#endif // _LIBCUDACXX_HAS_ALIGNED_ALLOCATION()
-
-_CCCL_API inline void* __cccl_allocate(size_t __size, [[maybe_unused]] size_t __align)
+_CCCL_API inline void* __cccl_allocate(size_t __size, size_t __align)
 {
-#if _LIBCUDACXX_HAS_ALIGNED_ALLOCATION()
-  if (::cuda::std::__is_overaligned_for_new(__align))
+  if (__align > __STDCPP_DEFAULT_NEW_ALIGNMENT__)
   {
     const align_val_t __align_val = static_cast<align_val_t>(__align);
     return ::cuda::std::__cccl_operator_new(__size, __align_val);
   }
-#endif // _LIBCUDACXX_HAS_ALIGNED_ALLOCATION()
   return ::cuda::std::__cccl_operator_new(__size);
 }
 
@@ -100,27 +78,23 @@ _CCCL_API inline void __do_deallocate_handle_size(void* __ptr, [[maybe_unused]] 
 #endif // !_LIBCUDACXX_HAS_SIZED_DEALLOCATION()
 }
 
-_CCCL_API inline void __cccl_deallocate(void* __ptr, size_t __size, [[maybe_unused]] size_t __align)
+_CCCL_API inline void __cccl_deallocate(void* __ptr, size_t __size, size_t __align)
 {
-#if _LIBCUDACXX_HAS_ALIGNED_ALLOCATION()
-  if (::cuda::std::__is_overaligned_for_new(__align))
+  if (__align > __STDCPP_DEFAULT_NEW_ALIGNMENT__)
   {
     const align_val_t __align_val = static_cast<align_val_t>(__align);
     return ::cuda::std::__do_deallocate_handle_size(__ptr, __size, __align_val);
   }
-#endif // _LIBCUDACXX_HAS_ALIGNED_ALLOCATION()
   return ::cuda::std::__do_deallocate_handle_size(__ptr, __size);
 }
 
-_CCCL_API inline void __cccl_deallocate_unsized(void* __ptr, [[maybe_unused]] size_t __align)
+_CCCL_API inline void __cccl_deallocate_unsized(void* __ptr, size_t __align)
 {
-#if _LIBCUDACXX_HAS_ALIGNED_ALLOCATION()
-  if (::cuda::std::__is_overaligned_for_new(__align))
+  if (__align > __STDCPP_DEFAULT_NEW_ALIGNMENT__)
   {
     const align_val_t __align_val = static_cast<align_val_t>(__align);
     return ::cuda::std::__cccl_operator_delete(__ptr, __align_val);
   }
-#endif // _LIBCUDACXX_HAS_ALIGNED_ALLOCATION()
   return ::cuda::std::__cccl_operator_delete(__ptr);
 }
 
