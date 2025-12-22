@@ -337,3 +337,18 @@ struct binary_user_operation_traits
   }
 #endif
 };
+
+struct binary_user_predicate_traits
+{
+  static const constexpr auto name = "binary_user_predicate_traits::type";
+  template <typename Tag, cccl_op_t_mapping Operation, cccl_type_info_mapping ValueT>
+  using type = user_operation_traits::type<Tag, Operation, cccl_type_info_mapping<bool>{}, ValueT, ValueT>;
+
+#ifndef _CCCL_C_PARALLEL_JIT_TEMPLATES_PREPROCESS
+  template <typename Tag, typename... Args>
+  static cuda::std::optional<specialization> special(cccl_op_t operation, cccl_type_info arg_t)
+  {
+    return user_operation_traits::special<Tag>(operation, arg_t, arg_t, arg_t);
+  }
+#endif
+};
