@@ -1230,7 +1230,7 @@ struct __fmt_column_width_result
 };
 
 template <class _It>
-_CCCL_HOST_DEVICE __fmt_column_width_result(size_t, _It) -> __fmt_column_width_result<_It>;
+_CCCL_DEDUCTION_GUIDE_EXSPACE __fmt_column_width_result(size_t, _It) -> __fmt_column_width_result<_It>;
 
 //! Since a column width can be two it's possible that the requested column
 //! width can't be achieved. Depending on the intended usage the policy can be

@@ -301,7 +301,7 @@ private:
 };
 
 template <class _Tp, class _Bound>
-_CCCL_HOST_DEVICE repeat_view(_Tp, _Bound) -> repeat_view<_Tp, _Bound>;
+_CCCL_DEDUCTION_GUIDE_EXSPACE repeat_view(_Tp, _Bound) -> repeat_view<_Tp, _Bound>;
 
 _CCCL_END_NAMESPACE_CUDA_STD_RANGES
 

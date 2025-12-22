@@ -43,7 +43,7 @@ struct recursive_lambda
 };
 
 template <class Fn>
-recursive_lambda(Fn) -> recursive_lambda<Fn>;
+_CCCL_DEDUCTION_GUIDE_EXSPACE recursive_lambda(Fn) -> recursive_lambda<Fn>;
 
 C2H_TEST("sender visitation API works", "[visit]")
 {

@@ -483,7 +483,8 @@ public:
 };
 
 template <class _Range, class _Fn>
-_CCCL_HOST_DEVICE transform_view(_Range&&, _Fn) -> transform_view<::cuda::std::ranges::views::all_t<_Range>, _Fn>;
+_CCCL_DEDUCTION_GUIDE_EXSPACE transform_view(_Range&&, _Fn)
+  -> transform_view<::cuda::std::ranges::views::all_t<_Range>, _Fn>;
 
 _CCCL_END_NAMESPACE_CUDA_STD_RANGES
 

@@ -813,27 +813,30 @@ _CCCL_CTAD_SUPPORTED_FOR_TYPE(basic_string_view);
 
 _CCCL_TEMPLATE(class _It, class _End)
 _CCCL_REQUIRES(contiguous_iterator<_It> _CCCL_AND sized_sentinel_for<_End, _It>)
-_CCCL_HOST_DEVICE basic_string_view(_It, _End) -> basic_string_view<iter_value_t<_It>>;
+_CCCL_DEDUCTION_GUIDE_EXSPACE basic_string_view(_It, _End) -> basic_string_view<iter_value_t<_It>>;
 
 _CCCL_TEMPLATE(class _Range)
 _CCCL_REQUIRES(::cuda::std::ranges::contiguous_range<_Range>)
-_CCCL_HOST_DEVICE basic_string_view(_Range&&) -> basic_string_view<::cuda::std::ranges::range_value_t<_Range>>;
+_CCCL_DEDUCTION_GUIDE_EXSPACE basic_string_view(_Range&&)
+  -> basic_string_view<::cuda::std::ranges::range_value_t<_Range>>;
 
 #if !_CCCL_COMPILER(NVRTC)
 template <class _CharT, class _Alloc>
-_CCCL_HOST basic_string_view(::std::basic_string<_CharT, ::std::char_traits<_CharT>, _Alloc>)
+_CCCL_DEDUCTION_GUIDE_EXSPACE basic_string_view(::std::basic_string<_CharT, ::std::char_traits<_CharT>, _Alloc>)
   -> basic_string_view<_CharT>;
 
 template <class _CharT, class _Traits, class _Alloc>
-_CCCL_HOST basic_string_view(::std::basic_string<_CharT, _Traits, _Alloc>) -> basic_string_view<_CharT, _Traits>;
+_CCCL_DEDUCTION_GUIDE_EXSPACE basic_string_view(::std::basic_string<_CharT, _Traits, _Alloc>)
+  -> basic_string_view<_CharT, _Traits>;
 #endif // !_CCCL_COMPILER(NVRTC)
 
 #if __cpp_lib_string_view >= 201606L
 template <class _CharT>
-_CCCL_HOST basic_string_view(::std::basic_string_view<_CharT>) -> basic_string_view<_CharT>;
+_CCCL_DEDUCTION_GUIDE_EXSPACE basic_string_view(::std::basic_string_view<_CharT>) -> basic_string_view<_CharT>;
 
 template <class _CharT, class _Traits>
-_CCCL_HOST basic_string_view(::std::basic_string_view<_CharT, _Traits>) -> basic_string_view<_CharT, _Traits>;
+_CCCL_DEDUCTION_GUIDE_EXSPACE basic_string_view(::std::basic_string_view<_CharT, _Traits>)
+  -> basic_string_view<_CharT, _Traits>;
 #endif // __cpp_lib_string_view >= 201606L
 
 // operator <<
