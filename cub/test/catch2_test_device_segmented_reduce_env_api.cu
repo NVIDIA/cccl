@@ -9,7 +9,9 @@
 #include <thrust/device_vector.h>
 
 #include <cuda/__execution/determinism.h>
+#include <cuda/__execution/max_segment_size.h>
 #include <cuda/__execution/require.h>
+#include <cuda/std/__execution/env.h>
 
 #include <c2h/catch2_test_helper.h>
 
@@ -63,6 +65,68 @@ C2H_TEST("cub::DeviceSegmentedReduce::Sum accepts stream", "[segmented_reduce][e
     std::cerr << "cub::DeviceSegmentedReduce::Sum failed with status: " << error << std::endl;
   }
   // example-end segmented-reduce-reduce-sum-env-stream
+
+  REQUIRE(d_out == expected);
+  REQUIRE(error == cudaSuccess);
+}
+
+C2H_TEST("cub::DeviceSegmentedReduce::Sum accepts static max_segment_size guarantee and stream",
+         "[segmented_reduce][env]")
+{
+  // example-begin segmented-reduce-reduce-sum-env-static-max-segment-size-stream
+  int num_segments                     = 3;
+  thrust::device_vector<int> d_offsets = {0, 3, 3, 7};
+  auto d_offsets_it                    = thrust::raw_pointer_cast(d_offsets.data());
+  thrust::device_vector<int> d_in{8, 6, 7, 5, 3, 0, 9};
+  thrust::device_vector<int> d_out(3);
+
+  cudaStream_t legacy_stream = 0;
+  cuda::stream_ref stream_ref{legacy_stream};
+
+  auto g_env = cuda::execution::guarantee(cuda::execution::max_segment_size<10>{});
+  auto env   = ::cuda::std::execution::env{g_env, stream_ref};
+
+  auto error =
+    cub::DeviceSegmentedReduce::Sum(d_in.begin(), d_out.begin(), num_segments, d_offsets_it, d_offsets_it + 1, env);
+
+  thrust::device_vector<int> expected{21, 0, 17};
+
+  if (error != cudaSuccess)
+  {
+    std::cerr << "cub::DeviceSegmentedReduce::Sum failed with status: " << error << std::endl;
+  }
+  // example-end segmented-reduce-reduce-sum-env-static-max-segment-size-stream
+
+  REQUIRE(d_out == expected);
+  REQUIRE(error == cudaSuccess);
+}
+
+C2H_TEST("cub::DeviceSegmentedReduce::Sum accepts dynamic max_segment_size guarantee and stream",
+         "[segmented_reduce][env]")
+{
+  // example-begin segmented-reduce-reduce-sum-env-dynamic-max-segment-size-stream
+  int num_segments                     = 3;
+  thrust::device_vector<int> d_offsets = {0, 3, 3, 7};
+  auto d_offsets_it                    = thrust::raw_pointer_cast(d_offsets.data());
+  thrust::device_vector<int> d_in{8, 6, 7, 5, 3, 0, 9};
+  thrust::device_vector<int> d_out(3);
+
+  cudaStream_t legacy_stream = 0;
+  cuda::stream_ref stream_ref{legacy_stream};
+
+  auto g_env = cuda::execution::guarantee(cuda::execution::max_segment_size{10});
+  auto env   = ::cuda::std::execution::env{g_env, stream_ref};
+
+  auto error =
+    cub::DeviceSegmentedReduce::Sum(d_in.begin(), d_out.begin(), num_segments, d_offsets_it, d_offsets_it + 1, env);
+
+  thrust::device_vector<int> expected{21, 0, 17};
+
+  if (error != cudaSuccess)
+  {
+    std::cerr << "cub::DeviceSegmentedReduce::Sum failed with status: " << error << std::endl;
+  }
+  // example-end segmented-reduce-reduce-sum-env-dynamic-max-segment-size-stream
 
   REQUIRE(d_out == expected);
   REQUIRE(error == cudaSuccess);
