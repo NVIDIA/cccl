@@ -294,16 +294,16 @@ C2H_TEST("Different constructions", "[hierarchy]")
   cuda::block_dims<block_size>());
   static_assert(std::is_same_v<decltype(config), decltype(conf_weird_order)>);
 
-  static_assert(config.dims.count(cuda::gpu_thread, cuda::block) == block_size);
-  static_assert(config.dims.count(cuda::gpu_thread, cuda::cluster) == cluster_cnt *
-  block_size); static_assert(config.dims.count(cuda::block, cuda::cluster) ==
-  cluster_cnt); CCCLRT_REQUIRE(config.dims.count() == grid_size * cluster_cnt *
+  static_assert(config.hierarchy().count(cuda::gpu_thread, cuda::block) == block_size);
+  static_assert(config.hierarchy().count(cuda::gpu_thread, cuda::cluster) == cluster_cnt *
+  block_size); static_assert(config.hierarchy().count(cuda::block, cuda::cluster) ==
+  cluster_cnt); CCCLRT_REQUIRE(config.hierarchy().count() == grid_size * cluster_cnt *
   block_size);
 
-  static_assert(cuda::has_level_v<cuda::block_level, decltype(config.dims)>);
-  static_assert(cuda::has_level_v<cuda::cluster_level, decltype(config.dims)>);
-  static_assert(cuda::has_level_v<cuda::grid_level, decltype(config.dims)>);
-  static_assert(!cuda::has_level_v<cuda::thread_level, decltype(config.dims)>);
+  static_assert(cuda::has_level_v<cuda::block_level, decltype(config.hierarchy())>);
+  static_assert(cuda::has_level_v<cuda::cluster_level, decltype(config.hierarchy())>);
+  static_assert(cuda::has_level_v<cuda::grid_level, decltype(config.hierarchy())>);
+  static_assert(!cuda::has_level_v<cuda::thread_level, decltype(config.hierarchy())>);
   */
 }
 
@@ -572,8 +572,9 @@ C2H_TEST("cuda::distribute", "[hierarchy]")
   constexpr int threadsPerBlock = 256;
   auto config                   = cuda::distribute<threadsPerBlock>(numElements);
 
-  CCCLRT_REQUIRE(config.dims.count(cuda::gpu_thread, cuda::block) == 256);
-  CCCLRT_REQUIRE(config.dims.count(cuda::block, cuda::grid) == (numElements + threadsPerBlock - 1) / threadsPerBlock);
+  CCCLRT_REQUIRE(config.hierarchy().count(cuda::gpu_thread, cuda::block) == 256);
+  CCCLRT_REQUIRE(
+    config.hierarchy().count(cuda::block, cuda::grid) == (numElements + threadsPerBlock - 1) / threadsPerBlock);
 }
 
 C2H_TEST("hierarchy merge", "[hierarchy]")

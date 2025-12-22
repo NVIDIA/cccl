@@ -201,16 +201,17 @@ C2H_TEST("Launch configuration", "[launch]")
 C2H_TEST("Hierarchy construction in config", "[launch]")
 {
   auto config = cuda::make_config(cuda::grid_dims<2>(), cuda::cooperative_launch());
-  static_assert(config.dims.count(cuda::block) == 2);
+  static_assert(config.hierarchy().count(cuda::block) == 2);
 
   auto config_larger = cuda::make_config(cuda::grid_dims<2>(), cuda::block_dims(256), cuda::cooperative_launch());
-  CCCLRT_REQUIRE(config_larger.dims.count(cuda::gpu_thread) == 512);
+  CCCLRT_REQUIRE(config_larger.hierarchy().count(cuda::gpu_thread) == 512);
 
   auto config_no_options = cuda::make_config(cuda::grid_dims(2), cuda::block_dims<128>());
-  CCCLRT_REQUIRE(config_no_options.dims.count(cuda::gpu_thread) == 256);
+  CCCLRT_REQUIRE(config_no_options.hierarchy().count(cuda::gpu_thread) == 256);
 
   [[maybe_unused]] auto config_no_dims = cuda::make_config(cuda::cooperative_launch());
-  static_assert(cuda::std::is_same_v<decltype(config_no_dims.dims), cuda::__empty_hierarchy>);
+  static_assert(
+    cuda::std::is_same_v<::cuda::std::remove_cvref_t<decltype(config_no_dims.hierarchy())>, cuda::__empty_hierarchy>);
 }
 
 C2H_TEST("Configuration combine", "[launch]")
@@ -231,22 +232,70 @@ C2H_TEST("Configuration combine", "[launch]")
     static_assert(cuda::std::is_same_v<decltype(combined), decltype(combined_other_way)>);
     static_assert(cuda::std::is_same_v<decltype(combined), decltype(combined_with_empty)>);
     static_assert(cuda::std::is_same_v<decltype(combined), decltype(empty_with_combined)>);
-    CCCLRT_REQUIRE(combined.dims.count(cuda::gpu_thread) == 512);
+    CCCLRT_REQUIRE(combined.hierarchy().count(cuda::gpu_thread) == 512);
   }
   SECTION("Combine with overlap")
   {
     auto config_part1 = make_config(grid, cluster, cuda::launch_priority(2));
     auto config_part2 = make_config(cuda::cluster_dims<256>(), block, cuda::launch_priority(42));
     auto combined     = config_part1.combine(config_part2);
-    CCCLRT_REQUIRE(combined.dims.count(cuda::gpu_thread) == 2048);
-    CCCLRT_REQUIRE(cuda::std::get<0>(combined.options).priority == 2);
+    CCCLRT_REQUIRE(combined.hierarchy().count(cuda::gpu_thread) == 2048);
+    CCCLRT_REQUIRE(cuda::std::get<0>(combined.options()).priority == 2);
 
     auto replaced_one_option = cuda::make_config(cuda::launch_priority(3)).combine(combined);
-    CCCLRT_REQUIRE(replaced_one_option.dims.count(cuda::gpu_thread) == 2048);
-    CCCLRT_REQUIRE(cuda::std::get<0>(replaced_one_option.options).priority == 3);
+    CCCLRT_REQUIRE(replaced_one_option.hierarchy().count(cuda::gpu_thread) == 2048);
+    CCCLRT_REQUIRE(cuda::std::get<0>(replaced_one_option.options()).priority == 3);
 
     [[maybe_unused]] auto combined_with_extra_option = combined.combine(cuda::make_config(cuda::cooperative_launch()));
-    static_assert(cuda::std::is_same_v<decltype(combined.dims), decltype(combined_with_extra_option.dims)>);
-    static_assert(cuda::std::tuple_size_v<decltype(combined_with_extra_option.options)> == 2);
+    static_assert(
+      cuda::std::is_same_v<decltype(combined.hierarchy()), decltype(combined_with_extra_option.hierarchy())>);
+    static_assert(
+      cuda::std::tuple_size_v<::cuda::std::remove_cvref_t<decltype(combined_with_extra_option.options())>> == 2);
   }
 }
+
+#if !_CCCL_CUDA_COMPILER(CLANG)
+template <typename Config>
+__host__ __device__ void test_queries_on_config(const Config& config)
+{
+  CCCLRT_REQUIRE(cuda::gpu_thread.dims(cuda::grid, config) == dim3(1024));
+  {
+    auto dims = cuda::gpu_thread.dims_as<int>(cuda::grid, config);
+    CCCLRT_REQUIRE(dims.x == 1024);
+    CCCLRT_REQUIRE(dims.y == 1);
+    CCCLRT_REQUIRE(dims.z == 1);
+  }
+  CCCLRT_REQUIRE(cuda::gpu_thread.count(cuda::block, config) == 256);
+  CCCLRT_REQUIRE(cuda::gpu_thread.count_as<int>(cuda::block, config) == 256);
+  CCCLRT_REQUIRE(cuda::gpu_thread.count(cuda::grid, config) == 1024);
+  CCCLRT_REQUIRE(cuda::gpu_thread.count_as<int>(cuda::grid, config) == 1024);
+  CCCLRT_REQUIRE(cuda::block.extents(cuda::grid, config).extent(0) == 4);
+  CCCLRT_REQUIRE(cuda::block.extents_as<int>(cuda::grid, config).extent(0) == 4);
+  NV_IF_TARGET(
+    NV_IS_DEVICE,
+    (CCCLRT_REQUIRE(cuda::block.rank(cuda::grid, config) == blockIdx.x);
+     CCCLRT_REQUIRE(cuda::block.rank_as<int>(cuda::grid, config) == blockIdx.x);
+     CCCLRT_REQUIRE(cuda::gpu_thread.index(cuda::block, config) == threadIdx);
+     {
+       auto idx = cuda::gpu_thread.index_as<int>(cuda::block, config);
+       CCCLRT_REQUIRE(idx.x == static_cast<int>(threadIdx.x));
+       CCCLRT_REQUIRE(idx.y == static_cast<int>(threadIdx.y));
+       CCCLRT_REQUIRE(idx.z == static_cast<int>(threadIdx.z));
+     }));
+}
+
+template <typename Config>
+__global__ void test_kernel(Config config)
+{
+  test_queries_on_config(config);
+}
+
+C2H_TEST("Queries on config", "[launch]")
+{
+  auto config = cuda::make_config(cuda::grid_dims(4), cuda::block_dims<256>(), cuda::cooperative_launch());
+  test_queries_on_config(config);
+  test_kernel<<<4, 256>>>(config);
+  CUDART(cudaGetLastError());
+  CUDART(cudaDeviceSynchronize());
+}
+#endif // !_CCCL_CUDA_COMPILER(CLANG)

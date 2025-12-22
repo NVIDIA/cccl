@@ -133,7 +133,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT stream_scheduler
       // Read the launch configuration passed to us by the parent operation. When we launch
       // the completion kernel, we will be completing the parent's receiver, so we must let
       // the receiver tell us how to launch the kernel.
-      auto const __launch_dims      = get_launch_config(execution::get_env(__rcvr_)).dims;
+      auto const __launch_dims      = get_launch_config(execution::get_env(__rcvr_)).hierarchy();
       constexpr int __block_threads = decltype(__launch_dims)::static_count(cuda::gpu_thread, cuda::block);
       int const __grid_blocks       = __launch_dims.count(cuda::block, cuda::grid);
       static_assert(__block_threads != ::cuda::std::dynamic_extent);
@@ -152,7 +152,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT stream_scheduler
     // TODO: untested
     _CCCL_DEVICE_API void __device_start() noexcept
     {
-      using __launch_dims_t         = decltype(get_launch_config(execution::get_env(__rcvr_)).dims);
+      using __launch_dims_t         = typename decltype(get_launch_config(execution::get_env(__rcvr_)))::hierarchy_type;
       constexpr int __block_threads = __launch_dims_t::static_count(cuda::gpu_thread, cuda::block);
 
       // without the following, the kernel in __host_start will fail to launch with

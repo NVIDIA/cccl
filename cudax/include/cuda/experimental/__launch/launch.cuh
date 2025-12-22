@@ -106,10 +106,10 @@ namespace cuda::experimental
 template <typename... _ExpTypes, typename _Dst, typename _Config>
 _CCCL_HOST_API auto __launch_impl(_Dst&& __dst, _Config __conf, ::CUfunction __kernel, _ExpTypes... __args)
 {
-  static_assert(!::cuda::std::is_same_v<decltype(__conf.dims), no_init_t>,
+  static_assert(!::cuda::std::is_same_v<decltype(__conf.hierarchy()), no_init_t>,
                 "Can't launch a configuration without hierarchy dimensions");
   ::CUlaunchConfig __config{};
-  constexpr bool __has_cluster_level = has_level_v<cluster_level, decltype(__conf.dims)>;
+  constexpr bool __has_cluster_level = has_level_v<cluster_level, decltype(__conf.hierarchy())>;
   constexpr unsigned int __num_attrs_needed =
     ::cuda::__detail::kernel_config_count_attr_space(__conf) + __has_cluster_level;
   ::CUlaunchAttribute __attrs[__num_attrs_needed == 0 ? 1 : __num_attrs_needed];
@@ -122,20 +122,20 @@ _CCCL_HOST_API auto __launch_impl(_Dst&& __dst, _Config __conf, ::CUfunction __k
     ::cuda::__throw_cuda_error(__status, "Failed to prepare a launch configuration");
   }
 
-  __config.gridDimX  = static_cast<unsigned>(__conf.dims.extents(block, grid).x);
-  __config.gridDimY  = static_cast<unsigned>(__conf.dims.extents(block, grid).y);
-  __config.gridDimZ  = static_cast<unsigned>(__conf.dims.extents(block, grid).z);
-  __config.blockDimX = static_cast<unsigned>(__conf.dims.extents(gpu_thread, block).x);
-  __config.blockDimY = static_cast<unsigned>(__conf.dims.extents(gpu_thread, block).y);
-  __config.blockDimZ = static_cast<unsigned>(__conf.dims.extents(gpu_thread, block).z);
+  __config.gridDimX  = static_cast<unsigned>(__conf.hierarchy().extents(block, grid).x);
+  __config.gridDimY  = static_cast<unsigned>(__conf.hierarchy().extents(block, grid).y);
+  __config.gridDimZ  = static_cast<unsigned>(__conf.hierarchy().extents(block, grid).z);
+  __config.blockDimX = static_cast<unsigned>(__conf.hierarchy().extents(gpu_thread, block).x);
+  __config.blockDimY = static_cast<unsigned>(__conf.hierarchy().extents(gpu_thread, block).y);
+  __config.blockDimZ = static_cast<unsigned>(__conf.hierarchy().extents(gpu_thread, block).z);
 
   if constexpr (__has_cluster_level)
   {
     ::CUlaunchAttribute __cluster_dims_attr{};
     __cluster_dims_attr.id                 = ::CU_LAUNCH_ATTRIBUTE_CLUSTER_DIMENSION;
-    __cluster_dims_attr.value.clusterDim.x = static_cast<unsigned>(__conf.dims.extents(block, cluster).x);
-    __cluster_dims_attr.value.clusterDim.y = static_cast<unsigned>(__conf.dims.extents(block, cluster).y);
-    __cluster_dims_attr.value.clusterDim.z = static_cast<unsigned>(__conf.dims.extents(block, cluster).z);
+    __cluster_dims_attr.value.clusterDim.x = static_cast<unsigned>(__conf.hierarchy().extents(block, cluster).x);
+    __cluster_dims_attr.value.clusterDim.y = static_cast<unsigned>(__conf.hierarchy().extents(block, cluster).y);
+    __cluster_dims_attr.value.clusterDim.z = static_cast<unsigned>(__conf.hierarchy().extents(block, cluster).z);
     __config.attrs[__config.numAttrs++]    = __cluster_dims_attr;
   }
 
@@ -162,7 +162,7 @@ _CCCL_CONCEPT work_submitter =
 //!     template <typename Configuration>
 //!     __device__ void operator()(Configuration conf, unsigned int
 //!     thread_to_print) {
-//!         if (conf.dims.rank(cudax::thread, cudax::grid) == thread_to_print) {
+//!         if (conf.hierarchy().rank(cudax::thread, cudax::grid) == thread_to_print) {
 //!             printf("Hello from the GPU\n");
 //!         }
 //!     }
@@ -294,7 +294,7 @@ _CCCL_HOST_API auto launch(_Submitter&& __submitter,
 //!
 //! template <typename Configuration>
 //! __global__ void kernel(Configuration conf, unsigned int thread_to_print) {
-//!     if (conf.dims.rank(cudax::thread, cudax::grid) == thread_to_print) {
+//!     if (conf.hierarchy().rank(cudax::thread, cudax::grid) == thread_to_print) {
 //!         printf("Hello from the GPU\n");
 //!     }
 //! }
@@ -351,7 +351,7 @@ _CCCL_HOST_API auto launch(_Submitter&& __submitter,
 //!
 //! template <typename Configuration>
 //! __global__ void kernel(Configuration conf, unsigned int thread_to_print) {
-//!     if (conf.dims.rank(cudax::thread, cudax::grid) == thread_to_print) {
+//!     if (conf.hierarchy().rank(cudax::thread, cudax::grid) == thread_to_print) {
 //!         printf("Hello from the GPU\n");
 //!     }
 //! }
@@ -404,7 +404,7 @@ _CCCL_HOST_API auto launch(_Submitter&& __submitter,
 //!
 //! template <typename Configuration>
 //! __global__ void kernel(Configuration conf, unsigned int thread_to_print) {
-//!     if (conf.dims.rank(cudax::thread, cudax::grid) == thread_to_print) {
+//!     if (conf.hierarchy().rank(cudax::thread, cudax::grid) == thread_to_print) {
 //!         printf("Hello from the GPU\n");
 //!     }
 //! }
