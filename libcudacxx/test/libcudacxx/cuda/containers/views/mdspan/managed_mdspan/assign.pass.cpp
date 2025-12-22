@@ -10,6 +10,7 @@
 // <mdspan>
 
 // constexpr mdspan& operator=(const mdspan& rhs) = default;
+#define _CCCL_DISABLE_MDSPAN_ACCESSOR_DETECT_INVALIDITY
 
 #include <cuda/mdspan>
 #include <cuda/std/cassert>

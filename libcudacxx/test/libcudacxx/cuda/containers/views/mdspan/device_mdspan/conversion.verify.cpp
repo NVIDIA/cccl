@@ -36,6 +36,7 @@
 // Remarks: The expression inside explicit is equivalent to:
 //   !is_convertible_v<const OtherLayoutPolicy::template mapping<OtherExtents>&, mapping_type>
 //   || !is_convertible_v<const OtherAccessor&, accessor_type>
+#define _CCCL_DISABLE_MDSPAN_ACCESSOR_DETECT_INVALIDITY
 
 #include <cuda/mdspan>
 

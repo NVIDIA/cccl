@@ -16,6 +16,7 @@
 //   swap(x.map_, y.map_);
 //   swap(x.acc_, y.acc_);
 
+#define _CCCL_DISABLE_MDSPAN_ACCESSOR_DETECT_INVALIDITY
 #include <cuda/mdspan>
 #include <cuda/std/cassert>
 #include <cuda/std/concepts>

@@ -50,6 +50,7 @@
 //    - is_nothrow_swappable_v<MDS> is true.
 // A specialization of mdspan is a trivially copyable type if its accessor_type, mapping_type, and data_handle_type are
 // trivially copyable types.
+#define _CCCL_DISABLE_MDSPAN_ACCESSOR_DETECT_INVALIDITY
 
 #include <cuda/mdspan>
 #include <cuda/std/cassert>
