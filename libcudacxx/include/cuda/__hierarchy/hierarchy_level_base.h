@@ -90,7 +90,7 @@ __hierarchy_extents_mul(const ::cuda::std::extents<_Index, _LhsExts...>& __lhs,
     }
     else
     {
-      __ret[__i] = _Ret::static_extent(__i);
+      __ret[__i] = static_cast<_Index>(_Ret::static_extent(__i));
     }
   }
   return _Ret{__ret};
@@ -110,7 +110,7 @@ __hierarchy_extents_cast(::cuda::std::extents<_OrgIndex, _StaticExts...> __org_e
     }
     else
     {
-      __ret[__i] = _OrgExts::static_extent(__i);
+      __ret[__i] = static_cast<_Index>(_OrgExts::static_extent(__i));
     }
   }
   return ::cuda::std::extents<_Index, _StaticExts...>{__ret};
@@ -185,18 +185,18 @@ struct hierarchy_level_base
                    __is_hierarchy_v<_Hierarchy>)
   [[nodiscard]] _CCCL_API static constexpr auto extents_as(const _InLevel& __in_level, const _Hierarchy& __hier) noexcept
   {
-    static_assert(has_unit_or_level_v<_Level, _Hierarchy>, "_Hierarchy doesn't contain _Level");
-    static_assert(has_level_v<_InLevel, _Hierarchy>, "_Hierarchy doesn't contain _InLevel");
+    static_assert(__has_bottom_unit_or_level_v<_Level, _Hierarchy>, "_Hierarchy doesn't contain _Level");
+    static_assert(_Hierarchy::template has_level<_InLevel>(), "_Hierarchy doesn't contain _InLevel");
 
     using _NextLevel = __next_hierarchy_level_t<_Level, _Hierarchy>;
-    using _CurrExts  = decltype(::cuda::__hierarchy_extents_cast<_Tp>(__hier.level(_NextLevel{}).dims));
+    using _CurrExts  = decltype(::cuda::__hierarchy_extents_cast<_Tp>(__hier.level(_NextLevel{}).extents()));
 
     // Remove dependency on runtime storage. This makes the queries work for hierarchy levels with all static extents
     // in constant evaluated context.
     _CurrExts __curr_exts{};
     if constexpr (_CurrExts::rank_dynamic() > 0)
     {
-      __curr_exts = ::cuda::__hierarchy_extents_cast<_Tp>(__hier.level(_NextLevel{}).dims);
+      __curr_exts = ::cuda::__hierarchy_extents_cast<_Tp>(__hier.level(_NextLevel{}).extents());
     }
 
     if constexpr (!::cuda::std::is_same_v<_NextLevel, _InLevel>)
@@ -225,8 +225,8 @@ struct hierarchy_level_base
   [[nodiscard]] _CCCL_DEVICE_API static constexpr auto
   index_as(const _InLevel& __level, const _Hierarchy& __hier) noexcept
   {
-    static_assert(has_unit_or_level_v<_Level, _Hierarchy>, "_Hierarchy doesn't contain _Level");
-    static_assert(has_level_v<_InLevel, _Hierarchy>, "_Hierarchy doesn't contain _InLevel");
+    static_assert(__has_bottom_unit_or_level_v<_Level, _Hierarchy>, "_Hierarchy doesn't contain _Level");
+    static_assert(_Hierarchy::template has_level<_InLevel>(), "_Hierarchy doesn't contain _InLevel");
 
     using _NextLevel = __next_hierarchy_level_t<_Level, _Hierarchy>;
     if constexpr (::cuda::std::is_same_v<_InLevel, _NextLevel>)
@@ -260,8 +260,8 @@ struct hierarchy_level_base
   [[nodiscard]] _CCCL_DEVICE_API static constexpr auto
   rank_as(const _InLevel& __level, const _Hierarchy& __hier) noexcept
   {
-    static_assert(has_unit_or_level_v<_Level, _Hierarchy>, "_Hierarchy doesn't contain _Level");
-    static_assert(has_level_v<_InLevel, _Hierarchy>, "_Hierarchy doesn't contain _InLevel");
+    static_assert(__has_bottom_unit_or_level_v<_Level, _Hierarchy>, "_Hierarchy doesn't contain _Level");
+    static_assert(_Hierarchy::template has_level<_InLevel>(), "_Hierarchy doesn't contain _InLevel");
 
     using _NextLevel = __next_hierarchy_level_t<_Level, _Hierarchy>;
 

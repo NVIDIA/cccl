@@ -63,52 +63,33 @@ inline constexpr bool __is_natively_reachable_hierarchy_level_v<
 
 // __level_type_of
 
-template <class _Level>
-using __level_type_of = typename _Level::level_type;
+template <class _LevelDesc>
+using __level_type_of = typename _LevelDesc::level_type;
 
-// has_unit_v
-
-template <class _QueryLevel, class _Hierarchy>
-inline constexpr bool __has_unit_helper_v = false;
-template <class _QueryLevel, class... _Levels>
-inline constexpr bool __has_unit_helper_v<_QueryLevel, hierarchy_dimensions<_QueryLevel, _Levels...>> = true;
-
-// has_level_v
+// __has_bottom_unit_or_level_v
 
 template <class _QueryLevel, class _Hierarchy>
-inline constexpr bool __has_level_helper_v = false;
-template <class _QueryLevel, class _Unit, class... _Levels>
-inline constexpr bool __has_level_helper_v<_QueryLevel, hierarchy_dimensions<_Unit, _Levels...>> =
-  (::cuda::std::is_same_v<_QueryLevel, typename _Levels::level_type> || ...);
-
-template <class _QueryLevel, class _Hierarchy>
-inline constexpr bool has_level_v = __has_level_helper_v<_QueryLevel, ::cuda::std::remove_cvref_t<_Hierarchy>>;
-
-template <class _QueryLevel, class _Hierarchy>
-inline constexpr bool has_unit_v = __has_unit_helper_v<_QueryLevel, ::cuda::std::remove_cvref_t<_Hierarchy>>;
-
-// has_unit_or_level_v
-
-template <class _QueryLevel, class _Hierarchy>
-inline constexpr bool has_unit_or_level_v = has_unit_v<_QueryLevel, _Hierarchy> || has_level_v<_QueryLevel, _Hierarchy>;
+inline constexpr bool __has_bottom_unit_or_level_v =
+  ::cuda::std::is_same_v<_QueryLevel, typename _Hierarchy::bottom_unit_type>
+  || _Hierarchy::template has_level<_QueryLevel>();
 
 // __next_hierarchy_level
 
 template <class _Level, class _Hierarchy>
 struct __next_hierarchy_level;
 
-template <class _Level, class _BottomUnit, class... _Levels>
-struct __next_hierarchy_level<_Level, hierarchy_dimensions<_BottomUnit, _Levels...>>
+template <class _Level, class _BottomUnit, class... _LevelDescs>
+struct __next_hierarchy_level<_Level, hierarchy<_BottomUnit, _LevelDescs...>>
 {
   static constexpr ::cuda::std::size_t __level_idx =
-    ::cuda::std::__find_exactly_one_t<_Level, typename _Levels::level_type...>::value;
-  using __type = ::cuda::std::__type_index_c<__level_idx - 1, typename _Levels::level_type...>;
+    hierarchy<_BottomUnit, _LevelDescs...>::template __level_idx<_Level>;
+  using __type = ::cuda::std::__type_index_c<__level_idx - 1, typename _LevelDescs::level_type...>;
 };
 
-template <class _Level, class... _Levels>
-struct __next_hierarchy_level<_Level, hierarchy_dimensions<_Level, _Levels...>>
+template <class _Level, class... _LevelDescs>
+struct __next_hierarchy_level<_Level, hierarchy<_Level, _LevelDescs...>>
 {
-  using __type = ::cuda::std::__type_index_c<(sizeof...(_Levels) - 1), typename _Levels::level_type...>;
+  using __type = ::cuda::std::__type_index_c<(sizeof...(_LevelDescs) - 1), typename _LevelDescs::level_type...>;
 };
 
 template <class _Level, class _Hierarchy>
