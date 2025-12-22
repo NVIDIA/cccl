@@ -522,7 +522,7 @@ template <typename Hierarchy, typename... Options>
 struct kernel_config
 {
   using hierarchy_type = Hierarchy;
-  using options_type = ::cuda::std::tuple<Options...>;
+  using options_type   = ::cuda::std::tuple<Options...>;
 
   static_assert(::cuda::std::_And<::cuda::std::is_base_of<__detail::launch_option, Options>...>::value);
   static_assert(__detail::no_duplicate_options<Options...>);
