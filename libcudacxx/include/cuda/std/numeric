@@ -22,15 +22,20 @@
 #endif // no system header
 
 #include <cuda/std/__numeric/accumulate.h>
+#include <cuda/std/__numeric/add_sat.h>
 #include <cuda/std/__numeric/adjacent_difference.h>
+#include <cuda/std/__numeric/div_sat.h>
 #include <cuda/std/__numeric/exclusive_scan.h>
 #include <cuda/std/__numeric/gcd_lcm.h>
 #include <cuda/std/__numeric/inclusive_scan.h>
 #include <cuda/std/__numeric/inner_product.h>
 #include <cuda/std/__numeric/iota.h>
 #include <cuda/std/__numeric/midpoint.h>
+#include <cuda/std/__numeric/mul_sat.h>
 #include <cuda/std/__numeric/partial_sum.h>
 #include <cuda/std/__numeric/reduce.h>
+#include <cuda/std/__numeric/saturate_cast.h>
+#include <cuda/std/__numeric/sub_sat.h>
 #include <cuda/std/__numeric/transform_exclusive_scan.h>
 #include <cuda/std/__numeric/transform_inclusive_scan.h>
 #include <cuda/std/__numeric/transform_reduce.h>
