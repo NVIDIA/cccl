@@ -143,24 +143,31 @@
 #  define CCCL_DISABLE_CDP
 #endif // _CCCL_DOXYGEN_INVOKED
 
+#if defined(__CUDACC_RDC__)
+#  define _CCCL_HAS_RDC()     1
+#  define _CCCL_DEVICE_IF_RDC _CCCL_DEVICE
+#else // ^^^ __CUDACC_RDC__ ^^^ / vvv !__CUDACC_RDC__ vvv
+#  define _CCCL_HAS_RDC() 0
+#  define _CCCL_DEVICE_IF_RDC
+#endif // ^^^ !__CUDACC_RDC__ ^^^
+
 // Some functions can be called from host or device code and launch kernels inside. Thus, they use CUDA Dynamic
 // Parallelism (CDP) and require compiling with Relocatable Device Code (RDC).
 // TODO(bgruber): remove CUB_DISABLE_CDP in CCCL 4.0
-#if defined(__CUDACC_RDC__) && !defined(CCCL_DISABLE_CDP) && !defined(CUB_DISABLE_CDP)
-#  define _CCCL_HAS_RDC() 1
-// We have RDC, so host and device APIs can call kernels
-#  define _CCCL_CDP_API _CCCL_API
-#else // defined(__CUDACC_RDC__) && !defined(CCCL_DISABLE_CDP) && !defined(CUB_DISABLE_CDP)
-#  define _CCCL_HAS_RDC() 0
-// We don't have RDC, only host APIs can call kernels
+#if _CCCL_HAS_RDC() && !defined(CCCL_DISABLE_CDP) && !defined(CUB_DISABLE_CDP)
+#  define _CCCL_HAS_CDP() 1
+#  define _CCCL_CDP_API   _CCCL_API
+#else // ^^^ _CCCL_HAS_RDC() && !CCCL_DISABLE_CDP && !CUB_DISABLE_CDP ^^^ /
+      // vvv !_CCCL_HAS_RDC() || CCCL_DISABLE_CDP || CUB_DISABLE_CDP vvv
+#  define _CCCL_HAS_CDP() 0
 #  define _CCCL_CDP_API   _CCCL_HOST_API
-#endif // defined(__CUDACC_RDC__) && !defined(CCCL_DISABLE_CDP) && !defined(CUB_DISABLE_CDP)
+#endif // ^^^ !_CCCL_HAS_RDC() || CCCL_DISABLE_CDP || CUB_DISABLE_CDP ^^^
 
-#if _CCCL_HAS_RDC()
+#if _CCCL_HAS_CDP()
 #  ifdef CUDA_FORCE_CDP1_IF_SUPPORTED
 #    error "CUDA Dynamic Parallelism 1 is no longer supported. Please undefine CUDA_FORCE_CDP1_IF_SUPPORTED."
 #  endif // CUDA_FORCE_CDP1_IF_SUPPORTED
-#endif // _CCCL_HAS_RDC()
+#endif // _CCCL_HAS_CDP()
 
 //! _LIBCUDACXX_HIDE_FROM_ABI is for backwards compatibility for external projects.
 //! _CCCL_API and its variants are the preferred way to declare functions

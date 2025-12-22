@@ -125,3 +125,5 @@ extern "C" __global__ void main_kernel() {
     fake_main(0, nullptr);
 }
 )program";
+
+extern std::vector<std::string> link_libraries;

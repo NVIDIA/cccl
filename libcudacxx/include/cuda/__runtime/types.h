@@ -34,8 +34,8 @@ inline constexpr memory_location host_memory_location = {::cudaMemLocationTypeHo
 
 _CCCL_END_NAMESPACE_CUDA
 
-#endif // _CCCL_HAS_CTK() && !_CCCL_COMPILER(NVRTC)
+#  include <cuda/std/__cccl/epilogue.h>
 
-#include <cuda/std/__cccl/epilogue.h>
+#endif // _CCCL_HAS_CTK() && !_CCCL_COMPILER(NVRTC)
 
 #endif // __CUDA___RUNTIME_TYPES_H
