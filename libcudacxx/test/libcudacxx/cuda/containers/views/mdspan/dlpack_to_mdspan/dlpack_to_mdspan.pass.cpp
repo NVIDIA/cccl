@@ -656,7 +656,6 @@ bool test_return_types()
     cuda::std::is_same_v<decltype(host_ms_right),
                          cuda::host_mdspan<float, cuda::std::dextents<int64_t, 1>, cuda::std::layout_right>>);
   assert(host_ms_right.extent(0) == 4);
-
   return true;
 }
 
@@ -665,12 +664,12 @@ int main(int, char**)
   NV_IF_TARGET(
     NV_IS_HOST,
     (assert(test_rank0()); //
+     assert(test_empty_tensor());
      assert(test_rank1());
      assert(test_rank2_layout_right());
      assert(test_rank2_layout_left());
      assert(test_rank2_layout_stride());
      assert(test_byte_offset());
-     assert(test_empty_tensor());
      assert(test_return_types());
      assert(test_exceptions());))
 #if !(DLPACK_MAJOR_VERSION > 1 || (DLPACK_MAJOR_VERSION == 1 && DLPACK_MINOR_VERSION >= 2))
