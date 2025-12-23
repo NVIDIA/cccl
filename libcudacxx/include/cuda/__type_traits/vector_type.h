@@ -24,7 +24,6 @@
 #if _CCCL_HAS_CTK()
 
 #  include <cuda/std/__cstddef/types.h>
-#  include <cuda/std/__type_traits/always_false.h>
 #  include <cuda/std/__type_traits/is_same.h>
 
 #  if !_CCCL_CUDA_COMPILATION()
@@ -346,10 +345,200 @@ using __vector_type_t = decltype(::cuda::__cccl_vector_type_t_impl<_Tp, _Size>()
 template <class _Tp, ::cuda::std::size_t _Size>
 inline constexpr bool __has_vector_type_v = !::cuda::std::is_same_v<__vector_type_t<_Tp, _Size>, void>;
 
+template <class _Tp>
+inline constexpr bool __is_vector_type_v = false;
+
+template <>
+inline constexpr bool __is_vector_type_v<::char1> = true;
+template <>
+inline constexpr bool __is_vector_type_v<::char2> = true;
+template <>
+inline constexpr bool __is_vector_type_v<::char3> = true;
+template <>
+inline constexpr bool __is_vector_type_v<::char4> = true;
+
+template <>
+inline constexpr bool __is_vector_type_v<::uchar1> = true;
+template <>
+inline constexpr bool __is_vector_type_v<::uchar2> = true;
+template <>
+inline constexpr bool __is_vector_type_v<::uchar3> = true;
+template <>
+inline constexpr bool __is_vector_type_v<::uchar4> = true;
+
+template <>
+inline constexpr bool __is_vector_type_v<::short1> = true;
+template <>
+inline constexpr bool __is_vector_type_v<::short2> = true;
+template <>
+inline constexpr bool __is_vector_type_v<::short3> = true;
+template <>
+inline constexpr bool __is_vector_type_v<::short4> = true;
+
+template <>
+inline constexpr bool __is_vector_type_v<::ushort1> = true;
+template <>
+inline constexpr bool __is_vector_type_v<::ushort2> = true;
+template <>
+inline constexpr bool __is_vector_type_v<::ushort3> = true;
+template <>
+inline constexpr bool __is_vector_type_v<::ushort4> = true;
+
+template <>
+inline constexpr bool __is_vector_type_v<::int1> = true;
+template <>
+inline constexpr bool __is_vector_type_v<::int2> = true;
+template <>
+inline constexpr bool __is_vector_type_v<::int3> = true;
+template <>
+inline constexpr bool __is_vector_type_v<::int4> = true;
+
+template <>
+inline constexpr bool __is_vector_type_v<::uint1> = true;
+template <>
+inline constexpr bool __is_vector_type_v<::uint2> = true;
+template <>
+inline constexpr bool __is_vector_type_v<::uint3> = true;
+template <>
+inline constexpr bool __is_vector_type_v<::uint4> = true;
+
+template <>
+inline constexpr bool __is_vector_type_v<::long1> = true;
+template <>
+inline constexpr bool __is_vector_type_v<::long2> = true;
+template <>
+inline constexpr bool __is_vector_type_v<::long3> = true;
+#  if _CCCL_CTK_AT_LEAST(13, 0)
+template <>
+inline constexpr bool __is_vector_type_v<::long4_16a> = true;
+template <>
+inline constexpr bool __is_vector_type_v<::long4_32a> = true;
+#  else // ^^^ _CCCL_CTK_AT_LEAST(13, 0) ^^^ / vvv _CCCL_CTK_BELOW(13, 0) vvv
+template <>
+inline constexpr bool __is_vector_type_v<::long4> = true;
+#  endif // ^^^ _CCCL_CTK_BELOW(13, 0) ^^^
+
+template <>
+inline constexpr bool __is_vector_type_v<::ulong1> = true;
+template <>
+inline constexpr bool __is_vector_type_v<::ulong2> = true;
+template <>
+inline constexpr bool __is_vector_type_v<::ulong3> = true;
+#  if _CCCL_CTK_AT_LEAST(13, 0)
+template <>
+inline constexpr bool __is_vector_type_v<::ulong4_16a> = true;
+template <>
+inline constexpr bool __is_vector_type_v<::ulong4_32a> = true;
+#  else // ^^^ _CCCL_CTK_AT_LEAST(13, 0) ^^^ / vvv _CCCL_CTK_BELOW(13, 0) vvv
+template <>
+inline constexpr bool __is_vector_type_v<::ulong4> = true;
+#  endif // ^^^ _CCCL_CTK_BELOW(13, 0) ^^^
+
+template <>
+inline constexpr bool __is_vector_type_v<::longlong1> = true;
+template <>
+inline constexpr bool __is_vector_type_v<::longlong2> = true;
+template <>
+inline constexpr bool __is_vector_type_v<::longlong3> = true;
+#  if _CCCL_CTK_AT_LEAST(13, 0)
+template <>
+inline constexpr bool __is_vector_type_v<::longlong4_16a> = true;
+template <>
+inline constexpr bool __is_vector_type_v<::longlong4_32a> = true;
+#  else // ^^^ _CCCL_CTK_AT_LEAST(13, 0) ^^^ / vvv _CCCL_CTK_BELOW(13, 0) vvv
+template <>
+inline constexpr bool __is_vector_type_v<::longlong4> = true;
+#  endif // ^^^ _CCCL_CTK_BELOW(13, 0) ^^^
+
+template <>
+inline constexpr bool __is_vector_type_v<::ulonglong1> = true;
+template <>
+inline constexpr bool __is_vector_type_v<::ulonglong2> = true;
+template <>
+inline constexpr bool __is_vector_type_v<::ulonglong3> = true;
+#  if _CCCL_CTK_AT_LEAST(13, 0)
+template <>
+inline constexpr bool __is_vector_type_v<::ulonglong4_16a> = true;
+template <>
+inline constexpr bool __is_vector_type_v<::ulonglong4_32a> = true;
+#  else // ^^^ _CCCL_CTK_AT_LEAST(13, 0) ^^^ / vvv _CCCL_CTK_BELOW(13, 0) vvv
+template <>
+inline constexpr bool __is_vector_type_v<::ulonglong4> = true;
+#  endif // ^^^ _CCCL_CTK_BELOW(13, 0) ^^^
+
+template <>
+inline constexpr bool __is_vector_type_v<::float1> = true;
+template <>
+inline constexpr bool __is_vector_type_v<::float2> = true;
+template <>
+inline constexpr bool __is_vector_type_v<::float3> = true;
+template <>
+inline constexpr bool __is_vector_type_v<::float4> = true;
+
+template <>
+inline constexpr bool __is_vector_type_v<::double1> = true;
+template <>
+inline constexpr bool __is_vector_type_v<::double2> = true;
+template <>
+inline constexpr bool __is_vector_type_v<::double3> = true;
+#  if _CCCL_CTK_AT_LEAST(13, 0)
+template <>
+inline constexpr bool __is_vector_type_v<::double4_16a> = true;
+template <>
+inline constexpr bool __is_vector_type_v<::double4_32a> = true;
+#  else // ^^^ _CCCL_CTK_AT_LEAST(13, 0) ^^^ / vvv _CCCL_CTK_BELOW(13, 0) vvv
+template <>
+inline constexpr bool __is_vector_type_v<::double4> = true;
+#  endif // ^^^ _CCCL_CTK_BELOW(13, 0) ^^^
+
+template <>
+inline constexpr bool __is_vector_type_v<::dim3> = true;
+
+template <typename _Tp>
+inline constexpr bool __is_extended_fp_vector_type_v = false;
+
+#  if _CCCL_HAS_NVFP8()
+template <>
+inline constexpr bool __is_extended_fp_vector_type_v<::__nv_bfloat162> = true;
+template <>
+inline constexpr bool __is_extended_fp_vector_type_v<::__half2> = true;
+template <>
+inline constexpr bool __is_extended_fp_vector_type_v<::__nv_fp8x2_e4m3> = true;
+template <>
+inline constexpr bool __is_extended_fp_vector_type_v<::__nv_fp8x2_e5m2> = true;
+template <>
+inline constexpr bool __is_extended_fp_vector_type_v<::__nv_fp8x4_e4m3> = true;
+template <>
+inline constexpr bool __is_extended_fp_vector_type_v<::__nv_fp8x4_e5m2> = true;
+#    if _CCCL_CTK_AT_LEAST(12, 8)
+template <>
+inline constexpr bool __is_extended_fp_vector_type_v<::__nv_fp8x2_e8m0> = true;
+template <>
+inline constexpr bool __is_extended_fp_vector_type_v<::__nv_fp8x4_e8m0> = true;
+#    endif // _CCCL_CTK_AT_LEAST(12, 8)
+#  endif // _CCCL_HAS_NVFP8()
+
+#  if _CCCL_HAS_NVFP6()
+template <>
+inline constexpr bool __is_extended_fp_vector_type_v<::__nv_fp6x2_e2m3> = true;
+template <>
+inline constexpr bool __is_extended_fp_vector_type_v<::__nv_fp6x2_e3m2> = true;
+template <>
+inline constexpr bool __is_extended_fp_vector_type_v<::__nv_fp6x4_e2m3> = true;
+template <>
+inline constexpr bool __is_extended_fp_vector_type_v<::__nv_fp6x4_e3m2> = true;
+#  endif // _CCCL_HAS_NVFP6()
+
+#  if _CCCL_HAS_NVFP4()
+template <>
+inline constexpr bool __is_extended_fp_vector_type_v<::__nv_fp4x2_e2m1> = true;
+template <>
+inline constexpr bool __is_extended_fp_vector_type_v<::__nv_fp4x4_e2m1> = true;
+#  endif // _CCCL_HAS_NVFP4()
+
 _CCCL_END_NAMESPACE_CUDA
 
 #  include <cuda/std/__cccl/epilogue.h>
 
 #endif // !_CCCL_HAS_CTK()
-
 #endif // _CUDA__TYPE_TRAITS_VECTOR_TYPE_H
