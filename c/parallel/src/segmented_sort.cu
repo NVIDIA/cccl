@@ -10,7 +10,7 @@
 
 #include <cub/detail/choose_offset.cuh> // cub::detail::choose_offset_t
 #include <cub/detail/launcher/cuda_driver.cuh> // cub::detail::CudaDriverLauncherFactory
-#include <cub/detail/ptx-json-parser.h>
+#include <cub/detail/ptx-json-parser.cuh>
 #include <cub/device/dispatch/dispatch_segmented_sort.cuh> // cub::DispatchSegmentedSort
 #include <cub/device/dispatch/kernels/kernel_segmented_sort.cuh> // DeviceSegmentedSort kernels
 #include <cub/device/dispatch/tuning/tuning_segmented_sort.cuh> // policy_hub
@@ -664,7 +664,7 @@ struct __align__({4}) items_storage_t {{
 using device_segmented_sort_policy = {11}::MaxPolicy;
 using device_three_way_partition_policy = {12}::MaxPolicy;
 
-#include <cub/detail/ptx-json/json.h>
+#include <cub/detail/ptx-json/json.cuh>
 __device__ consteval auto& segmented_sort_policy_generator() {{
   return ptx_json::id<ptx_json::string("device_segmented_sort_policy")>()
     = cub::detail::segmented_sort::SegmentedSortPolicyWrapper<device_segmented_sort_policy::ActivePolicy>::EncodedPolicy();

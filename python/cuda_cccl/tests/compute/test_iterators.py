@@ -60,11 +60,14 @@ def test_equality_transform_iterator():
         return x
 
     it = CountingIterator(np.int32(0))
+    it = CountingIterator(np.int32(1))
     it1 = TransformIterator(it, op1)
     it2 = TransformIterator(it, op1)
     it3 = TransformIterator(it, op3)
 
-    assert it1.kind == it2.kind == it3.kind
+    assert it1.kind == it2.kind
+    # op3 has a different name than op1, so should have a different kind
+    assert it1.kind != it3.kind
 
     ary1 = cp.asarray([0, 1, 2])
     ary2 = cp.asarray([3, 4, 5])
@@ -74,8 +77,11 @@ def test_equality_transform_iterator():
     it7 = TransformIterator(ary1, op3)
     it8 = TransformIterator(ary2, op1)
 
-    assert it4.kind == it5.kind == it7.kind == it8.kind
+    assert it4.kind == it5.kind == it8.kind
+    # op2 has different bytecode, so should have a different kind
     assert it4.kind != it6.kind
+    # op3 has a different name than op1, so should have a different kind
+    assert it4.kind != it7.kind
 
 
 @pytest.fixture(

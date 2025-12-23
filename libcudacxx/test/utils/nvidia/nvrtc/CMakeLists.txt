@@ -1,7 +1,6 @@
-project(nvrtcc)
+project(nvrtcc CUDA)
 
-enable_language(CUDA)
-find_package(CUDAToolkit REQUIRED)
+cccl_get_cudatoolkit()
 
 add_executable(libcudacxx.nvrtcc nvrtcc.cpp)
 

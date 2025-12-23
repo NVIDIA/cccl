@@ -26,6 +26,10 @@
 #include <cuda/std/__functional/operations.h>
 #include <cuda/std/__type_traits/conditional.h>
 
+#if !_CCCL_COMPILER(NVRTC)
+#  include <ostream>
+#endif // !_CCCL_COMPILER(NVRTC)
+
 CUB_NAMESPACE_BEGIN
 
 /******************************************************************************
@@ -98,6 +102,23 @@ enum BlockScanAlgorithm
   //! @endrst
   BLOCK_SCAN_WARP_SCANS,
 };
+
+#if !_CCCL_COMPILER(NVRTC)
+inline ::std::ostream& operator<<(::std::ostream& os, BlockScanAlgorithm algo)
+{
+  switch (algo)
+  {
+    case BLOCK_SCAN_RAKING:
+      return os << "BLOCK_SCAN_RAKING";
+    case BLOCK_SCAN_RAKING_MEMOIZE:
+      return os << "BLOCK_SCAN_RAKING_MEMOIZE";
+    case BLOCK_SCAN_WARP_SCANS:
+      return os << "BLOCK_SCAN_WARP_SCANS";
+    default:
+      return os << "<unknown BlockScanAlgorithm: " << static_cast<int>(algo) << ">";
+  }
+}
+#endif // !_CCCL_COMPILER(NVRTC)
 
 //! @rst
 //! The BlockScan class provides :ref:`collective <collective-primitives>` methods for computing a parallel prefix

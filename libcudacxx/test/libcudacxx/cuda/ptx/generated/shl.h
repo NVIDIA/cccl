@@ -21,7 +21,7 @@ __global__ void test_shl(void** fn_ptr)
                (
                    // shl.b16 dest, a_reg, b_reg;
                    * fn_ptr++ = reinterpret_cast<void*>(
-                     static_cast<int16_t (*)(cuda::std::int16_t, cuda::std::uint32_t)>(cuda::ptx::shl));));
+                     static_cast<cuda::std::int16_t (*)(cuda::std::int16_t, cuda::std::uint32_t)>(cuda::ptx::shl));));
 #endif // __cccl_ptx_isa >= 100
 
 #if __cccl_ptx_isa >= 100
@@ -29,7 +29,7 @@ __global__ void test_shl(void** fn_ptr)
                (
                    // shl.b32 dest, a_reg, b_reg;
                    * fn_ptr++ = reinterpret_cast<void*>(
-                     static_cast<int32_t (*)(cuda::std::int32_t, cuda::std::uint32_t)>(cuda::ptx::shl));));
+                     static_cast<cuda::std::int32_t (*)(cuda::std::int32_t, cuda::std::uint32_t)>(cuda::ptx::shl));));
 #endif // __cccl_ptx_isa >= 100
 
 #if __cccl_ptx_isa >= 100
@@ -37,6 +37,6 @@ __global__ void test_shl(void** fn_ptr)
                (
                    // shl.b64 dest, a_reg, b_reg;
                    * fn_ptr++ = reinterpret_cast<void*>(
-                     static_cast<int64_t (*)(cuda::std::int64_t, cuda::std::uint32_t)>(cuda::ptx::shl));));
+                     static_cast<cuda::std::int64_t (*)(cuda::std::int64_t, cuda::std::uint32_t)>(cuda::ptx::shl));));
 #endif // __cccl_ptx_isa >= 100
 }

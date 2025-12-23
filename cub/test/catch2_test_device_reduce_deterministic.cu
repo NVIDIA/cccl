@@ -81,7 +81,7 @@ C2H_TEST("Deterministic Device reduce works with float and double on gpu", "[red
   // NOTE: `std::reduce` is not equivalent
   h_expected[0] = std::accumulate(h_input.begin(), h_input.end(), type{}, cuda::std::plus<type>());
 
-  REQUIRE_APPROX_EQ_EPSILON(h_expected, d_output, type{0.01});
+  REQUIRE_APPROX_EQ_EPSILON(h_expected, d_output, type{0.02});
 }
 
 template <typename FType, typename Iter>

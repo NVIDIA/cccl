@@ -118,10 +118,13 @@ CUB_RUNTIME_FUNCTION static cudaError_t dispatch_topk_hub(
 //! DeviceTopK can process all of the built-in C++ numeric primitive types (`unsigned char`, `int`, `double`, etc.) as
 //! well as CUDA's `__half`  and `__nv_bfloat16` 16-bit floating-point types.
 //!
-//! Stability
+//! Determinism
 //! ++++++++++++++++++++++++++
 //!
-//! DeviceTopK currently only provides an unstable version.
+//! DeviceTopK currently only supports unordered output, which may be non-deterministic for certain inputs.
+//! That is, if there are multiple items across the k-th position that compare equal, the subset of tied elements that
+//! ends up in the returned top‑k is not uniquely defined and may vary between runs. This behavior has to be explicitly
+//! acknowledged by the user by passing `cuda::execution::determinism::not_guaranteed`.
 //!
 //! Usage Considerations
 //! ++++++++++++++++++++++++++

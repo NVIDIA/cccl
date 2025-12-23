@@ -61,7 +61,7 @@
 // Debuggers do not step into functions marked with __attribute__((__artificial__)). This
 // is useful for small wrapper functions that just dispatch to other functions and that
 // are inlined into the caller.
-#if _CCCL_HAS_ATTRIBUTE(__artificial__) && !_CCCL_HAS_CUDA_COMPILER()
+#if _CCCL_HAS_ATTRIBUTE(__artificial__) && !_CCCL_CUDA_COMPILER(NVCC)
 #  define _CCCL_ARTIFICIAL __attribute__((__artificial__))
 #else // ^^^ _CCCL_HAS_ATTRIBUTE(__artificial__) ^^^ / vvv !_CCCL_HAS_ATTRIBUTE(__artificial__) vvv
 #  define _CCCL_ARTIFICIAL

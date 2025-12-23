@@ -25,6 +25,7 @@
 #include <cuda/__fwd/devices.h>
 #include <cuda/std/__type_traits/always_false.h>
 #include <cuda/std/__utility/to_underlying.h>
+#include <cuda/std/array>
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -37,6 +38,7 @@ enum class arch_id : int
 {
   sm_60   = 60,
   sm_61   = 61,
+  sm_62   = 62,
   sm_70   = 70,
   sm_75   = 75,
   sm_80   = 80,
@@ -58,12 +60,28 @@ enum class arch_id : int
   sm_121a = 121 * __arch_specific_id_multiplier,
 };
 
+[[nodiscard]] _CCCL_API constexpr auto __all_arch_ids() noexcept
+{
+  return ::cuda::std::array{
+    arch_id::sm_60,   arch_id::sm_61,   arch_id::sm_62,   arch_id::sm_70,   arch_id::sm_75,  arch_id::sm_80,
+    arch_id::sm_86,   arch_id::sm_87,   arch_id::sm_88,   arch_id::sm_89,   arch_id::sm_90,  arch_id::sm_100,
+    arch_id::sm_103,  arch_id::sm_110,  arch_id::sm_120,  arch_id::sm_121,  arch_id::sm_90a, arch_id::sm_100a,
+    arch_id::sm_103a, arch_id::sm_110a, arch_id::sm_120a, arch_id::sm_121a,
+  };
+}
+
+[[nodiscard]] _CCCL_API constexpr bool __is_specific_arch(arch_id __arch) noexcept
+{
+  return ::cuda::std::to_underlying(__arch) > __arch_specific_id_multiplier;
+}
+
 [[nodiscard]] _CCCL_API constexpr bool __has_known_arch(compute_capability __cc) noexcept
 {
   switch (__cc.get())
   {
     case ::cuda::std::to_underlying(arch_id::sm_60):
     case ::cuda::std::to_underlying(arch_id::sm_61):
+    case ::cuda::std::to_underlying(arch_id::sm_62):
     case ::cuda::std::to_underlying(arch_id::sm_70):
     case ::cuda::std::to_underlying(arch_id::sm_75):
     case ::cuda::std::to_underlying(arch_id::sm_80):
@@ -139,7 +157,7 @@ _CCCL_DEVICE_API ::cuda::arch_id __unknown_cuda_architecture();
 //!
 //! @note This API cannot be used in constexpr context when compiling with nvc++ in CUDA mode.
 template <class _Dummy = void>
-[[nodiscard]] _CCCL_DEVICE_API _CCCL_TARGET_CONSTEXPR ::cuda::arch_id current_arch_id() noexcept
+[[nodiscard]] _CCCL_DEVICE_API inline _CCCL_TARGET_CONSTEXPR ::cuda::arch_id current_arch_id() noexcept
 {
 #  if _CCCL_CUDA_COMPILER(NVHPC)
   const auto __cc = ::cuda::device::current_compute_capability();

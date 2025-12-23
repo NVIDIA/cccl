@@ -72,8 +72,8 @@ function(add_bench_dir bench_dir)
 
       string(APPEND bench_name ".base")
       add_bench(base_bench_target ${bench_name} "${real_bench_src}")
+      cccl_configure_target(${bench_name} DIALECT 17)
       target_link_libraries(${bench_name} PRIVATE ${thrust_target})
-      thrust_clone_target_properties(${bench_name} ${thrust_target})
 
       if ("CUDA" STREQUAL "${config_device}")
         target_compile_options(${bench_name} PRIVATE "--extended-lambda")

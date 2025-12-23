@@ -97,3 +97,8 @@ Math
      - Most significant half of the product
      - CCCL 3.2.0
      - CUDA 13.2
+
+   * - :ref:`sincos <libcudacxx-extended-api-math-sincos>`
+     - Computes sine and cosine of a value at the same time.
+     - CCCL 3.3.0
+     - CUDA 13.3

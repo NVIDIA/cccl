@@ -12,7 +12,7 @@
   "initializeCommand": [
     "/bin/bash",
     "-c",
-    "mkdir -m 0755 -p ${localWorkspaceFolder}/.{aws,cache,config}; mkdir -m 0755 -p ${localWorkspaceFolder}/{build,wheelhouse}; if test -z ${localEnv:WSLENV}; then docker volume create --driver local --opt type=none --opt device=${localWorkspaceFolder}/build --opt o=bind cccl-build >/dev/null; docker volume create --driver local --opt type=none --opt device=${localWorkspaceFolder}/wheelhouse --opt o=bind cccl-wheelhouse >/dev/null; else docker volume create cccl-build >/dev/null; docker volume create cccl-wheelhouse >/dev/null; fi;"
+    "set -euo pipefail; mkdir -m 0755 -p \"${localWorkspaceFolder}\"/.{aws,cache,config}; mkdir -m 0755 -p \"${localWorkspaceFolder}\"/{build,wheelhouse}; if test -z \"${localEnv:WSLENV}\"; then docker volume create --driver local --opt type=none --opt \"device=${localWorkspaceFolder}/build\" --opt o=bind cccl-build >/dev/null; docker volume create --driver local --opt type=none --opt \"device=${localWorkspaceFolder}/wheelhouse\" --opt o=bind cccl-wheelhouse >/dev/null; else docker volume create cccl-build >/dev/null; docker volume create cccl-wheelhouse >/dev/null; fi;"
   ],
   "postAttachCommand": [
     "/bin/bash",
@@ -22,6 +22,8 @@
   "containerEnv": {
     "SCCACHE_REGION": "us-east-2",
     "SCCACHE_BUCKET": "rapids-sccache-devs",
+    "SCCACHE_S3_USE_PREPROCESSOR_CACHE_MODE": "true",
+    "SCCACHE_S3_PREPROCESSOR_CACHE_KEY_PREFIX": "cccl-preprocessor-cache",
     "AWS_ROLE_ARN": "arn:aws:iam::279114543810:role/nv-gha-token-sccache-devs",
     "HISTFILE": "${containerWorkspaceFolder}/.cache/._bash_history",
     "DEVCONTAINER_NAME": "cuda13.0-llvm20",

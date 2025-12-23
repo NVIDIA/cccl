@@ -8,6 +8,7 @@
 //
 //===----------------------------------------------------------------------===//
 
+#include <cuda/memory_pool>
 #include <cuda/memory_resource>
 #include <cuda/std/cstdint>
 #include <cuda/std/type_traits>
@@ -19,9 +20,9 @@
 #include "common_tests.cuh"
 
 #if _CCCL_CTK_AT_LEAST(12, 6)
-#  define TEST_TYPES cuda::legacy_pinned_memory_resource, cuda::pinned_memory_pool_ref
+#  define TEST_TYPES cuda::mr::legacy_pinned_memory_resource, cuda::pinned_memory_pool_ref
 #else // ^^^ _CCCL_CTK_AT_LEAST(12, 6) ^^^ / vvv _CCCL_CTK_BELOW(12, 6) vvv
-#  define TEST_TYPES cuda::legacy_pinned_memory_resource
+#  define TEST_TYPES cuda::mr::legacy_pinned_memory_resource
 #endif // ^^^ _CCCL_CTK_BELOW(12, 6) ^^^
 
 template <typename Resource>
@@ -34,13 +35,13 @@ void resource_static_asserts()
   static_assert(cuda::std::is_trivially_copy_assignable_v<Resource>, "");
   static_assert(cuda::std::is_trivially_move_assignable_v<Resource>, "");
   static_assert(cuda::std::is_trivially_destructible_v<Resource>, "");
-  if constexpr (cuda::std::is_same_v<Resource, cuda::legacy_pinned_memory_resource>)
+  if constexpr (cuda::std::is_same_v<Resource, cuda::mr::legacy_pinned_memory_resource>)
   {
     static_assert(cuda::std::is_default_constructible_v<Resource>, "");
   }
 }
 
-template void resource_static_asserts<cuda::legacy_pinned_memory_resource>();
+template void resource_static_asserts<cuda::mr::legacy_pinned_memory_resource>();
 #if _CCCL_CTK_AT_LEAST(12, 6)
 template void resource_static_asserts<cuda::pinned_memory_pool_ref>();
 #endif // _CCCL_CTK_AT_LEAST(12, 6)
@@ -184,47 +185,8 @@ C2H_CCCLRT_TEST_LIST("pinned_memory_resource allocation", "[memory_resource]", T
 #endif // _CCCL_HAS_EXCEPTIONS()
 }
 
-enum class AccessibilityType
-{
-  Device,
-  Host,
-};
-
-template <AccessibilityType Accessibility>
-struct resource
-{
-  void* allocate_sync(size_t, size_t)
-  {
-    return nullptr;
-  }
-  void deallocate_sync(void*, size_t, size_t) noexcept {}
-
-  bool operator==(const resource&) const
-  {
-    return true;
-  }
-  bool operator!=(const resource& other) const
-  {
-    return false;
-  }
-};
-static_assert(cuda::mr::synchronous_resource<resource<AccessibilityType::Host>>, "");
-static_assert(cuda::mr::synchronous_resource<resource<AccessibilityType::Device>>, "");
-
-template <AccessibilityType Accessibility>
-struct test_resource : public resource<Accessibility>
-{
-  void* allocate(cuda::stream_ref, size_t, size_t)
-  {
-    return nullptr;
-  }
-  void deallocate(cuda::stream_ref, void*, size_t, size_t) {}
-};
-static_assert(cuda::mr::resource<test_resource<AccessibilityType::Host>>, "");
-static_assert(cuda::mr::resource<test_resource<AccessibilityType::Device>>, "");
-
 // test for cccl#2214: https://github.com/NVIDIA/cccl/issues/2214
-struct derived_pinned_resource : cuda::legacy_pinned_memory_resource
+struct derived_pinned_resource : cuda::mr::legacy_pinned_memory_resource
 {
   using legacy_pinned_memory_resource::legacy_pinned_memory_resource;
 };
@@ -259,34 +221,6 @@ C2H_CCCLRT_TEST_LIST("pinned_memory_resource comparison", "[memory_resource]", T
     CHECK(!(first != second_ref));
     CHECK((second_ref == first));
     CHECK(!(second_ref != first));
-  }
-
-  { // comparison against a different pinned_resource through synchronous_resource_ref
-    resource<AccessibilityType::Host> host_resource{};
-    resource<AccessibilityType::Device> device_resource{};
-    CHECK(!(first == host_resource));
-    CHECK((first != host_resource));
-    CHECK(!(first == device_resource));
-    CHECK((first != device_resource));
-
-    CHECK(!(host_resource == first));
-    CHECK((host_resource != first));
-    CHECK(!(device_resource == first));
-    CHECK((device_resource != first));
-  }
-
-  { // comparison against a different pinned_resource through synchronous_resource_ref
-    resource<AccessibilityType::Host> host_async_resource{};
-    resource<AccessibilityType::Device> device_async_resource{};
-    CHECK(!(first == host_async_resource));
-    CHECK((first != host_async_resource));
-    CHECK(!(first == device_async_resource));
-    CHECK((first != device_async_resource));
-
-    CHECK(!(host_async_resource == first));
-    CHECK((host_async_resource != first));
-    CHECK(!(device_async_resource == first));
-    CHECK((device_async_resource != first));
   }
 }
 

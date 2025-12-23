@@ -23,6 +23,7 @@
 
 #include <cuda/__mdspan/host_device_mdspan.h>
 #include <cuda/__mdspan/restrict_mdspan.h>
+#include <cuda/__mdspan/shared_memory_mdspan.h>
 #include <cuda/std/mdspan>
 
 #endif // _CUDA_MDSPAN

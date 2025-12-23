@@ -124,6 +124,7 @@ int main(int argc, char** argv)
   int* d_out = nullptr;
   CubDebugExit(g_allocator.DeviceAllocate((void**) &d_out, sizeof(int) * 1));
 
+  // example-begin temp-storage-query
   // Request and allocate temporary storage
   void* d_temp_storage      = nullptr;
   size_t temp_storage_bytes = 0;
@@ -132,6 +133,7 @@ int main(int argc, char** argv)
 
   // Run
   CubDebugExit(DeviceReduce::Sum(d_temp_storage, temp_storage_bytes, d_in, d_out, num_items));
+  // example-end temp-storage-query
 
   // Check for correctness (and display results, if specified)
   int compare = CompareDeviceResults(&h_reference, d_out, 1, g_verbose, g_verbose);

@@ -47,7 +47,7 @@ struct input_iterator_t
 
   __device__ input_iterator_t& operator+=(difference_type diff)
   {
-    Iterator.advance(&state, diff);
+    Iterator.advance(&state, &diff);
     return *this;
   }
 

@@ -21,11 +21,11 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/__stream/stream.h>
+#if _CCCL_HAS_CTK()
 
-#include <cuda_runtime_api.h>
+#  include <cuda/__stream/stream.h>
 
-#include <cuda/std/__cccl/prologue.h>
+#  include <cuda/std/__cccl/prologue.h>
 
 _CCCL_BEGIN_NAMESPACE_CUDA
 
@@ -33,12 +33,19 @@ _CCCL_BEGIN_NAMESPACE_CUDA
 //! should ever be pushed into it
 inline ::cuda::stream_ref __cccl_allocation_stream()
 {
-  static ::cuda::stream __stream{device_ref{0}};
+  // Intentionally leak the stream here to avoid stream destruction when the program exits, which is not guaraneed to
+  // work.
+  static ::cuda::stream_ref __stream = []() {
+    ::cuda::stream __str{::cuda::device_ref{0}};
+    return __str.release();
+  }();
   return __stream;
 }
 
 _CCCL_END_NAMESPACE_CUDA
 
-#include <cuda/std/__cccl/epilogue.h>
+#  include <cuda/std/__cccl/epilogue.h>
+
+#endif // _CCCL_HAS_CTK()
 
 #endif // _CUDA___STREAM_INTERNAL_STREAMS_H

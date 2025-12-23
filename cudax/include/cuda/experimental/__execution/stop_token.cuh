@@ -21,11 +21,15 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__concepts/boolean_testable.h>
+#include <cuda/std/__concepts/concept_macros.h>
+#include <cuda/std/__concepts/equality_comparable.h>
 #include <cuda/std/__thread/threading_support.h>
 #include <cuda/std/__tuple_dir/ignore.h>
 #include <cuda/std/__type_traits/is_nothrow_constructible.h>
 #include <cuda/std/atomic>
 
+#include <cuda/experimental/__detail/type_traits.cuh>
 #include <cuda/experimental/__execution/thread.cuh>
 #include <cuda/experimental/__execution/utility.cuh>
 
@@ -474,6 +478,37 @@ struct __on_stop_request
 
 template <class _Token, class _Callback>
 using stop_callback_for_t _CCCL_NODEBUG_ALIAS = typename _Token::template callback_type<_Callback>;
+
+namespace __detail
+{
+template <template <class> class>
+struct __check_type_alias_exists;
+} // namespace __detail
+
+template <class _Token>
+_CCCL_CONCEPT stoppable_token = _CCCL_REQUIRES_EXPR((_Token), const _Token& __token)(
+  requires(__nothrow_copyable<_Token>),
+  requires(__nothrow_movable<_Token>),
+  requires(cuda::std::equality_comparable<_Token>),
+  _Satisfies(cuda::std::__boolean_testable) __token.stop_requested(),
+  _Satisfies(cuda::std::__boolean_testable) __token.stop_possible(),
+  noexcept(__token.stop_requested()),
+  noexcept(__token.stop_possible()),
+  typename(__detail::__check_type_alias_exists<_Token::template callback_type>));
+
+template <class _Token, typename _Callback, typename _Initializer = _Callback>
+_CCCL_CONCEPT stoppable_token_for = _CCCL_REQUIRES_EXPR((_Token, _Callback, _Initializer))(
+  requires(stoppable_token<_Token>),
+  requires(__callable<_Callback>),
+  typename(stop_callback_for_t<_Token, _Callback>),
+  requires(__constructible<_Callback, _Initializer>),
+  requires(__constructible<stop_callback_for_t<_Token, _Callback>, const _Token&, _Initializer>));
+
+template <class _Token>
+_CCCL_CONCEPT unstoppable_token = _CCCL_REQUIRES_EXPR((_Token))(
+  requires(stoppable_token<_Token>),
+  _Satisfies(cuda::std::__boolean_testable) _Token::stop_possible(),
+  requires(!_Token::stop_possible()));
 } // namespace cuda::experimental::execution
 
 #include <cuda/experimental/__execution/epilogue.cuh>

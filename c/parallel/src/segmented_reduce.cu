@@ -10,7 +10,7 @@
 
 #include <cub/detail/choose_offset.cuh> // cub::detail::choose_offset_t
 #include <cub/detail/launcher/cuda_driver.cuh> // cub::detail::CudaDriverLauncherFactory
-#include <cub/detail/ptx-json-parser.h>
+#include <cub/detail/ptx-json-parser.cuh>
 #include <cub/device/dispatch/dispatch_fixed_size_segmented_reduce.cuh>
 #include <cub/device/dispatch/dispatch_segmented_reduce.cuh> // cub::DispatchSegmentedReduce
 #include <cub/thread/thread_load.cuh> // cub::LoadModifier
@@ -200,7 +200,7 @@ struct __align__({2}) storage_t {{
 {7}
 using device_segmented_reduce_policy = {8}::MaxPolicy;
 
-#include <cub/detail/ptx-json/json.h>
+#include <cub/detail/ptx-json/json.cuh>
 __device__ consteval auto& policy_generator() {{
   return ptx_json::id<ptx_json::string("device_segmented_reduce_policy")>()
     = cub::detail::reduce::ReducePolicyWrapper<device_segmented_reduce_policy::ActivePolicy>::EncodedPolicy();

@@ -34,10 +34,6 @@ runs:
       run: |
         echo -e "\e[1;34mMock with: ci/util/create_mock_job_env.sh $GITHUB_RUN_ID ${{inputs.id}}\e[0m"
 
-        # Use the job def info to setup the Github cache key:
-        job_hash=$(${GITHUB_WORKSPACE}/ci/util/workflow/get_stable_job_hash.sh ${{ inputs.id }} | cut -c1-8)
-        job_project=$(${GITHUB_WORKSPACE}/ci/util/workflow/get_job_project.sh ${{ inputs.id }})
-
         echo "::group::️🔍 Job Inputs"
         echo "Job command: ${COMMAND}" # Intentionally not passing to GITUB_ENV, arg handling is fragile.
 
@@ -48,28 +44,7 @@ runs:
         echo "JOB_CUDA=${{inputs.cuda}}"           | tee -a $GITHUB_ENV
         echo "JOB_HOST=${{inputs.host}}"           | tee -a $GITHUB_ENV
 
-        # SCCACHE config:
-        echo "SCCACHE_DIR=${RUNNER_TEMP}/sccache" | tee -a $GITHUB_ENV
-        mkdir -p ${RUNNER_TEMP}/sccache/preprocessor
-
-        # Used to locate an appropriate existing cache:
-        echo "TOOLCHAIN_SLUG=${{inputs.cuda}}-${{inputs.host}}" | tee -a "${GITHUB_ENV}"
-        echo "PROJECT_SLUG=$job_project" | tee -a "${GITHUB_ENV}"
-        echo "JOB_SLUG=$job_hash" | tee -a "${GITHUB_ENV}"
-
-        # The new cache won't be uploaded unless the cache key is unique:
-        echo "UNIQUE_SLUG=${{github.run_id}}-${{github.run_attempt}}-$RANDOM" | tee -a "${GITHUB_ENV}"
         echo "::endgroup::"
-
-    - name: Setup sccache preprocessor cache
-      id: sccache-preprocessor-cache
-      uses: actions/cache@v4
-      with:
-        path: ${{env.SCCACHE_DIR}}/preprocessor
-        key: sccache-preprocessor-cache-${{runner.os}}-${{env.TOOLCHAIN_SLUG}}-${{env.PROJECT_SLUG}}-${{env.JOB_SLUG}}-${{env.UNIQUE_SLUG}}
-        restore-keys: |
-          sccache-preprocessor-cache-${{runner.os}}-${{env.TOOLCHAIN_SLUG}}-${{env.PROJECT_SLUG}}-${{env.JOB_SLUG}}
-          sccache-preprocessor-cache-${{runner.os}}-${{env.TOOLCHAIN_SLUG}}-${{env.PROJECT_SLUG}}
 
     - name: Add NVCC problem matcher
       continue-on-error: true
@@ -157,7 +132,7 @@ runs:
 
         # The devcontainer will mount this path to the home directory:
         readonly aws_dir="${{github.workspace}}/.aws"
-        mkdir "${aws_dir}";
+        mkdir -p "${aws_dir}"
 
         cat <<EOF > "${aws_dir}/config"
         [default]
@@ -218,10 +193,8 @@ runs:
             --env "JOB_ID=$JOB_ID" \
             --env "NVIDIA_VISIBLE_DEVICES=${NVIDIA_VISIBLE_DEVICES:-}" \
             --env "RUNNER_TEMP=$RUNNER_TEMP" \
-            --env "SCCACHE_DIR=$SCCACHE_DIR" \
             --volume "${ARTIFACT_ARCHIVES}:${ARTIFACT_ARCHIVES}" \
             --volume "${ARTIFACT_UPLOAD_STAGE}:${ARTIFACT_UPLOAD_STAGE}" \
-            --volume "${SCCACHE_DIR}:${SCCACHE_DIR}" \
             --volume "${WORKFLOW_DIR}:${WORKFLOW_DIR}" \
             -- ./ci.sh
         )

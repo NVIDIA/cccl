@@ -12,7 +12,7 @@ import numpy as np
 import cuda.compute
 from cuda.compute import (
     OpKind,
-    TransformIterator,
+    TransformOutputIterator,
 )
 
 # Create input and output arrays
@@ -27,7 +27,7 @@ def sqrt(x: np.float32) -> np.float32:
 
 
 # Create transform output iterator
-d_out_it = TransformIterator(d_output, sqrt)
+d_out_it = TransformOutputIterator(d_output, sqrt)
 
 
 # Apply a sum reduction into the transform output iterator

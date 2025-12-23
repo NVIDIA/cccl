@@ -398,13 +398,17 @@ void generator_t::generate(
   {
     case bit_entropy::_1_000: {
       const double* uniform_distribution = dist.new_uniform_distribution(seed, span.size());
-      thrust::for_each_n(
-        exec, thrust::make_counting_iterator(0), span.size(), set_real_t{min, max, span.data(), uniform_distribution});
+      thrust::for_each_n(exec,
+                         thrust::make_counting_iterator(std::size_t{0}),
+                         span.size(),
+                         set_real_t{min, max, span.data(), uniform_distribution});
       ++seed;
 
       uniform_distribution = dist.new_uniform_distribution(seed, span.size());
-      thrust::for_each_n(
-        exec, thrust::make_counting_iterator(0), span.size(), set_imag_t{min, max, span.data(), uniform_distribution});
+      thrust::for_each_n(exec,
+                         thrust::make_counting_iterator(std::size_t{0}),
+                         span.size(),
+                         set_imag_t{min, max, span.data(), uniform_distribution});
       ++seed;
       return;
     }
@@ -419,13 +423,17 @@ void generator_t::generate(
     }
     default: {
       const double* uniform_distribution = dist.new_uniform_distribution(seed, span.size());
-      thrust::for_each_n(
-        exec, thrust::make_counting_iterator(0), span.size(), set_real_t{min, max, span.data(), uniform_distribution});
+      thrust::for_each_n(exec,
+                         thrust::make_counting_iterator(std::size_t{0}),
+                         span.size(),
+                         set_real_t{min, max, span.data(), uniform_distribution});
       ++seed;
 
       uniform_distribution = dist.new_uniform_distribution(seed, span.size());
-      thrust::for_each_n(
-        exec, thrust::make_counting_iterator(0), span.size(), set_imag_t{min, max, span.data(), uniform_distribution});
+      thrust::for_each_n(exec,
+                         thrust::make_counting_iterator(std::size_t{0}),
+                         span.size(),
+                         set_imag_t{min, max, span.data(), uniform_distribution});
       ++seed;
 
       const int number_of_steps = static_cast<int>(entropy);

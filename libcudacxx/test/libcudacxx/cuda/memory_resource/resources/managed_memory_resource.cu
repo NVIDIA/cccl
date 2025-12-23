@@ -8,6 +8,7 @@
 //
 //===----------------------------------------------------------------------===//
 
+#include <cuda/memory_pool>
 #include <cuda/memory_resource>
 #include <cuda/std/cstdint>
 #include <cuda/std/type_traits>
@@ -16,10 +17,10 @@
 #include <testing.cuh>
 #include <utility.cuh>
 
-#if _CCCL_CTK_AT_LEAST(13, 0)
-#  define TEST_TYPES cuda::legacy_managed_memory_resource, cuda::managed_memory_pool_ref
+#if _CCCL_CTK_AT_LEAST(13, 0) && !_CCCL_OS(WINDOWS)
+#  define TEST_TYPES cuda::mr::legacy_managed_memory_resource, cuda::managed_memory_pool_ref
 #else // ^^^ _CCCL_CTK_AT_LEAST(13, 0) ^^^ / vvv _CCCL_CTK_BELOW(13, 0) vvv
-#  define TEST_TYPES cuda::legacy_managed_memory_resource
+#  define TEST_TYPES cuda::mr::legacy_managed_memory_resource
 #endif // ^^^ _CCCL_CTK_BELOW(13, 0) ^^^
 
 template <typename Resource>
@@ -35,7 +36,7 @@ void resource_static_asserts()
   static_assert(!cuda::std::is_empty<Resource>::value, "");
 }
 
-template void resource_static_asserts<cuda::legacy_managed_memory_resource>();
+template void resource_static_asserts<cuda::mr::legacy_managed_memory_resource>();
 #if _CCCL_CTK_AT_LEAST(13, 0)
 template void resource_static_asserts<cuda::managed_memory_pool_ref>();
 #endif // _CCCL_CTK_AT_LEAST(13, 0)
@@ -69,7 +70,7 @@ C2H_CCCLRT_TEST_LIST("managed_memory_resource construction", "[memory_resource]"
   using managed_resource = TestType;
   SECTION("Default construction")
   {
-    if constexpr (cuda::std::is_same_v<managed_resource, cuda::legacy_managed_memory_resource>)
+    if constexpr (cuda::std::is_same_v<managed_resource, cuda::mr::legacy_managed_memory_resource>)
     {
       STATIC_REQUIRE(cuda::std::is_default_constructible_v<managed_resource>);
     }
@@ -163,49 +164,10 @@ C2H_CCCLRT_TEST_LIST("managed_memory_resource allocation", "[memory_resource]", 
 #endif // _CCCL_HAS_EXCEPTIONS()
 }
 
-enum class AccessibilityType
-{
-  Device,
-  Host,
-};
-
-template <AccessibilityType Accessibility>
-struct resource
-{
-  void* allocate_sync(size_t, size_t)
-  {
-    return nullptr;
-  }
-  void deallocate_sync(void*, size_t, size_t) noexcept {}
-
-  bool operator==(const resource&) const
-  {
-    return true;
-  }
-  bool operator!=(const resource& other) const
-  {
-    return false;
-  }
-};
-static_assert(cuda::mr::synchronous_resource<resource<AccessibilityType::Host>>, "");
-static_assert(cuda::mr::synchronous_resource<resource<AccessibilityType::Device>>, "");
-
-template <AccessibilityType Accessibility>
-struct test_resource : public resource<Accessibility>
-{
-  void* allocate(cuda::stream_ref, size_t, size_t)
-  {
-    return nullptr;
-  }
-  void deallocate(cuda::stream_ref, void*, size_t, size_t) {}
-};
-static_assert(cuda::mr::resource<test_resource<AccessibilityType::Host>>, "");
-static_assert(cuda::mr::resource<test_resource<AccessibilityType::Device>>, "");
-
 // test for cccl#2214: https://github.com/NVIDIA/cccl/issues/2214
-struct derived_managed_resource : cuda::legacy_managed_memory_resource
+struct derived_managed_resource : cuda::mr::legacy_managed_memory_resource
 {
-  using cuda::legacy_managed_memory_resource::legacy_managed_memory_resource;
+  using cuda::mr::legacy_managed_memory_resource::legacy_managed_memory_resource;
 };
 static_assert(cuda::mr::synchronous_resource<derived_managed_resource>, "");
 
@@ -219,9 +181,9 @@ C2H_CCCLRT_TEST_LIST("managed_memory_resource comparison", "[memory_resource]", 
     CHECK(!(first != second));
   }
 
-  if constexpr (cuda::std::is_same_v<managed_resource, cuda::legacy_managed_memory_resource>)
+  if constexpr (cuda::std::is_same_v<managed_resource, cuda::mr::legacy_managed_memory_resource>)
   { // comparison against a plain legacy_managed_memory_resource with a different flags
-    managed_resource second = cuda::legacy_managed_memory_resource{cudaMemAttachHost};
+    managed_resource second = cuda::mr::legacy_managed_memory_resource{cudaMemAttachHost};
     CHECK((first != second));
     CHECK(!(first == second));
   }
@@ -244,20 +206,6 @@ C2H_CCCLRT_TEST_LIST("managed_memory_resource comparison", "[memory_resource]", 
     CHECK(!(second_ref != first));
   }
 
-  { // comparison against a different managed_resource through synchronous_resource_ref
-    resource<AccessibilityType::Host> host_resource{};
-    resource<AccessibilityType::Device> device_resource{};
-    CHECK(!(first == host_resource));
-    CHECK((first != host_resource));
-    CHECK(!(first == device_resource));
-    CHECK((first != device_resource));
-
-    CHECK(!(host_resource == first));
-    CHECK((host_resource != first));
-    CHECK(!(device_resource == first));
-    CHECK((device_resource != first));
-  }
-
   if constexpr (cuda::mr::resource<managed_resource>)
   { // comparison against a managed_memory_resource wrapped inside a resource_ref
     managed_resource second = get_resource<managed_resource>();
@@ -267,20 +215,6 @@ C2H_CCCLRT_TEST_LIST("managed_memory_resource comparison", "[memory_resource]", 
     CHECK(!(first != second_ref));
     CHECK((second_ref == first));
     CHECK(!(second_ref != first));
-  }
-
-  { // comparison against a different managed_resource through synchronous_resource_ref
-    resource<AccessibilityType::Host> host_async_resource{};
-    resource<AccessibilityType::Device> device_async_resource{};
-    CHECK(!(first == host_async_resource));
-    CHECK((first != host_async_resource));
-    CHECK(!(first == device_async_resource));
-    CHECK((first != device_async_resource));
-
-    CHECK(!(host_async_resource == first));
-    CHECK((host_async_resource != first));
-    CHECK(!(device_async_resource == first));
-    CHECK((device_async_resource != first));
   }
 }
 #if _CCCL_CTK_AT_LEAST(13, 0)
