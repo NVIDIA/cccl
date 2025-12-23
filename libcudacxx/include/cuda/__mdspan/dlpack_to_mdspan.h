@@ -23,7 +23,7 @@
 #if !_CCCL_COMPILER(NVRTC) && _CCCL_HAS_INCLUDE(<dlpack/dlpack.h>)
 
 #  include <cuda/__mdspan/host_device_mdspan.h>
-// #  include <cuda/__mdspan/mdspan_to_dlpack.h> // __data_type_to_dlpack
+#  include <cuda/__mdspan/mdspan_to_dlpack.h>
 #  include <cuda/__memory/is_aligned.h>
 #  include <cuda/std/__cstddef/types.h>
 #  include <cuda/std/__exception/exception_macros.h>
