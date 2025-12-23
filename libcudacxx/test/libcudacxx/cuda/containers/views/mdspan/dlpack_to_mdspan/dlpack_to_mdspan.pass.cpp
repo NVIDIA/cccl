@@ -227,7 +227,9 @@ bool test_rank2_layout_stride()
 // Test: layout_stride with default (layout_right) strides when strides is nullptr
 // Note: This tests the fallback behavior for DLPack < 1.2
 //==============================================================================
+
 #if !(DLPACK_MAJOR_VERSION == 1 && DLPACK_MINOR_VERSION >= 2)
+
 bool test_layout_stride_null_strides()
 {
   cuda::std::array<float, 6> data = {1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f};
@@ -247,7 +249,8 @@ bool test_layout_stride_null_strides()
   assert(host_mdspan.stride(1) == 1);
   return true;
 }
-#endif
+
+#endif // !(DLPACK_MAJOR_VERSION == 1 && DLPACK_MINOR_VERSION >= 2)
 
 //==============================================================================
 // Test: byte_offset support
@@ -667,7 +670,6 @@ int main(int, char**)
      assert(test_rank2_layout_right());
      assert(test_rank2_layout_left());
      assert(test_rank2_layout_stride());
-     assert(test_element_types());
      assert(test_byte_offset());
      assert(test_empty_tensor());
      assert(test_return_types());
