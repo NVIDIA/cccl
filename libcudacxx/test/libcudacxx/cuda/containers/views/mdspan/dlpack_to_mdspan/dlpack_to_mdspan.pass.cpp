@@ -8,8 +8,6 @@
 //===----------------------------------------------------------------------===//
 // UNSUPPORTED: nvrtc
 
-#include <dlpack/dlpack.h>
-
 #include <cuda/mdspan>
 #include <cuda/std/array>
 #include <cuda/std/cassert>
@@ -19,6 +17,7 @@
 #include <nv/target>
 
 #include "test_macros.h"
+#include <dlpack/dlpack.h>
 
 template <size_t Rank>
 using dlpack_array = cuda::std::array<int64_t, Rank>;
