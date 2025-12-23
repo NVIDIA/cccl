@@ -150,9 +150,9 @@ template <typename _ElementType>
   else
   {
     static_assert(::cuda::std::__always_false_v<_ElementType>, "Unsupported type");
+    _CCCL_UNREACHABLE();
+    return ::DLDataType{};
   }
-  _CCCL_UNREACHABLE();
-  return ::DLDataType{};
 }
 
 template <::cuda::std::size_t _Rank>

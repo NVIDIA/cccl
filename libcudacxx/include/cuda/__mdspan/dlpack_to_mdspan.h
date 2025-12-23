@@ -76,10 +76,11 @@ __layout_left_stride(const ::cuda::std::int64_t* __shapes, ::cuda::std::size_t _
 template <typename _LayoutPolicy>
 _CCCL_HOST_API void __validate_dlpack_strides(const ::DLTensor& __tensor, [[maybe_unused]] ::cuda::std::size_t __rank)
 {
-  constexpr bool __is_layout_right  = ::cuda::std::is_same_v<_LayoutPolicy, ::cuda::std::layout_right>;
-  constexpr bool __is_layout_left   = ::cuda::std::is_same_v<_LayoutPolicy, ::cuda::std::layout_left>;
-  constexpr bool __is_layout_stride = ::cuda::std::is_same_v<_LayoutPolicy, ::cuda::std::layout_stride>;
-  const auto __strides_ptr          = __tensor.strides;
+  [[maybe_unused]] constexpr bool __is_layout_right = ::cuda::std::is_same_v<_LayoutPolicy, ::cuda::std::layout_right>;
+  [[maybe_unused]] constexpr bool __is_layout_left  = ::cuda::std::is_same_v<_LayoutPolicy, ::cuda::std::layout_left>;
+  [[maybe_unused]] constexpr bool __is_layout_stride =
+    ::cuda::std::is_same_v<_LayoutPolicy, ::cuda::std::layout_stride>;
+  const auto __strides_ptr = __tensor.strides;
   if (__strides_ptr == nullptr)
   {
 #  if DLPACK_MAJOR_VERSION > 1 || (DLPACK_MAJOR_VERSION == 1 && DLPACK_MINOR_VERSION >= 2)
@@ -138,6 +139,8 @@ __to_mdspan(const ::DLTensor& __tensor)
   if constexpr (!__is_layout_right && !__is_layout_left && !__is_layout_stride)
   {
     static_assert(::cuda::std::__always_false_v<_LayoutPolicy>, "Unsupported layout policy");
+    _CCCL_UNREACHABLE();
+    return __mdspan_type{};
   }
   else
   {
