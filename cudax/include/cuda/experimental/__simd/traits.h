@@ -82,17 +82,17 @@ template <int _Np>
 inline constexpr bool is_abi_tag_v<simd_abi::fixed_size<_Np>> = true;
 
 template <typename _Tp>
-inline constexpr bool is_simd_v = false;
+inline constexpr bool is_vec_v = false;
 
 template <typename _Tp>
-struct is_simd : ::cuda::std::bool_constant<is_simd_v<_Tp>>
+struct is_vec : ::cuda::std::bool_constant<is_vec_v<_Tp>>
 {};
 
 template <typename _Tp>
-inline constexpr bool is_simd_mask_v = false;
+inline constexpr bool is_mask_v = false;
 
 template <typename _Tp>
-struct is_simd_mask : ::cuda::std::bool_constant<is_simd_mask_v<_Tp>>
+struct is_mask : ::cuda::std::bool_constant<is_mask_v<_Tp>>
 {};
 
 template <typename _Tp>
@@ -112,17 +112,12 @@ struct simd_size<_Tp, _Abi, false>
   static constexpr ::cuda::std::size_t value = 0;
 };
 
-template <typename _Tp, typename _Abi = simd_abi::fixed_size<1>>
-inline constexpr ::cuda::std::size_t simd_size_v = simd_size<_Tp, _Abi>::value;
-
-template <typename _Tp>
-inline constexpr ::cuda::std::size_t simd_size_v<_Tp, void> = _Tp::size();
 
 template <typename _Tp, typename _Abi>
-inline constexpr bool is_simd_v<basic_simd<_Tp, _Abi>> = true;
+inline constexpr bool is_vec_v<basic_vec<_Tp, _Abi>> = true;
 
-template <typename _Tp, typename _Abi>
-inline constexpr bool is_simd_mask_v<basic_simd_mask<_Tp, _Abi>> = true;
+template <::cuda::std::size_t _Bytes, typename _Abi>
+inline constexpr bool is_mask_v<basic_mask<_Bytes, _Abi>> = true;
 
 template <>
 inline constexpr bool is_simd_flag_type_v<element_aligned_tag> = true;
@@ -137,33 +132,35 @@ inline constexpr bool is_simd_flag_type_v<overaligned_tag<_Alignment>> = true;
 template <typename _Tp, typename _Flags = element_aligned_tag>
 struct memory_alignment;
 
+// P1928R15: basic_vec memory alignment
 template <typename _Tp, typename _Abi>
-struct memory_alignment<basic_simd<_Tp, _Abi>, element_aligned_tag>
+struct memory_alignment<basic_vec<_Tp, _Abi>, element_aligned_tag>
     : ::cuda::std::integral_constant<::cuda::std::size_t, alignof(_Tp)>
 {};
 
 template <typename _Tp, typename _Abi>
-struct memory_alignment<basic_simd<_Tp, _Abi>, vector_aligned_tag>
-    : ::cuda::std::integral_constant<::cuda::std::size_t, alignof(_Tp) * simd_size_v<_Tp, _Abi>>
+struct memory_alignment<basic_vec<_Tp, _Abi>, vector_aligned_tag>
+    : ::cuda::std::integral_constant<::cuda::std::size_t, alignof(_Tp) * __simd_size_v<_Tp, _Abi>>
 {};
 
 template <typename _Tp, typename _Abi, ::cuda::std::size_t _Alignment>
-struct memory_alignment<basic_simd<_Tp, _Abi>, overaligned_tag<_Alignment>>
+struct memory_alignment<basic_vec<_Tp, _Abi>, overaligned_tag<_Alignment>>
     : ::cuda::std::integral_constant<::cuda::std::size_t, _Alignment>
 {};
 
-template <typename _Tp, typename _Abi>
-struct memory_alignment<basic_simd_mask<_Tp, _Abi>, element_aligned_tag>
+// P1928R15: basic_mask memory alignment (indexed by Bytes)
+template <::cuda::std::size_t _Bytes, typename _Abi>
+struct memory_alignment<basic_mask<_Bytes, _Abi>, element_aligned_tag>
     : ::cuda::std::integral_constant<::cuda::std::size_t, alignof(bool)>
 {};
 
-template <typename _Tp, typename _Abi>
-struct memory_alignment<basic_simd_mask<_Tp, _Abi>, vector_aligned_tag>
-    : ::cuda::std::integral_constant<::cuda::std::size_t, alignof(bool) * simd_size_v<_Tp, _Abi>>
+template <::cuda::std::size_t _Bytes, typename _Abi>
+struct memory_alignment<basic_mask<_Bytes, _Abi>, vector_aligned_tag>
+    : ::cuda::std::integral_constant<::cuda::std::size_t, alignof(bool) * _Abi::__simd_size>
 {};
 
-template <typename _Tp, typename _Abi, ::cuda::std::size_t _Alignment>
-struct memory_alignment<basic_simd_mask<_Tp, _Abi>, overaligned_tag<_Alignment>>
+template <::cuda::std::size_t _Bytes, typename _Abi, ::cuda::std::size_t _Alignment>
+struct memory_alignment<basic_mask<_Bytes, _Abi>, overaligned_tag<_Alignment>>
     : ::cuda::std::integral_constant<::cuda::std::size_t, _Alignment>
 {};
 
@@ -174,20 +171,33 @@ inline constexpr ::cuda::std::size_t memory_alignment_v = memory_alignment<_Tp, 
 template <typename _Tp, typename _Simd>
 struct rebind_simd;
 
+// P1928R15: rebind for basic_vec
 template <typename _Tp, typename _Up, typename _Abi>
-struct rebind_simd<_Tp, basic_simd<_Up, _Abi>>
+struct rebind_simd<_Tp, basic_vec<_Up, _Abi>>
 {
-  using type = basic_simd<_Tp, _Abi>;
+  using type = basic_vec<_Tp, _Abi>;
 };
 
-template <typename _Tp, typename _Up, typename _Abi>
-struct rebind_simd<_Tp, basic_simd_mask<_Up, _Abi>>
+// P1928R15: rebind for basic_mask (creates mask with sizeof(_Tp) bytes)
+template <typename _Tp, ::cuda::std::size_t _Bytes, typename _Abi>
+struct rebind_simd<_Tp, basic_mask<_Bytes, _Abi>>
 {
-  using type = basic_simd_mask<_Tp, _Abi>;
+  using type = basic_mask<sizeof(_Tp), _Abi>;
 };
 
 template <typename _Tp, typename _Simd>
 using rebind_simd_t = typename rebind_simd<_Tp, _Simd>::type;
+
+// P1928R15: mask_element_size trait - get the Bytes value from a mask
+template <typename _Tp>
+struct mask_element_size;
+
+template <::cuda::std::size_t _Bytes, typename _Abi>
+struct mask_element_size<basic_mask<_Bytes, _Abi>> : ::cuda::std::integral_constant<::cuda::std::size_t, _Bytes>
+{};
+
+template <typename _Tp>
+inline constexpr ::cuda::std::size_t mask_element_size_v = mask_element_size<_Tp>::value;
 } // namespace cuda::experimental::datapar
 
 #include <cuda/std/__cccl/epilogue.h>

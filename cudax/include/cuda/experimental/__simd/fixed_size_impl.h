@@ -64,11 +64,13 @@ struct __simd_storage<_Tp, simd_abi::__fixed_size<_Np>>
   }
 };
 
-// use a single bit for the mask storage could be not efficient in CUDA
-template <typename _Tp, int _Np>
-struct __mask_storage<_Tp, simd_abi::__fixed_size<_Np>> : public __simd_storage<bool, simd_abi::__fixed_size<_Np>>
+// P1928R15: Mask storage is now indexed by Bytes (element size) rather than type
+// Using a single bit for the mask storage could be not efficient in CUDA
+template <::cuda::std::size_t _Bytes, int _Np>
+struct __mask_storage<_Bytes, simd_abi::__fixed_size<_Np>> : public __simd_storage<bool, simd_abi::__fixed_size<_Np>>
 {
-  using value_type = bool;
+  using value_type                                     = bool;
+  static constexpr ::cuda::std::size_t __element_bytes = _Bytes;
 };
 
 // Helper macros to generate repeated fixed-size operations.
@@ -111,7 +113,7 @@ template <typename _Tp, int _Np>
 struct __simd_operations<_Tp, simd_abi::__fixed_size<_Np>>
 {
   using _SimdStorage = __simd_storage<_Tp, simd_abi::__fixed_size<_Np>>;
-  using _MaskStorage = __mask_storage<_Tp, simd_abi::__fixed_size<_Np>>;
+  using _MaskStorage = __mask_storage<sizeof(_Tp), simd_abi::__fixed_size<_Np>>;
 
   [[nodiscard]] _CCCL_API static constexpr _SimdStorage __broadcast(_Tp __v) noexcept
   {
@@ -242,13 +244,13 @@ struct __simd_operations<_Tp, simd_abi::__fixed_size<_Np>>
 };
 
 // *********************************************************************************************************************
-// * SIMD Mask Operations
+// * SIMD Mask Operations (P1928R15: indexed by Bytes instead of type)
 // *********************************************************************************************************************
 
-template <class _Tp, int _Np>
-struct __mask_operations<_Tp, simd_abi::__fixed_size<_Np>>
+template <::cuda::std::size_t _Bytes, int _Np>
+struct __mask_operations<_Bytes, simd_abi::__fixed_size<_Np>>
 {
-  using _MaskStorage = __mask_storage<_Tp, simd_abi::__fixed_size<_Np>>;
+  using _MaskStorage = __mask_storage<_Bytes, simd_abi::__fixed_size<_Np>>;
 
   [[nodiscard]] _CCCL_API static constexpr _MaskStorage __broadcast(bool __v) noexcept
   {

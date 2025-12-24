@@ -72,9 +72,9 @@ C2H_CCCLRT_TEST("simd.traits", "[simd][traits]")
 
   STATIC_REQUIRE(dp::is_abi_tag_v<abi_t>);
   STATIC_REQUIRE(!dp::is_abi_tag_v<int>);
-  STATIC_REQUIRE(dp::simd_size_v<int, abi_t> == 4);
-  STATIC_REQUIRE(dp::simd_size_v<float, abi_t> == 4);
-  STATIC_REQUIRE(dp::simd_size_v<void, abi_t> == 0);
+  STATIC_REQUIRE(dp::__simd_size_v<int, abi_t> == 4);
+  STATIC_REQUIRE(dp::__simd_size_v<float, abi_t> == 4);
+  STATIC_REQUIRE(dp::__simd_size_v<void, abi_t> == 0);
 
   STATIC_REQUIRE(dp::is_simd_v<simd_t>);
   STATIC_REQUIRE(!dp::is_simd_v<int>);

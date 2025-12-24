@@ -106,12 +106,10 @@ cudax_add_catch2_test(test_target algorithm
     algorithm/copy.cu
 )
 
-  cudax_add_catch2_test(test_target simd ${cudax_target}
+cudax_add_catch2_test(test_target simd
     simd/simd.cu
-  )
+)
 
-  if (cudax_ENABLE_CUFILE)
-    cudax_add_catch2_test(test_target cufile_driver_attributes ${cudax_target}
 if (cudax_ENABLE_CUFILE)
   cudax_add_catch2_test(test_target cufile.driver_attributes
       cufile/driver_attributes.cu

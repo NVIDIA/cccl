@@ -59,10 +59,12 @@ struct __simd_storage<_Tp, simd_abi::__scalar>
   }
 };
 
-template <typename _Tp>
-struct __mask_storage<_Tp, simd_abi::__scalar> : __simd_storage<bool, simd_abi::__scalar>
+// P1928R15: Mask storage is now indexed by Bytes (element size) rather than type
+template <::cuda::std::size_t _Bytes>
+struct __mask_storage<_Bytes, simd_abi::__scalar> : __simd_storage<bool, simd_abi::__scalar>
 {
-  using value_type = bool;
+  using value_type                                     = bool;
+  static constexpr ::cuda::std::size_t __element_bytes = _Bytes;
 };
 
 // *********************************************************************************************************************
@@ -73,7 +75,7 @@ template <typename _Tp>
 struct __simd_operations<_Tp, simd_abi::__scalar>
 {
   using _SimdStorage = __simd_storage<_Tp, simd_abi::__scalar>;
-  using _MaskStorage = __mask_storage<_Tp, simd_abi::__scalar>;
+  using _MaskStorage = __mask_storage<sizeof(_Tp), simd_abi::__scalar>;
 
   [[nodiscard]] _CCCL_API static constexpr _SimdStorage __broadcast(_Tp __v) noexcept
   {
@@ -233,13 +235,13 @@ struct __simd_operations<_Tp, simd_abi::__scalar>
 };
 
 // *********************************************************************************************************************
-// * SIMD Mask Operations
+// * SIMD Mask Operations (P1928R15: indexed by Bytes instead of type)
 // *********************************************************************************************************************
 
-template <class _Tp>
-struct __mask_operations<_Tp, simd_abi::__scalar>
+template <::cuda::std::size_t _Bytes>
+struct __mask_operations<_Bytes, simd_abi::__scalar>
 {
-  using _MaskStorage = __mask_storage<_Tp, simd_abi::__scalar>;
+  using _MaskStorage = __mask_storage<_Bytes, simd_abi::__scalar>;
 
   [[nodiscard]] _CCCL_API static constexpr _MaskStorage __broadcast(bool __v) noexcept
   {

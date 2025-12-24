@@ -35,11 +35,13 @@ namespace cuda::experimental::datapar
 template <typename _Storage, typename _Vp>
 class __simd_reference
 {
+  // P1928R15: basic_vec is the primary SIMD vector type
   template <typename, typename>
-  friend class basic_simd;
+  friend class basic_vec;
 
-  template <typename, typename>
-  friend class basic_simd_mask;
+  // P1928R15: basic_mask is the primary SIMD mask type (indexed by Bytes)
+  template <::cuda::std::size_t, typename>
+  friend class basic_mask;
 
   _Storage& __s_;
   ::cuda::std::size_t __idx_;
