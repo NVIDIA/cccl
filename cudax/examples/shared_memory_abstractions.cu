@@ -50,6 +50,9 @@ __global__ void demo1()
 
   use(&shared_obj);
 
+  // Wait until all threads are done using the shared object.
+  __syncthreads();
+
   // The object will be destructed by thread 0 when the object goes out of scope.
 }
 
@@ -69,6 +72,9 @@ __global__ void demo2()
 
   use(&shared_obj1);
   use(&shared_obj2);
+
+  // Wait until all threads are done using the shared object.
+  __syncthreads();
 
   // Manually destroy the shared_obj1 by thread 0.
   shared_obj1.destroy();

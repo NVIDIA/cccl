@@ -179,7 +179,7 @@ __global__ void test_static_shared()
   {
     SST a{cuda::no_init};
     SST b{cuda::no_init};
-    assert(&a.get() != &b.get());
+    assert(&a != &b);
   }
 
   // 10. Test the construct method.
