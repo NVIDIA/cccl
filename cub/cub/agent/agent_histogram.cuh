@@ -95,6 +95,29 @@ struct AgentHistogramPolicy
   static constexpr CacheLoadModifier LOAD_MODIFIER = LoadModifier;
 };
 
+#if defined(CUB_DEFINE_RUNTIME_POLICIES) || defined(CUB_ENABLE_POLICY_PTX_JSON)
+namespace detail
+{
+// Only define this when needed.
+// Because of overload woes, this depends on C++20 concepts. util_device.h checks that concepts are available when
+// either runtime policies or PTX JSON information are enabled, so if they are, this is always valid. The generic
+// version is always defined, and that's the only one needed for regular CUB operations.
+//
+// TODO: enable this unconditionally once concepts are always available
+CUB_DETAIL_POLICY_WRAPPER_DEFINE(
+  HistogramAgentPolicy,
+  (always_true),
+  (BLOCK_THREADS, BlockThreads, int),
+  (PIXELS_PER_THREAD, PixelsPerThread, int),
+  (IS_RLE_COMPRESS, IsRleCompress, bool),
+  (MEM_PREFERENCE, MemPreference, BlockHistogramMemoryPreference),
+  (IS_WORK_STEALING, IsWorkStealing, bool),
+  (VEC_SIZE, VecSize, int),
+  (LOAD_ALGORITHM, LoadAlgorithm, cub::BlockLoadAlgorithm),
+  (LOAD_MODIFIER, LoadModifier, cub::CacheLoadModifier))
+} // namespace detail
+#endif
+
 namespace detail::histogram
 {
 // Return a native pixel pointer (specialized for CacheModifiedInputIterator types)
