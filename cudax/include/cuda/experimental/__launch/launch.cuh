@@ -22,6 +22,7 @@
 #endif // no system header
 
 #include <cuda/__driver/driver_api.h>
+#include <cuda/__hierarchy/traits.h>
 #include <cuda/__launch/configuration.h>
 #include <cuda/__launch/launch.h>
 #include <cuda/__stream/launch_transform.h>
@@ -108,7 +109,7 @@ _CCCL_HOST_API auto __launch_impl(_Dst&& __dst, _Config __conf, ::CUfunction __k
   static_assert(!::cuda::std::is_same_v<decltype(__conf.dims), no_init_t>,
                 "Can't launch a configuration without hierarchy dimensions");
   ::CUlaunchConfig __config{};
-  constexpr bool __has_cluster_level = has_level<cluster_level, decltype(__conf.dims)>;
+  constexpr bool __has_cluster_level = has_level_v<cluster_level, decltype(__conf.dims)>;
   constexpr unsigned int __num_attrs_needed =
     ::cuda::__detail::kernel_config_count_attr_space(__conf) + __has_cluster_level;
   ::CUlaunchAttribute __attrs[__num_attrs_needed == 0 ? 1 : __num_attrs_needed];
@@ -124,9 +125,9 @@ _CCCL_HOST_API auto __launch_impl(_Dst&& __dst, _Config __conf, ::CUfunction __k
   __config.gridDimX  = static_cast<unsigned>(__conf.dims.extents(block, grid).x);
   __config.gridDimY  = static_cast<unsigned>(__conf.dims.extents(block, grid).y);
   __config.gridDimZ  = static_cast<unsigned>(__conf.dims.extents(block, grid).z);
-  __config.blockDimX = static_cast<unsigned>(__conf.dims.extents(thread, block).x);
-  __config.blockDimY = static_cast<unsigned>(__conf.dims.extents(thread, block).y);
-  __config.blockDimZ = static_cast<unsigned>(__conf.dims.extents(thread, block).z);
+  __config.blockDimX = static_cast<unsigned>(__conf.dims.extents(gpu_thread, block).x);
+  __config.blockDimY = static_cast<unsigned>(__conf.dims.extents(gpu_thread, block).y);
+  __config.blockDimZ = static_cast<unsigned>(__conf.dims.extents(gpu_thread, block).z);
 
   if constexpr (__has_cluster_level)
   {
