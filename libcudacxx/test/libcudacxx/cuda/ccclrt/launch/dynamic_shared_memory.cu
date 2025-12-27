@@ -25,10 +25,10 @@ struct TestKernel
   template <class Config>
   __device__ void operator()(const Config& config)
   {
-    static_assert(cuda::std::is_same_v<View, decltype(cuda::dynamic_shared_memory_view(config))>);
-    static_assert(noexcept(cuda::dynamic_shared_memory_view(config)));
+    static_assert(cuda::std::is_same_v<View, decltype(cuda::dynamic_shared_memory(config))>);
+    static_assert(noexcept(cuda::dynamic_shared_memory(config)));
 
-    write_smem(cuda::dynamic_shared_memory_view(config));
+    write_smem(cuda::dynamic_shared_memory(config));
   }
 
   __device__ void write_smem(T& view)
