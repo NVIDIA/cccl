@@ -43,33 +43,38 @@ struct policy_hub_t
 };
 #endif // !TUNE_BASE
 
-template <typename KeyT, typename OffsetT, typename OutOffsetT>
-void topk_keys(nvbench::state& state, nvbench::type_list<KeyT, OffsetT, OutOffsetT>)
+template <typename KeyT, int MaxSegmentSize, int MaxNumSelected, typename OffsetT, typename OutOffsetT>
+void fixed_seg_size_topk_keys(
+  nvbench::state& state,
+  nvbench::type_list<KeyT, nvbench::enum_type<MaxSegmentSize>, nvbench::enum_type<MaxNumSelected>, OffsetT, OutOffsetT>)
 {
-  // A guarantee that segment size and k fit in shared memory
-  constexpr auto min_segment_size    = 1;
-  constexpr auto max_segment_size    = 44 * 1024 / sizeof(KeyT);
-  constexpr auto min_k               = 1;
-  constexpr auto max_k               = max_segment_size;
+  // Range of guaranteed total number of items
   constexpr auto min_num_total_items = 1;
   constexpr auto max_num_total_items = ::cuda::std::numeric_limits<::cuda::std::int32_t>::max();
 
-  using key_input_it_t  = cuda::strided_iterator<cuda::counting_iterator<const KeyT*>>;
+  // Iterator types
+  using key_input_it_t  = cuda::strided_iterator<cuda::counting_iterator<KeyT*>>;
   using key_output_it_t = cuda::strided_iterator<cuda::counting_iterator<KeyT*>>;
 
-  // Statically constrains segment size to what can fit in shared memory
-  using seg_size_t = cub::detail::topk::segment_size_uniform<min_segment_size, max_segment_size>;
+  // Static segment size
+  using seg_size_t = cub::detail::segmented_topk::segment_size_static<MaxSegmentSize>;
 
-  // Statically constrains k to the maximum segment size
-  using k_value_t = cub::detail::topk::k_uniform<min_k, max_k>;
+  // Static k (number of selected output elements per segment)
+  using k_value_t = cub::detail::segmented_topk::k_static<MaxNumSelected>;
 
-  using select_direction_value_t = cub::detail::topk::select_direction_static<cub::detail::topk::select::max>;
+  // Static selection direction (max)
+  using select_direction_value_t = cub::detail::segmented_topk::select_direction_static<cub::detail::topk::select::max>;
+
+  // Number of segments is a host-accessible value
+  using num_segments_uniform_t = cub::detail::segmented_topk::num_segments_uniform<>;
+
+  // Total number of items guarantee type
   using total_num_items_guarantee_t =
-    cub::detail::topk::total_num_items_guarantee<min_num_total_items, max_num_total_items>;
+    cub::detail::segmented_topk::total_num_items_guarantee<min_num_total_items, max_num_total_items>;
   using offset_t     = ::cuda::std::int32_t;
   using out_offset_t = ::cuda::std::int32_t;
 
-  using dispatch_t = cub::detail::topk::DispatchSegmentedTopK<
+  using dispatch_t = cub::detail::segmented_topk::DispatchSegmentedTopK<
     key_input_it_t,
     key_output_it_t,
     cub::NullType**,
@@ -77,10 +82,8 @@ void topk_keys(nvbench::state& state, nvbench::type_list<KeyT, OffsetT, OutOffse
     seg_size_t,
     k_value_t,
     select_direction_value_t,
-    total_num_items_guarantee_t,
-    offset_t,
-    out_offset_t,
-    cub::detail::topk::select::max
+    num_segments_uniform_t,
+    total_num_items_guarantee_t
 #if !TUNE_BASE
     ,
     policy_hub_t<KeyT, OffsetT>
@@ -89,38 +92,29 @@ void topk_keys(nvbench::state& state, nvbench::type_list<KeyT, OffsetT, OutOffse
 
   // Retrieve axis parameters
   const auto max_elements      = static_cast<size_t>(state.get_int64("Elements{io}"));
-  const auto segment_size      = static_cast<size_t>(state.get_int64("SegmentSize"));
-  const auto selected_elements = static_cast<size_t>(state.get_int64("SelectedElements"));
+  const auto segment_size      = static_cast<::cuda::std::ptrdiff_t>(MaxSegmentSize);
+  const auto selected_elements = static_cast<::cuda::std::ptrdiff_t>(MaxNumSelected);
   const auto num_segments      = ::cuda::std::max<std::size_t>(1, (max_elements / segment_size));
   const auto elements          = num_segments * segment_size;
   const auto total_num_items   = total_num_items_guarantee_t{static_cast<::cuda::std::int64_t>(elements)};
   const bit_entropy entropy    = str_to_entropy(state.get_string("Entropy"));
 
   // Skip workloads where k exceeds the segment size
-  if (selected_elements >= elements)
+  if (selected_elements >= segment_size)
   {
-    state.skip("We only support the case where the variable SelectedElements is smaller than the variable "
-               "Elements{io}.");
-    return;
-  }
-
-  // Skip workloads where the segment size exceeds shared memory capacity
-  if (segment_size > max_segment_size)
-  {
-    state.skip("The specified SegmentSize exceeds the maximum segment size that can fit in shared memory for the given "
-               "KeyT.");
+    state.skip("Skipping workload where K >= SegmentSize.");
     return;
   }
 
   thrust::device_vector<KeyT> in_keys_buffer = generate(elements, entropy);
   thrust::device_vector<KeyT> out_keys_buffer(selected_elements * num_segments, thrust::no_init);
-  key_input_it_t d_keys_in_ptr   = thrust::raw_pointer_cast(in_keys_buffer.data());
-  key_output_it_t d_keys_out_ptr = thrust::raw_pointer_cast(out_keys_buffer.data());
-  auto d_keys_in  = cuda::make_strided_iterator(cuda::make_counting_iterator(d_keys_in_ptr), segment_size);
-  auto d_keys_out = cuda::make_strided_iterator(cuda::make_counting_iterator(d_keys_out_ptr), selected_elements);
+  auto d_keys_in_ptr  = thrust::raw_pointer_cast(in_keys_buffer.data());
+  auto d_keys_out_ptr = thrust::raw_pointer_cast(out_keys_buffer.data());
+  auto d_keys_in      = cuda::make_strided_iterator(cuda::make_counting_iterator(d_keys_in_ptr), segment_size);
+  auto d_keys_out     = cuda::make_strided_iterator(cuda::make_counting_iterator(d_keys_out_ptr), selected_elements);
 
-  auto segment_sizes     = seg_size_t{static_cast<::cuda::std::int64_t>(segment_size)};
-  auto k                 = k_value_t{static_cast<::cuda::std::int64_t>(selected_elements)};
+  auto segment_sizes     = seg_size_t{};
+  auto k                 = k_value_t{};
   auto select_directions = select_direction_value_t{};
 
   state.add_element_count(elements, "NumElements");
@@ -142,6 +136,7 @@ void topk_keys(nvbench::state& state, nvbench::type_list<KeyT, OffsetT, OutOffse
     k,
     select_directions,
     num_segments,
+    total_num_items,
     0);
 
   thrust::device_vector<nvbench::uint8_t> temp(temp_size, thrust::no_init);
@@ -160,6 +155,7 @@ void topk_keys(nvbench::state& state, nvbench::type_list<KeyT, OffsetT, OutOffse
       k,
       select_directions,
       num_segments,
+      total_num_items,
       launch.get_stream());
   });
 }
@@ -168,13 +164,16 @@ using key_type_list          = nvbench::type_list<float>;
 using segment_size_type_list = nvbench::type_list<uint32_t>;
 using out_offset_type_list   = nvbench::type_list<uint32_t>;
 
-// seq_lens = [seq_len] if seq_len > 0 else [2049, 4096, 8192, 16384, 32768, 65536, 131072, 256 * 1024, 512 * 1024]
-// (i.e., 2**11 to 2**19)
+using segment_size_        = nvbench::type_list<uint32_t>;
+using out_offset_type_list = nvbench::type_list<uint32_t>;
 
-NVBENCH_BENCH_TYPES(fixed_seg_size_topk_keys, NVBENCH_TYPE_AXES(key_type_list, segment_size_type_list, out_offset_type_list))
-  .set_name("base")
-  .set_type_axes_names({"KeyT{ct}", "SegmentSize{ct}", "OutOffsetT{ct}"})
+using small_segment_size_list = nvbench::enum_type_list<64, 128, 256, 512, 1024>;
+using small_k_list            = nvbench::enum_type_list<8, 16, 32, 128, 512, 1024>;
+
+NVBENCH_BENCH_TYPES(
+  fixed_seg_size_topk_keys,
+  NVBENCH_TYPE_AXES(key_type_list, small_segment_size_list, small_k_list, segment_size_type_list, out_offset_type_list))
+  .set_name("small")
+  .set_type_axes_names({"KeyT{ct}", "MaxSegmentSize{ct}", "MaxNumSelected{ct}", "SegmentSize{ct}", "OutOffsetT{ct}"})
   .add_int64_power_of_two_axis("Elements{io}", nvbench::range(28, 28, 4))
-  .add_int64_power_of_two_axis("SegmentSize", nvbench::range(10, 14, 1)
-  .add_int64_power_of_two_axis("SelectedElements", nvbench::range(3, 23, 4))
   .add_string_axis("Entropy", {"1.000", "0.544", "0.201", "0.000"});

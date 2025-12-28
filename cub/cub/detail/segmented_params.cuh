@@ -203,7 +203,8 @@ constexpr _CCCL_HOST_DEVICE auto resolve_param(ParamT const& p, [[maybe_unused]]
   if constexpr (is_static_param_v<ParamT>)
   {
     // Case 1: Compile-time constant.
-    return ParamT::static_value;
+    static_assert(ParamT::is_exact, "Static parameter must have exact value");
+    return ParamT::static_min_value;
   }
   else if constexpr (is_uniform_param_v<ParamT>)
   {
