@@ -169,7 +169,7 @@ inline ::std::ostream& operator<<(::std::ostream& os, BlockScanAlgorithm algo)
 //! are partitioned in a :ref:`blocked arrangement <flexible-data-arrangement>` across 128 threads
 //! where each thread owns 4 consecutive items.
 //!
-//! .. literalinclude:: ../../examples/block/example_block_scan.cu
+//! .. literalinclude:: ../../../cub/examples/block/example_block_scan.cu
 //!     :language: c++
 //!     :dedent:
 //!     :start-after: example-begin exclusive-sum-array
@@ -291,7 +291,7 @@ public:
   //! The code snippet below illustrates an exclusive prefix sum of 128 integer items that
   //! are partitioned across 128 threads.
   //!
-  //! .. literalinclude:: ../../examples/block/example_block_scan.cu
+  //! .. literalinclude:: ../../../cub/examples/block/example_block_scan.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin exclusive-sum-single
@@ -330,7 +330,7 @@ public:
   //! The code snippet below illustrates an exclusive prefix sum of 128 integer items that
   //! are partitioned across 128 threads.
   //!
-  //! .. literalinclude:: ../../examples/block/example_block_scan.cu
+  //! .. literalinclude:: ../../../cub/examples/block/example_block_scan.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin exclusive-sum-aggregate
@@ -379,13 +379,13 @@ public:
   //! prefix functor to maintain a running total between block-wide scans.  Each tile consists
   //! of 128 integer items that are partitioned across 128 threads.
   //!
-  //! .. literalinclude:: ../../examples/block/example_block_scan.cu
+  //! .. literalinclude:: ../../../cub/examples/block/example_block_scan.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin block-prefix-callback-op
   //!     :end-before: example-end block-prefix-callback-op
   //!
-  //! .. literalinclude:: ../../examples/block/example_block_scan.cu
+  //! .. literalinclude:: ../../../cub/examples/block/example_block_scan.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin exclusive-sum-single-prefix-callback
@@ -438,7 +438,7 @@ public:
   //! are partitioned in a :ref:`blocked arrangement <flexible-data-arrangement>` across 128 threads
   //! where each thread owns 4 consecutive items.
   //!
-  //! .. literalinclude:: ../../examples/block/example_block_scan.cu
+  //! .. literalinclude:: ../../../cub/examples/block/example_block_scan.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin exclusive-sum-array
@@ -485,7 +485,7 @@ public:
   //! a :ref:`blocked arrangement <flexible-data-arrangement>` across 128 threads where each thread owns
   //! 4 consecutive items.
   //!
-  //! .. literalinclude:: ../../examples/block/example_block_scan.cu
+  //! .. literalinclude:: ../../../cub/examples/block/example_block_scan.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin exclusive-sum-array-aggregate
@@ -545,13 +545,13 @@ public:
   //! of 512 integer items that are partitioned in a :ref:`blocked arrangement <flexible-data-arrangement>`
   //! across 128 threads where each thread owns 4 consecutive items.
   //!
-  //! .. literalinclude:: ../../examples/block/example_block_scan.cu
+  //! .. literalinclude:: ../../../cub/examples/block/example_block_scan.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin block-prefix-callback-op
   //!     :end-before: example-end block-prefix-callback-op
   //!
-  //! .. literalinclude:: ../../examples/block/example_block_scan.cu
+  //! .. literalinclude:: ../../../cub/examples/block/example_block_scan.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin exclusive-sum-prefix-callback
@@ -606,7 +606,7 @@ public:
   //! The code snippet below illustrates an exclusive prefix max scan of 128 integer items that
   //! are partitioned across 128 threads.
   //!
-  //! .. literalinclude:: ../../examples/block/example_block_scan.cu
+  //! .. literalinclude:: ../../../cub/examples/block/example_block_scan.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin exclusive-scan-single
@@ -654,7 +654,7 @@ public:
   //! The code snippet below illustrates an exclusive prefix max scan of 128 integer items that
   //! are partitioned across 128 threads.
   //!
-  //! .. literalinclude:: ../../examples/block/example_block_scan.cu
+  //! .. literalinclude:: ../../../cub/examples/block/example_block_scan.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin exclusive-scan-aggregate
@@ -823,7 +823,7 @@ public:
   //! items that are partitioned in a [<em>blocked arrangement</em>](../index.html#sec5sec3)
   //! across 128 threads where each thread owns 4 consecutive items.
   //!
-  //! .. literalinclude:: ../../examples/block/example_block_scan.cu
+  //! .. literalinclude:: ../../../cub/examples/block/example_block_scan.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin exclusive-scan-array
@@ -981,13 +981,13 @@ public:
   //! prefix functor to maintain a running total between block-wide scans. Each tile consists
   //! of 128 integer items that are partitioned across 128 threads.
   //!
-  //! .. literalinclude:: ../../examples/block/example_block_scan.cu
+  //! .. literalinclude:: ../../../cub/examples/block/example_block_scan.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin block-prefix-callback-max-op
   //!     :end-before: example-end block-prefix-callback-max-op
   //!
-  //! .. literalinclude:: ../../examples/block/example_block_scan.cu
+  //! .. literalinclude:: ../../../cub/examples/block/example_block_scan.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin exclusive-scan-prefix-callback
@@ -1214,7 +1214,7 @@ public:
   //! The code snippet below illustrates an inclusive prefix sum of 128 integer items that
   //! are partitioned across 128 threads.
   //!
-  //! .. literalinclude:: ../../examples/block/example_block_scan.cu
+  //! .. literalinclude:: ../../../cub/examples/block/example_block_scan.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin inclusive-sum-single
@@ -1249,7 +1249,7 @@ public:
   //! The code snippet below illustrates an inclusive prefix sum of 128 integer items that
   //! are partitioned across 128 threads.
   //!
-  //! .. literalinclude:: ../../examples/block/example_block_scan.cu
+  //! .. literalinclude:: ../../../cub/examples/block/example_block_scan.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin inclusive-sum-single-aggregate
@@ -1390,7 +1390,7 @@ public:
   //! are partitioned in a :ref:`blocked arrangement <flexible-data-arrangement>` across 128 threads
   //! where each thread owns 4 consecutive items.
   //!
-  //! .. literalinclude:: ../../examples/block/example_block_scan.cu
+  //! .. literalinclude:: ../../../cub/examples/block/example_block_scan.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin inclusive-sum-array
@@ -1447,7 +1447,7 @@ public:
   //! are partitioned in a :ref:`blocked arrangement <flexible-data-arrangement>` across 128 threads
   //! where each thread owns 4 consecutive items.
   //!
-  //! .. literalinclude:: ../../examples/block/example_block_scan.cu
+  //! .. literalinclude:: ../../../cub/examples/block/example_block_scan.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin inclusive-sum-array-aggregate
@@ -1517,13 +1517,13 @@ public:
   //! of 512 integer items that are partitioned in a :ref:`blocked arrangement <flexible-data-arrangement>`
   //! across 128 threads where each thread owns 4 consecutive items.
   //!
-  //! .. literalinclude:: ../../examples/block/example_block_scan.cu
+  //! .. literalinclude:: ../../../cub/examples/block/example_block_scan.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin block-prefix-callback-op
   //!     :end-before: example-end block-prefix-callback-op
   //!
-  //! .. literalinclude:: ../../examples/block/example_block_scan.cu
+  //! .. literalinclude:: ../../../cub/examples/block/example_block_scan.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin inclusive-scan-prefix-callback
@@ -1593,7 +1593,7 @@ public:
   //! The code snippet below illustrates an inclusive prefix max scan of 128 integer items that
   //! are partitioned across 128 threads.
   //!
-  //! .. literalinclude:: ../../examples/block/example_block_scan.cu
+  //! .. literalinclude:: ../../../cub/examples/block/example_block_scan.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin inclusive-scan-single
@@ -1707,13 +1707,13 @@ public:
   //! prefix functor to maintain a running total between block-wide scans.  Each tile consists
   //! of 128 integer items that are partitioned across 128 threads.
   //!
-  //! .. literalinclude:: ../../examples/block/example_block_scan.cu
+  //! .. literalinclude:: ../../../cub/examples/block/example_block_scan.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin block-prefix-callback-max-op
   //!     :end-before: example-end block-prefix-callback-max-op
   //!
-  //! .. literalinclude:: ../../examples/block/example_block_scan.cu
+  //! .. literalinclude:: ../../../cub/examples/block/example_block_scan.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin inclusive-scan-prefix-callback-max
@@ -1773,7 +1773,7 @@ public:
   //! are partitioned in a [<em>blocked arrangement</em>](../index.html#sec5sec3) across 128 threads
   //! where each thread owns 4 consecutive items.
   //!
-  //! .. literalinclude:: ../../examples/block/example_block_scan.cu
+  //! .. literalinclude:: ../../../cub/examples/block/example_block_scan.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin inclusive-scan-array
