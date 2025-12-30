@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDAX__CUCO__HYPERLOGLOG__FINALIZER_CUH
-#define _CUDAX__CUCO__HYPERLOGLOG__FINALIZER_CUH
+#ifndef _CUDAX___CUCO___HYPERLOGLOG_FINALIZER_CUH
+#define _CUDAX___CUCO___HYPERLOGLOG_FINALIZER_CUH
 
 #include <cuda/__cccl_config>
 
@@ -197,4 +197,4 @@ private:
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _CUDAX__CUCO__HYPERLOGLOG__FINALIZER_CUH
+#endif // _CUDAX___CUCO___HYPERLOGLOG_FINALIZER_CUH

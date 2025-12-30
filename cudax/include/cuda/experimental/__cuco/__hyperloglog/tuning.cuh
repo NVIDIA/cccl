@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDAX__CUCO__HYPERLOGLOG__TUNING_CUH
-#define _CUDAX__CUCO__HYPERLOGLOG__TUNING_CUH
+#ifndef _CUDAX___CUCO___HYPERLOGLOG___TUNING_CUH
+#define _CUDAX___CUCO___HYPERLOGLOG___TUNING_CUH
 
 #include <cuda/__cccl_config>
 
@@ -186,4 +186,4 @@ CUDAX_CUCO_HLL_TUNING_ARR_DECL __bias_data_p18{189083.0, 185696.913, 182348.774,
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // CUDAX__CUCO__HYPERLOGLOG__TUNING_CUH
+#endif // _CUDAX___CUCO___HYPERLOGLOG_TUNING_CUH

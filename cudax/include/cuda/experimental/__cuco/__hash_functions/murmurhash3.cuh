@@ -19,8 +19,8 @@
  * platform, but your performance with the non-native version will be less than optimal.
  */
 
-#ifndef _CUDAX__CUCO__HASH_FUNCTIONS__MURMURHASH3_CUH
-#define _CUDAX__CUCO__HASH_FUNCTIONS__MURMURHASH3_CUH
+#ifndef _CUDAX___CUCO___HASH_FUNCTIONS_MURMURHASH3_CUH
+#define _CUDAX___CUCO___HASH_FUNCTIONS_MURMURHASH3_CUH
 
 #include <cuda/__cccl_config>
 
@@ -842,4 +842,4 @@ private:
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _CUDAX__CUCO__HASH_FUNCTIONS__MURMURHASH3_CUH
+#endif // _CUDAX___CUCO___HASH_FUNCTIONS_MURMURHASH3_CUH

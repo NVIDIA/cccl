@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDAX__CUCO__HASH_FUNCTIONS__UTILS_CUH
-#define _CUDAX__CUCO__HASH_FUNCTIONS__UTILS_CUH
+#ifndef _CUDAX___CUCO___HASH_FUNCTIONS_UTILS_CUH
+#define _CUDAX___CUCO___HASH_FUNCTIONS_UTILS_CUH
 
 #include <cuda/__cccl_config>
 
@@ -143,4 +143,4 @@ struct _Byte_holder<_KeySize, _ChunkSize, _BlockSize, _UseTailBlock, _BlockT, tr
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _CUDAX__CUCO__HASH_FUNCTIONS__UTILS_CUH
+#endif // _CUDAX___CUCO___HASH_FUNCTIONS_UTILS_CUH

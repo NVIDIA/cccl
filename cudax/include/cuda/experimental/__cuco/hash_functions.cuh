@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDAX__CUCO_HASH_FUNCTIONS_CUH
-#define _CUDAX__CUCO_HASH_FUNCTIONS_CUH
+#ifndef _CUDAX___CUCO_HASH_FUNCTIONS_CUH
+#define _CUDAX___CUCO_HASH_FUNCTIONS_CUH
 
 #include <cuda/__cccl_config>
 
@@ -94,4 +94,4 @@ public:
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _CUDAX__CUCO_HASH_FUNCTIONS_CUH
+#endif // _CUDAX___CUCO_HASH_FUNCTIONS_CUH

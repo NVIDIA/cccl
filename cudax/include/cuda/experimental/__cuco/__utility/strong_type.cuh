@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDAX__CUCO__UTILITY__STRONG_TYPE_CUH
-#define _CUDAX__CUCO__UTILITY__STRONG_TYPE_CUH
+#ifndef _CUDAX___CUCO___UTILITY_STRONG_TYPE_CUH
+#define _CUDAX___CUCO___UTILITY_STRONG_TYPE_CUH
 
 #include <cuda/__cccl_config>
 
@@ -63,4 +63,4 @@ struct __strong_type
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _CUDAX__CUCO__UTILITY__STRONG_TYPE_CUH
+#endif // _CUDAX___CUCO___UTILITY_STRONG_TYPE_CUH
