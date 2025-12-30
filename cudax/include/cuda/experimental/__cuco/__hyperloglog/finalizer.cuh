@@ -50,7 +50,7 @@ public:
   //! @brief Constructs an HLL finalizer object.
   //!
   //! @param precision HLL precision parameter
-  _CCCL_API constexpr _Finalizer(int __precision_)
+  _CCCL_API constexpr _Finalizer(int __precision_) noexcept
       : __precision{__precision_}
       , __m{static_cast<int>(1u << __precision_)}
   {}
