@@ -123,7 +123,7 @@ _CCCL_VISIBILITY_HIDDEN __launch_bounds__(_BlockThreads) __global__
   void __completion_kernel(__state_base_t<_Rcvr, _Variant>* __state)
 {
   _CCCL_ASSERT(__state->__results_.__index() != __npos, "__completion_kernel called with empty results");
-  _Variant::__visit(__visit_results{}, __state->__results_, __state->__rcvr_);
+  __visit(__visit_results{}, __state->__results_, __state->__rcvr_);
 }
 
 // This is the environment of the inner receiver that is used to connect the child sender.
@@ -229,7 +229,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __opstate_t
   template <class _Rcvr2>
   _CCCL_API auto __set_results(_Rcvr2& __rcvr) noexcept
   {
-    __results_t::__visit(__visit_results{}, __get_state().__state_.__results_, __rcvr);
+    __visit(__visit_results{}, __get_state().__state_.__results_, __rcvr);
   }
 
 private:
@@ -322,7 +322,9 @@ private:
   // in dyncamically-allocated managed memory.
   [[nodiscard]] _CCCL_API constexpr auto __get_state() noexcept -> __state_t&
   {
-    return __state_.__index() == 0 ? __state_.template __get<0>() : __state_.template __get<1>()->__value;
+    return __state_.__index() == 0
+           ? execution::__variant_get<0>(__state_)
+           : execution::__variant_get<1>(__state_)->__value;
   }
 
   stream_ref __stream_;
