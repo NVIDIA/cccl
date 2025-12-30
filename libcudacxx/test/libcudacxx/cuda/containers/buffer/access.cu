@@ -86,6 +86,37 @@ C2H_CCCLRT_TEST("cuda::buffer access and stream", "[container][buffer]", test_ty
     }
   }
 
+  SECTION("cuda::buffer::memory_resource")
+  {
+    static_assert(noexcept(cuda::std::declval<const Buffer&>().memory_resource()));
+
+    { // Returns the resource used during construction
+      Buffer buf{stream, resource, {T(1), T(42), T(1337), T(0)}};
+      const auto& mr = buf.memory_resource();
+      CCCLRT_CHECK(mr == resource);
+    }
+
+    { // Works with empty buffer
+      Buffer buf{stream, resource, 0, cuda::no_init};
+      const auto& mr = buf.memory_resource();
+      CCCLRT_CHECK(mr == resource);
+    }
+
+    { // Returns same resource after move assignment
+      Buffer buf1{stream, resource, {T(1), T(42)}};
+      const auto& mr1 = buf1.memory_resource();
+
+      Resource other_resource = extract_properties<TestT>::get_resource();
+      Buffer buf2{stream, other_resource, {T(99), T(88)}};
+      const auto& mr2 = buf2.memory_resource();
+
+      buf1 = cuda::std::move(buf2);
+      // After move assignment, buf1 should have buf2's resource
+      const auto& mr_after = buf1.memory_resource();
+      CCCLRT_CHECK(mr_after == other_resource);
+    }
+  }
+
   SECTION("cuda::buffer::stream")
   {
     Buffer buf{stream, resource, {T(1), T(42), T(1337), T(0)}};
@@ -100,5 +131,61 @@ C2H_CCCLRT_TEST("cuda::buffer access and stream", "[container][buffer]", test_ty
 
     CCCLRT_CHECK(buf.stream() == stream);
     buf.destroy(stream);
+  }
+
+  SECTION("cuda::buffer::destroy")
+  {
+    { // destroy with explicit stream
+      Buffer buf{stream, resource, {T(1), T(42), T(1337), T(0)}};
+      CCCLRT_CHECK(!buf.empty());
+      CCCLRT_CHECK(buf.data() != nullptr);
+
+      cuda::stream destroy_stream{cuda::device_ref{0}};
+      destroy_stream.wait(stream);
+      buf.destroy(destroy_stream);
+      CCCLRT_CHECK(buf.empty());
+      CCCLRT_CHECK(buf.data() == nullptr);
+    }
+
+    { // destroy without explicit stream (uses stored stream)
+      Buffer buf{stream, resource, {T(1), T(42), T(1337), T(0)}};
+      CCCLRT_CHECK(!buf.empty());
+      CCCLRT_CHECK(buf.data() != nullptr);
+
+      buf.destroy();
+      CCCLRT_CHECK(buf.empty());
+      CCCLRT_CHECK(buf.data() == nullptr);
+    }
+
+    { // destroy empty buffer
+      Buffer buf{stream, resource, 0, cuda::no_init};
+      CCCLRT_CHECK(buf.empty());
+      CCCLRT_CHECK(buf.data() == nullptr);
+
+      buf.destroy();
+      CCCLRT_CHECK(buf.empty());
+      CCCLRT_CHECK(buf.data() == nullptr);
+    }
+
+    { // destroy and then move assign (should be valid)
+      Buffer buf1{stream, resource, {T(1), T(42), T(1337)}};
+      Buffer buf2{stream, resource, {T(99), T(88)}};
+
+      buf1.destroy();
+      CCCLRT_CHECK(buf1.empty());
+
+      buf1 = cuda::std::move(buf2);
+      CCCLRT_CHECK(buf1.size() == 2);
+      CCCLRT_CHECK(buf2.empty());
+    }
+
+    { // destroy and then destroy again (should be safe)
+      Buffer buf{stream, resource, {T(1), T(42)}};
+      buf.destroy();
+      CCCLRT_CHECK(buf.empty());
+
+      buf.destroy();
+      CCCLRT_CHECK(buf.empty());
+    }
   }
 }
