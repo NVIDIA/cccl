@@ -36,7 +36,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA
 //! @rst
 //! For \c has_property we require the following free function to be callable
 //!
-//! .. code cpp::
+//! .. code-block:: cpp
 //!
 //!    get_property(const Resource& res, Property prop);
 //!
@@ -51,7 +51,7 @@ using __property_value_t = typename _Property::value_type;
 //! @brief The \c property_with_value concept verifies that a Property is stateful and signals this through the
 //! `value_type` alias
 //! @rst
-//! .. code cpp::
+//! .. code-block:: cpp
 //!
 //!    struct stateless_property {};
 //!    static_assert(!cuda::property_with_value<stateless_property>);
@@ -68,7 +68,7 @@ _CCCL_CONCEPT property_with_value = _CCCL_REQUIRES_EXPR((_Property))(typename(__
 //! For \c has_property_with we require the following free function to be callable and its return type to exactly match
 //! the ``value_type`` of the Property
 //!
-//! .. code cpp::
+//! .. code-block:: cpp
 //!
 //!    struct stateless_property {};
 //!    constexpr void get_property(const Resource& res, stateless_property) {}
@@ -130,7 +130,7 @@ _CCCL_END_NAMESPACE_CPO
 
 //! @brief The \c forward_property CRTP template allows Derived to forward all properties of Upstream
 //! @rst
-//! .. code cpp::
+//! .. code-block:: cpp
 //!
 //!    class UpstreamWithProperties;
 //!
