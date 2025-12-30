@@ -92,7 +92,6 @@ public:
       , __precision{::cuda::std::countr_zero(
           __sketch_bytes(static_cast<::cuda::experimental::cuco::__sketch_size_kb_t>(sketch_span.size() / 1024.0))
           / sizeof(register_type))}
-      , __register_mask{(1ull << __precision) - 1}
       , __sketch{reinterpret_cast<int*>(sketch_span.data()), __sketch_bytes() / sizeof(register_type)}
   // MSVC fails with register_type*, use int* instead
   {
@@ -144,8 +143,8 @@ public:
   _CCCL_DEVICE constexpr void __add(const _Tp& __item) noexcept
   {
     const auto __h      = __hash(__item);
-    const auto __reg    = __h & __register_mask;
-    const auto __zeroes = ::cuda::std::countl_zero(__h | __register_mask) + 1; // __clz
+    const auto __reg    = __h & __register_mask();
+    const auto __zeroes = ::cuda::std::countl_zero(__h | __register_mask()) + 1; // __clz
 
     // reversed order (same one as Spark uses)
     // const auto __reg    = __h >> ((sizeof(__hash_value_type) * 8) - __precision);
@@ -541,6 +540,15 @@ public:
   }
 
 private:
+  //!
+  //! @brief Gets the register mask used to separate register index from count.
+  //!
+  //! @return The register mask
+  [[nodiscard]] _CCCL_API constexpr __hash_value_type __register_mask() const noexcept
+  {
+    return (1ull << __precision) - 1;
+  }
+
   //! @brief Atomically updates the register at position `i` with `max(reg[i], value)`.
   //!
   //! @tparam Scope CUDA thread scope
@@ -592,7 +600,6 @@ private:
 
   hasher __hash; ///< Hash function used to hash items
   int32_t __precision; ///< HLL precision parameter
-  __hash_value_type __register_mask; ///< Mask used to separate register index from count
   ::cuda::std::span<register_type> __sketch; ///< HLL sketch storage
 
   template <class _Tp_, ::cuda::thread_scope _Scope_, class _Hash_>
