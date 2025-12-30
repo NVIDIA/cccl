@@ -272,7 +272,7 @@ public:
       , linear_tid(RowMajorTid(BlockDimX, BlockDimY, BlockDimZ))
   {}
 
-  //! @}  end member group
+  //! @}
   //! @name Exclusive prefix sum operations
   //! @{
 
@@ -417,7 +417,7 @@ public:
     ExclusiveScan(input, output, ::cuda::std::plus<>{}, block_prefix_callback_op);
   }
 
-  //! @} end member group
+  //! @}
   //! @name Exclusive prefix sum operations (multiple data per thread)
   //! @{
 
@@ -588,7 +588,7 @@ public:
     ExclusiveScan(input, output, ::cuda::std::plus<>{}, block_prefix_callback_op);
   }
 
-  //! @} end member group // Exclusive prefix sums (multiple data per thread)
+  //! @}
   //! @name Exclusive prefix scan operations
   //! @{
 
@@ -803,7 +803,7 @@ public:
     InternalBlockScan(temp_storage).ExclusiveScan(input, output, scan_op, block_prefix_callback_op);
   }
 
-  //! @} end member group // Inclusive prefix sums
+  //! @}
   //! @name Exclusive prefix scan operations (multiple data per thread)
   //! @{
 
@@ -1041,7 +1041,7 @@ public:
     detail::ThreadScanExclusive(input, output, scan_op, thread_prefix);
   }
 
-  //! @}  end member group
+  //! @}
 #ifndef _CCCL_DOXYGEN_INVOKED // Do not document no-initial-value scans
 
   //! @name Exclusive prefix scan operations (no initial value, single datum per thread)
@@ -1107,7 +1107,7 @@ public:
     InternalBlockScan(temp_storage).ExclusiveScan(input, output, scan_op, block_aggregate);
   }
 
-  //! @} end member group // Exclusive prefix scans (no initial value, single datum per thread)
+  //! @}
   //! @name Exclusive prefix scan operations (no initial value, multiple data per thread)
   //! @{
 
@@ -1195,7 +1195,7 @@ public:
     detail::ThreadScanExclusive(input, output, scan_op, thread_partial, (linear_tid != 0));
   }
 
-  //! @} end member group // Exclusive prefix scans (no initial value, multiple data per thread)
+  //! @}
 #endif // _CCCL_DOXYGEN_INVOKED  // Do not document no-initial-value scans
 
   //! @name Inclusive prefix sum operations
@@ -1371,7 +1371,7 @@ public:
     InclusiveScan(input, output, ::cuda::std::plus<>{}, block_prefix_callback_op);
   }
 
-  //! @}  end member group
+  //! @}
   //! @name Inclusive prefix sum operations (multiple data per thread)
   //! @{
 
@@ -1575,7 +1575,7 @@ public:
     }
   }
 
-  //! @}  end member group
+  //! @}
   //! @name Inclusive prefix scan operations
   //! @{
 
@@ -1753,7 +1753,7 @@ public:
     InternalBlockScan(temp_storage).InclusiveScan(input, output, scan_op, block_prefix_callback_op);
   }
 
-  //! @}  end member group
+  //! @}
   //! @name Inclusive prefix scan operations (multiple data per thread)
   //! @{
 
@@ -2162,7 +2162,7 @@ public:
     }
   }
 
-  //! @}  end member group
+  //! @}
 };
 
 CUB_NAMESPACE_END
