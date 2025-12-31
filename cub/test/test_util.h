@@ -897,9 +897,8 @@ __host__ __device__ __forceinline__ void InitValue(GenMode gen_mode, TestFoo& va
   InitValue(gen_mode, value.w, index);
 }
 
-_CCCL_BEGIN_NAMESPACE_CUDA_STD
 template <>
-class numeric_limits<TestFoo>
+class ::cuda::std::numeric_limits<TestFoo>
 {
 public:
   static constexpr bool is_specialized = true;
@@ -922,7 +921,6 @@ public:
       numeric_limits<char>::lowest());
   }
 };
-_CCCL_END_NAMESPACE_CUDA_STD
 
 //---------------------------------------------------------------------
 // Complex data type TestBar (with optimizations for fence-free warp-synchrony)
@@ -1027,9 +1025,8 @@ __host__ __device__ __forceinline__ void InitValue(GenMode gen_mode, TestBar& va
   InitValue(gen_mode, value.y, index);
 }
 
-_CCCL_BEGIN_NAMESPACE_CUDA_STD
 template <>
-class numeric_limits<TestBar>
+class cuda::std::numeric_limits<TestBar>
 {
 public:
   static constexpr bool is_specialized = true;
@@ -1044,7 +1041,6 @@ public:
     return TestBar(numeric_limits<long long>::lowest(), numeric_limits<int>::lowest());
   }
 };
-_CCCL_END_NAMESPACE_CUDA_STD
 
 /******************************************************************************
  * Helper routines for list comparison and display
