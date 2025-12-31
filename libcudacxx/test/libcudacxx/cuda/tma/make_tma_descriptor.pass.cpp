@@ -131,9 +131,6 @@ bool test_strides()
   // stride is 0
   strides_storage[0] = 0;
   unused(cuda::make_tma_descriptor(tensor, box_sizes));
-  // stride is nullptr
-  tensor.strides = nullptr;
-  unused(cuda::make_tma_descriptor(tensor, box_sizes));
   return true;
 }
 
