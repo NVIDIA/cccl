@@ -52,6 +52,10 @@ def add_op(a, b):
     return a + b
 
 
+# Lambda function for testing lambda support as reducers
+add_op_lambda = lambda a, b: a + b  # noqa: E731
+
+
 reduce_params = [
     pytest.param(
         dt,
@@ -78,6 +82,44 @@ def test_device_reduce(dtype, num_items, op):
     assert h_output[0] == pytest.approx(
         sum(h_input) + init_value, rel=0.08 if dtype == np.float16 else 0
     )  # obtained relative error value from c2h/include/c2h/check_results.cuh
+
+
+def test_device_reduce_with_lambda():
+    """Test that lambda functions can be used as reducers."""
+    dtype = np.int32
+    init_value = 42
+    num_items = 1024
+
+    h_init = np.array([init_value], dtype=dtype)
+    d_output = numba.cuda.device_array(1, dtype=dtype)
+
+    h_input = random_int(num_items, dtype)
+    d_input = numba.cuda.to_device(h_input)
+
+    # Use a lambda function directly as the reducer
+    cuda.compute.reduce_into(
+        d_input, d_output, lambda a, b: a + b, d_input.size, h_init
+    )
+    h_output = d_output.copy_to_host()
+    assert h_output[0] == sum(h_input) + init_value
+
+
+def test_device_reduce_with_lambda_variable():
+    """Test that lambda functions assigned to variables can be used as reducers."""
+    dtype = np.int32
+    init_value = 42
+    num_items = 1024
+
+    h_init = np.array([init_value], dtype=dtype)
+    d_output = numba.cuda.device_array(1, dtype=dtype)
+
+    h_input = random_int(num_items, dtype)
+    d_input = numba.cuda.to_device(h_input)
+
+    # Use a lambda function assigned to a variable as the reducer
+    cuda.compute.reduce_into(d_input, d_output, add_op_lambda, d_input.size, h_init)
+    h_output = d_output.copy_to_host()
+    assert h_output[0] == sum(h_input) + init_value
 
 
 def test_complex_device_reduce():
