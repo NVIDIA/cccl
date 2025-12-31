@@ -823,7 +823,7 @@ public:
       : temp_storage(temp_storage.Alias())
   {}
 
-  //! @} end member group
+  //! @}
   //! @name Structured exchanges
   //! @{
 
@@ -1034,7 +1034,7 @@ public:
     BlockedToWarpStriped(input_items, output_items, detail::bool_constant_v<WarpTimeSlicing>);
   }
 
-  //! @}  end member group
+  //! @}
   //! @name Scatter exchanges
   //! @{
 
@@ -1196,7 +1196,7 @@ public:
     }
   }
 
-  //! @}  end member group
+  //! @}
 
 #ifndef _CCCL_DOXYGEN_INVOKED // Do not document
 
