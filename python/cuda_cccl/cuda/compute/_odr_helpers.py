@@ -31,6 +31,8 @@ from typing import TYPE_CHECKING
 from numba import types
 from numba.core.extending import intrinsic
 
+from ._utils import sanitize_identifier
+
 if TYPE_CHECKING:
     from numba.core.typing import Signature
 
@@ -145,8 +147,9 @@ def _create_void_ptr_wrapper(
     void_sig = types.void(*(types.voidptr for _ in arg_specs))
 
     # Create unique wrapper name
+    sanitized_name = sanitize_identifier(name)
     unique_suffix = hex(id(func))[2:]
-    wrapper_name = f"wrapped_{name}_{unique_suffix}"
+    wrapper_name = f"wrapped_{sanitized_name}_{unique_suffix}"
 
     # We need exec() here because Numba's @intrinsic decorator requires:
     # 1. A function with a specific signature visible at parse time
