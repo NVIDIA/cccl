@@ -21,7 +21,7 @@ from ._iterators import (
 )
 
 # -----------------------------------------------------------------------------
-# Constants (used by host-side code; device code inlines these for Numba compat)
+# Constants
 # -----------------------------------------------------------------------------
 
 # SplitMix64 step (≈ 2^64 / φ)
@@ -45,13 +45,12 @@ def _mix64(z):
     SplitMix64-style 64-bit mixing function.
 
     Used as the round function core inside the Feistel network.
-    Uses SPLITMIX64_MUL1 and SPLITMIX64_MUL2 constants (inlined for Numba).
     """
     z = uint64(z)
     z ^= z >> uint64(30)
-    z = uint64(z * uint64(0xBF58476D1CE4E5B9))  # SPLITMIX64_MUL1
+    z = uint64(z * uint64(SPLITMIX64_MUL1))
     z ^= z >> uint64(27)
-    z = uint64(z * uint64(0x94D049BB133111EB))  # SPLITMIX64_MUL2
+    z = uint64(z * uint64(SPLITMIX64_MUL2))
     z ^= z >> uint64(31)
     return z
 
@@ -72,8 +71,7 @@ def _feistel_balanced(x, key, half_bits, half_mask, rounds):
 
     for rnd in range(rounds):
         # Round function F(R) -> half_bits bits
-        # Uses FEISTEL_ROUND_C constant (inlined for Numba)
-        z = R ^ key ^ uint64(rnd * 0xD6E8FEB86659FD93)
+        z = R ^ key ^ uint64(rnd * FEISTEL_ROUND_C)
         F = _mix64(z) & half_mask
 
         # Standard Feistel step
