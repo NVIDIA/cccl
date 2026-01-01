@@ -31,5 +31,4 @@ reduce_into(it_input, d_output, OpKind.PLUS, len(d_input), h_init)
 # Verify the result.
 expected_output = cp.sum(d_input**2).get()
 assert d_output[0] == expected_output
-print(
-    f"Transform iterator result: {d_output[0]} (expected: {expected_output})")
+print(f"Transform iterator result: {d_output[0]} (expected: {expected_output})")
