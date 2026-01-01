@@ -17,6 +17,7 @@ from ._iterators import (
     make_transform_iterator,
 )
 from ._permutation_iterator import make_permutation_iterator
+from ._shuffle_iterator import make_shuffle_iterator
 from ._zip_iterator import make_zip_iterator
 
 
@@ -217,6 +218,39 @@ def PermutationIterator(values, indices):
         A ``PermutationIterator`` object that yields values[indices[i]] at position i
     """
     return make_permutation_iterator(values, indices)
+
+
+def ShuffleIterator(num_items, seed, rounds=8):
+    """Lazy, stateless iterator that produces a deterministic "random" permutation.
+
+    This iterator yields indices in ``[0, num_items)`` in a shuffled order
+    without materializing a permutation table. Each permuted index is computed
+    on demand using a stateless bijection derived from the seed.
+
+    This is particularly useful for randomly accessing data without creating
+    an explicit index array, and composes well with ``PermutationIterator``
+    to traverse data in shuffled order without extra storage.
+
+    The permutation uses a balanced Feistel network with cycle-walking to
+    ensure bijectivity on ``[0, num_items)``.
+
+    Example:
+        The code snippet below demonstrates the usage of a ``ShuffleIterator``
+        to randomly permute indices:
+
+        .. literalinclude:: ../../python/cuda_cccl/tests/compute/examples/iterator/shuffle_iterator_basic.py
+            :language: python
+            :start-after: # example-begin
+
+    Args:
+        num_items: Number of elements in the domain to permute
+        seed: Seed used to parameterize the permutation
+        rounds: Number of Feistel rounds to use (default: 8)
+
+    Returns:
+        A ``ShuffleIterator`` object that yields shuffled indices
+    """
+    return make_shuffle_iterator(num_items, seed, rounds)
 
 
 def ZipIterator(*iterators):
