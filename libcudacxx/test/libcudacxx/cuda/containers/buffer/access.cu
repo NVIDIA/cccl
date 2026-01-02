@@ -108,7 +108,6 @@ C2H_CCCLRT_TEST("cuda::buffer access and stream", "[container][buffer]", test_ty
 
       Resource other_resource = extract_properties<TestT>::get_resource();
       Buffer buf2{stream, other_resource, {T(99), T(88)}};
-      const auto& mr2 = buf2.memory_resource();
 
       buf1 = cuda::std::move(buf2);
       // After move assignment, buf1 should have buf2's resource

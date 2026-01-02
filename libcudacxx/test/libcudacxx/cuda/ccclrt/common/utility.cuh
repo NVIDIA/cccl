@@ -47,7 +47,6 @@ namespace
 {
 namespace test
 {
-
 template <typename T1, typename T2>
 T1& assign(T1& t1, T2&& t2)
 {
