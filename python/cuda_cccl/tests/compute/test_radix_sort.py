@@ -256,7 +256,8 @@ def test_radix_sort_keys_double_buffer(dtype, num_items, monkeypatch):
 )
 def test_radix_sort_pairs_double_buffer(dtype, num_items, monkeypatch):
     cc_major, _ = numba.cuda.get_current_device().compute_capability
-    if cc_major >= 9 or np.isdtype(dtype, np.uint32):
+    # NOTE: int16 failures seen only with NVRTC 13.1:
+    if cc_major >= 9 or np.isdtype(dtype, (np.int16, np.uint32)):
         import cuda.compute._cccl_interop
 
         monkeypatch.setattr(
@@ -306,7 +307,8 @@ DTYPE_SIZE_BIT_WINDOW = [
 )
 def test_radix_sort_pairs_bit_window(dtype, num_items, monkeypatch):
     cc_major, _ = numba.cuda.get_current_device().compute_capability
-    if cc_major >= 9 or np.isdtype(dtype, np.uint32):
+    # NOTE: int16 failures seen only with NVRTC 13.1:
+    if cc_major >= 9 or np.isdtype(dtype, (np.int16, np.uint32)):
         import cuda.compute._cccl_interop
 
         monkeypatch.setattr(

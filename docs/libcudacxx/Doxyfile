@@ -14,6 +14,8 @@ INPUT                  = ../../libcudacxx/include/cuda/__iterator \
                          ../../libcudacxx/include/cuda/__device \
                          ../../libcudacxx/include/cuda/__event \
                          ../../libcudacxx/include/cuda/__algorithm \
+                         ../../libcudacxx/include/cuda/__memory_resource \
+                         ../../libcudacxx/include/cuda/__memory_pool \
                          ../../libcudacxx/include/nv
 
 RECURSIVE              = YES

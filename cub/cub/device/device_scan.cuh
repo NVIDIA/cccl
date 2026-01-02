@@ -1027,7 +1027,7 @@ struct DeviceScan
     return ExclusiveScan(d_temp_storage, temp_storage_bytes, d_data, d_data, scan_op, init_value, num_items, stream);
   }
 
-  //! @}  end member group
+  //! @}
 
   //! @name Inclusive scans
   //! @{
@@ -1520,7 +1520,7 @@ struct DeviceScan
   {
     return InclusiveScan(d_temp_storage, temp_storage_bytes, d_data, d_data, scan_op, num_items, stream);
   }
-  //! @}  end member group
+  //! @}
 
   //! @name Scans by key
   //! @{
@@ -2146,7 +2146,7 @@ struct DeviceScan
                          stream);
   }
 
-  //! @}  end member group
+  //! @}
 };
 
 CUB_NAMESPACE_END

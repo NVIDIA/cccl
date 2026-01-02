@@ -1383,7 +1383,7 @@ private:
   }
 
 public:
-  //! @}  end member group
+  //! @}
   //! @name Key-value pairs
   //! @{
 
@@ -2781,7 +2781,7 @@ public:
       stream);
   }
 
-  //! @}  end member group
+  //! @}
 };
 
 CUB_NAMESPACE_END
