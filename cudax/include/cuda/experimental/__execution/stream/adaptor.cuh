@@ -271,7 +271,7 @@ private:
     auto const __launch_config    = get_launch_config(execution::get_env(__state.__state_.__rcvr_));
     using __launch_dims_t         = typename decltype(__launch_config)::hierarchy_type;
     constexpr int __block_threads = __launch_dims_t::static_count(gpu_thread, block);
-    int const __grid_blocks       = __launch_config.dims.count(block, grid);
+    int const __grid_blocks       = __launch_config.hierarchy().count(block, grid);
     static_assert(__block_threads != ::cuda::std::dynamic_extent);
 
     // Start the child operation state. This will launch kernels for all the predecessors
