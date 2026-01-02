@@ -47,6 +47,14 @@ namespace
 {
 namespace test
 {
+
+template <typename T1, typename T2>
+T1& assign(T1& t1, T2&& t2)
+{
+  t1 = std::forward<T2>(t2);
+  return t1;
+}
+
 struct _malloc_pinned
 {
 private:

@@ -271,7 +271,7 @@ C2H_CCCLRT_TEST("cuda::buffer constructors", "[container][buffer]", test_types)
       Buffer buf{stream, resource, {T(1), T(42), T(1337), T(0), T(12), T(-1)}};
       const auto* allocation = buf.data();
       const auto size        = buf.size();
-      buf                    = cuda::std::move(buf);
+      test::assign(buf, cuda::std::move(buf));
       CCCLRT_CHECK(buf.size() == size);
       CCCLRT_CHECK(buf.data() == allocation);
       CCCLRT_CHECK(equal_range(buf));
