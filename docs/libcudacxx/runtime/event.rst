@@ -21,7 +21,6 @@ Example:
 
 .. code:: cpp
 
-   #include <cuda/event>
    #include <cuda/stream>
 
    void record_on_stream(cuda::stream_ref stream, cudaEvent_t raw_handle) {
@@ -41,7 +40,6 @@ Availability: CCCL 3.1.0 / CUDA 13.1
 
 .. code:: cpp
 
-   #include <cuda/event>
    #include <cuda/stream>
    #include <cuda/devices>
 
@@ -65,7 +63,6 @@ Availability: CCCL 3.1.0 / CUDA 13.1
 
 .. code:: cpp
 
-   #include <cuda/event>
    #include <cuda/stream>
    #include <cuda/std/chrono>
 
