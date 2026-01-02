@@ -96,13 +96,18 @@ struct offset_by_alignment_resource
     return reinterpret_cast<char*>(ptr) + alignment;
   }
 
+  void* remove_alignment_offset(void* ptr, std::size_t alignment)
+  {
+    return reinterpret_cast<char*>(ptr) - alignment;
+  }
+
   void* allocate_sync(std::size_t size, std::size_t alignment)
   {
     return offset_by_alignment(resource_.allocate_sync(size + alignment, alignment), alignment);
   }
   void deallocate_sync(void* ptr, std::size_t size, std::size_t alignment)
   {
-    resource_.deallocate_sync(offset_by_alignment(ptr, -alignment), size + alignment, alignment);
+    resource_.deallocate_sync(remove_alignment_offset(ptr, alignment), size + alignment, alignment);
   }
   void* allocate(cuda::stream_ref stream, std::size_t size, std::size_t alignment)
   {
@@ -111,7 +116,7 @@ struct offset_by_alignment_resource
 
   void deallocate(cuda::stream_ref stream, void* ptr, std::size_t size, std::size_t alignment)
   {
-    resource_.deallocate(stream, offset_by_alignment(ptr, -alignment), size + alignment, alignment);
+    resource_.deallocate(stream, remove_alignment_offset(ptr, alignment), size + alignment, alignment);
   }
 
   bool operator==(const offset_by_alignment_resource&) const

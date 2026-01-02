@@ -104,7 +104,6 @@ C2H_CCCLRT_TEST("cuda::buffer access and stream", "[container][buffer]", test_ty
 
     { // Returns same resource after move assignment
       Buffer buf1{stream, resource, {T(1), T(42)}};
-      const auto& mr1 = buf1.memory_resource();
 
       Resource other_resource = extract_properties<TestT>::get_resource();
       Buffer buf2{stream, other_resource, {T(99), T(88)}};
