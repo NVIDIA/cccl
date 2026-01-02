@@ -414,6 +414,9 @@ __get_tensor_sizes(const ::DLTensor& __tensor, int __rank, ::CUtensorMapDataType
   int64_t __cumulative_size                 = 1;
   if (__input_strides == nullptr)
   {
+#  if DLPACK_MAJOR_VERSION > 1 || (DLPACK_MAJOR_VERSION == 1 && DLPACK_MINOR_VERSION >= 2)
+    _CCCL_THROW(::std::invalid_argument{"__tensor.strides=nullptr is not supported for DLPack v1.2 and later"});
+#  else
     for (int __i = 0; __i < __rank - 1; ++__i)
     {
       // TODO(fbusato): check mul overflow
@@ -430,6 +433,7 @@ __get_tensor_sizes(const ::DLTensor& __tensor, int __rank, ::CUtensorMapDataType
       __output_strides[__i] = __stride_bytes;
     }
     return __output_strides;
+#  endif // DLPACK_MAJOR_VERSION > 1 || (DLPACK_MAJOR_VERSION == 1 && DLPACK_MINOR_VERSION >= 2)
   }
   // TMA ignores the innermost stride (always 1).
   for (int __i = __rank - 2; __i >= 0; --__i)

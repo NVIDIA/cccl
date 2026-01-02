@@ -16,7 +16,6 @@ INPUT                  = ../../cudax/include/cuda/experimental/__container \
                          ../../cudax/include/cuda/experimental/__graph \
                          ../../cudax/include/cuda/experimental/__hierarchy \
                          ../../cudax/include/cuda/experimental/__launch \
-                         ../../cudax/include/cuda/experimental/__memory_resource \
                          ../../cudax/include/cuda/experimental/__stream \
                          ../../cudax/include/cuda/experimental/stf.cuh \
                          ../../cudax/include/cuda/experimental/__stf \
