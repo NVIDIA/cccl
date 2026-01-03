@@ -4,10 +4,7 @@
 
 # example-begin
 """
-Demonstrate using ShuffleIterator for deterministic random permutation.
-
-ShuffleIterator provides a lazy, stateless way to generate a shuffled
-ordering of indices without materializing a permutation table.
+Demonstrate using ShuffleIterator for deterministic random permutation of indices in ``[0, num_items)``.
 """
 
 import cupy as cp

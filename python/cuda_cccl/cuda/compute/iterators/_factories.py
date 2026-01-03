@@ -221,18 +221,7 @@ def PermutationIterator(values, indices):
 
 
 def ShuffleIterator(num_items, seed, rounds=8):
-    """Lazy, stateless iterator that produces a deterministic "random" permutation.
-
-    This iterator yields indices in ``[0, num_items)`` in a shuffled order
-    without materializing a permutation table. Each permuted index is computed
-    on demand using a stateless bijection derived from the seed.
-
-    This is particularly useful for randomly accessing data without creating
-    an explicit index array, and composes well with ``PermutationIterator``
-    to traverse data in shuffled order without extra storage.
-
-    The permutation uses a balanced Feistel network with cycle-walking to
-    ensure bijectivity on ``[0, num_items)``.
+    """Iterator that produces a deterministic "random" permutation of indices in ``[0, num_items)``.
 
     Example:
         The code snippet below demonstrates the usage of a ``ShuffleIterator``
@@ -258,9 +247,8 @@ def ZipIterator(*iterators):
 
     Similar to https://nvidia.github.io/cccl/thrust/api/classthrust_1_1zip__iterator.html
 
-    The resulting iterator yields gpu_struct objects with fields corresponding to each input iterator.
-    For 2 iterators, fields are named 'first' and 'second'. For N iterators, fields are indexed
-    as field_0, field_1, ..., field_N-1.
+    The resulting iterator structs with fields corresponding to each input iterator.
+    Fields can be accessed by index using `[]`.
 
     Example:
         The code snippet below demonstrates the usage of a ``ZipIterator``

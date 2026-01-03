@@ -2,14 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""
-Stateless shuffle iterator for cuda.compute.
-
-This module provides a lazy, deterministic "random" permutation of indices
-without materializing a permutation table. It is designed to compose with
-cuda.compute iterators (e.g. TransformIterator and PermutationIterator) and
-to be callable from device code.
-"""
 
 from numba import cuda, int64, uint64
 
@@ -34,10 +26,6 @@ SPLITMIX64_MUL2 = 0x94D049BB133111EB
 
 # Per-round constant to decorrelate Feistel rounds (any odd 64-bit constant works)
 FEISTEL_ROUND_C = 0xD6E8FEB86659FD93
-
-# -----------------------------------------------------------------------------
-# Device helpers
-# -----------------------------------------------------------------------------
 
 
 @cuda.jit(device=True, inline=True)
@@ -84,11 +72,6 @@ def _feistel_balanced(x, key, half_bits, half_mask, rounds):
     return (R << hb) | L
 
 
-# -----------------------------------------------------------------------------
-# Host-side utilities
-# -----------------------------------------------------------------------------
-
-
 def _splitmix64_host(x: int) -> int:
     """
     Host-side SplitMix64 used to derive a 64-bit key from the seed.
@@ -104,30 +87,42 @@ def _splitmix64_host(x: int) -> int:
     return z & ((1 << 64) - 1)
 
 
-# -----------------------------------------------------------------------------
-# Public API
-# -----------------------------------------------------------------------------
-
-
-def make_cache_key(num_items: int, seed: int, rounds: int):
+def _make_cache_key(num_items: int, seed: int, rounds: int):
     return (num_items, seed, rounds)
 
 
-@cache_with_key(make_cache_key)
+@cache_with_key(_make_cache_key)
 def make_shuffle_iterator(num_items: int, seed: int, rounds: int = 8):
     """
-    Lazy, stateless iterator that produces a deterministic "random" permutation
+    Iterator that produces a deterministic "random" permutation
     of indices in ``[0, num_items)``.
 
+
+
+    Parameters
+    ----------
+    num_items : int
+        Number of elements in the domain to permute.
+    seed : int
+        Seed used to parameterize the permutation. Different seeds produce
+        different (deterministic) permutations.
+    rounds : int, optional
+        Number of Feistel rounds to use. More rounds improve diffusion at the
+        cost of additional arithmetic. Typical values are 6–10.
+
+    Returns
+    -------
+    TransformIterator
+        An iterator that yields a shuffled ordering of indices in
+        ``[0, num_items)``.
+
+
+    Notes
+    -----
     This iterator does **not** materialize a permutation table. Instead, it
     computes each permuted index on demand using a *stateless bijection* derived
-    from a fixed seed. It is suitable for use in device code and composes with
-    other iterators (e.g. ``PermutationIterator``) to traverse data in shuffled
-    order without extra storage.
+    from a fixed seed.
 
-
-    Implementation details
-    ----------------------
     The iterator is implemented as::
 
         TransformIterator(CountingIterator(0), permute)
@@ -169,23 +164,6 @@ def make_shuffle_iterator(num_items: int, seed: int, rounds: int = 8):
     - Cycle-walking may apply the Feistel permutation more than once per element
       when ``num_items`` is far from a power of two, though the expected number
       of iterations is close to 1.
-
-    Parameters
-    ----------
-    num_items : int
-        Number of elements in the domain to permute.
-    seed : int
-        Seed used to parameterize the permutation. Different seeds produce
-        different (deterministic) permutations.
-    rounds : int, optional
-        Number of Feistel rounds to use. More rounds improve diffusion at the
-        cost of additional arithmetic. Typical values are 6–10.
-
-    Returns
-    -------
-    TransformIterator
-        An iterator that yields a shuffled ordering of indices in
-        ``[0, num_items)``.
     """
     if num_items <= 0:
         raise ValueError("num_items must be > 0")
