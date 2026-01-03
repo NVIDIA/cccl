@@ -13,6 +13,7 @@ to be callable from device code.
 
 from numba import cuda, int64, uint64
 
+from .._caching import cache_with_key
 from ._iterators import (
     CountingIterator as _CountingIterator,
 )
@@ -108,6 +109,11 @@ def _splitmix64_host(x: int) -> int:
 # -----------------------------------------------------------------------------
 
 
+def make_cache_key(num_items: int, seed: int, rounds: int):
+    return (num_items, seed, rounds)
+
+
+@cache_with_key(make_cache_key)
 def make_shuffle_iterator(num_items: int, seed: int, rounds: int = 8):
     """
     Lazy, stateless iterator that produces a deterministic "random" permutation
@@ -118,6 +124,7 @@ def make_shuffle_iterator(num_items: int, seed: int, rounds: int = 8):
     from a fixed seed. It is suitable for use in device code and composes with
     other iterators (e.g. ``PermutationIterator``) to traverse data in shuffled
     order without extra storage.
+
 
     Implementation details
     ----------------------
