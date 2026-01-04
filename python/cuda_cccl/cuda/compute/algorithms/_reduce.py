@@ -70,7 +70,7 @@ class _Reduce:
                 self.device_reduce_fn = self.build_result.compute_nondeterministic
             case _:
                 raise ValueError(f"Invalid determinism: {determinism}")
-                
+
     @annotate(message="_Reduce.__call__")
     def __call__(
         self,
