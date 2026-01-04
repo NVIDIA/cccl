@@ -19,17 +19,12 @@ from cuda.compute import (
     TransformIterator,
 )
 
-
-def transform_op(a):
-    return -a if a % 2 == 0 else a
-
-
 # Prepare the input and output arrays.
 first_item = 10
 num_items = 100
 
 transform_it = TransformIterator(
-    CountingIterator(np.int32(first_item)), transform_op
+    CountingIterator(np.int32(first_item)), lambda a: -a if a % 2 == 0 else a
 )  # Input sequence
 h_init = np.array([0], dtype=np.int64)  # Initial value for the reduction
 d_output = cp.empty(1, dtype=np.int64)  # Storage for output

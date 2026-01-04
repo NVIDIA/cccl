@@ -191,7 +191,7 @@ public:
       , lane_id(IS_ARCH_WARP ? ::cuda::ptx::get_sreg_laneid() : ::cuda::ptx::get_sreg_laneid() % LOGICAL_WARP_THREADS)
   {}
 
-  //! @}  end member group
+  //! @}
   //! @name Inclusive prefix sums
   //! @{
 
@@ -293,7 +293,7 @@ public:
     InclusiveScan(input, inclusive_output, ::cuda::std::plus<>{}, warp_aggregate);
   }
 
-  //! @}  end member group
+  //! @}
   //! @name Exclusive prefix sums
   //! @{
 
@@ -403,7 +403,7 @@ public:
     ExclusiveScan(input, exclusive_output, initial_value, ::cuda::std::plus<>{}, warp_aggregate);
   }
 
-  //! @}  end member group
+  //! @}
   //! @name Inclusive prefix scans
   //! @{
 
@@ -907,7 +907,7 @@ public:
 
 #endif // _CCCL_DOXYGEN_INVOKED  // Do not document partial inclusive scans
 
-  //! @}  end member group
+  //! @}
   //! @name Exclusive prefix scans
   //! @{
 
@@ -1500,7 +1500,7 @@ public:
 
 #endif // _CCCL_DOXYGEN_INVOKED  // Do not document partial exclusive scans
 
-  //! @}  end member group
+  //! @}
   //! @name Combination (inclusive & exclusive) prefix scans
   //! @{
 
@@ -1806,7 +1806,7 @@ public:
 
 #endif // _CCCL_DOXYGEN_INVOKED  // Do not document partial combined scans
 
-  //! @}  end member group
+  //! @}
   //! @name Data exchange
   //! @{
 
@@ -1857,7 +1857,7 @@ public:
     return InternalWarpScan(temp_storage).Broadcast(input, src_lane);
   }
 
-  //@}  end member group
+  //@}
 };
 
 CUB_NAMESPACE_END

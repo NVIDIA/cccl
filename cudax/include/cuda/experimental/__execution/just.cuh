@@ -53,7 +53,7 @@ private:
     using __tuple_t               = ::cuda::std::__tuple<_Ts...>;
 
     _CCCL_API constexpr explicit __opstate_t(_Rcvr&& __rcvr, __tuple_t __values)
-        : __rcvr_{__rcvr}
+        : __rcvr_{static_cast<_Rcvr&&>(__rcvr)}
         , __values_{static_cast<__tuple_t&&>(__values)}
     {}
 

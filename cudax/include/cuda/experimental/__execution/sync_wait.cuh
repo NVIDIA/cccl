@@ -260,7 +260,7 @@ public:
 
     if (__state.__errors_.__index() != __npos)
     {
-      __errors_t::__visit(__throw_error_fn{}, static_cast<__errors_t&&>(__state.__errors_));
+      __visit(__throw_error_fn{}, static_cast<__errors_t&&>(__state.__errors_));
     }
 
     return __result; // uses NRVO to return the result

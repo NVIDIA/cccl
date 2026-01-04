@@ -25,6 +25,29 @@
 #include <cuda/std/__type_traits/copy_cvref.h>
 #include <cuda/std/__type_traits/remove_reference.h>
 
+#if (_CCCL_COMPILER(CLANG, >=, 17) || _CCCL_COMPILER(GCC, >=, 15)) && __cpp_lib_forward_like >= 202217L
+#  define _CCCL_HAS_BUILTIN_STD_FORWARD_LIKE() 1
+#else // ^^^ has builtin std::forward_like ^^^ / vvv no builtin std::forward_like vvv
+#  define _CCCL_HAS_BUILTIN_STD_FORWARD_LIKE() 0
+#endif // ^^^ no builtin std::forward_like ^^^
+
+// nvcc warns about host only std::forward_like being used in device code
+#if _CCCL_CUDA_COMPILER(NVCC) && _CCCL_DEVICE_COMPILATION()
+#  undef _CCCL_HAS_BUILTIN_STD_FORWARD_LIKE
+#  define _CCCL_HAS_BUILTIN_STD_FORWARD_LIKE() 0
+#endif // _CCCL_CUDA_COMPILER(NVCC) && _CCCL_DEVICE_COMPILATION()
+
+// include minimal std:: headers
+#if _CCCL_HAS_BUILTIN_STD_FORWARD_LIKE()
+#  if _CCCL_HOST_STD_LIB(LIBSTDCXX) && _CCCL_HAS_INCLUDE(<bits/move.h>)
+#    include <bits/move.h>
+#  elif _CCCL_HOST_STD_LIB(LIBCXX) && _CCCL_HAS_INCLUDE(<__utility/forward_like.h>)
+#    include <__utility/forward_like.h>
+#  elif !_CCCL_COMPILER(NVRTC)
+#    include <utility>
+#  endif
+#endif // _CCCL_HAS_BUILTIN_STD_FORWARD_LIKE()
+
 #include <cuda/std/__cccl/prologue.h>
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
@@ -46,7 +69,7 @@ template <class _Tp, class _Up>
   return static_cast<_ForwardLike<_Tp, _Up>>(__ux);
 }
 
-#endif // _CCCL_HAS_BUILTIN_STD_FORWARD_LIKE()
+#endif // ^^^ !_CCCL_HAS_BUILTIN_STD_FORWARD_LIKE() ^^^
 
 _CCCL_END_NAMESPACE_CUDA_STD
 

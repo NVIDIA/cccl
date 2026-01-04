@@ -34,8 +34,7 @@ At a high level, the header provides:
      - stable CCCL 3.1.0 / CUDA 13.1, experimental CCCL 2.2.0 / CUDA 12.3
    * - :ref:`cuda::mr::{synchronous_}resource_ref <libcudacxx-extended-api-memory-resources-resource-ref>`
      - A non-owning type-erased memory resource wrapper that enables consumers to specify properties of resources that they expect.
-       ``resource_ref`` is still an experimental design, only available if ``LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE`` is defined
-     - experimental CCCL 2.2.0 / CUDA 12.3
+     - stable CCCL 3.2.0 / CUDA 13.2, experimental CCCL 2.2.0 / CUDA 12.3
 
 These features are an evolution of `std::pmr::memory_resource <https://en.cppreference.com/w/cpp/header/memory_resource>`__
 that was introduced in C++17. While ``std::pmr::memory_resource`` provides a polymorphic memory resource that can be

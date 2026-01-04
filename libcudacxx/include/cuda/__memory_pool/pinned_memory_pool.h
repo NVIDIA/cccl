@@ -21,25 +21,22 @@
 #  pragma system_header
 #endif // no system header
 
-#if _CCCL_CUDA_COMPILER(CLANG)
-#  include <cuda_runtime.h>
-#  include <cuda_runtime_api.h>
-#endif // _CCCL_CUDA_COMPILER(CLANG)
+#if _CCCL_HAS_CTK()
 
-#include <cuda/__device/all_devices.h>
-#include <cuda/__memory_pool/memory_pool_base.h>
-#include <cuda/__memory_resource/properties.h>
-#include <cuda/std/__concepts/concept_macros.h>
-#include <cuda/std/__exception/throw_error.h>
+#  include <cuda/__device/all_devices.h>
+#  include <cuda/__memory_pool/memory_pool_base.h>
+#  include <cuda/__memory_resource/properties.h>
+#  include <cuda/std/__concepts/concept_macros.h>
+#  include <cuda/std/__exception/throw_error.h>
 
-#include <cuda/std/__cccl/prologue.h>
+#  include <cuda/std/__cccl/prologue.h>
 
 //! @file
 //! The \c pinned_memory_resource class provides a memory resource that
 //! allocates pinned memory.
 _CCCL_BEGIN_NAMESPACE_CUDA
 
-#if _CCCL_CTK_AT_LEAST(12, 6)
+#  if _CCCL_CTK_AT_LEAST(12, 6)
 
 static ::cudaMemPool_t __get_default_host_pinned_pool();
 
@@ -110,7 +107,7 @@ struct pinned_memory_pool : pinned_memory_pool_ref
 {
   using reference_type = pinned_memory_pool_ref;
 
-#  if _CCCL_CTK_AT_LEAST(13, 0)
+#    if _CCCL_CTK_AT_LEAST(13, 0)
   //! @brief Constructs a \c pinned_memory_pool with optional properties.
   //! Properties include the initial pool size and the release threshold. If the
   //! pool size grows beyond the release threshold, unused memory held by the
@@ -129,7 +126,7 @@ struct pinned_memory_pool : pinned_memory_pool_ref
   {
     enable_access_from(cuda::devices);
   }
-#  endif // _CCCL_CTK_AT_LEAST(13, 0)
+#    endif // _CCCL_CTK_AT_LEAST(13, 0)
 
   //! @brief Constructs a \c pinned_memory_pool with the specified NUMA node id
   //! and optional properties. Properties include the initial pool size and the
@@ -166,6 +163,13 @@ struct pinned_memory_pool : pinned_memory_pool_ref
     return pinned_memory_pool(__pool);
   }
 
+  //! @brief Returns a \c pinned_memory_pool_ref for this \c pinned_memory_pool.
+  //! The result is the same as if this object was cast to a \c pinned_memory_pool_ref.
+  _CCCL_HOST_API pinned_memory_pool_ref as_ref() noexcept
+  {
+    return pinned_memory_pool_ref(__pool_);
+  }
+
   pinned_memory_pool(const pinned_memory_pool&)            = delete;
   pinned_memory_pool& operator=(const pinned_memory_pool&) = delete;
 
@@ -183,7 +187,7 @@ static_assert(::cuda::mr::resource_with<pinned_memory_pool, ::cuda::mr::host_acc
 
 [[nodiscard]] static ::cudaMemPool_t __get_default_host_pinned_pool()
 {
-#  if _CCCL_CTK_AT_LEAST(13, 0)
+#    if _CCCL_CTK_AT_LEAST(13, 0)
   static ::cudaMemPool_t __default_pool = []() {
     ::cudaMemPool_t __pool = ::cuda::__get_default_memory_pool(
       ::CUmemLocation{::CU_MEM_LOCATION_TYPE_HOST, 0}, ::CU_MEM_ALLOCATION_TYPE_PINNED);
@@ -193,19 +197,21 @@ static_assert(::cuda::mr::resource_with<pinned_memory_pool, ::cuda::mr::host_acc
     return __pool;
   }();
 
-#  else // ^^^ _CCCL_CTK_AT_LEAST(13, 0) ^^^ / vvv _CCCL_CTK_BELOW(13, 0) vvv
+#    else // ^^^ _CCCL_CTK_AT_LEAST(13, 0) ^^^ / vvv _CCCL_CTK_BELOW(13, 0) vvv
   static ::cudaMemPool_t __default_pool = []() {
     cuda::pinned_memory_pool __pool(0);
     return __pool.release();
   }();
-#  endif // ^^^ _CCCL_CTK_BELOW(13, 0) ^^^
+#    endif // ^^^ _CCCL_CTK_BELOW(13, 0) ^^^
   return __default_pool;
 }
 
-#endif // _CCCL_CTK_AT_LEAST(12, 6)
+#  endif // _CCCL_CTK_AT_LEAST(12, 6)
 
 _CCCL_END_NAMESPACE_CUDA
 
-#include <cuda/std/__cccl/epilogue.h>
+#  include <cuda/std/__cccl/epilogue.h>
+
+#endif // _CCCL_HAS_CTK()
 
 #endif //_CUDA___MEMORY_RESOURCE_PINNED_MEMORY_POOL_H

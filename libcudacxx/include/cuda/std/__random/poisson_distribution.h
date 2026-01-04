@@ -20,12 +20,12 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__limits/numeric_limits.h>
 #include <cuda/std/__random/generate_canonical.h>
 #include <cuda/std/__random/is_valid.h>
 #include <cuda/std/__random/normal_distribution.h>
 #include <cuda/std/__random/uniform_real_distribution.h>
 #include <cuda/std/cmath>
-#include <cuda/std/limits>
 #if !_CCCL_COMPILER(NVRTC)
 #  include <ios>
 #endif // !_CCCL_COMPILER(NVRTC)
@@ -37,7 +37,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 template <class _IntType = int>
 class poisson_distribution
 {
-  static_assert(__libcpp_random_is_valid_inttype<_IntType>, "IntType must be a supported integer type");
+  static_assert(__cccl_random_is_valid_inttype<_IntType>, "IntType must be a supported integer type");
 
 public:
   // types

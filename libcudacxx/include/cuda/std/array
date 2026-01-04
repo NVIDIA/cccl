@@ -26,6 +26,7 @@
 #include <cuda/std/__algorithm/swap_ranges.h>
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__exception/throw_error.h>
+#include <cuda/std/__fwd/array.h>
 #include <cuda/std/__iterator/reverse_iterator.h>
 #include <cuda/std/__tuple_dir/sfinae_helpers.h>
 #include <cuda/std/__type_traits/conditional.h>

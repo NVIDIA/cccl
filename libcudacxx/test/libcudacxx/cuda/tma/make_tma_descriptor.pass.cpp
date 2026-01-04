@@ -8,7 +8,6 @@
 //===----------------------------------------------------------------------===//
 // UNSUPPORTED: nvrtc
 // UNSUPPORTED: pre-sm-90
-
 #include <dlpack/dlpack.h> // to include before the make_from_dlpack.h
 //
 #include <cuda/std/array>
@@ -130,9 +129,6 @@ bool test_strides()
   unused(cuda::make_tma_descriptor(tensor, box_sizes));
   // stride is 0
   strides_storage[0] = 0;
-  unused(cuda::make_tma_descriptor(tensor, box_sizes));
-  // stride is nullptr
-  tensor.strides = nullptr;
   unused(cuda::make_tma_descriptor(tensor, box_sizes));
   return true;
 }

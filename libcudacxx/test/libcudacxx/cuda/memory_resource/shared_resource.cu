@@ -133,7 +133,7 @@ TEMPLATE_TEST_CASE_METHOD(test_fixture, "shared_resource", "[container][resource
   SECTION("basic sanity test about shared resource handling")
   {
     Counts expected{};
-    this->align(alignof(int) * 4);
+    this->align(alignof(int));
     {
       this->bytes(42 * sizeof(int));
       cuda::stream stream{cuda::device_ref{0}};

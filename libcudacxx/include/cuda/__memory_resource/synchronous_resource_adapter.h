@@ -21,12 +21,15 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/__memory_resource/properties.h>
-#include <cuda/__memory_resource/resource.h>
-#include <cuda/std/__concepts/concept_macros.h>
-#include <cuda/stream>
+#if _CCCL_HAS_CTK()
 
-#include <cuda/std/__cccl/prologue.h>
+#  include <cuda/__memory_resource/get_property.h>
+#  include <cuda/__memory_resource/properties.h>
+#  include <cuda/__memory_resource/resource.h>
+#  include <cuda/std/__concepts/concept_macros.h>
+#  include <cuda/stream>
+
+#  include <cuda/std/__cccl/prologue.h>
 
 _CCCL_BEGIN_NAMESPACE_CUDA_MR
 
@@ -48,7 +51,9 @@ _CCCL_CONCEPT __has_member_deallocate = _CCCL_REQUIRES_EXPR(
 //! @note This adapter takes ownership of the contained resource.
 //! @tparam _Resource The type of the resource to be adapted
 template <class _Resource>
-struct synchronous_resource_adapter : ::cuda::mr::__copy_default_queries<_Resource>
+struct synchronous_resource_adapter
+    : ::cuda::mr::__copy_default_queries<_Resource>
+    , ::cuda::forward_property<synchronous_resource_adapter<_Resource>, _Resource>
 {
   _CCCL_HOST_API synchronous_resource_adapter(const _Resource& __resource) noexcept
       : __resource(__resource)
@@ -100,17 +105,21 @@ struct synchronous_resource_adapter : ::cuda::mr::__copy_default_queries<_Resour
     return __resource == __rhs.__resource;
   }
 
-#if _CCCL_STD_VER <= 2017
+#  if _CCCL_STD_VER <= 2017
   [[nodiscard]] _CCCL_HOST_API bool operator!=(const synchronous_resource_adapter& __rhs) const noexcept
   {
     return __resource != __rhs.__resource;
   }
-#endif // _CCCL_STD_VER <= 2017
+#  endif // _CCCL_STD_VER <= 2017
 
-  template <class _Property>
-  friend constexpr void get_property(const synchronous_resource_adapter& __res, _Property __prop) noexcept
+  _CCCL_HOST_API _Resource& upstream_resource() noexcept
   {
-    __res.__resource.get_property(__prop);
+    return __resource;
+  }
+
+  _CCCL_HOST_API const _Resource& upstream_resource() const noexcept
+  {
+    return __resource;
   }
 
 private:
@@ -118,11 +127,11 @@ private:
 };
 
 template <class _Resource>
-_CCCL_HOST_API auto __adapt_if_synchronous(_Resource&& __resource) noexcept
+_CCCL_HOST_API decltype(auto) __adapt_if_synchronous(_Resource&& __resource) noexcept
 {
   if constexpr (::cuda::mr::resource<::cuda::std::decay_t<_Resource>>)
   {
-    return __resource;
+    return ::cuda::std::forward<_Resource>(__resource);
   }
   else
   {
@@ -131,6 +140,8 @@ _CCCL_HOST_API auto __adapt_if_synchronous(_Resource&& __resource) noexcept
 }
 _CCCL_END_NAMESPACE_CUDA_MR
 
-#include <cuda/std/__cccl/epilogue.h>
+#  include <cuda/std/__cccl/epilogue.h>
+
+#endif // _CCCL_HAS_CTK()
 
 #endif //_CUDA___MEMORY_RESOURCE_SYNCHRONOUS_RESOURCE_ADAPTER_H
