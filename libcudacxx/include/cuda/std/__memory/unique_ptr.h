@@ -528,8 +528,7 @@ _CCCL_API inline _CCCL_CONSTEXPR_CXX20 bool operator==(const unique_ptr<_T1, _D1
 template <class _T1, class _D1, class _T2, class _D2>
 _CCCL_API inline
 
-  bool
-  operator!=(const unique_ptr<_T1, _D1>& __x, const unique_ptr<_T2, _D2>& __y)
+  bool operator!=(const unique_ptr<_T1, _D1>& __x, const unique_ptr<_T2, _D2>& __y)
 {
   return !(__x == __y);
 }
@@ -538,8 +537,7 @@ _CCCL_API inline
 template <class _T1, class _D1, class _T2, class _D2>
 _CCCL_API inline
 
-  bool
-  operator<(const unique_ptr<_T1, _D1>& __x, const unique_ptr<_T2, _D2>& __y)
+  bool operator<(const unique_ptr<_T1, _D1>& __x, const unique_ptr<_T2, _D2>& __y)
 {
   typedef typename unique_ptr<_T1, _D1>::pointer _P1;
   typedef typename unique_ptr<_T2, _D2>::pointer _P2;
@@ -597,8 +595,7 @@ _CCCL_API inline _CCCL_CONSTEXPR_CXX20 bool operator==(const unique_ptr<_T1, _D1
 template <class _T1, class _D1>
 _CCCL_API inline
 
-  bool
-  operator==(nullptr_t, const unique_ptr<_T1, _D1>& __x) noexcept
+  bool operator==(nullptr_t, const unique_ptr<_T1, _D1>& __x) noexcept
 {
   return !__x;
 }

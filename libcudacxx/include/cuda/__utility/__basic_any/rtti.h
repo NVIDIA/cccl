@@ -104,7 +104,7 @@ inline constexpr size_t __half_size_t_bits = sizeof(size_t) * CHAR_BIT / 2;
 // which contains a sub-object of this type.
 struct __object_metadata
 {
-  size_t __size_ : __half_size_t_bits;
+  size_t __size_  : __half_size_t_bits;
   size_t __align_ : __half_size_t_bits;
   ::cuda::std::__type_info_ptr __object_typeid_;
   ::cuda::std::__type_info_ptr __pointer_typeid_;

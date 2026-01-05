@@ -105,8 +105,8 @@ class __host_accessor : public _Accessor
     noexcept(::cuda::std::declval<_Accessor>().offset(::cuda::std::declval<__data_handle_type>(), 0));
 
 #if !_CCCL_COMPILER(NVRTC)
-  [[nodiscard]] _CCCL_HOST_API static constexpr bool
-  __is_host_accessible_pointer([[maybe_unused]] __data_handle_type __p) noexcept
+  [[nodiscard]]
+  _CCCL_HOST_API static constexpr bool __is_host_accessible_pointer([[maybe_unused]] __data_handle_type __p) noexcept
   {
 #  if _CCCL_HAS_CTK()
     if constexpr (::cuda::std::contiguous_iterator<__data_handle_type>)
@@ -263,8 +263,8 @@ class __device_accessor : public _Accessor
 
 #if _CCCL_DEVICE_COMPILATION()
 
-  [[nodiscard]] _CCCL_HIDE_FROM_ABI _CCCL_DEVICE static constexpr bool
-  __is_device_accessible_pointer_from_device(__data_handle_type __p) noexcept
+  [[nodiscard]] _CCCL_HIDE_FROM_ABI
+  _CCCL_DEVICE static constexpr bool __is_device_accessible_pointer_from_device(__data_handle_type __p) noexcept
   {
     return ::cuda::device::is_address_from(__p, ::cuda::device::address_space::global)
         || ::cuda::device::is_address_from(__p, ::cuda::device::address_space::shared)

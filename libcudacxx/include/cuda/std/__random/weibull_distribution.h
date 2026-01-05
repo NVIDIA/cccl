@@ -137,8 +137,8 @@ public:
     return __x.__p_ == __y.__p_;
   }
 #if _CCCL_STD_VER <= 2017
-  [[nodiscard]] _CCCL_API friend constexpr bool
-  operator!=(const weibull_distribution& __x, const weibull_distribution& __y) noexcept
+  [[nodiscard]]
+  _CCCL_API friend constexpr bool operator!=(const weibull_distribution& __x, const weibull_distribution& __y) noexcept
   {
     return !(__x == __y);
   }

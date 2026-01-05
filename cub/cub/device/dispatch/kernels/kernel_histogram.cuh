@@ -170,8 +170,8 @@ struct Transforms
 #endif // _CCCL_HAS_NVFP16()
 
 #if _CCCL_HAS_NVBF16()
-    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE ScaleT
-    ComputeScale(int num_levels, __nv_bfloat16 max_level, __nv_bfloat16 min_level)
+    _CCCL_HOST_DEVICE
+    _CCCL_FORCEINLINE ScaleT ComputeScale(int num_levels, __nv_bfloat16 max_level, __nv_bfloat16 min_level)
     {
       ScaleT result;
       NV_IF_TARGET(
@@ -201,8 +201,8 @@ struct Transforms
 #endif // _CCCL_HAS_NVFP16()
 
 #if _CCCL_HAS_NVBF16()
-    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE int
-    SampleIsValid(__nv_bfloat16 sample, __nv_bfloat16 max_level, __nv_bfloat16 min_level)
+    _CCCL_HOST_DEVICE
+    _CCCL_FORCEINLINE int SampleIsValid(__nv_bfloat16 sample, __nv_bfloat16 max_level, __nv_bfloat16 min_level)
     {
       NV_IF_TARGET(NV_PROVIDES_SM_80,
                    (return __hge(sample, min_level) && __hlt(sample, max_level);),

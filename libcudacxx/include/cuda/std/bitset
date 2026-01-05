@@ -105,7 +105,7 @@ struct __avoid_promotions
 
 #define _DEFINE_SHIFT_ASSIGNMENT(__op)                                                       \
   template <class _Tp>                                                                       \
-  _CCCL_HOST_DEVICE constexpr __avoid_promotions& operator __op##=(_Tp __n)                  \
+  _CCCL_HOST_DEVICE constexpr __avoid_promotions& operator __op## = (_Tp __n)                \
   {                                                                                          \
     if (__n >= sizeof(_Int) * CHAR_BIT)                                                      \
     {                                                                                        \
@@ -141,7 +141,7 @@ struct __avoid_promotions
 #undef _DEFINE_BINARY
 
 #define _DEFINE_ASSIGNMENT(__op)                                                                    \
-  _CCCL_HOST_DEVICE constexpr __avoid_promotions& operator __op##=(__avoid_promotions __rhs)        \
+  _CCCL_HOST_DEVICE constexpr __avoid_promotions& operator __op## = (__avoid_promotions __rhs)      \
   {                                                                                                 \
     __data = static_cast<_Int>(static_cast<__base>(__data) __op static_cast<__base>(__rhs.__data)); \
     return *this;                                                                                   \

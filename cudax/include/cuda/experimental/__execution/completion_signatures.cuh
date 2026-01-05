@@ -630,8 +630,8 @@ using __eptr_completion_if_t _CCCL_NODEBUG_ALIAS = decltype(execution::__eptr_co
 #if _CCCL_HAS_EXCEPTIONS() && __cpp_constexpr_exceptions >= 202411L // C++26, https://wg21.link/p3068
 
 template <class... _What, class... _Values>
-[[noreturn, nodiscard]] _CCCL_API consteval auto invalid_completion_signature(_Values... __values)
-  -> completion_signatures<>
+[[noreturn, nodiscard]]
+_CCCL_API consteval auto invalid_completion_signature(_Values... __values) -> completion_signatures<>
 {
   if constexpr (sizeof...(_Values) == 1)
   {

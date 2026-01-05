@@ -799,8 +799,8 @@ private:
 
 #if !_CCCL_COMPILER(NVRTC)
   template <int ArchMult, int... CudaArches, typename FunctorT>
-  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t
-  runtime_arch_to_compiletime(int device_ptx_version, FunctorT& op)
+  CUB_RUNTIME_FUNCTION
+  _CCCL_FORCEINLINE static cudaError_t runtime_arch_to_compiletime(int device_ptx_version, FunctorT& op)
   {
     // We instantiate find_and_invoke_policy for each CudaArches (the arches we are compiling for), but only call the
     // one matching device_ptx_version.
