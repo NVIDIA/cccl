@@ -66,7 +66,17 @@ def _host_three_way_partition(h_in: np.ndarray, less_than_op, greater_equal_op):
 
 
 @pytest.mark.parametrize("dtype,num_items", three_way_partition_params)
-def test_three_way_partition_basic(dtype, num_items):
+def test_three_way_partition_basic(dtype, num_items, monkeypatch):
+    # NOTE: the SASS check failure is seen only with NVRTC 13.1:
+    if np.isdtype(dtype, np.float16):
+        import cuda.compute._cccl_interop as cccl_interop
+
+        monkeypatch.setattr(
+            cccl_interop,
+            "_check_sass",
+            False,
+        )
+
     h_in = random_array(num_items, dtype, max_value=100)
 
     def less_than_op(x):
@@ -80,7 +90,6 @@ def test_three_way_partition_basic(dtype, num_items):
     d_second = cp.empty_like(d_in)
     d_unselected = cp.empty_like(d_in)
     d_num_selected = cp.empty(2, dtype=np.int32)
-
     cuda.compute.three_way_partition(
         d_in,
         d_first,

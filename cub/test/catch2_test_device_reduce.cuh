@@ -26,10 +26,8 @@
 // Half support is provided by SM53+. We currently test against a few older architectures.
 // The specializations below can be removed once we drop these architectures.
 
-_CCCL_BEGIN_NAMESPACE_CUDA
-
 template <>
-_CCCL_API inline __half minimum<void>::operator()<__half, __half>(const __half& a, const __half& b) const
+_CCCL_API inline __half cuda::minimum<void>::operator()<__half, __half>(const __half& a, const __half& b) const
 {
 #  if defined(__CUDA_NO_HALF_OPERATORS__)
   return ::cuda::std::min(__half2float(a), __half2float(b));
@@ -40,7 +38,7 @@ _CCCL_API inline __half minimum<void>::operator()<__half, __half>(const __half& 
 }
 
 template <>
-_CCCL_API inline __half maximum<void>::operator()<__half, __half>(const __half& a, const __half& b) const
+_CCCL_API inline __half cuda::maximum<void>::operator()<__half, __half>(const __half& a, const __half& b) const
 {
 #  if defined(__CUDA_NO_HALF_OPERATORS__)
   return ::cuda::std::max(__half2float(a), __half2float(b));
@@ -49,8 +47,6 @@ _CCCL_API inline __half maximum<void>::operator()<__half, __half>(const __half& 
     NV_PROVIDES_SM_53, (return ::cuda::std::max(a, b);), (return ::cuda::std::max(__half2float(a), __half2float(b));));
 #  endif // !__CUDA_NO_HALF_OPERATORS__
 }
-
-_CCCL_END_NAMESPACE_CUDA
 
 CUB_NAMESPACE_BEGIN
 
