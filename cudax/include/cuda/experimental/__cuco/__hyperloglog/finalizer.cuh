@@ -95,16 +95,17 @@ public:
 private:
   [[nodiscard]] _CCCL_API constexpr double __alpha_mm() const noexcept
   {
+    const auto __m2 = static_cast<double>(__m) * __m;
     switch (__m)
     {
       case 16:
-        return 0.673 * __m * __m;
+        return 0.673 * __m2;
       case 32:
-        return 0.697 * __m * __m;
+        return 0.697 * __m2;
       case 64:
-        return 0.709 * __m * __m;
+        return 0.709 * __m2;
       default:
-        return (0.7213 / (1.0 + 1.079 / __m)) * __m * __m;
+        return (0.7213 / (1.0 + 1.079 / __m)) * __m2;
     }
   }
 
