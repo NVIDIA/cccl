@@ -29,6 +29,7 @@
 #  include <cuda/std/__algorithm/min.h>
 #  include <cuda/std/__cstddef/types.h>
 #  include <cuda/std/__exception/exception_macros.h>
+#  include <cuda/std/__utility/unreachable.h>
 #  include <cuda/std/array>
 #  include <cuda/std/cstdint>
 #  include <cuda/std/span>
@@ -96,7 +97,7 @@ enum class tma_swizzle
     case tma_oob_fill::nan:
       return ::CU_TENSOR_MAP_FLOAT_OOB_FILL_NAN_REQUEST_ZERO_FMA;
     default:
-      _CCCL_UNREACHABLE();
+      ::cuda::std::unreachable();
   }
 }
 
@@ -114,7 +115,7 @@ __to_cutensor_map(tma_l2_fetch_size __l2_fetch_size) noexcept
     case tma_l2_fetch_size::bytes256:
       return ::CU_TENSOR_MAP_L2_PROMOTION_L2_256B;
     default:
-      _CCCL_UNREACHABLE();
+      ::cuda::std::unreachable();
   }
 }
 
@@ -130,7 +131,7 @@ __to_cutensor_map(tma_interleave_layout __interleave_layout) noexcept
     case tma_interleave_layout::bytes32:
       return ::CU_TENSOR_MAP_INTERLEAVE_32B;
     default:
-      _CCCL_UNREACHABLE();
+      ::cuda::std::unreachable();
   }
 }
 
@@ -155,7 +156,7 @@ __to_cutensor_map(tma_interleave_layout __interleave_layout) noexcept
       return ::CU_TENSOR_MAP_SWIZZLE_128B_ATOM_64B;
 #  endif // _CCCL_CTK_AT_LEAST(12, 8)
     default:
-      _CCCL_UNREACHABLE();
+      ::cuda::std::unreachable();
   }
 }
 
