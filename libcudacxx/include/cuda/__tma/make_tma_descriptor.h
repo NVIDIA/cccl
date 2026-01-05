@@ -408,11 +408,11 @@ __get_tensor_sizes(const ::DLTensor& __tensor, int __rank, ::CUtensorMapDataType
 {
   using ::cuda::std::int64_t;
   __tma_strides_array_t __output_strides{1}; // inner stride is implicit = 1
-  const auto __input_strides                = __tensor.strides;
-  const auto __input_sizes                  = __tensor.shape;
-  const auto __alignment                    = (__interleave_layout == tma_interleave_layout::bytes32) ? 32 : 16;
-  constexpr auto __max_allowed_stride_bytes = int64_t{1} << 40; // 2^40
-  int64_t __cumulative_size                 = 1;
+  const auto __input_strides                 = __tensor.strides;
+  const auto __input_sizes                   = __tensor.shape;
+  const auto __alignment                     = (__interleave_layout == tma_interleave_layout::bytes32) ? 32 : 16;
+  constexpr auto __max_allowed_stride_bytes  = int64_t{1} << 40; // 2^40
+  [[maybe_unused]] int64_t __cumulative_size = 1;
   if (__input_strides == nullptr)
   {
 #  if DLPACK_MAJOR_VERSION > 1 || (DLPACK_MAJOR_VERSION == 1 && DLPACK_MINOR_VERSION >= 2)
