@@ -218,7 +218,7 @@ TEMPLATE_TEST_CASE_METHOD(test_fixture, "any_resource", "[container][resource]",
       ++expected.move_count;
       CHECK(this->counts == expected);
 
-      mr = mr; // self copy assignment
+      test::assign(mr, mr); // self copy assignment
       CHECK(this->counts == expected);
 
       CHECK(mr == mr);
@@ -311,7 +311,7 @@ TEMPLATE_TEST_CASE_METHOD(
   CHECK(ref.allocate_sync(this->bytes(100), this->align(8)) == this);
   CHECK(get_property(ref, get_data{}) == 43);
 
-  ref = ref; // self copy assignment
+  test::assign(ref, ref); // self copy assignment
   CHECK(ref.allocate_sync(this->bytes(100), this->align(8)) == this);
   CHECK(get_property(ref, get_data{}) == 43);
 }

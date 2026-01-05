@@ -278,7 +278,7 @@ TEMPLATE_TEST_CASE_METHOD(
       ++expected.move_count;
       CHECK(this->counts == expected);
 
-      mr = mr; // self copy assignment
+      test::assign(mr, mr); // self copy assignment
       CHECK(this->counts == expected);
 
       CHECK(mr == mr);
