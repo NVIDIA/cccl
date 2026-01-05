@@ -270,6 +270,19 @@
 #  define _CCCL_POP_MACRO_clang
 #endif // defined(clang)
 
+// major and minor are defined in sys/sysmacros.h in libc
+#if defined(major)
+#  pragma push_macro("major")
+#  undef clang
+#  define _CCCL_POP_MACRO_major
+#endif // defined(major)
+
+#if defined(minor)
+#  pragma push_macro("minor")
+#  undef clang
+#  define _CCCL_POP_MACRO_minor
+#endif // defined(minor)
+
 _CCCL_DIAG_PUSH
 _CCCL_NV_DIAG_PUSH()
 

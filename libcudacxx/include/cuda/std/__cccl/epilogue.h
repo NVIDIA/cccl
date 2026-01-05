@@ -352,4 +352,20 @@ _CCCL_DIAG_POP
 #  undef _CCCL_POP_MACRO_clang
 #endif
 
+// major and minor are defined in sys/sysmacros.h in libc
+#if defined(major)
+#  error \
+    "cccl internal error: macro `major` was redefined between <cuda/std/__cccl/prologue.h> and <cuda/std/__cccl/epilogue.h>"
+#elif defined(_CCCL_POP_MACRO_major)
+#  pragma pop_macro("major")
+#  undef _CCCL_POP_MACRO_major
+#endif
+
+#if defined(minor)
+#  error \
+    "cccl internal error: macro `minor` was redefined between <cuda/std/__cccl/prologue.h> and <cuda/std/__cccl/epilogue.h>"
+#elif defined(_CCCL_POP_MACRO_minor)
+#  pragma pop_macro("minor")
+#  undef _CCCL_POP_MACRO_minor
+#endif
 // NO include guards here (this file is included multiple times)
