@@ -11,20 +11,34 @@
 #ifndef _CUDA___HIERARCHY_HIERARCHY_DIMENSIONS_H
 #define _CUDA___HIERARCHY_HIERARCHY_DIMENSIONS_H
 
-#include <cuda/__hierarchy/level_dimensions.h>
-#include <cuda/std/__type_traits/fold.h>
-#include <cuda/std/__type_traits/is_same.h>
-#include <cuda/std/__type_traits/remove_cvref.h>
-#include <cuda/std/__type_traits/type_list.h>
-#include <cuda/std/__utility/declval.h>
-#include <cuda/std/__utility/integer_sequence.h>
-#include <cuda/std/array>
-#include <cuda/std/span>
-#include <cuda/std/tuple>
+#include <cuda/std/detail/__config>
 
-#include <nv/target>
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 
-#include <cuda/std/__cccl/prologue.h>
+#if _CCCL_HAS_CTK()
+
+#  include <cuda/__fwd/hierarchy.h>
+#  include <cuda/__hierarchy/level_dimensions.h>
+#  include <cuda/__hierarchy/traits.h>
+#  include <cuda/std/__type_traits/fold.h>
+#  include <cuda/std/__type_traits/is_same.h>
+#  include <cuda/std/__type_traits/remove_cvref.h>
+#  include <cuda/std/__type_traits/type_list.h>
+#  include <cuda/std/__utility/declval.h>
+#  include <cuda/std/__utility/integer_sequence.h>
+#  include <cuda/std/array>
+#  include <cuda/std/span>
+#  include <cuda/std/tuple>
+
+#  include <nv/target>
+
+#  include <cuda/std/__cccl/prologue.h>
 
 _CCCL_BEGIN_NAMESPACE_CUDA
 
@@ -42,12 +56,6 @@ template <typename _LevelFn>
   return {};
 }
 } // namespace __detail
-
-template <class _Level>
-using __level_type_of = typename _Level::level_type;
-
-template <class _BottomUnit = thread_level, class... _Levels>
-struct hierarchy_dimensions;
 
 namespace __detail
 {
@@ -67,22 +75,6 @@ template <class _Tp, size_t... _Extents>
   }
 }
 
-template <class _QueryLevel, class _Hierarchy>
-struct __has_level_helper;
-
-template <class _QueryLevel, class _Unit, class... _Levels>
-struct __has_level_helper<_QueryLevel, hierarchy_dimensions<_Unit, _Levels...>>
-    : public ::cuda::std::__fold_or<::cuda::std::is_same_v<_QueryLevel, __level_type_of<_Levels>>...>
-{};
-
-template <class _QueryLevel, class _Hierarchy>
-struct __has_unit
-{};
-
-template <class _QueryLevel, class _Unit, class... _Levels>
-struct __has_unit<_QueryLevel, hierarchy_dimensions<_Unit, _Levels...>> : ::cuda::std::is_same<_QueryLevel, _Unit>
-{};
-
 template <class _QueryLevel>
 struct __get_level_helper
 {
@@ -100,15 +92,6 @@ struct __get_level_helper
   }
 };
 } // namespace __detail
-
-template <class _QueryLevel, class _Hierarchy>
-inline constexpr bool has_level =
-  __detail::__has_level_helper<_QueryLevel, ::cuda::std::remove_cvref_t<_Hierarchy>>::value;
-
-template <class _QueryLevel, class _Hierarchy>
-inline constexpr bool has_level_or_unit =
-  __detail::__has_level_helper<_QueryLevel, ::cuda::std::remove_cvref_t<_Hierarchy>>::value
-  || __detail::__has_unit<_QueryLevel, ::cuda::std::remove_cvref_t<_Hierarchy>>::value;
 
 namespace __detail
 {
@@ -273,7 +256,7 @@ struct __hierarchy_extents_helper
 };
 
 template <class _Tp, size_t... _Extents>
-[[nodiscard]] _CCCL_DEVICE constexpr auto __static_index_hint(const dimensions<_Tp, _Extents...>& __dims, ::dim3 __index)
+[[nodiscard]] _CCCL_DEVICE constexpr auto __static_index_hint(const dimensions<_Tp, _Extents...>&, ::dim3 __index)
 {
   using _HintedIndexT = dimensions<_Tp, (_Extents == 1 ? 0 : ::cuda::std::dynamic_extent)...>;
   return _HintedIndexT(__index.x, __index.y, __index.z);
@@ -377,7 +360,7 @@ struct __empty_hierarchy
 template <class _BottomUnit, class... _Levels>
 struct hierarchy_dimensions
 {
-  static_assert(::cuda::std::is_base_of_v<hierarchy_level, _BottomUnit> || ::cuda::std::is_same_v<_BottomUnit, void>);
+  static_assert(__is_hierarchy_level_v<_BottomUnit> || ::cuda::std::is_same_v<_BottomUnit, void>);
   ::cuda::std::tuple<_Levels...> levels;
 
   _CCCL_API constexpr hierarchy_dimensions(const _Levels&... __ls) noexcept
@@ -395,10 +378,10 @@ struct hierarchy_dimensions
       : levels(__ls)
   {}
 
-#if !defined(_CCCL_NO_THREE_WAY_COMPARISON) && !_CCCL_COMPILER(MSVC, <, 19, 39) && !_CCCL_COMPILER(GCC, <, 12)
+#  if !defined(_CCCL_NO_THREE_WAY_COMPARISON) && !_CCCL_COMPILER(MSVC, <, 19, 39) && !_CCCL_COMPILER(GCC, <, 12)
   [[nodiscard]] _CCCL_HIDE_FROM_ABI constexpr bool operator==(const hierarchy_dimensions&) const noexcept = default;
-#else // ^^^ !_CCCL_NO_THREE_WAY_COMPARISON ^^^ / vvv
-      // _CCCL_NO_THREE_WAY_COMPARISON vvv
+#  else // ^^^ !_CCCL_NO_THREE_WAY_COMPARISON ^^^ / vvv
+        // _CCCL_NO_THREE_WAY_COMPARISON vvv
   [[nodiscard]] _CCCL_API friend constexpr bool
   operator==(const hierarchy_dimensions& __left, const hierarchy_dimensions& __right) noexcept
   {
@@ -410,7 +393,7 @@ struct hierarchy_dimensions
   {
     return __left.levels != __right.levels;
   }
-#endif // _CCCL_NO_THREE_WAY_COMPARISON
+#  endif // _CCCL_NO_THREE_WAY_COMPARISON
 
 private:
   // This being static is a bit of a hack to make extents_type working without
@@ -419,8 +402,8 @@ private:
   [[nodiscard]] _CCCL_API static constexpr auto
   levels_range_static(const ::cuda::std::tuple<_Levels...>& __levels) noexcept
   {
-    static_assert(has_level<_Level, hierarchy_dimensions<_BottomUnit, _Levels...>>);
-    static_assert(has_level_or_unit<_Unit, hierarchy_dimensions<_BottomUnit, _Levels...>>);
+    static_assert(has_level_v<_Level, hierarchy_dimensions<_BottomUnit, _Levels...>>);
+    static_assert(has_unit_or_level_v<_Unit, hierarchy_dimensions<_BottomUnit, _Levels...>>);
     static_assert(__detail::__legal_unit_for_level<_Unit, _Level>);
     auto __fn = __detail::__get_levels_range<_Level, _Unit, _Levels...>;
     return ::cuda::std::apply(__fn, __levels);
@@ -780,7 +763,7 @@ public:
   template <typename _Level>
   _CCCL_API constexpr auto level(const _Level&) const noexcept
   {
-    static_assert(has_level<_Level, hierarchy_dimensions<_BottomUnit, _Levels...>>);
+    static_assert(has_level_v<_Level, hierarchy_dimensions<_BottomUnit, _Levels...>>);
 
     return ::cuda::std::apply(__detail::__get_level_helper<_Level>{}, levels);
   }
@@ -811,8 +794,8 @@ public:
       // block)
       return ::cuda::std::apply(fragment_helper<_OtherUnit>(), ::cuda::std::tuple_cat(levels, __other.levels));
     }
-    else if constexpr (has_level<__this_bottom_level, hierarchy_dimensions<_OtherUnit, _OtherLevels...>>
-                       && (!has_level<__this_top_level, hierarchy_dimensions<_OtherUnit, _OtherLevels...>>
+    else if constexpr (has_level_v<__this_bottom_level, hierarchy_dimensions<_OtherUnit, _OtherLevels...>>
+                       && (!has_level_v<__this_top_level, hierarchy_dimensions<_OtherUnit, _OtherLevels...>>
                            || ::cuda::std::is_same_v<__this_top_level, __other_top_level>) )
     {
       // Overlap with this on the top, e.g. this is (grid, cluster), other is
@@ -837,8 +820,8 @@ public:
       {
         // Overlap with this on the bottom, e.g. this is (cluster, block), other
         // is (grid, cluster), can fully overlap
-        static_assert(has_level<__other_bottom_level, hierarchy_dimensions<_BottomUnit, _Levels...>>
-                        && (!has_level<__this_bottom_level, hierarchy_dimensions<_OtherUnit, _OtherLevels...>>
+        static_assert(has_level_v<__other_bottom_level, hierarchy_dimensions<_BottomUnit, _Levels...>>
+                        && (!has_level_v<__this_bottom_level, hierarchy_dimensions<_OtherUnit, _OtherLevels...>>
                             || ::cuda::std::is_same_v<__this_bottom_level, __other_bottom_level>),
                       "Can't combine the hierarchies");
 
@@ -848,61 +831,13 @@ public:
     }
   }
 
-#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
+#  ifndef _CCCL_DOXYGEN_INVOKED // Do not document
   constexpr hierarchy_dimensions combine([[maybe_unused]] __empty_hierarchy __empty) const
   {
     return *this;
   }
-#endif // _CCCL_DOXYGEN_INVOKED
+#  endif // _CCCL_DOXYGEN_INVOKED
 };
-
-/**
- * @brief Returns a tuple of dim3 compatible objects that can be used to launch
- * a kernel
- *
- * This function returns a tuple of hierarchy_query_result objects that contain
- * dimensions from the supplied hierarchy, that can be used to launch that
- * hierarchy. It is meant to allow for easy usage of hierarchy dimensions with
- * the <<<>>> launch syntax or cudaLaunchKernelEx in case of a cluster launch.
- * Contained hierarchy_query_result objects are results of extents() member
- * function on the hierarchy passed in. The returned tuple has three elements if
- * cluster_level is present in the hierarchy (extents(block, grid),
- * extents(cluster, block), extents(thread, block)). Otherwise it contains only
- * two elements, without the middle one related to the cluster.
- *
- * @par Snippet
- * @code
- * #include <cudax/hierarchy_dimensions.cuh>
- *
- * using namespace cuda;
- *
- * auto hierarchy = make_hierarchy(grid_dims(256), cluster_dims<4>(),
- * block_dims<8, 8, 8>()); auto [grid_dimensions, cluster_dimensions,
- * block_dimensions] = get_launch_dimensions(hierarchy);
- * assert(grid_dimensions.x == 256);
- * assert(cluster_dimensions.x == 4);
- * assert(block_dimensions.x == 8);
- * assert(block_dimensions.y == 8);
- * assert(block_dimensions.z == 8);
- * @endcode
- * @par
- *
- * @param hierarchy
- *  Hierarchy that the launch dimensions are requested for
- */
-template <class... _Levels>
-constexpr auto _CCCL_HOST get_launch_dimensions(const hierarchy_dimensions<_Levels...>& __hierarchy)
-{
-  if constexpr (has_level<cluster_level, hierarchy_dimensions<_Levels...>>)
-  {
-    return ::cuda::std::make_tuple(
-      __hierarchy.extents(block, grid), __hierarchy.extents(block, cluster), __hierarchy.extents(thread, block));
-  }
-  else
-  {
-    return ::cuda::std::make_tuple(__hierarchy.extents(block, grid), __hierarchy.extents(thread, block));
-  }
-}
 
 // TODO consider having LUnit optional argument for template argument deduction
 /**
@@ -981,6 +916,8 @@ constexpr auto hierarchy_add_level(const hierarchy_dimensions<_Unit, _Levels...>
 }
 _CCCL_END_NAMESPACE_CUDA
 
-#include <cuda/std/__cccl/epilogue.h>
+#  include <cuda/std/__cccl/epilogue.h>
+
+#endif // _CCCL_HAS_CTK()
 
 #endif // _CUDA___HIERARCHY_HIERARCHY_DIMENSIONS_H

@@ -519,24 +519,24 @@ public:
   [[nodiscard]]
   _CCCL_API constexpr bool is_unique() const noexcept(noexcept(::cuda::std::declval<const mapping_type&>().is_unique()))
   {
-    const auto __tmp = mapping(); // workaround for clang with nodiscard
+    const auto& __tmp = mapping(); // workaround for clang with nodiscard
     return __tmp.is_unique();
   }
   [[nodiscard]] _CCCL_API constexpr bool is_exhaustive() const
     noexcept(noexcept(::cuda::std::declval<const mapping_type&>().is_exhaustive()))
   {
-    const auto __tmp = mapping(); // workaround for clang with nodiscard
+    const auto& __tmp = mapping(); // workaround for clang with nodiscard
     return __tmp.is_exhaustive();
   }
   [[nodiscard]] _CCCL_API constexpr bool is_strided() const
     noexcept(noexcept(::cuda::std::declval<const mapping_type&>().is_strided()))
   {
-    const auto __tmp = mapping(); // workaround for clang with nodiscard
+    const auto& __tmp = mapping(); // workaround for clang with nodiscard
     return __tmp.is_strided();
   }
   [[nodiscard]] _CCCL_API constexpr index_type stride(rank_type __r) const
   {
-    const auto __tmp = mapping(); // workaround for clang with nodiscard
+    const auto& __tmp = mapping(); // workaround for clang with nodiscard
     return __tmp.stride(__r);
   }
 };

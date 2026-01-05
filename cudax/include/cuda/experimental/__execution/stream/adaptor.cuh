@@ -23,6 +23,7 @@
 
 #include <cuda/__launch/configuration.h>
 #include <cuda/__launch/launch.h>
+#include <cuda/hierarchy>
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__memory/unique_ptr.h>
 #include <cuda/std/__type_traits/remove_cvref.h>
@@ -111,7 +112,7 @@ _CCCL_API constexpr auto __with_cuda_error(_Completions __completions) noexcept
 }
 
 template <class _Config>
-using __dims_of_t = decltype(_Config::dims);
+using __dims_of_t = typename _Config::hierarchy_type;
 
 // This kernel forwards the results from the child sender to the receiver of the parent
 // sender. The receiver is where most algorithms do their work, so we want the receiver to
@@ -122,7 +123,7 @@ _CCCL_VISIBILITY_HIDDEN __launch_bounds__(_BlockThreads) __global__
   void __completion_kernel(__state_base_t<_Rcvr, _Variant>* __state)
 {
   _CCCL_ASSERT(__state->__results_.__index() != __npos, "__completion_kernel called with empty results");
-  _Variant::__visit(__visit_results{}, __state->__results_, __state->__rcvr_);
+  __visit(__visit_results{}, __state->__results_, __state->__rcvr_);
 }
 
 // This is the environment of the inner receiver that is used to connect the child sender.
@@ -228,7 +229,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __opstate_t
   template <class _Rcvr2>
   _CCCL_API auto __set_results(_Rcvr2& __rcvr) noexcept
   {
-    __results_t::__visit(__visit_results{}, __get_state().__state_.__results_, __rcvr);
+    __visit(__visit_results{}, __get_state().__state_.__results_, __rcvr);
   }
 
 private:
@@ -268,8 +269,8 @@ private:
     // the completion kernel, we will be completing the parent's receiver, so we must let
     // the receiver tell us how to launch the kernel.
     auto const __launch_config    = get_launch_config(execution::get_env(__state.__state_.__rcvr_));
-    using __launch_dims_t         = decltype(__launch_config.dims);
-    constexpr int __block_threads = __launch_dims_t::static_count(thread, block);
+    using __launch_dims_t         = typename decltype(__launch_config)::hierarchy_type;
+    constexpr int __block_threads = __launch_dims_t::static_count(gpu_thread, block);
 
     // Start the child operation state. This will launch kernels for all the predecessors
     // of this operation.
@@ -295,7 +296,7 @@ private:
   _CCCL_DEVICE_API void __device_start() noexcept
   {
     using __launch_dims_t         = __dims_of_t<__rcvr_config_t>;
-    constexpr int __block_threads = __launch_dims_t::static_count(thread, block);
+    constexpr int __block_threads = __launch_dims_t::static_count(gpu_thread, block);
     auto& __state                 = __get_state();
 
     // without the following, the kernel in __host_start will fail to launch with
@@ -321,7 +322,9 @@ private:
   // in dyncamically-allocated managed memory.
   [[nodiscard]] _CCCL_API constexpr auto __get_state() noexcept -> __state_t&
   {
-    return __state_.__index() == 0 ? __state_.template __get<0>() : __state_.template __get<1>()->__value;
+    return __state_.__index() == 0
+           ? execution::__variant_get<0>(__state_)
+           : execution::__variant_get<1>(__state_)->__value;
   }
 
   stream_ref __stream_;

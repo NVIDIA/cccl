@@ -7,15 +7,17 @@ Memory Resources
    :glob:
    :maxdepth: 3
 
-   api/*any__resource*
-   api/struct*memory__pool__properties*
-   api/class*device__memory__pool*
-   api/class*device__memory__resource*
-   api/class*pinned__memory__pool*
-   api/class*pinned__memory__resource*
-   api/*shared__resource*
+   ../libcudacxx/api/*any__resource*
+   ../libcudacxx/api/struct*memory__pool__properties*
+   ../libcudacxx/api/struct*device__memory__pool*
+   ../libcudacxx/api/struct*pinned__memory__pool*
+   ../libcudacxx/api/struct*managed__memory__pool*
+   ../libcudacxx/api/class*legacy__pinned__memory__resource*
+   ../libcudacxx/api/class*legacy__managed__memory__resource*
+   ../libcudacxx/api/*shared__resource*
 
 The ``<cuda/experimental/memory_resource.cuh>`` header provides:
+
    -  :ref:`any_synchronous_resource <cudax-memory-resource-any-resource>` and
       :ref:`any_resource <cudax-memory-resource-any-async-resource>` type erased memory resources similar to
       ``std::any``. In contrast to :ref:`resource_ref <libcudacxx-extended-api-memory-resources-resource-ref>` they

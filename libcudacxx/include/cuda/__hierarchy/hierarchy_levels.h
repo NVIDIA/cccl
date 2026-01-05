@@ -11,12 +11,25 @@
 #ifndef _CUDA___HIERARCHY_HIERARCHY_LEVELS_H
 #define _CUDA___HIERARCHY_HIERARCHY_LEVELS_H
 
-#include <cuda/__hierarchy/dimensions.h>
-#include <cuda/std/__type_traits/type_list.h>
+#include <cuda/std/detail/__config>
 
-#include <nv/target>
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 
-#include <cuda/std/__cccl/prologue.h>
+#if _CCCL_HAS_CTK()
+
+#  include <cuda/__fwd/hierarchy.h>
+#  include <cuda/__hierarchy/dimensions.h>
+#  include <cuda/std/__type_traits/type_list.h>
+
+#  include <nv/target>
+
+#  include <cuda/std/__cccl/prologue.h>
 
 _CCCL_BEGIN_NAMESPACE_CUDA
 
@@ -98,94 +111,6 @@ template <class _Unit>
 inline constexpr bool __legal_unit_for_level<_Unit, void> = false;
 } // namespace __detail
 
-// Base type for all hierarchy levels
-struct hierarchy_level
-{};
-
-struct grid_level;
-struct cluster_level;
-struct block_level;
-struct thread_level;
-
-/*
-  Types to represent CUDA threads hierarchy levels
-  All metadata about the hierarchy level goes here including certain forward
-  progress information or what adjacent levels are valid in the hierarchy for
-  validation.
-*/
-
-/**
- * @brief Type representing the grid level in CUDA thread hierarchy
- *
- * This type can be used in hierarchy queries to refer to the
- * grid level or to get that level from the hierarchy.
- * There is a constexpr variable of this type available for convenience
- * named grid.
- */
-struct grid_level
-    : public hierarchy_level
-    , public __detail::__dimensions_query<grid_level>
-{
-  using product_type  = unsigned long long;
-  using allowed_above = allowed_levels<>;
-  using allowed_below = allowed_levels<block_level, cluster_level>;
-};
-_CCCL_GLOBAL_CONSTANT grid_level grid;
-
-/**
- * @brief Type representing the cluster level in CUDA thread hierarchy
- *
- * This type can be used in hierarchy queries to refer to the
- * cluster level or to get that level from the hierarchy.
- * There is a constexpr variable of this type available for convenience
- * named cluster.
- */
-struct cluster_level
-    : public hierarchy_level
-    , public __detail::__dimensions_query<cluster_level>
-{
-  using product_type  = unsigned int;
-  using allowed_above = allowed_levels<grid_level>;
-  using allowed_below = allowed_levels<block_level>;
-};
-_CCCL_GLOBAL_CONSTANT cluster_level cluster;
-
-/**
- * @brief Type representing the block level in CUDA thread hierarchy
- *
- * This type can be used in hierarchy queries to refer to the
- * block level or to get that level from the hierarchy.
- * There is a constexpr variable of this type available for convenience
- * named block.
- */
-struct block_level
-    : public hierarchy_level
-    , public __detail::__dimensions_query<block_level>
-{
-  using product_type  = unsigned int;
-  using allowed_above = allowed_levels<grid_level, cluster_level>;
-  using allowed_below = allowed_levels<thread_level>;
-};
-_CCCL_GLOBAL_CONSTANT block_level block;
-
-/**
- * @brief Type representing the thread level in CUDA thread hierarchy
- *
- * This type can be used in hierarchy queries to specify threads as a
- * unit of the query.
- * There is a constexpr variable of this type available for convenience
- * named thread.
- */
-struct thread_level
-    : public hierarchy_level
-    , public __detail::__dimensions_query<thread_level>
-{
-  using product_type  = unsigned int;
-  using allowed_above = allowed_levels<block_level>;
-  using allowed_below = allowed_levels<>;
-};
-_CCCL_GLOBAL_CONSTANT thread_level thread;
-
 template <typename _Level>
 constexpr bool is_core_cuda_hierarchy_level =
   ::cuda::std::is_same_v<_Level, grid_level> || ::cuda::std::is_same_v<_Level, cluster_level>
@@ -196,6 +121,7 @@ namespace __detail
 template <typename _Unit, typename _Level>
 struct __dims_helper;
 
+#  if _CCCL_CUDA_COMPILATION()
 template <typename _Level>
 struct __dims_helper<_Level, _Level>
 {
@@ -265,6 +191,7 @@ struct __dims_helper<cluster_level, grid_level>
     NV_IF_ELSE_TARGET(NV_PROVIDES_SM_90, (return __clusterIdx();), (return ::dim3(0, 0, 0);));
   }
 };
+#  endif // _CCCL_CUDA_COMPILATION()
 
 // Seems like a compiler bug, where NODISCARD is marked as ignored due to void
 // return type, while its not possible to ever have void return type here
@@ -489,6 +416,8 @@ _CCCL_DEVICE auto index(const _Unit&, const _Level&)
 } // namespace hierarchy
 _CCCL_END_NAMESPACE_CUDA
 
-#include <cuda/std/__cccl/epilogue.h>
+#  include <cuda/std/__cccl/epilogue.h>
+
+#endif // _CCCL_HAS_CTK()
 
 #endif // _CUDA___HIERARCHY_HIERARCHY_LEVELS_H
