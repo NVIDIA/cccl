@@ -408,10 +408,12 @@ template <>
 inline constexpr bool __is_vector_type_v<::long2> = true;
 template <>
 inline constexpr bool __is_vector_type_v<::long3> = true;
+#  if _CCCL_CTK_AT_LEAST(13, 0)
 template <>
 inline constexpr bool __is_vector_type_v<::long4_16a> = true;
 template <>
 inline constexpr bool __is_vector_type_v<::long4_32a> = true;
+#  endif // ^^^ _CCCL_CTK_AT_LEAST(13, 0)
 template <>
 inline constexpr bool __is_vector_type_v<::long4> = true;
 
@@ -421,10 +423,12 @@ template <>
 inline constexpr bool __is_vector_type_v<::ulong2> = true;
 template <>
 inline constexpr bool __is_vector_type_v<::ulong3> = true;
+#  if _CCCL_CTK_AT_LEAST(13, 0)
 template <>
 inline constexpr bool __is_vector_type_v<::ulong4_16a> = true;
 template <>
 inline constexpr bool __is_vector_type_v<::ulong4_32a> = true;
+#  endif // ^^^ _CCCL_CTK_AT_LEAST(13, 0)
 template <>
 inline constexpr bool __is_vector_type_v<::ulong4> = true;
 
@@ -434,10 +438,12 @@ template <>
 inline constexpr bool __is_vector_type_v<::longlong2> = true;
 template <>
 inline constexpr bool __is_vector_type_v<::longlong3> = true;
+#  if _CCCL_CTK_AT_LEAST(13, 0)
 template <>
 inline constexpr bool __is_vector_type_v<::longlong4_16a> = true;
 template <>
 inline constexpr bool __is_vector_type_v<::longlong4_32a> = true;
+#  endif // ^^^ _CCCL_CTK_AT_LEAST(13, 0)
 template <>
 inline constexpr bool __is_vector_type_v<::longlong4> = true;
 
@@ -447,10 +453,12 @@ template <>
 inline constexpr bool __is_vector_type_v<::ulonglong2> = true;
 template <>
 inline constexpr bool __is_vector_type_v<::ulonglong3> = true;
+#  if _CCCL_CTK_AT_LEAST(13, 0)
 template <>
 inline constexpr bool __is_vector_type_v<::ulonglong4_16a> = true;
 template <>
 inline constexpr bool __is_vector_type_v<::ulonglong4_32a> = true;
+#  endif // ^^^ _CCCL_CTK_AT_LEAST(13, 0)
 template <>
 inline constexpr bool __is_vector_type_v<::ulonglong4> = true;
 
@@ -469,10 +477,12 @@ template <>
 inline constexpr bool __is_vector_type_v<::double2> = true;
 template <>
 inline constexpr bool __is_vector_type_v<::double3> = true;
+#  if _CCCL_CTK_AT_LEAST(13, 0)
 template <>
 inline constexpr bool __is_vector_type_v<::double4_16a> = true;
 template <>
 inline constexpr bool __is_vector_type_v<::double4_32a> = true;
+#  endif // ^^^ _CCCL_CTK_AT_LEAST(13, 0)
 template <>
 inline constexpr bool __is_vector_type_v<::double4> = true;
 
