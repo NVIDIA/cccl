@@ -91,10 +91,7 @@ def bench_reduce_pointer(bench_fixture, request, size):
         reduce_pointer(input_array, build_only=(bench_fixture == "compile_benchmark"))
 
     fixture = request.getfixturevalue(bench_fixture)
-    if bench_fixture == "compile_benchmark":
-        fixture(cuda.compute.make_reduce_into, run)
-    else:
-        fixture(run)
+    fixture(run)
 
 
 @pytest.mark.parametrize("bench_fixture", ["compile_benchmark", "benchmark"])
@@ -109,10 +106,7 @@ def bench_reduce_iterator(bench_fixture, request, size):
         )
 
     fixture = request.getfixturevalue(bench_fixture)
-    if bench_fixture == "compile_benchmark":
-        fixture(cuda.compute.make_reduce_into, run)
-    else:
-        fixture(run)
+    fixture(run)
 
 
 @pytest.mark.parametrize("bench_fixture", ["compile_benchmark", "benchmark"])
@@ -127,10 +121,7 @@ def bench_reduce_struct(bench_fixture, request, size):
         reduce_struct(input_array, build_only=(bench_fixture == "compile_benchmark"))
 
     fixture = request.getfixturevalue(bench_fixture)
-    if bench_fixture == "compile_benchmark":
-        fixture(cuda.compute.make_reduce_into, run)
-    else:
-        fixture(run)
+    fixture(run)
 
 
 @pytest.mark.parametrize("bench_fixture", ["compile_benchmark", "benchmark"])
@@ -141,10 +132,7 @@ def bench_reduce_pointer_custom_op(bench_fixture, request, size):
         reduce_pointer_custom_op(input_array, build_only=False)
 
     fixture = request.getfixturevalue(bench_fixture)
-    if bench_fixture == "compile_benchmark":
-        fixture(cuda.compute.make_reduce_into, run)
-    else:
-        fixture(run)
+    fixture(run)
 
 
 def bench_reduce_pointer_single_phase(benchmark, size):
@@ -220,3 +208,35 @@ def reduce_iterator_single_phase(inp, size, build_only):
     cuda.compute.reduce_into(inp, res, OpKind.PLUS, size, h_init)
 
     cp.cuda.runtime.deviceSynchronize()
+
+
+def reduce_pointer_lambda(input_array, build_only):
+    """Reduce using a lambda function as the operator."""
+    size = len(input_array)
+    res = cp.empty(1, dtype=input_array.dtype)
+    h_init = np.zeros(1, dtype=input_array.dtype)
+
+    # Use a lambda function directly as the reducer
+    alg = cuda.compute.make_reduce_into(input_array, res, lambda a, b: a + b, h_init)
+    if not build_only:
+        temp_storage_bytes = alg(None, input_array, res, size, h_init)
+        temp_storage = cp.empty(temp_storage_bytes, dtype=np.uint8)
+        alg(temp_storage, input_array, res, size, h_init)
+
+    cp.cuda.runtime.deviceSynchronize()
+
+
+@pytest.mark.parametrize("bench_fixture", ["compile_benchmark", "benchmark"])
+def bench_reduce_pointer_lambda(bench_fixture, request, size):
+    """Benchmark reduce_into with a lambda function as the reducer."""
+    # Use small size for compile benchmarks, parameterized size for runtime benchmarks
+    actual_size = 10 if bench_fixture == "compile_benchmark" else size
+    input_array = cp.random.randint(0, 10, actual_size)
+
+    def run():
+        reduce_pointer_lambda(
+            input_array, build_only=(bench_fixture == "compile_benchmark")
+        )
+
+    fixture = request.getfixturevalue(bench_fixture)
+    fixture(run)

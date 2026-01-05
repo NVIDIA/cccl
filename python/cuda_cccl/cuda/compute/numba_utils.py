@@ -5,11 +5,15 @@ from numba import cuda
 from numba.core.extending import as_numba_type
 from numpy.typing import DTypeLike
 
+from ._utils import sanitize_identifier
 from .typing import GpuStruct
 
 
 def get_inferred_return_type(op, args: tuple):
-    _, return_type = cuda.compile(op, args)
+    sanitized_name = sanitize_identifier(op.__name__)
+    unique_suffix = hex(id(op))[2:]
+    abi_name = f"{sanitized_name}_{unique_suffix}"
+    _, return_type = cuda.compile(op, args, abi_info={"abi_name": abi_name})
     return return_type
 
 

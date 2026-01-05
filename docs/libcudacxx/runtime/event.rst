@@ -21,7 +21,6 @@ Example:
 
 .. code:: cpp
 
-   #include <cuda/event>
    #include <cuda/stream>
 
    void record_on_stream(cuda::stream_ref stream, cudaEvent_t raw_handle) {
@@ -29,9 +28,9 @@ Example:
      e.record(stream);
    }
 
-.. _cccl-runtime-event-event:
 ``cuda::event``
 --------------------------------------------
+.. _cccl-runtime-event-event:
 
 ``cuda::event`` is an owning wrapper around a ``cudaEvent_t`` (with timing disabled). It inherits from ``event_ref`` and provides all of its functionality.
 It also creates and destroys the native event, can be moved (but not copied), and can release ownership via ``release()``. Construction can target a specific
@@ -41,7 +40,6 @@ Availability: CCCL 3.1.0 / CUDA 13.1
 
 .. code:: cpp
 
-   #include <cuda/event>
    #include <cuda/stream>
    #include <cuda/devices>
 
@@ -65,7 +63,6 @@ Availability: CCCL 3.1.0 / CUDA 13.1
 
 .. code:: cpp
 
-   #include <cuda/event>
    #include <cuda/stream>
    #include <cuda/std/chrono>
 

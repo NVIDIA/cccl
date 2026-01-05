@@ -326,6 +326,15 @@ struct tuning_vec<1200, StoreSize>
   static constexpr int items_per_thread = 8;
 };
 
+// manually tuned triad on A100
+template <int StoreSize, int LoadSize0, int... LoadSizes>
+struct tuning_vec<800, StoreSize, LoadSize0, LoadSizes...>
+{
+  static constexpr int block_threads    = 128;
+  static constexpr int vec_size         = 4;
+  static constexpr int items_per_thread = 16;
+};
+
 template <bool RequiresStableAddress,
           bool DenseOutput,
           typename RandomAccessIteratorTupleIn,
@@ -397,7 +406,14 @@ struct policy_hub<RequiresStableAddress,
         block_threads* async_policy::min_items_per_thread,
         ldgsts_size_and_align)
       > int{max_smem_per_block};
-    static constexpr bool fallback_to_vectorized = exhaust_smem || no_input_streams || !can_memcpy_all_inputs;
+
+    // on Ampere, the vectorized kernel performs better for 1 and 2 byte values
+    static constexpr bool use_vector_kernel_on_ampere =
+      ((size_of<it_value_t<RandomAccessIteratorsIn>> < 4) && ...) && sizeof...(RandomAccessIteratorsIn) > 1
+      && size_of<it_value_t<RandomAccessIteratorOut>> < 4;
+
+    static constexpr bool fallback_to_vectorized =
+      exhaust_smem || no_input_streams || !can_memcpy_all_inputs || use_vector_kernel_on_ampere;
 
   public:
     static constexpr auto algorithm =

@@ -91,7 +91,7 @@ enum CacheStoreModifier
 template <CacheStoreModifier MODIFIER, typename OutputIteratorT, typename T>
 _CCCL_DEVICE _CCCL_FORCEINLINE void ThreadStore(OutputIteratorT itr, T val);
 
-//@}  end member group
+//@}
 
 #ifndef _CCCL_DOXYGEN_INVOKED // Do not document
 

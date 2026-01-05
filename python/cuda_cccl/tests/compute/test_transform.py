@@ -380,3 +380,52 @@ def test_binary_transform_struct_type_with_annotations():
 
     np.testing.assert_equal(result["x"], h_in1["x"] + h_in2["x"])
     np.testing.assert_equal(result["y"], h_in1["y"] + h_in2["y"])
+
+
+def test_unary_transform_stateful_counting():
+    """Test unary_transform with state that counts even numbers."""
+    from numba import cuda as numba_cuda
+
+    d_in = cp.arange(100, dtype=np.int32)
+    d_out = cp.empty_like(d_in)
+
+    even_count = cp.zeros(1, dtype=np.int32)
+
+    # Define op that references state as closure
+    def count_evens(x):
+        if x % 2 == 0:
+            numba_cuda.atomic.add(even_count, 0, 1)
+        return x * 2
+
+    cuda.compute.unary_transform(d_in, d_out, count_evens, len(d_in))
+
+    expected_output = cp.arange(100, dtype=np.int32) * 2
+    np.testing.assert_array_equal(d_out.get(), expected_output.get())
+
+    num_evens = int(even_count.get()[0])
+    assert num_evens == 50  # 0, 2, 4, ..., 98
+
+
+def test_unary_transform_with_lambda():
+    """Test unary_transform with a lambda function."""
+    d_in = cp.array([1, 2, 3, 4, 5], dtype=np.int32)
+    d_out = cp.empty_like(d_in)
+
+    # Use a lambda function directly
+    cuda.compute.unary_transform(d_in, d_out, lambda x: x * 2, len(d_in))
+
+    expected = np.array([2, 4, 6, 8, 10], dtype=np.int32)
+    np.testing.assert_array_equal(d_out.get(), expected)
+
+
+def test_binary_transform_with_lambda():
+    """Test binary_transform with a lambda function."""
+    d_in1 = cp.array([1, 2, 3, 4, 5], dtype=np.int32)
+    d_in2 = cp.array([10, 20, 30, 40, 50], dtype=np.int32)
+    d_out = cp.empty_like(d_in1)
+
+    # Use a lambda function directly
+    cuda.compute.binary_transform(d_in1, d_in2, d_out, lambda a, b: a + b, len(d_in1))
+
+    expected = np.array([11, 22, 33, 44, 55], dtype=np.int32)
+    np.testing.assert_array_equal(d_out.get(), expected)
