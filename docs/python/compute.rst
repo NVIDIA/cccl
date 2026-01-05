@@ -39,6 +39,8 @@ API conventions
 * **Operators** — Many algorithms accept an ``op`` parameter. This can be a built-in
   :class:`OpKind <cuda.compute.op.OpKind>` value or a
   :ref:`user-defined function <cuda.compute.user_defined_operations>`.
+  When possible, prefer built-in operators (e.g., ``OpKind.PLUS``) over the equivalent
+  user-defined operation (e.g., ``lambda a, b: a + b``) for better performance.
 
 * **Iterators** — Inputs and outputs can be :ref:`iterators <cuda.compute.iterators>`
   instead of arrays, enabling lazy evaluation and operation fusion.
@@ -61,6 +63,19 @@ Many algorithms allocate temporary device memory for intermediate results. For f
 control over allocation—or to reuse buffers across calls—use the object-based API.
 For example, :func:`make_reduce_into <cuda.compute.algorithms.make_reduce_into>`
 returns a reusable reduction object that lets you manage memory explicitly.
+
+.. code-block:: python
+   :caption: Controlling temporary memory.
+
+   # create a reducer object:
+   reducer = cuda.compute.make_reduce_into(d_in, d_out, op, h_init)
+   # get the temporary storage size by passing None as the first argument:
+   temp_storage_bytes = reducer(None, d_in, d_out, num_items, h_init)
+   # allocate the temporary storage as any array-like object
+   # (e.g., CuPy array, Torch tensor):
+   temp_storage = cp.empty(temp_storage_bytes, dtype=np.uint8)
+   # perform the reduction, passing the temporary storage as the first argument:
+   reducer(temp_storage, d_in, d_out, num_items, h_init)
 
 .. _cuda.compute.user_defined_operations:
 
@@ -212,9 +227,9 @@ Each algorithm computes a cache key from:
 * **Compute capability** — the GPU architecture of the current device
 * **Algorithm-specific parameters** — such as initial value dtype or determinism mode
 
-Note that array *contents* and *pointers* are not part of the cache key—only
-structural properties like dtype and shape. This means you can reuse a cached
-algorithm across different arrays of the same type.
+Note that array *contents* or *pointers* are not part of the cache key—only
+the array's dtype. This means you can reuse a cached algorithm across different
+arrays of the same type.
 
 How user-defined functions are cached
 +++++++++++++++++++++++++++++++++++++
