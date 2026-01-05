@@ -13,7 +13,7 @@
 #include <cuda/std/utility>
 #include <cuda/stream>
 
-#include <utility.cuh>
+#include <testing.cuh>
 
 C2H_CCCLRT_TEST("Can create a stream and launch work into it", "[stream]")
 {
