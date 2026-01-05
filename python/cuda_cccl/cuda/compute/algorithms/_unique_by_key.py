@@ -162,7 +162,7 @@ def _make_unique_by_key_cached(
     )
 
 
-@annotate
+@annotate()
 def make_unique_by_key(
     d_in_keys: DeviceArrayLike | IteratorBase,
     d_in_items: DeviceArrayLike | IteratorBase,
