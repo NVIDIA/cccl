@@ -44,12 +44,6 @@ def _splitmix64_next(state):
 def _feistel_bijection(val, seed, left_bits, right_bits, left_mask, right_mask):
     """
     Feistel bijection matching libcudacxx __feistel_bijection.
-
-    The C++ implementation uses a struct with members named __low and __high,
-    but these names refer to struct position, not bit position. We use the
-    same naming here to match the C++ logic exactly:
-      - state_low  corresponds to C++ __state.__low
-      - state_high corresponds to C++ __state.__high
     """
     M0 = uint64(FEISTEL_M0)
 
