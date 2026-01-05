@@ -123,7 +123,7 @@ private:
     auto __high = ::cuda::std::min(__low + __k, __n);
     // Keep moving bounds as long as the (exclusive) high bound is closer to the estimate than
     // the lower (inclusive) bound.
-    while (__high < __n and __distance(__e, __high) < __distance(__e, __low))
+    while (__high < __n & __distance(__e, __high) < __distance(__e, __low))
     {
       __low += 1;
       __high += 1;
