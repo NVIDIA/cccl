@@ -20,20 +20,6 @@
 
 #include "count_new.h"
 
-#if _LIBCUDACXX_HAS_ALIGNED_ALLOCATION()
-static const bool UsingAlignedNew = true;
-#else
-static const bool UsingAlignedNew = false;
-#endif
-
-#ifdef __STDCPP_DEFAULT_NEW_ALIGNMENT__
-static const cuda::std::size_t MaxAligned = __STDCPP_DEFAULT_NEW_ALIGNMENT__;
-#else
-static const cuda::std::size_t MaxAligned = cuda::std::alignment_of<cuda::std::max_align_t>::value;
-#endif
-
-static const cuda::std::size_t OverAligned = MaxAligned * 2;
-
 template <cuda::std::size_t Align>
 struct alignas(Align) AlignedType
 {
@@ -62,8 +48,8 @@ __host__ __device__ void test_aligned()
   T::constructed = 0;
   globalMemCounter.reset();
   cuda::std::allocator<T> a;
-  const bool IsOverAlignedType = Align > MaxAligned;
-  const bool ExpectAligned     = IsOverAlignedType && UsingAlignedNew;
+  const bool IsOverAlignedType = Align > __STDCPP_DEFAULT_NEW_ALIGNMENT__;
+  const bool ExpectAligned     = IsOverAlignedType;
   {
     assert(globalMemCounter.checkOutstandingNewEq(0));
     assert(T::constructed == 0);
@@ -107,17 +93,17 @@ int main(int, char**)
   test_aligned<4>();
   test_aligned<8>();
   test_aligned<16>();
-  test_aligned<MaxAligned>();
-  test_aligned<OverAligned>();
-  test_aligned<OverAligned * 2>();
+  test_aligned<__STDCPP_DEFAULT_NEW_ALIGNMENT__>();
+  test_aligned<__STDCPP_DEFAULT_NEW_ALIGNMENT__ * 2>();
+  test_aligned<__STDCPP_DEFAULT_NEW_ALIGNMENT__ * 4>();
 
   static_assert(test_aligned_constexpr<1>());
   static_assert(test_aligned_constexpr<2>());
   static_assert(test_aligned_constexpr<4>());
   static_assert(test_aligned_constexpr<8>());
   static_assert(test_aligned_constexpr<16>());
-  static_assert(test_aligned_constexpr<MaxAligned>());
-  static_assert(test_aligned_constexpr<OverAligned>());
-  static_assert(test_aligned_constexpr<OverAligned * 2>());
+  static_assert(test_aligned_constexpr<__STDCPP_DEFAULT_NEW_ALIGNMENT__>());
+  static_assert(test_aligned_constexpr<__STDCPP_DEFAULT_NEW_ALIGNMENT__ * 2>());
+  static_assert(test_aligned_constexpr<__STDCPP_DEFAULT_NEW_ALIGNMENT__ * 4>());
   return 0;
 }
