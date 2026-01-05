@@ -58,7 +58,7 @@ Inspecting the PTX, we see that the structs are passed by value to the device fu
         .param .b64 foo_param_1,
         .param .b32 foo_param_2,
         .param .b64 foo_param_3
-)
+    )
 """
 
 import functools

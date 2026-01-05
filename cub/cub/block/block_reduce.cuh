@@ -332,7 +332,7 @@ public:
       , linear_tid(RowMajorTid(BlockDimX, BlockDimY, BlockDimZ))
   {}
 
-  //! @}  end member group
+  //! @}
   //! @name Generic reductions
   //! @{
 
@@ -503,7 +503,7 @@ public:
     }
   }
 
-  //! @}  end member group
+  //! @}
   //! @name Summation reductions
   //! @{
 
@@ -655,7 +655,7 @@ public:
     }
   }
 
-  //! @}  end member group
+  //! @}
 };
 
 CUB_NAMESPACE_END

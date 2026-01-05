@@ -222,7 +222,7 @@ struct DeviceSegmentedScan
   //! The code snippet below illustrates the exclusive segmented prefix sum of an ``int``
   //! device vector.
   //!
-  //! .. literalinclude:: ../../../cub/test/catch2_test_segmented_scan_api.cu
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_segmented_scan_api.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin exclusive-segmented-sum-three-offsets
@@ -361,7 +361,7 @@ struct DeviceSegmentedScan
   //! The code snippet below illustrates the exclusive segmented prefix scan of an ``int``
   //! device vector.
   //!
-  //! .. literalinclude:: ../../../cub/test/catch2_test_segmented_scan_api.cu
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_segmented_scan_api.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin exclusive-segmented-scan-two-offsets
@@ -629,7 +629,7 @@ struct DeviceSegmentedScan
   //! The code snippet below illustrates the inclusive segmented prefix sum of an ``int``
   //! device vector.
   //!
-  //! .. literalinclude:: ../../../cub/test/catch2_test_segmented_scan_api.cu
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_segmented_scan_api.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin inclusive-segmented-sum-two-offsets
@@ -748,7 +748,7 @@ struct DeviceSegmentedScan
   //! The code snippet below illustrates the inclusive segmented prefix sum of an ``int``
   //! device vector.
   //!
-  //! .. literalinclude:: ../../../cub/test/catch2_test_segmented_scan_api.cu
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_segmented_scan_api.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin inclusive-segmented-sum-three-offsets
@@ -994,7 +994,7 @@ struct DeviceSegmentedScan
   //! The code snippet below illustrates the exclusive segmented prefix sum of an ``int``
   //! device vector.
   //!
-  //! .. literalinclude:: ../../../cub/test/catch2_test_segmented_scan_api.cu
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_segmented_scan_api.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin inclusive-segmented-scan-three-offsets
@@ -1133,7 +1133,7 @@ struct DeviceSegmentedScan
   //! The code snippet below illustrates the exclusive segmented prefix scan of an ``int``
   //! device vector.
   //!
-  //! .. literalinclude:: ../../../cub/test/catch2_test_segmented_scan_api.cu
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_segmented_scan_api.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin inclusive-segmented-scan-init-two-offsets

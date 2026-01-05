@@ -142,6 +142,7 @@ template <typename _ElementType>
     else
     {
       static_assert(::cuda::std::__always_false_v<_ElementType>, "Unsupported vector type");
+      return ::DLDataType{};
     }
   }
 #  endif // _CCCL_HAS_CTK()
@@ -150,7 +151,6 @@ template <typename _ElementType>
   else
   {
     static_assert(::cuda::std::__always_false_v<_ElementType>, "Unsupported type");
-    _CCCL_UNREACHABLE();
     return ::DLDataType{};
   }
 }
