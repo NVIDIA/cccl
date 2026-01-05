@@ -47,10 +47,6 @@ class _Select:
         self.discard_second = DiscardIterator(d_out)
         self.discard_unselected = DiscardIterator(d_out)
 
-        # Create a predicate that always returns False
-        def _cccl_always_false(x):
-            return False
-
         # Use three_way_partition internally
         self.partitioner = make_three_way_partition(
             d_in,
@@ -59,7 +55,7 @@ class _Select:
             self.discard_unselected,  # unselected_out - discarded
             d_num_selected_out,
             cond,  # select_first_part_op - user's select condition
-            _cccl_always_false,  # select_second_part_op - always false
+            lambda x: False,  # select_second_part_op - always false
         )
 
     def __call__(

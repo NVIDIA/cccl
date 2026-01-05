@@ -342,6 +342,36 @@ def test_three_way_partition_no_selection():
     np.testing.assert_array_equal(got_unselected, h_in)
 
 
+def test_three_way_partition_same_predicate():
+    dtype = np.int32
+    num_items = 100
+    h_in = random_array(num_items, dtype, max_value=100)
+
+    def always_true(x):
+        return True
+
+    d_in = cp.asarray(h_in)
+    d_first = cp.empty_like(d_in)
+    d_second = cp.empty_like(d_in)
+    d_unselected = cp.empty_like(d_in)
+    d_num_selected = cp.empty(2, dtype=np.int64)
+
+    cuda.compute.three_way_partition(
+        d_in,
+        d_first,
+        d_second,
+        d_unselected,
+        d_num_selected,
+        always_true,
+        always_true,
+        num_items,
+    )
+
+    num_selected = d_num_selected.get()
+    assert int(num_selected[0]) == num_items
+    assert int(num_selected[1]) == 0
+
+
 def test_three_way_partition_all_selected_first():
     dtype = np.int32
     num_items = 20_000
