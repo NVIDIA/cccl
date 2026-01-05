@@ -220,7 +220,7 @@ def PermutationIterator(values, indices):
     return make_permutation_iterator(values, indices)
 
 
-def ShuffleIterator(num_items, seed, rounds=8):
+def ShuffleIterator(num_items, seed):
     """Iterator that produces a deterministic "random" permutation of indices in ``[0, num_items)``.
 
     Example:
@@ -234,12 +234,11 @@ def ShuffleIterator(num_items, seed, rounds=8):
     Args:
         num_items: Number of elements in the domain to permute
         seed: Seed used to parameterize the permutation
-        rounds: Number of Feistel rounds to use (default: 8)
 
     Returns:
         A ``ShuffleIterator`` object that yields shuffled indices
     """
-    return make_shuffle_iterator(num_items, seed, rounds)
+    return make_shuffle_iterator(num_items, seed)
 
 
 def ZipIterator(*iterators):
