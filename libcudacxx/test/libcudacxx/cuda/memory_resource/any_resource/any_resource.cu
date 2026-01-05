@@ -88,12 +88,12 @@ TEMPLATE_TEST_CASE_METHOD(test_fixture, "any_resource", "[container][resource]",
       ++expected.move_count;
       CHECK(this->counts == expected);
 
-      void* ptr = mr.allocate_sync(bytes(50), align(8));
+      void* ptr = mr.allocate_sync(this->bytes(50), this->align(8));
       CHECK(ptr == this);
       ++expected.allocate_count;
       CHECK(this->counts == expected);
 
-      mr.deallocate_sync(ptr, bytes(50), align(8));
+      mr.deallocate_sync(ptr, this->bytes(50), this->align(8));
       ++expected.deallocate_count;
       CHECK(this->counts == expected);
     }
@@ -117,12 +117,12 @@ TEMPLATE_TEST_CASE_METHOD(test_fixture, "any_resource", "[container][resource]",
       ++expected.move_count;
       CHECK(this->counts == expected);
 
-      void* ptr = mr.allocate(::cuda::stream_ref{stream}, bytes(50), align(8));
+      void* ptr = mr.allocate(::cuda::stream_ref{stream}, this->bytes(50), this->align(8));
       CHECK(ptr == this);
       ++expected.allocate_async_count;
       CHECK(this->counts == expected);
 
-      mr.deallocate(::cuda::stream_ref{stream}, ptr, bytes(50), align(8));
+      mr.deallocate(::cuda::stream_ref{stream}, ptr, this->bytes(50), this->align(8));
       ++expected.deallocate_async_count;
       CHECK(this->counts == expected);
     }
@@ -147,11 +147,11 @@ TEMPLATE_TEST_CASE_METHOD(test_fixture, "any_resource", "[container][resource]",
       cuda::mr::synchronous_resource_ref<::cuda::mr::host_accessible> ref = mr;
 
       CHECK(this->counts == expected);
-      auto* ptr = ref.allocate_sync(bytes(100), align(8));
+      auto* ptr = ref.allocate_sync(this->bytes(100), this->align(8));
       CHECK(ptr == this);
       ++expected.allocate_count;
       CHECK(this->counts == expected);
-      ref.deallocate_sync(ptr, bytes(0), align(0));
+      ref.deallocate_sync(ptr, this->bytes(0), this->align(0));
       ++expected.deallocate_count;
       CHECK(this->counts == expected);
     }
@@ -187,18 +187,18 @@ TEMPLATE_TEST_CASE_METHOD(
 {
   big_resource mr{42, this};
   cuda::mr::resource_ref<::cuda::mr::host_accessible, get_data> ref{mr};
-  CHECK(ref.allocate_sync(bytes(100), align(8)) == this);
+  CHECK(ref.allocate_sync(this->bytes(100), this->align(8)) == this);
   CHECK(get_property(ref, get_data{}) == 42);
 
   big_resource mr2{43, this};
   cuda::mr::resource_ref<::cuda::mr::host_accessible, get_data> ref2{mr2};
   ref = ref2;
-  CHECK(ref.allocate_sync(bytes(100), align(8)) == this);
+  CHECK(ref.allocate_sync(this->bytes(100), this->align(8)) == this);
   CHECK(get_property(ref, get_data{}) == 43);
 
   cuda::mr::resource_ref<::cuda::mr::host_accessible, get_data, extra_property> ref3{mr};
   ref = ref3;
-  CHECK(ref.allocate_sync(bytes(100), align(8)) == this);
+  CHECK(ref.allocate_sync(this->bytes(100), this->align(8)) == this);
   CHECK(get_property(ref, get_data{}) == 42);
 }
 
