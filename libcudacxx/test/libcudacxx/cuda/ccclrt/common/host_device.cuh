@@ -13,7 +13,7 @@
 
 #include <cuda/hierarchy>
 
-#include "utility.cuh"
+#include "testing.cuh"
 
 template <typename Dims, typename Lambda>
 void __global__ lambda_launcher(const Dims dims, const Lambda lambda)
