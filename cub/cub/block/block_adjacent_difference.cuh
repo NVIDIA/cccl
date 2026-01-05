@@ -213,7 +213,7 @@ public:
       , linear_tid(RowMajorTid(BlockDimX, BlockDimY, BlockDimZ))
   {}
 
-  //! @} end member group
+  //! @}
   //! @name Read left operations
   //! @{
 
@@ -638,7 +638,7 @@ public:
     }
   }
 
-  //! @} end member group
+  //! @}
   //! @name Read right operations
   //! @{
   //!

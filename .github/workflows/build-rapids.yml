@@ -64,8 +64,8 @@ jobs:
       matrix:
         include:
           - { cuda: '13.0', libs: 'rmm kvikio cudf cudf_kafka' }
-          - { cuda: '13.0', libs: 'rmm ucxx raft cuvs cumlprims_mg cuml' }
-          - { cuda: '13.0', libs: 'rmm ucxx raft cugraph'                }
+          - { cuda: '13.0', libs: 'rmm ucxx raft cuvs cuml'    }
+          - { cuda: '13.0', libs: 'rmm ucxx raft cugraph'      }
     permissions:
       id-token: write
       contents: read
@@ -106,7 +106,6 @@ jobs:
           # RAPIDS_cugraph_GIT_REPO: '{"upstream": "rapidsai", "tag": "main"}'
           # RAPIDS_cugraph_gnn_GIT_REPO: '{"upstream": "rapidsai", "tag": "main"}'
           # RAPIDS_cuml_GIT_REPO: '{"upstream": "rapidsai", "tag": "main"}'
-          # RAPIDS_cumlprims_mg_GIT_REPO: '{"upstream": "rapidsai", "tag": "main"}'
           # RAPIDS_cuvs_GIT_REPO: '{"upstream": "rapidsai", "tag": "main"}'
           # RAPIDS_kvikio_GIT_REPO: '{"upstream": "rapidsai", "tag": "main"}'
           # RAPIDS_raft_GIT_REPO: '{"upstream": "rapidsai", "tag": "main"}'
