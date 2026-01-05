@@ -63,6 +63,9 @@ class LibcxxTestFormat(object):
                 "ADDITIONAL_COMPILE_OPTIONS_CUDA:", ParserKind.LIST, initial_value=[]
             ),
             IntegratedTestKeywordParser("CONSTEXPR_STEPS:", ParserKind.INTEGER),
+            IntegratedTestKeywordParser(
+                "WANTS_CUDADEVRT.", ParserKind.TAG, initial_value=False
+            ),
         ]
 
     @staticmethod
@@ -208,6 +211,19 @@ class LibcxxTestFormat(object):
                     test_cxx.compile_flags += ["-Xcompiler", f'"{constexpr_steps_opt}"']
                 else:
                     test_cxx.compile_flags += [constexpr_steps_opt]
+
+        # Handle the case when the test needs libcudadevrt to be linked in
+        needs_cudadevrt = self._get_parser("WANTS_CUDADEVRT.", parsers).getValue()
+        if needs_cudadevrt:
+            if (
+                test_cxx.type == "nvcc"
+                or test_cxx.type == "nvc++"
+                or test_cxx.type == "nvrtcc"
+            ):
+                test_cxx.compile_flags += ["-dc"]
+                test_cxx.link_flags += ["-lcudadevrt"]
+            else:
+                test_cxx.compile_flags += ["-DTEST_NO_CUDADEVRT"]
 
         # Dispatch the test based on its suffix.
         if is_sh_test:

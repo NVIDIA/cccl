@@ -32,6 +32,7 @@ std::string inputFile;
 bool skipOutput = false;
 bool building   = false;
 bool execute    = false;
+std::vector<std::string> link_libraries{};
 
 ExecutionConfig executionConfig;
 
@@ -90,6 +91,20 @@ ArgPair argHandlers[] = {
    [](const std::smatch&) {
      building = true;
      // We're compiling, maybe do something useful
+     return NORMAL; // Unreachable
+   }},
+  {// Add -lmy_lib params to link_libraries
+   std::regex("^-l.+$"),
+   [](const std::smatch& match) {
+     std::cerr << "Emplacing: " << match[0].str().substr(2) << std::endl << "\n\n\n\n\n";
+     link_libraries.emplace_back("lib" + match[0].str().substr(2));
+     //  exit(1);
+     return NORMAL;
+   }},
+  {//
+   std::regex("^-dc$"),
+   [](const std::smatch&) {
+     nvrtcArguments.emplace_back("-dc");
      return NORMAL; // Unreachable
    }},
   {// Forward all arguments to NVCC
@@ -235,6 +250,8 @@ int main(int argc, char** argv)
   {
     // If the argument was greedy, we'll retry with an appended argument
     c_arg = (argState == GREEDY) ? c_arg + " " + *a : *a;
+
+    std::cerr << "Processing argument: " << c_arg << "\n";
 
     for (auto& h : argHandlers)
     {
