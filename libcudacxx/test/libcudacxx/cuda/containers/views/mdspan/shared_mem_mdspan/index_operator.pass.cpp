@@ -288,6 +288,6 @@ __global__ void test()
 
 int main(int, char**)
 {
-  NV_IF_TARGET(NV_IS_HOST, (test<<<1, 1, 1024 * sizeof(int)>>>();))
+  NV_IF_TARGET(NV_IS_HOST, (test<<<1, 1>>>(); assert(cudaDeviceSynchronize() == cudaSuccess);))
   return 0;
 }
