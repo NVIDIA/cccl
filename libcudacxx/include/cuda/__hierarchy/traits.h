@@ -112,6 +112,16 @@ struct __next_hierarchy_level<_Level, hierarchy_dimensions<_Level, _Levels...>>
 template <class _Level, class _Hierarchy>
 using __next_hierarchy_level_t = typename __next_hierarchy_level<_Level, _Hierarchy>::__type;
 
+template <class _Type>
+_CCCL_CONCEPT_FRAGMENT(__has_hierarchy_member_,
+                       requires(const _Type& __instance)(requires(
+                         ::cuda::__is_hierarchy_v<::cuda::std::remove_cvref_t<decltype(__instance.hierarchy())>>)));
+template <class _Type>
+_CCCL_CONCEPT __has_hierarchy_member = _CCCL_FRAGMENT(__has_hierarchy_member_, _Type);
+
+template <class _Type>
+inline constexpr bool __is_or_has_hierarchy_member_v = __has_hierarchy_member<_Type> || __is_hierarchy_v<_Type>;
+
 _CCCL_END_NAMESPACE_CUDA
 
 #include <cuda/std/__cccl/epilogue.h>
