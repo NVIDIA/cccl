@@ -48,12 +48,11 @@ template <class _Tp>
   {
     if constexpr (alignof(_Tp) > __STDCPP_DEFAULT_NEW_ALIGNMENT__)
     {
-      ::cuda::std::align_val_t __al = ::cuda::std::align_val_t(::cuda::std::alignment_of<_Tp>::value);
-      __r.first                     = static_cast<_Tp*>(::operator new(__n * sizeof(_Tp), __al));
+      __r.first = static_cast<_Tp*>(::cuda::std::__cccl_operator_new(__n * sizeof(_Tp), align_val_t{alignof(_Tp)}));
     }
     else
     {
-      __r.first = static_cast<_Tp*>(::operator new(__n * sizeof(_Tp)));
+      __r.first = static_cast<_Tp*>(::cuda::std::__cccl_operator_new(__n * sizeof(_Tp)));
     }
 
     if (__r.first)

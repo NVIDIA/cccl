@@ -65,6 +65,16 @@ _CCCL_API void __cccl_operator_delete(_Args... __args)
   ::operator delete(__args...);
 }
 
+template <class... _Args>
+_CCCL_API void __cccl_operator_delete(void* __ptr, align_val_t __align, _Args... __args)
+{
+#if _CCCL_CUDA_COMPILER(CLANG) && _CCCL_DEVICE_COMPILATION()
+  ::cuda::std::free(__ptr);
+#else // ^^^ clang-cuda in device mode ^^^ / vvv other vvv
+  return ::operator delete(__ptr, __align, __args...);
+#endif // ^^^ other ^^^
+}
+
 #if _CCCL_HAS_SIZED_DEALLOCATION()
 template <class... _Args>
 _CCCL_API void __cccl_operator_delete(void* __ptr, size_t __size, align_val_t __align, _Args... __args)
@@ -75,17 +85,7 @@ _CCCL_API void __cccl_operator_delete(void* __ptr, size_t __size, align_val_t __
   return ::operator delete(__ptr, __size, __align, __args...);
 #  endif // ^^^ other ^^^
 }
-#else // ^^^ _CCCL_HAS_SIZED_DEALLOCATION() ^^^ / vvv !_CCCL_HAS_SIZED_DEALLOCATION() vvv
-template <class... _Args>
-_CCCL_API void __cccl_operator_delete(void* __ptr, align_val_t __align, _Args... __args)
-{
-#  if _CCCL_CUDA_COMPILER(CLANG) && _CCCL_DEVICE_COMPILATION()
-  ::cuda::std::free(__ptr);
-#  else // ^^^ clang-cuda in device mode ^^^ / vvv other vvv
-  return ::operator delete(__ptr, __align, __args...);
-#  endif // ^^^ other ^^^
-}
-#endif // ^^^ !_CCCL_HAS_SIZED_DEALLOCATION() ^^^
+#endif // _CCCL_HAS_SIZED_DEALLOCATION()
 
 [[nodiscard]] _CCCL_API inline void* __cccl_allocate(size_t __size, size_t __align)
 {
