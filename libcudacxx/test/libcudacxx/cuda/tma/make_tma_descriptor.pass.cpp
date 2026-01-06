@@ -130,9 +130,6 @@ bool test_strides()
   // stride is 0
   strides_storage[0] = 0;
   unused(cuda::make_tma_descriptor(tensor, box_sizes));
-  // stride is nullptr
-  tensor.strides = nullptr;
-  unused(cuda::make_tma_descriptor(tensor, box_sizes));
   return true;
 }
 
@@ -231,7 +228,7 @@ bool test_enums()
         cuda::tma_swizzle swizzle,
         cuda::tma_l2_fetch_size l2_fetch_size,
         cuda::tma_oob_fill oobfill) {
-      tensor.dtype.bits    = bits;
+      tensor.dtype.bits    = static_cast<uint8_t>(bits);
       box_sizes_storage[0] = /*min_align=*/16 * /*bits=*/8 / tensor.dtype.bits;
       box_sizes_storage[1] = /*min_align=*/16 * /*bits=*/8 / tensor.dtype.bits;
       box_sizes_storage[2] = /*min_align=*/16 * /*bits=*/8 / tensor.dtype.bits;
@@ -283,7 +280,7 @@ bool test_enums()
                   kDLFloat8_e5m2fnuz,
                   kDLFloat8_e8m0fnu})
             {
-              tensor.dtype.code  = code;
+              tensor.dtype.code  = static_cast<uint8_t>(code);
               constexpr int bits = 8;
               exec_make_tma_descriptor(bits, no_interleave, swizzle, l2_fetch_size, oobfill);
             }

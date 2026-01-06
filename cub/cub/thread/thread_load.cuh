@@ -115,7 +115,7 @@ inline ::std::ostream& operator<<(::std::ostream& os, CacheLoadModifier modifier
 template <CacheLoadModifier MODIFIER, typename RandomAccessIterator>
 _CCCL_DEVICE _CCCL_FORCEINLINE cub::detail::it_value_t<RandomAccessIterator> ThreadLoad(RandomAccessIterator itr);
 
-//@}  end member group
+//@}
 
 #ifndef _CCCL_DOXYGEN_INVOKED // Do not document
 

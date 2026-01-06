@@ -367,7 +367,7 @@ public:
           IS_ARCH_WARP ? ::cuda::ptx::get_sreg_laneid() : (::cuda::ptx::get_sreg_laneid() % LOGICAL_WARP_THREADS))
   {}
 
-  //! @}  end member group
+  //! @}
   //! @name Data movement
   //! @{
 
@@ -492,7 +492,7 @@ public:
     InternalStore(temp_storage, linear_tid).Store(block_itr, items, valid_items);
   }
 
-  //! @}  end member group
+  //! @}
 };
 
 CUB_NAMESPACE_END
