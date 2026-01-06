@@ -86,7 +86,7 @@ TEMPLATE_TEST_CASE_METHOD(
       ++expected.object_count;
       ++expected.move_count;
       CHECK(this->counts == expected);
-      CHECK(mr2 != mr4);
+      CHECK((mr2 != mr4));
       ++expected.equal_to_count;
       CHECK(this->counts == expected);
     }
@@ -281,7 +281,7 @@ TEMPLATE_TEST_CASE_METHOD(
       test::assign(mr, mr); // self copy assignment
       CHECK(this->counts == expected);
 
-      CHECK(mr == mr);
+      CHECK((mr == mr));
       CHECK(!(mr != mr));
       expected.equal_to_count += 2;
       CHECK(this->counts == expected);
