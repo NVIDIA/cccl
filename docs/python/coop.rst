@@ -21,7 +21,7 @@ Example Collections
 For complete runnable examples and more advanced usage patterns, see our
 full collection of `examples <https://github.com/NVIDIA/CCCL/tree/main/python/cuda_cccl/tests/coop/examples>`_.
 
-External API References
-------------------------
+API Reference
+-------------
 
 - :ref:`cuda_coop-module`
