@@ -143,8 +143,11 @@ struct DeviceTopK
   //! Overview
   //! +++++++++++++++++++++++++++++++++++++++++++++
   //!
-  //! - Finds the largest K keys and their corresponding values from an unordered input sequence of key-value pairs.
-  //! - The behavior is undefined if the input and output ranges overlap in any way.
+  //! Finds the largest K keys and their corresponding values from an unordered input sequence of key-value pairs.
+  //!
+  //! .. note::
+  //!
+  //!    The behavior is undefined if the input and output ranges overlap in any way.
   //!
   //! - @devicestorage
   //!
@@ -247,8 +250,11 @@ struct DeviceTopK
   //! Overview
   //! +++++++++++++++++++++++++++++++++++++++++++++
   //!
-  //! - Finds the lowest K keys and their corresponding values from an unordered input sequence of key-value pairs.
-  //! - The behavior is undefined if the input and output ranges overlap in any way.
+  //! Finds the lowest K keys and their corresponding values from an unordered input sequence of key-value pairs.
+  //!
+  //! .. note::
+  //!
+  //!    The behavior is undefined if the input and output ranges overlap in any way.
   //!
   //! - @devicestorage
   //!
@@ -351,8 +357,11 @@ struct DeviceTopK
   //! Overview
   //! +++++++++++++++++++++++++++++++++++++++++++++
   //!
-  //! - Finds the largest K keys from an unordered input sequence of keys.
-  //! - The behavior is undefined if the input and output ranges overlap in any way.
+  //! Finds the largest K keys from an unordered input sequence of keys.
+  //!
+  //! .. note::
+  //!
+  //!    The behavior is undefined if the input and output ranges overlap in any way.
   //!
   //! - @devicestorage
   //!
@@ -438,8 +447,11 @@ struct DeviceTopK
   //! Overview
   //! +++++++++++++++++++++++++++++++++++++++++++++
   //!
-  //! - Finds the lowest K keys from an unordered input sequence of keys.
-  //! - The behavior is undefined if the input and output ranges overlap in any way.
+  //! Finds the lowest K keys from an unordered input sequence of keys.
+  //!
+  //! .. note::
+  //!
+  //!    The behavior is undefined if the input and output ranges overlap in any way.
   //!
   //! - @devicestorage
   //!
