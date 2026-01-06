@@ -161,6 +161,7 @@ public:
 
   _CCCL_API reference access(__element_type* __p, ::cuda::std::size_t __i) const noexcept(__is_access_noexcept)
   {
+#if !defined(_CCCL_DISABLE_MDSPAN_ACCESSOR_DETECT_INVALIDITY)
     NV_IF_TARGET(
       NV_IS_DEVICE,
       (bool __is_shared_mem = ::__isShared(__p); //
@@ -169,11 +170,13 @@ public:
                     "__i exceeds the maximum shared memory allocation size");
        _CCCL_ASSUME(__is_shared_mem);))
     _CCCL_VERIFY_DEVICE_ONLY_USAGE();
+#endif // !defined(_CCCL_DISABLE_MDSPAN_ACCESSOR_DETECT_INVALIDITY)
     return _Accessor::access(__p, __i);
   }
 
   _CCCL_API data_handle_type offset(__element_type* __p, ::cuda::std::size_t __i) const noexcept(__is_offset_noexcept)
   {
+#if !defined(_CCCL_DISABLE_MDSPAN_ACCESSOR_DETECT_INVALIDITY)
     NV_IF_TARGET(
       NV_IS_DEVICE,
       (bool __is_shared_mem = ::__isShared(__p); //
@@ -181,6 +184,7 @@ public:
        _CCCL_ASSERT(__i <= ::cuda::__max_smem_allocation_bytes() / sizeof(__element_type),
                     "__i exceeds the maximum shared memory allocation size");
        _CCCL_ASSUME(__is_shared_mem);))
+#endif // !defined(_CCCL_DISABLE_MDSPAN_ACCESSOR_DETECT_INVALIDITY)
     _CCCL_VERIFY_DEVICE_ONLY_USAGE();
     return _Accessor::offset(__p, __i);
   }
