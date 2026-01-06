@@ -50,11 +50,11 @@ _CCCL_API constexpr auto find_lowest_arch_with_same_policy(
 }
 
 template <int ArchMult, typename CudaArches, typename ArchPolicies, size_t... Is>
-struct LowestArchResolver;
+struct lowest_arch_resolver;
 
 // we keep the compile-time build up of the mapping table outside a template parameterized by a user-provided callable
 template <int ArchMult, int... CudaArches, typename ArchPolicies, size_t... Is>
-struct LowestArchResolver<ArchMult, ::cuda::std::integer_sequence<int, CudaArches...>, ArchPolicies, Is...>
+struct lowest_arch_resolver<ArchMult, ::cuda::std::integer_sequence<int, CudaArches...>, ArchPolicies, Is...>
 {
   static_assert(::cuda::std::is_empty_v<ArchPolicies>);
   static_assert(sizeof...(CudaArches) == sizeof...(Is));
@@ -99,10 +99,11 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_to_arch_list(
 #  else // if _CCCL_STD_VER >= 2020
   // In C++17, we have to collapse architectures with the same policies ourselves, so we instantiate call_for_arch once
   // per policy on the lowest ArchId which produces the same policy
-  using Resolver = LowestArchResolver<ArchMult, ::cuda::std::integer_sequence<int, CudaArches...>, ArchPolicies, Is...>;
+  using resolver_t =
+    lowest_arch_resolver<ArchMult, ::cuda::std::integer_sequence<int, CudaArches...>, ArchPolicies, Is...>;
   (...,
    (device_arch == ::cuda::arch_id{(CudaArches * ArchMult) / 10}
-      ? (e = f(policy_getter_17<ArchPolicies, Resolver::lowest_arch_with_same_policy[Is]>{arch_policies}))
+      ? (e = f(policy_getter_17<ArchPolicies, resolver_t::lowest_arch_with_same_policy[Is]>{arch_policies}))
       : cudaSuccess));
 
 #  endif // if _CCCL_STD_VER >= 2020
