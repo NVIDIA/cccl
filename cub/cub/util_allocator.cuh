@@ -11,12 +11,12 @@
 
 #include <cub/config.cuh>
 
-#ifndef CCCL_DISABLE_CUB_NVRTC_COMPATIBILITY_CHECK
+#ifndef CCCL_DISABLE_NVRTC_COMPATIBILITY_CHECK
 #  if _CCCL_COMPILER(NVRTC)
 #    error \
-      "Including <cub/util_allocator.cuh> is not supported when compiling with NVRTC, which supports device code only. You can define CCCL_DISABLE_CUB_NVRTC_COMPATIBILITY_CHECK to disable this warning."
+      "Including <cub/util_allocator.cuh> is not supported when compiling with NVRTC, which supports device code only. You can define CCCL_DISABLE_NVRTC_COMPATIBILITY_CHECK to disable this warning."
 #  endif // _CCCL_COMPILER(NVRTC)
-#endif // CCCL_DISABLE_CUB_NVRTC_COMPATIBILITY_CHECK
+#endif // CCCL_DISABLE_NVRTC_COMPATIBILITY_CHECK
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
