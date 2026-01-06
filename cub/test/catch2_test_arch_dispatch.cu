@@ -32,7 +32,6 @@ struct arch_policy
   }
 };
 
-#ifdef CUDA_SM_LIST
 struct arch_policies_all
 {
   _CCCL_API constexpr auto operator()(arch_id id) const -> arch_policy
@@ -41,6 +40,7 @@ struct arch_policies_all
   }
 };
 
+#ifdef CUDA_SM_LIST
 // check that the selected policy exactly matches one of (scaled) arches we compile for
 template <arch_id SelectedPolicyArch, int... ArchList>
 struct check
@@ -48,6 +48,7 @@ struct check
   static_assert(((SelectedPolicyArch == arch_id{ArchList * CUDA_SM_LIST_SCALE / 10}) || ...));
   using type = cudaError_t;
 };
+#endif // CUDA_SM_LIST
 
 struct closure_all
 {
@@ -55,7 +56,11 @@ struct closure_all
 
   template <typename PolicyGetter>
   CUB_RUNTIME_FUNCTION auto operator()(PolicyGetter policy_getter) const ->
+#ifdef CUDA_SM_LIST
     typename check<PolicyGetter{}().value, CUDA_SM_LIST>::type
+#else // CUDA_SM_LIST
+    cudaError_t
+#endif // CUDA_SM_LIST
   {
     constexpr arch_policy active_policy = policy_getter();
     // since an individual policy is generated per architecture, we can do an exact comparison here
@@ -66,13 +71,17 @@ struct closure_all
 
 C2H_TEST("dispatch_arch prunes based on __CUDA_ARCH_LIST__/NV_TARGET_SM_INTEGER_LIST", "[util][dispatch]")
 {
+#ifdef CUDA_SM_LIST
   for (const int sm_val : {CUDA_SM_LIST})
   {
     const auto id = arch_id{sm_val * CUDA_SM_LIST_SCALE / 10};
+#else
+  for (const int id : cuda::__all_arch_ids())
+  {
+#endif
     CHECK(cub::detail::dispatch_arch(arch_policies_all{}, id, closure_all{id}) == cudaSuccess);
   }
 }
-#endif
 
 template <int NumPolicies>
 struct check_policy_closure
@@ -123,10 +132,14 @@ struct arch_policies_minimal
 
 C2H_TEST("dispatch_arch invokes correct policy", "[util][dispatch]")
 {
+#ifdef CUDA_SM_LIST
   for (const int sm_val : {CUDA_SM_LIST})
   {
     const auto id = arch_id{sm_val * CUDA_SM_LIST_SCALE / 10};
-
+#else
+  for (const int id : cuda::__all_arch_ids())
+  {
+#endif
     const auto closure_some =
       check_policy_closure<3>{id, cuda::std::array<arch_id, 3>{arch_id::sm_60, arch_id::sm_80, arch_id::sm_100}};
     CHECK(cub::detail::dispatch_arch(arch_policies_some{}, id, closure_some) == cudaSuccess);
