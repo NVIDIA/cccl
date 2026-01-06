@@ -250,7 +250,7 @@ __launch_bounds__(int()) __global__ void DeviceSegmentedTopKKernel(
   // Static Assertions (Constraints)
   static_assert(agent_t::tile_size >= params::static_max_value_v<SegmentSizeParameterT>,
                 "Block size exceeds maximum segment size supported by SegmentSizeParameterT");
-  static_assert(sizeof(agent_t::TempStorage) <= 48 * 1024,
+  static_assert(sizeof(typename agent_t::TempStorage) <= 48 * 1024,
                 "Static shared memory per block must not exceed 48KB limit.");
 
   // Temporary storage allocation
