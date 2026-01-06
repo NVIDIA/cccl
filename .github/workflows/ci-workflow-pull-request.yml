@@ -65,6 +65,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           persist-credentials: false
+          lfs: false
       - name: Lookup PR info
         id: get-pr-info
         uses: nv-gha-runners/get-pr-info@main
@@ -185,7 +186,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           persist-credentials: false
-
+          lfs: false
       - name: Check workflow success
         id: check-workflow
         uses: ./.github/actions/workflow-results
