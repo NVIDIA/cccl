@@ -239,7 +239,7 @@ and closure contents. Two functions with identical bytecode and closures produce
 the same cache key, even if defined at different source locations.
 
 Closure contents are recursively hashed:
-‘
+
 * **Scalars and host arrays** — hashed by value
 * **Device arrays** — hashed by pointer, shape, and dtype (not contents)
 * **Nested functions** — hashed by their own bytecode and closures
