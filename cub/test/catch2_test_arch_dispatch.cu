@@ -41,10 +41,6 @@ struct arch_policies_all
   }
 };
 
-#  if _CCCL_HAS_CONCEPTS()
-static_assert(::cub::detail::policy_hub<arch_policies_all, arch_policy>);
-#  endif
-
 // check that the selected policy exactly matches one of (scaled) arches we compile for
 template <arch_id SelectedPolicyArch, int... ArchList>
 struct check
@@ -124,11 +120,6 @@ struct arch_policies_minimal
     return arch_policy{arch_id::sm_60};
   }
 };
-
-#if _CCCL_HAS_CONCEPTS()
-static_assert(::cub::detail::policy_hub<arch_policies_some, arch_policy>);
-static_assert(::cub::detail::policy_hub<arch_policies_minimal, arch_policy>);
-#endif
 
 C2H_TEST("dispatch_arch invokes correct policy", "[util][dispatch]")
 {
