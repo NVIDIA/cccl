@@ -193,7 +193,7 @@ struct AgentSegmentedTopkWorkerPerSegment
     BlockLoadKeysT(temp_storage.load_keys).Load(block_keys_in, thread_keys, segment_size, padding_key);
 
     // Load Values (if applicable)
-    value_t thread_values[items_per_thread];
+    [[maybe_unused]] value_t thread_values[items_per_thread];
 
     if constexpr (!is_keys_only)
     {
