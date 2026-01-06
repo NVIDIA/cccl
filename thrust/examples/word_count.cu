@@ -29,19 +29,18 @@ int word_count(const thrust::device_vector<char>& input)
 
   // determines whether the right character begins a new word
   // Define lambda locally for safety and clarity
-  auto is_word_start = [] __host__ __device__ (const char& left, const char& right)
-  {
+  auto is_word_start = [] __host__ __device__(const char& left, const char& right) {
     return is_alpha(right) && !is_alpha(left);
   };
 
   // compute the number characters that start a new word
   int wc = thrust::inner_product(
     input.begin(),
-    input.end() - 1,       // sequence of left characters
-    input.begin() + 1,     // sequence of right characters
-    0,                     // initialize sum to 0
+    input.end() - 1, // sequence of left characters
+    input.begin() + 1, // sequence of right characters
+    0, // initialize sum to 0
     cuda::std::plus<int>{}, // sum values together (use {} for uniform init)
-    is_word_start          // Pass the lambda object directly (NO parentheses)
+    is_word_start // Pass the lambda object directly (NO parentheses)
   );
 
   // if the first character is alphabetical, then it also begins a word
