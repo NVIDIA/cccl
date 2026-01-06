@@ -127,11 +127,11 @@ dispatch_arch(ArchPolicies arch_policies, ::cuda::arch_id device_arch, F&& f)
 {
   // if we have __CUDA_ARCH_LIST__ or NV_TARGET_SM_INTEGER_LIST, we only poll the policy hub for those arches.
 #  ifdef __CUDA_ARCH_LIST__
-  constexpr auto arch_seq = ::cuda::std::integer_sequence<int, __CUDA_ARCH_LIST__>{};
+  [[maybe_unused]] constexpr auto arch_seq = ::cuda::std::integer_sequence<int, __CUDA_ARCH_LIST__>{};
   return dispatch_to_arch_list<1, __CUDA_ARCH_LIST__>(
     arch_policies, device_arch, ::cuda::std::forward<F>(f), ::cuda::std::make_index_sequence<arch_seq.size()>{});
 #  elif defined(NV_TARGET_SM_INTEGER_LIST)
-  constexpr auto arch_seq = ::cuda::std::integer_sequence<int, NV_TARGET_SM_INTEGER_LIST>{};
+  [[maybe_unused]] constexpr auto arch_seq = ::cuda::std::integer_sequence<int, NV_TARGET_SM_INTEGER_LIST>{};
   return dispatch_to_arch_list<10, NV_TARGET_SM_INTEGER_LIST>(
     arch_policies, device_arch, ::cuda::std::forward<F>(f), ::cuda::std::make_index_sequence<arch_seq.size()>{});
 #  else
