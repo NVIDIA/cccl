@@ -8,9 +8,6 @@ Containers library
    :maxdepth: 1
 
    api/class*uninitialized__buffer*
-   api/class*uninitialized__async__buffer*
-   api/class*heterogeneous__iterator*
-   api/class*experimental*vector*
 
 The headers of the container library provide facilities to store elements on the heap. They are heavily inspired by the
 C++ `containers library <https://en.cppreference.com/w/cpp/container>`__ but deviate from the standard provided ones due to different requirements from
