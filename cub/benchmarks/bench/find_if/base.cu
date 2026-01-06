@@ -35,7 +35,7 @@ void find_if(nvbench::state& state, nvbench::type_list<T, OffsetT>)
     thrust::raw_pointer_cast(dinput.data()),
     thrust::raw_pointer_cast(d_result.data()),
     thrust::detail::equal_to_value<T>(val),
-    dinput.size(),
+    static_cast<OffsetT>(dinput.size()),
     0);
 
   thrust::device_vector<uint8_t> temp_storage(temp_storage_bytes, thrust::no_init);
