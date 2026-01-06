@@ -30,6 +30,10 @@
 #include <cuda/std/array>
 #include <cuda/std/cassert>
 
+#if _CCCL_HAS_CONCEPTS()
+#  include <cuda/std/__concepts/regular.h>
+#endif // _CCCL_HAS_CONCEPTS()
+
 #if !_CCCL_COMPILER(NVRTC)
 #  include <atomic> // saves 146ms compile-time over <cuda/std/atomic> (CCCL 3.1)
 #  if defined(CUB_DEFINE_RUNTIME_POLICIES)
@@ -831,6 +835,21 @@ private:
   }
 #endif // !_CCCL_COMPILER(NVRTC)
 };
+
+namespace detail
+{
+#if _CCCL_HAS_CONCEPTS()
+_CCCL_API consteval void __needs_a_constexpr_value(auto) {}
+
+// TODO(bgruber): bikeshed name before we make the tuning API public
+template <typename T, typename ArchPolicy>
+concept policy_selector = requires(T hub, ::cuda::arch_id arch) {
+  { hub(arch) } -> _CCCL_CONCEPT_VSTD::same_as<ArchPolicy>;
+  { __needs_a_constexpr_value(hub(arch)) };
+} && ::cuda::std::regular<ArchPolicy>;
+#endif // _CCCL_HAS_CONCEPTS()
+} // namespace detail
+
 CUB_NAMESPACE_END
 
 #if _CCCL_CUDA_COMPILATION() && !_CCCL_COMPILER(NVRTC)

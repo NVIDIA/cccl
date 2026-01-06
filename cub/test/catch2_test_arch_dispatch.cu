@@ -40,6 +40,10 @@ struct policy_selector_all
   }
 };
 
+#if _CCCL_HAS_CONCEPTS()
+static_assert(::cub::detail::policy_selector<policy_selector_all, a_policy>);
+#endif
+
 #ifdef CUDA_SM_LIST
 template <arch_id SelectedPolicyArch, int... ArchList>
 void check_arch_is_in_list()
@@ -125,6 +129,11 @@ struct policy_selector_minimal
     return a_policy{arch_id::sm_60};
   }
 };
+
+#if _CCCL_HAS_CONCEPTS()
+static_assert(::cub::detail::policy_selector<policy_selector_some, a_policy>);
+static_assert(::cub::detail::policy_selector<policy_selector_minimal, a_policy>);
+#endif
 
 C2H_TEST("dispatch_arch invokes correct policy", "[util][dispatch]")
 {
