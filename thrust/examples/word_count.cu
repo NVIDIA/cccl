@@ -5,6 +5,7 @@
 #include <thrust/reduce.h>
 
 #include <iostream>
+#include <iterator> // Required for std::begin/std::end
 
 // This example computes the number of words in a text sample
 // with a single call to thrust::inner_product.  The algorithm
@@ -18,15 +19,6 @@ __host__ __device__ bool is_alpha(const char c)
   return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z');
 }
 
-// determines whether the right character begins a new word
-struct is_word_start
-{
-  __host__ __device__ bool operator()(const char& left, const char& right) const
-  {
-    return is_alpha(right) && !is_alpha(left);
-  }
-};
-
 int word_count(const thrust::device_vector<char>& input)
 {
   // check for empty string
@@ -35,14 +27,22 @@ int word_count(const thrust::device_vector<char>& input)
     return 0;
   }
 
+  // determines whether the right character begins a new word
+  // Define lambda locally for safety and clarity
+  auto is_word_start = [] __host__ __device__ (const char& left, const char& right)
+  {
+    return is_alpha(right) && !is_alpha(left);
+  };
+
   // compute the number characters that start a new word
   int wc = thrust::inner_product(
     input.begin(),
-    input.end() - 1, // sequence of left characters
-    input.begin() + 1, // sequence of right characters
-    0, // initialize sum to 0
-    cuda::std::plus<int>(), // sum values together
-    is_word_start()); // how to compare the left and right characters
+    input.end() - 1,       // sequence of left characters
+    input.begin() + 1,     // sequence of right characters
+    0,                     // initialize sum to 0
+    cuda::std::plus<int>{}, // sum values together (use {} for uniform init)
+    is_word_start          // Pass the lambda object directly (NO parentheses)
+  );
 
   // if the first character is alphabetical, then it also begins a word
   if (is_alpha(input.front()))
@@ -65,16 +65,17 @@ int main()
     "  On the morrow he will leave me, as my hopes have flown before.'\n"
     "  Then the bird said, `Nevermore.'\n";
 
-  std::cout << "Text sample:" << std::endl;
-  std::cout << raw_input << std::endl;
+  std::cout << "Text sample:\n";
+  std::cout << raw_input << "\n";
 
   // transfer to device
-  thrust::device_vector<char> input(raw_input, raw_input + sizeof(raw_input));
+  // Use std::begin/end for safer C++ iterator access
+  thrust::device_vector<char> input(std::begin(raw_input), std::end(raw_input));
 
   // count words
   int wc = word_count(input);
 
-  std::cout << "Text sample contains " << wc << " words" << std::endl;
+  std::cout << "Text sample contains " << wc << " words\n";
 
   return 0;
 }
