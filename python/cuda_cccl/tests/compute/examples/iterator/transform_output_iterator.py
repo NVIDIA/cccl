@@ -2,6 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+# example-begin
 """
 TransformOutputIterator example demonstrating reduction with transform output iterator.
 """

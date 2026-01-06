@@ -36,7 +36,7 @@ C2H_TEST("cub::DeviceSegmentedReduce::Sum accepts env with stream and determinis
   {
     std::cerr << "cub::DeviceSegmentedReduce::Sum failed with status: " << error << std::endl;
   }
-  // example-end segmented-reduce-reduce-sum-env
+  // example-end segmented-reduce-sum-env
 
   REQUIRE(d_out == expected);
   REQUIRE(error == cudaSuccess);
@@ -62,7 +62,7 @@ C2H_TEST("cub::DeviceSegmentedReduce::Sum accepts stream", "[segmented_reduce][e
   {
     std::cerr << "cub::DeviceSegmentedReduce::Sum failed with status: " << error << std::endl;
   }
-  // example-end segmented-reduce-reduce-sum-env-stream
+  // example-end segmented-reduce-sum-env-stream
 
   REQUIRE(d_out == expected);
   REQUIRE(error == cudaSuccess);
@@ -87,7 +87,7 @@ C2H_TEST("cub::DeviceSegmentedReduce::Sum accepts run_to_run determinism require
   {
     std::cerr << "cub::DeviceSegmentedReduce::Sum failed with status: " << error << std::endl;
   }
-  // example-end segmented-reduce-reduce-sum-env-determinism
+  // example-end segmented-reduce-sum-env-determinism
 
   REQUIRE(d_out == expected);
   REQUIRE(error == cudaSuccess);
@@ -112,7 +112,7 @@ C2H_TEST("cub::DeviceSegmentedReduce::Sum accepts not_guaranteed determinism req
   {
     std::cerr << "cub::DeviceSegmentedReduce::Sum failed with status: " << error << std::endl;
   }
-  // example-end segmented-reduce-reduce-sum-env-non-determinism
+  // example-end segmented-reduce-sum-env-non-determinism
 
   REQUIRE(d_out == expected);
   REQUIRE(error == cudaSuccess);
