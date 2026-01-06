@@ -68,18 +68,30 @@ TEMPLATE_TEST_CASE_METHOD(
       ++expected.object_count;
       CHECK(this->counts == expected);
       CHECK((mr == mr2));
-      ++expected.equal_to_count;
+      CHECK(!(mr != mr2));
+      expected.equal_to_count += 2;
       CHECK(this->counts == expected);
 
       auto mr3 = std::move(mr);
       expected.move_count += !is_big; // for big resources, move is a pointer swap
       CHECK(this->counts == expected);
       CHECK((mr2 == mr3));
+      CHECK(!(mr2 != mr3));
+      expected.equal_to_count += 2;
+      CHECK(this->counts == expected);
+
+      // Test inequality with different resource
+      cuda::mr::any_synchronous_resource<::cuda::mr::host_accessible, get_data> mr4{TestResource{43, this}};
+      expected.new_count += is_big;
+      ++expected.object_count;
+      ++expected.move_count;
+      CHECK(this->counts == expected);
+      CHECK((mr2 != mr4));
       ++expected.equal_to_count;
       CHECK(this->counts == expected);
     }
-    expected.delete_count += 2 * is_big;
-    expected.object_count -= 2;
+    expected.delete_count += 3 * is_big;
+    expected.object_count -= 3;
     CHECK(this->counts == expected);
   }
 
@@ -120,10 +132,10 @@ TEMPLATE_TEST_CASE_METHOD(
     CHECK(this->counts == expected);
     {
       TestResource resource1{42, this};
-      TestResource resource2{42, this};
+      TestResource resource2{43, this};
       expected.object_count += 2;
       CHECK(this->counts == expected);
-      CHECK(resource1 == resource2);
+      CHECK(!(resource1 == resource2));
       ++expected.equal_to_count;
       CHECK(this->counts == expected);
       cuda::mr::any_synchronous_resource<::cuda::mr::host_accessible, get_data> mr{resource1};
@@ -132,6 +144,10 @@ TEMPLATE_TEST_CASE_METHOD(
       ++expected.copy_count;
       CHECK(this->counts == expected);
       CHECK(mr == resource1);
+      CHECK(!(mr != resource1));
+      expected.equal_to_count += 2;
+      CHECK(this->counts == expected);
+      CHECK(mr != resource2);
       ++expected.equal_to_count;
       CHECK(this->counts == expected);
     }
@@ -142,40 +158,6 @@ TEMPLATE_TEST_CASE_METHOD(
 
   // Reset the counters:
   this->counts = Counts();
-
-  SECTION("conversion from any_synchronous_resource to "
-          "cuda::mr::synchronous_resource_ref")
-  {
-    Counts expected{};
-    {
-      cuda::mr::any_synchronous_resource<::cuda::mr::host_accessible, get_data> mr{TestResource{42, this}};
-      expected.new_count += is_big;
-      ++expected.object_count;
-      ++expected.move_count;
-      CHECK(this->counts == expected);
-
-      // conversion from any_synchronous_resource to
-      // cuda::mr::synchronous_synchronous_resource_ref:
-      cuda::mr::synchronous_resource_ref<::cuda::mr::host_accessible, get_data> ref = mr;
-
-      // conversion from any_synchronous_resource to
-      // cuda::mr::synchronous_synchronous_resource_ref with narrowing:
-      cuda::mr::synchronous_resource_ref<cuda::mr::host_accessible, get_data> ref2 = mr;
-      CHECK(get_property(ref2, get_data{}) == 42);
-
-      CHECK(this->counts == expected);
-      auto* ptr = ref.allocate_sync(this->bytes(100), this->align(8));
-      CHECK(ptr == this);
-      ++expected.allocate_count;
-      CHECK(this->counts == expected);
-      ref.deallocate_sync(ptr, this->bytes(0), this->align(0));
-      ++expected.deallocate_count;
-      CHECK(this->counts == expected);
-    }
-    expected.delete_count += is_big;
-    --expected.object_count;
-    CHECK(this->counts == expected);
-  }
 
   SECTION("conversion from any_synchronous_resource to "
           "cuda::mr::synchronous_resource_ref")
@@ -285,6 +267,68 @@ TEMPLATE_TEST_CASE_METHOD(
   // Reset the counters:
   this->counts = Counts();
 
+  SECTION("self-assignment")
+  {
+    Counts expected{};
+    CHECK(this->counts == expected);
+    {
+      cuda::mr::any_synchronous_resource<::cuda::mr::host_accessible, get_data> mr{TestResource{42, this}};
+      expected.new_count += is_big;
+      ++expected.object_count;
+      ++expected.move_count;
+      CHECK(this->counts == expected);
+
+      test::assign(mr, mr); // self copy assignment
+      CHECK(this->counts == expected);
+
+      CHECK((mr == mr));
+      CHECK(!(mr != mr));
+      expected.equal_to_count += 2;
+      CHECK(this->counts == expected);
+    }
+    expected.delete_count += is_big;
+    expected.object_count -= 1;
+    CHECK(this->counts == expected);
+  }
+
+  // Reset the counters:
+  this->counts = Counts();
+
+  SECTION("conversion from resource_ref")
+  {
+    Counts expected{};
+    CHECK(this->counts == expected);
+    {
+      TestResource test{42, this};
+      ++expected.object_count;
+      CHECK(this->counts == expected);
+
+      cuda::mr::resource_ref<::cuda::mr::host_accessible, get_data> ref{test};
+      CHECK(this->counts == expected);
+
+      cuda::mr::any_synchronous_resource<::cuda::mr::host_accessible, get_data> mr = ref;
+      expected.new_count += is_big;
+      ++expected.object_count;
+      ++expected.copy_count;
+      CHECK(this->counts == expected);
+
+      CHECK(get_property(mr, get_data{}) == 42);
+      void* ptr = mr.allocate_sync(this->bytes(100), this->align(8));
+      CHECK(ptr == this);
+      ++expected.allocate_count;
+      CHECK(this->counts == expected);
+      mr.deallocate_sync(ptr, this->bytes(100), this->align(8));
+      ++expected.deallocate_count;
+      CHECK(this->counts == expected);
+    }
+    expected.delete_count += is_big;
+    expected.object_count -= 2;
+    CHECK(this->counts == expected);
+  }
+
+  // Reset the counters:
+  this->counts = Counts();
+
   SECTION("make_any_synchronous_resource")
   {
     Counts expected{};
@@ -319,9 +363,13 @@ TEMPLATE_TEST_CASE_METHOD(
   CHECK(get_property(ref, get_data{}) == 43);
 
   cuda::mr::synchronous_resource_ref<::cuda::mr::host_accessible, get_data, extra_property> ref3{mr};
-  ref = ref3;
+  ref = ref3; // copy assignment with property narrowing
   CHECK(ref.allocate_sync(this->bytes(100), this->align(8)) == this);
   CHECK(get_property(ref, get_data{}) == 42);
+
+  ref = std::move(ref2); // move assignment
+  CHECK(ref.allocate_sync(this->bytes(100), this->align(8)) == this);
+  CHECK(get_property(ref, get_data{}) == 43);
 }
 
 TEMPLATE_TEST_CASE_METHOD(test_fixture, "Empty property set", "[container][resource]", big_resource, small_resource)
