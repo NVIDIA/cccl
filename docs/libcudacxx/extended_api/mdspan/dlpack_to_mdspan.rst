@@ -127,4 +127,3 @@ See also
 --------
 
 - :ref:`libcudacxx-extended-api-mdspan-mdspan-to-dlpack` for the reverse conversion.
-
