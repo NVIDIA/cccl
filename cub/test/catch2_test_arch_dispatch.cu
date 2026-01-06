@@ -76,7 +76,7 @@ C2H_TEST("dispatch_arch prunes based on __CUDA_ARCH_LIST__/NV_TARGET_SM_INTEGER_
   {
     const auto id = arch_id{sm_val * CUDA_SM_LIST_SCALE / 10};
 #else
-  for (const int id : cuda::__all_arch_ids())
+  for (const arch_id id : cuda::__all_arch_ids())
   {
 #endif
     CHECK(cub::detail::dispatch_arch(arch_policies_all{}, id, closure_all{id}) == cudaSuccess);
@@ -137,7 +137,7 @@ C2H_TEST("dispatch_arch invokes correct policy", "[util][dispatch]")
   {
     const auto id = arch_id{sm_val * CUDA_SM_LIST_SCALE / 10};
 #else
-  for (const int id : cuda::__all_arch_ids())
+  for (const arch_id id : cuda::__all_arch_ids())
   {
 #endif
     const auto closure_some =
