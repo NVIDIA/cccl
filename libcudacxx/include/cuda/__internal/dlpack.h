@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDA_STD___INTERNAL_DLPACK_H
-#define _CUDA_STD___INTERNAL_DLPACK_H
+#ifndef _CUDA___INTERNAL_DLPACK_H
+#define _CUDA___INTERNAL_DLPACK_H
 
 #include <cuda/std/detail/__config>
 
@@ -35,4 +35,4 @@
 
 #endif // _CCCL_HAS_DLPACK()
 
-#endif // _CUDA_STD___INTERNAL_DLPACK_H
+#endif // _CUDA___INTERNAL_DLPACK_H

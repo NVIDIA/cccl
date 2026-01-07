@@ -23,13 +23,13 @@
 #if _CCCL_HAS_CTK() && _CCCL_HAS_DLPACK()
 
 #  include <cuda/__driver/driver_api.h>
+#  include <cuda/__internal/dlpack.h>
 #  include <cuda/__memory/is_aligned.h>
 #  include <cuda/__memory/is_pointer_accessible.h>
 #  include <cuda/devices> // sub headers cause circular dependency
 #  include <cuda/std/__algorithm/min.h>
 #  include <cuda/std/__cstddef/types.h>
 #  include <cuda/std/__exception/exception_macros.h>
-#  include <cuda/std/__internal/dlpack.h>
 #  include <cuda/std/__utility/unreachable.h>
 #  include <cuda/std/array>
 #  include <cuda/std/cstdint>
