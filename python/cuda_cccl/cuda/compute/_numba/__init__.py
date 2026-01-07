@@ -13,7 +13,8 @@ operations (CompiledOp, CompiledIterator).
 # Lazy imports - only import when accessed
 __all__ = [
     "interop",
-    "odr_helpers",
+    "iterators",
     "numba_utils",
+    "odr_helpers",
     "struct",
 ]

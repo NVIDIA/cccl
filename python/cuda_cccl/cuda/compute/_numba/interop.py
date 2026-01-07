@@ -164,3 +164,32 @@ def typeof(val):
 def get_as_numba_type(cls):
     """Get the Numba type for a class registered with as_numba_type."""
     return as_numba_type(cls)
+
+
+def get_value_type(d_in):
+    """Get the value type for an input array, iterator, or struct.
+
+    Args:
+        d_in: Device array, iterator, or struct value
+
+    Returns:
+        Numba type representing the value type
+    """
+    import numpy as np
+
+    from .._utils.protocols import get_dtype
+    from ..struct import _Struct, gpu_struct
+    from .iterators.base import IteratorBase
+
+    if isinstance(d_in, IteratorBase):
+        return d_in.value_type
+    if isinstance(d_in, _Struct):
+        return numba.typeof(d_in)
+    dtype = get_dtype(d_in)
+    if dtype.type == np.void:
+        # we can't use the numba type corresponding to numpy struct
+        # types directly, as those are passed by pointer to device
+        # functions. Instead, we create an anonymous struct type
+        # which has the appropriate pass-by-value semantics.
+        return as_numba_type(gpu_struct(dtype))
+    return numba.from_dtype(dtype)
