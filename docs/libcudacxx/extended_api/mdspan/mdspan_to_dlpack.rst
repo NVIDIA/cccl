@@ -101,6 +101,7 @@ Availability notes
 ------------------
 
 - This API is available only when DLPack header is present, namely ``<dlpack/dlpack.h>`` is found in the include path.
+- This API can be disabled by defining ``CCCL_DISABLE_DLPACK`` before including any library headers. In this case, ``<dlpack/dlpack.h>`` will not be included.
 
 References
 ----------
