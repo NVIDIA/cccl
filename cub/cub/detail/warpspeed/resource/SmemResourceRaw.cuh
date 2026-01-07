@@ -12,10 +12,10 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cub/device/dispatch/kernels/warpspeed/allocators/SmemAllocator.h>
-#include <cub/device/dispatch/kernels/warpspeed/constantAssert.h>
-#include <cub/device/dispatch/kernels/warpspeed/squad/SquadDesc.h>
-#include <cub/device/dispatch/kernels/warpspeed/SyncHandler.h>
+#include <cub/detail/warpspeed/allocators/SmemAllocator.h>
+#include <cub/detail/warpspeed/constantAssert.h>
+#include <cub/detail/warpspeed/squad/SquadDesc.h>
+#include <cub/detail/warpspeed/SyncHandler.h>
 
 #include <cuda/__ptx/instructions/fence.h>
 #include <cuda/__ptx/instructions/mbarrier_arrive.h>

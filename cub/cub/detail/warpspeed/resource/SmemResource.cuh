@@ -12,11 +12,11 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cub/device/dispatch/kernels/warpspeed/allocators/SmemAllocator.h>
-#include <cub/device/dispatch/kernels/warpspeed/resource/SmemResourceRaw.cuh>
-#include <cub/device/dispatch/kernels/warpspeed/resource/SmemStage.cuh>
-#include <cub/device/dispatch/kernels/warpspeed/SyncHandler.h>
-#include <cub/device/dispatch/kernels/warpspeed/values.h>
+#include <cub/detail/warpspeed/allocators/SmemAllocator.h>
+#include <cub/detail/warpspeed/resource/SmemResourceRaw.cuh>
+#include <cub/detail/warpspeed/resource/SmemStage.cuh>
+#include <cub/detail/warpspeed/SyncHandler.h>
+#include <cub/detail/warpspeed/values.h>
 
 #include <cuda/std/__utility/to_underlying.h>
 #include <cuda/std/cstdint>
