@@ -1,5 +1,5 @@
-// SPDX-FileCopyrightText: Copyright (c) 2011-2023, NVIDIA CORPORATION. All rights reserved.
-// SPDX-License-Identifier: BSD-3
+// SPDX-FileCopyrightText: Copyright (c) 2025, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 #pragma once
 
@@ -101,7 +101,7 @@ struct user_policy_hub_t
   {
     using segmented_scan_policy_t =
       agent_policy_t<128,
-                     ItemsPerThread + 1 - ::cuda::std::min(ItemsPerThread, SegmentsPerBlock),
+                     ItemsPerThread,
                      AccumT,
                      base_policy_t::load_algorithm,
                      base_policy_t::load_modifier,
@@ -230,25 +230,30 @@ using bench_types = nvbench::type_list<TUNE_T>;
 using bench_types = all_types;
 #endif
 
+#ifdef TUNE_SEGMENTS_PER_BLOCK
+using segments_per_block = nvbench::type_list<std::integral_constant<int, TUNE_SEGMENTS_PER_BLOCK>>;
+#else
 using segments_per_block =
   nvbench::type_list<std::integral_constant<int, 1>,
                      std::integral_constant<int, 2>,
                      std::integral_constant<int, 3>,
                      std::integral_constant<int, 4>,
+                     std::integral_constant<int, 6>,
                      std::integral_constant<int, 8>,
                      std::integral_constant<int, 16>>;
 
+#endif
+
+#ifdef TUNE_ITEMS
+using itps = nvbench::type_list<std::integral_constant<int, TUNE_ITEMS>>;
+#else
 using itps =
-  nvbench::type_list<std::integral_constant<int, 15>,
-                     std::integral_constant<int, 13>,
-                     std::integral_constant<int, 11>,
-                     std::integral_constant<int, 9>,
+  nvbench::type_list<std::integral_constant<int, 9>,
                      std::integral_constant<int, 7>,
                      std::integral_constant<int, 5>,
-                     std::integral_constant<int, 4>,
                      std::integral_constant<int, 3>,
                      std::integral_constant<int, 1>>;
-
+#endif
 NVBENCH_BENCH_TYPES(basic, NVBENCH_TYPE_AXES(bench_types, offset_types, segments_per_block, itps))
   .set_name("base")
   .set_type_axes_names({"T{ct}", "OffsetT{ct}", "SegmentsPerBlock{ct}", "ItemsPerThread{ct}"})
