@@ -12,10 +12,10 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cub/detail/warpspeed/makeWarpUniform.cuh> // makeWarpUniform.cuh
+#include <cub/detail/warpspeed/make_warp_uniform.cuh>
 
 #include <cuda/__ptx/instructions/get_sreg.h>
-#include <cuda/std/cstdint> // uint32_t
+#include <cuda/std/cstdint>
 
 CUB_NAMESPACE_BEGIN
 
