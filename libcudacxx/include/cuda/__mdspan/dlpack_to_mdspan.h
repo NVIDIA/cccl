@@ -28,6 +28,7 @@
 #  include <cuda/std/__cstddef/types.h>
 #  include <cuda/std/__exception/exception_macros.h>
 #  include <cuda/std/__type_traits/is_same.h>
+#  include <cuda/std/__utility/cmp.h>
 #  include <cuda/std/array>
 #  include <cuda/std/cstdint>
 #  include <cuda/std/mdspan>
@@ -125,10 +126,10 @@ _CCCL_HOST_API void __validate_dlpack_strides(const ::DLTensor& __tensor, [[mayb
 
 template <typename _ElementType, ::cuda::std::size_t _Rank, typename _LayoutPolicy>
 [[nodiscard]]
-_CCCL_HOST_API ::cuda::std::mdspan<_ElementType, ::cuda::std::dextents<::cuda::std::int64_t, _Rank>, _LayoutPolicy>
+_CCCL_HOST_API ::cuda::std::mdspan<_ElementType, ::cuda::std::dims<_Rank, ::cuda::std::int64_t>, _LayoutPolicy>
 __to_mdspan(const ::DLTensor& __tensor)
 {
-  using __extents_type              = ::cuda::std::dextents<::cuda::std::int64_t, _Rank>;
+  using __extents_type              = ::cuda::std::dims<_Rank, ::cuda::std::int64_t>;
   using __mdspan_type               = ::cuda::std::mdspan<_ElementType, __extents_type, _LayoutPolicy>;
   using __mapping_type              = typename _LayoutPolicy::template mapping<__extents_type>;
   using __element_type              = typename __mdspan_type::element_type;
@@ -144,7 +145,7 @@ __to_mdspan(const ::DLTensor& __tensor)
   }
   else
   {
-    if (__tensor.ndim != int{_Rank})
+    if (cuda::std::cmp_not_equal(__tensor.ndim, _Rank))
     {
       _CCCL_THROW(::std::invalid_argument{"DLTensor rank does not match expected rank"});
     }
@@ -213,42 +214,42 @@ __to_mdspan(const ::DLTensor& __tensor)
 
 template <typename _ElementType, ::cuda::std::size_t _Rank, typename _LayoutPolicy = ::cuda::std::layout_stride>
 [[nodiscard]]
-_CCCL_HOST_API ::cuda::host_mdspan<_ElementType, ::cuda::std::dextents<::cuda::std::int64_t, _Rank>, _LayoutPolicy>
+_CCCL_HOST_API ::cuda::host_mdspan<_ElementType, ::cuda::std::dims<_Rank, ::cuda::std::int64_t>, _LayoutPolicy>
 to_host_mdspan(const ::DLTensor& __tensor)
 {
   if (__tensor.device.device_type != ::kDLCPU)
   {
     _CCCL_THROW(::std::invalid_argument{"DLTensor device type must be kDLCPU for host_mdspan"});
   }
-  using __extents_type = ::cuda::std::dextents<::cuda::std::int64_t, _Rank>;
+  using __extents_type = ::cuda::std::dims<_Rank, ::cuda::std::int64_t>;
   using __mdspan_type  = ::cuda::host_mdspan<_ElementType, __extents_type, _LayoutPolicy>;
   return __mdspan_type{::cuda::__to_mdspan<_ElementType, _Rank, _LayoutPolicy>(__tensor)};
 }
 
 template <typename _ElementType, ::cuda::std::size_t _Rank, typename _LayoutPolicy = ::cuda::std::layout_stride>
 [[nodiscard]]
-_CCCL_HOST_API ::cuda::device_mdspan<_ElementType, ::cuda::std::dextents<::cuda::std::int64_t, _Rank>, _LayoutPolicy>
+_CCCL_HOST_API ::cuda::device_mdspan<_ElementType, ::cuda::std::dims<_Rank, ::cuda::std::int64_t>, _LayoutPolicy>
 to_device_mdspan(const ::DLTensor& __tensor)
 {
   if (__tensor.device.device_type != ::kDLCUDA)
   {
     _CCCL_THROW(::std::invalid_argument{"DLTensor device type must be kDLCUDA for device_mdspan"});
   }
-  using __extents_type = ::cuda::std::dextents<::cuda::std::int64_t, _Rank>;
+  using __extents_type = ::cuda::std::dims<_Rank, ::cuda::std::int64_t>;
   using __mdspan_type  = ::cuda::device_mdspan<_ElementType, __extents_type, _LayoutPolicy>;
   return __mdspan_type{::cuda::__to_mdspan<_ElementType, _Rank, _LayoutPolicy>(__tensor)};
 }
 
 template <typename _ElementType, ::cuda::std::size_t _Rank, typename _LayoutPolicy = ::cuda::std::layout_stride>
 [[nodiscard]]
-_CCCL_HOST_API ::cuda::managed_mdspan<_ElementType, ::cuda::std::dextents<::cuda::std::int64_t, _Rank>, _LayoutPolicy>
+_CCCL_HOST_API ::cuda::managed_mdspan<_ElementType, ::cuda::std::dims<_Rank, ::cuda::std::int64_t>, _LayoutPolicy>
 to_managed_mdspan(const ::DLTensor& __tensor)
 {
   if (__tensor.device.device_type != ::kDLCUDAManaged)
   {
     _CCCL_THROW(::std::invalid_argument{"DLTensor device type must be kDLCUDAManaged for managed_mdspan"});
   }
-  using __extents_type = ::cuda::std::dextents<::cuda::std::int64_t, _Rank>;
+  using __extents_type = ::cuda::std::dims<_Rank, ::cuda::std::int64_t>;
   using __mdspan_type  = ::cuda::managed_mdspan<_ElementType, __extents_type, _LayoutPolicy>;
   return __mdspan_type{::cuda::__to_mdspan<_ElementType, _Rank, _LayoutPolicy>(__tensor)};
 }

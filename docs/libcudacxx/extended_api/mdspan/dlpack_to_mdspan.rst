@@ -15,15 +15,15 @@ Conversion functions
    namespace cuda {
 
    template <typename ElementType, size_t Rank, typename LayoutPolicy = cuda::std::layout_stride>
-   [[nodiscard]] cuda::host_mdspan<ElementType, cuda::std::dextents<int64_t, Rank>, LayoutPolicy>
+   [[nodiscard]] cuda::host_mdspan<ElementType, cuda::std::dims<Rank, int64_t>, LayoutPolicy>
    to_host_mdspan(const DLTensor& tensor);
 
    template <typename ElementType, size_t Rank, typename LayoutPolicy = cuda::std::layout_stride>
-   [[nodiscard]] cuda::device_mdspan<ElementType, cuda::std::dextents<int64_t, Rank>, LayoutPolicy>
+   [[nodiscard]] cuda::device_mdspan<ElementType, cuda::std::dims<Rank, int64_t>, LayoutPolicy>
    to_device_mdspan(const DLTensor& tensor);
 
    template <typename ElementType, size_t Rank, typename LayoutPolicy = cuda::std::layout_stride>
-   [[nodiscard]] cuda::managed_mdspan<ElementType, cuda::std::dextents<int64_t, Rank>, LayoutPolicy>
+   [[nodiscard]] cuda::managed_mdspan<ElementType, cuda::std::dims<Rank, int64_t>, LayoutPolicy>
    to_managed_mdspan(const DLTensor& tensor);
 
    } // namespace cuda
