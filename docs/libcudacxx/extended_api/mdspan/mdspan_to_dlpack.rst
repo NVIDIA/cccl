@@ -16,16 +16,15 @@ Conversion functions
 
    template <typename T, typename Extents, typename Layout, typename Accessor>
    [[nodiscard]] __dlpack_tensor<Extents::rank()>
-   to_dlpack(const cuda::host_mdspan<T, Extents, Layout, Accessor>& mdspan);
+   to_dlpack_tensor(const cuda::host_mdspan<T, Extents, Layout, Accessor>& mdspan);
 
    template <typename T, typename Extents, typename Layout, typename Accessor>
    [[nodiscard]] __dlpack_tensor<Extents::rank()>
-   to_dlpack(const cuda::device_mdspan<T, Extents, Layout, Accessor>& mdspan,
-                    cuda::device_ref device = cuda::device_ref{0});
+   to_dlpack_tensor(const cuda::device_mdspan<T, Extents, Layout, Accessor>& mdspan);
 
    template <typename T, typename Extents, typename Layout, typename Accessor>
    [[nodiscard]] __dlpack_tensor<Extents::rank()>
-   to_dlpack(const cuda::managed_mdspan<T, Extents, Layout, Accessor>& mdspan);
+   to_dlpack_tensor(const cuda::managed_mdspan<T, Extents, Layout, Accessor>& mdspan);
 
    } // namespace cuda
 
@@ -58,7 +57,7 @@ Types
 
 .. note:: **Lifetime**
 
-  The ``DLTensor`` associated with ``cuda::__dlpack_tensor`` must not outlive the wrapper. If the wrapper is destroyed, the returned ``DLTensor::shape`` and ``DLTensor::strides`` pointers will dangle.
+  The ``DLTensor`` associated with ``cuda::__dlpack_tensor`` must not outlive the wrapper. If the wrapper is destroyed or moved, the returned ``DLTensor::shape`` and ``DLTensor::strides`` pointers will dangle.
 
 .. note:: **Const-correctness**
 
@@ -76,7 +75,7 @@ The conversion produces a non-owning DLPack view of the ``mdspan`` data and meta
 - ``DLTensor::device`` is:
 
   - ``{kDLCPU, 0}`` for ``cuda::host_mdspan``
-  - ``{kDLCUDA, device.get()}`` for ``cuda::device_mdspan``
+  - ``{kDLCUDA, /*device_id*/}`` for ``cuda::device_mdspan``
   - ``{kDLCUDAManaged, 0}`` for ``cuda::managed_mdspan``
 
 Element types are mapped to ``DLDataType`` according to the DLPack conventions, including:
@@ -96,7 +95,7 @@ Constraints
 Runtime errors
 --------------
 
-- If any ``extent(i)`` or ``stride(i)`` cannot be represented in ``int64_t``, the conversion raises an exception.
+- If any ``extent(i)`` or ``stride(i)`` cannot be represented in ``int64_t``, the conversion raises an ``std::invalid_argument`` exception.
 
 Availability notes
 ------------------
@@ -124,7 +123,7 @@ Example
     int data[6] = {0, 1, 2, 3, 4, 5};
     cuda::host_mdspan<int, extents_t> md{data, extents_t{}};
 
-    auto dl              = cuda::to_dlpack(md);
+    auto dl              = cuda::to_dlpack_tensor(md);
     const auto& dltensor = dl.get();
     // auto dltensor = dl.get(); is incorrect; it returns a reference to a temporary object that will be destroyed at the end of the statement.
 

@@ -44,7 +44,7 @@ bool test_dlpack_wrapper_copy_ctor()
   using extents_t = cuda::std::extents<size_t, 2, 3>;
   int data[6]     = {0, 1, 2, 3, 4, 5};
   cuda::host_mdspan<int, extents_t> md{data, extents_t{}};
-  auto w            = cuda::to_dlpack(md);
+  auto w            = cuda::to_dlpack_tensor(md);
   auto& t           = w.get();
   auto* shape_ptr   = t.shape;
   auto* strides_ptr = t.strides;
@@ -80,7 +80,7 @@ bool test_dlpack_wrapper_move_ctor()
   using extents_t = cuda::std::extents<size_t, 2, 3>;
   int data[6]     = {0, 1, 2, 3, 4, 5};
   cuda::host_mdspan<int, extents_t> md{data, extents_t{}};
-  auto w            = cuda::to_dlpack(md);
+  auto w            = cuda::to_dlpack_tensor(md);
   auto& t           = w.get();
   auto* shape_ptr   = t.shape;
   auto* strides_ptr = t.strides;
@@ -120,8 +120,8 @@ bool test_dlpack_wrapper_copy_assignment()
   int data_b[6]   = {6, 7, 8, 9, 10, 11};
   cuda::host_mdspan<int, extents_t> md_a{data_a, extents_t{}};
   cuda::host_mdspan<int, extents_t> md_b{data_b, extents_t{}};
-  auto a              = cuda::to_dlpack(md_a);
-  auto b              = cuda::to_dlpack(md_b);
+  auto a              = cuda::to_dlpack_tensor(md_a);
+  auto b              = cuda::to_dlpack_tensor(md_b);
   auto& ta            = a.get();
   auto& tb            = b.get();
   auto* b_shape_ptr   = tb.shape;
@@ -151,8 +151,8 @@ bool test_dlpack_wrapper_move_assignment()
   int data_b[6]   = {6, 7, 8, 9, 10, 11};
   cuda::host_mdspan<int, extents_t> md_a{data_a, extents_t{}};
   cuda::host_mdspan<int, extents_t> md_b{data_b, extents_t{}};
-  auto a              = cuda::to_dlpack(md_a);
-  auto b              = cuda::to_dlpack(md_b);
+  auto a              = cuda::to_dlpack_tensor(md_a);
+  auto b              = cuda::to_dlpack_tensor(md_b);
   auto& ta            = a.get();
   auto& tb            = b.get();
   auto* a_shape_ptr   = ta.shape;

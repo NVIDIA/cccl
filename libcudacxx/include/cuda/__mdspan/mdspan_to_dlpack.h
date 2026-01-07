@@ -22,10 +22,10 @@
 
 #if !_CCCL_COMPILER(NVRTC) && _CCCL_HAS_INCLUDE(<dlpack/dlpack.h>)
 
+#  include <cuda/__driver/driver_api.h>
 #  include <cuda/__mdspan/host_device_mdspan.h>
 #  include <cuda/__type_traits/is_floating_point.h>
 #  include <cuda/__type_traits/vector_type.h>
-#  include <cuda/devices>
 #  include <cuda/std/__cstddef/types.h>
 #  include <cuda/std/__exception/exception_macros.h>
 #  include <cuda/std/__fwd/complex.h>
@@ -272,7 +272,7 @@ __to_dlpack(const ::cuda::std::mdspan<_ElementType, _Extents, _Layout, _Accessor
 
 template <typename _ElementType, typename _Extents, typename _Layout, typename _Accessor>
 [[nodiscard]] _CCCL_HOST_API __dlpack_tensor<_Extents::rank()>
-to_dlpack(const ::cuda::host_mdspan<_ElementType, _Extents, _Layout, _Accessor>& __mdspan)
+to_dlpack_tensor(const ::cuda::host_mdspan<_ElementType, _Extents, _Layout, _Accessor>& __mdspan)
 {
   using __mdspan_type = ::cuda::std::mdspan<_ElementType, _Extents, _Layout, _Accessor>;
   return ::cuda::__to_dlpack(__mdspan_type{__mdspan}, ::kDLCPU, 0);
@@ -280,16 +280,23 @@ to_dlpack(const ::cuda::host_mdspan<_ElementType, _Extents, _Layout, _Accessor>&
 
 template <typename _ElementType, typename _Extents, typename _Layout, typename _Accessor>
 [[nodiscard]] _CCCL_HOST_API __dlpack_tensor<_Extents::rank()>
-to_dlpack(const ::cuda::device_mdspan<_ElementType, _Extents, _Layout, _Accessor>& __mdspan,
-          ::cuda::device_ref __device = ::cuda::device_ref{0})
+to_dlpack_tensor(const ::cuda::device_mdspan<_ElementType, _Extents, _Layout, _Accessor>& __mdspan)
 {
-  using __mdspan_type = ::cuda::std::mdspan<_ElementType, _Extents, _Layout, _Accessor>;
-  return ::cuda::__to_dlpack(__mdspan_type{__mdspan}, ::kDLCUDA, __device.get());
+  using __mdspan_type              = ::cuda::std::mdspan<_ElementType, _Extents, _Layout, _Accessor>;
+  ::CUpointer_attribute __attrs[1] = {::CU_POINTER_ATTRIBUTE_DEVICE_ORDINAL};
+  int __ptr_dev_id                 = 0;
+  void* __results[1]               = {&__ptr_dev_id};
+  const auto __status = ::cuda::__driver::__pointerGetAttributesNoThrow(__attrs, __results, __mdspan.data_handle());
+  if (__status != ::cudaSuccess)
+  {
+    _CCCL_THROW(::std::invalid_argument{"Failed to get device ordinal of a pointer"});
+  }
+  return ::cuda::__to_dlpack(__mdspan_type{__mdspan}, ::kDLCUDA, __ptr_dev_id);
 }
 
 template <typename _ElementType, typename _Extents, typename _Layout, typename _Accessor>
 [[nodiscard]] _CCCL_HOST_API __dlpack_tensor<_Extents::rank()>
-to_dlpack(const ::cuda::managed_mdspan<_ElementType, _Extents, _Layout, _Accessor>& __mdspan)
+to_dlpack_tensor(const ::cuda::managed_mdspan<_ElementType, _Extents, _Layout, _Accessor>& __mdspan)
 {
   using __mdspan_type = ::cuda::std::mdspan<_ElementType, _Extents, _Layout, _Accessor>;
   return ::cuda::__to_dlpack(__mdspan_type{__mdspan}, ::kDLCUDAManaged, 0);
