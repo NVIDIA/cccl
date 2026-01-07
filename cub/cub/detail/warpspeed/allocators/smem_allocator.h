@@ -21,7 +21,7 @@
 
 CUB_NAMESPACE_BEGIN
 
-namespace detail::scan
+namespace detail
 {
 struct SmemAllocator
 {
@@ -78,6 +78,6 @@ struct SmemAllocator
     return mAllocatedSize;
   }
 };
-} // namespace detail::scan
+} // namespace detail
 
 CUB_NAMESPACE_END
