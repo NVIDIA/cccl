@@ -129,15 +129,22 @@ void test_memory_pool_impl(
 
 bool test_memory_pool()
 {
-  test_memory_pool_impl(cudaMemAllocationTypePinned, cudaMemLocationTypeDevice, false, true, false);
+  if (cuda::__driver::__deviceGetAttribute(::CU_DEVICE_ATTRIBUTE_MEMORY_POOLS_SUPPORTED, 0))
+  {
+    test_memory_pool_impl(cudaMemAllocationTypePinned, cudaMemLocationTypeDevice, false, true, false);
 
 #if _CCCL_CTK_AT_LEAST(12, 2)
-  test_memory_pool_impl(cudaMemAllocationTypePinned, cudaMemLocationTypeHost, true, false, false);
+    test_memory_pool_impl(cudaMemAllocationTypePinned, cudaMemLocationTypeHost, true, false, false);
 #endif // _CCCL_CTK_AT_LEAST(12, 2)
 #if _CCCL_CTK_AT_LEAST(13, 0)
-  // TODO(fbusato): check if this can be improved in future releases
-  test_memory_pool_impl(cudaMemAllocationTypeManaged, cudaMemLocationTypeHost, true, false, true);
-  test_memory_pool_impl(cudaMemAllocationTypeManaged, cudaMemLocationTypeDevice, false, true, true);
+    // TODO(fbusato): check if this can be improved in future releases
+    if (cuda::__driver::__deviceGetAttribute(::CU_DEVICE_ATTRIBUTE_CONCURRENT_MANAGED_ACCESS, 0))
+    {
+      // TODO(fbusato): check if this can be improved in future releases
+      test_memory_pool_impl(cudaMemAllocationTypeManaged, cudaMemLocationTypeHost, true, false, true);
+      test_memory_pool_impl(cudaMemAllocationTypeManaged, cudaMemLocationTypeDevice, false, true, true);
+    }
+  }
 #endif // _CCCL_CTK_AT_LEAST(13, 0)
   return true;
 }
