@@ -53,7 +53,7 @@ struct random_to_vec_item_t
     template <>                                                                                                   \
     void gen_values_between(seed_t seed, ::cuda::std::span<T> data, T min, T max)                                 \
     {                                                                                                             \
-      const auto* dist = generator.prepare_random_generator(seed, data.size());                                   \
+      const auto* dist = prepare_random_data(seed, data.size());                                                  \
       auto op          = random_to_vec_item_t<T, ::cuda::std::tuple_size_v<T>>{min, max, dist, data.data()};      \
       thrust::for_each(                                                                                           \
         device_policy, thrust::counting_iterator<size_t>{0}, thrust::counting_iterator<size_t>{data.size()}, op); \

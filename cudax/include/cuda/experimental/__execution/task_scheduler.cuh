@@ -406,7 +406,7 @@ public:
   _CCCL_API void set_value() noexcept final override
   {
     // Send the stored values to the downstream receiver.
-    _Values::__visit(
+    __visit(
       [this](auto& __tupl) {
         constexpr bool __valid_args = __not_same_as<decltype(__tupl), ::cuda::std::monostate&>;
         // runtime assert that we never take this path without valid args from the predecessor:
@@ -426,8 +426,7 @@ public:
     _CCCL_TRY
     {
       constexpr bool __parallelize = _Policy() == par || _Policy() == par_unseq;
-      _Values::__visit(__detail::__get_execute_bulk_fn<__parallelize>(_BulkTag(), __fn_, __shape_, __begin, __end),
-                       __values_);
+      __visit(__detail::__get_execute_bulk_fn<__parallelize>(_BulkTag(), __fn_, __shape_, __begin, __end), __values_);
     }
     _CCCL_CATCH_ALL
     {

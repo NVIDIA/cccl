@@ -107,8 +107,8 @@ struct __memcpy_completion_impl
   }
 
   template <typename _Group, thread_scope _Sco, typename _CompF>
-  [[nodiscard]] _CCCL_API inline static async_contract_fulfillment __defer_non_smem_barrier(
-    __completion_mechanism __cm, _Group const& __group, ::cuda::std::size_t __size, barrier<_Sco, _CompF>& __barrier)
+  [[nodiscard]] _CCCL_API inline static async_contract_fulfillment
+  __defer_non_smem_barrier(__completion_mechanism __cm, _Group const&, ::cuda::std::size_t, barrier<_Sco, _CompF>&)
   {
     // Overload for non-smem barriers.
     switch (__cm)

@@ -113,7 +113,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT continues_on_t
 
     _CCCL_API constexpr void set_value() noexcept
     {
-      __state_->__result_.__visit(__send_result_visitor{}, __state_->__result_, __state_->__rcvr_);
+      __visit(__send_result_visitor{}, __state_->__result_, __state_->__rcvr_);
     }
 
     template <class _Error>

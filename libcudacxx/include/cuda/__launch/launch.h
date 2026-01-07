@@ -24,6 +24,11 @@
 #if _CCCL_HAS_CTK() && !_CCCL_COMPILER(NVRTC)
 
 #  include <cuda/__driver/driver_api.h>
+#  include <cuda/__hierarchy/block_level.h>
+#  include <cuda/__hierarchy/cluster_level.h>
+#  include <cuda/__hierarchy/grid_level.h>
+#  include <cuda/__hierarchy/thread_level.h>
+#  include <cuda/__hierarchy/traits.h>
 #  include <cuda/__launch/configuration.h>
 #  include <cuda/__runtime/api_wrapper.h>
 #  include <cuda/__runtime/ensure_current_context.h>
@@ -79,10 +84,10 @@ _CCCL_HOST_API void inline __do_launch(
 template <typename... _ExpTypes, typename _Dst, typename _Config>
 _CCCL_HOST_API auto __launch_impl(_Dst&& __dst, _Config __conf, ::CUfunction __kernel, _ExpTypes... __args)
 {
-  static_assert(!::cuda::std::is_same_v<decltype(__conf.dims), no_init_t>,
+  static_assert(!::cuda::std::is_same_v<decltype(__conf.hierarchy()), no_init_t>,
                 "Can't launch a configuration without hierarchy dimensions");
   ::CUlaunchConfig __config{};
-  constexpr bool __has_cluster_level        = has_level<cluster_level, decltype(__conf.dims)>;
+  constexpr bool __has_cluster_level        = has_level_v<cluster_level, decltype(__conf.hierarchy())>;
   constexpr unsigned int __num_attrs_needed = __detail::kernel_config_count_attr_space(__conf) + __has_cluster_level;
   ::CUlaunchAttribute __attrs[__num_attrs_needed == 0 ? 1 : __num_attrs_needed];
   __config.attrs    = &__attrs[0];
@@ -94,20 +99,20 @@ _CCCL_HOST_API auto __launch_impl(_Dst&& __dst, _Config __conf, ::CUfunction __k
     ::cuda::__throw_cuda_error(__status, "Failed to prepare a launch configuration");
   }
 
-  __config.gridDimX  = static_cast<unsigned>(__conf.dims.extents(block, grid).x);
-  __config.gridDimY  = static_cast<unsigned>(__conf.dims.extents(block, grid).y);
-  __config.gridDimZ  = static_cast<unsigned>(__conf.dims.extents(block, grid).z);
-  __config.blockDimX = static_cast<unsigned>(__conf.dims.extents(thread, block).x);
-  __config.blockDimY = static_cast<unsigned>(__conf.dims.extents(thread, block).y);
-  __config.blockDimZ = static_cast<unsigned>(__conf.dims.extents(thread, block).z);
+  __config.gridDimX  = static_cast<unsigned>(__conf.hierarchy().extents(block, grid).x);
+  __config.gridDimY  = static_cast<unsigned>(__conf.hierarchy().extents(block, grid).y);
+  __config.gridDimZ  = static_cast<unsigned>(__conf.hierarchy().extents(block, grid).z);
+  __config.blockDimX = static_cast<unsigned>(__conf.hierarchy().extents(gpu_thread, block).x);
+  __config.blockDimY = static_cast<unsigned>(__conf.hierarchy().extents(gpu_thread, block).y);
+  __config.blockDimZ = static_cast<unsigned>(__conf.hierarchy().extents(gpu_thread, block).z);
 
   if constexpr (__has_cluster_level)
   {
     ::CUlaunchAttribute __cluster_dims_attr{};
     __cluster_dims_attr.id                 = ::CU_LAUNCH_ATTRIBUTE_CLUSTER_DIMENSION;
-    __cluster_dims_attr.value.clusterDim.x = static_cast<unsigned>(__conf.dims.extents(block, cluster).x);
-    __cluster_dims_attr.value.clusterDim.y = static_cast<unsigned>(__conf.dims.extents(block, cluster).y);
-    __cluster_dims_attr.value.clusterDim.z = static_cast<unsigned>(__conf.dims.extents(block, cluster).z);
+    __cluster_dims_attr.value.clusterDim.x = static_cast<unsigned>(__conf.hierarchy().extents(block, cluster).x);
+    __cluster_dims_attr.value.clusterDim.y = static_cast<unsigned>(__conf.hierarchy().extents(block, cluster).y);
+    __cluster_dims_attr.value.clusterDim.z = static_cast<unsigned>(__conf.hierarchy().extents(block, cluster).z);
     __config.attrs[__config.numAttrs++]    = __cluster_dims_attr;
   }
 
@@ -186,11 +191,15 @@ _CCCL_HOST_API auto launch(_Submitter&& __submitter,
   auto __combined = __conf.combine_with_default(__kernel);
   if constexpr (::cuda::std::is_invocable_v<_Kernel,
                                             kernel_config<_Dimensions, _Config...>,
-                                            ::cuda::std::decay_t<transformed_device_argument_t<_Args>>...>)
+                                            ::cuda::std::decay_t<transformed_device_argument_t<_Args>>...>
+#    if _CCCL_CUDA_COMPILER(NVCC)
+                && !__nv_is_extended_device_lambda_closure_type(_Kernel)
+#    endif
+  )
   {
     auto __launcher =
       __kernel_launcher<decltype(__combined), _Kernel, ::cuda::std::decay_t<transformed_device_argument_t<_Args>>...>;
-    return __launch_impl(
+    return ::cuda::__launch_impl(
       cuda::__forward_or_cast_to_stream_ref<_Submitter>(::cuda::std::forward<_Submitter>(__submitter)),
       __combined,
       ::cuda::__get_cufunction_of(__launcher),
