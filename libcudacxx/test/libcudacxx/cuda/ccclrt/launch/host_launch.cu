@@ -32,6 +32,21 @@ void unblock_and_wait_stream(cuda::stream_ref stream, cuda::atomic<int>& atomic)
   atomic = 0;
 }
 
+bool ordinary_function_run_proof = false;
+
+template <class Ret, class... Args>
+Ret ordinary_function(Args...)
+{
+  ordinary_function_run_proof = true;
+  return (Ret) 0;
+}
+
+[[nodiscard]] int nodiscard_ordinary_function()
+{
+  ordinary_function_run_proof = true;
+  return 0;
+}
+
 void launch_local_lambda(cuda::stream_ref stream, int& set, int set_to)
 {
   auto lambda = [&set, set_to]() {
@@ -111,9 +126,51 @@ C2H_CCCLRT_TEST("Host launch", "")
   cuda::device_ref device{0};
   device.init();
 
-  cuda::atomic<int> atomic = 0;
   cuda::stream stream{device};
-  int i = 0;
+
+  SECTION("Ordinary function without arguments returning void")
+  {
+    CCCLRT_REQUIRE(ordinary_function_run_proof == false);
+
+    cuda::host_launch(stream, ordinary_function<void>);
+
+    stream.sync();
+    CCCLRT_REQUIRE(ordinary_function_run_proof == true);
+    ordinary_function_run_proof = false;
+  }
+  SECTION("Ordinary function without arguments returning int")
+  {
+    CCCLRT_REQUIRE(ordinary_function_run_proof == false);
+
+    cuda::host_launch(stream, ordinary_function<int>);
+
+    stream.sync();
+    CCCLRT_REQUIRE(ordinary_function_run_proof == true);
+    ordinary_function_run_proof = false;
+  }
+  SECTION("Ordinary function with arguments returning void")
+  {
+    CCCLRT_REQUIRE(ordinary_function_run_proof == false);
+
+    cuda::host_launch(stream, ordinary_function<int, char, double>, 'c', 1.0);
+
+    stream.sync();
+    CCCLRT_REQUIRE(ordinary_function_run_proof == true);
+    ordinary_function_run_proof = false;
+  }
+  SECTION("Nodiscard ordinary function")
+  {
+    CCCLRT_REQUIRE(ordinary_function_run_proof == false);
+
+    cuda::host_launch(stream, nodiscard_ordinary_function);
+
+    stream.sync();
+    CCCLRT_REQUIRE(ordinary_function_run_proof == true);
+    ordinary_function_run_proof = false;
+  }
+
+  cuda::atomic<int> atomic = 0;
+  int i                    = 0;
 
   auto set_lambda = [&](int set) {
     i = set;
