@@ -143,7 +143,8 @@ struct DeviceTopK
   //! Overview
   //! +++++++++++++++++++++++++++++++++++++++++++++
   //!
-  //! Finds the largest K keys and their corresponding values from an unordered input sequence of key-value pairs.
+  //! - Finds the largest K keys and their corresponding values from an unordered input sequence of key-value pairs.
+  //! - Note that the behavior is undefined if the input and output ranges overlap in any way.
   //!
   //! - @devicestorage
   //!
@@ -246,7 +247,8 @@ struct DeviceTopK
   //! Overview
   //! +++++++++++++++++++++++++++++++++++++++++++++
   //!
-  //! Finds the lowest K keys and their corresponding values from an unordered input sequence of key-value pairs.
+  //! - Finds the lowest K keys and their corresponding values from an unordered input sequence of key-value pairs.
+  //! - Note that the behavior is undefined if the input and output ranges overlap in any way.
   //!
   //! - @devicestorage
   //!
@@ -349,7 +351,8 @@ struct DeviceTopK
   //! Overview
   //! +++++++++++++++++++++++++++++++++++++++++++++
   //!
-  //! Finds the largest K keys from an unordered input sequence of keys.
+  //! - Finds the largest K keys from an unordered input sequence of keys.
+  //! - Note that the behavior is undefined if the input and output ranges overlap in any way.
   //!
   //! - @devicestorage
   //!
@@ -435,7 +438,8 @@ struct DeviceTopK
   //! Overview
   //! +++++++++++++++++++++++++++++++++++++++++++++
   //!
-  //! Finds the lowest K keys from an unordered input sequence of keys.
+  //! - Finds the lowest K keys from an unordered input sequence of keys.
+  //! - Note that the behavior is undefined if the input and output ranges overlap in any way.
   //!
   //! - @devicestorage
   //!
