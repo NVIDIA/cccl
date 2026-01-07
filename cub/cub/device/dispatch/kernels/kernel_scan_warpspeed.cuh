@@ -178,12 +178,6 @@ _CCCL_DEVICE_API inline Tp warpScanExclusive(const Tp regInput, ScanOpT& scan_op
   return result;
 }
 
-template <int elemPerThread, typename AccumT, typename ScanOpT>
-_CCCL_DEVICE_API inline void threadScanInclusive(AccumT (&regArray)[elemPerThread], ScanOpT& scan_op)
-{
-  detail::ThreadScanInclusive(regArray, regArray, scan_op);
-}
-
 namespace ptx = cuda::ptx;
 
 // The kernelBody device function is a straight-line implementation of the
