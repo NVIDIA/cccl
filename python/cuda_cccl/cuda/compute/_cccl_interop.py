@@ -82,6 +82,19 @@ def _is_compiled_iterator(it) -> bool:
     return isinstance(it, CompiledIterator)
 
 
+def is_iterator(it) -> bool:
+    """Check if an object is any kind of iterator (Numba-based or CompiledIterator)."""
+    return _is_numba_iterator(it) or _is_compiled_iterator(it)
+
+
+def get_iterator_kind(it):
+    """Get the cache key kind from any iterator type.
+
+    Works with both Numba-based IteratorBase and CompiledIterator.
+    """
+    return it.kind
+
+
 class _IteratorIO(enum.Enum):
     INPUT = 0
     OUTPUT = 1

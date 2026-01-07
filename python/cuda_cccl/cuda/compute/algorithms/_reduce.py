@@ -12,7 +12,9 @@ from .. import _cccl_interop as cccl
 from .._caching import cache_with_key
 from .._cccl_interop import (
     call_build,
+    get_iterator_kind,
     get_value_type,
+    is_iterator,
     set_cccl_iterator_state,
     to_cccl_value_state,
 )
@@ -20,7 +22,6 @@ from .._utils import protocols
 from .._utils.protocols import get_data_pointer, validate_and_get_stream
 from .._utils.temp_storage_buffer import TempStorageBuffer
 from ..determinism import Determinism
-from ..iterators._iterators import IteratorBase
 from ..op import OpAdapter, OpKind, make_op_adapter
 from ..typing import DeviceArrayLike, GpuStruct
 
@@ -39,8 +40,8 @@ class _Reduce:
     # TODO: constructor shouldn't require concrete `d_in`, `d_out`:
     def __init__(
         self,
-        d_in: DeviceArrayLike | IteratorBase,
-        d_out: DeviceArrayLike | IteratorBase,
+        d_in: DeviceArrayLike,
+        d_out: DeviceArrayLike,
         op: OpAdapter,
         h_init: np.ndarray | GpuStruct,
         determinism: Determinism,
@@ -107,17 +108,17 @@ class _Reduce:
 
 
 def _make_cache_key(
-    d_in: DeviceArrayLike | IteratorBase,
-    d_out: DeviceArrayLike | IteratorBase,
+    d_in: DeviceArrayLike,
+    d_out: DeviceArrayLike,
     op: OpAdapter,
     h_init: np.ndarray | GpuStruct,
     **kwargs,
 ):
     d_in_key = (
-        d_in.kind if isinstance(d_in, IteratorBase) else protocols.get_dtype(d_in)
+        get_iterator_kind(d_in) if is_iterator(d_in) else protocols.get_dtype(d_in)
     )
     d_out_key = (
-        d_out.kind if isinstance(d_out, IteratorBase) else protocols.get_dtype(d_out)
+        get_iterator_kind(d_out) if is_iterator(d_out) else protocols.get_dtype(d_out)
     )
     h_init_key = h_init.dtype
     determinism = kwargs.get("determinism", Determinism.RUN_TO_RUN)
@@ -126,8 +127,8 @@ def _make_cache_key(
 
 @cache_with_key(_make_cache_key)
 def _make_reduce_into_cached(
-    d_in: DeviceArrayLike | IteratorBase,
-    d_out: DeviceArrayLike | IteratorBase,
+    d_in: DeviceArrayLike,
+    d_out: DeviceArrayLike,
     op: OpAdapter,
     h_init: np.ndarray | GpuStruct,
     **kwargs,
@@ -141,8 +142,8 @@ def _make_reduce_into_cached(
 # TODO Figure out `sum` without operator and initial value
 # TODO Accept stream
 def make_reduce_into(
-    d_in: DeviceArrayLike | IteratorBase,
-    d_out: DeviceArrayLike | IteratorBase,
+    d_in: DeviceArrayLike,
+    d_out: DeviceArrayLike,
     op: Callable | OpKind,
     h_init: np.ndarray | GpuStruct,
     **kwargs,
@@ -171,8 +172,8 @@ def make_reduce_into(
 
 
 def reduce_into(
-    d_in: DeviceArrayLike | IteratorBase,
-    d_out: DeviceArrayLike | IteratorBase,
+    d_in: DeviceArrayLike,
+    d_out: DeviceArrayLike,
     op: Callable | OpKind,
     num_items: int,
     h_init: np.ndarray | GpuStruct,
