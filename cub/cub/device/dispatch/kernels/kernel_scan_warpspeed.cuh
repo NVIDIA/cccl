@@ -29,7 +29,7 @@
 #include <cuda/__cmath/ceil_div.h>
 #include <cuda/__memory/align_down.h>
 #include <cuda/__memory/align_up.h>
-#include <cuda/ptx>
+#include <cuda/__ptx/instructions/clusterlaunchcontrol.h>
 #include <cuda/std/__algorithm/clamp.h>
 #include <cuda/std/__cccl/cuda_capabilities.h>
 #include <cuda/std/__type_traits/is_same.h>
@@ -177,8 +177,6 @@ _CCCL_DEVICE_API inline Tp warpScanExclusive(const Tp regInput, ScanOpT& scan_op
 
   return result;
 }
-
-namespace ptx = cuda::ptx;
 
 // The kernelBody device function is a straight-line implementation of the
 // warp-specialized kernel.
