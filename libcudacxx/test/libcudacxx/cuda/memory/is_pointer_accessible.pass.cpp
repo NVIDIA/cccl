@@ -144,8 +144,8 @@ bool test_memory_pool()
       test_memory_pool_impl(cudaMemAllocationTypeManaged, cudaMemLocationTypeHost, true, false, true);
       test_memory_pool_impl(cudaMemAllocationTypeManaged, cudaMemLocationTypeDevice, false, true, true);
     }
-  }
 #endif // _CCCL_CTK_AT_LEAST(13, 0)
+  }
   return true;
 }
 
