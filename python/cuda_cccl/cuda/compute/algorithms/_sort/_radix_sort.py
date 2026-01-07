@@ -74,9 +74,9 @@ class _RadixSort:
         self.d_out_values_cccl = cccl.to_cccl_output_iter(d_out_values_array)
 
         # TODO: decomposer op is not supported for now
-        self.decomposer_op = cccl.Op(
+        self.decomposer_op = _bindings.Op(
             name="",
-            operator_type=cccl.OpKind.STATELESS,
+            operator_type=_bindings.OpKind.STATELESS,
             ltoir=b"",
             state_alignment=1,
             state=None,
