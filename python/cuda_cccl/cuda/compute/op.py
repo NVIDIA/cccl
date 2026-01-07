@@ -74,8 +74,14 @@ class _WellKnownOp(_OpAdapter):
         return self._kind
 
 
-class _StatelessOp(_OpAdapter):
-    """Internal wrapper for stateless callables."""
+class _JitOp(_OpAdapter):
+    """
+    Internal wrapper for JIT-compiled callables using Numba.
+
+    This wraps Python callables that will be compiled to LTOIR via Numba
+    when the compile() method is called. Numba imports are deferred to
+    compile time to allow cuda.compute to be imported without Numba.
+    """
 
     __slots__ = ["_func", "_cachable"]
 
@@ -87,6 +93,7 @@ class _StatelessOp(_OpAdapter):
         return self._cachable
 
     def compile(self, input_types, output_type=None) -> Op:
+        # Lazy import of Numba-dependent code
         from . import _cccl_interop as cccl
         from .numba_utils import get_inferred_return_type, signature_from_annotations
 
@@ -241,7 +248,7 @@ def make_op_adapter(op) -> OpAdapter:
     if isinstance(op, OpKind):
         return _WellKnownOp(op)
 
-    return _StatelessOp(op)
+    return _JitOp(op)
 
 
 __all__ = [
