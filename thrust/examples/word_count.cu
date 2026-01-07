@@ -4,8 +4,9 @@
 #include <thrust/inner_product.h>
 #include <thrust/reduce.h>
 
-#include <iostream>
 #include <cuda/std/iterator> // Required for std::begin/std::end
+
+#include <iostream>
 
 // This example computes the number of words in a text sample
 // with a single call to thrust::inner_product.  The algorithm
