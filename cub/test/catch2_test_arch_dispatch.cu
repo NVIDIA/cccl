@@ -41,13 +41,11 @@ struct policy_selector_all
 };
 
 #ifdef CUDA_SM_LIST
-// check that the selected policy exactly matches one of (scaled) arches we compile for
 template <arch_id SelectedPolicyArch, int... ArchList>
-struct check
+void check_arch_is_in_list()
 {
   static_assert(((SelectedPolicyArch == arch_id{ArchList * CUDA_SM_LIST_SCALE / 10}) || ...));
-  using type = cudaError_t;
-};
+}
 #endif // CUDA_SM_LIST
 
 struct closure_all
@@ -55,13 +53,11 @@ struct closure_all
   arch_id id;
 
   template <typename PolicyGetter>
-  CUB_RUNTIME_FUNCTION auto operator()(PolicyGetter policy_getter) const ->
-#ifdef CUDA_SM_LIST
-    typename check<PolicyGetter{}().value, CUDA_SM_LIST>::type
-#else // CUDA_SM_LIST
-    cudaError_t
-#endif // CUDA_SM_LIST
+  CUB_RUNTIME_FUNCTION auto operator()(PolicyGetter policy_getter) const -> cudaError_t
   {
+#ifdef CUDA_SM_LIST
+    check_arch_is_in_list<PolicyGetter{}().value, CUDA_SM_LIST>();
+#endif // CUDA_SM_LIST
     constexpr a_policy active_policy = policy_getter();
     // since an individual policy is generated per architecture, we can do an exact comparison here
     REQUIRE(active_policy.value == id);
