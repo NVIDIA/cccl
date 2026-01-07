@@ -12,7 +12,7 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cub/device/dispatch/kernels/warpspeed/makeWarpUniform.cuh> // makeWarpUniform.cuh
+#include <cub/detail/warpspeed/makeWarpUniform.cuh> // makeWarpUniform.cuh
 
 #include <cuda/__ptx/instructions/get_sreg.h>
 #include <cuda/std/cstdint> // uint32_t

@@ -12,8 +12,8 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cub/device/dispatch/kernels/warpspeed/SpecialRegisters.cuh>
-#include <cub/device/dispatch/kernels/warpspeed/squad/SquadDesc.h>
+#include <cub/detail/warpspeed/SpecialRegisters.cuh>
+#include <cub/detail/warpspeed/squad/SquadDesc.h>
 
 #include <cuda/__ptx/instructions/elect_sync.h>
 

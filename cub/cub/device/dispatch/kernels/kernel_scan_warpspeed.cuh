@@ -13,13 +13,13 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cub/device/dispatch/kernels/warpspeed/allocators/SmemAllocator.h>
-#include <cub/device/dispatch/kernels/warpspeed/look_ahead.h>
-#include <cub/device/dispatch/kernels/warpspeed/resource/SmemRef.cuh>
-#include <cub/device/dispatch/kernels/warpspeed/resource/SmemResource.cuh>
-#include <cub/device/dispatch/kernels/warpspeed/SpecialRegisters.cuh>
-#include <cub/device/dispatch/kernels/warpspeed/squad/Squad.h>
-#include <cub/device/dispatch/kernels/warpspeed/values.h>
+#include <cub/detail/warpspeed/allocators/SmemAllocator.h>
+#include <cub/detail/warpspeed/look_ahead.h>
+#include <cub/detail/warpspeed/resource/SmemRef.cuh>
+#include <cub/detail/warpspeed/resource/SmemResource.cuh>
+#include <cub/detail/warpspeed/SpecialRegisters.cuh>
+#include <cub/detail/warpspeed/squad/Squad.h>
+#include <cub/detail/warpspeed/values.h>
 #include <cub/thread/thread_reduce.cuh>
 #include <cub/thread/thread_scan.cuh>
 #include <cub/warp/warp_reduce.cuh>
