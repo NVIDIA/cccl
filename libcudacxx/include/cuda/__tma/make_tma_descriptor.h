@@ -20,7 +20,7 @@
 #  pragma system_header
 #endif // no system header
 
-#if _CCCL_HAS_CTK() && !_CCCL_COMPILER(NVRTC) && _CCCL_HAS_INCLUDE(<dlpack/dlpack.h>)
+#if _CCCL_HAS_CTK() && _CCCL_HAS_DLPACK()
 
 #  include <cuda/__driver/driver_api.h>
 #  include <cuda/__memory/is_aligned.h>
@@ -29,6 +29,7 @@
 #  include <cuda/std/__algorithm/min.h>
 #  include <cuda/std/__cstddef/types.h>
 #  include <cuda/std/__exception/exception_macros.h>
+#  include <cuda/std/__internal/dlpack.h>
 #  include <cuda/std/__utility/unreachable.h>
 #  include <cuda/std/array>
 #  include <cuda/std/cstdint>
@@ -38,13 +39,9 @@
 
 #  include <driver_types.h>
 
-#  include <dlpack/dlpack.h>
-//
 #  include <cuda/std/__cccl/prologue.h>
 
 _CCCL_BEGIN_NAMESPACE_CUDA
-
-static_assert(DLPACK_MAJOR_VERSION == 1, "DLPACK_MAJOR_VERSION must be 1");
 
 /***********************************************************************************************************************
  * Public Enums
@@ -415,9 +412,9 @@ __get_tensor_sizes(const ::DLTensor& __tensor, int __rank, ::CUtensorMapDataType
   [[maybe_unused]] int64_t __cumulative_size = 1;
   if (__input_strides == nullptr)
   {
-#  if DLPACK_MAJOR_VERSION > 1 || (DLPACK_MAJOR_VERSION == 1 && DLPACK_MINOR_VERSION >= 2)
+#  if _CCCL_DLPACK_AT_LEAST(1, 2)
     _CCCL_THROW(::std::invalid_argument{"__tensor.strides=nullptr is not supported for DLPack v1.2 and later"});
-#  else
+#  else // ^^^ _CCCL_DLPACK_AT_LEAST(1, 2) ^^^ / vvv _CCCL_DLPACK_BELOW(1, 2) vvv
     for (int __i = 0; __i < __rank - 1; ++__i)
     {
       // TODO(fbusato): check mul overflow
@@ -434,7 +431,7 @@ __get_tensor_sizes(const ::DLTensor& __tensor, int __rank, ::CUtensorMapDataType
       __output_strides[__i] = __stride_bytes;
     }
     return __output_strides;
-#  endif // DLPACK_MAJOR_VERSION > 1 || (DLPACK_MAJOR_VERSION == 1 && DLPACK_MINOR_VERSION >= 2)
+#  endif // ^^^ _CCCL_DLPACK_BELOW(1, 2) ^^^
   }
   // TMA ignores the innermost stride (always 1).
   for (int __i = __rank - 2; __i >= 0; --__i)
@@ -660,5 +657,6 @@ _CCCL_END_NAMESPACE_CUDA
 
 #  include <cuda/std/__cccl/epilogue.h>
 
-#endif // _CCCL_HAS_CTK() && !_CCCL_COMPILER(NVRTC) && _CCCL_HAS_INCLUDE(<dlpack/dlpack.h>)
+#endif // _CCCL_HAS_CTK() && _CCCL_HAS_DLPACK()
+
 #endif // _CUDA___TMA_MAKE_TMA_DESCRIPTOR_H
