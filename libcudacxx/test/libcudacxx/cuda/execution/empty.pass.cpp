@@ -24,9 +24,8 @@ __host__ __device__ void test()
   [[maybe_unused]] Wrapper<Empty> w{};
 }
 
-int main()
+int main(int, char**)
 {
   test();
   return 0;
 }
-

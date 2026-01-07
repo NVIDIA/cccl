@@ -18,9 +18,8 @@ __host__ __device__ void test_tuple_empty()
   [[maybe_unused]] ::cuda::std::__tuple<max_segment_size_42> t{};
 }
 
-int main()
+int main(int, char**)
 {
   test_tuple_empty();
   return 0;
 }
-
