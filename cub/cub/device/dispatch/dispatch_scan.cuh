@@ -415,8 +415,8 @@ struct DispatchScan
   template <typename WarpspeedPolicy, typename InputT, typename OutputT>
   CUB_RUNTIME_FUNCTION _CCCL_HOST static constexpr auto smem_for_stages(int num_stages) -> int
   {
-    detail::scan::SyncHandler syncHandler{};
-    detail::scan::SmemAllocator smemAllocator{};
+    detail::SyncHandler syncHandler{};
+    detail::SmemAllocator smemAllocator{};
     (void) detail::scan::allocResources<WarpspeedPolicy, InputT, OutputT, AccumT>(
       syncHandler, smemAllocator, num_stages);
     syncHandler.mHasInitialized = true; // avoid assertion in destructor
@@ -433,8 +433,8 @@ struct DispatchScan
 
 #if __cccl_ptx_isa >= 860
   template <typename ActivePolicyT>
-  CUB_RUNTIME_FUNCTION _CCCL_HOST _CCCL_FORCEINLINE cudaError_t
-  __invoke_lookahead_algorithm(ActivePolicyT, int smem_size_1_stage)
+  CUB_RUNTIME_FUNCTION _CCCL_HOST
+  _CCCL_FORCEINLINE cudaError_t __invoke_lookahead_algorithm(ActivePolicyT, int smem_size_1_stage)
   {
     using InputT          = ::cuda::std::iter_value_t<InputIteratorT>;
     using OutputT         = ::cuda::std::iter_value_t<OutputIteratorT>;
