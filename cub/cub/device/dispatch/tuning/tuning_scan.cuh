@@ -18,7 +18,7 @@
 #include <cub/block/block_load.cuh>
 #include <cub/block/block_scan.cuh>
 #include <cub/block/block_store.cuh>
-#include <cub/detail/warpspeed/squad/SquadDesc.h>
+#include <cub/detail/warpspeed/squad/squad_desc.h>
 #include <cub/device/dispatch/tuning/common.cuh>
 #include <cub/thread/thread_load.cuh>
 #include <cub/util_device.cuh>

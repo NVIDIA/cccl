@@ -4,9 +4,6 @@
 
 #include <cub/config.cuh>
 
-#include <cuda/__cmath/pow2.h>
-#include <cuda/__memory/is_aligned.h>
-
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
@@ -17,11 +14,13 @@
 
 #include <cub/detail/strong_load.cuh>
 #include <cub/detail/strong_store.cuh>
-#include <cub/detail/warpspeed/SpecialRegisters.cuh>
+#include <cub/detail/warpspeed/special_registers.cuh>
 #include <cub/thread/thread_store.cuh>
 #include <cub/warp/specializations/warp_reduce_shfl.cuh>
 #include <cub/warp/warp_reduce.cuh>
 
+#include <cuda/__cmath/pow2.h>
+#include <cuda/__memory/is_aligned.h>
 #include <cuda/__ptx/instructions/get_sreg.h>
 #include <cuda/std/__bit/popcount.h>
 #include <cuda/std/__type_traits/underlying_type.h>
