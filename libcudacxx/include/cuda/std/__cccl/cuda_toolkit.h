@@ -52,5 +52,6 @@
 #define _CCCL_CTK_MAKE_VERSION(_MAJOR, _MINOR) ((_MAJOR) * 1000 + (_MINOR) * 10)
 #define _CCCL_CTK_BELOW(...)                   _CCCL_VERSION_COMPARE(_CCCL_CTK_, _CCCL_CTK, <, __VA_ARGS__)
 #define _CCCL_CTK_AT_LEAST(...)                _CCCL_VERSION_COMPARE(_CCCL_CTK_, _CCCL_CTK, >=, __VA_ARGS__)
+#define _CCCL_CTK_EQUAL(...)                   _CCCL_VERSION_COMPARE(_CCCL_CTK_, _CCCL_CTK, ==, __VA_ARGS__)
 
 #endif // __CCCL_CUDA_TOOLKIT_H
