@@ -13,9 +13,9 @@
 // %RANGE% TUNE_ITEMS_PER_VEC_LOAD_POW2 ipv 1:2:1
 
 #if !TUNE_BASE
-struct arch_policies
+struct policy_selector
 {
-  _CCCL_API constexpr auto operator()(cuda::arch_id) const -> ::cub::reduce_arch_policy
+  _CCCL_API constexpr auto operator()(cuda::arch_id) const -> ::cub::reduce_policy
   {
     const auto [items, threads] = cub::detail::scale_mem_bound(TUNE_THREADS_PER_BLOCK, TUNE_ITEMS_PER_THREAD);
     const auto policy           = cub::agent_reduce_policy{
@@ -24,7 +24,7 @@ struct arch_policies
       1 << TUNE_ITEMS_PER_VEC_LOAD_POW2,
       cub::BLOCK_REDUCE_WARP_REDUCTIONS_NONDETERMINISTIC,
       cub::LOAD_DEFAULT};
-    return {{}, {}, {}, policy}; // Only reduce_nondeterministic_policy is used
+    return {{}, {}, {}, policy}; // Only reduce_nondeterministic is used
   }
 };
 #endif // !TUNE_BASE
@@ -66,7 +66,7 @@ void nondeterministic_sum(nvbench::state& state, nvbench::type_list<T, OffsetT>)
     transform_op
 #if !TUNE_BASE
     ,
-    arch_policies{}
+    policy_selector{}
 #endif
   );
 
@@ -86,7 +86,7 @@ void nondeterministic_sum(nvbench::state& state, nvbench::type_list<T, OffsetT>)
       transform_op
 #if !TUNE_BASE
       ,
-      arch_policies{}
+      policy_selector{}
 #endif
     );
   });
