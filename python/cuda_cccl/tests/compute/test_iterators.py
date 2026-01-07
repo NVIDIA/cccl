@@ -3,6 +3,8 @@ import numba.cuda
 import numpy as np
 import pytest
 
+import cuda.compute
+from cuda.compute import OpKind
 from cuda.compute._utils.protocols import (
     compute_c_contiguous_strides_in_bytes,
 )
@@ -201,3 +203,23 @@ def test_matches_numpy_strides_for_c_contiguous_arrays(shape, dtype):
     expected = arr.strides
     result = compute_c_contiguous_strides_in_bytes(shape, dtype().itemsize)
     assert result == expected
+
+
+def test_transform_iterator_with_lambda():
+    """Test TransformIterator with a lambda function."""
+    first_item = 10
+    num_items = 100
+
+    # Use a lambda function directly with TransformIterator
+    transform_it = TransformIterator(
+        CountingIterator(np.int32(first_item)), lambda x: x * 2
+    )
+    h_init = np.array([0], dtype=np.int32)
+    d_output = cp.empty(1, dtype=np.int32)
+
+    # Perform reduction on the transformed iterator
+    cuda.compute.reduce_into(transform_it, d_output, OpKind.PLUS, num_items, h_init)
+
+    # Expected: sum of (10*2, 11*2, ..., 109*2) = 2 * sum(10..109)
+    expected = 2 * sum(range(first_item, first_item + num_items))
+    assert d_output.get()[0] == expected

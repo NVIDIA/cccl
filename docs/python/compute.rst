@@ -3,142 +3,275 @@
 ``cuda.compute``: Parallel Computing Primitives
 ===============================================
 
-The ``cuda.compute`` library provides parallel computing primitives that operate
-on entire arrays or ranges of data. These algorithms are designed to be easy to use from Python
-while delivering the performance of hand-optimized CUDA kernels, portable across different
-GPU architectures.
+The ``cuda.compute`` library provides composable primitives for building custom
+parallel algorithms on the GPU—without writing CUDA kernels directly.
 
 Algorithms
 ----------
 
-The core functionality provided by the ``cuda.compute`` library are algorithms such
-as reductions, scans, sorts, and transforms.
+Algorithms are the core of ``cuda.compute``. They operate on arrays or
+:ref:`iterators <cuda.compute.iterators>` and can be composed to build specialized
+GPU operations—reductions, scans, sorts, transforms, and more.
 
-Here's a simple example showing how to use the :func:`reduce_into <cuda.compute.algorithms.reduce_into>` algorithm to
-reduce an array of integers.
+Typical usage of an algorithm looks like this:
 
+.. code-block:: python
+
+   cuda.compute.reduce_into(
+      d_in=...,       # input array or iterator
+      d_out=...,      # output array or iterator
+      op=...,         # binary operator (built-in or user-defined)
+      num_items=...,  # number of input elements
+      h_init=...,     # initial value for the reduction
+   )
+
+API conventions
++++++++++++++++
+
+* **Naming** — The ``d_`` prefix denotes *device* memory (e.g., CuPy arrays, PyTorch tensors);
+  ``h_`` denotes *host* memory (NumPy arrays). Some scalar values must be passed as
+  host arrays.
+
+* **Output semantics** — Algorithms write results into a user-provided array or iterator
+  rather than returning them. This keeps memory ownership explicit and lifetimes under
+  your control.
+
+* **Operators** — Many algorithms accept an ``op`` parameter. This can be a built-in
+  :class:`OpKind <cuda.compute.op.OpKind>` value or a
+  :ref:`user-defined function <cuda.compute.user_defined_operations>`.
+  When possible, prefer built-in operators (e.g., ``OpKind.PLUS``) over the equivalent
+  user-defined operation (e.g., ``lambda a, b: a + b``) for better performance.
+
+* **Iterators** — Inputs and outputs can be :ref:`iterators <cuda.compute.iterators>`
+  instead of arrays, enabling lazy evaluation and operation fusion.
+
+Full Example
+++++++++++++
+
+The following example uses :func:`reduce_into <cuda.compute.algorithms.reduce_into>`
+to compute the sum of a sequence of integers:
 
 .. literalinclude:: ../../python/cuda_cccl/tests/compute/examples/reduction/sum_reduction.py
    :language: python
    :start-after: # example-begin
-   :caption: Basic reduction example.
+   :caption: Sum reduction example.
 
-Many algorithms, including reduction, require a temporary memory buffer.
-The library will allocate this buffer for you, but you can also use the
-object-based API for greater control.
+Controlling temporary memory
+++++++++++++++++++++++++++++
 
-.. literalinclude:: ../../python/cuda_cccl/tests/compute/examples/reduction/reduce_object.py
+Many algorithms allocate temporary device memory for intermediate results. For finer
+control over allocation—or to reuse buffers across calls—use the object-based API.
+For example, :func:`make_reduce_into <cuda.compute.algorithms.make_reduce_into>`
+returns a reusable reduction object that lets you manage memory explicitly.
+
+.. code-block:: python
+   :caption: Controlling temporary memory.
+
+   # create a reducer object:
+   reducer = cuda.compute.make_reduce_into(d_in, d_out, op, h_init)
+   # get the temporary storage size by passing None as the first argument:
+   temp_storage_bytes = reducer(None, d_in, d_out, num_items, h_init)
+   # allocate the temporary storage as any array-like object
+   # (e.g., CuPy array, Torch tensor):
+   temp_storage = cp.empty(temp_storage_bytes, dtype=np.uint8)
+   # perform the reduction, passing the temporary storage as the first argument:
+   reducer(temp_storage, d_in, d_out, num_items, h_init)
+
+.. _cuda.compute.user_defined_operations:
+
+User-Defined Operations
+-----------------------
+
+A powerful feature is the ability to use algorithms with user-defined operations.
+For example, to compute the sum of only the even values in a sequence,
+we can use :func:`reduce_into <cuda.compute.algorithms.reduce_into>` with a custom binary operation:
+
+.. literalinclude:: ../../python/cuda_cccl/tests/compute/examples/reduction/sum_custom_reduction.py
    :language: python
    :start-after: # example-begin
-   :caption: Reduction with object-based API.
+   :caption: Reduction with a custom binary operation.
 
+Features and Restrictions
++++++++++++++++++++++++++
+
+User-defined operations are compiled into device code using
+`Numba CUDA <https://nvidia.github.io/numba-cuda/>`_, so they inherit many
+of the same features and restrictions as Numba CUDA functions:
+
+* `Python features <https://nvidia.github.io/numba-cuda/user/cudapysupported.html>`_
+  and `atomic operations <https://nvidia.github.io/numba-cuda/user/intrinsics.html>`_
+  supported by Numba CUDA are also supported within user-defined operations.
+* Nested functions must be decorated with ``@numba.cuda.jit``.
+* Variables captured in closures or globals follow
+  `Numba CUDA semantics <https://nvidia.github.io/numba-cuda/user/globals.html>`_:
+  scalars and host arrays are captured by value (as constants),
+  while device arrays are captured by reference.
+
+.. _cuda.compute.iterators:
 
 Iterators
 ---------
 
-Algorithms can be used not just on arrays, but also on iterators. Iterators
-provide a way to represent sequences of data without needing to allocate memory
-for them.
+Iterators represent sequences whose elements are computed **on the fly**. They can
+be used in place of arrays in most algorithms, enabling lazy evaluation, operation
+fusion, and custom data access patterns.
 
-Here's an example showing how to use reduction with a :func:`CountingIterator <cuda.compute.iterators.CountingIterator>` that
-generates a sequence of numbers starting from a specified value.
+A :func:`CountingIterator <cuda.compute.iterators.CountingIterator>`, for example,
+represents an integer sequence starting from a given value:
+
+.. code-block:: python
+
+   it = CountingIterator(np.int32(1))  # represents [1, 2, 3, 4, ...]
+
+To compute the sum of the first 100 integers, we can pass a
+:func:`CountingIterator <cuda.compute.iterators.CountingIterator>` directly to
+:func:`reduce_into <cuda.compute.algorithms.reduce_into>`. No memory is allocated
+to store the input sequence—the values are generated as needed.
 
 .. literalinclude:: ../../python/cuda_cccl/tests/compute/examples/iterator/counting_iterator_basic.py
    :language: python
    :start-after: # example-begin
    :caption: Counting iterator example.
 
-Iterators also provide a way to compose operations. Here's an example showing
-how to use :func:`reduce_into <cuda.compute.algorithms.reduce_into>` with a :func:`TransformIterator <cuda.compute.iterators.TransformIterator>` to compute the sum of squares
-of a sequence of numbers.
+Iterators can also be used to *fuse* operations. In the example below, a
+:func:`TransformIterator <cuda.compute.iterators.TransformIterator>` lazily applies
+the square operation to each element of the input sequence. The resulting iterator
+is then passed to :func:`reduce_into <cuda.compute.algorithms.reduce_into>` to compute
+the sum of squares.
+
+Because the square is evaluated on demand during the reduction, there is no need
+to create or store an intermediate array of squared values. The transform and the
+reduction are fused into a single pass over the data.
 
 .. literalinclude:: ../../python/cuda_cccl/tests/compute/examples/iterator/transform_iterator_basic.py
    :language: python
    :start-after: # example-begin
    :caption: Transform iterator example.
 
-Iterators that wrap an array (or another output iterator) may be used as both input and output iterators.
-Here's an example showing how to use a
-:func:`TransformIterator <cuda.compute.iterators.TransformIterator>` to transform the output
-of a reduction before writing to the underlying array.
+Some iterators can also be used as the output of an algorithm. In the example below,
+a :func:`TransformOutputIterator <cuda.compute.iterators.TransformOutputIterator>`
+applies the square-root operation to the result of a reduction before writing
+it into the underlying array.
 
 .. literalinclude:: ../../python/cuda_cccl/tests/compute/examples/iterator/transform_output_iterator.py
    :language: python
    :start-after: # example-begin
    :caption: Transform output iterator example.
 
-Custom Types
+As another example, :func:`ZipIterator <cuda.compute.iterators.ZipIterator>` combines multiple
+arrays or iterators into a single logical sequence. In the example below, we combine
+a counting iterator and an array, creating an iterator that yields ``(index, value)``
+pairs. This combined iterator is then used as the input to
+:func:`reduce_into <cuda.compute.algorithms.reduce_into>` to compute the index of
+the maximum value in the array.
+
+.. literalinclude:: ../../python/cuda_cccl/tests/compute/examples/iterator/zip_iterator_counting.py
+   :language: python
+   :start-after: # example-begin
+   :caption: Argmax using a zip iterator.
+
+These examples illustrate a few of the patterns enabled by iterators. See the
+:ref:`API reference <cuda_compute-module>` for the full set of available iterators.
+
+.. _cuda.compute.custom_types:
+
+Struct Types
 ------------
 
-The ``cuda.compute`` library supports defining custom data types,
-using the :func:`gpu_struct <cuda.compute.struct.gpu_struct>` decorator.
-Here are some examples showing how to define and use custom types:
+The :func:`gpu_struct <cuda.compute.struct.gpu_struct>` decorator defines
+GPU-compatible struct types. These are useful when you have data laid out
+as an "array of structures", similar to `NumPy structured arrays <https://numpy.org/doc/stable/user/basics.rec.html>`_.
 
 .. literalinclude:: ../../python/cuda_cccl/tests/compute/examples/struct/struct_reduction.py
    :language: python
    :start-after: # example-begin
-   :caption: Custom type reduction example.
+   :caption: Custom struct type in a reduction.
 
-User-defined operations
------------------------
+Array of Structures vs Structure of Arrays
+++++++++++++++++++++++++++++++++++++++++++
 
-A powerful feature of ``cuda.compute`` is the ability to customized algorithms
-with user-defined operations. Below is an example of doing a custom reduction
-with a user-defined binary operation.
+When working with structured data, there are two common memory layouts:
 
-.. literalinclude:: ../../python/cuda_cccl/tests/compute/examples/reduction/sum_custom_reduction.py
-   :language: python
-   :start-after: # example-begin
-   :caption: Reduction with user-defined binary operations.
+* **Array of Structures (AoS)** — each element is a complete struct, stored
+  contiguously. For example, an array of ``Point`` structs where each point's
+  ``x`` and ``y`` are adjacent in memory.
 
-Note that user-defined operations are compiled into device code
-using `numba-cuda <https://nvidia.github.io/numba-cuda/>`_,
-so many of the same features and restrictions of `numba` and `numba-cuda` apply.
-Here are some important gotchas to be aware of:
+* **Structure of Arrays (SoA)** — each field is stored in its own array.
+  For example, separate ``x_coords`` and ``y_coords`` arrays.
 
-* Lambda functions are not supported.
-* Functions may invoke other functions, but the inner functions must be
-  decorated with ``@numba.cuda.jit``.
-* Functions capturing by global reference may not work as intended.
-  Prefer using closures in these situations.
+``cuda.compute`` supports both layouts:
 
-  Here is an example of a function that captures a global variable by reference,
-  which is then used in a loop with ``unary_transform``.
+* **``gpu_struct``** — defines a true AoS type with named fields
+* **``ZipIterator``** — combines separate arrays into tuples on the fly, letting
+  you work with SoA data as if it were AoS
 
-  .. code-block:: python
+.. _cuda.compute.caching:
 
-     for i in range(10):
-         def func(x):
-             return x + i  # i is captured from global scope
+Caching
+-------
 
-         cuda.compute.unary_transform(d_in, d_out, func, num_items)
+Algorithms in ``cuda.compute`` are compiled to GPU code at runtime. To avoid
+recompiling on every call, build results are cached in memory. When you invoke
+an algorithm with the same configuration—same dtypes, iterator kinds, operator,
+and compute capability—the cached build is reused.
 
-  Modifications to the global variable ``i`` may not be reflected in the function
-  when the function is called multiple times. Thus, the different calls to
-  ``unary_transform`` may not produce different results. This is true even though
-  the function is redefined each time in the loop.
+What determines the cache key
++++++++++++++++++++++++++++++
 
-  To avoid this, capture the variable in a closure:
+Each algorithm computes a cache key from:
 
-  .. code-block:: python
+* **Array dtypes** — the data types of input and output arrays
+* **Iterator kinds** — for iterator inputs/outputs, a descriptor of the iterator type
+* **Operator identity** — for user-defined functions, the function's bytecode,
+  constants, and closure contents (see below)
+* **Compute capability** — the GPU architecture of the current device
+* **Algorithm-specific parameters** — such as initial value dtype or determinism mode
 
-     def make_func(i):
-         def func(x):
-            return x + i  # i is captured as a closure variable
-         return func
+Note that array *contents* or *pointers* are not part of the cache key—only
+the array's dtype. This means you can reuse a cached algorithm across different
+arrays of the same type.
 
-     for i in range(10):
-         func = make_func(i)
-         cuda.compute.unary_transform(d_in, d_out, func, num_items)
+How user-defined functions are cached
++++++++++++++++++++++++++++++++++++++
 
+User-defined operators and predicates are hashed based on their bytecode, constants,
+and closure contents. Two functions with identical bytecode and closures produce
+the same cache key, even if defined at different source locations.
 
-Example Collections
--------------------
+Closure contents are recursively hashed:
 
-For complete runnable examples and more advanced usage patterns, see our
-full collection of `examples <https://github.com/NVIDIA/CCCL/tree/main/python/cuda_cccl/tests/compute/examples>`_.
+* **Scalars and host arrays** — hashed by value
+* **Device arrays** — hashed by pointer, shape, and dtype (not contents)
+* **Nested functions** — hashed by their own bytecode and closures
 
-External API References
-------------------------
+Because device arrays captured in closures are hashed by pointer, changing the
+array's contents does not invalidate the cache—only reassigning the variable to
+a different array does.
+
+Memory considerations
++++++++++++++++++++++
+
+The cache persists for the lifetime of the process and grows with the number of
+unique algorithm configurations. In long-running applications or exploratory
+notebooks, this can accumulate significant memory.
+
+To clear all caches and free memory:
+
+.. code-block:: python
+
+   import cuda.compute
+   cuda.compute.clear_all_caches()
+
+This forces recompilation on the next algorithm invocation—useful for benchmarking
+compilation time or reclaiming memory.
+
+Examples
+--------
+
+For complete runnable examples and additional usage patterns, see the
+`examples directory <https://github.com/NVIDIA/CCCL/tree/main/python/cuda_cccl/tests/compute/examples>`_.
+
+API Reference
+-------------
 
 - :ref:`cuda_compute-module`

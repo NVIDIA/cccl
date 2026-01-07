@@ -11,18 +11,29 @@
 #ifndef _CUDA___HIERARCHY_DIMENSIONS_H
 #define _CUDA___HIERARCHY_DIMENSIONS_H
 
-#include <cuda/std/__mdspan/extents.h>
-#include <cuda/std/functional>
+#include <cuda/std/detail/__config>
 
-#include <cuda/std/__cccl/prologue.h>
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
+
+#if _CCCL_HAS_CTK()
+
+#  include <cuda/std/__mdspan/extents.h>
+#  include <cuda/std/functional>
+
+#  include <cuda/std/__cccl/prologue.h>
 
 _CCCL_BEGIN_NAMESPACE_CUDA
 
 template <class _Tp, size_t... _Extents>
 using dimensions = ::cuda::std::extents<_Tp, _Extents...>;
 
-// not unsigned because of a bug in ::cuda::std::extents
-using dimensions_index_type = int;
+using dimensions_index_type = unsigned;
 
 /**
  * @brief Type representing a result of a multi-dimensional hierarchy query.
@@ -55,19 +66,19 @@ using dimensions_index_type = int;
  *   Extents of the result
  */
 template <class _Tp, size_t... _Extents>
-struct hierarchy_query_result : public dimensions<_Tp, _Extents...>
+struct hierarchy_query_result_org : public dimensions<_Tp, _Extents...>
 {
   using _Dims = dimensions<_Tp, _Extents...>;
   using _Dims::_Dims;
 
-  _CCCL_API constexpr hierarchy_query_result()
+  _CCCL_API constexpr hierarchy_query_result_org()
       : _Dims()
       , x(_Dims::extent(0))
       , y(_Dims::rank() > 1 ? _Dims::extent(1) : 1)
       , z(_Dims::rank() > 2 ? _Dims::extent(2) : 1)
   {}
 
-  _CCCL_API explicit constexpr hierarchy_query_result(const _Dims& dims)
+  _CCCL_API explicit constexpr hierarchy_query_result_org(const _Dims& dims)
       : _Dims(dims)
       , x(_Dims::extent(0))
       , y(_Dims::rank() > 1 ? _Dims::extent(1) : 1)
@@ -135,7 +146,7 @@ __dims_sum(const dimensions<_T1, _E1...>& __h1, const dimensions<_T2, _E2...>& _
 template <class _Tp, size_t... _Extents>
 [[nodiscard]] _CCCL_API constexpr auto __convert_to_query_result(const dimensions<_Tp, _Extents...>& __result)
 {
-  return hierarchy_query_result<_Tp, _Extents...>(__result);
+  return hierarchy_query_result_org<_Tp, _Extents...>(__result);
 }
 
 [[nodiscard]] _CCCL_API constexpr auto __dim3_to_dims(const ::dim3& dims)
@@ -157,6 +168,8 @@ template <class _TyTrunc, class _Index, class _Dims>
 } // namespace __detail
 _CCCL_END_NAMESPACE_CUDA
 
-#include <cuda/std/__cccl/epilogue.h>
+#  include <cuda/std/__cccl/epilogue.h>
+
+#endif // _CCCL_HAS_CTK()
 
 #endif // _CUDA___HIERARCHY_DIMENSIONS_H

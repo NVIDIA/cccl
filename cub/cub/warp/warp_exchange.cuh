@@ -136,7 +136,7 @@ public:
       : InternalWarpExchange(temp_storage)
   {}
 
-  //! @}  end member group
+  //! @}
   //! @name Data movement
   //! @{
 
@@ -375,7 +375,7 @@ public:
     InternalWarpExchange::ScatterToStriped(input_items, output_items, ranks);
   }
 
-  //@}  end member group
+  //@}
 };
 
 CUB_NAMESPACE_END
