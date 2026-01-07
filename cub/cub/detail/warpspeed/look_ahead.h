@@ -17,7 +17,7 @@
 
 #include <cub/detail/strong_load.cuh>
 #include <cub/detail/strong_store.cuh>
-#include <cub/device/dispatch/kernels/warpspeed/SpecialRegisters.cuh>
+#include <cub/detail/warpspeed/SpecialRegisters.cuh>
 #include <cub/thread/thread_store.cuh>
 #include <cub/warp/specializations/warp_reduce_shfl.cuh>
 #include <cub/warp/warp_reduce.cuh>
