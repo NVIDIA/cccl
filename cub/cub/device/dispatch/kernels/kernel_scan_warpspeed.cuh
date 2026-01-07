@@ -135,12 +135,6 @@ _CCCL_DEVICE_API inline void squadGetNextBlockIdx(const Squad& squad, SmemRef<ui
   refDestSmem.squadIncreaseTxCount(squad, refDestSmem.sizeBytes());
 }
 
-template <typename Tp, int elemPerThread, typename ScanOpT>
-_CCCL_DEVICE_API inline Tp threadReduce(const Tp (&regInput)[elemPerThread], ScanOpT& scan_op)
-{
-  return ThreadReduce(regInput, scan_op);
-}
-
 template <typename Tp, typename ScanOpT>
 _CCCL_DEVICE_API inline Tp warpReduce(const Tp input, ScanOpT& scan_op)
 {
@@ -352,7 +346,7 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void kernelBody(
         }
         else
         {
-          regThreadSum = threadReduce(regInput, scan_op);
+          regThreadSum = ThreadReduce(regInput, scan_op);
           regWarpSum   = warpReduce(regThreadSum, scan_op);
         }
       }
