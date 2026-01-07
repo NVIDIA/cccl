@@ -12,9 +12,9 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cub/detail/warpspeed/constantAssert.h>
-#include <cub/detail/warpspeed/resource/SmemPhase.cuh>
-#include <cub/detail/warpspeed/resource/SmemResourceRaw.cuh>
+#include <cub/detail/warpspeed/constant_assert.h>
+#include <cub/detail/warpspeed/resource/smem_phase.cuh>
+#include <cub/detail/warpspeed/resource/smem_resource_raw.cuh>
 
 #include <cuda/std/__tuple_dir/structured_bindings.h>
 #include <cuda/std/cstdint>
