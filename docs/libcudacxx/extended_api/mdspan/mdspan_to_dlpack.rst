@@ -15,16 +15,16 @@ Conversion functions
    namespace cuda {
 
    template <typename T, typename Extents, typename Layout, typename Accessor>
-   [[nodiscard]] dlpack_tensor<Extents::rank()>
+   [[nodiscard]] __dlpack_tensor<Extents::rank()>
    to_dlpack(const cuda::host_mdspan<T, Extents, Layout, Accessor>& mdspan);
 
    template <typename T, typename Extents, typename Layout, typename Accessor>
-   [[nodiscard]] dlpack_tensor<Extents::rank()>
+   [[nodiscard]] __dlpack_tensor<Extents::rank()>
    to_dlpack(const cuda::device_mdspan<T, Extents, Layout, Accessor>& mdspan,
                     cuda::device_ref device = cuda::device_ref{0});
 
    template <typename T, typename Extents, typename Layout, typename Accessor>
-   [[nodiscard]] dlpack_tensor<Extents::rank()>
+   [[nodiscard]] __dlpack_tensor<Extents::rank()>
    to_dlpack(const cuda::managed_mdspan<T, Extents, Layout, Accessor>& mdspan);
 
    } // namespace cuda
@@ -32,19 +32,21 @@ Conversion functions
 Types
 -----
 
+``__dlpack_tensor`` is an internal class that stores a ``DLTensor`` and owns the backing storage for its ``shape`` and ``strides`` pointers. The class does not use any heap allocation.
+
 .. code:: cuda
 
   namespace cuda {
 
   template <size_t Rank>
-  class dlpack_tensor {
+  class __dlpack_tensor {
   public:
-      dlpack_tensor();
-      dlpack_tensor(const dlpack_tensor&) noexcept;
-      dlpack_tensor(dlpack_tensor&&) noexcept;
-      dlpack_tensor& operator=(const dlpack_tensor&) noexcept;
-      dlpack_tensor& operator=(dlpack_tensor&&) noexcept;
-      ~dlpack_tensor() noexcept = default;
+      __dlpack_tensor();
+      __dlpack_tensor(const __dlpack_tensor&) noexcept;
+      __dlpack_tensor(__dlpack_tensor&&) noexcept;
+      __dlpack_tensor& operator=(const __dlpack_tensor&) noexcept;
+      __dlpack_tensor& operator=(__dlpack_tensor&&) noexcept;
+      ~__dlpack_tensor() noexcept = default;
 
       DLTensor&       get() noexcept;
       const DLTensor& get() const noexcept;
@@ -52,11 +54,11 @@ Types
 
   } // namespace cuda
 
-``cuda::dlpack_tensor`` stores a ``DLTensor`` and owns the backing storage for its ``shape`` and ``strides`` pointers. The class does not use any heap allocation.
+``cuda::__dlpack_tensor`` stores a ``DLTensor`` and owns the backing storage for its ``shape`` and ``strides`` pointers. The class does not use any heap allocation.
 
 .. note:: **Lifetime**
 
-  The ``DLTensor`` associated with ``cuda::dlpack_tensor`` must not outlive the wrapper. If the wrapper is destroyed, the returned ``DLTensor::shape`` and ``DLTensor::strides`` pointers will dangle.
+  The ``DLTensor`` associated with ``cuda::__dlpack_tensor`` must not outlive the wrapper. If the wrapper is destroyed, the returned ``DLTensor::shape`` and ``DLTensor::strides`` pointers will dangle.
 
 .. note:: **Const-correctness**
 
@@ -124,6 +126,7 @@ Example
 
     auto dl              = cuda::to_dlpack(md);
     const auto& dltensor = dl.get();
+    // auto dltensor = dl.get(); is incorrect; it returns a reference to a temporary object that will be destroyed at the end of the statement.
 
     // `dl` owns the shape/stride storage; `dltensor.data` is a non-owning pointer to `data`.
     assert(dltensor.device.device_type == kDLCPU);
