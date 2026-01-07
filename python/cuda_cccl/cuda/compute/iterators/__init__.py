@@ -1,3 +1,4 @@
+from ._compiled_iterator import CompiledIterator
 from ._factories import (
     CacheModifiedInputIterator,
     ConstantIterator,
@@ -12,6 +13,7 @@ from ._factories import (
 
 __all__ = [
     "CacheModifiedInputIterator",
+    "CompiledIterator",
     "ConstantIterator",
     "CountingIterator",
     "DiscardIterator",
