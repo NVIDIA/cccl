@@ -12,7 +12,7 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/cassert> // assert
+#include <cuda/std/cassert>
 
 /*
  * constantAssert: an assertion that is intended to be verified at compile time.

@@ -12,7 +12,7 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cub/detail/warpspeed/optimizeSmemPtr.cuh>
+#include <cub/detail/warpspeed/optimize_smem_ptr.cuh>
 
 #include <cuda/std/__type_traits/is_constant_evaluated.h>
 #include <cuda/std/cstdint>
