@@ -52,11 +52,14 @@ struct scanKernelParams
 template <typename WarpspeedPolicy, typename InputT, typename OutputT, typename AccumT>
 struct ScanResources
 {
+  // Handle unaligned loads. We have at least 16 extra bytes of padding in every stage for squadLoadBulk.
+  static constexpr size_t input_tile_size  = WarpspeedPolicy::tile_size + ::cuda::ceil_div(16, sizeof(InputT));
+  static constexpr size_t output_tile_size = input_tile_size * sizeof(InputT) / sizeof(OutputT);
+
   union InOutT
   {
-    // Handle unaligned loads. We have at least 16 extra bytes of padding in every stage for squadLoadBulk.
-    InputT in[WarpspeedPolicy::tile_size + ::cuda::ceil_div(16, sizeof(InputT))];
-    OutputT out[sizeof(in) / sizeof(OutputT)];
+    InputT in[input_tile_size];
+    OutputT out[output_tile_size];
   };
   static_assert(alignof(InOutT) >= alignof(InputT));
   static_assert(alignof(InOutT) >= alignof(OutputT));
@@ -830,10 +833,11 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void kernelBody(
       {
         // otherwise, issue multiple bulk copies in chunks of the input tile size
         // TODO(bgruber): I am sure this could be implemented a lot more efficiently
-        const int elem_per_chunk = ::cuda::std::size(refInOutRW.data().out);
-        for (int chunk_offset = 0; chunk_offset < static_cast<int>(valid_items); chunk_offset += elem_per_chunk)
+        static constexpr int elem_per_chunk =
+          static_cast<int>(ScanResources<WarpspeedPolicy, InputT, OutputT, AccumT>::output_tile_size);
+        for (int chunk_offset = 0; chunk_offset < valid_items; chunk_offset += elem_per_chunk)
         {
-          const int chunk_size     = ::cuda::std::min(static_cast<int>(valid_items) - chunk_offset, elem_per_chunk);
+          const int chunk_size     = ::cuda::std::min(valid_items - chunk_offset, elem_per_chunk);
           CpAsyncOobInfo storeInfo = prepareCpAsyncOob(params.ptrOut + idxTileBase + chunk_offset, chunk_size);
           OutputT* smemBuf         = smem_output_tile + storeInfo.smemStartOffsetElem;
 
