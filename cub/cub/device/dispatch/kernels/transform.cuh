@@ -25,6 +25,7 @@
 #include <cuda/cmath>
 #include <cuda/memory>
 #include <cuda/ptx>
+#include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/bit>
 #include <cuda/std/cstdint>
 #include <cuda/std/expected>
@@ -705,13 +706,9 @@ _CCCL_DEVICE void transform_kernel_ublkcp(
           bytes_to_copy = int{sizeof(T)} * tile_size;
         }
 
-        ::cuda::ptx::cp_async_bulk(
-          ::cuda::std::conditional_t<__cccl_ptx_isa >= 860, ::cuda::ptx::space_shared_t, ::cuda::ptx::space_cluster_t>{},
-          ::cuda::ptx::space_global,
-          dst,
-          src,
-          bytes_to_copy,
-          &bar);
+        using dst_space_t =
+          ::cuda::std::conditional_t<__cccl_ptx_isa >= 860, ::cuda::ptx::space_shared_t, ::cuda::ptx::space_cluster_t>;
+        ::cuda::ptx::cp_async_bulk(dst_space_t{}, ::cuda::ptx::space_global, dst, src, bytes_to_copy, &bar);
         total_copied += bytes_to_copy;
 
         smem += tile_padding + int{sizeof(T)} * tile_size;
