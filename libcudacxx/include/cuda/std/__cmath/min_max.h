@@ -110,10 +110,9 @@ _CCCL_REQUIRES(__is_extended_arithmetic_v<_Tp>)
         {
           NV_IF_TARGET(NV_PROVIDES_SM_100, (return ::__nv_fp128_fmax(__x, __y);))
         }
-        else
 #endif // _CCCL_HAS_FLOAT128()
 #if _CCCL_USE_BUILTIN_FMAX()
-          if constexpr (is_floating_point_v<_Tp>)
+        if constexpr (is_floating_point_v<_Tp>)
         {
 // GCC builtins do not treat NaN properly
 #  if _CCCL_COMPILER(GCC)
