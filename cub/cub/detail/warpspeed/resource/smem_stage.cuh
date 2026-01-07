@@ -21,7 +21,7 @@
 
 CUB_NAMESPACE_BEGIN
 
-namespace detail::scan
+namespace detail
 {
 template <typename _Tp>
 struct SmemStage
@@ -74,7 +74,7 @@ template <size_t numPhases, typename _Tp>
 
   return SmemPhaseStructuredBinding<_Tp, numPhases>{smemStage.mSmemResourceRaw};
 }
-} // namespace detail::scan
+} // namespace detail
 
 CUB_NAMESPACE_END
 
@@ -82,14 +82,14 @@ CUB_NAMESPACE_END
 namespace std
 {
 template <typename _Tp, size_t numPhases>
-struct tuple_size<CUB_NS_QUALIFIER::detail::scan::SmemPhaseStructuredBinding<_Tp, numPhases>>
+struct tuple_size<CUB_NS_QUALIFIER::detail::SmemPhaseStructuredBinding<_Tp, numPhases>>
 {
   static constexpr size_t value = numPhases;
 };
 
 template <typename _Tp, size_t _Index, size_t numPhases>
-struct tuple_element<_Index, CUB_NS_QUALIFIER::detail::scan::SmemPhaseStructuredBinding<_Tp, numPhases>>
+struct tuple_element<_Index, CUB_NS_QUALIFIER::detail::SmemPhaseStructuredBinding<_Tp, numPhases>>
 {
-  using type = CUB_NS_QUALIFIER::detail::scan::SmemPhase<_Tp>;
+  using type = CUB_NS_QUALIFIER::detail::SmemPhase<_Tp>;
 };
 } // namespace std

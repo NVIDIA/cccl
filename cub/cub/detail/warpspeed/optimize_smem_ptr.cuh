@@ -14,7 +14,7 @@
 
 CUB_NAMESPACE_BEGIN
 
-namespace detail::scan
+namespace detail
 {
 template <typename _Tp>
 [[nodiscard]] _CCCL_DEVICE_API inline _Tp* optimizeSmemPtr(const _Tp* smemGeneric)
@@ -33,6 +33,6 @@ template <typename _Tp>
   //    In our case, `x` is smem32, which is exactly what we want.
   return reinterpret_cast<_Tp*>(__cvta_shared_to_generic(smem32));
 }
-} // namespace detail::scan
+} // namespace detail
 
 CUB_NAMESPACE_END

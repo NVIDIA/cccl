@@ -26,7 +26,7 @@
 
 CUB_NAMESPACE_BEGIN
 
-namespace detail::scan
+namespace detail
 {
 struct SmemResourceRaw
 {
@@ -173,6 +173,6 @@ struct SmemResourceRaw
     }
   }
 };
-} // namespace detail::scan
+} // namespace detail
 
 CUB_NAMESPACE_END

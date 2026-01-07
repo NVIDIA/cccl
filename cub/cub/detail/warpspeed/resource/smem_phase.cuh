@@ -19,7 +19,7 @@
 
 CUB_NAMESPACE_BEGIN
 
-namespace detail::scan
+namespace detail
 {
 template <typename _Tp>
 struct SmemPhase
@@ -40,6 +40,6 @@ struct SmemPhase
     return SmemRef<_Tp>(mSmemResourceRaw, mCurPhase);
   }
 };
-} // namespace detail::scan
+} // namespace detail
 
 CUB_NAMESPACE_END

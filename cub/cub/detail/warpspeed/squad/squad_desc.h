@@ -14,7 +14,7 @@
 
 CUB_NAMESPACE_BEGIN
 
-namespace detail::scan
+namespace detail
 {
 // SquadDesc - squad descriptor
 //
@@ -72,6 +72,6 @@ template <int numSquads>
   }
   return sumThreads;
 }
-} // namespace detail::scan
+} // namespace detail
 
 CUB_NAMESPACE_END

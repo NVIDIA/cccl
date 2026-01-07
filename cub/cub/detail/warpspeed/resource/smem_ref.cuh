@@ -19,7 +19,7 @@
 
 CUB_NAMESPACE_BEGIN
 
-namespace detail::scan
+namespace detail
 {
 template <typename _Tp>
 struct SmemRef
@@ -87,6 +87,6 @@ struct SmemRef
     mDoFenceLdsToAsyncProxy = true;
   }
 };
-} // namespace detail::scan
+} // namespace detail
 
 CUB_NAMESPACE_END

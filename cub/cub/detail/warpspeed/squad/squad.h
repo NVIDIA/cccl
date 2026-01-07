@@ -19,7 +19,7 @@
 
 CUB_NAMESPACE_BEGIN
 
-namespace detail::scan
+namespace detail
 {
 // Squad - device squad instance
 //
@@ -145,6 +145,6 @@ squadDispatch(SpecialRegisters sr, const SquadDesc (&squads)[numSquads], F f, in
     }
   }
 }
-} // namespace detail::scan
+} // namespace detail
 
 CUB_NAMESPACE_END

@@ -16,7 +16,7 @@
 
 CUB_NAMESPACE_BEGIN
 
-namespace detail::scan
+namespace detail
 {
 // Move register to uniform register
 
@@ -35,6 +35,6 @@ namespace detail::scan
 {
   return __shfl_sync(~0, x, 0);
 }
-} // namespace detail::scan
+} // namespace detail
 
 CUB_NAMESPACE_END
