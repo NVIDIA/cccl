@@ -163,7 +163,7 @@ __device__ void test_layout()
 
 #if _CCCL_HAS_MULTIARG_OPERATOR_BRACKETS()
   test_iteration(construct_mapping(Layout(), cuda::std::extents<int>()));
-  __shared__ int data[1];
+  __shared__ int data[16];
   // Check operator constraint for number of arguments
   static_assert(check_operator_constraints(
     cuda::shared_memory_mdspan(data, construct_mapping(Layout(), cuda::std::extents<int, D>(1))), 0));
