@@ -20,6 +20,7 @@
 #include <cub/block/block_scan.cuh>
 #include <cub/block/block_store.cuh>
 #include <cub/iterator/cache_modified_input_iterator.cuh>
+#include <cub/util_arch.cuh> // MemBoundScaling
 
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/is_pointer.h>
@@ -36,7 +37,7 @@ namespace detail::segmented_scan
  ******************************************************************************/
 
 template <typename ComputeT, int NumSegmentsPerBlock>
-using segmented_scan_compute_t =
+using agent_segmented_scan_compute_t =
   ::cuda::std::conditional_t<NumSegmentsPerBlock == 1, ComputeT, ::cuda::std::tuple<bool, ComputeT>>;
 
 //! @brief Parameterizable tuning policy type for agent_segmented_scan
@@ -75,7 +76,7 @@ template <int Nominal4ByteBlockThreads,
           int SegmentsPerBlock = 1,
           typename ScalingType = detail::MemBoundScaling<Nominal4ByteBlockThreads,
                                                          Nominal4BytesItemsPerThread,
-                                                         segmented_scan_compute_t<ComputeT, SegmentsPerBlock>>>
+                                                         agent_segmented_scan_compute_t<ComputeT, SegmentsPerBlock>>>
 struct agent_segmented_scan_policy_t : ScalingType
 {
   static_assert(SegmentsPerBlock > 0, "SegmentsPerBlock template value parameter must be positive");
@@ -152,7 +153,7 @@ struct agent_segmented_scan
   static constexpr int tile_items         = block_threads * items_per_thread;
   static constexpr int segments_per_block = AgentSegmentedScanPolicyT::segments_per_block;
 
-  using augmented_accum_t = segmented_scan_compute_t<AccumT, segments_per_block>;
+  using augmented_accum_t = agent_segmented_scan_compute_t<AccumT, segments_per_block>;
 
   using block_load_t  = BlockLoad<AccumT, block_threads, items_per_thread, AgentSegmentedScanPolicyT::load_algorithm>;
   using block_store_t = BlockStore<AccumT, block_threads, items_per_thread, AgentSegmentedScanPolicyT::store_algorithm>;
@@ -250,7 +251,7 @@ struct agent_segmented_scan
     }
   };
 
-  //! @brief Scan one segment of values
+  //! @brief Scan statically given number of segment of values
   //!
   //! @param inp_idx_begin
   //!   Index of start of the segment in input array
@@ -364,6 +365,7 @@ struct agent_segmented_scan
     }
   }
 
+  //! @brief Scan dynamically given number of segment of values
   template <typename InputBeginOffsetIteratorT,
             typename OutputBeginOffsetIteratorT,
             typename Ty                     = OffsetT,
@@ -586,7 +588,6 @@ private:
     }
   };
 
-private:
   template <typename PrefixTy, typename BinaryOpTy>
   struct block_prefix_callback_t
   {
