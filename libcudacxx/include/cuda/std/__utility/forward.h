@@ -25,7 +25,8 @@
 #include <cuda/std/__type_traits/remove_reference.h>
 #include <cuda/std/cstddef>
 
-#if _CCCL_COMPILER(CLANG, >=, 15) || _CCCL_COMPILER(GCC, >=, 12) || _CCCL_COMPILER(NVRTC)
+#if _CCCL_COMPILER(CLANG, >=, 15) || _CCCL_COMPILER(GCC, >=, 12) \
+  || (_CCCL_COMPILER(NVRTC) && defined(__NV_BUILTIN_MOVE_FORWARD))
 #  define _CCCL_HAS_BUILTIN_STD_FORWARD() 1
 #else // ^^^ has builtin std::forward ^^^ / vvv no builtin std::forward vvv
 #  define _CCCL_HAS_BUILTIN_STD_FORWARD() 0
