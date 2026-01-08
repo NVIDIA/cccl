@@ -138,22 +138,38 @@ __host__ __device__ constexpr bool test()
     assert(cc.get() == 100);
   }
 
-  // 8. Test major().
+  // 8. Test major_cap().
   {
+    static_assert(cuda::std::is_same_v<int, decltype(cuda::compute_capability{}.major_cap())>);
+    static_assert(noexcept(cuda::compute_capability{}.major_cap()));
+
+    const cuda::compute_capability cc{cuda::arch_id::sm_100};
+    assert(cc.major_cap() == 10);
+
+    // Test deprecated major().
+    _CCCL_SUPPRESS_DEPRECATED_PUSH
     static_assert(cuda::std::is_same_v<int, decltype(cuda::compute_capability{}.major())>);
     static_assert(noexcept(cuda::compute_capability{}.major()));
 
-    const cuda::compute_capability cc{cuda::arch_id::sm_100};
-    assert(cc.major() == 10);
+    assert(cc.major() == cc.major_cap());
+    _CCCL_SUPPRESS_DEPRECATED_POP
   }
 
-  // 9. Test minor().
+  // 9. Test minor_cap().
   {
+    static_assert(cuda::std::is_same_v<int, decltype(cuda::compute_capability{}.minor_cap())>);
+    static_assert(noexcept(cuda::compute_capability{}.minor_cap()));
+
+    const cuda::compute_capability cc{cuda::arch_id::sm_89};
+    assert(cc.minor_cap() == 9);
+
+    // Test deprecated minor().
+    _CCCL_SUPPRESS_DEPRECATED_PUSH
     static_assert(cuda::std::is_same_v<int, decltype(cuda::compute_capability{}.minor())>);
     static_assert(noexcept(cuda::compute_capability{}.minor()));
 
-    const cuda::compute_capability cc{cuda::arch_id::sm_89};
-    assert(cc.minor() == 9);
+    assert(cc.minor() == cc.minor_cap());
+    _CCCL_SUPPRESS_DEPRECATED_POP
   }
 
   // 10. operator int()
