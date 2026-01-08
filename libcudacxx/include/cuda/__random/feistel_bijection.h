@@ -52,7 +52,7 @@ public:
   _CCCL_API __feistel_bijection(uint64_t __num_elements, _RNG&& __gen)
   {
     const uint64_t __total_bits =
-      (::cuda::std::max) (uint64_t{6}, static_cast<uint64_t>(::cuda::std::bit_width(__num_elements)));
+      (::cuda::std::max) (uint64_t{8}, static_cast<uint64_t>(::cuda::std::bit_width(__num_elements)));
 
     // Half bits rounded down
     __L_bits_ = __total_bits / 2;
