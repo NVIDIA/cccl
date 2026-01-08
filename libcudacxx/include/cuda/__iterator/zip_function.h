@@ -84,6 +84,7 @@ public:
     return ::cuda::std::apply(__fun_, ::cuda::std::forward<_Tuple>(__tuple));
   }
 
+#ifndef _CCCL_DOXYGEN_INVOKED // Doxygen interprets this as a duplicated function
   //! @brief Applies a tuple to the stored functor
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Tuple)
@@ -93,6 +94,7 @@ public:
   {
     return ::cuda::std::apply(__fun_, ::cuda::std::forward<_Tuple>(__tuple));
   }
+#endif // !_CCCL_DOXYGEN_INVOKED
 
   [[nodiscard]] _CCCL_API constexpr _Fn& __fun() noexcept
   {
