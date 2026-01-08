@@ -14,6 +14,7 @@
 #endif // no system header
 
 #include <cub/agent/agent_segmented_scan.cuh>
+#include <cub/agent/agent_warp_segmented_scan.cuh>
 #include <cub/block/block_load.cuh>
 #include <cub/block/block_scan.cuh>
 #include <cub/block/block_store.cuh>
@@ -30,6 +31,8 @@ CUB_NAMESPACE_BEGIN
 
 namespace detail::segmented_scan
 {
+// policy wrapper for block-granularity agent
+
 template <typename PolicyT, typename = void, typename = void>
 struct segmented_scan_policy_wrapper : PolicyT
 {
@@ -77,6 +80,61 @@ CUB_RUNTIME_FUNCTION segmented_scan_policy_wrapper<PolicyT> make_segmented_scan_
   return segmented_scan_policy_wrapper<PolicyT>{policy};
 }
 
+// policy wrapper for warp-granularity agent
+
+template <typename PolicyT, typename = void, typename = void>
+struct warp_segmented_scan_policy_wrapper : PolicyT
+{
+  CUB_RUNTIME_FUNCTION warp_segmented_scan_policy_wrapper(PolicyT base)
+      : PolicyT(base)
+  {}
+};
+
+template <typename StaticPolicyT>
+struct warp_segmented_scan_policy_wrapper<
+  StaticPolicyT,
+  ::cuda::std::void_t<decltype(StaticPolicyT::warp_segmented_scan_policy_t::load_modifier),
+                      decltype(StaticPolicyT::warp_segmented_scan_policy_t::segments_per_warp)>> : StaticPolicyT
+{
+  CUB_RUNTIME_FUNCTION warp_segmented_scan_policy_wrapper(StaticPolicyT base)
+      : StaticPolicyT(base)
+  {}
+
+  CUB_RUNTIME_FUNCTION static constexpr auto SegmentedScan()
+  {
+    return cub::detail::MakePolicyWrapper(typename StaticPolicyT::warp_segmented_scan_policy_t());
+  }
+
+  CUB_RUNTIME_FUNCTION static constexpr CacheLoadModifier LoadModifier()
+  {
+    return StaticPolicyT::warp_segmented_scan_policy_t::load_modifier;
+  }
+
+  CUB_RUNTIME_FUNCTION static constexpr int SegmentsPerBlock()
+  {
+    return StaticPolicyT::warp_segmented_scan_policy_t::segments_per_warp
+         * (int(StaticPolicyT::warp_segmented_scan_policy_t::BLOCK_THREADS) >> cub::detail::log2_warp_threads);
+  }
+
+  CUB_RUNTIME_FUNCTION static constexpr int SegmentsPerWarp()
+  {
+    return StaticPolicyT::warp_segmented_scan_policy_t::segments_per_warp;
+  }
+
+  CUB_RUNTIME_FUNCTION constexpr void CheckLoadModifier()
+  {
+    static_assert(LoadModifier() != CacheLoadModifier::LOAD_LDG,
+                  "The memory consistency model does not apply to texture "
+                  "accesses");
+  }
+};
+
+template <typename PolicyT>
+CUB_RUNTIME_FUNCTION warp_segmented_scan_policy_wrapper<PolicyT> make_warp_segmented_scan_policy_wrapper(PolicyT policy)
+{
+  return warp_segmented_scan_policy_wrapper<PolicyT>{policy};
+}
+
 template <typename InputValueT, typename OutputValueT, typename AccumT, typename OffsetT, typename ScanOpT>
 struct policy_hub
 {
@@ -94,12 +152,15 @@ public:
   {
     using segmented_scan_policy_t = agent_segmented_scan_policy_t<
       128,
-      15,
+      7,
       AccumT,
       scan_transposed_load,
       LOAD_DEFAULT,
       scan_transposed_store,
       BLOCK_SCAN_WARP_SCANS>;
+
+    using warp_segmented_scan_policy_t =
+      agent_warp_segmented_scan_policy_t<128, 4, AccumT, WARP_LOAD_TRANSPOSE, LOAD_DEFAULT, WARP_STORE_TRANSPOSE>;
   };
 
   struct policy_500
