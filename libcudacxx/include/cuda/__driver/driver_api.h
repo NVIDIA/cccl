@@ -224,7 +224,7 @@ __get_driver_entry_point(const char* __name, [[maybe_unused]] int __major = 12, 
   return __result;
 }
 
-[[nodiscard]] _CCCL_HOST_API inline ::CUdevice __deviceGetAttribute(::CUdevice_attribute __attr, ::CUdevice __device)
+[[nodiscard]] _CCCL_HOST_API inline int __deviceGetAttribute(::CUdevice_attribute __attr, ::CUdevice __device)
 {
   static auto __driver_fn = _CCCLRT_GET_DRIVER_FUNCTION(cuDeviceGetAttribute);
   int __result;
