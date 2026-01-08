@@ -191,6 +191,61 @@ class IteratorBase:
         )
         return (abi_name, ltoir)
 
+    def to_cccl_iter(self, is_output: bool = False):
+        """Convert this iterator to a CCCL Iterator object.
+
+        Args:
+            is_output: If True, use output_dereference; otherwise use input_dereference
+
+        Returns:
+            CCCL Iterator object for C++ interop
+        """
+        from numba import cuda
+
+        from ..._bindings import Iterator, Op
+        from ..._bindings import IteratorKind as CCCLIteratorKind
+        from ...op import OpKind
+        from ..interop import numba_type_to_info
+
+        context = cuda.descriptor.cuda_target.target_context
+        state_ptr_type = self.state_ptr_type
+        state_type = self.state_type
+        size = context.get_value_type(state_type).get_abi_size(context.target_data)
+        iterator_state = memoryview(self.state)
+        if not iterator_state.nbytes == size:
+            raise ValueError(
+                f"Iterator state size, {iterator_state.nbytes} bytes, for iterator type {type(self)} "
+                f"does not match size of numba type, {size} bytes"
+            )
+        alignment = context.get_value_type(state_ptr_type).get_abi_alignment(
+            context.target_data
+        )
+
+        advance_abi_name, advance_ltoir = self.get_advance_ltoir()
+        if is_output:
+            deref_abi_name, deref_ltoir = self.get_output_dereference_ltoir()
+        else:
+            deref_abi_name, deref_ltoir = self.get_input_dereference_ltoir()
+
+        advance_op = Op(
+            operator_type=OpKind.STATELESS,
+            name=advance_abi_name,
+            ltoir=advance_ltoir,
+        )
+        deref_op = Op(
+            operator_type=OpKind.STATELESS,
+            name=deref_abi_name,
+            ltoir=deref_ltoir,
+        )
+        return Iterator(
+            alignment,
+            CCCLIteratorKind.ITERATOR,
+            advance_op,
+            deref_op,
+            numba_type_to_info(self.value_type),
+            state=self.state,
+        )
+
     def __add__(self, offset: int):
         # add the offset to the iterator's state, and return a new iterator
         # with the new state.

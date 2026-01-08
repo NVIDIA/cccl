@@ -4,7 +4,6 @@
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 from __future__ import annotations
 
-import enum
 import functools
 import os
 import subprocess
@@ -67,37 +66,14 @@ def _numpy_dtype_to_info(dtype: np.dtype) -> TypeInfo:
     return TypeInfo(dtype.itemsize, dtype.alignment, TypeEnum.STORAGE)
 
 
-def _is_numba_iterator(it) -> bool:
-    """Check if an object is a Numba-based iterator."""
-    # Import here to avoid circular imports and Numba dependency at module level
-    from .iterators._iterators import IteratorBase
-
-    return isinstance(it, IteratorBase)
-
-
-def _is_compiled_iterator(it) -> bool:
-    """Check if an object is a CompiledIterator."""
-    from .iterators._compiled_iterator import CompiledIterator
-
-    return isinstance(it, CompiledIterator)
-
-
 def is_iterator(it) -> bool:
-    """Check if an object is any kind of iterator (Numba-based or CompiledIterator)."""
-    return _is_numba_iterator(it) or _is_compiled_iterator(it)
+    """Check if an object is an iterator (has to_cccl_iter method)."""
+    return hasattr(it, "to_cccl_iter") and callable(it.to_cccl_iter)
 
 
 def get_iterator_kind(it):
-    """Get the cache key kind from any iterator type.
-
-    Works with both Numba-based IteratorBase and CompiledIterator.
-    """
+    """Get the cache key kind from any iterator type."""
     return it.kind
-
-
-class _IteratorIO(enum.Enum):
-    INPUT = 0
-    OUTPUT = 1
 
 
 def _device_array_to_cccl_iter(array: DeviceArrayLike) -> Iterator:
@@ -139,42 +115,25 @@ def _none_to_cccl_iter() -> Iterator:
     return Iterator(info.alignment, IteratorKind.POINTER, Op(), Op(), info, state=None)
 
 
-def _compiled_iterator_to_cccl_iter(it, io_kind: _IteratorIO) -> Iterator:
-    """Convert a CompiledIterator to a CCCL Iterator."""
-    is_output = io_kind == _IteratorIO.OUTPUT
-    return it.to_cccl_iter(is_output=is_output)
+def _to_cccl_iter(it, is_output: bool) -> Iterator:
+    """Convert an iterator or array to a CCCL Iterator.
 
-
-def _numba_iterator_to_cccl_iter(it, io_kind: _IteratorIO) -> Iterator:
-    """Convert a Numba-based iterator to a CCCL Iterator."""
-    from ._numba.interop import _IteratorIO as NumbaIteratorIO
-    from ._numba.interop import numba_iterator_to_cccl_iter
-
-    numba_io_kind = (
-        NumbaIteratorIO.OUTPUT
-        if io_kind == _IteratorIO.OUTPUT
-        else NumbaIteratorIO.INPUT
-    )
-    return numba_iterator_to_cccl_iter(it, numba_io_kind)
-
-
-def _to_cccl_iter(it, io_kind: _IteratorIO) -> Iterator:
-    """Convert an iterator or array to a CCCL Iterator with dispatch logic."""
+    Uses duck typing: if the object has a to_cccl_iter method, call it.
+    Otherwise, treat it as a device array.
+    """
     if it is None:
         return _none_to_cccl_iter()
-    if _is_compiled_iterator(it):
-        return _compiled_iterator_to_cccl_iter(it, io_kind)
-    if _is_numba_iterator(it):
-        return _numba_iterator_to_cccl_iter(it, io_kind)
+    if is_iterator(it):
+        return it.to_cccl_iter(is_output=is_output)
     return _device_array_to_cccl_iter(it)
 
 
 def to_cccl_input_iter(array_or_iterator) -> Iterator:
-    return _to_cccl_iter(array_or_iterator, _IteratorIO.INPUT)
+    return _to_cccl_iter(array_or_iterator, is_output=False)
 
 
 def to_cccl_output_iter(array_or_iterator) -> Iterator:
-    return _to_cccl_iter(array_or_iterator, _IteratorIO.OUTPUT)
+    return _to_cccl_iter(array_or_iterator, is_output=True)
 
 
 def type_enum_as_name(enum_value: int) -> str:
@@ -222,17 +181,14 @@ def to_stateless_cccl_op(op, sig: "Signature") -> Op:
 def get_value_type(d_in):
     """Get the value type for an input array, iterator, or struct.
 
-    For CompiledIterator, returns the TypeDescriptor.
-    For Numba-based iterators, returns a Numba type.
+    For iterators (CompiledIterator or Numba-based), returns value_type.
     For device arrays, returns a Numba type.
     """
-    from .iterators._compiled_iterator import CompiledIterator
-
-    # Handle CompiledIterator
-    if isinstance(d_in, CompiledIterator):
+    # Any iterator should have a value_type property
+    if is_iterator(d_in):
         return d_in.value_type
 
-    # Handle Numba-based iterators and arrays
+    # Handle Numba-based arrays and structs
     from ._numba.interop import get_value_type as _get_value_type
 
     return _get_value_type(d_in)
@@ -245,15 +201,12 @@ def set_cccl_iterator_state(cccl_it: Iterator, input_it):
         ptr_obj = make_pointer_object(ptr, input_it)
         cccl_it.state = ptr_obj
     else:
-        # Check if it's a CompiledIterator
-        if _is_compiled_iterator(input_it):
-            cccl_it.state = input_it.state
+        # It's an iterator with to_cccl_iter method
+        state_ = input_it.state
+        if isinstance(state_, (IteratorState, Pointer, bytes)):
+            cccl_it.state = state_
         else:
-            state_ = input_it.state
-            if isinstance(state_, (IteratorState, Pointer)):
-                cccl_it.state = state_
-            else:
-                cccl_it.state = make_pointer_object(state_, input_it)
+            cccl_it.state = make_pointer_object(state_, input_it)
 
 
 @functools.lru_cache()
@@ -331,17 +284,17 @@ def _make_host_cfunc(state_ptr_ty, fn):
 def cccl_iterator_set_host_advance(cccl_it: Iterator, array_or_iterator):
     """Set the host advance function for a CCCL Iterator."""
     if cccl_it.is_kind_iterator():
-        # CompiledIterator doesn't support host_advance yet
-        if _is_compiled_iterator(array_or_iterator):
-            # CompiledIterator may not have host_advance
-            if array_or_iterator._host_advance_fn is not None:
+        it = array_or_iterator
+        # Check if it's a CompiledIterator (has _host_advance_fn attribute)
+        if hasattr(it, "_host_advance_fn"):
+            if it._host_advance_fn is not None:
                 # TODO: Support host advance for CompiledIterator
                 raise NotImplementedError(
                     "host_advance for CompiledIterator is not yet supported"
                 )
             return
 
-        it = array_or_iterator
+        # Numba-based iterator
         fn_impl = it.host_advance
         if fn_impl is not None:
             cccl_it.host_advance_fn = _make_host_cfunc(it.state_ptr_type, fn_impl)
