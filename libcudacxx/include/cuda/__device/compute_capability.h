@@ -87,10 +87,10 @@ public:
   //!
   //! @deprecated This symbol is deprecated because it collides with major(...) macro defined in <sys/sysmacros.h> and
   //! will be removed in next major release. Use cc.major_cap() instead.
+  [[nodiscard]]
   CCCL_DEPRECATED_BECAUSE("This symbol is deprecated because it collides with major(...) macro defined in "
                           "<sys/sysmacros.h> and will be removed in next major release. Use cc.major_cap() instead.")
-  [[nodiscard]] _CCCL_API constexpr int
-  major() const noexcept
+  _CCCL_API constexpr int major() const noexcept
   {
     return major_cap();
   }
@@ -109,10 +109,10 @@ public:
   //!
   //! @deprecated This symbol is deprecated because it collides with minor(...) macro defined in <sys/sysmacros.h> and
   //! will be removed in next major release. Use cc.minor_cap() instead.
+  [[nodiscard]]
   CCCL_DEPRECATED_BECAUSE("This symbol is deprecated because it collides with minor(...) macro defined in "
                           "<sys/sysmacros.h> and will be removed in next major release. Use cc.minor_cap() instead.")
-  [[nodiscard]] _CCCL_API constexpr int
-  minor() const noexcept
+  _CCCL_API constexpr int minor() const noexcept
   {
     return minor_cap();
   }
