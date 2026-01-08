@@ -62,7 +62,7 @@ template <class _Env>
 inline constexpr bool __buffer_compatible_env = ::cuda::std::is_same_v<_Env, ::cuda::std::execution::env<>>;
 
 //! @rst
-//! .. _cudax-containers-async-vector:
+//! .. _libcudacxx-containers-async-vector:
 //!
 //! buffer
 //! -------------
@@ -521,7 +521,7 @@ public:
 
   //! @rst
   //! Returns a \c const reference to the :ref:`any_resource
-  //! <cuda-memory-resource-any-resource>` that holds the memory resource used
+  //! <libcudacxx-memory-resource-any-resource>` that holds the memory resource used
   //! to allocate the buffer
   //! @endrst
   [[nodiscard]] _CCCL_HIDE_FROM_ABI const __resource_t& memory_resource() const noexcept
