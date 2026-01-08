@@ -13,9 +13,9 @@ This module contains:
 from typing import TYPE_CHECKING, Callable, Hashable
 
 from .._bindings import Op, TypeEnum
-from .._caching import CachableFunction
 from ..op import OpKind
 from ..types import _TypeDescriptor
+from ._caching import CachableFunction
 
 if TYPE_CHECKING:
     from numba.core.typing import Signature

@@ -92,8 +92,6 @@ def _normalize_field_spec(
     if isinstance(field_dict, type) and hasattr(field_dict, "__annotations__"):
         name = field_dict.__name__
         field_dict = get_type_hints(field_dict)
-    else:
-        raise ValueError("Expected an annotated class or a numpy dtype")
 
     return name, field_dict
 

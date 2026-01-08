@@ -16,7 +16,7 @@ from numba import cuda, types
 from numba.core.extending import intrinsic
 from numba.cuda.dispatcher import CUDADispatcher
 
-from ..._caching import CachableFunction
+from .._caching import CachableFunction
 from ..numba_utils import get_inferred_return_type, signature_from_annotations
 from .base import IteratorBase, IteratorKind
 from .simple import pointer
