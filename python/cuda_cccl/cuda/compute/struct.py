@@ -247,7 +247,7 @@ def gpu_struct(
     StructClass.__init__ = __init__  # type: ignore
 
     # Add dtype property
-    StructClass.dtype = dtype
+    StructClass.dtype = dtype  # type: ignore[attr-defined]
 
     # Register with Numba if available (for backward compatibility)
     try:

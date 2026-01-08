@@ -16,7 +16,6 @@ registers a struct class (created by gpu_struct) with Numba's type system.
 
 import functools
 import operator
-from typing import TYPE_CHECKING
 
 import numba
 import numpy as np
@@ -34,9 +33,6 @@ from numba.core.typing import signature as nb_signature
 from numba.core.typing.templates import AttributeTemplate, ConcreteTemplate
 from numba.cuda.cudadecl import registry as cuda_registry
 from numba.extending import as_numba_type, lower_builtin, lower_cast
-
-if TYPE_CHECKING:
-    from ..struct import _Struct
 
 
 def _convert_field_type_to_numba(val):
@@ -80,7 +76,7 @@ def _register_struct_with_numba(struct_class: type) -> None:
     """
 
     name = struct_class.__name__
-    raw_field_spec = struct_class._field_spec
+    raw_field_spec = struct_class._field_spec  # type: ignore[attr-defined]
 
     # Convert all field types to Numba types
     field_spec = {
@@ -271,9 +267,9 @@ def gpu_struct(field_dict, name: str = "AnonymousStruct"):
     struct_class = _gpu_struct(field_dict, name)
 
     # Immediately register with Numba for backward compatibility
-    if not struct_class._numba_registered:
+    if not struct_class._numba_registered:  # type: ignore[attr-defined]
         _register_struct_with_numba(struct_class)
-        struct_class._numba_registered = True
+        struct_class._numba_registered = True  # type: ignore[attr-defined]
 
     return struct_class
 
@@ -434,13 +430,3 @@ def make_struct_type(name, field_names, field_types):
 
     struct_class._numba_registered = True
     return struct_class
-
-
-# Re-export _Struct for type checking
-def _get_struct_base():
-    from ..struct import _Struct
-
-    return _Struct
-
-
-_Struct = property(lambda self: _get_struct_base())

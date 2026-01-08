@@ -13,7 +13,7 @@ reduce_into, scan, etc. Operators can be:
 - Pre-compiled LTOIR (BYOC - Bring Your Own Compiler)
 """
 
-from typing import Callable, Hashable
+from typing import Callable, Hashable, Protocol, runtime_checkable
 
 from ._bindings import Op, OpKind
 
@@ -25,9 +25,10 @@ def _is_well_known_op(op: OpKind) -> bool:
     return isinstance(op, OpKind) and op not in (OpKind.STATELESS, OpKind.STATEFUL)
 
 
-class _BaseOp:
+@runtime_checkable
+class OpProtocol(Protocol):
     """
-    Base class for operator adapters.
+    Protocol defining the interface for operator adapters.
 
     Provides a unified interface for operators, whether they are:
     - Well-known operations (OpKind.PLUS, OpKind.MAXIMUM, etc.)
@@ -37,7 +38,7 @@ class _BaseOp:
 
     def get_cache_key(self) -> Hashable:
         """Return a hashable cache key for this operator."""
-        raise NotImplementedError("Subclasses must implement this method")
+        ...
 
     def compile(self, input_types, output_type=None) -> Op:
         """
@@ -50,15 +51,15 @@ class _BaseOp:
         Returns:
             Compiled Op object for C++ interop
         """
-        raise NotImplementedError("Subclasses must implement this method")
+        ...
 
     @property
     def func(self) -> Callable | None:
         """The underlying callable, if any."""
-        return None
+        ...
 
 
-class _WellKnownOp(_BaseOp):
+class _WellKnownOp:
     """Internal wrapper for well-known OpKind values."""
 
     __slots__ = ["_kind"]
@@ -84,12 +85,17 @@ class _WellKnownOp(_BaseOp):
         )
 
     @property
+    def func(self) -> Callable | None:
+        """The underlying callable, if any."""
+        return None
+
+    @property
     def kind(self) -> OpKind:
         """The underlying OpKind."""
         return self._kind
 
 
-def make_op_adapter(op) -> _BaseOp:
+def make_op_adapter(op) -> OpProtocol:
     """
     Create an Op adapter from a callable or well-known OpKind.
 
@@ -97,14 +103,10 @@ def make_op_adapter(op) -> _BaseOp:
         op: Callable, OpKind, or existing op adapter
 
     Returns:
-        A _BaseOp subclass instance
+        An object implementing OpProtocol
     """
-    # Already a _BaseOp instance
-    if isinstance(op, _BaseOp):
-        return op
-
-    # CompiledOp (from compiled/op.py)
-    if isinstance(op, CompiledOp):
+    # Already implements OpProtocol
+    if isinstance(op, OpProtocol):
         return op
 
     # Well-known operation
@@ -114,19 +116,16 @@ def make_op_adapter(op) -> _BaseOp:
     # JIT-compiled callable - lazy import to avoid Numba dependency
     from ._numba.op import _JitOp
 
-    # Already a _JitOp (doesn't inherit from _BaseOp to avoid circular imports)
-    if isinstance(op, _JitOp):
-        return op
-
     return _JitOp(op)
 
 
 # Public aliases for backwards compatibility
-OpAdapter = _BaseOp
+OpAdapter = OpProtocol
 
 __all__ = [
     "CompiledOp",
     "OpAdapter",
     "OpKind",
+    "OpProtocol",
     "make_op_adapter",
 ]
