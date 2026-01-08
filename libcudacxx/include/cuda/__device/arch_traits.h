@@ -180,8 +180,8 @@ struct arch_traits_t
   __traits.max_registers_per_multiprocessor = 64 * 1024;
   __traits.max_registers_per_thread         = 255;
   __traits.arch_id                          = __arch_id;
-  __traits.compute_capability_major         = __cc.major();
-  __traits.compute_capability_minor         = __cc.minor();
+  __traits.compute_capability_major         = __cc.major_cap();
+  __traits.compute_capability_minor         = __cc.minor_cap();
   __traits.compute_capability               = __cc;
   // __traits.max_shared_memory_per_multiprocessor; // set up individually
   // __traits.max_blocks_per_multiprocessor; // set up individually
