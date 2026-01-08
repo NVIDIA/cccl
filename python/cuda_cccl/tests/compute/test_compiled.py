@@ -100,7 +100,7 @@ def test_import_numba_should_fail():
     # cuda.compute should be usable with compiled ops/iterators
     # without numba present.
     with pytest.raises(ModuleNotFoundError):
-        pass
+        import numba  # noqa: F401
 
 
 def test_compiled_op_reduce_int32():
