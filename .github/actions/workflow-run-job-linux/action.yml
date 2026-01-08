@@ -110,7 +110,7 @@ runs:
         cat <<'EOF' > ci.sh
         #! /usr/bin/env bash
 
-        set -euo pipefail
+        set -xeuo pipefail
         ulimit -n $(ulimit -Hn)
 
         # Need this for git to trust the docker-mounted workspace:
