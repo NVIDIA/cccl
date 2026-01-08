@@ -23,6 +23,7 @@
 //
 // Preconditions:
 //   * extents_type::index-cast(i) is a multidimensional index in extents_.
+#define _CCCL_DISABLE_MDSPAN_ACCESSOR_DETECT_INVALIDITY
 
 #include <cuda/mdspan>
 #include <cuda/std/cassert>
