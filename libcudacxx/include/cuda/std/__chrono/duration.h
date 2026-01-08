@@ -339,7 +339,8 @@ public:
 
 #if _CCCL_STD_VER <= 2017
   template <class _Rep2, class _Period2>
-  [[nodiscard]] _CCCL_API friend constexpr bool operator!=(const duration& __lhs, const duration<_Rep2, _Period2>& __rhs)
+  [[nodiscard]]
+  _CCCL_API friend constexpr bool operator!=(const duration& __lhs, const duration<_Rep2, _Period2>& __rhs)
   {
     if constexpr (is_same_v<duration, duration<_Rep2, _Period2>>)
     {

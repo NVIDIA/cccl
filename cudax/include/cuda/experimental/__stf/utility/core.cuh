@@ -675,12 +675,12 @@ private:
       return lhs op rhs.get();                                                                           \
     }                                                                                                    \
     template <auto v2, auto r>                                                                           \
-    constexpr auto& operator op##=(optionally_static<r, r>& lhs, const optionally_static<v2, r>& rhs)    \
+    constexpr auto& operator op## = (optionally_static<r, r> & lhs, const optionally_static<v2, r>& rhs) \
     {                                                                                                    \
       return lhs.get_ref() op## = rhs.get();                                                             \
     }                                                                                                    \
     template <auto r, typename T>                                                                        \
-    constexpr auto& operator op##=(optionally_static<r, r>& lhs, const T & rhs)                          \
+    constexpr auto& operator op## = (optionally_static<r, r> & lhs, const T& rhs)                        \
     {                                                                                                    \
       return lhs.get_ref() op## = rhs;                                                                   \
     }

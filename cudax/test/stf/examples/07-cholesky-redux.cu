@@ -676,7 +676,9 @@ int main(int argc, char** argv)
 
   if (check_result)
   {
-    auto rhs_vals = [] __host__ __device__(size_t row, size_t /*unused*/) { return 1.0 * (row + 1); };
+    auto rhs_vals = [] __host__ __device__(size_t row, size_t /*unused*/) {
+      return 1.0 * (row + 1);
+    };
     B_potrs.fill(rhs_vals);
     Bref_potrs.fill(rhs_vals);
   }

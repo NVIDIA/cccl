@@ -146,8 +146,8 @@ struct level_dimensions
   [[nodiscard]] _CCCL_HIDE_FROM_ABI constexpr bool operator==(const level_dimensions&) const noexcept = default;
 #  else // ^^^ !_CCCL_NO_THREE_WAY_COMPARISON ^^^ / vvv
         // _CCCL_NO_THREE_WAY_COMPARISON vvv
-  [[nodiscard]] _CCCL_API friend constexpr bool
-  operator==(const level_dimensions& __left, const level_dimensions& __right) noexcept
+  [[nodiscard]]
+  _CCCL_API friend constexpr bool operator==(const level_dimensions& __left, const level_dimensions& __right) noexcept
   {
     return __left.dims == __right.dims;
   }

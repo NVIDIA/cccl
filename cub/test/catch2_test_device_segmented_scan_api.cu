@@ -304,7 +304,9 @@ C2H_TEST("cub::DeviceSegmentedScan::ExclusiveSegmentedScan API with two offsets 
    * over boolean values stored as bits in unsigned integer, where addition is bitwise XOR.
    * Each unsigned integer represents 32-long tuple of GF(2) values
    */
-  auto scan_op        = [] __host__ __device__(unsigned v1, unsigned v2) -> unsigned { return v1 ^ v2; };
+  auto scan_op = [] __host__ __device__(unsigned v1, unsigned v2) -> unsigned {
+    return v1 ^ v2;
+  };
   unsigned init_value = 0u;
 
   // 128 input elements
@@ -380,7 +382,9 @@ C2H_TEST("cub::DeviceSegmentedScan::InclusiveSegmentedScan API with three offset
   auto d_in  = input.begin();
   auto d_out = output.begin();
 
-  auto scan_op = [] __host__ __device__(float v1, float v2) noexcept -> float { return cuda::maximum<>{}(v1, v2); };
+  auto scan_op = [] __host__ __device__(float v1, float v2) noexcept -> float {
+    return cuda::maximum<>{}(v1, v2);
+  };
 
   void* temp_storage = nullptr;
   size_t temp_storage_bytes;

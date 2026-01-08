@@ -718,8 +718,7 @@ public:
   template <class DecomposerT>
   _CCCL_DEVICE _CCCL_FORCEINLINE //
   ::cuda::std::enable_if_t< //
-    !::cuda::std::is_convertible_v<DecomposerT, int>>
-  Sort(KeyT (&keys)[ItemsPerThread], DecomposerT decomposer)
+    !::cuda::std::is_convertible_v<DecomposerT, int>> Sort(KeyT (&keys)[ItemsPerThread], DecomposerT decomposer)
   {
     Sort(keys, decomposer, 0, detail::radix::traits_t<KeyT>::default_end_bit(decomposer));
   }

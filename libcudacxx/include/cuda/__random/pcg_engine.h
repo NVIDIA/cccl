@@ -151,8 +151,8 @@ public:
   }
 
 #if _CCCL_STD_VER <= 2017
-  [[nodiscard]] _CCCL_API constexpr friend bool
-  operator!=(__pcg_uint128_fallback __lhs, __pcg_uint128_fallback __rhs) noexcept
+  [[nodiscard]]
+  _CCCL_API constexpr friend bool operator!=(__pcg_uint128_fallback __lhs, __pcg_uint128_fallback __rhs) noexcept
   {
     return !(__lhs == __rhs);
   }

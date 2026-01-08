@@ -40,8 +40,8 @@ extern "C" _CCCL_DEVICE void* __cuda_syscall_aligned_malloc(size_t, size_t);
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 #if !_CCCL_COMPILER(NVRTC)
-[[nodiscard]] _CCCL_HIDE_FROM_ABI _CCCL_HOST void*
-__aligned_alloc_host([[maybe_unused]] size_t __nbytes, [[maybe_unused]] size_t __align) noexcept
+[[nodiscard]] _CCCL_HIDE_FROM_ABI
+_CCCL_HOST void* __aligned_alloc_host([[maybe_unused]] size_t __nbytes, [[maybe_unused]] size_t __align) noexcept
 {
 #  if _CCCL_OS(WINDOWS)
   _CCCL_ASSERT(false, "Use of aligned_alloc in host code is not supported on WIndows");

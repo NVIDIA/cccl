@@ -79,8 +79,8 @@ BFE(UnsignedBits source, unsigned int bit_start, unsigned int num_bits, detail::
  */
 template <typename UnsignedBits>
 //! deprecated [Since 3.0]
-CCCL_DEPRECATED_BECAUSE("Use cuda::bitfield_extract()") _CCCL_DEVICE _CCCL_FORCEINLINE unsigned int
-BFE(UnsignedBits source, unsigned int bit_start, unsigned int num_bits)
+CCCL_DEPRECATED_BECAUSE("Use cuda::bitfield_extract()") _CCCL_DEVICE
+_CCCL_FORCEINLINE unsigned int BFE(UnsignedBits source, unsigned int bit_start, unsigned int num_bits)
 {
   return BFE(source, bit_start, num_bits, detail::constant_v<int{sizeof(UnsignedBits)}>);
 }

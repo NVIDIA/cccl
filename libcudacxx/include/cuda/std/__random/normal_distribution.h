@@ -168,8 +168,8 @@ public:
     return __x.__p_ == __y.__p_ && __x.__v_hot_ == __y.__v_hot_ && (!__x.__v_hot_ || __x.__v_ == __y.__v_);
   }
 #if _CCCL_STD_VER <= 2017
-  [[nodiscard]] _CCCL_API friend constexpr bool
-  operator!=(const normal_distribution& __x, const normal_distribution& __y) noexcept
+  [[nodiscard]]
+  _CCCL_API friend constexpr bool operator!=(const normal_distribution& __x, const normal_distribution& __y) noexcept
   {
     return !(__x == __y);
   }

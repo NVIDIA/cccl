@@ -61,8 +61,7 @@ __host__ __device__
 #if !TEST_COMPILER(GCC, <, 8)
   constexpr
 #endif // !TEST_COMPILER(GCC, <, 8)
-  bool
-  tests()
+  bool tests()
 {
   {
     typedef cuda::std::array<int, 5> C;

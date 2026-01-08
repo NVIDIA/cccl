@@ -25,10 +25,11 @@
 import importlib
 import os
 
-from cuda.cccl._cuda_version_utils import detect_cuda_version, get_recommended_extra
 from cuda.pathfinder import (  # type: ignore[import-not-found]
     load_nvidia_dynamic_lib,
 )
+
+from cuda.cccl._cuda_version_utils import detect_cuda_version, get_recommended_extra
 
 
 def _load_cuda_libraries():

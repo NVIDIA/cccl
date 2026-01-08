@@ -499,8 +499,8 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT pair : public __pair_base<_T1, _T2>
 #  endif // !_CCCL_COMPILER(NVRTC)
 #endif // _CCCL_STD_VER >= 2023
 
-  _CCCL_API inline _CCCL_CONSTEXPR_CXX20 void
-  swap(pair& __p) noexcept(is_nothrow_swappable_v<_T1> && is_nothrow_swappable_v<_T2>)
+  _CCCL_API inline
+    _CCCL_CONSTEXPR_CXX20 void swap(pair& __p) noexcept(is_nothrow_swappable_v<_T1> && is_nothrow_swappable_v<_T2>)
   {
     using ::cuda::std::swap;
     swap(this->first, __p.first);

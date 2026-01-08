@@ -24,9 +24,11 @@ __host__ __device__ void test_lambda_return_type()
   auto d_lm = [] __device__() -> ReturnT {
     return ReturnT{};
   };
-  auto hd_lm = [] __host__ __device__() -> ReturnT { return ReturnT{}; };
-  using Td   = decltype(d_lm);
-  using Thd  = decltype(hd_lm);
+  auto hd_lm = [] __host__ __device__() -> ReturnT {
+    return ReturnT{};
+  };
+  using Td  = decltype(d_lm);
+  using Thd = decltype(hd_lm);
 
   static_assert(cuda::std::is_same_v<cuda::std::invoke_result_t<Td>, ReturnT>);
   static_assert(cuda::std::is_same_v<cuda::std::invoke_result_t<Thd>, ReturnT>);

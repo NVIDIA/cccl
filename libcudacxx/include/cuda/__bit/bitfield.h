@@ -34,8 +34,8 @@ _CCCL_BEGIN_NAMESPACE_CUDA
 
 #if __cccl_ptx_isa >= 200
 
-[[nodiscard]] _CCCL_HIDE_FROM_ABI _CCCL_DEVICE uint32_t
-__bfi(uint32_t __dest, uint32_t __source, int __start, int __width) noexcept
+[[nodiscard]] _CCCL_HIDE_FROM_ABI
+_CCCL_DEVICE uint32_t __bfi(uint32_t __dest, uint32_t __source, int __start, int __width) noexcept
 {
   asm("bfi.b32 %0, %1, %2, %3, %4;" : "=r"(__dest) : "r"(__source), "r"(__dest), "r"(__start), "r"(__width));
   return __dest;
@@ -65,8 +65,8 @@ __bfi(uint64_t __dest, uint64_t __source, int __start, int __width) noexcept
 #endif // __cccl_ptx_isa >= 200
 
 template <typename _Tp>
-[[nodiscard]] _CCCL_API constexpr _Tp
-bitfield_insert(const _Tp __dest, const _Tp __source, int __start, int __width) noexcept
+[[nodiscard]]
+_CCCL_API constexpr _Tp bitfield_insert(const _Tp __dest, const _Tp __source, int __start, int __width) noexcept
 {
   static_assert(::cuda::std::__cccl_is_cv_unsigned_integer_v<_Tp>, "bitfield_insert() requires unsigned integer types");
   [[maybe_unused]] constexpr auto __digits = ::cuda::std::numeric_limits<_Tp>::digits;

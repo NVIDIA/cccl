@@ -201,8 +201,8 @@ public:
     return __x.__p_ == __y.__p_;
   }
 #if _CCCL_STD_VER <= 2017
-  [[nodiscard]] friend _CCCL_API constexpr bool
-  operator!=(const gamma_distribution& __x, const gamma_distribution& __y) noexcept
+  [[nodiscard]] friend
+    _CCCL_API constexpr bool operator!=(const gamma_distribution& __x, const gamma_distribution& __y) noexcept
   {
     return !(__x == __y);
   }
