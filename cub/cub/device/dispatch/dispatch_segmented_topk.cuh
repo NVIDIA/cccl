@@ -389,7 +389,9 @@ struct DispatchSegmentedTopK
     // Only uniform number of segments are supported (i.e., we  need to resolve the number of segments on the host)
     static_assert(!params::is_per_segment_param_v<NumSegmentsParameterT>,
                   "Only uniform segment sizes are currently supported.");
-    int grid_dim = resolve_param(num_segments, 0);
+
+    // TODO (elstehle): support larger number of segments through multiple kernel launches
+    int grid_dim = static_cast<int>(resolve_param(num_segments, 0));
 
     THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(grid_dim, block_dim, 0, stream)
       .doit(
