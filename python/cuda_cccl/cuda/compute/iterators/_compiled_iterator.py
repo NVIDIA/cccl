@@ -11,7 +11,7 @@ pre-compiled LTOIR rather than relying on Numba for JIT compilation.
 
 from typing import Callable
 
-from .._bindings import Iterator, IteratorKind, Op, OpKind
+from .._bindings import Iterator, IteratorKind, IteratorState, Op, OpKind
 from ..types import _TypeDescriptor
 
 
@@ -216,6 +216,9 @@ class CompiledIterator:
                 ltoir=self._input_deref_ltoir,
             )
 
+        # Wrap state bytes in IteratorState
+        iter_state = IteratorState(self._state)
+
         # Create the CCCL Iterator
         return Iterator(
             self._state_alignment,
@@ -223,7 +226,7 @@ class CompiledIterator:
             advance_op,
             deref_op,
             self._value_type.to_type_info(),
-            state=self._state,
+            state=iter_state,
         )
 
     @property
