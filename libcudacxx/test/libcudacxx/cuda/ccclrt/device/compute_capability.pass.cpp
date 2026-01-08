@@ -8,6 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
+// ADDITIONAL_COMPILE_DEFINITIONS: CCCL_IGNORE_DEPRECATED_API
+
 #include <cuda/devices>
 #include <cuda/std/cassert>
 #include <cuda/std/type_traits>
@@ -147,12 +149,10 @@ __host__ __device__ constexpr bool test()
     assert(cc.major_cap() == 10);
 
     // Test deprecated major().
-    _CCCL_SUPPRESS_DEPRECATED_PUSH
     static_assert(cuda::std::is_same_v<int, decltype(cuda::compute_capability{}.major())>);
     static_assert(noexcept(cuda::compute_capability{}.major()));
 
     assert(cc.major() == cc.major_cap());
-    _CCCL_SUPPRESS_DEPRECATED_POP
   }
 
   // 9. Test minor_cap().
@@ -164,12 +164,10 @@ __host__ __device__ constexpr bool test()
     assert(cc.minor_cap() == 9);
 
     // Test deprecated minor().
-    _CCCL_SUPPRESS_DEPRECATED_PUSH
     static_assert(cuda::std::is_same_v<int, decltype(cuda::compute_capability{}.minor())>);
     static_assert(noexcept(cuda::compute_capability{}.minor()));
 
     assert(cc.minor() == cc.minor_cap());
-    _CCCL_SUPPRESS_DEPRECATED_POP
   }
 
   // 10. operator int()
