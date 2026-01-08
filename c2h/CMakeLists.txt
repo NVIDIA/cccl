@@ -33,6 +33,7 @@ target_include_directories(cccl.c2h PUBLIC "${C2H_SOURCE_DIR}/include")
 target_link_libraries(
   cccl.c2h
   PUBLIC #
+    CUDA::cudart
     cccl.compiler_interface
     Catch2::Catch2
 )
