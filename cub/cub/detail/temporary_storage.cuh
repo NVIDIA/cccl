@@ -345,6 +345,7 @@ private:
   }
 };
 
+_CCCL_EXEC_CHECK_DISABLE
 template <typename MRT>
 CUB_RUNTIME_FUNCTION cudaError_t
 allocate(::cuda::stream_ref stream, void*& d_temp_storage, size_t temp_storage_bytes, MRT& mr)
@@ -359,6 +360,7 @@ allocate(::cuda::stream_ref stream, void*& d_temp_storage, size_t temp_storage_b
   return cudaSuccess;
 }
 
+_CCCL_EXEC_CHECK_DISABLE
 template <typename MRT>
 CUB_RUNTIME_FUNCTION cudaError_t
 deallocate(::cuda::stream_ref stream, void* d_temp_storage, size_t temp_storage_bytes, MRT& mr)

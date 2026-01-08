@@ -42,8 +42,7 @@ CUB_RUNTIME_FUNCTION static cudaError_t dispatch_with_env(EnvT env, AlgorithmCal
   auto stream = ::cuda::std::execution::__query_or(env, ::cuda::get_stream, ::cuda::stream_ref{cudaStream_t{}});
 
   // Query memory resource from environment
-  auto mr =
-    ::cuda::std::execution::__query_or(env, ::cuda::mr::get_memory_resource, detail::device_memory_resource{});
+  auto mr = ::cuda::std::execution::__query_or(env, ::cuda::mr::get_memory_resource, detail::device_memory_resource{});
 
   // Query tuning from environment
 

@@ -212,7 +212,8 @@ __host__ __device__ void test()
       }
     };
     static_assert(!::cuda::std::is_invocable_v<::cuda::mr::get_memory_resource_t, const with_get_resource_non_async&>);
-    static_assert(!::cuda::std::is_invocable_v<::cuda::mr::get_memory_resource_t, const with_get_resource_non_async::resource&>);
+    static_assert(
+      !::cuda::std::is_invocable_v<::cuda::mr::get_memory_resource_t, const with_get_resource_non_async::resource&>);
   }
 }
 
