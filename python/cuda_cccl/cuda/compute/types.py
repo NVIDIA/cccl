@@ -22,7 +22,24 @@ Example:
     )
 """
 
+import numpy as np
+
 from ._bindings import TypeEnum, TypeInfo
+
+# Mapping from numpy dtype to TypeEnum
+_NUMPY_DTYPE_TO_ENUM = {
+    np.dtype("int8"): TypeEnum.INT8,
+    np.dtype("int16"): TypeEnum.INT16,
+    np.dtype("int32"): TypeEnum.INT32,
+    np.dtype("int64"): TypeEnum.INT64,
+    np.dtype("uint8"): TypeEnum.UINT8,
+    np.dtype("uint16"): TypeEnum.UINT16,
+    np.dtype("uint32"): TypeEnum.UINT32,
+    np.dtype("uint64"): TypeEnum.UINT64,
+    np.dtype("float16"): TypeEnum.FLOAT16,
+    np.dtype("float32"): TypeEnum.FLOAT32,
+    np.dtype("float64"): TypeEnum.FLOAT64,
+}
 
 
 class _TypeDescriptor:
@@ -102,6 +119,45 @@ def custom_type(size: int, alignment: int) -> _TypeDescriptor:
     )
 
 
+def from_numpy_dtype(dtype: np.dtype) -> _TypeDescriptor:
+    """
+    Create a type descriptor from a numpy dtype.
+
+    This handles both scalar dtypes (int32, float64, etc.) and structured
+    dtypes (record types). For structured dtypes, a custom type with the
+    appropriate size and alignment is returned.
+
+    Args:
+        dtype: A numpy dtype
+
+    Returns:
+        A _TypeDescriptor for the dtype
+
+    Example:
+        from cuda.compute.types import from_numpy_dtype
+        import numpy as np
+
+        int_type = from_numpy_dtype(np.dtype('int32'))
+        struct_type = from_numpy_dtype(np.dtype([('x', 'i4'), ('y', 'f8')]))
+    """
+    dtype = np.dtype(dtype)  # Ensure it's a dtype object
+    if dtype in _NUMPY_DTYPE_TO_ENUM:
+        return _TypeDescriptor(
+            dtype.itemsize, dtype.alignment, _NUMPY_DTYPE_TO_ENUM[dtype], dtype.name
+        )
+
+    # Handle complex types (kind 'c' = complex floating)
+    if dtype.kind == "c":
+        return _TypeDescriptor(
+            dtype.itemsize, dtype.alignment, TypeEnum.STORAGE, dtype.name
+        )
+
+    # For structured/record types, use STORAGE enum
+    return _TypeDescriptor(
+        dtype.itemsize, dtype.alignment, TypeEnum.STORAGE, f"struct({dtype})"
+    )
+
+
 __all__ = [
     # Signed integers
     "int8",
@@ -119,4 +175,6 @@ __all__ = [
     "float64",
     # Custom types
     "custom_type",
+    # Conversion
+    "from_numpy_dtype",
 ]

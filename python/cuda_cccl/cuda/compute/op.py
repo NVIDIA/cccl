@@ -4,7 +4,7 @@
 
 from typing import Callable, Hashable
 
-from ._bindings import Op, OpKind
+from ._bindings import Op, OpKind, TypeEnum
 from ._caching import CachableFunction
 from .types import _TypeDescriptor
 
@@ -74,6 +74,61 @@ class _WellKnownOp(_OpAdapter):
         return self._kind
 
 
+def _to_numba_type(t):
+    """
+    Convert a type (struct class, _TypeDescriptor, or Numba type) to a Numba type.
+
+    - Struct classes (with _get_numba_type): triggers lazy Numba registration
+    - _TypeDescriptor: converts via numpy dtype
+    - Numba types: returned as-is
+    """
+    # Already a Numba type - return directly
+    from numba import types as numba_types
+
+    if isinstance(t, numba_types.Type):
+        return t
+
+    # Struct class with lazy Numba registration
+    if isinstance(t, type) and hasattr(t, "_get_numba_type"):
+        return t._get_numba_type()
+
+    # _TypeDescriptor - convert via numpy dtype
+    if isinstance(t, _TypeDescriptor):
+        import numpy as np
+        from numba.np.numpy_support import from_dtype
+
+        _enum_to_numpy = {
+            TypeEnum.INT8: np.dtype("int8"),
+            TypeEnum.INT16: np.dtype("int16"),
+            TypeEnum.INT32: np.dtype("int32"),
+            TypeEnum.INT64: np.dtype("int64"),
+            TypeEnum.UINT8: np.dtype("uint8"),
+            TypeEnum.UINT16: np.dtype("uint16"),
+            TypeEnum.UINT32: np.dtype("uint32"),
+            TypeEnum.UINT64: np.dtype("uint64"),
+            TypeEnum.FLOAT16: np.dtype("float16"),
+            TypeEnum.FLOAT32: np.dtype("float32"),
+            TypeEnum.FLOAT64: np.dtype("float64"),
+        }
+        np_dtype = _enum_to_numpy.get(t._type_enum)
+        if np_dtype is not None:
+            return from_dtype(np_dtype)
+
+        # Handle complex types (stored with STORAGE enum but name like "complex64", "complex128")
+        if t._name in ("complex64", "complex128"):
+            return from_dtype(np.dtype(t._name))
+
+        raise ValueError(
+            f"Cannot convert TypeDescriptor {t} to Numba type. "
+            "For struct types, use gpu_struct() instead of custom_type()."
+        )
+
+    # Last resort - assume Numba can handle it
+    from numba.core.extending import as_numba_type
+
+    return as_numba_type(t)
+
+
 class _JitOp(_OpAdapter):
     """
     Internal wrapper for JIT-compiled callables using Numba.
@@ -97,16 +152,25 @@ class _JitOp(_OpAdapter):
         from . import _cccl_interop as cccl
         from .numba_utils import get_inferred_return_type, signature_from_annotations
 
+        # Convert types to Numba types (handles struct classes and TypeDescriptors)
+        numba_input_types = tuple(_to_numba_type(t) for t in input_types)
+        numba_output_type = (
+            _to_numba_type(output_type) if output_type is not None else None
+        )
+
         # Try to get signature from annotations first
         try:
             sig = signature_from_annotations(self._func)
         except ValueError:
             # Infer signature from input/output types
-            if output_type is None or (
-                hasattr(output_type, "is_internal") and not output_type.is_internal
+            if numba_output_type is None or (
+                hasattr(numba_output_type, "is_internal")
+                and not numba_output_type.is_internal
             ):
-                output_type = get_inferred_return_type(self._func, input_types)
-            sig = output_type(*input_types)
+                numba_output_type = get_inferred_return_type(
+                    self._func, numba_input_types
+                )
+            sig = numba_output_type(*numba_input_types)
 
         return cccl.to_stateless_cccl_op(self._func, sig)
 

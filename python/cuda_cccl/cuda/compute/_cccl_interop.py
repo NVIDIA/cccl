@@ -168,17 +168,32 @@ def to_stateless_cccl_op(op, sig: "Signature") -> Op:
 def get_value_type(d_in):
     """Get the value type for an input array, iterator, or struct.
 
-    For iterators (CompiledIterator or Numba-based), returns value_type.
-    For device arrays, returns a Numba type.
+    Returns:
+        - For iterators: their value_type (Numba type or _TypeDescriptor)
+        - For _Struct instances: the struct class itself
+        - For arrays with structured dtype: an anonymous gpu_struct class
+        - For arrays with scalar dtype: a _TypeDescriptor
     """
-    # Any iterator should have a value_type property
+    from .struct import _Struct, gpu_struct
+    from .types import from_numpy_dtype
+
+    # Iterators have a value_type property
     if is_iterator(d_in):
         return d_in.value_type
 
-    # Handle Numba-based arrays and structs
-    from ._numba.interop import get_value_type as _get_value_type
+    # Struct instances - return the class
+    if isinstance(d_in, _Struct):
+        return d_in.__class__
 
-    return _get_value_type(d_in)
+    # Arrays - check dtype
+    dtype = get_dtype(d_in)
+
+    # Structured dtype → create anonymous gpu_struct
+    if dtype.fields is not None:
+        return gpu_struct(dtype)
+
+    # Scalar dtype → return TypeDescriptor
+    return from_numpy_dtype(dtype)
 
 
 def set_cccl_iterator_state(cccl_it: Iterator, input_it):
