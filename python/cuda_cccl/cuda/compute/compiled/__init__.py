@@ -9,6 +9,7 @@ This package contains implementations for users who bring their own compiler
 (BYOC) by providing pre-compiled LTOIR rather than using Numba JIT compilation.
 """
 
+from .iterator import CompiledIterator
 from .op import CompiledOp
 
-__all__ = ["CompiledOp"]
+__all__ = ["CompiledIterator", "CompiledOp"]

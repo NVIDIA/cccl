@@ -7,10 +7,10 @@ from typing import Callable
 
 from .._caching import cache_with_key
 from .._cccl_interop import get_iterator_kind, is_iterator
+from .._iterators import DiscardIterator
 from .._utils import protocols
 from .._utils.temp_storage_buffer import TempStorageBuffer
 from ..iterator import IteratorProtocol
-from ..iterators._factories import DiscardIterator
 from ..op import OpAdapter, make_op_adapter
 from ..typing import DeviceArrayLike
 from ._three_way_partition import make_three_way_partition

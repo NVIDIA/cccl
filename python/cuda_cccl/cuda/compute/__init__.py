@@ -4,6 +4,17 @@
 
 from . import types
 from ._caching import clear_all_caches
+from ._iterators import (
+    CacheModifiedInputIterator,
+    ConstantIterator,
+    CountingIterator,
+    DiscardIterator,
+    PermutationIterator,
+    ReverseIterator,
+    TransformIterator,
+    TransformOutputIterator,
+    ZipIterator,
+)
 from .algorithms import (
     DoubleBuffer,
     SortOrder,
@@ -34,19 +45,8 @@ from .algorithms import (
     unary_transform,
     unique_by_key,
 )
+from .compiled import CompiledIterator
 from .determinism import Determinism
-from .iterators import (
-    CacheModifiedInputIterator,
-    ConstantIterator,
-    CountingIterator,
-    DiscardIterator,
-    PermutationIterator,
-    ReverseIterator,
-    TransformIterator,
-    TransformOutputIterator,
-    ZipIterator,
-)
-from .iterators._compiled_iterator import CompiledIterator
 from .op import CompiledOp, OpKind
 from .struct import gpu_struct
 
