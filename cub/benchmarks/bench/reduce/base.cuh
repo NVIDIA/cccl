@@ -54,7 +54,7 @@ void reduce(nvbench::state& state, nvbench::type_list<T, OffsetT>)
   state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch, [&](nvbench::launch& launch) {
     auto env = ::cuda::std::execution::env{
       ::cuda::stream_ref{launch.get_stream().get_stream()},
-      ::cuda::std::execution::prop{::cuda::mr::__get_memory_resource, mr}
+      ::cuda::std::execution::prop{::cuda::mr::get_memory_resource, mr}
 #  if !TUNE_BASE
       ,
       ::cuda::std::execution::prop{
@@ -63,7 +63,7 @@ void reduce(nvbench::state& state, nvbench::type_list<T, OffsetT>)
           ::cuda::std::execution::prop{::cub::detail::reduce::get_tuning_query_t, arch_policies{}}}}
 #  endif
     };
-    static_assert(::cuda::std::execution::__queryable_with<decltype(env), ::cuda::mr::__get_memory_resource_t>);
+    static_assert(::cuda::std::execution::__queryable_with<decltype(env), ::cuda::mr::get_memory_resource_t>);
     (void) cub::DeviceReduce::Reduce(d_in, d_out, elements, op_t{}, init_t{}, env);
   });
 #endif

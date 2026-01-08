@@ -429,6 +429,15 @@ struct __query_or_t
   }
 
   _CCCL_EXEC_CHECK_DISABLE
+  _CCCL_TEMPLATE(class _Env, class _Query, class _Default, class... _Args)
+  _CCCL_REQUIRES((!__queryable_with<_Env, _Query, _Args...>) _CCCL_AND (::cuda::std::is_invocable_v<_Query, _Env, _Args...>))
+  [[nodiscard]] _CCCL_API constexpr auto operator()(const _Env& __env, _Query&& __query, _Default&& __default, _Args&&... __args) const
+    noexcept(::cuda::std::is_nothrow_invocable_v<_Query, _Env, _Args...>) -> decltype(::cuda::std::invoke(static_cast<_Query&&>(__query), __env, static_cast<_Args&&>(__args)...))
+  {
+    return ::cuda::std::invoke(static_cast<_Query&&>(__query), __env, static_cast<_Args&&>(__args)...);
+  }
+
+  _CCCL_EXEC_CHECK_DISABLE
   template <class _Default, class... _Args>
   [[nodiscard]] _CCCL_API constexpr auto
   operator()(::cuda::std::__ignore_t, ::cuda::std::__ignore_t, _Default&& __default, _Args&&...) const

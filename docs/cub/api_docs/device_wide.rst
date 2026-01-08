@@ -64,7 +64,7 @@ Example (centralized control via a single environment argument):
    auto stream_env = cuda::std::execution::prop{cuda::get_stream_t{}, cuda::stream_ref{stream}};
 
    auto mr = /* CCCL-provided or user-defined device_memory_resource */;
-   auto mr_env = cuda::std::execution::prop{cuda::mr::__get_memory_resource_t{}, mr};
+   auto mr_env = cuda::std::execution::prop{cuda::mr::get_memory_resource_t{}, mr};
 
    auto det_env = cuda::execution::require(cuda::execution::determinism::gpu_to_gpu);
 

@@ -164,6 +164,24 @@ __host__ __device__ void test()
     assert(val.res_ == res);
   }
 
+  { // Can call get_memory_resource on a resource
+    const test_resource input_res{};
+    auto&& res = ::cuda::mr::get_memory_resource(input_res);
+    static_assert(cuda::std::is_same_v<decltype(res), const test_resource&>);
+    assert(res == res);
+  }
+  { // Can call get_memory_resource on a resource rvalue
+    auto&& res = ::cuda::mr::get_memory_resource(test_resource{});
+    static_assert(cuda::std::is_same_v<decltype(res), test_resource&&>);
+    assert(res == res);
+  }
+  {
+    const test_resource input_res{};
+    decltype(auto) res = ::cuda::std::execution::__query_or(input_res, ::cuda::mr::get_memory_resource, 0);
+    static_assert(cuda::std::is_same_v<decltype(res), const test_resource&>);
+    assert(res == input_res);
+  }
+
   { // Cannot call get_memory_resource on an env with a non-async resource
     struct with_get_resource_non_async
     {
@@ -194,6 +212,7 @@ __host__ __device__ void test()
       }
     };
     static_assert(!::cuda::std::is_invocable_v<::cuda::mr::get_memory_resource_t, const with_get_resource_non_async&>);
+    static_assert(!::cuda::std::is_invocable_v<::cuda::mr::get_memory_resource_t, const with_get_resource_non_async::resource&>);
   }
 }
 
