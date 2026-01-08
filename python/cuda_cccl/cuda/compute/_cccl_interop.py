@@ -81,20 +81,7 @@ def _device_array_to_cccl_iter(array: DeviceArrayLike) -> Iterator:
     if not is_contiguous(array):
         raise ValueError("Non-contiguous arrays are not supported.")
     dtype = get_dtype(array)
-
-    # Handle structured dtypes by creating a proper gpu_struct
-    if dtype.type == np.void:
-        # This path requires Numba for gpu_struct
-        from numba.core.extending import as_numba_type
-
-        from ._numba.interop import numba_type_to_info
-        from ._numba.struct import gpu_struct
-
-        numba_type = as_numba_type(gpu_struct(dtype))
-        info = numba_type_to_info(numba_type)
-    else:
-        info = _numpy_dtype_to_info(dtype)
-
+    info = _numpy_dtype_to_info(dtype)
     state_info = _numpy_dtype_to_info(np.dtype(np.intp))
     return Iterator(
         state_info.alignment,
