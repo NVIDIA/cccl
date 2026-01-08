@@ -4,7 +4,7 @@
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -349,6 +349,32 @@ _CCCL_DIAG_POP
 #elif defined(_CCCL_POP_MACRO_clang)
 #  pragma pop_macro("clang")
 #  undef _CCCL_POP_MACRO_clang
+#endif
+
+// sys/sysmacros.h on linux
+
+#if defined(major)
+#  error \
+    "cccl internal error: macro `major` was redefined between <cuda/std/__cccl/prologue.h> and <cuda/std/__cccl/epilogue.h>"
+#elif defined(_CCCL_POP_MACRO_major)
+#  pragma pop_macro("major")
+#  undef _CCCL_POP_MACRO_major
+#endif
+
+#if defined(minor)
+#  error \
+    "cccl internal error: macro `minor` was redefined between <cuda/std/__cccl/prologue.h> and <cuda/std/__cccl/epilogue.h>"
+#elif defined(_CCCL_POP_MACRO_minor)
+#  pragma pop_macro("minor")
+#  undef _CCCL_POP_MACRO_minor
+#endif
+
+#if defined(makedev)
+#  error \
+    "cccl internal error: macro `makedev` was redefined between <cuda/std/__cccl/prologue.h> and <cuda/std/__cccl/epilogue.h>"
+#elif defined(_CCCL_POP_MACRO_makedev)
+#  pragma pop_macro("makedev")
+#  undef _CCCL_POP_MACRO_makedev
 #endif
 
 // NO include guards here (this file is included multiple times)
