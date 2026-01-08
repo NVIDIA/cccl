@@ -520,9 +520,8 @@ public:
   //! @}
 
   //! @rst
-  //! Returns a \c const reference to the :ref:`any_resource
-  //! <libcudacxx-memory-resource-any-resource>` that holds the memory resource used
-  //! to allocate the buffer
+  //! Returns a \c const reference to the :ref:`any_resource <libcudacxx-memory-resource-any-resource>` that holds the
+  //! memory resource used to allocate the buffer
   //! @endrst
   [[nodiscard]] _CCCL_HIDE_FROM_ABI const __resource_t& memory_resource() const noexcept
   {
