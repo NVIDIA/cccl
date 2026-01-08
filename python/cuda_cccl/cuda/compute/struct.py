@@ -19,7 +19,7 @@ Example:
     >>> s = S(x=1, y=2)
 """
 
-from typing import Any, Union
+from typing import Any, Union, get_type_hints
 
 import numpy as np
 
@@ -89,12 +89,11 @@ def _normalize_field_spec(
         }
 
     # Handle annotated class (decorator usage)
-    if isinstance(field_dict, type):
-        if hasattr(field_dict, "__annotations__"):
-            name = field_dict.__name__
-            field_dict = field_dict.__annotations__
-        else:
-            raise ValueError("Expected an annotated class")
+    if isinstance(field_dict, type) and hasattr(field_dict, "__annotations__"):
+        name = field_dict.__name__
+        field_dict = get_type_hints(field_dict)
+    else:
+        raise ValueError("Expected an annotated class or a numpy dtype")
 
     return name, field_dict
 
