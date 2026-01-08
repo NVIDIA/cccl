@@ -4,11 +4,12 @@
 Host Stub Visibility Issue
 ---------------------------
 
-Consider the following simple TU:
+Consider the following simple translation unit (TU):
 
 .. code-block:: cpp
 
   #include <cstdio>
+  #include <cuda/memory>
 
   template <class T>
   __global__ void kernel(T *val) {
@@ -16,11 +17,11 @@ Consider the following simple TU:
       *val = 42;
   }
 
-  __shared__ int val;
+  __device__ int val;
 
   int main() {
 
-     kernel<<<1, 1>>>(cuda::std::addressof(val));
+     kernel<<<1, 1>>>(cuda::get_device_address(val));
   }
 
 The CUDA compiler frontend will turn this into:

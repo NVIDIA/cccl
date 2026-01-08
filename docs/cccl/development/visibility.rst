@@ -1,4 +1,4 @@
-.. _cccl-development-visibility:
+. _cccl-development-visibility:
 
 Symbol Visibility
 ==================
@@ -20,8 +20,8 @@ shared libraries.
 1. Every kernel should be annotated as ``hidden`` through ``CCCL_DETAIL_KERNEL_ATTRIBUTES``
 2. Every function or type that eventually calls a kernel in a subsequent function call or member function must be put in
    a namespace that disambiguates the CUDA architectures the library was compiled with.
-and the other kernel launch might silently fail.
-   disambiguated free functions
+3. It is important that an API accepting kernel pointers (e.g. ``triple_chevron``) always resides in the same
+   library as the code taking this pointers.
 
 In the following we will give a more detailed overview over the different problems and why we settled on above rules.
 

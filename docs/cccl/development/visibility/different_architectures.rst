@@ -18,9 +18,9 @@ Consider the following simple library:
       *val = sum_archs<__CUDA_ARCH_LIST__>();
     }
 
-    __attribute__((visibility("hidden"))) __forceinline__ int use_kernel() {
+    __attribute__((visibility("hidden"))) inline int use_kernel() {
       int *d_val{};
-      cudaMalloc(&d_val, sizeof(size_t));
+      cudaMalloc(&d_val, sizeof(d_val));
       kernel<<<1, 1>>>(d_val);
       int ret;
       if (cudaMemcpy(&ret, d_val, sizeof(size_t), cudaMemcpyDeviceToHost) !=
@@ -30,7 +30,8 @@ Consider the following simple library:
       return ret;
     }
 
-    template <class T = int> struct some_class_with_kernel {
+    template <class T = int>
+    struct some_class_with_kernel {
       T val_;
 
       some_class_with_kernel();

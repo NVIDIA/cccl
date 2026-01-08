@@ -4,7 +4,7 @@
 Device Kernel Visibility Issue
 -------------------------------
 
-Consider the following simple TU:
+Consider the following simple translation unit (TU):
 
 .. code-block:: cpp
 
