@@ -124,19 +124,14 @@ def numba_iterator_to_cccl_iter(it: "IteratorBase", io_kind: _IteratorIO) -> Ite
 
 
 def to_stateless_cccl_op(op, sig: "Signature") -> Op:
-    """Compile a Python callable to a CCCL Op using Numba."""
-    from .odr_helpers import create_op_void_ptr_wrapper
+    """Compile a Python callable to a CCCL Op using Numba.
 
-    wrapped_op, wrapper_sig = create_op_void_ptr_wrapper(op, sig)
+    Note: This function is now implemented in _numba/op.py. This is a
+    re-export for backwards compatibility.
+    """
+    from .op import to_stateless_cccl_op as _impl
 
-    ltoir, _ = cuda.compile(wrapped_op, sig=wrapper_sig, output="ltoir")
-    return Op(
-        operator_type=OpKind.STATELESS,
-        name=wrapped_op.__name__,
-        ltoir=ltoir,
-        state_alignment=1,
-        state=None,
-    )
+    return _impl(op, sig)
 
 
 def make_host_cfunc(state_ptr_ty, fn):

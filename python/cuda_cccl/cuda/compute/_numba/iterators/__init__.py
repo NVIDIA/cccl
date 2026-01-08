@@ -5,23 +5,26 @@
 """
 Numba-based iterator implementations for cuda.compute.
 
-This package contains all Numba-dependent iterator code.
+This package contains all Numba-dependent iterator code, organized as:
+- base.py: IteratorBase and IteratorKind base classes
+- simple.py: Simple iterators (RawPointer, Constant, Counting, Discard, Reverse)
+- transform.py: TransformIterator
+- permutation.py: PermutationIterator
+- zip.py: ZipIterator
 """
 
-from .base import (
+from .base import IteratorBase, IteratorKind, cached_compile
+from .permutation import make_permutation_iterator
+from .simple import (
     CacheModifiedPointer,
     ConstantIterator,
     CountingIterator,
     DiscardIterator,
-    IteratorBase,
-    IteratorKind,
     RawPointer,
-    cached_compile,
     make_reverse_iterator,
-    make_transform_iterator,
     pointer,
 )
-from .permutation import make_permutation_iterator
+from .transform import make_transform_iterator
 from .zip import make_zip_iterator
 
 __all__ = [
@@ -29,7 +32,7 @@ __all__ = [
     "IteratorBase",
     "IteratorKind",
     "cached_compile",
-    # Iterator implementations
+    # Simple iterators
     "RawPointer",
     "pointer",
     "CacheModifiedPointer",

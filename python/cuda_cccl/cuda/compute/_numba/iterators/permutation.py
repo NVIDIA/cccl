@@ -17,11 +17,8 @@ from numba.core.extending import as_numba_type, intrinsic  # noqa: F401
 from ..._caching import cache_with_key
 from ..._utils.protocols import get_dtype
 from ..struct import make_struct_type
-from .base import (
-    IteratorBase,
-    IteratorKind,
-    pointer,
-)
+from .base import IteratorBase, IteratorKind
+from .simple import pointer
 
 
 class PermutationIteratorKind(IteratorKind):

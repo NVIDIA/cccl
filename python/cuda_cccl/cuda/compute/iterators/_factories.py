@@ -38,7 +38,7 @@ def CacheModifiedInputIterator(device_array, modifier):
     """
     import numba
 
-    from .._numba.iterators.base import CacheModifiedPointer
+    from .._numba.iterators import CacheModifiedPointer
 
     if modifier != "stream":
         raise NotImplementedError("Only stream modifier is supported")
@@ -70,7 +70,7 @@ def ConstantIterator(value):
     Returns:
         A ``ConstantIterator`` object initialized to ``value``
     """
-    from .._numba.iterators.base import ConstantIterator as _ConstantIterator
+    from .._numba.iterators import ConstantIterator as _ConstantIterator
 
     return _ConstantIterator(value)
 
@@ -97,7 +97,7 @@ def CountingIterator(offset):
     Returns:
         A ``CountingIterator`` object initialized to ``offset``
     """
-    from .._numba.iterators.base import CountingIterator as _CountingIterator
+    from .._numba.iterators import CountingIterator as _CountingIterator
 
     return _CountingIterator(offset)
 
@@ -124,7 +124,7 @@ def DiscardIterator(reference_iterator=None):
     Returns:
         A ``DiscardIterator`` object
     """
-    from .._numba.iterators.base import DiscardIterator as _DiscardIterator
+    from .._numba.iterators import DiscardIterator as _DiscardIterator
 
     return _DiscardIterator(reference_iterator)
 
@@ -156,7 +156,7 @@ def ReverseIterator(sequence):
     Returns:
         A ``ReverseIterator`` object
     """
-    from .._numba.iterators.base import make_reverse_iterator
+    from .._numba.iterators import make_reverse_iterator
 
     return make_reverse_iterator(sequence)
 
@@ -182,7 +182,7 @@ def TransformIterator(it, op):
     Returns:
         A ``TransformIterator`` object to transform the items in ``it`` using ``op``
     """
-    from .._numba.iterators.base import make_transform_iterator
+    from .._numba.iterators import make_transform_iterator
 
     return make_transform_iterator(it, op, "input")
 
@@ -209,7 +209,7 @@ def TransformOutputIterator(it, op):
     Returns:
         A ``TransformOutputIterator`` object that applies ``op`` to transform values before writing them to ``it``
     """
-    from .._numba.iterators.base import make_transform_iterator
+    from .._numba.iterators import make_transform_iterator
 
     return make_transform_iterator(it, op, "output")
 

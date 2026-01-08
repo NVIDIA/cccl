@@ -12,7 +12,7 @@ Note: These iterators require Numba to be installed.
 """
 
 # Re-export all iterator classes from _numba for backwards compatibility
-from .._numba.iterators.base import (
+from .._numba.iterators import (
     CacheModifiedPointer,
     ConstantIterator,
     CountingIterator,

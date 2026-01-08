@@ -160,7 +160,7 @@ def to_cccl_value(array_or_struct: np.ndarray | GpuStruct) -> Value:
 
 def to_stateless_cccl_op(op, sig: "Signature") -> Op:
     """Compile a Python callable to a CCCL Op using Numba."""
-    from ._numba.interop import to_stateless_cccl_op as _to_stateless_cccl_op
+    from ._numba.op import to_stateless_cccl_op as _to_stateless_cccl_op
 
     return _to_stateless_cccl_op(op, sig)
 
