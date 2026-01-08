@@ -145,7 +145,7 @@ trivial_copy_from_device(Type* dst, Type const* src, size_t count, cudaStream_t 
     return status;
   }
 
-  status = ::cudaMemcpyAsync(dst, src, sizeof(Type) * count, cudaMemcpyDeviceToHost, stream);
+  status = ::cudaMemcpyAsync(dst, src, sizeof(Type) * count, cudaMemcpyDefault, stream);
   cudaStreamSynchronize(stream);
   return status;
 }
@@ -160,7 +160,7 @@ trivial_copy_to_device(Type* dst, Type const* src, size_t count, cudaStream_t st
     return status;
   }
 
-  status = ::cudaMemcpyAsync(dst, src, sizeof(Type) * count, cudaMemcpyHostToDevice, stream);
+  status = ::cudaMemcpyAsync(dst, src, sizeof(Type) * count, cudaMemcpyDefault, stream);
   cudaStreamSynchronize(stream);
   return status;
 }
