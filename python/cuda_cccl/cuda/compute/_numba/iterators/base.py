@@ -230,11 +230,15 @@ class IteratorBase:
         )
 
         if self.host_advance is not None:
-            host_advance_fn = make_host_cfunc(self.state_ptr_type, self.host_advance)
+            try:
+                host_advance_fn = make_host_cfunc(
+                    self.state_ptr_type, self.host_advance
+                )
+            except Exception:
+                # TODO: figure out what to do here.
+                host_advance_fn = None
         else:
-            raise ValueError(
-                "Host advance function is not defined for iterator type {type(self)}"
-            )
+            host_advance_fn = None
 
         return Iterator(
             alignment,

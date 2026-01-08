@@ -71,7 +71,7 @@ class _Struct:
 
 def _normalize_field_spec(
     field_dict: Union[dict, np.dtype, type],
-) -> tuple[str, dict[str, Any]]:
+) -> tuple[str, dict[Any, Any]]:
     """
     Normalize input to gpu_struct into a name and field spec dictionary.
 
@@ -93,6 +93,7 @@ def _normalize_field_spec(
         name = field_dict.__name__
         field_dict = get_type_hints(field_dict)
 
+    assert isinstance(field_dict, dict)
     return name, field_dict
 
 

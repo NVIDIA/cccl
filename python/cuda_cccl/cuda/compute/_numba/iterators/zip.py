@@ -247,7 +247,11 @@ def make_zip_iterator(*iterators):
 
         @property
         def host_advance(self):
-            return advance_func
+            # TODO: host_advance is disabled for ZipIterator because the
+            # dynamically-generated get_field_ptr_N intrinsics (created via
+            # exec()) don't have their lowering properly registered for
+            # Numba's compile_subroutine path used by make_host_cfunc.
+            return None
 
         @property
         def advance(self):
