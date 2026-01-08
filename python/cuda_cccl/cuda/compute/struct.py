@@ -244,7 +244,7 @@ def gpu_struct(
         self._data = np.asarray(_fields_to_numpy(self._fields, self.__class__._dtype))
         self.__array_interface__ = self._data.__array_interface__
 
-    StructClass.__init__ = __init__
+    StructClass.__init__ = __init__  # type: ignore
 
     # Add dtype property
     StructClass.dtype = dtype

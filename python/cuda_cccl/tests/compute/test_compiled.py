@@ -2,7 +2,14 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Tests for CompiledOp and CompiledIterator (BYOC - Bring Your Own Compiler)."""
+"""Tests for CompiledOp and CompiledIterator (BYOC - Bring Your Own Compiler).
+
+These tests verify that the BYOC path works without requiring Numba.
+All tests in this module are marked with 'no_numba' and use the numba_absent
+fixture to ensure no accidental Numba imports occur during execution.
+"""
+
+import builtins
 
 import cupy as cp
 import numpy as np
@@ -17,6 +24,22 @@ from cuda.compute import (
     types,
 )
 from cuda.core import Device, Program, ProgramOptions
+
+# Mark all tests in this module as no_numba
+pytestmark = pytest.mark.no_numba
+
+
+@pytest.fixture(autouse=True)
+def numba_absent(monkeypatch):
+    """Fixture that blocks numba imports to verify BYOC path works without Numba."""
+    real_import = builtins.__import__
+
+    def guarded_import(name, *args, **kwargs):
+        if name == "numba" or name.startswith("numba."):
+            raise ModuleNotFoundError(f"No module named '{name}'")
+        return real_import(name, *args, **kwargs)
+
+    monkeypatch.setattr(builtins, "__import__", guarded_import)
 
 
 def get_arch():
@@ -71,6 +94,13 @@ extern "C" __device__ void dereference(void* state_ptr, void* result_ptr) {
     *result = *state;
 }
 """
+
+
+def test_import_numba_should_fail():
+    # cuda.compute should be usable with compiled ops/iterators
+    # without numba present.
+    with pytest.raises(ModuleNotFoundError):
+        pass
 
 
 def test_compiled_op_reduce_int32():

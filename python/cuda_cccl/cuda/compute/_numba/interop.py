@@ -32,7 +32,7 @@ from ..op import OpKind
 if TYPE_CHECKING:
     from numba.core.typing import Signature
 
-    from ..iterators._iterators import IteratorBase
+    from .iterators.base import IteratorBase
 
 # Mapping from Numba types to TypeEnum values
 _NUMBA_TYPE_TO_ENUM = {

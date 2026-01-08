@@ -9,8 +9,8 @@ from .._caching import cache_with_key
 from .._cccl_interop import get_iterator_kind, is_iterator
 from .._utils import protocols
 from .._utils.temp_storage_buffer import TempStorageBuffer
+from ..iterator import IteratorProtocol
 from ..iterators._factories import DiscardIterator
-from ..iterators._iterators import IteratorBase
 from ..op import OpAdapter, make_op_adapter
 from ..typing import DeviceArrayLike
 from ._three_way_partition import make_three_way_partition
@@ -38,8 +38,8 @@ class _Select:
 
     def __init__(
         self,
-        d_in: DeviceArrayLike | IteratorBase,
-        d_out: DeviceArrayLike | IteratorBase,
+        d_in: DeviceArrayLike | IteratorProtocol,
+        d_out: DeviceArrayLike | IteratorProtocol,
         d_num_selected_out: DeviceArrayLike,
         cond: OpAdapter,
     ):
@@ -82,8 +82,8 @@ class _Select:
 
 @cache_with_key(_make_cache_key)
 def _make_select_cached(
-    d_in: DeviceArrayLike | IteratorBase,
-    d_out: DeviceArrayLike | IteratorBase,
+    d_in: DeviceArrayLike | IteratorProtocol,
+    d_out: DeviceArrayLike | IteratorProtocol,
     d_num_selected_out: DeviceArrayLike,
     cond: OpAdapter,
 ):
@@ -95,8 +95,8 @@ def _make_select_cached(
 
 
 def make_select(
-    d_in: DeviceArrayLike | IteratorBase,
-    d_out: DeviceArrayLike | IteratorBase,
+    d_in: DeviceArrayLike | IteratorProtocol,
+    d_out: DeviceArrayLike | IteratorProtocol,
     d_num_selected_out: DeviceArrayLike,
     cond: Callable,
 ):
@@ -129,8 +129,8 @@ def make_select(
 
 
 def select(
-    d_in: DeviceArrayLike | IteratorBase,
-    d_out: DeviceArrayLike | IteratorBase,
+    d_in: DeviceArrayLike | IteratorProtocol,
+    d_out: DeviceArrayLike | IteratorProtocol,
     d_num_selected_out: DeviceArrayLike,
     cond: Callable,
     num_items: int,

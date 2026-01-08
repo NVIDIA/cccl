@@ -248,14 +248,24 @@ def _check_compile_result(cubin: bytes):
 _check_sass: bool = False
 
 
+def get_current_device_cc() -> tuple[int, int]:
+    """Get the compute capability of the current CUDA device.
+
+    Uses cuda.core to avoid Numba dependency.
+    """
+    from cuda.core import Device
+
+    device = Device()
+    arch = device.compute_capability
+    return arch
+
+
 def call_build(build_impl_fn: Callable, *args, **kwargs):
     """Calls given build_impl_fn callable while providing compute capability and paths
 
     Returns result of the call.
     """
     global _check_sass
-
-    from ._numba.interop import get_current_device_cc
 
     cc_major, cc_minor = get_current_device_cc()
     cub_path, thrust_path, libcudacxx_path, cuda_include_path = get_includes()

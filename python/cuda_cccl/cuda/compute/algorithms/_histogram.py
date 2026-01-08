@@ -19,7 +19,7 @@ from .._cccl_interop import (
 )
 from .._utils.protocols import get_data_pointer, get_dtype, validate_and_get_stream
 from .._utils.temp_storage_buffer import TempStorageBuffer
-from ..iterators._iterators import IteratorBase
+from ..iterator import IteratorProtocol
 from ..typing import DeviceArrayLike
 
 
@@ -63,7 +63,7 @@ class _Histogram:
 
     def __init__(
         self,
-        d_samples: DeviceArrayLike | IteratorBase,
+        d_samples: DeviceArrayLike | IteratorProtocol,
         d_histogram: DeviceArrayLike,
         h_num_output_levels: np.ndarray,
         h_lower_level: np.ndarray,
@@ -99,7 +99,7 @@ class _Histogram:
     def __call__(
         self,
         temp_storage,
-        d_samples: DeviceArrayLike | IteratorBase,
+        d_samples: DeviceArrayLike | IteratorProtocol,
         d_histogram: DeviceArrayLike,
         h_num_output_levels: np.ndarray,
         h_lower_level: np.ndarray,
@@ -142,7 +142,7 @@ class _Histogram:
 
 @cache_with_key(make_cache_key)
 def make_histogram_even(
-    d_samples: DeviceArrayLike | IteratorBase,
+    d_samples: DeviceArrayLike | IteratorProtocol,
     d_histogram: DeviceArrayLike,
     h_num_output_levels: np.ndarray,
     h_lower_level: np.ndarray,
@@ -180,7 +180,7 @@ def make_histogram_even(
 
 
 def histogram_even(
-    d_samples: DeviceArrayLike | IteratorBase,
+    d_samples: DeviceArrayLike | IteratorProtocol,
     d_histogram: DeviceArrayLike,
     num_output_levels: int,
     lower_level: Union[np.floating, np.integer],
