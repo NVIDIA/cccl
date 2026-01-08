@@ -65,11 +65,11 @@ struct DeviceFixedSizeSegmentedReduceKernelSource
       DeviceFixedSizeSegmentedReduceKernel<MaxPolicyT, InputIteratorT, OutputIteratorT, OffsetT, ReductionOpT, InitT, AccumT>)
 
   CUB_DEFINE_KERNEL_GETTER(
-    FixedSizeSegmentedReduceKernelVLL,
-    DeviceFixedSizeSegmentedReduceVLLKernel<MaxPolicyT, InputIteratorT, AccumT*, OffsetT, ReductionOpT, InitT, AccumT>)
+    FixedSizeSegmentedReduceKernelPartial,
+    DeviceFixedSizeSegmentedReducePartialKernel<MaxPolicyT, InputIteratorT, AccumT*, OffsetT, ReductionOpT, InitT, AccumT>)
 
   CUB_DEFINE_KERNEL_GETTER(
-    FixedSizeSegmentedReduceKernelVLLFinal,
+    FixedSizeSegmentedReduceKernelFinal,
     DeviceFixedSizeSegmentedReduceKernel<MaxPolicyT, AccumT*, OutputIteratorT, OffsetT, ReductionOpT, InitT, AccumT>)
 
   CUB_RUNTIME_FUNCTION static constexpr ::cuda::std::size_t AccumSize()
@@ -135,6 +135,9 @@ struct DispatchFixedSizeSegmentedReduce
 
   KernelLauncherFactory launcher_factory;
 
+  // Segment chunk size for two-phase reduction for large segments
+  static constexpr int seg_chunk_size = 1u << 12;
+
   //---------------------------------------------------------------------------
   // Constructor
   //---------------------------------------------------------------------------
@@ -188,7 +191,6 @@ struct DispatchFixedSizeSegmentedReduce
   CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE cudaError_t
   InvokePasses(DeviceFixedSizeSegmentedReduceKernelT fixed_size_segmented_reduce_kernel)
   {
-    // printf("using non-vll path\n");
     constexpr auto small_items_per_tile  = ActivePolicyT::SmallReducePolicy::ITEMS_PER_TILE;
     constexpr auto medium_items_per_tile = ActivePolicyT::MediumReducePolicy::ITEMS_PER_TILE;
 
@@ -259,23 +261,19 @@ struct DispatchFixedSizeSegmentedReduce
     return error;
   }
 
-  static constexpr int vll_segment_size = 1024;
-
   template <typename ActivePolicyT,
-            typename DeviceFixedSizeSegmentedReduceKernelVLLT,
-            typename DeviceFixedSizeSegmentedReduceKernelVLLFinalT>
+            typename DeviceFixedSizeSegmentedReduceKernelPartialT,
+            typename DeviceFixedSizeSegmentedReduceKernelFinalT>
   CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE cudaError_t
-  InvokePassesVLL(DeviceFixedSizeSegmentedReduceKernelVLLT fixed_size_segmented_reduce_kernel_vll,
-                  DeviceFixedSizeSegmentedReduceKernelVLLFinalT fixed_size_segmented_reduce_kernel_vll_final)
+  InvokeTwoPhase(DeviceFixedSizeSegmentedReduceKernelPartialT fixed_size_segmented_reduce_kernel_partial,
+                 DeviceFixedSizeSegmentedReduceKernelFinalT fixed_size_segmented_reduce_kernel_final)
   {
-    // printf("Using VLL segmented reduce dispatch path\n");
-
     constexpr auto small_items_per_tile  = ActivePolicyT::SmallReducePolicy::ITEMS_PER_TILE;
     constexpr auto medium_items_per_tile = ActivePolicyT::MediumReducePolicy::ITEMS_PER_TILE;
 
     static_assert((small_items_per_tile < medium_items_per_tile),
                   "small items per tile must be less than medium items per tile");
-    int blocks_per_segment = ::cuda::ceil_div(segment_size, vll_segment_size);
+    int blocks_per_segment = ::cuda::ceil_div(segment_size, seg_chunk_size);
 
     // Temporary storage allocation requirements
     void* allocations[1]       = {};
@@ -303,27 +301,19 @@ struct DispatchFixedSizeSegmentedReduce
 
     const auto num_current_blocks = blocks_per_segment * num_segments;
 
-    // printf("  launching fixed_size_segmented_reduce_kernel_vll %d blocks of %d threads for %lld segments of size %d "
-    //        "(%d blocks per segment)\n",
-    //        static_cast<int>(num_current_blocks),
-    //        ActivePolicyT::ReducePolicy::BLOCK_THREADS,
-    //        static_cast<long long>(num_segments),
-    //        static_cast<int>(segment_size),
-    //        blocks_per_segment);
-
+    constexpr int local_seg_chunk_size = seg_chunk_size;
     launcher_factory(
       static_cast<::cuda::std::int32_t>(num_current_blocks), ActivePolicyT::ReducePolicy::BLOCK_THREADS, 0, stream)
-      .doit(fixed_size_segmented_reduce_kernel_vll,
+      .doit(fixed_size_segmented_reduce_kernel_partial,
             d_in,
             d_block_reductions,
             segment_size,
-            vll_segment_size,
+            local_seg_chunk_size,
             blocks_per_segment,
-            num_current_blocks, // should be vll segments ?
+            num_current_blocks,
             reduction_op,
             init);
 
-    // printf("  fixed_size_segmented_reduce_kernel_vll launched\n");
     error = CubDebug(cudaPeekAtLastError());
     if (cudaSuccess != error)
     {
@@ -336,8 +326,6 @@ struct DispatchFixedSizeSegmentedReduce
     {
       return error;
     }
-
-    // printf(" no error after first kernel, launching final kernel\n");
 
     int final_segment_size       = blocks_per_segment;
     int final_segments_per_block = 1;
@@ -351,25 +339,11 @@ struct DispatchFixedSizeSegmentedReduce
       final_segments_per_block = ActivePolicyT::MediumReducePolicy::SEGMENTS_PER_BLOCK;
     }
 
-    // printf("small_items_per_tile=%d, medium_items_per_tile=%d\n",
-    //        static_cast<int>(small_items_per_tile),
-    //        static_cast<int>(medium_items_per_tile));
-    // printf("final_segment_size=%d, final_segments_per_block=%d\n",
-    //        static_cast<int>(final_segment_size),
-    //        static_cast<int>(final_segments_per_block));
-
     const auto final_num_current_blocks = ::cuda::ceil_div(num_segments, final_segments_per_block);
-
-    // printf("  launching fixed_size_segmented_reduce_kernel_vll_final %d blocks of %d threads for %lld segments of size "
-    //        "%d\n",
-    //        static_cast<int>(final_num_current_blocks),
-    //        ActivePolicyT::ReducePolicy::BLOCK_THREADS,
-    //        static_cast<long long>(num_segments),
-    //        static_cast<int>(final_segment_size));
 
     launcher_factory(
       static_cast<::cuda::std::int32_t>(final_num_current_blocks), ActivePolicyT::ReducePolicy::BLOCK_THREADS, 0, stream)
-      .doit(fixed_size_segmented_reduce_kernel_vll_final,
+      .doit(fixed_size_segmented_reduce_kernel_final,
             d_block_reductions,
             d_out,
             final_segment_size,
@@ -377,7 +351,6 @@ struct DispatchFixedSizeSegmentedReduce
             reduction_op,
             init);
 
-    // printf("  fixed_size_segmented_reduce_kernel_vll_final launched\n");
     error = CubDebug(cudaPeekAtLastError());
     if (cudaSuccess != error)
     {
@@ -389,19 +362,22 @@ struct DispatchFixedSizeSegmentedReduce
     {
       return error;
     }
-    // printf(" no error after final kernel\n");
+
     return error;
   }
   /// Invocation
   template <typename ActivePolicyT>
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t Invoke()
   {
-    if (segment_size < vll_segment_size)
+    // if single chunk, use single-phase reduction
+    if (segment_size < seg_chunk_size)
     {
       return InvokePasses<ActivePolicyT>(kernel_source.FixedSizeSegmentedReduceKernel());
     }
-    return InvokePassesVLL<ActivePolicyT>(
-      kernel_source.FixedSizeSegmentedReduceKernelVLL(), kernel_source.FixedSizeSegmentedReduceKernelVLLFinal());
+    // if multiple chunks, use two-phase reduction by reducing large segments in chunks, by assigning each chunk to a
+    // block
+    return InvokeTwoPhase<ActivePolicyT>(
+      kernel_source.FixedSizeSegmentedReduceKernelPartial(), kernel_source.FixedSizeSegmentedReduceKernelFinal());
   }
 
   //---------------------------------------------------------------------------
