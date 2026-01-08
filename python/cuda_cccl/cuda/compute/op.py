@@ -2,11 +2,26 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-from typing import Callable, Hashable
+from typing import Callable, Hashable, Union
 
 from ._bindings import Op, OpKind, TypeEnum
 from ._caching import CachableFunction
+from .struct import _Struct
 from .types import _TypeDescriptor
+
+# Type alias for arguments that can be either a TypeDescriptor or a gpu_struct class
+TypeLike = Union[_TypeDescriptor, type]
+
+
+def _to_type_descriptor(t: TypeLike) -> _TypeDescriptor:
+    """Convert a TypeLike to a TypeDescriptor."""
+    if isinstance(t, _TypeDescriptor):
+        return t
+    if isinstance(t, type) and issubclass(t, _Struct):
+        return t._get_type_descriptor()
+    raise TypeError(
+        f"Expected a TypeDescriptor or gpu_struct class, got {type(t).__name__}"
+    )
 
 
 def _is_well_known_op(op: OpKind) -> bool:
@@ -213,8 +228,8 @@ class _CompiledOp(_OpAdapter):
         self,
         ltoir: bytes,
         name: str,
-        arg_types: tuple[_TypeDescriptor, ...],
-        return_type: _TypeDescriptor,
+        arg_types: tuple[TypeLike, ...],
+        return_type: TypeLike,
     ):
         """
         Create a pre-compiled operator from LTOIR bytecode.
@@ -222,8 +237,8 @@ class _CompiledOp(_OpAdapter):
         Args:
             ltoir: LTOIR bytecode compiled from C++ source
             name: The symbol name of the device function (must match extern "C" name)
-            arg_types: Tuple of type descriptors for the input arguments
-            return_type: Type descriptor for the return value
+            arg_types: Tuple of type descriptors or gpu_struct classes for input arguments
+            return_type: Type descriptor or gpu_struct class for the return value
         """
         if not isinstance(ltoir, bytes):
             raise TypeError(f"ltoir must be bytes, got {type(ltoir).__name__}")
@@ -237,22 +252,31 @@ class _CompiledOp(_OpAdapter):
             raise TypeError(
                 f"arg_types must be a tuple, got {type(arg_types).__name__}"
             )
+
+        # Convert all arg_types to TypeDescriptors
+        converted_arg_types = []
         for i, arg_type in enumerate(arg_types):
-            if not isinstance(arg_type, _TypeDescriptor):
+            try:
+                converted_arg_types.append(_to_type_descriptor(arg_type))
+            except TypeError:
                 raise TypeError(
-                    f"arg_types[{i}] must be a TypeDescriptor (e.g., types.int32), "
-                    f"got {type(arg_type).__name__}"
+                    f"arg_types[{i}] must be a TypeDescriptor (e.g., types.int32) "
+                    f"or a gpu_struct class, got {type(arg_type).__name__}"
                 )
-        if not isinstance(return_type, _TypeDescriptor):
+
+        # Convert return_type to TypeDescriptor
+        try:
+            converted_return_type = _to_type_descriptor(return_type)
+        except TypeError:
             raise TypeError(
-                f"return_type must be a TypeDescriptor (e.g., types.int32), "
-                f"got {type(return_type).__name__}"
+                f"return_type must be a TypeDescriptor (e.g., types.int32) "
+                f"or a gpu_struct class, got {type(return_type).__name__}"
             )
 
         self._ltoir = ltoir
         self._name = name
-        self._arg_types = arg_types
-        self._return_type = return_type
+        self._arg_types = tuple(converted_arg_types)
+        self._return_type = converted_return_type
 
     def get_cache_key(self) -> Hashable:
         # Use the LTOIR bytes hash and name as cache key

@@ -8,7 +8,14 @@ import cupy as cp
 import numpy as np
 import pytest
 
-from cuda.compute import CompiledIterator, CompiledOp, OpKind, reduce_into, types
+from cuda.compute import (
+    CompiledIterator,
+    CompiledOp,
+    OpKind,
+    gpu_struct,
+    reduce_into,
+    types,
+)
 from cuda.core import Device, Program, ProgramOptions
 
 
@@ -277,3 +284,78 @@ def test_compiled_iterator_validation_errors():
             value_type=types.int64,
             advance=("advance", advance_ltoir),
         )
+
+
+# C++ source for struct operations
+# Must match the Python gpu_struct layout exactly
+STRUCT_ADD_SOURCE = """
+struct Point {
+    int x;
+    int y;
+};
+
+extern "C" __device__ void point_add(void* a_ptr, void* b_ptr, void* result_ptr) {
+    const Point& a = *static_cast<const Point*>(a_ptr);
+    const Point& b = *static_cast<const Point*>(b_ptr);
+    Point& result = *static_cast<Point*>(result_ptr);
+    result.x = a.x + b.x;
+    result.y = a.y + b.y;
+}
+"""
+
+
+def test_compiled_op_with_gpu_struct():
+    """Test CompiledOp with gpu_struct types for reduce_into."""
+    arch = get_arch()
+    add_ltoir = compile_to_ltoir(STRUCT_ADD_SOURCE, arch)
+
+    # Define a gpu_struct type
+    Point = gpu_struct({"x": np.int32, "y": np.int32}, name="Point")
+
+    # Create CompiledOp using the struct type directly
+    point_add_op = CompiledOp(
+        ltoir=add_ltoir,
+        name="point_add",
+        arg_types=(Point, Point),
+        return_type=Point,
+    )
+
+    # Create test data - use empty() + set() for structured dtypes with cupy
+    h_points = np.array([(1, 2), (3, 4), (5, 6), (7, 8)], dtype=Point._dtype)
+    d_points = cp.empty(len(h_points), dtype=Point._dtype)
+    d_points.set(h_points)
+
+    d_out = cp.empty(1, dtype=Point._dtype)
+    h_init = np.zeros(1, dtype=Point._dtype)
+
+    reduce_into(d_points, d_out, point_add_op, len(h_points), h_init)
+
+    result = d_out.get()[0]
+    expected_x = 1 + 3 + 5 + 7  # 16
+    expected_y = 2 + 4 + 6 + 8  # 20
+    assert result["x"] == expected_x
+    assert result["y"] == expected_y
+
+
+def test_compiled_op_struct_type_descriptor():
+    """Test that CompiledOp correctly converts gpu_struct to TypeDescriptor."""
+    arch = get_arch()
+    add_ltoir = compile_to_ltoir(STRUCT_ADD_SOURCE, arch)
+
+    Point = gpu_struct({"x": np.int32, "y": np.int32}, name="Point")
+
+    op = CompiledOp(
+        ltoir=add_ltoir,
+        name="point_add",
+        arg_types=(Point, Point),
+        return_type=Point,
+    )
+
+    # Check that types were converted to TypeDescriptors
+    assert isinstance(op.arg_types[0], types._TypeDescriptor)
+    assert isinstance(op.arg_types[1], types._TypeDescriptor)
+    assert isinstance(op.return_type, types._TypeDescriptor)
+
+    # Check size and alignment match the struct
+    assert op.arg_types[0].size == Point._dtype.itemsize
+    assert op.return_type.size == Point._dtype.itemsize
