@@ -123,7 +123,7 @@ runs:
         # kill 10m early so we have time to upload artifacts for debugging hung builds
         START_T="${JOB_START_TIME:-$(date -u '+%s')}"
         TIMEOUT="$((21000 - ($(date -u '+%s') - START_T)))"
-        timeout --preserve-status --kill-after=1m --verbose "${TIMEOUT}s" bash -c 'eval ${COMMAND}' || exit_code=$?
+        eval timeout --preserve-status --kill-after=1m --verbose "${TIMEOUT}s" ${COMMAND} || exit_code=$?
         if [[ "$exit_code" -ne 0 ]]; then
           echo -e "::group::️❗ \e[1;31mInstructions to Reproduce CI Failure Locally\e[0m"
           echo "::error:: To replicate this failure locally, follow the steps below:"
