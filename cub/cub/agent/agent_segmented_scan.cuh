@@ -223,7 +223,7 @@ struct agent_segmented_scan
     AccumT exclusive_prefix{};
     block_prefix_callback_t<AccumT, ScanOpT> prefix_op{exclusive_prefix, scan_op};
 
-    for (OffsetT chunk_id = 0; chunk_id < n_chunks; ++chunk_id)
+    for (OffsetT chunk_id = 0; chunk_id < n_chunks;)
     {
       const OffsetT chunk_begin = inp_idx_begin + chunk_id * tile_items;
       const OffsetT chunk_end   = (::cuda::std::min) (chunk_begin + tile_items, inp_idx_end);
@@ -247,7 +247,10 @@ struct agent_segmented_scan
       __syncthreads();
 
       block_store_t(temp_storage.store).Store(d_out + out_idx_begin + chunk_id * tile_items, thread_values, chunk_size);
-      __syncthreads();
+      if (++chunk_id < n_chunks)
+      {
+        __syncthreads();
+      }
     }
   };
 
@@ -299,7 +302,7 @@ struct agent_segmented_scan
     augmented_accum_t exclusive_prefix{};
     block_prefix_callback_t<augmented_accum_t, augmented_scan_op_t> prefix_op{exclusive_prefix, augmented_scan_op};
 
-    for (OffsetT chunk_id = 0; chunk_id < n_chunks; ++chunk_id)
+    for (OffsetT chunk_id = 0; chunk_id < n_chunks;)
     {
       const OffsetT chunk_begin = chunk_id * tile_items;
       const OffsetT chunk_end   = (::cuda::std::min) (chunk_begin + tile_items, items_per_block);
@@ -361,7 +364,10 @@ struct agent_segmented_scan
         multi_segmented_iterator it_out{d_out, out_offset, cum_sizes, out_idx_begin_it};
         block_store_t(temp_storage.store).Store(it_out, thread_values, chunk_size);
       }
-      __syncthreads();
+      if (++chunk_id < n_chunks)
+      {
+        __syncthreads();
+      }
     }
   }
 
@@ -411,7 +417,7 @@ struct agent_segmented_scan
     augmented_accum_t exclusive_prefix{};
     block_prefix_callback_t<augmented_accum_t, augmented_scan_op_t> prefix_op{exclusive_prefix, augmented_scan_op};
 
-    for (OffsetT chunk_id = 0; chunk_id < n_chunks; ++chunk_id)
+    for (OffsetT chunk_id = 0; chunk_id < n_chunks;)
     {
       const OffsetT chunk_begin = chunk_id * tile_items;
       const OffsetT chunk_end   = (::cuda::std::min) (chunk_begin + tile_items, items_per_block);
@@ -474,7 +480,10 @@ struct agent_segmented_scan
         multi_segmented_iterator it_out{d_out, out_offset, cum_sizes, out_idx_begin_it};
         block_store_t(temp_storage.store).Store(it_out, thread_values, chunk_size);
       }
-      __syncthreads();
+      if (++chunk_id < n_chunks)
+      {
+        __syncthreads();
+      }
     }
   }
 
