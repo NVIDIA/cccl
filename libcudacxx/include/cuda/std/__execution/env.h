@@ -422,7 +422,7 @@ struct __query_or_t
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Env, class _Query, class _Default, class... _Args)
   _CCCL_REQUIRES(__queryable_with<_Env, _Query, _Args...>)
-  [[nodiscard]] _CCCL_API constexpr auto operator()(const _Env& __env, _Query, _Default&&, _Args&&... __args) const
+  [[nodiscard]] _CCCL_API constexpr auto operator()(const _Env& __env, _Query&&, _Default&&, _Args&&... __args) const
     noexcept(__nothrow_queryable_with<_Env, _Query, _Args...>) -> __query_result_t<_Env, _Query, _Args...>
   {
     return __env.query(_Query{}, static_cast<_Args&&>(__args)...);
@@ -430,9 +430,12 @@ struct __query_or_t
 
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Env, class _Query, class _Default, class... _Args)
-  _CCCL_REQUIRES((!__queryable_with<_Env, _Query, _Args...>) _CCCL_AND (::cuda::std::is_invocable_v<_Query, _Env, _Args...>))
-  [[nodiscard]] _CCCL_API constexpr auto operator()(const _Env& __env, _Query&& __query, _Default&& __default, _Args&&... __args) const
-    noexcept(::cuda::std::is_nothrow_invocable_v<_Query, _Env, _Args...>) -> decltype(::cuda::std::invoke(static_cast<_Query&&>(__query), __env, static_cast<_Args&&>(__args)...))
+  _CCCL_REQUIRES(
+    (!__queryable_with<_Env, _Query, _Args...>) _CCCL_AND(::cuda::std::is_invocable_v<_Query, const _Env&, _Args...>))
+  [[nodiscard]] _CCCL_API constexpr auto
+  operator()(const _Env& __env, _Query&& __query, _Default&&, _Args&&... __args) const
+    noexcept(::cuda::std::is_nothrow_invocable_v<_Query, const _Env&, _Args...>)
+      -> ::cuda::std::invoke_result_t<_Query, const _Env&, _Args...>
   {
     return ::cuda::std::invoke(static_cast<_Query&&>(__query), __env, static_cast<_Args&&>(__args)...);
   }
