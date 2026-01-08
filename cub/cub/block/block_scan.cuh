@@ -103,7 +103,7 @@ enum BlockScanAlgorithm
   BLOCK_SCAN_WARP_SCANS,
 };
 
-#if !_CCCL_COMPILER(NVRTC)
+#if !_CCCL_COMPILER(NVRTC) && !defined(_CCCL_DOXYGEN_INVOKED)
 inline ::std::ostream& operator<<(::std::ostream& os, BlockScanAlgorithm algo)
 {
   switch (algo)
@@ -118,7 +118,7 @@ inline ::std::ostream& operator<<(::std::ostream& os, BlockScanAlgorithm algo)
       return os << "<unknown BlockScanAlgorithm: " << static_cast<int>(algo) << ">";
   }
 }
-#endif // !_CCCL_COMPILER(NVRTC)
+#endif // !_CCCL_COMPILER(NVRTC) && !_CCCL_DOXYGEN_INVOKED
 
 //! @rst
 //! The BlockScan class provides :ref:`collective <collective-primitives>` methods for computing a parallel prefix
