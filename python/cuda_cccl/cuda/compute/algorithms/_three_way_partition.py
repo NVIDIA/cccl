@@ -10,7 +10,12 @@ import numba
 from .. import _bindings
 from .. import _cccl_interop as cccl
 from .._caching import cache_with_key
-from .._cccl_interop import call_build, set_cccl_iterator_state
+from .._cccl_interop import (
+    call_build,
+    get_iterator_kind,
+    is_iterator,
+    set_cccl_iterator_state,
+)
 from .._utils import protocols
 from .._utils.temp_storage_buffer import TempStorageBuffer
 from ..iterators._iterators import IteratorBase
@@ -19,35 +24,35 @@ from ..typing import DeviceArrayLike
 
 
 def _make_cache_key(
-    d_in: DeviceArrayLike | IteratorBase,
-    d_first_part_out: DeviceArrayLike | IteratorBase,
-    d_second_part_out: DeviceArrayLike | IteratorBase,
-    d_unselected_out: DeviceArrayLike | IteratorBase,
-    d_num_selected_out: DeviceArrayLike | IteratorBase,
+    d_in: DeviceArrayLike,
+    d_first_part_out: DeviceArrayLike,
+    d_second_part_out: DeviceArrayLike,
+    d_unselected_out: DeviceArrayLike,
+    d_num_selected_out: DeviceArrayLike,
     select_first_part_op: OpAdapter,
     select_second_part_op: OpAdapter,
 ):
     d_in_key = (
-        d_in.kind if isinstance(d_in, IteratorBase) else protocols.get_dtype(d_in)
+        get_iterator_kind(d_in) if is_iterator(d_in) else protocols.get_dtype(d_in)
     )
     d_first_part_out_key = (
-        d_first_part_out.kind
-        if isinstance(d_first_part_out, IteratorBase)
+        get_iterator_kind(d_first_part_out)
+        if is_iterator(d_first_part_out)
         else protocols.get_dtype(d_first_part_out)
     )
     d_second_part_out_key = (
-        d_second_part_out.kind
-        if isinstance(d_second_part_out, IteratorBase)
+        get_iterator_kind(d_second_part_out)
+        if is_iterator(d_second_part_out)
         else protocols.get_dtype(d_second_part_out)
     )
     d_unselected_out_key = (
-        d_unselected_out.kind
-        if isinstance(d_unselected_out, IteratorBase)
+        get_iterator_kind(d_unselected_out)
+        if is_iterator(d_unselected_out)
         else protocols.get_dtype(d_unselected_out)
     )
     d_num_selected_out_key = (
-        d_num_selected_out.kind
-        if isinstance(d_num_selected_out, IteratorBase)
+        get_iterator_kind(d_num_selected_out)
+        if is_iterator(d_num_selected_out)
         else protocols.get_dtype(d_num_selected_out)
     )
 

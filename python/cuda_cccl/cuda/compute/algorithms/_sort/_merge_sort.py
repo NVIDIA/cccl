@@ -10,7 +10,12 @@ import numba
 from ... import _bindings
 from ... import _cccl_interop as cccl
 from ..._caching import cache_with_key
-from ..._cccl_interop import call_build, set_cccl_iterator_state
+from ..._cccl_interop import (
+    call_build,
+    get_iterator_kind,
+    is_iterator,
+    set_cccl_iterator_state,
+)
 from ..._utils import protocols
 from ..._utils.protocols import (
     get_data_pointer,
@@ -23,23 +28,23 @@ from ...typing import DeviceArrayLike
 
 
 def _make_cache_key(
-    d_in_keys: DeviceArrayLike | IteratorBase,
-    d_in_items: DeviceArrayLike | IteratorBase | None,
+    d_in_keys: DeviceArrayLike,
+    d_in_items: DeviceArrayLike | None,
     d_out_keys: DeviceArrayLike,
     d_out_items: DeviceArrayLike | None,
     op: OpAdapter,
 ):
     d_in_keys_key = (
-        d_in_keys.kind
-        if isinstance(d_in_keys, IteratorBase)
+        get_iterator_kind(d_in_keys)
+        if is_iterator(d_in_keys)
         else protocols.get_dtype(d_in_keys)
     )
     if d_in_items is None:
         d_in_items_key = None
     else:
         d_in_items_key = (
-            d_in_items.kind
-            if isinstance(d_in_items, IteratorBase)
+            get_iterator_kind(d_in_items)
+            if is_iterator(d_in_items)
             else protocols.get_dtype(d_in_items)
         )
     d_out_keys_key = protocols.get_dtype(d_out_keys)
@@ -47,8 +52,8 @@ def _make_cache_key(
         d_out_items_key = None
     else:
         d_out_items_key = (
-            d_out_items.kind
-            if isinstance(d_out_items, IteratorBase)
+            get_iterator_kind(d_out_items)
+            if is_iterator(d_out_items)
             else protocols.get_dtype(d_out_items)
         )
 

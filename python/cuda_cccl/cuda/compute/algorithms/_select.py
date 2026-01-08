@@ -6,6 +6,7 @@
 from typing import Callable
 
 from .._caching import cache_with_key
+from .._cccl_interop import get_iterator_kind, is_iterator
 from .._utils import protocols
 from .._utils.temp_storage_buffer import TempStorageBuffer
 from ..iterators._factories import DiscardIterator
@@ -16,16 +17,16 @@ from ._three_way_partition import make_three_way_partition
 
 
 def _make_cache_key(
-    d_in: DeviceArrayLike | IteratorBase,
-    d_out: DeviceArrayLike | IteratorBase,
+    d_in: DeviceArrayLike,
+    d_out: DeviceArrayLike,
     d_num_selected_out: DeviceArrayLike,
     cond: OpAdapter,
 ):
     d_in_key = (
-        d_in.kind if isinstance(d_in, IteratorBase) else protocols.get_dtype(d_in)
+        get_iterator_kind(d_in) if is_iterator(d_in) else protocols.get_dtype(d_in)
     )
     d_out_key = (
-        d_out.kind if isinstance(d_out, IteratorBase) else protocols.get_dtype(d_out)
+        get_iterator_kind(d_out) if is_iterator(d_out) else protocols.get_dtype(d_out)
     )
     d_num_selected_out_key = protocols.get_dtype(d_num_selected_out)
 

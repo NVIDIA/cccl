@@ -10,7 +10,13 @@ import numpy as np
 from .. import _bindings
 from .. import _cccl_interop as cccl
 from .._caching import cache_with_key
-from .._cccl_interop import call_build, set_cccl_iterator_state, to_cccl_value_state
+from .._cccl_interop import (
+    call_build,
+    get_iterator_kind,
+    is_iterator,
+    set_cccl_iterator_state,
+    to_cccl_value_state,
+)
 from .._utils.protocols import get_data_pointer, get_dtype, validate_and_get_stream
 from .._utils.temp_storage_buffer import TempStorageBuffer
 from ..iterators._iterators import IteratorBase
@@ -18,7 +24,7 @@ from ..typing import DeviceArrayLike
 
 
 def make_cache_key(
-    d_samples: DeviceArrayLike | IteratorBase,
+    d_samples: DeviceArrayLike,
     d_histogram: DeviceArrayLike,
     d_num_output_levels: DeviceArrayLike,
     h_lower_level: np.ndarray,
@@ -26,7 +32,7 @@ def make_cache_key(
     num_samples: int,
 ):
     d_samples_key = (
-        d_samples.kind if isinstance(d_samples, IteratorBase) else get_dtype(d_samples)
+        get_iterator_kind(d_samples) if is_iterator(d_samples) else get_dtype(d_samples)
     )
 
     d_histogram_key = get_dtype(d_histogram)

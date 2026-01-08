@@ -13,7 +13,9 @@ from .. import _cccl_interop as cccl
 from .._caching import cache_with_key
 from .._cccl_interop import (
     call_build,
+    get_iterator_kind,
     get_value_type,
+    is_iterator,
     set_cccl_iterator_state,
     to_cccl_value_state,
 )
@@ -165,16 +167,16 @@ class _Scan:
 
 
 def _make_cache_key(
-    d_in: DeviceArrayLike | IteratorBase,
-    d_out: DeviceArrayLike | IteratorBase,
+    d_in: DeviceArrayLike,
+    d_out: DeviceArrayLike,
     op: OpAdapter,
     init_value: np.ndarray | DeviceArrayLike | GpuStruct | None,
 ):
     d_in_key = (
-        d_in.kind if isinstance(d_in, IteratorBase) else protocols.get_dtype(d_in)
+        get_iterator_kind(d_in) if is_iterator(d_in) else protocols.get_dtype(d_in)
     )
     d_out_key = (
-        d_out.kind if isinstance(d_out, IteratorBase) else protocols.get_dtype(d_out)
+        get_iterator_kind(d_out) if is_iterator(d_out) else protocols.get_dtype(d_out)
     )
 
     init_kind_key = get_init_kind(init_value)
