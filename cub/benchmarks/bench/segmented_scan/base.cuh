@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include <cub/agent/agent_warp_segmented_scan.cuh>
 #include <cub/device/device_segmented_scan.cuh>
 
 #include <thrust/tabulate.h>
@@ -66,11 +67,11 @@ struct policy_hub_t
 };
 #else
 
-template <typename ComputeT, int NumSegmentsPerBlock>
+template <typename ComputeT, int NumSegmentsPerWorkUnit>
 using segmented_scan_compute_t =
-  ::cuda::std::conditional_t<NumSegmentsPerBlock == 1, ComputeT, ::cuda::std::tuple<bool, ComputeT>>;
+  ::cuda::std::conditional_t<NumSegmentsPerWorkUnit == 1, ComputeT, ::cuda::std::tuple<bool, ComputeT>>;
 
-template <typename AccumT, int SegmentsPerBlock, int ItemsPerThread>
+template <typename AccumT, int SegmentsPerWorkUnit, int ItemsPerThread>
 struct user_policy_hub_t
 {
   template <int Nominal4ByteBlockThreads,
@@ -81,7 +82,7 @@ struct user_policy_hub_t
             cub::BlockStoreAlgorithm StoreAlgorithm,
             cub::BlockScanAlgorithm ScanAlgorithm,
             int _SegmentsPerBlock = 1>
-  using agent_policy_t = cub::detail::segmented_scan::agent_segmented_scan_policy_t<
+  using block_level_agent_policy_t = cub::detail::segmented_scan::agent_segmented_scan_policy_t<
     Nominal4ByteBlockThreads,
     Nominal4ByteItemsPerThread,
     ComputeT,
@@ -92,22 +93,52 @@ struct user_policy_hub_t
     _SegmentsPerBlock,
     cub::detail::MemBoundScaling<Nominal4ByteBlockThreads,
                                  Nominal4ByteItemsPerThread,
-                                 segmented_scan_compute_t<ComputeT, SegmentsPerBlock>>>;
+                                 segmented_scan_compute_t<ComputeT, _SegmentsPerBlock>>>;
+  template <int Nominal4ByteBlockThreads,
+            int Nominal4ByteItemsPerThread,
+            typename ComputeT,
+            cub::WarpLoadAlgorithm LoadAlgorithm,
+            cub::CacheLoadModifier LoadModifier,
+            cub::WarpStoreAlgorithm StoreAlgorithm,
+            int _SegmentsPerWarp = 1>
+  using warp_level_agent_policy_t = cub::detail::segmented_scan::agent_warp_segmented_scan_policy_t<
+    Nominal4ByteBlockThreads,
+    Nominal4ByteItemsPerThread,
+    ComputeT,
+    LoadAlgorithm,
+    LoadModifier,
+    StoreAlgorithm,
+    _SegmentsPerWarp,
+    cub::detail::MemBoundScaling<Nominal4ByteBlockThreads,
+                                 Nominal4ByteItemsPerThread,
+                                 segmented_scan_compute_t<ComputeT, _SegmentsPerWarp>>>;
 
-  using base_policy_t =
+  using base_block_level_policy_t =
     typename cub::detail::segmented_scan::policy_hub<void, void, AccumT, void, void>::MaxPolicy::segmented_scan_policy_t;
+
+  using base_warp_level_policy_t = typename cub::detail::segmented_scan::policy_hub<void, void, AccumT, void, void>::
+    MaxPolicy::warp_segmented_scan_policy_t;
 
   struct policy_t : cub::ChainedPolicy<300, policy_t, policy_t>
   {
-    using segmented_scan_policy_t =
-      agent_policy_t<128,
-                     ItemsPerThread,
-                     AccumT,
-                     base_policy_t::load_algorithm,
-                     base_policy_t::load_modifier,
-                     base_policy_t::store_algorithm,
-                     base_policy_t::scan_algorithm,
-                     SegmentsPerBlock>;
+    using segmented_scan_policy_t = block_level_agent_policy_t<
+      128,
+      ItemsPerThread,
+      AccumT,
+      base_block_level_policy_t::load_algorithm,
+      base_block_level_policy_t::load_modifier,
+      base_block_level_policy_t::store_algorithm,
+      base_block_level_policy_t::scan_algorithm,
+      SegmentsPerWorkUnit>;
+
+    using warp_segmented_scan_policy_t = warp_level_agent_policy_t<
+      128,
+      ItemsPerThread,
+      AccumT,
+      base_warp_level_policy_t::load_algorithm,
+      base_warp_level_policy_t::load_modifier,
+      base_warp_level_policy_t::store_algorithm,
+      SegmentsPerWorkUnit>;
   };
 
   using MaxPolicy = policy_t;
