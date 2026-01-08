@@ -38,16 +38,15 @@
 #include <cuda/std/__tuple_dir/tuple_like.h>
 #include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/is_convertible.h>
-#include <cuda/std/__type_traits/is_integral.h>
+#include <cuda/std/__type_traits/is_move_assignable.h>
 #include <cuda/std/__type_traits/is_nothrow_constructible.h>
-#include <cuda/std/__type_traits/is_nothrow_move_assignable.h>
 #include <cuda/std/__type_traits/is_nothrow_move_constructible.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/is_signed.h>
 #include <cuda/std/__type_traits/is_swappable.h>
 #include <cuda/std/__type_traits/is_unsigned.h>
-#include <cuda/std/__type_traits/remove_const.h>
-#include <cuda/std/__type_traits/remove_cvref.h>
+#include <cuda/std/__type_traits/void_t.h>
+#include <cuda/std/__utility/declval.h>
 #include <cuda/std/span>
 
 #include <cuda/std/__cccl/prologue.h>
@@ -129,6 +128,11 @@ _CCCL_CONCEPT __index_pair_like = _CCCL_REQUIRES_EXPR((_Tp, _IndexType))(
 
 template <class _Tp>
 _CCCL_CONCEPT __index_like = is_signed_v<_Tp> || is_unsigned_v<_Tp> || __integral_constant_like<_Tp>;
+
+template <class _AccessorPolicy>
+_CCCL_CONCEPT __has_detect_invalidity =
+  _CCCL_REQUIRES_EXPR((_AccessorPolicy), _AccessorPolicy __ap)(__ap.__detectably_invalid(
+    ::cuda::std::declval<typename _AccessorPolicy::data_handle_type>(), ::cuda::std::declval<::cuda::std::size_t>()));
 
 _CCCL_END_NAMESPACE_CUDA_STD
 

@@ -6,22 +6,25 @@
 // SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
+// UNSUPPORTED: nvrtc
 
 #include <cuda/mdspan>
 
 #include "test_macros.h"
 
-__device__ void basic_mdspan_access_test()
+using ext_t = cuda::std::extents<int, 4>;
+
+bool managed_accessor_test()
 {
-  using ext_t = cuda::std::extents<int, 4>;
-  __shared__ int smem[4];
-  [[maybe_unused]] cuda::shared_memory_mdspan<int, ext_t> md{smem, ext_t{}};
-  unused(md[0]);
-  asm volatile("" : : "l"((size_t) smem) : "memory");
+  int* managed_ptr;
+  assert(cudaMallocManaged(&managed_ptr, 4) == cudaSuccess);
+  cuda::device_mdspan<int, ext_t> m_md{managed_ptr, ext_t{}};
+  unused(m_md);
+  return true;
 }
 
 int main(int, char**)
 {
-  NV_IF_TARGET(NV_IS_DEVICE, (basic_mdspan_access_test();))
+  NV_IF_TARGET(NV_IS_HOST, (assert(managed_accessor_test());))
   return 0;
 }
