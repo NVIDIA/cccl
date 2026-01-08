@@ -44,7 +44,7 @@ static ::cudaMemPool_t __get_default_host_pinned_pool();
 //! .. _cudax-memory-resource-async:
 //!
 //! Stream ordered host pinned memory pool
-//! ------------------------------
+//! ---------------------------------------
 //!
 //! ``pinned_memory_pool_ref`` allocates pinned memory using
 //! `cudaMallocFromPoolAsync / cudaFreeAsync
