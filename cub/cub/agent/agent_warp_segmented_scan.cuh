@@ -234,7 +234,7 @@ struct agent_warp_segmented_scan
       {
         multi_segmented_iterator it_in{d_in, chunk_begin, cum_sizes, inp_idx_begin_it};
         AccumT thread_values[items_per_thread];
-        block_load_t(temp_storage.load).Load(it_in, thread_values, chunk_size, AccumT{});
+        warp_load_t(temp_storage.load[warp_id]).Load(it_in, thread_values, chunk_size, AccumT{});
 
         // reconstruct flags
 #pragma unroll
@@ -281,7 +281,7 @@ struct agent_warp_segmented_scan
 
         const OffsetT out_offset = chunk_id * tile_items;
         multi_segmented_iterator it_out{d_out, out_offset, cum_sizes, out_idx_begin_it};
-        block_store_t(temp_storage.store).Store(it_out, thread_values, chunk_size);
+        warp_store_t(temp_storage.store[warp_id]).Store(it_out, thread_values, chunk_size);
       }
       if (++chunk_id < n_chunks)
       {
@@ -349,7 +349,7 @@ struct agent_warp_segmented_scan
         multi_segmented_iterator it_in{d_in, chunk_begin, cum_sizes, inp_idx_begin_it};
 
         AccumT thread_values[items_per_thread];
-        block_load_t(temp_storage.load).Load(it_in, thread_values, chunk_size, AccumT{});
+        warp_load_t(temp_storage.load[warp_id]).Load(it_in, thread_values, chunk_size, AccumT{});
 
         // reconstruct flags
         for (int i = 0; i < items_per_thread; ++i)
@@ -396,7 +396,7 @@ struct agent_warp_segmented_scan
 
         const OffsetT out_offset = chunk_id * tile_items;
         multi_segmented_iterator it_out{d_out, out_offset, cum_sizes, out_idx_begin_it};
-        block_store_t(temp_storage.store).Store(it_out, thread_values, chunk_size);
+        warp_store_t(temp_storage.store[warp_id]).Store(it_out, thread_values, chunk_size);
       }
       if (++chunk_id < n_chunks)
       {
