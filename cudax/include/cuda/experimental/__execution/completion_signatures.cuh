@@ -39,8 +39,7 @@
 // include this last:
 #include <cuda/experimental/__execution/prologue.cuh>
 
-_CCCL_DIAG_PUSH
-_CCCL_DIAG_SUPPRESS_GCC("-Wunused-but-set-parameter")
+_CCCL_DIAG_PUSH_AND_SUPPRESS(GCC, "-Wunused-but-set-parameter")
 
 namespace cuda::experimental::execution
 {

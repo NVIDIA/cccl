@@ -107,8 +107,7 @@ _CCCL_CONCEPT_FRAGMENT(__can_reference_, requires()(typename(__with_reference<_T
 template <class _Tp>
 _CCCL_CONCEPT __can_reference = _CCCL_FRAGMENT(__can_reference_, _Tp);
 
-_CCCL_DIAG_PUSH
-_CCCL_DIAG_SUPPRESS_CLANG("-Wvoid-ptr-dereference")
+_CCCL_DIAG_PUSH_AND_SUPPRESS(CLANG, "-Wvoid-ptr-dereference")
 template <class _Tp>
 _CCCL_CONCEPT_FRAGMENT(__dereferenceable_, requires(_Tp& __t)(requires(__can_reference<decltype(*__t)>)));
 _CCCL_DIAG_POP

@@ -24,8 +24,7 @@
 CUB_NAMESPACE_BEGIN
 namespace detail
 {
-_CCCL_DIAG_PUSH
-_CCCL_DIAG_SUPPRESS_MSVC(4702) // unreachable code (even if there are no branches!)
+_CCCL_DIAG_PUSH_AND_SUPPRESS(MSVC, 4702) // unreachable code (even if there are no branches!)
 
 // Compute the submdspan size of a given rank
 template <typename IndexType, size_t... Extents>

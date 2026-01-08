@@ -83,9 +83,9 @@ struct __basic_any_reference_conversion_base<_Interface const>
 
 _CCCL_DIAG_PUSH
 // "operator __basic_any<...> will not be called for implicit or explicit conversions"
-_CCCL_DIAG_SUPPRESS_NVHPC(conversion_function_not_usable)
+_CCCL_DIAG_SUPPRESS(NVHPC, conversion_function_not_usable)
 // "operator __basic_any<...> will not be called for implicit or explicit conversions"
-_CCCL_BEGIN_NV_DIAG_SUPPRESS(554)
+_CCCL_DIAG_SUPPRESS(NV, 554)
 
 //!
 //! \c __basic_any<__ireference<_Interface>>
@@ -249,7 +249,6 @@ private:
   ::cuda::std::__maybe_const<__is_const_ref, void>* __optr_{};
 };
 
-_CCCL_END_NV_DIAG_SUPPRESS()
 _CCCL_DIAG_POP
 
 //!

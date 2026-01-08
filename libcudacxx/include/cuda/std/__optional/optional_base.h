@@ -49,8 +49,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_CCCL_DIAG_PUSH
-_CCCL_DIAG_SUPPRESS_MSVC(4702) // suppress bogus unreachable code warning
+_CCCL_DIAG_PUSH_AND_SUPPRESS(MSVC, 4702) // suppress bogus unreachable code warning
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 

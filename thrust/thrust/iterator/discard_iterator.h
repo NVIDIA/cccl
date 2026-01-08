@@ -63,8 +63,7 @@ struct make_discard_iterator_base
 };
 } // namespace detail
 
-_CCCL_DIAG_PUSH
-_CCCL_DIAG_SUPPRESS_MSVC(4244 4267) // possible loss of data
+_CCCL_DIAG_PUSH_AND_SUPPRESS(MSVC, 4244, 4267) // possible loss of data
 
 //! \addtogroup iterators
 //! \{

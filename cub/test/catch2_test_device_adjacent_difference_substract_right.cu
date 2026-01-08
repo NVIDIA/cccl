@@ -64,7 +64,7 @@ C2H_TEST("DeviceAdjacentDifference::SubtractRightCopy does not change the input"
   REQUIRE(reference == in);
 }
 
-_CCCL_SUPPRESS_DEPRECATED_PUSH
+_CCCL_DIAG_PUSH_AND_SUPPRESS_DEPRECATED
 template <class T>
 struct ref_diff
 {
@@ -88,7 +88,7 @@ struct ref_diff
     return long2{rhs.x - lhs.x, rhs.y - lhs.y};
   }
 };
-_CCCL_SUPPRESS_DEPRECATED_POP
+_CCCL_DIAG_POP_DEPRECATED
 
 C2H_TEST("DeviceAdjacentDifference::SubtractRight works with iterators", "[device][adjacent_difference]", types)
 {
@@ -170,7 +170,7 @@ C2H_TEST("DeviceAdjacentDifference::SubtractRightCopy works with pointers", "[de
   REQUIRE(reference == out);
 }
 
-_CCCL_SUPPRESS_DEPRECATED_PUSH
+_CCCL_DIAG_PUSH_AND_SUPPRESS_DEPRECATED
 struct cust_diff
 {
   template <class T>
@@ -194,7 +194,7 @@ struct cust_diff
     return long2{lhs.x - rhs.x, lhs.y - rhs.y};
   }
 };
-_CCCL_SUPPRESS_DEPRECATED_POP
+_CCCL_DIAG_POP_DEPRECATED
 
 C2H_TEST("DeviceAdjacentDifference::SubtractRight works with custom difference",
          "[device][adjacent_difference]",

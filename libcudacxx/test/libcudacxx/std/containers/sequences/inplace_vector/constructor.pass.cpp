@@ -23,9 +23,9 @@
 #  include <stdexcept>
 #endif // TEST_HAS_EXCEPTIONS()
 
-_CCCL_DIAG_SUPPRESS_GCC("-Wmissing-braces")
-_CCCL_DIAG_SUPPRESS_CLANG("-Wmissing-braces")
-_CCCL_DIAG_SUPPRESS_MSVC(5246)
+_CCCL_DIAG_SUPPRESS(GCC, "-Wmissing-braces")
+_CCCL_DIAG_SUPPRESS(CLANG, "-Wmissing-braces")
+_CCCL_DIAG_SUPPRESS(MSVC, 5246)
 
 template <class T>
 __host__ __device__ constexpr void test_default()

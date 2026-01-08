@@ -37,10 +37,11 @@ concept convertible_to = is_convertible_v<_From, _To> && requires { static_cast<
 
 #else // ^^^ _CCCL_HAS_CONCEPTS() ^^^ / vvv !_CCCL_HAS_CONCEPTS() vvv
 
+_CCCL_DIAG_PUSH
 #  if _CCCL_COMPILER(MSVC)
-_CCCL_BEGIN_NV_DIAG_SUPPRESS(1211) // nonstandard cast to array type ignored
+_CCCL_DIAG_SUPPRESS(NV, 1211) // nonstandard cast to array type ignored
 #  endif // _CCCL_COMPILER(MSVC)
-_CCCL_BEGIN_NV_DIAG_SUPPRESS(171) // invalid type conversion, e.g. [with _From=int **, _To=const int *const *]
+_CCCL_DIAG_SUPPRESS(NV, 171) // invalid type conversion, e.g. [with _From=int **, _To=const int *const *]
 
 // We cannot put this conversion check with the other constraint, as types with deleted operator will break here
 template <class _From, class _To>
@@ -56,10 +57,7 @@ _CCCL_CONCEPT_FRAGMENT(__convertible_to_,
 template <class _From, class _To>
 _CCCL_CONCEPT convertible_to = _CCCL_FRAGMENT(__convertible_to_, _From, _To);
 
-#  if _CCCL_COMPILER(MSVC)
-_CCCL_END_NV_DIAG_SUPPRESS() // nonstandard cast to array type ignored
-#  endif // _CCCL_COMPILER(MSVC)
-_CCCL_END_NV_DIAG_SUPPRESS() // invalid type conversion, e.g. [with _From=int **, _To=const int *const *]
+_CCCL_DIAG_POP
 
 #endif // ^^^ !_CCCL_HAS_CONCEPTS() ^^^
 

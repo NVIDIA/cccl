@@ -29,7 +29,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 #if defined(_LIBCUDACXX_ENABLE_CXX17_REMOVED_BINDERS)
 
-_CCCL_SUPPRESS_DEPRECATED_PUSH
+_CCCL_DIAG_PUSH_AND_SUPPRESS_DEPRECATED
 
 template <class _Arg, class _Result>
 class _CCCL_TYPE_VISIBILITY_DEFAULT CCCL_DEPRECATED pointer_to_unary_function : public __unary_function<_Arg, _Result>
@@ -52,7 +52,7 @@ CCCL_DEPRECATED _CCCL_API inline pointer_to_unary_function<_Arg, _Result> ptr_fu
   return pointer_to_unary_function<_Arg, _Result>(__f);
 }
 
-_CCCL_SUPPRESS_DEPRECATED_POP
+_CCCL_DIAG_POP_DEPRECATED
 
 #endif // defined(_LIBCUDACXX_ENABLE_CXX17_REMOVED_BINDERS)
 

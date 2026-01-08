@@ -866,9 +866,9 @@ operator<<(::std::basic_ostream<_CharT, _Traits>& __os, basic_string_view<_CharT
 // literals
 
 _CCCL_DIAG_PUSH
-_CCCL_DIAG_SUPPRESS_GCC("-Wliteral-suffix")
-_CCCL_DIAG_SUPPRESS_CLANG("-Wuser-defined-literals")
-_CCCL_DIAG_SUPPRESS_MSVC(4455)
+_CCCL_DIAG_SUPPRESS(GCC, "-Wliteral-suffix")
+_CCCL_DIAG_SUPPRESS(CLANG, "-Wuser-defined-literals")
+_CCCL_DIAG_SUPPRESS(MSVC, 4455)
 
 inline namespace literals
 {

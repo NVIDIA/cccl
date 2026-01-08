@@ -448,8 +448,7 @@ private:
   bool optimized = true;
 };
 
-_CCCL_DIAG_PUSH
-_CCCL_DIAG_SUPPRESS_MSVC(4702) // unreachable code
+_CCCL_DIAG_PUSH_AND_SUPPRESS(MSVC, 4702) // unreachable code
 inline event_list event_impl::from_stream(backend_ctx_untyped&, cudaStream_t) const
 {
   fprintf(stderr, "Unsupported synchronization with stream.\n");

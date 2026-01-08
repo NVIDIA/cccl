@@ -30,7 +30,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 #if defined(_LIBCUDACXX_ENABLE_CXX17_REMOVED_BINDERS)
 
-_CCCL_SUPPRESS_DEPRECATED_PUSH
+_CCCL_DIAG_PUSH_AND_SUPPRESS_DEPRECATED
 
 template <class _Sp, class _Tp>
 class _CCCL_TYPE_VISIBILITY_DEFAULT CCCL_DEPRECATED mem_fun_t : public __unary_function<_Tp*, _Sp>
@@ -200,7 +200,7 @@ CCCL_DEPRECATED _CCCL_API inline const_mem_fun1_ref_t<_Sp, _Tp, _Ap> mem_fun_ref
   return const_mem_fun1_ref_t<_Sp, _Tp, _Ap>(__f);
 }
 
-_CCCL_SUPPRESS_DEPRECATED_POP
+_CCCL_DIAG_POP_DEPRECATED
 
 #endif // defined(_LIBCUDACXX_ENABLE_CXX17_REMOVED_BINDERS)
 

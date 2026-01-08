@@ -100,8 +100,7 @@ struct choose_signed_offset
    */
   static _CCCL_HOST_DEVICE _CCCL_FORCEINLINE cudaError_t is_exceeding_offset_type(NumItemsT num_items)
   {
-    _CCCL_DIAG_PUSH
-    _CCCL_DIAG_SUPPRESS_MSVC(4127) /* conditional expression is constant */
+    _CCCL_DIAG_PUSH_AND_SUPPRESS(MSVC, 4127) /* conditional expression is constant */
     if (sizeof(NumItemsT) >= 8 && num_items > static_cast<NumItemsT>(::cuda::std::numeric_limits<type>::max()))
     {
       return cudaErrorInvalidValue;

@@ -33,7 +33,7 @@
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
-_CCCL_SUPPRESS_DEPRECATED_PUSH
+_CCCL_DIAG_PUSH_AND_SUPPRESS_DEPRECATED
 template <class _Tp, class _CharT = char, class _Traits = char_traits<_CharT>, class _Distance = ptrdiff_t>
 class _CCCL_TYPE_VISIBILITY_DEFAULT istream_iterator
 {
@@ -123,7 +123,7 @@ public:
   }
 #endif // _CCCL_STD_VER < 2020
 };
-_CCCL_SUPPRESS_DEPRECATED_POP
+_CCCL_DIAG_POP_DEPRECATED
 
 template <class _Tp, class _CharT, class _Traits, class _Distance>
 [[nodiscard]] _CCCL_API bool operator==(const istream_iterator<_Tp, _CharT, _Traits, _Distance>& __x,

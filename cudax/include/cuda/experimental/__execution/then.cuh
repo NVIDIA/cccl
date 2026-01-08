@@ -43,8 +43,7 @@
 
 #include <cuda/experimental/__execution/prologue.cuh>
 
-_CCCL_DIAG_PUSH
-_CCCL_DIAG_SUPPRESS_MSVC(4702) // warning C4702: unreachable code
+_CCCL_DIAG_PUSH_AND_SUPPRESS(MSVC, 4702) // warning C4702: unreachable code
 
 namespace cuda::experimental::execution
 {

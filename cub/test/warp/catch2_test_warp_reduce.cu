@@ -183,8 +183,7 @@ using logical_warp_threads = c2h::enum_type_list<unsigned, 32, 16, 9, 7, 1>;
  * Reference
  **********************************************************************************************************************/
 
-_CCCL_DIAG_PUSH
-_CCCL_DIAG_SUPPRESS_MSVC(4244) // numeric(33): C: '=': conversion from 'int' to '_Ty', possible loss of data
+_CCCL_DIAG_PUSH_AND_SUPPRESS(MSVC, 4244) // numeric(33): C: '=': conversion from 'int' to '_Ty', possible loss of data
 
 template <typename predefined_op, typename T>
 void compute_host_reference(

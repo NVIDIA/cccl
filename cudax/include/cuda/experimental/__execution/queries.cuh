@@ -21,9 +21,9 @@
 #  pragma system_header
 #endif // no system header
 
-_CCCL_SUPPRESS_DEPRECATED_PUSH
+_CCCL_DIAG_PUSH_AND_SUPPRESS_DEPRECATED
 #include <cuda/std/__memory/allocator.h>
-_CCCL_SUPPRESS_DEPRECATED_POP
+_CCCL_DIAG_POP_DEPRECATED
 
 #include <cuda/__launch/configuration.h>
 #include <cuda/hierarchy>

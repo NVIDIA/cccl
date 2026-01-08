@@ -32,8 +32,7 @@
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
-_CCCL_DIAG_PUSH
-_CCCL_DIAG_SUPPRESS_MSVC(4324) // structure was padded due to alignment specifier
+_CCCL_DIAG_PUSH_AND_SUPPRESS(MSVC, 4324) // structure was padded due to alignment specifier
 
 template <class _CompletionF, thread_scope _Sco = thread_scope_system>
 class __barrier_base

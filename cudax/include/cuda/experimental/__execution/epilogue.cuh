@@ -16,9 +16,6 @@
 
 #undef _CUDAX_ASYNC_PROLOGUE_INCLUDED
 
-#if _CCCL_CUDA_COMPILER(NVHPC)
-_CCCL_END_NV_DIAG_SUPPRESS()
-#endif // _CCCL_CUDA_COMPILER(NVHPC)
-
 _CCCL_DIAG_POP
+
 #include <cuda/std/__cccl/epilogue.h>

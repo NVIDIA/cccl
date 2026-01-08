@@ -42,9 +42,9 @@ _CCCL_BEGIN_NAMESPACE_CUDA
 // to warn about applying [[nodiscard]] to a function that returns void.
 _CCCL_DIAG_PUSH
 #  if _CCCL_CUDA_COMPILER(NVCC)
-_CCCL_DIAG_SUPPRESS_GCC("-Wattributes")
-_CCCL_DIAG_SUPPRESS_CLANG("-Wignored-attributes")
-_CCCL_DIAG_SUPPRESS_NVHPC(nodiscard_doesnt_apply)
+_CCCL_DIAG_SUPPRESS(GCC, "-Wattributes")
+_CCCL_DIAG_SUPPRESS(CLANG, "-Wignored-attributes")
+_CCCL_DIAG_SUPPRESS(NVHPC, nodiscard_doesnt_apply)
 #  endif // _CCCL_CUDA_COMPILER(NVCC)
 
 template <class _Level>

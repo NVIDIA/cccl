@@ -47,8 +47,8 @@
 #include <cuda/experimental/__execution/prologue.cuh>
 
 _CCCL_DIAG_PUSH
-_CCCL_DIAG_SUPPRESS_GCC("-Wattributes")
-_CCCL_DIAG_SUPPRESS_NVHPC(attribute_requires_external_linkage)
+_CCCL_DIAG_SUPPRESS(GCC, "-Wattributes")
+_CCCL_DIAG_SUPPRESS(NVHPC, attribute_requires_external_linkage)
 
 // This header provides a sender adaptor that adapts a non-stream sender to a stream
 // sender. The adaptor does several things:

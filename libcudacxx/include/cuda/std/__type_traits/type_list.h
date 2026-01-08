@@ -450,8 +450,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_try_catch
 // Implementation for indexing into a list of types:
 #  if _CCCL_HAS_PACK_INDEXING()
 
-_CCCL_DIAG_PUSH
-_CCCL_DIAG_SUPPRESS_CLANG("-Wc++26-extensions")
+_CCCL_DIAG_PUSH_AND_SUPPRESS(CLANG, "-Wc++26-extensions")
 
 template <size_t _Ip, class... _Ts>
 using __type_index_c = _Ts...[_Ip];

@@ -115,10 +115,10 @@ PREDEFINED             = __device__= \
                         _CCCL_DEVICE= \
                         _CCCL_DIAG_PUSH= \
                         _CCCL_DIAG_POP= \
-                        "_CCCL_DIAG_SUPPRESS_CLANG(x)=" \
-                        "_CCCL_DIAG_SUPPRESS_GCC(x)=" \
-                        "_CCCL_DIAG_SUPPRESS_MSVC(x)=" \
-                        "_CCCL_DIAG_SUPPRESS_NVHPC(x)=" \
+                        "_CCCL_DIAG_SUPPRESS(...)=" \
+                        "_CCCL_DIAG_PUSH_AND_SUPPRESS(...)=" \
+                        "_CCCL_DIAG_PUSH_AND_SUPPRESS_DEPRECATED=" \
+                        "_CCCL_DIAG_POP_DEPRECATED=" \
                         _CCCL_DOXYGEN_INVOKED \
                         _CCCL_EXEC_CHECK_DISABLE= \
                         _CCCL_FORCEINLINE= \
@@ -129,8 +129,8 @@ PREDEFINED             = __device__= \
                         _CCCL_HOST_DEVICE= \
                         "_CCCL_REQUIRES(x)= ::cuda::std::enable_if_t<x, int> = 0>" \
                         _CCCL_STD_VER=2020 \
-                        _CCCL_SUPPRESS_DEPRECATED_PUSH= \
-                        _CCCL_SUPPRESS_DEPRECATED_POP= \
+                        _CCCL_DIAG_PUSH_AND_SUPPRESS_DEPRECATED= \
+                        _CCCL_DIAG_POP_DEPRECATED= \
                         "_CCCL_TEMPLATE(x)=template<x, " \
                         "_CCCL_TRAIT(x, y)=x<y>::value" \
                         "_CCCL_TRAILING_REQUIRES(x)=-> x requires " \

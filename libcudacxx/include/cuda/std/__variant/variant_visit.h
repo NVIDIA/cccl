@@ -108,7 +108,8 @@ struct __variant
       ::cuda::std::forward<_Vs>(__vs)...);
   }
 
-  _CCCL_BEGIN_NV_DIAG_SUPPRESS(940) // Suppress no return at end of function
+  _CCCL_DIAG_PUSH_AND_SUPPRESS(NV, 940) // Suppress no return at end of function
+
   // This overload is needed to tell the compiler that the recursion is indeed limited
   template <class _Visitor, class... _Vs, size_t... _ProcessedIndices, size_t... _UnprocessedIndices>
   [[nodiscard]] _CCCL_API static constexpr decltype(auto) __visit_impl(
@@ -132,10 +133,11 @@ struct __variant
     }
     _CCCL_UNREACHABLE();
   }
-  _CCCL_END_NV_DIAG_SUPPRESS() // End suppression of no return at end of function
 
-  template <class _Visitor, class... _Vs>
-  [[nodiscard]] _CCCL_API static constexpr decltype(auto) __visit_value(_Visitor&& __visitor, _Vs&&... __vs)
+  _CCCL_DIAG_POP // End suppression of no return at end of function
+
+    template <class _Visitor, class... _Vs>
+    [[nodiscard]] _CCCL_API static constexpr decltype(auto) __visit_value(_Visitor&& __visitor, _Vs&&... __vs)
   {
     // NOTE: We use a recursive implementation strategy here. That means we can omit the manual return type checks from
     // the common function pointer implementation, as the compiler will abort if the return types do not match.

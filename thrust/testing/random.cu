@@ -670,8 +670,7 @@ void TestRanlux48Unequal()
 }
 DECLARE_UNITTEST(TestRanlux48Unequal);
 
-_CCCL_DIAG_PUSH
-_CCCL_DIAG_SUPPRESS_MSVC(4305) // truncation warning
+_CCCL_DIAG_PUSH_AND_SUPPRESS(MSVC, 4305) // truncation warning
 template <typename Distribution, typename Validator>
 void ValidateDistributionCharacteristic()
 {

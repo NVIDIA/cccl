@@ -3,7 +3,7 @@
 #include "literal.h"
 
 // nvcc complains about the i128 literal constants being too large
-_CCCL_DIAG_SUPPRESS_NVCC(23)
+_CCCL_DIAG_SUPPRESS(NV, 23)
 
 #if _CCCL_HAS_INT128()
 

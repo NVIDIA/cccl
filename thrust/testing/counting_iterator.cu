@@ -41,8 +41,7 @@ static_assert(thrust::detail::is_numeric<custom_int>::value);
 
 static_assert(diff_type_is<custom_int, ptrdiff_t>);
 
-_CCCL_DIAG_PUSH
-_CCCL_DIAG_SUPPRESS_MSVC(4244 4267) // possible loss of data
+_CCCL_DIAG_PUSH_AND_SUPPRESS(MSVC, 4244, 4267) // possible loss of data
 
 // ensure that we properly support thrust::counting_iterator from cuda::std
 void TestCountingIteratorTraits()

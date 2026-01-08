@@ -32,12 +32,12 @@
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 _CCCL_DIAG_PUSH
-_CCCL_DIAG_SUPPRESS_GCC("-Wliteral-suffix")
-_CCCL_DIAG_SUPPRESS_CLANG("-Wuser-defined-literals")
-_CCCL_DIAG_SUPPRESS_NVHPC(lit_suffix_no_underscore)
-_CCCL_DIAG_SUPPRESS_MSVC(4455) // literal suffix identifiers that do not start with an underscore are reserved
-_CCCL_BEGIN_NV_DIAG_SUPPRESS(2506, 20208) // a user-provided literal suffix must begin with "_",
-                                          // long double treated as double
+_CCCL_DIAG_SUPPRESS(GCC, "-Wliteral-suffix")
+_CCCL_DIAG_SUPPRESS(CLANG, "-Wuser-defined-literals")
+_CCCL_DIAG_SUPPRESS(NVHPC, lit_suffix_no_underscore)
+_CCCL_DIAG_SUPPRESS(MSVC, 4455) // literal suffix identifiers that do not start with an underscore are reserved
+_CCCL_DIAG_SUPPRESS(NV, 2506, 20208) // a user-provided literal suffix must begin with "_", long double treated as
+                                     // double
 
 inline namespace literals
 {
@@ -74,7 +74,6 @@ _CCCL_API constexpr complex<float> operator""if(unsigned long long __im)
 } // namespace complex_literals
 } // namespace literals
 
-_CCCL_END_NV_DIAG_SUPPRESS()
 _CCCL_DIAG_POP
 
 _CCCL_END_NAMESPACE_CUDA_STD

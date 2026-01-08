@@ -56,8 +56,7 @@
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 // MSVC complains about [[no_unique_address]] prior to C++20 as a vendor extension
-_CCCL_DIAG_PUSH
-_CCCL_DIAG_SUPPRESS_MSVC(4848)
+_CCCL_DIAG_PUSH_AND_SUPPRESS(MSVC, 4848)
 
 struct __expected_construct_from_invoke_tag
 {
@@ -760,8 +759,7 @@ struct __expected_move_assign<_Tp, _Err, __smf_availability::__deleted> : __expe
 
 // expected<void, E> base classtemplate <class _Tp, class _Err>
 // MSVC complains about [[no_unique_address]] prior to C++20 as a vendor extension
-_CCCL_DIAG_PUSH
-_CCCL_DIAG_SUPPRESS_MSVC(4848)
+_CCCL_DIAG_PUSH_AND_SUPPRESS(MSVC, 4848)
 
 template <class _Err>
 struct __expected_destruct<void, _Err, false, false>

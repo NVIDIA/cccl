@@ -4,8 +4,7 @@
 
 #include <unittest/unittest.h>
 
-_CCCL_DIAG_PUSH
-_CCCL_DIAG_SUPPRESS_MSVC(4244) // warning C4244: '=': conversion from 'int' to '_Ty', possible loss of data
+_CCCL_DIAG_PUSH_AND_SUPPRESS(MSVC, 4244) // warning C4244: '=': conversion from 'int' to '_Ty', possible loss of data
 
 #define BINARY_FUNCTIONAL_PLACEHOLDERS_TEST(name, op, reference_functor, type_list)                               \
   template <typename Vector>                                                                                      \

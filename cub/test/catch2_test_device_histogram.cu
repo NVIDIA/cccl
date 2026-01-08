@@ -30,7 +30,7 @@
 DECLARE_LAUNCH_WRAPPER(cub::DeviceHistogram::HistogramEven, histogram_even);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceHistogram::HistogramRange, histogram_range);
 
-_CCCL_SUPPRESS_DEPRECATED_PUSH
+_CCCL_DIAG_PUSH_AND_SUPPRESS_DEPRECATED
 DECLARE_TMPL_LAUNCH_WRAPPER(cub::DeviceHistogram::MultiHistogramEven,
                             multi_histogram_even,
                             ESCAPE_LIST(int Channels, int ActiveChannels),
@@ -40,7 +40,7 @@ DECLARE_TMPL_LAUNCH_WRAPPER(cub::DeviceHistogram::MultiHistogramRange,
                             multi_histogram_range,
                             ESCAPE_LIST(int Channels, int ActiveChannels),
                             ESCAPE_LIST(Channels, ActiveChannels));
-_CCCL_SUPPRESS_DEPRECATED_POP
+_CCCL_DIAG_POP_DEPRECATED
 
 namespace cs = cuda::std;
 using cs::array;

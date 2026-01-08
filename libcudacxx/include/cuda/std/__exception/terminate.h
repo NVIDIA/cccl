@@ -28,8 +28,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_CCCL_DIAG_PUSH
-_CCCL_DIAG_SUPPRESS_MSVC(4702) // unreachable code
+_CCCL_DIAG_PUSH_AND_SUPPRESS(MSVC, 4702) // unreachable code
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD_NOVERSION // purposefully not using versioning namespace
 

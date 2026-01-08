@@ -31,8 +31,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_CCCL_DIAG_PUSH
-_CCCL_DIAG_SUPPRESS_CLANG("-Wunused-local-typedefs")
+_CCCL_DIAG_PUSH_AND_SUPPRESS(CLANG, "-Wunused-local-typedefs")
 
 _CCCL_BEGIN_NAMESPACE_CUDA
 

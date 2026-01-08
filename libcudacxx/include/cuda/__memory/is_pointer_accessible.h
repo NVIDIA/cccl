@@ -28,9 +28,8 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_CCCL_DIAG_PUSH
-_CCCL_DIAG_SUPPRESS_CLANG("-Wmissing-braces")
 // clang complains about missing braces in CUmemLocation constructor but GCC complains if we add them
+_CCCL_DIAG_PUSH_AND_SUPPRESS(CLANG, "-Wmissing-braces")
 
 _CCCL_BEGIN_NAMESPACE_CUDA
 

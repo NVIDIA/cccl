@@ -48,8 +48,7 @@
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
-_CCCL_DIAG_PUSH
-_CCCL_DIAG_SUPPRESS_MSVC(4146) // unary minus applied to an unsigned type
+_CCCL_DIAG_PUSH_AND_SUPPRESS(MSVC, 4146) // unary minus applied to an unsigned type
 
 template <class _Int>
 struct __avoid_promotions
@@ -432,9 +431,8 @@ private:
   }
 };
 
-_CCCL_DIAG_PUSH
-_CCCL_DIAG_SUPPRESS_MSVC(4293) // shift count negative or too big
-                               // MSVC is slightly overeager with diagnosing that here
+_CCCL_DIAG_PUSH_AND_SUPPRESS(MSVC, 4293) // shift count negative or too big, MSVC is slightly overeager with diagnosing
+                                         // that here
 template <size_t _Size>
 class __bitset<1, _Size>
 {

@@ -30,7 +30,7 @@
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
-_CCCL_SUPPRESS_DEPRECATED_PUSH
+_CCCL_DIAG_PUSH_AND_SUPPRESS_DEPRECATED
 template <class _CharT, class _Traits>
 class _CCCL_TYPE_VISIBILITY_DEFAULT istreambuf_iterator
 {
@@ -136,7 +136,7 @@ public:
   }
 #endif // _CCCL_STD_VER < 2020
 };
-_CCCL_SUPPRESS_DEPRECATED_POP
+_CCCL_DIAG_POP_DEPRECATED
 
 template <class _CharT, class _Traits>
 [[nodiscard]] _CCCL_API bool

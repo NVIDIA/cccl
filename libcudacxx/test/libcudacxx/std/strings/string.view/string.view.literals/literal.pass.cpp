@@ -24,7 +24,7 @@
 #include <cuda/std/type_traits>
 #include <cuda/std/utility>
 
-_CCCL_DIAG_SUPPRESS_MSVC(4455) // literal suffix identifiers that do not start with an underscore are reserved
+_CCCL_DIAG_SUPPRESS(MSVC, 4455) // literal suffix identifiers that do not start with an underscore are reserved
 
 #if _CCCL_HAS_CHAR8_T()
 using u8string_view = cuda::std::u8string_view;

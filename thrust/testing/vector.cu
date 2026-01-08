@@ -209,8 +209,7 @@ void TestVectorAssignFromHostVector()
 }
 DECLARE_VECTOR_UNITTEST(TestVectorAssignFromHostVector);
 
-_CCCL_DIAG_PUSH
-_CCCL_DIAG_SUPPRESS_CLANG("-Wself-assign")
+_CCCL_DIAG_PUSH_AND_SUPPRESS(CLANG, "-Wself-assign")
 
 template <class Vector>
 void TestVectorToAndFromHostVector()
@@ -262,8 +261,7 @@ void TestVectorAssignFromDeviceVector()
 }
 DECLARE_VECTOR_UNITTEST(TestVectorAssignFromDeviceVector);
 
-_CCCL_DIAG_PUSH
-_CCCL_DIAG_SUPPRESS_CLANG("-Wself-assign")
+_CCCL_DIAG_PUSH_AND_SUPPRESS(CLANG, "-Wself-assign")
 
 template <class Vector>
 void TestVectorToAndFromDeviceVector()

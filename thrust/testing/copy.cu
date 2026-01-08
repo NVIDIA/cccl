@@ -129,8 +129,7 @@ void TestCopyMatchingTypes()
 }
 DECLARE_VECTOR_UNITTEST(TestCopyMatchingTypes);
 
-_CCCL_DIAG_PUSH
-_CCCL_DIAG_SUPPRESS_MSVC(4244) // '=': conversion from 'int' to '_Ty', possible loss of data
+_CCCL_DIAG_PUSH_AND_SUPPRESS(MSVC, 4244) // '=': conversion from 'int' to '_Ty', possible loss of data
 
 template <class Vector>
 void TestCopyMixedTypes()

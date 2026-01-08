@@ -62,8 +62,9 @@ struct __fmt_padding_size_result
 
 // nvcc warns about missing return statement when compiling with msvc host compiler, adding more unreachables doesn't
 // help, so let's just suppress the warning
+_CCCL_DIAG_PUSH
 #if _CCCL_COMPILER(MSVC)
-_CCCL_BEGIN_NV_DIAG_SUPPRESS(940) // missing return statement at end of non-void function
+_CCCL_DIAG_SUPPRESS(NV, 940) // missing return statement at end of non-void function
 #endif // _CCCL_COMPILER(MSVC)
 
 [[nodiscard]] _CCCL_API constexpr __fmt_padding_size_result
@@ -94,9 +95,7 @@ __fmt_padding_size(size_t __size, size_t __width, __fmt_spec_alignment __align)
   }
 }
 
-#if _CCCL_COMPILER(MSVC)
-_CCCL_END_NV_DIAG_SUPPRESS()
-#endif // _CCCL_COMPILER(MSVC)
+_CCCL_DIAG_POP
 
 //! Copy wrapper.
 //!

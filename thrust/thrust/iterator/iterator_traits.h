@@ -94,7 +94,7 @@ using iterator_traits CCCL_DEPRECATED_BECAUSE("Use cuda::std::iterator_traits in
 #endif // _CCCL_COMPILER(NVRTC)
   ::std::iterator_traits<T>;
 
-_CCCL_SUPPRESS_DEPRECATED_PUSH
+_CCCL_DIAG_PUSH_AND_SUPPRESS_DEPRECATED
 
 // value
 
@@ -183,7 +183,7 @@ struct iterator_system_impl<Iterator, ::cuda::std::void_t<typename iterator_trai
 {};
 } // namespace detail
 
-_CCCL_SUPPRESS_DEPRECATED_POP
+_CCCL_DIAG_POP_DEPRECATED
 
 //! Trait obtaining the iterator system of an iterator type, usually as the systems tag type.
 template <typename Iterator>

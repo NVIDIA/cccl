@@ -20,9 +20,6 @@
 #  pragma system_header
 #endif // no system header
 
-_CCCL_DIAG_PUSH
-_CCCL_DIAG_SUPPRESS_CLANG("-Wmismatched-tags")
-
 #include <cuda/__fwd/complex.h>
 #include <cuda/std/__fwd/array.h>
 #include <cuda/std/__fwd/complex.h>
@@ -41,6 +38,8 @@ _CCCL_DIAG_SUPPRESS_CLANG("-Wmismatched-tags")
 // See https://github.com/NVIDIA/libcudacxx/issues/316 for a short discussion
 
 #include <cuda/std/__cccl/prologue.h>
+
+_CCCL_DIAG_PUSH_AND_SUPPRESS(CLANG, "-Wmismatched-tags")
 
 _CCCL_BEGIN_NAMESPACE_STD
 
@@ -205,8 +204,8 @@ struct tuple_element<1, const ::cuda::std::ranges::subrange<_Ip, _Sp, _Kp>>
 
 _CCCL_END_NAMESPACE_STD
 
-#include <cuda/std/__cccl/epilogue.h>
-
 _CCCL_DIAG_POP
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _CUDA_STD___TUPLE_STRUCTURED_BINDINGS_H

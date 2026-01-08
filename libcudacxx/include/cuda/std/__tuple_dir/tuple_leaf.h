@@ -81,8 +81,7 @@ _CCCL_API inline void swap(__tuple_leaf<_Ip, _Hp, _Ep>& __x,
   swap(__x.get(), __y.get());
 }
 
-_CCCL_DIAG_PUSH
-_CCCL_DIAG_SUPPRESS_MSVC(4244) // conversion from '_Tp' to '_Hp', possible loss of data
+_CCCL_DIAG_PUSH_AND_SUPPRESS(MSVC, 4244) // conversion from '_Tp' to '_Hp', possible loss of data
 
 template <class _Tp, class _Up, class _Current, bool = !is_same_v<remove_cvref_t<_Tp>, _Current>>
 inline constexpr bool __tuple_leaf_can_forward = false;

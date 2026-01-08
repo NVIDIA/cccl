@@ -43,7 +43,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_CCCL_BEGIN_NV_DIAG_SUPPRESS(1215)
+_CCCL_DIAG_PUSH_AND_SUPPRESS(NV, 1215)
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
@@ -180,7 +180,7 @@ template <class _Tp, class _Up>
 _CCCL_CONCEPT __has_member_rebind_other =
   _CCCL_REQUIRES_EXPR((_Tp, _Up))(typename(typename _Tp::template rebind<_Up>::other));
 
-_CCCL_SUPPRESS_DEPRECATED_PUSH
+_CCCL_DIAG_PUSH_AND_SUPPRESS_DEPRECATED
 template <class _Tp, class _Up, bool = __has_member_rebind_other<_Tp, _Up>>
 struct __allocator_traits_rebind
 {
@@ -495,7 +495,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT allocator_traits
     }
   }
 };
-_CCCL_SUPPRESS_DEPRECATED_POP
+_CCCL_DIAG_POP_DEPRECATED
 
 template <class _Traits, class _Tp>
 using __rebind_alloc _CCCL_NODEBUG_ALIAS = typename _Traits::template rebind_alloc<_Tp>;
@@ -510,7 +510,7 @@ struct __rebind_alloc_helper
 
 _CCCL_END_NAMESPACE_CUDA_STD
 
-_CCCL_END_NV_DIAG_SUPPRESS()
+_CCCL_DIAG_POP
 
 #include <cuda/std/__cccl/epilogue.h>
 

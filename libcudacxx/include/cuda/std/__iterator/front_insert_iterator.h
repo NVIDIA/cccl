@@ -32,7 +32,7 @@
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
-_CCCL_SUPPRESS_DEPRECATED_PUSH
+_CCCL_DIAG_PUSH_AND_SUPPRESS_DEPRECATED
 template <class _Container>
 class _CCCL_TYPE_VISIBILITY_DEFAULT front_insert_iterator
 {
@@ -84,7 +84,7 @@ public:
     return *this;
   }
 };
-_CCCL_SUPPRESS_DEPRECATED_POP
+_CCCL_DIAG_POP_DEPRECATED
 _CCCL_CTAD_SUPPORTED_FOR_TYPE(front_insert_iterator);
 
 template <class _Container>

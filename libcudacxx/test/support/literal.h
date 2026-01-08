@@ -244,7 +244,7 @@ namespace test_integer_literals
 // clang 20 already warns about this, so we need to suppress the warning here
 _CCCL_DIAG_PUSH
 #if _CCCL_COMPILER(CLANG, >=, 20)
-_CCCL_DIAG_SUPPRESS_CLANG("-Wdeprecated-literal-operator")
+_CCCL_DIAG_SUPPRESS(CLANG, "-Wdeprecated-literal-operator")
 #endif // _CCCL_COMPILER(CLANG, >=, 20)
 
 #if _CCCL_HAS_INT128()

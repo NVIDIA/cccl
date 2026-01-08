@@ -26,8 +26,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_CCCL_DIAG_PUSH
-_CCCL_DIAG_SUPPRESS_NVHPC(inexact_fp_conversion)
+_CCCL_DIAG_PUSH_AND_SUPPRESS(NVHPC, inexact_fp_conversion)
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
@@ -97,7 +96,7 @@ struct __numbers
     }                                                        \
   };
 
-_CCCL_BEGIN_NV_DIAG_SUPPRESS(1046) // floating-point value cannot be represented exactly
+_CCCL_DIAG_PUSH_AND_SUPPRESS(NV, 1046) // floating-point value cannot be represented exactly
 
 _CCCL_STD_NUMBERS_SPECIALATION_IMPL(float, f);
 _CCCL_STD_NUMBERS_SPECIALATION_IMPL(double, );
@@ -108,7 +107,7 @@ _CCCL_STD_NUMBERS_SPECIALATION_IMPL(long double, l);
 _CCCL_STD_NUMBERS_SPECIALATION_IMPL(__float128, q);
 #endif // _CCCL_HAS_FLOAT128()
 
-_CCCL_END_NV_DIAG_SUPPRESS()
+_CCCL_DIAG_POP
 
 #undef _CCCL_STD_NUMBERS_SPECIALATION_IMPL
 

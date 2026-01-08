@@ -222,8 +222,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT array
   }
 };
 
-_CCCL_DIAG_PUSH
-_CCCL_DIAG_SUPPRESS_MSVC(4702) // Unreachable code
+_CCCL_DIAG_PUSH_AND_SUPPRESS(MSVC, 4702) // Unreachable code
 
 template <class _Tp>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT array<_Tp, 0>

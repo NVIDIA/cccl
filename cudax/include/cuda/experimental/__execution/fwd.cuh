@@ -37,8 +37,8 @@
 
 #include <cuda/experimental/__execution/prologue.cuh>
 
-_CCCL_BEGIN_NV_DIAG_SUPPRESS(2642) // call through incomplete class "cuda::experimental::execution::schedule_t"
-                                   // will always produce an error when instantiated.
+_CCCL_DIAG_PUSH_AND_SUPPRESS(NV, 2642) // call through incomplete class "cuda::experimental::execution::schedule_t"
+                                       // will always produce an error when instantiated.
 
 namespace cuda::experimental
 {
@@ -330,7 +330,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __receiver_archetype
 } // namespace execution
 } // namespace cuda::experimental
 
-_CCCL_END_NV_DIAG_SUPPRESS()
+_CCCL_DIAG_POP
 
 #include <cuda/experimental/__execution/epilogue.cuh>
 

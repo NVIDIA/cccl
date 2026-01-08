@@ -85,8 +85,7 @@ struct __any_t
   _CCCL_API operator _Ty&&();
 };
 
-_CCCL_DIAG_PUSH
-_CCCL_DIAG_SUPPRESS_CLANG("-Wmissing-field-initializers")
+_CCCL_DIAG_PUSH_AND_SUPPRESS(CLANG, "-Wmissing-field-initializers")
 
 // use the "magic tuple" trick to get the arity of a structured binding
 // see https://github.com/apolukhin/magic_get
@@ -124,8 +123,7 @@ inline constexpr int structured_binding_size<_Sndr const&> = structured_binding_
 // implementation.
 #if defined(_CCCL_STRUCTURED_BINDING_CAN_INTRODUCE_A_PACK)
 
-_CCCL_DIAG_PUSH
-_CCCL_DIAG_SUPPRESS_CLANG("-Wc++2c-extensions")
+_CCCL_DIAG_PUSH_AND_SUPPRESS(CLANG, "-Wc++2c-extensions")
 
 // C++26, structured binding can introduce a pack.
 struct _CCCL_TYPE_VISIBILITY_DEFAULT visit_t
