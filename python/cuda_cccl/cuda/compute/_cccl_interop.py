@@ -284,33 +284,3 @@ def call_build(build_impl_fn: Callable, *args, **kwargs):
         os.unlink(temp_cubin_file_name)
 
     return result
-
-
-def _make_host_cfunc(state_ptr_ty, fn):
-    """Create a host-callable C function using Numba."""
-    from ._numba.interop import make_host_cfunc
-
-    return make_host_cfunc(state_ptr_ty, fn)
-
-
-def cccl_iterator_set_host_advance(cccl_it: Iterator, array_or_iterator):
-    """Set the host advance function for a CCCL Iterator."""
-    if cccl_it.is_kind_iterator():
-        it = array_or_iterator
-        # Check if it's a CompiledIterator (has _host_advance_fn attribute)
-        if hasattr(it, "_host_advance_fn"):
-            if it._host_advance_fn is not None:
-                # TODO: Support host advance for CompiledIterator
-                raise NotImplementedError(
-                    "host_advance for CompiledIterator is not yet supported"
-                )
-            return
-
-        # Numba-based iterator
-        fn_impl = it.host_advance
-        if fn_impl is not None:
-            cccl_it.host_advance_fn = _make_host_cfunc(it.state_ptr_type, fn_impl)
-        else:
-            raise ValueError(
-                f"Iterator of type {type(it)} does not provide definition of host_advance function"
-            )

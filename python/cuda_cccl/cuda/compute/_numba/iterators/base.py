@@ -20,6 +20,7 @@ from numba import cuda, types
 from numba.core.extending import intrinsic, overload
 
 from ..._bindings import IteratorState
+from ..interop import make_host_cfunc
 
 _DEVICE_POINTER_SIZE = 8
 _DEVICE_POINTER_BITWIDTH = _DEVICE_POINTER_SIZE * 8
@@ -227,6 +228,14 @@ class IteratorBase:
             name=deref_abi_name,
             ltoir=deref_ltoir,
         )
+
+        if self.host_advance is not None:
+            host_advance_fn = make_host_cfunc(self.state_ptr_type, self.host_advance)
+        else:
+            raise ValueError(
+                "Host advance function is not defined for iterator type {type(self)}"
+            )
+
         return Iterator(
             alignment,
             CCCLIteratorKind.ITERATOR,
@@ -234,6 +243,7 @@ class IteratorBase:
             deref_op,
             numba_type_to_info(self.value_type),
             state=self.state,
+            host_advance_fn=host_advance_fn,
         )
 
     def __add__(self, offset: int):

@@ -49,27 +49,6 @@ class _SegmentedReduce:
         self.d_out_cccl = cccl.to_cccl_output_iter(d_out)
         self.start_offsets_in_cccl = cccl.to_cccl_input_iter(start_offsets_in)
         self.end_offsets_in_cccl = cccl.to_cccl_input_iter(end_offsets_in)
-
-        # set host advance functions
-        cccl.cccl_iterator_set_host_advance(self.d_out_cccl, d_out)
-        cccl.cccl_iterator_set_host_advance(
-            self.start_offsets_in_cccl, start_offsets_in
-        )
-        if (
-            self.start_offsets_in_cccl.is_kind_iterator()
-            and self.end_offsets_in_cccl.is_kind_iterator()
-            and is_iterator(start_offsets_in)
-            and is_iterator(end_offsets_in)
-            and get_iterator_kind(start_offsets_in) == get_iterator_kind(end_offsets_in)
-        ):
-            self.end_offsets_in_cccl.host_advance_fn = (
-                self.start_offsets_in_cccl.host_advance_fn
-            )
-        else:
-            cccl.cccl_iterator_set_host_advance(
-                self.end_offsets_in_cccl, end_offsets_in
-            )
-
         self.h_init_cccl = cccl.to_cccl_value(h_init)
 
         # Compile the op with value types
