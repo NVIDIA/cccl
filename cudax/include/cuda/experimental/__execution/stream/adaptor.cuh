@@ -269,10 +269,8 @@ private:
     // the completion kernel, we will be completing the parent's receiver, so we must let
     // the receiver tell us how to launch the kernel.
     auto const __launch_config    = get_launch_config(execution::get_env(__state.__state_.__rcvr_));
-    using __launch_dims_t         = typename decltype(__launch_config)::hierarchy_type;
-    constexpr int __block_threads = __launch_dims_t::static_count(gpu_thread, block);
-    int const __grid_blocks       = __launch_config.hierarchy().count(block, grid);
-    static_assert(__block_threads != ::cuda::std::dynamic_extent);
+    constexpr int __block_threads = gpu_thread.count(block, __launch_config);
+    const int __grid_blocks       = block.count(grid, __launch_config);
 
     // Start the child operation state. This will launch kernels for all the predecessors
     // of this operation.
@@ -291,9 +289,10 @@ private:
   // TODO: untested
   _CCCL_DEVICE_API void __device_start() noexcept
   {
-    using __launch_dims_t         = __dims_of_t<__rcvr_config_t>;
-    constexpr int __block_threads = __launch_dims_t::static_count(gpu_thread, block);
-    auto& __state                 = __get_state();
+    auto& __state = __get_state();
+
+    auto const __launch_config    = get_launch_config(execution::get_env(__state.__state_.__rcvr_));
+    constexpr int __block_threads = gpu_thread.count(block, __launch_config);
 
     // without the following, the kernel in __host_start will fail to launch with
     // cudaErrorInvalidDeviceFunction.

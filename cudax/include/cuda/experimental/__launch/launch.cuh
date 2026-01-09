@@ -22,11 +22,11 @@
 #endif // no system header
 
 #include <cuda/__driver/driver_api.h>
-#include <cuda/__hierarchy/traits.h>
 #include <cuda/__launch/configuration.h>
 #include <cuda/__launch/launch.h>
 #include <cuda/__stream/launch_transform.h>
 #include <cuda/__stream/stream_ref.h>
+#include <cuda/hierarchy>
 #include <cuda/std/__exception/cuda_error.h>
 #include <cuda/std/__type_traits/is_function.h>
 #include <cuda/std/__type_traits/is_pointer.h>
@@ -108,8 +108,9 @@ _CCCL_HOST_API auto __launch_impl(_Dst&& __dst, _Config __conf, ::CUfunction __k
 {
   static_assert(!::cuda::std::is_same_v<decltype(__conf.hierarchy()), no_init_t>,
                 "Can't launch a configuration without hierarchy dimensions");
+  using _Hierarchy = typename _Config::hierarchy_type;
   ::CUlaunchConfig __config{};
-  constexpr bool __has_cluster_level = has_level_v<cluster_level, decltype(__conf.hierarchy())>;
+  constexpr bool __has_cluster_level = _Hierarchy::has_level(cluster);
   constexpr unsigned int __num_attrs_needed =
     ::cuda::__detail::kernel_config_count_attr_space(__conf) + __has_cluster_level;
   ::CUlaunchAttribute __attrs[__num_attrs_needed == 0 ? 1 : __num_attrs_needed];
@@ -122,20 +123,20 @@ _CCCL_HOST_API auto __launch_impl(_Dst&& __dst, _Config __conf, ::CUfunction __k
     ::cuda::__throw_cuda_error(__status, "Failed to prepare a launch configuration");
   }
 
-  __config.gridDimX  = static_cast<unsigned>(__conf.hierarchy().extents(block, grid).x);
-  __config.gridDimY  = static_cast<unsigned>(__conf.hierarchy().extents(block, grid).y);
-  __config.gridDimZ  = static_cast<unsigned>(__conf.hierarchy().extents(block, grid).z);
-  __config.blockDimX = static_cast<unsigned>(__conf.hierarchy().extents(gpu_thread, block).x);
-  __config.blockDimY = static_cast<unsigned>(__conf.hierarchy().extents(gpu_thread, block).y);
-  __config.blockDimZ = static_cast<unsigned>(__conf.hierarchy().extents(gpu_thread, block).z);
+  __config.gridDimX  = block.dims(grid, __conf).x;
+  __config.gridDimY  = block.dims(grid, __conf).y;
+  __config.gridDimZ  = block.dims(grid, __conf).z;
+  __config.blockDimX = gpu_thread.dims(block, __conf).x;
+  __config.blockDimY = gpu_thread.dims(block, __conf).y;
+  __config.blockDimZ = gpu_thread.dims(block, __conf).z;
 
   if constexpr (__has_cluster_level)
   {
     ::CUlaunchAttribute __cluster_dims_attr{};
     __cluster_dims_attr.id                 = ::CU_LAUNCH_ATTRIBUTE_CLUSTER_DIMENSION;
-    __cluster_dims_attr.value.clusterDim.x = static_cast<unsigned>(__conf.hierarchy().extents(block, cluster).x);
-    __cluster_dims_attr.value.clusterDim.y = static_cast<unsigned>(__conf.hierarchy().extents(block, cluster).y);
-    __cluster_dims_attr.value.clusterDim.z = static_cast<unsigned>(__conf.hierarchy().extents(block, cluster).z);
+    __cluster_dims_attr.value.clusterDim.x = block.dims(cluster, __conf).x;
+    __cluster_dims_attr.value.clusterDim.y = block.dims(cluster, __conf).y;
+    __cluster_dims_attr.value.clusterDim.z = block.dims(cluster, __conf).z;
     __config.attrs[__config.numAttrs++]    = __cluster_dims_attr;
   }
 
