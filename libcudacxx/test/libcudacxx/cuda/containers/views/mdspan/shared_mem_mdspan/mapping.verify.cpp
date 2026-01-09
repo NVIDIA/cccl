@@ -14,7 +14,6 @@
 //
 // Mandates:
 //  - LayoutPolicy shall meet the layout mapping policy requirements ([mdspan.layout.policy.reqmts])
-
 #include <cuda/mdspan>
 
 #include "test_macros.h"
