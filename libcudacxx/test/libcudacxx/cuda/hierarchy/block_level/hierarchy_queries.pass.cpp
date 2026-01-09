@@ -23,7 +23,7 @@ __device__ void test_block(
   const Hierarchy& hier, const GridExts& grid_exts, const ClusterExts& cluster_exts, const BlockExts& block_exts)
 {
   // 1. Test cuda::block.dims(x, hier)
-  if constexpr (cuda::has_level_v<cuda::cluster_level, Hierarchy>)
+  if constexpr (Hierarchy::has_level(cuda::cluster))
   {
     uint3 exp{1, 1, 1};
     NV_IF_TARGET(NV_PROVIDES_SM_90, (exp = __clusterDim();))
@@ -32,7 +32,7 @@ __device__ void test_block(
   test_dims(gridDim, cuda::block, cuda::grid, hier);
 
   // 2. Test cuda::block.static_dims(x, hier)
-  if constexpr (cuda::has_level_v<cuda::cluster_level, Hierarchy>)
+  if constexpr (Hierarchy::has_level(cuda::cluster))
   {
     const ulonglong3 exp{
       ClusterExts::static_extent(0),
@@ -51,7 +51,7 @@ __device__ void test_block(
   }
 
   // 3. Test cuda::block.extents(x)
-  if constexpr (cuda::has_level_v<cuda::cluster_level, Hierarchy>)
+  if constexpr (Hierarchy::has_level(cuda::cluster))
   {
     uint3 dims{1, 1, 1};
     NV_IF_TARGET(NV_PROVIDES_SM_90, (dims = __clusterDim();))
@@ -71,7 +71,7 @@ __device__ void test_block(
   }
 
   // 4. Test cuda::block.count(x, hier)
-  if constexpr (cuda::has_level_v<cuda::cluster_level, Hierarchy>)
+  if constexpr (Hierarchy::has_level(cuda::cluster))
   {
     cuda::std::size_t exp = 1;
     NV_IF_TARGET(NV_PROVIDES_SM_90, ({
@@ -84,7 +84,7 @@ __device__ void test_block(
   test_count(cuda::std::size_t{gridDim.z} * gridDim.y * gridDim.x, cuda::block, cuda::grid, hier);
 
   // 5. test cuda::block.index(x, hier)
-  if constexpr (cuda::has_level_v<cuda::cluster_level, Hierarchy>)
+  if constexpr (Hierarchy::has_level(cuda::cluster))
   {
     uint3 exp{0, 0, 0};
     NV_IF_TARGET(NV_PROVIDES_SM_90, (exp = __clusterRelativeBlockIdx();))
@@ -93,7 +93,7 @@ __device__ void test_block(
   test_index(blockIdx, cuda::block, cuda::grid, hier);
 
   // 6. Test cuda::block.rank(x, hier)
-  if constexpr (cuda::has_level_v<cuda::cluster_level, Hierarchy>)
+  if constexpr (Hierarchy::has_level(cuda::cluster))
   {
     cuda::std::size_t exp = 0;
     NV_IF_TARGET(NV_PROVIDES_SM_90, ({

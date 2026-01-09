@@ -28,6 +28,8 @@
 
 _CCCL_BEGIN_NAMESPACE_CUDA
 
+using dimensions_index_type = unsigned;
+
 // hierarchy level
 
 template <class _Level>
@@ -52,15 +54,23 @@ inline constexpr bool __is_native_hierarchy_level_v =
 // hierarchy
 
 template <class _BottomUnit, class... _Levels>
-struct hierarchy_dimensions;
+class hierarchy;
 
 template <class _Tp>
 inline constexpr bool __is_hierarchy_v = false;
 template <class _BottomUnit, class... _Levels>
-inline constexpr bool __is_hierarchy_v<hierarchy_dimensions<_BottomUnit, _Levels...>> = true;
+inline constexpr bool __is_hierarchy_v<hierarchy<_BottomUnit, _Levels...>> = true;
 
 template <typename... _Levels>
-struct allowed_levels;
+struct __allowed_levels;
+
+struct __hierarchy_level_desc_base
+{};
+template <class _Level, class _Exts>
+class hierarchy_level_desc;
+
+template <class _Tp>
+inline constexpr bool __is_hierarchy_level_desc_v = ::cuda::std::is_base_of_v<__hierarchy_level_desc_base, _Tp>;
 
 _CCCL_END_NAMESPACE_CUDA
 
