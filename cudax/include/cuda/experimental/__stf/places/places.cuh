@@ -337,7 +337,7 @@ public:
         : affine(mv(place))
     {}
 
-    virtual exec_place activate(backend_ctx_untyped&) const
+    virtual exec_place activate() const
     {
       if (affine.is_device())
       {
@@ -354,7 +354,7 @@ public:
       return exec_place();
     }
 
-    virtual void deactivate(backend_ctx_untyped&, const exec_place& prev) const
+    virtual void deactivate(const exec_place& prev) const
     {
       if (affine.is_device())
       {
@@ -534,9 +534,104 @@ public:
     return pimpl->get_stream_pool(async_resources, for_computation);
   }
 
+  /**
+   * @brief Get a decorated stream from the stream pool associated to this execution place.
+   *
+   * This method can be used to obtain CUDA streams from execution places without requiring
+   * a CUDASTF context. This is useful when you want to use CUDASTF's place abstractions
+   * (devices, green contexts) for stream management without the full task-based model.
+   *
+   * @note If you are using a CUDASTF context, use `ctx.async_resources()` to ensure the
+   *       same stream pools are shared between your code and the context's internal operations.
+   *
+   * @param async_resources Handle managing the stream pools. Create a standalone
+   *        `async_resources_handle` for context-free usage, or use `ctx.async_resources()`
+   *        when working alongside a CUDASTF context.
+   * @param for_computation Hint for selecting which pool to use. When true, returns a stream
+   *        from the computation pool; when false, returns a stream from the data transfer pool.
+   *        Using separate pools for computation and transfers can improve overlapping.
+   *        This is a performance hint and does not affect correctness.
+   * @return A decorated_stream containing the CUDA stream and metadata (device ID, pool index)
+   */
   decorated_stream getStream(async_resources_handle& async_resources, bool for_computation) const
   {
     return pimpl->getStream(async_resources, for_computation);
+  }
+
+  /**
+   * @brief Get a CUDA stream from the stream pool associated to this execution place.
+   *
+   * This method can be used to obtain CUDA streams from execution places without requiring
+   * a CUDASTF context. This is useful when you want to use CUDASTF's place abstractions
+   * (devices, green contexts) for stream management without the full task-based model.
+   *
+   * Example usage without a context:
+   * @code
+   * async_resources_handle resources;
+   * exec_place place = exec_place::device(0);
+   * cudaStream_t stream = place.pick_stream(resources);
+   * myKernel<<<grid, block, 0, stream>>>(...);
+   * @endcode
+   *
+   * Example usage with a context (sharing resources):
+   * @code
+   * stream_ctx ctx;
+   * exec_place place = exec_place::device(0);
+   * cudaStream_t stream = place.pick_stream(ctx.async_resources());
+   * // Stream comes from the same pool used by ctx internally
+   * @endcode
+   *
+   * @note If you are using a CUDASTF context, use `ctx.async_resources()` to ensure the
+   *       same stream pools are shared between your code and the context's internal operations.
+   *
+   * @param async_resources Handle managing the stream pools. Create a standalone
+   *        `async_resources_handle` for context-free usage, or use `ctx.async_resources()`
+   *        when working alongside a CUDASTF context.
+   * @param for_computation Hint for selecting which pool to use. When true, returns a stream
+   *        from the computation pool; when false, returns a stream from the data transfer pool.
+   *        Using separate pools for computation and transfers can improve overlapping.
+   *        This is a performance hint and does not affect correctness. Defaults to true.
+   * @return A CUDA stream associated with this execution place
+   */
+  cudaStream_t pick_stream(async_resources_handle& async_resources, bool for_computation = true) const
+  {
+    return getStream(async_resources, for_computation).stream;
+  }
+
+  /**
+   * @brief Get the number of streams available in the pool for this execution place.
+   *
+   * @param async_resources Handle managing the stream pools
+   * @param for_computation Hint for selecting which pool to query (computation or transfer pool)
+   * @return The number of stream slots in the pool
+   */
+  size_t stream_pool_size(async_resources_handle& async_resources, bool for_computation = true) const
+  {
+    return get_stream_pool(async_resources, for_computation).size();
+  }
+
+  /**
+   * @brief Get all streams from the pool associated to this execution place.
+   *
+   * This method returns a vector containing all CUDA streams in the pool. Streams are
+   * created lazily, so calling this method will create any streams that haven't been
+   * created yet.
+   *
+   * @param async_resources Handle managing the stream pools
+   * @param for_computation Hint for selecting which pool to use (computation or transfer pool)
+   * @return A vector of CUDA streams from the pool
+   */
+  ::std::vector<cudaStream_t>
+  pick_all_streams(async_resources_handle& async_resources, bool for_computation = true) const
+  {
+    auto& pool = get_stream_pool(async_resources, for_computation);
+    ::std::vector<cudaStream_t> result;
+    result.reserve(pool.size());
+    for (size_t i = 0; i < pool.size(); ++i)
+    {
+      result.push_back(pool.next().stream);
+    }
+    return result;
   }
 
   // TODO make protected !
@@ -550,9 +645,9 @@ public:
    *
    * @return `exec_place` The previous execution place. See `deactivate` below.
    */
-  exec_place activate(backend_ctx_untyped& state) const
+  exec_place activate() const
   {
-    return pimpl->activate(state);
+    return pimpl->activate();
   }
 
   /**
@@ -560,9 +655,9 @@ public:
    *
    * @warning Undefined behavior if you don't pass the result of `activate`.
    */
-  void deactivate(backend_ctx_untyped& state, const exec_place& p) const
+  void deactivate(const exec_place& p) const
   {
-    pimpl->deactivate(state, p);
+    pimpl->deactivate(p);
   }
 
   bool is_host() const
@@ -699,11 +794,11 @@ public:
     impl()
         : exec_place::impl(data_place::host())
     {}
-    exec_place activate(backend_ctx_untyped&) const override
+    exec_place activate() const override
     {
       return exec_place();
     } // no-op
-    void deactivate(backend_ctx_untyped&, const exec_place& p) const override
+    void deactivate(const exec_place& p) const override
     {
       _CCCL_ASSERT(!p.get_impl(), "");
     } // no-op
@@ -857,14 +952,14 @@ public:
       return ::std::string("GRID place");
     }
 
-    exec_place activate(backend_ctx_untyped&) const override
+    exec_place activate() const override
     {
       // No-op
       return exec_place();
     }
 
     // TODO : shall we deactivate the current place, if any ?
-    void deactivate(backend_ctx_untyped&, const exec_place& _prev) const override
+    void deactivate(const exec_place& _prev) const override
     {
       // No-op
       EXPECT(!_prev.get_impl(), "Invalid execution place.");
@@ -913,16 +1008,16 @@ public:
       return places;
     }
 
-    exec_place grid_activate(backend_ctx_untyped& ctx, size_t i) const
+    exec_place grid_activate(size_t i) const
     {
       const auto& v = get_places();
-      return v[i].activate(ctx);
+      return v[i].activate();
     }
 
-    void grid_deactivate(backend_ctx_untyped& ctx, size_t i, exec_place p) const
+    void grid_deactivate(size_t i, exec_place p) const
     {
       const auto& v = get_places();
-      v[i].deactivate(ctx, p);
+      v[i].deactivate(p);
     }
 
     const exec_place& get_current_place()
@@ -931,35 +1026,35 @@ public:
     }
 
     // Set the current place from the 1D index within the grid (flattened grid)
-    void set_current_place(backend_ctx_untyped& ctx, size_t p_index)
+    void set_current_place(size_t p_index)
     {
       // Unset the previous place, if any
       if (current_p_1d >= 0)
       {
         // First deactivate the previous place
-        grid_deactivate(ctx, current_p_1d, old_place);
+        grid_deactivate(current_p_1d, old_place);
       }
 
       // get the 1D index for that position
       current_p_1d = (::std::ptrdiff_t) p_index;
 
       // The returned value contains the state to restore when we deactivate the place
-      old_place = grid_activate(ctx, current_p_1d);
+      old_place = grid_activate(current_p_1d);
     }
 
     // Set the current place, given the position in the grid
-    void set_current_place(backend_ctx_untyped& ctx, pos4 p)
+    void set_current_place(pos4 p)
     {
       size_t p_index = dims.get_index(p);
-      set_current_place(ctx, p_index);
+      set_current_place(p_index);
     }
 
-    void unset_current_place(backend_ctx_untyped& ctx)
+    void unset_current_place()
     {
       EXPECT(current_p_1d >= 0, "unset_current_place() called without corresponding call to set_current_place()");
 
       // First deactivate the previous place
-      grid_deactivate(ctx, current_p_1d, old_place);
+      grid_deactivate(current_p_1d, old_place);
       current_p_1d = -1;
     }
 
@@ -1077,9 +1172,9 @@ public:
   }
 
   // Set the current place from the 1D index within the grid (flattened grid)
-  void set_current_place(backend_ctx_untyped& ctx, size_t p_index)
+  void set_current_place(size_t p_index)
   {
-    return get_impl()->set_current_place(ctx, p_index);
+    return get_impl()->set_current_place(p_index);
   }
 
   // Get the current execution place
@@ -1089,14 +1184,14 @@ public:
   }
 
   // Set the current place, given the position in the grid
-  void set_current_place(backend_ctx_untyped& ctx, pos4 p)
+  void set_current_place(pos4 p)
   {
-    return get_impl()->set_current_place(ctx, p);
+    return get_impl()->set_current_place(p);
   }
 
-  void unset_current_place(backend_ctx_untyped& ctx)
+  void unset_current_place()
   {
-    return get_impl()->unset_current_place(ctx);
+    return get_impl()->unset_current_place();
   }
 
   ::std::shared_ptr<impl> get_impl() const
