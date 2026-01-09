@@ -96,7 +96,9 @@ int main(int, char**)
     "");
   static_assert((cuda::std::is_same<cuda::std::reference_wrapper<C()>::result_type, C>::value), "");
   static_assert(has_result_type<cuda::std::reference_wrapper<functor3>>::value, "");
+#if !TEST_COMPILER(MSVC, >=, 19, 50) // Visual Studio 2026 fails this
   static_assert(!has_result_type<cuda::std::reference_wrapper<functor4>>::value, "");
+#endif // !TEST_COMPILER(MSVC, >=, 19, 50)
   static_assert(!has_result_type<cuda::std::reference_wrapper<C>>::value, "");
 
   return 0;
