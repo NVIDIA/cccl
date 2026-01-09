@@ -548,11 +548,8 @@ public:
     return mv(*this);
   }
 
-#if _CCCL_COMPILER(MSVC)
   // TODO (miscco): figure out why MSVC is complaining about unreachable code here
-  _CCCL_DIAG_PUSH
-  _CCCL_DIAG_SUPPRESS_MSVC(4702) // unreachable code
-#endif // _CCCL_COMPILER(MSVC)
+  _CCCL_DIAG_PUSH_AND_SUPPRESS(MSVC, 4702) // unreachable code
 
   template <typename Fun>
   void operator->*(Fun&& f)
@@ -666,9 +663,7 @@ public:
       ::std::apply(f, tuple_prepend(mv(childGraph), typed_deps()));
     }
   }
-#if _CCCL_COMPILER(MSVC)
   _CCCL_DIAG_POP
-#endif // _CCCL_COMPILER(MSVC)
 
 private:
   auto typed_deps()

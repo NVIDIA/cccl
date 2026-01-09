@@ -3,7 +3,7 @@
 _CCCL_DIAG_PUSH
 // gcc 10 and 11 wrongly warn about an out-of-bounds access in TestWritingStridedIteratorToStructMember
 #if _CCCL_COMPILER(GCC, >=, 10) && _CCCL_COMPILER(GCC, <, 12)
-_CCCL_DIAG_SUPPRESS_GCC("-Warray-bounds")
+_CCCL_DIAG_SUPPRESS(GCC, "-Warray-bounds")
 #endif // _CCCL_COMPILER(GCC, >=, 10) && _CCCL_COMPILER(GCC, <, 12)
 
 #include <thrust/device_vector.h>

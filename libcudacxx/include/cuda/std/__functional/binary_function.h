@@ -47,10 +47,10 @@ struct __binary_function_keep_layout_base
 };
 
 #if defined(_LIBCUDACXX_ENABLE_CXX17_REMOVED_UNARY_BINARY_FUNCTION)
-_CCCL_SUPPRESS_DEPRECATED_PUSH
+_CCCL_DIAG_PUSH_AND_SUPPRESS_DEPRECATED
 template <class _Arg1, class _Arg2, class _Result>
 using __binary_function = binary_function<_Arg1, _Arg2, _Result>;
-_CCCL_SUPPRESS_DEPRECATED_POP
+_CCCL_DIAG_POP_DEPRECATED
 #else
 template <class _Arg1, class _Arg2, class _Result>
 using __binary_function = __binary_function_keep_layout_base<_Arg1, _Arg2, _Result>;

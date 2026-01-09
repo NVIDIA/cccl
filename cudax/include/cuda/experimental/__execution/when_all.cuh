@@ -413,8 +413,7 @@ template <class _Child, class... _Env>
   }
 }
 
-_CCCL_DIAG_PUSH
-_CCCL_DIAG_SUPPRESS_GCC("-Wunused-value")
+_CCCL_DIAG_PUSH_AND_SUPPRESS(GCC, "-Wunused-value")
 
 template <class... _Completions>
 [[nodiscard]] _CCCL_API _CCCL_CONSTEVAL auto when_all_t::__merge_completions(_Completions... __cs)

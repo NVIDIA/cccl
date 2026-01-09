@@ -17,8 +17,7 @@
 #  define THRUST_DISABLE_BROKEN_GCC_VECTORIZER
 #endif
 
-_CCCL_DIAG_PUSH
-_CCCL_DIAG_SUPPRESS_MSVC(4244 4267) // possible loss of data
+_CCCL_DIAG_PUSH_AND_SUPPRESS(MSVC, 4244, 4267) // possible loss of data
 
 template <class Vector>
 void TestGatherSimple()

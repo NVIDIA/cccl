@@ -20,7 +20,6 @@
 #endif
 #undef _CCCL_PROLOGUE_INCLUDED
 
-_CCCL_NV_DIAG_POP()
 _CCCL_DIAG_POP
 
 // __declspec modifiers

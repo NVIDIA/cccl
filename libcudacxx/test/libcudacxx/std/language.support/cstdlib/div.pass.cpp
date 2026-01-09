@@ -13,7 +13,7 @@
 
 #include "test_macros.h"
 
-_CCCL_DIAG_SUPPRESS_MSVC(4244) // conversion from fp to integral, possible loss of data
+_CCCL_DIAG_SUPPRESS(MSVC, 4244) // conversion from fp to integral, possible loss of data
 
 using I   = int;
 using IL  = long;

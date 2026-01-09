@@ -53,8 +53,7 @@ _CCCL_API constexpr auto ssize(const _Cont& __c) noexcept(
 
 // GCC complains about the implicit conversion from ptrdiff_t to size_t in
 // the array bound.
-_CCCL_DIAG_PUSH
-_CCCL_DIAG_SUPPRESS_GCC("-Wsign-conversion")
+_CCCL_DIAG_PUSH_AND_SUPPRESS(GCC, "-Wsign-conversion")
 template <class _Tp, ptrdiff_t _Sz>
 _CCCL_API constexpr ptrdiff_t ssize(const _Tp (&)[_Sz]) noexcept
 {

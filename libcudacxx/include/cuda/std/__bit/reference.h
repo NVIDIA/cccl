@@ -478,8 +478,7 @@ _CCCL_API constexpr __bit_iterator<_Cp, false> __copy_backward_aligned(
   return __result;
 }
 
-_CCCL_DIAG_PUSH
-_CCCL_DIAG_SUPPRESS_MSVC(4146) // unary minus applied to unsigned type
+_CCCL_DIAG_PUSH_AND_SUPPRESS(MSVC, 4146) // unary minus applied to unsigned type
 
 template <class _Cp, bool _IsConst>
 _CCCL_API constexpr __bit_iterator<_Cp, false> __copy_backward_unaligned(
@@ -536,8 +535,7 @@ _CCCL_API constexpr __bit_iterator<_Cp, false> __copy_backward_unaligned(
 #else // ^^ GCC < 9 ^^ | vv !GCC || GCC >= 9 vv
         --__result.__seg_;
 #endif // !GCC || GCC >= 9
-        _CCCL_DIAG_PUSH
-        _CCCL_DIAG_SUPPRESS_MSVC(4146) // unary minus applied to unsigned type
+        _CCCL_DIAG_PUSH_AND_SUPPRESS(MSVC, 4146) // unary minus applied to unsigned type
         __result.__ctz_ = static_cast<unsigned>(-__dn & (__bits_per_word - 1));
         _CCCL_DIAG_POP
         __m = ~__storage_type(0) << __result.__ctz_;

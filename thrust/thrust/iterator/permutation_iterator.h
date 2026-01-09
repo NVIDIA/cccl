@@ -163,17 +163,15 @@ public:
 
 private:
   // MSVC incorrectly warning about returning a reference to a local/temporary here.
-  // NVHPC breaks with push / pop within a class
-#if _CCCL_COMPILER(MSVC)
-  _CCCL_DIAG_PUSH
-  _CCCL_DIAG_SUPPRESS_MSVC(4172)
-#endif // _CCCL_COMPILER(MSVC)
+  _CCCL_DIAG_PUSH_AND_SUPPRESS(MSVC, 4172)
 
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_HOST_DEVICE typename super_t::reference dereference() const
   {
     return *(m_element_iterator + *this->base());
   }
+
+  _CCCL_DIAG_POP
 
   // make friends for the copy constructor
   template <typename, typename>

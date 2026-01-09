@@ -200,10 +200,10 @@ template <class... _Sndr>
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 // get_completion_signatures
-_CCCL_DIAG_PUSH
+
 // warning C4913: user defined binary operator ',' exists but no overload could convert all operands,
 // default built-in binary operator ',' used
-_CCCL_DIAG_SUPPRESS_MSVC(4913)
+_CCCL_DIAG_PUSH_AND_SUPPRESS(MSVC, 4913)
 
 #define _CUDAX_GET_COMPLSIGS(...) \
   ::cuda::std::remove_reference_t<_CCCL_PP_FIRST(__VA_ARGS__)>::template get_completion_signatures<__VA_ARGS__>()

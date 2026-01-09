@@ -253,8 +253,7 @@ C2H_TEST("Transform works with integral types with well-known operations", "[tra
   unary_transform(input_ptr, output_ptr, num_items, op, build_cache, test_key);
 
   std::vector<T> expected(num_items, 0);
-  _CCCL_DIAG_PUSH
-  _CCCL_DIAG_SUPPRESS_MSVC(4146) // unary minus on unsigned type
+  _CCCL_DIAG_PUSH_AND_SUPPRESS(MSVC, 4146) // unary minus on unsigned type
   std::transform(input.begin(), input.end(), expected.begin(), [](const T& x) {
     return -x;
   });
@@ -533,8 +532,7 @@ C2H_TEST("Transform works with floating point types", "[transform]", floating_po
   operation_t op                   = make_operation("op", get_unary_op(get_type_info<T>().type));
   const std::vector<int> int_input = generate<int>(num_items);
   // Suppress harmless conversion warnings on MSVC
-  _CCCL_DIAG_PUSH
-  _CCCL_DIAG_SUPPRESS_MSVC(4244)
+  _CCCL_DIAG_PUSH_AND_SUPPRESS(MSVC, 4244)
   const std::vector<T> input(int_input.begin(), int_input.end());
   _CCCL_DIAG_POP
   const std::vector<T> output(num_items, 0);

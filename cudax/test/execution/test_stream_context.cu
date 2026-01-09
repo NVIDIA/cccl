@@ -21,7 +21,7 @@
 
 #include "testing.cuh" // IWYU pragma: keep
 
-_CCCL_BEGIN_NV_DIAG_SUPPRESS(177) // function "_is_on_device" was declared but never referenced
+_CCCL_DIAG_SUPPRESS(NV, 177) // function "_is_on_device" was declared but never referenced
 
 namespace ex = cuda::experimental::execution;
 

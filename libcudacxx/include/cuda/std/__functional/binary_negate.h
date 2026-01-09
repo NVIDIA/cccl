@@ -48,13 +48,13 @@ public:
   }
 };
 
-_CCCL_SUPPRESS_DEPRECATED_PUSH
+_CCCL_DIAG_PUSH_AND_SUPPRESS_DEPRECATED
 template <class _Predicate>
 CCCL_DEPRECATED _CCCL_API constexpr binary_negate<_Predicate> not2(const _Predicate& __pred)
 {
   return binary_negate<_Predicate>(__pred);
 }
-_CCCL_SUPPRESS_DEPRECATED_POP
+_CCCL_DIAG_POP_DEPRECATED
 
 #endif // _CCCL_STD_VER <= 2017 || defined(_LIBCUDACXX_ENABLE_CXX20_REMOVED_NEGATORS)
 

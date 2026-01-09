@@ -57,12 +57,12 @@ extern __declfn_t<_Tp&&> declval<_Tp, void_t<_Tp&&>>;
 
 // Suppress deprecation notice for volatile-qualified return type resulting
 // from volatile-qualified types _Tp.
-_CCCL_SUPPRESS_DEPRECATED_PUSH
+_CCCL_DIAG_PUSH_AND_SUPPRESS_DEPRECATED
 template <class _Tp>
 _CCCL_API inline _Tp&& __declval(int);
 template <class _Tp>
 _CCCL_API inline _Tp __declval(long);
-_CCCL_SUPPRESS_DEPRECATED_POP
+_CCCL_DIAG_POP_DEPRECATED
 
 template <class _Tp>
 _CCCL_API inline decltype(::cuda::std::__declval<_Tp>(0)) declval() noexcept;

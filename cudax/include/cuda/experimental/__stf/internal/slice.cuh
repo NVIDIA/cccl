@@ -955,8 +955,7 @@ void unpin(mdspan<T, P...>& s)
   }
 }
 
-_CCCL_DIAG_PUSH
-_CCCL_DIAG_SUPPRESS_MSVC(4702) // unreachable code
+_CCCL_DIAG_PUSH_AND_SUPPRESS(MSVC, 4702) // unreachable code
 
 //! @brief Computes a hash value for the contents of an mdspan.
 //!

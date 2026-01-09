@@ -59,8 +59,7 @@ inline constexpr bool is_restrict_accessor_v<__restrict_accessor<_Accessor>> = t
  * Restrict Accessor
  **********************************************************************************************************************/
 
-_CCCL_DIAG_PUSH
-_CCCL_DIAG_SUPPRESS_GCC("-Wignored-qualifiers")
+_CCCL_DIAG_PUSH_AND_SUPPRESS(GCC, "-Wignored-qualifiers")
 
 template <typename _Accessor>
 class __restrict_accessor : public _Accessor

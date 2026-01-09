@@ -49,10 +49,10 @@
  * If defined, the default suppression of kernel visibility attribute warning is disabled.
  */
 #  if !defined(THRUST_DISABLE_KERNEL_VISIBILITY_WARNING_SUPPRESSION)
-_CCCL_DIAG_SUPPRESS_GCC("-Wattributes")
-_CCCL_DIAG_SUPPRESS_CLANG("-Wattributes")
+_CCCL_DIAG_SUPPRESS(GCC, "-Wattributes")
+_CCCL_DIAG_SUPPRESS(CLANG, "-Wattributes")
 #    if !_CCCL_CUDA_COMPILER(NVHPC)
-_CCCL_DIAG_SUPPRESS_NVHPC(attribute_requires_external_linkage)
+_CCCL_DIAG_SUPPRESS(NVHPC, attribute_requires_external_linkage)
 #    endif // !_CCCL_CUDA_COMPILER(NVHPC)
 #  endif // !THRUST_DISABLE_KERNEL_VISIBILITY_WARNING_SUPPRESSION
 

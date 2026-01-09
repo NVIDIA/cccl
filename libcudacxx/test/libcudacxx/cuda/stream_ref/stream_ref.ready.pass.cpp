@@ -15,7 +15,7 @@
 
 #include "test_macros.h"
 
-_CCCL_SUPPRESS_DEPRECATED_PUSH
+_CCCL_DIAG_PUSH_AND_SUPPRESS_DEPRECATED
 
 void test_ready(cuda::stream_ref& ref)
 {

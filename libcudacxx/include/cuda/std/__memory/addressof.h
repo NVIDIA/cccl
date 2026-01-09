@@ -46,8 +46,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_CCCL_DIAG_PUSH
-_CCCL_DIAG_SUPPRESS_MSVC(4312) // warning C4312: 'type cast': conversion from '_Tp' to '_Tp *' of greater size
+_CCCL_DIAG_PUSH_AND_SUPPRESS(MSVC, 4312) // warning C4312: 'type cast': conversion from '_Tp' to '_Tp *' of greater size
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 

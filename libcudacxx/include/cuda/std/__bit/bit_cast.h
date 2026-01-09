@@ -44,8 +44,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 #  define _CCCL_HAS_CONSTEXPR_BIT_CAST() 0
 #  if _CCCL_COMPILER(GCC, >=, 8)
 // GCC starting with GCC8 warns about our extended floating point types having protected data members
-_CCCL_DIAG_PUSH
-_CCCL_DIAG_SUPPRESS_GCC("-Wclass-memaccess")
+_CCCL_DIAG_PUSH_AND_SUPPRESS(GCC, "-Wclass-memaccess")
 #  endif // _CCCL_COMPILER(GCC, >=, 8)
 #endif // !_CCCL_BUILTIN_BIT_CAST
 

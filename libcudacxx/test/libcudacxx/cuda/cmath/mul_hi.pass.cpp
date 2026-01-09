@@ -17,7 +17,7 @@
 
 #include "literal.h"
 
-_CCCL_DIAG_SUPPRESS_NVCC(23)
+_CCCL_DIAG_SUPPRESS(NV, 23)
 
 template <typename T>
 __host__ __device__ constexpr void test_type()

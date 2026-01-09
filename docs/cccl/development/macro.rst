@@ -461,33 +461,34 @@ Debugging Macros
 Warning Suppression Macros
 --------------------------
 
-+-----------------------------+--------------------------------------------+
-| ``_CCCL_DIAG_PUSH``         | Portable ``#pragma push``                  |
-+-----------------------------+--------------------------------------------+
-| ``_CCCL_DIAG_POP``          | Portable ``#pragma pop``                   |
-+-----------------------------+--------------------------------------------+
-
-**Compiler-specific Suppression Macros**:
-
-+-------------------------------------+-------------------------------------------------------------+
-| ``_CCCL_DIAG_SUPPRESS_CLANG(X)``    | Suppress clang warning, e.g. ``"-Wattributes"``             |
-+-------------------------------------+-------------------------------------------------------------+
-| ``_CCCL_DIAG_SUPPRESS_GCC(X)``      | Suppress gcc warning, e.g. ``"-Wattributes"``               |
-+-------------------------------------+-------------------------------------------------------------+
-| ``_CCCL_DIAG_SUPPRESS_NVHPC(X)``    | Suppress nvhpc warning, e.g. ``expr_has_no_effect``         |
-+-------------------------------------+-------------------------------------------------------------+
-| ``_CCCL_DIAG_SUPPRESS_MSVC(X)``     | Suppress msvc warning, e.g. ``4127``                        |
-+-------------------------------------+-------------------------------------------------------------+
-| ``_CCCL_BEGIN_NV_DIAG_SUPPRESS(X)`` | Start to suppress nvcc warning, e.g. ``177``                |
-+-------------------------------------+-------------------------------------------------------------+
-| ``_CCCL_END_NV_DIAG_SUPPRESS()``    | End to suppress nvcc warning                                |
-+-------------------------------------+-------------------------------------------------------------+
++-------------------------------------------------+-------------------------------------------------------------------------------------------------------------------------------+
+| ``_CCCL_DIAG_PUSH``                             | Portable ``#pragma diagnostic push``                                                                                          |
++-------------------------------------------------+-------------------------------------------------------------------------------------------------------------------------------+
+| ``_CCCL_DIAG_POP``                              | Portable ``#pragma diagnostic pop``                                                                                           |
++-------------------------------------------------+-------------------------------------------------------------------------------------------------------------------------------+
+| ``_CCCL_DIAG_SUPPRESS(COMPILER, ...)``          | Suppress list of warnings for a given compiler                                                                                |
++-------------------------------------------------+-------------------------------------------------------------------------------------------------------------------------------+
+| ``_CCCL_DIAG_PUSH_AND_SUPPRESS(COMPILER, ...)`` | Shortcut for ``_CCCL_DIAG_PUSH`` and ``_CCCL_DIAG_SUPPRESS``                                                                  |
++-------------------------------------------------+-------------------------------------------------------------------------------------------------------------------------------+
+| ``_CCCL_DIAG_PUSH_AND_SUPPRESS_DEPRECATED``     | Shortcut for ``_CCCL_DIAG_PUSH`` and deprecation warnings suppression                                                         |
++-------------------------------------------------+-------------------------------------------------------------------------------------------------------------------------------+
+| ``_CCCL_DIAG_POP_DEPRECATED``                   | Expands just to ``_CCCL_DIAG_POP``, should be used to reset the state after using ``_CCCL_DIAG_PUSH_AND_SUPPRESS_DEPRECATED`` |
++-------------------------------------------------+-------------------------------------------------------------------------------------------------------------------------------+
 
 Usage example:
 
 .. code-block:: c++
 
     _CCCL_DIAG_PUSH
-    _CCCL_DIAG_SUPPRESS_GCC("-Wattributes")
+    _CCCL_DIAG_SUPPRESS(GCC, "-Wattributes", "-Wself-assign")
     // code ..
     _CCCL_DIAG_POP
+
+    _CCCL_DIAG_PUSH_AND_SUPPRESS(NV, 171) // should be used only for suppressions for 1 compiler
+    // _CCCL_DIAG_SUPPRESS(...) - wrong, rather use combination of _CCCL_DIAG_PUSH and 2x _CCCL_DIAG_SUPPRESS
+    // code that does invalid type conversion ..
+    _CCCL_DIAG_POP
+
+    _CCCL_DIAG_PUSH_AND_SUPPRESS_DEPRECATED
+    // code that uses deprecated features ..
+    _CCCL_DIAG_POP_DEPRECATED

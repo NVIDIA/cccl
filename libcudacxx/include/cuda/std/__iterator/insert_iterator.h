@@ -34,7 +34,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 template <class _Container>
 using __insert_iterator_iter_t = typename _Container::iterator;
 
-_CCCL_SUPPRESS_DEPRECATED_PUSH
+_CCCL_DIAG_PUSH_AND_SUPPRESS_DEPRECATED
 template <class _Container>
 class _CCCL_TYPE_VISIBILITY_DEFAULT insert_iterator
 {
@@ -91,7 +91,7 @@ public:
     return *this;
   }
 };
-_CCCL_SUPPRESS_DEPRECATED_POP
+_CCCL_DIAG_POP_DEPRECATED
 
 template <class _Container>
 [[nodiscard]] _CCCL_API constexpr insert_iterator<_Container>

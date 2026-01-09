@@ -45,10 +45,10 @@ struct __unary_function_keep_layout_base
 
 #if defined(_LIBCUDACXX_ENABLE_CXX17_REMOVED_UNARY_BINARY_FUNCTION)
 
-_CCCL_SUPPRESS_DEPRECATED_PUSH
+_CCCL_DIAG_PUSH_AND_SUPPRESS_DEPRECATED
 template <class _Arg, class _Result>
 using __unary_function = unary_function<_Arg, _Result>;
-_CCCL_SUPPRESS_DEPRECATED_POP
+_CCCL_DIAG_POP_DEPRECATED
 
 #else
 template <class _Arg, class _Result>

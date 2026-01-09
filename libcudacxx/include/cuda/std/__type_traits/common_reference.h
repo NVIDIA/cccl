@@ -39,7 +39,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_CCCL_BEGIN_NV_DIAG_SUPPRESS(1384) // warning: pointer converted to bool
+_CCCL_DIAG_PUSH_AND_SUPPRESS(NV, 1384) // warning: pointer converted to bool
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
@@ -255,7 +255,7 @@ struct common_reference
 
 _CCCL_END_NAMESPACE_CUDA_STD
 
-_CCCL_END_NV_DIAG_SUPPRESS()
+_CCCL_DIAG_POP
 
 #include <cuda/std/__cccl/epilogue.h>
 

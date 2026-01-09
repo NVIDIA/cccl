@@ -26,8 +26,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_CCCL_DIAG_PUSH
-_CCCL_DIAG_SUPPRESS_MSVC(4180) // qualifier applied to function type has no meaning; ignored
+_CCCL_DIAG_PUSH_AND_SUPPRESS(MSVC, 4180) // qualifier applied to function type has no meaning; ignored
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 

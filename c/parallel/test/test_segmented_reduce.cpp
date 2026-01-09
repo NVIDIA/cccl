@@ -587,8 +587,7 @@ C2H_TEST("segmented_reduce can work with floating point types", "[segmented_redu
 
   const std::vector<int> int_input = generate<int>(n_elems);
   // Suppress harmless conversion warnings on MSVC
-  _CCCL_DIAG_PUSH
-  _CCCL_DIAG_SUPPRESS_MSVC(4244)
+  _CCCL_DIAG_PUSH_AND_SUPPRESS(MSVC, 4244)
   const std::vector<T> input(int_input.begin(), int_input.end());
   _CCCL_DIAG_POP
   std::vector<T> output(n_rows, 0);

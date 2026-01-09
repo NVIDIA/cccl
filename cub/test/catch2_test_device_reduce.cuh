@@ -218,12 +218,12 @@ inline void init_default_constant(uchar3& val)
   val = uchar3{2, 2, 2};
 }
 
-_CCCL_SUPPRESS_DEPRECATED_PUSH
+_CCCL_DIAG_PUSH_AND_SUPPRESS_DEPRECATED
 inline void init_default_constant(ulonglong4& val)
 {
   val = ulonglong4{2, 2, 2, 2};
 }
-_CCCL_SUPPRESS_DEPRECATED_POP
+_CCCL_DIAG_POP_DEPRECATED
 
 #if _CCCL_CTK_AT_LEAST(13, 0)
 inline void init_default_constant(ulonglong4_16a& val)

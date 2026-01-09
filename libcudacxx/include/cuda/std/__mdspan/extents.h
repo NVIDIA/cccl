@@ -168,8 +168,7 @@ struct __static_partial_sums
 template <class _TStatic, _TStatic _DynTag, _TStatic... _Values>
 inline constexpr size_t __count_dynamic_v = (size_t{0} + ... + static_cast<size_t>(_Values == _DynTag));
 
-_CCCL_DIAG_PUSH
-_CCCL_DIAG_SUPPRESS_MSVC(4702) // Unreachable code
+_CCCL_DIAG_PUSH_AND_SUPPRESS(MSVC, 4702) // Unreachable code
 
 // array like class which has a mix of static and runtime values but
 // only stores the runtime values.

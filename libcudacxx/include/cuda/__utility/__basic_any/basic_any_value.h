@@ -589,8 +589,7 @@ private:
     return __in_situ() ? __pv : *static_cast<void**>(__pv);
   }
 
-  _CCCL_DIAG_PUSH
-  _CCCL_DIAG_SUPPRESS_MSVC(4702) // warning C4702: unreachable code (srsly where, msvc?)
+  _CCCL_DIAG_PUSH_AND_SUPPRESS(MSVC, 4702) // warning C4702: unreachable code (srsly where, msvc?)
   [[nodiscard]] _CCCL_API auto __get_optr() const noexcept -> void const*
   {
     void const* __pv = __buffer_;

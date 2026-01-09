@@ -22,8 +22,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_CCCL_DIAG_PUSH
-_CCCL_DIAG_SUPPRESS_MSVC(4146) // unary minus operator applied to unsigned type, result still unsigned
+_CCCL_DIAG_PUSH_AND_SUPPRESS(MSVC, 4146) // unary minus operator applied to unsigned type, result still unsigned
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 

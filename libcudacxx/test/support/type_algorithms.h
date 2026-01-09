@@ -53,8 +53,7 @@ template <class... Types>
 __host__ __device__ constexpr void swallow(Types...)
 {}
 
-_CCCL_DIAG_PUSH
-_CCCL_DIAG_SUPPRESS_MSVC(4864) // nvbug5765092 latest toolchain complains about missing template
+_CCCL_DIAG_PUSH_AND_SUPPRESS(MSVC, 4864) // nvbug5765092 latest toolchain complains about missing template
 
 template <class... Types, class Functor>
 __host__ __device__ constexpr void for_each(type_list<Types...>, Functor f)

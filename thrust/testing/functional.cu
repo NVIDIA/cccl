@@ -6,8 +6,7 @@
 
 #include <unittest/unittest.h>
 
-_CCCL_DIAG_PUSH
-_CCCL_DIAG_SUPPRESS_MSVC(4244 4267) // possible loss of data
+_CCCL_DIAG_PUSH_AND_SUPPRESS(MSVC, 4244, 4267) // possible loss of data
 
 // There is a unfortunate miscompilation of the gcc-11 vectorizer leading to OOB writes
 // Adding this attribute suffices that this miscompilation does not appear anymore
@@ -172,8 +171,8 @@ Macro(vector_type, operator_name, unittest::uint64_t)
   }                                                                                                  \
   DECLARE_UNITTEST(Test##OperatorName##FunctionalDevice);
 
-_CCCL_DIAG_PUSH
-_CCCL_DIAG_SUPPRESS_MSVC(4146) // warning C4146: unary minus operator applied to unsigned type, result still unsigned
+_CCCL_DIAG_PUSH_AND_SUPPRESS(MSVC, 4146) // warning C4146: unary minus operator applied to unsigned type, result still
+                                         // unsigned
 
 // Create the unit tests
 DECLARE_UNARY_ARITHMETIC_FUNCTIONAL_UNITTEST(negate, Negate);

@@ -1617,8 +1617,9 @@ inline constexpr bool IsProxy = false;
 template <class T>
 inline constexpr bool IsProxy<Proxy<T>> = true;
 
+_CCCL_DIAG_PUSH
 #if TEST_COMPILER(MSVC)
-_CCCL_BEGIN_NV_DIAG_SUPPRESS(1805) // MSVC complains that if we pass a pointer type, adding const is useless
+_CCCL_DIAG_SUPPRESS(NV, 1805) // MSVC complains that if we pass a pointer type, adding const is useless
 #endif // TEST_COMPILER(MSVC)
 
 template <class T>
@@ -1734,9 +1735,7 @@ struct Proxy
 #endif // _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
 };
 
-#if TEST_COMPILER(MSVC)
-_CCCL_END_NV_DIAG_SUPPRESS()
-#endif // TEST_COMPILER(MSVC)
+_CCCL_DIAG_POP
 
 namespace cuda::std
 {

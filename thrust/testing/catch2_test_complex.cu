@@ -11,7 +11,7 @@
 #include <unittest/random.h>
 #include <unittest/testframework.h>
 
-_CCCL_DIAG_SUPPRESS_MSVC(4244) // conversion from 'const T1' to 'const T', possible loss of data
+_CCCL_DIAG_SUPPRESS(MSVC, 4244) // conversion from 'const T1' to 'const T', possible loss of data
 
 /*
    The following tests do not check for the numerical accuracy of the operations.

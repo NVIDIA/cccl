@@ -21,17 +21,17 @@
 #include <cuda/std/__cccl/prologue.h>
 
 _CCCL_DIAG_PUSH
-_CCCL_DIAG_SUPPRESS_GCC("-Wsubobject-linkage")
-_CCCL_DIAG_SUPPRESS_CLANG("-Wunused-value")
-_CCCL_DIAG_SUPPRESS_MSVC(4848) // [[no_unique_address]] prior to C++20 as a vendor extension
-_CCCL_DIAG_SUPPRESS_MSVC(4714) // function 'foo' marked as __forceinline not inlined
+_CCCL_DIAG_SUPPRESS(GCC, "-Wsubobject-linkage")
+_CCCL_DIAG_SUPPRESS(CLANG, "-Wunused-value")
+_CCCL_DIAG_SUPPRESS(MSVC, 4848) // [[no_unique_address]] prior to C++20 as a vendor extension
+_CCCL_DIAG_SUPPRESS(MSVC, 4714) // function 'foo' marked as __forceinline not inlined
 
-_CCCL_DIAG_SUPPRESS_GCC("-Wmissing-braces")
-_CCCL_DIAG_SUPPRESS_CLANG("-Wmissing-braces")
-_CCCL_DIAG_SUPPRESS_MSVC(5246) // missing braces around initializer
+_CCCL_DIAG_SUPPRESS(GCC, "-Wmissing-braces")
+_CCCL_DIAG_SUPPRESS(CLANG, "-Wmissing-braces")
+_CCCL_DIAG_SUPPRESS(MSVC, 5246) // missing braces around initializer
 
 #if _CCCL_CUDA_COMPILER(NVHPC)
-_CCCL_BEGIN_NV_DIAG_SUPPRESS(cuda_compile)
+_CCCL_DIAG_SUPPRESS(NVHPC, cuda_compile) // is this correct??
 #endif // _CCCL_CUDA_COMPILER(NVHPC)
 
 // private and protected nested class types cannot be used as tparams to __global__

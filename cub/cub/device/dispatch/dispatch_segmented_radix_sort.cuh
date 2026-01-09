@@ -37,8 +37,7 @@
 // suppress warnings triggered by #pragma unroll:
 // "warning: loop not unrolled: the optimizer was unable to perform the requested transformation; the transformation
 // might be disabled or specified as part of an unsupported transformation ordering [-Wpass-failed=transform-warning]"
-_CCCL_DIAG_PUSH
-_CCCL_DIAG_SUPPRESS_CLANG("-Wpass-failed")
+_CCCL_DIAG_PUSH_AND_SUPPRESS(CLANG, "-Wpass-failed")
 
 CUB_NAMESPACE_BEGIN
 

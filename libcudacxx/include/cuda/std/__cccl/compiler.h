@@ -183,10 +183,8 @@
 #  endif // !__ELF__
 #endif // _CCCL_COMPILER(NVHPC) || _CCCL_COMPILER(NVRTC)
 
-#if _CCCL_DEVICE_COMPILATION()
-#  define _CCCL_PRAGMA_UNROLL(_N)    _CCCL_PRAGMA(unroll _N)
-#  define _CCCL_PRAGMA_UNROLL_FULL() _CCCL_PRAGMA(unroll)
-#elif _CCCL_COMPILER(NVHPC) || _CCCL_COMPILER(NVRTC) || _CCCL_COMPILER(CLANG)
+#if _CCCL_COMPILER(NVHPC) || _CCCL_COMPILER(NVRTC) || _CCCL_COMPILER(CLANG) \
+  || (_CCCL_CUDA_COMPILER(NVCC) && _CCCL_DEVICE_COMPILATION())
 #  define _CCCL_PRAGMA_UNROLL(_N)    _CCCL_PRAGMA(unroll _N)
 #  define _CCCL_PRAGMA_UNROLL_FULL() _CCCL_PRAGMA(unroll)
 #elif _CCCL_COMPILER(GCC, >=, 8)
@@ -194,9 +192,15 @@
 // when compiling device code, and #pragma GCC unroll when compiling host code, but we need to suppress the warning
 // about the unknown pragma for nvcc.
 // #pragma GCC unroll does not support full unrolling, so we use the maximum value that it supports.
-#  define _CCCL_PRAGMA_UNROLL(_N) \
-    _CCCL_BEGIN_NV_DIAG_SUPPRESS(1675) _CCCL_PRAGMA(GCC unroll _N) _CCCL_END_NV_DIAG_SUPPRESS()
-#  define _CCCL_PRAGMA_UNROLL_FULL() _CCCL_PRAGMA_UNROLL(65534)
+#  if _CCCL_CUDA_COMPILATION()
+#    define _CCCL_PRAGMA_UNROLL(_N)    \
+      _CCCL_PRAGMA(nv_diagnostic push) \
+      _CCCL_PRAGMA(nv_diag_suppress 1675) _CCCL_PRAGMA(GCC unroll _N) _CCCL_PRAGMA(nv_diagnostic pop)
+#    define _CCCL_PRAGMA_UNROLL_FULL() _CCCL_PRAGMA_UNROLL(65534)
+#  else // ^^^ _CCCL_CUDA_COMPILATION() ^^^ / vvv !_CCCL_CUDA_COMPILATION() vvv
+#    define _CCCL_PRAGMA_UNROLL(_N)    _CCCL_PRAGMA(GCC unroll _N)
+#    define _CCCL_PRAGMA_UNROLL_FULL() _CCCL_PRAGMA_UNROLL(65534)
+#  endif // ^^^ !_CCCL_CUDA_COMPILATION() ^^^
 #else // ^^^ has pragma unroll support ^^^ / vvv no pragma unroll support vvv
 #  define _CCCL_PRAGMA_UNROLL(_N)
 #  define _CCCL_PRAGMA_UNROLL_FULL()

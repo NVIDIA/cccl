@@ -27,13 +27,13 @@ inline ulonglong2 to_bound(const unsigned long long bound)
   return {bound, bound};
 }
 
-_CCCL_SUPPRESS_DEPRECATED_PUSH
+_CCCL_DIAG_PUSH_AND_SUPPRESS_DEPRECATED
 template <>
 inline ulonglong4 to_bound(const unsigned long long bound)
 {
   return {bound, bound, bound, bound};
 }
-_CCCL_SUPPRESS_DEPRECATED_POP
+_CCCL_DIAG_POP_DEPRECATED
 
 #if _CCCL_CTK_AT_LEAST(13, 0)
 template <>

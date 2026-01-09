@@ -83,7 +83,7 @@ inline constexpr bool has_rebind = false;
 template <typename Alloc, typename U>
 inline constexpr bool has_rebind<Alloc, U, ::cuda::std::void_t<decltype(U::template rebind<U>::other)>> = true;
 
-_CCCL_SUPPRESS_DEPRECATED_PUSH
+_CCCL_DIAG_PUSH_AND_SUPPRESS_DEPRECATED
 
 // The following fields of std::allocator have been deprecated (since C++17).
 // There's no way to detect it other than explicit specialization.
@@ -190,7 +190,7 @@ struct has_member_system
   static const bool value = type::value;
 };
 
-_CCCL_SUPPRESS_DEPRECATED_POP
+_CCCL_DIAG_POP_DEPRECATED
 
 template <class Alloc, class U, bool = has_rebind<Alloc, U>>
 struct rebind_alloc

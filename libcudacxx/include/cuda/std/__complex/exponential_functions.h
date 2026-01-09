@@ -360,8 +360,7 @@ _CCCL_API inline complex<__nv_bfloat16> pow(const complex<__nv_bfloat16>& __x, c
 }
 #endif // _LIBCUDACXX_HAS_NVBF16()
 
-_CCCL_DIAG_PUSH
-_CCCL_DIAG_SUPPRESS_MSVC(4244)
+_CCCL_DIAG_PUSH_AND_SUPPRESS(MSVC, 4244)
 
 template <class _Tp, class _Up>
 [[nodiscard]] _CCCL_API inline complex<common_type_t<_Tp, _Up>> pow(const complex<_Tp>& __x, const complex<_Up>& __y)

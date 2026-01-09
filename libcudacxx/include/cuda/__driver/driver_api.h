@@ -52,7 +52,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_DRIVER
       ::cuda::__driver::__get_driver_entry_point(#function_name, major, minor))
 
 // cudaGetDriverEntryPoint function is deprecated
-_CCCL_SUPPRESS_DEPRECATED_PUSH
+_CCCL_DIAG_PUSH_AND_SUPPRESS_DEPRECATED
 
 //! @brief Gets the cuGetProcAddress function pointer.
 [[nodiscard]] _CCCL_PUBLIC_HOST_API inline auto __getProcAddressFn() -> decltype(cuGetProcAddress)*
@@ -89,7 +89,7 @@ _CCCL_SUPPRESS_DEPRECATED_PUSH
   return reinterpret_cast<decltype(cuGetProcAddress)*>(__fn);
 }
 
-_CCCL_SUPPRESS_DEPRECATED_POP
+_CCCL_DIAG_POP_DEPRECATED
 
 //! @brief Makes the driver version from major and minor version.
 [[nodiscard]] _CCCL_HOST_API constexpr int __make_version(int __major, int __minor) noexcept

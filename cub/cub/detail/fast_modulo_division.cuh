@@ -31,7 +31,7 @@
 #include <cuda/std/limits>
 
 #if defined(CCCL_ENABLE_DEVICE_ASSERTIONS)
-_CCCL_BEGIN_NV_DIAG_SUPPRESS(186) // pointless comparison of unsigned integer with zero
+_CCCL_DIAG_PUSH_AND_SUPPRESS(NV, 186) // pointless comparison of unsigned integer with zero
 #endif // CCCL_ENABLE_DEVICE_ASSERTIONS
 
 CUB_NAMESPACE_BEGIN
@@ -116,8 +116,7 @@ multiply_extract_higher_bits(T value, R multiplier)
  * Fast Modulo/Division based on Precomputation
  **********************************************************************************************************************/
 
-_CCCL_DIAG_PUSH
-_CCCL_DIAG_SUPPRESS_MSVC(4127) /* conditional expression is constant */
+_CCCL_DIAG_PUSH_AND_SUPPRESS(MSVC, 4127) /* conditional expression is constant */
 
 template <typename T1>
 class fast_div_mod
@@ -223,5 +222,5 @@ _CCCL_DIAG_POP
 CUB_NAMESPACE_END
 
 #if defined(CCCL_ENABLE_DEVICE_ASSERTIONS)
-_CCCL_END_NV_DIAG_SUPPRESS()
+_CCCL_DIAG_POP
 #endif // CCCL_ENABLE_DEVICE_ASSERTIONS

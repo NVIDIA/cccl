@@ -49,8 +49,7 @@ struct __override_tag_;
 template <class _Tp, auto _Override>
 using __override_tag _CCCL_NODEBUG_ALIAS = __override_tag_<_Tp, _Override>*;
 
-_CCCL_DIAG_PUSH
-_CCCL_DIAG_SUPPRESS_GCC("-Wstrict-aliasing")
+_CCCL_DIAG_PUSH_AND_SUPPRESS(GCC, "-Wstrict-aliasing")
 
 template <class _Fn, class _Cp>
 _CCCL_API auto __class_of_(_Fn _Cp::*) -> _Cp;

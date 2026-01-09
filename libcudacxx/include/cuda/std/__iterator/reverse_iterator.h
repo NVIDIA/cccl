@@ -72,7 +72,7 @@ inline constexpr bool __noexcept_rev_iter_iter_swap<_Iter, _Iter2, enable_if_t<i
 
 _LIBCUDACXX_BEGIN_HIDDEN_FRIEND_NAMESPACE
 
-_CCCL_SUPPRESS_DEPRECATED_PUSH
+_CCCL_DIAG_PUSH_AND_SUPPRESS_DEPRECATED
 template <class _Iter>
 class _CCCL_TYPE_VISIBILITY_DEFAULT reverse_iterator
 {
@@ -321,7 +321,7 @@ public:
   }
 #endif // !_LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
 };
-_CCCL_SUPPRESS_DEPRECATED_POP
+_CCCL_DIAG_POP_DEPRECATED
 
 _LIBCUDACXX_END_HIDDEN_FRIEND_NAMESPACE(reverse_iterator)
 

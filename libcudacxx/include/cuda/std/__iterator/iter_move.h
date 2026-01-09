@@ -32,8 +32,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_CCCL_DIAG_PUSH
-_CCCL_DIAG_SUPPRESS_CLANG("-Wvoid-ptr-dereference")
+_CCCL_DIAG_PUSH_AND_SUPPRESS(CLANG, "-Wvoid-ptr-dereference")
 
 // [iterator.cust.move]
 

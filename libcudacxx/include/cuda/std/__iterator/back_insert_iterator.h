@@ -91,7 +91,7 @@ public:
   }
 };
 
-_CCCL_SUPPRESS_DEPRECATED_PUSH
+_CCCL_DIAG_PUSH_AND_SUPPRESS_DEPRECATED
 template <class _Container>
 class _CCCL_TYPE_VISIBILITY_DEFAULT back_insert_iterator
 {
@@ -148,7 +148,7 @@ public:
     return container;
   }
 };
-_CCCL_SUPPRESS_DEPRECATED_POP
+_CCCL_DIAG_POP_DEPRECATED
 _CCCL_CTAD_SUPPORTED_FOR_TYPE(back_insert_iterator);
 
 template <class _Container>

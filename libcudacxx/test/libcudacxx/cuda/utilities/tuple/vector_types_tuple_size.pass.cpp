@@ -12,7 +12,7 @@
 
 #include "test_macros.h"
 
-_CCCL_SUPPRESS_DEPRECATED_PUSH
+_CCCL_DIAG_PUSH_AND_SUPPRESS_DEPRECATED
 
 template <class VType, size_t Size>
 __host__ __device__ constexpr void test()
