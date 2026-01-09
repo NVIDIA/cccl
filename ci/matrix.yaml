@@ -21,6 +21,12 @@ workflows:
   #       args: '--preset libcudacxx-cpp20 --lit-tests "cuda/utility/basic_any.pass.cpp"' }
   #
   override:
+    - {jobs: ['test'], project: 'cccl_c_parallel', ctk: '12.X', cxx: 'gcc13', gpu: ['rtx2080']}
+    - {jobs: ['test'], project: 'cccl_c_parallel', ctk: '13.X', cxx: 'gcc13', gpu: ['rtx2080', 'l4', 'h100']}
+    - {jobs: ['test'], project: 'libcudacxx', std: 'max', cxx: ['gcc', 'clang', 'msvc'], gpu: 'rtx2080'}
+    - {jobs: ['nvrtc'], project: 'libcudacxx', std: 'all', gpu: 'rtx2080', sm: 'gpu'}
+    - {jobs: ['build'], std: 'minmax', ctk: '12.X', cxx: ['gcc7',  'gcc',   'clang14', 'clang19', 'msvc2019', 'msvc'     ]}
+    - {jobs: ['build'], std: 'minmax', ctk: '13.0', cxx: ['gcc11', 'gcc',   'clang15', 'clang',   'msvc2019', 'msvc'     ]}
 
   pull_request:
     # Old CTK: Oldest/newest supported host compilers:
