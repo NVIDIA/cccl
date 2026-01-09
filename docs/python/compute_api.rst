@@ -25,11 +25,15 @@ Iterators
 
 Operators
 ---------
+
+.. py:currentmodule:: cuda.compute.op
+
 .. Unfortunately, we need to manually document the OpKind enum here because
 .. the `._bindings` module, where OpKind is defined, is mocked out when building
 .. docs. The mock out is needed to avoid the need for CUDA to be installed
 .. at docs build time.
-.. py:class:: cuda.compute.op.OpKind
+
+.. py:class:: OpKind
 
    Enumeration of operator kinds for CUDA parallel algorithms.
 
