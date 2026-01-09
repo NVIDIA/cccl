@@ -167,10 +167,16 @@ struct DeviceScan
                                                   ::cuda::execution::determinism::__get_determinism_t,
                                                   ::cuda::execution::determinism::not_guaranteed_t>;
 
-    // static assert to reject `run_to_run` determinism if input type is not integral or op type is not well-known
+    using accum_t =
+      ::cuda::std::__accumulator_t<ScanOpT,
+                                   cub::detail::it_value_t<InputIteratorT>,
+                                   ::cuda::std::_If<::cuda::std::is_same_v<InitValueT, NullType>,
+                                                    cub::detail::it_value_t<InputIteratorT>,
+                                                    typename InitValueT::value_type>>;
+
+    // static assert to reject `run_to_run` determinism if `accum_t` is not integral or op type is not well-known
     static_assert(!(::cuda::std::is_same_v<requested_determinism_t, ::cuda::execution::determinism::run_to_run_t>
-                    && (!::cuda::std::is_integral_v<cub::detail::it_value_t<InputIteratorT>>
-                        || !detail::is_cuda_binary_operator<ScanOpT>) ),
+                    && (!::cuda::std::is_integral_v<accum_t> || !detail::is_cuda_binary_operator<ScanOpT>) ),
                   "run_to_run determinism is only supported for integral types with well-known operators");
 
     // Static assert to reject gpu_to_gpu determinism since it's not implemented
