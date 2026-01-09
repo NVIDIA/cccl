@@ -337,7 +337,7 @@ public:
         : affine(mv(place))
     {}
 
-    virtual exec_place activate(backend_ctx_untyped&) const
+    virtual exec_place activate() const
     {
       if (affine.is_device())
       {
@@ -354,7 +354,7 @@ public:
       return exec_place();
     }
 
-    virtual void deactivate(backend_ctx_untyped&, const exec_place& prev) const
+    virtual void deactivate(const exec_place& prev) const
     {
       if (affine.is_device())
       {
@@ -645,9 +645,9 @@ public:
    *
    * @return `exec_place` The previous execution place. See `deactivate` below.
    */
-  exec_place activate(backend_ctx_untyped& state) const
+  exec_place activate() const
   {
-    return pimpl->activate(state);
+    return pimpl->activate();
   }
 
   /**
@@ -655,9 +655,9 @@ public:
    *
    * @warning Undefined behavior if you don't pass the result of `activate`.
    */
-  void deactivate(backend_ctx_untyped& state, const exec_place& p) const
+  void deactivate(const exec_place& p) const
   {
-    pimpl->deactivate(state, p);
+    pimpl->deactivate(p);
   }
 
   bool is_host() const
@@ -794,11 +794,11 @@ public:
     impl()
         : exec_place::impl(data_place::host())
     {}
-    exec_place activate(backend_ctx_untyped&) const override
+    exec_place activate() const override
     {
       return exec_place();
     } // no-op
-    void deactivate(backend_ctx_untyped&, const exec_place& p) const override
+    void deactivate(const exec_place& p) const override
     {
       _CCCL_ASSERT(!p.get_impl(), "");
     } // no-op
@@ -952,14 +952,14 @@ public:
       return ::std::string("GRID place");
     }
 
-    exec_place activate(backend_ctx_untyped&) const override
+    exec_place activate() const override
     {
       // No-op
       return exec_place();
     }
 
     // TODO : shall we deactivate the current place, if any ?
-    void deactivate(backend_ctx_untyped&, const exec_place& _prev) const override
+    void deactivate(const exec_place& _prev) const override
     {
       // No-op
       EXPECT(!_prev.get_impl(), "Invalid execution place.");
@@ -1008,16 +1008,16 @@ public:
       return places;
     }
 
-    exec_place grid_activate(backend_ctx_untyped& ctx, size_t i) const
+    exec_place grid_activate(size_t i) const
     {
       const auto& v = get_places();
-      return v[i].activate(ctx);
+      return v[i].activate();
     }
 
-    void grid_deactivate(backend_ctx_untyped& ctx, size_t i, exec_place p) const
+    void grid_deactivate(size_t i, exec_place p) const
     {
       const auto& v = get_places();
-      v[i].deactivate(ctx, p);
+      v[i].deactivate(p);
     }
 
     const exec_place& get_current_place()
@@ -1026,35 +1026,35 @@ public:
     }
 
     // Set the current place from the 1D index within the grid (flattened grid)
-    void set_current_place(backend_ctx_untyped& ctx, size_t p_index)
+    void set_current_place(size_t p_index)
     {
       // Unset the previous place, if any
       if (current_p_1d >= 0)
       {
         // First deactivate the previous place
-        grid_deactivate(ctx, current_p_1d, old_place);
+        grid_deactivate(current_p_1d, old_place);
       }
 
       // get the 1D index for that position
       current_p_1d = (::std::ptrdiff_t) p_index;
 
       // The returned value contains the state to restore when we deactivate the place
-      old_place = grid_activate(ctx, current_p_1d);
+      old_place = grid_activate(current_p_1d);
     }
 
     // Set the current place, given the position in the grid
-    void set_current_place(backend_ctx_untyped& ctx, pos4 p)
+    void set_current_place(pos4 p)
     {
       size_t p_index = dims.get_index(p);
-      set_current_place(ctx, p_index);
+      set_current_place(p_index);
     }
 
-    void unset_current_place(backend_ctx_untyped& ctx)
+    void unset_current_place()
     {
       EXPECT(current_p_1d >= 0, "unset_current_place() called without corresponding call to set_current_place()");
 
       // First deactivate the previous place
-      grid_deactivate(ctx, current_p_1d, old_place);
+      grid_deactivate(current_p_1d, old_place);
       current_p_1d = -1;
     }
 
@@ -1172,9 +1172,9 @@ public:
   }
 
   // Set the current place from the 1D index within the grid (flattened grid)
-  void set_current_place(backend_ctx_untyped& ctx, size_t p_index)
+  void set_current_place(size_t p_index)
   {
-    return get_impl()->set_current_place(ctx, p_index);
+    return get_impl()->set_current_place(p_index);
   }
 
   // Get the current execution place
@@ -1184,14 +1184,14 @@ public:
   }
 
   // Set the current place, given the position in the grid
-  void set_current_place(backend_ctx_untyped& ctx, pos4 p)
+  void set_current_place(pos4 p)
   {
-    return get_impl()->set_current_place(ctx, p);
+    return get_impl()->set_current_place(p);
   }
 
-  void unset_current_place(backend_ctx_untyped& ctx)
+  void unset_current_place()
   {
-    return get_impl()->unset_current_place(ctx);
+    return get_impl()->unset_current_place();
   }
 
   ::std::shared_ptr<impl> get_impl() const
