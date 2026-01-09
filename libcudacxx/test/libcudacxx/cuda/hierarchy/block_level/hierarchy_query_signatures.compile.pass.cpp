@@ -91,7 +91,7 @@ __device__ void test(const InLevel& in_level, const Hierarchy& hier)
 template <class Hierarchy>
 __device__ void test(const Hierarchy& hier)
 {
-  if constexpr (cuda::has_level_v<cuda::cluster_level, Hierarchy>)
+  if constexpr (Hierarchy::has_level(cuda::cluster))
   {
     test(cuda::cluster, hier);
   }

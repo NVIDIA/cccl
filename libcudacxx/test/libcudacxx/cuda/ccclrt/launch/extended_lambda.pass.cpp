@@ -30,8 +30,8 @@ __host__ void test_extended_lambda()
   assert(*i == 42);
 
   auto assign_1337_lambda = [] __device__(auto config, int* pi) {
-    static_assert(config.hierarchy().count(cuda::gpu_thread, cuda::block) == 32);
-    static_assert(config.hierarchy().count(cuda::block) == 1);
+    static_assert(cuda::gpu_thread.count(cuda::block, config) == 32);
+    static_assert(cuda::block.count(cuda::grid, config) == 1);
     *pi = 1337;
   };
   cuda::launch(stream, config, assign_1337_lambda, config, i.get());
