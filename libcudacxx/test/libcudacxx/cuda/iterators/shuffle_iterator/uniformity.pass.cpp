@@ -16,6 +16,7 @@
 #include <cuda/std/__random_>
 #include <cuda/std/array>
 #include <cuda/std/cassert>
+#include <cuda/std/cmath>
 
 #include <nv/target>
 
