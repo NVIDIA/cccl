@@ -34,11 +34,11 @@
 
 _CCCL_BEGIN_NAMESPACE_CUDA
 
-struct block_level : __native_hierarchy_level_base<block_level>
+struct _CCCL_DECLSPEC_EMPTY_BASES block_level : __native_hierarchy_level_base<block_level>
 {
-  using product_type  = unsigned;
-  using allowed_above = allowed_levels<grid_level, cluster_level>;
-  using allowed_below = allowed_levels<thread_level>;
+  using __product_type  = unsigned;
+  using __allowed_above = __allowed_levels<grid_level, cluster_level>;
+  using __allowed_below = __allowed_levels<thread_level>;
 
   using __next_native_level = cluster_level;
 
@@ -129,8 +129,9 @@ struct block_level : __native_hierarchy_level_base<block_level>
   {
     auto& __hier_unpacked    = ::cuda::__unpack_hierarchy_if_needed(__hier);
     using _HierarchyUnpacked = ::cuda::std::remove_cvref_t<decltype(__hier_unpacked)>;
-    static_assert(has_unit_or_level_v<block_level, _HierarchyUnpacked>, "_Hierarchy doesn't contain block level");
-    static_assert(has_level_v<grid_level, _HierarchyUnpacked>, "_Hierarchy doesn't contain grid level");
+    static_assert(__has_bottom_unit_or_level_v<block_level, _HierarchyUnpacked>,
+                  "_Hierarchy doesn't contain block level");
+    static_assert(_HierarchyUnpacked::template has_level<grid_level>(), "_Hierarchy doesn't contain grid level");
 
     const auto __dims = dims_as<_Tp>(__level, __hier_unpacked);
     const auto __idx  = index_as<_Tp>(__level, __hier_unpacked);
