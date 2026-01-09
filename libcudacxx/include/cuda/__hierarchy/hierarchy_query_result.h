@@ -25,8 +25,6 @@
 
 #  include <cuda/std/__concepts/concept_macros.h>
 #  include <cuda/std/__cstddef/types.h>
-#  include <cuda/std/__type_traits/is_convertible.h>
-#  include <cuda/std/__type_traits/is_nothrow_convertible.h>
 #  include <cuda/std/__type_traits/is_same.h>
 
 #  include <cuda/std/__cccl/prologue.h>

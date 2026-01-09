@@ -27,11 +27,9 @@
 #  include <cuda/__hierarchy/hierarchy_level_base.h>
 #  include <cuda/__hierarchy/hierarchy_query_result.h>
 #  include <cuda/__hierarchy/traits.h>
-#  include <cuda/std/__algorithm/max.h>
 #  include <cuda/std/__concepts/concept_macros.h>
 #  include <cuda/std/__cstddef/types.h>
 #  include <cuda/std/__mdspan/extents.h>
-#  include <cuda/std/__type_traits/common_type.h>
 #  include <cuda/std/__type_traits/is_integer.h>
 
 #  include <cuda/std/__cccl/prologue.h>
@@ -48,7 +46,7 @@ _CCCL_DIAG_SUPPRESS_NVHPC(nodiscard_doesnt_apply)
 #  endif // _CCCL_CUDA_COMPILER(NVCC)
 
 template <class _Level>
-struct __native_hierarchy_level_base : hierarchy_level_base<_Level>
+struct _CCCL_DECLSPEC_EMPTY_BASES __native_hierarchy_level_base : hierarchy_level_base<_Level>
 {
   template <class _InLevel>
   using __default_md_query_type = unsigned;

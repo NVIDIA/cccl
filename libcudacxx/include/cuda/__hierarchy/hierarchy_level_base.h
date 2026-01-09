@@ -207,18 +207,18 @@ struct hierarchy_level_base
   {
     auto& __hier_unpacked    = ::cuda::__unpack_hierarchy_if_needed(__hier);
     using _HierarchyUnpacked = ::cuda::std::remove_cvref_t<decltype(__hier_unpacked)>;
-    static_assert(has_unit_or_level_v<_Level, _HierarchyUnpacked>, "_Hierarchy doesn't contain _Level");
-    static_assert(has_level_v<_InLevel, _HierarchyUnpacked>, "_Hierarchy doesn't contain _InLevel");
+    static_assert(__has_bottom_unit_or_level_v<_Level, _HierarchyUnpacked>, "_Hierarchy doesn't contain _Level");
+    static_assert(_HierarchyUnpacked::template has_level<_InLevel>(), "_Hierarchy doesn't contain _InLevel");
 
     using _NextLevel = __next_hierarchy_level_t<_Level, _HierarchyUnpacked>;
-    using _CurrExts  = decltype(::cuda::__hierarchy_extents_cast<_Tp>(__hier_unpacked.level(_NextLevel{}).dims));
+    using _CurrExts  = decltype(::cuda::__hierarchy_extents_cast<_Tp>(__hier_unpacked.level(_NextLevel{}).extents()));
 
     // Remove dependency on runtime storage. This makes the queries work for hierarchy levels with all static extents
     // in constant evaluated context.
     _CurrExts __curr_exts{};
     if constexpr (_CurrExts::rank_dynamic() > 0)
     {
-      __curr_exts = ::cuda::__hierarchy_extents_cast<_Tp>(__hier_unpacked.level(_NextLevel{}).dims);
+      __curr_exts = ::cuda::__hierarchy_extents_cast<_Tp>(__hier_unpacked.level(_NextLevel{}).extents());
     }
 
     if constexpr (!::cuda::std::is_same_v<_NextLevel, _InLevel>)
@@ -249,8 +249,8 @@ struct hierarchy_level_base
   {
     auto& __hier_unpacked    = ::cuda::__unpack_hierarchy_if_needed(__hier);
     using _HierarchyUnpacked = ::cuda::std::remove_cvref_t<decltype(__hier_unpacked)>;
-    static_assert(has_unit_or_level_v<_Level, _HierarchyUnpacked>, "_Hierarchy doesn't contain _Level");
-    static_assert(has_level_v<_InLevel, _HierarchyUnpacked>, "_Hierarchy doesn't contain _InLevel");
+    static_assert(__has_bottom_unit_or_level_v<_Level, _HierarchyUnpacked>, "_Hierarchy doesn't contain _Level");
+    static_assert(_HierarchyUnpacked::template has_level<_InLevel>(), "_Hierarchy doesn't contain _InLevel");
 
     using _NextLevel = __next_hierarchy_level_t<_Level, _HierarchyUnpacked>;
     if constexpr (::cuda::std::is_same_v<_InLevel, _NextLevel>)
@@ -286,8 +286,8 @@ struct hierarchy_level_base
   {
     auto& __hier_unpacked    = ::cuda::__unpack_hierarchy_if_needed(__hier);
     using _HierarchyUnpacked = ::cuda::std::remove_cvref_t<decltype(__hier_unpacked)>;
-    static_assert(has_unit_or_level_v<_Level, _HierarchyUnpacked>, "_Hierarchy doesn't contain _Level");
-    static_assert(has_level_v<_InLevel, _HierarchyUnpacked>, "_Hierarchy doesn't contain _InLevel");
+    static_assert(__has_bottom_unit_or_level_v<_Level, _HierarchyUnpacked>, "_Hierarchy doesn't contain _Level");
+    static_assert(_HierarchyUnpacked::template has_level<_InLevel>(), "_Hierarchy doesn't contain _InLevel");
 
     using _NextLevel = __next_hierarchy_level_t<_Level, _HierarchyUnpacked>;
 
