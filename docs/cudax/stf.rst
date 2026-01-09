@@ -2075,8 +2075,9 @@ internal operations:
     exec_place place = exec_place::device(0);
     cudaStream_t stream = place.pick_stream(ctx.async_resources());
 
-    // This stream comes from the same pool used by the context internally
-    // You can also use ctx.pick_stream() which does the same thing
+    // This stream comes from the same pool used by the context internally.
+    // ctx.pick_stream() is a shorthand that uses the default execution place
+    // for the calling thread.
     cudaStream_t ctx_stream = ctx.pick_stream();
 
     ctx.finalize();
