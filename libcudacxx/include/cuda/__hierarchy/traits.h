@@ -21,15 +21,17 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/__fwd/hierarchy.h>
-#include <cuda/std/__tuple_dir/get.h>
-#include <cuda/std/__type_traits/is_same.h>
-#include <cuda/std/__type_traits/remove_cvref.h>
-#include <cuda/std/__type_traits/type_list.h>
-#include <cuda/std/__type_traits/void_t.h>
-#include <cuda/std/cstdint>
+#if _CCCL_HAS_CTK()
 
-#include <cuda/std/__cccl/prologue.h>
+#  include <cuda/__fwd/hierarchy.h>
+#  include <cuda/std/__tuple_dir/get.h>
+#  include <cuda/std/__type_traits/is_same.h>
+#  include <cuda/std/__type_traits/remove_cvref.h>
+#  include <cuda/std/__type_traits/type_list.h>
+#  include <cuda/std/__type_traits/void_t.h>
+#  include <cuda/std/cstdint>
+
+#  include <cuda/std/__cccl/prologue.h>
 
 _CCCL_BEGIN_NAMESPACE_CUDA
 
@@ -124,6 +126,8 @@ inline constexpr bool __is_or_has_hierarchy_member_v = __has_hierarchy_member<_T
 
 _CCCL_END_NAMESPACE_CUDA
 
-#include <cuda/std/__cccl/epilogue.h>
+#  include <cuda/std/__cccl/epilogue.h>
+
+#endif // _CCCL_HAS_CTK()
 
 #endif // _CUDA___HIERARCHY_TRAITS_H

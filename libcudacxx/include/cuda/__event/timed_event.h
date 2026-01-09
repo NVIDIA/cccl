@@ -11,9 +11,6 @@
 #ifndef _CUDA___EVENT_TIMED_EVENT_H
 #define _CUDA___EVENT_TIMED_EVENT_H
 
-#include <cuda_runtime_api.h>
-// cuda_runtime_api needs to come first
-
 #include <cuda/std/detail/__config>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)

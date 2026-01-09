@@ -21,19 +21,21 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/__fwd/hierarchy.h>
-#include <cuda/__hierarchy/hierarchy_query_result.h>
-#include <cuda/__hierarchy/traits.h>
-#include <cuda/std/__algorithm/max.h>
-#include <cuda/std/__concepts/concept_macros.h>
-#include <cuda/std/__cstddef/types.h>
-#include <cuda/std/__functional/operations.h>
-#include <cuda/std/__mdspan/extents.h>
-#include <cuda/std/__type_traits/is_integer.h>
-#include <cuda/std/__utility/integer_sequence.h>
-#include <cuda/std/array>
+#if _CCCL_HAS_CTK()
 
-#include <cuda/std/__cccl/prologue.h>
+#  include <cuda/__fwd/hierarchy.h>
+#  include <cuda/__hierarchy/hierarchy_query_result.h>
+#  include <cuda/__hierarchy/traits.h>
+#  include <cuda/std/__algorithm/max.h>
+#  include <cuda/std/__concepts/concept_macros.h>
+#  include <cuda/std/__cstddef/types.h>
+#  include <cuda/std/__functional/operations.h>
+#  include <cuda/std/__mdspan/extents.h>
+#  include <cuda/std/__type_traits/is_integer.h>
+#  include <cuda/std/__utility/integer_sequence.h>
+#  include <cuda/std/array>
+
+#  include <cuda/std/__cccl/prologue.h>
 
 _CCCL_BEGIN_NAMESPACE_CUDA
 
@@ -171,7 +173,7 @@ struct hierarchy_level_base
       __level, ::cuda::__unpack_hierarchy_if_needed(__hier));
   }
 
-#if _CCCL_CUDA_COMPILATION()
+#  if _CCCL_CUDA_COMPILATION()
   _CCCL_TEMPLATE(class _InLevel, class _Hierarchy)
   _CCCL_REQUIRES(__is_hierarchy_level_v<_InLevel> _CCCL_AND __is_or_has_hierarchy_member_v<_Hierarchy>)
   [[nodiscard]] _CCCL_DEVICE_API static constexpr auto index(const _InLevel& __level, const _Hierarchy& __hier) noexcept
@@ -188,7 +190,7 @@ struct hierarchy_level_base
     return _Level::template rank_as<__default_1d_query_type<_InLevel>>(
       __level, ::cuda::__unpack_hierarchy_if_needed(__hier));
   }
-#endif // _CCCL_CUDA_COMPILATION()
+#  endif // _CCCL_CUDA_COMPILATION()
 
   _CCCL_TEMPLATE(class _Tp, class _InLevel, class _Hierarchy)
   _CCCL_REQUIRES(::cuda::std::__cccl_is_integer_v<_Tp> _CCCL_AND __is_hierarchy_level_v<_InLevel> _CCCL_AND
@@ -238,7 +240,7 @@ struct hierarchy_level_base
     return __count_as_impl<_Tp>(__level, ::cuda::__unpack_hierarchy_if_needed(__hier));
   }
 
-#if _CCCL_CUDA_COMPILATION()
+#  if _CCCL_CUDA_COMPILATION()
   _CCCL_TEMPLATE(class _Tp, class _InLevel, class _Hierarchy)
   _CCCL_REQUIRES(::cuda::std::__cccl_is_integer_v<_Tp> _CCCL_AND __is_hierarchy_level_v<_InLevel> _CCCL_AND
                    __is_or_has_hierarchy_member_v<_Hierarchy>)
@@ -310,7 +312,7 @@ struct hierarchy_level_base
     }
     return __ret;
   }
-#endif // _CCCL_CUDA_COMPILATION()
+#  endif // _CCCL_CUDA_COMPILATION()
 
 private:
   template <class>
@@ -361,6 +363,8 @@ private:
 
 _CCCL_END_NAMESPACE_CUDA
 
-#include <cuda/std/__cccl/epilogue.h>
+#  include <cuda/std/__cccl/epilogue.h>
+
+#endif // _CCCL_HAS_CTK()
 
 #endif // _CUDA___HIERARCHY_HIERARCHY_LEVEL_BASE_H
