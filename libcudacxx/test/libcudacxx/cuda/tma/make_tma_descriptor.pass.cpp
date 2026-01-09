@@ -23,7 +23,8 @@ constexpr auto no_interleave = cuda::tma_interleave_layout::none;
 
 bool test_ranks()
 {
-  alignas(128) float data[64]{};
+  float* data = nullptr;
+  assert(cudaMalloc(&data, 64 * sizeof(float)) == cudaSuccess);
   constexpr int64_t shape_storage[5]   = {128, 128, 128, 128, 128};
   constexpr int64_t strides_storage[5] = {128 * 128 * 128 * 128, 128 * 128 * 128, 128 * 128, 128, 1};
   int box_sizes_storage[5]             = {4, 4, 4, 4, 4};
@@ -55,8 +56,10 @@ bool test_ranks()
 
 bool test_address_alignment()
 {
-  alignas(16) float data_16B[64]{};
-  alignas(32) float data_32B[64]{};
+  float* data_32B = nullptr; // aligned to 32B
+  assert(cudaMalloc(&data_32B, 64 * sizeof(float)) == cudaSuccess);
+  float* data_16B = data_32B + 4; // aligned to 16B
+
   constexpr int64_t shape_storage[]   = {128, 128, 128, 128};
   constexpr int64_t strides_storage[] = {128 * 128 * 128, 128 * 128, 128, 1};
   DLTensor tensor{};
@@ -86,7 +89,8 @@ bool test_address_alignment()
 
 bool test_sizes()
 {
-  alignas(128) float data[64]{};
+  float* data = nullptr;
+  assert(cudaMalloc(&data, 64 * sizeof(float)) == cudaSuccess);
   constexpr int64_t shape_storage[2]   = {16, int64_t{1} << 32};
   constexpr int64_t strides_storage[2] = {int64_t{1} << 32, 1};
 
@@ -109,7 +113,8 @@ bool test_sizes()
 
 bool test_strides()
 {
-  alignas(128) float data[64]{};
+  float* data = nullptr;
+  assert(cudaMalloc(&data, 64 * sizeof(float)) == cudaSuccess);
   constexpr int64_t shape_storage[2] = {16, 128};
   int64_t strides_storage[2]         = {(int64_t{1} << 38) - 4, 1};
   int box_sizes_storage[]            = {16, 16};
@@ -135,7 +140,8 @@ bool test_strides()
 
 bool test_box_sizes()
 {
-  alignas(128) float data[64]{};
+  float* data = nullptr;
+  assert(cudaMalloc(&data, 64 * sizeof(float)) == cudaSuccess);
   constexpr int64_t shape_storage[1]   = {256};
   constexpr int64_t strides_storage[1] = {1};
   int box_sizes_storage[1]             = {256};
@@ -158,7 +164,8 @@ bool test_box_sizes()
 
 bool test_elem_strides()
 {
-  alignas(128) float data[64]{};
+  float* data = nullptr;
+  assert(cudaMalloc(&data, 64 * sizeof(float)) == cudaSuccess);
   constexpr int64_t shape_storage[]   = {128, 128, 128};
   constexpr int64_t strides_storage[] = {128 * 128, 128, 1};
   int box_sizes_storage[]             = {16, 16, 16};
@@ -206,7 +213,8 @@ bool test_enums()
   int computeCapabilityMajor;
   assert(cudaDeviceGetAttribute(&computeCapabilityMajor, cudaDevAttrComputeCapabilityMajor, 0) == cudaSuccess);
 
-  alignas(128) float data[64]{};
+  float* data = nullptr;
+  assert(cudaMalloc(&data, 64 * sizeof(float)) == cudaSuccess);
   constexpr int64_t shape_storage[3]   = {128, 128, 128};
   constexpr int64_t strides_storage[3] = {128 * 128, 128, 1};
 
