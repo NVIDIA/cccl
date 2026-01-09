@@ -8,6 +8,7 @@
 #include <cub/util_type.cuh>
 
 #include <thrust/device_vector.h>
+#include <thrust/iterator/transform_iterator.h>
 #include <thrust/sequence.h>
 
 #include <cuda/__execution/determinism.h>

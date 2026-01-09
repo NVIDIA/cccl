@@ -1,9 +1,10 @@
 #include <thrust/device_vector.h>
 #include <thrust/extrema.h>
 #include <thrust/host_vector.h>
-#include <thrust/iterator/counting_iterator.h>
 #include <thrust/random.h>
 #include <thrust/tuple.h>
+
+#include <cuda/iterator>
 
 #include <cmath>
 #include <fstream>
@@ -184,7 +185,7 @@ void jfa(thrust::device_vector<int>& in, thrust::device_vector<int>& out, unsign
       in.begin() + k - m * k,
       in.begin() - k + m * k,
       in.begin() - k - m * k,
-      thrust::counting_iterator<int>(0)),
+      cuda::counting_iterator<int>(0)),
     thrust::make_zip_iterator(
       in.begin(),
       in.begin() + k,
@@ -195,7 +196,7 @@ void jfa(thrust::device_vector<int>& in, thrust::device_vector<int>& out, unsign
       in.begin() + k - m * k,
       in.begin() - k + m * k,
       in.begin() - k - m * k,
-      thrust::counting_iterator<int>(0))
+      cuda::counting_iterator<int>(0))
       + n * m,
     out.begin(),
     voronoi_site_selector(m, n, k));

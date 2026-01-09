@@ -1,8 +1,9 @@
 #include <thrust/device_ptr.h>
 #include <thrust/device_vector.h>
 #include <thrust/functional.h>
-#include <thrust/iterator/counting_iterator.h>
 #include <thrust/iterator/transform_iterator.h>
+
+#include <cuda/iterator>
 
 #include <unittest/unittest.h>
 
@@ -99,8 +100,8 @@ DECLARE_UNITTEST(TestDeviceDereferenceTransformIteratorOutputConversion);
 
 void TestDeviceDereferenceCountingIterator()
 {
-  thrust::counting_iterator<int> first(1);
-  thrust::counting_iterator<int> last(6);
+  cuda::counting_iterator<int> first(1);
+  cuda::counting_iterator<int> last(6);
 
   thrust::device_vector<int> output(5);
 
@@ -113,8 +114,8 @@ DECLARE_UNITTEST(TestDeviceDereferenceCountingIterator);
 
 void TestDeviceDereferenceTransformedCountingIterator()
 {
-  thrust::counting_iterator<int> first(1);
-  thrust::counting_iterator<int> last(6);
+  cuda::counting_iterator<int> first(1);
+  cuda::counting_iterator<int> last(6);
 
   thrust::device_vector<int> output(5);
 
