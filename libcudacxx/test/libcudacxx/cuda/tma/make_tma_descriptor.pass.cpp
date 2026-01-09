@@ -51,6 +51,7 @@ bool test_ranks()
   // test 3D tensor + interleave layout 32B + swizzle 32B
   unused(
     cuda::make_tma_descriptor(tensor, box_sizes_3D, cuda::tma_interleave_layout::bytes32, cuda::tma_swizzle::bytes32));
+  assert(cudaFree(data) == cudaSuccess);
   return true;
 }
 
@@ -84,6 +85,7 @@ bool test_address_alignment()
   tensor.data = data_32B;
   unused(
     cuda::make_tma_descriptor(tensor, box_sizes, cuda::tma_interleave_layout::bytes32, cuda::tma_swizzle::bytes32));
+  assert(cudaFree(data_32B) == cudaSuccess);
   return true;
 }
 
@@ -108,6 +110,7 @@ bool test_sizes()
   cuda::std::span<const int, 2> box_sizes{box_sizes_storage};
   // test largest tensor size
   unused(cuda::make_tma_descriptor(tensor, box_sizes));
+  assert(cudaFree(data) == cudaSuccess);
   return true;
 }
 
@@ -135,6 +138,7 @@ bool test_strides()
   // stride is 0
   strides_storage[0] = 0;
   unused(cuda::make_tma_descriptor(tensor, box_sizes));
+  assert(cudaFree(data) == cudaSuccess);
   return true;
 }
 
@@ -159,6 +163,7 @@ bool test_box_sizes()
   tensor.byte_offset = 0;
   // test largest box size
   unused(cuda::make_tma_descriptor(tensor, box_sizes));
+  assert(cudaFree(data) == cudaSuccess);
   return true;
 }
 
@@ -185,6 +190,7 @@ bool test_elem_strides()
   tensor.byte_offset = 0;
   unused(cuda::make_tma_descriptor(tensor, box_sizes, elem_strides, no_interleave));
   unused(cuda::make_tma_descriptor(tensor, box_sizes, elem_strides, cuda::tma_interleave_layout::bytes16));
+  assert(cudaFree(data) == cudaSuccess);
   return true;
 }
 
@@ -318,6 +324,7 @@ bool test_enums()
       }
     }
   }
+  assert(cudaFree(data) == cudaSuccess);
   return true;
 }
 
