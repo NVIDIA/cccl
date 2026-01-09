@@ -11,6 +11,11 @@
 
 #include "test_macros.h"
 
+#if (_CCCL_LIFETIMEBOUND + 0)
+#else
+#  error "lifetimebound attribute not supported"
+#endif
+
 struct S
 {
   char data[32];
