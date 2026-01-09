@@ -21,14 +21,16 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/__fwd/hierarchy.h>
-#include <cuda/__hierarchy/hierarchy_query_result.h>
-#include <cuda/__hierarchy/native_hierarchy_level_base.h>
-#include <cuda/std/__concepts/concept_macros.h>
-#include <cuda/std/__mdspan/extents.h>
-#include <cuda/std/__type_traits/is_integer.h>
+#if _CCCL_HAS_CTK()
 
-#include <cuda/std/__cccl/prologue.h>
+#  include <cuda/__fwd/hierarchy.h>
+#  include <cuda/__hierarchy/hierarchy_query_result.h>
+#  include <cuda/__hierarchy/native_hierarchy_level_base.h>
+#  include <cuda/std/__concepts/concept_macros.h>
+#  include <cuda/std/__mdspan/extents.h>
+#  include <cuda/std/__type_traits/is_integer.h>
+
+#  include <cuda/std/__cccl/prologue.h>
 
 _CCCL_BEGIN_NAMESPACE_CUDA
 
@@ -42,6 +44,8 @@ struct cluster_level : __native_hierarchy_level_base<cluster_level>
 
   using __base_type = __native_hierarchy_level_base<cluster_level>;
   using __base_type::extents_as;
+
+#  if _CCCL_CUDA_COMPILATION()
   using __base_type::index_as;
 
   // interactions with grid level
@@ -63,12 +67,15 @@ struct cluster_level : __native_hierarchy_level_base<cluster_level>
     NV_IF_TARGET(NV_PROVIDES_SM_90, (__idx = ::__clusterIdx();))
     return {static_cast<_Tp>(__idx.x), static_cast<_Tp>(__idx.y), static_cast<_Tp>(__idx.z)};
   }
+#  endif // _CCCL_CUDA_COMPILATION()
 };
 
 _CCCL_GLOBAL_CONSTANT cluster_level cluster;
 
 _CCCL_END_NAMESPACE_CUDA
 
-#include <cuda/std/__cccl/epilogue.h>
+#  include <cuda/std/__cccl/epilogue.h>
+
+#endif // _CCCL_HAS_CTK()
 
 #endif // _CUDA___HIERARCHY_CLUSTER_LEVEL_H

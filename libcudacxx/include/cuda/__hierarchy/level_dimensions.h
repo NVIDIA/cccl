@@ -21,15 +21,17 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/__fwd/hierarchy.h>
-#include <cuda/__hierarchy/block_level.h>
-#include <cuda/__hierarchy/cluster_level.h>
-#include <cuda/__hierarchy/grid_level.h>
-#include <cuda/__hierarchy/hierarchy_levels.h>
-#include <cuda/std/span>
-#include <cuda/std/type_traits>
+#if _CCCL_HAS_CTK()
 
-#include <cuda/std/__cccl/prologue.h>
+#  include <cuda/__fwd/hierarchy.h>
+#  include <cuda/__hierarchy/block_level.h>
+#  include <cuda/__hierarchy/cluster_level.h>
+#  include <cuda/__hierarchy/grid_level.h>
+#  include <cuda/__hierarchy/hierarchy_levels.h>
+#  include <cuda/std/span>
+#  include <cuda/std/type_traits>
+
+#  include <cuda/std/__cccl/prologue.h>
 
 _CCCL_BEGIN_NAMESPACE_CUDA
 
@@ -140,10 +142,10 @@ struct level_dimensions
   _CCCL_API constexpr level_dimensions()
       : dims(){};
 
-#if !defined(_CCCL_NO_THREE_WAY_COMPARISON) && !_CCCL_COMPILER(MSVC, <, 19, 39) && !_CCCL_COMPILER(GCC, <, 12)
+#  if !defined(_CCCL_NO_THREE_WAY_COMPARISON) && !_CCCL_COMPILER(MSVC, <, 19, 39) && !_CCCL_COMPILER(GCC, <, 12)
   [[nodiscard]] _CCCL_HIDE_FROM_ABI constexpr bool operator==(const level_dimensions&) const noexcept = default;
-#else // ^^^ !_CCCL_NO_THREE_WAY_COMPARISON ^^^ / vvv
-      // _CCCL_NO_THREE_WAY_COMPARISON vvv
+#  else // ^^^ !_CCCL_NO_THREE_WAY_COMPARISON ^^^ / vvv
+        // _CCCL_NO_THREE_WAY_COMPARISON vvv
   [[nodiscard]] _CCCL_API friend constexpr bool
   operator==(const level_dimensions& __left, const level_dimensions& __right) noexcept
   {
@@ -155,7 +157,7 @@ struct level_dimensions
   {
     return __left.dims != __right.dims;
   }
-#endif // _CCCL_NO_THREE_WAY_COMPARISON
+#  endif // _CCCL_NO_THREE_WAY_COMPARISON
 };
 
 /**
@@ -234,6 +236,8 @@ _CCCL_API constexpr auto block_dims(_Dims __dims) noexcept
 }
 _CCCL_END_NAMESPACE_CUDA
 
-#include <cuda/std/__cccl/epilogue.h>
+#  include <cuda/std/__cccl/epilogue.h>
+
+#endif // _CCCL_HAS_CTK()
 
 #endif // _CUDA___HIERARCHY_LEVEL_DIMENSIONS_H
