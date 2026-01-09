@@ -107,6 +107,72 @@ int main()
   }
 
   // ==========================================================================
+  // Test activate()/deactivate() - generic alternative to cudaSetDevice
+  // These methods can be used without a CUDASTF context
+  // ==========================================================================
+  {
+    // Save initial device
+    int initial_device;
+    cuda_safe_call(cudaGetDevice(&initial_device));
+
+    // Use activate() to switch to current device (no-op but verifies it works)
+    exec_place current_place = exec_place::current_device();
+    exec_place prev          = current_place.activate();
+
+    int after_activate;
+    cuda_safe_call(cudaGetDevice(&after_activate));
+    EXPECT(after_activate == initial_device);
+
+    // Restore (also a no-op in this case)
+    current_place.deactivate(prev);
+  }
+
+  // Test activate()/deactivate() with multiple devices
+  if (device_count > 1)
+  {
+    // Save initial device
+    int initial_device;
+    cuda_safe_call(cudaGetDevice(&initial_device));
+
+    // Switch to device 1
+    exec_place place1 = exec_place::device(1);
+    exec_place prev   = place1.activate();
+
+    // Verify we're now on device 1
+    int new_device;
+    cuda_safe_call(cudaGetDevice(&new_device));
+    EXPECT(new_device == 1);
+
+    // Restore previous device using deactivate
+    place1.deactivate(prev);
+
+    // Verify we're back on the initial device
+    int restored_device;
+    cuda_safe_call(cudaGetDevice(&restored_device));
+    EXPECT(restored_device == initial_device);
+
+    // Alternative: restore by calling activate() on the previous place
+    exec_place place0 = exec_place::device(0);
+    prev              = place0.activate();
+
+    cuda_safe_call(cudaGetDevice(&new_device));
+    EXPECT(new_device == 0);
+
+    // Restore by activating the previous place directly
+    prev.activate();
+
+    cuda_safe_call(cudaGetDevice(&restored_device));
+    EXPECT(restored_device == initial_device);
+  }
+
+  // Test that host exec_place activate/deactivate works (no-op in practice)
+  {
+    exec_place host_place = exec_place::host;
+    exec_place prev       = host_place.activate();
+    host_place.deactivate(prev);
+  }
+
+  // ==========================================================================
   // Test context stream picking (for comparison)
   // ==========================================================================
   {

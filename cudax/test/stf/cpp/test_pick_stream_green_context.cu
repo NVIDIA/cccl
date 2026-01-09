@@ -117,6 +117,92 @@ int main()
   }
 
   // ==========================================================================
+  // Test activate()/deactivate() with green contexts
+  // These methods can be used without a CUDASTF context
+  // ==========================================================================
+  if (cnt > 0)
+  {
+    auto view           = gc.get_view(0);
+    exec_place gc_place = exec_place::green_ctx(view);
+
+    // Save the current CUDA context
+    CUcontext initial_ctx;
+    cuda_safe_call(cuCtxGetCurrent(&initial_ctx));
+
+    // Activate the green context - this sets cuCtxSetCurrent to the green context
+    exec_place prev = gc_place.activate();
+
+    // Verify the current context is now the green context
+    CUcontext current_ctx;
+    cuda_safe_call(cuCtxGetCurrent(&current_ctx));
+
+    // The current context should be the green context's driver context
+    CUcontext green_driver_ctx;
+    cuda_safe_call(cuCtxFromGreenCtx(&green_driver_ctx, view.g_ctx));
+
+    unsigned long long current_ctx_id, green_ctx_id;
+    cuda_safe_call(cuCtxGetId(current_ctx, &current_ctx_id));
+    cuda_safe_call(cuCtxGetId(green_driver_ctx, &green_ctx_id));
+    EXPECT(current_ctx_id == green_ctx_id);
+
+    // Restore the previous context
+    gc_place.deactivate(prev);
+
+    // Verify we're back to the initial context
+    CUcontext restored_ctx;
+    cuda_safe_call(cuCtxGetCurrent(&restored_ctx));
+
+    unsigned long long initial_ctx_id, restored_ctx_id;
+    cuda_safe_call(cuCtxGetId(initial_ctx, &initial_ctx_id));
+    cuda_safe_call(cuCtxGetId(restored_ctx, &restored_ctx_id));
+    EXPECT(initial_ctx_id == restored_ctx_id);
+  }
+
+  // Test switching between multiple green contexts
+  if (cnt > 1)
+  {
+    auto view0           = gc.get_view(0);
+    auto view1           = gc.get_view(1);
+    exec_place gc_place0 = exec_place::green_ctx(view0);
+    exec_place gc_place1 = exec_place::green_ctx(view1);
+
+    // Activate first green context
+    exec_place prev0 = gc_place0.activate();
+
+    // Verify we're in green context 0
+    CUcontext current_ctx;
+    cuda_safe_call(cuCtxGetCurrent(&current_ctx));
+    CUcontext green0_ctx;
+    cuda_safe_call(cuCtxFromGreenCtx(&green0_ctx, view0.g_ctx));
+    unsigned long long current_id, green0_id;
+    cuda_safe_call(cuCtxGetId(current_ctx, &current_id));
+    cuda_safe_call(cuCtxGetId(green0_ctx, &green0_id));
+    EXPECT(current_id == green0_id);
+
+    // Switch to second green context
+    exec_place prev1 = gc_place1.activate();
+
+    // Verify we're now in green context 1
+    cuda_safe_call(cuCtxGetCurrent(&current_ctx));
+    CUcontext green1_ctx;
+    cuda_safe_call(cuCtxFromGreenCtx(&green1_ctx, view1.g_ctx));
+    unsigned long long green1_id;
+    cuda_safe_call(cuCtxGetId(current_ctx, &current_id));
+    cuda_safe_call(cuCtxGetId(green1_ctx, &green1_id));
+    EXPECT(current_id == green1_id);
+
+    // Restore to green context 0
+    gc_place1.deactivate(prev1);
+
+    cuda_safe_call(cuCtxGetCurrent(&current_ctx));
+    cuda_safe_call(cuCtxGetId(current_ctx, &current_id));
+    EXPECT(current_id == green0_id);
+
+    // Restore to original context
+    gc_place0.deactivate(prev0);
+  }
+
+  // ==========================================================================
   // Test context with green context affinity
   // ==========================================================================
   {

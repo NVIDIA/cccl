@@ -2102,6 +2102,66 @@ You can query the pool size and retrieve all streams as a vector:
         myKernel<<<grid, block, 0, streams[i]>>>(d_data[i]);
     }
 
+Setting the current device or context
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The ``exec_place::activate()`` method provides a generic alternative to
+``cudaSetDevice()`` that works uniformly across different execution place types.
+This is useful when you want to set the current CUDA device or context without
+using CUDASTF tasks.
+
+The method returns an ``exec_place`` representing the previous state, which can
+be used to restore the original device or context.
+
+**Behavior by execution place type:**
+
+- **Device places** (``exec_place::device(id)``): Calls ``cudaSetDevice(id)``
+- **Green context places**: Sets the current CUDA driver context via ``cuCtxSetCurrent()``
+- **Host places**: No-op
+
+**Basic usage with devices:**
+
+.. code:: cpp
+
+    exec_place place = exec_place::device(1);
+    exec_place prev = place.activate();  // Switch to device 1
+
+    // ... perform operations on device 1 ...
+
+    place.deactivate(prev);  // Restore previous device
+
+**Alternative restoration pattern:**
+
+You can also restore by calling ``activate()`` on the returned place:
+
+.. code:: cpp
+
+    exec_place place = exec_place::device(1);
+    exec_place prev = place.activate();
+
+    // ... work on device 1 ...
+
+    prev.activate();  // Equivalent to place.deactivate(prev)
+
+**Usage with green contexts (CUDA 12.4+):**
+
+Green contexts provide SM-level partitioning of GPU resources. The
+``activate()``/``deactivate()`` methods handle the underlying driver context
+management:
+
+.. code:: cpp
+
+    // Create green contexts with 8 SMs each
+    green_context_helper gc(8, device_id);
+    auto view = gc.get_view(0);
+
+    exec_place gc_place = exec_place::green_ctx(view);
+    exec_place prev = gc_place.activate();  // Sets green context as current
+
+    // ... GPU work runs with SM affinity ...
+
+    gc_place.deactivate(prev);  // Restore original context
+
 Debugging
 ---------
 
