@@ -22,6 +22,8 @@
 #include "test_macros.h"
 #include "types.h"
 
+TEST_DIAG_SUPPRESS_MSVC(4146) // unary minus operator applied to unsigned type, result still unsigned
+
 // A lehmer code is a unique index for a permutation
 template <size_t N>
 __host__ __device__ size_t lehmer_code(const cuda::std::array<int, N>& perm)
