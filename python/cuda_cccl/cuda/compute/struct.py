@@ -247,7 +247,9 @@ def gpu_struct(
     # Add dtype property
     StructClass.dtype = dtype  # type: ignore[attr-defined]
 
-    # Register with Numba if available (for backward compatibility)
+    # Register with Numba if available. This is done eagerly (at struct creation
+    # time) because  we need the struct to be registered before JIT compilation,
+    # in order for type inference to work correctly.
     try:
         from ._numba.struct import _register_struct_with_numba
 
