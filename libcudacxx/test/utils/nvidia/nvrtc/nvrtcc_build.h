@@ -62,8 +62,8 @@ GpuProg nvrtc_build_prog(const std::string& testCu, const ArchConfig& config, co
 
   if (enable_float128)
   {
-    // __float128 is only supported on architectures >= 90
-    if (archId(config) >= 90)
+    // __float128 is only supported on architectures >= 100
+    if (archId(config) >= 100)
     {
       optList.emplace_back("-device-float128");
     }
