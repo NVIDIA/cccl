@@ -534,9 +534,104 @@ public:
     return pimpl->get_stream_pool(async_resources, for_computation);
   }
 
+  /**
+   * @brief Get a decorated stream from the stream pool associated to this execution place.
+   *
+   * This method can be used to obtain CUDA streams from execution places without requiring
+   * a CUDASTF context. This is useful when you want to use CUDASTF's place abstractions
+   * (devices, green contexts) for stream management without the full task-based model.
+   *
+   * @note If you are using a CUDASTF context, use `ctx.async_resources()` to ensure the
+   *       same stream pools are shared between your code and the context's internal operations.
+   *
+   * @param async_resources Handle managing the stream pools. Create a standalone
+   *        `async_resources_handle` for context-free usage, or use `ctx.async_resources()`
+   *        when working alongside a CUDASTF context.
+   * @param for_computation Hint for selecting which pool to use. When true, returns a stream
+   *        from the computation pool; when false, returns a stream from the data transfer pool.
+   *        Using separate pools for computation and transfers can improve overlapping.
+   *        This is a performance hint and does not affect correctness.
+   * @return A decorated_stream containing the CUDA stream and metadata (device ID, pool index)
+   */
   decorated_stream getStream(async_resources_handle& async_resources, bool for_computation) const
   {
     return pimpl->getStream(async_resources, for_computation);
+  }
+
+  /**
+   * @brief Get a CUDA stream from the stream pool associated to this execution place.
+   *
+   * This method can be used to obtain CUDA streams from execution places without requiring
+   * a CUDASTF context. This is useful when you want to use CUDASTF's place abstractions
+   * (devices, green contexts) for stream management without the full task-based model.
+   *
+   * Example usage without a context:
+   * @code
+   * async_resources_handle resources;
+   * exec_place place = exec_place::device(0);
+   * cudaStream_t stream = place.pick_stream(resources);
+   * myKernel<<<grid, block, 0, stream>>>(...);
+   * @endcode
+   *
+   * Example usage with a context (sharing resources):
+   * @code
+   * stream_ctx ctx;
+   * exec_place place = exec_place::device(0);
+   * cudaStream_t stream = place.pick_stream(ctx.async_resources());
+   * // Stream comes from the same pool used by ctx internally
+   * @endcode
+   *
+   * @note If you are using a CUDASTF context, use `ctx.async_resources()` to ensure the
+   *       same stream pools are shared between your code and the context's internal operations.
+   *
+   * @param async_resources Handle managing the stream pools. Create a standalone
+   *        `async_resources_handle` for context-free usage, or use `ctx.async_resources()`
+   *        when working alongside a CUDASTF context.
+   * @param for_computation Hint for selecting which pool to use. When true, returns a stream
+   *        from the computation pool; when false, returns a stream from the data transfer pool.
+   *        Using separate pools for computation and transfers can improve overlapping.
+   *        This is a performance hint and does not affect correctness. Defaults to true.
+   * @return A CUDA stream associated with this execution place
+   */
+  cudaStream_t pick_stream(async_resources_handle& async_resources, bool for_computation = true) const
+  {
+    return getStream(async_resources, for_computation).stream;
+  }
+
+  /**
+   * @brief Get the number of streams available in the pool for this execution place.
+   *
+   * @param async_resources Handle managing the stream pools
+   * @param for_computation Hint for selecting which pool to query (computation or transfer pool)
+   * @return The number of stream slots in the pool
+   */
+  size_t stream_pool_size(async_resources_handle& async_resources, bool for_computation = true) const
+  {
+    return get_stream_pool(async_resources, for_computation).size();
+  }
+
+  /**
+   * @brief Get all streams from the pool associated to this execution place.
+   *
+   * This method returns a vector containing all CUDA streams in the pool. Streams are
+   * created lazily, so calling this method will create any streams that haven't been
+   * created yet.
+   *
+   * @param async_resources Handle managing the stream pools
+   * @param for_computation Hint for selecting which pool to use (computation or transfer pool)
+   * @return A vector of CUDA streams from the pool
+   */
+  ::std::vector<cudaStream_t>
+  pick_all_streams(async_resources_handle& async_resources, bool for_computation = true) const
+  {
+    auto& pool = get_stream_pool(async_resources, for_computation);
+    ::std::vector<cudaStream_t> result;
+    result.reserve(pool.size());
+    for (size_t i = 0; i < pool.size(); ++i)
+    {
+      result.push_back(pool.next().stream);
+    }
+    return result;
   }
 
   // TODO make protected !

@@ -1894,6 +1894,7 @@ in existing code.
   the application take care of synchronization.
 - ``Tokens`` make it possible to enforce concurrent execution while
   letting the application manage data allocations and data transfers.
+- ``Execution places`` can be used without tasks for example to automate the management of CUDA streams, or set the current execution context.
 
 Freezing logical data
 ^^^^^^^^^^^^^^^^^^^^^
@@ -2015,6 +2016,90 @@ or an ``rw()`` access. There is no need to set any content in the token
 A token corresponds to a ``logical_data<void_interface>`` object, so that the
 ``token`` type serves as a short-hand for this type. ``ctx.token()`` thus
 returns an object with a ``token`` type.
+
+Stream management with execution places
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+CUDASTF's execution places can be used independently of the task system to
+manage CUDA streams in a structured way. This is useful when you want to use
+CUDASTF's place abstractions (devices, green contexts) for stream management
+without the full task-based programming model.
+
+The ``exec_place::pick_stream`` method returns a CUDA stream from the stream
+pool associated with a specific execution place. To use this facility, you need
+an ``async_resources_handle`` object, which manages the underlying stream pools.
+
+The method accepts an optional ``for_computation`` hint (defaults to ``true``)
+that may select between computation and data transfer stream pools to improve
+overlapping. This is purely a performance hint, and it does not affect correctness. Not all execution places enforce
+it.
+
+**Using execution places without a context:**
+
+When using execution places without a CUDASTF context, create a standalone
+``async_resources_handle``:
+
+.. code:: cpp
+
+    #include <cuda/experimental/stf.cuh>
+    using namespace cuda::experimental::stf;
+
+    // Create an async_resources_handle (manages stream pools)
+    async_resources_handle resources;
+
+    // Get a stream from the current device
+    exec_place place = exec_place::current_device();
+    cudaStream_t stream = place.pick_stream(resources);
+
+    // Use the stream for CUDA operations
+    myKernel<<<grid, block, 0, stream>>>(d_data);
+
+    // Get streams from specific devices
+    cudaStream_t stream_dev0 = exec_place::device(0).pick_stream(resources);
+    cudaStream_t stream_dev1 = exec_place::device(1).pick_stream(resources);
+
+Stream pools are populated lazily—CUDA streams are only created when first
+requested via ``pick_stream()``.
+
+**Using execution places alongside a context:**
+
+When working alongside a CUDASTF context, use ``ctx.async_resources()`` to
+ensure the same stream pools are shared between your code and the context's
+internal operations:
+
+.. code:: cpp
+
+    stream_ctx ctx;
+
+    // Get a stream using the context's async_resources
+    exec_place place = exec_place::device(0);
+    cudaStream_t stream = place.pick_stream(ctx.async_resources());
+
+    // This stream comes from the same pool used by the context internally
+    // You can also use ctx.pick_stream() which does the same thing
+    cudaStream_t ctx_stream = ctx.pick_stream();
+
+    ctx.finalize();
+
+**Getting multiple streams:**
+
+You can query the pool size and retrieve all streams as a vector:
+
+.. code:: cpp
+
+    async_resources_handle resources;
+    exec_place place = exec_place::current_device();
+
+    // Query the number of streams in the pool
+    size_t pool_size = place.stream_pool_size(resources);
+
+    // Get all streams from the pool as a vector
+    std::vector<cudaStream_t> streams = place.pick_all_streams(resources);
+
+    // Use the streams for concurrent operations
+    for (size_t i = 0; i < streams.size(); ++i) {
+        myKernel<<<grid, block, 0, streams[i]>>>(d_data[i]);
+    }
 
 Debugging
 ---------
