@@ -102,4 +102,12 @@
 #  define _CCCL_DIAGNOSE_ERROR(_COND, _MSG)
 #endif
 
+// Third party libraries
+
+#if _CCCL_HAS_INCLUDE(<dlpack/dlpack.h>) && !_CCCL_COMPILER(NVRTC) && !defined(CCCL_DISABLE_DLPACK)
+#  define _CCCL_HAS_DLPACK() 1
+#else // ^^^ has dlpack ^^^ / vvv no dlpack vvv
+#  define _CCCL_HAS_DLPACK() 0
+#endif // ^^^ no dlpack ^^^
+
 #endif // _CUDA_STD___INTERNAL_FEATURES_H
