@@ -122,7 +122,7 @@ class _JitOp:
                 )
             sig = numba_output_type(*numba_input_types)
 
-        return to_stateless_cccl_op(self._func, sig)
+        return _compile_to_cccl_op(self._func, sig)
 
     @property
     def func(self) -> Callable:
@@ -134,7 +134,7 @@ class _JitOp:
 JitOp = _JitOp
 
 
-def to_stateless_cccl_op(op, sig: "Signature") -> Op:
+def _compile_to_cccl_op(op, sig: "Signature") -> Op:
     """Compile a Python callable to a CCCL Op using Numba.
 
     Args:

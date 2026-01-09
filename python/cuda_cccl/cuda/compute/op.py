@@ -113,8 +113,16 @@ def make_op_adapter(op) -> OpProtocol:
     if isinstance(op, OpKind):
         return _WellKnownOp(op)
 
-    # JIT-compiled callable - lazy import to avoid Numba dependency
-    from ._numba.op import _JitOp
+    # JIT-compiled callable - needs Numba
+    try:
+        import numba.cuda as _  # noqa: F401
+    except ImportError:
+        raise ImportError(
+            "Using Python callables as operators requires numba-cuda, but it is "
+            "not installed or failed to import.\n\n"
+        ) from None
+
+    from ._numba.op import _JitOp  # noqa: F401
 
     return _JitOp(op)
 

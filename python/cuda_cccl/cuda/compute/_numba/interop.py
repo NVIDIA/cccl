@@ -30,8 +30,6 @@ from .._bindings import (
 from ..op import OpKind
 
 if TYPE_CHECKING:
-    from numba.core.typing import Signature
-
     from .iterators.base import IteratorBase
 
 # Mapping from Numba types to TypeEnum values
@@ -121,17 +119,6 @@ def numba_iterator_to_cccl_iter(it: "IteratorBase", io_kind: _IteratorIO) -> Ite
         numba_type_to_info(it.value_type),
         state=it.state,
     )
-
-
-def to_stateless_cccl_op(op, sig: "Signature") -> Op:
-    """Compile a Python callable to a CCCL Op using Numba.
-
-    Note: This function is now implemented in _numba/op.py. This is a
-    re-export for backwards compatibility.
-    """
-    from .op import to_stateless_cccl_op as _impl
-
-    return _impl(op, sig)
 
 
 def make_host_cfunc(state_ptr_ty, fn):

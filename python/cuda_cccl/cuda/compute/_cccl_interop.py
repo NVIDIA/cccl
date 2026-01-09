@@ -9,7 +9,7 @@ import os
 import subprocess
 import tempfile
 import warnings
-from typing import TYPE_CHECKING, Callable, List
+from typing import Callable, List
 
 import numpy as np
 
@@ -38,9 +38,6 @@ from ._bindings import (
 )
 from ._utils.protocols import get_data_pointer, get_dtype, is_contiguous
 from .typing import DeviceArrayLike, GpuStruct
-
-if TYPE_CHECKING:
-    from numba.core.typing import Signature
 
 # Numpy dtype to TypeEnum mapping (no Numba dependency)
 _NUMPY_DTYPE_TO_ENUM = {
@@ -156,13 +153,6 @@ def to_cccl_value(array_or_struct: np.ndarray | GpuStruct) -> Value:
     else:
         # it's a GpuStruct, use the array underlying it
         return to_cccl_value(array_or_struct._data)
-
-
-def to_stateless_cccl_op(op, sig: "Signature") -> Op:
-    """Compile a Python callable to a CCCL Op using Numba."""
-    from ._numba.op import to_stateless_cccl_op as _to_stateless_cccl_op
-
-    return _to_stateless_cccl_op(op, sig)
 
 
 def get_value_type(d_in):
