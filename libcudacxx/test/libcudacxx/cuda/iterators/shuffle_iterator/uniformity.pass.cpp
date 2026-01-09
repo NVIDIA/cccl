@@ -28,7 +28,7 @@
 
 // A lehmer code is a unique index for a permutation
 template <size_t N>
-_CCCL_HOST_DEVICE size_t lehmer_code(const cuda::std::array<int, N>& perm)
+__host__ __device__ size_t lehmer_code(const cuda::std::array<int, N>& perm)
 {
   // This algorithm is N^2 but is faster for small N
   size_t rank = 0;
@@ -52,14 +52,14 @@ _CCCL_HOST_DEVICE size_t lehmer_code(const cuda::std::array<int, N>& perm)
   return rank;
 }
 
-_CCCL_HOST_DEVICE constexpr size_t factorial(size_t n)
+__host__ __device__ constexpr size_t factorial(size_t n)
 {
   return n <= 1 ? 1 : n * factorial(n - 1);
 }
 
 // Compute chi-squared statistic
 template <size_t NumCategories>
-_CCCL_HOST_DEVICE double compute_chi_squared(const cuda::std::array<size_t, NumCategories>& counts, double expected)
+__host__ __device__ double compute_chi_squared(const cuda::std::array<size_t, NumCategories>& counts, double expected)
 {
   double chi2 = 0.0;
   for (size_t c : counts)
@@ -72,7 +72,7 @@ _CCCL_HOST_DEVICE double compute_chi_squared(const cuda::std::array<size_t, NumC
 
 // Exhaustively generate permutations for a small N and count occurrences
 template <size_t N>
-_CCCL_HOST_DEVICE void test_small_n()
+__host__ __device__ void test_small_n()
 {
   static_assert(N <= 5, "N too large for exhaustive permutation test");
   constexpr size_t num_permutations = factorial(N);
@@ -109,17 +109,10 @@ _CCCL_HOST_DEVICE void test_small_n()
   // Degrees of freedom = num_permutations - 1, alpha=0.05
   // DoF: -, -, 1, 5, 23, 119 for N=0,1,2,3,4,5
   const double critical_values_N[6] = {0, 0, 3.841, 11.070, 35.172, 145.461};
-  // assert(chi2 < critical_values_N[N]);
-
-  printf("n=%zu, samples=%d: chi2=%.2f, critical=%.2f -> %s\n",
-         N,
-         num_samples,
-         chi2,
-         critical_values_N[N],
-         chi2 < critical_values_N[N] ? "UNIFORM" : "NOT UNIFORM");
+  assert(chi2 < critical_values_N[N]);
 }
 
-_CCCL_HOST_DEVICE void chi_squared_tests()
+__host__ __device__ void chi_squared_tests()
 {
   test_small_n<2>();
   test_small_n<3>();
@@ -134,7 +127,7 @@ struct Fenwick
 
   Fenwick() = default;
 
-  _CCCL_HOST_DEVICE void add(size_t i, int v = 1)
+  __host__ __device__ void add(size_t i, int v = 1)
   {
     for (++i; i < f.size(); i += i & -i)
     {
@@ -142,7 +135,7 @@ struct Fenwick
     }
   }
 
-  _CCCL_HOST_DEVICE int sum(size_t i) const
+  __host__ __device__ int sum(size_t i) const
   {
     int s = 0;
     for (++i; i > 0; i -= i & -i)
@@ -155,7 +148,7 @@ struct Fenwick
 
 // O(n log n) Kendall distance
 template <size_t N>
-_CCCL_HOST_DEVICE size_t kendall_distance(const cuda::std::array<int, N>& a, const cuda::std::array<int, N>& b)
+__host__ __device__ size_t kendall_distance(const cuda::std::array<int, N>& a, const cuda::std::array<int, N>& b)
 {
   cuda::std::array<int, N> inv{};
   cuda::std::array<int, N> c{};
@@ -184,7 +177,7 @@ _CCCL_HOST_DEVICE size_t kendall_distance(const cuda::std::array<int, N>& a, con
 
 // Mallows kernel
 template <size_t N>
-_CCCL_HOST_DEVICE double
+__host__ __device__ double
 mallows_kernel(const cuda::std::array<int, N>& a, const cuda::std::array<int, N>& b, double lambda)
 {
   const double n = static_cast<double>(N);
@@ -193,7 +186,7 @@ mallows_kernel(const cuda::std::array<int, N>& a, const cuda::std::array<int, N>
 }
 
 // E[K] under uniform distribution (closed form)
-_CCCL_HOST_DEVICE double expected_K(size_t n, double lambda)
+__host__ __device__ double expected_K(size_t n, double lambda)
 {
   double prod = 1.0;
   double n2   = double(n) * double(n);
@@ -208,7 +201,7 @@ _CCCL_HOST_DEVICE double expected_K(size_t n, double lambda)
 }
 
 // E[K^2] under uniform distribution
-_CCCL_HOST_DEVICE double expected_K2(size_t n, double lambda)
+__host__ __device__ double expected_K2(size_t n, double lambda)
 {
   double prod = 1.0;
   double n2   = double(n) * double(n);
@@ -222,7 +215,7 @@ _CCCL_HOST_DEVICE double expected_K2(size_t n, double lambda)
   return prod;
 }
 
-_CCCL_HOST_DEVICE double inverse_erf(double x)
+__host__ __device__ double inverse_erf(double x)
 {
   double tt1, tt2, lnx, sgn;
   sgn = (x < 0) ? -1.0 : 1.0;
@@ -237,7 +230,7 @@ _CCCL_HOST_DEVICE double inverse_erf(double x)
 }
 
 // Formula (7): acceptance threshold
-_CCCL_HOST_DEVICE double mmd_threshold(size_t n, size_t M, double lambda, double alpha)
+__host__ __device__ double mmd_threshold(size_t n, size_t M, double lambda, double alpha)
 {
   double EK  = expected_K(n, lambda);
   double EK2 = expected_K2(n, lambda);
@@ -249,7 +242,7 @@ _CCCL_HOST_DEVICE double mmd_threshold(size_t n, size_t M, double lambda, double
 }
 
 template <size_t N>
-_CCCL_HOST_DEVICE void test_mmd()
+__host__ __device__ void test_mmd()
 {
   const double lambda   = 5.0;
   const int num_samples = 1000;
@@ -276,18 +269,12 @@ _CCCL_HOST_DEVICE void test_mmd()
   double EK        = expected_K(N, lambda);
   double mmd_hat   = cuda::std::abs((2.0 / num_samples) * sum - EK);
   double threshold = mmd_threshold(N, num_samples, lambda, 0.05);
-  printf("n=%zu, samples=%d: mmd=%.6f, threshold=%.6f -> %s\n",
-         N,
-         num_samples,
-         mmd_hat,
-         threshold,
-         mmd_hat < threshold ? "UNIFORM" : "NOT UNIFORM");
-  // assert(mmd_hat < threshold);
+  assert(mmd_hat < threshold);
 }
 
 // Mitchell, Rory, et al. "Bandwidth-optimal random shuffling for GPUs." ACM Transactions on Parallel Computing 9.1
 // (2022): 1-20.
-_CCCL_HOST_DEVICE void maximum_mean_discrepency_tests()
+__host__ __device__ void maximum_mean_discrepency_tests()
 {
   test_mmd<50>();
   test_mmd<100>();
@@ -295,7 +282,7 @@ _CCCL_HOST_DEVICE void maximum_mean_discrepency_tests()
 }
 
 template <size_t N>
-_CCCL_HOST_DEVICE void expected_value_test()
+__host__ __device__ void expected_value_test()
 {
   const int num_samples = 1000;
   cuda::std::philox4x64 rng;
@@ -322,17 +309,11 @@ _CCCL_HOST_DEVICE void expected_value_test()
 
   double alpha = 0.05;
   double zcrit = inverse_erf(1.0 - alpha / (2.0 * N)) * cuda::std::sqrt(2.0);
-  printf("n=%zu, samples=%d: zmax=%.2f, zcrit=%.2f -> %s\n",
-         N,
-         num_samples,
-         zmax,
-         zcrit,
-         zmax < zcrit ? "UNIFORM" : "NOT UNIFORM");
-  // assert(zmax < zcrit);
+  assert(zmax < zcrit);
 }
 
 // Test the expected value at each index of the shuffle_iterator
-_CCCL_HOST_DEVICE void expected_value_tests()
+__host__ __device__ void expected_value_tests()
 {
   expected_value_test<50>();
   expected_value_test<100>();
@@ -340,7 +321,7 @@ _CCCL_HOST_DEVICE void expected_value_tests()
 }
 
 template <size_t N>
-_CCCL_HOST_DEVICE void adjacent_inversion_test()
+__host__ __device__ void adjacent_inversion_test()
 {
   const double alpha    = 0.05;
   const int num_samples = 1000;
@@ -364,16 +345,10 @@ _CCCL_HOST_DEVICE void adjacent_inversion_test()
     z_max                      = cuda::std::max(z_max, cuda::std::abs(z));
   }
   double zcrit = inverse_erf(1.0 - alpha / (2.0 * num_samples)) * cuda::std::sqrt(2.0);
-  // assert(z_max < zcrit);
-  printf("n=%zu, samples=%d: zmax=%.2f, zcrit=%.2f -> %s\n",
-         N,
-         num_samples,
-         z_max,
-         zcrit,
-         z_max < zcrit ? "UNIFORM" : "NOT UNIFORM");
+  assert(z_max < zcrit);
 }
 
-_CCCL_HOST_DEVICE void adjacent_inversion_tests()
+__host__ __device__ void adjacent_inversion_tests()
 {
   adjacent_inversion_test<5>();
   adjacent_inversion_test<694>();
