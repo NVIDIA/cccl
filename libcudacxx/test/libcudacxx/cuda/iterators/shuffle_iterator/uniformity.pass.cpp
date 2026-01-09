@@ -12,16 +12,12 @@
 // This test checks that different seeds produce a reasonably uniform
 // distribution across all possible permutations.
 
-#include <thrust/iterator/shuffle_iterator.h>
-
 #include <cuda/iterator>
 #include <cuda/std/__random_>
 #include <cuda/std/array>
 #include <cuda/std/cassert>
 
 #include <nv/target>
-
-#include <cstdio>
 
 #include "test_macros.h"
 #include "types.h"
@@ -182,7 +178,7 @@ mallows_kernel(const cuda::std::array<int, N>& a, const cuda::std::array<int, N>
 {
   const double n = static_cast<double>(N);
   double d       = static_cast<double>(kendall_distance<N>(a, b));
-  return std::exp(-lambda * d / (n * n));
+  return cuda::std::exp(-lambda * d / (n * n));
 }
 
 // E[K] under uniform distribution (closed form)
@@ -193,8 +189,8 @@ __host__ __device__ double expected_K(size_t n, double lambda)
 
   for (size_t j = 1; j <= n; ++j)
   {
-    double num = 1.0 - std::exp(-lambda * j / n2);
-    double den = j * (1.0 - std::exp(-lambda / n2));
+    double num = 1.0 - cuda::std::exp(-lambda * j / n2);
+    double den = j * (1.0 - cuda::std::exp(-lambda / n2));
     prod *= num / den;
   }
   return prod;
@@ -208,8 +204,8 @@ __host__ __device__ double expected_K2(size_t n, double lambda)
 
   for (size_t j = 1; j <= n; ++j)
   {
-    double num = 1.0 - std::exp(-2.0 * lambda * j / n2);
-    double den = j * (1.0 - std::exp(-2.0 * lambda / n2));
+    double num = 1.0 - cuda::std::exp(-2.0 * lambda * j / n2);
+    double den = j * (1.0 - cuda::std::exp(-2.0 * lambda / n2));
     prod *= num / den;
   }
   return prod;
