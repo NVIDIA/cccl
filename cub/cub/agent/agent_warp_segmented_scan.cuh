@@ -152,7 +152,7 @@ struct agent_warp_segmented_scan
 
       AccumT thread_values[items_per_thread];
       warp_load_t(temp_storage.load[warp_id]).Load(d_in + chunk_begin, thread_values, chunk_size, AccumT{});
-      __syncthreads();
+      __syncwarp();
 
       if (chunk_id == 0)
       {
@@ -163,13 +163,13 @@ struct agent_warp_segmented_scan
       {
         scan_later_tile(thread_values, scan_op, exclusive_prefix);
       }
-      __syncthreads();
+      __syncwarp();
 
       const OffsetT out_offset = out_idx_begin + chunk_id * tile_items;
       warp_store_t(temp_storage.store[warp_id]).Store(d_out + out_offset, thread_values, chunk_size);
       if (++chunk_id < n_chunks)
       {
-        __syncthreads();
+        __syncwarp();
       }
     }
   };
@@ -246,7 +246,7 @@ struct agent_warp_segmented_scan
           thread_flag_values[i] = augmented_accum_t{is_segment_head, thread_values[i]};
         }
       }
-      __syncthreads();
+      __syncwarp();
 
       if (chunk_id == 0)
       {
@@ -258,7 +258,7 @@ struct agent_warp_segmented_scan
       {
         scan_later_tile(thread_flag_values, augmented_scan_op, exclusive_prefix);
       }
-      __syncthreads();
+      __syncwarp();
 
       // store prefix-scan values, discarding head flags
       {
@@ -285,7 +285,7 @@ struct agent_warp_segmented_scan
       }
       if (++chunk_id < n_chunks)
       {
-        __syncthreads();
+        __syncwarp();
       }
     }
   }
@@ -361,7 +361,7 @@ struct agent_warp_segmented_scan
           thread_flag_values[i] = augmented_accum_t{is_segment_head, thread_values[i]};
         }
       }
-      __syncthreads();
+      __syncwarp();
 
       if (chunk_id == 0)
       {
@@ -373,7 +373,7 @@ struct agent_warp_segmented_scan
       {
         scan_later_tile(thread_flag_values, augmented_scan_op, exclusive_prefix);
       }
-      __syncthreads();
+      __syncwarp();
 
       // store prefix-scan values, discarding head flags
       {
@@ -400,7 +400,7 @@ struct agent_warp_segmented_scan
       }
       if (++chunk_id < n_chunks)
       {
-        __syncthreads();
+        __syncwarp();
       }
     }
   }
