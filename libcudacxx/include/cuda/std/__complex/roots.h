@@ -78,10 +78,10 @@ template <class _Tp>
 
   // NVCC 12.9 seems to be eliminating some parentheses which makes MSVC unhappy.
   _CCCL_DIAG_PUSH
-#if _CCCL_CUDACC_BELOW(13, 0)
+#if _CCCL_CUDA_COMPILER(NVCC, <, 13, 0)
   _CCCL_DIAG_SUPPRESS_MSVC(4554) // warning C4554: '<<': check operator precedence for possible error; use parentheses
                                  // to clarify precedence
-#endif
+#endif // _CCCL_CUDA_COMPILER(NVCC, <, 13, 0)
 
   // Get some bounds where __re +- |__x| won't overflow.
   // Doesn't need to be too exact, enough to cover extremal cases.
