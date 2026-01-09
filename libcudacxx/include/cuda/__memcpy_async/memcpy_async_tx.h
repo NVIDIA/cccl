@@ -35,6 +35,7 @@
 #    include <cuda/__ptx/ptx_dot_variants.h>
 #    include <cuda/__ptx/ptx_helper_functions.h>
 #    include <cuda/std/__atomic/scopes.h>
+#    include <cuda/std/__type_traits/conditional.h>
 #    include <cuda/std/__type_traits/is_trivially_copyable.h>
 #    include <cuda/std/cstdint>
 
@@ -76,7 +77,7 @@ _CCCL_DEVICE inline async_contract_fulfillment memcpy_async_tx(
       if (_CUDA_DEVICE::is_address_from(__dest, _CUDA_DEVICE::address_space::shared)
           && _CUDA_DEVICE::is_address_from(__src, _CUDA_DEVICE::address_space::global)) {
         _CUDA_VPTX::cp_async_bulk(
-          _CUDA_VPTX::space_cluster,
+          ::cuda::std::conditional_t<__cccl_ptx_isa >= 860, ::cuda::ptx::space_shared_t, ::cuda::ptx::space_cluster_t>{},
           _CUDA_VPTX::space_global,
           __dest,
           __src,
