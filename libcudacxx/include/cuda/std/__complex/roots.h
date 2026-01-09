@@ -76,6 +76,13 @@ template <class _Tp>
   // pre-check to see if we over/underflow:
   _Tp __x_abs_sq = ::cuda::std::fma(__re, __re, __im * __im);
 
+  // NVCC 12.9 seems to be eliminating some parentheses which makes MSVC unhappy.
+  _CCCL_DIAG_PUSH
+#if _CCCL_CUDA_COMPILER(NVCC, <, 13, 0)
+  _CCCL_DIAG_SUPPRESS_MSVC(4554) // warning C4554: '<<': check operator precedence for possible error; use parentheses
+                                 // to clarify precedence
+#endif // _CCCL_CUDA_COMPILER(NVCC, <, 13, 0)
+
   // Get some bounds where __re +- |__x| won't overflow.
   // Doesn't need to be too exact, enough to cover extremal cases.
   // overflow bound = sqrt(MAX_FLOAT / 2)
@@ -86,6 +93,8 @@ template <class _Tp>
   constexpr __uint_t __underflow_bound_exp =
     (static_cast<__uint_t>((static_cast<__uint_t>(-__max_exponent + __mant_nbits) >> 1) + __exp_bias) << __mant_nbits)
     | __fp_explicit_bit_mask_of_v<_Tp>;
+
+  _CCCL_DIAG_POP
 
   _Tp __overflow_bound  = ::cuda::std::__fp_from_storage<_Tp>(__overflow_bound_exp);
   _Tp __underflow_bound = ::cuda::std::__fp_from_storage<_Tp>(__underflow_bound_exp);
