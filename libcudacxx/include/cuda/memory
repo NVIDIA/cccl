@@ -28,6 +28,7 @@
 #include <cuda/__memory/discard_memory.h>
 #include <cuda/__memory/get_device_address.h>
 #include <cuda/__memory/is_aligned.h>
+#include <cuda/__memory/is_pointer_accessible.h>
 #include <cuda/__memory/ptr_in_range.h>
 #include <cuda/__memory/ptr_rebind.h>
 #include <cuda/__memory/ranges_overlap.h>

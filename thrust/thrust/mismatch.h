@@ -30,7 +30,8 @@
 #  pragma system_header
 #endif // no system header
 #include <thrust/detail/execution_policy.h>
-#include <thrust/pair.h>
+
+#include <cuda/std/__utility/pair.h>
 
 THRUST_NAMESPACE_BEGIN
 
@@ -80,7 +81,7 @@ THRUST_NAMESPACE_BEGIN
  *  vec1[3] = 7;  vec2[3] = 7;
  *
  *  using Iterator = thrust::device_vector<int>::iterator;
- *  thrust::pair<Iterator,Iterator> result;
+ *  cuda::std::pair<Iterator,Iterator> result;
  *
  *  result = thrust::mismatch(thrust::device, vec1.begin(), vec1.end(), vec2.begin());
  *
@@ -92,7 +93,7 @@ THRUST_NAMESPACE_BEGIN
  *  \see find_if
  */
 template <typename DerivedPolicy, typename InputIterator1, typename InputIterator2>
-_CCCL_HOST_DEVICE thrust::pair<InputIterator1, InputIterator2>
+_CCCL_HOST_DEVICE ::cuda::std::pair<InputIterator1, InputIterator2>
 mismatch(const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
          InputIterator1 first1,
          InputIterator1 last1,
@@ -131,7 +132,7 @@ mismatch(const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
  *  vec1[3] = 7;  vec2[3] = 7;
  *
  *  using Iterator = thrust::device_vector<int>::iterator;
- *  thrust::pair<Iterator,Iterator> result;
+ *  cuda::std::pair<Iterator,Iterator> result;
  *
  *  result = thrust::mismatch(vec1.begin(), vec1.end(), vec2.begin());
  *
@@ -143,7 +144,7 @@ mismatch(const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
  *  \see find_if
  */
 template <typename InputIterator1, typename InputIterator2>
-thrust::pair<InputIterator1, InputIterator2>
+::cuda::std::pair<InputIterator1, InputIterator2>
 mismatch(InputIterator1 first1, InputIterator1 last1, InputIterator2 first2);
 
 /*! \p mismatch finds the first position where the two ranges <tt>[first1, last1)</tt>
@@ -185,7 +186,7 @@ mismatch(InputIterator1 first1, InputIterator1 last1, InputIterator2 first2);
  *  vec1[3] = 7;  vec2[3] = 7;
  *
  *  using Iterator = thrust::device_vector<int>::iterator;
- *  thrust::pair<Iterator,Iterator> result;
+ *  cuda::std::pair<Iterator,Iterator> result;
  *
  *  result = thrust::mismatch(thrust::device, vec1.begin(), vec1.end(), vec2.begin(), ::cuda::std::equal_to<int>());
  *
@@ -197,7 +198,7 @@ mismatch(InputIterator1 first1, InputIterator1 last1, InputIterator2 first2);
  *  \see find_if
  */
 template <typename DerivedPolicy, typename InputIterator1, typename InputIterator2, typename BinaryPredicate>
-_CCCL_HOST_DEVICE thrust::pair<InputIterator1, InputIterator2> mismatch(
+_CCCL_HOST_DEVICE ::cuda::std::pair<InputIterator1, InputIterator2> mismatch(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   InputIterator1 first1,
   InputIterator1 last1,
@@ -238,7 +239,7 @@ _CCCL_HOST_DEVICE thrust::pair<InputIterator1, InputIterator2> mismatch(
  *  vec1[3] = 7;  vec2[3] = 7;
  *
  *  using Iterator = thrust::device_vector<int>::iterator;
- *  thrust::pair<Iterator,Iterator> result;
+ *  cuda::std::pair<Iterator,Iterator> result;
  *
  *  result = thrust::mismatch(vec1.begin(), vec1.end(), vec2.begin(), ::cuda::std::equal_to<int>());
  *
@@ -250,7 +251,7 @@ _CCCL_HOST_DEVICE thrust::pair<InputIterator1, InputIterator2> mismatch(
  *  \see find_if
  */
 template <typename InputIterator1, typename InputIterator2, typename BinaryPredicate>
-thrust::pair<InputIterator1, InputIterator2>
+::cuda::std::pair<InputIterator1, InputIterator2>
 mismatch(InputIterator1 first1, InputIterator1 last1, InputIterator2 first2, BinaryPredicate pred);
 
 /*! \} // end searching

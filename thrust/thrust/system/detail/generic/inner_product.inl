@@ -34,7 +34,6 @@
 THRUST_NAMESPACE_BEGIN
 namespace system::detail::generic
 {
-
 template <typename DerivedPolicy, typename InputIterator1, typename InputIterator2, typename OutputType>
 _CCCL_HOST_DEVICE OutputType inner_product(
   thrust::execution_policy<DerivedPolicy>& exec,
@@ -67,6 +66,5 @@ _CCCL_HOST_DEVICE OutputType inner_product(
   const auto last  = thrust::make_zip_iterator(last1, first2); // only first iterator matters
   return thrust::transform_reduce(exec, first, last, thrust::make_zip_function(binary_op2), init, binary_op1);
 } // end inner_product()
-
 } // namespace system::detail::generic
 THRUST_NAMESPACE_END

@@ -58,7 +58,6 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT stream_context : private __immovable
 private:
   stream __stream_;
 };
-
 } // namespace cuda::experimental::execution
 
 #include <cuda/experimental/__execution/epilogue.cuh>

@@ -22,8 +22,8 @@
 
 // UNSUPPORTED: nvrtc
 
-#include <cuda/std/__algorithm_>
 #include <cuda/std/cassert>
+#include <cuda/std/memory>
 #include <cuda/std/utility>
 
 #include "test_macros.h"

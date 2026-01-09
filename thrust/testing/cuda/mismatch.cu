@@ -20,7 +20,7 @@ void TestMismatchDevice(ExecutionPolicy exec)
   thrust::device_vector<int> b = {1, 2, 4, 3};
 
   using pair_type =
-    thrust::pair<typename thrust::device_vector<int>::iterator, typename thrust::device_vector<int>::iterator>;
+    cuda::std::pair<typename thrust::device_vector<int>::iterator, typename thrust::device_vector<int>::iterator>;
 
   thrust::device_vector<pair_type> d_result(1);
 

@@ -36,7 +36,6 @@
 THRUST_NAMESPACE_BEGIN
 namespace system::detail::generic
 {
-
 template <typename DerivedPolicy, typename InputIterator1, typename InputIterator2, typename OutputIterator>
 _CCCL_HOST_DEVICE OutputIterator set_difference(
   thrust::execution_policy<DerivedPolicy>& exec,
@@ -57,7 +56,7 @@ template <typename DerivedPolicy,
           typename InputIterator4,
           typename OutputIterator1,
           typename OutputIterator2>
-_CCCL_HOST_DEVICE thrust::pair<OutputIterator1, OutputIterator2> set_difference_by_key(
+_CCCL_HOST_DEVICE ::cuda::std::pair<OutputIterator1, OutputIterator2> set_difference_by_key(
   thrust::execution_policy<DerivedPolicy>& exec,
   InputIterator1 keys_first1,
   InputIterator1 keys_last1,
@@ -90,7 +89,7 @@ template <typename DerivedPolicy,
           typename OutputIterator1,
           typename OutputIterator2,
           typename StrictWeakOrdering>
-_CCCL_HOST_DEVICE thrust::pair<OutputIterator1, OutputIterator2> set_difference_by_key(
+_CCCL_HOST_DEVICE ::cuda::std::pair<OutputIterator1, OutputIterator2> set_difference_by_key(
   thrust::execution_policy<DerivedPolicy>& exec,
   InputIterator1 keys_first1,
   InputIterator1 keys_last1,
@@ -124,7 +123,7 @@ _CCCL_HOST_DEVICE thrust::pair<OutputIterator1, OutputIterator2> set_difference_
     thrust::set_difference(exec, zipped_first1, zipped_last1, zipped_first2, zipped_last2, zipped_result, comp_first)
       .get_iterator_tuple();
 
-  return thrust::make_pair(thrust::get<0>(result), thrust::get<1>(result));
+  return ::cuda::std::make_pair(thrust::get<0>(result), thrust::get<1>(result));
 } // end set_difference_by_key()
 
 template <typename DerivedPolicy, typename InputIterator1, typename InputIterator2, typename OutputIterator>
@@ -146,7 +145,7 @@ template <typename DerivedPolicy,
           typename InputIterator3,
           typename OutputIterator1,
           typename OutputIterator2>
-_CCCL_HOST_DEVICE thrust::pair<OutputIterator1, OutputIterator2> set_intersection_by_key(
+_CCCL_HOST_DEVICE ::cuda::std::pair<OutputIterator1, OutputIterator2> set_intersection_by_key(
   thrust::execution_policy<DerivedPolicy>& exec,
   InputIterator1 keys_first1,
   InputIterator1 keys_last1,
@@ -176,7 +175,7 @@ template <typename DerivedPolicy,
           typename OutputIterator1,
           typename OutputIterator2,
           typename StrictWeakOrdering>
-_CCCL_HOST_DEVICE thrust::pair<OutputIterator1, OutputIterator2> set_intersection_by_key(
+_CCCL_HOST_DEVICE ::cuda::std::pair<OutputIterator1, OutputIterator2> set_intersection_by_key(
   thrust::execution_policy<DerivedPolicy>& exec,
   InputIterator1 keys_first1,
   InputIterator1 keys_last1,
@@ -216,7 +215,7 @@ _CCCL_HOST_DEVICE thrust::pair<OutputIterator1, OutputIterator2> set_intersectio
     thrust::set_intersection(exec, zipped_first1, zipped_last1, zipped_first2, zipped_last2, zipped_result, comp_first)
       .get_iterator_tuple();
 
-  return thrust::make_pair(thrust::get<0>(result), thrust::get<1>(result));
+  return ::cuda::std::make_pair(thrust::get<0>(result), thrust::get<1>(result));
 } // end set_intersection_by_key()
 
 template <typename DerivedPolicy, typename InputIterator1, typename InputIterator2, typename OutputIterator>
@@ -239,7 +238,7 @@ template <typename DerivedPolicy,
           typename InputIterator4,
           typename OutputIterator1,
           typename OutputIterator2>
-_CCCL_HOST_DEVICE thrust::pair<OutputIterator1, OutputIterator2> set_symmetric_difference_by_key(
+_CCCL_HOST_DEVICE ::cuda::std::pair<OutputIterator1, OutputIterator2> set_symmetric_difference_by_key(
   thrust::execution_policy<DerivedPolicy>& exec,
   InputIterator1 keys_first1,
   InputIterator1 keys_last1,
@@ -272,7 +271,7 @@ template <typename DerivedPolicy,
           typename OutputIterator1,
           typename OutputIterator2,
           typename StrictWeakOrdering>
-_CCCL_HOST_DEVICE thrust::pair<OutputIterator1, OutputIterator2> set_symmetric_difference_by_key(
+_CCCL_HOST_DEVICE ::cuda::std::pair<OutputIterator1, OutputIterator2> set_symmetric_difference_by_key(
   thrust::execution_policy<DerivedPolicy>& exec,
   InputIterator1 keys_first1,
   InputIterator1 keys_last1,
@@ -307,7 +306,7 @@ _CCCL_HOST_DEVICE thrust::pair<OutputIterator1, OutputIterator2> set_symmetric_d
       exec, zipped_first1, zipped_last1, zipped_first2, zipped_last2, zipped_result, comp_first)
       .get_iterator_tuple();
 
-  return thrust::make_pair(thrust::get<0>(result), thrust::get<1>(result));
+  return ::cuda::std::make_pair(thrust::get<0>(result), thrust::get<1>(result));
 } // end set_symmetric_difference_by_key()
 
 template <typename DerivedPolicy, typename InputIterator1, typename InputIterator2, typename OutputIterator>
@@ -330,7 +329,7 @@ template <typename DerivedPolicy,
           typename InputIterator4,
           typename OutputIterator1,
           typename OutputIterator2>
-_CCCL_HOST_DEVICE thrust::pair<OutputIterator1, OutputIterator2> set_union_by_key(
+_CCCL_HOST_DEVICE ::cuda::std::pair<OutputIterator1, OutputIterator2> set_union_by_key(
   thrust::execution_policy<DerivedPolicy>& exec,
   InputIterator1 keys_first1,
   InputIterator1 keys_last1,
@@ -363,7 +362,7 @@ template <typename DerivedPolicy,
           typename OutputIterator1,
           typename OutputIterator2,
           typename StrictWeakOrdering>
-_CCCL_HOST_DEVICE thrust::pair<OutputIterator1, OutputIterator2> set_union_by_key(
+_CCCL_HOST_DEVICE ::cuda::std::pair<OutputIterator1, OutputIterator2> set_union_by_key(
   thrust::execution_policy<DerivedPolicy>& exec,
   InputIterator1 keys_first1,
   InputIterator1 keys_last1,
@@ -397,7 +396,7 @@ _CCCL_HOST_DEVICE thrust::pair<OutputIterator1, OutputIterator2> set_union_by_ke
     thrust::set_union(exec, zipped_first1, zipped_last1, zipped_first2, zipped_last2, zipped_result, comp_first)
       .get_iterator_tuple();
 
-  return thrust::make_pair(thrust::get<0>(result), thrust::get<1>(result));
+  return ::cuda::std::make_pair(thrust::get<0>(result), thrust::get<1>(result));
 } // end set_union_by_key()
 
 template <typename DerivedPolicy,
@@ -471,6 +470,5 @@ _CCCL_HOST_DEVICE OutputIterator set_union(
   static_assert(thrust::detail::depend_on_instantiation<InputIterator1, false>::value, "unimplemented for this system");
   return result;
 } // end set_union()
-
 } // namespace system::detail::generic
 THRUST_NAMESPACE_END

@@ -50,7 +50,6 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 namespace __layout_stride_detail
 {
-
 template <class _StridedLayoutMapping, class _Extents>
 _CCCL_CONCEPT __can_convert = _CCCL_REQUIRES_EXPR((_StridedLayoutMapping, _Extents))(
   requires(__mdspan_detail::__layout_mapping_alike<_StridedLayoutMapping>),
@@ -67,11 +66,10 @@ struct __constraints
         || __mdspan_detail::__is_mapping_of<layout_right, _StridedLayoutMapping>
         || __mdspan_detail::__is_mapping_of<layout_stride, _StridedLayoutMapping>);
 };
-
 } // namespace __layout_stride_detail
 
 template <class _Extents>
-class layout_stride::mapping
+class _CCCL_DECLSPEC_EMPTY_BASES layout_stride::mapping
     : private __mdspan_ebco<_Extents,
                             __mdspan_detail::__possibly_empty_array<typename _Extents::index_type, _Extents::rank()>>
 {
@@ -139,7 +137,6 @@ private:
     {
       return false;
     }
-    _CCCL_UNREACHABLE();
   }
 
   template <class _OtherIndexType>
@@ -201,7 +198,6 @@ private:
     {
       return static_cast<index_type>(__mapping());
     }
-    _CCCL_UNREACHABLE();
   }
 
   static_assert((extents_type::rank_dynamic() > 0) || __required_span_size_is_representable(extents_type()),
@@ -247,7 +243,6 @@ public:
     {
       return ((static_cast<index_type>(__strides[_Pos]) > index_type{0}) && ... && true);
     }
-    _CCCL_UNREACHABLE();
   }
 
   // compute the permutation for sorting the stride array
@@ -518,7 +513,6 @@ public:
         return __span_size == __total_size;
       }
     }
-    _CCCL_UNREACHABLE();
   }
 
   [[nodiscard]] _CCCL_API static constexpr bool is_strided() noexcept
@@ -559,7 +553,6 @@ public:
     {
       return (!__offset(__rhs));
     }
-    _CCCL_UNREACHABLE();
   }
 
   template <class _OtherMapping, class _OtherExtents = typename _OtherMapping::extents_type>

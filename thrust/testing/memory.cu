@@ -1,10 +1,11 @@
 #include <thrust/fill.h>
 #include <thrust/logical.h>
 #include <thrust/memory.h>
-#include <thrust/pair.h>
 #include <thrust/reverse.h>
 #include <thrust/sequence.h>
 #include <thrust/sort.h>
+
+#include <cuda/std/utility>
 
 #include <iostream>
 
@@ -55,17 +56,16 @@ private:
 
 namespace my_old_namespace
 {
-
 struct my_old_temporary_allocation_system : public thrust::device_execution_policy<my_old_temporary_allocation_system>
 {};
 
 template <typename T>
-thrust::pair<thrust::pointer<T, my_old_temporary_allocation_system>, std::ptrdiff_t>
+cuda::std::pair<thrust::pointer<T, my_old_temporary_allocation_system>, std::ptrdiff_t>
 get_temporary_buffer(my_old_temporary_allocation_system, std::ptrdiff_t)
 {
   thrust::pointer<T, my_old_temporary_allocation_system> const result(reinterpret_cast<T*>(4217));
 
-  return thrust::make_pair(result, 314);
+  return cuda::std::make_pair(result, 314);
 }
 
 template <typename Pointer>
@@ -74,22 +74,20 @@ void return_temporary_buffer(my_old_temporary_allocation_system, Pointer p)
   using RP = typename thrust::detail::pointer_traits<Pointer>::raw_pointer;
   ASSERT_EQUAL(p.get(), reinterpret_cast<RP>(4217));
 }
-
 } // namespace my_old_namespace
 
 namespace my_new_namespace
 {
-
 struct my_new_temporary_allocation_system : public thrust::device_execution_policy<my_new_temporary_allocation_system>
 {};
 
 template <typename T>
-thrust::pair<thrust::pointer<T, my_new_temporary_allocation_system>, std::ptrdiff_t>
+cuda::std::pair<thrust::pointer<T, my_new_temporary_allocation_system>, std::ptrdiff_t>
 get_temporary_buffer(my_new_temporary_allocation_system, std::ptrdiff_t)
 {
   thrust::pointer<T, my_new_temporary_allocation_system> const result(reinterpret_cast<T*>(1742));
 
-  return thrust::make_pair(result, 413);
+  return cuda::std::make_pair(result, 413);
 }
 
 template <typename Pointer>
@@ -107,7 +105,6 @@ void return_temporary_buffer(my_new_temporary_allocation_system, Pointer p, std:
   ASSERT_EQUAL(p.get(), reinterpret_cast<RP>(1742));
   ASSERT_EQUAL(n, 413);
 }
-
 } // namespace my_new_namespace
 
 template <typename T1, typename T2>
@@ -166,8 +163,8 @@ void TestGetTemporaryBuffer()
   const std::ptrdiff_t n = 9001;
 
   thrust::device_system_tag dev_tag;
-  using pointer                                    = thrust::pointer<int, thrust::device_system_tag>;
-  thrust::pair<pointer, std::ptrdiff_t> ptr_and_sz = thrust::get_temporary_buffer<int>(dev_tag, n);
+  using pointer                                       = thrust::pointer<int, thrust::device_system_tag>;
+  cuda::std::pair<pointer, std::ptrdiff_t> ptr_and_sz = thrust::get_temporary_buffer<int>(dev_tag, n);
 
   ASSERT_EQUAL(ptr_and_sz.second, n);
 
@@ -237,15 +234,15 @@ void TestFreeDispatchExplicit()
 DECLARE_UNITTEST(TestFreeDispatchExplicit);
 
 template <typename T>
-thrust::pair<thrust::pointer<T, my_memory_system>, std::ptrdiff_t>
+cuda::std::pair<thrust::pointer<T, my_memory_system>, std::ptrdiff_t>
 get_temporary_buffer(my_memory_system& system, std::ptrdiff_t n)
 {
   system.validate_dispatch();
 
   thrust::device_system_tag device_sys;
-  thrust::pair<thrust::pointer<T, thrust::device_system_tag>, std::ptrdiff_t> result =
+  cuda::std::pair<thrust::pointer<T, thrust::device_system_tag>, std::ptrdiff_t> result =
     thrust::get_temporary_buffer<T>(device_sys, n);
-  return thrust::make_pair(thrust::pointer<T, my_memory_system>(result.first.get()), result.second);
+  return cuda::std::make_pair(thrust::pointer<T, my_memory_system>(result.first.get()), result.second);
 }
 
 void TestGetTemporaryBufferDispatchExplicit()
@@ -253,8 +250,8 @@ void TestGetTemporaryBufferDispatchExplicit()
   const std::ptrdiff_t n = 9001;
 
   my_memory_system sys(0);
-  using pointer                                    = thrust::pointer<int, thrust::device_system_tag>;
-  thrust::pair<pointer, std::ptrdiff_t> ptr_and_sz = thrust::get_temporary_buffer<int>(sys, n);
+  using pointer                                       = thrust::pointer<int, thrust::device_system_tag>;
+  cuda::std::pair<pointer, std::ptrdiff_t> ptr_and_sz = thrust::get_temporary_buffer<int>(sys, n);
 
   ASSERT_EQUAL(ptr_and_sz.second, n);
   ASSERT_EQUAL(true, sys.is_valid());
@@ -303,7 +300,7 @@ void TestTemporaryBufferOldCustomization()
 {
   using system           = my_old_namespace::my_old_temporary_allocation_system;
   using pointer          = thrust::pointer<int, system>;
-  using pointer_and_size = thrust::pair<pointer, std::ptrdiff_t>;
+  using pointer_and_size = cuda::std::pair<pointer, std::ptrdiff_t>;
 
   system sys;
 
@@ -323,7 +320,7 @@ void TestTemporaryBufferNewCustomization()
 {
   using system           = my_new_namespace::my_new_temporary_allocation_system;
   using pointer          = thrust::pointer<int, system>;
-  using pointer_and_size = thrust::pair<pointer, std::ptrdiff_t>;
+  using pointer_and_size = cuda::std::pair<pointer, std::ptrdiff_t>;
 
   system sys;
 

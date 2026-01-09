@@ -22,6 +22,7 @@
 #endif // no system header
 
 #include <cuda/std/__concepts/concept_macros.h>
+#include <cuda/std/__fwd/reference_wrapper.h>
 #include <cuda/std/__type_traits/decay.h>
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/integral_constant.h>
@@ -29,10 +30,10 @@
 #include <cuda/std/__type_traits/is_core_convertible.h>
 #include <cuda/std/__type_traits/is_member_function_pointer.h>
 #include <cuda/std/__type_traits/is_member_object_pointer.h>
-#include <cuda/std/__type_traits/is_reference_wrapper.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/is_void.h>
 #include <cuda/std/__type_traits/nat.h>
+#include <cuda/std/__type_traits/remove_cvref.h>
 #include <cuda/std/__utility/declval.h>
 #include <cuda/std/__utility/forward.h>
 
@@ -67,7 +68,7 @@ using __enable_if_bullet1 = enable_if_t<is_member_function_pointer_v<_DecayFp> &
 
 template <class _Fp, class _A0, class _DecayFp = decay_t<_Fp>, class _DecayA0 = decay_t<_A0>>
 using __enable_if_bullet2 =
-  enable_if_t<is_member_function_pointer_v<_DecayFp> && __cccl_is_reference_wrapper_v<_DecayA0>>;
+  enable_if_t<is_member_function_pointer_v<_DecayFp> && __is_cuda_std_reference_wrapper_v<_DecayA0>>;
 
 template <class _Fp,
           class _A0,
@@ -75,7 +76,7 @@ template <class _Fp,
           class _DecayA0 = decay_t<_A0>,
           class _ClassT  = __member_pointer_class_type_t<_DecayFp>>
 using __enable_if_bullet3 = enable_if_t<is_member_function_pointer_v<_DecayFp> && !is_base_of_v<_ClassT, _DecayA0>
-                                        && !__cccl_is_reference_wrapper_v<_DecayA0>>;
+                                        && !__is_cuda_std_reference_wrapper_v<_DecayA0>>;
 
 template <class _Fp,
           class _A0,
@@ -86,7 +87,7 @@ using __enable_if_bullet4 = enable_if_t<is_member_object_pointer_v<_DecayFp> && 
 
 template <class _Fp, class _A0, class _DecayFp = decay_t<_Fp>, class _DecayA0 = decay_t<_A0>>
 using __enable_if_bullet5 =
-  enable_if_t<is_member_object_pointer_v<_DecayFp> && __cccl_is_reference_wrapper_v<_DecayA0>>;
+  enable_if_t<is_member_object_pointer_v<_DecayFp> && __is_cuda_std_reference_wrapper_v<_DecayA0>>;
 
 template <class _Fp,
           class _A0,
@@ -94,7 +95,7 @@ template <class _Fp,
           class _DecayA0 = decay_t<_A0>,
           class _ClassT  = __member_pointer_class_type_t<_DecayFp>>
 using __enable_if_bullet6 = enable_if_t<is_member_object_pointer_v<_DecayFp> && !is_base_of_v<_ClassT, _DecayA0>
-                                        && !__cccl_is_reference_wrapper_v<_DecayA0>>;
+                                        && !__is_cuda_std_reference_wrapper_v<_DecayA0>>;
 
 // __invoke forward declarations
 
@@ -192,15 +193,16 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT invoke_result //
 {
 #if _CCCL_CUDA_COMPILER(NVCC) && defined(__CUDACC_EXTENDED_LAMBDA__) && !_CCCL_DEVICE_COMPILATION()
 #  if _CCCL_CUDACC_BELOW(12, 3)
-  static_assert(!__nv_is_extended_device_lambda_closure_type(_Fp),
+  static_assert(!__nv_is_extended_device_lambda_closure_type(remove_cvref_t<_Fp>),
                 "Attempt to use an extended __device__ lambda in a context "
                 "that requires querying its return type in host code. Use a "
                 "named function object, an extended __host__ __device__ lambda, or "
                 "cuda::proclaim_return_type instead.");
 #  else // ^^^ _CCCL_CUDACC_BELOW(12, 3) ^^^ / vvv _CCCL_CUDACC_AT_LEAST(12, 3) vvv
   static_assert(
-    !__nv_is_extended_device_lambda_closure_type(_Fp) || __nv_is_extended_host_device_lambda_closure_type(_Fp)
-      || __nv_is_extended_device_lambda_with_preserved_return_type(_Fp),
+    !__nv_is_extended_device_lambda_closure_type(remove_cvref_t<_Fp>)
+      || __nv_is_extended_host_device_lambda_closure_type(remove_cvref_t<_Fp>)
+      || __nv_is_extended_device_lambda_with_preserved_return_type(remove_cvref_t<_Fp>),
     "Attempt to use an extended __device__ lambda in a context "
     "that requires querying its return type in host code. Use a "
     "named function object, an extended __host__ __device__ lambda, "

@@ -38,7 +38,6 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 namespace chrono
 {
-
 template <class _Rep, class _Period = ratio<1>>
 class _CCCL_TYPE_VISIBILITY_DEFAULT duration;
 
@@ -56,7 +55,6 @@ inline constexpr bool __is_cuda_std_duration_v<volatile duration<_Rep, _Period>>
 
 template <class _Rep, class _Period>
 inline constexpr bool __is_cuda_std_duration_v<const volatile duration<_Rep, _Period>> = true;
-
 } // namespace chrono
 
 template <class _Rep1, class _Period1, class _Rep2, class _Period2>
@@ -69,7 +67,6 @@ common_type<::cuda::std::chrono::duration<_Rep1, _Period1>, ::cuda::std::chrono:
 
 namespace chrono
 {
-
 // duration_cast
 
 _CCCL_TEMPLATE(class _ToDuration, class _Rep, class _Period)
@@ -493,7 +490,6 @@ using days   = duration<int, ratio_multiply<ratio<24>, hours::period>>;
 using weeks  = duration<int, ratio_multiply<ratio<7>, days::period>>;
 using years  = duration<int, ratio_multiply<ratio<146097, 400>, days::period>>;
 using months = duration<int, ratio_divide<years::period, ratio<12>>>;
-
 } // namespace chrono
 
 _CCCL_END_NAMESPACE_CUDA_STD

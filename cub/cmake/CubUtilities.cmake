@@ -5,12 +5,20 @@ function(cub_configure_cuda_target target_name)
   set(options)
   set(one_value_args RDC)
   set(multi_value_args)
-  cmake_parse_arguments(cub_cuda "${options}" "${one_value_args}" "${multi_value_args}" ${ARGN})
+  cmake_parse_arguments(
+    cub_cuda
+    "${options}"
+    "${one_value_args}"
+    "${multi_value_args}"
+    ${ARGN}
+  )
 
   if (cub_cuda_UNPARSED_ARGUMENTS)
-    message(AUTHOR_WARNING
+    message(
+      AUTHOR_WARNING
       "Unrecognized arguments passed to cub_configure_cuda_target: "
-      ${cub_cuda_UNPARSED_ARGUMENTS})
+      ${cub_cuda_UNPARSED_ARGUMENTS}
+    )
   endif()
 
   if (NOT DEFINED cub_cuda_RDC)
@@ -18,8 +26,16 @@ function(cub_configure_cuda_target target_name)
   endif()
 
   if (cub_cuda_RDC)
-    set_target_properties(${target_name} PROPERTIES CUDA_SEPARABLE_COMPILATION ON POSITION_INDEPENDENT_CODE ON)
+    set_target_properties(
+      ${target_name}
+      PROPERTIES #
+        CUDA_SEPARABLE_COMPILATION ON
+        POSITION_INDEPENDENT_CODE ON
+    )
   else()
-    set_target_properties(${target_name} PROPERTIES CUDA_SEPARABLE_COMPILATION OFF)
+    set_target_properties(
+      ${target_name}
+      PROPERTIES CUDA_SEPARABLE_COMPILATION OFF
+    )
   endif()
 endfunction()

@@ -32,7 +32,6 @@ THRUST_NAMESPACE_BEGIN
 
 namespace system
 {
-
 system_error ::system_error(error_code ec, const std::string& what_arg)
     : std::runtime_error(what_arg)
     , m_error_code(ec)
@@ -102,7 +101,6 @@ const char* system_error ::what() const noexcept
 
   return m_what.c_str();
 } // end system_error::what()
-
 } // namespace system
 
 THRUST_NAMESPACE_END

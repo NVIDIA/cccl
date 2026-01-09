@@ -1,0 +1,2 @@
+FULL_BUILD=libcudacxx thrust
+LITE_BUILD=cub cudax cccl_c_parallel cccl_c_stf python packaging stdpar nvbench_helper

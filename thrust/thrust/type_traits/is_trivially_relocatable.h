@@ -40,7 +40,8 @@
 #include <cuda/std/__fwd/pair.h>
 #include <cuda/std/__fwd/tuple.h>
 #include <cuda/std/__type_traits/conjunction.h>
-#include <cuda/std/type_traits>
+#include <cuda/std/__type_traits/is_same.h>
+#include <cuda/std/__type_traits/is_trivially_copyable.h>
 
 THRUST_NAMESPACE_BEGIN
 
@@ -57,10 +58,8 @@ THRUST_NAMESPACE_BEGIN
 
 namespace detail
 {
-
 template <typename T>
 struct is_trivially_relocatable_impl;
-
 } // namespace detail
 
 /*! \endcond
@@ -112,7 +111,7 @@ constexpr bool is_trivially_relocatable_v = is_trivially_relocatable<T>::value;
  */
 template <typename From, typename To>
 using is_trivially_relocatable_to =
-  integral_constant<bool, ::cuda::std::is_same<From, To>::value && is_trivially_relocatable<To>::value>;
+  integral_constant<bool, ::cuda::std::is_same_v<From, To> && is_trivially_relocatable<To>::value>;
 
 /*! \brief <tt>constexpr bool</tt> that is \c true if \c From is
  *  <a href="https://wg21.link/P1144"><i>TriviallyRelocatable</i></a>,
@@ -208,17 +207,15 @@ struct proclaim_trivially_relocatable : false_type
 
 namespace detail
 {
-
 // https://wg21.link/P1144R0#wording-inheritance
 template <typename T>
 struct is_trivially_relocatable_impl
-    : integral_constant<bool, ::cuda::std::is_trivially_copyable<T>::value || proclaim_trivially_relocatable<T>::value>
+    : integral_constant<bool, ::cuda::std::is_trivially_copyable_v<T> || proclaim_trivially_relocatable<T>::value>
 {};
 
 template <typename T, ::cuda::std::size_t N>
 struct is_trivially_relocatable_impl<T[N]> : is_trivially_relocatable_impl<T>
 {};
-
 } // namespace detail
 
 THRUST_NAMESPACE_END

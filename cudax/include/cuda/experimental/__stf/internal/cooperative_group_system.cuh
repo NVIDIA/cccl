@@ -27,7 +27,6 @@
 
 namespace cuda::experimental::stf::reserved
 {
-
 /**
  * This class implements a synchronization mechanism at system scale, in particular to mimic an implementation of
  * multi-device cooperative kernels.
@@ -120,5 +119,4 @@ private:
   }
 #endif // _CCCL_CUDA_COMPILATION()
 };
-
 } // end namespace cuda::experimental::stf::reserved

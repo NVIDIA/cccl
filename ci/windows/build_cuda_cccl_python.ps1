@@ -23,12 +23,6 @@
     **Required.** The Python version to use for building the wheel, expressed
     as `<major>.<minor>` (e.g. `3.11`).
 
-.PARAMETER UseNinja
-    When present, uses Ninja instead of Visual Studio for the CMake generator
-    if the `ninja` executable can be found on the PATH.  If Ninja is not
-    available the script falls back to the default Visual Studio generator
-    and continues without error.
-
 .PARAMETER OnlyCudaMajor
     Optional. Restricts the build to a single CUDA major version (`12` or `13`).
     When set, only that version is built and the *merge* step is skipped.
@@ -57,9 +51,6 @@ Param(
     [Alias("py-version")]
     [ValidatePattern("^\d+\.\d+$")]
     [string]$PyVersion,
-
-    [Parameter(Mandatory = $false)]
-    [switch]$UseNinja,
 
     [Parameter(Mandatory = $false)]
     [ValidateSet('12', '13')]
@@ -153,30 +144,7 @@ $pipBaseConfigArgs = @(
     '-C', 'cmake.define.CMAKE_CXX_COMPILER=cl.exe'
 )
 
-# Use Ninja if requested and available.
-if ($UseNinja) {
-    if (Get-Command ninja -ErrorAction SilentlyContinue) {
-        $env:CMAKE_GENERATOR = "Ninja"
-        Write-Host "CMAKE_GENERATOR=Ninja"
-    }
-    else {
-        Write-Host "Ninja not found; proceeding with default generator" `
-            -ForegroundColor Yellow
-        $UseNinja = $false
-        if ($env:CMAKE_GENERATOR -eq 'Ninja') {
-            Remove-Item Env:CMAKE_GENERATOR -ErrorAction SilentlyContinue
-        }
-    }
-}
-
-# Remove the env vars VS complains about when not using Ninja.
-if (-not $UseNinja) {
-    Remove-Item Env:CUDAHOSTCXX -ErrorAction SilentlyContinue
-    Remove-Item Env:CMAKE_CUDA_HOST_COMPILER -ErrorAction SilentlyContinue
-    if ($env:CMAKE_GENERATOR -eq 'Ninja') {
-        Remove-Item Env:CMAKE_GENERATOR -ErrorAction SilentlyContinue
-    }
-}
+$env:CMAKE_GENERATOR = "Ninja"
 
 # Ensure wheelhouse directories exist.
 $Wheelhouse = Join-Path $RepoRoot "wheelhouse"
@@ -198,8 +166,6 @@ function Invoke-Cuda13NestedBuild {
     param (
         [Parameter(Mandatory)] [string] $Cuda13Image,
         [Parameter(Mandatory)] [string] $PyVersion,
-        [bool] $UseNinja = $false,
-
         [ValidateNotNullOrEmpty()] [string] $HostWorkspace = $env:HOST_WORKSPACE,
         [ValidateNotNullOrEmpty()] [string] $ContainerWorkspace = $env:CONTAINER_WORKSPACE
     )
@@ -256,7 +222,6 @@ function Invoke-Cuda13NestedBuild {
         '-OnlyCudaMajor', '13',
         '-SkipUpload'
     )
-    if ($UseNinja) { $dockerArgs += '-UseNinja' }
 
     Write-Host ("About to invoke: docker " + ($dockerArgs -join ' '))
     & docker @dockerArgs
@@ -280,8 +245,7 @@ function Build-CudaCcclWheel {
         [Parameter(Mandatory)] [ValidateSet('12', '13')] [string] $Major,
         [Parameter(Mandatory)] [string] $RepoRoot,
         [Parameter(Mandatory)] [string] $PythonExe,
-        [Parameter(Mandatory)] [string[]] $PipBaseConfigArgs,
-        [bool] $UseNinja = $false
+        [Parameter(Mandatory)] [string[]] $PipBaseConfigArgs
     )
 
     # Resolve CUDA toolkit location for the requested major version.
@@ -361,8 +325,7 @@ try {
         if (-not $OnlyCudaMajor -and $major -eq '13' -and $Cuda13Image) {
             Invoke-Cuda13NestedBuild `
                 -Cuda13Image $Cuda13Image `
-                -PyVersion $PyVersion `
-                -UseNinja $UseNinja
+                -PyVersion $PyVersion
 
             continue
         }
@@ -373,8 +336,7 @@ try {
             -Major $major `
             -RepoRoot $RepoRoot `
             -PythonExe $PythonExe `
-            -PipBaseConfigArgs $pipBaseConfigArgs `
-            -UseNinja $UseNinja
+            -PipBaseConfigArgs $pipBaseConfigArgs
     }
 }
 finally {

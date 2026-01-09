@@ -16,6 +16,7 @@
 #include <thrust/tabulate.h>
 
 #include <cuda/functional>
+#include <cuda/std/bit>
 
 #include <cstdint>
 #include <random>
@@ -28,7 +29,6 @@
 
 namespace
 {
-
 constexpr double lognormal_mean  = 3.0;
 constexpr double lognormal_sigma = 1.2;
 
@@ -181,14 +181,14 @@ struct and_t
 
   __host__ __device__ float operator()(float a, float b) const
   {
-    const std::uint32_t result = reinterpret_cast<std::uint32_t&>(a) & reinterpret_cast<std::uint32_t&>(b);
-    return reinterpret_cast<const float&>(result);
+    const std::uint32_t result = cuda::std::bit_cast<std::uint32_t>(a) & cuda::std::bit_cast<std::uint32_t>(b);
+    return cuda::std::bit_cast<float>(result);
   }
 
   __host__ __device__ double operator()(double a, double b) const
   {
-    const std::uint64_t result = reinterpret_cast<std::uint64_t&>(a) & reinterpret_cast<std::uint64_t&>(b);
-    return reinterpret_cast<const double&>(result);
+    const std::uint64_t result = cuda::std::bit_cast<std::uint64_t>(a) & cuda::std::bit_cast<std::uint64_t>(b);
+    return cuda::std::bit_cast<double>(result);
   }
 
   __host__ __device__ complex operator()(complex a, complex b) const
@@ -200,13 +200,13 @@ struct and_t
     double b_imag = b.imag();
 
     const std::uint64_t result_real =
-      reinterpret_cast<std::uint64_t&>(a_real) & reinterpret_cast<std::uint64_t&>(b_real);
+      cuda::std::bit_cast<std::uint64_t>(a_real) & cuda::std::bit_cast<std::uint64_t>(b_real);
 
     const std::uint64_t result_imag =
-      reinterpret_cast<std::uint64_t&>(a_imag) & reinterpret_cast<std::uint64_t&>(b_imag);
+      cuda::std::bit_cast<std::uint64_t>(a_imag) & cuda::std::bit_cast<std::uint64_t>(b_imag);
 
-    return {static_cast<float>(reinterpret_cast<const double&>(result_real)),
-            static_cast<float>(reinterpret_cast<const double&>(result_imag))};
+    return {static_cast<float>(cuda::std::bit_cast<double>(result_real)),
+            static_cast<float>(cuda::std::bit_cast<double>(result_imag))};
   }
 };
 
@@ -398,13 +398,17 @@ void generator_t::generate(
   {
     case bit_entropy::_1_000: {
       const double* uniform_distribution = dist.new_uniform_distribution(seed, span.size());
-      thrust::for_each_n(
-        exec, thrust::make_counting_iterator(0), span.size(), set_real_t{min, max, span.data(), uniform_distribution});
+      thrust::for_each_n(exec,
+                         thrust::make_counting_iterator(std::size_t{0}),
+                         span.size(),
+                         set_real_t{min, max, span.data(), uniform_distribution});
       ++seed;
 
       uniform_distribution = dist.new_uniform_distribution(seed, span.size());
-      thrust::for_each_n(
-        exec, thrust::make_counting_iterator(0), span.size(), set_imag_t{min, max, span.data(), uniform_distribution});
+      thrust::for_each_n(exec,
+                         thrust::make_counting_iterator(std::size_t{0}),
+                         span.size(),
+                         set_imag_t{min, max, span.data(), uniform_distribution});
       ++seed;
       return;
     }
@@ -419,13 +423,17 @@ void generator_t::generate(
     }
     default: {
       const double* uniform_distribution = dist.new_uniform_distribution(seed, span.size());
-      thrust::for_each_n(
-        exec, thrust::make_counting_iterator(0), span.size(), set_real_t{min, max, span.data(), uniform_distribution});
+      thrust::for_each_n(exec,
+                         thrust::make_counting_iterator(std::size_t{0}),
+                         span.size(),
+                         set_real_t{min, max, span.data(), uniform_distribution});
       ++seed;
 
       uniform_distribution = dist.new_uniform_distribution(seed, span.size());
-      thrust::for_each_n(
-        exec, thrust::make_counting_iterator(0), span.size(), set_imag_t{min, max, span.data(), uniform_distribution});
+      thrust::for_each_n(exec,
+                         thrust::make_counting_iterator(std::size_t{0}),
+                         span.size(),
+                         set_imag_t{min, max, span.data(), uniform_distribution});
       ++seed;
 
       const int number_of_steps = static_cast<int>(entropy);
@@ -512,7 +520,8 @@ void generator_t::power_law_segment_offsets(
   const std::size_t total_segments   = device_segment_offsets.size() - 1;
   const double* uniform_distribution = dist.new_lognormal_distribution(seed, total_segments);
 
-  if (thrust::count(exec, uniform_distribution, uniform_distribution + total_segments, 0.0) == total_segments)
+  if (static_cast<std::size_t>(thrust::count(exec, uniform_distribution, uniform_distribution + total_segments, 0.0))
+      == total_segments)
   {
     uniform_distribution = dist.new_constant(total_segments, 1.0);
   }
@@ -550,12 +559,10 @@ void gen(executor exec, seed_t seed, cuda::std::span<T> span, bit_entropy entrop
 {
   generator_t{}.generate(exec, seed, span, entropy, min, max);
 }
-
 } // namespace
 
 namespace detail
 {
-
 template <typename T>
 void gen_host(seed_t seed, cuda::std::span<T> span, bit_entropy entropy, T min, T max)
 {
@@ -599,7 +606,7 @@ struct offset_to_size_t
 };
 
 template <typename T>
-void gen_key_segments(executor exec, seed_t seed, cuda::std::span<T> keys, cuda::std::span<std::size_t> segment_offsets)
+void gen_key_segments(executor exec, seed_t, cuda::std::span<T> keys, cuda::std::span<std::size_t> segment_offsets)
 {
   thrust::counting_iterator<int> iota(0);
   offset_to_iterator_t<T> dst_transform_op{keys.data()};
@@ -679,12 +686,10 @@ std::size_t gen_uniform_offsets(
 
   return tail(thrust::host);
 }
-
 } // namespace detail
 
 namespace detail
 {
-
 /**
  * @brief Generates a vector of random key segments.
  *
@@ -760,7 +765,6 @@ void gen_power_law_segment_offsets_device(seed_t seed, cuda::std::span<T> segmen
 }
 
 void do_not_optimize([[maybe_unused]] const void* ptr) {}
-
 } // namespace detail
 
 #define INSTANTIATE(TYPE)                                                                                       \

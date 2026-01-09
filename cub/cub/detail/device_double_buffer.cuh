@@ -32,7 +32,6 @@ CUB_NAMESPACE_BEGIN
 
 namespace detail
 {
-
 /**
  * @brief It's a double-buffer storage wrapper for multi-pass stream
  *        transformations that require more than one storage array for
@@ -90,7 +89,6 @@ public:
     m_alternate_buffer = tmp;
   }
 };
-
 } // namespace detail
 
 CUB_NAMESPACE_END

@@ -36,7 +36,6 @@
 
 namespace cuda::experimental::stf::reserved
 {
-
 /**
  * @brief Singleton object abstracting a machine able to set up CUDA peer accesses.
  *
@@ -128,5 +127,4 @@ private:
   bool initialized_peer_accesses = false;
   int ndevices;
 };
-
 } // namespace cuda::experimental::stf::reserved

@@ -23,6 +23,7 @@
 #endif // no system header
 
 #include <cuda/std/__memory/allocator_traits.h>
+#include <cuda/std/__utility/ctad_support.h>
 #include <cuda/std/cstddef>
 
 #include <cuda/std/__cccl/prologue.h>
@@ -36,7 +37,7 @@ struct allocation_result
   _Pointer ptr;
   size_t count;
 };
-_LIBCUDACXX_CTAD_SUPPORTED_FOR_TYPE(allocation_result);
+_CCCL_CTAD_SUPPORTED_FOR_TYPE(allocation_result);
 
 template <class _Alloc>
 [[nodiscard]] _CCCL_API constexpr allocation_result<typename allocator_traits<_Alloc>::pointer>

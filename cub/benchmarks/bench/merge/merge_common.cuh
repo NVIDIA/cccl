@@ -22,10 +22,16 @@
 
 #  if TUNE_LOAD == 0
 #    define TUNE_LOAD_MODIFIER cub::LOAD_DEFAULT
+#    define TUNE_USE_BL2SH     false
 #  elif TUNE_LOAD == 1
 #    define TUNE_LOAD_MODIFIER cub::LOAD_LDG
-#  else // TUNE_LOAD == 2
+#    define TUNE_USE_BL2SH     false
+#  elif TUNE_LOAD == 2
 #    define TUNE_LOAD_MODIFIER cub::LOAD_CA
+#    define TUNE_USE_BL2SH     false
+#  else // TUNE_LOAD == 3
+#    define TUNE_LOAD_MODIFIER cub::LOAD_DEFAULT
+#    define TUNE_USE_BL2SH     true
 #  endif // TUNE_LOAD
 
 template <typename KeyT>
@@ -37,7 +43,8 @@ struct policy_hub_t
       cub::agent_policy_t<TUNE_THREADS_PER_BLOCK,
                           cub::Nominal4BItemsToItems<KeyT>(TUNE_ITEMS_PER_THREAD),
                           TUNE_LOAD_MODIFIER,
-                          TUNE_STORE_ALGORITHM>;
+                          TUNE_STORE_ALGORITHM,
+                          TUNE_USE_BL2SH>;
   };
 
   using MaxPolicy = policy_t;

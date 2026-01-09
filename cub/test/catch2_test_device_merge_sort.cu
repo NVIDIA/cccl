@@ -1,29 +1,5 @@
-/******************************************************************************
- * Copyright (c) 2024, NVIDIA CORPORATION.  All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *     * Redistributions of source code must retain the above copyright
- *       notice, this list of conditions and the following disclaimer.
- *     * Redistributions in binary form must reproduce the above copyright
- *       notice, this list of conditions and the following disclaimer in the
- *       documentation and/or other materials provided with the distribution.
- *     * Neither the name of the NVIDIA CORPORATION nor the
- *       names of its contributors may be used to endorse or promote products
- *       derived from this software without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
- * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
- * DISCLAIMED. IN NO EVENT SHALL NVIDIA CORPORATION BE LIABLE FOR ANY
- * DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
- * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
- * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
- * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- *
- ******************************************************************************/
+// SPDX-FileCopyrightText: Copyright (c) 2024, NVIDIA CORPORATION. All rights reserved.
+// SPDX-License-Identifier: BSD-3
 
 #include "insert_nested_NVTX_range_guard.h"
 
@@ -32,13 +8,12 @@
 #include <thrust/copy.h>
 #include <thrust/detail/raw_pointer_cast.h>
 #include <thrust/equal.h>
-#include <thrust/iterator/counting_iterator.h>
-#include <thrust/iterator/transform_iterator.h>
 #include <thrust/iterator/zip_iterator.h>
 #include <thrust/random.h>
 #include <thrust/sequence.h>
 #include <thrust/shuffle.h>
 
+#include <cuda/iterator>
 #include <cuda/std/iterator>
 
 #include <algorithm>
@@ -241,8 +216,8 @@ C2H_TEST("DeviceMergeSort::SortKeysCopy works",
     thrust::raw_pointer_cast(keys_in.data()), thrust::raw_pointer_cast(keys_out.data()), num_items, custom_less_op_t{});
 
   // Verify results
-  auto key_ranks_it     = thrust::make_counting_iterator(offset_t{});
-  auto keys_expected_it = thrust::make_transform_iterator(key_ranks_it, rank_to_key_op_t<offset_t, key_t>{});
+  auto key_ranks_it     = cuda::counting_iterator(offset_t{});
+  auto keys_expected_it = cuda::transform_iterator(key_ranks_it, rank_to_key_op_t<offset_t, key_t>{});
   bool results_equal    = thrust::equal(c2h::device_policy, keys_out.cbegin(), keys_out.cend(), keys_expected_it);
   REQUIRE(results_equal == true);
 }
@@ -265,8 +240,8 @@ C2H_TEST("DeviceMergeSort::SortKeys works", "[merge][sort][device]", wide_key_ty
   sort_keys(thrust::raw_pointer_cast(keys_in_out.data()), num_items, custom_less_op_t{});
 
   // Verify results
-  auto key_ranks_it     = thrust::make_counting_iterator(offset_t{});
-  auto keys_expected_it = thrust::make_transform_iterator(key_ranks_it, rank_to_key_op_t<offset_t, key_t>{});
+  auto key_ranks_it     = cuda::counting_iterator(offset_t{});
+  auto keys_expected_it = cuda::transform_iterator(key_ranks_it, rank_to_key_op_t<offset_t, key_t>{});
   bool results_equal    = thrust::equal(c2h::device_policy, keys_in_out.cbegin(), keys_in_out.cend(), keys_expected_it);
   REQUIRE(results_equal == true);
 }
@@ -285,8 +260,8 @@ C2H_TEST("DeviceMergeSort::StableSortKeysCopy works and performs a stable sort w
   c2h::device_vector<offset_t> key_ranks(num_items);
   c2h::gen(C2H_SEED(2), key_ranks, offset_t{}, static_cast<offset_t>(128));
   c2h::device_vector<key_t> keys_in(num_items);
-  auto key_value_it = thrust::make_counting_iterator(offset_t{});
-  auto key_init_it  = thrust::make_zip_iterator(key_ranks.begin(), key_value_it);
+  auto key_value_it = cuda::counting_iterator(offset_t{});
+  auto key_init_it  = cuda::make_zip_iterator(key_ranks.begin(), key_value_it);
   thrust::transform(
     c2h::device_policy, key_init_it, key_init_it + num_items, keys_in.begin(), tuple_to_custom_op_t<key_t>{});
 
@@ -352,9 +327,9 @@ C2H_TEST("DeviceMergeSort::SortPairsCopy works",
     custom_less_op_t{});
 
   // Verify results
-  auto key_ranks_it       = thrust::make_counting_iterator(offset_t{});
-  auto keys_expected_it   = thrust::make_transform_iterator(key_ranks_it, rank_to_key_op_t<offset_t, key_t>{});
-  auto values_expected_it = thrust::make_counting_iterator(offset_t{});
+  auto key_ranks_it       = cuda::counting_iterator(offset_t{});
+  auto keys_expected_it   = cuda::transform_iterator(key_ranks_it, rank_to_key_op_t<offset_t, key_t>{});
+  auto values_expected_it = cuda::counting_iterator(offset_t{});
   bool keys_equal         = thrust::equal(c2h::device_policy, keys_out.cbegin(), keys_out.cend(), keys_expected_it);
   bool values_equal = thrust::equal(c2h::device_policy, values_out.cbegin(), values_out.cend(), values_expected_it);
   REQUIRE(keys_equal == true);
@@ -382,9 +357,9 @@ C2H_TEST("DeviceMergeSort::SortPairs works", "[merge][sort][device]", wide_key_t
              custom_less_op_t{});
 
   // Verify results
-  auto key_ranks_it       = thrust::make_counting_iterator(offset_t{});
-  auto keys_expected_it   = thrust::make_transform_iterator(key_ranks_it, rank_to_key_op_t<offset_t, key_t>{});
-  auto values_expected_it = thrust::make_counting_iterator(offset_t{});
+  auto key_ranks_it       = cuda::counting_iterator(offset_t{});
+  auto keys_expected_it   = cuda::transform_iterator(key_ranks_it, rank_to_key_op_t<offset_t, key_t>{});
+  auto values_expected_it = cuda::counting_iterator(offset_t{});
   bool keys_equal   = thrust::equal(c2h::device_policy, keys_in_out.cbegin(), keys_in_out.cend(), keys_expected_it);
   bool values_equal = thrust::equal(c2h::device_policy, key_ranks.cbegin(), key_ranks.cend(), values_expected_it);
   REQUIRE(keys_equal == true);
@@ -410,6 +385,9 @@ C2H_TEST(
   // Prepare host data for verification
   c2h::host_vector<key_t> keys_expected(keys_in_out);
   c2h::host_vector<data_t> values_expected(values_in_out);
+
+  // Use thrust::make_zip_iterator instead of cuda::make_zip_iterator as a work-around
+  // See https://github.com/NVIDIA/cccl/issues/6400
   auto zipped_expected_it = thrust::make_zip_iterator(keys_expected.begin(), values_expected.begin());
   std::stable_sort(zipped_expected_it, zipped_expected_it + num_items, compare_first_lt_op_t{});
 
@@ -469,15 +447,15 @@ C2H_TEST("DeviceMergeSort::StableSortPairs works for large inputs",
       c2h::device_vector<key_t> keys_in_out(num_items);
 
       // Pre-populated array with a constant value
-      auto counting_it = thrust::make_counting_iterator(std::size_t{0});
+      auto counting_it = cuda::counting_iterator(std::size_t{0});
       thrust::copy(counting_it, counting_it + num_items, keys_in_out.begin());
 
       // Perform sort
       stable_sort_keys(thrust::raw_pointer_cast(keys_in_out.data()), num_items, custom_less_op_t{});
 
       // Perform comparison
-      auto expected_result_it = thrust::make_transform_iterator(
-        thrust::make_counting_iterator(std::size_t{}), index_to_expected_key_op<key_t>(num_items));
+      auto expected_result_it =
+        cuda::transform_iterator(cuda::counting_iterator(std::size_t{}), index_to_expected_key_op<key_t>(num_items));
       bool is_correct = thrust::equal(expected_result_it, expected_result_it + num_items, keys_in_out.begin());
       REQUIRE(is_correct == true);
     }
@@ -495,8 +473,8 @@ C2H_TEST("DeviceMergeSort::StableSortPairs works for large inputs",
     {
       c2h::device_vector<key_t> keys_in_out(num_items);
 
-      auto counting_it   = thrust::make_counting_iterator(std::size_t{0});
-      auto key_value_it  = thrust::make_transform_iterator(counting_it, index_to_key_value_op<key_t>{});
+      auto counting_it   = cuda::counting_iterator(std::size_t{0});
+      auto key_value_it  = cuda::transform_iterator(counting_it, index_to_key_value_op<key_t>{});
       auto rev_sorted_it = cuda::std::make_reverse_iterator(key_value_it + num_items);
       thrust::copy(rev_sorted_it, rev_sorted_it + num_items, keys_in_out.begin());
 
@@ -504,8 +482,8 @@ C2H_TEST("DeviceMergeSort::StableSortPairs works for large inputs",
       stable_sort_keys(thrust::raw_pointer_cast(keys_in_out.data()), num_items, custom_less_op_t{});
 
       // Perform comparison
-      auto expected_result_it = thrust::make_transform_iterator(
-        thrust::make_counting_iterator(std::size_t{}), index_to_expected_key_op<key_t>(num_items));
+      auto expected_result_it =
+        cuda::transform_iterator(cuda::counting_iterator(std::size_t{}), index_to_expected_key_op<key_t>(num_items));
       bool is_correct = thrust::equal(expected_result_it, expected_result_it + num_items, keys_in_out.cbegin());
       REQUIRE(is_correct == true);
     }

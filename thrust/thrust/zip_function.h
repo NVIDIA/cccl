@@ -1,4 +1,3 @@
-
 /*! \file thrust/zip_function.h
  *  \brief Adaptor type that turns an N-ary function object into one that takes
  *         a tuple of size N so it can easily be used with algorithms taking zip

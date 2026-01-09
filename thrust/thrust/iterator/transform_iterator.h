@@ -47,9 +47,13 @@
 #include <thrust/iterator/iterator_adaptor.h>
 #include <thrust/iterator/iterator_traits.h>
 
+#include <cuda/std/__functional/identity.h>
+#include <cuda/std/__functional/invoke.h>
 #include <cuda/std/__memory/construct_at.h>
-#include <cuda/std/functional>
-#include <cuda/std/type_traits>
+#include <cuda/std/__type_traits/is_copy_assignable.h>
+#include <cuda/std/__type_traits/is_copy_constructible.h>
+#include <cuda/std/__type_traits/remove_cvref.h>
+#include <cuda/std/__type_traits/remove_reference.h>
 
 THRUST_NAMESPACE_BEGIN
 
@@ -58,12 +62,11 @@ class transform_iterator;
 
 namespace detail
 {
-
 template <class UnaryFunc, class Iterator>
 struct transform_iterator_reference
 {
   // by default, dereferencing the iterator yields the same as the function.
-  using type = decltype(::cuda::std::declval<UnaryFunc>()(::cuda::std::declval<it_value_t<Iterator>>()));
+  using type = ::cuda::std::invoke_result_t<UnaryFunc&, it_value_t<Iterator>>;
 };
 
 // for certain function objects, we need to tweak the reference type. Notably, identity functions must decay to values.
@@ -76,8 +79,8 @@ struct transform_iterator_reference<::cuda::std::identity, Iterator>
 template <typename Eval, class Iterator>
 struct transform_iterator_reference<functional::actor<Eval>, Iterator>
 {
-  using type = ::cuda::std::remove_reference_t<decltype(::cuda::std::declval<functional::actor<Eval>>()(
-    ::cuda::std::declval<it_value_t<Iterator>>()))>;
+  using type =
+    ::cuda::std::remove_reference_t<::cuda::std::invoke_result_t<functional::actor<Eval>&, it_value_t<Iterator>>>;
 };
 
 // Type function to compute the iterator_adaptor instantiation to be used for transform_iterator
@@ -97,7 +100,6 @@ public:
                      use_default, // pick traversal from Iterator
                      reference>;
 };
-
 } // namespace detail
 
 //! \addtogroup iterators

@@ -62,8 +62,6 @@ file. Use ``_CCCL_CUDA_COMPILATION()`` to check for the compilation of a CUDA so
 **CUDA identification/version macros**:
 
 +----------------------------------+------------------------------------------------------------------------------------------------+
-| ``_CCCL_HAS_CUDA_COMPILER()``    | CUDA compiler is available                                                                     |
-+----------------------------------+------------------------------------------------------------------------------------------------+
 | ``_CCCL_CUDA_COMPILATION()``     | CUDA code is being compiled                                                                    |
 +----------------------------------+------------------------------------------------------------------------------------------------+
 | ``_CCCL_HOST_COMPILATION()``     | Compiling host code, ``true`` when executing the CUDA host pass or compiling a C++ source file |
@@ -330,6 +328,91 @@ Usage example:
 | ``_CCCL_PRAGMA_NOUNROLL()``    | Portable ``#pragma nounroll`` pragma      |
 +--------------------------------+-------------------------------------------+
 
+**Conditional Constant Evaluation Macros**
+
+In C++23, the ``if consteval`` statement (`link <https://en.cppreference.com/w/cpp/language/if.html>`_) was introduced. CCCL mimics the behaviour with a set of macros that expand to an implementation supported by the compiler. If the compiler doesn't support any kind of conditional constant evaluation, the macros expand to predefined fallback values.
+
++------------------------------------+-----------------------------------------------------------------------------------+
+| ``_CCCL_IF_CONSTEVAL``             | Equivalent to ``if consteval`` statement (fallbacks to ``if constexpr (false)``)  |
++------------------------------------+-----------------------------------------------------------------------------------+
+| ``_CCCL_IF_CONSTEVAL_DEFAULT``     | Equivalent to ``if consteval`` statement (fallbacks to ``if constexpr (true)``)   |
++------------------------------------+-----------------------------------------------------------------------------------+
+| ``_CCCL_IF_NOT_CONSTEVAL``         | Equivalent to ``if !consteval`` statement (fallbacks to ``if constexpr (true)``)  |
++------------------------------------+-----------------------------------------------------------------------------------+
+| ``_CCCL_IF_NOT_CONSTEVAL_DEFAULT`` | Equivalent to ``if !consteval`` statement (fallbacks to ``if constexpr (false)``) |
++------------------------------------+-----------------------------------------------------------------------------------+
+
+**Exception Macros**
+
+CUDA doesn't support exceptions in device code, however, sometimes we need to write host/device functions that use exceptions on host and ``__trap()`` on device. CCCL provides a set of macros that should be used in place of the standard C++ keywords to make the code compile in both, host and device code.
+
++-----------------------------+-----------------------------------------------------------------------+
+| ``_CCCL_TRY``               | Replacement for the ``try`` keyword                                   |
++-----------------------------+-----------------------------------------------------------------------+
+| ``_CCCL_CATCH (X)``         | Replacement for the ``catch (/*X*/)`` statement                       |
++-----------------------------+-----------------------------------------------------------------------+
+| ``_CCCL_CATCH_ALL``         | Replacement for the ``catch (...)`` statement                         |
++-----------------------------+-----------------------------------------------------------------------+
+| ``_CCCL_THROW``             | Replacement for the ``throw /*arg*/`` expression                      |
++-----------------------------+-----------------------------------------------------------------------+
+| ``_CCCL_RETHROW``           | Replacement for the plain ``throw`` expression                        |
++-----------------------------+-----------------------------------------------------------------------+
+
+*Note*: The ``_CCCL_CATCH`` clause must always introduce a named variable, like: ``_CCCL_CATCH(const exception_type& var)``.
+
+.. note::
+
+  ``_CCCL_THROW`` requires to include the ``<stdexcept>`` header, regardless exceptions are enabled or not.
+
+Example:
+
+.. code-block:: c++
+
+    __host__ __device__ void* alloc(cuda::std::size_t nbytes)
+    {
+        if (void* ptr = cuda::std::malloc(nbytes))
+        {
+            return ptr;
+        }
+        _CCCL_THROW(std::bad_alloc{}); // on device calls cuda::std::terminate()
+    }
+
+    __host__ __device__ void do_something(int* buff)
+    {
+        _CCCL_THROW(std::runtime_error{"Something went wrong"}); // on device calls cuda::std::terminate()
+    }
+
+    __host__ __device__ void fn(cuda::std::size_t n)
+    {
+        int* buff{};
+        _CCCL_TRY
+        {
+            buff = reinterpret_cast<int*>(alloc(n * sizeof(int)));
+            do_something(buff);
+        }
+        _CCCL_CATCH ([[maybe_unused]] const std::bad_alloc& e) // must be always named
+        {
+            std::fprintf(stderr, "Failed to allocate memory\n"); // We can directly call host-only functions
+            cuda::std::terminate();
+        }
+        _CCCL_CATCH_ALL // or _CCCL_CATCH_FALLTHOUGH
+        {
+            cuda::std::free(buff);
+            _CCCL_RETHROW;
+        }
+    }
+
+    __global__ void kernel()
+    {
+        fn(10);
+    }
+
+    int main()
+    {
+        fn(10);
+        return 0;
+    }
+
 ----
 
 Visibility Macros
@@ -360,9 +443,9 @@ Debugging Macros
 ----------------
 
 +-----------------------------------+-------------------------------------------------------------------------------------------------------------+
-| ``_CCCL_ASSERT(COND, MSG)``       | Portable CCCL assert macro. Requires (``CCCL_ENABLE_HOST_ASSERTIONS`` or ``CCCL_ENABLE_DEVICE_ASSERTIONS``) |
+| ``_CCCL_ASSERT(COND, MSG)``       | Portable, conditional CCCL `assert()` macro. Requires (``CCCL_ENABLE_ASSERTIONS`` or a debug build)         |
 +-----------------------------------+-------------------------------------------------------------------------------------------------------------+
-| ``_CCCL_VERIFY(COND, MSG)``       | Portable ``alignas(X)`` keyword (variable)                                                                  |
+| ``_CCCL_VERIFY(COND, MSG)``       | Portable, always-on `assert()` reserved for critical checks that are always required                        |
 +-----------------------------------+-------------------------------------------------------------------------------------------------------------+
 | ``_CCCL_ENABLE_ASSERTIONS``       | Enable assertions                                                                                           |
 +-----------------------------------+-------------------------------------------------------------------------------------------------------------+

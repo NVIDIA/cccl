@@ -27,11 +27,8 @@
 #include <cuda/experimental/__stf/utility/cuda_safe_call.cuh>
 #include <cuda/experimental/__stf/utility/hash.cuh>
 
-namespace cuda::experimental::stf
+namespace cuda::experimental::stf::reserved
 {
-namespace reserved
-{
-
 struct compute_occupancy_result
 {
   int min_grid_size;
@@ -113,6 +110,4 @@ cuda_kernel_limits_result compute_kernel_limits(const Fun&& f, size_t shared_mem
 
   return res;
 }
-
-} // end namespace reserved
-} // namespace cuda::experimental::stf
+} // namespace cuda::experimental::stf::reserved

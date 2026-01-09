@@ -22,6 +22,7 @@
 #endif // no system header
 
 #include <cuda/std/__exception/cuda_error.h>
+#include <cuda/std/__exception/exception_macros.h>
 #include <cuda/std/__type_traits/always_false.h>
 #include <cuda/std/__type_traits/conjunction.h>
 #include <cuda/std/__type_traits/decay.h>
@@ -259,7 +260,7 @@ public:
 
     if (__state.__errors_.__index() != __npos)
     {
-      __errors_t::__visit(__throw_error_fn{}, static_cast<__errors_t&&>(__state.__errors_));
+      __visit(__throw_error_fn{}, static_cast<__errors_t&&>(__state.__errors_));
     }
 
     return __result; // uses NRVO to return the result

@@ -1,4 +1,3 @@
-
 #include <cstdint>
 #include <cstdlib>
 #include <iostream> // std::cerr
@@ -109,7 +108,7 @@ C2H_TEST("Transform generates UBLKCP on SM90", "[transform][ublkcp]")
     return;
   }
 
-  cccl_device_transform_build_result_t build;
+  cccl_device_transform_build_result_t build{};
   operation_t op = make_operation("op", get_unary_op(get_type_info<int>().type));
   REQUIRE(
     CUDA_SUCCESS
@@ -254,10 +253,12 @@ C2H_TEST("Transform works with integral types with well-known operations", "[tra
   unary_transform(input_ptr, output_ptr, num_items, op, build_cache, test_key);
 
   std::vector<T> expected(num_items, 0);
+  _CCCL_DIAG_PUSH
+  _CCCL_DIAG_SUPPRESS_MSVC(4146) // unary minus on unsigned type
   std::transform(input.begin(), input.end(), expected.begin(), [](const T& x) {
     return -x;
   });
-
+  _CCCL_DIAG_POP
   if (num_items > 0)
   {
     REQUIRE(expected == std::vector<T>(output_ptr));
@@ -280,14 +281,13 @@ C2H_TEST("Transform works with output of different type", "[transform]")
 {
   const std::size_t num_items = GENERATE(0, 42, take(4, random(1 << 12, 1 << 24)));
 
-  operation_t op = make_operation(
-    "op",
-    "struct pair { short a; size_t b; };\n"
-    "extern \"C\" __device__ void op(void* x_ptr, void* out_ptr) {\n"
-    "  int* x = static_cast<int*>(x_ptr);\n"
-    "  pair* out = static_cast<pair*>(out_ptr);\n"
-    "  *out = pair{ short(*x), size_t(*x) };\n"
-    "}");
+  operation_t op               = make_operation("op",
+                                  R"(struct pair { short a; size_t b; };
+extern "C" __device__ void op(void* x_ptr, void* out_ptr) {
+  int* x = static_cast<int*>(x_ptr);
+  pair* out = static_cast<pair*>(out_ptr);
+  *out = pair{ short(*x), size_t(*x) };
+})");
   const std::vector<int> input = generate<int>(num_items);
   std::vector<pair> expected(num_items);
   std::vector<pair> output(num_items);
@@ -314,14 +314,13 @@ C2H_TEST("Transform works with custom types", "[transform]")
 {
   const std::size_t num_items = GENERATE(0, 42, take(4, random(1 << 12, 1 << 24)));
 
-  operation_t op = make_operation(
-    "op",
-    "struct pair { short a; size_t b; };\n"
-    "extern \"C\" __device__ void op(void* x_ptr, void* out_ptr) {\n"
-    "  pair* x = static_cast<pair*>(x_ptr);\n"
-    "  pair* out = static_cast<pair*>(out_ptr);\n"
-    "  *out = pair{ x->a * 2, x->b * 2  };\n"
-    "}");
+  operation_t op              = make_operation("op",
+                                  R"(struct pair { short a; size_t b; };
+extern "C" __device__ void op(void* x_ptr, void* out_ptr) {
+  pair* x = static_cast<pair*>(x_ptr);
+  pair* out = static_cast<pair*>(out_ptr);
+  *out = pair{ x->a * 2, x->b * 2  };
+})");
   const std::vector<short> a  = generate<short>(num_items);
   const std::vector<size_t> b = generate<size_t>(num_items);
   std::vector<pair> input(num_items);
@@ -353,15 +352,14 @@ C2H_TEST("Transform works with custom types with well-known operators", "[transf
 {
   const std::size_t num_items = GENERATE(0, 42, take(4, random(1 << 12, 1 << 24)));
 
-  operation_t op_state = make_operation(
-    "op",
-    "struct pair { short a; size_t b; };\n"
-    "extern \"C\" __device__ void op(void* x_ptr, void* out_ptr) {\n"
-    "  pair* x = static_cast<pair*>(x_ptr);\n"
-    "  pair* out = static_cast<pair*>(out_ptr);\n"
-    "  *out = pair{ x->a * 2, x->b * 2  };\n"
-    "}");
-  cccl_op_t op = op_state;
+  operation_t op_state = make_operation("op",
+                                        R"(struct pair { short a; size_t b; };
+extern "C" __device__ void op(void* x_ptr, void* out_ptr) {
+  pair* x = static_cast<pair*>(x_ptr);
+  pair* out = static_cast<pair*>(out_ptr);
+  *out = pair{ x->a * 2, x->b * 2  };
+})");
+  cccl_op_t op         = op_state;
   // HACK: this doesn't actually match the operation above, but that's fine, as we are supposed to not take the
   // well-known path anyway
   op.type                     = cccl_op_kind_t::CCCL_NEGATE;
@@ -457,14 +455,13 @@ C2H_TEST("Transform with binary operator", "[transform]")
   pointer_t<int> input2_ptr(input2);
   pointer_t<int> output_ptr(output);
 
-  operation_t op = make_operation(
-    "op",
-    "extern \"C\" __device__ void op(void* x_ptr, void* y_ptr, void* out_ptr  ) {\n"
-    "  int* x = static_cast<int*>(x_ptr);\n"
-    "  int* y = static_cast<int*>(y_ptr);\n"
-    "  int* out = static_cast<int*>(out_ptr);\n"
-    "  *out = (*x > *y) ? *x : *y;\n"
-    "}");
+  operation_t op = make_operation("op",
+                                  R"(extern "C" __device__ void op(void* x_ptr, void* y_ptr, void* out_ptr  ) {
+  int* x = static_cast<int*>(x_ptr);
+  int* y = static_cast<int*>(y_ptr);
+  int* out = static_cast<int*>(out_ptr);
+  *out = (*x > *y) ? *x : *y;
+})");
 
   auto& build_cache    = get_cache<Transform_BinaryOp_Fixture_Tag>();
   const auto& test_key = make_key<int>();
@@ -495,14 +492,13 @@ C2H_TEST("Binary transform with one iterator", "[transform]")
   pointer_t<int> input1_ptr(input1);
   pointer_t<int> output_ptr(output);
 
-  operation_t op = make_operation(
-    "op",
-    "extern \"C\" __device__ void op(void* x_ptr, void* y_ptr, void* out_ptr) {\n"
-    "  int* x = static_cast<int*>(x_ptr);\n"
-    "  int* y = static_cast<int*>(y_ptr);\n"
-    "  int* out = static_cast<int*>(out_ptr);\n"
-    "  *out = (*x > *y) ? *x : *y;\n"
-    "}");
+  operation_t op = make_operation("op",
+                                  R"(extern "C" __device__ void op(void* x_ptr, void* y_ptr, void* out_ptr) {
+  int* x = static_cast<int*>(x_ptr);
+  int* y = static_cast<int*>(y_ptr);
+  int* out = static_cast<int*>(out_ptr);
+  *out = (*x > *y) ? *x : *y;
+})");
 
   auto& build_cache    = get_cache<Transform_BinaryOp_Iterator_Fixture_Tag>();
   const auto& test_key = make_key<int>();
@@ -536,7 +532,11 @@ C2H_TEST("Transform works with floating point types", "[transform]", floating_po
   const std::size_t num_items      = GENERATE(0, 42, take(4, random(1 << 12, 1 << 16)));
   operation_t op                   = make_operation("op", get_unary_op(get_type_info<T>().type));
   const std::vector<int> int_input = generate<int>(num_items);
+  // Suppress harmless conversion warnings on MSVC
+  _CCCL_DIAG_PUSH
+  _CCCL_DIAG_SUPPRESS_MSVC(4244)
   const std::vector<T> input(int_input.begin(), int_input.end());
+  _CCCL_DIAG_POP
   const std::vector<T> output(num_items, 0);
   pointer_t<T> input_ptr(input);
   pointer_t<T> output_ptr(output);

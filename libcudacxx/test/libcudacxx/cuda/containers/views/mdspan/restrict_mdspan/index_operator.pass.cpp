@@ -43,7 +43,7 @@ __host__ __device__ constexpr auto& access(MDS mds, int64_t i0)
   return mds[i0];
 }
 
-#if defined(_LIBCUDACXX_HAS_MULTIARG_OPERATOR_BRACKETS)
+#if _CCCL_HAS_MULTIARG_OPERATOR_BRACKETS()
 template <class MDS,
           class... Indices,
           class  = cuda::std::enable_if_t<
@@ -55,7 +55,7 @@ __host__ __device__ constexpr bool check_operator_constraints(MDS m, Indices... 
   unused(m[idxs...]);
   return true;
 }
-#else // ^^^ _LIBCUDACXX_HAS_MULTIARG_OPERATOR_BRACKETS ^^^ / vvv!_LIBCUDACXX_HAS_MULTIARG_OPERATOR_BRACKETS vvv
+#else // ^^^ _CCCL_HAS_MULTIARG_OPERATOR_BRACKETS() ^^^ / vvv !_CCCL_HAS_MULTIARG_OPERATOR_BRACKETS() vvv
 template <
   class MDS,
   class Index,
@@ -66,7 +66,7 @@ __host__ __device__ constexpr bool check_operator_constraints(MDS m, Index idx)
   unused(m[idx]);
   return true;
 }
-#endif // !_LIBCUDACXX_HAS_MULTIARG_OPERATOR_BRACKETS
+#endif // ^^^ !_CCCL_HAS_MULTIARG_OPERATOR_BRACKETS() ^^^
 
 template <class MDS, class... Indices>
 __host__ __device__ constexpr bool check_operator_constraints(MDS, Indices...)
@@ -74,7 +74,7 @@ __host__ __device__ constexpr bool check_operator_constraints(MDS, Indices...)
   return false;
 }
 
-#if defined(_LIBCUDACXX_HAS_MULTIARG_OPERATOR_BRACKETS)
+#if _CCCL_HAS_MULTIARG_OPERATOR_BRACKETS()
 template <class MDS>
 __host__ __device__ constexpr auto& access(MDS mds)
 {
@@ -95,7 +95,7 @@ __host__ __device__ constexpr auto& access(MDS mds, int64_t i0, int64_t i1, int6
 {
   return mds[i0, i1, i2, i3];
 }
-#endif // !_LIBCUDACXX_HAS_MULTIARG_OPERATOR_BRACKETS
+#endif // _CCCL_HAS_MULTIARG_OPERATOR_BRACKETS()
 
 // We must ensure that we do not try to access multiarg accessors
 template <class MDS, class Arg, cuda::std::enable_if_t<(MDS::extents_type::rank() == 1), int> = 0>
@@ -109,13 +109,13 @@ __host__ __device__ constexpr void assert_access(MDS mds, Arg arg)
 template <class MDS, class... Args, cuda::std::enable_if_t<(MDS::extents_type::rank() == sizeof...(Args)), int> = 0>
 __host__ __device__ constexpr void assert_access(MDS mds, Args... args)
 {
-#if defined(_LIBCUDACXX_HAS_MULTIARG_OPERATOR_BRACKETS)
+#if _CCCL_HAS_MULTIARG_OPERATOR_BRACKETS()
   int* ptr1 = &(mds.accessor().access(mds.data_handle(), mds.mapping()(args...)));
   int* ptr2 = &access(mds, args...);
   assert(ptr1 == ptr2);
-#else
+#else // ^^^ _CCCL_HAS_MULTIARG_OPERATOR_BRACKETS() ^^^ / vvv !_CCCL_HAS_MULTIARG_OPERATOR_BRACKETS() vvv
   unused(mds, args...);
-#endif // !_LIBCUDACXX_HAS_MULTIARG_OPERATOR_BRACKETS
+#endif // ^^^ !_CCCL_HAS_MULTIARG_OPERATOR_BRACKETS() ^^^
 }
 
 template <class MDS, class... Args, cuda::std::enable_if_t<(MDS::extents_type::rank() == sizeof...(Args)), int> = 0>
@@ -160,7 +160,7 @@ __host__ __device__ constexpr void test_layout()
   test_iteration(construct_mapping(Layout(), cuda::std::extents<unsigned, 7, 8>()));
   test_iteration(construct_mapping(Layout(), cuda::std::extents<char, D, D, D, D>(1, 1, 1, 1)));
 
-#if defined(_LIBCUDACXX_HAS_MULTIARG_OPERATOR_BRACKETS)
+#if _CCCL_HAS_MULTIARG_OPERATOR_BRACKETS()
   test_iteration(construct_mapping(Layout(), cuda::std::extents<int>()));
   int data[1];
   // Check operator constraint for number of arguments
@@ -295,7 +295,7 @@ __host__ __device__ constexpr void test_layout()
         cuda::restrict_mdspan(data, construct_mapping(Layout(), cuda::std::extents<int, D>(1))), s));
     }
   }
-#endif // _LIBCUDACXX_HAS_MULTIARG_OPERATOR_BRACKETS
+#endif // _CCCL_HAS_MULTIARG_OPERATOR_BRACKETS()
 }
 
 template <class Layout>

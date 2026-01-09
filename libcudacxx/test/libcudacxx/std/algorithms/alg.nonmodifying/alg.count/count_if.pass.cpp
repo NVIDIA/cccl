@@ -13,7 +13,7 @@
 //   constexpr Iter::difference_type   // constexpr after C++17
 //   count_if(Iter first, Iter last, Pred pred);
 
-#include <cuda/std/__algorithm_>
+#include <cuda/std/algorithm>
 #include <cuda/std/cassert>
 #include <cuda/std/functional>
 

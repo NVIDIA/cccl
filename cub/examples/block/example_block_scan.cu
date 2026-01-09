@@ -1,30 +1,6 @@
-/******************************************************************************
- * Copyright (c) 2011, Duane Merrill.  All rights reserved.
- * Copyright (c) 2011-2018, NVIDIA CORPORATION.  All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *     * Redistributions of source code must retain the above copyright
- *       notice, this list of conditions and the following disclaimer.
- *     * Redistributions in binary form must reproduce the above copyright
- *       notice, this list of conditions and the following disclaimer in the
- *       documentation and/or other materials provided with the distribution.
- *     * Neither the name of the NVIDIA CORPORATION nor the
- *       names of its contributors may be used to endorse or promote products
- *       derived from this software without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
- * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
- * DISCLAIMED. IN NO EVENT SHALL NVIDIA CORPORATION BE LIABLE FOR ANY
- * DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
- * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
- * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
- * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- *
- ******************************************************************************/
+// SPDX-FileCopyrightText: Copyright (c) 2011, Duane Merrill. All rights reserved.
+// SPDX-FileCopyrightText: Copyright (c) 2011-2025, NVIDIA CORPORATION. All rights reserved.
+// SPDX-License-Identifier: BSD-3
 
 /******************************************************************************
  * Simple demonstration of cub::BlockScan
@@ -425,6 +401,26 @@ __global__ void ExclusiveSumPrefixCallbackKernel(int* d_data, int num_items)
 }
 // example-end exclusive-sum-prefix-callback
 
+// example-begin exclusive-scan-single
+__global__ void ExclusiveScanSingleKernel(int* d_data)
+{
+  // Specialize BlockScan for a 1D block of 128 threads of type int
+  using BlockScan = cub::BlockScan<int, 128>;
+
+  // Allocate shared memory for BlockScan
+  __shared__ typename BlockScan::TempStorage temp_storage;
+
+  // Obtain input item for each thread
+  int thread_data = d_data[threadIdx.x];
+
+  // Collectively compute the block-wide exclusive prefix max scan
+  BlockScan(temp_storage).ExclusiveScan(thread_data, thread_data, INT_MIN, cuda::maximum<>{});
+
+  // Store result
+  d_data[threadIdx.x] = thread_data;
+}
+// example-end exclusive-scan-single
+
 // example-begin inclusive-scan-prefix-callback
 __global__ void InclusiveSumPrefixCallbackKernel(int* d_data, int num_items)
 {
@@ -527,7 +523,7 @@ __global__ void ExclusiveScanArrayKernel(int* d_data)
   }
 
   // Collectively compute the block-wide exclusive prefix max scan
-  BlockScan(temp_storage).ExclusiveScan(thread_data, thread_data, INT_MIN, ::cuda::maximum<>{});
+  BlockScan(temp_storage).ExclusiveScan(thread_data, thread_data, INT_MIN, cuda::maximum<>{});
 
   // Store results
   for (int i = 0; i < 4; i++)
@@ -551,7 +547,7 @@ __global__ void ExclusiveScanAggregateKernel(int* d_data)
 
   // Collectively compute the block-wide exclusive prefix max scan
   int block_aggregate;
-  BlockScan(temp_storage).ExclusiveScan(thread_data, thread_data, INT_MIN, ::cuda::maximum<>{}, block_aggregate);
+  BlockScan(temp_storage).ExclusiveScan(thread_data, thread_data, INT_MIN, cuda::maximum<>{}, block_aggregate);
 
   // Store result
   d_data[threadIdx.x] = thread_data;
@@ -620,6 +616,62 @@ __global__ void ExclusiveScanPrefixCallbackKernel(int* d_data, int num_items)
 }
 // example-end exclusive-scan-prefix-callback
 
+// example-begin exclusive-sum-single-prefix-callback
+__global__ void ExclusiveSumSinglePrefixCallbackKernel(int* d_data, int num_items)
+{
+  // Specialize BlockScan for a 1D block of 128 threads
+  using BlockScan = cub::BlockScan<int, 128>;
+
+  // Allocate shared memory for BlockScan
+  __shared__ typename BlockScan::TempStorage temp_storage;
+
+  // Initialize running total
+  BlockPrefixCallbackOp prefix_op(0);
+
+  // Have the block iterate over segments of items
+  for (int block_offset = 0; block_offset < num_items; block_offset += 128)
+  {
+    // Load a segment of consecutive items that are blocked across threads
+    int thread_data = d_data[block_offset + threadIdx.x];
+
+    // Collectively compute the block-wide exclusive prefix sum
+    BlockScan(temp_storage).ExclusiveSum(thread_data, thread_data, prefix_op);
+    __syncthreads();
+
+    // Store scanned items to output segment
+    d_data[block_offset + threadIdx.x] = thread_data;
+  }
+}
+// example-end exclusive-sum-single-prefix-callback
+
+// example-begin exclusive-sum-array-aggregate
+__global__ void ExclusiveSumArrayAggregateKernel(int* d_data)
+{
+  // Specialize BlockScan for a 1D block of 128 threads of type int
+  using BlockScan = cub::BlockScan<int, 128>;
+
+  // Allocate shared memory for BlockScan
+  __shared__ typename BlockScan::TempStorage temp_storage;
+
+  // Obtain a segment of consecutive items that are blocked across threads
+  int thread_data[4];
+  for (int i = 0; i < 4; i++)
+  {
+    thread_data[i] = d_data[threadIdx.x * 4 + i];
+  }
+
+  // Collectively compute the block-wide exclusive prefix sum
+  int block_aggregate;
+  BlockScan(temp_storage).ExclusiveSum(thread_data, thread_data, block_aggregate);
+
+  // Store results
+  for (int i = 0; i < 4; i++)
+  {
+    d_data[threadIdx.x * 4 + i] = thread_data[i];
+  }
+}
+// example-end exclusive-sum-array-aggregate
+
 // example-begin inclusive-scan-array
 __global__ void InclusiveScanArrayKernel(int* d_data)
 {
@@ -660,7 +712,7 @@ __global__ void InclusiveScanSingleKernel(int* d_data)
   int thread_data = d_data[threadIdx.x];
 
   // Collectively compute the block-wide inclusive prefix max scan
-  BlockScan(temp_storage).InclusiveScan(thread_data, thread_data, ::cuda::maximum<>{});
+  BlockScan(temp_storage).InclusiveScan(thread_data, thread_data, cuda::maximum<>{});
 
   // Store result
   d_data[threadIdx.x] = thread_data;
@@ -695,7 +747,7 @@ __global__ void InclusiveScanPrefixCallbackKernel(int* d_data, int num_items)
     __syncthreads();
 
     // Collectively compute the block-wide inclusive prefix max
-    BlockScanT(temp_storage.scan).InclusiveScan(thread_data, thread_data, ::cuda::maximum<>{}, prefix_op);
+    BlockScanT(temp_storage.scan).InclusiveScan(thread_data, thread_data, cuda::maximum<>{}, prefix_op);
     __syncthreads();
 
     // Store scanned items to output segment
@@ -704,6 +756,55 @@ __global__ void InclusiveScanPrefixCallbackKernel(int* d_data, int num_items)
   }
 }
 // example-end inclusive-scan-prefix-callback-max
+
+// example-begin inclusive-sum-array-aggregate
+__global__ void InclusiveSumArrayAggregateKernel(int* d_data)
+{
+  // Specialize BlockScan for a 1D block of 128 threads of type int
+  using BlockScan = cub::BlockScan<int, 128>;
+
+  // Allocate shared memory for BlockScan
+  __shared__ typename BlockScan::TempStorage temp_storage;
+
+  // Obtain a segment of consecutive items that are blocked across threads
+  int thread_data[4];
+  for (int i = 0; i < 4; i++)
+  {
+    thread_data[i] = d_data[threadIdx.x * 4 + i];
+  }
+
+  // Collectively compute the block-wide inclusive prefix sum
+  int block_aggregate;
+  BlockScan(temp_storage).InclusiveSum(thread_data, thread_data, block_aggregate);
+
+  // Store results
+  for (int i = 0; i < 4; i++)
+  {
+    d_data[threadIdx.x * 4 + i] = thread_data[i];
+  }
+}
+// example-end inclusive-sum-array-aggregate
+
+// example-begin inclusive-sum-single-aggregate
+__global__ void InclusiveSumSingleAggregateKernel(int* d_data)
+{
+  // Specialize BlockScan for a 1D block of 128 threads of type int
+  using BlockScan = cub::BlockScan<int, 128>;
+
+  // Allocate shared memory for BlockScan
+  __shared__ typename BlockScan::TempStorage temp_storage;
+
+  // Obtain input item for each thread
+  int thread_data = d_data[threadIdx.x];
+
+  // Collectively compute the block-wide inclusive prefix sum
+  int block_aggregate;
+  BlockScan(temp_storage).InclusiveSum(thread_data, thread_data, block_aggregate);
+
+  // Store result
+  d_data[threadIdx.x] = thread_data;
+}
+// example-end inclusive-sum-single-aggregate
 
 /**
  * Test documentation example kernels

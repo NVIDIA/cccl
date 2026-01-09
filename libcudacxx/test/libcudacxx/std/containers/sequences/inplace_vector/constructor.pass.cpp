@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#include <cuda/std/__algorithm_>
 #include <cuda/std/__type_traits/is_nothrow_default_constructible.h>
+#include <cuda/std/algorithm>
 #include <cuda/std/array>
 #include <cuda/std/cassert>
 #include <cuda/std/initializer_list>

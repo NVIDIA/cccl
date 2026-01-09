@@ -34,7 +34,7 @@ struct IsSmallObject
 template <class Type>
 bool isSmallType()
 {
-#if defined(_LIBCUDACXX_VERSION)
+#if defined(_CUDA_STD_VERSION)
   return std::experimental::__any_imp::_IsSmallObject<Type>::value;
 #else
   return IsSmallObject<Type>::value;

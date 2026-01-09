@@ -32,12 +32,8 @@
 
 THRUST_NAMESPACE_BEGIN
 
-namespace random
+namespace random::detail
 {
-
-namespace detail
-{
-
 template <typename UIntType, UIntType a, unsigned long long c, UIntType m>
 struct linear_congruential_engine_discard_implementation
 {
@@ -96,9 +92,6 @@ struct linear_congruential_engine_discard
     linear_congruential_engine_discard_implementation<result_type, a, c, m>::discard(lcg.m_x, z);
   }
 }; // end linear_congruential_engine_discard
-
-} // namespace detail
-
-} // namespace random
+} // namespace random::detail
 
 THRUST_NAMESPACE_END

@@ -1,29 +1,5 @@
-/******************************************************************************
- * Copyright (c) 2011-2024, NVIDIA CORPORATION.  All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *     * Redistributions of source code must retain the above copyright
- *       notice, this list of conditions and the following disclaimer.
- *     * Redistributions in binary form must reproduce the above copyright
- *       notice, this list of conditions and the following disclaimer in the
- *       documentation and/or other materials provided with the distribution.
- *     * Neither the name of the NVIDIA CORPORATION nor the
- *       names of its contributors may be used to endorse or promote products
- *       derived from this software without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
- * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
- * DISCLAIMED. IN NO EVENT SHALL NVIDIA CORPORATION BE LIABLE FOR ANY
- * DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
- * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
- * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
- * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- *
- ******************************************************************************/
+// SPDX-FileCopyrightText: Copyright (c) 2011-2024, NVIDIA CORPORATION. All rights reserved.
+// SPDX-License-Identifier: BSD-3
 
 #pragma once
 
@@ -31,13 +7,12 @@
 
 #include <thrust/fill.h>
 #include <thrust/functional.h>
-#include <thrust/iterator/counting_iterator.h>
-#include <thrust/iterator/transform_iterator.h>
 #include <thrust/memory.h>
 #include <thrust/random.h>
 #include <thrust/shuffle.h>
 #include <thrust/tabulate.h>
 
+#include <cuda/iterator>
 #include <cuda/std/iterator>
 #include <cuda/std/limits>
 #include <cuda/std/type_traits>
@@ -62,7 +37,6 @@
 
 namespace detail
 {
-
 template <typename KeyType>
 class key_sort_ref_key_transform
 {
@@ -157,7 +131,6 @@ struct index_to_value
     return static_cast<ValueType>(index);
   }
 };
-
 } // namespace detail
 
 template <typename KeyType, typename ValueType = cub::NullType>
@@ -210,9 +183,8 @@ struct large_array_sort_helper
     TIME(timer.print_elapsed_seconds_and_reset("Device Alloc"));
 
     { // Place the sorted keys into keys_out
-      auto key_iter = thrust::make_transform_iterator(
-        thrust::make_counting_iterator(std::size_t{0}),
-        detail::key_sort_ref_key_transform<KeyType>(num_items, is_descending));
+      auto key_iter = cuda::make_transform_iterator(
+        cuda::counting_iterator(std::size_t{0}), detail::key_sort_ref_key_transform<KeyType>(num_items, is_descending));
       thrust::copy(c2h::device_policy, key_iter, key_iter + num_items, keys_out.begin());
     }
 
@@ -238,9 +210,8 @@ struct large_array_sort_helper
   void verify_unstable_key_sort(std::size_t num_items, bool is_descending, const c2h::device_vector<KeyType>& keys)
   {
     TIME(c2h::cpu_timer timer);
-    auto key_iter = thrust::make_transform_iterator(
-      thrust::make_counting_iterator(std::size_t{0}),
-      detail::key_sort_ref_key_transform<KeyType>{num_items, is_descending});
+    auto key_iter = cuda::make_transform_iterator(
+      cuda::counting_iterator(std::size_t{0}), detail::key_sort_ref_key_transform<KeyType>{num_items, is_descending});
     REQUIRE(thrust::equal(c2h::device_policy, keys.cbegin(), keys.cend(), key_iter));
     TIME(timer.print_elapsed_seconds_and_reset("Validate keys"));
   }
@@ -378,8 +349,8 @@ struct large_array_sort_helper
 
     TIME(c2h::cpu_timer timer);
 
-    auto ref_key_begin = thrust::make_transform_iterator(
-      thrust::make_counting_iterator(std::size_t{0}),
+    auto ref_key_begin = cuda::make_transform_iterator(
+      cuda::counting_iterator(std::size_t{0}),
       detail::pair_sort_ref_key_transform<KeyType>(num_items, num_summaries, is_descending));
 
     REQUIRE(thrust::equal(c2h::device_policy, keys.cbegin(), keys.cend(), ref_key_begin));

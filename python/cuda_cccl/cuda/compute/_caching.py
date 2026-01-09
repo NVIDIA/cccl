@@ -5,7 +5,14 @@
 
 import functools
 
-from cuda.core.experimental import Device
+try:
+    from cuda.core import Device
+except ImportError:
+    from cuda.core.experimental import Device
+
+
+# Central registry of all algorithm caches
+_cache_registry: dict[str, object] = {}
 
 
 def cache_with_key(key):
@@ -18,6 +25,9 @@ def cache_with_key(key):
     -----
     The CUDA compute capability of the current device is appended to
     the cache key returned by `key`.
+
+    The decorated function is automatically registered in the central
+    cache registry for easy cache management.
     """
 
     def deco(func):
@@ -36,9 +46,58 @@ def cache_with_key(key):
             cache.clear()
 
         inner.cache_clear = cache_clear
+
+        # Register the cache in the central registry
+        cache_name = func.__qualname__
+        _cache_registry[cache_name] = inner
+
         return inner
 
     return deco
+
+
+def _hash_device_array_like(value):
+    # hash based on pointer, shape, and dtype
+    ptr = value.__cuda_array_interface__["data"][0]
+    shape = value.__cuda_array_interface__["shape"]
+    dtype = value.__cuda_array_interface__["typestr"]
+    return hash((ptr, shape, dtype))
+
+
+def _make_hashable(value):
+    import numba.cuda.dispatcher
+
+    from .typing import DeviceArrayLike
+
+    if isinstance(value, numba.cuda.dispatcher.CUDADispatcher):
+        return CachableFunction(value.py_func)
+    elif isinstance(value, DeviceArrayLike):
+        return _hash_device_array_like(value)
+    elif isinstance(value, (list, tuple)):
+        return tuple(_make_hashable(v) for v in value)
+    elif isinstance(value, dict):
+        return tuple(
+            sorted((_make_hashable(k), _make_hashable(v)) for k, v in value.items())
+        )
+    else:
+        return id(value)
+
+
+def clear_all_caches():
+    """
+    Clear all algorithm caches.
+
+    This function clears all cached algorithm build results, forcing
+    recompilation on the next invocation. Useful for benchmarking
+    compilation time.
+
+    Example
+    -------
+    >>> import cuda.compute
+    >>> cuda.compute.clear_all_caches()
+    """
+    for cached_func in _cache_registry.values():
+        cached_func.cache_clear()
 
 
 class CachableFunction:
@@ -55,10 +114,20 @@ class CachableFunction:
         self._func = func
 
         closure = func.__closure__ if func.__closure__ is not None else []
+        contents = []
+        # if any of the contents is a numba.cuda.dispatcher.CUDADispatcher
+        # use the function for caching purposes:
+        for cell in closure:
+            contents.append(_make_hashable(cell.cell_contents))
         self._identity = (
+            func.__name__,
             func.__code__.co_code,
             func.__code__.co_consts,
-            tuple(cell.cell_contents for cell in closure),
+            tuple(contents),
+            tuple(
+                _make_hashable(func.__globals__.get(name, None))
+                for name in func.__code__.co_names
+            ),
         )
 
     def __eq__(self, other):

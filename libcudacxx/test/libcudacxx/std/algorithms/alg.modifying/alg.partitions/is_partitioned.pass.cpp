@@ -14,7 +14,7 @@
 //     constexpr bool       // constexpr after C++17
 //     is_partitioned(InputIterator first, InputIterator last, Predicate pred);
 
-#include <cuda/std/__algorithm_>
+#include <cuda/std/algorithm>
 #include <cuda/std/cassert>
 #include <cuda/std/cstddef>
 #include <cuda/std/functional>

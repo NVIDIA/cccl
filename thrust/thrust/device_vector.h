@@ -33,8 +33,8 @@
 #include <thrust/detail/vector_base.h>
 #include <thrust/device_allocator.h>
 
+#include <cuda/std/__utility/move.h>
 #include <cuda/std/initializer_list>
-#include <cuda/std/utility>
 
 #include <vector>
 

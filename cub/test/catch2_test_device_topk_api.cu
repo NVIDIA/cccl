@@ -12,6 +12,7 @@
 #include <cuda/__execution/require.h>
 #include <cuda/iterator>
 #include <cuda/std/functional>
+#include <cuda/stream>
 
 #include <c2h/catch2_test_helper.h>
 
@@ -26,9 +27,17 @@ C2H_TEST("DeviceTopK::MinKeys API example for non-deterministic, unsorted result
   auto requirements =
     cuda::execution::require(cuda::execution::determinism::not_guaranteed, cuda::execution::output_ordering::unsorted);
 
+  // Prepare CUDA stream
+  cudaStream_t stream = nullptr;
+  cudaStreamCreate(&stream);
+  cuda::stream_ref stream_ref{stream};
+
+  // Create the environment with the stream and requirements
+  auto env = cuda::std::execution::env{stream_ref, requirements};
+
   // Query temporary storage requirements
   size_t temp_storage_bytes{};
-  cub::DeviceTopK::MinKeys(nullptr, temp_storage_bytes, input.begin(), output.begin(), input.size(), k, requirements);
+  cub::DeviceTopK::MinKeys(nullptr, temp_storage_bytes, input.begin(), output.begin(), input.size(), k, env);
 
   // Allocate temporary storage
   thrust::device_vector<char> temp_storage(temp_storage_bytes, thrust::no_init);
@@ -40,7 +49,7 @@ C2H_TEST("DeviceTopK::MinKeys API example for non-deterministic, unsorted result
     output.begin(),
     input.size(),
     k,
-    requirements);
+    env);
 
   // Get the top-k results into sorted order for easy comparison
   thrust::sort(output.begin(), output.end());
@@ -61,9 +70,17 @@ C2H_TEST("DeviceTopK::MaxKeys API example for non-deterministic, unsorted result
   auto requirements =
     cuda::execution::require(cuda::execution::determinism::not_guaranteed, cuda::execution::output_ordering::unsorted);
 
+  // Prepare CUDA stream
+  cudaStream_t stream = nullptr;
+  cudaStreamCreate(&stream);
+  cuda::stream_ref stream_ref{stream};
+
+  // Create the environment with the stream and requirements
+  auto env = cuda::std::execution::env{stream_ref, requirements};
+
   // Query temporary storage requirements
   size_t temp_storage_bytes{};
-  cub::DeviceTopK::MaxKeys(nullptr, temp_storage_bytes, input.begin(), output.begin(), input.size(), k, requirements);
+  cub::DeviceTopK::MaxKeys(nullptr, temp_storage_bytes, input.begin(), output.begin(), input.size(), k, env);
 
   // Allocate temporary storage
   thrust::device_vector<char> temp_storage(temp_storage_bytes, thrust::no_init);
@@ -75,7 +92,7 @@ C2H_TEST("DeviceTopK::MaxKeys API example for non-deterministic, unsorted result
     output.begin(),
     input.size(),
     k,
-    requirements);
+    env);
 
   // Get the top-k results into sorted order for easy comparison
   thrust::sort(output.begin(), output.end(), cuda::std::greater{});
@@ -98,18 +115,18 @@ C2H_TEST("DeviceTopK::MinPairs API example for non-deterministic, unsorted resul
   auto requirements =
     cuda::execution::require(cuda::execution::determinism::not_guaranteed, cuda::execution::output_ordering::unsorted);
 
+  // Prepare CUDA stream
+  cudaStream_t stream = nullptr;
+  cudaStreamCreate(&stream);
+  cuda::stream_ref stream_ref{stream};
+
+  // Create the environment with the stream and requirements
+  auto env = cuda::std::execution::env{stream_ref, requirements};
+
   // Query temporary storage requirements
   size_t temp_storage_bytes{};
   cub::DeviceTopK::MinPairs(
-    nullptr,
-    temp_storage_bytes,
-    keys.begin(),
-    keys_out.begin(),
-    values,
-    values_out.begin(),
-    keys.size(),
-    k,
-    requirements);
+    nullptr, temp_storage_bytes, keys.begin(), keys_out.begin(), values, values_out.begin(), keys.size(), k, env);
 
   // Allocate temporary storage
   thrust::device_vector<char> temp_storage(temp_storage_bytes, thrust::no_init);
@@ -123,7 +140,7 @@ C2H_TEST("DeviceTopK::MinPairs API example for non-deterministic, unsorted resul
     values_out.begin(),
     keys.size(),
     k,
-    requirements);
+    env);
 
   // Get the top-k results into sorted order for easy comparison
   thrust::sort_by_key(keys_out.begin(), keys_out.end(), values_out.begin());
@@ -148,18 +165,18 @@ C2H_TEST("DeviceTopK::MaxPairs API example for non-deterministic, unsorted resul
   auto requirements =
     cuda::execution::require(cuda::execution::determinism::not_guaranteed, cuda::execution::output_ordering::unsorted);
 
+  // Prepare CUDA stream
+  cudaStream_t stream = nullptr;
+  cudaStreamCreate(&stream);
+  cuda::stream_ref stream_ref{stream};
+
+  // Create the environment with the stream and requirements
+  auto env = cuda::std::execution::env{stream_ref, requirements};
+
   // Query temporary storage requirements
   size_t temp_storage_bytes{};
   cub::DeviceTopK::MaxPairs(
-    nullptr,
-    temp_storage_bytes,
-    keys.begin(),
-    keys_out.begin(),
-    values,
-    values_out.begin(),
-    keys.size(),
-    k,
-    requirements);
+    nullptr, temp_storage_bytes, keys.begin(), keys_out.begin(), values, values_out.begin(), keys.size(), k, env);
 
   // Allocate temporary storage
   thrust::device_vector<char> temp_storage(temp_storage_bytes, thrust::no_init);
@@ -173,7 +190,7 @@ C2H_TEST("DeviceTopK::MaxPairs API example for non-deterministic, unsorted resul
     values_out.begin(),
     keys.size(),
     k,
-    requirements);
+    env);
 
   // Get the top-k results into sorted order for easy comparison
   thrust::sort_by_key(keys_out.begin(), keys_out.end(), values_out.begin(), cuda::std::greater<>{});

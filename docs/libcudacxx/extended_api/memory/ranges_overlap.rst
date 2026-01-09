@@ -3,7 +3,7 @@
 ``cuda::ranges_overlap``
 ========================
 
-Defined in ``<cuda/memory>`` header.
+Defined in the ``<cuda/memory>`` header.
 
 .. code:: cuda
 
@@ -57,4 +57,4 @@ Example
         return 0;
     }
 
-`See it on Godbolt 🔗 <https://godbolt.org/z/xP343GKea>`_
+`See it on Godbolt 🔗 <https://godbolt.org/z/nasnWz9Tv>`__

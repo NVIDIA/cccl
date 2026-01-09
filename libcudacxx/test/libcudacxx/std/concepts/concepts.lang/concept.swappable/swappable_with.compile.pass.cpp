@@ -218,7 +218,6 @@ static_assert(!check_swappable_with_impl<int, int (&)()>(), "");
 
 namespace adl
 {
-
 #if !TEST_COMPILER(MSVC) || TEST_STD_VER > 2017 // MSVC ignores the rvalue/lvalue
                                                 // distinction in the swap
 // definitions

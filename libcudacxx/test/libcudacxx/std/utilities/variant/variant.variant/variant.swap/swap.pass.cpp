@@ -434,7 +434,7 @@ void test_exceptions_different_alternatives()
     assert(cuda::std::get<1>(v2).value == 100);
   }
 // FIXME: The tests below are just very libc++ specific
-#  ifdef _LIBCUDACXX_VERSION
+#  ifdef _CUDA_STD_VERSION
   {
     using T1 = ThrowsOnSecondMove;
     using T2 = NonThrowingNonNoexceptType;
@@ -466,7 +466,7 @@ void test_exceptions_different_alternatives()
     assert(v1.valueless_by_exception());
     assert(cuda::std::get<0>(v2).value == 42);
   }
-#  endif // _LIBCUDACXX_VERSION
+#  endif // _CUDA_STD_VERSION
 }
 #endif // TEST_HAS_EXCEPTIONS()
 
@@ -585,10 +585,10 @@ __host__ __device__ void test_swap_noexcept()
   }
 }
 
-#ifdef _LIBCUDACXX_VERSION
+#ifdef _CUDA_STD_VERSION
 // This is why variant should SFINAE member swap. :-)
 template class cuda::std::variant<int, NotSwappable>;
-#endif // _LIBCUDACXX_VERSION
+#endif // _CUDA_STD_VERSION
 
 int main(int, char**)
 {

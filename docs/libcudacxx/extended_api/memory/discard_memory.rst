@@ -7,7 +7,8 @@ Defined in header ``<cuda/memory>``, ``<cuda/discard_memory>`` (deprecated since
 
 .. code:: cuda
 
-   __host__ __device__ void discard_memory(volatile void* ptr, size_t nbytes);
+    __host__ __device__
+    void discard_memory(volatile void* ptr, size_t nbytes);
 
 Discard modified cache lines without writing back the cached data to memory. The functionality enables using global memory as temporary scratch space. Does **not** generate any HW store operations.
 

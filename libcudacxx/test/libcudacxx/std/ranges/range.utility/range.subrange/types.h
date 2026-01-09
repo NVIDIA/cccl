@@ -249,17 +249,11 @@ struct ForwardBorrowedRange
   }
 };
 
-namespace cuda
-{
-namespace std
-{
-namespace ranges
+namespace cuda::std::ranges
 {
 template <>
 inline constexpr bool enable_borrowed_range<ForwardBorrowedRange> = true;
-}
-} // namespace std
-} // namespace cuda
+} // namespace cuda::std::ranges
 
 struct ForwardRange
 {
@@ -279,17 +273,11 @@ struct ConvertibleForwardBorrowedRange
   }
 };
 
-namespace cuda
-{
-namespace std
-{
-namespace ranges
+namespace cuda::std::ranges
 {
 template <>
 inline constexpr bool enable_borrowed_range<ConvertibleForwardBorrowedRange> = true;
-}
-} // namespace std
-} // namespace cuda
+} // namespace cuda::std::ranges
 
 struct ForwardBorrowedRangeDifferentSentinel
 {
@@ -326,17 +314,11 @@ struct ForwardBorrowedRangeDifferentSentinel
   }
 };
 
-namespace cuda
-{
-namespace std
-{
-namespace ranges
+namespace cuda::std::ranges
 {
 template <>
 inline constexpr bool enable_borrowed_range<ForwardBorrowedRangeDifferentSentinel> = true;
-}
-} // namespace std
-} // namespace cuda
+} // namespace cuda::std::ranges
 
 using DifferentSentinelSubrange = cuda::std::ranges::
   subrange<ForwardIter, ForwardBorrowedRangeDifferentSentinel::sentinel, cuda::std::ranges::subrange_kind::unsized>;
@@ -380,17 +362,11 @@ struct DifferentSentinelWithSizeMember
   }
 };
 
-namespace cuda
-{
-namespace std
-{
-namespace ranges
+namespace cuda::std::ranges
 {
 template <>
 inline constexpr bool enable_borrowed_range<DifferentSentinelWithSizeMember> = true;
-}
-} // namespace std
-} // namespace cuda
+} // namespace cuda::std::ranges
 
 using DifferentSentinelWithSizeMemberSubrange = cuda::std::ranges::
   subrange<ForwardIter, DifferentSentinelWithSizeMember::sentinel, cuda::std::ranges::subrange_kind::unsized>;

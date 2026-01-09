@@ -399,3 +399,36 @@ def test_no_init_value(monkeypatch):
     got = d_output.get()
     expected = scan_host(d_input.get(), lambda a, b: a + b, [0], force_inclusive)
     np.testing.assert_array_equal(expected, got)
+
+
+def test_no_init_value_iterator():
+    force_inclusive = True
+    num_items = 1024
+    dtype = np.dtype("float64")
+
+    d_input = CountingIterator(np.float64(0))
+    d_output = cp.empty(num_items, dtype=dtype)
+
+    scan_device(d_input, d_output, num_items, OpKind.PLUS, None, force_inclusive)
+
+    got = d_output.get()
+    expected = scan_host(
+        np.arange(0, num_items, dtype=dtype), lambda a, b: a + b, [0], force_inclusive
+    )
+
+    np.testing.assert_array_equal(expected, got)
+
+
+def test_inclusive_scan_with_lambda():
+    """Test inclusive_scan with a lambda function as the scan operator."""
+    h_init = np.array([0], dtype=np.int32)
+    d_input = cp.array([1, 2, 3, 4, 5], dtype=np.int32)
+    d_output = cp.empty_like(d_input)
+
+    # Use a lambda function directly as the scan operator
+    cuda.compute.inclusive_scan(
+        d_input, d_output, lambda a, b: a + b, h_init, len(d_input)
+    )
+
+    expected = np.array([1, 3, 6, 10, 15], dtype=np.int32)
+    np.testing.assert_array_equal(d_output.get(), expected)

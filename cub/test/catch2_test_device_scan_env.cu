@@ -13,7 +13,8 @@ struct stream_registry_factory_t;
 #include <cub/device/device_scan.cuh>
 
 #include <thrust/device_vector.h>
-#include <thrust/iterator/constant_iterator.h>
+
+#include <cuda/iterator>
 
 #include "catch2_test_env_launch_helper.h"
 
@@ -78,7 +79,7 @@ TEST_CASE("Device scan exclusive scan works with default environment", "[scan][d
   num_items_t num_items = 1;
   c2h::device_vector<int> d_block_size(1);
   block_size_check_t block_size_check{thrust::raw_pointer_cast(d_block_size.data())};
-  auto d_in  = thrust::make_constant_iterator(value_t{1});
+  auto d_in  = cuda::constant_iterator(value_t{1});
   auto d_out = thrust::device_vector<value_t>(1);
 
   auto init = value_t{0};
@@ -103,7 +104,7 @@ TEST_CASE("Device scan exclusive sum works with default environment", "[sum][dev
 
   num_items_t num_items = 1;
 
-  auto d_in  = thrust::make_constant_iterator(value_t{1});
+  auto d_in  = cuda::constant_iterator(value_t{1});
   auto d_out = thrust::device_vector<value_t>(1);
 
   REQUIRE(cudaSuccess == cub::DeviceScan::ExclusiveSum(d_in, d_out.begin(), num_items));
@@ -169,7 +170,7 @@ C2H_TEST("Device scan exclusive-scan can be tuned", "[scan][device]", block_size
   block_size_check_t block_size_check{thrust::raw_pointer_cast(d_block_size.data())};
 
   auto num_items = 3;
-  auto d_in      = thrust::make_constant_iterator(1);
+  auto d_in      = cuda::constant_iterator(1);
   auto d_out     = thrust::device_vector<int>(num_items);
 
   // We are expecting that `reduce_tuning` is ignored
@@ -189,7 +190,7 @@ C2H_TEST("Device scan exclusive-sum can be tuned", "[scan][device]", block_sizes
   constexpr int target_block_size = c2h::get<0, TestType>::value;
 
   auto num_items = target_block_size;
-  auto d_in      = thrust::make_constant_iterator(1);
+  auto d_in      = cuda::constant_iterator(1);
   auto d_out     = thrust::device_vector<int>(num_items);
 
   // We are expecting that `reduce_tuning` is ignored
@@ -211,7 +212,7 @@ C2H_TEST("Device scan exclusive-scan uses environment", "[scan][device]")
   using num_items_t = int;
 
   num_items_t num_items = 10;
-  auto d_in             = thrust::make_constant_iterator(1.0f);
+  auto d_in             = cuda::constant_iterator(1.0f);
   auto d_out            = thrust::device_vector<float>(num_items);
 
   using init_t = float;
@@ -240,7 +241,7 @@ C2H_TEST("Device scan exclusive-sum uses environment", "[scan][device]")
   using num_items_t = int;
 
   num_items_t num_items = 10;
-  auto d_in             = thrust::make_constant_iterator(1.0f);
+  auto d_in             = cuda::constant_iterator(1.0f);
   auto d_out            = thrust::device_vector<float>(num_items);
 
   size_t expected_bytes_allocated{};

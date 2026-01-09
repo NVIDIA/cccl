@@ -20,32 +20,10 @@
 #include <exception> // IWYU pragma: keep
 #include <sstream>
 
+#include "utility.cuh"
 #include <c2h/catch2_test_helper.h>
 
 #define CUDART(call) REQUIRE((call) == cudaSuccess)
-
-__device__ inline void ccclrt_require_impl(
-  bool condition, const char* condition_text, const char* filename, unsigned int linenum, const char* funcname)
-{
-  if (!condition)
-  {
-#if !_CCCL_CUDA_COMPILER(CLANG)
-    // TODO do warp aggregate prints for easier readability?
-    printf("%s:%u: %s: block: [%d,%d,%d], thread: [%d,%d,%d] Condition `%s` failed.\n",
-           filename,
-           linenum,
-           funcname,
-           blockIdx.x,
-           blockIdx.y,
-           blockIdx.z,
-           threadIdx.x,
-           threadIdx.y,
-           threadIdx.z,
-           condition_text);
-#endif
-    __trap();
-  }
-}
 
 // There is a problem with clang-cuda and nv/target, but we don't need the device side macros yet,
 // disable them for now
@@ -74,6 +52,14 @@ __device__ inline void ccclrt_require_impl(
 #  define CCCLRT_CHECK_FALSE(condition) CCCLRT_CHECK(!(condition))
 #endif // _CCCL_CUDA_COMPILER(CLANG)
 
+// Explicit device side require macros for clang-cuda
+#define CCCLRT_REQUIRE_DEVICE(condition) \
+  ccclrt_require_impl(condition, #condition, __FILE__, __LINE__, __PRETTY_FUNCTION__);
+#define CCCLRT_CHECK_DEVICE(condition) \
+  ccclrt_require_impl(condition, #condition, __FILE__, __LINE__, __PRETTY_FUNCTION__);
+#define CCCLRT_FAIL_DEVICE(message)          ccclrt_require_impl(false, message, __FILE__, __LINE__, __PRETTY_FUNCTION__);
+#define CCCLRT_CHECK_FALSE_DEVICE(condition) CCCLRT_CHECK_DEVICE(!(condition))
+
 __host__ __device__ constexpr bool operator==(const dim3& lhs, const dim3& rhs) noexcept
 {
   return (lhs.x == rhs.x) && (lhs.y == rhs.y) && (lhs.z == rhs.z);
@@ -91,7 +77,6 @@ struct StringMaker<dim3>
     return oss.str();
   }
 };
-
 } // namespace Catch
 
 namespace
@@ -139,7 +124,6 @@ struct ccclrt_test_fixture
     CCCLRT_CHECK(count_driver_stack() == 0);
   }
 };
-
 } // namespace test
 } // namespace
 
@@ -149,5 +133,8 @@ struct ccclrt_test_fixture
 // we don't accidentally initialize device 0 through CUDART usage and makes sure
 // our APIs work with empty driver stack.
 #define C2H_CCCLRT_TEST(NAME, TAGS, ...) C2H_TEST_WITH_FIXTURE(::test::ccclrt_test_fixture, NAME, TAGS, __VA_ARGS__)
+
+#define C2H_CCCLRT_TEST_LIST(NAME, TAGS, ...) \
+  C2H_TEST_LIST_WITH_FIXTURE(::test::ccclrt_test_fixture, NAME, TAGS, __VA_ARGS__)
 
 #endif // __LIBCUDACXX_CCCLRT_COMMON_TESTING_H__

@@ -10,6 +10,7 @@
 
 #pragma once
 
+#include <cuda/std/__exception/exception_macros.h>
 #include <cuda/std/__utility/typeid.h>
 #include <cuda/std/string_view> // IWYU pragma: keep
 #include <cuda/std/type_traits>
@@ -31,19 +32,34 @@ struct checked_value_receiver
       : _values{values...}
   {}
 
+  _CCCL_HOST_DEVICE checked_value_receiver(checked_value_receiver&& other) noexcept
+      : _called{::cuda::std::exchange(other._called, true)}
+      , _values{::cuda::std::move(other._values)}
+  {}
+
+  _CCCL_HOST_DEVICE ~checked_value_receiver()
+  {
+    CUDAX_CHECK(_called);
+  }
+
   // This overload is needed to avoid an nvcc compiler bug where a variadic
   // pack is not visible within the scope of a lambda.
   _CCCL_HOST_DEVICE void set_value() && noexcept
   {
     if constexpr (!::cuda::std::is_same_v<::cuda::std::__type_list<Values...>, ::cuda::std::__type_list<>>)
     {
-      CUDAX_FAIL("expected a value completion; got a different value");
+      CUDAX_FAIL("expected a value completion; got no values");
+    }
+    else
+    {
+      _called = true;
     }
   }
 
   template <class... As>
   _CCCL_HOST_DEVICE void set_value(As... as) && noexcept
   {
+    _called = true;
     if constexpr (::cuda::std::is_same_v<::cuda::std::__type_list<Values...>, ::cuda::std::__type_list<As...>>)
     {
       ::cuda::std::__apply(
@@ -61,14 +77,17 @@ struct checked_value_receiver
   template <class Error>
   _CCCL_HOST_DEVICE void set_error(Error) && noexcept
   {
+    _called = true;
     CUDAX_FAIL("expected a value completion; got an error");
   }
 
   _CCCL_HOST_DEVICE void set_stopped() && noexcept
   {
+    _called = true;
     CUDAX_FAIL("expected a value completion; got stopped");
   }
 
+  bool _called = false;
   ::cuda::std::__tuple<Values...> _values;
 };
 
@@ -197,5 +216,4 @@ struct proxy_value_receiver
 
 template <class Ty>
 _CCCL_HOST_DEVICE proxy_value_receiver(Ty&) -> proxy_value_receiver<Ty>;
-
 } // namespace

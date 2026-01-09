@@ -12,18 +12,18 @@
 #  pragma system_header
 #endif // no system header
 
-#if _CCCL_HAS_CUDA_COMPILER()
+#if _CCCL_CUDA_COMPILATION()
 #  include <cub/device/device_transform.cuh>
 
 #  include <thrust/system/cuda/detail/cdp_dispatch.h>
 #  include <thrust/system/cuda/detail/dispatch.h>
 
-#  include <cuda/std/iterator>
+#  include <cuda/std/__iterator/distance.h>
+#  include <cuda/std/tuple>
 
 THRUST_NAMESPACE_BEGIN
 namespace cuda_cub
 {
-
 _CCCL_EXEC_CHECK_DISABLE
 template <class Derived, class OutputIt, class Size, class Generator>
 OutputIt _CCCL_HOST_DEVICE
@@ -54,7 +54,6 @@ void _CCCL_HOST_DEVICE generate(execution_policy<Derived>& policy, OutputIt firs
 {
   cuda_cub::generate_n(policy, first, ::cuda::std::distance(first, last), generator);
 }
-
 } // namespace cuda_cub
 THRUST_NAMESPACE_END
-#endif
+#endif // _CCCL_CUDA_COMPILATION()

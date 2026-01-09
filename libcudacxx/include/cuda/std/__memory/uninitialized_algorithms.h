@@ -36,7 +36,6 @@
 #include <cuda/std/__new_>
 #include <cuda/std/__type_traits/extent.h>
 #include <cuda/std/__type_traits/is_array.h>
-#include <cuda/std/__type_traits/is_constant_evaluated.h>
 #include <cuda/std/__type_traits/is_trivially_copy_assignable.h>
 #include <cuda/std/__type_traits/is_trivially_copy_constructible.h>
 #include <cuda/std/__type_traits/is_trivially_move_assignable.h>
@@ -584,7 +583,7 @@ template <class _Alloc,
 _CCCL_API inline _CCCL_CONSTEXPR_CXX20 _Out*
 __uninitialized_allocator_copy_impl(_Alloc&, _In* __first1, _In* __last1, _Out* __first2)
 {
-  if (::cuda::std::is_constant_evaluated())
+  _CCCL_IF_CONSTEVAL
   {
     while (__first1 != __last1)
     {
@@ -655,7 +654,7 @@ template <class _Alloc,
 _CCCL_API inline _CCCL_CONSTEXPR_CXX20 _Iter2
 __uninitialized_allocator_move_if_noexcept(_Alloc&, _Iter1 __first1, _Iter1 __last1, _Iter2 __first2)
 {
-  if (::cuda::std::is_constant_evaluated())
+  _CCCL_IF_CONSTEVAL
   {
     while (__first1 != __last1)
     {

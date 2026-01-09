@@ -14,9 +14,8 @@
 #include <cuda/std/detail/__config>
 
 // Use the CCCL compiler detection
-#define TEST_COMPILER(...)       _CCCL_COMPILER(__VA_ARGS__)
-#define TEST_CUDA_COMPILER(...)  _CCCL_CUDA_COMPILER(__VA_ARGS__)
-#define TEST_HAS_CUDA_COMPILER() _CCCL_HAS_CUDA_COMPILER()
+#define TEST_COMPILER(...)      _CCCL_COMPILER(__VA_ARGS__)
+#define TEST_CUDA_COMPILER(...) _CCCL_CUDA_COMPILER(__VA_ARGS__)
 
 // Use the CCCL diagnostic suppression
 #define TEST_DIAG_SUPPRESS_CLANG(...) _CCCL_DIAG_SUPPRESS_CLANG(__VA_ARGS__)
@@ -48,7 +47,7 @@
 #define TEST_HAS_SPACESHIP() _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
 
 #if defined(_CCCL_BUILTIN_IS_CONSTANT_EVALUATED)
-#  define TEST_IS_CONSTANT_EVALUATED() cuda::std::is_constant_evaluated()
+#  define TEST_IS_CONSTANT_EVALUATED() _CCCL_BUILTIN_IS_CONSTANT_EVALUATED()
 #else
 #  define TEST_IS_CONSTANT_EVALUATED() false
 #endif
@@ -81,9 +80,6 @@
 #      define TEST_HAS_TIMESPEC_GET
 #      define TEST_HAS_C11_FEATURES
 #    endif
-#  elif defined(_LIBCUDACXX_HAS_MUSL_LIBC)
-#    define TEST_HAS_C11_FEATURES
-#    define TEST_HAS_TIMESPEC_GET
 #  endif
 #endif
 

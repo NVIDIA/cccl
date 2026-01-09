@@ -29,7 +29,6 @@
 THRUST_NAMESPACE_BEGIN
 namespace system::detail::internal
 {
-
 template <typename IndexType>
 class index_range
 {
@@ -112,6 +111,5 @@ private:
   index_type m_small_interval;
   index_type m_large_interval;
 };
-
 } // namespace system::detail::internal
 THRUST_NAMESPACE_END

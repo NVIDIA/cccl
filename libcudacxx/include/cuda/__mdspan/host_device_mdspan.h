@@ -32,6 +32,7 @@
 #include <cuda/std/__type_traits/remove_all_extents.h>
 #include <cuda/std/__type_traits/remove_pointer.h>
 #include <cuda/std/__type_traits/remove_reference.h>
+#include <cuda/std/__utility/delegate_constructors.h>
 #include <cuda/std/mdspan>
 
 #include <cuda/std/__cccl/prologue.h>
@@ -45,7 +46,7 @@ template <typename _ElementType,
 class host_mdspan : public ::cuda::std::mdspan<_ElementType, _Extents, _LayoutPolicy, host_accessor<_AccessorPolicy>>
 {
 public:
-  _LIBCUDACXX_DELEGATE_CONSTRUCTORS(
+  _CCCL_DELEGATE_CONSTRUCTORS(
     host_mdspan, ::cuda::std::mdspan, _ElementType, _Extents, _LayoutPolicy, host_accessor<_AccessorPolicy>);
 
   _CCCL_API friend constexpr void swap(host_mdspan& __x, host_mdspan& __y) noexcept
@@ -105,7 +106,7 @@ class device_mdspan
     : public ::cuda::std::mdspan<_ElementType, _Extents, _LayoutPolicy, device_accessor<_AccessorPolicy>>
 {
 public:
-  _LIBCUDACXX_DELEGATE_CONSTRUCTORS(
+  _CCCL_DELEGATE_CONSTRUCTORS(
     device_mdspan, ::cuda::std::mdspan, _ElementType, _Extents, _LayoutPolicy, device_accessor<_AccessorPolicy>);
 
   _CCCL_API friend constexpr void swap(device_mdspan& __x, device_mdspan& __y) noexcept
@@ -167,7 +168,7 @@ class managed_mdspan
     : public ::cuda::std::mdspan<_ElementType, _Extents, _LayoutPolicy, managed_accessor<_AccessorPolicy>>
 {
 public:
-  _LIBCUDACXX_DELEGATE_CONSTRUCTORS(
+  _CCCL_DELEGATE_CONSTRUCTORS(
     managed_mdspan, ::cuda::std::mdspan, _ElementType, _Extents, _LayoutPolicy, managed_accessor<_AccessorPolicy>);
 
   _CCCL_API friend constexpr void swap(managed_mdspan& __x, managed_mdspan& __y) noexcept

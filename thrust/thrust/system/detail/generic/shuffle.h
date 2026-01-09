@@ -35,7 +35,6 @@
 THRUST_NAMESPACE_BEGIN
 namespace system::detail::generic
 {
-
 template <typename ExecutionPolicy, typename RandomIterator, typename URBG>
 _CCCL_HOST_DEVICE void
 shuffle(thrust::execution_policy<ExecutionPolicy>& exec, RandomIterator first, RandomIterator last, URBG&& g);
@@ -47,7 +46,6 @@ _CCCL_HOST_DEVICE void shuffle_copy(
   RandomIterator last,
   OutputIterator result,
   URBG&& g);
-
 } // namespace system::detail::generic
 THRUST_NAMESPACE_END
 

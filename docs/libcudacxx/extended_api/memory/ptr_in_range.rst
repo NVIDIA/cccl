@@ -3,7 +3,7 @@
 ``cuda::ptr_in_range``
 ======================
 
-Defined in ``<cuda/memory>`` header.
+Defined in the header ``<cuda/memory>``.
 
 .. code:: cuda
 
@@ -11,7 +11,7 @@ Defined in ``<cuda/memory>`` header.
 
    template <typename T>
    [[nodiscard]] __host__ __device__ constexpr
-   bool ptr_in_range(T* ptr, T* start, T* end) noexcept
+   bool ptr_in_range(T* ptr, T* start, T* end) noexcept;
 
    } // namespace cuda
 
@@ -64,4 +64,4 @@ Example
         return 0;
     }
 
-`See it on Godbolt 🔗 <https://godbolt.org/z/6Ybevcr5e>`_
+`See it on Godbolt 🔗 <https://godbolt.org/z/sMz76hGEc>`__

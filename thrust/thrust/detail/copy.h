@@ -48,7 +48,6 @@ OutputIterator copy_n(InputIterator first, Size n, OutputIterator result);
 
 namespace detail
 {
-
 template <typename FromSystem, typename ToSystem, typename InputIterator, typename OutputIterator>
 _CCCL_HOST_DEVICE OutputIterator two_system_copy(
   const thrust::execution_policy<FromSystem>& from_system,
@@ -64,7 +63,6 @@ _CCCL_HOST_DEVICE OutputIterator two_system_copy_n(
   InputIterator first,
   Size n,
   OutputIterator result);
-
 } // namespace detail
 
 THRUST_NAMESPACE_END

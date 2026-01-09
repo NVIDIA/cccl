@@ -33,10 +33,8 @@
 
 namespace cuda::experimental::stf
 {
-
 namespace reserved
 {
-
 const uint32_t kEmpty = 0xffffffff;
 
 /**
@@ -59,7 +57,6 @@ public:
 
 /* Default capacity */
 const ::std::uint32_t kHashTableCapacity = 64 * 1024 * 1024;
-
 } // end namespace reserved
 
 /**
@@ -258,5 +255,4 @@ struct hash<hashtable>
     return ::std::hash<reserved::KeyValue*>{}(s.addr);
   }
 };
-
 } // end namespace cuda::experimental::stf

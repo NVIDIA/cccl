@@ -112,7 +112,6 @@ template <class... _As>
 using __nothrow_decay_copyable_t _CCCL_NODEBUG_ALIAS = ::cuda::std::bool_constant<__nothrow_decay_copyable<_As...>>;
 
 using ::cuda::std::__call_result_t;
-
 } // namespace cuda::experimental
 
 #include <cuda/std/__cccl/epilogue.h>

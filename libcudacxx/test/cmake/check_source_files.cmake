@@ -14,7 +14,8 @@ function(count_substrings input search_regex output_var)
 endfunction()
 
 set(found_errors 0)
-file(GLOB_RECURSE libcudacxx_srcs
+file(
+  GLOB_RECURSE libcudacxx_srcs
   RELATIVE "${LIBCUDACXX_SOURCE_DIR}"
   "${LIBCUDACXX_SOURCE_DIR}/include/cuda/*"
   "${LIBCUDACXX_SOURCE_DIR}/include/nv/*"
@@ -36,15 +37,16 @@ list(FILTER libcudacxx_srcs EXCLUDE REGEX "^include/cuda/std/detail/libcxx/")
 # <memory>    -> <cuda/std/__cccl/memory_wrapper.h>
 # <numeric>   -> <cuda/std/__cccl/numeric_wrapper.h>
 #
-set(stdpar_header_exclusions
+set(
+  stdpar_header_exclusions
   include/cuda/std/__cccl/algorithm_wrapper.h
   include/cuda/std/__cccl/memory_wrapper.h
   include/cuda/std/__cccl/numeric_wrapper.h
 )
 
 set(algorithm_regex "#[ \t]*include[ \t]+<algorithm>")
-set(memory_regex    "#[ \t]*include[ \t]+<memory>")
-set(numeric_regex   "#[ \t]*include[ \t]+<numeric>")
+set(memory_regex "#[ \t]*include[ \t]+<memory>")
+set(numeric_regex "#[ \t]*include[ \t]+<numeric>")
 
 # Validation check for the above regex pattern:
 count_substrings([=[
@@ -54,19 +56,22 @@ count_substrings([=[
 # include  <algorithm>
 # include  <algorithm> // ...
 ]=]
-  ${algorithm_regex} valid_count)
+  ${algorithm_regex} valid_count
+)
 if (NOT valid_count EQUAL 5)
-  message(FATAL_ERROR "Validation of stdpar header regex failed: "
-    "Matched ${valid_count} times, expected 5.")
+  message(
+    FATAL_ERROR
+    "Validation of stdpar header regex failed: "
+    "Matched ${valid_count} times, expected 5."
+  )
 endif()
 
 ################################################################################
 # Read source files:
-foreach(src ${libcudacxx_srcs})
+foreach (src ${libcudacxx_srcs})
   if (IS_DIRECTORY "${LIBCUDACXX_SOURCE_DIR}/${src}")
     continue()
   endif()
-
 
   file(READ "${LIBCUDACXX_SOURCE_DIR}/${src}" src_contents)
 
@@ -76,17 +81,23 @@ foreach(src ${libcudacxx_srcs})
     count_substrings("${src_contents}" "${numeric_regex}" numeric_count)
 
     if (NOT algorithm_count EQUAL 0)
-      message("'${src}' includes the <algorithm> header. Replace with <cuda/std/__cccl/algorithm_wrapper.h>.")
+      message(
+        "'${src}' includes the <algorithm> header. Replace with <cuda/std/__cccl/algorithm_wrapper.h>."
+      )
       set(found_errors 1)
     endif()
 
     if (NOT memory_count EQUAL 0)
-      message("'${src}' includes the <memory> header. Replace with <cuda/std/__cccl/memory_wrapper.h>.")
+      message(
+        "'${src}' includes the <memory> header. Replace with <cuda/std/__cccl/memory_wrapper.h>."
+      )
       set(found_errors 1)
     endif()
 
     if (NOT numeric_count EQUAL 0)
-      message("'${src}' includes the <numeric> header. Replace with <cuda/std/__cccl/numeric_wrapper.h>.")
+      message(
+        "'${src}' includes the <numeric> header. Replace with <cuda/std/__cccl/numeric_wrapper.h>."
+      )
       set(found_errors 1)
     endif()
   endif()

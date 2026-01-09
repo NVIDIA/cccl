@@ -87,6 +87,36 @@ struct Tuple
   __host__ __device__ Tuple(Empty&&) noexcept {}
 };
 
+struct ConvertibleToInt
+{
+  __host__ __device__ constexpr operator int() const
+  {
+    return 42;
+  }
+};
+
+struct NothrowConvertibleToInt
+{
+  __host__ __device__ constexpr operator int() const noexcept
+  {
+    return 42;
+  }
+};
+
+__host__ __device__ void test_is_nothrow_constructible_only_conversion()
+{
+  {
+    static_assert(cuda::std::is_constructible_v<int, ConvertibleToInt>);
+    static_assert(!cuda::std::is_nothrow_constructible<int, ConvertibleToInt>::value);
+    static_assert(!cuda::std::is_nothrow_constructible_v<int, ConvertibleToInt>);
+  }
+  {
+    static_assert(cuda::std::is_constructible_v<int, NothrowConvertibleToInt>);
+    static_assert(cuda::std::is_nothrow_constructible<int, NothrowConvertibleToInt>::value);
+    static_assert(cuda::std::is_nothrow_constructible_v<int, NothrowConvertibleToInt>);
+  }
+}
+
 int main(int, char**)
 {
   test_is_nothrow_constructible<int>();
@@ -102,6 +132,9 @@ int main(int, char**)
 
   static_assert(!cuda::std::is_constructible<Tuple&, Empty>::value, "");
   test_is_not_nothrow_constructible<Tuple&, Empty>(); // See bug #19616.
+
+  // conversion only types
+  test_is_nothrow_constructible_only_conversion();
 
   return 0;
 }

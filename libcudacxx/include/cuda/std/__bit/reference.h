@@ -111,7 +111,7 @@ public:
     return __bit_iterator<_Cp, false>(__seg_, static_cast<unsigned>(::cuda::std::countr_zero(__mask_)));
   }
 
-  friend _CCCL_API constexpr void swap(__bit_reference<_Cp> __x, __bit_reference<_Cp> __y) noexcept
+  _CCCL_API friend constexpr void swap(__bit_reference<_Cp> __x, __bit_reference<_Cp> __y) noexcept
   {
     bool __t = __x;
     __x      = __y;
@@ -119,21 +119,21 @@ public:
   }
 
   template <class _Dp>
-  friend _CCCL_API constexpr void swap(__bit_reference<_Cp> __x, __bit_reference<_Dp> __y) noexcept
+  _CCCL_API friend constexpr void swap(__bit_reference<_Cp> __x, __bit_reference<_Dp> __y) noexcept
   {
     bool __t = __x;
     __x      = __y;
     __y      = __t;
   }
 
-  friend _CCCL_API constexpr void swap(__bit_reference<_Cp> __x, bool& __y) noexcept
+  _CCCL_API friend constexpr void swap(__bit_reference<_Cp> __x, bool& __y) noexcept
   {
     bool __t = __x;
     __x      = __y;
     __y      = __t;
   }
 
-  friend _CCCL_API constexpr void swap(bool& __x, __bit_reference<_Cp> __y) noexcept
+  _CCCL_API friend constexpr void swap(bool& __x, __bit_reference<_Cp> __y) noexcept
   {
     bool __t = __x;
     __x      = __y;
@@ -806,7 +806,7 @@ struct __bit_array
   _CCCL_API constexpr explicit __bit_array(difference_type __s)
       : __size_(__s)
   {
-    if (::cuda::std::is_constant_evaluated())
+    _CCCL_IF_CONSTEVAL
     {
       for (size_t __i = 0; __i != __bit_array<_Cp>::_Np; ++__i)
       {

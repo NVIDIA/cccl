@@ -209,9 +209,9 @@ consumption and system instability.
 
     mkdir -p build
     cd build
-    cmake .. --preset cudax-cpp17
-    cd cudax-cpp17
-    ninja cudax.cpp17.examples.stf -j4
+    cmake .. --preset cudax
+    cd cudax
+    ninja cudax.examples.stf -j4
 
 To launch examples, simply run binaries under the `bin/`
 subdirectory in the current directory. For instance, to launch the `01-axpy`
@@ -2015,6 +2015,47 @@ or an ``rw()`` access. There is no need to set any content in the token
 A token corresponds to a ``logical_data<void_interface>`` object, so that the
 ``token`` type serves as a short-hand for this type. ``ctx.token()`` thus
 returns an object with a ``token`` type.
+
+Debugging
+---------
+
+Enabling internal checks
+^^^^^^^^^^^^^^^^^^^^^^^^
+
+CUDASTF includes internal assertions (``_CCCL_ASSERT``) that help detect
+programming errors and invalid usage patterns during development. These checks
+are disabled by default for performance but can be enabled to aid debugging.
+
+**With CMake:**
+
+When building in Debug mode, assertions are enabled automatically:
+
+.. code:: bash
+
+   cmake -DCMAKE_BUILD_TYPE=Debug ..
+
+To explicitly enable assertions for any build type, add the compile definition
+to your target:
+
+.. code:: cmake
+
+   target_compile_definitions(your_target PRIVATE CCCL_ENABLE_ASSERTIONS)
+
+**With Makefile or manual compilation:**
+
+Add the ``-DCCCL_ENABLE_ASSERTIONS`` flag to your compiler invocation:
+
+.. code:: bash
+
+   # For nvcc
+   nvcc -DCCCL_ENABLE_ASSERTIONS ...
+
+   # For host compiler
+   g++ -DCCCL_ENABLE_ASSERTIONS ...
+
+Note that this flag enables the assertion checks themselves. For full debugging
+support (setting breakpoints, inspecting variables), you may also want to add
+debug symbol flags (``-g`` for host code, ``-G`` for device code).
 
 Tools
 -----

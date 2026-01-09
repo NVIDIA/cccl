@@ -100,14 +100,11 @@ struct double_sized_sentinel
   __host__ __device__ friend int operator-(double*, double_sized_sentinel);
 };
 
-namespace cuda
-{
-namespace std
+namespace cuda::std
 {
 template <>
 inline constexpr bool disable_sized_sentinel_for<double_sized_sentinel, double*> = true;
-}
-} // namespace cuda
+} // namespace cuda::std
 
 static_assert(!cuda::std::sized_sentinel_for<double_sized_sentinel, double*>, "");
 

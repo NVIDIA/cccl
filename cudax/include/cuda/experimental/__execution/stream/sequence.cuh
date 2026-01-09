@@ -41,7 +41,6 @@ namespace cuda::experimental::execution
 //                   "The CUDA stream scheduler does not yet support the 'sequence' algorithm.");
 //   }
 // };
-
 } // namespace cuda::experimental::execution
 
 #include <cuda/experimental/__execution/epilogue.cuh>

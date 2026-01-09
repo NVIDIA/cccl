@@ -33,7 +33,6 @@ THRUST_NAMESPACE_BEGIN
 
 namespace detail
 {
-
 // introduce an intermediate type tuple_meta_transform_WAR_NVCC
 // rather than directly specializing tuple_meta_transform with
 // default argument IndexSequence = thrust::make_index_sequence<thrust::tuple_size<Tuple>::value>
@@ -55,7 +54,6 @@ struct tuple_meta_transform
                                            UnaryMetaFunction,
                                            thrust::make_index_sequence<thrust::tuple_size<Tuple>::value>>::type;
 };
-
 } // namespace detail
 
 THRUST_NAMESPACE_END

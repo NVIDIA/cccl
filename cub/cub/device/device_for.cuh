@@ -35,7 +35,6 @@ CUB_NAMESPACE_BEGIN
 
 namespace detail::for_each
 {
-
 /**
  * `op_wrapper_t` turns bulk into a for-each operation by wrapping the user-provided unary operator.
  */
@@ -96,7 +95,6 @@ struct op_wrapper_vectorized_t
     }
   }
 };
-
 } // namespace detail::for_each
 
 struct DeviceFor

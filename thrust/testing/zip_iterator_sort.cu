@@ -17,10 +17,10 @@ struct TestZipIteratorStableSort
     device_vector<T> d2 = h2;
 
     // sort on host
-    stable_sort(make_zip_iterator(h1.begin(), h2.begin()), make_zip_iterator(h1.end(), h2.end()));
+    thrust::stable_sort(make_zip_iterator(h1.begin(), h2.begin()), make_zip_iterator(h1.end(), h2.end()));
 
     // sort on device
-    stable_sort(make_zip_iterator(d1.begin(), d2.begin()), make_zip_iterator(d1.end(), d2.end()));
+    thrust::stable_sort(make_zip_iterator(d1.begin(), d2.begin()), make_zip_iterator(d1.end(), d2.end()));
 
     ASSERT_EQUAL_QUIET(h1, d1);
     ASSERT_EQUAL_QUIET(h2, d2);

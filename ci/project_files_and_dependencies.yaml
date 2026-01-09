@@ -1,0 +1,206 @@
+# Configuration for CCCL project change detection.
+# Projects are declared in this file along with their human-friendly names, path
+# matching patterns, and dependency relationships. Every path pattern is
+# evaluated as a regular expression anchored to the repository root.
+#
+# Changed files that satisfy a project's include_regexes, exclude_regexes, and
+# exclude_project_files checks will mark that project as "dirty". The current project
+# will be added to the FULL_BUILD if it has dirty files or if any of its
+# full_dependencies are dirty.
+#
+# Additionally, if any of a project's lite_dependencies are dirty, the current project
+# will be added to the LITE_BUILD.
+#
+# If any transitive dependencies are dirty (eg. a full or lite dependency has
+# dirty dependencies of its own), the current project will also be added to the LITE_BUILD.
+#
+# Projects with large dependency trees are split into "public" and "internal" sub-projects.
+# The "public" sub-project contains only the public API files, while the "internal"
+# sub-project contains tests, examples, and other non-public files. This allows changes to
+# internal files to avoid triggering rebuilds of dependent projects when the public API
+# is not changed.
+#
+# Layout:
+#   project_key:          mapping from project key to configuration
+#     name:               display name used in logs/reports
+#     matrix_project:     project name to use for matrix generation. If not provided,
+#                           the project is considered internal-only and will not be listed
+#                           in the FULL_BUILD or LITE_BUILD outputs.
+#     lite_dependencies:  Add the current project to the `lite` matrix if any of these
+#                           dependencies are dirty.
+#     full_dependencies:  Add the current project to the `full` matrix if any of these
+#                           dependencies are dirty.
+#     include_regexes:    regexes that match files for this project
+#     exclude_regexes:    regexes that exclude files from the included set
+#     exclude_project_files: list of other project keys whose files should be
+#                           excluded from this project
+
+projects:
+  # `core` collects any dirty files that are not matched by other projects. It
+  # never appears in dependency lists because the script treats it specially,
+  # triggering a full rebuild of all projects when any core file is dirty.
+  core:
+    name: "CCCL Infrastructure"
+
+  libcudacxx_public:
+    name: "libcu++ Public API"
+    lite_dependencies: ['thrust_public', 'cub_public']
+    full_dependencies: []
+    include_regexes: ["libcudacxx/include/"]
+
+  libcudacxx_internal:
+    name: "libcu++ Tests/Infra"
+    matrix_project: "libcudacxx"
+    lite_dependencies: []
+    full_dependencies: [libcudacxx_public]
+    include_regexes: ["libcudacxx/"]
+    exclude_project_files: [libcudacxx_public]
+
+  cub_public:
+    name: "CUB Public API"
+    lite_dependencies: [libcudacxx_public, thrust_public]
+    full_dependencies: []
+    include_regexes: ["cub/cub/"]
+
+  cub_internal:
+    name: "CUB Tests/Infra"
+    matrix_project: "cub"
+    lite_dependencies: [c2h, nvbench_helper]
+    full_dependencies: [cub_public]
+    include_regexes: ["cub/"]
+    exclude_project_files: [cub_public]
+
+  thrust_public:
+    name: "Thrust Public API"
+    lite_dependencies: [libcudacxx_public, cub_public]
+    full_dependencies: []
+    include_regexes: ["thrust/thrust/"]
+
+  thrust_internal:
+    name: "Thrust Tests/Infra"
+    matrix_project: "thrust"
+    lite_dependencies: [nvbench_helper]
+    full_dependencies: [thrust_public]
+    include_regexes: ["thrust/"]
+    exclude_project_files: [thrust_public]
+
+  cudax_public:
+    name: "CUDA Experimental Public API"
+    lite_dependencies: [libcudacxx_public, thrust_public, cub_public]
+    full_dependencies: []
+    include_regexes: ["cudax/include/"]
+
+  cudax_internal:
+    name: "CUDA Experimental Tests/Infra"
+    matrix_project: "cudax"
+    lite_dependencies: [c2h, nvbench_helper]
+    full_dependencies: [cudax_public]
+    include_regexes: ["cudax/"]
+    exclude_project_files: [cudax_public]
+
+  cccl_c_parallel_public:
+    name: "CCCL C Parallel Library Public API"
+    lite_dependencies: [libcudacxx_public, cub_public, thrust_public]
+    full_dependencies: []
+    include_regexes:
+      - "c/parallel/include/"
+      - "c/parallel/src/"
+
+  cccl_c_parallel_internal:
+    name: "CCCL C Parallel Library Tests/Infra"
+    matrix_project: "cccl_c_parallel"
+    lite_dependencies: [c2h]
+    full_dependencies: [cccl_c_parallel_public]
+    include_regexes: ["c/parallel/"]
+    exclude_project_files: [cccl_c_parallel_public]
+
+  cccl_c_stf:
+    name: "CCCL C CUDASTF Library"
+    matrix_project: "cccl_c_stf"
+    lite_dependencies: [libcudacxx_public, cudax_public, c2h]
+    full_dependencies: []
+    include_regexes:  ["c/experimental/stf/"]
+    exclude_regexes: []
+
+  python:
+    name: "Python"
+    matrix_project: "python"
+    lite_dependencies: [cccl_c_parallel_public]
+    full_dependencies: []
+    include_regexes:
+    - "python/"
+    - "pyproject.toml"
+
+  packaging:
+    name: "CCCL Packaging"
+    matrix_project: "packaging"
+    # Anything that affects CMake packages / install rules:
+    lite_dependencies:
+      - libcudacxx_internal
+      - libcudacxx_public
+      - cub_internal
+      - cub_public
+      - thrust_internal
+      - thrust_public
+      - cudax_internal
+      - cudax_public
+    full_dependencies: []
+    include_regexes:
+      - "examples/"
+      - "test/cmake/"
+      - "ci/test/"
+
+  stdpar:
+    name: "stdpar"
+    matrix_project: "stdpar"
+    lite_dependencies: [thrust_public]
+    full_dependencies: []
+    include_regexes: ["test/stdpar/"]
+
+  c2h:
+    name: "Catch2Helper"
+    lite_dependencies: [libcudacxx_public, cub_public, thrust_public]
+    full_dependencies: []
+    include_regexes: ["c2h/"]
+
+  nvbench_helper:
+    name: "NVBench Helper"
+    matrix_project: "nvbench_helper"
+    lite_dependencies: [libcudacxx_public, cub_public, thrust_public]
+    full_dependencies: []
+    include_regexes:
+      - "nvbench_helper/"
+      # CCCLBenchmarkRegistry.cmake is effectively part of nvbench_helper:
+      - "benchmarks/cmake/"
+
+# Files matching any of these regexes will be ignored globally.
+ignore_regexes:
+  - '.+\.md$'
+  - '\.clang-format'
+  - '\.clangd'
+  - '\.devcontainer/img'
+  - '\.git-blame-ignore-revs'
+  - '\.github/actions/docs-build'
+  - '\.github/CODEOWNERS'
+  - '\.github/copy-pr-bot\.yaml'
+  - '\.github/ISSUE_TEMPLATE/'
+  - '\.github/problem-matchers/problem-matcher\.json'
+  - '\.github/workflows/backport-prs\.yml'
+  - '\.github/workflows/build-docs\.yml'
+  - '\.github/workflows/build-matx\.yml'
+  - '\.github/workflows/build-pytorch\.yml'
+  - '\.github/workflows/build-rapids\.yml'
+  - '\.github/workflows/git-bisect\.yml'
+  - '\.github/workflows/project_automation.*\.yml'
+  - '\.github/workflows/release.*\.yml'
+  - '\.github/workflows/triage_rotation\.yml'
+  - '\.github/workflows/update_branch_version\.yml'
+  - '\.github/workflows/verify-devcontainers\.yml'
+  - '\.gitignore'
+  - "benchmarks/scripts/" # Python+bash scripts for running benchmarks, not used in tests.
+  - 'cccl-version.json'
+  - 'ci/matx/'
+  - 'ci/pytorch/'
+  - 'ci/rapids/'
+  - 'docs/'
+  - 'LICENSE'

@@ -30,7 +30,8 @@
 #  pragma system_header
 #endif // no system header
 #include <thrust/detail/execution_policy.h>
-#include <thrust/pair.h>
+
+#include <cuda/std/__utility/pair.h>
 
 THRUST_NAMESPACE_BEGIN
 
@@ -384,7 +385,7 @@ merge(InputIterator1 first1,
  *  int keys_result[13];
  *  int vals_result[13];
  *
- *  thrust::pair<int*,int*> end =
+ *  cuda::std::pair<int*,int*> end =
  *    thrust::merge_by_key(thrust::host,
  *                         A_keys, A_keys + 6,
  *                         B_keys, B_keys + 7,
@@ -406,7 +407,7 @@ template <typename DerivedPolicy,
           typename InputIterator4,
           typename OutputIterator1,
           typename OutputIterator2>
-_CCCL_HOST_DEVICE thrust::pair<OutputIterator1, OutputIterator2> merge_by_key(
+_CCCL_HOST_DEVICE ::cuda::std::pair<OutputIterator1, OutputIterator2> merge_by_key(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   InputIterator1 keys_first1,
   InputIterator1 keys_last1,
@@ -486,7 +487,7 @@ _CCCL_HOST_DEVICE thrust::pair<OutputIterator1, OutputIterator2> merge_by_key(
  *  int keys_result[13];
  *  int vals_result[13];
  *
- *  thrust::pair<int*,int*> end = thrust::merge_by_key(A_keys, A_keys + 6, B_keys, B_keys + 7, A_vals, B_vals,
+ *  cuda::std::pair<int*,int*> end = thrust::merge_by_key(A_keys, A_keys + 6, B_keys, B_keys + 7, A_vals, B_vals,
  * keys_result, vals_result);
  *
  *  // keys_result = {1, 1, 1, 2, 3, 3, 5, 5, 7, 8, 9, 11, 13}
@@ -503,7 +504,7 @@ template <typename InputIterator1,
           typename InputIterator4,
           typename OutputIterator1,
           typename OutputIterator2>
-thrust::pair<OutputIterator1, OutputIterator2> merge_by_key(
+::cuda::std::pair<OutputIterator1, OutputIterator2> merge_by_key(
   InputIterator1 keys_first1,
   InputIterator1 keys_last1,
   InputIterator2 keys_first2,
@@ -585,7 +586,7 @@ thrust::pair<OutputIterator1, OutputIterator2> merge_by_key(
  *  int keys_result[13];
  *  int vals_result[13];
  *
- *  thrust::pair<int*,int*> end =
+ *  cuda::std::pair<int*,int*> end =
  *    thrust::merge_by_key(thrust::host,
  *                         A_keys, A_keys + 6,
  *                         B_keys, B_keys + 7,
@@ -609,7 +610,7 @@ template <typename DerivedPolicy,
           typename OutputIterator1,
           typename OutputIterator2,
           typename Compare>
-_CCCL_HOST_DEVICE thrust::pair<OutputIterator1, OutputIterator2> merge_by_key(
+_CCCL_HOST_DEVICE ::cuda::std::pair<OutputIterator1, OutputIterator2> merge_by_key(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   InputIterator1 keys_first1,
   InputIterator1 keys_last1,
@@ -688,7 +689,7 @@ _CCCL_HOST_DEVICE thrust::pair<OutputIterator1, OutputIterator2> merge_by_key(
  *  int keys_result[13];
  *  int vals_result[13];
  *
- *  thrust::pair<int*,int*> end = thrust::merge_by_key(A_keys, A_keys + 6, B_keys, B_keys + 7, A_vals, B_vals,
+ *  cuda::std::pair<int*,int*> end = thrust::merge_by_key(A_keys, A_keys + 6, B_keys, B_keys + 7, A_vals, B_vals,
  * keys_result, vals_result, ::cuda::std::greater<int>());
  *
  *  // keys_result = {13, 11, 9, 8, 7, 5, 5, 3, 3, 2, 1, 1, 1}
@@ -706,7 +707,7 @@ template <typename InputIterator1,
           typename OutputIterator1,
           typename OutputIterator2,
           typename StrictWeakCompare>
-thrust::pair<OutputIterator1, OutputIterator2> merge_by_key(
+::cuda::std::pair<OutputIterator1, OutputIterator2> merge_by_key(
   InputIterator1 keys_first1,
   InputIterator1 keys_last1,
   InputIterator2 keys_first2,

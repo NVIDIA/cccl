@@ -33,9 +33,8 @@
 THRUST_NAMESPACE_BEGIN
 namespace system::detail::generic
 {
-
 template <typename DerivedPolicy, typename InputIterator1, typename InputIterator2>
-_CCCL_HOST_DEVICE thrust::pair<InputIterator1, InputIterator2> mismatch(
+_CCCL_HOST_DEVICE ::cuda::std::pair<InputIterator1, InputIterator2> mismatch(
   thrust::execution_policy<DerivedPolicy>& exec, InputIterator1 first1, InputIterator1 last1, InputIterator2 first2)
 {
   using namespace thrust::placeholders;
@@ -44,7 +43,7 @@ _CCCL_HOST_DEVICE thrust::pair<InputIterator1, InputIterator2> mismatch(
 } // end mismatch()
 
 template <typename DerivedPolicy, typename InputIterator1, typename InputIterator2, typename BinaryPredicate>
-_CCCL_HOST_DEVICE thrust::pair<InputIterator1, InputIterator2> mismatch(
+_CCCL_HOST_DEVICE ::cuda::std::pair<InputIterator1, InputIterator2> mismatch(
   thrust::execution_policy<DerivedPolicy>& exec,
   InputIterator1 first1,
   InputIterator1 last1,
@@ -61,8 +60,8 @@ _CCCL_HOST_DEVICE thrust::pair<InputIterator1, InputIterator2> mismatch(
   ZipIterator result =
     thrust::find_if_not(exec, zipped_first, zipped_last, thrust::detail::tuple_binary_predicate<BinaryPredicate>{pred});
 
-  return thrust::make_pair(thrust::get<0>(result.get_iterator_tuple()), thrust::get<1>(result.get_iterator_tuple()));
+  return ::cuda::std::make_pair(
+    thrust::get<0>(result.get_iterator_tuple()), thrust::get<1>(result.get_iterator_tuple()));
 } // end mismatch()
-
 } // namespace system::detail::generic
 THRUST_NAMESPACE_END

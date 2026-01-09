@@ -36,7 +36,6 @@ namespace system::detail::generic
 {
 namespace detail
 {
-
 template <typename DerivedPolicy, typename ForwardIterator, typename T>
 _CCCL_HOST_DEVICE void uninitialized_fill(
   thrust::execution_policy<DerivedPolicy>& exec,
@@ -84,7 +83,6 @@ _CCCL_HOST_DEVICE ForwardIterator uninitialized_fill_n(
 
   return thrust::for_each_n(exec, first, n, thrust::detail::uninitialized_fill_functor<ValueType>{x});
 } // end uninitialized_fill()
-
 } // namespace detail
 
 template <typename DerivedPolicy, typename ForwardIterator, typename T>
@@ -110,6 +108,5 @@ uninitialized_fill_n(thrust::execution_policy<DerivedPolicy>& exec, ForwardItera
   return thrust::system::detail::generic::detail::uninitialized_fill_n(
     exec, first, n, x, ValueTypeHasTrivialCopyConstructor());
 } // end uninitialized_fill()
-
 } // namespace system::detail::generic
 THRUST_NAMESPACE_END

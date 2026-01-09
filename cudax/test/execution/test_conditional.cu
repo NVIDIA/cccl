@@ -55,5 +55,4 @@ C2H_TEST("simple use of conditional runs exactly one of the two closures", "[ada
     CHECK(odd == (i % 2 == 1));
   }
 }
-
 } // namespace

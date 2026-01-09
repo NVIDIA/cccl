@@ -32,15 +32,42 @@
 #endif // no system header
 #include <thrust/detail/reference_forward_declaration.h>
 #include <thrust/iterator/iterator_traits.h>
-#include <thrust/system/detail/adl/assign_value.h>
-#include <thrust/system/detail/adl/get_value.h>
-#include <thrust/system/detail/adl/iter_swap.h>
 #include <thrust/system/detail/generic/memory.h>
 #include <thrust/system/detail/generic/select_system.h>
 
-#include <cuda/std/type_traits>
+#include <cuda/std/__type_traits/enable_if.h>
+#include <cuda/std/__type_traits/is_convertible.h>
+#include <cuda/std/__type_traits/remove_cvref.h>
+#include <cuda/std/__utility/move.h>
 
 #include <ostream>
+
+// Include all active backend system implementations (sequential, host and device) (there is no generic implementation)
+#include <thrust/system/detail/sequential/assign_value.h>
+#include <thrust/system/detail/sequential/get_value.h>
+#include <thrust/system/detail/sequential/iter_swap.h>
+#include __THRUST_HOST_SYSTEM_ALGORITH_DETAIL_HEADER_INCLUDE(assign_value.h)
+#include __THRUST_HOST_SYSTEM_ALGORITH_DETAIL_HEADER_INCLUDE(get_value.h)
+#include __THRUST_HOST_SYSTEM_ALGORITH_DETAIL_HEADER_INCLUDE(iter_swap.h)
+#include __THRUST_DEVICE_SYSTEM_ALGORITH_DETAIL_HEADER_INCLUDE(assign_value.h)
+#include __THRUST_DEVICE_SYSTEM_ALGORITH_DETAIL_HEADER_INCLUDE(get_value.h)
+#include __THRUST_DEVICE_SYSTEM_ALGORITH_DETAIL_HEADER_INCLUDE(iter_swap.h)
+
+// Some build systems need a hint to know which files we could include
+#if 0
+#  include <thrust/system/cpp/detail/assign_value.h>
+#  include <thrust/system/cpp/detail/get_value.h>
+#  include <thrust/system/cpp/detail/iter_swap.h>
+#  include <thrust/system/cuda/detail/assign_value.h>
+#  include <thrust/system/cuda/detail/get_value.h>
+#  include <thrust/system/cuda/detail/iter_swap.h>
+#  include <thrust/system/omp/detail/assign_value.h>
+#  include <thrust/system/omp/detail/get_value.h>
+#  include <thrust/system/omp/detail/iter_swap.h>
+#  include <thrust/system/tbb/detail/assign_value.h>
+#  include <thrust/system/tbb/detail/get_value.h>
+#  include <thrust/system/tbb/detail/iter_swap.h>
+#endif
 
 THRUST_NAMESPACE_BEGIN
 

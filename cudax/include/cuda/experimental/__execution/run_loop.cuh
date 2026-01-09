@@ -257,17 +257,9 @@ private:
 // it a simpler type name that is easier to read in diagnostics.
 struct _CCCL_TYPE_VISIBILITY_DEFAULT run_loop : basic_run_loop<env<>>
 {
-  struct _CCCL_TYPE_VISIBILITY_DEFAULT scheduler : basic_run_loop::scheduler
-  {};
-
-  _CCCL_API constexpr run_loop() noexcept
+  _CCCL_HIDE_FROM_ABI constexpr run_loop() noexcept
       : basic_run_loop<env<>>{env{}}
   {}
-
-  [[nodiscard]] _CCCL_API constexpr auto get_scheduler() noexcept -> scheduler
-  {
-    return scheduler{basic_run_loop::get_scheduler()};
-  }
 };
 
 template <class _Env>
@@ -307,7 +299,6 @@ _CCCL_API constexpr auto basic_run_loop<_Env>::__attrs_t::query(get_completion_d
 {
   return query(get_completion_domain<set_value_t>);
 }
-
 } // namespace cuda::experimental::execution
 
 #include <cuda/experimental/__execution/epilogue.cuh>

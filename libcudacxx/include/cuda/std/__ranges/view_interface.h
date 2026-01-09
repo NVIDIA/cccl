@@ -37,7 +37,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_CCCL_BEGIN_NAMESPACE_RANGES
+_CCCL_BEGIN_NAMESPACE_CUDA_STD_RANGES
 
 #if _CCCL_HAS_CONCEPTS()
 template <class _Tp>
@@ -176,7 +176,7 @@ public:
   }
 };
 
-_CCCL_END_NAMESPACE_RANGES
+_CCCL_END_NAMESPACE_CUDA_STD_RANGES
 
 #include <cuda/std/__cccl/epilogue.h>
 

@@ -16,6 +16,7 @@ repos:
       - id: end-of-file-fixer
       - id: mixed-line-ending
       - id: trailing-whitespace
+
   - repo: https://github.com/pre-commit/mirrors-clang-format
     rev: v20.1.7
     hooks:
@@ -54,6 +55,12 @@ repos:
       - id: taplo-format
         exclude: "^docs/"
 
+  # CMake formatting
+  - repo: https://github.com/BlankSpruce/gersemi
+    rev: 0.23.1
+    hooks:
+    - id: gersemi
+
   - repo: https://github.com/codespell-project/codespell
     rev: v2.4.1
     hooks:
@@ -65,7 +72,6 @@ repos:
             build|
             CITATION.md
           )
-
 
   - repo: https://github.com/pre-commit/mirrors-mypy
     rev: 'v1.16.1'

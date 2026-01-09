@@ -21,7 +21,6 @@ CUB_NAMESPACE_BEGIN
 
 namespace detail
 {
-
 struct TripleChevronFactory
 {
   CUB_RUNTIME_FUNCTION THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron operator()(
@@ -33,6 +32,11 @@ struct TripleChevronFactory
   CUB_RUNTIME_FUNCTION ::cudaError_t PtxVersion(int& version)
   {
     return cub::PtxVersion(version);
+  }
+
+  CUB_RUNTIME_FUNCTION ::cudaError_t PtxArchId(::cuda::arch_id& arch_id) const
+  {
+    return ptx_arch_id(arch_id);
   }
 
   _CCCL_HIDE_FROM_ABI CUB_RUNTIME_FUNCTION ::cudaError_t MultiProcessorCount(int& sm_count) const
@@ -94,7 +98,6 @@ struct TripleChevronFactory
     return cudaDeviceGetAttribute(&max_shared_memory, cudaDevAttrMaxSharedMemoryPerBlock, device);
   }
 };
-
 } // namespace detail
 
 CUB_NAMESPACE_END

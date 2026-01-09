@@ -30,7 +30,8 @@
 #  pragma system_header
 #endif // no system header
 #include <thrust/detail/execution_policy.h>
-#include <thrust/pair.h>
+
+#include <cuda/std/__utility/pair.h>
 
 THRUST_NAMESPACE_BEGIN
 
@@ -1372,8 +1373,8 @@ OutputIterator set_union(
  *  int keys_result[3];
  *  int vals_result[3];
  *
- *  thrust::pair<int*,int*> end = thrust::set_difference_by_key(thrust::host, A_keys, A_keys + 6, B_keys, B_keys + 5,
- * A_vals, B_vals, keys_result, vals_result);
+ *  cuda::std::pair<int*,int*> end = thrust::set_difference_by_key(thrust::host, A_keys, A_keys + 6, B_keys, B_keys +
+ * 5, A_vals, B_vals, keys_result, vals_result);
  *  // keys_result is now {0, 4, 6}
  *  // vals_result is now {0, 0, 0}
  *  \endcode
@@ -1391,7 +1392,7 @@ template <typename DerivedPolicy,
           typename InputIterator4,
           typename OutputIterator1,
           typename OutputIterator2>
-_CCCL_HOST_DEVICE thrust::pair<OutputIterator1, OutputIterator2> set_difference_by_key(
+_CCCL_HOST_DEVICE ::cuda::std::pair<OutputIterator1, OutputIterator2> set_difference_by_key(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   InputIterator1 keys_first1,
   InputIterator1 keys_last1,
@@ -1474,8 +1475,8 @@ _CCCL_HOST_DEVICE thrust::pair<OutputIterator1, OutputIterator2> set_difference_
  *  int keys_result[3];
  *  int vals_result[3];
  *
- *  thrust::pair<int*,int*> end = thrust::set_difference_by_key(A_keys, A_keys + 6, B_keys, B_keys + 5, A_vals, B_vals,
- * keys_result, vals_result);
+ *  cuda::std::pair<int*,int*> end = thrust::set_difference_by_key(A_keys, A_keys + 6, B_keys, B_keys + 5, A_vals,
+ * B_vals, keys_result, vals_result);
  *  // keys_result is now {0, 4, 6}
  *  // vals_result is now {0, 0, 0}
  *  \endcode
@@ -1492,7 +1493,7 @@ template <typename InputIterator1,
           typename InputIterator4,
           typename OutputIterator1,
           typename OutputIterator2>
-thrust::pair<OutputIterator1, OutputIterator2> set_difference_by_key(
+::cuda::std::pair<OutputIterator1, OutputIterator2> set_difference_by_key(
   InputIterator1 keys_first1,
   InputIterator1 keys_last1,
   InputIterator2 keys_first2,
@@ -1584,8 +1585,8 @@ thrust::pair<OutputIterator1, OutputIterator2> set_difference_by_key(
  *  int keys_result[3];
  *  int vals_result[3];
  *
- *  thrust::pair<int*,int*> end = thrust::set_difference_by_key(thrust::host, A_keys, A_keys + 6, B_keys, B_keys + 5,
- * A_vals, B_vals, keys_result, vals_result, ::cuda::std::greater<int>());
+ *  cuda::std::pair<int*,int*> end = thrust::set_difference_by_key(thrust::host, A_keys, A_keys + 6, B_keys, B_keys +
+ * 5, A_vals, B_vals, keys_result, vals_result, ::cuda::std::greater<int>());
  *  // keys_result is now {0, 4, 6}
  *  // vals_result is now {0, 0, 0}
  *  \endcode
@@ -1604,7 +1605,7 @@ template <typename DerivedPolicy,
           typename OutputIterator1,
           typename OutputIterator2,
           typename StrictWeakCompare>
-_CCCL_HOST_DEVICE thrust::pair<OutputIterator1, OutputIterator2> set_difference_by_key(
+_CCCL_HOST_DEVICE ::cuda::std::pair<OutputIterator1, OutputIterator2> set_difference_by_key(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   InputIterator1 keys_first1,
   InputIterator1 keys_last1,
@@ -1692,8 +1693,8 @@ _CCCL_HOST_DEVICE thrust::pair<OutputIterator1, OutputIterator2> set_difference_
  *  int keys_result[3];
  *  int vals_result[3];
  *
- *  thrust::pair<int*,int*> end = thrust::set_difference_by_key(A_keys, A_keys + 6, B_keys, B_keys + 5, A_vals, B_vals,
- * keys_result, vals_result, ::cuda::std::greater<int>());
+ *  cuda::std::pair<int*,int*> end = thrust::set_difference_by_key(A_keys, A_keys + 6, B_keys, B_keys + 5, A_vals,
+ * B_vals, keys_result, vals_result, ::cuda::std::greater<int>());
  *  // keys_result is now {0, 4, 6}
  *  // vals_result is now {0, 0, 0}
  *  \endcode
@@ -1711,7 +1712,7 @@ template <typename InputIterator1,
           typename OutputIterator1,
           typename OutputIterator2,
           typename StrictWeakCompare>
-thrust::pair<OutputIterator1, OutputIterator2> set_difference_by_key(
+::cuda::std::pair<OutputIterator1, OutputIterator2> set_difference_by_key(
   InputIterator1 keys_first1,
   InputIterator1 keys_last1,
   InputIterator2 keys_first2,
@@ -1800,8 +1801,8 @@ thrust::pair<OutputIterator1, OutputIterator2> set_difference_by_key(
  *  int keys_result[7];
  *  int vals_result[7];
  *
- *  thrust::pair<int*,int*> end = thrust::set_intersection_by_key(thrust::host, A_keys, A_keys + 6, B_keys, B_keys + 7,
- * A_vals, keys_result, vals_result);
+ *  cuda::std::pair<int*,int*> end = thrust::set_intersection_by_key(thrust::host, A_keys, A_keys + 6, B_keys, B_keys
+ * + 7, A_vals, keys_result, vals_result);
  *
  *  // keys_result is now {1, 3, 5}
  *  // vals_result is now {0, 0, 0}
@@ -1819,7 +1820,7 @@ template <typename DerivedPolicy,
           typename InputIterator3,
           typename OutputIterator1,
           typename OutputIterator2>
-_CCCL_HOST_DEVICE thrust::pair<OutputIterator1, OutputIterator2> set_intersection_by_key(
+_CCCL_HOST_DEVICE ::cuda::std::pair<OutputIterator1, OutputIterator2> set_intersection_by_key(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   InputIterator1 keys_first1,
   InputIterator1 keys_last1,
@@ -1901,7 +1902,7 @@ _CCCL_HOST_DEVICE thrust::pair<OutputIterator1, OutputIterator2> set_intersectio
  *  int keys_result[7];
  *  int vals_result[7];
  *
- *  thrust::pair<int*,int*> end = thrust::set_intersection_by_key(A_keys, A_keys + 6, B_keys, B_keys + 7, A_vals,
+ *  cuda::std::pair<int*,int*> end = thrust::set_intersection_by_key(A_keys, A_keys + 6, B_keys, B_keys + 7, A_vals,
  * keys_result, vals_result);
  *
  *  // keys_result is now {1, 3, 5}
@@ -1919,7 +1920,7 @@ template <typename InputIterator1,
           typename InputIterator3,
           typename OutputIterator1,
           typename OutputIterator2>
-thrust::pair<OutputIterator1, OutputIterator2> set_intersection_by_key(
+::cuda::std::pair<OutputIterator1, OutputIterator2> set_intersection_by_key(
   InputIterator1 keys_first1,
   InputIterator1 keys_last1,
   InputIterator2 keys_first2,
@@ -2010,8 +2011,8 @@ thrust::pair<OutputIterator1, OutputIterator2> set_intersection_by_key(
  *  int keys_result[7];
  *  int vals_result[7];
  *
- *  thrust::pair<int*,int*> end = thrust::set_intersection_by_key(thrust::host, A_keys, A_keys + 6, B_keys, B_keys + 7,
- * A_vals, keys_result, vals_result, ::cuda::std::greater<int>());
+ *  cuda::std::pair<int*,int*> end = thrust::set_intersection_by_key(thrust::host, A_keys, A_keys + 6, B_keys, B_keys
+ * + 7, A_vals, keys_result, vals_result, ::cuda::std::greater<int>());
  *
  *  // keys_result is now {5, 3, 1}
  *  // vals_result is now {0, 0, 0}
@@ -2030,7 +2031,7 @@ template <typename DerivedPolicy,
           typename OutputIterator1,
           typename OutputIterator2,
           typename StrictWeakCompare>
-_CCCL_HOST_DEVICE thrust::pair<OutputIterator1, OutputIterator2> set_intersection_by_key(
+_CCCL_HOST_DEVICE ::cuda::std::pair<OutputIterator1, OutputIterator2> set_intersection_by_key(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   InputIterator1 keys_first1,
   InputIterator1 keys_last1,
@@ -2117,7 +2118,7 @@ _CCCL_HOST_DEVICE thrust::pair<OutputIterator1, OutputIterator2> set_intersectio
  *  int keys_result[7];
  *  int vals_result[7];
  *
- *  thrust::pair<int*,int*> end = thrust::set_intersection_by_key(A_keys, A_keys + 6, B_keys, B_keys + 7, A_vals,
+ *  cuda::std::pair<int*,int*> end = thrust::set_intersection_by_key(A_keys, A_keys + 6, B_keys, B_keys + 7, A_vals,
  * keys_result, vals_result, ::cuda::std::greater<int>());
  *
  *  // keys_result is now {5, 3, 1}
@@ -2136,7 +2137,7 @@ template <typename InputIterator1,
           typename OutputIterator1,
           typename OutputIterator2,
           typename StrictWeakCompare>
-thrust::pair<OutputIterator1, OutputIterator2> set_intersection_by_key(
+::cuda::std::pair<OutputIterator1, OutputIterator2> set_intersection_by_key(
   InputIterator1 keys_first1,
   InputIterator1 keys_last1,
   InputIterator2 keys_first2,
@@ -2227,8 +2228,8 @@ thrust::pair<OutputIterator1, OutputIterator2> set_intersection_by_key(
  *  int keys_result[6];
  *  int vals_result[6];
  *
- *  thrust::pair<int*,int*> end = thrust::set_symmetric_difference_by_key(thrust::host, A_keys, A_keys + 6, B_keys,
- * B_keys + 5, A_vals, B_vals, keys_result, vals_result);
+ *  cuda::std::pair<int*,int*> end = thrust::set_symmetric_difference_by_key(thrust::host, A_keys, A_keys + 6,
+ * B_keys, B_keys + 5, A_vals, B_vals, keys_result, vals_result);
  *  // keys_result is now {0, 4, 5, 6, 7, 8}
  *  // vals_result is now {0, 0, 1, 0, 0, 1}
  *  \endcode
@@ -2246,7 +2247,7 @@ template <typename DerivedPolicy,
           typename InputIterator4,
           typename OutputIterator1,
           typename OutputIterator2>
-_CCCL_HOST_DEVICE thrust::pair<OutputIterator1, OutputIterator2> set_symmetric_difference_by_key(
+_CCCL_HOST_DEVICE ::cuda::std::pair<OutputIterator1, OutputIterator2> set_symmetric_difference_by_key(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   InputIterator1 keys_first1,
   InputIterator1 keys_last1,
@@ -2332,7 +2333,7 @@ _CCCL_HOST_DEVICE thrust::pair<OutputIterator1, OutputIterator2> set_symmetric_d
  *  int keys_result[6];
  *  int vals_result[6];
  *
- *  thrust::pair<int*,int*> end = thrust::set_symmetric_difference_by_key(A_keys, A_keys + 6, B_keys, B_keys + 5,
+ *  cuda::std::pair<int*,int*> end = thrust::set_symmetric_difference_by_key(A_keys, A_keys + 6, B_keys, B_keys + 5,
  * A_vals, B_vals, keys_result, vals_result);
  *  // keys_result is now {0, 4, 5, 6, 7, 8}
  *  // vals_result is now {0, 0, 1, 0, 0, 1}
@@ -2350,7 +2351,7 @@ template <typename InputIterator1,
           typename InputIterator4,
           typename OutputIterator1,
           typename OutputIterator2>
-thrust::pair<OutputIterator1, OutputIterator2> set_symmetric_difference_by_key(
+::cuda::std::pair<OutputIterator1, OutputIterator2> set_symmetric_difference_by_key(
   InputIterator1 keys_first1,
   InputIterator1 keys_last1,
   InputIterator2 keys_first2,
@@ -2445,8 +2446,8 @@ thrust::pair<OutputIterator1, OutputIterator2> set_symmetric_difference_by_key(
  *  int keys_result[6];
  *  int vals_result[6];
  *
- *  thrust::pair<int*,int*> end = thrust::set_symmetric_difference_by_key(thrust::host, A_keys, A_keys + 6, B_keys,
- * B_keys + 5, A_vals, B_vals, keys_result, vals_result);
+ *  cuda::std::pair<int*,int*> end = thrust::set_symmetric_difference_by_key(thrust::host, A_keys, A_keys + 6,
+ * B_keys, B_keys + 5, A_vals, B_vals, keys_result, vals_result);
  *  // keys_result is now {8, 7, 6, 5, 4, 0}
  *  // vals_result is now {1, 0, 0, 1, 0, 0}
  *  \endcode
@@ -2465,7 +2466,7 @@ template <typename DerivedPolicy,
           typename OutputIterator1,
           typename OutputIterator2,
           typename StrictWeakCompare>
-_CCCL_HOST_DEVICE thrust::pair<OutputIterator1, OutputIterator2> set_symmetric_difference_by_key(
+_CCCL_HOST_DEVICE ::cuda::std::pair<OutputIterator1, OutputIterator2> set_symmetric_difference_by_key(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   InputIterator1 keys_first1,
   InputIterator1 keys_last1,
@@ -2556,7 +2557,7 @@ _CCCL_HOST_DEVICE thrust::pair<OutputIterator1, OutputIterator2> set_symmetric_d
  *  int keys_result[6];
  *  int vals_result[6];
  *
- *  thrust::pair<int*,int*> end = thrust::set_symmetric_difference_by_key(A_keys, A_keys + 6, B_keys, B_keys + 5,
+ *  cuda::std::pair<int*,int*> end = thrust::set_symmetric_difference_by_key(A_keys, A_keys + 6, B_keys, B_keys + 5,
  * A_vals, B_vals, keys_result, vals_result);
  *  // keys_result is now {8, 7, 6, 5, 4, 0}
  *  // vals_result is now {1, 0, 0, 1, 0, 0}
@@ -2575,7 +2576,7 @@ template <typename InputIterator1,
           typename OutputIterator1,
           typename OutputIterator2,
           typename StrictWeakCompare>
-thrust::pair<OutputIterator1, OutputIterator2> set_symmetric_difference_by_key(
+::cuda::std::pair<OutputIterator1, OutputIterator2> set_symmetric_difference_by_key(
   InputIterator1 keys_first1,
   InputIterator1 keys_last1,
   InputIterator2 keys_first2,
@@ -2665,8 +2666,8 @@ thrust::pair<OutputIterator1, OutputIterator2> set_symmetric_difference_by_key(
  *  int keys_result[11];
  *  int vals_result[11];
  *
- *  thrust::pair<int*,int*> end = thrust::set_symmetric_difference_by_key(thrust::host, A_keys, A_keys + 6, B_keys,
- * B_keys + 5, A_vals, B_vals, keys_result, vals_result);
+ *  cuda::std::pair<int*,int*> end = thrust::set_symmetric_difference_by_key(thrust::host, A_keys, A_keys + 6,
+ * B_keys, B_keys + 5, A_vals, B_vals, keys_result, vals_result);
  *  // keys_result is now {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12}
  *  // vals_result is now {0, 1, 0, 1, 0, 1, 0, 1, 0, 1,  0,  0}
  *  \endcode
@@ -2684,7 +2685,7 @@ template <typename DerivedPolicy,
           typename InputIterator4,
           typename OutputIterator1,
           typename OutputIterator2>
-_CCCL_HOST_DEVICE thrust::pair<OutputIterator1, OutputIterator2> set_union_by_key(
+_CCCL_HOST_DEVICE ::cuda::std::pair<OutputIterator1, OutputIterator2> set_union_by_key(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   InputIterator1 keys_first1,
   InputIterator1 keys_last1,
@@ -2768,7 +2769,7 @@ _CCCL_HOST_DEVICE thrust::pair<OutputIterator1, OutputIterator2> set_union_by_ke
  *  int keys_result[11];
  *  int vals_result[11];
  *
- *  thrust::pair<int*,int*> end = thrust::set_symmetric_difference_by_key(A_keys, A_keys + 6, B_keys, B_keys + 5,
+ *  cuda::std::pair<int*,int*> end = thrust::set_symmetric_difference_by_key(A_keys, A_keys + 6, B_keys, B_keys + 5,
  * A_vals, B_vals, keys_result, vals_result);
  *  // keys_result is now {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12}
  *  // vals_result is now {0, 1, 0, 1, 0, 1, 0, 1, 0, 1,  0,  0}
@@ -2786,7 +2787,7 @@ template <typename InputIterator1,
           typename InputIterator4,
           typename OutputIterator1,
           typename OutputIterator2>
-thrust::pair<OutputIterator1, OutputIterator2> set_union_by_key(
+::cuda::std::pair<OutputIterator1, OutputIterator2> set_union_by_key(
   InputIterator1 keys_first1,
   InputIterator1 keys_last1,
   InputIterator2 keys_first2,
@@ -2879,8 +2880,8 @@ thrust::pair<OutputIterator1, OutputIterator2> set_union_by_key(
  *  int keys_result[11];
  *  int vals_result[11];
  *
- *  thrust::pair<int*,int*> end = thrust::set_symmetric_difference_by_key(thrust::host, A_keys, A_keys + 6, B_keys,
- * B_keys + 5, A_vals, B_vals, keys_result, vals_result, ::cuda::std::greater<int>());
+ *  cuda::std::pair<int*,int*> end = thrust::set_symmetric_difference_by_key(thrust::host, A_keys, A_keys + 6,
+ * B_keys, B_keys + 5, A_vals, B_vals, keys_result, vals_result, ::cuda::std::greater<int>());
  *  // keys_result is now {12, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0}
  *  // vals_result is now { 0,  1, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0}
  *  \endcode
@@ -2899,7 +2900,7 @@ template <typename DerivedPolicy,
           typename OutputIterator1,
           typename OutputIterator2,
           typename StrictWeakCompare>
-_CCCL_HOST_DEVICE thrust::pair<OutputIterator1, OutputIterator2> set_union_by_key(
+_CCCL_HOST_DEVICE ::cuda::std::pair<OutputIterator1, OutputIterator2> set_union_by_key(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   InputIterator1 keys_first1,
   InputIterator1 keys_last1,
@@ -2988,7 +2989,7 @@ _CCCL_HOST_DEVICE thrust::pair<OutputIterator1, OutputIterator2> set_union_by_ke
  *  int keys_result[11];
  *  int vals_result[11];
  *
- *  thrust::pair<int*,int*> end = thrust::set_symmetric_difference_by_key(A_keys, A_keys + 6, B_keys, B_keys + 5,
+ *  cuda::std::pair<int*,int*> end = thrust::set_symmetric_difference_by_key(A_keys, A_keys + 6, B_keys, B_keys + 5,
  * A_vals, B_vals, keys_result, vals_result, ::cuda::std::greater<int>());
  *  // keys_result is now {12, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0}
  *  // vals_result is now { 0,  1, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0}
@@ -3007,7 +3008,7 @@ template <typename InputIterator1,
           typename OutputIterator1,
           typename OutputIterator2,
           typename StrictWeakCompare>
-thrust::pair<OutputIterator1, OutputIterator2> set_union_by_key(
+::cuda::std::pair<OutputIterator1, OutputIterator2> set_union_by_key(
   InputIterator1 keys_first1,
   InputIterator1 keys_last1,
   InputIterator2 keys_first2,

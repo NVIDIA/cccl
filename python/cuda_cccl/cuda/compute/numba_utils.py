@@ -2,13 +2,18 @@ import inspect
 
 import numba
 from numba import cuda
+from numba.core.extending import as_numba_type
 from numpy.typing import DTypeLike
 
+from ._utils import sanitize_identifier
 from .typing import GpuStruct
 
 
 def get_inferred_return_type(op, args: tuple):
-    _, return_type = cuda.compile(op, args)
+    sanitized_name = sanitize_identifier(op.__name__)
+    unique_suffix = hex(id(op))[2:]
+    abi_name = f"{sanitized_name}_{unique_suffix}"
+    _, return_type = cuda.compile(op, args, abi_info={"abi_name": abi_name})
     return return_type
 
 
@@ -16,8 +21,8 @@ def to_numba_type(tp: GpuStruct | DTypeLike) -> numba.types.Type:
     """
     Convert a GpuStruct or DtypeLike to a numba type.
     """
-    if hasattr(tp, "_numba_type"):
-        return tp._numba_type  # type: ignore[union-attr]
+    if value := as_numba_type.lookup.get(tp):
+        return value
     return numba.from_dtype(tp)
 
 

@@ -48,7 +48,7 @@
 _CCCL_DIAG_PUSH
 _CCCL_DIAG_SUPPRESS_MSVC(4848)
 
-_CCCL_BEGIN_NAMESPACE_RANGES
+_CCCL_BEGIN_NAMESPACE_CUDA_STD_RANGES
 
 template <class _View, class _Pred>
 _CCCL_CONCEPT __take_while_const_is_range = _CCCL_REQUIRES_EXPR((_View, _Pred))(
@@ -123,16 +123,16 @@ public:
 #endif // _CCCL_STD_VER <= 2017
 
     template <bool _OtherConst = !_Const>
-    [[nodiscard]] _CCCL_API friend constexpr auto
-    operator==(const iterator_t<_Base2<_OtherConst>>& __x, const __sentinel& __y)
+    [[nodiscard]]
+    _CCCL_API friend constexpr auto operator==(const iterator_t<_Base2<_OtherConst>>& __x, const __sentinel& __y)
       _CCCL_TRAILING_REQUIRES(bool)(sentinel_for<sentinel_t<_Base>, iterator_t<_Base2<_OtherConst>>>)
     {
       return __x == __y.__end_ || !::cuda::std::invoke(*__y.__pred_, *__x);
     }
 #if _CCCL_STD_VER <= 2017
     template <bool _OtherConst = !_Const>
-    [[nodiscard]] _CCCL_API friend constexpr auto
-    operator==(const __sentinel& __x, const iterator_t<_Base2<_OtherConst>>& __y)
+    [[nodiscard]]
+    _CCCL_API friend constexpr auto operator==(const __sentinel& __x, const iterator_t<_Base2<_OtherConst>>& __y)
       _CCCL_TRAILING_REQUIRES(bool)(sentinel_for<sentinel_t<_Base>, iterator_t<_Base2<_OtherConst>>>)
     {
       return __y == __x.__end_ || !::cuda::std::invoke(*__x.__pred_, *__y);
@@ -221,9 +221,9 @@ public:
 template <class _Range, class _Pred>
 _CCCL_HOST_DEVICE take_while_view(_Range&&, _Pred) -> take_while_view<::cuda::std::ranges::views::all_t<_Range>, _Pred>;
 
-_CCCL_END_NAMESPACE_RANGES
+_CCCL_END_NAMESPACE_CUDA_STD_RANGES
 
-_CCCL_BEGIN_NAMESPACE_VIEWS
+_CCCL_BEGIN_NAMESPACE_CUDA_STD_VIEWS
 _CCCL_BEGIN_NAMESPACE_CPO(__take_while)
 
 struct __fn
@@ -250,7 +250,7 @@ inline namespace __cpo
 {
 _CCCL_GLOBAL_CONSTANT auto take_while = __take_while::__fn{};
 } // namespace __cpo
-_CCCL_END_NAMESPACE_VIEWS
+_CCCL_END_NAMESPACE_CUDA_STD_VIEWS
 
 _CCCL_DIAG_POP
 

@@ -37,7 +37,6 @@
 THRUST_NAMESPACE_BEGIN
 namespace detail
 {
-
 template <typename T, typename System, typename Pointer>
 class malloc_allocator : public tagged_allocator<T, System, Pointer>
 {
@@ -73,6 +72,5 @@ public:
     thrust::free(select_system(system), p);
   }
 };
-
 } // namespace detail
 THRUST_NAMESPACE_END

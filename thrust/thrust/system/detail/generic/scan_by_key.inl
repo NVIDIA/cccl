@@ -42,7 +42,6 @@ namespace system::detail::generic
 {
 namespace detail
 {
-
 template <typename OutputType, typename HeadFlagType, typename AssociativeOperator>
 struct segmented_scan_functor
 {
@@ -60,7 +59,6 @@ struct segmented_scan_functor
                        thrust::get<1>(a) | thrust::get<1>(b));
   }
 };
-
 } // end namespace detail
 
 template <typename DerivedPolicy, typename InputIterator1, typename InputIterator2, typename OutputIterator>
@@ -227,6 +225,5 @@ _CCCL_HOST_DEVICE OutputIterator exclusive_scan_by_key(
 
   return result + n;
 }
-
 } // namespace system::detail::generic
 THRUST_NAMESPACE_END

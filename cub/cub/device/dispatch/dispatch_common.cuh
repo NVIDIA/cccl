@@ -40,4 +40,11 @@ enum class SelectImpl
   Partition
 };
 
+// Options for forcing inclusive prefix-scan even when initial value has been provided
+enum class ForceInclusive
+{
+  Yes,
+  No
+};
+
 CUB_NAMESPACE_END

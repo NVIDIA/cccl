@@ -30,7 +30,6 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 namespace chrono
 {
-
 struct local_t
 {};
 
@@ -44,7 +43,6 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT last_spec
   _CCCL_HIDE_FROM_ABI explicit last_spec() = default;
 };
 inline constexpr last_spec last{};
-
 } // namespace chrono
 
 _CCCL_END_NAMESPACE_CUDA_STD

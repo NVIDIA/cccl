@@ -15,13 +15,15 @@
 
 #include <cub/util_device.cuh>
 
+#include <cuda/__device/arch_id.h>
+#include <cuda/__device/compute_capability.h>
+
 #include <cuda.h>
 
 CUB_NAMESPACE_BEGIN
 
 namespace detail
 {
-
 struct CudaDriverLauncher
 {
   dim3 grid;
@@ -82,8 +84,14 @@ struct CudaDriverLauncherFactory
 
   ::cudaError_t PtxVersion(int& version) const
   {
-    version = cc;
+    version = cc * 10;
     return cudaSuccess;
+  }
+
+  ::cudaError_t PtxArchId(::cuda::arch_id& arch_id) const
+  {
+    arch_id = ::cuda::to_arch_id(::cuda::compute_capability(cc));
+    return ::cudaSuccess;
   }
 
   _CCCL_HIDE_FROM_ABI ::cudaError_t MultiProcessorCount(int& sm_count) const
@@ -136,7 +144,6 @@ struct CudaDriverLauncherFactory
   CUdevice device;
   int cc;
 };
-
 } // namespace detail
 
 CUB_NAMESPACE_END

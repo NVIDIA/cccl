@@ -1,29 +1,5 @@
-/******************************************************************************
- * Copyright (c) 2011-2023, NVIDIA CORPORATION.  All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *     * Redistributions of source code must retain the above copyright
- *       notice, this list of conditions and the following disclaimer.
- *     * Redistributions in binary form must reproduce the above copyright
- *       notice, this list of conditions and the following disclaimer in the
- *       documentation and/or other materials provided with the distribution.
- *     * Neither the name of the NVIDIA CORPORATION nor the
- *       names of its contributors may be used to endorse or promote products
- *       derived from this software without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
- * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
- * DISCLAIMED. IN NO EVENT SHALL NVIDIA CORPORATION BE LIABLE FOR ANY
- * DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
- * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
- * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
- * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- *
- ******************************************************************************/
+// SPDX-FileCopyrightText: Copyright (c) 2011-2023, NVIDIA CORPORATION. All rights reserved.
+// SPDX-License-Identifier: BSD-3
 
 #pragma once
 
@@ -40,17 +16,17 @@
 #include <cub/util_ptx.cuh>
 #include <cub/util_type.cuh>
 
+#include <cuda/__cmath/pow2.h>
 #include <cuda/__ptx/instructions/get_sreg.h>
 
 CUB_NAMESPACE_BEGIN
 
 namespace detail
 {
-
 template <typename InputT, int ITEMS_PER_THREAD, int LOGICAL_WARP_THREADS = warp_threads>
 class WarpExchangeShfl
 {
-  static_assert(PowerOfTwo<LOGICAL_WARP_THREADS>::VALUE, "LOGICAL_WARP_THREADS must be a power of two");
+  static_assert(::cuda::is_power_of_two(LOGICAL_WARP_THREADS), "LOGICAL_WARP_THREADS must be a power of two");
 
   static_assert(ITEMS_PER_THREAD == LOGICAL_WARP_THREADS,
                 "WARP_EXCHANGE_SHUFFLE currently only works when ITEMS_PER_THREAD == "
@@ -217,16 +193,16 @@ class WarpExchangeShfl
       CompileTimeArray<OutputT, next_idx, SIZE>::template Foreach<NUM_ENTRIES>(xor_bit_set, mask);
     }
 
-    // terminate recursion
-    _CCCL_DEVICE void TransposeImpl(unsigned int, unsigned int, constant_t<0>) {}
-
     template <int NUM_ENTRIES>
     _CCCL_DEVICE void TransposeImpl(const unsigned int lane_id, const unsigned int mask, constant_t<NUM_ENTRIES>)
     {
-      const bool xor_bit_set = lane_id & NUM_ENTRIES;
-      Foreach<NUM_ENTRIES>(xor_bit_set, mask);
+      if constexpr (NUM_ENTRIES != 0)
+      {
+        const bool xor_bit_set = lane_id & NUM_ENTRIES;
+        Foreach<NUM_ENTRIES>(xor_bit_set, mask);
 
-      TransposeImpl(lane_id, mask, constant_v<NUM_ENTRIES / 2>);
+        TransposeImpl(lane_id, mask, constant_v<NUM_ENTRIES / 2>);
+      }
     }
 
   public:
@@ -323,7 +299,6 @@ public:
                   "                 OffsetT (&ranks)[ITEMS_PER_THREAD])");
   }
 };
-
 } // namespace detail
 
 CUB_NAMESPACE_END

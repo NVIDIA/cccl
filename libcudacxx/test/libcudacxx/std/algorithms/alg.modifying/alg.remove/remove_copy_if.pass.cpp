@@ -14,7 +14,7 @@
 //   constexpr OutIter         // constexpr after C++17
 //   remove_copy_if(InIter first, InIter last, OutIter result, Pred pred);
 
-#include <cuda/std/__algorithm_>
+#include <cuda/std/algorithm>
 #include <cuda/std/cassert>
 #include <cuda/std/functional>
 

@@ -23,8 +23,8 @@ num_levels = 6
 # note that the object API requires passing numpy arrays
 # rather than scalars:
 h_num_output_levels = np.array([num_levels], dtype=np.int32)
-h_lower_level = np.array([0.0], dtype=np.float64)
-h_upper_level = np.array([10.0], dtype=np.float64)
+h_lower_level = np.array([0.0], dtype=np.float32)
+h_upper_level = np.array([10.0], dtype=np.float32)
 
 d_histogram = cp.zeros(num_levels - 1, dtype="int32")
 

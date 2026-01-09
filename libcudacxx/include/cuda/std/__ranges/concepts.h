@@ -44,7 +44,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_CCCL_BEGIN_NAMESPACE_RANGES
+_CCCL_BEGIN_NAMESPACE_CUDA_STD_RANGES
 
 #if _CCCL_HAS_CONCEPTS()
 
@@ -295,7 +295,7 @@ template <class _Range, class _Tp>
 _CCCL_CONCEPT __container_compatible_range = _CCCL_FRAGMENT(__container_compatible_range_, _Range, _Tp);
 #endif // ^^^ !_CCCL_HAS_CONCEPTS() ^^^
 
-_CCCL_END_NAMESPACE_RANGES
+_CCCL_END_NAMESPACE_CUDA_STD_RANGES
 
 #include <cuda/std/__cccl/epilogue.h>
 

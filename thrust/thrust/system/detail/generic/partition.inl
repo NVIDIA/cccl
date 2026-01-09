@@ -25,22 +25,24 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
-#include <thrust/advance.h>
+
 #include <thrust/count.h>
 #include <thrust/detail/internal_functional.h>
 #include <thrust/detail/temporary_array.h>
 #include <thrust/iterator/iterator_traits.h>
 #include <thrust/iterator/transform_iterator.h>
-#include <thrust/pair.h>
 #include <thrust/partition.h>
 #include <thrust/remove.h>
 #include <thrust/sort.h>
 #include <thrust/system/detail/generic/partition.h>
 
+#include <cuda/std/__functional/not_fn.h>
+#include <cuda/std/__iterator/advance.h>
+#include <cuda/std/__utility/pair.h>
+
 THRUST_NAMESPACE_BEGIN
 namespace system::detail::generic
 {
-
 template <typename DerivedPolicy, typename ForwardIterator, typename Predicate>
 _CCCL_HOST_DEVICE ForwardIterator stable_partition(
   thrust::execution_policy<DerivedPolicy>& exec, ForwardIterator first, ForwardIterator last, Predicate pred)
@@ -90,7 +92,7 @@ template <typename DerivedPolicy,
           typename OutputIterator1,
           typename OutputIterator2,
           typename Predicate>
-_CCCL_HOST_DEVICE thrust::pair<OutputIterator1, OutputIterator2> stable_partition_copy(
+_CCCL_HOST_DEVICE ::cuda::std::pair<OutputIterator1, OutputIterator2> stable_partition_copy(
   thrust::execution_policy<DerivedPolicy>& exec,
   InputIterator first,
   InputIterator last,
@@ -106,7 +108,7 @@ _CCCL_HOST_DEVICE thrust::pair<OutputIterator1, OutputIterator2> stable_partitio
   // remove_copy_if the false partition to out_false
   OutputIterator2 end_of_false_partition = thrust::remove_copy_if(exec, first, last, out_false, pred);
 
-  return thrust::make_pair(end_of_true_partition, end_of_false_partition);
+  return ::cuda::std::make_pair(end_of_true_partition, end_of_false_partition);
 } // end stable_partition_copy()
 
 template <typename DerivedPolicy,
@@ -115,7 +117,7 @@ template <typename DerivedPolicy,
           typename OutputIterator1,
           typename OutputIterator2,
           typename Predicate>
-_CCCL_HOST_DEVICE thrust::pair<OutputIterator1, OutputIterator2> stable_partition_copy(
+_CCCL_HOST_DEVICE ::cuda::std::pair<OutputIterator1, OutputIterator2> stable_partition_copy(
   thrust::execution_policy<DerivedPolicy>& exec,
   InputIterator1 first,
   InputIterator1 last,
@@ -132,7 +134,7 @@ _CCCL_HOST_DEVICE thrust::pair<OutputIterator1, OutputIterator2> stable_partitio
   // remove_copy_if the false partition to out_false
   OutputIterator2 end_of_false_partition = thrust::remove_copy_if(exec, first, last, stencil, out_false, pred);
 
-  return thrust::make_pair(end_of_true_partition, end_of_false_partition);
+  return ::cuda::std::make_pair(end_of_true_partition, end_of_false_partition);
 } // end stable_partition_copy()
 
 template <typename DerivedPolicy, typename ForwardIterator, typename Predicate>
@@ -158,7 +160,7 @@ template <typename DerivedPolicy,
           typename OutputIterator1,
           typename OutputIterator2,
           typename Predicate>
-_CCCL_HOST_DEVICE thrust::pair<OutputIterator1, OutputIterator2> partition_copy(
+_CCCL_HOST_DEVICE ::cuda::std::pair<OutputIterator1, OutputIterator2> partition_copy(
   thrust::execution_policy<DerivedPolicy>& exec,
   InputIterator first,
   InputIterator last,
@@ -175,7 +177,7 @@ template <typename DerivedPolicy,
           typename OutputIterator1,
           typename OutputIterator2,
           typename Predicate>
-_CCCL_HOST_DEVICE thrust::pair<OutputIterator1, OutputIterator2> partition_copy(
+_CCCL_HOST_DEVICE ::cuda::std::pair<OutputIterator1, OutputIterator2> partition_copy(
   thrust::execution_policy<DerivedPolicy>& exec,
   InputIterator1 first,
   InputIterator1 last,
@@ -202,6 +204,5 @@ is_partitioned(thrust::execution_policy<DerivedPolicy>& exec, InputIterator firs
                            thrust::make_transform_iterator(first, ::cuda::std::not_fn(pred)),
                            thrust::make_transform_iterator(last, ::cuda::std::not_fn(pred)));
 } // end is_partitioned()
-
 } // namespace system::detail::generic
 THRUST_NAMESPACE_END

@@ -10,10 +10,13 @@ from ._iterators import (
     CountingIterator as _CountingIterator,
 )
 from ._iterators import (
-    make_permutation_iterator,
+    DiscardIterator as _DiscardIterator,
+)
+from ._iterators import (
     make_reverse_iterator,
     make_transform_iterator,
 )
+from ._permutation_iterator import make_permutation_iterator
 from ._zip_iterator import make_zip_iterator
 
 
@@ -91,6 +94,29 @@ def CountingIterator(offset):
         A ``CountingIterator`` object initialized to ``offset``
     """
     return _CountingIterator(offset)
+
+
+def DiscardIterator(reference_iterator=None):
+    """Returns an Input or Output Iterator that discards all values written to it.
+
+    Similar to https://nvidia.github.io/cccl/thrust/api/classthrust_1_1discard__iterator.html
+
+    Args:
+        reference_iterator: Optional iterator to use as a reference for value_type and state_type.
+                          If not provided, defaults to uint8.
+
+    Example:
+        The code snippet below demonstrates the usage of a ``DiscardIterator`` to discard items in a unique by key operation:
+
+        .. literalinclude:: ../../python/cuda_cccl/tests/compute/examples/iterator/discard_iterator_basic.py
+            :language: python
+            :start-after: # example-begin
+
+
+    Returns:
+        A ``DiscardIterator`` object
+    """
+    return _DiscardIterator(reference_iterator)
 
 
 def ReverseIterator(sequence):
@@ -207,6 +233,12 @@ def ZipIterator(*iterators):
         combining two device arrays:
 
         .. literalinclude:: ../../python/cuda_cccl/tests/compute/examples/iterator/zip_iterator_elementwise.py
+            :language: python
+            :start-after: # example-begin
+
+        ZipIterator can also be used with nested gpu_struct types:
+
+        .. literalinclude:: ../../python/cuda_cccl/tests/compute/examples/struct/nested_struct_zip_iterator.py
             :language: python
             :start-after: # example-begin
 

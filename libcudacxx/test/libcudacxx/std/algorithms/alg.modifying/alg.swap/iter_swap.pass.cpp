@@ -15,7 +15,7 @@
 //   void
 //   iter_swap(Iter1 a, Iter2 b);
 
-#include <cuda/std/__algorithm_>
+#include <cuda/std/algorithm>
 #include <cuda/std/cassert>
 
 #include "test_iterators.h"

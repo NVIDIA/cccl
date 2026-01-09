@@ -139,9 +139,15 @@ __make_physical_devices(::cuda::std::size_t __device_count)
   return __devices;
 }
 
-[[nodiscard]] inline ::cuda::std::span<__physical_device> __physical_devices()
+[[nodiscard]] inline ::cuda::std::size_t __physical_devices_count()
 {
   static const auto __device_count = static_cast<::cuda::std::size_t>(::cuda::__driver::__deviceGetCount());
+  return __device_count;
+}
+
+[[nodiscard]] inline ::cuda::std::span<__physical_device> __physical_devices()
+{
+  static const auto __device_count = __physical_devices_count();
   static const auto __devices      = ::cuda::__make_physical_devices(__device_count);
   return ::cuda::std::span<__physical_device>{__devices.get(), __device_count};
 }

@@ -1,30 +1,6 @@
-/******************************************************************************
- * Copyright (c) 2011, Duane Merrill.  All rights reserved.
- * Copyright (c) 2011-2018, NVIDIA CORPORATION.  All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *     * Redistributions of source code must retain the above copyright
- *       notice, this list of conditions and the following disclaimer.
- *     * Redistributions in binary form must reproduce the above copyright
- *       notice, this list of conditions and the following disclaimer in the
- *       documentation and/or other materials provided with the distribution.
- *     * Neither the name of the NVIDIA CORPORATION nor the
- *       names of its contributors may be used to endorse or promote products
- *       derived from this software without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
- * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
- * DISCLAIMED. IN NO EVENT SHALL NVIDIA CORPORATION BE LIABLE FOR ANY
- * DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
- * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
- * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
- * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- *
- ******************************************************************************/
+// SPDX-FileCopyrightText: Copyright (c) 2011, Duane Merrill. All rights reserved.
+// SPDX-FileCopyrightText: Copyright (c) 2011-2018, NVIDIA CORPORATION. All rights reserved.
+// SPDX-License-Identifier: BSD-3
 
 //! \file
 //! cub::AgentHistogram implements a stateful abstraction of CUDA thread blocks for participating in device-wide
@@ -118,6 +94,29 @@ struct AgentHistogramPolicy
   ///< Cache load modifier for reading input elements
   static constexpr CacheLoadModifier LOAD_MODIFIER = LoadModifier;
 };
+
+#if defined(CUB_DEFINE_RUNTIME_POLICIES) || defined(CUB_ENABLE_POLICY_PTX_JSON)
+namespace detail
+{
+// Only define this when needed.
+// Because of overload woes, this depends on C++20 concepts. util_device.h checks that concepts are available when
+// either runtime policies or PTX JSON information are enabled, so if they are, this is always valid. The generic
+// version is always defined, and that's the only one needed for regular CUB operations.
+//
+// TODO: enable this unconditionally once concepts are always available
+CUB_DETAIL_POLICY_WRAPPER_DEFINE(
+  HistogramAgentPolicy,
+  (always_true),
+  (BLOCK_THREADS, BlockThreads, int),
+  (PIXELS_PER_THREAD, PixelsPerThread, int),
+  (IS_RLE_COMPRESS, IsRleCompress, bool),
+  (MEM_PREFERENCE, MemPreference, BlockHistogramMemoryPreference),
+  (IS_WORK_STEALING, IsWorkStealing, bool),
+  (VEC_SIZE, VecSize, int),
+  (LOAD_ALGORITHM, LoadAlgorithm, cub::BlockLoadAlgorithm),
+  (LOAD_MODIFIER, LoadModifier, cub::CacheLoadModifier))
+} // namespace detail
+#endif
 
 namespace detail::histogram
 {
@@ -235,7 +234,8 @@ struct AgentHistogram
   PrivatizedDecodeOpT* privatized_decode_op; // determines privatized counter index from sample, one for each channel
   bool prefer_smem; // for privatized counterss
 
-  _CCCL_DEVICE _CCCL_FORCEINLINE void ZeroBinCounters(CounterT* privatized_histograms[NumActiveChannels])
+  template <typename TwoDimSubscriptableCounterT>
+  _CCCL_DEVICE _CCCL_FORCEINLINE void ZeroBinCounters(TwoDimSubscriptableCounterT& privatized_histograms)
   {
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int ch = 0; ch < NumActiveChannels; ++ch)
@@ -252,7 +252,8 @@ struct AgentHistogram
   }
 
   // Update final output histograms from privatized histograms
-  _CCCL_DEVICE _CCCL_FORCEINLINE void StoreOutput(CounterT* privatized_histograms[NumActiveChannels])
+  template <typename TwoDimSubscriptableCounterT>
+  _CCCL_DEVICE _CCCL_FORCEINLINE void StoreOutput(TwoDimSubscriptableCounterT& privatized_histograms)
   {
     // Barrier to make sure all threads are done updating counters
     __syncthreads();
@@ -278,10 +279,11 @@ struct AgentHistogram
   }
 
   // Accumulate pixels.  Specialized for RLE compression.
+  template <typename TwoDimSubscriptableCounterT>
   _CCCL_DEVICE _CCCL_FORCEINLINE void AccumulatePixels(
     SampleT samples[pixels_per_thread][NumChannels],
     bool is_valid[pixels_per_thread],
-    CounterT* privatized_histograms[NumActiveChannels],
+    TwoDimSubscriptableCounterT& privatized_histograms,
     ::cuda::std::true_type is_rle_compress)
   {
     _CCCL_PRAGMA_UNROLL_FULL()
@@ -327,10 +329,11 @@ struct AgentHistogram
   }
 
   // Accumulate pixels.  Specialized for individual accumulation of each pixel.
+  template <typename TwoDimSubscriptableCounterT>
   _CCCL_DEVICE _CCCL_FORCEINLINE void AccumulatePixels(
     SampleT samples[pixels_per_thread][NumChannels],
     bool is_valid[pixels_per_thread],
-    CounterT* privatized_histograms[NumActiveChannels],
+    TwoDimSubscriptableCounterT& privatized_histograms,
     ::cuda::std::false_type is_rle_compress)
   {
     _CCCL_PRAGMA_UNROLL_FULL()
@@ -446,12 +449,7 @@ struct AgentHistogram
 
     if (prefer_smem)
     {
-      CounterT* privatized_histograms[NumActiveChannels];
-      for (int ch = 0; ch < NumActiveChannels; ++ch)
-      {
-        privatized_histograms[ch] = temp_storage.histograms[ch];
-      }
-      AccumulatePixels(samples, is_valid, privatized_histograms, ::cuda::std::bool_constant<is_rle_compress>{});
+      AccumulatePixels(samples, is_valid, temp_storage.histograms, ::cuda::std::bool_constant<is_rle_compress>{});
     }
     else
     {
@@ -638,22 +636,22 @@ struct AgentHistogram
     OffsetT num_row_pixels, OffsetT num_rows, OffsetT row_stride_samples, int tiles_per_row, GridQueue<int> tile_queue)
   {
     // Check whether all row starting offsets are vec-aligned (in single-channel) or pixel-aligned (in multi-channel)
-    int vec_mask     = AlignBytes<VecT>::ALIGN_BYTES - 1;
-    int pixel_mask   = AlignBytes<PixelT>::ALIGN_BYTES - 1;
-    size_t row_bytes = sizeof(SampleT) * row_stride_samples;
+    constexpr int vec_mask   = AlignBytes<VecT>::ALIGN_BYTES - 1;
+    constexpr int pixel_mask = AlignBytes<PixelT>::ALIGN_BYTES - 1;
+    const size_t row_bytes   = sizeof(SampleT) * row_stride_samples;
 
-    // FIXME(bgruber): const changes SASS
-    /*const*/ bool vec_aligned_rows =
+    const bool vec_aligned_rows =
       (NumChannels == 1) && (samples_per_thread % vec_size == 0) && // Single channel
       ((size_t(d_native_samples) & vec_mask) == 0) && // ptr is quad-aligned
       ((num_rows == 1) || ((row_bytes & vec_mask) == 0)); // number of row-samples is a multiple of the alignment of the
                                                           // quad
 
-    // FIXME(bgruber): const changes SASS
-    /*const*/ bool pixel_aligned_rows =
+    const bool pixel_aligned_rows =
       (NumChannels > 1) && // Multi channel
       ((size_t(d_native_samples) & pixel_mask) == 0) && // ptr is pixel-aligned
       ((row_bytes & pixel_mask) == 0); // number of row-samples is a multiple of the alignment of the pixel
+
+    _CCCL_PDL_GRID_DEPENDENCY_SYNC();
 
     // Whether rows are aligned and can be vectorized
     if ((d_native_samples != nullptr) && (vec_aligned_rows || pixel_aligned_rows))
@@ -666,6 +664,8 @@ struct AgentHistogram
       ConsumeTiles<false>(
         num_row_pixels, num_rows, row_stride_samples, tiles_per_row, tile_queue, bool_constant_v<is_work_stealing>);
     }
+
+    _CCCL_PDL_TRIGGER_NEXT_LAUNCH(); // omitting makes no difference in cub.bench.histogram.even.base
   }
 
   //! Initialize privatized bin counters.  Specialized for privatized shared-memory counters
@@ -673,12 +673,7 @@ struct AgentHistogram
   {
     if (prefer_smem)
     {
-      CounterT* privatized_histograms[NumActiveChannels];
-      for (int ch = 0; ch < NumActiveChannels; ++ch)
-      {
-        privatized_histograms[ch] = temp_storage.histograms[ch];
-      }
-      ZeroBinCounters(privatized_histograms);
+      ZeroBinCounters(temp_storage.histograms);
     }
     else
     {
@@ -691,12 +686,7 @@ struct AgentHistogram
   {
     if (prefer_smem)
     {
-      CounterT* privatized_histograms[NumActiveChannels];
-      for (int ch = 0; ch < NumActiveChannels; ++ch)
-      {
-        privatized_histograms[ch] = temp_storage.histograms[ch];
-      }
-      StoreOutput(privatized_histograms);
+      StoreOutput(temp_storage.histograms);
     }
     else
     {

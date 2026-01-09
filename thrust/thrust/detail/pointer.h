@@ -1,4 +1,3 @@
-
 /*
  *  Copyright 2008-2021 NVIDIA Corporation
  *
@@ -38,8 +37,13 @@
 #include <thrust/iterator/iterator_adaptor.h>
 #include <thrust/iterator/iterator_traversal_tags.h>
 
+#include <cuda/std/__type_traits/is_reference.h>
+#include <cuda/std/__type_traits/is_same.h>
+#include <cuda/std/__type_traits/is_void.h>
+#include <cuda/std/__type_traits/remove_cv.h>
+#include <cuda/std/__type_traits/remove_cvref.h>
+#include <cuda/std/__type_traits/type_identity.h>
 #include <cuda/std/cstddef>
-#include <cuda/std/type_traits>
 
 #if !_CCCL_COMPILER(NVRTC)
 #  include <ostream>

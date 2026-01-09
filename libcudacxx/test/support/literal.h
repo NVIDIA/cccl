@@ -50,8 +50,8 @@ template <class CharT>
   {
     static_assert(cuda::std::__always_false_v<CharT>,
                   "Unsupported character type. Supported types are char, wchar_t, char8_t, char16_t, and char32_t.");
+    _CCCL_UNREACHABLE();
   }
-  _CCCL_UNREACHABLE();
 }
 
 #if _CCCL_HAS_CHAR8_T()
@@ -96,8 +96,8 @@ template <class CharT, cuda::std::size_t N>
   {
     static_assert(cuda::std::__always_false_v<CharT>,
                   "Unsupported character type. Supported types are char, wchar_t, char8_t, char16_t, and char32_t.");
+    _CCCL_UNREACHABLE();
   }
-  _CCCL_UNREACHABLE();
 }
 
 #if _CCCL_HAS_CHAR8_T()
@@ -240,7 +240,6 @@ _test_int_literal_impl(const char (&cs)[N]) noexcept
 
 namespace test_integer_literals
 {
-
 // nvcc passes operator""_x to the host compiler as operator "" _x, which was deprecated in CWG 2521 (nvbug 5507437)
 // clang 20 already warns about this, so we need to suppress the warning here
 _CCCL_DIAG_PUSH
@@ -271,7 +270,6 @@ template <char... Cs>
 #endif // _CCCL_HAS_INT128()
 
 _CCCL_DIAG_POP
-
 } // namespace test_integer_literals
 
 #endif // TEST_SUPPORT_LITERAL_H

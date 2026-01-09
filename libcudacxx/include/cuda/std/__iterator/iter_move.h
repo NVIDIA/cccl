@@ -37,7 +37,7 @@ _CCCL_DIAG_SUPPRESS_CLANG("-Wvoid-ptr-dereference")
 
 // [iterator.cust.move]
 
-_CCCL_BEGIN_NAMESPACE_RANGES
+_CCCL_BEGIN_NAMESPACE_CUDA_STD_RANGES
 _CCCL_BEGIN_NAMESPACE_CPO(__iter_move)
 
 _CCCL_HOST_DEVICE void iter_move();
@@ -124,7 +124,7 @@ inline namespace __cpo
 {
 _CCCL_GLOBAL_CONSTANT auto iter_move = __iter_move::__fn{};
 } // namespace __cpo
-_CCCL_END_NAMESPACE_RANGES
+_CCCL_END_NAMESPACE_CUDA_STD_RANGES
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 

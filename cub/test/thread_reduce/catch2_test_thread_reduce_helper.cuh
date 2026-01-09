@@ -89,7 +89,6 @@ struct cub_operator_to_identity<T, cuda::maximum<>>
 
 namespace detail
 {
-
 template <typename T, typename Operator, cuda::std::ptrdiff_t MaxReductionLength, typename = void>
 struct dist_interval
 {
@@ -143,7 +142,6 @@ struct dist_interval<
     return static_cast<T>(cuda::std::exp2(log2_max / MaxReductionLength));
   }
 };
-
 } // namespace detail
 
 template <typename Input,

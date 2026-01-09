@@ -79,7 +79,7 @@ _CCCL_REQUIRES(__is_extended_arithmetic_v<_Tp>)
 #if _LIBCUDACXX_HAS_NVFP16()
     if constexpr (is_same_v<_Tp, __half>)
     {
-      if (!::cuda::std::__cccl_default_is_constant_evaluated())
+      _CCCL_IF_NOT_CONSTEVAL_DEFAULT
       {
         return ::__habs(__x);
       }
@@ -88,7 +88,7 @@ _CCCL_REQUIRES(__is_extended_arithmetic_v<_Tp>)
 #if _LIBCUDACXX_HAS_NVBF16()
     if constexpr (is_same_v<_Tp, __nv_bfloat16>)
     {
-      if (!::cuda::std::__cccl_default_is_constant_evaluated())
+      _CCCL_IF_NOT_CONSTEVAL_DEFAULT
       {
         return ::__habs(__x);
       }
@@ -114,7 +114,7 @@ _CCCL_REQUIRES(__is_extended_arithmetic_v<_Tp>)
 // abs
 
 _CCCL_TEMPLATE(class _Tp)
-_CCCL_REQUIRES(__is_extended_arithmetic_v<_Tp>)
+_CCCL_REQUIRES(__is_fp_v<_Tp>)
 [[nodiscard]] _CCCL_API constexpr auto abs(_Tp __x) noexcept
 {
   return ::cuda::std::fabs(__x);

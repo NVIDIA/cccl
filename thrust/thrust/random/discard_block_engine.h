@@ -41,7 +41,6 @@ THRUST_NAMESPACE_BEGIN
 
 namespace random
 {
-
 /*! \addtogroup random_number_engine_adaptors Random Number Engine Adaptor Class Templates
  *  \ingroup random
  *  \{
@@ -229,7 +228,6 @@ operator>>(std::basic_istream<CharT, Traits>& is, discard_block_engine<Engine, p
 
 /*! \} // end random_number_engine_adaptors
  */
-
 } // namespace random
 
 // import names into thrust::

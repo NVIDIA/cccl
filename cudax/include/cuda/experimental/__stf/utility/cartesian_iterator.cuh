@@ -25,7 +25,6 @@
 
 namespace cuda::experimental::stf::reserved
 {
-
 #if 0
 /**
  * @brief Implementation of a cartesian product of multiple iterators
@@ -288,7 +287,6 @@ __global__ void unit_test_range_func(T n)
   }
   assert(sum == n);
 }
-
 } // namespace reserved
 
 UNITTEST("range")
@@ -519,5 +517,4 @@ UNITTEST("StridedRange CUDA")
   cudaDeviceSynchronize();
 };
 #endif // UNITTESTED_FILE
-
 } // end namespace cuda::experimental::stf::reserved

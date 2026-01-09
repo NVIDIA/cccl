@@ -30,10 +30,10 @@
 #  pragma system_header
 #endif // no system header
 #include <thrust/detail/execution_policy.h>
-#include <thrust/pair.h>
 
 #include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__algorithm/min.h>
+#include <cuda/std/__utility/pair.h>
 
 THRUST_NAMESPACE_BEGIN
 
@@ -475,7 +475,7 @@ ForwardIterator max_element(ForwardIterator first, ForwardIterator last, BinaryP
  *  #include <thrust/execution_policy.h>
  *  ...
  *  int data[6] = {1, 0, 2, 2, 1, 3};
- *  thrust::pair<int *, int *> result = thrust::minmax_element(thrust::host, data, data + 6);
+ *  cuda::std::pair<int *, int *> result = thrust::minmax_element(thrust::host, data, data + 6);
  *
  *  // result.first is data + 1
  *  // result.second is data + 5
@@ -488,7 +488,7 @@ ForwardIterator max_element(ForwardIterator first, ForwardIterator last, BinaryP
  *  \see http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2005/n1840.pdf
  */
 template <typename DerivedPolicy, typename ForwardIterator>
-_CCCL_HOST_DEVICE thrust::pair<ForwardIterator, ForwardIterator> minmax_element(
+_CCCL_HOST_DEVICE ::cuda::std::pair<ForwardIterator, ForwardIterator> minmax_element(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec, ForwardIterator first, ForwardIterator last);
 
 /*! \p minmax_element finds the smallest and largest elements in the range <tt>[first, last)</tt>.
@@ -509,7 +509,7 @@ _CCCL_HOST_DEVICE thrust::pair<ForwardIterator, ForwardIterator> minmax_element(
  *  #include <thrust/extrema.h>
  *  ...
  *  int data[6] = {1, 0, 2, 2, 1, 3};
- *  thrust::pair<int *, int *> result = thrust::minmax_element(data, data + 6);
+ *  cuda::std::pair<int *, int *> result = thrust::minmax_element(data, data + 6);
  *
  *  // result.first is data + 1
  *  // result.second is data + 5
@@ -522,7 +522,7 @@ _CCCL_HOST_DEVICE thrust::pair<ForwardIterator, ForwardIterator> minmax_element(
  *  \see http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2005/n1840.pdf
  */
 template <typename ForwardIterator>
-thrust::pair<ForwardIterator, ForwardIterator> minmax_element(ForwardIterator first, ForwardIterator last);
+::cuda::std::pair<ForwardIterator, ForwardIterator> minmax_element(ForwardIterator first, ForwardIterator last);
 
 /*! \p minmax_element finds the smallest and largest elements in the range <tt>[first, last)</tt>.
  *  It returns a pair of iterators <tt>(imin, imax)</tt> where \c imin is the same iterator
@@ -549,7 +549,7 @@ thrust::pair<ForwardIterator, ForwardIterator> minmax_element(ForwardIterator fi
  *
  *  \code
  *  #include <thrust/extrema.h>
- *  #include <thrust/pair.h>
+ *  #include <cuda/std/__utility/pair.h>
  *  #include <thrust/execution_policy.h>
  *  ...
  *
@@ -571,7 +571,7 @@ thrust::pair<ForwardIterator, ForwardIterator> minmax_element(ForwardIterator fi
  *  ...
  *  key_value data[4] = { {4,5}, {0,7}, {2,3}, {6,1} };
  *
- *  thrust::pair<key_value*,key_value*> extrema = thrust::minmax_element(thrust::host, data, data + 4,
+ *  cuda::std::pair<key_value*,key_value*> extrema = thrust::minmax_element(thrust::host, data, data + 4,
  * compare_key_value());
  *
  *  // extrema.first   == data + 1
@@ -585,7 +585,7 @@ thrust::pair<ForwardIterator, ForwardIterator> minmax_element(ForwardIterator fi
  *  \see http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2005/n1840.pdf
  */
 template <typename DerivedPolicy, typename ForwardIterator, typename BinaryPredicate>
-_CCCL_HOST_DEVICE thrust::pair<ForwardIterator, ForwardIterator> minmax_element(
+_CCCL_HOST_DEVICE ::cuda::std::pair<ForwardIterator, ForwardIterator> minmax_element(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   ForwardIterator first,
   ForwardIterator last,
@@ -612,7 +612,7 @@ _CCCL_HOST_DEVICE thrust::pair<ForwardIterator, ForwardIterator> minmax_element(
  *
  *  \code
  *  #include <thrust/extrema.h>
- *  #include <thrust/pair.h>
+ *  #include <cuda/std/__utility/pair.h>
  *
  *  struct key_value
  *  {
@@ -632,7 +632,7 @@ _CCCL_HOST_DEVICE thrust::pair<ForwardIterator, ForwardIterator> minmax_element(
  *  ...
  *  key_value data[4] = { {4,5}, {0,7}, {2,3}, {6,1} };
  *
- *  thrust::pair<key_value*,key_value*> extrema = thrust::minmax_element(data, data + 4, compare_key_value());
+ *  cuda::std::pair<key_value*,key_value*> extrema = thrust::minmax_element(data, data + 4, compare_key_value());
  *
  *  // extrema.first   == data + 1
  *  // *extrema.first  == {0,7}
@@ -645,7 +645,7 @@ _CCCL_HOST_DEVICE thrust::pair<ForwardIterator, ForwardIterator> minmax_element(
  *  \see http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2005/n1840.pdf
  */
 template <typename ForwardIterator, typename BinaryPredicate>
-thrust::pair<ForwardIterator, ForwardIterator>
+::cuda::std::pair<ForwardIterator, ForwardIterator>
 minmax_element(ForwardIterator first, ForwardIterator last, BinaryPredicate comp);
 
 /*! \} // end extrema

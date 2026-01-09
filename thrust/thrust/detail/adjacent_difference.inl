@@ -25,9 +25,22 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
-#include <thrust/system/detail/adl/adjacent_difference.h>
-#include <thrust/system/detail/generic/adjacent_difference.h>
+
 #include <thrust/system/detail/generic/select_system.h>
+
+// Include all active backend system implementations (generic, sequential, host and device)
+#include <thrust/system/detail/generic/adjacent_difference.h>
+#include <thrust/system/detail/sequential/adjacent_difference.h>
+#include __THRUST_HOST_SYSTEM_ALGORITH_DETAIL_HEADER_INCLUDE(adjacent_difference.h)
+#include __THRUST_DEVICE_SYSTEM_ALGORITH_DETAIL_HEADER_INCLUDE(adjacent_difference.h)
+
+// Some build systems need a hint to know which files we could include
+#if 0
+#  include <thrust/system/cpp/detail/adjacent_difference.h>
+#  include <thrust/system/cuda/detail/adjacent_difference.h>
+#  include <thrust/system/omp/detail/adjacent_difference.h>
+#  include <thrust/system/tbb/detail/adjacent_difference.h>
+#endif
 
 THRUST_NAMESPACE_BEGIN
 

@@ -21,9 +21,11 @@
 #endif // no system header
 
 #include <cuda/__numeric/add_overflow.h>
+#include <cuda/__numeric/div_overflow.h>
 #include <cuda/__numeric/narrow.h>
 #include <cuda/__numeric/overflow_cast.h>
 #include <cuda/__numeric/overflow_result.h>
+#include <cuda/__numeric/sub_overflow.h>
 #include <cuda/std/numeric>
 
 #endif // _CUDA_NUMERIC

@@ -13,15 +13,14 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/__runtime/api_wrapper.h>
 #include <cuda/__stream/stream_ref.h>
-#include <cuda/std/__cuda/api_wrapper.h>
 #include <cuda/std/cstdint>
 
 CUB_NAMESPACE_BEGIN
 
 namespace detail
 {
-
 // TODO(gevtushenko/srinivasyadav18): move cudax `device_memory_resource` to `cuda::__device_memory_resource` and remove
 // this implementation
 struct device_memory_resource
@@ -56,7 +55,6 @@ struct device_memory_resource
     _CCCL_TRY_CUDA_API(::cudaFreeAsync, "deallocate failed", ptr, stream.get());
   }
 };
-
 } // namespace detail
 
 CUB_NAMESPACE_END

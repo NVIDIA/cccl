@@ -232,7 +232,6 @@ struct __numbers<__nv_bfloat16>
 
 namespace numbers
 {
-
 template <class _Tp>
 inline constexpr _Tp e_v = __numbers<_Tp>::__e();
 template <class _Tp>
@@ -334,7 +333,6 @@ inline constexpr double sqrt3      = __numbers<double>::__sqrt3();
 inline constexpr double inv_sqrt3  = __numbers<double>::__inv_sqrt3();
 inline constexpr double egamma     = __numbers<double>::__egamma();
 inline constexpr double phi        = __numbers<double>::__phi();
-
 } // namespace numbers
 
 _CCCL_END_NAMESPACE_CUDA_STD

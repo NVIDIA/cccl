@@ -31,13 +31,12 @@
 THRUST_NAMESPACE_BEGIN
 namespace system::detail::generic
 {
-
 template <typename DerivedPolicy,
           typename InputIterator1,
           typename InputIterator2,
           typename OutputIterator1,
           typename OutputIterator2>
-_CCCL_HOST_DEVICE thrust::pair<OutputIterator1, OutputIterator2> reduce_by_key(
+_CCCL_HOST_DEVICE ::cuda::std::pair<OutputIterator1, OutputIterator2> reduce_by_key(
   thrust::execution_policy<DerivedPolicy>& exec,
   InputIterator1 keys_first,
   InputIterator1 keys_last,
@@ -51,7 +50,7 @@ template <typename DerivedPolicy,
           typename OutputIterator1,
           typename OutputIterator2,
           typename BinaryPredicate>
-_CCCL_HOST_DEVICE thrust::pair<OutputIterator1, OutputIterator2> reduce_by_key(
+_CCCL_HOST_DEVICE ::cuda::std::pair<OutputIterator1, OutputIterator2> reduce_by_key(
   thrust::execution_policy<DerivedPolicy>& exec,
   InputIterator1 keys_first,
   InputIterator1 keys_last,
@@ -67,7 +66,7 @@ template <typename DerivedPolicy,
           typename OutputIterator2,
           typename BinaryPredicate,
           typename BinaryFunction>
-_CCCL_HOST_DEVICE thrust::pair<OutputIterator1, OutputIterator2> reduce_by_key(
+_CCCL_HOST_DEVICE ::cuda::std::pair<OutputIterator1, OutputIterator2> reduce_by_key(
   thrust::execution_policy<DerivedPolicy>& exec,
   InputIterator1 keys_first,
   InputIterator1 keys_last,
@@ -76,7 +75,6 @@ _CCCL_HOST_DEVICE thrust::pair<OutputIterator1, OutputIterator2> reduce_by_key(
   OutputIterator2 values_output,
   BinaryPredicate binary_pred,
   BinaryFunction binary_op);
-
 } // namespace system::detail::generic
 THRUST_NAMESPACE_END
 

@@ -34,7 +34,6 @@
 THRUST_NAMESPACE_BEGIN
 namespace system::detail::generic
 {
-
 template <typename DerivedPolicy, typename ForwardIterator, typename T>
 _CCCL_HOST_DEVICE ForwardIterator
 remove(thrust::execution_policy<DerivedPolicy>& exec, ForwardIterator first, ForwardIterator last, const T& value);
@@ -79,7 +78,6 @@ _CCCL_HOST_DEVICE OutputIterator remove_copy_if(
   InputIterator2 stencil,
   OutputIterator result,
   Predicate pred);
-
 } // namespace system::detail::generic
 THRUST_NAMESPACE_END
 

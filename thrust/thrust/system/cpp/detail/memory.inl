@@ -31,11 +31,8 @@
 #include <cuda/std/limits>
 
 THRUST_NAMESPACE_BEGIN
-namespace system
+namespace system::cpp
 {
-namespace cpp
-{
-
 pointer<void> malloc(std::size_t n)
 {
   tag t;
@@ -54,7 +51,5 @@ void free(pointer<void> ptr)
   tag t;
   return thrust::system::detail::sequential::free(t, ptr);
 } // end free()
-
-} // namespace cpp
-} // namespace system
+} // namespace system::cpp
 THRUST_NAMESPACE_END

@@ -37,7 +37,6 @@
 
 namespace cuda::experimental::stf
 {
-
 class cb;
 
 #    ifdef STATEFUL_CALLBACKS
@@ -600,7 +599,6 @@ inline bool cudaCallbackQueueProgress(callback_queue* q, bool flag)
 
   return false;
 }
-
 } // end namespace cuda::experimental::stf
 
 #  endif // !_CCCL_COMPILER(MSVC)

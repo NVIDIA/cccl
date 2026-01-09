@@ -30,17 +30,17 @@
 #include <thrust/detail/internal_functional.h>
 #include <thrust/detail/range/head_flags.h>
 #include <thrust/detail/temporary_array.h>
-#include <thrust/distance.h>
 #include <thrust/functional.h>
 #include <thrust/iterator/iterator_traits.h>
 #include <thrust/system/detail/generic/unique.h>
 #include <thrust/transform.h>
 #include <thrust/unique.h>
 
+#include <cuda/std/__functional/operations.h>
+
 THRUST_NAMESPACE_BEGIN
 namespace system::detail::generic
 {
-
 template <typename DerivedPolicy, typename ForwardIterator>
 _CCCL_HOST_DEVICE ForwardIterator
 unique(thrust::execution_policy<DerivedPolicy>& exec, ForwardIterator first, ForwardIterator last)
@@ -108,6 +108,5 @@ unique_count(thrust::execution_policy<DerivedPolicy>& exec, ForwardIterator firs
   using value_type = thrust::detail::it_value_t<ForwardIterator>;
   return thrust::unique_count(exec, first, last, ::cuda::std::equal_to<value_type>());
 } // end unique_copy()
-
 } // namespace system::detail::generic
 THRUST_NAMESPACE_END

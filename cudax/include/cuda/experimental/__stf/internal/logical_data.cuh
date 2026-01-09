@@ -38,7 +38,6 @@
 
 namespace cuda::experimental::stf
 {
-
 logical_data_untyped unpack_state(const ::std::shared_ptr<void>&);
 
 class logical_data_untyped_impl;
@@ -102,7 +101,6 @@ private:
 
 namespace reserved
 {
-
 /**
  * @brief This class describes the status of a logical data (e.g. previous writer,
  * readers...) in a specific task context.
@@ -929,7 +927,6 @@ public:
 private:
   ::std::mutex mutex;
 };
-
 } // namespace reserved
 
 /** @brief Base class of all `logical_data<T>` types. It does not "know" the type of the data, so most of the time it's
@@ -1840,7 +1837,6 @@ inline void reserved::logical_data_untyped_impl::erase()
 
 namespace reserved
 {
-
 /**
  * @brief Implements STF dependencies.
  *
@@ -2062,7 +2058,6 @@ inline void fetch_data(
   // because we are reclaiming data for instance.
   result.merge(mv(stf_prereq));
 }
-
 }; // namespace reserved
 
 // This implementation is deferred because we need the logical_data_untyped type in it
@@ -2603,5 +2598,4 @@ inline void reclaim_memory(
     }
   }
 }
-
 } // namespace cuda::experimental::stf

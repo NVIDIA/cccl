@@ -498,5 +498,4 @@ C2H_TEST("let_value has the correct completion domain", "[adaptors][let_value]")
   auto dom   = ex::get_completion_domain<ex::set_value_t>(ex::get_env(sndr));
   static_assert(::cuda::std::is_same_v<decltype(dom), let_value_test_domain>);
 }
-
 } // namespace

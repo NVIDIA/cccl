@@ -32,7 +32,6 @@ THRUST_NAMESPACE_BEGIN
 
 namespace random
 {
-
 template <typename UIntType, size_t w, size_t k, size_t q, size_t s>
 _CCCL_HOST_DEVICE linear_feedback_shift_engine<UIntType, w, k, q, s>::linear_feedback_shift_engine(result_type value)
 {
@@ -145,7 +144,6 @@ operator>>(std::basic_istream<CharT, Traits>& is, linear_feedback_shift_engine<U
 {
   return thrust::random::detail::random_core_access::stream_in(is, e);
 }
-
 } // namespace random
 
 THRUST_NAMESPACE_END

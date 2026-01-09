@@ -168,7 +168,6 @@ inline constexpr TypeID const& makeArgumentID()
 {
   return makeTypeID<ArgumentListID<Args...>>();
 }
-
 } // namespace detail
 
 //===----------------------------------------------------------------------===//
@@ -546,7 +545,6 @@ _CCCL_END_NAMESPACE_CUDA_STD
 // TCT - Test container type
 namespace TCT
 {
-
 template <class T = CopyInsertable<1>>
 using vector = std::vector<T, ContainerTestAllocator<T, T>>;
 template <class T = CopyInsertable<1>>
@@ -581,7 +579,6 @@ using unordered_multiset =
 
 template <class Value = CopyInsertable<1>>
 using multiset = std::multiset<Value, std::less<Value>, ContainerTestAllocator<Value, Value>>;
-
 } // end namespace TCT
 
 #endif // SUPPORT_CONTAINER_TEST_TYPES_H

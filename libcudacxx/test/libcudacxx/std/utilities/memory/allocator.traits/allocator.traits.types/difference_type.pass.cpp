@@ -58,11 +58,8 @@ private:
   typedef void difference_type;
 };
 
-namespace cuda
+namespace cuda::std
 {
-namespace std
-{
-
 template <>
 struct pointer_traits<C<char>::pointer>
 {
@@ -70,9 +67,7 @@ struct pointer_traits<C<char>::pointer>
   typedef char element_type;
   typedef signed char difference_type;
 };
-
-} // namespace std
-} // namespace cuda
+} // namespace cuda::std
 
 int main(int, char**)
 {

@@ -36,7 +36,7 @@
 #  pragma system_header
 #endif // no system header
 
-#if _CCCL_HAS_CUDA_COMPILER()
+#if _CCCL_CUDA_COMPILATION()
 #  include <thrust/system/cuda/detail/core/triple_chevron_launch.h>
 #  include <thrust/system/cuda/detail/core/util.h>
 
@@ -58,11 +58,7 @@ _CCCL_DIAG_SUPPRESS_NVHPC(attribute_requires_external_linkage)
 
 THRUST_NAMESPACE_BEGIN
 
-namespace cuda_cub
-{
-namespace core
-{
-namespace detail
+namespace cuda_cub::core::detail
 {
 #  ifndef THRUST_DETAIL_KERNEL_ATTRIBUTES
 #    define THRUST_DETAIL_KERNEL_ATTRIBUTES CCCL_DETAIL_KERNEL_ATTRIBUTES
@@ -107,10 +103,8 @@ struct AgentLauncher : Agent
   bool has_shmem;
   size_t shmem_size;
 
-  enum
-  {
-    MAX_SHMEM_PER_BLOCK = 48 * 1024,
-  };
+  static constexpr int MAX_SHMEM_PER_BLOCK = 48 * 1024;
+
   using has_enough_shmem_t = typename has_enough_shmem<Agent, MAX_SHMEM_PER_BLOCK>::type;
   using shm1               = has_enough_shmem<Agent, MAX_SHMEM_PER_BLOCK>;
 
@@ -279,11 +273,8 @@ struct AgentLauncher : Agent
     sync();
   }
 };
-
-} // namespace detail
-} // namespace core
-} // namespace cuda_cub
+} // namespace cuda_cub::core::detail
 
 THRUST_NAMESPACE_END
 
-#endif
+#endif // _CCCL_CUDA_COMPILATION()

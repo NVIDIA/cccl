@@ -27,7 +27,7 @@
 #include "test_macros.h"
 #include <sys/wait.h>
 
-#ifndef _LIBCUDACXX_VERSION
+#ifndef _CUDA_STD_VERSION
 #  error "This header may only be used for libc++ tests"
 #endif
 

@@ -53,7 +53,6 @@
 
 namespace cuda::experimental::stf
 {
-
 template <typename T>
 class logical_data;
 
@@ -70,7 +69,6 @@ class stream_ctx;
 
 namespace reserved
 {
-
 template <typename Ctx, typename exec_place_t, typename shape_t, typename partitioner_t, typename... DepsAndOps>
 class parallel_for_scope;
 
@@ -85,7 +83,6 @@ class cuda_kernel_scope;
 
 // We need to have a map of logical data stored in the ctx.
 class logical_data_untyped_impl;
-
 } // end namespace reserved
 
 /**
@@ -1145,5 +1142,4 @@ private:
     return ::std::make_shared<typename Engine::template data_interface<T>>(::std::forward<P>(p)...);
   }
 };
-
 } // end namespace cuda::experimental::stf

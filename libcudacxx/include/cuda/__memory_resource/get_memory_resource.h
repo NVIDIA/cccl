@@ -21,15 +21,17 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/__memory_resource/properties.h>
-#include <cuda/__memory_resource/resource.h>
-#include <cuda/__stream/stream_ref.h>
-#include <cuda/std/__concepts/equality_comparable.h>
-#include <cuda/std/__execution/env.h>
-#include <cuda/std/__type_traits/is_same.h>
-#include <cuda/std/__type_traits/remove_cvref.h>
+#if _CCCL_HAS_CTK()
 
-#include <cuda/std/__cccl/prologue.h>
+#  include <cuda/__memory_resource/properties.h>
+#  include <cuda/__memory_resource/resource.h>
+#  include <cuda/__stream/stream_ref.h>
+#  include <cuda/std/__concepts/equality_comparable.h>
+#  include <cuda/std/__execution/env.h>
+#  include <cuda/std/__type_traits/is_same.h>
+#  include <cuda/std/__type_traits/remove_cvref.h>
+
+#  include <cuda/std/__cccl/prologue.h>
 
 _CCCL_BEGIN_NAMESPACE_CUDA_MR
 
@@ -77,6 +79,8 @@ _CCCL_GLOBAL_CONSTANT auto get_memory_resource = get_memory_resource_t{};
 
 _CCCL_END_NAMESPACE_CUDA_MR
 
-#include <cuda/std/__cccl/epilogue.h>
+#  include <cuda/std/__cccl/epilogue.h>
+
+#endif // _CCCL_HAS_CTK()
 
 #endif //_CUDA__MEMORY_RESOURCE_GET_MEMORY_RESOURCE_H

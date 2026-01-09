@@ -30,7 +30,6 @@
 THRUST_NAMESPACE_BEGIN
 namespace system::detail::generic
 {
-
 struct key_flag_tuple
 {
   std::uint64_t key;
@@ -120,6 +119,5 @@ _CCCL_HOST_DEVICE void shuffle_copy(
   // pseudorandom permuted index
   thrust::inclusive_scan(exec, key_flag_it, key_flag_it + n, gather_output_it, key_flag_scan_op());
 }
-
 } // namespace system::detail::generic
 THRUST_NAMESPACE_END

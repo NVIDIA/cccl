@@ -27,7 +27,6 @@
 
 namespace cuda::experimental::stf
 {
-
 class exec_place;
 
 template <auto... spec>
@@ -319,5 +318,4 @@ UNITTEST("interpreted policy")
   p.set_level_sync(1, true);
 };
 #endif // UNITTESTED_FILE
-
 } // end namespace cuda::experimental::stf

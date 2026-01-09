@@ -32,10 +32,8 @@
 
 namespace cuda::experimental
 {
-
 namespace __detail
 {
-
 template <::CUfunction_attribute _Attr, typename _Type>
 struct __kernel_attr_impl
 {
@@ -50,7 +48,7 @@ struct __kernel_attr_impl
   [[nodiscard]] type operator()(kernel_ref<_Signature> __kernel, device_ref __dev) const
   {
     return static_cast<type>(
-      _CUDA_DRIVER::__kernelGetAttribute(_Attr, __kernel.get(), _CUDA_DRIVER::__deviceGet(__dev.get())));
+      ::cuda::__driver::__kernelGetAttribute(_Attr, __kernel.get(), ::cuda::__driver::__deviceGet(__dev.get())));
   }
 };
 
@@ -86,7 +84,6 @@ template <>
 struct __kernel_attr<::CU_FUNC_ATTRIBUTE_CLUSTER_SIZE_MUST_BE_SET> //
     : __kernel_attr_impl<::CU_FUNC_ATTRIBUTE_CLUSTER_SIZE_MUST_BE_SET, bool>
 {};
-
 } // namespace __detail
 
 namespace kernel_attributes

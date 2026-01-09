@@ -1076,5 +1076,4 @@ C2H_TEST("bulk can be customized, independently of bulk_chunked", "[adaptors][th
   bulk_can_be_customized_independently_of_bulk_chunked();
 }
 #endif // !defined(__CUDA_ARCH__)
-
 } // namespace

@@ -79,7 +79,6 @@ Arg const& unwrap(Arg& a)
   static_assert(!std::is_class<Arg>::value, "cannot pass class here");
   return a;
 }
-
 } // namespace format_string_detail
 
 template <class... Args>

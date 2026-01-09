@@ -21,18 +21,21 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/__memory_resource/get_property.h>
-#include <cuda/__memory_resource/properties.h>
-#include <cuda/__memory_resource/resource.h>
-#include <cuda/__utility/basic_any.h>
-#include <cuda/std/__concepts/concept_macros.h>
-#include <cuda/std/__utility/forward.h>
-#include <cuda/std/optional>
+#if _CCCL_HAS_CTK()
 
-#include <cuda/std/__cccl/prologue.h>
+#  include <cuda/__memory_resource/get_property.h>
+#  include <cuda/__memory_resource/properties.h>
+#  include <cuda/__memory_resource/resource.h>
+#  include <cuda/__utility/basic_any.h>
+#  include <cuda/std/__concepts/concept_macros.h>
+#  include <cuda/std/__utility/delegate_constructors.h>
+#  include <cuda/std/__utility/forward.h>
+#  include <cuda/std/optional>
+
+#  include <cuda/std/__cccl/prologue.h>
 
 _CCCL_BEGIN_NAMESPACE_CUDA_MR
-#ifndef _CCCL_DOXYGEN_INVOKED // Do not document this
+#  ifndef _CCCL_DOXYGEN_INVOKED // Do not document this
 
 template <class _Property>
 using __property_result_t _CCCL_NODEBUG_ALIAS = ::cuda::std::__type_call1< //
@@ -208,7 +211,7 @@ struct _CCCL_DECLSPEC_EMPTY_BASES any_synchronous_resource
     , __with_try_get_property<any_synchronous_resource<_Properties...>>
 {
   // Inherit constructors from __basic_any
-  _LIBCUDACXX_DELEGATE_CONSTRUCTORS(any_synchronous_resource, ::cuda::__basic_any, __iresource<_Properties...>);
+  _CCCL_DELEGATE_CONSTRUCTORS(any_synchronous_resource, ::cuda::__basic_any, __iresource<_Properties...>);
 
   // any_resource is convertible to any_synchronous_resource
   _CCCL_TEMPLATE(class... _OtherProperties)
@@ -217,13 +220,9 @@ struct _CCCL_DECLSPEC_EMPTY_BASES any_synchronous_resource
       : __base(::cuda::std::move(__other.__get_base()))
   {}
 
-  using default_queries = properties_list<_Properties...>;
+  using default_queries = ::cuda::mr::properties_list<_Properties...>;
 
 private:
-  static_assert(::cuda::mr::__contains_execution_space_property<_Properties...>,
-                "The properties of any_synchronous_resource must contain at least one execution "
-                "space "
-                "property!");
   using __base::interface;
 };
 
@@ -238,15 +237,11 @@ struct _CCCL_DECLSPEC_EMPTY_BASES any_resource
     , __with_try_get_property<any_resource<_Properties...>>
 {
   // Inherit constructors from __basic_any
-  _LIBCUDACXX_DELEGATE_CONSTRUCTORS(any_resource, ::cuda::__basic_any, __iasync_resource<_Properties...>);
+  _CCCL_DELEGATE_CONSTRUCTORS(any_resource, ::cuda::__basic_any, __iasync_resource<_Properties...>);
 
   using default_queries = ::cuda::mr::properties_list<_Properties...>;
 
 private:
-  static_assert(::cuda::mr::__contains_execution_space_property<_Properties...>,
-                "The properties of any_resource must contain at least one execution space "
-                "property!");
-
   template <class...>
   friend struct any_synchronous_resource;
 
@@ -266,7 +261,7 @@ struct _CCCL_DECLSPEC_EMPTY_BASES synchronous_resource_ref
     , __with_try_get_property<synchronous_resource_ref<_Properties...>>
 {
   // Inherit constructors from __basic_any
-  _LIBCUDACXX_DELEGATE_CONSTRUCTORS(synchronous_resource_ref, ::cuda::__basic_any, __iresource<_Properties...>&);
+  _CCCL_DELEGATE_CONSTRUCTORS(synchronous_resource_ref, ::cuda::__basic_any, __iresource<_Properties...>&);
 
   synchronous_resource_ref(const synchronous_resource_ref& __other) noexcept = default;
 
@@ -303,11 +298,6 @@ struct _CCCL_DECLSPEC_EMPTY_BASES synchronous_resource_ref
   using default_queries = ::cuda::mr::properties_list<_Properties...>;
 
 private:
-  static_assert(::cuda::mr::__contains_execution_space_property<_Properties...>,
-                "The properties of synchronous_resource_ref must contain at least one execution "
-                "space "
-                "property!");
-
   template <class...>
   friend struct synchronous_resource_ref;
 
@@ -327,7 +317,7 @@ struct _CCCL_DECLSPEC_EMPTY_BASES resource_ref
     , __with_try_get_property<resource_ref<_Properties...>>
 {
   // Inherit other constructors from __basic_any
-  _LIBCUDACXX_DELEGATE_CONSTRUCTORS(resource_ref, ::cuda::__basic_any, __iasync_resource<_Properties...>&);
+  _CCCL_DELEGATE_CONSTRUCTORS(resource_ref, ::cuda::__basic_any, __iasync_resource<_Properties...>&);
 
   resource_ref(const resource_ref& __other) noexcept = default;
 
@@ -353,13 +343,9 @@ struct _CCCL_DECLSPEC_EMPTY_BASES resource_ref
     return *this;
   }
 
-  using default_queries = properties_list<_Properties...>;
+  using default_queries = ::cuda::mr::properties_list<_Properties...>;
 
 private:
-  static_assert(::cuda::mr::__contains_execution_space_property<_Properties...>,
-                "The properties of resource_ref must contain at least one execution space "
-                "property!");
-
   template <class...>
   friend struct synchronous_resource_ref;
   template <class...>
@@ -392,7 +378,7 @@ synchronous_resource_ref<_Properties...> __as_resource_ref(resource_ref<_Propert
   return __mr;
 }
 
-#else // ^^^ !_CCCL_DOXYGEN_INVOKED ^^^ / vvv _CCCL_DOXYGEN_INVOKED vvv
+#  else // ^^^ !_CCCL_DOXYGEN_INVOKED ^^^ / vvv _CCCL_DOXYGEN_INVOKED vvv
 
 enum class _ResourceKind
 {
@@ -837,7 +823,7 @@ using synchronous_resource_ref = basic_resource_ref<_ResourceKind::_Synchronous,
 template <class... _Properties>
 using resource_ref = basic_resource_ref<_ResourceKind::_Asynchronous, _Properties...>;
 
-#endif // _CCCL_DOXYGEN_INVOKED
+#  endif // _CCCL_DOXYGEN_INVOKED
 
 //! @rst
 //! .. _cudax-memory-resource-make-any-resource:
@@ -893,6 +879,8 @@ auto make_any_resource(_Args&&... __args) -> any_resource<_Properties...>
 
 _CCCL_END_NAMESPACE_CUDA_MR
 
-#include <cuda/std/__cccl/epilogue.h>
+#  include <cuda/std/__cccl/epilogue.h>
+
+#endif // _CCCL_HAS_CTK()
 
 #endif // _CUDA___MEMORY_RESOURCE_ANY_RESOURCE_H

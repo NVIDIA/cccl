@@ -21,17 +21,21 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/__memory_resource/get_property.h>
-#include <cuda/__stream/stream_ref.h>
-#include <cuda/std/__concepts/concept_macros.h>
-#include <cuda/std/__concepts/convertible_to.h>
-#include <cuda/std/__concepts/equality_comparable.h>
-#include <cuda/std/__concepts/same_as.h>
-#include <cuda/std/__tuple_dir/sfinae_helpers.h>
-#include <cuda/std/__type_traits/decay.h>
-#include <cuda/std/__type_traits/fold.h>
+#if _CCCL_HAS_CTK()
 
-#include <cuda/std/__cccl/prologue.h>
+#  include <cuda/__memory_resource/get_property.h>
+#  include <cuda/__stream/stream_ref.h>
+#  include <cuda/__utility/__basic_any/semiregular.h>
+#  include <cuda/std/__concepts/concept_macros.h>
+#  include <cuda/std/__concepts/convertible_to.h>
+#  include <cuda/std/__concepts/equality_comparable.h>
+#  include <cuda/std/__concepts/same_as.h>
+#  include <cuda/std/__tuple_dir/sfinae_helpers.h>
+#  include <cuda/std/__type_traits/decay.h>
+#  include <cuda/std/__type_traits/fold.h>
+#  include <cuda/std/__type_traits/is_same.h>
+
+#  include <cuda/std/__cccl/prologue.h>
 
 _CCCL_BEGIN_NAMESPACE_CUDA_MR
 
@@ -119,7 +123,17 @@ _CCCL_CONCEPT __different_resource =
   __different_resource__<::cuda::std::convertible_to<_OtherResource const&, _Resource const&>>::__value(
     static_cast<_OtherResource*>(nullptr));
 
+template <class _Resource, class _OtherResource>
+_CCCL_CONCEPT __non_polymorphic_resources = _CCCL_REQUIRES_EXPR((_Resource, _OtherResource))(
+  requires(::cuda::mr::synchronous_resource<_Resource>),
+  requires(::cuda::mr::synchronous_resource<_OtherResource>),
+  requires(::cuda::__non_polymorphic<_Resource>),
+  requires(::cuda::__non_polymorphic<_OtherResource>));
+
 _CCCL_END_NAMESPACE_CUDA_MR
-#include <cuda/std/__cccl/epilogue.h>
+
+#  include <cuda/std/__cccl/epilogue.h>
+
+#endif // _CCCL_HAS_CTK()
 
 #endif //_CUDA___MEMORY_RESOURCE_RESOURCE_H

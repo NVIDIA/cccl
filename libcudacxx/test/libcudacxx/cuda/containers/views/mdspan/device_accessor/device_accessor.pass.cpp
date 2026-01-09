@@ -6,32 +6,29 @@
 // SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
+// UNSUPPORTED: nvrtc
 
 #include <cuda/mdspan>
 
 #include "test_macros.h"
 
-__device__ int device_array[]              = {1, 2, 3, 4};
-__device__ __managed__ int managed_array[] = {1, 2, 3, 4};
-
 using ext_t = cuda::std::extents<int, 4>;
 
-__device__ void basic_mdspan_access_test()
+bool device_accessor_test()
 {
-  [[maybe_unused]] cuda::device_mdspan<int, ext_t> d_md{device_array, ext_t{}};
-  [[maybe_unused]] cuda::device_mdspan<int, ext_t> m_md{managed_array, ext_t{}};
-  NV_IF_TARGET(NV_IS_DEVICE, unused(d_md[0]);)
-  unused(m_md[0]);
-}
-
-__global__ void test_kernel(cuda::device_mdspan<int, ext_t> md)
-{
-  [[maybe_unused]] cuda::device_mdspan<int, ext_t> h_md2{md};
-  unused(h_md2);
+  int* device_ptr;
+  int* managed_ptr;
+  assert(cudaMalloc(&device_ptr, 4) == cudaSuccess);
+  assert(cudaMallocManaged(&managed_ptr, 4) == cudaSuccess);
+  cuda::device_mdspan<int, ext_t> d_md{device_ptr, ext_t{}};
+  cuda::device_mdspan<int, ext_t> m_md{managed_ptr, ext_t{}};
+  unused(d_md);
+  unused(m_md);
+  return true;
 }
 
 int main(int, char**)
 {
-  NV_IF_TARGET(NV_IS_DEVICE, (basic_mdspan_access_test();))
+  NV_IF_TARGET(NV_IS_HOST, (assert(device_accessor_test());))
   return 0;
 }

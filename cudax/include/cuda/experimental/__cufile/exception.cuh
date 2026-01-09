@@ -30,7 +30,6 @@
 
 namespace cuda::experimental
 {
-
 #if _CCCL_HAS_CTK()
 using __cufile_error_t = ::CUfileOpError;
 #else // ^^^ _CCCL_HAS_CTK() ^^^ // vvv !_CCCL_HAS_CTK() vvv
@@ -117,5 +116,4 @@ public:
         __throw_cufile_error(__cufile_error_status.err, _MSG, #_NAME);                                      \
     }                                                                                                       \
   } while (0)
-
 } // namespace cuda::experimental

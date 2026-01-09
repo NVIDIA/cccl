@@ -30,7 +30,7 @@
 #include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/is_arithmetic.h>
 #include <cuda/std/__type_traits/is_array.h>
-#include <cuda/std/__type_traits/is_constant_evaluated.h>
+#include <cuda/std/__type_traits/is_constructible.h>
 #include <cuda/std/__type_traits/is_trivially_constructible.h>
 #include <cuda/std/__type_traits/is_trivially_destructible.h>
 #include <cuda/std/__type_traits/is_trivially_move_assignable.h>
@@ -71,7 +71,6 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 // This is possible because we are calling ::new ignoring any user defined overloads of operator placement new
 namespace __detail
 {
-
 #if _CCCL_COMPILER(NVHPC, <, 25, 5) // NVHPC has issues determining the narrowing conversions
 template <class _To, class...>
 struct __check_narrowing : true_type
@@ -104,14 +103,13 @@ _CCCL_CONCEPT __can_optimize_construct_at = _CCCL_REQUIRES_EXPR((_Tp, variadic _
 #if _CCCL_STD_VER >= 2020
 
 _CCCL_EXEC_CHECK_DISABLE
-template <class _Tp,
-          class... _Args,
-          class = decltype(::new(::cuda::std::declval<void*>()) _Tp(::cuda::std::declval<_Args>()...))>
+_CCCL_TEMPLATE(class _Tp, class... _Args)
+_CCCL_REQUIRES(is_constructible_v<_Tp, _Args...>)
 _CCCL_API inline _CCCL_CONSTEXPR_CXX20 _Tp* construct_at(_Tp* __location, _Args&&... __args)
 {
   _CCCL_ASSERT(__location != nullptr, "null pointer given to construct_at");
   // Need to go through `std::construct_at` as that is the explicitly blessed function
-  if (::cuda::std::is_constant_evaluated())
+  _CCCL_IF_CONSTEVAL
   {
     return ::std::construct_at(__location, ::cuda::std::forward<_Args>(__args)...);
   }
@@ -134,7 +132,7 @@ _CCCL_API inline _CCCL_CONSTEXPR_CXX20 _Tp* __construct_at(_Tp* __location, _Arg
   _CCCL_ASSERT(__location != nullptr, "null pointer given to construct_at");
 #if _CCCL_STD_VER >= 2020
   // Need to go through `std::construct_at` as that is the explicitly blessed function
-  if (::cuda::std::is_constant_evaluated())
+  _CCCL_IF_CONSTEVAL
   {
     return ::std::construct_at(__location, ::cuda::std::forward<_Args>(__args)...);
   }
@@ -159,7 +157,7 @@ _CCCL_API constexpr _ForwardIterator __destroy(_ForwardIterator, _ForwardIterato
 
 _CCCL_EXEC_CHECK_DISABLE
 template <class _Tp>
-_CCCL_API constexpr void __destroy_at(_Tp* __loc)
+_CCCL_API constexpr void __destroy_at([[maybe_unused]] _Tp* __loc)
 {
   _CCCL_ASSERT(__loc != nullptr, "null pointer given to __destroy_at");
   if constexpr (is_trivially_destructible_v<_Tp>)
@@ -202,7 +200,7 @@ __reverse_destroy(_BidirectionalIterator __first, _BidirectionalIterator __last)
 
 _CCCL_EXEC_CHECK_DISABLE
 template <class _Tp>
-_CCCL_API inline _CCCL_CONSTEXPR_CXX20 void destroy_at(_Tp* __loc)
+_CCCL_API inline _CCCL_CONSTEXPR_CXX20 void destroy_at([[maybe_unused]] _Tp* __loc)
 {
   _CCCL_ASSERT(__loc != nullptr, "null pointer given to __destroy_at");
   if constexpr (is_trivially_destructible_v<_Tp>)

@@ -27,7 +27,6 @@
 
 namespace cuda::experimental::stf::reserved
 {
-
 /**
  * @brief Repeats a blocks of code for a fixed number of steps
  *
@@ -87,5 +86,4 @@ private:
   // The supporting context for this construct
   context_t& ctx;
 };
-
 } // end namespace cuda::experimental::stf::reserved

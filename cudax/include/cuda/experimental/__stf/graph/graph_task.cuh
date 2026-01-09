@@ -37,7 +37,6 @@
 
 namespace cuda::experimental::stf
 {
-
 template <typename... Deps>
 class graph_task;
 
@@ -679,5 +678,4 @@ private:
     });
   }
 };
-
 } // namespace cuda::experimental::stf

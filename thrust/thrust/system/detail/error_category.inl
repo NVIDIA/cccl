@@ -36,7 +36,6 @@ THRUST_NAMESPACE_BEGIN
 
 namespace system
 {
-
 error_category ::~error_category()
 {
   ;
@@ -75,7 +74,6 @@ bool error_category ::operator<(const error_category& rhs) const
 
 namespace detail
 {
-
 class generic_error_category : public error_category
 {
 public:
@@ -282,7 +280,6 @@ public:
     }
   }
 }; // end system_category_result
-
 } // namespace detail
 
 inline const error_category& generic_category()
@@ -296,7 +293,6 @@ inline const error_category& system_category()
   static const detail::system_error_category result;
   return result;
 }
-
 } // namespace system
 
 THRUST_NAMESPACE_END

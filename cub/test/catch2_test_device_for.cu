@@ -1,29 +1,5 @@
-/******************************************************************************
- * Copyright (c) 2024, NVIDIA CORPORATION. All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *     * Redistributions of source code must retain the above copyright
- *       notice, this list of conditions and the following disclaimer.
- *     * Redistributions in binary form must reproduce the above copyright
- *       notice, this list of conditions and the following disclaimer in the
- *       documentation and/or other materials provided with the distribution.
- *     * Neither the name of the NVIDIA CORPORATION nor the
- *       names of its contributors may be used to endorse or promote products
- *       derived from this software without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
- * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
- * DISCLAIMED. IN NO EVENT SHALL NVIDIA CORPORATION BE LIABLE FOR ANY
- * DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
- * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
- * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
- * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- *
- ******************************************************************************/
+// SPDX-FileCopyrightText: Copyright (c) 2024, NVIDIA CORPORATION. All rights reserved.
+// SPDX-License-Identifier: BSD-3
 
 #include "insert_nested_NVTX_range_guard.h"
 
@@ -32,8 +8,9 @@
 #include <thrust/count.h>
 #include <thrust/detail/raw_pointer_cast.h>
 #include <thrust/equal.h>
-#include <thrust/iterator/counting_iterator.h>
 #include <thrust/sequence.h>
+
+#include <cuda/iterator>
 
 #include "catch2_test_launch_helper.h"
 #include <c2h/catch2_test_helper.h>
@@ -131,7 +108,7 @@ C2H_TEST("Device for each works with bad operators", "[for][device]")
 
   device_for_each(input.begin(), input.end(), referencing_operator_t{d_input, magic_value});
 
-  REQUIRE(thrust::equal(c2h::device_policy, input.begin(), input.end(), thrust::make_counting_iterator(std::size_t{})));
+  REQUIRE(thrust::equal(c2h::device_policy, input.begin(), input.end(), cuda::counting_iterator(std::size_t{})));
 }
 
 C2H_TEST("Device for each works with unaligned vectors", "[for][device]")
@@ -213,7 +190,7 @@ C2H_TEST("Device for each n works with bad operators", "[for][device]", offset_t
 
   device_for_each_n(input.begin(), num_items, referencing_operator_t{d_input, magic_value});
 
-  REQUIRE(thrust::equal(c2h::device_policy, input.begin(), input.end(), thrust::make_counting_iterator(std::size_t{})));
+  REQUIRE(thrust::equal(c2h::device_policy, input.begin(), input.end(), cuda::counting_iterator(std::size_t{})));
 }
 
 C2H_TEST("Device for each n works with unaligned vectors", "[for][device]", offset_type)
@@ -259,7 +236,7 @@ C2H_TEST("Device for each works with counting iterator", "[for][device]")
       max_items,
     }));
 
-  const auto it = thrust::counting_iterator<int>{0};
+  const auto it = cuda::counting_iterator<int>{0};
   c2h::device_vector<int> counts(num_items);
   device_for_each(it, it + num_items, incrementer_t{thrust::raw_pointer_cast(counts.data())});
 
