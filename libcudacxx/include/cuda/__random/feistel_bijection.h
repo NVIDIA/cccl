@@ -77,8 +77,8 @@ public:
   {
     // Mitchell, Rory, et al. "Bandwidth-optimal random shuffling for GPUs." ACM Transactions on Parallel Computing 9.1
     // (2022): 1-20.
-    uint32_t __L = __val >> __R_bits_;
-    uint32_t __R = __val & __R_mask_;
+    uint32_t __L = static_cast<uint32_t>(__val >> __R_bits_);
+    uint32_t __R = static_cast<uint32_t>(__val & __R_mask_);
     for (uint32_t __i = 0; __i < __num_rounds; __i++)
     {
       constexpr uint64_t __m0  = 0xD2B74407B1CE6E93;
