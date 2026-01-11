@@ -372,7 +372,7 @@ struct policy_selector
     bool all_inputs_contiguous                  = true;
     bool all_input_values_trivially_reloc       = true;
     bool can_memcpy_contiguous_inputs           = true;
-    bool all_value_types_have_power_of_two_size = ::cuda::is_power_of_two(::cuda::std::max(1, output.value_type_size));
+    bool all_value_types_have_power_of_two_size = ::cuda::is_power_of_two(output.value_type_size);
     for (const auto& input : inputs)
     {
       all_inputs_contiguous &= input.is_contiguous;
