@@ -24,7 +24,7 @@
 #include <nvbench_helper.cuh>
 
 #if !TUNE_BASE
-struct arch_policies
+struct policy_selector
 {
   _CCCL_API constexpr auto operator()(cuda::arch_id) const -> cub::detail::transform::transform_policy
   {
@@ -85,7 +85,7 @@ void bench_transform(nvbench::state& state,
       launch.get_stream()
 #if !TUNE_BASE
         ,
-      arch_policies{}
+      policy_selector{}
 #endif
     );
   });

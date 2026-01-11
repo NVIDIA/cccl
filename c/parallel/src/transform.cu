@@ -233,15 +233,15 @@ try
 
   const auto inputs =
     cuda::std::array<cub::detail::transform::iterator_info, 1>{transform::make_iterator_info(input_it)};
-  const auto output            = transform::make_iterator_info(output_it);
-  const auto cub_arch_policies = cub::detail::transform::arch_policies<1>{false, true, inputs, output};
+  const auto output     = transform::make_iterator_info(output_it);
+  const auto policy_sel = cub::detail::transform::policy_selector<1>{false, true, inputs, output};
 
   // TODO(bgruber): drop this if tuning policies become formattable
-  std::stringstream cub_arch_policies_str;
-  cub_arch_policies_str << cub_arch_policies(cuda::to_arch_id(cuda::compute_capability{cc_major, cc_minor}));
+  std::stringstream policy_sel_str;
+  policy_sel_str << policy_sel(cuda::to_arch_id(cuda::compute_capability{cc_major, cc_minor}));
 
   const auto policy_hub_expr = std::format(
-    "cub::detail::transform::arch_policies_from_types<false, true, ::cuda::std::tuple<{}>, {}>",
+    "cub::detail::transform::policy_selector_from_types<false, true, ::cuda::std::tuple<{}>, {}>",
     transform::get_iterator_name<input_storage_t>(input_it, transform::input_iterator_name),
     transform::get_iterator_name<output_storage_t>(output_it, transform::output_iterator_name));
 
@@ -271,7 +271,7 @@ static_assert(device_transform_policy()(::cuda::arch_id{{CUB_PTX_ARCH / 10}}) ==
     output_iterator_src, // 5
     op_src, // 6
     policy_hub_expr, // 7
-    cub_arch_policies_str.view()); // 8
+    policy_sel_str.view()); // 8
 
 #if false // CCCL_DEBUGGING_SWITCH
     fflush(stderr);
@@ -329,7 +329,7 @@ static_assert(device_transform_policy()(::cuda::arch_id{{CUB_PTX_ARCH / 10}}) ==
   build_ptr->cc                         = cc_major * 10 + cc_minor;
   build_ptr->cubin                      = (void*) result.data.release();
   build_ptr->cubin_size                 = result.size;
-  build_ptr->runtime_policy             = new cub::detail::transform::arch_policies<1>{cub_arch_policies};
+  build_ptr->runtime_policy             = new cub::detail::transform::policy_selector<1>{policy_sel};
   build_ptr->cache                      = new transform::cache();
 
   return CUDA_SUCCESS;
@@ -365,7 +365,7 @@ CUresult cccl_device_unary_transform(
       transform::cdt::always_true_predicate{},
       op,
       stream,
-      *static_cast<cub::detail::transform::arch_policies<1>*>(build.runtime_policy),
+      *static_cast<cub::detail::transform::policy_selector<1>*>(build.runtime_policy),
       transform::transform_kernel_source<1>{build, {transform::make_iterator_info(d_in)}},
       cub::detail::CudaDriverLauncherFactory{cu_device, build.cc}));
   }
@@ -418,15 +418,15 @@ try
 
   const auto inputs = cuda::std::array<cub::detail::transform::iterator_info, 2>{
     transform::make_iterator_info(input1_it), transform::make_iterator_info(input2_it)};
-  const auto output            = transform::make_iterator_info(output_it);
-  const auto cub_arch_policies = cub::detail::transform::arch_policies<2>{false, true, inputs, output};
+  const auto output     = transform::make_iterator_info(output_it);
+  const auto policy_sel = cub::detail::transform::policy_selector<2>{false, true, inputs, output};
 
   // TODO(bgruber): drop this if tuning policies become formattable
-  std::stringstream cub_arch_policies_str;
-  cub_arch_policies_str << cub_arch_policies(cuda::to_arch_id(cuda::compute_capability{cc_major, cc_minor}));
+  std::stringstream policy_sel_str;
+  policy_sel_str << policy_sel(cuda::to_arch_id(cuda::compute_capability{cc_major, cc_minor}));
 
   const auto policy_hub_expr = std::format(
-    "cub::detail::transform::arch_policies_from_types<false, true, ::cuda::std::tuple<{0}, {1}>, {2}>",
+    "cub::detail::transform::policy_selector_from_types<false, true, ::cuda::std::tuple<{0}, {1}>, {2}>",
     transform::get_iterator_name<input1_storage_t>(input1_it, transform::input1_iterator_name),
     transform::get_iterator_name<input2_storage_t>(input2_it, transform::input2_iterator_name),
     transform::get_iterator_name<output_storage_t>(output_it, transform::output_iterator_name));
@@ -464,7 +464,7 @@ static_assert(device_transform_policy()(::cuda::arch_id{{CUB_PTX_ARCH / 10}}) ==
     output_iterator_src, // 8
     op_src, // 9
     policy_hub_expr, // 10
-    cub_arch_policies_str.view()); // 11
+    policy_sel_str.view()); // 11
 
 #if false // CCCL_DEBUGGING_SWITCH
     fflush(stderr);
@@ -523,7 +523,7 @@ static_assert(device_transform_policy()(::cuda::arch_id{{CUB_PTX_ARCH / 10}}) ==
   build_ptr->cc                         = cc_major * 10 + cc_minor;
   build_ptr->cubin                      = (void*) result.data.release();
   build_ptr->cubin_size                 = result.size;
-  build_ptr->runtime_policy             = new cub::detail::transform::arch_policies<2>{cub_arch_policies};
+  build_ptr->runtime_policy             = new cub::detail::transform::policy_selector<2>{policy_sel};
   build_ptr->cache                      = new transform::cache();
 
   return CUDA_SUCCESS;
@@ -561,7 +561,7 @@ CUresult cccl_device_binary_transform(
       transform::cdt::always_true_predicate{},
       op,
       stream,
-      *static_cast<cub::detail::transform::arch_policies<2>*>(build.runtime_policy),
+      *static_cast<cub::detail::transform::policy_selector<2>*>(build.runtime_policy),
       transform::transform_kernel_source<2>{
         build, {transform::make_iterator_info(d_in1), transform::make_iterator_info(d_in2)}},
       cub::detail::CudaDriverLauncherFactory{cu_device, build.cc}));
@@ -624,11 +624,12 @@ try
   }
   using namespace cub::detail::transform;
   std::unique_ptr<char[]> cubin(static_cast<char*>(build_ptr->cubin));
-  std::unique_ptr<arch_policies<1>> rtp(static_cast<arch_policies<1>*>(build_ptr->runtime_policy)); // FIXME(bgruber):
-                                                                                                    // handle <2> as
-                                                                                                    // well
-  std::unique_ptr<transform::cache> cache(static_cast<transform::cache*>(build_ptr->cache));
-  check(cuLibraryUnload(build_ptr->library));
+  std::unique_ptr<policy_selector<1>> rtp(
+      static_cast<policy_selector<1>*>(build_ptr->runtime_policy)); // FIXME(bgruber):
+                                                                    // handle <2> as
+                                                                    // well
+    std::unique_ptr<transform::cache> cache(static_cast<transform::cache*>(build_ptr->cache));
+    check(cuLibraryUnload(build_ptr->library));
 
   return CUDA_SUCCESS;
 }

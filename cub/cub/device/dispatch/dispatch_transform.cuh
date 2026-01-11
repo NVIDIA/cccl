@@ -536,10 +536,10 @@ template <requires_stable_address StableAddress,
           typename Offset,
           typename Predicate,
           typename TransformOp,
-          typename PolicySelector        = arch_policies_from_types<StableAddress == requires_stable_address::yes,
-                                                                    ::cuda::std::is_same_v<Predicate, always_true_predicate>,
-                                                                    ::cuda::std::tuple<RandomAccessIteratorsIn...>,
-                                                                    RandomAccessIteratorOut>,
+          typename PolicySelector        = policy_selector_from_types<StableAddress == requires_stable_address::yes,
+                                                                      ::cuda::std::is_same_v<Predicate, always_true_predicate>,
+                                                                      ::cuda::std::tuple<RandomAccessIteratorsIn...>,
+                                                                      RandomAccessIteratorOut>,
           typename KernelSource          = TransformKernelSource<PolicySelector,
                                                                  Offset,
                                                                  ::cuda::std::tuple<RandomAccessIteratorsIn...>,
@@ -557,7 +557,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t dispatch(
   Predicate pred,
   TransformOp op,
   cudaStream_t stream,
-  PolicySelector arch_policies           = {},
+  PolicySelector policy_selector         = {},
   KernelSource kernel_source             = {},
   KernelLauncherFactory launcher_factory = {})
 {
@@ -577,7 +577,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t dispatch(
   }
 
   return dispatch_arch(
-    arch_policies,
+    policy_selector,
     arch_id,
     invoke_for_arch<::cuda::std::tuple<RandomAccessIteratorsIn...>,
                     RandomAccessIteratorOut,

@@ -358,7 +358,7 @@ _CCCL_HOST_DEVICE constexpr auto bulk_copy_dyn_smem_for_tile_size(
 }
 
 template <int InputCount>
-struct arch_policies
+struct policy_selector
 {
   bool requires_stable_address;
   bool dense_output;
@@ -495,7 +495,7 @@ struct arch_policies
 };
 
 #if _CCCL_HAS_CONCEPTS()
-static_assert(transform_policy_selector<arch_policies<1>>);
+static_assert(transform_policy_selector<policy_selector<1>>);
 #endif // _CCCL_HAS_CONCEPTS()
 
 // stateless version which can be passed to kernels
@@ -503,7 +503,7 @@ template <bool RequiresStableAddress,
           bool DenseOutput,
           typename RandomAccessIteratorTupleIn,
           typename RandomAccessIteratorOut>
-struct arch_policies_from_types
+struct policy_selector_from_types
 {
   static_assert(sizeof(RandomAccessIteratorTupleIn) == 0, "Second parameter must be a tuple");
 };
@@ -512,14 +512,14 @@ template <bool RequiresStableAddress,
           bool DenseOutput,
           typename... RandomAccessIteratorsIn,
           typename RandomAccessIteratorOut>
-struct arch_policies_from_types<RequiresStableAddress,
-                                DenseOutput,
-                                ::cuda::std::tuple<RandomAccessIteratorsIn...>,
-                                RandomAccessIteratorOut>
+struct policy_selector_from_types<RequiresStableAddress,
+                                  DenseOutput,
+                                  ::cuda::std::tuple<RandomAccessIteratorsIn...>,
+                                  RandomAccessIteratorOut>
 {
   [[nodiscard]] _CCCL_API constexpr auto operator()(::cuda::arch_id arch) const -> transform_policy
   {
-    constexpr auto policies = arch_policies<sizeof...(RandomAccessIteratorsIn)>{
+    constexpr auto policies = policy_selector<sizeof...(RandomAccessIteratorsIn)>{
       RequiresStableAddress,
       DenseOutput,
       {make_iterator_info<RandomAccessIteratorsIn>()...},

@@ -841,12 +841,11 @@ namespace detail
 #if _CCCL_HAS_CONCEPTS()
 _CCCL_API consteval void __needs_a_constexpr_value(auto) {}
 
-// TODO(bgruber): bikeshed name before we make the tuning API public
-template <typename T, typename ArchPolicy>
+template <typename T, typename Policy>
 concept policy_selector = requires(T hub, ::cuda::arch_id arch) {
-  { hub(arch) } -> _CCCL_CONCEPT_VSTD::same_as<ArchPolicy>;
+  { hub(arch) } -> _CCCL_CONCEPT_VSTD::same_as<Policy>;
   { __needs_a_constexpr_value(hub(arch)) };
-} && ::cuda::std::regular<ArchPolicy>;
+} && ::cuda::std::regular<Policy>;
 #endif // _CCCL_HAS_CONCEPTS()
 } // namespace detail
 
