@@ -41,7 +41,10 @@ public:
   template <class URBG>
   _CCCL_HOST_DEVICE feistel_bijection(std::uint64_t m, URBG&& g)
   {
-    const uint64_t total_bits = static_cast<uint64_t>(::cuda::std::max(8, ::cuda::std::bit_width(m)));
+    // Calculate number of bits needed to represent num_elements - 1
+    // Prevent zero
+    const uint64_t max_index  = ::cuda::std::max(static_cast<uint64_t>(1), m) - 1;
+    const uint64_t total_bits = static_cast<uint64_t>(::cuda::std::max(8, ::cuda::std::bit_width(max_index)));
     // Half bits rounded down
     L_bits = total_bits / 2;
     L_mask = (1ull << L_bits) - 1;
@@ -125,7 +128,6 @@ public:
     auto upcast_i = static_cast<typename Bijection::index_type>(i);
     auto upcast_n = static_cast<typename Bijection::index_type>(n);
 
-    // If i < n Iterating a bijection like this will always terminate.
     // If i >= n, then this may loop forever.
     if (upcast_i >= upcast_n)
     { // Avoid infinite loop.
