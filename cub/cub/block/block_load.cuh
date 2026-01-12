@@ -696,7 +696,7 @@ enum BlockLoadAlgorithm
   BLOCK_LOAD_WARP_TRANSPOSE_TIMESLICED,
 };
 
-#if !_CCCL_COMPILER(NVRTC)
+#if !_CCCL_COMPILER(NVRTC) && !defined(_CCCL_DOXYGEN_INVOKED)
 inline ::std::ostream& operator<<(::std::ostream& os, BlockLoadAlgorithm algo)
 {
   switch (algo)
@@ -717,7 +717,7 @@ inline ::std::ostream& operator<<(::std::ostream& os, BlockLoadAlgorithm algo)
       return os << "<unknown BlockLoadAlgorithm: " << static_cast<int>(algo) << ">";
   }
 }
-#endif // !_CCCL_COMPILER(NVRTC)
+#endif // !_CCCL_COMPILER(NVRTC) && !_CCCL_DOXYGEN_INVOKED
 
 //! @rst
 //! The BlockLoad class provides :ref:`collective <collective-primitives>` data movement methods for loading a linear
