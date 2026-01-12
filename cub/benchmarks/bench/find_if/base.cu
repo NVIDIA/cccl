@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright (c) 2025, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-#include <cub/device/device_find.cuk>
+#include <cub/device/device_find.cuh>
 
 #include <thrust/count.h>
 #include <thrust/detail/internal_functional.h>
