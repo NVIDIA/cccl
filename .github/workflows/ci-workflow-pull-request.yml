@@ -276,32 +276,27 @@ jobs:
   test-cpu-import:
     name: Test CPU-only import
     runs-on: ubuntu-latest
-    if: ${{ github.repository == 'NVIDIA/cccl' }}
+    needs: dispatch-groups-linux-two-stage
+    if: ${{ !cancelled() && github.repository == 'NVIDIA/cccl' }}
     permissions:
       contents: read
     steps:
-      - name: Checkout repo
-        uses: actions/checkout@v4
+      - name: Download wheel artifact
+        uses: actions/download-artifact@v4
         with:
-          persist-credentials: false
+          name: wheel-cccl-linux-amd64-py3.13
+          path: wheelhouse
 
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.13'
 
-      - name: Install cuda-cccl from PyPI and patch with PR changes
+      - name: Install wheel
         run: |
-          # Install the base package from PyPI (this has pre-built wheels)
-          pip install cuda-cccl[cu12]
-
-          # Find where the package is installed
-          SITE_PACKAGES=$(python -c "import cuda.compute; import os; print(os.path.dirname(os.path.dirname(cuda.compute.__file__)))")
-          echo "Site packages: $SITE_PACKAGES"
-
-          # Patch with PR changes to test the CPU-only import fix
-          cp python/cuda_cccl/cuda/compute/_bindings.py "$SITE_PACKAGES/cuda/compute/_bindings.py"
-          cp python/cuda_cccl/cuda/compute/__init__.py "$SITE_PACKAGES/cuda/compute/__init__.py"
+          echo "Available wheels:"
+          ls -la wheelhouse/
+          pip install wheelhouse/*.whl
 
       - name: Test CPU-only import
         run: |
