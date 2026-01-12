@@ -6,13 +6,26 @@ from ._block_exchange import (
     BlockExchangeType,
     exchange,
 )
-from ._block_load_store import load, store
+from ._block_histogram import (
+    BlockHistogram,
+    histogram,
+)
+from ._block_load_store import (
+    BlockLoad,
+    BlockStore,
+    load,
+    store,
+)
 from ._block_merge_sort import merge_sort_keys
 from ._block_radix_sort import (
     radix_sort_keys,
     radix_sort_keys_descending,
 )
 from ._block_reduce import reduce, sum
+from ._block_run_length_decode import (
+    BlockRunLength,
+    run_length,
+)
 from ._block_scan import (
     exclusive_scan,
     exclusive_sum,
@@ -23,9 +36,14 @@ from ._block_scan import (
 
 __all__ = [
     "BlockExchangeType",
+    "BlockHistogram",
+    "BlockLoad",
+    "BlockStore",
+    "BlockRunLength",
     "exchange",
     "exclusive_scan",
     "exclusive_sum",
+    "histogram",
     "inclusive_scan",
     "inclusive_sum",
     "load",
@@ -33,6 +51,7 @@ __all__ = [
     "radix_sort_keys",
     "radix_sort_keys_descending",
     "reduce",
+    "run_length",
     "scan",
     "store",
     "sum",

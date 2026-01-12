@@ -6,10 +6,13 @@ import re
 import tempfile
 from collections import namedtuple
 from enum import Enum
-from typing import BinaryIO, Union
+from types import SimpleNamespace
+from typing import BinaryIO, Type, Union
 
 import numba
+import numba.types
 import numpy as np
+from numba.cuda.stubs import Stub as CudaVectorTypeStub
 
 from ._typing import DimType
 
@@ -101,6 +104,32 @@ def find_unsigned(name, txt):
         return int(found.group(1))
 
 
+def find_unsigned_ints_in_ptx_by_suffix(suffixes, txt, raise_on_missing=True):
+    suffix_pattern = "|".join(re.escape(suffix) for suffix in suffixes)
+    pattern = (
+        r"^\.global \.align 4 \.u32 ([a-zA-Z_][a-zA-Z0-9_]*)"
+        rf"({suffix_pattern})(?: = ([0-9]+))?;"
+    )
+    regex = re.compile(pattern, re.MULTILINE)
+
+    matches = regex.findall(txt)
+    result_dict = {}
+
+    for prefix, suffix, value in matches:
+        key = suffix.lstrip("_")
+        if value:
+            result_dict[key] = int(value)
+        else:
+            result_dict[key] = 0
+
+    if raise_on_missing:
+        for suffix in suffixes:
+            if suffix not in result_dict:
+                raise ValueError(f"{suffix} not found in text")
+
+    return SimpleNamespace(**result_dict)
+
+
 def find_mangled_name(name, txt):
     regex = re.compile(f"[_a-zA-Z0-9]*{name}[_a-zA-Z0-9]*", re.MULTILINE)
     return regex.search(txt).group(0)
@@ -173,18 +202,37 @@ def normalize_dim_param(dim: DimType) -> dim3:
             msg = f"Tuple dimension must have 2 or 3 elements, got {len(dim)}"
             raise ValueError(msg)
 
+    # Last ditch effort at casting to an integer.
+    try:
+        dim = int(dim)
+    except (ValueError, TypeError):
+        pass
+    else:
+        if dim < 0:
+            msg = f"Dimension value must be non-negative, got {dim}"
+            raise ValueError(msg)
+        return dim3(dim, 1, 1)
+
     raise ValueError(f"Unsupported dimension type: {type(dim)}")
 
 
+def _is_cuda_vector_type(obj) -> bool:
+    """
+    Returns True iff the object is a CUDA vector type, False otherwise.
+    """
+    return isinstance(obj, type) and issubclass(obj, CudaVectorTypeStub)
+
+
 def normalize_dtype_param(
-    dtype: Union[str, type, "np.dtype", "numba.types.Type"],
-) -> "numba.types.Type":
+    dtype: Union[str, type, "np.dtype", numba.types.Type, Type[CudaVectorTypeStub]],
+) -> Union[numba.types.Type, Type[CudaVectorTypeStub]]:
     """
     Normalize the dtype parameter to an appropriate Numba type.
 
     The logic for this routine is as follows:
 
     - If the dtype is already a numba type, return it as is.
+    - If the dtype is already a numba-cuda vector type, return it as is.
     - If the dtype is a valid numpy dtype, convert it to the corresponding
       numba type.  Note that this applies to both `np.int32` and
       `np.dtype(np.int32)`.
@@ -202,7 +250,8 @@ def normalize_dtype_param(
         dtype: Supplies the dtype parameter to normalize.
 
     Returns:
-        The normalized dtype parameter as a numba type.
+        The normalized dtype parameter as a numba type, or, in the case of
+        CUDA vector types, the original dtype parameter.
 
     Raises:
         ValueError: If the dtype is invalid.
@@ -212,6 +261,10 @@ def normalize_dtype_param(
 
     # If dtype is already a numba type, return it as is.
     if isinstance(dtype, numba.types.Type):
+        return dtype
+
+    # If dtype is a CUDA vector type, return it as is.
+    if _is_cuda_vector_type(dtype):
         return dtype
 
     # Handle numpy dtype objects.
