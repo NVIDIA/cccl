@@ -24,9 +24,9 @@ workflows:
 
   pull_request:
     # Old CTK: Oldest/newest supported host compilers:
-    - {jobs: ['build'], std: 'minmax', ctk: '12.0', cxx: ['gcc7',  'gcc12', 'clang14',            'msvc2019', 'msvc14.39']}
-    - {jobs: ['build'], std: 'minmax', ctk: '12.X', cxx: ['gcc7',  'gcc',   'clang14', 'clang19', 'msvc2019', 'msvc'     ]}
-    - {jobs: ['build'], std: 'minmax', ctk: '13.0', cxx: ['gcc11', 'gcc',   'clang15', 'clang',   'msvc2019', 'msvc'     ]}
+    - {jobs: ['build'], std: 'minmax', ctk: '12.0', cxx: ['gcc7',  'gcc12', 'clang14',            'msvc2019', 'msvc14.39'        ]}
+    - {jobs: ['build'], std: 'minmax', ctk: '12.X', cxx: ['gcc7',  'gcc',   'clang14', 'clang19', 'msvc2019', 'msvc'             ]}
+    - {jobs: ['build'], std: 'minmax', ctk: '13.0', cxx: ['gcc11', 'gcc',   'clang15', 'clang',   'msvc2019', 'msvc', 'msvc2026' ]}
     # Old CTK: cudax has a different support matrix:
     - {jobs: ['build'], project: 'cudax', ctk: '12.0', std: 'minmax', cxx: ['gcc9',  'gcc12', 'clang14']}
     - {jobs: ['build'], project: 'cudax', ctk: '12.X', std: 'minmax', cxx: ['gcc9',  'gcc',   'clang14', 'clang19']}
@@ -35,7 +35,7 @@ workflows:
     - {jobs: ['build'], std: 'minmax', cxx: ['gcc11', 'clang15', 'msvc2019'] } # Oldest
     - {jobs: ['build'], std: 'max',    cxx: ['gcc12', 'gcc13'] }
     - {jobs: ['build'], std: 'max',    cxx: ['clang16', 'clang17', 'clang18', 'clang19'] }
-    - {jobs: ['build'], std: 'all',    cxx: ['gcc', 'clang', 'msvc']} # Latest
+    - {jobs: ['build'], std: 'all',    cxx: ['gcc', 'clang', 'msvc2026']} # Latest
     # Current CTK build-only: cudax has a different support matrix:
     - {jobs: ['build'], project: 'cudax', std: 'minmax', cxx: ['gcc11', 'clang15']} # Oldest
     - {jobs: ['build'], project: 'cudax', std: 'max',    cxx: ['gcc12']}
@@ -43,7 +43,7 @@ workflows:
     - {jobs: ['build'], project: 'cudax', std: 'all',    cxx: ['gcc', 'clang']} # Newest
     # Current CTK testing:
     - {jobs: ['test'], project: 'thrust',     std: 'max', cxx: ['gcc', 'clang', 'msvc'], gpu: 'rtx4090'}
-    - {jobs: ['test'], project: 'libcudacxx', std: 'max', cxx: ['gcc', 'clang', 'msvc'], gpu: 'rtx2080'}
+    - {jobs: ['test'], project: 'libcudacxx', std: 'max', cxx: ['gcc', 'clang', 'msvc', 'msvc2026'], gpu: 'rtx2080'}
     - {jobs: ['test'], project: 'cudax',      std: 'max', cxx: ['gcc', 'clang'], gpu: 'rtx2080'}
     - {jobs: ['test_nolid', 'test_lid0'], project: 'cub', std: 'max', cxx: ['gcc', 'clang', 'msvc'], gpu: 'rtxa6000'}
     - {jobs: ['test_lid1',  'test_lid2'], project: 'cub', std: 'max', cxx: ['gcc'],                  gpu: 'rtxa6000'}
@@ -59,7 +59,7 @@ workflows:
     - {jobs: ['nvrtc'], project: 'libcudacxx', std: 'all', gpu: 'rtx2080', sm: 'gpu'}
     - {jobs: ['verify_codegen'], project: 'libcudacxx'}
     # c.parallel -- pinned to gcc13 on Linux to match python
-    - {jobs: ['test'], project: 'cccl_c_parallel', ctk: '12.X', cxx: ['gcc13', 'msvc'], gpu: ['rtx2080']}
+    - {jobs: ['test'], project: 'cccl_c_parallel', ctk: '12.X', cxx: ['gcc13', 'msvc', 'msvc2026'], gpu: ['rtx2080']}
     - {jobs: ['test'], project: 'cccl_c_parallel', ctk: '13.X', cxx: ['gcc13', 'msvc'], gpu: ['rtx2080', 'l4', 'h100']}
     # c.experimental.stf-- pinned to gcc13 to match python
     - {jobs: ['test'], project: 'cccl_c_stf', ctk: '12.X', cxx: 'gcc13', gpu: ['rtx2080']}
@@ -327,7 +327,7 @@ workflows:
 
 
 # The version of the devcontainer images to use from https://hub.docker.com/r/rapidsai/devcontainers
-devcontainer_version: '25.12'
+devcontainer_version: '26.02'
 
 # Compiler versions used for the cuda99.X internal builds:
 cuda99_gcc_version: 14
@@ -389,6 +389,8 @@ host_compilers:
       14.29: { stds: [17,   ], alias: '2019' }
       14.39: { stds: [17, 20] } # CTK 12.0 doesn't recognize >14.39 as MSVC 2022.
       14.44: { stds: [17, 20], alias: '2022' }
+      14.50: { stds: [17, 20], alias: '2026' }
+
   nvhpc:
     name: 'NVHPC'
     container_tag: 'nvhpc'
