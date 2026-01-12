@@ -554,17 +554,17 @@ void TestFeistelBijectionLength()
 {
   thrust::default_random_engine g(0xD5);
 
-  uint64_t m = 31;
+  uint64_t m = 345;
   thrust::detail::feistel_bijection f(m, g);
-  ASSERT_EQUAL(f.nearest_power_of_two(), uint64_t(32));
+  ASSERT_EQUAL(f.size(), uint64_t(512));
 
-  m = 32;
+  m = 256;
   f = thrust::detail::feistel_bijection(m, g);
-  ASSERT_EQUAL(f.nearest_power_of_two(), uint64_t(32));
+  ASSERT_EQUAL(f.size(), uint64_t(256));
 
   m = 1;
   f = thrust::detail::feistel_bijection(m, g);
-  ASSERT_EQUAL(f.nearest_power_of_two(), uint64_t(16));
+  ASSERT_EQUAL(f.size(), uint64_t(256));
 }
 DECLARE_UNITTEST(TestFeistelBijectionLength);
 
