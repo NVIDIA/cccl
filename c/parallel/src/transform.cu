@@ -329,8 +329,12 @@ static_assert(device_transform_policy()(::cuda::arch_id{{CUB_PTX_ARCH / 10}}) ==
   build_ptr->cc                         = cc_major * 10 + cc_minor;
   build_ptr->cubin                      = (void*) result.data.release();
   build_ptr->cubin_size                 = result.size;
-  build_ptr->runtime_policy             = new cub::detail::transform::policy_selector<1>{policy_sel};
   build_ptr->cache                      = new transform::cache();
+
+    // avoid new and delete which requires the allocated and freed types to match
+    static_assert(std::is_trivially_copyable_v<decltype(policy_sel)>);
+  build_ptr->runtime_policy = std::malloc(sizeof(policy_sel));
+    std::memcpy(build_ptr->runtime_policy, &policy_sel, sizeof(policy_sel));
 
   return CUDA_SUCCESS;
 }
@@ -523,8 +527,12 @@ static_assert(device_transform_policy()(::cuda::arch_id{{CUB_PTX_ARCH / 10}}) ==
   build_ptr->cc                         = cc_major * 10 + cc_minor;
   build_ptr->cubin                      = (void*) result.data.release();
   build_ptr->cubin_size                 = result.size;
-  build_ptr->runtime_policy             = new cub::detail::transform::policy_selector<2>{policy_sel};
   build_ptr->cache                      = new transform::cache();
+
+    // avoid new and delete which requires the allocated and freed types to match
+    static_assert(std::is_trivially_copyable_v<decltype(policy_sel)>);
+  build_ptr->runtime_policy = std::malloc(sizeof(policy_sel));
+    std::memcpy(build_ptr->runtime_policy, &policy_sel, sizeof(policy_sel));
 
   return CUDA_SUCCESS;
 }
@@ -624,10 +632,7 @@ try
   }
   using namespace cub::detail::transform;
   std::unique_ptr<char[]> cubin(static_cast<char*>(build_ptr->cubin));
-  std::unique_ptr<policy_selector<1>> rtp(
-      static_cast<policy_selector<1>*>(build_ptr->runtime_policy)); // FIXME(bgruber):
-                                                                    // handle <2> as
-                                                                    // well
+  std::free(build_ptr->runtime_policy);
     std::unique_ptr<transform::cache> cache(static_cast<transform::cache*>(build_ptr->cache));
     check(cuLibraryUnload(build_ptr->library));
 
