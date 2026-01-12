@@ -39,7 +39,7 @@
 #if _CCCL_CUDA_COMPILATION()
 #  include <thrust/system/cuda/config.h>
 
-#  include <cub/device/device_find_if.cuh>
+#  include <cub/device/device_find.cuk>
 
 #  include <thrust/detail/temporary_array.h>
 #  include <thrust/system/cuda/detail/cdp_dispatch.h>
