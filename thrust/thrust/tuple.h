@@ -59,6 +59,8 @@ THRUST_NAMESPACE_BEGIN
  *
  *  \see pair
  *  \see tuple
+ *
+ *  \deprecated Use cuda::std::tuple_element instead
  */
 #ifdef _CCCL_DOXYGEN_INVOKED // Provide a fake alias for doxygen
 template <size_t N, class T>
@@ -74,6 +76,8 @@ using ::cuda::std::tuple_element;
  *
  *  \see pair
  *  \see tuple
+ *
+ *  \deprecated Use cuda::std::tuple_size instead
  */
 #ifdef _CCCL_DOXYGEN_INVOKED // Provide a fake alias for doxygen
 template <class T>
@@ -118,6 +122,8 @@ using ::cuda::std::tuple_size;
  *  \see tuple_element
  *  \see tuple_size
  *  \see tie
+ *
+ *  \deprecated Use cuda::std::tuple instead
  */
 #ifdef _CCCL_DOXYGEN_INVOKED // Provide a fake alias for doxygen
 template <class... Ts>

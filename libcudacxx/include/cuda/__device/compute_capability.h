@@ -84,7 +84,21 @@ public:
   //! @brief Gets the major compute capability.
   //!
   //! @return Major compute capability.
-  [[nodiscard]] _CCCL_API constexpr int major() const noexcept
+  //!
+  //! @deprecated This symbol is deprecated because it collides with major(...) macro defined in <sys/sysmacros.h> and
+  //! will be removed in next major release. Use cc.major_cap() instead.
+  [[nodiscard]]
+  CCCL_DEPRECATED_BECAUSE("This symbol is deprecated because it collides with major(...) macro defined in "
+                          "<sys/sysmacros.h> and will be removed in next major release. Use cc.major_cap() instead.")
+  _CCCL_API constexpr int major() const noexcept
+  {
+    return major_cap();
+  }
+
+  //! @brief Gets the major compute capability.
+  //!
+  //! @return Major compute capability.
+  [[nodiscard]] _CCCL_API constexpr int major_cap() const noexcept
   {
     return __cc_ / 10;
   }
@@ -92,7 +106,21 @@ public:
   //! @brief Gets the minor compute capability.
   //!
   //! @return Minor compute capability. The value is always less than 10.
-  [[nodiscard]] _CCCL_API constexpr int minor() const noexcept
+  //!
+  //! @deprecated This symbol is deprecated because it collides with minor(...) macro defined in <sys/sysmacros.h> and
+  //! will be removed in next major release. Use cc.minor_cap() instead.
+  [[nodiscard]]
+  CCCL_DEPRECATED_BECAUSE("This symbol is deprecated because it collides with minor(...) macro defined in "
+                          "<sys/sysmacros.h> and will be removed in next major release. Use cc.minor_cap() instead.")
+  _CCCL_API constexpr int minor() const noexcept
+  {
+    return minor_cap();
+  }
+
+  //! @brief Gets the minor compute capability.
+  //!
+  //! @return Minor compute capability. The value is always less than 10.
+  [[nodiscard]] _CCCL_API constexpr int minor_cap() const noexcept
   {
     return __cc_ % 10;
   }
