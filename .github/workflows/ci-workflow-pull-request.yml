@@ -276,7 +276,9 @@ jobs:
   test-cpu-import:
     name: Test CPU-only import
     runs-on: ubuntu-latest
-    needs: dispatch-groups-linux-two-stage
+    needs:
+      - dispatch-groups-linux-two-stage
+      - dispatch-groups-linux-standalone
     if: ${{ !cancelled() && github.repository == 'NVIDIA/cccl' }}
     permissions:
       contents: read
