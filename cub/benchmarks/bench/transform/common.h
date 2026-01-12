@@ -31,8 +31,8 @@ struct policy_selector
     const int min_bytes_in_flight =
       cub::detail::transform::arch_to_min_bytes_in_flight(__CUDA_ARCH_LIST__) + TUNE_BIF_BIAS;
 #  if TUNE_ALGORITHM == 0
-    const auto algorithm = cub::detail::transform::Algorithm::prefetch;
-    const auto policy    = prefetch_policy{
+    constexpr auto algorithm = cub::detail::transform::Algorithm::prefetch;
+    constexpr auto policy    = prefetch_policy{
       TUNE_THREADS
 #    ifdef TUNE_ITEMS_PER_THREAD_NO_INPUT
       ,
@@ -41,8 +41,8 @@ struct policy_selector
     };
     return {min_bytes_in_flight, algorithm, policy, {}, {}};
 #  elif TUNE_ALGORITHM == 1
-    const auto algorithm = cub::detail::transform::Algorithm::vectorized;
-    const auto policy    = vectorized_policy{
+    constexpr auto algorithm = cub::detail::transform::Algorithm::vectorized;
+    constexpr auto policy    = vectorized_policy{
       TUNE_THREADS,
       TUNE_VEC_SIZE * TUNE_VECTORS_PER_THREAD,
       TUNE_VEC_SIZE
@@ -53,12 +53,12 @@ struct policy_selector
     };
     return {min_bytes_in_flight, algorithm, {}, policy, {}};
 #  elif TUNE_ALGORITHM == 2
-    const auto algorithm = cub::detail::transform::Algorithm::memcpy_async;
-    const auto policy    = async_copy_policy{TUNE_THREADS, cub::detail::transform::ldgsts_size_and_align};
+    constexpr auto algorithm = cub::detail::transform::Algorithm::memcpy_async;
+    constexpr auto policy    = async_copy_policy{TUNE_THREADS, cub::detail::transform::ldgsts_size_and_align};
     return {min_bytes_in_flight, algorithm, {}, {}, policy};
-#  elif TUNE_ALGORITHM == 3s
-    const auto algorithm = cub::detail::transform::Algorithm::ublkcp;
-    const auto policy =
+#  elif TUNE_ALGORITHM == 3
+    constexpr auto algorithm = cub::detail::transform::Algorithm::ublkcp;
+    constexpr auto policy =
       async_copy_policy{TUNE_THREADS, cub::detail::transform::bulk_copy_alignment(__CUDA_ARCH_LIST__)};
     return {min_bytes_in_flight, algorithm, {}, {}, policy};
 #  else

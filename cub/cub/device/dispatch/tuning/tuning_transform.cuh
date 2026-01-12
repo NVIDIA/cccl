@@ -339,7 +339,7 @@ _CCCL_HOST_DEVICE constexpr auto bulk_copy_dyn_smem_for_tile_size(
         store_size > 4 ? 128 : 256, 16, ::cuda::std::max(8 / store_size, 1) /* 64-bit instructions */};
     }
     // manually tuned fill on A100
-    if (arch >= ::cuda::arch_id::sm_80) // TODO(bgruber): this should be sm_80
+    if (arch >= ::cuda::arch_id::sm_80)
     {
       return vectorized_policy{256, 8, ::cuda::std::max(8 / store_size, 1) /* 64-bit instructions */};
     }
