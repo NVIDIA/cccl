@@ -23,7 +23,7 @@
 
 CUB_NAMESPACE_BEGIN
 
-namespace detail
+namespace detail::warpspeed
 {
 // SkipSync is a tag type that is used to indicate that a SyncHandler.blockInit
 // should forgo syncing.
@@ -145,6 +145,6 @@ struct SyncHandler
                  }))
   }
 };
-} // namespace detail
+} // namespace detail::warpspeed
 
 CUB_NAMESPACE_END

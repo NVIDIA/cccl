@@ -25,7 +25,7 @@
 
 CUB_NAMESPACE_BEGIN
 
-namespace detail
+namespace detail::warpspeed
 {
 #if __cccl_ptx_isa >= 860
 
@@ -245,6 +245,6 @@ squadStoreSmemPartial(Squad squad, OutputT* smemBuf, const AccumT (&inReg)[elemP
     }
   }
 }
-} // namespace detail
+} // namespace detail::warpspeed
 
 CUB_NAMESPACE_END
