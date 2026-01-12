@@ -202,7 +202,7 @@ OutputIt _CCCL_API _CCCL_FORCEINLINE cub_transform_many(
   zip_function<TransformOp> transform_op)
 {
   return cub_transform_many(
-    policy, get<0>(firsts).get_iterator_tuple(), result, num_items, transform_op.underlying_function());
+    policy, ::cuda::std::get<0>(firsts).get_iterator_tuple(), result, num_items, transform_op.underlying_function());
 }
 
 template <class Derived, class Offset, class... InputIts, class OutputIt, class TransformOp>
@@ -213,7 +213,7 @@ OutputIt _CCCL_API _CCCL_FORCEINLINE cub_transform_many(
   Offset num_items,
   ::cuda::zip_function<TransformOp> transform_op)
 {
-  return cub_transform_many(policy, get<0>(firsts).__iterators(), result, num_items, transform_op.__fun());
+  return cub_transform_many(policy, ::cuda::std::get<0>(firsts).__iterators(), result, num_items, transform_op.__fun());
 }
 
 template <typename F>

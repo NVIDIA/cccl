@@ -192,7 +192,7 @@ public:
         : driver_context(saved_context)
     {}
 
-    exec_place activate(backend_ctx_untyped&) const override
+    exec_place activate() const override
     {
       // Save the current context and transform it into a fake green context place
       CUcontext current_ctx;
@@ -219,7 +219,7 @@ public:
       return result;
     }
 
-    void deactivate(backend_ctx_untyped&, const exec_place& prev) const override
+    void deactivate(const exec_place& prev) const override
     {
       auto prev_impl      = ::std::static_pointer_cast<impl>(prev.get_impl());
       CUcontext saved_ctx = prev_impl->driver_context;

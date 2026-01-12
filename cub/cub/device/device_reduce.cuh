@@ -147,7 +147,7 @@ private:
     using reduce_tuning_t = ::cuda::std::execution::__query_result_or_t<
       TuningEnvT,
       detail::reduce::get_tuning_query_t,
-      detail::reduce::arch_policies_from_types<accum_t, offset_t, ReductionOpT>>;
+      detail::reduce::policy_selector_from_types<accum_t, offset_t, ReductionOpT>>;
 
     return detail::reduce::dispatch<accum_t>(
       d_temp_storage,
@@ -221,7 +221,7 @@ private:
     using reduce_tuning_t = ::cuda::std::execution::__query_result_or_t<
       TuningEnvT,
       detail::reduce::get_tuning_query_t,
-      detail::reduce::arch_policies_from_types<accum_t, offset_t, ReductionOpT>>;
+      detail::reduce::policy_selector_from_types<accum_t, offset_t, ReductionOpT>>;
 
     return detail::reduce::dispatch_nondeterministic<accum_t>(
       d_temp_storage,

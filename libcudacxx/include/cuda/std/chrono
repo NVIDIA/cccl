@@ -21,6 +21,30 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/detail/libcxx/include/chrono>
+#include <cuda/std/__chrono/calendar.h>
+#include <cuda/std/__chrono/day.h>
+#include <cuda/std/__chrono/duration.h>
+#include <cuda/std/__chrono/file_clock.h>
+#include <cuda/std/__chrono/hh_mm_ss.h>
+#include <cuda/std/__chrono/high_resolution_clock.h>
+#include <cuda/std/__chrono/literals.h>
+#include <cuda/std/__chrono/month.h>
+#include <cuda/std/__chrono/month_day.h>
+#include <cuda/std/__chrono/month_weekday.h>
+#include <cuda/std/__chrono/steady_clock.h>
+#include <cuda/std/__chrono/system_clock.h>
+#include <cuda/std/__chrono/time_point.h>
+#include <cuda/std/__chrono/weekday.h>
+#include <cuda/std/__chrono/year.h>
+#include <cuda/std/__chrono/year_month.h>
+#include <cuda/std/__chrono/year_month_day.h>
+#include <cuda/std/__chrono/year_month_weekday.h>
+
+// standard-mandated includes
+#include <cuda/std/version>
+
+#if _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
+#  include <cuda/std/compare>
+#endif // _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
 
 #endif // _CUDA_STD_CHRONO
