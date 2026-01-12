@@ -14,7 +14,7 @@
 
 CUB_NAMESPACE_BEGIN
 
-namespace detail
+namespace detail::warpspeed
 {
 // SquadDesc - squad descriptor
 //
@@ -72,6 +72,6 @@ template <int numSquads>
   }
   return sumThreads;
 }
-} // namespace detail
+} // namespace detail::warpspeed
 
 CUB_NAMESPACE_END

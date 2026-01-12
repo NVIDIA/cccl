@@ -90,12 +90,12 @@ struct DeviceScanKernelSource
 
   CUB_RUNTIME_FUNCTION static constexpr size_t look_ahead_tile_state_size()
   {
-    return sizeof(tile_state_t<AccumT>);
+    return sizeof(warpspeed::tile_state_t<AccumT>);
   }
 
   CUB_RUNTIME_FUNCTION static constexpr size_t look_ahead_tile_state_alignment()
   {
-    return alignof(tile_state_t<AccumT>);
+    return alignof(warpspeed::tile_state_t<AccumT>);
   }
 
   CUB_RUNTIME_FUNCTION static constexpr auto make_tile_state_kernel_arg(ScanTileStateT ts)
@@ -108,7 +108,7 @@ struct DeviceScanKernelSource
   CUB_RUNTIME_FUNCTION static constexpr auto look_ahead_make_tile_state_kernel_arg(void* ts)
   {
     tile_state_kernel_arg_t<ScanTileStateT, AccumT> arg;
-    ::cuda::std::__construct_at(&arg.lookahead, static_cast<tile_state_t<AccumT>*>(ts));
+    ::cuda::std::__construct_at(&arg.lookahead, static_cast<warpspeed::tile_state_t<AccumT>*>(ts));
     return arg;
   }
 };
@@ -415,8 +415,8 @@ struct DispatchScan
   template <typename WarpspeedPolicy, typename InputT, typename OutputT>
   CUB_RUNTIME_FUNCTION _CCCL_HOST static constexpr auto smem_for_stages(int num_stages) -> int
   {
-    detail::SyncHandler syncHandler{};
-    detail::SmemAllocator smemAllocator{};
+    detail::warpspeed::SyncHandler syncHandler{};
+    detail::warpspeed::SmemAllocator smemAllocator{};
     (void) detail::scan::allocResources<WarpspeedPolicy, InputT, OutputT, AccumT>(
       syncHandler, smemAllocator, num_stages);
     syncHandler.mHasInitialized = true; // avoid assertion in destructor

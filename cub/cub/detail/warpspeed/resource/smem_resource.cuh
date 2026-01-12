@@ -23,7 +23,7 @@
 
 CUB_NAMESPACE_BEGIN
 
-namespace detail
+namespace detail::warpspeed
 {
 template <typename _Tp>
 struct SmemResource : SmemResourceRaw
@@ -55,6 +55,6 @@ private:
     return SmemResourceRaw(syncHandler, ptrBase, sizeBytes, strideBytes, ::cuda::std::to_underlying(stages));
   }
 };
-} // namespace detail
+} // namespace detail::warpspeed
 
 CUB_NAMESPACE_END

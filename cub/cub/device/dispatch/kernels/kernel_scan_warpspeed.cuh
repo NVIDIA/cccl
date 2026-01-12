@@ -44,7 +44,7 @@ struct scanKernelParams
 {
   const InputT* ptrIn;
   OutputT* ptrOut;
-  tile_state_t<AccumT>* ptrTileStates;
+  warpspeed::tile_state_t<AccumT>* ptrTileStates;
   size_t numElem;
   int numStages;
 };
@@ -67,16 +67,16 @@ struct ScanResources
   using SumThreadAndWarpT =
     AccumT[WarpspeedPolicy::squadReduce().threadCount() + WarpspeedPolicy::squadReduce().warpCount()];
 
-  SmemResource<InOutT> smemInOut; // will also be used to stage the output (as OutputT) for the bulk copy
-  SmemResource<uint4> smemNextBlockIdx;
-  SmemResource<AccumT> smemSumExclusiveCta;
-  SmemResource<SumThreadAndWarpT> smemSumThreadAndWarp;
+  warpspeed::SmemResource<InOutT> smemInOut; // will also be used to stage the output (as OutputT) for the bulk copy
+  warpspeed::SmemResource<uint4> smemNextBlockIdx;
+  warpspeed::SmemResource<AccumT> smemSumExclusiveCta;
+  warpspeed::SmemResource<SumThreadAndWarpT> smemSumThreadAndWarp;
 };
 // Function to allocate resources.
 
 template <typename WarpspeedPolicy, typename InputT, typename OutputT, typename AccumT>
 [[nodiscard]] _CCCL_API constexpr ScanResources<WarpspeedPolicy, InputT, OutputT, AccumT>
-allocResources(SyncHandler& syncHandler, SmemAllocator& smemAllocator, int numStages)
+allocResources(warpspeed::SyncHandler& syncHandler, warpspeed::SmemAllocator& smemAllocator, int numStages)
 {
   using ScanResourcesT    = ScanResources<WarpspeedPolicy, InputT, OutputT, AccumT>;
   using InOutT            = typename ScanResourcesT::InOutT;
@@ -94,13 +94,13 @@ allocResources(SyncHandler& syncHandler, SmemAllocator& smemAllocator, int numSt
   int numSumExclusiveCtaStages = 2;
 
   ScanResourcesT res = {
-    SmemResource<InOutT>(syncHandler, smemAllocator, Stages{numStages}),
-    SmemResource<uint4>(syncHandler, smemAllocator, Stages{numBlockIdxStages}),
-    SmemResource<AccumT>(syncHandler, smemAllocator, Stages{numSumExclusiveCtaStages}),
-    SmemResource<SumThreadAndWarpT>(syncHandler, smemAllocator, Stages{numStages}),
+    warpspeed::SmemResource<InOutT>(syncHandler, smemAllocator, warpspeed::Stages{numStages}),
+    warpspeed::SmemResource<uint4>(syncHandler, smemAllocator, warpspeed::Stages{numBlockIdxStages}),
+    warpspeed::SmemResource<AccumT>(syncHandler, smemAllocator, warpspeed::Stages{numSumExclusiveCtaStages}),
+    warpspeed::SmemResource<SumThreadAndWarpT>(syncHandler, smemAllocator, warpspeed::Stages{numStages}),
   };
   // asdfasdf
-  constexpr SquadDesc scanSquads[WarpspeedPolicy::num_squads] = {
+  constexpr warpspeed::SquadDesc scanSquads[WarpspeedPolicy::num_squads] = {
     WarpspeedPolicy::squadReduce(),
     WarpspeedPolicy::squadScanStore(),
     WarpspeedPolicy::squadLoad(),
@@ -126,7 +126,7 @@ allocResources(SyncHandler& syncHandler, SmemAllocator& smemAllocator, int numSt
 
 #if __cccl_ptx_isa >= 860
 
-_CCCL_DEVICE_API inline void squadGetNextBlockIdx(const Squad& squad, SmemRef<uint4>& refDestSmem)
+_CCCL_DEVICE_API inline void squadGetNextBlockIdx(const warpspeed::Squad& squad, warpspeed::SmemRef<uint4>& refDestSmem)
 {
   if (squad.isLeaderThread())
   {
@@ -197,8 +197,8 @@ template <typename WarpspeedPolicy,
           typename RealInitValueT,
           bool ForceInclusive>
 _CCCL_DEVICE_API _CCCL_FORCEINLINE void kernelBody(
-  Squad squad,
-  SpecialRegisters specialRegisters,
+  warpspeed::Squad squad,
+  warpspeed::SpecialRegisters specialRegisters,
   const scanKernelParams<InputT, OutputT, AccumT>& params,
   ScanOpT scan_op,
   RealInitValueT real_init_value)
@@ -206,11 +206,11 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void kernelBody(
   ////////////////////////////////////////////////////////////////////////////////
   // Tuning dependent variables
   ////////////////////////////////////////////////////////////////////////////////
-  static constexpr SquadDesc squadReduce    = WarpspeedPolicy::squadReduce();
-  static constexpr SquadDesc squadScanStore = WarpspeedPolicy::squadScanStore();
-  static constexpr SquadDesc squadLoad      = WarpspeedPolicy::squadLoad();
-  static constexpr SquadDesc squadSched     = WarpspeedPolicy::squadSched();
-  static constexpr SquadDesc squadLookback  = WarpspeedPolicy::squadLookback();
+  static constexpr warpspeed::SquadDesc squadReduce    = WarpspeedPolicy::squadReduce();
+  static constexpr warpspeed::SquadDesc squadScanStore = WarpspeedPolicy::squadScanStore();
+  static constexpr warpspeed::SquadDesc squadLoad      = WarpspeedPolicy::squadLoad();
+  static constexpr warpspeed::SquadDesc squadSched     = WarpspeedPolicy::squadSched();
+  static constexpr warpspeed::SquadDesc squadLookback  = WarpspeedPolicy::squadLookback();
 
   constexpr int tile_size            = WarpspeedPolicy::tile_size;
   constexpr int num_look_ahead_items = WarpspeedPolicy::num_look_ahead_items;
@@ -222,8 +222,8 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void kernelBody(
   ////////////////////////////////////////////////////////////////////////////////
   // Resources
   ////////////////////////////////////////////////////////////////////////////////
-  SyncHandler syncHandler{};
-  SmemAllocator smemAllocator{};
+  warpspeed::SyncHandler syncHandler{};
+  warpspeed::SmemAllocator smemAllocator{};
 
   ScanResources<WarpspeedPolicy, InputT, OutputT, AccumT> res =
     allocResources<WarpspeedPolicy, InputT, OutputT, AccumT>(syncHandler, smemAllocator, params.numStages);
@@ -253,19 +253,19 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void kernelBody(
   {
     // Get stages. When these objects go out of scope, the stage of the resource
     // is automatically incremented.
-    SmemStage stageNextBlockIdx     = res.smemNextBlockIdx.popStage();
-    SmemStage stageInOut            = res.smemInOut.popStage();
-    SmemStage stageSumThreadAndWarp = res.smemSumThreadAndWarp.popStage();
-    SmemStage stageSumExclusiveCta  = res.smemSumExclusiveCta.popStage();
+    warpspeed::SmemStage stageNextBlockIdx     = res.smemNextBlockIdx.popStage();
+    warpspeed::SmemStage stageInOut            = res.smemInOut.popStage();
+    warpspeed::SmemStage stageSumThreadAndWarp = res.smemSumThreadAndWarp.popStage();
+    warpspeed::SmemStage stageSumExclusiveCta  = res.smemSumExclusiveCta.popStage();
 
     // Split the stages into phases. Each resource goes through phases where it
     // is writeable by a set of threads and readable by a set of threads. To
     // acquire and release a phase, we need to arrive and wait on certain
     // barriers. The selection of the barriers is handled under the hood.
-    auto [phaseNextBlockIdxW, phaseNextBlockIdxR]         = bindPhases<2>(stageNextBlockIdx);
-    auto [phaseInOutW, phaseInOutRW]                      = bindPhases<2>(stageInOut);
-    auto [phaseSumThreadAndWarpW, phaseSumThreadAndWarpR] = bindPhases<2>(stageSumThreadAndWarp);
-    auto [phaseSumExclusiveCtaW, phaseSumExclusiveCtaR]   = bindPhases<2>(stageSumExclusiveCta);
+    auto [phaseNextBlockIdxW, phaseNextBlockIdxR]         = warpspeed::bindPhases<2>(stageNextBlockIdx);
+    auto [phaseInOutW, phaseInOutRW]                      = warpspeed::bindPhases<2>(stageInOut);
+    auto [phaseSumThreadAndWarpW, phaseSumThreadAndWarpR] = warpspeed::bindPhases<2>(stageSumThreadAndWarp);
+    auto [phaseSumExclusiveCtaW, phaseSumExclusiveCtaR]   = warpspeed::bindPhases<2>(stageSumExclusiveCta);
 
     // We need to handle the first and the last -partial- tile differently
     const bool is_first_tile = idxTile == 0;
@@ -275,7 +275,7 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void kernelBody(
       ////////////////////////////////////////////////////////////////////////////////
       // Load next tile index
       ////////////////////////////////////////////////////////////////////////////////
-      SmemRef refNextBlockIdxW = phaseNextBlockIdxW.acquireRef();
+      warpspeed::SmemRef refNextBlockIdxW = phaseNextBlockIdxW.acquireRef();
       squadGetNextBlockIdx(squad, refNextBlockIdxW);
     }
 
@@ -283,15 +283,15 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void kernelBody(
     _CCCL_ASSERT(idxTileBase < params.numElem, "");
     const int valid_items   = static_cast<int>(cuda::std::min(params.numElem - idxTileBase, size_t(tile_size)));
     const bool is_last_tile = valid_items < tile_size;
-    CpAsyncOobInfo loadInfo = prepareCpAsyncOob(params.ptrIn + idxTileBase, valid_items);
+    warpspeed::CpAsyncOobInfo loadInfo = warpspeed::prepareCpAsyncOob(params.ptrIn + idxTileBase, valid_items);
 
     if (squad == squadLoad)
     {
       ////////////////////////////////////////////////////////////////////////////////
       // Load current tile
       ////////////////////////////////////////////////////////////////////////////////
-      SmemRef refInOutW = phaseInOutW.acquireRef();
-      squadLoadBulk(squad, refInOutW, loadInfo);
+      warpspeed::SmemRef refInOutW = phaseInOutW.acquireRef();
+      warpspeed::squadLoadBulk(squad, refInOutW, loadInfo);
     }
 
     ////////////////////////////////////////////////////////////////////////////////
@@ -299,8 +299,8 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void kernelBody(
     ////////////////////////////////////////////////////////////////////////////////
     uint4 regNextBlockIdx{};
     {
-      SmemRef refNextBlockIdxR = phaseNextBlockIdxR.acquireRef();
-      regNextBlockIdx          = refNextBlockIdxR.data();
+      warpspeed::SmemRef refNextBlockIdxR = phaseNextBlockIdxR.acquireRef();
+      regNextBlockIdx                     = refNextBlockIdxR.data();
       refNextBlockIdxR.setFenceLdsToAsyncProxy();
     }
     bool nextIdxTileValid = ::cuda::ptx::clusterlaunchcontrol_query_cancel_is_canceled(regNextBlockIdx);
@@ -321,12 +321,12 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void kernelBody(
       AccumT regWarpSum;
       {
         // Acquire phaseInOutRW in this short scope
-        SmemRef refInOutRW = phaseInOutRW.acquireRef();
+        warpspeed::SmemRef refInOutRW = phaseInOutRW.acquireRef();
         // Load data
         AccumT regInput[elemPerThread];
         // Handle unaligned refInOutRW.data() + loadInfo.smemStartOffsetElem points to the first element of the tile.
         // in the last tile, we load some invalid elements, but don't process them later
-        squadLoadSmem(squad, regInput, &refInOutRW.data().in[0] + loadInfo.smemStartOffsetElem);
+        warpspeed::squadLoadSmem(squad, regInput, &refInOutRW.data().in[0] + loadInfo.smemStartOffsetElem);
 
         ////////////////////////////////////////////////////////////////////////////////
         // Reduce across thread and warp
@@ -346,7 +346,7 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void kernelBody(
       ////////////////////////////////////////////////////////////////////////////////
       // Store warp sump to shared memory
       ////////////////////////////////////////////////////////////////////////////////
-      SmemRef refSumThreadAndWarpW = phaseSumThreadAndWarpW.acquireRef();
+      warpspeed::SmemRef refSumThreadAndWarpW = phaseSumThreadAndWarpW.acquireRef();
 
       if (squad.isLeaderThreadOfWarp())
       {
@@ -400,7 +400,7 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void kernelBody(
       ////////////////////////////////////////////////////////////////////////////////
       if (squad.isLeaderThread())
       {
-        storeTileAggregate(params.ptrTileStates, TILE_AGGREGATE, regSquadSum, idxTile);
+        warpspeed::storeTileAggregate(params.ptrTileStates, warpspeed::TILE_AGGREGATE, regSquadSum, idxTile);
       }
       ////////////////////////////////////////////////////////////////////////////////
       // Store thread sum
@@ -413,11 +413,11 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void kernelBody(
       ////////////////////////////////////////////////////////////////////////////////
       // Perform lookback
       ////////////////////////////////////////////////////////////////////////////////
-      SmemRef refSumExclusiveCtaW = phaseSumExclusiveCtaW.acquireRef();
+      warpspeed::SmemRef refSumExclusiveCtaW = phaseSumExclusiveCtaW.acquireRef();
 
       if (!is_first_tile)
       {
-        AccumT regSumExclusiveCta = warpIncrementalLookback<num_look_ahead_items>(
+        AccumT regSumExclusiveCta = warpspeed::warpIncrementalLookback<num_look_ahead_items>(
           specialRegisters, params.ptrTileStates, idxTilePrev, sumExclusiveCtaPrev, idxTile, scan_op);
         if (squad.isLeaderThread())
         {
@@ -440,7 +440,7 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void kernelBody(
       ////////////////////////////////////////////////////////////////////////////////
       {
         // Acquire refSumThread briefly
-        SmemRef refSumThreadAndWarpR = phaseSumThreadAndWarpR.acquireRef();
+        warpspeed::SmemRef refSumThreadAndWarpR = phaseSumThreadAndWarpR.acquireRef();
         // Add the sums of the preceding warps in this CTA to the cumulative
         // sum. These sums have been calculated in squadReduce(). We need
         // the reduce and scan squads to be the same size to do this.
@@ -518,7 +518,7 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void kernelBody(
       ////////////////////////////////////////////////////////////////////////////////
       {
         // Briefly acquire refSumExclusiveCtaR (we have to do this for the first tile as well to prevent a hang)
-        SmemRef refSumExclusiveCtaR = phaseSumExclusiveCtaR.acquireRef();
+        warpspeed::SmemRef refSumExclusiveCtaR = phaseSumExclusiveCtaR.acquireRef();
 
         if (!is_first_tile)
         {
@@ -563,11 +563,11 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void kernelBody(
       AccumT regSumInclusive[elemPerThread] = {{}};
 
       // Acquire refInOut for remainder of scope.
-      SmemRef refInOutRW = phaseInOutRW.acquireRef();
+      warpspeed::SmemRef refInOutRW = phaseInOutRW.acquireRef();
 
       // We are always loading a full tile even for the last one. That will call scan_op on invalid data
       // loading partial tiles here regresses perf for about 10-15%
-      squadLoadSmem(squad, regSumInclusive, &refInOutRW.data().in[0] + loadInfo.smemStartOffsetElem);
+      warpspeed::squadLoadSmem(squad, regSumInclusive, &refInOutRW.data().in[0] + loadInfo.smemStartOffsetElem);
 
       // Perform inclusive scan of register array in current thread.
       // warp_0/thread_0 in the first tile when there is no initial value, we MUST NOT use sumExclusive
@@ -590,9 +590,9 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void kernelBody(
       OutputT* smem_output_tile = refInOutRW.data().out;
       if constexpr (sizeof(OutputT) <= sizeof(InputT))
       {
-        CpAsyncOobInfo storeInfo = prepareCpAsyncOob(params.ptrOut + idxTileBase, valid_items);
+        warpspeed::CpAsyncOobInfo storeInfo = warpspeed::prepareCpAsyncOob(params.ptrOut + idxTileBase, valid_items);
 
-        squadStoreSmem(squad, smem_output_tile + storeInfo.smemStartOffsetElem, regSumInclusive);
+        warpspeed::squadStoreSmem(squad, smem_output_tile + storeInfo.smemStartOffsetElem, regSumInclusive);
         // We do *not* release refSmemInOut here, because we will issue a TMA
         // instruction below. Instead, we issue a squad-local syncthreads +
         // fence.proxy.async to sync the shared memory writes with the TMA store.
@@ -601,7 +601,7 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void kernelBody(
         ////////////////////////////////////////////////////////////////////////////////
         // Store result to global memory using TMA
         ////////////////////////////////////////////////////////////////////////////////
-        squadStoreBulkSync(squad, storeInfo, smem_output_tile);
+        warpspeed::squadStoreBulkSync(squad, storeInfo, smem_output_tile);
       }
       else
       {
@@ -611,15 +611,16 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void kernelBody(
           static_cast<int>(ScanResources<WarpspeedPolicy, InputT, OutputT, AccumT>::output_tile_size);
         for (int chunk_offset = 0; chunk_offset < valid_items; chunk_offset += elem_per_chunk)
         {
-          const int chunk_size     = ::cuda::std::min(valid_items - chunk_offset, elem_per_chunk);
-          CpAsyncOobInfo storeInfo = prepareCpAsyncOob(params.ptrOut + idxTileBase + chunk_offset, chunk_size);
-          OutputT* smemBuf         = smem_output_tile + storeInfo.smemStartOffsetElem;
+          const int chunk_size = ::cuda::std::min(valid_items - chunk_offset, elem_per_chunk);
+          warpspeed::CpAsyncOobInfo storeInfo =
+            warpspeed::prepareCpAsyncOob(params.ptrOut + idxTileBase + chunk_offset, chunk_size);
+          OutputT* smemBuf = smem_output_tile + storeInfo.smemStartOffsetElem;
 
           // only stage elements of the current chunk to SMEM
           // storeInfo.smemStartOffsetElem < 16 and smem_output_tile contains extra 16 bytes, so we should fit
           _CCCL_ASSERT((storeInfo.smemStartOffsetElem + elem_per_chunk) * sizeof(OutputT) <= res.smemInOut.mSizeBytes,
                        "");
-          squadStoreSmemPartial(
+          warpspeed::squadStoreSmemPartial(
             squad,
             smem_output_tile + storeInfo.smemStartOffsetElem,
             regSumInclusive,
@@ -634,7 +635,7 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void kernelBody(
           ////////////////////////////////////////////////////////////////////////////////
           // Store result to global memory using TMA
           ////////////////////////////////////////////////////////////////////////////////
-          squadStoreBulkSync(squad, storeInfo, smem_output_tile);
+          warpspeed::squadStoreBulkSync(squad, storeInfo, smem_output_tile);
 
           squad.syncThreads();
         }
@@ -684,10 +685,10 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void device_scan_lookahead_body(
 {
 #if __cccl_ptx_isa >= 860
   // Cache special registers at start of kernel
-  SpecialRegisters specialRegisters = getSpecialRegisters();
+  warpspeed::SpecialRegisters specialRegisters = warpspeed::getSpecialRegisters();
 
   // Dispatch for warp-specialization
-  static constexpr SquadDesc scanSquads[WarpspeedPolicy::num_squads] = {
+  static constexpr warpspeed::SquadDesc scanSquads[WarpspeedPolicy::num_squads] = {
     WarpspeedPolicy::squadReduce(),
     WarpspeedPolicy::squadScanStore(),
     WarpspeedPolicy::squadLoad(),
@@ -695,7 +696,7 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void device_scan_lookahead_body(
     WarpspeedPolicy::squadLookback(),
   };
 
-  squadDispatch(specialRegisters, scanSquads, [&](Squad squad) {
+  warpspeed::squadDispatch(specialRegisters, scanSquads, [&](warpspeed::Squad squad) {
     kernelBody<WarpspeedPolicy, InputT, OutputT, AccumT, ScanOpT, RealInitValueT, ForceInclusive>(
       squad, specialRegisters, params, ::cuda::std::move(scan_op), static_cast<RealInitValueT>(init_value));
   });
@@ -704,7 +705,7 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void device_scan_lookahead_body(
 
 template <typename AccumT>
 _CCCL_DEVICE_API _CCCL_FORCEINLINE void
-device_scan_init_lookahead_body(tile_state_t<AccumT>* tile_states, const size_t num_temp_states)
+device_scan_init_lookahead_body(warpspeed::tile_state_t<AccumT>* tile_states, const size_t num_temp_states)
 {
   const int tile_id = blockDim.x * blockIdx.x + threadIdx.x;
   if (tile_id >= num_temp_states)
@@ -715,26 +716,26 @@ device_scan_init_lookahead_body(tile_state_t<AccumT>* tile_states, const size_t 
   _CCCL_PDL_TRIGGER_NEXT_LAUNCH();
   // we strive to initialize the padding bits to avoid compute-sanitizer's initcheck to report reading uninitialized
   // data when reading the tile state. We use a single atomic load/store up until 16 bytes.
-  static_assert(EMPTY == 0); // so we can zero init each tile state
-  if constexpr (sizeof(tile_state_t<AccumT>) == 2)
+  static_assert(warpspeed::EMPTY == 0); // so we can zero init each tile state
+  if constexpr (sizeof(warpspeed::tile_state_t<AccumT>) == 2)
   {
     *reinterpret_cast<uint16_t*>(tile_states + tile_id) = 0;
   }
-  else if constexpr (sizeof(tile_state_t<AccumT>) == 4)
+  else if constexpr (sizeof(warpspeed::tile_state_t<AccumT>) == 4)
   {
     *reinterpret_cast<uint32_t*>(tile_states + tile_id) = 0;
   }
-  else if constexpr (sizeof(tile_state_t<AccumT>) == 8)
+  else if constexpr (sizeof(warpspeed::tile_state_t<AccumT>) == 8)
   {
     *reinterpret_cast<uint64_t*>(tile_states + tile_id) = 0;
   }
-  else if constexpr (sizeof(tile_state_t<AccumT>) == 16)
+  else if constexpr (sizeof(warpspeed::tile_state_t<AccumT>) == 16)
   {
     *reinterpret_cast<uint4*>(tile_states + tile_id) = {};
   }
   else
   {
-    tile_states[tile_id] = tile_state_t<AccumT>{};
+    tile_states[tile_id] = warpspeed::tile_state_t<AccumT>{};
   }
 }
 } // namespace detail::scan
