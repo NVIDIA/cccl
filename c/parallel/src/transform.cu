@@ -197,13 +197,13 @@ public:
   }
 };
 
-auto make_iterator_info(cccl_iterator_t input_it) -> cdt::iterator_info
+auto make_iterator_info(cccl_iterator_t it) -> cdt::iterator_info
 {
   // FIXME(bgruber): CCCL_STORAGE is not necessarily trivially relocatable, but how can we know this here?
   const auto vt_is_trivially_relocatable = true; // input_it.value_type.type != CCCL_STORAGE;
-  const auto is_contiguous               = input_it.type == CCCL_POINTER;
-  return {static_cast<int>(input_it.value_type.size),
-          static_cast<int>(input_it.value_type.alignment),
+  const auto is_contiguous               = it.type == CCCL_POINTER;
+  return {static_cast<int>(it.value_type.size),
+          static_cast<int>(it.value_type.alignment),
           vt_is_trivially_relocatable,
           is_contiguous};
 }
