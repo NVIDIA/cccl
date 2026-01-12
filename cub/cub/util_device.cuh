@@ -841,11 +841,13 @@ namespace detail
 #if _CCCL_HAS_CONCEPTS()
 _CCCL_API consteval void __needs_a_constexpr_value(auto) {}
 
+// TODO(bgruber): should we either drop the Policy template argument or rename it to policy_selector_for?
 template <typename T, typename Policy>
 concept policy_selector = requires(T hub, ::cuda::arch_id arch) {
-  { hub(arch) } -> _CCCL_CONCEPT_VSTD::same_as<Policy>;
+  requires ::cuda::std::regular<Policy>;
+  { hub(arch) } -> ::cuda::std::same_as<Policy>;
   { __needs_a_constexpr_value(hub(arch)) };
-} && ::cuda::std::regular<Policy>;
+};
 #endif // _CCCL_HAS_CONCEPTS()
 } // namespace detail
 
