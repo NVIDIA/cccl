@@ -21,7 +21,7 @@
 
 CUB_NAMESPACE_BEGIN
 
-namespace detail
+namespace detail::warpspeed
 {
 struct SmemAllocator
 {
@@ -78,6 +78,6 @@ struct SmemAllocator
     return mAllocatedSize;
   }
 };
-} // namespace detail
+} // namespace detail::warpspeed
 
 CUB_NAMESPACE_END

@@ -19,7 +19,7 @@
 
 CUB_NAMESPACE_BEGIN
 
-namespace detail
+namespace detail::warpspeed
 {
 template <typename _Tp>
 struct SmemRef
@@ -87,6 +87,6 @@ struct SmemRef
     mDoFenceLdsToAsyncProxy = true;
   }
 };
-} // namespace detail
+} // namespace detail::warpspeed
 
 CUB_NAMESPACE_END

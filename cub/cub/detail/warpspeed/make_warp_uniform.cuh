@@ -16,7 +16,7 @@
 
 CUB_NAMESPACE_BEGIN
 
-namespace detail
+namespace detail::warpspeed
 {
 // Move register to uniform register
 
@@ -35,6 +35,6 @@ namespace detail
 {
   return __shfl_sync(~0, x, 0);
 }
-} // namespace detail
+} // namespace detail::warpspeed
 
 CUB_NAMESPACE_END
