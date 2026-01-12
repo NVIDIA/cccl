@@ -21,12 +21,12 @@ numba.config.CUDA_LOW_OCCUPANCY_WARNINGS = 0
 @pytest.mark.parametrize(
     "algorithm",
     [
-        "direct",
-        "striped",
-        "vectorize",
-        "transpose",
-        "warp_transpose",
-        "warp_transpose_timesliced",
+        coop.BlockLoadAlgorithm.DIRECT,
+        coop.BlockLoadAlgorithm.STRIPED,
+        coop.BlockLoadAlgorithm.VECTORIZE,
+        coop.BlockLoadAlgorithm.TRANSPOSE,
+        coop.BlockLoadAlgorithm.WARP_TRANSPOSE,
+        coop.BlockLoadAlgorithm.WARP_TRANSPOSE_TIMESLICED,
     ],
 )
 def test_block_load(T, threads_per_block, items_per_thread, algorithm):

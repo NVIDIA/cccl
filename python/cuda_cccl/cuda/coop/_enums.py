@@ -1,0 +1,87 @@
+# Copyright (c) 2025, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
+#
+# SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+
+from enum import IntEnum, auto
+from functools import lru_cache
+
+
+# Avoid the import of re and subsequent compilation of the regex pattern
+# at module import time.
+@lru_cache(maxsize=None)
+def get_pattern():
+    # Match CameCase class names.  Calling `findall()` will return a list of
+    # the capitalized words in the given class name.
+    import re
+
+    return re.compile(r"[A-Z][^A-Z]*")
+
+
+def cub_cpp_name(instance):
+    cls = instance.__class__
+    class_name = cls.__name__
+    pattern = get_pattern()
+    words = pattern.findall(class_name)
+    if words[-1] != "Algorithm":
+        raise ValueError(f"Unexpected class name: {class_name}")
+    parts = "_".join(word.upper() for word in words[:-1])
+    return f"::cub::{parts}_{instance.name}"
+
+
+# A dummy algorithm for primitives that have no algorithm enum.
+class NoAlgorithm(IntEnum):
+    NO_ALGORITHM = auto()
+
+
+class BaseAlgorithmEnum(IntEnum):
+    def __str__(self):
+        return cub_cpp_name(self)
+
+
+class BlockLoadAlgorithm(BaseAlgorithmEnum):
+    DIRECT = auto()
+    STRIPED = auto()
+    VECTORIZE = auto()
+    TRANSPOSE = auto()
+    WARP_TRANSPOSE = auto()
+    WARP_TRANSPOSE_TIMESLICED = auto()
+
+
+class WarpLoadAlgorithm(BaseAlgorithmEnum):
+    DIRECT = auto()
+    STRIPED = auto()
+    VECTORIZE = auto()
+    TRANSPOSE = auto()
+
+
+class BlockStoreAlgorithm(BaseAlgorithmEnum):
+    DIRECT = auto()
+    STRIPED = auto()
+    VECTORIZE = auto()
+    TRANSPOSE = auto()
+    WARP_TRANSPOSE = auto()
+    WARP_TRANSPOSE_TIMESLICED = auto()
+
+
+class WarpStoreAlgorithm(BaseAlgorithmEnum):
+    DIRECT = auto()
+    STRIPED = auto()
+    VECTORIZE = auto()
+    TRANSPOSE = auto()
+
+
+class BlockHistogramAlgorithm(IntEnum):
+    SORT = auto()
+    ATOMIC = auto()
+
+    def __str__(self):
+        # BlockHistogramAlgorithm uses a slightly different naming convention
+        # (`BLOCK_HISTO_` prefix instead of `BLOCK_HISTOGRAM_`) so we can't
+        # use `cub_cpp_name()` here.
+        return f"::cub::BLOCK_HISTO_{self.name.upper()}"
+
+
+class BlockScanAlgorithm(BaseAlgorithmEnum):
+    RAKING = auto()
+    RAKING_MEMOIZE = auto()
+    WARP_SCANS = auto()
