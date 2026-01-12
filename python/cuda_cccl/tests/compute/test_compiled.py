@@ -108,12 +108,8 @@ def test_compiled_op_reduce_int32():
     arch = get_arch()
     add_ltoir = compile_to_ltoir(ADD_OP_SOURCE, arch)
 
-    add_op = CompiledOp(
-        ltoir=add_ltoir,
-        name="my_add",
-        arg_types=(types.int32, types.int32),
-        return_type=types.int32,
-    )
+    # New simplified API: just ltoir and name
+    add_op = CompiledOp(add_ltoir, "my_add")
 
     d_in = cp.array([1, 2, 3, 4, 5], dtype=np.int32)
     d_out = cp.array([0], dtype=np.int32)
@@ -131,12 +127,7 @@ def test_compiled_op_reduce_int64():
     arch = get_arch()
     add_ltoir = compile_to_ltoir(ADD_OP_INT64_SOURCE, arch)
 
-    add_op = CompiledOp(
-        ltoir=add_ltoir,
-        name="my_add_i64",
-        arg_types=(types.int64, types.int64),
-        return_type=types.int64,
-    )
+    add_op = CompiledOp(add_ltoir, "my_add_i64")
 
     d_in = cp.array([10, 20, 30, 40, 50], dtype=np.int64)
     d_out = cp.array([0], dtype=np.int64)
@@ -154,12 +145,7 @@ def test_compiled_op_reduce_with_init():
     arch = get_arch()
     add_ltoir = compile_to_ltoir(ADD_OP_SOURCE, arch)
 
-    add_op = CompiledOp(
-        ltoir=add_ltoir,
-        name="my_add",
-        arg_types=(types.int32, types.int32),
-        return_type=types.int32,
-    )
+    add_op = CompiledOp(add_ltoir, "my_add")
 
     d_in = cp.array([1, 2, 3, 4, 5], dtype=np.int32)
     d_out = cp.array([0], dtype=np.int32)
@@ -178,16 +164,16 @@ def test_compiled_iterator_counting():
     advance_ltoir = compile_to_ltoir(ADVANCE_SOURCE, arch)
     deref_ltoir = compile_to_ltoir(DEREF_SOURCE, arch)
 
-    # State: starting offset
-    offset = 10
-    state = np.array([offset], dtype=np.int64).tobytes()
+    # Create CompiledOp objects for advance and dereference
+    advance_op = CompiledOp(advance_ltoir, "advance")
+    deref_op = CompiledOp(deref_ltoir, "dereference")
 
+    # New API: numpy state with auto-inferred alignment
     counting_iter = CompiledIterator(
-        state=state,
-        state_alignment=8,
+        state=np.int64(10),
         value_type=types.int64,
-        advance=("advance", advance_ltoir),
-        input_dereference=("dereference", deref_ltoir),
+        advance=advance_op,
+        input_dereference=deref_op,
     )
 
     d_out = cp.array([0], dtype=np.int64)
@@ -206,16 +192,15 @@ def test_compiled_iterator_different_offset():
     advance_ltoir = compile_to_ltoir(ADVANCE_SOURCE, arch)
     deref_ltoir = compile_to_ltoir(DEREF_SOURCE, arch)
 
-    # State: starting offset of 0
-    offset = 0
-    state = np.array([offset], dtype=np.int64).tobytes()
+    advance_op = CompiledOp(advance_ltoir, "advance")
+    deref_op = CompiledOp(deref_ltoir, "dereference")
 
+    # State: starting offset of 0
     counting_iter = CompiledIterator(
-        state=state,
-        state_alignment=8,
+        state=np.int64(0),
         value_type=types.int64,
-        advance=("advance", advance_ltoir),
-        input_dereference=("dereference", deref_ltoir),
+        advance=advance_op,
+        input_dereference=deref_op,
     )
 
     d_out = cp.array([0], dtype=np.int64)
@@ -228,6 +213,35 @@ def test_compiled_iterator_different_offset():
     assert result == expected
 
 
+def test_compiled_iterator_with_raw_bytes():
+    """Test CompiledIterator with raw bytes state (requires explicit alignment)."""
+    arch = get_arch()
+    advance_ltoir = compile_to_ltoir(ADVANCE_SOURCE, arch)
+    deref_ltoir = compile_to_ltoir(DEREF_SOURCE, arch)
+
+    advance_op = CompiledOp(advance_ltoir, "advance")
+    deref_op = CompiledOp(deref_ltoir, "dereference")
+
+    # Raw bytes with explicit alignment
+    state = np.int64(5).tobytes()
+    counting_iter = CompiledIterator(
+        state=state,
+        value_type=types.int64,
+        advance=advance_op,
+        input_dereference=deref_op,
+        state_alignment=8,
+    )
+
+    d_out = cp.array([0], dtype=np.int64)
+    h_init = np.array([0], dtype=np.int64)
+
+    reduce_into(counting_iter, d_out, OpKind.PLUS, 5, h_init)
+
+    result = d_out.get()[0]
+    expected = 5 + 6 + 7 + 8 + 9  # sum of 5..9
+    assert result == expected
+
+
 def test_compiled_op_validation_errors():
     """Test that CompiledOp raises appropriate validation errors."""
     arch = get_arch()
@@ -235,48 +249,19 @@ def test_compiled_op_validation_errors():
 
     # Test invalid ltoir type
     with pytest.raises(TypeError, match="ltoir must be bytes"):
-        CompiledOp(
-            ltoir="not bytes",
-            name="my_add",
-            arg_types=(types.int32, types.int32),
-            return_type=types.int32,
-        )
+        CompiledOp("not bytes", "my_add")
 
     # Test empty ltoir
     with pytest.raises(ValueError, match="ltoir cannot be empty"):
-        CompiledOp(
-            ltoir=b"",
-            name="my_add",
-            arg_types=(types.int32, types.int32),
-            return_type=types.int32,
-        )
+        CompiledOp(b"", "my_add")
 
     # Test invalid name type
     with pytest.raises(TypeError, match="name must be str"):
-        CompiledOp(
-            ltoir=add_ltoir,
-            name=123,
-            arg_types=(types.int32, types.int32),
-            return_type=types.int32,
-        )
+        CompiledOp(add_ltoir, 123)
 
     # Test empty name
     with pytest.raises(ValueError, match="name cannot be empty"):
-        CompiledOp(
-            ltoir=add_ltoir,
-            name="",
-            arg_types=(types.int32, types.int32),
-            return_type=types.int32,
-        )
-
-    # Test invalid arg_types
-    with pytest.raises(TypeError, match="arg_types must be a tuple"):
-        CompiledOp(
-            ltoir=add_ltoir,
-            name="my_add",
-            arg_types=[types.int32, types.int32],
-            return_type=types.int32,
-        )
+        CompiledOp(add_ltoir, "")
 
 
 def test_compiled_iterator_validation_errors():
@@ -284,35 +269,53 @@ def test_compiled_iterator_validation_errors():
     arch = get_arch()
     advance_ltoir = compile_to_ltoir(ADVANCE_SOURCE, arch)
     deref_ltoir = compile_to_ltoir(DEREF_SOURCE, arch)
-    state = np.array([0], dtype=np.int64).tobytes()
+
+    advance_op = CompiledOp(advance_ltoir, "advance")
+    deref_op = CompiledOp(deref_ltoir, "dereference")
 
     # Test invalid state type
-    with pytest.raises(TypeError, match="state must be bytes"):
+    with pytest.raises(TypeError, match="state must be bytes, numpy scalar"):
         CompiledIterator(
             state="not bytes",
-            state_alignment=8,
             value_type=types.int64,
-            advance=("advance", advance_ltoir),
-            input_dereference=("dereference", deref_ltoir),
+            advance=advance_op,
+            input_dereference=deref_op,
         )
 
     # Test invalid alignment
     with pytest.raises(ValueError, match="state_alignment must be a power of 2"):
         CompiledIterator(
-            state=state,
-            state_alignment=3,
+            state=np.int64(0),
             value_type=types.int64,
-            advance=("advance", advance_ltoir),
-            input_dereference=("dereference", deref_ltoir),
+            advance=advance_op,
+            input_dereference=deref_op,
+            state_alignment=3,
         )
 
     # Test missing dereference
     with pytest.raises(ValueError, match="At least one of input_dereference"):
         CompiledIterator(
-            state=state,
-            state_alignment=8,
+            state=np.int64(0),
             value_type=types.int64,
-            advance=("advance", advance_ltoir),
+            advance=advance_op,
+        )
+
+    # Test raw bytes without alignment
+    with pytest.raises(ValueError, match="state_alignment is required"):
+        CompiledIterator(
+            state=b"\x00\x00\x00\x00",
+            value_type=types.int64,
+            advance=advance_op,
+            input_dereference=deref_op,
+        )
+
+    # Test non-CompiledOp advance
+    with pytest.raises(TypeError, match="advance must be a CompiledOp"):
+        CompiledIterator(
+            state=np.int64(0),
+            value_type=types.int64,
+            advance=("advance", advance_ltoir),  # Old tuple format
+            input_dereference=deref_op,
         )
 
 
@@ -342,13 +345,8 @@ def test_compiled_op_with_gpu_struct():
     # Define a gpu_struct type
     Point = gpu_struct({"x": np.int32, "y": np.int32}, name="Point")
 
-    # Create CompiledOp using the struct type directly
-    point_add_op = CompiledOp(
-        ltoir=add_ltoir,
-        name="point_add",
-        arg_types=(Point, Point),
-        return_type=Point,
-    )
+    # Simplified API - just ltoir and name
+    point_add_op = CompiledOp(add_ltoir, "point_add")
 
     # Create test data - use empty() + set() for structured dtypes with cupy
     h_points = np.array([(1, 2), (3, 4), (5, 6), (7, 8)], dtype=Point._dtype)
@@ -367,25 +365,36 @@ def test_compiled_op_with_gpu_struct():
     assert result["y"] == expected_y
 
 
-def test_compiled_op_struct_type_descriptor():
-    """Test that CompiledOp correctly converts gpu_struct to TypeDescriptor."""
+def test_compiled_op_properties():
+    """Test CompiledOp property accessors."""
     arch = get_arch()
-    add_ltoir = compile_to_ltoir(STRUCT_ADD_SOURCE, arch)
+    add_ltoir = compile_to_ltoir(ADD_OP_SOURCE, arch)
 
-    Point = gpu_struct({"x": np.int32, "y": np.int32}, name="Point")
+    op = CompiledOp(add_ltoir, "my_add")
 
-    op = CompiledOp(
-        ltoir=add_ltoir,
-        name="point_add",
-        arg_types=(Point, Point),
-        return_type=Point,
+    assert op.name == "my_add"
+    assert op.ltoir == add_ltoir
+    assert op.func is None  # No underlying callable for compiled ops
+
+
+def test_compiled_iterator_properties():
+    """Test CompiledIterator property accessors."""
+    arch = get_arch()
+    advance_ltoir = compile_to_ltoir(ADVANCE_SOURCE, arch)
+    deref_ltoir = compile_to_ltoir(DEREF_SOURCE, arch)
+
+    advance_op = CompiledOp(advance_ltoir, "advance")
+    deref_op = CompiledOp(deref_ltoir, "dereference")
+
+    it = CompiledIterator(
+        state=np.int64(42),
+        value_type=types.int64,
+        advance=advance_op,
+        input_dereference=deref_op,
     )
 
-    # Check that types were converted to TypeDescriptors
-    assert isinstance(op.arg_types[0], types._TypeDescriptor)
-    assert isinstance(op.arg_types[1], types._TypeDescriptor)
-    assert isinstance(op.return_type, types._TypeDescriptor)
-
-    # Check size and alignment match the struct
-    assert op.arg_types[0].size == Point._dtype.itemsize
-    assert op.return_type.size == Point._dtype.itemsize
+    assert it.state == np.int64(42).tobytes()
+    assert it.state_alignment == 8  # Auto-inferred from int64
+    assert it.value_type == types.int64
+    assert it.is_input_iterator is True
+    assert it.is_output_iterator is False

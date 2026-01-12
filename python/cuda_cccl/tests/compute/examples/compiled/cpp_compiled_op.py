@@ -13,7 +13,7 @@ with cuda.compute's CompiledOp for custom reduction operations.
 import cupy as cp
 import numpy as np
 
-from cuda.compute import CompiledOp, reduce_into, types
+from cuda.compute import CompiledOp, reduce_into
 from cuda.core import Device, Program, ProgramOptions
 
 
@@ -51,12 +51,7 @@ arch = get_arch()
 add_ltoir = compile_to_ltoir(ADD_OP_SOURCE, arch)
 
 # Create a CompiledOp from the LTOIR
-add_op = CompiledOp(
-    ltoir=add_ltoir,
-    name="my_add",
-    arg_types=(types.int32, types.int32),
-    return_type=types.int32,
-)
+add_op = CompiledOp(add_ltoir, "my_add")
 
 # Prepare input and output arrays
 d_input = cp.array([1, 2, 3, 4, 5], dtype=np.int32)

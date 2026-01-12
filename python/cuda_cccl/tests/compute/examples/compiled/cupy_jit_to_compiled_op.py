@@ -14,7 +14,7 @@ import numpy as np
 from cupyx.jit import _compile as cupy_compile
 from cupyx.jit import _cuda_types
 
-from cuda.compute import CompiledOp, reduce_into, types
+from cuda.compute import CompiledOp, reduce_into
 from cuda.core import Device, Program, ProgramOptions
 
 # =============================================================================
@@ -135,29 +135,13 @@ def cupy_jit_to_compiled_op(cupy_func, arg_numpy_types, wrapper_name):
         np.dtype("float64"): "double",
     }
 
-    numpy_to_cccl_type = {
-        np.dtype("int8"): types.int8,
-        np.dtype("int16"): types.int16,
-        np.dtype("int32"): types.int32,
-        np.dtype("int64"): types.int64,
-        np.dtype("uint8"): types.uint8,
-        np.dtype("uint16"): types.uint16,
-        np.dtype("uint32"): types.uint32,
-        np.dtype("uint64"): types.uint64,
-        np.dtype("float32"): types.float32,
-        np.dtype("float64"): types.float64,
-    }
-
     arg_cpp_types = []
-    arg_cccl_types = []
     for arg in arg_numpy_types:
         dtype = np.dtype(arg)
         arg_cpp_types.append(numpy_to_cpp[dtype])
-        arg_cccl_types.append(numpy_to_cccl_type[dtype])
 
     result_dtype = return_type.dtype
     result_cpp_type = numpy_to_cpp[result_dtype]
-    result_cccl_type = numpy_to_cccl_type[result_dtype]
 
     wrapper_code = create_cccl_wrapper(
         cupy_func_name=func_name,
@@ -170,12 +154,7 @@ def cupy_jit_to_compiled_op(cupy_func, arg_numpy_types, wrapper_name):
     arch = get_arch()
     ltoir = compile_to_ltoir(wrapper_code, arch)
 
-    return CompiledOp(
-        ltoir=ltoir,
-        name=wrapper_name,
-        arg_types=tuple(arg_cccl_types),
-        return_type=result_cccl_type,
-    )
+    return CompiledOp(ltoir, wrapper_name)
 
 
 # =============================================================================
