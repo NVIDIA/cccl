@@ -14,6 +14,7 @@
 #endif // no system header
 
 #include <cub/agent/agent_scan.cuh>
+#include <cub/detail/warpspeed/look_ahead.h>
 #include <cub/device/dispatch/kernels/kernel_scan_warpspeed.cuh>
 #include <cub/device/dispatch/tuning/tuning_scan.cuh>
 #include <cub/util_macro.cuh>
@@ -27,7 +28,7 @@ namespace detail::scan
 template <typename ScanTileState, typename AccumT>
 union tile_state_kernel_arg_t
 {
-  tile_state_t<AccumT>* lookahead;
+  warpspeed::tile_state_t<AccumT>* lookahead;
   ScanTileState lookback;
 
   // ScanTileState<AccumT> is not trivially [default|copy]-constructible, so because of

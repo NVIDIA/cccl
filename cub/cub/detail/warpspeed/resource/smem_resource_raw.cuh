@@ -26,7 +26,7 @@
 
 CUB_NAMESPACE_BEGIN
 
-namespace detail
+namespace detail::warpspeed
 {
 struct SmemResourceRaw
 {
@@ -173,6 +173,6 @@ struct SmemResourceRaw
     }
   }
 };
-} // namespace detail
+} // namespace detail::warpspeed
 
 CUB_NAMESPACE_END

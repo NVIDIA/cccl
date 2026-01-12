@@ -19,7 +19,7 @@
 
 CUB_NAMESPACE_BEGIN
 
-namespace detail
+namespace detail::warpspeed
 {
 // Squad - device squad instance
 //
@@ -145,6 +145,6 @@ squadDispatch(SpecialRegisters sr, const SquadDesc (&squads)[numSquads], F f, in
     }
   }
 }
-} // namespace detail
+} // namespace detail::warpspeed
 
 CUB_NAMESPACE_END

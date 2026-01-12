@@ -14,7 +14,7 @@
 
 CUB_NAMESPACE_BEGIN
 
-namespace detail
+namespace detail::warpspeed
 {
 enum class Stages : int
 {
@@ -28,6 +28,6 @@ enum class Warps : int
 enum class Align : int
 {
 };
-} // namespace detail
+} // namespace detail::warpspeed
 
 CUB_NAMESPACE_END

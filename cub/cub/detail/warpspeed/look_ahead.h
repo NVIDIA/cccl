@@ -31,7 +31,7 @@
 
 CUB_NAMESPACE_BEGIN
 
-namespace detail
+namespace detail::warpspeed
 {
 enum scan_state : uint32_t
 {
@@ -245,6 +245,6 @@ template <int numTileStatesPerThread, typename AccumT, typename ScanOpT>
 }
 
 #endif // __cccl_ptx_isa >= 860
-} // namespace detail
+} // namespace detail::warpspeed
 
 CUB_NAMESPACE_END

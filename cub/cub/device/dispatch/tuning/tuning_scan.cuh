@@ -613,25 +613,25 @@ struct policy_hub
       static constexpr int tile_size = items_per_thread * squad_reduce_thread_count;
 
       // The squads cannot be static constexpr variables, as those are not device accessible
-      [[nodiscard]] _CCCL_API _CCCL_FORCEINLINE static constexpr SquadDesc squadReduce() noexcept
+      [[nodiscard]] _CCCL_API _CCCL_FORCEINLINE static constexpr warpspeed::SquadDesc squadReduce() noexcept
       {
-        return SquadDesc{0, num_reduce_warps};
+        return warpspeed::SquadDesc{0, num_reduce_warps};
       }
-      [[nodiscard]] _CCCL_API _CCCL_FORCEINLINE static constexpr SquadDesc squadScanStore() noexcept
+      [[nodiscard]] _CCCL_API _CCCL_FORCEINLINE static constexpr warpspeed::SquadDesc squadScanStore() noexcept
       {
-        return SquadDesc{1, num_scan_stor_warps};
+        return warpspeed::SquadDesc{1, num_scan_stor_warps};
       }
-      [[nodiscard]] _CCCL_API _CCCL_FORCEINLINE static constexpr SquadDesc squadLoad() noexcept
+      [[nodiscard]] _CCCL_API _CCCL_FORCEINLINE static constexpr warpspeed::SquadDesc squadLoad() noexcept
       {
-        return SquadDesc{2, num_load_warps};
+        return warpspeed::SquadDesc{2, num_load_warps};
       }
-      [[nodiscard]] _CCCL_API _CCCL_FORCEINLINE static constexpr SquadDesc squadSched() noexcept
+      [[nodiscard]] _CCCL_API _CCCL_FORCEINLINE static constexpr warpspeed::SquadDesc squadSched() noexcept
       {
-        return SquadDesc{3, num_sched_warps};
+        return warpspeed::SquadDesc{3, num_sched_warps};
       }
-      [[nodiscard]] _CCCL_API _CCCL_FORCEINLINE static constexpr SquadDesc squadLookback() noexcept
+      [[nodiscard]] _CCCL_API _CCCL_FORCEINLINE static constexpr warpspeed::SquadDesc squadLookback() noexcept
       {
-        return SquadDesc{4, num_look_ahead_warps};
+        return warpspeed::SquadDesc{4, num_look_ahead_warps};
       }
     };
 #endif // __cccl_ptx_isa >= 860
