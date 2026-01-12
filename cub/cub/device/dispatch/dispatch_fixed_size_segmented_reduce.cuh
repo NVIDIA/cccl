@@ -299,11 +299,10 @@ struct DispatchFixedSizeSegmentedReduce
 
     cudaError error = cudaSuccess;
 
-    const auto num_current_blocks = blocks_per_segment * num_segments;
+    const auto num_current_blocks = static_cast<::cuda::std::int32_t>(blocks_per_segment * num_segments);
 
     constexpr int local_seg_chunk_size = seg_chunk_size;
-    launcher_factory(
-      static_cast<::cuda::std::int32_t>(num_current_blocks), ActivePolicyT::ReducePolicy::BLOCK_THREADS, 0, stream)
+    launcher_factory(num_current_blocks, ActivePolicyT::ReducePolicy::BLOCK_THREADS, 0, stream)
       .doit(fixed_size_segmented_reduce_kernel_partial,
             d_in,
             d_block_reductions,
@@ -369,8 +368,11 @@ struct DispatchFixedSizeSegmentedReduce
   template <typename ActivePolicyT>
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t Invoke()
   {
-    // if single chunk, use single-phase reduction
-    if (segment_size < seg_chunk_size)
+    const auto two_phase_segments_per_block = ::cuda::ceil_div(segment_size, seg_chunk_size);
+    const auto two_phase_num_blocks         = two_phase_segments_per_block * num_segments;
+
+    // if single chunk or if two phase cannot be completed with single invocation, use single-phase reduction
+    if (segment_size < seg_chunk_size || two_phase_num_blocks >= ::cuda::std::numeric_limits<uint32_t>::max())
     {
       return InvokePasses<ActivePolicyT>(kernel_source.FixedSizeSegmentedReduceKernel());
     }
