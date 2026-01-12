@@ -148,19 +148,19 @@ template <typename OverrideAccumT = nondeterministic_no_override,
           typename TransformOpT = ::cuda::std::identity,
           typename AccumT = decltype(select_nondeterministic_accum_t<InputIteratorT, InitT, ReductionOpT, TransformOpT>(
             static_cast<OverrideAccumT*>(nullptr))),
-          typename ArchPolicies = arch_policies_from_types<AccumT, OffsetT, ReductionOpT>,
-          typename KernelSource = DeviceReduceNondeterministicKernelSource<
-            ArchPolicies,
-            InputIteratorT,
-            OutputIteratorT,
-            OffsetT,
-            ReductionOpT,
-            InitT,
-            AccumT,
-            TransformOpT>,
+          typename PolicySelector = policy_selector_from_types<AccumT, OffsetT, ReductionOpT>,
+          typename KernelSource   = DeviceReduceNondeterministicKernelSource<
+              PolicySelector,
+              InputIteratorT,
+              OutputIteratorT,
+              OffsetT,
+              ReductionOpT,
+              InitT,
+              AccumT,
+              TransformOpT>,
           typename KernelLauncherFactory = TripleChevronFactory>
 #if _CCCL_HAS_CONCEPTS()
-  requires reduce_policy_hub<ArchPolicies>
+  requires reduce_policy_selector<PolicySelector>
 #endif // _CCCL_HAS_CONCEPTS()
 CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch_nondeterministic(
   void* d_temp_storage,
@@ -172,7 +172,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch_nondeterministic(
   InitT init,
   cudaStream_t stream,
   TransformOpT transform_op              = {},
-  ArchPolicies arch_policies             = {},
+  PolicySelector policy_selector         = {},
   KernelSource kernel_source             = {},
   KernelLauncherFactory launcher_factory = {})
 {
@@ -183,7 +183,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch_nondeterministic(
     return error;
   }
 
-  const reduce_arch_policy active_policy = arch_policies(arch_id);
+  const reduce_policy active_policy = policy_selector(arch_id);
 #if !_CCCL_COMPILER(NVRTC) && defined(CUB_DEBUG_LOG)
   NV_IF_TARGET(
     NV_IS_HOST,
@@ -199,13 +199,13 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch_nondeterministic(
   }
 
   // Init kernel configuration
-  const int tile_size = active_policy.reduce_nondeterministic_policy.block_threads
-                      * active_policy.reduce_nondeterministic_policy.items_per_thread;
+  const int tile_size =
+    active_policy.reduce_nondeterministic.block_threads * active_policy.reduce_nondeterministic.items_per_thread;
   int sm_occupancy;
   if (const auto error = CubDebug(launcher_factory.MaxSmOccupancy(
         sm_occupancy,
         kernel_source.NondeterministicAtomicKernel(),
-        active_policy.reduce_nondeterministic_policy.block_threads)))
+        active_policy.reduce_nondeterministic.block_threads)))
   {
     return error;
   }
@@ -232,14 +232,14 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch_nondeterministic(
   _CubLog("Invoking NondeterministicDeviceReduceAtomicKernel<<<%llu, %d, 0, %p>>>(), %d items "
           "per thread, %d SM occupancy\n",
           (unsigned long long) reduce_grid_size,
-          active_policy.reduce_nondeterministic_policy.block_threads,
+          active_policy.reduce_nondeterministic.block_threads,
           (void*) stream,
-          active_policy.reduce_nondeterministic_policy.items_per_thread,
+          active_policy.reduce_nondeterministic.items_per_thread,
           sm_occupancy);
 #endif // CUB_DEBUG_LOG
 
   // Invoke NondeterministicDeviceReduceAtomicKernel
-  launcher_factory(reduce_grid_size, active_policy.reduce_nondeterministic_policy.block_threads, 0, stream)
+  launcher_factory(reduce_grid_size, active_policy.reduce_nondeterministic.block_threads, 0, stream)
     .doit(
       kernel_source.NondeterministicAtomicKernel(), d_in, d_out, num_items, even_share, reduction_op, init, transform_op);
 

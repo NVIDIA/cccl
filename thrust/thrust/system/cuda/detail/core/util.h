@@ -510,12 +510,12 @@ struct uninitialized
 // uninitialized_array
 // --------------
 // allocates uninitialized data on stack
-template <class T, size_t N>
+template <class T, size_t N, size_t Alignment = alignof(T)>
 struct uninitialized_array
 {
   using value_type = T;
   static constexpr ::cuda::std::integral_constant<size_t, N> size{};
-  alignas(T) char data_[N * sizeof(T)];
+  alignas(Alignment) char data_[N * sizeof(T)];
 
   _CCCL_HOST_DEVICE T* data()
   {
