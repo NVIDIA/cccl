@@ -271,6 +271,59 @@ jobs:
       contents: read
     uses: ./.github/workflows/build-pytorch.yml
 
+  # Test that cuda.compute can be imported on a CPU-only machine (no CUDA drivers).
+  # This runs on GitHub-hosted runners which don't have CUDA installed.
+  test-cpu-import:
+    name: Test CPU-only import
+    runs-on: ubuntu-latest
+    if: ${{ github.repository == 'NVIDIA/cccl' }}
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Install cuda-cccl from PyPI and patch with PR changes
+        run: |
+          # Install the base package from PyPI (this has pre-built wheels)
+          pip install cuda-cccl[cu12]
+
+          # Find where the package is installed
+          SITE_PACKAGES=$(python -c "import cuda.compute; import os; print(os.path.dirname(os.path.dirname(cuda.compute.__file__)))")
+          echo "Site packages: $SITE_PACKAGES"
+
+          # Patch with PR changes to test the CPU-only import fix
+          cp python/cuda_cccl/cuda/compute/_bindings.py "$SITE_PACKAGES/cuda/compute/_bindings.py"
+          cp python/cuda_cccl/cuda/compute/__init__.py "$SITE_PACKAGES/cuda/compute/__init__.py"
+
+      - name: Test CPU-only import
+        run: |
+          python -c "
+          import cuda.compute
+          print('cuda.compute imported successfully!')
+          print(f'_BINDINGS_AVAILABLE: {cuda.compute._BINDINGS_AVAILABLE}')
+
+          # Verify that accessing missing attributes gives a helpful error
+          try:
+              _ = cuda.compute.reduce_into
+              print('ERROR: Should have raised AttributeError')
+              exit(1)
+          except AttributeError as e:
+              print(f'Got expected AttributeError: {e}')
+              if 'CUDA bindings are not available' not in str(e):
+                  print('ERROR: AttributeError message is not helpful')
+                  exit(1)
+
+          print('All CPU-only import tests passed!')
+          "
+
   # Check all other job statuses. This job gates branch protection checks.
   ci:
     name: CI
@@ -284,6 +337,7 @@ jobs:
       - verify-workflow
       - verify-devcontainers
       - docs-build
+      - test-cpu-import
     runs-on: ubuntu-latest
     steps:
       - name: Check results
@@ -306,6 +360,7 @@ jobs:
           check_result "verify-workflow"      "success" "${{needs.verify-workflow.result}}"
           check_result "verify-devcontainers" "success" "${{needs.verify-devcontainers.result}}"
           check_result "docs-build"           "success" "${{needs.docs-build.result}}"
+          check_result "test-cpu-import"      "success" "${{needs.test-cpu-import.result}}"
 
           if [[ "$status" != "success" ]]; then
             exit 1
