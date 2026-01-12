@@ -17,6 +17,7 @@ struct stream_registry_factory_t;
 #include "catch2_test_env_launch_helper.h"
 
 DECLARE_LAUNCH_WRAPPER(cub::DeviceSelect::If, device_select_if);
+DECLARE_LAUNCH_WRAPPER(cub::DeviceSelect::Flagged, device_select_flagged);
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
 
@@ -52,6 +53,29 @@ TEST_CASE("Device select works with default environment", "[select][device]")
   REQUIRE(d_out == expected_output);
 }
 
+TEST_CASE("Device select flagged works with default environment", "[select][device]")
+{
+  using value_t     = int;
+  using num_items_t = int;
+
+  num_items_t num_items = 8;
+  auto d_in             = c2h::device_vector<value_t>{1, 2, 3, 4, 5, 6, 7, 8};
+  auto d_flags          = c2h::device_vector<char>{1, 0, 0, 1, 0, 1, 1, 0};
+  auto d_out            = c2h::device_vector<value_t>(num_items);
+  auto d_num_selected   = c2h::device_vector<int>(1);
+
+  REQUIRE(
+    cudaSuccess
+    == cub::DeviceSelect::Flagged(d_in.begin(), d_flags.begin(), d_out.begin(), d_num_selected.begin(), num_items));
+
+  c2h::device_vector<value_t> expected_output{1, 4, 6, 7};
+  c2h::device_vector<int> expected_num_selected{4};
+
+  REQUIRE(d_num_selected == expected_num_selected);
+  d_out.resize(d_num_selected[0]);
+  REQUIRE(d_out == expected_output);
+}
+
 #endif
 
 C2H_TEST("Device select uses environment", "[select][device]")
@@ -79,6 +103,42 @@ C2H_TEST("Device select uses environment", "[select][device]")
   device_select_if(d_in.begin(), d_out.begin(), d_num_selected.begin(), num_items, select_op, env);
 
   c2h::device_vector<value_t> expected_output{1, 2, 3, 4, 5};
+  c2h::device_vector<int> expected_num_selected{5};
+
+  REQUIRE(d_num_selected == expected_num_selected);
+  d_out.resize(d_num_selected[0]);
+  REQUIRE(d_out == expected_output);
+}
+
+C2H_TEST("Device select flagged uses environment", "[select][device]")
+{
+  using value_t     = int;
+  using num_items_t = int;
+
+  num_items_t num_items = 10;
+  auto d_in             = c2h::device_vector<value_t>{1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
+  auto d_flags          = c2h::device_vector<char>{1, 0, 1, 0, 1, 0, 1, 0, 1, 0};
+  auto d_out            = c2h::device_vector<value_t>(num_items);
+  auto d_num_selected   = c2h::device_vector<int>(1);
+
+  size_t expected_bytes_allocated{};
+  REQUIRE(
+    cudaSuccess
+    == cub::DeviceSelect::Flagged(
+      nullptr,
+      expected_bytes_allocated,
+      d_in.begin(),
+      d_flags.begin(),
+      d_out.begin(),
+      d_num_selected.begin(),
+      num_items));
+
+  auto env = stdexec::env{cuda::execution::require(cuda::execution::determinism::run_to_run), // determinism
+                          expected_allocation_size(expected_bytes_allocated)}; // temp storage size
+
+  device_select_flagged(d_in.begin(), d_flags.begin(), d_out.begin(), d_num_selected.begin(), num_items, env);
+
+  c2h::device_vector<value_t> expected_output{1, 3, 5, 7, 9};
   c2h::device_vector<int> expected_num_selected{5};
 
   REQUIRE(d_num_selected == expected_num_selected);
