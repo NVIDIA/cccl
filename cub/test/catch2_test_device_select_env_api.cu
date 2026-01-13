@@ -20,7 +20,7 @@ C2H_TEST("cub::DeviceSelect::If accepts determinism requirements", "[select][env
   auto input        = thrust::device_vector<int>{1, 2, 3, 4, 5, 6, 7, 8};
   auto output       = thrust::device_vector<int>(4);
   auto num_selected = thrust::device_vector<int>(1);
-  less_than_t<int> le{input[input.size() / 2]};
+  less_than_t<int> le{5};
 
   auto env = cuda::execution::require(cuda::execution::determinism::run_to_run);
 

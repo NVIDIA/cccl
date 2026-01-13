@@ -34,9 +34,7 @@
 
 CUB_NAMESPACE_BEGIN
 
-namespace detail
-{
-namespace select
+namespace detail::select
 {
 struct get_tuning_query_t
 {};
@@ -55,8 +53,7 @@ struct default_tuning : tuning<default_tuning>
   template <class InputT, class FlagT, class OffsetT, bool DistinctPartitions, SelectImpl Impl>
   using fn = policy_hub<InputT, FlagT, OffsetT, DistinctPartitions, Impl>;
 };
-} // namespace select
-} // namespace detail
+} // namespace detail::select
 
 //! @rst
 //! DeviceSelect provides device-wide, parallel operations for compacting selected items from sequences of data items
@@ -335,8 +332,10 @@ public:
             typename NumSelectedIteratorT,
             typename NumItemsT,
             typename EnvT = ::cuda::std::execution::env<>,
-            typename ::cuda::std::
-              enable_if_t<::cuda::std::is_integral_v<NumItemsT> && !::cuda::std::is_pointer_v<FlagIterator>, int> = 0>
+            typename ::cuda::std::enable_if_t<
+              ::cuda::std::is_integral_v<NumItemsT> && !::cuda::std::is_same_v<InputIteratorT, void*>
+                && !::cuda::std::is_same_v<FlagIterator, size_t&>,
+              int> = 0>
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t Flagged(
     InputIteratorT d_in,
     FlagIterator d_flags,
@@ -458,14 +457,15 @@ public:
   //! @param[in] env
   //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
   //!   @endrst
-  template <typename InputIteratorT,
-            typename OutputIteratorT,
-            typename NumSelectedIteratorT,
-            typename SelectOp,
-            typename NumItemsT,
-            typename EnvT = ::cuda::std::execution::env<>,
-            typename ::cuda::std::
-              enable_if_t<::cuda::std::is_integral_v<NumItemsT> && !::cuda::std::is_pointer_v<SelectOp>, int> = 0>
+  template <
+    typename InputIteratorT,
+    typename OutputIteratorT,
+    typename NumSelectedIteratorT,
+    typename SelectOp,
+    typename NumItemsT,
+    typename EnvT = ::cuda::std::execution::env<>,
+    typename ::cuda::std::
+      enable_if_t<::cuda::std::is_integral_v<NumItemsT> && !::cuda::std::is_same_v<InputIteratorT, void*>, int> = 0>
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t
   If(InputIteratorT d_in,
      OutputIteratorT d_out,
