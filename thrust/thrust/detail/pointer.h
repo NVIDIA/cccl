@@ -37,6 +37,7 @@
 #include <thrust/iterator/iterator_adaptor.h>
 #include <thrust/iterator/iterator_traversal_tags.h>
 
+#include <cuda/std/__type_traits/is_comparable.h>
 #include <cuda/std/__type_traits/is_reference.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/is_void.h>
@@ -207,8 +208,7 @@ public:
    *  \tparam OtherPointer The tag associated with \p OtherPointer shall be convertible to \p Tag,
    *                       and its element type shall be convertible to \p Element.
    */
-  template <typename OtherPointer,
-            typename detail::enable_if_pointer_is_convertible<OtherPointer, pointer>::type* = nullptr>
+  template <typename OtherPointer, detail::enable_if_pointer_is_convertible_t<OtherPointer, pointer>* = nullptr>
   _CCCL_HOST_DEVICE pointer(const OtherPointer& other)
       : super_t(detail::pointer_traits<OtherPointer>::get(other))
   {}
@@ -217,7 +217,7 @@ public:
   // OtherPointer's element_type shall be void
   // OtherPointer's system shall be convertible to Tag
   template <typename OtherPointer,
-            typename detail::enable_if_void_pointer_is_system_convertible<OtherPointer, pointer>::type* = nullptr>
+            detail::enable_if_void_pointer_is_system_convertible_t<OtherPointer, pointer>* = nullptr>
   _CCCL_HOST_DEVICE explicit pointer(const OtherPointer& other)
       : super_t(static_cast<Element*>(detail::pointer_traits<OtherPointer>::get(other)))
   {}
@@ -242,7 +242,7 @@ public:
    *                       and its element type shall be convertible to \p Element.
    */
   template <typename OtherPointer>
-  _CCCL_HOST_DEVICE typename detail::enable_if_pointer_is_convertible<OtherPointer, pointer, derived_type&>::type
+  _CCCL_HOST_DEVICE detail::enable_if_pointer_is_convertible_t<OtherPointer, pointer, derived_type&>
   operator=(const OtherPointer& other)
   {
     super_t::base_reference() = detail::pointer_traits<OtherPointer>::get(other);
@@ -305,6 +305,96 @@ public:
   {
     return !(nullptr == p);
   }
+
+  template <typename OtherElement, typename OtherTag, typename OtherReference, typename OtherDerived>
+  [[nodiscard]]
+  _CCCL_HOST_DEVICE friend ::cuda::std::enable_if_t<
+    detail::ptr_can_compare_equal<pointer, pointer<OtherElement, OtherTag, OtherReference, OtherDerived>>,
+    bool> operator==(pointer const& lhs, pointer<OtherElement, OtherTag, OtherReference, OtherDerived> const& rhs)
+  {
+    return lhs.get() == rhs.get();
+  }
+
+  template <typename OtherElement, typename OtherTag, typename OtherReference, typename OtherDerived>
+  _CCCL_HOST_DEVICE friend ::cuda::std::enable_if_t<
+    !detail::ptr_can_compare_equal<pointer, pointer<OtherElement, OtherTag, OtherReference, OtherDerived>>,
+    bool>
+  operator==(pointer const& lhs, pointer<OtherElement, OtherTag, OtherReference, OtherDerived> const& rhs) = delete;
+
+  template <typename OtherElement, typename OtherTag, typename OtherReference, typename OtherDerived>
+  _CCCL_HOST_DEVICE friend ::cuda::std::enable_if_t<
+    detail::ptr_can_compare_equal<pointer, pointer<OtherElement, OtherTag, OtherReference, OtherDerived>>,
+    bool>
+  operator!=(pointer const& lhs, pointer<OtherElement, OtherTag, OtherReference, OtherDerived> const& rhs)
+  {
+    return !(lhs.get() == rhs.get());
+  }
+
+  template <typename OtherElement, typename OtherTag, typename OtherReference, typename OtherDerived>
+  _CCCL_HOST_DEVICE friend ::cuda::std::enable_if_t<
+    !detail::ptr_can_compare_equal<pointer, pointer<OtherElement, OtherTag, OtherReference, OtherDerived>>,
+    bool>
+  operator!=(pointer const& lhs, pointer<OtherElement, OtherTag, OtherReference, OtherDerived> const& rhs) = delete;
+
+  template <typename OtherElement, typename OtherTag, typename OtherReference, typename OtherDerived>
+  _CCCL_HOST_DEVICE friend ::cuda::std::enable_if_t<
+    detail::ptr_can_compare_less_than<pointer, pointer<OtherElement, OtherTag, OtherReference, OtherDerived>>,
+    bool>
+  operator<(pointer const& lhs, pointer<OtherElement, OtherTag, OtherReference, OtherDerived> const& rhs)
+  {
+    return lhs.get() < rhs.get();
+  }
+
+  template <typename OtherElement, typename OtherTag, typename OtherReference, typename OtherDerived>
+  _CCCL_HOST_DEVICE friend ::cuda::std::enable_if_t<
+    !detail::ptr_can_compare_less_than<pointer, pointer<OtherElement, OtherTag, OtherReference, OtherDerived>>,
+    bool>
+  operator<(pointer const& lhs, pointer<OtherElement, OtherTag, OtherReference, OtherDerived> const& rhs) = delete;
+
+  template <typename OtherElement, typename OtherTag, typename OtherReference, typename OtherDerived>
+  _CCCL_HOST_DEVICE friend ::cuda::std::enable_if_t<
+    detail::ptr_can_compare_less_than<pointer, pointer<OtherElement, OtherTag, OtherReference, OtherDerived>>,
+    bool>
+  operator>=(pointer const& lhs, pointer<OtherElement, OtherTag, OtherReference, OtherDerived> const& rhs)
+  {
+    return !(lhs.get() < rhs.get());
+  }
+
+  template <typename OtherElement, typename OtherTag, typename OtherReference, typename OtherDerived>
+  _CCCL_HOST_DEVICE friend ::cuda::std::enable_if_t<
+    !detail::ptr_can_compare_less_than<pointer, pointer<OtherElement, OtherTag, OtherReference, OtherDerived>>,
+    bool>
+  operator>=(pointer const& lhs, pointer<OtherElement, OtherTag, OtherReference, OtherDerived> const& rhs) = delete;
+
+  template <typename OtherElement, typename OtherTag, typename OtherReference, typename OtherDerived>
+  _CCCL_HOST_DEVICE friend ::cuda::std::enable_if_t<
+    detail::ptr_can_compare_less_than<pointer, pointer<OtherElement, OtherTag, OtherReference, OtherDerived>>,
+    bool>
+  operator>(pointer const& lhs, pointer<OtherElement, OtherTag, OtherReference, OtherDerived> const& rhs)
+  {
+    return rhs.get() < lhs.get();
+  }
+
+  template <typename OtherElement, typename OtherTag, typename OtherReference, typename OtherDerived>
+  _CCCL_HOST_DEVICE friend ::cuda::std::enable_if_t<
+    !detail::ptr_can_compare_less_than<pointer, pointer<OtherElement, OtherTag, OtherReference, OtherDerived>>,
+    bool>
+  operator>(pointer const& lhs, pointer<OtherElement, OtherTag, OtherReference, OtherDerived> const& rhs) = delete;
+
+  template <typename OtherElement, typename OtherTag, typename OtherReference, typename OtherDerived>
+  _CCCL_HOST_DEVICE friend ::cuda::std::enable_if_t<
+    detail::ptr_can_compare_less_than<pointer, pointer<OtherElement, OtherTag, OtherReference, OtherDerived>>,
+    bool>
+  operator<=(pointer const& lhs, pointer<OtherElement, OtherTag, OtherReference, OtherDerived> const& rhs)
+  {
+    return !(rhs.get() < lhs.get());
+  }
+
+  template <typename OtherElement, typename OtherTag, typename OtherReference, typename OtherDerived>
+  _CCCL_HOST_DEVICE friend ::cuda::std::enable_if_t<
+    !detail::ptr_can_compare_less_than<pointer, pointer<OtherElement, OtherTag, OtherReference, OtherDerived>>,
+    bool>
+  operator<=(pointer const& lhs, pointer<OtherElement, OtherTag, OtherReference, OtherDerived> const& rhs) = delete;
 };
 
 /*! \} // memory_management
