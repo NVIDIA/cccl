@@ -30,15 +30,19 @@
 #  include <cuda/std/__mdspan/extents.h>
 #  include <cuda/std/__type_traits/is_integer.h>
 
+#  if _CCCL_CUDA_COMPILATION()
+#    include <cuda/__ptx/instructions/get_sreg.h>
+#  endif // _CCCL_CUDA_COMPILATION()
+
 #  include <cuda/std/__cccl/prologue.h>
 
 _CCCL_BEGIN_NAMESPACE_CUDA
 
-struct thread_level : __native_hierarchy_level_base<thread_level>
+struct _CCCL_DECLSPEC_EMPTY_BASES thread_level : __native_hierarchy_level_base<thread_level>
 {
-  using product_type  = unsigned;
-  using allowed_above = allowed_levels<block_level>;
-  using allowed_below = allowed_levels<>;
+  using __product_type  = unsigned;
+  using __allowed_above = __allowed_levels<block_level>;
+  using __allowed_below = __allowed_levels<>;
 
   using __next_native_level = block_level;
 

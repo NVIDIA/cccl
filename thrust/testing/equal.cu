@@ -137,6 +137,7 @@ void TestEqualWithBigIndexesHelper(int magnitude)
   ASSERT_EQUAL(has_executed_h, true);
 }
 
+#ifndef THRUST_FORCE_32_BIT_OFFSET_TYPE
 void TestEqualWithBigIndexes()
 {
   TestEqualWithBigIndexesHelper(30);
@@ -145,3 +146,4 @@ void TestEqualWithBigIndexes()
   TestEqualWithBigIndexesHelper(33);
 }
 DECLARE_UNITTEST(TestEqualWithBigIndexes);
+#endif // THRUST_FORCE_32_BIT_OFFSET_TYPE

@@ -45,7 +45,7 @@ CUB_NAMESPACE_BEGIN
 
 namespace detail::reduce
 {
-template <typename ArchPolicies,
+template <typename PolicySelector,
           typename InputIteratorT,
           typename OutputIteratorT,
           typename OffsetT,
@@ -55,12 +55,12 @@ template <typename ArchPolicies,
           typename TransformOpT>
 struct DeviceReduceKernelSource
 {
-  // ArchPolicies must be stateless, so we can pass the type to the kernel
-  static_assert(::cuda::std::is_empty_v<ArchPolicies>);
+  // PolicySelector must be stateless, so we can pass the type to the kernel
+  static_assert(::cuda::std::is_empty_v<PolicySelector>);
 
   CUB_DEFINE_KERNEL_GETTER(
     SingleTileKernel,
-    DeviceReduceSingleTileKernel<ArchPolicies,
+    DeviceReduceSingleTileKernel<PolicySelector,
                                  InputIteratorT,
                                  OutputIteratorT,
                                  OffsetT,
@@ -70,11 +70,11 @@ struct DeviceReduceKernelSource
                                  TransformOpT>)
 
   CUB_DEFINE_KERNEL_GETTER(
-    ReductionKernel, DeviceReduceKernel<ArchPolicies, InputIteratorT, OffsetT, ReductionOpT, AccumT, TransformOpT>)
+    ReductionKernel, DeviceReduceKernel<PolicySelector, InputIteratorT, OffsetT, ReductionOpT, AccumT, TransformOpT>)
 
   CUB_DEFINE_KERNEL_GETTER(
     SingleTileSecondKernel,
-    DeviceReduceSingleTileKernel<ArchPolicies,
+    DeviceReduceSingleTileKernel<PolicySelector,
                                  AccumT*,
                                  OutputIteratorT,
                                  int, // Always used with int offsets
@@ -90,15 +90,15 @@ struct DeviceReduceKernelSource
 
 // TODO(bgruber): remove in CCCL 4.0
 template <typename PolicyHub>
-struct arch_policies_from_hub
+struct policy_selector_from_hub
 {
   // this is only called in device code, so we can ignore the arch parameter
-  _CCCL_DEVICE_API constexpr auto operator()(::cuda::arch_id /*arch*/) const -> reduce_arch_policy
+  _CCCL_DEVICE_API constexpr auto operator()(::cuda::arch_id /*arch*/) const -> reduce_policy
   {
     using ap             = typename PolicyHub::MaxPolicy::ActivePolicy;
     using ap_reduce      = typename ap::ReducePolicy;
     using ap_single_tile = typename ap::SingleTilePolicy;
-    return reduce_arch_policy{
+    return reduce_policy{
       agent_reduce_policy{
         ap_reduce::BLOCK_THREADS,
         ap_reduce::ITEMS_PER_THREAD,
@@ -153,7 +153,7 @@ template <typename InputIteratorT,
           typename TransformOpT = ::cuda::std::identity,
           typename PolicyHub    = detail::reduce::policy_hub<AccumT, OffsetT, ReductionOpT>,
           typename KernelSource = detail::reduce::DeviceReduceKernelSource<
-            detail::reduce::arch_policies_from_hub<PolicyHub>,
+            detail::reduce::policy_selector_from_hub<PolicyHub>,
             InputIteratorT,
             OutputIteratorT,
             OffsetT,
@@ -594,7 +594,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t invoke_passes(
   InitT init,
   cudaStream_t stream,
   TransformOpT transform_op,
-  reduce_arch_policy active_policy,
+  reduce_policy active_policy,
   KernelSource kernel_source,
   KernelLauncherFactory launcher_factory)
 {
@@ -606,10 +606,10 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t invoke_passes(
   }
 
   // Init regular kernel configuration
-  const auto tile_size = active_policy.reduce_policy.block_threads * active_policy.reduce_policy.items_per_thread;
+  const auto tile_size = active_policy.reduce.block_threads * active_policy.reduce.items_per_thread;
   int sm_occupancy;
   if (const auto error = CubDebug(launcher_factory.MaxSmOccupancy(
-        sm_occupancy, kernel_source.ReductionKernel(), active_policy.reduce_policy.block_threads)))
+        sm_occupancy, kernel_source.ReductionKernel(), active_policy.reduce.block_threads)))
   {
     return error;
   }
@@ -652,14 +652,14 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t invoke_passes(
   _CubLog("Invoking DeviceReduceKernel<<<%lu, %d, 0, %lld>>>(), %d items "
           "per thread, %d SM occupancy\n",
           (unsigned long) reduce_grid_size,
-          active_policy.reduce_policy.block_threads,
+          active_policy.reduce.block_threads,
           (long long) stream,
-          active_policy.reduce_policy.items_per_thread,
+          active_policy.reduce.items_per_thread,
           sm_occupancy);
 #endif // CUB_DEBUG_LOG
 
   // Invoke DeviceReduceKernel
-  launcher_factory(reduce_grid_size, active_policy.reduce_policy.block_threads, 0, stream)
+  launcher_factory(reduce_grid_size, active_policy.reduce.block_threads, 0, stream)
     .doit(kernel_source.ReductionKernel(), d_in, d_block_reductions, num_items, even_share, reduction_op, transform_op);
 
   // Check for failure to launch
@@ -678,13 +678,13 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t invoke_passes(
 #ifdef CUB_DEBUG_LOG
   _CubLog("Invoking DeviceReduceSingleTileKernel<<<1, %d, 0, %lld>>>(), "
           "%d items per thread\n",
-          active_policy.single_tile_policy.block_threads,
+          active_policy.single_tile.block_threads,
           (long long) stream,
-          active_policy.single_tile_policy.items_per_thread);
+          active_policy.single_tile.items_per_thread);
 #endif // CUB_DEBUG_LOG
 
   // Invoke DeviceReduceSingleTileKernel
-  launcher_factory(1, active_policy.single_tile_policy.block_threads, 0, stream)
+  launcher_factory(1, active_policy.single_tile.block_threads, 0, stream)
     .doit(kernel_source.SingleTileSecondKernel(),
           d_block_reductions,
           d_out,
@@ -736,12 +736,12 @@ template <
   typename TransformOpT = ::cuda::std::identity,
   typename AccumT =
     decltype(select_accum_t<InputIteratorT, InitT, ReductionOpT, TransformOpT>(static_cast<OverrideAccumT*>(nullptr))),
-  typename ArchPolicies = arch_policies_from_types<AccumT, OffsetT, ReductionOpT>,
+  typename PolicySelector = policy_selector_from_types<AccumT, OffsetT, ReductionOpT>,
   typename KernelSource =
-    DeviceReduceKernelSource<ArchPolicies, InputIteratorT, OutputIteratorT, OffsetT, ReductionOpT, InitT, AccumT, TransformOpT>,
+    DeviceReduceKernelSource<PolicySelector, InputIteratorT, OutputIteratorT, OffsetT, ReductionOpT, InitT, AccumT, TransformOpT>,
   typename KernelLauncherFactory = CUB_DETAIL_DEFAULT_KERNEL_LAUNCHER_FACTORY>
 #if _CCCL_HAS_CONCEPTS()
-  requires reduce_policy_hub<ArchPolicies>
+  requires reduce_policy_selector<PolicySelector>
 #endif // _CCCL_HAS_CONCEPTS()
 CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
   void* d_temp_storage,
@@ -753,7 +753,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
   InitT init,
   cudaStream_t stream,
   TransformOpT transform_op              = {},
-  ArchPolicies arch_policies             = {},
+  PolicySelector policy_selector         = {},
   KernelSource kernel_source             = {},
   KernelLauncherFactory launcher_factory = {})
 {
@@ -764,7 +764,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
     return error;
   }
 
-  const reduce_arch_policy active_policy = arch_policies(arch_id);
+  const reduce_policy active_policy = policy_selector(arch_id);
 #if !_CCCL_COMPILER(NVRTC) && defined(CUB_DEBUG_LOG)
   NV_IF_TARGET(NV_IS_HOST,
                (std::stringstream ss; ss << active_policy;
@@ -772,8 +772,8 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
 #endif // !_CCCL_COMPILER(NVRTC) && defined(CUB_DEBUG_LOG)
 
   // Check for small, single tile size
-  if (num_items <= static_cast<OffsetT>(
-        active_policy.single_tile_policy.block_threads * active_policy.single_tile_policy.items_per_thread))
+  if (num_items
+      <= static_cast<OffsetT>(active_policy.single_tile.block_threads * active_policy.single_tile.items_per_thread))
   {
     // Return if the caller is simply requesting the size of the storage allocation
     if (d_temp_storage == nullptr)
@@ -786,13 +786,13 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
 #ifdef CUB_DEBUG_LOG
     _CubLog("Invoking DeviceReduceSingleTileKernel<<<1, %d, 0, %lld>>>(), "
             "%d items per thread\n",
-            active_policy.single_tile_policy.block_threads,
+            active_policy.single_tile.block_threads,
             (long long) stream,
-            active_policy.single_tile_policy.items_per_thread);
+            active_policy.single_tile.items_per_thread);
 #endif // CUB_DEBUG_LOG
 
     // Invoke single_reduce_sweep_kernel
-    launcher_factory(1, active_policy.single_tile_policy.block_threads, 0, stream)
+    launcher_factory(1, active_policy.single_tile.block_threads, 0, stream)
       .doit(kernel_source.SingleTileKernel(), d_in, d_out, num_items, reduction_op, init, transform_op);
 
     // Check for failure to launch

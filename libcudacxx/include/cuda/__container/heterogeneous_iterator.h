@@ -44,7 +44,7 @@ enum class _IsConstIter
   __yes,
 };
 //! @rst
-//! .. _cudax-containers-heterogeneous-iterator:
+//! .. _libcudacxx-containers-heterogeneous-iterator:
 //!
 //! Type safe iterator over heterogeneous memory
 //! ---------------------------------------------

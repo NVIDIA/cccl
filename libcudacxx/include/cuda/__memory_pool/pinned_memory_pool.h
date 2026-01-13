@@ -41,10 +41,10 @@ _CCCL_BEGIN_NAMESPACE_CUDA
 static ::cudaMemPool_t __get_default_host_pinned_pool();
 
 //! @rst
-//! .. _cudax-memory-resource-async:
+//! .. _libcudacxx-memory-resource-async:
 //!
 //! Stream ordered host pinned memory pool
-//! ------------------------------
+//! ---------------------------------------
 //!
 //! ``pinned_memory_pool_ref`` allocates pinned memory using
 //! `cudaMallocFromPoolAsync / cudaFreeAsync
@@ -90,7 +90,7 @@ public:
 }
 
 //! @rst
-//! .. _cudax-memory-resource-async:
+//! .. _libcudacxx-memory-resource-async:
 //!
 //! Stream ordered memory resource
 //! ------------------------------

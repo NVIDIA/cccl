@@ -250,7 +250,7 @@ void test_pairs(
                zip(keys2_h.end(), values2_h.end()),
                zip(reference_keys_h.begin(), reference_values_h.begin()),
                [&](const value_t& a, const value_t& b) {
-                 return compare_op(thrust::get<0>(a), thrust::get<0>(b));
+                 return compare_op(cuda::std::get<0>(a), cuda::std::get<0>(b));
                });
   }
 

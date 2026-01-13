@@ -53,7 +53,7 @@ THRUST_NAMESPACE_BEGIN
  *
  *  struct SumTuple {
  *    float operator()(auto tup) const {
- *      return thrust::get<0>(tup) + thrust::get<1>(tup) + thrust::get<2>(tup);
+ *      return cuda::std::get<0>(tup) + cuda::std::get<1>(tup) + ::cuda::std::get<2>(tup);
  *    }
  *  };
  *  struct SumArgs {

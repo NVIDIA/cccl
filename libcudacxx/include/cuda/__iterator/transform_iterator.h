@@ -235,8 +235,10 @@ public:
 
   //! @brief Dereferences the stored iterator and applies the stored functor to the result
   _CCCL_EXEC_CHECK_DISABLE
+#ifndef _CCCL_DOXYGEN_INVOKED // Doxygen has issues with the constraint
   _CCCL_TEMPLATE(class _Iter2 = _Iter)
   _CCCL_REQUIRES(::cuda::std::regular_invocable<const _Fn&, ::cuda::std::iter_reference_t<const _Iter2>>)
+#endif // !_CCCL_DOXYGEN_INVOKED
   [[nodiscard]] _CCCL_API constexpr reference operator*() const
     noexcept(noexcept(::cuda::std::invoke(::cuda::std::declval<const _Fn&>(), *::cuda::std::declval<const _Iter2&>())))
   {
@@ -248,8 +250,10 @@ public:
   //! @note This is a cludge against the fact that the iterator concepts requires `const Iter` but a user might have
   //! forgotten to const qualify the call operator
   _CCCL_EXEC_CHECK_DISABLE
+#ifndef _CCCL_DOXYGEN_INVOKED // Doxygen has issues with the constraint
   _CCCL_TEMPLATE(class _Iter2 = _Iter)
   _CCCL_REQUIRES((!::cuda::std::regular_invocable<const _Fn&, ::cuda::std::iter_reference_t<const _Iter2>>) )
+#endif // !_CCCL_DOXYGEN_INVOKED
   [[nodiscard]] _CCCL_API constexpr reference operator*() const
     noexcept(noexcept(::cuda::std::invoke(::cuda::std::declval<_Fn&>(), *::cuda::std::declval<const _Iter2&>())))
   {
@@ -268,9 +272,11 @@ public:
   //! @brief Subscripts the stored iterator by a number of elements and applies the stored functor to the result
   //! @param __n The number of elements to advance by
   _CCCL_EXEC_CHECK_DISABLE
+#ifndef _CCCL_DOXYGEN_INVOKED // Doxygen has issues with the constraint
   _CCCL_TEMPLATE(class _Iter2 = _Iter)
   _CCCL_REQUIRES(::cuda::std::__has_random_access_traversal<_Iter2>
                    _CCCL_AND ::cuda::std::regular_invocable<const _Fn&, ::cuda::std::iter_reference_t<const _Iter2>>)
+#endif // !_CCCL_DOXYGEN_INVOKED
   [[nodiscard]] _CCCL_API constexpr reference operator[](difference_type __n) const
     noexcept(__transform_iterator_nothrow_subscript<const _Fn, _Iter2>)
   {
@@ -283,9 +289,11 @@ public:
   //! @note This is a cludge against the fact that the iterator concepts requires `const Iter` but a user might have
   //! forgotten to const qualify the call operator
   _CCCL_EXEC_CHECK_DISABLE
+#ifndef _CCCL_DOXYGEN_INVOKED // Doxygen has issues with the constraint
   _CCCL_TEMPLATE(class _Iter2 = _Iter)
   _CCCL_REQUIRES(::cuda::std::__has_random_access_traversal<_Iter2> _CCCL_AND(
     !::cuda::std::regular_invocable<const _Fn&, ::cuda::std::iter_reference_t<const _Iter2>>))
+#endif // !_CCCL_DOXYGEN_INVOKED
   [[nodiscard]] _CCCL_API constexpr reference operator[](difference_type __n) const
     noexcept(__transform_iterator_nothrow_subscript<_Fn, _Iter2>)
   {
@@ -296,8 +304,10 @@ public:
   //! @brief Subscripts the stored iterator by a number of elements and applies the stored functor to the result
   //! @param __n The number of elements to advance by
   _CCCL_EXEC_CHECK_DISABLE
+#ifndef _CCCL_DOXYGEN_INVOKED // Doxygen has issues with the constraint
   _CCCL_TEMPLATE(class _Iter2 = _Iter)
   _CCCL_REQUIRES(::cuda::std::__has_random_access_traversal<_Iter2>)
+#endif // !_CCCL_DOXYGEN_INVOKED
   [[nodiscard]] _CCCL_API constexpr reference
   operator[](difference_type __n) noexcept(__transform_iterator_nothrow_subscript<_Fn, _Iter2>)
   {
