@@ -294,7 +294,6 @@ class Nvrtcc:
 
         return parser.parse_known_args(nvcc_opts)[0]
 
-
     def __init__(self, opts: list[str], env):
         args, nvcc_opts = Nvrtcc._parse_nvrtcc_opts(opts)
 
@@ -355,7 +354,9 @@ class Nvrtcc:
 
     def _get_nvcc_cmd_list(self) -> list[str]:
         run_result = subprocess.run(
-            [self.nvcc_bin] + self.nvcc_opts + ["-dryrun"], stderr=subprocess.PIPE, env=self.env
+            [self.nvcc_bin] + self.nvcc_opts + ["-dryrun"],
+            stderr=subprocess.PIPE,
+            env=self.env,
         )
 
         if run_result.returncode != 0:
@@ -579,10 +580,12 @@ class Nvrtcc:
                         [bin] + opts,
                         stdout=subprocess.DEVNULL,
                         stderr=subprocess.DEVNULL,
-                        env=self.env
+                        env=self.env,
                     )
                 else:
-                    run_result = subprocess.run([os.path.expandvars(bin)] + opts, env=self.env)
+                    run_result = subprocess.run(
+                        [os.path.expandvars(bin)] + opts, env=self.env
+                    )
                     if run_result.returncode != 0:
                         sys.exit(run_result.returncode)
 
