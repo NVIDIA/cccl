@@ -3,7 +3,7 @@
 
 #include "insert_nested_NVTX_range_guard.h"
 
-#include <cub/device/device_find_if.cuh>
+#include <cub/device/device_find.cuh>
 
 #include <thrust/device_vector.h>
 
