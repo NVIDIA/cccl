@@ -1,0 +1,134 @@
+//===----------------------------------------------------------------------===//
+//
+// Part of libcu++, the C++ Standard Library for your entire system,
+// under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+// SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES.
+//
+//===----------------------------------------------------------------------===//
+
+// <cuda/mdspan>
+
+// constexpr index_type required_span_size() const noexcept;
+//
+// For layout_stride_relaxed:
+//   - For rank-0: offset_ + 1
+//   - Otherwise: offset_ + 1 + sum of (max_index[r] * stride[r]) for all r,
+//     where max_index[r] = (extent[r] - 1) if stride[r] >= 0, else 0
+//
+// This differs from layout_stride because:
+//   - We account for the offset
+//   - We handle negative strides by using 0 for the corresponding dimension's contribution
+//     when the stride is negative (those dimensions iterate backwards from the offset)
+
+#include <cuda/mdspan>
+#include <cuda/std/cassert>
+#include <cuda/std/cstdint>
+
+#include "test_macros.h"
+
+template <class E>
+__host__ __device__ constexpr void test_required_span_size(
+  E e,
+  cuda::std::array<cuda::std::intptr_t, E::rank()> strides,
+  cuda::std::intptr_t offset,
+  typename E::index_type expected_size)
+{
+  using M = cuda::layout_stride_relaxed::mapping<E>;
+  const M m(e, strides, offset);
+
+  static_assert(noexcept(m.required_span_size()));
+  assert(m.required_span_size() == expected_size);
+}
+
+__host__ __device__ constexpr bool test()
+{
+  [[maybe_unused]] constexpr size_t D = cuda::std::dynamic_extent;
+
+  // Rank-0 cases: required_span_size = offset + 1
+  test_required_span_size(cuda::std::extents<int>(), cuda::std::array<cuda::std::intptr_t, 0>{}, 0, 1);
+  test_required_span_size(cuda::std::extents<int>(), cuda::std::array<cuda::std::intptr_t, 0>{}, 5, 6);
+  test_required_span_size(cuda::std::extents<int>(), cuda::std::array<cuda::std::intptr_t, 0>{}, 10, 11);
+
+  // Rank-1 cases with zero extent
+  // When extent is 0, max_index is 0, so contribution is 0
+  // required_span_size = offset + 1 + 0 = offset + 1
+  test_required_span_size(cuda::std::extents<unsigned, D>(0), cuda::std::array<cuda::std::intptr_t, 1>{5}, 0, 1);
+  test_required_span_size(cuda::std::extents<unsigned, D>(0), cuda::std::array<cuda::std::intptr_t, 1>{5}, 10, 11);
+
+  // Rank-1 cases with positive strides
+  // extent=1: required_span_size = offset + 1 + (1-1)*stride = offset + 1
+  test_required_span_size(cuda::std::extents<unsigned, D>(1), cuda::std::array<cuda::std::intptr_t, 1>{5}, 0, 1);
+  // extent=7, stride=5: required_span_size = offset + 1 + (7-1)*5 = 0 + 1 + 30 = 31
+  test_required_span_size(cuda::std::extents<unsigned, D>(7), cuda::std::array<cuda::std::intptr_t, 1>{5}, 0, 31);
+  // extent=7, stride=5, offset=10: required_span_size = 10 + 1 + 30 = 41
+  test_required_span_size(cuda::std::extents<unsigned, D>(7), cuda::std::array<cuda::std::intptr_t, 1>{5}, 10, 41);
+  test_required_span_size(cuda::std::extents<unsigned, 7>(), cuda::std::array<cuda::std::intptr_t, 1>{5}, 0, 31);
+
+  // Rank-1 cases with negative strides
+  // For negative stride, max contribution is at index 0, so we add 0
+  // extent=7, stride=-1, offset=6: max at index 0 gives offset, so required_span_size = offset + 1 = 7
+  test_required_span_size(cuda::std::extents<int, D>(7), cuda::std::array<cuda::std::intptr_t, 1>{-1}, 6, 7);
+  // extent=4, stride=-1, offset=3: required_span_size = 3 + 1 = 4
+  test_required_span_size(cuda::std::extents<int, 4>(), cuda::std::array<cuda::std::intptr_t, 1>{-1}, 3, 4);
+
+  // Rank-2 cases with positive strides
+  // extents(7,8), strides(20,2), offset=0: required = 0 + 1 + 6*20 + 7*2 = 1 + 120 + 14 = 135
+  test_required_span_size(
+    cuda::std::extents<unsigned, 7, 8>(), cuda::std::array<cuda::std::intptr_t, 2>{20, 2}, 0, 135);
+  // Same with offset=10: required = 10 + 1 + 120 + 14 = 145
+  test_required_span_size(
+    cuda::std::extents<unsigned, 7, 8>(), cuda::std::array<cuda::std::intptr_t, 2>{20, 2}, 10, 145);
+
+  // Rank-2 cases with mixed strides
+  // extents(7,8), strides(-1, 7), offset=6: 
+  // dim0 has negative stride, contributes 0; dim1 has positive stride, contributes 7*7=49
+  // required = 6 + 1 + 0 + 49 = 56
+  test_required_span_size(
+    cuda::std::extents<int, 7, 8>(), cuda::std::array<cuda::std::intptr_t, 2>{-1, 7}, 6, 56);
+
+  // Rank-2 with zero stride (broadcasting)
+  // extents(7,8), strides(0, 1), offset=0: 
+  // dim0 with stride 0 contributes 0; dim1 contributes 7*1=7
+  // required = 0 + 1 + 0 + 7 = 8
+  test_required_span_size(cuda::std::extents<int, 7, 8>(), cuda::std::array<cuda::std::intptr_t, 2>{0, 1}, 0, 8);
+
+  // Higher rank cases
+  // extents(7,8,9,10), strides(1,7,56,504), offset=0
+  // required = 0 + 1 + 6*1 + 7*7 + 8*56 + 9*504 = 1 + 6 + 49 + 448 + 4536 = 5040
+  test_required_span_size(
+    cuda::std::extents<int64_t, D, 8, D, D>(7, 9, 10),
+    cuda::std::array<cuda::std::intptr_t, 4>{1, 7, 7 * 8, 7 * 8 * 9},
+    0,
+    5040);
+
+  // With one extent = 1
+  // extents(1,8,9,10), the dimension with extent 1 contributes 0
+  test_required_span_size(
+    cuda::std::extents<int64_t, 1, 8, D, D>(9, 10),
+    cuda::std::array<cuda::std::intptr_t, 4>{1, 7, 7 * 8, 7 * 8 * 9},
+    0,
+    5034);
+
+  // With one extent = 0 (empty mdspan)
+  // For extents (1, 0, 9, 10) with strides (1, 7, 56, 504):
+  // max_indices = [0, 0, 8, 9] (ext=1->0, ext=0->0, ext=9->8, ext=10->9)
+  // Note: The dimension with extent 0 contributes 0, but other dimensions still contribute
+  // dot = 1 + 0*1 + 0*7 + 8*56 + 9*504 = 1 + 0 + 0 + 448 + 4536 = 4985
+  // required_span_size = 0 + 4985 = 4985
+  test_required_span_size(
+    cuda::std::extents<int64_t, 1, 0, D, D>(9, 10),
+    cuda::std::array<cuda::std::intptr_t, 4>{1, 7, 7 * 8, 7 * 8 * 9},
+    0,
+    4985);
+
+  return true;
+}
+
+int main(int, char**)
+{
+  test();
+  static_assert(test());
+  return 0;
+}

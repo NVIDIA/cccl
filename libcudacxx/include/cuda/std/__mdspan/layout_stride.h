@@ -524,8 +524,15 @@ public:
   // it still has the precondition though
   [[nodiscard]] _CCCL_API constexpr index_type stride(rank_type __r) const noexcept
   {
-    _CCCL_ASSERT(__r < __rank_, "layout_stride::mapping::stride(): invalid rank index");
-    return __strides()[__r];
+    if constexpr (__rank_ > 0) // avoid pointless comparison of unsigned integer with zero warning
+    {
+      _CCCL_ASSERT(__r < __rank_, "layout_stride::mapping::stride(): invalid rank index");
+      return __strides()[__r];
+    }
+    else
+    {
+      return index_type{0};
+    }
   }
 
   template <class _OtherMapping, size_t... _Pos>
