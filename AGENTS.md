@@ -52,7 +52,7 @@ All CCCL subprojects are computationally expensive to build and test. Use the pr
 
 ### CMake Presets
 
-Presets are defined in `CMakePresets.json`. Names follow a `project` or `<project>-cxx<std>` format, such as `cub-cpp20`, `thrust-cpp17`, or `libcudacxx`. Use `cmake --list-presets` to view available options. Build trees are placed under `build/${CCCL_BUILD_INFIX}/${PRESET}`.
+Presets are defined in `CMakePresets.json`. Names follow a `project` or `<project>-cpp<std>` format, such as `cub-cpp20`, `thrust-cpp17`, or `libcudacxx`. Use `cmake --list-presets` to view available options. Build trees are placed under `build/${CCCL_BUILD_INFIX}/${PRESET}`.
 
 ### `.devcontainer/launch.sh`
 
@@ -62,8 +62,9 @@ Common options:
 
 * `-d, --docker` — Run without VSCode (required for agents)
 * `--cuda <version>` — Select CUDA Toolkit (optional)
+* `--cuda-ext` — Use a docker image with extended CTK libraries
 * `--host <compiler>` — Select host compiler (optional)
-* `--gpus all` — Expose GPUs (omit in GPU-less environments)
+* `--gpus <request>` — GPU devices to add to the container (use `all` to pass all GPUs)
 * `-e/--env`, `-v/--volume` — Environment variables / volume mounts
 * `-- <script>` — Run script inside container after setup
 
@@ -216,6 +217,12 @@ From PyPI:
 pip install cuda-cccl[cu13] # or [cu12] for CTK 12.X
 ```
 
+From conda-forge:
+
+```bash
+conda install -c conda-forge cccl-python
+```
+
 From source:
 
 ```bash
@@ -226,10 +233,11 @@ pip install -e .[test-cu13] # or [test-cu12] for CTK 12.X
 
 Requirements:
 
-* Python 3.9+
-* CUDA Toolkit 12.x
+* Python 3.10+
+* CUDA Toolkit 12.x or 13.x
 * NVIDIA GPU (CC 6.0+)
-* Dependencies: `numba>=0.60.0`, `numpy`, `cuda-bindings>=12.9.1`, `cuda-core`, `numba-cuda>=0.18.0,<0.21.2`
+* Base dependencies: `numba>=0.60.0`, `numpy`, `cuda-pathfinder>=1.2.3`, `cuda-core`, `typing_extensions`
+* CUDA extras: `cuda-bindings` + `cuda-toolkit` + `numba-cuda` via `cuda-cccl[cu12]` or `cuda-cccl[cu13]`
 
 ### Usage Examples
 
@@ -250,18 +258,18 @@ include_paths = headers.get_include_paths()
 
 ```bash
 ./ci/build_cuda_cccl_python.sh -py-version 3.10
-./ci/test_cuda_cccl_parallel_python.sh -py-version 3.10
-./ci/test_cuda_cccl_cooperative_python.sh -py-version 3.10
+./ci/test_cuda_compute_python.sh -py-version 3.10
+./ci/test_cuda_coop_python.sh -py-version 3.10
 ./ci/test_cuda_cccl_headers_python.sh -py-version 3.10
 ./ci/test_cuda_cccl_examples_python.sh -py-version 3.10
 ```
 
 Test organization:
 
-* `tests/parallel` — Algorithms and iterators
-* `tests/cooperative` — Cooperative primitives
+* `tests/compute` — Algorithms and iterators
+* `tests/coop` — Cooperative primitives
 * `tests/headers` — Header integration
-* `examples/` — Usage demonstrations
+* `test_examples.py` — Runs compute/coop examples
 
 ---
 
@@ -378,10 +386,13 @@ Python package layout:
 
 ```
 python/cuda_cccl/
-├── cuda/cccl/
-│   ├── parallel/
-│   ├── cooperative/
-│   └── headers/
+├── cuda/
+│   ├── compute/
+│   ├── coop/
+│   └── cccl/
+│       ├── parallel/
+│       ├── cooperative/
+│       └── headers/
 ├── tests/
 ├── benchmarks/
 └── pyproject.toml
