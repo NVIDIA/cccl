@@ -291,7 +291,7 @@ void TestShuffleKeyPositionBase()
 
   double alpha = 0.05;
   double zcrit = inverse_erf(1.0 - alpha / (2.0 * n)) * cuda::std::sqrt(2.0);
-  assert(zmax < zcrit);
+  ASSERT_LESS(zmax, zcrit);
 }
 template <typename Vector>
 void TestShuffleKeyPosition()
