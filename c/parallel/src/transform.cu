@@ -199,7 +199,10 @@ public:
 
 auto make_iterator_info(cccl_iterator_t it) -> cdt::iterator_info
 {
-  // FIXME(bgruber): CCCL_STORAGE is not necessarily trivially relocatable, but how can we know this here?
+  // TODO(bgruber): CCCL_STORAGE is not necessarily trivially relocatable, but how can we know this here?
+  // gevtushenko said, that he is not aware of types which are not trivially relocatable for now, since
+  // CCCL_STORAGE is used to store user-defined types, and CCCL.C does not support any kind of constructors at the
+  // moment. So I guess we are fine until CCCL_STORAGE supports such complex types.
   const auto vt_is_trivially_relocatable = true; // input_it.value_type.type != CCCL_STORAGE;
   const auto is_contiguous               = it.type == CCCL_POINTER;
   return {static_cast<int>(it.value_type.size),
