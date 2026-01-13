@@ -34,6 +34,7 @@
 #endif
 
 #include <cuda/__ptx/instructions/get_sreg.h>
+#include <cuda/__utility/static_for.h>
 #include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__algorithm/min.h>
 
@@ -206,35 +207,6 @@ struct AgentRadixSortUpsweep
   DecomposerT decomposer;
 
   //---------------------------------------------------------------------
-  // Helper structure for templated iteration
-  //---------------------------------------------------------------------
-
-  // Iterate
-  template <int COUNT, int MAX>
-  struct Iterate
-  {
-    // BucketKeys
-    static _CCCL_DEVICE _CCCL_FORCEINLINE void
-    BucketKeys(AgentRadixSortUpsweep& cta, bit_ordered_type keys[KEYS_PER_THREAD])
-    {
-      cta.Bucket(keys[COUNT]);
-
-      // Next
-      Iterate<COUNT + 1, MAX>::BucketKeys(cta, keys);
-    }
-  };
-
-  // Terminate
-  template <int MAX>
-  struct Iterate<MAX, MAX>
-  {
-    // BucketKeys
-    static _CCCL_DEVICE _CCCL_FORCEINLINE void
-    BucketKeys(AgentRadixSortUpsweep& /*cta*/, bit_ordered_type /*keys*/[KEYS_PER_THREAD])
-    {}
-  };
-
-  //---------------------------------------------------------------------
   // Utility methods
   //---------------------------------------------------------------------
   _CCCL_DEVICE _CCCL_FORCEINLINE digit_extractor_t digit_extractor()
@@ -335,7 +307,9 @@ struct AgentRadixSortUpsweep
     __syncthreads();
 
     // Bucket tile of keys
-    Iterate<0, KEYS_PER_THREAD>::BucketKeys(*this, keys);
+    cuda::static_for<KEYS_PER_THREAD>([&](auto ic) {
+      Bucket(keys[ic]);
+    });
   }
 
   /**
