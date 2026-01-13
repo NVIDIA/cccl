@@ -42,6 +42,7 @@ TEST_CASE("Device select works with default environment", "[select][device]")
 
   less_than_t<value_t> select_op{5};
 
+  // launch wrapper always assumes the last argument is the environment
   REQUIRE(
     cudaSuccess == cub::DeviceSelect::If(d_in.begin(), d_out.begin(), d_num_selected.begin(), num_items, select_op));
 
@@ -64,6 +65,7 @@ TEST_CASE("Device select flagged works with default environment", "[select][devi
   auto d_out            = c2h::device_vector<value_t>(num_items);
   auto d_num_selected   = c2h::device_vector<int>(1);
 
+  // launch wrapper always assumes the last argument is the environment
   REQUIRE(
     cudaSuccess
     == cub::DeviceSelect::Flagged(d_in.begin(), d_flags.begin(), d_out.begin(), d_num_selected.begin(), num_items));
@@ -91,7 +93,7 @@ C2H_TEST("Device select uses environment", "[select][device]")
   less_than_t<value_t> select_op{6};
 
   size_t expected_bytes_allocated{};
-  // calculate expected_bytes_allocated
+  // calculate expected_bytes_allocated - call CUB API directly, not through wrapper
   REQUIRE(
     cudaSuccess
     == cub::DeviceSelect::If(
@@ -161,10 +163,16 @@ TEST_CASE("Device select uses custom stream", "[select][device]")
   cudaStream_t custom_stream;
   REQUIRE(cudaSuccess == cudaStreamCreate(&custom_stream));
 
-  auto env = stdexec::prop{cuda::get_stream_t{}, cuda::stream_ref{custom_stream}};
+  size_t expected_bytes_allocated{};
+  REQUIRE(
+    cudaSuccess
+    == cub::DeviceSelect::If(
+      nullptr, expected_bytes_allocated, d_in.begin(), d_out.begin(), d_num_selected.begin(), num_items, select_op));
 
-  REQUIRE(cudaSuccess
-          == cub::DeviceSelect::If(d_in.begin(), d_out.begin(), d_num_selected.begin(), num_items, select_op, env));
+  auto stream_prop = stdexec::prop{cuda::get_stream_t{}, cuda::stream_ref{custom_stream}};
+  auto env         = stdexec::env{stream_prop, expected_allocation_size(expected_bytes_allocated)};
+
+  device_select_if(d_in.begin(), d_out.begin(), d_num_selected.begin(), num_items, select_op, env);
 
   REQUIRE(cudaSuccess == cudaStreamSynchronize(custom_stream));
 
