@@ -578,7 +578,8 @@ try
     ctk_path,
     "-rdc=true",
     "-dlto",
-    "-DCUB_DISABLE_CDP",
+    "-default-device",
+      "-DCUB_DISABLE_CDP",
     "-std=c++20"};
 
   cccl::detail::extend_args_with_build_config(selector_compilation_args, config);
@@ -692,7 +693,8 @@ __device__ consteval auto& three_way_partition_policy_generator() {{
     ctk_path,
     "-rdc=true",
     "-dlto",
-    "-DCUB_DISABLE_CDP",
+    "-default-device",
+      "-DCUB_DISABLE_CDP",
     "-DCUB_ENABLE_POLICY_PTX_JSON",
     "-std=c++20"};
 
