@@ -24,9 +24,9 @@ workflows:
 
   pull_request:
     # Old CTK: Oldest/newest supported host compilers:
-    - {jobs: ['build'], std: 'minmax', ctk: '12.0', cxx: ['gcc7',  'gcc12', 'clang14',            'msvc2019', 'msvc14.39'        ]}
-    - {jobs: ['build'], std: 'minmax', ctk: '12.X', cxx: ['gcc7',  'gcc',   'clang14', 'clang19', 'msvc2019', 'msvc'             ]}
-    - {jobs: ['build'], std: 'minmax', ctk: '13.0', cxx: ['gcc11', 'gcc',   'clang15', 'clang',   'msvc2019', 'msvc', 'msvc2026' ]}
+    - {jobs: ['build'], std: 'minmax', ctk: '12.0', cxx: ['gcc7',  'gcc12', 'clang14',            'msvc2019', 'msvc14.39']}
+    - {jobs: ['build'], std: 'minmax', ctk: '12.X', cxx: ['gcc7',  'gcc',   'clang14', 'clang19', 'msvc2019', 'msvc'     ]}
+    - {jobs: ['build'], std: 'minmax', ctk: '13.0', cxx: ['gcc11', 'gcc',   'clang15', 'clang',   'msvc2019', 'msvc'     ]}
     # Old CTK: cudax has a different support matrix:
     - {jobs: ['build'], project: 'cudax', ctk: '12.0', std: 'minmax', cxx: ['gcc9',  'gcc12', 'clang14']}
     - {jobs: ['build'], project: 'cudax', ctk: '12.X', std: 'minmax', cxx: ['gcc9',  'gcc',   'clang14', 'clang19']}
@@ -59,8 +59,8 @@ workflows:
     - {jobs: ['nvrtc'], project: 'libcudacxx', std: 'all', gpu: 'rtx2080', sm: 'gpu'}
     - {jobs: ['verify_codegen'], project: 'libcudacxx'}
     # c.parallel -- pinned to gcc13 on Linux to match python
-    - {jobs: ['test'], project: 'cccl_c_parallel', ctk: '12.X', cxx: ['gcc13', 'msvc', 'msvc2026'], gpu: ['rtx2080']}
-    - {jobs: ['test'], project: 'cccl_c_parallel', ctk: '13.X', cxx: ['gcc13', 'msvc'], gpu: ['rtx2080', 'l4', 'h100']}
+    - {jobs: ['test'], project: 'cccl_c_parallel', ctk: '12.X', cxx: ['gcc13', 'msvc'], gpu: ['rtx2080']}
+    - {jobs: ['test'], project: 'cccl_c_parallel', ctk: '13.X', cxx: ['gcc13', 'msvc', 'msvc2026'], gpu: ['rtx2080', 'l4', 'h100']}
     # c.experimental.stf-- pinned to gcc13 to match python
     - {jobs: ['test'], project: 'cccl_c_stf', ctk: '12.X', cxx: 'gcc13', gpu: ['rtx2080']}
     - {jobs: ['test'], project: 'cccl_c_stf', ctk: '13.X', cxx: 'gcc13', gpu: ['rtx2080', 'l4', 'h100']}
