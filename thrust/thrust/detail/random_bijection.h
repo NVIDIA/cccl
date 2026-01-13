@@ -26,6 +26,7 @@
 #include <cuda/std/__type_traits/is_convertible.h>
 #include <cuda/std/__type_traits/is_integral.h>
 #include <cuda/std/__utility/forward.h>
+#include <cuda/std/bit>
 #include <cuda/std/cstdint>
 
 THRUST_NAMESPACE_BEGIN
@@ -34,25 +35,22 @@ namespace detail
 //! \brief A Feistel cipher for operating on power of two sized problems
 class feistel_bijection
 {
-  struct round_state
-  {
-    std::uint32_t left;
-    std::uint32_t right;
-  };
-
 public:
   using index_type = std::uint64_t;
 
   template <class URBG>
   _CCCL_HOST_DEVICE feistel_bijection(std::uint64_t m, URBG&& g)
   {
-    std::uint64_t total_bits = get_cipher_bits(m);
+    // Calculate number of bits needed to represent num_elements - 1
+    // Prevent zero
+    const uint64_t max_index  = ::cuda::std::max(static_cast<uint64_t>(1), m) - 1;
+    const uint64_t total_bits = static_cast<uint64_t>(::cuda::std::max(8, ::cuda::std::bit_width(max_index)));
     // Half bits rounded down
-    left_side_bits = total_bits / 2;
-    left_side_mask = (1ull << left_side_bits) - 1;
+    L_bits = total_bits / 2;
+    L_mask = (1ull << L_bits) - 1;
     // Half the bits rounded up
-    right_side_bits = total_bits - left_side_bits;
-    right_side_mask = (1ull << right_side_bits) - 1;
+    R_bits = total_bits - L_bits;
+    R_mask = (1ull << R_bits) - 1;
 
     thrust::uniform_int_distribution<std::uint32_t> dist;
     for (std::uint32_t i = 0; i < num_rounds; i++)
@@ -61,64 +59,41 @@ public:
     }
   }
 
-  _CCCL_HOST_DEVICE std::uint64_t nearest_power_of_two() const
-  {
-    return 1ull << (left_side_bits + right_side_bits);
-  }
-
   _CCCL_HOST_DEVICE std::uint64_t size() const
   {
-    return nearest_power_of_two();
+    return 1ull << (L_bits + R_bits);
   }
 
   _CCCL_HOST_DEVICE std::uint64_t operator()(const std::uint64_t val) const
   {
-    std::uint32_t state[2] = {static_cast<std::uint32_t>(val >> right_side_bits),
-                              static_cast<std::uint32_t>(val & right_side_mask)};
-    for (std::uint32_t i = 0; i < num_rounds; i++)
+    // Unfortunately this is duplicated with libcudacxx/include/cuda/__random/feistel_bijection.h
+    // We cannot use the above because thrust PRNG generators incorrectly implement URBG requirements.
+    // Mitchell, Rory, et al. "Bandwidth-optimal random shuffling for GPUs." ACM Transactions on Parallel Computing 9.1
+    // (2022): 1-20.
+    uint32_t L = static_cast<uint32_t>(val >> R_bits);
+    uint32_t R = static_cast<uint32_t>(val & R_mask);
+    for (uint32_t i = 0; i < num_rounds; i++)
     {
-      std::uint32_t hi, lo;
-      constexpr std::uint64_t M0 = UINT64_C(0xD2B74407B1CE6E93);
-      mulhilo(M0, state[0], hi, lo);
-      lo       = (lo << (right_side_bits - left_side_bits)) | state[1] >> left_side_bits;
-      state[0] = ((hi ^ key[i]) ^ state[1]) & left_side_mask;
-      state[1] = lo & right_side_mask;
+      constexpr uint64_t m0  = 0xD2B74407B1CE6E93;
+      const uint64_t product = m0 * L;
+      uint32_t F_k           = (product >> 32) ^ key[i];
+      uint32_t B_k           = static_cast<uint32_t>(product);
+      uint32_t L_prime       = F_k ^ R;
+
+      uint32_t R_prime = (B_k << (R_bits - L_bits)) | R >> L_bits;
+      L                = L_prime & L_mask;
+      R                = R_prime & R_mask;
     }
     // Combine the left and right sides together to get result
-    return (static_cast<std::uint64_t>(state[0]) << right_side_bits) | static_cast<std::uint64_t>(state[1]);
+    return (static_cast<uint64_t>(L) << R_bits) | static_cast<uint64_t>(R);
   }
 
 private:
-  // Perform 64 bit multiplication and save result in two 32 bit int
-  static _CCCL_HOST_DEVICE void mulhilo(std::uint64_t a, std::uint64_t b, std::uint32_t& hi, std::uint32_t& lo)
-  {
-    std::uint64_t product = a * b;
-    hi                    = static_cast<std::uint32_t>(product >> 32);
-    lo                    = static_cast<std::uint32_t>(product);
-  }
-
-  // Find the nearest power of two
-  static _CCCL_HOST_DEVICE std::uint64_t get_cipher_bits(std::uint64_t m)
-  {
-    if (m <= 16)
-    {
-      return 4;
-    }
-    std::uint64_t i = 0;
-    m--;
-    while (m != 0)
-    {
-      i++;
-      m >>= 1;
-    }
-    return i;
-  }
-
   static constexpr std::uint32_t num_rounds = 24;
-  std::uint64_t right_side_bits;
-  std::uint64_t left_side_bits;
-  std::uint64_t right_side_mask;
-  std::uint64_t left_side_mask;
+  std::uint64_t R_bits;
+  std::uint64_t L_bits;
+  std::uint64_t R_mask;
+  std::uint64_t L_mask;
   std::uint32_t key[num_rounds];
 };
 
@@ -153,7 +128,6 @@ public:
     auto upcast_i = static_cast<typename Bijection::index_type>(i);
     auto upcast_n = static_cast<typename Bijection::index_type>(n);
 
-    // If i < n Iterating a bijection like this will always terminate.
     // If i >= n, then this may loop forever.
     if (upcast_i >= upcast_n)
     { // Avoid infinite loop.
