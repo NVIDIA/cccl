@@ -18,6 +18,7 @@ Math
    math/uabs
    math/fast_mod_div
    math/mul_hi
+   math/sincos
 
 .. list-table::
    :widths: 25 45 30 30
