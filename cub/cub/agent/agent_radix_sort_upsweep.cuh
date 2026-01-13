@@ -258,6 +258,7 @@ struct AgentRadixSortUpsweep
 
     // Get row offset
     uint32_t row_offset = digit >> LOG_PACKING_RATIO;
+    _CCCL_ASSERT(row_offset < COUNTER_LANES, "");
 
     // Increment counter
     temp_storage.thread_counters[row_offset][threadIdx.x][sub_counter]++;
