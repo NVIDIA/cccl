@@ -79,7 +79,7 @@ __host__ __device__ constexpr void test_conversion(FromExt src_exts)
   {
     for (typename ToExt::rank_type r = 0; r < ToExt::rank(); r++)
     {
-      assert(dest.stride(r) == src.stride(r));
+      assert(cuda::std::cmp_equal(dest.stride(r), src.stride(r)));
     }
   }
 
@@ -103,7 +103,7 @@ __host__ __device__ constexpr void test_conversion(FromExt src_exts)
   {
     for (typename ToExt::rank_type r = 0; r < ToExt::rank(); r++)
     {
-      assert(dest.stride(r) == src.stride(r));
+      assert(cuda::std::cmp_equal(dest.stride(r), src.stride(r)));
     }
   }
   assert((!cuda::std::is_convertible_v<From, To>) );

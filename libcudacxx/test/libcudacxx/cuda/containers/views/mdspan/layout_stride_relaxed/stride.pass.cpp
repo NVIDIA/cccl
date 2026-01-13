@@ -31,10 +31,16 @@
 
 template <class E, class... Args>
 __host__ __device__ constexpr void
-test_stride(cuda::std::array<cuda::std::intptr_t, E::rank()> strides, cuda::std::intptr_t offset, Args... args)
+test_stride(cuda::std::array<cuda::std::intptr_t, E::rank()> input_strides, cuda::std::intptr_t offset, Args... args)
 {
-  using M = cuda::layout_stride_relaxed::mapping<E>;
-  M m(E(args...), strides, offset);
+  using M           = cuda::layout_stride_relaxed::mapping<E>;
+  using offset_type = typename M::offset_type;
+  cuda::std::array<offset_type, E::rank()> strides{};
+  for (size_t r = 0; r < E::rank(); r++)
+  {
+    strides[r] = static_cast<offset_type>(input_strides[r]);
+  }
+  M m(E(args...), strides, static_cast<offset_type>(offset));
 
   static_assert(noexcept(m.stride(0)));
   for (size_t r = 0; r < E::rank(); r++)
@@ -44,7 +50,7 @@ test_stride(cuda::std::array<cuda::std::intptr_t, E::rank()> strides, cuda::std:
 
   static_assert(noexcept(m.strides()));
   auto strides_out = m.strides();
-  static_assert(cuda::std::is_same<decltype(strides_out), cuda::std::array<cuda::std::intptr_t, E::rank()>>::value, "");
+  static_assert(cuda::std::is_same<decltype(strides_out), cuda::std::array<offset_type, E::rank()>>::value, "");
   for (size_t r = 0; r < E::rank(); r++)
   {
     assert(strides[r] == strides_out[r]);

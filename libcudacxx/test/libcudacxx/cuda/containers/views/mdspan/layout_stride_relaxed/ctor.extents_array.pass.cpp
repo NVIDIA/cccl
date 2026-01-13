@@ -27,9 +27,11 @@
 #include "test_macros.h"
 
 template <class E, class S, cuda::std::enable_if_t<E::rank() != 0, int> = 0>
-__host__ __device__ constexpr void test_construction(E e, S s, cuda::std::intptr_t offset = 0)
+__host__ __device__ constexpr void test_construction(E e, S s, cuda::std::intptr_t input_offset = 0)
 {
-  using M = cuda::layout_stride_relaxed::mapping<E>;
+  using M            = cuda::layout_stride_relaxed::mapping<E>;
+  using offset_type  = typename M::offset_type;
+  offset_type offset = static_cast<offset_type>(input_offset);
   static_assert(noexcept(M{e, s}));
   static_assert(noexcept(M{e, s, offset}));
   M m(e, s, offset);
@@ -46,15 +48,17 @@ __host__ __device__ constexpr void test_construction(E e, S s, cuda::std::intptr
   static_assert(noexcept(m.strides()));
   for (typename E::rank_type r = 0; r < E::rank(); r++)
   {
-    assert(m.stride(r) == static_cast<typename E::index_type>(s[r]));
-    assert(strides[r] == static_cast<cuda::std::intptr_t>(s[r]));
+    assert(cuda::std::cmp_equal(m.stride(r), s[r]));
+    assert(cuda::std::cmp_equal(strides[r], s[r]));
   }
 }
 
 template <class E, class S, cuda::std::enable_if_t<E::rank() == 0, int> = 0>
-__host__ __device__ constexpr void test_construction(E e, S s, cuda::std::intptr_t offset = 0)
+__host__ __device__ constexpr void test_construction(E e, S s, cuda::std::intptr_t input_offset = 0)
 {
-  using M = cuda::layout_stride_relaxed::mapping<E>;
+  using M            = cuda::layout_stride_relaxed::mapping<E>;
+  using offset_type  = typename M::offset_type;
+  offset_type offset = static_cast<offset_type>(input_offset);
   static_assert(noexcept(M{e, s}));
   static_assert(noexcept(M{e, s, offset}));
   M m(e, s, offset);

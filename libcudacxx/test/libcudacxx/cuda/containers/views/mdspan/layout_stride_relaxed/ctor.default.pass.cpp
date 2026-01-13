@@ -53,8 +53,8 @@ __host__ __device__ constexpr void test_construction()
   cuda::std::layout_right::mapping<E> m_right{};
   for (typename E::rank_type r = 0; r < E::rank(); r++)
   {
-    assert(m.stride(r) == m_right.stride(r));
-    assert(strides[r] == m.stride(r));
+    assert(cuda::std::cmp_equal(m.stride(r), m_right.stride(r)));
+    assert(cuda::std::cmp_equal(strides[r], m_right.stride(r)));
   }
 }
 

@@ -437,19 +437,13 @@ public:
     return accessor().access(data_handle(), mapping()(__indices...));
   }
 
-  [[nodiscard]] _CCCL_API static constexpr bool __mul_overflow(size_t x, size_t y, size_t* res) noexcept
-  {
-    *res = x * y;
-    return x && ((*res / x) != y);
-  }
-
   template <size_t... _Idxs>
   [[nodiscard]] _CCCL_API constexpr bool __check_size() const noexcept
   {
     size_t __prod = 1;
     for (size_t __r = 0; __r != extents_type::rank(); ++__r)
     {
-      if (__mul_overflow(__prod, mapping().extents().extent(__r), &__prod))
+      if (__mdspan_detail::__mul_overflow(__prod, mapping().extents().extent(__r), &__prod))
       {
         return false;
       }

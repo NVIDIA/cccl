@@ -105,7 +105,8 @@ __host__ __device__ constexpr bool test()
   test_iteration<cuda::std::extents<unsigned, D>>(cuda::std::array<cuda::std::intptr_t, 1>{3}, 0, 7);
   test_iteration<cuda::std::extents<unsigned, 7>>(cuda::std::array<cuda::std::intptr_t, 1>{4}, 0);
   test_iteration<cuda::std::extents<unsigned, 7, 8>>(cuda::std::array<cuda::std::intptr_t, 2>{25, 3}, 0);
-  test_iteration<cuda::std::extents<char, D, D, D, D>>(cuda::std::array<cuda::std::intptr_t, 4>{1, 1, 1, 1}, 0, 1, 1, 1, 1);
+  test_iteration<cuda::std::extents<signed char, D, D, D, D>>(
+    cuda::std::array<cuda::std::intptr_t, 4>{1, 1, 1, 1}, 0, 1, 1, 1, 1);
 
   // Cases with non-zero offset
   test_iteration<cuda::std::extents<int>>(cuda::std::array<cuda::std::intptr_t, 0>{}, 5);

@@ -31,7 +31,7 @@ __host__ __device__ constexpr void test_construction(E e, S s, cuda::std::intptr
 {
   using M = cuda::layout_stride_relaxed::mapping<E>;
   static_assert(noexcept(M{e, s}));
-  static_assert(noexcept(M{e, s, offset}));
+  static_assert(noexcept(M(e, s, offset)));
   M m(e, s, offset);
 
   // check correct extents are returned
@@ -46,8 +46,8 @@ __host__ __device__ constexpr void test_construction(E e, S s, cuda::std::intptr
   static_assert(noexcept(m.strides()));
   for (typename E::rank_type r = 0; r < E::rank(); r++)
   {
-    assert(m.stride(r) == static_cast<typename E::index_type>(s[r]));
-    assert(strides[r] == static_cast<cuda::std::intptr_t>(s[r]));
+    assert(cuda::std::cmp_equal(m.stride(r), s[r]));
+    assert(cuda::std::cmp_equal(strides[r], s[r]));
   }
 }
 
@@ -56,7 +56,7 @@ __host__ __device__ constexpr void test_construction(E e, S s, cuda::std::intptr
 {
   using M = cuda::layout_stride_relaxed::mapping<E>;
   static_assert(noexcept(M{e, s}));
-  static_assert(noexcept(M{e, s, offset}));
+  static_assert(noexcept(M(e, s, offset)));
   M m(e, s, offset);
 
   // check correct extents are returned

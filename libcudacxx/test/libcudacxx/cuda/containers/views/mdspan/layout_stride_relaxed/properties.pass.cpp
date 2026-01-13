@@ -28,7 +28,7 @@
 
 template <class E, class M, cuda::std::enable_if_t<(E::rank() > 0), int> = 0>
 __host__ __device__ constexpr void
-test_strides(E ext, M& m, const M& c_m, cuda::std::array<cuda::std::intptr_t, E::rank()> strides)
+test_strides(E ext, M& m, const M& c_m, cuda::std::array<typename M::offset_type, E::rank()> strides)
 {
   for (typename E::rank_type r = 0; r < E::rank(); r++)
   {
@@ -40,27 +40,36 @@ test_strides(E ext, M& m, const M& c_m, cuda::std::array<cuda::std::intptr_t, E:
 }
 
 template <class E, class M, cuda::std::enable_if_t<(E::rank() == 0), int> = 0>
-__host__ __device__ constexpr void
-test_strides(E, M&, const M&, cuda::std::array<cuda::std::intptr_t, E::rank()>)
+__host__ __device__ constexpr void test_strides(E, M&, const M&, cuda::std::array<typename M::offset_type, E::rank()>)
 {}
 
 template <class E>
 __host__ __device__ constexpr void test_layout_mapping_stride_relaxed(
   E ext,
-  cuda::std::array<cuda::std::intptr_t, E::rank()> strides,
+  cuda::std::array<cuda::std::intptr_t, E::rank()> input_strides,
   cuda::std::intptr_t offset,
   bool expected_is_strided)
 {
-  using M = cuda::layout_stride_relaxed::template mapping<E>;
-  M m(ext, strides, offset);
+  using M            = cuda::layout_stride_relaxed::template mapping<E>;
+  using offset_type  = typename M::offset_type;
+  using stride_array = cuda::std::array<offset_type, E::rank()>;
+  stride_array strides{};
+  if constexpr (E::rank() > 0)
+  {
+    for (typename E::rank_type r = 0; r < E::rank(); r++)
+    {
+      strides[r] = static_cast<offset_type>(input_strides[r]);
+    }
+  }
+  M m(ext, strides, static_cast<offset_type>(offset));
   const M c_m = m;
 
   assert(m.strides() == strides);
   assert(c_m.strides() == strides);
   assert(m.extents() == ext);
   assert(c_m.extents() == ext);
-  assert(m.offset() == offset);
-  assert(c_m.offset() == offset);
+  assert(cuda::std::cmp_equal(m.offset(), offset));
+  assert(cuda::std::cmp_equal(c_m.offset(), offset));
 
   // layout_stride_relaxed: is_always_* are all false (conservative)
   assert(M::is_always_unique() == false);
@@ -103,25 +112,20 @@ __host__ __device__ constexpr bool test()
   [[maybe_unused]] constexpr size_t D = cuda::std::dynamic_extent;
 
   // Rank-0 cases
-  test_layout_mapping_stride_relaxed(
-    cuda::std::extents<int>(), cuda::std::array<cuda::std::intptr_t, 0>{}, 0, true);
-  test_layout_mapping_stride_relaxed(
-    cuda::std::extents<int>(), cuda::std::array<cuda::std::intptr_t, 0>{}, 5, false);
+  test_layout_mapping_stride_relaxed(cuda::std::extents<int>(), cuda::std::array<cuda::std::intptr_t, 0>{}, 0, true);
+  test_layout_mapping_stride_relaxed(cuda::std::extents<int>(), cuda::std::array<cuda::std::intptr_t, 0>{}, 5, false);
 
   // Basic cases with zero offset (is_strided = true)
   test_layout_mapping_stride_relaxed(
-    cuda::std::extents<char, 4, 5>(), cuda::std::array<cuda::std::intptr_t, 2>{1, 4}, 0, true);
+    cuda::std::extents<signed char, 4, 5>(), cuda::std::array<cuda::std::intptr_t, 2>{1, 4}, 0, true);
   test_layout_mapping_stride_relaxed(
     cuda::std::extents<unsigned, D, 4>(7), cuda::std::array<cuda::std::intptr_t, 2>{20, 2}, 0, true);
   test_layout_mapping_stride_relaxed(
-    cuda::std::extents<size_t, D, D, D, D>(3, 3, 3, 3),
-    cuda::std::array<cuda::std::intptr_t, 4>{3, 1, 9, 27},
-    0,
-    true);
+    cuda::std::extents<size_t, D, D, D, D>(3, 3, 3, 3), cuda::std::array<cuda::std::intptr_t, 4>{3, 1, 9, 27}, 0, true);
 
   // Cases with non-zero offset (is_strided = false)
   test_layout_mapping_stride_relaxed(
-    cuda::std::extents<char, 4, 5>(), cuda::std::array<cuda::std::intptr_t, 2>{1, 4}, 10, false);
+    cuda::std::extents<signed char, 4, 5>(), cuda::std::array<cuda::std::intptr_t, 2>{1, 4}, 10, false);
   test_layout_mapping_stride_relaxed(
     cuda::std::extents<unsigned, D, 4>(7), cuda::std::array<cuda::std::intptr_t, 2>{20, 2}, 5, false);
 
