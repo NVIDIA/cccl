@@ -298,7 +298,7 @@ jobs:
         run: |
           echo "Artifact contents:"
           find artifact -name "*.whl" -type f
-          pip install $(find artifact -name "*.whl" -type f | head -1)
+          pip install $(find artifact -name "*.whl" -type f | head -1)[cu13]
 
       - name: Test CPU-only import
         run: |
