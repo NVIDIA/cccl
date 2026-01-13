@@ -25,15 +25,12 @@
 
 #include <cuda/__device/arch_id.h>
 #include <cuda/__device/compute_capability.h>
+#include <cuda/std/__concepts/regular.h>
+#include <cuda/std/__concepts/same_as.h>
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__utility/forward.h>
 #include <cuda/std/array>
 #include <cuda/std/cassert>
-
-#if _CCCL_HAS_CONCEPTS()
-#  include <cuda/std/__concepts/regular.h>
-#  include <cuda/std/__concepts/same_as.h>
-#endif // _CCCL_HAS_CONCEPTS()
 
 #if !_CCCL_COMPILER(NVRTC)
 #  include <atomic> // saves 146ms compile-time over <cuda/std/atomic> (CCCL 3.1)
@@ -846,7 +843,7 @@ _CCCL_API consteval void __needs_a_constexpr_value(auto) {}
 template <typename T, typename Policy>
 concept policy_selector = requires(T hub, ::cuda::arch_id arch) {
   requires ::cuda::std::regular<Policy>;
-  { hub(arch) } -> ::cuda::std::same_as<Policy>;
+  { hub(arch) } -> _CCCL_CONCEPT_VSTD::same_as<Policy>;
   { __needs_a_constexpr_value(hub(arch)) };
 };
 #endif // _CCCL_HAS_CONCEPTS()
