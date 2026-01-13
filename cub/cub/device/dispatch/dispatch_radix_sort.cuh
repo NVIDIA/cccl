@@ -102,7 +102,10 @@ _CCCL_API constexpr auto convert_policy() -> radix_sort_policy
 {
   using active_policy = LegacyActivePolicy;
 
-  auto convert_downsweep_policy = []([[maybe_unused]] auto p) {
+  auto convert_downsweep_policy = [](auto p) {
+    // MSVC will error if we put a [[no_discard]] on the parameter p above:
+    //   C2187: syntax error: 'attribute specifier' was unexpected here
+    (void) p;
     using p_t = decltype(p);
     return radix_sort_downsweep_policy{
       p_t::BLOCK_THREADS,
@@ -590,7 +593,7 @@ public:
       DownsweepKernelT downsweep_kern,
       int sm_count,
       OffsetT num_items,
-      int radix_bits,
+      int pass_radix_bits,
       detail::radix_sort::radix_sort_upsweep_policy upsweep_policy,
       detail::radix_sort::scan_policy scan_policy,
       detail::radix_sort::radix_sort_downsweep_policy downsweep_policy,
@@ -599,7 +602,7 @@ public:
       this->upsweep_kernel   = upsweep_kern;
       this->scan_kernel      = scan_kern;
       this->downsweep_kernel = downsweep_kern;
-      this->radix_bits       = radix_bits;
+      this->radix_bits       = pass_radix_bits;
       radix_digits           = 1 << radix_bits;
 
       if (const auto error = CubDebug(upsweep_config.__init(upsweep_kernel, upsweep_policy, launcher_factory)))
@@ -1159,7 +1162,12 @@ public:
       return __invoke_single_tile(kernel_source.RadixSortSingleTileKernel(), policy.single_tile);
     }
 
+#if _CCCL_COMPILER(GCC, <, 8)
+    // gcc 7 fails to use `policy` in a constant expression, so we just compute it again inplace
+    if CUB_DETAIL_CONSTEXPR_ISH (PolicyGetter{}().use_onesweep)
+#else // _CCCL_COMPILER(GCC, <, 8)
     if CUB_DETAIL_CONSTEXPR_ISH (policy.use_onesweep)
+#endif // _CCCL_COMPILER(GCC, <, 8)
     {
       return __invoke_onesweep(policy);
     }
