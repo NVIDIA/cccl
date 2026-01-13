@@ -32,6 +32,7 @@
 
 #if _CCCL_HAS_CONCEPTS()
 #  include <cuda/std/__concepts/regular.h>
+#  include <cuda/std/__concepts/same_as.h>
 #endif // _CCCL_HAS_CONCEPTS()
 
 #if !_CCCL_COMPILER(NVRTC)
