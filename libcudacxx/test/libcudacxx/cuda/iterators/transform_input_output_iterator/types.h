@@ -50,7 +50,7 @@ struct PlusOneHost
 };
 #endif // !TEST_COMPILER(NVRTC)
 
-#if TEST_HAS_CUDA_COMPILER()
+#if _CCCL_CUDA_COMPILATION()
 struct PlusOneDevice
 {
   __device__ constexpr PlusOneDevice() noexcept {}
@@ -59,7 +59,7 @@ struct PlusOneDevice
     return x + 1;
   }
 };
-#endif // TEST_HAS_CUDA_COMPILER()
+#endif // _CCCL_CUDA_COMPILATION()
 
 struct NotDefaultConstructiblePlusOne
 {

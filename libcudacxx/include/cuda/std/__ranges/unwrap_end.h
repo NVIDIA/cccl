@@ -43,7 +43,6 @@ _CCCL_REQUIRES(forward_range<_Range>)
     ::cuda::std::ranges::advance(__ret, ::cuda::std::ranges::end(__range));
     return __ret;
   }
-  _CCCL_UNREACHABLE();
 }
 
 _CCCL_END_NAMESPACE_CUDA_STD_RANGES

@@ -36,7 +36,7 @@
 _CCCL_BEGIN_NAMESPACE_CUDA
 
 //! @rst
-//! .. _cudax-memory-resource-async:
+//! .. _libcudacxx-memory-resource-async:
 //!
 //! Stream ordered memory resource
 //! ------------------------------
@@ -86,7 +86,7 @@ public:
 }
 
 //! @rst
-//! .. _cudax-memory-resource-async:
+//! .. _libcudacxx-memory-resource-async:
 //!
 //! Stream ordered memory resource
 //! ------------------------------
@@ -128,6 +128,13 @@ struct managed_memory_pool : managed_memory_pool_ref
   _CCCL_HOST_API static managed_memory_pool from_native_handle(::cudaMemPool_t __pool) noexcept
   {
     return managed_memory_pool(__pool);
+  }
+
+  //! @brief Returns a \c managed_memory_pool_ref for this \c managed_memory_pool.
+  //! The result is the same as if this object was cast to a \c managed_memory_pool_ref.
+  [[nodiscard]] _CCCL_HOST_API managed_memory_pool_ref as_ref() noexcept
+  {
+    return managed_memory_pool_ref(__pool_);
   }
 
   managed_memory_pool(const managed_memory_pool&)            = delete;

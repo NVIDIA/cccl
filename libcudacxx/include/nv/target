@@ -34,7 +34,10 @@
 #    define _NV_BITSET_ATTRIBUTE
 #  endif
 
-namespace nv::target
+// This must be a nested namespace as <nv/target> works with older dialects.
+namespace nv
+{
+namespace target
 {
 namespace detail
 {
@@ -232,7 +235,8 @@ constexpr sm_selector sm_121 = sm_selector::sm_121;
 
 using detail::is_exactly;
 using detail::provides;
-} // namespace nv::target
+} // namespace target
+} // namespace nv
 
 #endif // C++  && !defined(__CUDACC_RTC__)
 

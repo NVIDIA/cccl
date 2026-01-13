@@ -21,35 +21,37 @@
 #  pragma system_header
 #endif // no system header
 
-#if _CCCL_CUDA_COMPILATION()
-#  include <cub/device/device_transform.cuh>
-#endif // _CCCL_CUDA_COMPILATION()
+#if _CCCL_HAS_CTK()
 
-#include <cuda/__container/heterogeneous_iterator.h>
-#include <cuda/__container/uninitialized_async_buffer.h>
-#include <cuda/__launch/host_launch.h>
-#include <cuda/__memory_resource/any_resource.h>
-#include <cuda/__memory_resource/get_memory_resource.h>
-#include <cuda/__memory_resource/properties.h>
-#include <cuda/__memory_resource/synchronous_resource_adapter.h>
-#include <cuda/__runtime/ensure_current_context.h>
-#include <cuda/__stream/get_stream.h>
-#include <cuda/std/__execution/env.h>
-#include <cuda/std/__iterator/concepts.h>
-#include <cuda/std/__iterator/distance.h>
-#include <cuda/std/__iterator/reverse_iterator.h>
-#include <cuda/std/__memory/uninitialized_algorithms.h>
-#include <cuda/std/__ranges/access.h>
-#include <cuda/std/__ranges/concepts.h>
-#include <cuda/std/__ranges/size.h>
-#include <cuda/std/__ranges/unwrap_end.h>
-#include <cuda/std/__type_traits/is_trivially_copyable.h>
-#include <cuda/std/__utility/forward.h>
-#include <cuda/std/__utility/move.h>
-#include <cuda/std/cstdint>
-#include <cuda/std/initializer_list>
+#  if _CCCL_CUDA_COMPILATION()
+#    include <cub/device/device_transform.cuh>
+#  endif // _CCCL_CUDA_COMPILATION()
 
-#include <cuda/std/__cccl/prologue.h>
+#  include <cuda/__container/heterogeneous_iterator.h>
+#  include <cuda/__container/uninitialized_async_buffer.h>
+#  include <cuda/__launch/host_launch.h>
+#  include <cuda/__memory_resource/any_resource.h>
+#  include <cuda/__memory_resource/get_memory_resource.h>
+#  include <cuda/__memory_resource/properties.h>
+#  include <cuda/__memory_resource/synchronous_resource_adapter.h>
+#  include <cuda/__runtime/ensure_current_context.h>
+#  include <cuda/__stream/get_stream.h>
+#  include <cuda/std/__execution/env.h>
+#  include <cuda/std/__iterator/concepts.h>
+#  include <cuda/std/__iterator/distance.h>
+#  include <cuda/std/__iterator/reverse_iterator.h>
+#  include <cuda/std/__memory/uninitialized_algorithms.h>
+#  include <cuda/std/__ranges/access.h>
+#  include <cuda/std/__ranges/concepts.h>
+#  include <cuda/std/__ranges/size.h>
+#  include <cuda/std/__ranges/unwrap_end.h>
+#  include <cuda/std/__type_traits/is_trivially_copyable.h>
+#  include <cuda/std/__utility/forward.h>
+#  include <cuda/std/__utility/move.h>
+#  include <cuda/std/cstdint>
+#  include <cuda/std/initializer_list>
+
+#  include <cuda/std/__cccl/prologue.h>
 
 //! @file The \c buffer class provides a container of contiguous memory
 _CCCL_BEGIN_NAMESPACE_CUDA
@@ -60,7 +62,7 @@ template <class _Env>
 inline constexpr bool __buffer_compatible_env = ::cuda::std::is_same_v<_Env, ::cuda::std::execution::env<>>;
 
 //! @rst
-//! .. _cudax-containers-async-vector:
+//! .. _libcudacxx-containers-async-vector:
 //!
 //! buffer
 //! -------------
@@ -163,7 +165,7 @@ public:
 
   //! @brief Copy-constructs from a buffer
   //! @param __other The other buffer.
-  _CCCL_HIDE_FROM_ABI buffer(const buffer& __other)
+  _CCCL_HIDE_FROM_ABI explicit buffer(const buffer& __other)
       : __buf_(__other.memory_resource(), __other.stream(), __other.size())
   {
     this->__copy_cross<const_pointer>(
@@ -206,7 +208,11 @@ public:
   _CCCL_HIDE_FROM_ABI
   buffer(::cuda::stream_ref __stream, _Resource&& __resource, [[maybe_unused]] const _Env& __env = {})
       : __buf_(::cuda::mr::__adapt_if_synchronous(::cuda::std::forward<_Resource>(__resource)), __stream, 0)
-  {}
+  {
+    static_assert(::cuda::std::is_copy_constructible_v<::cuda::std::decay_t<_Resource>>,
+                  "Buffer owns a copy of the memory resource, which means it must be copy constructible. "
+                  "cuda::mr::shared_resource can be used to attach shared ownership to a resource type.");
+  }
 
   //! @brief Constructs a buffer of size \p __size using a memory and leaves all
   //! elements uninitialized
@@ -227,7 +233,11 @@ public:
     ::cuda::no_init_t,
     [[maybe_unused]] const _Env& __env = {})
       : __buf_(::cuda::mr::__adapt_if_synchronous(::cuda::std::forward<_Resource>(__resource)), __stream, __size)
-  {}
+  {
+    static_assert(::cuda::std::is_copy_constructible_v<::cuda::std::decay_t<_Resource>>,
+                  "Buffer owns a copy of the memory resource, which means it must be copy constructible. "
+                  "cuda::mr::shared_resource can be used to attach shared ownership to a resource type.");
+  }
 
   //! @brief Constructs a buffer using a memory resource and copy-constructs all
   //! elements from the forward range
@@ -249,6 +259,9 @@ public:
                __stream,
                static_cast<size_type>(::cuda::std::distance(__first, __last)))
   {
+    static_assert(::cuda::std::is_copy_constructible_v<::cuda::std::decay_t<_Resource>>,
+                  "Buffer owns a copy of the memory resource, which means it must be copy constructible. "
+                  "cuda::mr::shared_resource can be used to attach shared ownership to a resource type.");
     this->__copy_cross<_Iter>(__first, __last, __unwrapped_begin(), __buf_.size());
   }
 
@@ -267,6 +280,9 @@ public:
          [[maybe_unused]] const _Env& __env = {})
       : __buf_(::cuda::mr::__adapt_if_synchronous(::cuda::std::forward<_Resource>(__resource)), __stream, __ilist.size())
   {
+    static_assert(::cuda::std::is_copy_constructible_v<::cuda::std::decay_t<_Resource>>,
+                  "Buffer owns a copy of the memory resource, which means it must be copy constructible. "
+                  "cuda::mr::shared_resource can be used to attach shared ownership to a resource type.");
     this->__copy_cross(__ilist.begin(), __ilist.end(), __unwrapped_begin(), __buf_.size());
   }
 
@@ -284,6 +300,9 @@ public:
                __stream,
                static_cast<size_type>(::cuda::std::ranges::size(__range)))
   {
+    static_assert(::cuda::std::is_copy_constructible_v<::cuda::std::decay_t<_Resource>>,
+                  "Buffer owns a copy of the memory resource, which means it must be copy constructible. "
+                  "cuda::mr::shared_resource can be used to attach shared ownership to a resource type.");
     using _Iter = ::cuda::std::ranges::iterator_t<_Range>;
     this->__copy_cross<_Iter>(
       ::cuda::std::ranges::begin(__range),
@@ -292,7 +311,7 @@ public:
       __buf_.size());
   }
 
-#ifndef _CCCL_DOXYGEN_INVOKED // doxygen conflates the overloads
+#  ifndef _CCCL_DOXYGEN_INVOKED // doxygen conflates the overloads
   _CCCL_TEMPLATE(class _Range, class _Resource, class _Env = ::cuda::std::execution::env<>)
   _CCCL_REQUIRES(
     ::cuda::mr::synchronous_resource<::cuda::std::decay_t<_Resource>> _CCCL_AND __compatible_range<_Range>
@@ -305,6 +324,9 @@ public:
                  ::cuda::std::ranges::distance(::cuda::std::ranges::begin(__range), ::cuda::std::ranges::end(__range))),
                __env)
   {
+    static_assert(::cuda::std::is_copy_constructible_v<::cuda::std::decay_t<_Resource>>,
+                  "Buffer owns a copy of the memory resource, which means it must be copy constructible. "
+                  "cuda::mr::shared_resource can be used to attach shared ownership to a resource type.");
     using _Iter = ::cuda::std::ranges::iterator_t<_Range>;
     this->__copy_cross<_Iter>(
       ::cuda::std::ranges::begin(__range),
@@ -312,7 +334,7 @@ public:
       __unwrapped_begin(),
       __buf_.size());
   }
-#endif // _CCCL_DOXYGEN_INVOKED
+#  endif // _CCCL_DOXYGEN_INVOKED
   //! @}
 
   //! @addtogroup iterators
@@ -427,7 +449,7 @@ public:
     return __buf_.data();
   }
 
-#ifndef _CCCL_DOXYGEN_INVOKED
+#  ifndef _CCCL_DOXYGEN_INVOKED
   //! @brief Returns a pointer to the first element of the buffer. If the buffer
   //! is empty, the returned pointer will be null.
   [[nodiscard]] _CCCL_HIDE_FROM_ABI pointer __unwrapped_begin() noexcept
@@ -457,7 +479,7 @@ public:
   {
     return __buf_.data() + __buf_.size();
   }
-#endif // _CCCL_DOXYGEN_INVOKED
+#  endif // _CCCL_DOXYGEN_INVOKED
 
   //! @}
 
@@ -498,9 +520,8 @@ public:
   //! @}
 
   //! @rst
-  //! Returns a \c const reference to the :ref:`any_resource
-  //! <cuda-memory-resource-any-resource>` that holds the memory resource used
-  //! to allocate the buffer
+  //! Returns a \c const reference to the :ref:`any_resource <libcudacxx-memory-resource-any-resource>` that holds the
+  //! memory resource used to allocate the buffer
   //! @endrst
   [[nodiscard]] _CCCL_HIDE_FROM_ABI const __resource_t& memory_resource() const noexcept
   {
@@ -571,10 +592,9 @@ public:
   //! cuda::launch.
   //! @pre The buffer must have the cuda::mr::device_accessible property.
   template <class _DeviceAccessible = ::cuda::mr::device_accessible>
-  [[nodiscard]] _CCCL_HIDE_FROM_ABI friend auto transform_device_argument(::cuda::stream_ref, buffer& __self) noexcept
+  [[nodiscard]] _CCCL_HIDE_FROM_ABI friend auto transform_launch_argument(::cuda::stream_ref, buffer& __self) noexcept
     _CCCL_TRAILING_REQUIRES(::cuda::std::span<_Tp>)(::cuda::std::__is_included_in_v<_DeviceAccessible, _Properties...>)
   {
-    // TODO add auto synchronization
     return {__self.__unwrapped_begin(), __self.size()};
   }
 
@@ -583,10 +603,9 @@ public:
   //! @pre The buffer must have the cuda::mr::device_accessible property.
   template <class _DeviceAccessible = ::cuda::mr::device_accessible>
   [[nodiscard]] _CCCL_HIDE_FROM_ABI friend auto
-  transform_device_argument(::cuda::stream_ref, const buffer& __self) noexcept _CCCL_TRAILING_REQUIRES(
+  transform_launch_argument(::cuda::stream_ref, const buffer& __self) noexcept _CCCL_TRAILING_REQUIRES(
     ::cuda::std::span<const _Tp>)(::cuda::std::__is_included_in_v<_DeviceAccessible, _Properties...>)
   {
-    // TODO add auto synchronization
     return {__self.__unwrapped_begin(), __self.size()};
   }
 
@@ -665,13 +684,13 @@ __fill_n(cuda::stream_ref __stream, _Tp* __first, ::cuda::std::size_t __count, c
     }
     else
     {
-#if _CCCL_CUDA_COMPILATION()
+#  if _CCCL_CUDA_COMPILATION()
       ::cuda::__ensure_current_context __guard(__stream);
       ::cub::DeviceTransform::Fill(__first, __count, __value, __stream.get());
-#else // ^^^ _CCCL_CUDA_COMPILATION() ^^^ / vvv !_CCCL_CUDA_COMPILATION() vvv
+#  else // ^^^ _CCCL_CUDA_COMPILATION() ^^^ / vvv !_CCCL_CUDA_COMPILATION() vvv
       static_assert(sizeof(_Tp) <= 4,
                     "CUDA compiler is required to initialize an async_buffer with elements larger than 4 bytes");
-#endif // ^^^ !_CCCL_CUDA_COMPILATION() ^^^
+#  endif // ^^^ !_CCCL_CUDA_COMPILATION() ^^^
     }
   }
 }
@@ -868,6 +887,8 @@ auto make_buffer(stream_ref __stream, _Resource&& __mr, _Range&& __range, const 
 }
 _CCCL_END_NAMESPACE_CUDA
 
-#include <cuda/std/__cccl/epilogue.h>
+#  include <cuda/std/__cccl/epilogue.h>
+
+#endif // _CCCL_HAS_CTK()
 
 #endif //_CUDA___CONTAINER_BUFFER_H

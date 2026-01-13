@@ -793,7 +793,7 @@ public:
       stream);
   }
 
-  //! @}  end member group
+  //! @}
   //! @name Custom bin ranges
   //! @{
 
@@ -1479,7 +1479,7 @@ public:
       stream);
   }
 
-  //@}  end member group
+  //@}
 };
 
 CUB_NAMESPACE_END

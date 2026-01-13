@@ -233,11 +233,11 @@
 #  undef _CCCL_BUILTIN_MEMMOVE
 #endif // _CCCL_CUDA_COMPILER(NVCC)
 
-#if _CCCL_CHECK_BUILTIN(__builtin_operator_new) && _CCCL_CHECK_BUILTIN(__builtin_operator_delete) \
+#if _CCCL_CHECK_BUILTIN(builtin_operator_new) && _CCCL_CHECK_BUILTIN(builtin_operator_delete) \
   && _CCCL_CUDA_COMPILER(CLANG)
 #  define _CCCL_BUILTIN_OPERATOR_DELETE(...) __builtin_operator_delete(__VA_ARGS__)
 #  define _CCCL_BUILTIN_OPERATOR_NEW(...)    __builtin_operator_new(__VA_ARGS__)
-#endif // _CCCL_CHECK_BUILTIN(__builtin_operator_new) && _CCCL_CHECK_BUILTIN(__builtin_operator_delete)
+#endif // _CCCL_CHECK_BUILTIN(builtin_operator_new) && _CCCL_CHECK_BUILTIN(builtin_operator_delete)
 
 #if _CCCL_CHECK_BUILTIN(builtin_prefetch) || _CCCL_COMPILER(GCC)
 #  define _CCCL_BUILTIN_PREFETCH(...) NV_IF_TARGET(NV_IS_HOST, __builtin_prefetch(__VA_ARGS__);)
@@ -489,68 +489,6 @@
 // NVRTC does not expose builtin_strlen
 #if !_CCCL_COMPILER(GCC) && !_CCCL_COMPILER(NVRTC)
 #  define _CCCL_BUILTIN_STRLEN(...) __builtin_strlen(__VA_ARGS__)
-#endif
-
-// todo: re-enable std builtins
-
-// // Some compilers provide std::move/std::forward/etc as builtins
-// #if defined(__cplusplus)
-// // Bring in the bits of the STL we need
-// #  if _CCCL_HOST_STD_LIB(LIBSTDCXX)
-// #    include <bits/move.h> // for move, forward, forward_like, and addressof
-// #  elif _CCCL_HOST_STD_LIB(LIBCXX)
-// #    include <__memory/addressof.h>
-// #    include <__utility/as_const.h>
-// #    include <__utility/forward.h>
-// #    if __cpp_lib_forward_like >= 202217L
-// #      include <__utility/forward_like.h>
-// #    endif // __cpp_lib_forward_like >= 202217L
-// #    include <__utility/move.h>
-// #  endif
-
-// #  if _CCCL_HOST_STD_LIB(LIBSTDCXX) || _CCCL_HOST_STD_LIB(LIBCXX)
-// // std::move builtin
-// #    if _CCCL_COMPILER(CLANG, >=, 15) || _CCCL_COMPILER(GCC, >=, 15)
-// #      define _CCCL_HAS_BUILTIN_STD_MOVE() 1
-// #    endif
-
-// // std::forward builtin
-// #    if _CCCL_COMPILER(CLANG, >=, 15) || _CCCL_COMPILER(GCC, >=, 15)
-// #      define _CCCL_HAS_BUILTIN_STD_FORWARD() 1
-// #    endif
-
-// // std::addressof builtin
-// #    if _CCCL_COMPILER(CLANG, >=, 15) || _CCCL_COMPILER(GCC, >=, 15)
-// #      define _CCCL_HAS_BUILTIN_STD_ADDRESSOF() 1
-// #    endif
-
-// // std::as_const builtin
-// #    if _CCCL_COMPILER(CLANG, >=, 15)
-// #      define _CCCL_HAS_BUILTIN_STD_AS_CONST() 1
-// #    endif
-
-// // std::forward_like builtin
-// // Leaving out MSVC for now because it is hard for forward-declare std::forward_like.
-// #    if (_CCCL_COMPILER(CLANG, >=, 17) || _CCCL_COMPILER(GCC, >=, 15)) && __cpp_lib_forward_like >= 202217L
-// #      define _CCCL_HAS_BUILTIN_STD_FORWARD_LIKE() 1
-// #    endif
-// #  endif // _CCCL_HOST_STD_LIB(LIBSTDCXX) || _CCCL_HOST_STD_LIB(LIBCXX)
-// #endif // defined(__cplusplus)
-
-#ifndef _CCCL_HAS_BUILTIN_STD_MOVE
-#  define _CCCL_HAS_BUILTIN_STD_MOVE() 0
-#endif
-#ifndef _CCCL_HAS_BUILTIN_STD_FORWARD
-#  define _CCCL_HAS_BUILTIN_STD_FORWARD() 0
-#endif
-#ifndef _CCCL_HAS_BUILTIN_STD_ADDRESSOF
-#  define _CCCL_HAS_BUILTIN_STD_ADDRESSOF() 0
-#endif
-#ifndef _CCCL_HAS_BUILTIN_STD_AS_CONST
-#  define _CCCL_HAS_BUILTIN_STD_AS_CONST() 0
-#endif
-#ifndef _CCCL_HAS_BUILTIN_STD_FORWARD_LIKE
-#  define _CCCL_HAS_BUILTIN_STD_FORWARD_LIKE() 0
 #endif
 
 #endif // __CCCL_BUILTIN_H

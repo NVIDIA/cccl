@@ -24,10 +24,6 @@ function(cudax_add_catch2_test target_name_var test_name) # ARGN=test sources
       cccl.c2h.main
       CUDA::cudart
   )
-  target_compile_definitions(
-    ${test_target}
-    PRIVATE LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE
-  )
   target_compile_options(
     ${test_target}
     PRIVATE $<$<COMPILE_LANG_AND_ID:CUDA,NVIDIA>:--extended-lambda>
@@ -55,7 +51,9 @@ cudax_add_catch2_test(test_target execution ${cudax_target}
     execution/test_sequence.cu
     execution/test_starts_on.cu
     execution/test_stream_context.cu
+    execution/test_task_scheduler.cu
     execution/test_then.cu
+    execution/test_trampoline_scheduler.cu
     execution/test_visit.cu
     execution/test_when_all.cu
     execution/test_write_attrs.cu

@@ -773,14 +773,14 @@ public:
   template <typename FunctorT>
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t Invoke(int device_ptx_version, FunctorT& op)
   {
-    // __CUDA_ARCH_LIST__ is only available from CTK 11.5 onwards
+    // __CUDA_ARCH_LIST__ is available from CTK 11.5 onwards and contains values like 860
+    // NV_TARGET_SM_INTEGER_LIST is defined by NVHPC and contains values like 86, so we need to scale by 10
 #  ifdef __CUDA_ARCH_LIST__
-    return runtime_to_compiletime<1, __CUDA_ARCH_LIST__>(device_ptx_version, op);
-    // NV_TARGET_SM_INTEGER_LIST is defined by NVHPC. The values need to be multiplied by 10 to match
-    // __CUDA_ARCH_LIST__. E.g. arch 860 from __CUDA_ARCH_LIST__ corresponds to arch 86 from NV_TARGET_SM_INTEGER_LIST.
+    return runtime_arch_to_compiletime<1, __CUDA_ARCH_LIST__>(device_ptx_version, op);
 #  elif defined(NV_TARGET_SM_INTEGER_LIST)
-    return runtime_to_compiletime<10, NV_TARGET_SM_INTEGER_LIST>(device_ptx_version, op);
+    return runtime_arch_to_compiletime<10, NV_TARGET_SM_INTEGER_LIST>(device_ptx_version, op);
 #  else
+    // some compilers, like clang in CUDA mode, do not have a macro, so we have to include a fallback
     if constexpr (have_previous_policy)
     {
       if (device_ptx_version < PolicyPtxVersion)
@@ -795,28 +795,34 @@ public:
 
 private:
   template <int, typename, typename>
-  friend struct ChainedPolicy; // let us call invoke_static of other ChainedPolicy instantiations
+  friend struct ChainedPolicy; // let us call find_and_invoke_policy of other ChainedPolicy instantiations
 
 #if !_CCCL_COMPILER(NVRTC)
   template <int ArchMult, int... CudaArches, typename FunctorT>
-  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t runtime_to_compiletime(int device_ptx_version, FunctorT& op)
+  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t
+  runtime_arch_to_compiletime(int device_ptx_version, FunctorT& op)
   {
-    // We instantiate invoke_static for each CudaArches, but only call the one matching device_ptx_version.
+    // We instantiate find_and_invoke_policy for each CudaArches (the arches we are compiling for), but only call the
+    // one matching device_ptx_version.
     // If there's no exact match of the architectures in __CUDA_ARCH_LIST__/NV_TARGET_SM_INTEGER_LIST and the runtime
-    // queried ptx version (i.e., the closest ptx version to the current device's architecture that the EmptyKernel was
-    // compiled for), we return cudaErrorInvalidDeviceFunction. Such a scenario may arise if CUB_DISABLE_NAMESPACE_MAGIC
-    // is set and different TUs are compiled for different sets of architecture.
+    // queried ptx version (i.e., the closest lower or equal ptx version to the current device's architecture that the
+    // EmptyKernel was compiled for), we return cudaErrorInvalidDeviceFunction. Such a scenario is a bug and may arise
+    // if CUB_DISABLE_NAMESPACE_MAGIC is set and different TUs are compiled for different sets of architecture.
     cudaError_t e = cudaErrorInvalidDeviceFunction;
-    (..., (device_ptx_version == CudaArches * ArchMult ? (e = invoke_static<CudaArches * ArchMult>(op)) : cudaSuccess));
+    (...,
+     (device_ptx_version == CudaArches * ArchMult
+        ? (e = find_and_invoke_policy<CudaArches * ArchMult>(op))
+        : cudaSuccess));
     return e;
   }
 
   template <int DevicePtxVersion, typename FunctorT>
-  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t invoke_static(FunctorT& op)
+  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t find_and_invoke_policy(FunctorT& op)
   {
+    // find the first policy we can use on DevicePtxVersion
     if constexpr (DevicePtxVersion < PolicyPtxVersion && have_previous_policy)
     {
-      return PrevPolicyT::template invoke_static<DevicePtxVersion>(op);
+      return PrevPolicyT::template find_and_invoke_policy<DevicePtxVersion>(op);
     }
     else
     {

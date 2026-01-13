@@ -118,20 +118,20 @@ private:
   };
 
   [[nodiscard]] friend __action<__detail::__param_kind::_inout>
-  transform_device_argument(::cuda::stream_ref __str, vector& __v) noexcept
+  transform_launch_argument(::cuda::stream_ref __str, vector& __v) noexcept
   {
     return __action<__detail::__param_kind::_inout>{__str, __v};
   }
 
   [[nodiscard]] friend __action<__detail::__param_kind::_in>
-  transform_device_argument(::cuda::stream_ref __str, const vector& __v) noexcept
+  transform_launch_argument(::cuda::stream_ref __str, const vector& __v) noexcept
   {
     return __action<__detail::__param_kind::_in>{__str, __v};
   }
 
   template <__detail::__param_kind _Kind>
   [[nodiscard]] friend __action<_Kind>
-  transform_device_argument(::cuda::stream_ref __str, __detail::__box<vector, _Kind> __b) noexcept
+  transform_launch_argument(::cuda::stream_ref __str, __detail::__box<vector, _Kind> __b) noexcept
   {
     return __action<_Kind>{__str, __b.__val};
   }

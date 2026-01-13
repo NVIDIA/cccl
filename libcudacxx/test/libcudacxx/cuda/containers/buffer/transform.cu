@@ -15,19 +15,19 @@
 
 #include <cuda/algorithm>
 #include <cuda/buffer>
+#include <cuda/hierarchy>
+#include <cuda/launch>
 #include <cuda/memory_resource>
 #include <cuda/std/tuple>
 #include <cuda/std/type_traits>
 #include <cuda/std/utility>
-
-#include <cuda/experimental/launch.cuh>
 
 #include <algorithm>
 
 #include "helper.h"
 #include "types.h"
 
-C2H_TEST("DeviceTransform::Transform cuda::device_buffer", "[device][device_transform]")
+C2H_TEST("DeviceTransform::Transform cuda::device_buffer", "[device][launch_transform]")
 {
   using type          = int;
   const int num_items = 1 << 24;
@@ -69,8 +69,7 @@ struct add_kernel
   template <typename T>
   __device__ void operator()(cuda::std::span<T> a, cuda::std::span<const T> b)
   {
-    for (int i = cuda::hierarchy::rank(cuda::thread, cuda::grid); i < a.size();
-         i += cuda::hierarchy::count(cuda::thread, cuda::grid))
+    for (int i = cuda::gpu_thread.rank(cuda::grid); i < a.size(); i += cuda::gpu_thread.count(cuda::grid))
     {
       a[i] += b[i];
     }

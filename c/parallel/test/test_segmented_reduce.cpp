@@ -679,18 +679,29 @@ struct reduce_build
 {
   template <typename... Ts>
   CUresult operator()(
-    BuildResultT* build_ptr, cccl_iterator_t input, cccl_iterator_t output, uint64_t, Ts... args) const noexcept
+    BuildResultT* build_ptr,
+    cccl_determinism_t determinism,
+    cccl_iterator_t input,
+    cccl_iterator_t output,
+    uint64_t,
+    cccl_op_t op,
+    cccl_value_t init,
+    Ts... args) const noexcept
   {
-    return cccl_device_reduce_build(build_ptr, input, output, args...);
+    return cccl_device_reduce_build(build_ptr, input, output, op, init, determinism, args...);
   }
 };
 
 struct reduce_run
 {
   template <typename... Ts>
-  CUresult operator()(Ts... args) const noexcept
+  CUresult operator()(cccl_device_reduce_build_result_t build,
+                      void* d_temp_storage,
+                      size_t* temp_storage_bytes,
+                      cccl_determinism_t /*determinism*/,
+                      Ts... args) const noexcept
   {
-    return cccl_device_reduce(args...);
+    return cccl_device_reduce(build, d_temp_storage, temp_storage_bytes, args...);
   }
 };
 
@@ -713,7 +724,7 @@ void reduce_for_pointer_inputs(
   const auto& test_key = make_key<Ts...>();
 
   AlgorithmExecute<BuildResultT, reduce_build, reduce_cleanup, reduce_run>(
-    build_cache, test_key, input, output, num_items, op, init);
+    build_cache, test_key, CCCL_RUN_TO_RUN, input, output, num_items, op, init);
 }
 } // namespace validate
 

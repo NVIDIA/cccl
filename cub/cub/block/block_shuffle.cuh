@@ -103,7 +103,7 @@ public:
       , linear_tid(RowMajorTid(BlockDimX, BlockDimY, BlockDimZ))
   {}
 
-  //! @}  end member group
+  //! @}
   //! @name Shuffle movement
   //! @{
 
@@ -313,7 +313,7 @@ public:
     block_prefix = temp_storage[0];
   }
 
-  //! @} end member group
+  //! @}
 };
 
 CUB_NAMESPACE_END

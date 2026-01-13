@@ -2,6 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+from ._caching import clear_all_caches
 from .algorithms import (
     DoubleBuffer,
     SortOrder,
@@ -32,6 +33,7 @@ from .algorithms import (
     unary_transform,
     unique_by_key,
 )
+from .determinism import Determinism
 from .iterators import (
     CacheModifiedInputIterator,
     ConstantIterator,
@@ -48,13 +50,13 @@ from .struct import gpu_struct
 
 __all__ = [
     "binary_transform",
+    "clear_all_caches",
     "CacheModifiedInputIterator",
     "ConstantIterator",
     "CountingIterator",
     "DiscardIterator",
     "DoubleBuffer",
     "exclusive_scan",
-    "select",
     "gpu_struct",
     "histogram_even",
     "inclusive_scan",
@@ -73,12 +75,14 @@ __all__ = [
     "make_unique_by_key",
     "merge_sort",
     "OpKind",
+    "Determinism",
     "PermutationIterator",
     "radix_sort",
     "reduce_into",
     "ReverseIterator",
     "segmented_reduce",
     "segmented_sort",
+    "select",
     "SortOrder",
     "TransformIterator",
     "TransformOutputIterator",

@@ -42,10 +42,12 @@ struct heavy_functor
 
 template <typename Heaviness>
 static void heavy(nvbench::state& state, nvbench::type_list<Heaviness>)
+try
 {
-  using value_t                     = std::uint32_t;
-  using offset_t                    = int;
-  const auto n                      = cuda::narrow<offset_t>(state.get_int64("Elements{io}"));
+  using value_t  = std::uint32_t;
+  using offset_t = int64_t;
+  const auto n   = state.get_int64("Elements{io}");
+
   thrust::device_vector<value_t> in = generate(n);
   thrust::device_vector<value_t> out(n);
 
@@ -53,7 +55,12 @@ static void heavy(nvbench::state& state, nvbench::type_list<Heaviness>)
   state.add_global_memory_reads<value_t>(n);
   state.add_global_memory_writes<value_t>(n);
 
-  bench_transform(state, ::cuda::std::tuple{in.begin()}, out.begin(), n, heavy_functor<Heaviness::value>{});
+  bench_transform(
+    state, ::cuda::std::tuple{in.begin()}, out.begin(), cuda::narrow<offset_t>(n), heavy_functor<Heaviness::value>{});
+}
+catch (const std::bad_alloc&)
+{
+  state.skip("Skipping: out of memory.");
 }
 
 using ::cuda::std::integral_constant;
@@ -70,4 +77,4 @@ using heaviness =
 NVBENCH_BENCH_TYPES(heavy, NVBENCH_TYPE_AXES(heaviness))
   .set_name("heavy")
   .set_type_axes_names({"Heaviness{ct}"})
-  .add_int64_power_of_two_axis("Elements{io}", nvbench::range(16, 28, 4));
+  .add_int64_power_of_two_axis("Elements{io}", nvbench::range(16, 32, 4));

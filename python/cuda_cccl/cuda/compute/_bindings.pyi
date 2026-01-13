@@ -63,6 +63,12 @@ class InitKind(IntEnum):
     FUTURE_VALUE_INIT = ...
     VALUE_INIT = ...
 
+class Determinism(IntEnum):
+    _value_: int
+    NOT_GUARANTEED = ...
+    RUN_TO_RUN = ...
+    GPU_TO_GPU = ...
+
 class Op:
     def __init__(
         self,
@@ -181,9 +187,21 @@ class DeviceReduceBuildResult:
         d_out: Iterator,
         binary_op: Op,
         h_init: Value,
+        determinism: Determinism,
         info: CommonData,
     ): ...
     def compute(
+        self,
+        temp_storage_ptr: int | None,
+        temp_storage_nbytes: int,
+        d_in: Iterator,
+        d_out: Iterator,
+        num_items: int,
+        binary_op: Op,
+        h_init: Value,
+        stream,
+    ) -> int: ...
+    def compute_nondeterministic(
         self,
         temp_storage_ptr: int | None,
         temp_storage_nbytes: int,
