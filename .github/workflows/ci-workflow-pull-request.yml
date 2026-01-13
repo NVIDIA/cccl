@@ -272,7 +272,6 @@ jobs:
     uses: ./.github/workflows/build-pytorch.yml
 
   # Test that cuda.compute can be imported on a CPU-only machine (no CUDA drivers).
-  # This runs on GitHub-hosted runners which don't have CUDA installed.
   test-cpu-import:
     name: Test CPU-only import
     runs-on: ubuntu-latest
