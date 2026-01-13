@@ -1,0 +1,11 @@
+name: 'Infra: Routine Maintenance'
+description: 'Internal: template for routine infrastructure maintenance tracking tasks'
+title: '[INFRA]: '
+labels: ['infrastructure']
+body:
+  - type: textarea
+    id: Detail
+    attributes:
+      label: Provide any additional detail needed beyond the title.
+    validations:
+      required: false
