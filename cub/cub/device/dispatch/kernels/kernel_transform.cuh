@@ -222,9 +222,9 @@ _CCCL_DEVICE void transform_kernel_vectorized(
   RandomAccessIteratorOut out,
   RandomAccessIteratorsIn... ins)
 {
-  // constexpr int block_threads    = Policy.vectorized_policy.block_threads;
-  // constexpr int items_per_thread = Policy.vectorized_policy.items_per_thread_vectorized;
-  // constexpr int vec_size         = Policy.vectorized_policy.vec_size;
+  // constexpr int block_threads    = Policy.vectorized.block_threads;
+  // constexpr int items_per_thread = Policy.vectorized.items_per_thread_vectorized;
+  // constexpr int vec_size         = Policy.vectorized.vec_size;
   _CCCL_ASSERT(!can_vectorize || (items_per_thread == num_elem_per_thread_prefetch), "");
   constexpr int tile_size = block_threads * items_per_thread;
   const Offset offset     = static_cast<Offset>(blockIdx.x) * tile_size;
@@ -576,7 +576,7 @@ _CCCL_DEVICE void transform_kernel_ldgsts(
   static_assert(ldgsts_size_and_align <= 16);
   _CCCL_ASSERT(reinterpret_cast<uintptr_t>(smem) % ldgsts_size_and_align == 0, "");
 
-  // constexpr int block_threads = Policy.async_copy_policy.block_threads;
+  // constexpr int block_threads = Policy.async_copy.block_threads;
   const int tile_size   = block_threads * num_elem_per_thread;
   const Offset offset   = static_cast<Offset>(blockIdx.x) * tile_size;
   const int valid_items = static_cast<int>(::cuda::std::min(num_items - offset, Offset{tile_size}));
@@ -725,8 +725,8 @@ _CCCL_DEVICE void transform_kernel_ublkcp(
   RandomAccessIteratorOut out,
   aligned_base_ptr<InTs>... aligned_ptrs)
 {
-  // constexpr int block_threads       = Policy.async_copy_policy.block_threads;
-  // constexpr int bulk_copy_alignment = Policy.async_copy_policy.bulk_copy_alignment;
+  // constexpr int block_threads       = Policy.async_copy.block_threads;
+  // constexpr int bulk_copy_alignment = Policy.async_copy.bulk_copy_alignment;
 
   // add padding after a tile in shared memory to make space for the next tile's head padding, and retain alignment
   constexpr int max_alignment = ::cuda::std::max({int{alignof(InTs)}...});
@@ -983,15 +983,15 @@ _CCCL_API constexpr int get_block_threads_helper()
   constexpr transform_policy policy = PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10});
   if constexpr (policy.algorithm == Algorithm::prefetch)
   {
-    return policy.prefetch_policy.block_threads;
+    return policy.prefetch.block_threads;
   }
   else if constexpr (policy.algorithm == Algorithm::vectorized)
   {
-    return policy.vectorized_policy.block_threads;
+    return policy.vectorized.block_threads;
   }
   else
   {
-    return policy.async_copy_policy.block_threads;
+    return policy.async_copy.block_threads;
   }
 }
 
@@ -1027,7 +1027,7 @@ __launch_bounds__(get_block_threads<PolicySelector>) CUB_DETAIL_KERNEL_ATTRIBUTE
 
   if constexpr (policy.algorithm == Algorithm::prefetch)
   {
-    transform_kernel_prefetch<policy.prefetch_policy.block_threads>(
+    transform_kernel_prefetch<policy.prefetch.block_threads>(
       num_items,
       num_elem_per_thread,
       ::cuda::std::move(pred),
@@ -1040,9 +1040,9 @@ __launch_bounds__(get_block_threads<PolicySelector>) CUB_DETAIL_KERNEL_ATTRIBUTE
     static_assert(::cuda::std::is_same_v<Predicate, always_true_predicate>,
                   "Cannot vectorize transform with a predicate");
 
-    transform_kernel_vectorized</*policy*/ policy.vectorized_policy.block_threads,
-                                policy.vectorized_policy.items_per_thread_vectorized,
-                                policy.vectorized_policy.vec_size>(
+    transform_kernel_vectorized</*policy*/ policy.vectorized.block_threads,
+                                policy.vectorized.items_per_thread_vectorized,
+                                policy.vectorized.vec_size>(
       num_items,
       num_elem_per_thread,
       can_vectorize,
@@ -1054,7 +1054,7 @@ __launch_bounds__(get_block_threads<PolicySelector>) CUB_DETAIL_KERNEL_ATTRIBUTE
   {
     NV_IF_TARGET(
       NV_PROVIDES_SM_80,
-      (transform_kernel_ldgsts</*policy*/ policy.async_copy_policy.block_threads>(
+      (transform_kernel_ldgsts</*policy*/ policy.async_copy.block_threads>(
          num_items,
          num_elem_per_thread,
          ::cuda::std::move(pred),
@@ -1066,8 +1066,7 @@ __launch_bounds__(get_block_threads<PolicySelector>) CUB_DETAIL_KERNEL_ATTRIBUTE
   {
     NV_IF_TARGET(
       NV_PROVIDES_SM_90,
-      (transform_kernel_ublkcp</*policy*/ policy.async_copy_policy.block_threads,
-                               policy.async_copy_policy.bulk_copy_alignment>(
+      (transform_kernel_ublkcp</*policy*/ policy.async_copy.block_threads, policy.async_copy.bulk_copy_alignment>(
          num_items,
          num_elem_per_thread,
          ::cuda::std::move(pred),

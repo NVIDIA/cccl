@@ -185,15 +185,14 @@ struct transform_policy
 {
   int min_bytes_in_flight;
   Algorithm algorithm;
-  prefetch_policy prefetch_policy;
-  vectorized_policy vectorized_policy;
-  async_copy_policy async_copy_policy;
+  prefetch_policy prefetch;
+  vectorized_policy vectorized;
+  async_copy_policy async_copy;
 
   [[nodiscard]] _CCCL_API constexpr friend bool operator==(const transform_policy& lhs, const transform_policy& rhs)
   {
     return lhs.min_bytes_in_flight == rhs.min_bytes_in_flight && lhs.algorithm == rhs.algorithm
-        && lhs.prefetch_policy == rhs.prefetch_policy && lhs.vectorized_policy == rhs.vectorized_policy
-        && lhs.async_copy_policy == rhs.async_copy_policy;
+        && lhs.prefetch == rhs.prefetch && lhs.vectorized == rhs.vectorized && lhs.async_copy == rhs.async_copy;
   }
 
   [[nodiscard]] _CCCL_API constexpr friend bool operator!=(const transform_policy& lhs, const transform_policy& rhs)
@@ -204,11 +203,9 @@ struct transform_policy
 #if !_CCCL_COMPILER(NVRTC)
   friend ::std::ostream& operator<<(::std::ostream& os, const transform_policy& policy)
   {
-    return os
-        << "transform_policy { .min_bytes_in_flight = " << policy.min_bytes_in_flight
-        << ", .algorithm = " << policy.algorithm << ", .prefetch_policy = " << policy.prefetch_policy
-        << ", .vectorized_policy = " << policy.vectorized_policy
-        << ", .async_copy_policy = " << policy.async_copy_policy << " }";
+    return os << "transform_policy { .min_bytes_in_flight = " << policy.min_bytes_in_flight
+              << ", .algorithm = " << policy.algorithm << ", .prefetch = " << policy.prefetch
+              << ", .vectorized = " << policy.vectorized << ", .async_copy = " << policy.async_copy << " }";
   }
 #endif // !_CCCL_COMPILER(NVRTC)
 };

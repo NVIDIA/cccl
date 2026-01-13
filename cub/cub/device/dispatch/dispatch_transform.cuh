@@ -170,17 +170,14 @@ enum class requires_stable_address
   yes
 };
 
-// NEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEW
-
 // Reduces the items_per_thread when necessary to generate enough blocks to reach the maximum occupancy.
 template <typename Offset, typename Policy>
 CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE int
 spread_out_items_per_thread(Offset num_items, Policy policy, int items_per_thread, int sm_count, int max_occupancy)
 {
-  const int block_threads = policy.block_threads;
-
-  const int items_per_thread_evenly_spread = static_cast<int>((
-    ::cuda::std::min) (Offset{items_per_thread}, ::cuda::ceil_div(num_items, sm_count * block_threads * max_occupancy)));
+  const int items_per_thread_evenly_spread = static_cast<int>(
+    (::cuda::std::min) (Offset{items_per_thread},
+                        ::cuda::ceil_div(num_items, sm_count * policy.block_threads * max_occupancy)));
   const int items_per_thread_clamped =
     ::cuda::std::clamp(items_per_thread_evenly_spread, policy.min_items_per_thread, policy.max_items_per_thread);
   return items_per_thread_clamped;
@@ -204,13 +201,13 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto configure_as
     ::cuda::std::tuple<decltype(launcher_factory(0, 0, 0, 0)), decltype(kernel_source.TransformKernel()), int>>
 {
   CUB_DETAIL_CONSTEXPR_ISH const transform_policy policy = policy_getter();
-  CUB_DETAIL_CONSTEXPR_ISH int block_threads             = policy.async_copy_policy.block_threads;
+  CUB_DETAIL_CONSTEXPR_ISH int block_threads             = policy.async_copy.block_threads;
 
   _CCCL_ASSERT(block_threads % alignment == 0, "block_threads needs to be a multiple of the copy alignment");
   // ^ then tile_size is a multiple of it
 
-  CUB_DETAIL_CONSTEXPR_ISH auto min_items_per_thread = policy.async_copy_policy.min_items_per_thread;
-  CUB_DETAIL_CONSTEXPR_ISH auto max_items_per_thread = policy.async_copy_policy.max_items_per_thread;
+  CUB_DETAIL_CONSTEXPR_ISH auto min_items_per_thread = policy.async_copy.min_items_per_thread;
+  CUB_DETAIL_CONSTEXPR_ISH auto max_items_per_thread = policy.async_copy.max_items_per_thread;
 
   // ensures the loop below runs at least once
   // pulled outside of the lambda below to make MSVC happy
@@ -268,7 +265,7 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto configure_as
   _CCCL_ASSERT((config->items_per_thread * block_threads) % alignment == 0, "");
 
   const int ipt = spread_out_items_per_thread(
-    num_items, policy.async_copy_policy, config->items_per_thread, config->sm_count, config->max_occupancy);
+    num_items, policy.async_copy, config->items_per_thread, config->sm_count, config->max_occupancy);
   const int tile_size     = block_threads * ipt;
   const int dyn_smem_size = dyn_smem_for_tile_size(tile_size, alignment);
   _CCCL_ASSERT(NoInputs != (dyn_smem_size != 0), ""); // logical xor
@@ -347,9 +344,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t invoke_prefetch_or_vectorized
 {
   CUB_DETAIL_CONSTEXPR_ISH const transform_policy policy = policy_getter();
   CUB_DETAIL_CONSTEXPR_ISH const int block_threads =
-    policy.algorithm == Algorithm::vectorized
-      ? policy.vectorized_policy.block_threads
-      : policy.prefetch_policy.block_threads;
+    policy.algorithm == Algorithm::vectorized ? policy.vectorized.block_threads : policy.prefetch.block_threads;
 
   auto determine_config = [&]() -> cuda_expected<prefetch_config> {
     int max_occupancy = 0;
@@ -380,11 +375,11 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t invoke_prefetch_or_vectorized
   // the policy already handles the compile-time checks if we can vectorize. Do the remaining alignment check here
   if CUB_DETAIL_CONSTEXPR_ISH (Algorithm::vectorized == policy.algorithm)
   {
-    const int vs  = policy.vectorized_policy.vec_size;
+    const int vs  = policy.vectorized.vec_size;
     can_vectorize = kernel_source.CanVectorize(vs, out, ::cuda::std::get<Is>(in)...);
     if (can_vectorize)
     {
-      ipt = policy.vectorized_policy.items_per_thread_vectorized;
+      ipt = policy.vectorized.items_per_thread_vectorized;
     }
   }
 
@@ -392,12 +387,11 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t invoke_prefetch_or_vectorized
   {
     // otherwise, set up the prefetch kernel
     const auto fallback_prefetch_policy = prefetch_policy{
-      policy.vectorized_policy.block_threads,
-      policy.vectorized_policy.prefetch_items_per_thread_no_input,
-      policy.vectorized_policy.prefetch_min_items_per_thread,
-      policy.vectorized_policy.prefetch_max_items_per_thread};
-    const auto prefetch_policy =
-      policy.algorithm == Algorithm::prefetch ? policy.prefetch_policy : fallback_prefetch_policy;
+      policy.vectorized.block_threads,
+      policy.vectorized.prefetch_items_per_thread_no_input,
+      policy.vectorized.prefetch_min_items_per_thread,
+      policy.vectorized.prefetch_max_items_per_thread};
+    const auto prefetch_policy = policy.algorithm == Algorithm::prefetch ? policy.prefetch : fallback_prefetch_policy;
 
     auto loaded_bytes_per_iter           = kernel_source.LoadedBytesPerIteration();
     const auto items_per_thread_no_input = prefetch_policy.items_per_thread_no_input;
