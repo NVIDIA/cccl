@@ -19,6 +19,22 @@ The repository uses **CMake** with the **Ninja** generator and provides standard
 
 ---
 
+## Iteration Cycles
+
+For a given task, you should:
+
+1. Research. Search the web, read existing code, look up system/dependency headers / implementations of related functionality. Figure out best practices and common pitfalls. Look for existing tests of the functionality; if none exist, plan a new test that integrates with the relevant existing testing frameworks.
+2. Plan. Create a high-level plan to implement the requested feature.
+3. Review and Refine plan. Look for pitfalls, find ways to smooth out rough edges. Verify any assumptions, edgecases, or identified pitfalls. Repeat until the plan is solid.
+4. Gather consistency context. Look at similar code (sibling classes if possible, otherwise just related source files) to learn the style and patterns used in the project. Consistency is important -- similar features should be organized and implemented similarly. Naming conventions should be followed.
+5. If requested: Present the plan. Only do this if the user asks for a plan to do something -- if they just ask you implement something without requesting a plan, skip this step.
+6. Draft. Implement the requested task to the best of your ability.
+7. Review and Refine. Read through your changes. Verify that API calls are correct. Assess clarity, performance, and readability. Iterate as needed.
+8. Style check. Ensure that your changes follow style and naming conventions.
+9. Build and test. Once you're confident that your changes are functionally and stylistically correct start build, test, and iterate cycles. If you don't have permissions to do these, ask the user to run specific build/test commands for you.
+
+---
+
 ## Known Agent Limitations
 
 ### OpenAI Codex
