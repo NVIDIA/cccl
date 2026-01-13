@@ -433,8 +433,8 @@ struct DispatchScan
 
 #if __cccl_ptx_isa >= 860
   template <typename ActivePolicyT>
-  CUB_RUNTIME_FUNCTION _CCCL_HOST
-  _CCCL_FORCEINLINE cudaError_t __invoke_lookahead_algorithm(ActivePolicyT, int smem_size_1_stage)
+  CUB_RUNTIME_FUNCTION _CCCL_HOST _CCCL_FORCEINLINE cudaError_t
+  __invoke_lookahead_algorithm(ActivePolicyT, int smem_size_1_stage)
   {
     using InputT          = ::cuda::std::iter_value_t<InputIteratorT>;
     using OutputT         = ::cuda::std::iter_value_t<OutputIteratorT>;
