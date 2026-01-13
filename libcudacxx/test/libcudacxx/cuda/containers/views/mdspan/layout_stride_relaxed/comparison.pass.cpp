@@ -199,7 +199,11 @@ __host__ __device__ constexpr void test_comparison_with()
   test_comparison_with<OtherLayout>(
     true, cuda::std::extents<int>(), cuda::std::array<cuda::std::intptr_t, 0>{}, 0, cuda::std::extents<unsigned>());
   test_comparison_with<OtherLayout>(
-    true, cuda::std::extents<int, 5>(), cuda::std::array<cuda::std::intptr_t, 1>{1}, 0, cuda::std::extents<unsigned, 5>());
+    true,
+    cuda::std::extents<int, 5>(),
+    cuda::std::array<cuda::std::intptr_t, 1>{1},
+    0,
+    cuda::std::extents<unsigned, 5>());
   test_comparison_with<OtherLayout>(
     true,
     cuda::std::extents<int, D>(5),
