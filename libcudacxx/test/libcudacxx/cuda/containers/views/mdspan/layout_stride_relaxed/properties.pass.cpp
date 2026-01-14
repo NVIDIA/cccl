@@ -50,6 +50,7 @@ __host__ __device__ constexpr void test_layout_mapping_stride_relaxed(
   E ext, cuda::std::array<intptr_t, E::rank()> input_strides, intptr_t offset, bool expected_is_strided)
 {
   using M            = cuda::layout_stride_relaxed::template mapping<E>;
+  using strides_type = typename M::strides_type;
   using offset_type  = typename M::offset_type;
   using stride_array = cuda::std::array<offset_type, E::rank()>;
   stride_array strides{};
@@ -63,8 +64,8 @@ __host__ __device__ constexpr void test_layout_mapping_stride_relaxed(
   M m(ext, strides, static_cast<offset_type>(offset));
   const M c_m = m;
 
-  assert(m.strides() == strides);
-  assert(c_m.strides() == strides);
+  assert(m.strides() == strides_type(strides));
+  assert(c_m.strides() == strides_type(strides));
   assert(m.extents() == ext);
   assert(c_m.extents() == ext);
   assert(cuda::std::cmp_equal(m.offset(), offset));

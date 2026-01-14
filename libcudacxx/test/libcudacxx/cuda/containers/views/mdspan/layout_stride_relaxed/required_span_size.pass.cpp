@@ -36,7 +36,6 @@ test_required_span_size(E e, cuda::std::array<intptr_t, E::rank()> input_strides
 {
   using M            = cuda::layout_stride_relaxed::mapping<E>;
   using offset_type  = typename M::offset_type;
-  using index_type   = typename M::index_type;
   using stride_array = cuda::std::array<offset_type, E::rank()>;
   stride_array strides{};
   if constexpr (E::rank() > 0)
