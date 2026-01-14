@@ -157,7 +157,7 @@
 
 // _CCCL_NO_UNIQUE_ADDRESS
 
-#if _CCCL_COMPILER(MSVC) || _CCCL_HAS_CPP_ATTRIBUTE(no_unique_address) < 201803L || _CCCL_CTK_EQUAL(12, 9)
+#if _CCCL_COMPILER(MSVC) || _CCCL_HAS_CPP_ATTRIBUTE(no_unique_address) < 201803L || _CCCL_CUDA_COMPILER(NVCC, <, 13)
 // MSVC implementation has lead to multiple issues with silent runtime corruption when passing data into kernels
 // CTK 12.9 seg faults when using [[no_unique_address]] with instantiations of empty base classes
 #  define _CCCL_HAS_ATTRIBUTE_NO_UNIQUE_ADDRESS() 0
