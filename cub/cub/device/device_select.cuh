@@ -103,6 +103,7 @@ private:
     ::cuda::execution::determinism::__determinism_holder_t<Determinism> determinism_holder_arg,
     cudaStream_t stream)
   {
+    (void) determinism_holder_arg; // determisnim is of no use in DeviceSelect at the moment
     using select_tuning_t = ::cuda::std::execution::
       __query_result_or_t<TuningEnvT, detail::select::get_tuning_query_t, detail::select::default_tuning>;
 
