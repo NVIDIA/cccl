@@ -25,6 +25,7 @@
 #include <thrust/iterator/iterator_traversal_tags.h>
 
 #include <cuda/std/__host_stdlib/ostream>
+#include <cuda/std/__iterator/iterator_traits.h>
 #include <cuda/std/__memory/addressof.h>
 #include <cuda/std/__memory/pointer_traits.h>
 #include <cuda/std/__type_traits/enable_if.h>

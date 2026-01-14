@@ -343,7 +343,7 @@ THRUST_NAMESPACE_END
 // The reason is that libcu++ backported the C++20 range iterator machinery to C++17, but C++17 has slightly different
 // language rules, especially regarding `void`. We deemed to it too hard to work around the issues.
 #if _CCCL_STD_VER < 2020
-_CCCL_BEGIN_NAMESPACE_CUDA_STD
+_CCCL_BEGIN_NAMESPACE_STD
 template <typename IteratorTuple>
 struct iterator_traits<THRUST_NS_QUALIFIER::zip_iterator<IteratorTuple>>
 {
@@ -354,5 +354,5 @@ struct iterator_traits<THRUST_NS_QUALIFIER::zip_iterator<IteratorTuple>>
   using iterator_category = typename It::iterator_category;
   using difference_type   = typename It::difference_type;
 };
-_CCCL_END_NAMESPACE_CUDA_STD
+_CCCL_END_NAMESPACE_STD
 #endif // _CCCL_STD_VER < 2020

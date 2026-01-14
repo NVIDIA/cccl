@@ -121,7 +121,7 @@ struct summary_stats_binary_op
 template <typename Iterator>
 void print_range(const std::string& name, Iterator first, Iterator last)
 {
-  using T = typename std::iterator_traits<Iterator>::value_type;
+  using T = cuda::std::iter_value_t<Iterator>;
 
   std::cout << name << ": ";
   thrust::copy(first, last, std::ostream_iterator<T>(std::cout, " "));
