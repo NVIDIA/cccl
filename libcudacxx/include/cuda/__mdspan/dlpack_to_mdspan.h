@@ -20,8 +20,9 @@
 #  pragma system_header
 #endif // no system header
 
-#if !_CCCL_COMPILER(NVRTC) && _CCCL_HAS_INCLUDE(<dlpack/dlpack.h>)
+#if _CCCL_HAS_DLPACK()
 
+#  include <cuda/__internal/dlpack.h>
 #  include <cuda/__mdspan/host_device_mdspan.h>
 #  include <cuda/__mdspan/mdspan_to_dlpack.h>
 #  include <cuda/__memory/is_aligned.h>
@@ -40,8 +41,6 @@
 #  include <cuda/std/__cccl/prologue.h>
 
 _CCCL_BEGIN_NAMESPACE_CUDA
-
-static_assert(DLPACK_MAJOR_VERSION == 1, "DLPACK_MAJOR_VERSION must be 1");
 
 template <typename _ElementType>
 [[nodiscard]] _CCCL_HOST_API inline bool __validate_dlpack_data_type(const ::DLDataType& __dtype) noexcept
@@ -258,5 +257,5 @@ _CCCL_END_NAMESPACE_CUDA
 
 #  include <cuda/std/__cccl/epilogue.h>
 
-#endif // !_CCCL_COMPILER(NVRTC) && _CCCL_HAS_INCLUDE(<dlpack/dlpack.h>)
+#endif // __CCCL_HAS_DLPACK()
 #endif // _CUDA___MDSPAN_DLPACK_TO_MDSPAN_H
