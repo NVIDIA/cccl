@@ -21,6 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/__cmath/uabs.h>
 #include <cuda/__fwd/mdspan.h>
 #include <cuda/__numeric/add_overflow.h>
 #include <cuda/__numeric/overflow_cast.h>
@@ -273,8 +274,8 @@ public:
         {
           return index_type{0};
         }
-        //_CCCL_ASSERT(!::cuda::overflow_cast<index_type>(__strides_.stride(__r)),
-        //              "layout_stride_relaxed::mapping: stride is out of range");
+        _CCCL_ASSERT(!::cuda::overflow_cast<index_type>(::cuda::uabs(__strides_.stride(__r))),
+                     "layout_stride_relaxed::mapping: stride is out of range");
         const auto __max_index = __strides_.stride(__r) < 0 ? index_type{0} : static_cast<index_type>(__ext - 1);
         const auto __stride    = static_cast<index_type>(__strides_.stride(__r));
         _CCCL_ASSERT(!::cuda::std::__mdspan_detail::__mul_overflow(__max_index, __stride)
@@ -320,7 +321,10 @@ public:
                    _CCCL_AND(::cuda::std::is_nothrow_constructible_v<index_type, _Indices>&&...))
   [[nodiscard]] _CCCL_API constexpr index_type operator()(_Indices... __indices) const noexcept
   {
-    return __compute_index(__rank_sequence, __indices...);
+    const auto __index = __compute_index(__rank_sequence, __indices...);
+    _CCCL_ASSERT(::cuda::std::cmp_less_equal(__index, required_span_size()),
+                 "layout_stride_relaxed::mapping: index is out of bounds");
+    return __index;
   }
 
   //! @brief Returns false - not always unique due to zero/negative strides

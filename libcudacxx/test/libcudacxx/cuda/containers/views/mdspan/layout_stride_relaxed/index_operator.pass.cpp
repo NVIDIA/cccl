@@ -81,12 +81,12 @@ iterate_stride(M m, const cuda::std::array<intptr_t, M::extents_type::rank()>& s
   }
 }
 
-template <class E, class... Args>
+template <class E, class... Extents>
 __host__ __device__ constexpr void
-test_iteration(cuda::std::array<intptr_t, E::rank()> strides, intptr_t offset, Args... args)
+test_iteration(cuda::std::array<intptr_t, E::rank()> strides, intptr_t offset, Extents... extents)
 {
   using M = cuda::layout_stride_relaxed::mapping<E>;
-  M m(E(args...), strides, offset);
+  M m(E(extents...), strides, offset);
 
   iterate_stride(m, strides, offset);
 }

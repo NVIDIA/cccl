@@ -71,7 +71,7 @@ private:
       && ...);
   }
 
-  static_assert(__is_representable_as(_Strides...), "_Strides must be representable as offset_type and nonnegative");
+  static_assert(__is_representable_as(_Strides...), "_Strides must be representable as offset_type");
 
   static constexpr rank_type __rank_ = sizeof...(_Strides);
   static constexpr rank_type __rank_dynamic_ =
