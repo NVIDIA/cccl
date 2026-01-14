@@ -40,6 +40,8 @@
 #include <cuda/experimental/__cuco/__hyperloglog/kernels.cuh>
 #include <cuda/experimental/__cuco/__utility/strong_type.cuh>
 #include <cuda/experimental/__cuco/hash_functions.cuh>
+#include <cuda/experimental/container.cuh>
+#include <cuda/experimental/memory_resource.cuh>
 
 #include <vector>
 
@@ -450,28 +452,24 @@ public:
   //! @param stream CUDA stream this operation is executed in
   //!
   //! @return Approximate distinct items count
-  [[nodiscard]] _CCCL_HOST ::cuda::std::size_t __estimate(::cuda::stream_ref __stream) const
+  template <typename MemoryResourceRef = cuda::pinned_memory_pool_ref>
+  [[nodiscard]] _CCCL_HOST ::cuda::std::size_t
+  __estimate(::cuda::stream_ref __stream, MemoryResourceRef __host_mr = cuda::pinned_default_memory_pool()) const
   {
-    const auto __num_regs = 1ull << __precision;
-    ::std::vector<register_type> __host_sketch(__num_regs);
+    const auto __num_regs = __sketch.size();
 
-    // TODO check if storage is host accessible
-    _CCCL_TRY_CUDA_API(
-      ::cudaMemcpyAsync,
-      "cudaMemcpyAsync failed",
-      __host_sketch.data(),
-      __sketch.data(),
-      sizeof(register_type) * __num_regs,
-      cudaMemcpyDefault,
-      __stream.get());
+    ::cuda::experimental::host_buffer<register_type> __host_sketch_buf{
+      __stream, __host_mr, __sketch.size(), ::cuda::experimental::no_init};
 
+    ::cuda::__driver::__memcpyAsync(
+      __host_sketch_buf.data(), __sketch.data(), sizeof(register_type) * __num_regs, __stream.get());
     __stream.sync();
 
     __fp_type __sum = 0;
     int __zeroes    = 0;
 
     // geometric mean computation + count registers with 0s
-    for (const auto __reg : __host_sketch)
+    for (const auto __reg : __host_sketch_buf)
     {
       __sum += __fp_type{1} / static_cast<__fp_type>(1ull << __reg);
       __zeroes += __reg == 0;
