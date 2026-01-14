@@ -98,6 +98,7 @@ def load_devcontainer_meta(tag):
             subprocess.run(
                 ["docker", "pull", tag], stdout=sys.stderr
             ).check_returncode()
+            break
         except Exception as e:
             if attempts < 10:
                 attempts += 1
