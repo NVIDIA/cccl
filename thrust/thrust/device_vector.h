@@ -396,9 +396,7 @@ public:
    *  \throw std::length_error If n exceeds max_size().
  *
  *  \verbatim embed:rst:leading-asterisk
-
  *     .. versionadded:: 2.2.0
-
  *  \endverbatim
    */
   void reserve(size_type n);
