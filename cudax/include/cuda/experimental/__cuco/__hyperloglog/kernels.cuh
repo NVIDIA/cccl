@@ -86,7 +86,7 @@ __add_shmem_vectorized(const typename RefType::value_type* __first, int64_t __n,
   while (__idx < __n / VectorSize)
   {
     __vec =
-      *reinterpret_cast<vector_type*>(__builtin_assume_aligned(__first + __idx * VectorSize, sizeof(vector_type)));
+      *static_cast<const vector_type*>(::cuda::std::assume_aligned<sizeof(vector_type)>(__first + __idx * VectorSize));
     for (const auto& __i : __vec)
     {
       __local_ref.__add(__i);
