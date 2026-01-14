@@ -27,7 +27,6 @@
 #endif // no system header
 #include <thrust/detail/type_traits.h>
 #include <thrust/detail/type_traits/has_nested_type.h>
-#include <thrust/detail/type_traits/is_metafunction_defined.h>
 #include <thrust/detail/type_traits/is_thrust_pointer.h>
 #include <thrust/iterator/iterator_traits.h>
 
