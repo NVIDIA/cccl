@@ -84,6 +84,10 @@ THRUST_NAMESPACE_BEGIN
  *  \see \c replace_if
  *  \see \c replace_copy
  *  \see \c replace_copy_if
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename DerivedPolicy, typename ForwardIterator, typename T>
 _CCCL_HOST_DEVICE void
@@ -133,6 +137,10 @@ replace(const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
  *  \see \c replace_if
  *  \see \c replace_copy
  *  \see \c replace_copy_if
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename ForwardIterator, typename T>
 void replace(ForwardIterator first, ForwardIterator last, const T& old_value, const T& new_value);
@@ -195,6 +203,10 @@ void replace(ForwardIterator first, ForwardIterator last, const T& old_value, co
  *  \see \c replace
  *  \see \c replace_copy
  *  \see \c replace_copy_if
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename DerivedPolicy, typename ForwardIterator, typename Predicate, typename T>
 _CCCL_HOST_DEVICE void replace_if(
@@ -256,6 +268,10 @@ _CCCL_HOST_DEVICE void replace_if(
  *  \see \c replace
  *  \see \c replace_copy
  *  \see \c replace_copy_if
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename ForwardIterator, typename Predicate, typename T>
 void replace_if(ForwardIterator first, ForwardIterator last, Predicate pred, const T& new_value);
@@ -326,6 +342,10 @@ void replace_if(ForwardIterator first, ForwardIterator last, Predicate pred, con
  *  \see \c replace
  *  \see \c replace_copy
  *  \see \c replace_copy_if
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename DerivedPolicy, typename ForwardIterator, typename InputIterator, typename Predicate, typename T>
 _CCCL_HOST_DEVICE void replace_if(
@@ -396,6 +416,10 @@ _CCCL_HOST_DEVICE void replace_if(
  *  \see \c replace
  *  \see \c replace_copy
  *  \see \c replace_copy_if
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename ForwardIterator, typename InputIterator, typename Predicate, typename T>
 void replace_if(ForwardIterator first, ForwardIterator last, InputIterator stencil, Predicate pred, const T& new_value);
@@ -452,6 +476,10 @@ void replace_if(ForwardIterator first, ForwardIterator last, InputIterator stenc
  *  \see \c replace
  *  \see \c replace_if
  *  \see \c replace_copy_if
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename DerivedPolicy, typename InputIterator, typename OutputIterator, typename T>
 _CCCL_HOST_DEVICE OutputIterator replace_copy(
@@ -509,6 +537,10 @@ _CCCL_HOST_DEVICE OutputIterator replace_copy(
  *  \see \c replace
  *  \see \c replace_if
  *  \see \c replace_copy_if
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename InputIterator, typename OutputIterator, typename T>
 OutputIterator
@@ -579,6 +611,10 @@ replace_copy(InputIterator first, InputIterator last, OutputIterator result, con
  *  \see \c replace
  *  \see \c replace_if
  *  \see \c replace_copy
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename DerivedPolicy, typename InputIterator, typename OutputIterator, typename Predicate, typename T>
 _CCCL_HOST_DEVICE OutputIterator replace_copy_if(
@@ -649,6 +685,10 @@ _CCCL_HOST_DEVICE OutputIterator replace_copy_if(
  *  \see \c replace
  *  \see \c replace_if
  *  \see \c replace_copy
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename InputIterator, typename OutputIterator, typename Predicate, typename T>
 OutputIterator
@@ -725,6 +765,10 @@ replace_copy_if(InputIterator first, InputIterator last, OutputIterator result, 
  *
  *  \see \c replace_copy
  *  \see \c replace_if
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename DerivedPolicy,
           typename InputIterator1,
@@ -807,6 +851,10 @@ _CCCL_HOST_DEVICE OutputIterator replace_copy_if(
  *
  *  \see \c replace_copy
  *  \see \c replace_if
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename InputIterator1, typename InputIterator2, typename OutputIterator, typename Predicate, typename T>
 OutputIterator replace_copy_if(
