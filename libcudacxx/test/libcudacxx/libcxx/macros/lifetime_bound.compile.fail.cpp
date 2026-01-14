@@ -11,7 +11,8 @@
 
 #include "test_macros.h"
 
-#if (_CCCL_LIFETIMEBOUND + 0)
+#if _CCCL_HAS_CPP_ATTRIBUTE(clang::lifetimebound) || _CCCL_COMPILER(CLANG)
+#elif _CCCL_HAS_CPP_ATTRIBUTE(msvc::lifetimebound) || _CCCL_COMPILER(MSVC, >=, 19, 37)
 #else
 #  error "lifetimebound attribute not supported"
 #endif

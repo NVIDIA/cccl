@@ -84,6 +84,12 @@
 #  define _CCCL_POP_MACRO_hybrid_patchable
 #endif // defined(hybrid_patchable)
 
+#if defined(lifetimebound)
+#  pragma push_macro("lifetimebound")
+#  undef lifetimebound
+#  define _CCCL_POP_MACRO_lifetimebound
+#endif // defined(lifetimebound)
+
 #if defined(jitintrinsic)
 #  pragma push_macro("jitintrinsic")
 #  undef jitintrinsic

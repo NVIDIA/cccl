@@ -158,10 +158,8 @@
 
 #if _CCCL_HAS_CPP_ATTRIBUTE(clang::lifetimebound) || _CCCL_COMPILER(CLANG)
 #  define _CCCL_LIFETIMEBOUND [[clang::lifetimebound]]
-#elif _CCCL_HAS_CPP_ATTRIBUTE(msvc::lifetimebound) && _CCCL_COMPILER(MSVC, >=, 19, 37)
+#elif _CCCL_HAS_CPP_ATTRIBUTE(msvc::lifetimebound) || _CCCL_COMPILER(MSVC, >=, 19, 37)
 #  define _CCCL_LIFETIMEBOUND [[msvc::lifetimebound]]
-#elif _CCCL_HAS_CPP_ATTRIBUTE(lifetimebound)
-#  define _CCCL_LIFETIMEBOUND [[lifetimebound]]
 #else
 #  define _CCCL_LIFETIMEBOUND
 #endif
