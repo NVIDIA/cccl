@@ -132,7 +132,7 @@ public:
   //! @param stream CUDA stream this operation is executed in
   _CCCL_HOST constexpr void __clear_async(::cuda::stream_ref __stream)
   {
-    auto constexpr __block_size = 1024;
+    constexpr auto __block_size = 1024;
     ::cuda::experimental::cuco::__hyperloglog_ns::__clear<<<1, __block_size, 0, __stream.get()>>>(*this);
   }
 
@@ -180,7 +180,7 @@ public:
     if constexpr (::cuda::std::contiguous_iterator<_InputIt>)
     {
       const auto __ptr                  = thrust::raw_pointer_cast(&__first[0]);
-      auto constexpr __max_vector_bytes = 32;
+      constexpr auto __max_vector_bytes = 32;
       const auto __alignment =
         1u << ::cuda::std::countr_zero(reinterpret_cast<::cuda::std::uintptr_t>(__ptr) | __max_vector_bytes);
       const auto __vector_size = __alignment / sizeof(value_type);
@@ -345,7 +345,7 @@ public:
   __merge_async(const _HyperLogLog_Impl<_Tp, _OtherScope, _Hash>& __other, ::cuda::stream_ref __stream)
   {
     _CCCL_ASSERT(__other.__precision == __precision, "Cannot merge estimators with different sketch sizes");
-    auto constexpr __block_size = 1024;
+    constexpr auto __block_size = 1024;
     ::cuda::experimental::cuco::__hyperloglog_ns::__merge<<<1, __block_size, 0, __stream.get()>>>(__other, *this);
   }
 
@@ -578,7 +578,7 @@ private:
       ::cudaDeviceGetAttribute,
       "cudaDeviceGetAttribute failed",
       &__max_shmem_bytes,
-      cudaDevAttrMaxSharedMemoryPerBlockOptin,
+      ::cudaDevAttrMaxSharedMemoryPerBlockOptin,
       __device);
 
     if (__shmem_bytes <= __max_shmem_bytes)
