@@ -95,11 +95,15 @@ public:
       , __sketch{reinterpret_cast<int*>(sketch_span.data()), __sketch_bytes() / sizeof(register_type)}
   // MSVC fails with register_type*, use int* instead
   {
-#ifndef __CUDA_ARCH__
-    _CCCL_ASSERT(::cuda::is_aligned(sketch_span.data(), __sketch_alignment()), "Insufficient sketch alignment");
+    if (!::cuda::is_aligned(sketch_span.data(), __sketch_alignment()))
+    {
+      ::cuda::__throw_cuda_error(::cudaErrorNotSupported, "Sketch storage has insufficient alignment");
+    }
 
-    _CCCL_ASSERT(__precision >= 4, "Minimum required sketch size is 0.0625KB or 64B");
-#endif
+    if (__precision < 4)
+    {
+      ::cuda::__throw_cuda_error(::cudaErrorNotSupported, "Minimum required sketch size is 0.0625KB or 64B");
+    }
   }
 
   //! @brief Resets the estimator, i.e., clears the current count estimate.
@@ -323,8 +327,11 @@ public:
   template <class _CG, ::cuda::thread_scope _OtherScope>
   _CCCL_DEVICE constexpr void __merge(_CG __group, _HyperLogLog_Impl<_Tp, _OtherScope, _Hash>& __other)
   {
-    // TODO find a better way to do error handling in device code
-    // if (__other.__precision != __precision) { __trap(); }
+    if (__other.__precision != __precision)
+    {
+      ::cuda::__throw_cuda_error(::cudaErrorNotSupported, "Cannot merge estimators with different sketch sizes");
+      return;
+    }
 
     for (int __i = __group.thread_rank(); __i < __sketch.size(); __i += __group.size())
     {
@@ -345,7 +352,12 @@ public:
   _CCCL_HOST constexpr void
   __merge_async(const _HyperLogLog_Impl<_Tp, _OtherScope, _Hash>& __other, ::cuda::stream_ref __stream)
   {
-    _CCCL_ASSERT(__other.__precision == __precision, "Cannot merge estimators with different sketch sizes");
+    if (__other.__precision != __precision)
+    {
+      ::cuda::__throw_cuda_error(::cudaErrorNotSupported, "Cannot merge estimators with different sketch sizes");
+      return;
+    }
+
     constexpr auto __block_size = 1024;
     ::cuda::experimental::cuco::__hyperloglog_ns::__merge<<<1, __block_size, 0, __stream.get()>>>(__other, *this);
   }
