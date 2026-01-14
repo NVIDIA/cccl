@@ -30,6 +30,7 @@
 #include <cuda/std/__bit/countr.h>
 #include <cuda/std/__bit/integral.h>
 #include <cuda/std/__iterator/concepts.h>
+#include <cuda/std/__memory/addressof.h>
 #include <cuda/std/cstddef>
 #include <cuda/std/span>
 #include <cuda/std/utility>
@@ -179,7 +180,7 @@ public:
     // vectorized loads
     if constexpr (::cuda::std::contiguous_iterator<_InputIt>)
     {
-      const auto __ptr                  = thrust::raw_pointer_cast(&__first[0]);
+      const auto __ptr                  = ::cuda::std::addressof(__first[0]);
       constexpr auto __max_vector_bytes = 32;
       const auto __alignment =
         1u << ::cuda::std::countr_zero(reinterpret_cast<::cuda::std::uintptr_t>(__ptr) | __max_vector_bytes);
@@ -221,7 +222,7 @@ public:
           __kernel,
           __shmem_bytes);
 
-        const auto __ptr      = thrust::raw_pointer_cast(&__first[0]);
+        const auto __ptr      = ::cuda::std::addressof(__first[0]);
         void* __kernel_args[] = {const_cast<void*>(reinterpret_cast<const void*>(&__ptr)),
                                  const_cast<void*>(reinterpret_cast<const void*>(&__num_items)),
                                  reinterpret_cast<void*>(this)};
