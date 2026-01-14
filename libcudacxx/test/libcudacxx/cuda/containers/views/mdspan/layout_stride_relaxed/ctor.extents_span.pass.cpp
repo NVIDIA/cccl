@@ -26,8 +26,10 @@
 #include "../ConvertibleToIntegral.h"
 #include "test_macros.h"
 
+using cuda::std::intptr_t;
+
 template <class E, class S, cuda::std::enable_if_t<E::rank() != 0, int> = 0>
-__host__ __device__ constexpr void test_construction(E e, S s, cuda::std::intptr_t offset = 0)
+__host__ __device__ constexpr void test_construction(E e, S s, intptr_t offset = 0)
 {
   using M = cuda::layout_stride_relaxed::mapping<E>;
   static_assert(noexcept(M{e, s}));
@@ -52,7 +54,7 @@ __host__ __device__ constexpr void test_construction(E e, S s, cuda::std::intptr
 }
 
 template <class E, class S, cuda::std::enable_if_t<E::rank() == 0, int> = 0>
-__host__ __device__ constexpr void test_construction(E e, S s, cuda::std::intptr_t offset = 0)
+__host__ __device__ constexpr void test_construction(E e, S s, intptr_t offset = 0)
 {
   using M = cuda::layout_stride_relaxed::mapping<E>;
   static_assert(noexcept(M{e, s}));
@@ -112,18 +114,18 @@ __host__ __device__ constexpr bool test()
 
   // Cases with negative strides
   {
-    cuda::std::array<cuda::std::intptr_t, 1> s{-1};
-    test_construction(cuda::std::extents<int, D>(7), cuda::std::span<cuda::std::intptr_t, 1>(s), 6);
+    cuda::std::array<intptr_t, 1> s{-1};
+    test_construction(cuda::std::extents<int, D>(7), cuda::std::span<intptr_t, 1>(s), 6);
   }
   {
-    cuda::std::array<cuda::std::intptr_t, 2> s{-1, 7};
-    test_construction(cuda::std::extents<int, 7, 8>(), cuda::std::span<cuda::std::intptr_t, 2>(s), 6);
+    cuda::std::array<intptr_t, 2> s{-1, 7};
+    test_construction(cuda::std::extents<int, 7, 8>(), cuda::std::span<intptr_t, 2>(s), 6);
   }
 
   // Cases with zero strides (broadcasting)
   {
-    cuda::std::array<cuda::std::intptr_t, 2> s{0, 1};
-    test_construction(cuda::std::extents<int, 7, 8>(), cuda::std::span<cuda::std::intptr_t, 2>(s));
+    cuda::std::array<intptr_t, 2> s{0, 1};
+    test_construction(cuda::std::extents<int, 7, 8>(), cuda::std::span<intptr_t, 2>(s));
   }
 
   return true;

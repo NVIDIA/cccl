@@ -23,9 +23,11 @@
 
 #include "test_macros.h"
 
+using cuda::std::intptr_t;
+
 template <class E>
 __host__ __device__ constexpr void
-test_offset(E e, cuda::std::array<cuda::std::intptr_t, E::rank()> strides, cuda::std::intptr_t expected_offset)
+test_offset(E e, cuda::std::array<intptr_t, E::rank()> strides, intptr_t expected_offset)
 {
   using M = cuda::layout_stride_relaxed::mapping<E>;
   M m(e, strides, expected_offset);
@@ -41,11 +43,7 @@ test_offset(E e, cuda::std::array<cuda::std::intptr_t, E::rank()> strides, cuda:
 // Test that offset is correctly used in index computation
 template <class E, class... Indices>
 __host__ __device__ constexpr void test_offset_in_indexing(
-  E e,
-  cuda::std::array<cuda::std::intptr_t, E::rank()> strides,
-  cuda::std::intptr_t offset,
-  typename E::index_type expected_at_zero,
-  Indices... zero_indices)
+  E e, cuda::std::array<intptr_t, E::rank()> strides, intptr_t offset, typename E::index_type expected_at_zero, Indices... zero_indices)
 {
   using M = cuda::layout_stride_relaxed::mapping<E>;
   M m(e, strides, offset);
@@ -67,8 +65,8 @@ __host__ __device__ constexpr void test_reverse_array_pattern()
   using E = cuda::std::extents<int, 5>;
   using M = cuda::layout_stride_relaxed::mapping<E>;
 
-  cuda::std::array<cuda::std::intptr_t, 1> strides{-1};
-  cuda::std::intptr_t offset = 4; // N - 1
+  cuda::std::array<intptr_t, 1> strides{-1};
+  intptr_t offset = 4; // N - 1
 
   M m(E{}, strides, offset);
 
@@ -94,8 +92,8 @@ __host__ __device__ constexpr void test_2d_partial_reverse()
   using E = cuda::std::extents<int, 3, 4>;
   using M = cuda::layout_stride_relaxed::mapping<E>;
 
-  cuda::std::array<cuda::std::intptr_t, 2> strides{-4, 1};
-  cuda::std::intptr_t offset = 8; // (rows-1) * |stride0|
+  cuda::std::array<intptr_t, 2> strides{-4, 1};
+  intptr_t offset = 8; // (rows-1) * |stride0|
 
   M m(E{}, strides, offset);
 
@@ -122,8 +120,8 @@ __host__ __device__ constexpr void test_copy_preserves_offset()
   using E = cuda::std::extents<int, 4, 5>;
   using M = cuda::layout_stride_relaxed::mapping<E>;
 
-  cuda::std::array<cuda::std::intptr_t, 2> strides{5, 1};
-  cuda::std::intptr_t offset = 42;
+  cuda::std::array<intptr_t, 2> strides{5, 1};
+  intptr_t offset = 42;
 
   M m1(E{}, strides, offset);
   M m2 = m1;
@@ -137,17 +135,17 @@ __host__ __device__ constexpr bool test()
   [[maybe_unused]] constexpr size_t D = cuda::std::dynamic_extent;
 
   // Basic offset tests
-  test_offset(cuda::std::extents<int>(), cuda::std::array<cuda::std::intptr_t, 0>{}, 0);
-  test_offset(cuda::std::extents<int>(), cuda::std::array<cuda::std::intptr_t, 0>{}, 10);
-  test_offset(cuda::std::extents<int, 5>(), cuda::std::array<cuda::std::intptr_t, 1>{1}, 0);
-  test_offset(cuda::std::extents<int, 5>(), cuda::std::array<cuda::std::intptr_t, 1>{1}, 100);
-  test_offset(cuda::std::extents<int, D>(7), cuda::std::array<cuda::std::intptr_t, 1>{2}, 50);
-  test_offset(cuda::std::extents<int, 4, 5>(), cuda::std::array<cuda::std::intptr_t, 2>{5, 1}, 25);
+  test_offset(cuda::std::extents<int>(), cuda::std::array<intptr_t, 0>{}, 0);
+  test_offset(cuda::std::extents<int>(), cuda::std::array<intptr_t, 0>{}, 10);
+  test_offset(cuda::std::extents<int, 5>(), cuda::std::array<intptr_t, 1>{1}, 0);
+  test_offset(cuda::std::extents<int, 5>(), cuda::std::array<intptr_t, 1>{1}, 100);
+  test_offset(cuda::std::extents<int, D>(7), cuda::std::array<intptr_t, 1>{2}, 50);
+  test_offset(cuda::std::extents<int, 4, 5>(), cuda::std::array<intptr_t, 2>{5, 1}, 25);
 
   // Test offset in indexing
-  test_offset_in_indexing(cuda::std::extents<int>(), cuda::std::array<cuda::std::intptr_t, 0>{}, 5, 5);
-  test_offset_in_indexing(cuda::std::extents<int, 4>(), cuda::std::array<cuda::std::intptr_t, 1>{1}, 10, 10, 0);
-  test_offset_in_indexing(cuda::std::extents<int, 3, 4>(), cuda::std::array<cuda::std::intptr_t, 2>{4, 1}, 20, 20, 0, 0);
+  test_offset_in_indexing(cuda::std::extents<int>(), cuda::std::array<intptr_t, 0>{}, 5, 5);
+  test_offset_in_indexing(cuda::std::extents<int, 4>(), cuda::std::array<intptr_t, 1>{1}, 10, 10, 0);
+  test_offset_in_indexing(cuda::std::extents<int, 3, 4>(), cuda::std::array<intptr_t, 2>{4, 1}, 20, 20, 0, 0);
 
   // Pattern tests
   test_reverse_array_pattern();

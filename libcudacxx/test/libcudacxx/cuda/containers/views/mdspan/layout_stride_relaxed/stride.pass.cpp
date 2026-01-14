@@ -29,9 +29,10 @@
 
 #include "test_macros.h"
 
+using cuda::std::intptr_t;
+
 template <class E, class... Args>
-__host__ __device__ constexpr void
-test_stride(cuda::std::array<cuda::std::intptr_t, E::rank()> input_strides, cuda::std::intptr_t offset, Args... args)
+__host__ __device__ constexpr void test_stride(cuda::std::array<intptr_t, E::rank()> input_strides, intptr_t offset, Args... args)
 {
   using M           = cuda::layout_stride_relaxed::mapping<E>;
   using offset_type = typename M::offset_type;
@@ -50,7 +51,7 @@ test_stride(cuda::std::array<cuda::std::intptr_t, E::rank()> input_strides, cuda
 
   static_assert(noexcept(m.strides()));
   auto strides_out = m.strides();
-  static_assert(cuda::std::is_same<decltype(strides_out), cuda::dstrides<offset_type, E::rank()>>::value, "");
+  static_assert(cuda::std::is_same_v<decltype(strides_out), cuda::dstrides<offset_type, E::rank()>>);
   for (size_t r = 0; r < E::rank(); r++)
   {
     assert(strides[r] == strides_out.stride(r));
@@ -62,25 +63,24 @@ __host__ __device__ constexpr bool test()
   [[maybe_unused]] constexpr size_t D = cuda::std::dynamic_extent;
 
   // Basic cases with positive strides
-  test_stride<cuda::std::extents<unsigned, D>>(cuda::std::array<cuda::std::intptr_t, 1>{1}, 0, 7);
-  test_stride<cuda::std::extents<unsigned, 7>>(cuda::std::array<cuda::std::intptr_t, 1>{1}, 0);
-  test_stride<cuda::std::extents<unsigned, 7, 8>>(cuda::std::array<cuda::std::intptr_t, 2>{8, 1}, 0);
-  test_stride<cuda::std::extents<int64_t, D, 8, D, D>>(
-    cuda::std::array<cuda::std::intptr_t, 4>{720, 90, 10, 1}, 0, 7, 9, 10);
+  test_stride<cuda::std::extents<unsigned, D>>(cuda::std::array<intptr_t, 1>{1}, 0, 7);
+  test_stride<cuda::std::extents<unsigned, 7>>(cuda::std::array<intptr_t, 1>{1}, 0);
+  test_stride<cuda::std::extents<unsigned, 7, 8>>(cuda::std::array<intptr_t, 2>{8, 1}, 0);
+  test_stride<cuda::std::extents<int64_t, D, 8, D, D>>(cuda::std::array<intptr_t, 4>{720, 90, 10, 1}, 0, 7, 9, 10);
 
   // Cases with non-zero offset
-  test_stride<cuda::std::extents<unsigned, D>>(cuda::std::array<cuda::std::intptr_t, 1>{1}, 10, 7);
-  test_stride<cuda::std::extents<unsigned, 7, 8>>(cuda::std::array<cuda::std::intptr_t, 2>{8, 1}, 50);
+  test_stride<cuda::std::extents<unsigned, D>>(cuda::std::array<intptr_t, 1>{1}, 10, 7);
+  test_stride<cuda::std::extents<unsigned, 7, 8>>(cuda::std::array<intptr_t, 2>{8, 1}, 50);
 
   // Cases with negative strides
-  test_stride<cuda::std::extents<int, D>>(cuda::std::array<cuda::std::intptr_t, 1>{-1}, 6, 7);
-  test_stride<cuda::std::extents<int, 7, 8>>(cuda::std::array<cuda::std::intptr_t, 2>{-8, 1}, 48);
-  test_stride<cuda::std::extents<int, 7, 8>>(cuda::std::array<cuda::std::intptr_t, 2>{8, -1}, 7);
-  test_stride<cuda::std::extents<int, 7, 8>>(cuda::std::array<cuda::std::intptr_t, 2>{-8, -1}, 55);
+  test_stride<cuda::std::extents<int, D>>(cuda::std::array<intptr_t, 1>{-1}, 6, 7);
+  test_stride<cuda::std::extents<int, 7, 8>>(cuda::std::array<intptr_t, 2>{-8, 1}, 48);
+  test_stride<cuda::std::extents<int, 7, 8>>(cuda::std::array<intptr_t, 2>{8, -1}, 7);
+  test_stride<cuda::std::extents<int, 7, 8>>(cuda::std::array<intptr_t, 2>{-8, -1}, 55);
 
   // Cases with zero strides (broadcasting)
-  test_stride<cuda::std::extents<int, 7, 8>>(cuda::std::array<cuda::std::intptr_t, 2>{0, 1}, 0);
-  test_stride<cuda::std::extents<int, 7, 8>>(cuda::std::array<cuda::std::intptr_t, 2>{8, 0}, 0);
+  test_stride<cuda::std::extents<int, 7, 8>>(cuda::std::array<intptr_t, 2>{0, 1}, 0);
+  test_stride<cuda::std::extents<int, 7, 8>>(cuda::std::array<intptr_t, 2>{8, 0}, 0);
 
   return true;
 }

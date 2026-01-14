@@ -40,22 +40,19 @@ __host__ __device__ void test_mapping_requirements(cuda::std::index_sequence<Idx
   static_assert(cuda::std::is_same_v<typename M::rank_type, typename E::rank_type>);
   static_assert(cuda::std::is_same_v<typename M::layout_type, cuda::layout_stride_relaxed>);
   static_assert(cuda::std::is_same_v<typename M::layout_type::template mapping<E>, M>);
-  static_assert(cuda::std::is_same<decltype(cuda::std::declval<M>().extents()), const E&>::value, "");
-  // Note: layout_stride_relaxed uses dstrides<offset_type, rank> for strides
-  static_assert(cuda::std::is_same<decltype(cuda::std::declval<M>().strides()),
-                                   cuda::dstrides<typename M::offset_type, E::rank()>>::value,
-                "");
-  static_assert(cuda::std::is_same<decltype(cuda::std::declval<M>()(Idxs...)), typename M::index_type>::value, "");
-  static_assert(
-    cuda::std::is_same<decltype(cuda::std::declval<M>().required_span_size()), typename M::index_type>::value, "");
-  static_assert(cuda::std::is_same<decltype(cuda::std::declval<M>().is_unique()), bool>::value, "");
-  static_assert(cuda::std::is_same<decltype(cuda::std::declval<M>().is_exhaustive()), bool>::value, "");
-  static_assert(cuda::std::is_same<decltype(cuda::std::declval<M>().is_strided()), bool>::value, "");
-  static_assert(cuda::std::is_same<decltype(cuda::std::declval<M>().stride(0)), typename M::offset_type>::value, "");
-  static_assert(cuda::std::is_same<decltype(cuda::std::declval<M>().offset()), typename M::offset_type>::value, "");
-  static_assert(cuda::std::is_same<decltype(M::is_always_unique()), bool>::value, "");
-  static_assert(cuda::std::is_same<decltype(M::is_always_exhaustive()), bool>::value, "");
-  static_assert(cuda::std::is_same<decltype(M::is_always_strided()), bool>::value, "");
+  static_assert(cuda::std::is_same_v<decltype(cuda::std::declval<M>().extents()), const E&>);
+  // strides() returns a const reference to the internal strides_type
+  static_assert(cuda::std::is_same_v<decltype(cuda::std::declval<M>().strides()), const typename M::strides_type&>);
+  static_assert(cuda::std::is_same_v<decltype(cuda::std::declval<M>()(Idxs...)), typename M::index_type>);
+  static_assert(cuda::std::is_same_v<decltype(cuda::std::declval<M>().required_span_size()), typename M::index_type>);
+  static_assert(cuda::std::is_same_v<decltype(cuda::std::declval<M>().is_unique()), bool>);
+  static_assert(cuda::std::is_same_v<decltype(cuda::std::declval<M>().is_exhaustive()), bool>);
+  static_assert(cuda::std::is_same_v<decltype(cuda::std::declval<M>().is_strided()), bool>);
+  static_assert(cuda::std::is_same_v<decltype(cuda::std::declval<M>().stride(0)), typename M::offset_type>);
+  static_assert(cuda::std::is_same_v<decltype(cuda::std::declval<M>().offset()), typename M::offset_type>);
+  static_assert(cuda::std::is_same_v<decltype(M::is_always_unique()), bool>);
+  static_assert(cuda::std::is_same_v<decltype(M::is_always_exhaustive()), bool>);
+  static_assert(cuda::std::is_same_v<decltype(M::is_always_strided()), bool>);
 
   // layout_stride_relaxed specific: is_always_* are all false
   static_assert(M::is_always_unique() == false);

@@ -35,6 +35,8 @@
 #include "../CustomTestLayouts.h"
 #include "test_macros.h"
 
+using cuda::std::intptr_t;
+
 template <class FromL,
           class FromExt,
           cuda::std::enable_if_t<cuda::std::is_same<FromL, cuda::std::layout_stride>::value, int> = 0>
@@ -163,7 +165,7 @@ __host__ __device__ constexpr void test_self_conversion()
     using From = cuda::layout_stride_relaxed::mapping<cuda::std::extents<int, 4, 5>>;
     using To   = cuda::layout_stride_relaxed::mapping<cuda::std::extents<int, D, D>>;
 
-    cuda::std::array<cuda::std::intptr_t, 2> strides{5, 1};
+    cuda::std::array<intptr_t, 2> strides{5, 1};
     From src(cuda::std::extents<int, 4, 5>(), strides, 10);
     To dest(src);
 
@@ -179,7 +181,7 @@ __host__ __device__ constexpr void test_self_conversion()
     using From = cuda::layout_stride_relaxed::mapping<cuda::std::extents<int, 4>>;
     using To   = cuda::layout_stride_relaxed::mapping<cuda::std::extents<int, D>>;
 
-    cuda::std::array<cuda::std::intptr_t, 1> strides{-1};
+    cuda::std::array<intptr_t, 1> strides{-1};
     From src(cuda::std::extents<int, 4>(), strides, 3);
     To dest(src);
 

@@ -21,9 +21,47 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__cstddef/types.h>
+#include <cuda/std/__limits/numeric_limits.h>
+#include <cuda/std/__type_traits/make_signed.h>
+#include <cuda/std/__utility/integer_sequence.h>
+
 #include <cuda/std/__cccl/prologue.h>
 
 _CCCL_BEGIN_NAMESPACE_CUDA
+
+//! @brief Class to describe the strides of a multi-dimensional array layout.
+//!
+//! Similar to extents, but for strides. Supports both static (compile-time known)
+//! and dynamic (runtime) stride values. Uses dynamic_stride as the tag for dynamic values.
+//!
+//! @tparam _OffsetType The signed integer type for stride values (supports negative strides)
+//! @tparam _Strides... The stride values, where dynamic_stride indicates a runtime value
+template <class _OffsetType, ::cuda::std::ptrdiff_t... _Strides>
+class strides;
+
+//! @brief Tag value indicating a dynamic stride (similar to dynamic_extent for extents)
+inline constexpr ::cuda::std::ptrdiff_t dynamic_stride = (::cuda::std::numeric_limits<::cuda::std::ptrdiff_t>::min)();
+
+namespace __strides_detail
+{
+template <class _IndexType, class _Seq>
+struct __make_dstrides_impl;
+
+template <class _IndexType, ::cuda::std::size_t... _Idx>
+struct __make_dstrides_impl<_IndexType, ::cuda::std::index_sequence<_Idx...>>
+{
+  using type = strides<_IndexType, ((void) _Idx, dynamic_stride)...>;
+};
+} // namespace __strides_detail
+
+//! @brief Alias template for strides with all dynamic stride values
+template <class _IndexType, ::cuda::std::size_t _Rank>
+using dstrides =
+  typename __strides_detail::__make_dstrides_impl<_IndexType, ::cuda::std::make_index_sequence<_Rank>>::type;
+
+template <::cuda::std::size_t _Rank, class _IndexType = ::cuda::std::ptrdiff_t>
+using steps = dstrides<_IndexType, _Rank>;
 
 //! @brief Layout policy with relaxed stride mapping that supports negative strides and offsets.
 //!
@@ -35,7 +73,8 @@ _CCCL_BEGIN_NAMESPACE_CUDA
 //! @note This layout is NOT always unique, exhaustive, or strided in the standard sense.
 struct layout_stride_relaxed
 {
-  template <class _Extents>
+  template <class _Extents,
+            class _Stride = dstrides<::cuda::std::make_signed_t<typename _Extents::index_type>, _Extents::rank()>>
   class mapping;
 };
 

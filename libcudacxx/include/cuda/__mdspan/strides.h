@@ -21,10 +21,10 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/__fwd/mdspan.h>
 #include <cuda/__numeric/overflow_cast.h>
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__cstddef/types.h>
-#include <cuda/std/__limits/numeric_limits.h>
 #include <cuda/std/__mdspan/extents.h>
 #include <cuda/std/__type_traits/is_convertible.h>
 #include <cuda/std/__type_traits/is_nothrow_constructible.h>
@@ -37,9 +37,6 @@
 #include <cuda/std/__cccl/prologue.h>
 
 _CCCL_BEGIN_NAMESPACE_CUDA
-
-//! @brief Tag value indicating a dynamic stride (similar to dynamic_extent for extents)
-inline constexpr ::cuda::std::ptrdiff_t dynamic_stride = (::cuda::std::numeric_limits<::cuda::std::ptrdiff_t>::min)();
 
 // ------------------------------------------------------------------
 // ------------ strides ---------------------------------------------
@@ -58,26 +55,32 @@ class strides
         __maybe_static_array<_OffsetType, ::cuda::std::ptrdiff_t, dynamic_stride, _Strides...>
 {
 public:
-  using index_type = _OffsetType;
-  using size_type  = ::cuda::std::make_unsigned_t<index_type>;
-  using rank_type  = ::cuda::std::size_t;
+  using offset_type = _OffsetType;
+  using size_type   = ::cuda::std::make_unsigned_t<offset_type>;
+  using rank_type   = ::cuda::std::size_t;
 
 private:
   static_assert(::cuda::std::__cccl_is_signed_integer_v<_OffsetType>,
-                "strides::index_type must be a signed integer type");
+                "strides::offset_type must be a signed integer type");
 
   template <class... _From>
   [[nodiscard]] _CCCL_API static constexpr bool __is_representable_as(_From... __values) noexcept
   {
-    return ((!::cuda::overflow_cast<index_type>(__values) || ::cuda::std::cmp_equal(__values, dynamic_stride)) && ...
-            && true);
+    return (
+      (!::cuda::overflow_cast<offset_type>(__values) || static_cast<::cuda::std::ptrdiff_t>(__values) == dynamic_stride)
+      && ...);
   }
 
-  static_assert(__is_representable_as(_Strides...), "_Strides must be representable as index_type and nonnegative");
+  static_assert(__is_representable_as(_Strides...), "_Strides must be representable as offset_type and nonnegative");
 
   static constexpr rank_type __rank_ = sizeof...(_Strides);
   static constexpr rank_type __rank_dynamic_ =
     ::cuda::std::__mdspan_detail::__count_dynamic_v<::cuda::std::ptrdiff_t, dynamic_stride, _Strides...>;
+
+  template <class _OtherIndexType>
+  static constexpr bool __is_convertible_to_index_type =
+    ::cuda::std::is_convertible_v<const _OtherIndexType&, offset_type>
+    && ::cuda::std::is_nothrow_constructible_v<offset_type, const _OtherIndexType&>;
 
   using _Values =
     ::cuda::std::__mdspan_detail::__maybe_static_array<_OffsetType, ::cuda::std::ptrdiff_t, dynamic_stride, _Strides...>;
@@ -93,7 +96,7 @@ public:
     return __rank_dynamic_;
   }
 
-  [[nodiscard]] _CCCL_API constexpr index_type stride(rank_type __r) const noexcept
+  [[nodiscard]] _CCCL_API constexpr offset_type stride(rank_type __r) const noexcept
   {
     return this->__value(__r);
   }
@@ -108,19 +111,14 @@ public:
   // Construction from just dynamic or all values
   _CCCL_TEMPLATE(class... _OtherIndexTypes)
   _CCCL_REQUIRES((sizeof...(_OtherIndexTypes) == __rank_ || sizeof...(_OtherIndexTypes) == __rank_dynamic_)
-                   _CCCL_AND(::cuda::std::is_convertible_v<_OtherIndexTypes, index_type>&&...)
-                     _CCCL_AND(::cuda::std::is_nothrow_constructible_v<index_type, _OtherIndexTypes>&&...))
+                   _CCCL_AND(::cuda::std::is_convertible_v<_OtherIndexTypes, offset_type>&&...)
+                     _CCCL_AND(::cuda::std::is_nothrow_constructible_v<offset_type, _OtherIndexTypes>&&...))
   _CCCL_API constexpr explicit strides(_OtherIndexTypes... __dynvals) noexcept
-      : _Values(static_cast<index_type>(__dynvals)...)
+      : _Values(static_cast<offset_type>(__dynvals)...)
   {
     _CCCL_ASSERT(__is_representable_as(__dynvals...),
-                 "strides ctor: arguments must be representable as index_type and nonnegative");
+                 "strides ctor: arguments must be representable as offset_type and nonnegative");
   }
-
-  template <class _OtherIndexType>
-  static constexpr bool __is_convertible_to_index_type =
-    ::cuda::std::is_convertible_v<const _OtherIndexType&, index_type>
-    && ::cuda::std::is_nothrow_constructible_v<index_type, const _OtherIndexType&>;
 
   _CCCL_TEMPLATE(class _OtherIndexType, ::cuda::std::size_t _Size)
   _CCCL_REQUIRES((_Size == __rank_dynamic_) _CCCL_AND __is_convertible_to_index_type<_OtherIndexType>)
@@ -130,7 +128,7 @@ public:
     for ([[maybe_unused]] const auto& __value : __strs)
     {
       _CCCL_ASSERT(__is_representable_as(__value),
-                   "strides ctor: arguments must be representable as index_type and nonnegative");
+                   "strides ctor: arguments must be representable as offset_type and nonnegative");
     }
   }
 
@@ -143,7 +141,7 @@ public:
     for ([[maybe_unused]] const auto& __value : __strs)
     {
       _CCCL_ASSERT(__is_representable_as(__value),
-                   "strides ctor: arguments must be representable as index_type and nonnegative");
+                   "strides ctor: arguments must be representable as offset_type and nonnegative");
     }
   }
 
@@ -164,42 +162,20 @@ private:
   // Helper to construct from other strides
   template <::cuda::std::size_t _DynCount, ::cuda::std::size_t _Idx, class _OtherStrides, class... _DynamicValues>
   [[nodiscard]] _CCCL_API constexpr _Values __construct_vals_from_strides(
-    ::cuda::std::integral_constant<::cuda::std::size_t, _DynCount>,
-    ::cuda::std::integral_constant<::cuda::std::size_t, _Idx>,
-    [[maybe_unused]] const _OtherStrides& __strs,
-    _DynamicValues... __dynamic_values) noexcept
+    [[maybe_unused]] const _OtherStrides& __strs, _DynamicValues... __dynamic_values) noexcept
   {
     if constexpr (_Idx == __rank_)
     {
-      if constexpr (_DynCount == __rank_dynamic_)
-      {
-        return _Values{static_cast<index_type>(__dynamic_values)...};
-      }
-      else
-      {
-        static_assert(_DynCount == __rank_dynamic_, "Constructor of invalid strides passed to strides::strides");
-        _CCCL_UNREACHABLE();
-      }
+      static_assert(_DynCount == __rank_dynamic_, "Constructor of invalid strides passed to strides::strides");
+      return _Values{static_cast<offset_type>(__dynamic_values)...};
+    }
+    else if constexpr (static_stride(_Idx) == dynamic_stride)
+    {
+      return __construct_vals_from_strides<_DynCount + 1, _Idx + 1>(__strs, __dynamic_values..., __strs.stride(_Idx));
     }
     else
     {
-      if constexpr (static_stride(_Idx) == dynamic_stride)
-      {
-        return __construct_vals_from_strides(
-          ::cuda::std::integral_constant<::cuda::std::size_t, _DynCount + 1>(),
-          ::cuda::std::integral_constant<::cuda::std::size_t, _Idx + 1>(),
-          __strs,
-          __dynamic_values...,
-          __strs.stride(_Idx));
-      }
-      else
-      {
-        return __construct_vals_from_strides(
-          ::cuda::std::integral_constant<::cuda::std::size_t, _DynCount>(),
-          ::cuda::std::integral_constant<::cuda::std::size_t, _Idx + 1>(),
-          __strs,
-          __dynamic_values...);
-      }
+      return __construct_vals_from_strides<_DynCount, _Idx + 1>(__strs, __dynamic_values...);
     }
   }
 
@@ -208,10 +184,7 @@ private:
 
   template <class _OtherIndexType, ::cuda::std::ptrdiff_t... _OtherStrides>
   _CCCL_API constexpr strides(__strides_delegate_tag, const strides<_OtherIndexType, _OtherStrides...>& __other) noexcept
-      : _Values(__construct_vals_from_strides(
-          ::cuda::std::integral_constant<::cuda::std::size_t, 0>(),
-          ::cuda::std::integral_constant<::cuda::std::size_t, 0>(),
-          __other))
+      : _Values(__construct_vals_from_strides<0, 0>(__other))
   {
     if constexpr (__rank_ != 0)
     {
@@ -232,7 +205,7 @@ public:
 
   template <::cuda::std::ptrdiff_t... _OtherStrides>
   static constexpr bool __is_matching_strides =
-    ((_OtherStrides == dynamic_stride || _Strides == dynamic_stride || _OtherStrides == _Strides) && ... && true);
+    ((_OtherStrides == dynamic_stride || _Strides == dynamic_stride || _OtherStrides == _Strides) && ...);
 
   _CCCL_TEMPLATE(class _OtherIndexType, ::cuda::std::ptrdiff_t... _OtherStrides)
   _CCCL_REQUIRES((sizeof...(_OtherStrides) == sizeof...(_Strides)) _CCCL_AND __is_matching_strides<_OtherStrides...>
@@ -258,7 +231,7 @@ public:
     {
       return false;
     }
-    else if constexpr (__rank_ != 0)
+    else
     {
       for (rank_type __r = 0; __r != __rank_; __r++)
       {
@@ -267,10 +240,6 @@ public:
           return false;
         }
       }
-      return true;
-    }
-    else
-    {
       return true;
     }
   }
@@ -284,38 +253,6 @@ public:
   }
 #endif // _CCCL_STD_VER <= 2017
 };
-
-// ------------------------------------------------------------------
-// ------------ dstrides --------------------------------------------
-// ------------------------------------------------------------------
-
-namespace __strides_detail
-{
-template <class _IndexType, ::cuda::std::size_t _Rank, class _Strides = strides<_IndexType>>
-struct __make_dstrides;
-
-template <class _IndexType, ::cuda::std::size_t _Rank, class _Strides = strides<_IndexType>>
-using __make_dstrides_t = typename __make_dstrides<_IndexType, _Rank, _Strides>::type;
-
-template <class _IndexType, ::cuda::std::size_t _Rank, ::cuda::std::ptrdiff_t... _StridesPack>
-struct __make_dstrides<_IndexType, _Rank, strides<_IndexType, _StridesPack...>>
-{
-  using type = __make_dstrides_t<_IndexType, _Rank - 1, strides<_IndexType, dynamic_stride, _StridesPack...>>;
-};
-
-template <class _IndexType, ::cuda::std::ptrdiff_t... _StridesPack>
-struct __make_dstrides<_IndexType, 0, strides<_IndexType, _StridesPack...>>
-{
-  using type = strides<_IndexType, _StridesPack...>;
-};
-} // namespace __strides_detail
-
-//! @brief Alias template for strides with all dynamic stride values
-template <class _IndexType, ::cuda::std::size_t _Rank>
-using dstrides = __strides_detail::__make_dstrides_t<_IndexType, _Rank>;
-
-template <::cuda::std::size_t _Rank, class _IndexType = ::cuda::std::ptrdiff_t>
-using steps = dstrides<_IndexType, _Rank>;
 
 _CCCL_END_NAMESPACE_CUDA
 

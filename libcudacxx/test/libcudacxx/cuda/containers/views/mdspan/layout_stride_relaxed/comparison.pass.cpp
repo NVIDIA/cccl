@@ -28,8 +28,10 @@
 #include "../CustomTestLayouts.h"
 #include "test_macros.h"
 
+using cuda::std::intptr_t;
+
 template <class E>
-using strides = cuda::std::array<cuda::std::intptr_t, E::rank()>;
+using strides = cuda::std::array<intptr_t, E::rank()>;
 
 template <class E1, class E2>
 _CCCL_CONCEPT layout_stride_relaxed_mapping_comparable = _CCCL_REQUIRES_EXPR(
@@ -61,10 +63,10 @@ __host__ __device__ constexpr void test_comparison(
   bool equal,
   To dest_exts,
   From src_exts,
-  cuda::std::array<cuda::std::intptr_t, To::rank()> dest_strides,
-  cuda::std::array<cuda::std::intptr_t, From::rank()> src_strides,
-  cuda::std::intptr_t dest_offset = 0,
-  cuda::std::intptr_t src_offset  = 0)
+  cuda::std::array<intptr_t, To::rank()> dest_strides,
+  cuda::std::array<intptr_t, From::rank()> src_strides,
+  intptr_t dest_offset = 0,
+  intptr_t src_offset  = 0)
 {
   cuda::layout_stride_relaxed::mapping<To> dest(dest_exts, dest_strides, dest_offset);
   cuda::layout_stride_relaxed::mapping<From> src(src_exts, src_strides, src_offset);
@@ -83,22 +85,22 @@ __host__ __device__ constexpr void test_comparison_same_rank()
     true,
     cuda::std::extents<T1>(),
     cuda::std::extents<T2>(),
-    cuda::std::array<cuda::std::intptr_t, 0>{},
-    cuda::std::array<cuda::std::intptr_t, 0>{});
+    cuda::std::array<intptr_t, 0>{},
+    cuda::std::array<intptr_t, 0>{});
   test_comparison(
     true,
     cuda::std::extents<T1>(),
     cuda::std::extents<T2>(),
-    cuda::std::array<cuda::std::intptr_t, 0>{},
-    cuda::std::array<cuda::std::intptr_t, 0>{},
+    cuda::std::array<intptr_t, 0>{},
+    cuda::std::array<intptr_t, 0>{},
     5,
     5);
   test_comparison(
     false,
     cuda::std::extents<T1>(),
     cuda::std::extents<T2>(),
-    cuda::std::array<cuda::std::intptr_t, 0>{},
-    cuda::std::array<cuda::std::intptr_t, 0>{},
+    cuda::std::array<intptr_t, 0>{},
+    cuda::std::array<intptr_t, 0>{},
     5,
     10);
 
@@ -107,36 +109,36 @@ __host__ __device__ constexpr void test_comparison_same_rank()
     true,
     cuda::std::extents<T1, D>(5),
     cuda::std::extents<T2, D>(5),
-    cuda::std::array<cuda::std::intptr_t, 1>{1},
-    cuda::std::array<cuda::std::intptr_t, 1>{1});
+    cuda::std::array<intptr_t, 1>{1},
+    cuda::std::array<intptr_t, 1>{1});
   test_comparison(
     false,
     cuda::std::extents<T1, D>(5),
     cuda::std::extents<T2, D>(5),
-    cuda::std::array<cuda::std::intptr_t, 1>{2},
-    cuda::std::array<cuda::std::intptr_t, 1>{1});
+    cuda::std::array<intptr_t, 1>{2},
+    cuda::std::array<intptr_t, 1>{1});
   test_comparison(
     false,
     cuda::std::extents<T1, D>(5),
     cuda::std::extents<T2, D>(7),
-    cuda::std::array<cuda::std::intptr_t, 1>{1},
-    cuda::std::array<cuda::std::intptr_t, 1>{1});
+    cuda::std::array<intptr_t, 1>{1},
+    cuda::std::array<intptr_t, 1>{1});
 
   // Cases with offset
   test_comparison(
     true,
     cuda::std::extents<T1, D>(5),
     cuda::std::extents<T2, D>(5),
-    cuda::std::array<cuda::std::intptr_t, 1>{1},
-    cuda::std::array<cuda::std::intptr_t, 1>{1},
+    cuda::std::array<intptr_t, 1>{1},
+    cuda::std::array<intptr_t, 1>{1},
     10,
     10);
   test_comparison(
     false,
     cuda::std::extents<T1, D>(5),
     cuda::std::extents<T2, D>(5),
-    cuda::std::array<cuda::std::intptr_t, 1>{1},
-    cuda::std::array<cuda::std::intptr_t, 1>{1},
+    cuda::std::array<intptr_t, 1>{1},
+    cuda::std::array<intptr_t, 1>{1},
     10,
     5);
 
@@ -145,16 +147,16 @@ __host__ __device__ constexpr void test_comparison_same_rank()
     true,
     cuda::std::extents<T1, 5>(),
     cuda::std::extents<T2, 5>(),
-    cuda::std::array<cuda::std::intptr_t, 1>{-1},
-    cuda::std::array<cuda::std::intptr_t, 1>{-1},
+    cuda::std::array<intptr_t, 1>{-1},
+    cuda::std::array<intptr_t, 1>{-1},
     4,
     4);
   test_comparison(
     false,
     cuda::std::extents<T1, 5>(),
     cuda::std::extents<T2, 5>(),
-    cuda::std::array<cuda::std::intptr_t, 1>{-1},
-    cuda::std::array<cuda::std::intptr_t, 1>{1},
+    cuda::std::array<intptr_t, 1>{-1},
+    cuda::std::array<intptr_t, 1>{1},
     4,
     0);
 
@@ -163,14 +165,14 @@ __host__ __device__ constexpr void test_comparison_same_rank()
     true,
     cuda::std::extents<T1, D, D, D, D, D>(5, 6, 7, 8, 9),
     cuda::std::extents<T2, D, D, D, D, D>(5, 6, 7, 8, 9),
-    cuda::std::array<cuda::std::intptr_t, 5>{2, 20, 200, 2000, 20000},
-    cuda::std::array<cuda::std::intptr_t, 5>{2, 20, 200, 2000, 20000});
+    cuda::std::array<intptr_t, 5>{2, 20, 200, 2000, 20000},
+    cuda::std::array<intptr_t, 5>{2, 20, 200, 2000, 20000});
   test_comparison(
     false,
     cuda::std::extents<T1, D, D, D, D, D>(5, 6, 7, 8, 9),
     cuda::std::extents<T2, D, D, D, D, D>(5, 6, 7, 8, 9),
-    cuda::std::array<cuda::std::intptr_t, 5>{2, 20, 200, 20000, 2000},
-    cuda::std::array<cuda::std::intptr_t, 5>{2, 20, 200, 2000, 20000});
+    cuda::std::array<intptr_t, 5>{2, 20, 200, 20000, 2000},
+    cuda::std::array<intptr_t, 5>{2, 20, 200, 2000, 20000});
 }
 
 // Test comparison with standard layout mappings
@@ -178,8 +180,8 @@ template <class OtherLayout, class E1, class E2, class... OtherArgs>
 __host__ __device__ constexpr void test_comparison_with(
   bool expect_equal,
   E1 e1,
-  cuda::std::array<cuda::std::intptr_t, E1::rank()> strides,
-  cuda::std::intptr_t offset,
+  cuda::std::array<intptr_t, E1::rank()> strides,
+  intptr_t offset,
   E2 e2,
   OtherArgs... other_args)
 {
@@ -197,45 +199,29 @@ __host__ __device__ constexpr void test_comparison_with()
 
   // layout_stride_relaxed with zero offset should match standard layouts
   test_comparison_with<OtherLayout>(
-    true, cuda::std::extents<int>(), cuda::std::array<cuda::std::intptr_t, 0>{}, 0, cuda::std::extents<unsigned>());
+    true, cuda::std::extents<int>(), cuda::std::array<intptr_t, 0>{}, 0, cuda::std::extents<unsigned>());
   test_comparison_with<OtherLayout>(
-    true,
-    cuda::std::extents<int, 5>(),
-    cuda::std::array<cuda::std::intptr_t, 1>{1},
-    0,
-    cuda::std::extents<unsigned, 5>());
+    true, cuda::std::extents<int, 5>(), cuda::std::array<intptr_t, 1>{1}, 0, cuda::std::extents<unsigned, 5>());
   test_comparison_with<OtherLayout>(
-    true,
-    cuda::std::extents<int, D>(5),
-    cuda::std::array<cuda::std::intptr_t, 1>{1},
-    0,
-    cuda::std::extents<unsigned, 5>());
+    true, cuda::std::extents<int, D>(5), cuda::std::array<intptr_t, 1>{1}, 0, cuda::std::extents<unsigned, 5>());
   test_comparison_with<OtherLayout>(
-    false,
-    cuda::std::extents<int, D>(5),
-    cuda::std::array<cuda::std::intptr_t, 1>{2},
-    0,
-    cuda::std::extents<unsigned, 5>());
+    false, cuda::std::extents<int, D>(5), cuda::std::array<intptr_t, 1>{2}, 0, cuda::std::extents<unsigned, 5>());
 
   // layout_stride_relaxed with non-zero offset should not match standard layouts
   test_comparison_with<OtherLayout>(
-    false,
-    cuda::std::extents<int, 5>(),
-    cuda::std::array<cuda::std::intptr_t, 1>{1},
-    5,
-    cuda::std::extents<unsigned, 5>());
+    false, cuda::std::extents<int, 5>(), cuda::std::array<intptr_t, 1>{1}, 5, cuda::std::extents<unsigned, 5>());
 
   // 2D cases
   test_comparison_with<OtherLayout>(
     is_left_based,
     cuda::std::extents<int, D, D>(5, 7),
-    cuda::std::array<cuda::std::intptr_t, 2>{1, 5},
+    cuda::std::array<intptr_t, 2>{1, 5},
     0,
     cuda::std::extents<unsigned, D, D>(5, 7));
   test_comparison_with<OtherLayout>(
     !is_left_based,
     cuda::std::extents<int, D, D>(5, 7),
-    cuda::std::array<cuda::std::intptr_t, 2>{7, 1},
+    cuda::std::array<intptr_t, 2>{7, 1},
     0,
     cuda::std::extents<unsigned, D, D>(5, 7));
 }

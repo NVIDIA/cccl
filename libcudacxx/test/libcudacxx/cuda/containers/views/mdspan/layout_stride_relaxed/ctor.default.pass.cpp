@@ -90,6 +90,16 @@ __host__ __device__ constexpr bool test()
   test_construction<cuda::std::extents<unsigned, 0>>();
   test_construction<cuda::std::extents<unsigned, 7, 8>>();
   test_construction<cuda::std::extents<int64_t, D, 8, D, D>>();
+
+  // Additional edge cases for zero extents
+  test_construction<cuda::std::extents<int, 0>>();
+  test_construction<cuda::std::extents<int, 0, 0>>();
+  test_construction<cuda::std::extents<int, 0, 5>>();
+  test_construction<cuda::std::extents<int, 5, 0>>();
+  test_construction<cuda::std::extents<int, 3, 0, 4>>();
+  test_construction<cuda::std::extents<int64_t, 0, D, 0, D>>();
+  test_construction<cuda::std::extents<int64_t, D, 0, D, 0>>();
+
   return true;
 }
 
