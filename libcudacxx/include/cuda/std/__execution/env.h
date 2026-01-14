@@ -220,7 +220,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT _CCCL_DECLSPEC_EMPTY_BASES prop
   _CCCL_TEMPLATE(class _QArg, class _VArg)
   _CCCL_REQUIRES(is_constructible_v<_Query, _QArg> _CCCL_AND is_constructible_v<_Value, _VArg>)
   _CCCL_API constexpr prop(_QArg&& __q, _VArg&& __v) noexcept(
-    is_nothrow_constructible_v<_Query, _Qarg> && is_nothrow_constructible_v<_Value, _VArg>)
+    is_nothrow_constructible_v<_Query, _QArg> && is_nothrow_constructible_v<_Value, _VArg>)
       : _QueryMB(::cuda::std::forward<_QArg>(__q))
       , _ValueMB(::cuda::std::forward<_VArg>(__v))
   {}
