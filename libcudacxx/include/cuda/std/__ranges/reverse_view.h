@@ -41,14 +41,20 @@
 #include <cuda/std/__type_traits/remove_cvref.h>
 #include <cuda/std/__utility/forward.h>
 #include <cuda/std/__utility/move.h>
+#include <cuda/std/__utility/no_unique_member.h>
 
 #include <cuda/std/__cccl/prologue.h>
 
-// MSVC complains about [[msvc::no_unique_address]] prior to C++20 as a vendor extension
-_CCCL_DIAG_PUSH
-_CCCL_DIAG_SUPPRESS_MSVC(4848)
-
 _CCCL_BEGIN_NAMESPACE_CUDA_STD_RANGES
+
+// We cache begin() whenever ranges::next is not guaranteed O(1) to provide an
+// amortized O(1) begin() method.
+template <class _View>
+inline constexpr bool __use_reverse_view_cache_v = !random_access_range<_View> && !common_range<_View>;
+
+template <class _View>
+using __reverse_view_cache =
+  _If<__use_reverse_view_cache_v<_View>, __non_propagating_cache<reverse_iterator<iterator_t<_View>>>, __empty_cache>;
 
 #if _CCCL_HAS_CONCEPTS()
 template <view _View>
@@ -56,14 +62,13 @@ template <view _View>
 #else // ^^^ _CCCL_HAS_CONCEPTS() ^^^ / vvv !_CCCL_HAS_CONCEPTS() vvv
 template <class _View, class = enable_if_t<view<_View>>, class = enable_if_t<bidirectional_range<_View>>>
 #endif // !_CCCL_HAS_CONCEPTS()
-class reverse_view : public view_interface<reverse_view<_View>>
+class _CCCL_DECLSPEC_EMPTY_BASES reverse_view
+    : public view_interface<reverse_view<_View>>
+    , private __no_unique_member<__reverse_view_cache<_View>>
+    , private __no_unique_member<_View>
 {
-  // We cache begin() whenever ranges::next is not guaranteed O(1) to provide an
-  // amortized O(1) begin() method.
-  static constexpr bool _UseCache = !random_access_range<_View> && !common_range<_View>;
-  using _Cache = _If<_UseCache, __non_propagating_cache<reverse_iterator<iterator_t<_View>>>, __empty_cache>;
-  _CCCL_NO_UNIQUE_ADDRESS _Cache __cached_begin_ = _Cache();
-  _CCCL_NO_UNIQUE_ADDRESS _View __base_          = _View();
+  using _CachedBeginMB = __no_unique_member<__reverse_view_cache<_View>>;
+  using _BaseMB        = __no_unique_member<_View>;
 
 public:
 #if _CCCL_HAS_CONCEPTS()
@@ -75,42 +80,46 @@ public:
   _CCCL_REQUIRES(default_initializable<_View2>)
   _CCCL_API constexpr reverse_view() noexcept(is_nothrow_default_constructible_v<_View2>)
       : view_interface<reverse_view<_View>>()
+      , _CachedBeginMB()
+      , _BaseMB()
   {}
 #endif // !_CCCL_HAS_CONCEPTS()
 
   _CCCL_API constexpr explicit reverse_view(_View __view)
-      : __base_(::cuda::std::move(__view))
+      : view_interface<reverse_view<_View>>()
+      , _CachedBeginMB()
+      , _BaseMB(::cuda::std::move(__view))
   {}
 
   _CCCL_TEMPLATE(class _View2 = _View)
   _CCCL_REQUIRES(copy_constructible<_View2>)
   _CCCL_API constexpr _View base() const& noexcept(is_nothrow_copy_constructible_v<_View>)
   {
-    return __base_;
+    return _BaseMB::__get();
   }
 
   _CCCL_API constexpr _View base() && noexcept(is_nothrow_move_constructible_v<_View>)
   {
-    return ::cuda::std::move(__base_);
+    return ::cuda::std::move(_BaseMB::__get());
   }
 
   _CCCL_TEMPLATE(class _View2 = _View)
   _CCCL_REQUIRES((!common_range<_View2>) )
   _CCCL_API constexpr reverse_iterator<iterator_t<_View2>> begin()
   {
-    if constexpr (_UseCache)
+    if constexpr (__use_reverse_view_cache_v<_View>)
     {
-      if (__cached_begin_.__has_value())
+      if (_CachedBeginMB::__get().__has_value())
       {
-        return *__cached_begin_;
+        return *_CachedBeginMB::__get();
       }
     }
 
-    auto __tmp = ::cuda::std::make_reverse_iterator(
-      ::cuda::std::ranges::next(::cuda::std::ranges::begin(__base_), ::cuda::std::ranges::end(__base_)));
-    if constexpr (_UseCache)
+    auto __tmp = ::cuda::std::make_reverse_iterator(::cuda::std::ranges::next(
+      ::cuda::std::ranges::begin(_BaseMB::__get()), ::cuda::std::ranges::end(_BaseMB::__get())));
+    if constexpr (__use_reverse_view_cache_v<_View>)
     {
-      __cached_begin_.__emplace(__tmp);
+      _CachedBeginMB::__get().__emplace(__tmp);
     }
     return __tmp;
   }
@@ -119,40 +128,40 @@ public:
   _CCCL_REQUIRES(common_range<_View2>)
   _CCCL_API constexpr reverse_iterator<iterator_t<_View2>> begin()
   {
-    return ::cuda::std::make_reverse_iterator(::cuda::std::ranges::end(__base_));
+    return ::cuda::std::make_reverse_iterator(::cuda::std::ranges::end(_BaseMB::__get()));
   }
 
   _CCCL_TEMPLATE(class _View2 = _View)
   _CCCL_REQUIRES(common_range<const _View2>)
   _CCCL_API constexpr auto begin() const
   {
-    return ::cuda::std::make_reverse_iterator(::cuda::std::ranges::end(__base_));
+    return ::cuda::std::make_reverse_iterator(::cuda::std::ranges::end(_BaseMB::__get()));
   }
 
   _CCCL_API constexpr reverse_iterator<iterator_t<_View>> end()
   {
-    return ::cuda::std::make_reverse_iterator(::cuda::std::ranges::begin(__base_));
+    return ::cuda::std::make_reverse_iterator(::cuda::std::ranges::begin(_BaseMB::__get()));
   }
 
   _CCCL_TEMPLATE(class _View2 = _View)
   _CCCL_REQUIRES(common_range<const _View2>)
   _CCCL_API constexpr auto end() const
   {
-    return ::cuda::std::make_reverse_iterator(::cuda::std::ranges::begin(__base_));
+    return ::cuda::std::make_reverse_iterator(::cuda::std::ranges::begin(_BaseMB::__get()));
   }
 
   _CCCL_TEMPLATE(class _View2 = _View)
   _CCCL_REQUIRES(sized_range<_View2>)
   _CCCL_API constexpr auto size()
   {
-    return ::cuda::std::ranges::size(__base_);
+    return ::cuda::std::ranges::size(_BaseMB::__get());
   }
 
   _CCCL_TEMPLATE(class _View2 = _View)
   _CCCL_REQUIRES(sized_range<const _View2>)
   _CCCL_API constexpr auto size() const
   {
-    return ::cuda::std::ranges::size(__base_);
+    return ::cuda::std::ranges::size(_BaseMB::__get());
   }
 };
 
@@ -251,8 +260,6 @@ inline namespace __cpo
 _CCCL_GLOBAL_CONSTANT auto reverse = __reverse::__fn{};
 } // namespace __cpo
 _CCCL_END_NAMESPACE_CUDA_STD_VIEWS
-
-_CCCL_DIAG_POP
 
 #include <cuda/std/__cccl/epilogue.h>
 

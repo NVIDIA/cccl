@@ -41,12 +41,9 @@
 #include <cuda/std/__utility/forward.h>
 #include <cuda/std/__utility/in_place.h>
 #include <cuda/std/__utility/move.h>
+#include <cuda/std/__utility/no_unique_member.h>
 
 #include <cuda/std/__cccl/prologue.h>
-
-// MSVC complains about [[msvc::no_unique_address]] prior to C++20 as a vendor extension
-_CCCL_DIAG_PUSH
-_CCCL_DIAG_SUPPRESS_MSVC(4848)
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD_RANGES
 
@@ -65,10 +62,13 @@ template <class _View,
           class = enable_if_t<is_object_v<_Pred>>,
           class = enable_if_t<indirect_unary_predicate<const _Pred, iterator_t<_View>>>>
 #endif // ^^^ !_CCCL_HAS_CONCEPTS() ^^^
-class take_while_view : public view_interface<take_while_view<_View, _Pred>>
+class _CCCL_DECLSPEC_EMPTY_BASES take_while_view
+    : public view_interface<take_while_view<_View, _Pred>>
+    , private __no_unique_member<__movable_box<_Pred>>
+    , private __no_unique_member<_View>
 {
-  _CCCL_NO_UNIQUE_ADDRESS __movable_box<_Pred> __pred_;
-  _CCCL_NO_UNIQUE_ADDRESS _View __base_ = _View();
+  using _PredMB = __no_unique_member<__movable_box<_Pred>>;
+  using _BaseMB = __no_unique_member<_View>;
 
 public:
   template <bool _Const>
@@ -163,58 +163,62 @@ public:
   _CCCL_REQUIRES(default_initializable<_View2> _CCCL_AND default_initializable<_Pred2>)
   _CCCL_API constexpr take_while_view() noexcept(is_nothrow_default_constructible_v<_View2>
                                                  && is_nothrow_default_constructible_v<_Pred2>)
+      : _PredMB()
+      , _BaseMB()
   {}
 #endif // ^^^ !_CCCL_HAS_CONCEPTS() ^^^
 
   _CCCL_API constexpr take_while_view(_View __base, _Pred __pred)
       : view_interface<take_while_view<_View, _Pred>>()
-      , __pred_(::cuda::std::in_place, ::cuda::std::move(__pred))
-      , __base_(::cuda::std::move(__base))
+      , _PredMB(::cuda::std::in_place, ::cuda::std::move(__pred))
+      , _BaseMB(::cuda::std::move(__base))
   {}
 
   _CCCL_TEMPLATE(class _View2 = _View)
   _CCCL_REQUIRES(copy_constructible<_View2>)
   [[nodiscard]] _CCCL_API constexpr _View base() const&
   {
-    return __base_;
+    return _BaseMB::__get();
   }
 
   [[nodiscard]] _CCCL_API constexpr _View base() &&
   {
-    return ::cuda::std::move(__base_);
+    return ::cuda::std::move(_BaseMB::__get());
   }
 
   [[nodiscard]] _CCCL_API constexpr const _Pred& pred() const
   {
-    return *__pred_;
+    return *_PredMB::__get();
   }
 
   _CCCL_TEMPLATE(class _View2 = _View)
   _CCCL_REQUIRES((!__simple_view<_View2>) )
   [[nodiscard]] _CCCL_API constexpr auto begin()
   {
-    return ::cuda::std::ranges::begin(__base_);
+    return ::cuda::std::ranges::begin(_BaseMB::__get());
   }
 
   _CCCL_TEMPLATE(class _View2 = _View)
   _CCCL_REQUIRES(__take_while_const_is_range<_View2, _Pred>)
   [[nodiscard]] _CCCL_API constexpr auto begin() const
   {
-    return ::cuda::std::ranges::begin(__base_);
+    return ::cuda::std::ranges::begin(_BaseMB::__get());
   }
 
   _CCCL_TEMPLATE(class _View2 = _View)
   _CCCL_REQUIRES((!__simple_view<_View2>) )
   [[nodiscard]] _CCCL_API constexpr auto end()
   {
-    return __sentinel</*_Const=*/false>(::cuda::std::ranges::end(__base_), ::cuda::std::addressof(*__pred_));
+    return __sentinel</*_Const=*/false>(
+      ::cuda::std::ranges::end(_BaseMB::__get()), ::cuda::std::addressof(*_PredMB::__get()));
   }
 
   _CCCL_TEMPLATE(class _View2 = _View)
   _CCCL_REQUIRES(__take_while_const_is_range<_View2, _Pred>)
   [[nodiscard]] _CCCL_API constexpr auto end() const
   {
-    return __sentinel</*_Const=*/true>(::cuda::std::ranges::end(__base_), ::cuda::std::addressof(*__pred_));
+    return __sentinel</*_Const=*/true>(
+      ::cuda::std::ranges::end(_BaseMB::__get()), ::cuda::std::addressof(*_PredMB::__get()));
   }
 };
 
@@ -251,8 +255,6 @@ inline namespace __cpo
 _CCCL_GLOBAL_CONSTANT auto take_while = __take_while::__fn{};
 } // namespace __cpo
 _CCCL_END_NAMESPACE_CUDA_STD_VIEWS
-
-_CCCL_DIAG_POP
 
 #include <cuda/std/__cccl/epilogue.h>
 

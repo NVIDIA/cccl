@@ -52,28 +52,40 @@
 #include <cuda/std/__utility/forward.h>
 #include <cuda/std/__utility/forward_like.h>
 #include <cuda/std/__utility/move.h>
+#include <cuda/std/__utility/no_unique_member.h>
 
 #include <cuda/std/__cccl/prologue.h>
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD_RANGES
+
+// We cache begin() whenever ::cuda::std::ranges::next is not guaranteed O(1) to provide an
+// amortized O(1) begin() method. If this is an input_range, then we cannot cache
+// begin because begin is not equality preserving.
+// Note: drop_view<input-range>::begin() is still trivially amortized O(1) because
+// one can't call begin() on it more than once.
+template <class _View>
+inline constexpr bool __use_drop_view_cache_v =
+  forward_range<_View> && !(random_access_range<_View> && sized_range<_View>);
+
+template <class _View>
+using __drop_view_cache_t =
+  conditional_t<__use_drop_view_cache_v<_View>, __non_propagating_cache<iterator_t<_View>>, __empty_cache>;
 
 #if _CCCL_HAS_CONCEPTS()
 template <view _View>
 #else // ^^^ _CCCL_HAS_CONCEPTS() ^^^ / vvv !_CCCL_HAS_CONCEPTS() vvv
 template <class _View, enable_if_t<view<_View>, int> = 0>
 #endif // !_CCCL_HAS_CONCEPTS()
-class drop_view : public view_interface<drop_view<_View>>
+class _CCCL_DECLSPEC_EMPTY_BASES drop_view
+    : public view_interface<drop_view<_View>>
+    , private __no_unique_member<__drop_view_cache_t<_View>>
 {
-  // We cache begin() whenever ::cuda::std::ranges::next is not guaranteed O(1) to provide an
-  // amortized O(1) begin() method. If this is an input_range, then we cannot cache
-  // begin because begin is not equality preserving.
-  // Note: drop_view<input-range>::begin() is still trivially amortized O(1) because
-  // one can't call begin() on it more than once.
-  static constexpr bool _UseCache = forward_range<_View> && !(random_access_range<_View> && sized_range<_View>);
-  using _Cache                    = conditional_t<_UseCache, __non_propagating_cache<iterator_t<_View>>, __empty_cache>;
-  _CCCL_NO_UNIQUE_ADDRESS _Cache __cached_begin_ = _Cache();
-  _View __base_                                  = _View();
-  range_difference_t<_View> __count_             = 0;
+  static constexpr bool _UseCache = __use_drop_view_cache_v<_View>;
+
+  using _CachedBeginMB = __no_unique_member<__drop_view_cache_t<_View>>;
+
+  _View __base_                      = _View();
+  range_difference_t<_View> __count_ = 0;
 
 public:
 #if _CCCL_HAS_CONCEPTS()
@@ -85,12 +97,14 @@ public:
   _CCCL_REQUIRES(default_initializable<_View2>)
   _CCCL_API constexpr drop_view() noexcept(is_nothrow_default_constructible_v<_View2>)
       : view_interface<drop_view<_View>>()
+      , _CachedBeginMB()
   {}
 #endif // !_CCCL_HAS_CONCEPTS()
 
   _CCCL_API constexpr drop_view(_View __base, range_difference_t<_View> __count) //
     noexcept(is_nothrow_move_constructible_v<_View>)
       : view_interface<drop_view<_View>>()
+      , _CachedBeginMB()
       , __base_(::cuda::std::move(__base))
       , __count_(__count)
   {
@@ -120,12 +134,12 @@ public:
     }
     else if constexpr (_UseCache)
     {
-      if (!__cached_begin_.__has_value())
+      if (!_CachedBeginMB::__get().__has_value())
       {
-        __cached_begin_.__emplace(
+        _CachedBeginMB::__get().__emplace(
           ::cuda::std::ranges::next(::cuda::std::ranges::begin(__base_), __count_, ::cuda::std::ranges::end(__base_)));
       }
-      return *__cached_begin_;
+      return *_CachedBeginMB::__get();
     }
     else
     {
@@ -334,13 +348,13 @@ struct __fn
                    __is_repeat_specialization<_RawRange> _CCCL_AND sized_range<_RawRange>)
   [[nodiscard]] _CCCL_API constexpr auto operator()(_Range&& __range, _Np&& __n) const
     noexcept(noexcept(::cuda::std::ranges::views::repeat(
-      ::cuda::std::forward_like<_Range>(*__range.__value_),
+      ::cuda::std::forward_like<_Range>(*_CCCL_GET_NO_UNIQUE_MEMBER(__range, _ValueMB)),
       ::cuda::std::ranges::distance(__range)
         - ::cuda::std::min<_Dist>(::cuda::std::ranges::distance(__range), ::cuda::std::forward<_Np>(__n)))))
       -> _RawRange
   {
     return ::cuda::std::ranges::views::repeat(
-      ::cuda::std::forward_like<_Range>(*__range.__value_),
+      ::cuda::std::forward_like<_Range>(*_CCCL_GET_NO_UNIQUE_MEMBER(__range, _ValueMB)),
       ::cuda::std::ranges::distance(__range)
         - ::cuda::std::min<_Dist>(::cuda::std::ranges::distance(__range), ::cuda::std::forward<_Np>(__n)));
   }

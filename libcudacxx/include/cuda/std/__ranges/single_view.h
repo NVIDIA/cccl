@@ -36,6 +36,7 @@
 #include <cuda/std/__utility/forward.h>
 #include <cuda/std/__utility/in_place.h>
 #include <cuda/std/__utility/move.h>
+#include <cuda/std/__utility/no_unique_member.h>
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -47,9 +48,11 @@ template <move_constructible _Tp>
 #else // ^^^ _CCCL_HAS_CONCEPTS() ^^^ / vvv !_CCCL_HAS_CONCEPTS() vvv
 template <class _Tp, enable_if_t<move_constructible<_Tp>, int> = 0, enable_if_t<is_object_v<_Tp>, int> = 0>
 #endif // ^^^ !_CCCL_HAS_CONCEPTS() ^^^
-class single_view : public view_interface<single_view<_Tp>>
+class _CCCL_DECLSPEC_EMPTY_BASES single_view
+    : public view_interface<single_view<_Tp>>
+    , private __no_unique_member<__movable_box<_Tp>>
 {
-  _CCCL_NO_UNIQUE_ADDRESS __movable_box<_Tp> __value_;
+  using _ValueMB = __no_unique_member<__movable_box<_Tp>>;
 
 public:
 #if _CCCL_HAS_CONCEPTS()
@@ -61,19 +64,19 @@ public:
   _CCCL_REQUIRES(default_initializable<_Tp2>)
   _CCCL_API constexpr single_view() noexcept(is_nothrow_default_constructible_v<_Tp>)
       : view_interface<single_view<_Tp>>()
-      , __value_(){};
+      , _ValueMB(){};
 #endif // ^^^ !_CCCL_HAS_CONCEPTS() ^^^
 
   _CCCL_TEMPLATE(class _Tp2 = _Tp) // avoids circular concept definitions with copy_constructible
   _CCCL_REQUIRES((!is_same_v<remove_cvref_t<_Tp2>, single_view>) _CCCL_AND copy_constructible<_Tp2>)
   _CCCL_API constexpr explicit single_view(const _Tp2& __t) noexcept(is_nothrow_copy_constructible_v<_Tp2>)
       : view_interface<single_view<_Tp2>>()
-      , __value_(in_place, __t)
+      , _ValueMB(in_place, __t)
   {}
 
   _CCCL_API constexpr explicit single_view(_Tp&& __t) noexcept(is_nothrow_move_constructible_v<_Tp>)
       : view_interface<single_view<_Tp>>()
-      , __value_(in_place, ::cuda::std::move(__t))
+      , _ValueMB(in_place, ::cuda::std::move(__t))
   {}
 
   _CCCL_TEMPLATE(class... _Args)
@@ -81,7 +84,7 @@ public:
   _CCCL_API constexpr explicit single_view(in_place_t,
                                            _Args&&... __args) noexcept(is_nothrow_constructible_v<_Tp, _Args...>)
       : view_interface<single_view<_Tp>>()
-      , __value_{in_place, ::cuda::std::forward<_Args>(__args)...}
+      , _ValueMB{in_place, ::cuda::std::forward<_Args>(__args)...}
   {}
 
   [[nodiscard]] _CCCL_API constexpr _Tp* begin() noexcept
@@ -111,12 +114,12 @@ public:
 
   [[nodiscard]] _CCCL_API constexpr _Tp* data() noexcept
   {
-    return __value_.operator->();
+    return _ValueMB::__get().operator->();
   }
 
   [[nodiscard]] _CCCL_API constexpr const _Tp* data() const noexcept
   {
-    return __value_.operator->();
+    return _ValueMB::__get().operator->();
   }
 };
 

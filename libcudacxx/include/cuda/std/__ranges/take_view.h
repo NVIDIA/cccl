@@ -52,12 +52,9 @@
 #include <cuda/std/__utility/forward.h>
 #include <cuda/std/__utility/forward_like.h>
 #include <cuda/std/__utility/move.h>
+#include <cuda/std/__utility/no_unique_member.h>
 
 #include <cuda/std/__cccl/prologue.h>
-
-// MSVC complains about [[msvc::no_unique_address]] prior to C++20 as a vendor extension
-_CCCL_DIAG_PUSH
-_CCCL_DIAG_SUPPRESS_MSVC(4848)
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD_RANGES
 
@@ -66,49 +63,53 @@ template <view _View>
 #else // ^^^ _CCCL_HAS_CONCEPTS() ^^^ / vvv !_CCCL_HAS_CONCEPTS() vvv
 template <class _View, class = enable_if_t<view<_View>>>
 #endif // !_CCCL_HAS_CONCEPTS()
-class take_view : public view_interface<take_view<_View>>
+class _CCCL_DECLSPEC_EMPTY_BASES take_view
+    : public view_interface<take_view<_View>>
+    , private __no_unique_member<_View>
 {
-  _CCCL_NO_UNIQUE_ADDRESS _View __base_ = _View();
-  range_difference_t<_View> __count_    = 0;
+  using _BaseMB                      = __no_unique_member<_View>;
+  range_difference_t<_View> __count_ = 0;
 
 public:
   template <bool _Const>
-  class __sentinel
+  class _CCCL_DECLSPEC_EMPTY_BASES __sentinel : private __no_unique_member<sentinel_t<__maybe_const<_Const, _View>>>
   {
     using _Base _CCCL_NODEBUG_ALIAS = __maybe_const<_Const, _View>;
     template <bool _OtherConst>
-    using _Iter _CCCL_NODEBUG_ALIAS                  = counted_iterator<iterator_t<__maybe_const<_OtherConst, _View>>>;
-    _CCCL_NO_UNIQUE_ADDRESS sentinel_t<_Base> __end_ = sentinel_t<_Base>();
+    using _Iter _CCCL_NODEBUG_ALIAS = counted_iterator<iterator_t<__maybe_const<_OtherConst, _View>>>;
+    using _EndMB                    = __no_unique_member<sentinel_t<__maybe_const<_Const, _View>>>;
 
     template <bool>
     friend class __sentinel;
 
   public:
-    _CCCL_HIDE_FROM_ABI __sentinel() = default;
+    _CCCL_API constexpr __sentinel()
+        : _EndMB()
+    {}
 
     _CCCL_API constexpr explicit __sentinel(sentinel_t<_Base> __end)
-        : __end_(::cuda::std::move(__end))
+        : _EndMB(::cuda::std::move(__end))
     {}
 
     _CCCL_TEMPLATE(bool _OtherConst = _Const)
     _CCCL_REQUIRES(_OtherConst _CCCL_AND convertible_to<sentinel_t<_View>, sentinel_t<_Base>>)
     _CCCL_API constexpr __sentinel(__sentinel<!_OtherConst> __s)
-        : __end_(::cuda::std::move(__s.__end_))
+        : _EndMB(::cuda::std::move(__s.__end_))
     {}
 
     [[nodiscard]] _CCCL_API constexpr sentinel_t<_Base> base() const
     {
-      return __end_;
+      return _EndMB::__get();
     }
 
     [[nodiscard]] _CCCL_API friend constexpr bool operator==(const _Iter<_Const>& __lhs, const __sentinel& __rhs)
     {
-      return __lhs.count() == 0 || __lhs.base() == __rhs.__end_;
+      return __lhs.count() == 0 || __lhs.base() == _CCCL_GET_NO_UNIQUE_MEMBER(__rhs, _EndMB);
     }
 #if _CCCL_STD_VER <= 2017
     [[nodiscard]] _CCCL_API friend constexpr bool operator==(const __sentinel& __lhs, const _Iter<_Const>& __rhs)
     {
-      return __rhs.count() == 0 || __rhs.base() == __lhs.__end_;
+      return __rhs.count() == 0 || __rhs.base() == _CCCL_GET_NO_UNIQUE_MEMBER(__lhs, _EndMB);
     }
     [[nodiscard]] _CCCL_API friend constexpr bool operator!=(const _Iter<_Const>& __lhs, const __sentinel& __rhs)
     {
@@ -124,14 +125,14 @@ public:
     [[nodiscard]] _CCCL_API friend constexpr auto operator==(const _Iter<_OtherConst>& __lhs, const __sentinel& __rhs)
       _CCCL_TRAILING_REQUIRES(bool)(sentinel_for<sentinel_t<_Base>, iterator_t<__maybe_const<_OtherConst, _View>>>)
     {
-      return __lhs.count() == 0 || __lhs.base() == __rhs.__end_;
+      return __lhs.count() == 0 || __lhs.base() == _CCCL_GET_NO_UNIQUE_MEMBER(__rhs, _EndMB);
     }
 #if _CCCL_STD_VER <= 2017
     template <bool _OtherConst = !_Const>
     [[nodiscard]] _CCCL_API friend constexpr auto operator==(const __sentinel& __lhs, const _Iter<_OtherConst>& __rhs)
       _CCCL_TRAILING_REQUIRES(bool)(sentinel_for<sentinel_t<_Base>, iterator_t<__maybe_const<_OtherConst, _View>>>)
     {
-      return __rhs.count() == 0 || __rhs.base() == __lhs.__end_;
+      return __rhs.count() == 0 || __rhs.base() == _CCCL_GET_NO_UNIQUE_MEMBER(__lhs, _EndMB);
     }
     template <bool _OtherConst = !_Const>
     [[nodiscard]] _CCCL_API friend constexpr auto operator!=(const _Iter<_OtherConst>& __lhs, const __sentinel& __rhs)
@@ -155,11 +156,13 @@ public:
 #else // ^^^ _CCCL_HAS_CONCEPTS() ^^^ / vvv !_CCCL_HAS_CONCEPTS() vvv
   _CCCL_TEMPLATE(class _View2 = _View)
   _CCCL_REQUIRES(default_initializable<_View2>)
-  _CCCL_API constexpr take_view() noexcept(is_nothrow_default_constructible_v<_View2>) {}
+  _CCCL_API constexpr take_view() noexcept(is_nothrow_default_constructible_v<_View2>)
+      : _BaseMB{}
+  {}
 #endif // !_CCCL_HAS_CONCEPTS()
 
   _CCCL_API constexpr take_view(_View __base, range_difference_t<_View> __count)
-      : __base_(::cuda::std::move(__base))
+      : _BaseMB(::cuda::std::move(__base))
       , __count_(__count)
   {}
 
@@ -167,12 +170,12 @@ public:
   _CCCL_REQUIRES(copy_constructible<_View2>)
   [[nodiscard]] _CCCL_API constexpr _View base() const&
   {
-    return __base_;
+    return _BaseMB::__get();
   }
 
   [[nodiscard]] _CCCL_API constexpr _View base() &&
   {
-    return ::cuda::std::move(__base_);
+    return ::cuda::std::move(_BaseMB::__get());
   }
 
   _CCCL_TEMPLATE(class _View2 = _View)
@@ -183,18 +186,18 @@ public:
     {
       if constexpr (random_access_range<_View>)
       {
-        return ::cuda::std::ranges::begin(__base_);
+        return ::cuda::std::ranges::begin(_BaseMB::__get());
       }
       else
       {
         using _DifferenceT = range_difference_t<_View>;
         auto __size        = size();
-        return counted_iterator(::cuda::std::ranges::begin(__base_), static_cast<_DifferenceT>(__size));
+        return counted_iterator(::cuda::std::ranges::begin(_BaseMB::__get()), static_cast<_DifferenceT>(__size));
       }
     }
     else
     {
-      return counted_iterator(::cuda::std::ranges::begin(__base_), __count_);
+      return counted_iterator(::cuda::std::ranges::begin(_BaseMB::__get()), __count_);
     }
   }
 
@@ -206,18 +209,18 @@ public:
     {
       if constexpr (random_access_range<const _View>)
       {
-        return ::cuda::std::ranges::begin(__base_);
+        return ::cuda::std::ranges::begin(_BaseMB::__get());
       }
       else
       {
         using _DifferenceT = range_difference_t<const _View>;
         auto __size        = size();
-        return counted_iterator(::cuda::std::ranges::begin(__base_), static_cast<_DifferenceT>(__size));
+        return counted_iterator(::cuda::std::ranges::begin(_BaseMB::__get()), static_cast<_DifferenceT>(__size));
       }
     }
     else
     {
-      return counted_iterator(::cuda::std::ranges::begin(__base_), __count_);
+      return counted_iterator(::cuda::std::ranges::begin(_BaseMB::__get()), __count_);
     }
   }
 
@@ -229,7 +232,7 @@ public:
     {
       if constexpr (random_access_range<_View>)
       {
-        return ::cuda::std::ranges::begin(__base_) + size();
+        return ::cuda::std::ranges::begin(_BaseMB::__get()) + size();
       }
       else
       {
@@ -238,7 +241,7 @@ public:
     }
     else
     {
-      return __sentinel<false>{::cuda::std::ranges::end(__base_)};
+      return __sentinel<false>{::cuda::std::ranges::end(_BaseMB::__get())};
     }
   }
 
@@ -250,7 +253,7 @@ public:
     {
       if constexpr (random_access_range<const _View>)
       {
-        return ::cuda::std::ranges::begin(__base_) + size();
+        return ::cuda::std::ranges::begin(_BaseMB::__get()) + size();
       }
       else
       {
@@ -259,7 +262,7 @@ public:
     }
     else
     {
-      return __sentinel<true>{::cuda::std::ranges::end(__base_)};
+      return __sentinel<true>{::cuda::std::ranges::end(_BaseMB::__get())};
     }
   }
 
@@ -267,7 +270,7 @@ public:
   _CCCL_REQUIRES(sized_range<_View2>)
   [[nodiscard]] _CCCL_API constexpr auto size()
   {
-    const auto __n = ::cuda::std::ranges::size(__base_);
+    const auto __n = ::cuda::std::ranges::size(_BaseMB::__get());
     return (::cuda::std::ranges::min) (__n, static_cast<decltype(__n)>(__count_));
   }
 
@@ -275,7 +278,7 @@ public:
   _CCCL_REQUIRES(sized_range<const _View2>)
   [[nodiscard]] _CCCL_API constexpr auto size() const
   {
-    auto __n = ::cuda::std::ranges::size(__base_);
+    auto __n = ::cuda::std::ranges::size(_BaseMB::__get());
     return (::cuda::std::ranges::min) (__n, static_cast<decltype(__n)>(__count_));
   }
 };
@@ -402,10 +405,10 @@ struct __fn
   _CCCL_REQUIRES(convertible_to<_Np, range_difference_t<_Range>> _CCCL_AND
                    __is_repeat_specialization<_RawRange> _CCCL_AND sized_range<_RawRange>)
   [[nodiscard]] _CCCL_API constexpr auto operator()(_Range&& __range, _Np&& __n) const noexcept(noexcept(views::repeat(
-    ::cuda::std::forward_like<_Range>(*__range.__value_),
+    ::cuda::std::forward_like<_Range>(*_CCCL_GET_NO_UNIQUE_MEMBER(__range, _ValueMB)),
     ::cuda::std::min<_Dist>(ranges::distance(__range), ::cuda::std::forward<_Np>(__n))))) -> _RawRange
   {
-    return views::repeat(::cuda::std::forward_like<_Range>(*__range.__value_),
+    return views::repeat(::cuda::std::forward_like<_Range>(*_CCCL_GET_NO_UNIQUE_MEMBER(__range, _ValueMB)),
                          ::cuda::std::min<_Dist>(ranges::distance(__range), ::cuda::std::forward<_Np>(__n)));
   }
 
@@ -415,10 +418,11 @@ struct __fn
   _CCCL_REQUIRES(convertible_to<_Np, range_difference_t<_Range>> _CCCL_AND
                    __is_repeat_specialization<_RawRange> _CCCL_AND(!sized_range<_RawRange>))
   [[nodiscard]] _CCCL_API constexpr auto operator()(_Range&& __range, _Np&& __n) const
-    noexcept(noexcept(views::repeat(::cuda::std::forward_like<_Range>(*__range.__value_), static_cast<_Dist>(__n))))
-      -> repeat_view<range_value_t<_RawRange>, _Dist>
+    noexcept(noexcept(views::repeat(::cuda::std::forward_like<_Range>(*_CCCL_GET_NO_UNIQUE_MEMBER(__range, _ValueMB)),
+                                    static_cast<_Dist>(__n)))) -> repeat_view<range_value_t<_RawRange>, _Dist>
   {
-    return views::repeat(::cuda::std::forward_like<_Range>(*__range.__value_), static_cast<_Dist>(__n));
+    return views::repeat(::cuda::std::forward_like<_Range>(*_CCCL_GET_NO_UNIQUE_MEMBER(__range, _ValueMB)),
+                         static_cast<_Dist>(__n));
   }
 
   // [range.take.overview]: the `iota_view` case.
@@ -464,8 +468,6 @@ _CCCL_GLOBAL_CONSTANT auto take = __take::__fn{};
 } // namespace __cpo
 
 _CCCL_END_NAMESPACE_CUDA_STD_VIEWS
-
-_CCCL_DIAG_POP
 
 #include <cuda/std/__cccl/epilogue.h>
 

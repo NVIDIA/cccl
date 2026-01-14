@@ -39,6 +39,7 @@
 #include <cuda/std/__utility/forward.h>
 #include <cuda/std/__utility/in_place.h>
 #include <cuda/std/__utility/move.h>
+#include <cuda/std/__utility/no_unique_member.h>
 #include <cuda/std/__utility/piecewise_construct.h>
 #include <cuda/std/tuple>
 
@@ -76,10 +77,16 @@ template <
   enable_if_t<is_object_v<_Tp> && same_as<_Tp, remove_cv_t<_Tp>>, int> = 0,
   enable_if_t<(__integer_like_with_usable_difference_type<_Bound> || same_as<_Bound, unreachable_sentinel_t>), int> = 0>
 #endif // ^^^ !_CCCL_HAS_CONCEPTS() ^^^
-class repeat_view : public view_interface<repeat_view<_Tp, _Bound>>
+class _CCCL_DECLSPEC_EMPTY_BASES repeat_view
+    : public view_interface<repeat_view<_Tp, _Bound>>
+    , private __no_unique_member<__movable_box<_Tp>>
+    , private __no_unique_member<_Bound>
 {
   friend ::cuda::std::ranges::views::__take::__fn;
   friend ::cuda::std::ranges::views::__drop::__fn;
+
+  using _ValueMB = __no_unique_member<__movable_box<_Tp>>;
+  using _BoundMB = __no_unique_member<_Bound>;
 
 public:
   class __iterator
@@ -232,28 +239,30 @@ public:
 #else // ^^^ _CCCL_HAS_CONCEPTS() ^^^ / vvv !_CCCL_HAS_CONCEPTS() vvv
   _CCCL_TEMPLATE(class _Tp2 = _Tp)
   _CCCL_REQUIRES(default_initializable<_Tp2>)
-  _CCCL_API constexpr repeat_view() noexcept(is_nothrow_default_constructible_v<_Tp2>) {}
+  _CCCL_API constexpr repeat_view() noexcept(is_nothrow_default_constructible_v<_Tp2>)
+      : _BoundMB()
+  {}
 #endif // ^^^ !_CCCL_HAS_CONCEPTS() ^^^
 
   _CCCL_TEMPLATE(class _Tp2 = _Tp)
   _CCCL_REQUIRES((!same_as<_Tp2, repeat_view>) _CCCL_AND copy_constructible<_Tp2>)
   _CCCL_API constexpr explicit repeat_view(const _Tp2& __value, _Bound __bound_sentinel = _Bound())
-      : __value_(in_place, __value)
-      , __bound_(__bound_sentinel)
+      : _ValueMB(in_place, __value)
+      , _BoundMB(__bound_sentinel)
   {
     if constexpr (!same_as<_Bound, unreachable_sentinel_t> && is_signed_v<_Bound>)
     {
-      _CCCL_ASSERT(__bound_ >= 0, "The value of bound must be greater than or equal to 0");
+      _CCCL_ASSERT(_BoundMB::__get() >= 0, "The value of bound must be greater than or equal to 0");
     }
   }
 
   _CCCL_API constexpr explicit repeat_view(_Tp&& __value, _Bound __bound_sentinel = _Bound())
-      : __value_(in_place, ::cuda::std::move(__value))
-      , __bound_(__bound_sentinel)
+      : _ValueMB(in_place, ::cuda::std::move(__value))
+      , _BoundMB(__bound_sentinel)
   {
     if constexpr (!same_as<_Bound, unreachable_sentinel_t> && is_signed_v<_Bound>)
     {
-      _CCCL_ASSERT(__bound_ >= 0, "The value of bound must be greater than or equal to 0");
+      _CCCL_ASSERT(_BoundMB::__get() >= 0, "The value of bound must be greater than or equal to 0");
     }
   }
 
@@ -261,19 +270,19 @@ public:
   _CCCL_REQUIRES(constructible_from<_Tp, _TpArgs...> _CCCL_AND constructible_from<_Bound, _BoundArgs...>)
   _CCCL_API constexpr explicit repeat_view(
     piecewise_construct_t, tuple<_TpArgs...> __value_args, tuple<_BoundArgs...> __bound_args = tuple<>{})
-      : __value_(in_place, ::cuda::std::make_from_tuple<_Tp>(::cuda::std::move(__value_args)))
-      , __bound_(::cuda::std::make_from_tuple<_Bound>(::cuda::std::move(__bound_args)))
+      : _ValueMB(in_place, ::cuda::std::make_from_tuple<_Tp>(::cuda::std::move(__value_args)))
+      , _BoundMB(::cuda::std::make_from_tuple<_Bound>(::cuda::std::move(__bound_args)))
   {
     if constexpr (!same_as<_Bound, unreachable_sentinel_t> && is_signed_v<_Bound>)
     {
-      _CCCL_ASSERT(__bound_ >= 0,
+      _CCCL_ASSERT(_BoundMB::__get() >= 0,
                    "The behavior is undefined if Bound is not unreachable_sentinel_t and bound is negative");
     }
   }
 
   [[nodiscard]] _CCCL_API constexpr __iterator begin() const
   {
-    return __iterator(::cuda::std::addressof(*__value_));
+    return __iterator(::cuda::std::addressof(*_ValueMB::__get()));
   }
 
   _CCCL_API constexpr auto end() const noexcept(is_nothrow_copy_constructible_v<_Bound>)
@@ -284,7 +293,7 @@ public:
     }
     else
     {
-      return __iterator(::cuda::std::addressof(*__value_), __bound_);
+      return __iterator(::cuda::std::addressof(*_ValueMB::__get()), _BoundMB::__get());
     }
   }
 
@@ -292,12 +301,8 @@ public:
   _CCCL_REQUIRES((!same_as<_Bound2, unreachable_sentinel_t>) )
   _CCCL_API constexpr auto size() const
   {
-    return ::cuda::std::__to_unsigned_like(__bound_);
+    return ::cuda::std::__to_unsigned_like(_BoundMB::__get());
   }
-
-private:
-  _CCCL_NO_UNIQUE_ADDRESS __movable_box<_Tp> __value_;
-  _CCCL_NO_UNIQUE_ADDRESS _Bound __bound_ = _Bound();
 };
 
 template <class _Tp, class _Bound>
