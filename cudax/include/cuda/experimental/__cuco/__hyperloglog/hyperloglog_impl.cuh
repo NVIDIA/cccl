@@ -112,7 +112,7 @@ public:
   {
     for (int __i = __group.thread_rank(); __i < __sketch.size(); __i += __group.size())
     {
-      new (&(__sketch[__i])) register_type{};
+      __sketch[__i] = register_type{};
     }
   }
 
