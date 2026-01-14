@@ -274,7 +274,7 @@ public:
           return index_type{0};
         }
         //_CCCL_ASSERT(!::cuda::overflow_cast<index_type>(__strides_.stride(__r)),
-       //              "layout_stride_relaxed::mapping: stride is out of range");
+        //              "layout_stride_relaxed::mapping: stride is out of range");
         const auto __max_index = __strides_.stride(__r) < 0 ? index_type{0} : static_cast<index_type>(__ext - 1);
         const auto __stride    = static_cast<index_type>(__strides_.stride(__r));
         _CCCL_ASSERT(!::cuda::std::__mdspan_detail::__mul_overflow(__max_index, __stride)

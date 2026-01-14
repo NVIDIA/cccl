@@ -31,8 +31,8 @@
 using cuda::std::intptr_t;
 
 template <class E>
-__host__ __device__ constexpr void
-test_required_span_size(E e, cuda::std::array<intptr_t, E::rank()> input_strides, intptr_t offset, typename E::index_type expected_size)
+__host__ __device__ constexpr void test_required_span_size(
+  E e, cuda::std::array<intptr_t, E::rank()> input_strides, intptr_t offset, typename E::index_type expected_size)
 {
   using M            = cuda::layout_stride_relaxed::mapping<E>;
   using offset_type  = typename M::offset_type;

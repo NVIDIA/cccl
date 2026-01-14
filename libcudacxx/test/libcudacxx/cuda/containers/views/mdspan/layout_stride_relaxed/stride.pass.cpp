@@ -32,7 +32,8 @@
 using cuda::std::intptr_t;
 
 template <class E, class... Args>
-__host__ __device__ constexpr void test_stride(cuda::std::array<intptr_t, E::rank()> input_strides, intptr_t offset, Args... args)
+__host__ __device__ constexpr void
+test_stride(cuda::std::array<intptr_t, E::rank()> input_strides, intptr_t offset, Args... args)
 {
   using M           = cuda::layout_stride_relaxed::mapping<E>;
   using offset_type = typename M::offset_type;

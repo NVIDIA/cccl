@@ -43,7 +43,11 @@ test_offset(E e, cuda::std::array<intptr_t, E::rank()> strides, intptr_t expecte
 // Test that offset is correctly used in index computation
 template <class E, class... Indices>
 __host__ __device__ constexpr void test_offset_in_indexing(
-  E e, cuda::std::array<intptr_t, E::rank()> strides, intptr_t offset, typename E::index_type expected_at_zero, Indices... zero_indices)
+  E e,
+  cuda::std::array<intptr_t, E::rank()> strides,
+  intptr_t offset,
+  typename E::index_type expected_at_zero,
+  Indices... zero_indices)
 {
   using M = cuda::layout_stride_relaxed::mapping<E>;
   M m(e, strides, offset);

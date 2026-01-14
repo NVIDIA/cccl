@@ -61,8 +61,8 @@ __host__ __device__ constexpr intptr_t get_expected_index(
 }
 
 template <class M, class... Args, cuda::std::enable_if_t<(M::extents_type::rank() == sizeof...(Args)), int> = 0>
-__host__ __device__ constexpr void iterate_stride(
-  M m, const cuda::std::array<intptr_t, M::extents_type::rank()>& strides, intptr_t offset, Args... args)
+__host__ __device__ constexpr void
+iterate_stride(M m, const cuda::std::array<intptr_t, M::extents_type::rank()>& strides, intptr_t offset, Args... args)
 {
   static_assert(noexcept(m(args...)));
   const intptr_t expected_val =
@@ -71,8 +71,8 @@ __host__ __device__ constexpr void iterate_stride(
 }
 
 template <class M, class... Args, cuda::std::enable_if_t<(M::extents_type::rank() != sizeof...(Args)), int> = 0>
-__host__ __device__ constexpr void iterate_stride(
-  M m, const cuda::std::array<intptr_t, M::extents_type::rank()>& strides, intptr_t offset, Args... args)
+__host__ __device__ constexpr void
+iterate_stride(M m, const cuda::std::array<intptr_t, M::extents_type::rank()>& strides, intptr_t offset, Args... args)
 {
   constexpr size_t r = sizeof...(Args);
   for (typename M::index_type i = 0; i < m.extents().extent(r); i++)
