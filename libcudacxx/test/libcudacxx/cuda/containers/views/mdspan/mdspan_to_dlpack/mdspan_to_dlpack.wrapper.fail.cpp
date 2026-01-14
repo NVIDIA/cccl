@@ -9,7 +9,6 @@
 #include <cuda/mdspan>
 #include <cuda/std/cassert>
 
-
 bool test_mdspan_to_dlpack_wrapper_get_lvalue()
 {
   auto tensor = cuda::__dlpack_tensor<3>{}.get();

@@ -189,7 +189,7 @@ struct test_mdspan_to_dlpack_types_fn
   {
     using T         = cuda::std::__type_at_c<index, list_t>;
     using extents_t = cuda::std::extents<size_t, 2, 3>;
-    T data[6]      = {};
+    T data[6]       = {};
     cuda::host_mdspan<T, extents_t> md{data, extents_t{}};
     auto dlpack_wrapper  = cuda::to_dlpack_tensor(md);
     const auto& dltensor = dlpack_wrapper.get();
