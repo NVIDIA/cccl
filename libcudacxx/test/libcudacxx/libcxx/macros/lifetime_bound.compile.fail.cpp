@@ -6,6 +6,7 @@
 // SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
+// FORCE_ALL_WARNINGS.
 
 #include <cuda/std/__cccl/attributes.h>
 
