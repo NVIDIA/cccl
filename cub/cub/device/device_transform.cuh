@@ -111,12 +111,18 @@ private:
   template <typename Env>
   CUB_RUNTIME_FUNCTION static auto get_stream(Env env) -> cudaStream_t
   {
-    return ::cuda::std::execution::__query_or(env, ::cuda::get_stream, ::cuda::stream_ref{cudaStream_t{}}).get();
-  }
-
-  CUB_RUNTIME_FUNCTION static auto get_stream(cudaStream_t stream) -> cudaStream_t
-  {
-    return stream;
+    if constexpr (::cuda::std::is_same_v<Env, cudaStream_t>)
+    {
+      return env;
+    }
+    else if constexpr (::cuda::std::is_convertible_v<Env, cudaStream_t>)
+    {
+      return static_cast<cudaStream_t>(env);
+    }
+    else
+    {
+      return ::cuda::std::execution::__query_or(env, ::cuda::get_stream, ::cuda::stream_ref{cudaStream_t{}}).get();
+    }
   }
 
 public:
@@ -654,7 +660,7 @@ public:
       ::cuda::std::move(output),
       num_items,
       ::cuda::std::move(transform_op),
-      get_stream(env));
+      ::cuda::std::move(env));
   }
 
 #ifndef _CCCL_DOXYGEN_INVOKED // Do not document
