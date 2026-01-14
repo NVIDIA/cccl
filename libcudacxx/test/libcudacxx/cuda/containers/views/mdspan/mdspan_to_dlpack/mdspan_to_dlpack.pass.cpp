@@ -3,7 +3,7 @@
 // Part of the libcu++ Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 // UNSUPPORTED: nvrtc
@@ -189,7 +189,7 @@ struct test_mdspan_to_dlpack_types_fn
   {
     using T         = cuda::std::__type_at_c<index, list_t>;
     using extents_t = cuda::std::extents<size_t, 2, 3>;
-    T* data         = nullptr;
+    T data[6]      = {};
     cuda::host_mdspan<T, extents_t> md{data, extents_t{}};
     auto dlpack_wrapper  = cuda::to_dlpack_tensor(md);
     const auto& dltensor = dlpack_wrapper.get();
