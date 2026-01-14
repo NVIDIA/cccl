@@ -45,6 +45,9 @@
 
 _CCCL_BEGIN_NAMESPACE_CUDA
 
+//! @brief Computes the effective offset of a strided mapping by calling mapping(0, 0, ...).
+//! Standard layouts (layout_left, layout_right, layout_stride) don't have an explicit offset() member,
+//! but layout_stride_relaxed does. This helper enables comparing offsets in operator==.
 template <class _StridedMapping, ::cuda::std::size_t... _Pos>
 [[nodiscard]] _CCCL_API constexpr auto
 __layout_stride_relaxed_compute_offset(const _StridedMapping& __mapping, ::cuda::std::index_sequence<_Pos...>) noexcept
@@ -53,6 +56,7 @@ __layout_stride_relaxed_compute_offset(const _StridedMapping& __mapping, ::cuda:
   return static_cast<__index_type>(__mapping((static_cast<void>(_Pos), __index_type{0})...));
 }
 
+//! @brief Overload that handles rank-0 and zero-extent cases before delegating to the index_sequence version.
 template <class _StridedMapping>
 [[nodiscard]] _CCCL_API constexpr auto __layout_stride_relaxed_compute_offset(const _StridedMapping& __mapping) noexcept
 {
@@ -64,7 +68,7 @@ template <class _StridedMapping>
   else
   {
     using _RankType = typename _StridedMapping::rank_type;
-    // Check if any extent is zero
+    // Check if any extent is zero - can't call mapping(0,...) in that case
     for (_RankType __r = 0; __r < _Extents::rank(); ++__r)
     {
       if (__mapping.extents().extent(__r) == 0)
