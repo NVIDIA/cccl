@@ -41,9 +41,9 @@ __host__ __device__ void test_mapping_requirements(cuda::std::index_sequence<Idx
   static_assert(cuda::std::is_same_v<typename M::layout_type, cuda::layout_stride_relaxed>);
   static_assert(cuda::std::is_same_v<typename M::layout_type::template mapping<E>, M>);
   static_assert(cuda::std::is_same<decltype(cuda::std::declval<M>().extents()), const E&>::value, "");
-  // Note: layout_stride_relaxed uses offset_type (make_signed_t<index_type>) for strides, not index_type
+  // Note: layout_stride_relaxed uses dstrides<offset_type, rank> for strides
   static_assert(cuda::std::is_same<decltype(cuda::std::declval<M>().strides()),
-                                   cuda::std::array<typename M::offset_type, E::rank()>>::value,
+                                   cuda::dstrides<typename M::offset_type, E::rank()>>::value,
                 "");
   static_assert(cuda::std::is_same<decltype(cuda::std::declval<M>()(Idxs...)), typename M::index_type>::value, "");
   static_assert(

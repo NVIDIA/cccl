@@ -42,12 +42,12 @@ __host__ __device__ constexpr void test_construction(E e, S s, cuda::std::intptr
   assert(m.offset() == offset);
 
   // check strides
-  auto strides = m.strides();
+  auto strides_obj = m.strides();
   static_assert(noexcept(m.strides()));
   for (typename E::rank_type r = 0; r < E::rank(); r++)
   {
     assert(cuda::std::cmp_equal(m.stride(r), s[r]));
-    assert(cuda::std::cmp_equal(strides[r], s[r]));
+    assert(cuda::std::cmp_equal(strides_obj.stride(r), s[r]));
   }
 }
 

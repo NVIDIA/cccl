@@ -81,7 +81,7 @@ __host__ __device__ constexpr void iterate_stride(
   constexpr size_t r = sizeof...(Args);
   for (typename M::index_type i = 0; i < m.extents().extent(r); i++)
   {
-    iterate_stride(m, strides, offset, i, args...);
+    iterate_stride(m, strides, offset, args..., i); // append i after args to maintain dimension order
   }
 }
 

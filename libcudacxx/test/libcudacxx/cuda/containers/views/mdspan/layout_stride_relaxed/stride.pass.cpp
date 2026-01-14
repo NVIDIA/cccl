@@ -50,10 +50,10 @@ test_stride(cuda::std::array<cuda::std::intptr_t, E::rank()> input_strides, cuda
 
   static_assert(noexcept(m.strides()));
   auto strides_out = m.strides();
-  static_assert(cuda::std::is_same<decltype(strides_out), cuda::std::array<offset_type, E::rank()>>::value, "");
+  static_assert(cuda::std::is_same<decltype(strides_out), cuda::dstrides<offset_type, E::rank()>>::value, "");
   for (size_t r = 0; r < E::rank(); r++)
   {
-    assert(strides[r] == strides_out[r]);
+    assert(strides[r] == strides_out.stride(r));
   }
 }
 

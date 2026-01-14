@@ -48,13 +48,13 @@ __host__ __device__ constexpr void test_construction()
   assert(m.required_span_size() == expected_size);
 
   // check strides: uses layout_right strides by default
-  auto strides = m.strides();
+  auto strides_obj = m.strides();
   static_assert(noexcept(m.strides()));
   cuda::std::layout_right::mapping<E> m_right{};
   for (typename E::rank_type r = 0; r < E::rank(); r++)
   {
     assert(cuda::std::cmp_equal(m.stride(r), m_right.stride(r)));
-    assert(cuda::std::cmp_equal(strides[r], m_right.stride(r)));
+    assert(cuda::std::cmp_equal(strides_obj.stride(r), m_right.stride(r)));
   }
 }
 
