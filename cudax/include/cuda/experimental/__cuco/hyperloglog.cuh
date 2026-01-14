@@ -93,7 +93,7 @@ public:
                                 ref_type<>::sketch_bytes(__sketch_size_kb)},
               __hash}
   {
-    this->clear_async(__stream);
+    clear_async(__stream);
   }
 
   //! @brief Constructs a `hyperloglog` host object.
@@ -114,7 +114,7 @@ public:
                                 ref_type<>::sketch_bytes(__sketch_size_kb)},
               __hash}
   {
-    this->clear_async(__stream);
+    clear_async(__stream);
   }
 
   //! @brief Constructs a `hyperloglog` host object.
@@ -138,7 +138,7 @@ public:
                                 ref_type<>::sketch_bytes(__sd)},
               __hash}
   {
-    this->clear_async(__stream);
+    clear_async(__stream);
   }
 
   //! @brief Constructs a `hyperloglog` host object.
@@ -159,7 +159,7 @@ public:
                                 ref_type<>::sketch_bytes(__sd)},
               __hash}
   {
-    this->clear_async(__stream);
+    clear_async(__stream);
   }
 
   ~hyperloglog() = default;
@@ -229,7 +229,7 @@ public:
 
   //! @brief Asynchronously merges the result of `other` estimator into `*this` estimator.
   //!
-  //! @throw If this->sketch_bytes() != other.sketch_bytes()
+  //! @throw If sketch_bytes() != other.sketch_bytes()
   //!
   //! @tparam _OtherScope Thread scope of `other` estimator
   //! @tparam _OtherMemoryResource Memory resource type of `other` estimator
@@ -248,7 +248,7 @@ public:
   //! @note This function synchronizes the given stream. For asynchronous execution use
   //! `merge_async`.
   //!
-  //! @throw If this->sketch_bytes() != other.sketch_bytes()
+  //! @throw If sketch_bytes() != other.sketch_bytes()
   //!
   //! @tparam _OtherScope Thread scope of `other` estimator
   //! @tparam _OtherMemoryResource Memory resource type of `other` estimator
@@ -264,7 +264,7 @@ public:
 
   //! @brief Asynchronously merges the result of `other` estimator reference into `*this` estimator.
   //!
-  //! @throw If this->sketch_bytes() != other.sketch_bytes()
+  //! @throw If sketch_bytes() != other.sketch_bytes()
   //!
   //! @tparam _OtherScope Thread scope of `other` estimator
   //!
@@ -282,7 +282,7 @@ public:
   //! @note This function synchronizes the given stream. For asynchronous execution use
   //! `merge_async`.
   //!
-  //! @throw If this->sketch_bytes() != other.sketch_bytes()
+  //! @throw If sketch_bytes() != other.sketch_bytes()
   //!
   //! @tparam _OtherScope Thread scope of `other` estimator
   //!
@@ -313,7 +313,7 @@ public:
   //! @return Device ref object of the current `hyperloglog` host object
   [[nodiscard]] constexpr ref_type<> ref() const noexcept
   {
-    return {this->sketch(), this->hash_function()};
+    return {sketch(), hash_function()};
   }
 
   //! @brief Get hash function.

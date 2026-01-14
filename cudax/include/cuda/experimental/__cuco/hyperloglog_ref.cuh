@@ -155,7 +155,7 @@ public:
 
   //! @brief Merges the result of `other` estimator reference into `*this` estimator reference.
   //!
-  //! @throw If this->sketch_bytes() != other.sketch_bytes() then behavior is undefined
+  //! @throw If sketch_bytes() != other.sketch_bytes() then behavior is undefined
   //!
   //! @tparam _CG CUDA Cooperative Group type
   //! @tparam _OtherScope Thread scope of `other` estimator
@@ -171,7 +171,7 @@ public:
   //! @brief Asynchronously merges the result of `other` estimator reference into `*this`
   //! estimator.
   //!
-  //! @throw If this->sketch_bytes() != other.sketch_bytes()
+  //! @throw If sketch_bytes() != other.sketch_bytes()
   //!
   //! @tparam _OtherScope Thread scope of `other` estimator
   //!
@@ -189,7 +189,7 @@ public:
   //! @note This function synchronizes the given stream. For asynchronous execution use
   //! `merge_async`.
   //!
-  //! @throw If this->sketch_bytes() != other.sketch_bytes()
+  //! @throw If sketch_bytes() != other.sketch_bytes()
   //!
   //! @tparam _OtherScope Thread scope of `other` estimator
   //!

@@ -82,8 +82,7 @@ public:
   //!
   //! @throw If sketch size < 0.0625KB or 64B or standard deviation > 0.2765. Throws if called from
   //! host; UB if called from device.
-  //! @throw If sketch storage has insufficient alignment. Throws if called from host; UB if called.
-  //! from device.
+  //! @throw If sketch storage has insufficient alignment. Throws if called from host; UB if called from device.
   //!
   //! @param sketch_span Reference to sketch storage
   //! @param hash The hash function used to hash items
@@ -124,7 +123,7 @@ public:
   //! @param stream CUDA stream this operation is executed in
   _CCCL_HOST constexpr void __clear(::cuda::stream_ref __stream)
   {
-    this->__clear_async(__stream);
+    __clear_async(__stream);
     __stream.sync();
   }
 
@@ -150,7 +149,7 @@ public:
     // const auto __reg    = __h >> ((sizeof(__hash_value_type) * 8) - __precision);
     // const auto __zeroes = ::cuda::std::countl_zero(__h << __precision) + 1;
 
-    this->__update_max(__reg, __zeroes);
+    __update_max(__reg, __zeroes);
   }
 
   //! @brief Asynchronously adds to be counted items to the estimator.
@@ -207,7 +206,7 @@ public:
       };
     }
 
-    if (__kernel != nullptr and this->__try_reserve_shmem(__kernel, __shmem_bytes))
+    if (__kernel != nullptr and __try_reserve_shmem(__kernel, __shmem_bytes))
     {
       if constexpr (::cuda::std::contiguous_iterator<_InputIt>)
       {
@@ -244,7 +243,7 @@ public:
       void* __kernel_args[] = {const_cast<void*>(reinterpret_cast<const void*>(&__first)),
                                const_cast<void*>(reinterpret_cast<const void*>(&__num_items)),
                                reinterpret_cast<void*>(this)};
-      if (this->__try_reserve_shmem(__kernel, __shmem_bytes))
+      if (__try_reserve_shmem(__kernel, __shmem_bytes))
       {
         _CCCL_TRY_CUDA_API(
           ::cudaOccupancyMaxPotentialBlockSize,
@@ -307,7 +306,7 @@ public:
   template <class _InputIt>
   _CCCL_HOST constexpr void __add(_InputIt __first, _InputIt __last, ::cuda::stream_ref __stream)
   {
-    this->__add_async(__first, __last, __stream);
+    __add_async(__first, __last, __stream);
     __stream.sync();
   }
 
@@ -328,14 +327,14 @@ public:
 
     for (int __i = __group.thread_rank(); __i < __sketch.size(); __i += __group.size())
     {
-      this->__update_max(__i, __other.__sketch[__i]);
+      __update_max(__i, __other.__sketch[__i]);
     }
   }
 
   //! @brief Asynchronously merges the result of `other` estimator reference into `*this`
   //! estimator.
   //!
-  //! @throw If this->__sketch_bytes() != other.__sketch_bytes()
+  //! @throw If __sketch_bytes() != other.__sketch_bytes()
   //!
   //! @tparam _OtherScope Thread scope of `other` estimator
   //!
@@ -355,7 +354,7 @@ public:
   //! @note This function synchronizes the given stream. For asynchronous execution use
   //! `__merge_async`.
   //!
-  //! @throw If this->__sketch_bytes() != other.__sketch_bytes()
+  //! @throw If __sketch_bytes() != other.__sketch_bytes()
   //!
   //! @tparam _OtherScope Thread scope of `other` estimator
   //!
@@ -365,7 +364,7 @@ public:
   _CCCL_HOST constexpr void
   __merge(const _HyperLogLog_Impl<_Tp, _OtherScope, _Hash>& __other, ::cuda::stream_ref __stream)
   {
-    this->__merge_async(__other, __stream);
+    __merge_async(__other, __stream);
     __stream.sync();
   }
 
