@@ -39,7 +39,7 @@ namespace cuda::experimental::cuco::__hyperloglog_ns
 //! @return The global thread ID
 [[nodiscard]] _CCCL_DEVICE inline int64_t __global_thread_id() noexcept
 {
-  return int64_t{threadIdx.x} + int64_t{blockDim.x} * int64_t{blockIdx.x};
+  return static_cast<int64_t>(threadIdx.x) + blockDim.x * blockIdx.x;
 }
 
 //! @brief Returns the grid stride of a 1D grid
@@ -47,13 +47,13 @@ namespace cuda::experimental::cuco::__hyperloglog_ns
 //! @return The grid stride
 [[nodiscard]] _CCCL_DEVICE inline int64_t __grid_stride() noexcept
 {
-  return int64_t{gridDim.x} * int64_t{blockDim.x};
+  return static_cast<int64_t>(gridDim.x) * blockDim.x;
 }
 
 template <class RefType>
 CCCL_DETAIL_KERNEL_ATTRIBUTES void __clear(RefType __ref)
 {
-  const auto __block = cooperative_groups::this_thread_block();
+  const auto __block = ::cooperative_groups::this_thread_block();
   if (__block.group_index().x == 0)
   {
     __ref.__clear(__block);
@@ -74,8 +74,8 @@ __add_shmem_vectorized(const typename RefType::value_type* __first, int64_t __n,
 
   const auto __loop_stride = __grid_stride();
   auto __idx               = __global_thread_id();
-  const auto __grid        = cooperative_groups::this_grid();
-  const auto __block       = cooperative_groups::this_thread_block();
+  const auto __grid        = ::cooperative_groups::this_grid();
+  const auto __block       = ::cooperative_groups::this_thread_block();
 
   local_ref_type __local_ref(::cuda::std::span{__local_sketch, __ref.__sketch_bytes()}, {});
   __local_ref.__clear(__block);
@@ -95,7 +95,7 @@ __add_shmem_vectorized(const typename RefType::value_type* __first, int64_t __n,
   }
   // a single thread processes the remaining items
 #if defined(CUCO_HAS_CG_INVOKE_ONE)
-  cooperative_groups::invoke_one(__grid, [&]() {
+  ::cooperative_groups::invoke_one(__grid, [&]() {
     const auto __remainder = __n % VectorSize;
     for (int __i = 0; __i < __remainder; ++__i)
     {
@@ -127,7 +127,7 @@ CCCL_DETAIL_KERNEL_ATTRIBUTES void __add_shmem(InputIt __first, int64_t __n, Ref
 
   const auto __loop_stride = __grid_stride();
   auto __idx               = __global_thread_id();
-  const auto __block       = cooperative_groups::this_thread_block();
+  const auto __block       = ::cooperative_groups::this_thread_block();
 
   local_ref_type __local_ref(::cuda::std::span{__local_sketch, __ref.__sketch_bytes()}, {});
   __local_ref.__clear(__block);
@@ -159,7 +159,7 @@ CCCL_DETAIL_KERNEL_ATTRIBUTES void __add_gmem(InputIt __first, int64_t __n, RefT
 template <class OtherRefType, class RefType>
 CCCL_DETAIL_KERNEL_ATTRIBUTES void __merge(OtherRefType __other_ref, RefType __ref)
 {
-  const auto __block = cooperative_groups::this_thread_block();
+  const auto __block = ::cooperative_groups::this_thread_block();
   if (__block.group_index().x == 0)
   {
     __ref.__merge(__block, __other_ref);
@@ -170,7 +170,7 @@ CCCL_DETAIL_KERNEL_ATTRIBUTES void __merge(OtherRefType __other_ref, RefType __r
 template <class RefType>
 CCCL_DETAIL_KERNEL_ATTRIBUTES void __estimate(::cuda::std::size_t* __cardinality, RefType __ref)
 {
-  const auto __block = cooperative_groups::this_thread_block();
+  const auto __block = ::cooperative_groups::this_thread_block();
   if (__block.group_index().x == 0)
   {
     const auto __estimate = __ref.__estimate(__block);

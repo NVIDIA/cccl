@@ -374,7 +374,7 @@ public:
   //!
   //! @return Approximate distinct items count
   [[nodiscard]] _CCCL_DEVICE ::cuda::std::size_t
-  __estimate(const cooperative_groups::thread_block& __group) const noexcept
+  __estimate(const ::cooperative_groups::thread_block& __group) const noexcept
   {
     __shared__ ::cuda::atomic<__fp_type, ::cuda::std::thread_scope_block> __block_sum;
     __shared__ ::cuda::atomic<int, ::cuda::std::thread_scope_block> __block_zeroes;
@@ -397,15 +397,17 @@ public:
     }
 
     // warp reduce Z and V
-    const auto __warp = cooperative_groups::tiled_partition<32, cooperative_groups::thread_block>(__group);
+    const auto __warp = ::cooperative_groups::tiled_partition<32, ::cooperative_groups::thread_block>(__group);
 
     // TODO check if this is always true with latest ctk or cccl version and remove
 #if defined(CUDART_VERSION) && (CUDART_VERSION >= 12000)
-    cooperative_groups::reduce_update_async(__warp, __block_sum, __thread_sum, cooperative_groups::plus<__fp_type>());
-    cooperative_groups::reduce_update_async(__warp, __block_zeroes, __thread_zeroes, cooperative_groups::plus<int>());
+    ::cooperative_groups::reduce_update_async(
+      __warp, __block_sum, __thread_sum, ::cooperative_groups::plus<__fp_type>());
+    ::cooperative_groups::reduce_update_async(
+      __warp, __block_zeroes, __thread_zeroes, ::cooperative_groups::plus<int>());
 #else
-    const auto __warp_sum    = cooperative_groups::reduce(__warp, __thread_sum, cooperative_groups::plus<__fp_type>());
-    const auto __warp_zeroes = cooperative_groups::reduce(__warp, __thread_zeroes, cooperative_groups::plus<int>());
+    const auto __warp_sum = ::cooperative_groups::reduce(__warp, __thread_sum, ::cooperative_groups::plus<__fp_type>());
+    const auto __warp_zeroes = ::cooperative_groups::reduce(__warp, __thread_zeroes, ::cooperative_groups::plus<int>());
     // TODO warp sync needed?
     // TODO use invoke_one
     if (__warp.thread_rank() == 0)
@@ -503,7 +505,7 @@ public:
   __sketch_bytes(::cuda::experimental::cuco::__sketch_size_kb_t __sketch_size_kb) noexcept
   {
     // minimum precision is 4 or 64 bytes
-    return ::cuda::std::max(static_cast<::cuda::std::size_t>(sizeof(register_type) * 1ull << 4),
+    return ::cuda::std::max(static_cast<::cuda::std::size_t>(sizeof(register_type) * (1ull << 4)),
                             ::cuda::std::bit_floor(static_cast<::cuda::std::size_t>(__sketch_size_kb * 1024)));
   }
 
