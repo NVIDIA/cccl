@@ -512,7 +512,7 @@ _CCCL_CONCEPT __kernel_has_default_config =
  * function should be used instead
  *
  * @tparam Dimensions
- * cuda::hierarchy_dimensions instance that describes dimensions
+ * cuda::hierarchy instance that describes dimensions
  * of thread hierarchy in this configuration object
  *
  * @tparam Options
@@ -639,7 +639,7 @@ operator&(const NewLevel& new_level, const kernel_config<Dimensions, Options...>
 
 template <typename L1, typename Dims1, typename L2, typename Dims2>
 _CCCL_HOST_API constexpr auto
-operator&(const level_dimensions<L1, Dims1>& l1, const level_dimensions<L2, Dims2>& l2) noexcept
+operator&(const hierarchy_level_desc<L1, Dims1>& l1, const hierarchy_level_desc<L2, Dims2>& l2) noexcept
 {
   return kernel_config(::cuda::make_hierarchy(l1, l2));
 }
@@ -663,7 +663,7 @@ operator&(const kernel_config<Dimensions, Options...>& config, const Option& opt
 template <typename... Levels,
           typename Option,
           typename = ::cuda::std::enable_if_t<::cuda::std::is_base_of_v<__detail::launch_option, Option>>>
-[[nodiscard]] constexpr auto operator&(const hierarchy_dimensions<Levels...>& dims, const Option& option) noexcept
+[[nodiscard]] constexpr auto operator&(const hierarchy<Levels...>& dims, const Option& option) noexcept
 {
   return kernel_config(dims, option);
 }
@@ -685,10 +685,9 @@ template <typename... Levels,
  * resulting kernel configuration object
  */
 template <typename BottomUnit, typename... Levels, typename... Opts>
-[[nodiscard]] constexpr auto
-make_config(const hierarchy_dimensions<BottomUnit, Levels...>& dims, const Opts&... opts) noexcept
+[[nodiscard]] constexpr auto make_config(const hierarchy<BottomUnit, Levels...>& dims, const Opts&... opts) noexcept
 {
-  return kernel_config<hierarchy_dimensions<BottomUnit, Levels...>, Opts...>(dims, opts...);
+  return kernel_config<hierarchy<BottomUnit, Levels...>, Opts...>(dims, opts...);
 }
 
 /**

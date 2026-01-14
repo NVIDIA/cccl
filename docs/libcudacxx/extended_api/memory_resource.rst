@@ -44,5 +44,5 @@ With the current design it ranges from cumbersome to impossible to verify whethe
 that are e.g. accessible on device, or whether it can utilize other allocation mechanisms.
 
 To better support asynchronous CUDA `stream-ordered allocations <https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#stream-ordered-memory-allocator>`__
-libcu++ provides :ref:`cuda::stream_ref <libcudacxx-extended-api-streams-stream-ref>` as a wrapper around
+libcu++ provides :cpp:class:`cuda::stream_ref <cuda::stream_ref>` as a wrapper around
 ``cudaStream_t``. The definition of ``cuda::stream_ref`` can be found in the ``<cuda/stream>`` header.

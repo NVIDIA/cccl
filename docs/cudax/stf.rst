@@ -1894,6 +1894,7 @@ in existing code.
   the application take care of synchronization.
 - ``Tokens`` make it possible to enforce concurrent execution while
   letting the application manage data allocations and data transfers.
+- ``Execution places`` can be used without tasks for example to automate the management of CUDA streams, or set the current execution context.
 
 Freezing logical data
 ^^^^^^^^^^^^^^^^^^^^^
@@ -2015,6 +2016,151 @@ or an ``rw()`` access. There is no need to set any content in the token
 A token corresponds to a ``logical_data<void_interface>`` object, so that the
 ``token`` type serves as a short-hand for this type. ``ctx.token()`` thus
 returns an object with a ``token`` type.
+
+Stream management with execution places
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+CUDASTF's execution places can be used independently of the task system to
+manage CUDA streams in a structured way. This is useful when you want to use
+CUDASTF's place abstractions (devices, green contexts) for stream management
+without the full task-based programming model.
+
+The ``exec_place::pick_stream`` method returns a CUDA stream from the stream
+pool associated with a specific execution place. To use this facility, you need
+an ``async_resources_handle`` object, which manages the underlying stream pools.
+
+The method accepts an optional ``for_computation`` hint (defaults to ``true``)
+that may select between computation and data transfer stream pools to improve
+overlapping. This is purely a performance hint, and it does not affect correctness. Not all execution places enforce
+it.
+
+**Using execution places without a context:**
+
+When using execution places without a CUDASTF context, create a standalone
+``async_resources_handle``:
+
+.. code:: cpp
+
+    #include <cuda/experimental/stf.cuh>
+    using namespace cuda::experimental::stf;
+
+    // Create an async_resources_handle (manages stream pools)
+    async_resources_handle resources;
+
+    // Get a stream from the current device
+    exec_place place = exec_place::current_device();
+    cudaStream_t stream = place.pick_stream(resources);
+
+    // Use the stream for CUDA operations
+    myKernel<<<grid, block, 0, stream>>>(d_data);
+
+    // Get streams from specific devices
+    cudaStream_t stream_dev0 = exec_place::device(0).pick_stream(resources);
+    cudaStream_t stream_dev1 = exec_place::device(1).pick_stream(resources);
+
+Stream pools are populated lazily—CUDA streams are only created when first
+requested via ``pick_stream()``.
+
+**Using execution places alongside a context:**
+
+When working alongside a CUDASTF context, use ``ctx.async_resources()`` to
+ensure the same stream pools are shared between your code and the context's
+internal operations:
+
+.. code:: cpp
+
+    stream_ctx ctx;
+
+    // Get a stream using the context's async_resources
+    exec_place place = exec_place::device(0);
+    cudaStream_t stream = place.pick_stream(ctx.async_resources());
+
+    // This stream comes from the same pool used by the context internally.
+    // ctx.pick_stream() is a shorthand that uses the default execution place
+    // for the calling thread.
+    cudaStream_t ctx_stream = ctx.pick_stream();
+
+    ctx.finalize();
+
+**Getting multiple streams:**
+
+You can query the pool size and retrieve all streams as a vector:
+
+.. code:: cpp
+
+    async_resources_handle resources;
+    exec_place place = exec_place::current_device();
+
+    // Query the number of streams in the pool
+    size_t pool_size = place.stream_pool_size(resources);
+
+    // Get all streams from the pool as a vector
+    std::vector<cudaStream_t> streams = place.pick_all_streams(resources);
+
+    // Use the streams for concurrent operations
+    for (size_t i = 0; i < streams.size(); ++i) {
+        myKernel<<<grid, block, 0, streams[i]>>>(d_data[i]);
+    }
+
+Setting the current device or context
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The ``exec_place::activate()`` method provides a generic alternative to
+``cudaSetDevice()`` that works uniformly across different execution place types.
+This is useful when you want to set the current CUDA device or context without
+using CUDASTF tasks.
+
+The method returns an ``exec_place`` representing the previous state, which can
+be used to restore the original device or context.
+
+**Behavior by execution place type:**
+
+- **Device places** (``exec_place::device(id)``): Calls ``cudaSetDevice(id)``
+- **Green context places**: Sets the current CUDA driver context via ``cuCtxSetCurrent()``
+- **Host places**: No-op
+
+**Basic usage with devices:**
+
+.. code:: cpp
+
+    exec_place place = exec_place::device(1);
+    exec_place prev = place.activate();  // Switch to device 1
+
+    // ... perform operations on device 1 ...
+
+    place.deactivate(prev);  // Restore previous device
+
+**Alternative restoration pattern:**
+
+You can also restore by calling ``activate()`` on the returned place:
+
+.. code:: cpp
+
+    exec_place place = exec_place::device(1);
+    exec_place prev = place.activate();
+
+    // ... work on device 1 ...
+
+    prev.activate();  // Equivalent to place.deactivate(prev)
+
+**Usage with green contexts (CUDA 12.4+):**
+
+Green contexts provide SM-level partitioning of GPU resources. The
+``activate()``/``deactivate()`` methods handle the underlying driver context
+management:
+
+.. code:: cpp
+
+    // Create green contexts with 8 SMs each
+    green_context_helper gc(8, device_id);
+    auto view = gc.get_view(0);
+
+    exec_place gc_place = exec_place::green_ctx(view);
+    exec_place prev = gc_place.activate();  // Sets green context as current
+
+    // ... GPU work runs with SM affinity ...
+
+    gc_place.deactivate(prev);  // Restore original context
 
 Debugging
 ---------

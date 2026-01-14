@@ -23,6 +23,7 @@
 //
 // Preconditions:
 //   * extents_type::index-cast(i) is a multidimensional index in extents_.
+#define _CCCL_DISABLE_MDSPAN_ACCESSOR_DETECT_INVALIDITY
 
 #include <cuda/mdspan>
 #include <cuda/std/cassert>
@@ -288,6 +289,6 @@ __global__ void test()
 
 int main(int, char**)
 {
-  NV_IF_TARGET(NV_IS_HOST, (test<<<1, 1, 1024 * sizeof(int)>>>();))
+  NV_IF_TARGET(NV_IS_HOST, (test<<<1, 1>>>(); assert(cudaDeviceSynchronize() == cudaSuccess);))
   return 0;
 }

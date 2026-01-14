@@ -28,6 +28,7 @@
 //   - Direct-non-list-initializes ptr_ with cuda::std::move(p),
 //   - direct-non-list-initializes map_ with extents_type(static_cast<index_type>(cuda::std::move(exts))...), and
 //   - value-initializes acc_.
+#define _CCCL_DISABLE_MDSPAN_ACCESSOR_DETECT_INVALIDITY
 
 #include <cuda/mdspan>
 #include <cuda/std/array>
