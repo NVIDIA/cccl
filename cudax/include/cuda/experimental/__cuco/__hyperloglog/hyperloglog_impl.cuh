@@ -26,7 +26,7 @@
 #include <cuda/__memory/is_aligned.h>
 #include <cuda/__runtime/api_wrapper.h>
 #include <cuda/atomic>
-#include <cuda/std/__algorithm/max.h> // TODO #include <cuda/std/algorithm> once available
+#include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__bit/countr.h>
 #include <cuda/std/__bit/integral.h>
 #include <cuda/std/__iterator/concepts.h>
