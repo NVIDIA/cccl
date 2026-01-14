@@ -396,4 +396,3 @@ _CCCL_GLOBAL_CONSTANT thrust::detail::functional::placeholder<9>::type _10;
 THRUST_NAMESPACE_END
 
 #include <thrust/detail/functional/operators.h>
-#include <thrust/detail/type_traits/is_commutative.h>
