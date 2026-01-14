@@ -53,6 +53,7 @@ Availability: CCCL 3.1.0 / CUDA 13.1
    }
 
 .. _cccl-runtime-event-timed-event:
+
 ``cuda::timed_event``
 -----------------------------------------------------
 

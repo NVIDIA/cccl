@@ -21,7 +21,7 @@
 #include "test_comparisons.h"
 #include "test_macros.h"
 
-int main(int, char**)
+__host__ __device__ constexpr bool test()
 {
   using weekday         = cuda::std::chrono::weekday;
   using weekday_indexed = cuda::std::chrono::weekday_indexed;
@@ -29,20 +29,28 @@ int main(int, char**)
   AssertEqualityAreNoexcept<weekday_indexed>();
   AssertEqualityReturnBool<weekday_indexed>();
 
-  static_assert((weekday_indexed{} == weekday_indexed{}), "");
-  static_assert(!(weekday_indexed{} != weekday_indexed{}), "");
+  assert((weekday_indexed{} == weekday_indexed{}));
+  assert(!(weekday_indexed{} != weekday_indexed{}));
 
-  static_assert(!(weekday_indexed{} == weekday_indexed{cuda::std::chrono::Tuesday, 1}), "");
-  static_assert((weekday_indexed{} != weekday_indexed{cuda::std::chrono::Tuesday, 1}), "");
+  assert(!(weekday_indexed{} == weekday_indexed{cuda::std::chrono::Tuesday, 1}));
+  assert((weekday_indexed{} != weekday_indexed{cuda::std::chrono::Tuesday, 1}));
 
   //  Some 'ok' values as well
-  static_assert((weekday_indexed{weekday{1}, 2} == weekday_indexed{weekday{1}, 2}), "");
-  static_assert(!(weekday_indexed{weekday{1}, 2} != weekday_indexed{weekday{1}, 2}), "");
+  assert((weekday_indexed{weekday{1}, 2} == weekday_indexed{weekday{1}, 2}));
+  assert(!(weekday_indexed{weekday{1}, 2} != weekday_indexed{weekday{1}, 2}));
 
-  static_assert(!(weekday_indexed{weekday{1}, 2} == weekday_indexed{weekday{1}, 1}), "");
-  static_assert((weekday_indexed{weekday{1}, 2} != weekday_indexed{weekday{1}, 1}), "");
-  static_assert(!(weekday_indexed{weekday{1}, 2} == weekday_indexed{weekday{2}, 2}), "");
-  static_assert((weekday_indexed{weekday{1}, 2} != weekday_indexed{weekday{2}, 2}), "");
+  assert(!(weekday_indexed{weekday{1}, 2} == weekday_indexed{weekday{1}, 1}));
+  assert((weekday_indexed{weekday{1}, 2} != weekday_indexed{weekday{1}, 1}));
+  assert(!(weekday_indexed{weekday{1}, 2} == weekday_indexed{weekday{2}, 2}));
+  assert((weekday_indexed{weekday{1}, 2} != weekday_indexed{weekday{2}, 2}));
+
+  return true;
+}
+
+int main(int, char**)
+{
+  test();
+  static_assert(test());
 
   return 0;
 }

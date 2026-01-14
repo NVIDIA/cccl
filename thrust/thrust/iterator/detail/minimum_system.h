@@ -26,7 +26,6 @@
 #  pragma system_header
 #endif // no system header
 #include <thrust/detail/type_traits.h>
-#include <thrust/detail/type_traits/is_metafunction_defined.h>
 #include <thrust/detail/type_traits/minimum_type.h>
 
 THRUST_NAMESPACE_BEGIN

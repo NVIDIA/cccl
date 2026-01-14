@@ -42,12 +42,12 @@ using ::malloc;
 [[nodiscard]] _CCCL_HIDE_FROM_ABI _CCCL_DEVICE void* __calloc_device(size_t __n, size_t __size) noexcept
 {
   void* __ptr{};
-
-  const size_t __nbytes = __n * __size;
-
+  // check for overflow through a hypothetical larger integer
+  // TODO (miscco): use `mul_overflow` once implemented
   if (::cuda::mul_hi(__n, __size) == 0)
   {
-    __ptr = ::cuda::std::malloc(__nbytes);
+    const size_t __nbytes = __n * __size;
+    __ptr                 = ::cuda::std::malloc(__nbytes);
     if (__ptr != nullptr)
     {
       ::cuda::std::memset(__ptr, 0, __nbytes);

@@ -38,7 +38,7 @@
 _CCCL_BEGIN_NAMESPACE_CUDA_MR
 
 //! @rst
-//! .. _cudax-memory-resource-shared-resource:
+//! .. _libcudacxx-memory-resource-shared-resource:
 //!
 //! Resource wrapper to share ownership of a resource
 //! --------------------------------------------------
@@ -238,7 +238,7 @@ private:
 };
 
 //! @rst
-//! .. _cudax-memory-resource-make-shared-resource:
+//! .. _libcudacxx-memory-resource-make-shared-resource:
 //!
 //! Factory function for `shared_resource` objects
 //! -----------------------------------------------

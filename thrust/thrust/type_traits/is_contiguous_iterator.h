@@ -56,7 +56,7 @@ THRUST_NAMESPACE_BEGIN
  * \see THRUST_PROCLAIM_CONTIGUOUS_ITERATOR
  */
 template <typename Iterator>
-struct proclaim_contiguous_iterator : false_type
+struct proclaim_contiguous_iterator : ::cuda::std::false_type
 {};
 
 /*! \brief Declares that the iterator \c Iterator is
@@ -66,12 +66,12 @@ struct proclaim_contiguous_iterator : false_type
  * \see is_contiguous_iterator
  * \see proclaim_contiguous_iterator
  */
-#define THRUST_PROCLAIM_CONTIGUOUS_ITERATOR(Iterator)                            \
-  THRUST_NAMESPACE_BEGIN                                                         \
-  template <>                                                                    \
-  struct proclaim_contiguous_iterator<Iterator> : THRUST_NS_QUALIFIER::true_type \
-  {};                                                                            \
-  THRUST_NAMESPACE_END                                                           \
+#define THRUST_PROCLAIM_CONTIGUOUS_ITERATOR(Iterator)                    \
+  THRUST_NAMESPACE_BEGIN                                                 \
+  template <>                                                            \
+  struct proclaim_contiguous_iterator<Iterator> : ::cuda::std::true_type \
+  {};                                                                    \
+  THRUST_NAMESPACE_END                                                   \
   /**/
 
 /*! \cond
