@@ -5,49 +5,52 @@
 
 from typing import Callable
 
-import numba
-
-from .. import _bindings
+from .. import _bindings, types
 from .. import _cccl_interop as cccl
 from .._caching import cache_with_key
-from .._cccl_interop import call_build, set_cccl_iterator_state
+from .._cccl_interop import (
+    call_build,
+    get_iterator_kind,
+    is_iterator,
+    set_cccl_iterator_state,
+)
 from .._utils import protocols
 from .._utils.temp_storage_buffer import TempStorageBuffer
-from ..iterators._iterators import IteratorBase
+from ..iterator import IteratorProtocol
 from ..op import OpAdapter, make_op_adapter
 from ..typing import DeviceArrayLike
 
 
 def _make_cache_key(
-    d_in: DeviceArrayLike | IteratorBase,
-    d_first_part_out: DeviceArrayLike | IteratorBase,
-    d_second_part_out: DeviceArrayLike | IteratorBase,
-    d_unselected_out: DeviceArrayLike | IteratorBase,
-    d_num_selected_out: DeviceArrayLike | IteratorBase,
+    d_in: DeviceArrayLike,
+    d_first_part_out: DeviceArrayLike,
+    d_second_part_out: DeviceArrayLike,
+    d_unselected_out: DeviceArrayLike,
+    d_num_selected_out: DeviceArrayLike,
     select_first_part_op: OpAdapter,
     select_second_part_op: OpAdapter,
 ):
     d_in_key = (
-        d_in.kind if isinstance(d_in, IteratorBase) else protocols.get_dtype(d_in)
+        get_iterator_kind(d_in) if is_iterator(d_in) else protocols.get_dtype(d_in)
     )
     d_first_part_out_key = (
-        d_first_part_out.kind
-        if isinstance(d_first_part_out, IteratorBase)
+        get_iterator_kind(d_first_part_out)
+        if is_iterator(d_first_part_out)
         else protocols.get_dtype(d_first_part_out)
     )
     d_second_part_out_key = (
-        d_second_part_out.kind
-        if isinstance(d_second_part_out, IteratorBase)
+        get_iterator_kind(d_second_part_out)
+        if is_iterator(d_second_part_out)
         else protocols.get_dtype(d_second_part_out)
     )
     d_unselected_out_key = (
-        d_unselected_out.kind
-        if isinstance(d_unselected_out, IteratorBase)
+        get_iterator_kind(d_unselected_out)
+        if is_iterator(d_unselected_out)
         else protocols.get_dtype(d_unselected_out)
     )
     d_num_selected_out_key = (
-        d_num_selected_out.kind
-        if isinstance(d_num_selected_out, IteratorBase)
+        get_iterator_kind(d_num_selected_out)
+        if is_iterator(d_num_selected_out)
         else protocols.get_dtype(d_num_selected_out)
     )
 
@@ -78,11 +81,11 @@ class _ThreeWayPartition:
 
     def __init__(
         self,
-        d_in: DeviceArrayLike | IteratorBase,
-        d_first_part_out: DeviceArrayLike | IteratorBase,
-        d_second_part_out: DeviceArrayLike | IteratorBase,
-        d_unselected_out: DeviceArrayLike | IteratorBase,
-        d_num_selected_out: DeviceArrayLike | IteratorBase,
+        d_in: DeviceArrayLike | IteratorProtocol,
+        d_first_part_out: DeviceArrayLike | IteratorProtocol,
+        d_second_part_out: DeviceArrayLike | IteratorProtocol,
+        d_unselected_out: DeviceArrayLike | IteratorProtocol,
+        d_num_selected_out: DeviceArrayLike | IteratorProtocol,
         select_first_part_op: OpAdapter,
         select_second_part_op: OpAdapter,
     ):
@@ -95,10 +98,10 @@ class _ThreeWayPartition:
         # Compile ops - partition predicates return uint8 (boolean)
         value_type = cccl.get_value_type(d_in)
         self.select_first_part_op_cccl = select_first_part_op.compile(
-            (value_type,), numba.types.uint8
+            (value_type,), types.uint8
         )
         self.select_second_part_op_cccl = select_second_part_op.compile(
-            (value_type,), numba.types.uint8
+            (value_type,), types.uint8
         )
 
         self.build_result = call_build(
@@ -156,11 +159,11 @@ class _ThreeWayPartition:
 
 @cache_with_key(_make_cache_key)
 def _make_three_way_partition_cached(
-    d_in: DeviceArrayLike | IteratorBase,
-    d_first_part_out: DeviceArrayLike | IteratorBase,
-    d_second_part_out: DeviceArrayLike | IteratorBase,
-    d_unselected_out: DeviceArrayLike | IteratorBase,
-    d_num_selected_out: DeviceArrayLike | IteratorBase,
+    d_in: DeviceArrayLike | IteratorProtocol,
+    d_first_part_out: DeviceArrayLike | IteratorProtocol,
+    d_second_part_out: DeviceArrayLike | IteratorProtocol,
+    d_unselected_out: DeviceArrayLike | IteratorProtocol,
+    d_num_selected_out: DeviceArrayLike | IteratorProtocol,
     select_first_part_op: OpAdapter,
     select_second_part_op: OpAdapter,
 ):
@@ -177,11 +180,11 @@ def _make_three_way_partition_cached(
 
 
 def make_three_way_partition(
-    d_in: DeviceArrayLike | IteratorBase,
-    d_first_part_out: DeviceArrayLike | IteratorBase,
-    d_second_part_out: DeviceArrayLike | IteratorBase,
-    d_unselected_out: DeviceArrayLike | IteratorBase,
-    d_num_selected_out: DeviceArrayLike | IteratorBase,
+    d_in: DeviceArrayLike | IteratorProtocol,
+    d_first_part_out: DeviceArrayLike | IteratorProtocol,
+    d_second_part_out: DeviceArrayLike | IteratorProtocol,
+    d_unselected_out: DeviceArrayLike | IteratorProtocol,
+    d_num_selected_out: DeviceArrayLike | IteratorProtocol,
     select_first_part_op: Callable | OpAdapter,
     select_second_part_op: Callable | OpAdapter,
 ):
@@ -224,11 +227,11 @@ def make_three_way_partition(
 
 
 def three_way_partition(
-    d_in: DeviceArrayLike | IteratorBase,
-    d_first_part_out: DeviceArrayLike | IteratorBase,
-    d_second_part_out: DeviceArrayLike | IteratorBase,
-    d_unselected_out: DeviceArrayLike | IteratorBase,
-    d_num_selected_out: DeviceArrayLike | IteratorBase,
+    d_in: DeviceArrayLike | IteratorProtocol,
+    d_first_part_out: DeviceArrayLike | IteratorProtocol,
+    d_second_part_out: DeviceArrayLike | IteratorProtocol,
+    d_unselected_out: DeviceArrayLike | IteratorProtocol,
+    d_num_selected_out: DeviceArrayLike | IteratorProtocol,
     select_first_part_op: Callable,
     select_second_part_op: Callable,
     num_items: int,

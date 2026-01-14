@@ -1,3 +1,14 @@
+# Copyright (c) 2025, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
+#
+# SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+
+"""
+Numba utility functions for cuda.compute.
+
+This module provides helper functions for working with Numba types,
+signatures, and compilation.
+"""
+
 import inspect
 
 import numba
@@ -5,11 +16,12 @@ from numba import cuda
 from numba.core.extending import as_numba_type
 from numpy.typing import DTypeLike
 
-from ._utils import sanitize_identifier
-from .typing import GpuStruct
+from .._utils import sanitize_identifier
+from ..typing import GpuStruct
 
 
 def get_inferred_return_type(op, args: tuple):
+    """Infer the return type of a function by compiling it with Numba."""
     sanitized_name = sanitize_identifier(op.__name__)
     unique_suffix = hex(id(op))[2:]
     abi_name = f"{sanitized_name}_{unique_suffix}"

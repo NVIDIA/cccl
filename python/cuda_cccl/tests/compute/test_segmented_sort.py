@@ -6,6 +6,7 @@ from typing import Tuple
 
 import cupy as cp
 import numba
+import numba.cuda
 import numpy as np
 import pytest
 

@@ -4,18 +4,14 @@
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 from __future__ import annotations
 
-import enum
 import functools
 import os
 import subprocess
 import tempfile
 import warnings
-from typing import TYPE_CHECKING, Callable, List
+from typing import Callable, List
 
-import numba
 import numpy as np
-from numba import cuda, types
-from numba.core.extending import as_numba_type
 
 # TODO: adding a type-ignore here because `cuda` being a
 # namespace package confuses mypy when `cuda.<something_else>`
@@ -41,71 +37,49 @@ from ._bindings import (
     make_pointer_object,
 )
 from ._utils.protocols import get_data_pointer, get_dtype, is_contiguous
-from .iterators._iterators import IteratorBase
-from .op import OpKind
 from .typing import DeviceArrayLike, GpuStruct
 
-_TYPE_TO_ENUM = {
-    types.int8: TypeEnum.INT8,
-    types.int16: TypeEnum.INT16,
-    types.int32: TypeEnum.INT32,
-    types.int64: TypeEnum.INT64,
-    types.uint8: TypeEnum.UINT8,
-    types.uint16: TypeEnum.UINT16,
-    types.uint32: TypeEnum.UINT32,
-    types.uint64: TypeEnum.UINT64,
-    types.float16: TypeEnum.FLOAT16,
-    types.float32: TypeEnum.FLOAT32,
-    types.float64: TypeEnum.FLOAT64,
+# Numpy dtype to TypeEnum mapping (no Numba dependency)
+_NUMPY_DTYPE_TO_ENUM = {
+    np.dtype("int8"): TypeEnum.INT8,
+    np.dtype("int16"): TypeEnum.INT16,
+    np.dtype("int32"): TypeEnum.INT32,
+    np.dtype("int64"): TypeEnum.INT64,
+    np.dtype("uint8"): TypeEnum.UINT8,
+    np.dtype("uint16"): TypeEnum.UINT16,
+    np.dtype("uint32"): TypeEnum.UINT32,
+    np.dtype("uint64"): TypeEnum.UINT64,
+    np.dtype("float16"): TypeEnum.FLOAT16,
+    np.dtype("float32"): TypeEnum.FLOAT32,
+    np.dtype("float64"): TypeEnum.FLOAT64,
 }
 
 
-if TYPE_CHECKING:
-    from numba.core.typing import Signature
-
-
-def _type_to_enum(numba_type: types.Type) -> TypeEnum:
-    if numba_type in _TYPE_TO_ENUM:
-        return _TYPE_TO_ENUM[numba_type]
-    return TypeEnum.STORAGE
-
-
-# TODO: replace with functools.cache once our docs build environment
-# is upgraded to at least Python 3.9
 @functools.lru_cache(maxsize=None)
-def _numba_type_to_info(numba_type: types.Type) -> TypeInfo:
-    context = cuda.descriptor.cuda_target.target_context
-    value_type = context.get_value_type(numba_type)
-    if isinstance(numba_type, types.Record):
-        # then `value_type` is a pointer and we need the
-        # alignment of the pointee.
-        value_type = value_type.pointee
-    size = value_type.get_abi_size(context.target_data)
-    alignment = value_type.get_abi_alignment(context.target_data)
-    return TypeInfo(size, alignment, _type_to_enum(numba_type))
+def _numpy_dtype_to_info(dtype: np.dtype) -> TypeInfo:
+    """Convert a numpy dtype to TypeInfo without Numba."""
+    if dtype in _NUMPY_DTYPE_TO_ENUM:
+        return TypeInfo(dtype.itemsize, dtype.alignment, _NUMPY_DTYPE_TO_ENUM[dtype])
+    return TypeInfo(dtype.itemsize, dtype.alignment, TypeEnum.STORAGE)
 
 
-@functools.lru_cache(maxsize=None)
-def _numpy_type_to_info(numpy_type: np.dtype) -> TypeInfo:
-    numba_type = numba.from_dtype(numpy_type)
-    return _numba_type_to_info(numba_type)
+def is_iterator(it) -> bool:
+    """Check if an object is an iterator (has to_cccl_iter method)."""
+    return hasattr(it, "to_cccl_iter") and callable(it.to_cccl_iter)
+
+
+def get_iterator_kind(it):
+    """Get the cache key kind from any iterator type."""
+    return it.kind
 
 
 def _device_array_to_cccl_iter(array: DeviceArrayLike) -> Iterator:
+    """Convert a device array to a CCCL Iterator."""
     if not is_contiguous(array):
         raise ValueError("Non-contiguous arrays are not supported.")
     dtype = get_dtype(array)
-
-    # Handle structured dtypes by creating a proper gpu_struct
-    if dtype.type == np.void:
-        from .struct import gpu_struct
-
-        numba_type = as_numba_type(gpu_struct(dtype))
-        info = _numba_type_to_info(numba_type)
-    else:
-        info = _numpy_type_to_info(dtype)
-
-    state_info = _numpy_type_to_info(np.intp)
+    info = _numpy_dtype_to_info(dtype)
+    state_info = _numpy_dtype_to_info(np.dtype(np.intp))
     return Iterator(
         state_info.alignment,
         IteratorKind.POINTER,
@@ -120,9 +94,30 @@ def _device_array_to_cccl_iter(array: DeviceArrayLike) -> Iterator:
 
 
 def _none_to_cccl_iter() -> Iterator:
-    # Any type could be used here, we just need to pass NULL.
-    info = _numpy_type_to_info(np.uint8)
+    """Create a null CCCL Iterator."""
+    info = _numpy_dtype_to_info(np.dtype(np.uint8))
     return Iterator(info.alignment, IteratorKind.POINTER, Op(), Op(), info, state=None)
+
+
+def _to_cccl_iter(it, is_output: bool) -> Iterator:
+    """Convert an iterator or array to a CCCL Iterator.
+
+    Uses duck typing: if the object has a to_cccl_iter method, call it.
+    Otherwise, treat it as a device array.
+    """
+    if it is None:
+        return _none_to_cccl_iter()
+    if is_iterator(it):
+        return it.to_cccl_iter(is_output=is_output)
+    return _device_array_to_cccl_iter(it)
+
+
+def to_cccl_input_iter(array_or_iterator) -> Iterator:
+    return _to_cccl_iter(array_or_iterator, is_output=False)
+
+
+def to_cccl_output_iter(array_or_iterator) -> Iterator:
+    return _to_cccl_iter(array_or_iterator, is_output=True)
 
 
 def type_enum_as_name(enum_value: int) -> str:
@@ -141,73 +136,6 @@ def type_enum_as_name(enum_value: int) -> str:
     )[enum_value]
 
 
-class _IteratorIO(enum.Enum):
-    INPUT = 0
-    OUTPUT = 1
-
-
-def _iterator_to_cccl_iter(it: IteratorBase, io_kind: _IteratorIO) -> Iterator:
-    context = cuda.descriptor.cuda_target.target_context
-    state_ptr_type = it.state_ptr_type
-    state_type = it.state_type
-    size = context.get_value_type(state_type).get_abi_size(context.target_data)
-    iterator_state = memoryview(it.state)
-    if not iterator_state.nbytes == size:
-        raise ValueError(
-            f"Iterator state size, {iterator_state.nbytes} bytes, for iterator type {type(it)} "
-            f"does not match size of numba type, {size} bytes"
-        )
-    alignment = context.get_value_type(state_ptr_type).get_abi_alignment(
-        context.target_data
-    )
-
-    advance_abi_name, advance_ltoir = it.get_advance_ltoir()
-    match io_kind:
-        case _IteratorIO.INPUT:
-            deref_abi_name, deref_ltoir = it.get_input_dereference_ltoir()
-        case _IteratorIO.OUTPUT:
-            deref_abi_name, deref_ltoir = it.get_output_dereference_ltoir()
-        case _:
-            raise ValueError(f"Invalid io_kind: {io_kind}")
-
-    advance_op = Op(
-        operator_type=OpKind.STATELESS,
-        name=advance_abi_name,
-        ltoir=advance_ltoir,
-    )
-    deref_op = Op(
-        operator_type=OpKind.STATELESS,
-        name=deref_abi_name,
-        ltoir=deref_ltoir,
-    )
-    return Iterator(
-        alignment,
-        IteratorKind.ITERATOR,
-        advance_op,
-        deref_op,
-        _numba_type_to_info(it.value_type),
-        state=it.state,
-    )
-
-
-def _to_cccl_iter(
-    it: IteratorBase | DeviceArrayLike | None, io_kind: _IteratorIO
-) -> Iterator:
-    if it is None:
-        return _none_to_cccl_iter()
-    if isinstance(it, IteratorBase):
-        return _iterator_to_cccl_iter(it, io_kind)
-    return _device_array_to_cccl_iter(it)
-
-
-def to_cccl_input_iter(array_or_iterator) -> Iterator:
-    return _to_cccl_iter(array_or_iterator, _IteratorIO.INPUT)
-
-
-def to_cccl_output_iter(array_or_iterator) -> Iterator:
-    return _to_cccl_iter(array_or_iterator, _IteratorIO.OUTPUT)
-
-
 def to_cccl_value_state(array_or_struct: np.ndarray | GpuStruct) -> memoryview:
     if isinstance(array_or_struct, np.ndarray):
         assert array_or_struct.flags.contiguous
@@ -220,53 +148,54 @@ def to_cccl_value_state(array_or_struct: np.ndarray | GpuStruct) -> memoryview:
 
 def to_cccl_value(array_or_struct: np.ndarray | GpuStruct) -> Value:
     if isinstance(array_or_struct, np.ndarray):
-        info = _numpy_type_to_info(array_or_struct.dtype)
+        info = _numpy_dtype_to_info(array_or_struct.dtype)
         return Value(info, array_or_struct.data.cast("B"))
     else:
         # it's a GpuStruct, use the array underlying it
         return to_cccl_value(array_or_struct._data)
 
 
-def to_stateless_cccl_op(op, sig: "Signature") -> Op:
-    from ._odr_helpers import create_op_void_ptr_wrapper
+def get_value_type(d_in):
+    """Get the value type for an input array, iterator, or struct.
 
-    wrapped_op, wrapper_sig = create_op_void_ptr_wrapper(op, sig)
-
-    ltoir, _ = cuda.compile(wrapped_op, sig=wrapper_sig, output="ltoir")
-    return Op(
-        operator_type=OpKind.STATELESS,
-        name=wrapped_op.__name__,
-        ltoir=ltoir,
-        state_alignment=1,
-        state=None,
-    )
-
-
-def get_value_type(d_in: IteratorBase | DeviceArrayLike | GpuStruct | np.ndarray):
+    Returns:
+        - For iterators: their value_type (Numba type or _TypeDescriptor)
+        - For _Struct instances: the struct class itself
+        - For arrays with structured dtype: an anonymous gpu_struct class
+        - For arrays with scalar dtype: a _TypeDescriptor
+    """
     from .struct import _Struct, gpu_struct
+    from .types import from_numpy_dtype
 
-    if isinstance(d_in, IteratorBase):
+    # Iterators have a value_type property
+    if is_iterator(d_in):
         return d_in.value_type
+
+    # Struct instances - return the class
     if isinstance(d_in, _Struct):
-        return numba.typeof(d_in)
+        return d_in.__class__
+
+    # Arrays - check dtype
     dtype = get_dtype(d_in)
-    if dtype.type == np.void:
-        # we can't use the numba type corresponding to numpy struct
-        # types directly, as those are passed by pointer to device
-        # functions. Instead, we create an anonymous struct type
-        # which has the appropriate pass-by-value semantics.
-        return as_numba_type(gpu_struct(dtype))
-    return numba.from_dtype(dtype)
+
+    # Structured dtype → create anonymous gpu_struct
+    if dtype.fields is not None:
+        return gpu_struct(dtype)
+
+    # Scalar dtype → return TypeDescriptor
+    return from_numpy_dtype(dtype)
 
 
 def set_cccl_iterator_state(cccl_it: Iterator, input_it):
+    """Set the state of a CCCL Iterator from an input iterator or array."""
     if cccl_it.is_kind_pointer():
         ptr = get_data_pointer(input_it)
         ptr_obj = make_pointer_object(ptr, input_it)
         cccl_it.state = ptr_obj
     else:
+        # It's an iterator with to_cccl_iter method
         state_ = input_it.state
-        if isinstance(state_, (IteratorState, Pointer)):
+        if isinstance(state_, (IteratorState, Pointer, bytes)):
             cccl_it.state = state_
         else:
             cccl_it.state = make_pointer_object(state_, input_it)
@@ -309,6 +238,18 @@ def _check_compile_result(cubin: bytes):
 _check_sass: bool = False
 
 
+def get_current_device_cc() -> tuple[int, int]:
+    """Get the compute capability of the current CUDA device.
+
+    Uses cuda.core to avoid Numba dependency.
+    """
+    from cuda.core import Device
+
+    device = Device()
+    arch = device.compute_capability
+    return arch
+
+
 def call_build(build_impl_fn: Callable, *args, **kwargs):
     """Calls given build_impl_fn callable while providing compute capability and paths
 
@@ -316,7 +257,7 @@ def call_build(build_impl_fn: Callable, *args, **kwargs):
     """
     global _check_sass
 
-    cc_major, cc_minor = cuda.get_current_device().compute_capability
+    cc_major, cc_minor = get_current_device_cc()
     cub_path, thrust_path, libcudacxx_path, cuda_include_path = get_includes()
     common_data = CommonData(
         cc_major, cc_minor, cub_path, thrust_path, libcudacxx_path, cuda_include_path
@@ -333,22 +274,3 @@ def call_build(build_impl_fn: Callable, *args, **kwargs):
         os.unlink(temp_cubin_file_name)
 
     return result
-
-
-def _make_host_cfunc(state_ptr_ty, fn):
-    sig = numba.void(state_ptr_ty, numba.int64)
-    c_advance_fn = numba.cfunc(sig)(fn)
-
-    return c_advance_fn.ctypes
-
-
-def cccl_iterator_set_host_advance(cccl_it: Iterator, array_or_iterator):
-    if cccl_it.is_kind_iterator():
-        it = array_or_iterator
-        fn_impl = it.host_advance
-        if fn_impl is not None:
-            cccl_it.host_advance_fn = _make_host_cfunc(it.state_ptr_type, fn_impl)
-        else:
-            raise ValueError(
-                f"Iterator of type {type(it)} does not provide definition of host_advance function"
-            )

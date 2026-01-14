@@ -8,9 +8,9 @@ from typing import Callable
 from .. import _bindings
 from .. import _cccl_interop as cccl
 from .._caching import cache_with_key
-from .._cccl_interop import set_cccl_iterator_state
+from .._cccl_interop import get_iterator_kind, is_iterator, set_cccl_iterator_state
 from .._utils import protocols
-from ..iterators._iterators import IteratorBase
+from ..iterator import IteratorProtocol
 from ..op import OpAdapter, OpKind, make_op_adapter
 from ..typing import DeviceArrayLike
 
@@ -20,8 +20,8 @@ class _UnaryTransform:
 
     def __init__(
         self,
-        d_in: DeviceArrayLike | IteratorBase,
-        d_out: DeviceArrayLike | IteratorBase,
+        d_in: DeviceArrayLike | IteratorProtocol,
+        d_out: DeviceArrayLike | IteratorProtocol,
         op: OpAdapter,
     ):
         self.d_in_cccl = cccl.to_cccl_input_iter(d_in)
@@ -72,9 +72,9 @@ class _BinaryTransform:
 
     def __init__(
         self,
-        d_in1: DeviceArrayLike | IteratorBase,
-        d_in2: DeviceArrayLike | IteratorBase,
-        d_out: DeviceArrayLike | IteratorBase,
+        d_in1: DeviceArrayLike | IteratorProtocol,
+        d_in2: DeviceArrayLike | IteratorProtocol,
+        d_out: DeviceArrayLike | IteratorProtocol,
         op: OpAdapter,
     ):
         self.d_in1_cccl = cccl.to_cccl_input_iter(d_in1)
@@ -120,41 +120,41 @@ class _BinaryTransform:
 
 
 def _make_unary_transform_cache_key(
-    d_in: DeviceArrayLike | IteratorBase,
-    d_out: DeviceArrayLike | IteratorBase,
+    d_in: DeviceArrayLike,
+    d_out: DeviceArrayLike,
     op: OpAdapter,
 ):
     d_in_key = (
-        d_in.kind if isinstance(d_in, IteratorBase) else protocols.get_dtype(d_in)
+        get_iterator_kind(d_in) if is_iterator(d_in) else protocols.get_dtype(d_in)
     )
     d_out_key = (
-        d_out.kind if isinstance(d_out, IteratorBase) else protocols.get_dtype(d_out)
+        get_iterator_kind(d_out) if is_iterator(d_out) else protocols.get_dtype(d_out)
     )
     return (d_in_key, d_out_key, op.get_cache_key())
 
 
 def _make_binary_transform_cache_key(
-    d_in1: DeviceArrayLike | IteratorBase,
-    d_in2: DeviceArrayLike | IteratorBase,
-    d_out: DeviceArrayLike | IteratorBase,
+    d_in1: DeviceArrayLike,
+    d_in2: DeviceArrayLike,
+    d_out: DeviceArrayLike,
     op: OpAdapter,
 ):
     d_in1_key = (
-        d_in1.kind if isinstance(d_in1, IteratorBase) else protocols.get_dtype(d_in1)
+        get_iterator_kind(d_in1) if is_iterator(d_in1) else protocols.get_dtype(d_in1)
     )
     d_in2_key = (
-        d_in2.kind if isinstance(d_in2, IteratorBase) else protocols.get_dtype(d_in2)
+        get_iterator_kind(d_in2) if is_iterator(d_in2) else protocols.get_dtype(d_in2)
     )
     d_out_key = (
-        d_out.kind if isinstance(d_out, IteratorBase) else protocols.get_dtype(d_out)
+        get_iterator_kind(d_out) if is_iterator(d_out) else protocols.get_dtype(d_out)
     )
     return (d_in1_key, d_in2_key, d_out_key, op.get_cache_key())
 
 
 @cache_with_key(_make_unary_transform_cache_key)
 def _make_unary_transform_cached(
-    d_in: DeviceArrayLike | IteratorBase,
-    d_out: DeviceArrayLike | IteratorBase,
+    d_in: DeviceArrayLike | IteratorProtocol,
+    d_out: DeviceArrayLike | IteratorProtocol,
     op: OpAdapter,
 ):
     """Internal cached factory for _UnaryTransform."""
@@ -163,9 +163,9 @@ def _make_unary_transform_cached(
 
 @cache_with_key(_make_binary_transform_cache_key)
 def _make_binary_transform_cached(
-    d_in1: DeviceArrayLike | IteratorBase,
-    d_in2: DeviceArrayLike | IteratorBase,
-    d_out: DeviceArrayLike | IteratorBase,
+    d_in1: DeviceArrayLike | IteratorProtocol,
+    d_in2: DeviceArrayLike | IteratorProtocol,
+    d_out: DeviceArrayLike | IteratorProtocol,
     op: OpAdapter,
 ):
     """Internal cached factory for _BinaryTransform."""
@@ -173,8 +173,8 @@ def _make_binary_transform_cached(
 
 
 def make_unary_transform(
-    d_in: DeviceArrayLike | IteratorBase,
-    d_out: DeviceArrayLike | IteratorBase,
+    d_in: DeviceArrayLike | IteratorProtocol,
+    d_out: DeviceArrayLike | IteratorProtocol,
     op: Callable | OpKind,
 ):
     """
@@ -203,9 +203,9 @@ def make_unary_transform(
 
 
 def make_binary_transform(
-    d_in1: DeviceArrayLike | IteratorBase,
-    d_in2: DeviceArrayLike | IteratorBase,
-    d_out: DeviceArrayLike | IteratorBase,
+    d_in1: DeviceArrayLike | IteratorProtocol,
+    d_in2: DeviceArrayLike | IteratorProtocol,
+    d_out: DeviceArrayLike | IteratorProtocol,
     op: Callable | OpKind,
 ):
     """
@@ -235,8 +235,8 @@ def make_binary_transform(
 
 
 def unary_transform(
-    d_in: DeviceArrayLike | IteratorBase,
-    d_out: DeviceArrayLike | IteratorBase,
+    d_in: DeviceArrayLike | IteratorProtocol,
+    d_out: DeviceArrayLike | IteratorProtocol,
     op: Callable | OpKind,
     num_items: int,
     stream=None,
@@ -277,9 +277,9 @@ def unary_transform(
 
 
 def binary_transform(
-    d_in1: DeviceArrayLike | IteratorBase,
-    d_in2: DeviceArrayLike | IteratorBase,
-    d_out: DeviceArrayLike | IteratorBase,
+    d_in1: DeviceArrayLike | IteratorProtocol,
+    d_in2: DeviceArrayLike | IteratorProtocol,
+    d_out: DeviceArrayLike | IteratorProtocol,
     op: Callable | OpKind,
     num_items: int,
     stream=None,

@@ -33,7 +33,7 @@ from typing import TYPE_CHECKING
 from numba import types
 from numba.core.extending import intrinsic
 
-from ._utils import sanitize_identifier
+from .._utils import sanitize_identifier
 
 if TYPE_CHECKING:
     from numba.core.typing import Signature

@@ -50,11 +50,6 @@ class _SegmentedSort:
         self.start_offsets_in_cccl = cccl.to_cccl_input_iter(start_offsets_in)
         self.end_offsets_in_cccl = cccl.to_cccl_input_iter(end_offsets_in)
 
-        cccl.cccl_iterator_set_host_advance(
-            self.start_offsets_in_cccl, start_offsets_in
-        )
-        cccl.cccl_iterator_set_host_advance(self.end_offsets_in_cccl, end_offsets_in)
-
         self.build_result = call_build(
             _bindings.DeviceSegmentedSortBuildResult,
             _bindings.SortOrder.ASCENDING

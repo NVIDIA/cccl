@@ -1,4 +1,4 @@
-from cuda.compute._caching import CachableFunction
+from cuda.compute._numba._caching import CachableFunction
 
 global_x = 1
 

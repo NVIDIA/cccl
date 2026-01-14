@@ -5,41 +5,44 @@
 
 from typing import Callable
 
-import numba
-
-from ... import _bindings
+from ... import _bindings, types
 from ... import _cccl_interop as cccl
 from ..._caching import cache_with_key
-from ..._cccl_interop import call_build, set_cccl_iterator_state
+from ..._cccl_interop import (
+    call_build,
+    get_iterator_kind,
+    is_iterator,
+    set_cccl_iterator_state,
+)
 from ..._utils import protocols
 from ..._utils.protocols import (
     get_data_pointer,
     validate_and_get_stream,
 )
 from ..._utils.temp_storage_buffer import TempStorageBuffer
-from ...iterators._iterators import IteratorBase
+from ...iterator import IteratorProtocol
 from ...op import OpAdapter, OpKind, make_op_adapter
 from ...typing import DeviceArrayLike
 
 
 def _make_cache_key(
-    d_in_keys: DeviceArrayLike | IteratorBase,
-    d_in_items: DeviceArrayLike | IteratorBase | None,
+    d_in_keys: DeviceArrayLike,
+    d_in_items: DeviceArrayLike | None,
     d_out_keys: DeviceArrayLike,
     d_out_items: DeviceArrayLike | None,
     op: OpAdapter,
 ):
     d_in_keys_key = (
-        d_in_keys.kind
-        if isinstance(d_in_keys, IteratorBase)
+        get_iterator_kind(d_in_keys)
+        if is_iterator(d_in_keys)
         else protocols.get_dtype(d_in_keys)
     )
     if d_in_items is None:
         d_in_items_key = None
     else:
         d_in_items_key = (
-            d_in_items.kind
-            if isinstance(d_in_items, IteratorBase)
+            get_iterator_kind(d_in_items)
+            if is_iterator(d_in_items)
             else protocols.get_dtype(d_in_items)
         )
     d_out_keys_key = protocols.get_dtype(d_out_keys)
@@ -47,8 +50,8 @@ def _make_cache_key(
         d_out_items_key = None
     else:
         d_out_items_key = (
-            d_out_items.kind
-            if isinstance(d_out_items, IteratorBase)
+            get_iterator_kind(d_out_items)
+            if is_iterator(d_out_items)
             else protocols.get_dtype(d_out_items)
         )
 
@@ -74,8 +77,8 @@ class _MergeSort:
 
     def __init__(
         self,
-        d_in_keys: DeviceArrayLike | IteratorBase,
-        d_in_items: DeviceArrayLike | IteratorBase | None,
+        d_in_keys: DeviceArrayLike | IteratorProtocol,
+        d_in_items: DeviceArrayLike | IteratorProtocol | None,
         d_out_keys: DeviceArrayLike,
         d_out_items: DeviceArrayLike | None,
         op: OpAdapter,
@@ -92,7 +95,7 @@ class _MergeSort:
 
         # Compile the op - merge_sort expects int8 return (comparison)
         value_type = cccl.get_value_type(d_in_keys)
-        self.op_cccl = op.compile((value_type, value_type), numba.types.int8)
+        self.op_cccl = op.compile((value_type, value_type), types.int8)
 
         self.build_result = call_build(
             _bindings.DeviceMergeSortBuildResult,
@@ -106,8 +109,8 @@ class _MergeSort:
     def __call__(
         self,
         temp_storage,
-        d_in_keys: DeviceArrayLike | IteratorBase,
-        d_in_items: DeviceArrayLike | IteratorBase | None,
+        d_in_keys: DeviceArrayLike | IteratorProtocol,
+        d_in_items: DeviceArrayLike | IteratorProtocol | None,
         d_out_keys: DeviceArrayLike,
         d_out_items: DeviceArrayLike | None,
         num_items: int,
@@ -151,8 +154,8 @@ class _MergeSort:
 
 @cache_with_key(_make_cache_key)
 def _make_merge_sort_cached(
-    d_in_keys: DeviceArrayLike | IteratorBase,
-    d_in_items: DeviceArrayLike | IteratorBase | None,
+    d_in_keys: DeviceArrayLike | IteratorProtocol,
+    d_in_items: DeviceArrayLike | IteratorProtocol | None,
     d_out_keys: DeviceArrayLike,
     d_out_items: DeviceArrayLike | None,
     op: OpAdapter,
@@ -162,8 +165,8 @@ def _make_merge_sort_cached(
 
 
 def make_merge_sort(
-    d_in_keys: DeviceArrayLike | IteratorBase,
-    d_in_items: DeviceArrayLike | IteratorBase | None,
+    d_in_keys: DeviceArrayLike | IteratorProtocol,
+    d_in_items: DeviceArrayLike | IteratorProtocol | None,
     d_out_keys: DeviceArrayLike,
     d_out_items: DeviceArrayLike | None,
     op: Callable | OpKind,
@@ -195,8 +198,8 @@ def make_merge_sort(
 
 
 def merge_sort(
-    d_in_keys: DeviceArrayLike | IteratorBase,
-    d_in_items: DeviceArrayLike | IteratorBase | None,
+    d_in_keys: DeviceArrayLike | IteratorProtocol,
+    d_in_items: DeviceArrayLike | IteratorProtocol | None,
     d_out_keys: DeviceArrayLike,
     d_out_items: DeviceArrayLike | None,
     op: Callable | OpKind,

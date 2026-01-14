@@ -1,15 +1,20 @@
+"""
+Iterator factory functions for cuda.compute.
+"""
+
 # Copyright (c) 2025, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""
-Iterator factory functions for cuda.compute.
 
-This module provides user-facing iterator factory functions that wrap the
-Numba-based implementations in _numba/iterators/.
-
-Note: These functions require Numba to be installed.
-"""
+def import_numba_or_raise():
+    try:
+        import numba
+    except ImportError:
+        raise ImportError(
+            "Use of cuda.compute iterators requires numba to be installed"
+        )
+    return numba
 
 
 def CacheModifiedInputIterator(device_array, modifier):
@@ -18,8 +23,6 @@ def CacheModifiedInputIterator(device_array, modifier):
     Similar to https://nvidia.github.io/cccl/cub/api/classcub_1_1CacheModifiedInputIterator.html
 
     Currently the only supported modifier is "stream" (LOAD_CS).
-
-    Note: This function requires Numba to be installed.
 
     Example:
         The code snippet below demonstrates the usage of a ``CacheModifiedInputIterator``:
@@ -36,9 +39,9 @@ def CacheModifiedInputIterator(device_array, modifier):
     Returns:
         A ``CacheModifiedInputIterator`` object initialized with ``device_array``
     """
-    import numba
+    numba = import_numba_or_raise()
 
-    from .._numba.iterators import CacheModifiedPointer
+    from ._numba.iterators import CacheModifiedPointer
 
     if modifier != "stream":
         raise NotImplementedError("Only stream modifier is supported")
@@ -52,8 +55,6 @@ def ConstantIterator(value):
     """Returns an Iterator representing a sequence of constant values.
 
     Similar to https://nvidia.github.io/cccl/thrust/api/classthrust_1_1constant__iterator.html
-
-    Note: This function requires Numba to be installed.
 
     Example:
         The code snippet below demonstrates the usage of a ``ConstantIterator``
@@ -70,7 +71,9 @@ def ConstantIterator(value):
     Returns:
         A ``ConstantIterator`` object initialized to ``value``
     """
-    from .._numba.iterators import ConstantIterator as _ConstantIterator
+    _ = import_numba_or_raise()
+
+    from ._numba.iterators import ConstantIterator as _ConstantIterator
 
     return _ConstantIterator(value)
 
@@ -79,8 +82,6 @@ def CountingIterator(offset):
     """Returns an Iterator representing a sequence of incrementing values.
 
     Similar to https://nvidia.github.io/cccl/thrust/api/classthrust_1_1counting__iterator.html
-
-    Note: This function requires Numba to be installed.
 
     Example:
         The code snippet below demonstrates the usage of a ``CountingIterator``
@@ -97,7 +98,9 @@ def CountingIterator(offset):
     Returns:
         A ``CountingIterator`` object initialized to ``offset``
     """
-    from .._numba.iterators import CountingIterator as _CountingIterator
+    _ = import_numba_or_raise()
+
+    from ._numba.iterators import CountingIterator as _CountingIterator
 
     return _CountingIterator(offset)
 
@@ -106,8 +109,6 @@ def DiscardIterator(reference_iterator=None):
     """Returns an Input or Output Iterator that discards all values written to it.
 
     Similar to https://nvidia.github.io/cccl/thrust/api/classthrust_1_1discard__iterator.html
-
-    Note: This function requires Numba to be installed.
 
     Args:
         reference_iterator: Optional iterator to use as a reference for value_type and state_type.
@@ -124,7 +125,9 @@ def DiscardIterator(reference_iterator=None):
     Returns:
         A ``DiscardIterator`` object
     """
-    from .._numba.iterators import DiscardIterator as _DiscardIterator
+    _ = import_numba_or_raise()
+
+    from ._numba.iterators import DiscardIterator as _DiscardIterator
 
     return _DiscardIterator(reference_iterator)
 
@@ -133,8 +136,6 @@ def ReverseIterator(sequence):
     """Returns an Iterator over an array or another iterator in reverse.
 
     Similar to [std::reverse_iterator](https://en.cppreference.com/w/cpp/iterator/reverse_iterator).
-
-    Note: This function requires Numba to be installed.
 
     Examples:
         The code snippet below demonstrates the usage of a ``ReverseIterator`` as an input iterator:
@@ -156,7 +157,9 @@ def ReverseIterator(sequence):
     Returns:
         A ``ReverseIterator`` object
     """
-    from .._numba.iterators import make_reverse_iterator
+    _ = import_numba_or_raise()
+
+    from ._numba.iterators import make_reverse_iterator
 
     return make_reverse_iterator(sequence)
 
@@ -165,8 +168,6 @@ def TransformIterator(it, op):
     """An iterator that applies a user-defined unary function to the elements of an underlying iterator as they are read.
 
     Similar to [thrust::transform_iterator](https://nvidia.github.io/cccl/thrust/api/classthrust_1_1transform__iterator.html)
-
-    Note: This function requires Numba to be installed.
 
     Example:
         The code snippet below demonstrates the usage of a ``TransformIterator`` composed with a ``CountingIterator``
@@ -182,7 +183,9 @@ def TransformIterator(it, op):
     Returns:
         A ``TransformIterator`` object to transform the items in ``it`` using ``op``
     """
-    from .._numba.iterators import make_transform_iterator
+    _ = import_numba_or_raise()
+
+    from ._numba.iterators import make_transform_iterator
 
     return make_transform_iterator(it, op, "input")
 
@@ -191,8 +194,6 @@ def TransformOutputIterator(it, op):
     """An iterator that applies a user-defined unary function to values before writing them to an underlying iterator.
 
     Similar to [thrust::transform_output_iterator](https://nvidia.github.io/cccl/thrust/api/classthrust_1_1transform__output__iterator.html).
-
-    Note: This function requires Numba to be installed.
 
     Example:
         The code snippet below demonstrates the usage of a ``TransformOutputIterator`` to transform the output
@@ -209,7 +210,9 @@ def TransformOutputIterator(it, op):
     Returns:
         A ``TransformOutputIterator`` object that applies ``op`` to transform values before writing them to ``it``
     """
-    from .._numba.iterators import make_transform_iterator
+    _ = import_numba_or_raise()
+
+    from ._numba.iterators import make_transform_iterator
 
     return make_transform_iterator(it, op, "output")
 
@@ -222,8 +225,6 @@ def PermutationIterator(values, indices):
     The permutation iterator accesses elements from the values collection using indices
     from the indices collection, effectively computing values[indices[i]] at position i.
     This is useful for gather/scatter operations and indirect array access patterns.
-
-    Note: This function requires Numba to be installed.
 
     Example:
         The code snippet below demonstrates the usage of a ``PermutationIterator``
@@ -240,7 +241,9 @@ def PermutationIterator(values, indices):
     Returns:
         A ``PermutationIterator`` object that yields values[indices[i]] at position i
     """
-    from .._numba.iterators.permutation import make_permutation_iterator
+    _ = import_numba_or_raise()
+
+    from ._numba.iterators.permutation import make_permutation_iterator
 
     return make_permutation_iterator(values, indices)
 
@@ -253,8 +256,6 @@ def ZipIterator(*iterators):
     The resulting iterator yields gpu_struct objects with fields corresponding to each input iterator.
     For 2 iterators, fields are named 'first' and 'second'. For N iterators, fields are indexed
     as field_0, field_1, ..., field_N-1.
-
-    Note: This function requires Numba to be installed.
 
     Example:
         The code snippet below demonstrates the usage of a ``ZipIterator``
@@ -276,6 +277,8 @@ def ZipIterator(*iterators):
     Returns:
         A ``ZipIterator`` object that yields combined values from all input iterators
     """
-    from .._numba.iterators.zip import make_zip_iterator
+    _ = import_numba_or_raise()
+
+    from ._numba.iterators.zip import make_zip_iterator
 
     return make_zip_iterator(*iterators)

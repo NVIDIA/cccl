@@ -3,29 +3,31 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+
 from typing import Callable
 
 from .._caching import cache_with_key
+from .._cccl_interop import get_iterator_kind, is_iterator
+from .._iterators import DiscardIterator
 from .._utils import protocols
 from .._utils.temp_storage_buffer import TempStorageBuffer
-from ..iterators._factories import DiscardIterator
-from ..iterators._iterators import IteratorBase
+from ..iterator import IteratorProtocol
 from ..op import OpAdapter, make_op_adapter
 from ..typing import DeviceArrayLike
 from ._three_way_partition import make_three_way_partition
 
 
 def _make_cache_key(
-    d_in: DeviceArrayLike | IteratorBase,
-    d_out: DeviceArrayLike | IteratorBase,
+    d_in: DeviceArrayLike,
+    d_out: DeviceArrayLike,
     d_num_selected_out: DeviceArrayLike,
     cond: OpAdapter,
 ):
     d_in_key = (
-        d_in.kind if isinstance(d_in, IteratorBase) else protocols.get_dtype(d_in)
+        get_iterator_kind(d_in) if is_iterator(d_in) else protocols.get_dtype(d_in)
     )
     d_out_key = (
-        d_out.kind if isinstance(d_out, IteratorBase) else protocols.get_dtype(d_out)
+        get_iterator_kind(d_out) if is_iterator(d_out) else protocols.get_dtype(d_out)
     )
     d_num_selected_out_key = protocols.get_dtype(d_num_selected_out)
 
@@ -37,8 +39,8 @@ class _Select:
 
     def __init__(
         self,
-        d_in: DeviceArrayLike | IteratorBase,
-        d_out: DeviceArrayLike | IteratorBase,
+        d_in: DeviceArrayLike | IteratorProtocol,
+        d_out: DeviceArrayLike | IteratorProtocol,
         d_num_selected_out: DeviceArrayLike,
         cond: OpAdapter,
     ):
@@ -81,8 +83,8 @@ class _Select:
 
 @cache_with_key(_make_cache_key)
 def _make_select_cached(
-    d_in: DeviceArrayLike | IteratorBase,
-    d_out: DeviceArrayLike | IteratorBase,
+    d_in: DeviceArrayLike | IteratorProtocol,
+    d_out: DeviceArrayLike | IteratorProtocol,
     d_num_selected_out: DeviceArrayLike,
     cond: OpAdapter,
 ):
@@ -94,8 +96,8 @@ def _make_select_cached(
 
 
 def make_select(
-    d_in: DeviceArrayLike | IteratorBase,
-    d_out: DeviceArrayLike | IteratorBase,
+    d_in: DeviceArrayLike | IteratorProtocol,
+    d_out: DeviceArrayLike | IteratorProtocol,
     d_num_selected_out: DeviceArrayLike,
     cond: Callable,
 ):
@@ -128,8 +130,8 @@ def make_select(
 
 
 def select(
-    d_in: DeviceArrayLike | IteratorBase,
-    d_out: DeviceArrayLike | IteratorBase,
+    d_in: DeviceArrayLike | IteratorProtocol,
+    d_out: DeviceArrayLike | IteratorProtocol,
     d_num_selected_out: DeviceArrayLike,
     cond: Callable,
     num_items: int,
