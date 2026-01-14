@@ -123,3 +123,109 @@ void TestDevicePointerBoolConversion()
   ASSERT_EQUAL_QUIET(false, b);
 }
 DECLARE_GENERIC_UNITTEST(TestDevicePointerBoolConversion);
+
+void TestDevicePointerCompare()
+{
+  using T1 = int;
+
+  thrust::device_vector<T1> v1 = {42, 1337};
+
+  { // test same element type
+    using device_ptr = thrust::device_ptr<T1>;
+
+    device_ptr ptr1 = v1.data();
+    device_ptr ptr2 = ptr1 + 1;
+
+    // Equality
+    ASSERT_EQUAL(true, (ptr1 == ptr1));
+    ASSERT_EQUAL(false, (ptr1 != ptr1));
+
+    ASSERT_EQUAL(false, (ptr1 == ptr2));
+    ASSERT_EQUAL(true, (ptr1 != ptr2));
+
+    // Relations
+    ASSERT_EQUAL(true, (ptr1 < ptr2));
+    ASSERT_EQUAL(true, (ptr1 <= ptr2));
+    ASSERT_EQUAL(true, (ptr2 > ptr1));
+    ASSERT_EQUAL(true, (ptr2 >= ptr1));
+
+    ASSERT_EQUAL(false, (ptr2 < ptr1));
+    ASSERT_EQUAL(false, (ptr2 <= ptr1));
+    ASSERT_EQUAL(false, (ptr1 > ptr2));
+    ASSERT_EQUAL(false, (ptr1 >= ptr2));
+  }
+
+  using T2 = float;
+  { // Ensure different element types are not comparable
+    using device_ptr = thrust::device_ptr<T1>;
+    using other_ptr  = thrust::device_ptr<T2>;
+
+    static_assert(thrust::detail::is_pointer_system_convertible_v<device_ptr, other_ptr>);
+    static_assert(!::cuda::std::__is_cpp17_equality_comparable_v<device_ptr, other_ptr>);
+    static_assert(!::cuda::std::__is_cpp17_less_than_comparable_v<device_ptr, other_ptr>);
+  }
+
+  { // test different pointer types
+    using device_ptr = thrust::device_ptr<T1>;
+    using other_ptr =
+      thrust::pointer<T1, thrust::device_system_tag, thrust::tagged_reference<T1, thrust::device_system_tag>>;
+    static_assert(!::cuda::std::is_same_v<device_ptr, other_ptr>);
+
+    device_ptr ptr1 = v1.data();
+    other_ptr ptr2{other_ptr{thrust::raw_pointer_cast(ptr1 + 1)}};
+
+    // Equality
+    ASSERT_EQUAL(true, (ptr1 == ptr1));
+    ASSERT_EQUAL(false, (ptr1 != ptr1));
+
+    ASSERT_EQUAL(false, (ptr1 == ptr2));
+    ASSERT_EQUAL(true, (ptr1 != ptr2));
+
+    // Relations
+    ASSERT_EQUAL(true, (ptr1 < ptr2));
+    ASSERT_EQUAL(true, (ptr1 <= ptr2));
+    ASSERT_EQUAL(true, (ptr2 > ptr1));
+    ASSERT_EQUAL(true, (ptr2 >= ptr1));
+
+    ASSERT_EQUAL(false, (ptr2 < ptr1));
+    ASSERT_EQUAL(false, (ptr2 <= ptr1));
+    ASSERT_EQUAL(false, (ptr1 > ptr2));
+    ASSERT_EQUAL(false, (ptr1 >= ptr2));
+  }
+
+  { // ensure that different pointer types with different element types are not comparable
+    using device_ptr = thrust::device_ptr<T1>;
+    using other_ptr =
+      thrust::pointer<T2, thrust::device_system_tag, thrust::tagged_reference<T1, thrust::device_system_tag>>;
+
+    static_assert(thrust::detail::is_pointer_system_convertible_v<device_ptr, other_ptr>);
+    static_assert(!::cuda::std::__is_cpp17_equality_comparable_v<device_ptr, other_ptr>);
+    static_assert(!::cuda::std::__is_cpp17_less_than_comparable_v<device_ptr, other_ptr>);
+  }
+
+  // For the non-cuda backends host_system_tag and device_system_tag are comparable
+#if THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA
+  { // ensure that pointers with different tags are not comparable
+    using device_ptr = thrust::device_ptr<T1>;
+    using other_ptr =
+      thrust::pointer<T1, thrust::host_system_tag, thrust::tagged_reference<T1, thrust::host_system_tag>>;
+
+    static_assert(!thrust::detail::is_pointer_system_convertible_v<device_ptr, other_ptr>);
+    static_assert(!::cuda::std::__is_cpp17_equality_comparable_v<device_ptr, other_ptr>);
+    static_assert(!::cuda::std::__is_cpp17_less_than_comparable_v<device_ptr, other_ptr>);
+  }
+#endif // THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA
+
+  { // ensure that different pointers with different tags and types are not comparable
+    using device_ptr = thrust::device_ptr<T1>;
+    using other_ptr =
+      thrust::pointer<T2, thrust::host_system_tag, thrust::tagged_reference<T1, thrust::host_system_tag>>;
+
+    // For the non-cuda backends host_system_tag and device_system_tag are comparable
+    static_assert(thrust::detail::is_pointer_system_convertible_v<device_ptr, other_ptr>
+                  == (THRUST_DEVICE_SYSTEM != THRUST_DEVICE_SYSTEM_CUDA));
+    static_assert(!::cuda::std::__is_cpp17_equality_comparable_v<device_ptr, other_ptr>);
+    static_assert(!::cuda::std::__is_cpp17_less_than_comparable_v<device_ptr, other_ptr>);
+  }
+}
+DECLARE_UNITTEST(TestDevicePointerCompare);

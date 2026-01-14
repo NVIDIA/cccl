@@ -101,3 +101,4 @@ CUB device-level segmented-problem (batched) parallel algorithms:
 * :cpp:struct:`cub::DeviceSegmentedReduce` computes reductions across multiple sequences of data residing within device-accessible memory
 * :cpp:struct:`cub::DeviceCopy` provides device-wide, parallel operations for batched copying of data residing within device-accessible memory
 * :cpp:struct:`cub::DeviceMemcpy` provides device-wide, parallel operations for batched copying of data residing within device-accessible memory
+* :cpp:struct:`cub::DeviceFind` provides vectorized binary search algorithms

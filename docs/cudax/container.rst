@@ -20,12 +20,12 @@ annotations are checked by the type system.
    :widths: 25 45 30
    :header-rows: 0
 
-   * - :ref:`<cuda/experimental/container.cuh> <cudax-containers-uninitialized-buffer>`
+   * - :ref:`<cuda/experimental/container.cuh> <libcudacxx-containers-uninitialized-buffer>`
      - Facilities providing uninitialized *heterogeneous* potentially stream ordered storage satisfying a set of properties
      - cudax 2.7.0 / CCCL 2.7.0
-   * - :ref:`<cuda/experimental/container.cuh> <cudax-containers-heterogeneous-iterator>`
+   * - :ref:`<cuda/experimental/container.cuh> <libcudacxx-containers-heterogeneous-iterator>`
      - Iterator providing type safe iteration and memory access through a set of properties
      - cudax 2.7.0 / CCCL 2.7.0
-   * - :ref:`<cuda/experimental/container.cuh> <cudax-containers-async-vector>`
+   * - :ref:`<cuda/experimental/container.cuh> <libcudacxx-containers-async-vector>`
      - High level containers, that provide *heterogeneous* storage satisfying a set of properties
      - cudax 2.7.0 / CCCL 2.7.0
