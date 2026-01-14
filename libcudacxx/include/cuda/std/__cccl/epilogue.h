@@ -105,20 +105,20 @@ _CCCL_DIAG_POP
 #  undef _CCCL_POP_MACRO_hybrid_patchable
 #endif
 
-#if defined(lifetimebound)
-#  error \
-    "cccl internal error: macro `lifetimebound` was redefined between <cuda/std/__cccl/prologue.h> and <cuda/std/__cccl/epilogue.h>"
-#elif defined(_CCCL_POP_MACRO_lifetimebound)
-#  pragma pop_macro("lifetimebound")
-#  undef _CCCL_POP_MACRO_lifetimebound
-#endif
-
 #if defined(jitintrinsic)
 #  error \
     "cccl internal error: macro `jitintrinsic` was redefined between <cuda/std/__cccl/prologue.h> and <cuda/std/__cccl/epilogue.h>"
 #elif defined(_CCCL_POP_MACRO_jitintrinsic)
 #  pragma pop_macro("jitintrinsic")
 #  undef _CCCL_POP_MACRO_jitintrinsic
+#endif
+
+#if defined(lifetimebound)
+#  error \
+    "cccl internal error: macro `lifetimebound` was redefined between <cuda/std/__cccl/prologue.h> and <cuda/std/__cccl/epilogue.h>"
+#elif defined(_CCCL_POP_MACRO_lifetimebound)
+#  pragma pop_macro("lifetimebound")
+#  undef _CCCL_POP_MACRO_lifetimebound
 #endif
 
 #if defined(naked)
