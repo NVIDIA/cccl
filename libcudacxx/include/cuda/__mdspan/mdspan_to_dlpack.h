@@ -3,7 +3,7 @@
 // Part of the libcu++ Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -20,9 +20,10 @@
 #  pragma system_header
 #endif // no system header
 
-#if !_CCCL_COMPILER(NVRTC) && _CCCL_HAS_INCLUDE(<dlpack/dlpack.h>)
+#if _CCCL_HAS_DLPACK()
 
 #  include <cuda/__driver/driver_api.h>
+#  include <cuda/__internal/dlpack.h>
 #  include <cuda/__mdspan/host_device_mdspan.h>
 #  include <cuda/__type_traits/is_floating_point.h>
 #  include <cuda/__type_traits/vector_type.h>
@@ -43,13 +44,9 @@
 
 #  include <stdexcept>
 
-#  include <dlpack/dlpack.h>
-//
 #  include <cuda/std/__cccl/prologue.h>
 
 _CCCL_BEGIN_NAMESPACE_CUDA
-
-static_assert(DLPACK_MAJOR_VERSION == 1, "DLPACK_MAJOR_VERSION must be 1");
 
 template <typename _ElementType>
 [[nodiscard]] _CCCL_HOST_API inline ::DLDataType __data_type_to_dlpack() noexcept
@@ -220,15 +217,19 @@ public:
 
   _CCCL_HIDE_FROM_ABI ~__dlpack_tensor() noexcept = default;
 
-  [[nodiscard]] _CCCL_HOST_API ::DLTensor& get() noexcept
+  [[nodiscard]] _CCCL_HOST_API ::DLTensor& get() & noexcept
   {
     return __tensor;
   }
 
-  [[nodiscard]] _CCCL_HOST_API const ::DLTensor& get() const noexcept
+  [[nodiscard]] _CCCL_HOST_API ::DLTensor& get() && noexcept = delete;
+
+  [[nodiscard]] _CCCL_HOST_API const ::DLTensor& get() const& noexcept
   {
     return __tensor;
   }
+
+  [[nodiscard]] _CCCL_HOST_API const ::DLTensor& get() const&& noexcept = delete;
 };
 
 template <typename _ElementType, typename _Extents, typename _Layout, typename _Accessor>
@@ -306,5 +307,5 @@ _CCCL_END_NAMESPACE_CUDA
 
 #  include <cuda/std/__cccl/epilogue.h>
 
-#endif // !_CCCL_COMPILER(NVRTC) && _CCCL_HAS_INCLUDE(<dlpack/dlpack.h>)
+#endif // _CCCL_HAS_DLPACK()
 #endif // _CUDA___MDSPAN_MDSPAN_TO_DLPACK_H
