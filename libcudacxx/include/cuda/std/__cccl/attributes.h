@@ -154,6 +154,16 @@
 #define _CCCL_NO_SPECIALIZATIONS \
   _CCCL_NO_SPECIALIZATIONS_BECAUSE("Users are not allowed to specialize this cccl entity")
 
+// _CCCL_LIFETIMEBOUND
+
+#if _CCCL_HAS_CPP_ATTRIBUTE(clang::lifetimebound) || _CCCL_COMPILER(CLANG)
+#  define _CCCL_LIFETIMEBOUND [[clang::lifetimebound]]
+#elif _CCCL_HAS_CPP_ATTRIBUTE(msvc::lifetimebound) || _CCCL_COMPILER(MSVC, >=, 19, 37)
+#  define _CCCL_LIFETIMEBOUND [[msvc::lifetimebound]]
+#else
+#  define _CCCL_LIFETIMEBOUND
+#endif
+
 // _CCCL_NO_UNIQUE_ADDRESS
 
 #if _CCCL_COMPILER(MSVC) || _CCCL_HAS_CPP_ATTRIBUTE(no_unique_address) < 201803L
