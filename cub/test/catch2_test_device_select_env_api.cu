@@ -1,5 +1,5 @@
-// SPDX-FileCopyrightText: Copyright (c) 2025, NVIDIA CORPORATION. All rights reserved.
-// SPDX-License-Identifier: BSD-3-Clause
+// SPDX-FileCopyrightText: Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 #include "insert_nested_NVTX_range_guard.h"
 // above header needs to be included first
@@ -24,7 +24,7 @@ C2H_TEST("cub::DeviceSelect::If accepts determinism requirements", "[select][env
 
   auto env = cuda::execution::require(cuda::execution::determinism::run_to_run);
 
-  cub::DeviceSelect::If(input.begin(), output.begin(), num_selected.begin(), input.size(), le, env);
+  auto error = cub::DeviceSelect::If(input.begin(), output.begin(), num_selected.begin(), input.size(), le, env);
 
   thrust::device_vector<int> expected_output{1, 2, 3, 4};
   thrust::device_vector<int> expected_num_selected{4};

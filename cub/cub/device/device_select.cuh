@@ -20,7 +20,6 @@
 
 #include <cub/detail/choose_offset.cuh>
 #include <cub/detail/env_dispatch.cuh>
-#include <cub/detail/temporary_storage.cuh>
 #include <cub/device/dispatch/dispatch_select_if.cuh>
 #include <cub/device/dispatch/dispatch_unique_by_key.cuh>
 
@@ -103,6 +102,7 @@ private:
     ::cuda::execution::determinism::__determinism_holder_t<Determinism> determinism_holder_arg,
     cudaStream_t stream)
   {
+    (void) determinism_holder_arg; // determisnim is of no use in DeviceSelect at the moment
     using select_tuning_t = ::cuda::std::execution::
       __query_result_or_t<TuningEnvT, detail::select::get_tuning_query_t, detail::select::default_tuning>;
 
