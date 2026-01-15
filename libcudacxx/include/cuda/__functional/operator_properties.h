@@ -36,7 +36,6 @@
 #include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/is_integer.h>
 #include <cuda/std/__type_traits/is_same.h>
-#include <cuda/std/__type_traits/is_unsigned_integer.h>
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -84,9 +83,7 @@ struct __is_associative<::cuda::std::multiplies<>, _Tp> : __is_associative<::cud
 {};
 
 template <class _Tp>
-struct __is_associative<::cuda::std::bit_and<_Tp>,
-                        _Tp,
-                        ::cuda::std::enable_if_t<::cuda::std::__cccl_is_unsigned_integer_v<_Tp>>>
+struct __is_associative<::cuda::std::bit_and<_Tp>, _Tp, ::cuda::std::enable_if_t<::cuda::std::__cccl_is_integer_v<_Tp>>>
     : ::cuda::std::true_type
 {};
 
@@ -95,9 +92,7 @@ struct __is_associative<::cuda::std::bit_and<>, _Tp> : __is_associative<::cuda::
 {};
 
 template <class _Tp>
-struct __is_associative<::cuda::std::bit_or<_Tp>,
-                        _Tp,
-                        ::cuda::std::enable_if_t<::cuda::std::__cccl_is_unsigned_integer_v<_Tp>>>
+struct __is_associative<::cuda::std::bit_or<_Tp>, _Tp, ::cuda::std::enable_if_t<::cuda::std::__cccl_is_integer_v<_Tp>>>
     : ::cuda::std::true_type
 {};
 
@@ -106,9 +101,7 @@ struct __is_associative<::cuda::std::bit_or<>, _Tp> : __is_associative<::cuda::s
 {};
 
 template <class _Tp>
-struct __is_associative<::cuda::std::bit_xor<_Tp>,
-                        _Tp,
-                        ::cuda::std::enable_if_t<::cuda::std::__cccl_is_unsigned_integer_v<_Tp>>>
+struct __is_associative<::cuda::std::bit_xor<_Tp>, _Tp, ::cuda::std::enable_if_t<::cuda::std::__cccl_is_integer_v<_Tp>>>
     : ::cuda::std::true_type
 {};
 
@@ -247,9 +240,7 @@ struct __is_commutative<::cuda::std::multiplies<>, _Tp> : __is_commutative<::cud
 {};
 
 template <class _Tp>
-struct __is_commutative<::cuda::std::bit_and<_Tp>,
-                        _Tp,
-                        ::cuda::std::enable_if_t<::cuda::std::__cccl_is_unsigned_integer_v<_Tp>>>
+struct __is_commutative<::cuda::std::bit_and<_Tp>, _Tp, ::cuda::std::enable_if_t<::cuda::std::__cccl_is_integer_v<_Tp>>>
     : ::cuda::std::true_type
 {};
 
@@ -258,9 +249,7 @@ struct __is_commutative<::cuda::std::bit_and<>, _Tp> : __is_commutative<::cuda::
 {};
 
 template <class _Tp>
-struct __is_commutative<::cuda::std::bit_or<_Tp>,
-                        _Tp,
-                        ::cuda::std::enable_if_t<::cuda::std::__cccl_is_unsigned_integer_v<_Tp>>>
+struct __is_commutative<::cuda::std::bit_or<_Tp>, _Tp, ::cuda::std::enable_if_t<::cuda::std::__cccl_is_integer_v<_Tp>>>
     : ::cuda::std::true_type
 {};
 
@@ -269,9 +258,7 @@ struct __is_commutative<::cuda::std::bit_or<>, _Tp> : __is_commutative<::cuda::s
 {};
 
 template <class _Tp>
-struct __is_commutative<::cuda::std::bit_xor<_Tp>,
-                        _Tp,
-                        ::cuda::std::enable_if_t<::cuda::std::__cccl_is_unsigned_integer_v<_Tp>>>
+struct __is_commutative<::cuda::std::bit_xor<_Tp>, _Tp, ::cuda::std::enable_if_t<::cuda::std::__cccl_is_integer_v<_Tp>>>
     : ::cuda::std::true_type
 {};
 
@@ -393,7 +380,7 @@ struct __identity_element<::cuda::std::plus<_Tp>, _Tp, ::cuda::std::enable_if_t<
 template <class _Tp>
 struct __identity_element<::cuda::std::plus<_Tp>, _Tp, ::cuda::std::enable_if_t<::cuda::is_floating_point_v<_Tp>>>
 {
-  static constexpr auto value = ::cuda::std::__fp_neg(_Tp{}); // -0.0 -> +0.0 + -0.0 = +0.0
+  static constexpr auto value = ::cuda::std::__fp_neg(_Tp{}); // -0.0 to preserve negative zero: -0.0 + (-0.0) = -0.0
 };
 
 template <class _Tp>
@@ -419,9 +406,7 @@ struct __identity_element<::cuda::std::multiplies<>, _Tp> : __identity_element<:
 {};
 
 template <class _Tp>
-struct __identity_element<::cuda::std::bit_and<_Tp>,
-                          _Tp,
-                          ::cuda::std::enable_if_t<::cuda::std::__cccl_is_unsigned_integer_v<_Tp>>>
+struct __identity_element<::cuda::std::bit_and<_Tp>, _Tp, ::cuda::std::enable_if_t<::cuda::std::__cccl_is_integer_v<_Tp>>>
 {
   static constexpr auto value = static_cast<_Tp>(~_Tp{});
 };
@@ -431,9 +416,7 @@ struct __identity_element<::cuda::std::bit_and<>, _Tp> : __identity_element<::cu
 {};
 
 template <class _Tp>
-struct __identity_element<::cuda::std::bit_or<_Tp>,
-                          _Tp,
-                          ::cuda::std::enable_if_t<::cuda::std::__cccl_is_unsigned_integer_v<_Tp>>>
+struct __identity_element<::cuda::std::bit_or<_Tp>, _Tp, ::cuda::std::enable_if_t<::cuda::std::__cccl_is_integer_v<_Tp>>>
 {
   static constexpr auto value = _Tp{};
 };
@@ -443,9 +426,7 @@ struct __identity_element<::cuda::std::bit_or<>, _Tp> : __identity_element<::cud
 {};
 
 template <class _Tp>
-struct __identity_element<::cuda::std::bit_xor<_Tp>,
-                          _Tp,
-                          ::cuda::std::enable_if_t<::cuda::std::__cccl_is_unsigned_integer_v<_Tp>>>
+struct __identity_element<::cuda::std::bit_xor<_Tp>, _Tp, ::cuda::std::enable_if_t<::cuda::std::__cccl_is_integer_v<_Tp>>>
 {
   static constexpr auto value = _Tp{};
 };
@@ -539,9 +520,7 @@ struct __absorbing_element<::cuda::std::multiplies<>, _Tp> : __absorbing_element
 {};
 
 template <class _Tp>
-struct __absorbing_element<::cuda::std::bit_and<_Tp>,
-                           _Tp,
-                           ::cuda::std::enable_if_t<::cuda::std::__cccl_is_unsigned_integer_v<_Tp>>>
+struct __absorbing_element<::cuda::std::bit_and<_Tp>, _Tp, ::cuda::std::enable_if_t<::cuda::std::__cccl_is_integer_v<_Tp>>>
 {
   static constexpr auto value = _Tp{};
 };
@@ -551,9 +530,7 @@ struct __absorbing_element<::cuda::std::bit_and<>, _Tp> : __absorbing_element<::
 {};
 
 template <class _Tp>
-struct __absorbing_element<::cuda::std::bit_or<_Tp>,
-                           _Tp,
-                           ::cuda::std::enable_if_t<::cuda::std::__cccl_is_unsigned_integer_v<_Tp>>>
+struct __absorbing_element<::cuda::std::bit_or<_Tp>, _Tp, ::cuda::std::enable_if_t<::cuda::std::__cccl_is_integer_v<_Tp>>>
 {
   static constexpr auto value = static_cast<_Tp>(~_Tp{});
 };
@@ -583,12 +560,15 @@ struct __absorbing_element<::cuda::std::logical_or<>, _Tp> : __absorbing_element
 {};
 
 template <class _Tp>
-struct __absorbing_element<
-  ::cuda::minimum<_Tp>,
-  _Tp,
-  ::cuda::std::enable_if_t<::cuda::std::__cccl_is_integer_v<_Tp> || ::cuda::is_floating_point_v<_Tp>>>
+struct __absorbing_element<::cuda::minimum<_Tp>, _Tp, ::cuda::std::enable_if_t<::cuda::std::__cccl_is_integer_v<_Tp>>>
 {
   static constexpr auto value = ::cuda::std::numeric_limits<_Tp>::lowest();
+};
+
+template <class _Tp>
+struct __absorbing_element<::cuda::minimum<_Tp>, _Tp, ::cuda::std::enable_if_t<::cuda::is_floating_point_v<_Tp>>>
+{
+  static constexpr auto value = ::cuda::std::__fp_neg(::cuda::std::numeric_limits<_Tp>::infinity());
 };
 
 template <class _Tp>
@@ -596,12 +576,15 @@ struct __absorbing_element<::cuda::minimum<>, _Tp> : __absorbing_element<::cuda:
 {};
 
 template <class _Tp>
-struct __absorbing_element<
-  ::cuda::maximum<_Tp>,
-  _Tp,
-  ::cuda::std::enable_if_t<::cuda::std::__cccl_is_integer_v<_Tp> || ::cuda::is_floating_point_v<_Tp>>>
+struct __absorbing_element<::cuda::maximum<_Tp>, _Tp, ::cuda::std::enable_if_t<::cuda::std::__cccl_is_integer_v<_Tp>>>
 {
   static constexpr auto value = ::cuda::std::numeric_limits<_Tp>::max();
+};
+
+template <class _Tp>
+struct __absorbing_element<::cuda::maximum<_Tp>, _Tp, ::cuda::std::enable_if_t<::cuda::is_floating_point_v<_Tp>>>
+{
+  static constexpr auto value = ::cuda::std::numeric_limits<_Tp>::infinity();
 };
 
 template <class _Tp>

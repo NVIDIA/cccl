@@ -45,17 +45,11 @@ __host__ __device__ constexpr void test_associative_commutative_integral()
   static_assert(!is_commutative<cuda::std::minus, T>() && !is_associative<cuda::std::minus, T>());
   static_assert(!is_commutative<cuda::std::divides, T>() && !is_associative<cuda::std::divides, T>());
   static_assert(!is_commutative<cuda::std::modulus, T>() && !is_associative<cuda::std::modulus, T>());
-  static_assert(is_commutative_and_associative<cuda::minimum, T>());
-  static_assert(is_commutative_and_associative<cuda::maximum, T>());
-}
-
-template <class T>
-__host__ __device__ constexpr void test_associative_commutative_unsigned_integral()
-{
-  test_associative_commutative_integral<T>();
   static_assert(is_commutative_and_associative<cuda::std::bit_and, T>());
   static_assert(is_commutative_and_associative<cuda::std::bit_or, T>());
   static_assert(is_commutative_and_associative<cuda::std::bit_xor, T>());
+  static_assert(is_commutative_and_associative<cuda::minimum, T>());
+  static_assert(is_commutative_and_associative<cuda::maximum, T>());
 }
 
 __host__ __device__ constexpr void test_associative_commutative_integral()
@@ -63,18 +57,18 @@ __host__ __device__ constexpr void test_associative_commutative_integral()
   static_assert(is_commutative_and_associative<cuda::std::logical_and, bool>());
   static_assert(is_commutative_and_associative<cuda::std::logical_or, bool>());
   test_associative_commutative_integral<signed char>();
-  test_associative_commutative_unsigned_integral<unsigned char>();
+  test_associative_commutative_integral<unsigned char>();
   test_associative_commutative_integral<short>();
-  test_associative_commutative_unsigned_integral<unsigned short>();
+  test_associative_commutative_integral<unsigned short>();
   test_associative_commutative_integral<int>();
-  test_associative_commutative_unsigned_integral<unsigned int>();
+  test_associative_commutative_integral<unsigned int>();
   test_associative_commutative_integral<long>();
-  test_associative_commutative_unsigned_integral<unsigned long>();
+  test_associative_commutative_integral<unsigned long>();
   test_associative_commutative_integral<long long>();
-  test_associative_commutative_unsigned_integral<unsigned long long>();
+  test_associative_commutative_integral<unsigned long long>();
 #if _CCCL_HAS_INT128()
   test_associative_commutative_integral<__int128_t>();
-  test_associative_commutative_unsigned_integral<__uint128_t>();
+  test_associative_commutative_integral<__uint128_t>();
 #endif // _CCCL_HAS_INT128()
 }
 
@@ -176,17 +170,11 @@ __host__ __device__ constexpr void test_identity_integral()
 {
   test_identity<cuda::std::plus, T>(true, T{});
   test_identity<cuda::std::multiplies, T>(true, T{1});
-  test_identity<cuda::minimum, T>(true, cuda::std::numeric_limits<T>::max());
-  test_identity<cuda::maximum, T>(true, cuda::std::numeric_limits<T>::lowest());
-}
-
-template <class T>
-__host__ __device__ constexpr void test_identity_unsigned_integral()
-{
-  test_identity_integral<T>();
   test_identity<cuda::std::bit_and, T>(true, static_cast<T>(~T{}));
   test_identity<cuda::std::bit_or, T>(true, T{});
   test_identity<cuda::std::bit_xor, T>(true, T{});
+  test_identity<cuda::minimum, T>(true, cuda::std::numeric_limits<T>::max());
+  test_identity<cuda::maximum, T>(true, cuda::std::numeric_limits<T>::lowest());
 }
 
 __host__ __device__ constexpr void test_identity_integral()
@@ -194,18 +182,18 @@ __host__ __device__ constexpr void test_identity_integral()
   test_identity<cuda::std::logical_and, bool>(true, true);
   test_identity<cuda::std::logical_or, bool>(true, false);
   test_identity_integral<signed char>();
-  test_identity_unsigned_integral<unsigned char>();
+  test_identity_integral<unsigned char>();
   test_identity_integral<short>();
-  test_identity_unsigned_integral<unsigned short>();
+  test_identity_integral<unsigned short>();
   test_identity_integral<int>();
-  test_identity_unsigned_integral<unsigned int>();
+  test_identity_integral<unsigned int>();
   test_identity_integral<long>();
-  test_identity_unsigned_integral<unsigned long>();
+  test_identity_integral<unsigned long>();
   test_identity_integral<long long>();
-  test_identity_unsigned_integral<unsigned long long>();
+  test_identity_integral<unsigned long long>();
 #if _CCCL_HAS_INT128()
   test_identity_integral<__int128_t>();
-  test_identity_unsigned_integral<__uint128_t>();
+  test_identity_integral<__uint128_t>();
 #endif // _CCCL_HAS_INT128()
 }
 
@@ -285,16 +273,10 @@ template <class T>
 __host__ __device__ constexpr void test_absorbing_integral()
 {
   test_absorbing<cuda::std::multiplies, T>(true, T{});
-  test_absorbing<cuda::minimum, T>(true, cuda::std::numeric_limits<T>::lowest());
-  test_absorbing<cuda::maximum, T>(true, cuda::std::numeric_limits<T>::max());
-}
-
-template <class T>
-__host__ __device__ constexpr void test_absorbing_unsigned_integral()
-{
-  test_absorbing_integral<T>();
   test_absorbing<cuda::std::bit_and, T>(true, T{});
   test_absorbing<cuda::std::bit_or, T>(true, static_cast<T>(~T{}));
+  test_absorbing<cuda::minimum, T>(true, cuda::std::numeric_limits<T>::lowest());
+  test_absorbing<cuda::maximum, T>(true, cuda::std::numeric_limits<T>::max());
 }
 
 __host__ __device__ constexpr void test_absorbing_integral()
@@ -302,18 +284,18 @@ __host__ __device__ constexpr void test_absorbing_integral()
   test_absorbing<cuda::std::logical_and, bool>(true, false);
   test_absorbing<cuda::std::logical_or, bool>(true, true);
   test_absorbing_integral<signed char>();
-  test_absorbing_unsigned_integral<unsigned char>();
+  test_absorbing_integral<unsigned char>();
   test_absorbing_integral<short>();
-  test_absorbing_unsigned_integral<unsigned short>();
+  test_absorbing_integral<unsigned short>();
   test_absorbing_integral<int>();
-  test_absorbing_unsigned_integral<unsigned int>();
+  test_absorbing_integral<unsigned int>();
   test_absorbing_integral<long>();
-  test_absorbing_unsigned_integral<unsigned long>();
+  test_absorbing_integral<unsigned long>();
   test_absorbing_integral<long long>();
-  test_absorbing_unsigned_integral<unsigned long long>();
+  test_absorbing_integral<unsigned long long>();
 #if _CCCL_HAS_INT128()
   test_absorbing_integral<__int128_t>();
-  test_absorbing_unsigned_integral<__uint128_t>();
+  test_absorbing_integral<__uint128_t>();
 #endif // _CCCL_HAS_INT128()
 }
 
@@ -323,8 +305,8 @@ __host__ __device__ constexpr void test_absorbing_integral()
 template <class T>
 __host__ __device__ constexpr void test_absorbing_floating_point()
 {
-  test_absorbing<cuda::minimum, T>(true, cuda::std::numeric_limits<T>::lowest());
-  test_absorbing<cuda::maximum, T>(true, cuda::std::numeric_limits<T>::max());
+  test_absorbing<cuda::minimum, T>(true, cuda::std::__fp_neg(cuda::std::numeric_limits<T>::infinity()));
+  test_absorbing<cuda::maximum, T>(true, cuda::std::numeric_limits<T>::infinity());
 }
 
 __host__ __device__ constexpr void test_absorbing_floating_point()
