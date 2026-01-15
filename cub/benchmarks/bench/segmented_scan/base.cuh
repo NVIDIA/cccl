@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include <cub/agent/agent_thread_segmented_scan.cuh>
 #include <cub/agent/agent_warp_segmented_scan.cuh>
 #include <cub/device/device_segmented_scan.cuh>
 
@@ -113,11 +114,29 @@ struct user_policy_hub_t
                                  Nominal4ByteItemsPerThread,
                                  segmented_scan_compute_t<ComputeT, _SegmentsPerWarp>>>;
 
+  template <int Nominal4ByteBlockThreads,
+            int Nominal4ByteItemsPerThread,
+            typename ComputeT,
+            cub::CacheLoadModifier LoadModifier,
+            int _SegmentsPerWarp = 1>
+  using thread_level_agent_policy_t = cub::detail::segmented_scan::agent_thread_segmented_scan_policy_t<
+    Nominal4ByteBlockThreads,
+    Nominal4ByteItemsPerThread,
+    ComputeT,
+    LoadModifier,
+    _SegmentsPerWarp,
+    cub::detail::MemBoundScaling<Nominal4ByteBlockThreads,
+                                 Nominal4ByteItemsPerThread,
+                                 segmented_scan_compute_t<ComputeT, _SegmentsPerWarp>>>;
+
   using base_block_level_policy_t =
     typename cub::detail::segmented_scan::policy_hub<void, void, AccumT, void, void>::MaxPolicy::segmented_scan_policy_t;
 
   using base_warp_level_policy_t = typename cub::detail::segmented_scan::policy_hub<void, void, AccumT, void, void>::
     MaxPolicy::warp_segmented_scan_policy_t;
+
+  using base_thread_level_policy_t = typename cub::detail::segmented_scan::policy_hub<void, void, AccumT, void, void>::
+    MaxPolicy::thread_segmented_scan_policy_t;
 
   struct policy_t : cub::ChainedPolicy<300, policy_t, policy_t>
   {
@@ -139,6 +158,13 @@ struct user_policy_hub_t
       base_warp_level_policy_t::load_modifier,
       base_warp_level_policy_t::store_algorithm,
       SegmentsPerWorkUnit>;
+
+    using thread_segmented_scan_policy_t =
+      thread_level_agent_policy_t<128,
+                                  ItemsPerThread,
+                                  AccumT,
+                                  base_thread_level_policy_t::load_modifier,
+                                  SegmentsPerWorkUnit>;
   };
 
   using MaxPolicy = policy_t;
@@ -196,7 +222,7 @@ static void basic(
     op_t,
     wrapped_init_t,
     accum_t,
-    cub::ForceInclusive::Yes,
+    cub::ForceInclusive::No,
     offset_t,
     user_policy_hub_t<accum_t, segments_per_block, items_per_thread>>;
 #endif
@@ -219,8 +245,9 @@ static void basic(
   offset_it d_offsets = thrust::raw_pointer_cast(offsets.data());
 
   state.add_element_count(elements);
-  state.add_global_memory_reads<T>(elements, "Size");
-  state.add_global_memory_writes<T>(elements);
+  state.add_global_memory_reads<T>(elements, "In");
+  state.add_global_memory_reads<offset_t>(num_segments, "In Offsets");
+  state.add_global_memory_writes<T>(elements, "Out");
 
   size_t tmp_size;
   dispatch_t::dispatch(
@@ -271,7 +298,9 @@ using segments_per_block =
                      std::integral_constant<int, 4>,
                      std::integral_constant<int, 6>,
                      std::integral_constant<int, 8>,
-                     std::integral_constant<int, 16>>;
+                     std::integral_constant<int, 16>,
+                     std::integral_constant<int, 32>,
+                     std::integral_constant<int, 64>>;
 
 #endif
 
