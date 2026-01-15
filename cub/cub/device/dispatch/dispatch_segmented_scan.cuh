@@ -83,6 +83,21 @@ struct device_segmented_scan_kernel_source
       AccumT,
       EnforceInclusive == ForceInclusive::Yes>);
 
+  CUB_DEFINE_KERNEL_GETTER(
+    thread_segmented_scan_kernel,
+    device_thread_segmented_scan_kernel<
+      MaxPolicyT,
+      InputIteratorT,
+      OutputIteratorT,
+      BeginOffsetIteratorInputT,
+      EndOffsetIteratorInputT,
+      BeginOffsetIteratorOutputT,
+      OffsetT,
+      ScanOpT,
+      InitValueT,
+      AccumT,
+      EnforceInclusive == ForceInclusive::Yes>);
+
   CUB_RUNTIME_FUNCTION static constexpr size_t AccumSize()
   {
     return sizeof(AccumT);
@@ -166,10 +181,14 @@ struct dispatch_segmented_scan
 
   KernelLauncherFactory launcher_factory;
 
-  template <typename ActivePolicyT, typename BlockLevelSegmentedScanKernelT, typename WarpLevelSegmentedScanKernelT>
+  template <typename ActivePolicyT,
+            typename BlockLevelSegmentedScanKernelT,
+            typename WarpLevelSegmentedScanKernelT,
+            typename ThreadLevelSegmentedScanKernelT>
   CUB_RUNTIME_FUNCTION _CCCL_HOST _CCCL_FORCEINLINE cudaError_t invoke_passes(
     BlockLevelSegmentedScanKernelT large_segmented_scan_kernel,
-    WarpLevelSegmentedScanKernelT small_segmented_scan_kernel,
+    WarpLevelSegmentedScanKernelT medium_segmented_scan_kernel,
+    ThreadLevelSegmentedScanKernelT small_segmented_scan_kernel,
     ActivePolicyT policy = {})
   {
     // `LOAD_LDG` makes in-place execution UB and doesn't lead to better
@@ -188,6 +207,8 @@ struct dispatch_segmented_scan
     const ::cuda::std::int64_t num_invocations = ::cuda::ceil_div(num_segments, num_segments_per_invocation);
 
     (void) small_segmented_scan_kernel;
+    (void) medium_segmented_scan_kernel;
+    (void) large_segmented_scan_kernel;
 
     for (::cuda::std::int64_t invocation_index = 0; invocation_index < num_invocations; invocation_index++)
     {
@@ -198,7 +219,7 @@ struct dispatch_segmented_scan
       const auto grid_size = ::cuda::ceil_div(static_cast<::cuda::std::uint32_t>(num_current_segments),
                                               static_cast<::cuda::std::uint32_t>(segments_per_block));
       launcher_factory(grid_size, policy.SegmentedScan().BlockThreads(), 0, stream)
-        .doit(large_segmented_scan_kernel,
+        .doit(small_segmented_scan_kernel,
               d_in,
               d_out,
               d_input_begin_offsets,
@@ -238,7 +259,10 @@ struct dispatch_segmented_scan
     auto wrapped_policy = detail::segmented_scan::make_segmented_scan_policy_wrapper(policy);
     // Force kernel code-generation in all compiler passes
     return invoke_passes(
-      kernel_source.segmented_scan_kernel(), kernel_source.warp_segmented_scan_kernel(), wrapped_policy);
+      kernel_source.segmented_scan_kernel(),
+      kernel_source.warp_segmented_scan_kernel(),
+      kernel_source.thread_segmented_scan_kernel(),
+      wrapped_policy);
   }
 
   template <typename MaxPolicyT = typename PolicyHub::MaxPolicy>

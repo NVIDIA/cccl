@@ -14,9 +14,12 @@
 #endif // no system header
 
 #include <cub/agent/agent_segmented_scan.cuh>
+#include <cub/agent/agent_thread_segmented_scan.cuh>
 #include <cub/agent/agent_warp_segmented_scan.cuh>
 #include <cub/util_macro.cuh>
 #include <cub/util_type.cuh>
+
+#include <cuda/iterator>
 
 CUB_NAMESPACE_BEGIN
 
@@ -147,7 +150,7 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::warp_segmented_scan_policy_t
   static constexpr unsigned int warps_in_block = int(policy_t::BLOCK_THREADS) >> cub::detail::log2_warp_threads;
   const unsigned int warp_id                   = threadIdx.x >> cub::detail::log2_warp_threads;
 
-  const auto work_id = num_segments_per_warp * (blockIdx.x * warps_in_block + warp_id);
+  const auto work_id = num_segments_per_warp * (blockIdx.x * warps_in_block) + warp_id;
 
   if constexpr (num_segments_per_warp == 1)
   {
@@ -165,29 +168,84 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::warp_segmented_scan_policy_t
   {
     OffsetT inp_end_offsets[num_segments_per_warp] = {};
 
+    const ::cuda::strided_iterator<BeginOffsetIteratorInputT> raked_begin_inp{
+      begin_offset_d_in + work_id, warps_in_block};
+    const ::cuda::strided_iterator<BeginOffsetIteratorOutputT> raked_begin_out{
+      begin_offset_d_out + work_id, warps_in_block};
+
     using span_t = ::cuda::std::span<OffsetT, num_segments_per_warp>;
 
-    if (work_id + num_segments_per_warp < n_segments)
+    if (work_id + num_segments_per_warp * warps_in_block < n_segments)
     {
 #pragma unroll
       for (int i = 0; i < num_segments_per_warp; ++i)
       {
-        inp_end_offsets[i] = end_offset_d_in[work_id + i];
+        inp_end_offsets[i] = end_offset_d_in[work_id + i * warps_in_block];
       }
       agent_t(temp_storage, d_in, d_out, scan_op, _init_value)
-        .consume_ranges(begin_offset_d_in + work_id, span_t{inp_end_offsets}, begin_offset_d_out + work_id);
+        .consume_ranges(raked_begin_inp, span_t{inp_end_offsets}, raked_begin_out);
     }
     else
     {
-      int tail_size = n_segments - work_id;
-      for (int i = 0; i < tail_size; ++i)
+      if (work_id < n_segments)
       {
-        inp_end_offsets[i] = end_offset_d_in[work_id + i];
+        int tail_size = (n_segments - work_id) / warps_in_block;
+        for (int i = 0; i < tail_size; ++i)
+        {
+          inp_end_offsets[i] = end_offset_d_in[work_id + i * warps_in_block];
+        }
+        agent_t(temp_storage, d_in, d_out, scan_op, _init_value)
+          .consume_ranges(raked_begin_inp, span_t{inp_end_offsets}, raked_begin_out, tail_size);
       }
-      agent_t(temp_storage, d_in, d_out, scan_op, _init_value)
-        .consume_ranges(begin_offset_d_in + work_id, span_t{inp_end_offsets}, begin_offset_d_out + work_id, tail_size);
     }
   }
+}
+
+template <typename ChainedPolicyT,
+          typename InputIteratorT,
+          typename OutputIteratorT,
+          typename BeginOffsetIteratorInputT,
+          typename EndOffsetIteratorInputT,
+          typename BeginOffsetIteratorOutputT,
+          typename OffsetT,
+          typename ScanOpT,
+          typename InitValueT,
+          typename AccumT,
+          bool ForceInclusive,
+          typename ActualInitValueT = typename InitValueT::value_type>
+__launch_bounds__(int(ChainedPolicyT::ActivePolicy::warp_segmented_scan_policy_t::BLOCK_THREADS))
+  CUB_DETAIL_KERNEL_ATTRIBUTES void device_thread_segmented_scan_kernel(
+    InputIteratorT d_in,
+    OutputIteratorT d_out,
+    BeginOffsetIteratorInputT begin_offset_d_in,
+    EndOffsetIteratorInputT end_offset_d_in,
+    BeginOffsetIteratorOutputT begin_offset_d_out,
+    OffsetT n_segments,
+    ScanOpT scan_op,
+    InitValueT init_value)
+{
+  using policy_t = typename ChainedPolicyT::ActivePolicy::thread_segmented_scan_policy_t;
+
+  using agent_t = cub::detail::segmented_scan::agent_thread_segmented_scan<
+    policy_t,
+    InputIteratorT,
+    OutputIteratorT,
+    BeginOffsetIteratorInputT,
+    EndOffsetIteratorInputT,
+    BeginOffsetIteratorOutputT,
+    OffsetT,
+    ScanOpT,
+    ActualInitValueT,
+    AccumT,
+    ForceInclusive>;
+
+  __shared__ typename agent_t::TempStorage temp_storage;
+
+  const ActualInitValueT _init_value = init_value;
+
+  agent_t agent(
+    temp_storage, d_in, d_out, begin_offset_d_in, end_offset_d_in, begin_offset_d_out, n_segments, scan_op, _init_value);
+  agent.consume_range();
 }
 } // namespace detail::segmented_scan
 
