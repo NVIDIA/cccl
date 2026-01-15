@@ -129,8 +129,8 @@ private:
       __high += 1;
     }
 
-    const auto __biases     = __bias_data(__precision);
-    double __bias_sum = 0.0;
+    const auto __biases = __bias_data(__precision);
+    double __bias_sum   = 0.0;
     for (int __i = __low; __i < __high; ++__i)
     {
       __bias_sum += __biases[__i];

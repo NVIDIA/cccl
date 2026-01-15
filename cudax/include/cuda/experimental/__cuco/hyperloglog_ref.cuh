@@ -207,7 +207,8 @@ public:
   //! @param __group CUDA thread block group this operation is executed in
   //!
   //! @return Approximate distinct items count
-  [[nodiscard]] _CCCL_DEVICE ::cuda::std::size_t estimate(const ::cooperative_groups::thread_block& __group) const noexcept
+  [[nodiscard]] _CCCL_DEVICE ::cuda::std::size_t
+  estimate(const ::cooperative_groups::thread_block& __group) const noexcept
   {
     return __impl.__estimate(__group);
   }
