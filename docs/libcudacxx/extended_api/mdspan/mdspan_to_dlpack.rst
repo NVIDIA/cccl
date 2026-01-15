@@ -40,15 +40,18 @@ Types
   template <size_t Rank>
   class __dlpack_tensor {
   public:
-      __dlpack_tensor();
+      __dlpack_tensor() noexcept;
       __dlpack_tensor(const __dlpack_tensor&) noexcept;
       __dlpack_tensor(__dlpack_tensor&&) noexcept;
       __dlpack_tensor& operator=(const __dlpack_tensor&) noexcept;
       __dlpack_tensor& operator=(__dlpack_tensor&&) noexcept;
       ~__dlpack_tensor() noexcept = default;
 
-      DLTensor&       get() noexcept;
-      const DLTensor& get() const noexcept;
+      DLTensor&       get() & noexcept       [[lifetimebound]];
+      const DLTensor& get() & const noexcept [[lifetimebound]];
+
+      DLTensor&       get() && noexcept       = delete;
+      const DLTensor& get() && const noexcept = delete;
   };
 
   } // namespace cuda

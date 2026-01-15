@@ -217,14 +217,14 @@ public:
 
   _CCCL_HIDE_FROM_ABI ~__dlpack_tensor() noexcept = default;
 
-  [[nodiscard]] _CCCL_HOST_API ::DLTensor& get() & noexcept
+  [[nodiscard]] _CCCL_HOST_API ::DLTensor& get() & noexcept _CCCL_LIFETIMEBOUND
   {
     return __tensor;
   }
 
   [[nodiscard]] _CCCL_HOST_API ::DLTensor& get() && noexcept = delete;
 
-  [[nodiscard]] _CCCL_HOST_API const ::DLTensor& get() const& noexcept
+  [[nodiscard]] _CCCL_HOST_API const ::DLTensor& get() const& noexcept _CCCL_LIFETIMEBOUND
   {
     return __tensor;
   }
