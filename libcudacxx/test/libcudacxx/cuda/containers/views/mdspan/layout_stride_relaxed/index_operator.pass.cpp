@@ -85,8 +85,8 @@ template <class E, class... Extents>
 __host__ __device__ constexpr void
 test_iteration(cuda::std::array<intptr_t, E::rank()> strides, intptr_t offset, Extents... extents)
 {
-  using M          = cuda::layout_stride_relaxed::mapping<E>;
-  using index_type = typename M::index_type;
+  using M           = cuda::layout_stride_relaxed::mapping<E>;
+  using index_type  = typename M::index_type;
   using offset_type = typename M::offset_type;
   M m(E(static_cast<index_type>(extents)...), strides, static_cast<offset_type>(offset));
 
