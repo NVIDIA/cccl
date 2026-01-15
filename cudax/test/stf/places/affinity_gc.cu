@@ -22,11 +22,12 @@ int main()
   async_resources_handle handle;
   for (auto p : place_partition(handle, exec_place::current_device(), place_partition_scope::green_context))
   {
-    _CCCL_ASSERT(p.affine_data_place().is_green_ctx(), "expected a green context");
+    _CCCL_ASSERT(p.affine_data_place().is_extension(), "expected a green context (extension)");
 
     handle.push_affinity(::std::make_shared<exec_place>(p));
     _CCCL_ASSERT(handle.current_affinity().size() == 1, "invalid value");
-    _CCCL_ASSERT(handle.current_affinity()[0]->affine_data_place().is_green_ctx(), "expected a green context");
+    _CCCL_ASSERT(handle.current_affinity()[0]->affine_data_place().is_extension(),
+                 "expected a green context (extension)");
     handle.pop_affinity();
   }
   return 0;
