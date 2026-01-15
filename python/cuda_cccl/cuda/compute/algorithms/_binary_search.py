@@ -187,6 +187,9 @@ def make_lower_bound(
 
     Returns:
         A callable object that performs lower_bound.
+
+    See Also:
+        :func:`lower_bound`
     """
     comp_adapter = _normalize_comp(comp)
     return _make_binary_search_cached(
@@ -220,6 +223,9 @@ def make_upper_bound(
 
     Returns:
         A callable object that performs upper_bound.
+
+    See Also:
+        :func:`upper_bound`
     """
     comp_adapter = _normalize_comp(comp)
     return _make_binary_search_cached(
@@ -241,7 +247,8 @@ def lower_bound(
     stream=None,
 ):
     """
-    Performs device-wide lower_bound.
+    Find the *first* position that each value in ``d_values`` would be inserted into
+    ``d_data`` to maintain sorted order.
 
     Example:
         .. literalinclude:: ../../python/cuda_cccl/tests/compute/examples/binary_search/lower_bound_basic.py
@@ -271,7 +278,8 @@ def upper_bound(
     stream=None,
 ):
     """
-    Performs device-wide upper_bound.
+    Find the *last* position that each value in ``d_values`` would be inserted into
+    ``d_data`` to maintain sorted order.
 
     Example:
         .. literalinclude:: ../../python/cuda_cccl/tests/compute/examples/binary_search/upper_bound_basic.py
