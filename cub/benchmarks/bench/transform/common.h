@@ -46,10 +46,10 @@ struct policy_selector
     constexpr auto algorithm = cub::detail::transform::Algorithm::vectorized;
     constexpr auto policy    = vectorized_policy{
       TUNE_THREADS,
-      TUNE_VEC_SIZE * TUNE_VECTORS_PER_THREAD,
-      TUNE_VEC_SIZE
+      (1 << TUNE_VEC_SIZE_POW2) * TUNE_VECTORS_PER_THREAD,
+      (1 << TUNE_VEC_SIZE_POW2)
 #    ifdef TUNE_ITEMS_PER_THREAD_NO_INPUT
-      ,
+        ,
       TUNE_ITEMS_PER_THREAD_NO_INPUT
 #    endif // TUNE_ITEMS_PER_THREAD_NO_INPUT
     };

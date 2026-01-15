@@ -3,14 +3,14 @@
 
 // %RANGE% TUNE_BIF_BIAS alg -16:16:4
 // for filling, we can only use the prefetch and the vectorized algorithm
-// %RANGE% TUNE_ALGORITHM alg 1:2:1
+// %RANGE% TUNE_ALGORITHM alg 0:2:1
 // %RANGE% TUNE_THREADS tpb 128:1024:128
 
 // TODO(bgruber): those parameters only apply if TUNE_ALGORITHM == 0 (prefetch)
 // %RANGE% TUNE_ITEMS_PER_THREAD_NO_INPUT ipt 1:32:1
 
 // TODO(bgruber): those parameters only apply if TUNE_ALGORITHM == 1 (vectorized)
-// %RANGE% TUNE_VEC_SIZE ipt 1:32:1
+// %RANGE% TUNE_VEC_SIZE_POW2 vsp2 1:6:1
 // %RANGE% TUNE_VECTORS_PER_THREAD vpt 1:4:1
 
 #include "common.h"
