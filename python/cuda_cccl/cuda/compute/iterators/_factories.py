@@ -17,6 +17,7 @@ from ._iterators import (
     make_transform_iterator,
 )
 from ._permutation_iterator import make_permutation_iterator
+from ._shuffle_iterator import make_shuffle_iterator
 from ._zip_iterator import make_zip_iterator
 
 
@@ -219,14 +220,34 @@ def PermutationIterator(values, indices):
     return make_permutation_iterator(values, indices)
 
 
+def ShuffleIterator(num_items, seed):
+    """Iterator that produces a deterministic "random" permutation of indices in ``[0, num_items)``.
+
+    Example:
+        The code snippet below demonstrates the usage of a ``ShuffleIterator``
+        to randomly permute indices:
+
+        .. literalinclude:: ../../python/cuda_cccl/tests/compute/examples/iterator/shuffle_iterator_basic.py
+            :language: python
+            :start-after: # example-begin
+
+    Args:
+        num_items: Number of elements in the domain to permute
+        seed: Seed used to parameterize the permutation
+
+    Returns:
+        A ``ShuffleIterator`` object that yields shuffled indices
+    """
+    return make_shuffle_iterator(num_items, seed)
+
+
 def ZipIterator(*iterators):
     """Returns an Iterator representing a zipped sequence of values from N iterators.
 
     Similar to https://nvidia.github.io/cccl/thrust/api/classthrust_1_1zip__iterator.html
 
-    The resulting iterator yields gpu_struct objects with fields corresponding to each input iterator.
-    For 2 iterators, fields are named 'first' and 'second'. For N iterators, fields are indexed
-    as field_0, field_1, ..., field_N-1.
+    The resulting iterator structs with fields corresponding to each input iterator.
+    Fields can be accessed by index using `[]`.
 
     Example:
         The code snippet below demonstrates the usage of a ``ZipIterator``
