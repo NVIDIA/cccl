@@ -5,14 +5,16 @@
 
 // keep checks at the top so compilation of discarded variants fails really fast
 #include <cub/device/dispatch/dispatch_transform.cuh>
-#if !TUNE_BASE && TUNE_ALGORITHM == 3
+#if !TUNE_BASE
 #  if _CCCL_PP_COUNT(__CUDA_ARCH_LIST__) != 1
 #    error "When tuning, this benchmark does not support being compiled for multiple architectures"
 #  endif
-#  if (__CUDA_ARCH_LIST__) < 900
-#    error "Cannot compile algorithm 3 (ublkcp) below sm90"
-#  endif
-#endif
+#  if TUNE_ALGORITHM == 3
+#    if (__CUDA_ARCH_LIST__) < 900
+#      error "Cannot compile algorithm 3 (ublkcp) below sm90"
+#    endif
+#  endif // TUNE_ALGORITHM == 3
+#endif // !TUNE_BASE
 
 #include <cub/util_namespace.cuh>
 
@@ -29,7 +31,7 @@ struct policy_selector
   _CCCL_API constexpr auto operator()(cuda::arch_id) const -> cub::detail::transform::transform_policy
   {
     const int min_bytes_in_flight =
-      cub::detail::transform::arch_to_min_bytes_in_flight(__CUDA_ARCH_LIST__) + TUNE_BIF_BIAS;
+      cub::detail::transform::arch_to_min_bytes_in_flight(::cuda::arch_id{__CUDA_ARCH_LIST__ / 10}) + TUNE_BIF_BIAS;
 #  if TUNE_ALGORITHM == 0
     constexpr auto algorithm = cub::detail::transform::Algorithm::prefetch;
     constexpr auto policy    = prefetch_policy{
@@ -37,7 +39,7 @@ struct policy_selector
 #    ifdef TUNE_ITEMS_PER_THREAD_NO_INPUT
       ,
       TUNE_ITEMS_PER_THREAD_NO_INPUT
-#    endif
+#    endif // TUNE_ITEMS_PER_THREAD_NO_INPUT
     };
     return {min_bytes_in_flight, algorithm, policy, {}, {}};
 #  elif TUNE_ALGORITHM == 1
@@ -49,7 +51,7 @@ struct policy_selector
 #    ifdef TUNE_ITEMS_PER_THREAD_NO_INPUT
       ,
       TUNE_ITEMS_PER_THREAD_NO_INPUT
-#    endif
+#    endif // TUNE_ITEMS_PER_THREAD_NO_INPUT
     };
     return {min_bytes_in_flight, algorithm, {}, policy, {}};
 #  elif TUNE_ALGORITHM == 2
@@ -58,15 +60,15 @@ struct policy_selector
     return {min_bytes_in_flight, algorithm, {}, {}, policy};
 #  elif TUNE_ALGORITHM == 3
     constexpr auto algorithm = cub::detail::transform::Algorithm::ublkcp;
-    constexpr auto policy =
-      async_copy_policy{TUNE_THREADS, cub::detail::transform::bulk_copy_alignment(__CUDA_ARCH_LIST__)};
+    constexpr auto policy    = async_copy_policy{
+      TUNE_THREADS, cub::detail::transform::bulk_copy_alignment(::cuda::arch_id{__CUDA_ARCH_LIST__ / 10})};
     return {min_bytes_in_flight, algorithm, {}, {}, policy};
-#  else
+#  else // TUNE_ALGORITHM
 #    error Policy hub does not yet implement the specified value for algorithm
-#  endif
+#  endif // TUNE_ALGORITHM
   }
 };
-#endif
+#endif // !TUNE_BASE
 
 template <typename OffsetT, typename... RandomAccessIteratorsIn, typename RandomAccessIteratorOut, typename TransformOp>
 void bench_transform(nvbench::state& state,
@@ -86,7 +88,7 @@ void bench_transform(nvbench::state& state,
 #if !TUNE_BASE
         ,
       policy_selector{}
-#endif
+#endif // !TUNE_BASE
     );
   });
 }
