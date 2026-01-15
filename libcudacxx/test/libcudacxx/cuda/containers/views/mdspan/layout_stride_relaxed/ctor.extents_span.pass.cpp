@@ -31,10 +31,12 @@ using cuda::std::intptr_t;
 template <class E, class S, cuda::std::enable_if_t<E::rank() != 0, int> = 0>
 __host__ __device__ constexpr void test_construction(E e, S s, intptr_t offset = 0)
 {
-  using M = cuda::layout_stride_relaxed::mapping<E>;
+  using M           = cuda::layout_stride_relaxed::mapping<E>;
+  using offset_type = typename M::offset_type;
+  auto offset1      = static_cast<offset_type>(offset);
   static_assert(noexcept(M{e, s}));
-  static_assert(noexcept(M(e, s, offset)));
-  M m(e, s, offset);
+  static_assert(noexcept(M(e, s, offset1)));
+  M m(e, s, offset1);
 
   // check correct extents are returned
   static_assert(noexcept(m.extents()));
@@ -56,10 +58,12 @@ __host__ __device__ constexpr void test_construction(E e, S s, intptr_t offset =
 template <class E, class S, cuda::std::enable_if_t<E::rank() == 0, int> = 0>
 __host__ __device__ constexpr void test_construction(E e, S s, intptr_t offset = 0)
 {
-  using M = cuda::layout_stride_relaxed::mapping<E>;
+  using M           = cuda::layout_stride_relaxed::mapping<E>;
+  using offset_type = typename M::offset_type;
+  auto offset1      = static_cast<offset_type>(offset);
   static_assert(noexcept(M{e, s}));
-  static_assert(noexcept(M(e, s, offset)));
-  M m(e, s, offset);
+  static_assert(noexcept(M(e, s, offset1)));
+  M m(e, s, offset1);
 
   // check correct extents are returned
   static_assert(noexcept(m.extents()));

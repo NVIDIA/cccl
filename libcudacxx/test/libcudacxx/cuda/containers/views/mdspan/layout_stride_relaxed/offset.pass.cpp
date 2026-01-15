@@ -49,8 +49,9 @@ __host__ __device__ constexpr void test_offset_in_indexing(
   typename E::index_type expected_at_zero,
   Indices... zero_indices)
 {
-  using M = cuda::layout_stride_relaxed::mapping<E>;
-  M m(e, strides, offset);
+  using M           = cuda::layout_stride_relaxed::mapping<E>;
+  using offset_type = typename M::offset_type;
+  M m(e, strides, static_cast<offset_type>(offset));
 
   // The result at indices (0, 0, ...) should equal the offset
   assert(m(zero_indices...) == expected_at_zero);
@@ -66,11 +67,12 @@ __host__ __device__ constexpr void test_reverse_array_pattern()
   // ...
   // logical index N-1 -> physical 0
 
-  using E = cuda::std::extents<int, 5>;
-  using M = cuda::layout_stride_relaxed::mapping<E>;
+  using E           = cuda::std::extents<int, 5>;
+  using M           = cuda::layout_stride_relaxed::mapping<E>;
+  using offset_type = typename M::offset_type;
 
   cuda::std::array<intptr_t, 1> strides{-1};
-  intptr_t offset = 4; // N - 1
+  offset_type offset = 4; // N - 1
 
   M m(E{}, strides, offset);
 
@@ -121,11 +123,12 @@ __host__ __device__ constexpr void test_default_zero_offset()
 // Test that copy constructor preserves offset
 __host__ __device__ constexpr void test_copy_preserves_offset()
 {
-  using E = cuda::std::extents<int, 4, 5>;
-  using M = cuda::layout_stride_relaxed::mapping<E>;
+  using E           = cuda::std::extents<int, 4, 5>;
+  using M           = cuda::layout_stride_relaxed::mapping<E>;
+  using offset_type = typename M::offset_type;
 
   cuda::std::array<intptr_t, 2> strides{5, 1};
-  intptr_t offset = 42;
+  offset_type offset = 42;
 
   M m1(E{}, strides, offset);
   M m2 = m1;

@@ -47,7 +47,7 @@ __host__ __device__ constexpr void test_strides(E, M&, const M&, cuda::std::arra
 
 template <class E>
 __host__ __device__ constexpr void test_layout_mapping_stride_relaxed(
-  E ext, cuda::std::array<intptr_t, E::rank()> input_strides, intptr_t offset, bool expected_is_strided)
+  E ext, [[maybe_unused]] cuda::std::array<intptr_t, E::rank()> input_strides, intptr_t offset, bool expected_is_strided)
 {
   using M            = cuda::layout_stride_relaxed::template mapping<E>;
   using strides_type = typename M::strides_type;
