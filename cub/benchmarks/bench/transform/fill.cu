@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright (c) 2025, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-// %RANGE% TUNE_BIF_BIAS alg -16:16:4
+// %RANGE% TUNE_BIF_BIAS bif -16:16:4
 // for filling, we can only use the prefetch and the vectorized algorithm
 // %RANGE% TUNE_ALGORITHM alg 0:2:1
 // %RANGE% TUNE_THREADS tpb 128:1024:128
