@@ -14,6 +14,7 @@
 #endif // no system header
 
 #include <cub/agent/agent_segmented_scan.cuh>
+#include <cub/agent/agent_thread_segmented_scan.cuh>
 #include <cub/agent/agent_warp_segmented_scan.cuh>
 #include <cub/block/block_load.cuh>
 #include <cub/block/block_scan.cuh>
@@ -135,6 +136,62 @@ CUB_RUNTIME_FUNCTION warp_segmented_scan_policy_wrapper<PolicyT> make_warp_segme
   return warp_segmented_scan_policy_wrapper<PolicyT>{policy};
 }
 
+// policy wrapper for thread-granularity agent
+
+template <typename PolicyT, typename = void, typename = void>
+struct thread_segmented_scan_policy_wrapper : PolicyT
+{
+  CUB_RUNTIME_FUNCTION thread_segmented_scan_policy_wrapper(PolicyT base)
+      : PolicyT(base)
+  {}
+};
+
+template <typename StaticPolicyT>
+struct thread_segmented_scan_policy_wrapper<
+  StaticPolicyT,
+  ::cuda::std::void_t<decltype(StaticPolicyT::thread_segmented_scan_policy_t::load_modifier),
+                      decltype(StaticPolicyT::thread_segmented_scan_policy_t::segments_per_thread)>> : StaticPolicyT
+{
+  CUB_RUNTIME_FUNCTION thread_segmented_scan_policy_wrapper(StaticPolicyT base)
+      : StaticPolicyT(base)
+  {}
+
+  CUB_RUNTIME_FUNCTION static constexpr auto SegmentedScan()
+  {
+    return cub::detail::MakePolicyWrapper(typename StaticPolicyT::thread_segmented_scan_policy_t());
+  }
+
+  CUB_RUNTIME_FUNCTION static constexpr CacheLoadModifier LoadModifier()
+  {
+    return StaticPolicyT::thread_segmented_scan_policy_t::load_modifier;
+  }
+
+  CUB_RUNTIME_FUNCTION static constexpr int SegmentsPerBlock()
+  {
+    return StaticPolicyT::thread_segmented_scan_policy_t::segments_per_thread
+         * (int(StaticPolicyT::thread_segmented_scan_policy_t::BLOCK_THREADS));
+  }
+
+  CUB_RUNTIME_FUNCTION static constexpr int SegmentsPerThread()
+  {
+    return StaticPolicyT::thread_segmented_scan_policy_t::segments_per_thread;
+  }
+
+  CUB_RUNTIME_FUNCTION constexpr void CheckLoadModifier()
+  {
+    static_assert(LoadModifier() != CacheLoadModifier::LOAD_LDG,
+                  "The memory consistency model does not apply to texture "
+                  "accesses");
+  }
+};
+
+template <typename PolicyT>
+CUB_RUNTIME_FUNCTION thread_segmented_scan_policy_wrapper<PolicyT>
+make_thread_segmented_scan_policy_wrapper(PolicyT policy)
+{
+  return thread_segmented_scan_policy_wrapper<PolicyT>{policy};
+}
+
 template <typename InputValueT, typename OutputValueT, typename AccumT, typename OffsetT, typename ScanOpT>
 struct policy_hub
 {
@@ -161,6 +218,8 @@ public:
 
     using warp_segmented_scan_policy_t =
       agent_warp_segmented_scan_policy_t<128, 4, AccumT, WARP_LOAD_TRANSPOSE, LOAD_DEFAULT, WARP_STORE_TRANSPOSE>;
+
+    using thread_segmented_scan_policy_t = agent_thread_segmented_scan_policy_t<128, 4, AccumT, LOAD_DEFAULT>;
   };
 
   struct policy_500
