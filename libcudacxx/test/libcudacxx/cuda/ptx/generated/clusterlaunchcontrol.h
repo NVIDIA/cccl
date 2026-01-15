@@ -26,13 +26,14 @@ __global__ void test_clusterlaunchcontrol(void** fn_ptr)
 #endif // __cccl_ptx_isa >= 860
 
 #if __cccl_ptx_isa >= 860
-  NV_DISPATCH_TARGET(
+  NV_IF_TARGET(
     NV_HAS_FEATURE_SM_100a,
     (
         // clusterlaunchcontrol.try_cancel.async.shared::cta.mbarrier::complete_tx::bytes.multicast::cluster::all.b128
         // [addr], [smem_bar];
         * fn_ptr++ = reinterpret_cast<void*>(
-          static_cast<void (*)(void*, cuda::std::uint64_t*)>(cuda::ptx::clusterlaunchcontrol_try_cancel_multicast));),
+          static_cast<void (*)(void*, cuda::std::uint64_t*)>(cuda::ptx::clusterlaunchcontrol_try_cancel_multicast));));
+  NV_IF_TARGET(
     NV_HAS_FEATURE_SM_110a,
     (
         // clusterlaunchcontrol.try_cancel.async.shared::cta.mbarrier::complete_tx::bytes.multicast::cluster::all.b128
@@ -53,7 +54,7 @@ __global__ void test_clusterlaunchcontrol(void** fn_ptr)
   NV_IF_TARGET(NV_PROVIDES_SM_100,
                (
                    // clusterlaunchcontrol.query_cancel.get_first_ctaid::x.b32.b128 ret_dim, try_cancel_response;
-                   * fn_ptr++ = reinterpret_cast<void*>(static_cast<int32_t (*)(longlong2)>(
+                   * fn_ptr++ = reinterpret_cast<void*>(static_cast<cuda::std::int32_t (*)(longlong2)>(
                      cuda::ptx::clusterlaunchcontrol_query_cancel_get_first_ctaid_x));));
 #endif // __cccl_ptx_isa >= 860
 
@@ -61,7 +62,7 @@ __global__ void test_clusterlaunchcontrol(void** fn_ptr)
   NV_IF_TARGET(NV_PROVIDES_SM_100,
                (
                    // clusterlaunchcontrol.query_cancel.get_first_ctaid::y.b32.b128 ret_dim, try_cancel_response;
-                   * fn_ptr++ = reinterpret_cast<void*>(static_cast<int32_t (*)(longlong2)>(
+                   * fn_ptr++ = reinterpret_cast<void*>(static_cast<cuda::std::int32_t (*)(longlong2)>(
                      cuda::ptx::clusterlaunchcontrol_query_cancel_get_first_ctaid_y));));
 #endif // __cccl_ptx_isa >= 860
 
@@ -69,7 +70,7 @@ __global__ void test_clusterlaunchcontrol(void** fn_ptr)
   NV_IF_TARGET(NV_PROVIDES_SM_100,
                (
                    // clusterlaunchcontrol.query_cancel.get_first_ctaid::z.b32.b128 ret_dim, try_cancel_response;
-                   * fn_ptr++ = reinterpret_cast<void*>(static_cast<int32_t (*)(longlong2)>(
+                   * fn_ptr++ = reinterpret_cast<void*>(static_cast<cuda::std::int32_t (*)(longlong2)>(
                      cuda::ptx::clusterlaunchcontrol_query_cancel_get_first_ctaid_z));));
 #endif // __cccl_ptx_isa >= 860
 

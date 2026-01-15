@@ -81,7 +81,6 @@ struct __fn
       }
       return __result;
     }
-    _CCCL_UNREACHABLE();
   }
 };
 _CCCL_END_NAMESPACE_CPO

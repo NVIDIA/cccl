@@ -4,18 +4,12 @@ project(nvbench_helper LANGUAGES CXX CUDA)
 
 include(CMakeDependentOption)
 
-find_package(
-  CCCL
-  CONFIG
-  REQUIRED
-  NO_DEFAULT_PATH # Only check the explicit HINTS below:
-  HINTS "${CCCL_SOURCE_DIR}/lib/cmake/cccl/"
-)
-
-find_package(CUDAToolkit REQUIRED)
-
 cccl_get_catch2()
+cccl_get_cub()
+cccl_get_cudatoolkit()
+cccl_get_libcudacxx()
 cccl_get_nvbench()
+cccl_get_thrust()
 
 add_library(cccl.nvbench_helper OBJECT nvbench_helper/nvbench_helper.cu)
 cccl_configure_target(cccl.nvbench_helper DIALECT 17)
@@ -28,8 +22,8 @@ target_link_libraries(
     Thrust::Thrust
     nvbench::nvbench
   PRIVATE #
+    cccl.compiler_interface
     CUDA::curand
-    cccl.compiler_interface_cpp17
 )
 
 target_include_directories(
@@ -68,11 +62,11 @@ if (nvbench_helper_ENABLE_TESTING)
     target_link_libraries(
       ${nvbench_helper_test_target}
       PRIVATE
+        cccl.compiler_interface
         cccl.nvbench_helper
         cccl.nvbench_helper.test.Thrust.cpp.${device_system}
         Catch2::Catch2WithMain
         Boost::math
-        cccl.compiler_interface_cpp17
     )
 
     add_test(

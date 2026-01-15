@@ -1,6 +1,5 @@
 cccl_get_c2h()
-
-find_package(CUDAToolkit REQUIRED)
+cccl_get_cudatoolkit()
 
 ## cudax_add_test
 #
@@ -23,11 +22,7 @@ function(cudax_add_catch2_test target_name_var test_name) # ARGN=test sources
     PRIVATE #
       cudax.compiler_interface
       cccl.c2h.main
-      CUDA::cudart
-  )
-  target_compile_definitions(
-    ${test_target}
-    PRIVATE LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE
+      CUDA::cudart_static
   )
   target_compile_options(
     ${test_target}
@@ -41,15 +36,7 @@ cudax_add_catch2_test(test_target launch
     launch/launch_smoke.cu
 )
 
-cudax_add_catch2_test(test_target launch_configuration
-    launch/configuration.cu
-)
-
-cudax_add_catch2_test(test_target launch_config_dynamic_smem
-    launch/dynamic_shared_memory.cu
-)
-
-cudax_add_catch2_test(test_target execution
+cudax_add_catch2_test(test_target execution ${cudax_target}
     execution/env.cu
     execution/policies/policies.cu
     execution/policies/get_execution_policy.cu
@@ -64,7 +51,9 @@ cudax_add_catch2_test(test_target execution
     execution/test_sequence.cu
     execution/test_starts_on.cu
     execution/test_stream_context.cu
+    execution/test_task_scheduler.cu
     execution/test_then.cu
+    execution/test_trampoline_scheduler.cu
     execution/test_visit.cu
     execution/test_when_all.cu
     execution/test_write_attrs.cu
@@ -90,15 +79,6 @@ cudax_add_catch2_test(test_target misc
 
 cudax_add_catch2_test(test_target containers
     containers/uninitialized_buffer.cu
-    containers/async_buffer/access.cu
-    containers/async_buffer/capacity.cu
-    containers/async_buffer/constructor.cu
-    containers/async_buffer/conversion.cu
-    containers/async_buffer/copy.cu
-    containers/async_buffer/iterators.cu
-    containers/async_buffer/properties.cu
-    containers/async_buffer/swap.cu
-    containers/async_buffer/transform.cu
 )
 
 cudax_add_catch2_test(test_target cuco

@@ -24,11 +24,11 @@
 #define _LIBCUDACXX_HAS_MONOTONIC_CLOCK()       0
 #define _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()    0
 
-#if _CCCL_HAS_CUDA_COMPILER() || __cpp_aligned_new < 201606
+#if _CCCL_CUDA_COMPILATION() || __cpp_aligned_new < 201606
 #  define _LIBCUDACXX_HAS_ALIGNED_ALLOCATION() 0
 #else
 #  define _LIBCUDACXX_HAS_ALIGNED_ALLOCATION() 1
-#endif // !_CCCL_HAS_CUDA_COMPILER() && __cpp_aligned_new >= 201606
+#endif // !_CCCL_CUDA_COMPILATION() && __cpp_aligned_new >= 201606
 
 // We need `is_constant_evaluated` for clang and gcc. MSVC also needs extensive rework
 #if !defined(_CCCL_BUILTIN_IS_CONSTANT_EVALUATED)
@@ -54,8 +54,7 @@
 #endif // _LIBCUDACXX_HAS_NO_INCOMPLETE_RANGES
 
 // libcu++ requires host device support for its tests. Until then restrict usage to at least 12.2
-#if _CCCL_HAS_NVFP16() && _CCCL_CTK_AT_LEAST(12, 2) \
-  && (_CCCL_HAS_CUDA_COMPILER() || defined(LIBCUDACXX_ENABLE_HOST_NVFP16))
+#if _CCCL_HAS_NVFP16() && _CCCL_CTK_AT_LEAST(12, 2)
 #  define _LIBCUDACXX_HAS_NVFP16() 1
 #else
 #  define _LIBCUDACXX_HAS_NVFP16() 0
@@ -101,5 +100,13 @@
 #  define _CCCL_DIAGNOSE_WARNING(_COND, _MSG)
 #  define _CCCL_DIAGNOSE_ERROR(_COND, _MSG)
 #endif
+
+// Third party libraries
+
+#if _CCCL_HAS_INCLUDE(<dlpack/dlpack.h>) && !_CCCL_COMPILER(NVRTC) && !defined(CCCL_DISABLE_DLPACK)
+#  define _CCCL_HAS_DLPACK() 1
+#else // ^^^ has dlpack ^^^ / vvv no dlpack vvv
+#  define _CCCL_HAS_DLPACK() 0
+#endif // ^^^ no dlpack ^^^
 
 #endif // _CUDA_STD___INTERNAL_FEATURES_H

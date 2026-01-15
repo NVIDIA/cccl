@@ -182,7 +182,7 @@ def make_segmented_sort(
     Example:
         Below, ``make_segmented_sort`` is used to create a segmented sort object that can be reused.
 
-        .. literalinclude:: ../../python/cuda_cccl/tests/parallel/examples/sort/segmented_sort_object.py
+        .. literalinclude:: ../../python/cuda_cccl/tests/compute/examples/sort/segmented_sort_object.py
             :language: python
             :start-after: # example-begin
 
@@ -229,14 +229,14 @@ def segmented_sort(
     Example:
         Below, ``segmented_sort`` is used to perform a segmented sort. It also rearranges the values according to the keys' order.
 
-        .. literalinclude:: ../../python/cuda_cccl/tests/parallel/examples/sort/segmented_sort_basic.py
+        .. literalinclude:: ../../python/cuda_cccl/tests/compute/examples/sort/segmented_sort_basic.py
             :language: python
             :start-after: # example-begin
 
 
         In the following example, ``segmented_sort`` is used to perform a segmented sort with a ``DoubleBuffer` for reduced temporary storage.
 
-        .. literalinclude:: ../../python/cuda_cccl/tests/parallel/examples/sort/segmented_sort_buffer.py
+        .. literalinclude:: ../../python/cuda_cccl/tests/compute/examples/sort/segmented_sort_buffer.py
             :language: python
             :start-after: # example-begin
 

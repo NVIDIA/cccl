@@ -103,7 +103,7 @@ _CCCL_HOST_DEVICE void shuffle_copy(
   // we have an available bijection of length n via a feistel cipher
   std::size_t m = last - first;
   thrust::detail::feistel_bijection bijection(m, g);
-  std::uint64_t n = bijection.nearest_power_of_two();
+  std::uint64_t n = bijection.size();
 
   // perform stream compaction over length n bijection to get length m
   // pseudorandom bijection over the original input

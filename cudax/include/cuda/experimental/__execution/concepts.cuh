@@ -24,6 +24,8 @@
 #include <cuda/std/__cccl/unreachable.h>
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__concepts/constructible.h>
+#include <cuda/std/__concepts/copyable.h>
+#include <cuda/std/__concepts/equality_comparable.h>
 #include <cuda/std/__type_traits/decay.h>
 #include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/is_nothrow_move_constructible.h>
@@ -36,13 +38,6 @@
 
 namespace cuda::experimental::execution
 {
-// Utilities:
-template <class _Ty>
-_CCCL_API constexpr auto __is_constexpr_helper(_Ty) -> bool
-{
-  return true;
-}
-
 // Receiver concepts:
 template <class _Rcvr>
 _CCCL_CONCEPT receiver = //
@@ -146,6 +141,17 @@ _CCCL_CONCEPT dependent_sender = //
   ( //
     requires(sender<_Sndr>), //
     requires(__is_dependent_sender<_Sndr>()) //
+  );
+
+// Scheduler concepts:
+template <class _Sch>
+_CCCL_CONCEPT scheduler = //
+  _CCCL_REQUIRES_EXPR((_Sch), __declfn_t<_Sch> __sch) //
+  ( //
+    requires(__is_scheduler<_Sch>), //
+    schedule(__sch()), //
+    requires(::cuda::std::equality_comparable<::cuda::std::remove_cvref_t<_Sch>>), //
+    requires(::cuda::std::copyable<::cuda::std::remove_cvref_t<_Sch>>) //
   );
 } // namespace cuda::experimental::execution
 

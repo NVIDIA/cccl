@@ -51,7 +51,7 @@ _CCCL_HOST_DEVICE ::cuda::std::pair<InputIterator1, InputIterator2> mismatch(
   BinaryPredicate pred)
 {
   // Contributed by Erich Elsen
-  using IteratorTuple = thrust::tuple<InputIterator1, InputIterator2>;
+  using IteratorTuple = ::cuda::std::tuple<InputIterator1, InputIterator2>;
   using ZipIterator   = thrust::zip_iterator<IteratorTuple>;
 
   ZipIterator zipped_first = thrust::make_zip_iterator(first1, first2);
@@ -61,7 +61,7 @@ _CCCL_HOST_DEVICE ::cuda::std::pair<InputIterator1, InputIterator2> mismatch(
     thrust::find_if_not(exec, zipped_first, zipped_last, thrust::detail::tuple_binary_predicate<BinaryPredicate>{pred});
 
   return ::cuda::std::make_pair(
-    thrust::get<0>(result.get_iterator_tuple()), thrust::get<1>(result.get_iterator_tuple()));
+    ::cuda::std::get<0>(result.get_iterator_tuple()), ::cuda::std::get<1>(result.get_iterator_tuple()));
 } // end mismatch()
 } // namespace system::detail::generic
 THRUST_NAMESPACE_END

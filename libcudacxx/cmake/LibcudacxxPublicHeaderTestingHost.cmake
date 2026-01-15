@@ -6,6 +6,7 @@
 
 # Meta target for all configs' header builds:
 add_custom_target(libcudacxx.test.public_headers_host_only)
+add_custom_target(libcudacxx.test.public_headers_host_only_with_ctk)
 
 # Grep all public headers
 file(
@@ -13,18 +14,8 @@ file(
   LIST_DIRECTORIES false
   RELATIVE "${libcudacxx_SOURCE_DIR}/include"
   CONFIGURE_DEPENDS
+  "${libcudacxx_SOURCE_DIR}/include/cuda/*"
   "${libcudacxx_SOURCE_DIR}/include/cuda/std/*"
-  # Add some files we expect to work in host only compilation
-  "${libcudacxx_SOURCE_DIR}/include/cuda/bit"
-  "${libcudacxx_SOURCE_DIR}/include/cuda/cmath"
-  "${libcudacxx_SOURCE_DIR}/include/cuda/functional"
-  "${libcudacxx_SOURCE_DIR}/include/cuda/iterator"
-  "${libcudacxx_SOURCE_DIR}/include/cuda/mdspan"
-  "${libcudacxx_SOURCE_DIR}/include/cuda/memory"
-  "${libcudacxx_SOURCE_DIR}/include/cuda/numeric"
-  "${libcudacxx_SOURCE_DIR}/include/cuda/type_traits"
-  "${libcudacxx_SOURCE_DIR}/include/cuda/utility"
-  "${libcudacxx_SOURCE_DIR}/include/cuda/version"
 )
 
 set(public_host_header_cxx_compile_options)
@@ -37,16 +28,12 @@ endif()
 
 function(libcudacxx_create_public_header_test_host header_name headertest_src)
   # Create the default target for that file
-  set(public_headers_host_only_${header_name} verify_${header_name})
   add_library(
     public_headers_host_only_${header_name}
     SHARED
     "${headertest_src}.cpp"
   )
-  target_include_directories(
-    public_headers_host_only_${header_name}
-    PRIVATE "${libcudacxx_SOURCE_DIR}/include"
-  )
+  cccl_configure_target(public_headers_host_only_${header_name})
   target_compile_definitions(
     public_headers_host_only_${header_name}
     PRIVATE #
@@ -57,12 +44,6 @@ function(libcudacxx_create_public_header_test_host header_name headertest_src)
     public_headers_host_only_${header_name}
     PRIVATE ${public_host_header_cxx_compile_options}
   )
-  cccl_configure_target(
-    public_headers_host_only_${header_name}
-    DIALECT ${CMAKE_CXX_STANDARD}
-  )
-
-  # Bring in the global CCCL compile definitions
   target_link_libraries(
     public_headers_host_only_${header_name}
     PUBLIC libcudacxx.compiler_interface
@@ -70,6 +51,38 @@ function(libcudacxx_create_public_header_test_host header_name headertest_src)
   add_dependencies(
     libcudacxx.test.public_headers_host_only
     public_headers_host_only_${header_name}
+  )
+endfunction()
+
+function(
+  libcudacxx_create_public_header_test_host_with_ctk
+  header_name
+  headertest_src
+)
+  # Create the default target for that file
+  add_library(
+    public_headers_host_only_with_ctk_${header_name}
+    SHARED
+    "${headertest_src}.cpp"
+  )
+  cccl_configure_target(public_headers_host_only_with_ctk_${header_name})
+  target_compile_definitions(
+    public_headers_host_only_with_ctk_${header_name}
+    PRIVATE #
+      ${public_host_header_cxx_compile_definitions}
+      _CCCL_HEADER_TEST
+  )
+  target_compile_options(
+    public_headers_host_only_with_ctk_${header_name}
+    PRIVATE ${public_host_header_cxx_compile_options}
+  )
+  target_link_libraries(
+    public_headers_host_only_with_ctk_${header_name}
+    PUBLIC libcudacxx.compiler_interface CUDA::cudart
+  )
+  add_dependencies(
+    libcudacxx.test.public_headers_host_only_with_ctk
+    public_headers_host_only_with_ctk_${header_name}
   )
 endfunction()
 
@@ -86,6 +99,7 @@ function(libcudacxx_add_public_headers_host_only header)
 
   # Create the default target for that file
   libcudacxx_create_public_header_test_host(${header_name} ${headertest_src})
+  libcudacxx_create_public_header_test_host_with_ctk(${header_name} ${headertest_src})
 endfunction()
 
 foreach (header IN LISTS public_headers_host_only)

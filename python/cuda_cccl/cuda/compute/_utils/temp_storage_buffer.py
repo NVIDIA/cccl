@@ -4,8 +4,13 @@ from types import SimpleNamespace
 from typing import Optional
 
 from cuda.bindings import driver, runtime
-from cuda.core.experimental import Device
-from cuda.core.experimental._utils.cuda_utils import handle_return
+
+try:
+    from cuda.core import Device
+    from cuda.core._utils.cuda_utils import handle_return
+except ImportError:
+    from cuda.core.experimental import Device
+    from cuda.core.experimental._utils.cuda_utils import handle_return
 
 from ..typing import StreamLike
 
@@ -76,6 +81,7 @@ class TempStorageBuffer:
             self, _finalize_buffer, self._ptr, self._stream_handle
         )
 
+    @property
     def __cuda_array_interface__(self):
         return {
             "data": (self._ptr, False),

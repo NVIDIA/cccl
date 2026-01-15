@@ -66,7 +66,7 @@
 #  define _CCCL_ASSERT_IMPL_HOST(expression, message) ((void) 0)
 #elif _CCCL_COMPILER(NVRTC) // There is no host standard library in nvrtc
 #  define _CCCL_ASSERT_IMPL_HOST(expression, message) ((void) 0)
-#elif _CCCL_HAS_INCLUDE(<yvals.h>) && _CCCL_COMPILER(MSVC) // MSVC uses _STL_VERIFY from <yvals.h>
+#elif _CCCL_HAS_INCLUDE(<yvals.h>) && _CCCL_OS(WINDOWS) // Windows uses _STL_VERIFY from <yvals.h>
 #  include <yvals.h>
 #  define _CCCL_ASSERT_IMPL_HOST(expression, message) _STL_VERIFY(expression, message)
 #else // ^^^ MSVC STL ^^^ / vvv !MSVC STL vvv
@@ -90,6 +90,10 @@ void __assert_fail(const char* __assertion, const char* __file, unsigned int __l
 #    define _CCCL_ASSERT_IMPL_HOST(expression, message)      \
       _CCCL_BUILTIN_EXPECT(static_cast<bool>(expression), 1) \
       ? (void) 0 : __assert_rtn(__func__, __FILE__, __LINE__, __message__)
+#  elif _CCCL_OS(ANDROID)
+#    define _CCCL_ASSERT_IMPL_HOST(expression, message)      \
+      _CCCL_BUILTIN_EXPECT(static_cast<bool>(expression), 1) \
+      ? (void) 0 : __assert2(__FILE__, __LINE__, __func__, message)
 #  else // ^^^ _CCCL_OS(APPLE) ^^^ / vvv !_CCCL_OS(APPLE) ^^^
 #    define _CCCL_ASSERT_IMPL_HOST(expression, message)      \
       _CCCL_BUILTIN_EXPECT(static_cast<bool>(expression), 1) \
@@ -110,6 +114,10 @@ void __assert_fail(const char* __assertion, const char* __file, unsigned int __l
 #    define _CCCL_ASSERT_IMPL_DEVICE(expression, message)    \
       _CCCL_BUILTIN_EXPECT(static_cast<bool>(expression), 1) \
       ? (void) 0 : _wassert(_CRT_WIDE(#message), __FILEW__, __LINE__)
+#  elif _CCCL_OS(ANDROID)
+#    define _CCCL_ASSERT_IMPL_DEVICE(expression, message)    \
+      _CCCL_BUILTIN_EXPECT(static_cast<bool>(expression), 1) \
+      ? (void) 0 : __assert2(__FILE__, __LINE__, __func__, message)
 #  else // ^^^ _CCCL_COMPILER(MSVC) ^^^ / vvv !_CCCL_COMPILER(MSVC) vvv
 #    define _CCCL_ASSERT_IMPL_DEVICE(expression, message)    \
       _CCCL_BUILTIN_EXPECT(static_cast<bool>(expression), 1) \

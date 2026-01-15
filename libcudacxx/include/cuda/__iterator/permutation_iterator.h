@@ -266,6 +266,7 @@ public:
     return __tmp;
   }
 
+#ifndef _CCCL_DOXYGEN_INVOKED // Doxygen has issues with constexpr friend operators
   //! @brief Advances a @c permutation_iterator by a given number of elements
   //! @param __iter The original @c permutation_iterator
   //! @param __n The number of elements to advance
@@ -292,16 +293,6 @@ public:
     return permutation_iterator{__iter.__iter_, __iter.__index_ + __n};
   }
 
-  //! @brief Advances the @c permutation_iterator by a given number of elements
-  //! @param __n The number of elements to advance
-  //! @return Equivalent to ``index + __n``
-  _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_API constexpr permutation_iterator& operator+=(difference_type __n) noexcept(noexcept(__index_ += __n))
-  {
-    __index_ += __n;
-    return *this;
-  }
-
   //! @brief Decrements a @c permutation_iterator by a given number of elements
   //! @param __iter The original @c permutation_iterator
   //! @param __n The number of elements to decrement
@@ -313,6 +304,17 @@ public:
     && ::cuda::std::is_nothrow_copy_constructible_v<_Iter> && ::cuda::std::is_nothrow_copy_constructible_v<_Index>)
   {
     return permutation_iterator{__iter.__iter_, __iter.__index_ - __n};
+  }
+#endif // !_CCCL_DOXYGEN_INVOKED
+
+  //! @brief Advances the @c permutation_iterator by a given number of elements
+  //! @param __n The number of elements to advance
+  //! @return Equivalent to ``index + __n``
+  _CCCL_EXEC_CHECK_DISABLE
+  _CCCL_API constexpr permutation_iterator& operator+=(difference_type __n) noexcept(noexcept(__index_ += __n))
+  {
+    __index_ += __n;
+    return *this;
   }
 
   //! @brief Decrements the @c permutation_iterator by a given number of elements

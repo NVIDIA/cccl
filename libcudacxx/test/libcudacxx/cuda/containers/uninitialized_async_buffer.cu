@@ -1,6 +1,6 @@
 //===----------------------------------------------------------------------===//
 //
-// Part of CUDA Experimental in CUDA C++ Core Libraries,
+// Part of libcu++, the C++ Standard Library for your entire system,
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
@@ -13,6 +13,7 @@
 #include <thrust/reduce.h>
 
 #include <cuda/__container/uninitialized_async_buffer.h>
+#include <cuda/memory_pool>
 #include <cuda/memory_resource>
 #include <cuda/std/cassert>
 #include <cuda/std/cstdint>
@@ -22,6 +23,11 @@
 #include <cuda/stream>
 
 #include "testing.cuh"
+
+#if _CCCL_COMPILER(GCC, >=, 13)
+_CCCL_DIAG_SUPPRESS_GCC("-Wself-move")
+#endif // _CCCL_COMPILER(GCC, >=, 13)
+_CCCL_DIAG_SUPPRESS_CLANG("-Wself-move")
 
 struct do_not_construct
 {

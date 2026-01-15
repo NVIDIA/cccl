@@ -41,7 +41,7 @@ The sum of each block is then reduced to a single value using an atomic add via 
 
 It then shows how the same reduction can be done using Thrust's `reduce` algorithm and compares the results.
 
-[Try it live on Godbolt!](https://godbolt.org/z/aMx4j9f4T)
+[Try it live on Godbolt!](https://godbolt.org/z/3KaWz3Msf)
 
 ```cpp
 #include <thrust/execution_policy.h>

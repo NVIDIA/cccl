@@ -62,8 +62,6 @@ file. Use ``_CCCL_CUDA_COMPILATION()`` to check for the compilation of a CUDA so
 **CUDA identification/version macros**:
 
 +----------------------------------+------------------------------------------------------------------------------------------------+
-| ``_CCCL_HAS_CUDA_COMPILER()``    | CUDA compiler is available                                                                     |
-+----------------------------------+------------------------------------------------------------------------------------------------+
 | ``_CCCL_CUDA_COMPILATION()``     | CUDA code is being compiled                                                                    |
 +----------------------------------+------------------------------------------------------------------------------------------------+
 | ``_CCCL_HOST_COMPILATION()``     | Compiling host code, ``true`` when executing the CUDA host pass or compiling a C++ source file |
@@ -296,7 +294,8 @@ Usage example:
 +----------------------------------+------------------------------------------------------------------------------+
 | ``_CCCL_CONST``                  | Portable "constant" function attribute                                       |
 +----------------------------------+------------------------------------------------------------------------------+
-
+| ``_CCCL_LIFETIMEBOUND``          | Portable "lifetime bound" function attribute                                 |
++----------------------------------+------------------------------------------------------------------------------+
 
 **Portable Builtin Macros**:
 
@@ -348,21 +347,23 @@ In C++23, the ``if consteval`` statement (`link <https://en.cppreference.com/w/c
 
 CUDA doesn't support exceptions in device code, however, sometimes we need to write host/device functions that use exceptions on host and ``__trap()`` on device. CCCL provides a set of macros that should be used in place of the standard C++ keywords to make the code compile in both, host and device code.
 
-+----------------------------+-------------------------------------------------------------------+
-| ``_CCCL_TRY``              | Replacement for the ``try`` keyword                               |
-+----------------------------+-------------------------------------------------------------------+
-| ``_CCCL_CATCH (X)``        | Replacement for the ``catch (/*X*/)`` statement                   |
-+----------------------------+-------------------------------------------------------------------+
-| ``_CCCL_CATCH_ALL``        | Replacement for the ``catch (...)`` statement                     |
-+----------------------------+-------------------------------------------------------------------+
-| ``_CCCL_CATCH_FALLTHOUGH`` | End of ``try``/``catch`` block if ``_CCCL_CATCH_ALL`` is not used |
-+----------------------------+-------------------------------------------------------------------+
-| ``_CCCL_THROW``            | Replacement for the ``throw /*arg*/`` expression                  |
-+----------------------------+-------------------------------------------------------------------+
-| ``_CCCL_RETHROW``          | Replacement for the plain ``throw`` expression                    |
-+----------------------------+-------------------------------------------------------------------+
++-----------------------------+-----------------------------------------------------------------------+
+| ``_CCCL_TRY``               | Replacement for the ``try`` keyword                                   |
++-----------------------------+-----------------------------------------------------------------------+
+| ``_CCCL_CATCH (X)``         | Replacement for the ``catch (/*X*/)`` statement                       |
++-----------------------------+-----------------------------------------------------------------------+
+| ``_CCCL_CATCH_ALL``         | Replacement for the ``catch (...)`` statement                         |
++-----------------------------+-----------------------------------------------------------------------+
+| ``_CCCL_THROW``             | Replacement for the ``throw /*arg*/`` expression                      |
++-----------------------------+-----------------------------------------------------------------------+
+| ``_CCCL_RETHROW``           | Replacement for the plain ``throw`` expression                        |
++-----------------------------+-----------------------------------------------------------------------+
 
 *Note*: The ``_CCCL_CATCH`` clause must always introduce a named variable, like: ``_CCCL_CATCH(const exception_type& var)``.
+
+.. note::
+
+  ``_CCCL_THROW`` requires to include the ``<stdexcept>`` header, regardless exceptions are enabled or not.
 
 Example:
 
@@ -374,22 +375,20 @@ Example:
         {
             return ptr;
         }
-        _CCCL_THROW std::bad_alloc{}; // on device calls cuda::std::terminate()
+        _CCCL_THROW(std::bad_alloc{}); // on device calls cuda::std::terminate()
     }
 
     __host__ __device__ void do_something(int* buff)
     {
-        _CCCL_THROW std::runtime_error{"Something went wrong"}; // on device calls cuda::std::terminate()
+        _CCCL_THROW(std::runtime_error{"Something went wrong"}); // on device calls cuda::std::terminate()
     }
 
     __host__ __device__ void fn(cuda::std::size_t n)
     {
         int* buff{};
-
         _CCCL_TRY
         {
             buff = reinterpret_cast<int*>(alloc(n * sizeof(int)));
-
             do_something(buff);
         }
         _CCCL_CATCH ([[maybe_unused]] const std::bad_alloc& e) // must be always named
@@ -445,9 +444,9 @@ Debugging Macros
 ----------------
 
 +-----------------------------------+-------------------------------------------------------------------------------------------------------------+
-| ``_CCCL_ASSERT(COND, MSG)``       | Portable, conditional CCCL `assert()` macro. Requires (``CCCL_ENABLE_HOST_ASSERTIONS`` or ``CCCL_ENABLE_DEVICE_ASSERTIONS``) |
+| ``_CCCL_ASSERT(COND, MSG)``       | Portable, conditional CCCL `assert()` macro. Requires (``CCCL_ENABLE_ASSERTIONS`` or a debug build)         |
 +-----------------------------------+-------------------------------------------------------------------------------------------------------------+
-| ``_CCCL_VERIFY(COND, MSG)``       | Portable, always-on `assert()` reserved for critical checks that are always required                                                           |
+| ``_CCCL_VERIFY(COND, MSG)``       | Portable, always-on `assert()` reserved for critical checks that are always required                        |
 +-----------------------------------+-------------------------------------------------------------------------------------------------------------+
 | ``_CCCL_ENABLE_ASSERTIONS``       | Enable assertions                                                                                           |
 +-----------------------------------+-------------------------------------------------------------------------------------------------------------+

@@ -22,7 +22,7 @@
 
 CUB_NAMESPACE_BEGIN
 
-namespace detail::radix
+namespace detail::radix_sort
 {
 // sm90 default
 template <size_t KeySize, size_t ValueSize, size_t OffsetSize>
@@ -1040,6 +1040,6 @@ struct policy_hub
 
   using MaxPolicy = Policy1000;
 };
-} // namespace detail::radix
+} // namespace detail::radix_sort
 
 CUB_NAMESPACE_END

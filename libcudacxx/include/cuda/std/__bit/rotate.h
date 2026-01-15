@@ -30,6 +30,50 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
+#if _CCCL_CHECK_BUILTIN(builtin_rotateleft8)
+#  define _CCCL_BUILTIN_ROTATELEFT8(...) __builtin_rotateleft8(__VA_ARGS__)
+#endif
+
+#if _CCCL_CHECK_BUILTIN(builtin_rotateleft16)
+#  define _CCCL_BUILTIN_ROTATELEFT16(...) __builtin_rotateleft16(__VA_ARGS__)
+#endif
+
+#if _CCCL_CHECK_BUILTIN(builtin_rotateleft32)
+#  define _CCCL_BUILTIN_ROTATELEFT32(...) __builtin_rotateleft32(__VA_ARGS__)
+#endif
+
+#if _CCCL_CHECK_BUILTIN(builtin_rotateleft64)
+#  define _CCCL_BUILTIN_ROTATELEFT44(...) __builtin_rotateleft64(__VA_ARGS__)
+#endif
+
+#if _CCCL_CHECK_BUILTIN(builtin_rotateright8)
+#  define _CCCL_BUILTIN_ROTATERIGHT8(...) __builtin_rotateright8(__VA_ARGS__)
+#endif
+
+#if _CCCL_CHECK_BUILTIN(builtin_rotateright16)
+#  define _CCCL_BUILTIN_ROTATERIGHT16(...) __builtin_rotateright16(__VA_ARGS__)
+#endif
+
+#if _CCCL_CHECK_BUILTIN(builtin_rotateright32)
+#  define _CCCL_BUILTIN_ROTATERIGHT32(...) __builtin_rotateright32(__VA_ARGS__)
+#endif
+
+#if _CCCL_CHECK_BUILTIN(builtin_rotateright64)
+#  define _CCCL_BUILTIN_ROTATERIGHT44(...) __builtin_rotateright64(__VA_ARGS__)
+#endif
+
+// nvcc doesn't allow clang's rotater left/right builtins
+#if _CCCL_CUDA_COMPILER(NVCC)
+#  undef _CCCL_BUILTIN_ROTATELEFT8
+#  undef _CCCL_BUILTIN_ROTATELEFT16
+#  undef _CCCL_BUILTIN_ROTATELEFT32
+#  undef _CCCL_BUILTIN_ROTATELEFT64
+#  undef _CCCL_BUILTIN_ROTATERIGHT8
+#  undef _CCCL_BUILTIN_ROTATERIGHT16
+#  undef _CCCL_BUILTIN_ROTATERIGHT32
+#  undef _CCCL_BUILTIN_ROTATERIGHT64
+#endif // _CCCL_CUDA_COMPILER(NVCC)
+
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 template <typename _Tp>
@@ -42,6 +86,30 @@ template <typename _Tp>
       NV_IF_TARGET(NV_IS_DEVICE, (return ::__funnelshift_r(__v, __v, __cnt);))
     }
   }
+#if defined(_CCCL_BUILTIN_ROTATERIGHT8)
+  if constexpr (sizeof(_Tp) == sizeof(uint8_t))
+  {
+    return _CCCL_BUILTIN_ROTATERIGHT8(__v, __cnt);
+  }
+#endif // _CCCL_BUILTIN_ROTATERIGHT8
+#if defined(_CCCL_BUILTIN_ROTATERIGHT16)
+  if constexpr (sizeof(_Tp) == sizeof(uint16_t))
+  {
+    return _CCCL_BUILTIN_ROTATERIGHT16(__v, __cnt);
+  }
+#endif // _CCCL_BUILTIN_ROTATERIGHT16
+#if defined(_CCCL_BUILTIN_ROTATERIGHT32)
+  if constexpr (sizeof(_Tp) == sizeof(uint32_t))
+  {
+    return _CCCL_BUILTIN_ROTATERIGHT32(__v, __cnt);
+  }
+#endif // _CCCL_BUILTIN_ROTATERIGHT32
+#if defined(_CCCL_BUILTIN_ROTATERIGHT64)
+  if constexpr (sizeof(_Tp) == sizeof(uint64_t))
+  {
+    return _CCCL_BUILTIN_ROTATERIGHT64(__v, __cnt);
+  }
+#endif // _CCCL_BUILTIN_ROTATERIGHT64
   constexpr auto __digits = numeric_limits<_Tp>::digits;
   auto __cnt_mod          = static_cast<uint32_t>(__cnt) % __digits; // __cnt is always >= 0
   return __cnt_mod == 0 ? __v : (__v >> __cnt_mod) | (__v << (__digits - __cnt_mod));
@@ -57,6 +125,30 @@ template <typename _Tp>
       NV_IF_TARGET(NV_IS_DEVICE, (return ::__funnelshift_l(__v, __v, __cnt);))
     }
   }
+#if defined(_CCCL_BUILTIN_ROTATELEFT8)
+  if constexpr (sizeof(_Tp) == sizeof(uint8_t))
+  {
+    return _CCCL_BUILTIN_ROTATELEFT8(__v, __cnt);
+  }
+#endif // _CCCL_BUILTIN_ROTATELEFT8
+#if defined(_CCCL_BUILTIN_ROTATELEFT16)
+  if constexpr (sizeof(_Tp) == sizeof(uint16_t))
+  {
+    return _CCCL_BUILTIN_ROTATELEFT16(__v, __cnt);
+  }
+#endif // _CCCL_BUILTIN_ROTATELEFT16
+#if defined(_CCCL_BUILTIN_ROTATELEFT32)
+  if constexpr (sizeof(_Tp) == sizeof(uint32_t))
+  {
+    return _CCCL_BUILTIN_ROTATELEFT32(__v, __cnt);
+  }
+#endif // _CCCL_BUILTIN_ROTATELEFT32
+#if defined(_CCCL_BUILTIN_ROTATELEFT64)
+  if constexpr (sizeof(_Tp) == sizeof(uint64_t))
+  {
+    return _CCCL_BUILTIN_ROTATELEFT64(__v, __cnt);
+  }
+#endif // _CCCL_BUILTIN_ROTATELEFT64
   constexpr auto __digits = numeric_limits<_Tp>::digits;
   auto __cnt_mod          = static_cast<uint32_t>(__cnt) % __digits; // __cnt is always >= 0
   return __cnt_mod == 0 ? __v : (__v << __cnt_mod) | (__v >> (__digits - __cnt_mod));

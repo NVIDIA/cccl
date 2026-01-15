@@ -124,7 +124,7 @@ public:
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Err2 = _Err)
   _CCCL_REQUIRES(is_swappable_v<_Err2>)
-  friend _CCCL_API constexpr void swap(unexpected& __lhs, unexpected& __rhs) noexcept(is_nothrow_swappable_v<_Err2>)
+  _CCCL_API friend constexpr void swap(unexpected& __lhs, unexpected& __rhs) noexcept(is_nothrow_swappable_v<_Err2>)
   {
     __lhs.swap(__rhs);
     return;

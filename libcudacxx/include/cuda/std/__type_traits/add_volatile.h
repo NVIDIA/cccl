@@ -31,7 +31,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT add_volatile
 };
 
 template <class _Tp>
-using add_volatile_t _CCCL_NODEBUG_ALIAS = typename add_volatile<_Tp>::type;
+using add_volatile_t _CCCL_NODEBUG_ALIAS = volatile _Tp;
 
 _CCCL_END_NAMESPACE_CUDA_STD
 

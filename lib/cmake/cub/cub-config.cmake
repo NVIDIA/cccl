@@ -5,6 +5,14 @@
 # CUB.
 
 if (TARGET CUB::CUB)
+  # In case new languages have been enabled:
+  libcudacxx_update_language_compat_flags()
+
+  include(FindPackageHandleStandardArgs)
+  if (NOT CUB_CONFIG)
+    set(CUB_CONFIG "${CMAKE_CURRENT_LIST_FILE}")
+  endif()
+  find_package_handle_standard_args(CUB CONFIG_MODE)
   return()
 endif()
 
@@ -77,26 +85,20 @@ if (NOT TARGET CUB::Thrust)
 endif()
 
 if (NOT TARGET CUB::libcudacxx)
-  if (TARGET Thrust::libcudacxx)
-    # Prefer the same libcudacxx as Thrust, if available:
-    _cub_declare_interface_alias(CUB::libcudacxx _CUB_libcudacxx)
-    target_link_libraries(_CUB_libcudacxx INTERFACE Thrust::libcudacxx)
-  else()
-    if (NOT TARGET libcudacxx::libcudacxx)
-      find_package(
-        libcudacxx
-        ${CUB_VERSION}
-        EXACT
-        CONFIG
-        ${required_flag}
-        ${quiet_flag}
-        NO_DEFAULT_PATH # Only check the explicit HINTS below:
-        HINTS "${CMAKE_CURRENT_LIST_DIR}/../libcudacxx/"
-      )
-    endif()
-    _cub_declare_interface_alias(CUB::libcudacxx _CUB_libcudacxx)
-    target_link_libraries(_CUB_libcudacxx INTERFACE libcudacxx::libcudacxx)
+  if (NOT TARGET libcudacxx::libcudacxx)
+    find_package(
+      libcudacxx
+      ${CUB_VERSION}
+      EXACT
+      CONFIG
+      ${required_flag}
+      ${quiet_flag}
+      NO_DEFAULT_PATH # Only check the explicit HINTS below:
+      HINTS "${CMAKE_CURRENT_LIST_DIR}/../libcudacxx/"
+    )
   endif()
+  _cub_declare_interface_alias(CUB::libcudacxx _CUB_libcudacxx)
+  target_link_libraries(_CUB_libcudacxx INTERFACE libcudacxx::libcudacxx)
 endif()
 
 #
@@ -104,7 +106,12 @@ endif()
 #
 
 target_include_directories(_CUB_CUB INTERFACE "${_CUB_INCLUDE_DIR}")
-target_link_libraries(_CUB_CUB INTERFACE CUB::libcudacxx)
+target_link_libraries(
+  _CUB_CUB
+  INTERFACE #
+    CUB::libcudacxx
+    CUB::Thrust
+)
 
 function(_cub_test_flag_option flag)
   if (CCCL_${flag} OR CUB_${flag} OR THRUST_${flag})

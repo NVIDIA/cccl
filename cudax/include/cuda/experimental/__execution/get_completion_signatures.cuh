@@ -338,13 +338,6 @@ template <class _Sndr>
   return ::cuda::std::is_base_of_v<dependent_sender_error, _Completions>;
 }
 #endif // ^^^ no constexpr exceptions ^^^
-
-template <class _SetTag, class _Sndr, class... _Env>
-_CCCL_CONCEPT __has_completions_for = _CCCL_REQUIRES_EXPR((_SetTag, _Sndr, variadic _Env)) //
-  ( //
-    typename(completion_signatures_of_t<_Sndr, _Env...>),
-    requires(completion_signatures_of_t<_Sndr, _Env...>::count(_SetTag{}) != 0) //
-  );
 } // namespace cuda::experimental::execution
 
 #include <cuda/experimental/__execution/epilogue.cuh>

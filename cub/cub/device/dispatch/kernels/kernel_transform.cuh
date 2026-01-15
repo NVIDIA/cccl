@@ -37,7 +37,6 @@
 #include <cuda/std/__algorithm/transform.h>
 #include <cuda/std/__bit/bit_cast.h>
 #include <cuda/std/__bit/has_single_bit.h>
-#include <cuda/std/__cccl/cuda_capabilities.h>
 #include <cuda/std/__cstring/memcpy.h>
 #include <cuda/std/__functional/invoke.h>
 #include <cuda/std/__memory/construct_at.h>
@@ -252,7 +251,9 @@ _CCCL_DEVICE void transform_kernel_vectorized(
 
   // if we can vectorize, we convert f's return type to the output type right away, so we can reinterpret later
   using THRUST_NS_QUALIFIER::cuda_cub::core::detail::uninitialized_array;
-  uninitialized_array<::cuda::std::conditional_t<can_vectorize_store, output_t, result_t>, items_per_thread> output;
+  using output_array_t                  = ::cuda::std::conditional_t<can_vectorize_store, output_t, result_t>;
+  constexpr auto output_array_alignment = can_vectorize_store ? sizeof(output_t) * vec_size : alignof(result_t);
+  uninitialized_array<output_array_t, items_per_thread, output_array_alignment> output;
 
   auto provide_array = [&](auto... inputs) {
     // load inputs
@@ -299,7 +300,9 @@ _CCCL_DEVICE void transform_kernel_vectorized(
       output[i] = f(inputs[i]...);
     }
   };
-  provide_array(uninitialized_array<it_value_t<RandomAccessIteratorsIn>, items_per_thread>{}...);
+  provide_array(uninitialized_array<it_value_t<RandomAccessIteratorsIn>,
+                                    items_per_thread,
+                                    sizeof(it_value_t<RandomAccessIteratorsIn>) * vec_size>{}...);
 
   // write output
   if constexpr (can_vectorize_store)

@@ -515,7 +515,7 @@ C2H_TEST("Warp sort on key-value pairs of a partial warp-tile works",
     cpu_kv_pairs,
     segment_sizes,
     params::total_warps,
-    thrust::make_tuple(oob_default, value_type{}),
+    cuda::std::tuple(oob_default, value_type{}),
     params::logical_warp_items);
 
   // Verify results

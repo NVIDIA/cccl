@@ -788,8 +788,6 @@ class Configuration(object):
         compute_archs = self.get_lit_conf("compute_archs")
         if self.cxx.type == "nvrtcc":
             self.config.available_features.add("nvrtc")
-            self.cxx.compile_flags += ["-device-int128"]
-            self.cxx.compile_flags += ["-device-float128"]
         if self.cxx.type == "nvcc":
             self.cxx.compile_flags += ["--extended-lambda"]
         real_arch_format = "-gencode=arch=compute_{0},code=sm_{0}"
@@ -1049,9 +1047,13 @@ class Configuration(object):
         #    self.cxx.compile_flags += ['-nostdinc++']
         if cxx_headers is None:
             cxx_headers = os.path.join(self.libcudacxx_src_root, "include")
+            thrust_headers = os.path.join(self.libcudacxx_src_root, "../thrust/")
+            cub_headers = os.path.join(self.libcudacxx_src_root, "../cub/")
         if not os.path.isdir(cxx_headers):
             self.lit_config.fatal("cxx_headers='%s' is not a directory." % cxx_headers)
         self.cxx.compile_flags += ["-I" + cxx_headers]
+        self.cxx.compile_flags += ["-I" + thrust_headers]
+        self.cxx.compile_flags += ["-I" + cub_headers]
         if self.libcudacxx_obj_root is not None:
             cxxabi_headers = os.path.join(
                 self.libcudacxx_obj_root, "include", "c++build"

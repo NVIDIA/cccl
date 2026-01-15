@@ -48,11 +48,10 @@ struct always_true_predicate
 } // namespace detail::transform
 CUB_NAMESPACE_END
 
-_CCCL_BEGIN_NAMESPACE_CUDA
 template <>
-struct proclaims_copyable_arguments<CUB_NS_QUALIFIER::detail::transform::always_true_predicate> : ::cuda::std::true_type
+struct ::cuda::proclaims_copyable_arguments<CUB_NS_QUALIFIER::detail::transform::always_true_predicate>
+    : ::cuda::std::true_type
 {};
-_CCCL_END_NAMESPACE_CUDA
 
 CUB_NAMESPACE_BEGIN
 namespace detail::transform
@@ -272,12 +271,6 @@ _CCCL_HOST_DEVICE constexpr int arch_to_min_bytes_in_flight(int sm_arch)
   return 12 * 1024; // V100 and below
 }
 
-template <typename T>
-inline constexpr size_t size_of = sizeof(T);
-
-template <>
-inline constexpr size_t size_of<void> = 0;
-
 template <typename... RandomAccessIteratorsIn>
 _CCCL_HOST_DEVICE static constexpr auto make_sizes_alignments()
 {
@@ -327,6 +320,15 @@ struct tuning_vec<1200, StoreSize>
   static constexpr int items_per_thread = 8;
 };
 
+// manually tuned triad on A100
+template <int StoreSize, int LoadSize0, int... LoadSizes>
+struct tuning_vec<800, StoreSize, LoadSize0, LoadSizes...>
+{
+  static constexpr int block_threads    = 128;
+  static constexpr int vec_size         = 4;
+  static constexpr int items_per_thread = 16;
+};
+
 template <bool RequiresStableAddress,
           bool DenseOutput,
           typename RandomAccessIteratorTupleIn,
@@ -361,8 +363,7 @@ struct policy_hub<RequiresStableAddress,
     (::cuda::is_power_of_two(sizeof(it_value_t<RandomAccessIteratorsIn>)) && ...)
     && ::cuda::is_power_of_two(size_of<it_value_t<RandomAccessIteratorOut>>);
 
-  static constexpr bool fallback_to_prefetch =
-    RequiresStableAddress || !can_memcpy_contiguous_inputs || !all_value_types_have_power_of_two_size || !DenseOutput;
+  static constexpr bool fallback_to_prefetch = RequiresStableAddress || !can_memcpy_contiguous_inputs || !DenseOutput;
 
   // TODO(bgruber): consider a separate kernel for just filling
 
@@ -372,8 +373,9 @@ struct policy_hub<RequiresStableAddress,
     using prefetch_policy        = prefetch_policy_t<256>;
     using vectorized_policy      = vectorized_policy_t<
            tuning_vec<500, size_of<it_value_t<RandomAccessIteratorOut>>, sizeof(it_value_t<RandomAccessIteratorsIn>)...>>;
-    using async_policy              = async_copy_policy_t<256, 16>; // dummy policy, never used
-    static constexpr auto algorithm = fallback_to_prefetch ? Algorithm::prefetch : Algorithm::vectorized;
+    using async_policy = async_copy_policy_t<256, 16>; // dummy policy, never used
+    static constexpr auto algorithm =
+      (fallback_to_prefetch || !all_value_types_have_power_of_two_size) ? Algorithm::prefetch : Algorithm::vectorized;
   };
 
   struct policy800 : ChainedPolicy<800, policy800, policy300>
@@ -398,13 +400,20 @@ struct policy_hub<RequiresStableAddress,
         block_threads* async_policy::min_items_per_thread,
         ldgsts_size_and_align)
       > int{max_smem_per_block};
-    static constexpr bool fallback_to_vectorized = exhaust_smem || no_input_streams || !can_memcpy_all_inputs;
+
+    // on Ampere, the vectorized kernel performs better for 1 and 2 byte values
+    static constexpr bool use_vector_kernel_on_ampere =
+      ((size_of<it_value_t<RandomAccessIteratorsIn>> < 4) && ...) && sizeof...(RandomAccessIteratorsIn) > 1
+      && size_of<it_value_t<RandomAccessIteratorOut>> < 4;
+
+    static constexpr bool fallback_to_vectorized =
+      exhaust_smem || no_input_streams || !can_memcpy_all_inputs || use_vector_kernel_on_ampere;
 
   public:
     static constexpr auto algorithm =
       fallback_to_prefetch ? Algorithm::prefetch
       : fallback_to_vectorized
-        ? Algorithm::vectorized
+        ? (all_value_types_have_power_of_two_size ? Algorithm::vectorized : Algorithm::prefetch)
         : Algorithm::memcpy_async;
   };
 
@@ -434,6 +443,11 @@ struct policy_hub<RequiresStableAddress,
         alignment)
       > int{max_smem_per_block};
 
+    // on Hopper, the vectorized kernel performs better for 1 and 2 byte values
+    static constexpr bool use_vector_kernel_on_hopper =
+      ((size_of<it_value_t<RandomAccessIteratorsIn>> < 4) && ...) && sizeof...(RandomAccessIteratorsIn) > 1
+      && size_of<it_value_t<RandomAccessIteratorOut>> < 4;
+
     // if each tile size is a multiple of the bulk copy and maximum value type alignments, the alignment is retained if
     // the base pointer is sufficiently aligned (the correct check would be if it's a multiple of all value types
     // following the current tile). we would otherwise need to realign every SMEM tile individually, which is costly and
@@ -445,13 +459,13 @@ struct policy_hub<RequiresStableAddress,
     static constexpr bool enough_threads_for_peeling = AsyncBlockSize >= alignment; // head and tail bytes
     static constexpr bool fallback_to_vectorized =
       exhaust_smem || !tile_sizes_retain_alignment || !enough_threads_for_peeling || no_input_streams
-      || !can_memcpy_all_inputs;
+      || !can_memcpy_all_inputs || (PtxVersion == 900 && use_vector_kernel_on_hopper);
 
   public:
     static constexpr auto algorithm =
       fallback_to_prefetch ? Algorithm::prefetch
       : fallback_to_vectorized
-        ? Algorithm::vectorized
+        ? (all_value_types_have_power_of_two_size ? Algorithm::vectorized : Algorithm::prefetch)
         : Algorithm::ublkcp;
   };
 

@@ -26,7 +26,9 @@ function(libcudacxx_add_test target_name_var source)
   )
   target_link_libraries(
     ${target_name}
-    PRIVATE libcudacxx::libcudacxx libcudacxx.compiler_interface cccl.c2h.main
+    PRIVATE #
+      libcudacxx.compiler_interface
+      cccl.c2h.main
   )
 
   add_dependencies(${c2h_all_target} ${target_name})
@@ -48,10 +50,9 @@ macro(pythonize_bool var)
   endif()
 endmacro()
 
-#add dlpack
+cccl_get_cudatoolkit()
 cccl_get_dlpack()
 
-find_package(CUDAToolkit REQUIRED)
 get_target_property(CUDA_INCLUDE_DIR CUDA::cudart INTERFACE_INCLUDE_DIRECTORIES)
 
 foreach (COMPUTE_ARCH ${LIBCUDACXX_COMPUTE_ARCHS})
@@ -91,10 +92,6 @@ if (LIBCUDACXX_TEST_WITH_NVRTC)
   string(APPEND LIBCUDACXX_TEST_COMPILER_FLAGS " -device-int128")
   string(APPEND LIBCUDACXX_TEST_COMPILER_FLAGS " -device-float128")
 else() # NOT LIBCUDACXX_TEST_WITH_NVRTC
-  string(
-    APPEND LIBCUDACXX_TEST_COMPILER_FLAGS
-    " -DLIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE"
-  )
   set(
     LIBCUDACXX_FORCE_INCLUDE
     "-include ${libcudacxx_SOURCE_DIR}/test/libcudacxx/force_include.h"

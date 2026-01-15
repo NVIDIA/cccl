@@ -115,7 +115,7 @@ template <SortOrder Order,
           typename ValueT,
           typename OffsetT,
           typename DecomposerT  = detail::identity_decomposer_t,
-          typename PolicyHub    = detail::radix::policy_hub<KeyT, ValueT, OffsetT>,
+          typename PolicyHub    = detail::radix_sort::policy_hub<KeyT, ValueT, OffsetT>,
           typename KernelSource = detail::radix_sort::
             DeviceRadixSortKernelSource<typename PolicyHub::MaxPolicy, Order, KeyT, ValueT, OffsetT, DecomposerT>,
           typename KernelLauncherFactory = CUB_DETAIL_DEFAULT_KERNEL_LAUNCHER_FACTORY>
@@ -925,7 +925,7 @@ struct DispatchRadixSort
   template <typename ActivePolicyT>
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t Invoke(ActivePolicyT policy = {})
   {
-    auto wrapped_policy = detail::radix::MakeRadixSortPolicyWrapper(policy);
+    auto wrapped_policy = detail::radix_sort::MakeRadixSortPolicyWrapper(policy);
 
     // Return if empty problem, or if no bits to sort and double-buffering is used
     if (num_items == 0 || (begin_bit == end_bit && is_overwrite_okay))

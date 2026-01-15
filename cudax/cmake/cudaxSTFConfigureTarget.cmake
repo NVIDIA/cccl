@@ -14,7 +14,7 @@ function(cudax_stf_configure_target target_name)
   target_link_libraries(
     ${target_name}
     PRIVATE #
-      CUDA::cudart
+      CUDA::cudart_static
       CUDA::curand
       CUDA::cuda_driver
   )

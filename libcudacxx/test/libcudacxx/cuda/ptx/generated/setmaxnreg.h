@@ -17,47 +17,57 @@
 __global__ void test_setmaxnreg(void** fn_ptr)
 {
 #if __cccl_ptx_isa >= 800
-  NV_DISPATCH_TARGET(
+  NV_IF_TARGET(
     NV_HAS_FEATURE_SM_90a,
     (
         // setmaxnreg.inc.sync.aligned.u32 imm_reg_count;
-        * fn_ptr++ = reinterpret_cast<void*>(static_cast<void (*)(cuda::ptx::n32_t<32>)>(cuda::ptx::setmaxnreg_inc));),
+        * fn_ptr++ = reinterpret_cast<void*>(static_cast<void (*)(cuda::ptx::n32_t<32>)>(cuda::ptx::setmaxnreg_inc));));
+  NV_IF_TARGET(
     NV_HAS_FEATURE_SM_100a,
     (
         // setmaxnreg.inc.sync.aligned.u32 imm_reg_count;
-        * fn_ptr++ = reinterpret_cast<void*>(static_cast<void (*)(cuda::ptx::n32_t<32>)>(cuda::ptx::setmaxnreg_inc));),
+        * fn_ptr++ = reinterpret_cast<void*>(static_cast<void (*)(cuda::ptx::n32_t<32>)>(cuda::ptx::setmaxnreg_inc));));
+  NV_IF_TARGET(
     NV_HAS_FEATURE_SM_103a,
     (
         // setmaxnreg.inc.sync.aligned.u32 imm_reg_count;
-        * fn_ptr++ = reinterpret_cast<void*>(static_cast<void (*)(cuda::ptx::n32_t<32>)>(cuda::ptx::setmaxnreg_inc));),
+        * fn_ptr++ = reinterpret_cast<void*>(static_cast<void (*)(cuda::ptx::n32_t<32>)>(cuda::ptx::setmaxnreg_inc));));
+  NV_IF_TARGET(
     NV_HAS_FEATURE_SM_110a,
     (
         // setmaxnreg.inc.sync.aligned.u32 imm_reg_count;
-        * fn_ptr++ = reinterpret_cast<void*>(static_cast<void (*)(cuda::ptx::n32_t<32>)>(cuda::ptx::setmaxnreg_inc));),
+        * fn_ptr++ = reinterpret_cast<void*>(static_cast<void (*)(cuda::ptx::n32_t<32>)>(cuda::ptx::setmaxnreg_inc));));
+  NV_IF_TARGET(
     NV_HAS_FEATURE_SM_120a,
     (
         // setmaxnreg.inc.sync.aligned.u32 imm_reg_count;
-        * fn_ptr++ = reinterpret_cast<void*>(static_cast<void (*)(cuda::ptx::n32_t<32>)>(cuda::ptx::setmaxnreg_inc));),
+        * fn_ptr++ = reinterpret_cast<void*>(static_cast<void (*)(cuda::ptx::n32_t<32>)>(cuda::ptx::setmaxnreg_inc));));
+  NV_IF_TARGET(
     NV_HAS_FEATURE_SM_121a,
     (
         // setmaxnreg.inc.sync.aligned.u32 imm_reg_count;
-        * fn_ptr++ = reinterpret_cast<void*>(static_cast<void (*)(cuda::ptx::n32_t<32>)>(cuda::ptx::setmaxnreg_inc));),
+        * fn_ptr++ = reinterpret_cast<void*>(static_cast<void (*)(cuda::ptx::n32_t<32>)>(cuda::ptx::setmaxnreg_inc));));
+  NV_IF_TARGET(
     NV_HAS_FEATURE_SM_100f,
     (
         // setmaxnreg.inc.sync.aligned.u32 imm_reg_count;
-        * fn_ptr++ = reinterpret_cast<void*>(static_cast<void (*)(cuda::ptx::n32_t<32>)>(cuda::ptx::setmaxnreg_inc));),
+        * fn_ptr++ = reinterpret_cast<void*>(static_cast<void (*)(cuda::ptx::n32_t<32>)>(cuda::ptx::setmaxnreg_inc));));
+  NV_IF_TARGET(
     NV_HAS_FEATURE_SM_103f,
     (
         // setmaxnreg.inc.sync.aligned.u32 imm_reg_count;
-        * fn_ptr++ = reinterpret_cast<void*>(static_cast<void (*)(cuda::ptx::n32_t<32>)>(cuda::ptx::setmaxnreg_inc));),
+        * fn_ptr++ = reinterpret_cast<void*>(static_cast<void (*)(cuda::ptx::n32_t<32>)>(cuda::ptx::setmaxnreg_inc));));
+  NV_IF_TARGET(
     NV_HAS_FEATURE_SM_110f,
     (
         // setmaxnreg.inc.sync.aligned.u32 imm_reg_count;
-        * fn_ptr++ = reinterpret_cast<void*>(static_cast<void (*)(cuda::ptx::n32_t<32>)>(cuda::ptx::setmaxnreg_inc));),
+        * fn_ptr++ = reinterpret_cast<void*>(static_cast<void (*)(cuda::ptx::n32_t<32>)>(cuda::ptx::setmaxnreg_inc));));
+  NV_IF_TARGET(
     NV_HAS_FEATURE_SM_120f,
     (
         // setmaxnreg.inc.sync.aligned.u32 imm_reg_count;
-        * fn_ptr++ = reinterpret_cast<void*>(static_cast<void (*)(cuda::ptx::n32_t<32>)>(cuda::ptx::setmaxnreg_inc));),
+        * fn_ptr++ = reinterpret_cast<void*>(static_cast<void (*)(cuda::ptx::n32_t<32>)>(cuda::ptx::setmaxnreg_inc));));
+  NV_IF_TARGET(
     NV_HAS_FEATURE_SM_121f,
     (
         // setmaxnreg.inc.sync.aligned.u32 imm_reg_count;
@@ -65,47 +75,57 @@ __global__ void test_setmaxnreg(void** fn_ptr)
 #endif // __cccl_ptx_isa >= 800
 
 #if __cccl_ptx_isa >= 800
-  NV_DISPATCH_TARGET(
+  NV_IF_TARGET(
     NV_HAS_FEATURE_SM_90a,
     (
         // setmaxnreg.dec.sync.aligned.u32 imm_reg_count;
-        * fn_ptr++ = reinterpret_cast<void*>(static_cast<void (*)(cuda::ptx::n32_t<32>)>(cuda::ptx::setmaxnreg_dec));),
+        * fn_ptr++ = reinterpret_cast<void*>(static_cast<void (*)(cuda::ptx::n32_t<32>)>(cuda::ptx::setmaxnreg_dec));));
+  NV_IF_TARGET(
     NV_HAS_FEATURE_SM_100a,
     (
         // setmaxnreg.dec.sync.aligned.u32 imm_reg_count;
-        * fn_ptr++ = reinterpret_cast<void*>(static_cast<void (*)(cuda::ptx::n32_t<32>)>(cuda::ptx::setmaxnreg_dec));),
+        * fn_ptr++ = reinterpret_cast<void*>(static_cast<void (*)(cuda::ptx::n32_t<32>)>(cuda::ptx::setmaxnreg_dec));));
+  NV_IF_TARGET(
     NV_HAS_FEATURE_SM_103a,
     (
         // setmaxnreg.dec.sync.aligned.u32 imm_reg_count;
-        * fn_ptr++ = reinterpret_cast<void*>(static_cast<void (*)(cuda::ptx::n32_t<32>)>(cuda::ptx::setmaxnreg_dec));),
+        * fn_ptr++ = reinterpret_cast<void*>(static_cast<void (*)(cuda::ptx::n32_t<32>)>(cuda::ptx::setmaxnreg_dec));));
+  NV_IF_TARGET(
     NV_HAS_FEATURE_SM_110a,
     (
         // setmaxnreg.dec.sync.aligned.u32 imm_reg_count;
-        * fn_ptr++ = reinterpret_cast<void*>(static_cast<void (*)(cuda::ptx::n32_t<32>)>(cuda::ptx::setmaxnreg_dec));),
+        * fn_ptr++ = reinterpret_cast<void*>(static_cast<void (*)(cuda::ptx::n32_t<32>)>(cuda::ptx::setmaxnreg_dec));));
+  NV_IF_TARGET(
     NV_HAS_FEATURE_SM_120a,
     (
         // setmaxnreg.dec.sync.aligned.u32 imm_reg_count;
-        * fn_ptr++ = reinterpret_cast<void*>(static_cast<void (*)(cuda::ptx::n32_t<32>)>(cuda::ptx::setmaxnreg_dec));),
+        * fn_ptr++ = reinterpret_cast<void*>(static_cast<void (*)(cuda::ptx::n32_t<32>)>(cuda::ptx::setmaxnreg_dec));));
+  NV_IF_TARGET(
     NV_HAS_FEATURE_SM_121a,
     (
         // setmaxnreg.dec.sync.aligned.u32 imm_reg_count;
-        * fn_ptr++ = reinterpret_cast<void*>(static_cast<void (*)(cuda::ptx::n32_t<32>)>(cuda::ptx::setmaxnreg_dec));),
+        * fn_ptr++ = reinterpret_cast<void*>(static_cast<void (*)(cuda::ptx::n32_t<32>)>(cuda::ptx::setmaxnreg_dec));));
+  NV_IF_TARGET(
     NV_HAS_FEATURE_SM_100f,
     (
         // setmaxnreg.dec.sync.aligned.u32 imm_reg_count;
-        * fn_ptr++ = reinterpret_cast<void*>(static_cast<void (*)(cuda::ptx::n32_t<32>)>(cuda::ptx::setmaxnreg_dec));),
+        * fn_ptr++ = reinterpret_cast<void*>(static_cast<void (*)(cuda::ptx::n32_t<32>)>(cuda::ptx::setmaxnreg_dec));));
+  NV_IF_TARGET(
     NV_HAS_FEATURE_SM_103f,
     (
         // setmaxnreg.dec.sync.aligned.u32 imm_reg_count;
-        * fn_ptr++ = reinterpret_cast<void*>(static_cast<void (*)(cuda::ptx::n32_t<32>)>(cuda::ptx::setmaxnreg_dec));),
+        * fn_ptr++ = reinterpret_cast<void*>(static_cast<void (*)(cuda::ptx::n32_t<32>)>(cuda::ptx::setmaxnreg_dec));));
+  NV_IF_TARGET(
     NV_HAS_FEATURE_SM_110f,
     (
         // setmaxnreg.dec.sync.aligned.u32 imm_reg_count;
-        * fn_ptr++ = reinterpret_cast<void*>(static_cast<void (*)(cuda::ptx::n32_t<32>)>(cuda::ptx::setmaxnreg_dec));),
+        * fn_ptr++ = reinterpret_cast<void*>(static_cast<void (*)(cuda::ptx::n32_t<32>)>(cuda::ptx::setmaxnreg_dec));));
+  NV_IF_TARGET(
     NV_HAS_FEATURE_SM_120f,
     (
         // setmaxnreg.dec.sync.aligned.u32 imm_reg_count;
-        * fn_ptr++ = reinterpret_cast<void*>(static_cast<void (*)(cuda::ptx::n32_t<32>)>(cuda::ptx::setmaxnreg_dec));),
+        * fn_ptr++ = reinterpret_cast<void*>(static_cast<void (*)(cuda::ptx::n32_t<32>)>(cuda::ptx::setmaxnreg_dec));));
+  NV_IF_TARGET(
     NV_HAS_FEATURE_SM_121f,
     (
         // setmaxnreg.dec.sync.aligned.u32 imm_reg_count;

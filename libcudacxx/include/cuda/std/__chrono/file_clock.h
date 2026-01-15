@@ -48,6 +48,41 @@ using file_time = time_point<file_clock, _Duration>;
 
 _CCCL_END_NAMESPACE_CUDA_STD
 
+#ifndef __cuda_std__
+
+_CCCL_BEGIN_NAMESPACE_FILESYSTEM
+struct _FilesystemClock
+{
+#  if _CCCL_HAS_INT128()
+  using rep    = __int128_t;
+  using period = nano;
+#  else // ^^^ _CCCL_HAS_INT128() ^^^ / vvv !_CCCL_HAS_INT128() vvv
+  using rep    = long long;
+  using period = nano;
+#  endif // !_CCCL_HAS_INT128()
+
+  using duration   = chrono::duration<rep, period>;
+  using time_point = chrono::time_point<_FilesystemClock>;
+
+  _CCCL_VISIBILITY_DEFAULT static constexpr const bool is_steady = false;
+
+  [[nodiscard]] _CCCL_API inline static time_point now() noexcept;
+
+  [[nodiscard]] _CCCL_API inline static time_t to_time_t(const time_point& __t) noexcept
+  {
+    using __secs = chrono::duration<rep>;
+    return time_t(chrono::duration_cast<__secs>(__t.time_since_epoch()).count());
+  }
+
+  [[nodiscard]] _CCCL_API inline static time_point from_time_t(time_t __t) noexcept
+  {
+    using __secs = chrono::duration<rep>;
+    return time_point(__secs(__t));
+  }
+};
+_CCCL_END_NAMESPACE_FILESYSTEM
+#endif // __cuda_std__
+
 #include <cuda/std/__cccl/epilogue.h>
 
 #endif // _CUDA_STD___CHRONO_FILE_CLOCK_H
