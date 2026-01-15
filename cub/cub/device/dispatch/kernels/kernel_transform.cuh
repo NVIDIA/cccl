@@ -223,7 +223,7 @@ _CCCL_DEVICE void transform_kernel_vectorized(
   RandomAccessIteratorsIn... ins)
 {
   // constexpr int block_threads    = Policy.vectorized.block_threads;
-  // constexpr int items_per_thread = Policy.vectorized.items_per_thread_vectorized;
+  // constexpr int items_per_thread = Policy.vectorized.items_per_thread;
   // constexpr int vec_size         = Policy.vectorized.vec_size;
   _CCCL_ASSERT(!can_vectorize || (items_per_thread == num_elem_per_thread_prefetch), "");
   constexpr int tile_size = block_threads * items_per_thread;
@@ -1041,7 +1041,7 @@ __launch_bounds__(get_block_threads<PolicySelector>) CUB_DETAIL_KERNEL_ATTRIBUTE
                   "Cannot vectorize transform with a predicate");
 
     transform_kernel_vectorized</*policy*/ policy.vectorized.block_threads,
-                                policy.vectorized.items_per_thread_vectorized,
+                                policy.vectorized.items_per_thread,
                                 policy.vectorized.vec_size>(
       num_items,
       num_elem_per_thread,

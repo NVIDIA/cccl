@@ -13,10 +13,8 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cub/device/dispatch/tuning/common.cuh>
 #include <cub/util_type.cuh>
-
-#include <thrust/type_traits/is_contiguous_iterator.h>
-#include <thrust/type_traits/is_trivially_relocatable.h>
 
 #include <cuda/__cmath/pow2.h>
 #include <cuda/__cmath/round_up.h>
@@ -118,7 +116,7 @@ struct prefetch_policy
 struct vectorized_policy
 {
   int block_threads;
-  int items_per_thread_vectorized;
+  int items_per_thread;
   int vec_size;
   // if we have to fall back to prefetching, use these values:
   int prefetch_items_per_thread_no_input = 2;
@@ -127,7 +125,7 @@ struct vectorized_policy
 
   [[nodiscard]] _CCCL_API constexpr friend bool operator==(const vectorized_policy& lhs, const vectorized_policy& rhs)
   {
-    return lhs.block_threads == rhs.block_threads && lhs.items_per_thread_vectorized == rhs.items_per_thread_vectorized
+    return lhs.block_threads == rhs.block_threads && lhs.items_per_thread == rhs.items_per_thread
         && lhs.vec_size == rhs.vec_size
         && lhs.prefetch_items_per_thread_no_input == rhs.prefetch_items_per_thread_no_input
         && lhs.prefetch_min_items_per_thread == rhs.prefetch_min_items_per_thread
@@ -143,8 +141,8 @@ struct vectorized_policy
   friend ::std::ostream& operator<<(::std::ostream& os, const vectorized_policy& policy)
   {
     return os
-        << "vectorized_policy { .block_threads = " << policy.block_threads << ", .items_per_thread_vectorized = "
-        << policy.items_per_thread_vectorized << ", .vec_size = " << policy.vec_size
+        << "vectorized_policy { .block_threads = " << policy.block_threads
+        << ", .items_per_thread = " << policy.items_per_thread << ", .vec_size = " << policy.vec_size
         << ", .prefetch_items_per_thread_no_input = " << policy.prefetch_items_per_thread_no_input
         << ", .prefetch_min_items_per_thread = " << policy.prefetch_min_items_per_thread
         << ", .prefetch_max_items_per_thread = " << policy.prefetch_max_items_per_thread << " }";
@@ -214,37 +212,6 @@ struct transform_policy
 template <typename T>
 concept transform_policy_selector = policy_selector<T, transform_policy>;
 #endif // _CCCL_HAS_CONCEPTS()
-
-struct iterator_info
-{
-  int value_type_size;
-  int value_type_alignment;
-  bool value_type_is_trivially_relocatable;
-  bool is_contiguous;
-};
-
-template <typename T>
-inline constexpr size_t size_of = sizeof(T);
-
-template <>
-inline constexpr size_t size_of<void> = 0;
-
-template <typename T>
-inline constexpr size_t align_of = alignof(T);
-
-template <>
-inline constexpr size_t align_of<void> = 0;
-
-template <typename It>
-[[nodiscard]] _CCCL_API constexpr auto make_iterator_info() -> iterator_info
-{
-  using vt = it_value_t<It>;
-  return iterator_info{
-    static_cast<int>(size_of<vt>),
-    static_cast<int>(align_of<vt>),
-    THRUST_NS_QUALIFIER::is_trivially_relocatable_v<vt>,
-    THRUST_NS_QUALIFIER::is_contiguous_iterator_v<It>};
-}
 
 template <typename... Its>
 _CCCL_HOST_DEVICE constexpr auto loaded_bytes_per_iteration() -> int

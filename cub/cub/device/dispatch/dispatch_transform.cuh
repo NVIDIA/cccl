@@ -379,7 +379,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t invoke_prefetch_or_vectorized
     can_vectorize = kernel_source.CanVectorize(vs, out, ::cuda::std::get<Is>(in)...);
     if (can_vectorize)
     {
-      ipt = policy.vectorized.items_per_thread_vectorized;
+      ipt = policy.vectorized.items_per_thread;
     }
   }
 

@@ -130,7 +130,7 @@ template <int NumInputs>
 struct transform_kernel_source
 {
   cccl_device_transform_build_result_t& build;
-  cuda::std::array<cdt::iterator_info, NumInputs> inputs;
+  cuda::std::array<cub::detail::iterator_info, NumInputs> inputs;
 
   template <class ActionT>
   cub::detail::transform::cuda_expected<cub::detail::transform::async_config>
@@ -197,7 +197,7 @@ public:
   }
 };
 
-auto make_iterator_info(cccl_iterator_t it) -> cdt::iterator_info
+auto make_iterator_info(cccl_iterator_t it) -> cub::detail::iterator_info
 {
   // TODO(bgruber): CCCL_STORAGE is not necessarily trivially relocatable, but how can we know this here?
   // gevtushenko said, that he is not aware of types which are not trivially relocatable for now, since
@@ -237,8 +237,7 @@ try
     make_kernel_output_iterator(offset_t, transform::output_iterator_name, output_it_value_t, output_it);
   const std::string op_src = make_kernel_user_unary_operator(input_it_value_t, output_it_value_t, op);
 
-  const auto inputs =
-    cuda::std::array<cub::detail::transform::iterator_info, 1>{transform::make_iterator_info(input_it)};
+  const auto inputs     = cuda::std::array<cub::detail::iterator_info, 1>{transform::make_iterator_info(input_it)};
   const auto output     = transform::make_iterator_info(output_it);
   const auto policy_sel = cub::detail::transform::policy_selector<1>{false, true, inputs, output};
 
@@ -337,10 +336,10 @@ static_assert(device_transform_policy()(::cuda::arch_id{{CUB_PTX_ARCH / 10}}) ==
   build_ptr->cubin_size                 = result.size;
   build_ptr->cache                      = new transform::cache();
 
-    // avoid new and delete which requires the allocated and freed types to match
-    static_assert(std::is_trivially_copyable_v<decltype(policy_sel)>);
+  // avoid new and delete which requires the allocated and freed types to match
+  static_assert(std::is_trivially_copyable_v<decltype(policy_sel)>);
   build_ptr->runtime_policy = std::malloc(sizeof(policy_sel));
-    std::memcpy(build_ptr->runtime_policy, &policy_sel, sizeof(policy_sel));
+  std::memcpy(build_ptr->runtime_policy, &policy_sel, sizeof(policy_sel));
 
   return CUDA_SUCCESS;
 }
@@ -426,7 +425,7 @@ try
   const std::string op_src =
     make_kernel_user_binary_operator(input1_it_value_t, input2_it_value_t, output_it_value_t, op);
 
-  const auto inputs = cuda::std::array<cub::detail::transform::iterator_info, 2>{
+  const auto inputs = cuda::std::array<cub::detail::iterator_info, 2>{
     transform::make_iterator_info(input1_it), transform::make_iterator_info(input2_it)};
   const auto output     = transform::make_iterator_info(output_it);
   const auto policy_sel = cub::detail::transform::policy_selector<2>{false, true, inputs, output};
@@ -535,10 +534,10 @@ static_assert(device_transform_policy()(::cuda::arch_id{{CUB_PTX_ARCH / 10}}) ==
   build_ptr->cubin_size                 = result.size;
   build_ptr->cache                      = new transform::cache();
 
-    // avoid new and delete which requires the allocated and freed types to match
-    static_assert(std::is_trivially_copyable_v<decltype(policy_sel)>);
+  // avoid new and delete which requires the allocated and freed types to match
+  static_assert(std::is_trivially_copyable_v<decltype(policy_sel)>);
   build_ptr->runtime_policy = std::malloc(sizeof(policy_sel));
-    std::memcpy(build_ptr->runtime_policy, &policy_sel, sizeof(policy_sel));
+  std::memcpy(build_ptr->runtime_policy, &policy_sel, sizeof(policy_sel));
 
   return CUDA_SUCCESS;
 }
@@ -639,8 +638,8 @@ try
   using namespace cub::detail::transform;
   std::unique_ptr<char[]> cubin(static_cast<char*>(build_ptr->cubin));
   std::free(build_ptr->runtime_policy);
-    std::unique_ptr<transform::cache> cache(static_cast<transform::cache*>(build_ptr->cache));
-    check(cuLibraryUnload(build_ptr->library));
+  std::unique_ptr<transform::cache> cache(static_cast<transform::cache*>(build_ptr->cache));
+  check(cuLibraryUnload(build_ptr->library));
 
   return CUDA_SUCCESS;
 }
