@@ -9,205 +9,352 @@
 //===----------------------------------------------------------------------===//
 
 #include <cuda/functional>
+#include <cuda/std/__cccl/dialect.h>
 #include <cuda/std/cassert>
 #include <cuda/std/limits>
 
 #include "test_macros.h"
 
-template <class T, class Op, class Identity, class Absorbing>
-__host__ __device__ constexpr void test_operator_properties(
-  bool is_commutative,
-  bool is_associative,
-  bool has_identity_element,
-  bool has_absorbing_element,
-  Identity identity,
-  Absorbing absorbing)
-{
-  using props = cuda::operator_properties<Op, T>;
-  assert(props::is_commutative == is_commutative);
-  assert(props::is_associative == is_associative);
-  assert(props::has_identity_element == has_identity_element);
-  assert(props::has_absorbing_element == has_absorbing_element);
-  if constexpr (props::has_identity_element)
-  {
-    assert(props::identity_element() == identity);
-  }
-  if constexpr (props::has_absorbing_element)
-  {
-    assert(props::absorbing_element() == absorbing);
-  }
-}
-
-template <class T, template <class...> class Op, class Identity, class Absorbing>
-__host__ __device__ constexpr void test_operator_properties(
-  bool is_commutative,
-  bool is_associative,
-  bool has_identity_element,
-  bool has_absorbing_element,
-  Identity identity,
-  Absorbing absorbing)
-{
-  test_operator_properties<T, Op<T>, Identity, Absorbing>(
-    is_commutative, is_associative, has_identity_element, has_absorbing_element, identity, absorbing);
-  test_operator_properties<T, Op<>, Identity, Absorbing>(
-    is_commutative, is_associative, has_identity_element, has_absorbing_element, identity, absorbing);
-}
-
 /***********************************************************************************************************************
- * Test all integral types
+ * Associativity and Commutativity
  **********************************************************************************************************************/
 
-template <class T>
-__host__ __device__ constexpr void test_integral_types()
+template <template <class...> class Op, class T>
+__host__ __device__ constexpr bool is_commutative()
 {
-  // is_commutative, is_associative, has_identity_element, has_absorbing_element
-  // identity, absorbing
-  test_operator_properties<T, cuda::std::plus<T>, T, T>(true, true, true, false, T{}, T{});
-  test_operator_properties<T, cuda::std::multiplies<T>, T, T>(true, true, true, true, T{1}, T{});
-  test_operator_properties<T, cuda::std::minus<T>, T, T>(false, false, false, false, T{}, T{});
-  test_operator_properties<T, cuda::std::divides<T>, T, T>(false, false, false, false, T{}, T{});
-  test_operator_properties<T, cuda::std::modulus<T>, T, T>(false, false, false, false, T{}, T{});
-  if constexpr (cuda::std::__cccl_is_unsigned_integer_v<T>)
-  {
-    test_operator_properties<T, cuda::std::bit_and<T>, T, T>(true, true, true, true, static_cast<T>(~T{}), T{});
-    test_operator_properties<T, cuda::std::bit_or<T>, T, T>(true, true, true, true, T{}, static_cast<T>(~T{}));
-    test_operator_properties<T, cuda::std::bit_xor<T>, T, T>(true, true, true, false, T{}, T{});
-  }
-  test_operator_properties<T, cuda::minimum<T>, T, T>(
-    true, true, true, true, cuda::std::numeric_limits<T>::max(), cuda::std::numeric_limits<T>::lowest());
-  test_operator_properties<T, cuda::maximum<T>, T, T>(
-    true, true, true, true, cuda::std::numeric_limits<T>::lowest(), cuda::std::numeric_limits<T>::max());
+  return cuda::is_commutative_v<Op<T>, T> && cuda::is_commutative_v<Op<>, T>;
 }
 
-__host__ __device__ constexpr void test_integral_types()
+template <template <class...> class Op, class T>
+__host__ __device__ constexpr bool is_associative()
 {
-  // is_commutative, is_associative, has_identity_element, has_absorbing_element
-  // identity, absorbing
-  test_operator_properties<bool, cuda::std::logical_and<bool>, bool, bool>(true, true, true, true, true, false);
-  test_operator_properties<bool, cuda::std::logical_or<bool>, bool, bool>(true, true, true, true, false, true);
+  return cuda::is_associative_v<Op<T>, T> && cuda::is_associative_v<Op<>, T>;
+}
 
-  test_integral_types<char>();
-  test_integral_types<signed char>();
-  test_integral_types<unsigned char>();
-  test_integral_types<short>();
-  test_integral_types<unsigned short>();
-  test_integral_types<int>();
-  test_integral_types<unsigned int>();
-  test_integral_types<long>();
-  test_integral_types<unsigned long>();
-  test_integral_types<long long>();
-  test_integral_types<unsigned long long>();
+template <template <class...> class Op, class T>
+__host__ __device__ constexpr bool is_commutative_and_associative()
+{
+  return is_commutative<Op, T>() && is_associative<Op, T>();
+}
+
+template <class T>
+__host__ __device__ constexpr void test_associative_commutative_integral()
+{
+  static_assert(is_commutative_and_associative<cuda::std::plus, T>());
+  static_assert(is_commutative_and_associative<cuda::std::multiplies, T>());
+  static_assert(!is_commutative<cuda::std::minus, T>() && !is_associative<cuda::std::minus, T>());
+  static_assert(!is_commutative<cuda::std::divides, T>() && !is_associative<cuda::std::divides, T>());
+  static_assert(!is_commutative<cuda::std::modulus, T>() && !is_associative<cuda::std::modulus, T>());
+  static_assert(is_commutative_and_associative<cuda::minimum, T>());
+  static_assert(is_commutative_and_associative<cuda::maximum, T>());
+}
+
+template <class T>
+__host__ __device__ constexpr void test_associative_commutative_unsigned_integral()
+{
+  test_associative_commutative_integral<T>();
+  static_assert(is_commutative_and_associative<cuda::std::bit_and, T>());
+  static_assert(is_commutative_and_associative<cuda::std::bit_or, T>());
+  static_assert(is_commutative_and_associative<cuda::std::bit_xor, T>());
+}
+
+__host__ __device__ constexpr void test_associative_commutative_integral()
+{
+  static_assert(is_commutative_and_associative<cuda::std::logical_and, bool>());
+  static_assert(is_commutative_and_associative<cuda::std::logical_or, bool>());
+  test_associative_commutative_integral<signed char>();
+  test_associative_commutative_unsigned_integral<unsigned char>();
+  test_associative_commutative_integral<short>();
+  test_associative_commutative_unsigned_integral<unsigned short>();
+  test_associative_commutative_integral<int>();
+  test_associative_commutative_unsigned_integral<unsigned int>();
+  test_associative_commutative_integral<long>();
+  test_associative_commutative_unsigned_integral<unsigned long>();
+  test_associative_commutative_integral<long long>();
+  test_associative_commutative_unsigned_integral<unsigned long long>();
 #if _CCCL_HAS_INT128()
-  test_integral_types<__int128_t>();
-  test_integral_types<__uint128_t>();
+  test_associative_commutative_integral<__int128_t>();
+  test_associative_commutative_unsigned_integral<__uint128_t>();
 #endif // _CCCL_HAS_INT128()
 }
 
-/***********************************************************************************************************************
- * Test floating-point types (associativity should be false for plus/multiplies)
- **********************************************************************************************************************/
+//----------------------------------------------------------------------------------------------------------------------
+// floating-point
 
 template <class T>
-__host__ __device__ constexpr void test_floating_point_types()
+__host__ __device__ constexpr void test_associative_commutative_floating_point()
 {
-  // is_commutative, is_associative, has_identity_element, has_absorbing_element
-  // identity, absorbing
-  // Note: plus and multiplies are NOT associative for floating-point due to rounding
-  test_operator_properties<T, cuda::std::plus<T>, T, T>(true, false, true, false, T{}, T{});
-  test_operator_properties<T, cuda::std::multiplies<T>, T, T>(true, false, true, true, T{1}, T{});
-  test_operator_properties<T, cuda::std::minus<T>, T, T>(false, false, false, false, T{}, T{});
-  test_operator_properties<T, cuda::std::divides<T>, T, T>(false, false, false, false, T{}, T{});
-  test_operator_properties<T, cuda::minimum<T>, T, T>(
-    true, true, true, true, cuda::std::numeric_limits<T>::max(), cuda::std::numeric_limits<T>::lowest());
-  test_operator_properties<T, cuda::maximum<T>, T, T>(
-    true, true, true, true, cuda::std::numeric_limits<T>::lowest(), cuda::std::numeric_limits<T>::max());
+  static_assert(is_commutative<cuda::std::plus, T>() && !is_associative<cuda::std::plus, T>());
+  static_assert(is_commutative<cuda::std::multiplies, T>() && !is_associative<cuda::std::multiplies, T>());
+  static_assert(!is_commutative<cuda::std::minus, T>() && !is_associative<cuda::std::minus, T>());
+  static_assert(!is_commutative<cuda::std::divides, T>() && !is_associative<cuda::std::divides, T>());
+  static_assert(is_commutative_and_associative<cuda::minimum, T>());
+  static_assert(is_commutative_and_associative<cuda::maximum, T>());
 }
 
-__host__ __device__ constexpr void test_floating_point_types()
+__host__ __device__ constexpr void test_associative_commutative_floating_point()
 {
-  test_floating_point_types<float>();
-  test_floating_point_types<double>();
-  // Verify associativity is false for floating-point arithmetic
-  static_assert(!cuda::operator_properties<cuda::std::plus<float>, float>::is_associative);
-  static_assert(!cuda::operator_properties<cuda::std::plus<double>, double>::is_associative);
-  static_assert(!cuda::operator_properties<cuda::std::multiplies<float>, float>::is_associative);
-  static_assert(!cuda::operator_properties<cuda::std::multiplies<double>, double>::is_associative);
+  test_associative_commutative_floating_point<float>();
+  test_associative_commutative_floating_point<double>();
+#if _CCCL_HAS_NVFP16()
+  test_associative_commutative_floating_point<__half>();
+#endif // _CCCL_HAS_NVFP16()
+#if _CCCL_HAS_NVBF16()
+  test_associative_commutative_floating_point<__nv_bfloat16>();
+#endif // _CCCL_HAS_NVBF16()
+#if _CCCL_HAS_FLOAT128()
+  test_associative_commutative_floating_point<__float128>();
+#endif // _CCCL_HAS_FLOAT128()
 }
 
 /***********************************************************************************************************************
- * Test that identity and absorbing elements work correctly with operators
+ * Identity
  **********************************************************************************************************************/
-
-template <class T, class Op>
-__host__ __device__ constexpr void test_identity_property()
+template <class T>
+__host__ __device__ constexpr T get_value()
 {
-  // Test that op(x, identity) == x for operators with identity
-  using props = cuda::operator_properties<Op, T>;
-  if constexpr (props::has_identity_element)
+  if constexpr (cuda::std::is_same_v<T, bool>)
   {
-    Op op{};
-    T value      = T{42};
-    T identity   = props::identity_element();
-    T result_lhs = op(value, identity);
-    T result_rhs = op(identity, value);
-    assert(result_lhs == value);
-    assert(result_rhs == value);
+    return true;
+  }
+  else
+  {
+    if constexpr (::cuda::std::__is_extended_floating_point_v<T>)
+    {
+      return cuda::std::__fp_max<T>();
+    }
+    else
+    {
+      return T{42};
+    }
   }
 }
 
-template <class T, class Op>
-__host__ __device__ constexpr void test_absorbing_property()
+template <class Op, class T>
+__host__ __device__ constexpr void test_identity_impl2(T identity)
 {
-  // Test that op(x, absorbing) == absorbing for operators with absorbing element
-  using props = cuda::operator_properties<Op, T>;
-  if constexpr (props::has_absorbing_element)
+  assert((identity == cuda::identity_element_v<Op, T>) );
+  Op op{};
+  T value      = get_value<T>();
+  T identity1  = cuda::identity_element_v<Op, T>;
+  T result_lhs = op(value, identity1);
+  T result_rhs = op(identity1, value);
+  assert(result_lhs == value);
+  assert(result_rhs == value);
+}
+
+template <class Op, class T>
+__host__ __device__ constexpr void test_identity_impl(bool has_identity, [[maybe_unused]] T identity)
+{
+  assert((has_identity == cuda::has_identity_element_v<Op, T>) );
+  if constexpr (cuda::has_identity_element_v<Op, T>)
   {
-    Op op{};
-    T value      = T{42};
-    T absorbing  = props::absorbing_element();
-    T result_lhs = op(value, absorbing);
-    T result_rhs = op(absorbing, value);
-    assert(result_lhs == absorbing);
-    assert(result_rhs == absorbing);
+    // handle extended floating-point types separately
+    if constexpr (!::cuda::std::__is_extended_floating_point_v<T>)
+    {
+      test_identity_impl2<Op, T>(identity);
+    }
+    else
+    {
+      _CCCL_IF_NOT_CONSTEVAL
+      {
+        test_identity_impl2<Op, T>(identity);
+      }
+    }
   }
 }
 
-template <class T, class Op>
-__host__ __device__ constexpr void test_algebraic_properties()
+template <template <class...> class Op, class T>
+__host__ __device__ constexpr void test_identity(bool has_identity, T identity)
 {
-  test_identity_property<T, Op>();
-  test_absorbing_property<T, Op>();
+  test_identity_impl<Op<T>, T>(has_identity, identity);
+  test_identity_impl<Op<>, T>(has_identity, identity);
 }
 
 template <class T>
-__host__ __device__ constexpr void test_algebraic_properties()
+__host__ __device__ constexpr void test_identity_integral()
 {
-  test_algebraic_properties<T, cuda::std::plus<T>>();
-  test_algebraic_properties<T, cuda::std::multiplies<T>>();
-  if constexpr (cuda::std::__cccl_is_unsigned_integer_v<T>)
-  {
-    test_algebraic_properties<T, cuda::std::bit_and<T>>();
-    test_algebraic_properties<T, cuda::std::bit_or<T>>();
-    test_algebraic_properties<T, cuda::std::bit_xor<T>>();
-  }
-  test_algebraic_properties<T, cuda::minimum<T>>();
-  test_algebraic_properties<T, cuda::maximum<T>>();
+  test_identity<cuda::std::plus, T>(true, T{});
+  test_identity<cuda::std::multiplies, T>(true, T{1});
+  test_identity<cuda::minimum, T>(true, cuda::std::numeric_limits<T>::max());
+  test_identity<cuda::maximum, T>(true, cuda::std::numeric_limits<T>::lowest());
 }
 
-__host__ __device__ constexpr bool test_algebraic_properties()
+template <class T>
+__host__ __device__ constexpr void test_identity_unsigned_integral()
 {
-  test_algebraic_properties<int>();
-  test_algebraic_properties<unsigned int>();
-  test_algebraic_properties<float>();
-  test_algebraic_properties<double>();
-  return true;
+  test_identity_integral<T>();
+  test_identity<cuda::std::bit_and, T>(true, static_cast<T>(~T{}));
+  test_identity<cuda::std::bit_or, T>(true, T{});
+  test_identity<cuda::std::bit_xor, T>(true, T{});
 }
+
+__host__ __device__ constexpr void test_identity_integral()
+{
+  test_identity<cuda::std::logical_and, bool>(true, true);
+  test_identity<cuda::std::logical_or, bool>(true, false);
+  test_identity_integral<signed char>();
+  test_identity_unsigned_integral<unsigned char>();
+  test_identity_integral<short>();
+  test_identity_unsigned_integral<unsigned short>();
+  test_identity_integral<int>();
+  test_identity_unsigned_integral<unsigned int>();
+  test_identity_integral<long>();
+  test_identity_unsigned_integral<unsigned long>();
+  test_identity_integral<long long>();
+  test_identity_unsigned_integral<unsigned long long>();
+#if _CCCL_HAS_INT128()
+  test_identity_integral<__int128_t>();
+  test_identity_unsigned_integral<__uint128_t>();
+#endif // _CCCL_HAS_INT128()
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+// floating-point
+
+template <class T>
+__host__ __device__ constexpr void test_identity_floating_point()
+{
+  test_identity<cuda::std::plus, T>(true, cuda::std::__fp_neg(T{}));
+  test_identity<cuda::std::multiplies, T>(true, cuda::std::__fp_one<T>());
+  test_identity<cuda::minimum, T>(true, cuda::std::numeric_limits<T>::infinity());
+  test_identity<cuda::maximum, T>(true, cuda::std::__fp_neg(::cuda::std::__fp_inf<T>()));
+}
+
+__host__ __device__ constexpr void test_identity_floating_point()
+{
+  test_identity_floating_point<float>();
+  test_identity_floating_point<double>();
+#if _CCCL_HAS_NVFP16()
+  test_identity_floating_point<__half>();
+#endif // _CCCL_HAS_NVFP16()
+#if _CCCL_HAS_NVBF16()
+  test_identity_floating_point<__nv_bfloat16>();
+#endif // _CCCL_HAS_NVBF16()
+#if _CCCL_HAS_FLOAT128()
+  test_identity_floating_point<__float128>();
+#endif // _CCCL_HAS_FLOAT128()
+}
+
+/***********************************************************************************************************************
+ * Absorbing element
+ **********************************************************************************************************************/
+
+template <class Op, class T>
+__host__ __device__ constexpr void test_absorbing_impl2([[maybe_unused]] T absorbing)
+{
+  assert((absorbing == cuda::absorbing_element_v<Op, T>) );
+  Op op{};
+  T value      = get_value<T>();
+  T absorbing1 = cuda::absorbing_element_v<Op, T>;
+  T result_lhs = op(value, absorbing1);
+  T result_rhs = op(absorbing1, value);
+  assert(result_lhs == absorbing1);
+  assert(result_rhs == absorbing1);
+}
+
+template <class Op, class T>
+__host__ __device__ constexpr void test_absorbing_impl(bool has_absorbing, [[maybe_unused]] T absorbing)
+{
+  assert((has_absorbing == cuda::has_absorbing_element_v<Op, T>) );
+  if constexpr (cuda::has_absorbing_element_v<Op, T>)
+  {
+    // handle extended floating-point types separately
+    if constexpr (!::cuda::std::__is_extended_floating_point_v<T>)
+    {
+      test_absorbing_impl2<Op, T>(absorbing);
+    }
+    else
+    {
+      _CCCL_IF_NOT_CONSTEVAL
+      {
+        test_absorbing_impl2<Op, T>(absorbing);
+      }
+    }
+  }
+}
+
+template <template <class...> class Op, class T>
+__host__ __device__ constexpr void test_absorbing(bool has_absorbing, T absorbing)
+{
+  test_absorbing_impl<Op<T>, T>(has_absorbing, absorbing);
+  test_absorbing_impl<Op<>, T>(has_absorbing, absorbing);
+}
+
+template <class T>
+__host__ __device__ constexpr void test_absorbing_integral()
+{
+  test_absorbing<cuda::std::multiplies, T>(true, T{});
+  test_absorbing<cuda::minimum, T>(true, cuda::std::numeric_limits<T>::lowest());
+  test_absorbing<cuda::maximum, T>(true, cuda::std::numeric_limits<T>::max());
+}
+
+template <class T>
+__host__ __device__ constexpr void test_absorbing_unsigned_integral()
+{
+  test_absorbing_integral<T>();
+  test_absorbing<cuda::std::bit_and, T>(true, T{});
+  test_absorbing<cuda::std::bit_or, T>(true, static_cast<T>(~T{}));
+}
+
+__host__ __device__ constexpr void test_absorbing_integral()
+{
+  test_absorbing<cuda::std::logical_and, bool>(true, false);
+  test_absorbing<cuda::std::logical_or, bool>(true, true);
+  test_absorbing_integral<signed char>();
+  test_absorbing_unsigned_integral<unsigned char>();
+  test_absorbing_integral<short>();
+  test_absorbing_unsigned_integral<unsigned short>();
+  test_absorbing_integral<int>();
+  test_absorbing_unsigned_integral<unsigned int>();
+  test_absorbing_integral<long>();
+  test_absorbing_unsigned_integral<unsigned long>();
+  test_absorbing_integral<long long>();
+  test_absorbing_unsigned_integral<unsigned long long>();
+#if _CCCL_HAS_INT128()
+  test_absorbing_integral<__int128_t>();
+  test_absorbing_unsigned_integral<__uint128_t>();
+#endif // _CCCL_HAS_INT128()
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+// floating-point
+
+template <class T>
+__host__ __device__ constexpr void test_absorbing_floating_point()
+{
+  test_absorbing<cuda::minimum, T>(true, cuda::std::numeric_limits<T>::lowest());
+  test_absorbing<cuda::maximum, T>(true, cuda::std::numeric_limits<T>::max());
+}
+
+__host__ __device__ constexpr void test_absorbing_floating_point()
+{
+  test_absorbing_floating_point<float>();
+  test_absorbing_floating_point<double>();
+#if _CCCL_HAS_NVFP16()
+  test_absorbing_floating_point<__half>();
+#endif // _CCCL_HAS_NVFP16()
+#if _CCCL_HAS_NVBF16()
+  test_absorbing_floating_point<__nv_bfloat16>();
+#endif // _CCCL_HAS_NVBF16()
+#if _CCCL_HAS_FLOAT128()
+  test_absorbing_floating_point<__float128>();
+#endif // _CCCL_HAS_FLOAT128()
+}
+
+/***********************************************************************************************************************
+ * Test dispatch
+ **********************************************************************************************************************/
 
 __host__ __device__ constexpr bool test()
 {
-  test_integral_types();
-  test_floating_point_types();
-  test_algebraic_properties();
+  test_associative_commutative_integral();
+  test_associative_commutative_floating_point();
+
+  test_identity_integral();
+  test_identity_floating_point();
+  test_absorbing_integral();
+  test_absorbing_floating_point();
   return true;
 }
 

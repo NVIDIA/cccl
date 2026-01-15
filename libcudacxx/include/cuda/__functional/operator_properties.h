@@ -13,6 +13,8 @@
 
 #include <cuda/std/detail/__config>
 
+#include <cuda/std/__cccl/execution_space.h>
+
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
@@ -23,379 +25,598 @@
 
 #include <cuda/__functional/maximum.h>
 #include <cuda/__functional/minimum.h>
+#include <cuda/__type_traits/is_floating_point.h>
+#include <cuda/std/__concepts/concept_macros.h>
+#include <cuda/std/__floating_point/arithmetic.h>
+#include <cuda/std/__floating_point/constants.h>
 #include <cuda/std/__functional/operations.h>
+#include <cuda/std/__limits/numeric_limits.h>
 #include <cuda/std/__type_traits/always_false.h>
-#include <cuda/std/__type_traits/is_arithmetic.h>
-#include <cuda/std/__type_traits/is_integral.h>
+#include <cuda/std/__type_traits/enable_if.h>
+#include <cuda/std/__type_traits/integral_constant.h>
+#include <cuda/std/__type_traits/is_integer.h>
+#include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/is_unsigned_integer.h>
-#include <cuda/std/limits>
 
 #include <cuda/std/__cccl/prologue.h>
 
 _CCCL_BEGIN_NAMESPACE_CUDA
 
-/// @brief Trait class describing algebraic properties of binary operators.
-///
-/// @tparam Op The binary operator type (e.g., cuda::std::plus<T>)
-/// @tparam T The value type the operator operates on
-///
-/// Properties:
-/// - `is_commutative` - whether `op(a, b) == op(b, a)`
-/// - `is_associative` - whether `op(op(a, b), c) == op(a, op(b, c))` (exact/bit-accurate)
-/// - `has_identity_element` - whether an identity element exists
-/// - `identity_element()` - the value `e` where `op(a, e) == op(e, a) == a`
-/// - `has_absorbing_element` - whether an absorbing element exists
-/// - `absorbing_element()` - the value `z` where `op(a, z) == op(z, a) == z`
-///
-/// Users can specialize this template for custom operators and types.
-template <class Op, class T = void>
-struct operator_properties
+/***********************************************************************************************************************
+ * Associativity
+ **********************************************************************************************************************/
+
+template <class _Op, class _Tp, class Enable = void>
+struct __is_associative
 {
-  static_assert(::cuda::std::__always_false_v<Op>,
+  static_assert(::cuda::std::__always_false_v<_Op>,
                 "operator_properties is not specialized for this operator and type combination");
 };
 
-/***********************************************************************************************************************
- * cuda::std::plus specializations
- **********************************************************************************************************************/
-
-template <class T>
-struct operator_properties<::cuda::std::plus<T>, T>
-{
-  static constexpr bool is_commutative        = true;
-  static constexpr bool is_associative        = ::cuda::std::is_integral_v<T>;
-  static constexpr bool has_identity_element  = true;
-  static constexpr bool has_absorbing_element = false;
-
-  [[nodiscard]] _CCCL_API static constexpr T identity_element() noexcept
-  {
-    return T{};
-  }
-
-  [[nodiscard]] _CCCL_API static constexpr T absorbing_element() noexcept
-  {
-    static_assert(has_absorbing_element, "cuda::std::plus does not have an absorbing element");
-    return T{};
-  }
-};
-
-template <class T>
-struct operator_properties<::cuda::std::plus<>, T> : operator_properties<::cuda::std::plus<T>, T>
+// strictly speaking, plus (+) and multiply (*) are not associative because of overflow UB
+template <class _Tp>
+struct __is_associative<::cuda::std::plus<_Tp>, _Tp, ::cuda::std::enable_if_t<::cuda::std::__cccl_is_integer_v<_Tp>>>
+    : ::cuda::std::true_type
 {};
 
-/***********************************************************************************************************************
- * cuda::std::multiplies specializations
- **********************************************************************************************************************/
-
-template <class T>
-struct operator_properties<::cuda::std::multiplies<T>, T>
-{
-  static constexpr bool is_commutative        = true;
-  static constexpr bool is_associative        = ::cuda::std::is_integral_v<T>;
-  static constexpr bool has_identity_element  = true;
-  static constexpr bool has_absorbing_element = true;
-
-  [[nodiscard]] _CCCL_API static constexpr T identity_element() noexcept
-  {
-    return T{1};
-  }
-
-  [[nodiscard]] _CCCL_API static constexpr T absorbing_element() noexcept
-  {
-    return T{};
-  }
-};
-
-template <class T>
-struct operator_properties<::cuda::std::multiplies<>, T> : operator_properties<::cuda::std::multiplies<T>, T>
+template <class _Tp>
+struct __is_associative<::cuda::std::plus<_Tp>, _Tp, ::cuda::std::enable_if_t<::cuda::is_floating_point_v<_Tp>>>
+    : ::cuda::std::false_type
 {};
 
-/***********************************************************************************************************************
- * cuda::std::bit_and specializations
- **********************************************************************************************************************/
-
-template <class T>
-struct operator_properties<::cuda::std::bit_and<T>, T>
-{
-  static_assert(::cuda::std::__cccl_is_unsigned_integer_v<T>, "cuda::std::bit_and requires an unsigned integer type");
-
-  static constexpr bool is_commutative        = true;
-  static constexpr bool is_associative        = true;
-  static constexpr bool has_identity_element  = true;
-  static constexpr bool has_absorbing_element = true;
-
-  [[nodiscard]] _CCCL_API static constexpr T identity_element() noexcept
-  {
-    return static_cast<T>(~T{});
-  }
-
-  [[nodiscard]] _CCCL_API static constexpr T absorbing_element() noexcept
-  {
-    return T{};
-  }
-};
-
-template <class T>
-struct operator_properties<::cuda::std::bit_and<>, T> : operator_properties<::cuda::std::bit_and<T>, T>
+template <class _Tp>
+struct __is_associative<::cuda::std::plus<>, _Tp> : __is_associative<::cuda::std::plus<_Tp>, _Tp>
 {};
 
-/***********************************************************************************************************************
- * cuda::std::bit_or specializations
- **********************************************************************************************************************/
-
-template <class T>
-struct operator_properties<::cuda::std::bit_or<T>, T>
-{
-  static_assert(::cuda::std::__cccl_is_unsigned_integer_v<T>, "cuda::std::bit_or requires an unsigned integer type");
-
-  static constexpr bool is_commutative        = true;
-  static constexpr bool is_associative        = true;
-  static constexpr bool has_identity_element  = true;
-  static constexpr bool has_absorbing_element = true;
-
-  [[nodiscard]] _CCCL_API static constexpr T identity_element() noexcept
-  {
-    return T{};
-  }
-
-  [[nodiscard]] _CCCL_API static constexpr T absorbing_element() noexcept
-  {
-    return static_cast<T>(~T{});
-  }
-};
-
-template <class T>
-struct operator_properties<::cuda::std::bit_or<>, T> : operator_properties<::cuda::std::bit_or<T>, T>
+template <class _Tp>
+struct __is_associative<::cuda::std::multiplies<_Tp>,
+                        _Tp,
+                        ::cuda::std::enable_if_t<::cuda::std::__cccl_is_integer_v<_Tp>>> : ::cuda::std::true_type
 {};
 
-/***********************************************************************************************************************
- * cuda::std::bit_xor specializations
- **********************************************************************************************************************/
-
-template <class T>
-struct operator_properties<::cuda::std::bit_xor<T>, T>
-{
-  static_assert(::cuda::std::__cccl_is_unsigned_integer_v<T>, "cuda::std::bit_xor requires an unsigned integer type");
-
-  static constexpr bool is_commutative        = true;
-  static constexpr bool is_associative        = true;
-  static constexpr bool has_identity_element  = true;
-  static constexpr bool has_absorbing_element = false;
-
-  [[nodiscard]] _CCCL_API static constexpr T identity_element() noexcept
-  {
-    return T{};
-  }
-
-  [[nodiscard]] _CCCL_API static constexpr T absorbing_element() noexcept
-  {
-    static_assert(has_absorbing_element, "cuda::std::bit_xor does not have an absorbing element");
-    return T{};
-  }
-};
-
-template <class T>
-struct operator_properties<::cuda::std::bit_xor<>, T> : operator_properties<::cuda::std::bit_xor<T>, T>
+template <class _Tp>
+struct __is_associative<::cuda::std::multiplies<_Tp>, _Tp, ::cuda::std::enable_if_t<::cuda::is_floating_point_v<_Tp>>>
+    : ::cuda::std::false_type
 {};
 
-/***********************************************************************************************************************
- * cuda::std::logical_and specializations
- **********************************************************************************************************************/
-
-template <class T>
-struct operator_properties<::cuda::std::logical_and<T>, T>
-{
-  static_assert(::cuda::std::is_same_v<T, bool>, "cuda::std::logical_and requires a boolean type");
-
-  static constexpr bool is_commutative        = true;
-  static constexpr bool is_associative        = true;
-  static constexpr bool has_identity_element  = true;
-  static constexpr bool has_absorbing_element = true;
-
-  [[nodiscard]] _CCCL_API static constexpr T identity_element() noexcept
-  {
-    return static_cast<T>(true);
-  }
-
-  [[nodiscard]] _CCCL_API static constexpr T absorbing_element() noexcept
-  {
-    return static_cast<T>(false);
-  }
-};
-
-template <class T>
-struct operator_properties<::cuda::std::logical_and<>, T> : operator_properties<::cuda::std::logical_and<T>, T>
+template <class _Tp>
+struct __is_associative<::cuda::std::multiplies<>, _Tp> : __is_associative<::cuda::std::multiplies<_Tp>, _Tp>
 {};
 
-/***********************************************************************************************************************
- * cuda::std::logical_or specializations
- **********************************************************************************************************************/
-
-template <class T>
-struct operator_properties<::cuda::std::logical_or<T>, T>
-{
-  static_assert(::cuda::std::is_same_v<T, bool>, "cuda::std::logical_and requires a boolean type");
-
-  static constexpr bool is_commutative        = true;
-  static constexpr bool is_associative        = true;
-  static constexpr bool has_identity_element  = true;
-  static constexpr bool has_absorbing_element = true;
-
-  [[nodiscard]] _CCCL_API static constexpr T identity_element() noexcept
-  {
-    return static_cast<T>(false);
-  }
-
-  [[nodiscard]] _CCCL_API static constexpr T absorbing_element() noexcept
-  {
-    return static_cast<T>(true);
-  }
-};
-
-template <class T>
-struct operator_properties<::cuda::std::logical_or<>, T> : operator_properties<::cuda::std::logical_or<T>, T>
+template <class _Tp>
+struct __is_associative<::cuda::std::bit_and<_Tp>,
+                        _Tp,
+                        ::cuda::std::enable_if_t<::cuda::std::__cccl_is_unsigned_integer_v<_Tp>>>
+    : ::cuda::std::true_type
 {};
 
-/***********************************************************************************************************************
- * cuda::minimum specializations
- **********************************************************************************************************************/
-
-template <class T>
-struct operator_properties<::cuda::minimum<T>, T>
-{
-  static constexpr bool is_commutative        = true;
-  static constexpr bool is_associative        = true;
-  static constexpr bool has_identity_element  = true;
-  static constexpr bool has_absorbing_element = true;
-
-  [[nodiscard]] _CCCL_API static constexpr T identity_element() noexcept
-  {
-    return ::cuda::std::numeric_limits<T>::max();
-  }
-
-  [[nodiscard]] _CCCL_API static constexpr T absorbing_element() noexcept
-  {
-    return ::cuda::std::numeric_limits<T>::lowest();
-  }
-};
-
-template <class T>
-struct operator_properties<::cuda::minimum<>, T> : operator_properties<::cuda::minimum<T>, T>
+template <class _Tp>
+struct __is_associative<::cuda::std::bit_and<>, _Tp> : __is_associative<::cuda::std::bit_and<_Tp>, _Tp>
 {};
 
-/***********************************************************************************************************************
- * cuda::maximum specializations
- **********************************************************************************************************************/
-
-template <class T>
-struct operator_properties<::cuda::maximum<T>, T>
-{
-  static constexpr bool is_commutative        = true;
-  static constexpr bool is_associative        = true;
-  static constexpr bool has_identity_element  = true;
-  static constexpr bool has_absorbing_element = true;
-
-  [[nodiscard]] _CCCL_API static constexpr T identity_element() noexcept
-  {
-    return ::cuda::std::numeric_limits<T>::lowest();
-  }
-
-  [[nodiscard]] _CCCL_API static constexpr T absorbing_element() noexcept
-  {
-    return ::cuda::std::numeric_limits<T>::max();
-  }
-};
-
-template <class T>
-struct operator_properties<::cuda::maximum<>, T> : operator_properties<::cuda::maximum<T>, T>
+template <class _Tp>
+struct __is_associative<::cuda::std::bit_or<_Tp>,
+                        _Tp,
+                        ::cuda::std::enable_if_t<::cuda::std::__cccl_is_unsigned_integer_v<_Tp>>>
+    : ::cuda::std::true_type
 {};
 
-/***********************************************************************************************************************
- * cuda::std::minus specializations (not commutative, not associative, no identity/absorbing)
- **********************************************************************************************************************/
-
-template <class T>
-struct operator_properties<::cuda::std::minus<T>, T>
-{
-  static constexpr bool is_commutative        = false;
-  static constexpr bool is_associative        = false;
-  static constexpr bool has_identity_element  = false;
-  static constexpr bool has_absorbing_element = false;
-
-  [[nodiscard]] _CCCL_API static constexpr T identity_element() noexcept
-  {
-    static_assert(has_identity_element, "cuda::std::minus does not have an identity element");
-    return T{};
-  }
-
-  [[nodiscard]] _CCCL_API static constexpr T absorbing_element() noexcept
-  {
-    static_assert(has_absorbing_element, "cuda::std::minus does not have an absorbing element");
-    return T{};
-  }
-};
-
-template <class T>
-struct operator_properties<::cuda::std::minus<>, T> : operator_properties<::cuda::std::minus<T>, T>
+template <class _Tp>
+struct __is_associative<::cuda::std::bit_or<>, _Tp> : __is_associative<::cuda::std::bit_or<_Tp>, _Tp>
 {};
 
-/***********************************************************************************************************************
- * cuda::std::divides specializations (not commutative, not associative, no identity/absorbing)
- **********************************************************************************************************************/
-
-template <class T>
-struct operator_properties<::cuda::std::divides<T>, T>
-{
-  static constexpr bool is_commutative        = false;
-  static constexpr bool is_associative        = false;
-  static constexpr bool has_identity_element  = false;
-  static constexpr bool has_absorbing_element = false;
-
-  [[nodiscard]] _CCCL_API static constexpr T identity_element() noexcept
-  {
-    static_assert(has_identity_element, "cuda::std::divides does not have an identity element");
-    return T{};
-  }
-
-  [[nodiscard]] _CCCL_API static constexpr T absorbing_element() noexcept
-  {
-    static_assert(has_absorbing_element, "cuda::std::divides does not have an absorbing element");
-    return T{};
-  }
-};
-
-template <class T>
-struct operator_properties<::cuda::std::divides<>, T> : operator_properties<::cuda::std::divides<T>, T>
+template <class _Tp>
+struct __is_associative<::cuda::std::bit_xor<_Tp>,
+                        _Tp,
+                        ::cuda::std::enable_if_t<::cuda::std::__cccl_is_unsigned_integer_v<_Tp>>>
+    : ::cuda::std::true_type
 {};
 
+template <class _Tp>
+struct __is_associative<::cuda::std::bit_xor<>, _Tp> : __is_associative<::cuda::std::bit_xor<_Tp>, _Tp>
+{};
+
+template <class _Tp>
+struct __is_associative<::cuda::std::logical_and<_Tp>, _Tp, ::cuda::std::enable_if_t<::cuda::std::is_same_v<_Tp, bool>>>
+    : ::cuda::std::true_type
+{};
+
+template <class _Tp>
+struct __is_associative<::cuda::std::logical_and<>, _Tp> : __is_associative<::cuda::std::logical_and<_Tp>, _Tp>
+{};
+
+template <class _Tp>
+struct __is_associative<::cuda::std::logical_or<_Tp>, _Tp, ::cuda::std::enable_if_t<::cuda::std::is_same_v<_Tp, bool>>>
+    : ::cuda::std::true_type
+{};
+
+template <class _Tp>
+struct __is_associative<::cuda::std::logical_or<>, _Tp> : __is_associative<::cuda::std::logical_or<_Tp>, _Tp>
+{};
+
+template <class _Tp>
+struct __is_associative<::cuda::minimum<_Tp>, _Tp, ::cuda::std::enable_if_t<::cuda::std::__cccl_is_integer_v<_Tp>>>
+    : ::cuda::std::true_type
+{};
+
+template <class _Tp>
+struct __is_associative<::cuda::minimum<_Tp>, _Tp, ::cuda::std::enable_if_t<::cuda::is_floating_point_v<_Tp>>>
+    : ::cuda::std::true_type
+{};
+
+template <class _Tp>
+struct __is_associative<::cuda::minimum<>, _Tp> : __is_associative<::cuda::minimum<_Tp>, _Tp>
+{};
+
+template <class _Tp>
+struct __is_associative<::cuda::maximum<_Tp>, _Tp, ::cuda::std::enable_if_t<::cuda::std::__cccl_is_integer_v<_Tp>>>
+    : ::cuda::std::true_type
+{};
+
+template <class _Tp>
+struct __is_associative<::cuda::maximum<_Tp>, _Tp, ::cuda::std::enable_if_t<::cuda::is_floating_point_v<_Tp>>>
+    : ::cuda::std::true_type
+{};
+
+template <class _Tp>
+struct __is_associative<::cuda::maximum<>, _Tp> : __is_associative<::cuda::maximum<_Tp>, _Tp>
+{};
+
+template <class _Tp>
+struct __is_associative<::cuda::std::minus<_Tp>, _Tp, ::cuda::std::enable_if_t<::cuda::std::__cccl_is_integer_v<_Tp>>>
+    : ::cuda::std::false_type
+{};
+
+template <class _Tp>
+struct __is_associative<::cuda::std::minus<_Tp>, _Tp, ::cuda::std::enable_if_t<::cuda::is_floating_point_v<_Tp>>>
+    : ::cuda::std::false_type
+{};
+
+template <class _Tp>
+struct __is_associative<::cuda::std::minus<>, _Tp> : __is_associative<::cuda::std::minus<_Tp>, _Tp>
+{};
+
+template <class _Tp>
+struct __is_associative<::cuda::std::divides<_Tp>, _Tp, ::cuda::std::enable_if_t<::cuda::std::__cccl_is_integer_v<_Tp>>>
+    : ::cuda::std::false_type
+{};
+
+template <class _Tp>
+struct __is_associative<::cuda::std::divides<_Tp>, _Tp, ::cuda::std::enable_if_t<::cuda::is_floating_point_v<_Tp>>>
+    : ::cuda::std::false_type
+{};
+
+template <class _Tp>
+struct __is_associative<::cuda::std::divides<>, _Tp> : __is_associative<::cuda::std::divides<_Tp>, _Tp>
+{};
+
+template <class _Tp>
+struct __is_associative<::cuda::std::modulus<_Tp>, _Tp, ::cuda::std::enable_if_t<::cuda::std::__cccl_is_integer_v<_Tp>>>
+    : ::cuda::std::false_type
+{};
+
+template <class _Tp>
+struct __is_associative<::cuda::std::modulus<>, _Tp> : __is_associative<::cuda::std::modulus<_Tp>, _Tp>
+{};
+
+template <class _Op, class _Tp>
+struct is_associative : __is_associative<_Op, _Tp>
+{};
+
+template <class _Op, class _Tp>
+inline constexpr bool is_associative_v = is_associative<_Op, _Tp>::value;
+
 /***********************************************************************************************************************
- * cuda::std::modulus specializations (not commutative, not associative, no identity/absorbing)
+ * Commutativity
  **********************************************************************************************************************/
 
-template <class T>
-struct operator_properties<::cuda::std::modulus<T>, T>
+template <class _Op, class _Tp, class Enable = void>
+struct __is_commutative
 {
-  static constexpr bool is_commutative        = false;
-  static constexpr bool is_associative        = false;
-  static constexpr bool has_identity_element  = false;
-  static constexpr bool has_absorbing_element = false;
-
-  [[nodiscard]] _CCCL_API static constexpr T identity_element() noexcept
-  {
-    static_assert(has_identity_element, "cuda::std::modulus does not have an identity element");
-    return T{};
-  }
-
-  [[nodiscard]] _CCCL_API static constexpr T absorbing_element() noexcept
-  {
-    static_assert(has_absorbing_element, "cuda::std::modulus does not have an absorbing element");
-    return T{};
-  }
+  static_assert(::cuda::std::__always_false_v<_Op>,
+                "operator_properties is not specialized for this operator and type combination");
 };
 
-template <class T>
-struct operator_properties<::cuda::std::modulus<>, T> : operator_properties<::cuda::std::modulus<T>, T>
+template <class _Tp>
+struct __is_commutative<::cuda::std::plus<_Tp>, _Tp, ::cuda::std::enable_if_t<::cuda::std::__cccl_is_integer_v<_Tp>>>
+    : ::cuda::std::true_type
 {};
+
+template <class _Tp>
+struct __is_commutative<::cuda::std::plus<_Tp>, _Tp, ::cuda::std::enable_if_t<::cuda::is_floating_point_v<_Tp>>>
+    : ::cuda::std::true_type
+{};
+
+template <class _Tp>
+struct __is_commutative<::cuda::std::plus<>, _Tp> : __is_commutative<::cuda::std::plus<_Tp>, _Tp>
+{};
+
+template <class _Tp>
+struct __is_commutative<::cuda::std::multiplies<_Tp>,
+                        _Tp,
+                        ::cuda::std::enable_if_t<::cuda::std::__cccl_is_integer_v<_Tp>>> : ::cuda::std::true_type
+{};
+
+template <class _Tp>
+struct __is_commutative<::cuda::std::multiplies<_Tp>, _Tp, ::cuda::std::enable_if_t<::cuda::is_floating_point_v<_Tp>>>
+    : ::cuda::std::true_type
+{};
+
+template <class _Tp>
+struct __is_commutative<::cuda::std::multiplies<>, _Tp> : __is_commutative<::cuda::std::multiplies<_Tp>, _Tp>
+{};
+
+template <class _Tp>
+struct __is_commutative<::cuda::std::bit_and<_Tp>,
+                        _Tp,
+                        ::cuda::std::enable_if_t<::cuda::std::__cccl_is_unsigned_integer_v<_Tp>>>
+    : ::cuda::std::true_type
+{};
+
+template <class _Tp>
+struct __is_commutative<::cuda::std::bit_and<>, _Tp> : __is_commutative<::cuda::std::bit_and<_Tp>, _Tp>
+{};
+
+template <class _Tp>
+struct __is_commutative<::cuda::std::bit_or<_Tp>,
+                        _Tp,
+                        ::cuda::std::enable_if_t<::cuda::std::__cccl_is_unsigned_integer_v<_Tp>>>
+    : ::cuda::std::true_type
+{};
+
+template <class _Tp>
+struct __is_commutative<::cuda::std::bit_or<>, _Tp> : __is_commutative<::cuda::std::bit_or<_Tp>, _Tp>
+{};
+
+template <class _Tp>
+struct __is_commutative<::cuda::std::bit_xor<_Tp>,
+                        _Tp,
+                        ::cuda::std::enable_if_t<::cuda::std::__cccl_is_unsigned_integer_v<_Tp>>>
+    : ::cuda::std::true_type
+{};
+
+template <class _Tp>
+struct __is_commutative<::cuda::std::bit_xor<>, _Tp> : __is_commutative<::cuda::std::bit_xor<_Tp>, _Tp>
+{};
+
+template <class _Tp>
+struct __is_commutative<::cuda::std::logical_and<_Tp>, _Tp, ::cuda::std::enable_if_t<::cuda::std::is_same_v<_Tp, bool>>>
+    : ::cuda::std::true_type
+{};
+
+template <class _Tp>
+struct __is_commutative<::cuda::std::logical_and<>, _Tp> : __is_commutative<::cuda::std::logical_and<_Tp>, _Tp>
+{};
+
+template <class _Tp>
+struct __is_commutative<::cuda::std::logical_or<_Tp>, _Tp, ::cuda::std::enable_if_t<::cuda::std::is_same_v<_Tp, bool>>>
+    : ::cuda::std::true_type
+{};
+
+template <class _Tp>
+struct __is_commutative<::cuda::std::logical_or<>, _Tp> : __is_commutative<::cuda::std::logical_or<_Tp>, _Tp>
+{};
+
+template <class _Tp>
+struct __is_commutative<::cuda::minimum<_Tp>, _Tp, ::cuda::std::enable_if_t<::cuda::std::__cccl_is_integer_v<_Tp>>>
+    : ::cuda::std::true_type
+{};
+
+template <class _Tp>
+struct __is_commutative<::cuda::minimum<_Tp>, _Tp, ::cuda::std::enable_if_t<::cuda::is_floating_point_v<_Tp>>>
+    : ::cuda::std::true_type
+{};
+
+template <class _Tp>
+struct __is_commutative<::cuda::minimum<>, _Tp> : __is_commutative<::cuda::minimum<_Tp>, _Tp>
+{};
+
+template <class _Tp>
+struct __is_commutative<::cuda::maximum<_Tp>, _Tp, ::cuda::std::enable_if_t<::cuda::std::__cccl_is_integer_v<_Tp>>>
+    : ::cuda::std::true_type
+{};
+
+template <class _Tp>
+struct __is_commutative<::cuda::maximum<_Tp>, _Tp, ::cuda::std::enable_if_t<::cuda::is_floating_point_v<_Tp>>>
+    : ::cuda::std::true_type
+{};
+
+template <class _Tp>
+struct __is_commutative<::cuda::maximum<>, _Tp> : __is_commutative<::cuda::maximum<_Tp>, _Tp>
+{};
+
+template <class _Tp>
+struct __is_commutative<::cuda::std::minus<_Tp>, _Tp, ::cuda::std::enable_if_t<::cuda::std::__cccl_is_integer_v<_Tp>>>
+    : ::cuda::std::false_type
+{};
+
+template <class _Tp>
+struct __is_commutative<::cuda::std::minus<_Tp>, _Tp, ::cuda::std::enable_if_t<::cuda::is_floating_point_v<_Tp>>>
+    : ::cuda::std::false_type
+{};
+
+template <class _Tp>
+struct __is_commutative<::cuda::std::minus<>, _Tp> : __is_commutative<::cuda::std::minus<_Tp>, _Tp>
+{};
+
+template <class _Tp>
+struct __is_commutative<::cuda::std::divides<_Tp>, _Tp, ::cuda::std::enable_if_t<::cuda::std::__cccl_is_integer_v<_Tp>>>
+    : ::cuda::std::false_type
+{};
+
+template <class _Tp>
+struct __is_commutative<::cuda::std::divides<_Tp>, _Tp, ::cuda::std::enable_if_t<::cuda::is_floating_point_v<_Tp>>>
+    : ::cuda::std::false_type
+{};
+
+template <class _Tp>
+struct __is_commutative<::cuda::std::divides<>, _Tp> : __is_commutative<::cuda::std::divides<_Tp>, _Tp>
+{};
+
+template <class _Tp>
+struct __is_commutative<::cuda::std::modulus<_Tp>, _Tp, ::cuda::std::enable_if_t<::cuda::std::__cccl_is_integer_v<_Tp>>>
+    : ::cuda::std::false_type
+{};
+
+template <class _Tp>
+struct __is_commutative<::cuda::std::modulus<>, _Tp> : __is_commutative<::cuda::std::modulus<_Tp>, _Tp>
+{};
+
+template <class _Op, class _Tp>
+struct is_commutative : __is_commutative<_Op, _Tp>
+{};
+
+template <class _Op, class _Tp>
+inline constexpr bool is_commutative_v = is_commutative<_Op, _Tp>::value;
+
+/***********************************************************************************************************************
+ * Element Existence
+ **********************************************************************************************************************/
+
+template <template <class...> class _Trait, class... _Tp>
+_CCCL_CONCEPT element_exists = _CCCL_REQUIRES_EXPR((_Tp...))((_Trait<_Tp...>::value));
+
+/***********************************************************************************************************************
+ * Identity Element
+ **********************************************************************************************************************/
+
+template <class _Op, class _Tp, class Enable = void>
+struct __identity_element
+{};
+
+template <class _Tp>
+struct __identity_element<::cuda::std::plus<_Tp>, _Tp, ::cuda::std::enable_if_t<::cuda::std::__cccl_is_integer_v<_Tp>>>
+{
+  static constexpr auto value = _Tp{};
+};
+
+template <class _Tp>
+struct __identity_element<::cuda::std::plus<_Tp>, _Tp, ::cuda::std::enable_if_t<::cuda::is_floating_point_v<_Tp>>>
+{
+  static constexpr auto value = ::cuda::std::__fp_neg(_Tp{}); // -0.0 -> +0.0 + -0.0 = +0.0
+};
+
+template <class _Tp>
+struct __identity_element<::cuda::std::plus<>, _Tp> : __identity_element<::cuda::std::plus<_Tp>, _Tp>
+{};
+
+template <class _Tp>
+struct __identity_element<::cuda::std::multiplies<_Tp>,
+                          _Tp,
+                          ::cuda::std::enable_if_t<::cuda::std::__cccl_is_integer_v<_Tp>>>
+{
+  static constexpr auto value = _Tp{1};
+};
+
+template <class _Tp>
+struct __identity_element<::cuda::std::multiplies<_Tp>, _Tp, ::cuda::std::enable_if_t<::cuda::is_floating_point_v<_Tp>>>
+{
+  static constexpr auto value = ::cuda::std::__fp_one<_Tp>();
+};
+
+template <class _Tp>
+struct __identity_element<::cuda::std::multiplies<>, _Tp> : __identity_element<::cuda::std::multiplies<_Tp>, _Tp>
+{};
+
+template <class _Tp>
+struct __identity_element<::cuda::std::bit_and<_Tp>,
+                          _Tp,
+                          ::cuda::std::enable_if_t<::cuda::std::__cccl_is_unsigned_integer_v<_Tp>>>
+{
+  static constexpr auto value = static_cast<_Tp>(~_Tp{});
+};
+
+template <class _Tp>
+struct __identity_element<::cuda::std::bit_and<>, _Tp> : __identity_element<::cuda::std::bit_and<_Tp>, _Tp>
+{};
+
+template <class _Tp>
+struct __identity_element<::cuda::std::bit_or<_Tp>,
+                          _Tp,
+                          ::cuda::std::enable_if_t<::cuda::std::__cccl_is_unsigned_integer_v<_Tp>>>
+{
+  static constexpr auto value = _Tp{};
+};
+
+template <class _Tp>
+struct __identity_element<::cuda::std::bit_or<>, _Tp> : __identity_element<::cuda::std::bit_or<_Tp>, _Tp>
+{};
+
+template <class _Tp>
+struct __identity_element<::cuda::std::bit_xor<_Tp>,
+                          _Tp,
+                          ::cuda::std::enable_if_t<::cuda::std::__cccl_is_unsigned_integer_v<_Tp>>>
+{
+  static constexpr auto value = _Tp{};
+};
+
+template <class _Tp>
+struct __identity_element<::cuda::std::bit_xor<>, _Tp> : __identity_element<::cuda::std::bit_xor<_Tp>, _Tp>
+{};
+
+template <class _Tp>
+struct __identity_element<::cuda::std::logical_and<_Tp>, _Tp, ::cuda::std::enable_if_t<::cuda::std::is_same_v<_Tp, bool>>>
+{
+  static constexpr auto value = true;
+};
+
+template <class _Tp>
+struct __identity_element<::cuda::std::logical_and<>, _Tp> : __identity_element<::cuda::std::logical_and<_Tp>, _Tp>
+{};
+
+template <class _Tp>
+struct __identity_element<::cuda::std::logical_or<_Tp>, _Tp, ::cuda::std::enable_if_t<::cuda::std::is_same_v<_Tp, bool>>>
+{
+  static constexpr auto value = false;
+};
+
+template <class _Tp>
+struct __identity_element<::cuda::std::logical_or<>, _Tp> : __identity_element<::cuda::std::logical_or<_Tp>, _Tp>
+{};
+
+template <class _Tp>
+struct __identity_element<::cuda::minimum<_Tp>, _Tp, ::cuda::std::enable_if_t<::cuda::std::__cccl_is_integer_v<_Tp>>>
+{
+  static constexpr auto value = ::cuda::std::numeric_limits<_Tp>::max();
+};
+
+template <class _Tp>
+struct __identity_element<::cuda::minimum<_Tp>, _Tp, ::cuda::std::enable_if_t<::cuda::is_floating_point_v<_Tp>>>
+{
+  static constexpr auto value = ::cuda::std::numeric_limits<_Tp>::infinity();
+};
+
+template <class _Tp>
+struct __identity_element<::cuda::minimum<>, _Tp> : __identity_element<::cuda::minimum<_Tp>, _Tp>
+{};
+
+template <class _Tp>
+struct __identity_element<::cuda::maximum<_Tp>, _Tp, ::cuda::std::enable_if_t<::cuda::std::__cccl_is_integer_v<_Tp>>>
+{
+  static constexpr auto value = ::cuda::std::numeric_limits<_Tp>::lowest();
+};
+
+template <class _Tp>
+struct __identity_element<::cuda::maximum<_Tp>, _Tp, ::cuda::std::enable_if_t<::cuda::is_floating_point_v<_Tp>>>
+{
+  static constexpr auto value = ::cuda::std::__fp_neg(::cuda::std::__fp_inf<_Tp>());
+};
+
+template <class _Tp>
+struct __identity_element<::cuda::maximum<>, _Tp> : __identity_element<::cuda::maximum<_Tp>, _Tp>
+{};
+
+template <class _Op, class _Tp>
+struct identity_element : __identity_element<_Op, _Tp>
+{};
+
+template <class _Op, class _Tp>
+_CCCL_GLOBAL_VARIABLE constexpr auto identity_element_v = identity_element<_Op, _Tp>::value;
+
+template <class _Op, class _Tp>
+inline constexpr bool has_identity_element_v = element_exists<identity_element, _Op, _Tp>;
+
+/***********************************************************************************************************************
+ * Absorbing Element
+ **********************************************************************************************************************/
+
+template <class _Op, class _Tp, class Enable = void>
+struct __absorbing_element
+{};
+
+template <class _Tp>
+struct __absorbing_element<::cuda::std::multiplies<_Tp>,
+                           _Tp,
+                           ::cuda::std::enable_if_t<::cuda::std::__cccl_is_integer_v<_Tp>>>
+{
+  static constexpr auto value = _Tp{};
+};
+
+// no absorbing element for floating-point due to NaN, infinity, and -1.0 * +0.0 = -0.0  (!= +0.0)
+
+template <class _Tp>
+struct __absorbing_element<::cuda::std::multiplies<>, _Tp> : __absorbing_element<::cuda::std::multiplies<_Tp>, _Tp>
+{};
+
+template <class _Tp>
+struct __absorbing_element<::cuda::std::bit_and<_Tp>,
+                           _Tp,
+                           ::cuda::std::enable_if_t<::cuda::std::__cccl_is_unsigned_integer_v<_Tp>>>
+{
+  static constexpr auto value = _Tp{};
+};
+
+template <class _Tp>
+struct __absorbing_element<::cuda::std::bit_and<>, _Tp> : __absorbing_element<::cuda::std::bit_and<_Tp>, _Tp>
+{};
+
+template <class _Tp>
+struct __absorbing_element<::cuda::std::bit_or<_Tp>,
+                           _Tp,
+                           ::cuda::std::enable_if_t<::cuda::std::__cccl_is_unsigned_integer_v<_Tp>>>
+{
+  static constexpr auto value = static_cast<_Tp>(~_Tp{});
+};
+
+template <class _Tp>
+struct __absorbing_element<::cuda::std::bit_or<>, _Tp> : __absorbing_element<::cuda::std::bit_or<_Tp>, _Tp>
+{};
+
+template <class _Tp>
+struct __absorbing_element<::cuda::std::logical_and<_Tp>, _Tp, ::cuda::std::enable_if_t<::cuda::std::is_same_v<_Tp, bool>>>
+{
+  static constexpr auto value = false;
+};
+
+template <class _Tp>
+struct __absorbing_element<::cuda::std::logical_and<>, _Tp> : __absorbing_element<::cuda::std::logical_and<_Tp>, _Tp>
+{};
+
+template <class _Tp>
+struct __absorbing_element<::cuda::std::logical_or<_Tp>, _Tp, ::cuda::std::enable_if_t<::cuda::std::is_same_v<_Tp, bool>>>
+{
+  static constexpr auto value = true;
+};
+
+template <class _Tp>
+struct __absorbing_element<::cuda::std::logical_or<>, _Tp> : __absorbing_element<::cuda::std::logical_or<_Tp>, _Tp>
+{};
+
+template <class _Tp>
+struct __absorbing_element<
+  ::cuda::minimum<_Tp>,
+  _Tp,
+  ::cuda::std::enable_if_t<::cuda::std::__cccl_is_integer_v<_Tp> || ::cuda::is_floating_point_v<_Tp>>>
+{
+  static constexpr auto value = ::cuda::std::numeric_limits<_Tp>::lowest();
+};
+
+template <class _Tp>
+struct __absorbing_element<::cuda::minimum<>, _Tp> : __absorbing_element<::cuda::minimum<_Tp>, _Tp>
+{};
+
+template <class _Tp>
+struct __absorbing_element<
+  ::cuda::maximum<_Tp>,
+  _Tp,
+  ::cuda::std::enable_if_t<::cuda::std::__cccl_is_integer_v<_Tp> || ::cuda::is_floating_point_v<_Tp>>>
+{
+  static constexpr auto value = ::cuda::std::numeric_limits<_Tp>::max();
+};
+
+template <class _Tp>
+struct __absorbing_element<::cuda::maximum<>, _Tp> : __absorbing_element<::cuda::maximum<_Tp>, _Tp>
+{};
+
+template <class _Op, class _Tp>
+struct absorbing_element : __absorbing_element<_Op, _Tp>
+{};
+
+template <class _Op, class _Tp>
+_CCCL_GLOBAL_VARIABLE constexpr auto absorbing_element_v = absorbing_element<_Op, _Tp>::value;
+
+template <class _Op, class _Tp>
+inline constexpr bool has_absorbing_element_v = element_exists<absorbing_element, _Op, _Tp>;
 
 _CCCL_END_NAMESPACE_CUDA
 
