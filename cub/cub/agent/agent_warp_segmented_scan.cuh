@@ -151,7 +151,14 @@ struct agent_warp_segmented_scan
       const int chunk_size = static_cast<int>(chunk_end - chunk_begin);
 
       AccumT thread_values[items_per_thread];
-      warp_load_t(temp_storage.load[warp_id]).Load(d_in + chunk_begin, thread_values, chunk_size, AccumT{});
+      if (chunk_size == tile_items)
+      {
+        warp_load_t(temp_storage.load[warp_id]).Load(d_in + chunk_begin, thread_values);
+      }
+      else
+      {
+        warp_load_t(temp_storage.load[warp_id]).Load(d_in + chunk_begin, thread_values, chunk_size, AccumT{});
+      }
       __syncwarp();
 
       if (chunk_id == 0)
@@ -166,7 +173,14 @@ struct agent_warp_segmented_scan
       __syncwarp();
 
       const OffsetT out_offset = out_idx_begin + chunk_id * tile_items;
-      warp_store_t(temp_storage.store[warp_id]).Store(d_out + out_offset, thread_values, chunk_size);
+      if (chunk_size == tile_items)
+      {
+        warp_store_t(temp_storage.store[warp_id]).Store(d_out + out_offset, thread_values);
+      }
+      else
+      {
+        warp_store_t(temp_storage.store[warp_id]).Store(d_out + out_offset, thread_values, chunk_size);
+      }
       if (++chunk_id < n_chunks)
       {
         __syncwarp();
@@ -323,7 +337,7 @@ struct agent_warp_segmented_scan
     }
     for (int i = ::cuda::std::max(n_segments, 0); i < NumSegments; ++i)
     {
-      cum_sizes[i] = items_per_block + 1;
+      cum_sizes[i] = items_per_block;
     }
     const OffsetT n_chunks = ::cuda::ceil_div(items_per_block, tile_items);
 

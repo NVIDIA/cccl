@@ -232,7 +232,14 @@ struct agent_segmented_scan
       const int chunk_size = static_cast<int>(chunk_end - chunk_begin);
 
       AccumT thread_values[items_per_thread];
-      block_load_t(temp_storage.load).Load(d_in + chunk_begin, thread_values, chunk_size, AccumT{});
+      if (chunk_size == tile_items)
+      {
+        block_load_t(temp_storage.load).Load(d_in + chunk_begin, thread_values);
+      }
+      else
+      {
+        block_load_t(temp_storage.load).Load(d_in + chunk_begin, thread_values, chunk_size, AccumT{});
+      }
       __syncthreads();
 
       if (chunk_id == 0)
@@ -246,7 +253,15 @@ struct agent_segmented_scan
       }
       __syncthreads();
 
-      block_store_t(temp_storage.store).Store(d_out + out_idx_begin + chunk_id * tile_items, thread_values, chunk_size);
+      if (chunk_size == tile_items)
+      {
+        block_store_t(temp_storage.store).Store(d_out + out_idx_begin + chunk_id * tile_items, thread_values);
+      }
+      else
+      {
+        block_store_t(temp_storage.store)
+          .Store(d_out + out_idx_begin + chunk_id * tile_items, thread_values, chunk_size);
+      }
       if (++chunk_id < n_chunks)
       {
         __syncthreads();
