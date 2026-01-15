@@ -221,21 +221,32 @@ template <typename ChainedPolicyT,
           typename KParameterT,
           typename SelectDirectionParameterT,
           typename NumSegmentsParameterT>
-__launch_bounds__(int()) __global__ void DeviceSegmentedTopKKernel(
-  KeyInputItItT d_key_segments_it,
-  KeyOutputItItT d_key_segments_out_it,
-  ValueInputItItT d_value_segments_it,
-  ValueOutputItItT d_value_segments_out_it,
-  SegmentSizeParameterT segment_sizes,
-  KParameterT k,
-  SelectDirectionParameterT select_directions,
-  NumSegmentsParameterT num_segments)
+__launch_bounds__(int(
+  find_valid_policy<typename ChainedPolicyT::ActivePolicy,
+                    AgentBatchedTopKWorkerPerSegment,
+                    KeyInputItItT,
+                    KeyOutputItItT,
+                    ValueInputItItT,
+                    ValueOutputItItT,
+                    SegmentSizeParameterT,
+                    KParameterT,
+                    SelectDirectionParameterT,
+                    NumSegmentsParameterT>::worker_per_segment_policy_t::BLOCK_THREADS)) __global__
+  void DeviceSegmentedTopKKernel(
+    KeyInputItItT d_key_segments_it,
+    KeyOutputItItT d_key_segments_out_it,
+    ValueInputItItT d_value_segments_it,
+    ValueOutputItItT d_value_segments_out_it,
+    SegmentSizeParameterT segment_sizes,
+    KParameterT k,
+    SelectDirectionParameterT select_directions,
+    NumSegmentsParameterT num_segments)
 {
   using active_policy_t = typename ChainedPolicyT::ActivePolicy;
 
   using find_valid_policy_t = find_valid_policy<
     active_policy_t,
-    AgentSegmentedTopkWorkerPerSegment,
+    AgentBatchedTopKWorkerPerSegment,
     KeyInputItItT,
     KeyOutputItItT,
     ValueInputItItT,
@@ -288,7 +299,7 @@ template <typename KeyInputItItT,
                                                it_value_t<it_value_t<ValueInputItItT>>,
                                                ::cuda::std::int64_t,
                                                params::static_max_value_v<KParameterT>>>
-struct DispatchSegmentedTopK
+struct DispatchBatchedTopK
 {
   using offset_t = ::cuda::std::int64_t;
 
@@ -336,7 +347,7 @@ struct DispatchSegmentedTopK
   // We pass ValueInputItItT itself as cub::NullType** when only keys are processed
   static constexpr bool keys_only = ::cuda::std::is_same_v<ValueInputItItT, NullType**>;
 
-  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE DispatchSegmentedTopK(
+  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE DispatchBatchedTopK(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
     KeyInputItItT d_key_segments_it,
@@ -393,28 +404,37 @@ struct DispatchSegmentedTopK
     // TODO (elstehle): support larger number of segments through multiple kernel launches
     int grid_dim = static_cast<int>(resolve_param(num_segments, 0));
 
-    THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(grid_dim, block_dim, 0, stream)
-      .doit(
-        DeviceSegmentedTopKKernel<max_policy_t,
-                                  KeyInputItItT,
-                                  KeyOutputItItT,
-                                  ValueInputItItT,
-                                  ValueOutputItItT,
-                                  SegmentSizeParameterT,
-                                  KParameterT,
-                                  SelectDirectionParameterT,
-                                  NumSegmentsParameterT>,
-        d_key_segments_it,
-        d_key_segments_out_it,
-        d_value_segments_it,
-        d_value_segments_out_it,
-        segment_sizes,
-        k,
-        select_directions,
-        num_segments);
+    cudaError_t error = CubDebug(
+      THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(grid_dim, block_dim, 0, stream)
+        .doit(DeviceSegmentedTopKKernel<max_policy_t,
+                                        KeyInputItItT,
+                                        KeyOutputItItT,
+                                        ValueInputItItT,
+                                        ValueOutputItItT,
+                                        SegmentSizeParameterT,
+                                        KParameterT,
+                                        SelectDirectionParameterT,
+                                        NumSegmentsParameterT>,
+              d_key_segments_it,
+              d_key_segments_out_it,
+              d_value_segments_it,
+              d_value_segments_out_it,
+              segment_sizes,
+              k,
+              select_directions,
+              num_segments));
 
     // Check for failure to launch
-    if (const auto error = CubDebug(cudaPeekAtLastError()))
+    if (cudaSuccess != error)
+    {
+      return error;
+    }
+
+    // Sync the stream if specified to flush runtime errors
+    error = CubDebug(detail::DebugSyncStream(stream));
+
+    // Check for failure to launch
+    if (cudaSuccess != error)
     {
       return error;
     }
@@ -431,7 +451,7 @@ struct DispatchSegmentedTopK
     // sizes and k, and (b) if so, which set of one-worker-per-segment policies to use
     using find_valid_policy_t = find_valid_policy<
       ActivePolicyT,
-      AgentSegmentedTopkWorkerPerSegment,
+      AgentBatchedTopKWorkerPerSegment,
       KeyInputItItT,
       KeyOutputItItT,
       ValueInputItItT,
@@ -476,7 +496,7 @@ struct DispatchSegmentedTopK
       return error;
     }
 
-    DispatchSegmentedTopK dispatch{
+    DispatchBatchedTopK dispatch{
       d_temp_storage,
       temp_storage_bytes,
       d_key_segments_it,

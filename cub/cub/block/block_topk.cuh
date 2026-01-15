@@ -39,18 +39,16 @@ public:
 
 private:
   TempStorage& temp_storage;
-  int linear_tid;
 
 public:
   _CCCL_DEVICE _CCCL_FORCEINLINE BlockTopK(TempStorage& temp_storage)
       : temp_storage(temp_storage)
-      , linear_tid(threadIdx.x)
   {}
 
   _CCCL_DEVICE _CCCL_FORCEINLINE void
   Max(KeyT (&keys)[ItemsPerThread],
       ValueT (&values)[ItemsPerThread],
-      int k,
+      int /*k*/,
       int begin_bit = 0,
       int end_bit   = sizeof(KeyT) * 8)
   {
@@ -58,14 +56,14 @@ public:
   }
 
   _CCCL_DEVICE _CCCL_FORCEINLINE void
-  Max(KeyT (&keys)[ItemsPerThread], int k, int begin_bit = 0, int end_bit = sizeof(KeyT) * 8)
+  Max(KeyT (&keys)[ItemsPerThread], int /*k*/, int begin_bit = 0, int end_bit = sizeof(KeyT) * 8)
   {
     BlockRadixSortT(temp_storage.sort_storage).SortDescending(keys, begin_bit, end_bit);
   }
   _CCCL_DEVICE _CCCL_FORCEINLINE void
   Min(KeyT (&keys)[ItemsPerThread],
       ValueT (&values)[ItemsPerThread],
-      int k,
+      int /*k*/,
       int begin_bit = 0,
       int end_bit   = sizeof(KeyT) * 8)
   {
@@ -73,7 +71,7 @@ public:
   }
 
   _CCCL_DEVICE _CCCL_FORCEINLINE void
-  Min(KeyT (&keys)[ItemsPerThread], int k, int begin_bit = 0, int end_bit = sizeof(KeyT) * 8)
+  Min(KeyT (&keys)[ItemsPerThread], int /*k*/, int begin_bit = 0, int end_bit = sizeof(KeyT) * 8)
   {
     BlockRadixSortT(temp_storage.sort_storage).Sort(keys, begin_bit, end_bit);
   }

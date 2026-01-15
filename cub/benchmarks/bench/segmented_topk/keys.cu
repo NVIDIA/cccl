@@ -43,10 +43,10 @@ struct policy_hub_t
 };
 #endif // !TUNE_BASE
 
-template <typename KeyT, int MaxSegmentSize, int MaxNumSelected, typename OffsetT, typename OutOffsetT>
+template <typename KeyT, int MaxSegmentSize, int MaxNumSelected>
 void fixed_seg_size_topk_keys(
   nvbench::state& state,
-  nvbench::type_list<KeyT, nvbench::enum_type<MaxSegmentSize>, nvbench::enum_type<MaxNumSelected>, OffsetT, OutOffsetT>)
+  nvbench::type_list<KeyT, nvbench::enum_type<MaxSegmentSize>, nvbench::enum_type<MaxNumSelected>>)
 {
   // Range of guaranteed total number of items
   constexpr auto min_num_total_items = 1;
@@ -71,10 +71,8 @@ void fixed_seg_size_topk_keys(
   // Total number of items guarantee type
   using total_num_items_guarantee_t =
     cub::detail::segmented_topk::total_num_items_guarantee<min_num_total_items, max_num_total_items>;
-  using offset_t     = ::cuda::std::int32_t;
-  using out_offset_t = ::cuda::std::int32_t;
 
-  using dispatch_t = cub::detail::segmented_topk::DispatchSegmentedTopK<
+  using dispatch_t = cub::detail::segmented_topk::DispatchBatchedTopK<
     key_input_it_t,
     key_output_it_t,
     cub::NullType**,
@@ -86,7 +84,7 @@ void fixed_seg_size_topk_keys(
     total_num_items_guarantee_t
 #if !TUNE_BASE
     ,
-    policy_hub_t<KeyT, OffsetT>
+    policy_hub_t<KeyT, cub::NullType, ::cuda::std::int32_t, MaxNumSelected>
 #endif // !TUNE_BASE
     >;
 
@@ -170,10 +168,8 @@ using out_offset_type_list = nvbench::type_list<uint32_t>;
 using small_segment_size_list = nvbench::enum_type_list<64, 128, 256, 512, 1024>;
 using small_k_list            = nvbench::enum_type_list<8, 16, 32, 128, 512, 1024>;
 
-NVBENCH_BENCH_TYPES(
-  fixed_seg_size_topk_keys,
-  NVBENCH_TYPE_AXES(key_type_list, small_segment_size_list, small_k_list, segment_size_type_list, out_offset_type_list))
+NVBENCH_BENCH_TYPES(fixed_seg_size_topk_keys, NVBENCH_TYPE_AXES(key_type_list, small_segment_size_list, small_k_list))
   .set_name("small")
-  .set_type_axes_names({"KeyT{ct}", "MaxSegmentSize{ct}", "MaxNumSelected{ct}", "SegmentSize{ct}", "OutOffsetT{ct}"})
+  .set_type_axes_names({"KeyT{ct}", "MaxSegmentSize{ct}", "MaxNumSelected{ct}"})
   .add_int64_power_of_two_axis("Elements{io}", nvbench::range(28, 28, 4))
   .add_string_axis("Entropy", {"1.000", "0.544", "0.201", "0.000"});

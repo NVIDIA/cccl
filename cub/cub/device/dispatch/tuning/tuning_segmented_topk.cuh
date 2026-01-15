@@ -28,12 +28,12 @@ struct policy_hub
     // The list below will be checked to determine if each policy can support the one-worker-per-segment approach
     // within available shared memory limits. Policies must be ordered by decreasing segment size
     using worker_per_segment_policies =
-      ::cuda::std::tuple<AgentSegmentedTopkWorkerPerSegmentPolicy<256, 64>,
-                         AgentSegmentedTopkWorkerPerSegmentPolicy<256, 32>,
-                         AgentSegmentedTopkWorkerPerSegmentPolicy<256, 16>,
-                         AgentSegmentedTopkWorkerPerSegmentPolicy<256, 8>,
-                         AgentSegmentedTopkWorkerPerSegmentPolicy<256, 4>,
-                         AgentSegmentedTopkWorkerPerSegmentPolicy<128, 2>>;
+      ::cuda::std::tuple<AgentBatchedTopKWorkerPerSegmentPolicy<256, 64>,
+                         AgentBatchedTopKWorkerPerSegmentPolicy<256, 32>,
+                         AgentBatchedTopKWorkerPerSegmentPolicy<256, 16>,
+                         AgentBatchedTopKWorkerPerSegmentPolicy<256, 8>,
+                         AgentBatchedTopKWorkerPerSegmentPolicy<256, 4>,
+                         AgentBatchedTopKWorkerPerSegmentPolicy<128, 2>>;
   };
 
   using max_policy = Policy900;

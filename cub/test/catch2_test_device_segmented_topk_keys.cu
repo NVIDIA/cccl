@@ -43,7 +43,7 @@ CUB_RUNTIME_FUNCTION static cudaError_t dispatch_segmented_topk_keys(
   using value_it_t = cub::NullType**;
 
   auto values_it = static_cast<cub::NullType**>(nullptr);
-  return cub::detail::segmented_topk::DispatchSegmentedTopK<
+  return cub::detail::segmented_topk::DispatchBatchedTopK<
     KeyInputItItT,
     KeyOutputItItT,
     value_it_t,

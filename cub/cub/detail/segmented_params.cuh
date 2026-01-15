@@ -26,7 +26,7 @@ namespace detail::params
 // -----------------------------------------------------------------------------
 
 // Allows providing constrains on parameter values at compile time
-template <typename T, T Min = ::cuda::std::numeric_limits<T>::min(), T Max = ::cuda::std::numeric_limits<T>::max()>
+template <typename T, T Min = ::cuda::std::numeric_limits<T>::lowest(), T Max = ::cuda::std::numeric_limits<T>::max()>
 struct static_bounds_mixin
 {
   static_assert(Min <= Max, "Min must be <= Max");
@@ -69,7 +69,7 @@ struct static_constant_param : public static_bounds_mixin<T, Value, Value>
 // 1. Uniform Param
 // -----------------------------------------------------------------------------
 // Added default template args so CTAD can deduce T and default Min/Max
-template <typename T, T Min = ::cuda::std::numeric_limits<T>::min(), T Max = ::cuda::std::numeric_limits<T>::max()>
+template <typename T, T Min = ::cuda::std::numeric_limits<T>::lowest(), T Max = ::cuda::std::numeric_limits<T>::max()>
 struct uniform_param : public static_bounds_mixin<T, Min, Max>
 {
   using value_type = T;
@@ -95,7 +95,7 @@ uniform_param(T) -> uniform_param<T>;
 // Added defaults for T, Min, and Max based on the Iterator's value_type
 template <typename IteratorT,
           typename T = typename ::cuda::std::iterator_traits<IteratorT>::value_type,
-          T Min      = ::cuda::std::numeric_limits<T>::min(),
+          T Min      = ::cuda::std::numeric_limits<T>::lowest(),
           T Max      = ::cuda::std::numeric_limits<T>::max()>
 struct per_segment_param : public static_bounds_mixin<T, Min, Max>
 {

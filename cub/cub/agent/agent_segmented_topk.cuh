@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 //! @file
-//! cub::AgentTopK implements a stateful abstraction of CUDA thread blocks for participating in device-wide topK.
+//! cub::AgentBatchedTopK implements a stateful abstraction of CUDA thread blocks for participating in device-wide topK.
 #pragma once
 
 #include <cub/config.cuh>
@@ -23,14 +23,12 @@
 #include <cub/device/dispatch/dispatch_common.cuh>
 #include <cub/util_type.cuh>
 
-#include <cuda/atomic>
-
 CUB_NAMESPACE_BEGIN
 
 namespace detail::segmented_topk
 {
 template <int BlockThreads, int ItemsPerThread>
-struct AgentSegmentedTopkWorkerPerSegmentPolicy
+struct AgentBatchedTopKWorkerPerSegmentPolicy
 {
   /// Threads per thread block
   static constexpr int BLOCK_THREADS = BlockThreads;
@@ -48,7 +46,7 @@ template <typename ActivePolicyT,
           typename KParameterT,
           typename SelectDirectionParameterT,
           typename NumSegmentsParameterT>
-struct AgentSegmentedTopkWorkerPerSegment
+struct AgentBatchedTopKWorkerPerSegment
 {
   // -------------------------------------------------------------------------
   // Types and Constants
@@ -70,33 +68,35 @@ struct AgentSegmentedTopkWorkerPerSegment
   // -------------------------------------------------------------------------
   // Primitive Types
   // -------------------------------------------------------------------------
-  using BlockLoadKeysT = BlockLoad<key_t, block_threads, items_per_thread, BLOCK_LOAD_WARP_TRANSPOSE>;
-  using BlockLoadValsT = BlockLoad<value_t, block_threads, items_per_thread, BLOCK_LOAD_WARP_TRANSPOSE>;
+  using block_load_keys_t = BlockLoad<key_t, block_threads, items_per_thread, BLOCK_LOAD_WARP_TRANSPOSE>;
+  using block_load_vals_t = BlockLoad<value_t, block_threads, items_per_thread, BLOCK_LOAD_WARP_TRANSPOSE>;
 
-  using BlockTopkT = BlockTopK<key_t, block_threads, items_per_thread, value_t>;
+  using block_topk_t = BlockTopK<key_t, block_threads, items_per_thread, value_t>;
 
-  using BlockStoreKeysT = BlockStore<key_t, block_threads, items_per_thread, BLOCK_STORE_WARP_TRANSPOSE>;
-  using BlockStoreValsT = BlockStore<value_t, block_threads, items_per_thread, BLOCK_STORE_WARP_TRANSPOSE>;
+  using block_store_keys_t = BlockStore<key_t, block_threads, items_per_thread, BLOCK_STORE_WARP_TRANSPOSE>;
+  using block_store_vals_t = BlockStore<value_t, block_threads, items_per_thread, BLOCK_STORE_WARP_TRANSPOSE>;
 
   // -------------------------------------------------------------------------
   // Shared Memory Storage
   // -------------------------------------------------------------------------
-  struct TempStorage
+  struct TempStorage_
   {
     union
     {
-      typename BlockLoadKeysT::TempStorage load_keys;
-      typename BlockLoadValsT::TempStorage load_vals;
-      typename BlockTopkT::TempStorage topk;
-      typename BlockStoreKeysT::TempStorage store_keys;
-      typename BlockStoreValsT::TempStorage store_vals;
+      typename block_load_keys_t::TempStorage load_keys;
+      typename block_load_vals_t::TempStorage load_vals;
+      typename block_topk_t::TempStorage topk;
+      typename block_store_keys_t::TempStorage store_keys;
+      typename block_store_vals_t::TempStorage store_vals;
     };
   };
+
+  using TempStorage = Uninitialized<TempStorage_>;
 
   // -------------------------------------------------------------------------
   // Members
   // -------------------------------------------------------------------------
-  TempStorage& temp_storage;
+  TempStorage_& temp_storage;
   KeyInputItItT d_key_segments_it;
   KeyOutputItItT d_key_segments_out_it;
   ValueInputItItT d_value_segments_it;
@@ -109,7 +109,7 @@ struct AgentSegmentedTopkWorkerPerSegment
   // -------------------------------------------------------------------------
   // Constructor
   // -------------------------------------------------------------------------
-  _CCCL_DEVICE _CCCL_FORCEINLINE AgentSegmentedTopkWorkerPerSegment(
+  _CCCL_DEVICE _CCCL_FORCEINLINE AgentBatchedTopKWorkerPerSegment(
     TempStorage& temp_storage,
     KeyInputItItT d_key_segments_it,
     KeyOutputItItT d_key_segments_out_it,
@@ -119,7 +119,7 @@ struct AgentSegmentedTopkWorkerPerSegment
     KParameterT k_param,
     SelectDirectionParameterT select_directions,
     NumSegmentsParameterT num_segments)
-      : temp_storage(temp_storage)
+      : temp_storage(temp_storage.Alias())
       , d_key_segments_it(d_key_segments_it)
       , d_key_segments_out_it(d_key_segments_out_it)
       , d_value_segments_it(d_value_segments_it)
@@ -139,11 +139,11 @@ struct AgentSegmentedTopkWorkerPerSegment
   {
     if constexpr (Direction == detail::topk::select::max)
     {
-      BlockTopkT(temp_storage.topk).Max(keys, k);
+      block_topk_t(temp_storage.topk).Max(keys, k);
     }
     else
     {
-      BlockTopkT(temp_storage.topk).Min(keys, k);
+      block_topk_t(temp_storage.topk).Min(keys, k);
     }
   }
 
@@ -156,11 +156,11 @@ struct AgentSegmentedTopkWorkerPerSegment
   {
     if constexpr (Direction == detail::topk::select::max)
     {
-      BlockTopkT(temp_storage.topk).Max(keys, values, k);
+      block_topk_t(temp_storage.topk).Max(keys, values, k);
     }
     else
     {
-      BlockTopkT(temp_storage.topk).Min(keys, values, k);
+      block_topk_t(temp_storage.topk).Min(keys, values, k);
     }
   }
 
@@ -190,7 +190,7 @@ struct AgentSegmentedTopkWorkerPerSegment
 
     // Load Keys
     key_t thread_keys[items_per_thread];
-    BlockLoadKeysT(temp_storage.load_keys).Load(block_keys_in, thread_keys, segment_size, padding_key);
+    block_load_keys_t(temp_storage.load_keys).Load(block_keys_in, thread_keys, segment_size, padding_key);
 
     // Load Values (if applicable)
     [[maybe_unused]] value_t thread_values[items_per_thread];
@@ -200,7 +200,7 @@ struct AgentSegmentedTopkWorkerPerSegment
       __syncthreads();
       auto block_vals_in = d_value_segments_it[segment_id];
 
-      BlockLoadValsT(temp_storage.load_vals).Load(block_vals_in, thread_values, segment_size);
+      block_load_vals_t(temp_storage.load_vals).Load(block_vals_in, thread_values, segment_size);
     }
 
     __syncthreads();
@@ -228,7 +228,7 @@ struct AgentSegmentedTopkWorkerPerSegment
 
     auto block_keys_out = d_key_segments_out_it[segment_id];
 
-    BlockStoreKeysT(temp_storage.store_keys)
+    block_store_keys_t(temp_storage.store_keys)
       .Store(block_keys_out,
              thread_keys,
              k // Only store K items
@@ -239,7 +239,7 @@ struct AgentSegmentedTopkWorkerPerSegment
       __syncthreads();
       auto block_vals_out = d_value_segments_out_it[segment_id];
 
-      BlockStoreValsT(temp_storage.store_vals).Store(block_vals_out, thread_values, k);
+      block_store_vals_t(temp_storage.store_vals).Store(block_vals_out, thread_values, k);
     }
   }
 };
