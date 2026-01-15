@@ -176,6 +176,7 @@ projects:
 # Files matching any of these regexes will be ignored globally.
 ignore_regexes:
   - '.+\.md$'
+  - '\.branch_notes/'
   - '\.clang-format'
   - '\.clangd'
   - '\.devcontainer/img'
