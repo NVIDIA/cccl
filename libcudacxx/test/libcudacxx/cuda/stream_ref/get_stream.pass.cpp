@@ -9,6 +9,7 @@
 
 // UNSUPPORTED: nvrtc
 
+#include <cuda/__functional/call_or.h>
 #include <cuda/std/execution>
 #include <cuda/std/type_traits>
 #include <cuda/stream>
@@ -21,7 +22,7 @@ __host__ __device__ void test()
     auto ref = ::cuda::get_stream(stream);
     assert(stream == ref);
 
-    auto ref_query = ::cuda::std::execution::__call_or(::cuda::get_stream, stream, invalid_stream);
+    auto ref_query = ::cuda::__call_or(::cuda::get_stream, invalid_stream, stream);
     assert(stream == ref_query);
   }
 
@@ -67,7 +68,7 @@ __host__ __device__ void test()
     auto ref = ::cuda::get_stream(str);
     assert(stream == ref);
 
-    auto ref_query = ::cuda::std::execution::__call_or(::cuda::get_stream, str, invalid_stream);
+    auto ref_query = ::cuda::__call_or(::cuda::get_stream, invalid_stream, str);
     assert(stream == ref_query);
   }
 
@@ -84,7 +85,7 @@ __host__ __device__ void test()
     static_assert(!::cuda::std::is_invocable_v<::cuda::get_stream_t, const with_mutable_get_stream&>);
 
     with_mutable_get_stream str{stream};
-    auto ref_query = ::cuda::std::execution::__call_or(::cuda::get_stream, str, invalid_stream);
+    auto ref_query = ::cuda::__call_or(::cuda::get_stream, invalid_stream, str);
     assert(invalid_stream == ref_query);
   }
 
@@ -102,7 +103,7 @@ __host__ __device__ void test()
     auto ref = ::cuda::get_stream(str);
     assert(stream == ref);
 
-    auto ref_query = ::cuda::std::execution::__call_or(::cuda::get_stream, str, invalid_stream);
+    auto ref_query = ::cuda::__call_or(::cuda::get_stream, invalid_stream, str);
     assert(stream == ref_query);
   }
 
@@ -117,7 +118,7 @@ __host__ __device__ void test()
     static_assert(!::cuda::std::is_invocable_v<::cuda::get_stream_t, const returns_not_convertible_to_stream_ref&>);
 
     returns_not_convertible_to_stream_ref str{};
-    auto ref_query = ::cuda::std::execution::__call_or(::cuda::get_stream, str, invalid_stream);
+    auto ref_query = ::cuda::__call_or(::cuda::get_stream, invalid_stream, str);
     assert(invalid_stream == ref_query);
   }
 
@@ -135,7 +136,7 @@ __host__ __device__ void test()
     auto ref = ::cuda::get_stream(str);
     assert(stream == ref);
 
-    auto ref_query = ::cuda::std::execution::__call_or(::cuda::get_stream, str, invalid_stream);
+    auto ref_query = ::cuda::__call_or(::cuda::get_stream, invalid_stream, str);
     assert(stream == ref_query);
   }
 
@@ -153,7 +154,7 @@ __host__ __device__ void test()
     auto ref = ::cuda::get_stream(str);
     assert(stream == ref);
 
-    auto ref_query = ::cuda::std::execution::__call_or(::cuda::get_stream, str, invalid_stream);
+    auto ref_query = ::cuda::__call_or(::cuda::get_stream, invalid_stream, str);
     assert(stream == ref_query);
   }
 
@@ -171,7 +172,7 @@ __host__ __device__ void test()
     auto ref = ::cuda::get_stream(str);
     assert(stream == ref);
 
-    auto ref_query = ::cuda::std::execution::__call_or(::cuda::get_stream, str, invalid_stream);
+    auto ref_query = ::cuda::__call_or(::cuda::get_stream, invalid_stream, str);
     assert(stream == ref_query);
   }
 
@@ -186,7 +187,7 @@ __host__ __device__ void test()
     static_assert(!::cuda::std::is_invocable_v<::cuda::get_stream_t, const with_query_not_convertible_to_stream_ref&>);
 
     with_query_not_convertible_to_stream_ref str{};
-    auto ref_query = ::cuda::std::execution::__call_or(::cuda::get_stream, str, invalid_stream);
+    auto ref_query = ::cuda::__call_or(::cuda::get_stream, invalid_stream, str);
     assert(invalid_stream == ref_query);
   }
 }

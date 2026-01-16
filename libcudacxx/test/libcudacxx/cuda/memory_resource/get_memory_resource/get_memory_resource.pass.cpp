@@ -10,6 +10,7 @@
 
 // UNSUPPORTED: nvrtc
 
+#include <cuda/__functional/call_or.h>
 #include <cuda/memory_resource>
 #include <cuda/std/type_traits>
 
@@ -67,7 +68,7 @@ __host__ __device__ void test()
     static_assert(cuda::std::is_same_v<decltype(res), const test_resource&>);
     assert(val.res_ == res);
 
-    auto res_query = ::cuda::std::execution::__call_or(::cuda::mr::get_memory_resource, val, invalid_resource);
+    auto res_query = ::cuda::__call_or(::cuda::mr::get_memory_resource, invalid_resource, val);
     assert(val.res_ == res_query);
   }
 
@@ -86,7 +87,7 @@ __host__ __device__ void test()
     static_assert(cuda::std::is_same_v<decltype(res), test_resource&&>);
     assert(val.res_ == res);
 
-    auto res_query = ::cuda::std::execution::__call_or(::cuda::mr::get_memory_resource, val, invalid_resource);
+    auto res_query = ::cuda::__call_or(::cuda::mr::get_memory_resource, invalid_resource, val);
     assert(val.res_ == res_query);
   }
 
@@ -103,7 +104,7 @@ __host__ __device__ void test()
     static_assert(!::cuda::std::is_invocable_v<::cuda::mr::get_memory_resource_t, const with_get_resource_non_const&>);
 
     with_get_resource_non_const val{};
-    auto res_query = ::cuda::std::execution::__call_or(::cuda::mr::get_memory_resource, val, invalid_resource);
+    auto res_query = ::cuda::__call_or(::cuda::mr::get_memory_resource, invalid_resource, val);
     assert(res_query == invalid_resource);
   }
 
@@ -122,7 +123,7 @@ __host__ __device__ void test()
     static_assert(cuda::std::is_same_v<decltype(res), const test_resource&>);
     assert(val.res_ == res);
 
-    auto res_query = ::cuda::std::execution::__call_or(::cuda::mr::get_memory_resource, val, invalid_resource);
+    auto res_query = ::cuda::__call_or(::cuda::mr::get_memory_resource, invalid_resource, val);
     assert(val.res_ == res_query);
   }
 
@@ -142,7 +143,7 @@ __host__ __device__ void test()
     static_assert(cuda::std::is_same_v<decltype(res), test_resource&&>);
     assert(val.res_ == res);
 
-    auto res_query = ::cuda::std::execution::__call_or(::cuda::mr::get_memory_resource, val, invalid_resource);
+    auto res_query = ::cuda::__call_or(::cuda::mr::get_memory_resource, invalid_resource, val);
     assert(val.res_ == res_query);
   }
 
@@ -159,7 +160,7 @@ __host__ __device__ void test()
     static_assert(!::cuda::std::is_invocable_v<::cuda::mr::get_memory_resource_t, const env_with_query_non_const&>);
 
     env_with_query_non_const val{};
-    auto res_query = ::cuda::std::execution::__call_or(::cuda::mr::get_memory_resource, val, invalid_resource);
+    auto res_query = ::cuda::__call_or(::cuda::mr::get_memory_resource, invalid_resource, val);
     assert(res_query == invalid_resource);
   }
 
@@ -184,7 +185,7 @@ __host__ __device__ void test()
     static_assert(cuda::std::is_same_v<decltype(res), const test_resource&>);
     assert(val.res_ == res);
 
-    auto res_query = ::cuda::std::execution::__call_or(::cuda::mr::get_memory_resource, val, invalid_resource);
+    auto res_query = ::cuda::__call_or(::cuda::mr::get_memory_resource, invalid_resource, val);
     assert(val.res_ == res_query);
   }
 
@@ -220,7 +221,7 @@ __host__ __device__ void test()
     static_assert(!::cuda::std::is_invocable_v<::cuda::mr::get_memory_resource_t, const with_get_resource_non_async&>);
 
     with_get_resource_non_async val{};
-    auto res_query = ::cuda::std::execution::__call_or(::cuda::mr::get_memory_resource, val, invalid_resource);
+    auto res_query = ::cuda::__call_or(::cuda::mr::get_memory_resource, invalid_resource, val);
     assert(res_query == invalid_resource);
   }
 }
