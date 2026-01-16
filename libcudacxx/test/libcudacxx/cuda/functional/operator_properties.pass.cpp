@@ -15,6 +15,9 @@
 
 #include "test_macros.h"
 
+_CCCL_BEGIN_NV_DIAG_SUPPRESS(3215) // "if consteval" and "if not consteval" are not standard in this mode
+_CCCL_DIAG_SUPPRESS_GCC("-Wc++23-extensions")
+
 /***********************************************************************************************************************
  * Associativity and Commutativity
  **********************************************************************************************************************/

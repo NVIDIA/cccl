@@ -497,7 +497,7 @@ struct identity_element : __identity_element<_Op, _Tp>
 {};
 
 template <class _Op, class _Tp>
-_CCCL_GLOBAL_VARIABLE constexpr auto identity_element_v = identity_element<_Op, _Tp>::value;
+_CCCL_GLOBAL_CONSTANT auto identity_element_v = identity_element<_Op, _Tp>::value;
 
 template <class _Op, class _Tp>
 inline constexpr bool has_identity_element = element_exists<identity_element, _Op, _Tp>;
@@ -601,7 +601,7 @@ struct absorbing_element : __absorbing_element<_Op, _Tp>
 {};
 
 template <class _Op, class _Tp>
-_CCCL_GLOBAL_VARIABLE constexpr auto absorbing_element_v = absorbing_element<_Op, _Tp>::value;
+_CCCL_GLOBAL_CONSTANT auto absorbing_element_v = absorbing_element<_Op, _Tp>::value;
 
 template <class _Op, class _Tp>
 inline constexpr bool has_absorbing_element = element_exists<absorbing_element, _Op, _Tp>;
