@@ -68,9 +68,10 @@ __host__ __device__ constexpr void test_comparison(
   intptr_t dest_offset = 0,
   intptr_t src_offset  = 0)
 {
-  using offset_type = typename cuda::layout_stride_relaxed::mapping<To>::offset_type;
-  auto dest_offset1 = static_cast<offset_type>(dest_offset);
-  auto src_offset1  = static_cast<offset_type>(src_offset);
+  using offset_type_dest = typename cuda::layout_stride_relaxed::mapping<To>::offset_type;
+  using offset_type_src  = typename cuda::layout_stride_relaxed::mapping<From>::offset_type;
+  auto dest_offset1      = static_cast<offset_type_dest>(dest_offset);
+  auto src_offset1       = static_cast<offset_type_src>(src_offset);
   cuda::layout_stride_relaxed::mapping<To> dest(dest_exts, dest_strides, dest_offset1);
   cuda::layout_stride_relaxed::mapping<From> src(src_exts, src_strides, src_offset1);
   static_assert(noexcept(dest == src));
