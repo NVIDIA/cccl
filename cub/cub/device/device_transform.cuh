@@ -85,9 +85,6 @@ private:
     using transform_tuning_t =
       ::cuda::std::execution::__query_result_or_t<tuning_env_t, detail::transform::get_tuning_query_t, int>;
 
-    cudaStream_t stream =
-      ::cuda::std::execution::__query_or(env, ::cuda::get_stream, ::cuda::stream_ref{cudaStream_t{}}).get();
-
     if constexpr (!::cuda::std::is_same_v<transform_tuning_t, int>)
     {
       return detail::transform::dispatch<StableAddress>(
@@ -96,7 +93,7 @@ private:
         static_cast<offset_t>(num_items),
         ::cuda::std::move(predicate),
         ::cuda::std::move(transform_op),
-        stream,
+        get_stream(env),
         transform_tuning_t{});
     }
     else
@@ -107,7 +104,20 @@ private:
         static_cast<offset_t>(num_items),
         ::cuda::std::move(predicate),
         ::cuda::std::move(transform_op),
-        stream);
+        get_stream(env));
+    }
+  }
+
+  template <typename Env>
+  CUB_RUNTIME_FUNCTION static auto get_stream(Env env) -> cudaStream_t
+  {
+    if constexpr (::cuda::std::is_invocable_v<::cuda::get_stream_t, Env>)
+    {
+      return ::cuda::get_stream(env).get();
+    }
+    else
+    {
+      return cudaStream_t{};
     }
   }
 
