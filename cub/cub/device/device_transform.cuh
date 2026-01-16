@@ -93,7 +93,7 @@ private:
         static_cast<offset_t>(num_items),
         ::cuda::std::move(predicate),
         ::cuda::std::move(transform_op),
-        get_stream(env),
+        ::cuda::std::execution::__call_or(::cuda::get_stream, env, ::cuda::stream_ref{cudaStream_t{}}).get(),
         transform_tuning_t{});
     }
     else
@@ -104,20 +104,7 @@ private:
         static_cast<offset_t>(num_items),
         ::cuda::std::move(predicate),
         ::cuda::std::move(transform_op),
-        get_stream(env));
-    }
-  }
-
-  template <typename Env>
-  CUB_RUNTIME_FUNCTION static auto get_stream([[maybe_unused]] Env env) -> cudaStream_t
-  {
-    if constexpr (::cuda::std::is_invocable_v<::cuda::get_stream_t, Env>)
-    {
-      return ::cuda::get_stream(env).get();
-    }
-    else
-    {
-      return cudaStream_t{};
+        ::cuda::std::execution::__call_or(::cuda::get_stream, env, ::cuda::stream_ref{cudaStream_t{}}).get());
     }
   }
 

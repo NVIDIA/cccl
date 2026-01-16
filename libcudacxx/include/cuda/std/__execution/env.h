@@ -26,6 +26,7 @@
 #include <cuda/std/__functional/reference_wrapper.h>
 #include <cuda/std/__tuple_dir/ignore.h>
 #include <cuda/std/__type_traits/enable_if.h>
+#include <cuda/std/__type_traits/is_callable.h>
 #include <cuda/std/__type_traits/is_nothrow_move_constructible.h>
 #include <cuda/std/__type_traits/is_valid_expansion.h>
 #include <cuda/std/__utility/declval.h>
@@ -421,11 +422,12 @@ struct __query_or_t
 {
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Env, class _Query, class _Default, class... _Args)
-  _CCCL_REQUIRES(__queryable_with<_Env, _Query, _Args...>)
-  [[nodiscard]] _CCCL_API constexpr auto operator()(const _Env& __env, _Query, _Default&&, _Args&&... __args) const
-    noexcept(__nothrow_queryable_with<_Env, _Query, _Args...>) -> __query_result_t<_Env, _Query, _Args...>
+  _CCCL_REQUIRES(__queryable_with<const _Env&, _Query, _Args...>)
+  [[nodiscard]] _CCCL_API constexpr auto
+  operator()(const _Env& __env, _Query __query, _Default&&, _Args&&... __args) const
+    noexcept(__nothrow_queryable_with<const _Env&, _Query, _Args...>) -> __query_result_t<const _Env&, _Query, _Args...>
   {
-    return __env.query(_Query{}, static_cast<_Args&&>(__args)...);
+    return __env.query(__query, static_cast<_Args&&>(__args)...);
   }
 
   _CCCL_EXEC_CHECK_DISABLE
@@ -447,6 +449,28 @@ using __query_result_or_t _CCCL_NODEBUG_ALIAS = decltype(__query_or(
   ::cuda::std::declval<_Query>(),
   ::cuda::std::declval<_Default>(),
   ::cuda::std::declval<_Args>()...));
+
+//! @brief `__call_or` is an internal customization point object that combines a CPO with a default value
+struct __call_or_t
+{
+  _CCCL_EXEC_CHECK_DISABLE
+  template <class _Env, class _CPO, class _Fallback>
+  [[nodiscard]] _CCCL_API constexpr decltype(auto) operator()(
+    [[maybe_unused]] _CPO __cpo, [[maybe_unused]] const _Env& __env, [[maybe_unused]] _Fallback&& __fallback) const
+    noexcept(::cuda::std::__is_nothrow_callable_v<_CPO, const _Env&>)
+  {
+    if constexpr (::cuda::std::__is_callable_v<_CPO, const _Env&>)
+    {
+      return __cpo(__env);
+    }
+    else
+    {
+      return static_cast<_Fallback&&>(__fallback);
+    }
+  }
+};
+
+_CCCL_GLOBAL_CONSTANT auto __call_or = __call_or_t{};
 
 _CCCL_END_NAMESPACE_CUDA_STD_EXECUTION
 

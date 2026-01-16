@@ -78,7 +78,7 @@ CUB_RUNTIME_FUNCTION static cudaError_t dispatch_topk_hub(
                 "unsorted.");
 
   // Query relevant properties from the environment
-  auto stream = ::cuda::std::execution::__query_or(env, ::cuda::get_stream, ::cuda::stream_ref{cudaStream_t{}});
+  auto stream = ::cuda::std::execution::__call_or(::cuda::get_stream, env, ::cuda::stream_ref{cudaStream_t{}});
 
   return topk::DispatchTopK<
     KeyInputIteratorT,

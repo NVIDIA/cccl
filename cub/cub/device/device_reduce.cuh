@@ -1145,9 +1145,8 @@ public:
                   "gpu_to_gpu determinism is not supported");
 
     // Query relevant properties from the environment
-    auto stream = ::cuda::std::execution::__query_or(env, ::cuda::get_stream, ::cuda::stream_ref{cudaStream_t{}});
-    auto mr =
-      ::cuda::std::execution::__query_or(env, ::cuda::mr::__get_memory_resource, detail::device_memory_resource{});
+    auto stream = ::cuda::std::execution::__call_or(::cuda::get_stream, env, ::cuda::stream_ref{cudaStream_t{}});
+    auto mr = ::cuda::std::execution::__call_or(::cuda::mr::get_memory_resource, env, detail::device_memory_resource{});
 
     void* d_temp_storage      = nullptr;
     size_t temp_storage_bytes = 0;
@@ -1894,9 +1893,8 @@ public:
                   "gpu_to_gpu determinism is not supported");
 
     // Query relevant properties from the environment
-    auto stream = ::cuda::std::execution::__query_or(env, ::cuda::get_stream, ::cuda::stream_ref{cudaStream_t{}});
-    auto mr =
-      ::cuda::std::execution::__query_or(env, ::cuda::mr::__get_memory_resource, detail::device_memory_resource{});
+    auto stream = ::cuda::std::execution::__call_or(::cuda::get_stream, env, ::cuda::stream_ref{cudaStream_t{}});
+    auto mr = ::cuda::std::execution::__call_or(::cuda::mr::get_memory_resource, env, detail::device_memory_resource{});
 
     void* d_temp_storage      = nullptr;
     size_t temp_storage_bytes = 0;
