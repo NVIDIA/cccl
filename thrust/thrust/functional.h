@@ -243,12 +243,10 @@ template <typename T1 = void, typename T2 = void>
 struct project1st
 {
   /*! Function call operator. The return value is <tt>lhs</tt>.
- *
- *  \verbatim embed:rst:leading-asterisk
-
- *     .. versionadded:: 2.2.0
-
- *  \endverbatim
+   *
+   *  \verbatim embed:rst:leading-asterisk
+   *     .. versionadded:: 2.2.0
+   *  \endverbatim
    */
   _CCCL_HOST_DEVICE constexpr const T1& operator()(const T1& lhs, const T2& /*rhs*/) const
   {
@@ -294,12 +292,10 @@ template <typename T1 = void, typename T2 = void>
 struct project2nd
 {
   /*! Function call operator. The return value is <tt>rhs</tt>.
- *
- *  \verbatim embed:rst:leading-asterisk
-
- *     .. versionadded:: 2.2.0
-
- *  \endverbatim
+   *
+   *  \verbatim embed:rst:leading-asterisk
+   *     .. versionadded:: 2.2.0
+   *  \endverbatim
    */
   _CCCL_HOST_DEVICE constexpr const T2& operator()(const T1& /*lhs*/, const T2& rhs) const
   {

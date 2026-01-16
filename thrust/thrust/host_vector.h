@@ -71,21 +71,17 @@ public:
   using size_type  = typename Parent::size_type;
   using value_type = typename Parent::value_type;
   /*! \endcond
- *
- *  \verbatim embed:rst:leading-asterisk
-
- *     .. versionadded:: 2.2.0
-
- *  \endverbatim
+   *
+   *  \verbatim embed:rst:leading-asterisk
+   *     .. versionadded:: 2.2.0
+   *  \endverbatim
    */
 
   /*! This constructor creates an empty \p host_vector.
- *
- *  \verbatim embed:rst:leading-asterisk
-
- *     .. versionadded:: 2.2.0
-
- *  \endverbatim
+   *
+   *  \verbatim embed:rst:leading-asterisk
+   *     .. versionadded:: 2.2.0
+   *  \endverbatim
    */
   _CCCL_HOST host_vector()
       : Parent()
@@ -93,24 +89,20 @@ public:
 
   /*! This constructor creates an empty \p host_vector.
    *  \param alloc The allocator to use by this host_vector.
- *
- *  \verbatim embed:rst:leading-asterisk
-
- *     .. versionadded:: 2.2.0
-
- *  \endverbatim
+   *
+   *  \verbatim embed:rst:leading-asterisk
+   *     .. versionadded:: 2.2.0
+   *  \endverbatim
    */
   _CCCL_HOST host_vector(const Alloc& alloc)
       : Parent(alloc)
   {}
 
   /*! The destructor erases the elements.
- *
- *  \verbatim embed:rst:leading-asterisk
-
- *     .. versionadded:: 2.2.0
-
- *  \endverbatim
+   *
+   *  \verbatim embed:rst:leading-asterisk
+   *     .. versionadded:: 2.2.0
+   *  \endverbatim
    */
   //  Define an empty destructor to explicitly specify
   //  its execution space qualifier, as a workaround for nvcc warning
@@ -119,12 +111,10 @@ public:
   /*! This constructor creates a \p host_vector with the given
    *  size.
    *  \param n The number of elements to initially create.
- *
- *  \verbatim embed:rst:leading-asterisk
-
- *     .. versionadded:: 2.2.0
-
- *  \endverbatim
+   *
+   *  \verbatim embed:rst:leading-asterisk
+   *     .. versionadded:: 2.2.0
+   *  \endverbatim
    */
   _CCCL_HOST explicit host_vector(size_type n)
       : Parent(n)
@@ -148,12 +138,10 @@ public:
    *  size.
    *  \param n The number of elements to initially create.
    *  \param alloc The allocator to use by this host_vector.
- *
- *  \verbatim embed:rst:leading-asterisk
-
- *     .. versionadded:: 2.2.0
-
- *  \endverbatim
+   *
+   *  \verbatim embed:rst:leading-asterisk
+   *     .. versionadded:: 2.2.0
+   *  \endverbatim
    */
   _CCCL_HOST explicit host_vector(size_type n, const Alloc& alloc)
       : Parent(n, alloc)
@@ -163,12 +151,10 @@ public:
    *  of an exemplar element.
    *  \param n The number of elements to initially create.
    *  \param value An element to copy.
- *
- *  \verbatim embed:rst:leading-asterisk
-
- *     .. versionadded:: 2.2.0
-
- *  \endverbatim
+   *
+   *  \verbatim embed:rst:leading-asterisk
+   *     .. versionadded:: 2.2.0
+   *  \endverbatim
    */
   _CCCL_HOST explicit host_vector(size_type n, const value_type& value)
       : Parent(n, value)
@@ -179,12 +165,10 @@ public:
    *  \param n The number of elements to initially create.
    *  \param value An element to copy.
    *  \param alloc The allocator to use by this host_vector.
- *
- *  \verbatim embed:rst:leading-asterisk
-
- *     .. versionadded:: 2.2.0
-
- *  \endverbatim
+   *
+   *  \verbatim embed:rst:leading-asterisk
+   *     .. versionadded:: 2.2.0
+   *  \endverbatim
    */
   _CCCL_HOST explicit host_vector(size_type n, const value_type& value, const Alloc& alloc)
       : Parent(n, value, alloc)
@@ -192,12 +176,10 @@ public:
 
   /*! Copy constructor copies from an exemplar \p host_vector.
    *  \param v The \p host_vector to copy.
- *
- *  \verbatim embed:rst:leading-asterisk
-
- *     .. versionadded:: 2.2.0
-
- *  \endverbatim
+   *
+   *  \verbatim embed:rst:leading-asterisk
+   *     .. versionadded:: 2.2.0
+   *  \endverbatim
    */
   _CCCL_HOST host_vector(const host_vector& v)
       : Parent(v)
@@ -206,12 +188,10 @@ public:
   /*! Copy constructor copies from an exemplar \p host_vector.
    *  \param v The \p host_vector to copy.
    *  \param alloc The allocator to use by this host_vector.
- *
- *  \verbatim embed:rst:leading-asterisk
-
- *     .. versionadded:: 2.2.0
-
- *  \endverbatim
+   *
+   *  \verbatim embed:rst:leading-asterisk
+   *     .. versionadded:: 2.2.0
+   *  \endverbatim
    */
   _CCCL_HOST host_vector(const host_vector& v, const Alloc& alloc)
       : Parent(v, alloc)
@@ -219,12 +199,10 @@ public:
 
   /*! Move constructor moves from another host_vector.
    *  \param v The host_vector to move.
- *
- *  \verbatim embed:rst:leading-asterisk
-
- *     .. versionadded:: 2.2.0
-
- *  \endverbatim
+   *
+   *  \verbatim embed:rst:leading-asterisk
+   *     .. versionadded:: 2.2.0
+   *  \endverbatim
    */
   _CCCL_HOST host_vector(host_vector&& v)
       : Parent(::cuda::std::move(v))
@@ -233,12 +211,10 @@ public:
   /*! Move constructor moves from another host_vector.
    *  \param v The host_vector to move.
    *  \param alloc The allocator to use by this host_vector.
- *
- *  \verbatim embed:rst:leading-asterisk
-
- *     .. versionadded:: 2.2.0
-
- *  \endverbatim
+   *
+   *  \verbatim embed:rst:leading-asterisk
+   *     .. versionadded:: 2.2.0
+   *  \endverbatim
    */
   _CCCL_HOST host_vector(host_vector&& v, const Alloc& alloc)
       : Parent(::cuda::std::move(v), alloc)
@@ -246,12 +222,10 @@ public:
 
   /*! Assign operator copies from an exemplar \p host_vector.
    *  \param v The \p host_vector to copy.
- *
- *  \verbatim embed:rst:leading-asterisk
-
- *     .. versionadded:: 2.2.0
-
- *  \endverbatim
+   *
+   *  \verbatim embed:rst:leading-asterisk
+   *     .. versionadded:: 2.2.0
+   *  \endverbatim
    */
   _CCCL_HOST host_vector& operator=(const host_vector& v)
   {
@@ -261,12 +235,10 @@ public:
 
   /*! Move assign operator moves from another host_vector.
    *  \param v The host_vector to move.
- *
- *  \verbatim embed:rst:leading-asterisk
-
- *     .. versionadded:: 2.2.0
-
- *  \endverbatim
+   *
+   *  \verbatim embed:rst:leading-asterisk
+   *     .. versionadded:: 2.2.0
+   *  \endverbatim
    */
   _CCCL_HOST host_vector& operator=(host_vector&& v)
   {
@@ -276,12 +248,10 @@ public:
 
   /*! Copy constructor copies from an exemplar \p host_vector with different type.
    *  \param v The \p host_vector to copy.
- *
- *  \verbatim embed:rst:leading-asterisk
-
- *     .. versionadded:: 2.2.0
-
- *  \endverbatim
+   *
+   *  \verbatim embed:rst:leading-asterisk
+   *     .. versionadded:: 2.2.0
+   *  \endverbatim
    */
   template <typename OtherT, typename OtherAlloc>
   _CCCL_HOST host_vector(const host_vector<OtherT, OtherAlloc>& v)
@@ -290,12 +260,10 @@ public:
 
   /*! Assign operator copies from an exemplar \p host_vector with different type.
    *  \param v The \p host_vector to copy.
- *
- *  \verbatim embed:rst:leading-asterisk
-
- *     .. versionadded:: 2.2.0
-
- *  \endverbatim
+   *
+   *  \verbatim embed:rst:leading-asterisk
+   *     .. versionadded:: 2.2.0
+   *  \endverbatim
    */
   template <typename OtherT, typename OtherAlloc>
   _CCCL_HOST host_vector& operator=(const host_vector<OtherT, OtherAlloc>& v)
@@ -306,12 +274,10 @@ public:
 
   /*! Copy constructor copies from an exemplar <tt>std::vector</tt>.
    *  \param v The <tt>std::vector</tt> to copy.
- *
- *  \verbatim embed:rst:leading-asterisk
-
- *     .. versionadded:: 2.2.0
-
- *  \endverbatim
+   *
+   *  \verbatim embed:rst:leading-asterisk
+   *     .. versionadded:: 2.2.0
+   *  \endverbatim
    */
   template <typename OtherT, typename OtherAlloc>
   _CCCL_HOST host_vector(const std::vector<OtherT, OtherAlloc>& v)
@@ -320,12 +286,10 @@ public:
 
   /*! Assign operator copies from an exemplar <tt>std::vector</tt>.
    *  \param v The <tt>std::vector</tt> to copy.
- *
- *  \verbatim embed:rst:leading-asterisk
-
- *     .. versionadded:: 2.2.0
-
- *  \endverbatim
+   *
+   *  \verbatim embed:rst:leading-asterisk
+   *     .. versionadded:: 2.2.0
+   *  \endverbatim
    */
   template <typename OtherT, typename OtherAlloc>
   _CCCL_HOST host_vector& operator=(const std::vector<OtherT, OtherAlloc>& v)
@@ -338,12 +302,10 @@ public:
    *  to \c T.
    *
    *  \param v The \p vector_base to copy.
- *
- *  \verbatim embed:rst:leading-asterisk
-
- *     .. versionadded:: 2.2.0
-
- *  \endverbatim
+   *
+   *  \verbatim embed:rst:leading-asterisk
+   *     .. versionadded:: 2.2.0
+   *  \endverbatim
    */
   template <typename OtherT, typename OtherAlloc>
   _CCCL_HOST host_vector(const detail::vector_base<OtherT, OtherAlloc>& v)
@@ -353,12 +315,10 @@ public:
   /*! Assign a \p vector_base whose element type is convertible to \c T.
    *
    *  \param v The \p vector_base to copy.
- *
- *  \verbatim embed:rst:leading-asterisk
-
- *     .. versionadded:: 2.2.0
-
- *  \endverbatim
+   *
+   *  \verbatim embed:rst:leading-asterisk
+   *     .. versionadded:: 2.2.0
+   *  \endverbatim
    */
   template <typename OtherT, typename OtherAlloc>
   _CCCL_HOST host_vector& operator=(const detail::vector_base<OtherT, OtherAlloc>& v)
@@ -394,12 +354,10 @@ public:
   /*! This constructor builds a \p host_vector from a range.
    *  \param first The beginning of the range.
    *  \param last The end of the range.
- *
- *  \verbatim embed:rst:leading-asterisk
-
- *     .. versionadded:: 2.2.0
-
- *  \endverbatim
+   *
+   *  \verbatim embed:rst:leading-asterisk
+   *     .. versionadded:: 2.2.0
+   *  \endverbatim
    */
   template <typename InputIterator>
   _CCCL_HOST host_vector(InputIterator first, InputIterator last)
@@ -410,12 +368,10 @@ public:
    *  \param first The beginning of the range.
    *  \param last The end of the range.
    *  \param alloc The allocator to use by this host_vector.
- *
- *  \verbatim embed:rst:leading-asterisk
-
- *     .. versionadded:: 2.2.0
-
- *  \endverbatim
+   *
+   *  \verbatim embed:rst:leading-asterisk
+   *     .. versionadded:: 2.2.0
+   *  \endverbatim
    */
   template <typename InputIterator>
   _CCCL_HOST host_vector(InputIterator first, InputIterator last, const Alloc& alloc)
@@ -434,12 +390,10 @@ public:
    *  elements.  If the number is smaller than this vector's current
    *  size this vector is truncated, otherwise this vector is
    *  extended and new elements are populated with given data.
- *
- *  \verbatim embed:rst:leading-asterisk
-
- *     .. versionadded:: 2.2.0
-
- *  \endverbatim
+   *
+   *  \verbatim embed:rst:leading-asterisk
+   *     .. versionadded:: 2.2.0
+   *  \endverbatim
    */
   void resize(size_type new_size, const value_type& x = value_type());
 
@@ -469,12 +423,10 @@ public:
    *         the request is successful, then capacity() is greater than or equal to
    *         n; otherwise, capacity() is unchanged. In either case, size() is unchanged.
    *  \throw std::length_error If n exceeds max_size().
- *
- *  \verbatim embed:rst:leading-asterisk
-
- *     .. versionadded:: 2.2.0
-
- *  \endverbatim
+   *
+   *  \verbatim embed:rst:leading-asterisk
+   *     .. versionadded:: 2.2.0
+   *  \endverbatim
    */
   void reserve(size_type n);
 
@@ -485,12 +437,10 @@ public:
 
   /*! This method shrinks the capacity of this vector to exactly
    *  fit its elements.
- *
- *  \verbatim embed:rst:leading-asterisk
-
- *     .. versionadded:: 2.2.0
-
- *  \endverbatim
+   *
+   *  \verbatim embed:rst:leading-asterisk
+   *     .. versionadded:: 2.2.0
+   *  \endverbatim
    */
   void shrink_to_fit();
 
@@ -620,66 +570,54 @@ public:
 
   /*! This method returns a const_pointer to this vector's first element.
    *  \return a const_pointer to the first element of this vector.
- *
- *  \verbatim embed:rst:leading-asterisk
-
- *     .. versionadded:: 2.2.0
-
- *  \endverbatim
+   *
+   *  \verbatim embed:rst:leading-asterisk
+   *     .. versionadded:: 2.2.0
+   *  \endverbatim
    */
   const_pointer data() const;
 
   /*! This method resizes this vector to 0.
- *
- *  \verbatim embed:rst:leading-asterisk
-
- *     .. versionadded:: 2.2.0
-
- *  \endverbatim
+   *
+   *  \verbatim embed:rst:leading-asterisk
+   *     .. versionadded:: 2.2.0
+   *  \endverbatim
    */
   void clear();
 
   /*! This method returns true iff size() == 0.
    *  \return true if size() == 0; false, otherwise.
- *
- *  \verbatim embed:rst:leading-asterisk
-
- *     .. versionadded:: 2.2.0
-
- *  \endverbatim
+   *
+   *  \verbatim embed:rst:leading-asterisk
+   *     .. versionadded:: 2.2.0
+   *  \endverbatim
    */
   bool empty() const;
 
   /*! This method appends the given element to the end of this vector.
    *  \param x The element to append.
- *
- *  \verbatim embed:rst:leading-asterisk
-
- *     .. versionadded:: 2.2.0
-
- *  \endverbatim
+   *
+   *  \verbatim embed:rst:leading-asterisk
+   *     .. versionadded:: 2.2.0
+   *  \endverbatim
    */
   void push_back(const value_type& x);
 
   /*! This method erases the last element of this vector, invalidating
    *  all iterators and references to it.
- *
- *  \verbatim embed:rst:leading-asterisk
-
- *     .. versionadded:: 2.2.0
-
- *  \endverbatim
+   *
+   *  \verbatim embed:rst:leading-asterisk
+   *     .. versionadded:: 2.2.0
+   *  \endverbatim
    */
   void pop_back();
 
   /*! This method swaps the contents of this host_vector with another vector.
    *  \param v The vector with which to swap.
- *
- *  \verbatim embed:rst:leading-asterisk
-
- *     .. versionadded:: 2.2.0
-
- *  \endverbatim
+   *
+   *  \verbatim embed:rst:leading-asterisk
+   *     .. versionadded:: 2.2.0
+   *  \endverbatim
    */
   void swap(host_vector& v);
 
@@ -711,12 +649,10 @@ public:
    *  \param position The insertion position
    *  \param n The number of insertions to perform.
    *  \param x The value to replicate and insert.
- *
- *  \verbatim embed:rst:leading-asterisk
-
- *     .. versionadded:: 2.2.0
-
- *  \endverbatim
+   *
+   *  \verbatim embed:rst:leading-asterisk
+   *     .. versionadded:: 2.2.0
+   *  \endverbatim
    */
   void insert(iterator position, size_type n, const T& x);
 
@@ -729,12 +665,10 @@ public:
    *  \tparam InputIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator>Input
    * Iterator</a>, and \p InputIterator's \c value_type is a model of <a
    * href="https://en.cppreference.com/w/cpp/named_req/CopyAssignable">Assignable</a>.
- *
- *  \verbatim embed:rst:leading-asterisk
-
- *     .. versionadded:: 2.2.0
-
- *  \endverbatim
+   *
+   *  \verbatim embed:rst:leading-asterisk
+   *     .. versionadded:: 2.2.0
+   *  \endverbatim
    */
   template <typename InputIterator>
   void insert(iterator position, InputIterator first, InputIterator last);
@@ -743,12 +677,10 @@ public:
    *  \p n times into this vector.
    *  \param n The number of times to copy \p x.
    *  \param x The exemplar element to replicate.
- *
- *  \verbatim embed:rst:leading-asterisk
-
- *     .. versionadded:: 2.2.0
-
- *  \endverbatim
+   *
+   *  \verbatim embed:rst:leading-asterisk
+   *     .. versionadded:: 2.2.0
+   *  \endverbatim
    */
   void assign(size_type n, const T& x);
 
@@ -758,12 +690,10 @@ public:
    *
    *  \tparam InputIterator is a model of <a href="https://en.cppreference.com/w/cpp/named_req/InputIterator">Input
    * Iterator</a>.
- *
- *  \verbatim embed:rst:leading-asterisk
-
- *     .. versionadded:: 2.2.0
-
- *  \endverbatim
+   *
+   *  \verbatim embed:rst:leading-asterisk
+   *     .. versionadded:: 2.2.0
+   *  \endverbatim
    */
   template <typename InputIterator>
   void assign(InputIterator first, InputIterator last);

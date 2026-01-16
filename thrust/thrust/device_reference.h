@@ -238,12 +238,10 @@ public:
    *
    *  \note This constructor is templated primarily to allow initialization of
    *  <tt>device_reference<const T></tt> from <tt>device_reference<T></tt>.
- *
- *  \verbatim embed:rst:leading-asterisk
-
- *     .. versionadded:: 2.2.0
-
- *  \endverbatim
+   *
+   *  \verbatim embed:rst:leading-asterisk
+   *     .. versionadded:: 2.2.0
+   *  \endverbatim
    */
   template <typename OtherT>
   _CCCL_HOST_DEVICE
@@ -280,12 +278,10 @@ public:
    *  *ptr = 13;
    *  assert(ref == 13);
    *  \endcode
- *
- *  \verbatim embed:rst:leading-asterisk
-
- *     .. versionadded:: 2.2.0
-
- *  \endverbatim
+   *
+   *  \verbatim embed:rst:leading-asterisk
+   *     .. versionadded:: 2.2.0
+   *  \endverbatim
    */
   _CCCL_HOST_DEVICE explicit device_reference(const pointer& ptr)
       : super_t(ptr)
@@ -302,12 +298,10 @@ public:
    *
    *  \param other The \p device_reference to assign from.
    *  \return <tt>*this</tt>
- *
- *  \verbatim embed:rst:leading-asterisk
-
- *     .. versionadded:: 2.2.0
-
- *  \endverbatim
+   *
+   *  \verbatim embed:rst:leading-asterisk
+   *     .. versionadded:: 2.2.0
+   *  \endverbatim
    */
   template <typename OtherT>
   _CCCL_HOST_DEVICE const device_reference& operator=(const device_reference<OtherT>& other) const
@@ -320,12 +314,10 @@ public:
    *
    *  \param x The value to assign from.
    *  \return <tt>*this</tt>
- *
- *  \verbatim embed:rst:leading-asterisk
-
- *     .. versionadded:: 2.2.0
-
- *  \endverbatim
+   *
+   *  \verbatim embed:rst:leading-asterisk
+   *     .. versionadded:: 2.2.0
+   *  \endverbatim
    */
   _CCCL_HOST_DEVICE const device_reference& operator=(const value_type& x) const
   {
@@ -341,12 +333,10 @@ public:
    *
    *  \return A \p device_ptr pointing to the object this
    *  \p device_reference references.
- *
- *  \verbatim embed:rst:leading-asterisk
-
- *     .. versionadded:: 2.2.0
-
- *  \endverbatim
+   *
+   *  \verbatim embed:rst:leading-asterisk
+   *     .. versionadded:: 2.2.0
+   *  \endverbatim
    */
   _CCCL_HOST_DEVICE pointer operator&(void) const;
 
@@ -355,23 +345,19 @@ public:
    *  \p device_reference.
    *
    *  \return A copy of the object referenced by this \p device_reference.
- *
- *  \verbatim embed:rst:leading-asterisk
-
- *     .. versionadded:: 2.2.0
-
- *  \endverbatim
+   *
+   *  \verbatim embed:rst:leading-asterisk
+   *     .. versionadded:: 2.2.0
+   *  \endverbatim
    */
   _CCCL_HOST_DEVICE operator value_type(void) const;
 
   /*! swaps the value this \p device_reference references with another.
    *  \p other The other \p device_reference with which to swap.
- *
- *  \verbatim embed:rst:leading-asterisk
-
- *     .. versionadded:: 2.2.0
-
- *  \endverbatim
+   *
+   *  \verbatim embed:rst:leading-asterisk
+   *     .. versionadded:: 2.2.0
+   *  \endverbatim
    */
   _CCCL_HOST_DEVICE void swap(device_reference other);
 

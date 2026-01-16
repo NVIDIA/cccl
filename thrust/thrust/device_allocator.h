@@ -59,12 +59,10 @@ class device_ptr_memory_resource final : public thrust::mr::memory_resource<devi
 public:
   /*! Initialize the adaptor with the global instance of the upstream resource. Obtains
    *      the global instance by calling \p get_global_resource.
- *
- *  \verbatim embed:rst:leading-asterisk
-
- *     .. versionadded:: 2.2.0
-
- *  \endverbatim
+   *
+   *  \verbatim embed:rst:leading-asterisk
+   *     .. versionadded:: 2.2.0
+   *  \endverbatim
    */
   _CCCL_HOST device_ptr_memory_resource()
       : m_upstream(mr::get_global_resource<Upstream>())
@@ -73,12 +71,10 @@ public:
   /*! Initialize the adaptor with an upstream resource.
    *
    *  \param upstream the upstream memory resource to adapt.
- *
- *  \verbatim embed:rst:leading-asterisk
-
- *     .. versionadded:: 2.2.0
-
- *  \endverbatim
+   *
+   *  \verbatim embed:rst:leading-asterisk
+   *     .. versionadded:: 2.2.0
+   *  \endverbatim
    */
   _CCCL_HOST device_ptr_memory_resource(Upstream* upstream)
       : m_upstream(upstream)
@@ -119,23 +115,19 @@ public:
    *  instantiated with another type.
    *
    *  \tparam U the other type to use for instantiation.
- *
- *  \verbatim embed:rst:leading-asterisk
-
- *     .. versionadded:: 2.2.0
-
- *  \endverbatim
+   *
+   *  \verbatim embed:rst:leading-asterisk
+   *     .. versionadded:: 2.2.0
+   *  \endverbatim
    */
   template <typename U>
   struct rebind
   {
     /*! The alias \p other gives the type of the rebound \p device_allocator.
- *
- *  \verbatim embed:rst:leading-asterisk
-
- *     .. versionadded:: 2.2.0
-
- *  \endverbatim
+   *
+   *  \verbatim embed:rst:leading-asterisk
+   *     .. versionadded:: 2.2.0
+   *  \endverbatim
      */
     using other = device_allocator<U>;
   };

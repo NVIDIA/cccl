@@ -84,12 +84,10 @@ public:
   /*! The \p rebind metafunction provides the type of an \p per_device_allocator instantiated with another type.
    *
    *  \tparam U the other type to use for instantiation.
- *
- *  \verbatim embed:rst:leading-asterisk
-
- *     .. versionadded:: 2.2.0
-
- *  \endverbatim
+   *
+   *  \verbatim embed:rst:leading-asterisk
+   *     .. versionadded:: 2.2.0
+   *  \endverbatim
    */
   template <typename U>
   struct rebind
@@ -101,12 +99,10 @@ public:
 
   /*! Default constructor. Uses \p get_global_resource to get the global instance of \p Upstream and initializes the
    *      \p allocator base subobject with that resource.
- *
- *  \verbatim embed:rst:leading-asterisk
-
- *     .. versionadded:: 2.2.0
-
- *  \endverbatim
+   *
+   *  \verbatim embed:rst:leading-asterisk
+   *     .. versionadded:: 2.2.0
+   *  \endverbatim
    */
   _CCCL_HOST per_device_allocator()
       : base(get_per_device_resource<Upstream>(ExecutionPolicy()))

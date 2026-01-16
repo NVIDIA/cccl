@@ -92,12 +92,10 @@ public:
    *  This constructor accepts a \c std::nullptr_t value.
    *
    *  \post <tt>get() == nullptr</tt>.
- *
- *  \verbatim embed:rst:leading-asterisk
-
- *     .. versionadded:: 2.2.0
-
- *  \endverbatim
+   *
+   *  \verbatim embed:rst:leading-asterisk
+   *     .. versionadded:: 2.2.0
+   *  \endverbatim
    */
   _CCCL_HOST_DEVICE device_ptr(std::nullptr_t)
       : super_t(nullptr)
@@ -114,12 +112,10 @@ public:
    *  \pre \c ptr points to a location in device memory.
    *
    *  \post <tt>get() == nullptr</tt>.
- *
- *  \verbatim embed:rst:leading-asterisk
-
- *     .. versionadded:: 2.2.0
-
- *  \endverbatim
+   *
+   *  \verbatim embed:rst:leading-asterisk
+   *     .. versionadded:: 2.2.0
+   *  \endverbatim
    */
   template <typename U>
   _CCCL_HOST_DEVICE explicit device_ptr(U* ptr)
@@ -135,12 +131,10 @@ public:
    *  \pre <tt>std::is_convertible_v<U*, T*> == true</tt>.
    *
    *  \post <tt>get() == other.get()</tt>.
- *
- *  \verbatim embed:rst:leading-asterisk
-
- *     .. versionadded:: 2.2.0
-
- *  \endverbatim
+   *
+   *  \verbatim embed:rst:leading-asterisk
+   *     .. versionadded:: 2.2.0
+   *  \endverbatim
    */
   template <typename U>
   _CCCL_HOST_DEVICE device_ptr(device_ptr<U> const& other)
@@ -158,12 +152,10 @@ public:
    *  \post <tt>get() == other.get()</tt>.
    *
    *  \return \c *this.
- *
- *  \verbatim embed:rst:leading-asterisk
-
- *     .. versionadded:: 2.2.0
-
- *  \endverbatim
+   *
+   *  \verbatim embed:rst:leading-asterisk
+   *     .. versionadded:: 2.2.0
+   *  \endverbatim
    */
   template <typename U>
   _CCCL_HOST_DEVICE device_ptr& operator=(device_ptr<U> const& other)
@@ -179,12 +171,10 @@ public:
    *  \post <tt>get() == nullptr</tt>.
    *
    *  \return \c *this.
- *
- *  \verbatim embed:rst:leading-asterisk
-
- *     .. versionadded:: 2.2.0
-
- *  \endverbatim
+   *
+   *  \verbatim embed:rst:leading-asterisk
+   *     .. versionadded:: 2.2.0
+   *  \endverbatim
    */
   _CCCL_HOST_DEVICE device_ptr& operator=(std::nullptr_t)
   {

@@ -90,12 +90,10 @@ public:
   /*! Construct a complex number with an imaginary part of 0.
    *
    *  \param re The real part of the number.
- *
- *  \verbatim embed:rst:leading-asterisk
-
- *     .. versionadded:: 2.2.0
-
- *  \endverbatim
+   *
+   *  \verbatim embed:rst:leading-asterisk
+   *     .. versionadded:: 2.2.0
+   *  \endverbatim
    */
   _CCCL_HOST_DEVICE complex(const T& re);
 
@@ -103,12 +101,10 @@ public:
    *
    *  \param re The real part of the number.
    *  \param im The imaginary part of the number.
- *
- *  \verbatim embed:rst:leading-asterisk
-
- *     .. versionadded:: 2.2.0
-
- *  \endverbatim
+   *
+   *  \verbatim embed:rst:leading-asterisk
+   *     .. versionadded:: 2.2.0
+   *  \endverbatim
    */
   _CCCL_HOST_DEVICE complex(const T& re, const T& im);
 
@@ -129,12 +125,10 @@ public:
    *  \param z The \p complex to copy from.
    *
    *  \tparam U is convertible to \c value_type.
- *
- *  \verbatim embed:rst:leading-asterisk
-
- *     .. versionadded:: 2.2.0
-
- *  \endverbatim
+   *
+   *  \verbatim embed:rst:leading-asterisk
+   *     .. versionadded:: 2.2.0
+   *  \endverbatim
    */
   template <typename U>
   _CCCL_HOST_DEVICE complex(const complex<U>& z);
@@ -144,12 +138,10 @@ public:
    *  a type that is convertible to this \p complex's \c value_type.
    *
    *  \param z The \p complex to copy from.
- *
- *  \verbatim embed:rst:leading-asterisk
-
- *     .. versionadded:: 2.2.0
-
- *  \endverbatim
+   *
+   *  \verbatim embed:rst:leading-asterisk
+   *     .. versionadded:: 2.2.0
+   *  \endverbatim
    */
   _CCCL_HOST THRUST_STD_COMPLEX_DEVICE complex(const ::std::complex<T>& z);
 
@@ -159,12 +151,10 @@ public:
    *  \param z The \p complex to copy from.
    *
    *  \tparam U is convertible to \c value_type.
- *
- *  \verbatim embed:rst:leading-asterisk
-
- *     .. versionadded:: 2.2.0
-
- *  \endverbatim
+   *
+   *  \verbatim embed:rst:leading-asterisk
+   *     .. versionadded:: 2.2.0
+   *  \endverbatim
    */
   template <typename U>
   _CCCL_HOST THRUST_STD_COMPLEX_DEVICE complex(const ::std::complex<U>& z);
@@ -176,12 +166,10 @@ public:
    *  to 0.
    *
    *  \param re The real part of the number.
- *
- *  \verbatim embed:rst:leading-asterisk
-
- *     .. versionadded:: 2.2.0
-
- *  \endverbatim
+   *
+   *  \verbatim embed:rst:leading-asterisk
+   *     .. versionadded:: 2.2.0
+   *  \endverbatim
    */
   _CCCL_HOST_DEVICE complex& operator=(const T& re);
 
@@ -198,12 +186,10 @@ public:
    *  \param z The \p complex to copy from.
    *
    *  \tparam U is convertible to \c value_type.
- *
- *  \verbatim embed:rst:leading-asterisk
-
- *     .. versionadded:: 2.2.0
-
- *  \endverbatim
+   *
+   *  \verbatim embed:rst:leading-asterisk
+   *     .. versionadded:: 2.2.0
+   *  \endverbatim
    */
   template <typename U>
   _CCCL_HOST_DEVICE complex& operator=(const complex<U>& z);
@@ -213,12 +199,10 @@ public:
    *  \p complex respectively.
    *
    *  \param z The \p complex to copy from.
- *
- *  \verbatim embed:rst:leading-asterisk
-
- *     .. versionadded:: 2.2.0
-
- *  \endverbatim
+   *
+   *  \verbatim embed:rst:leading-asterisk
+   *     .. versionadded:: 2.2.0
+   *  \endverbatim
    */
   _CCCL_HOST THRUST_STD_COMPLEX_DEVICE complex& operator=(const ::std::complex<T>& z);
 
@@ -228,12 +212,10 @@ public:
    *  \param z The \p complex to copy from.
    *
    *  \tparam U is convertible to \c value_type.
- *
- *  \verbatim embed:rst:leading-asterisk
-
- *     .. versionadded:: 2.2.0
-
- *  \endverbatim
+   *
+   *  \verbatim embed:rst:leading-asterisk
+   *     .. versionadded:: 2.2.0
+   *  \endverbatim
    */
   template <typename U>
   _CCCL_HOST THRUST_STD_COMPLEX_DEVICE complex& operator=(const ::std::complex<U>& z);
@@ -247,12 +229,10 @@ public:
    *  \param z The \p complex to be added.
    *
    *  \tparam U is convertible to \c value_type.
- *
- *  \verbatim embed:rst:leading-asterisk
-
- *     .. versionadded:: 2.2.0
-
- *  \endverbatim
+   *
+   *  \verbatim embed:rst:leading-asterisk
+   *     .. versionadded:: 2.2.0
+   *  \endverbatim
    */
   template <typename U>
   _CCCL_HOST_DEVICE complex<T>& operator+=(const complex<U>& z);
@@ -263,12 +243,10 @@ public:
    *  \param z The \p complex to be subtracted.
    *
    *  \tparam U is convertible to \c value_type.
- *
- *  \verbatim embed:rst:leading-asterisk
-
- *     .. versionadded:: 2.2.0
-
- *  \endverbatim
+   *
+   *  \verbatim embed:rst:leading-asterisk
+   *     .. versionadded:: 2.2.0
+   *  \endverbatim
    */
   template <typename U>
   _CCCL_HOST_DEVICE complex<T>& operator-=(const complex<U>& z);
@@ -279,12 +257,10 @@ public:
    *  \param z The \p complex to be multiplied.
    *
    *  \tparam U is convertible to \c value_type.
- *
- *  \verbatim embed:rst:leading-asterisk
-
- *     .. versionadded:: 2.2.0
-
- *  \endverbatim
+   *
+   *  \verbatim embed:rst:leading-asterisk
+   *     .. versionadded:: 2.2.0
+   *  \endverbatim
    */
   template <typename U>
   _CCCL_HOST_DEVICE complex<T>& operator*=(const complex<U>& z);
@@ -295,12 +271,10 @@ public:
    *  \param z The \p complex to be divided.
    *
    *  \tparam U is convertible to \c value_type.
- *
- *  \verbatim embed:rst:leading-asterisk
-
- *     .. versionadded:: 2.2.0
-
- *  \endverbatim
+   *
+   *  \verbatim embed:rst:leading-asterisk
+   *     .. versionadded:: 2.2.0
+   *  \endverbatim
    */
   template <typename U>
   _CCCL_HOST_DEVICE complex<T>& operator/=(const complex<U>& z);
@@ -311,12 +285,10 @@ public:
    *  \param z The \p complex to be added.
    *
    *  \tparam U is convertible to \c value_type.
- *
- *  \verbatim embed:rst:leading-asterisk
-
- *     .. versionadded:: 2.2.0
-
- *  \endverbatim
+   *
+   *  \verbatim embed:rst:leading-asterisk
+   *     .. versionadded:: 2.2.0
+   *  \endverbatim
    */
   template <typename U>
   _CCCL_HOST_DEVICE complex<T>& operator+=(const U& z);
@@ -327,12 +299,10 @@ public:
    *  \param z The scalar to be subtracted.
    *
    *  \tparam U is convertible to \c value_type.
- *
- *  \verbatim embed:rst:leading-asterisk
-
- *     .. versionadded:: 2.2.0
-
- *  \endverbatim
+   *
+   *  \verbatim embed:rst:leading-asterisk
+   *     .. versionadded:: 2.2.0
+   *  \endverbatim
    */
   template <typename U>
   _CCCL_HOST_DEVICE complex<T>& operator-=(const U& z);
@@ -343,12 +313,10 @@ public:
    *  \param z The scalar to be multiplied.
    *
    *  \tparam U is convertible to \c value_type.
- *
- *  \verbatim embed:rst:leading-asterisk
-
- *     .. versionadded:: 2.2.0
-
- *  \endverbatim
+   *
+   *  \verbatim embed:rst:leading-asterisk
+   *     .. versionadded:: 2.2.0
+   *  \endverbatim
    */
   template <typename U>
   _CCCL_HOST_DEVICE complex<T>& operator*=(const U& z);
@@ -359,12 +327,10 @@ public:
    *  \param z The scalar to be divided.
    *
    *  \tparam U is convertible to \c value_type.
- *
- *  \verbatim embed:rst:leading-asterisk
-
- *     .. versionadded:: 2.2.0
-
- *  \endverbatim
+   *
+   *  \verbatim embed:rst:leading-asterisk
+   *     .. versionadded:: 2.2.0
+   *  \endverbatim
    */
   template <typename U>
   _CCCL_HOST_DEVICE complex<T>& operator/=(const U& z);
@@ -372,21 +338,17 @@ public:
   /* --- Getter functions ---
    * The volatile ones are there to help for example
    * with certain reductions optimizations
- *
- *  \verbatim embed:rst:leading-asterisk
-
- *     .. versionadded:: 2.2.0
-
- *  \endverbatim
+   *
+   *  \verbatim embed:rst:leading-asterisk
+   *     .. versionadded:: 2.2.0
+   *  \endverbatim
    */
 
   /*! Returns the real part of this \p complex.
- *
- *  \verbatim embed:rst:leading-asterisk
-
- *     .. versionadded:: 2.2.0
-
- *  \endverbatim
+   *
+   *  \verbatim embed:rst:leading-asterisk
+   *     .. versionadded:: 2.2.0
+   *  \endverbatim
    */
   _CCCL_HOST_DEVICE T real() const volatile
   {
@@ -394,12 +356,10 @@ public:
   }
 
   /*! Returns the imaginary part of this \p complex.
- *
- *  \verbatim embed:rst:leading-asterisk
-
- *     .. versionadded:: 2.2.0
-
- *  \endverbatim
+   *
+   *  \verbatim embed:rst:leading-asterisk
+   *     .. versionadded:: 2.2.0
+   *  \endverbatim
    */
   _CCCL_HOST_DEVICE T imag() const volatile
   {
@@ -407,12 +367,10 @@ public:
   }
 
   /*! Returns the real part of this \p complex.
- *
- *  \verbatim embed:rst:leading-asterisk
-
- *     .. versionadded:: 2.2.0
-
- *  \endverbatim
+   *
+   *  \verbatim embed:rst:leading-asterisk
+   *     .. versionadded:: 2.2.0
+   *  \endverbatim
    */
   _CCCL_HOST_DEVICE T real() const
   {
@@ -420,12 +378,10 @@ public:
   }
 
   /*! Returns the imaginary part of this \p complex.
- *
- *  \verbatim embed:rst:leading-asterisk
-
- *     .. versionadded:: 2.2.0
-
- *  \endverbatim
+   *
+   *  \verbatim embed:rst:leading-asterisk
+   *     .. versionadded:: 2.2.0
+   *  \endverbatim
    */
   _CCCL_HOST_DEVICE T imag() const
   {
@@ -440,12 +396,10 @@ public:
   /*! Sets the real part of this \p complex.
    *
    *  \param re The new real part of this \p complex.
- *
- *  \verbatim embed:rst:leading-asterisk
-
- *     .. versionadded:: 2.2.0
-
- *  \endverbatim
+   *
+   *  \verbatim embed:rst:leading-asterisk
+   *     .. versionadded:: 2.2.0
+   *  \endverbatim
    */
   _CCCL_HOST_DEVICE void real(T re) volatile
   {
@@ -455,12 +409,10 @@ public:
   /*! Sets the imaginary part of this \p complex.
    *
    *  \param im The new imaginary part of this \p complex.e
- *
- *  \verbatim embed:rst:leading-asterisk
-
- *     .. versionadded:: 2.2.0
-
- *  \endverbatim
+   *
+   *  \verbatim embed:rst:leading-asterisk
+   *     .. versionadded:: 2.2.0
+   *  \endverbatim
    */
   _CCCL_HOST_DEVICE void imag(T im) volatile
   {
@@ -470,12 +422,10 @@ public:
   /*! Sets the real part of this \p complex.
    *
    *  \param re The new real part of this \p complex.
- *
- *  \verbatim embed:rst:leading-asterisk
-
- *     .. versionadded:: 2.2.0
-
- *  \endverbatim
+   *
+   *  \verbatim embed:rst:leading-asterisk
+   *     .. versionadded:: 2.2.0
+   *  \endverbatim
    */
   _CCCL_HOST_DEVICE void real(T re)
   {
@@ -485,12 +435,10 @@ public:
   /*! Sets the imaginary part of this \p complex.
    *
    *  \param im The new imaginary part of this \p complex.
- *
- *  \verbatim embed:rst:leading-asterisk
-
- *     .. versionadded:: 2.2.0
-
- *  \endverbatim
+   *
+   *  \verbatim embed:rst:leading-asterisk
+   *     .. versionadded:: 2.2.0
+   *  \endverbatim
    */
   _CCCL_HOST_DEVICE void imag(T im)
   {
@@ -501,12 +449,10 @@ public:
   /* --- Casting functions --- */
 
   /*! Casts this \p complex to a <tt>std::complex</tt> of the same type.
- *
- *  \verbatim embed:rst:leading-asterisk
-
- *     .. versionadded:: 2.2.0
-
- *  \endverbatim
+   *
+   *  \verbatim embed:rst:leading-asterisk
+   *     .. versionadded:: 2.2.0
+   *  \endverbatim
    */
   _CCCL_HOST operator ::std::complex<T>() const
   {
