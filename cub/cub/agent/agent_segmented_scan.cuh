@@ -569,13 +569,13 @@ private:
 
     // workaround for CTK 12.0 where span::extent is not constexpr
     template <typename T>
-    struct extract_extend
+    struct extract_extent
     {};
 
     template <typename T, ::cuda::std::size_t N>
-    struct extract_extend<::cuda::std::span<T, N>>
+    struct extract_extent<::cuda::std::span<T, N>>
     {
-      static constexpr int extend = static_cast<int>(N);
+      static constexpr int extent = static_cast<int>(N);
     };
 
     static_assert(::cuda::std::is_same_v<difference_type, typename SpanTy::value_type>, "types are inconsistent");
@@ -590,7 +590,7 @@ private:
 
     _CCCL_DEVICE _CCCL_FORCEINLINE decltype(auto) operator[](difference_type n)
     {
-      static constexpr int offset_size = extract_extend<SpanTy>::extend;
+      static constexpr int offset_size = extract_extent<SpanTy>::extent;
       const difference_type offset     = m_start + n;
 
       difference_type shifted_offset = offset;
