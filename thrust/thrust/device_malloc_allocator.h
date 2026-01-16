@@ -105,10 +105,10 @@ public:
   struct rebind
   {
     /*! The alias \p other gives the type of the rebound \p device_malloc_allocator.
-   *
-   *  \verbatim embed:rst:leading-asterisk
-   *     .. versionadded:: 2.2.0
-   *  \endverbatim
+     *
+     *  \verbatim embed:rst:leading-asterisk
+     *     .. versionadded:: 2.2.0
+     *  \endverbatim
      */
     using other = device_malloc_allocator<U>;
   }; // end rebind
