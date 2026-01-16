@@ -86,6 +86,23 @@ private:
              stream);
   }
 
+  template <typename Env>
+  CUB_RUNTIME_FUNCTION static auto get_stream(Env env) -> cudaStream_t
+  {
+    if constexpr (::cuda::std::is_same_v<Env, cudaStream_t>)
+    {
+      return env;
+    }
+    else if constexpr (::cuda::std::is_convertible_v<Env, cudaStream_t>)
+    {
+      return static_cast<cudaStream_t>(env);
+    }
+    else
+    {
+      return ::cuda::std::execution::__query_or(env, ::cuda::get_stream, ::cuda::stream_ref{cudaStream_t{}}).get();
+    }
+  }
+
 public:
   //! @rst
   //! Overview
@@ -129,15 +146,13 @@ public:
     Env env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceTransform::Transform");
-    cudaStream_t stream =
-      ::cuda::std::execution::__query_or(env, ::cuda::get_stream, ::cuda::stream_ref{cudaStream_t{}}).get();
     return TransformInternal(
       ::cuda::std::move(inputs),
       ::cuda::std::move(output),
       num_items,
       detail::transform::always_true_predicate{},
       ::cuda::std::move(transform_op),
-      stream);
+      get_stream(env));
   }
 
 #ifndef _CCCL_DOXYGEN_INVOKED // Do not document
@@ -254,15 +269,13 @@ public:
       "The return value of the generator's call operator must be assignable to the dereferenced output iterator");
 
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceTransform::Generate");
-    cudaStream_t stream =
-      ::cuda::std::execution::__query_or(env, ::cuda::get_stream, ::cuda::stream_ref{cudaStream_t{}}).get();
     return TransformInternal(
       ::cuda::std::make_tuple(),
       ::cuda::std::move(output),
       num_items,
       detail::transform::always_true_predicate{},
       ::cuda::std::move(generator),
-      stream);
+      get_stream(env));
   }
 
 #ifndef _CCCL_DOXYGEN_INVOKED // Do not document
@@ -309,15 +322,13 @@ public:
                   "The passed value must be assignable to the dereferenced output iterator");
 
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceTransform::Fill");
-    cudaStream_t stream =
-      ::cuda::std::execution::__query_or(env, ::cuda::get_stream, ::cuda::stream_ref{cudaStream_t{}}).get();
     return TransformInternal(
       ::cuda::std::make_tuple(),
       ::cuda::std::move(output),
       num_items,
       detail::transform::always_true_predicate{},
       detail::__return_constant<Value>{::cuda::std::move(value)},
-      stream);
+      get_stream(env));
   }
 
 #ifndef _CCCL_DOXYGEN_INVOKED // Do not document
@@ -390,15 +401,13 @@ public:
     Env env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceTransform::TransformIf");
-    cudaStream_t stream =
-      ::cuda::std::execution::__query_or(env, ::cuda::get_stream, ::cuda::stream_ref{cudaStream_t{}}).get();
     return TransformInternal(
       ::cuda::std::move(inputs),
       ::cuda::std::move(output),
       num_items,
       ::cuda::std::move(predicate),
       ::cuda::std::move(transform_op),
-      stream);
+      get_stream(env));
   }
 
 #ifndef _CCCL_DOXYGEN_INVOKED // Do not document
@@ -564,15 +573,13 @@ public:
     Env env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceTransform::TransformStableArgumentAddresses");
-    cudaStream_t stream =
-      ::cuda::std::execution::__query_or(env, ::cuda::get_stream, ::cuda::stream_ref{cudaStream_t{}}).get();
     return TransformInternal(
       ::cuda::std::move(inputs),
       ::cuda::std::move(output),
       num_items,
       detail::transform::always_true_predicate{},
       ::cuda::std::move(transform_op),
-      stream,
+      get_stream(env),
       ::cuda::std::true_type{});
   }
 
