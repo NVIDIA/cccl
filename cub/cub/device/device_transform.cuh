@@ -87,19 +87,15 @@ private:
   }
 
   template <typename Env>
-  CUB_RUNTIME_FUNCTION static auto get_stream(Env env) -> cudaStream_t
+  CUB_RUNTIME_FUNCTION static auto get_stream([[maybe_unused]] Env env) -> cudaStream_t
   {
-    if constexpr (::cuda::std::is_same_v<Env, cudaStream_t>)
+    if constexpr (::cuda::std::is_invocable_v<::cuda::get_stream_t, Env>)
     {
-      return env;
-    }
-    else if constexpr (::cuda::std::is_convertible_v<Env, cudaStream_t>)
-    {
-      return static_cast<cudaStream_t>(env);
+      return ::cuda::get_stream(env).get();
     }
     else
     {
-      return ::cuda::std::execution::__query_or(env, ::cuda::get_stream, ::cuda::stream_ref{cudaStream_t{}}).get();
+      return cudaStream_t{};
     }
   }
 
