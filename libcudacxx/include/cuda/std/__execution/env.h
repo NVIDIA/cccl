@@ -450,28 +450,6 @@ using __query_result_or_t _CCCL_NODEBUG_ALIAS = decltype(__query_or(
   ::cuda::std::declval<_Default>(),
   ::cuda::std::declval<_Args>()...));
 
-//! @brief `__call_or` is an internal customization point object that combines a CPO with a default value
-struct __call_or_t
-{
-  _CCCL_EXEC_CHECK_DISABLE
-  template <class _Env, class _CPO, class _Fallback>
-  [[nodiscard]] _CCCL_API constexpr decltype(auto) operator()(
-    [[maybe_unused]] _CPO __cpo, [[maybe_unused]] const _Env& __env, [[maybe_unused]] _Fallback&& __fallback) const
-    noexcept(::cuda::std::__is_nothrow_callable_v<_CPO, const _Env&>)
-  {
-    if constexpr (::cuda::std::__is_callable_v<_CPO, const _Env&>)
-    {
-      return __cpo(__env);
-    }
-    else
-    {
-      return static_cast<_Fallback&&>(__fallback);
-    }
-  }
-};
-
-_CCCL_GLOBAL_CONSTANT auto __call_or = __call_or_t{};
-
 _CCCL_END_NAMESPACE_CUDA_STD_EXECUTION
 
 #include <cuda/std/__cccl/epilogue.h>

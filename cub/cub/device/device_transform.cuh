@@ -19,6 +19,7 @@
 
 #include <cuda/__execution/tune.h>
 #include <cuda/__functional/address_stability.h>
+#include <cuda/__functional/call_or.h>
 #include <cuda/__stream/get_stream.h>
 #include <cuda/std/__execution/env.h>
 #include <cuda/std/tuple>
@@ -81,9 +82,8 @@ private:
     }
 
     using tuning_env_t =
-      ::cuda::std::execution::__query_result_or_t<Env, ::cuda::execution::__get_tuning_t, ::cuda::std::execution::env<>>;
-    using transform_tuning_t =
-      ::cuda::std::execution::__query_result_or_t<tuning_env_t, detail::transform::get_tuning_query_t, int>;
+      ::cuda::__call_result_or_t<::cuda::execution::__get_tuning_t, ::cuda::std::execution::env<>, Env>;
+    using transform_tuning_t = ::cuda::__call_result_or_t<detail::transform::get_tuning_query_t, int, tuning_env_t>;
 
     if constexpr (!::cuda::std::is_same_v<transform_tuning_t, int>)
     {
@@ -93,7 +93,7 @@ private:
         static_cast<offset_t>(num_items),
         ::cuda::std::move(predicate),
         ::cuda::std::move(transform_op),
-        ::cuda::std::execution::__call_or(::cuda::get_stream, env, ::cuda::stream_ref{cudaStream_t{}}).get(),
+        ::cuda::__call_or(::cuda::get_stream, ::cuda::stream_ref{cudaStream_t{}}, env).get(),
         transform_tuning_t{});
     }
     else
@@ -104,7 +104,7 @@ private:
         static_cast<offset_t>(num_items),
         ::cuda::std::move(predicate),
         ::cuda::std::move(transform_op),
-        ::cuda::std::execution::__call_or(::cuda::get_stream, env, ::cuda::stream_ref{cudaStream_t{}}).get());
+        ::cuda::__call_or(::cuda::get_stream, ::cuda::stream_ref{cudaStream_t{}}, env).get());
     }
   }
 

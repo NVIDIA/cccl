@@ -23,6 +23,7 @@
 #include <cuda/__execution/determinism.h>
 #include <cuda/__execution/output_ordering.h>
 #include <cuda/__execution/require.h>
+#include <cuda/__functional/call_or.h>
 #include <cuda/__stream/get_stream.h>
 #include <cuda/std/__execution/env.h>
 
@@ -78,7 +79,7 @@ CUB_RUNTIME_FUNCTION static cudaError_t dispatch_topk_hub(
                 "unsorted.");
 
   // Query relevant properties from the environment
-  auto stream = ::cuda::std::execution::__call_or(::cuda::get_stream, env, ::cuda::stream_ref{cudaStream_t{}});
+  auto stream = ::cuda::__call_or(::cuda::get_stream, ::cuda::stream_ref{cudaStream_t{}}, env);
 
   return topk::DispatchTopK<
     KeyInputIteratorT,
