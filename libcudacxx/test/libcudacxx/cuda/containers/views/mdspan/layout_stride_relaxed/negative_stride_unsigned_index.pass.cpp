@@ -25,12 +25,13 @@ __host__ __device__ constexpr bool test()
   using S = cuda::dstrides<cuda::std::int16_t, 1>;
   using M = cuda::layout_stride_relaxed::mapping<E, S>;
 
-  using index_type = typename M::index_type;
+  using index_type  = typename M::index_type;
+  using offset_type = typename M::offset_type;
   static_assert(cuda::std::is_unsigned_v<index_type>);
   static_assert(cuda::std::numeric_limits<index_type>::max() <= cuda::std::numeric_limits<int64_t>::max());
 
   cuda::std::array<cuda::std::int16_t, 1> strides{-2};
-  constexpr int offset = 10;
+  constexpr offset_type offset = 10;
   M mapping(E{}, strides, offset);
 
   for (index_type i = 0; i < 3; ++i)
