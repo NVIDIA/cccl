@@ -165,7 +165,7 @@ public:
     return (devid == composite_devid);
   }
 
-  /// checks if this data place has an extension (green context, uGPU, etc.)
+  /// checks if this data place has an extension (green context, etc.)
   bool is_extension() const
   {
     _CCCL_ASSERT(devid != extension_devid || extension != nullptr, "invalid state");
