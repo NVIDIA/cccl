@@ -26,7 +26,6 @@
 #include <cuda/__functional/maximum.h>
 #include <cuda/__functional/minimum.h>
 #include <cuda/__type_traits/is_floating_point.h>
-#include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__floating_point/arithmetic.h>
 #include <cuda/std/__floating_point/constants.h>
 #include <cuda/std/__functional/operations.h>
@@ -361,7 +360,13 @@ inline constexpr bool is_commutative_v = is_commutative<_Op, _Tp>::value;
  **********************************************************************************************************************/
 
 template <template <class...> class _Trait, class... _Tp>
-_CCCL_CONCEPT element_exists = _CCCL_REQUIRES_EXPR((_Tp...))((_Trait<_Tp...>::value));
+_CCCL_HOST_DEVICE auto __element_exists_test(int) -> decltype(_Trait<_Tp...>::value, ::cuda::std::true_type{});
+
+template <template <class...> class _Trait, class... _Tp>
+_CCCL_HOST_DEVICE auto __element_exists_test(...) -> ::cuda::std::false_type;
+
+template <template <class...> class _Trait, class... _Tp>
+inline constexpr bool element_exists = decltype(__element_exists_test<_Trait, _Tp...>(0))::value;
 
 /***********************************************************************************************************************
  * Identity Element
@@ -495,7 +500,7 @@ template <class _Op, class _Tp>
 _CCCL_GLOBAL_VARIABLE constexpr auto identity_element_v = identity_element<_Op, _Tp>::value;
 
 template <class _Op, class _Tp>
-inline constexpr bool has_identity_element_v = element_exists<identity_element, _Op, _Tp>;
+inline constexpr bool has_identity_element = element_exists<identity_element, _Op, _Tp>;
 
 /***********************************************************************************************************************
  * Absorbing Element
@@ -599,7 +604,7 @@ template <class _Op, class _Tp>
 _CCCL_GLOBAL_VARIABLE constexpr auto absorbing_element_v = absorbing_element<_Op, _Tp>::value;
 
 template <class _Op, class _Tp>
-inline constexpr bool has_absorbing_element_v = element_exists<absorbing_element, _Op, _Tp>;
+inline constexpr bool has_absorbing_element = element_exists<absorbing_element, _Op, _Tp>;
 
 _CCCL_END_NAMESPACE_CUDA
 

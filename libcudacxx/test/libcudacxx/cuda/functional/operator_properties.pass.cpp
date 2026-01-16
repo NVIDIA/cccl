@@ -140,21 +140,23 @@ __host__ __device__ constexpr void test_identity_impl2(T identity)
 template <class Op, class T>
 __host__ __device__ constexpr void test_identity_impl(bool has_identity, [[maybe_unused]] T identity)
 {
-  assert((has_identity == cuda::has_identity_element_v<Op, T>) );
-  if constexpr (cuda::has_identity_element_v<Op, T>)
+  assert((has_identity == cuda::has_identity_element<Op, T>) );
+  if constexpr (cuda::has_identity_element<Op, T>)
   {
     // handle extended floating-point types separately
     if constexpr (!::cuda::std::__is_extended_floating_point_v<T>)
     {
       test_identity_impl2<Op, T>(identity);
     }
+#if _CCCL_CTK_AT_LEAST(12, 2)
     else
     {
-      _CCCL_IF_NOT_CONSTEVAL
+      _CCCL_IF_NOT_CONSTEVAL_DEFAULT
       {
         test_identity_impl2<Op, T>(identity);
       }
     }
+#endif // _CCCL_CTK_AT_LEAST(12, 2)
   }
 }
 
@@ -244,21 +246,23 @@ __host__ __device__ constexpr void test_absorbing_impl2([[maybe_unused]] T absor
 template <class Op, class T>
 __host__ __device__ constexpr void test_absorbing_impl(bool has_absorbing, [[maybe_unused]] T absorbing)
 {
-  assert((has_absorbing == cuda::has_absorbing_element_v<Op, T>) );
-  if constexpr (cuda::has_absorbing_element_v<Op, T>)
+  assert((has_absorbing == cuda::has_absorbing_element<Op, T>) );
+  if constexpr (cuda::has_absorbing_element<Op, T>)
   {
     // handle extended floating-point types separately
     if constexpr (!::cuda::std::__is_extended_floating_point_v<T>)
     {
       test_absorbing_impl2<Op, T>(absorbing);
     }
+#if _CCCL_CTK_AT_LEAST(12, 2)
     else
     {
-      _CCCL_IF_NOT_CONSTEVAL
+      _CCCL_IF_NOT_CONSTEVAL_DEFAULT
       {
         test_absorbing_impl2<Op, T>(absorbing);
       }
     }
+#endif // _CCCL_CTK_AT_LEAST(12, 2)
   }
 }
 
@@ -325,6 +329,106 @@ __host__ __device__ constexpr void test_absorbing_floating_point()
 }
 
 /***********************************************************************************************************************
+ * Negative tests - operators without identity/absorbing elements
+ *
+ * - minus, divides, modulus: no identity, no absorbing (all types)
+ * - plus: no absorbing (all types)
+ * - multiplies: no absorbing for floating-point
+ **********************************************************************************************************************/
+
+template <template <class...> class Op, class T>
+__host__ __device__ constexpr bool no_absorbing()
+{
+  return !cuda::has_absorbing_element<Op<T>, T> && !cuda::has_absorbing_element<Op<>, T>;
+}
+
+template <template <class...> class Op, class T>
+__host__ __device__ constexpr bool no_identity_no_absorbing()
+{
+  return !cuda::has_identity_element<Op<T>, T> && !cuda::has_identity_element<Op<>, T> && no_absorbing<Op, T>();
+}
+
+template <class T>
+__host__ __device__ constexpr void test_no_identity_no_absorbing()
+{
+  static_assert(no_identity_no_absorbing<cuda::std::minus, T>());
+  static_assert(no_identity_no_absorbing<cuda::std::divides, T>());
+  static_assert(no_identity_no_absorbing<cuda::std::modulus, T>());
+}
+
+__host__ __device__ constexpr void test_negative_integral()
+{
+  test_no_identity_no_absorbing<signed char>();
+  test_no_identity_no_absorbing<unsigned char>();
+  test_no_identity_no_absorbing<short>();
+  test_no_identity_no_absorbing<unsigned short>();
+  test_no_identity_no_absorbing<int>();
+  test_no_identity_no_absorbing<unsigned int>();
+  test_no_identity_no_absorbing<long>();
+  test_no_identity_no_absorbing<unsigned long>();
+  test_no_identity_no_absorbing<long long>();
+  test_no_identity_no_absorbing<unsigned long long>();
+#if _CCCL_HAS_INT128()
+  test_no_identity_no_absorbing<__int128_t>();
+  test_no_identity_no_absorbing<__uint128_t>();
+#endif // _CCCL_HAS_INT128()
+
+  static_assert(no_absorbing<cuda::std::plus, signed char>());
+  static_assert(no_absorbing<cuda::std::plus, unsigned char>());
+  static_assert(no_absorbing<cuda::std::plus, short>());
+  static_assert(no_absorbing<cuda::std::plus, unsigned short>());
+  static_assert(no_absorbing<cuda::std::plus, int>());
+  static_assert(no_absorbing<cuda::std::plus, unsigned int>());
+  static_assert(no_absorbing<cuda::std::plus, long>());
+  static_assert(no_absorbing<cuda::std::plus, unsigned long>());
+  static_assert(no_absorbing<cuda::std::plus, long long>());
+  static_assert(no_absorbing<cuda::std::plus, unsigned long long>());
+#if _CCCL_HAS_INT128()
+  static_assert(no_absorbing<cuda::std::plus, __int128_t>());
+  static_assert(no_absorbing<cuda::std::plus, __uint128_t>());
+#endif // _CCCL_HAS_INT128()
+}
+
+__host__ __device__ constexpr void test_negative_floating_point()
+{
+  test_no_identity_no_absorbing<float>();
+  test_no_identity_no_absorbing<double>();
+#if _CCCL_HAS_NVFP16()
+  test_no_identity_no_absorbing<__half>();
+#endif // _CCCL_HAS_NVFP16()
+#if _CCCL_HAS_NVBF16()
+  test_no_identity_no_absorbing<__nv_bfloat16>();
+#endif // _CCCL_HAS_NVBF16()
+#if _CCCL_HAS_FLOAT128()
+  test_no_identity_no_absorbing<__float128>();
+#endif // _CCCL_HAS_FLOAT128()
+
+  static_assert(no_absorbing<cuda::std::plus, float>());
+  static_assert(no_absorbing<cuda::std::plus, double>());
+#if _CCCL_HAS_NVFP16()
+  static_assert(no_absorbing<cuda::std::plus, __half>());
+#endif // _CCCL_HAS_NVFP16()
+#if _CCCL_HAS_NVBF16()
+  static_assert(no_absorbing<cuda::std::plus, __nv_bfloat16>());
+#endif // _CCCL_HAS_NVBF16()
+#if _CCCL_HAS_FLOAT128()
+  static_assert(no_absorbing<cuda::std::plus, __float128>());
+#endif // _CCCL_HAS_FLOAT128()
+
+  static_assert(no_absorbing<cuda::std::multiplies, float>());
+  static_assert(no_absorbing<cuda::std::multiplies, double>());
+#if _CCCL_HAS_NVFP16()
+  static_assert(no_absorbing<cuda::std::multiplies, __half>());
+#endif // _CCCL_HAS_NVFP16()
+#if _CCCL_HAS_NVBF16()
+  static_assert(no_absorbing<cuda::std::multiplies, __nv_bfloat16>());
+#endif // _CCCL_HAS_NVBF16()
+#if _CCCL_HAS_FLOAT128()
+  static_assert(no_absorbing<cuda::std::multiplies, __float128>());
+#endif // _CCCL_HAS_FLOAT128()
+}
+
+/***********************************************************************************************************************
  * Test dispatch
  **********************************************************************************************************************/
 
@@ -337,6 +441,9 @@ __host__ __device__ constexpr bool test()
   test_identity_floating_point();
   test_absorbing_integral();
   test_absorbing_floating_point();
+
+  test_negative_integral();
+  test_negative_floating_point();
   return true;
 }
 
