@@ -134,16 +134,3 @@ Conformance
 
 libcu++ aims to be a conforming implementation of the C++ Standard, `ISO/IEC IS 14882 <https://eel.is/c++draft>`_,
 Clause 16 through 32.
-
-ABI Evolution
--------------
-
-libcu++ does not maintain long-term ABI stability. Promising long-term ABI stability would prevent us from fixing
-mistakes and providing best in class performance. So, we make no such promises.
-
-Every major CUDA Toolkit release, the ABI will be broken. The life cycle of an ABI version is approximately one year.
-Long-term support for an ABI version ends after approximately two years. Please see the
-:ref:`versioning section <libcudacxx-releases-versioning>` for more details.
-
-We recommend that you always recompile your code and dependencies with the latest NVIDIA SDKs and use the latest
-NVIDIA C++ Standard Library ABI. `Live at head <https://www.youtube.com/watch?v=tISy7EJQPzI&t=1032s>`_.

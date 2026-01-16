@@ -578,6 +578,7 @@ try
     ctk_path,
     "-rdc=true",
     "-dlto",
+    "-default-device",
     "-DCUB_DISABLE_CDP",
     "-std=c++20"};
 
@@ -692,6 +693,7 @@ __device__ consteval auto& three_way_partition_policy_generator() {{
     ctk_path,
     "-rdc=true",
     "-dlto",
+    "-default-device",
     "-DCUB_DISABLE_CDP",
     "-DCUB_ENABLE_POLICY_PTX_JSON",
     "-std=c++20"};
