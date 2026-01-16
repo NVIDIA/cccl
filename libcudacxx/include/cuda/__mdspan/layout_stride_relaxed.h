@@ -317,8 +317,8 @@ public:
   //! @brief Maps multidimensional indices to a linear index
   _CCCL_TEMPLATE(class... _Indices)
   _CCCL_REQUIRES((sizeof...(_Indices) == __rank_) //
-                 _CCCL_AND(::cuda::std::is_convertible_v<_Indices, index_type>&&...)
-                   _CCCL_AND(::cuda::std::is_nothrow_constructible_v<index_type, _Indices>&&...))
+                 _CCCL_AND(::cuda::std::is_convertible_v<_Indices, index_type>&&... && true)
+                   _CCCL_AND(::cuda::std::is_nothrow_constructible_v<index_type, _Indices>&&... && true))
   [[nodiscard]] _CCCL_API constexpr index_type operator()(_Indices... __indices) const noexcept
   {
     const auto __index = __compute_index(__rank_sequence, __indices...);
