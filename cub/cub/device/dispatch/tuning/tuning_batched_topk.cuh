@@ -13,7 +13,7 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cub/agent/agent_segmented_topk.cuh>
+#include <cub/agent/agent_batched_topk.cuh>
 #include <cub/util_device.cuh>
 
 CUB_NAMESPACE_BEGIN

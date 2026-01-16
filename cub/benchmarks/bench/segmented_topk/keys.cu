@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 #include <cub/detail/choose_offset.cuh>
-#include <cub/device/dispatch/dispatch_segmented_topk.cuh>
+#include <cub/device/dispatch/dispatch_batched_topk.cuh>
 
 #include <cuda/iterator>
 
@@ -26,8 +26,7 @@ struct policy_hub_t
 {
   struct policy_t : cub::ChainedPolicy<300, policy_t, policy_t>
   {
-    static constexpr int nominal_4b_items_per_thread = TUNE_ITEMS_PER_THREAD;
-    static constexpr int items_per_thread = cuda::std::max(1, (nominal_4b_items_per_thread * 4 / sizeof(KeyInT)));
+    static constexpr int items_per_thread = TUNE_ITEMS_PER_THREAD;
 
     static constexpr int bits_per_pass = cub::detail::topk::calc_bits_per_pass<KeyInT>();
 

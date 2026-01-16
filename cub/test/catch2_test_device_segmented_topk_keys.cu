@@ -4,7 +4,7 @@
 #include "insert_nested_NVTX_range_guard.h"
 
 #include <cub/device/device_segmented_sort.cuh>
-#include <cub/device/dispatch/dispatch_segmented_topk.cuh>
+#include <cub/device/dispatch/dispatch_batched_topk.cuh>
 #include <cub/util_type.cuh>
 
 #include <thrust/detail/raw_pointer_cast.h>

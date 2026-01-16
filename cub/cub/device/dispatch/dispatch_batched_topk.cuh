@@ -17,10 +17,10 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cub/agent/agent_segmented_topk.cuh>
+#include <cub/agent/agent_batched_topk.cuh>
 #include <cub/detail/segmented_params.cuh>
 #include <cub/device/dispatch/dispatch_common.cuh>
-#include <cub/device/dispatch/tuning/tuning_segmented_topk.cuh>
+#include <cub/device/dispatch/tuning/tuning_batched_topk.cuh>
 #include <cub/util_device.cuh>
 #include <cub/util_math.cuh>
 #include <cub/util_temporary_storage.cuh>
