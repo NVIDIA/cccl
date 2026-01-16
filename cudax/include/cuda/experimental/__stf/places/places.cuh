@@ -284,7 +284,7 @@ private:
   int devid = invalid_devid; // invalid by default
   // Stores the fields specific to composite data places
   ::std::shared_ptr<composite_state> composite_desc;
-  // Extension for custom place types (green contexts, uGPU, etc.)
+  // Extension for custom place types (green contexts, etc.)
   ::std::shared_ptr<data_place_extension> extension;
   //} state
 
