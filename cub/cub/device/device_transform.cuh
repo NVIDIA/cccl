@@ -109,7 +109,7 @@ private:
   }
 
   template <typename Env>
-  CUB_RUNTIME_FUNCTION static auto get_stream(Env env) -> cudaStream_t
+  CUB_RUNTIME_FUNCTION static auto get_stream([[maybe_unused]] Env env) -> cudaStream_t
   {
     if constexpr (::cuda::std::is_invocable_v<::cuda::get_stream_t, Env>)
     {
