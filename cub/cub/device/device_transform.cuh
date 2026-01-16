@@ -491,7 +491,7 @@ public:
       num_items,
       ::cuda::std::move(predicate),
       ::cuda::std::move(transform_op),
-      get_stream(env));
+      ::cuda::std::move(env));
   }
 
 #ifndef _CCCL_DOXYGEN_INVOKED // Do not document
