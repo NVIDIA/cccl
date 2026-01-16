@@ -23,8 +23,8 @@
 __host__ __device__ constexpr bool tests()
 {
   {
-    typedef double T;
-    typedef cuda::std::array<T, 3> C;
+    using T                  = double;
+    using C                  = cuda::std::array<T, 3>;
     C c                      = {1, 2, 3.5};
     typename C::reference r1 = c.at(0);
     assert(r1 == 1);

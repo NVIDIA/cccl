@@ -23,11 +23,11 @@ class ConvertibleTo
   int* it_;
 
 public:
-  typedef cuda::std::input_iterator_tag iterator_category;
-  typedef int value_type;
-  typedef typename cuda::std::iterator_traits<int*>::difference_type difference_type;
-  typedef int* pointer;
-  typedef int& reference;
+  using iterator_category = cuda::std::input_iterator_tag;
+  using value_type        = int;
+  using difference_type   = typename cuda::std::iterator_traits<int*>::difference_type;
+  using pointer           = int*;
+  using reference         = int&;
 
   __host__ __device__ constexpr int* base() const
   {

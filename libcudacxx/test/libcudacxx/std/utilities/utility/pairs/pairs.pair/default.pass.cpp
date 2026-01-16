@@ -27,13 +27,13 @@
 int main(int, char**)
 {
   {
-    typedef cuda::std::pair<float, short*> P;
+    using P = cuda::std::pair<float, short*>;
     P p;
     assert(p.first == 0.0f);
     assert(p.second == nullptr);
   }
   {
-    typedef cuda::std::pair<float, short*> P;
+    using P = cuda::std::pair<float, short*>;
     constexpr P p;
     static_assert(p.first == 0.0f, "");
     static_assert(p.second == nullptr, "");

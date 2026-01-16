@@ -64,7 +64,7 @@ struct A
   __host__ __device__ ~A();
 };
 
-typedef void(Function)();
+using Function = void();
 
 struct PublicAbstract
 {

@@ -36,7 +36,7 @@ struct GenericDeleter
 template <bool IsArray>
 __host__ __device__ TEST_CONSTEXPR_CXX23 void test_basic()
 {
-  typedef typename cuda::std::conditional<IsArray, A[], A>::type VT;
+  using VT               = typename cuda::std::conditional<IsArray, A[], A>::type;
   const int expect_alive = IsArray ? 5 : 1;
   {
     cuda::std::unique_ptr<VT> s1(newValue<VT>(expect_alive));
@@ -119,30 +119,30 @@ __host__ __device__ TEST_CONSTEXPR_CXX23 void test_basic()
 template <bool IsArray>
 __host__ __device__ TEST_CONSTEXPR_CXX23 void test_sfinae()
 {
-  typedef typename cuda::std::conditional<IsArray, int[], int>::type VT;
+  using VT = typename cuda::std::conditional<IsArray, int[], int>::type;
   {
-    typedef cuda::std::unique_ptr<VT> U;
+    using U = cuda::std::unique_ptr<VT>;
     static_assert(!cuda::std::is_assignable<U, U&>::value, "");
     static_assert(!cuda::std::is_assignable<U, const U&>::value, "");
     static_assert(!cuda::std::is_assignable<U, const U&&>::value, "");
     static_assert(cuda::std::is_nothrow_assignable<U, U&&>::value, "");
   }
   {
-    typedef cuda::std::unique_ptr<VT, GenericDeleter> U;
+    using U = cuda::std::unique_ptr<VT, GenericDeleter>;
     static_assert(!cuda::std::is_assignable<U, U&>::value, "");
     static_assert(!cuda::std::is_assignable<U, const U&>::value, "");
     static_assert(!cuda::std::is_assignable<U, const U&&>::value, "");
     static_assert(cuda::std::is_nothrow_assignable<U, U&&>::value, "");
   }
   {
-    typedef cuda::std::unique_ptr<VT, NCDeleter<VT>&> U;
+    using U = cuda::std::unique_ptr<VT, NCDeleter<VT>&>;
     static_assert(!cuda::std::is_assignable<U, U&>::value, "");
     static_assert(!cuda::std::is_assignable<U, const U&>::value, "");
     static_assert(!cuda::std::is_assignable<U, const U&&>::value, "");
     static_assert(cuda::std::is_nothrow_assignable<U, U&&>::value, "");
   }
   {
-    typedef cuda::std::unique_ptr<VT, const NCDeleter<VT>&> U;
+    using U = cuda::std::unique_ptr<VT, const NCDeleter<VT>&>;
     static_assert(!cuda::std::is_assignable<U, U&>::value, "");
     static_assert(!cuda::std::is_assignable<U, const U&>::value, "");
     static_assert(!cuda::std::is_assignable<U, const U&&>::value, "");

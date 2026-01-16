@@ -20,29 +20,29 @@ template <class T>
 __host__ __device__ void test()
 {
   {
-    typedef T Exp;
-    typedef cuda::std::array<T, 3> C;
+    using Exp = T;
+    using C   = cuda::std::array<T, 3>;
     static_assert((cuda::std::is_same<typename cuda::std::tuple_element<0, C>::type, Exp>::value), "");
     static_assert((cuda::std::is_same<typename cuda::std::tuple_element<1, C>::type, Exp>::value), "");
     static_assert((cuda::std::is_same<typename cuda::std::tuple_element<2, C>::type, Exp>::value), "");
   }
   {
-    typedef T const Exp;
-    typedef cuda::std::array<T, 3> const C;
+    using Exp = T const;
+    using C   = cuda::std::array<T, 3> const;
     static_assert((cuda::std::is_same<typename cuda::std::tuple_element<0, C>::type, Exp>::value), "");
     static_assert((cuda::std::is_same<typename cuda::std::tuple_element<1, C>::type, Exp>::value), "");
     static_assert((cuda::std::is_same<typename cuda::std::tuple_element<2, C>::type, Exp>::value), "");
   }
   {
-    typedef T volatile Exp;
-    typedef cuda::std::array<T, 3> volatile C;
+    using Exp = T volatile;
+    using C   = cuda::std::array<T, 3> volatile;
     static_assert((cuda::std::is_same<typename cuda::std::tuple_element<0, C>::type, Exp>::value), "");
     static_assert((cuda::std::is_same<typename cuda::std::tuple_element<1, C>::type, Exp>::value), "");
     static_assert((cuda::std::is_same<typename cuda::std::tuple_element<2, C>::type, Exp>::value), "");
   }
   {
-    typedef T const volatile Exp;
-    typedef cuda::std::array<T, 3> const volatile C;
+    using Exp = T const volatile;
+    using C   = cuda::std::array<T, 3> const volatile;
     static_assert((cuda::std::is_same<typename cuda::std::tuple_element<0, C>::type, Exp>::value), "");
     static_assert((cuda::std::is_same<typename cuda::std::tuple_element<1, C>::type, Exp>::value), "");
     static_assert((cuda::std::is_same<typename cuda::std::tuple_element<2, C>::type, Exp>::value), "");

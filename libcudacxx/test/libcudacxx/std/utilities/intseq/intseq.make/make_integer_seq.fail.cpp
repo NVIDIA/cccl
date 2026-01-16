@@ -23,7 +23,7 @@
 
 int main(int, char**)
 {
-  typedef cuda::std::make_integer_sequence<int, -3> MakeSeqT;
+  using MakeSeqT = cuda::std::make_integer_sequence<int, -3>;
 
   // cuda::std::make_integer_sequence is implemented using a compiler builtin if available.
   // this builtin has different diagnostic messages than the fallback implementation.
