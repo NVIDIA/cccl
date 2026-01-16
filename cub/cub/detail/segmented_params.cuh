@@ -196,6 +196,10 @@ inline constexpr auto static_max_value_v = T::static_max_value;
 template <typename T>
 inline constexpr auto static_min_value_v = T::static_min_value;
 
+// Whether a given parameter allows only for a single static value
+template <typename T>
+inline constexpr bool has_single_static_value_v = (static_max_value_v<T> == static_min_value_v<T>);
+
 // Resolve parameter value for a given segment index
 template <typename ParamT, typename SegmentIndexT>
 constexpr _CCCL_HOST_DEVICE auto resolve_param(ParamT const& p, [[maybe_unused]] SegmentIndexT segment_id)

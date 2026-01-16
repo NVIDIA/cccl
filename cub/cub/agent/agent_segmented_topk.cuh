@@ -73,6 +73,8 @@ struct AgentBatchedTopKWorkerPerSegment
 
   using block_topk_t = BlockTopK<key_t, block_threads, items_per_thread, value_t>;
 
+  // TODO (elstehle): Specialize for the case that we statically know k and we can skip passing num_valid_items to
+  // Store()
   using block_store_keys_t = BlockStore<key_t, block_threads, items_per_thread, BLOCK_STORE_WARP_TRANSPOSE>;
   using block_store_vals_t = BlockStore<value_t, block_threads, items_per_thread, BLOCK_STORE_WARP_TRANSPOSE>;
 
@@ -190,7 +192,17 @@ struct AgentBatchedTopKWorkerPerSegment
 
     // Load Keys
     key_t thread_keys[items_per_thread];
-    block_load_keys_t(temp_storage.load_keys).Load(block_keys_in, thread_keys, segment_size, padding_key);
+    if constexpr (params::has_single_static_value_v<SegmentSizeParameterT>
+                  && params::static_min_value_v<SegmentSizeParameterT> == tile_size)
+    {
+      // No padding needed
+      block_load_keys_t(temp_storage.load_keys).Load(block_keys_in, thread_keys);
+    }
+    else
+    {
+      // Potentially partial final load with padding
+      block_load_keys_t(temp_storage.load_keys).Load(block_keys_in, thread_keys, segment_size, padding_key);
+    }
 
     // Load Values (if applicable)
     [[maybe_unused]] value_t thread_values[items_per_thread];
@@ -200,7 +212,17 @@ struct AgentBatchedTopKWorkerPerSegment
       __syncthreads();
       auto block_vals_in = d_value_segments_it[segment_id];
 
-      block_load_vals_t(temp_storage.load_vals).Load(block_vals_in, thread_values, segment_size);
+      if constexpr (params::has_single_static_value_v<SegmentSizeParameterT>
+                    && params::static_min_value_v<SegmentSizeParameterT> == tile_size)
+      {
+        // No padding needed
+        block_load_vals_t(temp_storage.load_vals).Load(block_vals_in, thread_values);
+      }
+      else
+      {
+        // Potentially partial final load with padding
+        block_load_vals_t(temp_storage.load_vals).Load(block_vals_in, thread_values, segment_size);
+      }
     }
 
     __syncthreads();
