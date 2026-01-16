@@ -143,6 +143,8 @@ void test_device_vmm_allocation()
   printf("  Device VMM allocation test PASSED\n");
 }
 
+// Host VMM requires CU_MEM_LOCATION_TYPE_HOST which is only available in CUDA 12.2+
+#if _CCCL_CTK_AT_LEAST(12, 2)
 void test_host_vmm_allocation()
 {
   printf("Testing host VMM allocation (mem_create)...\n");
@@ -215,6 +217,7 @@ void test_host_vmm_allocation()
 
   printf("  Host VMM allocation test PASSED\n");
 }
+#endif // _CCCL_CTK_AT_LEAST(12, 2)
 
 void test_multi_segment_vmm()
 {
@@ -302,7 +305,9 @@ int main()
   }
 
   test_device_vmm_allocation();
+#if _CCCL_CTK_AT_LEAST(12, 2)
   test_host_vmm_allocation();
+#endif // _CCCL_CTK_AT_LEAST(12, 2)
   test_multi_segment_vmm();
 
   printf("\n=== All VMM tests PASSED ===\n");
