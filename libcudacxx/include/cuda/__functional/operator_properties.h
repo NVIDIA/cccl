@@ -44,316 +44,306 @@ _CCCL_BEGIN_NAMESPACE_CUDA
  * Associativity
  **********************************************************************************************************************/
 
-template <class _Op, class _Tp, class Enable = void>
-struct __is_associative
+template <class _Op>
+constexpr bool __is_associative_static_assert()
 {
   static_assert(::cuda::std::__always_false_v<_Op>,
                 "operator_properties is not specialized for this operator and type combination");
-};
+  return false;
+}
+
+template <class _Op, class _Tp, class Enable = void>
+inline constexpr bool __is_associative_v = __is_associative_static_assert<_Op>();
 
 // strictly speaking, plus (+) and multiply (*) are not associative because of overflow UB
 template <class _Tp>
-struct __is_associative<::cuda::std::plus<_Tp>, _Tp, ::cuda::std::enable_if_t<::cuda::std::__cccl_is_integer_v<_Tp>>>
-    : ::cuda::std::true_type
-{};
+inline constexpr bool
+  __is_associative_v<::cuda::std::plus<_Tp>, _Tp, ::cuda::std::enable_if_t<::cuda::std::__cccl_is_integer_v<_Tp>>> =
+    true;
 
 template <class _Tp>
-struct __is_associative<::cuda::std::plus<_Tp>, _Tp, ::cuda::std::enable_if_t<::cuda::is_floating_point_v<_Tp>>>
-    : ::cuda::std::false_type
-{};
+inline constexpr bool
+  __is_associative_v<::cuda::std::plus<_Tp>, _Tp, ::cuda::std::enable_if_t<::cuda::is_floating_point_v<_Tp>>> = false;
 
 template <class _Tp>
-struct __is_associative<::cuda::std::plus<>, _Tp> : __is_associative<::cuda::std::plus<_Tp>, _Tp>
-{};
+inline constexpr bool __is_associative_v<::cuda::std::plus<>, _Tp> =
+  __is_associative_v<::cuda::std::plus<_Tp>, _Tp, void>;
 
 template <class _Tp>
-struct __is_associative<::cuda::std::multiplies<_Tp>,
-                        _Tp,
-                        ::cuda::std::enable_if_t<::cuda::std::__cccl_is_integer_v<_Tp>>> : ::cuda::std::true_type
-{};
+inline constexpr bool
+  __is_associative_v<::cuda::std::multiplies<_Tp>, _Tp, ::cuda::std::enable_if_t<::cuda::std::__cccl_is_integer_v<_Tp>>> =
+    true;
 
 template <class _Tp>
-struct __is_associative<::cuda::std::multiplies<_Tp>, _Tp, ::cuda::std::enable_if_t<::cuda::is_floating_point_v<_Tp>>>
-    : ::cuda::std::false_type
-{};
+inline constexpr bool
+  __is_associative_v<::cuda::std::multiplies<_Tp>, _Tp, ::cuda::std::enable_if_t<::cuda::is_floating_point_v<_Tp>>> =
+    false;
 
 template <class _Tp>
-struct __is_associative<::cuda::std::multiplies<>, _Tp> : __is_associative<::cuda::std::multiplies<_Tp>, _Tp>
-{};
+inline constexpr bool __is_associative_v<::cuda::std::multiplies<>, _Tp> =
+  __is_associative_v<::cuda::std::multiplies<_Tp>, _Tp, void>;
 
 template <class _Tp>
-struct __is_associative<::cuda::std::bit_and<_Tp>, _Tp, ::cuda::std::enable_if_t<::cuda::std::__cccl_is_integer_v<_Tp>>>
-    : ::cuda::std::true_type
-{};
+inline constexpr bool
+  __is_associative_v<::cuda::std::bit_and<_Tp>, _Tp, ::cuda::std::enable_if_t<::cuda::std::__cccl_is_integer_v<_Tp>>> =
+    true;
 
 template <class _Tp>
-struct __is_associative<::cuda::std::bit_and<>, _Tp> : __is_associative<::cuda::std::bit_and<_Tp>, _Tp>
-{};
+inline constexpr bool __is_associative_v<::cuda::std::bit_and<>, _Tp> =
+  __is_associative_v<::cuda::std::bit_and<_Tp>, _Tp, void>;
 
 template <class _Tp>
-struct __is_associative<::cuda::std::bit_or<_Tp>, _Tp, ::cuda::std::enable_if_t<::cuda::std::__cccl_is_integer_v<_Tp>>>
-    : ::cuda::std::true_type
-{};
+inline constexpr bool
+  __is_associative_v<::cuda::std::bit_or<_Tp>, _Tp, ::cuda::std::enable_if_t<::cuda::std::__cccl_is_integer_v<_Tp>>> =
+    true;
 
 template <class _Tp>
-struct __is_associative<::cuda::std::bit_or<>, _Tp> : __is_associative<::cuda::std::bit_or<_Tp>, _Tp>
-{};
+inline constexpr bool __is_associative_v<::cuda::std::bit_or<>, _Tp> =
+  __is_associative_v<::cuda::std::bit_or<_Tp>, _Tp, void>;
 
 template <class _Tp>
-struct __is_associative<::cuda::std::bit_xor<_Tp>, _Tp, ::cuda::std::enable_if_t<::cuda::std::__cccl_is_integer_v<_Tp>>>
-    : ::cuda::std::true_type
-{};
+inline constexpr bool
+  __is_associative_v<::cuda::std::bit_xor<_Tp>, _Tp, ::cuda::std::enable_if_t<::cuda::std::__cccl_is_integer_v<_Tp>>> =
+    true;
 
 template <class _Tp>
-struct __is_associative<::cuda::std::bit_xor<>, _Tp> : __is_associative<::cuda::std::bit_xor<_Tp>, _Tp>
-{};
+inline constexpr bool __is_associative_v<::cuda::std::bit_xor<>, _Tp> =
+  __is_associative_v<::cuda::std::bit_xor<_Tp>, _Tp, void>;
 
 template <class _Tp>
-struct __is_associative<::cuda::std::logical_and<_Tp>, _Tp, ::cuda::std::enable_if_t<::cuda::std::is_same_v<_Tp, bool>>>
-    : ::cuda::std::true_type
-{};
+inline constexpr bool
+  __is_associative_v<::cuda::std::logical_and<_Tp>, _Tp, ::cuda::std::enable_if_t<::cuda::std::is_same_v<_Tp, bool>>> =
+    true;
 
 template <class _Tp>
-struct __is_associative<::cuda::std::logical_and<>, _Tp> : __is_associative<::cuda::std::logical_and<_Tp>, _Tp>
-{};
+inline constexpr bool __is_associative_v<::cuda::std::logical_and<>, _Tp> =
+  __is_associative_v<::cuda::std::logical_and<_Tp>, _Tp, void>;
 
 template <class _Tp>
-struct __is_associative<::cuda::std::logical_or<_Tp>, _Tp, ::cuda::std::enable_if_t<::cuda::std::is_same_v<_Tp, bool>>>
-    : ::cuda::std::true_type
-{};
+inline constexpr bool
+  __is_associative_v<::cuda::std::logical_or<_Tp>, _Tp, ::cuda::std::enable_if_t<::cuda::std::is_same_v<_Tp, bool>>> =
+    true;
 
 template <class _Tp>
-struct __is_associative<::cuda::std::logical_or<>, _Tp> : __is_associative<::cuda::std::logical_or<_Tp>, _Tp>
-{};
+inline constexpr bool __is_associative_v<::cuda::std::logical_or<>, _Tp> =
+  __is_associative_v<::cuda::std::logical_or<_Tp>, _Tp, void>;
 
 template <class _Tp>
-struct __is_associative<::cuda::minimum<_Tp>, _Tp, ::cuda::std::enable_if_t<::cuda::std::__cccl_is_integer_v<_Tp>>>
-    : ::cuda::std::true_type
-{};
+inline constexpr bool
+  __is_associative_v<::cuda::minimum<_Tp>, _Tp, ::cuda::std::enable_if_t<::cuda::std::__cccl_is_integer_v<_Tp>>> = true;
 
 template <class _Tp>
-struct __is_associative<::cuda::minimum<_Tp>, _Tp, ::cuda::std::enable_if_t<::cuda::is_floating_point_v<_Tp>>>
-    : ::cuda::std::true_type
-{};
+inline constexpr bool
+  __is_associative_v<::cuda::minimum<_Tp>, _Tp, ::cuda::std::enable_if_t<::cuda::is_floating_point_v<_Tp>>> = true;
 
 template <class _Tp>
-struct __is_associative<::cuda::minimum<>, _Tp> : __is_associative<::cuda::minimum<_Tp>, _Tp>
-{};
+inline constexpr bool __is_associative_v<::cuda::minimum<>, _Tp> = __is_associative_v<::cuda::minimum<_Tp>, _Tp, void>;
 
 template <class _Tp>
-struct __is_associative<::cuda::maximum<_Tp>, _Tp, ::cuda::std::enable_if_t<::cuda::std::__cccl_is_integer_v<_Tp>>>
-    : ::cuda::std::true_type
-{};
+inline constexpr bool
+  __is_associative_v<::cuda::maximum<_Tp>, _Tp, ::cuda::std::enable_if_t<::cuda::std::__cccl_is_integer_v<_Tp>>> = true;
 
 template <class _Tp>
-struct __is_associative<::cuda::maximum<_Tp>, _Tp, ::cuda::std::enable_if_t<::cuda::is_floating_point_v<_Tp>>>
-    : ::cuda::std::true_type
-{};
+inline constexpr bool
+  __is_associative_v<::cuda::maximum<_Tp>, _Tp, ::cuda::std::enable_if_t<::cuda::is_floating_point_v<_Tp>>> = true;
 
 template <class _Tp>
-struct __is_associative<::cuda::maximum<>, _Tp> : __is_associative<::cuda::maximum<_Tp>, _Tp>
-{};
+inline constexpr bool __is_associative_v<::cuda::maximum<>, _Tp> = __is_associative_v<::cuda::maximum<_Tp>, _Tp, void>;
 
 template <class _Tp>
-struct __is_associative<::cuda::std::minus<_Tp>, _Tp, ::cuda::std::enable_if_t<::cuda::std::__cccl_is_integer_v<_Tp>>>
-    : ::cuda::std::false_type
-{};
+inline constexpr bool
+  __is_associative_v<::cuda::std::minus<_Tp>, _Tp, ::cuda::std::enable_if_t<::cuda::std::__cccl_is_integer_v<_Tp>>> =
+    false;
 
 template <class _Tp>
-struct __is_associative<::cuda::std::minus<_Tp>, _Tp, ::cuda::std::enable_if_t<::cuda::is_floating_point_v<_Tp>>>
-    : ::cuda::std::false_type
-{};
+inline constexpr bool
+  __is_associative_v<::cuda::std::minus<_Tp>, _Tp, ::cuda::std::enable_if_t<::cuda::is_floating_point_v<_Tp>>> = false;
 
 template <class _Tp>
-struct __is_associative<::cuda::std::minus<>, _Tp> : __is_associative<::cuda::std::minus<_Tp>, _Tp>
-{};
+inline constexpr bool __is_associative_v<::cuda::std::minus<>, _Tp> =
+  __is_associative_v<::cuda::std::minus<_Tp>, _Tp, void>;
 
 template <class _Tp>
-struct __is_associative<::cuda::std::divides<_Tp>, _Tp, ::cuda::std::enable_if_t<::cuda::std::__cccl_is_integer_v<_Tp>>>
-    : ::cuda::std::false_type
-{};
+inline constexpr bool
+  __is_associative_v<::cuda::std::divides<_Tp>, _Tp, ::cuda::std::enable_if_t<::cuda::std::__cccl_is_integer_v<_Tp>>> =
+    false;
 
 template <class _Tp>
-struct __is_associative<::cuda::std::divides<_Tp>, _Tp, ::cuda::std::enable_if_t<::cuda::is_floating_point_v<_Tp>>>
-    : ::cuda::std::false_type
-{};
+inline constexpr bool
+  __is_associative_v<::cuda::std::divides<_Tp>, _Tp, ::cuda::std::enable_if_t<::cuda::is_floating_point_v<_Tp>>> =
+    false;
 
 template <class _Tp>
-struct __is_associative<::cuda::std::divides<>, _Tp> : __is_associative<::cuda::std::divides<_Tp>, _Tp>
-{};
+inline constexpr bool __is_associative_v<::cuda::std::divides<>, _Tp> =
+  __is_associative_v<::cuda::std::divides<_Tp>, _Tp, void>;
 
 template <class _Tp>
-struct __is_associative<::cuda::std::modulus<_Tp>, _Tp, ::cuda::std::enable_if_t<::cuda::std::__cccl_is_integer_v<_Tp>>>
-    : ::cuda::std::false_type
-{};
+inline constexpr bool
+  __is_associative_v<::cuda::std::modulus<_Tp>, _Tp, ::cuda::std::enable_if_t<::cuda::std::__cccl_is_integer_v<_Tp>>> =
+    false;
 
 template <class _Tp>
-struct __is_associative<::cuda::std::modulus<>, _Tp> : __is_associative<::cuda::std::modulus<_Tp>, _Tp>
-{};
+inline constexpr bool __is_associative_v<::cuda::std::modulus<>, _Tp> =
+  __is_associative_v<::cuda::std::modulus<_Tp>, _Tp, void>;
 
 template <class _Op, class _Tp>
-struct is_associative : __is_associative<_Op, _Tp>
-{};
+inline constexpr bool is_associative_v = __is_associative_v<_Op, _Tp>;
 
 template <class _Op, class _Tp>
-inline constexpr bool is_associative_v = is_associative<_Op, _Tp>::value;
+struct is_associative : ::cuda::std::bool_constant<is_associative_v<_Op, _Tp>>
+{};
 
 /***********************************************************************************************************************
  * Commutativity
  **********************************************************************************************************************/
 
-template <class _Op, class _Tp, class Enable = void>
-struct __is_commutative
+template <class _Op>
+constexpr bool __is_commutative_static_assert()
 {
   static_assert(::cuda::std::__always_false_v<_Op>,
                 "operator_properties is not specialized for this operator and type combination");
-};
+  return false;
+}
+
+template <class _Op, class _Tp, class Enable = void>
+inline constexpr bool __is_commutative_v = ::cuda::__is_commutative_static_assert<_Op>();
 
 template <class _Tp>
-struct __is_commutative<::cuda::std::plus<_Tp>, _Tp, ::cuda::std::enable_if_t<::cuda::std::__cccl_is_integer_v<_Tp>>>
-    : ::cuda::std::true_type
-{};
+inline constexpr bool
+  __is_commutative_v<::cuda::std::plus<_Tp>, _Tp, ::cuda::std::enable_if_t<::cuda::std::__cccl_is_integer_v<_Tp>>> =
+    true;
 
 template <class _Tp>
-struct __is_commutative<::cuda::std::plus<_Tp>, _Tp, ::cuda::std::enable_if_t<::cuda::is_floating_point_v<_Tp>>>
-    : ::cuda::std::true_type
-{};
+inline constexpr bool
+  __is_commutative_v<::cuda::std::plus<_Tp>, _Tp, ::cuda::std::enable_if_t<::cuda::is_floating_point_v<_Tp>>> = true;
 
 template <class _Tp>
-struct __is_commutative<::cuda::std::plus<>, _Tp> : __is_commutative<::cuda::std::plus<_Tp>, _Tp>
-{};
+inline constexpr bool __is_commutative_v<::cuda::std::plus<>, _Tp> =
+  __is_commutative_v<::cuda::std::plus<_Tp>, _Tp, void>;
 
 template <class _Tp>
-struct __is_commutative<::cuda::std::multiplies<_Tp>,
-                        _Tp,
-                        ::cuda::std::enable_if_t<::cuda::std::__cccl_is_integer_v<_Tp>>> : ::cuda::std::true_type
-{};
+inline constexpr bool
+  __is_commutative_v<::cuda::std::multiplies<_Tp>, _Tp, ::cuda::std::enable_if_t<::cuda::std::__cccl_is_integer_v<_Tp>>> =
+    true;
 
 template <class _Tp>
-struct __is_commutative<::cuda::std::multiplies<_Tp>, _Tp, ::cuda::std::enable_if_t<::cuda::is_floating_point_v<_Tp>>>
-    : ::cuda::std::true_type
-{};
+inline constexpr bool
+  __is_commutative_v<::cuda::std::multiplies<_Tp>, _Tp, ::cuda::std::enable_if_t<::cuda::is_floating_point_v<_Tp>>> =
+    true;
 
 template <class _Tp>
-struct __is_commutative<::cuda::std::multiplies<>, _Tp> : __is_commutative<::cuda::std::multiplies<_Tp>, _Tp>
-{};
+inline constexpr bool __is_commutative_v<::cuda::std::multiplies<>, _Tp> =
+  __is_commutative_v<::cuda::std::multiplies<_Tp>, _Tp, void>;
 
 template <class _Tp>
-struct __is_commutative<::cuda::std::bit_and<_Tp>, _Tp, ::cuda::std::enable_if_t<::cuda::std::__cccl_is_integer_v<_Tp>>>
-    : ::cuda::std::true_type
-{};
+inline constexpr bool
+  __is_commutative_v<::cuda::std::bit_and<_Tp>, _Tp, ::cuda::std::enable_if_t<::cuda::std::__cccl_is_integer_v<_Tp>>> =
+    true;
 
 template <class _Tp>
-struct __is_commutative<::cuda::std::bit_and<>, _Tp> : __is_commutative<::cuda::std::bit_and<_Tp>, _Tp>
-{};
+inline constexpr bool __is_commutative_v<::cuda::std::bit_and<>, _Tp> =
+  __is_commutative_v<::cuda::std::bit_and<_Tp>, _Tp, void>;
 
 template <class _Tp>
-struct __is_commutative<::cuda::std::bit_or<_Tp>, _Tp, ::cuda::std::enable_if_t<::cuda::std::__cccl_is_integer_v<_Tp>>>
-    : ::cuda::std::true_type
-{};
+inline constexpr bool
+  __is_commutative_v<::cuda::std::bit_or<_Tp>, _Tp, ::cuda::std::enable_if_t<::cuda::std::__cccl_is_integer_v<_Tp>>> =
+    true;
 
 template <class _Tp>
-struct __is_commutative<::cuda::std::bit_or<>, _Tp> : __is_commutative<::cuda::std::bit_or<_Tp>, _Tp>
-{};
+inline constexpr bool __is_commutative_v<::cuda::std::bit_or<>, _Tp> =
+  __is_commutative_v<::cuda::std::bit_or<_Tp>, _Tp, void>;
 
 template <class _Tp>
-struct __is_commutative<::cuda::std::bit_xor<_Tp>, _Tp, ::cuda::std::enable_if_t<::cuda::std::__cccl_is_integer_v<_Tp>>>
-    : ::cuda::std::true_type
-{};
+inline constexpr bool
+  __is_commutative_v<::cuda::std::bit_xor<_Tp>, _Tp, ::cuda::std::enable_if_t<::cuda::std::__cccl_is_integer_v<_Tp>>> =
+    true;
 
 template <class _Tp>
-struct __is_commutative<::cuda::std::bit_xor<>, _Tp> : __is_commutative<::cuda::std::bit_xor<_Tp>, _Tp>
-{};
+inline constexpr bool __is_commutative_v<::cuda::std::bit_xor<>, _Tp> =
+  __is_commutative_v<::cuda::std::bit_xor<_Tp>, _Tp, void>;
 
 template <class _Tp>
-struct __is_commutative<::cuda::std::logical_and<_Tp>, _Tp, ::cuda::std::enable_if_t<::cuda::std::is_same_v<_Tp, bool>>>
-    : ::cuda::std::true_type
-{};
+inline constexpr bool
+  __is_commutative_v<::cuda::std::logical_and<_Tp>, _Tp, ::cuda::std::enable_if_t<::cuda::std::is_same_v<_Tp, bool>>> =
+    true;
 
 template <class _Tp>
-struct __is_commutative<::cuda::std::logical_and<>, _Tp> : __is_commutative<::cuda::std::logical_and<_Tp>, _Tp>
-{};
+inline constexpr bool __is_commutative_v<::cuda::std::logical_and<>, _Tp> =
+  __is_commutative_v<::cuda::std::logical_and<_Tp>, _Tp, void>;
 
 template <class _Tp>
-struct __is_commutative<::cuda::std::logical_or<_Tp>, _Tp, ::cuda::std::enable_if_t<::cuda::std::is_same_v<_Tp, bool>>>
-    : ::cuda::std::true_type
-{};
+inline constexpr bool
+  __is_commutative_v<::cuda::std::logical_or<_Tp>, _Tp, ::cuda::std::enable_if_t<::cuda::std::is_same_v<_Tp, bool>>> =
+    true;
 
 template <class _Tp>
-struct __is_commutative<::cuda::std::logical_or<>, _Tp> : __is_commutative<::cuda::std::logical_or<_Tp>, _Tp>
-{};
+inline constexpr bool __is_commutative_v<::cuda::std::logical_or<>, _Tp> =
+  __is_commutative_v<::cuda::std::logical_or<_Tp>, _Tp, void>;
 
 template <class _Tp>
-struct __is_commutative<::cuda::minimum<_Tp>, _Tp, ::cuda::std::enable_if_t<::cuda::std::__cccl_is_integer_v<_Tp>>>
-    : ::cuda::std::true_type
-{};
+inline constexpr bool
+  __is_commutative_v<::cuda::minimum<_Tp>, _Tp, ::cuda::std::enable_if_t<::cuda::std::__cccl_is_integer_v<_Tp>>> = true;
 
 template <class _Tp>
-struct __is_commutative<::cuda::minimum<_Tp>, _Tp, ::cuda::std::enable_if_t<::cuda::is_floating_point_v<_Tp>>>
-    : ::cuda::std::true_type
-{};
+inline constexpr bool
+  __is_commutative_v<::cuda::minimum<_Tp>, _Tp, ::cuda::std::enable_if_t<::cuda::is_floating_point_v<_Tp>>> = true;
 
 template <class _Tp>
-struct __is_commutative<::cuda::minimum<>, _Tp> : __is_commutative<::cuda::minimum<_Tp>, _Tp>
-{};
+inline constexpr bool __is_commutative_v<::cuda::minimum<>, _Tp> = __is_commutative_v<::cuda::minimum<_Tp>, _Tp, void>;
 
 template <class _Tp>
-struct __is_commutative<::cuda::maximum<_Tp>, _Tp, ::cuda::std::enable_if_t<::cuda::std::__cccl_is_integer_v<_Tp>>>
-    : ::cuda::std::true_type
-{};
+inline constexpr bool
+  __is_commutative_v<::cuda::maximum<_Tp>, _Tp, ::cuda::std::enable_if_t<::cuda::std::__cccl_is_integer_v<_Tp>>> = true;
 
 template <class _Tp>
-struct __is_commutative<::cuda::maximum<_Tp>, _Tp, ::cuda::std::enable_if_t<::cuda::is_floating_point_v<_Tp>>>
-    : ::cuda::std::true_type
-{};
+inline constexpr bool
+  __is_commutative_v<::cuda::maximum<_Tp>, _Tp, ::cuda::std::enable_if_t<::cuda::is_floating_point_v<_Tp>>> = true;
 
 template <class _Tp>
-struct __is_commutative<::cuda::maximum<>, _Tp> : __is_commutative<::cuda::maximum<_Tp>, _Tp>
-{};
+inline constexpr bool __is_commutative_v<::cuda::maximum<>, _Tp> = __is_commutative_v<::cuda::maximum<_Tp>, _Tp, void>;
 
 template <class _Tp>
-struct __is_commutative<::cuda::std::minus<_Tp>, _Tp, ::cuda::std::enable_if_t<::cuda::std::__cccl_is_integer_v<_Tp>>>
-    : ::cuda::std::false_type
-{};
+inline constexpr bool
+  __is_commutative_v<::cuda::std::minus<_Tp>, _Tp, ::cuda::std::enable_if_t<::cuda::std::__cccl_is_integer_v<_Tp>>> =
+    false;
 
 template <class _Tp>
-struct __is_commutative<::cuda::std::minus<_Tp>, _Tp, ::cuda::std::enable_if_t<::cuda::is_floating_point_v<_Tp>>>
-    : ::cuda::std::false_type
-{};
+inline constexpr bool
+  __is_commutative_v<::cuda::std::minus<_Tp>, _Tp, ::cuda::std::enable_if_t<::cuda::is_floating_point_v<_Tp>>> = false;
 
 template <class _Tp>
-struct __is_commutative<::cuda::std::minus<>, _Tp> : __is_commutative<::cuda::std::minus<_Tp>, _Tp>
-{};
+inline constexpr bool __is_commutative_v<::cuda::std::minus<>, _Tp> =
+  __is_commutative_v<::cuda::std::minus<_Tp>, _Tp, void>;
 
 template <class _Tp>
-struct __is_commutative<::cuda::std::divides<_Tp>, _Tp, ::cuda::std::enable_if_t<::cuda::std::__cccl_is_integer_v<_Tp>>>
-    : ::cuda::std::false_type
-{};
+inline constexpr bool
+  __is_commutative_v<::cuda::std::divides<_Tp>, _Tp, ::cuda::std::enable_if_t<::cuda::std::__cccl_is_integer_v<_Tp>>> =
+    false;
 
 template <class _Tp>
-struct __is_commutative<::cuda::std::divides<_Tp>, _Tp, ::cuda::std::enable_if_t<::cuda::is_floating_point_v<_Tp>>>
-    : ::cuda::std::false_type
-{};
+inline constexpr bool
+  __is_commutative_v<::cuda::std::divides<_Tp>, _Tp, ::cuda::std::enable_if_t<::cuda::is_floating_point_v<_Tp>>> =
+    false;
 
 template <class _Tp>
-struct __is_commutative<::cuda::std::divides<>, _Tp> : __is_commutative<::cuda::std::divides<_Tp>, _Tp>
-{};
+inline constexpr bool __is_commutative_v<::cuda::std::divides<>, _Tp> =
+  __is_commutative_v<::cuda::std::divides<_Tp>, _Tp, void>;
 
 template <class _Tp>
-struct __is_commutative<::cuda::std::modulus<_Tp>, _Tp, ::cuda::std::enable_if_t<::cuda::std::__cccl_is_integer_v<_Tp>>>
-    : ::cuda::std::false_type
-{};
+inline constexpr bool
+  __is_commutative_v<::cuda::std::modulus<_Tp>, _Tp, ::cuda::std::enable_if_t<::cuda::std::__cccl_is_integer_v<_Tp>>> =
+    false;
 
 template <class _Tp>
-struct __is_commutative<::cuda::std::modulus<>, _Tp> : __is_commutative<::cuda::std::modulus<_Tp>, _Tp>
-{};
+inline constexpr bool __is_commutative_v<::cuda::std::modulus<>, _Tp> =
+  __is_commutative_v<::cuda::std::modulus<_Tp>, _Tp, void>;
 
 template <class _Op, class _Tp>
-struct is_commutative : __is_commutative<_Op, _Tp>
-{};
+inline constexpr bool is_commutative_v = __is_commutative_v<_Op, _Tp>;
 
 template <class _Op, class _Tp>
-inline constexpr bool is_commutative_v = is_commutative<_Op, _Tp>::value;
+struct is_commutative : ::cuda::std::bool_constant<is_commutative_v<_Op, _Tp>>
+{};
 
 /***********************************************************************************************************************
  * Element Existence
