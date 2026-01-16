@@ -13,6 +13,16 @@ namespace stdexec = cuda::std::execution;
 
 using namespace thrust::placeholders;
 
+struct custom_stream
+{
+  cudaStream_t stream;
+
+  operator cudaStream_t() const noexcept
+  {
+    return stream;
+  }
+};
+
 auto make_stream_env(cudaStream_t stream)
 {
   // MSVC has trouble nesting two aggregate initializations with CTAD
@@ -31,14 +41,20 @@ C2H_TEST("DeviceTransform::Transform custom stream", "[device][transform]")
   REQUIRE(cudaStreamCreate(&stream) == cudaSuccess);
 
   c2h::device_vector<type> result(num_items, thrust::no_init);
+  auto run = [&](auto streamish) {
+    cub::DeviceTransform::Transform(cuda::std::make_tuple(a, b), result.begin(), num_items, _1 + _2, streamish);
+  };
   SECTION("raw stream")
   {
-    cub::DeviceTransform::Transform(cuda::std::make_tuple(a, b), result.begin(), num_items, _1 + _2, stream);
+    run(stream);
+  }
+  SECTION("custom stream")
+  {
+    run(custom_stream{stream});
   }
   SECTION("environment")
   {
-    auto env = make_stream_env(stream);
-    cub::DeviceTransform::Transform(cuda::std::make_tuple(a, b), result.begin(), num_items, _1 + _2, env);
+    run(make_stream_env(stream));
   }
 
   REQUIRE(cudaStreamDestroy(stream) == cudaSuccess);
@@ -55,14 +71,20 @@ C2H_TEST("DeviceTransform::Transform (single argument) custom stream", "[device]
   REQUIRE(cudaStreamCreate(&stream) == cudaSuccess);
 
   c2h::device_vector<type> result(num_items, thrust::no_init);
+  auto run = [&](auto streamish) {
+    cub::DeviceTransform::Transform(a, result.begin(), num_items, _1 + 13, streamish);
+  };
   SECTION("raw stream")
   {
-    cub::DeviceTransform::Transform(a, result.begin(), num_items, _1 + 13, stream);
+    run(stream);
+  }
+  SECTION("custom stream")
+  {
+    run(custom_stream{stream});
   }
   SECTION("environment")
   {
-    auto env = make_stream_env(stream);
-    cub::DeviceTransform::Transform(a, result.begin(), num_items, _1 + 13, env);
+    run(make_stream_env(stream));
   }
 
   REQUIRE(cudaStreamDestroy(stream) == cudaSuccess);
@@ -79,14 +101,20 @@ C2H_TEST("DeviceTransform::Generate custom stream", "[device][transform]")
   REQUIRE(cudaStreamCreate(&stream) == cudaSuccess);
 
   c2h::device_vector<type> result(num_items, thrust::no_init);
+  auto run = [&](auto streamish) {
+    cub::DeviceTransform::Generate(result.begin(), num_items, generator, streamish);
+  };
   SECTION("raw stream")
   {
-    cub::DeviceTransform::Generate(result.begin(), num_items, generator, stream);
+    run(stream);
+  }
+  SECTION("custom stream")
+  {
+    run(custom_stream{stream});
   }
   SECTION("environment")
   {
-    auto env = make_stream_env(stream);
-    cub::DeviceTransform::Generate(result.begin(), num_items, generator, env);
+    run(make_stream_env(stream));
   }
 
   REQUIRE(cudaStreamDestroy(stream) == cudaSuccess);
@@ -102,14 +130,20 @@ C2H_TEST("DeviceTransform::Fill custom stream", "[device][transform]")
   REQUIRE(cudaStreamCreate(&stream) == cudaSuccess);
 
   c2h::device_vector<type> result(num_items, thrust::no_init);
+  auto run = [&](auto streamish) {
+    cub::DeviceTransform::Fill(result.begin(), num_items, 0xBAD, streamish);
+  };
   SECTION("raw stream")
   {
-    cub::DeviceTransform::Fill(result.begin(), num_items, 0xBAD, stream);
+    run(stream);
+  }
+  SECTION("custom stream")
+  {
+    run(custom_stream{stream});
   }
   SECTION("environment")
   {
-    auto env = make_stream_env(stream);
-    cub::DeviceTransform::Fill(result.begin(), num_items, 0xBAD, env);
+    run(make_stream_env(stream));
   }
 
   REQUIRE(cudaStreamDestroy(stream) == cudaSuccess);
@@ -136,16 +170,21 @@ C2H_TEST("DeviceTransform::TransformIf custom stream", "[device][transform]")
   REQUIRE(cudaStreamCreate(&stream) == cudaSuccess);
 
   c2h::device_vector<type> result(num_items, 1337);
+  auto run = [&](auto streamish) {
+    cub::DeviceTransform::TransformIf(
+      cuda::std::make_tuple(a, b), result.begin(), num_items, (_1 + _2) > 1000, _1 + _2, streamish);
+  };
   SECTION("raw stream")
   {
-    cub::DeviceTransform::TransformIf(
-      cuda::std::make_tuple(a, b), result.begin(), num_items, (_1 + _2) > 1000, _1 + _2, stream);
+    run(stream);
+  }
+  SECTION("custom stream")
+  {
+    run(custom_stream{stream});
   }
   SECTION("environment")
   {
-    auto env = make_stream_env(stream);
-    cub::DeviceTransform::TransformIf(
-      cuda::std::make_tuple(a, b), result.begin(), num_items, (_1 + _2) > 1000, _1 + _2, env);
+    run(make_stream_env(stream));
   }
 
   auto reference_it = cuda::transform_iterator{cuda::counting_iterator{42}, reference_func{}};
@@ -164,14 +203,20 @@ C2H_TEST("DeviceTransform::TransformIf (single argument) custom stream", "[devic
   REQUIRE(cudaStreamCreate(&stream) == cudaSuccess);
 
   c2h::device_vector<type> result(num_items, 1337);
+  auto run = [&](auto streamish) {
+    cub::DeviceTransform::TransformIf(a, result.begin(), num_items, (_1 + 13) > 1000, _1 + 13, streamish);
+  };
   SECTION("raw stream")
   {
-    cub::DeviceTransform::TransformIf(a, result.begin(), num_items, (_1 + 13) > 1000, _1 + 13, stream);
+    run(stream);
+  }
+  SECTION("custom stream")
+  {
+    run(custom_stream{stream});
   }
   SECTION("environment")
   {
-    auto env = make_stream_env(stream);
-    cub::DeviceTransform::TransformIf(a, result.begin(), num_items, (_1 + 13) > 1000, _1 + 13, env);
+    run(make_stream_env(stream));
   }
 
   auto reference_it = cuda::transform_iterator{cuda::counting_iterator{42}, reference_func{}};
@@ -191,16 +236,21 @@ C2H_TEST("DeviceTransform::TransformStableArgumentAddresses custom stream", "[de
   REQUIRE(cudaStreamCreate(&stream) == cudaSuccess);
 
   c2h::device_vector<type> result(num_items, thrust::no_init);
+  auto run = [&](auto streamish) {
+    cub::DeviceTransform::TransformStableArgumentAddresses(
+      cuda::std::make_tuple(a, b), result.begin(), num_items, _1 + _2, streamish);
+  };
   SECTION("raw stream")
   {
-    cub::DeviceTransform::TransformStableArgumentAddresses(
-      cuda::std::make_tuple(a, b), result.begin(), num_items, _1 + _2, stream);
+    run(stream);
+  }
+  SECTION("custom stream")
+  {
+    run(custom_stream{stream});
   }
   SECTION("environment")
   {
-    auto env = make_stream_env(stream);
-    cub::DeviceTransform::TransformStableArgumentAddresses(
-      cuda::std::make_tuple(a, b), result.begin(), num_items, _1 + _2, env);
+    run(make_stream_env(stream));
   }
 
   REQUIRE(cudaStreamDestroy(stream) == cudaSuccess);
