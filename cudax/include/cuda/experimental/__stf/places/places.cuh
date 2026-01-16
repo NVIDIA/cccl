@@ -355,16 +355,20 @@ public:
       prop.location.type = CU_MEM_LOCATION_TYPE_DEVICE;
       prop.location.id   = dev_ordinal;
     }
+#if _CCCL_CTK_AT_LEAST(12, 2)
     else if (dev_ordinal == -1)
     {
       // Host memory (device ordinal -1)
+      // CU_MEM_LOCATION_TYPE_HOST requires CUDA 12.2+
       prop.location.type = CU_MEM_LOCATION_TYPE_HOST;
       prop.location.id   = 0;
     }
+#endif // _CCCL_CTK_AT_LEAST(12, 2)
     else
     {
-      // Managed memory (-2) and other special types are not supported by VMM
-      _CCCL_ASSERT(false, "mem_create: unsupported place type (managed memory not supported by VMM API)");
+      // Managed memory (-2), host memory on CUDA < 12.2, and other special types are not supported by VMM
+      _CCCL_ASSERT(
+        false, "mem_create: unsupported place type (managed memory and host on CUDA < 12.2 not supported by VMM API)");
       return CUDA_ERROR_NOT_SUPPORTED;
     }
     return cuMemCreate(handle, size, &prop, 0);
@@ -435,7 +439,8 @@ public:
    *
    * @param ptr Pointer to memory to deallocate
    * @param size Size of the allocation
-   * @param stream CUDA stream for stream-ordered deallocations (ignored for immediate deallocations, defaults to nullptr)
+   * @param stream CUDA stream for stream-ordered deallocations (ignored for immediate deallocations, defaults to
+   * nullptr)
    */
   void deallocate(void* ptr, size_t size, cudaStream_t stream = nullptr) const
   {

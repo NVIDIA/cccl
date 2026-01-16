@@ -146,7 +146,8 @@ public:
     else
     {
       // Managed memory (-2), host memory on CUDA < 12.2, and other special types are not supported by VMM
-      _CCCL_ASSERT(false, "mem_create: unsupported place type (managed memory and host on CUDA < 12.2 not supported by VMM API)");
+      _CCCL_ASSERT(
+        false, "mem_create: unsupported place type (managed memory and host on CUDA < 12.2 not supported by VMM API)");
       return CUDA_ERROR_NOT_SUPPORTED;
     }
     return cuMemCreate(handle, size, &prop, 0);
