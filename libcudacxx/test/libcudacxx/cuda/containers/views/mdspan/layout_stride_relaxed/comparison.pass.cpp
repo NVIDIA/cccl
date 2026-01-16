@@ -188,7 +188,9 @@ __host__ __device__ constexpr void test_comparison_with(
   E2 e2,
   OtherArgs... other_args)
 {
-  typename cuda::layout_stride_relaxed::template mapping<E1> map(e1, strides, offset);
+  using layout_type = cuda::layout_stride_relaxed::mapping<E1>;
+  using offset_type = typename layout_type::offset_type;
+  layout_type map(e1, strides, static_cast<offset_type>(offset));
   typename OtherLayout::template mapping<E2> other_map(e2, other_args...);
 
   assert((map == other_map) == expect_equal);

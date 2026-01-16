@@ -29,8 +29,9 @@ template <class E>
 __host__ __device__ constexpr void
 test_offset(E e, cuda::std::array<intptr_t, E::rank()> strides, intptr_t expected_offset)
 {
-  using M = cuda::layout_stride_relaxed::mapping<E>;
-  M m(e, strides, expected_offset);
+  using M           = cuda::layout_stride_relaxed::mapping<E>;
+  using offset_type = typename M::offset_type;
+  M m(e, strides, static_cast<offset_type>(expected_offset));
   const M c_m = m;
 
   static_assert(noexcept(m.offset()));
@@ -95,13 +96,14 @@ __host__ __device__ constexpr void test_2d_partial_reverse()
   // (2,0) -> 8 - 2*4 + 0*1 = 0
   // (0,1) -> 8 - 0*4 + 1*1 = 9
 
-  using E = cuda::std::extents<int, 3, 4>;
-  using M = cuda::layout_stride_relaxed::mapping<E>;
+  using E           = cuda::std::extents<int, 3, 4>;
+  using M           = cuda::layout_stride_relaxed::mapping<E>;
+  using offset_type = typename M::offset_type;
 
   cuda::std::array<intptr_t, 2> strides{-4, 1};
   intptr_t offset = 8; // (rows-1) * |stride0|
 
-  M m(E{}, strides, offset);
+  M m(E{}, strides, static_cast<offset_type>(offset));
 
   assert(m(0, 0) == 8);
   assert(m(1, 0) == 4);
