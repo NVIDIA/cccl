@@ -72,6 +72,23 @@ _CCCL_HOST_DEVICE OutputIterator transform_exclusive_scan(
   UnaryFunction unary_op,
   T init,
   AssociativeOperator binary_op);
+
+template <typename ExecutionPolicy,
+          typename InputIterator1,
+          typename InputIterator2,
+          typename OutputIterator,
+          typename T,
+          typename AssociativeOperator1,
+          typename BinaryFunction>
+_CCCL_HOST_DEVICE OutputIterator transform_exclusive_scan(
+  thrust::execution_policy<ExecutionPolicy>& exec,
+  InputIterator1 first1,
+  InputIterator1 last1,
+  InputIterator2 first2,
+  OutputIterator result,
+  T init,
+  AssociativeOperator1 binary_op1,
+  BinaryFunction binary_op2);
 } // namespace system::detail::generic
 THRUST_NAMESPACE_END
 
