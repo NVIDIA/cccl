@@ -99,8 +99,6 @@ THRUST_NAMESPACE_BEGIN
  *
  *  \see \p transform
  *  \see \p inclusive_scan
- *
- *
  *  \verbatim embed:rst:leading-asterisk
  *     .. versionadded:: 2.2.0
  *  \endverbatim
@@ -164,8 +162,6 @@ _CCCL_HOST_DEVICE OutputIterator transform_inclusive_scan(
  *
  *  \see \p transform
  *  \see \p inclusive_scan
- *
- *
  *  \verbatim embed:rst:leading-asterisk
  *     .. versionadded:: 2.2.0
  *  \endverbatim
@@ -230,8 +226,6 @@ OutputIterator transform_inclusive_scan(
  *
  *  \see \p transform
  *  \see \p inclusive_scan
- *
- *
  *  \verbatim embed:rst:leading-asterisk
  *     .. versionadded:: 2.2.0
  *  \endverbatim
@@ -301,8 +295,6 @@ _CCCL_HOST_DEVICE OutputIterator transform_inclusive_scan(
  *
  *  \see \p transform
  *  \see \p inclusive_scan
- *
- *
  *  \verbatim embed:rst:leading-asterisk
  *     .. versionadded:: 2.2.0
  *  \endverbatim
@@ -371,8 +363,6 @@ OutputIterator transform_inclusive_scan(
  *
  *  \see \p transform
  *  \see \p exclusive_scan
- *
- *
  *  \verbatim embed:rst:leading-asterisk
  *     .. versionadded:: 2.2.0
  *  \endverbatim
@@ -440,8 +430,6 @@ _CCCL_HOST_DEVICE OutputIterator transform_exclusive_scan(
  *
  *  \see \p transform
  *  \see \p exclusive_scan
- *
- *
  *  \verbatim embed:rst:leading-asterisk
  *     .. versionadded:: 2.2.0
  *  \endverbatim

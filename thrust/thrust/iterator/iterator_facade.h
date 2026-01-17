@@ -76,7 +76,6 @@ class iterator_facade;
 class iterator_core_access
 {
   /*! \cond
-   *
    */
 
   // declare our friends
@@ -322,7 +321,6 @@ class iterator_facade
 {
 private:
   /*! \cond
-   *
    */
 
   //
@@ -369,7 +367,6 @@ public:
 
   /*! \p operator*() dereferences this \p iterator_facade.
    *  \return A reference to the element pointed to by this \p iterator_facade.
-   *
    */
   _CCCL_HOST_DEVICE reference operator*() const
   {
@@ -387,7 +384,6 @@ public:
 
   /*! \p operator[] performs indexed dereference.
    *  \return A reference to the element \p n distance away from this \p iterator_facade.
-   *
    */
   _CCCL_HOST_DEVICE reference operator[](difference_type n) const
   {
@@ -396,7 +392,6 @@ public:
 
   /*! \p operator++ pre-increments this \p iterator_facade to refer to the element in the next position.
    *  \return <tt>*this</tt>
-   *
    */
   _CCCL_HOST_DEVICE Derived& operator++()
   {
@@ -406,7 +401,6 @@ public:
 
   /*! \p operator++ post-increments this \p iterator_facade and returns a new \p iterator_facade referring to the
    * element in the next position. \return A copy of <tt>*this</tt> before increment.
-   *
    */
   _CCCL_HOST_DEVICE Derived operator++(int)
   {
@@ -417,7 +411,6 @@ public:
 
   /*! \p operator-- pre-decrements this \p iterator_facade to refer to the element in the previous position.
    *  \return <tt>*this</tt>
-   *
    */
   _CCCL_HOST_DEVICE Derived& operator--()
   {
@@ -427,7 +420,6 @@ public:
 
   /*! \p operator-- post-decrements this \p iterator_facade and returns a new \p iterator_facade referring to the
    * element in the previous position. \return A copy of <tt>*this</tt> before decrement.
-   *
    */
   _CCCL_HOST_DEVICE Derived operator--(int)
   {
@@ -438,7 +430,6 @@ public:
 
   /*! \p operator+= increments this \p iterator_facade to refer to an element a given distance after its current
    * position. \param n The quantity to increment. \return <tt>*this</tt>
-   *
    */
   _CCCL_HOST_DEVICE Derived& operator+=(difference_type n)
   {
@@ -448,7 +439,6 @@ public:
 
   /*! \p operator-= decrements this \p iterator_facade to refer to an element a given distance before its current
    * position. \param n The quantity to decrement. \return <tt>*this</tt>
-   *
    */
   _CCCL_HOST_DEVICE Derived& operator-=(difference_type n)
   {
@@ -459,7 +449,6 @@ public:
   /*! \p operator- subtracts a given quantity from this \p iterator_facade and returns a new \p iterator_facade
    * referring to the element at the given position before this \p iterator_facade. \param n The quantity to decrement
    *  \return An \p iterator_facade pointing \p n elements before this \p iterator_facade.
-   *
    */
   _CCCL_HOST_DEVICE Derived operator-(difference_type n) const
   {

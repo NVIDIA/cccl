@@ -782,8 +782,6 @@ exclusive_scan(InputIterator first, InputIterator last, OutputIterator result, T
  *
  *  \see inclusive_scan
  *  \see exclusive_scan_by_key
- *
- *
  *  \verbatim embed:rst:leading-asterisk
  *     .. versionadded:: 2.2.0
  *  \endverbatim
@@ -850,8 +848,6 @@ _CCCL_HOST_DEVICE OutputIterator inclusive_scan_by_key(
  *
  *  \see inclusive_scan
  *  \see exclusive_scan_by_key
- *
- *
  *  \verbatim embed:rst:leading-asterisk
  *     .. versionadded:: 2.2.0
  *  \endverbatim
@@ -926,8 +922,6 @@ inclusive_scan_by_key(InputIterator1 first1, InputIterator1 last1, InputIterator
  *
  *  \see inclusive_scan
  *  \see exclusive_scan_by_key
- *
- *
  *  \verbatim embed:rst:leading-asterisk
  *     .. versionadded:: 2.2.0
  *  \endverbatim
@@ -1004,8 +998,6 @@ _CCCL_HOST_DEVICE OutputIterator inclusive_scan_by_key(
  *
  *  \see inclusive_scan
  *  \see exclusive_scan_by_key
- *
- *
  *  \verbatim embed:rst:leading-asterisk
  *     .. versionadded:: 2.2.0
  *  \endverbatim
@@ -1087,8 +1079,6 @@ OutputIterator inclusive_scan_by_key(
  *
  *  \see inclusive_scan
  *  \see exclusive_scan_by_key
- *
- *
  *  \verbatim embed:rst:leading-asterisk
  *     .. versionadded:: 2.2.0
  *  \endverbatim
@@ -1170,8 +1160,6 @@ _CCCL_HOST_DEVICE OutputIterator inclusive_scan_by_key(
  *
  *  \see inclusive_scan
  *  \see exclusive_scan_by_key
- *
- *
  *  \verbatim embed:rst:leading-asterisk
  *     .. versionadded:: 2.2.0
  *  \endverbatim
@@ -1240,8 +1228,6 @@ OutputIterator inclusive_scan_by_key(
  *  \endcode
  *
  *  \see exclusive_scan
- *
- *
  *  \verbatim embed:rst:leading-asterisk
  *     .. versionadded:: 2.2.0
  *  \endverbatim
@@ -1299,8 +1285,6 @@ _CCCL_HOST_DEVICE OutputIterator exclusive_scan_by_key(
  *  \endcode
  *
  *  \see exclusive_scan
- *
- *
  *  \verbatim embed:rst:leading-asterisk
  *     .. versionadded:: 2.2.0
  *  \endverbatim
@@ -1359,8 +1343,6 @@ exclusive_scan_by_key(InputIterator1 first1, InputIterator1 last1, InputIterator
  *
  *  \see exclusive_scan
  *  \see inclusive_scan_by_key
- *
- *
  *  \verbatim embed:rst:leading-asterisk
  *     .. versionadded:: 2.2.0
  *  \endverbatim
@@ -1418,8 +1400,6 @@ _CCCL_HOST_DEVICE OutputIterator exclusive_scan_by_key(
  *
  *  \see exclusive_scan
  *  \see inclusive_scan_by_key
- *
- *
  *  \verbatim embed:rst:leading-asterisk
  *     .. versionadded:: 2.2.0
  *  \endverbatim
@@ -1486,8 +1466,6 @@ OutputIterator exclusive_scan_by_key(
  *
  *  \see exclusive_scan
  *  \see inclusive_scan_by_key
- *
- *
  *  \verbatim embed:rst:leading-asterisk
  *     .. versionadded:: 2.2.0
  *  \endverbatim
@@ -1559,8 +1537,6 @@ _CCCL_HOST_DEVICE OutputIterator exclusive_scan_by_key(
  *
  *  \see exclusive_scan
  *  \see inclusive_scan_by_key
- *
- *
  *  \verbatim embed:rst:leading-asterisk
  *     .. versionadded:: 2.2.0
  *  \endverbatim
@@ -1650,8 +1626,6 @@ OutputIterator exclusive_scan_by_key(
  *
  *  \see exclusive_scan
  *  \see inclusive_scan_by_key
- *
- *
  *  \verbatim embed:rst:leading-asterisk
  *     .. versionadded:: 2.2.0
  *  \endverbatim
@@ -1741,8 +1715,6 @@ _CCCL_HOST_DEVICE OutputIterator exclusive_scan_by_key(
  *
  *  \see exclusive_scan
  *  \see inclusive_scan_by_key
- *
- *
  *  \verbatim embed:rst:leading-asterisk
  *     .. versionadded:: 2.2.0
  *  \endverbatim

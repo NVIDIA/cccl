@@ -143,12 +143,10 @@ protected:
 
 public:
   /*! \p iterator_adaptor's default constructor does nothing.
-   *
    */
   iterator_adaptor() = default;
 
   /*! This constructor copies from a given instance of the \p Base iterator.
-   *
    */
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_HOST_DEVICE explicit iterator_adaptor(Base const& iter)
@@ -165,11 +163,9 @@ public:
 
   using difference_type = typename super_t::difference_type;
   /*! \endcond
-   *
    */
 
   /*! \return A \p const reference to the \p Base iterator this \p iterator_adaptor adapts.
-   *
    */
   _CCCL_HOST_DEVICE Base const& base() const
   {
@@ -178,7 +174,6 @@ public:
 
 protected:
   /*! \return A \p const reference to the \p Base iterator this \p iterator_adaptor adapts.
-   *
    */
   _CCCL_HOST_DEVICE Base const& base_reference() const
   {
@@ -186,7 +181,6 @@ protected:
   }
 
   /*! \return A mutable reference to the \p Base iterator this \p iterator_adaptor adapts.
-   *
    */
   _CCCL_HOST_DEVICE Base& base_reference()
   {
@@ -194,7 +188,6 @@ protected:
   }
 
   /*! \cond
-   *
    */
 
 private: // Core iterator interface for iterator_facade
