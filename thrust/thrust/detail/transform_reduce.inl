@@ -126,7 +126,13 @@ _CCCL_HOST_DEVICE T transform_reduce(
   _CCCL_NVTX_RANGE_SCOPE("thrust::transform_reduce");
   using thrust::system::detail::generic::transform_reduce;
   return transform_reduce(
-    thrust::detail::derived_cast(thrust::detail::strip_const(exec)), first1, last1, first2, init, binary_op1, binary_op2);
+    thrust::detail::derived_cast(thrust::detail::strip_const(exec)),
+    first1,
+    last1,
+    first2,
+    init,
+    binary_op1,
+    binary_op2);
 } // end transform_reduce()
 
 template <typename InputIterator1, typename InputIterator2, typename T, typename BinaryOp1, typename BinaryOp2>

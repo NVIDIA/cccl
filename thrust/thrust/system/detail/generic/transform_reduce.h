@@ -65,7 +65,7 @@ _CCCL_HOST_DEVICE T transform_reduce(
   T init,
   BinaryOp1 binary_op1,
   BinaryOp2 binary_op2);
-}
+} // namespace system::detail::generic
 THRUST_NAMESPACE_END
 
 #include <thrust/system/detail/generic/transform_reduce.inl>

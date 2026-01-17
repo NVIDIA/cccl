@@ -347,7 +347,12 @@ _CCCL_HOST_DEVICE T transform_reduce(
  */
 template <typename InputIterator1, typename InputIterator2, typename T, typename BinaryOp1, typename BinaryOp2>
 T transform_reduce(
-  InputIterator1 first1, InputIterator1 last1, InputIterator2 first2, T init, BinaryOp1 binary_op1, BinaryOp2 binary_op2);
+  InputIterator1 first1,
+  InputIterator1 last1,
+  InputIterator2 first2,
+  T init,
+  BinaryOp1 binary_op1,
+  BinaryOp2 binary_op2);
 
 /*! \} // end transformed_reductions
  *  \} // end reductions

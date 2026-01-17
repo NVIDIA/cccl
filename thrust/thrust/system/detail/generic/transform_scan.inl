@@ -129,7 +129,8 @@ _CCCL_HOST_DEVICE OutputIterator transform_exclusive_scan(
   const auto last  = thrust::make_zip_iterator(last1, first2); // only first iterator matters
 
   // Use the unary transform_exclusive_scan with the zipped iterators and a zip_function
-  return thrust::transform_exclusive_scan(exec, first, last, result, thrust::make_zip_function(binary_op2), init, binary_op1);
+  return thrust::transform_exclusive_scan(
+    exec, first, last, result, thrust::make_zip_function(binary_op2), init, binary_op1);
 } // end transform_exclusive_scan()
 } // namespace system::detail::generic
 THRUST_NAMESPACE_END

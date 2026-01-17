@@ -455,9 +455,12 @@ OutputIterator transform_exclusive_scan(
  *  \return The end of the output sequence.
  *
  *  \tparam DerivedPolicy The name of the derived execution policy.
- *  \tparam InputIterator1 is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input Iterator</a>.
- *  \tparam InputIterator2 is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input Iterator</a>.
- *  \tparam OutputIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/output_iterator">Output Iterator</a>.
+ *  \tparam InputIterator1 is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input
+ * Iterator</a>.
+ *  \tparam InputIterator2 is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input
+ * Iterator</a>.
+ *  \tparam OutputIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/output_iterator">Output
+ * Iterator</a>.
  *  \tparam T is convertible to \c OutputIterator's \c value_type.
  *  \tparam AssociativeOperator1 is a binary function for the scan operation.
  *  \tparam BinaryFunction is a binary function for the transformation operation.
@@ -509,9 +512,12 @@ _CCCL_HOST_DEVICE OutputIterator transform_exclusive_scan(
  *  \param binary_op2 The binary transformation operation.
  *  \return The end of the output sequence.
  *
- *  \tparam InputIterator1 is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input Iterator</a>.
- *  \tparam InputIterator2 is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input Iterator</a>.
- *  \tparam OutputIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/output_iterator">Output Iterator</a>.
+ *  \tparam InputIterator1 is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input
+ * Iterator</a>.
+ *  \tparam InputIterator2 is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input
+ * Iterator</a>.
+ *  \tparam OutputIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/output_iterator">Output
+ * Iterator</a>.
  *  \tparam T is convertible to \c OutputIterator's \c value_type.
  *  \tparam AssociativeOperator1 is a binary function for the scan operation.
  *  \tparam BinaryFunction is a binary function for the transformation operation.
