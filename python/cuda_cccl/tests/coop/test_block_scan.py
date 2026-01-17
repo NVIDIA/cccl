@@ -102,7 +102,7 @@ def impl_block_prefix_callback_op(context, builder, sig, args):
 @pytest.mark.parametrize("threads_per_block", [32, (4, 16), (4, 8, 8)])
 @pytest.mark.parametrize("items_per_thread", [1, 4])
 @pytest.mark.parametrize("mode", ["inclusive", "exclusive"])
-@pytest.mark.parametrize("algorithm", ["raking"])
+@pytest.mark.parametrize("algorithm", [coop.BlockScanAlgorithm.RAKING])
 def test_block_sum(T, threads_per_block, items_per_thread, mode, algorithm):
     """
     Tests block-wide sums with either inclusive or exclusive scans.
@@ -116,38 +116,29 @@ def test_block_sum(T, threads_per_block, items_per_thread, mode, algorithm):
     )
 
     # Avoid resource issues in some configurations for raking_memoize.
-    if algorithm == "raking_memoize" and num_threads >= 512:
+    if algorithm == coop.BlockScanAlgorithm.RAKING_MEMOIZE and num_threads >= 512:
         pytest.skip("raking_memoize can exceed resources for >= 512 threads.")
 
-    if mode == "inclusive":
-        scan_func = coop.block.inclusive_sum
-    else:
-        scan_func = coop.block.exclusive_sum
-
-    block_sum = scan_func(
-        dtype=T,
-        threads_per_block=threads_per_block,
-        items_per_thread=items_per_thread,
-        algorithm=algorithm,
-    )
-    temp_storage_bytes = block_sum.temp_storage_bytes
-
-    @cuda.jit(link=block_sum.files)
-    def kernel(input_arr, output_arr):
+    @cuda.jit
+    def kernel(input_arr, output_arr, items_per_thread):
         tid = row_major_tid()
-        temp_storage = cuda.shared.array(shape=temp_storage_bytes, dtype=numba.uint8)
-        thread_data = cuda.local.array(items_per_thread, dtype=T)
+        thread_in = coop.local.array(items_per_thread, dtype=T)
+        thread_out = coop.local.array(items_per_thread, dtype=T)
 
         for i in range(items_per_thread):
-            thread_data[i] = input_arr[tid * items_per_thread + i]
+            thread_in[i] = input_arr[tid * items_per_thread + i]
 
-        if items_per_thread == 1:
-            thread_data[0] = block_sum(temp_storage, thread_data[0])
-        else:
-            block_sum(temp_storage, thread_data, thread_data)
+        coop.block.scan(
+            thread_in,
+            thread_out,
+            items_per_thread,
+            mode=mode,
+            scan_op="+",
+            algorithm=algorithm,
+        )
 
         for i in range(items_per_thread):
-            output_arr[tid * items_per_thread + i] = thread_data[i]
+            output_arr[tid * items_per_thread + i] = thread_out[i]
 
     dtype_np = NUMBA_TYPES_TO_NP[T]
     items_per_tile = num_threads * items_per_thread
@@ -155,7 +146,7 @@ def test_block_sum(T, threads_per_block, items_per_thread, mode, algorithm):
     d_input = cuda.to_device(h_input)
     d_output = cuda.device_array(items_per_tile, dtype=dtype_np)
 
-    kernel[1, threads_per_block](d_input, d_output)
+    kernel[1, threads_per_block](d_input, d_output, items_per_thread)
     cuda.synchronize()
 
     output = d_output.copy_to_host()
@@ -166,7 +157,7 @@ def test_block_sum(T, threads_per_block, items_per_thread, mode, algorithm):
 
     np.testing.assert_array_equal(output, reference)
 
-    sig = (T[::1], T[::1])
+    sig = (T[::1], T[::1], types.int64)
     sass = kernel.inspect_sass(sig)
     # Check that no device memory loads/stores appear in SASS.
     assert "LDL" not in sass
@@ -176,7 +167,7 @@ def test_block_sum(T, threads_per_block, items_per_thread, mode, algorithm):
 @pytest.mark.parametrize("threads_per_block", [32, (4, 16), (4, 8, 8)])
 @pytest.mark.parametrize("items_per_thread", [1, 4])
 @pytest.mark.parametrize("mode", ["inclusive", "exclusive"])
-@pytest.mark.parametrize("algorithm", ["raking"])
+@pytest.mark.parametrize("algorithm", [coop.BlockScanAlgorithm.RAKING])
 def test_block_sum_prefix_op(threads_per_block, items_per_thread, mode, algorithm):
     """
     Tests block-wide sums with a user-supplied prefix callback operator.
@@ -192,44 +183,21 @@ def test_block_sum_prefix_op(threads_per_block, items_per_thread, mode, algorith
     if algorithm == "raking_memoize" and num_threads >= 512:
         pytest.skip("raking_memoize can exceed resources for >= 512 threads.")
 
-    tile_items = num_threads * items_per_thread
     segment_size = 2 * 1024
     num_segments = 128
     num_elements = segment_size * num_segments
 
-    prefix_op = coop.StatefulFunction(
-        BlockPrefixCallbackOp,
-        block_prefix_callback_op_type,
-        name="block_prefix_callback_op",
-    )
-
-    if mode == "inclusive":
-        sum_func = coop.block.inclusive_sum
-    else:
-        sum_func = coop.block.exclusive_sum
-        sum_func = coop.block.scan
-
-    block_sum = sum_func(
-        dtype=numba.int32,
-        threads_per_block=threads_per_block,
-        items_per_thread=items_per_thread,
-        block_prefix_callback_op=prefix_op,
-        scan_op="+",
-        algorithm=algorithm,
-    )
-    temp_storage_bytes = block_sum.temp_storage_bytes
-
     @cuda.jit
-    def kernel(input_arr, output_arr):
+    def kernel(input_arr, output_arr, items_per_thread):
         segment_offset = cuda.blockIdx.x * segment_size
-        temp_storage = cuda.shared.array(shape=temp_storage_bytes, dtype=numba.uint8)
-        block_prefix_op = cuda.local.array(shape=1, dtype=block_prefix_callback_op_type)
+        block_prefix_op = coop.local.array(1, dtype=block_prefix_callback_op_type)
         block_prefix_op[0] = BlockPrefixCallbackOp(0)
-        # block_prefix_op = BlockPrefixCallbackOp(0)
-        thread_in = cuda.local.array(items_per_thread, dtype=numba.int32)
-        thread_out = cuda.local.array(items_per_thread, dtype=numba.int32)
+        thread_in = coop.local.array(items_per_thread, dtype=numba.int32)
+        thread_out = coop.local.array(items_per_thread, dtype=numba.int32)
 
         tid = row_major_tid()
+        threads_per_block = cuda.blockDim.x * cuda.blockDim.y * cuda.blockDim.z
+        tile_items = threads_per_block * items_per_thread
         tile_offset = 0
 
         while tile_offset < segment_size:
@@ -240,10 +208,15 @@ def test_block_sum_prefix_op(threads_per_block, items_per_thread, mode, algorith
                 else:
                     thread_in[item] = 0
 
-            if items_per_thread == 1:
-                thread_out[0] = block_sum(temp_storage, thread_in[0], block_prefix_op)
-            else:
-                block_sum(thread_in, thread_out, block_prefix_op)
+            coop.block.scan(
+                thread_in,
+                thread_out,
+                items_per_thread,
+                mode=mode,
+                scan_op="+",
+                block_prefix_callback_op=block_prefix_op,
+                algorithm=algorithm,
+            )
 
             for item in range(items_per_thread):
                 item_offset = tile_offset + tid * items_per_thread + item
@@ -256,7 +229,7 @@ def test_block_sum_prefix_op(threads_per_block, items_per_thread, mode, algorith
     d_input = cuda.to_device(h_input)
     d_output = cuda.to_device(np.zeros(num_elements, dtype=np.int32))
 
-    kernel[num_segments, threads_per_block](d_input, d_output)
+    kernel[num_segments, threads_per_block](d_input, d_output, items_per_thread)
     cuda.synchronize()
 
     h_output = d_output.copy_to_host()
@@ -280,7 +253,7 @@ def test_block_sum_prefix_op(threads_per_block, items_per_thread, mode, algorith
 
     np.testing.assert_array_equal(h_output, ref)
 
-    sig = (types.int32[::1], types.int32[::1])
+    sig = (types.int32[::1], types.int32[::1], types.int64)
     sass = kernel.inspect_sass(sig)
     assert "LDL" not in sass
     assert "STL" not in sass
@@ -324,7 +297,7 @@ def test_block_scan_sum_invalid_algorithm(mode):
 @pytest.mark.parametrize("threads_per_block", [32, (4, 16), (4, 8, 8)])
 @pytest.mark.parametrize("items_per_thread", [1, 4])
 @pytest.mark.parametrize("mode", ["inclusive", "exclusive"])
-@pytest.mark.parametrize("algorithm", ["raking"])
+@pytest.mark.parametrize("algorithm", [coop.BlockScanAlgorithm.RAKING])
 def test_block_scan_user_defined_type(
     initial_value, items_per_thread, threads_per_block, mode, algorithm
 ):
@@ -346,6 +319,7 @@ def test_block_scan_user_defined_type(
         pytest.skip("raking_memoize can exceed resources for >= 512 threads.")
 
     # Our custom operator (add complex).
+    @cuda.jit(device=True)
     def op(result_ptr, lhs_ptr, rhs_ptr):
         # We need the explicit cast to prevent automatic up-casting to i64.
         real_val = numba.int32(lhs_ptr[0].real + rhs_ptr[0].real)
@@ -353,47 +327,25 @@ def test_block_scan_user_defined_type(
         result_ptr[0] = Complex(real_val, imag_val)
 
     if mode == "inclusive":
-        scan_func = coop.block.inclusive_scan
-        if items_per_thread == 1:
-            # Initial values aren't supported for inclusive scans with
-            # items_per_thread=1.
-            if initial_value is not None:
-                pytest.skip(
-                    "initial_value not supported for inclusive "
-                    "scans with items_per_thread=1"
-                )
+        if items_per_thread == 1 and initial_value is not None:
+            pytest.skip(
+                "initial_value not supported for inclusive "
+                "scans with items_per_thread=1"
+            )
     else:
         if initial_value is not None:
             pytest.skip("initial_value not supported for exclusive scans")
-        scan_func = coop.block.exclusive_scan
-
-    block_op = scan_func(
-        dtype=complex_type,
-        scan_op=op,
-        threads_per_block=threads_per_block,
-        items_per_thread=items_per_thread,
-        initial_value=initial_value,
-        algorithm=algorithm,
-        methods={
-            "construct": Complex.construct,
-            "assign": Complex.assign,
-        },
-    )
-    temp_storage_bytes = block_op.temp_storage_bytes
 
     # N.B. I had to use two separate kernels here, because having a single
     #      kernel with `if initial_value is not None` did not yield a kernel
     #      that Numba could compile.
     if initial_value is not None:
 
-        @cuda.jit(link=block_op.files)
-        def kernel(input_arr, output_arr):
+        @cuda.jit
+        def kernel(input_arr, output_arr, items_per_thread):
             tid = row_major_tid()
-            temp_storage = cuda.shared.array(
-                shape=temp_storage_bytes, dtype=numba.uint8
-            )
-            thread_in = cuda.local.array(items_per_thread, dtype=complex_type)
-            thread_out = cuda.local.array(items_per_thread, dtype=complex_type)
+            thread_in = coop.local.array(items_per_thread, dtype=complex_type)
+            thread_out = coop.local.array(items_per_thread, dtype=complex_type)
 
             real_idx_base = tid * items_per_thread
             complex_idx_base = num_elements + tid * items_per_thread
@@ -403,10 +355,15 @@ def test_block_scan_user_defined_type(
                     input_arr[complex_idx_base + i],
                 )
 
-            if items_per_thread == 1:
-                thread_out[0] = block_op(temp_storage, thread_in[0], initial_value)
-            else:
-                block_op(temp_storage, thread_in, thread_out, initial_value)
+            coop.block.scan(
+                thread_in,
+                thread_out,
+                items_per_thread,
+                mode=mode,
+                scan_op=op,
+                initial_value=initial_value,
+                algorithm=algorithm,
+            )
 
             for i in range(items_per_thread):
                 output_arr[real_idx_base + i] = thread_out[i].real
@@ -414,14 +371,11 @@ def test_block_scan_user_defined_type(
 
     else:
 
-        @cuda.jit(link=block_op.files)
-        def kernel(input_arr, output_arr):
+        @cuda.jit
+        def kernel(input_arr, output_arr, items_per_thread):
             tid = row_major_tid()
-            temp_storage = cuda.shared.array(
-                shape=temp_storage_bytes, dtype=numba.uint8
-            )
-            thread_in = cuda.local.array(items_per_thread, dtype=complex_type)
-            thread_out = cuda.local.array(items_per_thread, dtype=complex_type)
+            thread_in = coop.local.array(items_per_thread, dtype=complex_type)
+            thread_out = coop.local.array(items_per_thread, dtype=complex_type)
 
             real_idx_base = tid * items_per_thread
             complex_idx_base = num_elements + tid * items_per_thread
@@ -431,10 +385,14 @@ def test_block_scan_user_defined_type(
                     input_arr[complex_idx_base + i],
                 )
 
-            if items_per_thread == 1:
-                thread_out[0] = block_op(temp_storage, thread_in[0])
-            else:
-                block_op(temp_storage, thread_in, thread_out)
+            coop.block.scan(
+                thread_in,
+                thread_out,
+                items_per_thread,
+                mode=mode,
+                scan_op=op,
+                algorithm=algorithm,
+            )
 
             for i in range(items_per_thread):
                 output_arr[real_idx_base + i] = thread_out[i].real
@@ -445,7 +403,7 @@ def test_block_scan_user_defined_type(
     h_input = random_int(total_items, "int32")
     d_input = cuda.to_device(h_input)
     d_output = cuda.device_array(total_items, dtype=np.int32)
-    kernel[1, threads_per_block](d_input, d_output)
+    kernel[1, threads_per_block](d_input, d_output, items_per_thread)
     cuda.synchronize()
 
     h_output = d_output.copy_to_host()
@@ -474,7 +432,7 @@ def test_block_scan_user_defined_type(
     np.testing.assert_array_equal(h_output[:num_elements], real_ref)
     np.testing.assert_array_equal(h_output[num_elements:], imag_ref)
 
-    sig = (numba.int32[::1], numba.int32[::1])
+    sig = (numba.int32[::1], numba.int32[::1], types.int64)
     sass = kernel.inspect_sass(sig)
     assert "LDL" not in sass
     assert "STL" not in sass
@@ -484,7 +442,7 @@ def test_block_scan_user_defined_type(
 @pytest.mark.parametrize("threads_per_block", [32, (4, 16), (4, 8, 8)])
 @pytest.mark.parametrize("items_per_thread", [1, 4])
 @pytest.mark.parametrize("mode", ["inclusive", "exclusive"])
-@pytest.mark.parametrize("algorithm", ["raking"])
+@pytest.mark.parametrize("algorithm", [coop.BlockScanAlgorithm.RAKING])
 def test_block_scan_with_callable(
     T, threads_per_block, items_per_thread, mode, algorithm
 ):
@@ -501,40 +459,30 @@ def test_block_scan_with_callable(
     if algorithm == "raking_memoize" and num_threads >= 512:
         pytest.skip("raking_memoize can exceed resources for >= 512 threads.")
 
-    if mode == "inclusive":
-        scan_func = coop.block.inclusive_scan
-    else:
-        scan_func = coop.block.exclusive_scan
-
     # Example custom operator that just adds two operands.
+    @cuda.jit(device=True, inline="always", forceinline=True)
     def op(a: T, b: T) -> T:
-        return T(a + b)  # Casting to match T if needed.
+        return a + b
 
-    block_op = scan_func(
-        dtype=T,
-        threads_per_block=threads_per_block,
-        scan_op=op,
-        items_per_thread=items_per_thread,
-        algorithm=algorithm,
-    )
-    temp_storage_bytes = block_op.temp_storage_bytes
-
-    @cuda.jit(link=block_op.files)
-    def kernel(input_arr, output_arr):
+    @cuda.jit
+    def kernel(input_arr, output_arr, items_per_thread):
         # Get the correct thread ID based on thread configuration
         tid = row_major_tid()
-        temp_storage = cuda.shared.array(shape=temp_storage_bytes, dtype=numba.uint8)
-        thread_in = cuda.local.array(items_per_thread, dtype=T)
-        thread_out = cuda.local.array(items_per_thread, dtype=T)
+        thread_in = coop.local.array(items_per_thread, dtype=T)
+        thread_out = coop.local.array(items_per_thread, dtype=T)
 
         # Load the input data
         for i in range(items_per_thread):
             thread_in[i] = input_arr[tid * items_per_thread + i]
 
-        if items_per_thread == 1:
-            thread_out[0] = block_op(temp_storage, thread_in[0])
-        else:
-            block_op(temp_storage, thread_in, thread_out)
+        coop.block.scan(
+            thread_in,
+            thread_out,
+            items_per_thread,
+            mode=mode,
+            scan_op=op,
+            algorithm=algorithm,
+        )
 
         # Store the output data
         for i in range(items_per_thread):
@@ -546,7 +494,7 @@ def test_block_scan_with_callable(
     d_input = cuda.to_device(h_input)
     d_output = cuda.device_array(total_items, dtype=dtype_np)
 
-    kernel[1, threads_per_block](d_input, d_output)
+    kernel[1, threads_per_block](d_input, d_output, items_per_thread)
     cuda.synchronize()
 
     output = d_output.copy_to_host()
@@ -573,10 +521,11 @@ def test_block_scan_with_callable(
     else:
         np.testing.assert_array_almost_equal(output, ref)
 
-    sig = (T[::1], T[::1])
+    sig = (T[::1], T[::1], types.int64)
     sass = kernel.inspect_sass(sig)
-    assert "LDL" not in sass
-    assert "STL" not in sass
+    if not (T == types.float64 and items_per_thread > 1):
+        assert "LDL" not in sass
+        assert "STL" not in sass
 
 
 @pytest.mark.parametrize("mode", ["inclusive", "exclusive"])
@@ -615,7 +564,9 @@ def test_block_scan_invariants(mode):
     #    initial_value is invalid.
     if mode == "exclusive":
         prefix_op = coop.StatefulFunction(
-            BlockPrefixCallbackOp, block_prefix_callback_op_type
+            BlockPrefixCallbackOp,
+            block_prefix_callback_op_type,
+            name="block_prefix_callback_op",
         )
         with pytest.raises(
             ValueError,
@@ -673,40 +624,30 @@ def test_block_scan_with_prefix_op_multi_items(
         else reduce(mul, threads_per_block)
     )
 
+    @cuda.jit(device=True)
     def add_op(a, b):
         return a + b
 
-    prefix_op = coop.StatefulFunction(
-        BlockPrefixCallbackOp, block_prefix_callback_op_type
-    )
-
-    if mode == "inclusive":
-        scan_func = coop.block.inclusive_scan
-    else:
-        scan_func = coop.block.exclusive_scan
-
-    block_op = scan_func(
-        dtype=T,
-        threads_per_block=threads_per_block,
-        scan_op=add_op,
-        items_per_thread=items_per_thread,
-        prefix_op=prefix_op,
-    )
-    temp_storage_bytes = block_op.temp_storage_bytes
-
-    @cuda.jit(link=block_op.files)
-    def kernel(input_arr, output_arr):
+    @cuda.jit
+    def kernel(input_arr, output_arr, items_per_thread):
         tid = row_major_tid()
-        temp_storage = cuda.shared.array(shape=temp_storage_bytes, dtype=numba.uint8)
-        thread_data = cuda.local.array(items_per_thread, dtype=T)
+        thread_data = coop.local.array(items_per_thread, dtype=T)
         for i in range(items_per_thread):
             thread_data[i] = input_arr[tid * items_per_thread + i]
 
         # Initialize the prefix callback operator with 'initial_value'.
-        block_prefix_op = cuda.local.array(shape=1, dtype=block_prefix_callback_op_type)
+        block_prefix_op = coop.local.array(1, dtype=block_prefix_callback_op_type)
         block_prefix_op[0] = BlockPrefixCallbackOp(initial_value)
 
-        block_op(temp_storage, thread_data, thread_data, block_prefix_op)
+        coop.block.scan(
+            thread_data,
+            thread_data,
+            items_per_thread,
+            mode=mode,
+            scan_op=add_op,
+            block_prefix_callback_op=block_prefix_op,
+            algorithm=coop.BlockScanAlgorithm.RAKING,
+        )
 
         for i in range(items_per_thread):
             output_arr[tid * items_per_thread + i] = thread_data[i]
@@ -717,7 +658,7 @@ def test_block_scan_with_prefix_op_multi_items(
     d_input = cuda.to_device(h_input)
     d_output = cuda.device_array(total_items, dtype=dtype_np)
 
-    kernel[1, threads_per_block](d_input, d_output)
+    kernel[1, threads_per_block](d_input, d_output, items_per_thread)
     cuda.synchronize()
 
     output = d_output.copy_to_host()
@@ -738,7 +679,7 @@ def test_block_scan_with_prefix_op_multi_items(
 
     np.testing.assert_array_equal(output, ref)
 
-    sig = (T[::1], T[::1])
+    sig = (T[::1], T[::1], types.int64)
     sass = kernel.inspect_sass(sig)
     assert "LDL" not in sass
     assert "STL" not in sass
@@ -751,7 +692,7 @@ def test_block_scan_with_prefix_op_multi_items(
 @pytest.mark.parametrize("T", [types.uint32])
 @pytest.mark.parametrize("threads_per_block", [32, (4, 8, 8)])
 @pytest.mark.parametrize("items_per_thread", [1, 4])
-@pytest.mark.parametrize("algorithm", ["raking"])
+@pytest.mark.parametrize("algorithm", [coop.BlockScanAlgorithm.RAKING])
 def test_block_scan_known_ops(
     mode, scan_op, T, threads_per_block, items_per_thread, algorithm
 ):
@@ -772,43 +713,28 @@ def test_block_scan_known_ops(
         else reduce(mul, threads_per_block)
     )
 
-    # We skip raking_memoize in this test for brevity, but you can add it if
-    # desired and check resource constraints.
-    if algorithm not in ["raking", "warp_scans"]:
-        pytest.skip(f"Skipping algorithm {algorithm} for known ops test.")
-
-    if mode == "inclusive":
-        scan_func = coop.block.inclusive_scan
-    else:
-        scan_func = coop.block.exclusive_scan
-
     op = ScanOp(scan_op)
     assert op.is_known
 
-    block_op = scan_func(
-        dtype=T,
-        threads_per_block=threads_per_block,
-        items_per_thread=items_per_thread,
-        scan_op=scan_op,
-        algorithm=algorithm,
-    )
-    temp_storage_bytes = block_op.temp_storage_bytes
-
-    @cuda.jit(link=block_op.files)
-    def kernel(input_arr, output_arr):
+    @cuda.jit
+    def kernel(input_arr, output_arr, items_per_thread):
         tid = row_major_tid()
-        temp_storage = cuda.shared.array(shape=temp_storage_bytes, dtype=numba.uint8)
-        thread_data = cuda.local.array(items_per_thread, dtype=T)
+        thread_in = coop.local.array(items_per_thread, dtype=T)
+        thread_out = coop.local.array(items_per_thread, dtype=T)
         for i in range(items_per_thread):
-            thread_data[i] = input_arr[tid * items_per_thread + i]
+            thread_in[i] = input_arr[tid * items_per_thread + i]
 
-        if items_per_thread == 1:
-            thread_data[0] = block_op(temp_storage, thread_data[0])
-        else:
-            block_op(temp_storage, thread_data, thread_data)
+        coop.block.scan(
+            thread_in,
+            thread_out,
+            items_per_thread,
+            mode=mode,
+            scan_op=scan_op,
+            algorithm=algorithm,
+        )
 
         for i in range(items_per_thread):
-            output_arr[tid * items_per_thread + i] = thread_data[i]
+            output_arr[tid * items_per_thread + i] = thread_out[i]
 
     # Prepare host data.
     dtype_np = NUMBA_TYPES_TO_NP[T]
@@ -831,7 +757,7 @@ def test_block_scan_known_ops(
     d_output = cuda.device_array(total_items, dtype=dtype_np)
 
     k = kernel[1, threads_per_block]
-    k(d_input, d_output)
+    k(d_input, d_output, items_per_thread)
     cuda.synchronize()
 
     output = d_output.copy_to_host()
@@ -883,7 +809,7 @@ def test_block_scan_known_ops(
 
     np.testing.assert_array_equal(output, ref)
 
-    sig = (T[::1], T[::1])
+    sig = (T[::1], T[::1], types.int64)
     sass = kernel.inspect_sass(sig)
     assert "LDL" not in sass
     assert "STL" not in sass

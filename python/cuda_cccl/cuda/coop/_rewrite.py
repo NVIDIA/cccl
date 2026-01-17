@@ -924,6 +924,9 @@ class CoopNode:
             # If the argument is an integer literal, return its value.
             return arg_ty.literal_value
 
+        if isinstance(arg_ty, types.StringLiteral):
+            return arg_ty.literal_value
+
         if isinstance(arg_ty, (types.Tuple, types.UniTuple)):
             literals = []
             if hasattr(arg_ty, "elements"):
@@ -1227,7 +1230,10 @@ class CoopNode:
         num_params = len(parameters)
         assert num_params == 1, parameters
         parameters = parameters[0]
-        param_dtypes = [p.dtype() for p in parameters]
+        param_dtypes = []
+        for param in parameters:
+            dtype_fn = getattr(param, "dtype", None)
+            param_dtypes.append(dtype_fn() if callable(dtype_fn) else None)
         debug_print(f"param_dtypes: {param_dtypes}")
 
         # if len(parameters) != len(self.runtime_arg_types):
@@ -1716,30 +1722,39 @@ class CoopArrayNode(CoopNode):
 
         # Process the dtype argument.  Unlike shape, which we can just inject
         # as a constant variable, dtype is a Numba type object, so we need to
-        # inject both the `numba` module as a global, and then a supporting
-        # getattr to get the dtype object from it.
-        g_numba_module_assign = rewriter.get_or_create_global_numba_module_instr(
-            scope,
-            expr.loc,
-            new_nodes,
-        )
-
+        # inject a corresponding Python object into the IR.
         dtype_attr = str(self.dtype)
         new_dtype_name = f"${self.make_arg_name('dtype')}"
         new_dtype_var = ir.Var(scope, new_dtype_name, expr.loc)
         dtype_ty = types.DType(self.dtype)
         self.typemap[new_dtype_var.name] = dtype_ty
+        import numba
 
-        dtype_getattr = ir.Expr.getattr(
-            value=g_numba_module_assign.target,
-            attr=dtype_attr,
-            loc=expr.loc,
-        )
-        dtype_assign = ir.Assign(
-            value=dtype_getattr,
-            target=new_dtype_var,
-            loc=expr.loc,
-        )
+        if hasattr(numba, dtype_attr):
+            # Prefer well-known dtypes off the numba module (e.g. numba.int32).
+            g_numba_module_assign = rewriter.get_or_create_global_numba_module_instr(
+                scope,
+                expr.loc,
+                new_nodes,
+            )
+            dtype_getattr = ir.Expr.getattr(
+                value=g_numba_module_assign.target,
+                attr=dtype_attr,
+                loc=expr.loc,
+            )
+            dtype_assign = ir.Assign(
+                value=dtype_getattr,
+                target=new_dtype_var,
+                loc=expr.loc,
+            )
+        else:
+            # Custom user-defined numba types (e.g. BlockPrefixCallbackOpType)
+            # aren't present on the numba module; inject the object directly.
+            dtype_assign = ir.Assign(
+                value=ir.Global(dtype_attr, self.dtype, expr.loc),
+                target=new_dtype_var,
+                loc=expr.loc,
+            )
         new_nodes.append(dtype_assign)
 
         # Process the alignment argument if present.  We can handle this the
@@ -1986,7 +2001,12 @@ class CoopBlockHistogramNode(CoopNode, CoopNodeMixin):
 
     def rewrite(self, rewriter):
         rd = self.rewrite_details
-        return (rd.g_assign, rd.new_assign)
+        instrs = [rd.g_assign]
+        initial_value_assign = getattr(self, "initial_value_assign", None)
+        if initial_value_assign is not None:
+            instrs.append(initial_value_assign)
+        instrs.append(rd.new_assign)
+        return instrs
 
     @cached_property
     def rewrite_details(self):
@@ -2018,7 +2038,12 @@ class CoopBlockHistogramInitNode(CoopNode, CoopNodeMixin):
 
     def rewrite(self, rewriter):
         rd = self.rewrite_details
-        return (rd.g_assign, rd.new_assign)
+        instrs = [rd.g_assign]
+        initial_value_assign = getattr(self, "initial_value_assign", None)
+        if initial_value_assign is not None:
+            instrs.append(initial_value_assign)
+        instrs.append(rd.new_assign)
+        return tuple(instrs)
 
     @cached_property
     def rewrite_details(self):
@@ -2597,6 +2622,40 @@ class CoopBlockScanNode(CoopNode, CoopNodeMixin):
         src_ty = self.typemap[src.name]
         dst_ty = self.typemap[dst.name]
 
+        try:
+            from ._decls import ThreadDataType
+        except Exception:
+            ThreadDataType = None
+
+        if ThreadDataType is not None and (
+            isinstance(src_ty, ThreadDataType) or isinstance(dst_ty, ThreadDataType)
+        ):
+            raise RuntimeError(
+                "coop.block.scan does not yet support ThreadData inputs "
+                "in single-phase mode"
+            )
+
+        src_is_array = isinstance(src_ty, types.Array)
+        dst_is_array = isinstance(dst_ty, types.Array)
+        if src_is_array != dst_is_array:
+            raise RuntimeError(
+                "coop.block.scan requires src and dst to be both arrays "
+                "or both scalars in single-phase mode"
+            )
+        use_array_inputs = src_is_array and dst_is_array
+
+        dtype = src_ty.dtype if use_array_inputs else src_ty
+
+        if not use_array_inputs:
+            raise RuntimeError(
+                "coop.block.scan single-phase expects array inputs; "
+                "use coop.local.array(...) even for items_per_thread == 1"
+            )
+
+        methods = getattr(dtype, "methods", None)
+        if methods is not None and not methods:
+            methods = None
+
         runtime_args.append(src)
         runtime_arg_types.append(src_ty)
         runtime_arg_names.append("src")
@@ -2618,9 +2677,22 @@ class CoopBlockScanNode(CoopNode, CoopNodeMixin):
         bound = self.bound.arguments
 
         initial_value = bound.get("initial_value")
+        initial_value_var = None
+        initial_value_value = None
+        initial_value_type = None
         if initial_value is not None:
             if isinstance(initial_value, ir.Var):
-                initial_value = self.typemap[initial_value.name]
+                initial_value_var = initial_value
+                initial_value_type = self.typemap[initial_value.name]
+            elif isinstance(initial_value, ir.Const):
+                initial_value_value = initial_value.value
+            else:
+                initial_value_value = initial_value
+
+        from ._scan_op import ScanOp
+        from .block._block_scan import _validate_initial_value
+
+        scan_op_obj = scan_op if isinstance(scan_op, ScanOp) else ScanOp(scan_op)
 
         block_prefix_callback_op = bound.get("block_prefix_callback_op")
         if block_prefix_callback_op is not None:
@@ -2630,6 +2702,7 @@ class CoopBlockScanNode(CoopNode, CoopNodeMixin):
                     f"got {block_prefix_callback_op!r}"
                 )
 
+            block_prefix_callback_op_var = block_prefix_callback_op
             dtype = self.typemap[block_prefix_callback_op.name]
             runtime_dtype = dtype
             prefix_op_root_def = rewriter.get_root_def(block_prefix_callback_op)
@@ -2674,12 +2747,90 @@ class CoopBlockScanNode(CoopNode, CoopNodeMixin):
                 dtype,
                 name=callback_name,
             )
-            runtime_args.append(block_prefix_callback_op)
+            runtime_args.append(block_prefix_callback_op_var)
             runtime_arg_types.append(runtime_dtype)
             runtime_arg_names.append("block_prefix_callback_op")
 
-        algorithm = bound.get("algorithm")
+        if scan_op_obj.is_sum:
+            if initial_value_var is not None or initial_value_value is not None:
+                raise RuntimeError(
+                    "initial_value is not supported for inclusive and exclusive sums"
+                )
+        else:
+            if initial_value_var is None and initial_value_value is None:
+                try:
+                    initial_value_value = _validate_initial_value(
+                        None,
+                        dtype,
+                        items_per_thread,
+                        mode,
+                        scan_op_obj,
+                        block_prefix_callback_op,
+                    )
+                except ValueError as e:
+                    raise RuntimeError(str(e)) from e
+
+        include_initial_value = (
+            not scan_op_obj.is_sum
+            and block_prefix_callback_op is None
+            and (initial_value_var is not None or initial_value_value is not None)
+            and (use_array_inputs or mode == "exclusive")
+        )
+        if include_initial_value:
+            if initial_value_var is not None:
+                runtime_args.append(initial_value_var)
+                runtime_arg_types.append(initial_value_type)
+            else:
+                from numba.np.numpy_support import as_dtype
+
+                const_value = initial_value_value
+                try:
+                    const_value = as_dtype(dtype).type(initial_value_value)
+                except Exception:
+                    pass
+                scope = self.instr.target.scope
+                const_name = f"$block_scan_init_{self.unique_id}"
+                const_var = ir.Var(scope, const_name, expr.loc)
+                if const_name in self.typemap:
+                    raise RuntimeError(
+                        f"Variable {const_name} already exists in typemap."
+                    )
+                const_assign = ir.Assign(
+                    value=ir.Const(const_value, expr.loc),
+                    target=const_var,
+                    loc=expr.loc,
+                )
+                if isinstance(dtype, types.Integer):
+                    self.typemap[const_name] = types.IntegerLiteral(int(const_value))
+                elif isinstance(dtype, types.Boolean):
+                    self.typemap[const_name] = types.BooleanLiteral(bool(const_value))
+                else:
+                    self.typemap[const_name] = dtype
+                self.initial_value_assign = const_assign
+                runtime_args.append(const_var)
+                runtime_arg_types.append(dtype)
+            runtime_arg_names.append("initial_value")
+
+        if scan_op_obj.is_sum:
+            initial_value_for_impl = None
+        else:
+            initial_value_for_impl = (
+                initial_value_var
+                if initial_value_var is not None
+                else initial_value_value
+            )
+
+        algorithm = self.get_arg_value_safe("algorithm")
         temp_storage = bound.get("temp_storage")
+        if temp_storage is not None:
+            if not isinstance(temp_storage, ir.Var):
+                raise RuntimeError(
+                    "coop.block.scan temp_storage must be provided as a variable"
+                )
+            temp_storage_ty = self.typemap[temp_storage.name]
+            runtime_args.append(temp_storage)
+            runtime_arg_types.append(temp_storage_ty)
+            runtime_arg_names.append("temp_storage")
 
         self.runtime_args = runtime_args
         self.runtime_arg_types = runtime_arg_types
@@ -2687,26 +2838,33 @@ class CoopBlockScanNode(CoopNode, CoopNodeMixin):
 
         self.src = src
         self.dst = dst
-        self.dtype = src_ty.dtype
+        if use_array_inputs:
+            self.dtype = src_ty.dtype
+        else:
+            self.dtype = src_ty
         self.items_per_thread = items_per_thread
         self.mode = mode
         self.scan_op = scan_op
-        self.initial_value = initial_value
+        self.initial_value = initial_value_for_impl
         self.block_prefix_callback_op = block_prefix_callback_op
         self.algorithm = algorithm
         self.temp_storage = temp_storage
+        self.use_array_inputs = use_array_inputs
+        self.methods = methods
 
         self.impl_kwds = {
             "dtype": self.dtype,
             "threads_per_block": self.threads_per_block,
             "items_per_thread": items_per_thread,
-            "initial_value": initial_value,
+            "initial_value": initial_value_for_impl,
             "mode": mode,
             "scan_op": scan_op,
             "block_prefix_callback_op": block_prefix_callback_op,
             "algorithm": algorithm,
             "unique_id": self.unique_id,
             "temp_storage": temp_storage,
+            "use_array_inputs": use_array_inputs,
+            "methods": methods,
         }
 
         return
