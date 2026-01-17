@@ -71,6 +71,9 @@ The unsupported APIs are as follows:
 
 from typing import Any, Callable, Literal
 
+import numpy as np
+from numba.np.numpy_support import as_dtype
+
 from .._common import (
     CUB_BLOCK_SCAN_ALGOS,
     normalize_dim_param,
@@ -80,6 +83,12 @@ from .._enums import (
     BlockScanAlgorithm,
 )
 from .._scan_op import (
+    CUDA_MAXIMUM,
+    CUDA_MINIMUM,
+    CUDA_STD_BIT_AND,
+    CUDA_STD_BIT_OR,
+    CUDA_STD_BIT_XOR,
+    CUDA_STD_MULTIPLIES,
     ScanOp,
 )
 from .._types import (
@@ -152,9 +161,46 @@ def _validate_initial_value(
         # We require an initial value, but one was not supplied.
         # Attempt to create a default value for the given dtype.
         # If we can't, raise an error.
+        if scan_op.is_known:
+            try:
+                dtype_np = as_dtype(dtype)
+            except Exception as e:
+                msg = (
+                    "initial_value is required for both inclusive and "
+                    "exclusive scans when items_per_thread > 1 and no "
+                    "block prefix callback operator has been supplied; "
+                    "attempted to create a default value for the given "
+                    f"dtype, but failed: {e}"
+                )
+                raise ValueError(msg) from e
+            if scan_op.op_cpp == CUDA_MINIMUM:
+                if dtype_np.kind == "f":
+                    default_value = float("inf")
+                else:
+                    default_value = np.iinfo(dtype_np).max
+            elif scan_op.op_cpp == CUDA_MAXIMUM:
+                if dtype_np.kind == "f":
+                    default_value = float("-inf")
+                else:
+                    default_value = np.iinfo(dtype_np).min
+            elif scan_op.op_cpp == CUDA_STD_MULTIPLIES:
+                default_value = 1
+            elif scan_op.op_cpp == CUDA_STD_BIT_AND:
+                if dtype_np.kind == "u":
+                    default_value = np.iinfo(dtype_np).max
+                elif dtype_np.kind == "b":
+                    default_value = True
+                else:
+                    default_value = -1
+            elif scan_op.op_cpp in (CUDA_STD_BIT_OR, CUDA_STD_BIT_XOR):
+                default_value = 0
+            else:
+                default_value = 0
+        else:
+            default_value = 0
         try:
-            initial_value = dtype.cast_python_value(0)
-        except (TypeError, NotImplementedError) as e:
+            initial_value = dtype.cast_python_value(default_value)
+        except (TypeError, NotImplementedError, ValueError) as e:
             # We can't create a default value for the given dtype.
             # Raise an error.
             msg = (
@@ -187,6 +233,7 @@ class scan(BasePrimitive):
         methods: dict = None,
         unique_id: int = None,
         temp_storage: Any = None,
+        use_array_inputs: bool = False,
     ) -> None:
         """
         Creates a block-wide prefix scan primitive based on the CUB library's
@@ -319,11 +366,14 @@ class scan(BasePrimitive):
             TemplateParameter("BLOCK_DIM_Z"),
         ]
 
-        if items_per_thread == 1:
-            fake_return = True
-        else:
+        use_array_inputs = use_array_inputs or items_per_thread > 1
+        self.use_array_inputs = use_array_inputs
+
+        if use_array_inputs:
             specialization_kwds["ITEMS_PER_THREAD"] = items_per_thread
             fake_return = False
+        else:
+            fake_return = True
 
         # A "known" scan op is the standard set of associative operators,
         # e.g. ::cuda::std::plus<>, etc.  A "callable" scan op is a Python
@@ -359,7 +409,7 @@ class scan(BasePrimitive):
                 )
 
         if scan_op.is_sum:
-            if items_per_thread == 1:
+            if not use_array_inputs:
                 if block_prefix_callback_op is None:
                     parameters = [
                         # Signature:
@@ -405,7 +455,6 @@ class scan(BasePrimitive):
                     ]
 
             else:
-                assert items_per_thread > 1, items_per_thread
                 if block_prefix_callback_op is not None:
                     parameters = [
                         # Signature:
@@ -461,7 +510,7 @@ class scan(BasePrimitive):
                     ]
 
         elif scan_op.is_known or scan_op.is_callable:
-            if items_per_thread == 1:
+            if not use_array_inputs:
                 if mode == "exclusive":
                     if block_prefix_callback_op is not None:
                         assert initial_value is None
@@ -594,7 +643,6 @@ class scan(BasePrimitive):
                         ]
 
             else:
-                assert items_per_thread > 1, items_per_thread
                 if block_prefix_callback_op is not None:
                     assert initial_value is None
                     parameters = [

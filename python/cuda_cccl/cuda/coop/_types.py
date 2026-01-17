@@ -467,6 +467,8 @@ class DependentPythonOperator:
 
     def specialize(self, template_arguments):
         op = self.op.resolve(template_arguments)
+        if not isinstance(op, StatefulFunction) and hasattr(op, "py_func"):
+            op = op.py_func
         ret_dtype = self.ret_dtype.resolve(template_arguments)
         ret_cpp_type = numba_type_to_cpp(ret_dtype)
         ret_numba_type = (
@@ -1008,18 +1010,22 @@ class Algorithm:
                 param_name = param.name
                 if param_name is None:
                     param_name = f"param_{pid}"
-                param_names.append(param_name)
                 if isinstance(param, StatelessOperator):
+                    param_name = param.op_name or f"param_{pid}"
+                    param_names.append(param_name)
                     func_decls.append(param.wrap_decl(param_name))
                     param_args.append(param_name)
                 elif isinstance(param, StatefulOperator):
-                    param_name = f"param_{pid}"
+                    param_name = param.op_name or f"param_{pid}"
+                    param_names.append(param_name)
                     func_decls.append(param.wrap_decl(param_name))
                     param_args.append(param_name)
                     param_decls.append(param.cpp_decl(param_name))
                 elif isinstance(param, CxxFunction):
+                    param_names.append(param_name)
                     param_args.append(param.cpp)
                 else:
+                    param_names.append(param_name)
                     param_decls.append(param.cpp_decl(param_name))
                     if not self.fake_return and param.is_output:
                         if out_param is not None:
@@ -1214,17 +1220,22 @@ class Algorithm:
             param_name = param.name
             if param_name is None:
                 param_name = f"param_{pid}"
-            param_names.append(param_name)
             if isinstance(param, StatelessOperator):
+                param_name = param.op_name or f"param_{pid}"
+                param_names.append(param_name)
                 func_decls.append(param.wrap_decl(param_name))
                 param_args.append(param_name)
             elif isinstance(param, StatefulOperator):
+                param_name = param.op_name or f"param_{pid}"
+                param_names.append(param_name)
                 func_decls.append(param.wrap_decl(param_name))
                 param_args.append(param_name)
                 param_decls.append(param.cpp_decl(param_name))
             elif isinstance(param, CxxFunction):
+                param_names.append(param_name)
                 param_args.append(param.cpp)
             else:
+                param_names.append(param_name)
                 param_decls.append(param.cpp_decl(param_name))
                 # XXX: I think we can remove this for parent source.
                 if not self.fake_return and param.is_output:
@@ -1332,17 +1343,22 @@ class Algorithm:
             param_name = param.name
             if param_name is None:
                 param_name = f"param_{pid}"
-            param_names.append(param_name)
             if isinstance(param, StatelessOperator):
+                param_name = param.op_name or f"param_{pid}"
+                param_names.append(param_name)
                 func_decls.append(param.wrap_decl(param_name))
                 param_args.append(param_name)
             elif isinstance(param, StatefulOperator):
+                param_name = param.op_name or f"param_{pid}"
+                param_names.append(param_name)
                 func_decls.append(param.wrap_decl(param_name))
                 param_args.append(param_name)
                 param_decls.append(param.cpp_decl(param_name))
             elif isinstance(param, CxxFunction):
+                param_names.append(param_name)
                 param_args.append(param.cpp)
             else:
+                param_names.append(param_name)
                 param_decls.append(param.cpp_decl(param_name))
                 # XXX: I think we can remove this for parent source.
                 if not self.fake_return and param.is_output:
@@ -1898,7 +1914,11 @@ class BasePrimitive:
                 if not cub_map:
                     msg = f"Invalid algorithm for {self!r}: {algorithm_arg}"
                     raise ValueError(msg)
-                algorithm_cub = cub_map[algorithm_arg]
+                try:
+                    algorithm_cub = cub_map[algorithm_arg]
+                except KeyError as exc:
+                    msg = f"Invalid algorithm for {self!r}: {algorithm_arg}"
+                    raise ValueError(msg) from exc
             elif isinstance(algorithm_arg, int):
                 algorithm_enum = enum_class(algorithm_arg)
                 algorithm_cub = str(algorithm_enum)

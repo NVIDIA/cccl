@@ -1459,7 +1459,22 @@ class CoopBlockScanDecl(CoopAbstractTemplate, CoopDeclMixin):
     def _validate_args_and_create_signature(self, bound, two_phase=False):
         src = bound.arguments["src"]
         dst = bound.arguments["dst"]
-        validate_src_dst(self, src, dst)
+        if isinstance(src, (types.Array, ThreadDataType)) or isinstance(
+            dst, (types.Array, ThreadDataType)
+        ):
+            validate_src_dst(self, src, dst)
+        else:
+            scalar_types = (types.Number,)
+            if not isinstance(src, scalar_types) or not isinstance(dst, scalar_types):
+                raise errors.TypingError(
+                    f"{self.primitive_name} requires src and dst to be "
+                    "both arrays or both scalar numeric types"
+                )
+            if src != dst:
+                raise errors.TypingError(
+                    f"{self.primitive_name} requires src and dst to have "
+                    f"the same type (got {src} vs {dst})"
+                )
         arglist = [src, dst]
 
         process_items_per_thread(
@@ -1473,6 +1488,8 @@ class CoopBlockScanDecl(CoopAbstractTemplate, CoopDeclMixin):
         mode = bound.arguments.get("mode")
         if mode is None:
             mode = "exclusive"
+        elif isinstance(mode, types.StringLiteral):
+            mode = mode.literal_value
         if mode not in ("inclusive", "exclusive"):
             raise errors.TypingError(
                 f"Invalid mode '{mode}' for {self.primitive_name}; expected "
@@ -1481,6 +1498,8 @@ class CoopBlockScanDecl(CoopAbstractTemplate, CoopDeclMixin):
         arglist.append(mode)
 
         scan_op = bound.arguments.get("scan_op", "+")
+        if isinstance(scan_op, types.StringLiteral):
+            scan_op = scan_op.literal_value
         try:
             scan_op = ScanOp(scan_op)
         except ValueError as e:
