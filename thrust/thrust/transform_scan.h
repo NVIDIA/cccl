@@ -431,6 +431,121 @@ OutputIterator transform_exclusive_scan(
   T init,
   AssociativeOperator binary_op);
 
+/*! \p transform_exclusive_scan fuses the \p transform and \p exclusive_scan
+ *  operations on two input ranges. This version applies a binary transformation
+ *  to corresponding elements from two input sequences, then performs an exclusive
+ *  scan on the transformed values.
+ *
+ *  The algorithm computes:
+ *  <tt>result[0] = init</tt>
+ *  <tt>result[1] = binary_op1(init, binary_op2(*first1, *first2))</tt>
+ *  <tt>result[2] = binary_op1(result[1], binary_op2(*(first1+1), *(first2+1)))</tt>
+ *  and so on.
+ *
+ *  The algorithm's execution is parallelized as determined by \p exec.
+ *
+ *  \param exec The execution policy to use for parallelization.
+ *  \param first1 The beginning of the first input sequence.
+ *  \param last1 The end of the first input sequence.
+ *  \param first2 The beginning of the second input sequence.
+ *  \param result The beginning of the output sequence.
+ *  \param init The initial value of the exclusive scan.
+ *  \param binary_op1 The associative operator used for the scan operation.
+ *  \param binary_op2 The binary transformation operation.
+ *  \return The end of the output sequence.
+ *
+ *  \tparam DerivedPolicy The name of the derived execution policy.
+ *  \tparam InputIterator1 is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input Iterator</a>.
+ *  \tparam InputIterator2 is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input Iterator</a>.
+ *  \tparam OutputIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/output_iterator">Output Iterator</a>.
+ *  \tparam T is convertible to \c OutputIterator's \c value_type.
+ *  \tparam AssociativeOperator1 is a binary function for the scan operation.
+ *  \tparam BinaryFunction is a binary function for the transformation operation.
+ *
+ *  \code
+ *  #include <thrust/transform_scan.h>
+ *  #include <thrust/functional.h>
+ *  #include <thrust/execution_policy.h>
+ *  ...
+ *  int data1[6] = {1, 0, 2, 2, 1, 3};
+ *  int data2[6] = {4, 1, 5, 3, 2, 1};
+ *  int result[6];
+ *  thrust::transform_exclusive_scan(thrust::host, data1, data1 + 6, data2, result,
+ *                                   0, ::cuda::std::plus<int>(), ::cuda::std::multiplies<int>());
+ *  // result is now {0, 4, 4, 14, 20, 22}
+ *  \endcode
+ *
+ *  \see \p transform
+ *  \see \p exclusive_scan
+ */
+template <typename DerivedPolicy,
+          typename InputIterator1,
+          typename InputIterator2,
+          typename OutputIterator,
+          typename T,
+          typename AssociativeOperator1,
+          typename BinaryFunction>
+_CCCL_HOST_DEVICE OutputIterator transform_exclusive_scan(
+  const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
+  InputIterator1 first1,
+  InputIterator1 last1,
+  InputIterator2 first2,
+  OutputIterator result,
+  T init,
+  AssociativeOperator1 binary_op1,
+  BinaryFunction binary_op2);
+
+/*! \p transform_exclusive_scan fuses the \p transform and \p exclusive_scan
+ *  operations on two input ranges. This version applies a binary transformation
+ *  to corresponding elements from two input sequences, then performs an exclusive
+ *  scan on the transformed values.
+ *
+ *  \param first1 The beginning of the first input sequence.
+ *  \param last1 The end of the first input sequence.
+ *  \param first2 The beginning of the second input sequence.
+ *  \param result The beginning of the output sequence.
+ *  \param init The initial value of the exclusive scan.
+ *  \param binary_op1 The associative operator used for the scan operation.
+ *  \param binary_op2 The binary transformation operation.
+ *  \return The end of the output sequence.
+ *
+ *  \tparam InputIterator1 is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input Iterator</a>.
+ *  \tparam InputIterator2 is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input Iterator</a>.
+ *  \tparam OutputIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/output_iterator">Output Iterator</a>.
+ *  \tparam T is convertible to \c OutputIterator's \c value_type.
+ *  \tparam AssociativeOperator1 is a binary function for the scan operation.
+ *  \tparam BinaryFunction is a binary function for the transformation operation.
+ *
+ *  \code
+ *  #include <thrust/transform_scan.h>
+ *  #include <thrust/functional.h>
+ *  ...
+ *  int data1[6] = {1, 0, 2, 2, 1, 3};
+ *  int data2[6] = {4, 1, 5, 3, 2, 1};
+ *  int result[6];
+ *  thrust::transform_exclusive_scan(data1, data1 + 6, data2, result,
+ *                                   0, ::cuda::std::plus<int>(), ::cuda::std::multiplies<int>());
+ *  // result is now {0, 4, 4, 14, 20, 22}
+ *  \endcode
+ *
+ *  \see \p transform
+ *  \see \p exclusive_scan
+ */
+template <typename InputIterator1,
+          typename InputIterator2,
+          typename OutputIterator,
+          typename T,
+          typename AssociativeOperator1,
+          typename BinaryFunction>
+OutputIterator transform_exclusive_scan(
+  InputIterator1 first1,
+  InputIterator1 last1,
+  InputIterator2 first2,
+  OutputIterator result,
+  T init,
+  AssociativeOperator1 binary_op1,
+  BinaryFunction binary_op2);
+
 /*! \} // end transformed_prefixsums
  */
 
