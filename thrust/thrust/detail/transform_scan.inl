@@ -109,7 +109,77 @@ _CCCL_HOST_DEVICE OutputIterator transform_exclusive_scan(
   return transform_exclusive_scan(
     thrust::detail::derived_cast(thrust::detail::strip_const(exec)), first, last, result, unary_op, init, binary_op);
 } // end transform_exclusive_scan()
+_CCCL_EXEC_CHECK_DISABLE
+template <typename DerivedPolicy,
+          typename InputIterator1,
+          typename InputIterator2,
+          typename OutputIterator,
+          typename T,
+          typename AssociativeOperator1,
+          typename BinaryFunction>
+_CCCL_HOST_DEVICE OutputIterator transform_exclusive_scan(
+  const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
+  InputIterator1 first1,
+  InputIterator1 last1,
+  InputIterator2 first2,
+  OutputIterator result,
+  T init,
+  AssociativeOperator1 binary_op1,
+  BinaryFunction binary_op2)
+{
+  _CCCL_NVTX_RANGE_SCOPE("thrust::transform_exclusive_scan");
+  using thrust::system::detail::generic::select_system;
 
+  using System1 = typename thrust::iterator_system<InputIterator1>::type;
+  using System2 = typename thrust::iterator_system<InputIterator2>::type;
+  using System3 = typename thrust::iterator_system<OutputIterator>::type;
+
+  System1 system1;
+  System2 system2;
+  System3 system3;
+
+  using thrust::system::detail::generic::transform_exclusive_scan;
+  return transform_exclusive_scan(
+    select_system(thrust::detail::derived_cast(thrust::detail::strip_const(exec)), system1, system2, system3),
+    first1,
+    last1,
+    first2,
+    result,
+    init,
+    binary_op1,
+    binary_op2);
+} // end transform_exclusive_scan()
+
+_CCCL_EXEC_CHECK_DISABLE
+template <typename InputIterator1,
+          typename InputIterator2,
+          typename OutputIterator,
+          typename T,
+          typename AssociativeOperator1,
+          typename BinaryFunction>
+OutputIterator transform_exclusive_scan(
+  InputIterator1 first1,
+  InputIterator1 last1,
+  InputIterator2 first2,
+  OutputIterator result,
+  T init,
+  AssociativeOperator1 binary_op1,
+  BinaryFunction binary_op2)
+{
+  using thrust::system::detail::generic::select_system;
+
+  using System1 = typename thrust::iterator_system<InputIterator1>::type;
+  using System2 = typename thrust::iterator_system<InputIterator2>::type;
+  using System3 = typename thrust::iterator_system<OutputIterator>::type;
+
+  System1 system1;
+  System2 system2;
+  System3 system3;
+
+  using thrust::system::detail::generic::transform_exclusive_scan;
+  return transform_exclusive_scan(
+    select_system(system1, system2, system3), first1, last1, first2, result, init, binary_op1, binary_op2);
+} // end transform_exclusive_scan()
 template <typename InputIterator, typename OutputIterator, typename UnaryFunction, typename BinaryFunction>
 OutputIterator transform_inclusive_scan(
   InputIterator first, InputIterator last, OutputIterator result, UnaryFunction unary_op, BinaryFunction binary_op)
