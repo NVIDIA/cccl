@@ -7,7 +7,6 @@
 #include <cub/util_type.cuh>
 
 #include <thrust/detail/raw_pointer_cast.h>
-#include <thrust/remove.h>
 #include <thrust/sort.h>
 
 #include <cuda/iterator>

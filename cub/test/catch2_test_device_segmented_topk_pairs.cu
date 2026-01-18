@@ -9,7 +9,6 @@
 
 #include <thrust/count.h>
 #include <thrust/detail/raw_pointer_cast.h>
-#include <thrust/remove.h>
 #include <thrust/sort.h>
 
 #include <cuda/iterator>

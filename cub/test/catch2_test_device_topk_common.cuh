@@ -6,6 +6,8 @@
 #include <cub/device/device_segmented_sort.cuh>
 #include <cub/device/dispatch/dispatch_common.cuh> // topk::select::{min, max}
 
+#include <thrust/remove.h>
+
 #include <cuda/iterator>
 #include <cuda/std/limits>
 
