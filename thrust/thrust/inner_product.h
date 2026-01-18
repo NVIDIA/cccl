@@ -80,6 +80,10 @@ THRUST_NAMESPACE_BEGIN
  *  \endcode
  *
  *  \see https://en.cppreference.com/w/cpp/algorithm/inner_product
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename DerivedPolicy, typename InputIterator1, typename InputIterator2, typename OutputType>
 _CCCL_HOST_DEVICE OutputType inner_product(
@@ -127,6 +131,10 @@ _CCCL_HOST_DEVICE OutputType inner_product(
  *  \endcode
  *
  *  \see https://en.cppreference.com/w/cpp/algorithm/inner_product
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename InputIterator1, typename InputIterator2, typename OutputType>
 OutputType inner_product(InputIterator1 first1, InputIterator1 last1, InputIterator2 first2, OutputType init);
@@ -179,6 +187,10 @@ OutputType inner_product(InputIterator1 first1, InputIterator1 last1, InputItera
  *  \endcode
  *
  *  \see https://en.cppreference.com/w/cpp/algorithm/inner_product
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename DerivedPolicy,
           typename InputIterator1,
@@ -241,6 +253,10 @@ _CCCL_HOST_DEVICE OutputType inner_product(
  *  \endcode
  *
  *  \see https://en.cppreference.com/w/cpp/algorithm/inner_product
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename InputIterator1,
           typename InputIterator2,

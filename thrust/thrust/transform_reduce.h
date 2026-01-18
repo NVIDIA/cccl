@@ -108,6 +108,10 @@ THRUST_NAMESPACE_BEGIN
  *
  *  \see \c transform
  *  \see \c reduce
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename DerivedPolicy,
           typename InputIterator,
@@ -180,6 +184,10 @@ _CCCL_HOST_DEVICE OutputType transform_reduce(
  *
  *  \see \c transform
  *  \see \c reduce
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename InputIterator, typename UnaryFunction, typename OutputType, typename BinaryFunction>
 OutputType transform_reduce(
