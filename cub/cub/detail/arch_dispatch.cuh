@@ -56,18 +56,26 @@ struct lowest_arch_resolver;
 template <int ArchMult, int... CudaArches, typename PolicySelector, size_t... Is>
 struct lowest_arch_resolver<ArchMult, ::cuda::std::integer_sequence<int, CudaArches...>, PolicySelector, Is...>
 {
-  static_assert(::cuda::std::is_empty_v<PolicySelector>);
   static_assert(sizeof...(CudaArches) == sizeof...(Is));
 
   using policy_t = decltype(PolicySelector{}(::cuda::arch_id{}));
 
   static constexpr ::cuda::arch_id all_arches[sizeof...(Is)] = {::cuda::arch_id{(CudaArches * ArchMult) / 10}...};
-  static constexpr policy_t all_policies[sizeof...(Is)]      = {PolicySelector{}(all_arches[Is])...};
+
+  // GCC 7 has issues reusing the constexr array of tuning policies in find_lowest below (it loses the constexpr-ness)
+#    if _CCCL_COMPILER(GCC, >=, 8)
+  static constexpr policy_t all_policies[sizeof...(Is)] = {PolicySelector{}(all_arches[Is])...};
+#    endif // _CCCL_COMPILER(GCC, <, 8)
 
   _CCCL_API static constexpr auto find_lowest(size_t i) -> ::cuda::arch_id
   {
+#    if _CCCL_COMPILER(GCC, >=, 8)
     const auto& policy = all_policies[i];
     while (i > 0 && policy == all_policies[i - 1])
+#    else // _CCCL_COMPILER(GCC, >=, 8)
+    const auto& policy = PolicySelector{}(all_arches[i]);
+    while (i > 0 && policy == PolicySelector{}(all_arches[i - 1]))
+#    endif // _CCCL_COMPILER(GCC, >=, 8)
     {
       --i;
     }
@@ -127,6 +135,9 @@ template <typename PolicySelector, typename F>
 CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t
 dispatch_arch(PolicySelector policy_selector, ::cuda::arch_id device_arch, F&& f)
 {
+  // when not using CCCL.C, policy_selector is empty since all information is contained in its type
+  static_assert(::cuda::std::is_empty_v<PolicySelector>);
+
   // if we have __CUDA_ARCH_LIST__ or NV_TARGET_SM_INTEGER_LIST, we only poll the policy hub for those arches.
 #  ifdef __CUDA_ARCH_LIST__
   [[maybe_unused]] static constexpr auto arch_seq = ::cuda::std::integer_sequence<int, __CUDA_ARCH_LIST__>{};
