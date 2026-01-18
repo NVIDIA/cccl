@@ -107,30 +107,5 @@ _CCCL_HOST_DEVICE OutputIterator transform_exclusive_scan(
 
   return thrust::exclusive_scan(exec, _first, _last, result, init, binary_op);
 } // end transform_exclusive_scan()
-template <typename DerivedPolicy,
-          typename InputIterator1,
-          typename InputIterator2,
-          typename OutputIterator,
-          typename T,
-          typename AssociativeOperator1,
-          typename BinaryFunction>
-_CCCL_HOST_DEVICE OutputIterator transform_exclusive_scan(
-  thrust::execution_policy<DerivedPolicy>& exec,
-  InputIterator1 first1,
-  InputIterator1 last1,
-  InputIterator2 first2,
-  OutputIterator result,
-  T init,
-  AssociativeOperator1 binary_op1,
-  BinaryFunction binary_op2)
-{
-  // Create a zip iterator to iterate over both input ranges simultaneously
-  const auto first = thrust::make_zip_iterator(first1, first2);
-  const auto last  = thrust::make_zip_iterator(last1, first2); // only first iterator matters
-
-  // Use the unary transform_exclusive_scan with the zipped iterators and a zip_function
-  return thrust::transform_exclusive_scan(
-    exec, first, last, result, thrust::make_zip_function(binary_op2), init, binary_op1);
-} // end transform_exclusive_scan()
 } // namespace system::detail::generic
 THRUST_NAMESPACE_END
