@@ -18,12 +18,8 @@ def test_block_radix_sort():
     # Specialize radix sort for a 1D block of 128 threads owning 4 integer items each
     items_per_thread = 4
     threads_per_block = 128
-    block_radix_sort = coop.block.radix_sort_keys(
-        numba.int32, threads_per_block, items_per_thread
-    )
 
-    # Link the radix sort to a CUDA kernel
-    @cuda.jit(link=block_radix_sort.files)
+    @cuda.jit
     def kernel(keys):
         # Obtain a segment of consecutive items that are blocked across threads
         thread_keys = cuda.local.array(shape=items_per_thread, dtype=numba.int32)
@@ -32,7 +28,7 @@ def test_block_radix_sort():
             thread_keys[i] = keys[cuda.threadIdx.x * items_per_thread + i]
 
         # Collectively sort the keys
-        block_radix_sort(thread_keys)
+        coop.block.radix_sort_keys(thread_keys, items_per_thread)
 
         # Copy the sorted keys back to the output
         for i in range(items_per_thread):
@@ -55,12 +51,8 @@ def test_block_radix_sort_descending():
     # Specialize radix sort for a 1D block of 128 threads owning 4 integer items each
     items_per_thread = 4
     threads_per_block = 128
-    block_radix_sort = coop.block.radix_sort_keys_descending(
-        numba.int32, threads_per_block, items_per_thread
-    )
 
-    # Link the radix sort to a CUDA kernel
-    @cuda.jit(link=block_radix_sort.files)
+    @cuda.jit
     def kernel(keys):
         # Obtain a segment of consecutive items that are blocked across threads
         thread_keys = cuda.local.array(shape=items_per_thread, dtype=numba.int32)
@@ -69,7 +61,7 @@ def test_block_radix_sort_descending():
             thread_keys[i] = keys[cuda.threadIdx.x * items_per_thread + i]
 
         # Collectively sort the keys
-        block_radix_sort(thread_keys)
+        coop.block.radix_sort_keys_descending(thread_keys, items_per_thread)
 
         # Copy the sorted keys back to the output
         for i in range(items_per_thread):

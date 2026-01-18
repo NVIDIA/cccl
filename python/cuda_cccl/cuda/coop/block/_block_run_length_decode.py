@@ -13,6 +13,7 @@ from .._types import (
     BasePrimitive,
     Dependency,
     DependentArray,
+    DependentPointerReference,
     DependentReference,
     TemplateParameter,
 )
@@ -192,14 +193,15 @@ class BlockRunLength(BasePrimitive):
             specialization_kwds["RunLengthT"] = run_lengths.dtype
 
         if total_decoded_size is not None:
-            # template_parameters.append(
-            #    TemplateParameter("TotalDecodedSizeT"),
-            # )
-            specialization_kwds["TotalDecodedSizeT"] = total_decoded_size
+            total_decoded_size_dtype = total_decoded_size
+            if isinstance(total_decoded_size, numba.types.Array):
+                total_decoded_size_dtype = total_decoded_size.dtype
+            specialization_kwds["TotalDecodedSizeT"] = total_decoded_size_dtype
             method.append(
-                DependentReference(
+                DependentPointerReference(
                     Dependency("TotalDecodedSizeT"),
                     name="total_decoded_size",
+                    is_array_pointer=True,
                 )
             )
 

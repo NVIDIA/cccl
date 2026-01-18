@@ -17,8 +17,10 @@ from ._block_load_store import (
     load,
     store,
 )
-from ._block_merge_sort import merge_sort_keys
+from ._block_merge_sort import BlockMergeSort, merge_sort_keys
 from ._block_radix_sort import (
+    BlockRadixSort,
+    BlockRadixSortDescending,
     radix_sort_keys,
     radix_sort_keys_descending,
 )
@@ -52,6 +54,9 @@ __all__ = [
     "merge_sort_keys",
     "radix_sort_keys",
     "radix_sort_keys_descending",
+    "BlockMergeSort",
+    "BlockRadixSort",
+    "BlockRadixSortDescending",
     "BlockReduce",
     "BlockSum",
     "reduce",

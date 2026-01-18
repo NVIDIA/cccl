@@ -261,6 +261,28 @@ class DependentPointer(Pointer):
 
 
 @dataclass
+class PointerReference(Pointer):
+    deref_on_call: bool = True
+
+
+@dataclass
+class DependentPointerReference(DependentPointer):
+    deref_on_call: bool = True
+
+    def specialize(self, template_arguments):
+        value_dtype = self.value_dtype.resolve(template_arguments)
+        return PointerReference(
+            value_dtype,
+            type_name=self.type_name,
+            restrict=self.restrict,
+            is_array_pointer=self.is_array_pointer,
+            is_output=self.is_output,
+            name=self.name,
+            deref_on_call=self.deref_on_call,
+        )
+
+
+@dataclass
 class Reference(ParameterMixin):
     value_dtype: numba.types.Type
     is_output: bool = False
@@ -1032,7 +1054,10 @@ class Algorithm:
                             raise ValueError("Multiple output parameters not supported")
                         out_param = param_name
                     else:
-                        param_args.append(param_name)
+                        if getattr(param, "deref_on_call", False):
+                            param_args.append(f"*{param_name}")
+                        else:
+                            param_args.append(param_name)
 
             if self.struct_name.startswith("Warp"):
                 threads = self.threads
@@ -1251,7 +1276,10 @@ class Algorithm:
                     elif pid == 1:
                         assert param_name == "size", param_name
                         continue
-                    param_args.append(param_name)
+                    if getattr(param, "deref_on_call", False):
+                        param_args.append(f"*{param_name}")
+                    else:
+                        param_args.append(param_name)
 
         buf = StringIO()
         w = buf.write
@@ -1371,7 +1399,10 @@ class Algorithm:
                     if pid == 0:
                         assert param_name == "algorithm", param_name
                         continue
-                    param_args.append(param_name)
+                    if getattr(param, "deref_on_call", False):
+                        param_args.append(f"*{param_name}")
+                    else:
+                        param_args.append(param_name)
 
         buf = StringIO()
         w = buf.write
