@@ -88,10 +88,18 @@ class CoopDeclMixin:
 
 
 def get_coop_decl_class_map():
-    return {
-        subclass: getattr(subclass, "key")
-        for subclass in CoopDeclMixin.__subclasses__()
-    }
+    def _iter_decl_subclasses():
+        stack = list(CoopDeclMixin.__subclasses__())
+        seen = set()
+        while stack:
+            subclass = stack.pop()
+            if subclass in seen:
+                continue
+            seen.add(subclass)
+            yield subclass
+            stack.extend(subclass.__subclasses__())
+
+    return {subclass: getattr(subclass, "key") for subclass in _iter_decl_subclasses()}
 
 
 # Unlike the dict returned by get_coop_decl_class_map() on the fly, we use
@@ -991,6 +999,181 @@ class CoopBlockExchangeDecl(CoopAbstractTemplate, CoopDeclMixin):
 
 
 # =============================================================================
+# Merge Sort
+# =============================================================================
+
+
+@register_global(coop.block.merge_sort_keys)
+class CoopBlockMergeSortDecl(CoopAbstractTemplate, CoopDeclMixin):
+    key = coop.block.merge_sort_keys
+    primitive_name = "coop.block.merge_sort_keys"
+    is_constructor = False
+    minimum_num_args = 3
+
+    @staticmethod
+    def signature(
+        keys: types.Array,
+        items_per_thread: int = None,
+        compare_op: Optional[Callable] = None,
+        temp_storage: Union[types.Array, TempStorageType] = None,
+    ):
+        return inspect.signature(CoopBlockMergeSortDecl.signature).bind(
+            keys,
+            items_per_thread=items_per_thread,
+            compare_op=compare_op,
+            temp_storage=temp_storage,
+        )
+
+    def _validate_args_and_create_signature(self, bound, two_phase=False):
+        keys = bound.arguments["keys"]
+        if not isinstance(keys, types.Array):
+            raise errors.TypingError(
+                f"{self.primitive_name} requires 'keys' to be a device array"
+            )
+
+        arglist = [keys]
+        process_items_per_thread(self, bound, arglist, two_phase, target_array=keys)
+
+        compare_op = bound.arguments.get("compare_op")
+        if compare_op is None:
+            raise errors.TypingError(
+                f"{self.primitive_name} requires 'compare_op' to be specified"
+            )
+        arglist.append(compare_op)
+
+        temp_storage = bound.arguments.get("temp_storage")
+        if temp_storage is not None:
+            raise errors.TypingError(
+                f"{self.primitive_name} does not support 'temp_storage' in single-phase"
+            )
+
+        return signature(types.void, *arglist)
+
+
+# =============================================================================
+# Radix Sort
+# =============================================================================
+
+
+@register_global(coop.block.radix_sort_keys)
+class CoopBlockRadixSortDecl(CoopAbstractTemplate, CoopDeclMixin):
+    key = coop.block.radix_sort_keys
+    primitive_name = "coop.block.radix_sort_keys"
+    is_constructor = False
+    minimum_num_args = 2
+
+    @staticmethod
+    def signature(
+        keys: types.Array,
+        items_per_thread: int = None,
+        begin_bit: Optional[int] = None,
+        end_bit: Optional[int] = None,
+        temp_storage: Union[types.Array, TempStorageType] = None,
+    ):
+        return inspect.signature(CoopBlockRadixSortDecl.signature).bind(
+            keys,
+            items_per_thread=items_per_thread,
+            begin_bit=begin_bit,
+            end_bit=end_bit,
+            temp_storage=temp_storage,
+        )
+
+    def _validate_args_and_create_signature(self, bound, two_phase=False):
+        keys = bound.arguments["keys"]
+        if not isinstance(keys, types.Array):
+            raise errors.TypingError(
+                f"{self.primitive_name} requires 'keys' to be a device array"
+            )
+
+        arglist = [keys]
+        process_items_per_thread(self, bound, arglist, two_phase, target_array=keys)
+
+        begin_bit = bound.arguments.get("begin_bit")
+        end_bit = bound.arguments.get("end_bit")
+        if (begin_bit is None) != (end_bit is None):
+            raise errors.TypingError(
+                f"{self.primitive_name} requires both 'begin_bit' and 'end_bit'"
+            )
+        if begin_bit is not None:
+            if not isinstance(begin_bit, (types.Integer, types.IntegerLiteral)):
+                raise errors.TypingError(
+                    f"{self.primitive_name} requires 'begin_bit' to be an integer"
+                )
+            if not isinstance(end_bit, (types.Integer, types.IntegerLiteral)):
+                raise errors.TypingError(
+                    f"{self.primitive_name} requires 'end_bit' to be an integer"
+                )
+            arglist.extend([begin_bit, end_bit])
+
+        temp_storage = bound.arguments.get("temp_storage")
+        if temp_storage is not None:
+            raise errors.TypingError(
+                f"{self.primitive_name} does not support 'temp_storage' in single-phase"
+            )
+
+        return signature(types.void, *arglist)
+
+
+@register_global(coop.block.radix_sort_keys_descending)
+class CoopBlockRadixSortDescendingDecl(CoopAbstractTemplate, CoopDeclMixin):
+    key = coop.block.radix_sort_keys_descending
+    primitive_name = "coop.block.radix_sort_keys_descending"
+    is_constructor = False
+    minimum_num_args = 2
+
+    @staticmethod
+    def signature(
+        keys: types.Array,
+        items_per_thread: int = None,
+        begin_bit: Optional[int] = None,
+        end_bit: Optional[int] = None,
+        temp_storage: Union[types.Array, TempStorageType] = None,
+    ):
+        return inspect.signature(CoopBlockRadixSortDescendingDecl.signature).bind(
+            keys,
+            items_per_thread=items_per_thread,
+            begin_bit=begin_bit,
+            end_bit=end_bit,
+            temp_storage=temp_storage,
+        )
+
+    def _validate_args_and_create_signature(self, bound, two_phase=False):
+        keys = bound.arguments["keys"]
+        if not isinstance(keys, types.Array):
+            raise errors.TypingError(
+                f"{self.primitive_name} requires 'keys' to be a device array"
+            )
+
+        arglist = [keys]
+        process_items_per_thread(self, bound, arglist, two_phase, target_array=keys)
+
+        begin_bit = bound.arguments.get("begin_bit")
+        end_bit = bound.arguments.get("end_bit")
+        if (begin_bit is None) != (end_bit is None):
+            raise errors.TypingError(
+                f"{self.primitive_name} requires both 'begin_bit' and 'end_bit'"
+            )
+        if begin_bit is not None:
+            if not isinstance(begin_bit, (types.Integer, types.IntegerLiteral)):
+                raise errors.TypingError(
+                    f"{self.primitive_name} requires 'begin_bit' to be an integer"
+                )
+            if not isinstance(end_bit, (types.Integer, types.IntegerLiteral)):
+                raise errors.TypingError(
+                    f"{self.primitive_name} requires 'end_bit' to be an integer"
+                )
+            arglist.extend([begin_bit, end_bit])
+
+        temp_storage = bound.arguments.get("temp_storage")
+        if temp_storage is not None:
+            raise errors.TypingError(
+                f"{self.primitive_name} does not support 'temp_storage' in single-phase"
+            )
+
+        return signature(types.void, *arglist)
+
+
+# =============================================================================
 # Instance-related Load & Store Scaffolding (Two-Phase)
 # =============================================================================
 
@@ -1498,11 +1681,20 @@ class CoopBlockRunLengthDecl(CallableTemplate, CoopDeclMixin):
                 # if not isinstance(decoded_offset_dtype, types.Integer):
                 #    raise error_class("decoded_offset_dtype must be an integer type")
 
-            invalid_total_decoded_size = total_decoded_size is None or not isinstance(
-                total_decoded_size, types.Integer
-            )
-            if invalid_total_decoded_size:
-                raise error_class("total_decoded_size must be an integer type")
+            if total_decoded_size is None:
+                raise error_class("total_decoded_size must be a device array")
+            if not isinstance(total_decoded_size, types.Array):
+                raise error_class(
+                    "total_decoded_size must be a device array, "
+                    f"got {type(total_decoded_size).__name__}"
+                )
+            if total_decoded_size.ndim != 1:
+                raise error_class(
+                    "total_decoded_size must be a 1D device array, "
+                    f"got ndim={total_decoded_size.ndim}"
+                )
+            if not isinstance(total_decoded_size.dtype, types.Integer):
+                raise error_class("total_decoded_size array must use an integer dtype")
 
             validate_temp_storage(self, temp_storage)
 

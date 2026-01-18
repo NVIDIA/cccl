@@ -16,18 +16,15 @@ numba.config.CUDA_LOW_OCCUPANCY_WARNINGS = 0
 def test_block_merge_sort():
     # example-begin merge-sort
     # Define comparison operator
+    @cuda.jit(device=True)
     def compare_op(a, b):
         return a > b
 
     # Specialize merge sort for a 1D block of 128 threads owning 4 integer items each
     items_per_thread = 4
     threads_per_block = 128
-    block_merge_sort = coop.block.merge_sort_keys(
-        numba.int32, threads_per_block, items_per_thread, compare_op
-    )
 
-    # Link the merge sort to a CUDA kernel
-    @cuda.jit(link=block_merge_sort.files)
+    @cuda.jit
     def kernel(keys):
         # Obtain a segment of consecutive items that are blocked across threads
         thread_keys = cuda.local.array(shape=items_per_thread, dtype=numba.int32)
@@ -36,7 +33,7 @@ def test_block_merge_sort():
             thread_keys[i] = keys[cuda.threadIdx.x * items_per_thread + i]
 
         # Collectively sort the keys
-        block_merge_sort(thread_keys)
+        coop.block.merge_sort_keys(thread_keys, items_per_thread, compare_op)
 
         # Copy the sorted keys back to the output
         for i in range(items_per_thread):

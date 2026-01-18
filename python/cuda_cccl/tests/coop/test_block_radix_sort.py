@@ -28,19 +28,15 @@ def test_block_radix_sort_descending(T, threads_per_block, items_per_thread):
         else reduce(mul, threads_per_block)
     )
 
-    block_radix_sort = coop.block.radix_sort_keys_descending(
-        dtype=T, threads_per_block=threads_per_block, items_per_thread=items_per_thread
-    )
-    temp_storage_bytes = block_radix_sort.temp_storage_bytes
-
-    @cuda.jit(link=block_radix_sort.files)
+    @cuda.jit
     def kernel(input, output):
         tid = row_major_tid()
-        temp_storage = cuda.shared.array(shape=temp_storage_bytes, dtype="uint8")
         thread_data = cuda.local.array(shape=items_per_thread, dtype=dtype)
         for i in range(items_per_thread):
             thread_data[i] = input[tid * items_per_thread + i]
-        block_radix_sort(temp_storage, thread_data, begin_bit, end_bit)
+        coop.block.radix_sort_keys_descending(
+            thread_data, items_per_thread, begin_bit, end_bit
+        )
         for i in range(items_per_thread):
             output[tid * items_per_thread + i] = thread_data[i]
 
@@ -74,19 +70,13 @@ def test_block_radix_sort(T, threads_per_block, items_per_thread):
         else reduce(mul, threads_per_block) * items_per_thread
     )
 
-    block_radix_sort = coop.block.radix_sort_keys(
-        dtype=T, threads_per_block=threads_per_block, items_per_thread=items_per_thread
-    )
-    temp_storage_bytes = block_radix_sort.temp_storage_bytes
-
-    @cuda.jit(link=block_radix_sort.files)
+    @cuda.jit
     def kernel(input, output):
         tid = row_major_tid()
-        temp_storage = cuda.shared.array(shape=temp_storage_bytes, dtype="uint8")
         thread_data = cuda.local.array(shape=items_per_thread, dtype=dtype)
         for i in range(items_per_thread):
             thread_data[i] = input[tid * items_per_thread + i]
-        block_radix_sort(temp_storage, thread_data)
+        coop.block.radix_sort_keys(thread_data, items_per_thread)
         for i in range(items_per_thread):
             output[tid * items_per_thread + i] = thread_data[i]
 
@@ -115,19 +105,15 @@ def test_block_radix_sort_overloads_work():
     items_per_thread = 3
     items_per_tile = threads_per_block * items_per_thread
 
-    block_radix_sort = coop.block.radix_sort_keys(
-        dtype=T, threads_per_block=threads_per_block, items_per_thread=items_per_thread
-    )
-    temp_storage_bytes = block_radix_sort.temp_storage_bytes
-
-    @cuda.jit(link=block_radix_sort.files)
+    @cuda.jit
     def kernel(input, output):
         tid = cuda.threadIdx.x
-        temp_storage = cuda.shared.array(shape=temp_storage_bytes, dtype="uint8")
         thread_data = cuda.local.array(shape=items_per_thread, dtype="int32")
         for i in range(items_per_thread):
             thread_data[i] = input[tid * items_per_thread + i]
-        block_radix_sort(temp_storage, thread_data, numba.int32(0), numba.int32(32))
+        coop.block.radix_sort_keys(
+            thread_data, items_per_thread, numba.int32(0), numba.int32(32)
+        )
         for i in range(items_per_thread):
             output[tid * items_per_thread + i] = thread_data[i]
 

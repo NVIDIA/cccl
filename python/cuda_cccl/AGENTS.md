@@ -14,7 +14,8 @@ This directory tracks the CUDA cooperative single-phase effort. Start with
 - Typing: `cuda/coop/_decls.py` (templates, validation, instance types).
 - Primitives: `cuda/coop/block/_block_scan.py`, `cuda/coop/block/_block_load_store.py`,
   `cuda/coop/block/_block_histogram.py`, `cuda/coop/block/_block_reduce.py`,
-  `cuda/coop/block/_block_exchange.py`.
+  `cuda/coop/block/_block_exchange.py`, `cuda/coop/block/_block_run_length_decode.py`,
+  `cuda/coop/block/_block_merge_sort.py`, `cuda/coop/block/_block_radix_sort.py`.
 - Examples/tests: `tests/coop/test_histo2.py` (single-phase histogram example),
   `tests/coop/test_block_load_store_scan_single_phase.py`,
   `tests/coop/test_block_reduce.py`, `tests/coop/test_block_exchange.py`.
@@ -39,6 +40,17 @@ This directory tracks the CUDA cooperative single-phase effort. Start with
 - In-place and separate output arrays are supported (scatter variants require
   `ranks`; flagged scatter requires `valid_flags`).
 - `warp_time_slicing` is supported as a compile-time boolean.
+
+## Run Length Decode Status (Single-Phase)
+- Use `coop.block.run_length` inside kernels; `total_decoded_size` must be a
+  1-element local array (integer dtype).
+- `run_length.decode` supports optional `relative_offsets` and window offsets.
+
+## Merge/Radix Sort Status (Single-Phase)
+- `coop.block.merge_sort_keys` sorts per-thread key arrays (items_per_thread
+  literal) using a provided comparison op.
+- `coop.block.radix_sort_keys` / `coop.block.radix_sort_keys_descending` sort
+  key arrays; optional `begin_bit`/`end_bit` are supported.
 
 ## Reminders
 - Prefer `coop.block.scan` in kernels for single-phase.

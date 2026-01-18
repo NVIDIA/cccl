@@ -16,6 +16,7 @@ from .._common import (
 )
 from .._types import (
     Algorithm,
+    BasePrimitive,
     Dependency,
     DependentArray,
     Invocable,
@@ -26,6 +27,8 @@ from .._types import (
 
 if TYPE_CHECKING:
     import numpy as np
+
+    from ._rewrite import CoopNode
 
 
 TEMPLATE_PARAMETERS = [
@@ -42,7 +45,18 @@ TEMPLATE_PARAMETERS = [
 ]
 
 
-METHOD_PARAMETERS_VARIANTS = [
+METHOD_PARAMETERS_SINGLE_PHASE = [
+    [
+        DependentArray(Dependency("KeyT"), Dependency("ITEMS_PER_THREAD")),
+    ],
+    [
+        DependentArray(Dependency("KeyT"), Dependency("ITEMS_PER_THREAD")),
+        Value(numba.int32, name="begin_bit"),
+        Value(numba.int32, name="end_bit"),
+    ],
+]
+
+METHOD_PARAMETERS_TWO_PHASE = [
     [
         Pointer(numba.uint8),
         DependentArray(Dependency("KeyT"), Dependency("ITEMS_PER_THREAD")),
@@ -50,8 +64,8 @@ METHOD_PARAMETERS_VARIANTS = [
     [
         Pointer(numba.uint8),
         DependentArray(Dependency("KeyT"), Dependency("ITEMS_PER_THREAD")),
-        Value(numba.int32),
-        Value(numba.int32),
+        Value(numba.int32, name="begin_bit"),
+        Value(numba.int32, name="end_bit"),
     ],
 ]
 
@@ -100,39 +114,94 @@ def _get_template_parameter_specializations(
     return specialization
 
 
-def _radix_sort(
-    dtype: Union[str, type, "np.dtype", "numba.types.Type"],
-    threads_per_block: Union[int, Tuple[int, int], Tuple[int, int, int], dim3],
-    items_per_thread: int,
-    descending: bool,
-) -> Invocable:
-    dim = normalize_dim_param(threads_per_block)
-    dtype = normalize_dtype_param(dtype)
+class _RadixSortBase(BasePrimitive):
+    is_one_shot = True
 
-    method_name = "SortDescending" if descending else "Sort"
-    template = Algorithm(
-        "BlockRadixSort",
-        method_name,
-        "block_radix_sort",
-        ["cub/block/block_radix_sort.cuh"],
-        TEMPLATE_PARAMETERS,
-        METHOD_PARAMETERS_VARIANTS,
-    )
-    specialization = template.specialize(
-        _get_template_parameter_specializations(dtype, dim, items_per_thread)
-    )
-    return Invocable(
-        temp_files=[
-            make_binary_tempfile(ltoir, ".ltoir")
-            for ltoir in specialization.get_lto_ir()
-        ],
-        temp_storage_bytes=specialization.temp_storage_bytes,
-        temp_storage_alignment=specialization.temp_storage_alignment,
-        algorithm=specialization,
-    )
+    def __init__(
+        self,
+        dtype: Union[str, type, "np.dtype", "numba.types.Type"],
+        threads_per_block: Union[int, Tuple[int, int], Tuple[int, int, int], dim3],
+        items_per_thread: int,
+        descending: bool,
+        begin_bit: int = None,
+        end_bit: int = None,
+        unique_id: int = None,
+        temp_storage=None,
+        node: "CoopNode" = None,
+    ) -> None:
+        if items_per_thread < 1:
+            raise ValueError("items_per_thread must be >= 1")
+        if (begin_bit is None) != (end_bit is None):
+            raise ValueError("begin_bit and end_bit must be provided together")
+
+        self.node = node
+        self.temp_storage = temp_storage
+        self.dim = normalize_dim_param(threads_per_block)
+        self.dtype = normalize_dtype_param(dtype)
+        self.items_per_thread = items_per_thread
+        self.descending = descending
+        self.begin_bit = begin_bit
+        self.end_bit = end_bit
+        self.unique_id = unique_id
+
+        method_name = "SortDescending" if descending else "Sort"
+        parameters = (
+            [METHOD_PARAMETERS_SINGLE_PHASE[1]]
+            if begin_bit is not None
+            else [METHOD_PARAMETERS_SINGLE_PHASE[0]]
+        )
+
+        self.algorithm = Algorithm(
+            "BlockRadixSort",
+            method_name,
+            "block_radix_sort",
+            ["cub/block/block_radix_sort.cuh"],
+            TEMPLATE_PARAMETERS,
+            parameters,
+            self,
+            unique_id=unique_id,
+        )
+        self.specialization = self.algorithm.specialize(
+            _get_template_parameter_specializations(
+                self.dtype, self.dim, self.items_per_thread
+            )
+        )
+
+    @classmethod
+    def create(
+        cls,
+        dtype: Union[str, type, "np.dtype", "numba.types.Type"],
+        threads_per_block: Union[int, Tuple[int, int], Tuple[int, int, int], dim3],
+        items_per_thread: int,
+        descending: bool,
+    ) -> Invocable:
+        dim = normalize_dim_param(threads_per_block)
+        dtype = normalize_dtype_param(dtype)
+
+        method_name = "SortDescending" if descending else "Sort"
+        template = Algorithm(
+            "BlockRadixSort",
+            method_name,
+            "block_radix_sort",
+            ["cub/block/block_radix_sort.cuh"],
+            TEMPLATE_PARAMETERS,
+            METHOD_PARAMETERS_TWO_PHASE,
+        )
+        specialization = template.specialize(
+            _get_template_parameter_specializations(dtype, dim, items_per_thread)
+        )
+        return Invocable(
+            temp_files=[
+                make_binary_tempfile(ltoir, ".ltoir")
+                for ltoir in specialization.get_lto_ir()
+            ],
+            temp_storage_bytes=specialization.temp_storage_bytes,
+            temp_storage_alignment=specialization.temp_storage_alignment,
+            algorithm=specialization,
+        )
 
 
-def radix_sort_keys(dtype, threads_per_block, items_per_thread):
+class radix_sort_keys(_RadixSortBase):
     """Performs an ascending block-wide radix sort over a :ref:`blocked arrangement <flexible-data-arrangement>` of keys.
 
     Example:
@@ -170,10 +239,32 @@ def radix_sort_keys(dtype, threads_per_block, items_per_thread):
     Returns:
         A callable object that can be linked to and invoked from a CUDA kernel
     """
-    return _radix_sort(dtype, threads_per_block, items_per_thread, descending=False)
+
+    def __init__(
+        self,
+        dtype,
+        threads_per_block,
+        items_per_thread,
+        begin_bit: int = None,
+        end_bit: int = None,
+        unique_id: int = None,
+        temp_storage=None,
+        node: "CoopNode" = None,
+    ):
+        super().__init__(
+            dtype=dtype,
+            threads_per_block=threads_per_block,
+            items_per_thread=items_per_thread,
+            descending=False,
+            begin_bit=begin_bit,
+            end_bit=end_bit,
+            unique_id=unique_id,
+            temp_storage=temp_storage,
+            node=node,
+        )
 
 
-def radix_sort_keys_descending(dtype, threads_per_block, items_per_thread):
+class radix_sort_keys_descending(_RadixSortBase):
     """Performs an descending block-wide radix sort over a :ref:`blocked arrangement <flexible-data-arrangement>` of keys.
 
     Example:
@@ -211,4 +302,58 @@ def radix_sort_keys_descending(dtype, threads_per_block, items_per_thread):
     Returns:
         A callable object that can be linked to and invoked from a CUDA kernel
     """
-    return _radix_sort(dtype, threads_per_block, items_per_thread, descending=True)
+
+    def __init__(
+        self,
+        dtype,
+        threads_per_block,
+        items_per_thread,
+        begin_bit: int = None,
+        end_bit: int = None,
+        unique_id: int = None,
+        temp_storage=None,
+        node: "CoopNode" = None,
+    ):
+        super().__init__(
+            dtype=dtype,
+            threads_per_block=threads_per_block,
+            items_per_thread=items_per_thread,
+            descending=True,
+            begin_bit=begin_bit,
+            end_bit=end_bit,
+            unique_id=unique_id,
+            temp_storage=temp_storage,
+            node=node,
+        )
+
+
+def BlockRadixSort(
+    dtype: Union[str, type, "np.dtype", "numba.types.Type"],
+    threads_per_block: Union[int, Tuple[int, int], Tuple[int, int, int], dim3],
+    items_per_thread: int,
+):
+    """
+    Create a two-phase ascending block radix sort invocable.
+    """
+    return _RadixSortBase.create(
+        dtype=dtype,
+        threads_per_block=threads_per_block,
+        items_per_thread=items_per_thread,
+        descending=False,
+    )
+
+
+def BlockRadixSortDescending(
+    dtype: Union[str, type, "np.dtype", "numba.types.Type"],
+    threads_per_block: Union[int, Tuple[int, int], Tuple[int, int, int], dim3],
+    items_per_thread: int,
+):
+    """
+    Create a two-phase descending block radix sort invocable.
+    """
+    return _RadixSortBase.create(
+        dtype=dtype,
+        threads_per_block=threads_per_block,
+        items_per_thread=items_per_thread,
+        descending=True,
+    )

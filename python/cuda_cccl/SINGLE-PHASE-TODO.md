@@ -20,6 +20,10 @@
 - [x] Port block exchange ScatterToBlocked variants.
 - [x] Port block exchange ScatterToStriped / Flagged / Guarded variants.
 - [x] Port block exchange WarpStripedToBlocked variants.
+- [x] Port block run-length decode to single-phase (total_decoded_size handling).
+- [x] Add single-phase tests for block run-length decode.
+- [x] Port block merge sort to single-phase (typing, rewrite, tests).
+- [x] Port block radix sort to single-phase (typing, rewrite, tests).
 - [x] Add single-phase tests for BlockLoad/BlockStore shared-memory algorithms:
   TRANSPOSE, WARP_TRANSPOSE, WARP_TRANSPOSE_TIMESLICED.
 - [x] Add single-phase tests for BlockLoad/BlockStore VECTORIZE (alignment

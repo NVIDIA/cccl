@@ -146,3 +146,36 @@
     - Result: 12 passed.
   - `pre-commit run --all-files`
     - Result: all hooks passed.
+
+## 2026-01-18 (block run-length decode)
+- Request: Implement single-phase block run-length decode; use CUB for guidance; run GPU tests and pre-commit.
+- Changes:
+  - `cuda/coop/_types.py`: added pointer-reference parameter types and deref-on-call support; fixed parent/child param arg handling for pointer deref.
+  - `cuda/coop/block/_block_run_length_decode.py`: pass `total_decoded_size` as a pointer-backed array parameter and specialize on its dtype.
+  - `cuda/coop/_decls.py`: require `total_decoded_size` be a 1D integer device array.
+  - `cuda/coop/_rewrite.py`: require `total_decoded_size`, initialize parent `children`, and use parent decoded-offset dtype when decode window offset is a literal.
+  - `tests/coop/test_block_run_length_decode.py`: replaced with deterministic single-phase decode test (validates decoded items, relative offsets, total size).
+  - `AGENTS.md` / `SINGLE-PHASE-TODO.md`: documented run-length decode status and marked tasks complete.
+- Tests:
+  - `pytest tests/coop/test_block_run_length_decode.py`
+    - Result: 1 passed.
+  - `pre-commit run --all-files`
+    - Result: all hooks passed.
+
+## 2026-01-18 (block merge sort + radix sort single-phase)
+- Request: Port block merge sort + block radix sort to single-phase, update tests, and run GPU tests.
+- Changes:
+  - `cuda/coop/_decls.py`: expanded decl class discovery to include nested subclasses (register_global template wrappers) so single-phase rewrite recognizes merge/radix templates.
+  - `cuda/coop/_rewrite.py`: allow duplicate decl primitive names, added rewrite support for radix sort descending node, and removed unsupported `descending` kw from radix single-phase instantiation.
+  - `cuda/coop/block/_block_merge_sort.py`: always generate type wrapper for non-CPP-mapped types (e.g., complex) to define `storage_t` in NVRTC codegen.
+- Tests:
+  - `pytest tests/coop/test_block_merge_sort.py`
+    - Result: 97 passed.
+  - `pytest tests/coop/test_block_merge_sort_api.py`
+    - Result: 1 passed.
+  - `pytest tests/coop/test_block_radix_sort.py`
+    - Result: 98 passed.
+  - `pytest tests/coop/test_block_radix_sort_api.py`
+    - Result: 2 passed.
+  - `pre-commit run --files cuda/coop/_decls.py cuda/coop/_rewrite.py cuda/coop/block/_block_merge_sort.py`
+    - Result: all hooks passed.

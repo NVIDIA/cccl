@@ -747,6 +747,8 @@ class Primitive(IntEnum):
     HISTOGRAM__COMPOSITE = auto()
     RUN_LENGTH = auto()
     RUN_LENGTH__DECODE = auto()
+    MERGE_SORT = auto()
+    RADIX_SORT = auto()
 
 
 class Disposition(IntEnum):
@@ -865,6 +867,8 @@ class CoopNode:
             # We can default the parent return type to the corresponding
             # template's `get_instance_type()`.
             self.return_type = self.template.get_instance_type()
+            if self.children is None:
+                self.children = []
 
     def set_no_runtime_args(self):
         """
@@ -1068,6 +1072,10 @@ class CoopNode:
             return Primitive.STORE
         elif "exchange" in name:
             return Primitive.EXCHANGE
+        elif "merge_sort" in name:
+            return Primitive.MERGE_SORT
+        elif "radix_sort" in name:
+            return Primitive.RADIX_SORT
         elif "scan" in name:
             return Primitive.SCAN
         elif "reduce" in name:
@@ -1913,6 +1921,287 @@ class CoopBlockExchangeNode(CoopNode, CoopNodeMixin):
 
 
 @dataclass
+class CoopBlockMergeSortNode(CoopNode, CoopNodeMixin):
+    primitive_name = "coop.block.merge_sort_keys"
+    disposition = Disposition.ONE_SHOT
+
+    def refine_match(self, rewriter):
+        launch_config = rewriter.launch_config
+        if launch_config is None:
+            return False
+
+        self.threads_per_block = launch_config.blockdim
+
+        runtime_args = []
+        runtime_arg_types = []
+        runtime_arg_names = []
+
+        bound = self.bound.arguments
+        keys = bound.get("keys")
+        if keys is None:
+            raise RuntimeError("coop.block.merge_sort_keys requires keys")
+        if not isinstance(keys, ir.Var):
+            raise RuntimeError("coop.block.merge_sort_keys keys must be a variable")
+
+        keys_ty = self.typemap[keys.name]
+        if not isinstance(keys_ty, types.Array):
+            raise RuntimeError(
+                "coop.block.merge_sort_keys requires keys to be an array"
+            )
+
+        keys_root = rewriter.get_root_def(keys)
+        keys_leaf = keys_root.leaf_constructor_call
+        if not isinstance(keys_leaf, ArrayCallDefinition):
+            raise RuntimeError(
+                "Expected keys constructor call to be an ArrayCallDefinition, "
+                f"but got {keys_leaf!r} for {keys!r}"
+            )
+        items_per_thread = keys_leaf.shape
+        if not isinstance(items_per_thread, int):
+            raise RuntimeError(
+                f"Expected items_per_thread to be an int, got {items_per_thread!r}"
+            )
+
+        items_per_thread_kwarg = self.get_arg_value("items_per_thread")
+        if items_per_thread_kwarg != items_per_thread:
+            raise RuntimeError(
+                "coop.block.merge_sort_keys items_per_thread must match the "
+                f"keys array shape ({items_per_thread}); got {items_per_thread_kwarg}"
+            )
+        if items_per_thread < 1:
+            raise RuntimeError("items_per_thread must be >= 1")
+
+        compare_op = self.get_arg_value_safe("compare_op")
+        if compare_op is None:
+            raise RuntimeError("coop.block.merge_sort_keys requires compare_op")
+
+        dtype = keys_ty.dtype
+        methods = getattr(dtype, "methods", None)
+        if methods is not None and not methods:
+            methods = None
+
+        temp_storage = bound.get("temp_storage")
+        if temp_storage is not None:
+            raise RuntimeError(
+                "coop.block.merge_sort_keys does not support temp_storage "
+                "in single-phase"
+            )
+
+        runtime_args.append(keys)
+        runtime_arg_types.append(keys_ty)
+        runtime_arg_names.append("keys")
+
+        self.impl_kwds = {
+            "dtype": dtype,
+            "threads_per_block": self.threads_per_block,
+            "items_per_thread": items_per_thread,
+            "compare_op": compare_op,
+            "methods": methods,
+            "unique_id": self.unique_id,
+            "temp_storage": None,
+            "node": self,
+        }
+
+        self.return_type = types.void
+        self.runtime_args = runtime_args
+        self.runtime_arg_types = runtime_arg_types
+        self.runtime_arg_names = runtime_arg_names
+
+    def rewrite(self, rewriter):
+        rd = self.rewrite_details
+        return (rd.g_assign, rd.new_assign)
+
+    @cached_property
+    def rewrite_details(self):
+        return self.do_rewrite()
+
+
+@dataclass
+class CoopBlockRadixSortNode(CoopNode, CoopNodeMixin):
+    primitive_name = "coop.block.radix_sort_keys"
+    disposition = Disposition.ONE_SHOT
+
+    def refine_match(self, rewriter):
+        return self._refine_block_radix_sort(rewriter, descending=False)
+
+    def _refine_block_radix_sort(self, rewriter, descending: bool):
+        launch_config = rewriter.launch_config
+        if launch_config is None:
+            return False
+
+        self.threads_per_block = launch_config.blockdim
+
+        runtime_args = []
+        runtime_arg_types = []
+        runtime_arg_names = []
+
+        bound = self.bound.arguments
+        keys = bound.get("keys")
+        if keys is None:
+            raise RuntimeError("coop.block.radix_sort_keys requires keys")
+        if not isinstance(keys, ir.Var):
+            raise RuntimeError("coop.block.radix_sort_keys keys must be a variable")
+
+        keys_ty = self.typemap[keys.name]
+        if not isinstance(keys_ty, types.Array):
+            raise RuntimeError(
+                "coop.block.radix_sort_keys requires keys to be an array"
+            )
+
+        keys_root = rewriter.get_root_def(keys)
+        keys_leaf = keys_root.leaf_constructor_call
+        if not isinstance(keys_leaf, ArrayCallDefinition):
+            raise RuntimeError(
+                "Expected keys constructor call to be an ArrayCallDefinition, "
+                f"but got {keys_leaf!r} for {keys!r}"
+            )
+        items_per_thread = keys_leaf.shape
+        if not isinstance(items_per_thread, int):
+            raise RuntimeError(
+                f"Expected items_per_thread to be an int, got {items_per_thread!r}"
+            )
+
+        items_per_thread_kwarg = self.get_arg_value("items_per_thread")
+        if items_per_thread_kwarg != items_per_thread:
+            raise RuntimeError(
+                "coop.block.radix_sort_keys items_per_thread must match the "
+                f"keys array shape ({items_per_thread}); got {items_per_thread_kwarg}"
+            )
+        if items_per_thread < 1:
+            raise RuntimeError("items_per_thread must be >= 1")
+
+        begin_bit = bound.get("begin_bit")
+        end_bit = bound.get("end_bit")
+        if (begin_bit is None) != (end_bit is None):
+            raise RuntimeError(
+                "coop.block.radix_sort_keys requires both begin_bit and end_bit"
+            )
+
+        begin_bit_var = None
+        end_bit_var = None
+        if begin_bit is not None:
+            if isinstance(begin_bit, ir.Var):
+                begin_bit_var = begin_bit
+            elif isinstance(begin_bit, ir.Const):
+                begin_bit_value = begin_bit.value
+            else:
+                begin_bit_value = begin_bit
+
+            if begin_bit_var is None:
+                scope = self.instr.target.scope
+                const_name = f"$block_radix_sort_begin_bit_{self.unique_id}"
+                const_var = ir.Var(scope, const_name, self.expr.loc)
+                if const_name in self.typemap:
+                    raise RuntimeError(
+                        f"Variable {const_name} already exists in typemap."
+                    )
+                const_assign = ir.Assign(
+                    value=ir.Const(int(begin_bit_value), self.expr.loc),
+                    target=const_var,
+                    loc=self.expr.loc,
+                )
+                self.typemap[const_name] = types.int32
+                self.begin_bit_assign = const_assign
+                begin_bit_var = const_var
+
+            if isinstance(end_bit, ir.Var):
+                end_bit_var = end_bit
+            elif isinstance(end_bit, ir.Const):
+                end_bit_value = end_bit.value
+            else:
+                end_bit_value = end_bit
+
+            if end_bit_var is None:
+                scope = self.instr.target.scope
+                const_name = f"$block_radix_sort_end_bit_{self.unique_id}"
+                const_var = ir.Var(scope, const_name, self.expr.loc)
+                if const_name in self.typemap:
+                    raise RuntimeError(
+                        f"Variable {const_name} already exists in typemap."
+                    )
+                const_assign = ir.Assign(
+                    value=ir.Const(int(end_bit_value), self.expr.loc),
+                    target=const_var,
+                    loc=self.expr.loc,
+                )
+                self.typemap[const_name] = types.int32
+                self.end_bit_assign = const_assign
+                end_bit_var = const_var
+
+        temp_storage = bound.get("temp_storage")
+        if temp_storage is not None:
+            raise RuntimeError(
+                "coop.block.radix_sort_keys does not support temp_storage "
+                "in single-phase"
+            )
+
+        runtime_args.append(keys)
+        runtime_arg_types.append(keys_ty)
+        runtime_arg_names.append("keys")
+
+        if begin_bit_var is not None:
+            runtime_args.extend([begin_bit_var, end_bit_var])
+            runtime_arg_types.extend([types.int32, types.int32])
+            runtime_arg_names.extend(["begin_bit", "end_bit"])
+
+        dtype = keys_ty.dtype
+        methods = getattr(dtype, "methods", None)
+        if methods is not None and not methods:
+            methods = None
+
+        self.impl_kwds = {
+            "dtype": dtype,
+            "threads_per_block": self.threads_per_block,
+            "items_per_thread": items_per_thread,
+            "begin_bit": begin_bit,
+            "end_bit": end_bit,
+            "unique_id": self.unique_id,
+            "temp_storage": None,
+            "node": self,
+        }
+
+        self.return_type = types.void
+        self.runtime_args = runtime_args
+        self.runtime_arg_types = runtime_arg_types
+        self.runtime_arg_names = runtime_arg_names
+
+    def rewrite(self, rewriter):
+        rd = self.rewrite_details
+        instrs = [rd.g_assign]
+        begin_bit_assign = getattr(self, "begin_bit_assign", None)
+        if begin_bit_assign is not None:
+            instrs.append(begin_bit_assign)
+        end_bit_assign = getattr(self, "end_bit_assign", None)
+        if end_bit_assign is not None:
+            instrs.append(end_bit_assign)
+        instrs.append(rd.new_assign)
+        return instrs
+
+    @cached_property
+    def rewrite_details(self):
+        return self.do_rewrite()
+
+
+@dataclass
+class CoopBlockRadixSortDescendingNode(CoopNode, CoopNodeMixin):
+    primitive_name = "coop.block.radix_sort_keys_descending"
+    disposition = Disposition.ONE_SHOT
+
+    def refine_match(self, rewriter):
+        return CoopBlockRadixSortNode._refine_block_radix_sort(
+            self, rewriter, descending=True
+        )
+
+    def rewrite(self, rewriter):
+        rd = self.rewrite_details
+        return (rd.g_assign, rd.new_assign)
+
+    @cached_property
+    def rewrite_details(self):
+        return self.do_rewrite()
+
+
+@dataclass
 class CoopArrayNode(CoopNode):
     shape = None
     dtype = None
@@ -2419,12 +2708,15 @@ class CoopBlockRunLengthNode(CoopNode, CoopNodeMixin):
         decoded_items_per_thread = self.get_arg_value("decoded_items_per_thread")
 
         total_decoded_size = self.bound.arguments.get("total_decoded_size")
-        if total_decoded_size is not None:
-            assert isinstance(total_decoded_size, ir.Var)
-            total_decoded_size_ty = self.typemap[total_decoded_size.name]
-            runtime_args.append(total_decoded_size)
-            runtime_arg_types.append(total_decoded_size_ty)
-            runtime_arg_names.append("total_decoded_size")
+        if total_decoded_size is None:
+            raise RuntimeError(
+                "total_decoded_size must be provided for coop.block.run_length"
+            )
+        assert isinstance(total_decoded_size, ir.Var)
+        total_decoded_size_ty = self.typemap[total_decoded_size.name]
+        runtime_args.append(total_decoded_size)
+        runtime_arg_types.append(total_decoded_size_ty)
+        runtime_arg_names.append("total_decoded_size")
 
         decoded_offset_dtype = self.get_arg_value_safe("decoded_offset_dtype")
         if decoded_offset_dtype is not None:
@@ -2680,9 +2972,10 @@ class CoopBlockRunLengthDecodeNode(CoopNode, CoopNodeMixin):
         if decoded_window_offset is not None:
             if isinstance(decoded_window_offset, ir.Var):
                 decoded_window_offset_ty = self.typemap[decoded_window_offset.name]
-                decoded_window_offset_dtype = normalize_dtype_param(
-                    decoded_window_offset_ty
-                )
+                if not isinstance(decoded_window_offset_ty, types.IntegerLiteral):
+                    decoded_window_offset_dtype = normalize_dtype_param(
+                        decoded_window_offset_ty
+                    )
             else:
                 raise RuntimeError(
                     f"Expected a variable for decoded_window_offset, "
@@ -2690,7 +2983,7 @@ class CoopBlockRunLengthDecodeNode(CoopNode, CoopNodeMixin):
                 )
         if decoded_window_offset_dtype is None:
             # Try and obtain the type from the parent.
-            decoded_window_offset_dtype = self.parent_node.decode_window_offset_dtype
+            decoded_window_offset_dtype = self.parent_node.decoded_offset_dtype
 
         if decoded_window_offset_dtype is None:
             # If we still don't have a decoded window offset dtype, then
@@ -3793,13 +4086,19 @@ class CoopNodeRewriter(Rewrite):
     @cached_property
     def decl_class_by_primitive_name(self):
         decl_classes = self._decl_classes
-        primitive_names = set(k.primitive_name for k in decl_classes.keys())
-        if len(primitive_names) != len(decl_classes):
-            raise RuntimeError(
-                "Duplicate primitive names found in decl_classes: "
-                f"{decl_classes}, primitive names: {primitive_names}"
-            )
-        return {k.primitive_name: k for k in decl_classes.keys()}
+        decl_by_name = {}
+        for decl in decl_classes.keys():
+            name = decl.primitive_name
+            if name not in decl_by_name:
+                decl_by_name[name] = decl
+                continue
+            existing = decl_by_name[name]
+            if (
+                existing.__module__ != "cuda.coop._decls"
+                and decl.__module__ == "cuda.coop._decls"
+            ):
+                decl_by_name[name] = decl
+        return decl_by_name
 
     @cached_property
     def assignments_map(self):
