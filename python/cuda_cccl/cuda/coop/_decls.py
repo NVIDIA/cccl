@@ -51,6 +51,7 @@ from numba.extending import (
 
 import cuda.coop as coop
 
+from ._common import CUB_BLOCK_REDUCE_ALGOS
 from ._scan_op import ScanOp
 from ._typing import (
     ScanOpType,
@@ -314,7 +315,7 @@ def type_thread_data(context):
 
 
 class CoopArrayBaseTemplate(CoopAbstractTemplate):
-    minimum_num_args = 2
+    minimum_num_args = 1
 
     def _prevalidate_args(self, args, kwds):
         if len(args) >= self.minimum_num_args:
@@ -791,6 +792,205 @@ class CoopBlockStoreTempStorageGetItemDecl(CoopTempStorageGetItemDecl):
 
 
 # =============================================================================
+# Exchange
+# =============================================================================
+
+
+@register_global(coop.block.exchange)
+class CoopBlockExchangeDecl(CoopAbstractTemplate, CoopDeclMixin):
+    key = coop.block.exchange
+    primitive_name = "coop.block.exchange"
+    is_constructor = False
+    minimum_num_args = 1
+    default_exchange_type = coop.block.BlockExchangeType.StripedToBlocked
+
+    @staticmethod
+    def signature(
+        items: types.Array,
+        output_items: types.Array = None,
+        items_per_thread: int = None,
+        ranks: types.Array = None,
+        valid_flags: types.Array = None,
+        block_exchange_type: coop.block.BlockExchangeType = None,
+        warp_time_slicing: bool = False,
+        temp_storage: Union[types.Array, TempStorageType] = None,
+    ):
+        return inspect.signature(CoopBlockExchangeDecl.signature).bind(
+            items,
+            output_items=output_items,
+            items_per_thread=items_per_thread,
+            ranks=ranks,
+            valid_flags=valid_flags,
+            block_exchange_type=block_exchange_type,
+            warp_time_slicing=warp_time_slicing,
+            temp_storage=temp_storage,
+        )
+
+    def _validate_args_and_create_signature(self, bound, two_phase=False):
+        items = bound.arguments["items"]
+        output_items = bound.arguments.get("output_items")
+        ranks = bound.arguments.get("ranks")
+        valid_flags = bound.arguments.get("valid_flags")
+        if not isinstance(items, (types.Array, ThreadDataType)):
+            raise errors.TypingError(
+                f"{self.primitive_name} requires 'items' to be a device or "
+                "thread-data array"
+            )
+
+        using_thread_data = isinstance(items, ThreadDataType) or (
+            output_items is not None and isinstance(output_items, ThreadDataType)
+        )
+        if output_items is not None:
+            validate_src_dst(self, items, output_items)
+
+        items_per_thread = bound.arguments.get("items_per_thread")
+        if not using_thread_data:
+            if not two_phase or items_per_thread is not None:
+                items_per_thread = validate_items_per_thread(self, items_per_thread)
+
+        block_exchange_type = bound.arguments.get("block_exchange_type")
+        if block_exchange_type is None:
+            block_exchange_type = self.default_exchange_type
+        if isinstance(block_exchange_type, enum.IntEnum):
+            if block_exchange_type not in coop.block.BlockExchangeType:
+                raise errors.TypingError(
+                    f"{self.primitive_name} requires 'block_exchange_type' to be "
+                    "a BlockExchangeType enum value"
+                )
+            exchange_type_value = block_exchange_type
+        else:
+            if not isinstance(block_exchange_type, types.EnumMember):
+                raise errors.TypingError(
+                    f"{self.primitive_name} requires 'block_exchange_type' to be "
+                    "a BlockExchangeType enum value"
+                )
+            if block_exchange_type.instance_class is not coop.block.BlockExchangeType:
+                raise errors.TypingError(
+                    f"{self.primitive_name} requires 'block_exchange_type' to be "
+                    "a BlockExchangeType enum value"
+                )
+            exchange_type_value = None
+
+        if exchange_type_value is None:
+            if ranks is not None:
+                if not isinstance(ranks, (types.Array, ThreadDataType)):
+                    raise errors.TypingError(
+                        f"{self.primitive_name} requires 'ranks' to be a device or "
+                        "thread-data array"
+                    )
+                if isinstance(ranks, types.Array) and not isinstance(
+                    ranks.dtype, types.Integer
+                ):
+                    raise errors.TypingError(
+                        f"{self.primitive_name} requires 'ranks' to be an integer array"
+                    )
+            if valid_flags is not None:
+                if not isinstance(valid_flags, (types.Array, ThreadDataType)):
+                    raise errors.TypingError(
+                        f"{self.primitive_name} requires 'valid_flags' to be a device "
+                        "or thread-data array"
+                    )
+                if isinstance(valid_flags, types.Array) and not isinstance(
+                    valid_flags.dtype, (types.Integer, types.Boolean)
+                ):
+                    raise errors.TypingError(
+                        f"{self.primitive_name} requires 'valid_flags' to be a "
+                        "boolean or integer array"
+                    )
+        else:
+            uses_ranks = exchange_type_value in (
+                coop.block.BlockExchangeType.ScatterToBlocked,
+                coop.block.BlockExchangeType.ScatterToStriped,
+                coop.block.BlockExchangeType.ScatterToStripedGuarded,
+                coop.block.BlockExchangeType.ScatterToStripedFlagged,
+            )
+            uses_valid_flags = (
+                exchange_type_value
+                == coop.block.BlockExchangeType.ScatterToStripedFlagged
+            )
+
+            if uses_ranks:
+                if ranks is None:
+                    raise errors.TypingError(
+                        f"{self.primitive_name} requires 'ranks' for scatter exchanges"
+                    )
+                if not isinstance(ranks, (types.Array, ThreadDataType)):
+                    raise errors.TypingError(
+                        f"{self.primitive_name} requires 'ranks' to be a device or "
+                        "thread-data array"
+                    )
+                if isinstance(ranks, types.Array) and not isinstance(
+                    ranks.dtype, types.Integer
+                ):
+                    raise errors.TypingError(
+                        f"{self.primitive_name} requires 'ranks' to be an integer array"
+                    )
+            elif ranks is not None:
+                raise errors.TypingError(
+                    f"{self.primitive_name} does not accept 'ranks' for "
+                    f"{exchange_type_value.name}"
+                )
+
+            if uses_valid_flags:
+                if valid_flags is None:
+                    raise errors.TypingError(
+                        f"{self.primitive_name} requires 'valid_flags' for "
+                        "ScatterToStripedFlagged"
+                    )
+                if not isinstance(valid_flags, (types.Array, ThreadDataType)):
+                    raise errors.TypingError(
+                        f"{self.primitive_name} requires 'valid_flags' to be a device "
+                        "or thread-data array"
+                    )
+                if isinstance(valid_flags, types.Array) and not isinstance(
+                    valid_flags.dtype, (types.Integer, types.Boolean)
+                ):
+                    raise errors.TypingError(
+                        f"{self.primitive_name} requires 'valid_flags' to be a "
+                        "boolean or integer array"
+                    )
+            elif valid_flags is not None:
+                raise errors.TypingError(
+                    f"{self.primitive_name} does not accept 'valid_flags' for "
+                    f"{exchange_type_value.name}"
+                )
+
+        warp_time_slicing = bound.arguments.get("warp_time_slicing")
+        if warp_time_slicing is None:
+            warp_time_slicing = False
+        if not isinstance(
+            warp_time_slicing, (types.Boolean, types.BooleanLiteral, bool)
+        ):
+            raise errors.TypingError(
+                f"{self.primitive_name} requires 'warp_time_slicing' to be a boolean"
+            )
+
+        temp_storage = bound.arguments.get("temp_storage")
+        if temp_storage is not None:
+            raise errors.TypingError(
+                f"{self.primitive_name} does not support 'temp_storage' in single-phase"
+            )
+
+        arglist = [items]
+        if output_items is not None:
+            arglist.append(output_items)
+        if items_per_thread is not None:
+            arglist.append(items_per_thread)
+        if ranks is not None:
+            arglist.append(ranks)
+        if valid_flags is not None:
+            arglist.append(valid_flags)
+        if block_exchange_type is not None:
+            arglist.append(block_exchange_type)
+        if warp_time_slicing is not None:
+            arglist.append(warp_time_slicing)
+
+        sig = signature(types.void, *arglist)
+
+        return sig
+
+
+# =============================================================================
 # Instance-related Load & Store Scaffolding (Two-Phase)
 # =============================================================================
 
@@ -1001,7 +1201,7 @@ class CoopBlockHistogramDecl(CoopAbstractTemplate, CoopDeclMixin):
     primitive_name = "coop.block.histogram"
     algorithm_enum = coop.BlockHistogramAlgorithm
     default_algorithm = coop.BlockHistogramAlgorithm.ATOMIC
-    minimum_num_args = 2
+    minimum_num_args = 1
 
     @staticmethod
     def get_instance_type():
@@ -1623,6 +1823,310 @@ def lower_constant_block_scan_instance_type(context, builder, typ, value):
 
 
 # =============================================================================
+# Reduce
+# =============================================================================
+
+
+@register
+class CoopBlockReduceDecl(CoopAbstractTemplate, CoopDeclMixin):
+    key = coop.block.reduce
+    primitive_name = "coop.block.reduce"
+    is_constructor = False
+    minimum_num_args = 1
+    default_algorithm = "warp_reductions"
+
+    @staticmethod
+    def signature(
+        src: Union[types.Array, types.Number],
+        items_per_thread: int = None,
+        binary_op: Optional[Callable] = None,
+        num_valid: Optional[int] = None,
+        algorithm: Optional[str] = None,
+        temp_storage: Union[types.Array, TempStorageType] = None,
+    ):
+        return inspect.signature(CoopBlockReduceDecl.signature).bind(
+            src,
+            items_per_thread=items_per_thread,
+            binary_op=binary_op,
+            num_valid=num_valid,
+            algorithm=algorithm,
+            temp_storage=temp_storage,
+        )
+
+    @staticmethod
+    def get_instance_type():
+        return block_reduce_instance_type
+
+    def _validate_args_and_create_signature(self, bound, two_phase=False):
+        src = bound.arguments["src"]
+        if not isinstance(src, (types.Array, types.Type)):
+            raise errors.TypingError(
+                f"{self.primitive_name} requires 'src' to be an array or scalar"
+            )
+
+        return_type = src.dtype if isinstance(src, types.Array) else src
+        arglist = [src]
+
+        process_items_per_thread(
+            self,
+            bound,
+            arglist,
+            two_phase,
+            target_array=src if isinstance(src, types.Array) else None,
+        )
+
+        binary_op = bound.arguments.get("binary_op")
+        if binary_op is None:
+            raise errors.TypingError(
+                f"{self.primitive_name} requires 'binary_op' to be specified"
+            )
+        arglist.append(binary_op)
+
+        num_valid = bound.arguments.get("num_valid")
+        if num_valid is not None:
+            if isinstance(src, types.Array):
+                raise errors.TypingError(
+                    f"{self.primitive_name} does not support 'num_valid' for array inputs"
+                )
+            if not isinstance(num_valid, (types.Integer, types.IntegerLiteral)):
+                raise errors.TypingError(
+                    f"{self.primitive_name} requires 'num_valid' to be an integer"
+                )
+            arglist.append(num_valid)
+
+        algorithm = bound.arguments.get("algorithm")
+        if algorithm is None:
+            algorithm = self.default_algorithm
+        if isinstance(algorithm, types.StringLiteral):
+            algorithm = algorithm.literal_value
+        if algorithm not in CUB_BLOCK_REDUCE_ALGOS:
+            raise errors.TypingError(
+                f"Invalid algorithm '{algorithm}' for {self.primitive_name}"
+            )
+        arglist.append(algorithm)
+
+        temp_storage = bound.arguments.get("temp_storage")
+        if temp_storage is not None:
+            raise errors.TypingError(
+                f"{self.primitive_name} does not support 'temp_storage' in single-phase"
+            )
+
+        sig = signature(return_type, *arglist)
+
+        return sig
+
+
+class CoopBlockReduceInstanceType(types.Type, CoopInstanceTypeMixin):
+    decl_class = CoopBlockReduceDecl
+
+    def __init__(self):
+        self.decl = self.decl_class()
+        name = self.decl_class.primitive_name
+        types.Type.__init__(self, name=name)
+        CoopInstanceTypeMixin.__init__(self)
+
+    def _validate_args_and_create_signature(
+        self,
+        src,
+        items_per_thread=None,
+        binary_op=None,
+        num_valid=None,
+        algorithm=None,
+        temp_storage=None,
+    ):
+        bound = inspect.signature(self.decl.signature).bind(
+            src,
+            items_per_thread=items_per_thread,
+            binary_op=binary_op,
+            num_valid=num_valid,
+            algorithm=algorithm,
+            temp_storage=temp_storage,
+        )
+
+        return self.decl._validate_args_and_create_signature(bound, two_phase=True)
+
+
+block_reduce_instance_type = CoopBlockReduceInstanceType()
+
+
+@type_callable(block_reduce_instance_type)
+def type_block_reduce_instance_call(context):
+    instance = block_reduce_instance_type
+
+    def typer(
+        src,
+        items_per_thread=None,
+        binary_op=None,
+        num_valid=None,
+        algorithm=None,
+        temp_storage=None,
+    ):
+        return instance._validate_args_and_create_signature(
+            src,
+            items_per_thread=items_per_thread,
+            binary_op=binary_op,
+            num_valid=num_valid,
+            algorithm=algorithm,
+            temp_storage=temp_storage,
+        )
+
+    return typer
+
+
+@register_model(CoopBlockReduceInstanceType)
+class CoopBlockReduceInstanceModel(models.OpaqueModel):
+    pass
+
+
+@lower_constant(CoopBlockReduceInstanceType)
+def lower_constant_block_reduce_instance_type(context, builder, typ, value):
+    return context.get_dummy_value()
+
+
+@register
+class CoopBlockSumDecl(CoopAbstractTemplate, CoopDeclMixin):
+    key = coop.block.sum
+    primitive_name = "coop.block.sum"
+    is_constructor = False
+    minimum_num_args = 1
+    default_algorithm = "warp_reductions"
+
+    @staticmethod
+    def signature(
+        src: Union[types.Array, types.Number],
+        items_per_thread: int = None,
+        num_valid: Optional[int] = None,
+        algorithm: Optional[str] = None,
+        temp_storage: Union[types.Array, TempStorageType] = None,
+    ):
+        return inspect.signature(CoopBlockSumDecl.signature).bind(
+            src,
+            items_per_thread=items_per_thread,
+            num_valid=num_valid,
+            algorithm=algorithm,
+            temp_storage=temp_storage,
+        )
+
+    @staticmethod
+    def get_instance_type():
+        return block_sum_instance_type
+
+    def _validate_args_and_create_signature(self, bound, two_phase=False):
+        src = bound.arguments["src"]
+        if not isinstance(src, (types.Array, types.Type)):
+            raise errors.TypingError(
+                f"{self.primitive_name} requires 'src' to be an array or scalar"
+            )
+
+        return_type = src.dtype if isinstance(src, types.Array) else src
+        arglist = [src]
+
+        process_items_per_thread(
+            self,
+            bound,
+            arglist,
+            two_phase,
+            target_array=src if isinstance(src, types.Array) else None,
+        )
+
+        num_valid = bound.arguments.get("num_valid")
+        if num_valid is not None:
+            if isinstance(src, types.Array):
+                raise errors.TypingError(
+                    f"{self.primitive_name} does not support 'num_valid' for array inputs"
+                )
+            if not isinstance(num_valid, (types.Integer, types.IntegerLiteral)):
+                raise errors.TypingError(
+                    f"{self.primitive_name} requires 'num_valid' to be an integer"
+                )
+            arglist.append(num_valid)
+
+        algorithm = bound.arguments.get("algorithm")
+        if algorithm is None:
+            algorithm = self.default_algorithm
+        if isinstance(algorithm, types.StringLiteral):
+            algorithm = algorithm.literal_value
+        if algorithm not in CUB_BLOCK_REDUCE_ALGOS:
+            raise errors.TypingError(
+                f"Invalid algorithm '{algorithm}' for {self.primitive_name}"
+            )
+        arglist.append(algorithm)
+
+        temp_storage = bound.arguments.get("temp_storage")
+        if temp_storage is not None:
+            raise errors.TypingError(
+                f"{self.primitive_name} does not support 'temp_storage' in single-phase"
+            )
+
+        sig = signature(return_type, *arglist)
+
+        return sig
+
+
+class CoopBlockSumInstanceType(types.Type, CoopInstanceTypeMixin):
+    decl_class = CoopBlockSumDecl
+
+    def __init__(self):
+        self.decl = self.decl_class()
+        name = self.decl_class.primitive_name
+        types.Type.__init__(self, name=name)
+        CoopInstanceTypeMixin.__init__(self)
+
+    def _validate_args_and_create_signature(
+        self,
+        src,
+        items_per_thread=None,
+        num_valid=None,
+        algorithm=None,
+        temp_storage=None,
+    ):
+        bound = inspect.signature(self.decl.signature).bind(
+            src,
+            items_per_thread=items_per_thread,
+            num_valid=num_valid,
+            algorithm=algorithm,
+            temp_storage=temp_storage,
+        )
+
+        return self.decl._validate_args_and_create_signature(bound, two_phase=True)
+
+
+block_sum_instance_type = CoopBlockSumInstanceType()
+
+
+@type_callable(block_sum_instance_type)
+def type_block_sum_instance_call(context):
+    instance = block_sum_instance_type
+
+    def typer(
+        src,
+        items_per_thread=None,
+        num_valid=None,
+        algorithm=None,
+        temp_storage=None,
+    ):
+        return instance._validate_args_and_create_signature(
+            src,
+            items_per_thread=items_per_thread,
+            num_valid=num_valid,
+            algorithm=algorithm,
+            temp_storage=temp_storage,
+        )
+
+    return typer
+
+
+@register_model(CoopBlockSumInstanceType)
+class CoopBlockSumInstanceModel(models.OpaqueModel):
+    pass
+
+
+@lower_constant(CoopBlockSumInstanceType)
+def lower_constant_block_sum_instance_type(context, builder, typ, value):
+    return context.get_dummy_value()
+
+
+# =============================================================================
 # Module Template
 # =============================================================================
 
@@ -1653,14 +2157,23 @@ class CoopBlockModuleTemplate(AttributeTemplate):
     def resolve_store(self, mod):
         return types.Function(CoopBlockStoreDecl)
 
+    def resolve_exchange(self, mod):
+        return types.Function(CoopBlockExchangeDecl)
+
     def resolve_histogram(self, mod):
         return types.Function(CoopBlockHistogramDecl)
 
     def resolve_run_length(self, mod):
         return types.Function(CoopBlockRunLengthDecl)
 
+    def resolve_reduce(self, mod):
+        return types.Function(CoopBlockReduceDecl)
+
     def resolve_scan(self, mod):
         return types.Function(CoopBlockScanDecl)
+
+    def resolve_sum(self, mod):
+        return types.Function(CoopBlockSumDecl)
 
 
 @register_attr

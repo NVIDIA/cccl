@@ -75,3 +75,74 @@
 - Tests:
   - `pre-commit run --all-files`
     - Result: all hooks passed.
+
+## 2026-01-17 (block reduce)
+- Request: Port block reduce to single-phase, iterate on failures, run full tests and pre-commit.
+- Changes:
+  - `cuda/coop/_decls.py`: return reduce/sum signatures as dtype (not instance types) for typed results; keep array/scalar validation.
+  - `cuda/coop/_rewrite.py`: accept scalar user-defined types for reduce/sum, switch one-shot nodes to `impl_kwds` only, cast `num_valid` to int32 for runtime calls, treat `sum` as reduce primitive, and remove `binary_op` from sum impl kwargs.
+  - `cuda/coop/_types.py`: allow output params to serve as the return type when it matches the node return type.
+  - `AGENTS.md`: add block reduce entry points/status.
+  - `SINGLE-PHASE-TODO.md`: mark block reduce/sum port done.
+  - `tests/coop/test_block_reduce.py`: ruff removed unused imports and reformatted.
+- Tests:
+  - `pytest tests/coop/test_block_reduce.py -k "user_defined_type_without_temp_storage and raking and 32" -x`
+  - `pytest tests/coop/test_block_reduce.py -k "block_reduction_valid and raking-32-T0" -x -vv`
+  - `pytest tests/coop/test_block_reduce.py -k "test_block_sum and raking-32-T0" -x -vv`
+  - `pytest tests/coop/test_block_reduce.py`
+    - Result: 867 passed.
+  - `pre-commit run --all-files`
+    - Result: all hooks passed (ruff/format updated `tests/coop/test_block_reduce.py`).
+
+## 2026-01-18 (block exchange)
+- Request: Port block exchange StripedToBlocked to single-phase, update tests, run full test file and pre-commit.
+- Changes:
+  - `cuda/coop/block/_block_exchange.py`: convert `exchange` to a `BasePrimitive` for single-phase; add `BlockExchange` helper; add `use_output_items` specialization.
+  - `cuda/coop/_decls.py`: add single-phase typing for `coop.block.exchange` and module attribute resolver.
+  - `cuda/coop/_rewrite.py`: add exchange primitive mapping and rewrite node; handle in/out arrays and warp_time_slicing.
+  - `tests/coop/test_block_exchange.py`: switch to single-phase calls (no link/temp storage).
+  - `AGENTS.md` / `SINGLE-PHASE-TODO.md`: record block exchange status and remaining variants.
+- Tests:
+  - `pytest tests/coop/test_block_exchange.py`
+    - Result: 54 passed.
+  - `pre-commit run --all-files`
+    - Result: all hooks passed (ruff/format updated `cuda/coop/block/_block_exchange.py` and `cuda/coop/block/__init__.py`).
+
+## 2026-01-18 (block exchange variants)
+- Request: Port remaining block exchange variants to single-phase (BlockedToStriped, BlockedToWarpStriped, WarpStripedToBlocked, ScatterToBlocked/Striped/Guarded/Flagged), run full tests, run pre-commit.
+- Changes:
+  - `cuda/coop/block/_block_exchange.py`: added full `BlockExchangeType` enum, extended `exchange` to select method/params per variant, and added scatter type specialization for ranks/valid flags.
+  - `cuda/coop/_decls.py`: expanded `coop.block.exchange` signature to accept `ranks`/`valid_flags`, relaxed enum-value checking, and enforced integer `valid_flags` for flagged scatter.
+  - `cuda/coop/_rewrite.py`: added scatter argument handling, shape checks, and impl kwargs for ranks/valid flags; normalized enum handling.
+  - `tests/coop/test_block_exchange.py`: added tests for BlockedToStriped/BlockedToWarpStriped/WarpStripedToBlocked and scatter variants, fixed scatter rank mapping, and used integer valid flags.
+  - `AGENTS.md` / `SINGLE-PHASE-TODO.md`: updated exchange status and marked variants complete.
+- Tests:
+  - `pytest tests/coop/test_block_exchange.py`
+    - Result: 120 passed.
+  - `pre-commit run --all-files`
+    - Result: all hooks passed.
+
+## 2026-01-18 (block exchange bool flags + load/store audit)
+- Request: Accept boolean valid_flags automatically (no manual cast) and audit BlockLoad/Store shared-memory algorithms with a plan.
+- Changes:
+  - `cuda/coop/_types.py`: treat boolean arrays as byte-addressed in codegen (bitcast to i8*) to avoid i1*/i8* mismatches.
+  - `cuda/coop/_decls.py` / `cuda/coop/_rewrite.py`: allow boolean valid_flags again.
+  - `tests/coop/test_block_exchange.py`: parameterize flagged scatter to cover boolean and uint8 valid_flags.
+  - `AGENTS.md` / `SINGLE-PHASE-TODO.md`: add BlockLoad/Store shared-memory algorithm audit notes and test-plan TODOs.
+- Tests:
+  - `pytest tests/coop/test_block_exchange.py -k "scatter_to_striped_guarded_and_flagged and True" -x -vv`
+  - `pytest tests/coop/test_block_exchange.py`
+    - Result: 121 passed.
+  - `pre-commit run --all-files`
+    - Result: all hooks passed (ruff format update).
+
+## 2026-01-18 (block load/store algorithm tests)
+- Request: Add single-phase tests for BlockLoad/BlockStore shared-memory algorithms and VECTORIZE alignment/fallback.
+- Changes:
+  - `tests/coop/test_block_load_store_algorithms_single_phase.py`: new single-phase coverage for TRANSPOSE/WARP_TRANSPOSE/WARP_TRANSPOSE_TIMESLICED and VECTORIZE (aligned, misaligned, odd items per thread).
+  - `SINGLE-PHASE-TODO.md`: marked load/store algorithm test items complete.
+- Tests:
+  - `pytest tests/coop/test_block_load_store_algorithms_single_phase.py`
+    - Result: 12 passed.
+  - `pre-commit run --all-files`
+    - Result: all hooks passed.

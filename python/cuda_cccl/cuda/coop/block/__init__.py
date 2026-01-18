@@ -3,6 +3,7 @@
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 from ._block_exchange import (
+    BlockExchange,
     BlockExchangeType,
     exchange,
 )
@@ -21,7 +22,7 @@ from ._block_radix_sort import (
     radix_sort_keys,
     radix_sort_keys_descending,
 )
-from ._block_reduce import reduce, sum
+from ._block_reduce import BlockReduce, BlockSum, reduce, sum
 from ._block_run_length_decode import (
     BlockRunLength,
     run_length,
@@ -36,6 +37,7 @@ from ._block_scan import (
 
 __all__ = [
     "BlockExchangeType",
+    "BlockExchange",
     "BlockHistogram",
     "BlockLoad",
     "BlockStore",
@@ -50,6 +52,8 @@ __all__ = [
     "merge_sort_keys",
     "radix_sort_keys",
     "radix_sort_keys_descending",
+    "BlockReduce",
+    "BlockSum",
     "reduce",
     "run_length",
     "scan",

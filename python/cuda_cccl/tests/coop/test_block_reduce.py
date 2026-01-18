@@ -11,7 +11,6 @@ import pytest
 from helpers import (
     NUMBA_TYPES_TO_NP,
     Complex,
-    complex_type,
     random_int,
     row_major_tid,
 )
@@ -31,6 +30,7 @@ numba.config.CUDA_LOW_OCCUPANCY_WARNINGS = 0
 def test_block_reduction_of_user_defined_type_without_temp_storage(
     threads_per_block, algorithm
 ):
+    @cuda.jit(device=True)
     def op(result_ptr, lhs_ptr, rhs_ptr):
         real_value = numba.int32(lhs_ptr[0].real + rhs_ptr[0].real)
         imag_value = numba.int32(lhs_ptr[0].imag + rhs_ptr[0].imag)
@@ -42,22 +42,14 @@ def test_block_reduction_of_user_defined_type_without_temp_storage(
         else reduce(mul, threads_per_block)
     )
 
-    block_reduce = coop.block.reduce(
-        dtype=complex_type,
-        binary_op=op,
-        threads_per_block=threads_per_block,
-        algorithm=algorithm,
-        methods={
-            "construct": Complex.construct,
-            "assign": Complex.assign,
-        },
-    )
-
-    @cuda.jit(link=block_reduce.files)
+    @cuda.jit
     def kernel(input, output):
         tid = row_major_tid()
-        block_output = block_reduce(
-            Complex(input[tid], input[num_threads_per_block + tid])
+        block_output = coop.block.reduce(
+            Complex(input[tid], input[num_threads_per_block + tid]),
+            items_per_thread=1,
+            binary_op=op,
+            algorithm=algorithm,
         )
 
         if tid == 0:
@@ -92,6 +84,7 @@ def test_block_reduction_of_user_defined_type_without_temp_storage(
     "algorithm", ["raking", "raking_commutative_only", "warp_reductions"]
 )
 def test_block_reduction_of_user_defined_type(threads_per_block, algorithm):
+    @cuda.jit(device=True)
     def op(result_ptr, lhs_ptr, rhs_ptr):
         real_value = numba.int32(lhs_ptr[0].real + rhs_ptr[0].real)
         imag_value = numba.int32(lhs_ptr[0].imag + rhs_ptr[0].imag)
@@ -103,25 +96,14 @@ def test_block_reduction_of_user_defined_type(threads_per_block, algorithm):
         else reduce(mul, threads_per_block)
     )
 
-    block_reduce = coop.block.reduce(
-        dtype=complex_type,
-        binary_op=op,
-        threads_per_block=threads_per_block,
-        algorithm=algorithm,
-        methods={
-            "construct": Complex.construct,
-            "assign": Complex.assign,
-        },
-    )
-    temp_storage_bytes = block_reduce.temp_storage_bytes
-
-    @cuda.jit(link=block_reduce.files)
+    @cuda.jit
     def kernel(input, output):
         tid = row_major_tid()
-        temp_storage = cuda.shared.array(shape=temp_storage_bytes, dtype="uint8")
-        block_output = block_reduce(
-            temp_storage,
+        block_output = coop.block.reduce(
             Complex(input[tid], input[num_threads_per_block + tid]),
+            items_per_thread=1,
+            binary_op=op,
+            algorithm=algorithm,
         )
 
         if tid == 0:
@@ -157,6 +139,7 @@ def test_block_reduction_of_user_defined_type(threads_per_block, algorithm):
     "algorithm", ["raking", "raking_commutative_only", "warp_reductions"]
 )
 def test_block_reduction_of_integral_type(T, threads_per_block, algorithm):
+    @cuda.jit(device=True)
     def op(a, b):
         return a if a < b else b
 
@@ -166,16 +149,15 @@ def test_block_reduction_of_integral_type(T, threads_per_block, algorithm):
         else reduce(mul, threads_per_block)
     )
 
-    block_reduce = coop.block.reduce(
-        dtype=T, binary_op=op, threads_per_block=threads_per_block, algorithm=algorithm
-    )
-    temp_storage_bytes = block_reduce.temp_storage_bytes
-
-    @cuda.jit(link=block_reduce.files)
+    @cuda.jit
     def kernel(input, output):
         tid = row_major_tid()
-        temp_storage = cuda.shared.array(shape=temp_storage_bytes, dtype="uint8")
-        block_output = block_reduce(temp_storage, input[tid])
+        block_output = coop.block.reduce(
+            input[tid],
+            items_per_thread=1,
+            binary_op=op,
+            algorithm=algorithm,
+        )
 
         if tid == 0:
             output[0] = block_output
@@ -206,6 +188,7 @@ def test_block_reduction_of_integral_type(T, threads_per_block, algorithm):
     "algorithm", ["raking", "raking_commutative_only", "warp_reductions"]
 )
 def test_block_reduction_valid(T, threads_per_block, algorithm):
+    @cuda.jit(device=True)
     def op(a, b):
         return a if a < b else b
 
@@ -215,17 +198,15 @@ def test_block_reduction_valid(T, threads_per_block, algorithm):
         else reduce(mul, threads_per_block)
     )
 
-    block_reduce = coop.block.reduce(
-        dtype=T, binary_op=op, threads_per_block=threads_per_block, algorithm=algorithm
-    )
-    temp_storage_bytes = block_reduce.temp_storage_bytes
-
-    @cuda.jit(link=block_reduce.files)
+    @cuda.jit
     def kernel(input, output):
         tid = row_major_tid()
-        temp_storage = cuda.shared.array(shape=temp_storage_bytes, dtype="uint8")
-        block_output = block_reduce(
-            temp_storage, input[tid], num_threads_per_block // 2
+        block_output = coop.block.reduce(
+            input[tid],
+            items_per_thread=1,
+            binary_op=op,
+            num_valid=num_threads_per_block // 2,
+            algorithm=algorithm,
         )
 
         if tid == 0:
@@ -259,6 +240,7 @@ def test_block_reduction_valid(T, threads_per_block, algorithm):
     "algorithm", ["raking", "raking_commutative_only", "warp_reductions"]
 )
 def test_block_reduction_array_local(T, threads_per_block, items_per_thread, algorithm):
+    @cuda.jit(device=True)
     def op(a, b):
         return a if a < b else b
 
@@ -268,28 +250,20 @@ def test_block_reduction_array_local(T, threads_per_block, items_per_thread, alg
         else reduce(mul, threads_per_block)
     )
 
-    block_reduce = coop.block.reduce(
-        dtype=T,
-        binary_op=op,
-        threads_per_block=threads_per_block,
-        items_per_thread=items_per_thread,
-        algorithm=algorithm,
-    )
-    temp_storage_bytes = block_reduce.temp_storage_bytes
-
-    @cuda.jit(link=block_reduce.files)
+    @cuda.jit
     def kernel(input, output):
         tid = row_major_tid()
-        temp_storage = cuda.shared.array(shape=temp_storage_bytes, dtype="uint8")
-        thread_items = cuda.local.array(shape=items_per_thread, dtype=T)
+        thread_items = coop.local.array(items_per_thread, dtype=T)
 
         for i in range(items_per_thread):
             thread_items[i] = input[i * num_threads_per_block + tid]
 
-        if items_per_thread == 1:
-            block_output = block_reduce(temp_storage, thread_items[0])
-        else:
-            block_output = block_reduce(temp_storage, thread_items)
+        block_output = coop.block.reduce(
+            thread_items,
+            items_per_thread=items_per_thread,
+            binary_op=op,
+            algorithm=algorithm,
+        )
 
         if tid == 0:
             output[0] = block_output
@@ -323,6 +297,7 @@ def test_block_reduction_array_local(T, threads_per_block, items_per_thread, alg
 def test_block_reduction_array_global(
     T, threads_per_block, items_per_thread, algorithm
 ):
+    @cuda.jit(device=True)
     def op(a, b):
         return a if a < b else b
 
@@ -332,25 +307,24 @@ def test_block_reduction_array_global(
         else reduce(mul, threads_per_block)
     )
 
-    block_reduce = coop.block.reduce(
-        dtype=T,
-        binary_op=op,
-        threads_per_block=threads_per_block,
-        items_per_thread=items_per_thread,
-        algorithm=algorithm,
-    )
-    temp_storage_bytes = block_reduce.temp_storage_bytes
-
-    @cuda.jit(link=block_reduce.files)
+    @cuda.jit
     def kernel(input, output):
         tid = row_major_tid()
-        temp_storage = cuda.shared.array(shape=temp_storage_bytes, dtype="uint8")
-
         if items_per_thread == 1:
-            block_output = block_reduce(temp_storage, input[tid])
+            block_output = coop.block.reduce(
+                input[tid],
+                items_per_thread=1,
+                binary_op=op,
+                algorithm=algorithm,
+            )
         else:
             block_input = input[items_per_thread * tid :]
-            block_output = block_reduce(temp_storage, block_input)
+            block_output = coop.block.reduce(
+                block_input,
+                items_per_thread=items_per_thread,
+                binary_op=op,
+                algorithm=algorithm,
+            )
 
         if tid == 0:
             output[0] = block_output
@@ -387,16 +361,14 @@ def test_block_sum(T, threads_per_block, algorithm):
         else reduce(mul, threads_per_block)
     )
 
-    block_reduce = coop.block.sum(
-        dtype=T, threads_per_block=threads_per_block, algorithm=algorithm
-    )
-    temp_storage_bytes = block_reduce.temp_storage_bytes
-
-    @cuda.jit(link=block_reduce.files)
+    @cuda.jit
     def kernel(input, output):
         tid = row_major_tid()
-        temp_storage = cuda.shared.array(shape=temp_storage_bytes, dtype="uint8")
-        block_output = block_reduce(temp_storage, input[tid])
+        block_output = coop.block.sum(
+            input[tid],
+            items_per_thread=1,
+            algorithm=algorithm,
+        )
 
         if tid == 0:
             output[0] = block_output
@@ -433,17 +405,14 @@ def test_block_sum_valid(T, threads_per_block, algorithm):
         else reduce(mul, threads_per_block)
     )
 
-    block_reduce = coop.block.sum(
-        dtype=T, threads_per_block=threads_per_block, algorithm=algorithm
-    )
-    temp_storage_bytes = block_reduce.temp_storage_bytes
-
-    @cuda.jit(link=block_reduce.files)
+    @cuda.jit
     def kernel(input, output):
         tid = row_major_tid()
-        temp_storage = cuda.shared.array(shape=temp_storage_bytes, dtype="uint8")
-        block_output = block_reduce(
-            temp_storage, input[tid], numba.int32(num_threads_per_block // 2)
+        block_output = coop.block.sum(
+            input[tid],
+            items_per_thread=1,
+            num_valid=numba.int32(num_threads_per_block // 2),
+            algorithm=algorithm,
         )
 
         if tid == 0:
@@ -483,27 +452,19 @@ def test_block_sum_array_local(T, threads_per_block, items_per_thread, algorithm
         else reduce(mul, threads_per_block)
     )
 
-    block_reduce = coop.block.sum(
-        dtype=T,
-        threads_per_block=threads_per_block,
-        items_per_thread=items_per_thread,
-        algorithm=algorithm,
-    )
-    temp_storage_bytes = block_reduce.temp_storage_bytes
-
-    @cuda.jit(link=block_reduce.files)
+    @cuda.jit
     def kernel(input, output):
         tid = row_major_tid()
-        temp_storage = cuda.shared.array(shape=temp_storage_bytes, dtype="uint8")
-        thread_items = cuda.local.array(shape=items_per_thread, dtype=T)
+        thread_items = coop.local.array(items_per_thread, dtype=T)
 
         for i in range(items_per_thread):
             thread_items[i] = input[i * num_threads_per_block + tid]
 
-        if items_per_thread == 1:
-            block_output = block_reduce(temp_storage, thread_items[0])
-        else:
-            block_output = block_reduce(temp_storage, thread_items)
+        block_output = coop.block.sum(
+            thread_items,
+            items_per_thread=items_per_thread,
+            algorithm=algorithm,
+        )
 
         if tid == 0:
             output[0] = block_output
@@ -541,24 +502,22 @@ def test_block_sum_array_global(T, threads_per_block, items_per_thread, algorith
         else reduce(mul, threads_per_block)
     )
 
-    block_reduce = coop.block.sum(
-        dtype=T,
-        threads_per_block=threads_per_block,
-        items_per_thread=items_per_thread,
-        algorithm=algorithm,
-    )
-    temp_storage_bytes = block_reduce.temp_storage_bytes
-
-    @cuda.jit(link=block_reduce.files)
+    @cuda.jit
     def kernel(input, output):
         tid = row_major_tid()
-        temp_storage = cuda.shared.array(shape=temp_storage_bytes, dtype="uint8")
-
         if items_per_thread == 1:
-            block_output = block_reduce(temp_storage, input[tid])
+            block_output = coop.block.sum(
+                input[tid],
+                items_per_thread=1,
+                algorithm=algorithm,
+            )
         else:
             block_input = input[items_per_thread * tid :]
-            block_output = block_reduce(temp_storage, block_input)
+            block_output = coop.block.sum(
+                block_input,
+                items_per_thread=items_per_thread,
+                algorithm=algorithm,
+            )
 
         if tid == 0:
             output[0] = block_output

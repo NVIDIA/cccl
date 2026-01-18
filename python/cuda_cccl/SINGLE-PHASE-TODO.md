@@ -13,3 +13,16 @@
 - [x] Fix array-based known-op scan codegen (items_per_thread > 1 initial value handling).
 - [x] Run targeted GPU tests for block scan (block_sum, block_scan_known_ops).
 - [x] Run targeted GPU tests for block scan (prefix callbacks, callable ops, user-defined types).
+- [x] Port block reduce/sum to single-phase (typing, rewrite, tests).
+- [x] Port block exchange StripedToBlocked to single-phase (typing, rewrite, tests).
+- [x] Port block exchange BlockedToStriped variants.
+- [x] Port block exchange BlockedToWarpStriped variants.
+- [x] Port block exchange ScatterToBlocked variants.
+- [x] Port block exchange ScatterToStriped / Flagged / Guarded variants.
+- [x] Port block exchange WarpStripedToBlocked variants.
+- [x] Add single-phase tests for BlockLoad/BlockStore shared-memory algorithms:
+  TRANSPOSE, WARP_TRANSPOSE, WARP_TRANSPOSE_TIMESLICED.
+- [x] Add single-phase tests for BlockLoad/BlockStore VECTORIZE (alignment
+  requirements + fallback behavior).
+- [x] Document BlockLoad/Store algorithm constraints and shared-memory
+  behavior (no separate BlockLoadToShared API; algorithms handle smem).
