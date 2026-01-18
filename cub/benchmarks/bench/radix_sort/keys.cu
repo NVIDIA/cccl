@@ -117,7 +117,7 @@ void radix_sort_keys(nvbench::state& state, nvbench::type_list<T, OffsetT>)
 {
   using offset_t = cub::detail::choose_offset_t<OffsetT>;
   using key_t    = T;
-  if constexpr (!fits_in_default_shared_memory<key_t, value_t, offset_t, sort_order>())
+  if constexpr (!fits_in_default_shared_memory<key_t, value_t, offset_t>())
   {
     return;
   }
