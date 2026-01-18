@@ -56,28 +56,6 @@ _CCCL_HOST_DEVICE OutputType transform_reduce(
   return thrust::reduce(exec, xfrm_first, xfrm_last, init, binary_op);
 } // end transform_reduce()
 
-template <typename DerivedPolicy, typename InputIterator1, typename InputIterator2, typename T>
-_CCCL_HOST_DEVICE T transform_reduce(
-  thrust::execution_policy<DerivedPolicy>& exec,
-  InputIterator1 first1,
-  InputIterator1 last1,
-  InputIterator2 first2,
-  T init)
-{
-  // Default binary operations: multiply elements and add results
-  using ValueType1 = ::cuda::std::iter_value_t<InputIterator1>;
-  using ValueType2 = ::cuda::std::iter_value_t<InputIterator2>;
-
-  return thrust::transform_reduce(
-    exec,
-    first1,
-    last1,
-    first2,
-    init,
-    ::cuda::std::plus<T>(),
-    ::cuda::std::multiplies<::cuda::std::common_type_t<ValueType1, ValueType2>>());
-} // end transform_reduce()
-
 template <typename DerivedPolicy,
           typename InputIterator1,
           typename InputIterator2,
