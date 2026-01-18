@@ -73,6 +73,10 @@ THRUST_NAMESPACE_BEGIN
  *  \see https://en.cppreference.com/w/cpp/algorithm/fill
  *  \see \c fill_n
  *  \see \c uninitialized_fill
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename DerivedPolicy, typename ForwardIterator, typename T>
 _CCCL_HOST_DEVICE void
@@ -111,6 +115,10 @@ fill(const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
  *  \see https://en.cppreference.com/w/cpp/algorithm/fill
  *  \see \c fill_n
  *  \see \c uninitialized_fill
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename ForwardIterator, typename T>
 _CCCL_HOST_DEVICE void fill(ForwardIterator first, ForwardIterator last, const T& value);
@@ -151,6 +159,10 @@ _CCCL_HOST_DEVICE void fill(ForwardIterator first, ForwardIterator last, const T
  *  \see https://en.cppreference.com/w/cpp/algorithm/fill_n
  *  \see \c fill
  *  \see \c uninitialized_fill_n
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename DerivedPolicy, typename OutputIterator, typename Size, typename T>
 _CCCL_HOST_DEVICE OutputIterator
@@ -187,6 +199,10 @@ fill_n(const thrust::detail::execution_policy_base<DerivedPolicy>& exec, OutputI
  *  \see https://en.cppreference.com/w/cpp/algorithm/fill_n
  *  \see \c fill
  *  \see \c uninitialized_fill_n
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename OutputIterator, typename Size, typename T>
 _CCCL_HOST_DEVICE OutputIterator fill_n(OutputIterator first, Size n, const T& value);

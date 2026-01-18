@@ -13,19 +13,19 @@
 #include <cooperative_groups.h>
 #include <host_device.cuh>
 
-struct custom_level : public cuda::hierarchy_level
+struct custom_level : public cuda::hierarchy_level_base<custom_level>
 {
-  using product_type  = unsigned int;
-  using allowed_above = cuda::allowed_levels<cuda::grid_level>;
-  using allowed_below = cuda::allowed_levels<cuda::block_level>;
+  using __product_type  = unsigned int;
+  using __allowed_above = cuda::__allowed_levels<cuda::grid_level>;
+  using __allowed_below = cuda::__allowed_levels<cuda::block_level>;
 };
 
 template <typename Level, typename Dims>
-struct custom_level_dims : public cuda::level_dimensions<Level, Dims>
+struct custom_level_dims : public cuda::hierarchy_level_desc<Level, Dims>
 {
   int dummy;
   constexpr custom_level_dims()
-      : cuda::level_dimensions<Level, Dims>() {};
+      : cuda::hierarchy_level_desc<Level, Dims>() {};
 };
 
 struct custom_level_test
@@ -33,37 +33,37 @@ struct custom_level_test
   template <typename DynDims>
   __host__ __device__ void operator()(const DynDims& dims) const
   {
-    // device-side require doesn't work with clang-cuda for now
+    // todo: allow this after fixing CCCLRT_REQUIRE with clang-cuda
 #if !_CCCL_CUDA_COMPILER(CLANG)
-    CCCLRT_REQUIRE(dims.count() == 84 * 1024);
-    CCCLRT_REQUIRE(dims.count(custom_level(), cuda::grid) == 42);
-    CCCLRT_REQUIRE(dims.extents() == dim3(42 * 512, 2, 2));
-    CCCLRT_REQUIRE(dims.extents(custom_level(), cuda::grid) == dim3(42, 1, 1));
-#endif
+    CCCLRT_REQUIRE(cuda::gpu_thread.count(cuda::grid, dims) == 84 * 1024);
+    CCCLRT_REQUIRE(custom_level{}.count(cuda::grid, dims) == 42);
+    CCCLRT_REQUIRE(cuda::gpu_thread.dims(cuda::grid, dims) == dim3(42 * 512, 2, 2));
+    CCCLRT_REQUIRE(custom_level{}.dims(cuda::grid, dims) == dim3(42, 1, 1));
+#endif // !_CCCL_CUDA_COMPILER(CLANG)
   }
 
   void run()
   {
-    // Check extending level_dimensions with custom info
-    custom_level_dims<cuda::block_level, cuda::dimensions<int, 64, 1, 1>> custom_block;
+    // Check extending hierarchy_level_desc with custom info
+    custom_level_dims<cuda::block_level, cuda::std::extents<int, 64, 1, 1>> custom_block;
     custom_block.dummy     = 2;
     auto custom_dims       = cuda::make_hierarchy(cuda::grid_dims<256>(), cuda::cluster_dims<8>(), custom_block);
     auto custom_block_back = custom_dims.level(cuda::block);
     CCCLRT_REQUIRE(custom_block_back.dummy == 2);
 
-    auto custom_dims_fragment = custom_dims.fragment(cuda::thread, cuda::block);
+    auto custom_dims_fragment = custom_dims.fragment(cuda::gpu_thread, cuda::block);
     auto custom_block_back2   = custom_dims_fragment.level(cuda::block);
     CCCLRT_REQUIRE(custom_block_back2.dummy == 2);
 
     // Check creating a custom level type works
-    auto custom_level_dims = cuda::dimensions<cuda::dimensions_index_type, 2, 2, 2>();
+    auto custom_level_dims = cuda::std::extents<cuda::dimensions_index_type, 2, 2, 2>();
     auto custom_hierarchy  = cuda::make_hierarchy(
       cuda::grid_dims(42),
-      cuda::level_dimensions<custom_level, decltype(custom_level_dims)>(custom_level_dims),
+      cuda::hierarchy_level_desc<custom_level, decltype(custom_level_dims)>(custom_level_dims),
       cuda::block_dims<256>());
 
-    static_assert(custom_hierarchy.extents(cuda::thread, custom_level()) == dim3(512, 2, 2));
-    static_assert(custom_hierarchy.count(cuda::thread, custom_level()) == 2048);
+    static_assert(cuda::gpu_thread.dims(custom_level(), custom_hierarchy) == dim3(512, 2, 2));
+    static_assert(cuda::gpu_thread.count(custom_level(), custom_hierarchy) == 2048);
 
     test_host_dev(custom_hierarchy, *this);
   }

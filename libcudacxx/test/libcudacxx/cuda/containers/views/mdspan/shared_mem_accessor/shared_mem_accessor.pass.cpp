@@ -17,6 +17,7 @@ __device__ void basic_mdspan_access_test()
   __shared__ int smem[4];
   [[maybe_unused]] cuda::shared_memory_mdspan<int, ext_t> md{smem, ext_t{}};
   unused(md[0]);
+  asm volatile("" : : "l"((size_t) smem) : "memory");
 }
 
 int main(int, char**)

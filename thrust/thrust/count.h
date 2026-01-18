@@ -87,6 +87,10 @@ THRUST_NAMESPACE_BEGIN
  *  \endcode
  *
  *  \see https://en.cppreference.com/w/cpp/algorithm/count
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename DerivedPolicy, typename InputIterator, typename EqualityComparable>
 _CCCL_HOST_DEVICE thrust::detail::it_difference_t<InputIterator>
@@ -129,6 +133,10 @@ count(const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
  *  \endcode
  *
  *  \see https://en.cppreference.com/w/cpp/algorithm/count
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename InputIterator, typename EqualityComparable>
 thrust::detail::it_difference_t<InputIterator>
@@ -182,6 +190,10 @@ count(InputIterator first, InputIterator last, const EqualityComparable& value);
  *  \endcode
  *
  *  \see https://en.cppreference.com/w/cpp/algorithm/count
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename DerivedPolicy, typename InputIterator, typename Predicate>
 _CCCL_HOST_DEVICE thrust::detail::it_difference_t<InputIterator>
@@ -232,6 +244,10 @@ count_if(const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
  *  \endcode
  *
  *  \see https://en.cppreference.com/w/cpp/algorithm/count
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename InputIterator, typename Predicate>
 thrust::detail::it_difference_t<InputIterator> count_if(InputIterator first, InputIterator last, Predicate pred);

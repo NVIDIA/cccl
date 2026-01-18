@@ -294,7 +294,8 @@ Usage example:
 +----------------------------------+------------------------------------------------------------------------------+
 | ``_CCCL_CONST``                  | Portable "constant" function attribute                                       |
 +----------------------------------+------------------------------------------------------------------------------+
-
+| ``_CCCL_LIFETIMEBOUND``          | Portable "lifetime bound" function attribute                                 |
++----------------------------------+------------------------------------------------------------------------------+
 
 **Portable Builtin Macros**:
 
@@ -359,6 +360,10 @@ CUDA doesn't support exceptions in device code, however, sometimes we need to wr
 +-----------------------------+-----------------------------------------------------------------------+
 
 *Note*: The ``_CCCL_CATCH`` clause must always introduce a named variable, like: ``_CCCL_CATCH(const exception_type& var)``.
+
+.. note::
+
+  ``_CCCL_THROW`` requires to include the ``<stdexcept>`` header, regardless exceptions are enabled or not.
 
 Example:
 

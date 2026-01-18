@@ -23,6 +23,7 @@
 //
 // Preconditions:
 //   * extents_type::index-cast(i) is a multidimensional index in extents_.
+#define _CCCL_DISABLE_MDSPAN_ACCESSOR_DETECT_INVALIDITY
 
 #include <cuda/mdspan>
 #include <cuda/std/cassert>
@@ -163,7 +164,7 @@ __device__ void test_layout()
 
 #if _CCCL_HAS_MULTIARG_OPERATOR_BRACKETS()
   test_iteration(construct_mapping(Layout(), cuda::std::extents<int>()));
-  __shared__ int data[1];
+  __shared__ int data[16];
   // Check operator constraint for number of arguments
   static_assert(check_operator_constraints(
     cuda::shared_memory_mdspan(data, construct_mapping(Layout(), cuda::std::extents<int, D>(1))), 0));
@@ -288,6 +289,6 @@ __global__ void test()
 
 int main(int, char**)
 {
-  NV_IF_TARGET(NV_IS_HOST, (test<<<1, 1, 1024 * sizeof(int)>>>();))
+  NV_IF_TARGET(NV_IS_HOST, (test<<<1, 1>>>(); assert(cudaDeviceSynchronize() == cudaSuccess);))
   return 0;
 }

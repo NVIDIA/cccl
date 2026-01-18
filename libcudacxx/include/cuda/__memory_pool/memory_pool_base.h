@@ -21,23 +21,20 @@
 #  pragma system_header
 #endif // no system header
 
-#if _CCCL_CUDA_COMPILER(CLANG)
-#  include <cuda_runtime.h>
-#  include <cuda_runtime_api.h>
-#endif // _CCCL_CUDA_COMPILER(CLANG)
+#if _CCCL_HAS_CTK()
 
-#include <cuda/__device/attributes.h>
-#include <cuda/__device/device_ref.h>
-#include <cuda/__memory_resource/any_resource.h>
-#include <cuda/__memory_resource/properties.h>
-#include <cuda/__runtime/api_wrapper.h>
-#include <cuda/__stream/internal_streams.h>
-#include <cuda/__stream/stream.h>
-#include <cuda/__stream/stream_ref.h>
-#include <cuda/std/__concepts/concept_macros.h>
-#include <cuda/std/cstddef>
+#  include <cuda/__device/attributes.h>
+#  include <cuda/__device/device_ref.h>
+#  include <cuda/__memory_resource/any_resource.h>
+#  include <cuda/__memory_resource/properties.h>
+#  include <cuda/__runtime/api_wrapper.h>
+#  include <cuda/__stream/internal_streams.h>
+#  include <cuda/__stream/stream.h>
+#  include <cuda/__stream/stream_ref.h>
+#  include <cuda/std/__concepts/concept_macros.h>
+#  include <cuda/std/cstddef>
 
-#include <cuda/std/__cccl/prologue.h>
+#  include <cuda/std/__cccl/prologue.h>
 
 _CCCL_BEGIN_NAMESPACE_CUDA
 
@@ -199,9 +196,9 @@ inline void __verify_device_supports_export_handle_type(
     return;
   }
   if (__location.type != ::CU_MEM_LOCATION_TYPE_DEVICE
-#if _CCCL_CTK_AT_LEAST(12, 6)
+#  if _CCCL_CTK_AT_LEAST(12, 6)
       && __location.type != ::CU_MEM_LOCATION_TYPE_HOST_NUMA
-#endif
+#  endif
   )
   {
     ::cuda::__throw_cuda_error(::cudaErrorNotSupported,
@@ -222,17 +219,17 @@ __get_default_memory_pool(const CUmemLocation __location, [[maybe_unused]] const
   auto __device = __location.type == ::CU_MEM_LOCATION_TYPE_DEVICE ? __location.id : 0;
   ::cuda::__verify_device_supports_stream_ordered_allocations(__device);
 
-#if _CCCL_CTK_AT_LEAST(13, 0)
+#  if _CCCL_CTK_AT_LEAST(13, 0)
   ::cudaMemPool_t __pool = ::cuda::__driver::__getDefaultMemPool(__location, __allocation_type);
   if (::cuda::memory_pool_attributes::release_threshold(__pool) == 0)
   {
     ::cuda::memory_pool_attributes::release_threshold.set(__pool, ::cuda::std::numeric_limits<size_t>::max());
   }
-#else // ^^^ _CCCL_CTK_AT_LEAST(13, 0) ^^^ / vvv _CCCL_CTK_BELOW(13, 0) vvv
+#  else // ^^^ _CCCL_CTK_AT_LEAST(13, 0) ^^^ / vvv _CCCL_CTK_BELOW(13, 0) vvv
   _CCCL_ASSERT(__location.type == ::CU_MEM_LOCATION_TYPE_DEVICE,
                "Before CUDA 13 only device memory pools have a default");
   ::cudaMemPool_t __pool = ::cuda::__driver::__deviceGetDefaultMemPool(__device);
-#endif // ^^^ _CCCL_CTK_BELOW(13, 0) ^^^
+#  endif // ^^^ _CCCL_CTK_BELOW(13, 0) ^^^
   return __pool;
 }
 
@@ -294,27 +291,27 @@ struct memory_pool_properties
   __pool_properties.handleTypes = ::CUmemAllocationHandleType(__properties.allocation_handle_type);
   __pool_properties.location    = __location;
 
-#if _CCCL_CTK_AT_LEAST(12, 2)
+#  if _CCCL_CTK_AT_LEAST(12, 2)
   if (__properties.max_pool_size != 0)
   {
-#  if _CCCL_CTK_AT_LEAST(13, 0)
+#    if _CCCL_CTK_AT_LEAST(13, 0)
     if (__allocation_type == ::CU_MEM_ALLOCATION_TYPE_MANAGED)
     {
       ::cuda::std::__throw_invalid_argument("Max pool size is not supported for managed memory pools");
     }
-#  endif // _CCCL_CTK_AT_LEAST(13, 0)
+#    endif // _CCCL_CTK_AT_LEAST(13, 0)
     if (__properties.initial_pool_size > __properties.max_pool_size)
     {
       ::cuda::std::__throw_invalid_argument("Initial pool size must be less than the max pool size");
     }
   }
   __pool_properties.maxSize = __properties.max_pool_size;
-#else
+#  else
   if (__properties.max_pool_size != 0)
   {
     ::cuda::std::__throw_invalid_argument("Max pool size is not supported on this CUDA version");
   }
-#endif // _CCCL_CTK_AT_LEAST(12, 2)
+#  endif // _CCCL_CTK_AT_LEAST(12, 2)
 
   if (__properties.initial_pool_size > __properties.release_threshold)
   {
@@ -627,18 +624,20 @@ public:
     return __pool_ == __rhs.__pool_;
   }
 
-#if _CCCL_STD_VER <= 2017
+#  if _CCCL_STD_VER <= 2017
   //! @brief Inequality comparison with another __memory_pool_base.
   //! @returns true if underlying \c cudaMemPool_t are not equal.
   [[nodiscard]] _CCCL_HOST_API bool operator!=(__memory_pool_base const& __rhs) const noexcept
   {
     return __pool_ != __rhs.__pool_;
   }
-#endif // _CCCL_STD_VER <= 2017
+#  endif // _CCCL_STD_VER <= 2017
 };
 
 _CCCL_END_NAMESPACE_CUDA
 
-#include <cuda/std/__cccl/epilogue.h>
+#  include <cuda/std/__cccl/epilogue.h>
+
+#endif // _CCCL_HAS_CTK()
 
 #endif // _CUDA___MEMORY_RESOURCE_MEMORY_POOL_BASE_H

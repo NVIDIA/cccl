@@ -104,7 +104,7 @@ struct binary_search_functor
   template <typename Tuple>
   _CCCL_HOST_DEVICE void operator()(Tuple t)
   {
-    thrust::get<1>(t) = func(begin, end, thrust::get<0>(t), comp);
+    ::cuda::std::get<1>(t) = func(begin, end, ::cuda::std::get<0>(t), comp);
   }
 }; // binary_search_functor
 
@@ -194,7 +194,6 @@ template <typename DerivedPolicy, typename ForwardIterator, typename T>
 _CCCL_HOST_DEVICE ForwardIterator
 lower_bound(thrust::execution_policy<DerivedPolicy>& exec, ForwardIterator begin, ForwardIterator end, const T& value)
 {
-  namespace p = thrust::placeholders;
   return thrust::lower_bound(exec, begin, end, value, ::cuda::std::less<>{});
 }
 
@@ -215,7 +214,6 @@ template <typename DerivedPolicy, typename ForwardIterator, typename T>
 _CCCL_HOST_DEVICE ForwardIterator
 upper_bound(thrust::execution_policy<DerivedPolicy>& exec, ForwardIterator begin, ForwardIterator end, const T& value)
 {
-  namespace p = thrust::placeholders;
   return thrust::upper_bound(exec, begin, end, value, ::cuda::std::less<>{});
 }
 
@@ -263,7 +261,6 @@ _CCCL_HOST_DEVICE OutputIterator lower_bound(
   InputIterator values_end,
   OutputIterator output)
 {
-  namespace p = thrust::placeholders;
   return thrust::lower_bound(exec, begin, end, values_begin, values_end, output, ::cuda::std::less<>{});
 }
 
@@ -293,7 +290,6 @@ _CCCL_HOST_DEVICE OutputIterator upper_bound(
   InputIterator values_end,
   OutputIterator output)
 {
-  namespace p = thrust::placeholders;
   return thrust::upper_bound(exec, begin, end, values_begin, values_end, output, ::cuda::std::less<>{});
 }
 
@@ -323,7 +319,6 @@ _CCCL_HOST_DEVICE OutputIterator binary_search(
   InputIterator values_end,
   OutputIterator output)
 {
-  namespace p = thrust::placeholders;
   return thrust::binary_search(exec, begin, end, values_begin, values_end, output, ::cuda::std::less<>{});
 }
 
