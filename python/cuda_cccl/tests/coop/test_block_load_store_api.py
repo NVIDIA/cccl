@@ -18,10 +18,10 @@ def test_block_load_store():
     # example-begin load_store
     threads_per_block = 32
     items_per_thread = 4
-    block_load = coop.block.load(
+    block_load = coop.block.BlockLoad(
         numba.int32, threads_per_block, items_per_thread, "striped"
     )
-    block_store = coop.block.store(
+    block_store = coop.block.BlockStore(
         numba.int32, threads_per_block, items_per_thread, "striped"
     )
 
@@ -50,7 +50,7 @@ def test_block_load_store_single_phase():
 
     @cuda.jit
     def kernel(d_in, d_out, items_per_thread):
-        thread_data = cuda.local.array(items_per_thread, dtype=d_in.dtype)
+        thread_data = coop.local.array(items_per_thread, dtype=d_in.dtype)
         coop.block.load(d_in, thread_data, items_per_thread)
         coop.block.store(d_out, thread_data, items_per_thread)
 

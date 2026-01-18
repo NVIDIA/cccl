@@ -30,8 +30,7 @@ numba.config.CUDA_LOW_OCCUPANCY_WARNINGS = 0
     ],
 )
 def test_block_load(T, threads_per_block, items_per_thread, algorithm):
-    block_load = coop.block.load(T, threads_per_block, items_per_thread, algorithm)
-    temp_storage_bytes = block_load.temp_storage_bytes
+    block_load = coop.block.BlockLoad(T, threads_per_block, items_per_thread, algorithm)
 
     num_threads_per_block = (
         threads_per_block
@@ -39,7 +38,7 @@ def test_block_load(T, threads_per_block, items_per_thread, algorithm):
         else reduce(mul, threads_per_block)
     )
 
-    if algorithm == "striped":
+    if algorithm == "striped" or algorithm == coop.BlockLoadAlgorithm.STRIPED:
 
         @cuda.jit(device=True)
         def output_index(i):
@@ -52,9 +51,8 @@ def test_block_load(T, threads_per_block, items_per_thread, algorithm):
 
     @cuda.jit(link=block_load.files)
     def kernel(d_input, d_output):
-        temp_storage = cuda.shared.array(shape=temp_storage_bytes, dtype="uint8")
         thread_data = cuda.local.array(shape=items_per_thread, dtype=dtype)
-        block_load(temp_storage, d_input, thread_data)
+        block_load(d_input, thread_data)
         for i in range(items_per_thread):
             d_output[output_index(i)] = thread_data[i]
 

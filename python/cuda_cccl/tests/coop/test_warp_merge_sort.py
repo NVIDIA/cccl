@@ -19,16 +19,14 @@ def test_warp_merge_sort(T, items_per_thread):
         return a < b
 
     warp_merge_sort = coop.warp.merge_sort_keys(T, items_per_thread, op)
-    temp_storage_bytes = warp_merge_sort.temp_storage_bytes
 
     @cuda.jit(link=warp_merge_sort.files)
     def kernel(input, output):
         tid = cuda.threadIdx.x
-        temp_storage = cuda.shared.array(shape=temp_storage_bytes, dtype="uint8")
         thread_data = cuda.local.array(shape=items_per_thread, dtype=dtype)
         for i in range(items_per_thread):
             thread_data[i] = input[tid * items_per_thread + i]
-        warp_merge_sort(temp_storage, thread_data)
+        warp_merge_sort(thread_data)
         for i in range(items_per_thread):
             output[tid * items_per_thread + i] = thread_data[i]
 

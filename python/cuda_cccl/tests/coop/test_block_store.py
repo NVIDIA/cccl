@@ -30,8 +30,9 @@ numba.config.CUDA_LOW_OCCUPANCY_WARNINGS = 0
     ],
 )
 def test_block_store(T, threads_per_block, items_per_thread, algorithm):
-    block_store = coop.block.store(T, threads_per_block, items_per_thread, algorithm)
-    temp_storage_bytes = block_store.temp_storage_bytes
+    block_store = coop.block.BlockStore(
+        T, threads_per_block, items_per_thread, algorithm
+    )
 
     num_threads_per_block = (
         threads_per_block
@@ -52,11 +53,10 @@ def test_block_store(T, threads_per_block, items_per_thread, algorithm):
 
     @cuda.jit(link=block_store.files)
     def kernel(d_input, d_output):
-        temp_storage = cuda.shared.array(shape=temp_storage_bytes, dtype="uint8")
         thread_data = cuda.local.array(shape=items_per_thread, dtype=dtype)
         for i in range(items_per_thread):
             thread_data[i] = d_input[input_index(i)]
-        block_store(temp_storage, d_output, thread_data)
+        block_store(d_output, thread_data)
 
     dtype = NUMBA_TYPES_TO_NP[T]
     items_per_tile = num_threads_per_block * items_per_thread

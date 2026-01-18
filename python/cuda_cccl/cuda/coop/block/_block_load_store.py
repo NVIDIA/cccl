@@ -23,6 +23,7 @@ from .._types import (
     DependentPointer,
     Invocable,
     TemplateParameter,
+    TempStoragePointer,
     Value,
 )
 from .._typing import (
@@ -85,7 +86,7 @@ class BaseLoadStore(BasePrimitive):
             algorithm,
         )
 
-        input_is_array_pointer = items_per_thread > 1
+        input_is_array_pointer = True
 
         parameters = [
             [
@@ -104,6 +105,13 @@ class BaseLoadStore(BasePrimitive):
         ]
         if num_valid_items is not None:
             parameters[0].append(Value(numba.types.int32, name="num_valid_items"))
+        if temp_storage is not None:
+            parameters[0].insert(
+                0,
+                TempStoragePointer(
+                    numba.types.uint8, is_array_pointer=True, name="temp_storage"
+                ),
+            )
         self.parameters = parameters
 
         self.algorithm = Algorithm(

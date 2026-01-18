@@ -179,3 +179,27 @@
     - Result: 2 passed.
   - `pre-commit run --files cuda/coop/_decls.py cuda/coop/_rewrite.py cuda/coop/block/_block_merge_sort.py`
     - Result: all hooks passed.
+
+## 2026-01-18 (cuda.coop full test run + test_histo2 fix)
+- Request: Run full `tests/coop` and iterate on any failures.
+- Tests:
+  - `pytest tests/coop`
+    - Result: 15 failed, 2844 passed, 41 skipped, 2 xfailed (failures all in `tests/coop/test_histo2.py::test_block_histogram_histo_single_phase_2` for `num_total_items=1024`, `items_per_thread=2`).
+- Diagnosis:
+  - Failures were non-deterministic in the full suite but passed in isolation.
+  - Root cause: output device array in `test_histo2` relied on zeroed memory; the CUDA memory pool can reuse non-zero buffers during a long test run, inflating histogram totals.
+- Changes:
+  - `tests/coop/test_histo2.py`: zero-initialize `d_output` via `cuda.to_device(np.zeros(...))` for deterministic histogram totals.
+- Tests after fix:
+  - `pytest tests/coop/test_histo2.py`
+    - Result: 560 passed, 16 skipped.
+  - `pre-commit run --files tests/coop/test_histo2.py`
+    - Result: all hooks passed.
+
+## 2026-01-18 (pre-commit follow-up)
+- Request: Run pre-commit and fix ruff/linter errors.
+- Changes:
+  - `tests/coop/test_block_histogram.py`: removed two unused `tid` assignments.
+- Tests:
+  - `pre-commit run --all-files`
+    - Result: all hooks passed.

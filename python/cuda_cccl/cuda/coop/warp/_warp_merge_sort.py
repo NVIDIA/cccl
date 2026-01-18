@@ -4,15 +4,14 @@
 
 import numba
 
-from .._common import make_binary_tempfile
 from .._types import (
     Algorithm,
+    BasePrimitive,
     Constant,
     Dependency,
     DependentArray,
     DependentPythonOperator,
     Invocable,
-    Pointer,
     TemplateParameter,
     numba_type_to_wrapper,
 )
@@ -50,6 +49,11 @@ def merge_sort_keys(
     Returns:
         A callable object that can be linked to and invoked from a CUDA kernel
     """
+    primitive = BasePrimitive()
+    primitive.is_one_shot = True
+    primitive.temp_storage = None
+    primitive.node = None
+
     template = Algorithm(
         "WarpMergeSort",
         "Sort",
@@ -62,16 +66,18 @@ def merge_sort_keys(
         ],
         [
             [
-                Pointer(numba.uint8),
                 DependentArray(Dependency("KeyT"), Dependency("ITEMS_PER_THREAD")),
                 DependentPythonOperator(
                     Constant(numba.int8),
                     [Dependency("KeyT"), Dependency("KeyT")],
                     Dependency("Op"),
+                    name="compare_op",
                 ),
             ]
         ],
+        primitive,
         type_definitions=[numba_type_to_wrapper(dtype, methods=methods)],
+        threads=threads_in_warp,
     )
     specialization = template.specialize(
         {
@@ -82,10 +88,7 @@ def merge_sort_keys(
         }
     )
     return Invocable(
-        temp_files=[
-            make_binary_tempfile(ltoir, ".ltoir")
-            for ltoir in specialization.get_lto_ir(threads=threads_in_warp)
-        ],
+        ltoir_files=specialization.get_lto_ir(threads=threads_in_warp),
         temp_storage_bytes=specialization.temp_storage_bytes,
         temp_storage_alignment=specialization.temp_storage_alignment,
         algorithm=specialization,

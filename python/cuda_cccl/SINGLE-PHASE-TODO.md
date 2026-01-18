@@ -7,8 +7,11 @@
 - [x] Support callable scan ops in single-phase scan.
 - [x] Support user-defined types in single-phase scan.
 - [ ] Support `coop.ThreadData` inputs for scan (dtype inference).
+- [ ] Support `coop.ThreadData` inputs for load/store/exchange (rewrite items_per_thread + dtype inference).
 - [ ] Decide how to handle scalar scan inputs (return semantics) if needed.
 - [ ] Verify explicit `temp_storage` handling for scan (single-phase).
+- [ ] Implement `coop.TempStorage` placeholder handling (allocate shared uint8 buffer from size/alignment).
+- [ ] Add tests for `coop.TempStorage` placeholder reuse across primitives.
 - [x] Re-enable/convert skipped block scan tests once features land.
 - [x] Fix array-based known-op scan codegen (items_per_thread > 1 initial value handling).
 - [x] Run targeted GPU tests for block scan (block_sum, block_scan_known_ops).
@@ -30,3 +33,4 @@
   requirements + fallback behavior).
 - [x] Document BlockLoad/Store algorithm constraints and shared-memory
   behavior (no separate BlockLoadToShared API; algorithms handle smem).
+- [ ] Evaluate numba-cuda `280-launch-config-v2` branch for coop launch config needs.

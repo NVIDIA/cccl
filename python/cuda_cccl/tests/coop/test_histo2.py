@@ -174,7 +174,8 @@ def test_block_histogram_histo_single_phase_2(
 
     h_input = np.random.randint(0, bins, num_total_items, dtype=item_dtype)
     d_input = cuda.to_device(h_input)
-    d_output = cuda.device_array(bins, dtype=counter_dtype)
+    # Ensure deterministic output; device_array is not guaranteed zeroed.
+    d_output = cuda.to_device(np.zeros(bins, dtype=counter_dtype))
     num_blocks = blocks_per_grid
 
     k = kernel[num_blocks, threads_per_block]

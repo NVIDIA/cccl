@@ -1339,18 +1339,25 @@ class CoopBlockHistogramInitDecl(CoopAbstractTemplate, CoopDeclMixin):
     minimum_num_args = 0
 
     @staticmethod
-    def signature(*args, **kwargs):
+    def signature(histogram: types.Array = None):
         return inspect.signature(
             CoopBlockHistogramInitDecl.signature,
-        ).bind()
+        ).bind(histogram=histogram)
 
     @staticmethod
     def get_instance_type():
         return block_histogram_instance_type
 
     def _validate_args_and_create_signature(self, bound, two_phase=False):
-        sig = signature(types.void, None)
-        return sig
+        histogram = bound.arguments.get("histogram")
+        if histogram is None:
+            return signature(types.void)
+        if not isinstance(histogram, types.Array):
+            raise errors.TypingError(
+                f"{self.primitive_name} requires 'histogram' to be a device array, "
+                f"got {type(histogram).__name__}"
+            )
+        return signature(types.void, histogram)
 
 
 @register
@@ -1360,10 +1367,10 @@ class CoopBlockHistogramCompositeDecl(CoopAbstractTemplate, CoopDeclMixin):
     minimum_num_args = 1
 
     @staticmethod
-    def signature(items: types.Array):
+    def signature(items: types.Array, histogram: types.Array = None):
         return inspect.signature(
             CoopBlockHistogramCompositeDecl.signature,
-        ).bind(items)
+        ).bind(items, histogram=histogram)
 
     def _validate_args_and_create_signature(self, bound, two_phase=False):
         items = bound.arguments["items"]
@@ -1373,7 +1380,15 @@ class CoopBlockHistogramCompositeDecl(CoopAbstractTemplate, CoopDeclMixin):
                 f"got {type(items).__name__}"
             )
 
-        sig = signature(types.void, items)
+        histogram = bound.arguments.get("histogram")
+        if histogram is None:
+            return signature(types.void, items)
+        if not isinstance(histogram, types.Array):
+            raise errors.TypingError(
+                f"{self.primitive_name} requires 'histogram' to be a device array, "
+                f"got {type(histogram).__name__}"
+            )
+        sig = signature(types.void, items, histogram)
 
         return sig
 
