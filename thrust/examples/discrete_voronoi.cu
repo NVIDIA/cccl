@@ -40,70 +40,71 @@ __host__ __device__ int minVoro(int m, int n, int x_i, int y_i, int p, int q)
   int d_iq = (x_i - x_q) * (x_i - x_q) + (y_i - y_q) * (y_i - y_q);
   int d_ip = (x_i - x_p) * (x_i - x_p) + (y_i - y_p) * (y_i - y_p);
 
-    if (d_iq < d_ip)
-    {
-      return q; // q is closer
-    }
-    else
-    {
-      return p;
-    }
-  }
-
-  // For each point p+{-k,0,k}, we keep the Site with minimum distance
-  template <typename Tuple>
-  __host__ __device__ int operator()(const Tuple& t)
+  if (d_iq < d_ip)
   {
-    // Current point and site
-    int i = cuda::std::get<9>(t);
-    int v = cuda::std::get<0>(t);
+    return q; // q is closer
+  }
+  else
+  {
+    return p;
+  }
+}
 
-    // Current point coordinates
-    int y = i / m;
-    int x = i - y * m;
+// For each point p+{-k,0,k}, we keep the Site with minimum distance
+template <typename Tuple>
+__host__ __device__ int operator()(const Tuple& t)
+{
+  // Current point and site
+  int i = cuda::std::get<9>(t);
+  int v = cuda::std::get<0>(t);
 
-    if (x >= k)
-    {
-      v = minVoro(x, y, v, cuda::std::get<3>(t));
+  // Current point coordinates
+  int y = i / m;
+  int x = i - y * m;
 
-      if (y >= k)
-      {
-        v = minVoro(x, y, v, cuda::std::get<8>(t));
-      }
-
-      if (y + k < n)
-      {
-        v = minVoro(x, y, v, cuda::std::get<7>(t));
-      }
-    }
-
-    if (x + k < m)
-    {
-      v = minVoro(x, y, v, cuda::std::get<1>(t));
-
-      if (y >= k)
-      {
-        v = minVoro(x, y, v, cuda::std::get<6>(t));
-      }
-      if (y + k < n)
-      {
-        v = minVoro(x, y, v, cuda::std::get<5>(t));
-      }
-    }
+  if (x >= k)
+  {
+    v = minVoro(x, y, v, cuda::std::get<3>(t));
 
     if (y >= k)
     {
-      v = minVoro(x, y, v, cuda::std::get<4>(t));
+      v = minVoro(x, y, v, cuda::std::get<8>(t));
+    }
+
+    if (y + k < n)
+    {
+      v = minVoro(x, y, v, cuda::std::get<7>(t));
+    }
+  }
+
+  if (x + k < m)
+  {
+    v = minVoro(x, y, v, cuda::std::get<1>(t));
+
+    if (y >= k)
+    {
+      v = minVoro(x, y, v, cuda::std::get<6>(t));
     }
     if (y + k < n)
     {
-      v = minVoro(x, y, v, cuda::std::get<2>(t));
+      v = minVoro(x, y, v, cuda::std::get<5>(t));
     }
-
-    // global return
-    return v;
   }
-};
+
+  if (y >= k)
+  {
+    v = minVoro(x, y, v, cuda::std::get<4>(t));
+  }
+  if (y + k < n)
+  {
+    v = minVoro(x, y, v, cuda::std::get<2>(t));
+  }
+
+  // global return
+  return v;
+}
+}
+;
 
 // print an M-by-N array
 template <typename T>
