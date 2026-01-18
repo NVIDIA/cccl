@@ -417,3 +417,18 @@ def test_no_init_value_iterator():
     )
 
     np.testing.assert_array_equal(expected, got)
+
+
+def test_inclusive_scan_with_lambda():
+    """Test inclusive_scan with a lambda function as the scan operator."""
+    h_init = np.array([0], dtype=np.int32)
+    d_input = cp.array([1, 2, 3, 4, 5], dtype=np.int32)
+    d_output = cp.empty_like(d_input)
+
+    # Use a lambda function directly as the scan operator
+    cuda.compute.inclusive_scan(
+        d_input, d_output, lambda a, b: a + b, h_init, len(d_input)
+    )
+
+    expected = np.array([1, 3, 6, 10, 15], dtype=np.int32)
+    np.testing.assert_array_equal(d_output.get(), expected)

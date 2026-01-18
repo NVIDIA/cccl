@@ -272,7 +272,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT when_all_t
           break;
         case __error:
           // One or more child operations completed with an error:
-          __errors_.__visit(execution::set_error, static_cast<__errors_t&&>(__errors_), static_cast<_Rcvr&&>(__rcvr_));
+          __visit(execution::set_error, static_cast<__errors_t&&>(__errors_), static_cast<_Rcvr&&>(__rcvr_));
           break;
         case __stopped:
           execution::set_stopped(static_cast<_Rcvr&&>(__rcvr_));

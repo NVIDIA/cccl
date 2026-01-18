@@ -22,7 +22,7 @@ function(cudax_add_catch2_test target_name_var test_name) # ARGN=test sources
     PRIVATE #
       cudax.compiler_interface
       cccl.c2h.main
-      CUDA::cudart
+      CUDA::cudart_static
   )
   target_compile_options(
     ${test_target}

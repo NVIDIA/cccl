@@ -244,7 +244,7 @@ public:
 
   _CCCL_DEVICE BlockLoadToShared(const BlockLoadToShared<BlockDimX, BlockDimY, BlockDimZ>&) = delete;
 
-  //! @}  end member group
+  //! @}
 
   _CCCL_DEVICE BlockLoadToShared& operator=(const BlockLoadToShared<BlockDimX, BlockDimY, BlockDimZ>&) = delete;
 

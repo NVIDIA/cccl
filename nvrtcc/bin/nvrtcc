@@ -1,0 +1,609 @@
+#!/usr/bin/env python3
+
+##===----------------------------------------------------------------------===##
+##
+## Part of nvrtcc in CUDA Core Compute Libraries,
+## under the Apache License v2.0 with LLVM Exceptions.
+## See https://llvm.org/LICENSE.txt for license information.
+## SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+## SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES.
+##
+##===----------------------------------------------------------------------===##
+
+import argparse
+import copy
+import os
+import re
+import shlex
+import shutil
+import subprocess
+import sys
+
+
+class Nvrtcc:
+    @staticmethod
+    def _parse_nvrtcc_opts(opts):
+        parser = argparse.ArgumentParser(allow_abbrev=False)
+
+        parser.add_argument("-nvccbin", "--nvccbin", nargs=1)
+        parser.add_argument("-use-nvrtc", "--use-nvrtc", action="store_true")
+        parser.add_argument("-Xnvrtc", "--nvrtc-options", action="append", default=[])
+
+        return parser.parse_known_args(opts)
+
+    @staticmethod
+    def _get_nvcc_bin_abs_path(nvcc_bin_arg, env):
+        if nvcc_bin_arg is None:
+            nvcc_bin = env.get("NVRTCC_NVCC_BIN", "nvcc")
+        else:
+            nvcc_bin = nvcc_bin_arg
+
+        if not os.path.isabs(nvcc_bin):
+            nvcc_bin = shutil.which(nvcc_bin)
+
+        return nvcc_bin
+
+    @staticmethod
+    def _parse_nvcc_opts(nvcc_opts):
+        parser = argparse.ArgumentParser(allow_abbrev=False)
+
+        # File and Path Specifications
+        parser.add_argument("-o", "--output-file", nargs=1, type=str)
+        parser.add_argument("-objtemp", "--objdir-as-tempdir", action="store_true")
+        parser.add_argument("-include", "--pre-include", action="append", default=[])
+        parser.add_argument("-l", "--library", action="append", default=[])
+        parser.add_argument("-D", "--define-macro", action="append", default=[])
+        parser.add_argument("-U", "--undefine-macro", action="append", default=[])
+        parser.add_argument("-I", "--include-path", action="append", default=[])
+        parser.add_argument("-isystem", "--system-include", action="append", default=[])
+        parser.add_argument("-L", "--library-path", action="append", default=[])
+        parser.add_argument("-odir", "--output-directory", nargs=1, type=str)
+        parser.add_argument("-MF", "--dependency-output", nargs=1, type=str)
+        parser.add_argument("-MP", "--generate-dependency-targets", action="store_true")
+        parser.add_argument("-ccbin", "--compiler-bindir", nargs=1, type=str)
+        parser.add_argument(
+            "-allow-unsupported-compiler",
+            "--allow-unsupported-compiler",
+            action="store_true",
+        )
+        parser.add_argument("-arbin", "--archiver-binary", nargs=1, type=str)
+        parser.add_argument("-cudart", "--cudart", choices=["none", "shared", "static"])
+        parser.add_argument("-cudadevrt", "--cudadevrt", choices=["none", "static"])
+        parser.add_argument("-ldir", "--libdevice-directory", nargs=1, type=str)
+        parser.add_argument("-target-dir", "--target-directory", nargs=1, type=str)
+
+        # Options for Specifying the Compilation Phase
+        parser.add_argument("-link", "--link", action="store_true")
+        parser.add_argument("-lib", "--lib", action="store_true")
+        parser.add_argument("-dlink", "--device-link", action="store_true")
+        parser.add_argument("-dc", "--device-c", action="store_true")
+        parser.add_argument("-dw", "--device-w", action="store_true")
+        parser.add_argument("-cuda", "--cuda", action="store_true")
+        parser.add_argument("-c", "--compile", action="store_true")
+        parser.add_argument("-fatbin", "--fatbin", action="store_true")
+        parser.add_argument("-cubin", "--cubin", action="store_true")
+        parser.add_argument("-ptx", "--ptx", action="store_true")
+        parser.add_argument("-E", "--preprocess", action="store_true")
+        parser.add_argument("-M", "--generate-dependencies", action="store_true")
+        parser.add_argument(
+            "-MM", "--generate-nonsystem-dependencies", action="store_true"
+        )
+        parser.add_argument(
+            "-MD", "--generate-dependencies-with-compile", action="store_true"
+        )
+        parser.add_argument(
+            "-MMD",
+            "--generate-nonsystem-dependencies-with-compile",
+            action="store_true",
+        )
+        parser.add_argument("-optix-ir", "--optix-ir", action="store_true")
+        parser.add_argument("-ltoir", "--ltoir", action="store_true")
+        parser.add_argument("-run", "--run", action="store_true")
+
+        # Options for Specifying Behavior of Compiler/Linker
+        parser.add_argument("-pg", "--profile", action="store_true")
+        parser.add_argument("-g", "--debug", action="store_true")
+        parser.add_argument("-G", "--device-debug", action="store_true")
+        parser.add_argument("-lineinfo", "--generate-line-info", action="store_true")
+        parser.add_argument(
+            "-opt-info", "-optimization-info", action="append", default=[]
+        )
+        parser.add_argument("-O", "--optimize", nargs=1, type=str)
+        parser.add_argument("-Ofc", "--Ofast-compile", nargs=1, type=str)
+        parser.add_argument("-dopt", "--dopt", choices=["on"])
+        parser.add_argument("-dlto", "--dlink-time-opt", action="store_true")
+        parser.add_argument("-lto", "--lto", action="store_true")
+        parser.add_argument("-gen-opt-lto", "--gen-opt-lto", action="store_true")
+        parser.add_argument(
+            "-ftemplate-backtrace-limit", "--ftemplate-backtrace-limit", nargs=1
+        )
+        parser.add_argument("-ftemplate-depth", "--ftemplate-depth", nargs=1, type=int)
+        parser.add_argument("-noeh", "--no-exceptions", action="store_true")
+        parser.add_argument("-shared", "--shared", action="store_true")
+        parser.add_argument("-x", "--x", nargs=1, type=str)
+        parser.add_argument("-std", "--std", nargs=1, type=str)
+        parser.add_argument(
+            "-nohdinitlist", "--no-host-device-initializer-list", action="store_true"
+        )
+        parser.add_argument(
+            "-nohdmoveforward", "--no-host-device-move-forward", action="store_true"
+        )
+        parser.add_argument(
+            "-expt-relaxed-constexpr", "--expt-relaxed-constexpr", action="store_true"
+        )
+        parser.add_argument(
+            "-extended-lambda", "--extended-lambda", action="store_true"
+        )
+        parser.add_argument(
+            "-expt-extended-lambda", "--expt-extended-lambda", action="store_true"
+        )
+        parser.add_argument("-m", "--machine", nargs=1, type=int)
+        parser.add_argument("-m64", "--m64", action="store_true")
+
+        # Options for passing specific phase options
+        parser.add_argument(
+            "-Xcompiler", "--compiler-options", action="append", default=[]
+        )
+        parser.add_argument("-Xlinker", "--linker-options", action="append", default=[])
+        parser.add_argument(
+            "-Xarchive", "--archive-options", action="append", default=[]
+        )
+        parser.add_argument("-Xptxas", "--ptxas-options", action="append", default=[])
+        parser.add_argument("-Xnvlink", "--nvlink-options", action="append", default=[])
+
+        # Miscellaneous options for guiding the compiler driver.
+        parser.add_argument(
+            "-static-global-template-stub", "--static-global-template-stub", nargs=1
+        )
+        parser.add_argument(
+            "-device-entity-has-hidden-visibility",
+            "--device-entity-has-hidden-visibility",
+            nargs=1,
+        )
+        parser.add_argument(
+            "-forward-unknown-to-host-compiler",
+            "--forward-unknown-to-host-compiler",
+            action="store_true",
+        )
+        parser.add_argument(
+            "-forward-unknown-to-host-linker",
+            "--forward-unknown-to-host-linker",
+            action="store_true",
+        )
+        parser.add_argument(
+            "-forward-unknown-opts", "--forward-unknown-opts", action="store_true"
+        )
+        parser.add_argument("-noprof", "--dont-use-profile", action="store_true")
+        parser.add_argument("-dryrun", "--dryrun", action="store_true")
+        parser.add_argument("-v", "--verbose", action="store_true")
+        parser.add_argument("-t", "--threads", nargs=1, type=int)
+        parser.add_argument("-split-compile", "--split-compile", nargs=1, type=int)
+        parser.add_argument(
+            "-split-compile-extended", "--split-compile-extended", nargs=1, type=int
+        )
+        parser.add_argument(
+            "-fdevice-syntax-only", "--fdevice-syntax-only", nargs=1, type=str
+        )
+        parser.add_argument(
+            "-fdevice-time-trace", "--fdevice-time-trace", nargs=1, type=str
+        )
+        parser.add_argument("-keep", "--keep", action="store_true")
+        parser.add_argument("-keep-dir", "--keep-dir", nargs=1, type=str)
+        parser.add_argument("-save-temps", "--save-temps", action="store_true")
+        parser.add_argument("-clean", "--clean-targets", action="store_true")
+        parser.add_argument("-time", "--time", nargs=1, type=str)
+        parser.add_argument("-run-args", "--run-args", nargs=1)
+        parser.add_argument("-idp", "--input-drive-prefix", nargs=1, type=str)
+        parser.add_argument("-ddp", "--dependency-drive-prefix", nargs=1, type=str)
+        parser.add_argument("-dp", "--drive-prefix", nargs=1, type=str)
+        parser.add_argument("-MT", "--dependency-target-name", nargs=1, type=str)
+        parser.add_argument(
+            "-no-align-double", "--no-align-double", action="store_true"
+        )
+        parser.add_argument("-nodlink", "--no-device-link", action="store_true")
+
+        # Options for steering GPU code generation.
+        parser.add_argument("-arch", "--gpu-architecture", action="append", default=[])
+        parser.add_argument("-code", "--gpu-code", action="append", default=[])
+        parser.add_argument("-gencode", "--generate-code", action="append", default=[])
+        parser.add_argument("-rdc", "--relocatable-device-code", nargs=1, type=str)
+        parser.add_argument("-e", "--entries", action="append", default=[])
+        parser.add_argument("-maxrregcount", "--maxrregcount", nargs=1)
+        parser.add_argument("-use_fast_math", "--use_fast_math", action="store_true")
+        parser.add_argument("-ftz", "--ftz", nargs=1, type=str)
+        parser.add_argument("-prec-div", "--prec-div", nargs=1)
+        parser.add_argument("-prec-sqrt", "--prec-sqrt", nargs=1)
+        parser.add_argument("-fmad", "--fmad", nargs=1)
+        parser.add_argument(
+            "-extra-device-vectorization",
+            "--extra-device-vectorization",
+            action="store_true",
+        )
+
+        # Options for steering cuda compilation.
+        parser.add_argument("-default-stream", "--default-stream", nargs=1)
+
+        # Generic tool options.
+        parser.add_argument("-w", "--disable-warnings", action="store_true")
+        parser.add_argument(
+            "-keep-device-functions", "--keep-device-functions", action="store_true"
+        )
+        parser.add_argument("-src-in-ptx", "--source-in-ptx", action="store_true")
+        parser.add_argument("-restrict", "--restrict", action="store_true")
+        parser.add_argument("-Wreorder", "--Wreorder", action="store_true")
+        parser.add_argument(
+            "-Wdefault-stream-launch", "--Wdefault-stream-launch", action="store_true"
+        )
+        parser.add_argument(
+            "-Wmissing-launch-bounds", "--Wmissing-launch-bounds", action="store_true"
+        )
+        parser.add_argument(
+            "-Wext-lambda-captures-this",
+            "--Wext-lambda-captures-this",
+            action="store_true",
+        )
+        parser.add_argument(
+            "-Wno-deprecated-declarations",
+            "--Wno-deprecated-declarations",
+            action="store_true",
+        )
+        parser.add_argument(
+            "-Wno-deprecated-gpu-targets",
+            "--Wno-deprecated-gpu-targets",
+            action="store_true",
+        )
+        parser.add_argument("-Werror", "--Werror", action="append", default=[])
+        parser.add_argument("-res-usage", "--resource-usage", action="store_true")
+        parser.add_argument("-ewp", "--extensible-whole-program", action="store_true")
+        parser.add_argument("-no-compress", "--no-compress", action="store_true")
+        parser.add_argument("-qpp-config", "--qpp-config", action="store_true")
+        parser.add_argument(
+            "-astoolpatch", "--compile-as-tools-patch", action="store_true"
+        )
+        parser.add_argument("-code-ls", "--list-gpu-code", action="store_true")
+        parser.add_argument("-arch-ls", "--list-gpu-arch", action="store_true")
+        parser.add_argument("-err-no", "--display-error-number", action="store_true")
+        parser.add_argument(
+            "-no-err-no", "--no-display-error-number", action="store_true"
+        )
+        parser.add_argument("-diag-error", "--diag-error", action="append", default=[])
+        parser.add_argument(
+            "-diag-suppress", "--diag-suppress", action="append", default=[]
+        )
+        parser.add_argument("-diag-warn", "--diag-warn", action="append", default=[])
+        parser.add_argument("-hls", "--host-linker-script", nargs=1, type=str)
+        parser.add_argument(
+            "-aug-hls", "--augment-host-linker-script", action="store_true"
+        )
+        parser.add_argument("-r", "--relocatable-link", action="store_true")
+        parser.add_argument("-brief-diag", "--brief-diagnostics", nargs=1, type=str)
+        parser.add_argument("-jtd", "--jump-table-density", nargs=1, type=int)
+        parser.add_argument("-reloc-ptx", "--relocatable-ptx", action="store_true")
+        parser.add_argument(
+            "-device-stack-protector", "--device-stack-protector", nargs=1, type=str
+        )
+        parser.add_argument("-compress-mode", "--compress-mode", nargs=1, type=str)
+        parser.add_argument("-frandom-seed", "--frandom-seed", nargs=1, type=str)
+        parser.add_argument(
+            "-fdevice-sanitize", "--fdevice-sanitize", nargs=1, type=str
+        )
+        parser.add_argument("-jobserver", "--jobserver", action="store_true")
+        # "-h", "--help"
+        parser.add_argument("-V", "--version", action="store_true")
+        parser.add_argument("-optf", "--options-file", action="append", default=[])
+
+        return parser.parse_known_args(nvcc_opts)[0]
+
+    def __init__(self, opts: list[str], env):
+        args, nvcc_opts = Nvrtcc._parse_nvrtcc_opts(opts)
+
+        self.nvcc_bin = Nvrtcc._get_nvcc_bin_abs_path(args.nvccbin, env)
+        self.use_nvrtc = args.use_nvrtc
+        self.nvrtc_opts = args.nvrtc_options
+        self.nvcc_opts = ["-D__NVRTCC__"] + nvcc_opts
+        self.nvcc_args = Nvrtcc._parse_nvcc_opts(self.nvcc_opts)
+        self.device_compile_bin = os.path.join(
+            os.path.dirname(__file__), "nvrtcc_device_compiler"
+        )
+        self.nvrtc_lib = os.path.join(
+            os.path.dirname(os.path.dirname(self.nvcc_bin)), "lib64", "libnvrtc.so"
+        )
+        self.env = env
+
+        # Clear environment variables that prepend/append nvcc flags.
+        self.env.pop("NVCC_PREPEND_FLAGS", None)
+        self.env.pop("NVCC_APPEND_FLAGS", None)
+
+    @staticmethod
+    def _emit_error(msg, retcode=-1):
+        print(f"nvrtcc error: {msg}", file=sys.stderr)
+        sys.exit(retcode)
+
+    @staticmethod
+    def _emit_warning(msg):
+        print(f"nvrtcc warning: {msg}", file=sys.stderr)
+
+    def _check_nvcc_args(self):
+        if self.nvcc_args.optix_ir:
+            Nvrtcc._emit_error(
+                "compiling to Optix IR with nvrtc is currently unsupported"
+            )
+
+        if (
+            self.nvcc_args.ltoir
+            or self.nvcc_args.dlink_time_opt
+            or self.nvcc_args.gen_opt_lto
+        ):
+            Nvrtcc._emit_error(
+                "compiling to LTO IR with nvrtc is currently unsupported"
+            )
+
+        if self.nvcc_args.expt_relaxed_constexpr:
+            Nvrtcc._emit_warning("relaxed constexpr is unsupported with nvrtc")
+
+        if self.nvcc_args.extended_lambda or self.nvcc_args.expt_extended_lambda:
+            Nvrtcc._emit_warning(
+                "extended lambda declarations are unsupported with nvrtc"
+            )
+
+        if self.nvcc_args.keep_device_functions:
+            Nvrtcc._emit_warning("keeping device functions is unsupported with nvrtc")
+
+        if self.nvcc_args.options_file:
+            Nvrtcc._emit_error("passing command line options via file is not supported")
+
+    def _get_nvcc_cmd_list(self) -> list[str]:
+        run_result = subprocess.run(
+            [self.nvcc_bin] + self.nvcc_opts + ["-dryrun"],
+            stderr=subprocess.PIPE,
+            env=self.env,
+        )
+
+        if run_result.returncode != 0:
+            Nvrtcc._emit_error(
+                "failed to retrieve nvcc command list", run_result.returncode
+            )
+
+        lines = run_result.stderr.decode().splitlines()
+        return [line.removeprefix("#$ ") for line in lines]
+
+    def _print_if_verbose(self, msg, **kwargs):
+        if self.nvcc_args.verbose:
+            print(msg, **kwargs)
+
+    @staticmethod
+    def _is_comment(cmd):
+        return cmd.startswith("--")
+
+    @staticmethod
+    def _is_env_var_assign(cmd):
+        return re.match(r"^[a-zA-Z0-9_]+=", cmd)
+
+    @staticmethod
+    def _split_cmd(cmd):
+        result = shlex.split(cmd)
+        return result[0], result[1:]
+
+    @staticmethod
+    def _parse_ccbin_invocation(opts):
+        arch_list = None
+
+        arch_list_def = [x for x in opts if x.startswith("-D__CUDA_ARCH_LIST__=")]
+        if arch_list_def:
+            assert len(arch_list_def) == 1
+            arch_list = arch_list_def[0].removeprefix("-D__CUDA_ARCH_LIST__=")
+
+        return argparse.Namespace(arch_list=arch_list)
+
+    @staticmethod
+    def _parse_cicc_invocation(opts):
+        parser = argparse.ArgumentParser(allow_abbrev=False)
+
+        # Positional arguments.
+        parser.add_argument("file", nargs="*")
+
+        # Recognized used arguments.
+        parser.add_argument("-o", "--output-file", type=str)
+        parser.add_argument("--orig_src_file_name", type=str)
+        parser.add_argument("--orig_src_path_name", type=str)
+        parser.add_argument("--c++17", dest="cxx17", action="store_true")
+        parser.add_argument("--c++20", dest="cxx20", action="store_true")
+        parser.add_argument("--c++23", dest="cxx23", action="store_true")
+        parser.add_argument("-arch", type=str)
+        parser.add_argument("-maxreg", type=int)
+        parser.add_argument("-ftz", type=int)
+        parser.add_argument("-prec_div", type=int)
+        parser.add_argument("-prec_sqrt", type=int)
+        parser.add_argument("-fmad", type=int)
+        parser.add_argument("--device-c", action="store_true")
+        parser.add_argument("--partial-link", action="store_true")
+        parser.add_argument("--debug_mode", action="store_true")
+        parser.add_argument("-generate-line-info", action="store_true")
+        parser.add_argument("-O0", dest="dopt", action="store_false", default=True)
+        parser.add_argument("--Ofast-compile", type=str)
+        parser.add_argument("--frandom-seed", nargs=1, type=str)
+        parser.add_argument("-extra-device-vectorization", action="store_true")
+        parser.add_argument("-jump-table-density", type=int)
+        parser.add_argument("-w", action="store_true")
+        parser.add_argument("-kernel-params-are-restrict", action="store_true")
+        parser.add_argument("-inline-info", action="store_true")
+        parser.add_argument("--display_error_number", action="store_true")
+        parser.add_argument("-diag_error", "--diag_error", action="append", default=[])
+        parser.add_argument(
+            "-diag_suppress", "--diag_suppress", action="append", default=[]
+        )
+        parser.add_argument("-diag_warn", "--diag_warn", action="append", default=[])
+        parser.add_argument("--brief_diagnostics", action="store_true")
+        parser.add_argument("-split-compile", nargs=1)
+        parser.add_argument("--device-time-trace", nargs=1)
+        parser.add_argument("--promote_warnings", action="store_true")
+
+        # Recognized ignored arguments.
+        parser.add_argument("--static-host-stub", action="store_true")
+        parser.add_argument("--host-stub-linkage-explicit", action="store_true")
+        parser.add_argument("--device-hidden-visibility", action="store_true")
+        parser.add_argument("--gnu_version")
+        parser.add_argument("--allow_managed", action="store_true")
+        parser.add_argument("-m64", action="store_true")
+        parser.add_argument("--no-version-ident", action="store_true")
+        parser.add_argument("--include_file_name")
+        parser.add_argument("-tused", action="store_true")
+        parser.add_argument("--module_id_file_name")
+        parser.add_argument("--gen_c_file_name")
+        parser.add_argument("--stub_file_name")
+        parser.add_argument("--gen_device_file_name")
+        parser.add_argument("--keep-device-functions", action="store_true")
+        parser.add_argument("--gen_module_id_file", action="store_true")
+        parser.add_argument("--relaxed_constexpr", action="store_true")
+        parser.add_argument("--pending_instantiations", nargs=1)
+        parser.add_argument("--extended-lambda", action="store_true")
+
+        return parser.parse_args(opts)
+
+    def _invoke_nvrtc(self, ccbin_args, cicc_args):
+        cc = int(cicc_args.arch.removeprefix("compute_"))
+
+        nvrtc_opts = copy.deepcopy(self.nvrtc_opts)
+
+        # Remove -device-float128 for architectures with cc < 100.
+        if cc < 100:
+            nvrtc_opts = list(
+                filter(
+                    lambda x: x != "-device-float128" and x != "--device-float128",
+                    nvrtc_opts,
+                )
+            )
+
+        cmd = [self.device_compile_bin]
+
+        # Positional arguments
+        cmd += [self.nvrtc_lib]
+        cmd += [cicc_args.orig_src_path_name]
+        cmd += [cicc_args.orig_src_file_name]
+        cmd += [cicc_args.output_file]
+        cmd += [ccbin_args.arch_list]
+
+        # Add nvrtc options passed by -Xnvrtc
+        cmd += nvrtc_opts
+
+        # Compilation targets
+        cmd += [f"-arch={cicc_args.arch}"]
+        cmd += ["-dc"] if cicc_args.device_c else []
+        cmd += ["-ewp"] if self.nvcc_args.extensible_whole_program else []
+
+        # Debugging support
+        cmd += ["-G"] if cicc_args.debug_mode else []
+        cmd += ["-lineinfo"] if cicc_args.generate_line_info else []
+
+        # Code generation
+        cmd += ["-dopt=on"] if cicc_args.dopt else []
+        cmd += [f"-Ofc={cicc_args.Ofast_compile}"] if cicc_args.Ofast_compile else []
+        cmd += [f"-maxrregcount={cicc_args.maxreg}"] if cicc_args.maxreg else []
+        cmd += [f"-ftz={'true' if cicc_args.ftz else 'false'}"]
+        cmd += [f"-prec-sqrt={'true' if cicc_args.prec_sqrt else 'false'}"]
+        cmd += [f"-prec-div={'true' if cicc_args.prec_div else 'false'}"]
+        cmd += [f"-fmad={'true' if cicc_args.fmad else 'false'}"]
+        cmd += (
+            ["-extra-device-vectorization"]
+            if cicc_args.extra_device_vectorization
+            else []
+        )
+        cmd += (
+            [f"-jtd={cicc_args.jump_table_density}"]
+            if cicc_args.jump_table_density
+            else []
+        )
+        cmd += (
+            ["-frandom-seed", cicc_args.frandom_seed] if cicc_args.frandom_seed else []
+        )
+
+        # Preprocessing
+        cmd += [f"-D{x}" for x in self.nvcc_args.define_macro]
+        cmd += [f"-U{x}" for x in self.nvcc_args.undefine_macro]
+        cmd += [f"-I{x}" for x in self.nvcc_args.include_path]
+        cmd += [f"-I{x}" for x in self.nvcc_args.system_include]
+        cmd += [f"-include={x}" for x in self.nvcc_args.pre_include]
+
+        # Language Dialect
+        cmd += ["-std=c++17"] if cicc_args.cxx17 else []
+        cmd += ["-std=c++20"] if cicc_args.cxx20 else []
+        cmd += ["-std=c++23"] if cicc_args.cxx23 else []
+
+        # Misc
+        cmd += ["-w"] if cicc_args.w else []
+        cmd += ["-Werror=all-warnings"] if cicc_args.promote_warnings else []
+        cmd += ["-restrict"] if cicc_args.kernel_params_are_restrict else []
+        cmd += ["-opt-info=inline"] if cicc_args.inline_info else []
+        cmd += ["-no-err-no"] if not cicc_args.display_error_number else []
+        cmd += [f"-diag-error={diag}" for diag in cicc_args.diag_error]
+        cmd += [f"-diag-suppress={diag}" for diag in cicc_args.diag_suppress]
+        # cmd += [f'-diag-warn={diag}' for diag in cicc_args.diag_warn]
+        cmd += ["-brief_diag=true"] if cicc_args.brief_diagnostics else []
+        cmd += [f"-time={self.nvcc_args.time}"] if self.nvcc_args.time else []
+        cmd += (
+            [f"-split-compile={cicc_args.split_compile}"]
+            if cicc_args.split_compile
+            else []
+        )
+        cmd += (
+            [f"-fdevice-time-trace={cicc_args.device_time_trace}"]
+            if cicc_args.device_time_trace
+            else []
+        )
+
+        # Run the nvrtc compilation.
+        self._print_if_verbose(f"#$ {' '.join(cmd)}")
+        if not self.nvcc_args.dryrun:
+            run_result = subprocess.run(cmd, env=self.env)
+            if run_result.returncode != 0:
+                sys.exit(run_result.returncode)
+
+    def _run_nvrtcc(self):
+        Nvrtcc._check_nvcc_args(self)
+
+        for cmd in self._get_nvcc_cmd_list():
+            self._print_if_verbose(f"#$ {cmd}")
+
+            if not self.nvcc_args.dryrun and Nvrtcc._is_comment(cmd):
+                continue
+
+            if not self.nvcc_args.dryrun and Nvrtcc._is_env_var_assign(cmd):
+                os.environ[cmd.split("=")[0]] = "".join(cmd.split("=")[1:])
+                continue
+
+            bin, opts = Nvrtcc._split_cmd(cmd)
+
+            if not self.nvcc_args.dryrun:
+                # For some reason nvcc produces rm command that can fail if the file doesn't exist, so we just ignore the return value and output.
+                if re.match(r"^rm$", bin):
+                    subprocess.run(
+                        [bin] + opts,
+                        stdout=subprocess.DEVNULL,
+                        stderr=subprocess.DEVNULL,
+                        env=self.env,
+                    )
+                else:
+                    run_result = subprocess.run(
+                        [os.path.expandvars(bin)] + opts, env=self.env
+                    )
+                    if run_result.returncode != 0:
+                        sys.exit(run_result.returncode)
+
+            if re.match(r"^(gcc|clang|nvc\+\+|cl\.exe)$", bin):
+                ccbin_args = Nvrtcc._parse_ccbin_invocation(opts)
+            elif re.match(r"^.*cicc$", bin):
+                cicc_args = Nvrtcc._parse_cicc_invocation(opts)
+                self._invoke_nvrtc(ccbin_args, cicc_args)
+
+    def _run_nvcc(self):
+        run_result = subprocess.run([self.nvcc_bin] + self.nvcc_opts, env=self.env)
+        if run_result.returncode != 0:
+            sys.exit(run_result.returncode)
+
+    def run(self):
+        self._run_nvrtcc() if self.use_nvrtc else self._run_nvcc()
+
+
+if __name__ == "__main__":
+    Nvrtcc(sys.argv[1:], os.environ).run()
+    sys.exit(0)

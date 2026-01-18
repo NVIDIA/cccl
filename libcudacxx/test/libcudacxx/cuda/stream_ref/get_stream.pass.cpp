@@ -20,6 +20,34 @@ __host__ __device__ void test()
     assert(stream == ref);
   }
 
+  { // Can call get_stream on a type convertible to cudaStream_t
+    struct convertible_to_cuda_stream_t
+    {
+      ::cudaStream_t stream_;
+      __host__ __device__ operator ::cudaStream_t() const noexcept
+      {
+        return stream_;
+      }
+    };
+    convertible_to_cuda_stream_t str{stream};
+    auto ref = ::cuda::get_stream(str);
+    assert(stream == ref);
+  }
+
+  { // Can call get_stream on a type convertible to stream_ref
+    struct convertible_to_stream_ref
+    {
+      ::cudaStream_t stream_;
+      __host__ __device__ operator ::cuda::stream_ref() const noexcept
+      {
+        return ::cuda::stream_ref{stream_};
+      }
+    };
+    convertible_to_stream_ref str{stream};
+    auto ref = ::cuda::get_stream(str);
+    assert(stream == ref);
+  }
+
   { // Can call get_stream on a type with a get_stream method
     struct with_const_get_stream
     {

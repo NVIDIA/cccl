@@ -15,6 +15,7 @@
 
 #include <cuda/algorithm>
 #include <cuda/buffer>
+#include <cuda/hierarchy>
 #include <cuda/launch>
 #include <cuda/memory_resource>
 #include <cuda/std/tuple>
@@ -68,8 +69,7 @@ struct add_kernel
   template <typename T>
   __device__ void operator()(cuda::std::span<T> a, cuda::std::span<const T> b)
   {
-    for (int i = cuda::hierarchy::rank(cuda::thread, cuda::grid); i < a.size();
-         i += cuda::hierarchy::count(cuda::thread, cuda::grid))
+    for (int i = cuda::gpu_thread.rank(cuda::grid); i < a.size(); i += cuda::gpu_thread.count(cuda::grid))
     {
       a[i] += b[i];
     }

@@ -20,28 +20,28 @@
 #  pragma system_header
 #endif // no system header
 
-#if _CCCL_HAS_CTK() && !_CCCL_COMPILER(NVRTC) && _CCCL_HAS_INCLUDE(<dlpack/dlpack.h>)
+#if _CCCL_HAS_CTK() && _CCCL_HAS_DLPACK()
 
 #  include <cuda/__driver/driver_api.h>
+#  include <cuda/__internal/dlpack.h>
 #  include <cuda/__memory/is_aligned.h>
 #  include <cuda/__memory/is_pointer_accessible.h>
 #  include <cuda/devices> // sub headers cause circular dependency
 #  include <cuda/std/__algorithm/min.h>
 #  include <cuda/std/__cstddef/types.h>
 #  include <cuda/std/__exception/exception_macros.h>
+#  include <cuda/std/__utility/unreachable.h>
 #  include <cuda/std/array>
 #  include <cuda/std/cstdint>
 #  include <cuda/std/span>
 
+#  include <stdexcept>
+
 #  include <driver_types.h>
 
-#  include <dlpack/dlpack.h>
-//
 #  include <cuda/std/__cccl/prologue.h>
 
 _CCCL_BEGIN_NAMESPACE_CUDA
-
-static_assert(DLPACK_MAJOR_VERSION == 1, "DLPACK_MAJOR_VERSION must be 1");
 
 /***********************************************************************************************************************
  * Public Enums
@@ -94,7 +94,7 @@ enum class tma_swizzle
     case tma_oob_fill::nan:
       return ::CU_TENSOR_MAP_FLOAT_OOB_FILL_NAN_REQUEST_ZERO_FMA;
     default:
-      _CCCL_UNREACHABLE();
+      ::cuda::std::unreachable();
   }
 }
 
@@ -112,7 +112,7 @@ __to_cutensor_map(tma_l2_fetch_size __l2_fetch_size) noexcept
     case tma_l2_fetch_size::bytes256:
       return ::CU_TENSOR_MAP_L2_PROMOTION_L2_256B;
     default:
-      _CCCL_UNREACHABLE();
+      ::cuda::std::unreachable();
   }
 }
 
@@ -128,7 +128,7 @@ __to_cutensor_map(tma_interleave_layout __interleave_layout) noexcept
     case tma_interleave_layout::bytes32:
       return ::CU_TENSOR_MAP_INTERLEAVE_32B;
     default:
-      _CCCL_UNREACHABLE();
+      ::cuda::std::unreachable();
   }
 }
 
@@ -153,7 +153,7 @@ __to_cutensor_map(tma_interleave_layout __interleave_layout) noexcept
       return ::CU_TENSOR_MAP_SWIZZLE_128B_ATOM_64B;
 #  endif // _CCCL_CTK_AT_LEAST(12, 8)
     default:
-      _CCCL_UNREACHABLE();
+      ::cuda::std::unreachable();
   }
 }
 
@@ -405,13 +405,16 @@ __get_tensor_sizes(const ::DLTensor& __tensor, int __rank, ::CUtensorMapDataType
 {
   using ::cuda::std::int64_t;
   __tma_strides_array_t __output_strides{1}; // inner stride is implicit = 1
-  const auto __input_strides                = __tensor.strides;
-  const auto __input_sizes                  = __tensor.shape;
-  const auto __alignment                    = (__interleave_layout == tma_interleave_layout::bytes32) ? 32 : 16;
-  constexpr auto __max_allowed_stride_bytes = int64_t{1} << 40; // 2^40
-  int64_t __cumulative_size                 = 1;
+  const auto __input_strides                 = __tensor.strides;
+  const auto __input_sizes                   = __tensor.shape;
+  const auto __alignment                     = (__interleave_layout == tma_interleave_layout::bytes32) ? 32 : 16;
+  constexpr auto __max_allowed_stride_bytes  = int64_t{1} << 40; // 2^40
+  [[maybe_unused]] int64_t __cumulative_size = 1;
   if (__input_strides == nullptr)
   {
+#  if _CCCL_DLPACK_AT_LEAST(1, 2)
+    _CCCL_THROW(::std::invalid_argument{"__tensor.strides=nullptr is not supported for DLPack v1.2 and later"});
+#  else // ^^^ _CCCL_DLPACK_AT_LEAST(1, 2) ^^^ / vvv _CCCL_DLPACK_BELOW(1, 2) vvv
     for (int __i = 0; __i < __rank - 1; ++__i)
     {
       // TODO(fbusato): check mul overflow
@@ -428,6 +431,7 @@ __get_tensor_sizes(const ::DLTensor& __tensor, int __rank, ::CUtensorMapDataType
       __output_strides[__i] = __stride_bytes;
     }
     return __output_strides;
+#  endif // ^^^ _CCCL_DLPACK_BELOW(1, 2) ^^^
   }
   // TMA ignores the innermost stride (always 1).
   for (int __i = __rank - 2; __i >= 0; --__i)
@@ -653,5 +657,6 @@ _CCCL_END_NAMESPACE_CUDA
 
 #  include <cuda/std/__cccl/epilogue.h>
 
-#endif // _CCCL_HAS_CTK() && !_CCCL_COMPILER(NVRTC) && _CCCL_HAS_INCLUDE(<dlpack/dlpack.h>)
+#endif // _CCCL_HAS_CTK() && _CCCL_HAS_DLPACK()
+
 #endif // _CUDA___TMA_MAKE_TMA_DESCRIPTOR_H

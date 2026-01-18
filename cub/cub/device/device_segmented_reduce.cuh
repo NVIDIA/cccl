@@ -464,7 +464,7 @@ struct DeviceSegmentedReduce
   //!
   //! The code snippet below illustrates the sum reduction of a device vector of ``int`` data elements.
   //!
-  //! .. literalinclude:: ../../../cub/test/catch2_test_device_segmented_reduce_api.cu
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_segmented_reduce_env_api.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin segmented-reduce-sum-env

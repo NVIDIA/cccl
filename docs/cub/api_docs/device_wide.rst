@@ -90,6 +90,7 @@ CUB device-level single-problem parallel algorithms:
 * :cpp:struct:`cub::DeviceRunLengthEncode` demarcating "runs" of same-valued items within a sequence residing within device-accessible memory
 * :cpp:struct:`cub::DeviceScan` computes a prefix scan across a sequence of data items residing within device-accessible memory
 * :cpp:struct:`cub::DeviceSelect` compacts data residing within device-accessible memory
+* :cpp:struct:`cub::DeviceTransform` transforms elements from multiple input sequences into an output sequence
 * :cpp:struct:`cub::DeviceTopK` finds the largest (or smallest) K items from an unordered list residing within device-accessible memory
 
 
@@ -100,3 +101,4 @@ CUB device-level segmented-problem (batched) parallel algorithms:
 * :cpp:struct:`cub::DeviceSegmentedReduce` computes reductions across multiple sequences of data residing within device-accessible memory
 * :cpp:struct:`cub::DeviceCopy` provides device-wide, parallel operations for batched copying of data residing within device-accessible memory
 * :cpp:struct:`cub::DeviceMemcpy` provides device-wide, parallel operations for batched copying of data residing within device-accessible memory
+* :cpp:struct:`cub::DeviceFind` provides vectorized binary search algorithms

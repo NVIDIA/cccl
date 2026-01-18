@@ -21,19 +21,21 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/__memory_resource/get_property.h>
-#include <cuda/__stream/stream_ref.h>
-#include <cuda/__utility/__basic_any/semiregular.h>
-#include <cuda/std/__concepts/concept_macros.h>
-#include <cuda/std/__concepts/convertible_to.h>
-#include <cuda/std/__concepts/equality_comparable.h>
-#include <cuda/std/__concepts/same_as.h>
-#include <cuda/std/__tuple_dir/sfinae_helpers.h>
-#include <cuda/std/__type_traits/decay.h>
-#include <cuda/std/__type_traits/fold.h>
-#include <cuda/std/__type_traits/is_same.h>
+#if _CCCL_HAS_CTK()
 
-#include <cuda/std/__cccl/prologue.h>
+#  include <cuda/__memory_resource/get_property.h>
+#  include <cuda/__stream/stream_ref.h>
+#  include <cuda/__utility/__basic_any/semiregular.h>
+#  include <cuda/std/__concepts/concept_macros.h>
+#  include <cuda/std/__concepts/convertible_to.h>
+#  include <cuda/std/__concepts/equality_comparable.h>
+#  include <cuda/std/__concepts/same_as.h>
+#  include <cuda/std/__tuple_dir/sfinae_helpers.h>
+#  include <cuda/std/__type_traits/decay.h>
+#  include <cuda/std/__type_traits/fold.h>
+#  include <cuda/std/__type_traits/is_same.h>
+
+#  include <cuda/std/__cccl/prologue.h>
 
 _CCCL_BEGIN_NAMESPACE_CUDA_MR
 
@@ -130,6 +132,8 @@ _CCCL_CONCEPT __non_polymorphic_resources = _CCCL_REQUIRES_EXPR((_Resource, _Oth
 
 _CCCL_END_NAMESPACE_CUDA_MR
 
-#include <cuda/std/__cccl/epilogue.h>
+#  include <cuda/std/__cccl/epilogue.h>
+
+#endif // _CCCL_HAS_CTK()
 
 #endif //_CUDA___MEMORY_RESOURCE_RESOURCE_H
