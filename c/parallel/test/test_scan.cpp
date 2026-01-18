@@ -398,15 +398,14 @@ C2H_TEST("Scan works with custom types", "[scan]")
 {
   const std::size_t num_items = GENERATE(0, 42, take(4, random(1 << 12, 1 << 24)));
 
-  operation_t op = make_operation(
-    "op",
-    "struct pair { short a; size_t b; };\n"
-    "extern \"C\" __device__ void op(void* lhs_ptr, void* rhs_ptr, void* out_ptr) {\n"
-    "  pair* lhs = static_cast<pair*>(lhs_ptr);\n"
-    "  pair* rhs = static_cast<pair*>(rhs_ptr);\n"
-    "  pair* out = static_cast<pair*>(out_ptr);\n"
-    "  *out = pair{ lhs->a + rhs->a, lhs->b + rhs->b };\n"
-    "}");
+  operation_t op              = make_operation("op",
+                                  R"(struct pair { short a; size_t b; };
+extern "C" __device__ void op(void* lhs_ptr, void* rhs_ptr, void* out_ptr) {
+  pair* lhs = static_cast<pair*>(lhs_ptr);
+  pair* rhs = static_cast<pair*>(rhs_ptr);
+  pair* out = static_cast<pair*>(out_ptr);
+  *out = pair{ lhs->a + rhs->a, lhs->b + rhs->b };
+})");
   const std::vector<short> a  = generate<short>(num_items);
   const std::vector<size_t> b = generate<size_t>(num_items);
   std::vector<pair> input(num_items);
@@ -439,15 +438,14 @@ C2H_TEST("Scan works with custom types with well-known operations", "[scan][well
 {
   const std::size_t num_items = GENERATE(0, 42, take(4, random(1 << 12, 1 << 24)));
 
-  operation_t op_state = make_operation(
-    "op",
-    "struct pair { short a; size_t b; };\n"
-    "extern \"C\" __device__ void op(void* lhs_ptr, void* rhs_ptr, void* out_ptr) {\n"
-    "  pair* lhs = static_cast<pair*>(lhs_ptr);\n"
-    "  pair* rhs = static_cast<pair*>(rhs_ptr);\n"
-    "  pair* out = static_cast<pair*>(out_ptr);\n"
-    "  *out = pair{ lhs->a + rhs->a, lhs->b + rhs->b };\n"
-    "}");
+  operation_t op_state        = make_operation("op",
+                                        R"(struct pair { short a; size_t b; };
+extern "C" __device__ void op(void* lhs_ptr, void* rhs_ptr, void* out_ptr) {
+  pair* lhs = static_cast<pair*>(lhs_ptr);
+  pair* rhs = static_cast<pair*>(rhs_ptr);
+  pair* out = static_cast<pair*>(out_ptr);
+  *out = pair{ lhs->a + rhs->a, lhs->b + rhs->b };
+})");
   cccl_op_t op                = op_state;
   op.type                     = cccl_op_kind_t::CCCL_PLUS;
   const std::vector<short> a  = generate<short>(num_items);

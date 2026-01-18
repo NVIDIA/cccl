@@ -39,6 +39,25 @@
 //
 // The possibilities are endless! :)
 
+struct arbitrary_functor1
+{
+  template <typename Tuple>
+  __host__ __device__ void operator()(Tuple t)
+  {
+    // D[i] = A[i] + B[i] * C[i];
+    cuda::std::get<3>(t) = cuda::std::get<0>(t) + cuda::std::get<1>(t) * cuda::std::get<2>(t);
+  }
+};
+
+struct arbitrary_functor2
+{
+  __host__ __device__ void operator()(const float& a, const float& b, const float& c, float& d)
+  {
+    // D[i] = A[i] + B[i] * C[i];
+    d = a + b * c;
+  }
+};
+
 int main()
 {
   // allocate and initialize

@@ -1,11 +1,17 @@
 // SPDX-FileCopyrightText: Copyright (c) 2024, NVIDIA CORPORATION. All rights reserved.
 // SPDX-License-Identifier: BSD-3-Clause
 
-// Because CUB cannot inspect the transformation function, we cannot add any tunings based on the results of this
-// benchmark. Its main use is to detect regressions.
-
+// %RANGE% TUNE_BIF_BIAS bif -16:16:4
+// %RANGE% TUNE_ALGORITHM alg 0:4:1
 // %RANGE% TUNE_THREADS tpb 128:1024:128
-// %RANGE% TUNE_ALGORITHM alg 0:1:1
+
+// those parameters only apply if TUNE_ALGORITHM == 1 (vectorized)
+// %RANGE% TUNE_VEC_SIZE_POW2 vsp2 1:6:1
+// %RANGE% TUNE_VECTORS_PER_THREAD vpt 1:4:1
+
+#if !TUNE_BASE && TUNE_ALGORITHM != 1 && (TUNE_VEC_SIZE_POW2 != 1 || TUNE_VECTORS_PER_THREAD != 1)
+#  error "Non-vectorized algorithms require vector size and vectors per thread to be 1 since they ignore the parameters"
+#endif // !TUNE_BASE && TUNE_ALGORITHM != 1 && (TUNE_VEC_SIZE_POW2 != 1 || TUNE_VECTORS_PER_THREAD != 1)
 
 #include "common.h"
 
@@ -42,10 +48,12 @@ struct heavy_functor
 
 template <typename Heaviness>
 static void heavy(nvbench::state& state, nvbench::type_list<Heaviness>)
+try
 {
-  using value_t                     = std::uint32_t;
-  using offset_t                    = int;
-  const auto n                      = cuda::narrow<offset_t>(state.get_int64("Elements{io}"));
+  using value_t  = std::uint32_t;
+  using offset_t = int64_t;
+  const auto n   = state.get_int64("Elements{io}");
+
   thrust::device_vector<value_t> in = generate(n);
   thrust::device_vector<value_t> out(n);
 
@@ -53,7 +61,12 @@ static void heavy(nvbench::state& state, nvbench::type_list<Heaviness>)
   state.add_global_memory_reads<value_t>(n);
   state.add_global_memory_writes<value_t>(n);
 
-  bench_transform(state, ::cuda::std::tuple{in.begin()}, out.begin(), n, heavy_functor<Heaviness::value>{});
+  bench_transform(
+    state, ::cuda::std::tuple{in.begin()}, out.begin(), cuda::narrow<offset_t>(n), heavy_functor<Heaviness::value>{});
+}
+catch (const std::bad_alloc&)
+{
+  state.skip("Skipping: out of memory.");
 }
 
 using ::cuda::std::integral_constant;
@@ -70,4 +83,4 @@ using heaviness =
 NVBENCH_BENCH_TYPES(heavy, NVBENCH_TYPE_AXES(heaviness))
   .set_name("heavy")
   .set_type_axes_names({"Heaviness{ct}"})
-  .add_int64_power_of_two_axis("Elements{io}", nvbench::range(16, 28, 4));
+  .add_int64_power_of_two_axis("Elements{io}", nvbench::range(16, 32, 4));

@@ -177,6 +177,12 @@ export CXX_STANDARD
 
 source ./pretty_printing.sh
 
+# Kill any build / test steps that exceed this time, otherwise CI jobs may be
+# killed by GHA before they can upload logs / artifacts needed to reproduce the timeout.
+# Only applies when running inside GitHub Actions.
+# Note that this is per-build/test limit, not a total timeout for the entire job.
+: "${CCCL_CI_COMMAND_TIMEOUT:=5.5h}"
+
 print_environment_details() {
   begin_group "⚙️ Environment Details"
 
@@ -196,6 +202,7 @@ print_environment_details() {
       NVCC_VERSION \
       CMAKE_BUILD_PARALLEL_LEVEL \
       CTEST_PARALLEL_LEVEL \
+      CCCL_CI_COMMAND_TIMEOUT \
       CCCL_CUDA_EXTENDED \
       CCCL_BUILD_INFIX \
       GLOBAL_CMAKE_OPTIONS \
@@ -231,6 +238,24 @@ print_environment_details() {
   end_group "⚙️ Environment Details"
 }
 
+run_ci_timed_command() {
+    local group_name="${1:-}"
+    shift
+    local -a command=("$@")
+
+    if [[ -n "${GITHUB_ACTIONS:-}" ]]; then
+        if [[ -n "${CCCL_CI_COMMAND_TIMEOUT}" && "${CCCL_CI_COMMAND_TIMEOUT}" != "0" ]]; then
+            if command -v timeout &> /dev/null; then
+                run_command "${group_name}" timeout "${CCCL_CI_COMMAND_TIMEOUT}" "${command[@]}"
+                return $?
+            fi
+            echo "Warning: timeout not found; running without CI timeout." >&2
+        fi
+    fi
+
+    run_command "${group_name}" "${command[@]}"
+}
+
 fail_if_no_gpu() {
     if ! nvidia-smi &> /dev/null; then
         echo "Error: No NVIDIA GPU detected. Please ensure you have an NVIDIA GPU installed and the drivers are properly configured." >&2
@@ -260,7 +285,9 @@ function configure_preset()
 {
     local BUILD_NAME=$1
     local PRESET=$2
-    local CMAKE_OPTIONS=$3
+    shift 2
+    local CMAKE_OPTIONS=$@
+
     local GROUP_NAME="🛠️  CMake Configure ${BUILD_NAME}"
 
     symlink_latest_preset "$PRESET"
@@ -320,7 +347,7 @@ function build_preset() {
 
     pushd .. > /dev/null
     status=0
-    run_command "$GROUP_NAME" cmake --build --preset=$PRESET -v || status=$?
+    run_ci_timed_command "$GROUP_NAME" cmake --build --preset="$PRESET" -v || status=$?
     popd > /dev/null
 
     if [[ -n "${GITHUB_ACTIONS:-}" || -n "${MEMMON:-}" ]]; then
@@ -372,7 +399,7 @@ function test_preset()
 
     pushd .. > /dev/null
     status=0
-    run_command "$GROUP_NAME" ctest --output-log "${ctest_log}" --preset=$PRESET || status=$?
+    run_ci_timed_command "$GROUP_NAME" ctest --output-log "${ctest_log}" --preset="$PRESET" || status=$?
     popd > /dev/null
 
     print_test_time_summary ${ctest_log}
@@ -384,7 +411,8 @@ function configure_and_build_preset()
 {
     local BUILD_NAME=$1
     local PRESET=$2
-    local CMAKE_OPTIONS=$3
+    shift 2
+    local CMAKE_OPTIONS=$@
 
     configure_preset "$BUILD_NAME" "$PRESET" "$CMAKE_OPTIONS"
 

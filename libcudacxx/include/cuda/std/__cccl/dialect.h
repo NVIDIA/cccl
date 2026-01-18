@@ -141,8 +141,10 @@
 #  define _CCCL_HAS_IF_CONSTEVAL_IN_CXX20() 0
 #endif
 
-#if _CCCL_CUDA_COMPILER(NVCC) \
-  && (_CCCL_CUDA_COMPILER(NVCC, <, 13) || _CCCL_DEVICE_COMPILATION() || _CCCL_COMPILER(CLANG))
+// nvcc before 13 doesn't support if consteval at all. Since 13, it accepts if consteval in host code (clang doesn't
+// work) and since 13.1 it works in device code, too.
+#if _CCCL_CUDA_COMPILER(NVCC, <, 13) || (_CCCL_CUDA_COMPILER(NVCC, <, 13, 1) && _CCCL_DEVICE_COMPILATION()) \
+  || (_CCCL_CUDA_COMPILER(NVCC) && _CCCL_COMPILER(CLANG))
 #  undef _CCCL_HAS_IF_CONSTEVAL_IN_CXX20
 #  define _CCCL_HAS_IF_CONSTEVAL_IN_CXX20() 0
 #endif // ^^^ disable if consteval in c++20 for nvcc ^^^
@@ -186,10 +188,10 @@
 
 // Fixme: replace the condition with (!_CCCL_DEVICE_COMPILATION())
 // FIXME: Enable this for clang-cuda in a followup
-#if !_CCCL_HAS_CUDA_COMPILER()
+#if !_CCCL_CUDA_COMPILATION()
 #  define _CCCL_HAS_LONG_DOUBLE() 1
-#else // ^^^ !_CCCL_HAS_CUDA_COMPILER() ^^^ / vvv _CCCL_HAS_CUDA_COMPILER() vvv
+#else // ^^^ !_CCCL_CUDA_COMPILATION() ^^^ / vvv _CCCL_CUDA_COMPILATION() vvv
 #  define _CCCL_HAS_LONG_DOUBLE() 0
-#endif // ^^^ _CCCL_HAS_CUDA_COMPILER() ^^^
+#endif // ^^^ _CCCL_CUDA_COMPILATION() ^^^
 
 #endif // __CCCL_DIALECT_H

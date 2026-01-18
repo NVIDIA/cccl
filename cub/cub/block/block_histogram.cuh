@@ -216,7 +216,7 @@ public:
       , linear_tid(RowMajorTid(BlockDimX, BlockDimY, BlockDimZ))
   {}
 
-  //! @}  end member group
+  //! @}
   //! @name Histogram operations
   //! @{
 

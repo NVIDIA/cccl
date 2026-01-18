@@ -23,6 +23,7 @@
 
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__concepts/same_as.h>
+#include <cuda/std/__exception/terminate.h>
 #include <cuda/std/__execution/env.h>
 #include <cuda/std/__tuple_dir/ignore.h>
 #include <cuda/std/__type_traits/decay.h>
@@ -70,6 +71,16 @@ using ::cuda::std::execution::__queryable_with;
 using ::cuda::std::execution::__query_or;
 using ::cuda::std::execution::__query_result_or_t;
 // NOLINTEND(misc-unused-using-decls)
+
+struct _CCCL_TYPE_VISIBILITY_DEFAULT never_stop_token;
+class _CCCL_TYPE_VISIBILITY_DEFAULT inplace_stop_source;
+class _CCCL_TYPE_VISIBILITY_DEFAULT inplace_stop_token;
+
+template <class _Callback>
+class _CCCL_TYPE_VISIBILITY_DEFAULT inplace_stop_callback;
+
+template <class _Token, class _Callback>
+using stop_callback_for_t _CCCL_NODEBUG_ALIAS = typename _Token::template callback_type<_Callback>;
 
 template <class _Env, class _Query, bool _Default>
 _CCCL_CONCEPT __nothrow_queryable_with_or =
@@ -125,6 +136,14 @@ _CCCL_API _CCCL_CONSTEVAL auto get_completion_signatures();
 template <class _Sndr, class... _Env>
 using completion_signatures_of_t _CCCL_NODEBUG_ALIAS = decltype(execution::get_completion_signatures<_Sndr, _Env...>());
 
+#if _CCCL_HAS_EXCEPTIONS() && __cpp_constexpr_exceptions >= 202411L // C++26, https://wg21.link/p3068
+template <class... _What, class... _Values>
+_CCCL_API consteval auto invalid_completion_signature(_Values... __values) -> completion_signatures<>;
+#else // ^^^ constexpr exceptions ^^^ / vvv no constexpr exceptions vvv
+template <class... _What, class... _Values>
+_CCCL_API _CCCL_CONSTEVAL auto invalid_completion_signature(_Values...);
+#endif // ^^^ no constexpr exceptions ^^^
+
 // handy enumerations for keeping type names readable
 enum class __disposition : int8_t
 {
@@ -141,6 +160,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT set_stopped_t;
 struct _CCCL_TYPE_VISIBILITY_DEFAULT start_t;
 struct _CCCL_TYPE_VISIBILITY_DEFAULT connect_t;
 struct _CCCL_TYPE_VISIBILITY_DEFAULT schedule_t;
+struct _CCCL_TYPE_VISIBILITY_DEFAULT transform_sender_t;
 
 template <class _Sch>
 using schedule_result_t _CCCL_NODEBUG_ALIAS = decltype(declval<schedule_t>()(declval<_Sch>()));
@@ -148,13 +168,12 @@ using schedule_result_t _CCCL_NODEBUG_ALIAS = decltype(declval<schedule_t>()(dec
 template <class _Sndr, class _Rcvr>
 using connect_result_t _CCCL_NODEBUG_ALIAS = decltype(declval<connect_t>()(declval<_Sndr>(), declval<_Rcvr>()));
 
-#if _CCCL_HOST_COMPILATION()
+template <class _Sndr, class _Env>
+using transform_sender_result_t _CCCL_NODEBUG_ALIAS =
+  decltype(declval<transform_sender_t>()(declval<_Sndr>(), declval<_Env>()));
+
 template <class _Sndr, class _Rcvr>
 inline constexpr bool __nothrow_connectable = noexcept(declval<connect_t>()(declval<_Sndr>(), declval<_Rcvr>()));
-#else // ^^^ _CCCL_HOST_COMPILATION() ^^^ / vvv !_CCCL_HOST_COMPILATION() vvv
-template <class _Sndr, class _Rcvr>
-inline constexpr bool __nothrow_connectable = __is_instantiable_with<connect_result_t, _Sndr, _Rcvr>;
-#endif // ^^^ !_CCCL_HOST_COMPILATION() ^^^
 
 // sender factory algorithms:
 struct _CCCL_TYPE_VISIBILITY_DEFAULT read_env_t;
@@ -182,6 +201,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT sequence_t;
 struct _CCCL_TYPE_VISIBILITY_DEFAULT write_env_t;
 struct _CCCL_TYPE_VISIBILITY_DEFAULT starts_on_t;
 struct _CCCL_TYPE_VISIBILITY_DEFAULT continues_on_t;
+struct _CCCL_TYPE_VISIBILITY_DEFAULT on_t;
 struct _CCCL_TYPE_VISIBILITY_DEFAULT schedule_from_t;
 struct _CCCL_TYPE_VISIBILITY_DEFAULT bulk_t;
 struct _CCCL_TYPE_VISIBILITY_DEFAULT bulk_chunked_t;
@@ -197,6 +217,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT get_stop_token_t;
 struct _CCCL_TYPE_VISIBILITY_DEFAULT get_scheduler_t;
 struct _CCCL_TYPE_VISIBILITY_DEFAULT get_delegation_scheduler_t;
 struct _CCCL_TYPE_VISIBILITY_DEFAULT get_forward_progress_guarantee_t;
+struct _CCCL_TYPE_VISIBILITY_DEFAULT get_available_parallelism_t;
 template <class _Tag>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT get_completion_scheduler_t;
 struct _CCCL_TYPE_VISIBILITY_DEFAULT get_domain_t;
@@ -211,13 +232,11 @@ template <class _Env>
 using __scheduler_of_t _CCCL_NODEBUG_ALIAS = decay_t<__call_result_t<get_scheduler_t, _Env>>;
 
 template <class _Env>
-using __domain_of_t _CCCL_NODEBUG_ALIAS = decay_t<::cuda::std::__type_call<
-  ::cuda::std::__type_try_catch<::cuda::std::__type_bind_front_quote<__call_result_t, get_domain_t>,
-                                ::cuda::std::__type_always<default_domain>>,
-  _Env>>;
+using __domain_of_t _CCCL_NODEBUG_ALIAS = __call_result_t<get_domain_t, _Env>;
 
 template <class _Tag, class _Sndr, class... _Env>
-using __completion_domain_of_t = __call_result_t<get_completion_domain_t<_Tag>, env_of_t<_Sndr>, _Env...>;
+using __completion_domain_of_t _CCCL_NODEBUG_ALIAS =
+  __call_result_t<get_completion_domain_t<_Tag>, env_of_t<_Sndr>, _Env...>;
 
 // get_forward_progress_guarantee:
 enum class forward_progress_guarantee
@@ -269,10 +288,45 @@ inline constexpr __disposition __signature_disposition<set_stopped_t()> = __disp
 } // namespace __detail
 
 struct inline_scheduler;
+class task_scheduler;
 
 struct stream_domain;
 struct stream_context;
 struct stream_scheduler;
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+// __has_completions_for and __never_completes_with
+template <class _SetTag, class _Sndr, class... _Env>
+_CCCL_CONCEPT __has_completions_for = _CCCL_REQUIRES_EXPR((_SetTag, _Sndr, variadic _Env)) //
+  ( //
+    typename(completion_signatures_of_t<_Sndr, _Env...>),
+    requires(completion_signatures_of_t<_Sndr, _Env...>::count(_SetTag{}) != 0) //
+  );
+
+template <class _Sndr, class _SetTag, class... _Env>
+_CCCL_CONCEPT __never_completes_with = _CCCL_REQUIRES_EXPR((_SetTag, _Sndr, variadic _Env)) //
+  ( //
+    typename(completion_signatures_of_t<_Sndr, _Env...>),
+    requires(completion_signatures_of_t<_Sndr, _Env...>::count(_SetTag{}) == 0) //
+  );
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+// __receiver_archetype
+template <class _Env>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT __receiver_archetype
+{
+  using receiver_concept = receiver_t;
+
+  template <class... _As>
+  _CCCL_API constexpr void set_value(_As&&...) noexcept;
+
+  template <class _Error>
+  _CCCL_API constexpr void set_error(_Error&&) noexcept;
+
+  _CCCL_API constexpr void set_stopped() noexcept;
+
+  [[nodiscard]] _CCCL_API constexpr auto get_env() const noexcept -> _Env;
+};
 } // namespace execution
 } // namespace cuda::experimental
 

@@ -58,14 +58,14 @@ jobs:
     name: "${{ matrix.libs }}"
     if: needs.check-event.outputs.ok == 'true'
     needs: check-event
-    runs-on: ${{ fromJSON(github.repository != 'NVIDIA/cccl' && '"ubuntu-latest"' || '"linux-amd64-cpu32"') }}
+    runs-on: ${{ fromJSON(github.repository != 'NVIDIA/cccl' && '"ubuntu-latest"' || '"linux-amd64-cpu16"') }}
     strategy:
       fail-fast: false
       matrix:
         include:
           - { cuda: '13.0', libs: 'rmm kvikio cudf cudf_kafka' }
-          - { cuda: '13.0', libs: 'rmm ucxx raft cuvs cumlprims_mg cuml' }
-          - { cuda: '13.0', libs: 'rmm ucxx raft cugraph'                }
+          - { cuda: '13.0', libs: 'rmm ucxx raft cuvs cuml'    }
+          - { cuda: '13.0', libs: 'rmm ucxx raft cugraph'      }
     permissions:
       id-token: write
       contents: read
@@ -77,7 +77,7 @@ jobs:
           persist-credentials: false
       - name: Add NVCC problem matcher
         run: echo "::add-matcher::$(pwd)/.github/problem-matchers/problem-matcher.json"
-      - uses: aws-actions/configure-aws-credentials@v4
+      - uses: aws-actions/configure-aws-credentials@v5
         if: ${{ github.repository == 'NVIDIA/cccl' }}
         with:
           role-to-assume: arn:aws:iam::279114543810:role/gha-oidc-NVIDIA
@@ -88,6 +88,8 @@ jobs:
           CCCL_TAG: ${{ inputs.override_cccl_tag }}
           CCCL_VERSION: ${{ inputs.override_cccl_version }}
           CI: true
+          CONDA_ENV_CREATE_QUIET: true
+          GH_TOKEN: ${{ github.token }}
           RAPIDS_LIBS: ${{ matrix.libs }}
           # Uncomment any of these to customize the git repo and branch for a RAPIDS lib:
           # RAPIDS_cmake_GIT_REPO: '{"upstream": "rapidsai", "tag": "main"}'
@@ -96,16 +98,25 @@ jobs:
           # RAPIDS_cugraph_GIT_REPO: '{"upstream": "rapidsai", "tag": "main"}'
           # RAPIDS_cugraph_gnn_GIT_REPO: '{"upstream": "rapidsai", "tag": "main"}'
           # RAPIDS_cuml_GIT_REPO: '{"upstream": "rapidsai", "tag": "main"}'
-          # RAPIDS_cumlprims_mg_GIT_REPO: '{"upstream": "rapidsai", "tag": "main"}'
           # RAPIDS_cuvs_GIT_REPO: '{"upstream": "rapidsai", "tag": "main"}'
           # RAPIDS_kvikio_GIT_REPO: '{"upstream": "rapidsai", "tag": "main"}'
           # RAPIDS_raft_GIT_REPO: '{"upstream": "rapidsai", "tag": "main"}'
           # RAPIDS_rmm_GIT_REPO: '{"upstream": "rapidsai", "tag": "main"}'
           # RAPIDS_ucxx_GIT_REPO: '{"upstream": "rapidsai", "tag": "main"}'
+          # Build cluster auth
+          SCCACHE_DIST_TOKEN: "${{ secrets.SCCACHE_DIST_TOKEN }}"
+          SCCACHE_DIST_AUTH_TOKEN_VAR: "SCCACHE_DIST_TOKEN"
+          # Retry intermittent failures
+          SCCACHE_DIST_MAX_RETRIES: "inf"
+          # Never fallback to building locally, fail instead
+          SCCACHE_DIST_FALLBACK_TO_LOCAL_COMPILE: "false"
+          SCCACHE_IDLE_TIMEOUT: 0
         run: |
           cat <<"EOF" > "$RUNNER_TEMP/ci.sh"
           #! /usr/bin/env bash
           set -eo pipefail
+
+          ulimit -n $(ulimit -Hn)
 
           declare -a failures
 
@@ -122,7 +133,7 @@ jobs:
               cat <<____EOF
              RAPIDS_LIBS='${RAPIDS_LIBS}'$(for lib in cmake ${RAPIDS_LIBS}; do var=RAPIDS_${lib//-/_}_GIT_REPO; if test -v "$var" && test -n "${!var}"; then echo -n " $var='${!var}'"; fi; done) \\
                .devcontainer/launch.sh -d -c ${{matrix.cuda}} -H rapids-conda -- ./ci/rapids/rapids-entrypoint.sh \\
-               /bin/bash -li -c 'uninstall-all -j -qqq && clean-all -j && build-all -j -v || exec /bin/bash -li'
+               /bin/bash -li -c 'uninstall-all -j -qqq && clean-all -j && build-all -j0 -v || exec /bin/bash -li'
           ____EOF
               echo ""
               echo "For additional information, see:"
@@ -165,14 +176,9 @@ jobs:
             --env "AWS_SESSION_TOKEN=${AWS_SESSION_TOKEN:-}" \
             --env "AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY:-}" \
             --env "CONDA_ENV_CREATE_QUIET=true" \
-            --env "CCCL_TAG=${CCCL_TAG}" \
-            --env "CCCL_VERSION=${CCCL_VERSION}" \
-            --env "DEVCONTAINER_UTILS_ENABLE_SCCACHE_DIST=true" \
-            --env "INFER_NUM_DEVICE_ARCHITECTURES=true" \
-            --env "MAX_DEVICE_OBJ_TO_COMPILE_IN_PARALLEL=100" \
-            --env "SCCACHE_BUCKET=${SCCACHE_BUCKET:-}" \
-            --env "SCCACHE_REGION=${SCCACHE_REGION:-}" \
-            --env "SCCACHE_IDLE_TIMEOUT=0" \
+            --env "CCCL_TAG=$CCCL_TAG" \
+            --env "CCCL_VERSION=$CCCL_VERSION" \
+            --env "GH_TOKEN=$GH_TOKEN" \
             --env "GITHUB_ACTIONS=$GITHUB_ACTIONS" \
             --env "GITHUB_SHA=$GITHUB_SHA" \
             --env "GITHUB_REF_NAME=$GITHUB_REF_NAME" \

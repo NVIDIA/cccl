@@ -3,6 +3,8 @@ import numba.cuda
 import numpy as np
 import pytest
 
+import cuda.compute
+from cuda.compute import OpKind
 from cuda.compute._utils.protocols import (
     compute_c_contiguous_strides_in_bytes,
 )
@@ -60,11 +62,14 @@ def test_equality_transform_iterator():
         return x
 
     it = CountingIterator(np.int32(0))
+    it = CountingIterator(np.int32(1))
     it1 = TransformIterator(it, op1)
     it2 = TransformIterator(it, op1)
     it3 = TransformIterator(it, op3)
 
-    assert it1.kind == it2.kind == it3.kind
+    assert it1.kind == it2.kind
+    # op3 has a different name than op1, so should have a different kind
+    assert it1.kind != it3.kind
 
     ary1 = cp.asarray([0, 1, 2])
     ary2 = cp.asarray([3, 4, 5])
@@ -74,8 +79,11 @@ def test_equality_transform_iterator():
     it7 = TransformIterator(ary1, op3)
     it8 = TransformIterator(ary2, op1)
 
-    assert it4.kind == it5.kind == it7.kind == it8.kind
+    assert it4.kind == it5.kind == it8.kind
+    # op2 has different bytecode, so should have a different kind
     assert it4.kind != it6.kind
+    # op3 has a different name than op1, so should have a different kind
+    assert it4.kind != it7.kind
 
 
 @pytest.fixture(
@@ -195,3 +203,23 @@ def test_matches_numpy_strides_for_c_contiguous_arrays(shape, dtype):
     expected = arr.strides
     result = compute_c_contiguous_strides_in_bytes(shape, dtype().itemsize)
     assert result == expected
+
+
+def test_transform_iterator_with_lambda():
+    """Test TransformIterator with a lambda function."""
+    first_item = 10
+    num_items = 100
+
+    # Use a lambda function directly with TransformIterator
+    transform_it = TransformIterator(
+        CountingIterator(np.int32(first_item)), lambda x: x * 2
+    )
+    h_init = np.array([0], dtype=np.int32)
+    d_output = cp.empty(1, dtype=np.int32)
+
+    # Perform reduction on the transformed iterator
+    cuda.compute.reduce_into(transform_it, d_output, OpKind.PLUS, num_items, h_init)
+
+    # Expected: sum of (10*2, 11*2, ..., 109*2) = 2 * sum(10..109)
+    expected = 2 * sum(range(first_item, first_item + num_items))
+    assert d_output.get()[0] == expected

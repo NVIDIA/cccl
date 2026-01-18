@@ -16,6 +16,59 @@
 // over a padded grid.  The padded values are not considered
 // during the reduction operation.
 
+// transform a tuple (int,value) into a tuple (bool,value,value)
+// where the bool is true for valid grid values and false for
+// values in the padded region of the grid
+template <typename IndexType, typename ValueType>
+struct transform_tuple
+{
+  using InputTuple  = typename cuda::std::tuple<IndexType, ValueType>;
+  using OutputTuple = typename cuda::std::tuple<bool, ValueType, ValueType>;
+
+  IndexType n, N;
+
+  transform_tuple(IndexType n, IndexType N)
+      : n(n)
+      , N(N)
+  {}
+
+  __host__ __device__ OutputTuple operator()(const InputTuple& t) const
+  {
+    bool is_valid = (cuda::std::get<0>(t) % N) < n;
+    return OutputTuple(is_valid, cuda::std::get<1>(t), cuda::std::get<1>(t));
+  }
+};
+
+// reduce two tuples (bool,value,value) into a single tuple such that output
+// contains the smallest and largest *valid* values.
+template <typename IndexType, typename ValueType>
+struct reduce_tuple
+{
+  using Tuple = typename cuda::std::tuple<bool, ValueType, ValueType>;
+
+  __host__ __device__ Tuple operator()(const Tuple& t0, const Tuple& t1) const
+  {
+    if (cuda::std::get<0>(t0) && cuda::std::get<0>(t1)) // both valid
+    {
+      return Tuple(true,
+                   thrust::min(cuda::std::get<1>(t0), cuda::std::get<1>(t1)),
+                   thrust::max(cuda::std::get<2>(t0), cuda::std::get<2>(t1)));
+    }
+    else if (cuda::std::get<0>(t0))
+    {
+      return t0;
+    }
+    else if (cuda::std::get<0>(t1))
+    {
+      return t1;
+    }
+    else
+    {
+      return t1; // if neither is valid then it doesn't matter what we return
+    }
+  }
+};
+
 int main()
 {
   int M = 10; // number of rows
@@ -51,9 +104,9 @@ int main()
   std::cout << "\n";
 
   // compute min & max over valid region of the 2d grid
-  using InputTuple  = thrust::tuple<int, float>;
-  using OutputTuple = thrust::tuple<bool, float, float>;
-  using result_type = thrust::tuple<bool, float, float>;
+  using InputTuple  = cuda::std::tuple<int, float>;
+  using OutputTuple = cuda::std::tuple<bool, float, float>;
+  using result_type = cuda::std::tuple<bool, float, float>;
 
   // lambda to transform a tuple (int,value) into a tuple (bool,value,value)
   // where the bool is true for valid grid values and false for values in the padded region
@@ -88,13 +141,13 @@ int main()
 
   result_type result = thrust::transform_reduce(
     thrust::make_zip_iterator(thrust::counting_iterator<int>(0), data.begin()),
-    thrust::make_zip_iterator(thrust::make_tuple(thrust::counting_iterator<int>(0), data.begin())) + data.size(),
+    thrust::make_zip_iterator(cuda::std::tuple(thrust::counting_iterator<int>(0), data.begin())) + data.size(),
     unary_op,
     init,
     binary_op);
 
-  std::cout << "minimum value: " << thrust::get<1>(result) << std::endl;
-  std::cout << "maximum value: " << thrust::get<2>(result) << std::endl;
+  std::cout << "minimum value: " << cuda::std::get<1>(result) << std::endl;
+  std::cout << "maximum value: " << cuda::std::get<2>(result) << std::endl;
 
   return 0;
 }

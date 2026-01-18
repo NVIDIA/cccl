@@ -8,6 +8,7 @@ import cuda.compute
 from cuda.compute.iterators import (
     CountingIterator,
     PermutationIterator,
+    TransformIterator,
     ZipIterator,
 )
 
@@ -133,3 +134,70 @@ def test_unary_transform_of_permutation_iterator():
 
     expected = values[indices] + 1
     assert cp.all(d_out == expected)
+
+
+def test_caching_permutation_iterator():
+    # same value type, same index type:
+    it1 = PermutationIterator(
+        cp.arange(10, dtype=np.int32), cp.arange(10, dtype=np.int32)
+    )
+    it2 = PermutationIterator(
+        cp.arange(10, dtype=np.int32), cp.arange(10, dtype=np.int32)
+    )
+    assert it1.advance is it2.advance
+    assert it1.input_dereference is it2.input_dereference
+    assert it1.output_dereference is it2.output_dereference
+
+    # same value type, different index types:
+    it1 = PermutationIterator(
+        cp.arange(10, dtype=np.int32), cp.arange(10, dtype=np.int32)
+    )
+    it2 = PermutationIterator(
+        cp.arange(10, dtype=np.int32), cp.arange(10, dtype=np.int64)
+    )
+    assert it1.advance is not it2.advance
+    assert it1.input_dereference is not it2.input_dereference
+    assert it1.output_dereference is not it2.output_dereference
+
+    # different value types, same index type:
+    it1 = PermutationIterator(
+        cp.arange(10, dtype=np.int32), cp.arange(10, dtype=np.int32)
+    )
+    it2 = PermutationIterator(
+        cp.arange(10, dtype=np.int64), cp.arange(10, dtype=np.int32)
+    )
+    assert it1.advance is not it2.advance
+    assert it1.input_dereference is not it2.input_dereference
+    assert it1.output_dereference is not it2.output_dereference
+
+    # permutation iterator with transform iterator value type (same op):
+    def op(x):
+        return x + 1
+
+    it1 = PermutationIterator(
+        TransformIterator(cp.arange(10, dtype=np.int32), op),
+        cp.arange(10, dtype=np.int32),
+    )
+    it2 = PermutationIterator(
+        TransformIterator(cp.arange(10, dtype=np.int32), op),
+        cp.arange(10, dtype=np.int32),
+    )
+    assert it1.advance is it2.advance
+    assert it1.input_dereference is it2.input_dereference
+    assert it1.output_dereference is it2.output_dereference
+
+    # permutation iterator with transform iterator value type (different op):
+    def op2(x):
+        return x + 2
+
+    it1 = PermutationIterator(
+        TransformIterator(cp.arange(10, dtype=np.int32), op),
+        cp.arange(10, dtype=np.int32),
+    )
+    it2 = PermutationIterator(
+        TransformIterator(cp.arange(10, dtype=np.int32), op2),
+        cp.arange(10, dtype=np.int32),
+    )
+    assert it1.advance is not it2.advance
+    assert it1.input_dereference is not it2.input_dereference
+    assert it1.output_dereference is not it2.output_dereference

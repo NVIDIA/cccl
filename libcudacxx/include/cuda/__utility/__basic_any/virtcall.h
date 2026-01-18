@@ -115,7 +115,6 @@ _CCCL_API auto __virtcall(_Self* __self, _Args&&... __args) //
   // map the member function pointer to the correct one if necessary
   using __virtual_fn_t = __virtual_fn_for<_Mbr, _Interface, _Super>;
   return __vptr->__virtual_fn_t::__fn_(__obj, static_cast<_Args&&>(__args)...);
-  _CCCL_UNREACHABLE();
 }
 
 _CCCL_TEMPLATE(auto _Mbr, template <class...> class _Interface, class _Super, class... _Args)

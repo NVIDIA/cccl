@@ -58,13 +58,13 @@ Inspecting the PTX, we see that the structs are passed by value to the device fu
         .param .b64 foo_param_1,
         .param .b32 foo_param_2,
         .param .b64 foo_param_3
-)
+    )
 """
 
 import functools
 import operator
 from types import new_class
-from typing import Any, Union
+from typing import Any, Union, get_type_hints
 
 import numba
 import numpy as np
@@ -156,7 +156,7 @@ def gpu_struct(field_dict: Union[dict, np.dtype, type], name: str = "AnonymousSt
     # Handle annotated class (decorator usage)
     if isinstance(field_dict, type) and hasattr(field_dict, "__annotations__"):
         name = field_dict.__name__
-        field_dict = field_dict.__annotations__
+        field_dict = get_type_hints(field_dict)
 
     # At this point, field_dict must be a dict
     assert isinstance(field_dict, dict)

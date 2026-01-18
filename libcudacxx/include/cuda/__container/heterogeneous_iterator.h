@@ -21,17 +21,19 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/__memory_resource/properties.h>
-#include <cuda/std/__iterator/iterator_traits.h>
-#include <cuda/std/__memory/addressof.h>
-#include <cuda/std/__memory/pointer_traits.h>
-#include <cuda/std/__type_traits/is_const.h>
-#include <cuda/std/__type_traits/is_same.h>
-#include <cuda/std/__type_traits/maybe_const.h>
-#include <cuda/std/__type_traits/remove_const.h>
-#include <cuda/std/cstdint>
+#if _CCCL_HAS_CTK()
 
-#include <cuda/std/__cccl/prologue.h>
+#  include <cuda/__memory_resource/properties.h>
+#  include <cuda/std/__iterator/iterator_traits.h>
+#  include <cuda/std/__memory/addressof.h>
+#  include <cuda/std/__memory/pointer_traits.h>
+#  include <cuda/std/__type_traits/is_const.h>
+#  include <cuda/std/__type_traits/is_same.h>
+#  include <cuda/std/__type_traits/maybe_const.h>
+#  include <cuda/std/__type_traits/remove_const.h>
+#  include <cuda/std/cstdint>
+
+#  include <cuda/std/__cccl/prologue.h>
 
 //! @file The \c heterogeneous_iterator class is an iterator that provides typed execution space safety.
 _CCCL_BEGIN_NAMESPACE_CUDA
@@ -42,7 +44,7 @@ enum class _IsConstIter
   __yes,
 };
 //! @rst
-//! .. _cudax-containers-heterogeneous-iterator:
+//! .. _libcudacxx-containers-heterogeneous-iterator:
 //!
 //! Type safe iterator over heterogeneous memory
 //! ---------------------------------------------
@@ -231,8 +233,8 @@ public:
 
   //! @brief Constructs an immutable \c heterogeneous_iterator from a mutable one
   //! @param __other The mutable \c heterogeneous_iterator
-  _CCCL_TEMPLATE(class _OtherTp)
-  _CCCL_REQUIRES((::cuda::std::is_same_v<_OtherTp, value_type>) _CCCL_AND(::cuda::std::is_const_v<_CvTp>))
+  _CCCL_TEMPLATE(class _OtherTp, class _CvTp2 = _CvTp)
+  _CCCL_REQUIRES((::cuda::std::is_same_v<_OtherTp, value_type>) _CCCL_AND(::cuda::std::is_const_v<_CvTp2>))
   _CCCL_API constexpr heterogeneous_iterator(heterogeneous_iterator<_OtherTp, _Properties...> __other) noexcept
       : __base(__other.__ptr_)
   {}
@@ -290,7 +292,7 @@ public:
     return __temp;
   }
 
-#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
+#  ifndef _CCCL_DOXYGEN_INVOKED // Do not document
   //! @brief Advance a \c heterogeneous_iterator
   //! @param __count The number of elements to advance.
   //! @param __other A heterogeneous_iterator.
@@ -301,7 +303,7 @@ public:
     __other += __count;
     return __other;
   }
-#endif // _CCCL_DOXYGEN_INVOKED
+#  endif // _CCCL_DOXYGEN_INVOKED
 
   //! @brief Advance a \c heterogeneous_iterator by the negative value of \p __count
   //! @param __count The number of elements to advance.
@@ -330,7 +332,7 @@ public:
     return static_cast<difference_type>(this->__ptr_ - __other.__ptr_);
   }
 
-#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
+#  ifndef _CCCL_DOXYGEN_INVOKED // Do not document
   //! @brief Equality comparison between two heterogeneous_iterator
   //! @param __lhs A heterogeneous_iterator.
   //! @param __rhs Another heterogeneous_iterator.
@@ -340,7 +342,7 @@ public:
   {
     return __lhs.__ptr_ == __rhs.__ptr_;
   }
-#  if _CCCL_STD_VER <= 2017
+#    if _CCCL_STD_VER <= 2017
   //! @brief Inequality comparison between two heterogeneous_iterator
   //! @param __lhs A heterogeneous_iterator.
   //! @param __rhs Another heterogeneous_iterator.
@@ -350,15 +352,15 @@ public:
   {
     return __lhs.__ptr_ != __rhs.__ptr_;
   }
-#  endif // _CCCL_STD_VER <= 2017
+#    endif // _CCCL_STD_VER <= 2017
 
-#  if _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
+#    if _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
   [[nodiscard]] _CCCL_API friend constexpr ::cuda::std::strong_ordering
   operator<=>(const heterogeneous_iterator& __lhs, const heterogeneous_iterator& __rhs) noexcept
   {
     return __lhs.__ptr_ <=> __rhs.__ptr_;
   }
-#  else // ^^^ _LIBCUDACXX_HAS_SPACESHIP_OPERATOR() ^^^ /  vvv !_LIBCUDACXX_HAS_SPACESHIP_OPERATOR() vvv
+#    else // ^^^ _LIBCUDACXX_HAS_SPACESHIP_OPERATOR() ^^^ /  vvv !_LIBCUDACXX_HAS_SPACESHIP_OPERATOR() vvv
   //! @brief Less than relation between two heterogeneous_iterator
   //! @param __lhs A heterogeneous_iterator.
   //! @param __rhs Another heterogeneous_iterator.
@@ -399,8 +401,8 @@ public:
   {
     return __lhs.__ptr_ >= __rhs.__ptr_;
   }
-#  endif // !_LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
-#endif // _CCCL_DOXYGEN_INVOKED
+#    endif // !_LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
+#  endif // _CCCL_DOXYGEN_INVOKED
 
   _CCCL_API constexpr pointer __unwrap() const noexcept
   {
@@ -431,6 +433,8 @@ struct pointer_traits<::cuda::heterogeneous_iterator<_Tp, _Properties...>>
 
 _CCCL_END_NAMESPACE_CUDA_STD
 
-#include <cuda/std/__cccl/epilogue.h>
+#  include <cuda/std/__cccl/epilogue.h>
+
+#endif // _CCCL_HAS_CTK()
 
 #endif //__CUDAX__CONTAINERS_HETEROGENEOUS_ITERATOR_CUH

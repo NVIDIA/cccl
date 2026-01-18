@@ -92,11 +92,10 @@ try
 
   // Define the kernel launch parameters
   constexpr int threadsPerBlock = 256;
-  auto config                   = cudax::distribute<threadsPerBlock>(numElements);
+  auto config                   = cuda::distribute<threadsPerBlock>(numElements);
 
   // Launch the vectorAdd kernel
-  printf(
-    "CUDA kernel launch with %d blocks of %d threads\n", config.dims.count(cuda::block, cuda::grid), threadsPerBlock);
+  printf("CUDA kernel launch with %zu blocks of %d threads\n", cuda::block.count(cuda::grid, config), threadsPerBlock);
   cudax::launch(stream, config, vectorAdd, in(A), in(B), out(C));
 
   printf("waiting for the stream to finish\n");

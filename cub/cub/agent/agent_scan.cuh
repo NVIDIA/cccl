@@ -149,7 +149,8 @@ template <typename AgentScanPolicyT,
           typename InitValueT,
           typename OffsetT,
           typename AccumT,
-          bool ForceInclusive = false>
+          bool ForceInclusive = false,
+          bool UsePDL         = false>
 struct AgentScan
 {
   //---------------------------------------------------------------------
@@ -370,6 +371,11 @@ struct AgentScan
     }
 
     __syncthreads();
+
+    if constexpr (UsePDL)
+    {
+      _CCCL_PDL_TRIGGER_NEXT_LAUNCH(); // omitting makes almost no difference in cub.bench.scan.exclusive.sum.base
+    }
 
     // Store items
     if constexpr (IS_LAST_TILE)

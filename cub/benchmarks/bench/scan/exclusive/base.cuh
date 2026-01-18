@@ -64,6 +64,7 @@ struct policy_hub_t
 
 template <typename T, typename OffsetT>
 static void basic(nvbench::state& state, nvbench::type_list<T, OffsetT>)
+try
 {
   using init_t         = T;
   using wrapped_init_t = cub::detail::InputValue<init_t>;
@@ -82,6 +83,11 @@ static void basic(nvbench::state& state, nvbench::type_list<T, OffsetT>)
 #endif
 
   const auto elements = static_cast<std::size_t>(state.get_int64("Elements{io}"));
+  if (sizeof(offset_t) == 4 && elements > std::numeric_limits<offset_t>::max())
+  {
+    state.skip("Skipping: input size exceeds 32-bit offset type capacity.");
+    return;
+  }
 
   thrust::device_vector<T> input = generate(elements);
   thrust::device_vector<T> output(elements);
@@ -95,11 +101,16 @@ static void basic(nvbench::state& state, nvbench::type_list<T, OffsetT>)
 
   size_t tmp_size;
   dispatch_t::Dispatch(
-    nullptr, tmp_size, d_input, d_output, op_t{}, wrapped_init_t{T{}}, static_cast<int>(input.size()), 0 /* stream */);
+    nullptr,
+    tmp_size,
+    d_input,
+    d_output,
+    op_t{},
+    wrapped_init_t{T{}},
+    static_cast<offset_t>(input.size()),
+    0 /* stream */);
 
   thrust::device_vector<nvbench::uint8_t> tmp(tmp_size);
-  nvbench::uint8_t* d_tmp = thrust::raw_pointer_cast(tmp.data());
-
   state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch, [&](nvbench::launch& launch) {
     dispatch_t::Dispatch(
       thrust::raw_pointer_cast(tmp.data()),
@@ -108,12 +119,16 @@ static void basic(nvbench::state& state, nvbench::type_list<T, OffsetT>)
       d_output,
       op_t{},
       wrapped_init_t{T{}},
-      static_cast<int>(input.size()),
+      static_cast<offset_t>(input.size()),
       launch.get_stream());
   });
+}
+catch (const std::bad_alloc&)
+{
+  state.skip("Skipping: out of memory.");
 }
 
 NVBENCH_BENCH_TYPES(basic, NVBENCH_TYPE_AXES(all_types, offset_types))
   .set_name("base")
   .set_type_axes_names({"T{ct}", "OffsetT{ct}"})
-  .add_int64_power_of_two_axis("Elements{io}", nvbench::range(16, 28, 4));
+  .add_int64_power_of_two_axis("Elements{io}", nvbench::range(16, 32, 4));

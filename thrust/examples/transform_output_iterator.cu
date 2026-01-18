@@ -6,6 +6,17 @@
 
 #include <iostream>
 
+struct Functor
+{
+  template <class Tuple>
+  __host__ __device__ float operator()(const Tuple& tuple) const
+  {
+    const float x = cuda::std::get<0>(tuple);
+    const float y = cuda::std::get<1>(tuple);
+    return x * y * 2.0f / 3.0f;
+  }
+};
+
 int main()
 {
   thrust::host_vector<float> u{4, 3, 2, 1};

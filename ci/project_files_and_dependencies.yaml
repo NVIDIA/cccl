@@ -44,7 +44,7 @@ projects:
 
   libcudacxx_public:
     name: "libcu++ Public API"
-    lite_dependencies: []
+    lite_dependencies: ['thrust_public', 'cub_public']
     full_dependencies: []
     include_regexes: ["libcudacxx/include/"]
 
@@ -176,6 +176,7 @@ projects:
 # Files matching any of these regexes will be ignored globally.
 ignore_regexes:
   - '.+\.md$'
+  - '\.branch_notes/'
   - '\.clang-format'
   - '\.clangd'
   - '\.devcontainer/img'

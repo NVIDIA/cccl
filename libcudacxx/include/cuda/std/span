@@ -21,6 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__concepts/convertible_to.h>
 #include <cuda/std/__concepts/equality_comparable.h>
 #include <cuda/std/__exception/throw_error.h>
@@ -65,71 +66,41 @@ template <class _From, class _To>
 _CCCL_CONCEPT __span_array_convertible = is_convertible_v<_From (*)[], _To (*)[]>;
 
 template <class _Range, class _ElementType>
-_CCCL_CONCEPT_FRAGMENT(
-  __span_compatible_range_,
-  requires()(
-    requires(::cuda::std::ranges::contiguous_range<_Range>),
-    requires(::cuda::std::ranges::sized_range<_Range>),
-    requires((::cuda::std::ranges::borrowed_range<_Range> || is_const_v<_ElementType>) ),
-    requires((!is_array_v<remove_cvref_t<_Range>>) ),
-    requires((!__is_cuda_std_span_v<remove_cvref_t<_Range>> && !__is_cuda_std_array_v<remove_cvref_t<_Range>>) ),
+_CCCL_CONCEPT __span_compatible_range = _CCCL_REQUIRES_EXPR((_Range, _ElementType)) //
+  ( //
+    requires(::cuda::std::ranges::contiguous_range<_Range>), //
+    requires(::cuda::std::ranges::sized_range<_Range>), //
+    requires(::cuda::std::ranges::borrowed_range<_Range> || is_const_v<_ElementType>), //
+    requires(!is_array_v<remove_cvref_t<_Range>>), //
+    requires(!__is_cuda_std_span_v<remove_cvref_t<_Range>>), //
+    requires(!__is_cuda_std_array_v<remove_cvref_t<_Range>>), //
     requires(
-      is_convertible_v<remove_reference_t<::cuda::std::ranges::range_reference_t<_Range>> (*)[], _ElementType (*)[]>)));
-
-template <class _Range, class _ElementType>
-_CCCL_CONCEPT __span_compatible_range = _CCCL_FRAGMENT(__span_compatible_range_, _Range, _ElementType);
-
-#if _CCCL_STD_VER >= 2020
-template <class _It, class _Tp>
-_CCCL_CONCEPT __span_compatible_iterator =
-  contiguous_iterator<_It> && __span_array_convertible<remove_reference_t<iter_reference_t<_It>>, _Tp>;
-
-template <class _Sentinel, class _It>
-_CCCL_CONCEPT __span_compatible_sentinel_for =
-  sized_sentinel_for<_Sentinel, _It> && !is_convertible_v<_Sentinel, size_t>;
-#else // ^^^ C++20 ^^^ / vvv C++17 vvv
-template <class _It, class _Tp>
-_CCCL_CONCEPT_FRAGMENT(__span_compatible_iterator_,
-                       requires()(requires(contiguous_iterator<_It>),
-                                  requires(__span_array_convertible<remove_reference_t<iter_reference_t<_It>>, _Tp>)));
+      is_convertible_v<remove_reference_t<::cuda::std::ranges::range_reference_t<_Range>> (*)[], _ElementType (*)[]>));
 
 template <class _It, class _Tp>
-_CCCL_CONCEPT __span_compatible_iterator = _CCCL_FRAGMENT(__span_compatible_iterator_, _It, _Tp);
+_CCCL_CONCEPT __span_compatible_iterator = _CCCL_REQUIRES_EXPR((_It, _Tp)) //
+  ( //
+    requires(contiguous_iterator<_It>), //
+    requires(__span_array_convertible<remove_reference_t<iter_reference_t<_It>>, _Tp>) //
+  );
 
 template <class _Sentinel, class _It>
-_CCCL_CONCEPT_FRAGMENT(
-  __span_compatible_sentinel_for_,
-  requires()(requires(sized_sentinel_for<_Sentinel, _It>), requires(!is_convertible_v<_Sentinel, size_t>)));
-
-template <class _Sentinel, class _It>
-_CCCL_CONCEPT __span_compatible_sentinel_for = _CCCL_FRAGMENT(__span_compatible_sentinel_for_, _Sentinel, _It);
-#endif // ^^^ !_CCCL_HAS_CONCEPTS() ^^^
-
-#if _CCCL_HAS_CONCEPTS()
+_CCCL_CONCEPT __span_compatible_sentinel_for = _CCCL_REQUIRES_EXPR((_Sentinel, _It)) //
+  ( //
+    requires(sized_sentinel_for<_Sentinel, _It>), //
+    requires(!is_convertible_v<_Sentinel, size_t>) //
+  );
 
 template <class _Tp>
-concept __integral_constant_like =
-  is_integral_v<decltype(_Tp::value)> //
-  && !is_same_v<bool, remove_const_t<decltype(_Tp::value)>> //
-  && convertible_to<_Tp, decltype(_Tp::value)> //
-  && equality_comparable_with<_Tp, decltype(_Tp::value)> //
-  && bool_constant<_Tp() == _Tp::value>::value
-  && bool_constant<static_cast<decltype(_Tp::value)>(_Tp()) == _Tp::value>::value;
-
-#else // ^^^ _CCCL_HAS_CONCEPTS() ^^^ / vvv !_CCCL_HAS_CONCEPTS() vvv
-
-template <class _Tp>
-_CCCL_CONCEPT_FRAGMENT(
-  __integral_constant_like_,
-  requires()(requires(is_integral_v<decltype(_Tp::value)>),
-             requires(!is_same_v<bool, remove_const_t<decltype(_Tp::value)>>),
-             requires(convertible_to<_Tp, decltype(_Tp::value)>),
-             requires(equality_comparable_with<_Tp, decltype(_Tp::value)>),
-             (integral_constant<bool, _Tp() == _Tp::value>::value),
-             (integral_constant<bool, static_cast<decltype(_Tp::value)>(_Tp()) == _Tp::value>::value)));
-template <class _Tp>
-_CCCL_CONCEPT __integral_constant_like = _CCCL_FRAGMENT(__integral_constant_like_, _Tp);
-#endif // ^^^ !_CCCL_HAS_CONCEPTS() ^^^
+_CCCL_CONCEPT __integral_constant_like = _CCCL_REQUIRES_EXPR((_Tp)) //
+  ( //
+    requires(is_integral_v<decltype(_Tp::value)>), //
+    requires(!is_same_v<bool, remove_const_t<decltype(_Tp::value)>>), //
+    requires(convertible_to<_Tp, decltype(_Tp::value)>), //
+    requires(equality_comparable_with<_Tp, decltype(_Tp::value)>), //
+    requires(_Tp() == _Tp::value), //
+    requires(static_cast<decltype(_Tp::value)>(_Tp()) == _Tp::value) //
+  );
 
 template <class _Tp, bool = __integral_constant_like<_Tp>>
 inline constexpr size_t __maybe_static_ext = dynamic_extent;

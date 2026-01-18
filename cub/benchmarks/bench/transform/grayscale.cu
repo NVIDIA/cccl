@@ -1,6 +1,18 @@
 // SPDX-FileCopyrightText: Copyright (c) 2025, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: BSD-3-Clause
 
+// %RANGE% TUNE_BIF_BIAS bif -16:16:4
+// %RANGE% TUNE_ALGORITHM alg 0:4:1
+// %RANGE% TUNE_THREADS tpb 128:1024:128
+
+// those parameters only apply if TUNE_ALGORITHM == 1 (vectorized)
+// %RANGE% TUNE_VEC_SIZE_POW2 vsp2 1:6:1
+// %RANGE% TUNE_VECTORS_PER_THREAD vpt 1:4:1
+
+#if !TUNE_BASE && TUNE_ALGORITHM != 1 && (TUNE_VEC_SIZE_POW2 != 1 || TUNE_VECTORS_PER_THREAD != 1)
+#  error "Non-vectorized algorithms require vector size and vectors per thread to be 1 since they ignore the parameters"
+#endif // !TUNE_BASE && TUNE_ALGORITHM != 1 && (TUNE_VEC_SIZE_POW2 != 1 || TUNE_VECTORS_PER_THREAD != 1)
+
 #include "common.h"
 
 template <typename T>
@@ -31,9 +43,15 @@ struct transform_op_t
 
 template <typename T, typename OffsetT>
 static void grayscale(nvbench::state& state, nvbench::type_list<T, OffsetT>)
+try
 {
   using pixel_t = rgb_t<T>;
-  const auto n  = cuda::narrow<OffsetT>(state.get_int64("Elements{io}"));
+  const auto n  = state.get_int64("Elements{io}");
+  if (sizeof(OffsetT) == 4 && n > std::numeric_limits<OffsetT>::max())
+  {
+    state.skip("Skipping: input size exceeds 32-bit offset type capacity.");
+    return;
+  }
 
   // Generate random RGB data by creating separate R, G, B vectors and combining them
   thrust::device_vector<T> r_data = generate(n);
@@ -55,7 +73,11 @@ static void grayscale(nvbench::state& state, nvbench::type_list<T, OffsetT>)
   state.add_global_memory_reads<pixel_t>(n);
   state.add_global_memory_writes<T>(n);
 
-  bench_transform(state, cuda::std::tuple{input.begin()}, output.begin(), n, transform_op_t<T>{});
+  bench_transform(state, cuda::std::tuple{input.begin()}, output.begin(), static_cast<OffsetT>(n), transform_op_t<T>{});
+}
+catch (const std::bad_alloc&)
+{
+  state.skip("Skipping: out of memory.");
 }
 
 #ifdef TUNE_T
@@ -67,4 +89,4 @@ using value_types = nvbench::type_list<float, double>;
 NVBENCH_BENCH_TYPES(grayscale, NVBENCH_TYPE_AXES(value_types, offset_types))
   .set_name("grayscale")
   .set_type_axes_names({"T{ct}", "OffsetT{ct}"})
-  .add_int64_power_of_two_axis("Elements{io}", nvbench::range(16, 28, 4));
+  .add_int64_power_of_two_axis("Elements{io}", nvbench::range(16, 32, 4));
