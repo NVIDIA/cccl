@@ -2,10 +2,10 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-from typing import Callable, Hashable
+from typing import Callable
 
 from ._bindings import Op, OpKind
-from ._caching import CachableFunction
+from ._caching import CachableFunction, cache_with_registered_key_functions
 
 
 def _is_well_known_op(op: OpKind) -> bool:
@@ -17,11 +17,10 @@ class _OpAdapter:
     Provides a unified interface for operators, whether they are:
     - Well-known operations (OpKind.PLUS, OpKind.MAXIMUM, etc.)
     - Stateless user-provided callables
-    """
 
-    def get_cache_key(self) -> Hashable:
-        """Return a hashable cache key for this operator."""
-        raise NotImplementedError("Subclasses must implement this method")
+    Note: Cache key extraction is handled by the cache key registry,
+    not by a get_cache_key() method.
+    """
 
     def compile(self, input_types, output_type=None) -> Op:
         """
@@ -55,9 +54,6 @@ class _WellKnownOp(_OpAdapter):
             )
         self._kind = kind
 
-    def get_cache_key(self) -> Hashable:
-        return (self._kind.name, self._kind.value)
-
     def compile(self, input_types, output_type=None) -> Op:
         return Op(
             operator_type=self._kind,
@@ -81,9 +77,6 @@ class _StatelessOp(_OpAdapter):
     def __init__(self, func: Callable):
         self._func = func
         self._cachable = CachableFunction(func)
-
-    def get_cache_key(self) -> Hashable:
-        return self._cachable
 
     def compile(self, input_types, output_type=None) -> Op:
         from . import _cccl_interop as cccl
@@ -138,3 +131,22 @@ __all__ = [
     "OpKind",
     "make_op_adapter",
 ]
+
+
+# ============================================================================
+# Register key functions
+# ============================================================================
+
+cache_with_registered_key_functions.register(
+    _WellKnownOp, lambda op: (op._kind.name, op._kind.value)
+)
+
+cache_with_registered_key_functions.register(_StatelessOp, lambda op: op._cachable)
+
+cache_with_registered_key_functions.register(
+    OpKind, lambda kind: (kind.name, kind.value)
+)
+
+cache_with_registered_key_functions.register(
+    type(lambda: None), lambda func: CachableFunction(func)
+)
