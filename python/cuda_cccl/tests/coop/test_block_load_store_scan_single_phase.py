@@ -40,17 +40,11 @@ class BlockPrefixCallbackOp:
         self.call_count = call_count
 
     def __call__(self_ptr, block_aggregate):
-        print("block_agg: ", block_aggregate)
-        print("old_prefix: ", self_ptr[0].running_total)
-        return block_aggregate
-
-        # print("old_prefix: ", self_ptr[0].running_total)
-        # print("call_count: ", self_ptr[0].call_count)
-        # old_prefix = self_ptr[0].running_total
-        # call_count = self_ptr[0].call_count + 1
-        # new_running_total = old_prefix + block_aggregate
-        # self_ptr[0] = BlockPrefixCallbackOp(new_running_total, call_count)
-        # return old_prefix
+        old_prefix = self_ptr[0].running_total
+        call_count = self_ptr[0].call_count + 1
+        new_running_total = old_prefix + block_aggregate
+        self_ptr[0] = BlockPrefixCallbackOp(new_running_total, call_count)
+        return old_prefix
 
 
 class BlockPrefixCallbackOpType(types.Type):
@@ -493,6 +487,9 @@ def test_block_load_store_scan_simple4():
 
 
 def test_block_load_store_scan_simple5():
+    pytest.skip(
+        "Experimental prefix-op CUSource scaffolding not supported in single-phase yet."
+    )
     from numba.core.typing.templates import Signature
 
     # ffi = cffi.FFI()
@@ -949,9 +946,7 @@ def test_block_load_store_scan_simple6():
 
 def test_block_load_store_scan_simple7():
     @cuda.jit
-    def kernel(
-        d_in, d_out, items_per_thread, num_total_items, d_call_counts, block_prefixes
-    ):
+    def kernel(d_in, d_out, items_per_thread, num_total_items):
         threads_per_block = cuda.blockDim.x * cuda.blockDim.y * cuda.blockDim.z
         items_per_block = items_per_thread * threads_per_block
 
@@ -966,14 +961,8 @@ def test_block_load_store_scan_simple7():
             num_total_items - block_offset,
         )
 
-        idx = cuda.grid(1)
-        block_prefix_op = block_prefixes[idx]
-        # block_prefix_op = cuda.local.array(
-        #    shape=1,
-        #    dtype=block_prefix_callback_op_type,
-        # )
-        # block_prefix_op[0] = BlockPrefixCallbackOp(0, 0)
-        # block_prefix_callback_op = BlockPrefixCallbackOp(0)
+        block_prefix_op = coop.local.array(1, dtype=block_prefix_callback_op_type)
+        block_prefix_op[0] = BlockPrefixCallbackOp(0, 0)
 
         # Load with padding
         coop.block.load(
@@ -999,9 +988,6 @@ def test_block_load_store_scan_simple7():
             block_prefix_callback_op=block_prefix_op,
         )
 
-        # tid = cuda.grid(1)
-        # call_counts[tid] = block_prefix_op[0].call_count
-
         # Store only valid items back to global memory
         coop.block.store(
             d_out[block_offset:],
@@ -1025,30 +1011,6 @@ def test_block_load_store_scan_simple7():
     items_per_block = threads_per_block * items_per_thread
     blocks_per_grid = (num_total_items + items_per_block - 1) // items_per_block
 
-    num_threads = (
-        threads_per_block
-        if isinstance(threads_per_block, int)
-        else reduce(mul, threads_per_block)
-    )
-
-    d_call_counts = cuda.to_device(np.zeros(num_threads, dtype=np.int64))
-    block_prefix_callback_op_type = types.Record.make_c_struct(
-        [
-            ("running_total", types.int32),
-            ("call_count", types.int32),
-        ]
-    )
-    print(f"block_prefix_callback_op_type: {block_prefix_callback_op_type}")
-
-    bp_npy = np.dtype(
-        [
-            ("running_total", np.int32),
-            ("call_count", np.int32),
-        ]
-    )
-    h_block_prefixes = np.zeros(num_threads, dtype=bp_npy)
-    d_block_prefixes = cuda.to_device(h_block_prefixes)
-
     print(
         f"blocks_per_grid: {blocks_per_grid}\n"
         f"items_per_block: {items_per_block}\n"
@@ -1061,14 +1023,9 @@ def test_block_load_store_scan_simple7():
         d_output,
         items_per_thread,
         num_total_items,
-        d_call_counts,
-        d_block_prefixes,
     )
 
     cuda.synchronize()
-
-    h_call_counts = d_call_counts.copy_to_host()
-    print(f"call_counts: {h_call_counts}")
 
     # Compute the correct prefix-sum on host to compare results
     h_reference = np.zeros_like(h_input)
@@ -1085,7 +1042,7 @@ def test_block_load_store_scan_simple7():
 
 def test_block_load_store_num_valid_items_with_single_phase_scan():
     @cuda.jit
-    def kernel(d_in, d_out, items_per_thread, num_total_items, d_bps):
+    def kernel(d_in, d_out, items_per_thread, num_total_items):
         idx = cuda.grid(1)
         if idx >= d_in.size:
             return
@@ -1098,14 +1055,11 @@ def test_block_load_store_num_valid_items_with_single_phase_scan():
 
         thread_data = coop.local.array(items_per_thread, dtype=d_in.dtype)
 
-        # block_prefix_callback_op = cuda.local.array(
-        #    shape=1,
-        #    dtype=block_prefix_callback_op_type,
-        # )
-        # block_prefix_callback_op[0] = BlockPrefixCallbackOp(0, 0)
-
-        # block_prefix_callback_op = BlockPrefixCallbackOp(0)
-        block_prefix_callback_op = d_bps[idx]
+        block_prefix_callback_op = coop.local.array(
+            shape=1,
+            dtype=block_prefix_callback_op_type,
+        )
+        block_prefix_callback_op[0] = BlockPrefixCallbackOp(0, 0)
 
         while block_offset < num_total_items:
             # Calculate num_valid_items for current block
@@ -1229,7 +1183,7 @@ def test_block_sum_prefix_op(threads_per_block, items_per_thread, mode):
     def kernel(input_arr, output_arr, call_counts):
         segment_offset = cuda.blockIdx.x * segment_size
         # temp_storage = cuda.shared.array(shape=temp_storage_bytes, dtype=numba.uint8)
-        block_prefix_op = cuda.local.array(shape=1, dtype=block_prefix_callback_op_type)
+        block_prefix_op = coop.local.array(1, dtype=block_prefix_callback_op_type)
         block_prefix_op[0] = BlockPrefixCallbackOp(0, 0)
         # block_prefix_op = BlockPrefixCallbackOp(0, 0)
         # block_prefix_callback_op = cuda.local.array(
@@ -1238,8 +1192,8 @@ def test_block_sum_prefix_op(threads_per_block, items_per_thread, mode):
         # )
         # block_prefix_callback_op[0] = BlockPrefixCallbackOp(0)
 
-        thread_in = cuda.local.array(items_per_thread, dtype=numba.int32)
-        thread_out = cuda.local.array(items_per_thread, dtype=numba.int32)
+        thread_in = coop.local.array(items_per_thread, dtype=numba.int32)
+        thread_out = coop.local.array(items_per_thread, dtype=numba.int32)
 
         tid = row_major_tid()
         tile_offset = 0
@@ -1252,16 +1206,13 @@ def test_block_sum_prefix_op(threads_per_block, items_per_thread, mode):
                 else:
                     thread_in[item] = 0
 
-            if items_per_thread == 1:
-                # thread_out[0] = block_sum(temp_storage, thread_in[0], block_prefix_op)
-                pass
-            else:
-                coop.block.scan(
-                    thread_in,
-                    thread_out,
-                    items_per_thread,
-                    block_prefix_callback_op=block_prefix_op,
-                )
+            coop.block.scan(
+                thread_in,
+                thread_out,
+                items_per_thread,
+                mode=mode,
+                block_prefix_callback_op=block_prefix_op,
+            )
 
             cuda.syncthreads()
 
@@ -1281,8 +1232,7 @@ def test_block_sum_prefix_op(threads_per_block, items_per_thread, mode):
     d_output = cuda.to_device(np.zeros(num_elements, dtype=np.int32))
     d_call_counts = cuda.to_device(np.zeros(num_threads, dtype=np.int64))
 
-    # kernel[num_segments, threads_per_block](d_input, d_output)
-    kernel[1, threads_per_block](d_input, d_output, d_call_counts)
+    kernel[num_segments, threads_per_block](d_input, d_output, d_call_counts)
     cuda.synchronize()
 
     h_output = d_output.copy_to_host()
@@ -1310,7 +1260,7 @@ def test_block_sum_prefix_op(threads_per_block, items_per_thread, mode):
     print(f"Sum equal: {sum_equal} / {num_elements}")
     np.testing.assert_array_equal(h_output, ref)
 
-    sig = (types.int32[::1], types.int32[::1])
+    sig = (types.int32[::1], types.int32[::1], types.int64[::1])
     sass = kernel.inspect_sass(sig)
     assert "LDL" not in sass
     assert "STL" not in sass

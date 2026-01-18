@@ -2,6 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+from types import SimpleNamespace
 from typing import TYPE_CHECKING, Callable
 
 import numba
@@ -15,9 +16,8 @@ from .._enums import (
 )
 from .._types import (
     Algorithm,
+    Array,
     BasePrimitive,
-    Dependency,
-    DependentArray,
     Invocable,
     TemplateParameter,
 )
@@ -33,27 +33,110 @@ if TYPE_CHECKING:
     from ._rewrite import CoopNode
 
 
+ATOMIC_WRAPPER_CODE = """
+namespace cub {
+template <typename T,
+          int BLOCK_DIM_X,
+          int ITEMS_PER_THREAD,
+          int BINS,
+          ::cub::BlockHistogramAlgorithm ALGORITHM,
+          int BLOCK_DIM_Y,
+          int BLOCK_DIM_Z>
+struct BlockHistogramAtomicWrapper
+{
+  static constexpr int BLOCK_THREADS = BLOCK_DIM_X * BLOCK_DIM_Y * BLOCK_DIM_Z;
+
+  struct TempStorage
+  {};
+
+  template <typename U, int Size = sizeof(U)>
+  struct IndexLoader;
+
+  template <typename U>
+  struct IndexLoader<U, 1>
+  {
+    __device__ __forceinline__ static unsigned int load(const U* ptr)
+    {
+      unsigned int idx;
+      asm volatile("ld.u8 %0, [%1];" : "=r"(idx) : "l"(ptr));
+      return idx & 0xFFu;
+    }
+  };
+
+  template <typename U>
+  struct IndexLoader<U, 2>
+  {
+    __device__ __forceinline__ static unsigned int load(const U* ptr)
+    {
+      unsigned int idx;
+      asm volatile("ld.u16 %0, [%1];" : "=r"(idx) : "l"(ptr));
+      return idx & 0xFFFFu;
+    }
+  };
+
+  template <typename U>
+  struct IndexLoader<U, 4>
+  {
+    __device__ __forceinline__ static unsigned int load(const U* ptr)
+    {
+      unsigned int idx;
+      asm volatile("ld.u32 %0, [%1];" : "=r"(idx) : "l"(ptr));
+      return idx;
+    }
+  };
+
+  __device__ __forceinline__ BlockHistogramAtomicWrapper() {}
+
+  template <typename CounterT>
+  __device__ __forceinline__ void InitHistogram(CounterT (&histogram)[BINS])
+  {
+    unsigned int linear_tid =
+      (threadIdx.z * BLOCK_DIM_Y + threadIdx.y) * BLOCK_DIM_X + threadIdx.x;
+
+    int histo_offset = 0;
+    #pragma unroll
+    for (; histo_offset + BLOCK_THREADS <= BINS; histo_offset += BLOCK_THREADS)
+    {
+      histogram[histo_offset + linear_tid] = 0;
+    }
+
+    if ((BINS % BLOCK_THREADS != 0) && (histo_offset + linear_tid < BINS))
+    {
+      histogram[histo_offset + linear_tid] = 0;
+    }
+  }
+
+  template <typename CounterT>
+  __device__ __forceinline__ void Composite(T (&items)[ITEMS_PER_THREAD],
+                                            CounterT (&histogram)[BINS])
+  {
+    constexpr unsigned int bin_mask = static_cast<unsigned int>(BINS - 1);
+    constexpr bool bins_power_of_two = (BINS & (BINS - 1)) == 0;
+    #pragma unroll
+    for (int i = 0; i < ITEMS_PER_THREAD; ++i)
+    {
+      unsigned int idx = IndexLoader<T>::load(&items[i]);
+      if (bins_power_of_two)
+      {
+        idx &= bin_mask;
+      }
+      if (idx < BINS)
+      {
+        atomicAdd(&histogram[idx], 1);
+      }
+    }
+  }
+};
+} // namespace cub
+"""
+
+
 class BlockHistogramInit(BasePrimitive):
     is_child = True
     c_name = "init"
     method_name = "InitHistogram"
     struct_name = STRUCT_NAME
     includes = INCLUDES
-
-    template_parameters = (
-        TemplateParameter("CounterT"),
-        TemplateParameter("BINS"),
-    )
-
-    parameters = (
-        (
-            DependentArray(
-                Dependency("CounterT"),
-                Dependency("BINS"),
-                name="histogram",
-            ),
-        ),
-    )
 
     def __init__(
         self,
@@ -62,25 +145,45 @@ class BlockHistogramInit(BasePrimitive):
     ) -> None:
         self.node = node
         self.parent = parent
+        self.struct_name = parent.struct_name
+        self.includes = parent.includes
         parent_node = self.parent_node = parent.node
         self.histogram = parent_node.histogram
         self.bins = parent_node.bins
         self.counter_dtype = parent_node.counter_dtype
+
+        template_parameters = parent.template_parameters
+        parameters = (
+            (
+                Array(
+                    self.counter_dtype,
+                    self.bins,
+                    name="histogram",
+                ),
+            ),
+        )
 
         self.algorithm = Algorithm(
             self.struct_name,
             self.method_name,
             self.c_name,
             self.includes,
-            self.template_parameters,
-            self.parameters,
+            template_parameters,
+            parameters,
             primitive=self,
             unique_id=parent_node.unique_id,
         )
 
+        dim = parent_node.threads_per_block
+        algorithm = parent_node.algorithm or parent.default_algorithm
         specialization_kwds = {
-            "CounterT": self.counter_dtype,
-            "BINS": self.bins,
+            "T": parent_node.item_dtype,
+            "BLOCK_DIM_X": dim[0],
+            "ITEMS_PER_THREAD": parent_node.items_per_thread,
+            "BINS": parent_node.bins,
+            "ALGORITHM": str(algorithm),
+            "BLOCK_DIM_Y": dim[1],
+            "BLOCK_DIM_Z": dim[2],
         }
 
         self.specialization = self.algorithm.specialize(specialization_kwds)
@@ -96,30 +199,6 @@ class BlockHistogramComposite(BasePrimitive):
     c_name = "composite"
     method_name = "Composite"
 
-    template_parameters = (
-        TemplateParameter("T"),
-        TemplateParameter("CounterT"),
-        TemplateParameter("BINS"),
-        TemplateParameter("ITEMS_PER_THREAD"),
-    )
-
-    parameters = (
-        (
-            # `T (&items)[ITEMS_PER_THREAD]`
-            DependentArray(
-                value_dtype=Dependency("T"),
-                size=Dependency("ITEMS_PER_THREAD"),
-                name="items",
-            ),
-            # `CounterT (&histogram)[BINS]`
-            DependentArray(
-                value_dtype=Dependency("CounterT"),
-                size=Dependency("BINS"),
-                name="histogram",
-            ),
-        ),
-    )
-
     def __init__(
         self,
         parent: "BlockHistogram",
@@ -128,6 +207,8 @@ class BlockHistogramComposite(BasePrimitive):
     ) -> None:
         self.node = node
         self.parent = parent
+        self.struct_name = parent.struct_name
+        self.includes = parent.includes
         parent_node = self.parent_node = parent.node
         self.items = items
         self.items_per_thread = parent_node.items_per_thread
@@ -136,22 +217,39 @@ class BlockHistogramComposite(BasePrimitive):
         self.bins = parent_node.bins
         self.counter_dtype = parent_node.counter_dtype
 
+        template_parameters = parent.template_parameters
+        parameters = (
+            (
+                Array(self.item_dtype, self.items_per_thread, name="items"),
+                Array(
+                    self.counter_dtype,
+                    self.bins,
+                    name="histogram",
+                ),
+            ),
+        )
+
         self.algorithm = Algorithm(
             self.struct_name,
             self.method_name,
             self.c_name,
             self.includes,
-            self.template_parameters,
-            self.parameters,
+            template_parameters,
+            parameters,
             primitive=self,
             unique_id=parent_node.unique_id,
         )
 
+        dim = parent_node.threads_per_block
+        algorithm = parent_node.algorithm or parent.default_algorithm
         specialization_kwds = {
-            "T": self.item_dtype,
-            "ITEMS_PER_THREAD": self.items_per_thread,
-            "CounterT": self.counter_dtype,
-            "BINS": self.bins,
+            "T": parent_node.item_dtype,
+            "BLOCK_DIM_X": dim[0],
+            "ITEMS_PER_THREAD": parent_node.items_per_thread,
+            "BINS": parent_node.bins,
+            "ALGORITHM": str(algorithm),
+            "BLOCK_DIM_Y": dim[1],
+            "BLOCK_DIM_Z": dim[2],
         }
 
         self.specialization = self.algorithm.specialize(specialization_kwds)
@@ -270,6 +368,11 @@ class BlockHistogram(BasePrimitive):
         method_name = "Histogram"
         c_name = "block_histogram"
         includes = ["cub/block/block_histogram.cuh"]
+        type_definitions = None
+
+        if algorithm == BlockHistogramAlgorithm.ATOMIC:
+            struct_name = "BlockHistogramAtomicWrapper"
+            type_definitions = [SimpleNamespace(code=ATOMIC_WRAPPER_CODE, lto_irs=[])]
 
         self.algorithm = Algorithm(
             struct_name,
@@ -280,6 +383,7 @@ class BlockHistogram(BasePrimitive):
             parameters,
             primitive=self,
             unique_id=unique_id,
+            type_definitions=type_definitions,
         )
 
         # Save attributes our children will need.
@@ -287,6 +391,9 @@ class BlockHistogram(BasePrimitive):
         self.counter_dtype = counter_dtype
         self.items_per_thread = items_per_thread
         self.bins = bins
+        self.struct_name = struct_name
+        self.includes = includes
+        self.type_definitions = type_definitions
 
         self.specialization = self.algorithm.specialize(specialization_kwds)
 

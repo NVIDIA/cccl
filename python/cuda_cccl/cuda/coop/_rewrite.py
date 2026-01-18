@@ -111,8 +111,16 @@ def debug_print(*args, **kwargs):
 def add_ltoirs(context, ltoirs):
     # Add all the LTO-IRs to the current code library.
     lib = context.active_code_library
+    cache = getattr(lib, "_cuda_cccl_coop_ltoir_cache", None)
+    if cache is None:
+        cache = set()
+        setattr(lib, "_cuda_cccl_coop_ltoir_cache", cache)
     for ltoir in ltoirs:
         assert isinstance(ltoir, LTOIR), f"Expected LTOIR, got {type(ltoir)}: {ltoir!r}"
+        key = (ltoir.name, hash(ltoir.data))
+        if key in cache:
+            continue
+        cache.add(key)
         lib.add_linking_file(ltoir)
 
 
@@ -324,7 +332,18 @@ class RootDefinition:
 
         root_module = self.instance
         if not isinstance(root_module, PyModuleType):
-            raise RuntimeError(f"Root instance {root_module!r} is not a module.")
+            impl_to_decl = self.rewriter.impl_to_decl_classes
+            decl_cls = None
+            for cls in type(root_module).mro():
+                decl_cls = impl_to_decl.get(cls)
+                if decl_cls is not None:
+                    break
+            if decl_cls is None:
+                raise RuntimeError(f"Root instance {root_module!r} is not a module.")
+            suffix = ".".join(a.attr_name for a in self.getattr_definitions)
+            if suffix:
+                return ".".join((decl_cls.primitive_name, suffix))
+            return decl_cls.primitive_name
         root_name = root_module.__name__
 
         if root_name != CUDA_CCCL_COOP_MODULE_NAME:
@@ -1146,8 +1165,14 @@ class CoopNode:
 
     def do_rewrite(self):
         if self.is_two_phase:
-            assert not self.instance
-            instance = self.two_phase_instance
+            if self.instance is None:
+                self.instance = self.two_phase_instance
+            elif self.instance is not self.two_phase_instance:
+                raise RuntimeError(
+                    f"Two-phase instance mismatch for {self!r}: "
+                    f"{self.instance!r} vs {self.two_phase_instance!r}"
+                )
+            instance = self.instance
             algo = instance.specialization
             algo.unique_id = self.unique_id
         elif self.is_one_shot:
@@ -2473,6 +2498,27 @@ class CoopBlockHistogramNode(CoopNode, CoopNodeMixin):
     disposition = Disposition.PARENT
 
     def refine_match(self, rewriter):
+        if self.is_two_phase:
+            instance = self.two_phase_instance
+            self.instance = instance
+            instance.specialization.unique_id = self.unique_id
+            self.item_dtype = instance.item_dtype
+            self.counter_dtype = instance.counter_dtype
+            self.items_per_thread = instance.items_per_thread
+            self.bins = instance.bins
+            self.algorithm = getattr(instance, "algorithm", None)
+
+            launch_config = rewriter.launch_config
+            if launch_config is None:
+                return False
+
+            self.threads_per_block = launch_config.blockdim
+            self.children = []
+            self.runtime_args = tuple()
+            self.runtime_arg_types = tuple()
+            self.runtime_arg_names = tuple()
+            return
+
         bound = self.bound.arguments
 
         # Infer `items_per_thread` and `bins` from the shapes of the items and
@@ -2568,10 +2614,18 @@ class CoopBlockHistogramInitNode(CoopNode, CoopNodeMixin):
 
     def refine_match(self, rewriter):
         parent_node = self.parent_node
-        parent_instance = parent_node.instance
+        parent_instance = parent_node.instance or parent_node.two_phase_instance
 
-        histogram = parent_node.histogram
-        histogram_ty = parent_node.histogram_ty
+        bound = self.bound.arguments
+        histogram = bound.get("histogram")
+        if histogram is None:
+            histogram = parent_node.histogram
+            histogram_ty = parent_node.histogram_ty
+        else:
+            histogram_ty = self.typemap[histogram.name]
+            if getattr(parent_node, "histogram", None) is None:
+                parent_node.histogram = histogram
+                parent_node.histogram_ty = histogram_ty
         if histogram_ty != self.typemap[histogram.name]:
             raise RuntimeError(
                 f"Expected histogram type {parent_node.histogram_ty!r}, "
@@ -2605,7 +2659,7 @@ class CoopBlockHistogramCompositeNode(CoopNode, CoopNodeMixin):
 
     def refine_match(self, rewriter):
         parent_node = self.parent_node
-        parent_instance = parent_node.instance
+        parent_instance = parent_node.instance or parent_node.two_phase_instance
         parent_root_def = parent_node.root_def
         assert self.parent_root_def is parent_root_def, (
             self.parent_root_def,
@@ -2615,14 +2669,24 @@ class CoopBlockHistogramCompositeNode(CoopNode, CoopNodeMixin):
         bound = self.bound.arguments
         items = bound["items"]
         items_ty = self.typemap[items.name]
-        if items_ty != parent_node.items_ty:
+        parent_items_ty = getattr(parent_node, "items_ty", None)
+        if parent_items_ty is None:
+            parent_node.items_ty = items_ty
+        elif items_ty != parent_items_ty:
             raise RuntimeError(
-                f"Expected items type {parent_node.items_ty!r}, "
+                f"Expected items type {parent_items_ty!r}, "
                 f"got {items_ty!r} for {self!r}"
             )
 
-        histogram = parent_node.histogram
-        histogram_ty = parent_node.histogram_ty
+        histogram = bound.get("histogram")
+        if histogram is None:
+            histogram = parent_node.histogram
+            histogram_ty = parent_node.histogram_ty
+        else:
+            histogram_ty = self.typemap[histogram.name]
+            if getattr(parent_node, "histogram", None) is None:
+                parent_node.histogram = histogram
+                parent_node.histogram_ty = histogram_ty
         if histogram_ty != self.typemap[histogram.name]:
             raise RuntimeError(
                 f"Expected histogram type {parent_node.histogram_ty!r}, "
@@ -3974,9 +4038,22 @@ class CoopNodeRewriter(Rewrite):
         root_assign = parent_root_def.root_assign
         root_block = self.all_assignments[root_assign]
         expr = root_assign.value
-        func_name = expr.func.name
-        func = typemap[func_name]
+        if isinstance(expr, ir.Expr) and expr.op == "call":
+            func_name = expr.func.name
+            func = typemap[func_name]
+        else:
+            func_name = parent_target_name
+            func = typemap[parent_target_name]
         target = root_assign.target
+
+        two_phase_instance = None
+        if not isinstance(parent_root_def.instance, PyModuleType):
+            two_phase_instance = parent_root_def.instance
+        type_instance = None
+        if two_phase_instance is not None:
+            parent_type = typemap.get(parent_target_name)
+            if parent_type in self._instances:
+                type_instance = parent_type
 
         node = node_class(
             index=0,
@@ -3996,8 +4073,8 @@ class CoopNodeRewriter(Rewrite):
             launch_config=launch_config,
             needs_pre_launch_callback=needs_pre_launch_callback,
             unique_id=self.next_unique_id(),
-            type_instance=None,  # type_instance,
-            two_phase_instance=None,
+            type_instance=type_instance,
+            two_phase_instance=two_phase_instance,
             parent_struct_instance_type=None,
             parent_node=None,
             children=[],
@@ -4009,6 +4086,11 @@ class CoopNodeRewriter(Rewrite):
 
         self.nodes[parent_target_name] = node
         node.refine_match(self)
+        if (
+            two_phase_instance is not None
+            and getattr(two_phase_instance, "node", None) is None
+        ):
+            two_phase_instance.node = node
 
         return node
 
@@ -4075,12 +4157,11 @@ class CoopNodeRewriter(Rewrite):
     @cached_property
     def impl_to_decl_classes(self):
         decl_classes = self._decl_classes
-        impl_to_decl_classes = {v: k for (k, v) in decl_classes.items()}
-        # Sanity check that the values in the decl_classes were unique.
-        if len(impl_to_decl_classes) != len(decl_classes):
-            raise RuntimeError(
-                f"Duplicates found in decl_classes.values(): {decl_classes.values()}"
-            )
+        impl_to_decl_classes = {}
+        for decl, impl in decl_classes.items():
+            # Keep the first mapping for a given impl; duplicates are expected
+            # for method-style helpers (e.g. init/composite).
+            impl_to_decl_classes.setdefault(impl, decl)
         return impl_to_decl_classes
 
     @cached_property
@@ -4549,9 +4630,7 @@ class CoopNodeRewriter(Rewrite):
                     template,
                 )
 
-                if not parent_root_def.is_single_phase:
-                    # Everything should be single-phase at this stage.
-                    raise RuntimeError("Not yet implemented.")
+                # Allow two-phase parents (e.g. instances created outside the kernel).
 
                 impl_class = func.key[0]
 

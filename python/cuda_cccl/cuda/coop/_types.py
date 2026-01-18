@@ -1029,6 +1029,9 @@ class Algorithm:
             param_names = []
 
             for pid, param in enumerate(method):
+                if isinstance(param, TempStoragePointer):
+                    # Handled separately in the explicit temp storage path.
+                    continue
                 param_name = param.name
                 if param_name is None:
                     param_name = f"param_{pid}"
@@ -1063,18 +1066,11 @@ class Algorithm:
                 threads = self.threads
                 if threads is None:
                     raise ValueError("Warp algorithm must specify number of threads")
-                # sub hw warps require computing masks for syncwarp, which is not supported
-                # allocate temporary storage explicitly
-                # provide_alloc_version = threads == 32
-
-                # Need to review existing warp primitives re temp storage.
-                raise NotImplementedError
-
-                # pessimistic temporary storage allocation for 1024 threads
+                # Pessimistic temporary storage allocation for a 1024-thread block.
                 storage = (
-                    "__shared__ temp_storage_t temp_storages"
+                    f"__shared__ {n.temp_storage_t} temp_storages"
                     f"[1024 / {threads}];\n"
-                    "    temp_storage_t &temp_storage = temp_storages"
+                    f"    {n.temp_storage_t} &temp_storage = temp_storages"
                     f"[threadIdx.x / {threads}];\n"
                 )
                 sync = "__syncwarp();"
@@ -1105,15 +1101,22 @@ class Algorithm:
                 w(f"    {sync}\n")
                 w("}\n")
             else:
-                w(f"{n.temp_storage_t} *temp_storage, ")
-                w(f"{param_decls_csv}) {{\n")
+                temp_storage_decl = "::cuda::std::uint8_t *temp_storage"
+                if param_decls_csv:
+                    w(f"{temp_storage_decl}, {param_decls_csv}) {{\n")
+                else:
+                    w(f"{temp_storage_decl}) {{\n")
                 for decl in func_decls:
                     w(f"    {decl}\n")
+                w(
+                    "    auto &temp_storage_ref = *reinterpret_cast"
+                    f"<{n.temp_storage_t} *>(temp_storage);\n"
+                )
                 if out_param:
                     w(f"    {out_param} = ")
                 else:
                     w("    ")
-                w(f"{n.algorithm_t}(*temp_storage).")
+                w(f"{n.algorithm_t}(temp_storage_ref).")
                 w(f"{method_name}({param_args_csv});\n")
                 w("}\n\n")
 
@@ -1448,9 +1451,15 @@ class Algorithm:
         if primitive.is_parent:
             children = primitive.node.children
             if children:
-                child_sources = [
-                    c.instance.specialization.source_code for c in children
-                ]
+                seen = set()
+                child_sources = []
+                for child in children:
+                    child_algo = child.instance.specialization
+                    key = child_algo.c_name
+                    if key in seen:
+                        continue
+                    seen.add(key)
+                    child_sources.append(child_algo.source_code)
                 src += "\n".join(child_sources)
 
         rewriter = _get_source_code_rewriter()
@@ -1528,29 +1537,19 @@ class Algorithm:
                     f"{given_parameters - known_parameters}"
                 )
 
-        # Temporary hack to support the fact that when the primitives were
-        # first written, (almost?) everything got a `Pointer(numba.uint8)`
-        # as the first parameter for temporary storage.  Now that we can
-        # detect whether or not temp storage has been provided by the user,
-        # we can dynamically codegen an appropriate method, instead of doing
-        # both up-front.
-        #
-        # This logic can be removed once all the primitives have been updated
-        # to have their `Pointer(numba.uint8)` first parameter removed.
-        first_param_is_temp_storage = False
-        if parameters and len(parameters) > 1:
-            for method in parameters:
-                first = method[0]
-                if isinstance(first, Pointer):
-                    first_dtype = normalize_dtype_param(first.value_dtype)
-                    is_ptr = (
-                        isinstance(first_dtype, numba.types.Integer)
-                        and first_dtype.bitwidth == 8
-                    )
-                    if is_ptr:
-                        assert False
-                        first_param_is_temp_storage = True
-                        first_dtype = first_dtype.dtype
+        def is_temp_storage_param(param):
+            if isinstance(param, TempStoragePointer):
+                return True
+            if (
+                isinstance(param, Pointer)
+                and getattr(param, "name", None) == "temp_storage"
+            ):
+                first_dtype = normalize_dtype_param(param.value_dtype)
+                return (
+                    isinstance(first_dtype, numba.types.Integer)
+                    and first_dtype.bitwidth == 8
+                )
+            return False
 
         num_params = len(parameters)
         assert num_params in (0, 1), (
@@ -1561,10 +1560,13 @@ class Algorithm:
         if not parameters:
             parameters = [[]]
         for method in parameters:
-            if first_param_is_temp_storage:
+            params = method
+            if (
+                method
+                and is_temp_storage_param(method[0])
+                and self.implicit_temp_storage
+            ):
                 params = method[1:]
-            else:
-                params = method
             results.append(
                 self.create_codegen_method(
                     params,
@@ -1753,8 +1755,8 @@ class Algorithm:
                     node = primitive.node
                     parent_node = node.parent_node
                     parent_cg_details = parent_node.cg_details
-
-                    func_name = self.c_name
+                    parent_algo = parent_node.instance.specialization
+                    func_name = f"{parent_algo.names.target_name}_{primitive.c_name}"
 
                     parent_ptr = parent_cg_details.result
                     arguments.insert(0, parent_ptr)

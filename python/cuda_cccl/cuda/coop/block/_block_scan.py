@@ -71,6 +71,7 @@ The unsupported APIs are as follows:
 
 from typing import Any, Callable, Literal
 
+import numba
 import numpy as np
 from numba.np.numpy_support import as_dtype
 
@@ -101,6 +102,7 @@ from .._types import (
     DependentReference,
     Invocable,
     TemplateParameter,
+    TempStoragePointer,
     numba_type_to_wrapper,
 )
 from .._typing import (
@@ -736,6 +738,14 @@ class scan(BasePrimitive):
         # Invariant check: if we get here, parameters should have one element.
         assert len(parameters) == 1, "parameters should have one element"
 
+        if temp_storage is not None:
+            parameters[0].insert(
+                0,
+                TempStoragePointer(
+                    numba.types.uint8, is_array_pointer=True, name="temp_storage"
+                ),
+            )
+
         # If we have a non-None `methods`, we're dealing with user-defined types.
         if methods is not None:
             type_definitions = [
@@ -802,6 +812,36 @@ class scan(BasePrimitive):
 
 
 class exclusive_sum(scan):
+    @classmethod
+    def create(
+        cls,
+        dtype: DtypeType,
+        threads_per_block: DimType,
+        items_per_thread: int,
+        prefix_op: Callable = None,
+        algorithm=None,
+        methods: dict = None,
+        unique_id: int = None,
+        temp_storage: Any = None,
+    ):
+        algo = cls(
+            dtype=dtype,
+            threads_per_block=threads_per_block,
+            items_per_thread=items_per_thread,
+            prefix_op=prefix_op,
+            algorithm=algorithm,
+            methods=methods,
+            unique_id=unique_id,
+            temp_storage=temp_storage,
+        )
+        specialization = algo.specialization
+        return Invocable(
+            ltoir_files=specialization.get_lto_ir(),
+            temp_storage_bytes=specialization.temp_storage_bytes,
+            temp_storage_alignment=specialization.temp_storage_alignment,
+            algorithm=specialization,
+        )
+
     def __init__(
         self,
         dtype: DtypeType,

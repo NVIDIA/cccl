@@ -3,14 +3,12 @@
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 
-import numba
-
 from .._types import (
     Algorithm,
+    BasePrimitive,
     Dependency,
     DependentReference,
     Invocable,
-    Pointer,
     TemplateParameter,
 )
 
@@ -48,6 +46,11 @@ def exclusive_sum(dtype, threads_in_warp=32):
     Returns:
         A callable object that can be linked to and invoked from a CUDA kernel
     """
+    primitive = BasePrimitive()
+    primitive.is_one_shot = True
+    primitive.temp_storage = None
+    primitive.node = None
+
     template = Algorithm(
         "WarpScan",
         "ExclusiveSum",
@@ -56,12 +59,13 @@ def exclusive_sum(dtype, threads_in_warp=32):
         [TemplateParameter("T"), TemplateParameter("VIRTUAL_WARP_THREADS")],
         [
             [
-                Pointer(numba.uint8),
                 DependentReference(Dependency("T")),
                 DependentReference(Dependency("T"), True),
             ]
         ],
+        primitive,
         fake_return=True,
+        threads=threads_in_warp,
     )
     specialization = template.specialize(
         {"T": dtype, "VIRTUAL_WARP_THREADS": threads_in_warp}

@@ -19,12 +19,10 @@ def test_warp_reduction_of_integral_type(T):
         return a if a < b else b
 
     warp_reduce = coop.warp.reduce(T, op)
-    temp_storage_bytes = warp_reduce.temp_storage_bytes
 
     @cuda.jit(link=warp_reduce.files)
     def kernel(input, output):
-        temp_storage = cuda.shared.array(shape=temp_storage_bytes, dtype="uint8")
-        warp_output = warp_reduce(temp_storage, input[cuda.threadIdx.x])
+        warp_output = warp_reduce(input[cuda.threadIdx.x])
 
         if cuda.threadIdx.x == 0:
             output[0] = warp_output
@@ -50,12 +48,10 @@ def test_warp_reduction_of_integral_type(T):
 @pytest.mark.parametrize("T", [types.uint32, types.uint64])
 def test_warp_sum(T):
     warp_reduce = coop.warp.sum(T)
-    temp_storage_bytes = warp_reduce.temp_storage_bytes
 
     @cuda.jit(link=warp_reduce.files)
     def kernel(input, output):
-        temp_storage = cuda.shared.array(shape=temp_storage_bytes, dtype="uint8")
-        warp_output = warp_reduce(temp_storage, input[cuda.threadIdx.x])
+        warp_output = warp_reduce(input[cuda.threadIdx.x])
 
         if cuda.threadIdx.x == 0:
             output[0] = warp_output

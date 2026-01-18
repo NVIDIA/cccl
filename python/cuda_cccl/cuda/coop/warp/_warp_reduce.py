@@ -2,16 +2,13 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-import numba
-
-from .._common import make_binary_tempfile
 from .._types import (
     Algorithm,
+    BasePrimitive,
     Dependency,
     DependentPythonOperator,
     DependentReference,
     Invocable,
-    Pointer,
     TemplateParameter,
     numba_type_to_wrapper,
 )
@@ -54,6 +51,11 @@ def reduce(dtype, binary_op, threads_in_warp=32, methods=None):
     Returns:
         A callable object that can be linked to and invoked from a CUDA kernel
     """
+    primitive = BasePrimitive()
+    primitive.is_one_shot = True
+    primitive.temp_storage = None
+    primitive.node = None
+
     template = Algorithm(
         "WarpReduce",
         "Reduce",
@@ -62,27 +64,26 @@ def reduce(dtype, binary_op, threads_in_warp=32, methods=None):
         [TemplateParameter("T"), TemplateParameter("VIRTUAL_WARP_THREADS")],
         [
             [
-                Pointer(numba.uint8),
                 DependentReference(Dependency("T")),
                 DependentPythonOperator(
                     Dependency("T"),
                     [Dependency("T"), Dependency("T")],
                     Dependency("Op"),
+                    name="binary_op",
                 ),
                 DependentReference(Dependency("T"), True),
             ]
         ],
+        primitive,
         type_definitions=[numba_type_to_wrapper(dtype, methods=methods)],
+        threads=threads_in_warp,
     )
     specialization = template.specialize(
         {"T": dtype, "VIRTUAL_WARP_THREADS": threads_in_warp, "Op": binary_op}
     )
 
     return Invocable(
-        temp_files=[
-            make_binary_tempfile(ltoir, ".ltoir")
-            for ltoir in specialization.get_lto_ir(threads=threads_in_warp)
-        ],
+        ltoir_files=specialization.get_lto_ir(threads=threads_in_warp),
         temp_storage_bytes=specialization.temp_storage_bytes,
         temp_storage_alignment=specialization.temp_storage_alignment,
         algorithm=specialization,
@@ -125,6 +126,11 @@ def sum(dtype, threads_in_warp=32):
     Returns:
         A callable object that can be linked to and invoked from a CUDA kernel
     """
+    primitive = BasePrimitive()
+    primitive.is_one_shot = True
+    primitive.temp_storage = None
+    primitive.node = None
+
     template = Algorithm(
         "WarpReduce",
         "Sum",
@@ -133,20 +139,18 @@ def sum(dtype, threads_in_warp=32):
         [TemplateParameter("T"), TemplateParameter("VIRTUAL_WARP_THREADS")],
         [
             [
-                Pointer(numba.uint8),
                 DependentReference(Dependency("T")),
                 DependentReference(Dependency("T"), True),
             ]
         ],
+        primitive,
+        threads=threads_in_warp,
     )
     specialization = template.specialize(
         {"T": dtype, "VIRTUAL_WARP_THREADS": threads_in_warp}
     )
     return Invocable(
-        temp_files=[
-            make_binary_tempfile(ltoir, ".ltoir")
-            for ltoir in specialization.get_lto_ir(threads=threads_in_warp)
-        ],
+        ltoir_files=specialization.get_lto_ir(threads=threads_in_warp),
         temp_storage_bytes=specialization.temp_storage_bytes,
         temp_storage_alignment=specialization.temp_storage_alignment,
         algorithm=specialization,
