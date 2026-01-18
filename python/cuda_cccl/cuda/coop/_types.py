@@ -1641,13 +1641,20 @@ class Algorithm:
                         if param.is_output:
                             raise ValueError("Output arrays not supported")
                         arg = args[arg_id]
-                        data_type = context.get_value_type(dtype.dtype)
+                        element_dtype = getattr(dtype, "dtype", None)
+                        data_type = context.get_value_type(element_dtype)
+                        data_ptr = cgutils.create_struct_proxy(dtype)(
+                            context, builder, arg
+                        ).data
+                        if element_dtype == numba.types.boolean:
+                            # Numba boolean arrays are byte-addressed; use i8*
+                            # to avoid i1* mismatches in LLVM calls.
+                            data_type = context.get_value_type(numba.types.uint8)
+                            data_ptr = builder.bitcast(
+                                data_ptr, ir.PointerType(data_type)
+                            )
                         types.append(ir.PointerType(data_type))
-                        arguments.append(
-                            cgutils.create_struct_proxy(dtype)(
-                                context, builder, arg
-                            ).data
-                        )
+                        arguments.append(data_ptr)
                     else:
                         if param.is_output:
                             raise ValueError("Output values not supported")
@@ -1747,8 +1754,10 @@ class Algorithm:
 
                 if param.is_output:
                     if ret is not numba.types.void:
-                        raise ValueError("Multiple output parameters not supported")
-                    ret = param.dtype()
+                        if ret != param.dtype():
+                            raise ValueError("Multiple output parameters not supported")
+                    else:
+                        ret = param.dtype()
                 else:
                     params.append(param.dtype())
 

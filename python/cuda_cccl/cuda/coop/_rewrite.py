@@ -739,6 +739,7 @@ class Primitive(IntEnum):
     ARRAY = auto()
     LOAD = auto()
     STORE = auto()
+    EXCHANGE = auto()
     REDUCE = auto()
     SCAN = auto()
     HISTOGRAM = auto()
@@ -1065,9 +1066,13 @@ class CoopNode:
             return Primitive.LOAD
         elif "store" in name:
             return Primitive.STORE
+        elif "exchange" in name:
+            return Primitive.EXCHANGE
         elif "scan" in name:
             return Primitive.SCAN
         elif "reduce" in name:
+            return Primitive.REDUCE
+        elif "sum" in name:
             return Primitive.REDUCE
         elif "histogram" in name:
             if "init" in name:
@@ -1651,6 +1656,260 @@ class CoopBlockLoadNode(CoopLoadStoreNode, CoopNodeMixin):
 @dataclass
 class CoopBlockStoreNode(CoopLoadStoreNode, CoopNodeMixin):
     primitive_name = "coop.block.store"
+
+
+@dataclass
+class CoopBlockExchangeNode(CoopNode, CoopNodeMixin):
+    primitive_name = "coop.block.exchange"
+    disposition = Disposition.ONE_SHOT
+
+    def refine_match(self, rewriter):
+        launch_config = rewriter.launch_config
+        if launch_config is None:
+            return False
+
+        self.threads_per_block = launch_config.blockdim
+
+        runtime_args = []
+        runtime_arg_types = []
+        runtime_arg_names = []
+
+        bound = self.bound.arguments
+        items = bound.get("items")
+        if items is None:
+            raise RuntimeError("coop.block.exchange requires an items argument")
+        if not isinstance(items, ir.Var):
+            raise RuntimeError("coop.block.exchange items must be a variable")
+
+        output_items = bound.get("output_items")
+        ranks = bound.get("ranks")
+        valid_flags = bound.get("valid_flags")
+
+        items_ty = self.typemap[items.name]
+        if not isinstance(items_ty, types.Array):
+            raise RuntimeError("coop.block.exchange requires items to be an array")
+
+        output_items_ty = None
+        if output_items is not None:
+            if not isinstance(output_items, ir.Var):
+                raise RuntimeError(
+                    "coop.block.exchange output_items must be a variable"
+                )
+            output_items_ty = self.typemap[output_items.name]
+            if not isinstance(output_items_ty, types.Array):
+                raise RuntimeError(
+                    "coop.block.exchange requires output_items to be an array"
+                )
+            if items_ty.dtype != output_items_ty.dtype:
+                raise RuntimeError(
+                    "coop.block.exchange requires items and output_items to have "
+                    "the same dtype"
+                )
+
+        items_root = rewriter.get_root_def(items)
+        items_leaf = items_root.leaf_constructor_call
+        if not isinstance(items_leaf, ArrayCallDefinition):
+            raise RuntimeError(
+                f"Expected items constructor call to be an ArrayCallDefinition, "
+                f"but got {items_leaf!r} for {items!r}"
+            )
+        items_per_thread = items_leaf.shape
+        assert isinstance(items_per_thread, int), (
+            f"Expected items_per_thread to be an int, got {items_per_thread!r}"
+        )
+
+        if output_items is not None:
+            output_root = rewriter.get_root_def(output_items)
+            output_leaf = output_root.leaf_constructor_call
+            if not isinstance(output_leaf, ArrayCallDefinition):
+                raise RuntimeError(
+                    "Expected output_items constructor call to be an "
+                    f"ArrayCallDefinition, but got {output_leaf!r} for "
+                    f"{output_items!r}"
+                )
+            if output_leaf.shape != items_per_thread:
+                raise RuntimeError(
+                    "coop.block.exchange requires items and output_items to "
+                    "have the same items_per_thread"
+                )
+
+        dtype = items_ty.dtype
+        methods = getattr(dtype, "methods", None)
+        if methods is not None and not methods:
+            methods = None
+        if methods is not None and items_per_thread > 1:
+            raise RuntimeError(
+                "coop.block.exchange only supports user-defined types when "
+                "items_per_thread == 1"
+            )
+
+        block_exchange_type = self.get_arg_value_safe("block_exchange_type")
+        if block_exchange_type is None:
+            from cuda.coop.block._block_exchange import BlockExchangeType
+
+            block_exchange_type = BlockExchangeType.StripedToBlocked
+        else:
+            from cuda.coop.block._block_exchange import BlockExchangeType
+
+            if isinstance(block_exchange_type, types.EnumMember):
+                literal_value = getattr(block_exchange_type, "literal_value", None)
+                if literal_value is None:
+                    literal_value = block_exchange_type.value
+                block_exchange_type = block_exchange_type.instance_class(literal_value)
+            if isinstance(block_exchange_type, int):
+                block_exchange_type = BlockExchangeType(block_exchange_type)
+            if block_exchange_type not in BlockExchangeType:
+                raise RuntimeError(
+                    "coop.block.exchange requires block_exchange_type to be a "
+                    "BlockExchangeType enum value"
+                )
+
+        uses_ranks = block_exchange_type in (
+            BlockExchangeType.ScatterToBlocked,
+            BlockExchangeType.ScatterToStriped,
+            BlockExchangeType.ScatterToStripedGuarded,
+            BlockExchangeType.ScatterToStripedFlagged,
+        )
+        uses_valid_flags = (
+            block_exchange_type == BlockExchangeType.ScatterToStripedFlagged
+        )
+
+        ranks_ty = None
+        if uses_ranks:
+            if ranks is None:
+                raise RuntimeError(
+                    "coop.block.exchange requires ranks for scatter exchanges"
+                )
+            if not isinstance(ranks, ir.Var):
+                raise RuntimeError("coop.block.exchange ranks must be a variable")
+            ranks_ty = self.typemap[ranks.name]
+            if not isinstance(ranks_ty, types.Array):
+                raise RuntimeError("coop.block.exchange requires ranks to be an array")
+            if not isinstance(ranks_ty.dtype, types.Integer):
+                raise RuntimeError(
+                    "coop.block.exchange requires ranks to be an integer array"
+                )
+            ranks_root = rewriter.get_root_def(ranks)
+            ranks_leaf = ranks_root.leaf_constructor_call
+            if not isinstance(ranks_leaf, ArrayCallDefinition):
+                raise RuntimeError(
+                    "Expected ranks constructor call to be an ArrayCallDefinition, "
+                    f"but got {ranks_leaf!r} for {ranks!r}"
+                )
+            if ranks_leaf.shape != items_per_thread:
+                raise RuntimeError(
+                    "coop.block.exchange requires ranks to have the same "
+                    "items_per_thread as items"
+                )
+        elif ranks is not None:
+            raise RuntimeError(
+                "coop.block.exchange ranks are only valid for scatter exchanges"
+            )
+
+        valid_flags_ty = None
+        if uses_valid_flags:
+            if valid_flags is None:
+                raise RuntimeError(
+                    "coop.block.exchange requires valid_flags for "
+                    "ScatterToStripedFlagged"
+                )
+            if not isinstance(valid_flags, ir.Var):
+                raise RuntimeError("coop.block.exchange valid_flags must be a variable")
+            valid_flags_ty = self.typemap[valid_flags.name]
+            if not isinstance(valid_flags_ty, types.Array):
+                raise RuntimeError(
+                    "coop.block.exchange requires valid_flags to be an array"
+                )
+            if not isinstance(valid_flags_ty.dtype, (types.Integer, types.Boolean)):
+                raise RuntimeError(
+                    "coop.block.exchange requires valid_flags to be a boolean "
+                    "or integer array"
+                )
+            valid_flags_root = rewriter.get_root_def(valid_flags)
+            valid_flags_leaf = valid_flags_root.leaf_constructor_call
+            if not isinstance(valid_flags_leaf, ArrayCallDefinition):
+                raise RuntimeError(
+                    "Expected valid_flags constructor call to be an "
+                    f"ArrayCallDefinition, but got {valid_flags_leaf!r} for "
+                    f"{valid_flags!r}"
+                )
+            if valid_flags_leaf.shape != items_per_thread:
+                raise RuntimeError(
+                    "coop.block.exchange requires valid_flags to have the same "
+                    "items_per_thread as items"
+                )
+        elif valid_flags is not None:
+            raise RuntimeError(
+                "coop.block.exchange valid_flags are only valid for "
+                "ScatterToStripedFlagged"
+            )
+
+        items_per_thread_kwarg = self.get_arg_value_safe("items_per_thread")
+        if items_per_thread_kwarg is not None:
+            if items_per_thread_kwarg != items_per_thread:
+                raise RuntimeError(
+                    "coop.block.exchange items_per_thread must match the "
+                    f"items array shape ({items_per_thread}); got "
+                    f"{items_per_thread_kwarg}"
+                )
+
+        warp_time_slicing = self.get_arg_value_safe("warp_time_slicing")
+        if warp_time_slicing is None:
+            warp_time_slicing = False
+        if not isinstance(warp_time_slicing, bool):
+            raise RuntimeError(
+                "coop.block.exchange requires warp_time_slicing to be a boolean"
+            )
+
+        temp_storage = bound.get("temp_storage")
+        if temp_storage is not None:
+            raise RuntimeError(
+                "coop.block.exchange does not support temp_storage in single-phase"
+            )
+
+        runtime_args.append(items)
+        runtime_arg_types.append(items_ty)
+        runtime_arg_names.append("items")
+        if output_items is not None:
+            runtime_args.append(output_items)
+            runtime_arg_types.append(output_items_ty)
+            runtime_arg_names.append("output_items")
+        if uses_ranks:
+            runtime_args.append(ranks)
+            runtime_arg_types.append(ranks_ty)
+            runtime_arg_names.append("ranks")
+        if uses_valid_flags:
+            runtime_args.append(valid_flags)
+            runtime_arg_types.append(valid_flags_ty)
+            runtime_arg_names.append("valid_flags")
+
+        self.impl_kwds = {
+            "block_exchange_type": block_exchange_type,
+            "dtype": dtype,
+            "threads_per_block": self.threads_per_block,
+            "items_per_thread": items_per_thread,
+            "warp_time_slicing": warp_time_slicing,
+            "methods": methods,
+            "unique_id": self.unique_id,
+            "temp_storage": None,
+            "use_output_items": output_items is not None,
+            "offset_dtype": ranks_ty.dtype if uses_ranks else None,
+            "valid_flag_dtype": valid_flags_ty.dtype if uses_valid_flags else None,
+            "node": self,
+        }
+
+        self.return_type = types.void
+        self.runtime_args = runtime_args
+        self.runtime_arg_types = runtime_arg_types
+        self.runtime_arg_names = runtime_arg_names
+
+    def rewrite(self, rewriter):
+        rd = self.rewrite_details
+        return (rd.g_assign, rd.new_assign)
+
+    @cached_property
+    def rewrite_details(self):
+        return self.do_rewrite()
 
 
 @dataclass
@@ -2872,6 +3131,281 @@ class CoopBlockScanNode(CoopNode, CoopNodeMixin):
     def rewrite(self, rewriter):
         rd = self.rewrite_details
         return (rd.g_assign, rd.new_assign)
+
+    @cached_property
+    def rewrite_details(self):
+        return self.do_rewrite()
+
+
+@dataclass
+class CoopBlockReduceNode(CoopNode, CoopNodeMixin):
+    primitive_name = "coop.block.reduce"
+    disposition = Disposition.ONE_SHOT
+
+    def refine_match(self, rewriter):
+        launch_config = rewriter.launch_config
+        if launch_config is None:
+            return False
+
+        self.threads_per_block = launch_config.blockdim
+
+        runtime_args = []
+        runtime_arg_types = []
+        runtime_arg_names = []
+
+        expr = self.expr
+        expr_args = list(expr.args)
+
+        src = expr_args.pop(0)
+        if src is None:
+            raise RuntimeError("coop.block.reduce requires a src argument")
+
+        src_ty = self.typemap[src.name]
+        src_is_array = isinstance(src_ty, types.Array)
+        if src_is_array:
+            dtype = src_ty.dtype
+        else:
+            dtype = src_ty
+
+        methods = getattr(dtype, "methods", None)
+        if methods is not None and not methods:
+            methods = None
+
+        runtime_args.append(src)
+        runtime_arg_types.append(src_ty)
+        runtime_arg_names.append("src")
+
+        items_per_thread = self.get_arg_value("items_per_thread")
+        if items_per_thread < 1:
+            raise RuntimeError("items_per_thread must be >= 1")
+        if items_per_thread > 1 and not src_is_array:
+            raise RuntimeError(
+                "coop.block.reduce requires array inputs when items_per_thread > 1"
+            )
+
+        binary_op = self.get_arg_value_safe("binary_op")
+        if binary_op is None:
+            raise RuntimeError("coop.block.reduce requires binary_op to be provided")
+
+        bound = self.bound.arguments
+        num_valid = bound.get("num_valid")
+        num_valid_var = None
+        num_valid_type = None
+        if num_valid is not None:
+            if src_is_array:
+                raise RuntimeError(
+                    "coop.block.reduce does not support num_valid for array inputs"
+                )
+            if isinstance(num_valid, ir.Var):
+                num_valid_var = num_valid
+                num_valid_type = types.int32
+            elif isinstance(num_valid, ir.Const):
+                num_valid_value = num_valid.value
+            else:
+                num_valid_value = num_valid
+
+            if num_valid_var is None:
+                scope = self.instr.target.scope
+                const_name = f"$block_reduce_num_valid_{self.unique_id}"
+                const_var = ir.Var(scope, const_name, expr.loc)
+                if const_name in self.typemap:
+                    raise RuntimeError(
+                        f"Variable {const_name} already exists in typemap."
+                    )
+                const_assign = ir.Assign(
+                    value=ir.Const(int(num_valid_value), expr.loc),
+                    target=const_var,
+                    loc=expr.loc,
+                )
+                self.typemap[const_name] = types.int32
+                self.num_valid_assign = const_assign
+                num_valid_var = const_var
+                num_valid_type = types.int32
+
+            runtime_args.append(num_valid_var)
+            runtime_arg_types.append(num_valid_type or types.int32)
+            runtime_arg_names.append("num_valid")
+
+        algorithm = self.get_arg_value_safe("algorithm")
+        if algorithm is None:
+            algorithm = "warp_reductions"
+
+        temp_storage = bound.get("temp_storage")
+        if temp_storage is not None:
+            raise RuntimeError(
+                "coop.block.reduce does not yet support temp_storage in single-phase"
+            )
+
+        self.dtype = dtype
+        self.items_per_thread = items_per_thread
+        self.algorithm = algorithm
+        self.temp_storage = None
+        self.use_array_inputs = src_is_array
+        self.methods = methods
+        self.num_valid = num_valid
+
+        self.impl_kwds = {
+            "dtype": dtype,
+            "threads_per_block": self.threads_per_block,
+            "binary_op": binary_op,
+            "items_per_thread": items_per_thread,
+            "algorithm": algorithm,
+            "methods": methods,
+            "unique_id": self.unique_id,
+            "temp_storage": None,
+            "num_valid": num_valid,
+            "use_array_inputs": src_is_array,
+            "node": self,
+        }
+
+        self.return_type = dtype
+        self.runtime_args = runtime_args
+        self.runtime_arg_types = runtime_arg_types
+        self.runtime_arg_names = runtime_arg_names
+
+    def rewrite(self, rewriter):
+        rd = self.rewrite_details
+        instrs = [rd.g_assign]
+        num_valid_assign = getattr(self, "num_valid_assign", None)
+        if num_valid_assign is not None:
+            instrs.append(num_valid_assign)
+        instrs.append(rd.new_assign)
+        return instrs
+
+    @cached_property
+    def rewrite_details(self):
+        return self.do_rewrite()
+
+
+@dataclass
+class CoopBlockSumNode(CoopNode, CoopNodeMixin):
+    primitive_name = "coop.block.sum"
+    disposition = Disposition.ONE_SHOT
+
+    def refine_match(self, rewriter):
+        launch_config = rewriter.launch_config
+        if launch_config is None:
+            return False
+
+        self.threads_per_block = launch_config.blockdim
+
+        runtime_args = []
+        runtime_arg_types = []
+        runtime_arg_names = []
+
+        expr = self.expr
+        expr_args = list(expr.args)
+
+        src = expr_args.pop(0)
+        if src is None:
+            raise RuntimeError("coop.block.sum requires a src argument")
+
+        src_ty = self.typemap[src.name]
+        src_is_array = isinstance(src_ty, types.Array)
+        if src_is_array:
+            dtype = src_ty.dtype
+        else:
+            dtype = src_ty
+
+        methods = getattr(dtype, "methods", None)
+        if methods is not None and not methods:
+            methods = None
+
+        runtime_args.append(src)
+        runtime_arg_types.append(src_ty)
+        runtime_arg_names.append("src")
+
+        items_per_thread = self.get_arg_value("items_per_thread")
+        if items_per_thread < 1:
+            raise RuntimeError("items_per_thread must be >= 1")
+        if items_per_thread > 1 and not src_is_array:
+            raise RuntimeError(
+                "coop.block.sum requires array inputs when items_per_thread > 1"
+            )
+
+        bound = self.bound.arguments
+        num_valid = bound.get("num_valid")
+        num_valid_var = None
+        num_valid_type = None
+        if num_valid is not None:
+            if src_is_array:
+                raise RuntimeError(
+                    "coop.block.sum does not support num_valid for array inputs"
+                )
+            if isinstance(num_valid, ir.Var):
+                num_valid_var = num_valid
+                num_valid_type = types.int32
+            elif isinstance(num_valid, ir.Const):
+                num_valid_value = num_valid.value
+            else:
+                num_valid_value = num_valid
+
+            if num_valid_var is None:
+                scope = self.instr.target.scope
+                const_name = f"$block_sum_num_valid_{self.unique_id}"
+                const_var = ir.Var(scope, const_name, expr.loc)
+                if const_name in self.typemap:
+                    raise RuntimeError(
+                        f"Variable {const_name} already exists in typemap."
+                    )
+                const_assign = ir.Assign(
+                    value=ir.Const(int(num_valid_value), expr.loc),
+                    target=const_var,
+                    loc=expr.loc,
+                )
+                self.typemap[const_name] = types.int32
+                self.num_valid_assign = const_assign
+                num_valid_var = const_var
+                num_valid_type = types.int32
+
+            runtime_args.append(num_valid_var)
+            runtime_arg_types.append(num_valid_type or types.int32)
+            runtime_arg_names.append("num_valid")
+
+        algorithm = self.get_arg_value_safe("algorithm")
+        if algorithm is None:
+            algorithm = "warp_reductions"
+
+        temp_storage = bound.get("temp_storage")
+        if temp_storage is not None:
+            raise RuntimeError(
+                "coop.block.sum does not yet support temp_storage in single-phase"
+            )
+
+        self.dtype = dtype
+        self.items_per_thread = items_per_thread
+        self.algorithm = algorithm
+        self.temp_storage = None
+        self.use_array_inputs = src_is_array
+        self.methods = methods
+        self.num_valid = num_valid
+
+        self.impl_kwds = {
+            "dtype": dtype,
+            "threads_per_block": self.threads_per_block,
+            "items_per_thread": items_per_thread,
+            "algorithm": algorithm,
+            "methods": methods,
+            "unique_id": self.unique_id,
+            "temp_storage": None,
+            "num_valid": num_valid,
+            "use_array_inputs": src_is_array,
+            "node": self,
+        }
+
+        self.return_type = dtype
+        self.runtime_args = runtime_args
+        self.runtime_arg_types = runtime_arg_types
+        self.runtime_arg_names = runtime_arg_names
+
+    def rewrite(self, rewriter):
+        rd = self.rewrite_details
+        instrs = [rd.g_assign]
+        num_valid_assign = getattr(self, "num_valid_assign", None)
+        if num_valid_assign is not None:
+            instrs.append(num_valid_assign)
+        instrs.append(rd.new_assign)
+        return instrs
 
     @cached_property
     def rewrite_details(self):

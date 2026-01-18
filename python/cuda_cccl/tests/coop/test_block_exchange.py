@@ -8,7 +8,7 @@ test_block_exchange.py
 This file contains unit tests for cuda.coop.block_exchange.
 """
 
-from functools import partial, reduce
+from functools import reduce
 from operator import mul
 
 import numba
@@ -27,10 +27,16 @@ from cuda import coop
 
 numba.config.CUDA_LOW_OCCUPANCY_WARNINGS = 0
 
-striped_to_blocked = partial(
-    coop.block.exchange,
-    block_exchange_type=coop.block.BlockExchangeType.StripedToBlocked,
-)
+striped_to_blocked = coop.block.BlockExchangeType.StripedToBlocked
+blocked_to_striped = coop.block.BlockExchangeType.BlockedToStriped
+warp_striped_to_blocked = coop.block.BlockExchangeType.WarpStripedToBlocked
+blocked_to_warp_striped = coop.block.BlockExchangeType.BlockedToWarpStriped
+scatter_to_blocked = coop.block.BlockExchangeType.ScatterToBlocked
+scatter_to_striped = coop.block.BlockExchangeType.ScatterToStriped
+scatter_to_striped_guarded = coop.block.BlockExchangeType.ScatterToStripedGuarded
+scatter_to_striped_flagged = coop.block.BlockExchangeType.ScatterToStripedFlagged
+
+WARP_SIZE = 32
 
 
 @pytest.mark.parametrize("T", [types.int32, types.float64])
@@ -55,24 +61,11 @@ def test_striped_to_blocked(
         else reduce(mul, threads_per_block)
     )
 
-    block_exchange_op = striped_to_blocked(
-        dtype=T,
-        threads_per_block=threads_per_block,
-        items_per_thread=items_per_thread,
-        warp_time_slicing=warp_time_slicing,
-    )
-    temp_storage_bytes = block_exchange_op.temp_storage_bytes
-
     if separate_input_output_arrays:
 
-        @cuda.jit(link=block_exchange_op.files)
+        @cuda.jit
         def kernel(input_arr, output_arr):
             tid = row_major_tid()
-            temp_storage = cuda.shared.array(
-                shape=temp_storage_bytes,
-                dtype=numba.uint8,
-            )
-
             thread_data_in = cuda.local.array(items_per_thread, dtype=T)
             thread_data_out = cuda.local.array(items_per_thread, dtype=T)
 
@@ -82,7 +75,13 @@ def test_striped_to_blocked(
                 if idx < input_arr.shape[0]:
                     thread_data_in[i] = input_arr[idx]
 
-            block_exchange_op(temp_storage, thread_data_in, thread_data_out)
+            coop.block.exchange(
+                thread_data_in,
+                thread_data_out,
+                items_per_thread=items_per_thread,
+                block_exchange_type=striped_to_blocked,
+                warp_time_slicing=warp_time_slicing,
+            )
 
             # Store output data (blocked)
             for i in range(items_per_thread):
@@ -92,14 +91,9 @@ def test_striped_to_blocked(
 
     else:
 
-        @cuda.jit(link=block_exchange_op.files)
+        @cuda.jit
         def kernel(input_arr, output_arr):
             tid = row_major_tid()
-            temp_storage = cuda.shared.array(
-                shape=temp_storage_bytes,
-                dtype=numba.uint8,
-            )
-
             items = cuda.local.array(items_per_thread, dtype=T)
 
             # Load input data (striped)
@@ -108,7 +102,12 @@ def test_striped_to_blocked(
                 if idx < input_arr.shape[0]:
                     items[i] = input_arr[idx]
 
-            block_exchange_op(temp_storage, items)
+            coop.block.exchange(
+                items,
+                items_per_thread=items_per_thread,
+                block_exchange_type=striped_to_blocked,
+                warp_time_slicing=warp_time_slicing,
+            )
 
             # Store output data (blocked)
             for i in range(items_per_thread):
@@ -186,20 +185,9 @@ def test_striped_to_blocked_user_defined_type(
         else reduce(mul, threads_per_block)
     )
 
-    block_exchange_op = striped_to_blocked(
-        dtype=T_complex,
-        threads_per_block=threads_per_block,
-        items_per_thread=items_per_thread,
-        warp_time_slicing=warp_time_slicing,
-        methods={"construct": Complex.construct, "assign": Complex.assign},
-    )
-    temp_storage_bytes = block_exchange_op.temp_storage_bytes
-
-    @cuda.jit(link=block_exchange_op.files)
+    @cuda.jit
     def kernel(input_arr, output_arr):
         tid = row_major_tid()
-        temp_storage = cuda.shared.array(shape=temp_storage_bytes, dtype=numba.uint8)
-
         thread_data_in = cuda.local.array(items_per_thread, dtype=T_complex)
         thread_data_out = cuda.local.array(items_per_thread, dtype=T_complex)
 
@@ -214,7 +202,13 @@ def test_striped_to_blocked_user_defined_type(
                 ]
                 thread_data_in[i] = Complex(real_val, imag_val)
 
-        block_exchange_op(temp_storage, thread_data_in, thread_data_out)
+        coop.block.exchange(
+            thread_data_in,
+            thread_data_out,
+            items_per_thread=items_per_thread,
+            block_exchange_type=striped_to_blocked,
+            warp_time_slicing=warp_time_slicing,
+        )
 
         for i in range(items_per_thread):
             blocked_idx_of_complex_item = tid * items_per_thread + i
@@ -274,3 +268,517 @@ def test_striped_to_blocked_user_defined_type(
     sass = kernel.inspect_sass(sig)
     assert "LDL" not in sass
     assert "STL" not in sass
+
+
+@pytest.mark.parametrize("T", [types.int32])
+@pytest.mark.parametrize("threads_per_block", [32, (4, 16)])
+@pytest.mark.parametrize("items_per_thread", [1, 4])
+@pytest.mark.parametrize("warp_time_slicing", [False, True])
+@pytest.mark.parametrize("separate_input_output_arrays", [False, True])
+def test_blocked_to_striped(
+    T,
+    threads_per_block,
+    items_per_thread,
+    warp_time_slicing,
+    separate_input_output_arrays,
+):
+    """
+    Tests the blocked_to_striped block-wide data exchange.
+    """
+    T_np = NUMBA_TYPES_TO_NP[T]
+    num_threads = (
+        threads_per_block
+        if isinstance(threads_per_block, int)
+        else reduce(mul, threads_per_block)
+    )
+
+    if separate_input_output_arrays:
+
+        @cuda.jit
+        def kernel(input_arr, output_arr):
+            tid = row_major_tid()
+            thread_data_in = cuda.local.array(items_per_thread, dtype=T)
+            thread_data_out = cuda.local.array(items_per_thread, dtype=T)
+
+            # Load input data (blocked)
+            for i in range(items_per_thread):
+                idx = tid * items_per_thread + i
+                thread_data_in[i] = input_arr[idx]
+
+            coop.block.exchange(
+                thread_data_in,
+                thread_data_out,
+                items_per_thread=items_per_thread,
+                block_exchange_type=blocked_to_striped,
+                warp_time_slicing=warp_time_slicing,
+            )
+
+            # Store output data (striped)
+            for i in range(items_per_thread):
+                idx = tid + i * num_threads
+                output_arr[idx] = thread_data_out[i]
+
+    else:
+
+        @cuda.jit
+        def kernel(input_arr, output_arr):
+            tid = row_major_tid()
+            items = cuda.local.array(items_per_thread, dtype=T)
+
+            # Load input data (blocked)
+            for i in range(items_per_thread):
+                idx = tid * items_per_thread + i
+                items[i] = input_arr[idx]
+
+            coop.block.exchange(
+                items,
+                items_per_thread=items_per_thread,
+                block_exchange_type=blocked_to_striped,
+                warp_time_slicing=warp_time_slicing,
+            )
+
+            # Store output data (striped)
+            for i in range(items_per_thread):
+                idx = tid + i * num_threads
+                output_arr[idx] = items[i]
+
+    total_items = num_threads * items_per_thread
+    h_input = random_int(total_items, T_np)
+
+    d_input = cuda.to_device(h_input)
+    d_output = cuda.device_array(total_items, dtype=T_np)
+
+    kernel[1, threads_per_block](d_input, d_output)
+    cuda.synchronize()
+
+    output = d_output.copy_to_host()
+    np.testing.assert_array_equal(output, h_input)
+
+
+@pytest.mark.parametrize("T", [types.int32])
+@pytest.mark.parametrize("threads_per_block", [64, 128])
+@pytest.mark.parametrize("items_per_thread", [1, 4])
+@pytest.mark.parametrize("warp_time_slicing", [False, True])
+@pytest.mark.parametrize("separate_input_output_arrays", [False, True])
+def test_blocked_to_warp_striped(
+    T,
+    threads_per_block,
+    items_per_thread,
+    warp_time_slicing,
+    separate_input_output_arrays,
+):
+    """
+    Tests the blocked_to_warp_striped block-wide data exchange.
+    """
+    T_np = NUMBA_TYPES_TO_NP[T]
+    num_threads = (
+        threads_per_block
+        if isinstance(threads_per_block, int)
+        else reduce(mul, threads_per_block)
+    )
+
+    if separate_input_output_arrays:
+
+        @cuda.jit
+        def kernel(input_arr, output_arr):
+            tid = row_major_tid()
+            thread_data_in = cuda.local.array(items_per_thread, dtype=T)
+            thread_data_out = cuda.local.array(items_per_thread, dtype=T)
+
+            # Load input data (blocked)
+            for i in range(items_per_thread):
+                idx = tid * items_per_thread + i
+                thread_data_in[i] = input_arr[idx]
+
+            coop.block.exchange(
+                thread_data_in,
+                thread_data_out,
+                items_per_thread=items_per_thread,
+                block_exchange_type=blocked_to_warp_striped,
+                warp_time_slicing=warp_time_slicing,
+            )
+
+            # Store output data (warp-striped)
+            warp_id = tid // WARP_SIZE
+            lane_id = tid % WARP_SIZE
+            for i in range(items_per_thread):
+                idx = warp_id * WARP_SIZE * items_per_thread + lane_id + i * WARP_SIZE
+                output_arr[idx] = thread_data_out[i]
+
+    else:
+
+        @cuda.jit
+        def kernel(input_arr, output_arr):
+            tid = row_major_tid()
+            items = cuda.local.array(items_per_thread, dtype=T)
+
+            # Load input data (blocked)
+            for i in range(items_per_thread):
+                idx = tid * items_per_thread + i
+                items[i] = input_arr[idx]
+
+            coop.block.exchange(
+                items,
+                items_per_thread=items_per_thread,
+                block_exchange_type=blocked_to_warp_striped,
+                warp_time_slicing=warp_time_slicing,
+            )
+
+            # Store output data (warp-striped)
+            warp_id = tid // WARP_SIZE
+            lane_id = tid % WARP_SIZE
+            for i in range(items_per_thread):
+                idx = warp_id * WARP_SIZE * items_per_thread + lane_id + i * WARP_SIZE
+                output_arr[idx] = items[i]
+
+    total_items = num_threads * items_per_thread
+    h_input = random_int(total_items, T_np)
+
+    d_input = cuda.to_device(h_input)
+    d_output = cuda.device_array(total_items, dtype=T_np)
+
+    kernel[1, threads_per_block](d_input, d_output)
+    cuda.synchronize()
+
+    output = d_output.copy_to_host()
+    np.testing.assert_array_equal(output, h_input)
+
+
+@pytest.mark.parametrize("T", [types.int32])
+@pytest.mark.parametrize("threads_per_block", [64, 128])
+@pytest.mark.parametrize("items_per_thread", [1, 4])
+@pytest.mark.parametrize("warp_time_slicing", [False, True])
+@pytest.mark.parametrize("separate_input_output_arrays", [False, True])
+def test_warp_striped_to_blocked(
+    T,
+    threads_per_block,
+    items_per_thread,
+    warp_time_slicing,
+    separate_input_output_arrays,
+):
+    """
+    Tests the warp_striped_to_blocked block-wide data exchange.
+    """
+    T_np = NUMBA_TYPES_TO_NP[T]
+    num_threads = (
+        threads_per_block
+        if isinstance(threads_per_block, int)
+        else reduce(mul, threads_per_block)
+    )
+
+    if separate_input_output_arrays:
+
+        @cuda.jit
+        def kernel(input_arr, output_arr):
+            tid = row_major_tid()
+            thread_data_in = cuda.local.array(items_per_thread, dtype=T)
+            thread_data_out = cuda.local.array(items_per_thread, dtype=T)
+
+            # Load input data (warp-striped)
+            warp_id = tid // WARP_SIZE
+            lane_id = tid % WARP_SIZE
+            for i in range(items_per_thread):
+                idx = warp_id * WARP_SIZE * items_per_thread + lane_id + i * WARP_SIZE
+                thread_data_in[i] = input_arr[idx]
+
+            coop.block.exchange(
+                thread_data_in,
+                thread_data_out,
+                items_per_thread=items_per_thread,
+                block_exchange_type=warp_striped_to_blocked,
+                warp_time_slicing=warp_time_slicing,
+            )
+
+            # Store output data (blocked)
+            for i in range(items_per_thread):
+                idx = tid * items_per_thread + i
+                output_arr[idx] = thread_data_out[i]
+
+    else:
+
+        @cuda.jit
+        def kernel(input_arr, output_arr):
+            tid = row_major_tid()
+            items = cuda.local.array(items_per_thread, dtype=T)
+
+            # Load input data (warp-striped)
+            warp_id = tid // WARP_SIZE
+            lane_id = tid % WARP_SIZE
+            for i in range(items_per_thread):
+                idx = warp_id * WARP_SIZE * items_per_thread + lane_id + i * WARP_SIZE
+                items[i] = input_arr[idx]
+
+            coop.block.exchange(
+                items,
+                items_per_thread=items_per_thread,
+                block_exchange_type=warp_striped_to_blocked,
+                warp_time_slicing=warp_time_slicing,
+            )
+
+            # Store output data (blocked)
+            for i in range(items_per_thread):
+                idx = tid * items_per_thread + i
+                output_arr[idx] = items[i]
+
+    total_items = num_threads * items_per_thread
+    h_input = random_int(total_items, T_np)
+
+    d_input = cuda.to_device(h_input)
+    d_output = cuda.device_array(total_items, dtype=T_np)
+
+    kernel[1, threads_per_block](d_input, d_output)
+    cuda.synchronize()
+
+    output = d_output.copy_to_host()
+    np.testing.assert_array_equal(output, h_input)
+
+
+@pytest.mark.parametrize("T", [types.int32])
+@pytest.mark.parametrize("threads_per_block", [64])
+@pytest.mark.parametrize("items_per_thread", [1, 4])
+@pytest.mark.parametrize("warp_time_slicing", [False, True])
+@pytest.mark.parametrize("separate_input_output_arrays", [False, True])
+def test_scatter_to_blocked(
+    T,
+    threads_per_block,
+    items_per_thread,
+    warp_time_slicing,
+    separate_input_output_arrays,
+):
+    """
+    Tests the scatter_to_blocked block-wide data exchange.
+    """
+    T_np = NUMBA_TYPES_TO_NP[T]
+    num_threads = (
+        threads_per_block
+        if isinstance(threads_per_block, int)
+        else reduce(mul, threads_per_block)
+    )
+
+    if separate_input_output_arrays:
+
+        @cuda.jit
+        def kernel(input_arr, output_arr):
+            tid = row_major_tid()
+            thread_data_in = cuda.local.array(items_per_thread, dtype=T)
+            thread_data_out = cuda.local.array(items_per_thread, dtype=T)
+            ranks = cuda.local.array(items_per_thread, dtype=types.int32)
+
+            # Load input data (striped)
+            for i in range(items_per_thread):
+                idx = tid + i * num_threads
+                thread_data_in[i] = input_arr[idx]
+                ranks[i] = tid + i * num_threads
+
+            coop.block.exchange(
+                thread_data_in,
+                thread_data_out,
+                items_per_thread=items_per_thread,
+                ranks=ranks,
+                block_exchange_type=scatter_to_blocked,
+                warp_time_slicing=warp_time_slicing,
+            )
+
+            # Store output data (blocked)
+            for i in range(items_per_thread):
+                idx = tid * items_per_thread + i
+                output_arr[idx] = thread_data_out[i]
+
+    else:
+
+        @cuda.jit
+        def kernel(input_arr, output_arr):
+            tid = row_major_tid()
+            items = cuda.local.array(items_per_thread, dtype=T)
+            ranks = cuda.local.array(items_per_thread, dtype=types.int32)
+
+            # Load input data (striped)
+            for i in range(items_per_thread):
+                idx = tid + i * num_threads
+                items[i] = input_arr[idx]
+                ranks[i] = tid + i * num_threads
+
+            coop.block.exchange(
+                items,
+                items_per_thread=items_per_thread,
+                ranks=ranks,
+                block_exchange_type=scatter_to_blocked,
+                warp_time_slicing=warp_time_slicing,
+            )
+
+            # Store output data (blocked)
+            for i in range(items_per_thread):
+                idx = tid * items_per_thread + i
+                output_arr[idx] = items[i]
+
+    total_items = num_threads * items_per_thread
+    h_input = random_int(total_items, T_np)
+
+    d_input = cuda.to_device(h_input)
+    d_output = cuda.device_array(total_items, dtype=T_np)
+
+    kernel[1, threads_per_block](d_input, d_output)
+    cuda.synchronize()
+
+    output = d_output.copy_to_host()
+    np.testing.assert_array_equal(output, h_input)
+
+
+@pytest.mark.parametrize("T", [types.int32])
+@pytest.mark.parametrize("threads_per_block", [64])
+@pytest.mark.parametrize("items_per_thread", [1, 4])
+@pytest.mark.parametrize("warp_time_slicing", [False, True])
+@pytest.mark.parametrize("separate_input_output_arrays", [False, True])
+def test_scatter_to_striped(
+    T,
+    threads_per_block,
+    items_per_thread,
+    warp_time_slicing,
+    separate_input_output_arrays,
+):
+    """
+    Tests the scatter_to_striped block-wide data exchange.
+    """
+    T_np = NUMBA_TYPES_TO_NP[T]
+    num_threads = (
+        threads_per_block
+        if isinstance(threads_per_block, int)
+        else reduce(mul, threads_per_block)
+    )
+
+    if separate_input_output_arrays:
+
+        @cuda.jit
+        def kernel(input_arr, output_arr):
+            tid = row_major_tid()
+            thread_data_in = cuda.local.array(items_per_thread, dtype=T)
+            thread_data_out = cuda.local.array(items_per_thread, dtype=T)
+            ranks = cuda.local.array(items_per_thread, dtype=types.int32)
+
+            # Load input data (blocked)
+            for i in range(items_per_thread):
+                idx = tid * items_per_thread + i
+                thread_data_in[i] = input_arr[idx]
+                ranks[i] = tid * items_per_thread + i
+
+            coop.block.exchange(
+                thread_data_in,
+                thread_data_out,
+                items_per_thread=items_per_thread,
+                ranks=ranks,
+                block_exchange_type=scatter_to_striped,
+                warp_time_slicing=warp_time_slicing,
+            )
+
+            # Store output data (striped)
+            for i in range(items_per_thread):
+                idx = tid + i * num_threads
+                output_arr[idx] = thread_data_out[i]
+
+    else:
+
+        @cuda.jit
+        def kernel(input_arr, output_arr):
+            tid = row_major_tid()
+            items = cuda.local.array(items_per_thread, dtype=T)
+            ranks = cuda.local.array(items_per_thread, dtype=types.int32)
+
+            # Load input data (blocked)
+            for i in range(items_per_thread):
+                idx = tid * items_per_thread + i
+                items[i] = input_arr[idx]
+                ranks[i] = tid * items_per_thread + i
+
+            coop.block.exchange(
+                items,
+                items_per_thread=items_per_thread,
+                ranks=ranks,
+                block_exchange_type=scatter_to_striped,
+                warp_time_slicing=warp_time_slicing,
+            )
+
+            # Store output data (striped)
+            for i in range(items_per_thread):
+                idx = tid + i * num_threads
+                output_arr[idx] = items[i]
+
+    total_items = num_threads * items_per_thread
+    h_input = random_int(total_items, T_np)
+
+    d_input = cuda.to_device(h_input)
+    d_output = cuda.device_array(total_items, dtype=T_np)
+
+    kernel[1, threads_per_block](d_input, d_output)
+    cuda.synchronize()
+
+    output = d_output.copy_to_host()
+    np.testing.assert_array_equal(output, h_input)
+
+
+@pytest.mark.parametrize(
+    "block_exchange_type, use_valid_flags, valid_flags_dtype",
+    [
+        (scatter_to_striped_guarded, False, types.uint8),
+        (scatter_to_striped_flagged, True, types.boolean),
+        (scatter_to_striped_flagged, True, types.uint8),
+    ],
+)
+def test_scatter_to_striped_guarded_and_flagged(
+    block_exchange_type, use_valid_flags, valid_flags_dtype
+):
+    """
+    Tests the scatter_to_striped_guarded and scatter_to_striped_flagged exchanges.
+    """
+    T = types.int32
+    T_np = NUMBA_TYPES_TO_NP[T]
+    threads_per_block = 64
+    items_per_thread = 4
+    num_threads = threads_per_block
+
+    @cuda.jit
+    def kernel(input_arr, output_arr):
+        tid = row_major_tid()
+        items = cuda.local.array(items_per_thread, dtype=T)
+        ranks = cuda.local.array(items_per_thread, dtype=types.int32)
+        valid_flags = cuda.local.array(items_per_thread, dtype=valid_flags_dtype)
+
+        # Load input data (blocked)
+        for i in range(items_per_thread):
+            idx = tid * items_per_thread + i
+            items[i] = input_arr[idx]
+            ranks[i] = tid * items_per_thread + i
+            if use_valid_flags:
+                valid_flags[i] = 1
+
+        if use_valid_flags:
+            coop.block.exchange(
+                items,
+                items_per_thread=items_per_thread,
+                ranks=ranks,
+                valid_flags=valid_flags,
+                block_exchange_type=block_exchange_type,
+            )
+        else:
+            coop.block.exchange(
+                items,
+                items_per_thread=items_per_thread,
+                ranks=ranks,
+                block_exchange_type=block_exchange_type,
+            )
+
+        # Store output data (striped)
+        for i in range(items_per_thread):
+            idx = tid + i * num_threads
+            output_arr[idx] = items[i]
+
+    total_items = num_threads * items_per_thread
+    h_input = random_int(total_items, T_np)
+
+    d_input = cuda.to_device(h_input)
+    d_output = cuda.device_array(total_items, dtype=T_np)
+
+    kernel[1, threads_per_block](d_input, d_output)
+    cuda.synchronize()
+
+    output = d_output.copy_to_host()
+    np.testing.assert_array_equal(output, h_input)

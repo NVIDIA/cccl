@@ -16,15 +16,19 @@ numba.config.CUDA_LOW_OCCUPANCY_WARNINGS = 0
 
 def test_block_reduction():
     # example-begin reduce
+    @cuda.jit(device=True)
     def op(a, b):
         return a if a > b else b
 
     threads_per_block = 128
-    block_reduce = coop.block.reduce(numba.int32, threads_per_block, op)
 
-    @cuda.jit(link=block_reduce.files)
+    @cuda.jit
     def kernel(input, output):
-        block_output = block_reduce(input[cuda.threadIdx.x])
+        block_output = coop.block.reduce(
+            input[cuda.threadIdx.x],
+            items_per_thread=1,
+            binary_op=op,
+        )
 
         if cuda.threadIdx.x == 0:
             output[0] = block_output
@@ -44,11 +48,13 @@ def test_block_reduction():
 def test_block_sum():
     # example-begin sum
     threads_per_block = 128
-    block_sum = coop.block.sum(numba.int32, threads_per_block)
 
-    @cuda.jit(link=block_sum.files)
+    @cuda.jit
     def kernel(input, output):
-        block_output = block_sum(input[cuda.threadIdx.x])
+        block_output = coop.block.sum(
+            input[cuda.threadIdx.x],
+            items_per_thread=1,
+        )
 
         if cuda.threadIdx.x == 0:
             output[0] = block_output
