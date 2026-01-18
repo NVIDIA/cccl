@@ -63,8 +63,8 @@ _CCCL_HOST_DEVICE T transform_reduce(
   InputIterator1 last1,
   InputIterator2 first2,
   T init,
-  BinaryOp1 binary_op1,
-  BinaryOp2 binary_op2);
+  BinaryOp1 reduce,
+  BinaryOp2 transform);
 } // namespace system::detail::generic
 THRUST_NAMESPACE_END
 

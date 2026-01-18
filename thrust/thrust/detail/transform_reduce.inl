@@ -120,8 +120,8 @@ _CCCL_HOST_DEVICE T transform_reduce(
   InputIterator1 last1,
   InputIterator2 first2,
   T init,
-  BinaryOp1 binary_op1,
-  BinaryOp2 binary_op2)
+  BinaryOp1 reduce,
+  BinaryOp2 transform)
 {
   _CCCL_NVTX_RANGE_SCOPE("thrust::transform_reduce");
   using thrust::system::detail::generic::transform_reduce;
@@ -131,13 +131,13 @@ _CCCL_HOST_DEVICE T transform_reduce(
     last1,
     first2,
     init,
-    binary_op1,
-    binary_op2);
+    reduce,
+    transform);
 } // end transform_reduce()
 
 template <typename InputIterator1, typename InputIterator2, typename T, typename BinaryOp1, typename BinaryOp2>
 T transform_reduce(
-  InputIterator1 first1, InputIterator1 last1, InputIterator2 first2, T init, BinaryOp1 binary_op1, BinaryOp2 binary_op2)
+  InputIterator1 first1, InputIterator1 last1, InputIterator2 first2, T init, BinaryOp1 reduce, BinaryOp2 transform)
 {
   _CCCL_NVTX_RANGE_SCOPE("thrust::transform_reduce");
   using thrust::system::detail::generic::select_system;
@@ -148,7 +148,7 @@ T transform_reduce(
   System1 system1;
   System2 system2;
 
-  return thrust::transform_reduce(select_system(system1, system2), first1, last1, first2, init, binary_op1, binary_op2);
+  return thrust::transform_reduce(select_system(system1, system2), first1, last1, first2, init, reduce, transform);
 } // end transform_reduce()
 
 THRUST_NAMESPACE_END

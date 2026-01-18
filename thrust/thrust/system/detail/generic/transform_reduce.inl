@@ -90,15 +90,15 @@ _CCCL_HOST_DEVICE T transform_reduce(
   InputIterator1 last1,
   InputIterator2 first2,
   T init,
-  BinaryOp1 binary_op1,
-  BinaryOp2 binary_op2)
+  BinaryOp1 reduce,
+  BinaryOp2 transform)
 {
   // Create a zip iterator to iterate over both input ranges simultaneously
   const auto first = thrust::make_zip_iterator(first1, first2);
   const auto last  = thrust::make_zip_iterator(last1, first2); // only first iterator matters
 
   // Use the unary transform_reduce with the zipped iterators and a zip_function
-  return thrust::transform_reduce(exec, first, last, thrust::make_zip_function(binary_op2), init, binary_op1);
+  return thrust::transform_reduce(exec, first, last, thrust::make_zip_function(transform), init, reduce);
 } // end transform_reduce()
 } // namespace system::detail::generic
 THRUST_NAMESPACE_END
