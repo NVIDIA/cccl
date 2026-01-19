@@ -29,7 +29,7 @@
 
 _CCCL_BEGIN_NAMESPACE_CUDA
 
-//! @brief `__call_or` is an higher-order function that accepts a function, a default
+//! @brief `__call_or` is a higher-order function that accepts a function, a default
 //! value, and arguments to call the function with. If the function is callable with the
 //! provided arguments, it invokes the function and returns the result. Otherwise, it
 //! returns the default value.
