@@ -25,7 +25,7 @@
 
 CUB_NAMESPACE_BEGIN
 
-namespace detail::segmented_topk
+namespace detail::batched_topk
 {
 template <int BlockThreads, int ItemsPerThread>
 struct AgentBatchedTopKWorkerPerSegmentPolicy
@@ -265,5 +265,5 @@ struct AgentBatchedTopKWorkerPerSegment
     }
   }
 };
-} // namespace detail::segmented_topk
+} // namespace detail::batched_topk
 CUB_NAMESPACE_END

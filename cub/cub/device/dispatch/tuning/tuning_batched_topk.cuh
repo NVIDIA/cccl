@@ -17,7 +17,7 @@
 #include <cub/util_device.cuh>
 
 CUB_NAMESPACE_BEGIN
-namespace detail::segmented_topk
+namespace detail::batched_topk
 {
 template <typename KeyT, typename ValueT, typename SegmentSizeT, ::cuda::std::int64_t MaxK>
 struct policy_hub
@@ -38,6 +38,6 @@ struct policy_hub
 
   using max_policy = Policy900;
 };
-} // namespace detail::segmented_topk
+} // namespace detail::batched_topk
 
 CUB_NAMESPACE_END

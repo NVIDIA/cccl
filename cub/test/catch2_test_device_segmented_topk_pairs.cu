@@ -48,7 +48,7 @@ template <typename KeyInputItItT,
           typename SelectDirectionParamT,
           typename NumSegmentsParameterT,
           typename TotalNumItemsGuaranteeT>
-CUB_RUNTIME_FUNCTION static cudaError_t dispatch_segmented_topk_pairs(
+CUB_RUNTIME_FUNCTION static cudaError_t dispatch_batched_topk_pairs(
   void* d_temp_storage,
   size_t& temp_storage_bytes,
   KeyInputItItT d_key_segments_it,
@@ -62,7 +62,7 @@ CUB_RUNTIME_FUNCTION static cudaError_t dispatch_segmented_topk_pairs(
   TotalNumItemsGuaranteeT total_num_items_guarantee,
   cudaStream_t stream = 0)
 {
-  return cub::detail::segmented_topk::DispatchBatchedTopK<
+  return cub::detail::batched_topk::DispatchBatchedTopK<
     KeyInputItItT,
     KeyOutputItItT,
     ValueInputItItT,
@@ -88,7 +88,7 @@ CUB_RUNTIME_FUNCTION static cudaError_t dispatch_segmented_topk_pairs(
 }
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
-DECLARE_LAUNCH_WRAPPER(dispatch_segmented_topk_pairs, segmented_topk_pairs);
+DECLARE_LAUNCH_WRAPPER(dispatch_batched_topk_pairs, batched_topk_pairs);
 
 // Total segment size
 using max_segment_size_list = c2h::enum_type_list<cuda::std::size_t, 4 * 1024>;
@@ -226,16 +226,16 @@ auto values_in_it = cuda::make_counting_iterator(val_t{0});
   c2h::device_vector<key_t> expected_keys(keys_in_buffer);
 
   // Run the top-k algorithm
-  segmented_topk_pairs(
+  batched_topk_pairs(
     d_keys_in,
     d_keys_out,
     d_values_in,
     d_values_out,
-    cub::detail::segmented_topk::segment_size_uniform<1, max_segment_size>{segment_size},
-    cub::detail::segmented_topk::k_uniform<1, static_max_k>{k},
-    cub::detail::segmented_topk::select_direction_uniform{direction},
-    cub::detail::segmented_topk::num_segments_uniform<>{num_segments},
-    cub::detail::segmented_topk::total_num_items_guarantee{num_segments * segment_size});
+    cub::detail::batched_topk::segment_size_uniform<1, max_segment_size>{segment_size},
+    cub::detail::batched_topk::k_uniform<1, static_max_k>{k},
+    cub::detail::batched_topk::select_direction_uniform{direction},
+    cub::detail::batched_topk::num_segments_uniform<>{num_segments},
+    cub::detail::batched_topk::total_num_items_guarantee{num_segments * segment_size});
 
   // Verificatoin:
   // - We verify correct top-k selection through the keys

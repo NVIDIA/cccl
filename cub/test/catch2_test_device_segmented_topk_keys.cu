@@ -26,7 +26,7 @@ template <typename KeyInputItItT,
           typename SelectDirectionParamT,
           typename NumSegmentsParameterT,
           typename TotalNumItemsGuaranteeT>
-CUB_RUNTIME_FUNCTION static cudaError_t dispatch_segmented_topk_keys(
+CUB_RUNTIME_FUNCTION static cudaError_t dispatch_batched_topk_keys(
   void* d_temp_storage,
   size_t& temp_storage_bytes,
   KeyInputItItT d_key_segments_it,
@@ -41,7 +41,7 @@ CUB_RUNTIME_FUNCTION static cudaError_t dispatch_segmented_topk_keys(
   using value_it_t = cub::NullType**;
 
   auto values_it = static_cast<cub::NullType**>(nullptr);
-  return cub::detail::segmented_topk::DispatchBatchedTopK<
+  return cub::detail::batched_topk::DispatchBatchedTopK<
     KeyInputItItT,
     KeyOutputItItT,
     value_it_t,
@@ -67,7 +67,7 @@ CUB_RUNTIME_FUNCTION static cudaError_t dispatch_segmented_topk_keys(
 }
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
-DECLARE_LAUNCH_WRAPPER(dispatch_segmented_topk_keys, segmented_topk_keys);
+DECLARE_LAUNCH_WRAPPER(dispatch_batched_topk_keys, batched_topk_keys);
 
 // Total segment size
 using max_segment_size_list = c2h::enum_type_list<cuda::std::size_t, 4 * 1024>;
@@ -152,14 +152,14 @@ C2H_TEST("DeviceSegmentedTopK::{Min,Max}Keys work with small fixed-size segments
   c2h::device_vector<key_t> expected_keys(keys_in_buffer);
 
   // Run the top-k algorithm
-  segmented_topk_keys(
+  batched_topk_keys(
     d_keys_in,
     d_keys_out,
-    cub::detail::segmented_topk::segment_size_uniform<1, max_segment_size>{segment_size},
-    cub::detail::segmented_topk::k_uniform<1, static_max_k>{k},
-    cub::detail::segmented_topk::select_direction_uniform{direction},
-    cub::detail::segmented_topk::num_segments_uniform<>{num_segments},
-    cub::detail::segmented_topk::total_num_items_guarantee{num_segments * segment_size});
+    cub::detail::batched_topk::segment_size_uniform<1, max_segment_size>{segment_size},
+    cub::detail::batched_topk::k_uniform<1, static_max_k>{k},
+    cub::detail::batched_topk::select_direction_uniform{direction},
+    cub::detail::batched_topk::num_segments_uniform<>{num_segments},
+    cub::detail::batched_topk::total_num_items_guarantee{num_segments * segment_size});
   // Prepare expected results
   segmented_sort_keys(expected_keys, num_segments, segment_size, direction);
   compact_sorted_keys_to_topk(expected_keys, segment_size, k);

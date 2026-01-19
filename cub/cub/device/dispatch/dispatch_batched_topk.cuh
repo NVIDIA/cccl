@@ -33,7 +33,7 @@
 
 CUB_NAMESPACE_BEGIN
 
-namespace detail::segmented_topk
+namespace detail::batched_topk
 {
 // -----------------------------------------------------------------------------
 // Segmented Top-K-Specific Parameter Types
@@ -514,6 +514,6 @@ struct DispatchBatchedTopK
     return CubDebug(max_policy_t::Invoke(ptx_version, dispatch));
   }
 };
-} // namespace detail::segmented_topk
+} // namespace detail::batched_topk
 
 CUB_NAMESPACE_END

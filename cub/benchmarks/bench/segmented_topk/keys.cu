@@ -56,22 +56,22 @@ void fixed_seg_size_topk_keys(
   using key_output_it_t = cuda::strided_iterator<cuda::counting_iterator<KeyT*>>;
 
   // Static segment size
-  using seg_size_t = cub::detail::segmented_topk::segment_size_static<MaxSegmentSize>;
+  using seg_size_t = cub::detail::batched_topk::segment_size_static<MaxSegmentSize>;
 
   // Static k (number of selected output elements per segment)
-  using k_value_t = cub::detail::segmented_topk::k_static<MaxNumSelected>;
+  using k_value_t = cub::detail::batched_topk::k_static<MaxNumSelected>;
 
   // Static selection direction (max)
-  using select_direction_value_t = cub::detail::segmented_topk::select_direction_static<cub::detail::topk::select::max>;
+  using select_direction_value_t = cub::detail::batched_topk::select_direction_static<cub::detail::topk::select::max>;
 
   // Number of segments is a host-accessible value
-  using num_segments_uniform_t = cub::detail::segmented_topk::num_segments_uniform<>;
+  using num_segments_uniform_t = cub::detail::batched_topk::num_segments_uniform<>;
 
   // Total number of items guarantee type
   using total_num_items_guarantee_t =
-    cub::detail::segmented_topk::total_num_items_guarantee<min_num_total_items, max_num_total_items>;
+    cub::detail::batched_topk::total_num_items_guarantee<min_num_total_items, max_num_total_items>;
 
-  using dispatch_t = cub::detail::segmented_topk::DispatchBatchedTopK<
+  using dispatch_t = cub::detail::batched_topk::DispatchBatchedTopK<
     key_input_it_t,
     key_output_it_t,
     cub::NullType**,
