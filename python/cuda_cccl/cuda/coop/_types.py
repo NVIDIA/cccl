@@ -573,7 +573,7 @@ class DependentPythonOperator:
 
 
 @dataclass
-class CxxFunction:
+class CxxFunction(ParameterMixin):
     cpp: str
     func_dtype: numba.types.Type
     name: Optional[str] = None
@@ -793,7 +793,18 @@ class Algorithm:
     def unique_id(self, value):
         if value is None or not isinstance(value, int):
             return
+        if self._unique_id == value:
+            return
         self._unique_id = value
+        # Invalidate cached LTO-IR and derived size/alignment info because
+        # symbol names depend on the unique_id.
+        self._lto_irs = []
+        if "lto_irs" in self.__dict__:
+            del self.__dict__["lto_irs"]
+        self._temp_storage_bytes = None
+        self._temp_storage_alignment = None
+        self._algorithm_struct_size = None
+        self._algorithm_struct_alignment = None
 
     @property
     def unique_name(self):
@@ -1986,7 +1997,8 @@ class TempStorage:
 
 
 class ThreadData:
-    def __init__(self, items_per_thread: int):
+    def __init__(self, items_per_thread: int, dtype=None):
         if items_per_thread <= 0:
             raise ValueError("items_per_thread must be a positive integer")
         self.items_per_thread = items_per_thread
+        self.dtype = dtype

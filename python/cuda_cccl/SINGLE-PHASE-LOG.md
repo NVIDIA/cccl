@@ -203,3 +203,135 @@
 - Tests:
   - `pre-commit run --all-files`
     - Result: all hooks passed.
+
+## 2026-01-18 (numba-cuda 280-launch-config-v2 evaluation)
+- Request: Validate the `280-launch-config-v2` numba-cuda worktree and confirm compatibility with cuda.coop single-phase.
+- Changes (numba-cuda worktree):
+  - `numba_cuda/numba/cuda/dispatcher.py`: attach `launch_config.args` during calls (cleared after launch), serialize-safe defaulting in `__getstate__/__setstate__`.
+  - `numba_cuda/numba/cuda/launchconfig.py`: added module exposing `current_launch_config()` / `ensure_current_launch_config()`.
+- Tests (numba-cuda worktree):
+  - `pytest -c testing/pytest.ini -k launch_config_available_during_compile`
+    - Result: 1 passed.
+- Tests (cccl coop, with v2 branch installed):
+  - `pytest tests/coop/test_block_scan.py -k "block_sum"`
+    - Result: 24 passed.
+  - `pytest tests/coop/test_histo2.py::test_block_histogram_histo_single_phase_2[::cub::BLOCK_HISTO_ATOMIC-1024-2-32-int32-uint8]`
+    - Result: 1 passed (with low-occupancy warning).
+
+## 2026-01-18 (numba-cuda launch overhead benchmarking)
+- Request: Review the PR feedback about launch overhead and add scaffolding to compare baseline vs contextvar vs v2.
+- Maintenance:
+  - `git pull --rebase origin main` on `/home/trentn/src/numba-cuda-main`, `/home/trentn/src/numba-cuda`, and `/home/trentn/src/280-launch-config-v2`.
+- Changes (numba-cuda worktree):
+  - `scripts/bench-launch-overhead.py`: new microbenchmark driver to time 0-4 arg kernel launches across multiple repos and emit a comparison table/JSON.
+  - `pixi.toml`: added `bench-launch-overhead` task to invoke the new script.
+- Bench run:
+  - `python scripts/bench-launch-overhead.py --repo baseline=/home/trentn/src/numba-cuda-main --repo contextvar=/home/trentn/src/numba-cuda --repo v2=/home/trentn/src/280-launch-config-v2 --output /tmp/bench-launch-overhead.json`
+    - Result: contextvar +14-33% vs baseline; v2 within about -2% to +1% vs baseline (see `/tmp/bench-launch-overhead.json`).
+
+## 2026-01-18 (ThreadData + TempStorage refinements)
+- Request: Improve ThreadData/TempStorage UX and validate with GPU tests.
+- Changes:
+  - `cuda/coop/_types.py`: ThreadData tracks optional `dtype`.
+  - `cuda/coop/_decls.py`: allow ThreadData to omit `items_per_thread` for scan, relax items-per-thread processing for ThreadData, narrow exchange ranks/valid_flags to arrays, scan minimum args to 2.
+  - `cuda/coop/_rewrite.py`: resolve dtype/size from attribute roots, add typingctx on rewriter, ThreadData/TempStorage arrays update typemap safely, skip unmatched call defs, insert temp_storage first in load/store/scan, and fix prefix-op dtype clobbering; TempStorage auto-sync uses syncthreads.
+  - `tests/coop/test_block_load_store_api_single_phase.py`: add ThreadData and TempStorage placeholder reuse tests.
+  - `tests/coop/test_block_load_store_scan_single_phase.py`: add ThreadData scan test.
+- Tests:
+  - `pytest -q tests/coop/test_block_load_store_api_single_phase.py`
+    - Result: 8 passed.
+  - `pytest -q tests/coop/test_block_load_store_scan_single_phase.py`
+    - Result: 13 passed, 1 skipped (NVRTC warnings about attributes).
+
+## 2026-01-18 (scan TempStorage placeholder test)
+- Request: Add explicit temp_storage single-phase scan test.
+- Changes:
+  - `tests/coop/test_block_load_store_scan_single_phase.py`: add TempStorage placeholder scan test using ThreadData and explicit temp_storage sizing from two-phase scan.
+- Tests:
+  - `pytest -q tests/coop/test_block_load_store_scan_single_phase.py`
+    - Result: 14 passed, 1 skipped (NVRTC attribute warnings).
+- Lint:
+  - `pre-commit run --files tests/coop/test_block_load_store_scan_single_phase.py SINGLE-PHASE-TODO.md SINGLE-PHASE-LOG.md`
+    - Result: all hooks passed.
+
+## 2026-01-18 (block adjacent difference + warp load/store/exchange)
+- Request: Start missing CUB primitives for block and warp.
+- Changes:
+  - `cuda/coop/block/_block_adjacent_difference.py`: add BlockAdjacentDifference + enum.
+  - `cuda/coop/block/__init__.py`: export adjacent difference API.
+  - `cuda/coop/_decls.py`: add typing for `coop.block.adjacent_difference`.
+  - `cuda/coop/_rewrite.py`: add adjacent difference node + TempStorage alignment rounding.
+  - `cuda/coop/warp/_warp_load_store.py`: add warp load/store invocables.
+  - `cuda/coop/warp/_warp_exchange.py`: add warp exchange invocable + enum.
+  - `cuda/coop/warp/__init__.py`: export warp load/store/exchange.
+  - `tests/coop/test_block_adjacent_difference.py`: add single-phase tests (ThreadData + temp storage).
+  - `tests/coop/test_warp_load_store_api.py`: add warp load/store test.
+  - `tests/coop/test_warp_exchange_api.py`: add warp exchange test.
+- Tests:
+  - `pytest -q tests/coop/test_block_adjacent_difference.py`
+    - Result: 2 passed.
+  - `pytest -q tests/coop/test_warp_load_store_api.py`
+    - Result: 1 passed.
+  - `pytest -q tests/coop/test_warp_exchange_api.py`
+    - Result: 1 passed.
+- Lint:
+  - `pre-commit run --files SINGLE-PHASE-TODO.md SINGLE-PHASE-LOG.md cuda/coop/block/_block_adjacent_difference.py cuda/coop/block/__init__.py cuda/coop/_decls.py cuda/coop/_rewrite.py cuda/coop/warp/_warp_load_store.py cuda/coop/warp/_warp_exchange.py cuda/coop/warp/__init__.py tests/coop/test_block_adjacent_difference.py tests/coop/test_warp_load_store_api.py tests/coop/test_warp_exchange_api.py`
+    - Result: all hooks passed (ruff/ruff-format updated imports/formatting).
+
+## 2026-01-18 (block radix rank + warp oob_default + warp scatter)
+- Request: Implement missing primitives and cover num_valid/oob_default + scatter.
+- Changes:
+  - `cuda/coop/block/_block_radix_rank.py`: implement RankKeys wrapper, fix RADIX_BITS override ordering, use fixed-size Array params.
+  - `cuda/coop/_decls.py`: add `coop.block.radix_rank` typing.
+  - `cuda/coop/_rewrite.py`: add primitive enum + single-phase node for radix rank (ThreadData + temp storage support).
+  - `cuda/coop/_types.py`: make `CxxFunction` a ParameterMixin to support specialization.
+  - `cuda/coop/warp/_warp_load_store.py`: add `oob_default` to warp load.
+  - `tests/coop/test_block_radix_rank.py`: add rank validation tests (ascending/descending).
+  - `tests/coop/test_warp_load_store_api.py`: add num_valid + oob_default coverage (separate kernels to avoid symbol clash).
+  - `tests/coop/test_warp_exchange_api.py`: add ScatterToStriped test.
+- Tests:
+  - `pytest -q tests/coop/test_block_radix_rank.py`
+    - Result: 2 passed.
+  - `pytest -q tests/coop/test_warp_load_store_api.py`
+    - Result: 2 passed.
+  - `pytest -q tests/coop/test_warp_exchange_api.py`
+    - Result: 2 passed.
+- Lint:
+  - `pre-commit run --all-files`
+    - Result: all hooks passed (ruff/ruff-format applied formatting on first pass).
+
+## 2026-01-18 (single-phase scalar block scan)
+- Request: implement scalar-return semantics for single-phase block scan.
+- Changes:
+  - `cuda/coop/_decls.py`: allow scalar `coop.block.scan` with dst omitted; return scalar type; keep array path returning void.
+  - `cuda/coop/_rewrite.py`: support scalar scan path (items_per_thread==1), return scalar value.
+  - `tests/coop/test_block_scan.py`: add scalar scan return test (inclusive/exclusive).
+  - `SINGLE-PHASE-TODO.md`: mark scalar scan decision complete.
+- Tests:
+  - `pytest -q tests/coop/test_block_scan.py -k scalar_return`
+    - Result: 1 passed, 179 deselected.
+
+## 2026-01-19 (kernel traits gpu_dataclass fix)
+- Request: get kernel-traits/gpu_dataclass path working (previously segfaulted at launch) and add test coverage.
+- Changes:
+  - `cuda/coop/_dataclass.py`: flatten gpu_dataclass args in `prepare_args` (dummy pointer values for primitives), fix attribute resolver closure for per-field typing.
+  - `cuda/coop/_rewrite.py`: prefer `attr_instance` when resolving coop array shapes from kernel-traits attrs.
+  - `tests/coop/test_block_load_store_api_single_phase.py`: enable gpu_dataclass kernel-param test and use `kp.items_per_thread` + `kp.block_store` inside kernel.
+- Tests:
+  - `pytest -q tests/coop/test_block_load_store_api_single_phase.py -k gpu_dataclass`
+    - Result: 1 passed.
+  - `pytest -q tests/coop/test_block_load_store_api_single_phase.py`
+    - Result: 9 passed.
+
+## 2026-01-19 (kernel traits attrs + mamba kernel)
+- Request: make kernel-traits attribute handling robust and start the mamba selective-scan port.
+- Changes:
+  - `cuda/coop/_dataclass.py`: tag gpu_dataclass instances with `__cuda_coop_gpu_dataclass__`.
+  - `cuda/coop/_rewrite.py`: register kernel-traits extensions on getattr for gpu_dataclass; add two-phase scan defaults (instance values) and guard `instance` handling in block scan.
+  - `cuda/coop/block/_block_scan.py`: store scan config (`mode`, `scan_op`, `algorithm_id`, `initial_value`) on two-phase instances.
+  - `cuda/coop/_decls.py`: allow two-phase block_scan instance calls to omit items_per_thread/mode/scan_op (typing defaults + instance call uses two_phase=True).
+  - `tests/coop/mamba_selective_scan_fwd.py`: add simplified selective scan forward kernel + custom Float2/SSM ops; kernel traits used for block load/store.
+  - `tests/coop/test_mamba_selective_scan_fwd.py`: add GPU test + CPU reference.
+- Tests:
+  - `pytest -q tests/coop/test_mamba_selective_scan_fwd.py -k mamba`
+    - Result: 1 passed.

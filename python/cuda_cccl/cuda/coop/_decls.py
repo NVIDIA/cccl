@@ -278,8 +278,9 @@ class CoopTempStorageGetItemDecl(AbstractTemplate):
 #      ...
 #      coop.block.store(d_out, thread_data)
 #
-# We are able to infer the dtype during rewriting, obviating the need to
-# specify it explicitly to the ThreadData constructor.  Additionally, we
+# We are able to infer the dtype during rewriting in many cases, obviating
+# the need to specify it explicitly to the ThreadData constructor. If
+# inference is ambiguous, users can pass `dtype` directly. Additionally, we
 # can obtain the `items_per_thread` value from the ThreadData object,
 # obviating need to pass it explicitly to the load/store functions.
 
@@ -299,7 +300,7 @@ def typeof_thread_data(*args, **kwargs):
 
 @type_callable(coop.ThreadData)
 def type_thread_data(context):
-    def typer(items_per_thread):
+    def typer(items_per_thread, dtype=None):
         permitted = (types.Integer, types.IntegerLiteral)
         if not isinstance(items_per_thread, permitted):
             msg = (
@@ -307,6 +308,13 @@ def type_thread_data(context):
                 f"integer literal, got {items_per_thread}"
             )
             raise errors.TypingError(msg)
+
+        if dtype is not None:
+            try:
+                parse_dtype(dtype)
+            except Exception as exc:
+                msg = f"Invalid dtype for coop.ThreadData: {dtype}"
+                raise errors.TypingError(msg) from exc
 
         return thread_data_type
 
@@ -549,14 +557,22 @@ def validate_items_per_thread(obj, items_per_thread):
 
 def process_items_per_thread(obj, bound, arglist, two_phase, target_array=None):
     items_per_thread = bound.arguments.get("items_per_thread")
+    if target_array is not None:
+        if isinstance(target_array, (tuple, list)):
+            using_thread_data = any(
+                isinstance(array, ThreadDataType) for array in target_array
+            )
+        else:
+            using_thread_data = isinstance(target_array, ThreadDataType)
+    else:
+        using_thread_data = False
+
     if items_per_thread is None:
+        if using_thread_data:
+            return items_per_thread
         raise errors.TypingError(
             f"{obj.primitive_name} requires 'items_per_thread' to be specified"
         )
-    if target_array is not None:
-        using_thread_data = isinstance(target_array, ThreadDataType)
-    else:
-        using_thread_data = False
 
     if not using_thread_data:
         if not two_phase or items_per_thread is not None:
@@ -626,9 +642,21 @@ def validate_temp_storage(obj, temp_storage):
     Validate that *temp_storage* is either None or a device array.
     Raise TypingError if it is not.  Return None if the checks pass.
     """
-    if temp_storage is not None and not isinstance(temp_storage, types.Array):
+    if temp_storage is None:
+        return
+
+    if isinstance(temp_storage, TempStorageType):
+        return
+
+    if not isinstance(temp_storage, types.Array):
         raise errors.TypingError(
             f"{obj.primitive_name} requires 'temp_storage' to be a device array or None"
+        )
+
+    dtype = temp_storage.dtype
+    if not (isinstance(dtype, types.Integer) and dtype.bitwidth == 8):
+        raise errors.TypingError(
+            f"{obj.primitive_name} requires 'temp_storage' to be a uint8 array"
         )
 
 
@@ -881,26 +909,21 @@ class CoopBlockExchangeDecl(CoopAbstractTemplate, CoopDeclMixin):
 
         if exchange_type_value is None:
             if ranks is not None:
-                if not isinstance(ranks, (types.Array, ThreadDataType)):
+                if not isinstance(ranks, types.Array):
                     raise errors.TypingError(
-                        f"{self.primitive_name} requires 'ranks' to be a device or "
-                        "thread-data array"
+                        f"{self.primitive_name} requires 'ranks' to be a device array"
                     )
-                if isinstance(ranks, types.Array) and not isinstance(
-                    ranks.dtype, types.Integer
-                ):
+                if not isinstance(ranks.dtype, types.Integer):
                     raise errors.TypingError(
                         f"{self.primitive_name} requires 'ranks' to be an integer array"
                     )
             if valid_flags is not None:
-                if not isinstance(valid_flags, (types.Array, ThreadDataType)):
+                if not isinstance(valid_flags, types.Array):
                     raise errors.TypingError(
                         f"{self.primitive_name} requires 'valid_flags' to be a device "
-                        "or thread-data array"
+                        "array"
                     )
-                if isinstance(valid_flags, types.Array) and not isinstance(
-                    valid_flags.dtype, (types.Integer, types.Boolean)
-                ):
+                if not isinstance(valid_flags.dtype, (types.Integer, types.Boolean)):
                     raise errors.TypingError(
                         f"{self.primitive_name} requires 'valid_flags' to be a "
                         "boolean or integer array"
@@ -922,14 +945,11 @@ class CoopBlockExchangeDecl(CoopAbstractTemplate, CoopDeclMixin):
                     raise errors.TypingError(
                         f"{self.primitive_name} requires 'ranks' for scatter exchanges"
                     )
-                if not isinstance(ranks, (types.Array, ThreadDataType)):
+                if not isinstance(ranks, types.Array):
                     raise errors.TypingError(
-                        f"{self.primitive_name} requires 'ranks' to be a device or "
-                        "thread-data array"
+                        f"{self.primitive_name} requires 'ranks' to be a device array"
                     )
-                if isinstance(ranks, types.Array) and not isinstance(
-                    ranks.dtype, types.Integer
-                ):
+                if not isinstance(ranks.dtype, types.Integer):
                     raise errors.TypingError(
                         f"{self.primitive_name} requires 'ranks' to be an integer array"
                     )
@@ -945,14 +965,12 @@ class CoopBlockExchangeDecl(CoopAbstractTemplate, CoopDeclMixin):
                         f"{self.primitive_name} requires 'valid_flags' for "
                         "ScatterToStripedFlagged"
                     )
-                if not isinstance(valid_flags, (types.Array, ThreadDataType)):
+                if not isinstance(valid_flags, types.Array):
                     raise errors.TypingError(
                         f"{self.primitive_name} requires 'valid_flags' to be a device "
-                        "or thread-data array"
+                        "array"
                     )
-                if isinstance(valid_flags, types.Array) and not isinstance(
-                    valid_flags.dtype, (types.Integer, types.Boolean)
-                ):
+                if not isinstance(valid_flags.dtype, (types.Integer, types.Boolean)):
                     raise errors.TypingError(
                         f"{self.primitive_name} requires 'valid_flags' to be a "
                         "boolean or integer array"
@@ -1046,6 +1064,438 @@ class CoopBlockMergeSortDecl(CoopAbstractTemplate, CoopDeclMixin):
             raise errors.TypingError(
                 f"{self.primitive_name} does not support 'temp_storage' in single-phase"
             )
+
+        return signature(types.void, *arglist)
+
+
+# =============================================================================
+# Adjacent Difference
+# =============================================================================
+
+
+@register_global(coop.block.adjacent_difference)
+class CoopBlockAdjacentDifferenceDecl(CoopAbstractTemplate, CoopDeclMixin):
+    key = coop.block.adjacent_difference
+    primitive_name = "coop.block.adjacent_difference"
+    is_constructor = False
+    minimum_num_args = 2
+    default_difference_type = coop.block.BlockAdjacentDifferenceType.SubtractLeft
+
+    @staticmethod
+    def signature(
+        items: types.Array,
+        output_items: types.Array,
+        items_per_thread: int = None,
+        difference_op: Optional[Callable] = None,
+        block_adjacent_difference_type: coop.block.BlockAdjacentDifferenceType = None,
+        valid_items: Optional[int] = None,
+        tile_predecessor_item: Optional[Any] = None,
+        tile_successor_item: Optional[Any] = None,
+        temp_storage: Union[types.Array, TempStorageType] = None,
+    ):
+        return inspect.signature(CoopBlockAdjacentDifferenceDecl.signature).bind(
+            items,
+            output_items,
+            items_per_thread=items_per_thread,
+            difference_op=difference_op,
+            block_adjacent_difference_type=block_adjacent_difference_type,
+            valid_items=valid_items,
+            tile_predecessor_item=tile_predecessor_item,
+            tile_successor_item=tile_successor_item,
+            temp_storage=temp_storage,
+        )
+
+    def _validate_args_and_create_signature(self, bound, two_phase=False):
+        items = bound.arguments["items"]
+        output_items = bound.arguments["output_items"]
+
+        if not isinstance(items, (types.Array, ThreadDataType)):
+            raise errors.TypingError(
+                f"{self.primitive_name} requires 'items' to be a device or "
+                "thread-data array"
+            )
+        if not isinstance(output_items, (types.Array, ThreadDataType)):
+            raise errors.TypingError(
+                f"{self.primitive_name} requires 'output_items' to be a device or "
+                "thread-data array"
+            )
+
+        using_thread_data = isinstance(items, ThreadDataType) or isinstance(
+            output_items, ThreadDataType
+        )
+        if not using_thread_data:
+            if isinstance(items, types.Array) and isinstance(output_items, types.Array):
+                if items.dtype != output_items.dtype:
+                    raise errors.TypingError(
+                        f"{self.primitive_name} requires 'items' and "
+                        "'output_items' to have matching dtypes"
+                    )
+
+        items_per_thread = bound.arguments.get("items_per_thread")
+        if not using_thread_data:
+            if not two_phase or items_per_thread is not None:
+                items_per_thread = validate_items_per_thread(self, items_per_thread)
+
+        block_adjacent_difference_type = bound.arguments.get(
+            "block_adjacent_difference_type"
+        )
+        if block_adjacent_difference_type is None:
+            block_adjacent_difference_type = self.default_difference_type
+        if isinstance(block_adjacent_difference_type, enum.IntEnum):
+            if (
+                block_adjacent_difference_type
+                not in coop.block.BlockAdjacentDifferenceType
+            ):
+                raise errors.TypingError(
+                    f"{self.primitive_name} requires 'block_adjacent_difference_type' "
+                    "to be a BlockAdjacentDifferenceType enum value"
+                )
+        else:
+            if not isinstance(block_adjacent_difference_type, types.EnumMember):
+                raise errors.TypingError(
+                    f"{self.primitive_name} requires 'block_adjacent_difference_type' "
+                    "to be a BlockAdjacentDifferenceType enum value"
+                )
+            if (
+                block_adjacent_difference_type.instance_class
+                is not coop.block.BlockAdjacentDifferenceType
+            ):
+                raise errors.TypingError(
+                    f"{self.primitive_name} requires 'block_adjacent_difference_type' "
+                    "to be a BlockAdjacentDifferenceType enum value"
+                )
+
+        difference_op = bound.arguments.get("difference_op")
+        if difference_op is None:
+            raise errors.TypingError(
+                f"{self.primitive_name} requires 'difference_op' to be specified"
+            )
+
+        valid_items = bound.arguments.get("valid_items")
+        if valid_items is not None and not isinstance(
+            valid_items, (types.Integer, types.IntegerLiteral)
+        ):
+            raise errors.TypingError(
+                f"{self.primitive_name} requires 'valid_items' to be an integer"
+            )
+
+        tile_predecessor_item = bound.arguments.get("tile_predecessor_item")
+        tile_successor_item = bound.arguments.get("tile_successor_item")
+        if tile_predecessor_item is not None and tile_successor_item is not None:
+            raise errors.TypingError(
+                f"{self.primitive_name} accepts only one of 'tile_predecessor_item' "
+                "or 'tile_successor_item'"
+            )
+        if (
+            block_adjacent_difference_type
+            == coop.block.BlockAdjacentDifferenceType.SubtractLeft
+            and tile_successor_item is not None
+        ):
+            raise errors.TypingError(
+                f"{self.primitive_name} does not accept 'tile_successor_item' for "
+                "SubtractLeft"
+            )
+        if (
+            block_adjacent_difference_type
+            == coop.block.BlockAdjacentDifferenceType.SubtractRight
+            and tile_predecessor_item is not None
+        ):
+            raise errors.TypingError(
+                f"{self.primitive_name} does not accept 'tile_predecessor_item' for "
+                "SubtractRight"
+            )
+
+        temp_storage = bound.arguments.get("temp_storage")
+        validate_temp_storage(self, temp_storage)
+
+        arglist = [items, output_items]
+        if items_per_thread is not None:
+            arglist.append(items_per_thread)
+        arglist.append(difference_op)
+        if block_adjacent_difference_type is not None:
+            arglist.append(block_adjacent_difference_type)
+        if valid_items is not None:
+            arglist.append(valid_items)
+        if tile_predecessor_item is not None:
+            arglist.append(tile_predecessor_item)
+        if tile_successor_item is not None:
+            arglist.append(tile_successor_item)
+        if temp_storage is not None:
+            arglist.append(temp_storage)
+
+        return signature(types.void, *arglist)
+
+
+# =============================================================================
+# Shuffle
+# =============================================================================
+
+
+@register_global(coop.block.shuffle)
+class CoopBlockShuffleDecl(CoopAbstractTemplate, CoopDeclMixin):
+    key = coop.block.shuffle
+    primitive_name = "coop.block.shuffle"
+    is_constructor = False
+    minimum_num_args = 1
+    default_shuffle_type = coop.block.BlockShuffleType.Up
+
+    @staticmethod
+    def signature(
+        items: Union[types.Array, types.Number],
+        output_items: Union[types.Array, types.Number] = None,
+        items_per_thread: int = None,
+        block_shuffle_type: coop.block.BlockShuffleType = None,
+        distance: Optional[int] = None,
+        temp_storage: Union[types.Array, TempStorageType] = None,
+    ):
+        return inspect.signature(CoopBlockShuffleDecl.signature).bind(
+            items,
+            output_items=output_items,
+            items_per_thread=items_per_thread,
+            block_shuffle_type=block_shuffle_type,
+            distance=distance,
+            temp_storage=temp_storage,
+        )
+
+    def _validate_args_and_create_signature(self, bound, two_phase=False):
+        items = bound.arguments["items"]
+        output_items = bound.arguments.get("output_items")
+
+        items_is_array = isinstance(items, (types.Array, ThreadDataType))
+        items_is_scalar = isinstance(items, types.Number)
+
+        if not items_is_array and not items_is_scalar:
+            raise errors.TypingError(
+                f"{self.primitive_name} requires 'items' to be a scalar or array"
+            )
+
+        if items_is_scalar and output_items is not None:
+            raise errors.TypingError(
+                f"{self.primitive_name} does not accept 'output_items' for scalar "
+                "shuffle operations"
+            )
+
+        if items_is_array:
+            if not isinstance(output_items, (types.Array, ThreadDataType)):
+                raise errors.TypingError(
+                    f"{self.primitive_name} requires 'output_items' to be a device "
+                    "or thread-data array for Up/Down shuffles"
+                )
+
+            if isinstance(items, types.Array) and isinstance(output_items, types.Array):
+                if items.dtype != output_items.dtype:
+                    raise errors.TypingError(
+                        f"{self.primitive_name} requires 'items' and "
+                        "'output_items' to have matching dtypes"
+                    )
+
+        block_shuffle_type = bound.arguments.get("block_shuffle_type")
+        if block_shuffle_type is None:
+            if items_is_scalar:
+                block_shuffle_type = coop.block.BlockShuffleType.Offset
+            else:
+                block_shuffle_type = self.default_shuffle_type
+
+        if isinstance(block_shuffle_type, enum.IntEnum):
+            if block_shuffle_type not in coop.block.BlockShuffleType:
+                raise errors.TypingError(
+                    f"{self.primitive_name} requires 'block_shuffle_type' to be a "
+                    "BlockShuffleType enum value"
+                )
+        else:
+            if not isinstance(block_shuffle_type, types.EnumMember):
+                raise errors.TypingError(
+                    f"{self.primitive_name} requires 'block_shuffle_type' to be a "
+                    "BlockShuffleType enum value"
+                )
+            if block_shuffle_type.instance_class is not coop.block.BlockShuffleType:
+                raise errors.TypingError(
+                    f"{self.primitive_name} requires 'block_shuffle_type' to be a "
+                    "BlockShuffleType enum value"
+                )
+
+        array_shuffle = block_shuffle_type in (
+            coop.block.BlockShuffleType.Up,
+            coop.block.BlockShuffleType.Down,
+        )
+        scalar_shuffle = block_shuffle_type in (
+            coop.block.BlockShuffleType.Offset,
+            coop.block.BlockShuffleType.Rotate,
+        )
+
+        if items_is_scalar and not scalar_shuffle:
+            raise errors.TypingError(
+                f"{self.primitive_name} requires Offset or Rotate for scalar shuffles"
+            )
+        if items_is_array and not array_shuffle:
+            raise errors.TypingError(
+                f"{self.primitive_name} requires Up or Down for array shuffles"
+            )
+
+        items_per_thread = bound.arguments.get("items_per_thread")
+        if items_is_array:
+            if not isinstance(items, ThreadDataType) and not isinstance(
+                output_items, ThreadDataType
+            ):
+                if not two_phase or items_per_thread is not None:
+                    items_per_thread = validate_items_per_thread(self, items_per_thread)
+
+        distance = bound.arguments.get("distance")
+        if distance is not None and scalar_shuffle:
+            if not isinstance(distance, (types.Integer, types.IntegerLiteral)):
+                raise errors.TypingError(
+                    f"{self.primitive_name} requires 'distance' to be an integer"
+                )
+        if distance is not None and array_shuffle:
+            raise errors.TypingError(
+                f"{self.primitive_name} does not accept 'distance' for Up/Down shuffles"
+            )
+
+        temp_storage = bound.arguments.get("temp_storage")
+        validate_temp_storage(self, temp_storage)
+
+        if items_is_array:
+            arglist = [items, output_items]
+            if items_per_thread is not None:
+                arglist.append(items_per_thread)
+            arglist.append(block_shuffle_type)
+            if temp_storage is not None:
+                arglist.append(temp_storage)
+            return signature(types.void, *arglist)
+
+        arglist = [items]
+        if distance is not None:
+            arglist.append(distance)
+        arglist.append(block_shuffle_type)
+        if temp_storage is not None:
+            arglist.append(temp_storage)
+        return signature(items, *arglist)
+
+
+# =============================================================================
+# Discontinuity
+# =============================================================================
+
+
+@register_global(coop.block.discontinuity)
+class CoopBlockDiscontinuityDecl(CoopAbstractTemplate, CoopDeclMixin):
+    key = coop.block.discontinuity
+    primitive_name = "coop.block.discontinuity"
+    is_constructor = False
+    minimum_num_args = 2
+    default_discontinuity_type = coop.block.BlockDiscontinuityType.HEADS
+
+    @staticmethod
+    def signature(
+        items: types.Array,
+        head_flags: types.Array,
+        tail_flags: types.Array = None,
+        items_per_thread: int = None,
+        flag_op: Optional[Callable] = None,
+        block_discontinuity_type: coop.block.BlockDiscontinuityType = None,
+        temp_storage: Union[types.Array, TempStorageType] = None,
+    ):
+        return inspect.signature(CoopBlockDiscontinuityDecl.signature).bind(
+            items,
+            head_flags,
+            tail_flags=tail_flags,
+            items_per_thread=items_per_thread,
+            flag_op=flag_op,
+            block_discontinuity_type=block_discontinuity_type,
+            temp_storage=temp_storage,
+        )
+
+    def _validate_args_and_create_signature(self, bound, two_phase=False):
+        items = bound.arguments["items"]
+        head_flags = bound.arguments["head_flags"]
+        tail_flags = bound.arguments.get("tail_flags")
+
+        if not isinstance(items, (types.Array, ThreadDataType)):
+            raise errors.TypingError(
+                f"{self.primitive_name} requires 'items' to be a device or "
+                "thread-data array"
+            )
+        if not isinstance(head_flags, (types.Array, ThreadDataType)):
+            raise errors.TypingError(
+                f"{self.primitive_name} requires 'head_flags' to be a device or "
+                "thread-data array"
+            )
+        if tail_flags is not None and not isinstance(
+            tail_flags, (types.Array, ThreadDataType)
+        ):
+            raise errors.TypingError(
+                f"{self.primitive_name} requires 'tail_flags' to be a device or "
+                "thread-data array"
+            )
+
+        using_thread_data = isinstance(items, ThreadDataType) or isinstance(
+            head_flags, ThreadDataType
+        )
+        if tail_flags is not None and isinstance(tail_flags, ThreadDataType):
+            using_thread_data = True
+
+        items_per_thread = bound.arguments.get("items_per_thread")
+        if not using_thread_data:
+            if not two_phase or items_per_thread is not None:
+                items_per_thread = validate_items_per_thread(self, items_per_thread)
+
+        block_discontinuity_type = bound.arguments.get("block_discontinuity_type")
+        if block_discontinuity_type is None:
+            block_discontinuity_type = self.default_discontinuity_type
+        if isinstance(block_discontinuity_type, enum.IntEnum):
+            if block_discontinuity_type not in coop.block.BlockDiscontinuityType:
+                raise errors.TypingError(
+                    f"{self.primitive_name} requires 'block_discontinuity_type' "
+                    "to be a BlockDiscontinuityType enum value"
+                )
+        else:
+            if not isinstance(block_discontinuity_type, types.EnumMember):
+                raise errors.TypingError(
+                    f"{self.primitive_name} requires 'block_discontinuity_type' "
+                    "to be a BlockDiscontinuityType enum value"
+                )
+            if (
+                block_discontinuity_type.instance_class
+                is not coop.block.BlockDiscontinuityType
+            ):
+                raise errors.TypingError(
+                    f"{self.primitive_name} requires 'block_discontinuity_type' "
+                    "to be a BlockDiscontinuityType enum value"
+                )
+
+        if (
+            block_discontinuity_type
+            == coop.block.BlockDiscontinuityType.HEADS_AND_TAILS
+            and tail_flags is None
+        ):
+            raise errors.TypingError(
+                f"{self.primitive_name} requires 'tail_flags' for HEADS_AND_TAILS"
+            )
+
+        flag_op = bound.arguments.get("flag_op")
+        if flag_op is None:
+            raise errors.TypingError(
+                f"{self.primitive_name} requires 'flag_op' to be specified"
+            )
+
+        temp_storage = bound.arguments.get("temp_storage")
+        validate_temp_storage(self, temp_storage)
+
+        arglist = [items, head_flags]
+
+        if tail_flags is not None:
+            arglist.append(tail_flags)
+
+        if items_per_thread is not None:
+            arglist.append(items_per_thread)
+
+        arglist.append(flag_op)
+
+        if block_discontinuity_type is not None:
+            arglist.append(block_discontinuity_type)
+
+        if temp_storage is not None:
+            arglist.append(temp_storage)
 
         return signature(types.void, *arglist)
 
@@ -1169,6 +1619,116 @@ class CoopBlockRadixSortDescendingDecl(CoopAbstractTemplate, CoopDeclMixin):
             raise errors.TypingError(
                 f"{self.primitive_name} does not support 'temp_storage' in single-phase"
             )
+
+        return signature(types.void, *arglist)
+
+
+# =============================================================================
+# Radix Rank
+# =============================================================================
+
+
+@register_global(coop.block.radix_rank)
+class CoopBlockRadixRankDecl(CoopAbstractTemplate, CoopDeclMixin):
+    key = coop.block.radix_rank
+    primitive_name = "coop.block.radix_rank"
+    is_constructor = False
+    minimum_num_args = 3
+
+    @staticmethod
+    def signature(
+        items: types.Array,
+        ranks: types.Array,
+        items_per_thread: int = None,
+        begin_bit: Optional[int] = None,
+        end_bit: Optional[int] = None,
+        descending: Optional[bool] = None,
+        temp_storage: Union[types.Array, TempStorageType] = None,
+    ):
+        return inspect.signature(CoopBlockRadixRankDecl.signature).bind(
+            items,
+            ranks,
+            items_per_thread=items_per_thread,
+            begin_bit=begin_bit,
+            end_bit=end_bit,
+            descending=descending,
+            temp_storage=temp_storage,
+        )
+
+    def _validate_args_and_create_signature(self, bound, two_phase=False):
+        items = bound.arguments["items"]
+        ranks = bound.arguments["ranks"]
+
+        if not isinstance(items, (types.Array, ThreadDataType)):
+            raise errors.TypingError(
+                f"{self.primitive_name} requires 'items' to be a device or "
+                "thread-data array"
+            )
+        if not isinstance(ranks, (types.Array, ThreadDataType)):
+            raise errors.TypingError(
+                f"{self.primitive_name} requires 'ranks' to be a device or "
+                "thread-data array"
+            )
+
+        if isinstance(items, types.Array) and isinstance(ranks, types.Array):
+            if items.dtype.signed:
+                raise errors.TypingError(
+                    f"{self.primitive_name} requires unsigned integer item types"
+                )
+            if not isinstance(ranks.dtype, types.Integer):
+                raise errors.TypingError(
+                    f"{self.primitive_name} requires integer 'ranks' arrays"
+                )
+            if ranks.dtype.bitwidth != 32:
+                raise errors.TypingError(
+                    f"{self.primitive_name} requires int32 ranks arrays"
+                )
+
+        items_per_thread = bound.arguments.get("items_per_thread")
+        using_thread_data = isinstance(items, ThreadDataType) or isinstance(
+            ranks, ThreadDataType
+        )
+        if not using_thread_data:
+            if not two_phase or items_per_thread is not None:
+                items_per_thread = validate_items_per_thread(self, items_per_thread)
+
+        begin_bit = bound.arguments.get("begin_bit")
+        end_bit = bound.arguments.get("end_bit")
+        if begin_bit is None or end_bit is None:
+            raise errors.TypingError(
+                f"{self.primitive_name} requires begin_bit and end_bit"
+            )
+        if not isinstance(begin_bit, types.IntegerLiteral) or not isinstance(
+            end_bit, types.IntegerLiteral
+        ):
+            raise errors.TypingError(
+                f"{self.primitive_name} requires begin_bit and end_bit to be "
+                "integer literals"
+            )
+        if end_bit.literal_value <= begin_bit.literal_value:
+            raise errors.TypingError(
+                f"{self.primitive_name} requires end_bit > begin_bit"
+            )
+
+        descending = bound.arguments.get("descending")
+        if descending is not None and not isinstance(
+            descending, (types.Boolean, types.BooleanLiteral, bool)
+        ):
+            raise errors.TypingError(
+                f"{self.primitive_name} requires descending to be a boolean"
+            )
+
+        temp_storage = bound.arguments.get("temp_storage")
+        validate_temp_storage(self, temp_storage)
+
+        arglist = [items, ranks]
+        if items_per_thread is not None:
+            arglist.append(items_per_thread)
+        arglist.extend([begin_bit, end_bit])
+        if descending is not None:
+            arglist.append(descending)
+        if temp_storage is not None:
+            arglist.append(temp_storage)
 
         return signature(types.void, *arglist)
 
@@ -1829,12 +2389,12 @@ class CoopBlockScanDecl(CoopAbstractTemplate, CoopDeclMixin):
     algorithm_enum = coop.BlockScanAlgorithm
     default_algorithm = coop.BlockScanAlgorithm.RAKING
     is_constructor = False
-    minimum_num_args = 3
+    minimum_num_args = 1
 
     @staticmethod
     def signature(
-        src: types.Array,
-        dst: types.Array,
+        src: Union[types.Array, types.Number],
+        dst: Union[types.Array, types.Number] = None,
         items_per_thread: int = None,
         initial_value: Optional[Any] = None,
         mode: Literal["exclusive", "inclusive"] = "exclusive",
@@ -1865,55 +2425,86 @@ class CoopBlockScanDecl(CoopAbstractTemplate, CoopDeclMixin):
 
     def _validate_args_and_create_signature(self, bound, two_phase=False):
         src = bound.arguments["src"]
-        dst = bound.arguments["dst"]
-        if isinstance(src, (types.Array, ThreadDataType)) or isinstance(
-            dst, (types.Array, ThreadDataType)
-        ):
-            validate_src_dst(self, src, dst)
-        else:
-            scalar_types = (types.Number,)
-            if not isinstance(src, scalar_types) or not isinstance(dst, scalar_types):
-                raise errors.TypingError(
-                    f"{self.primitive_name} requires src and dst to be "
-                    "both arrays or both scalar numeric types"
-                )
-            if src != dst:
-                raise errors.TypingError(
-                    f"{self.primitive_name} requires src and dst to have "
-                    f"the same type (got {src} vs {dst})"
-                )
-        arglist = [src, dst]
+        dst = bound.arguments.get("dst")
 
-        process_items_per_thread(
-            self,
-            bound,
-            arglist,
-            two_phase,
-            target_array=src,
-        )
+        src_is_array = isinstance(src, (types.Array, ThreadDataType))
+        dst_is_array = isinstance(dst, (types.Array, ThreadDataType))
+        src_is_scalar = isinstance(src, types.Number)
+        dst_is_scalar = isinstance(dst, types.Number)
+
+        scalar_return = dst is None and src_is_scalar
+
+        if scalar_return:
+            arglist = [src]
+            items_per_thread = bound.arguments.get("items_per_thread")
+            if items_per_thread is not None:
+                maybe_literal = validate_items_per_thread(self, items_per_thread)
+                if maybe_literal is not None:
+                    items_per_thread = maybe_literal
+                if isinstance(items_per_thread, types.IntegerLiteral):
+                    if items_per_thread.literal_value != 1:
+                        raise errors.TypingError(
+                            f"{self.primitive_name} requires items_per_thread == 1 "
+                            "for scalar inputs"
+                        )
+                elif isinstance(items_per_thread, types.Integer):
+                    raise errors.TypingError(
+                        f"{self.primitive_name} requires items_per_thread to be a "
+                        "compile-time literal for scalar inputs"
+                    )
+                arglist.append(items_per_thread)
+        else:
+            if src_is_scalar or dst_is_scalar:
+                raise errors.TypingError(
+                    f"{self.primitive_name} requires scalar inputs to omit dst"
+                )
+            if not (src_is_array and dst_is_array):
+                raise errors.TypingError(
+                    f"{self.primitive_name} requires src and dst to be both arrays "
+                    "or src-only scalar input"
+                )
+            validate_src_dst(self, src, dst)
+            arglist = [src, dst]
+
+        if not scalar_return:
+            items_per_thread = bound.arguments.get("items_per_thread")
+            if not (two_phase and items_per_thread is None):
+                process_items_per_thread(
+                    self,
+                    bound,
+                    arglist,
+                    two_phase,
+                    target_array=(src, dst),
+                )
 
         mode = bound.arguments.get("mode")
         if mode is None:
-            mode = "exclusive"
+            if not two_phase:
+                mode = "exclusive"
         elif isinstance(mode, types.StringLiteral):
             mode = mode.literal_value
-        if mode not in ("inclusive", "exclusive"):
-            raise errors.TypingError(
-                f"Invalid mode '{mode}' for {self.primitive_name}; expected "
-                "'inclusive' or 'exclusive'"
-            )
-        arglist.append(mode)
+        if mode is not None:
+            if mode not in ("inclusive", "exclusive"):
+                raise errors.TypingError(
+                    f"Invalid mode '{mode}' for {self.primitive_name}; expected "
+                    "'inclusive' or 'exclusive'"
+                )
+            arglist.append(mode)
 
-        scan_op = bound.arguments.get("scan_op", "+")
-        if isinstance(scan_op, types.StringLiteral):
-            scan_op = scan_op.literal_value
-        try:
-            scan_op = ScanOp(scan_op)
-        except ValueError as e:
-            raise errors.TypingError(
-                f"Invalid scan_op '{scan_op}' for {self.primitive_name}: {e}"
-            )
-        arglist.append(scan_op)
+        scan_op = bound.arguments.get("scan_op")
+        if scan_op is None:
+            if not two_phase:
+                scan_op = "+"
+        if scan_op is not None:
+            if isinstance(scan_op, types.StringLiteral):
+                scan_op = scan_op.literal_value
+            try:
+                scan_op = ScanOp(scan_op)
+            except ValueError as e:
+                raise errors.TypingError(
+                    f"Invalid scan_op '{scan_op}' for {self.primitive_name}: {e}"
+                )
+            arglist.append(scan_op)
 
         block_prefix_callback_op = bound.arguments.get("block_prefix_callback_op")
         if block_prefix_callback_op is not None:
@@ -1934,10 +2525,8 @@ class CoopBlockScanDecl(CoopAbstractTemplate, CoopDeclMixin):
         if temp_storage is not None:
             arglist.append(temp_storage)
 
-        sig = signature(
-            block_scan_instance_type,
-            *arglist,
-        )
+        return_type = src if scalar_return else types.void
+        sig = signature(return_type, *arglist)
 
         return sig
 
@@ -1974,7 +2563,7 @@ class CoopBlockScanInstanceType(types.Type, CoopInstanceTypeMixin):
             algorithm=algorithm,
             temp_storage=temp_storage,
         )
-        return self.decl._validate_args_and_create_signature(bound)
+        return self.decl._validate_args_and_create_signature(bound, two_phase=True)
 
 
 block_scan_instance_type = CoopBlockScanInstanceType()

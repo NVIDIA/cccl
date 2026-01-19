@@ -2,6 +2,16 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+from ._block_adjacent_difference import (
+    BlockAdjacentDifference,
+    BlockAdjacentDifferenceType,
+    adjacent_difference,
+)
+from ._block_discontinuity import (
+    BlockDiscontinuity,
+    BlockDiscontinuityType,
+    discontinuity,
+)
 from ._block_exchange import (
     BlockExchange,
     BlockExchangeType,
@@ -18,6 +28,10 @@ from ._block_load_store import (
     store,
 )
 from ._block_merge_sort import BlockMergeSort, merge_sort_keys
+from ._block_radix_rank import (
+    BlockRadixRank,
+    radix_rank,
+)
 from ._block_radix_sort import (
     BlockRadixSort,
     BlockRadixSortDescending,
@@ -36,15 +50,29 @@ from ._block_scan import (
     inclusive_sum,
     scan,
 )
+from ._block_shuffle import (
+    BlockShuffle,
+    BlockShuffleType,
+    shuffle,
+)
 
 __all__ = [
     "BlockExchangeType",
+    "BlockDiscontinuityType",
+    "BlockAdjacentDifferenceType",
+    "BlockShuffleType",
     "BlockExchange",
+    "BlockDiscontinuity",
+    "BlockAdjacentDifference",
+    "BlockShuffle",
     "BlockHistogram",
     "BlockLoad",
     "BlockStore",
     "BlockRunLength",
+    "adjacent_difference",
+    "shuffle",
     "exchange",
+    "discontinuity",
     "exclusive_scan",
     "exclusive_sum",
     "histogram",
@@ -54,9 +82,11 @@ __all__ = [
     "merge_sort_keys",
     "radix_sort_keys",
     "radix_sort_keys_descending",
+    "radix_rank",
     "BlockMergeSort",
     "BlockRadixSort",
     "BlockRadixSortDescending",
+    "BlockRadixRank",
     "BlockReduce",
     "BlockSum",
     "reduce",

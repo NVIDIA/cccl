@@ -8,6 +8,7 @@
 import functools
 import inspect
 import itertools
+import struct
 import sys
 from collections import OrderedDict, defaultdict
 from dataclasses import dataclass
@@ -200,7 +201,12 @@ def register_kernel_extension(kernel, instance):
 
 VarType = Union[ir.Arg, ir.Const, ir.Expr, ir.FreeVar, ir.Global, ir.Var]
 RootVarType = Union[ir.Arg, ir.Const, ir.FreeVar, ir.Global]
-CallDefinitionType = Union["CallDefinition", "ArrayCallDefinition"]
+CallDefinitionType = Union[
+    "CallDefinition",
+    "ArrayCallDefinition",
+    "ThreadDataCallDefinition",
+    "TempStorageCallDefinition",
+]
 
 
 @dataclass
@@ -260,6 +266,19 @@ class ArrayCallDefinition(CallDefinition):
     array_alignment: Optional[int] = None
     is_coop_array: bool = False
     shape: Optional[int] = None
+
+
+@dataclass
+class ThreadDataCallDefinition(CallDefinition):
+    items_per_thread: Optional[int] = None
+    dtype: Optional[Any] = None
+
+
+@dataclass
+class TempStorageCallDefinition(CallDefinition):
+    size_in_bytes: Optional[int] = None
+    alignment: Optional[int] = None
+    auto_sync: Optional[bool] = None
 
 
 @dataclass
@@ -565,16 +584,117 @@ def get_root_definition(
                             or func_modname == NUMBA_CUDA_ARRAY_MODULE_NAME
                         )
                     )
+
+                def _resolve_arg_value(arg):
+                    if arg is None:
+                        return None
+                    if isinstance(arg, ir.Const):
+                        return arg.value
+                    if not isinstance(arg, ir.Var):
+                        return None
+                    arg_root = rewriter.get_root_def(arg)
+                    if arg_root is None:
+                        raise RuntimeError(
+                            f"Expected root definition for {arg!r}, but got None."
+                        )
+                    if arg_root.attr_instance is not None:
+                        return arg_root.attr_instance
+                    return arg_root.instance
+
                 if not is_array:
-                    # Normal function, create a CallDefinition.
-                    defn = CallDefinition(
-                        instr=instr,
-                        func=func,
-                        func_name=func.name,
-                        rewriter=rewriter,
-                        assign=assign,
-                        order=-1,
+                    func_obj = None
+                    func_def = func_ir.get_definition(func.name)
+                    if isinstance(func_def, (ir.Global, ir.FreeVar)):
+                        func_obj = func_def.value
+
+                    from ._types import TempStorage as TempStorageClass
+                    from ._types import ThreadData as ThreadDataClass
+
+                    is_thread_data = (
+                        py_func is ThreadDataClass or func_obj is ThreadDataClass
                     )
+                    is_temp_storage = (
+                        py_func is TempStorageClass or func_obj is TempStorageClass
+                    )
+
+                    instr_args = instr.args
+                    instr_kws = None
+                    if isinstance(instr.kws, (list, tuple)):
+                        instr_kws = dict(instr.kws)
+                    elif isinstance(instr.kws, dict):
+                        assert False
+                    if instr_kws is None:
+                        instr_kws = {}
+
+                    if is_thread_data:
+                        items_arg = (
+                            instr_args[0]
+                            if instr_args
+                            else instr_kws.get("items_per_thread")
+                        )
+                        dtype_arg = None
+                        if len(instr_args) > 1:
+                            dtype_arg = instr_args[1]
+                        if "dtype" in instr_kws:
+                            dtype_arg = instr_kws.get("dtype")
+
+                        items_per_thread = _resolve_arg_value(items_arg)
+                        dtype_value = _resolve_arg_value(dtype_arg)
+
+                        defn = ThreadDataCallDefinition(
+                            instr=instr,
+                            func=func,
+                            func_name=func.name,
+                            rewriter=rewriter,
+                            assign=assign,
+                            order=-1,
+                            items_per_thread=items_per_thread,
+                            dtype=dtype_value,
+                        )
+                    elif is_temp_storage:
+                        size_arg = (
+                            instr_args[0]
+                            if instr_args
+                            else instr_kws.get("size_in_bytes")
+                        )
+                        alignment_arg = None
+                        auto_sync_arg = None
+                        if len(instr_args) > 1:
+                            alignment_arg = instr_args[1]
+                        if len(instr_args) > 2:
+                            auto_sync_arg = instr_args[2]
+                        if "alignment" in instr_kws:
+                            alignment_arg = instr_kws.get("alignment")
+                        if "auto_sync" in instr_kws:
+                            auto_sync_arg = instr_kws.get("auto_sync")
+
+                        size_in_bytes = _resolve_arg_value(size_arg)
+                        alignment = _resolve_arg_value(alignment_arg)
+                        auto_sync = _resolve_arg_value(auto_sync_arg)
+                        if auto_sync is None:
+                            auto_sync = True
+
+                        defn = TempStorageCallDefinition(
+                            instr=instr,
+                            func=func,
+                            func_name=func.name,
+                            rewriter=rewriter,
+                            assign=assign,
+                            order=-1,
+                            size_in_bytes=size_in_bytes,
+                            alignment=alignment,
+                            auto_sync=auto_sync,
+                        )
+                    else:
+                        # Normal function, create a CallDefinition.
+                        defn = CallDefinition(
+                            instr=instr,
+                            func=func,
+                            func_name=func.name,
+                            rewriter=rewriter,
+                            assign=assign,
+                            order=-1,
+                        )
                 else:
                     calltype = calltypes[instr]
                     array_type = calltype.return_type
@@ -619,7 +739,11 @@ def get_root_definition(
                         # shape directly from the shape_root's `instance`
                         # attribute.  It'll either be a literal int or tuple,
                         # or a DeviceNDArray instance.
-                        shape = shape_root.instance
+                        shape = (
+                            shape_root.attr_instance
+                            if shape_root.attr_instance is not None
+                            else shape_root.instance
+                        )
                         if isinstance(shape, DeviceNDArray):
                             # We need to go one level deeper to get the shape
                             # if we're dealing with a device array.
@@ -766,8 +890,12 @@ class Primitive(IntEnum):
     HISTOGRAM__COMPOSITE = auto()
     RUN_LENGTH = auto()
     RUN_LENGTH__DECODE = auto()
+    DISCONTINUITY = auto()
+    ADJACENT_DIFFERENCE = auto()
+    SHUFFLE = auto()
     MERGE_SORT = auto()
     RADIX_SORT = auto()
+    RADIX_RANK = auto()
 
 
 class Disposition(IntEnum):
@@ -1095,6 +1223,8 @@ class CoopNode:
             return Primitive.MERGE_SORT
         elif "radix_sort" in name:
             return Primitive.RADIX_SORT
+        elif "radix_rank" in name:
+            return Primitive.RADIX_RANK
         elif "scan" in name:
             return Primitive.SCAN
         elif "reduce" in name:
@@ -1113,6 +1243,12 @@ class CoopNode:
                 return Primitive.RUN_LENGTH__DECODE
             elif name.endswith("run_length"):
                 return Primitive.RUN_LENGTH
+        elif "discontinuity" in name:
+            return Primitive.DISCONTINUITY
+        elif "adjacent_difference" in name:
+            return Primitive.ADJACENT_DIFFERENCE
+        elif "shuffle" in name:
+            return Primitive.SHUFFLE
 
         raise RuntimeError(f"Unknown primitive: {self!r}")
 
@@ -1400,12 +1536,18 @@ class CoopLoadStoreNode(CoopNode):
 
         array_root = rewriter.get_root_def(items_per_thread_array_var)
         array_leaf = array_root.leaf_constructor_call
-        if not isinstance(array_leaf, ArrayCallDefinition):
+        if isinstance(array_leaf, ArrayCallDefinition):
+            items_per_thread = array_leaf.shape
+        elif isinstance(array_leaf, ThreadDataCallDefinition):
+            items_per_thread = rewriter.get_thread_data_info(
+                items_per_thread_array_var
+            ).items_per_thread
+        else:
             raise RuntimeError(
-                f"Expected leaf constructor call to be an ArrayCallDefinition,"
-                f" but got {array_leaf!r} for {items_per_thread_array_var!r}"
+                f"Expected leaf constructor call to be an ArrayCallDefinition or "
+                f"ThreadDataCallDefinition, but got {array_leaf!r} for "
+                f"{items_per_thread_array_var!r}"
             )
-        items_per_thread = array_leaf.shape
         assert isinstance(items_per_thread, int), (
             f"Expected items_per_thread to be an int, but got {items_per_thread!r}"
         )
@@ -1419,9 +1561,61 @@ class CoopLoadStoreNode(CoopNode):
                     f"but got {items_per_thread_kwarg} for {self!r}"
                 )
 
-        arg_ty = self.typemap[src.name]
-        assert isinstance(arg_ty, types.Array)
-        dtype = arg_ty.dtype
+        src_ty = self.typemap[src.name]
+        dst_ty = self.typemap[dst.name]
+        try:
+            from ._decls import TempStorageType, ThreadDataType
+        except Exception:
+            ThreadDataType = None
+            TempStorageType = None
+
+        src_is_thread = ThreadDataType is not None and isinstance(
+            src_ty, ThreadDataType
+        )
+        dst_is_thread = ThreadDataType is not None and isinstance(
+            dst_ty, ThreadDataType
+        )
+        if src_is_thread and dst_is_thread:
+            raise RuntimeError(
+                "coop.block.load/store requires at least one device array to "
+                "infer dtype when using ThreadData"
+            )
+
+        if src_is_thread:
+            if not isinstance(dst_ty, types.Array):
+                raise RuntimeError(
+                    "coop.block.store requires destination array when source is "
+                    "ThreadData"
+                )
+            dtype = dst_ty.dtype
+            thread_info = rewriter.get_thread_data_info(src)
+            if thread_info.dtype != dtype:
+                raise RuntimeError(
+                    "ThreadData dtype does not match destination array dtype"
+                )
+        elif dst_is_thread:
+            if not isinstance(src_ty, types.Array):
+                raise RuntimeError(
+                    "coop.block.load requires source array when destination is "
+                    "ThreadData"
+                )
+            dtype = src_ty.dtype
+            thread_info = rewriter.get_thread_data_info(dst)
+            if thread_info.dtype != dtype:
+                raise RuntimeError("ThreadData dtype does not match source array dtype")
+        else:
+            if not isinstance(src_ty, types.Array):
+                raise RuntimeError(
+                    "coop.block.load/store requires array inputs in single-phase"
+                )
+            dtype = src_ty.dtype
+
+        if ThreadDataType is not None:
+            array_ty = types.Array(dtype, 1, "C")
+            for idx, arg in enumerate(runtime_args):
+                arg_ty = self.typemap.get(arg.name)
+                if isinstance(arg_ty, ThreadDataType):
+                    runtime_arg_types[idx] = array_ty
 
         # algorithm is always optional.
         algorithm_id = self.get_arg_value_safe("algorithm")
@@ -1440,12 +1634,18 @@ class CoopLoadStoreNode(CoopNode):
 
         temp_storage = self.bound.arguments.get("temp_storage")
         temp_storage_ty = None
+        temp_storage_info = None
         if temp_storage is not None:
             assert isinstance(temp_storage, ir.Var)
             temp_storage_ty = self.typemap[temp_storage.name]
-            runtime_args.append(temp_storage)
-            runtime_arg_types.append(temp_storage_ty)
-            runtime_arg_names.append("temp_storage")
+            if TempStorageType is not None and isinstance(
+                temp_storage_ty, TempStorageType
+            ):
+                temp_storage_info = rewriter.get_temp_storage_info(temp_storage)
+                temp_storage_ty = types.Array(types.uint8, 1, "C")
+            runtime_args.insert(0, temp_storage)
+            runtime_arg_types.insert(0, temp_storage_ty)
+            runtime_arg_names.insert(0, "temp_storage")
 
         self.dtype = dtype
         self.items_per_thread = items_per_thread
@@ -1454,6 +1654,7 @@ class CoopLoadStoreNode(CoopNode):
         self.src = src
         self.dst = dst
         self.temp_storage = temp_storage
+        self.temp_storage_info = temp_storage_info
         self.runtime_args = runtime_args
         self.runtime_arg_types = runtime_arg_types
         self.runtime_arg_names = runtime_arg_names
@@ -1569,8 +1770,11 @@ class CoopLoadStoreNode(CoopNode):
         if existing:
             raise RuntimeError(f"Variable {g_var.name} already exists in typemap.")
         self.typemap[g_var.name] = func_ty
+        instrs = [g_assign, new_assign]
+        if self.temp_storage_info is not None and self.temp_storage_info.auto_sync:
+            instrs.extend(rewriter.emit_syncthreads_call(scope, expr.loc))
 
-        return (g_assign, new_assign)
+        return tuple(instrs)
 
     def rewrite_two_phase(self, rewriter):
         # N.B. I tried valiantly to avoid duplicating the code from
@@ -1702,6 +1906,9 @@ class CoopBlockExchangeNode(CoopNode, CoopNodeMixin):
             return False
 
         self.threads_per_block = launch_config.blockdim
+        instance = self.two_phase_instance if self.is_two_phase else None
+        if instance is not None:
+            self.instance = instance
 
         runtime_args = []
         runtime_arg_types = []
@@ -1719,54 +1926,93 @@ class CoopBlockExchangeNode(CoopNode, CoopNodeMixin):
         valid_flags = bound.get("valid_flags")
 
         items_ty = self.typemap[items.name]
-        if not isinstance(items_ty, types.Array):
-            raise RuntimeError("coop.block.exchange requires items to be an array")
+        try:
+            from ._decls import ThreadDataType
+        except Exception:
+            ThreadDataType = None
+
+        items_is_thread = ThreadDataType is not None and isinstance(
+            items_ty, ThreadDataType
+        )
+        if not items_is_thread and not isinstance(items_ty, types.Array):
+            raise RuntimeError(
+                "coop.block.exchange requires items to be an array or ThreadData"
+            )
 
         output_items_ty = None
+        output_is_thread = False
         if output_items is not None:
             if not isinstance(output_items, ir.Var):
                 raise RuntimeError(
                     "coop.block.exchange output_items must be a variable"
                 )
             output_items_ty = self.typemap[output_items.name]
-            if not isinstance(output_items_ty, types.Array):
+            output_is_thread = ThreadDataType is not None and isinstance(
+                output_items_ty, ThreadDataType
+            )
+            if not output_is_thread and not isinstance(output_items_ty, types.Array):
                 raise RuntimeError(
-                    "coop.block.exchange requires output_items to be an array"
-                )
-            if items_ty.dtype != output_items_ty.dtype:
-                raise RuntimeError(
-                    "coop.block.exchange requires items and output_items to have "
-                    "the same dtype"
+                    "coop.block.exchange requires output_items to be an array "
+                    "or ThreadData"
                 )
 
         items_root = rewriter.get_root_def(items)
         items_leaf = items_root.leaf_constructor_call
-        if not isinstance(items_leaf, ArrayCallDefinition):
+        if items_is_thread:
+            items_per_thread = rewriter.get_thread_data_info(items).items_per_thread
+        elif not isinstance(items_leaf, ArrayCallDefinition):
             raise RuntimeError(
                 f"Expected items constructor call to be an ArrayCallDefinition, "
                 f"but got {items_leaf!r} for {items!r}"
             )
-        items_per_thread = items_leaf.shape
+        else:
+            items_per_thread = items_leaf.shape
         assert isinstance(items_per_thread, int), (
             f"Expected items_per_thread to be an int, got {items_per_thread!r}"
         )
 
         if output_items is not None:
-            output_root = rewriter.get_root_def(output_items)
-            output_leaf = output_root.leaf_constructor_call
-            if not isinstance(output_leaf, ArrayCallDefinition):
-                raise RuntimeError(
-                    "Expected output_items constructor call to be an "
-                    f"ArrayCallDefinition, but got {output_leaf!r} for "
-                    f"{output_items!r}"
-                )
-            if output_leaf.shape != items_per_thread:
-                raise RuntimeError(
-                    "coop.block.exchange requires items and output_items to "
-                    "have the same items_per_thread"
-                )
+            if output_is_thread:
+                output_info = rewriter.get_thread_data_info(output_items)
+                if output_info.items_per_thread != items_per_thread:
+                    raise RuntimeError(
+                        "coop.block.exchange requires items and output_items to "
+                        "have the same items_per_thread"
+                    )
+            else:
+                output_root = rewriter.get_root_def(output_items)
+                output_leaf = output_root.leaf_constructor_call
+                if not isinstance(output_leaf, ArrayCallDefinition):
+                    raise RuntimeError(
+                        "Expected output_items constructor call to be an "
+                        f"ArrayCallDefinition, but got {output_leaf!r} for "
+                        f"{output_items!r}"
+                    )
+                if output_leaf.shape != items_per_thread:
+                    raise RuntimeError(
+                        "coop.block.exchange requires items and output_items to "
+                        "have the same items_per_thread"
+                    )
 
-        dtype = items_ty.dtype
+        if items_is_thread:
+            dtype = rewriter.get_thread_data_info(items).dtype
+        else:
+            dtype = items_ty.dtype
+
+        if output_items is not None:
+            if output_is_thread:
+                output_info = rewriter.get_thread_data_info(output_items)
+                if output_info.dtype != dtype:
+                    raise RuntimeError(
+                        "coop.block.exchange requires items and output_items to "
+                        "have the same dtype"
+                    )
+            else:
+                if output_items_ty.dtype != dtype:
+                    raise RuntimeError(
+                        "coop.block.exchange requires items and output_items to "
+                        "have the same dtype"
+                    )
         methods = getattr(dtype, "methods", None)
         if methods is not None and not methods:
             methods = None
@@ -1900,6 +2146,13 @@ class CoopBlockExchangeNode(CoopNode, CoopNodeMixin):
                 "coop.block.exchange does not support temp_storage in single-phase"
             )
 
+        if ThreadDataType is not None:
+            array_ty = types.Array(dtype, 1, "C")
+            if items_is_thread:
+                items_ty = array_ty
+            if output_items is not None and output_is_thread:
+                output_items_ty = array_ty
+
         runtime_args.append(items)
         runtime_arg_types.append(items_ty)
         runtime_arg_names.append("items")
@@ -1938,7 +2191,934 @@ class CoopBlockExchangeNode(CoopNode, CoopNodeMixin):
 
     def rewrite(self, rewriter):
         rd = self.rewrite_details
-        return (rd.g_assign, rd.new_assign)
+        instrs = [rd.g_assign, rd.new_assign]
+        if self.temp_storage_info is not None and self.temp_storage_info.auto_sync:
+            instrs.extend(
+                rewriter.emit_syncthreads_call(self.instr.target.scope, self.expr.loc)
+            )
+        return tuple(instrs)
+
+    @cached_property
+    def rewrite_details(self):
+        return self.do_rewrite()
+
+
+@dataclass
+class CoopBlockShuffleNode(CoopNode, CoopNodeMixin):
+    primitive_name = "coop.block.shuffle"
+    disposition = Disposition.ONE_SHOT
+
+    def refine_match(self, rewriter):
+        launch_config = rewriter.launch_config
+        if launch_config is None:
+            return False
+
+        self.threads_per_block = launch_config.blockdim
+        instance = self.two_phase_instance if self.is_two_phase else None
+        if instance is not None:
+            self.instance = instance
+
+        runtime_args = []
+        runtime_arg_types = []
+        runtime_arg_names = []
+
+        bound = self.bound.arguments
+        items = bound.get("items")
+        output_items = bound.get("output_items")
+
+        if items is None:
+            raise RuntimeError("coop.block.shuffle requires items")
+        if not isinstance(items, ir.Var):
+            raise RuntimeError("coop.block.shuffle items must be a variable")
+
+        items_ty = self.typemap[items.name]
+
+        try:
+            from ._decls import TempStorageType, ThreadDataType
+        except Exception:
+            TempStorageType = None
+            ThreadDataType = None
+
+        items_is_thread = ThreadDataType is not None and isinstance(
+            items_ty, ThreadDataType
+        )
+        items_is_array = items_is_thread or isinstance(items_ty, types.Array)
+        items_is_scalar = isinstance(items_ty, types.Number)
+
+        if items_is_array:
+            if output_items is None:
+                raise RuntimeError(
+                    "coop.block.shuffle requires output_items for Up/Down shuffles"
+                )
+            if not isinstance(output_items, ir.Var):
+                raise RuntimeError("coop.block.shuffle output_items must be a variable")
+            output_items_ty = self.typemap[output_items.name]
+            output_is_thread = ThreadDataType is not None and isinstance(
+                output_items_ty, ThreadDataType
+            )
+            if not output_is_thread and not isinstance(output_items_ty, types.Array):
+                raise RuntimeError(
+                    "coop.block.shuffle output_items must be an array or ThreadData"
+                )
+
+            def _infer_items_per_thread(var, is_thread):
+                if is_thread:
+                    return rewriter.get_thread_data_info(var).items_per_thread
+                root = rewriter.get_root_def(var)
+                leaf = root.leaf_constructor_call
+                if not isinstance(leaf, ArrayCallDefinition):
+                    raise RuntimeError(
+                        f"Expected array constructor call for {var!r}, got {leaf!r}"
+                    )
+                return leaf.shape
+
+            items_per_thread = _infer_items_per_thread(items, items_is_thread)
+            output_items_per_thread = _infer_items_per_thread(
+                output_items, output_is_thread
+            )
+            if items_per_thread != output_items_per_thread:
+                raise RuntimeError(
+                    "coop.block.shuffle requires items and output_items to have the "
+                    "same items_per_thread"
+                )
+            if not isinstance(items_per_thread, int):
+                raise RuntimeError(
+                    f"Expected items_per_thread to be an int, got {items_per_thread!r}"
+                )
+
+            items_per_thread_kwarg = self.get_arg_value_safe("items_per_thread")
+            if items_per_thread_kwarg is not None:
+                if items_per_thread_kwarg != items_per_thread:
+                    raise RuntimeError(
+                        "coop.block.shuffle items_per_thread must match the "
+                        f"array shape ({items_per_thread}); got {items_per_thread_kwarg}"
+                    )
+
+            if items_is_thread:
+                item_dtype = rewriter.get_thread_data_info(items).dtype
+            else:
+                item_dtype = items_ty.dtype
+
+            if output_is_thread:
+                output_dtype = rewriter.get_thread_data_info(output_items).dtype
+            else:
+                output_dtype = output_items_ty.dtype
+
+            if output_dtype != item_dtype:
+                raise RuntimeError(
+                    "coop.block.shuffle requires output_items to have the same "
+                    "dtype as items"
+                )
+
+            methods = getattr(item_dtype, "methods", None)
+            if methods is not None and not methods:
+                methods = None
+
+            block_shuffle_type = self.get_arg_value_safe("block_shuffle_type")
+            if block_shuffle_type is None:
+                from cuda.coop.block._block_shuffle import BlockShuffleType
+
+                block_shuffle_type = BlockShuffleType.Up
+            else:
+                from cuda.coop.block._block_shuffle import BlockShuffleType
+
+                if isinstance(block_shuffle_type, types.EnumMember):
+                    literal_value = getattr(block_shuffle_type, "literal_value", None)
+                    if literal_value is None:
+                        literal_value = block_shuffle_type.value
+                    block_shuffle_type = block_shuffle_type.instance_class(
+                        literal_value
+                    )
+                if isinstance(block_shuffle_type, int):
+                    block_shuffle_type = BlockShuffleType(block_shuffle_type)
+                if block_shuffle_type not in BlockShuffleType:
+                    raise RuntimeError(
+                        "coop.block.shuffle requires block_shuffle_type to be a "
+                        "BlockShuffleType enum value"
+                    )
+
+            if block_shuffle_type not in (
+                BlockShuffleType.Up,
+                BlockShuffleType.Down,
+            ):
+                raise RuntimeError(
+                    "coop.block.shuffle requires Up or Down for array shuffles"
+                )
+
+            distance = self.get_arg_value_safe("distance")
+            if distance is not None:
+                raise RuntimeError(
+                    "coop.block.shuffle does not accept distance for Up/Down"
+                )
+
+            temp_storage = bound.get("temp_storage")
+            temp_storage_info = None
+            if temp_storage is not None:
+                if not isinstance(temp_storage, ir.Var):
+                    raise RuntimeError(
+                        "coop.block.shuffle temp_storage must be provided as a variable"
+                    )
+                temp_storage_ty = self.typemap[temp_storage.name]
+                if TempStorageType is not None and isinstance(
+                    temp_storage_ty, TempStorageType
+                ):
+                    temp_storage_info = rewriter.get_temp_storage_info(temp_storage)
+                    temp_storage_ty = types.Array(types.uint8, 1, "C")
+                runtime_args.insert(0, temp_storage)
+                runtime_arg_types.insert(0, temp_storage_ty)
+                runtime_arg_names.insert(0, "temp_storage")
+
+            array_items_ty = types.Array(item_dtype, 1, "C")
+            if items_is_thread:
+                items_ty = array_items_ty
+            if output_is_thread:
+                output_items_ty = array_items_ty
+
+            runtime_args.extend([items, output_items])
+            runtime_arg_types.extend([items_ty, output_items_ty])
+            runtime_arg_names.extend(["items", "output_items"])
+
+            self.return_type = types.void
+            self.items_per_thread = items_per_thread
+            self.block_shuffle_type = block_shuffle_type
+            self.distance = None
+            self.temp_storage_info = temp_storage_info
+            self.temp_storage = temp_storage
+            self.item_dtype = item_dtype
+            self.methods = methods
+
+            self.impl_kwds = {
+                "block_shuffle_type": block_shuffle_type,
+                "dtype": item_dtype,
+                "threads_per_block": self.threads_per_block,
+                "items_per_thread": items_per_thread,
+                "distance": None,
+                "methods": methods,
+                "unique_id": self.unique_id,
+                "temp_storage": temp_storage,
+                "node": self,
+            }
+
+            self.runtime_args = runtime_args
+            self.runtime_arg_types = runtime_arg_types
+            self.runtime_arg_names = runtime_arg_names
+            return
+
+        if not items_is_scalar:
+            raise RuntimeError(
+                "coop.block.shuffle requires items to be a scalar or array"
+            )
+
+        block_shuffle_type = self.get_arg_value_safe("block_shuffle_type")
+        if block_shuffle_type is None:
+            from cuda.coop.block._block_shuffle import BlockShuffleType
+
+            block_shuffle_type = BlockShuffleType.Offset
+        else:
+            from cuda.coop.block._block_shuffle import BlockShuffleType
+
+            if isinstance(block_shuffle_type, types.EnumMember):
+                literal_value = getattr(block_shuffle_type, "literal_value", None)
+                if literal_value is None:
+                    literal_value = block_shuffle_type.value
+                block_shuffle_type = block_shuffle_type.instance_class(literal_value)
+            if isinstance(block_shuffle_type, int):
+                block_shuffle_type = BlockShuffleType(block_shuffle_type)
+            if block_shuffle_type not in BlockShuffleType:
+                raise RuntimeError(
+                    "coop.block.shuffle requires block_shuffle_type to be a "
+                    "BlockShuffleType enum value"
+                )
+
+        if block_shuffle_type not in (
+            BlockShuffleType.Offset,
+            BlockShuffleType.Rotate,
+        ):
+            raise RuntimeError(
+                "coop.block.shuffle requires Offset or Rotate for scalar shuffles"
+            )
+
+        if output_items is not None:
+            raise RuntimeError(
+                "coop.block.shuffle does not accept output_items for scalar shuffles"
+            )
+
+        items_per_thread_kwarg = self.get_arg_value_safe("items_per_thread")
+        if items_per_thread_kwarg is not None:
+            raise RuntimeError(
+                "coop.block.shuffle does not accept items_per_thread for scalar shuffles"
+            )
+
+        distance = bound.get("distance")
+        distance_var = None
+        if distance is not None:
+            if isinstance(distance, ir.Var):
+                distance_var = distance
+            elif isinstance(distance, ir.Const):
+                distance_value = distance.value
+            else:
+                distance_value = distance
+        else:
+            distance_value = 1
+
+        if distance_var is None:
+            scope = self.instr.target.scope
+            const_name = f"$block_shuffle_distance_{self.unique_id}"
+            const_var = ir.Var(scope, const_name, self.expr.loc)
+            if const_name in self.typemap:
+                raise RuntimeError(f"Variable {const_name} already exists in typemap.")
+            const_assign = ir.Assign(
+                value=ir.Const(int(distance_value), self.expr.loc),
+                target=const_var,
+                loc=self.expr.loc,
+            )
+            self.typemap[const_name] = types.int32
+            self.distance_assign = const_assign
+            distance_var = const_var
+
+        temp_storage = bound.get("temp_storage")
+        temp_storage_info = None
+        if temp_storage is not None:
+            if not isinstance(temp_storage, ir.Var):
+                raise RuntimeError(
+                    "coop.block.shuffle temp_storage must be provided as a variable"
+                )
+            temp_storage_ty = self.typemap[temp_storage.name]
+            if TempStorageType is not None and isinstance(
+                temp_storage_ty, TempStorageType
+            ):
+                temp_storage_info = rewriter.get_temp_storage_info(temp_storage)
+                temp_storage_ty = types.Array(types.uint8, 1, "C")
+            runtime_args.insert(0, temp_storage)
+            runtime_arg_types.insert(0, temp_storage_ty)
+            runtime_arg_names.insert(0, "temp_storage")
+
+        runtime_args.append(items)
+        runtime_arg_types.append(items_ty)
+        runtime_arg_names.append("items")
+
+        runtime_args.append(distance_var)
+        runtime_arg_types.append(types.int32)
+        runtime_arg_names.append("distance")
+
+        self.return_type = items_ty
+        self.items_per_thread = None
+        self.block_shuffle_type = block_shuffle_type
+        self.distance = distance
+        self.temp_storage_info = temp_storage_info
+        self.temp_storage = temp_storage
+        self.item_dtype = items_ty
+        self.methods = None
+
+        self.impl_kwds = {
+            "block_shuffle_type": block_shuffle_type,
+            "dtype": items_ty,
+            "threads_per_block": self.threads_per_block,
+            "items_per_thread": None,
+            "distance": distance,
+            "methods": None,
+            "unique_id": self.unique_id,
+            "temp_storage": temp_storage,
+            "node": self,
+        }
+
+        self.runtime_args = runtime_args
+        self.runtime_arg_types = runtime_arg_types
+        self.runtime_arg_names = runtime_arg_names
+
+    def rewrite(self, rewriter):
+        rd = self.rewrite_details
+        instrs = []
+        distance_assign = getattr(self, "distance_assign", None)
+        if distance_assign is not None:
+            instrs.append(distance_assign)
+        instrs.extend([rd.g_assign, rd.new_assign])
+        if self.temp_storage_info is not None and self.temp_storage_info.auto_sync:
+            instrs.extend(
+                rewriter.emit_syncthreads_call(self.instr.target.scope, self.expr.loc)
+            )
+        return tuple(instrs)
+
+    @cached_property
+    def rewrite_details(self):
+        return self.do_rewrite()
+
+
+@dataclass
+class CoopBlockAdjacentDifferenceNode(CoopNode, CoopNodeMixin):
+    primitive_name = "coop.block.adjacent_difference"
+    disposition = Disposition.ONE_SHOT
+
+    def refine_match(self, rewriter):
+        launch_config = rewriter.launch_config
+        if launch_config is None:
+            return False
+
+        self.threads_per_block = launch_config.blockdim
+        instance = self.two_phase_instance if self.is_two_phase else None
+        if instance is not None:
+            self.instance = instance
+
+        runtime_args = []
+        runtime_arg_types = []
+        runtime_arg_names = []
+
+        bound = self.bound.arguments
+        items = bound.get("items")
+        output_items = bound.get("output_items")
+
+        if items is None or output_items is None:
+            raise RuntimeError(
+                "coop.block.adjacent_difference requires items and output_items"
+            )
+
+        if not isinstance(items, ir.Var):
+            raise RuntimeError(
+                "coop.block.adjacent_difference items must be a variable"
+            )
+        if not isinstance(output_items, ir.Var):
+            raise RuntimeError(
+                "coop.block.adjacent_difference output_items must be a variable"
+            )
+
+        items_ty = self.typemap[items.name]
+        output_items_ty = self.typemap[output_items.name]
+
+        try:
+            from ._decls import TempStorageType, ThreadDataType
+        except Exception:
+            TempStorageType = None
+            ThreadDataType = None
+
+        items_is_thread = ThreadDataType is not None and isinstance(
+            items_ty, ThreadDataType
+        )
+        output_is_thread = ThreadDataType is not None and isinstance(
+            output_items_ty, ThreadDataType
+        )
+
+        if not items_is_thread and not isinstance(items_ty, types.Array):
+            raise RuntimeError(
+                "coop.block.adjacent_difference requires items to be an array or "
+                "ThreadData"
+            )
+        if not output_is_thread and not isinstance(output_items_ty, types.Array):
+            raise RuntimeError(
+                "coop.block.adjacent_difference requires output_items to be an array "
+                "or ThreadData"
+            )
+
+        def _infer_items_per_thread(var, is_thread):
+            if is_thread:
+                return rewriter.get_thread_data_info(var).items_per_thread
+            root = rewriter.get_root_def(var)
+            leaf = root.leaf_constructor_call
+            if not isinstance(leaf, ArrayCallDefinition):
+                raise RuntimeError(
+                    f"Expected array constructor call for {var!r}, got {leaf!r}"
+                )
+            return leaf.shape
+
+        items_per_thread = _infer_items_per_thread(items, items_is_thread)
+        output_items_per_thread = _infer_items_per_thread(
+            output_items, output_is_thread
+        )
+        if items_per_thread != output_items_per_thread:
+            raise RuntimeError(
+                "coop.block.adjacent_difference requires items and output_items to "
+                "have the same items_per_thread"
+            )
+        if not isinstance(items_per_thread, int):
+            raise RuntimeError(
+                f"Expected items_per_thread to be an int, got {items_per_thread!r}"
+            )
+
+        items_per_thread_kwarg = self.get_arg_value_safe("items_per_thread")
+        if items_per_thread_kwarg is not None:
+            if items_per_thread_kwarg != items_per_thread:
+                raise RuntimeError(
+                    "coop.block.adjacent_difference items_per_thread must match the "
+                    f"array shape ({items_per_thread}); got {items_per_thread_kwarg}"
+                )
+
+        if items_is_thread:
+            item_dtype = rewriter.get_thread_data_info(items).dtype
+        else:
+            item_dtype = items_ty.dtype
+
+        if output_is_thread:
+            output_dtype = rewriter.get_thread_data_info(output_items).dtype
+        else:
+            output_dtype = output_items_ty.dtype
+
+        if output_dtype != item_dtype:
+            raise RuntimeError(
+                "coop.block.adjacent_difference requires output_items to have the "
+                "same dtype as items"
+            )
+
+        methods = getattr(item_dtype, "methods", None)
+        if methods is not None and not methods:
+            methods = None
+
+        block_adjacent_difference_type = self.get_arg_value_safe(
+            "block_adjacent_difference_type"
+        )
+        if block_adjacent_difference_type is None:
+            from cuda.coop.block._block_adjacent_difference import (
+                BlockAdjacentDifferenceType,
+            )
+
+            block_adjacent_difference_type = BlockAdjacentDifferenceType.SubtractLeft
+        else:
+            from cuda.coop.block._block_adjacent_difference import (
+                BlockAdjacentDifferenceType,
+            )
+
+            if isinstance(block_adjacent_difference_type, types.EnumMember):
+                literal_value = getattr(
+                    block_adjacent_difference_type, "literal_value", None
+                )
+                if literal_value is None:
+                    literal_value = block_adjacent_difference_type.value
+                block_adjacent_difference_type = (
+                    block_adjacent_difference_type.instance_class(literal_value)
+                )
+            if isinstance(block_adjacent_difference_type, int):
+                block_adjacent_difference_type = BlockAdjacentDifferenceType(
+                    block_adjacent_difference_type
+                )
+            if block_adjacent_difference_type not in BlockAdjacentDifferenceType:
+                raise RuntimeError(
+                    "coop.block.adjacent_difference requires "
+                    "block_adjacent_difference_type to be a "
+                    "BlockAdjacentDifferenceType enum value"
+                )
+
+        difference_op = self.get_arg_value_safe("difference_op")
+        if difference_op is None:
+            raise RuntimeError(
+                "coop.block.adjacent_difference requires difference_op to be set"
+            )
+
+        valid_items = bound.get("valid_items")
+        valid_items_var = None
+        if valid_items is not None:
+            if isinstance(valid_items, ir.Var):
+                valid_items_var = valid_items
+            elif isinstance(valid_items, ir.Const):
+                valid_items_value = valid_items.value
+            else:
+                valid_items_value = valid_items
+
+            if valid_items_var is None:
+                scope = self.instr.target.scope
+                const_name = f"$block_adjacent_difference_valid_{self.unique_id}"
+                const_var = ir.Var(scope, const_name, self.expr.loc)
+                if const_name in self.typemap:
+                    raise RuntimeError(
+                        f"Variable {const_name} already exists in typemap."
+                    )
+                const_assign = ir.Assign(
+                    value=ir.Const(int(valid_items_value), self.expr.loc),
+                    target=const_var,
+                    loc=self.expr.loc,
+                )
+                self.typemap[const_name] = types.int32
+                self.valid_items_assign = const_assign
+                valid_items_var = const_var
+
+        tile_predecessor_item = bound.get("tile_predecessor_item")
+        tile_successor_item = bound.get("tile_successor_item")
+        if tile_predecessor_item is not None and tile_successor_item is not None:
+            raise RuntimeError(
+                "coop.block.adjacent_difference accepts only one of "
+                "tile_predecessor_item or tile_successor_item"
+            )
+        if (
+            block_adjacent_difference_type == BlockAdjacentDifferenceType.SubtractLeft
+            and tile_successor_item is not None
+        ):
+            raise RuntimeError(
+                "coop.block.adjacent_difference does not accept tile_successor_item "
+                "for SubtractLeft"
+            )
+        if (
+            block_adjacent_difference_type == BlockAdjacentDifferenceType.SubtractRight
+            and tile_predecessor_item is not None
+        ):
+            raise RuntimeError(
+                "coop.block.adjacent_difference does not accept tile_predecessor_item "
+                "for SubtractRight"
+            )
+
+        tile_item_var = None
+        tile_item_type = None
+        tile_item_name = None
+        if tile_predecessor_item is not None:
+            if not isinstance(tile_predecessor_item, ir.Var):
+                raise RuntimeError(
+                    "tile_predecessor_item must be provided as a variable"
+                )
+            tile_item_var = tile_predecessor_item
+            tile_item_type = self.typemap[tile_item_var.name]
+            tile_item_name = "tile_predecessor_item"
+        if tile_successor_item is not None:
+            if not isinstance(tile_successor_item, ir.Var):
+                raise RuntimeError("tile_successor_item must be provided as a variable")
+            tile_item_var = tile_successor_item
+            tile_item_type = self.typemap[tile_item_var.name]
+            tile_item_name = "tile_successor_item"
+
+        if tile_item_var is not None and tile_item_type != item_dtype:
+            raise RuntimeError(
+                "tile_*_item dtype must match items dtype for "
+                "coop.block.adjacent_difference"
+            )
+
+        temp_storage = bound.get("temp_storage")
+        temp_storage_info = None
+        if temp_storage is not None:
+            if not isinstance(temp_storage, ir.Var):
+                raise RuntimeError(
+                    "coop.block.adjacent_difference temp_storage must be provided "
+                    "as a variable"
+                )
+            temp_storage_ty = self.typemap[temp_storage.name]
+            if TempStorageType is not None and isinstance(
+                temp_storage_ty, TempStorageType
+            ):
+                temp_storage_info = rewriter.get_temp_storage_info(temp_storage)
+                temp_storage_ty = types.Array(types.uint8, 1, "C")
+            runtime_args.insert(0, temp_storage)
+            runtime_arg_types.insert(0, temp_storage_ty)
+            runtime_arg_names.insert(0, "temp_storage")
+
+        array_items_ty = types.Array(item_dtype, 1, "C")
+        if items_is_thread:
+            items_ty = array_items_ty
+        if output_is_thread:
+            output_items_ty = array_items_ty
+
+        runtime_args.append(items)
+        runtime_arg_types.append(items_ty)
+        runtime_arg_names.append("items")
+
+        runtime_args.append(output_items)
+        runtime_arg_types.append(output_items_ty)
+        runtime_arg_names.append("output_items")
+
+        if valid_items_var is not None:
+            runtime_args.append(valid_items_var)
+            runtime_arg_types.append(types.int32)
+            runtime_arg_names.append("valid_items")
+
+        if tile_item_var is not None:
+            runtime_args.append(tile_item_var)
+            runtime_arg_types.append(tile_item_type)
+            runtime_arg_names.append(tile_item_name)
+
+        self.items = items
+        self.output_items = output_items
+        self.item_dtype = item_dtype
+        self.items_per_thread = items_per_thread
+        self.difference_op = difference_op
+        self.block_adjacent_difference_type = block_adjacent_difference_type
+        self.valid_items = valid_items
+        self.tile_predecessor_item = tile_predecessor_item
+        self.tile_successor_item = tile_successor_item
+        self.temp_storage = temp_storage
+        self.temp_storage_info = temp_storage_info
+        self.methods = methods
+
+        self.impl_kwds = {
+            "block_adjacent_difference_type": block_adjacent_difference_type,
+            "dtype": item_dtype,
+            "threads_per_block": self.threads_per_block,
+            "items_per_thread": items_per_thread,
+            "difference_op": difference_op,
+            "methods": methods,
+            "valid_items": valid_items,
+            "tile_predecessor_item": tile_predecessor_item,
+            "tile_successor_item": tile_successor_item,
+            "unique_id": self.unique_id,
+            "temp_storage": temp_storage,
+            "node": self,
+        }
+
+        self.runtime_args = runtime_args
+        self.runtime_arg_types = runtime_arg_types
+        self.runtime_arg_names = runtime_arg_names
+
+    def rewrite(self, rewriter):
+        rd = self.rewrite_details
+        instrs = []
+        valid_items_assign = getattr(self, "valid_items_assign", None)
+        if valid_items_assign is not None:
+            instrs.append(valid_items_assign)
+        instrs.extend([rd.g_assign, rd.new_assign])
+        if self.temp_storage_info is not None and self.temp_storage_info.auto_sync:
+            instrs.extend(
+                rewriter.emit_syncthreads_call(self.instr.target.scope, self.expr.loc)
+            )
+        return tuple(instrs)
+
+    @cached_property
+    def rewrite_details(self):
+        return self.do_rewrite()
+
+
+@dataclass
+class CoopBlockDiscontinuityNode(CoopNode, CoopNodeMixin):
+    primitive_name = "coop.block.discontinuity"
+    disposition = Disposition.ONE_SHOT
+
+    def refine_match(self, rewriter):
+        launch_config = rewriter.launch_config
+        if launch_config is None:
+            return False
+
+        self.threads_per_block = launch_config.blockdim
+        instance = self.two_phase_instance if self.is_two_phase else None
+        if instance is not None:
+            self.instance = instance
+
+        runtime_args = []
+        runtime_arg_types = []
+        runtime_arg_names = []
+
+        bound = self.bound.arguments
+        items = bound.get("items")
+        head_flags = bound.get("head_flags")
+        tail_flags = bound.get("tail_flags")
+
+        if items is None or head_flags is None:
+            raise RuntimeError("coop.block.discontinuity requires items and head_flags")
+
+        if not isinstance(items, ir.Var):
+            raise RuntimeError("coop.block.discontinuity items must be a variable")
+        if not isinstance(head_flags, ir.Var):
+            raise RuntimeError("coop.block.discontinuity head_flags must be a variable")
+        if tail_flags is not None and not isinstance(tail_flags, ir.Var):
+            raise RuntimeError("coop.block.discontinuity tail_flags must be a variable")
+
+        items_ty = self.typemap[items.name]
+        head_flags_ty = self.typemap[head_flags.name]
+        tail_flags_ty = (
+            self.typemap[tail_flags.name] if tail_flags is not None else None
+        )
+
+        try:
+            from ._decls import TempStorageType, ThreadDataType
+        except Exception:
+            TempStorageType = None
+            ThreadDataType = None
+
+        items_is_thread = ThreadDataType is not None and isinstance(
+            items_ty, ThreadDataType
+        )
+        head_is_thread = ThreadDataType is not None and isinstance(
+            head_flags_ty, ThreadDataType
+        )
+        tail_is_thread = (
+            ThreadDataType is not None
+            and tail_flags_ty is not None
+            and isinstance(tail_flags_ty, ThreadDataType)
+        )
+
+        if not items_is_thread and not isinstance(items_ty, types.Array):
+            raise RuntimeError(
+                "coop.block.discontinuity requires items to be an array or ThreadData"
+            )
+        if not head_is_thread and not isinstance(head_flags_ty, types.Array):
+            raise RuntimeError(
+                "coop.block.discontinuity requires head_flags to be an array or ThreadData"
+            )
+        if tail_flags is not None:
+            if not tail_is_thread and not isinstance(tail_flags_ty, types.Array):
+                raise RuntimeError(
+                    "coop.block.discontinuity requires tail_flags to be an array or "
+                    "ThreadData"
+                )
+
+        def _infer_items_per_thread(var, is_thread):
+            if is_thread:
+                return rewriter.get_thread_data_info(var).items_per_thread
+            root = rewriter.get_root_def(var)
+            leaf = root.leaf_constructor_call
+            if not isinstance(leaf, ArrayCallDefinition):
+                raise RuntimeError(
+                    f"Expected array constructor call for {var!r}, got {leaf!r}"
+                )
+            return leaf.shape
+
+        items_per_thread = _infer_items_per_thread(items, items_is_thread)
+        if not isinstance(items_per_thread, int):
+            raise RuntimeError(
+                f"Expected items_per_thread to be an int, got {items_per_thread!r}"
+            )
+        head_items = _infer_items_per_thread(head_flags, head_is_thread)
+        if items_per_thread != head_items:
+            raise RuntimeError(
+                "coop.block.discontinuity requires items and head_flags to have "
+                "the same items_per_thread"
+            )
+        if tail_flags is not None:
+            tail_items = _infer_items_per_thread(tail_flags, tail_is_thread)
+            if tail_items != items_per_thread:
+                raise RuntimeError(
+                    "coop.block.discontinuity requires tail_flags to have the same "
+                    "items_per_thread as items"
+                )
+
+        items_per_thread_kwarg = self.get_arg_value_safe("items_per_thread")
+        if items_per_thread_kwarg is not None:
+            if items_per_thread_kwarg != items_per_thread:
+                raise RuntimeError(
+                    "coop.block.discontinuity items_per_thread must match the "
+                    f"array shape ({items_per_thread}); got {items_per_thread_kwarg}"
+                )
+
+        if items_is_thread:
+            item_dtype = rewriter.get_thread_data_info(items).dtype
+        else:
+            item_dtype = items_ty.dtype
+
+        if head_is_thread:
+            flag_dtype = rewriter.get_thread_data_info(head_flags).dtype
+        else:
+            flag_dtype = head_flags_ty.dtype
+
+        if tail_flags is not None:
+            if tail_is_thread:
+                tail_dtype = rewriter.get_thread_data_info(tail_flags).dtype
+            else:
+                tail_dtype = tail_flags_ty.dtype
+            if tail_dtype != flag_dtype:
+                raise RuntimeError(
+                    "coop.block.discontinuity requires head_flags and tail_flags to "
+                    "have the same dtype"
+                )
+
+        methods = getattr(item_dtype, "methods", None)
+        if methods is not None and not methods:
+            methods = None
+
+        block_discontinuity_type = self.get_arg_value_safe("block_discontinuity_type")
+        if block_discontinuity_type is None:
+            from cuda.coop.block._block_discontinuity import BlockDiscontinuityType
+
+            block_discontinuity_type = BlockDiscontinuityType.HEADS
+        else:
+            from cuda.coop.block._block_discontinuity import BlockDiscontinuityType
+
+            if isinstance(block_discontinuity_type, types.EnumMember):
+                literal_value = getattr(block_discontinuity_type, "literal_value", None)
+                if literal_value is None:
+                    literal_value = block_discontinuity_type.value
+                block_discontinuity_type = block_discontinuity_type.instance_class(
+                    literal_value
+                )
+            if isinstance(block_discontinuity_type, int):
+                block_discontinuity_type = BlockDiscontinuityType(
+                    block_discontinuity_type
+                )
+            if block_discontinuity_type not in BlockDiscontinuityType:
+                raise RuntimeError(
+                    "coop.block.discontinuity requires block_discontinuity_type to "
+                    "be a BlockDiscontinuityType enum value"
+                )
+
+        if (
+            block_discontinuity_type == BlockDiscontinuityType.HEADS_AND_TAILS
+            and tail_flags is None
+        ):
+            raise RuntimeError(
+                "coop.block.discontinuity requires tail_flags for HEADS_AND_TAILS"
+            )
+
+        flag_op = self.get_arg_value_safe("flag_op")
+        if flag_op is None:
+            raise RuntimeError("coop.block.discontinuity requires flag_op to be set")
+
+        temp_storage = bound.get("temp_storage")
+        temp_storage_info = None
+        if temp_storage is not None:
+            if not isinstance(temp_storage, ir.Var):
+                raise RuntimeError(
+                    "coop.block.discontinuity temp_storage must be provided as a "
+                    "variable"
+                )
+            temp_storage_ty = self.typemap[temp_storage.name]
+            if TempStorageType is not None and isinstance(
+                temp_storage_ty, TempStorageType
+            ):
+                temp_storage_info = rewriter.get_temp_storage_info(temp_storage)
+                temp_storage_ty = types.Array(types.uint8, 1, "C")
+            runtime_args.insert(0, temp_storage)
+            runtime_arg_types.insert(0, temp_storage_ty)
+            runtime_arg_names.insert(0, "temp_storage")
+
+        array_items_ty = types.Array(item_dtype, 1, "C")
+        array_flags_ty = types.Array(flag_dtype, 1, "C")
+
+        if items_is_thread:
+            items_ty = array_items_ty
+        if head_is_thread:
+            head_flags_ty = array_flags_ty
+        if tail_flags is not None and tail_is_thread:
+            tail_flags_ty = array_flags_ty
+
+        if block_discontinuity_type == BlockDiscontinuityType.HEADS:
+            runtime_args.extend([head_flags, items])
+            runtime_arg_types.extend([head_flags_ty, items_ty])
+            runtime_arg_names.extend(["head_flags", "items"])
+        elif block_discontinuity_type == BlockDiscontinuityType.TAILS:
+            runtime_args.extend([head_flags, items])
+            runtime_arg_types.extend([head_flags_ty, items_ty])
+            runtime_arg_names.extend(["tail_flags", "items"])
+        else:
+            runtime_args.extend([head_flags, tail_flags, items])
+            runtime_arg_types.extend([head_flags_ty, tail_flags_ty, items_ty])
+            runtime_arg_names.extend(["head_flags", "tail_flags", "items"])
+
+        self.items = items
+        self.head_flags = head_flags
+        self.tail_flags = tail_flags
+        self.item_dtype = item_dtype
+        self.flag_dtype = flag_dtype
+        self.items_per_thread = items_per_thread
+        self.flag_op = flag_op
+        self.block_discontinuity_type = block_discontinuity_type
+        self.temp_storage = temp_storage
+        self.temp_storage_info = temp_storage_info
+        self.methods = methods
+
+        self.impl_kwds = {
+            "block_discontinuity_type": block_discontinuity_type,
+            "dtype": item_dtype,
+            "threads_per_block": self.threads_per_block,
+            "items_per_thread": items_per_thread,
+            "flag_op": flag_op,
+            "flag_dtype": flag_dtype,
+            "methods": methods,
+            "unique_id": self.unique_id,
+            "temp_storage": temp_storage,
+            "node": self,
+        }
+
+        self.runtime_args = runtime_args
+        self.runtime_arg_types = runtime_arg_types
+        self.runtime_arg_names = runtime_arg_names
+
+    def rewrite(self, rewriter):
+        rd = self.rewrite_details
+        instrs = [rd.g_assign, rd.new_assign]
+        if self.temp_storage_info is not None and self.temp_storage_info.auto_sync:
+            instrs.extend(
+                rewriter.emit_syncthreads_call(self.instr.target.scope, self.expr.loc)
+            )
+        return tuple(instrs)
 
     @cached_property
     def rewrite_details(self):
@@ -2227,6 +3407,187 @@ class CoopBlockRadixSortDescendingNode(CoopNode, CoopNodeMixin):
 
 
 @dataclass
+class CoopBlockRadixRankNode(CoopNode, CoopNodeMixin):
+    primitive_name = "coop.block.radix_rank"
+    disposition = Disposition.ONE_SHOT
+
+    def refine_match(self, rewriter):
+        launch_config = rewriter.launch_config
+        if launch_config is None:
+            return False
+
+        self.threads_per_block = launch_config.blockdim
+
+        runtime_args = []
+        runtime_arg_types = []
+        runtime_arg_names = []
+
+        bound = self.bound.arguments
+        items = bound.get("items")
+        ranks = bound.get("ranks")
+        if items is None or ranks is None:
+            raise RuntimeError(
+                "coop.block.radix_rank requires items and ranks arguments"
+            )
+        if not isinstance(items, ir.Var):
+            raise RuntimeError("coop.block.radix_rank items must be a variable")
+        if not isinstance(ranks, ir.Var):
+            raise RuntimeError("coop.block.radix_rank ranks must be a variable")
+
+        items_ty = self.typemap[items.name]
+        ranks_ty = self.typemap[ranks.name]
+
+        try:
+            from ._decls import TempStorageType, ThreadDataType
+        except Exception:
+            TempStorageType = None
+            ThreadDataType = None
+
+        items_is_thread = ThreadDataType is not None and isinstance(
+            items_ty, ThreadDataType
+        )
+        ranks_is_thread = ThreadDataType is not None and isinstance(
+            ranks_ty, ThreadDataType
+        )
+
+        if not items_is_thread and not isinstance(items_ty, types.Array):
+            raise RuntimeError(
+                "coop.block.radix_rank requires items to be an array or ThreadData"
+            )
+        if not ranks_is_thread and not isinstance(ranks_ty, types.Array):
+            raise RuntimeError(
+                "coop.block.radix_rank requires ranks to be an array or ThreadData"
+            )
+
+        def _infer_items_per_thread(var, is_thread):
+            if is_thread:
+                return rewriter.get_thread_data_info(var).items_per_thread
+            root = rewriter.get_root_def(var)
+            leaf = root.leaf_constructor_call
+            if not isinstance(leaf, ArrayCallDefinition):
+                raise RuntimeError(
+                    f"Expected array constructor call for {var!r}, got {leaf!r}"
+                )
+            return leaf.shape
+
+        items_per_thread = _infer_items_per_thread(items, items_is_thread)
+        ranks_items_per_thread = _infer_items_per_thread(ranks, ranks_is_thread)
+        if items_per_thread != ranks_items_per_thread:
+            raise RuntimeError(
+                "coop.block.radix_rank requires items and ranks to have the same "
+                "items_per_thread"
+            )
+        if not isinstance(items_per_thread, int):
+            raise RuntimeError(
+                f"Expected items_per_thread to be an int, got {items_per_thread!r}"
+            )
+
+        items_per_thread_kwarg = self.get_arg_value_safe("items_per_thread")
+        if items_per_thread_kwarg is not None:
+            if items_per_thread_kwarg != items_per_thread:
+                raise RuntimeError(
+                    "coop.block.radix_rank items_per_thread must match the array "
+                    f"shape ({items_per_thread}); got {items_per_thread_kwarg}"
+                )
+
+        if items_is_thread:
+            item_dtype = rewriter.get_thread_data_info(items).dtype
+        else:
+            item_dtype = items_ty.dtype
+
+        if ranks_is_thread:
+            ranks_dtype = rewriter.get_thread_data_info(ranks).dtype
+        else:
+            ranks_dtype = ranks_ty.dtype
+
+        if not isinstance(item_dtype, types.Integer) or item_dtype.signed:
+            raise RuntimeError("coop.block.radix_rank requires unsigned integer items")
+        if not isinstance(ranks_dtype, types.Integer) or ranks_dtype.bitwidth != 32:
+            raise RuntimeError("coop.block.radix_rank requires int32 ranks arrays")
+
+        begin_bit = int(self.get_arg_value("begin_bit"))
+        end_bit = int(self.get_arg_value("end_bit"))
+        if end_bit <= begin_bit:
+            raise RuntimeError("coop.block.radix_rank requires end_bit > begin_bit")
+
+        descending = bound.get("descending")
+        if descending is None:
+            descending_value = False
+        else:
+            descending_value = self.get_arg_value_safe("descending")
+            if descending_value is None:
+                raise RuntimeError(
+                    "coop.block.radix_rank requires descending to be a compile-time "
+                    "boolean"
+                )
+            if not isinstance(descending_value, bool):
+                raise RuntimeError(
+                    "coop.block.radix_rank requires descending to be a boolean"
+                )
+
+        temp_storage = bound.get("temp_storage")
+        temp_storage_info = None
+        if temp_storage is not None:
+            if not isinstance(temp_storage, ir.Var):
+                raise RuntimeError(
+                    "coop.block.radix_rank temp_storage must be provided as a variable"
+                )
+            temp_storage_ty = self.typemap[temp_storage.name]
+            if TempStorageType is not None and isinstance(
+                temp_storage_ty, TempStorageType
+            ):
+                temp_storage_info = rewriter.get_temp_storage_info(temp_storage)
+                temp_storage_ty = types.Array(types.uint8, 1, "C")
+            runtime_args.insert(0, temp_storage)
+            runtime_arg_types.insert(0, temp_storage_ty)
+            runtime_arg_names.insert(0, "temp_storage")
+
+        array_items_ty = types.Array(item_dtype, 1, "C")
+        array_ranks_ty = types.Array(ranks_dtype, 1, "C")
+
+        runtime_args.extend([items, ranks])
+        runtime_arg_types.extend(
+            [
+                array_items_ty if items_is_thread else items_ty,
+                array_ranks_ty if ranks_is_thread else ranks_ty,
+            ]
+        )
+        runtime_arg_names.extend(["items", "ranks"])
+
+        self.impl_kwds = {
+            "dtype": item_dtype,
+            "threads_per_block": self.threads_per_block,
+            "items_per_thread": items_per_thread,
+            "begin_bit": begin_bit,
+            "end_bit": end_bit,
+            "descending": descending_value,
+            "unique_id": self.unique_id,
+            "temp_storage": temp_storage,
+            "node": self,
+        }
+
+        self.return_type = types.void
+        self.runtime_args = runtime_args
+        self.runtime_arg_types = runtime_arg_types
+        self.runtime_arg_names = runtime_arg_names
+        self.temp_storage_info = temp_storage_info
+        self.temp_storage = temp_storage
+
+    def rewrite(self, rewriter):
+        rd = self.rewrite_details
+        instrs = [rd.g_assign, rd.new_assign]
+        if self.temp_storage_info is not None and self.temp_storage_info.auto_sync:
+            instrs.extend(
+                rewriter.emit_syncthreads_call(self.instr.target.scope, self.expr.loc)
+            )
+        return tuple(instrs)
+
+    @cached_property
+    def rewrite_details(self):
+        return self.do_rewrite()
+
+
+@dataclass
 class CoopArrayNode(CoopNode):
     shape = None
     dtype = None
@@ -2490,6 +3851,92 @@ class CoopSharedArrayNode(CoopArrayNode, CoopNodeMixin):
 @dataclass
 class CoopLocalArrayNode(CoopArrayNode, CoopNodeMixin):
     primitive_name = "coop.local.array"
+
+
+@dataclass
+class CoopThreadDataNode:
+    primitive_name = "coop.ThreadData"
+    wants_rewrite: bool = True
+    has_been_rewritten: bool = False
+    is_parent: bool = False
+    is_child: bool = False
+    is_one_shot: bool = True
+
+    expr: ir.Expr = None
+    instr: ir.Assign = None
+    target: ir.Var = None
+    func_ir: ir.FunctionIR = None
+    typemap: dict = None
+    calltypes: dict = None
+    block_line: int = None
+
+    items_per_thread: int = None
+    dtype: types.Type = None
+
+    @property
+    def shortname(self):
+        return "CoopThreadDataNode"
+
+    def refine_match(self, rewriter):
+        info = rewriter.get_thread_data_info(self.target)
+        self.items_per_thread = info.items_per_thread
+        self.dtype = info.dtype
+
+    def rewrite(self, rewriter):
+        return rewriter.emit_cuda_array_call(
+            self.target.scope,
+            self.expr.loc,
+            self.items_per_thread,
+            self.dtype,
+            alignment=None,
+            shared=False,
+            target=self.target,
+        )
+
+
+@dataclass
+class CoopTempStorageNode:
+    primitive_name = "coop.TempStorage"
+    wants_rewrite: bool = True
+    has_been_rewritten: bool = False
+    is_parent: bool = False
+    is_child: bool = False
+    is_one_shot: bool = True
+
+    expr: ir.Expr = None
+    instr: ir.Assign = None
+    target: ir.Var = None
+    func_ir: ir.FunctionIR = None
+    typemap: dict = None
+    calltypes: dict = None
+    block_line: int = None
+
+    size_in_bytes: int = None
+    alignment: Optional[int] = None
+    auto_sync: bool = True
+
+    @property
+    def shortname(self):
+        return "CoopTempStorageNode"
+
+    def refine_match(self, rewriter):
+        info = rewriter.get_temp_storage_info(self.target)
+        self.size_in_bytes = info.size_in_bytes
+        self.alignment = info.alignment
+        self.auto_sync = info.auto_sync
+
+    def rewrite(self, rewriter):
+        import numba
+
+        return rewriter.emit_cuda_array_call(
+            self.target.scope,
+            self.expr.loc,
+            self.size_in_bytes,
+            numba.uint8,
+            alignment=self.alignment,
+            shared=True,
+            target=self.target,
+        )
 
 
 @dataclass
@@ -3213,6 +4660,9 @@ class CoopBlockScanNode(CoopNode, CoopNodeMixin):
             return False
 
         self.threads_per_block = launch_config.blockdim
+        instance = self.two_phase_instance if self.is_two_phase else None
+        if instance is not None:
+            self.instance = instance
 
         runtime_args = []
         runtime_arg_types = []
@@ -3227,46 +4677,68 @@ class CoopBlockScanNode(CoopNode, CoopNodeMixin):
         block_prefix_callback_op = None
         temp_storage = None
 
-        expr_args = list(expr.args)
+        bound = self.bound.arguments
 
-        src = expr_args.pop(0)
-        dst = expr_args.pop(0)
+        src = bound.get("src")
+        dst = bound.get("dst")
 
         assert src is not None, src
-        assert dst is not None, dst
 
         src_ty = self.typemap[src.name]
-        dst_ty = self.typemap[dst.name]
+        dst_ty = self.typemap[dst.name] if dst is not None else None
 
         try:
-            from ._decls import ThreadDataType
+            from ._decls import TempStorageType, ThreadDataType
         except Exception:
+            TempStorageType = None
             ThreadDataType = None
 
-        if ThreadDataType is not None and (
-            isinstance(src_ty, ThreadDataType) or isinstance(dst_ty, ThreadDataType)
-        ):
-            raise RuntimeError(
-                "coop.block.scan does not yet support ThreadData inputs "
-                "in single-phase mode"
-            )
+        src_is_thread = ThreadDataType is not None and isinstance(
+            src_ty, ThreadDataType
+        )
+        dst_is_thread = ThreadDataType is not None and isinstance(
+            dst_ty, ThreadDataType
+        )
 
-        src_is_array = isinstance(src_ty, types.Array)
-        dst_is_array = isinstance(dst_ty, types.Array)
-        if src_is_array != dst_is_array:
-            raise RuntimeError(
-                "coop.block.scan requires src and dst to be both arrays "
-                "or both scalars in single-phase mode"
-            )
-        use_array_inputs = src_is_array and dst_is_array
+        src_is_array = isinstance(src_ty, types.Array) or src_is_thread
+        dst_is_array = dst is not None and (
+            isinstance(dst_ty, types.Array) or dst_is_thread
+        )
+        src_is_scalar = isinstance(src_ty, types.Number)
+        dst_is_scalar = dst is not None and isinstance(dst_ty, types.Number)
 
-        dtype = src_ty.dtype if use_array_inputs else src_ty
+        if dst is None:
+            if not src_is_scalar:
+                raise RuntimeError(
+                    "coop.block.scan requires array dst when src is an array"
+                )
+            use_array_inputs = False
+            dtype = src_ty
+        else:
+            if src_is_scalar or dst_is_scalar:
+                raise RuntimeError(
+                    "coop.block.scan scalar inputs must omit dst in single-phase"
+                )
+            if src_is_array != dst_is_array:
+                raise RuntimeError(
+                    "coop.block.scan requires src and dst to be both arrays"
+                )
+            use_array_inputs = src_is_array and dst_is_array
 
-        if not use_array_inputs:
-            raise RuntimeError(
-                "coop.block.scan single-phase expects array inputs; "
-                "use coop.local.array(...) even for items_per_thread == 1"
-            )
+            if src_is_thread:
+                dtype = rewriter.get_thread_data_info(src).dtype
+            else:
+                dtype = src_ty.dtype
+
+            if dst_is_thread:
+                dst_dtype = rewriter.get_thread_data_info(dst).dtype
+            else:
+                dst_dtype = dst_ty.dtype
+
+            if dst_dtype != dtype:
+                raise RuntimeError(
+                    "coop.block.scan requires src and dst to have the same dtype"
+                )
 
         methods = getattr(dtype, "methods", None)
         if methods is not None and not methods:
@@ -3276,21 +4748,78 @@ class CoopBlockScanNode(CoopNode, CoopNodeMixin):
         runtime_arg_types.append(src_ty)
         runtime_arg_names.append("src")
 
-        runtime_args.append(dst)
-        runtime_arg_types.append(dst_ty)
-        runtime_arg_names.append("dst")
+        if dst is not None:
+            runtime_args.append(dst)
+            runtime_arg_types.append(dst_ty)
+            runtime_arg_names.append("dst")
 
-        items_per_thread = self.get_arg_value("items_per_thread")
+        if ThreadDataType is not None and use_array_inputs:
+            array_ty = types.Array(dtype, 1, "C")
+            if src_is_thread:
+                runtime_arg_types[0] = array_ty
+            if dst_is_thread:
+                runtime_arg_types[1] = array_ty
+
+        items_per_thread = self.get_arg_value_safe("items_per_thread")
+        if use_array_inputs:
+
+            def _infer_items_per_thread(var, is_thread):
+                if is_thread:
+                    return rewriter.get_thread_data_info(var).items_per_thread
+                root = rewriter.get_root_def(var)
+                leaf = root.leaf_constructor_call
+                if not isinstance(leaf, ArrayCallDefinition):
+                    raise RuntimeError(
+                        f"Expected array constructor call for {var!r}, got {leaf!r}"
+                    )
+                return leaf.shape
+
+            src_items = _infer_items_per_thread(src, src_is_thread)
+            dst_items = _infer_items_per_thread(dst, dst_is_thread)
+            if src_items != dst_items:
+                raise RuntimeError(
+                    "coop.block.scan requires src and dst to have the same "
+                    "items_per_thread"
+                )
+            if items_per_thread is None:
+                items_per_thread = src_items
+            elif items_per_thread != src_items:
+                raise RuntimeError(
+                    "coop.block.scan items_per_thread must match the "
+                    f"array shape ({src_items}); got {items_per_thread}"
+                )
+
+        else:
+            if items_per_thread is None:
+                items_per_thread = 1
+            elif items_per_thread != 1:
+                raise RuntimeError(
+                    "coop.block.scan requires items_per_thread == 1 for scalar inputs"
+                )
+
+        if instance is not None:
+            instance_items = getattr(instance, "items_per_thread", None)
+            if instance_items is not None:
+                if items_per_thread is None:
+                    items_per_thread = instance_items
+                elif items_per_thread != instance_items:
+                    raise RuntimeError(
+                        "coop.block.scan items_per_thread must match the "
+                        f"two-phase instance ({instance_items}); got "
+                        f"{items_per_thread}"
+                    )
 
         mode = self.get_arg_value_safe("mode")
+        if mode is None and instance is not None:
+            mode = getattr(instance, "mode", None)
         if mode is None:
             mode = "exclusive"
 
         scan_op = self.get_arg_value_safe("scan_op")
+        if scan_op is None and instance is not None:
+            scan_op = getattr(instance, "scan_op", None)
         if scan_op is None:
             scan_op = "+"
-
-        bound = self.bound.arguments
 
         initial_value = bound.get("initial_value")
         initial_value_var = None
@@ -3304,6 +4833,10 @@ class CoopBlockScanNode(CoopNode, CoopNodeMixin):
                 initial_value_value = initial_value.value
             else:
                 initial_value_value = initial_value
+        elif instance is not None:
+            instance_initial_value = getattr(instance, "initial_value", None)
+            if instance_initial_value is not None:
+                initial_value_value = instance_initial_value
 
         from ._scan_op import ScanOp
         from .block._block_scan import _validate_initial_value
@@ -3319,8 +4852,8 @@ class CoopBlockScanNode(CoopNode, CoopNodeMixin):
                 )
 
             block_prefix_callback_op_var = block_prefix_callback_op
-            dtype = self.typemap[block_prefix_callback_op.name]
-            runtime_dtype = dtype
+            prefix_state_ty = self.typemap[block_prefix_callback_op.name]
+            runtime_prefix_ty = prefix_state_ty
             prefix_op_root_def = rewriter.get_root_def(block_prefix_callback_op)
             if prefix_op_root_def is None:
                 raise RuntimeError(
@@ -3340,12 +4873,12 @@ class CoopBlockScanNode(CoopNode, CoopNodeMixin):
                         f"Expected a leaf array call definition for "
                         f"{block_prefix_callback_op!r}, got {call_def!r}"
                     )
-                assert isinstance(dtype, types.Array)
-                runtime_dtype = dtype
-                dtype = dtype.dtype
-                modulename = dtype.__module__
+                assert isinstance(prefix_state_ty, types.Array)
+                runtime_prefix_ty = prefix_state_ty
+                prefix_state_ty = prefix_state_ty.dtype
+                modulename = prefix_state_ty.__module__
                 module = sys.modules[modulename]
-                instance = getattr(module, dtype.name)
+                instance = getattr(module, prefix_state_ty.name)
 
             op = instance
 
@@ -3356,15 +4889,15 @@ class CoopBlockScanNode(CoopNode, CoopNodeMixin):
                 raise RuntimeError(
                     f"Callback name {callback_name} already exists in typemap."
                 )
-            self.typemap[callback_name] = runtime_dtype
+            self.typemap[callback_name] = runtime_prefix_ty
 
             block_prefix_callback_op = StatefulFunction(
                 op,
-                dtype,
+                prefix_state_ty,
                 name=callback_name,
             )
             runtime_args.append(block_prefix_callback_op_var)
-            runtime_arg_types.append(runtime_dtype)
+            runtime_arg_types.append(runtime_prefix_ty)
             runtime_arg_names.append("block_prefix_callback_op")
 
         if scan_op_obj.is_sum:
@@ -3437,16 +4970,24 @@ class CoopBlockScanNode(CoopNode, CoopNodeMixin):
             )
 
         algorithm = self.get_arg_value_safe("algorithm")
+        if algorithm is None and instance is not None:
+            algorithm = getattr(instance, "algorithm_id", None)
         temp_storage = bound.get("temp_storage")
+        temp_storage_info = None
         if temp_storage is not None:
             if not isinstance(temp_storage, ir.Var):
                 raise RuntimeError(
                     "coop.block.scan temp_storage must be provided as a variable"
                 )
             temp_storage_ty = self.typemap[temp_storage.name]
-            runtime_args.append(temp_storage)
-            runtime_arg_types.append(temp_storage_ty)
-            runtime_arg_names.append("temp_storage")
+            if TempStorageType is not None and isinstance(
+                temp_storage_ty, TempStorageType
+            ):
+                temp_storage_info = rewriter.get_temp_storage_info(temp_storage)
+                temp_storage_ty = types.Array(types.uint8, 1, "C")
+            runtime_args.insert(0, temp_storage)
+            runtime_arg_types.insert(0, temp_storage_ty)
+            runtime_arg_names.insert(0, "temp_storage")
 
         self.runtime_args = runtime_args
         self.runtime_arg_types = runtime_arg_types
@@ -3455,7 +4996,7 @@ class CoopBlockScanNode(CoopNode, CoopNodeMixin):
         self.src = src
         self.dst = dst
         if use_array_inputs:
-            self.dtype = src_ty.dtype
+            self.dtype = dtype
         else:
             self.dtype = src_ty
         self.items_per_thread = items_per_thread
@@ -3465,6 +5006,7 @@ class CoopBlockScanNode(CoopNode, CoopNodeMixin):
         self.block_prefix_callback_op = block_prefix_callback_op
         self.algorithm = algorithm
         self.temp_storage = temp_storage
+        self.temp_storage_info = temp_storage_info
         self.use_array_inputs = use_array_inputs
         self.methods = methods
 
@@ -3482,6 +5024,11 @@ class CoopBlockScanNode(CoopNode, CoopNodeMixin):
             "use_array_inputs": use_array_inputs,
             "methods": methods,
         }
+
+        if not use_array_inputs:
+            self.return_type = dtype
+        else:
+            self.return_type = types.void
 
         return
 
@@ -3854,7 +5401,11 @@ class CoopNodeRewriter(Rewrite):
         # name to this set.
         self._needs_module: set[str] = set()
 
+        self._thread_data_info: dict[str, Any] = {}
+        self._temp_storage_info: dict[str, Any] = {}
+
         self._state = state
+        self.typingctx = state.typingctx
 
         self.nodes = OrderedDict()
 
@@ -4007,6 +5558,402 @@ class CoopNodeRewriter(Rewrite):
             raise RuntimeError(f"Could not find root definition for {instr!r}")
         self._roots[instr] = root_def
         return root_def
+
+    def _iter_call_exprs(self):
+        for block in self.func_ir.blocks.values():
+            for instr in block.body:
+                if not isinstance(instr, ir.Assign):
+                    continue
+                expr = instr.value
+                if isinstance(expr, ir.Expr) and expr.op == "call":
+                    yield expr
+
+    @staticmethod
+    def _kws_to_dict(kws):
+        if isinstance(kws, (list, tuple)):
+            return dict(kws)
+        if isinstance(kws, dict):
+            return kws
+        return {}
+
+    @staticmethod
+    def _var_matches(obj, var_name):
+        return isinstance(obj, ir.Var) and obj.name == var_name
+
+    def _dtype_from_var(self, obj):
+        if not isinstance(obj, ir.Var):
+            return None
+        ty = self.typemap.get(obj.name)
+        if isinstance(ty, types.Array):
+            return ty.dtype
+        return None
+
+    def _infer_thread_data_dtype_from_uses(self, var):
+        var_name = var.name
+        candidates = []
+
+        for expr in self._iter_call_exprs():
+            args = expr.args
+            kws = self._kws_to_dict(expr.kws)
+            uses_var = any(
+                isinstance(arg, ir.Var) and arg.name == var_name for arg in args
+            ) or any(
+                isinstance(arg, ir.Var) and arg.name == var_name for arg in kws.values()
+            )
+            if not uses_var:
+                continue
+
+            func_ty = self.typemap.get(expr.func.name)
+            templates = getattr(func_ty, "templates", None)
+            if not templates:
+                continue
+
+            template = templates[0]
+            primitive_name = getattr(template, "primitive_name", None)
+            if primitive_name is None:
+                continue
+
+            try:
+                bound = template.signature(*args, **kws)
+            except Exception:
+                continue
+
+            candidate = None
+            if primitive_name == "coop.block.load":
+                src = bound.arguments.get("src")
+                dst = bound.arguments.get("dst")
+                if self._var_matches(dst, var_name):
+                    candidate = self._dtype_from_var(src)
+                elif self._var_matches(src, var_name):
+                    candidate = self._dtype_from_var(dst)
+            elif primitive_name == "coop.block.store":
+                dst = bound.arguments.get("dst")
+                src = bound.arguments.get("src")
+                if self._var_matches(src, var_name):
+                    candidate = self._dtype_from_var(dst)
+                elif self._var_matches(dst, var_name):
+                    candidate = self._dtype_from_var(src)
+            elif primitive_name == "coop.block.exchange":
+                items = bound.arguments.get("items")
+                output_items = bound.arguments.get("output_items")
+                if self._var_matches(items, var_name):
+                    candidate = self._dtype_from_var(output_items)
+                elif self._var_matches(output_items, var_name):
+                    candidate = self._dtype_from_var(items)
+            elif primitive_name == "coop.block.scan":
+                src = bound.arguments.get("src")
+                dst = bound.arguments.get("dst")
+                if self._var_matches(src, var_name):
+                    candidate = self._dtype_from_var(dst)
+                elif self._var_matches(dst, var_name):
+                    candidate = self._dtype_from_var(src)
+
+            if candidate is not None:
+                candidates.append(candidate)
+
+        if not candidates:
+            return None
+
+        dtype = candidates[0]
+        for candidate in candidates[1:]:
+            if candidate != dtype:
+                msg = (
+                    "Could not infer a consistent dtype for ThreadData; "
+                    f"found {dtype} and {candidate}"
+                )
+                raise RuntimeError(msg)
+
+        return dtype
+
+    def get_thread_data_info(self, var):
+        cached = self._thread_data_info.get(var.name)
+        if cached is not None:
+            return cached
+
+        root = self.get_root_def(var)
+        leaf = root.leaf_constructor_call
+        if not isinstance(leaf, ThreadDataCallDefinition):
+            raise RuntimeError(f"Expected ThreadData call for {var!r}, got {leaf!r}")
+
+        items_per_thread = leaf.items_per_thread
+        if not isinstance(items_per_thread, int):
+            raise RuntimeError(
+                "items_per_thread must be a compile-time integer for ThreadData"
+            )
+        if items_per_thread <= 0:
+            raise RuntimeError("items_per_thread must be >= 1 for ThreadData")
+
+        dtype = None
+        if leaf.dtype is not None:
+            from ._common import normalize_dtype_param
+
+            try:
+                dtype = normalize_dtype_param(leaf.dtype)
+            except Exception as exc:
+                msg = f"Invalid dtype for ThreadData: {leaf.dtype}"
+                raise RuntimeError(msg) from exc
+
+        if dtype is None:
+            dtype = self._infer_thread_data_dtype_from_uses(var)
+
+        if dtype is None:
+            msg = (
+                "Could not infer dtype for ThreadData; provide dtype explicitly "
+                "or use coop.local.array instead."
+            )
+            raise RuntimeError(msg)
+
+        info = SimpleNamespace(
+            items_per_thread=items_per_thread,
+            dtype=dtype,
+        )
+        self._thread_data_info[var.name] = info
+        return info
+
+    def get_temp_storage_info(self, var):
+        cached = self._temp_storage_info.get(var.name)
+        if cached is not None:
+            return cached
+
+        root = self.get_root_def(var)
+        leaf = root.leaf_constructor_call
+        if not isinstance(leaf, TempStorageCallDefinition):
+            raise RuntimeError(f"Expected TempStorage call for {var!r}, got {leaf!r}")
+
+        size_in_bytes = leaf.size_in_bytes
+        alignment = leaf.alignment
+        auto_sync = leaf.auto_sync if leaf.auto_sync is not None else True
+
+        if size_in_bytes is None:
+            msg = (
+                "TempStorage requires size_in_bytes for now; "
+                "pass size_in_bytes or omit temp_storage to use implicit storage."
+            )
+            raise RuntimeError(msg)
+        if not isinstance(size_in_bytes, int) or size_in_bytes <= 0:
+            raise RuntimeError("TempStorage size_in_bytes must be a positive integer")
+        if alignment is not None:
+            if not isinstance(alignment, int) or alignment <= 0:
+                raise RuntimeError("TempStorage alignment must be a positive integer")
+            pointer_size = struct.calcsize("P")
+            if alignment % pointer_size != 0:
+                alignment = (
+                    (alignment + pointer_size - 1) // pointer_size
+                ) * pointer_size
+        if not isinstance(auto_sync, bool):
+            raise RuntimeError("TempStorage auto_sync must be a boolean value")
+
+        info = SimpleNamespace(
+            size_in_bytes=size_in_bytes,
+            alignment=alignment,
+            auto_sync=auto_sync,
+        )
+        self._temp_storage_info[var.name] = info
+        return info
+
+    def emit_cuda_array_call(self, scope, loc, shape, dtype, alignment, shared, target):
+        new_nodes = []
+
+        shape = get_element_count(shape)
+
+        new_shape_name = ir_utils.mk_unique_var("$coop_array_shape")
+        new_shape_var = ir.Var(scope, new_shape_name, loc)
+        self.typemap[new_shape_var.name] = types.IntegerLiteral(shape)
+        new_shape_assign = ir.Assign(
+            value=ir.Const(shape, loc),
+            target=new_shape_var,
+            loc=loc,
+        )
+        new_nodes.append(new_shape_assign)
+
+        dtype_attr = str(dtype)
+        new_dtype_name = ir_utils.mk_unique_var("$coop_array_dtype")
+        new_dtype_var = ir.Var(scope, new_dtype_name, loc)
+        dtype_ty = types.DType(dtype)
+        self.typemap[new_dtype_var.name] = dtype_ty
+        import numba
+
+        if hasattr(numba, dtype_attr):
+            g_numba_module_assign = self.get_or_create_global_numba_module_instr(
+                scope,
+                loc,
+                new_nodes,
+            )
+            dtype_getattr = ir.Expr.getattr(
+                value=g_numba_module_assign.target,
+                attr=dtype_attr,
+                loc=loc,
+            )
+            dtype_assign = ir.Assign(
+                value=dtype_getattr,
+                target=new_dtype_var,
+                loc=loc,
+            )
+        else:
+            dtype_assign = ir.Assign(
+                value=ir.Global(dtype_attr, dtype, loc),
+                target=new_dtype_var,
+                loc=loc,
+            )
+        new_nodes.append(dtype_assign)
+
+        if alignment is not None:
+            alignment_name = ir_utils.mk_unique_var("$coop_array_alignment")
+            alignment_var = ir.Var(scope, alignment_name, loc)
+            self.typemap[alignment_var.name] = types.IntegerLiteral(alignment)
+            alignment_assign = ir.Assign(
+                value=ir.Const(alignment, loc),
+                target=alignment_var,
+                loc=loc,
+            )
+            new_nodes.append(alignment_assign)
+        else:
+            alignment_var = None
+
+        g_numba_cuda_module_assign = self.get_or_create_global_numba_cuda_module_instr(
+            scope,
+            loc,
+            new_nodes,
+        )
+
+        attr_name = "shared" if shared else "local"
+        import numba.cuda
+        import numba.cuda.cudadecl
+
+        array_module = getattr(numba.cuda, attr_name)
+        array_decl_name = f"Cuda_{attr_name}_array"
+        array_decl = getattr(numba.cuda.cudadecl, array_decl_name)
+        array_decl_ty = types.Function(array_decl)
+
+        if shared:
+            from numba.cuda.cudadecl import CudaSharedModuleTemplate as mod_ty
+        else:
+            from numba.cuda.cudadecl import CudaLocalModuleTemplate as mod_ty
+
+        mod = mod_ty(context=None)
+        array_func_ty = mod.resolve_array(None)
+        assert array_decl_ty is array_func_ty, (array_decl_ty, array_func_ty)
+
+        array_func_template_class = array_func_ty.templates[0]
+        instance = array_func_template_class(context=None)
+        typer = instance.generic()
+
+        args = [types.IntegerLiteral(shape), dtype_ty]
+        if alignment is not None:
+            args.append(types.IntegerLiteral(alignment))
+
+        return_type = typer(*args)
+        if not isinstance(return_type, types.Array):
+            msg = f"Expected an array type, got {return_type!r}"
+            raise RuntimeError(msg)
+
+        array_func_sig = Signature(return_type, tuple(args), recvr=None, pysig=None)
+        array_decl_ty.get_call_type(self.typingctx, args=array_func_sig.args, kws={})
+        check = array_decl_ty._impl_keys[array_func_sig.args]
+        assert check is not None, check
+
+        module_attr_getattr = ir.Expr.getattr(
+            value=g_numba_cuda_module_assign.target,
+            attr=attr_name,
+            loc=loc,
+        )
+        module_attr_var_name = ir_utils.mk_unique_var(f"$coop_{attr_name}_module")
+        module_attr_var = ir.Var(scope, module_attr_var_name, loc)
+        self.typemap[module_attr_var.name] = types.Module(array_module)
+        module_attr_assign = ir.Assign(
+            value=module_attr_getattr,
+            target=module_attr_var,
+            loc=loc,
+        )
+        new_nodes.append(module_attr_assign)
+
+        array_attr_getattr = ir.Expr.getattr(
+            value=module_attr_var,
+            attr="array",
+            loc=loc,
+        )
+        array_attr_var_name = f"{module_attr_var_name}_array_getattr"
+        array_attr_var = ir.Var(scope, array_attr_var_name, loc)
+        self.typemap[array_attr_var.name] = array_decl_ty
+        array_attr_assign = ir.Assign(
+            value=array_attr_getattr,
+            target=array_attr_var,
+            loc=loc,
+        )
+        new_nodes.append(array_attr_assign)
+
+        new_args = [new_shape_var, new_dtype_var]
+        if alignment_var is not None:
+            new_args.append(alignment_var)
+
+        array_func_var_name = f"{module_attr_var_name}_array_call"
+        array_func_var = ir.Var(scope, array_func_var_name, loc)
+        self.typemap[array_func_var.name] = array_func_ty
+        array_func_call = ir.Expr.call(
+            func=array_func_var,
+            args=tuple(new_args),
+            kws=(),
+            loc=loc,
+        )
+        self.calltypes[array_func_call] = array_func_sig
+        if target.name in self.typemap:
+            del self.typemap[target.name]
+        self.typemap[target.name] = array_func_sig.return_type
+        array_func_assign = ir.Assign(
+            value=array_func_call,
+            target=target,
+            loc=loc,
+        )
+        new_nodes.append(array_func_assign)
+
+        return new_nodes
+
+    def emit_syncthreads_call(self, scope, loc):
+        new_nodes = []
+        import numba.cuda
+
+        g_numba_cuda_module_assign = self.get_or_create_global_numba_cuda_module_instr(
+            scope,
+            loc,
+            new_nodes,
+        )
+
+        syncthreads_getattr = ir.Expr.getattr(
+            value=g_numba_cuda_module_assign.target,
+            attr="syncthreads",
+            loc=loc,
+        )
+        syncthreads_var_name = ir_utils.mk_unique_var("$cuda_syncthreads")
+        syncthreads_var = ir.Var(scope, syncthreads_var_name, loc)
+        syncthreads_ty = self.typingctx.resolve_value_type(numba.cuda.syncthreads)
+        self.typemap[syncthreads_var.name] = syncthreads_ty
+        syncthreads_assign = ir.Assign(
+            value=syncthreads_getattr,
+            target=syncthreads_var,
+            loc=loc,
+        )
+        new_nodes.append(syncthreads_assign)
+
+        call_expr = ir.Expr.call(
+            func=syncthreads_var,
+            args=(),
+            kws=(),
+            loc=loc,
+        )
+        call_sig = syncthreads_ty.get_call_type(self.typingctx, args=(), kws={})
+        self.calltypes[call_expr] = call_sig
+
+        call_var_name = ir_utils.mk_unique_var("$cuda_syncthreads_call")
+        call_var = ir.Var(scope, call_var_name, loc)
+        self.typemap[call_var.name] = call_sig.return_type
+        call_assign = ir.Assign(
+            value=call_expr,
+            target=call_var,
+            loc=loc,
+        )
+        new_nodes.append(call_assign)
+
+        return new_nodes
 
     def next_unique_id(self):
         return next(self._unique_id_counter)
@@ -4375,6 +6322,30 @@ class CoopNodeRewriter(Rewrite):
 
             expr = rhs
 
+            if expr.op == "getattr":
+                base_var = expr.value
+                if isinstance(base_var, ir.Var):
+                    try:
+                        root = self.get_root_def(base_var)
+                    except Exception:
+                        root = None
+                    if root is not None and isinstance(root.root_instr, ir.Arg):
+                        arg_name = root.root_instr.name
+                        if arg_name not in self.seen_structs:
+                            struct = root.instance
+                            if struct is not None and (
+                                getattr(struct, "__cuda_coop_gpu_dataclass__", False)
+                                or (
+                                    hasattr(struct, "prepare_args")
+                                    and hasattr(struct, "pre_launch_callback")
+                                )
+                            ):
+                                self.handle_new_kernel_traits_struct(
+                                    struct, arg_name, launch_config
+                                )
+                                self.seen_structs.add(arg_name)
+                continue
+
             if False and expr.op in ("getitem", "static_getitem"):
                 import debugpy
 
@@ -4387,7 +6358,50 @@ class CoopNodeRewriter(Rewrite):
                 continue
 
             func_name = expr.func.name
-            func = typemap[func_name]
+            func = typemap.get(func_name)
+            if func is None:
+                continue
+
+            func_obj = None
+            try:
+                func_def = func_ir.get_definition(func_name)
+            except KeyError:
+                continue
+            if isinstance(func_def, (ir.Global, ir.FreeVar)):
+                func_obj = func_def.value
+
+            py_func = getattr(func, "typing_key", None)
+            import cuda.coop as coop
+
+            if py_func is coop.ThreadData or func_obj is coop.ThreadData:
+                node = CoopThreadDataNode(
+                    expr=expr,
+                    instr=instr,
+                    target=target,
+                    func_ir=func_ir,
+                    typemap=typemap,
+                    calltypes=calltypes,
+                    block_line=block.loc.line,
+                )
+                self.nodes[target_name] = node
+                node.refine_match(self)
+                we_want_apply = True
+                continue
+
+            if py_func is coop.TempStorage or func_obj is coop.TempStorage:
+                node = CoopTempStorageNode(
+                    expr=expr,
+                    instr=instr,
+                    target=target,
+                    func_ir=func_ir,
+                    typemap=typemap,
+                    calltypes=calltypes,
+                    block_line=block.loc.line,
+                )
+                self.nodes[target_name] = node
+                node.refine_match(self)
+                we_want_apply = True
+                continue
 
             # Reset our per loop iteration local variables.
             decl = None

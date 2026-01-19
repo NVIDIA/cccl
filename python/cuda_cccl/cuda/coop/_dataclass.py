@@ -16,7 +16,7 @@ from numba.core.typing.templates import AttributeTemplate
 from numba.cuda.cudadecl import registry as cuda_registry
 
 
-def gpu_dataclass(dc: Any) -> Any:
+def gpu_dataclass(dc: Any, *, compute_temp_storage: bool = True) -> Any:
     fields = dataclasses.fields(dc)
     names = [f.name for f in fields]
     objs = [getattr(dc, name) for name in names]
@@ -28,7 +28,7 @@ def gpu_dataclass(dc: Any) -> Any:
     primitives = {
         name: obj for (name, obj) in zip(names, objs) if isinstance(obj, BasePrimitive)
     }
-    if primitives:
+    if compute_temp_storage and primitives:
         temp_storage_bytes_sum = sum(
             obj.temp_storage_bytes for obj in primitives.values()
         )
@@ -66,7 +66,7 @@ def gpu_dataclass(dc: Any) -> Any:
 
     for name, type_obj in members:
 
-        def resolver(self, this):
+        def resolver(self, this, type_obj=type_obj):
             return type_obj
 
         setattr(GpuDataClassAttrsTemplate, f"resolve_{name}", resolver)
@@ -86,12 +86,26 @@ def gpu_dataclass(dc: Any) -> Any:
         if val is not dc:
             return (ty, val)
 
-        # The values we return here just need to pacify _Kernel's
-        # _parse_args() routines--we never actually use the kernel
-        # parameters by way of the arguments provided at kernel launch.
-        addr = id(val)
-        return (numba.types.uint64, addr)
+        def coerce_field(field_val: Any):
+            if isinstance(field_val, BasePrimitive):
+                # Primitives are compile-time only; use a dummy pointer-sized
+                # value to satisfy argument packing.
+                return numba.types.uintp, 0
+            return numba.typeof(field_val), field_val
+
+        field_types = []
+        field_vals = []
+        for name in names:
+            field_ty, field_val = coerce_field(getattr(val, name))
+            field_types.append(field_ty)
+            field_vals.append(field_val)
+
+        # Flatten the struct into a tuple so that _Kernel._prepare_args can
+        # marshal the argument according to the backend ABI.
+        tuple_ty = numba.types.Tuple(tuple(field_types))
+        return (tuple_ty, tuple(field_vals))
 
     setattr(dc, "prepare_args", prepare_args)
+    setattr(dc, "__cuda_coop_gpu_dataclass__", True)
 
     return dc
