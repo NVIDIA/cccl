@@ -71,7 +71,7 @@ void fixed_seg_size_topk_keys(
   using total_num_items_guarantee_t =
     cub::detail::batched_topk::total_num_items_guarantee<min_num_total_items, max_num_total_items>;
 
-  using dispatch_t = cub::detail::batched_topk::DispatchBatchedTopK<
+  using dispatch_t = cub::detail::batched_topk::dispatch_batched_topk<
     key_input_it_t,
     key_output_it_t,
     cub::NullType**,
@@ -122,7 +122,7 @@ void fixed_seg_size_topk_keys(
 
   // allocate temporary storage
   size_t temp_size;
-  dispatch_t::Dispatch(
+  dispatch_t::dispatch(
     nullptr,
     temp_size,
     d_keys_in,
@@ -141,7 +141,7 @@ void fixed_seg_size_topk_keys(
 
   // run the algorithm
   state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch, [&](nvbench::launch& launch) {
-    dispatch_t::Dispatch(
+    dispatch_t::dispatch(
       temp_storage,
       temp_size,
       d_keys_in,

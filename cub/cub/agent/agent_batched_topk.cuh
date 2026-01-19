@@ -28,7 +28,7 @@ CUB_NAMESPACE_BEGIN
 namespace detail::batched_topk
 {
 template <int BlockThreads, int ItemsPerThread>
-struct AgentBatchedTopKWorkerPerSegmentPolicy
+struct agent_batched_topk_worker_per_segment_policy
 {
   /// Threads per thread block
   static constexpr int BLOCK_THREADS = BlockThreads;
@@ -46,7 +46,7 @@ template <typename ActivePolicyT,
           typename KParameterT,
           typename SelectDirectionParameterT,
           typename NumSegmentsParameterT>
-struct AgentBatchedTopKWorkerPerSegment
+struct agent_batched_topk_worker_per_segment
 {
   // -------------------------------------------------------------------------
   // Types and Constants
@@ -111,7 +111,7 @@ struct AgentBatchedTopKWorkerPerSegment
   // -------------------------------------------------------------------------
   // Constructor
   // -------------------------------------------------------------------------
-  _CCCL_DEVICE _CCCL_FORCEINLINE AgentBatchedTopKWorkerPerSegment(
+  _CCCL_DEVICE _CCCL_FORCEINLINE agent_batched_topk_worker_per_segment(
     TempStorage& temp_storage,
     KeyInputItItT d_key_segments_it,
     KeyOutputItItT d_key_segments_out_it,

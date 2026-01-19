@@ -41,7 +41,7 @@ CUB_RUNTIME_FUNCTION static cudaError_t dispatch_batched_topk_keys(
   using value_it_t = cub::NullType**;
 
   auto values_it = static_cast<cub::NullType**>(nullptr);
-  return cub::detail::batched_topk::DispatchBatchedTopK<
+  return cub::detail::batched_topk::dispatch_batched_topk<
     KeyInputItItT,
     KeyOutputItItT,
     value_it_t,
@@ -51,7 +51,7 @@ CUB_RUNTIME_FUNCTION static cudaError_t dispatch_batched_topk_keys(
     SelectDirectionParamT,
     NumSegmentsParameterT,
     TotalNumItemsGuaranteeT>::
-    Dispatch(
+    dispatch(
       d_temp_storage,
       temp_storage_bytes,
       d_key_segments_it,

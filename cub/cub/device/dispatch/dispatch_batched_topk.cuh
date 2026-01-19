@@ -223,7 +223,7 @@ template <typename ChainedPolicyT,
           typename NumSegmentsParameterT>
 __launch_bounds__(int(
   find_valid_policy<typename ChainedPolicyT::ActivePolicy,
-                    AgentBatchedTopKWorkerPerSegment,
+                    agent_batched_topk_worker_per_segment,
                     KeyInputItItT,
                     KeyOutputItItT,
                     ValueInputItItT,
@@ -246,7 +246,7 @@ __launch_bounds__(int(
 
   using find_valid_policy_t = find_valid_policy<
     active_policy_t,
-    AgentBatchedTopKWorkerPerSegment,
+    agent_batched_topk_worker_per_segment,
     KeyInputItItT,
     KeyOutputItItT,
     ValueInputItItT,
@@ -299,7 +299,7 @@ template <typename KeyInputItItT,
                                                it_value_t<it_value_t<ValueInputItItT>>,
                                                ::cuda::std::int64_t,
                                                params::static_max_value_v<KParameterT>>>
-struct DispatchBatchedTopK
+struct dispatch_batched_topk
 {
   using offset_t = ::cuda::std::int64_t;
 
@@ -347,37 +347,8 @@ struct DispatchBatchedTopK
   // We pass ValueInputItItT itself as cub::NullType** when only keys are processed
   static constexpr bool keys_only = ::cuda::std::is_same_v<ValueInputItItT, NullType**>;
 
-  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE DispatchBatchedTopK(
-    void* d_temp_storage,
-    size_t& temp_storage_bytes,
-    KeyInputItItT d_key_segments_it,
-    KeyOutputItItT d_key_segments_out_it,
-    ValueInputItItT d_value_segments_it,
-    ValueOutputItItT d_value_segments_out_it,
-    SegmentSizeParameterT segment_sizes,
-    KParameterT k,
-    SelectDirectionParameterT select_directions,
-    NumSegmentsParameterT num_segments,
-    TotalNumItemsGuaranteeT total_num_items_guarantee,
-    cudaStream_t stream,
-    int ptx_version)
-      : d_temp_storage(d_temp_storage)
-      , temp_storage_bytes(temp_storage_bytes)
-      , d_key_segments_it(d_key_segments_it)
-      , d_key_segments_out_it(d_key_segments_out_it)
-      , d_value_segments_it(d_value_segments_it)
-      , d_value_segments_out_it(d_value_segments_out_it)
-      , segment_sizes(segment_sizes)
-      , k(k)
-      , select_directions(select_directions)
-      , num_segments(num_segments)
-      , total_num_items_guarantee(total_num_items_guarantee)
-      , stream(stream)
-      , ptx_version(ptx_version)
-  {}
-
   template <typename ActiveWorkerPerSegmentPolicyTPolicyT>
-  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t InvokeFixedSegmentSize()
+  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t invoke_fixed_segment_size()
   {
     using max_policy_t = typename SelectedPolicy::max_policy;
 
@@ -451,7 +422,7 @@ struct DispatchBatchedTopK
     // sizes and k, and (b) if so, which set of one-worker-per-segment policies to use
     using find_valid_policy_t = find_valid_policy<
       ActivePolicyT,
-      AgentBatchedTopKWorkerPerSegment,
+      agent_batched_topk_worker_per_segment,
       KeyInputItItT,
       KeyOutputItItT,
       ValueInputItItT,
@@ -466,7 +437,7 @@ struct DispatchBatchedTopK
     if constexpr (!params::is_per_segment_param_v<SegmentSizeParameterT>
                   && find_valid_policy_t::supports_one_worker_per_segment)
     {
-      return InvokeFixedSegmentSize<typename find_valid_policy_t::worker_per_segment_policy_t>();
+      return invoke_fixed_segment_size<typename find_valid_policy_t::worker_per_segment_policy_t>();
     }
     else
     {
@@ -474,7 +445,7 @@ struct DispatchBatchedTopK
     }
   }
 
-  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t Dispatch(
+  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t dispatch(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
     KeyInputItItT d_key_segments_it,
@@ -496,7 +467,7 @@ struct DispatchBatchedTopK
       return error;
     }
 
-    DispatchBatchedTopK dispatch{
+    dispatch_batched_topk dispatch{
       d_temp_storage,
       temp_storage_bytes,
       d_key_segments_it,

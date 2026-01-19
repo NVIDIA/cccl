@@ -62,7 +62,7 @@ CUB_RUNTIME_FUNCTION static cudaError_t dispatch_batched_topk_pairs(
   TotalNumItemsGuaranteeT total_num_items_guarantee,
   cudaStream_t stream = 0)
 {
-  return cub::detail::batched_topk::DispatchBatchedTopK<
+  return cub::detail::batched_topk::dispatch_batched_topk<
     KeyInputItItT,
     KeyOutputItItT,
     ValueInputItItT,
@@ -72,7 +72,7 @@ CUB_RUNTIME_FUNCTION static cudaError_t dispatch_batched_topk_pairs(
     SelectDirectionParamT,
     NumSegmentsParameterT,
     TotalNumItemsGuaranteeT>::
-    Dispatch(
+    dispatch(
       d_temp_storage,
       temp_storage_bytes,
       d_key_segments_it,
