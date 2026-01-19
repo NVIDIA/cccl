@@ -164,6 +164,35 @@ def test_block_sum(T, threads_per_block, items_per_thread, mode, algorithm):
     assert "STL" not in sass
 
 
+def test_block_scan_scalar_return():
+    threads_per_block = 128
+    dtype = np.int32
+
+    @cuda.jit
+    def kernel(d_in, d_out_exclusive, d_out_inclusive):
+        tid = row_major_tid()
+        value = d_in[tid]
+        out_exclusive = coop.block.scan(value, mode="exclusive", scan_op="+")
+        out_inclusive = coop.block.scan(value, mode="inclusive", scan_op="+")
+        d_out_exclusive[tid] = out_exclusive
+        d_out_inclusive[tid] = out_inclusive
+
+    h_input = np.random.randint(0, 64, threads_per_block, dtype=dtype)
+    d_input = cuda.to_device(h_input)
+    d_out_exclusive = cuda.device_array_like(d_input)
+    d_out_inclusive = cuda.device_array_like(d_input)
+
+    kernel[1, threads_per_block](d_input, d_out_exclusive, d_out_inclusive)
+    h_out_exclusive = d_out_exclusive.copy_to_host()
+    h_out_inclusive = d_out_inclusive.copy_to_host()
+
+    reference_inclusive = np.cumsum(h_input)
+    reference_exclusive = reference_inclusive - h_input
+
+    np.testing.assert_array_equal(h_out_exclusive, reference_exclusive)
+    np.testing.assert_array_equal(h_out_inclusive, reference_inclusive)
+
+
 @pytest.mark.parametrize("threads_per_block", [32, (4, 16), (4, 8, 8)])
 @pytest.mark.parametrize("items_per_thread", [1, 4])
 @pytest.mark.parametrize("mode", ["inclusive", "exclusive"])

@@ -351,6 +351,12 @@ class scan(BasePrimitive):
             scan_op,
             block_prefix_callback_op,
         )
+        self.mode = mode
+        self.scan_op = scan_op
+        self.algorithm_enum = algorithm_enum
+        self.algorithm_id = int(algorithm_enum)
+        self.initial_value = initial_value
+        self.block_prefix_callback_op = block_prefix_callback_op
 
         specialization_kwds = {
             "T": dtype,

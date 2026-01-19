@@ -37,6 +37,84 @@ def test_block_load_store_single_phase():
     np.testing.assert_allclose(h_output, h_input)
 
 
+def test_block_load_store_single_phase_thread_data():
+    @cuda.jit
+    def kernel(d_in, d_out, items_per_thread):
+        thread_data = coop.ThreadData(items_per_thread)
+        coop.block.load(d_in, thread_data)
+        coop.block.store(d_out, thread_data)
+
+    dtype = np.int32
+    threads_per_block = 128
+    items_per_thread = 4
+    h_input = np.random.randint(
+        0, 42, threads_per_block * items_per_thread, dtype=dtype
+    )
+    d_input = cuda.to_device(h_input)
+    d_output = cuda.device_array_like(d_input)
+    kernel[1, threads_per_block](d_input, d_output, items_per_thread)
+    h_output = d_output.copy_to_host()
+
+    np.testing.assert_allclose(h_output, h_input)
+
+
+def test_block_load_store_single_phase_thread_data_temp_storage():
+    dtype = np.int32
+    threads_per_block = 128
+    items_per_thread = 4
+
+    block_load = coop.block.load(
+        dtype,
+        threads_per_block,
+        items_per_thread,
+        algorithm=coop.BlockLoadAlgorithm.TRANSPOSE,
+    )
+    block_store = coop.block.store(
+        dtype,
+        threads_per_block,
+        items_per_thread,
+        algorithm=coop.BlockStoreAlgorithm.TRANSPOSE,
+    )
+    temp_storage_bytes = max(
+        block_load.temp_storage_bytes,
+        block_store.temp_storage_bytes,
+    )
+    temp_storage_alignment = max(
+        block_load.temp_storage_alignment,
+        block_store.temp_storage_alignment,
+    )
+
+    @cuda.jit
+    def kernel(d_in, d_out):
+        temp_storage = coop.TempStorage(
+            temp_storage_bytes,
+            temp_storage_alignment,
+        )
+        thread_data = coop.ThreadData(items_per_thread)
+        coop.block.load(
+            d_in,
+            thread_data,
+            algorithm=coop.BlockLoadAlgorithm.TRANSPOSE,
+            temp_storage=temp_storage,
+        )
+        coop.block.store(
+            d_out,
+            thread_data,
+            algorithm=coop.BlockStoreAlgorithm.TRANSPOSE,
+            temp_storage=temp_storage,
+        )
+
+    h_input = np.random.randint(
+        0, 42, threads_per_block * items_per_thread, dtype=dtype
+    )
+    d_input = cuda.to_device(h_input)
+    d_output = cuda.device_array_like(d_input)
+    kernel[1, threads_per_block](d_input, d_output)
+    h_output = d_output.copy_to_host()
+
+    np.testing.assert_allclose(h_output, h_input)
+
+
 def test_block_load_store_single_phase_num_valid_items():
     @cuda.jit
     def kernel(d_in, d_out, items_per_thread, num_total_items):
@@ -219,20 +297,17 @@ def test_block_load_store_two_phase_kernel_param():
     np.testing.assert_allclose(h_output, h_input)
 
 
-# Crashes with:
-#  ... Call to cuLaunchKernel results in CUDA_ERROR_INVALID_VALUE
-def disabled_test_block_load_store_two_phase_gpu_dataclass():
-    # XXX: this only seems to pass when *debugged* in VS Code/Cursor.  Running
-    # it any other way results in a seg fault.
+def test_block_load_store_two_phase_gpu_dataclass():
     dtype = np.int32
     dim = 128
     items_per_thread = 16
 
     @cuda.jit
-    def kernel(d_in, d_out, items_per_thread, kp):
+    def kernel(d_in, d_out, kp):
+        items_per_thread = kp.items_per_thread
         thread_data = coop.local.array(items_per_thread, dtype=d_in.dtype)
         kp.block_load(d_in, thread_data)
-        coop.block.store(d_out, thread_data, items_per_thread)
+        kp.block_store(d_out, thread_data)
 
     def make_kernel_params(dtype, dim, items_per_thread):
         block_load = coop.block.load(dtype, dim, items_per_thread)
@@ -264,7 +339,7 @@ def disabled_test_block_load_store_two_phase_gpu_dataclass():
     assert kp.temp_storage_alignment == 1
     assert kp.items_per_thread == items_per_thread
 
-    k(d_input, d_output, items_per_thread, kp)
+    k(d_input, d_output, kp)
     h_output = d_output.copy_to_host()
 
     np.testing.assert_array_equal(h_output, h_input)
