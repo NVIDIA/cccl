@@ -62,7 +62,7 @@ struct lowest_arch_resolver<ArchMult, ::cuda::std::integer_sequence<int, CudaArc
 
   static constexpr ::cuda::arch_id all_arches[sizeof...(Is)] = {::cuda::arch_id{(CudaArches * ArchMult) / 10}...};
 
-  // GCC 7 has issues reusing the constexr array of tuning policies in find_lowest below (it loses the constexpr-ness)
+  // GCC 7 has issues reusing the constexpr array of tuning policies in find_lowest below (it loses the constexpr-ness)
 #    if _CCCL_COMPILER(GCC, >=, 8)
   static constexpr policy_t all_policies[sizeof...(Is)] = {PolicySelector{}(all_arches[Is])...};
 #    endif // _CCCL_COMPILER(GCC, <, 8)

@@ -453,16 +453,16 @@ public:
                   "DecomposerT must be a callable object returning a tuple of references to "
                   "arithmetic types");
 
-    // We cast away const-ness, but will *not* write to these arrays.
-    // ``DispatchRadixSort::Dispatch`` will allocate temporary storage and
-    // create a new double-buffer internally when the ``is_overwrite_ok`` flag
-    // is not set.
-    constexpr bool is_overwrite_okay = false;
-    DoubleBuffer<KeyT> d_keys(const_cast<KeyT*>(d_keys_in), d_keys_out);
-    DoubleBuffer<ValueT> d_values(const_cast<ValueT*>(d_values_in), d_values_out);
-
     if constexpr (decomposer_check_t::value)
     {
+      // We cast away const-ness, but will *not* write to these arrays.
+      // ``DispatchRadixSort::Dispatch`` will allocate temporary storage and
+      // create a new double-buffer internally when the ``is_overwrite_ok`` flag
+      // is not set.
+      constexpr bool is_overwrite_okay = false;
+      DoubleBuffer<KeyT> d_keys(const_cast<KeyT*>(d_keys_in), d_keys_out);
+      DoubleBuffer<ValueT> d_values(const_cast<ValueT*>(d_values_in), d_values_out);
+
       return DeviceRadixSort::custom_radix_sort<SortOrder::Ascending>(
         d_temp_storage,
         temp_storage_bytes,
@@ -593,16 +593,16 @@ public:
                   "DecomposerT must be a callable object returning a tuple of references to "
                   "arithmetic types");
 
-    // We cast away const-ness, but will *not* write to these arrays.
-    // ``DispatchRadixSort::Dispatch`` will allocate temporary storage and
-    // create a new double-buffer internally when the ``is_overwrite_ok`` flag
-    // is not set.
-    constexpr bool is_overwrite_okay = false;
-    DoubleBuffer<KeyT> d_keys(const_cast<KeyT*>(d_keys_in), d_keys_out);
-    DoubleBuffer<ValueT> d_values(const_cast<ValueT*>(d_values_in), d_values_out);
-
     if constexpr (decomposer_check_t::value)
     {
+      // We cast away const-ness, but will *not* write to these arrays.
+      // ``DispatchRadixSort::Dispatch`` will allocate temporary storage and
+      // create a new double-buffer internally when the ``is_overwrite_ok`` flag
+      // is not set.
+      constexpr bool is_overwrite_okay = false;
+      DoubleBuffer<KeyT> d_keys(const_cast<KeyT*>(d_keys_in), d_keys_out);
+      DoubleBuffer<ValueT> d_values(const_cast<ValueT*>(d_values_in), d_values_out);
+
       return DeviceRadixSort::custom_radix_sort<SortOrder::Ascending>(
         d_temp_storage,
         temp_storage_bytes,
@@ -864,10 +864,9 @@ public:
                   "DecomposerT must be a callable object returning a tuple of references to "
                   "arithmetic types");
 
-    constexpr bool is_overwrite_okay = true;
-
     if constexpr (decomposer_check_t::value)
     {
+      constexpr bool is_overwrite_okay = true;
       return DeviceRadixSort::custom_radix_sort<SortOrder::Ascending>(
         d_temp_storage,
         temp_storage_bytes,
@@ -1011,10 +1010,9 @@ public:
                   "DecomposerT must be a callable object returning a tuple of references to "
                   "arithmetic types");
 
-    constexpr bool is_overwrite_okay = true;
-
     if constexpr (decomposer_check_t::value)
     {
+      constexpr bool is_overwrite_okay = true;
       return DeviceRadixSort::custom_radix_sort<SortOrder::Ascending>(
         d_temp_storage,
         temp_storage_bytes,
@@ -1294,16 +1292,16 @@ public:
                   "DecomposerT must be a callable object returning a tuple of references to "
                   "arithmetic types");
 
-    // We cast away const-ness, but will *not* write to these arrays.
-    // ``DispatchRadixSort::Dispatch`` will allocate temporary storage and
-    // create a new double-buffer internally when the ``is_overwrite_ok`` flag
-    // is not set.
-    constexpr bool is_overwrite_okay = false;
-    DoubleBuffer<KeyT> d_keys(const_cast<KeyT*>(d_keys_in), d_keys_out);
-    DoubleBuffer<ValueT> d_values(const_cast<ValueT*>(d_values_in), d_values_out);
-
     if constexpr (decomposer_check_t::value)
     {
+      // We cast away const-ness, but will *not* write to these arrays.
+      // ``DispatchRadixSort::Dispatch`` will allocate temporary storage and
+      // create a new double-buffer internally when the ``is_overwrite_ok`` flag
+      // is not set.
+      constexpr bool is_overwrite_okay = false;
+      DoubleBuffer<KeyT> d_keys(const_cast<KeyT*>(d_keys_in), d_keys_out);
+      DoubleBuffer<ValueT> d_values(const_cast<ValueT*>(d_values_in), d_values_out);
+
       return DeviceRadixSort::custom_radix_sort<SortOrder::Descending>(
         d_temp_storage,
         temp_storage_bytes,
@@ -1436,16 +1434,16 @@ public:
                   "DecomposerT must be a callable object returning a tuple of references to "
                   "arithmetic types");
 
-    // We cast away const-ness, but will *not* write to these arrays.
-    // ``DispatchRadixSort::Dispatch`` will allocate temporary storage and
-    // create a new double-buffer internally when the ``is_overwrite_ok`` flag
-    // is not set.
-    constexpr bool is_overwrite_okay = false;
-    DoubleBuffer<KeyT> d_keys(const_cast<KeyT*>(d_keys_in), d_keys_out);
-    DoubleBuffer<ValueT> d_values(const_cast<ValueT*>(d_values_in), d_values_out);
-
     if constexpr (decomposer_check_t::value)
     {
+      // We cast away const-ness, but will *not* write to these arrays.
+      // ``DispatchRadixSort::Dispatch`` will allocate temporary storage and
+      // create a new double-buffer internally when the ``is_overwrite_ok`` flag
+      // is not set.
+      constexpr bool is_overwrite_okay = false;
+      DoubleBuffer<KeyT> d_keys(const_cast<KeyT*>(d_keys_in), d_keys_out);
+      DoubleBuffer<ValueT> d_values(const_cast<ValueT*>(d_values_in), d_values_out);
+
       return DeviceRadixSort::custom_radix_sort<SortOrder::Descending>(
         d_temp_storage,
         temp_storage_bytes,
@@ -1708,10 +1706,9 @@ public:
                   "DecomposerT must be a callable object returning a tuple of references to "
                   "arithmetic types");
 
-    constexpr bool is_overwrite_okay = true;
-
     if constexpr (decomposer_check_t::value)
     {
+      constexpr bool is_overwrite_okay = true;
       return DeviceRadixSort::custom_radix_sort<SortOrder::Descending>(
         d_temp_storage,
         temp_storage_bytes,
@@ -1856,10 +1853,9 @@ public:
                   "DecomposerT must be a callable object returning a tuple of references to "
                   "arithmetic types");
 
-    constexpr bool is_overwrite_okay = true;
-
     if constexpr (decomposer_check_t::value)
     {
+      constexpr bool is_overwrite_okay = true;
       return DeviceRadixSort::custom_radix_sort<SortOrder::Descending>(
         d_temp_storage,
         temp_storage_bytes,
@@ -2121,16 +2117,16 @@ public:
                   "DecomposerT must be a callable object returning a tuple of references to "
                   "arithmetic types");
 
-    // We cast away const-ness, but will *not* write to these arrays.
-    // ``DispatchRadixSort::Dispatch`` will allocate temporary storage and
-    // create a new double-buffer internally when the ``is_overwrite_ok`` flag
-    // is not set.
-    constexpr bool is_overwrite_okay = false;
-    DoubleBuffer<KeyT> d_keys(const_cast<KeyT*>(d_keys_in), d_keys_out);
-    DoubleBuffer<NullType> d_values;
-
     if constexpr (decomposer_check_t::value)
     {
+      // We cast away const-ness, but will *not* write to these arrays.
+      // ``DispatchRadixSort::Dispatch`` will allocate temporary storage and
+      // create a new double-buffer internally when the ``is_overwrite_ok`` flag
+      // is not set.
+      constexpr bool is_overwrite_okay = false;
+      DoubleBuffer<KeyT> d_keys(const_cast<KeyT*>(d_keys_in), d_keys_out);
+      DoubleBuffer<NullType> d_values;
+
       return DeviceRadixSort::custom_radix_sort<SortOrder::Ascending>(
         d_temp_storage,
         temp_storage_bytes,
@@ -2251,16 +2247,16 @@ public:
                   "DecomposerT must be a callable object returning a tuple of references to "
                   "arithmetic types");
 
-    // We cast away const-ness, but will *not* write to these arrays.
-    // ``DispatchRadixSort::Dispatch`` will allocate temporary storage and
-    // create a new double-buffer internally when the ``is_overwrite_ok`` flag
-    // is not set.
-    constexpr bool is_overwrite_okay = false;
-    DoubleBuffer<KeyT> d_keys(const_cast<KeyT*>(d_keys_in), d_keys_out);
-    DoubleBuffer<NullType> d_values;
-
     if constexpr (decomposer_check_t::value)
     {
+      // We cast away const-ness, but will *not* write to these arrays.
+      // ``DispatchRadixSort::Dispatch`` will allocate temporary storage and
+      // create a new double-buffer internally when the ``is_overwrite_ok`` flag
+      // is not set.
+      constexpr bool is_overwrite_okay = false;
+      DoubleBuffer<KeyT> d_keys(const_cast<KeyT*>(d_keys_in), d_keys_out);
+      DoubleBuffer<NullType> d_values;
+
       return DeviceRadixSort::custom_radix_sort<SortOrder::Ascending>(
         d_temp_storage,
         temp_storage_bytes,
@@ -2495,11 +2491,11 @@ public:
                   "DecomposerT must be a callable object returning a tuple of references to "
                   "arithmetic types");
 
-    constexpr bool is_overwrite_okay = true;
-    DoubleBuffer<NullType> d_values;
-
     if constexpr (decomposer_check_t::value)
     {
+      constexpr bool is_overwrite_okay = true;
+      DoubleBuffer<NullType> d_values;
+
       return DeviceRadixSort::custom_radix_sort<SortOrder::Ascending>(
         d_temp_storage,
         temp_storage_bytes,
@@ -2630,11 +2626,11 @@ public:
                   "DecomposerT must be a callable object returning a tuple of references to "
                   "arithmetic types");
 
-    constexpr bool is_overwrite_okay = true;
-    DoubleBuffer<NullType> d_values;
-
     if constexpr (decomposer_check_t::value)
     {
+      constexpr bool is_overwrite_okay = true;
+      DoubleBuffer<NullType> d_values;
+
       return DeviceRadixSort::custom_radix_sort<SortOrder::Ascending>(
         d_temp_storage,
         temp_storage_bytes,
@@ -2883,16 +2879,16 @@ public:
                   "DecomposerT must be a callable object returning a tuple of references to "
                   "arithmetic types");
 
-    // We cast away const-ness, but will *not* write to these arrays.
-    // ``DispatchRadixSort::Dispatch`` will allocate temporary storage and
-    // create a new double-buffer internally when the ``is_overwrite_ok`` flag
-    // is not set.
-    constexpr bool is_overwrite_okay = false;
-    DoubleBuffer<KeyT> d_keys(const_cast<KeyT*>(d_keys_in), d_keys_out);
-    DoubleBuffer<NullType> d_values;
-
     if constexpr (decomposer_check_t::value)
     {
+      // We cast away const-ness, but will *not* write to these arrays.
+      // ``DispatchRadixSort::Dispatch`` will allocate temporary storage and
+      // create a new double-buffer internally when the ``is_overwrite_ok`` flag
+      // is not set.
+      constexpr bool is_overwrite_okay = false;
+      DoubleBuffer<KeyT> d_keys(const_cast<KeyT*>(d_keys_in), d_keys_out);
+      DoubleBuffer<NullType> d_values;
+
       return DeviceRadixSort::custom_radix_sort<SortOrder::Descending>(
         d_temp_storage,
         temp_storage_bytes,
@@ -3011,16 +3007,16 @@ public:
                   "DecomposerT must be a callable object returning a tuple of references to "
                   "arithmetic types");
 
-    // We cast away const-ness, but will *not* write to these arrays.
-    // ``DispatchRadixSort::Dispatch`` will allocate temporary storage and
-    // create a new double-buffer internally when the ``is_overwrite_ok`` flag
-    // is not set.
-    constexpr bool is_overwrite_okay = false;
-    DoubleBuffer<KeyT> d_keys(const_cast<KeyT*>(d_keys_in), d_keys_out);
-    DoubleBuffer<NullType> d_values;
-
     if constexpr (decomposer_check_t::value)
     {
+      // We cast away const-ness, but will *not* write to these arrays.
+      // ``DispatchRadixSort::Dispatch`` will allocate temporary storage and
+      // create a new double-buffer internally when the ``is_overwrite_ok`` flag
+      // is not set.
+      constexpr bool is_overwrite_okay = false;
+      DoubleBuffer<KeyT> d_keys(const_cast<KeyT*>(d_keys_in), d_keys_out);
+      DoubleBuffer<NullType> d_values;
+
       return DeviceRadixSort::custom_radix_sort<SortOrder::Descending>(
         d_temp_storage,
         temp_storage_bytes,
@@ -3255,11 +3251,11 @@ public:
                   "DecomposerT must be a callable object returning a tuple of references to "
                   "arithmetic types");
 
-    constexpr bool is_overwrite_okay = true;
-    DoubleBuffer<NullType> d_values;
-
     if constexpr (decomposer_check_t::value)
     {
+      constexpr bool is_overwrite_okay = true;
+      DoubleBuffer<NullType> d_values;
+
       return DeviceRadixSort::custom_radix_sort<SortOrder::Descending>(
         d_temp_storage,
         temp_storage_bytes,
@@ -3391,11 +3387,11 @@ public:
                   "DecomposerT must be a callable object returning a tuple of references to "
                   "arithmetic types");
 
-    constexpr bool is_overwrite_okay = true;
-    DoubleBuffer<NullType> d_values;
-
     if constexpr (decomposer_check_t::value)
     {
+      constexpr bool is_overwrite_okay = true;
+      DoubleBuffer<NullType> d_values;
+
       return DeviceRadixSort::custom_radix_sort<SortOrder::Descending>(
         d_temp_storage,
         temp_storage_bytes,
