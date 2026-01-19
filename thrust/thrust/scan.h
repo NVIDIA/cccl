@@ -94,6 +94,9 @@ THRUST_NAMESPACE_BEGIN
  *
  *  \see https://en.cppreference.com/w/cpp/algorithm/partial_sum
  *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename DerivedPolicy, typename InputIterator, typename OutputIterator>
 _CCCL_HOST_DEVICE OutputIterator inclusive_scan(
@@ -148,6 +151,9 @@ _CCCL_HOST_DEVICE OutputIterator inclusive_scan(
  *
  *  \see https://en.cppreference.com/w/cpp/algorithm/partial_sum
  *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename InputIterator, typename OutputIterator>
 OutputIterator inclusive_scan(InputIterator first, InputIterator last, OutputIterator result);
@@ -200,6 +206,10 @@ OutputIterator inclusive_scan(InputIterator first, InputIterator last, OutputIte
  *  \endcode
  *
  *  \see https://en.cppreference.com/w/cpp/algorithm/partial_sum
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename DerivedPolicy, typename InputIterator, typename OutputIterator, typename AssociativeOperator>
 _CCCL_HOST_DEVICE OutputIterator inclusive_scan(
@@ -252,6 +262,10 @@ _CCCL_HOST_DEVICE OutputIterator inclusive_scan(
  *  \endcode
  *
  *  \see https://en.cppreference.com/w/cpp/algorithm/partial_sum
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename InputIterator, typename OutputIterator, typename AssociativeOperator>
 OutputIterator
@@ -300,6 +314,10 @@ inclusive_scan(InputIterator first, InputIterator last, OutputIterator result, A
  *  \endcode
  *
  *  \see https://en.cppreference.com/w/cpp/algorithm/partial_sum
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.6.0
+ *  \endverbatim
  */
 template <typename DerivedPolicy, typename InputIterator, typename OutputIterator, typename T, typename AssociativeOperator>
 _CCCL_HOST_DEVICE OutputIterator inclusive_scan(
@@ -349,6 +367,10 @@ _CCCL_HOST_DEVICE OutputIterator inclusive_scan(
  *  \endcode
  *
  *  \see https://en.cppreference.com/w/cpp/algorithm/partial_sum
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.6.0
+ *  \endverbatim
  */
 template <typename InputIterator, typename OutputIterator, typename T, typename AssociativeOperator>
 OutputIterator
@@ -401,6 +423,10 @@ inclusive_scan(InputIterator first, InputIterator last, OutputIterator result, T
  *  \endcode
  *
  *  \see https://en.cppreference.com/w/cpp/algorithm/partial_sum
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename DerivedPolicy, typename InputIterator, typename OutputIterator>
 _CCCL_HOST_DEVICE OutputIterator exclusive_scan(
@@ -449,6 +475,10 @@ _CCCL_HOST_DEVICE OutputIterator exclusive_scan(
  *  \endcode
  *
  *  \see https://en.cppreference.com/w/cpp/algorithm/partial_sum
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename InputIterator, typename OutputIterator>
 OutputIterator exclusive_scan(InputIterator first, InputIterator last, OutputIterator result);
@@ -500,6 +530,10 @@ OutputIterator exclusive_scan(InputIterator first, InputIterator last, OutputIte
  *  \endcode
  *
  *  \see https://en.cppreference.com/w/cpp/algorithm/partial_sum
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename DerivedPolicy, typename InputIterator, typename OutputIterator, typename T>
 _CCCL_HOST_DEVICE OutputIterator exclusive_scan(
@@ -550,6 +584,10 @@ _CCCL_HOST_DEVICE OutputIterator exclusive_scan(
  *  \endcode
  *
  *  \see https://en.cppreference.com/w/cpp/algorithm/partial_sum
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename InputIterator, typename OutputIterator, typename T>
 OutputIterator exclusive_scan(InputIterator first, InputIterator last, OutputIterator result, T init);
@@ -608,6 +646,10 @@ OutputIterator exclusive_scan(InputIterator first, InputIterator last, OutputIte
  *  \endcode
  *
  *  \see https://en.cppreference.com/w/cpp/algorithm/partial_sum
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename DerivedPolicy, typename InputIterator, typename OutputIterator, typename T, typename AssociativeOperator>
 _CCCL_HOST_DEVICE OutputIterator exclusive_scan(
@@ -665,6 +707,10 @@ _CCCL_HOST_DEVICE OutputIterator exclusive_scan(
  *  \endcode
  *
  *  \see https://en.cppreference.com/w/cpp/algorithm/partial_sum
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename InputIterator, typename OutputIterator, typename T, typename AssociativeOperator>
 OutputIterator
@@ -736,7 +782,9 @@ exclusive_scan(InputIterator first, InputIterator last, OutputIterator result, T
  *
  *  \see inclusive_scan
  *  \see exclusive_scan_by_key
- *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename DerivedPolicy, typename InputIterator1, typename InputIterator2, typename OutputIterator>
 _CCCL_HOST_DEVICE OutputIterator inclusive_scan_by_key(
@@ -800,7 +848,9 @@ _CCCL_HOST_DEVICE OutputIterator inclusive_scan_by_key(
  *
  *  \see inclusive_scan
  *  \see exclusive_scan_by_key
- *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename InputIterator1, typename InputIterator2, typename OutputIterator>
 OutputIterator
@@ -872,7 +922,9 @@ inclusive_scan_by_key(InputIterator1 first1, InputIterator1 last1, InputIterator
  *
  *  \see inclusive_scan
  *  \see exclusive_scan_by_key
- *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename DerivedPolicy,
           typename InputIterator1,
@@ -946,7 +998,9 @@ _CCCL_HOST_DEVICE OutputIterator inclusive_scan_by_key(
  *
  *  \see inclusive_scan
  *  \see exclusive_scan_by_key
- *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename InputIterator1, typename InputIterator2, typename OutputIterator, typename BinaryPredicate>
 OutputIterator inclusive_scan_by_key(
@@ -1025,7 +1079,9 @@ OutputIterator inclusive_scan_by_key(
  *
  *  \see inclusive_scan
  *  \see exclusive_scan_by_key
- *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename DerivedPolicy,
           typename InputIterator1,
@@ -1104,7 +1160,9 @@ _CCCL_HOST_DEVICE OutputIterator inclusive_scan_by_key(
  *
  *  \see inclusive_scan
  *  \see exclusive_scan_by_key
- *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename InputIterator1,
           typename InputIterator2,
@@ -1170,7 +1228,9 @@ OutputIterator inclusive_scan_by_key(
  *  \endcode
  *
  *  \see exclusive_scan
- *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename DerivedPolicy, typename InputIterator1, typename InputIterator2, typename OutputIterator>
 _CCCL_HOST_DEVICE OutputIterator exclusive_scan_by_key(
@@ -1225,7 +1285,9 @@ _CCCL_HOST_DEVICE OutputIterator exclusive_scan_by_key(
  *  \endcode
  *
  *  \see exclusive_scan
- *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename InputIterator1, typename InputIterator2, typename OutputIterator>
 OutputIterator
@@ -1281,7 +1343,9 @@ exclusive_scan_by_key(InputIterator1 first1, InputIterator1 last1, InputIterator
  *
  *  \see exclusive_scan
  *  \see inclusive_scan_by_key
- *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename DerivedPolicy, typename InputIterator1, typename InputIterator2, typename OutputIterator, typename T>
 _CCCL_HOST_DEVICE OutputIterator exclusive_scan_by_key(
@@ -1336,7 +1400,9 @@ _CCCL_HOST_DEVICE OutputIterator exclusive_scan_by_key(
  *
  *  \see exclusive_scan
  *  \see inclusive_scan_by_key
- *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename InputIterator1, typename InputIterator2, typename OutputIterator, typename T>
 OutputIterator exclusive_scan_by_key(
@@ -1400,7 +1466,9 @@ OutputIterator exclusive_scan_by_key(
  *
  *  \see exclusive_scan
  *  \see inclusive_scan_by_key
- *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename DerivedPolicy,
           typename InputIterator1,
@@ -1469,7 +1537,9 @@ _CCCL_HOST_DEVICE OutputIterator exclusive_scan_by_key(
  *
  *  \see exclusive_scan
  *  \see inclusive_scan_by_key
- *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename InputIterator1, typename InputIterator2, typename OutputIterator, typename T, typename BinaryPredicate>
 OutputIterator exclusive_scan_by_key(
@@ -1556,7 +1626,9 @@ OutputIterator exclusive_scan_by_key(
  *
  *  \see exclusive_scan
  *  \see inclusive_scan_by_key
- *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename DerivedPolicy,
           typename InputIterator1,
@@ -1643,7 +1715,9 @@ _CCCL_HOST_DEVICE OutputIterator exclusive_scan_by_key(
  *
  *  \see exclusive_scan
  *  \see inclusive_scan_by_key
- *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename InputIterator1,
           typename InputIterator2,
