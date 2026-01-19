@@ -46,6 +46,7 @@
 #include <thrust/type_traits/integer_sequence.h>
 
 #include <cuda/std/__iterator/advance.h>
+#include <cuda/std/__iterator/distance.h>
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/is_constructible.h>
@@ -306,7 +307,7 @@ private:
   inline _CCCL_HOST_DEVICE typename super_t::difference_type
   distance_to(const zip_iterator<OtherIteratorTuple>& other) const
   {
-    return ::cuda::std::get<0>(other.get_iterator_tuple()) - ::cuda::std::get<0>(get_iterator_tuple());
+    return ::cuda::std::distance(::cuda::std::get<0>(get_iterator_tuple()), ::cuda::std::get<0>(other.get_iterator_tuple()));
   }
 
   // The iterator tuple.

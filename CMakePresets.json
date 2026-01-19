@@ -200,8 +200,10 @@
       "displayName": "Thrust",
       "inherits": "base",
       "cacheVariables": {
+        "CMAKE_CUDA_ARCHITECTURES": "minmax-major-cccl",
         "CCCL_ENABLE_THRUST": true,
         "THRUST_ENABLE_MULTICONFIG": true,
+        "THRUST_MULTICONFIG_WORKLOAD": "MEDIUM",
         "THRUST_MULTICONFIG_ENABLE_SYSTEM_CPP": true,
         "THRUST_MULTICONFIG_ENABLE_SYSTEM_CUDA": true,
         "THRUST_MULTICONFIG_ENABLE_SYSTEM_OMP": true,
@@ -564,11 +566,30 @@
       "inherits": "cub"
     },
     {
+      "name": "cub-fail",
+      "inherits": "cub",
+      "filter": {
+        "include": {
+          "name": "^cub.*[_.]fail(\\.|$)"
+        }
+      }
+    },
+    {
+      "name": "cub-fail-cpp17",
+      "configurePreset": "cub-cpp17",
+      "inherits": "cub-fail"
+    },
+    {
+      "name": "cub-fail-cpp20",
+      "configurePreset": "cub-cpp20",
+      "inherits": "cub-fail"
+    },
+    {
       "name": "cub-nolid",
       "inherits": "cub",
       "filter": {
         "exclude": {
-          "name": "^cub.*\\.lid_[0-2].*$"
+          "name": "^cub.*(\\.lid_[0-2]|[_.]fail)(\\.|$)"
         }
       }
     },
@@ -588,6 +609,9 @@
       "filter": {
         "include": {
           "name": "^cub.*\\.lid_0.*$"
+        },
+        "exclude": {
+          "name": "^cub.*[_.]fail(\\.|$)"
         }
       }
     },
@@ -607,6 +631,9 @@
       "filter": {
         "include": {
           "name": "^cub.*\\.lid_1.*$"
+        },
+        "exclude": {
+          "name": "^cub.*[_.]fail(\\.|$)"
         }
       }
     },
@@ -626,6 +653,9 @@
       "filter": {
         "include": {
           "name": "^cub.*\\.lid_2.*$"
+        },
+        "exclude": {
+          "name": "^cub.*[_.]fail(\\.|$)"
         }
       }
     },
@@ -655,12 +685,34 @@
       "inherits": "thrust"
     },
     {
+      "name": "thrust-fail",
+      "inherits": "thrust",
+      "filter": {
+        "include": {
+          "name": "^thrust.*[_.]fail(\\.|$)"
+        }
+      }
+    },
+    {
+      "name": "thrust-fail-cpp17",
+      "configurePreset": "thrust-cpp17",
+      "inherits": "thrust-fail"
+    },
+    {
+      "name": "thrust-fail-cpp20",
+      "configurePreset": "thrust-cpp20",
+      "inherits": "thrust-fail"
+    },
+    {
       "name": "thrust-gpu",
       "configurePreset": "thrust",
       "inherits": "thrust",
       "filter": {
         "include": {
-          "name": "^thrust.*\\.cuda\\..*$"
+          "name": "^thrust.*\\.cuda(\\.|$)"
+        },
+        "exclude": {
+          "name": "^thrust.*[_.]fail(\\.|$)"
         }
       }
     },
@@ -680,7 +732,7 @@
       "inherits": "thrust",
       "filter": {
         "exclude": {
-          "name": "^thrust.*\\.cuda\\..*$"
+          "name": "^thrust.*(\\.cuda|[_.]fail)(\\.|$)"
         }
       }
     },

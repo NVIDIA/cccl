@@ -1,3 +1,15 @@
+#include <thrust/detail/config/host_system.h>
+
+#include <thrust/detail/config/device_system.h>
+
+#include <cuda/std/__cccl/diagnostic.h>
+
+// GCC with host=device=cpp generates false positive static analysis warnings in this test:
+#if (THRUST_HOST_SYSTEM == THRUST_HOST_SYSTEM_CPP) && (THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CPP)
+_CCCL_DIAG_SUPPRESS_GCC("-Wnonnull")
+_CCCL_DIAG_SUPPRESS_GCC("-Wstringop-overflow")
+#endif
+
 #include <thrust/extrema.h>
 #include <thrust/functional.h>
 #include <thrust/iterator/retag.h>

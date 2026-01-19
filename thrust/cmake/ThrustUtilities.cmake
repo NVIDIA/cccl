@@ -14,47 +14,27 @@ function(thrust_wrap_cu_in_cpp cpp_file_var cu_file thrust_target)
   set(${cpp_file_var} "${cpp_file}" PARENT_SCOPE)
 endfunction()
 
-# thrust_configure_cuda_target(<target_name> RDC <ON|OFF>)
-#
-# Configures `target_name` with the appropriate CUDA architectures and RDC state.
-function(thrust_configure_cuda_target target_name)
-  set(options)
-  set(one_value_args RDC)
-  set(multi_value_args)
-  cmake_parse_arguments(
-    thrust_cuda
-    "${options}"
-    "${one_value_args}"
-    "${multi_value_args}"
-    ${ARGN}
+# Creates (if needed) a `thrust.all.[...]` metatarget that ties multiple per-config
+# targets together. For instance, calling this with `thrust.cpp.cuda.test.foo` and
+# `thrust.cpp.tbb.test.foo` will create a `thrust.all.test.foo` target that can be
+# used to build both configurations of the `foo` test.
+function(thrust_add_all_config_metatarget target_name)
+  string(
+    REGEX REPLACE
+    "^thrust\\.[^.]+\\.[^.]+\\."
+    "thrust.all."
+    all_target_name
+    "${target_name}"
   )
 
-  if (thrust_cuda_UNPARSED_ARGUMENTS)
-    message(
-      AUTHOR_WARNING
-      "Unrecognized arguments passed to thrust_configure_cuda_target: "
-      ${thrust_cuda_UNPARSED_ARGUMENTS}
-    )
+  # Do nothing if the target doesn't match the expected "thrust.host.device." pattern.
+  if (target_name STREQUAL all_target_name)
+    return()
   endif()
 
-  if (NOT DEFINED thrust_cuda_RDC)
-    message(
-      AUTHOR_WARNING
-      "RDC option required for thrust_configure_cuda_target."
-    )
+  if (NOT TARGET ${all_target_name})
+    add_custom_target(${all_target_name})
+    set_target_properties(${all_target_name} PROPERTIES EXCLUDE_FROM_ALL TRUE)
   endif()
-
-  if (thrust_cuda_RDC)
-    set_target_properties(
-      ${target_name}
-      PROPERTIES #
-        CUDA_SEPARABLE_COMPILATION ON
-        POSITION_INDEPENDENT_CODE ON
-    )
-  else()
-    set_target_properties(
-      ${target_name}
-      PROPERTIES CUDA_SEPARABLE_COMPILATION OFF
-    )
-  endif()
+  add_dependencies(${all_target_name} ${target_name})
 endfunction()

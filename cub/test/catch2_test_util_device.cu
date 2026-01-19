@@ -12,6 +12,8 @@
 #include <cuda/std/__algorithm/find_if.h>
 #include <cuda/std/array>
 
+#include <nv/target>
+
 #include "catch2_test_launch_helper.h"
 #include <c2h/catch2_test_helper.h>
 
@@ -147,7 +149,7 @@ struct closure_all
   {
     // since policy_hub_all lists all PTX virtual architectures, we can do an exact comparison here
 #  if TEST_LAUNCH == 0
-    REQUIRE(+ActivePolicy::value == ptx_version);
+    NV_IF_TARGET(NV_IS_HOST, (REQUIRE(+ActivePolicy::value == ptx_version);));
 #  endif // TEST_LAUNCH == 0
     // the returned error code will be checked by the launch helper
     return +ActivePolicy::value == ptx_version ? cudaSuccess : cudaErrorInvalidValue;
@@ -194,8 +196,9 @@ struct check_policy_closure
 #define CHECK_EXPR +ActivePolicy::value == *cuda::std::find_if(policies.rbegin(), policies.rend(), *this)
 
 #if TEST_LAUNCH == 0
-    CAPTURE(ptx_version, policies);
-    REQUIRE(CHECK_EXPR);
+    NV_IF_TARGET(NV_IS_HOST,
+                 (CAPTURE(ptx_version, policies); //
+                  REQUIRE(CHECK_EXPR);));
 #else // TEST_LAUNCH == 0
     if (!(CHECK_EXPR))
     {

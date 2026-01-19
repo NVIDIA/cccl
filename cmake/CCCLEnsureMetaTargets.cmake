@@ -10,24 +10,21 @@ function(cccl_ensure_metatargets target_name)
   set(oneValueArgs METATARGET_PATH)
   set(multiValueArgs)
   cmake_parse_arguments(
-    _cccl
+    self
     "${options}"
     "${oneValueArgs}"
     "${multiValueArgs}"
     ${ARGN}
   )
-
-  if (_cccl_UNPARSED_ARGUMENTS)
-    message(FATAL_ERROR "Unrecognized arguments: ${_cccl_UNPARSED_ARGUMENTS}")
-  endif()
-
-  if (NOT DEFINED _cccl_METATARGET_PATH)
-    set(_cccl_METATARGET_PATH ${target_name})
-  endif()
+  cccl_parse_arguments_error_checks(
+    "cccl_ensure_metatargets"
+    ERROR_UNPARSED
+    DEFAULT_VALUES METATARGET_PATH "${target_name}"
+  )
 
   set(parent_path "")
   set(current_path "")
-  string(REPLACE "." ";" path_parts "${_cccl_METATARGET_PATH}")
+  string(REPLACE "." ";" path_parts "${self_METATARGET_PATH}")
   foreach (part IN LISTS path_parts)
     if (current_path STREQUAL "")
       set(current_path "${part}")

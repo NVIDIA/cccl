@@ -31,6 +31,10 @@ if ($CL_VERSION -lt [version]"19.20") {
 
 configure_and_build_preset "CUB" $PRESET $LOCAL_CMAKE_OPTIONS
 
+# Fail tests run compilers to check for build errors. Run those here as they can be
+# very slow on GPU runners.
+test_preset "CUB" "cub-fail"
+
 if ($env:GITHUB_ACTIONS) {
     Write-Host "Packaging test artifacts..."
     & bash "./upload_cub_test_artifacts.sh"

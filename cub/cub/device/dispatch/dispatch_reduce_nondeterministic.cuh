@@ -191,10 +191,43 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch_nondeterministic(
        "Dispatching DeviceReduceNondeterministic to arch %d with tuning: %s\n", (int) arch_id, ss.str().c_str());))
 #endif // !_CCCL_COMPILER(NVRTC) && defined(CUB_DEBUG_LOG)
 
-  // No temp storage needed but keep API consistent
-  if (d_temp_storage == nullptr)
-  {
-    temp_storage_bytes = 1;
+    // Even-share work distribution
+    const int max_blocks = reduce_device_occupancy * subscription_factor;
+    GridEvenShare<OffsetT> even_share;
+    even_share.DispatchInit(num_items, max_blocks, tile_size);
+    // Get grid size for nondeterministic_device_reduce_atomic_kernel
+    const int reduce_grid_size = ::cuda::std::max(1, even_share.grid_size);
+
+    if (const auto error = CubDebug(launcher_factory.MemsetAsync(d_out, 0, kernel_source.InitSize(), stream)))
+    {
+      return error;
+    }
+
+// Log nondeterministic_device_reduce_atomic_kernel configuration
+#ifdef CUB_DEBUG_LOG
+    _CubLog("Invoking NondeterministicDeviceReduceAtomicKernel<<<%llu, %d, 0, %lld>>>(), %d items "
+            "per thread, %d SM occupancy\n",
+            (unsigned long long) reduce_grid_size,
+            active_policy.reduce_nondeterministic_policy.block_threads,
+            (long long) stream,
+            active_policy.reduce_nondeterministic_policy.items_per_thread,
+            sm_occupancy);
+#endif // CUB_DEBUG_LOG
+
+    // Invoke NondeterministicDeviceReduceAtomicKernel
+    launcher_factory(reduce_grid_size, active_policy.reduce_nondeterministic_policy.block_threads, 0, stream)
+      .doit(atomic_kernel, d_in, d_out, num_items, even_share, reduction_op, init, transform_op);
+
+    // Check for failure to launch
+    if (const auto error = CubDebug(cudaPeekAtLastError()))
+    {
+      return error;
+    }
+    // Sync the stream if specified to flush runtime errors
+    if (const auto error = CubDebug(detail::DebugSyncStream(stream)))
+    {
+      return error;
+    }
     return cudaSuccess;
   }
 
