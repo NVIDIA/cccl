@@ -69,7 +69,7 @@
 // CCCL is not forward compatible with CTK.
 #  if _CCCL_CTK_AT_LEAST(_CCCL_MAJOR_TO_CTK_MAJOR_VERSION(CCCL_MAJOR_VERSION), CCCL_MINOR_VERSION + 1)
 #    error \
-      "Attempting to use CCCL with newer CUDA Toolkit than the version it was released with. CCCL is not forward compatible with CUDA Toolkit. Define CCCL_ALLOW_UNSUPPORTED_CTK to suppress this warning."
+      "Attempting to use CCCL with newer CUDA Toolkit than the version it was released with. CCCL is not forward compatible with future CUDA Toolkits. Define CCCL_ALLOW_UNSUPPORTED_CTK to suppress this warning."
 #  endif // _CCCL_CTK_AT_LEAST(_CCCL_MAJOR_TO_CTK_MAJOR_VERSION(CCCL_MAJOR_VERSION), CCCL_MINOR_VERSION + 1)
 #endif // _CCCL_HAS_CTK() && !CCCL_ALLOW_UNSUPPORTED_CTK
 
