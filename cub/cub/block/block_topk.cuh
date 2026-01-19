@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 //! @file
-//! The @c cub::BlockTopK class provides a :ref:`collective <collective-primitives>` method for selecting the top-k
+//! The @c cub::block_topk class provides a :ref:`collective <collective-primitives>` method for selecting the top-k
 //! elements from a set of items within a CUDA thread block.
 
 #pragma once
@@ -26,7 +26,7 @@ CUB_NAMESPACE_BEGIN
 namespace detail
 {
 template <typename KeyT, int BlockDimX, int ItemsPerThread, typename ValueT = NullType>
-class BlockTopK
+class block_topk
 {
 private:
   using BlockRadixSortT = BlockRadixSort<KeyT, BlockDimX, ItemsPerThread, ValueT>;
@@ -41,7 +41,7 @@ private:
   TempStorage& temp_storage;
 
 public:
-  _CCCL_DEVICE _CCCL_FORCEINLINE BlockTopK(TempStorage& temp_storage)
+  _CCCL_DEVICE _CCCL_FORCEINLINE block_topk(TempStorage& temp_storage)
       : temp_storage(temp_storage)
   {}
 

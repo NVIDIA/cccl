@@ -63,7 +63,7 @@ struct AgentBatchedTopKWorkerPerSegment
   static constexpr int tile_size        = block_threads * items_per_thread;
 
   // Check if we are dealing with keys-only or key-value pairs
-  static constexpr bool is_keys_only = ::cuda::std::is_same<value_t, cub::NullType>::value;
+  static constexpr bool is_keys_only = ::cuda::std::is_same_v<value_t, cub::NullType>;
 
   // -------------------------------------------------------------------------
   // Primitive Types
@@ -71,7 +71,7 @@ struct AgentBatchedTopKWorkerPerSegment
   using block_load_keys_t = BlockLoad<key_t, block_threads, items_per_thread, BLOCK_LOAD_WARP_TRANSPOSE>;
   using block_load_vals_t = BlockLoad<value_t, block_threads, items_per_thread, BLOCK_LOAD_WARP_TRANSPOSE>;
 
-  using block_topk_t = BlockTopK<key_t, block_threads, items_per_thread, value_t>;
+  using block_topk_t = block_topk<key_t, block_threads, items_per_thread, value_t>;
 
   // TODO (elstehle): Specialize for the case that we statically know k and we can skip passing num_valid_items to
   // Store()
