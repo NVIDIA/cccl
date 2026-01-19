@@ -50,12 +50,9 @@
 #include <cuda/std/__utility/forward.h>
 #include <cuda/std/__utility/in_place.h>
 #include <cuda/std/__utility/move.h>
+#include <cuda/std/__utility/no_unique_member.h>
 
 #include <cuda/std/__cccl/prologue.h>
-
-// MSVC complains about [[msvc::no_unique_address]] prior to C++20 as a vendor extension
-_CCCL_DIAG_PUSH
-_CCCL_DIAG_SUPPRESS_MSVC(4848)
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD_RANGES
 
@@ -101,10 +98,13 @@ template <class _View,
           class = enable_if_t<move_constructible<_Fn>>,
           class = enable_if_t<__transform_view_constraints<_View, _Fn>>>
 #endif // ^^^ !_CCCL_HAS_CONCEPTS() ^^^
-class transform_view : public view_interface<transform_view<_View, _Fn>>
+class _CCCL_DECLSPEC_EMPTY_BASES transform_view
+    : public view_interface<transform_view<_View, _Fn>>
+    , private __no_unique_member<_View>
+    , private __no_unique_member<__movable_box<_Fn>>
 {
-  _CCCL_NO_UNIQUE_ADDRESS _View __base_ = _View();
-  _CCCL_NO_UNIQUE_ADDRESS __movable_box<_Fn> __func_;
+  using _BaseMB = __no_unique_member<_View>;
+  using _FuncMB = __no_unique_member<__movable_box<_Fn>>;
 
 public:
   template <bool>
@@ -172,9 +172,9 @@ public:
     }
 
     [[nodiscard]] _CCCL_API constexpr decltype(auto) operator*() const
-      noexcept(noexcept(::cuda::std::invoke(*__parent_->__func_, *__current_)))
+      noexcept(noexcept(::cuda::std::invoke(*_CCCL_GET_NO_UNIQUE_MEMBER(*__parent_, _FuncMB), *__current_)))
     {
-      return ::cuda::std::invoke(*__parent_->__func_, *__current_);
+      return ::cuda::std::invoke(*_CCCL_GET_NO_UNIQUE_MEMBER(*__parent_, _FuncMB), *__current_);
     }
 
     _CCCL_API constexpr __iterator& operator++()
@@ -237,7 +237,7 @@ public:
     [[nodiscard]] _CCCL_API constexpr decltype(auto) operator[](difference_type __n) const
       noexcept(__nothrow_subscript<_Fn, _Base2>)
     {
-      return ::cuda::std::invoke(*__parent_->__func_, __current_[__n]);
+      return ::cuda::std::invoke(*_CCCL_GET_NO_UNIQUE_MEMBER(*__parent_, _FuncMB), __current_[__n]);
     }
 
     template <class _Base2 = _Base>
@@ -411,46 +411,47 @@ public:
   _CCCL_REQUIRES(default_initializable<_View2>&& default_initializable<_Fn>)
   _CCCL_API constexpr transform_view() noexcept(is_nothrow_default_constructible_v<_View2>
                                                 && is_nothrow_default_constructible_v<_Fn>)
+      : _BaseMB()
   {}
 #endif // ^^^ !_CCCL_HAS_CONCEPTS() ^^^
 
   _CCCL_API constexpr transform_view(_View __base, _Fn __func)
       : view_interface<transform_view<_View, _Fn>>()
-      , __base_(::cuda::std::move(__base))
-      , __func_(::cuda::std::in_place, ::cuda::std::move(__func))
+      , _BaseMB(::cuda::std::move(__base))
+      , _FuncMB(::cuda::std::in_place, ::cuda::std::move(__func))
   {}
 
   _CCCL_TEMPLATE(class _View2 = _View)
   _CCCL_REQUIRES(copy_constructible<_View2>)
   [[nodiscard]] _CCCL_API constexpr _View base() const&
   {
-    return __base_;
+    return _BaseMB::__get();
   }
   [[nodiscard]] _CCCL_API constexpr _View base() &&
   {
-    return ::cuda::std::move(__base_);
+    return ::cuda::std::move(_BaseMB::__get());
   }
 
   [[nodiscard]] _CCCL_API constexpr __iterator<false> begin()
   {
-    return __iterator<false>{*this, ::cuda::std::ranges::begin(__base_)};
+    return __iterator<false>{*this, ::cuda::std::ranges::begin(_BaseMB::__get())};
   }
   _CCCL_TEMPLATE(class _View2 = _View)
   _CCCL_REQUIRES(range<const _View2> _CCCL_AND __regular_invocable_with_range_ref<const _Fn&, const _View2>)
   [[nodiscard]] _CCCL_API constexpr __iterator<true> begin() const
   {
-    return __iterator<true>(*this, ::cuda::std::ranges::begin(__base_));
+    return __iterator<true>(*this, ::cuda::std::ranges::begin(_BaseMB::__get()));
   }
 
   [[nodiscard]] _CCCL_API constexpr auto end()
   {
     if constexpr (common_range<_View>)
     {
-      return __iterator<false>(*this, ::cuda::std::ranges::end(__base_));
+      return __iterator<false>(*this, ::cuda::std::ranges::end(_BaseMB::__get()));
     }
     else
     {
-      return __sentinel<false>(::cuda::std::ranges::end(__base_));
+      return __sentinel<false>(::cuda::std::ranges::end(_BaseMB::__get()));
     }
   }
 
@@ -460,11 +461,11 @@ public:
   {
     if constexpr (common_range<const _View>)
     {
-      return __iterator<true>(*this, ::cuda::std::ranges::end(__base_));
+      return __iterator<true>(*this, ::cuda::std::ranges::end(_BaseMB::__get()));
     }
     else
     {
-      return __sentinel<true>(::cuda::std::ranges::end(__base_));
+      return __sentinel<true>(::cuda::std::ranges::end(_BaseMB::__get()));
     }
   }
 
@@ -472,13 +473,13 @@ public:
   _CCCL_REQUIRES(sized_range<_View2>)
   [[nodiscard]] _CCCL_API constexpr auto size()
   {
-    return ::cuda::std::ranges::size(__base_);
+    return ::cuda::std::ranges::size(_BaseMB::__get());
   }
   _CCCL_TEMPLATE(class _View2 = _View)
   _CCCL_REQUIRES(sized_range<const _View2>)
   [[nodiscard]] _CCCL_API constexpr auto size() const
   {
-    return ::cuda::std::ranges::size(__base_);
+    return ::cuda::std::ranges::size(_BaseMB::__get());
   }
 };
 
@@ -514,8 +515,6 @@ inline namespace __cpo
 _CCCL_GLOBAL_CONSTANT auto transform = __transform::__fn{};
 } // namespace __cpo
 _CCCL_END_NAMESPACE_CUDA_STD_VIEWS
-
-_CCCL_DIAG_POP
 
 #include <cuda/std/__cccl/epilogue.h>
 

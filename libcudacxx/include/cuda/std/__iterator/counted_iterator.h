@@ -44,6 +44,7 @@
 #include <cuda/std/__utility/ctad_support.h>
 #include <cuda/std/__utility/exception_guard.h>
 #include <cuda/std/__utility/move.h>
+#include <cuda/std/__utility/no_unique_member.h>
 
 #if _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
 #  include <cuda/std/detail/libcxx/include/compare>
@@ -90,14 +91,16 @@ template <input_or_output_iterator _Iter>
 #else // ^^^ _CCCL_HAS_CONCEPTS() ^^^ / vvv !_CCCL_HAS_CONCEPTS() vvv
 template <class _Iter, enable_if_t<input_or_output_iterator<_Iter>, int> = 0>
 #endif // ^^^ !_CCCL_HAS_CONCEPTS() ^^^
-class counted_iterator
+class _CCCL_DECLSPEC_EMPTY_BASES counted_iterator
     : public __counted_iterator_concept<_Iter>
     , public __counted_iterator_category<_Iter>
     , public __counted_iterator_value_type<_Iter>
+    , public __no_unique_member<_Iter>
 {
 public:
-  _CCCL_NO_UNIQUE_ADDRESS _Iter __current_ = _Iter();
-  iter_difference_t<_Iter> __count_        = 0;
+  using _CurrentMB = __no_unique_member<_Iter>;
+
+  iter_difference_t<_Iter> __count_ = 0;
 
   using iterator_type   = _Iter;
   using difference_type = iter_difference_t<_Iter>;
@@ -109,12 +112,14 @@ public:
 #else // ^^^ _CCCL_HAS_CONCEPTS() ^^^ / vvv !_CCCL_HAS_CONCEPTS() vvv
   _CCCL_TEMPLATE(class _I2 = _Iter)
   _CCCL_REQUIRES(default_initializable<_I2>)
-  _CCCL_API constexpr counted_iterator() noexcept(is_nothrow_default_constructible_v<_I2>) {}
+  _CCCL_API constexpr counted_iterator() noexcept(is_nothrow_default_constructible_v<_I2>)
+      : _CurrentMB()
+  {}
 #endif // ^^^ !_CCCL_HAS_CONCEPTS() ^^^
 
   _CCCL_API constexpr counted_iterator(_Iter __iter,
                                        iter_difference_t<_Iter> __n) noexcept(is_nothrow_move_constructible_v<_Iter>)
-      : __current_(::cuda::std::move(__iter))
+      : _CurrentMB(::cuda::std::move(__iter))
       , __count_(__n)
   {
     _CCCL_ASSERT(__n >= 0, "__n must not be negative.");
@@ -124,7 +129,7 @@ public:
   _CCCL_REQUIRES(convertible_to<const _I2&, _Iter>)
   _CCCL_API constexpr counted_iterator(const counted_iterator<_I2>& __other) noexcept(
     is_nothrow_constructible_v<_Iter, const _I2&>)
-      : __current_(__other.__current_)
+      : _CurrentMB(_CCCL_GET_NO_UNIQUE_MEMBER(__other, _CurrentMB))
       , __count_(__other.__count_)
   {}
 
@@ -133,19 +138,19 @@ public:
   _CCCL_API constexpr counted_iterator&
   operator=(const counted_iterator<_I2>& __other) noexcept(is_nothrow_assignable_v<_Iter&, const _I2&>)
   {
-    __current_ = __other.__current_;
-    __count_   = __other.__count_;
+    _CurrentMB::__get() = _CCCL_GET_NO_UNIQUE_MEMBER(__other, _CurrentMB);
+    __count_            = __other.__count_;
     return *this;
   }
 
   [[nodiscard]] _CCCL_API constexpr const _Iter& base() const& noexcept
   {
-    return __current_;
+    return _CurrentMB::__get();
   }
 
   [[nodiscard]] _CCCL_API constexpr _Iter base() &&
   {
-    return ::cuda::std::move(__current_);
+    return ::cuda::std::move(_CurrentMB::__get());
   }
 
   [[nodiscard]] _CCCL_API constexpr iter_difference_t<_Iter> count() const noexcept
@@ -156,7 +161,7 @@ public:
   [[nodiscard]] _CCCL_API constexpr decltype(auto) operator*()
   {
     _CCCL_ASSERT(__count_ > 0, "Iterator is equal to or past end.");
-    return *__current_;
+    return *_CurrentMB::__get();
   }
 
   _CCCL_TEMPLATE(class _I2 = _Iter)
@@ -164,20 +169,20 @@ public:
   [[nodiscard]] _CCCL_API constexpr decltype(auto) operator*() const
   {
     _CCCL_ASSERT(__count_ > 0, "Iterator is equal to or past end.");
-    return *__current_;
+    return *_CurrentMB::__get();
   }
 
   _CCCL_TEMPLATE(class _I2 = _Iter)
   _CCCL_REQUIRES(contiguous_iterator<_I2>)
   [[nodiscard]] _CCCL_API constexpr auto operator->() const noexcept
   {
-    return ::cuda::std::to_address(__current_);
+    return ::cuda::std::to_address(_CurrentMB::__get());
   }
 
   _CCCL_API constexpr counted_iterator& operator++()
   {
     _CCCL_ASSERT(__count_ > 0, "Iterator already at or past end.");
-    ++__current_;
+    ++_CurrentMB::__get();
     --__count_;
     return *this;
   }
@@ -192,13 +197,13 @@ public:
     NV_IF_ELSE_TARGET(
       NV_IS_HOST,
       (
-        try { return __current_++; } catch (...) {
+        try { return _CurrentMB::__get()++; } catch (...) {
           ++__count_;
           throw;
         }),
-      (return __current_++;))
+      (return _CurrentMB::__get()++;))
 #else // ^^^ _CCCL_HAS_EXCEPTIONS() ^^^ / vvv !_CCCL_HAS_EXCEPTIONS() vvv
-    return __current_++;
+    return _CurrentMB::__get()++;
 #endif // !_CCCL_HAS_EXCEPTIONS()
   }
 
@@ -216,7 +221,7 @@ public:
   _CCCL_REQUIRES(bidirectional_iterator<_I2>)
   _CCCL_API constexpr counted_iterator& operator--()
   {
-    --__current_;
+    --_CurrentMB::__get();
     ++__count_;
     return *this;
   }
@@ -234,7 +239,7 @@ public:
   _CCCL_REQUIRES(random_access_iterator<_I2>)
   [[nodiscard]] _CCCL_API constexpr counted_iterator operator+(iter_difference_t<_I2> __n) const
   {
-    return counted_iterator(__current_ + __n, __count_ - __n);
+    return counted_iterator(_CurrentMB::__get() + __n, __count_ - __n);
   }
 
   _CCCL_TEMPLATE(class _I2 = _Iter)
@@ -250,7 +255,7 @@ public:
   _CCCL_API constexpr counted_iterator& operator+=(iter_difference_t<_I2> __n)
   {
     _CCCL_ASSERT(__n <= __count_, "Cannot advance iterator past end.");
-    __current_ += __n;
+    _CurrentMB::__get() += __n;
     __count_ -= __n;
     return *this;
   }
@@ -259,7 +264,7 @@ public:
   _CCCL_REQUIRES(random_access_iterator<_I2>)
   [[nodiscard]] _CCCL_API constexpr counted_iterator operator-(iter_difference_t<_I2> __n) const
   {
-    return counted_iterator(__current_ - __n, __count_ + __n);
+    return counted_iterator(_CurrentMB::__get() - __n, __count_ + __n);
   }
 
   _CCCL_TEMPLATE(class _I2)
@@ -298,7 +303,7 @@ public:
                  "Attempt to subtract too large of a size: "
                  "counted_iterator would be decremented before the "
                  "first element of its range.");
-    __current_ -= __n;
+    _CurrentMB::__get() -= __n;
     __count_ += __n;
     return *this;
   }
@@ -308,7 +313,7 @@ public:
   [[nodiscard]] _CCCL_API constexpr decltype(auto) operator[](iter_difference_t<_I2> __n) const
   {
     _CCCL_ASSERT(__n < __count_, "Subscript argument must be less than size.");
-    return __current_[__n];
+    return _CurrentMB::__get()[__n];
   }
 
   _CCCL_TEMPLATE(class _I2)
@@ -407,11 +412,13 @@ public:
 
   template <class _I2>
   _CCCL_API friend constexpr auto iter_swap(const counted_iterator& __x, const counted_iterator<_I2>& __y) noexcept(
-    noexcept(::cuda::std::ranges::iter_swap(__x.__current_, __y.__current_)))
+    noexcept(::cuda::std::ranges::iter_swap(_CCCL_GET_NO_UNIQUE_MEMBER(__x, _CurrentMB),
+                                            _CCCL_GET_NO_UNIQUE_MEMBER(__y, _CurrentMB))))
     _CCCL_TRAILING_REQUIRES(void)(indirectly_swappable<_I2, _Iter>)
   {
     _CCCL_ASSERT(__x.__count_ > 0 && __y.__count_ > 0, "Iterators must not be past end of range.");
-    return ::cuda::std::ranges::iter_swap(__x.__current_, __y.__current_);
+    return ::cuda::std::ranges::iter_swap(
+      _CCCL_GET_NO_UNIQUE_MEMBER(__x, _CurrentMB), _CCCL_GET_NO_UNIQUE_MEMBER(__y, _CurrentMB));
   }
 };
 _CCCL_CTAD_SUPPORTED_FOR_TYPE(counted_iterator);

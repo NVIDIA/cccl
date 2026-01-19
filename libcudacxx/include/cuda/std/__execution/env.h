@@ -26,9 +26,14 @@
 #include <cuda/std/__functional/reference_wrapper.h>
 #include <cuda/std/__tuple_dir/ignore.h>
 #include <cuda/std/__type_traits/enable_if.h>
+#include <cuda/std/__type_traits/is_constructible.h>
+#include <cuda/std/__type_traits/is_nothrow_constructible.h>
+#include <cuda/std/__type_traits/is_nothrow_default_constructible.h>
 #include <cuda/std/__type_traits/is_nothrow_move_constructible.h>
 #include <cuda/std/__type_traits/is_valid_expansion.h>
 #include <cuda/std/__utility/declval.h>
+#include <cuda/std/__utility/forward.h>
+#include <cuda/std/__utility/no_unique_member.h>
 #include <cuda/std/__utility/pod_tuple.h>
 
 #if !_CCCL_COMPILER(NVRTC)
@@ -186,11 +191,6 @@ struct __basic_query<_Query, void>
     return __env.query(_Query{}, static_cast<_Args&&>(__args)...);
   }
 };
-
-// nvvm/bin/cicc segfaults when `prop` uses [[no_unique_address]]
-#if (_CCCL_HAS_ATTRIBUTE_NO_UNIQUE_ADDRESS() || defined(_CCCL_DOXYGEN_INVOKED)) && !_CCCL_CUDA_COMPILER(NVCC) \
-  && !_CCCL_CUDA_COMPILER(NVRTC)
-
 //! @brief A template structure representing a query with a query and a value.
 //!
 //! @tparam _Query The type of the query associated with the query.
@@ -207,33 +207,30 @@ struct __basic_query<_Query, void>
 //! - constexpr auto query(_Query) const noexcept -> const _Value&:
 //!   Returns the value associated with the query.
 template <class _Query, class _Value>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT prop
+struct _CCCL_TYPE_VISIBILITY_DEFAULT _CCCL_DECLSPEC_EMPTY_BASES prop
+    : __no_unique_member<_Query>
+    , __no_unique_member<_Value>
 {
+  using _QueryMB = __no_unique_member<_Query>;
+  using _ValueMB = __no_unique_member<_Value>;
+
+  _CCCL_HIDE_FROM_ABI constexpr prop() noexcept(is_nothrow_default_constructible_v<_Query>
+                                                && is_nothrow_default_constructible_v<_Value>) = default;
+
+  _CCCL_TEMPLATE(class _QArg, class _VArg)
+  _CCCL_REQUIRES(is_constructible_v<_Query, _QArg> _CCCL_AND is_constructible_v<_Value, _VArg>)
+  _CCCL_API constexpr prop(_QArg&& __q, _VArg&& __v) noexcept(
+    is_nothrow_constructible_v<_Query, _QArg> && is_nothrow_constructible_v<_Value, _VArg>)
+      : _QueryMB(::cuda::std::forward<_QArg>(__q))
+      , _ValueMB(::cuda::std::forward<_VArg>(__v))
+  {}
+
   template <class... _Args>
   [[nodiscard]] _CCCL_NODEBUG_API constexpr auto query(_Query, _Args&&...) const noexcept -> const _Value&
   {
-    return __value;
+    return _ValueMB::__get();
   }
-
-  _CCCL_NO_UNIQUE_ADDRESS _Query __ignore;
-  _CCCL_NO_UNIQUE_ADDRESS _Value __value;
 };
-
-#else // ^^^ _CCCL_HAS_ATTRIBUTE_NO_UNIQUE_ADDRESS() ^^^ / vvv !_CCCL_HAS_ATTRIBUTE_NO_UNIQUE_ADDRESS() vvv
-
-template <class _Query, class _Value>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT _CCCL_DECLSPEC_EMPTY_BASES prop : _Query
-{
-  template <class... _Args>
-  [[nodiscard]] _CCCL_NODEBUG_API constexpr auto query(_Query, _Args&&...) const noexcept -> const _Value&
-  {
-    return __value;
-  }
-
-  _Value __value;
-};
-
-#endif // !_CCCL_HAS_ATTRIBUTE_NO_UNIQUE_ADDRESS()
 
 template <class _Query, class _Value>
 _CCCL_HOST_DEVICE prop(_Query, _Value) -> prop<_Query, _Value>;
