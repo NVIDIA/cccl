@@ -18,6 +18,7 @@
 #include <cub/util_namespace.cuh>
 
 #include <cuda/__functional/address_stability.h>
+#include <cuda/__functional/call_or.h>
 #include <cuda/__stream/get_stream.h>
 #include <cuda/std/__execution/env.h>
 #include <cuda/std/tuple>
