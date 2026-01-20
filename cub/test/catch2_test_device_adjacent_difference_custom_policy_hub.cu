@@ -38,7 +38,7 @@ C2H_TEST("DispatchAdjacentDifference::Dispatch: custom policy hub", "[device][ad
 {
   using value_t            = int;
   using offset_t           = unsigned;
-  using difference_op_t    = ::cuda::std::minus<>;
+  using difference_op_t    = cuda::std::minus<>;
   const offset_t num_items = 12345;
 
   c2h::device_vector<value_t> in_items(num_items);
