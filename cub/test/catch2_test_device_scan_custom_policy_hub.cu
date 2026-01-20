@@ -31,8 +31,8 @@ C2H_TEST("DispatchScan::Dispatch: custom policy hub", "[scan][device]")
 {
   using value_t            = int;
   using offset_t           = unsigned;
-  using scan_op_t          = ::cuda::std::plus<>;
-  using accum_t            = ::cuda::std::__accumulator_t<scan_op_t, value_t, value_t>;
+  using scan_op_t          = cuda::std::plus<>;
+  using accum_t            = cuda::std::__accumulator_t<scan_op_t, value_t, value_t>;
   const offset_t num_items = 12345;
 
   c2h::device_vector<value_t> in_items(num_items);
