@@ -66,7 +66,7 @@ class localized_array
     {}
 
     CUmemGenericAllocationHandle alloc_handle;
-    data_place place;
+    const data_place place;
     size_t size;
     size_t offset;
   };
