@@ -51,10 +51,10 @@ C2H_TEST("DispatchHistogram::DispatchEven: custom policy hub", "[histogram][devi
   c2h::device_vector<sample_t> d_samples = h_samples;
   c2h::device_vector<counter_t> d_histogram(num_bins, 0);
 
-  ::cuda::std::array<counter_t*, num_active_channels> d_histograms{thrust::raw_pointer_cast(d_histogram.data())};
-  ::cuda::std::array<int, num_active_channels> num_levels{num_output_levels};
-  ::cuda::std::array<level_t, num_active_channels> lower_level{0};
-  ::cuda::std::array<level_t, num_active_channels> upper_level{num_bins};
+  cuda::std::array<counter_t*, num_active_channels> d_histograms{thrust::raw_pointer_cast(d_histogram.data())};
+  cuda::std::array<int, num_active_channels> num_levels{num_output_levels};
+  cuda::std::array<level_t, num_active_channels> lower_level{0};
+  cuda::std::array<level_t, num_active_channels> upper_level{num_bins};
 
   using policy_hub_t = my_policy_hub<sample_t, counter_t, num_channels, num_active_channels, /* is_even */ true>;
   using dispatch_t =
