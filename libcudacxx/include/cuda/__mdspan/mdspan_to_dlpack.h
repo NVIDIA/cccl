@@ -217,13 +217,6 @@ public:
 
   _CCCL_HIDE_FROM_ABI ~__dlpack_tensor() noexcept = default;
 
-  [[nodiscard]] _CCCL_HOST_API ::DLTensor& get() & noexcept _CCCL_LIFETIMEBOUND
-  {
-    return __tensor;
-  }
-
-  [[nodiscard]] _CCCL_HOST_API ::DLTensor& get() && noexcept = delete;
-
   [[nodiscard]] _CCCL_HOST_API const ::DLTensor& get() const& noexcept _CCCL_LIFETIMEBOUND
   {
     return __tensor;
@@ -290,7 +283,7 @@ to_dlpack_tensor(const ::cuda::device_mdspan<_ElementType, _Extents, _Layout, _A
   const auto __status = ::cuda::__driver::__pointerGetAttributesNoThrow(__attrs, __results, __mdspan.data_handle());
   if (__status != ::cudaSuccess)
   {
-    _CCCL_THROW(::std::invalid_argument{"Failed to get device ordinal of a pointer"});
+    ::cuda::__throw_cuda_error(__status, "Failed to get device ordinal of a pointer");
   }
   return ::cuda::__to_dlpack(__mdspan_type{__mdspan}, ::kDLCUDA, __ptr_dev_id);
 }
