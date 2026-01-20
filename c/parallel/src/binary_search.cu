@@ -93,42 +93,39 @@ CUresult cccl_device_binary_search_build_ex(
   const char* libcudacxx_path,
   const char* ctk_path,
   cccl_build_config* config)
+try
 {
-  CUresult error = CUDA_SUCCESS;
-
-  try
+  if (d_data.type == cccl_iterator_kind_t::CCCL_ITERATOR)
   {
-    if (d_data.type == cccl_iterator_kind_t::CCCL_ITERATOR)
+    throw std::runtime_error(std::string("Iterators are unsupported in for_each currently"));
+  }
+
+  const char* name = "test";
+
+  const int cc = cc_major * 10 + cc_minor;
+
+  auto [d_data_it_name, d_data_it_src] =
+    get_specialization<binary_search_data_iterator_tag>(template_id<input_iterator_traits>(), d_data);
+  auto [d_values_it_name, d_values_it_src] =
+    get_specialization<binary_search_values_iterator_tag>(template_id<input_iterator_traits>(), d_values);
+  auto [d_out_it_name, d_out_it_src] = get_specialization<binary_search_output_iterator_tag>(
+    template_id<output_iterator_traits>(), d_out, d_out.value_type);
+  auto [op_name, op_src] =
+    get_specialization<binary_search_op_tag>(template_id<binary_user_predicate_traits>(), op, d_data.value_type);
+
+  const std::string mode_t = [&] {
+    switch (mode)
     {
-      throw std::runtime_error(std::string("Iterators are unsupported in for_each currently"));
+      case CCCL_BINARY_SEARCH_LOWER_BOUND:
+        return "cub::detail::find::lower_bound";
+      case CCCL_BINARY_SEARCH_UPPER_BOUND:
+        return "cub::detail::find::upper_bound";
     }
+    throw std::runtime_error(std::format("Invalid binary search mode ({})", static_cast<int>(mode)));
+  }();
 
-    const char* name = "test";
-
-    const int cc = cc_major * 10 + cc_minor;
-
-    auto [d_data_it_name, d_data_it_src] =
-      get_specialization<binary_search_data_iterator_tag>(template_id<input_iterator_traits>(), d_data);
-    auto [d_values_it_name, d_values_it_src] =
-      get_specialization<binary_search_values_iterator_tag>(template_id<input_iterator_traits>(), d_values);
-    auto [d_out_it_name, d_out_it_src] = get_specialization<binary_search_output_iterator_tag>(
-      template_id<output_iterator_traits>(), d_out, d_out.value_type);
-    auto [op_name, op_src] =
-      get_specialization<binary_search_op_tag>(template_id<binary_user_predicate_traits>(), op, d_data.value_type);
-
-    const std::string mode_t = [&] {
-      switch (mode)
-      {
-        case CCCL_BINARY_SEARCH_LOWER_BOUND:
-          return "cub::detail::find::lower_bound";
-        case CCCL_BINARY_SEARCH_UPPER_BOUND:
-          return "cub::detail::find::upper_bound";
-      }
-      throw std::runtime_error(std::format("Invalid binary search mode ({})", static_cast<int>(mode)));
-    }();
-
-    const std::string src = std::format(
-      R"XXX(
+  const std::string src = std::format(
+    R"XXX(
 #include <cub/agent/agent_for.cuh>
 #include <cub/detail/binary_search_helpers.cuh>
 #include <cuda/__iterator/zip_iterator.h>
@@ -157,7 +154,7 @@ struct device_for_policy
 
 CUB_DETAIL_KERNEL_ATTRIBUTES
 __launch_bounds__(device_for_policy::ActivePolicy::for_policy_t::block_threads)
-  void binary_search_kernel({1} d_data, OffsetT num_data, {3} d_values, OffsetT num_values, {5} d_out, {7} op)
+void binary_search_kernel({1} d_data, OffsetT num_data, {3} d_values, OffsetT num_values, {5} d_out, {7} op)
 {{
   auto d_out_typed = [&] {{
     constexpr auto out_is_ptr = cuda::std::is_pointer_v<decltype(d_out)>;
@@ -200,77 +197,77 @@ __launch_bounds__(device_for_policy::ActivePolicy::for_policy_t::block_threads)
   }}
 }}
 )XXX",
-      d_data_it_src,
-      d_data_it_name,
-      d_values_it_src,
-      d_values_it_name,
-      d_out_it_src,
-      d_out_it_name,
-      op_src,
-      op_name,
-      mode_t,
-      d_out.value_type.size,
-      d_out.value_type.alignment,
-      jit_template_header_contents);
+    d_data_it_src,
+    d_data_it_name,
+    d_values_it_src,
+    d_values_it_name,
+    d_out_it_src,
+    d_out_it_name,
+    op_src,
+    op_name,
+    mode_t,
+    d_out.value_type.size,
+    d_out.value_type.alignment,
+    jit_template_header_contents);
 
-    const std::string arch = std::format("-arch=sm_{0}{1}", cc_major, cc_minor);
+  const std::string arch = std::format("-arch=sm_{0}{1}", cc_major, cc_minor);
 
-    std::vector<const char*> args = {
-      arch.c_str(),
-      cub_path,
-      thrust_path,
-      libcudacxx_path,
-      ctk_path,
-      "-std=c++20",
-      "-rdc=true",
-      "-dlto",
-      "-DCUB_DISABLE_CDP"};
+  std::vector<const char*> args = {
+    arch.c_str(),
+    cub_path,
+    thrust_path,
+    libcudacxx_path,
+    ctk_path,
+    "-std=c++20",
+    "-rdc=true",
+    "-dlto",
+    "-DCUB_DISABLE_CDP"};
 
-    cccl::detail::extend_args_with_build_config(args, config);
+  cccl::detail::extend_args_with_build_config(args, config);
 
-    constexpr size_t num_lto_args   = 2;
-    const char* lopts[num_lto_args] = {"-lto", arch.c_str()};
+  constexpr size_t num_lto_args   = 2;
+  const char* lopts[num_lto_args] = {"-lto", arch.c_str()};
 
-    std::string lowered_name;
+  std::string lowered_name;
 
-    // Collect all LTO-IRs to be linked
-    nvrtc_linkable_list linkable_list;
-    nvrtc_linkable_list_appender appender{linkable_list};
+  // Collect all LTO-IRs to be linked
+  nvrtc_linkable_list linkable_list;
+  nvrtc_linkable_list_appender appender{linkable_list};
 
-    appender.append_operation(op);
+  appender.append_operation(op);
 
-    // Add iterator definitions if present
-    for (const auto& it_type : {d_data, d_values, d_out})
-    {
-      if (cccl_iterator_kind_t::CCCL_ITERATOR == it_type.type)
-      {
-        appender.append_operation(it_type.advance);
-        appender.append_operation(it_type.dereference);
-      }
-    }
-
-    nvrtc_link_result result =
-      begin_linking_nvrtc_program(num_lto_args, lopts)
-        ->add_program(nvrtc_translation_unit{src, name})
-        ->add_expression({"binary_search_kernel"})
-        ->compile_program({args.data(), args.size()})
-        ->get_name({"binary_search_kernel", lowered_name})
-        ->link_program()
-        ->add_link_list(linkable_list)
-        ->finalize_program();
-
-    cuLibraryLoadData(&build_ptr->library, result.data.get(), nullptr, nullptr, 0, nullptr, nullptr, 0);
-    check(cuLibraryGetKernel(&build_ptr->kernel, build_ptr->library, lowered_name.c_str()));
-
-    build_ptr->cc         = cc;
-    build_ptr->cubin      = (void*) result.data.release();
-    build_ptr->cubin_size = result.size;
-  }
-  catch (...)
+  // Add iterator definitions if present
+  for (const auto& it_type : {d_data, d_values, d_out})
   {
-    error = CUDA_ERROR_UNKNOWN;
+    if (cccl_iterator_kind_t::CCCL_ITERATOR == it_type.type)
+    {
+      appender.append_operation(it_type.advance);
+      appender.append_operation(it_type.dereference);
+    }
   }
-  return error;
+
+  nvrtc_link_result result =
+    begin_linking_nvrtc_program(num_lto_args, lopts)
+      ->add_program(nvrtc_translation_unit{src, name})
+      ->add_expression({"binary_search_kernel"})
+      ->compile_program({args.data(), args.size()})
+      ->get_name({"binary_search_kernel", lowered_name})
+      ->link_program()
+      ->add_link_list(linkable_list)
+      ->finalize_program();
+
+  cuLibraryLoadData(&build_ptr->library, result.data.get(), nullptr, nullptr, 0, nullptr, nullptr, 0);
+  check(cuLibraryGetKernel(&build_ptr->kernel, build_ptr->library, lowered_name.c_str()));
+
+  build_ptr->cc         = cc;
+  build_ptr->cubin      = (void*) result.data.release();
+  build_ptr->cubin_size = result.size;
+
+  return CUDA_SUCCESS;
+}
+catch (...)
+{
+  return CUDA_ERROR_UNKNOWN;
 }
 
 CUresult cccl_device_binary_search(
@@ -338,21 +335,19 @@ CUresult cccl_device_binary_search_build(
 }
 
 CUresult cccl_device_binary_search_cleanup(cccl_device_binary_search_build_result_t* build_ptr)
+try
 {
-  try
+  if (build_ptr == nullptr)
   {
-    if (build_ptr == nullptr)
-    {
-      return CUDA_ERROR_INVALID_VALUE;
-    }
+    return CUDA_ERROR_INVALID_VALUE;
+  }
 
-    std::unique_ptr<char[]> cubin(reinterpret_cast<char*>(build_ptr->cubin));
-    check(cuLibraryUnload(build_ptr->library));
-  }
-  catch (...)
-  {
-    return CUDA_ERROR_UNKNOWN;
-  }
+  std::unique_ptr<char[]> cubin(reinterpret_cast<char*>(build_ptr->cubin));
+  check(cuLibraryUnload(build_ptr->library));
 
   return CUDA_SUCCESS;
+}
+catch (...)
+{
+  return CUDA_ERROR_UNKNOWN;
 }
