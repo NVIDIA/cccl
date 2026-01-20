@@ -175,7 +175,7 @@ Identity Element
    struct identity_element;
 
    template <class Op, class T>
-   constexpr auto identity_element_v = identity_element<Op, T>::value;
+   constexpr auto get_identity_element() noexcept;
 
    template <class Op, class T>
    inline constexpr bool has_identity_element = /* see below */;
@@ -184,6 +184,8 @@ Identity Element
 
 Provides the identity element for operator ``Op`` and type ``T``. The identity element ``e`` satisfies
 ``op(e, x) == op(x, e) == x`` for all values ``x`` of type ``T``.
+
+The function ``get_identity_element<Op, T>()`` returns ``identity_element<Op, T>::value``.
 
 ``has_identity_element`` evaluates to ``true`` if an identity element is defined for the given operator and type.
 
@@ -244,7 +246,7 @@ Absorbing Element
    struct absorbing_element;
 
    template <class Op, class T>
-   constexpr auto absorbing_element_v = absorbing_element<Op, T>::value;
+   constexpr auto get_absorbing_element() noexcept;
 
    template <class Op, class T>
    inline constexpr bool has_absorbing_element = /* see below */;
@@ -253,6 +255,8 @@ Absorbing Element
 
 Provides the absorbing (annihilating) element for operator ``Op`` and type ``T``. The absorbing element ``z`` satisfies
 ``op(z, x) == op(x, z) == z`` for all values ``x`` of type ``T``.
+
+The function ``get_absorbing_element<Op, T>()`` returns ``absorbing_element<Op, T>::value``.
 
 ``has_absorbing_element`` evaluates to ``true`` if an absorbing element is defined for the given operator and type.
 
@@ -338,6 +342,6 @@ Example
         static_assert(cuda::is_commutative_v<cuda::std::plus<float>, float>);
 
         // Use identity element for reduction initialization
-        int sum_identity = cuda::identity_element_v<cuda::std::plus<int>, int>;       // 0
-        int mul_identity = cuda::identity_element_v<cuda::std::multiplies<int>, int>; // 1
+        int sum_identity = cuda::get_identity_element<cuda::std::plus<int>, int>();       // 0
+        int mul_identity = cuda::get_identity_element<cuda::std::multiplies<int>, int>(); // 1
    }

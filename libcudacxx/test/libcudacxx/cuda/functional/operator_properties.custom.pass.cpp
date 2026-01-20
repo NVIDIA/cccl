@@ -59,8 +59,8 @@ __host__ __device__ constexpr bool test()
   static_assert(cuda::is_commutative<MyAdd, MyInt>::value);
   static_assert(cuda::has_identity_element<MyAdd, MyInt>);
   static_assert(cuda::has_absorbing_element<MyAdd, MyInt>);
-  assert((cuda::absorbing_element_v<MyAdd, MyInt>.value == MyInt{0}.value));
-  assert((cuda::identity_element_v<MyAdd, MyInt>.value == MyInt{0}.value));
+  assert((cuda::get_absorbing_element<MyAdd, MyInt>().value == MyInt{0}.value));
+  assert((cuda::get_identity_element<MyAdd, MyInt>().value == MyInt{0}.value));
   return true;
 }
 

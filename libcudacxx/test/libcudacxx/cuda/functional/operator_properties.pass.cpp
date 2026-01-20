@@ -15,7 +15,7 @@
 
 #include "test_macros.h"
 
-#if _CCCL_COMPILER(GCC, >=, 12)
+#if _CCCL_COMPILER(GCC, >=, 12) || _CCCL_CUDA_COMPILER(CLANG, >=, 13)
 _CCCL_BEGIN_NV_DIAG_SUPPRESS(3215) // "if consteval" and "if not consteval" are not standard in this mode
 _CCCL_DIAG_SUPPRESS_GCC("-Wc++23-extensions")
 #endif // _CCCL_COMPILER(GCC, >=, 12)
@@ -132,10 +132,10 @@ __host__ __device__ constexpr T get_value()
 template <class Op, class T>
 __host__ __device__ constexpr void test_identity_impl2(T identity)
 {
-  assert((identity == cuda::identity_element_v<Op, T>) );
+  assert((identity == cuda::get_identity_element<Op, T>()) );
   Op op{};
   T value      = get_value<T>();
-  T identity1  = cuda::identity_element_v<Op, T>;
+  T identity1  = cuda::get_identity_element<Op, T>();
   T result_lhs = op(value, identity1);
   T result_rhs = op(identity1, value);
   assert(result_lhs == value);
@@ -238,10 +238,10 @@ __host__ __device__ constexpr void test_identity_floating_point()
 template <class Op, class T>
 __host__ __device__ constexpr void test_absorbing_impl2([[maybe_unused]] T absorbing)
 {
-  assert((absorbing == cuda::absorbing_element_v<Op, T>) );
+  assert((absorbing == cuda::get_absorbing_element<Op, T>()) );
   Op op{};
   T value      = get_value<T>();
-  T absorbing1 = cuda::absorbing_element_v<Op, T>;
+  T absorbing1 = cuda::get_absorbing_element<Op, T>();
   T result_lhs = op(value, absorbing1);
   T result_rhs = op(absorbing1, value);
   assert(result_lhs == absorbing1);
