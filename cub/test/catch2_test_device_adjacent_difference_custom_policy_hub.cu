@@ -47,7 +47,7 @@ C2H_TEST("DispatchAdjacentDifference::Dispatch: custom policy hub", "[device][ad
 
   c2h::host_vector<value_t> host_in(in_items);
   c2h::host_vector<value_t> expected(num_items);
-  std::adjacent_difference(host_in.begin(), host_in.end(), expected.begin(), std::minus<value_t>{});
+  cuda::std::adjacent_difference(host_in.begin(), host_in.end(), expected.begin(), cuda::std::minus<value_t>{});
 
   using policy_hub_t = my_policy_hub<value_t*, /* may_alias */ false>;
   using dispatch_t =
