@@ -4,7 +4,7 @@
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -29,6 +29,7 @@
 #include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__bit/countr.h>
 #include <cuda/std/__bit/integral.h>
+#include <cuda/std/__exception/cuda_error.h>
 #include <cuda/std/__iterator/concepts.h>
 #include <cuda/std/__memory/addressof.h>
 #include <cuda/std/cstddef>
@@ -194,26 +195,23 @@ public:
 
       switch (__vector_size)
       {
+        using ::cuda::experimental::cuco::__hyperloglog_ns::__add_shmem_vectorized;
         case 2:
-          __kernel = reinterpret_cast<const void*>(
-            ::cuda::experimental::cuco::__hyperloglog_ns::__add_shmem_vectorized<2, _HyperLogLog_Impl>);
+          __kernel = reinterpret_cast<const void*>(__add_shmem_vectorized<2, _HyperLogLog_Impl>);
           break;
         case 4:
-          __kernel = reinterpret_cast<const void*>(
-            ::cuda::experimental::cuco::__hyperloglog_ns::__add_shmem_vectorized<4, _HyperLogLog_Impl>);
+          __kernel = reinterpret_cast<const void*>(__add_shmem_vectorized<4, _HyperLogLog_Impl>);
           break;
         case 8:
-          __kernel = reinterpret_cast<const void*>(
-            ::cuda::experimental::cuco::__hyperloglog_ns::__add_shmem_vectorized<8, _HyperLogLog_Impl>);
+          __kernel = reinterpret_cast<const void*>(__add_shmem_vectorized<8, _HyperLogLog_Impl>);
           break;
         case 16:
-          __kernel = reinterpret_cast<const void*>(
-            ::cuda::experimental::cuco::__hyperloglog_ns::__add_shmem_vectorized<16, _HyperLogLog_Impl>);
+          __kernel = reinterpret_cast<const void*>(__add_shmem_vectorized<16, _HyperLogLog_Impl>);
           break;
       };
     }
 
-    if (__kernel != nullptr and __try_reserve_shmem(__kernel, __shmem_bytes))
+    if (__kernel != nullptr && __try_reserve_shmem(__kernel, __shmem_bytes))
     {
       if constexpr (::cuda::std::contiguous_iterator<_InputIt>)
       {
@@ -458,8 +456,7 @@ public:
   {
     const auto __num_regs = __sketch.size();
 
-    ::cuda::experimental::host_buffer<register_type> __host_sketch_buf{
-      __stream, __host_mr, __sketch.size(), ::cuda::experimental::no_init};
+    ::cuda::host_buffer<register_type> __host_sketch_buf{__stream, __host_mr, __sketch.size(), ::cuda::no_init};
 
     ::cuda::__driver::__memcpyAsync(
       __host_sketch_buf.data(), __sketch.data(), sizeof(register_type) * __num_regs, __stream.get());
@@ -533,9 +530,8 @@ public:
 
     //  minimum precision is 4 or 64 bytes
     const auto __precision_ = ::cuda::std::max(
-      static_cast<int32_t>(4),
-      static_cast<int32_t>(
-        ::cuda::std::ceil(2.0 * ::cuda::std::log(1.106 / __standard_deviation) / ::cuda::std::log(2.0))));
+      static_cast<int>(4),
+      static_cast<int>(::cuda::std::ceil(2.0 * ::cuda::std::log(1.106 / __standard_deviation) / ::cuda::std::log(2.0))));
 
     // inverse of this function (omitting the minimum precision constraint) is
     // standard_deviation = 1.106 / exp((__precision_ * log(2.0)) / 2.0)
@@ -611,7 +607,7 @@ private:
   }
 
   hasher __hash; ///< Hash function used to hash items
-  int32_t __precision; ///< HLL precision parameter
+  int __precision; ///< HLL precision parameter
   ::cuda::std::span<register_type> __sketch; ///< HLL sketch storage
 
   template <class _Tp_, ::cuda::thread_scope _Scope_, class _Hash_>

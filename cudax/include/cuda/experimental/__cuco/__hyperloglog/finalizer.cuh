@@ -4,7 +4,7 @@
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -26,6 +26,7 @@
 #include <cuda/std/__cmath/abs.h>
 #include <cuda/std/__cmath/logarithms.h>
 #include <cuda/std/__cmath/rounding_functions.h>
+#include <cuda/std/__numeric/midpoint.h>
 #include <cuda/std/cstddef>
 #include <cuda/std/limits>
 
@@ -123,7 +124,7 @@ private:
     auto __high = ::cuda::std::min(__low + __k, __n);
     // Keep moving bounds as long as the (exclusive) high bound is closer to the estimate than
     // the lower (inclusive) bound.
-    while (__high < __n & __distance(__e, __high) < __distance(__e, __low))
+    while (__high < __n && __distance(__e, __high) < __distance(__e, __low))
     {
       __low += 1;
       __high += 1;
@@ -147,16 +148,16 @@ private:
 
   [[nodiscard]] _CCCL_API constexpr int __interpolation_anchor_index(double __e) const noexcept
   {
-    auto __estimates      = __raw_estimate_data(__precision);
-    const int __n         = __raw_estimate_data_size(__precision);
-    int __left            = 0;
-    int __right           = static_cast<int>(__n) - 1;
-    int __mid             = -1;
-    int __candidate_index = 0; // Index of the closest element found
+    const auto __estimates = __raw_estimate_data(__precision);
+    const int __n          = __raw_estimate_data_size(__precision);
+    int __left             = 0;
+    int __right            = static_cast<int>(__n) - 1;
+    int __mid              = -1;
+    int __candidate_index  = 0; // Index of the closest element found
 
     while (__left <= __right)
     {
-      __mid = __left + (__right - __left) / 2;
+      __mid = ::cuda::std::midpoint(__left, __right);
 
       if (__estimates[__mid] < __e)
       {
@@ -176,14 +177,13 @@ private:
     // At this point, '__left' is the insertion point. We need to compare the elements at '__left' and
     // '__left - 1' to find the closest one, taking care of boundary conditions.
 
+    constexpr auto __max_double = ::cuda::std::numeric_limits<double>::max();
+
     // Distance from '__e' to the element at '__left', if within bounds
     const double __dist_lhs =
-      __left < static_cast<int>(__n)
-        ? ::cuda::std::abs(__estimates[__left] - __e)
-        : ::cuda::std::numeric_limits<double>::max();
+      __left < static_cast<int>(__n) ? ::cuda::std::abs(__estimates[__left] - __e) : __max_double;
     // Distance from '__e' to the element at '__left - 1', if within bounds
-    const double __dist_rhs =
-      __left - 1 >= 0 ? ::cuda::std::abs(__estimates[__left - 1] - __e) : ::cuda::std::numeric_limits<double>::max();
+    const double __dist_rhs = __left - 1 >= 0 ? ::cuda::std::abs(__estimates[__left - 1] - __e) : __max_double;
 
     __candidate_index = (__dist_lhs < __dist_rhs) ? __left : __left - 1;
 

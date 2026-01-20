@@ -4,7 +4,7 @@
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -71,6 +71,16 @@ public:
   //! standard deviation for the cardinality estimate of `cuda::experimental::cuco::hyperloglog(_ref)`.
   using standard_deviation = ::cuda::experimental::cuco::__standard_deviation_t;
 
+private:
+  ::cuda::device_buffer<register_type> __sketch_buffer; ///< Storage for sketch
+  ref_type<> __ref; ///< Device ref of the current `hyperloglog` object
+
+  // Needs to be friends with other instantiations of this class template to have access to their
+  // storage
+  template <class _Tp_, class _MemoryResource_, ::cuda::thread_scope _Scope_, class _Hash_>
+  friend class hyperloglog;
+
+public:
   // TODO enable CTAD
   //! @brief Constructs a `hyperloglog` host object.
   //!
@@ -89,9 +99,7 @@ public:
                         ::cuda::std::forward<_MemoryResource_>(__memory_resource),
                         ref_type<>::sketch_bytes(__sketch_size_kb) / sizeof(register_type),
                         ::cuda::experimental::no_init}
-      , __ref{::cuda::std::span{reinterpret_cast<::cuda::std::byte*>(__sketch_buffer.data()),
-                                ref_type<>::sketch_bytes(__sketch_size_kb)},
-              __hash}
+      , __ref{::cuda::std::as_writable_bytes(::cuda::std::span{__sketch_buffer.data(), __sketch_buffer.size()}), __hash}
   {
     clear_async(__stream);
   }
@@ -109,10 +117,8 @@ public:
       : __sketch_buffer{__stream,
                         ::cuda::device_default_memory_pool(::cuda::device_ref{0}),
                         ref_type<>::sketch_bytes(__sketch_size_kb) / sizeof(register_type),
-                        ::cuda::experimental::no_init}
-      , __ref{::cuda::std::span{reinterpret_cast<::cuda::std::byte*>(__sketch_buffer.data()),
-                                ref_type<>::sketch_bytes(__sketch_size_kb)},
-              __hash}
+                        ::cuda::no_init}
+      , __ref{::cuda::std::as_writable_bytes(::cuda::std::span{__sketch_buffer.data(), __sketch_buffer.size()}), __hash}
   {
     clear_async(__stream);
   }
@@ -134,9 +140,7 @@ public:
                         ::cuda::std::forward<_MemoryResource_>(__memory_resource),
                         ref_type<>::sketch_bytes(__sd) / sizeof(register_type),
                         ::cuda::experimental::no_init}
-      , __ref{::cuda::std::span{reinterpret_cast<::cuda::std::byte*>(__sketch_buffer.data()),
-                                ref_type<>::sketch_bytes(__sd)},
-              __hash}
+      , __ref{::cuda::std::as_writable_bytes(::cuda::std::span{__sketch_buffer.data(), __sketch_buffer.size()}), __hash}
   {
     clear_async(__stream);
   }
@@ -154,10 +158,8 @@ public:
       : __sketch_buffer{__stream,
                         ::cuda::device_default_memory_pool(::cuda::device_ref{0}),
                         ref_type<>::sketch_bytes(__sd) / sizeof(register_type),
-                        ::cuda::experimental::no_init}
-      , __ref{::cuda::std::span{reinterpret_cast<::cuda::std::byte*>(__sketch_buffer.data()),
-                                ref_type<>::sketch_bytes(__sd)},
-              __hash}
+                        ::cuda::no_init}
+      , __ref{::cuda::std::as_writable_bytes(::cuda::std::span{__sketch_buffer.data(), __sketch_buffer.size()}), __hash}
   {
     clear_async(__stream);
   }
@@ -367,15 +369,6 @@ public:
   {
     return ref_type<>::sketch_alignment();
   }
-
-private:
-  ::cuda::experimental::device_buffer<register_type> __sketch_buffer; ///< Storage for sketch
-  ref_type<> __ref; ///< Device ref of the current `hyperloglog` object
-
-  // Needs to be friends with other instantiations of this class template to have access to their
-  // storage
-  template <class _Tp_, class _MemoryResource_, ::cuda::thread_scope _Scope_, class _Hash_>
-  friend class hyperloglog;
 };
 } // namespace cuda::experimental::cuco
 

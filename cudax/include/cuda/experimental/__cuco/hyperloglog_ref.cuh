@@ -4,7 +4,7 @@
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -48,6 +48,11 @@ template <class _Tp,
 class hyperloglog_ref
 {
   using __impl_type = ::cuda::experimental::cuco::_HyperLogLog_Impl<_Tp, _Scope, _Hash>;
+
+  __impl_type __impl; ///< Implementation object
+
+  template <class _Tp_, ::cuda::thread_scope _Scope_, class _Hash_>
+  friend class hyperloglog_ref;
 
 public:
   static constexpr auto thread_scope = __impl_type::thread_scope; ///< CUDA thread scope
@@ -278,12 +283,6 @@ public:
   {
     return __impl_type::__sketch_alignment();
   }
-
-private:
-  __impl_type __impl; ///< Implementation object
-
-  template <class _Tp_, ::cuda::thread_scope _Scope_, class _Hash_>
-  friend class hyperloglog_ref;
 };
 } // namespace cuda::experimental::cuco
 

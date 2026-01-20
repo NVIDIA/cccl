@@ -4,7 +4,7 @@
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -21,6 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__memory/assume_aligned.h>
 #include <cuda/std/array>
 #include <cuda/std/cstddef>
 #include <cuda/std/span>
@@ -39,7 +40,7 @@ namespace cuda::experimental::cuco::__hyperloglog_ns
 //! @return The global thread ID
 [[nodiscard]] _CCCL_DEVICE inline int64_t __global_thread_id() noexcept
 {
-  return static_cast<int64_t>(threadIdx.x) + blockDim.x * blockIdx.x;
+  return static_cast<int64_t>(blockDim.x) * blockIdx.x + threadIdx.x;
 }
 
 //! @brief Returns the grid stride of a 1D grid
@@ -60,7 +61,7 @@ CCCL_DETAIL_KERNEL_ATTRIBUTES void __clear(RefType __ref)
   }
 }
 
-template <int32_t VectorSize, class RefType>
+template <int VectorSize, class RefType>
 CCCL_DETAIL_KERNEL_ATTRIBUTES void
 __add_shmem_vectorized(const typename RefType::value_type* __first, int64_t __n, RefType __ref)
 {
@@ -87,10 +88,12 @@ __add_shmem_vectorized(const typename RefType::value_type* __first, int64_t __n,
   {
     __vec =
       *static_cast<const vector_type*>(::cuda::std::assume_aligned<sizeof(vector_type)>(__first + __idx * VectorSize));
-    for (const auto& __i : __vec)
+
+    for (int i = 0; i < VectorSize; ++i)
     {
-      __local_ref.__add(__i);
+      __local_ref.__add(__vec[i]);
     }
+
     __idx += __loop_stride;
   }
   // a single thread processes the remaining items
