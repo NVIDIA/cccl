@@ -36,7 +36,7 @@ C2H_TEST("DispatchScan::Dispatch: custom policy hub", "[scan][device]")
   const offset_t num_items = 12345;
 
   c2h::device_vector<value_t> in_items(num_items);
-  c2h::device_vector<value_t> out_items(num_items);
+  c2h::device_vector<value_t> out_items(num_items, thrust::no_init);
   c2h::gen(C2H_SEED(1), in_items);
 
   c2h::host_vector<value_t> expected(num_items);
@@ -67,6 +67,5 @@ C2H_TEST("DispatchScan::Dispatch: custom policy hub", "[scan][device]")
     num_items,
     /* stream */ nullptr);
 
-  c2h::host_vector<value_t> host_out(out_items);
-  REQUIRE(host_out == expected);
+  REQUIRE(out_items == expected);
 }
