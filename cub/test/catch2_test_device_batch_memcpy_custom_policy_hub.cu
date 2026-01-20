@@ -61,7 +61,7 @@ C2H_TEST("DispatchBatchMemcpy::Dispatch: custom policy hub", "[device][memcpy]")
   using buffer_offset_t = cub::detail::batch_memcpy::per_invocation_buffer_offset_t;
 
   const cuda::std::array<buffer_size_t, 5> buffer_sizes{3, 128, 512, 4096, 9000};
-  const auto num_buffers = static_cast<::cuda::std::int64_t>(buffer_sizes.size());
+  const auto num_buffers = static_cast<cuda::std::int64_t>(buffer_sizes.size());
 
   std::vector<c2h::device_vector<value_t>> in_buffers;
   std::vector<c2h::device_vector<value_t>> out_buffers;
