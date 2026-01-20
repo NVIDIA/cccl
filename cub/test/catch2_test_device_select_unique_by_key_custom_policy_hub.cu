@@ -37,7 +37,7 @@ C2H_TEST("DispatchUniqueByKey::Dispatch: custom policy hub", "[select_unique_by_
   using key_t    = int;
   using value_t  = int;
   using offset_t = int;
-  using eq_op_t  = ::cuda::std::equal_to<>;
+  using eq_op_t  = cuda::std::equal_to<>;
 
   const c2h::host_vector<key_t> h_keys_in{1, 1, 2, 2, 2, 3, 1};
   const c2h::host_vector<value_t> h_vals_in{10, 11, 20, 21, 22, 30, 40};
