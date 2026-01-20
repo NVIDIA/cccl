@@ -22,7 +22,7 @@ struct my_policy_hub
   {
     static constexpr int nominal_4b_items_per_thread = 10;
     static constexpr int items_per_thread =
-      ::cuda::std::clamp(nominal_4b_items_per_thread * 4 / int{sizeof(InputT)}, 1, nominal_4b_items_per_thread);
+      cuda::std::clamp(nominal_4b_items_per_thread * 4 / int{sizeof(InputT)}, 1, nominal_4b_items_per_thread);
     using SelectIfPolicyT =
       AgentSelectIfPolicy<128,
                           items_per_thread,
