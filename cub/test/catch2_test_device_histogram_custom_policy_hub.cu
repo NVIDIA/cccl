@@ -73,7 +73,7 @@ C2H_TEST("DispatchHistogram::DispatchEven: custom policy hub", "[histogram][devi
     num_rows,
     row_stride_samples,
     /* stream */ nullptr,
-    ::cuda::std::true_type{});
+    cuda::std::true_type{});
   c2h::device_vector<std::uint8_t> temp_storage(temp_size, thrust::no_init);
   dispatch_t::DispatchEven(
     thrust::raw_pointer_cast(temp_storage.data()),
