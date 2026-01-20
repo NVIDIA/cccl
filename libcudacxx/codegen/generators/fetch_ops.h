@@ -90,7 +90,7 @@ static inline _CCCL_DEVICE void __cuda_atomic_fetch_memory_order_dispatch(_Fn& _
   // 5 - Memory Order function tag
   // 6 - Scope Constraint
   // 7 - Scope function tag
-  const std::string asm_intrinsic_format = R"XXX(
+  constexpr auto asm_intrinsic_format = R"XXX(
 template <class _Type>
 static inline _CCCL_DEVICE void __cuda_atomic_fetch_{0}(
   _Type* __ptr, _Type& __dst, _Type __op, {5}, __atomic_cuda_operand_{1}{2}, {7})
@@ -99,7 +99,7 @@ static inline _CCCL_DEVICE void __cuda_atomic_fetch_{0}(
   // 0 - Atomic Operation
   // 1 - Operand type constraint
   // 2 - Pointer op skip_v
-  const std::string fetch_bind_invoke = R"XXX(
+  constexpr auto fetch_bind_invoke = R"XXX(
 template <typename _Type, typename _Tag, typename _Sco>
 struct __cuda_atomic_bind_fetch_{0} {{
   _Type* __ptr;

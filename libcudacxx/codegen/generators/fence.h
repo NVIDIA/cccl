@@ -32,7 +32,7 @@ inline void FormatFence(std::ostream& out)
   // Argument ID Reference
   // 0 - Membar scope tag
   // 1 - Membar scope
-  const std::string intrinsic_membar = R"XXX(
+  constexpr auto intrinsic_membar = R"XXX(
 static inline _CCCL_DEVICE void __cuda_atomic_membar({0})
 {{ asm volatile("membar{1};" ::: "memory"); }})XXX";
 
@@ -52,7 +52,7 @@ static inline _CCCL_DEVICE void __cuda_atomic_membar({0})
   // 1 - Fence scope
   // 2 - Fence order tag
   // 3 - Fence order
-  const std::string intrinsic_fence = R"XXX(
+  constexpr auto intrinsic_fence = R"XXX(
 static inline _CCCL_DEVICE void __cuda_atomic_fence({0}, {2})
 {{ asm volatile("fence{1}{3};" ::: "memory"); }})XXX";
 
