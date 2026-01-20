@@ -11,10 +11,10 @@
 #ifndef EXCHANGE_H
 #define EXCHANGE_H
 
+#include <format>
 #include <string>
 
 #include "definitions.h"
-#include <fmt/format.h>
 
 inline void FormatExchange(std::ostream& out)
 {
@@ -124,7 +124,7 @@ static inline _CCCL_DEVICE void __cuda_atomic_exchange(
           {
             continue;
           }
-          out << fmt::format(
+          out << std::format(
             (size == 128) ? asm_intrinsic_format_128 : asm_intrinsic_format,
             operand(type),
             size,

@@ -65,11 +65,6 @@ macro(cccl_get_dlpack)
   CPMAddPackage("gh:dmlc/dlpack#v1.2")
 endmacro()
 
-macro(cccl_get_fmt)
-  include("${_cccl_cpm_file}")
-  CPMAddPackage("gh:fmtlib/fmt#11.0.1")
-endmacro()
-
 macro(cccl_get_json)
   include("${_cccl_cpm_file}")
   CPMAddPackage("gh:nlohmann/json@3.12.0")

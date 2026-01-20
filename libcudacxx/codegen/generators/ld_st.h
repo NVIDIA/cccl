@@ -11,10 +11,10 @@
 #ifndef LD_ST_H
 #define LD_ST_H
 
+#include <format>
 #include <string>
 
 #include "definitions.h"
-#include <fmt/format.h>
 
 inline std::string semantic_ld_st(Semantic sem)
 {
@@ -152,7 +152,7 @@ static inline _CCCL_DEVICE void __cuda_atomic_load(
             {
               continue;
             }
-            out << fmt::format(
+            out << std::format(
               (size == 128) ? asm_intrinsic_format_128 : asm_intrinsic_format,
               /* 0 */ operand(type),
               /* 1 */ size,
@@ -315,7 +315,7 @@ static inline _CCCL_DEVICE void __cuda_atomic_store(
             {
               continue;
             }
-            out << fmt::format(
+            out << std::format(
               (size == 128) ? asm_intrinsic_format_128 : asm_intrinsic_format,
               /* 0 */ operand(type),
               /* 1 */ size,

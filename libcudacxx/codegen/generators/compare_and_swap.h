@@ -11,10 +11,10 @@
 #ifndef COMPARED_AND_SWAP_H
 #define COMPARED_AND_SWAP_H
 
+#include <format>
 #include <string>
 
 #include "definitions.h"
-#include <fmt/format.h>
 
 inline void FormatCompareAndSwap(std::ostream& out)
 {
@@ -126,7 +126,7 @@ static inline _CCCL_DEVICE bool __cuda_atomic_compare_exchange(
           {
             continue;
           }
-          out << fmt::format(
+          out << std::format(
             (size == 128) ? asm_intrinsic_format_128 : asm_intrinsic_format,
             operand(type),
             size,

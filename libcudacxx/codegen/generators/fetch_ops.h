@@ -12,10 +12,10 @@
 #define FETCH_OPS_H
 
 #include <array>
+#include <format>
 #include <string>
 
 #include "definitions.h"
-#include <fmt/format.h>
 
 inline std::string fetch_op_skip_v(std::string fetch_op)
 {
@@ -185,7 +185,7 @@ template <class _Type, class _Up, class _Sco, __atomic_enable_if_native_{1}<_Typ
             {
               continue;
             }
-            out << fmt::format(
+            out << std::format(
               asm_intrinsic_format,
               /* 0 */ op_name,
               /* 1 */ operand(type),
@@ -199,7 +199,7 @@ template <class _Type, class _Up, class _Sco, __atomic_enable_if_native_{1}<_Typ
         }
       }
     }
-    out << "\n" << fmt::format(fetch_bind_invoke, op_name, deduction, fetch_op_skip_v(op_name));
+    out << "\n" << std::format(fetch_bind_invoke, op_name, deduction, fetch_op_skip_v(op_name));
   }
 
   out << R"XXX(

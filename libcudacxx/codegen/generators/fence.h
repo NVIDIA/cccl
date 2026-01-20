@@ -11,10 +11,10 @@
 #ifndef FENCE_H
 #define FENCE_H
 
+#include <format>
 #include <string>
 
 #include "definitions.h"
-#include <fmt/format.h>
 
 inline std::string membar_scope(Scope sco)
 {
@@ -44,7 +44,7 @@ static inline _CCCL_DEVICE void __cuda_atomic_membar({0})
 
   for (const auto& sco : membar_scopes)
   {
-    out << fmt::format(intrinsic_membar, scope_tag(sco.first), sco.second);
+    out << std::format(intrinsic_membar, scope_tag(sco.first), sco.second);
   }
 
   // Argument ID Reference
@@ -72,7 +72,7 @@ static inline _CCCL_DEVICE void __cuda_atomic_fence({0}, {2})
   {
     for (const auto& sem : fence_semantics)
     {
-      out << fmt::format(intrinsic_fence, scope_tag(sco), semantic(sem), semantic_tag(sem), scope(sco));
+      out << std::format(intrinsic_fence, scope_tag(sco), semantic(sem), semantic_tag(sem), scope(sco));
     }
   }
   out << "\n"
