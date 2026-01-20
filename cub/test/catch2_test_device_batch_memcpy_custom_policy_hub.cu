@@ -7,6 +7,7 @@
 
 #include <thrust/detail/raw_pointer_cast.h>
 
+#include <cuda/std/array>
 #include <cuda/std/cstdint>
 
 #include <vector>
