@@ -7,7 +7,6 @@
 
 #include <thrust/detail/raw_pointer_cast.h>
 
-#include <cuda/std/algorithm>
 #include <cuda/std/functional>
 
 #include <c2h/catch2_test_helper.h>
