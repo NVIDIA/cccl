@@ -30,7 +30,7 @@ struct my_policy_hub
 
 C2H_TEST("DispatchHistogram::DispatchEven: custom policy hub", "[histogram][device]")
 {
-  using sample_t                    = std::uint8_t;
+  using sample_t                    = cuda::std::uint8_t;
   using counter_t                   = int;
   using level_t                     = int;
   using offset_t                    = int;
