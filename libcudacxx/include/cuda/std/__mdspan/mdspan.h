@@ -32,7 +32,6 @@
 #include <cuda/std/__fwd/mdspan.h>
 #include <cuda/std/__mdspan/concepts.h>
 #include <cuda/std/__mdspan/default_accessor.h>
-#include <cuda/std/__mdspan/empty_base.h>
 #include <cuda/std/__mdspan/extents.h>
 #include <cuda/std/__mdspan/layout_right.h>
 #include <cuda/std/__type_traits/extent.h>
@@ -54,6 +53,7 @@
 #include <cuda/std/__utility/declval.h>
 #include <cuda/std/__utility/integer_sequence.h>
 #include <cuda/std/__utility/move.h>
+#include <cuda/std/__utility/no_unique_member.h>
 #include <cuda/std/array>
 #include <cuda/std/cstddef>
 #include <cuda/std/limits>
@@ -103,9 +103,9 @@ struct __mdspan_constraints
 
 template <class _ElementType, class _Extents, class _LayoutPolicy, class _AccessorPolicy>
 class mdspan
-    : private __mdspan_ebco<typename _AccessorPolicy::data_handle_type,
-                            typename _LayoutPolicy::template mapping<_Extents>,
-                            _AccessorPolicy>
+    : private __no_unique_member<typename _AccessorPolicy::data_handle_type>
+    , private __no_unique_member<typename _LayoutPolicy::template mapping<_Extents>>
+    , private __no_unique_member<_AccessorPolicy>
 {
 private:
   static_assert(__is_cuda_std_extents_v<_Extents>,
@@ -124,6 +124,10 @@ private:
   using __constraints = __mdspan_constraints<_Extents, _LayoutPolicy, _AccessorPolicy>;
 
 public:
+  using _DataHandleMB = __no_unique_member<typename _AccessorPolicy::data_handle_type>;
+  using _MappingMB    = __no_unique_member<typename _LayoutPolicy::template mapping<_Extents>>;
+  using _AccessorMB   = __no_unique_member<_AccessorPolicy>;
+
   using extents_type     = _Extents;
   using layout_type      = _LayoutPolicy;
   using accessor_type    = _AccessorPolicy;
@@ -135,9 +139,6 @@ public:
   using rank_type        = typename extents_type::rank_type;
   using data_handle_type = typename accessor_type::data_handle_type;
   using reference        = typename accessor_type::reference;
-  using __base           = __mdspan_ebco<typename accessor_type::data_handle_type,
-                                         typename _LayoutPolicy::template mapping<_Extents>,
-                                         _AccessorPolicy>;
 
   [[nodiscard]] _CCCL_API static constexpr rank_type rank() noexcept
   {
@@ -164,7 +165,9 @@ public:
   _CCCL_API constexpr mdspan() noexcept(
     is_nothrow_default_constructible_v<data_handle_type> && is_nothrow_default_constructible_v<mapping_type>
     && is_nothrow_default_constructible_v<accessor_type>)
-      : __base()
+      : _DataHandleMB()
+      , _MappingMB()
+      , _AccessorMB()
   {
     if constexpr (::cuda::std::__has_detect_invalidity<accessor_type>)
     {
@@ -180,7 +183,9 @@ public:
   _CCCL_TEMPLATE(class... _OtherIndexTypes)
   _CCCL_REQUIRES(__constraints::template __can_construct_from_handle_and_variadic<_OtherIndexTypes...>)
   _CCCL_API explicit constexpr mdspan(data_handle_type __p, _OtherIndexTypes... __exts)
-      : __base(::cuda::std::move(__p), extents_type(static_cast<index_type>(::cuda::std::move(__exts))...))
+      : _DataHandleMB(::cuda::std::move(__p))
+      , _MappingMB(extents_type(static_cast<index_type>(::cuda::std::move(__exts))...))
+      , _AccessorMB()
   {
     if constexpr (::cuda::std::__has_detect_invalidity<accessor_type>)
     {
@@ -194,7 +199,9 @@ public:
   _CCCL_REQUIRES(__mdspan_detail::__matches_dynamic_rank<extents_type, _Size> _CCCL_AND
                    __constraints::template __is_constructible_from_index_type<_OtherIndexType>)
   _CCCL_API constexpr mdspan(data_handle_type __p, const array<_OtherIndexType, _Size>& __exts)
-      : __base(::cuda::std::move(__p), extents_type{__exts})
+      : _DataHandleMB(::cuda::std::move(__p))
+      , _MappingMB(extents_type{__exts})
+      , _AccessorMB()
   {
     if constexpr (::cuda::std::__has_detect_invalidity<accessor_type>)
     {
@@ -208,7 +215,9 @@ public:
   _CCCL_REQUIRES(__mdspan_detail::__matches_static_rank<extents_type, _Size> _CCCL_AND
                    __constraints::template __is_constructible_from_index_type<_OtherIndexType>)
   _CCCL_API explicit constexpr mdspan(data_handle_type __p, const array<_OtherIndexType, _Size>& __exts)
-      : __base(::cuda::std::move(__p), extents_type{__exts})
+      : _DataHandleMB(::cuda::std::move(__p))
+      , _MappingMB(extents_type{__exts})
+      , _AccessorMB()
   {
     if constexpr (::cuda::std::__has_detect_invalidity<accessor_type>)
     {
@@ -222,7 +231,9 @@ public:
   _CCCL_REQUIRES(__mdspan_detail::__matches_dynamic_rank<extents_type, _Size> _CCCL_AND
                    __constraints::template __is_constructible_from_index_type<_OtherIndexType>)
   _CCCL_API constexpr mdspan(data_handle_type __p, span<_OtherIndexType, _Size> __exts)
-      : __base(::cuda::std::move(__p), extents_type{__exts})
+      : _DataHandleMB(::cuda::std::move(__p))
+      , _MappingMB(extents_type{__exts})
+      , _AccessorMB()
   {
     if constexpr (::cuda::std::__has_detect_invalidity<accessor_type>)
     {
@@ -236,7 +247,9 @@ public:
   _CCCL_REQUIRES(__mdspan_detail::__matches_static_rank<extents_type, _Size> _CCCL_AND
                    __constraints::template __is_constructible_from_index_type<_OtherIndexType>)
   _CCCL_API explicit constexpr mdspan(data_handle_type __p, span<_OtherIndexType, _Size> __exts)
-      : __base(::cuda::std::move(__p), extents_type{__exts})
+      : _DataHandleMB(::cuda::std::move(__p))
+      , _MappingMB(extents_type{__exts})
+      , _AccessorMB()
   {
     if constexpr (::cuda::std::__has_detect_invalidity<accessor_type>)
     {
@@ -250,7 +263,9 @@ public:
   _CCCL_REQUIRES(
     is_default_constructible_v<_AccessorPolicy2> _CCCL_AND is_constructible_v<_Mapping2, const extents_type&>)
   _CCCL_API constexpr mdspan(data_handle_type __p, const extents_type& __exts)
-      : __base(::cuda::std::move(__p), __exts)
+      : _DataHandleMB(::cuda::std::move(__p))
+      , _MappingMB(__exts)
+      , _AccessorMB()
   {
     if constexpr (::cuda::std::__has_detect_invalidity<accessor_type>)
     {
@@ -263,7 +278,9 @@ public:
   _CCCL_TEMPLATE(class _AccessorPolicy2 = _AccessorPolicy)
   _CCCL_REQUIRES(is_default_constructible_v<_AccessorPolicy2>)
   _CCCL_API constexpr mdspan(data_handle_type __p, const mapping_type& __m)
-      : __base(::cuda::std::move(__p), __m)
+      : _DataHandleMB(::cuda::std::move(__p))
+      , _MappingMB(__m)
+      , _AccessorMB()
   {
     if constexpr (::cuda::std::__has_detect_invalidity<accessor_type>)
     {
@@ -274,7 +291,9 @@ public:
   }
 
   _CCCL_API constexpr mdspan(data_handle_type __p, const mapping_type& __m, const accessor_type& __a)
-      : __base(::cuda::std::move(__p), __m, __a)
+      : _DataHandleMB(::cuda::std::move(__p))
+      , _MappingMB(__m)
+      , _AccessorMB(__a)
   {
     if constexpr (::cuda::std::__has_detect_invalidity<accessor_type>)
     {
@@ -290,7 +309,9 @@ public:
       _CCCL_AND
         __constraints::template __is_implicit_convertible_from<_OtherExtents, _OtherLayoutPolicy, _OtherAccessor>)
   _CCCL_API constexpr mdspan(const mdspan<_OtherElementType, _OtherExtents, _OtherLayoutPolicy, _OtherAccessor>& __other)
-      : __base(__other.data_handle(), __other.mapping(), __other.accessor())
+      : _DataHandleMB(__other.data_handle())
+      , _MappingMB(__other.mapping())
+      , _AccessorMB(__other.accessor())
   {
     static_assert(is_constructible_v<data_handle_type, const typename _OtherAccessor::data_handle_type&>,
                   "mdspan: incompatible data_handle_type for mdspan construction");
@@ -327,7 +348,9 @@ public:
       !__constraints::template __is_implicit_convertible_from<_OtherExtents, _OtherLayoutPolicy, _OtherAccessor>))
   _CCCL_API explicit constexpr mdspan(
     const mdspan<_OtherElementType, _OtherExtents, _OtherLayoutPolicy, _OtherAccessor>& __other)
-      : __base(__other.data_handle(), __other.mapping(), __other.accessor())
+      : _DataHandleMB(__other.data_handle())
+      , _MappingMB(__other.mapping())
+      , _AccessorMB(__other.accessor())
   {
     static_assert(is_constructible_v<data_handle_type, const typename _OtherAccessor::data_handle_type&>,
                   "mdspan: incompatible data_handle_type for mdspan construction");
@@ -484,7 +507,9 @@ public:
 
   _CCCL_API friend constexpr void swap(mdspan& __x, mdspan& __y) noexcept
   {
-    swap(static_cast<__base&>(__x), static_cast<__base&>(__y));
+    swap(_CCCL_GET_NO_UNIQUE_MEMBER(__x, _DataHandleMB), _CCCL_GET_NO_UNIQUE_MEMBER(__y, _DataHandleMB));
+    swap(_CCCL_GET_NO_UNIQUE_MEMBER(__x, _MappingMB), _CCCL_GET_NO_UNIQUE_MEMBER(__y, _MappingMB));
+    swap(_CCCL_GET_NO_UNIQUE_MEMBER(__x, _AccessorMB), _CCCL_GET_NO_UNIQUE_MEMBER(__y, _AccessorMB));
   }
 
   [[nodiscard]] _CCCL_API constexpr const extents_type& extents() const noexcept
@@ -493,15 +518,15 @@ public:
   }
   [[nodiscard]] _CCCL_API constexpr const data_handle_type& data_handle() const noexcept
   {
-    return this->template __get<0>();
+    return _DataHandleMB::__get();
   }
   [[nodiscard]] _CCCL_API constexpr const mapping_type& mapping() const noexcept
   {
-    return this->template __get<1>();
+    return _MappingMB::__get();
   }
   [[nodiscard]] _CCCL_API constexpr const accessor_type& accessor() const noexcept
   {
-    return this->template __get<2>();
+    return _AccessorMB::__get();
   }
 
   [[nodiscard]] _CCCL_API static constexpr bool is_always_unique() noexcept(noexcept(mapping_type::is_always_unique()))

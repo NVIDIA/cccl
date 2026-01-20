@@ -30,7 +30,6 @@
 
 #include <cuda/std/__fwd/mdspan.h>
 #include <cuda/std/__mdspan/concepts.h>
-#include <cuda/std/__mdspan/empty_base.h>
 #include <cuda/std/__mdspan/extents.h>
 #include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/is_constructible.h>
@@ -39,6 +38,7 @@
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__utility/as_const.h>
 #include <cuda/std/__utility/integer_sequence.h>
+#include <cuda/std/__utility/no_unique_member.h>
 #include <cuda/std/__utility/swap.h>
 #include <cuda/std/array>
 #include <cuda/std/cstddef>
@@ -70,19 +70,22 @@ struct __constraints
 
 template <class _Extents>
 class _CCCL_DECLSPEC_EMPTY_BASES layout_stride::mapping
-    : private __mdspan_ebco<_Extents,
-                            __mdspan_detail::__possibly_empty_array<typename _Extents::index_type, _Extents::rank()>>
+    : private __no_unique_member<_Extents>
+    , private __no_unique_member<__mdspan_detail::__possibly_empty_array<typename _Extents::index_type, _Extents::rank()>>
 {
 public:
   static_assert(__is_cuda_std_extents_v<_Extents>,
                 "layout_stride::mapping template argument must be a specialization of extents.");
+
+  using _ExtentsMB = __no_unique_member<_Extents>;
+  using _StridesMB =
+    __no_unique_member<__mdspan_detail::__possibly_empty_array<typename _Extents::index_type, _Extents::rank()>>;
 
   using extents_type = _Extents;
   using index_type   = typename extents_type::index_type;
   using size_type    = typename extents_type::size_type;
   using rank_type    = typename extents_type::rank_type;
   using layout_type  = layout_stride;
-  using __base = __mdspan_ebco<_Extents, __mdspan_detail::__possibly_empty_array<index_type, extents_type::rank()>>;
 
   template <class, class, class, class>
   friend class mdspan;
@@ -206,7 +209,8 @@ private:
 public:
   // [mdspan.layout.stride.cons], constructors
   _CCCL_API constexpr mapping() noexcept
-      : __base(extents_type())
+      : _ExtentsMB(extents_type())
+      , _StridesMB()
   {
     if constexpr (extents_type::rank() > 0)
     {
@@ -299,7 +303,8 @@ public:
             enable_if_t<is_constructible_v<index_type, const _OtherIndexType&>, int> = 0,
             enable_if_t<is_convertible_v<const _OtherIndexType&, index_type>, int>   = 0>
   _CCCL_API constexpr mapping(const extents_type& __ext, span<_OtherIndexType, extents_type::rank()> __strides) noexcept
-      : __base(__ext, __to_strides_array(__strides, __rank_sequence))
+      : _ExtentsMB(__ext)
+      , _StridesMB(__to_strides_array(__strides, __rank_sequence))
   {
     _CCCL_ASSERT(__check_strides(__strides, __rank_sequence),
                  "layout_stride::mapping ctor: all strides must be greater than 0");
@@ -343,7 +348,8 @@ public:
   _CCCL_REQUIRES(__layout_stride_detail::__can_convert<_StridedLayoutMapping, _Extents> _CCCL_AND
                    __layout_stride_detail::__constraints::__converts_implicit<_StridedLayoutMapping, _Extents>)
   _CCCL_API constexpr mapping(const _StridedLayoutMapping& __other) noexcept
-      : __base(__other.extents(), __to_strides_array(__other, __rank_sequence))
+      : _ExtentsMB(__other.extents())
+      , _StridesMB(__to_strides_array(__other, __rank_sequence))
   {
     _CCCL_ASSERT(__check_mapped_strides(__other, __rank_sequence),
                  "layout_stride::mapping converting ctor: all strides must be greater than 0");
@@ -357,7 +363,8 @@ public:
   _CCCL_REQUIRES(__layout_stride_detail::__can_convert<_StridedLayoutMapping, _Extents> _CCCL_AND(
     !__layout_stride_detail::__constraints::__converts_implicit<_StridedLayoutMapping, _Extents>))
   _CCCL_API explicit constexpr mapping(const _StridedLayoutMapping& __other) noexcept
-      : __base(__other.extents(), __to_strides_array(__other, __rank_sequence))
+      : _ExtentsMB(__other.extents())
+      , _StridesMB(__to_strides_array(__other, __rank_sequence))
   {
     _CCCL_ASSERT(__check_mapped_strides(__other, __rank_sequence),
                  "layout_stride::mapping converting ctor: all strides must be greater than 0");
@@ -373,17 +380,17 @@ public:
   // [mdspan.layout.stride.obs], observers
   [[nodiscard]] _CCCL_API constexpr const extents_type& extents() const noexcept
   {
-    return this->template __get<0>();
+    return _ExtentsMB::__get();
   }
 
   [[nodiscard]] _CCCL_API constexpr __stride_array& __strides() noexcept
   {
-    return this->template __get<1>();
+    return _StridesMB::__get();
   }
 
   [[nodiscard]] _CCCL_API constexpr const __stride_array& __strides() const noexcept
   {
-    return this->template __get<1>();
+    return _StridesMB::__get();
   }
 
   template <size_t... _Pos>

@@ -31,13 +31,13 @@
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__fwd/mdspan.h>
 #include <cuda/std/__mdspan/concepts.h>
-#include <cuda/std/__mdspan/empty_base.h>
 #include <cuda/std/__mdspan/extents.h>
 #include <cuda/std/__type_traits/fold.h>
 #include <cuda/std/__type_traits/is_constructible.h>
 #include <cuda/std/__type_traits/is_convertible.h>
 #include <cuda/std/__type_traits/is_nothrow_constructible.h>
 #include <cuda/std/__utility/integer_sequence.h>
+#include <cuda/std/__utility/no_unique_member.h>
 #include <cuda/std/array>
 #include <cuda/std/cstddef>
 #include <cuda/std/limits>
@@ -47,18 +47,19 @@
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 template <class _Extents>
-class _CCCL_DECLSPEC_EMPTY_BASES layout_right::mapping : private __mdspan_ebco<_Extents>
+class _CCCL_DECLSPEC_EMPTY_BASES layout_right::mapping : private __no_unique_member<_Extents>
 {
 public:
   static_assert(__is_cuda_std_extents_v<_Extents>,
                 "layout_right::mapping template argument must be a specialization of extents.");
+
+  using _ExtentsMB = __no_unique_member<_Extents>;
 
   using extents_type = _Extents;
   using index_type   = typename extents_type::index_type;
   using size_type    = typename extents_type::size_type;
   using rank_type    = typename extents_type::rank_type;
   using layout_type  = layout_right;
-  using __base       = __mdspan_ebco<_Extents>;
 
   template <class, class, class, class>
   friend class mdspan;
@@ -96,7 +97,7 @@ public:
   _CCCL_HIDE_FROM_ABI constexpr mapping(const mapping&) noexcept = default;
 
   _CCCL_API constexpr mapping(const extents_type& __ext) noexcept
-      : __base(__ext)
+      : _ExtentsMB(__ext)
   {
     // not catching this could lead to out-of-bounds access later when used inside mdspan
     // mapping<dextents<char, 2>> map(dextents<char, 2>(40,40)); map(3, 10) == -126
@@ -107,7 +108,7 @@ public:
   _CCCL_TEMPLATE(class _OtherExtents)
   _CCCL_REQUIRES(is_constructible_v<extents_type, _OtherExtents> _CCCL_AND is_convertible_v<_OtherExtents, extents_type>)
   _CCCL_API constexpr mapping(const mapping<_OtherExtents>& __other) noexcept
-      : __base(__other.extents())
+      : _ExtentsMB(__other.extents())
   {
     // not catching this could lead to out-of-bounds access later when used inside mdspan
     // mapping<dextents<char, 2>> map(mapping<dextents<int, 2>>(dextents<int, 2>(40,40))); map(3, 10) == -126
@@ -120,7 +121,7 @@ public:
   _CCCL_REQUIRES(
     is_constructible_v<extents_type, _OtherExtents> _CCCL_AND(!is_convertible_v<_OtherExtents, extents_type>))
   _CCCL_API explicit constexpr mapping(const mapping<_OtherExtents>& __other) noexcept
-      : __base(__other.extents())
+      : _ExtentsMB(__other.extents())
   {
     // not catching this could lead to out-of-bounds access later when used inside mdspan
     // mapping<dextents<char, 2>> map(mapping<dextents<int, 2>>(dextents<int, 2>(40,40))); map(3, 10) == -126
@@ -133,7 +134,7 @@ public:
   _CCCL_REQUIRES((_OtherExtents::rank() <= 1) _CCCL_AND is_constructible_v<extents_type, _OtherExtents> _CCCL_AND
                    is_convertible_v<_OtherExtents, extents_type>)
   _CCCL_API constexpr mapping(const layout_left::mapping<_OtherExtents>& __other) noexcept
-      : __base(__other.extents())
+      : _ExtentsMB(__other.extents())
   {
     // not catching this could lead to out-of-bounds access later when used inside mdspan
     // Note: since this is constraint to rank 1, extents itself would catch the invalid conversion first
@@ -150,7 +151,7 @@ public:
   _CCCL_REQUIRES((_OtherExtents::rank() <= 1) _CCCL_AND is_constructible_v<extents_type, _OtherExtents> _CCCL_AND(
     !is_convertible_v<_OtherExtents, extents_type>))
   _CCCL_API explicit constexpr mapping(const layout_left::mapping<_OtherExtents>& __other) noexcept
-      : __base(__other.extents())
+      : _ExtentsMB(__other.extents())
   {
     // not catching this could lead to out-of-bounds access later when used inside mdspan
     // Note: since this is constraint to rank 1, extents itself would catch the invalid conversion first
@@ -181,7 +182,7 @@ public:
   _CCCL_TEMPLATE(class _OtherExtents)
   _CCCL_REQUIRES(is_constructible_v<extents_type, _OtherExtents> _CCCL_AND(extents_type::rank() > 0))
   _CCCL_API explicit constexpr mapping(const layout_stride::mapping<_OtherExtents>& __other) noexcept
-      : __base(__other.extents())
+      : _ExtentsMB(__other.extents())
   {
     _CCCL_ASSERT(__check_strides(__other),
                  "layout_right::mapping from layout_stride ctor: strides are not compatible with layout_left.");
@@ -193,7 +194,7 @@ public:
   _CCCL_TEMPLATE(class _OtherExtents)
   _CCCL_REQUIRES(is_constructible_v<extents_type, _OtherExtents> _CCCL_AND(extents_type::rank() == 0))
   _CCCL_API constexpr mapping(const layout_stride::mapping<_OtherExtents>& __other) noexcept
-      : __base(__other.extents())
+      : _ExtentsMB(__other.extents())
   {}
 
   _CCCL_HIDE_FROM_ABI constexpr mapping& operator=(const mapping&) noexcept = default;
@@ -201,7 +202,7 @@ public:
   // [mdspan.layout.right.obs], observers
   [[nodiscard]] _CCCL_API constexpr const extents_type& extents() const noexcept
   {
-    return this->template __get<0>();
+    return _ExtentsMB::__get();
   }
 
   [[nodiscard]] _CCCL_API constexpr index_type required_span_size() const noexcept
