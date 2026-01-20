@@ -172,25 +172,18 @@ public:
 
     cudaStream_t stream = adapter_state->stream;
 
-    // Check if any blocking deallocations are needed - if so, sync the stream once
-    bool has_blocking_dealloc = false;
-    for (const auto& b : adapter_state->to_free)
-    {
-      if (!b.memory_node.allocation_is_stream_ordered())
-      {
-        has_blocking_dealloc = true;
-        break;
-      }
-    }
-
-    if (has_blocking_dealloc)
-    {
-      cuda_safe_call(cudaStreamSynchronize(stream));
-    }
-
-    // Deallocate all buffers using the data_place interface
+    // Deallocate all buffers, synchronizing lazily on the first blocking deallocation.
+    // This allows stream-ordered deallocations (cudaFreeAsync) that appear before any
+    // blocking ones (cudaFreeHost, cudaFree) to proceed without waiting for the sync.
+    bool stream_synchronized = false;
     for (auto& b : adapter_state->to_free)
     {
+      // Sync stream once before the first blocking deallocation
+      if (!b.memory_node.allocation_is_stream_ordered() && !stream_synchronized)
+      {
+        cuda_safe_call(cudaStreamSynchronize(stream));
+        stream_synchronized = true;
+      }
       b.memory_node.deallocate(b.ptr, b.sz, stream);
     }
 
