@@ -56,9 +56,9 @@ struct my_policy_hub
 
 C2H_TEST("DispatchBatchMemcpy::Dispatch: custom policy hub", "[device][memcpy]")
 {
-  using value_t         = ::cuda::std::uint8_t;
-  using buffer_size_t   = ::cuda::std::uint32_t;
-  using block_offset_t  = ::cuda::std::uint32_t;
+  using value_t         = cuda::std::uint8_t;
+  using buffer_size_t   = cuda::std::uint32_t;
+  using block_offset_t  = cuda::std::uint32_t;
   using buffer_offset_t = cub::detail::batch_memcpy::per_invocation_buffer_offset_t;
 
   const cuda::std::array<buffer_size_t, 5> buffer_sizes{3, 128, 512, 4096, 9000};
