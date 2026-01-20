@@ -334,9 +334,16 @@ public:
   class impl : public exec_place::impl
   {
   public:
-    /* Note that we are using the green context data place as the affine data place */
-    impl(green_ctx_view gc_view)
-        : exec_place::impl(make_green_ctx_data_place(gc_view))
+    /**
+     * @brief Construct a green context execution place
+     *
+     * @param gc_view The green context view
+     * @param use_green_ctx_data_place If true, use a green context data place as the
+     *        affine data place. If false (default), use a regular device data place instead.
+     */
+    impl(green_ctx_view gc_view, bool use_green_ctx_data_place = false)
+        : exec_place::impl(use_green_ctx_data_place ? make_green_ctx_data_place(gc_view)
+                                                    : data_place::device(gc_view.devid))
         , devid(gc_view.devid)
         , g_ctx(gc_view.g_ctx)
         , pool(mv(gc_view.pool))
@@ -410,29 +417,29 @@ public:
   };
 
 public:
-  exec_place_green_ctx(green_ctx_view gc_view)
-      : exec_place(::std::make_shared<impl>(mv(gc_view)))
+  exec_place_green_ctx(green_ctx_view gc_view, bool use_green_ctx_data_place = false)
+      : exec_place(::std::make_shared<impl>(mv(gc_view), use_green_ctx_data_place))
   {
     static_assert(sizeof(exec_place_green_ctx) <= sizeof(exec_place),
                   "exec_place_green_ctx cannot add state; it would be sliced away.");
   }
 
-  exec_place_green_ctx(::std::shared_ptr<green_ctx_view> gc_view_ptr)
-      : exec_place(::std::make_shared<impl>(*gc_view_ptr))
+  exec_place_green_ctx(::std::shared_ptr<green_ctx_view> gc_view_ptr, bool use_green_ctx_data_place = false)
+      : exec_place(::std::make_shared<impl>(*gc_view_ptr, use_green_ctx_data_place))
   {
     static_assert(sizeof(exec_place_green_ctx) <= sizeof(exec_place),
                   "exec_place_green_ctx cannot add state; it would be sliced away.");
   }
 };
 
-inline exec_place exec_place::green_ctx(const green_ctx_view& gc_view)
+inline exec_place exec_place::green_ctx(const green_ctx_view& gc_view, bool use_green_ctx_data_place)
 {
-  return exec_place_green_ctx(gc_view);
+  return exec_place_green_ctx(gc_view, use_green_ctx_data_place);
 }
 
-inline exec_place exec_place::green_ctx(const ::std::shared_ptr<green_ctx_view>& gc_view_ptr)
+inline exec_place exec_place::green_ctx(const ::std::shared_ptr<green_ctx_view>& gc_view_ptr, bool use_green_ctx_data_place)
 {
-  return exec_place_green_ctx(gc_view_ptr);
+  return exec_place_green_ctx(gc_view_ptr, use_green_ctx_data_place);
 }
 
 // Implementation of async_resources_handle::get_gc_helper moved here to avoid circular dependencies

@@ -915,8 +915,15 @@ public:
 
 // Green contexts are only supported since CUDA 12.4
 #if _CCCL_CTK_AT_LEAST(12, 4)
-  static exec_place green_ctx(const green_ctx_view& gc_view);
-  static exec_place green_ctx(const ::std::shared_ptr<green_ctx_view>& gc_view_ptr);
+  /**
+   * @brief Create a green context execution place
+   *
+   * @param gc_view The green context view
+   * @param use_green_ctx_data_place If true, use a green context data place as the
+   *        affine data place. If false (default), use a regular device data place instead.
+   */
+  static exec_place green_ctx(const green_ctx_view& gc_view, bool use_green_ctx_data_place = false);
+  static exec_place green_ctx(const ::std::shared_ptr<green_ctx_view>& gc_view_ptr, bool use_green_ctx_data_place = false);
 #endif // _CCCL_CTK_AT_LEAST(12, 4)
 
   static exec_place_cuda_stream cuda_stream(cudaStream_t stream);
