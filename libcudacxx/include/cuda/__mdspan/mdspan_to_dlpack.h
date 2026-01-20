@@ -165,6 +165,10 @@ class __dlpack_tensor
     __tensor.strides = _Rank > 0 ? __strides.data() : nullptr;
   }
 
+  template <typename _ElementType, typename _Extents, typename _Layout, typename _Accessor>
+  _CCCL_HOST_API friend __dlpack_tensor<_Extents::rank()>
+  __to_dlpack(const ::cuda::std::mdspan<_ElementType, _Extents, _Layout, _Accessor>&, ::DLDeviceType, int);
+
 public:
   _CCCL_HOST_API explicit __dlpack_tensor() noexcept
   {
@@ -234,7 +238,7 @@ __to_dlpack(const ::cuda::std::mdspan<_ElementType, _Extents, _Layout, _Accessor
   static_assert(::cuda::std::is_pointer_v<typename _Accessor::data_handle_type>, "data_handle_type must be a pointer");
   using __element_type = ::cuda::std::remove_cv_t<_ElementType>;
   __dlpack_tensor<_Extents::rank()> __wrapper{};
-  auto& __tensor  = __wrapper.get();
+  auto& __tensor  = __wrapper.__tensor;
   __tensor.data   = __mdspan.size() > 0 ? const_cast<__element_type*>(__mdspan.data_handle()) : nullptr;
   __tensor.device = ::DLDevice{__device_type, __device_id};
   __tensor.ndim   = static_cast<int>(__mdspan.rank());

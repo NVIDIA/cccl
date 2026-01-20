@@ -186,18 +186,7 @@ bool test_dlpack_wrapper_move_assignment()
 bool test_dlpack_wrapper_get()
 {
   using wrapper_t = cuda::__dlpack_tensor<2>;
-  static_assert(cuda::std::is_same_v<decltype(cuda::std::declval<wrapper_t&>().get()), ::DLTensor&>);
   static_assert(cuda::std::is_same_v<decltype(cuda::std::declval<const wrapper_t&>().get()), const ::DLTensor&>);
-
-  wrapper_t w{};
-  // Mutating through the reference returned by `get()` must be observable.
-  auto& t = w.get();
-  t.ndim  = 123;
-  assert(w.get().ndim == 123);
-
-  // Const overload should also alias the same underlying object.
-  const wrapper_t& cw = w;
-  assert(&cw.get() == &w.get());
   return true;
 }
 
