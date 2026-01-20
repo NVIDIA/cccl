@@ -363,14 +363,26 @@ public:
       prop.location.type = CU_MEM_LOCATION_TYPE_HOST;
       prop.location.id   = 0;
     }
-#endif // _CCCL_CTK_AT_LEAST(12, 2)
     else
     {
-      // Managed memory (-2), host memory on CUDA < 12.2, and other special types are not supported by VMM
-      _CCCL_ASSERT(
-        false, "mem_create: unsupported place type (managed memory and host on CUDA < 12.2 not supported by VMM API)");
+      // Managed memory (-2) is not supported by the VMM API
+      _CCCL_ASSERT(false, "mem_create: managed memory is not supported by the VMM API");
       return CUDA_ERROR_NOT_SUPPORTED;
     }
+#else // ^^^ _CCCL_CTK_AT_LEAST(12, 2) ^^^ / vvv _CCCL_CTK_BELOW(12, 2) vvv
+    else if (dev_ordinal == -1)
+    {
+      // Host VMM requires CU_MEM_LOCATION_TYPE_HOST which is only available in CUDA 12.2+
+      _CCCL_ASSERT(false, "mem_create: host VMM requires CUDA 12.2+ (CU_MEM_LOCATION_TYPE_HOST not available)");
+      return CUDA_ERROR_NOT_SUPPORTED;
+    }
+    else
+    {
+      // Managed memory (-2) is not supported by the VMM API
+      _CCCL_ASSERT(false, "mem_create: managed memory is not supported by the VMM API");
+      return CUDA_ERROR_NOT_SUPPORTED;
+    }
+#endif // _CCCL_CTK_AT_LEAST(12, 2)
     return cuMemCreate(handle, size, &prop, 0);
   }
 
