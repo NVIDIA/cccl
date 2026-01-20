@@ -25,6 +25,8 @@
 
 #include <cuda/__device/arch_id.h>
 #include <cuda/__device/compute_capability.h>
+#include <cuda/std/__concepts/regular.h>
+#include <cuda/std/__concepts/same_as.h>
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__utility/forward.h>
 #include <cuda/std/array>
@@ -831,6 +833,22 @@ private:
   }
 #endif // !_CCCL_COMPILER(NVRTC)
 };
+
+namespace detail
+{
+#if _CCCL_HAS_CONCEPTS()
+// TODO(bgruber): should we either drop the Policy template argument or rename it to policy_selector_for?
+template <typename T, typename Policy>
+concept policy_selector = requires(T pol_sel, ::cuda::arch_id arch) {
+  requires ::cuda::std::regular<Policy>;
+  { pol_sel(arch) } -> _CCCL_CONCEPT_VSTD::same_as<Policy>;
+  // we cannot reliably check whether pol_sel(arch) is a constant expression, since it sometimes depends on the data
+  // member values whether it can be constant evaluated (e.g., a default constructed reduce::policy_selector will lead
+  // to a division by zero when evaluated)
+};
+#endif // _CCCL_HAS_CONCEPTS()
+} // namespace detail
+
 CUB_NAMESPACE_END
 
 #if _CCCL_CUDA_COMPILATION() && !_CCCL_COMPILER(NVRTC)
