@@ -31,10 +31,12 @@ _CCCL_DIAG_SUPPRESS_CLANG("-Wshadow")
 _CCCL_DIAG_POP
 
 #  include <cuda/__execution/policy.h>
+#  include <cuda/__iterator/tabulate_output_iterator.h>
 #  include <cuda/__runtime/api_wrapper.h>
 #  include <cuda/std/__exception/cuda_error.h>
 #  include <cuda/std/__execution/env.h>
 #  include <cuda/std/__execution/policy.h>
+#  include <cuda/std/__functional/invoke.h>
 #  include <cuda/std/__iterator/distance.h>
 #  include <cuda/std/__iterator/iterator_traits.h>
 #  include <cuda/std/__memory/addressof.h>
@@ -57,7 +59,7 @@ template <>
 struct __pstl_dispatch<__pstl_algorithm::__reduce, __execution_backend::__cuda>
 {
   //! Ensures we properly deallocate the memory allocated for the result
-  template <class _Tp>
+  template <class _Tp, class _AccumT>
   struct __allocation_guard
   {
     //! This helper struct ensures that we can properly assign types with a nontrivial assignment operator
@@ -76,13 +78,16 @@ struct __pstl_dispatch<__pstl_algorithm::__reduce, __execution_backend::__cuda>
       }
     };
 
-    _Tp* __ptr_;
+    void* __ptr_;
 
-    _CCCL_HOST_API __allocation_guard()
+    _CCCL_HOST_API __allocation_guard(size_t __num_bytes)
         : __ptr_(nullptr)
     {
-      _CCCL_TRY_CUDA_API(
-        ::cudaMalloc, "__pstl_cuda_reduce: allocation failed", reinterpret_cast<void**>(&__ptr_), sizeof(_Tp));
+      // Add the temporary storage from DeviceReduce to the allocation
+      _CCCL_TRY_CUDA_API(::cudaMalloc,
+                         "__pstl_cuda_reduce: allocation failed",
+                         reinterpret_cast<void**>(&__ptr_),
+                         __num_bytes + sizeof(_Tp));
     }
 
     _CCCL_HOST_API ~__allocation_guard()
@@ -92,31 +97,53 @@ struct __pstl_dispatch<__pstl_algorithm::__reduce, __execution_backend::__cuda>
 
     [[nodiscard]] _CCCL_HOST_API auto __get_result_iter()
     {
-      return ::cuda::tabulate_output_iterator{__construct_result{__ptr_}};
+      if constexpr (::cuda::std::__detail::__can_optimize_construct_at<_Tp, _AccumT>)
+      {
+        return reinterpret_cast<_Tp*>(__ptr_);
+      }
+      else
+      {
+        return ::cuda::tabulate_output_iterator{__construct_result{reinterpret_cast<_Tp*>(__ptr_)}};
+      }
+    }
+
+    [[nodiscard]] _CCCL_HOST_API void* __get_temp_storage()
+    {
+      return static_cast<void*>(static_cast<unsigned char*>(__ptr_) + sizeof(_Tp));
     }
   };
 
   template <class _Policy, class _Iter, class _Tp, class _BinaryOp>
   [[nodiscard]] _CCCL_HOST_API static _Tp
-  __par_impl(_Policy __policy, _Iter __first, _Iter __last, _Tp __init, _BinaryOp __func)
+  __par_impl([[maybe_unused]] _Policy __policy, _Iter __first, _Iter __last, _Tp __init, _BinaryOp __func)
   {
     _Tp __ret;
 
     {
-      // Allocate memory for result
-      __allocation_guard<_Tp> __guard{};
+      // We need to know the accumulator type to determine whether we need construct_at for the return value
+      using _AccumT = __accumulator_t<_BinaryOp, iter_reference_t<_Iter>, _Tp>;
 
-      const auto __count = ::cuda::std::distance(__first, __last);
-      _CCCL_TRY_CUDA_API(
-        ::cub::DeviceReduce::Reduce,
-        "__pstl_cuda_reduce: cub::DeviceReduce::Reduce failed",
+      //!    // Determine temporary device storage requirements for reduce
+      void* __temp_storage   = nullptr;
+      size_t __num_bytes     = 0;
+      const auto __num_items = ::cuda::std::distance(__first, __last);
+      ::cub::DeviceReduce::Reduce(
+        __temp_storage, __num_bytes, __first, static_cast<_Tp*>(nullptr), __num_items, __func, __init);
+
+      // Allocate memory for result
+      __allocation_guard<_Tp, _AccumT> __guard{__num_bytes};
+
+      // Run the reduction
+      ::cub::DeviceReduce::Reduce(
+        __guard.__get_temp_storage(),
+        __num_bytes,
         ::cuda::std::move(__first),
         __guard.__get_result_iter(),
-        __count,
+        __num_items,
         ::cuda::std::move(__func),
-        ::cuda::std::move(__init),
-        ::cuda::std::move(__policy));
+        ::cuda::std::move(__init));
 
+      // Copy the result back from storage
       _CCCL_TRY_CUDA_API(
         ::cudaMemcpy,
         "__pstl_cuda_reduce: copy of result from device to host failed",
