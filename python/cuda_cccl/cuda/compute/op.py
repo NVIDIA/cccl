@@ -17,9 +17,6 @@ class _OpAdapter:
     Provides a unified interface for operators, whether they are:
     - Well-known operations (OpKind.PLUS, OpKind.MAXIMUM, etc.)
     - Stateless user-provided callables
-
-    Note: Cache key extraction is handled by the cache key registry,
-    not by a get_cache_key() method.
     """
 
     def compile(self, input_types, output_type=None) -> Op:
