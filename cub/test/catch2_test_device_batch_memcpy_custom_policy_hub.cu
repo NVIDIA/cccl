@@ -10,8 +10,6 @@
 #include <cuda/std/array>
 #include <cuda/std/cstdint>
 
-#include <vector>
-
 #include <c2h/catch2_test_helper.h>
 
 using namespace cub;
@@ -37,17 +35,16 @@ struct my_policy_hub
   // from Policy500 of the CUB batch memcpy tunings
   struct MaxPolicy : ChainedPolicy<500, MaxPolicy, MaxPolicy>
   {
-    static constexpr bool PREFER_POW2_BITS = true;
-    using AgentSmallBufferPolicyT          = cub::detail::batch_memcpy::AgentBatchMemcpyPolicy<
-               BLOCK_THREADS,
-               BUFFERS_PER_THREAD,
-               TLEV_BYTES_PER_THREAD,
-               PREFER_POW2_BITS,
-               LARGE_BUFFER_BLOCK_THREADS * LARGE_BUFFER_BYTES_PER_THREAD,
-               WARP_LEVEL_THRESHOLD,
-               BLOCK_LEVEL_THRESHOLD,
-               buff_delay_constructor_t,
-               block_delay_constructor_t>;
+    using AgentSmallBufferPolicyT = cub::detail::batch_memcpy::AgentBatchMemcpyPolicy<
+      BLOCK_THREADS,
+      BUFFERS_PER_THREAD,
+      TLEV_BYTES_PER_THREAD,
+      /* PREFER_POW2_BITS */ true,
+      LARGE_BUFFER_BLOCK_THREADS * LARGE_BUFFER_BYTES_PER_THREAD,
+      WARP_LEVEL_THRESHOLD,
+      BLOCK_LEVEL_THRESHOLD,
+      buff_delay_constructor_t,
+      block_delay_constructor_t>;
 
     using AgentLargeBufferPolicyT =
       cub::detail::batch_memcpy::agent_large_buffer_policy<LARGE_BUFFER_BLOCK_THREADS, LARGE_BUFFER_BYTES_PER_THREAD>;
@@ -62,12 +59,9 @@ C2H_TEST("DispatchBatchMemcpy::Dispatch: custom policy hub", "[device][memcpy]")
   using buffer_offset_t = cub::detail::batch_memcpy::per_invocation_buffer_offset_t;
 
   const cuda::std::array<buffer_size_t, 5> buffer_sizes{3, 128, 512, 4096, 9000};
-  const auto num_buffers = static_cast<cuda::std::int64_t>(buffer_sizes.size());
 
-  std::vector<c2h::device_vector<value_t>> in_buffers;
-  std::vector<c2h::device_vector<value_t>> out_buffers;
-  in_buffers.reserve(buffer_sizes.size());
-  out_buffers.reserve(buffer_sizes.size());
+  c2h::host_vector<c2h::device_vector<value_t>> in_buffers(buffer_sizes.size());
+  c2h::host_vector<c2h::device_vector<value_t>> out_buffers(buffer_sizes.size());
 
   c2h::host_vector<value_t*> h_in_ptrs(buffer_sizes.size());
   c2h::host_vector<value_t*> h_out_ptrs(buffer_sizes.size());
@@ -76,12 +70,12 @@ C2H_TEST("DispatchBatchMemcpy::Dispatch: custom policy hub", "[device][memcpy]")
   for (buffer_size_t i = 0; i < buffer_sizes.size(); ++i)
   {
     const auto bytes = buffer_sizes[i];
-    in_buffers.emplace_back(bytes);
-    out_buffers.emplace_back(bytes);
-    c2h::gen(C2H_SEED(static_cast<unsigned>(i + 1)), in_buffers.back());
+    in_buffers[i].resize(bytes);
+    out_buffers[i].resize(bytes);
+    c2h::gen(C2H_SEED(1), in_buffers[i]);
 
-    h_in_ptrs[i]  = thrust::raw_pointer_cast(in_buffers.back().data());
-    h_out_ptrs[i] = thrust::raw_pointer_cast(out_buffers.back().data());
+    h_in_ptrs[i]  = thrust::raw_pointer_cast(in_buffers[i].data());
+    h_out_ptrs[i] = thrust::raw_pointer_cast(out_buffers[i].data());
     h_sizes[i]    = bytes;
   }
 
@@ -100,7 +94,7 @@ C2H_TEST("DispatchBatchMemcpy::Dispatch: custom policy hub", "[device][memcpy]")
     thrust::raw_pointer_cast(d_in_ptrs.data()),
     thrust::raw_pointer_cast(d_out_ptrs.data()),
     thrust::raw_pointer_cast(d_sizes.data()),
-    num_buffers,
+    static_cast<cuda::std::int64_t>(buffer_sizes.size()),
     /* stream */ nullptr);
   c2h::device_vector<::cuda::std::uint8_t> temp_storage(temp_size, thrust::no_init);
   dispatch_t::Dispatch(
@@ -109,7 +103,7 @@ C2H_TEST("DispatchBatchMemcpy::Dispatch: custom policy hub", "[device][memcpy]")
     thrust::raw_pointer_cast(d_in_ptrs.data()),
     thrust::raw_pointer_cast(d_out_ptrs.data()),
     thrust::raw_pointer_cast(d_sizes.data()),
-    num_buffers,
+    static_cast<cuda::std::int64_t>(buffer_sizes.size()),
     /* stream */ nullptr);
 
   for (size_t i = 0; i < buffer_sizes.size(); ++i)
