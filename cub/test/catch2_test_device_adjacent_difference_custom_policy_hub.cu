@@ -17,7 +17,7 @@ using namespace cub;
 // TODO(bgruber): drop this test with CCCL 4.0 when we drop the adjacent difference dispatcher after publishing the
 // tuning API
 
-template <typename InputIteratorT, bool MayAlias>
+template <typename InputIteratorT>
 struct my_policy_hub
 {
   using ValueT = cub::detail::it_value_t<InputIteratorT>;
@@ -29,7 +29,7 @@ struct my_policy_hub
       AgentAdjacentDifferencePolicy<128,
                                     Nominal8BItemsToItems<ValueT>(7),
                                     BLOCK_LOAD_WARP_TRANSPOSE,
-                                    MayAlias ? LOAD_CA : LOAD_LDG,
+                                    LOAD_LDG,
                                     BLOCK_STORE_WARP_TRANSPOSE>;
   };
 };
@@ -49,7 +49,7 @@ C2H_TEST("DispatchAdjacentDifference::Dispatch: custom policy hub", "[device][ad
   c2h::host_vector<value_t> expected(num_items);
   cuda::std::adjacent_difference(host_in.begin(), host_in.end(), expected.begin(), cuda::std::minus<value_t>{});
 
-  using policy_hub_t = my_policy_hub<value_t*, /* may_alias */ false>;
+  using policy_hub_t = my_policy_hub<value_t*>;
   using dispatch_t =
     DispatchAdjacentDifference<value_t*, value_t*, difference_op_t, offset_t, MayAlias::No, ReadOption::Left, policy_hub_t>;
   size_t temp_size = 0;
@@ -71,6 +71,5 @@ C2H_TEST("DispatchAdjacentDifference::Dispatch: custom policy hub", "[device][ad
     difference_op_t{},
     /* stream */ nullptr);
 
-  c2h::host_vector<value_t> host_out(out_items);
-  REQUIRE(host_out == expected);
+  REQUIRE(out_items == expected);
 }
