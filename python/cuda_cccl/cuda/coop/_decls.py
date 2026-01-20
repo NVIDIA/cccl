@@ -26,7 +26,6 @@ from numba.core.typing.npydecl import (
 from numba.core.typing.templates import (
     AbstractTemplate,
     AttributeTemplate,
-    CallableTemplate,
     Registry,
     Signature,
     infer_global,
@@ -45,7 +44,6 @@ from numba.extending import (
     lower_builtin,
     models,
     register_model,
-    type_callable,
     typeof_impl,
 )
 
@@ -167,8 +165,8 @@ class CoopAbstractTemplate(AbstractTemplate):
     def __init__(self, context=None):
         super().__init__(context=context)
 
-    def _prevalidate_args(self, args):
-        if len(args) < self.minimum_num_args:
+    def _prevalidate_args(self, args, kwds):
+        if len(args) + len(kwds) < self.minimum_num_args:
             suffix = "s" if self.minimum_num_args >= 2 else ""
             msg = (
                 f"{self.primitive_name} requires at least "
@@ -181,9 +179,33 @@ class CoopAbstractTemplate(AbstractTemplate):
         Validate the arguments and create a signature for the cooperative
         primitive.
         """
-        self._prevalidate_args(args)
+        self._prevalidate_args(args, kwds)
         bound = self.signature(*args, **kwds)
         return self._validate_args_and_create_signature(bound)
+
+
+class CoopInstanceTemplate(AbstractTemplate):
+    """
+    Base class for cooperative instance call templates.  Subclasses must set
+    `instance_type` to the corresponding CoopInstanceType.
+    """
+
+    unsafe_casting = False
+    exact_match_required = True
+    prefer_literal = True
+
+    instance_type = None
+    primitive_name = None
+
+    def generic(self, args, kwds):
+        instance_type = self.instance_type
+        if instance_type is None:
+            msg = "CoopInstanceTemplate requires `instance_type` to be set"
+            raise errors.TypingError(msg)
+        try:
+            return instance_type._validate_args_and_create_signature(*args, **kwds)
+        except TypeError as exc:
+            raise errors.TypingError(str(exc)) from exc
 
 
 # =============================================================================
@@ -202,30 +224,61 @@ def typeof_temp_storage(*args, **kwargs):
     return temp_storage_type
 
 
-@type_callable(coop.TempStorage)
-def type_temp_storage(context):
-    def typer(size_in_bytes=None, alignment=None, auto_sync=True):
+@register
+class CoopTempStorageDecl(CoopAbstractTemplate):
+    key = coop.TempStorage
+    primitive_name = "coop.TempStorage"
+    minimum_num_args = 0
+
+    @staticmethod
+    def signature(
+        size_in_bytes: Optional[int] = None,
+        alignment: Optional[int] = None,
+        auto_sync: Optional[bool] = True,
+    ):
+        return inspect.signature(CoopTempStorageDecl.signature).bind(
+            size_in_bytes,
+            alignment=alignment,
+            auto_sync=auto_sync,
+        )
+
+    def _validate_args_and_create_signature(self, bound, two_phase=False):
+        arglist = []
+
+        size_in_bytes = bound.arguments.get("size_in_bytes")
+        if isinstance(size_in_bytes, types.NoneType):
+            arglist.append(size_in_bytes)
+            size_in_bytes = None
         if size_in_bytes is not None:
             permitted = (types.Integer, types.IntegerLiteral)
             if not isinstance(size_in_bytes, permitted):
                 msg = "size_in_bytes must be an integer value"
                 raise errors.TypingError(msg)
+            arglist.append(size_in_bytes)
 
+        alignment = bound.arguments.get("alignment")
+        if isinstance(alignment, types.NoneType):
+            arglist.append(alignment)
+            alignment = None
         if alignment is not None:
             permitted = (types.Integer, types.IntegerLiteral)
             if not isinstance(alignment, permitted):
                 msg = "alignment must be an integer value"
                 raise errors.TypingError(msg)
+            arglist.append(alignment)
 
+        auto_sync = bound.arguments.get("auto_sync")
+        if isinstance(auto_sync, types.NoneType):
+            arglist.append(auto_sync)
+            auto_sync = None
         if auto_sync is not None:
             permitted = (bool, types.Boolean, types.BooleanLiteral)
             if not isinstance(auto_sync, permitted):
                 msg = f"auto_sync must be a boolean value, got {auto_sync}"
                 raise errors.TypingError(msg)
+            arglist.append(auto_sync)
 
-        return temp_storage_type
-
-    return typer
+        return signature(temp_storage_type, *arglist)
 
 
 class CoopTempStorageGetItemDecl(AbstractTemplate):
@@ -285,12 +338,19 @@ class CoopTempStorageGetItemDecl(AbstractTemplate):
 # obviating need to pass it explicitly to the load/store functions.
 
 
-class ThreadDataType(types.Type):
-    def __init__(self):
-        super().__init__(name="coop.ThreadData")
+class ThreadDataType(types.Array):
+    def __init__(self, dtype, items_per_thread=None):
+        super().__init__(dtype=dtype, ndim=1, layout="A")
+        self.items_per_thread = items_per_thread
+        self.name = "coop.ThreadData"
+
+    def is_precise(self):
+        # ThreadData may be created without an explicit dtype; we rely on
+        # rewrite-time inference from usage to determine the actual dtype.
+        return True
 
 
-thread_data_type = ThreadDataType()
+thread_data_type = ThreadDataType(types.undefined)
 
 
 @typeof_impl.register(coop.ThreadData)
@@ -298,9 +358,28 @@ def typeof_thread_data(*args, **kwargs):
     return thread_data_type
 
 
-@type_callable(coop.ThreadData)
-def type_thread_data(context):
-    def typer(items_per_thread, dtype=None):
+@register_model(ThreadDataType)
+class ThreadDataModel(models.ArrayModel):
+    pass
+
+
+@register
+class CoopThreadDataDecl(CoopAbstractTemplate):
+    key = coop.ThreadData
+    primitive_name = "coop.ThreadData"
+    minimum_num_args = 1
+
+    @staticmethod
+    def signature(items_per_thread: int, dtype: Optional[Any] = None):
+        return inspect.signature(CoopThreadDataDecl.signature).bind(
+            items_per_thread,
+            dtype=dtype,
+        )
+
+    def _validate_args_and_create_signature(self, bound, two_phase=False):
+        arglist = []
+
+        items_per_thread = bound.arguments.get("items_per_thread")
         permitted = (types.Integer, types.IntegerLiteral)
         if not isinstance(items_per_thread, permitted):
             msg = (
@@ -308,17 +387,31 @@ def type_thread_data(context):
                 f"integer literal, got {items_per_thread}"
             )
             raise errors.TypingError(msg)
+        arglist.append(items_per_thread)
 
+        dtype = bound.arguments.get("dtype")
+        if isinstance(dtype, types.NoneType):
+            arglist.append(dtype)
+            dtype = None
+        dtype_type = types.undefined
         if dtype is not None:
             try:
-                parse_dtype(dtype)
+                dtype_type = parse_dtype(dtype)
             except Exception as exc:
                 msg = f"Invalid dtype for coop.ThreadData: {dtype}"
                 raise errors.TypingError(msg) from exc
+            if dtype_type is None:
+                if isinstance(dtype, types.Type):
+                    dtype_type = dtype
+                else:
+                    msg = f"Invalid dtype for coop.ThreadData: {dtype}"
+                    raise errors.TypingError(msg)
+            arglist.append(dtype)
 
-        return thread_data_type
-
-    return typer
+        return signature(
+            ThreadDataType(dtype_type, items_per_thread=items_per_thread),
+            *arglist,
+        )
 
 
 # =============================================================================
@@ -1296,12 +1389,14 @@ class CoopBlockShuffleDecl(CoopAbstractTemplate, CoopDeclMixin):
             else:
                 block_shuffle_type = self.default_shuffle_type
 
+        block_shuffle_type_value = None
         if isinstance(block_shuffle_type, enum.IntEnum):
             if block_shuffle_type not in coop.block.BlockShuffleType:
                 raise errors.TypingError(
                     f"{self.primitive_name} requires 'block_shuffle_type' to be a "
                     "BlockShuffleType enum value"
                 )
+            block_shuffle_type_value = block_shuffle_type
         else:
             if not isinstance(block_shuffle_type, types.EnumMember):
                 raise errors.TypingError(
@@ -1314,23 +1409,27 @@ class CoopBlockShuffleDecl(CoopAbstractTemplate, CoopDeclMixin):
                     "BlockShuffleType enum value"
                 )
 
-        array_shuffle = block_shuffle_type in (
-            coop.block.BlockShuffleType.Up,
-            coop.block.BlockShuffleType.Down,
-        )
-        scalar_shuffle = block_shuffle_type in (
-            coop.block.BlockShuffleType.Offset,
-            coop.block.BlockShuffleType.Rotate,
-        )
+        array_shuffle = items_is_array
+        scalar_shuffle = items_is_scalar
+        if block_shuffle_type_value is not None:
+            array_shuffle = block_shuffle_type_value in (
+                coop.block.BlockShuffleType.Up,
+                coop.block.BlockShuffleType.Down,
+            )
+            scalar_shuffle = block_shuffle_type_value in (
+                coop.block.BlockShuffleType.Offset,
+                coop.block.BlockShuffleType.Rotate,
+            )
 
-        if items_is_scalar and not scalar_shuffle:
-            raise errors.TypingError(
-                f"{self.primitive_name} requires Offset or Rotate for scalar shuffles"
-            )
-        if items_is_array and not array_shuffle:
-            raise errors.TypingError(
-                f"{self.primitive_name} requires Up or Down for array shuffles"
-            )
+            if items_is_scalar and not scalar_shuffle:
+                raise errors.TypingError(
+                    f"{self.primitive_name} requires Offset or Rotate for scalar "
+                    "shuffles"
+                )
+            if items_is_array and not array_shuffle:
+                raise errors.TypingError(
+                    f"{self.primitive_name} requires Up or Down for array shuffles"
+                )
 
         items_per_thread = bound.arguments.get("items_per_thread")
         if items_is_array:
@@ -1784,7 +1883,7 @@ class CoopLoadStoreInstanceBaseType(types.Type, CoopInstanceTypeMixin):
             num_valid_items=num_valid_items,
             temp_storage=temp_storage,
         )
-        return self.decl._validate_args_and_create_signature(bound)
+        return self.decl._validate_args_and_create_signature(bound, two_phase=True)
 
 
 # Load
@@ -1800,20 +1899,11 @@ def typeof_block_load_instance(*args, **kwargs):
     return block_load_instance_type
 
 
-@type_callable(block_load_instance_type)
-def type_block_load_instance_call(context):
-    instance = block_load_instance_type
-
-    def typer(src, dst, items_per_thread=None, num_valid_items=None, temp_storage=None):
-        return instance._validate_args_and_create_signature(
-            src,
-            dst,
-            items_per_thread=items_per_thread,
-            num_valid_items=num_valid_items,
-            temp_storage=temp_storage,
-        )
-
-    return typer
+@register
+class CoopBlockLoadInstanceDecl(CoopInstanceTemplate):
+    key = block_load_instance_type
+    instance_type = block_load_instance_type
+    primitive_name = "coop.block.load"
 
 
 @register_model(CoopBlockLoadInstanceType)
@@ -1850,20 +1940,11 @@ def typeof_block_store_instance(*args, **kwargs):
     return block_store_instance_type
 
 
-@type_callable(block_store_instance_type)
-def type_block_store_instance_call(context):
-    instance = block_store_instance_type
-
-    def typer(dst, src, items_per_thread=None, num_valid_items=None, temp_storage=None):
-        return instance._validate_args_and_create_signature(
-            dst,
-            src,
-            items_per_thread=items_per_thread,
-            num_valid_items=num_valid_items,
-            temp_storage=temp_storage,
-        )
-
-    return typer
+@register
+class CoopBlockStoreInstanceDecl(CoopInstanceTemplate):
+    key = block_store_instance_type
+    instance_type = block_store_instance_type
+    primitive_name = "coop.block.store"
 
 
 @register_model(CoopBlockStoreInstanceType)
@@ -2023,23 +2104,39 @@ class CoopBlockHistogramDecl(CoopAbstractTemplate, CoopDeclMixin):
         # Validate algorithm next.  If it's of type ATOMIC, we need to ensure
         # the counter_dtype is a 32-bit or 64-bit integer, as other types
         # won't compile.
-        algorithm = process_algorithm(self, bound, arglist)
-        if algorithm == coop.BlockHistogramAlgorithm.ATOMIC:
-            valid_atomic_dtypes = (
-                types.int32,
-                types.int64,
-                types.uint32,
-                types.uint64,
-            )
-            if histogram.dtype not in valid_atomic_dtypes:
-                raise errors.TypingError(
-                    "histogram array type must be a 32-bit or 64-bit integer "
-                    f"when using the ATOMIC algorithm: got: {histogram.dtype}"
-                )
+        algorithm = bound.arguments.get("algorithm")
+        algorithm_is_none_type = isinstance(algorithm, types.NoneType)
+        if algorithm_is_none_type:
+            arglist.append(algorithm)
+            algorithm = None
+        if not algorithm_is_none_type:
+            if algorithm is None and two_phase:
+                # Use the algorithm baked into the two-phase instance.
+                pass
+            else:
+                algorithm = process_algorithm(self, bound, arglist)
+                if algorithm == coop.BlockHistogramAlgorithm.ATOMIC:
+                    valid_atomic_dtypes = (
+                        types.int32,
+                        types.int64,
+                        types.uint32,
+                        types.uint64,
+                    )
+                    if histogram.dtype not in valid_atomic_dtypes:
+                        raise errors.TypingError(
+                            "histogram array type must be a 32-bit or 64-bit integer "
+                            f"when using the ATOMIC algorithm: got: {histogram.dtype}"
+                        )
 
         temp_storage = bound.arguments.get("temp_storage")
-        if temp_storage is not None:
+        temp_storage_is_none_type = isinstance(temp_storage, types.NoneType)
+        if temp_storage_is_none_type:
             arglist.append(temp_storage)
+            temp_storage = None
+        if not temp_storage_is_none_type:
+            validate_temp_storage(self, temp_storage)
+            if temp_storage is not None:
+                arglist.append(temp_storage)
 
         sig = signature(
             block_histogram_instance_type,
@@ -2068,6 +2165,36 @@ class CoopBlockHistogramInstanceType(types.Type, CoopInstanceTypeMixin):
         types.Type.__init__(self, name=name)
         CoopInstanceTypeMixin.__init__(self)
 
+    def _validate_args_and_create_signature(self, *args, **kwds):
+        if not args and not kwds:
+            return signature(block_histogram_instance_type)
+
+        if "items" in kwds or "histogram" in kwds or len(args) >= 2:
+            bound = inspect.signature(self.decl.signature).bind(*args, **kwds)
+            return self.decl._validate_args_and_create_signature(bound, two_phase=True)
+
+        if kwds and set(kwds) - {"temp_storage"}:
+            raise errors.TypingError(
+                f"{self.decl.primitive_name} only supports 'temp_storage' "
+                "without items/histogram arguments"
+            )
+        if len(args) > 1:
+            raise errors.TypingError(
+                f"{self.decl.primitive_name} accepts at most one positional argument "
+                "when no items/histogram are provided"
+            )
+
+        temp_storage = args[0] if args else kwds.get("temp_storage")
+        temp_storage_is_none_type = isinstance(temp_storage, types.NoneType)
+        if not temp_storage_is_none_type:
+            validate_temp_storage(self.decl, temp_storage)
+
+        arglist = []
+        if temp_storage is not None or temp_storage_is_none_type:
+            arglist.append(temp_storage)
+
+        return signature(block_histogram_instance_type, *arglist)
+
 
 block_histogram_instance_type = CoopBlockHistogramInstanceType()
 
@@ -2082,23 +2209,11 @@ def typeof_block_histogram_instance(*args, **kwargs):
     return block_histogram_instance_type
 
 
-@type_callable(block_histogram_instance_type)
-def type_block_histogram_instance_call(context):
-    # decl = block_histogram_instance_type.decl
-    # return decl.generic()
-
-    def typer(temp_storage=None):
-        """
-        This function is called to infer the type of the coop.block.histogram
-        instance type. It checks that the parameters are of the expected types.
-        """
-        obj = block_histogram_instance_type.decl_class
-        validate_temp_storage(obj, temp_storage)
-
-        # Return the block histogram instance type.
-        return block_histogram_instance_type
-
-    return typer
+@register
+class CoopBlockHistogramInstanceDecl(CoopInstanceTemplate):
+    key = block_histogram_instance_type
+    instance_type = block_histogram_instance_type
+    primitive_name = "coop.block.histogram"
 
 
 class CoopBlockHistogramAttrsTemplate(AttributeTemplate):
@@ -2144,63 +2259,80 @@ def codegen_block_histogram_call(context, builder, sig, args):
 
 
 @register
-class CoopBlockRunLengthDecodeDecl(CallableTemplate, CoopDeclMixin):
+class CoopBlockRunLengthDecodeDecl(CoopAbstractTemplate, CoopDeclMixin):
     key = coop.block.run_length.decode
     primitive_name = "coop.block.run_length.decode"
+    minimum_num_args = 2
 
-    unsafe_casting = False
-    exact_match_required = True
-    prefer_literal = True
+    @staticmethod
+    def signature(
+        decoded_items: types.Array,
+        decoded_window_offset: types.Integer,
+        relative_offsets: types.Array = None,
+    ):
+        return inspect.signature(CoopBlockRunLengthDecodeDecl.signature).bind(
+            decoded_items,
+            decoded_window_offset,
+            relative_offsets=relative_offsets,
+        )
 
-    def generic(self):
-        def typer(decoded_items, decoded_window_offset, relative_offsets=None):
-            # Verify decoded_items is a device array.
-            if not isinstance(decoded_items, types.Array):
-                raise errors.TypingError(
-                    "decoded_items must be a device array, "
-                    f"got {type(decoded_items).__name__}"
-                )
-
-            arglist = [
-                decoded_items,
-            ]
-
-            if decoded_window_offset is not None:
-                if not isinstance(decoded_window_offset, types.Integer):
-                    raise errors.TypingError(
-                        "decoded_window_offset must be an integer value"
-                    )
-                arglist.append(decoded_window_offset)
-
-            if relative_offsets is not None:
-                # Verify relative_offsets is a device array.
-                if not isinstance(relative_offsets, types.Array):
-                    raise errors.TypingError(
-                        "relative_offsets must be a device array, "
-                        f"got {type(relative_offsets).__name__}"
-                    )
-                arglist.append(relative_offsets)
-
-            sig = signature(
-                types.void,
-                *arglist,
+    def _validate_args_and_create_signature(self, bound, two_phase=False):
+        decoded_items = bound.arguments["decoded_items"]
+        if not isinstance(decoded_items, types.Array):
+            raise errors.TypingError(
+                "decoded_items must be a device array, "
+                f"got {type(decoded_items).__name__}"
             )
 
-            return sig
+        arglist = [
+            decoded_items,
+        ]
 
-        return typer
+        decoded_window_offset = bound.arguments.get("decoded_window_offset")
+        decoded_window_offset_is_none_type = isinstance(
+            decoded_window_offset, types.NoneType
+        )
+        if decoded_window_offset_is_none_type:
+            arglist.append(decoded_window_offset)
+            decoded_window_offset = None
+        if not decoded_window_offset_is_none_type and decoded_window_offset is not None:
+            if not isinstance(decoded_window_offset, types.Integer):
+                raise errors.TypingError(
+                    "decoded_window_offset must be an integer value"
+                )
+            arglist.append(decoded_window_offset)
+
+        relative_offsets = bound.arguments.get("relative_offsets")
+        relative_offsets_is_none_type = isinstance(relative_offsets, types.NoneType)
+        if relative_offsets_is_none_type:
+            arglist.append(relative_offsets)
+            relative_offsets = None
+        if not relative_offsets_is_none_type and relative_offsets is not None:
+            if not isinstance(relative_offsets, types.Array):
+                raise errors.TypingError(
+                    "relative_offsets must be a device array, "
+                    f"got {type(relative_offsets).__name__}"
+                )
+            arglist.append(relative_offsets)
+
+        sig = signature(
+            types.void,
+            *arglist,
+        )
+
+        return sig
 
 
 @register
-class CoopBlockRunLengthDecl(CallableTemplate, CoopDeclMixin):
+class CoopBlockRunLengthDecl(CoopAbstractTemplate, CoopDeclMixin):
     key = coop.block.run_length
     primitive_name = "coop.block.run_length"
     algorithm_enum = coop.NoAlgorithm
     default_algorithm = coop.NoAlgorithm.NO_ALGORITHM
     decode_decl = CoopBlockRunLengthDecodeDecl
     is_constructor = True
+    minimum_num_args = 5
 
-    # unsafe_casting = True
     exact_match_required = True
     prefer_literal = True
 
@@ -2211,90 +2343,124 @@ class CoopBlockRunLengthDecl(CallableTemplate, CoopDeclMixin):
     def get_instance_type():
         return block_run_length_instance_type
 
-    def generic(self):
-        def typer(
+    @staticmethod
+    def signature(
+        run_values: types.Array,
+        run_lengths: types.Array,
+        runs_per_thread: Union[types.Integer, types.IntegerLiteral],
+        decoded_items_per_thread: Union[types.Integer, types.IntegerLiteral],
+        total_decoded_size: types.Array,
+        decoded_offset_dtype: Optional[Any] = None,
+        temp_storage: Optional[Union[types.Array, TempStorageType]] = None,
+    ):
+        return inspect.signature(CoopBlockRunLengthDecl.signature).bind(
             run_values,
             run_lengths,
             runs_per_thread,
             decoded_items_per_thread,
             total_decoded_size,
-            decoded_offset_dtype=None,
-            temp_storage=None,
-        ):
-            # error_class = errors.TypingError
-            error_class = RuntimeError
+            decoded_offset_dtype=decoded_offset_dtype,
+            temp_storage=temp_storage,
+        )
 
-            # Verify run_values and run_lengths are device arrays.
-            if not isinstance(run_values, types.Array):
-                raise error_class(
-                    "run_values must be a device array, "
-                    f"got {type(run_values).__name__}"
-                )
+    def _validate_args_and_create_signature(self, bound, two_phase=False):
+        # error_class = errors.TypingError
+        error_class = RuntimeError
 
-            if not isinstance(run_lengths, types.Array):
-                raise error_class(
-                    "run_lengths must be a device array, "
-                    f"got {type(run_lengths).__name__}"
-                )
+        run_values = bound.arguments["run_values"]
+        run_lengths = bound.arguments["run_lengths"]
 
+        # Verify run_values and run_lengths are device arrays.
+        if not isinstance(run_values, types.Array):
+            raise error_class(
+                f"run_values must be a device array, got {type(run_values).__name__}"
+            )
+
+        if not isinstance(run_lengths, types.Array):
+            raise error_class(
+                f"run_lengths must be a device array, got {type(run_lengths).__name__}"
+            )
+
+        runs_per_thread = bound.arguments.get("runs_per_thread")
+        runs_per_thread_is_none_type = isinstance(runs_per_thread, types.NoneType)
+        if runs_per_thread_is_none_type:
+            runs_per_thread = None
+        if not (two_phase and runs_per_thread is None):
             validate_positive_integer_literal(
                 self,
                 runs_per_thread,
                 "runs_per_thread",
             )
 
+        decoded_items_per_thread = bound.arguments.get("decoded_items_per_thread")
+        decoded_items_is_none_type = isinstance(
+            decoded_items_per_thread, types.NoneType
+        )
+        if decoded_items_is_none_type:
+            decoded_items_per_thread = None
+        if not (two_phase and decoded_items_per_thread is None):
             validate_positive_integer_literal(
                 self,
                 decoded_items_per_thread,
                 "decoded_items_per_thread",
             )
 
-            if decoded_offset_dtype is not None:
-                from ._common import normalize_dtype_param
+        decoded_offset_dtype = bound.arguments.get("decoded_offset_dtype")
+        decoded_offset_is_none_type = isinstance(decoded_offset_dtype, types.NoneType)
+        if decoded_offset_is_none_type:
+            decoded_offset_dtype = None
+        if decoded_offset_dtype is not None:
+            from ._common import normalize_dtype_param
 
-                decoded_offset_dtype = normalize_dtype_param(decoded_offset_dtype)
-                # if not isinstance(decoded_offset_dtype, types.Integer):
-                #    raise error_class("decoded_offset_dtype must be an integer type")
+            decoded_offset_dtype = normalize_dtype_param(decoded_offset_dtype)
 
-            if total_decoded_size is None:
-                raise error_class("total_decoded_size must be a device array")
-            if not isinstance(total_decoded_size, types.Array):
-                raise error_class(
-                    "total_decoded_size must be a device array, "
-                    f"got {type(total_decoded_size).__name__}"
-                )
-            if total_decoded_size.ndim != 1:
-                raise error_class(
-                    "total_decoded_size must be a 1D device array, "
-                    f"got ndim={total_decoded_size.ndim}"
-                )
-            if not isinstance(total_decoded_size.dtype, types.Integer):
-                raise error_class("total_decoded_size array must use an integer dtype")
-
-            validate_temp_storage(self, temp_storage)
-
-            arglist = [
-                run_values,
-                run_lengths,
-                runs_per_thread,
-                decoded_items_per_thread,
-                total_decoded_size,
-            ]
-
-            if decoded_offset_dtype is not None:
-                arglist.append(decoded_offset_dtype)
-
-            if temp_storage is not None:
-                arglist.append(temp_storage)
-
-            sig = signature(
-                block_run_length_instance_type,
-                *arglist,
+        total_decoded_size = bound.arguments.get("total_decoded_size")
+        if total_decoded_size is None:
+            raise error_class("total_decoded_size must be a device array")
+        if not isinstance(total_decoded_size, types.Array):
+            raise error_class(
+                "total_decoded_size must be a device array, "
+                f"got {type(total_decoded_size).__name__}"
             )
+        if total_decoded_size.ndim != 1:
+            raise error_class(
+                "total_decoded_size must be a 1D device array, "
+                f"got ndim={total_decoded_size.ndim}"
+            )
+        if not isinstance(total_decoded_size.dtype, types.Integer):
+            raise error_class("total_decoded_size array must use an integer dtype")
 
-            return sig
+        temp_storage = bound.arguments.get("temp_storage")
+        temp_storage_is_none_type = isinstance(temp_storage, types.NoneType)
+        if temp_storage_is_none_type:
+            temp_storage = None
+        validate_temp_storage(self, temp_storage)
 
-        return typer
+        arglist = [
+            run_values,
+            run_lengths,
+        ]
+
+        if runs_per_thread is not None or runs_per_thread_is_none_type:
+            arglist.append(runs_per_thread)
+
+        if decoded_items_per_thread is not None or decoded_items_is_none_type:
+            arglist.append(decoded_items_per_thread)
+
+        arglist.append(total_decoded_size)
+
+        if decoded_offset_dtype is not None or decoded_offset_is_none_type:
+            arglist.append(decoded_offset_dtype)
+
+        if temp_storage is not None:
+            arglist.append(temp_storage)
+
+        sig = signature(
+            block_run_length_instance_type,
+            *arglist,
+        )
+
+        return sig
 
 
 # =============================================================================
@@ -2316,6 +2482,13 @@ class CoopBlockRunLengthInstanceType(types.Type, CoopInstanceTypeMixin):
         types.Type.__init__(self, name=name)
         CoopInstanceTypeMixin.__init__(self)
 
+    def _validate_args_and_create_signature(self, *args, **kwds):
+        if not args and not kwds:
+            return signature(block_run_length_instance_type)
+
+        bound = inspect.signature(self.decl.signature).bind(*args, **kwds)
+        return self.decl._validate_args_and_create_signature(bound, two_phase=True)
+
 
 block_run_length_instance_type = CoopBlockRunLengthInstanceType()
 
@@ -2330,21 +2503,11 @@ def typeof_block_run_length_instance(*args, **kwargs):
     return block_run_length_instance_type
 
 
-@type_callable(block_run_length_instance_type)
-def type_block_run_length_instance_call(context):
-    def typer(
-        run_values,
-        run_lengths,
-        runs_per_thread,
-        decoded_items_per_thread,
-        total_decoded_size,
-        decoded_offset_dtype,
-        temp_storage=None,
-    ):
-        decl = block_run_length_instance_type.decl
-        return decl.generic()
-
-    return typer
+@register
+class CoopBlockRunLengthInstanceDecl(CoopInstanceTemplate):
+    key = block_run_length_instance_type
+    instance_type = block_run_length_instance_type
+    primitive_name = "coop.block.run_length"
 
 
 class CoopBlockRunLengthAttrsTemplate(AttributeTemplate):
@@ -2436,8 +2599,22 @@ class CoopBlockScanDecl(CoopAbstractTemplate, CoopDeclMixin):
 
         if scalar_return:
             arglist = [src]
+            pysig_params = [
+                inspect.Parameter("src", inspect.Parameter.POSITIONAL_OR_KEYWORD)
+            ]
             items_per_thread = bound.arguments.get("items_per_thread")
-            if items_per_thread is not None:
+            items_per_thread_is_none_type = isinstance(items_per_thread, types.NoneType)
+            if items_per_thread_is_none_type:
+                arglist.append(items_per_thread)
+                pysig_params.append(
+                    inspect.Parameter(
+                        "items_per_thread",
+                        inspect.Parameter.POSITIONAL_OR_KEYWORD,
+                        default=None,
+                    )
+                )
+                items_per_thread = None
+            if not items_per_thread_is_none_type and items_per_thread is not None:
                 maybe_literal = validate_items_per_thread(self, items_per_thread)
                 if maybe_literal is not None:
                     items_per_thread = maybe_literal
@@ -2453,6 +2630,13 @@ class CoopBlockScanDecl(CoopAbstractTemplate, CoopDeclMixin):
                         "compile-time literal for scalar inputs"
                     )
                 arglist.append(items_per_thread)
+                pysig_params.append(
+                    inspect.Parameter(
+                        "items_per_thread",
+                        inspect.Parameter.POSITIONAL_OR_KEYWORD,
+                        default=None,
+                    )
+                )
         else:
             if src_is_scalar or dst_is_scalar:
                 raise errors.TypingError(
@@ -2465,10 +2649,27 @@ class CoopBlockScanDecl(CoopAbstractTemplate, CoopDeclMixin):
                 )
             validate_src_dst(self, src, dst)
             arglist = [src, dst]
+            pysig_params = [
+                inspect.Parameter("src", inspect.Parameter.POSITIONAL_OR_KEYWORD),
+                inspect.Parameter("dst", inspect.Parameter.POSITIONAL_OR_KEYWORD),
+            ]
 
         if not scalar_return:
             items_per_thread = bound.arguments.get("items_per_thread")
-            if not (two_phase and items_per_thread is None):
+            items_per_thread_is_none_type = isinstance(items_per_thread, types.NoneType)
+            if items_per_thread_is_none_type:
+                arglist.append(items_per_thread)
+                pysig_params.append(
+                    inspect.Parameter(
+                        "items_per_thread",
+                        inspect.Parameter.POSITIONAL_OR_KEYWORD,
+                        default=None,
+                    )
+                )
+                items_per_thread = None
+            if not items_per_thread_is_none_type and not (
+                two_phase and items_per_thread is None
+            ):
                 process_items_per_thread(
                     self,
                     bound,
@@ -2476,57 +2677,177 @@ class CoopBlockScanDecl(CoopAbstractTemplate, CoopDeclMixin):
                     two_phase,
                     target_array=(src, dst),
                 )
-
-        mode = bound.arguments.get("mode")
-        if mode is None:
-            if not two_phase:
-                mode = "exclusive"
-        elif isinstance(mode, types.StringLiteral):
-            mode = mode.literal_value
-        if mode is not None:
-            if mode not in ("inclusive", "exclusive"):
-                raise errors.TypingError(
-                    f"Invalid mode '{mode}' for {self.primitive_name}; expected "
-                    "'inclusive' or 'exclusive'"
+                pysig_params.append(
+                    inspect.Parameter(
+                        "items_per_thread",
+                        inspect.Parameter.POSITIONAL_OR_KEYWORD,
+                        default=None,
+                    )
                 )
-            arglist.append(mode)
-
-        scan_op = bound.arguments.get("scan_op")
-        if scan_op is None:
-            if not two_phase:
-                scan_op = "+"
-        if scan_op is not None:
-            if isinstance(scan_op, types.StringLiteral):
-                scan_op = scan_op.literal_value
-            try:
-                scan_op = ScanOp(scan_op)
-            except ValueError as e:
-                raise errors.TypingError(
-                    f"Invalid scan_op '{scan_op}' for {self.primitive_name}: {e}"
-                )
-            arglist.append(scan_op)
-
-        block_prefix_callback_op = bound.arguments.get("block_prefix_callback_op")
-        if block_prefix_callback_op is not None:
-            # We can't do much validation here.
-            arglist.append(block_prefix_callback_op)
 
         initial_value = bound.arguments.get("initial_value")
-        if isinstance(initial_value, types.IntegerLiteral):
-            # If initial_value is an IntegerLiteral, we can use it directly.
-            initial_value = initial_value.literal_value
-        if initial_value is not None:
+        initial_value_is_none_type = isinstance(initial_value, types.NoneType)
+        if initial_value_is_none_type:
             arglist.append(initial_value)
+            pysig_params.append(
+                inspect.Parameter(
+                    "initial_value",
+                    inspect.Parameter.POSITIONAL_OR_KEYWORD,
+                    default=None,
+                )
+            )
+            initial_value = None
+        if not initial_value_is_none_type:
+            if isinstance(initial_value, types.IntegerLiteral):
+                # If initial_value is an IntegerLiteral, we can use it directly.
+                initial_value = initial_value.literal_value
+            if initial_value is not None:
+                arglist.append(initial_value)
+                pysig_params.append(
+                    inspect.Parameter(
+                        "initial_value",
+                        inspect.Parameter.POSITIONAL_OR_KEYWORD,
+                        default=None,
+                    )
+                )
 
-        process_algorithm(self, bound, arglist)
+        mode = bound.arguments.get("mode")
+        mode_is_none_type = isinstance(mode, types.NoneType)
+        if mode_is_none_type:
+            arglist.append(mode)
+            pysig_params.append(
+                inspect.Parameter(
+                    "mode", inspect.Parameter.POSITIONAL_OR_KEYWORD, default=None
+                )
+            )
+            mode = None
+        if not mode_is_none_type:
+            if mode is None:
+                if not two_phase:
+                    mode = "exclusive"
+            elif isinstance(mode, types.StringLiteral):
+                mode = mode.literal_value
+            if mode is not None:
+                if mode not in ("inclusive", "exclusive"):
+                    raise errors.TypingError(
+                        f"Invalid mode '{mode}' for {self.primitive_name}; expected "
+                        "'inclusive' or 'exclusive'"
+                    )
+                arglist.append(mode)
+                pysig_params.append(
+                    inspect.Parameter(
+                        "mode", inspect.Parameter.POSITIONAL_OR_KEYWORD, default=None
+                    )
+                )
+
+        scan_op = bound.arguments.get("scan_op")
+        scan_op_is_none_type = isinstance(scan_op, types.NoneType)
+        if scan_op_is_none_type:
+            arglist.append(scan_op)
+            pysig_params.append(
+                inspect.Parameter(
+                    "scan_op", inspect.Parameter.POSITIONAL_OR_KEYWORD, default=None
+                )
+            )
+            scan_op = None
+        if not scan_op_is_none_type:
+            if scan_op is None:
+                if not two_phase:
+                    scan_op = "+"
+            if scan_op is not None:
+                if isinstance(scan_op, types.StringLiteral):
+                    scan_op = scan_op.literal_value
+                try:
+                    scan_op = ScanOp(scan_op)
+                except ValueError as e:
+                    raise errors.TypingError(
+                        f"Invalid scan_op '{scan_op}' for {self.primitive_name}: {e}"
+                    )
+                arglist.append(scan_op)
+                pysig_params.append(
+                    inspect.Parameter(
+                        "scan_op",
+                        inspect.Parameter.POSITIONAL_OR_KEYWORD,
+                        default=None,
+                    )
+                )
+
+        block_prefix_callback_op = bound.arguments.get("block_prefix_callback_op")
+        block_prefix_is_none_type = isinstance(block_prefix_callback_op, types.NoneType)
+        if block_prefix_is_none_type:
+            arglist.append(block_prefix_callback_op)
+            pysig_params.append(
+                inspect.Parameter(
+                    "block_prefix_callback_op",
+                    inspect.Parameter.POSITIONAL_OR_KEYWORD,
+                    default=None,
+                )
+            )
+            block_prefix_callback_op = None
+        if not block_prefix_is_none_type and block_prefix_callback_op is not None:
+            # We can't do much validation here.
+            arglist.append(block_prefix_callback_op)
+            pysig_params.append(
+                inspect.Parameter(
+                    "block_prefix_callback_op",
+                    inspect.Parameter.POSITIONAL_OR_KEYWORD,
+                    default=None,
+                )
+            )
+
+        algorithm = bound.arguments.get("algorithm")
+        algorithm_is_none_type = isinstance(algorithm, types.NoneType)
+        if algorithm_is_none_type:
+            arglist.append(algorithm)
+            pysig_params.append(
+                inspect.Parameter(
+                    "algorithm",
+                    inspect.Parameter.POSITIONAL_OR_KEYWORD,
+                    default=None,
+                )
+            )
+            algorithm = None
+        if not algorithm_is_none_type:
+            if algorithm is None and two_phase:
+                # Use the algorithm baked into the two-phase instance.
+                pass
+            else:
+                process_algorithm(self, bound, arglist)
+                pysig_params.append(
+                    inspect.Parameter(
+                        "algorithm",
+                        inspect.Parameter.POSITIONAL_OR_KEYWORD,
+                        default=None,
+                    )
+                )
 
         temp_storage = bound.arguments.get("temp_storage")
-        validate_temp_storage(self, temp_storage)
-        if temp_storage is not None:
+        temp_storage_is_none_type = isinstance(temp_storage, types.NoneType)
+        if temp_storage_is_none_type:
             arglist.append(temp_storage)
+            pysig_params.append(
+                inspect.Parameter(
+                    "temp_storage",
+                    inspect.Parameter.POSITIONAL_OR_KEYWORD,
+                    default=None,
+                )
+            )
+            temp_storage = None
+        if not temp_storage_is_none_type:
+            validate_temp_storage(self, temp_storage)
+            if temp_storage is not None:
+                arglist.append(temp_storage)
+                pysig_params.append(
+                    inspect.Parameter(
+                        "temp_storage",
+                        inspect.Parameter.POSITIONAL_OR_KEYWORD,
+                        default=None,
+                    )
+                )
 
         return_type = src if scalar_return else types.void
-        sig = signature(return_type, *arglist)
+        pysig = inspect.Signature(pysig_params)
+        sig = Signature(return_type, tuple(arglist), recvr=None, pysig=pysig)
 
         return sig
 
@@ -2574,38 +2895,11 @@ def typeof_block_scan_instance(*args, **kwargs):
     return block_scan_instance_type
 
 
-@type_callable(block_scan_instance_type)
-def type_block_scan_instance_call(context):
-    instance = block_scan_instance_type
-
-    def typer(
-        src,
-        dst,
-        items_per_thread=None,
-        initial_value=None,
-        mode=None,
-        scan_op=None,
-        block_prefix_callback_op=None,
-        algorithm=None,
-        temp_storage=None,
-    ):
-        """
-        This function is called to infer the type of the coop.block.scan
-        instance type. It checks that the parameters are of the expected types.
-        """
-        return instance._validate_args_and_create_signature(
-            src,
-            dst,
-            items_per_thread=items_per_thread,
-            initial_value=initial_value,
-            mode=mode,
-            scan_op=scan_op,
-            block_prefix_callback_op=block_prefix_callback_op,
-            algorithm=algorithm,
-            temp_storage=temp_storage,
-        )
-
-    return typer
+@register
+class CoopBlockScanInstanceDecl(CoopInstanceTemplate):
+    key = block_scan_instance_type
+    instance_type = block_scan_instance_type
+    primitive_name = "coop.block.scan"
 
 
 @register_model(CoopBlockScanInstanceType)
@@ -2745,28 +3039,11 @@ class CoopBlockReduceInstanceType(types.Type, CoopInstanceTypeMixin):
 block_reduce_instance_type = CoopBlockReduceInstanceType()
 
 
-@type_callable(block_reduce_instance_type)
-def type_block_reduce_instance_call(context):
-    instance = block_reduce_instance_type
-
-    def typer(
-        src,
-        items_per_thread=None,
-        binary_op=None,
-        num_valid=None,
-        algorithm=None,
-        temp_storage=None,
-    ):
-        return instance._validate_args_and_create_signature(
-            src,
-            items_per_thread=items_per_thread,
-            binary_op=binary_op,
-            num_valid=num_valid,
-            algorithm=algorithm,
-            temp_storage=temp_storage,
-        )
-
-    return typer
+@register
+class CoopBlockReduceInstanceDecl(CoopInstanceTemplate):
+    key = block_reduce_instance_type
+    instance_type = block_reduce_instance_type
+    primitive_name = "coop.block.reduce"
 
 
 @register_model(CoopBlockReduceInstanceType)
@@ -2890,26 +3167,11 @@ class CoopBlockSumInstanceType(types.Type, CoopInstanceTypeMixin):
 block_sum_instance_type = CoopBlockSumInstanceType()
 
 
-@type_callable(block_sum_instance_type)
-def type_block_sum_instance_call(context):
-    instance = block_sum_instance_type
-
-    def typer(
-        src,
-        items_per_thread=None,
-        num_valid=None,
-        algorithm=None,
-        temp_storage=None,
-    ):
-        return instance._validate_args_and_create_signature(
-            src,
-            items_per_thread=items_per_thread,
-            num_valid=num_valid,
-            algorithm=algorithm,
-            temp_storage=temp_storage,
-        )
-
-    return typer
+@register
+class CoopBlockSumInstanceDecl(CoopInstanceTemplate):
+    key = block_sum_instance_type
+    instance_type = block_sum_instance_type
+    primitive_name = "coop.block.sum"
 
 
 @register_model(CoopBlockSumInstanceType)
@@ -3002,6 +3264,12 @@ class CoopModuleTemplate(AttributeTemplate):
 
     def resolve_BlockHistogramAlgorithm(self, mod):
         return types.Module(coop.BlockHistogramAlgorithm)
+
+    def resolve_TempStorage(self, mod):
+        return types.Function(CoopTempStorageDecl)
+
+    def resolve_ThreadData(self, mod):
+        return types.Function(CoopThreadDataDecl)
 
 
 register_global(coop, types.Module(coop))

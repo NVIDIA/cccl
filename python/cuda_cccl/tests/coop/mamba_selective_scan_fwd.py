@@ -173,6 +173,7 @@ class KernelTraits:
     block_load_u: coop.block.load
     block_load_delta: coop.block.load
     block_store: coop.block.store
+    block_scan: coop.block.scan
 
 
 def make_kernel_traits(dtype, threads_per_block, items_per_thread):
@@ -194,11 +195,26 @@ def make_kernel_traits(dtype, threads_per_block, items_per_thread):
         items_per_thread,
         algorithm=coop.BlockStoreAlgorithm.WARP_TRANSPOSE,
     )
+    block_scan = coop.block.scan(
+        dtype=float2_type,
+        threads_per_block=threads_per_block,
+        items_per_thread=items_per_thread,
+        mode="inclusive",
+        scan_op=ssm_scan_op,
+        block_prefix_callback_op=coop.StatefulFunction(
+            SSMScanPrefixCallbackOp,
+            ssm_prefix_callback_op_type,
+            name="ssm_scan_prefix",
+        ),
+        algorithm=coop.BlockScanAlgorithm.WARP_SCANS,
+        methods=float2_type.methods,
+    )
     traits = KernelTraits(
         items_per_thread=items_per_thread,
         block_load_u=block_load_u,
         block_load_delta=block_load_delta,
         block_store=block_store,
+        block_scan=block_scan,
     )
     return coop.gpu_dataclass(traits)
 
@@ -231,14 +247,10 @@ def make_selective_scan_fwd_kernel(traits):
                 Float2(numba.float32(1.0), numba.float32(0.0))
             )
 
-            coop.block.scan(
+            traits.block_scan(
                 thread_data,
                 thread_data,
-                items_per_thread=DEFAULT_ITEMS_PER_THREAD,
                 block_prefix_callback_op=prefix_op,
-                scan_op=ssm_scan_op,
-                mode="inclusive",
-                algorithm=coop.BlockScanAlgorithm.WARP_SCANS,
             )
 
             out_vals = coop.local.array(DEFAULT_ITEMS_PER_THREAD, dtype=out.dtype)

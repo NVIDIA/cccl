@@ -41,4 +41,5 @@
 - [x] Add warp exchange scatter-to-striped coverage/tests (including ranks dtype).
 - [x] Add warp load/store num_valid + oob_default coverage/tests.
 - [x] Fix gpu_dataclass kernel-traits argument handling and add test coverage.
-- [ ] Allow two-phase coop.block.scan instance calls to omit mode/scan_op/items_per_thread (kernel-traits defaulting).
+- [x] Allow two-phase coop.block.scan instance calls to omit mode/scan_op/items_per_thread (kernel-traits defaulting).
+- [x] Switch coop primitives to AbstractTemplate so two-phase instance calls accept kwargs.

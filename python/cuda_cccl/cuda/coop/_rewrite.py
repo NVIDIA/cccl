@@ -2192,7 +2192,8 @@ class CoopBlockExchangeNode(CoopNode, CoopNodeMixin):
     def rewrite(self, rewriter):
         rd = self.rewrite_details
         instrs = [rd.g_assign, rd.new_assign]
-        if self.temp_storage_info is not None and self.temp_storage_info.auto_sync:
+        temp_storage_info = getattr(self, "temp_storage_info", None)
+        if temp_storage_info is not None and temp_storage_info.auto_sync:
             instrs.extend(
                 rewriter.emit_syncthreads_call(self.instr.target.scope, self.expr.loc)
             )
@@ -5585,7 +5586,10 @@ class CoopNodeRewriter(Rewrite):
             return None
         ty = self.typemap.get(obj.name)
         if isinstance(ty, types.Array):
-            return ty.dtype
+            dtype = ty.dtype
+            if isinstance(dtype, types.Undefined):
+                return None
+            return dtype
         return None
 
     def _infer_thread_data_dtype_from_uses(self, var):

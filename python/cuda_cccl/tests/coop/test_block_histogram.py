@@ -129,7 +129,7 @@ def test_block_histogram_histo_atomic_single_phase0():
 
     h_input = np.random.randint(0, bins, num_total_items, dtype=item_dtype)
     d_input = cuda.to_device(h_input)
-    d_output = cuda.device_array(bins, dtype=counter_dtype)
+    d_output = cuda.to_device(np.zeros(bins, dtype=counter_dtype))
     num_blocks = blocks_per_grid
     num_blocks = 1
     k = kernel[num_blocks, threads_per_block]
@@ -210,7 +210,7 @@ def test_block_histogram_histo_atomic_single_phase_0():
 
     h_input = np.random.randint(0, bins, num_total_items, dtype=item_dtype)
     d_input = cuda.to_device(h_input)
-    d_output = cuda.device_array(bins, dtype=counter_dtype)
+    d_output = cuda.to_device(np.zeros(bins, dtype=counter_dtype))
     num_blocks = blocks_per_grid
     print(f"num blocks: {num_blocks}, threads per block: {threads_per_block}")
     num_blocks = 1
@@ -300,7 +300,7 @@ def test_block_histogram_histo_atomic_single_phase_1():
 
     h_input = np.random.randint(0, bins, num_total_items, dtype=item_dtype)
     d_input = cuda.to_device(h_input)
-    d_output = cuda.device_array(bins, dtype=counter_dtype)
+    d_output = cuda.to_device(np.zeros(bins, dtype=counter_dtype))
     num_blocks = blocks_per_grid
     print(f"num blocks: {num_blocks}, threads per block: {threads_per_block}")
     num_blocks = 1
@@ -426,7 +426,7 @@ def test_block_histogram_histo_atomic_single_phase_2(
 
     h_input = np.random.randint(0, bins, num_total_items, dtype=item_dtype)
     d_input = cuda.to_device(h_input)
-    d_output = cuda.device_array(bins, dtype=counter_dtype)
+    d_output = cuda.to_device(np.zeros(bins, dtype=counter_dtype))
     num_blocks = blocks_per_grid
     print(
         f"num_blocks: {num_blocks}, "
@@ -588,7 +588,7 @@ def test_block_histogram_histo_atomic_single_phase_3(
 
     h_input = np.random.randint(0, bins, num_total_items, dtype=item_dtype)
     d_input = cuda.to_device(h_input)
-    d_output = cuda.device_array(bins, dtype=counter_dtype)
+    d_output = cuda.to_device(np.zeros(bins, dtype=counter_dtype))
     num_blocks = blocks_per_grid
     print(
         f"num_blocks: {num_blocks}, "
@@ -720,7 +720,7 @@ def test_block_histogram_histo_atomic_single_phase_4(
 
     h_input = np.random.randint(0, bins, num_total_items, dtype=item_dtype)
     d_input = cuda.to_device(h_input)
-    d_output = cuda.device_array(bins, dtype=counter_dtype)
+    d_output = cuda.to_device(np.zeros(bins, dtype=counter_dtype))
     num_blocks = blocks_per_grid
     print(
         f"num_blocks: {num_blocks}, "
@@ -894,7 +894,7 @@ def test_block_histogram_histo_sort_two_phase0():
 
     h_input = np.random.randint(0, bins, total_items, dtype=item_dtype)
     d_input = cuda.to_device(h_input)
-    d_output = cuda.device_array(bins, dtype=counter_dtype)
+    d_output = cuda.to_device(np.zeros(bins, dtype=counter_dtype))
     num_blocks = 1
     k = kernel[num_blocks, threads_per_block]
     k(d_input, d_output)
@@ -1027,7 +1027,7 @@ def test_block_histogram_histo_sort_two_phase1():
 
     h_input = np.random.randint(0, bins, total_items, dtype=item_dtype)
     d_input = cuda.to_device(h_input)
-    d_output = cuda.device_array(bins, dtype=counter_dtype)
+    d_output = cuda.to_device(np.zeros(bins, dtype=counter_dtype))
     num_blocks = 1
     k = kernel[num_blocks, threads_per_block]
     k(d_input, d_output)
@@ -1159,7 +1159,7 @@ def test_block_histogram_histo_sort_two_phase2():
 
     h_input = np.random.randint(0, bins, total_items, dtype=item_dtype)
     d_input = cuda.to_device(h_input)
-    d_output = cuda.device_array(bins, dtype=counter_dtype)
+    d_output = cuda.to_device(np.zeros(bins, dtype=counter_dtype))
     num_blocks = 1
     k = kernel[num_blocks, threads_per_block]
     k(d_input, d_output)
