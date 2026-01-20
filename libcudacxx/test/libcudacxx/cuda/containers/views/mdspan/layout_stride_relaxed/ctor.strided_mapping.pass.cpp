@@ -162,11 +162,11 @@ __host__ __device__ constexpr void test_self_conversion()
 
   // Test converting ctor from layout_stride_relaxed to layout_stride_relaxed
   {
-    using From = cuda::layout_stride_relaxed::mapping<cuda::std::extents<int, 4, 5>>;
-    using To   = cuda::layout_stride_relaxed::mapping<cuda::std::extents<int, D, D>>;
+    using From         = cuda::layout_stride_relaxed::mapping<cuda::std::extents<int, 4, 5>>;
+    using To           = cuda::layout_stride_relaxed::mapping<cuda::std::extents<int, D, D>>;
+    using strides_type = typename From::strides_type;
 
-    cuda::std::array<intptr_t, 2> strides{5, 1};
-    From src(cuda::std::extents<int, 4, 5>(), strides, 10);
+    From src(cuda::std::extents<int, 4, 5>(), strides_type(5, 1), 10);
     To dest(src);
 
     assert(dest.extents().extent(0) == 4);
@@ -178,11 +178,11 @@ __host__ __device__ constexpr void test_self_conversion()
 
   // Test with negative strides
   {
-    using From = cuda::layout_stride_relaxed::mapping<cuda::std::extents<int, 4>>;
-    using To   = cuda::layout_stride_relaxed::mapping<cuda::std::extents<int, D>>;
+    using From         = cuda::layout_stride_relaxed::mapping<cuda::std::extents<int, 4>>;
+    using To           = cuda::layout_stride_relaxed::mapping<cuda::std::extents<int, D>>;
+    using strides_type = typename From::strides_type;
 
-    cuda::std::array<intptr_t, 1> strides{-1};
-    From src(cuda::std::extents<int, 4>(), strides, 3);
+    From src(cuda::std::extents<int, 4>(), strides_type(-1), 3);
     To dest(src);
 
     assert(dest.extents().extent(0) == 4);

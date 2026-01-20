@@ -29,9 +29,10 @@ template <class E>
 __host__ __device__ constexpr void
 test_offset(E e, cuda::std::array<intptr_t, E::rank()> strides, intptr_t expected_offset)
 {
-  using M           = cuda::layout_stride_relaxed::mapping<E>;
-  using offset_type = typename M::offset_type;
-  M m(e, strides, static_cast<offset_type>(expected_offset));
+  using M            = cuda::layout_stride_relaxed::mapping<E>;
+  using strides_type = typename M::strides_type;
+  using offset_type  = typename M::offset_type;
+  M m(e, strides_type(strides), static_cast<offset_type>(expected_offset));
   const M c_m = m;
 
   static_assert(noexcept(m.offset()));
@@ -50,9 +51,10 @@ __host__ __device__ constexpr void test_offset_in_indexing(
   typename E::index_type expected_at_zero,
   Indices... zero_indices)
 {
-  using M           = cuda::layout_stride_relaxed::mapping<E>;
-  using offset_type = typename M::offset_type;
-  M m(e, strides, static_cast<offset_type>(offset));
+  using M            = cuda::layout_stride_relaxed::mapping<E>;
+  using strides_type = typename M::strides_type;
+  using offset_type  = typename M::offset_type;
+  M m(e, strides_type(strides), static_cast<offset_type>(offset));
 
   // The result at indices (0, 0, ...) should equal the offset
   assert(m(zero_indices...) == expected_at_zero);
@@ -68,14 +70,14 @@ __host__ __device__ constexpr void test_reverse_array_pattern()
   // ...
   // logical index N-1 -> physical 0
 
-  using E           = cuda::std::extents<int, 5>;
-  using M           = cuda::layout_stride_relaxed::mapping<E>;
-  using offset_type = typename M::offset_type;
+  using E            = cuda::std::extents<int, 5>;
+  using M            = cuda::layout_stride_relaxed::mapping<E>;
+  using strides_type = typename M::strides_type;
+  using offset_type  = typename M::offset_type;
 
-  cuda::std::array<intptr_t, 1> strides{-1};
   offset_type offset = 4; // N - 1
 
-  M m(E{}, strides, offset);
+  M m(E{}, strides_type(-1), offset);
 
   assert(m(0) == 4); // logical 0 -> physical 4
   assert(m(1) == 3); // logical 1 -> physical 3
@@ -96,14 +98,14 @@ __host__ __device__ constexpr void test_2d_partial_reverse()
   // (2,0) -> 8 - 2*4 + 0*1 = 0
   // (0,1) -> 8 - 0*4 + 1*1 = 9
 
-  using E           = cuda::std::extents<int, 3, 4>;
-  using M           = cuda::layout_stride_relaxed::mapping<E>;
-  using offset_type = typename M::offset_type;
+  using E            = cuda::std::extents<int, 3, 4>;
+  using M            = cuda::layout_stride_relaxed::mapping<E>;
+  using strides_type = typename M::strides_type;
+  using offset_type  = typename M::offset_type;
 
-  cuda::std::array<intptr_t, 2> strides{-4, 1};
   intptr_t offset = 8; // (rows-1) * |stride0|
 
-  M m(E{}, strides, static_cast<offset_type>(offset));
+  M m(E{}, strides_type(-4, 1), static_cast<offset_type>(offset));
 
   assert(m(0, 0) == 8);
   assert(m(1, 0) == 4);
@@ -125,14 +127,14 @@ __host__ __device__ constexpr void test_default_zero_offset()
 // Test that copy constructor preserves offset
 __host__ __device__ constexpr void test_copy_preserves_offset()
 {
-  using E           = cuda::std::extents<int, 4, 5>;
-  using M           = cuda::layout_stride_relaxed::mapping<E>;
-  using offset_type = typename M::offset_type;
+  using E            = cuda::std::extents<int, 4, 5>;
+  using M            = cuda::layout_stride_relaxed::mapping<E>;
+  using strides_type = typename M::strides_type;
+  using offset_type  = typename M::offset_type;
 
-  cuda::std::array<intptr_t, 2> strides{5, 1};
   offset_type offset = 42;
 
-  M m1(E{}, strides, offset);
+  M m1(E{}, strides_type(5, 1), offset);
   M m2 = m1;
 
   assert(m2.offset() == offset);

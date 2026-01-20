@@ -38,17 +38,9 @@ __host__ __device__ constexpr void test_required_span_size(
   typename E::index_type expected_size)
 {
   using M            = cuda::layout_stride_relaxed::mapping<E>;
+  using strides_type = typename M::strides_type;
   using offset_type  = typename M::offset_type;
-  using stride_array = cuda::std::array<offset_type, E::rank()>;
-  stride_array strides{};
-  if constexpr (E::rank() > 0)
-  {
-    for (typename E::rank_type r = 0; r < E::rank(); r++)
-    {
-      strides[r] = static_cast<offset_type>(input_strides[r]);
-    }
-  }
-  const M m(e, strides, static_cast<offset_type>(offset));
+  const M m(e, strides_type(input_strides), static_cast<offset_type>(offset));
 
   static_assert(noexcept(m.required_span_size()));
   assert(cuda::std::cmp_equal(m.required_span_size(), expected_size));

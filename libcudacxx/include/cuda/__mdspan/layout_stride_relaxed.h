@@ -38,7 +38,6 @@
 #include <cuda/std/__utility/cmp.h>
 #include <cuda/std/__utility/integer_sequence.h>
 #include <cuda/std/array>
-#include <cuda/std/span>
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -151,16 +150,14 @@ public:
   _CCCL_HIDE_FROM_ABI constexpr mapping(const mapping&) noexcept            = default;
   _CCCL_HIDE_FROM_ABI constexpr mapping& operator=(const mapping&) noexcept = default;
 
-  _CCCL_TEMPLATE(class _OtherIndexType)
-  _CCCL_REQUIRES(::cuda::std::is_convertible_v<const _OtherIndexType&, offset_type> _CCCL_AND(
-    ::cuda::std::is_nothrow_constructible_v<offset_type, const _OtherIndexType&>))
-  _CCCL_API constexpr mapping(const extents_type& __ext,
-                              ::cuda::std::span<_OtherIndexType, __rank_> __span_strides,
-                              offset_type __offset = 0) noexcept
+  _CCCL_API constexpr mapping(
+    const extents_type& __ext, const strides_type& __strides, offset_type __offset = 0) noexcept
       : __extents_(__ext)
-      , __strides_(__span_strides)
+      , __strides_(__strides)
       , __offset_(__offset)
   {
+    _CCCL_ASSERT(::cuda::std::cmp_greater_equal(__offset_, offset_type{0}),
+                 "layout_stride_relaxed::mapping: offset must be nonnegative");
     // not catching this could lead to out-of-bounds access later when used inside mdspan
     // using ext_t = dextents<char, 2>;
     // mapping<ext_t> map(ext_t(40,40));
@@ -168,15 +165,6 @@ public:
     _CCCL_ASSERT((static_cast<void>(required_span_size()), true),
                  "layout_stride_relaxed::mapping extents ctor: required_span_size() is not representable");
   }
-
-  _CCCL_TEMPLATE(class _OtherIndexType)
-  _CCCL_REQUIRES(::cuda::std::is_convertible_v<const _OtherIndexType&, offset_type> _CCCL_AND(
-    ::cuda::std::is_nothrow_constructible_v<offset_type, const _OtherIndexType&>))
-  _CCCL_API constexpr mapping(const extents_type& __ext,
-                              const ::cuda::std::array<_OtherIndexType, __rank_>& __array_strides,
-                              offset_type __offset = 0) noexcept
-      : mapping(__ext, ::cuda::std::span<const _OtherIndexType, __rank_>(__array_strides), __offset)
-  {}
 
   //! @brief (non-explicit) Converting constructor from another layout_stride_relaxed::mapping
   _CCCL_TEMPLATE(class _OtherMapping)
@@ -189,6 +177,8 @@ public:
       , __strides_(__other.strides())
       , __offset_(__other.offset())
   {
+    _CCCL_ASSERT(::cuda::std::cmp_greater_equal(__offset_, offset_type{0}),
+                 "layout_stride_relaxed::mapping: offset must be nonnegative");
     _CCCL_ASSERT((static_cast<void>(required_span_size()), true),
                  "layout_stride_relaxed::mapping converting ctor: required_span_size() is not representable");
   }
@@ -204,6 +194,8 @@ public:
       , __strides_(__other.strides())
       , __offset_(__other.offset())
   {
+    _CCCL_ASSERT(::cuda::std::cmp_greater_equal(__offset_, offset_type{0}),
+                 "layout_stride_relaxed::mapping: offset must be nonnegative");
     _CCCL_ASSERT((static_cast<void>(required_span_size()), true),
                  "layout_stride_relaxed::mapping converting ctor: required_span_size() is not representable");
   }
@@ -267,7 +259,7 @@ public:
       // index (0) if the stride is negative, or the max index (extent(r) - 1) if the stride is non-negative.
       // For non-negative stride: contribution is (extent - 1) * stride
       // For negative stride: contribution is 0 (max achieved at index 0)
-      index_type __dot = index_type{1};
+      index_type __dot{1};
       for (rank_type __r = 0; __r < __rank_; ++__r)
       {
         const auto __ext = __extents_.extent(__r);
@@ -324,7 +316,11 @@ public:
   [[nodiscard]] _CCCL_API constexpr index_type operator()(_Indices... __indices) const noexcept
   {
     const auto __index = __compute_index(__rank_sequence, __indices...);
-    _CCCL_ASSERT(::cuda::std::cmp_less_equal(__index, required_span_size()),
+    if constexpr (::cuda::std::is_signed_v<index_type>)
+    {
+      _CCCL_ASSERT(__index >= 0, "layout_stride_relaxed::mapping: index is negative");
+    }
+    _CCCL_ASSERT(::cuda::std::cmp_less(__index, required_span_size()),
                  "layout_stride_relaxed::mapping: index is out of bounds");
     return __index;
   }

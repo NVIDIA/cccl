@@ -68,12 +68,16 @@ __host__ __device__ constexpr void test_comparison(
   intptr_t dest_offset = 0,
   intptr_t src_offset  = 0)
 {
-  using offset_type_dest = typename cuda::layout_stride_relaxed::mapping<To>::offset_type;
-  using offset_type_src  = typename cuda::layout_stride_relaxed::mapping<From>::offset_type;
+  using dest_mapping     = cuda::layout_stride_relaxed::mapping<To>;
+  using src_mapping      = cuda::layout_stride_relaxed::mapping<From>;
+  using strides_type_dst = typename dest_mapping::strides_type;
+  using strides_type_src = typename src_mapping::strides_type;
+  using offset_type_dest = typename dest_mapping::offset_type;
+  using offset_type_src  = typename src_mapping::offset_type;
   auto dest_offset1      = static_cast<offset_type_dest>(dest_offset);
   auto src_offset1       = static_cast<offset_type_src>(src_offset);
-  cuda::layout_stride_relaxed::mapping<To> dest(dest_exts, dest_strides, dest_offset1);
-  cuda::layout_stride_relaxed::mapping<From> src(src_exts, src_strides, src_offset1);
+  dest_mapping dest(dest_exts, strides_type_dst(dest_strides), dest_offset1);
+  src_mapping src(src_exts, strides_type_src(src_strides), src_offset1);
   static_assert(noexcept(dest == src));
   assert((dest == src) == equal);
   assert((dest != src) == !equal);
@@ -189,9 +193,10 @@ __host__ __device__ constexpr void test_comparison_with(
   E2 e2,
   OtherArgs... other_args)
 {
-  using layout_type = cuda::layout_stride_relaxed::mapping<E1>;
-  using offset_type = typename layout_type::offset_type;
-  layout_type map(e1, strides, static_cast<offset_type>(offset));
+  using layout_type  = cuda::layout_stride_relaxed::mapping<E1>;
+  using strides_type = typename layout_type::strides_type;
+  using offset_type  = typename layout_type::offset_type;
+  layout_type map(e1, strides_type(strides), static_cast<offset_type>(offset));
   typename OtherLayout::template mapping<E2> other_map(e2, other_args...);
 
   assert((map == other_map) == expect_equal);

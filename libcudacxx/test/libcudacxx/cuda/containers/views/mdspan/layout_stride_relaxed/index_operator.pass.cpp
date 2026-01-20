@@ -85,10 +85,11 @@ template <class E, class... Extents>
 __host__ __device__ constexpr void
 test_iteration(cuda::std::array<intptr_t, E::rank()> strides, intptr_t offset, Extents... extents)
 {
-  using M           = cuda::layout_stride_relaxed::mapping<E>;
-  using index_type  = typename M::index_type;
-  using offset_type = typename M::offset_type;
-  M m(E(static_cast<index_type>(extents)...), strides, static_cast<offset_type>(offset));
+  using M            = cuda::layout_stride_relaxed::mapping<E>;
+  using strides_type = typename M::strides_type;
+  using index_type   = typename M::index_type;
+  using offset_type  = typename M::offset_type;
+  M m(E(static_cast<index_type>(extents)...), strides_type(strides), static_cast<offset_type>(offset));
 
   iterate_stride(m, strides, offset);
 }
@@ -116,31 +117,28 @@ __host__ __device__ constexpr bool test()
   test_iteration<cuda::std::extents<int, 4>>(cuda::std::array<intptr_t, 1>{-1}, 3);
 
   // Check operator constraint for number of arguments
-  static_assert(check_operator_constraints(
-    cuda::layout_stride_relaxed::mapping<cuda::std::extents<int, D>>(
-      cuda::std::extents<int, D>(1), cuda::std::array<intptr_t, 1>{1}),
-    0));
-  static_assert(!check_operator_constraints(
-    cuda::layout_stride_relaxed::mapping<cuda::std::extents<int, D>>(
-      cuda::std::extents<int, D>(1), cuda::std::array<intptr_t, 1>{1}),
-    0,
-    0));
+  {
+    using M = cuda::layout_stride_relaxed::mapping<cuda::std::extents<int, D>>;
+    static_assert(check_operator_constraints(M(cuda::std::extents<int, D>(1), typename M::strides_type(1)), 0));
+    static_assert(!check_operator_constraints(M(cuda::std::extents<int, D>(1), typename M::strides_type(1)), 0, 0));
+  }
 
   // Check operator constraint for convertibility of arguments to index_type
-  static_assert(check_operator_constraints(
-    cuda::layout_stride_relaxed::mapping<cuda::std::extents<int, D>>(
-      cuda::std::extents<int, D>(1), cuda::std::array<intptr_t, 1>{1}),
-    IntType(0)));
-  static_assert(!check_operator_constraints(
-    cuda::layout_stride_relaxed::mapping<cuda::std::extents<unsigned, D>>(
-      cuda::std::extents<unsigned, D>(1), cuda::std::array<intptr_t, 1>{1}),
-    IntType(0)));
+  {
+    using M1 = cuda::layout_stride_relaxed::mapping<cuda::std::extents<int, D>>;
+    using M2 = cuda::layout_stride_relaxed::mapping<cuda::std::extents<unsigned, D>>;
+    static_assert(
+      check_operator_constraints(M1(cuda::std::extents<int, D>(1), typename M1::strides_type(1)), IntType(0)));
+    static_assert(
+      !check_operator_constraints(M2(cuda::std::extents<unsigned, D>(1), typename M2::strides_type(1)), IntType(0)));
+  }
 
   // Check operator constraint for no-throw-constructibility of index_type from arguments
-  static_assert(!check_operator_constraints(
-    cuda::layout_stride_relaxed::mapping<cuda::std::extents<unsigned char, D>>(
-      cuda::std::extents<unsigned char, D>(1), cuda::std::array<intptr_t, 1>{1}),
-    IntType(0)));
+  {
+    using M = cuda::layout_stride_relaxed::mapping<cuda::std::extents<unsigned char, D>>;
+    static_assert(
+      !check_operator_constraints(M(cuda::std::extents<unsigned char, D>(1), typename M::strides_type(1)), IntType(0)));
+  }
 
   return true;
 }

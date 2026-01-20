@@ -111,13 +111,11 @@ public:
   // Construction from just dynamic or all values
   _CCCL_TEMPLATE(class... _OtherIndexTypes)
   _CCCL_REQUIRES((sizeof...(_OtherIndexTypes) == __rank_ || sizeof...(_OtherIndexTypes) == __rank_dynamic_)
-                   _CCCL_AND(::cuda::std::is_convertible_v<_OtherIndexTypes, offset_type>&&...)
-                     _CCCL_AND(::cuda::std::is_nothrow_constructible_v<offset_type, _OtherIndexTypes>&&...))
+                   _CCCL_AND(__is_convertible_to_index_type<_OtherIndexTypes>&&...))
   _CCCL_API constexpr explicit strides(_OtherIndexTypes... __dynvals) noexcept
       : _Values(static_cast<offset_type>(__dynvals)...)
   {
-    _CCCL_ASSERT(__is_representable_as(__dynvals...),
-                 "strides ctor: arguments must be representable as offset_type and nonnegative");
+    _CCCL_ASSERT(__is_representable_as(__dynvals...), "strides ctor: arguments must be representable as offset_type");
   }
 
   _CCCL_TEMPLATE(class _OtherIndexType, ::cuda::std::size_t _Size)
@@ -127,8 +125,7 @@ public:
   {
     for ([[maybe_unused]] const auto& __value : __strs)
     {
-      _CCCL_ASSERT(__is_representable_as(__value),
-                   "strides ctor: arguments must be representable as offset_type and nonnegative");
+      _CCCL_ASSERT(__is_representable_as(__value), "strides ctor: arguments must be representable as offset_type");
     }
   }
 
@@ -140,8 +137,7 @@ public:
   {
     for ([[maybe_unused]] const auto& __value : __strs)
     {
-      _CCCL_ASSERT(__is_representable_as(__value),
-                   "strides ctor: arguments must be representable as offset_type and nonnegative");
+      _CCCL_ASSERT(__is_representable_as(__value), "strides ctor: arguments must be representable as offset_type");
     }
   }
 
@@ -190,6 +186,7 @@ private:
     {
       for (::cuda::std::size_t __r = 0; __r != __rank_; __r++)
       {
+        _CCCL_ASSERT(__is_representable_as(__other.stride(__r)), "strides construction: stride is out of range");
         _CCCL_ASSERT(_Values::__static_value(__r) == dynamic_stride
                        || ::cuda::std::cmp_equal(__other.stride(__r), _Values::__static_value(__r)),
                      "strides construction: mismatch of provided arguments with static strides.");
@@ -197,7 +194,6 @@ private:
     }
   }
 
-public:
   // Converting constructor from other strides specializations
   template <class _OtherIndexType, ::cuda::std::ptrdiff_t... _OtherStrides>
   static constexpr bool __is_explicit_conversion =
@@ -207,6 +203,7 @@ public:
   static constexpr bool __is_matching_strides =
     ((_OtherStrides == dynamic_stride || _Strides == dynamic_stride || _OtherStrides == _Strides) && ...);
 
+public:
   _CCCL_TEMPLATE(class _OtherIndexType, ::cuda::std::ptrdiff_t... _OtherStrides)
   _CCCL_REQUIRES((sizeof...(_OtherStrides) == sizeof...(_Strides)) _CCCL_AND __is_matching_strides<_OtherStrides...>
                    _CCCL_AND(!__is_explicit_conversion<_OtherIndexType, _OtherStrides...>))

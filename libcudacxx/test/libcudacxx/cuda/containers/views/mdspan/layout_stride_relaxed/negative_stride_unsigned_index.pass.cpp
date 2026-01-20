@@ -30,9 +30,8 @@ __host__ __device__ constexpr bool test()
   static_assert(cuda::std::is_unsigned_v<index_type>);
   static_assert(cuda::std::numeric_limits<index_type>::max() <= cuda::std::numeric_limits<int64_t>::max());
 
-  cuda::std::array<cuda::std::int16_t, 1> strides{-2};
   constexpr offset_type offset = 10;
-  M mapping(E{}, strides, offset);
+  M mapping(E{}, S(-2), offset);
 
   for (index_type i = 0; i < 3; ++i)
   {

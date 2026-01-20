@@ -35,27 +35,23 @@ template <class E, class... Args>
 __host__ __device__ constexpr void
 test_stride(cuda::std::array<intptr_t, E::rank()> input_strides, intptr_t offset, Args... args)
 {
-  using M           = cuda::layout_stride_relaxed::mapping<E>;
-  using offset_type = typename M::offset_type;
-  cuda::std::array<offset_type, E::rank()> strides{};
-  for (size_t r = 0; r < E::rank(); r++)
-  {
-    strides[r] = static_cast<offset_type>(input_strides[r]);
-  }
-  M m(E(args...), strides, static_cast<offset_type>(offset));
+  using M            = cuda::layout_stride_relaxed::mapping<E>;
+  using strides_type = typename M::strides_type;
+  using offset_type  = typename M::offset_type;
+  M m(E(args...), strides_type(input_strides), static_cast<offset_type>(offset));
 
   static_assert(noexcept(m.stride(0)));
   for (size_t r = 0; r < E::rank(); r++)
   {
-    assert(strides[r] == m.stride(r));
+    assert(cuda::std::cmp_equal(input_strides[r], m.stride(r)));
   }
 
   static_assert(noexcept(m.strides()));
   auto strides_out = m.strides();
-  static_assert(cuda::std::is_same_v<decltype(strides_out), cuda::dstrides<offset_type, E::rank()>>);
+  static_assert(cuda::std::is_same_v<decltype(strides_out), strides_type>);
   for (size_t r = 0; r < E::rank(); r++)
   {
-    assert(strides[r] == strides_out.stride(r));
+    assert(cuda::std::cmp_equal(input_strides[r], strides_out.stride(r)));
   }
 }
 
