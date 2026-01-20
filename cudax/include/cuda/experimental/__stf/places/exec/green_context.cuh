@@ -342,8 +342,8 @@ public:
      *        affine data place. If false (default), use a regular device data place instead.
      */
     impl(green_ctx_view gc_view, bool use_green_ctx_data_place = false)
-        : exec_place::impl(use_green_ctx_data_place ? make_green_ctx_data_place(gc_view)
-                                                    : data_place::device(gc_view.devid))
+        : exec_place::impl(
+            use_green_ctx_data_place ? make_green_ctx_data_place(gc_view) : data_place::device(gc_view.devid))
         , devid(gc_view.devid)
         , g_ctx(gc_view.g_ctx)
         , pool(mv(gc_view.pool))
@@ -437,7 +437,8 @@ inline exec_place exec_place::green_ctx(const green_ctx_view& gc_view, bool use_
   return exec_place_green_ctx(gc_view, use_green_ctx_data_place);
 }
 
-inline exec_place exec_place::green_ctx(const ::std::shared_ptr<green_ctx_view>& gc_view_ptr, bool use_green_ctx_data_place)
+inline exec_place
+exec_place::green_ctx(const ::std::shared_ptr<green_ctx_view>& gc_view_ptr, bool use_green_ctx_data_place)
 {
   return exec_place_green_ctx(gc_view_ptr, use_green_ctx_data_place);
 }
