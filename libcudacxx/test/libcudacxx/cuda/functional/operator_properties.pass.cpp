@@ -15,8 +15,10 @@
 
 #include "test_macros.h"
 
+#if _CCCL_COMPILER(GCC, >=, 12)
 _CCCL_BEGIN_NV_DIAG_SUPPRESS(3215) // "if consteval" and "if not consteval" are not standard in this mode
 _CCCL_DIAG_SUPPRESS_GCC("-Wc++23-extensions")
+#endif // _CCCL_COMPILER(GCC, >=, 12)
 
 /***********************************************************************************************************************
  * Associativity and Commutativity

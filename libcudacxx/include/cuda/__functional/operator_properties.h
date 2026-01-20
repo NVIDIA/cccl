@@ -45,7 +45,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA
  **********************************************************************************************************************/
 
 template <class _Op>
-constexpr bool __is_associative_static_assert()
+[[nodiscard]] _CCCL_API constexpr bool __is_associative_static_assert()
 {
   static_assert(::cuda::std::__always_false_v<_Op>,
                 "operator_properties is not specialized for this operator and type combination");
@@ -198,7 +198,7 @@ struct is_associative : ::cuda::std::bool_constant<is_associative_v<_Op, _Tp>>
  **********************************************************************************************************************/
 
 template <class _Op>
-constexpr bool __is_commutative_static_assert()
+[[nodiscard]] _CCCL_API constexpr bool __is_commutative_static_assert()
 {
   static_assert(::cuda::std::__always_false_v<_Op>,
                 "operator_properties is not specialized for this operator and type combination");
