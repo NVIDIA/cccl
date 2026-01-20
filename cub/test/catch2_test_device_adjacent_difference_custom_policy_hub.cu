@@ -8,8 +8,7 @@
 #include <thrust/detail/raw_pointer_cast.h>
 
 #include <cuda/std/functional>
-
-#include <numeric>
+#include <cuda/std/numeric>
 
 #include <c2h/catch2_test_helper.h>
 
