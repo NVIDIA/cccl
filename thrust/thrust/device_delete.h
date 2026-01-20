@@ -59,6 +59,10 @@ struct device_delete_allocator
  *
  *  \see device_ptr
  *  \see device_new
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename T>
 inline void device_delete(thrust::device_ptr<T> ptr, const size_t n = 1)
