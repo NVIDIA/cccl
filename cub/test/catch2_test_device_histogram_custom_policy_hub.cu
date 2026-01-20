@@ -87,7 +87,7 @@ C2H_TEST("DispatchHistogram::DispatchEven: custom policy hub", "[histogram][devi
     num_rows,
     row_stride_samples,
     /* stream */ nullptr,
-    ::cuda::std::true_type{});
+    cuda::std::true_type{});
 
   c2h::host_vector<counter_t> expected_histogram(num_bins, 0);
   for (const auto sample : h_samples)
