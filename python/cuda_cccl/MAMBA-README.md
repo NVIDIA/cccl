@@ -9,4 +9,4 @@ This document will summarize the process of porting the Mamba v1 selective scan 
 ## Status
 - Kernel-traits gpu_dataclass path stabilized (see SINGLE-PHASE-LOG.md).
 - Float2 POD type, prefix callback op, simplified kernel, and test are in place.
-- Kernel traits currently cover block load/store; block scan is still single-phase due to typing limitations for two-phase instances (see MAMBA-TODO.md).
+- Kernel traits include two-phase block scan; instance call now uses kwargs after switching to AbstractTemplate in coop typing.

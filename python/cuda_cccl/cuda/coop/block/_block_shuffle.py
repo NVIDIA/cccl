@@ -95,6 +95,7 @@ class shuffle(BasePrimitive):
             BlockShuffleType.Up,
             BlockShuffleType.Down,
         )
+        fake_return = not use_array_inputs
 
         if use_array_inputs:
             if items_per_thread is None or items_per_thread < 1:
@@ -148,6 +149,7 @@ class shuffle(BasePrimitive):
             self,
             unique_id=unique_id,
             type_definitions=type_definitions,
+            fake_return=fake_return,
         )
         self.specialization = self.algorithm.specialize(specialization_kwds)
 

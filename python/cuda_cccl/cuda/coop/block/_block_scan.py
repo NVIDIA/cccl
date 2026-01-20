@@ -69,6 +69,7 @@ The unsupported APIs are as follows:
     InclusiveScan(T&)[ITEMS_PER_THREAD] input, T(&)[ITEMS_PER_THREAD] output, T initial_value, ScanOp scan_op, T &block_aggregate)
 """
 
+import enum
 from typing import Any, Callable, Literal
 
 import numba
@@ -353,6 +354,13 @@ class scan(BasePrimitive):
         )
         self.mode = mode
         self.scan_op = scan_op
+        if algorithm_enum is None:
+            if isinstance(algorithm, enum.IntEnum):
+                algorithm_enum = algorithm
+            elif isinstance(algorithm, int):
+                algorithm_enum = self.default_algorithm.__class__(algorithm)
+            else:
+                algorithm_enum = self.default_algorithm
         self.algorithm_enum = algorithm_enum
         self.algorithm_id = int(algorithm_enum)
         self.initial_value = initial_value

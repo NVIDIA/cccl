@@ -50,12 +50,12 @@ class discontinuity(BasePrimitive):
 
     def __init__(
         self,
-        block_discontinuity_type: BlockDiscontinuityType,
         dtype: DtypeType,
         threads_per_block: DimType,
         items_per_thread: int,
         flag_op,
         flag_dtype: DtypeType,
+        block_discontinuity_type: BlockDiscontinuityType = BlockDiscontinuityType.HEADS,
         methods: dict = None,
         unique_id: int = None,
         temp_storage=None,
@@ -94,7 +94,6 @@ class discontinuity(BasePrimitive):
         template_parameters = [
             TemplateParameter("T"),
             TemplateParameter("BLOCK_DIM_X"),
-            TemplateParameter("ITEMS_PER_THREAD"),
             TemplateParameter("BLOCK_DIM_Y"),
             TemplateParameter("BLOCK_DIM_Z"),
         ]

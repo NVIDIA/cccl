@@ -335,3 +335,26 @@
 - Tests:
   - `pytest -q tests/coop/test_mamba_selective_scan_fwd.py -k mamba`
     - Result: 1 passed.
+
+## 2026-01-20 (two-phase block_scan instance + kernel traits)
+- Request: enable two-phase block_scan instance calls in kernel traits and make the mamba selective-scan kernel compile.
+- Findings:
+  - Numba CallableTemplate does not accept keyword arguments for callable instances; positional args are required.
+- Changes:
+  - `cuda/coop/_decls.py`: reorder block-scan arglist to match signature; treat explicit `NoneType` placeholders as positional args for two-phase calls; keep defaults when omitted; remove debug scaffolding.
+  - `tests/coop/mamba_selective_scan_fwd.py`: call `traits.block_scan` with positional None placeholders (commented).
+- Tests:
+  - `pytest -q tests/coop/test_mamba_selective_scan_fwd.py -k mamba` (pass)
+  - `pytest -q tests/coop/test_block_scan.py -k prefix_op_multi_items` (24 passed, 156 deselected)
+
+## 2026-01-20 (AbstractTemplate for coop typing)
+- Request: switch coop typing to AbstractTemplate so two-phase instance calls accept kwargs; review _decls.py signature helpers.
+- Changes:
+  - `cuda/coop/_decls.py`: add `CoopInstanceTemplate`; convert TempStorage/ThreadData typing to AbstractTemplate; convert instance call typing for block load/store/scan/reduce/sum/histogram/run_length to AbstractTemplate; convert run-length decode/constructor to AbstractTemplate; allow kw-only prevalidation; improve histogram/run-length two-phase argument handling.
+  - `tests/coop/mamba_selective_scan_fwd.py`: use kwargs for `traits.block_scan` now that instance calls accept them.
+- Tests:
+  - `pytest -q tests/coop/test_mamba_selective_scan_fwd.py -k mamba` (1 passed)
+  - `pytest -q tests/coop/test_block_run_length_decode.py -k single_phase` (1 passed)
+  - `pytest -q tests/coop/test_block_histogram.py -k two_phase0` (1 passed, 306 deselected)
+- Lint:
+  - `pre-commit run --files cuda/coop/_decls.py tests/coop/mamba_selective_scan_fwd.py`
