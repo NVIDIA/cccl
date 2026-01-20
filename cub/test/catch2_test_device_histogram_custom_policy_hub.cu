@@ -10,7 +10,6 @@
 #include <cuda/std/array>
 #include <cuda/std/type_traits>
 
-#include <algorithm>
 
 #include <c2h/catch2_test_helper.h>
 
