@@ -134,7 +134,7 @@ template <class _Tp>
       constexpr auto __min = static_cast<int32_t>(numeric_limits<_Tp>::min());
       constexpr auto __max = static_cast<int32_t>(numeric_limits<_Tp>::max());
       const auto __result  = static_cast<int32_t>(__x) - static_cast<int32_t>(__y);
-      return static_cast<_Tp>(::cuda::std::min(::cuda::std::max(__result, __min), __max));
+      return static_cast<_Tp>(::cuda::std::clamp(__result, __min, , __max));
     }
     // Disabled due to nvbug 5033045
     // else if constexpr (sizeof(_Tp) == sizeof(int32_t))

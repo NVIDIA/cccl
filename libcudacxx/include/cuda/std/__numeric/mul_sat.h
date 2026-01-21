@@ -42,8 +42,8 @@ _CCCL_TEMPLATE(class _Tp)
 _CCCL_REQUIRES(__cccl_is_integer_v<_Tp>)
 [[nodiscard]] _CCCL_API constexpr _Tp mul_sat(_Tp __x, _Tp __y) noexcept
 {
-  constexpr auto __min = numeric_limits<_Tp>::min();
-  constexpr auto __max = numeric_limits<_Tp>::max();
+  [[maybe_unused]] constexpr auto __min = numeric_limits<_Tp>::min();
+  constexpr auto __max                  = numeric_limits<_Tp>::max();
 
   if constexpr (is_signed_v<_Tp>)
   {
