@@ -45,7 +45,8 @@ struct any_execution_policy
   _CCCL_HIDE_FROM_ABI any_execution_policy() = default;
 
   template <uint32_t _Policy>
-  _CCCL_HOST_API constexpr any_execution_policy(::cuda::std::execution::__execution_policy_base<_Policy>) noexcept
+  _CCCL_HOST_API constexpr any_execution_policy(
+    const ::cuda::std::execution::__execution_policy_base<_Policy>& __pol) noexcept
       : value(value_type{_Policy})
   {}
 
