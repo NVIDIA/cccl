@@ -118,7 +118,7 @@ class _BinarySearch:
 
 
 @cache_with_registered_key_functions
-def make_binary_search(
+def _make_binary_search(
     d_data: DeviceArrayLike,
     d_values: DeviceArrayLike | IteratorBase,
     d_out: DeviceArrayLike,
@@ -158,7 +158,7 @@ def make_lower_bound(
         :func:`lower_bound`
     """
     comp_adapter = _normalize_comp(comp)
-    return make_binary_search(
+    return _make_binary_search(
         d_data,
         d_values,
         d_out,
@@ -196,7 +196,7 @@ def make_upper_bound(
         :func:`upper_bound`
     """
     comp_adapter = _normalize_comp(comp)
-    return make_binary_search(
+    return _make_binary_search(
         d_data,
         d_values,
         d_out,
