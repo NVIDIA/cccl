@@ -128,11 +128,11 @@ Class template to describe the strides of a multi-dimensional array layout. Simi
 **Constructors**
 
 .. code:: cpp
-   
+
     // (1) default constructor
     constexpr strides() noexcept = default;
 
-    // (2) constructor from values 
+    // (2) constructor from values
     template <class... OtherIndexTypes>
     constexpr explicit strides(OtherIndexTypes... values) noexcept;
 
@@ -151,36 +151,36 @@ Class template to describe the strides of a multi-dimensional array layout. Simi
 - **(1)** Default constructor. Value-initializes all dynamic strides to zero.
 - **(2)** Initializes the strides with the provided values.
 
-  - *Constraints*: 
- 
+  - *Constraints*:
+
     - ``sizeof...(OtherIndexTypes)`` equals ``rank()`` or ``rank_dynamic()``.
     - ``OtherIndexTypes...`` is convertible and nothrow constructible to ``offset_type``.
-  
-  - *Preconditions*: 
+
+  - *Preconditions*:
 
     - Each value is representable as ``offset_type``.
 
 - **(3)**, **(4)** Initializes the strides from ``span`` or ``array`` values.
 
   - *Constraints*:
-   
+
     - ``Size`` equals ``rank_dynamic()`` (implicit) or ``Size`` equals ``rank()`` and ``Size != rank_dynamic()`` (explicit).
     - ``OtherIndexType`` is convertible and nothrow constructible to ``offset_type``.
-     
-  - *Preconditions*: 
-  
+
+  - *Preconditions*:
+
     - Each value is representable as ``offset_type``.
 
 - **(5)** Initializes the strides from another ``strides`` object.
 
   - The constructor is ``explicit`` if any static stride in ``Strides...`` corresponds to a ``dynamic_stride`` in ``OtherStrides...``.
   - *Constraints*:
-  
+
     - ``sizeof...(OtherStrides)`` equals ``sizeof...(Strides)``.
     - For each dimension, either stride is ``dynamic_stride``, or both strides are equal.
 
-  - *Preconditions*: 
-  
+  - *Preconditions*:
+
     - Static strides must match their compile-time values.
     - Each dynamic stride value is representable as ``offset_type``.
 
