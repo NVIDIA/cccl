@@ -1,0 +1,6 @@
+thrust\:\:unique\_by\_key\_copy
+===============================
+
+Defined in :ref:`thrust\/unique.h <unique_8h>`
+
+.. doxygenfunction:: thrust::unique_by_key_copy(const thrust::detail::execution_policy_base< DerivedPolicy > &exec, InputIterator1 keys_first, InputIterator1 keys_last, InputIterator2 values_first, OutputIterator1 keys_result, OutputIterator2 values_result)

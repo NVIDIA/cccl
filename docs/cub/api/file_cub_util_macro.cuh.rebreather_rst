@@ -1,0 +1,30 @@
+.. _`util__macro_8cuh`:
+
+cub\/util\_macro.cuh
+====================
+
+In directory: :ref:`cub <dir_d583f216f1aafe19404e836b0c097ad2>`
+
+Source file: :doc:`program_listing_file_cub_util_macro.cuh`
+
+.. doxygenfile:: cub/util_macro.cuh
+   :sections: briefdescription detaileddescription
+
+.. toctree::
+   :maxdepth: 1
+   :hidden:
+
+   Source file <program_listing_file_cub_util_macro.cuh>
+
+Defines
+-------
+
+- :ref:`CUB\_DEFINE\_KERNEL\_GETTER <util__macro_8cuh_1ae0e4c369f9d9e041efa3ecb69854c2f6>`
+- :ref:`CUB\_DEFINE\_SUB\_POLICY\_GETTER <util__macro_8cuh_1a281cce6eb6ae602129375af1dbe3b95d>`
+- :ref:`\_CCCL\_SORT\_MAYBE\_UNROLL <util__macro_8cuh_1a1858d51fe58d958035af057a2d49ffb1>`
+
+Namespaces
+----------
+
+- :ref:`cub <namespacecub>`
+

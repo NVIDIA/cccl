@@ -1,0 +1,6 @@
+cuda\:\:experimental\:\:stf\:\:scalar\_stream\_interface
+========================================================
+
+Defined in :ref:`include\/cuda\/experimental\/\_\_stf\/internal\/scalar\_interface.cuh <scalar__interface_8cuh>`
+
+.. doxygenclass:: cuda::experimental::stf::scalar_stream_interface

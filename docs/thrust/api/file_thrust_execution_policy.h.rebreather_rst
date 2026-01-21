@@ -1,0 +1,37 @@
+.. _`execution__policy_8h`:
+
+thrust\/execution\_policy.h
+===========================
+
+In directory: :ref:`thrust <dir_7807dea0fb0cf4ae34b71c9fa4b0a46c>`
+
+Source file: :doc:`program_listing_file_thrust_execution_policy.h`
+
+.. doxygenfile:: thrust/execution_policy.h
+   :sections: briefdescription detaileddescription
+
+.. toctree::
+   :maxdepth: 1
+   :hidden:
+
+   Source file <program_listing_file_thrust_execution_policy.h>
+
+Namespaces
+----------
+
+- :ref:`thrust <namespacethrust>`
+
+Structs
+-------
+
+- :ref:`thrust\:\:device\_execution\_policy <structthrust_1_1device__execution__policy>`
+- :ref:`thrust\:\:execution\_policy <structthrust_1_1execution__policy>`
+- :ref:`thrust\:\:host\_execution\_policy <structthrust_1_1host__execution__policy>`
+
+Variables
+---------
+
+- :ref:`thrust\:\:device <group__execution__policies_1ga61bff7f6dead1da5c85eaafa9f9f5ded>`
+- :ref:`thrust\:\:host <group__execution__policies_1ga98394c05ebaaac46c17cf0ec970695e0>`
+- :ref:`thrust\:\:seq <group__execution__policies_1ga88184f5729650369507a73899a1c8d32>`
+

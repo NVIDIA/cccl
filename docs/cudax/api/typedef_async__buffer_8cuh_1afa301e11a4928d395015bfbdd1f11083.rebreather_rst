@@ -1,0 +1,6 @@
+cuda\:\:experimental\:\:async\_host\_buffer
+===========================================
+
+Defined in :ref:`include\/cuda\/experimental\/\_\_container\/async\_buffer.cuh <async__buffer_8cuh>`
+
+.. doxygentypedef:: cuda::experimental::async_host_buffer

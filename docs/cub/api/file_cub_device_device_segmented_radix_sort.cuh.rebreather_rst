@@ -1,0 +1,28 @@
+.. _`device__segmented__radix__sort_8cuh`:
+
+cub\/device\/device\_segmented\_radix\_sort.cuh
+===============================================
+
+In directory: :ref:`cub\/device <dir_18fc672d63781b5a743137aee24ff656>`
+
+Source file: :doc:`program_listing_file_cub_device_device_segmented_radix_sort.cuh`
+
+.. doxygenfile:: cub/device/device_segmented_radix_sort.cuh
+   :sections: briefdescription detaileddescription
+
+.. toctree::
+   :maxdepth: 1
+   :hidden:
+
+   Source file <program_listing_file_cub_device_device_segmented_radix_sort.cuh>
+
+Namespaces
+----------
+
+- :ref:`cub <namespacecub>`
+
+Structs
+-------
+
+- :ref:`cub\:\:DeviceSegmentedRadixSort <structcub_1_1DeviceSegmentedRadixSort>`
+

@@ -1,0 +1,31 @@
+.. _`adjacent__difference_8h`:
+
+thrust\/adjacent\_difference.h
+==============================
+
+In directory: :ref:`thrust <dir_7807dea0fb0cf4ae34b71c9fa4b0a46c>`
+
+Source file: :doc:`program_listing_file_thrust_adjacent_difference.h`
+
+.. doxygenfile:: thrust/adjacent_difference.h
+   :sections: briefdescription detaileddescription
+
+.. toctree::
+   :maxdepth: 1
+   :hidden:
+
+   Source file <program_listing_file_thrust_adjacent_difference.h>
+
+Functions
+---------
+
+- :ref:`thrust\:\:adjacent\_difference <group__transformations_1ga0a47f6c0431b0905eaccc7bc427af396>`
+- :ref:`thrust\:\:adjacent\_difference <group__transformations_1ga0f4d328d7b75f58901672a42591f4d3d>`
+- :ref:`thrust\:\:adjacent\_difference <group__transformations_1gacf82b80be6b095cf7cedaff0d40864ef>`
+- :ref:`thrust\:\:adjacent\_difference <group__transformations_1gaecdeb69a74548f924e3a9de420a84516>`
+
+Namespaces
+----------
+
+- :ref:`thrust <namespacethrust>`
+

@@ -1,0 +1,6 @@
+thrust\:\:gather\_if
+====================
+
+Defined in :ref:`thrust\/gather.h <gather_8h>`
+
+.. doxygenfunction:: thrust::gather_if(const thrust::detail::execution_policy_base< DerivedPolicy > &exec, InputIterator1 map_first, InputIterator1 map_last, InputIterator2 stencil, RandomAccessIterator input_first, OutputIterator result, Predicate pred)

@@ -1,0 +1,6 @@
+cuda\:\:experimental\:\:stream
+==============================
+
+Defined in :ref:`include\/cuda\/experimental\/\_\_stream\/stream.cuh <stream_8cuh>`
+
+.. doxygenstruct:: cuda::experimental::stream

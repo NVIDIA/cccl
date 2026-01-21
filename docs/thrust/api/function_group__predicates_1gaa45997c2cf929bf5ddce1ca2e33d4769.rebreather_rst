@@ -1,0 +1,6 @@
+thrust\:\:is\_sorted
+====================
+
+Defined in :ref:`thrust\/sort.h <sort_8h>`
+
+.. doxygenfunction:: thrust::is_sorted(ForwardIterator first, ForwardIterator last, Compare comp)

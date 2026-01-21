@@ -1,0 +1,94 @@
+thrust\:\:system
+================
+
+.. doxygennamespace:: thrust::system
+   :desc-only:
+
+Classes
+-------
+
+.. toctree::
+   :hidden:
+   :maxdepth: 1
+
+   classthrust_1_1system_1_1error__category
+   classthrust_1_1system_1_1error__code
+   classthrust_1_1system_1_1error__condition
+   classthrust_1_1system_1_1system__error
+
+- :ref:`thrust\:\:system\:\:error\_category <classthrust_1_1system_1_1error__category>`
+- :ref:`thrust\:\:system\:\:error\_code <classthrust_1_1system_1_1error__code>`
+- :ref:`thrust\:\:system\:\:error\_condition <classthrust_1_1system_1_1error__condition>`
+- :ref:`thrust\:\:system\:\:system\_error <classthrust_1_1system_1_1system__error>`
+
+Functions
+---------
+
+.. toctree::
+   :hidden:
+   :maxdepth: 1
+
+   function_group__system__diagnostics_1ga0398745b1fc9ca63b4cc4a32fd5e2f37
+   function_group__system__diagnostics_1gac5948a68bc203ae0ef498f763fb3f3d3
+   function_group__system__diagnostics_1gaedfa758a2df32ab767da9e6e7bfe10d2
+   function_group__system__diagnostics_1ga39877e4c57f7292d957f21c1c9ab199a
+   function_group__system__diagnostics_1ga82b3841cd11043ae9453075fc2b5b50b
+   function_group__system__diagnostics_1ga94389734c6391e17195f8f7adc3642d2
+   function_group__system__diagnostics_1gaebaba0aae2b27efc652c0dc51ba10a11
+   function_group__system__diagnostics_1ga1534a08dd66c4137efee36ddb2cc7f09
+   function_group__system__diagnostics_1ga77c6e455a675f6b94664459e1f9d2253
+   function_group__system__diagnostics_1ga8a52c1904e21d254f983bd16da9f59b6
+   function_group__system__diagnostics_1ga80740ab857f3f3ded5ebb2b4257bbd27
+   function_group__system__diagnostics_1ga92a3065a9c4bb790e3f40efb22560f55
+   function_group__system__diagnostics_1gab6549b94fe86ed502c8c865add43fb77
+   function_group__system__diagnostics_1gae7262a5915f79b141f4ebbc3b9485f9d
+   function_group__system__diagnostics_1ga31750883ef58fa71f12cc16147c66259
+
+- :ref:`thrust\:\:system\:\:generic\_category <group__system__diagnostics_1ga0398745b1fc9ca63b4cc4a32fd5e2f37>`
+- :ref:`thrust\:\:system\:\:make\_error\_code <group__system__diagnostics_1gac5948a68bc203ae0ef498f763fb3f3d3>`
+- :ref:`thrust\:\:system\:\:make\_error\_condition <group__system__diagnostics_1gaedfa758a2df32ab767da9e6e7bfe10d2>`
+- :ref:`thrust\:\:system\:\:operator\!\= <group__system__diagnostics_1ga39877e4c57f7292d957f21c1c9ab199a>`
+- :ref:`thrust\:\:system\:\:operator\!\= <group__system__diagnostics_1ga82b3841cd11043ae9453075fc2b5b50b>`
+- :ref:`thrust\:\:system\:\:operator\!\= <group__system__diagnostics_1ga94389734c6391e17195f8f7adc3642d2>`
+- :ref:`thrust\:\:system\:\:operator\!\= <group__system__diagnostics_1gaebaba0aae2b27efc652c0dc51ba10a11>`
+- :ref:`thrust\:\:system\:\:operator\< <group__system__diagnostics_1ga1534a08dd66c4137efee36ddb2cc7f09>`
+- :ref:`thrust\:\:system\:\:operator\< <group__system__diagnostics_1ga77c6e455a675f6b94664459e1f9d2253>`
+- :ref:`thrust\:\:system\:\:operator\<\< <group__system__diagnostics_1ga8a52c1904e21d254f983bd16da9f59b6>`
+- :ref:`thrust\:\:system\:\:operator\=\= <group__system__diagnostics_1ga80740ab857f3f3ded5ebb2b4257bbd27>`
+- :ref:`thrust\:\:system\:\:operator\=\= <group__system__diagnostics_1ga92a3065a9c4bb790e3f40efb22560f55>`
+- :ref:`thrust\:\:system\:\:operator\=\= <group__system__diagnostics_1gab6549b94fe86ed502c8c865add43fb77>`
+- :ref:`thrust\:\:system\:\:operator\=\= <group__system__diagnostics_1gae7262a5915f79b141f4ebbc3b9485f9d>`
+- :ref:`thrust\:\:system\:\:system\_category <group__system__diagnostics_1ga31750883ef58fa71f12cc16147c66259>`
+
+Namespaces
+----------
+
+.. toctree::
+   :hidden:
+   :maxdepth: 1
+
+   namespace_thrust__system__cpp
+   namespace_thrust__system__errc
+   namespace_thrust__system__omp
+   namespace_thrust__system__tbb
+
+- :ref:`thrust\:\:system\:\:cpp <namespacethrust_1_1system_1_1cpp>`
+- :ref:`thrust\:\:system\:\:errc <namespacethrust_1_1system_1_1errc>`
+- :ref:`thrust\:\:system\:\:omp <namespacethrust_1_1system_1_1omp>`
+- :ref:`thrust\:\:system\:\:tbb <namespacethrust_1_1system_1_1tbb>`
+
+Structs
+-------
+
+.. toctree::
+   :hidden:
+   :maxdepth: 1
+
+   structthrust_1_1system_1_1is__error__code__enum
+   structthrust_1_1system_1_1is__error__condition__enum
+   structthrust_1_1system_1_1is__error__condition__enum_3_01errc_1_1errc__t_01_4
+
+- :ref:`thrust\:\:system\:\:is\_error\_code\_enum <structthrust_1_1system_1_1is__error__code__enum>`
+- :ref:`thrust\:\:system\:\:is\_error\_condition\_enum <structthrust_1_1system_1_1is__error__condition__enum>`
+- :ref:`thrust\:\:system\:\:is\_error\_condition\_enum\< errc\:\:errc\_t \> <structthrust_1_1system_1_1is__error__condition__enum_3_01errc_1_1errc__t_01_4>`
+

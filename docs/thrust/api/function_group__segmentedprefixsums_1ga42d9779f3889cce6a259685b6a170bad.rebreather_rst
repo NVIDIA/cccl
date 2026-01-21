@@ -1,0 +1,6 @@
+thrust\:\:exclusive\_scan\_by\_key
+==================================
+
+Defined in :ref:`thrust\/scan.h <scan_8h>`
+
+.. doxygenfunction:: thrust::exclusive_scan_by_key(InputIterator1 first1, InputIterator1 last1, InputIterator2 first2, OutputIterator result, T init)

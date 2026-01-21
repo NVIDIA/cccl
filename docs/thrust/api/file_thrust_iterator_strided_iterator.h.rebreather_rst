@@ -1,0 +1,40 @@
+.. _`strided__iterator_8h`:
+
+thrust\/iterator\/strided\_iterator.h
+=====================================
+
+In directory: :ref:`thrust\/iterator <dir_4a6d8329b843c73570cce28de80cb189>`
+
+Source file: :doc:`program_listing_file_thrust_iterator_strided_iterator.h`
+
+.. doxygenfile:: thrust/iterator/strided_iterator.h
+   :sections: briefdescription detaileddescription
+
+.. toctree::
+   :maxdepth: 1
+   :hidden:
+
+   Source file <program_listing_file_thrust_iterator_strided_iterator.h>
+
+Classes
+-------
+
+- :ref:`thrust\:\:strided\_iterator <classthrust_1_1strided__iterator>`
+
+Functions
+---------
+
+- :ref:`thrust\:\:make\_strided\_iterator <group__fancyiterator_1ga5af828629716c6ea8f93e489470c4b02>`
+- :ref:`thrust\:\:make\_strided\_iterator <group__fancyiterator_1ga6d57d4053c0f6d8bbb14915cbb24a7b5>`
+
+Namespaces
+----------
+
+- :ref:`thrust <namespacethrust>`
+
+Structs
+-------
+
+- :ref:`thrust\:\:compile\_time\_value <structthrust_1_1compile__time__value>`
+- :ref:`thrust\:\:runtime\_value <structthrust_1_1runtime__value>`
+

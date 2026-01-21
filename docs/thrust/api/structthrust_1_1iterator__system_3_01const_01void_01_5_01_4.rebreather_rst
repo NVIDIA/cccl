@@ -1,0 +1,6 @@
+thrust\:\:iterator\_system\< const void \* \>
+=============================================
+
+Defined in :ref:`thrust\/iterator\/iterator\_traits.h <iterator__traits_8h>`
+
+.. doxygenstruct:: thrust::iterator_system< const void * >

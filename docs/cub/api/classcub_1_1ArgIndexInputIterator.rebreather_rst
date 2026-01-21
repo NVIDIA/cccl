@@ -1,0 +1,6 @@
+cub\:\:ArgIndexInputIterator
+============================
+
+Defined in :ref:`cub\/iterator\/arg\_index\_input\_iterator.cuh <arg__index__input__iterator_8cuh>`
+
+.. doxygenclass:: cub::ArgIndexInputIterator

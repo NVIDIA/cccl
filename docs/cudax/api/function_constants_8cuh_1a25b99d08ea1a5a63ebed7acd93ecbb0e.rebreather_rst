@@ -1,0 +1,6 @@
+cuda\:\:experimental\:\:stf\:\:operator\|\=
+===========================================
+
+Defined in :ref:`include\/cuda\/experimental\/\_\_stf\/internal\/constants.cuh <constants_8cuh>`
+
+.. doxygenfunction:: cuda::experimental::stf::operator|=(access_mode &lhs, access_mode rhs)

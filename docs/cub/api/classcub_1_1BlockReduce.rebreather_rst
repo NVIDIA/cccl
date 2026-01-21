@@ -1,0 +1,6 @@
+cub\:\:BlockReduce
+==================
+
+Defined in :ref:`cub\/block\/block\_reduce.cuh <block__reduce_8cuh>`
+
+.. doxygenclass:: cub::BlockReduce

@@ -1,0 +1,28 @@
+.. _`tex__obj__input__iterator_8cuh`:
+
+cub\/iterator\/tex\_obj\_input\_iterator.cuh
+============================================
+
+In directory: :ref:`cub\/iterator <dir_80932b4cec52750ff92b1a1912314cf5>`
+
+Source file: :doc:`program_listing_file_cub_iterator_tex_obj_input_iterator.cuh`
+
+.. doxygenfile:: cub/iterator/tex_obj_input_iterator.cuh
+   :sections: briefdescription detaileddescription
+
+.. toctree::
+   :maxdepth: 1
+   :hidden:
+
+   Source file <program_listing_file_cub_iterator_tex_obj_input_iterator.cuh>
+
+Classes
+-------
+
+- :ref:`cub\:\:TexObjInputIterator <classcub_1_1TexObjInputIterator>`
+
+Namespaces
+----------
+
+- :ref:`cub <namespacecub>`
+

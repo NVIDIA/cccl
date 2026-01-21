@@ -1,0 +1,6 @@
+CUDASTF\_NO\_DEVICE\_STACK
+==========================
+
+Defined in :ref:`include\/cuda\/experimental\/\_\_stf\/utility\/cuda\_attributes.cuh <cuda__attributes_8cuh>`
+
+.. doxygendefine:: CUDASTF_NO_DEVICE_STACK

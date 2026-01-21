@@ -1,0 +1,29 @@
+.. _`system_2system__error_8h`:
+
+thrust\/system\/system\_error.h
+===============================
+
+In directory: :ref:`thrust\/system <dir_aa94a12d43e5ba9deab857d2808a2f0a>`
+
+Source file: :doc:`program_listing_file_thrust_system_system_error.h`
+
+.. doxygenfile:: thrust/system/system_error.h
+   :sections: briefdescription detaileddescription
+
+.. toctree::
+   :maxdepth: 1
+   :hidden:
+
+   Source file <program_listing_file_thrust_system_system_error.h>
+
+Classes
+-------
+
+- :ref:`thrust\:\:system\:\:system\_error <classthrust_1_1system_1_1system__error>`
+
+Namespaces
+----------
+
+- :ref:`thrust <namespacethrust>`
+- :ref:`thrust\:\:system <namespacethrust_1_1system>`
+

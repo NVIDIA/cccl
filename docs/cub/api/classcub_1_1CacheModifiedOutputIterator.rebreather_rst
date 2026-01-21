@@ -1,0 +1,6 @@
+cub\:\:CacheModifiedOutputIterator
+==================================
+
+Defined in :ref:`cub\/iterator\/cache\_modified\_output\_iterator.cuh <cache__modified__output__iterator_8cuh>`
+
+.. doxygenclass:: cub::CacheModifiedOutputIterator

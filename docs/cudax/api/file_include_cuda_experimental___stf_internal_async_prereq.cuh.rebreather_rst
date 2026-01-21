@@ -1,0 +1,41 @@
+.. _`async__prereq_8cuh`:
+
+include\/cuda\/experimental\/\_\_stf\/internal\/async\_prereq.cuh
+=================================================================
+
+In directory: :ref:`include\/cuda\/experimental\/\_\_stf\/internal <dir_9a0afe0e3b482b68b2edbe22051d0386>`
+
+Source file: :doc:`program_listing_file_include_cuda_experimental___stf_internal_async_prereq.cuh`
+
+.. doxygenfile:: include/cuda/experimental/__stf/internal/async_prereq.cuh
+   :sections: briefdescription detaileddescription
+
+.. toctree::
+   :maxdepth: 1
+   :hidden:
+
+   Source file <program_listing_file_include_cuda_experimental___stf_internal_async_prereq.cuh>
+
+Classes
+-------
+
+- :ref:`cuda\:\:experimental\:\:stf\:\:event\_impl <classcuda_1_1experimental_1_1stf_1_1event__impl>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:event\_list <classcuda_1_1experimental_1_1stf_1_1event__list>`
+
+Functions
+---------
+
+- :ref:`cuda\:\:experimental\:\:stf\:\:join <async__prereq_8cuh_1ad18742cd2980317d08fa22179fe9838b>`
+
+Namespaces
+----------
+
+- :ref:`cuda <namespacecuda>`
+- :ref:`cuda\:\:experimental <namespacecuda_1_1experimental>`
+- :ref:`cuda\:\:experimental\:\:stf <namespacecuda_1_1experimental_1_1stf>`
+
+Typedefs
+--------
+
+- :ref:`cuda\:\:experimental\:\:stf\:\:event <async__prereq_8cuh_1a57eb9d03994cae3406bf9101c62d80dd>`
+

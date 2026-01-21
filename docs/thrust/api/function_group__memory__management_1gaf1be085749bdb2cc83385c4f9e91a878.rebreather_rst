@@ -1,0 +1,6 @@
+thrust\:\:device\_malloc
+========================
+
+Defined in :ref:`thrust\/device\_malloc.h <device__malloc_8h>`
+
+.. doxygenfunction:: thrust::device_malloc(const std::size_t n)

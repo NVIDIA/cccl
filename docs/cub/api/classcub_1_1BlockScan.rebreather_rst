@@ -1,0 +1,6 @@
+cub\:\:BlockScan
+================
+
+Defined in :ref:`cub\/block\/block\_scan.cuh <block__scan_8cuh>`
+
+.. doxygenclass:: cub::BlockScan

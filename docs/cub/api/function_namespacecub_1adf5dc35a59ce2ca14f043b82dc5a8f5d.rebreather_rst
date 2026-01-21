@@ -1,0 +1,6 @@
+cub\:\:LoadDirectWarpStriped
+============================
+
+Defined in :ref:`cub\/block\/block\_load.cuh <block__load_8cuh>`
+
+.. doxygenfunction:: cub::LoadDirectWarpStriped(int linear_tid, RandomAccessIterator block_src_it, T(&dst_items)[ITEMS_PER_THREAD])

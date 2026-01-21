@@ -1,0 +1,37 @@
+.. _`cuda__safe__call_8cuh`:
+
+include\/cuda\/experimental\/\_\_stf\/utility\/cuda\_safe\_call.cuh
+===================================================================
+
+In directory: :ref:`include\/cuda\/experimental\/\_\_stf\/utility <dir_14105bc4e1d6df9ad9d3d55d2b993f2a>`
+
+Source file: :doc:`program_listing_file_include_cuda_experimental___stf_utility_cuda_safe_call.cuh`
+
+.. doxygenfile:: include/cuda/experimental/__stf/utility/cuda_safe_call.cuh
+   :sections: briefdescription detaileddescription
+
+.. toctree::
+   :maxdepth: 1
+   :hidden:
+
+   Source file <program_listing_file_include_cuda_experimental___stf_utility_cuda_safe_call.cuh>
+
+Classes
+-------
+
+- :ref:`cuda\:\:experimental\:\:stf\:\:cuda\_exception <classcuda_1_1experimental_1_1stf_1_1cuda__exception>`
+
+Functions
+---------
+
+- :ref:`cuda\:\:experimental\:\:stf\:\:cuda\_safe\_call <cuda__safe__call_8cuh_1a73e825b19bf30944e2a13c569ec09e61>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:cuda\_try <cuda__safe__call_8cuh_1a07256ff2759b03d52d6238ac9116bc68>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:cuda\_try <cuda__safe__call_8cuh_1adf71508673280bde267766a705d88fa1>`
+
+Namespaces
+----------
+
+- :ref:`cuda <namespacecuda>`
+- :ref:`cuda\:\:experimental <namespacecuda_1_1experimental>`
+- :ref:`cuda\:\:experimental\:\:stf <namespacecuda_1_1experimental_1_1stf>`
+

@@ -1,0 +1,6 @@
+thrust\:\:output\_device\_iterator\_tag
+=======================================
+
+Defined in :ref:`thrust\/iterator\/iterator\_categories.h <iterator__categories_8h>`
+
+.. doxygenstruct:: thrust::output_device_iterator_tag

@@ -1,0 +1,6 @@
+thrust\:\:retag
+===============
+
+Defined in :ref:`thrust\/iterator\/retag.h <retag_8h>`
+
+.. doxygenfunction:: thrust::retag(Iterator iter)

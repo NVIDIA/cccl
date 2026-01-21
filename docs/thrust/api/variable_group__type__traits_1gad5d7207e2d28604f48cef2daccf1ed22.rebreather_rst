@@ -1,0 +1,6 @@
+thrust\:\:is\_operator\_plus\_function\_object\_v
+=================================================
+
+Defined in :ref:`thrust\/type\_traits\/is\_operator\_plus\_function\_object.h <is__operator__plus__function__object_8h>`
+
+.. doxygenvariable:: thrust::is_operator_plus_function_object_v

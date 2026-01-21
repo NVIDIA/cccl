@@ -1,0 +1,6 @@
+cuda\:\:experimental\:\:stf\:\:instance\_id\_t
+==============================================
+
+Defined in :ref:`include\/cuda\/experimental\/\_\_stf\/places\/places.cuh <places_8cuh>`
+
+.. doxygenenum:: cuda::experimental::stf::instance_id_t

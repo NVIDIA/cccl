@@ -1,0 +1,37 @@
+.. _`uniform__real__distribution_8h`:
+
+thrust\/random\/uniform\_real\_distribution.h
+=============================================
+
+In directory: :ref:`thrust\/random <dir_6b5d3ab13cf47c9c63ea01a78cc86c7c>`
+
+Source file: :doc:`program_listing_file_thrust_random_uniform_real_distribution.h`
+
+.. doxygenfile:: thrust/random/uniform_real_distribution.h
+   :sections: briefdescription detaileddescription
+
+.. toctree::
+   :maxdepth: 1
+   :hidden:
+
+   Source file <program_listing_file_thrust_random_uniform_real_distribution.h>
+
+Classes
+-------
+
+- :ref:`thrust\:\:random\:\:uniform\_real\_distribution <classthrust_1_1random_1_1uniform__real__distribution>`
+
+Functions
+---------
+
+- :ref:`thrust\:\:random\:\:operator\!\= <group__random__number__distributions_1gae79733cacd5f489bc169b08ea48cffdf>`
+- :ref:`thrust\:\:random\:\:operator\<\< <group__random__number__distributions_1ga9fcc3123a7b6be2c939354073452ac66>`
+- :ref:`thrust\:\:random\:\:operator\=\= <group__random__number__distributions_1gac882496917824b088dab9d141121f2cb>`
+- :ref:`thrust\:\:random\:\:operator\>\> <group__random__number__distributions_1ga66879129b61b61685ea4719483b45469>`
+
+Namespaces
+----------
+
+- :ref:`thrust <namespacethrust>`
+- :ref:`thrust\:\:random <namespacethrust_1_1random>`
+

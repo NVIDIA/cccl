@@ -1,0 +1,33 @@
+.. _`warp__store_8cuh`:
+
+cub\/warp\/warp\_store.cuh
+==========================
+
+In directory: :ref:`cub\/warp <dir_cb3a671affffe7eeb3fdf5ae58e42cc8>`
+
+Source file: :doc:`program_listing_file_cub_warp_warp_store.cuh`
+
+.. doxygenfile:: cub/warp/warp_store.cuh
+   :sections: briefdescription detaileddescription
+
+.. toctree::
+   :maxdepth: 1
+   :hidden:
+
+   Source file <program_listing_file_cub_warp_warp_store.cuh>
+
+Classes
+-------
+
+- :ref:`cub\:\:WarpStore <classcub_1_1WarpStore>`
+
+Enums
+-----
+
+- :ref:`cub\:\:WarpStoreAlgorithm <namespacecub_1ab9f09b230f6c6566d12470872db88048>`
+
+Namespaces
+----------
+
+- :ref:`cub <namespacecub>`
+

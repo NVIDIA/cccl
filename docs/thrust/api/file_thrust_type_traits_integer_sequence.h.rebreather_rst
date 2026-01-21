@@ -1,0 +1,35 @@
+.. _`integer__sequence_8h`:
+
+thrust\/type\_traits\/integer\_sequence.h
+=========================================
+
+In directory: :ref:`thrust\/type\_traits <dir_6114e4c2865c2127f7ba04e72679f8d6>`
+
+Source file: :doc:`program_listing_file_thrust_type_traits_integer_sequence.h`
+
+.. doxygenfile:: thrust/type_traits/integer_sequence.h
+   :sections: briefdescription detaileddescription
+
+.. toctree::
+   :maxdepth: 1
+   :hidden:
+
+   Source file <program_listing_file_thrust_type_traits_integer_sequence.h>
+
+Namespaces
+----------
+
+- :ref:`thrust <namespacethrust>`
+
+Typedefs
+--------
+
+- :ref:`thrust\:\:index\_sequence <group__type__traits_1ga6bb99ef51b7a2fc17feb93059c442f24>`
+- :ref:`thrust\:\:integer\_sequence <group__type__traits_1ga9afb7f8af7061673f9eaff9a5a4d657f>`
+- :ref:`thrust\:\:integer\_sequence\_push\_back <group__type__traits_1ga9a0f2c1da32b7b14180366265894c192>`
+- :ref:`thrust\:\:integer\_sequence\_push\_front <group__type__traits_1ga30dd0858022330597b14a4c034e1936d>`
+- :ref:`thrust\:\:make\_index\_sequence <group__type__traits_1ga9141c8ba4dcabb3db2e23dda6de37f9e>`
+- :ref:`thrust\:\:make\_integer\_sequence <group__type__traits_1gab6e7873f8bd7a441653cb01201db1976>`
+- :ref:`thrust\:\:make\_reversed\_index\_sequence <group__type__traits_1ga95fbb1696d9e8d1c61891da69cc02c03>`
+- :ref:`thrust\:\:make\_reversed\_integer\_sequence <group__type__traits_1ga902b3a0313d9d2dffe1b71785fbc17f7>`
+

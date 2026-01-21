@@ -1,0 +1,90 @@
+thrust\:\:mr
+============
+
+.. doxygennamespace:: thrust::mr
+   :desc-only:
+
+Classes
+-------
+
+.. toctree::
+   :hidden:
+   :maxdepth: 1
+
+   classthrust_1_1mr_1_1allocator
+   classthrust_1_1mr_1_1disjoint__unsynchronized__pool__resource
+   classthrust_1_1mr_1_1fancy__pointer__resource
+   classthrust_1_1mr_1_1memory__resource
+   classthrust_1_1mr_1_1memory__resource_3_01void_01_5_01_4
+   classthrust_1_1mr_1_1new__delete__resource
+   classthrust_1_1mr_1_1new__delete__resource__base
+   classthrust_1_1mr_1_1polymorphic__adaptor__resource
+   classthrust_1_1mr_1_1stateless__resource__allocator
+   classthrust_1_1mr_1_1unsynchronized__pool__resource
+
+- :ref:`thrust\:\:mr\:\:allocator <classthrust_1_1mr_1_1allocator>`
+- :ref:`thrust\:\:mr\:\:disjoint\_unsynchronized\_pool\_resource <classthrust_1_1mr_1_1disjoint__unsynchronized__pool__resource>`
+- :ref:`thrust\:\:mr\:\:fancy\_pointer\_resource <classthrust_1_1mr_1_1fancy__pointer__resource>`
+- :ref:`thrust\:\:mr\:\:memory\_resource <classthrust_1_1mr_1_1memory__resource>`
+- :ref:`thrust\:\:mr\:\:memory\_resource\< void \* \> <classthrust_1_1mr_1_1memory__resource_3_01void_01_5_01_4>`
+- :ref:`thrust\:\:mr\:\:new\_delete\_resource <classthrust_1_1mr_1_1new__delete__resource>`
+- :ref:`thrust\:\:mr\:\:new\_delete\_resource\_base <classthrust_1_1mr_1_1new__delete__resource__base>`
+- :ref:`thrust\:\:mr\:\:polymorphic\_adaptor\_resource <classthrust_1_1mr_1_1polymorphic__adaptor__resource>`
+- :ref:`thrust\:\:mr\:\:stateless\_resource\_allocator <classthrust_1_1mr_1_1stateless__resource__allocator>`
+- :ref:`thrust\:\:mr\:\:unsynchronized\_pool\_resource <classthrust_1_1mr_1_1unsynchronized__pool__resource>`
+
+Functions
+---------
+
+.. toctree::
+   :hidden:
+   :maxdepth: 1
+
+   function_group__memory__resources_1ga2b829e47d6a68a87cb5e3c110383edc0
+   function_group__allocators_1ga0855de8268820e2fa44f47ff31c98638
+   function_group__memory__resources_1ga0bc87a510eced5d3238af53710410494
+   function_group__allocators_1ga993ad539e24d8c803dd0252a87c2290a
+   function_group__memory__resources_1gadc88980300ea75f3a7740684fc8396da
+   function_group__memory__resources_1ga7210167540a069839ac6199cd91a3b6e
+   function_group__memory__resources_1ga9d4c718151c3a659ad61849a1587f0f9
+
+- :ref:`thrust\:\:mr\:\:get\_global\_resource <group__memory__resources_1ga2b829e47d6a68a87cb5e3c110383edc0>`
+- :ref:`thrust\:\:mr\:\:operator\!\= <group__allocators_1ga0855de8268820e2fa44f47ff31c98638>`
+- :ref:`thrust\:\:mr\:\:operator\!\= <group__memory__resources_1ga0bc87a510eced5d3238af53710410494>`
+- :ref:`thrust\:\:mr\:\:operator\=\= <group__allocators_1ga993ad539e24d8c803dd0252a87c2290a>`
+- :ref:`thrust\:\:mr\:\:operator\=\= <group__memory__resources_1gadc88980300ea75f3a7740684fc8396da>`
+- :ref:`thrust\:\:mr\:\:tls\_disjoint\_pool <group__memory__resources_1ga7210167540a069839ac6199cd91a3b6e>`
+- :ref:`thrust\:\:mr\:\:tls\_pool <group__memory__resources_1ga9d4c718151c3a659ad61849a1587f0f9>`
+
+Structs
+-------
+
+.. toctree::
+   :hidden:
+   :maxdepth: 1
+
+   structthrust_1_1mr_1_1disjoint__synchronized__pool__resource
+   structthrust_1_1mr_1_1pool__options
+   structthrust_1_1mr_1_1synchronized__pool__resource
+   structthrust_1_1mr_1_1validator
+   structthrust_1_1mr_1_1validator2
+   structthrust_1_1mr_1_1validator2_3_01T_00_01T_01_4
+
+- :ref:`thrust\:\:mr\:\:disjoint\_synchronized\_pool\_resource <structthrust_1_1mr_1_1disjoint__synchronized__pool__resource>`
+- :ref:`thrust\:\:mr\:\:pool\_options <structthrust_1_1mr_1_1pool__options>`
+- :ref:`thrust\:\:mr\:\:synchronized\_pool\_resource <structthrust_1_1mr_1_1synchronized__pool__resource>`
+- :ref:`thrust\:\:mr\:\:validator <structthrust_1_1mr_1_1validator>`
+- :ref:`thrust\:\:mr\:\:validator2 <structthrust_1_1mr_1_1validator2>`
+- :ref:`thrust\:\:mr\:\:validator2\< T\, T \> <structthrust_1_1mr_1_1validator2_3_01T_00_01T_01_4>`
+
+Typedefs
+--------
+
+.. toctree::
+   :hidden:
+   :maxdepth: 1
+
+   typedef_group__allocators_1gaa3254521722da4dc78bc3ad9d8619ec0
+
+- :ref:`thrust\:\:mr\:\:polymorphic\_allocator <group__allocators_1gaa3254521722da4dc78bc3ad9d8619ec0>`
+

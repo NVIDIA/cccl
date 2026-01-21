@@ -1,0 +1,6 @@
+thrust\:\:iterator\_pointer
+===========================
+
+Defined in :ref:`thrust\/iterator\/iterator\_traits.h <iterator__traits_8h>`
+
+.. doxygenstruct:: thrust::iterator_pointer

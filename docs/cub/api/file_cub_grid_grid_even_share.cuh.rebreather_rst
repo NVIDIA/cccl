@@ -1,0 +1,28 @@
+.. _`grid__even__share_8cuh`:
+
+cub\/grid\/grid\_even\_share.cuh
+================================
+
+In directory: :ref:`cub\/grid <dir_f2530eaff2fd0556614e1cfc33864b65>`
+
+Source file: :doc:`program_listing_file_cub_grid_grid_even_share.cuh`
+
+.. doxygenfile:: cub/grid/grid_even_share.cuh
+   :sections: briefdescription detaileddescription
+
+.. toctree::
+   :maxdepth: 1
+   :hidden:
+
+   Source file <program_listing_file_cub_grid_grid_even_share.cuh>
+
+Namespaces
+----------
+
+- :ref:`cub <namespacecub>`
+
+Structs
+-------
+
+- :ref:`cub\:\:GridEvenShare <structcub_1_1GridEvenShare>`
+

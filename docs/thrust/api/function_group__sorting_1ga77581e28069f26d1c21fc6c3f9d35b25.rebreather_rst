@@ -1,0 +1,6 @@
+thrust\:\:stable\_sort
+======================
+
+Defined in :ref:`thrust\/sort.h <sort_8h>`
+
+.. doxygenfunction:: thrust::stable_sort(RandomAccessIterator first, RandomAccessIterator last, StrictWeakOrdering comp)

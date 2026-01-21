@@ -1,0 +1,6 @@
+cuda\:\:experimental\:\:stf\:\:stream\_async\_op
+================================================
+
+Defined in :ref:`include\/cuda\/experimental\/\_\_stf\/stream\/internal\/event\_types.cuh <stream_2internal_2event__types_8cuh>`
+
+.. doxygenclass:: cuda::experimental::stf::stream_async_op

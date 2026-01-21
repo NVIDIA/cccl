@@ -1,0 +1,45 @@
+.. _`scalar__interface_8cuh`:
+
+include\/cuda\/experimental\/\_\_stf\/internal\/scalar\_interface.cuh
+=====================================================================
+
+In directory: :ref:`include\/cuda\/experimental\/\_\_stf\/internal <dir_9a0afe0e3b482b68b2edbe22051d0386>`
+
+Source file: :doc:`program_listing_file_include_cuda_experimental___stf_internal_scalar_interface.cuh`
+
+.. doxygenfile:: include/cuda/experimental/__stf/internal/scalar_interface.cuh
+   :sections: briefdescription detaileddescription
+
+.. toctree::
+   :maxdepth: 1
+   :hidden:
+
+   Source file <program_listing_file_include_cuda_experimental___stf_internal_scalar_interface.cuh>
+
+Classes
+-------
+
+- :ref:`cuda\:\:experimental\:\:stf\:\:scalar\_graph\_interface <classcuda_1_1experimental_1_1stf_1_1scalar__graph__interface>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:scalar\_stream\_interface <classcuda_1_1experimental_1_1stf_1_1scalar__stream__interface>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:shape\_of <classcuda_1_1experimental_1_1stf_1_1shape__of>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:shape\_of\< scalar\_view\< T \> \> <classcuda_1_1experimental_1_1stf_1_1shape__of_3_01scalar__view_3_01T_01_4_01_4>`
+
+Namespaces
+----------
+
+- :ref:`cuda <namespacecuda>`
+- :ref:`cuda\:\:experimental <namespacecuda_1_1experimental>`
+- :ref:`cuda\:\:experimental\:\:stf <namespacecuda_1_1experimental_1_1stf>`
+
+Structs
+-------
+
+- :ref:`cuda\:\:experimental\:\:stf\:\:graphed\_interface\_of <structcuda_1_1experimental_1_1stf_1_1graphed__interface__of>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:graphed\_interface\_of\< scalar\_view\< T \> \> <structcuda_1_1experimental_1_1stf_1_1graphed__interface__of_3_01scalar__view_3_01T_01_4_01_4>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:hash\< scalar\_view\< T \> \> <structcuda_1_1experimental_1_1stf_1_1hash_3_01scalar__view_3_01T_01_4_01_4>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:owning\_container\_of <structcuda_1_1experimental_1_1stf_1_1owning__container__of>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:owning\_container\_of\< scalar\_view\< T \> \> <structcuda_1_1experimental_1_1stf_1_1owning__container__of_3_01scalar__view_3_01T_01_4_01_4>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:scalar\_view <structcuda_1_1experimental_1_1stf_1_1scalar__view>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:streamed\_interface\_of <structcuda_1_1experimental_1_1stf_1_1streamed__interface__of>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:streamed\_interface\_of\< scalar\_view\< T \> \> <structcuda_1_1experimental_1_1stf_1_1streamed__interface__of_3_01scalar__view_3_01T_01_4_01_4>`
+

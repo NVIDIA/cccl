@@ -1,0 +1,6 @@
+thrust\:\:swap
+==============
+
+Defined in :ref:`thrust\/device\_reference.h <device__reference_8h>`
+
+.. doxygenfunction:: thrust::swap(device_reference< T > x, device_reference< T > y) noexcept(noexcept(x.swap(y)))

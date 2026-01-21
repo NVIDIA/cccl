@@ -1,0 +1,34 @@
+.. _`device__reference_8h`:
+
+thrust\/device\_reference.h
+===========================
+
+In directory: :ref:`thrust <dir_7807dea0fb0cf4ae34b71c9fa4b0a46c>`
+
+Source file: :doc:`program_listing_file_thrust_device_reference.h`
+
+.. doxygenfile:: thrust/device_reference.h
+   :sections: briefdescription detaileddescription
+
+.. toctree::
+   :maxdepth: 1
+   :hidden:
+
+   Source file <program_listing_file_thrust_device_reference.h>
+
+Classes
+-------
+
+- :ref:`thrust\:\:device\_reference <classthrust_1_1device__reference>`
+
+Functions
+---------
+
+- :ref:`thrust\:\:operator\<\< <group__memory__management_1ga37e81400f1c016baaaad65e5fda755f6>`
+- :ref:`thrust\:\:swap <group__memory__management_1ga85e62452603ffae3dc05c681841aefba>`
+
+Namespaces
+----------
+
+- :ref:`thrust <namespacethrust>`
+

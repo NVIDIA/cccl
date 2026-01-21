@@ -1,0 +1,6 @@
+cub\:\:StoreDirectBlockedVectorized
+===================================
+
+Defined in :ref:`cub\/block\/block\_store.cuh <block__store_8cuh>`
+
+.. doxygenfunction:: cub::StoreDirectBlockedVectorized(int linear_tid, T *block_ptr, T(&items)[ITEMS_PER_THREAD])

@@ -1,0 +1,43 @@
+:orphan:
+
+404
+===
+
+The page you're seeking could not be found. Here is a list of similar pages:
+
+.. raw:: html
+
+    <ul>
+      <div id="linkGen"></div>
+    </ul>
+    <script type="module">
+      import Fuse from 'https://cdn.jsdelivr.net/npm/fuse.js@7.0.0/dist/fuse.mjs'
+      var localUri = window.location.pathname;
+      var hostUrl = window.location.protocol + "//" + window.location.host
+      var pagelistUrl = hostUrl + "/cccl/pagelist.txt"
+
+      fetch(pagelistUrl)
+        .then((response) => response.text())
+        .then((text) => {
+          const pagelist = text.split(",")
+
+          const options = {
+            includeScore: true,
+            distance: 100,
+            threshold: 0.8,
+            ignoreLocation: true
+          }
+
+          // cccl/device_vector.html => 'cccl 'device 'vector
+          const query = localUri.replace(/\/|-|_/gi," '").replace(".html","")
+          console.log("query:" + query)
+          const fuse = new Fuse(pagelist, options)
+          const result = fuse.search(query, {limit: 10})
+
+          const listItem = '<li><a href=\"{2}{0}\">{0}</a> - Score: {1}</li>'.replace(/\{2\}/g, hostUrl + "/")
+          document.getElementById('linkGen').innerHTML = ""
+          result.forEach(element => {
+            document.getElementById('linkGen').innerHTML += listItem.replace(/\{0\}/g, element.item).replace(/\{1\}/g, element.score.toFixed(2))
+          });
+        })
+    </script>

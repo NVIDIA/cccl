@@ -1,0 +1,56 @@
+.. _`places_8cuh`:
+
+include\/cuda\/experimental\/\_\_stf\/places\/places.cuh
+========================================================
+
+In directory: :ref:`include\/cuda\/experimental\/\_\_stf\/places <dir_0d707c7b2e641cd4a4b5d76502f17fc3>`
+
+Source file: :doc:`program_listing_file_include_cuda_experimental___stf_places_places.cuh`
+
+.. doxygenfile:: include/cuda/experimental/__stf/places/places.cuh
+   :sections: briefdescription detaileddescription
+
+.. toctree::
+   :maxdepth: 1
+   :hidden:
+
+   Source file <program_listing_file_include_cuda_experimental___stf_places_places.cuh>
+
+Classes
+-------
+
+- :ref:`cuda\:\:experimental\:\:stf\:\:data\_place <classcuda_1_1experimental_1_1stf_1_1data__place>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:exec\_place <classcuda_1_1experimental_1_1stf_1_1exec__place>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:exec\_place\_grid <classcuda_1_1experimental_1_1stf_1_1exec__place__grid>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:exec\_place\_host <classcuda_1_1experimental_1_1stf_1_1exec__place__host>`
+
+Enums
+-----
+
+- :ref:`cuda\:\:experimental\:\:stf\:\:instance\_id\_t <places_8cuh_1a0aecbcdcde59511ead903c663bd205da>`
+
+Functions
+---------
+
+- :ref:`cuda\:\:experimental\:\:stf\:\:make\_grid <places_8cuh_1a742f1c47d0b76725772e86a449d8d604>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:make\_grid <places_8cuh_1aab02b119ed6524b71ad2ff8e9df2a965>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:partition\_cyclic <places_8cuh_1a0f9eb25fdee0daf313384127f4b64d0d>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:partition\_tile <places_8cuh_1a46416010a94c64aae6dd02fb8ae2af7d>`
+
+Namespaces
+----------
+
+- :ref:`cuda <namespacecuda>`
+- :ref:`cuda\:\:experimental <namespacecuda_1_1experimental>`
+- :ref:`cuda\:\:experimental\:\:stf <namespacecuda_1_1experimental_1_1stf>`
+
+Structs
+-------
+
+- :ref:`cuda\:\:experimental\:\:stf\:\:hash\< data\_place \> <structcuda_1_1experimental_1_1stf_1_1hash_3_01data__place_01_4>`
+
+Typedefs
+--------
+
+- :ref:`cuda\:\:experimental\:\:stf\:\:get\_executor\_func\_t <places_8cuh_1aa088b12cd756808bfba193e21b88e95c>`
+

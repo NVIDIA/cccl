@@ -1,0 +1,30 @@
+.. _`uncached__allocator_8cuh`:
+
+include\/cuda\/experimental\/\_\_stf\/allocators\/uncached\_allocator.cuh
+=========================================================================
+
+In directory: :ref:`include\/cuda\/experimental\/\_\_stf\/allocators <dir_6ef724ba58db6b2f1fb9755593e6e203>`
+
+Source file: :doc:`program_listing_file_include_cuda_experimental___stf_allocators_uncached_allocator.cuh`
+
+.. doxygenfile:: include/cuda/experimental/__stf/allocators/uncached_allocator.cuh
+   :sections: briefdescription detaileddescription
+
+.. toctree::
+   :maxdepth: 1
+   :hidden:
+
+   Source file <program_listing_file_include_cuda_experimental___stf_allocators_uncached_allocator.cuh>
+
+Classes
+-------
+
+- :ref:`cuda\:\:experimental\:\:stf\:\:uncached\_block\_allocator <classcuda_1_1experimental_1_1stf_1_1uncached__block__allocator>`
+
+Namespaces
+----------
+
+- :ref:`cuda <namespacecuda>`
+- :ref:`cuda\:\:experimental <namespacecuda_1_1experimental>`
+- :ref:`cuda\:\:experimental\:\:stf <namespacecuda_1_1experimental_1_1stf>`
+

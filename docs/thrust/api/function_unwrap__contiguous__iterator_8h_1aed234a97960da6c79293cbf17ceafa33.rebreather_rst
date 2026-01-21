@@ -1,0 +1,6 @@
+thrust\:\:unwrap\_contiguous\_iterator
+======================================
+
+Defined in :ref:`thrust\/type\_traits\/unwrap\_contiguous\_iterator.h <unwrap__contiguous__iterator_8h>`
+
+.. doxygenfunction:: thrust::unwrap_contiguous_iterator(ContiguousIterator it) -> unwrap_contiguous_iterator_t< ContiguousIterator >

@@ -1,0 +1,6 @@
+cuda\:\:experimental\:\:stf\:\:uncached\_block\_allocator
+=========================================================
+
+Defined in :ref:`include\/cuda\/experimental\/\_\_stf\/allocators\/uncached\_allocator.cuh <uncached__allocator_8cuh>`
+
+.. doxygenclass:: cuda::experimental::stf::uncached_block_allocator

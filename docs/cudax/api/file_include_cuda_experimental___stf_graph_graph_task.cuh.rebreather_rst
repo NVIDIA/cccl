@@ -1,0 +1,31 @@
+.. _`graph__task_8cuh`:
+
+include\/cuda\/experimental\/\_\_stf\/graph\/graph\_task.cuh
+============================================================
+
+In directory: :ref:`include\/cuda\/experimental\/\_\_stf\/graph <dir_758711e0f4483d713f3bedf4c406d5a9>`
+
+Source file: :doc:`program_listing_file_include_cuda_experimental___stf_graph_graph_task.cuh`
+
+.. doxygenfile:: include/cuda/experimental/__stf/graph/graph_task.cuh
+   :sections: briefdescription detaileddescription
+
+.. toctree::
+   :maxdepth: 1
+   :hidden:
+
+   Source file <program_listing_file_include_cuda_experimental___stf_graph_graph_task.cuh>
+
+Classes
+-------
+
+- :ref:`cuda\:\:experimental\:\:stf\:\:graph\_task <classcuda_1_1experimental_1_1stf_1_1graph__task>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:graph\_task\<\> <classcuda_1_1experimental_1_1stf_1_1graph__task_3_4>`
+
+Namespaces
+----------
+
+- :ref:`cuda <namespacecuda>`
+- :ref:`cuda\:\:experimental <namespacecuda_1_1experimental>`
+- :ref:`cuda\:\:experimental\:\:stf <namespacecuda_1_1experimental_1_1stf>`
+

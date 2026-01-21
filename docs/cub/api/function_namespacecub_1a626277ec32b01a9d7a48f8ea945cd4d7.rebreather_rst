@@ -1,0 +1,6 @@
+cub\:\:ShuffleUp
+================
+
+Defined in :ref:`cub\/util\_ptx.cuh <util__ptx_8cuh>`
+
+.. doxygenfunction:: cub::ShuffleUp(T input, int src_offset, int first_thread, unsigned int member_mask)

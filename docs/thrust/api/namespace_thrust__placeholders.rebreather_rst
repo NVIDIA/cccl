@@ -1,0 +1,35 @@
+thrust\:\:placeholders
+======================
+
+.. doxygennamespace:: thrust::placeholders
+   :desc-only:
+
+Variables
+---------
+
+.. toctree::
+   :hidden:
+   :maxdepth: 1
+
+   variable_namespacethrust_1_1placeholders_1a51a401f02fea91efe9127a8e18a57336
+   variable_namespacethrust_1_1placeholders_1acc436709d1bf4b1141468e2956713878
+   variable_namespacethrust_1_1placeholders_1a7d2829ba7f75828382ef64ef2e2878eb
+   variable_namespacethrust_1_1placeholders_1aaa143d5425db32202de6fbecc8d40a2a
+   variable_namespacethrust_1_1placeholders_1a6a5f96b2bbbdea62838c96e23bbc110a
+   variable_namespacethrust_1_1placeholders_1a97aa8beefecc8df2edf80c4e04c55be7
+   variable_namespacethrust_1_1placeholders_1ab2154c3ddb439b75b82cda903e68345e
+   variable_namespacethrust_1_1placeholders_1a2fbdf2c557d89f0ad0430b656453fa47
+   variable_namespacethrust_1_1placeholders_1a2aa8f1149cd70c427f955fe289a1e3fa
+   variable_namespacethrust_1_1placeholders_1aa9a3ed3450fdd4612ec64c1b1b75e780
+
+- :ref:`thrust\:\:placeholders\:\:\_1 <namespacethrust_1_1placeholders_1a51a401f02fea91efe9127a8e18a57336>`
+- :ref:`thrust\:\:placeholders\:\:\_10 <namespacethrust_1_1placeholders_1acc436709d1bf4b1141468e2956713878>`
+- :ref:`thrust\:\:placeholders\:\:\_2 <namespacethrust_1_1placeholders_1a7d2829ba7f75828382ef64ef2e2878eb>`
+- :ref:`thrust\:\:placeholders\:\:\_3 <namespacethrust_1_1placeholders_1aaa143d5425db32202de6fbecc8d40a2a>`
+- :ref:`thrust\:\:placeholders\:\:\_4 <namespacethrust_1_1placeholders_1a6a5f96b2bbbdea62838c96e23bbc110a>`
+- :ref:`thrust\:\:placeholders\:\:\_5 <namespacethrust_1_1placeholders_1a97aa8beefecc8df2edf80c4e04c55be7>`
+- :ref:`thrust\:\:placeholders\:\:\_6 <namespacethrust_1_1placeholders_1ab2154c3ddb439b75b82cda903e68345e>`
+- :ref:`thrust\:\:placeholders\:\:\_7 <namespacethrust_1_1placeholders_1a2fbdf2c557d89f0ad0430b656453fa47>`
+- :ref:`thrust\:\:placeholders\:\:\_8 <namespacethrust_1_1placeholders_1a2aa8f1149cd70c427f955fe289a1e3fa>`
+- :ref:`thrust\:\:placeholders\:\:\_9 <namespacethrust_1_1placeholders_1aa9a3ed3450fdd4612ec64c1b1b75e780>`
+

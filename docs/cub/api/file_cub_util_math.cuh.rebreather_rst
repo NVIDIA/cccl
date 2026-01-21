@@ -1,0 +1,31 @@
+.. _`util__math_8cuh`:
+
+cub\/util\_math.cuh
+===================
+
+In directory: :ref:`cub <dir_d583f216f1aafe19404e836b0c097ad2>`
+
+Source file: :doc:`program_listing_file_cub_util_math.cuh`
+
+.. doxygenfile:: cub/util_math.cuh
+   :sections: briefdescription detaileddescription
+
+.. toctree::
+   :maxdepth: 1
+   :hidden:
+
+   Source file <program_listing_file_cub_util_math.cuh>
+
+Functions
+---------
+
+- :ref:`cub\:\:MidPoint <namespacecub_1a19c9696ebd3b66c361dd9abcafae2f3a>`
+- :ref:`cub\:\:Nominal4BItemsToItems <namespacecub_1a92146627fb9025cf631ce6894da54068>`
+- :ref:`cub\:\:Nominal4BItemsToItemsCombined <namespacecub_1a91f7ed12997a1c479e6c40039816e94c>`
+- :ref:`cub\:\:Nominal8BItemsToItems <namespacecub_1a0152e6fc2c5fb16bcc72078fc97dc4c2>`
+
+Namespaces
+----------
+
+- :ref:`cub <namespacecub>`
+

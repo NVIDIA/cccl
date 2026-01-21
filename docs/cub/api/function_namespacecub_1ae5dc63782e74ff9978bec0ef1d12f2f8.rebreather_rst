@@ -1,0 +1,6 @@
+cub\:\:MergePathSearch
+======================
+
+Defined in :ref:`cub\/thread\/thread\_search.cuh <thread__search_8cuh>`
+
+.. doxygenfunction:: cub::MergePathSearch(OffsetT diagonal, AIteratorT a, BIteratorT b, OffsetT a_len, OffsetT b_len, CoordinateT &path_coordinate)

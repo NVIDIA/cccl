@@ -1,0 +1,28 @@
+.. _`device__free_8h`:
+
+thrust\/device\_free.h
+======================
+
+In directory: :ref:`thrust <dir_7807dea0fb0cf4ae34b71c9fa4b0a46c>`
+
+Source file: :doc:`program_listing_file_thrust_device_free.h`
+
+.. doxygenfile:: thrust/device_free.h
+   :sections: briefdescription detaileddescription
+
+.. toctree::
+   :maxdepth: 1
+   :hidden:
+
+   Source file <program_listing_file_thrust_device_free.h>
+
+Functions
+---------
+
+- :ref:`thrust\:\:device\_free <group__memory__management_1ga1a350740a6ade432f3781096df91f162>`
+
+Namespaces
+----------
+
+- :ref:`thrust <namespacethrust>`
+

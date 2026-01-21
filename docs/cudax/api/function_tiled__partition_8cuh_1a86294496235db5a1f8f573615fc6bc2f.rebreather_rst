@@ -1,0 +1,6 @@
+cuda\:\:experimental\:\:stf\:\:tiled
+====================================
+
+Defined in :ref:`include\/cuda\/experimental\/\_\_stf\/places\/tiled\_partition.cuh <tiled__partition_8cuh>`
+
+.. doxygenfunction:: cuda::experimental::stf::tiled(const mdspan_shape_t s, size_t part_id, size_t nparts)

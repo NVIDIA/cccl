@@ -1,0 +1,6 @@
+thrust\:\:iterator\_adaptor
+===========================
+
+Defined in :ref:`thrust\/iterator\/iterator\_adaptor.h <iterator__adaptor_8h>`
+
+.. doxygenclass:: thrust::iterator_adaptor

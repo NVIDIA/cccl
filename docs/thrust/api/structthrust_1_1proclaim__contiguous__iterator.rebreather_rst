@@ -1,0 +1,6 @@
+thrust\:\:proclaim\_contiguous\_iterator
+========================================
+
+Defined in :ref:`thrust\/type\_traits\/is\_contiguous\_iterator.h <is__contiguous__iterator_8h>`
+
+.. doxygenstruct:: thrust::proclaim_contiguous_iterator

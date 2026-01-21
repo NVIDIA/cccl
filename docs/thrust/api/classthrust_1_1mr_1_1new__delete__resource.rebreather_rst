@@ -1,0 +1,6 @@
+thrust\:\:mr\:\:new\_delete\_resource
+=====================================
+
+Defined in :ref:`thrust\/mr\/new.h <new_8h>`
+
+.. doxygenclass:: thrust::mr::new_delete_resource

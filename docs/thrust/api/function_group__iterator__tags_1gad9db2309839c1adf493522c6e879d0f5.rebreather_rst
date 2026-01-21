@@ -1,0 +1,6 @@
+thrust\:\:reinterpret\_tag
+==========================
+
+Defined in :ref:`thrust\/iterator\/retag.h <retag_8h>`
+
+.. doxygenfunction:: thrust::reinterpret_tag(Iterator iter)

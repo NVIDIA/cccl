@@ -1,0 +1,6 @@
+THRUST\_VERSION
+===============
+
+Defined in :ref:`thrust\/version.h <version_8h>`
+
+.. doxygendefine:: THRUST_VERSION

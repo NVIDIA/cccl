@@ -1,0 +1,6 @@
+thrust\:\:constant\_iterator
+============================
+
+Defined in :ref:`thrust\/iterator\/constant\_iterator.h <constant__iterator_8h>`
+
+.. doxygenfunction:: thrust::constant_iterator(ValueT) -> constant_iterator< ValueT >

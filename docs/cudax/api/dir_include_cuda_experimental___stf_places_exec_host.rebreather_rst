@@ -1,0 +1,16 @@
+.. _`dir_469814e8ed48e9a31eb954a5dcca2a00`:
+
+include\/cuda\/experimental\/\_\_stf\/places\/exec\/host
+========================================================
+
+Files
+-----
+
+.. toctree::
+   :hidden:
+   :maxdepth: 1
+
+   file_include_cuda_experimental___stf_places_exec_host_callback_queues.cuh
+
+- :ref:`include\/cuda\/experimental\/\_\_stf\/places\/exec\/host\/callback\_queues.cuh <callback__queues_8cuh>`
+

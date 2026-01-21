@@ -1,0 +1,6 @@
+cuda\:\:experimental\:\:stf\:\:exec\_place\_green\_ctx
+======================================================
+
+Defined in :ref:`include\/cuda\/experimental\/\_\_stf\/places\/exec\/green\_context.cuh <green__context_8cuh>`
+
+.. doxygenclass:: cuda::experimental::stf::exec_place_green_ctx

@@ -1,0 +1,6 @@
+thrust\:\:iterator\_traversal\<\:\:cuda\:\:transform\_output\_iterator\< Iter\, Fn \> \>
+========================================================================================
+
+Defined in :ref:`thrust\/iterator\/iterator\_traits.h <iterator__traits_8h>`
+
+.. doxygenstruct:: thrust::iterator_traversal<::cuda::transform_output_iterator< Iter, Fn > >

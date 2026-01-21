@@ -1,0 +1,6 @@
+thrust\:\:is\_partitioned
+=========================
+
+Defined in :ref:`thrust\/partition.h <partition_8h>`
+
+.. doxygenfunction:: thrust::is_partitioned(const thrust::detail::execution_policy_base< DerivedPolicy > &exec, InputIterator first, InputIterator last, Predicate pred)

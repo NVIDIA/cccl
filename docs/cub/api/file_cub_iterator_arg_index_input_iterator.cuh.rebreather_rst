@@ -1,0 +1,28 @@
+.. _`arg__index__input__iterator_8cuh`:
+
+cub\/iterator\/arg\_index\_input\_iterator.cuh
+==============================================
+
+In directory: :ref:`cub\/iterator <dir_80932b4cec52750ff92b1a1912314cf5>`
+
+Source file: :doc:`program_listing_file_cub_iterator_arg_index_input_iterator.cuh`
+
+.. doxygenfile:: cub/iterator/arg_index_input_iterator.cuh
+   :sections: briefdescription detaileddescription
+
+.. toctree::
+   :maxdepth: 1
+   :hidden:
+
+   Source file <program_listing_file_cub_iterator_arg_index_input_iterator.cuh>
+
+Classes
+-------
+
+- :ref:`cub\:\:ArgIndexInputIterator <classcub_1_1ArgIndexInputIterator>`
+
+Namespaces
+----------
+
+- :ref:`cub <namespacecub>`
+

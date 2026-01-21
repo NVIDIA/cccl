@@ -1,0 +1,6 @@
+cuda\:\:experimental\:\:graph\_node\_type
+=========================================
+
+Defined in :ref:`include\/cuda\/experimental\/\_\_graph\/graph\_node\_type.cuh <graph__node__type_8cuh>`
+
+.. doxygenenum:: cuda::experimental::graph_node_type

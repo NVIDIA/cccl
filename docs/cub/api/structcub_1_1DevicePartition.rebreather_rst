@@ -1,0 +1,6 @@
+cub\:\:DevicePartition
+======================
+
+Defined in :ref:`cub\/device\/device\_partition.cuh <device__partition_8cuh>`
+
+.. doxygenstruct:: cub::DevicePartition

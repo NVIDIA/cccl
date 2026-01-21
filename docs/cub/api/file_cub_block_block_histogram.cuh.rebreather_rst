@@ -1,0 +1,33 @@
+.. _`block__histogram_8cuh`:
+
+cub\/block\/block\_histogram.cuh
+================================
+
+In directory: :ref:`cub\/block <dir_011e1c944d88f71be72e1e24a5fda7cf>`
+
+Source file: :doc:`program_listing_file_cub_block_block_histogram.cuh`
+
+.. doxygenfile:: cub/block/block_histogram.cuh
+   :sections: briefdescription detaileddescription
+
+.. toctree::
+   :maxdepth: 1
+   :hidden:
+
+   Source file <program_listing_file_cub_block_block_histogram.cuh>
+
+Classes
+-------
+
+- :ref:`cub\:\:BlockHistogram <classcub_1_1BlockHistogram>`
+
+Enums
+-----
+
+- :ref:`cub\:\:BlockHistogramAlgorithm <namespacecub_1a845ca81ef9b346ef7429a35d4fdc80d2>`
+
+Namespaces
+----------
+
+- :ref:`cub <namespacecub>`
+

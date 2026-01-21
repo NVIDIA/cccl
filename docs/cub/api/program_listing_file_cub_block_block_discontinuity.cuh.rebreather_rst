@@ -1,0 +1,416 @@
+cub\/block\/block\_discontinuity.cuh
+====================================
+
+File members: :ref:`cub\/block\/block\_discontinuity.cuh <block__discontinuity_8cuh>`
+
+.. code-block:: c++
+
+   /******************************************************************************
+    * Copyright (c) 2011, Duane Merrill.  All rights reserved.
+    * Copyright (c) 2011-2018, NVIDIA CORPORATION.  All rights reserved.
+    *
+    * Redistribution and use in source and binary forms, with or without
+    * modification, are permitted provided that the following conditions are met:
+    *     * Redistributions of source code must retain the above copyright
+    *       notice, this list of conditions and the following disclaimer.
+    *     * Redistributions in binary form must reproduce the above copyright
+    *       notice, this list of conditions and the following disclaimer in the
+    *       documentation and/or other materials provided with the distribution.
+    *     * Neither the name of the NVIDIA CORPORATION nor the
+    *       names of its contributors may be used to endorse or promote products
+    *       derived from this software without specific prior written permission.
+    *
+    * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+    * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+    * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+    * DISCLAIMED. IN NO EVENT SHALL NVIDIA CORPORATION BE LIABLE FOR ANY
+    * DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+    * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+    * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
+    * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+    * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+    * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+    *
+    ******************************************************************************/
+
+   #pragma once
+
+   #include <cub/config.cuh>
+
+   #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+   #  pragma GCC system_header
+   #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+   #  pragma clang system_header
+   #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+   #  pragma system_header
+   #endif // no system header
+
+   #include <cub/util_ptx.cuh>
+   #include <cub/util_type.cuh>
+
+   CUB_NAMESPACE_BEGIN
+
+   template <typename T, int BLOCK_DIM_X, int BLOCK_DIM_Y = 1, int BLOCK_DIM_Z = 1>
+   class BlockDiscontinuity
+   {
+   private:
+     enum
+     {
+       BLOCK_THREADS = BLOCK_DIM_X * BLOCK_DIM_Y * BLOCK_DIM_Z,
+     };
+
+     struct _TempStorage
+     {
+       T first_items[BLOCK_THREADS];
+       T last_items[BLOCK_THREADS];
+     };
+
+     _CCCL_DEVICE _CCCL_FORCEINLINE _TempStorage& PrivateStorage()
+     {
+       __shared__ _TempStorage private_storage;
+       return private_storage;
+     }
+
+     template <typename FlagOp, bool HAS_PARAM = BinaryOpHasIdxParam<T, FlagOp>::value>
+     struct ApplyOp
+     {
+       // Apply flag operator
+       static _CCCL_DEVICE _CCCL_FORCEINLINE bool FlagT(FlagOp flag_op, const T& a, const T& b, int idx)
+       {
+         return flag_op(a, b, idx);
+       }
+     };
+
+     template <typename FlagOp>
+     struct ApplyOp<FlagOp, false>
+     {
+       // Apply flag operator
+       static _CCCL_DEVICE _CCCL_FORCEINLINE bool FlagT(FlagOp flag_op, const T& a, const T& b, int /*idx*/)
+       {
+         return flag_op(a, b);
+       }
+     };
+
+     struct Iterate
+     {
+       template <int ITEMS_PER_THREAD, typename FlagT, typename FlagOp>
+       static _CCCL_DEVICE _CCCL_FORCEINLINE void FlagHeads(
+         int linear_tid,
+         FlagT (&flags)[ITEMS_PER_THREAD],
+         T (&input)[ITEMS_PER_THREAD],
+         T (&preds)[ITEMS_PER_THREAD],
+         FlagOp flag_op)
+       {
+         _CCCL_PRAGMA_UNROLL_FULL()
+         for (int i = 1; i < ITEMS_PER_THREAD; ++i)
+         {
+           preds[i] = input[i - 1];
+           flags[i] = ApplyOp<FlagOp>::FlagT(flag_op, preds[i], input[i], (linear_tid * ITEMS_PER_THREAD) + i);
+         }
+       }
+
+       template <int ITEMS_PER_THREAD, typename FlagT, typename FlagOp>
+       static _CCCL_DEVICE _CCCL_FORCEINLINE void
+       FlagTails(int linear_tid, FlagT (&flags)[ITEMS_PER_THREAD], T (&input)[ITEMS_PER_THREAD], FlagOp flag_op)
+       {
+         _CCCL_PRAGMA_UNROLL_FULL()
+         for (int i = 0; i < ITEMS_PER_THREAD - 1; ++i)
+         {
+           flags[i] = ApplyOp<FlagOp>::FlagT(flag_op, input[i], input[i + 1], (linear_tid * ITEMS_PER_THREAD) + i + 1);
+         }
+       }
+     };
+
+     /******************************************************************************
+      * Thread fields
+      ******************************************************************************/
+
+     _TempStorage& temp_storage;
+
+     unsigned int linear_tid;
+
+   public:
+     struct TempStorage : Uninitialized<_TempStorage>
+     {};
+
+     _CCCL_DEVICE _CCCL_FORCEINLINE BlockDiscontinuity()
+         : temp_storage(PrivateStorage())
+         , linear_tid(RowMajorTid(BLOCK_DIM_X, BLOCK_DIM_Y, BLOCK_DIM_Z))
+     {}
+
+     _CCCL_DEVICE _CCCL_FORCEINLINE BlockDiscontinuity(TempStorage& temp_storage)
+         : temp_storage(temp_storage.Alias())
+         , linear_tid(RowMajorTid(BLOCK_DIM_X, BLOCK_DIM_Y, BLOCK_DIM_Z))
+     {}
+
+   #ifndef _CCCL_DOXYGEN_INVOKED // Do not document
+
+     template <int ITEMS_PER_THREAD, typename FlagT, typename FlagOp>
+     _CCCL_DEVICE _CCCL_FORCEINLINE void FlagHeads(
+       FlagT (&head_flags)[ITEMS_PER_THREAD], T (&input)[ITEMS_PER_THREAD], T (&preds)[ITEMS_PER_THREAD], FlagOp flag_op)
+     {
+       // Share last item
+       temp_storage.last_items[linear_tid] = input[ITEMS_PER_THREAD - 1];
+
+       __syncthreads();
+
+       if (linear_tid == 0)
+       {
+         // Set flag for first thread-item (preds[0] is undefined)
+         head_flags[0] = 1;
+       }
+       else
+       {
+         preds[0]      = temp_storage.last_items[linear_tid - 1];
+         head_flags[0] = ApplyOp<FlagOp>::FlagT(flag_op, preds[0], input[0], linear_tid * ITEMS_PER_THREAD);
+       }
+
+       // Set head_flags for remaining items
+       Iterate::FlagHeads(linear_tid, head_flags, input, preds, flag_op);
+     }
+
+     template <int ITEMS_PER_THREAD, typename FlagT, typename FlagOp>
+     _CCCL_DEVICE _CCCL_FORCEINLINE void FlagHeads(
+       FlagT (&head_flags)[ITEMS_PER_THREAD],
+       T (&input)[ITEMS_PER_THREAD],
+       T (&preds)[ITEMS_PER_THREAD],
+       FlagOp flag_op,
+       T tile_predecessor_item)
+     {
+       // Share last item
+       temp_storage.last_items[linear_tid] = input[ITEMS_PER_THREAD - 1];
+
+       __syncthreads();
+
+       // Set flag for first thread-item
+       preds[0] = (linear_tid == 0) ? tile_predecessor_item : // First thread
+                    temp_storage.last_items[linear_tid - 1];
+
+       head_flags[0] = ApplyOp<FlagOp>::FlagT(flag_op, preds[0], input[0], linear_tid * ITEMS_PER_THREAD);
+
+       // Set head_flags for remaining items
+       Iterate::FlagHeads(linear_tid, head_flags, input, preds, flag_op);
+     }
+
+   #endif // _CCCL_DOXYGEN_INVOKED
+
+     template <int ITEMS_PER_THREAD, typename FlagT, typename FlagOp>
+     _CCCL_DEVICE _CCCL_FORCEINLINE void
+     FlagHeads(FlagT (&head_flags)[ITEMS_PER_THREAD], T (&input)[ITEMS_PER_THREAD], FlagOp flag_op)
+     {
+       T preds[ITEMS_PER_THREAD];
+       FlagHeads(head_flags, input, preds, flag_op);
+     }
+
+     template <int ITEMS_PER_THREAD, typename FlagT, typename FlagOp>
+     _CCCL_DEVICE _CCCL_FORCEINLINE void FlagHeads(
+       FlagT (&head_flags)[ITEMS_PER_THREAD], T (&input)[ITEMS_PER_THREAD], FlagOp flag_op, T tile_predecessor_item)
+     {
+       T preds[ITEMS_PER_THREAD];
+       FlagHeads(head_flags, input, preds, flag_op, tile_predecessor_item);
+     }
+
+     template <int ITEMS_PER_THREAD, typename FlagT, typename FlagOp>
+     _CCCL_DEVICE _CCCL_FORCEINLINE void
+     FlagTails(FlagT (&tail_flags)[ITEMS_PER_THREAD], T (&input)[ITEMS_PER_THREAD], FlagOp flag_op)
+     {
+       // Share first item
+       temp_storage.first_items[linear_tid] = input[0];
+
+       __syncthreads();
+
+       // Set flag for last thread-item
+       tail_flags[ITEMS_PER_THREAD - 1] =
+         (linear_tid == BLOCK_THREADS - 1) ? 1 : // Last thread
+           ApplyOp<FlagOp>::FlagT(
+             flag_op,
+             input[ITEMS_PER_THREAD - 1],
+             temp_storage.first_items[linear_tid + 1],
+             (linear_tid * ITEMS_PER_THREAD) + ITEMS_PER_THREAD);
+
+       // Set tail_flags for remaining items
+       Iterate::FlagTails(linear_tid, tail_flags, input, flag_op);
+     }
+
+     template <int ITEMS_PER_THREAD, typename FlagT, typename FlagOp>
+     _CCCL_DEVICE _CCCL_FORCEINLINE void
+     FlagTails(FlagT (&tail_flags)[ITEMS_PER_THREAD], T (&input)[ITEMS_PER_THREAD], FlagOp flag_op, T tile_successor_item)
+     {
+       // Share first item
+       temp_storage.first_items[linear_tid] = input[0];
+
+       __syncthreads();
+
+       // Set flag for last thread-item
+       T successor_item = (linear_tid == BLOCK_THREADS - 1) ? tile_successor_item : // Last thread
+                            temp_storage.first_items[linear_tid + 1];
+
+       tail_flags[ITEMS_PER_THREAD - 1] = ApplyOp<FlagOp>::FlagT(
+         flag_op, input[ITEMS_PER_THREAD - 1], successor_item, (linear_tid * ITEMS_PER_THREAD) + ITEMS_PER_THREAD);
+
+       // Set tail_flags for remaining items
+       Iterate::FlagTails(linear_tid, tail_flags, input, flag_op);
+     }
+
+     template <int ITEMS_PER_THREAD, typename FlagT, typename FlagOp>
+     _CCCL_DEVICE _CCCL_FORCEINLINE void FlagHeadsAndTails(
+       FlagT (&head_flags)[ITEMS_PER_THREAD],
+       FlagT (&tail_flags)[ITEMS_PER_THREAD],
+       T (&input)[ITEMS_PER_THREAD],
+       FlagOp flag_op)
+     {
+       // Share first and last items
+       temp_storage.first_items[linear_tid] = input[0];
+       temp_storage.last_items[linear_tid]  = input[ITEMS_PER_THREAD - 1];
+
+       __syncthreads();
+
+       T preds[ITEMS_PER_THREAD];
+
+       // Set flag for first thread-item
+       if (linear_tid == 0)
+       {
+         head_flags[0] = 1;
+       }
+       else
+       {
+         preds[0]      = temp_storage.last_items[linear_tid - 1];
+         head_flags[0] = ApplyOp<FlagOp>::FlagT(flag_op, preds[0], input[0], linear_tid * ITEMS_PER_THREAD);
+       }
+
+       // Set flag for last thread-item
+       tail_flags[ITEMS_PER_THREAD - 1] =
+         (linear_tid == BLOCK_THREADS - 1) ? 1 : // Last thread
+           ApplyOp<FlagOp>::FlagT(
+             flag_op,
+             input[ITEMS_PER_THREAD - 1],
+             temp_storage.first_items[linear_tid + 1],
+             (linear_tid * ITEMS_PER_THREAD) + ITEMS_PER_THREAD);
+
+       // Set head_flags for remaining items
+       Iterate::FlagHeads(linear_tid, head_flags, input, preds, flag_op);
+
+       // Set tail_flags for remaining items
+       Iterate::FlagTails(linear_tid, tail_flags, input, flag_op);
+     }
+
+     template <int ITEMS_PER_THREAD, typename FlagT, typename FlagOp>
+     _CCCL_DEVICE _CCCL_FORCEINLINE void FlagHeadsAndTails(
+       FlagT (&head_flags)[ITEMS_PER_THREAD],
+       FlagT (&tail_flags)[ITEMS_PER_THREAD],
+       T tile_successor_item,
+       T (&input)[ITEMS_PER_THREAD],
+       FlagOp flag_op)
+     {
+       // Share first and last items
+       temp_storage.first_items[linear_tid] = input[0];
+       temp_storage.last_items[linear_tid]  = input[ITEMS_PER_THREAD - 1];
+
+       __syncthreads();
+
+       T preds[ITEMS_PER_THREAD];
+
+       // Set flag for first thread-item
+       if (linear_tid == 0)
+       {
+         head_flags[0] = 1;
+       }
+       else
+       {
+         preds[0]      = temp_storage.last_items[linear_tid - 1];
+         head_flags[0] = ApplyOp<FlagOp>::FlagT(flag_op, preds[0], input[0], linear_tid * ITEMS_PER_THREAD);
+       }
+
+       // Set flag for last thread-item
+       T successor_item = (linear_tid == BLOCK_THREADS - 1) ? tile_successor_item : // Last thread
+                            temp_storage.first_items[linear_tid + 1];
+
+       tail_flags[ITEMS_PER_THREAD - 1] = ApplyOp<FlagOp>::FlagT(
+         flag_op, input[ITEMS_PER_THREAD - 1], successor_item, (linear_tid * ITEMS_PER_THREAD) + ITEMS_PER_THREAD);
+
+       // Set head_flags for remaining items
+       Iterate::FlagHeads(linear_tid, head_flags, input, preds, flag_op);
+
+       // Set tail_flags for remaining items
+       Iterate::FlagTails(linear_tid, tail_flags, input, flag_op);
+     }
+
+     template <int ITEMS_PER_THREAD, typename FlagT, typename FlagOp>
+     _CCCL_DEVICE _CCCL_FORCEINLINE void FlagHeadsAndTails(
+       FlagT (&head_flags)[ITEMS_PER_THREAD],
+       T tile_predecessor_item,
+       FlagT (&tail_flags)[ITEMS_PER_THREAD],
+       T (&input)[ITEMS_PER_THREAD],
+       FlagOp flag_op)
+     {
+       // Share first and last items
+       temp_storage.first_items[linear_tid] = input[0];
+       temp_storage.last_items[linear_tid]  = input[ITEMS_PER_THREAD - 1];
+
+       __syncthreads();
+
+       T preds[ITEMS_PER_THREAD];
+
+       // Set flag for first thread-item
+       preds[0] = (linear_tid == 0) ? tile_predecessor_item : // First thread
+                    temp_storage.last_items[linear_tid - 1];
+
+       head_flags[0] = ApplyOp<FlagOp>::FlagT(flag_op, preds[0], input[0], linear_tid * ITEMS_PER_THREAD);
+
+       // Set flag for last thread-item
+       tail_flags[ITEMS_PER_THREAD - 1] =
+         (linear_tid == BLOCK_THREADS - 1) ? 1 : // Last thread
+           ApplyOp<FlagOp>::FlagT(
+             flag_op,
+             input[ITEMS_PER_THREAD - 1],
+             temp_storage.first_items[linear_tid + 1],
+             (linear_tid * ITEMS_PER_THREAD) + ITEMS_PER_THREAD);
+
+       // Set head_flags for remaining items
+       Iterate::FlagHeads(linear_tid, head_flags, input, preds, flag_op);
+
+       // Set tail_flags for remaining items
+       Iterate::FlagTails(linear_tid, tail_flags, input, flag_op);
+     }
+
+     template <int ITEMS_PER_THREAD, typename FlagT, typename FlagOp>
+     _CCCL_DEVICE _CCCL_FORCEINLINE void FlagHeadsAndTails(
+       FlagT (&head_flags)[ITEMS_PER_THREAD],
+       T tile_predecessor_item,
+       FlagT (&tail_flags)[ITEMS_PER_THREAD],
+       T tile_successor_item,
+       T (&input)[ITEMS_PER_THREAD],
+       FlagOp flag_op)
+     {
+       // Share first and last items
+       temp_storage.first_items[linear_tid] = input[0];
+       temp_storage.last_items[linear_tid]  = input[ITEMS_PER_THREAD - 1];
+
+       __syncthreads();
+
+       T preds[ITEMS_PER_THREAD];
+
+       // Set flag for first thread-item
+       preds[0] = (linear_tid == 0) ? tile_predecessor_item : // First thread
+                    temp_storage.last_items[linear_tid - 1];
+
+       head_flags[0] = ApplyOp<FlagOp>::FlagT(flag_op, preds[0], input[0], linear_tid * ITEMS_PER_THREAD);
+
+       // Set flag for last thread-item
+       T successor_item = (linear_tid == BLOCK_THREADS - 1) ? tile_successor_item : // Last thread
+                            temp_storage.first_items[linear_tid + 1];
+
+       tail_flags[ITEMS_PER_THREAD - 1] = ApplyOp<FlagOp>::FlagT(
+         flag_op, input[ITEMS_PER_THREAD - 1], successor_item, (linear_tid * ITEMS_PER_THREAD) + ITEMS_PER_THREAD);
+
+       // Set head_flags for remaining items
+       Iterate::FlagHeads(linear_tid, head_flags, input, preds, flag_op);
+
+       // Set tail_flags for remaining items
+       Iterate::FlagTails(linear_tid, tail_flags, input, flag_op);
+     }
+
+   };
+
+   CUB_NAMESPACE_END
+

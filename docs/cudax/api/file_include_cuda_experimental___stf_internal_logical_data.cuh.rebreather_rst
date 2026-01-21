@@ -1,0 +1,43 @@
+.. _`logical__data_8cuh`:
+
+include\/cuda\/experimental\/\_\_stf\/internal\/logical\_data.cuh
+=================================================================
+
+In directory: :ref:`include\/cuda\/experimental\/\_\_stf\/internal <dir_9a0afe0e3b482b68b2edbe22051d0386>`
+
+Source file: :doc:`program_listing_file_include_cuda_experimental___stf_internal_logical_data.cuh`
+
+.. doxygenfile:: include/cuda/experimental/__stf/internal/logical_data.cuh
+   :sections: briefdescription detaileddescription
+
+.. toctree::
+   :maxdepth: 1
+   :hidden:
+
+   Source file <program_listing_file_include_cuda_experimental___stf_internal_logical_data.cuh>
+
+Classes
+-------
+
+- :ref:`cuda\:\:experimental\:\:stf\:\:logical\_data <classcuda_1_1experimental_1_1stf_1_1logical__data>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:logical\_data\_untyped <classcuda_1_1experimental_1_1stf_1_1logical__data__untyped>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:task\_set <classcuda_1_1experimental_1_1stf_1_1task__set>`
+
+Functions
+---------
+
+- :ref:`cuda\:\:experimental\:\:stf\:\:reclaim\_memory <logical__data_8cuh_1a2d806e586bfb0a9aaf002c498029a12f>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:unpack\_state <logical__data_8cuh_1af3013a012be4ed020b2a4f5523b1b225>`
+
+Namespaces
+----------
+
+- :ref:`cuda <namespacecuda>`
+- :ref:`cuda\:\:experimental <namespacecuda_1_1experimental>`
+- :ref:`cuda\:\:experimental\:\:stf <namespacecuda_1_1experimental_1_1stf>`
+
+Typedefs
+--------
+
+- :ref:`cuda\:\:experimental\:\:stf\:\:token <logical__data_8cuh_1aa9c8a86afb5d22780fd035a16435c768>`
+

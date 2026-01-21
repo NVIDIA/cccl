@@ -1,0 +1,28 @@
+.. _`device__make__unique_8h`:
+
+thrust\/device\_make\_unique.h
+==============================
+
+In directory: :ref:`thrust <dir_7807dea0fb0cf4ae34b71c9fa4b0a46c>`
+
+Source file: :doc:`program_listing_file_thrust_device_make_unique.h`
+
+.. doxygenfile:: thrust/device_make_unique.h
+   :sections: briefdescription detaileddescription
+
+.. toctree::
+   :maxdepth: 1
+   :hidden:
+
+   Source file <program_listing_file_thrust_device_make_unique.h>
+
+Functions
+---------
+
+- :ref:`thrust\:\:device\_make\_unique <device__make__unique_8h_1a4fdae8c40faefdab2e2cc75f0fdc41d5>`
+
+Namespaces
+----------
+
+- :ref:`thrust <namespacethrust>`
+

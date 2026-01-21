@@ -1,0 +1,6 @@
+cub\:\:ShuffleIndex
+===================
+
+Defined in :ref:`cub\/util\_ptx.cuh <util__ptx_8cuh>`
+
+.. doxygenfunction:: cub::ShuffleIndex(T input, int src_lane, unsigned int member_mask)

@@ -1,0 +1,6 @@
+cuda\:\:experimental\:\:stf\:\:executable\_graph\_cache\_stat
+=============================================================
+
+Defined in :ref:`include\/cuda\/experimental\/\_\_stf\/internal\/executable\_graph\_cache.cuh <executable__graph__cache_8cuh>`
+
+.. doxygenclass:: cuda::experimental::stf::executable_graph_cache_stat

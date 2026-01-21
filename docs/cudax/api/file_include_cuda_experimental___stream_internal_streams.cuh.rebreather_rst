@@ -1,0 +1,24 @@
+.. _`internal__streams_8cuh`:
+
+include\/cuda\/experimental\/\_\_stream\/internal\_streams.cuh
+==============================================================
+
+In directory: :ref:`include\/cuda\/experimental\/\_\_stream <dir_91ffbf4bff8733399d1fc87a794ed2b4>`
+
+Source file: :doc:`program_listing_file_include_cuda_experimental___stream_internal_streams.cuh`
+
+.. doxygenfile:: include/cuda/experimental/__stream/internal_streams.cuh
+   :sections: briefdescription detaileddescription
+
+.. toctree::
+   :maxdepth: 1
+   :hidden:
+
+   Source file <program_listing_file_include_cuda_experimental___stream_internal_streams.cuh>
+
+Namespaces
+----------
+
+- :ref:`cuda <namespacecuda>`
+- :ref:`cuda\:\:experimental <namespacecuda_1_1experimental>`
+

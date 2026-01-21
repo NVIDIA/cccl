@@ -1,0 +1,31 @@
+.. _`count_8h`:
+
+thrust\/count.h
+===============
+
+In directory: :ref:`thrust <dir_7807dea0fb0cf4ae34b71c9fa4b0a46c>`
+
+Source file: :doc:`program_listing_file_thrust_count.h`
+
+.. doxygenfile:: thrust/count.h
+   :sections: briefdescription detaileddescription
+
+.. toctree::
+   :maxdepth: 1
+   :hidden:
+
+   Source file <program_listing_file_thrust_count.h>
+
+Functions
+---------
+
+- :ref:`thrust\:\:count <group__counting_1ga140d701ed61ad9e9ba32f9011cc3563c>`
+- :ref:`thrust\:\:count <group__counting_1gabe437ea7b56f37deb03d78e423afbc82>`
+- :ref:`thrust\:\:count\_if <group__counting_1ga9eef599662025867024d1d6c4085eb0a>`
+- :ref:`thrust\:\:count\_if <group__counting_1gad2cfa02c29c5b3e576200cc716455b86>`
+
+Namespaces
+----------
+
+- :ref:`thrust <namespacethrust>`
+

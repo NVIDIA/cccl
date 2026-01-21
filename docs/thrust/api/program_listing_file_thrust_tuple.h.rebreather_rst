@@ -1,0 +1,75 @@
+thrust\/tuple.h
+===============
+
+File members: :ref:`thrust\/tuple.h <tuple_8h>`
+
+.. code-block:: c++
+
+   /*
+    *  Copyright 2008-2018 NVIDIA Corporation
+    *
+    *  Licensed under the Apache License, Version 2.0 (the "License");
+    *  you may not use this file except in compliance with the License.
+    *  You may obtain a copy of the License at
+    *
+    *      http://www.apache.org/licenses/LICENSE-2.0
+    *
+    *  Unless required by applicable law or agreed to in writing, software
+    *  distributed under the License is distributed on an "AS IS" BASIS,
+    *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    *  See the License for the specific language governing permissions and
+    *  limitations under the License.
+    */
+
+   /*
+    * Copyright (C) 1999, 2000 Jaakko Järvi (jaakko.jarvi@cs.utu.fi)
+    *
+    * Distributed under the Boost Software License, Version 1.0.
+    * (See accompanying NOTICE file for the complete license)
+    *
+    * For more information, see http://www.boost.org
+    */
+
+   #pragma once
+
+   #include <thrust/detail/config.h>
+
+   #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+   #  pragma GCC system_header
+   #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+   #  pragma clang system_header
+   #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+   #  pragma system_header
+   #endif // no system header
+
+   #include <cuda/std/tuple>
+
+   THRUST_NAMESPACE_BEGIN
+
+   #ifdef _CCCL_DOXYGEN_INVOKED // Provide a fake alias for doxygen
+   template <size_t N, class T>
+   using tuple_element = _CUDA_VSTD::tuple_element<N, T>;
+   #else // ^^^ _CCCL_DOXYGEN_INVOKED ^^^ / vvv !_CCCL_DOXYGEN_INVOKED vvv
+   using _CUDA_VSTD::tuple_element;
+   #endif // _CCCL_DOXYGEN_INVOKED
+
+   #ifdef _CCCL_DOXYGEN_INVOKED // Provide a fake alias for doxygen
+   template <class T>
+   using tuple_size = _CUDA_VSTD::tuple_size<T>;
+   #else // ^^^ _CCCL_DOXYGEN_INVOKED ^^^ / vvv !_CCCL_DOXYGEN_INVOKED vvv
+   using _CUDA_VSTD::tuple_size;
+   #endif // _CCCL_DOXYGEN_INVOKED
+
+   #ifdef _CCCL_DOXYGEN_INVOKED // Provide a fake alias for doxygen
+   template <class... Ts>
+   using tuple = _CUDA_VSTD::tuple<T...>;
+   #else // ^^^ _CCCL_DOXYGEN_INVOKED ^^^ / vvv !_CCCL_DOXYGEN_INVOKED vvv
+   using _CUDA_VSTD::tuple;
+   #endif // _CCCL_DOXYGEN_INVOKED
+
+   using _CUDA_VSTD::get;
+   using _CUDA_VSTD::make_tuple;
+   using _CUDA_VSTD::tie;
+
+   THRUST_NAMESPACE_END
+

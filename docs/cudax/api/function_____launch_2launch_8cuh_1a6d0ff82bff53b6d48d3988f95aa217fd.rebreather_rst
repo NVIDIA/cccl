@@ -1,0 +1,6 @@
+cuda\:\:experimental\:\:launch
+==============================
+
+Defined in :ref:`include\/cuda\/experimental\/\_\_launch\/launch.cuh <____launch_2launch_8cuh>`
+
+.. doxygenfunction:: cuda::experimental::launch(_Submitter &&__submitter, const kernel_config< _Dimensions, _Config... > &__conf, void(*__kernel)(_ExpArgs...), _ActArgs &&... __args)

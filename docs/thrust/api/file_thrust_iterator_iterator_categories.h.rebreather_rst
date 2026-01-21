@@ -1,0 +1,41 @@
+.. _`iterator__categories_8h`:
+
+thrust\/iterator\/iterator\_categories.h
+========================================
+
+In directory: :ref:`thrust\/iterator <dir_4a6d8329b843c73570cce28de80cb189>`
+
+Source file: :doc:`program_listing_file_thrust_iterator_iterator_categories.h`
+
+.. doxygenfile:: thrust/iterator/iterator_categories.h
+   :sections: briefdescription detaileddescription
+
+.. toctree::
+   :maxdepth: 1
+   :hidden:
+
+   Source file <program_listing_file_thrust_iterator_iterator_categories.h>
+
+Namespaces
+----------
+
+- :ref:`thrust <namespacethrust>`
+
+Structs
+-------
+
+- :ref:`thrust\:\:bidirectional\_device\_iterator\_tag <structthrust_1_1bidirectional__device__iterator__tag>`
+- :ref:`thrust\:\:forward\_device\_iterator\_tag <structthrust_1_1forward__device__iterator__tag>`
+- :ref:`thrust\:\:input\_device\_iterator\_tag <structthrust_1_1input__device__iterator__tag>`
+- :ref:`thrust\:\:output\_device\_iterator\_tag <structthrust_1_1output__device__iterator__tag>`
+- :ref:`thrust\:\:random\_access\_device\_iterator\_tag <structthrust_1_1random__access__device__iterator__tag>`
+
+Typedefs
+--------
+
+- :ref:`thrust\:\:bidirectional\_host\_iterator\_tag <group__iterator__tag__classes_1ga20e12ff89385c6c4658f39316e91e7ab>`
+- :ref:`thrust\:\:forward\_host\_iterator\_tag <group__iterator__tag__classes_1gaf265cb57247c2f8b81477cdac757f252>`
+- :ref:`thrust\:\:input\_host\_iterator\_tag <group__iterator__tag__classes_1gaaee0807fd12662c9c768a596c56224dd>`
+- :ref:`thrust\:\:output\_host\_iterator\_tag <group__iterator__tag__classes_1gaaa2d3281a2028d43aa8a6ab49ec70f6d>`
+- :ref:`thrust\:\:random\_access\_host\_iterator\_tag <group__iterator__tag__classes_1ga52f67176b2139d334ad3fc1b93558fd6>`
+

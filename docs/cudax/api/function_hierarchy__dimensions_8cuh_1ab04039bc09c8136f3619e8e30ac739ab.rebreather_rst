@@ -1,0 +1,6 @@
+cuda\:\:experimental\:\:make\_hierarchy
+=======================================
+
+Defined in :ref:`include\/cuda\/experimental\/\_\_hierarchy\/hierarchy\_dimensions.cuh <hierarchy__dimensions_8cuh>`
+
+.. doxygenfunction:: cuda::experimental::make_hierarchy(L1 l1, Levels... ls) noexcept

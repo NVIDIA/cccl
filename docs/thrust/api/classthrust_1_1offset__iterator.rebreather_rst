@@ -1,0 +1,6 @@
+thrust\:\:offset\_iterator
+==========================
+
+Defined in :ref:`thrust\/iterator\/offset\_iterator.h <offset__iterator_8h>`
+
+.. doxygenclass:: thrust::offset_iterator

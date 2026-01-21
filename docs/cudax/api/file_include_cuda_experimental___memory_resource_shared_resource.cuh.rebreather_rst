@@ -1,0 +1,34 @@
+.. _`shared__resource_8cuh`:
+
+include\/cuda\/experimental\/\_\_memory\_resource\/shared\_resource.cuh
+=======================================================================
+
+In directory: :ref:`include\/cuda\/experimental\/\_\_memory\_resource <dir_f5bb634f025bcd1aa086d4ae07d690be>`
+
+Source file: :doc:`program_listing_file_include_cuda_experimental___memory_resource_shared_resource.cuh`
+
+.. doxygenfile:: include/cuda/experimental/__memory_resource/shared_resource.cuh
+   :sections: briefdescription detaileddescription
+
+.. toctree::
+   :maxdepth: 1
+   :hidden:
+
+   Source file <program_listing_file_include_cuda_experimental___memory_resource_shared_resource.cuh>
+
+Functions
+---------
+
+- :ref:`cuda\:\:experimental\:\:make\_shared\_resource <shared__resource_8cuh_1a6bd77db8b90bae41aca5ae2cbb485f2f>`
+
+Namespaces
+----------
+
+- :ref:`cuda <namespacecuda>`
+- :ref:`cuda\:\:experimental <namespacecuda_1_1experimental>`
+
+Structs
+-------
+
+- :ref:`cuda\:\:experimental\:\:shared\_resource <structcuda_1_1experimental_1_1shared__resource>`
+

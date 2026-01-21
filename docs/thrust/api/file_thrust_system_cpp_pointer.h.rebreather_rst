@@ -1,0 +1,34 @@
+.. _`system_2cpp_2pointer_8h`:
+
+thrust\/system\/cpp\/pointer.h
+==============================
+
+In directory: :ref:`thrust\/system\/cpp <dir_d77906c62e23ab1810d90a4407989853>`
+
+Source file: :doc:`program_listing_file_thrust_system_cpp_pointer.h`
+
+.. doxygenfile:: thrust/system/cpp/pointer.h
+   :sections: briefdescription detaileddescription
+
+.. toctree::
+   :maxdepth: 1
+   :hidden:
+
+   Source file <program_listing_file_thrust_system_cpp_pointer.h>
+
+Namespaces
+----------
+
+- :ref:`thrust <namespacethrust>`
+- :ref:`thrust\:\:cpp <namespacethrust_1_1cpp>`
+- :ref:`thrust\:\:system <namespacethrust_1_1system>`
+- :ref:`thrust\:\:system\:\:cpp <namespacethrust_1_1system_1_1cpp>`
+
+Typedefs
+--------
+
+- :ref:`thrust\:\:system\:\:cpp\:\:pointer <group__system__backends_1ga2a3ec5b39ce2f378b7cb1a94c13335b4>`
+- :ref:`thrust\:\:system\:\:cpp\:\:reference <group__system__backends_1ga98af9db6b72cb24c25132a9f5645a4a8>`
+- :ref:`thrust\:\:system\:\:cpp\:\:universal\_host\_pinned\_pointer <group__system__backends_1ga95eda5ff5a87b7a92248a1545cac888a>`
+- :ref:`thrust\:\:system\:\:cpp\:\:universal\_pointer <group__system__backends_1ga201d3b3fa98ce6de956fa217882e7ea2>`
+

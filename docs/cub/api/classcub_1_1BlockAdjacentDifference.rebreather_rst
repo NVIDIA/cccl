@@ -1,0 +1,6 @@
+cub\:\:BlockAdjacentDifference
+==============================
+
+Defined in :ref:`cub\/block\/block\_adjacent\_difference.cuh <block__adjacent__difference_8cuh>`
+
+.. doxygenclass:: cub::BlockAdjacentDifference

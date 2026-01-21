@@ -1,0 +1,6 @@
+cuda\:\:experimental\:\:stf\:\:pooled\_allocator\_config
+========================================================
+
+Defined in :ref:`include\/cuda\/experimental\/\_\_stf\/allocators\/pooled\_allocator.cuh <pooled__allocator_8cuh>`
+
+.. doxygenstruct:: cuda::experimental::stf::pooled_allocator_config

@@ -1,0 +1,6 @@
+cub\:\:BFE
+==========
+
+Defined in :ref:`cub\/util\_ptx.cuh <util__ptx_8cuh>`
+
+.. doxygenfunction:: cub::BFE(UnsignedBits source, unsigned int bit_start, unsigned int num_bits)

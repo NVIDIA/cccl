@@ -1,0 +1,6 @@
+cub\:\:Nominal4BItemsToItemsCombined
+====================================
+
+Defined in :ref:`cub\/util\_math.cuh <util__math_8cuh>`
+
+.. doxygenfunction:: cub::Nominal4BItemsToItemsCombined(int nominal_4b_items_per_thread, int combined_bytes)

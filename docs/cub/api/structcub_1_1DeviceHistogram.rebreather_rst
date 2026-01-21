@@ -1,0 +1,6 @@
+cub\:\:DeviceHistogram
+======================
+
+Defined in :ref:`cub\/device\/device\_histogram.cuh <device__histogram_8cuh>`
+
+.. doxygenstruct:: cub::DeviceHistogram

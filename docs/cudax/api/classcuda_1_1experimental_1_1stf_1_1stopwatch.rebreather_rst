@@ -1,0 +1,6 @@
+cuda\:\:experimental\:\:stf\:\:stopwatch
+========================================
+
+Defined in :ref:`include\/cuda\/experimental\/\_\_stf\/utility\/stopwatch.cuh <stopwatch_8cuh>`
+
+.. doxygenclass:: cuda::experimental::stf::stopwatch

@@ -1,0 +1,6 @@
+thrust\:\:sort\_by\_key
+=======================
+
+Defined in :ref:`thrust\/sort.h <sort_8h>`
+
+.. doxygenfunction:: thrust::sort_by_key(RandomAccessIterator1 keys_first, RandomAccessIterator1 keys_last, RandomAccessIterator2 values_first)

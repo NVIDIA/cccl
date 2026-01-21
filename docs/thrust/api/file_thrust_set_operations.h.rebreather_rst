@@ -1,0 +1,59 @@
+.. _`set__operations_8h`:
+
+thrust\/set\_operations.h
+=========================
+
+In directory: :ref:`thrust <dir_7807dea0fb0cf4ae34b71c9fa4b0a46c>`
+
+Source file: :doc:`program_listing_file_thrust_set_operations.h`
+
+.. doxygenfile:: thrust/set_operations.h
+   :sections: briefdescription detaileddescription
+
+.. toctree::
+   :maxdepth: 1
+   :hidden:
+
+   Source file <program_listing_file_thrust_set_operations.h>
+
+Functions
+---------
+
+- :ref:`thrust\:\:set\_difference <group__set__operations_1ga1326c0163eed54192fd419d1691cdfef>`
+- :ref:`thrust\:\:set\_difference <group__set__operations_1ga3d7c39723b065e54feccdae6fbe599a5>`
+- :ref:`thrust\:\:set\_difference <group__set__operations_1gab4528ff414e0292680ba412dbafdc6e1>`
+- :ref:`thrust\:\:set\_difference <group__set__operations_1gacf5edd558fd96eee01b6425b3909c6b4>`
+- :ref:`thrust\:\:set\_difference\_by\_key <group__set__operations_1ga13e50a81573e4cfe4c0ddb6d5aeed55d>`
+- :ref:`thrust\:\:set\_difference\_by\_key <group__set__operations_1ga7462998276d8002271618b11907fc474>`
+- :ref:`thrust\:\:set\_difference\_by\_key <group__set__operations_1gae72b9d1974e6a28f77a61fe4d766134e>`
+- :ref:`thrust\:\:set\_difference\_by\_key <group__set__operations_1gaec9ea46b14c4129cc5c89edb3bf8d268>`
+- :ref:`thrust\:\:set\_intersection <group__set__operations_1ga251169469a5d79ccd11b9e0a1c867fc0>`
+- :ref:`thrust\:\:set\_intersection <group__set__operations_1ga63a7ebdaf5797f78be04febd436cd284>`
+- :ref:`thrust\:\:set\_intersection <group__set__operations_1ga69e037cb6ccedcc087e657641f8e5c63>`
+- :ref:`thrust\:\:set\_intersection <group__set__operations_1ga939f2c87cff784afc63e39c5e5119784>`
+- :ref:`thrust\:\:set\_intersection\_by\_key <group__set__operations_1ga73d15770c7f9c31846e54930f7ec5575>`
+- :ref:`thrust\:\:set\_intersection\_by\_key <group__set__operations_1ga94abdc8c04deae612c7ff3a916e50b73>`
+- :ref:`thrust\:\:set\_intersection\_by\_key <group__set__operations_1ga9777e9fb20b4597eab1dba6ac6209413>`
+- :ref:`thrust\:\:set\_intersection\_by\_key <group__set__operations_1gacb6055627d945f7e7df567ae8abdbbf3>`
+- :ref:`thrust\:\:set\_symmetric\_difference <group__set__operations_1ga16bc72ce5444f82fca22e178b8370a98>`
+- :ref:`thrust\:\:set\_symmetric\_difference <group__set__operations_1ga2194c9c4fe22397aff13e1c163c86446>`
+- :ref:`thrust\:\:set\_symmetric\_difference <group__set__operations_1ga575dc422a51753d641059e9897c51f11>`
+- :ref:`thrust\:\:set\_symmetric\_difference <group__set__operations_1ga6b0c58c0c655c0cfe5ed3166d266bc4f>`
+- :ref:`thrust\:\:set\_symmetric\_difference\_by\_key <group__set__operations_1ga081e23da3b97e04528bfb403dd4e7af6>`
+- :ref:`thrust\:\:set\_symmetric\_difference\_by\_key <group__set__operations_1ga16c84eec19aadfe0d3d4726882d2f8ea>`
+- :ref:`thrust\:\:set\_symmetric\_difference\_by\_key <group__set__operations_1ga9261406b5ae4c38d457b76eab24a0a4d>`
+- :ref:`thrust\:\:set\_symmetric\_difference\_by\_key <group__set__operations_1gaab57bb979ffabcf5a7abf84fbd5ab9c1>`
+- :ref:`thrust\:\:set\_union <group__set__operations_1ga37c6a6e120f45a1623f3a5760148f6d7>`
+- :ref:`thrust\:\:set\_union <group__set__operations_1ga5d768feeec14f067304bf66bf59aaecf>`
+- :ref:`thrust\:\:set\_union <group__set__operations_1gaae9a47e263655f0e56b1a4860182d4a8>`
+- :ref:`thrust\:\:set\_union <group__set__operations_1gac8e1b0b7feffbbccfab972a3dab81391>`
+- :ref:`thrust\:\:set\_union\_by\_key <group__set__operations_1ga7aa4740a1acff09b815492e408fa7508>`
+- :ref:`thrust\:\:set\_union\_by\_key <group__set__operations_1ga7d1d5d7cedc8d479aacf60025f57c086>`
+- :ref:`thrust\:\:set\_union\_by\_key <group__set__operations_1gafd083e5decf93eaebcb4d99fd4e09e85>`
+- :ref:`thrust\:\:set\_union\_by\_key <group__set__operations_1gafd50d04373d40746c12c0b9cb467b91b>`
+
+Namespaces
+----------
+
+- :ref:`thrust <namespacethrust>`
+

@@ -1,0 +1,498 @@
+
+Cudax\: Experimental new features API
+=====================================
+
+Directory hierarchy
+-------------------
+
+.. card::
+   :class-card: rebreather hierarchy
+
+   .. dropdown:: dir :ref:`include <dir_d44c64559bbebec7f509842c48db8b23>`
+
+      .. dropdown:: dir :ref:`include\/cuda <dir_84b56ae5fb2dac9a5c8c4aa192827ebc>`
+
+         .. dropdown:: dir :ref:`include\/cuda\/experimental <dir_50112f2f035c7ccf154633326c0ddcfe>`
+
+            .. dropdown:: dir :ref:`include\/cuda\/experimental\/\_\_container <dir_57af8c402e8ada1a958744585f52ebba>`
+
+               .. container:: rebreather hierarchy
+
+                  - file :ref:`include\/cuda\/experimental\/\_\_container\/async\_buffer.cuh <async__buffer_8cuh>`
+                  - file :ref:`include\/cuda\/experimental\/\_\_container\/heterogeneous\_iterator.cuh <heterogeneous__iterator_8cuh>`
+                  - file :ref:`include\/cuda\/experimental\/\_\_container\/uninitialized\_async\_buffer.cuh <uninitialized__async__buffer_8cuh>`
+                  - file :ref:`include\/cuda\/experimental\/\_\_container\/uninitialized\_buffer.cuh <uninitialized__buffer_8cuh>`
+
+            .. dropdown:: dir :ref:`include\/cuda\/experimental\/\_\_device <dir_0be56cf1bdd77d259a9ba8e1164da791>`
+
+               .. container:: rebreather hierarchy
+
+                  - file :ref:`include\/cuda\/experimental\/\_\_device\/logical\_device.cuh <logical__device_8cuh>`
+
+            .. dropdown:: dir :ref:`include\/cuda\/experimental\/\_\_graph <dir_58f95481ee3b5964d4a284a75c631d27>`
+
+               .. container:: rebreather hierarchy
+
+                  - file :ref:`include\/cuda\/experimental\/\_\_graph\/concepts.cuh <concepts_8cuh>`
+                  - file :ref:`include\/cuda\/experimental\/\_\_graph\/depends\_on.cuh <depends__on_8cuh>`
+                  - file :ref:`include\/cuda\/experimental\/\_\_graph\/fwd.cuh <fwd_8cuh>`
+                  - file :ref:`include\/cuda\/experimental\/\_\_graph\/graph.cuh <____graph_2graph_8cuh>`
+                  - file :ref:`include\/cuda\/experimental\/\_\_graph\/graph\_builder.cuh <graph__builder_8cuh>`
+                  - file :ref:`include\/cuda\/experimental\/\_\_graph\/graph\_builder\_ref.cuh <graph__builder__ref_8cuh>`
+                  - file :ref:`include\/cuda\/experimental\/\_\_graph\/graph\_node\_ref.cuh <graph__node__ref_8cuh>`
+                  - file :ref:`include\/cuda\/experimental\/\_\_graph\/graph\_node\_type.cuh <graph__node__type_8cuh>`
+                  - file :ref:`include\/cuda\/experimental\/\_\_graph\/path\_builder.cuh <path__builder_8cuh>`
+
+            .. dropdown:: dir :ref:`include\/cuda\/experimental\/\_\_hierarchy <dir_0a41398667450a16ffec14b30a195e6f>`
+
+               .. container:: rebreather hierarchy
+
+                  - file :ref:`include\/cuda\/experimental\/\_\_hierarchy\/dimensions.cuh <____hierarchy_2dimensions_8cuh>`
+                  - file :ref:`include\/cuda\/experimental\/\_\_hierarchy\/hierarchy\_dimensions.cuh <hierarchy__dimensions_8cuh>`
+                  - file :ref:`include\/cuda\/experimental\/\_\_hierarchy\/hierarchy\_levels.cuh <hierarchy__levels_8cuh>`
+                  - file :ref:`include\/cuda\/experimental\/\_\_hierarchy\/level\_dimensions.cuh <level__dimensions_8cuh>`
+
+            .. dropdown:: dir :ref:`include\/cuda\/experimental\/\_\_launch <dir_813ed679672daa6d88aebb2c68559996>`
+
+               .. container:: rebreather hierarchy
+
+                  - file :ref:`include\/cuda\/experimental\/\_\_launch\/configuration.cuh <configuration_8cuh>`
+                  - file :ref:`include\/cuda\/experimental\/\_\_launch\/host\_launch.cuh <host__launch_8cuh>`
+                  - file :ref:`include\/cuda\/experimental\/\_\_launch\/launch.cuh <____launch_2launch_8cuh>`
+                  - file :ref:`include\/cuda\/experimental\/\_\_launch\/param\_kind.cuh <param__kind_8cuh>`
+
+            .. dropdown:: dir :ref:`include\/cuda\/experimental\/\_\_memory\_resource <dir_f5bb634f025bcd1aa086d4ae07d690be>`
+
+               .. container:: rebreather hierarchy
+
+                  - file :ref:`include\/cuda\/experimental\/\_\_memory\_resource\/any\_resource.cuh <any__resource_8cuh>`
+                  - file :ref:`include\/cuda\/experimental\/\_\_memory\_resource\/device\_memory\_pool.cuh <device__memory__pool_8cuh>`
+                  - file :ref:`include\/cuda\/experimental\/\_\_memory\_resource\/device\_memory\_resource.cuh <device__memory__resource_8cuh>`
+                  - file :ref:`include\/cuda\/experimental\/\_\_memory\_resource\/legacy\_pinned\_memory\_resource.cuh <legacy__pinned__memory__resource_8cuh>`
+                  - file :ref:`include\/cuda\/experimental\/\_\_memory\_resource\/managed\_memory\_resource.cuh <managed__memory__resource_8cuh>`
+                  - file :ref:`include\/cuda\/experimental\/\_\_memory\_resource\/memory\_pool\_base.cuh <memory__pool__base_8cuh>`
+                  - file :ref:`include\/cuda\/experimental\/\_\_memory\_resource\/memory\_resource\_base.cuh <memory__resource__base_8cuh>`
+                  - file :ref:`include\/cuda\/experimental\/\_\_memory\_resource\/pinned\_memory\_pool.cuh <pinned__memory__pool_8cuh>`
+                  - file :ref:`include\/cuda\/experimental\/\_\_memory\_resource\/pinned\_memory\_resource.cuh <pinned__memory__resource_8cuh>`
+                  - file :ref:`include\/cuda\/experimental\/\_\_memory\_resource\/properties.cuh <properties_8cuh>`
+                  - file :ref:`include\/cuda\/experimental\/\_\_memory\_resource\/resource.cuh <resource_8cuh>`
+                  - file :ref:`include\/cuda\/experimental\/\_\_memory\_resource\/shared\_resource.cuh <shared__resource_8cuh>`
+
+            .. dropdown:: dir :ref:`include\/cuda\/experimental\/\_\_stf <dir_2b9c3d1d71c0f57290ce10196530540b>`
+
+               .. dropdown:: dir :ref:`include\/cuda\/experimental\/\_\_stf\/allocators <dir_6ef724ba58db6b2f1fb9755593e6e203>`
+
+                  .. container:: rebreather hierarchy
+
+                     - file :ref:`include\/cuda\/experimental\/\_\_stf\/allocators\/adapters.cuh <adapters_8cuh>`
+                     - file :ref:`include\/cuda\/experimental\/\_\_stf\/allocators\/block\_allocator.cuh <block__allocator_8cuh>`
+                     - file :ref:`include\/cuda\/experimental\/\_\_stf\/allocators\/buddy\_allocator.cuh <buddy__allocator_8cuh>`
+                     - file :ref:`include\/cuda\/experimental\/\_\_stf\/allocators\/cached\_allocator.cuh <cached__allocator_8cuh>`
+                     - file :ref:`include\/cuda\/experimental\/\_\_stf\/allocators\/pooled\_allocator.cuh <pooled__allocator_8cuh>`
+                     - file :ref:`include\/cuda\/experimental\/\_\_stf\/allocators\/uncached\_allocator.cuh <uncached__allocator_8cuh>`
+
+               .. dropdown:: dir :ref:`include\/cuda\/experimental\/\_\_stf\/graph <dir_758711e0f4483d713f3bedf4c406d5a9>`
+
+                  .. dropdown:: dir :ref:`include\/cuda\/experimental\/\_\_stf\/graph\/interfaces <dir_aa0e335859db22cac0afd94c409165ae>`
+
+                     .. container:: rebreather hierarchy
+
+                        - file :ref:`include\/cuda\/experimental\/\_\_stf\/graph\/interfaces\/slice.cuh <graph_2interfaces_2slice_8cuh>`
+                        - file :ref:`include\/cuda\/experimental\/\_\_stf\/graph\/interfaces\/void\_interface.cuh <graph_2interfaces_2void__interface_8cuh>`
+
+                  .. dropdown:: dir :ref:`include\/cuda\/experimental\/\_\_stf\/graph\/internal <dir_ad2d98b02cabb54cba53000d571b15b4>`
+
+                     .. container:: rebreather hierarchy
+
+                        - file :ref:`include\/cuda\/experimental\/\_\_stf\/graph\/internal\/event\_types.cuh <graph_2internal_2event__types_8cuh>`
+
+                  .. container:: rebreather hierarchy
+
+                     - file :ref:`include\/cuda\/experimental\/\_\_stf\/graph\/graph\_ctx.cuh <graph__ctx_8cuh>`
+                     - file :ref:`include\/cuda\/experimental\/\_\_stf\/graph\/graph\_data\_interface.cuh <graph__data__interface_8cuh>`
+                     - file :ref:`include\/cuda\/experimental\/\_\_stf\/graph\/graph\_task.cuh <graph__task_8cuh>`
+
+               .. dropdown:: dir :ref:`include\/cuda\/experimental\/\_\_stf\/internal <dir_9a0afe0e3b482b68b2edbe22051d0386>`
+
+                  .. container:: rebreather hierarchy
+
+                     - file :ref:`include\/cuda\/experimental\/\_\_stf\/internal\/acquire\_release.cuh <acquire__release_8cuh>`
+                     - file :ref:`include\/cuda\/experimental\/\_\_stf\/internal\/algorithm.cuh <algorithm_8cuh>`
+                     - file :ref:`include\/cuda\/experimental\/\_\_stf\/internal\/async\_prereq.cuh <async__prereq_8cuh>`
+                     - file :ref:`include\/cuda\/experimental\/\_\_stf\/internal\/async\_resources\_handle.cuh <async__resources__handle_8cuh>`
+                     - file :ref:`include\/cuda\/experimental\/\_\_stf\/internal\/backend\_allocator\_setup.cuh <backend__allocator__setup_8cuh>`
+                     - file :ref:`include\/cuda\/experimental\/\_\_stf\/internal\/backend\_ctx.cuh <backend__ctx_8cuh>`
+                     - file :ref:`include\/cuda\/experimental\/\_\_stf\/internal\/constants.cuh <constants_8cuh>`
+                     - file :ref:`include\/cuda\/experimental\/\_\_stf\/internal\/context.cuh <context_8cuh>`
+                     - file :ref:`include\/cuda\/experimental\/\_\_stf\/internal\/cooperative\_group\_system.cuh <cooperative__group__system_8cuh>`
+                     - file :ref:`include\/cuda\/experimental\/\_\_stf\/internal\/cuda\_kernel\_scope.cuh <cuda__kernel__scope_8cuh>`
+                     - file :ref:`include\/cuda\/experimental\/\_\_stf\/internal\/data\_interface.cuh <data__interface_8cuh>`
+                     - file :ref:`include\/cuda\/experimental\/\_\_stf\/internal\/dot.cuh <dot_8cuh>`
+                     - file :ref:`include\/cuda\/experimental\/\_\_stf\/internal\/exec\_affinity.cuh <exec__affinity_8cuh>`
+                     - file :ref:`include\/cuda\/experimental\/\_\_stf\/internal\/executable\_graph\_cache.cuh <executable__graph__cache_8cuh>`
+                     - file :ref:`include\/cuda\/experimental\/\_\_stf\/internal\/execution\_policy.cuh <execution__policy_8cuh>`
+                     - file :ref:`include\/cuda\/experimental\/\_\_stf\/internal\/for\_each\_batched.cuh <for__each__batched_8cuh>`
+                     - file :ref:`include\/cuda\/experimental\/\_\_stf\/internal\/frozen\_logical\_data.cuh <frozen__logical__data_8cuh>`
+                     - file :ref:`include\/cuda\/experimental\/\_\_stf\/internal\/hashtable\_linearprobing.cuh <internal_2hashtable__linearprobing_8cuh>`
+                     - file :ref:`include\/cuda\/experimental\/\_\_stf\/internal\/hooks.cuh <hooks_8cuh>`
+                     - file :ref:`include\/cuda\/experimental\/\_\_stf\/internal\/host\_launch\_scope.cuh <host__launch__scope_8cuh>`
+                     - file :ref:`include\/cuda\/experimental\/\_\_stf\/internal\/interpreted\_execution\_policy.cuh <interpreted__execution__policy_8cuh>`
+                     - file :ref:`include\/cuda\/experimental\/\_\_stf\/internal\/launch.cuh <____stf_2internal_2launch_8cuh>`
+                     - file :ref:`include\/cuda\/experimental\/\_\_stf\/internal\/logical\_data.cuh <logical__data_8cuh>`
+                     - file :ref:`include\/cuda\/experimental\/\_\_stf\/internal\/machine.cuh <machine_8cuh>`
+                     - file :ref:`include\/cuda\/experimental\/\_\_stf\/internal\/msir.cuh <msir_8cuh>`
+                     - file :ref:`include\/cuda\/experimental\/\_\_stf\/internal\/parallel\_for\_scope.cuh <parallel__for__scope_8cuh>`
+                     - file :ref:`include\/cuda\/experimental\/\_\_stf\/internal\/reducer.cuh <reducer_8cuh>`
+                     - file :ref:`include\/cuda\/experimental\/\_\_stf\/internal\/reduction\_base.cuh <reduction__base_8cuh>`
+                     - file :ref:`include\/cuda\/experimental\/\_\_stf\/internal\/reorderer.cuh <reorderer_8cuh>`
+                     - file :ref:`include\/cuda\/experimental\/\_\_stf\/internal\/repeat.cuh <repeat_8cuh>`
+                     - file :ref:`include\/cuda\/experimental\/\_\_stf\/internal\/scalar\_interface.cuh <scalar__interface_8cuh>`
+                     - file :ref:`include\/cuda\/experimental\/\_\_stf\/internal\/scheduler.cuh <scheduler_8cuh>`
+                     - file :ref:`include\/cuda\/experimental\/\_\_stf\/internal\/slice.cuh <internal_2slice_8cuh>`
+                     - file :ref:`include\/cuda\/experimental\/\_\_stf\/internal\/task.cuh <task_8cuh>`
+                     - file :ref:`include\/cuda\/experimental\/\_\_stf\/internal\/task\_dep.cuh <task__dep_8cuh>`
+                     - file :ref:`include\/cuda\/experimental\/\_\_stf\/internal\/task\_statistics.cuh <task__statistics_8cuh>`
+                     - file :ref:`include\/cuda\/experimental\/\_\_stf\/internal\/thread\_hierarchy.cuh <thread__hierarchy_8cuh>`
+                     - file :ref:`include\/cuda\/experimental\/\_\_stf\/internal\/void\_interface.cuh <internal_2void__interface_8cuh>`
+
+               .. dropdown:: dir :ref:`include\/cuda\/experimental\/\_\_stf\/localization <dir_601ae77b66315aaac267955fb3d4dfc9>`
+
+                  .. container:: rebreather hierarchy
+
+                     - file :ref:`include\/cuda\/experimental\/\_\_stf\/localization\/composite\_slice.cuh <composite__slice_8cuh>`
+
+               .. dropdown:: dir :ref:`include\/cuda\/experimental\/\_\_stf\/places <dir_0d707c7b2e641cd4a4b5d76502f17fc3>`
+
+                  .. dropdown:: dir :ref:`include\/cuda\/experimental\/\_\_stf\/places\/exec <dir_fc121962c2ae7923cd0f18a27646ba66>`
+
+                     .. dropdown:: dir :ref:`include\/cuda\/experimental\/\_\_stf\/places\/exec\/host <dir_469814e8ed48e9a31eb954a5dcca2a00>`
+
+                        .. container:: rebreather hierarchy
+
+                           - file :ref:`include\/cuda\/experimental\/\_\_stf\/places\/exec\/host\/callback\_queues.cuh <callback__queues_8cuh>`
+
+                     .. container:: rebreather hierarchy
+
+                        - file :ref:`include\/cuda\/experimental\/\_\_stf\/places\/exec\/cuda\_stream.cuh <cuda__stream_8cuh>`
+                        - file :ref:`include\/cuda\/experimental\/\_\_stf\/places\/exec\/green\_context.cuh <green__context_8cuh>`
+                        - file :ref:`include\/cuda\/experimental\/\_\_stf\/places\/exec\/green\_ctx\_view.cuh <green__ctx__view_8cuh>`
+
+                  .. container:: rebreather hierarchy
+
+                     - file :ref:`include\/cuda\/experimental\/\_\_stf\/places\/blocked\_partition.cuh <blocked__partition_8cuh>`
+                     - file :ref:`include\/cuda\/experimental\/\_\_stf\/places\/cyclic\_shape.cuh <cyclic__shape_8cuh>`
+                     - file :ref:`include\/cuda\/experimental\/\_\_stf\/places\/inner\_shape.cuh <inner__shape_8cuh>`
+                     - file :ref:`include\/cuda\/experimental\/\_\_stf\/places\/loop\_dispatch.cuh <loop__dispatch_8cuh>`
+                     - file :ref:`include\/cuda\/experimental\/\_\_stf\/places\/place\_partition.cuh <place__partition_8cuh>`
+                     - file :ref:`include\/cuda\/experimental\/\_\_stf\/places\/places.cuh <places_8cuh>`
+                     - file :ref:`include\/cuda\/experimental\/\_\_stf\/places\/tiled\_partition.cuh <tiled__partition_8cuh>`
+
+               .. dropdown:: dir :ref:`include\/cuda\/experimental\/\_\_stf\/stream <dir_8d1573554a2d822bef6ec5f1076cd11a>`
+
+                  .. dropdown:: dir :ref:`include\/cuda\/experimental\/\_\_stf\/stream\/interfaces <dir_51a4a9bc7ddf6057d2d89ef71916308f>`
+
+                     .. container:: rebreather hierarchy
+
+                        - file :ref:`include\/cuda\/experimental\/\_\_stf\/stream\/interfaces\/hashtable\_linearprobing.cuh <stream_2interfaces_2hashtable__linearprobing_8cuh>`
+                        - file :ref:`include\/cuda\/experimental\/\_\_stf\/stream\/interfaces\/slice.cuh <stream_2interfaces_2slice_8cuh>`
+                        - file :ref:`include\/cuda\/experimental\/\_\_stf\/stream\/interfaces\/slice\_reduction\_ops.cuh <slice__reduction__ops_8cuh>`
+                        - file :ref:`include\/cuda\/experimental\/\_\_stf\/stream\/interfaces\/void\_interface.cuh <stream_2interfaces_2void__interface_8cuh>`
+
+                  .. dropdown:: dir :ref:`include\/cuda\/experimental\/\_\_stf\/stream\/internal <dir_b3334876d4c6cb266af58073db3fbfc3>`
+
+                     .. container:: rebreather hierarchy
+
+                        - file :ref:`include\/cuda\/experimental\/\_\_stf\/stream\/internal\/event\_types.cuh <stream_2internal_2event__types_8cuh>`
+
+                  .. container:: rebreather hierarchy
+
+                     - file :ref:`include\/cuda\/experimental\/\_\_stf\/stream\/reduction.cuh <reduction_8cuh>`
+                     - file :ref:`include\/cuda\/experimental\/\_\_stf\/stream\/stream\_ctx.cuh <stream__ctx_8cuh>`
+                     - file :ref:`include\/cuda\/experimental\/\_\_stf\/stream\/stream\_data\_interface.cuh <stream__data__interface_8cuh>`
+                     - file :ref:`include\/cuda\/experimental\/\_\_stf\/stream\/stream\_task.cuh <stream__task_8cuh>`
+
+               .. dropdown:: dir :ref:`include\/cuda\/experimental\/\_\_stf\/utility <dir_14105bc4e1d6df9ad9d3d55d2b993f2a>`
+
+                  .. container:: rebreather hierarchy
+
+                     - file :ref:`include\/cuda\/experimental\/\_\_stf\/utility\/cartesian\_iterator.cuh <cartesian__iterator_8cuh>`
+                     - file :ref:`include\/cuda\/experimental\/\_\_stf\/utility\/constant\_logical\_data.cuh <constant__logical__data_8cuh>`
+                     - file :ref:`include\/cuda\/experimental\/\_\_stf\/utility\/core.cuh <core_8cuh>`
+                     - file :ref:`include\/cuda\/experimental\/\_\_stf\/utility\/cuda\_attributes.cuh <cuda__attributes_8cuh>`
+                     - file :ref:`include\/cuda\/experimental\/\_\_stf\/utility\/cuda\_safe\_call.cuh <cuda__safe__call_8cuh>`
+                     - file :ref:`include\/cuda\/experimental\/\_\_stf\/utility\/dimensions.cuh <____stf_2utility_2dimensions_8cuh>`
+                     - file :ref:`include\/cuda\/experimental\/\_\_stf\/utility\/getenv\_cache.cuh <getenv__cache_8cuh>`
+                     - file :ref:`include\/cuda\/experimental\/\_\_stf\/utility\/handle.cuh <handle_8cuh>`
+                     - file :ref:`include\/cuda\/experimental\/\_\_stf\/utility\/hash.cuh <hash_8cuh>`
+                     - file :ref:`include\/cuda\/experimental\/\_\_stf\/utility\/memory.cuh <memory_8cuh>`
+                     - file :ref:`include\/cuda\/experimental\/\_\_stf\/utility\/nvtx.cuh <nvtx_8cuh>`
+                     - file :ref:`include\/cuda\/experimental\/\_\_stf\/utility\/occupancy.cuh <occupancy_8cuh>`
+                     - file :ref:`include\/cuda\/experimental\/\_\_stf\/utility\/pretty\_print.cuh <pretty__print_8cuh>`
+                     - file :ref:`include\/cuda\/experimental\/\_\_stf\/utility\/run\_once.cuh <run__once_8cuh>`
+                     - file :ref:`include\/cuda\/experimental\/\_\_stf\/utility\/scope\_guard.cuh <scope__guard_8cuh>`
+                     - file :ref:`include\/cuda\/experimental\/\_\_stf\/utility\/source\_location.cuh <source__location_8cuh>`
+                     - file :ref:`include\/cuda\/experimental\/\_\_stf\/utility\/stopwatch.cuh <stopwatch_8cuh>`
+                     - file :ref:`include\/cuda\/experimental\/\_\_stf\/utility\/stream\_to\_dev.cuh <stream__to__dev_8cuh>`
+                     - file :ref:`include\/cuda\/experimental\/\_\_stf\/utility\/threads.cuh <threads_8cuh>`
+                     - file :ref:`include\/cuda\/experimental\/\_\_stf\/utility\/traits.cuh <traits_8cuh>`
+                     - file :ref:`include\/cuda\/experimental\/\_\_stf\/utility\/unique\_id.cuh <unique__id_8cuh>`
+                     - file :ref:`include\/cuda\/experimental\/\_\_stf\/utility\/unittest.cuh <unittest_8cuh>`
+                     - file :ref:`include\/cuda\/experimental\/\_\_stf\/utility\/unstable\_unique.cuh <unstable__unique_8cuh>`
+
+            .. dropdown:: dir :ref:`include\/cuda\/experimental\/\_\_stream <dir_91ffbf4bff8733399d1fc87a794ed2b4>`
+
+               .. container:: rebreather hierarchy
+
+                  - file :ref:`include\/cuda\/experimental\/\_\_stream\/device\_transform.cuh <device__transform_8cuh>`
+                  - file :ref:`include\/cuda\/experimental\/\_\_stream\/internal\_streams.cuh <internal__streams_8cuh>`
+                  - file :ref:`include\/cuda\/experimental\/\_\_stream\/stream.cuh <stream_8cuh>`
+                  - file :ref:`include\/cuda\/experimental\/\_\_stream\/stream\_ref.cuh <stream__ref_8cuh>`
+
+            .. container:: rebreather hierarchy
+
+               - file :ref:`include\/cuda\/experimental\/graph.cuh <graph_8cuh>`
+               - file :ref:`include\/cuda\/experimental\/stf.cuh <stf_8cuh>`
+
+Namespace hierarchy
+-------------------
+
+.. card::
+   :class-card: rebreather hierarchy
+
+   .. dropdown:: namespace :ref:`cuda <namespacecuda>`
+
+      .. dropdown:: namespace :ref:`cuda\:\:experimental <namespacecuda_1_1experimental>`
+
+         - namespace :ref:`cuda\:\:experimental\:\:execution <namespacecuda_1_1experimental_1_1execution>`
+
+         - namespace :ref:`cuda\:\:experimental\:\:hierarchy <namespacecuda_1_1experimental_1_1hierarchy>`
+
+         .. dropdown:: namespace :ref:`cuda\:\:experimental\:\:stf <namespacecuda_1_1experimental_1_1stf>`
+
+            .. dropdown:: namespace :ref:`cuda\:\:experimental\:\:stf\:\:reducer <namespacecuda_1_1experimental_1_1stf_1_1reducer>`
+
+               .. container:: rebreather hierarchy
+
+                  - class :ref:`cuda\:\:experimental\:\:stf\:\:reducer\:\:bitwise\_and <classcuda_1_1experimental_1_1stf_1_1reducer_1_1bitwise__and>`
+                  - class :ref:`cuda\:\:experimental\:\:stf\:\:reducer\:\:bitwise\_or <classcuda_1_1experimental_1_1stf_1_1reducer_1_1bitwise__or>`
+                  - class :ref:`cuda\:\:experimental\:\:stf\:\:reducer\:\:bitwise\_xor <classcuda_1_1experimental_1_1stf_1_1reducer_1_1bitwise__xor>`
+                  - class :ref:`cuda\:\:experimental\:\:stf\:\:reducer\:\:logical\_and <classcuda_1_1experimental_1_1stf_1_1reducer_1_1logical__and>`
+                  - class :ref:`cuda\:\:experimental\:\:stf\:\:reducer\:\:logical\_or <classcuda_1_1experimental_1_1stf_1_1reducer_1_1logical__or>`
+                  - class :ref:`cuda\:\:experimental\:\:stf\:\:reducer\:\:maxval <classcuda_1_1experimental_1_1stf_1_1reducer_1_1maxval>`
+                  - class :ref:`cuda\:\:experimental\:\:stf\:\:reducer\:\:minval <classcuda_1_1experimental_1_1stf_1_1reducer_1_1minval>`
+                  - class :ref:`cuda\:\:experimental\:\:stf\:\:reducer\:\:product <classcuda_1_1experimental_1_1stf_1_1reducer_1_1product>`
+                  - class :ref:`cuda\:\:experimental\:\:stf\:\:reducer\:\:sum <classcuda_1_1experimental_1_1stf_1_1reducer_1_1sum>`
+
+            .. container:: rebreather hierarchy
+
+               - enum :ref:`cuda\:\:experimental\:\:stf\:\:access\_mode <constants_8cuh_1a923aa8f0346e2b2a9e970a0fab753673>`
+               - class :ref:`cuda\:\:experimental\:\:stf\:\:algorithm <classcuda_1_1experimental_1_1stf_1_1algorithm>`
+               - class :ref:`cuda\:\:experimental\:\:stf\:\:async\_resources\_handle <classcuda_1_1experimental_1_1stf_1_1async__resources__handle>`
+               - class :ref:`cuda\:\:experimental\:\:stf\:\:backend\_ctx <classcuda_1_1experimental_1_1stf_1_1backend__ctx>`
+               - class :ref:`cuda\:\:experimental\:\:stf\:\:backend\_ctx\_untyped <classcuda_1_1experimental_1_1stf_1_1backend__ctx__untyped>`
+               - class :ref:`cuda\:\:experimental\:\:stf\:\:block\_allocator <classcuda_1_1experimental_1_1stf_1_1block__allocator>`
+               - class :ref:`cuda\:\:experimental\:\:stf\:\:block\_allocator\_interface <classcuda_1_1experimental_1_1stf_1_1block__allocator__interface>`
+               - class :ref:`cuda\:\:experimental\:\:stf\:\:block\_allocator\_untyped <classcuda_1_1experimental_1_1stf_1_1block__allocator__untyped>`
+               - class :ref:`cuda\:\:experimental\:\:stf\:\:blocked\_partition\_custom <classcuda_1_1experimental_1_1stf_1_1blocked__partition__custom>`
+               - class :ref:`cuda\:\:experimental\:\:stf\:\:box <classcuda_1_1experimental_1_1stf_1_1box>`
+               - class :ref:`cuda\:\:experimental\:\:stf\:\:buddy\_allocator <classcuda_1_1experimental_1_1stf_1_1buddy__allocator>`
+               - class :ref:`cuda\:\:experimental\:\:stf\:\:cached\_block\_allocator <classcuda_1_1experimental_1_1stf_1_1cached__block__allocator>`
+               - class :ref:`cuda\:\:experimental\:\:stf\:\:cached\_block\_allocator\_fifo <classcuda_1_1experimental_1_1stf_1_1cached__block__allocator__fifo>`
+               - class :ref:`cuda\:\:experimental\:\:stf\:\:constant\_logical\_data <classcuda_1_1experimental_1_1stf_1_1constant__logical__data>`
+               - class :ref:`cuda\:\:experimental\:\:stf\:\:context <classcuda_1_1experimental_1_1stf_1_1context>`
+               - class :ref:`cuda\:\:experimental\:\:stf\:\:cuda\_exception <classcuda_1_1experimental_1_1stf_1_1cuda__exception>`
+               - struct :ref:`cuda\:\:experimental\:\:stf\:\:cuda\_kernel\_desc <structcuda_1_1experimental_1_1stf_1_1cuda__kernel__desc>`
+               - class :ref:`cuda\:\:experimental\:\:stf\:\:cyclic\_partition <classcuda_1_1experimental_1_1stf_1_1cyclic__partition>`
+               - class :ref:`cuda\:\:experimental\:\:stf\:\:cyclic\_shape <classcuda_1_1experimental_1_1stf_1_1cyclic__shape>`
+               - class :ref:`cuda\:\:experimental\:\:stf\:\:data\_impl\_base <classcuda_1_1experimental_1_1stf_1_1data__impl__base>`
+               - class :ref:`cuda\:\:experimental\:\:stf\:\:data\_instance <classcuda_1_1experimental_1_1stf_1_1data__instance>`
+               - class :ref:`cuda\:\:experimental\:\:stf\:\:data\_interface <classcuda_1_1experimental_1_1stf_1_1data__interface>`
+               - class :ref:`cuda\:\:experimental\:\:stf\:\:data\_place <classcuda_1_1experimental_1_1stf_1_1data__place>`
+               - struct :ref:`cuda\:\:experimental\:\:stf\:\:decorated\_stream <structcuda_1_1experimental_1_1stf_1_1decorated__stream>`
+               - class :ref:`cuda\:\:experimental\:\:stf\:\:deferred\_stream\_task <classcuda_1_1experimental_1_1stf_1_1deferred__stream__task>`
+               - class :ref:`cuda\:\:experimental\:\:stf\:\:dim4 <classcuda_1_1experimental_1_1stf_1_1dim4>`
+               - class :ref:`cuda\:\:experimental\:\:stf\:\:event\_impl <classcuda_1_1experimental_1_1stf_1_1event__impl>`
+               - class :ref:`cuda\:\:experimental\:\:stf\:\:event\_list <classcuda_1_1experimental_1_1stf_1_1event__list>`
+               - class :ref:`cuda\:\:experimental\:\:stf\:\:exec\_affinity <classcuda_1_1experimental_1_1stf_1_1exec__affinity>`
+               - class :ref:`cuda\:\:experimental\:\:stf\:\:exec\_place <classcuda_1_1experimental_1_1stf_1_1exec__place>`
+               - class :ref:`cuda\:\:experimental\:\:stf\:\:exec\_place\_cuda\_stream <classcuda_1_1experimental_1_1stf_1_1exec__place__cuda__stream>`
+               - class :ref:`cuda\:\:experimental\:\:stf\:\:exec\_place\_green\_ctx <classcuda_1_1experimental_1_1stf_1_1exec__place__green__ctx>`
+               - class :ref:`cuda\:\:experimental\:\:stf\:\:exec\_place\_grid <classcuda_1_1experimental_1_1stf_1_1exec__place__grid>`
+               - class :ref:`cuda\:\:experimental\:\:stf\:\:exec\_place\_host <classcuda_1_1experimental_1_1stf_1_1exec__place__host>`
+               - class :ref:`cuda\:\:experimental\:\:stf\:\:executable\_graph\_cache <classcuda_1_1experimental_1_1stf_1_1executable__graph__cache>`
+               - class :ref:`cuda\:\:experimental\:\:stf\:\:executable\_graph\_cache\_stat <classcuda_1_1experimental_1_1stf_1_1executable__graph__cache__stat>`
+               - class :ref:`cuda\:\:experimental\:\:stf\:\:fixed\_size\_allocator <classcuda_1_1experimental_1_1stf_1_1fixed__size__allocator>`
+               - class :ref:`cuda\:\:experimental\:\:stf\:\:for\_each\_batched <classcuda_1_1experimental_1_1stf_1_1for__each__batched>`
+               - class :ref:`cuda\:\:experimental\:\:stf\:\:frozen\_logical\_data <classcuda_1_1experimental_1_1stf_1_1frozen__logical__data>`
+               - class :ref:`cuda\:\:experimental\:\:stf\:\:graph\_ctx <classcuda_1_1experimental_1_1stf_1_1graph__ctx>`
+               - class :ref:`cuda\:\:experimental\:\:stf\:\:graph\_data\_interface <classcuda_1_1experimental_1_1stf_1_1graph__data__interface>`
+               - class :ref:`cuda\:\:experimental\:\:stf\:\:graph\_task <classcuda_1_1experimental_1_1stf_1_1graph__task>`
+               - class :ref:`cuda\:\:experimental\:\:stf\:\:graph\_task\<\> <classcuda_1_1experimental_1_1stf_1_1graph__task_3_4>`
+               - struct :ref:`cuda\:\:experimental\:\:stf\:\:graphed\_interface\_of <structcuda_1_1experimental_1_1stf_1_1graphed__interface__of>`
+               - struct :ref:`cuda\:\:experimental\:\:stf\:\:graphed\_interface\_of\< mdspan\< T\, P... \> \> <structcuda_1_1experimental_1_1stf_1_1graphed__interface__of_3_01mdspan_3_01T_00_01P_8_8_8_01_4_01_4>`
+               - struct :ref:`cuda\:\:experimental\:\:stf\:\:graphed\_interface\_of\< scalar\_view\< T \> \> <structcuda_1_1experimental_1_1stf_1_1graphed__interface__of_3_01scalar__view_3_01T_01_4_01_4>`
+               - struct :ref:`cuda\:\:experimental\:\:stf\:\:graphed\_interface\_of\< void\_interface \> <structcuda_1_1experimental_1_1stf_1_1graphed__interface__of_3_01void__interface_01_4>`
+               - class :ref:`cuda\:\:experimental\:\:stf\:\:green\_context\_helper <classcuda_1_1experimental_1_1stf_1_1green__context__helper>`
+               - class :ref:`cuda\:\:experimental\:\:stf\:\:green\_ctx\_view <classcuda_1_1experimental_1_1stf_1_1green__ctx__view>`
+               - struct :ref:`cuda\:\:experimental\:\:stf\:\:hash <structcuda_1_1experimental_1_1stf_1_1hash>`
+               - struct :ref:`cuda\:\:experimental\:\:stf\:\:hash\< cuda\:\:experimental\:\:stf\:\:green\_ctx\_view \> <structcuda_1_1experimental_1_1stf_1_1hash_3_01cuda_1_1experimental_1_1stf_1_1green__ctx__view_01_4>`
+               - struct :ref:`cuda\:\:experimental\:\:stf\:\:hash\< data\_place \> <structcuda_1_1experimental_1_1stf_1_1hash_3_01data__place_01_4>`
+               - struct :ref:`cuda\:\:experimental\:\:stf\:\:hash\< dim4 \> <structcuda_1_1experimental_1_1stf_1_1hash_3_01dim4_01_4>`
+               - struct :ref:`cuda\:\:experimental\:\:stf\:\:hash\< hashtable \> <structcuda_1_1experimental_1_1stf_1_1hash_3_01hashtable_01_4>`
+               - struct :ref:`cuda\:\:experimental\:\:stf\:\:hash\< mdspan\< P... \> \> <structcuda_1_1experimental_1_1stf_1_1hash_3_01mdspan_3_01P_8_8_8_01_4_01_4>`
+               - struct :ref:`cuda\:\:experimental\:\:stf\:\:hash\< pos4 \> <structcuda_1_1experimental_1_1stf_1_1hash_3_01pos4_01_4>`
+               - struct :ref:`cuda\:\:experimental\:\:stf\:\:hash\< scalar\_view\< T \> \> <structcuda_1_1experimental_1_1stf_1_1hash_3_01scalar__view_3_01T_01_4_01_4>`
+               - struct :ref:`cuda\:\:experimental\:\:stf\:\:hash\< task \> <structcuda_1_1experimental_1_1stf_1_1hash_3_01task_01_4>`
+               - struct :ref:`cuda\:\:experimental\:\:stf\:\:hash\< void\_interface \> <structcuda_1_1experimental_1_1stf_1_1hash_3_01void__interface_01_4>`
+               - struct :ref:`cuda\:\:experimental\:\:stf\:\:hash\<\:\:std\:\:pair\< T1\, T2 \> \> <structcuda_1_1experimental_1_1stf_1_1hash_3_1_1std_1_1pair_3_01T1_00_01T2_01_4_01_4>`
+               - struct :ref:`cuda\:\:experimental\:\:stf\:\:hash\<\:\:std\:\:tuple\< Ts... \> \> <structcuda_1_1experimental_1_1stf_1_1hash_3_1_1std_1_1tuple_3_01Ts_8_8_8_01_4_01_4>`
+               - class :ref:`cuda\:\:experimental\:\:stf\:\:hashtable <classcuda_1_1experimental_1_1stf_1_1hashtable>`
+               - class :ref:`cuda\:\:experimental\:\:stf\:\:hashtable\_stream\_interface <classcuda_1_1experimental_1_1stf_1_1hashtable__stream__interface>`
+               - class :ref:`cuda\:\:experimental\:\:stf\:\:interpreted\_execution\_policy <classcuda_1_1experimental_1_1stf_1_1interpreted__execution__policy>`
+               - struct :ref:`cuda\:\:experimental\:\:stf\:\:layout\_stride <structcuda_1_1experimental_1_1stf_1_1layout__stride>`
+               - class :ref:`cuda\:\:experimental\:\:stf\:\:logical\_data <classcuda_1_1experimental_1_1stf_1_1logical__data>`
+               - class :ref:`cuda\:\:experimental\:\:stf\:\:logical\_data\_untyped <classcuda_1_1experimental_1_1stf_1_1logical__data__untyped>`
+               - class :ref:`cuda\:\:experimental\:\:stf\:\:no\_init <classcuda_1_1experimental_1_1stf_1_1no__init>`
+               - class :ref:`cuda\:\:experimental\:\:stf\:\:nvtx\_range <classcuda_1_1experimental_1_1stf_1_1nvtx__range>`
+               - class :ref:`cuda\:\:experimental\:\:stf\:\:optionally\_static <classcuda_1_1experimental_1_1stf_1_1optionally__static>`
+               - struct :ref:`cuda\:\:experimental\:\:stf\:\:owning\_container\_of <structcuda_1_1experimental_1_1stf_1_1owning__container__of>`
+               - struct :ref:`cuda\:\:experimental\:\:stf\:\:owning\_container\_of\< scalar\_view\< T \> \> <structcuda_1_1experimental_1_1stf_1_1owning__container__of_3_01scalar__view_3_01T_01_4_01_4>`
+               - class :ref:`cuda\:\:experimental\:\:stf\:\:place\_partition <classcuda_1_1experimental_1_1stf_1_1place__partition>`
+               - class :ref:`cuda\:\:experimental\:\:stf\:\:pooled\_allocator <classcuda_1_1experimental_1_1stf_1_1pooled__allocator>`
+               - struct :ref:`cuda\:\:experimental\:\:stf\:\:pooled\_allocator\_config <structcuda_1_1experimental_1_1stf_1_1pooled__allocator__config>`
+               - class :ref:`cuda\:\:experimental\:\:stf\:\:pos4 <classcuda_1_1experimental_1_1stf_1_1pos4>`
+               - class :ref:`cuda\:\:experimental\:\:stf\:\:print\_type\_name\_and\_fail <classcuda_1_1experimental_1_1stf_1_1print__type__name__and__fail>`
+               - class :ref:`cuda\:\:experimental\:\:stf\:\:reduction\_operator\_base <classcuda_1_1experimental_1_1stf_1_1reduction__operator__base>`
+               - class :ref:`cuda\:\:experimental\:\:stf\:\:run\_once <classcuda_1_1experimental_1_1stf_1_1run__once>`
+               - class :ref:`cuda\:\:experimental\:\:stf\:\:scalar\_graph\_interface <classcuda_1_1experimental_1_1stf_1_1scalar__graph__interface>`
+               - class :ref:`cuda\:\:experimental\:\:stf\:\:scalar\_stream\_interface <classcuda_1_1experimental_1_1stf_1_1scalar__stream__interface>`
+               - struct :ref:`cuda\:\:experimental\:\:stf\:\:scalar\_view <structcuda_1_1experimental_1_1stf_1_1scalar__view>`
+               - class :ref:`cuda\:\:experimental\:\:stf\:\:shape\_of <classcuda_1_1experimental_1_1stf_1_1shape__of>`
+               - class :ref:`cuda\:\:experimental\:\:stf\:\:shape\_of\< hashtable \> <classcuda_1_1experimental_1_1stf_1_1shape__of_3_01hashtable_01_4>`
+               - class :ref:`cuda\:\:experimental\:\:stf\:\:shape\_of\< mdspan\< T\, P... \> \> <classcuda_1_1experimental_1_1stf_1_1shape__of_3_01mdspan_3_01T_00_01P_8_8_8_01_4_01_4>`
+               - class :ref:`cuda\:\:experimental\:\:stf\:\:shape\_of\< scalar\_view\< T \> \> <classcuda_1_1experimental_1_1stf_1_1shape__of_3_01scalar__view_3_01T_01_4_01_4>`
+               - class :ref:`cuda\:\:experimental\:\:stf\:\:shape\_of\< void\_interface \> <classcuda_1_1experimental_1_1stf_1_1shape__of_3_01void__interface_01_4>`
+               - class :ref:`cuda\:\:experimental\:\:stf\:\:slice\_graph\_interface <classcuda_1_1experimental_1_1stf_1_1slice__graph__interface>`
+               - class :ref:`cuda\:\:experimental\:\:stf\:\:slice\_reduction\_op <classcuda_1_1experimental_1_1stf_1_1slice__reduction__op>`
+               - class :ref:`cuda\:\:experimental\:\:stf\:\:slice\_reduction\_op\_sum <classcuda_1_1experimental_1_1stf_1_1slice__reduction__op__sum>`
+               - class :ref:`cuda\:\:experimental\:\:stf\:\:slice\_reduction\_op\_sum\_impl <classcuda_1_1experimental_1_1stf_1_1slice__reduction__op__sum__impl>`
+               - class :ref:`cuda\:\:experimental\:\:stf\:\:slice\_stream\_interface <classcuda_1_1experimental_1_1stf_1_1slice__stream__interface>`
+               - class :ref:`cuda\:\:experimental\:\:stf\:\:small\_vector <classcuda_1_1experimental_1_1stf_1_1small__vector>`
+               - class :ref:`cuda\:\:experimental\:\:stf\:\:stopwatch <classcuda_1_1experimental_1_1stf_1_1stopwatch>`
+               - class :ref:`cuda\:\:experimental\:\:stf\:\:stream\_adapter <classcuda_1_1experimental_1_1stf_1_1stream__adapter>`
+               - class :ref:`cuda\:\:experimental\:\:stf\:\:stream\_and\_event <classcuda_1_1experimental_1_1stf_1_1stream__and__event>`
+               - class :ref:`cuda\:\:experimental\:\:stf\:\:stream\_async\_op <classcuda_1_1experimental_1_1stf_1_1stream__async__op>`
+               - class :ref:`cuda\:\:experimental\:\:stf\:\:stream\_ctx <classcuda_1_1experimental_1_1stf_1_1stream__ctx>`
+               - class :ref:`cuda\:\:experimental\:\:stf\:\:stream\_data\_interface <classcuda_1_1experimental_1_1stf_1_1stream__data__interface>`
+               - class :ref:`cuda\:\:experimental\:\:stf\:\:stream\_data\_interface\_simple <classcuda_1_1experimental_1_1stf_1_1stream__data__interface__simple>`
+               - struct :ref:`cuda\:\:experimental\:\:stf\:\:stream\_pool <structcuda_1_1experimental_1_1stf_1_1stream__pool>`
+               - class :ref:`cuda\:\:experimental\:\:stf\:\:stream\_reduction\_operator <classcuda_1_1experimental_1_1stf_1_1stream__reduction__operator>`
+               - class :ref:`cuda\:\:experimental\:\:stf\:\:stream\_reduction\_operator\_untyped <classcuda_1_1experimental_1_1stf_1_1stream__reduction__operator__untyped>`
+               - class :ref:`cuda\:\:experimental\:\:stf\:\:stream\_task <classcuda_1_1experimental_1_1stf_1_1stream__task>`
+               - class :ref:`cuda\:\:experimental\:\:stf\:\:stream\_task\<\> <classcuda_1_1experimental_1_1stf_1_1stream__task_3_4>`
+               - struct :ref:`cuda\:\:experimental\:\:stf\:\:streamed\_interface\_of <structcuda_1_1experimental_1_1stf_1_1streamed__interface__of>`
+               - struct :ref:`cuda\:\:experimental\:\:stf\:\:streamed\_interface\_of\< hashtable \> <structcuda_1_1experimental_1_1stf_1_1streamed__interface__of_3_01hashtable_01_4>`
+               - struct :ref:`cuda\:\:experimental\:\:stf\:\:streamed\_interface\_of\< mdspan\< T\, P... \> \> <structcuda_1_1experimental_1_1stf_1_1streamed__interface__of_3_01mdspan_3_01T_00_01P_8_8_8_01_4_01_4>`
+               - struct :ref:`cuda\:\:experimental\:\:stf\:\:streamed\_interface\_of\< scalar\_view\< T \> \> <structcuda_1_1experimental_1_1stf_1_1streamed__interface__of_3_01scalar__view_3_01T_01_4_01_4>`
+               - struct :ref:`cuda\:\:experimental\:\:stf\:\:streamed\_interface\_of\< void\_interface \> <structcuda_1_1experimental_1_1stf_1_1streamed__interface__of_3_01void__interface_01_4>`
+               - class :ref:`cuda\:\:experimental\:\:stf\:\:task <classcuda_1_1experimental_1_1stf_1_1task>`
+               - class :ref:`cuda\:\:experimental\:\:stf\:\:task\_dep <classcuda_1_1experimental_1_1stf_1_1task__dep>`
+               - class :ref:`cuda\:\:experimental\:\:stf\:\:task\_dep\< T\, void\, false \> <classcuda_1_1experimental_1_1stf_1_1task__dep_3_01T_00_01void_00_01false_01_4>`
+               - class :ref:`cuda\:\:experimental\:\:stf\:\:task\_dep\_untyped <classcuda_1_1experimental_1_1stf_1_1task__dep__untyped>`
+               - class :ref:`cuda\:\:experimental\:\:stf\:\:task\_dep\_vector <classcuda_1_1experimental_1_1stf_1_1task__dep__vector>`
+               - class :ref:`cuda\:\:experimental\:\:stf\:\:task\_set <classcuda_1_1experimental_1_1stf_1_1task__set>`
+               - class :ref:`cuda\:\:experimental\:\:stf\:\:thread\_hierarchy <classcuda_1_1experimental_1_1stf_1_1thread__hierarchy>`
+               - class :ref:`cuda\:\:experimental\:\:stf\:\:thread\_hierarchy\_spec <classcuda_1_1experimental_1_1stf_1_1thread__hierarchy__spec>`
+               - class :ref:`cuda\:\:experimental\:\:stf\:\:thread\_hierarchy\_spec\< can\_sync\, width\, lower\_levels... \> <classcuda_1_1experimental_1_1stf_1_1thread__hierarchy__spec_3_01can__sync_00_01width_00_01lower__levels_8_8_8_01_4>`
+               - class :ref:`cuda\:\:experimental\:\:stf\:\:thread\_hierarchy\_spec\<\> <classcuda_1_1experimental_1_1stf_1_1thread__hierarchy__spec_3_4>`
+               - class :ref:`cuda\:\:experimental\:\:stf\:\:tiled\_partition <classcuda_1_1experimental_1_1stf_1_1tiled__partition>`
+               - class :ref:`cuda\:\:experimental\:\:stf\:\:uncached\_block\_allocator <classcuda_1_1experimental_1_1stf_1_1uncached__block__allocator>`
+               - class :ref:`cuda\:\:experimental\:\:stf\:\:uncached\_graph\_allocator <classcuda_1_1experimental_1_1stf_1_1uncached__graph__allocator>`
+               - class :ref:`cuda\:\:experimental\:\:stf\:\:uncached\_stream\_allocator <classcuda_1_1experimental_1_1stf_1_1uncached__stream__allocator>`
+               - class :ref:`cuda\:\:experimental\:\:stf\:\:void\_graph\_interface <classcuda_1_1experimental_1_1stf_1_1void__graph__interface>`
+               - class :ref:`cuda\:\:experimental\:\:stf\:\:void\_interface <classcuda_1_1experimental_1_1stf_1_1void__interface>`
+               - class :ref:`cuda\:\:experimental\:\:stf\:\:void\_stream\_interface <classcuda_1_1experimental_1_1stf_1_1void__stream__interface>`
+               - enum :ref:`cuda\:\:experimental\:\:stf\:\:hw\_scope <execution__policy_8cuh_1a82008bf924d44262d76e4dd3e923e196>`
+               - enum :ref:`cuda\:\:experimental\:\:stf\:\:instance\_id\_t <places_8cuh_1a0aecbcdcde59511ead903c663bd205da>`
+               - enum :ref:`cuda\:\:experimental\:\:stf\:\:mem <execution__policy_8cuh_1a843ff5e8d2e1f11de9bffbf6bb794ff2>`
+               - enum :ref:`cuda\:\:experimental\:\:stf\:\:place\_partition\_scope <place__partition_8cuh_1a5ae181afc51b82e614e9438af5705632>`
+               - enum :ref:`cuda\:\:experimental\:\:stf\:\:scope\_guard\_condition <scope__guard_8cuh_1aabada0bc94a44064d40bed511a02b6df>`
+
+         .. container:: rebreather hierarchy
+
+            - struct :ref:`cuda\:\:experimental\:\:allowed\_levels <structcuda_1_1experimental_1_1allowed__levels>`
+            - class :ref:`cuda\:\:experimental\:\:async\_buffer <classcuda_1_1experimental_1_1async__buffer>`
+            - class :ref:`cuda\:\:experimental\:\:basic\_any\_resource <classcuda_1_1experimental_1_1basic__any__resource>`
+            - class :ref:`cuda\:\:experimental\:\:basic\_resource\_ref <classcuda_1_1experimental_1_1basic__resource__ref>`
+            - struct :ref:`cuda\:\:experimental\:\:block\_level <structcuda_1_1experimental_1_1block__level>`
+            - struct :ref:`cuda\:\:experimental\:\:cluster\_level <structcuda_1_1experimental_1_1cluster__level>`
+            - struct :ref:`cuda\:\:experimental\:\:cooperative\_launch <structcuda_1_1experimental_1_1cooperative__launch>`
+            - class :ref:`cuda\:\:experimental\:\:device\_memory\_pool <classcuda_1_1experimental_1_1device__memory__pool>`
+            - class :ref:`cuda\:\:experimental\:\:device\_memory\_resource <classcuda_1_1experimental_1_1device__memory__resource>`
+            - struct :ref:`cuda\:\:experimental\:\:dynamic\_shared\_memory\_option <structcuda_1_1experimental_1_1dynamic__shared__memory__option>`
+            - struct :ref:`cuda\:\:experimental\:\:graph <structcuda_1_1experimental_1_1graph>`
+            - struct :ref:`cuda\:\:experimental\:\:graph\_builder <structcuda_1_1experimental_1_1graph__builder>`
+            - struct :ref:`cuda\:\:experimental\:\:graph\_builder\_ref <structcuda_1_1experimental_1_1graph__builder__ref>`
+            - struct :ref:`cuda\:\:experimental\:\:graph\_node\_ref <structcuda_1_1experimental_1_1graph__node__ref>`
+            - struct :ref:`cuda\:\:experimental\:\:grid\_level <structcuda_1_1experimental_1_1grid__level>`
+            - class :ref:`cuda\:\:experimental\:\:heterogeneous\_iterator <classcuda_1_1experimental_1_1heterogeneous__iterator>`
+            - struct :ref:`cuda\:\:experimental\:\:hierarchy\_dimensions <structcuda_1_1experimental_1_1hierarchy__dimensions>`
+            - struct :ref:`cuda\:\:experimental\:\:hierarchy\_level <structcuda_1_1experimental_1_1hierarchy__level>`
+            - struct :ref:`cuda\:\:experimental\:\:hierarchy\_query\_result <structcuda_1_1experimental_1_1hierarchy__query__result>`
+            - struct :ref:`cuda\:\:experimental\:\:kernel\_config <structcuda_1_1experimental_1_1kernel__config>`
+            - struct :ref:`cuda\:\:experimental\:\:launch\_priority <structcuda_1_1experimental_1_1launch__priority>`
+            - class :ref:`cuda\:\:experimental\:\:legacy\_pinned\_memory\_resource <classcuda_1_1experimental_1_1legacy__pinned__memory__resource>`
+            - struct :ref:`cuda\:\:experimental\:\:level\_dimensions <structcuda_1_1experimental_1_1level__dimensions>`
+            - class :ref:`cuda\:\:experimental\:\:logical\_device <classcuda_1_1experimental_1_1logical__device>`
+            - class :ref:`cuda\:\:experimental\:\:managed\_memory\_resource <classcuda_1_1experimental_1_1managed__memory__resource>`
+            - struct :ref:`cuda\:\:experimental\:\:memory\_pool\_properties <structcuda_1_1experimental_1_1memory__pool__properties>`
+            - struct :ref:`cuda\:\:experimental\:\:path\_builder <structcuda_1_1experimental_1_1path__builder>`
+            - class :ref:`cuda\:\:experimental\:\:pinned\_memory\_pool <classcuda_1_1experimental_1_1pinned__memory__pool>`
+            - class :ref:`cuda\:\:experimental\:\:pinned\_memory\_resource <classcuda_1_1experimental_1_1pinned__memory__resource>`
+            - struct :ref:`cuda\:\:experimental\:\:properties\_list <structcuda_1_1experimental_1_1properties__list>`
+            - struct :ref:`cuda\:\:experimental\:\:shared\_resource <structcuda_1_1experimental_1_1shared__resource>`
+            - struct :ref:`cuda\:\:experimental\:\:stream <structcuda_1_1experimental_1_1stream>`
+            - struct :ref:`cuda\:\:experimental\:\:stream\_ref <structcuda_1_1experimental_1_1stream__ref>`
+            - struct :ref:`cuda\:\:experimental\:\:thread\_level <structcuda_1_1experimental_1_1thread__level>`
+            - class :ref:`cuda\:\:experimental\:\:uninitialized\_async\_buffer <classcuda_1_1experimental_1_1uninitialized__async__buffer>`
+            - class :ref:`cuda\:\:experimental\:\:uninitialized\_buffer <classcuda_1_1experimental_1_1uninitialized__buffer>`
+            - enum :ref:`cuda\:\:experimental\:\:cudaMemAllocationHandleType <memory__pool__base_8cuh_1aba64d14d68cc216854a42e0ca6f37758>`
+            - enum :ref:`cuda\:\:experimental\:\:graph\_node\_type <graph__node__type_8cuh_1a4401baa9c7798a0dd6f981de4e549d86>`
+
+      - namespace :ref:`cuda\:\:std <namespacecuda_1_1std>`
+
+Defines
+-------
+
+.. toctree::
+   :hidden:
+   :maxdepth: 1
+
+   define_cuda__attributes_8cuh_1ac9c0ba00ccfaa0f017093f9df67acbd3
+   define_scope__guard_8cuh_1a37ccfc954af89346627b7c5120b930c3
+
+- :ref:`CUDASTF\_NO\_DEVICE\_STACK <cuda__attributes_8cuh_1ac9c0ba00ccfaa0f017093f9df67acbd3>`
+- :ref:`SCOPE <scope__guard_8cuh_1a37ccfc954af89346627b7c5120b930c3>`
+
+Directories
+-----------
+
+.. toctree::
+   :hidden:
+   :maxdepth: 1
+
+   dir_include
+
+- :ref:`include <dir_d44c64559bbebec7f509842c48db8b23>`
+
+Namespaces
+----------
+
+.. toctree::
+   :hidden:
+   :maxdepth: 1
+
+   namespace_cuda
+
+- :ref:`cuda <namespacecuda>`
+

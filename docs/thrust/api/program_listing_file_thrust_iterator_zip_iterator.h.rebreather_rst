@@ -1,0 +1,249 @@
+thrust\/iterator\/zip\_iterator.h
+=================================
+
+File members: :ref:`thrust\/iterator\/zip\_iterator.h <zip__iterator_8h>`
+
+.. code-block:: c++
+
+   /*
+    *  Copyright 2008-2013 NVIDIA Corporation
+    *
+    *  Licensed under the Apache License, Version 2.0 (the "License");
+    *  you may not use this file except in compliance with the License.
+    *  You may obtain a copy of the License at
+    *
+    *      http://www.apache.org/licenses/LICENSE-2.0
+    *
+    *  Unless required by applicable law or agreed to in writing, software
+    *  distributed under the License is distributed on an "AS IS" BASIS,
+    *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    *  See the License for the specific language governing permissions and
+    *  limitations under the License.
+    */
+
+   /*
+    * Copyright David Abrahams and Thomas Becker 2000-2006.
+    *
+    * Distributed under the Boost Software License, Version 1.0.
+    * (See accompanying NOTICE file for the complete license)
+    *
+    * For more information, see http://www.boost.org
+    */
+
+   #pragma once
+
+   #include <thrust/detail/config.h>
+
+   #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+   #  pragma GCC system_header
+   #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+   #  pragma clang system_header
+   #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+   #  pragma system_header
+   #endif // no system header
+
+   #include <thrust/advance.h>
+   #include <thrust/detail/type_traits.h>
+   #include <thrust/iterator/detail/minimum_system.h>
+   #include <thrust/iterator/detail/tuple_of_iterator_references.h>
+   #include <thrust/iterator/iterator_facade.h>
+   #include <thrust/iterator/iterator_traits.h>
+   #include <thrust/type_traits/integer_sequence.h>
+
+   #include <cuda/std/tuple>
+
+   THRUST_NAMESPACE_BEGIN
+
+   template <typename IteratorTuple>
+   class zip_iterator;
+
+   namespace detail
+   {
+   template <typename IteratorTuple>
+   struct make_zip_iterator_base
+   {
+     static_assert(!sizeof(IteratorTuple), "thrust::zip_iterator only supports cuda::std::tuple");
+   };
+
+   template <typename... Its>
+   struct make_zip_iterator_base<::cuda::std::tuple<Its...>>
+   {
+     // We need this to make proxy iterators work because those have a void reference type
+     template <class Iter>
+     using zip_iterator_reference_t =
+       _CUDA_VSTD::conditional_t<_CUDA_VSTD::is_same_v<it_reference_t<Iter>, void>,
+                                 decltype(*_CUDA_VSTD::declval<Iter>()),
+                                 it_reference_t<Iter>>;
+
+     // reference type is the type of the tuple obtained from the iterator's reference types.
+     using reference = tuple_of_iterator_references<zip_iterator_reference_t<Its>...>;
+
+     // Boost's Value type is the same as reference type. using value_type = reference;
+     using value_type = ::cuda::std::tuple<it_value_t<Its>...>;
+
+     // Difference type is the first iterator's difference type
+     using difference_type = it_difference_t<::cuda::std::tuple_element_t<0, ::cuda::std::tuple<Its...>>>;
+
+     // Iterator system is the minimum system tag in the iterator tuple
+     using system = minimum_system_t<iterator_system_t<Its>...>;
+
+     // Traversal category is the minimum traversal category in the iterator tuple
+     using traversal_category = minimum_type<iterator_traversal_t<Its>...>;
+
+     // The iterator facade type from which the zip iterator will be derived.
+     using type =
+       iterator_facade<zip_iterator<::cuda::std::tuple<Its...>>,
+                       value_type,
+                       system,
+                       traversal_category,
+                       reference,
+                       difference_type>;
+   };
+   } // namespace detail
+
+   template <typename IteratorTuple>
+   class _CCCL_DECLSPEC_EMPTY_BASES zip_iterator : public detail::make_zip_iterator_base<IteratorTuple>::type
+   {
+   public:
+     using iterator_tuple = IteratorTuple;
+
+     zip_iterator() = default;
+
+     inline _CCCL_HOST_DEVICE zip_iterator(IteratorTuple iterator_tuple)
+         : m_iterator_tuple(iterator_tuple)
+     {}
+
+     template <class... Iterators,
+               ::cuda::std::enable_if_t<(sizeof...(Iterators) != 0), int>                                  = 0,
+               ::cuda::std::enable_if_t<::cuda::std::is_constructible_v<IteratorTuple, Iterators...>, int> = 0>
+     inline _CCCL_HOST_DEVICE zip_iterator(Iterators&&... iterators)
+         : m_iterator_tuple(::cuda::std::forward<Iterators>(iterators)...)
+     {}
+
+     template <typename OtherIteratorTuple, detail::enable_if_convertible_t<OtherIteratorTuple, IteratorTuple, int> = 0>
+     inline _CCCL_HOST_DEVICE zip_iterator(const zip_iterator<OtherIteratorTuple>& other)
+         : m_iterator_tuple(other.get_iterator_tuple())
+     {}
+
+     inline _CCCL_HOST_DEVICE const IteratorTuple& get_iterator_tuple() const
+     {
+       return m_iterator_tuple;
+     }
+
+   private:
+     using super_t = typename detail::make_zip_iterator_base<IteratorTuple>::type;
+
+     friend class iterator_core_access;
+
+     using index_seq = make_index_sequence<::cuda::std::tuple_size_v<IteratorTuple>>;
+
+     _CCCL_EXEC_CHECK_DISABLE
+     template <size_t... Is>
+     _CCCL_HOST_DEVICE typename super_t::reference dereference_impl(index_sequence<Is...>) const
+     {
+       return {*::cuda::std::get<Is>(m_iterator_tuple)...};
+     }
+
+     // Dereferencing returns a tuple built from the dereferenced iterators in the iterator tuple.
+     _CCCL_HOST_DEVICE typename super_t::reference dereference() const
+     {
+       return dereference_impl(index_seq{});
+     }
+
+     // Two zip_iterators are equal if the two first iterators of the tuple are equal. Note this differs from Boost's
+     // implementation, which considers the entire tuple.
+     _CCCL_EXEC_CHECK_DISABLE
+     template <typename OtherIteratorTuple>
+     inline _CCCL_HOST_DEVICE bool equal(const zip_iterator<OtherIteratorTuple>& other) const
+     {
+       return get<0>(get_iterator_tuple()) == get<0>(other.get_iterator_tuple());
+     }
+
+     _CCCL_EXEC_CHECK_DISABLE
+     template <size_t... Is>
+     inline _CCCL_HOST_DEVICE void advance_impl(typename super_t::difference_type n, index_sequence<Is...>)
+     {
+       (..., ::cuda::std::advance(::cuda::std::get<Is>(m_iterator_tuple), n));
+     }
+
+     // Advancing a zip_iterator means to advance all iterators in the tuple
+     inline _CCCL_HOST_DEVICE void advance(typename super_t::difference_type n)
+     {
+       advance_impl(n, index_seq{});
+     }
+
+     _CCCL_EXEC_CHECK_DISABLE
+     template <size_t... Is>
+     inline _CCCL_HOST_DEVICE void increment_impl(index_sequence<Is...>)
+     {
+       (..., ++::cuda::std::get<Is>(m_iterator_tuple));
+     }
+
+     // Incrementing a zip iterator means to increment all iterators in the tuple
+     inline _CCCL_HOST_DEVICE void increment()
+     {
+       increment_impl(index_seq{});
+     }
+
+     _CCCL_EXEC_CHECK_DISABLE
+     template <size_t... Is>
+     inline _CCCL_HOST_DEVICE void decrement_impl(index_sequence<Is...>)
+     {
+       (..., --::cuda::std::get<Is>(m_iterator_tuple));
+     }
+
+     // Decrementing a zip iterator means to decrement all iterators in the tuple
+     inline _CCCL_HOST_DEVICE void decrement()
+     {
+       decrement_impl(index_seq{});
+     }
+
+     // Distance is calculated using the first iterator in the tuple.
+     template <typename OtherIteratorTuple>
+     inline _CCCL_HOST_DEVICE typename super_t::difference_type
+     distance_to(const zip_iterator<OtherIteratorTuple>& other) const
+     {
+       return get<0>(other.get_iterator_tuple()) - get<0>(get_iterator_tuple());
+     }
+
+     // The iterator tuple.
+     IteratorTuple m_iterator_tuple;
+
+   };
+
+   template <class... Iterators>
+   _CCCL_HOST_DEVICE zip_iterator(Iterators...) -> zip_iterator<::cuda::std::tuple<Iterators...>>;
+
+   template <typename... Iterators>
+   inline _CCCL_HOST_DEVICE zip_iterator<::cuda::std::tuple<Iterators...>>
+   make_zip_iterator(::cuda::std::tuple<Iterators...> t)
+   {
+     return zip_iterator<::cuda::std::tuple<Iterators...>>{t};
+   }
+
+   template <typename... Iterators>
+   inline _CCCL_HOST_DEVICE zip_iterator<::cuda::std::tuple<Iterators...>> make_zip_iterator(Iterators... its)
+   {
+     return zip_iterator<::cuda::std::tuple<Iterators...>>{its...};
+   }
+
+   THRUST_NAMESPACE_END
+
+   // libcu++ iterator traits fail for complex zip_iterators in C++17, see e.g.: https://godbolt.org/z/7jb4qG3bb
+   // The reason is that libcu++ backported the C++20 range iterator machinery to C++17, but C++17 has slightly different
+   // language rules, especially regarding `void`. We deemed to it too hard to work around the issues.
+   #if _CCCL_STD_VER < 2020
+   _CCCL_BEGIN_NAMESPACE_CUDA_STD
+   template <typename IteratorTuple>
+   struct iterator_traits<THRUST_NS_QUALIFIER::zip_iterator<IteratorTuple>>
+   {
+     using It                = THRUST_NS_QUALIFIER::zip_iterator<IteratorTuple>;
+     using value_type        = typename It::value_type;
+     using reference         = typename It::reference;
+     using pointer           = void;
+     using iterator_category = typename It::iterator_category;
+     using difference_type   = typename It::difference_type;
+   };
+   _CCCL_END_NAMESPACE_CUDA_STD
+   #endif // _CCCL_STD_VER < 2020
+

@@ -1,0 +1,6 @@
+cub\:\:BlockMergeSortStrategy
+=============================
+
+Defined in :ref:`cub\/block\/block\_merge\_sort.cuh <block__merge__sort_8cuh>`
+
+.. doxygenclass:: cub::BlockMergeSortStrategy

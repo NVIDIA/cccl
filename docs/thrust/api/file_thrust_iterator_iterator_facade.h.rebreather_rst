@@ -1,0 +1,29 @@
+.. _`iterator__facade_8h`:
+
+thrust\/iterator\/iterator\_facade.h
+====================================
+
+In directory: :ref:`thrust\/iterator <dir_4a6d8329b843c73570cce28de80cb189>`
+
+Source file: :doc:`program_listing_file_thrust_iterator_iterator_facade.h`
+
+.. doxygenfile:: thrust/iterator/iterator_facade.h
+   :sections: briefdescription detaileddescription
+
+.. toctree::
+   :maxdepth: 1
+   :hidden:
+
+   Source file <program_listing_file_thrust_iterator_iterator_facade.h>
+
+Classes
+-------
+
+- :ref:`thrust\:\:iterator\_core\_access <classthrust_1_1iterator__core__access>`
+- :ref:`thrust\:\:iterator\_facade <classthrust_1_1iterator__facade>`
+
+Namespaces
+----------
+
+- :ref:`thrust <namespacethrust>`
+

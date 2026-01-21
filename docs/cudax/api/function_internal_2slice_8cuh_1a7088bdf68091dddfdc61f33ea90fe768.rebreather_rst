@@ -1,0 +1,6 @@
+cuda\:\:experimental\:\:stf\:\:data\_hash
+=========================================
+
+Defined in :ref:`include\/cuda\/experimental\/\_\_stf\/internal\/slice.cuh <internal_2slice_8cuh>`
+
+.. doxygenfunction:: cuda::experimental::stf::data_hash([[maybe_unused]] mdspan< E, X, L, A > s, ::std::index_sequence< i... >={})

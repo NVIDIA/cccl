@@ -1,0 +1,6 @@
+cuda\:\:experimental\:\:allowed\_levels
+=======================================
+
+Defined in :ref:`include\/cuda\/experimental\/\_\_hierarchy\/hierarchy\_levels.cuh <hierarchy__levels_8cuh>`
+
+.. doxygenstruct:: cuda::experimental::allowed_levels

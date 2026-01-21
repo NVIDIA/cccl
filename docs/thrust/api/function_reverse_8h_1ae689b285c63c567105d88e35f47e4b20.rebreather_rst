@@ -1,0 +1,6 @@
+thrust\:\:reverse\_copy
+=======================
+
+Defined in :ref:`thrust\/reverse.h <reverse_8h>`
+
+.. doxygenfunction:: thrust::reverse_copy(BidirectionalIterator first, BidirectionalIterator last, OutputIterator result)

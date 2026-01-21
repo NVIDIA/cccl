@@ -1,0 +1,6 @@
+cub\:\:BlockDiscontinuity
+=========================
+
+Defined in :ref:`cub\/block\/block\_discontinuity.cuh <block__discontinuity_8cuh>`
+
+.. doxygenclass:: cub::BlockDiscontinuity

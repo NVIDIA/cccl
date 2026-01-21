@@ -1,0 +1,6 @@
+thrust\:\:random\:\:operator\=\=
+================================
+
+Defined in :ref:`thrust\/random\/uniform\_int\_distribution.h <uniform__int__distribution_8h>`
+
+.. doxygenfunction:: thrust::random::operator==(const uniform_int_distribution< IntType > &lhs, const uniform_int_distribution< IntType > &rhs)

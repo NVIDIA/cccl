@@ -1,0 +1,6 @@
+thrust\:\:mr\:\:tls\_pool
+=========================
+
+Defined in :ref:`thrust\/mr\/tls\_pool.h <tls__pool_8h>`
+
+.. doxygenfunction:: thrust::mr::tls_pool(Upstream *upstream=nullptr)

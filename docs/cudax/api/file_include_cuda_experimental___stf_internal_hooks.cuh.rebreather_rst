@@ -1,0 +1,31 @@
+.. _`hooks_8cuh`:
+
+include\/cuda\/experimental\/\_\_stf\/internal\/hooks.cuh
+=========================================================
+
+In directory: :ref:`include\/cuda\/experimental\/\_\_stf\/internal <dir_9a0afe0e3b482b68b2edbe22051d0386>`
+
+Source file: :doc:`program_listing_file_include_cuda_experimental___stf_internal_hooks.cuh`
+
+.. doxygenfile:: include/cuda/experimental/__stf/internal/hooks.cuh
+   :sections: briefdescription detaileddescription
+
+.. toctree::
+   :maxdepth: 1
+   :hidden:
+
+   Source file <program_listing_file_include_cuda_experimental___stf_internal_hooks.cuh>
+
+Functions
+---------
+
+- :ref:`cuda\:\:experimental\:\:stf\:\:data\_dump <hooks_8cuh_1aa31e5e28fd145cb7a7c71dc1304105b3>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:data\_hash <hooks_8cuh_1af2283cf984d37d11d45ce28943328427>`
+
+Namespaces
+----------
+
+- :ref:`cuda <namespacecuda>`
+- :ref:`cuda\:\:experimental <namespacecuda_1_1experimental>`
+- :ref:`cuda\:\:experimental\:\:stf <namespacecuda_1_1experimental_1_1stf>`
+

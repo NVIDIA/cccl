@@ -1,0 +1,6 @@
+thrust\:\:operator\<\<
+======================
+
+Defined in :ref:`thrust\/complex.h <complex_8h>`
+
+.. doxygenfunction:: thrust::operator<<(std::basic_ostream< CharT, Traits > &os, const complex< T > &z)

@@ -1,0 +1,6 @@
+cuda\:\:experimental\:\:stf\:\:cuda\_kernel\_desc
+=================================================
+
+Defined in :ref:`include\/cuda\/experimental\/\_\_stf\/internal\/cuda\_kernel\_scope.cuh <cuda__kernel__scope_8cuh>`
+
+.. doxygenstruct:: cuda::experimental::stf::cuda_kernel_desc

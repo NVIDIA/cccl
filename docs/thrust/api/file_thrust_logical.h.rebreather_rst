@@ -1,0 +1,33 @@
+.. _`logical_8h`:
+
+thrust\/logical.h
+=================
+
+In directory: :ref:`thrust <dir_7807dea0fb0cf4ae34b71c9fa4b0a46c>`
+
+Source file: :doc:`program_listing_file_thrust_logical.h`
+
+.. doxygenfile:: thrust/logical.h
+   :sections: briefdescription detaileddescription
+
+.. toctree::
+   :maxdepth: 1
+   :hidden:
+
+   Source file <program_listing_file_thrust_logical.h>
+
+Functions
+---------
+
+- :ref:`thrust\:\:all\_of <group__logical_1ga0e0104d89eb247a7e10a6a75c1a024a2>`
+- :ref:`thrust\:\:all\_of <group__logical_1gab2ec420fbc55976ebefecad00acb2b40>`
+- :ref:`thrust\:\:any\_of <group__logical_1ga55fa5c5afc62720119dc1d244fc40d5b>`
+- :ref:`thrust\:\:any\_of <group__logical_1gac5a8c0f6c91c7655a8e719b0e3aa030d>`
+- :ref:`thrust\:\:none\_of <group__logical_1ga796d4d448b8b06a36734b3f6ff433417>`
+- :ref:`thrust\:\:none\_of <group__logical_1gab2296f35374d339646d94a8d560aebf3>`
+
+Namespaces
+----------
+
+- :ref:`thrust <namespacethrust>`
+

@@ -1,0 +1,36 @@
+.. _`device__ptr_8h`:
+
+thrust\/device\_ptr.h
+=====================
+
+In directory: :ref:`thrust <dir_7807dea0fb0cf4ae34b71c9fa4b0a46c>`
+
+Source file: :doc:`program_listing_file_thrust_device_ptr.h`
+
+.. doxygenfile:: thrust/device_ptr.h
+   :sections: briefdescription detaileddescription
+
+.. toctree::
+   :maxdepth: 1
+   :hidden:
+
+   Source file <program_listing_file_thrust_device_ptr.h>
+
+Classes
+-------
+
+- :ref:`thrust\:\:device\_ptr <classthrust_1_1device__ptr>`
+- :ref:`thrust\:\:device\_reference <classthrust_1_1device__reference>`
+
+Functions
+---------
+
+- :ref:`thrust\:\:device\_pointer\_cast <group__memory__management_1ga0ea0d4e35c25caf4b5b41d63da6d618e>`
+- :ref:`thrust\:\:device\_pointer\_cast <group__memory__management_1ga5c0ef364cbb1731660b1d2a7dc13eae9>`
+- :ref:`thrust\:\:operator\<\< <group__memory__management_1ga15bff204e187bf9dd6430a19812296ef>`
+
+Namespaces
+----------
+
+- :ref:`thrust <namespacethrust>`
+

@@ -1,0 +1,29 @@
+.. _`pinned__memory__pool_8cuh`:
+
+include\/cuda\/experimental\/\_\_memory\_resource\/pinned\_memory\_pool.cuh
+===========================================================================
+
+In directory: :ref:`include\/cuda\/experimental\/\_\_memory\_resource <dir_f5bb634f025bcd1aa086d4ae07d690be>`
+
+Source file: :doc:`program_listing_file_include_cuda_experimental___memory_resource_pinned_memory_pool.cuh`
+
+.. doxygenfile:: include/cuda/experimental/__memory_resource/pinned_memory_pool.cuh
+   :sections: briefdescription detaileddescription
+
+.. toctree::
+   :maxdepth: 1
+   :hidden:
+
+   Source file <program_listing_file_include_cuda_experimental___memory_resource_pinned_memory_pool.cuh>
+
+Classes
+-------
+
+- :ref:`cuda\:\:experimental\:\:pinned\_memory\_pool <classcuda_1_1experimental_1_1pinned__memory__pool>`
+
+Namespaces
+----------
+
+- :ref:`cuda <namespacecuda>`
+- :ref:`cuda\:\:experimental <namespacecuda_1_1experimental>`
+

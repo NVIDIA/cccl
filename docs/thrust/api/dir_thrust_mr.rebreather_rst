@@ -1,0 +1,46 @@
+.. _`dir_3e902a837487bd3819b2874775e3d698`:
+
+thrust\/mr
+==========
+
+Files
+-----
+
+.. toctree::
+   :hidden:
+   :maxdepth: 1
+
+   file_thrust_mr_allocator.h
+   file_thrust_mr_device_memory_resource.h
+   file_thrust_mr_disjoint_pool.h
+   file_thrust_mr_disjoint_sync_pool.h
+   file_thrust_mr_disjoint_tls_pool.h
+   file_thrust_mr_fancy_pointer_resource.h
+   file_thrust_mr_host_memory_resource.h
+   file_thrust_mr_memory_resource.h
+   file_thrust_mr_new.h
+   file_thrust_mr_polymorphic_adaptor.h
+   file_thrust_mr_pool.h
+   file_thrust_mr_pool_options.h
+   file_thrust_mr_sync_pool.h
+   file_thrust_mr_tls_pool.h
+   file_thrust_mr_universal_memory_resource.h
+   file_thrust_mr_validator.h
+
+- :ref:`thrust\/mr\/allocator.h <allocator_8h>`
+- :ref:`thrust\/mr\/device\_memory\_resource.h <device__memory__resource_8h>`
+- :ref:`thrust\/mr\/disjoint\_pool.h <disjoint__pool_8h>`
+- :ref:`thrust\/mr\/disjoint\_sync\_pool.h <disjoint__sync__pool_8h>`
+- :ref:`thrust\/mr\/disjoint\_tls\_pool.h <disjoint__tls__pool_8h>`
+- :ref:`thrust\/mr\/fancy\_pointer\_resource.h <fancy__pointer__resource_8h>`
+- :ref:`thrust\/mr\/host\_memory\_resource.h <host__memory__resource_8h>`
+- :ref:`thrust\/mr\/memory\_resource.h <memory__resource_8h>`
+- :ref:`thrust\/mr\/new.h <new_8h>`
+- :ref:`thrust\/mr\/polymorphic\_adaptor.h <polymorphic__adaptor_8h>`
+- :ref:`thrust\/mr\/pool.h <pool_8h>`
+- :ref:`thrust\/mr\/pool\_options.h <pool__options_8h>`
+- :ref:`thrust\/mr\/sync\_pool.h <sync__pool_8h>`
+- :ref:`thrust\/mr\/tls\_pool.h <tls__pool_8h>`
+- :ref:`thrust\/mr\/universal\_memory\_resource.h <universal__memory__resource_8h>`
+- :ref:`thrust\/mr\/validator.h <validator_8h>`
+

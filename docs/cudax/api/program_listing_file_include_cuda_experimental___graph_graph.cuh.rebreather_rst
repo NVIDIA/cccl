@@ -1,0 +1,111 @@
+include\/cuda\/experimental\/\_\_graph\/graph.cuh
+=================================================
+
+File members: :ref:`include\/cuda\/experimental\/\_\_graph\/graph.cuh <____graph_2graph_8cuh>`
+
+.. code-block:: c++
+
+   //===----------------------------------------------------------------------===//
+   //
+   // Part of CUDA Experimental in CUDA C++ Core Libraries,
+   // under the Apache License v2.0 with LLVM Exceptions.
+   // See https://llvm.org/LICENSE.txt for license information.
+   // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+   // SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
+   //
+   //===----------------------------------------------------------------------===//
+
+   #ifndef __CUDAX_GRAPH_GRAPH
+   #define __CUDAX_GRAPH_GRAPH
+
+   #include <cuda/std/detail/__config>
+
+   #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+   #  pragma GCC system_header
+   #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+   #  pragma clang system_header
+   #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+   #  pragma system_header
+   #endif // no system header
+
+   #include <cuda/std/__cuda/api_wrapper.h>
+   #include <cuda/std/__utility/exchange.h>
+   #include <cuda/std/__utility/swap.h>
+
+   #include <cuda/experimental/__stream/stream_ref.cuh>
+
+   #include <cuda_runtime_api.h>
+
+   #include <cuda/std/__cccl/prologue.h>
+
+   namespace cuda::experimental
+   {
+   struct _CCCL_TYPE_VISIBILITY_DEFAULT graph
+   {
+     _CCCL_HOST_API constexpr graph(graph&& __other) noexcept
+         : __exec_{_CUDA_VSTD::exchange(__other.__exec_, nullptr)}
+     {}
+
+     _CCCL_HOST_API _CCCL_CONSTEXPR_CXX20 ~graph()
+     {
+       reset();
+     }
+
+     _CCCL_HOST_API constexpr auto operator=(graph&& __other) noexcept -> graph&
+     {
+       swap(__other);
+       __other.reset();
+       return *this;
+     }
+
+     _CCCL_HOST_API constexpr void swap(graph& __other) noexcept
+     {
+       _CUDA_VSTD::swap(__exec_, __other.__exec_);
+     }
+
+     [[nodiscard]] _CCCL_TRIVIAL_HOST_API constexpr auto get() const noexcept -> cudaGraphExec_t
+     {
+       return __exec_;
+     }
+
+     [[nodiscard]] _CCCL_TRIVIAL_HOST_API constexpr auto release() noexcept -> cudaGraphExec_t
+     {
+       return _CUDA_VSTD::exchange(__exec_, nullptr);
+     }
+
+     _CCCL_HOST_API constexpr void reset() noexcept
+     {
+       if (auto __exec = _CUDA_VSTD::exchange(__exec_, nullptr))
+       {
+         _CCCL_ASSERT_CUDA_API(cudaGraphExecDestroy, "cudaGraphDestroy failed", __exec);
+       }
+     }
+
+     [[nodiscard]] _CCCL_HOST_API static _CCCL_CONSTEXPR_CXX20 auto from_native_handle(cudaGraphExec_t __exec) noexcept
+       -> graph
+     {
+       return graph{__exec};
+     }
+
+     _CCCL_HOST_API void launch(stream_ref __stream)
+     {
+       _CCCL_TRY_CUDA_API(cudaGraphLaunch, "cudaGraphLaunch failed", __exec_, __stream.get());
+     }
+
+   private:
+     friend struct graph_builder_ref;
+
+     _CCCL_HIDE_FROM_ABI graph() = default;
+
+     _CCCL_HOST_API explicit constexpr graph(cudaGraphExec_t __exec) noexcept
+         : __exec_{__exec}
+     {}
+
+     cudaGraphExec_t __exec_ = nullptr;
+   };
+   } // namespace cuda::experimental
+
+   #include <cuda/std/__cccl/epilogue.h>
+
+   #endif // __CUDAX_GRAPH_GRAPH
+

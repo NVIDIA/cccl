@@ -1,0 +1,130 @@
+thrust\/iterator\/permutation\_iterator.h
+=========================================
+
+File members: :ref:`thrust\/iterator\/permutation\_iterator.h <permutation__iterator_8h>`
+
+.. code-block:: c++
+
+   /*
+    *  Copyright 2008-2013 NVIDIA Corporation
+    *
+    *  Licensed under the Apache License, Version 2.0 (the "License");
+    *  you may not use this file except in compliance with the License.
+    *  You may obtain a copy of the License at
+    *
+    *      http://www.apache.org/licenses/LICENSE-2.0
+    *
+    *  Unless required by applicable law or agreed to in writing, software
+    *  distributed under the License is distributed on an "AS IS" BASIS,
+    *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    *  See the License for the specific language governing permissions and
+    *  limitations under the License.
+    */
+
+   /*
+    * (C) Copyright Toon Knapen    2001.
+    * (C) Copyright David Abrahams 2003.
+    * (C) Copyright Roland Richter 2003.
+    *
+    * Distributed under the Boost Software License, Version 1.0.
+    * (See accompanying NOTICE file for the complete license)
+    *
+    * For more information, see http://www.boost.org
+    */
+
+   #pragma once
+
+   #include <thrust/detail/config.h>
+
+   #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+   #  pragma GCC system_header
+   #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+   #  pragma clang system_header
+   #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+   #  pragma system_header
+   #endif // no system header
+
+   #include <thrust/detail/type_traits.h>
+   #include <thrust/iterator/detail/minimum_system.h>
+   #include <thrust/iterator/iterator_adaptor.h>
+   #include <thrust/iterator/iterator_traits.h>
+
+   THRUST_NAMESPACE_BEGIN
+
+   template <typename, typename>
+   class permutation_iterator;
+
+   namespace detail
+   {
+   template <typename ElementIterator, typename IndexIterator>
+   struct make_permutation_iterator_base
+   {
+     using System1 = iterator_system_t<ElementIterator>;
+     using System2 = iterator_system_t<IndexIterator>;
+
+     using type =
+       iterator_adaptor<permutation_iterator<ElementIterator, IndexIterator>,
+                        IndexIterator,
+                        it_value_t<ElementIterator>,
+                        minimum_system_t<System1, System2>,
+                        use_default,
+                        it_reference_t<ElementIterator>>;
+   };
+   } // namespace detail
+
+   template <typename ElementIterator, typename IndexIterator>
+   class _CCCL_DECLSPEC_EMPTY_BASES permutation_iterator
+       : public detail::make_permutation_iterator_base<ElementIterator, IndexIterator>::type
+   {
+
+     using super_t = typename detail::make_permutation_iterator_base<ElementIterator, IndexIterator>::type;
+
+     friend class iterator_core_access;
+
+   public:
+     permutation_iterator() = default;
+
+     _CCCL_HOST_DEVICE explicit permutation_iterator(ElementIterator x, IndexIterator y)
+         : super_t(y)
+         , m_element_iterator(x)
+     {}
+
+     template <typename OtherElementIterator,
+               typename OtherIndexIterator,
+               detail::enable_if_convertible_t<OtherElementIterator, ElementIterator, int> = 0,
+               detail::enable_if_convertible_t<OtherIndexIterator, IndexIterator, int>     = 0>
+     _CCCL_HOST_DEVICE permutation_iterator(permutation_iterator<OtherElementIterator, OtherIndexIterator> const& rhs)
+         : super_t(rhs.base())
+         , m_element_iterator(rhs.m_element_iterator)
+     {}
+
+   private:
+     // MSVC incorrectly warning about returning a reference to a local/temporary here.
+     // NVHPC breaks with push / pop within a class
+   #if _CCCL_COMPILER(MSVC)
+     _CCCL_DIAG_PUSH
+     _CCCL_DIAG_SUPPRESS_MSVC(4172)
+   #endif // _CCCL_COMPILER(MSVC)
+
+     _CCCL_EXEC_CHECK_DISABLE
+     _CCCL_HOST_DEVICE typename super_t::reference dereference() const
+     {
+       return *(m_element_iterator + *this->base());
+     }
+
+     // make friends for the copy constructor
+     template <typename, typename>
+     friend class permutation_iterator;
+
+     ElementIterator m_element_iterator;
+   };
+
+   template <typename ElementIterator, typename IndexIterator>
+   _CCCL_HOST_DEVICE permutation_iterator<ElementIterator, IndexIterator>
+   make_permutation_iterator(ElementIterator e, IndexIterator i)
+   {
+     return permutation_iterator<ElementIterator, IndexIterator>(e, i);
+   }
+
+   THRUST_NAMESPACE_END
+

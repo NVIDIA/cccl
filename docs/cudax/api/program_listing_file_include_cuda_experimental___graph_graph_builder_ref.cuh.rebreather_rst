@@ -1,0 +1,193 @@
+include\/cuda\/experimental\/\_\_graph\/graph\_builder\_ref.cuh
+===============================================================
+
+File members: :ref:`include\/cuda\/experimental\/\_\_graph\/graph\_builder\_ref.cuh <graph__builder__ref_8cuh>`
+
+.. code-block:: c++
+
+   //===----------------------------------------------------------------------===//
+   //
+   // Part of CUDA Experimental in CUDA C++ Core Libraries,
+   // under the Apache License v2.0 with LLVM Exceptions.
+   // See https://llvm.org/LICENSE.txt for license information.
+   // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+   // SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
+   //
+   //===----------------------------------------------------------------------===//
+
+   #ifndef __CUDAX_GRAPH_GRAPH_BUILDER_REF
+   #define __CUDAX_GRAPH_GRAPH_BUILDER_REF
+
+   #include <cuda/std/detail/__config>
+
+   #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+   #  pragma GCC system_header
+   #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+   #  pragma clang system_header
+   #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+   #  pragma system_header
+   #endif // no system header
+
+   #include <cuda/std/__cuda/api_wrapper.h>
+   #include <cuda/std/__type_traits/is_same.h>
+   #include <cuda/std/__utility/move.h>
+   #include <cuda/std/__utility/swap.h>
+   #include <cuda/std/array>
+   #include <cuda/std/cstddef>
+   #include <cuda/std/span>
+
+   #include <cuda/experimental/__graph/graph.cuh>
+   #include <cuda/experimental/__graph/graph_node_ref.cuh>
+
+   #include <cuda_runtime_api.h>
+
+   #include <cuda/std/__cccl/prologue.h>
+
+   // work around breathe "_CUDAX_CONSTEXPR_FRIEND friend" bug.
+   // See: https://github.com/breathe-doc/breathe/issues/916
+   #if defined(_CCCL_DOXYGEN_INVOKED)
+   #  define _CUDAX_CONSTEXPR_FRIEND friend
+   #else
+   #  define _CUDAX_CONSTEXPR_FRIEND constexpr friend
+   #endif
+
+   namespace cuda::experimental
+   {
+   struct _CCCL_TYPE_VISIBILITY_DEFAULT graph_builder_ref
+   {
+     _CCCL_HOST_API constexpr graph_builder_ref(cudaGraph_t __graph, device_ref __dev) noexcept
+         : __dev_{__dev}
+         , __graph_{__graph}
+     {}
+
+     [[nodiscard]] _CCCL_HOST_API _CUDAX_CONSTEXPR_FRIEND bool
+     operator==(const graph_builder_ref& __lhs, const graph_builder_ref& __rhs) noexcept
+     {
+       return __lhs.__graph_ == __rhs.__graph_;
+     }
+
+     [[nodiscard]] _CCCL_HOST_API _CUDAX_CONSTEXPR_FRIEND bool
+     operator!=(const graph_builder_ref& __lhs, const graph_builder_ref& __rhs) noexcept
+     {
+       return !(__lhs == __rhs);
+     }
+
+     [[nodiscard]] _CCCL_HOST_API _CUDAX_CONSTEXPR_FRIEND bool
+     operator==(_CUDA_VSTD::nullptr_t, const graph_builder_ref& __rhs) noexcept
+     {
+       return !static_cast<bool>(__rhs);
+     }
+
+     [[nodiscard]] _CCCL_HOST_API _CUDAX_CONSTEXPR_FRIEND bool
+     operator==(const graph_builder_ref& __lhs, _CUDA_VSTD::nullptr_t) noexcept
+     {
+       return !static_cast<bool>(__lhs);
+     }
+
+     [[nodiscard]] _CCCL_HOST_API _CUDAX_CONSTEXPR_FRIEND bool
+     operator!=(_CUDA_VSTD::nullptr_t, const graph_builder_ref& __rhs) noexcept
+     {
+       return static_cast<bool>(__rhs);
+     }
+
+     [[nodiscard]] _CCCL_HOST_API _CUDAX_CONSTEXPR_FRIEND bool
+     operator!=(const graph_builder_ref& __lhs, _CUDA_VSTD::nullptr_t) noexcept
+     {
+       return static_cast<bool>(__lhs);
+     }
+
+     [[nodiscard]] _CCCL_HOST_API explicit constexpr operator bool() const noexcept
+     {
+       return __graph_ != nullptr;
+     }
+
+     [[nodiscard]] _CCCL_HOST_API constexpr auto operator!() const noexcept -> bool
+     {
+       return !static_cast<bool>(*this);
+     }
+
+     _CCCL_HOST_API constexpr void swap(graph_builder_ref& __other) noexcept
+     {
+       _CUDA_VSTD::swap(__graph_, __other.__graph_);
+     }
+
+     [[nodiscard]] _CCCL_TRIVIAL_HOST_API constexpr auto get() const noexcept -> cudaGraph_t
+     {
+       return __graph_;
+     }
+
+     [[nodiscard]] _CCCL_TRIVIAL_HOST_API constexpr auto get_device() const noexcept -> device_ref
+     {
+       return __dev_;
+     }
+
+     template <class _Node>
+     [[nodiscard]] _CCCL_TRIVIAL_HOST_API constexpr auto add(_Node __node) -> graph_node_ref
+     {
+       return add(_CCCL_MOVE(__node), _CUDA_VSTD::span<cudaGraphNode_t, 0>{});
+     }
+
+     template <class _Node, size_t _Np>
+     _CCCL_HOST_API constexpr auto add(_Node __node, _CUDA_VSTD::array<cudaGraphNode_t, _Np> __deps) -> graph_node_ref
+     {
+       return add(_CCCL_MOVE(__node), _CUDA_VSTD::span{__deps});
+     }
+
+     template <class _Node, size_t _Extent>
+     _CCCL_HOST_API constexpr auto add(_Node __node, _CUDA_VSTD::span<cudaGraphNode_t, _Extent> __deps) -> graph_node_ref
+     {
+       // assert that the node descriptor returns a graph_node_ref object:
+       static_assert(_CUDA_VSTD::_IsSame<decltype(__node.__add_to_graph(__graph_, __deps)), graph_node_ref>::value,
+                     "node descriptors must return a graph_node_ref");
+       return __node.__add_to_graph(__graph_, __deps);
+     }
+
+     [[nodiscard]] _CCCL_HOST_API size_t node_count() const
+     {
+       size_t __count = 0;
+       _CCCL_TRY_CUDA_API(cudaGraphGetNodes, "cudaGraphGetNodes failed", __graph_, nullptr, &__count);
+       return __count;
+     }
+
+     _CCCL_HOST_API auto instantiate() -> graph
+     {
+       _CCCL_ASSERT(__graph_ != nullptr, "cannot instantiate a NULL graph");
+       graph __exec;
+       _CCCL_TRY_CUDA_API(
+         cudaGraphInstantiate,
+         "cudaGraphInstantiate failed",
+         &__exec.__exec_, // output
+         __graph_, // graph to instantiate
+         0); // flags
+       return __exec;
+     }
+
+   private:
+     friend struct graph_builder;
+
+     template <size_t _Extent>
+     [[nodiscard]] _CCCL_HOST_API auto
+     __add_to_graph(cudaGraph_t __parent, _CUDA_VSTD::span<cudaGraphNode_t, _Extent> __deps) -> graph_node_ref
+     {
+       graph_node_ref __child;
+       __child.__graph_ = __graph_;
+       _CCCL_ASSERT_CUDA_API(
+         cudaGraphAddChildGraphNode,
+         "cudaGraphAddChildGraphNode failed",
+         &__child.__node_, // output
+         __parent, // graph to which we are adding the child graph
+         __deps.data(), // dependencies
+         __deps.size(), // number of dependencies
+         __graph_); // the child graph to add
+       return __child;
+     }
+
+     device_ref __dev_;
+     cudaGraph_t __graph_ = nullptr;
+   };
+   } // namespace cuda::experimental
+
+   #include <cuda/std/__cccl/epilogue.h>
+
+   #endif // __CUDAX_GRAPH_GRAPH_BUILDER_REF
+

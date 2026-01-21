@@ -1,0 +1,6 @@
+thrust\:\:transform
+===================
+
+Defined in :ref:`thrust\/transform.h <transform_8h>`
+
+.. doxygenfunction:: thrust::transform(InputIterator1 first1, InputIterator1 last1, InputIterator2 first2, OutputIterator result, BinaryFunction op)

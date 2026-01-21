@@ -1,0 +1,6 @@
+cuda\:\:experimental\:\:stf\:\:mdspan\_to\_vtk
+==============================================
+
+Defined in :ref:`include\/cuda\/experimental\/\_\_stf\/utility\/pretty\_print.cuh <pretty__print_8cuh>`
+
+.. doxygenfunction:: cuda::experimental::stf::mdspan_to_vtk(mdspan_like s, const ::std::string &filename)

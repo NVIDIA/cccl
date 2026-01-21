@@ -1,0 +1,6 @@
+thrust\:\:mr\:\:tls\_disjoint\_pool
+===================================
+
+Defined in :ref:`thrust\/mr\/disjoint\_tls\_pool.h <disjoint__tls__pool_8h>`
+
+.. doxygenfunction:: thrust::mr::tls_disjoint_pool(Upstream *upstream=nullptr, Bookkeeper *bookkeeper=nullptr)

@@ -1,0 +1,6 @@
+cub\:\:MaxSmOccupancy
+=====================
+
+Defined in :ref:`cub\/util\_device.cuh <util__device_8cuh>`
+
+.. doxygenfunction:: cub::MaxSmOccupancy(int &max_sm_occupancy, KernelPtr kernel_ptr, int block_threads, int dynamic_smem_bytes=0)

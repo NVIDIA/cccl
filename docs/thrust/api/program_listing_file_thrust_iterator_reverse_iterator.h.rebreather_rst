@@ -1,0 +1,125 @@
+thrust\/iterator\/reverse\_iterator.h
+=====================================
+
+File members: :ref:`thrust\/iterator\/reverse\_iterator.h <reverse__iterator_8h>`
+
+.. code-block:: c++
+
+   /*
+    *  Copyright 2008-2013 NVIDIA Corporation
+    *
+    *  Licensed under the Apache License, Version 2.0 (the "License");
+    *  you may not use this file except in compliance with the License.
+    *  You may obtain a copy of the License at
+    *
+    *      http://www.apache.org/licenses/LICENSE-2.0
+    *
+    *  Unless required by applicable law or agreed to in writing, software
+    *  distributed under the License is distributed on an "AS IS" BASIS,
+    *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    *  See the License for the specific language governing permissions and
+    *  limitations under the License.
+    */
+
+   /*
+    * (C) Copyright David Abrahams 2002.
+    * (C) Copyright Jeremy Siek    2002.
+    * (C) Copyright Thomas Witt    2002.
+    *
+    * Distributed under the Boost Software License, Version 1.0.
+    * (See accompanying NOTICE file for the complete license)
+    *
+    * For more information, see http://www.boost.org
+    */
+
+   #pragma once
+
+   #include <thrust/detail/config.h>
+
+   #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+   #  pragma GCC system_header
+   #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+   #  pragma clang system_header
+   #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+   #  pragma system_header
+   #endif // no system header
+
+   #include <thrust/detail/type_traits.h>
+   #include <thrust/iterator/iterator_adaptor.h>
+   #include <thrust/iterator/iterator_traits.h>
+
+   THRUST_NAMESPACE_BEGIN
+
+   template <typename>
+   class reverse_iterator;
+
+   namespace detail
+   {
+   template <typename BidirectionalIterator>
+   struct make_reverse_iterator_base
+   {
+     using type = iterator_adaptor<reverse_iterator<BidirectionalIterator>, BidirectionalIterator>;
+   };
+   } // namespace detail
+
+   template <typename BidirectionalIterator>
+   class reverse_iterator : public detail::make_reverse_iterator_base<BidirectionalIterator>::type
+   {
+
+   private:
+     using super_t = typename detail::make_reverse_iterator_base<BidirectionalIterator>::type;
+
+     friend class iterator_core_access;
+
+   public:
+     reverse_iterator() = default;
+
+     _CCCL_HOST_DEVICE explicit reverse_iterator(BidirectionalIterator x)
+         : super_t(x)
+     {}
+
+     template <typename OtherBidirectionalIterator,
+               detail::enable_if_convertible_t<OtherBidirectionalIterator, BidirectionalIterator, int> = 0>
+     _CCCL_HOST_DEVICE reverse_iterator(reverse_iterator<OtherBidirectionalIterator> const& rhs)
+         : super_t(rhs.base())
+     {}
+
+   private:
+     _CCCL_EXEC_CHECK_DISABLE
+     _CCCL_HOST_DEVICE typename super_t::reference dereference() const
+     {
+       auto b = this->base();
+       return *--b;
+     }
+
+     _CCCL_HOST_DEVICE void increment()
+     {
+       --this->base_reference();
+     }
+
+     _CCCL_HOST_DEVICE void decrement()
+     {
+       ++this->base_reference();
+     }
+
+     _CCCL_HOST_DEVICE void advance(typename super_t::difference_type n)
+     {
+       this->base_reference() += -n;
+     }
+
+     template <typename OtherBidirectionalIterator>
+     _CCCL_HOST_DEVICE typename super_t::difference_type
+     distance_to(reverse_iterator<OtherBidirectionalIterator> const& y) const
+     {
+       return this->base_reference() - y.base();
+     }
+   };
+
+   template <typename BidirectionalIterator>
+   _CCCL_HOST_DEVICE reverse_iterator<BidirectionalIterator> make_reverse_iterator(BidirectionalIterator x)
+   {
+     return reverse_iterator<BidirectionalIterator>(x);
+   }
+
+   THRUST_NAMESPACE_END
+

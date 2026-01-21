@@ -1,0 +1,6 @@
+cuda\:\:experimental\:\:stf\:\:graphed\_interface\_of\< void\_interface \>
+==========================================================================
+
+Defined in :ref:`include\/cuda\/experimental\/\_\_stf\/graph\/interfaces\/void\_interface.cuh <graph_2interfaces_2void__interface_8cuh>`
+
+.. doxygenstruct:: cuda::experimental::stf::graphed_interface_of< void_interface >

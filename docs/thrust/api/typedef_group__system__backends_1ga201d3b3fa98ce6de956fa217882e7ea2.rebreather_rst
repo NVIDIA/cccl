@@ -1,0 +1,6 @@
+thrust\:\:system\:\:cpp\:\:universal\_pointer
+=============================================
+
+Defined in :ref:`thrust\/system\/cpp\/pointer.h <system_2cpp_2pointer_8h>`
+
+.. doxygentypedef:: thrust::system::cpp::universal_pointer

@@ -1,0 +1,6 @@
+cub\:\:BlockStore
+=================
+
+Defined in :ref:`cub\/block\/block\_store.cuh <block__store_8cuh>`
+
+.. doxygenclass:: cub::BlockStore

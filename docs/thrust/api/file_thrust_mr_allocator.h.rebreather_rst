@@ -1,0 +1,41 @@
+.. _`allocator_8h`:
+
+thrust\/mr\/allocator.h
+=======================
+
+In directory: :ref:`thrust\/mr <dir_3e902a837487bd3819b2874775e3d698>`
+
+Source file: :doc:`program_listing_file_thrust_mr_allocator.h`
+
+.. doxygenfile:: thrust/mr/allocator.h
+   :sections: briefdescription detaileddescription
+
+.. toctree::
+   :maxdepth: 1
+   :hidden:
+
+   Source file <program_listing_file_thrust_mr_allocator.h>
+
+Classes
+-------
+
+- :ref:`thrust\:\:mr\:\:allocator <classthrust_1_1mr_1_1allocator>`
+- :ref:`thrust\:\:mr\:\:stateless\_resource\_allocator <classthrust_1_1mr_1_1stateless__resource__allocator>`
+
+Functions
+---------
+
+- :ref:`thrust\:\:mr\:\:operator\!\= <group__allocators_1ga0855de8268820e2fa44f47ff31c98638>`
+- :ref:`thrust\:\:mr\:\:operator\=\= <group__allocators_1ga993ad539e24d8c803dd0252a87c2290a>`
+
+Namespaces
+----------
+
+- :ref:`thrust <namespacethrust>`
+- :ref:`thrust\:\:mr <namespacethrust_1_1mr>`
+
+Typedefs
+--------
+
+- :ref:`thrust\:\:mr\:\:polymorphic\_allocator <group__allocators_1gaa3254521722da4dc78bc3ad9d8619ec0>`
+

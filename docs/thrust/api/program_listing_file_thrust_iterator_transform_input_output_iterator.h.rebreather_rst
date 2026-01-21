@@ -1,0 +1,156 @@
+thrust\/iterator\/transform\_input\_output\_iterator.h
+======================================================
+
+File members: :ref:`thrust\/iterator\/transform\_input\_output\_iterator.h <transform__input__output__iterator_8h>`
+
+.. code-block:: c++
+
+   /*
+    *  Copyright 2020 NVIDIA Corporation
+    *
+    *  Licensed under the Apache License, Version 2.0 (the "License");
+    *  you may not use this file except in compliance with the License.
+    *  You may obtain a copy of the License at
+    *
+    *      http://www.apache.org/licenses/LICENSE-2.0
+    *
+    *  Unless required by applicable law or agreed to in writing, software
+    *  distributed under the License is distributed on an "AS IS" BASIS,
+    *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    *  See the License for the specific language governing permissions and
+    *  limitations under the License.
+    */
+
+   #pragma once
+
+   #include <thrust/detail/config.h>
+
+   #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+   #  pragma GCC system_header
+   #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+   #  pragma clang system_header
+   #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+   #  pragma system_header
+   #endif // no system header
+
+   #include <thrust/detail/type_traits.h>
+   #include <thrust/iterator/iterator_adaptor.h>
+
+   THRUST_NAMESPACE_BEGIN
+
+   template <typename InputFunction, typename OutputFunction, typename Iterator>
+   class transform_input_output_iterator;
+
+   namespace detail
+   {
+   // Proxy reference that invokes InputFunction when reading from and
+   // OutputFunction when writing to the dereferenced iterator
+   template <typename InputFunction, typename OutputFunction, typename Iterator>
+   class transform_input_output_iterator_proxy
+   {
+     using iterator_value_type = it_value_t<Iterator>;
+     using Value               = invoke_result_t<InputFunction, iterator_value_type>;
+
+   public:
+     _CCCL_HOST_DEVICE transform_input_output_iterator_proxy(
+       const Iterator& io, InputFunction input_function, OutputFunction output_function)
+         : io(io)
+         , input_function(input_function)
+         , output_function(output_function)
+     {}
+
+     transform_input_output_iterator_proxy(const transform_input_output_iterator_proxy&) = default;
+
+     _CCCL_EXEC_CHECK_DISABLE
+     _CCCL_HOST_DEVICE operator Value() const
+     {
+       return input_function(*io);
+     }
+
+     _CCCL_EXEC_CHECK_DISABLE
+     template <typename T>
+     _CCCL_HOST_DEVICE transform_input_output_iterator_proxy operator=(const T& x)
+     {
+       *io = output_function(x);
+       return *this;
+     }
+
+     _CCCL_EXEC_CHECK_DISABLE
+     _CCCL_HOST_DEVICE transform_input_output_iterator_proxy operator=(const transform_input_output_iterator_proxy& x)
+     {
+       *io = output_function(x);
+       return *this;
+     }
+
+   private:
+     Iterator io;
+     InputFunction input_function;
+     OutputFunction output_function;
+   };
+
+   // Compute the iterator_adaptor instantiation to be used for transform_input_output_iterator
+   template <typename InputFunction, typename OutputFunction, typename Iterator>
+   struct make_transform_input_output_iterator_base
+   {
+   private:
+     using iterator_value_type = it_value_t<Iterator>;
+
+   public:
+     using type =
+       iterator_adaptor<transform_input_output_iterator<InputFunction, OutputFunction, Iterator>,
+                        Iterator,
+                        invoke_result_t<InputFunction, iterator_value_type>,
+                        use_default,
+                        use_default,
+                        transform_input_output_iterator_proxy<InputFunction, OutputFunction, Iterator>>;
+   };
+
+   // Register transform_input_output_iterator_proxy with 'is_proxy_reference' from type_traits to enable its use with
+   // algorithms.
+   template <typename InputFunction, typename OutputFunction, typename Iterator>
+   inline constexpr bool
+     is_proxy_reference_v<transform_input_output_iterator_proxy<InputFunction, OutputFunction, Iterator>> = true;
+
+   } // namespace detail
+
+   template <typename InputFunction, typename OutputFunction, typename Iterator>
+   class transform_input_output_iterator
+       : public detail::make_transform_input_output_iterator_base<InputFunction, OutputFunction, Iterator>::type
+   {
+
+   public:
+     using super_t =
+       typename detail::make_transform_input_output_iterator_base<InputFunction, OutputFunction, Iterator>::type;
+
+     friend class iterator_core_access;
+
+     transform_input_output_iterator() = default;
+
+     _CCCL_HOST_DEVICE
+     transform_input_output_iterator(Iterator const& io, InputFunction input_function, OutputFunction output_function)
+         : super_t(io)
+         , input_function(input_function)
+         , output_function(output_function)
+     {}
+
+   private:
+     _CCCL_HOST_DEVICE typename super_t::reference dereference() const
+     {
+       return detail::transform_input_output_iterator_proxy<InputFunction, OutputFunction, Iterator>(
+         this->base_reference(), input_function, output_function);
+     }
+
+     InputFunction input_function;
+     OutputFunction output_function;
+
+   };
+
+   template <typename InputFunction, typename OutputFunction, typename Iterator>
+   transform_input_output_iterator<InputFunction, OutputFunction, Iterator> _CCCL_HOST_DEVICE
+   make_transform_input_output_iterator(Iterator io, InputFunction input_function, OutputFunction output_function)
+   {
+     return transform_input_output_iterator<InputFunction, OutputFunction, Iterator>(io, input_function, output_function);
+   }
+
+   THRUST_NAMESPACE_END
+

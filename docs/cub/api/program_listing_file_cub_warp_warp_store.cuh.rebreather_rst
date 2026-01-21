@@ -1,0 +1,238 @@
+cub\/warp\/warp\_store.cuh
+==========================
+
+File members: :ref:`cub\/warp\/warp\_store.cuh <warp__store_8cuh>`
+
+.. code-block:: c++
+
+   /******************************************************************************
+    * Copyright (c) 2011-2021, NVIDIA CORPORATION.  All rights reserved.
+    *
+    * Redistribution and use in source and binary forms, with or without
+    * modification, are permitted provided that the following conditions are met:
+    *     * Redistributions of source code must retain the above copyright
+    *       notice, this list of conditions and the following disclaimer.
+    *     * Redistributions in binary form must reproduce the above copyright
+    *       notice, this list of conditions and the following disclaimer in the
+    *       documentation and/or other materials provided with the distribution.
+    *     * Neither the name of the NVIDIA CORPORATION nor the
+    *       names of its contributors may be used to endorse or promote products
+    *       derived from this software without specific prior written permission.
+    *
+    * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+    * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+    * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+    * DISCLAIMED. IN NO EVENT SHALL NVIDIA CORPORATION BE LIABLE FOR ANY
+    * DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+    * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+    * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
+    * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+    * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+    * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+    *
+    ******************************************************************************/
+
+   #pragma once
+
+   #include <cub/config.cuh>
+
+   #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+   #  pragma GCC system_header
+   #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+   #  pragma clang system_header
+   #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+   #  pragma system_header
+   #endif // no system header
+
+   #include <cub/block/block_store.cuh>
+   #include <cub/util_ptx.cuh>
+   #include <cub/util_type.cuh>
+   #include <cub/warp/warp_exchange.cuh>
+
+   #include <cuda/ptx>
+
+   CUB_NAMESPACE_BEGIN
+
+   enum WarpStoreAlgorithm
+   {
+     WARP_STORE_DIRECT,
+
+     WARP_STORE_STRIPED,
+
+     WARP_STORE_VECTORIZE,
+
+     WARP_STORE_TRANSPOSE
+   };
+
+   template <typename T,
+             int ITEMS_PER_THREAD,
+             WarpStoreAlgorithm ALGORITHM = WARP_STORE_DIRECT,
+             int LOGICAL_WARP_THREADS     = detail::warp_threads>
+   class WarpStore
+   {
+     static_assert(PowerOfTwo<LOGICAL_WARP_THREADS>::VALUE, "LOGICAL_WARP_THREADS must be a power of two");
+
+     static constexpr bool IS_ARCH_WARP = LOGICAL_WARP_THREADS == detail::warp_threads;
+
+   private:
+     template <WarpStoreAlgorithm _POLICY, int DUMMY>
+     struct StoreInternal;
+
+     template <int DUMMY>
+     struct StoreInternal<WARP_STORE_DIRECT, DUMMY>
+     {
+       using TempStorage = NullType;
+
+       int linear_tid;
+
+       _CCCL_DEVICE _CCCL_FORCEINLINE StoreInternal(TempStorage& /*temp_storage*/, int linear_tid)
+           : linear_tid(linear_tid)
+       {}
+
+       template <typename OutputIteratorT>
+       _CCCL_DEVICE _CCCL_FORCEINLINE void Store(OutputIteratorT block_itr, T (&items)[ITEMS_PER_THREAD])
+       {
+         StoreDirectBlocked(linear_tid, block_itr, items);
+       }
+
+       template <typename OutputIteratorT>
+       _CCCL_DEVICE _CCCL_FORCEINLINE void Store(OutputIteratorT block_itr, T (&items)[ITEMS_PER_THREAD], int valid_items)
+       {
+         StoreDirectBlocked(linear_tid, block_itr, items, valid_items);
+       }
+     };
+
+     template <int DUMMY>
+     struct StoreInternal<WARP_STORE_STRIPED, DUMMY>
+     {
+       using TempStorage = NullType;
+
+       int linear_tid;
+
+       _CCCL_DEVICE _CCCL_FORCEINLINE StoreInternal(TempStorage& /*temp_storage*/, int linear_tid)
+           : linear_tid(linear_tid)
+       {}
+
+       template <typename OutputIteratorT>
+       _CCCL_DEVICE _CCCL_FORCEINLINE void Store(OutputIteratorT block_itr, T (&items)[ITEMS_PER_THREAD])
+       {
+         StoreDirectStriped<LOGICAL_WARP_THREADS>(linear_tid, block_itr, items);
+       }
+
+       template <typename OutputIteratorT>
+       _CCCL_DEVICE _CCCL_FORCEINLINE void Store(OutputIteratorT block_itr, T (&items)[ITEMS_PER_THREAD], int valid_items)
+       {
+         StoreDirectStriped<LOGICAL_WARP_THREADS>(linear_tid, block_itr, items, valid_items);
+       }
+     };
+
+     template <int DUMMY>
+     struct StoreInternal<WARP_STORE_VECTORIZE, DUMMY>
+     {
+       using TempStorage = NullType;
+
+       int linear_tid;
+
+       _CCCL_DEVICE _CCCL_FORCEINLINE StoreInternal(TempStorage& /*temp_storage*/, int linear_tid)
+           : linear_tid(linear_tid)
+       {}
+
+       _CCCL_DEVICE _CCCL_FORCEINLINE void Store(T* block_ptr, T (&items)[ITEMS_PER_THREAD])
+       {
+         StoreDirectBlockedVectorized(linear_tid, block_ptr, items);
+       }
+
+       template <typename OutputIteratorT>
+       _CCCL_DEVICE _CCCL_FORCEINLINE void Store(OutputIteratorT block_itr, T (&items)[ITEMS_PER_THREAD])
+       {
+         StoreDirectBlocked(linear_tid, block_itr, items);
+       }
+
+       template <typename OutputIteratorT>
+       _CCCL_DEVICE _CCCL_FORCEINLINE void Store(OutputIteratorT block_itr, T (&items)[ITEMS_PER_THREAD], int valid_items)
+       {
+         StoreDirectBlocked(linear_tid, block_itr, items, valid_items);
+       }
+     };
+
+     template <int DUMMY>
+     struct StoreInternal<WARP_STORE_TRANSPOSE, DUMMY>
+     {
+       using WarpExchangeT = WarpExchange<T, ITEMS_PER_THREAD, LOGICAL_WARP_THREADS>;
+
+       struct _TempStorage : WarpExchangeT::TempStorage
+       {};
+
+       struct TempStorage : Uninitialized<_TempStorage>
+       {};
+
+       _TempStorage& temp_storage;
+
+       int linear_tid;
+
+       _CCCL_DEVICE _CCCL_FORCEINLINE StoreInternal(TempStorage& temp_storage, int linear_tid)
+           : temp_storage(temp_storage.Alias())
+           , linear_tid(linear_tid)
+       {}
+
+       template <typename OutputIteratorT>
+       _CCCL_DEVICE _CCCL_FORCEINLINE void Store(OutputIteratorT block_itr, T (&items)[ITEMS_PER_THREAD])
+       {
+         WarpExchangeT(temp_storage).BlockedToStriped(items, items);
+         StoreDirectStriped<LOGICAL_WARP_THREADS>(linear_tid, block_itr, items);
+       }
+
+       template <typename OutputIteratorT>
+       _CCCL_DEVICE _CCCL_FORCEINLINE void Store(OutputIteratorT block_itr, T (&items)[ITEMS_PER_THREAD], int valid_items)
+       {
+         WarpExchangeT(temp_storage).BlockedToStriped(items, items);
+         StoreDirectStriped<LOGICAL_WARP_THREADS>(linear_tid, block_itr, items, valid_items);
+       }
+     };
+
+     using InternalStore = StoreInternal<ALGORITHM, 0>;
+
+     using _TempStorage = typename InternalStore::TempStorage;
+
+     _CCCL_DEVICE _CCCL_FORCEINLINE _TempStorage& PrivateStorage()
+     {
+       __shared__ _TempStorage private_storage;
+       return private_storage;
+     }
+
+     _TempStorage& temp_storage;
+
+     int linear_tid;
+
+   public:
+     struct TempStorage : Uninitialized<_TempStorage>
+     {};
+
+     _CCCL_DEVICE _CCCL_FORCEINLINE WarpStore()
+         : temp_storage(PrivateStorage())
+         , linear_tid(
+             IS_ARCH_WARP ? ::cuda::ptx::get_sreg_laneid() : (::cuda::ptx::get_sreg_laneid() % LOGICAL_WARP_THREADS))
+     {}
+
+     _CCCL_DEVICE _CCCL_FORCEINLINE WarpStore(TempStorage& temp_storage)
+         : temp_storage(temp_storage.Alias())
+         , linear_tid(
+             IS_ARCH_WARP ? ::cuda::ptx::get_sreg_laneid() : (::cuda::ptx::get_sreg_laneid() % LOGICAL_WARP_THREADS))
+     {}
+
+     template <typename OutputIteratorT>
+     _CCCL_DEVICE _CCCL_FORCEINLINE void Store(OutputIteratorT block_itr, T (&items)[ITEMS_PER_THREAD])
+     {
+       InternalStore(temp_storage, linear_tid).Store(block_itr, items);
+     }
+
+     template <typename OutputIteratorT>
+     _CCCL_DEVICE _CCCL_FORCEINLINE void Store(OutputIteratorT block_itr, T (&items)[ITEMS_PER_THREAD], int valid_items)
+     {
+       InternalStore(temp_storage, linear_tid).Store(block_itr, items, valid_items);
+     }
+
+   };
+
+   CUB_NAMESPACE_END
+

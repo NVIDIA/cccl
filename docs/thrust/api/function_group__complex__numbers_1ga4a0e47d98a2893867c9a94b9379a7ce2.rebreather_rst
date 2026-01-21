@@ -1,0 +1,6 @@
+thrust\:\:tan
+=============
+
+Defined in :ref:`thrust\/complex.h <complex_8h>`
+
+.. doxygenfunction:: thrust::tan(const complex< T > &z)

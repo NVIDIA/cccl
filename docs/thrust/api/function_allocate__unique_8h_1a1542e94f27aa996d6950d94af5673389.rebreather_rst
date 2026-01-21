@@ -1,0 +1,6 @@
+thrust\:\:allocate\_unique\_n
+=============================
+
+Defined in :ref:`thrust\/allocate\_unique.h <allocate__unique_8h>`
+
+.. doxygenfunction:: thrust::allocate_unique_n(Allocator const &alloc, Size n, Args &&... args)

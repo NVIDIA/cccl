@@ -1,0 +1,18 @@
+.. _`config_8cuh`:
+
+cub\/config.cuh
+===============
+
+In directory: :ref:`cub <dir_d583f216f1aafe19404e836b0c097ad2>`
+
+Source file: :doc:`program_listing_file_cub_config.cuh`
+
+.. doxygenfile:: cub/config.cuh
+   :sections: briefdescription detaileddescription
+
+.. toctree::
+   :maxdepth: 1
+   :hidden:
+
+   Source file <program_listing_file_cub_config.cuh>
+

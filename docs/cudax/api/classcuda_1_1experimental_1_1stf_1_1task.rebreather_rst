@@ -1,0 +1,6 @@
+cuda\:\:experimental\:\:stf\:\:task
+===================================
+
+Defined in :ref:`include\/cuda\/experimental\/\_\_stf\/internal\/task.cuh <task_8cuh>`
+
+.. doxygenclass:: cuda::experimental::stf::task

@@ -1,0 +1,31 @@
+.. _`reduction_8cuh`:
+
+include\/cuda\/experimental\/\_\_stf\/stream\/reduction.cuh
+===========================================================
+
+In directory: :ref:`include\/cuda\/experimental\/\_\_stf\/stream <dir_8d1573554a2d822bef6ec5f1076cd11a>`
+
+Source file: :doc:`program_listing_file_include_cuda_experimental___stf_stream_reduction.cuh`
+
+.. doxygenfile:: include/cuda/experimental/__stf/stream/reduction.cuh
+   :sections: briefdescription detaileddescription
+
+.. toctree::
+   :maxdepth: 1
+   :hidden:
+
+   Source file <program_listing_file_include_cuda_experimental___stf_stream_reduction.cuh>
+
+Classes
+-------
+
+- :ref:`cuda\:\:experimental\:\:stf\:\:stream\_reduction\_operator <classcuda_1_1experimental_1_1stf_1_1stream__reduction__operator>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:stream\_reduction\_operator\_untyped <classcuda_1_1experimental_1_1stf_1_1stream__reduction__operator__untyped>`
+
+Namespaces
+----------
+
+- :ref:`cuda <namespacecuda>`
+- :ref:`cuda\:\:experimental <namespacecuda_1_1experimental>`
+- :ref:`cuda\:\:experimental\:\:stf <namespacecuda_1_1experimental_1_1stf>`
+

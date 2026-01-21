@@ -1,0 +1,6 @@
+cuda\:\:experimental\:\:operator\&
+==================================
+
+Defined in :ref:`include\/cuda\/experimental\/\_\_launch\/configuration.cuh <configuration_8cuh>`
+
+.. doxygenfunction:: cuda::experimental::operator&(const level_dimensions< L1, Dims1 > &l1, const level_dimensions< L2, Dims2 > &l2) noexcept

@@ -1,0 +1,6 @@
+cuda\:\:experimental\:\:managed\_memory\_resource
+=================================================
+
+Defined in :ref:`include\/cuda\/experimental\/\_\_memory\_resource\/managed\_memory\_resource.cuh <managed__memory__resource_8cuh>`
+
+.. doxygenclass:: cuda::experimental::managed_memory_resource

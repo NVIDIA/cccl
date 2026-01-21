@@ -1,0 +1,6 @@
+thrust\:\:random\:\:operator\=\=
+================================
+
+Defined in :ref:`thrust\/random\/linear\_congruential\_engine.h <linear__congruential__engine_8h>`
+
+.. doxygenfunction:: thrust::random::operator==(const linear_congruential_engine< UIntType_, a_, c_, m_ > &lhs, const linear_congruential_engine< UIntType_, a_, c_, m_ > &rhs)

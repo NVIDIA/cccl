@@ -1,0 +1,37 @@
+.. _`is__operator__less__or__greater__function__object_8h`:
+
+thrust\/type\_traits\/is\_operator\_less\_or\_greater\_function\_object.h
+=========================================================================
+
+In directory: :ref:`thrust\/type\_traits <dir_6114e4c2865c2127f7ba04e72679f8d6>`
+
+Source file: :doc:`program_listing_file_thrust_type_traits_is_operator_less_or_greater_function_object.h`
+
+.. doxygenfile:: thrust/type_traits/is_operator_less_or_greater_function_object.h
+   :sections: briefdescription detaileddescription
+
+.. toctree::
+   :maxdepth: 1
+   :hidden:
+
+   Source file <program_listing_file_thrust_type_traits_is_operator_less_or_greater_function_object.h>
+
+Namespaces
+----------
+
+- :ref:`thrust <namespacethrust>`
+
+Typedefs
+--------
+
+- :ref:`thrust\:\:is\_operator\_greater\_function\_object <group__type__traits_1ga80899866447b02e95640aa86cb3b9d5b>`
+- :ref:`thrust\:\:is\_operator\_less\_function\_object <group__type__traits_1ga89fa2cd21cf618ac3f6742e015347bd4>`
+- :ref:`thrust\:\:is\_operator\_less\_or\_greater\_function\_object <group__type__traits_1ga9e81f0f06e410e65fd4ae0ff3649aa8d>`
+
+Variables
+---------
+
+- :ref:`thrust\:\:is\_operator\_greater\_function\_object\_v <group__type__traits_1ga42415f71c7b50c51763edc7a3591a400>`
+- :ref:`thrust\:\:is\_operator\_less\_function\_object\_v <group__type__traits_1ga38d413b5daee16a97fa7d9da9f3c4b29>`
+- :ref:`thrust\:\:is\_operator\_less\_or\_greater\_function\_object\_v <group__type__traits_1gac4884b2dd3b4d114ebc739d254c9d505>`
+

@@ -1,0 +1,507 @@
+cuda\:\:experimental\:\:stf
+===========================
+
+.. doxygennamespace:: cuda::experimental::stf
+   :desc-only:
+
+Classes
+-------
+
+.. toctree::
+   :hidden:
+   :maxdepth: 1
+
+   classcuda_1_1experimental_1_1stf_1_1algorithm
+   classcuda_1_1experimental_1_1stf_1_1async__resources__handle
+   classcuda_1_1experimental_1_1stf_1_1backend__ctx
+   classcuda_1_1experimental_1_1stf_1_1backend__ctx__untyped
+   classcuda_1_1experimental_1_1stf_1_1block__allocator
+   classcuda_1_1experimental_1_1stf_1_1block__allocator__interface
+   classcuda_1_1experimental_1_1stf_1_1block__allocator__untyped
+   classcuda_1_1experimental_1_1stf_1_1blocked__partition__custom
+   classcuda_1_1experimental_1_1stf_1_1box
+   classcuda_1_1experimental_1_1stf_1_1buddy__allocator
+   classcuda_1_1experimental_1_1stf_1_1cached__block__allocator
+   classcuda_1_1experimental_1_1stf_1_1cached__block__allocator__fifo
+   classcuda_1_1experimental_1_1stf_1_1constant__logical__data
+   classcuda_1_1experimental_1_1stf_1_1context
+   classcuda_1_1experimental_1_1stf_1_1cuda__exception
+   classcuda_1_1experimental_1_1stf_1_1cyclic__partition
+   classcuda_1_1experimental_1_1stf_1_1cyclic__shape
+   classcuda_1_1experimental_1_1stf_1_1data__impl__base
+   classcuda_1_1experimental_1_1stf_1_1data__instance
+   classcuda_1_1experimental_1_1stf_1_1data__interface
+   classcuda_1_1experimental_1_1stf_1_1data__place
+   classcuda_1_1experimental_1_1stf_1_1deferred__stream__task
+   classcuda_1_1experimental_1_1stf_1_1dim4
+   classcuda_1_1experimental_1_1stf_1_1event__impl
+   classcuda_1_1experimental_1_1stf_1_1event__list
+   classcuda_1_1experimental_1_1stf_1_1exec__affinity
+   classcuda_1_1experimental_1_1stf_1_1exec__place
+   classcuda_1_1experimental_1_1stf_1_1exec__place__cuda__stream
+   classcuda_1_1experimental_1_1stf_1_1exec__place__green__ctx
+   classcuda_1_1experimental_1_1stf_1_1exec__place__grid
+   classcuda_1_1experimental_1_1stf_1_1exec__place__host
+   classcuda_1_1experimental_1_1stf_1_1executable__graph__cache
+   classcuda_1_1experimental_1_1stf_1_1executable__graph__cache__stat
+   classcuda_1_1experimental_1_1stf_1_1fixed__size__allocator
+   classcuda_1_1experimental_1_1stf_1_1for__each__batched
+   classcuda_1_1experimental_1_1stf_1_1frozen__logical__data
+   classcuda_1_1experimental_1_1stf_1_1graph__ctx
+   classcuda_1_1experimental_1_1stf_1_1graph__data__interface
+   classcuda_1_1experimental_1_1stf_1_1graph__task
+   classcuda_1_1experimental_1_1stf_1_1graph__task_3_4
+   classcuda_1_1experimental_1_1stf_1_1green__context__helper
+   classcuda_1_1experimental_1_1stf_1_1green__ctx__view
+   classcuda_1_1experimental_1_1stf_1_1hashtable
+   classcuda_1_1experimental_1_1stf_1_1hashtable__stream__interface
+   classcuda_1_1experimental_1_1stf_1_1interpreted__execution__policy
+   classcuda_1_1experimental_1_1stf_1_1logical__data
+   classcuda_1_1experimental_1_1stf_1_1logical__data__untyped
+   classcuda_1_1experimental_1_1stf_1_1no__init
+   classcuda_1_1experimental_1_1stf_1_1nvtx__range
+   classcuda_1_1experimental_1_1stf_1_1optionally__static
+   classcuda_1_1experimental_1_1stf_1_1place__partition
+   classcuda_1_1experimental_1_1stf_1_1pooled__allocator
+   classcuda_1_1experimental_1_1stf_1_1pos4
+   classcuda_1_1experimental_1_1stf_1_1print__type__name__and__fail
+   classcuda_1_1experimental_1_1stf_1_1reduction__operator__base
+   classcuda_1_1experimental_1_1stf_1_1run__once
+   classcuda_1_1experimental_1_1stf_1_1scalar__graph__interface
+   classcuda_1_1experimental_1_1stf_1_1scalar__stream__interface
+   classcuda_1_1experimental_1_1stf_1_1shape__of
+   classcuda_1_1experimental_1_1stf_1_1shape__of_3_01hashtable_01_4
+   classcuda_1_1experimental_1_1stf_1_1shape__of_3_01mdspan_3_01T_00_01P_8_8_8_01_4_01_4
+   classcuda_1_1experimental_1_1stf_1_1shape__of_3_01scalar__view_3_01T_01_4_01_4
+   classcuda_1_1experimental_1_1stf_1_1shape__of_3_01void__interface_01_4
+   classcuda_1_1experimental_1_1stf_1_1slice__graph__interface
+   classcuda_1_1experimental_1_1stf_1_1slice__reduction__op
+   classcuda_1_1experimental_1_1stf_1_1slice__reduction__op__sum
+   classcuda_1_1experimental_1_1stf_1_1slice__reduction__op__sum__impl
+   classcuda_1_1experimental_1_1stf_1_1slice__stream__interface
+   classcuda_1_1experimental_1_1stf_1_1small__vector
+   classcuda_1_1experimental_1_1stf_1_1stopwatch
+   classcuda_1_1experimental_1_1stf_1_1stream__adapter
+   classcuda_1_1experimental_1_1stf_1_1stream__and__event
+   classcuda_1_1experimental_1_1stf_1_1stream__async__op
+   classcuda_1_1experimental_1_1stf_1_1stream__ctx
+   classcuda_1_1experimental_1_1stf_1_1stream__data__interface
+   classcuda_1_1experimental_1_1stf_1_1stream__data__interface__simple
+   classcuda_1_1experimental_1_1stf_1_1stream__reduction__operator
+   classcuda_1_1experimental_1_1stf_1_1stream__reduction__operator__untyped
+   classcuda_1_1experimental_1_1stf_1_1stream__task
+   classcuda_1_1experimental_1_1stf_1_1stream__task_3_4
+   classcuda_1_1experimental_1_1stf_1_1task
+   classcuda_1_1experimental_1_1stf_1_1task__dep
+   classcuda_1_1experimental_1_1stf_1_1task__dep_3_01T_00_01void_00_01false_01_4
+   classcuda_1_1experimental_1_1stf_1_1task__dep__untyped
+   classcuda_1_1experimental_1_1stf_1_1task__dep__vector
+   classcuda_1_1experimental_1_1stf_1_1task__set
+   classcuda_1_1experimental_1_1stf_1_1thread__hierarchy
+   classcuda_1_1experimental_1_1stf_1_1thread__hierarchy__spec
+   classcuda_1_1experimental_1_1stf_1_1thread__hierarchy__spec_3_01can__sync_00_01width_00_01lower__levels_8_8_8_01_4
+   classcuda_1_1experimental_1_1stf_1_1thread__hierarchy__spec_3_4
+   classcuda_1_1experimental_1_1stf_1_1tiled__partition
+   classcuda_1_1experimental_1_1stf_1_1uncached__block__allocator
+   classcuda_1_1experimental_1_1stf_1_1uncached__graph__allocator
+   classcuda_1_1experimental_1_1stf_1_1uncached__stream__allocator
+   classcuda_1_1experimental_1_1stf_1_1void__graph__interface
+   classcuda_1_1experimental_1_1stf_1_1void__interface
+   classcuda_1_1experimental_1_1stf_1_1void__stream__interface
+
+- :ref:`cuda\:\:experimental\:\:stf\:\:algorithm <classcuda_1_1experimental_1_1stf_1_1algorithm>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:async\_resources\_handle <classcuda_1_1experimental_1_1stf_1_1async__resources__handle>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:backend\_ctx <classcuda_1_1experimental_1_1stf_1_1backend__ctx>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:backend\_ctx\_untyped <classcuda_1_1experimental_1_1stf_1_1backend__ctx__untyped>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:block\_allocator <classcuda_1_1experimental_1_1stf_1_1block__allocator>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:block\_allocator\_interface <classcuda_1_1experimental_1_1stf_1_1block__allocator__interface>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:block\_allocator\_untyped <classcuda_1_1experimental_1_1stf_1_1block__allocator__untyped>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:blocked\_partition\_custom <classcuda_1_1experimental_1_1stf_1_1blocked__partition__custom>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:box <classcuda_1_1experimental_1_1stf_1_1box>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:buddy\_allocator <classcuda_1_1experimental_1_1stf_1_1buddy__allocator>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:cached\_block\_allocator <classcuda_1_1experimental_1_1stf_1_1cached__block__allocator>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:cached\_block\_allocator\_fifo <classcuda_1_1experimental_1_1stf_1_1cached__block__allocator__fifo>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:constant\_logical\_data <classcuda_1_1experimental_1_1stf_1_1constant__logical__data>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:context <classcuda_1_1experimental_1_1stf_1_1context>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:cuda\_exception <classcuda_1_1experimental_1_1stf_1_1cuda__exception>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:cyclic\_partition <classcuda_1_1experimental_1_1stf_1_1cyclic__partition>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:cyclic\_shape <classcuda_1_1experimental_1_1stf_1_1cyclic__shape>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:data\_impl\_base <classcuda_1_1experimental_1_1stf_1_1data__impl__base>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:data\_instance <classcuda_1_1experimental_1_1stf_1_1data__instance>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:data\_interface <classcuda_1_1experimental_1_1stf_1_1data__interface>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:data\_place <classcuda_1_1experimental_1_1stf_1_1data__place>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:deferred\_stream\_task <classcuda_1_1experimental_1_1stf_1_1deferred__stream__task>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:dim4 <classcuda_1_1experimental_1_1stf_1_1dim4>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:event\_impl <classcuda_1_1experimental_1_1stf_1_1event__impl>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:event\_list <classcuda_1_1experimental_1_1stf_1_1event__list>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:exec\_affinity <classcuda_1_1experimental_1_1stf_1_1exec__affinity>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:exec\_place <classcuda_1_1experimental_1_1stf_1_1exec__place>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:exec\_place\_cuda\_stream <classcuda_1_1experimental_1_1stf_1_1exec__place__cuda__stream>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:exec\_place\_green\_ctx <classcuda_1_1experimental_1_1stf_1_1exec__place__green__ctx>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:exec\_place\_grid <classcuda_1_1experimental_1_1stf_1_1exec__place__grid>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:exec\_place\_host <classcuda_1_1experimental_1_1stf_1_1exec__place__host>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:executable\_graph\_cache <classcuda_1_1experimental_1_1stf_1_1executable__graph__cache>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:executable\_graph\_cache\_stat <classcuda_1_1experimental_1_1stf_1_1executable__graph__cache__stat>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:fixed\_size\_allocator <classcuda_1_1experimental_1_1stf_1_1fixed__size__allocator>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:for\_each\_batched <classcuda_1_1experimental_1_1stf_1_1for__each__batched>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:frozen\_logical\_data <classcuda_1_1experimental_1_1stf_1_1frozen__logical__data>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:graph\_ctx <classcuda_1_1experimental_1_1stf_1_1graph__ctx>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:graph\_data\_interface <classcuda_1_1experimental_1_1stf_1_1graph__data__interface>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:graph\_task <classcuda_1_1experimental_1_1stf_1_1graph__task>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:graph\_task\<\> <classcuda_1_1experimental_1_1stf_1_1graph__task_3_4>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:green\_context\_helper <classcuda_1_1experimental_1_1stf_1_1green__context__helper>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:green\_ctx\_view <classcuda_1_1experimental_1_1stf_1_1green__ctx__view>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:hashtable <classcuda_1_1experimental_1_1stf_1_1hashtable>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:hashtable\_stream\_interface <classcuda_1_1experimental_1_1stf_1_1hashtable__stream__interface>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:interpreted\_execution\_policy <classcuda_1_1experimental_1_1stf_1_1interpreted__execution__policy>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:logical\_data <classcuda_1_1experimental_1_1stf_1_1logical__data>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:logical\_data\_untyped <classcuda_1_1experimental_1_1stf_1_1logical__data__untyped>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:no\_init <classcuda_1_1experimental_1_1stf_1_1no__init>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:nvtx\_range <classcuda_1_1experimental_1_1stf_1_1nvtx__range>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:optionally\_static <classcuda_1_1experimental_1_1stf_1_1optionally__static>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:place\_partition <classcuda_1_1experimental_1_1stf_1_1place__partition>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:pooled\_allocator <classcuda_1_1experimental_1_1stf_1_1pooled__allocator>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:pos4 <classcuda_1_1experimental_1_1stf_1_1pos4>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:print\_type\_name\_and\_fail <classcuda_1_1experimental_1_1stf_1_1print__type__name__and__fail>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:reduction\_operator\_base <classcuda_1_1experimental_1_1stf_1_1reduction__operator__base>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:run\_once <classcuda_1_1experimental_1_1stf_1_1run__once>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:scalar\_graph\_interface <classcuda_1_1experimental_1_1stf_1_1scalar__graph__interface>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:scalar\_stream\_interface <classcuda_1_1experimental_1_1stf_1_1scalar__stream__interface>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:shape\_of <classcuda_1_1experimental_1_1stf_1_1shape__of>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:shape\_of\< hashtable \> <classcuda_1_1experimental_1_1stf_1_1shape__of_3_01hashtable_01_4>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:shape\_of\< mdspan\< T\, P... \> \> <classcuda_1_1experimental_1_1stf_1_1shape__of_3_01mdspan_3_01T_00_01P_8_8_8_01_4_01_4>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:shape\_of\< scalar\_view\< T \> \> <classcuda_1_1experimental_1_1stf_1_1shape__of_3_01scalar__view_3_01T_01_4_01_4>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:shape\_of\< void\_interface \> <classcuda_1_1experimental_1_1stf_1_1shape__of_3_01void__interface_01_4>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:slice\_graph\_interface <classcuda_1_1experimental_1_1stf_1_1slice__graph__interface>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:slice\_reduction\_op <classcuda_1_1experimental_1_1stf_1_1slice__reduction__op>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:slice\_reduction\_op\_sum <classcuda_1_1experimental_1_1stf_1_1slice__reduction__op__sum>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:slice\_reduction\_op\_sum\_impl <classcuda_1_1experimental_1_1stf_1_1slice__reduction__op__sum__impl>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:slice\_stream\_interface <classcuda_1_1experimental_1_1stf_1_1slice__stream__interface>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:small\_vector <classcuda_1_1experimental_1_1stf_1_1small__vector>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:stopwatch <classcuda_1_1experimental_1_1stf_1_1stopwatch>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:stream\_adapter <classcuda_1_1experimental_1_1stf_1_1stream__adapter>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:stream\_and\_event <classcuda_1_1experimental_1_1stf_1_1stream__and__event>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:stream\_async\_op <classcuda_1_1experimental_1_1stf_1_1stream__async__op>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:stream\_ctx <classcuda_1_1experimental_1_1stf_1_1stream__ctx>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:stream\_data\_interface <classcuda_1_1experimental_1_1stf_1_1stream__data__interface>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:stream\_data\_interface\_simple <classcuda_1_1experimental_1_1stf_1_1stream__data__interface__simple>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:stream\_reduction\_operator <classcuda_1_1experimental_1_1stf_1_1stream__reduction__operator>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:stream\_reduction\_operator\_untyped <classcuda_1_1experimental_1_1stf_1_1stream__reduction__operator__untyped>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:stream\_task <classcuda_1_1experimental_1_1stf_1_1stream__task>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:stream\_task\<\> <classcuda_1_1experimental_1_1stf_1_1stream__task_3_4>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:task <classcuda_1_1experimental_1_1stf_1_1task>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:task\_dep <classcuda_1_1experimental_1_1stf_1_1task__dep>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:task\_dep\< T\, void\, false \> <classcuda_1_1experimental_1_1stf_1_1task__dep_3_01T_00_01void_00_01false_01_4>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:task\_dep\_untyped <classcuda_1_1experimental_1_1stf_1_1task__dep__untyped>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:task\_dep\_vector <classcuda_1_1experimental_1_1stf_1_1task__dep__vector>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:task\_set <classcuda_1_1experimental_1_1stf_1_1task__set>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:thread\_hierarchy <classcuda_1_1experimental_1_1stf_1_1thread__hierarchy>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:thread\_hierarchy\_spec <classcuda_1_1experimental_1_1stf_1_1thread__hierarchy__spec>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:thread\_hierarchy\_spec\< can\_sync\, width\, lower\_levels... \> <classcuda_1_1experimental_1_1stf_1_1thread__hierarchy__spec_3_01can__sync_00_01width_00_01lower__levels_8_8_8_01_4>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:thread\_hierarchy\_spec\<\> <classcuda_1_1experimental_1_1stf_1_1thread__hierarchy__spec_3_4>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:tiled\_partition <classcuda_1_1experimental_1_1stf_1_1tiled__partition>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:uncached\_block\_allocator <classcuda_1_1experimental_1_1stf_1_1uncached__block__allocator>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:uncached\_graph\_allocator <classcuda_1_1experimental_1_1stf_1_1uncached__graph__allocator>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:uncached\_stream\_allocator <classcuda_1_1experimental_1_1stf_1_1uncached__stream__allocator>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:void\_graph\_interface <classcuda_1_1experimental_1_1stf_1_1void__graph__interface>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:void\_interface <classcuda_1_1experimental_1_1stf_1_1void__interface>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:void\_stream\_interface <classcuda_1_1experimental_1_1stf_1_1void__stream__interface>`
+
+Enums
+-----
+
+.. toctree::
+   :hidden:
+   :maxdepth: 1
+
+   enum_constants_8cuh_1a923aa8f0346e2b2a9e970a0fab753673
+   enum_execution__policy_8cuh_1a82008bf924d44262d76e4dd3e923e196
+   enum_places_8cuh_1a0aecbcdcde59511ead903c663bd205da
+   enum_execution__policy_8cuh_1a843ff5e8d2e1f11de9bffbf6bb794ff2
+   enum_place__partition_8cuh_1a5ae181afc51b82e614e9438af5705632
+   enum_scope__guard_8cuh_1aabada0bc94a44064d40bed511a02b6df
+
+- :ref:`cuda\:\:experimental\:\:stf\:\:access\_mode <constants_8cuh_1a923aa8f0346e2b2a9e970a0fab753673>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:hw\_scope <execution__policy_8cuh_1a82008bf924d44262d76e4dd3e923e196>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:instance\_id\_t <places_8cuh_1a0aecbcdcde59511ead903c663bd205da>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:mem <execution__policy_8cuh_1a843ff5e8d2e1f11de9bffbf6bb794ff2>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:place\_partition\_scope <place__partition_8cuh_1a5ae181afc51b82e614e9438af5705632>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:scope\_guard\_condition <scope__guard_8cuh_1aabada0bc94a44064d40bed511a02b6df>`
+
+Functions
+---------
+
+.. toctree::
+   :hidden:
+   :maxdepth: 1
+
+   function_constants_8cuh_1a3735d239aaf8d4b8afb5d107efda7f28
+   function_memory_8cuh_1a88da6f8733f0777747a7c944949989cd
+   function_traits_8cuh_1a90917dab8a4951bc67ffb566ffbfd319
+   function_memory_8cuh_1aba82754740a74ac58c56778ca65ee630
+   function_memory_8cuh_1aeb42c89112998e8f5e4d836bbd6a3b95
+   function_core_8cuh_1a786484d682c30ee82599284ca9a72c9f
+   function_internal_2slice_8cuh_1a6c8a14c350bd50f902ca929a7ed3964b
+   function_cuda__safe__call_8cuh_1a73e825b19bf30944e2a13c569ec09e61
+   function_cuda__safe__call_8cuh_1a07256ff2759b03d52d6238ac9116bc68
+   function_cuda__safe__call_8cuh_1adf71508673280bde267766a705d88fa1
+   function_hooks_8cuh_1aa31e5e28fd145cb7a7c71dc1304105b3
+   function_internal_2slice_8cuh_1a30419bc361560845d2961fed2cfce24a
+   function_hooks_8cuh_1af2283cf984d37d11d45ce28943328427
+   function_internal_2slice_8cuh_1a7088bdf68091dddfdc61f33ea90fe768
+   function_memory_8cuh_1a642240b2330f94133c16e8e4936868c8
+   function_memory_8cuh_1a71b1c304a516296e9b6bf5097dd8e11e
+   function_memory_8cuh_1a743b744487f5ecadafd4d14a19d8e788
+   function_memory_8cuh_1a602b123aff6994380151bd06ae52bf31
+   function_memory_8cuh_1a98117fa4eebc965a54f3ee691aea20b9
+   function_core_8cuh_1a876bcb63dc7fa6ecb0495604ea381b9d
+   function_core_8cuh_1aade3c827a07bb9e8c8aa7fdf98ee29be
+   function_core_8cuh_1a7d5a6c6a2a00e85682ade2249aca24d3
+   function_core_8cuh_1a2af040ea8af00128469aa4d47b0bb8ad
+   function_green__context_8cuh_1a5b257d4c2331422fd492439852cb9005
+   function_green__context_8cuh_1aadd1cb4f1c23586a354def1c027188a7
+   function_stream__to__dev_8cuh_1a5c237966138c447f4227d2916b48e337
+   function_hash_8cuh_1a7c493042d80f4d9653af9fd5f7a318d1
+   function_hash_8cuh_1a046313a0322d9d1594210dffd8b02658
+   function_async__prereq_8cuh_1ad18742cd2980317d08fa22179fe9838b
+   function_loop__dispatch_8cuh_1a1f897184dc7f58de3c5f56c456defe2d
+   function_loop__dispatch_8cuh_1a3af10ebd13bba9ba5bc5726a362e89d4
+   function_loop__dispatch_8cuh_1ae8b8c97d2e1c2b46db38924b9acfd504
+   function_places_8cuh_1a742f1c47d0b76725772e86a449d8d604
+   function_places_8cuh_1aab02b119ed6524b71ad2ff8e9df2a965
+   function_internal_2slice_8cuh_1a357054da599290eb5c6addb6a9503251
+   function_internal_2slice_8cuh_1a6e1e1d7e034f7e4b86eb9d22a3c01421
+   function_core_8cuh_1a8f15f696bcf96721e3ae9df7cde3e2cd
+   function_pretty__print_8cuh_1ad6577a7f8858522a907c4f5c09968fe6
+   function_pretty__print_8cuh_1ae1b63e0daf10e4e9c9341d6ce739a17b
+   function_traits_8cuh_1a3dbb5ded86ef1308333b16fc1b1a4f5a
+   function_execution__policy_8cuh_1ab2c0a36d560b5d94af5eea4073fa7d95
+   function_constants_8cuh_1a35613ca87a54ac849b0a1c50a550bda7
+   function_execution__policy_8cuh_1aaf4d681c72680f254ea272f17c2a4e64
+   function_constants_8cuh_1a25b99d08ea1a5a63ebed7acd93ecbb0e
+   function_execution__policy_8cuh_1a60ecf9bfc15107583bff32163672d8c1
+   function_task__dep_8cuh_1a1d7f7b23f1c73965c0fe6e6f63068326
+   function_places_8cuh_1a0f9eb25fdee0daf313384127f4b64d0d
+   function_places_8cuh_1a46416010a94c64aae6dd02fb8ae2af7d
+   function_internal_2slice_8cuh_1a1c139b69c2b9733394833312ef7c477f
+   function_memory_8cuh_1a2f1daa59a6c73b0dd45a5ec85c8cfa34
+   function_memory_8cuh_1a96d0ffe602bbaadec70b5f02a1aae4b5
+   function_memory_8cuh_1abdd5f5fbdd731e4f8bef8f0414f9eca5
+   function_place__partition_8cuh_1a58cda9cdc2010f7451a34efc10f8f3f2
+   function_pretty__print_8cuh_1adbd6c6dd16c9696adc165ffe875d4b54
+   function_logical__data_8cuh_1a2d806e586bfb0a9aaf002c498029a12f
+   function_async__resources__handle_8cuh_1a15334df9162430aaae8d98d9f6614164
+   function_data__interface_8cuh_1a02e3c57fc10829f66888ed2549beee2a
+   function_traits_8cuh_1ad92f54f02b4dafee0f888d7b6cc2057f
+   function_traits_8cuh_1a7769bac86e1a10e2b46241e166f27d4a
+   function_traits_8cuh_1a1669149d35ad1dd57888eb3f654a91d8
+   function_tiled__partition_8cuh_1a86294496235db5a1f8f573615fc6bc2f
+   function_data__interface_8cuh_1a55ea2a80ffc7e96fc732da1450dce1e4
+   function_data__interface_8cuh_1aeb34862395da382c0874ec513f4ec980
+   function_core_8cuh_1a5ebfd2987530211beec491e5ecc14d14
+   function_traits_8cuh_1a4343e02b1e60ac26c78b6739caf683a1
+   function_traits_8cuh_1a951bfbb3c570faec76d0a43206b7e485
+   function_core_8cuh_1a90424981a48aa27d3095293b83601e8b
+   function_core_8cuh_1ad3305fe516d6886ca779879d230e369d
+   function_logical__data_8cuh_1af3013a012be4ed020b2a4f5523b1b225
+   function_internal_2slice_8cuh_1a1a0a071a123dfa3c957c8797d49db909
+   function_memory_8cuh_1a04ac2553bd24371a68dde60b317a892d
+   function_memory_8cuh_1a39dbada7c4c615040df569b0084cb8e1
+   function_async__resources__handle_8cuh_1ad4e01a86f130b065598ee6eccc017de9
+   function_core_8cuh_1ad0417b6c32e7d75d4c5d7922d1268f44
+   function_unstable__unique_8cuh_1a4feca66d5a16fca2a086b3c4c15036f5
+   function_unstable__unique_8cuh_1ab6102f1f400fb5014573fd1424e1ae0c
+
+- :ref:`cuda\:\:experimental\:\:stf\:\:access\_mode\_string <constants_8cuh_1a3735d239aaf8d4b8afb5d107efda7f28>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:address\_is\_pinned <memory_8cuh_1a88da6f8733f0777747a7c944949989cd>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:all\_convertible <traits_8cuh_1a90917dab8a4951bc67ffb566ffbfd319>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:allocateHostMemory <memory_8cuh_1aba82754740a74ac58c56778ca65ee630>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:allocateManagedMemory <memory_8cuh_1aeb42c89112998e8f5e4d836bbd6a3b95>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:as\_underlying <core_8cuh_1a786484d682c30ee82599284ca9a72c9f>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:contiguous\_dims <internal_2slice_8cuh_1a6c8a14c350bd50f902ca929a7ed3964b>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:cuda\_safe\_call <cuda__safe__call_8cuh_1a73e825b19bf30944e2a13c569ec09e61>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:cuda\_try <cuda__safe__call_8cuh_1a07256ff2759b03d52d6238ac9116bc68>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:cuda\_try <cuda__safe__call_8cuh_1adf71508673280bde267766a705d88fa1>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:data\_dump <hooks_8cuh_1aa31e5e28fd145cb7a7c71dc1304105b3>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:data\_dump <internal_2slice_8cuh_1a30419bc361560845d2961fed2cfce24a>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:data\_hash <hooks_8cuh_1af2283cf984d37d11d45ce28943328427>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:data\_hash <internal_2slice_8cuh_1a7088bdf68091dddfdc61f33ea90fe768>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:deallocateHostMemory <memory_8cuh_1a642240b2330f94133c16e8e4936868c8>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:deallocateHostMemory <memory_8cuh_1a71b1c304a516296e9b6bf5097dd8e11e>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:deallocateHostMemory <memory_8cuh_1a743b744487f5ecadafd4d14a19d8e788>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:deallocateManagedMemory <memory_8cuh_1a602b123aff6994380151bd06ae52bf31>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:deallocateManagedMemory <memory_8cuh_1a98117fa4eebc965a54f3ee691aea20b9>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:each <core_8cuh_1a876bcb63dc7fa6ecb0495604ea381b9d>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:each <core_8cuh_1aade3c827a07bb9e8c8aa7fdf98ee29be>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:each\_in\_pack <core_8cuh_1a7d5a6c6a2a00e85682ade2249aca24d3>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:each\_in\_tuple <core_8cuh_1a2af040ea8af00128469aa4d47b0bb8ad>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:get\_cuda\_context\_id <green__context_8cuh_1a5b257d4c2331422fd492439852cb9005>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:get\_cuda\_context\_id <green__context_8cuh_1aadd1cb4f1c23586a354def1c027188a7>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:get\_device\_from\_stream <stream__to__dev_8cuh_1a5c237966138c447f4227d2916b48e337>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:hash\_all <hash_8cuh_1a7c493042d80f4d9653af9fd5f7a318d1>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:hash\_combine <hash_8cuh_1a046313a0322d9d1594210dffd8b02658>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:join <async__prereq_8cuh_1ad18742cd2980317d08fa22179fe9838b>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:loop\_dispatch <loop__dispatch_8cuh_1a1f897184dc7f58de3c5f56c456defe2d>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:loop\_dispatch <loop__dispatch_8cuh_1a3af10ebd13bba9ba5bc5726a362e89d4>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:loop\_dispatch <loop__dispatch_8cuh_1ae8b8c97d2e1c2b46db38924b9acfd504>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:make\_grid <places_8cuh_1a742f1c47d0b76725772e86a449d8d604>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:make\_grid <places_8cuh_1aab02b119ed6524b71ad2ff8e9df2a965>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:make\_slice <internal_2slice_8cuh_1a357054da599290eb5c6addb6a9503251>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:make\_slice <internal_2slice_8cuh_1a6e1e1d7e034f7e4b86eb9d22a3c01421>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:make\_tuple\_indexwise <core_8cuh_1a8f15f696bcf96721e3ae9df7cde3e2cd>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:mdspan\_print <pretty__print_8cuh_1ad6577a7f8858522a907c4f5c09968fe6>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:mdspan\_to\_vtk <pretty__print_8cuh_1ae1b63e0daf10e4e9c9341d6ce739a17b>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:only\_convertible <traits_8cuh_1a3dbb5ded86ef1308333b16fc1b1a4f5a>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:operator\& <execution__policy_8cuh_1ab2c0a36d560b5d94af5eea4073fa7d95>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:operator\| <constants_8cuh_1a35613ca87a54ac849b0a1c50a550bda7>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:operator\| <execution__policy_8cuh_1aaf4d681c72680f254ea272f17c2a4e64>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:operator\|\= <constants_8cuh_1a25b99d08ea1a5a63ebed7acd93ecbb0e>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:operator\~ <execution__policy_8cuh_1a60ecf9bfc15107583bff32163672d8c1>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:pack\_state <task__dep_8cuh_1a1d7f7b23f1c73965c0fe6e6f63068326>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:partition\_cyclic <places_8cuh_1a0f9eb25fdee0daf313384127f4b64d0d>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:partition\_tile <places_8cuh_1a46416010a94c64aae6dd02fb8ae2af7d>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:pin <internal_2slice_8cuh_1a1c139b69c2b9733394833312ef7c477f>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:pin\_memory <memory_8cuh_1a2f1daa59a6c73b0dd45a5ec85c8cfa34>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:pin\_memory <memory_8cuh_1a96d0ffe602bbaadec70b5f02a1aae4b5>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:pin\_memory <memory_8cuh_1abdd5f5fbdd731e4f8bef8f0414f9eca5>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:place\_partition\_scope\_to\_string <place__partition_8cuh_1a58cda9cdc2010f7451a34efc10f8f3f2>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:pretty\_print\_bytes <pretty__print_8cuh_1adbd6c6dd16c9696adc165ffe875d4b54>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:reclaim\_memory <logical__data_8cuh_1a2d806e586bfb0a9aaf002c498029a12f>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:register\_stream <async__resources__handle_8cuh_1a15334df9162430aaae8d98d9f6614164>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:shape <data__interface_8cuh_1a02e3c57fc10829f66888ed2549beee2a>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:shuffled\_args\_check <traits_8cuh_1ad92f54f02b4dafee0f888d7b6cc2057f>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:shuffled\_array\_tuple <traits_8cuh_1a7769bac86e1a10e2b46241e166f27d4a>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:shuffled\_tuple <traits_8cuh_1a1669149d35ad1dd57888eb3f654a91d8>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:tiled <tiled__partition_8cuh_1a86294496235db5a1f8f573615fc6bc2f>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:to\_rw\_type\_of <data__interface_8cuh_1a55ea2a80ffc7e96fc732da1450dce1e4>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:to\_rw\_type\_of <data__interface_8cuh_1aeb34862395da382c0874ec513f4ec980>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:to\_shared <core_8cuh_1a5ebfd2987530211beec491e5ecc14d14>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:to\_tuple <traits_8cuh_1a4343e02b1e60ac26c78b6739caf683a1>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:tuple2tuple <traits_8cuh_1a951bfbb3c570faec76d0a43206b7e485>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:tuple\_prepend <core_8cuh_1a90424981a48aa27d3095293b83601e8b>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:tuple\_transform <core_8cuh_1ad3305fe516d6886ca779879d230e369d>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:unpack\_state <logical__data_8cuh_1af3013a012be4ed020b2a4f5523b1b225>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:unpin <internal_2slice_8cuh_1a1a0a071a123dfa3c957c8797d49db909>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:unpin\_memory <memory_8cuh_1a04ac2553bd24371a68dde60b317a892d>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:unpin\_memory <memory_8cuh_1a39dbada7c4c615040df569b0084cb8e1>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:unregister\_stream <async__resources__handle_8cuh_1ad4e01a86f130b065598ee6eccc017de9>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:unroll <core_8cuh_1ad0417b6c32e7d75d4c5d7922d1268f44>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:unstable\_unique <unstable__unique_8cuh_1a4feca66d5a16fca2a086b3c4c15036f5>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:unstable\_unique <unstable__unique_8cuh_1ab6102f1f400fb5014573fd1424e1ae0c>`
+
+Namespaces
+----------
+
+.. toctree::
+   :hidden:
+   :maxdepth: 1
+
+   namespace_cuda__experimental__stf__reducer
+
+- :ref:`cuda\:\:experimental\:\:stf\:\:reducer <namespacecuda_1_1experimental_1_1stf_1_1reducer>`
+
+Structs
+-------
+
+.. toctree::
+   :hidden:
+   :maxdepth: 1
+
+   structcuda_1_1experimental_1_1stf_1_1cuda__kernel__desc
+   structcuda_1_1experimental_1_1stf_1_1decorated__stream
+   structcuda_1_1experimental_1_1stf_1_1graphed__interface__of
+   structcuda_1_1experimental_1_1stf_1_1graphed__interface__of_3_01mdspan_3_01T_00_01P_8_8_8_01_4_01_4
+   structcuda_1_1experimental_1_1stf_1_1graphed__interface__of_3_01scalar__view_3_01T_01_4_01_4
+   structcuda_1_1experimental_1_1stf_1_1graphed__interface__of_3_01void__interface_01_4
+   structcuda_1_1experimental_1_1stf_1_1hash
+   structcuda_1_1experimental_1_1stf_1_1hash_3_01cuda_1_1experimental_1_1stf_1_1green__ctx__view_01_4
+   structcuda_1_1experimental_1_1stf_1_1hash_3_01data__place_01_4
+   structcuda_1_1experimental_1_1stf_1_1hash_3_01dim4_01_4
+   structcuda_1_1experimental_1_1stf_1_1hash_3_01hashtable_01_4
+   structcuda_1_1experimental_1_1stf_1_1hash_3_01mdspan_3_01P_8_8_8_01_4_01_4
+   structcuda_1_1experimental_1_1stf_1_1hash_3_01pos4_01_4
+   structcuda_1_1experimental_1_1stf_1_1hash_3_01scalar__view_3_01T_01_4_01_4
+   structcuda_1_1experimental_1_1stf_1_1hash_3_01task_01_4
+   structcuda_1_1experimental_1_1stf_1_1hash_3_01void__interface_01_4
+   structcuda_1_1experimental_1_1stf_1_1hash_3_1_1std_1_1pair_3_01T1_00_01T2_01_4_01_4
+   structcuda_1_1experimental_1_1stf_1_1hash_3_1_1std_1_1tuple_3_01Ts_8_8_8_01_4_01_4
+   structcuda_1_1experimental_1_1stf_1_1layout__stride
+   structcuda_1_1experimental_1_1stf_1_1owning__container__of
+   structcuda_1_1experimental_1_1stf_1_1owning__container__of_3_01scalar__view_3_01T_01_4_01_4
+   structcuda_1_1experimental_1_1stf_1_1pooled__allocator__config
+   structcuda_1_1experimental_1_1stf_1_1scalar__view
+   structcuda_1_1experimental_1_1stf_1_1stream__pool
+   structcuda_1_1experimental_1_1stf_1_1streamed__interface__of
+   structcuda_1_1experimental_1_1stf_1_1streamed__interface__of_3_01hashtable_01_4
+   structcuda_1_1experimental_1_1stf_1_1streamed__interface__of_3_01mdspan_3_01T_00_01P_8_8_8_01_4_01_4
+   structcuda_1_1experimental_1_1stf_1_1streamed__interface__of_3_01scalar__view_3_01T_01_4_01_4
+   structcuda_1_1experimental_1_1stf_1_1streamed__interface__of_3_01void__interface_01_4
+
+- :ref:`cuda\:\:experimental\:\:stf\:\:cuda\_kernel\_desc <structcuda_1_1experimental_1_1stf_1_1cuda__kernel__desc>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:decorated\_stream <structcuda_1_1experimental_1_1stf_1_1decorated__stream>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:graphed\_interface\_of <structcuda_1_1experimental_1_1stf_1_1graphed__interface__of>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:graphed\_interface\_of\< mdspan\< T\, P... \> \> <structcuda_1_1experimental_1_1stf_1_1graphed__interface__of_3_01mdspan_3_01T_00_01P_8_8_8_01_4_01_4>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:graphed\_interface\_of\< scalar\_view\< T \> \> <structcuda_1_1experimental_1_1stf_1_1graphed__interface__of_3_01scalar__view_3_01T_01_4_01_4>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:graphed\_interface\_of\< void\_interface \> <structcuda_1_1experimental_1_1stf_1_1graphed__interface__of_3_01void__interface_01_4>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:hash <structcuda_1_1experimental_1_1stf_1_1hash>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:hash\< cuda\:\:experimental\:\:stf\:\:green\_ctx\_view \> <structcuda_1_1experimental_1_1stf_1_1hash_3_01cuda_1_1experimental_1_1stf_1_1green__ctx__view_01_4>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:hash\< data\_place \> <structcuda_1_1experimental_1_1stf_1_1hash_3_01data__place_01_4>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:hash\< dim4 \> <structcuda_1_1experimental_1_1stf_1_1hash_3_01dim4_01_4>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:hash\< hashtable \> <structcuda_1_1experimental_1_1stf_1_1hash_3_01hashtable_01_4>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:hash\< mdspan\< P... \> \> <structcuda_1_1experimental_1_1stf_1_1hash_3_01mdspan_3_01P_8_8_8_01_4_01_4>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:hash\< pos4 \> <structcuda_1_1experimental_1_1stf_1_1hash_3_01pos4_01_4>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:hash\< scalar\_view\< T \> \> <structcuda_1_1experimental_1_1stf_1_1hash_3_01scalar__view_3_01T_01_4_01_4>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:hash\< task \> <structcuda_1_1experimental_1_1stf_1_1hash_3_01task_01_4>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:hash\< void\_interface \> <structcuda_1_1experimental_1_1stf_1_1hash_3_01void__interface_01_4>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:hash\<\:\:std\:\:pair\< T1\, T2 \> \> <structcuda_1_1experimental_1_1stf_1_1hash_3_1_1std_1_1pair_3_01T1_00_01T2_01_4_01_4>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:hash\<\:\:std\:\:tuple\< Ts... \> \> <structcuda_1_1experimental_1_1stf_1_1hash_3_1_1std_1_1tuple_3_01Ts_8_8_8_01_4_01_4>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:layout\_stride <structcuda_1_1experimental_1_1stf_1_1layout__stride>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:owning\_container\_of <structcuda_1_1experimental_1_1stf_1_1owning__container__of>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:owning\_container\_of\< scalar\_view\< T \> \> <structcuda_1_1experimental_1_1stf_1_1owning__container__of_3_01scalar__view_3_01T_01_4_01_4>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:pooled\_allocator\_config <structcuda_1_1experimental_1_1stf_1_1pooled__allocator__config>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:scalar\_view <structcuda_1_1experimental_1_1stf_1_1scalar__view>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:stream\_pool <structcuda_1_1experimental_1_1stf_1_1stream__pool>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:streamed\_interface\_of <structcuda_1_1experimental_1_1stf_1_1streamed__interface__of>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:streamed\_interface\_of\< hashtable \> <structcuda_1_1experimental_1_1stf_1_1streamed__interface__of_3_01hashtable_01_4>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:streamed\_interface\_of\< mdspan\< T\, P... \> \> <structcuda_1_1experimental_1_1stf_1_1streamed__interface__of_3_01mdspan_3_01T_00_01P_8_8_8_01_4_01_4>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:streamed\_interface\_of\< scalar\_view\< T \> \> <structcuda_1_1experimental_1_1stf_1_1streamed__interface__of_3_01scalar__view_3_01T_01_4_01_4>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:streamed\_interface\_of\< void\_interface \> <structcuda_1_1experimental_1_1stf_1_1streamed__interface__of_3_01void__interface_01_4>`
+
+Typedefs
+--------
+
+.. toctree::
+   :hidden:
+   :maxdepth: 1
+
+   typedef_traits_8cuh_1ad79958209ea876e5dafe78f59ab52d79
+   typedef_blocked__partition_8cuh_1aa7d4170e1a89607a1064da6257130929
+   typedef_async__prereq_8cuh_1a57eb9d03994cae3406bf9101c62d80dd
+   typedef_places_8cuh_1aa088b12cd756808bfba193e21b88e95c
+   typedef_data__interface_8cuh_1ab28afd99ed2c623ca757f24d3fc077a5
+   typedef_data__interface_8cuh_1a710d1dc1c682fc04bfe39904e906348e
+   typedef_internal_2slice_8cuh_1ae06c2436b4d1c209eb27b51246a623ef
+   typedef_task__dep_8cuh_1a3e15e8ae386f7f07da8d7503a0046b62
+   typedef_logical__data_8cuh_1aa9c8a86afb5d22780fd035a16435c768
+
+- :ref:`cuda\:\:experimental\:\:stf\:\:array\_tuple <traits_8cuh_1ad79958209ea876e5dafe78f59ab52d79>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:blocked\_partition <blocked__partition_8cuh_1aa7d4170e1a89607a1064da6257130929>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:event <async__prereq_8cuh_1a57eb9d03994cae3406bf9101c62d80dd>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:get\_executor\_func\_t <places_8cuh_1aa088b12cd756808bfba193e21b88e95c>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:readonly\_type\_of <data__interface_8cuh_1ab28afd99ed2c623ca757f24d3fc077a5>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:rw\_type\_of <data__interface_8cuh_1a710d1dc1c682fc04bfe39904e906348e>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:slice <internal_2slice_8cuh_1ae06c2436b4d1c209eb27b51246a623ef>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:task\_dep\_vector\_untyped <task__dep_8cuh_1a3e15e8ae386f7f07da8d7503a0046b62>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:token <logical__data_8cuh_1aa9c8a86afb5d22780fd035a16435c768>`
+
+Variables
+---------
+
+.. toctree::
+   :hidden:
+   :maxdepth: 1
+
+   variable_traits_8cuh_1a03453c0becd124285de9dad062506ef6
+
+- :ref:`cuda\:\:experimental\:\:stf\:\:type\_name <traits_8cuh_1a03453c0becd124285de9dad062506ef6>`
+

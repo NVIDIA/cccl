@@ -1,0 +1,6 @@
+cuda\:\:experimental\:\:stf\:\:cuda\_exception
+==============================================
+
+Defined in :ref:`include\/cuda\/experimental\/\_\_stf\/utility\/cuda\_safe\_call.cuh <cuda__safe__call_8cuh>`
+
+.. doxygenclass:: cuda::experimental::stf::cuda_exception

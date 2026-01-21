@@ -1,0 +1,6 @@
+thrust\:\:not\_equal\_to
+========================
+
+Defined in :ref:`thrust\/functional.h <functional_8h>`
+
+.. doxygentypedef:: thrust::not_equal_to

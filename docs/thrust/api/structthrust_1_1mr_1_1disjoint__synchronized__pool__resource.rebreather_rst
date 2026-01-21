@@ -1,0 +1,6 @@
+thrust\:\:mr\:\:disjoint\_synchronized\_pool\_resource
+======================================================
+
+Defined in :ref:`thrust\/mr\/disjoint\_sync\_pool.h <disjoint__sync__pool_8h>`
+
+.. doxygenstruct:: thrust::mr::disjoint_synchronized_pool_resource

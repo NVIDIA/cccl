@@ -1,0 +1,6 @@
+thrust\:\:conj
+==============
+
+Defined in :ref:`thrust\/complex.h <complex_8h>`
+
+.. doxygenfunction:: thrust::conj(const complex< T > &z)

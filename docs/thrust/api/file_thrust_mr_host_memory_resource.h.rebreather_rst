@@ -1,0 +1,28 @@
+.. _`host__memory__resource_8h`:
+
+thrust\/mr\/host\_memory\_resource.h
+====================================
+
+In directory: :ref:`thrust\/mr <dir_3e902a837487bd3819b2874775e3d698>`
+
+Source file: :doc:`program_listing_file_thrust_mr_host_memory_resource.h`
+
+.. doxygenfile:: thrust/mr/host_memory_resource.h
+   :sections: briefdescription detaileddescription
+
+.. toctree::
+   :maxdepth: 1
+   :hidden:
+
+   Source file <program_listing_file_thrust_mr_host_memory_resource.h>
+
+Namespaces
+----------
+
+- :ref:`thrust <namespacethrust>`
+
+Typedefs
+--------
+
+- :ref:`thrust\:\:host\_memory\_resource <host__memory__resource_8h_1ad2124d9469c0cf7b2a30e91d2cdec51b>`
+

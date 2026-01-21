@@ -1,0 +1,6 @@
+cuda\:\:experimental\:\:uninitialized\_async\_buffer
+====================================================
+
+Defined in :ref:`include\/cuda\/experimental\/\_\_container\/uninitialized\_async\_buffer.cuh <uninitialized__async__buffer_8cuh>`
+
+.. doxygenclass:: cuda::experimental::uninitialized_async_buffer

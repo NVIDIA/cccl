@@ -1,0 +1,137 @@
+thrust\/device\_reference.h
+===========================
+
+File members: :ref:`thrust\/device\_reference.h <device__reference_8h>`
+
+.. code-block:: c++
+
+   /*
+    *  Copyright 2008-2013 NVIDIA Corporation
+    *
+    *  Licensed under the Apache License, Version 2.0 (the "License");
+    *  you may not use this file except in compliance with the License.
+    *  You may obtain a copy of the License at
+    *
+    *      http://www.apache.org/licenses/LICENSE-2.0
+    *
+    *  Unless required by applicable law or agreed to in writing, software
+    *  distributed under the License is distributed on an "AS IS" BASIS,
+    *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    *  See the License for the specific language governing permissions and
+    *  limitations under the License.
+    */
+
+   #pragma once
+
+   #include <thrust/detail/config.h>
+
+   #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+   #  pragma GCC system_header
+   #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+   #  pragma clang system_header
+   #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+   #  pragma system_header
+   #endif // no system header
+   #include <thrust/detail/reference.h>
+   #include <thrust/detail/type_traits.h>
+   #include <thrust/device_ptr.h>
+
+   THRUST_NAMESPACE_BEGIN
+
+   template <typename T>
+   class device_reference : public thrust::reference<T, thrust::device_ptr<T>, thrust::device_reference<T>>
+   {
+   private:
+     using super_t = thrust::reference<T, thrust::device_ptr<T>, thrust::device_reference<T>>;
+
+   public:
+     using value_type = typename super_t::value_type;
+
+     using pointer = typename super_t::pointer;
+
+     device_reference(const device_reference& other) = default;
+
+     template <typename OtherT>
+     _CCCL_HOST_DEVICE
+     device_reference(const device_reference<OtherT>& other,
+                      thrust::detail::enable_if_convertible_t<typename device_reference<OtherT>::pointer, pointer>* = 0)
+         : super_t(other)
+     {}
+
+     _CCCL_HOST_DEVICE explicit device_reference(const pointer& ptr)
+         : super_t(ptr)
+     {}
+
+     _CCCL_HOST_DEVICE const device_reference& operator=(const device_reference& other) const
+     {
+       return super_t::operator=(other);
+     }
+
+     template <typename OtherT>
+     _CCCL_HOST_DEVICE const device_reference& operator=(const device_reference<OtherT>& other) const
+     {
+       return super_t::operator=(other);
+     }
+
+     _CCCL_HOST_DEVICE const device_reference& operator=(const value_type& x) const
+     {
+       return super_t::operator=(x);
+     }
+
+   // declare these members for the purpose of Doxygenating them
+   // they actually exist in a base class
+   #if _CCCL_DOXYGEN_INVOKED
+
+     _CCCL_HOST_DEVICE pointer operator&(void) const;
+
+     _CCCL_HOST_DEVICE operator value_type(void) const;
+
+     _CCCL_HOST_DEVICE void swap(device_reference other);
+
+     device_reference& operator++(void);
+
+     value_type operator++(int);
+
+     device_reference& operator+=(const T& rhs);
+
+     device_reference& operator--(void);
+
+     value_type operator--(int);
+
+     device_reference& operator-=(const T& rhs);
+
+     device_reference& operator*=(const T& rhs);
+
+     device_reference& operator/=(const T& rhs);
+
+     device_reference& operator%=(const T& rhs);
+
+     device_reference& operator<<=(const T& rhs);
+
+     device_reference& operator>>=(const T& rhs);
+
+     device_reference& operator&=(const T& rhs);
+
+     device_reference& operator|=(const T& rhs);
+
+     device_reference& operator^=(const T& rhs);
+   #endif // end doxygen-only members
+   }; // end device_reference
+
+   // note: this is not a hidden friend, because nvcc 12.0 will miscompile with: error: incomplete type is not allowed
+   template <typename T>
+   _CCCL_HOST_DEVICE void swap(device_reference<T> x, device_reference<T> y) noexcept(noexcept(x.swap(y)))
+   {
+     x.swap(y);
+   }
+
+   // declare these methods for the purpose of Doxygenating them
+   // they actually are defined for a base class
+   #ifdef _CCCL_DOXYGEN_INVOKED
+
+   template <typename T, typename charT, typename traits>
+   std::basic_ostream<charT, traits>& operator<<(std::basic_ostream<charT, traits>& os, const device_reference<T>& y);
+   #endif
+
+   THRUST_NAMESPACE_END
+

@@ -1,0 +1,6 @@
+thrust\:\:bit\_and
+==================
+
+Defined in :ref:`thrust\/functional.h <functional_8h>`
+
+.. doxygentypedef:: thrust::bit_and

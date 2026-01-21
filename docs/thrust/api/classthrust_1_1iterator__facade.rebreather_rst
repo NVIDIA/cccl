@@ -1,0 +1,6 @@
+thrust\:\:iterator\_facade
+==========================
+
+Defined in :ref:`thrust\/iterator\/iterator\_facade.h <iterator__facade_8h>`
+
+.. doxygenclass:: thrust::iterator_facade

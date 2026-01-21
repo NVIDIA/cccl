@@ -1,0 +1,6 @@
+cuda\:\:experimental\:\:stf\:\:unstable\_unique
+===============================================
+
+Defined in :ref:`include\/cuda\/experimental\/\_\_stf\/utility\/unstable\_unique.cuh <unstable__unique_8cuh>`
+
+.. doxygenfunction:: cuda::experimental::stf::unstable_unique(iterator first, iterator last, BinaryPredicate p)

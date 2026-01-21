@@ -1,0 +1,6 @@
+thrust\:\:norm
+==============
+
+Defined in :ref:`thrust\/complex.h <complex_8h>`
+
+.. doxygenfunction:: thrust::norm(const complex< T > &z)

@@ -1,0 +1,6 @@
+thrust\:\:tagged\_deleter
+=========================
+
+Defined in :ref:`thrust\/allocate\_unique.h <allocate__unique_8h>`
+
+.. doxygenstruct:: thrust::tagged_deleter

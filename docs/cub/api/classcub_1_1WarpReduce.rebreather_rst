@@ -1,0 +1,6 @@
+cub\:\:WarpReduce
+=================
+
+Defined in :ref:`cub\/warp\/warp\_reduce.cuh <warp__reduce_8cuh>`
+
+.. doxygenclass:: cub::WarpReduce

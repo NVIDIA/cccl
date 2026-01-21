@@ -1,0 +1,6 @@
+thrust\:\:is\_execution\_policy
+===============================
+
+Defined in :ref:`thrust\/type\_traits\/is\_execution\_policy.h <is__execution__policy_8h>`
+
+.. doxygentypedef:: thrust::is_execution_policy

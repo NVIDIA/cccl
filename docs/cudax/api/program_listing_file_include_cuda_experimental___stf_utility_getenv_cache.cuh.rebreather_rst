@@ -1,0 +1,56 @@
+include\/cuda\/experimental\/\_\_stf\/utility\/getenv\_cache.cuh
+================================================================
+
+File members: :ref:`include\/cuda\/experimental\/\_\_stf\/utility\/getenv\_cache.cuh <getenv__cache_8cuh>`
+
+.. code-block:: c++
+
+   //===----------------------------------------------------------------------===//
+   //
+   // Part of CUDASTF in CUDA C++ Core Libraries,
+   // under the Apache License v2.0 with LLVM Exceptions.
+   // See https://llvm.org/LICENSE.txt for license information.
+   // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+   // SPDX-FileCopyrightText: Copyright (c) 2022-2024 NVIDIA CORPORATION & AFFILIATES.
+   //
+   //===----------------------------------------------------------------------===//
+
+   #pragma once
+
+   #include <cuda/__cccl_config>
+
+   #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+   #  pragma GCC system_header
+   #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+   #  pragma clang system_header
+   #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+   #  pragma system_header
+   #endif // no system header
+
+   #include <iostream>
+   #include <string>
+   #include <unordered_map>
+
+   namespace cuda::experimental::stf::reserved
+   {
+
+   inline const char* cached_getenv(const char* name)
+   {
+     static thread_local ::std::unordered_map<::std::string, ::std::string> cache;
+
+     if (auto it = cache.find(name); it != cache.end())
+     {
+       return it->second.c_str();
+     }
+
+     const char* value = ::std::getenv(name);
+     if (value)
+     {
+       cache[name] = value;
+     }
+
+     return value;
+   }
+
+   } // end namespace cuda::experimental::stf::reserved
+

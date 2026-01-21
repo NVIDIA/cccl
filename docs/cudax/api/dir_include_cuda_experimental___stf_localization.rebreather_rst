@@ -1,0 +1,16 @@
+.. _`dir_601ae77b66315aaac267955fb3d4dfc9`:
+
+include\/cuda\/experimental\/\_\_stf\/localization
+==================================================
+
+Files
+-----
+
+.. toctree::
+   :hidden:
+   :maxdepth: 1
+
+   file_include_cuda_experimental___stf_localization_composite_slice.cuh
+
+- :ref:`include\/cuda\/experimental\/\_\_stf\/localization\/composite\_slice.cuh <composite__slice_8cuh>`
+

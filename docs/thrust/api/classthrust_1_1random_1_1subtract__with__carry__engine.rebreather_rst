@@ -1,0 +1,6 @@
+thrust\:\:random\:\:subtract\_with\_carry\_engine
+=================================================
+
+Defined in :ref:`thrust\/random\/subtract\_with\_carry\_engine.h <subtract__with__carry__engine_8h>`
+
+.. doxygenclass:: thrust::random::subtract_with_carry_engine

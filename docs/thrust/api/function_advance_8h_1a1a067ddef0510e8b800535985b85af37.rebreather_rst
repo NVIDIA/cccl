@@ -1,0 +1,6 @@
+thrust\:\:advance
+=================
+
+Defined in :ref:`thrust\/advance.h <advance_8h>`
+
+.. doxygenfunction:: thrust::advance(InputIterator &i, Distance n)

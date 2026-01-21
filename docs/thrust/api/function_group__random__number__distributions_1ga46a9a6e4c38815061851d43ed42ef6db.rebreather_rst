@@ -1,0 +1,6 @@
+thrust\:\:random\:\:operator\!\=
+================================
+
+Defined in :ref:`thrust\/random\/normal\_distribution.h <normal__distribution_8h>`
+
+.. doxygenfunction:: thrust::random::operator!=(const normal_distribution< RealType > &lhs, const normal_distribution< RealType > &rhs)

@@ -1,0 +1,6 @@
+cuda\:\:experimental\:\:make\_async\_buffer
+===========================================
+
+Defined in :ref:`include\/cuda\/experimental\/\_\_container\/async\_buffer.cuh <async__buffer_8cuh>`
+
+.. doxygenfunction:: cuda::experimental::make_async_buffer(stream_ref __stream, any_resource< _Properties... > __mr, size_t __size, const _Tp &__value)

@@ -1,0 +1,6 @@
+thrust\:\:sequence
+==================
+
+Defined in :ref:`thrust\/sequence.h <sequence_8h>`
+
+.. doxygenfunction:: thrust::sequence(const thrust::detail::execution_policy_base< DerivedPolicy > &exec, ForwardIterator first, ForwardIterator last)

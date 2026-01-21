@@ -1,0 +1,6 @@
+cuda\:\:experimental\:\:stf\:\:unpin\_memory
+============================================
+
+Defined in :ref:`include\/cuda\/experimental\/\_\_stf\/utility\/memory.cuh <memory_8cuh>`
+
+.. doxygenfunction:: cuda::experimental::stf::unpin_memory(T *p)

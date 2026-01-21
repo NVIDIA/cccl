@@ -1,0 +1,274 @@
+thrust\/host\_vector.h
+======================
+
+File members: :ref:`thrust\/host\_vector.h <host__vector_8h>`
+
+.. code-block:: c++
+
+   /*
+    *  Copyright 2008-2018 NVIDIA Corporation
+    *
+    *  Licensed under the Apache License, Version 2.0 (the "License");
+    *  you may not use this file except in compliance with the License.
+    *  You may obtain a copy of the License at
+    *
+    *      http://www.apache.org/licenses/LICENSE-2.0
+    *
+    *  Unless required by applicable law or agreed to in writing, software
+    *  distributed under the License is distributed on an "AS IS" BASIS,
+    *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    *  See the License for the specific language governing permissions and
+    *  limitations under the License.
+    */
+
+   #pragma once
+
+   #include <thrust/detail/config.h>
+
+   #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+   #  pragma GCC system_header
+   #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+   #  pragma clang system_header
+   #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+   #  pragma system_header
+   #endif // no system header
+   #include <thrust/detail/memory_wrapper.h>
+   #include <thrust/detail/vector_base.h>
+
+   #include <cuda/std/initializer_list>
+   #include <cuda/std/utility>
+
+   #include <vector>
+
+   THRUST_NAMESPACE_BEGIN
+
+   template <typename T, typename Alloc = std::allocator<T>>
+   class host_vector : public detail::vector_base<T, Alloc>
+   {
+   private:
+     using Parent = detail::vector_base<T, Alloc>;
+
+   public:
+     using size_type  = typename Parent::size_type;
+     using value_type = typename Parent::value_type;
+     _CCCL_HOST host_vector()
+         : Parent()
+     {}
+
+     _CCCL_HOST host_vector(const Alloc& alloc)
+         : Parent(alloc)
+     {}
+
+     //  Define an empty destructor to explicitly specify
+     //  its execution space qualifier, as a workaround for nvcc warning
+     _CCCL_HOST ~host_vector() {}
+
+     _CCCL_HOST explicit host_vector(size_type n)
+         : Parent(n)
+     {}
+
+     _CCCL_HOST host_vector(size_type n, default_init_t)
+         : Parent(n, default_init_t{})
+     {}
+
+     _CCCL_HOST host_vector(size_type n, no_init_t)
+         : Parent(n, no_init_t{})
+     {}
+
+     _CCCL_HOST explicit host_vector(size_type n, const Alloc& alloc)
+         : Parent(n, alloc)
+     {}
+
+     _CCCL_HOST explicit host_vector(size_type n, const value_type& value)
+         : Parent(n, value)
+     {}
+
+     _CCCL_HOST explicit host_vector(size_type n, const value_type& value, const Alloc& alloc)
+         : Parent(n, value, alloc)
+     {}
+
+     _CCCL_HOST host_vector(const host_vector& v)
+         : Parent(v)
+     {}
+
+     _CCCL_HOST host_vector(const host_vector& v, const Alloc& alloc)
+         : Parent(v, alloc)
+     {}
+
+     _CCCL_HOST host_vector(host_vector&& v)
+         : Parent(::cuda::std::move(v))
+     {}
+
+     _CCCL_HOST host_vector(host_vector&& v, const Alloc& alloc)
+         : Parent(::cuda::std::move(v), alloc)
+     {}
+
+     _CCCL_HOST host_vector& operator=(const host_vector& v)
+     {
+       Parent::operator=(v);
+       return *this;
+     }
+
+     _CCCL_HOST host_vector& operator=(host_vector&& v)
+     {
+       Parent::operator=(::cuda::std::move(v));
+       return *this;
+     }
+
+     template <typename OtherT, typename OtherAlloc>
+     _CCCL_HOST host_vector(const host_vector<OtherT, OtherAlloc>& v)
+         : Parent(v)
+     {}
+
+     template <typename OtherT, typename OtherAlloc>
+     _CCCL_HOST host_vector& operator=(const host_vector<OtherT, OtherAlloc>& v)
+     {
+       Parent::operator=(v);
+       return *this;
+     }
+
+     template <typename OtherT, typename OtherAlloc>
+     _CCCL_HOST host_vector(const std::vector<OtherT, OtherAlloc>& v)
+         : Parent(v)
+     {}
+
+     template <typename OtherT, typename OtherAlloc>
+     _CCCL_HOST host_vector& operator=(const std::vector<OtherT, OtherAlloc>& v)
+     {
+       Parent::operator=(v);
+       return *this;
+     }
+
+     template <typename OtherT, typename OtherAlloc>
+     _CCCL_HOST host_vector(const detail::vector_base<OtherT, OtherAlloc>& v)
+         : Parent(v)
+     {}
+
+     template <typename OtherT, typename OtherAlloc>
+     _CCCL_HOST host_vector& operator=(const detail::vector_base<OtherT, OtherAlloc>& v)
+     {
+       Parent::operator=(v);
+       return *this;
+     }
+
+     host_vector(::cuda::std::initializer_list<T> il)
+         : Parent(il)
+     {}
+
+     host_vector(::cuda::std::initializer_list<T> il, const Alloc& alloc)
+         : Parent(il, alloc)
+     {}
+
+     host_vector& operator=(::cuda::std::initializer_list<T> il)
+     {
+       Parent::operator=(il);
+       return *this;
+     }
+
+     template <typename InputIterator>
+     _CCCL_HOST host_vector(InputIterator first, InputIterator last)
+         : Parent(first, last)
+     {}
+
+     template <typename InputIterator>
+     _CCCL_HOST host_vector(InputIterator first, InputIterator last, const Alloc& alloc)
+         : Parent(first, last, alloc)
+     {}
+
+   // declare these members for the purpose of Doxygenating them
+   // they actually exist in a base class
+   #if _CCCL_DOXYGEN_INVOKED
+
+     void resize(size_type new_size, const value_type& x = value_type());
+
+     void resize(size_type new_size, default_init_t);
+
+     void resize(size_type new_size, no_init_t);
+
+     size_type size() const;
+
+     size_type max_size() const;
+
+     void reserve(size_type n);
+
+     size_type capacity() const;
+
+     void shrink_to_fit();
+
+     reference operator[](size_type n);
+
+     const_reference operator[](size_type n) const;
+
+     iterator begin();
+
+     const_iterator begin() const;
+
+     const_iterator cbegin() const;
+
+     reverse_iterator rbegin();
+
+     const_reverse_iterator rbegin() const;
+
+     const_reverse_iterator crbegin() const;
+
+     iterator end();
+
+     const_iterator end() const;
+
+     const_iterator cend() const;
+
+     reverse_iterator rend();
+
+     const_reverse_iterator rend() const;
+
+     const_reverse_iterator crend() const;
+
+     const_reference front() const;
+
+     reference front();
+
+     const_reference back() const;
+
+     reference back();
+
+     pointer data();
+
+     const_pointer data() const;
+
+     void clear();
+
+     bool empty() const;
+
+     void push_back(const value_type& x);
+
+     void pop_back();
+
+     void swap(host_vector& v);
+
+     iterator erase(iterator pos);
+
+     iterator erase(iterator first, iterator last);
+
+     iterator insert(iterator position, const T& x);
+
+     void insert(iterator position, size_type n, const T& x);
+
+     template <typename InputIterator>
+     void insert(iterator position, InputIterator first, InputIterator last);
+
+     void assign(size_type n, const T& x);
+
+     template <typename InputIterator>
+     void assign(InputIterator first, InputIterator last);
+
+     allocator_type get_allocator() const;
+   #endif // end doxygen-only members
+
+     friend void swap(host_vector& a, host_vector& b) noexcept(noexcept(a.swap(b)))
+     {
+       a.swap(b);
+     }
+   };
+
+   THRUST_NAMESPACE_END
+

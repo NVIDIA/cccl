@@ -1,0 +1,6 @@
+cub\:\:BlockRadixSort
+=====================
+
+Defined in :ref:`cub\/block\/block\_radix\_sort.cuh <block__radix__sort_8cuh>`
+
+.. doxygenclass:: cub::BlockRadixSort

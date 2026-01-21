@@ -1,0 +1,53 @@
+.. _`internal_2slice_8cuh`:
+
+include\/cuda\/experimental\/\_\_stf\/internal\/slice.cuh
+=========================================================
+
+In directory: :ref:`include\/cuda\/experimental\/\_\_stf\/internal <dir_9a0afe0e3b482b68b2edbe22051d0386>`
+
+Source file: :doc:`program_listing_file_include_cuda_experimental___stf_internal_slice.cuh`
+
+.. doxygenfile:: include/cuda/experimental/__stf/internal/slice.cuh
+   :sections: briefdescription detaileddescription
+
+.. toctree::
+   :maxdepth: 1
+   :hidden:
+
+   Source file <program_listing_file_include_cuda_experimental___stf_internal_slice.cuh>
+
+Classes
+-------
+
+- :ref:`cuda\:\:experimental\:\:stf\:\:shape\_of <classcuda_1_1experimental_1_1stf_1_1shape__of>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:shape\_of\< mdspan\< T\, P... \> \> <classcuda_1_1experimental_1_1stf_1_1shape__of_3_01mdspan_3_01T_00_01P_8_8_8_01_4_01_4>`
+
+Functions
+---------
+
+- :ref:`cuda\:\:experimental\:\:stf\:\:contiguous\_dims <internal_2slice_8cuh_1a6c8a14c350bd50f902ca929a7ed3964b>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:data\_dump <internal_2slice_8cuh_1a30419bc361560845d2961fed2cfce24a>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:data\_hash <internal_2slice_8cuh_1a7088bdf68091dddfdc61f33ea90fe768>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:make\_slice <internal_2slice_8cuh_1a357054da599290eb5c6addb6a9503251>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:make\_slice <internal_2slice_8cuh_1a6e1e1d7e034f7e4b86eb9d22a3c01421>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:pin <internal_2slice_8cuh_1a1c139b69c2b9733394833312ef7c477f>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:unpin <internal_2slice_8cuh_1a1a0a071a123dfa3c957c8797d49db909>`
+
+Namespaces
+----------
+
+- :ref:`cuda <namespacecuda>`
+- :ref:`cuda\:\:experimental <namespacecuda_1_1experimental>`
+- :ref:`cuda\:\:experimental\:\:stf <namespacecuda_1_1experimental_1_1stf>`
+
+Structs
+-------
+
+- :ref:`cuda\:\:experimental\:\:stf\:\:hash\< mdspan\< P... \> \> <structcuda_1_1experimental_1_1stf_1_1hash_3_01mdspan_3_01P_8_8_8_01_4_01_4>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:layout\_stride <structcuda_1_1experimental_1_1stf_1_1layout__stride>`
+
+Typedefs
+--------
+
+- :ref:`cuda\:\:experimental\:\:stf\:\:slice <internal_2slice_8cuh_1ae06c2436b4d1c209eb27b51246a623ef>`
+

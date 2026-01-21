@@ -1,0 +1,371 @@
+cub\/warp\/warp\_scan.cuh
+=========================
+
+File members: :ref:`cub\/warp\/warp\_scan.cuh <warp__scan_8cuh>`
+
+.. code-block:: c++
+
+   /******************************************************************************
+    * Copyright (c) 2011, Duane Merrill.  All rights reserved.
+    * Copyright (c) 2011-2018, NVIDIA CORPORATION.  All rights reserved.
+    *
+    * Redistribution and use in source and binary forms, with or without
+    * modification, are permitted provided that the following conditions are met:
+    *     * Redistributions of source code must retain the above copyright
+    *       notice, this list of conditions and the following disclaimer.
+    *     * Redistributions in binary form must reproduce the above copyright
+    *       notice, this list of conditions and the following disclaimer in the
+    *       documentation and/or other materials provided with the distribution.
+    *     * Neither the name of the NVIDIA CORPORATION nor the
+    *       names of its contributors may be used to endorse or promote products
+    *       derived from this software without specific prior written permission.
+    *
+    * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+    * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+    * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+    * DISCLAIMED. IN NO EVENT SHALL NVIDIA CORPORATION BE LIABLE FOR ANY
+    * DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+    * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+    * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
+    * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+    * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+    * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+    *
+    ******************************************************************************/
+
+   #pragma once
+
+   #include <cub/config.cuh>
+
+   #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+   #  pragma GCC system_header
+   #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+   #  pragma clang system_header
+   #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+   #  pragma system_header
+   #endif // no system header
+
+   #include <cub/thread/thread_operators.cuh>
+   #include <cub/util_type.cuh>
+   #include <cub/warp/specializations/warp_scan_shfl.cuh>
+   #include <cub/warp/specializations/warp_scan_smem.cuh>
+
+   #include <cuda/ptx>
+   #include <cuda/std/type_traits>
+
+   CUB_NAMESPACE_BEGIN
+
+   template <typename T, int LOGICAL_WARP_THREADS = detail::warp_threads>
+   class WarpScan
+   {
+   private:
+     /******************************************************************************
+      * Constants and type definitions
+      ******************************************************************************/
+
+     enum
+     {
+       IS_ARCH_WARP = (LOGICAL_WARP_THREADS == detail::warp_threads),
+
+       IS_POW_OF_TWO = ((LOGICAL_WARP_THREADS & (LOGICAL_WARP_THREADS - 1)) == 0),
+
+       IS_INTEGER = cuda::std::is_integral_v<T>
+     };
+
+     using InternalWarpScan = ::cuda::std::
+       _If<IS_POW_OF_TWO, detail::WarpScanShfl<T, LOGICAL_WARP_THREADS>, detail::WarpScanSmem<T, LOGICAL_WARP_THREADS>>;
+
+     using _TempStorage = typename InternalWarpScan::TempStorage;
+
+     /******************************************************************************
+      * Thread fields
+      ******************************************************************************/
+
+     _TempStorage& temp_storage;
+     unsigned int lane_id;
+
+     /******************************************************************************
+      * Public types
+      ******************************************************************************/
+
+   public:
+     struct TempStorage : Uninitialized<_TempStorage>
+     {};
+
+     _CCCL_DEVICE _CCCL_FORCEINLINE WarpScan(TempStorage& temp_storage)
+         : temp_storage(temp_storage.Alias())
+         , lane_id(IS_ARCH_WARP ? ::cuda::ptx::get_sreg_laneid() : ::cuda::ptx::get_sreg_laneid() % LOGICAL_WARP_THREADS)
+     {}
+
+     _CCCL_DEVICE _CCCL_FORCEINLINE void InclusiveSum(T input, T& inclusive_output)
+     {
+       InclusiveScan(input, inclusive_output, ::cuda::std::plus<>{});
+     }
+
+     _CCCL_DEVICE _CCCL_FORCEINLINE void InclusiveSum(T input, T& inclusive_output, T& warp_aggregate)
+     {
+       InclusiveScan(input, inclusive_output, ::cuda::std::plus<>{}, warp_aggregate);
+     }
+
+     _CCCL_DEVICE _CCCL_FORCEINLINE void ExclusiveSum(T input, T& exclusive_output)
+     {
+       T initial_value{};
+       ExclusiveScan(input, exclusive_output, initial_value, ::cuda::std::plus<>{});
+     }
+
+     _CCCL_DEVICE _CCCL_FORCEINLINE void ExclusiveSum(T input, T& exclusive_output, T& warp_aggregate)
+     {
+       T initial_value{};
+       ExclusiveScan(input, exclusive_output, initial_value, ::cuda::std::plus<>{}, warp_aggregate);
+     }
+
+     template <typename ScanOp>
+     _CCCL_DEVICE _CCCL_FORCEINLINE void InclusiveScan(T input, T& inclusive_output, ScanOp scan_op)
+     {
+       InternalWarpScan(temp_storage).InclusiveScan(input, inclusive_output, scan_op);
+     }
+
+     template <typename ScanOp>
+     _CCCL_DEVICE _CCCL_FORCEINLINE void InclusiveScan(T input, T& inclusive_output, T initial_value, ScanOp scan_op)
+     {
+       InternalWarpScan internal(temp_storage);
+
+       T exclusive_output;
+       internal.InclusiveScan(input, inclusive_output, scan_op);
+
+       internal.Update(
+         input, inclusive_output, exclusive_output, scan_op, initial_value, detail::bool_constant_v<IS_INTEGER>);
+     }
+
+     template <typename ScanOp>
+     _CCCL_DEVICE _CCCL_FORCEINLINE void InclusiveScan(T input, T& inclusive_output, ScanOp scan_op, T& warp_aggregate)
+     {
+       InternalWarpScan(temp_storage).InclusiveScan(input, inclusive_output, scan_op, warp_aggregate);
+     }
+
+     template <typename ScanOp>
+     _CCCL_DEVICE _CCCL_FORCEINLINE void
+     InclusiveScan(T input, T& inclusive_output, T initial_value, ScanOp scan_op, T& warp_aggregate)
+     {
+       InternalWarpScan internal(temp_storage);
+
+       // Perform the inclusive scan operation
+       internal.InclusiveScan(input, inclusive_output, scan_op);
+
+       // Update the inclusive_output and warp_aggregate using the Update function
+       T exclusive_output;
+       internal.Update(
+         input,
+         inclusive_output,
+         exclusive_output,
+         warp_aggregate,
+         scan_op,
+         initial_value,
+         detail::bool_constant_v<IS_INTEGER>);
+     }
+
+   #ifndef _CCCL_DOXYGEN_INVOKED // Do not document partial inclusive scans
+
+     template <typename ScanOp>
+     _CCCL_DEVICE _CCCL_FORCEINLINE void InclusiveScanPartial(T input, T& inclusive_output, ScanOp scan_op, int valid_items)
+     {
+       InternalWarpScan(temp_storage).InclusiveScanPartial(input, inclusive_output, scan_op, valid_items);
+     }
+
+     template <typename ScanOp>
+     _CCCL_DEVICE _CCCL_FORCEINLINE void
+     InclusiveScanPartial(T input, T& inclusive_output, T initial_value, ScanOp scan_op, int valid_items)
+     {
+       InternalWarpScan internal(temp_storage);
+
+       T exclusive_output;
+       internal.InclusiveScanPartial(input, inclusive_output, scan_op, valid_items);
+
+       internal.UpdatePartial(input, inclusive_output, exclusive_output, scan_op, valid_items, initial_value);
+     }
+
+     template <typename ScanOp>
+     _CCCL_DEVICE _CCCL_FORCEINLINE void
+     InclusiveScanPartial(T input, T& inclusive_output, ScanOp scan_op, int valid_items, T& warp_aggregate)
+     {
+       InternalWarpScan(temp_storage).InclusiveScanPartial(input, inclusive_output, scan_op, valid_items, warp_aggregate);
+     }
+
+     template <typename ScanOp>
+     _CCCL_DEVICE _CCCL_FORCEINLINE void InclusiveScanPartial(
+       T input, T& inclusive_output, T initial_value, ScanOp scan_op, int valid_items, T& warp_aggregate)
+     {
+       InternalWarpScan internal(temp_storage);
+
+       // Perform the inclusive scan operation
+       internal.InclusiveScanPartial(input, inclusive_output, scan_op, valid_items);
+
+       // Update the inclusive_output and warp_aggregate using the Update function
+       T exclusive_output;
+       internal.UpdatePartial(
+         input, inclusive_output, exclusive_output, warp_aggregate, scan_op, valid_items, initial_value);
+     }
+
+   #endif // _CCCL_DOXYGEN_INVOKED  // Do not document partial inclusive scans
+
+     template <typename ScanOp>
+     _CCCL_DEVICE _CCCL_FORCEINLINE void ExclusiveScan(T input, T& exclusive_output, ScanOp scan_op)
+     {
+       InternalWarpScan internal(temp_storage);
+
+       T inclusive_output;
+       internal.InclusiveScan(input, inclusive_output, scan_op);
+
+       internal.Update(input, inclusive_output, exclusive_output, scan_op, detail::bool_constant_v<IS_INTEGER>);
+     }
+
+     template <typename ScanOp>
+     _CCCL_DEVICE _CCCL_FORCEINLINE void ExclusiveScan(T input, T& exclusive_output, T initial_value, ScanOp scan_op)
+     {
+       InternalWarpScan internal(temp_storage);
+
+       T inclusive_output;
+       internal.InclusiveScan(input, inclusive_output, scan_op);
+
+       internal.Update(
+         input, inclusive_output, exclusive_output, scan_op, initial_value, detail::bool_constant_v<IS_INTEGER>);
+     }
+
+     template <typename ScanOp>
+     _CCCL_DEVICE _CCCL_FORCEINLINE void ExclusiveScan(T input, T& exclusive_output, ScanOp scan_op, T& warp_aggregate)
+     {
+       InternalWarpScan internal(temp_storage);
+
+       T inclusive_output;
+       internal.InclusiveScan(input, inclusive_output, scan_op);
+
+       internal.Update(
+         input, inclusive_output, exclusive_output, warp_aggregate, scan_op, detail::bool_constant_v<IS_INTEGER>);
+     }
+
+     template <typename ScanOp>
+     _CCCL_DEVICE _CCCL_FORCEINLINE void
+     ExclusiveScan(T input, T& exclusive_output, T initial_value, ScanOp scan_op, T& warp_aggregate)
+     {
+       InternalWarpScan internal(temp_storage);
+
+       T inclusive_output;
+       internal.InclusiveScan(input, inclusive_output, scan_op);
+
+       internal.Update(
+         input,
+         inclusive_output,
+         exclusive_output,
+         warp_aggregate,
+         scan_op,
+         initial_value,
+         detail::bool_constant_v<IS_INTEGER>);
+     }
+
+   #ifndef _CCCL_DOXYGEN_INVOKED // Do not document partial exclusive scans
+     template <typename ScanOp>
+     _CCCL_DEVICE _CCCL_FORCEINLINE void ExclusiveScanPartial(T input, T& exclusive_output, ScanOp scan_op, int valid_items)
+     {
+       InternalWarpScan internal(temp_storage);
+
+       T inclusive_output;
+       internal.InclusiveScanPartial(input, inclusive_output, scan_op, valid_items);
+
+       internal.UpdatePartial(input, inclusive_output, exclusive_output, scan_op, valid_items);
+     }
+
+     template <typename ScanOp>
+     _CCCL_DEVICE _CCCL_FORCEINLINE void
+     ExclusiveScanPartial(T input, T& exclusive_output, T initial_value, ScanOp scan_op, int valid_items)
+     {
+       InternalWarpScan internal(temp_storage);
+
+       T inclusive_output;
+       internal.InclusiveScanPartial(input, inclusive_output, scan_op, valid_items);
+
+       internal.UpdatePartial(input, inclusive_output, exclusive_output, scan_op, valid_items, initial_value);
+     }
+
+     template <typename ScanOp>
+     _CCCL_DEVICE _CCCL_FORCEINLINE void
+     ExclusiveScanPartial(T input, T& exclusive_output, ScanOp scan_op, int valid_items, T& warp_aggregate)
+     {
+       InternalWarpScan internal(temp_storage);
+
+       T inclusive_output;
+       internal.InclusiveScanPartial(input, inclusive_output, scan_op, valid_items);
+
+       internal.UpdatePartial(input, inclusive_output, exclusive_output, warp_aggregate, scan_op, valid_items);
+     }
+
+     template <typename ScanOp>
+     _CCCL_DEVICE _CCCL_FORCEINLINE void ExclusiveScanPartial(
+       T input, T& exclusive_output, T initial_value, ScanOp scan_op, int valid_items, T& warp_aggregate)
+     {
+       InternalWarpScan internal(temp_storage);
+
+       T inclusive_output;
+       internal.InclusiveScanPartial(input, inclusive_output, scan_op, valid_items);
+
+       internal.UpdatePartial(
+         input, inclusive_output, exclusive_output, warp_aggregate, scan_op, valid_items, initial_value);
+     }
+
+   #endif // _CCCL_DOXYGEN_INVOKED  // Do not document partial exclusive scans
+
+     template <typename ScanOp>
+     _CCCL_DEVICE _CCCL_FORCEINLINE void Scan(T input, T& inclusive_output, T& exclusive_output, ScanOp scan_op)
+     {
+       InternalWarpScan internal(temp_storage);
+
+       internal.InclusiveScan(input, inclusive_output, scan_op);
+
+       internal.Update(input, inclusive_output, exclusive_output, scan_op, detail::bool_constant_v<IS_INTEGER>);
+     }
+
+     template <typename ScanOp>
+     _CCCL_DEVICE _CCCL_FORCEINLINE void
+     Scan(T input, T& inclusive_output, T& exclusive_output, T initial_value, ScanOp scan_op)
+     {
+       InternalWarpScan internal(temp_storage);
+
+       internal.InclusiveScan(input, inclusive_output, scan_op);
+
+       internal.Update(
+         input, inclusive_output, exclusive_output, scan_op, initial_value, detail::bool_constant_v<IS_INTEGER>);
+     }
+
+   #ifndef _CCCL_DOXYGEN_INVOKED // Do not document partial combined scans
+     template <typename ScanOp>
+     _CCCL_DEVICE _CCCL_FORCEINLINE void
+     ScanPartial(T input, T& inclusive_output, T& exclusive_output, ScanOp scan_op, int valid_items)
+     {
+       InternalWarpScan internal(temp_storage);
+
+       internal.InclusiveScanPartial(input, inclusive_output, scan_op, valid_items);
+
+       internal.UpdatePartial(input, inclusive_output, exclusive_output, scan_op, valid_items);
+     }
+
+     template <typename ScanOp>
+     _CCCL_DEVICE _CCCL_FORCEINLINE void
+     ScanPartial(T input, T& inclusive_output, T& exclusive_output, T initial_value, ScanOp scan_op, int valid_items)
+     {
+       InternalWarpScan internal(temp_storage);
+
+       internal.InclusiveScanPartial(input, inclusive_output, scan_op, valid_items);
+
+       internal.UpdatePartial(input, inclusive_output, exclusive_output, scan_op, valid_items, initial_value);
+     }
+
+   #endif // _CCCL_DOXYGEN_INVOKED  // Do not document partial combined scans
+
+     _CCCL_DEVICE _CCCL_FORCEINLINE T Broadcast(T input, unsigned int src_lane)
+     {
+       return InternalWarpScan(temp_storage).Broadcast(input, src_lane);
+     }
+
+   };
+
+   CUB_NAMESPACE_END
+

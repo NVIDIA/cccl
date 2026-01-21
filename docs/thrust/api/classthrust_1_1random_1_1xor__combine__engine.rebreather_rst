@@ -1,0 +1,6 @@
+thrust\:\:random\:\:xor\_combine\_engine
+========================================
+
+Defined in :ref:`thrust\/random\/xor\_combine\_engine.h <xor__combine__engine_8h>`
+
+.. doxygenclass:: thrust::random::xor_combine_engine

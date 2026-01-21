@@ -1,0 +1,6 @@
+cub\:\:ShiftDigitExtractor
+==========================
+
+Defined in :ref:`cub\/block\/radix\_rank\_sort\_operations.cuh <radix__rank__sort__operations_8cuh>`
+
+.. doxygenstruct:: cub::ShiftDigitExtractor

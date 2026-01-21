@@ -1,0 +1,6 @@
+cub\:\:BlockReduceAlgorithm
+===========================
+
+Defined in :ref:`cub\/block\/block\_reduce.cuh <block__reduce_8cuh>`
+
+.. doxygenenum:: cub::BlockReduceAlgorithm

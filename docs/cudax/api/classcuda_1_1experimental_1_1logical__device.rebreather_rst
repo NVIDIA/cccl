@@ -1,0 +1,6 @@
+cuda\:\:experimental\:\:logical\_device
+=======================================
+
+Defined in :ref:`include\/cuda\/experimental\/\_\_device\/logical\_device.cuh <logical__device_8cuh>`
+
+.. doxygenclass:: cuda::experimental::logical_device

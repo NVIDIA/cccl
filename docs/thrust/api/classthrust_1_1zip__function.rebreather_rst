@@ -1,0 +1,6 @@
+thrust\:\:zip\_function
+=======================
+
+Defined in :ref:`thrust\/zip\_function.h <zip__function_8h>`
+
+.. doxygenclass:: thrust::zip_function

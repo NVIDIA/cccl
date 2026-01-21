@@ -1,0 +1,33 @@
+.. _`gather_8h`:
+
+thrust\/gather.h
+================
+
+In directory: :ref:`thrust <dir_7807dea0fb0cf4ae34b71c9fa4b0a46c>`
+
+Source file: :doc:`program_listing_file_thrust_gather.h`
+
+.. doxygenfile:: thrust/gather.h
+   :sections: briefdescription detaileddescription
+
+.. toctree::
+   :maxdepth: 1
+   :hidden:
+
+   Source file <program_listing_file_thrust_gather.h>
+
+Functions
+---------
+
+- :ref:`thrust\:\:gather <group__gathering_1ga6fdb1fe3ff0d9ce01f41a72fa94c56df>`
+- :ref:`thrust\:\:gather <group__gathering_1ga9e0862c6d03cd02b9b47083043cdb129>`
+- :ref:`thrust\:\:gather\_if <group__gathering_1ga826a4fe88363c1558017dbb6f1de4752>`
+- :ref:`thrust\:\:gather\_if <group__gathering_1ga99684dec614e14ccc4b2b6b896324b81>`
+- :ref:`thrust\:\:gather\_if <group__gathering_1gabe7fcb9789daffbdb2be995be1494240>`
+- :ref:`thrust\:\:gather\_if <group__gathering_1gaf7acd33a67b2313a651ee19f3ac5cd04>`
+
+Namespaces
+----------
+
+- :ref:`thrust <namespacethrust>`
+

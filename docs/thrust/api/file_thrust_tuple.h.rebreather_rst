@@ -1,0 +1,30 @@
+.. _`tuple_8h`:
+
+thrust\/tuple.h
+===============
+
+In directory: :ref:`thrust <dir_7807dea0fb0cf4ae34b71c9fa4b0a46c>`
+
+Source file: :doc:`program_listing_file_thrust_tuple.h`
+
+.. doxygenfile:: thrust/tuple.h
+   :sections: briefdescription detaileddescription
+
+.. toctree::
+   :maxdepth: 1
+   :hidden:
+
+   Source file <program_listing_file_thrust_tuple.h>
+
+Namespaces
+----------
+
+- :ref:`thrust <namespacethrust>`
+
+Typedefs
+--------
+
+- :ref:`thrust\:\:tuple <group__tuple_1gae1456bd2572caa234524eb71bdc43f47>`
+- :ref:`thrust\:\:tuple\_element <group__tuple_1ga8abc0ec0a59d7fa09cbaa86d24a43dce>`
+- :ref:`thrust\:\:tuple\_size <group__tuple_1ga60fc1e6f0856f6df9d2b07b40f066f35>`
+

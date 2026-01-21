@@ -1,0 +1,35 @@
+.. _`green__ctx__view_8cuh`:
+
+include\/cuda\/experimental\/\_\_stf\/places\/exec\/green\_ctx\_view.cuh
+========================================================================
+
+In directory: :ref:`include\/cuda\/experimental\/\_\_stf\/places\/exec <dir_fc121962c2ae7923cd0f18a27646ba66>`
+
+Source file: :doc:`program_listing_file_include_cuda_experimental___stf_places_exec_green_ctx_view.cuh`
+
+.. doxygenfile:: include/cuda/experimental/__stf/places/exec/green_ctx_view.cuh
+   :sections: briefdescription detaileddescription
+
+.. toctree::
+   :maxdepth: 1
+   :hidden:
+
+   Source file <program_listing_file_include_cuda_experimental___stf_places_exec_green_ctx_view.cuh>
+
+Classes
+-------
+
+- :ref:`cuda\:\:experimental\:\:stf\:\:green\_ctx\_view <classcuda_1_1experimental_1_1stf_1_1green__ctx__view>`
+
+Namespaces
+----------
+
+- :ref:`cuda <namespacecuda>`
+- :ref:`cuda\:\:experimental <namespacecuda_1_1experimental>`
+- :ref:`cuda\:\:experimental\:\:stf <namespacecuda_1_1experimental_1_1stf>`
+
+Structs
+-------
+
+- :ref:`cuda\:\:experimental\:\:stf\:\:hash\< cuda\:\:experimental\:\:stf\:\:green\_ctx\_view \> <structcuda_1_1experimental_1_1stf_1_1hash_3_01cuda_1_1experimental_1_1stf_1_1green__ctx__view_01_4>`
+

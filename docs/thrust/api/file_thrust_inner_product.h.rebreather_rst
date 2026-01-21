@@ -1,0 +1,31 @@
+.. _`inner__product_8h`:
+
+thrust\/inner\_product.h
+========================
+
+In directory: :ref:`thrust <dir_7807dea0fb0cf4ae34b71c9fa4b0a46c>`
+
+Source file: :doc:`program_listing_file_thrust_inner_product.h`
+
+.. doxygenfile:: thrust/inner_product.h
+   :sections: briefdescription detaileddescription
+
+.. toctree::
+   :maxdepth: 1
+   :hidden:
+
+   Source file <program_listing_file_thrust_inner_product.h>
+
+Functions
+---------
+
+- :ref:`thrust\:\:inner\_product <group__transformed__reductions_1ga295676877375893891b3e06fac5be34a>`
+- :ref:`thrust\:\:inner\_product <group__transformed__reductions_1ga4c406cbac000071a167617ad41a3c12a>`
+- :ref:`thrust\:\:inner\_product <group__transformed__reductions_1ga7dd3c0d0f64ef48165e5d56ebda94739>`
+- :ref:`thrust\:\:inner\_product <group__transformed__reductions_1gad9df36f7648745ca572037727b66b48d>`
+
+Namespaces
+----------
+
+- :ref:`thrust <namespacethrust>`
+

@@ -1,0 +1,29 @@
+.. _`universal__vector_8h`:
+
+thrust\/universal\_vector.h
+===========================
+
+In directory: :ref:`thrust <dir_7807dea0fb0cf4ae34b71c9fa4b0a46c>`
+
+Source file: :doc:`program_listing_file_thrust_universal_vector.h`
+
+.. doxygenfile:: thrust/universal_vector.h
+   :sections: briefdescription detaileddescription
+
+.. toctree::
+   :maxdepth: 1
+   :hidden:
+
+   Source file <program_listing_file_thrust_universal_vector.h>
+
+Namespaces
+----------
+
+- :ref:`thrust <namespacethrust>`
+
+Typedefs
+--------
+
+- :ref:`thrust\:\:universal\_host\_pinned\_vector <group__containers_1ga4a980d5c4f2e1843c6f2139216dac7fc>`
+- :ref:`thrust\:\:universal\_vector <group__containers_1ga74d92bb13ce59a1fa025cfb8dc4fbaa0>`
+

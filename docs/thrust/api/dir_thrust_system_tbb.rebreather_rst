@@ -1,0 +1,16 @@
+.. _`dir_78ae1529b0a334eb96b24abaa7d23fd1`:
+
+thrust\/system\/tbb
+===================
+
+Files
+-----
+
+.. toctree::
+   :hidden:
+   :maxdepth: 1
+
+   file_thrust_system_tbb_pointer.h
+
+- :ref:`thrust\/system\/tbb\/pointer.h <system_2tbb_2pointer_8h>`
+

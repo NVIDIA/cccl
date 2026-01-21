@@ -1,0 +1,6 @@
+CUB\_TEMP\_DEVICE\_CODE
+=======================
+
+Defined in :ref:`cub\/util\_debug.cuh <util__debug_8cuh>`
+
+.. doxygendefine:: CUB_TEMP_DEVICE_CODE

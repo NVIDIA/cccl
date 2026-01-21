@@ -1,0 +1,6 @@
+thrust\:\:all\_of
+=================
+
+Defined in :ref:`thrust\/logical.h <logical_8h>`
+
+.. doxygenfunction:: thrust::all_of(InputIterator first, InputIterator last, Predicate pred)

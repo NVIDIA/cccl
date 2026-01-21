@@ -1,0 +1,6 @@
+thrust\:\:compile\_time\_value
+==============================
+
+Defined in :ref:`thrust\/iterator\/strided\_iterator.h <strided__iterator_8h>`
+
+.. doxygenstruct:: thrust::compile_time_value

@@ -1,0 +1,6 @@
+thrust\:\:device\_new
+=====================
+
+Defined in :ref:`thrust\/device\_new.h <device__new_8h>`
+
+.. doxygenfunction:: thrust::device_new(const size_t n=1)

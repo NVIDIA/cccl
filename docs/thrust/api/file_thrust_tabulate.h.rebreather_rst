@@ -1,0 +1,29 @@
+.. _`tabulate_8h`:
+
+thrust\/tabulate.h
+==================
+
+In directory: :ref:`thrust <dir_7807dea0fb0cf4ae34b71c9fa4b0a46c>`
+
+Source file: :doc:`program_listing_file_thrust_tabulate.h`
+
+.. doxygenfile:: thrust/tabulate.h
+   :sections: briefdescription detaileddescription
+
+.. toctree::
+   :maxdepth: 1
+   :hidden:
+
+   Source file <program_listing_file_thrust_tabulate.h>
+
+Functions
+---------
+
+- :ref:`thrust\:\:tabulate <group__transformations_1ga0ddf108cc4d1109addeed3251824f951>`
+- :ref:`thrust\:\:tabulate <group__transformations_1gab61bfd92df1e3694f175fef4fb61a3e7>`
+
+Namespaces
+----------
+
+- :ref:`thrust <namespacethrust>`
+

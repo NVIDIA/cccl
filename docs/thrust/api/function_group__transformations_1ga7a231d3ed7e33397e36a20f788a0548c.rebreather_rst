@@ -1,0 +1,6 @@
+thrust\:\:transform\_if
+=======================
+
+Defined in :ref:`thrust\/transform.h <transform_8h>`
+
+.. doxygenfunction:: thrust::transform_if(InputIterator first, InputIterator last, ForwardIterator result, UnaryFunction op, Predicate pred)

@@ -1,0 +1,136 @@
+thrust\/random\/linear\_congruential\_engine.h
+==============================================
+
+File members: :ref:`thrust\/random\/linear\_congruential\_engine.h <linear__congruential__engine_8h>`
+
+.. code-block:: c++
+
+   /*
+    *  Copyright 2008-2013 NVIDIA Corporation
+    *
+    *  Licensed under the Apache License, Version 2.0 (the "License");
+    *  you may not use this file except in compliance with the License.
+    *  You may obtain a copy of the License at
+    *
+    *      http://www.apache.org/licenses/LICENSE-2.0
+    *
+    *  Unless required by applicable law or agreed to in writing, software
+    *  distributed under the License is distributed on an "AS IS" BASIS,
+    *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    *  See the License for the specific language governing permissions and
+    *  limitations under the License.
+    */
+
+   #pragma once
+
+   #include <thrust/detail/config.h>
+
+   #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+   #  pragma GCC system_header
+   #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+   #  pragma clang system_header
+   #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+   #  pragma system_header
+   #endif // no system header
+   #include <thrust/random/detail/linear_congruential_engine_discard.h>
+   #include <thrust/random/detail/random_core_access.h>
+
+   #include <cuda/std/cstdint>
+
+   #include <iostream>
+
+   THRUST_NAMESPACE_BEGIN
+
+   namespace random
+   {
+
+   template <typename UIntType, UIntType a, UIntType c, UIntType m>
+   class linear_congruential_engine
+   {
+   public:
+     // types
+
+     using result_type = UIntType;
+
+     // engine characteristics
+
+     static const result_type multiplier = a;
+
+     static const result_type increment = c;
+
+     static const result_type modulus = m;
+
+   #ifndef _CCCL_DOXYGEN_INVOKED // Doxygen breaks on the ternary :shrug:
+     static const result_type min = c == 0u ? 1u : 0u;
+   #else
+     static const result_type min = 0u;
+   #endif // _CCCL_DOXYGEN_INVOKED
+
+     static const result_type max = m - 1u;
+
+     static const result_type default_seed = 1u;
+
+     // constructors and seeding functions
+
+     _CCCL_HOST_DEVICE explicit linear_congruential_engine(result_type s = default_seed);
+
+     _CCCL_HOST_DEVICE void seed(result_type s = default_seed);
+
+     // generating functions
+
+     _CCCL_HOST_DEVICE result_type operator()(void);
+
+     _CCCL_HOST_DEVICE void discard(unsigned long long z);
+
+   private:
+     result_type m_x;
+
+     static void transition(result_type& state);
+
+     friend struct thrust::random::detail::random_core_access;
+
+     friend struct thrust::random::detail::linear_congruential_engine_discard;
+
+     _CCCL_HOST_DEVICE bool equal(const linear_congruential_engine& rhs) const;
+
+     template <typename CharT, typename Traits>
+     std::basic_ostream<CharT, Traits>& stream_out(std::basic_ostream<CharT, Traits>& os) const;
+
+     template <typename CharT, typename Traits>
+     std::basic_istream<CharT, Traits>& stream_in(std::basic_istream<CharT, Traits>& is);
+
+   }; // end linear_congruential_engine
+
+   template <typename UIntType_, UIntType_ a_, UIntType_ c_, UIntType_ m_>
+   _CCCL_HOST_DEVICE bool operator==(const linear_congruential_engine<UIntType_, a_, c_, m_>& lhs,
+                                     const linear_congruential_engine<UIntType_, a_, c_, m_>& rhs);
+
+   template <typename UIntType_, UIntType_ a_, UIntType_ c_, UIntType_ m_>
+   _CCCL_HOST_DEVICE bool operator!=(const linear_congruential_engine<UIntType_, a_, c_, m_>& lhs,
+                                     const linear_congruential_engine<UIntType_, a_, c_, m_>& rhs);
+
+   template <typename UIntType_, UIntType_ a_, UIntType_ c_, UIntType_ m_, typename CharT, typename Traits>
+   std::basic_ostream<CharT, Traits>&
+   operator<<(std::basic_ostream<CharT, Traits>& os, const linear_congruential_engine<UIntType_, a_, c_, m_>& e);
+
+   template <typename UIntType_, UIntType_ a_, UIntType_ c_, UIntType_ m_, typename CharT, typename Traits>
+   std::basic_istream<CharT, Traits>&
+   operator>>(std::basic_istream<CharT, Traits>& is, linear_congruential_engine<UIntType_, a_, c_, m_>& e);
+
+   // XXX the type N2111 used here was uint_fast32_t
+
+   using minstd_rand0 = linear_congruential_engine<std::uint32_t, 16807, 0, 2147483647>;
+
+   using minstd_rand = linear_congruential_engine<std::uint32_t, 48271, 0, 2147483647>;
+
+   } // namespace random
+
+   // import names into thrust::
+   using random::linear_congruential_engine;
+   using random::minstd_rand;
+   using random::minstd_rand0;
+
+   THRUST_NAMESPACE_END
+
+   #include <thrust/random/detail/linear_congruential_engine.inl>
+

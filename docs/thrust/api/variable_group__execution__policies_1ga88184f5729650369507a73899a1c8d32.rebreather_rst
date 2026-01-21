@@ -1,0 +1,6 @@
+thrust\:\:seq
+=============
+
+Defined in :ref:`thrust\/execution\_policy.h <execution__policy_8h>`
+
+.. doxygenvariable:: thrust::seq

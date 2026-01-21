@@ -1,0 +1,37 @@
+.. _`xor__combine__engine_8h`:
+
+thrust\/random\/xor\_combine\_engine.h
+======================================
+
+In directory: :ref:`thrust\/random <dir_6b5d3ab13cf47c9c63ea01a78cc86c7c>`
+
+Source file: :doc:`program_listing_file_thrust_random_xor_combine_engine.h`
+
+.. doxygenfile:: thrust/random/xor_combine_engine.h
+   :sections: briefdescription detaileddescription
+
+.. toctree::
+   :maxdepth: 1
+   :hidden:
+
+   Source file <program_listing_file_thrust_random_xor_combine_engine.h>
+
+Classes
+-------
+
+- :ref:`thrust\:\:random\:\:xor\_combine\_engine <classthrust_1_1random_1_1xor__combine__engine>`
+
+Functions
+---------
+
+- :ref:`thrust\:\:random\:\:operator\!\= <group__random__number__engine__adaptors_1gabf29e96f61bbc5a4d996386f86ae3c10>`
+- :ref:`thrust\:\:random\:\:operator\<\< <group__random__number__engine__adaptors_1ga7c8e9ba4daeffd7bd96c740be2842715>`
+- :ref:`thrust\:\:random\:\:operator\=\= <group__random__number__engine__adaptors_1ga6325b1f3708b77fe11e0af27c78b9ab7>`
+- :ref:`thrust\:\:random\:\:operator\>\> <group__random__number__engine__adaptors_1gad139ed03785daedec118a67e2150e82f>`
+
+Namespaces
+----------
+
+- :ref:`thrust <namespacethrust>`
+- :ref:`thrust\:\:random <namespacethrust_1_1random>`
+

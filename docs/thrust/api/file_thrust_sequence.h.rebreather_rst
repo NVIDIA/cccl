@@ -1,0 +1,33 @@
+.. _`sequence_8h`:
+
+thrust\/sequence.h
+==================
+
+In directory: :ref:`thrust <dir_7807dea0fb0cf4ae34b71c9fa4b0a46c>`
+
+Source file: :doc:`program_listing_file_thrust_sequence.h`
+
+.. doxygenfile:: thrust/sequence.h
+   :sections: briefdescription detaileddescription
+
+.. toctree::
+   :maxdepth: 1
+   :hidden:
+
+   Source file <program_listing_file_thrust_sequence.h>
+
+Functions
+---------
+
+- :ref:`thrust\:\:sequence <group__transformations_1ga08c1dd7914c155d5fed6458330af3443>`
+- :ref:`thrust\:\:sequence <group__transformations_1ga2de557c10ee7df719075bf92717b14c9>`
+- :ref:`thrust\:\:sequence <group__transformations_1ga57eb3695750a80676b34c9e7302535da>`
+- :ref:`thrust\:\:sequence <group__transformations_1ga94e03f98c79e6f537b1b85d8c05a0d20>`
+- :ref:`thrust\:\:sequence <group__transformations_1gae449d575ab0dde81a717ad3847388b36>`
+- :ref:`thrust\:\:sequence <group__transformations_1gaee768044bec3b9efcc5b9f733ed9a6a5>`
+
+Namespaces
+----------
+
+- :ref:`thrust <namespacethrust>`
+

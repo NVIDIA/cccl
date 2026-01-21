@@ -1,0 +1,6 @@
+cuda\:\:experimental\:\:stf\:\:stream\_data\_interface
+======================================================
+
+Defined in :ref:`include\/cuda\/experimental\/\_\_stf\/stream\/stream\_data\_interface.cuh <stream__data__interface_8cuh>`
+
+.. doxygenclass:: cuda::experimental::stf::stream_data_interface

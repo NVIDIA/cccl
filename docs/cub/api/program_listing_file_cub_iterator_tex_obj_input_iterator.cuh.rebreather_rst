@@ -1,0 +1,246 @@
+cub\/iterator\/tex\_obj\_input\_iterator.cuh
+============================================
+
+File members: :ref:`cub\/iterator\/tex\_obj\_input\_iterator.cuh <tex__obj__input__iterator_8cuh>`
+
+.. code-block:: c++
+
+   /******************************************************************************
+    * Copyright (c) 2011, Duane Merrill.  All rights reserved.
+    * Copyright (c) 2011-2018, NVIDIA CORPORATION.  All rights reserved.
+    *
+    * Redistribution and use in source and binary forms, with or without
+    * modification, are permitted provided that the following conditions are met:
+    *     * Redistributions of source code must retain the above copyright
+    *       notice, this list of conditions and the following disclaimer.
+    *     * Redistributions in binary form must reproduce the above copyright
+    *       notice, this list of conditions and the following disclaimer in the
+    *       documentation and/or other materials provided with the distribution.
+    *     * Neither the name of the NVIDIA CORPORATION nor the
+    *       names of its contributors may be used to endorse or promote products
+    *       derived from this software without specific prior written permission.
+    *
+    * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+    * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+    * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+    * DISCLAIMED. IN NO EVENT SHALL NVIDIA CORPORATION BE LIABLE FOR ANY
+    * DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+    * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+    * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
+    * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+    * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+    * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+    *
+    ******************************************************************************/
+
+   #pragma once
+
+   #include <cub/config.cuh>
+
+   #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+   #  pragma GCC system_header
+   #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+   #  pragma clang system_header
+   #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+   #  pragma system_header
+   #endif // no system header
+
+   #include <cub/thread/thread_load.cuh>
+   #include <cub/thread/thread_store.cuh>
+   #include <cub/util_debug.cuh>
+
+   #include <thrust/iterator/iterator_facade.h>
+
+   #include <cuda/std/type_traits>
+
+   #include <nv/target>
+
+   #if !_CCCL_COMPILER(NVRTC)
+   #  include <ostream>
+   #endif // !_CCCL_COMPILER(NVRTC)
+
+   CUB_NAMESPACE_BEGIN
+
+   template <typename T, typename OffsetT = ptrdiff_t>
+   class TexObjInputIterator
+   {
+   public:
+     // Required iterator traits
+
+     using self_type = TexObjInputIterator;
+
+     using difference_type = OffsetT;
+
+     using value_type = T;
+
+     using pointer = T*;
+
+     using reference = T;
+
+     using iterator_category = typename THRUST_NS_QUALIFIER::detail::iterator_facade_category<
+       THRUST_NS_QUALIFIER::device_system_tag,
+       THRUST_NS_QUALIFIER::random_access_traversal_tag,
+       value_type,
+       reference>::type;
+
+   private:
+     // Largest texture word we can use in device
+     using TextureWord = typename UnitWord<T>::TextureWord;
+
+     // Number of texture words per T
+     enum
+     {
+       TEXTURE_MULTIPLE = sizeof(T) / sizeof(TextureWord)
+     };
+
+   private:
+     T* ptr;
+     difference_type tex_offset;
+     cudaTextureObject_t tex_obj;
+
+   public:
+     _CCCL_HOST_DEVICE _CCCL_FORCEINLINE TexObjInputIterator()
+         : ptr(nullptr)
+         , tex_offset(0)
+         , tex_obj(0)
+     {}
+
+   #if !_CCCL_COMPILER(NVRTC)
+
+     template <typename QualifiedT>
+     cudaError_t BindTexture(QualifiedT* ptr, size_t bytes, size_t tex_offset = 0)
+     {
+       this->ptr        = const_cast<::cuda::std::remove_cv_t<QualifiedT>*>(ptr);
+       this->tex_offset = static_cast<difference_type>(tex_offset);
+
+       cudaChannelFormatDesc channel_desc = cudaCreateChannelDesc<TextureWord>();
+       cudaResourceDesc res_desc;
+       cudaTextureDesc tex_desc;
+       memset(&res_desc, 0, sizeof(cudaResourceDesc));
+       memset(&tex_desc, 0, sizeof(cudaTextureDesc));
+       res_desc.resType                = cudaResourceTypeLinear;
+       res_desc.res.linear.devPtr      = this->ptr;
+       res_desc.res.linear.desc        = channel_desc;
+       res_desc.res.linear.sizeInBytes = bytes;
+       tex_desc.readMode               = cudaReadModeElementType;
+       return CubDebug(cudaCreateTextureObject(&tex_obj, &res_desc, &tex_desc, nullptr));
+     }
+
+     cudaError_t UnbindTexture()
+     {
+       return CubDebug(cudaDestroyTextureObject(tex_obj));
+     }
+   #endif // !_CCCL_COMPILER(NVRTC)
+
+     _CCCL_HOST_DEVICE _CCCL_FORCEINLINE self_type operator++(int)
+     {
+       self_type retval = *this;
+       tex_offset++;
+       return retval;
+     }
+
+     _CCCL_HOST_DEVICE _CCCL_FORCEINLINE self_type operator++()
+     {
+       tex_offset++;
+       return *this;
+     }
+
+     _CCCL_HOST_DEVICE _CCCL_FORCEINLINE reference operator*() const
+     {
+       NV_IF_TARGET(NV_IS_HOST, (return ptr[tex_offset];), (return this->device_deref();));
+     }
+
+     template <typename Distance>
+     _CCCL_HOST_DEVICE _CCCL_FORCEINLINE self_type operator+(Distance n) const
+     {
+       self_type retval;
+       retval.ptr        = ptr;
+       retval.tex_obj    = tex_obj;
+       retval.tex_offset = tex_offset + n;
+       return retval;
+     }
+
+     template <typename Distance>
+     _CCCL_HOST_DEVICE _CCCL_FORCEINLINE self_type& operator+=(Distance n)
+     {
+       tex_offset += n;
+       return *this;
+     }
+
+     template <typename Distance>
+     _CCCL_HOST_DEVICE _CCCL_FORCEINLINE self_type operator-(Distance n) const
+     {
+       self_type retval;
+       retval.ptr        = ptr;
+       retval.tex_obj    = tex_obj;
+       retval.tex_offset = tex_offset - n;
+       return retval;
+     }
+
+     template <typename Distance>
+     _CCCL_HOST_DEVICE _CCCL_FORCEINLINE self_type& operator-=(Distance n)
+     {
+       tex_offset -= n;
+       return *this;
+     }
+
+     _CCCL_HOST_DEVICE _CCCL_FORCEINLINE difference_type operator-(self_type other) const
+     {
+       return tex_offset - other.tex_offset;
+     }
+
+     template <typename Distance>
+     _CCCL_HOST_DEVICE _CCCL_FORCEINLINE reference operator[](Distance n) const
+     {
+       self_type offset = (*this) + n;
+       return *offset;
+     }
+
+     _CCCL_HOST_DEVICE _CCCL_FORCEINLINE pointer operator->()
+     {
+       return &(*(*this));
+     }
+
+     _CCCL_HOST_DEVICE _CCCL_FORCEINLINE bool operator==(const self_type& rhs) const
+     {
+       return ((ptr == rhs.ptr) && (tex_offset == rhs.tex_offset) && (tex_obj == rhs.tex_obj));
+     }
+
+     _CCCL_HOST_DEVICE _CCCL_FORCEINLINE bool operator!=(const self_type& rhs) const
+     {
+       return ((ptr != rhs.ptr) || (tex_offset != rhs.tex_offset) || (tex_obj != rhs.tex_obj));
+     }
+
+   #if !_CCCL_COMPILER(NVRTC)
+     friend ::std::ostream& operator<<(::std::ostream& os, const self_type& itr)
+     {
+       os << "cub::TexObjInputIterator( ptr=" << itr.ptr << ", offset=" << itr.tex_offset << ", tex_obj=" << itr.tex_obj
+          << " )";
+       return os;
+     }
+   #endif // !_CCCL_COMPILER(NVRTC)
+
+   private:
+     // This is hoisted out of operator* because #pragma can't be used inside of
+     // NV_IF_TARGET
+     _CCCL_DEVICE _CCCL_FORCEINLINE reference device_deref() const
+     {
+       // Move array of uninitialized words, then alias and assign to return
+       // value
+       TextureWord words[TEXTURE_MULTIPLE];
+
+       const auto tex_idx_base = tex_offset * TEXTURE_MULTIPLE;
+
+       _CCCL_PRAGMA_UNROLL_FULL()
+       for (int i = 0; i < TEXTURE_MULTIPLE; ++i)
+       {
+         words[i] = tex1Dfetch<TextureWord>(tex_obj, tex_idx_base + i);
+       }
+
+       // Load from words
+       return *reinterpret_cast<T*>(words);
+     }
+   };
+
+   CUB_NAMESPACE_END
+

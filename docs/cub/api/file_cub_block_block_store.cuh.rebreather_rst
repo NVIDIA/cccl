@@ -1,0 +1,44 @@
+.. _`block__store_8cuh`:
+
+cub\/block\/block\_store.cuh
+============================
+
+In directory: :ref:`cub\/block <dir_011e1c944d88f71be72e1e24a5fda7cf>`
+
+Source file: :doc:`program_listing_file_cub_block_block_store.cuh`
+
+.. doxygenfile:: cub/block/block_store.cuh
+   :sections: briefdescription detaileddescription
+
+.. toctree::
+   :maxdepth: 1
+   :hidden:
+
+   Source file <program_listing_file_cub_block_block_store.cuh>
+
+Classes
+-------
+
+- :ref:`cub\:\:BlockStore <classcub_1_1BlockStore>`
+
+Enums
+-----
+
+- :ref:`cub\:\:BlockStoreAlgorithm <namespacecub_1a839b145451e9eec3d44172e3c3619700>`
+
+Functions
+---------
+
+- :ref:`cub\:\:StoreDirectBlocked <namespacecub_1a727a7c8ca5aa68345d99cf39c282d632>`
+- :ref:`cub\:\:StoreDirectBlocked <namespacecub_1aa04ff311936d3e0224ffcbf24190b831>`
+- :ref:`cub\:\:StoreDirectBlockedVectorized <namespacecub_1a31990743e30594516193a8adf77710ae>`
+- :ref:`cub\:\:StoreDirectStriped <namespacecub_1a17705dce23e8dfed6dc4814e32a25bec>`
+- :ref:`cub\:\:StoreDirectStriped <namespacecub_1a76050168e316d3d99ee8745d7e903f08>`
+- :ref:`cub\:\:StoreDirectWarpStriped <namespacecub_1a7a5ead0ddc690293225138bfc71ece6e>`
+- :ref:`cub\:\:StoreDirectWarpStriped <namespacecub_1ad47f931dc83eab368854eb28340ee55b>`
+
+Namespaces
+----------
+
+- :ref:`cub <namespacecub>`
+

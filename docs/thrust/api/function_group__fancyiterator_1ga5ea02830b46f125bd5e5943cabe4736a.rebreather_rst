@@ -1,0 +1,6 @@
+thrust\:\:make\_discard\_iterator
+=================================
+
+Defined in :ref:`thrust\/iterator\/discard\_iterator.h <discard__iterator_8h>`
+
+.. doxygenfunction:: thrust::make_discard_iterator(::cuda::std::ptrdiff_t i=0)

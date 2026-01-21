@@ -1,0 +1,6 @@
+thrust\:\:mr\:\:polymorphic\_adaptor\_resource
+==============================================
+
+Defined in :ref:`thrust\/mr\/polymorphic\_adaptor.h <polymorphic__adaptor_8h>`
+
+.. doxygenclass:: thrust::mr::polymorphic_adaptor_resource

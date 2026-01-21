@@ -1,0 +1,6 @@
+thrust\:\:universal\_host\_pinned\_vector
+=========================================
+
+Defined in :ref:`thrust\/universal\_vector.h <universal__vector_8h>`
+
+.. doxygentypedef:: thrust::universal_host_pinned_vector

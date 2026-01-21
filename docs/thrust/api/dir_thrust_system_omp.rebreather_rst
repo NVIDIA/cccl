@@ -1,0 +1,16 @@
+.. _`dir_8d0f0be15f7a4ed2349bed8439c4d8f0`:
+
+thrust\/system\/omp
+===================
+
+Files
+-----
+
+.. toctree::
+   :hidden:
+   :maxdepth: 1
+
+   file_thrust_system_omp_pointer.h
+
+- :ref:`thrust\/system\/omp\/pointer.h <system_2omp_2pointer_8h>`
+

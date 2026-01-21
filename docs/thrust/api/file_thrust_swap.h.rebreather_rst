@@ -1,0 +1,29 @@
+.. _`swap_8h`:
+
+thrust\/swap.h
+==============
+
+In directory: :ref:`thrust <dir_7807dea0fb0cf4ae34b71c9fa4b0a46c>`
+
+Source file: :doc:`program_listing_file_thrust_swap.h`
+
+.. doxygenfile:: thrust/swap.h
+   :sections: briefdescription detaileddescription
+
+.. toctree::
+   :maxdepth: 1
+   :hidden:
+
+   Source file <program_listing_file_thrust_swap.h>
+
+Functions
+---------
+
+- :ref:`thrust\:\:swap\_ranges <group__copying_1ga24337437822d9f7ca85f0c48b9248f6e>`
+- :ref:`thrust\:\:swap\_ranges <group__copying_1ga2a5f58c36e53be600582478365ec7108>`
+
+Namespaces
+----------
+
+- :ref:`thrust <namespacethrust>`
+

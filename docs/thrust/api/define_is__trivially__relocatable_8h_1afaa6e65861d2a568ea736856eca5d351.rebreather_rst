@@ -1,0 +1,6 @@
+THRUST\_PROCLAIM\_TRIVIALLY\_RELOCATABLE
+========================================
+
+Defined in :ref:`thrust\/type\_traits\/is\_trivially\_relocatable.h <is__trivially__relocatable_8h>`
+
+.. doxygendefine:: THRUST_PROCLAIM_TRIVIALLY_RELOCATABLE

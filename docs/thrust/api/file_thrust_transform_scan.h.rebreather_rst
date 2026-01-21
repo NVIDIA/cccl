@@ -1,0 +1,33 @@
+.. _`transform__scan_8h`:
+
+thrust\/transform\_scan.h
+=========================
+
+In directory: :ref:`thrust <dir_7807dea0fb0cf4ae34b71c9fa4b0a46c>`
+
+Source file: :doc:`program_listing_file_thrust_transform_scan.h`
+
+.. doxygenfile:: thrust/transform_scan.h
+   :sections: briefdescription detaileddescription
+
+.. toctree::
+   :maxdepth: 1
+   :hidden:
+
+   Source file <program_listing_file_thrust_transform_scan.h>
+
+Functions
+---------
+
+- :ref:`thrust\:\:transform\_exclusive\_scan <group__transformed__prefixsums_1ga2a7806bd3beb7530adefab85d3e3c587>`
+- :ref:`thrust\:\:transform\_exclusive\_scan <group__transformed__prefixsums_1gabad127fde32db45f99638f175e4b8963>`
+- :ref:`thrust\:\:transform\_inclusive\_scan <group__transformed__prefixsums_1ga43b2cc02bd9eb63380268d37d53f8d89>`
+- :ref:`thrust\:\:transform\_inclusive\_scan <group__transformed__prefixsums_1gacd3aa7e9f791e3843efc8b1a1b4af0c6>`
+- :ref:`thrust\:\:transform\_inclusive\_scan <group__transformed__prefixsums_1gadeff70c896f813f550d5679563143d22>`
+- :ref:`thrust\:\:transform\_inclusive\_scan <group__transformed__prefixsums_1gaf0ac7878b64b38161ba490f6aa8228d0>`
+
+Namespaces
+----------
+
+- :ref:`thrust <namespacethrust>`
+

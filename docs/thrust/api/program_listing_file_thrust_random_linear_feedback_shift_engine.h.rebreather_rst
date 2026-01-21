@@ -1,0 +1,134 @@
+thrust\/random\/linear\_feedback\_shift\_engine.h
+=================================================
+
+File members: :ref:`thrust\/random\/linear\_feedback\_shift\_engine.h <linear__feedback__shift__engine_8h>`
+
+.. code-block:: c++
+
+   /*
+    *  Copyright 2008-2013 NVIDIA Corporation
+    *
+    *  Licensed under the Apache License, Version 2.0 (the "License");
+    *  you may not use this file except in compliance with the License.
+    *  You may obtain a copy of the License at
+    *
+    *      http://www.apache.org/licenses/LICENSE-2.0
+    *
+    *  Unless required by applicable law or agreed to in writing, software
+    *  distributed under the License is distributed on an "AS IS" BASIS,
+    *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    *  See the License for the specific language governing permissions and
+    *  limitations under the License.
+    */
+
+   /*
+    * Copyright Jens Maurer 2002
+    *
+    * Distributed under the Boost Software License, Version 1.0.
+    * (See accompanying NOTICE file for the complete license)
+    *
+    * For more information, see http://www.boost.org
+    */
+
+   #pragma once
+
+   #include <thrust/detail/config.h>
+
+   #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+   #  pragma GCC system_header
+   #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+   #  pragma clang system_header
+   #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+   #  pragma system_header
+   #endif // no system header
+   #include <thrust/random/detail/linear_feedback_shift_engine_wordmask.h>
+   #include <thrust/random/detail/random_core_access.h>
+
+   #include <cuda/std/cstddef> // for size_t
+
+   #include <iostream>
+
+   THRUST_NAMESPACE_BEGIN
+
+   namespace random
+   {
+
+   template <typename UIntType, size_t w, size_t k, size_t q, size_t s>
+   class linear_feedback_shift_engine
+   {
+   public:
+     // types
+
+     using result_type = UIntType;
+
+     // engine characteristics
+
+     static const size_t word_size = w;
+
+     static const size_t exponent1 = k;
+
+     static const size_t exponent2 = q;
+
+     static const size_t step_size = s;
+
+   private:
+     static const result_type wordmask = detail::linear_feedback_shift_engine_wordmask<result_type, w>::value;
+   public:
+     static const result_type min = 0;
+
+     static const result_type max = wordmask;
+
+     static const result_type default_seed = 341u;
+
+     // constructors and seeding functions
+
+     _CCCL_HOST_DEVICE explicit linear_feedback_shift_engine(result_type value = default_seed);
+
+     _CCCL_HOST_DEVICE void seed(result_type value = default_seed);
+
+     // generating functions
+
+     _CCCL_HOST_DEVICE result_type operator()(void);
+
+     _CCCL_HOST_DEVICE void discard(unsigned long long z);
+
+   private:
+     result_type m_value;
+
+     friend struct thrust::random::detail::random_core_access;
+
+     _CCCL_HOST_DEVICE bool equal(const linear_feedback_shift_engine& rhs) const;
+
+     template <typename CharT, typename Traits>
+     std::basic_ostream<CharT, Traits>& stream_out(std::basic_ostream<CharT, Traits>& os) const;
+
+     template <typename CharT, typename Traits>
+     std::basic_istream<CharT, Traits>& stream_in(std::basic_istream<CharT, Traits>& is);
+
+   }; // end linear_feedback_shift_engine
+
+   template <typename UIntType_, size_t w_, size_t k_, size_t q_, size_t s_>
+   _CCCL_HOST_DEVICE bool operator==(const linear_feedback_shift_engine<UIntType_, w_, k_, q_, s_>& lhs,
+                                     const linear_feedback_shift_engine<UIntType_, w_, k_, q_, s_>& rhs);
+
+   template <typename UIntType_, size_t w_, size_t k_, size_t q_, size_t s_>
+   _CCCL_HOST_DEVICE bool operator!=(const linear_feedback_shift_engine<UIntType_, w_, k_, q_, s_>& lhs,
+                                     const linear_feedback_shift_engine<UIntType_, w_, k_, q_, s_>& rhs);
+
+   template <typename UIntType_, size_t w_, size_t k_, size_t q_, size_t s_, typename CharT, typename Traits>
+   std::basic_ostream<CharT, Traits>&
+   operator<<(std::basic_ostream<CharT, Traits>& os, const linear_feedback_shift_engine<UIntType_, w_, k_, q_, s_>& e);
+
+   template <typename UIntType_, size_t w_, size_t k_, size_t q_, size_t s_, typename CharT, typename Traits>
+   std::basic_istream<CharT, Traits>&
+   operator>>(std::basic_istream<CharT, Traits>& is, linear_feedback_shift_engine<UIntType_, w_, k_, q_, s_>& e);
+
+   } // namespace random
+
+   // import names into thrust::
+   using random::linear_feedback_shift_engine;
+
+   THRUST_NAMESPACE_END
+
+   #include <thrust/random/detail/linear_feedback_shift_engine.inl>
+

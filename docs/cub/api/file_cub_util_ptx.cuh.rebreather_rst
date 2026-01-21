@@ -1,0 +1,35 @@
+.. _`util__ptx_8cuh`:
+
+cub\/util\_ptx.cuh
+==================
+
+In directory: :ref:`cub <dir_d583f216f1aafe19404e836b0c097ad2>`
+
+Source file: :doc:`program_listing_file_cub_util_ptx.cuh`
+
+.. doxygenfile:: cub/util_ptx.cuh
+   :sections: briefdescription detaileddescription
+
+.. toctree::
+   :maxdepth: 1
+   :hidden:
+
+   Source file <program_listing_file_cub_util_ptx.cuh>
+
+Functions
+---------
+
+- :ref:`cub\:\:BFE <namespacecub_1a1d58d7c9bdbebe3c8ce82f47c881c418>`
+- :ref:`cub\:\:MatchAny <namespacecub_1ad69972e79ff49330e9a69ef2cc916ea3>`
+- :ref:`cub\:\:RowMajorTid <namespacecub_1a767f6bb0f696ac8264755e2c5549ba52>`
+- :ref:`cub\:\:ShuffleDown <namespacecub_1a1d7023c04c3d5f501a83dd2992c550bf>`
+- :ref:`cub\:\:ShuffleIndex <namespacecub_1a896be0f0cb8ed423fb9e413143cf8e91>`
+- :ref:`cub\:\:ShuffleUp <namespacecub_1a626277ec32b01a9d7a48f8ea945cd4d7>`
+- :ref:`cub\:\:ThreadExit <namespacecub_1a1b975318a8f3f7a19769fa51121bb288>`
+- :ref:`cub\:\:WarpMask <namespacecub_1a40ad588fae6fbb0c9ac841f25c3f57d0>`
+
+Namespaces
+----------
+
+- :ref:`cub <namespacecub>`
+

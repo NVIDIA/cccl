@@ -1,0 +1,6 @@
+cuda\:\:experimental\:\:stf\:\:reduction\_operator\_base
+========================================================
+
+Defined in :ref:`include\/cuda\/experimental\/\_\_stf\/internal\/reduction\_base.cuh <reduction__base_8cuh>`
+
+.. doxygenclass:: cuda::experimental::stf::reduction_operator_base

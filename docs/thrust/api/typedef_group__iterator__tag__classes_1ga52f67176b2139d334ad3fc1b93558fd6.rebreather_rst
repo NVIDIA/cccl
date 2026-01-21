@@ -1,0 +1,6 @@
+thrust\:\:random\_access\_host\_iterator\_tag
+=============================================
+
+Defined in :ref:`thrust\/iterator\/iterator\_categories.h <iterator__categories_8h>`
+
+.. doxygentypedef:: thrust::random_access_host_iterator_tag

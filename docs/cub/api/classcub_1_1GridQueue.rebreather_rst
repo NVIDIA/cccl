@@ -1,0 +1,6 @@
+cub\:\:GridQueue
+================
+
+Defined in :ref:`cub\/grid\/grid\_queue.cuh <grid__queue_8cuh>`
+
+.. doxygenclass:: cub::GridQueue

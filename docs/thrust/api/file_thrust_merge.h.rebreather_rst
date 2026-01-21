@@ -1,0 +1,35 @@
+.. _`merge_8h`:
+
+thrust\/merge.h
+===============
+
+In directory: :ref:`thrust <dir_7807dea0fb0cf4ae34b71c9fa4b0a46c>`
+
+Source file: :doc:`program_listing_file_thrust_merge.h`
+
+.. doxygenfile:: thrust/merge.h
+   :sections: briefdescription detaileddescription
+
+.. toctree::
+   :maxdepth: 1
+   :hidden:
+
+   Source file <program_listing_file_thrust_merge.h>
+
+Functions
+---------
+
+- :ref:`thrust\:\:merge <group__merging_1ga3d2776685a00dca265399f411784acec>`
+- :ref:`thrust\:\:merge <group__merging_1ga63349377f04e6b5988ba362cc82141be>`
+- :ref:`thrust\:\:merge <group__merging_1gaae0c908dc70a47bfd2bfbda46fcc1d12>`
+- :ref:`thrust\:\:merge <group__merging_1gae7b00b8ee810aa3d8b8d88644c61ca10>`
+- :ref:`thrust\:\:merge\_by\_key <group__merging_1ga2937abe3e9b8bdd1873f3d323bcb1cd0>`
+- :ref:`thrust\:\:merge\_by\_key <group__merging_1ga71ba8aab955a1f1475bbb4a658294df4>`
+- :ref:`thrust\:\:merge\_by\_key <group__merging_1ga9ad5b025e32b001e78ef46592beb9b63>`
+- :ref:`thrust\:\:merge\_by\_key <group__merging_1gaef5fdca18f73cbc0521d1ce8187807bc>`
+
+Namespaces
+----------
+
+- :ref:`thrust <namespacethrust>`
+

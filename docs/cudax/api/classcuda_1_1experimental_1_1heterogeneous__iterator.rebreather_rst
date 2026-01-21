@@ -1,0 +1,6 @@
+cuda\:\:experimental\:\:heterogeneous\_iterator
+===============================================
+
+Defined in :ref:`include\/cuda\/experimental\/\_\_container\/heterogeneous\_iterator.cuh <heterogeneous__iterator_8cuh>`
+
+.. doxygenclass:: cuda::experimental::heterogeneous_iterator

@@ -1,0 +1,6 @@
+cuda\:\:experimental\:\:stf\:\:streamed\_interface\_of\< hashtable \>
+=====================================================================
+
+Defined in :ref:`include\/cuda\/experimental\/\_\_stf\/stream\/interfaces\/hashtable\_linearprobing.cuh <stream_2interfaces_2hashtable__linearprobing_8cuh>`
+
+.. doxygenstruct:: cuda::experimental::stf::streamed_interface_of< hashtable >

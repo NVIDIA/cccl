@@ -1,0 +1,6 @@
+thrust\:\:system\:\:error\_code
+===============================
+
+Defined in :ref:`thrust\/system\/error\_code.h <error__code_8h>`
+
+.. doxygenclass:: thrust::system::error_code

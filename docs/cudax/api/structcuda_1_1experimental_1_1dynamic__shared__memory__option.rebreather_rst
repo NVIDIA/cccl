@@ -1,0 +1,6 @@
+cuda\:\:experimental\:\:dynamic\_shared\_memory\_option
+=======================================================
+
+Defined in :ref:`include\/cuda\/experimental\/\_\_launch\/configuration.cuh <configuration_8cuh>`
+
+.. doxygenstruct:: cuda::experimental::dynamic_shared_memory_option

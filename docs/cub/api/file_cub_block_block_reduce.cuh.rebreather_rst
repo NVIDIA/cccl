@@ -1,0 +1,33 @@
+.. _`block__reduce_8cuh`:
+
+cub\/block\/block\_reduce.cuh
+=============================
+
+In directory: :ref:`cub\/block <dir_011e1c944d88f71be72e1e24a5fda7cf>`
+
+Source file: :doc:`program_listing_file_cub_block_block_reduce.cuh`
+
+.. doxygenfile:: cub/block/block_reduce.cuh
+   :sections: briefdescription detaileddescription
+
+.. toctree::
+   :maxdepth: 1
+   :hidden:
+
+   Source file <program_listing_file_cub_block_block_reduce.cuh>
+
+Classes
+-------
+
+- :ref:`cub\:\:BlockReduce <classcub_1_1BlockReduce>`
+
+Enums
+-----
+
+- :ref:`cub\:\:BlockReduceAlgorithm <namespacecub_1add0251c713859b8974806079e498d10a>`
+
+Namespaces
+----------
+
+- :ref:`cub <namespacecub>`
+

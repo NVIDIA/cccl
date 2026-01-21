@@ -1,0 +1,6 @@
+thrust\:\:tuple\_size
+=====================
+
+Defined in :ref:`thrust\/tuple.h <tuple_8h>`
+
+.. doxygentypedef:: thrust::tuple_size

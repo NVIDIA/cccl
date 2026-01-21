@@ -1,0 +1,188 @@
+include\/cuda\/experimental\/\_\_memory\_resource\/shared\_resource.cuh
+=======================================================================
+
+File members: :ref:`include\/cuda\/experimental\/\_\_memory\_resource\/shared\_resource.cuh <shared__resource_8cuh>`
+
+.. code-block:: c++
+
+   //===----------------------------------------------------------------------===//
+   //
+   // Part of CUDA Experimental in CUDA C++ Core Libraries,
+   // under the Apache License v2.0 with LLVM Exceptions.
+   // See https://llvm.org/LICENSE.txt for license information.
+   // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+   // SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
+   //
+   //===----------------------------------------------------------------------===//
+
+   #ifndef _CUDAX__MEMORY_RESOURCE_SHARED_RESOURCE_H
+   #define _CUDAX__MEMORY_RESOURCE_SHARED_RESOURCE_H
+
+   #include <cuda/std/detail/__config>
+
+   #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+   #  pragma GCC system_header
+   #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+   #  pragma clang system_header
+   #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+   #  pragma system_header
+   #endif // no system header
+
+   #include <cuda/__memory_resource/resource.h>
+   #include <cuda/std/__new_>
+   #include <cuda/std/__type_traits/is_swappable.h>
+   #include <cuda/std/__utility/exchange.h>
+   #include <cuda/std/__utility/forward.h>
+   #include <cuda/std/__utility/in_place.h>
+   #include <cuda/std/__utility/move.h>
+   #include <cuda/std/atomic>
+
+   #include <cuda/experimental/__memory_resource/properties.cuh>
+
+   #include <cuda/std/__cccl/prologue.h>
+
+   namespace cuda::experimental
+   {
+
+   template <class _Resource>
+   struct shared_resource : __copy_default_queries<_Resource>
+   {
+     static_assert(_CUDA_VMR::synchronous_resource<_Resource>, "");
+
+     template <class... _Args>
+     explicit shared_resource(_CUDA_VSTD::in_place_type_t<_Resource>, _Args&&... __args)
+         : __control_block(new _Control_block{_Resource{_CUDA_VSTD::forward<_Args>(__args)...}, 1})
+     {}
+
+     shared_resource(const shared_resource& __other) noexcept
+         : __control_block(__other.__control_block)
+     {
+       if (__control_block)
+       {
+         __control_block->__ref_count.fetch_add(1, _CUDA_VSTD::memory_order_relaxed);
+       }
+     }
+
+     shared_resource(shared_resource&& __other) noexcept
+         : __control_block(_CUDA_VSTD::exchange(__other.__control_block, nullptr))
+     {}
+
+     ~shared_resource()
+     {
+       if (__control_block && __control_block->__ref_count.fetch_sub(1, _CUDA_VSTD::memory_order_acq_rel) == 1)
+       {
+         delete __control_block;
+       }
+     }
+
+     shared_resource& operator=(const shared_resource& __other) noexcept
+     {
+       if (this != &__other)
+       {
+         shared_resource(__other).swap(*this);
+       }
+
+       return *this;
+     }
+
+     shared_resource& operator=(shared_resource&& __other) noexcept
+     {
+       if (this != &__other)
+       {
+         shared_resource(_CUDA_VSTD::move(__other)).swap(*this);
+       }
+
+       return *this;
+     }
+
+     void swap(shared_resource& __other) noexcept
+     {
+       _CUDA_VSTD::swap(__control_block, __other.__control_block);
+     }
+
+     friend void swap(shared_resource& __left, shared_resource& __right) noexcept
+     {
+       __left.swap(__right);
+     }
+
+     [[nodiscard]] void* allocate_sync(size_t __bytes, size_t __alignment = alignof(_CUDA_VSTD::max_align_t))
+     {
+       return __control_block->__resource.allocate_sync(__bytes, __alignment);
+     }
+
+     void deallocate_sync(void* __ptr, size_t __bytes, size_t __alignment = alignof(_CUDA_VSTD::max_align_t)) noexcept
+     {
+       __control_block->__resource.deallocate_sync(__ptr, __bytes, __alignment);
+     }
+
+     _CCCL_TEMPLATE(class _ThisResource = _Resource)
+     _CCCL_REQUIRES(_CUDA_VMR::resource<_ThisResource>)
+     [[nodiscard]] void* allocate(::cuda::stream_ref __stream, size_t __bytes, size_t __alignment)
+     {
+       return this->__control_block->__resource.allocate(__stream, __bytes, __alignment);
+     }
+
+     _CCCL_TEMPLATE(class _ThisResource = _Resource)
+     _CCCL_REQUIRES(_CUDA_VMR::resource<_ThisResource>)
+     void deallocate(::cuda::stream_ref __stream, void* __ptr, size_t __bytes, size_t __alignment)
+     {
+       this->__control_block->__resource.deallocate(__stream, __ptr, __bytes, __alignment);
+     }
+
+     [[nodiscard]] friend bool operator==(const shared_resource& __lhs, const shared_resource& __rhs)
+     {
+       if (__lhs.__control_block == __rhs.__control_block)
+       {
+         return true;
+       }
+
+       if (__lhs.__control_block == nullptr || __rhs.__control_block == nullptr)
+       {
+         return false;
+       }
+
+       return __lhs.__control_block->__resource == __rhs.__control_block->__resource;
+     }
+
+     [[nodiscard]] friend bool operator!=(const shared_resource& __lhs, const shared_resource& __rhs)
+     {
+       return !(__lhs == __rhs);
+     }
+
+     _CCCL_TEMPLATE(class _Property)
+     _CCCL_REQUIRES((!property_with_value<_Property>) _CCCL_AND(has_property<_Resource, _Property>))
+     friend void get_property(const shared_resource&, _Property) noexcept {}
+
+     _CCCL_TEMPLATE(class _Property)
+     _CCCL_REQUIRES(property_with_value<_Property> _CCCL_AND(has_property<_Resource, _Property>))
+     [[nodiscard]] friend __property_value_t<_Property> get_property(const shared_resource& __self, _Property) noexcept
+     {
+       return get_property(__self.__control_block->__resource, _Property{});
+     }
+
+   private:
+     // Use a custom shared_ptr implementation because (a) we don't need to support weak_ptr so we only
+     // need one pointer, not two, and (b) this implementation can work on device also.
+     struct _Control_block
+     {
+       _Resource __resource;
+       _CUDA_VSTD::atomic<int> __ref_count;
+     };
+
+     _Control_block* __control_block;
+   };
+
+   template <class _Resource, class... _Args>
+   auto make_shared_resource(_Args&&... __args) -> shared_resource<_Resource>
+   {
+     static_assert(_CUDA_VMR::synchronous_resource<_Resource>,
+                   "_Resource does not satisfy the cuda::mr::synchronous_resource concept");
+     return shared_resource<_Resource>{_CUDA_VSTD::in_place_type<_Resource>, _CUDA_VSTD::forward<_Args>(__args)...};
+   }
+
+   } // namespace cuda::experimental
+
+   #include <cuda/std/__cccl/epilogue.h>
+
+   #endif // _CUDAX__MEMORY_RESOURCE_SHARED_RESOURCE_H
+

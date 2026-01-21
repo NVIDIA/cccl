@@ -1,0 +1,36 @@
+.. _`stream__ctx_8cuh`:
+
+include\/cuda\/experimental\/\_\_stf\/stream\/stream\_ctx.cuh
+=============================================================
+
+In directory: :ref:`include\/cuda\/experimental\/\_\_stf\/stream <dir_8d1573554a2d822bef6ec5f1076cd11a>`
+
+Source file: :doc:`program_listing_file_include_cuda_experimental___stf_stream_stream_ctx.cuh`
+
+.. doxygenfile:: include/cuda/experimental/__stf/stream/stream_ctx.cuh
+   :sections: briefdescription detaileddescription
+
+.. toctree::
+   :maxdepth: 1
+   :hidden:
+
+   Source file <program_listing_file_include_cuda_experimental___stf_stream_stream_ctx.cuh>
+
+Classes
+-------
+
+- :ref:`cuda\:\:experimental\:\:stf\:\:stream\_ctx <classcuda_1_1experimental_1_1stf_1_1stream__ctx>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:uncached\_stream\_allocator <classcuda_1_1experimental_1_1stf_1_1uncached__stream__allocator>`
+
+Namespaces
+----------
+
+- :ref:`cuda <namespacecuda>`
+- :ref:`cuda\:\:experimental <namespacecuda_1_1experimental>`
+- :ref:`cuda\:\:experimental\:\:stf <namespacecuda_1_1experimental_1_1stf>`
+
+Structs
+-------
+
+- :ref:`cuda\:\:experimental\:\:stf\:\:streamed\_interface\_of <structcuda_1_1experimental_1_1stf_1_1streamed__interface__of>`
+

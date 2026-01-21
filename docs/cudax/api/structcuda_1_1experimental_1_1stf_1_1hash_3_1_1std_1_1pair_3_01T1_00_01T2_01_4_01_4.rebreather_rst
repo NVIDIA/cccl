@@ -1,0 +1,6 @@
+cuda\:\:experimental\:\:stf\:\:hash\<\:\:std\:\:pair\< T1\, T2 \> \>
+====================================================================
+
+Defined in :ref:`include\/cuda\/experimental\/\_\_stf\/utility\/hash.cuh <hash_8cuh>`
+
+.. doxygenstruct:: cuda::experimental::stf::hash<::std::pair< T1, T2 > >

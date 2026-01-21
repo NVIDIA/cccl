@@ -1,0 +1,43 @@
+.. _`is__contiguous__iterator_8h`:
+
+thrust\/type\_traits\/is\_contiguous\_iterator.h
+================================================
+
+In directory: :ref:`thrust\/type\_traits <dir_6114e4c2865c2127f7ba04e72679f8d6>`
+
+Source file: :doc:`program_listing_file_thrust_type_traits_is_contiguous_iterator.h`
+
+.. doxygenfile:: thrust/type_traits/is_contiguous_iterator.h
+   :sections: briefdescription detaileddescription
+
+.. toctree::
+   :maxdepth: 1
+   :hidden:
+
+   Source file <program_listing_file_thrust_type_traits_is_contiguous_iterator.h>
+
+Defines
+-------
+
+- :ref:`THRUST\_PROCLAIM\_CONTIGUOUS\_ITERATOR <group__type__traits_1ga6481610468498fdee166a05ec3f6e270>`
+
+Namespaces
+----------
+
+- :ref:`thrust <namespacethrust>`
+
+Structs
+-------
+
+- :ref:`thrust\:\:proclaim\_contiguous\_iterator <structthrust_1_1proclaim__contiguous__iterator>`
+
+Typedefs
+--------
+
+- :ref:`thrust\:\:is\_contiguous\_iterator <group__type__traits_1gafcd0e9ee2ab2f7123caf84f6c85a691b>`
+
+Variables
+---------
+
+- :ref:`thrust\:\:is\_contiguous\_iterator\_v <group__type__traits_1ga1da323e7acfe527a28ea6bd940488584>`
+

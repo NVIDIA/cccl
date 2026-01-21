@@ -1,0 +1,6 @@
+thrust\:\:free
+==============
+
+Defined in :ref:`thrust\/memory.h <memory_8h>`
+
+.. doxygenfunction:: thrust::free(const thrust::detail::execution_policy_base< DerivedPolicy > &system, Pointer ptr)

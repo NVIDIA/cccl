@@ -1,0 +1,630 @@
+cub\/block\/block\_radix\_sort.cuh
+==================================
+
+File members: :ref:`cub\/block\/block\_radix\_sort.cuh <block__radix__sort_8cuh>`
+
+.. code-block:: c++
+
+   /******************************************************************************
+    * Copyright (c) 2011, Duane Merrill.  All rights reserved.
+    * Copyright (c) 2011-2018, NVIDIA CORPORATION.  All rights reserved.
+    *
+    * Redistribution and use in source and binary forms, with or without
+    * modification, are permitted provided that the following conditions are met:
+    *     * Redistributions of source code must retain the above copyright
+    *       notice, this list of conditions and the following disclaimer.
+    *     * Redistributions in binary form must reproduce the above copyright
+    *       notice, this list of conditions and the following disclaimer in the
+    *       documentation and/or other materials provided with the distribution.
+    *     * Neither the name of the NVIDIA CORPORATION nor the
+    *       names of its contributors may be used to endorse or promote products
+    *       derived from this software without specific prior written permission.
+    *
+    * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+    * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+    * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+    * DISCLAIMED. IN NO EVENT SHALL NVIDIA CORPORATION BE LIABLE FOR ANY
+    * DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+    * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+    * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
+    * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+    * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+    * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+    *
+    ******************************************************************************/
+
+   #pragma once
+
+   #include <cub/config.cuh>
+
+   #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+   #  pragma GCC system_header
+   #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+   #  pragma clang system_header
+   #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+   #  pragma system_header
+   #endif // no system header
+
+   #include <cub/block/block_exchange.cuh>
+   #include <cub/block/block_radix_rank.cuh>
+   #include <cub/block/radix_rank_sort_operations.cuh>
+   #include <cub/util_ptx.cuh>
+   #include <cub/util_type.cuh>
+
+   #include <cuda/std/__algorithm_>
+   #include <cuda/std/type_traits>
+
+   CUB_NAMESPACE_BEGIN
+
+   template <typename KeyT,
+             int BLOCK_DIM_X,
+             int ITEMS_PER_THREAD,
+             typename ValueT                         = NullType,
+             int RADIX_BITS                          = 4,
+             bool MEMOIZE_OUTER_SCAN                 = true,
+             BlockScanAlgorithm INNER_SCAN_ALGORITHM = BLOCK_SCAN_WARP_SCANS,
+             cudaSharedMemConfig SMEM_CONFIG         = cudaSharedMemBankSizeFourByte,
+             int BLOCK_DIM_Y                         = 1,
+             int BLOCK_DIM_Z                         = 1>
+   class BlockRadixSort
+   {
+   private:
+     /******************************************************************************
+      * Constants and type definitions
+      ******************************************************************************/
+
+     enum
+     {
+       // The thread block size in threads
+       BLOCK_THREADS = BLOCK_DIM_X * BLOCK_DIM_Y * BLOCK_DIM_Z,
+
+       // Whether or not there are values to be trucked along with keys
+       KEYS_ONLY = ::cuda::std::is_same_v<ValueT, NullType>,
+     };
+
+     // KeyT traits and unsigned bits type
+     using traits                 = detail::radix::traits_t<KeyT>;
+     using bit_ordered_type       = typename traits::bit_ordered_type;
+     using bit_ordered_conversion = typename traits::bit_ordered_conversion_policy;
+
+     using AscendingBlockRadixRank =
+       BlockRadixRank<BLOCK_DIM_X,
+                      RADIX_BITS,
+                      false,
+                      MEMOIZE_OUTER_SCAN,
+                      INNER_SCAN_ALGORITHM,
+                      SMEM_CONFIG,
+                      BLOCK_DIM_Y,
+                      BLOCK_DIM_Z>;
+
+     using DescendingBlockRadixRank =
+       BlockRadixRank<BLOCK_DIM_X,
+                      RADIX_BITS,
+                      true,
+                      MEMOIZE_OUTER_SCAN,
+                      INNER_SCAN_ALGORITHM,
+                      SMEM_CONFIG,
+                      BLOCK_DIM_Y,
+                      BLOCK_DIM_Z>;
+
+     using fundamental_digit_extractor_t = BFEDigitExtractor<KeyT>;
+
+     using BlockExchangeKeys = BlockExchange<KeyT, BLOCK_DIM_X, ITEMS_PER_THREAD, false, BLOCK_DIM_Y, BLOCK_DIM_Z>;
+
+     using BlockExchangeValues = BlockExchange<ValueT, BLOCK_DIM_X, ITEMS_PER_THREAD, false, BLOCK_DIM_Y, BLOCK_DIM_Z>;
+
+   #ifndef _CCCL_DOXYGEN_INVOKED // Do not document
+     union _TempStorage
+     {
+       typename AscendingBlockRadixRank::TempStorage asending_ranking_storage;
+       typename DescendingBlockRadixRank::TempStorage descending_ranking_storage;
+       typename BlockExchangeKeys::TempStorage exchange_keys;
+       typename BlockExchangeValues::TempStorage exchange_values;
+     };
+   #endif // _CCCL_DOXYGEN_INVOKED
+
+     /******************************************************************************
+      * Thread fields
+      ******************************************************************************/
+
+     _TempStorage& temp_storage;
+
+     unsigned int linear_tid;
+
+     /******************************************************************************
+      * Utility methods
+      ******************************************************************************/
+
+     _CCCL_DEVICE _CCCL_FORCEINLINE _TempStorage& PrivateStorage()
+     {
+       __shared__ _TempStorage private_storage;
+       return private_storage;
+     }
+
+     template <class DigitExtractorT>
+     _CCCL_DEVICE _CCCL_FORCEINLINE void
+     RankKeys(bit_ordered_type (&unsigned_keys)[ITEMS_PER_THREAD],
+              int (&ranks)[ITEMS_PER_THREAD],
+              DigitExtractorT digit_extractor,
+              ::cuda::std::false_type /*is_descending*/)
+     {
+       AscendingBlockRadixRank(temp_storage.asending_ranking_storage).RankKeys(unsigned_keys, ranks, digit_extractor);
+     }
+
+     template <class DigitExtractorT>
+     _CCCL_DEVICE _CCCL_FORCEINLINE void
+     RankKeys(bit_ordered_type (&unsigned_keys)[ITEMS_PER_THREAD],
+              int (&ranks)[ITEMS_PER_THREAD],
+              DigitExtractorT digit_extractor,
+              ::cuda::std::true_type /*is_descending*/)
+     {
+       DescendingBlockRadixRank(temp_storage.descending_ranking_storage).RankKeys(unsigned_keys, ranks, digit_extractor);
+     }
+
+     _CCCL_DEVICE _CCCL_FORCEINLINE void ExchangeValues(
+       ValueT (&values)[ITEMS_PER_THREAD],
+       int (&ranks)[ITEMS_PER_THREAD],
+       ::cuda::std::false_type /*is_keys_only*/,
+       ::cuda::std::true_type /*is_blocked*/)
+     {
+       __syncthreads();
+
+       // Exchange values through shared memory in blocked arrangement
+       BlockExchangeValues(temp_storage.exchange_values).ScatterToBlocked(values, ranks);
+     }
+
+     _CCCL_DEVICE _CCCL_FORCEINLINE void ExchangeValues(
+       ValueT (&values)[ITEMS_PER_THREAD],
+       int (&ranks)[ITEMS_PER_THREAD],
+       ::cuda::std::false_type /*is_keys_only*/,
+       ::cuda::std::false_type /*is_blocked*/)
+     {
+       __syncthreads();
+
+       // Exchange values through shared memory in blocked arrangement
+       BlockExchangeValues(temp_storage.exchange_values).ScatterToStriped(values, ranks);
+     }
+
+     template <bool IS_BLOCKED>
+     _CCCL_DEVICE _CCCL_FORCEINLINE void ExchangeValues(
+       ValueT (& /*values*/)[ITEMS_PER_THREAD],
+       int (& /*ranks*/)[ITEMS_PER_THREAD],
+       ::cuda::std::true_type /*is_keys_only*/,
+       ::cuda::std::bool_constant<IS_BLOCKED> /*is_blocked*/)
+     {}
+
+     template <bool DESCENDING, bool KEYS_ONLY, class DecomposerT = detail::identity_decomposer_t>
+     _CCCL_DEVICE _CCCL_FORCEINLINE void SortBlocked(
+       KeyT (&keys)[ITEMS_PER_THREAD],
+       ValueT (&values)[ITEMS_PER_THREAD],
+       int begin_bit,
+       int end_bit,
+       ::cuda::std::bool_constant<DESCENDING> is_descending,
+       ::cuda::std::bool_constant<KEYS_ONLY> is_keys_only,
+       DecomposerT decomposer = {})
+     {
+       bit_ordered_type(&unsigned_keys)[ITEMS_PER_THREAD] = reinterpret_cast<bit_ordered_type(&)[ITEMS_PER_THREAD]>(keys);
+
+       _CCCL_PRAGMA_UNROLL_FULL()
+       for (int KEY = 0; KEY < ITEMS_PER_THREAD; KEY++)
+       {
+         unsigned_keys[KEY] = bit_ordered_conversion::to_bit_ordered(decomposer, unsigned_keys[KEY]);
+       }
+
+       // Radix sorting passes
+       while (true)
+       {
+         int pass_bits = _CUDA_VSTD::min(RADIX_BITS, end_bit - begin_bit);
+         auto digit_extractor =
+           traits::template digit_extractor<fundamental_digit_extractor_t>(begin_bit, pass_bits, decomposer);
+
+         // Rank the blocked keys
+         int ranks[ITEMS_PER_THREAD];
+         RankKeys(unsigned_keys, ranks, digit_extractor, is_descending);
+         begin_bit += RADIX_BITS;
+
+         __syncthreads();
+
+         // Exchange keys through shared memory in blocked arrangement
+         BlockExchangeKeys(temp_storage.exchange_keys).ScatterToBlocked(keys, ranks);
+
+         // Exchange values through shared memory in blocked arrangement
+         ExchangeValues(values, ranks, is_keys_only, ::cuda::std::true_type());
+
+         // Quit if done
+         if (begin_bit >= end_bit)
+         {
+           break;
+         }
+
+         __syncthreads();
+       }
+
+       // Untwiddle bits if necessary
+       _CCCL_PRAGMA_UNROLL_FULL()
+       for (int KEY = 0; KEY < ITEMS_PER_THREAD; KEY++)
+       {
+         unsigned_keys[KEY] = bit_ordered_conversion::from_bit_ordered(decomposer, unsigned_keys[KEY]);
+       }
+     }
+
+   public:
+   #ifndef _CCCL_DOXYGEN_INVOKED // Do not document
+
+     template <bool DESCENDING, bool KEYS_ONLY, class DecomposerT = detail::identity_decomposer_t>
+     _CCCL_DEVICE _CCCL_FORCEINLINE void SortBlockedToStriped(
+       KeyT (&keys)[ITEMS_PER_THREAD],
+       ValueT (&values)[ITEMS_PER_THREAD],
+       int begin_bit,
+       int end_bit,
+       ::cuda::std::bool_constant<DESCENDING> is_descending,
+       ::cuda::std::bool_constant<KEYS_ONLY> is_keys_only,
+       DecomposerT decomposer = {})
+     {
+       bit_ordered_type(&unsigned_keys)[ITEMS_PER_THREAD] = reinterpret_cast<bit_ordered_type(&)[ITEMS_PER_THREAD]>(keys);
+
+       _CCCL_PRAGMA_UNROLL_FULL()
+       for (int KEY = 0; KEY < ITEMS_PER_THREAD; KEY++)
+       {
+         unsigned_keys[KEY] = bit_ordered_conversion::to_bit_ordered(decomposer, unsigned_keys[KEY]);
+       }
+
+       // Radix sorting passes
+       while (true)
+       {
+         int pass_bits = _CUDA_VSTD::min(RADIX_BITS, end_bit - begin_bit);
+         auto digit_extractor =
+           traits::template digit_extractor<fundamental_digit_extractor_t>(begin_bit, pass_bits, decomposer);
+
+         // Rank the blocked keys
+         int ranks[ITEMS_PER_THREAD];
+         RankKeys(unsigned_keys, ranks, digit_extractor, is_descending);
+         begin_bit += RADIX_BITS;
+
+         __syncthreads();
+
+         // Check if this is the last pass
+         if (begin_bit >= end_bit)
+         {
+           // Last pass exchanges keys through shared memory in striped arrangement
+           BlockExchangeKeys(temp_storage.exchange_keys).ScatterToStriped(keys, ranks);
+
+           // Last pass exchanges through shared memory in striped arrangement
+           ExchangeValues(values, ranks, is_keys_only, ::cuda::std::false_type());
+
+           // Quit
+           break;
+         }
+
+         // Exchange keys through shared memory in blocked arrangement
+         BlockExchangeKeys(temp_storage.exchange_keys).ScatterToBlocked(keys, ranks);
+
+         // Exchange values through shared memory in blocked arrangement
+         ExchangeValues(values, ranks, is_keys_only, ::cuda::std::true_type());
+
+         __syncthreads();
+       }
+
+       // Untwiddle bits if necessary
+       _CCCL_PRAGMA_UNROLL_FULL()
+       for (int KEY = 0; KEY < ITEMS_PER_THREAD; KEY++)
+       {
+         unsigned_keys[KEY] = bit_ordered_conversion::from_bit_ordered(decomposer, unsigned_keys[KEY]);
+       }
+     }
+
+   #endif // _CCCL_DOXYGEN_INVOKED
+
+     struct TempStorage : Uninitialized<_TempStorage>
+     {};
+
+     _CCCL_DEVICE _CCCL_FORCEINLINE BlockRadixSort()
+         : temp_storage(PrivateStorage())
+         , linear_tid(RowMajorTid(BLOCK_DIM_X, BLOCK_DIM_Y, BLOCK_DIM_Z))
+     {}
+
+     _CCCL_DEVICE _CCCL_FORCEINLINE BlockRadixSort(TempStorage& temp_storage)
+         : temp_storage(temp_storage.Alias())
+         , linear_tid(RowMajorTid(BLOCK_DIM_X, BLOCK_DIM_Y, BLOCK_DIM_Z))
+     {}
+
+     _CCCL_DEVICE _CCCL_FORCEINLINE void
+     Sort(KeyT (&keys)[ITEMS_PER_THREAD], int begin_bit = 0, int end_bit = sizeof(KeyT) * 8)
+     {
+       NullType values[ITEMS_PER_THREAD];
+
+       SortBlocked(keys, values, begin_bit, end_bit, ::cuda::std::false_type(), detail::bool_constant_v<KEYS_ONLY>);
+     }
+
+     template <class DecomposerT>
+     _CCCL_DEVICE _CCCL_FORCEINLINE //
+     ::cuda::std::enable_if_t< //
+       !::cuda::std::is_convertible_v<DecomposerT, int>>
+     Sort(KeyT (&keys)[ITEMS_PER_THREAD], DecomposerT decomposer, int begin_bit, int end_bit)
+     {
+       NullType values[ITEMS_PER_THREAD];
+
+       SortBlocked(
+         keys, values, begin_bit, end_bit, ::cuda::std::false_type(), detail::bool_constant_v<KEYS_ONLY>, decomposer);
+     }
+
+     template <class DecomposerT>
+     _CCCL_DEVICE _CCCL_FORCEINLINE //
+     ::cuda::std::enable_if_t< //
+       !::cuda::std::is_convertible_v<DecomposerT, int>>
+     Sort(KeyT (&keys)[ITEMS_PER_THREAD], DecomposerT decomposer)
+     {
+       Sort(keys, decomposer, 0, detail::radix::traits_t<KeyT>::default_end_bit(decomposer));
+     }
+
+     _CCCL_DEVICE _CCCL_FORCEINLINE void
+     Sort(KeyT (&keys)[ITEMS_PER_THREAD],
+          ValueT (&values)[ITEMS_PER_THREAD],
+          int begin_bit = 0,
+          int end_bit   = sizeof(KeyT) * 8)
+     {
+       SortBlocked(keys, values, begin_bit, end_bit, ::cuda::std::false_type(), detail::bool_constant_v<KEYS_ONLY>);
+     }
+
+     template <class DecomposerT>
+     _CCCL_DEVICE _CCCL_FORCEINLINE //
+     ::cuda::std::enable_if_t< //
+       !::cuda::std::is_convertible_v<DecomposerT, int>>
+     Sort(KeyT (&keys)[ITEMS_PER_THREAD],
+          ValueT (&values)[ITEMS_PER_THREAD],
+          DecomposerT decomposer,
+          int begin_bit,
+          int end_bit)
+     {
+       SortBlocked(
+         keys, values, begin_bit, end_bit, ::cuda::std::false_type(), detail::bool_constant_v<KEYS_ONLY>, decomposer);
+     }
+
+     template <class DecomposerT>
+     _CCCL_DEVICE _CCCL_FORCEINLINE //
+     ::cuda::std::enable_if_t< //
+       !::cuda::std::is_convertible_v<DecomposerT, int>>
+     Sort(KeyT (&keys)[ITEMS_PER_THREAD], ValueT (&values)[ITEMS_PER_THREAD], DecomposerT decomposer)
+     {
+       Sort(keys, values, decomposer, 0, detail::radix::traits_t<KeyT>::default_end_bit(decomposer));
+     }
+
+     _CCCL_DEVICE _CCCL_FORCEINLINE void
+     SortDescending(KeyT (&keys)[ITEMS_PER_THREAD], int begin_bit = 0, int end_bit = sizeof(KeyT) * 8)
+     {
+       NullType values[ITEMS_PER_THREAD];
+
+       SortBlocked(keys, values, begin_bit, end_bit, ::cuda::std::true_type(), detail::bool_constant_v<KEYS_ONLY>);
+     }
+
+     template <class DecomposerT>
+     _CCCL_DEVICE _CCCL_FORCEINLINE //
+     ::cuda::std::enable_if_t< //
+       !::cuda::std::is_convertible_v<DecomposerT, int>>
+     SortDescending(KeyT (&keys)[ITEMS_PER_THREAD], DecomposerT decomposer, int begin_bit, int end_bit)
+     {
+       NullType values[ITEMS_PER_THREAD];
+
+       SortBlocked(
+         keys, values, begin_bit, end_bit, ::cuda::std::true_type(), detail::bool_constant_v<KEYS_ONLY>, decomposer);
+     }
+
+     template <class DecomposerT>
+     _CCCL_DEVICE _CCCL_FORCEINLINE //
+     ::cuda::std::enable_if_t< //
+       !::cuda::std::is_convertible_v<DecomposerT, int>>
+     SortDescending(KeyT (&keys)[ITEMS_PER_THREAD], DecomposerT decomposer)
+     {
+       NullType values[ITEMS_PER_THREAD];
+
+       SortBlocked(
+         keys,
+         values,
+         0,
+         detail::radix::traits_t<KeyT>::default_end_bit(decomposer),
+         ::cuda::std::true_type(),
+         detail::bool_constant_v<KEYS_ONLY>,
+         decomposer);
+     }
+
+     _CCCL_DEVICE _CCCL_FORCEINLINE void SortDescending(
+       KeyT (&keys)[ITEMS_PER_THREAD],
+       ValueT (&values)[ITEMS_PER_THREAD],
+       int begin_bit = 0,
+       int end_bit   = sizeof(KeyT) * 8)
+     {
+       SortBlocked(keys, values, begin_bit, end_bit, ::cuda::std::true_type(), detail::bool_constant_v<KEYS_ONLY>);
+     }
+
+     template <class DecomposerT>
+     _CCCL_DEVICE _CCCL_FORCEINLINE //
+     ::cuda::std::enable_if_t< //
+       !::cuda::std::is_convertible_v<DecomposerT, int>>
+     SortDescending(KeyT (&keys)[ITEMS_PER_THREAD],
+                    ValueT (&values)[ITEMS_PER_THREAD],
+                    DecomposerT decomposer,
+                    int begin_bit,
+                    int end_bit)
+     {
+       SortBlocked(
+         keys, values, begin_bit, end_bit, ::cuda::std::true_type(), detail::bool_constant_v<KEYS_ONLY>, decomposer);
+     }
+
+     template <class DecomposerT>
+     _CCCL_DEVICE _CCCL_FORCEINLINE //
+     ::cuda::std::enable_if_t< //
+       !::cuda::std::is_convertible_v<DecomposerT, int>>
+     SortDescending(KeyT (&keys)[ITEMS_PER_THREAD], ValueT (&values)[ITEMS_PER_THREAD], DecomposerT decomposer)
+     {
+       SortBlocked(
+         keys,
+         values,
+         0,
+         detail::radix::traits_t<KeyT>::default_end_bit(decomposer),
+         ::cuda::std::true_type(),
+         detail::bool_constant_v<KEYS_ONLY>,
+         decomposer);
+     }
+
+     _CCCL_DEVICE _CCCL_FORCEINLINE void
+     SortBlockedToStriped(KeyT (&keys)[ITEMS_PER_THREAD], int begin_bit = 0, int end_bit = sizeof(KeyT) * 8)
+     {
+       NullType values[ITEMS_PER_THREAD];
+
+       SortBlockedToStriped(
+         keys, values, begin_bit, end_bit, ::cuda::std::false_type(), detail::bool_constant_v<KEYS_ONLY>);
+     }
+
+     template <class DecomposerT>
+     _CCCL_DEVICE _CCCL_FORCEINLINE //
+     ::cuda::std::enable_if_t< //
+       !::cuda::std::is_convertible_v<DecomposerT, int>>
+     SortBlockedToStriped(KeyT (&keys)[ITEMS_PER_THREAD], DecomposerT decomposer, int begin_bit, int end_bit)
+     {
+       NullType values[ITEMS_PER_THREAD];
+
+       SortBlockedToStriped(
+         keys, values, begin_bit, end_bit, ::cuda::std::false_type(), detail::bool_constant_v<KEYS_ONLY>, decomposer);
+     }
+
+     template <class DecomposerT>
+     _CCCL_DEVICE _CCCL_FORCEINLINE //
+     ::cuda::std::enable_if_t< //
+       !::cuda::std::is_convertible_v<DecomposerT, int>>
+     SortBlockedToStriped(KeyT (&keys)[ITEMS_PER_THREAD], DecomposerT decomposer)
+     {
+       NullType values[ITEMS_PER_THREAD];
+
+       SortBlockedToStriped(
+         keys,
+         values,
+         0,
+         detail::radix::traits_t<KeyT>::default_end_bit(decomposer),
+         ::cuda::std::false_type(),
+         detail::bool_constant_v<KEYS_ONLY>,
+         decomposer);
+     }
+
+     _CCCL_DEVICE _CCCL_FORCEINLINE void SortBlockedToStriped(
+       KeyT (&keys)[ITEMS_PER_THREAD],
+       ValueT (&values)[ITEMS_PER_THREAD],
+       int begin_bit = 0,
+       int end_bit   = sizeof(KeyT) * 8)
+     {
+       SortBlockedToStriped(
+         keys, values, begin_bit, end_bit, ::cuda::std::false_type(), detail::bool_constant_v<KEYS_ONLY>);
+     }
+
+     template <class DecomposerT>
+     _CCCL_DEVICE _CCCL_FORCEINLINE //
+     ::cuda::std::enable_if_t< //
+       !::cuda::std::is_convertible_v<DecomposerT, int>>
+     SortBlockedToStriped(KeyT (&keys)[ITEMS_PER_THREAD],
+                          ValueT (&values)[ITEMS_PER_THREAD],
+                          DecomposerT decomposer,
+                          int begin_bit,
+                          int end_bit)
+     {
+       SortBlockedToStriped(
+         keys, values, begin_bit, end_bit, ::cuda::std::false_type(), detail::bool_constant_v<KEYS_ONLY>, decomposer);
+     }
+
+     template <class DecomposerT>
+     _CCCL_DEVICE _CCCL_FORCEINLINE //
+     ::cuda::std::enable_if_t< //
+       !::cuda::std::is_convertible_v<DecomposerT, int>>
+     SortBlockedToStriped(KeyT (&keys)[ITEMS_PER_THREAD], ValueT (&values)[ITEMS_PER_THREAD], DecomposerT decomposer)
+     {
+       SortBlockedToStriped(
+         keys,
+         values,
+         0,
+         detail::radix::traits_t<KeyT>::default_end_bit(decomposer),
+         ::cuda::std::false_type(),
+         detail::bool_constant_v<KEYS_ONLY>,
+         decomposer);
+     }
+
+     _CCCL_DEVICE _CCCL_FORCEINLINE void
+     SortDescendingBlockedToStriped(KeyT (&keys)[ITEMS_PER_THREAD], int begin_bit = 0, int end_bit = sizeof(KeyT) * 8)
+     {
+       NullType values[ITEMS_PER_THREAD];
+
+       SortBlockedToStriped(keys, values, begin_bit, end_bit, ::cuda::std::true_type(), detail::bool_constant_v<KEYS_ONLY>);
+     }
+
+     template <class DecomposerT>
+     _CCCL_DEVICE _CCCL_FORCEINLINE //
+     ::cuda::std::enable_if_t< //
+       !::cuda::std::is_convertible_v<DecomposerT, int>>
+     SortDescendingBlockedToStriped(KeyT (&keys)[ITEMS_PER_THREAD], DecomposerT decomposer, int begin_bit, int end_bit)
+     {
+       NullType values[ITEMS_PER_THREAD];
+
+       SortBlockedToStriped(
+         keys, values, begin_bit, end_bit, ::cuda::std::true_type(), detail::bool_constant_v<KEYS_ONLY>, decomposer);
+     }
+
+     template <class DecomposerT>
+     _CCCL_DEVICE _CCCL_FORCEINLINE //
+     ::cuda::std::enable_if_t< //
+       !::cuda::std::is_convertible_v<DecomposerT, int>>
+     SortDescendingBlockedToStriped(KeyT (&keys)[ITEMS_PER_THREAD], DecomposerT decomposer)
+     {
+       NullType values[ITEMS_PER_THREAD];
+
+       SortBlockedToStriped(
+         keys,
+         values,
+         0,
+         detail::radix::traits_t<KeyT>::default_end_bit(decomposer),
+         ::cuda::std::true_type(),
+         detail::bool_constant_v<KEYS_ONLY>,
+         decomposer);
+     }
+
+     _CCCL_DEVICE _CCCL_FORCEINLINE void SortDescendingBlockedToStriped(
+       KeyT (&keys)[ITEMS_PER_THREAD],
+       ValueT (&values)[ITEMS_PER_THREAD],
+       int begin_bit = 0,
+       int end_bit   = sizeof(KeyT) * 8)
+     {
+       SortBlockedToStriped(keys, values, begin_bit, end_bit, ::cuda::std::true_type(), detail::bool_constant_v<KEYS_ONLY>);
+     }
+
+     template <class DecomposerT>
+     _CCCL_DEVICE _CCCL_FORCEINLINE //
+     ::cuda::std::enable_if_t< //
+       !::cuda::std::is_convertible_v<DecomposerT, int>>
+     SortDescendingBlockedToStriped(
+       KeyT (&keys)[ITEMS_PER_THREAD],
+       ValueT (&values)[ITEMS_PER_THREAD],
+       DecomposerT decomposer,
+       int begin_bit,
+       int end_bit)
+     {
+       SortBlockedToStriped(
+         keys, values, begin_bit, end_bit, ::cuda::std::true_type(), detail::bool_constant_v<KEYS_ONLY>, decomposer);
+     }
+
+     template <class DecomposerT>
+     _CCCL_DEVICE _CCCL_FORCEINLINE //
+     ::cuda::std::enable_if_t< //
+       !::cuda::std::is_convertible_v<DecomposerT, int>>
+     SortDescendingBlockedToStriped(
+       KeyT (&keys)[ITEMS_PER_THREAD], ValueT (&values)[ITEMS_PER_THREAD], DecomposerT decomposer)
+     {
+       SortBlockedToStriped(
+         keys,
+         values,
+         0,
+         detail::radix::traits_t<KeyT>::default_end_bit(decomposer),
+         ::cuda::std::true_type(),
+         detail::bool_constant_v<KEYS_ONLY>,
+         decomposer);
+     }
+
+   };
+
+   CUB_NAMESPACE_END
+

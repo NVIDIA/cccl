@@ -1,0 +1,6 @@
+thrust\:\:per\_device\_allocator
+================================
+
+Defined in :ref:`thrust\/per\_device\_resource.h <per__device__resource_8h>`
+
+.. doxygenclass:: thrust::per_device_allocator

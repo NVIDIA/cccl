@@ -1,0 +1,6 @@
+thrust\:\:iterator\_traversal\<\:\:cuda\:\:zip\_iterator\< Iterators... \> \>
+=============================================================================
+
+Defined in :ref:`thrust\/iterator\/iterator\_traits.h <iterator__traits_8h>`
+
+.. doxygenstruct:: thrust::iterator_traversal<::cuda::zip_iterator< Iterators... > >

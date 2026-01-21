@@ -1,0 +1,6 @@
+THRUST\_PATCH\_NUMBER
+=====================
+
+Defined in :ref:`thrust\/version.h <version_8h>`
+
+.. doxygendefine:: THRUST_PATCH_NUMBER

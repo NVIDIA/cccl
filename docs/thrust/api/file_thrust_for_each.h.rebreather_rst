@@ -1,0 +1,31 @@
+.. _`for__each_8h`:
+
+thrust\/for\_each.h
+===================
+
+In directory: :ref:`thrust <dir_7807dea0fb0cf4ae34b71c9fa4b0a46c>`
+
+Source file: :doc:`program_listing_file_thrust_for_each.h`
+
+.. doxygenfile:: thrust/for_each.h
+   :sections: briefdescription detaileddescription
+
+.. toctree::
+   :maxdepth: 1
+   :hidden:
+
+   Source file <program_listing_file_thrust_for_each.h>
+
+Functions
+---------
+
+- :ref:`thrust\:\:for\_each <group__modifying_1ga263741e1287daa9edbac8d56c95070ba>`
+- :ref:`thrust\:\:for\_each <group__modifying_1gacef91d7036641ffd9a9a483ff760de05>`
+- :ref:`thrust\:\:for\_each\_n <group__modifying_1ga4924f29db1ab184e799c15259b6c6949>`
+- :ref:`thrust\:\:for\_each\_n <group__modifying_1ga4c825347127313bc87b33731c907739a>`
+
+Namespaces
+----------
+
+- :ref:`thrust <namespacethrust>`
+

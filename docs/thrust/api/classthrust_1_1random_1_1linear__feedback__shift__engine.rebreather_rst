@@ -1,0 +1,6 @@
+thrust\:\:random\:\:linear\_feedback\_shift\_engine
+===================================================
+
+Defined in :ref:`thrust\/random\/linear\_feedback\_shift\_engine.h <linear__feedback__shift__engine_8h>`
+
+.. doxygenclass:: thrust::random::linear_feedback_shift_engine

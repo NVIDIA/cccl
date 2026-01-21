@@ -1,0 +1,6 @@
+thrust\:\:adjacent\_difference
+==============================
+
+Defined in :ref:`thrust\/adjacent\_difference.h <adjacent__difference_8h>`
+
+.. doxygenfunction:: thrust::adjacent_difference(InputIterator first, InputIterator last, OutputIterator result, BinaryFunction binary_op)

@@ -1,0 +1,23 @@
+thrust\:\:system\:\:cpp
+=======================
+
+.. doxygennamespace:: thrust::system::cpp
+   :desc-only:
+
+Typedefs
+--------
+
+.. toctree::
+   :hidden:
+   :maxdepth: 1
+
+   typedef_group__system__backends_1ga2a3ec5b39ce2f378b7cb1a94c13335b4
+   typedef_group__system__backends_1ga98af9db6b72cb24c25132a9f5645a4a8
+   typedef_group__system__backends_1ga95eda5ff5a87b7a92248a1545cac888a
+   typedef_group__system__backends_1ga201d3b3fa98ce6de956fa217882e7ea2
+
+- :ref:`thrust\:\:system\:\:cpp\:\:pointer <group__system__backends_1ga2a3ec5b39ce2f378b7cb1a94c13335b4>`
+- :ref:`thrust\:\:system\:\:cpp\:\:reference <group__system__backends_1ga98af9db6b72cb24c25132a9f5645a4a8>`
+- :ref:`thrust\:\:system\:\:cpp\:\:universal\_host\_pinned\_pointer <group__system__backends_1ga95eda5ff5a87b7a92248a1545cac888a>`
+- :ref:`thrust\:\:system\:\:cpp\:\:universal\_pointer <group__system__backends_1ga201d3b3fa98ce6de956fa217882e7ea2>`
+

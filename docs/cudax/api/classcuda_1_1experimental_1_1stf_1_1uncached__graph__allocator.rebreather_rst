@@ -1,0 +1,6 @@
+cuda\:\:experimental\:\:stf\:\:uncached\_graph\_allocator
+=========================================================
+
+Defined in :ref:`include\/cuda\/experimental\/\_\_stf\/graph\/graph\_ctx.cuh <graph__ctx_8cuh>`
+
+.. doxygenclass:: cuda::experimental::stf::uncached_graph_allocator

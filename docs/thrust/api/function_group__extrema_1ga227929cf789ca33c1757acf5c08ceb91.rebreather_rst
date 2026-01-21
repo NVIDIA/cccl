@@ -1,0 +1,6 @@
+thrust\:\:minmax\_element
+=========================
+
+Defined in :ref:`thrust\/extrema.h <extrema_8h>`
+
+.. doxygenfunction:: thrust::minmax_element(ForwardIterator first, ForwardIterator last, BinaryPredicate comp)

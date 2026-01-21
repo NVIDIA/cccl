@@ -1,0 +1,6 @@
+THRUST\_PROCLAIM\_CONTIGUOUS\_ITERATOR
+======================================
+
+Defined in :ref:`thrust\/type\_traits\/is\_contiguous\_iterator.h <is__contiguous__iterator_8h>`
+
+.. doxygendefine:: THRUST_PROCLAIM_CONTIGUOUS_ITERATOR

@@ -1,0 +1,6 @@
+thrust\:\:make\_permutation\_iterator
+=====================================
+
+Defined in :ref:`thrust\/iterator\/permutation\_iterator.h <permutation__iterator_8h>`
+
+.. doxygenfunction:: thrust::make_permutation_iterator(ElementIterator e, IndexIterator i)

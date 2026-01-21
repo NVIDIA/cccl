@@ -1,0 +1,6 @@
+cuda\:\:experimental\:\:stf\:\:place\_partition\_scope\_to\_string
+==================================================================
+
+Defined in :ref:`include\/cuda\/experimental\/\_\_stf\/places\/place\_partition.cuh <place__partition_8cuh>`
+
+.. doxygenfunction:: cuda::experimental::stf::place_partition_scope_to_string(place_partition_scope scope)

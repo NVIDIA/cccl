@@ -1,0 +1,6 @@
+thrust\:\:exp
+=============
+
+Defined in :ref:`thrust\/complex.h <complex_8h>`
+
+.. doxygenfunction:: thrust::exp(const complex< T > &z)

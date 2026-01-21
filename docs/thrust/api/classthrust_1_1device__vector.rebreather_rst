@@ -1,0 +1,6 @@
+thrust\:\:device\_vector
+========================
+
+Defined in :ref:`thrust\/device\_vector.h <device__vector_8h>`
+
+.. doxygenclass:: thrust::device_vector

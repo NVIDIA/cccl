@@ -1,0 +1,31 @@
+.. _`param__kind_8cuh`:
+
+include\/cuda\/experimental\/\_\_launch\/param\_kind.cuh
+========================================================
+
+In directory: :ref:`include\/cuda\/experimental\/\_\_launch <dir_813ed679672daa6d88aebb2c68559996>`
+
+Source file: :doc:`program_listing_file_include_cuda_experimental___launch_param_kind.cuh`
+
+.. doxygenfile:: include/cuda/experimental/__launch/param_kind.cuh
+   :sections: briefdescription detaileddescription
+
+.. toctree::
+   :maxdepth: 1
+   :hidden:
+
+   Source file <program_listing_file_include_cuda_experimental___launch_param_kind.cuh>
+
+Namespaces
+----------
+
+- :ref:`cuda <namespacecuda>`
+- :ref:`cuda\:\:experimental <namespacecuda_1_1experimental>`
+
+Variables
+---------
+
+- :ref:`cuda\:\:experimental\:\:in <param__kind_8cuh_1a4cbd53d4681c0629ef0d1ec521f3146f>`
+- :ref:`cuda\:\:experimental\:\:inout <param__kind_8cuh_1a22a860b92240dc157802c575121a2bd8>`
+- :ref:`cuda\:\:experimental\:\:out <param__kind_8cuh_1a0e77b206698879c24f721c676694fb6d>`
+

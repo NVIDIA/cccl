@@ -1,0 +1,6 @@
+thrust\:\:random\:\:discard\_block\_engine
+==========================================
+
+Defined in :ref:`thrust\/random\/discard\_block\_engine.h <discard__block__engine_8h>`
+
+.. doxygenclass:: thrust::random::discard_block_engine

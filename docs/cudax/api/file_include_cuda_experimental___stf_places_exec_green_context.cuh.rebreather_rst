@@ -1,0 +1,37 @@
+.. _`green__context_8cuh`:
+
+include\/cuda\/experimental\/\_\_stf\/places\/exec\/green\_context.cuh
+======================================================================
+
+In directory: :ref:`include\/cuda\/experimental\/\_\_stf\/places\/exec <dir_fc121962c2ae7923cd0f18a27646ba66>`
+
+Source file: :doc:`program_listing_file_include_cuda_experimental___stf_places_exec_green_context.cuh`
+
+.. doxygenfile:: include/cuda/experimental/__stf/places/exec/green_context.cuh
+   :sections: briefdescription detaileddescription
+
+.. toctree::
+   :maxdepth: 1
+   :hidden:
+
+   Source file <program_listing_file_include_cuda_experimental___stf_places_exec_green_context.cuh>
+
+Classes
+-------
+
+- :ref:`cuda\:\:experimental\:\:stf\:\:exec\_place\_green\_ctx <classcuda_1_1experimental_1_1stf_1_1exec__place__green__ctx>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:green\_context\_helper <classcuda_1_1experimental_1_1stf_1_1green__context__helper>`
+
+Functions
+---------
+
+- :ref:`cuda\:\:experimental\:\:stf\:\:get\_cuda\_context\_id <green__context_8cuh_1a5b257d4c2331422fd492439852cb9005>`
+- :ref:`cuda\:\:experimental\:\:stf\:\:get\_cuda\_context\_id <green__context_8cuh_1aadd1cb4f1c23586a354def1c027188a7>`
+
+Namespaces
+----------
+
+- :ref:`cuda <namespacecuda>`
+- :ref:`cuda\:\:experimental <namespacecuda_1_1experimental>`
+- :ref:`cuda\:\:experimental\:\:stf <namespacecuda_1_1experimental_1_1stf>`
+

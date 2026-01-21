@@ -1,0 +1,28 @@
+.. _`distance_8h`:
+
+thrust\/distance.h
+==================
+
+In directory: :ref:`thrust <dir_7807dea0fb0cf4ae34b71c9fa4b0a46c>`
+
+Source file: :doc:`program_listing_file_thrust_distance.h`
+
+.. doxygenfile:: thrust/distance.h
+   :sections: briefdescription detaileddescription
+
+.. toctree::
+   :maxdepth: 1
+   :hidden:
+
+   Source file <program_listing_file_thrust_distance.h>
+
+Functions
+---------
+
+- :ref:`thrust\:\:distance <distance_8h_1a3909ab1c38e1039110efff1260afbd48>`
+
+Namespaces
+----------
+
+- :ref:`thrust <namespacethrust>`
+

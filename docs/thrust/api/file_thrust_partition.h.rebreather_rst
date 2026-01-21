@@ -1,0 +1,47 @@
+.. _`partition_8h`:
+
+thrust\/partition.h
+===================
+
+In directory: :ref:`thrust <dir_7807dea0fb0cf4ae34b71c9fa4b0a46c>`
+
+Source file: :doc:`program_listing_file_thrust_partition.h`
+
+.. doxygenfile:: thrust/partition.h
+   :sections: briefdescription detaileddescription
+
+.. toctree::
+   :maxdepth: 1
+   :hidden:
+
+   Source file <program_listing_file_thrust_partition.h>
+
+Functions
+---------
+
+- :ref:`thrust\:\:is\_partitioned <group__predicates_1ga39f90d87ed0ed524e90551a1c97c71d0>`
+- :ref:`thrust\:\:is\_partitioned <group__predicates_1ga91da05b683fadd078eb90bf126de0e52>`
+- :ref:`thrust\:\:partition <group__partitioning_1ga26eb205b71250a1d8a1f938c0f697c06>`
+- :ref:`thrust\:\:partition <group__partitioning_1ga73ee335b49c6ae3dcb019423e268a231>`
+- :ref:`thrust\:\:partition <group__partitioning_1gab55221023e3832e8bf61e7616f44032a>`
+- :ref:`thrust\:\:partition <group__partitioning_1gad057b6f3f3f7f8098f8e5301843118e2>`
+- :ref:`thrust\:\:partition\_copy <group__partitioning_1ga0f82333b8621aaf56285efabdaf3a037>`
+- :ref:`thrust\:\:partition\_copy <group__partitioning_1ga25663b8a98cd8c50376e48bc3d3b9a42>`
+- :ref:`thrust\:\:partition\_copy <group__partitioning_1gaa082297920f8ff77bb5d670b1a86946d>`
+- :ref:`thrust\:\:partition\_copy <group__partitioning_1gaadff8bf21b036950ce2655c5824bb817>`
+- :ref:`thrust\:\:partition\_point <group__searching_1ga902ccc1fe9aeb8585ac8ddcf10fb4337>`
+- :ref:`thrust\:\:partition\_point <group__searching_1gacc1aa2e2a54dee829eab21c5bdabbc94>`
+- :ref:`thrust\:\:stable\_partition <group__partitioning_1ga12fbf51ebfc80fd049ed0cbde2dd8ff8>`
+- :ref:`thrust\:\:stable\_partition <group__partitioning_1ga9184a73d9481374d7868f6bf9d61add7>`
+- :ref:`thrust\:\:stable\_partition <group__partitioning_1gaa462d317fb80b65e671a3690aa8be372>`
+- :ref:`thrust\:\:stable\_partition <group__partitioning_1gac31350c1f5f917b7b205a3a226bfe00e>`
+- :ref:`thrust\:\:stable\_partition\_copy <group__partitioning_1ga29776c7e55f0beffbcb587b2f3de204f>`
+- :ref:`thrust\:\:stable\_partition\_copy <group__partitioning_1ga2be93491492ec034aab994b104ee2c3c>`
+- :ref:`thrust\:\:stable\_partition\_copy <group__partitioning_1ga9b2be7549737deb0afcfade4edd262a9>`
+- :ref:`thrust\:\:stable\_partition\_copy <group__partitioning_1ga9ccfecfb316693a59ae0f812af16214d>`
+
+Namespaces
+----------
+
+- :ref:`thrust <namespacethrust>`
+

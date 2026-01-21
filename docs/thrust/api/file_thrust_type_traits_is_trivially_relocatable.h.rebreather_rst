@@ -1,0 +1,23 @@
+.. _`is__trivially__relocatable_8h`:
+
+thrust\/type\_traits\/is\_trivially\_relocatable.h
+==================================================
+
+In directory: :ref:`thrust\/type\_traits <dir_6114e4c2865c2127f7ba04e72679f8d6>`
+
+Source file: :doc:`program_listing_file_thrust_type_traits_is_trivially_relocatable.h`
+
+.. doxygenfile:: thrust/type_traits/is_trivially_relocatable.h
+   :sections: briefdescription detaileddescription
+
+.. toctree::
+   :maxdepth: 1
+   :hidden:
+
+   Source file <program_listing_file_thrust_type_traits_is_trivially_relocatable.h>
+
+Defines
+-------
+
+- :ref:`THRUST\_PROCLAIM\_TRIVIALLY\_RELOCATABLE <is__trivially__relocatable_8h_1afaa6e65861d2a568ea736856eca5d351>`
+

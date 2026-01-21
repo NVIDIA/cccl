@@ -1,0 +1,6 @@
+thrust\:\:counting\_iterator
+============================
+
+Defined in :ref:`thrust\/iterator\/counting\_iterator.h <counting__iterator_8h>`
+
+.. doxygenclass:: thrust::counting_iterator

@@ -1,0 +1,18 @@
+.. _`universal__memory__resource_8h`:
+
+thrust\/mr\/universal\_memory\_resource.h
+=========================================
+
+In directory: :ref:`thrust\/mr <dir_3e902a837487bd3819b2874775e3d698>`
+
+Source file: :doc:`program_listing_file_thrust_mr_universal_memory_resource.h`
+
+.. doxygenfile:: thrust/mr/universal_memory_resource.h
+   :sections: briefdescription detaileddescription
+
+.. toctree::
+   :maxdepth: 1
+   :hidden:
+
+   Source file <program_listing_file_thrust_mr_universal_memory_resource.h>
+

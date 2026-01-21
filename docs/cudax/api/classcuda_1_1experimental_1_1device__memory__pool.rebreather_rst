@@ -1,0 +1,6 @@
+cuda\:\:experimental\:\:device\_memory\_pool
+============================================
+
+Defined in :ref:`include\/cuda\/experimental\/\_\_memory\_resource\/device\_memory\_pool.cuh <device__memory__pool_8cuh>`
+
+.. doxygenclass:: cuda::experimental::device_memory_pool

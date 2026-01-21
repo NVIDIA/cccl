@@ -1,0 +1,44 @@
+.. _`dir_011e1c944d88f71be72e1e24a5fda7cf`:
+
+cub\/block
+==========
+
+Files
+-----
+
+.. toctree::
+   :hidden:
+   :maxdepth: 1
+
+   file_cub_block_block_adjacent_difference.cuh
+   file_cub_block_block_discontinuity.cuh
+   file_cub_block_block_exchange.cuh
+   file_cub_block_block_histogram.cuh
+   file_cub_block_block_load.cuh
+   file_cub_block_block_merge_sort.cuh
+   file_cub_block_block_radix_rank.cuh
+   file_cub_block_block_radix_sort.cuh
+   file_cub_block_block_raking_layout.cuh
+   file_cub_block_block_reduce.cuh
+   file_cub_block_block_run_length_decode.cuh
+   file_cub_block_block_scan.cuh
+   file_cub_block_block_shuffle.cuh
+   file_cub_block_block_store.cuh
+   file_cub_block_radix_rank_sort_operations.cuh
+
+- :ref:`cub\/block\/block\_adjacent\_difference.cuh <block__adjacent__difference_8cuh>`
+- :ref:`cub\/block\/block\_discontinuity.cuh <block__discontinuity_8cuh>`
+- :ref:`cub\/block\/block\_exchange.cuh <block__exchange_8cuh>`
+- :ref:`cub\/block\/block\_histogram.cuh <block__histogram_8cuh>`
+- :ref:`cub\/block\/block\_load.cuh <block__load_8cuh>`
+- :ref:`cub\/block\/block\_merge\_sort.cuh <block__merge__sort_8cuh>`
+- :ref:`cub\/block\/block\_radix\_rank.cuh <block__radix__rank_8cuh>`
+- :ref:`cub\/block\/block\_radix\_sort.cuh <block__radix__sort_8cuh>`
+- :ref:`cub\/block\/block\_raking\_layout.cuh <block__raking__layout_8cuh>`
+- :ref:`cub\/block\/block\_reduce.cuh <block__reduce_8cuh>`
+- :ref:`cub\/block\/block\_run\_length\_decode.cuh <block__run__length__decode_8cuh>`
+- :ref:`cub\/block\/block\_scan.cuh <block__scan_8cuh>`
+- :ref:`cub\/block\/block\_shuffle.cuh <block__shuffle_8cuh>`
+- :ref:`cub\/block\/block\_store.cuh <block__store_8cuh>`
+- :ref:`cub\/block\/radix\_rank\_sort\_operations.cuh <radix__rank__sort__operations_8cuh>`
+

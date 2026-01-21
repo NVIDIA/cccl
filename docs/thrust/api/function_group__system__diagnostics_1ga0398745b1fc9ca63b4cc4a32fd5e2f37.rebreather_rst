@@ -1,0 +1,6 @@
+thrust\:\:system\:\:generic\_category
+=====================================
+
+Defined in :ref:`thrust\/system\/error\_code.h <error__code_8h>`
+
+.. doxygenfunction:: thrust::system::generic_category()

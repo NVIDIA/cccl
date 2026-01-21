@@ -1,0 +1,6 @@
+cuda\:\:experimental\:\:graph\_builder\_ref
+===========================================
+
+Defined in :ref:`include\/cuda\/experimental\/\_\_graph\/graph\_builder\_ref.cuh <graph__builder__ref_8cuh>`
+
+.. doxygenstruct:: cuda::experimental::graph_builder_ref

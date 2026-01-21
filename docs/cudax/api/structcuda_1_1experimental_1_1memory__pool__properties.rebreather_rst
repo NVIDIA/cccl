@@ -1,0 +1,6 @@
+cuda\:\:experimental\:\:memory\_pool\_properties
+================================================
+
+Defined in :ref:`include\/cuda\/experimental\/\_\_memory\_resource\/memory\_pool\_base.cuh <memory__pool__base_8cuh>`
+
+.. doxygenstruct:: cuda::experimental::memory_pool_properties

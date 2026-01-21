@@ -1,0 +1,6 @@
+thrust\:\:sqrt
+==============
+
+Defined in :ref:`thrust\/complex.h <complex_8h>`
+
+.. doxygenfunction:: thrust::sqrt(const complex< T > &z)

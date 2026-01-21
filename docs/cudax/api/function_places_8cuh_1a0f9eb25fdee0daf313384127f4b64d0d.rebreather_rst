@@ -1,0 +1,6 @@
+cuda\:\:experimental\:\:stf\:\:partition\_cyclic
+================================================
+
+Defined in :ref:`include\/cuda\/experimental\/\_\_stf\/places\/places.cuh <places_8cuh>`
+
+.. doxygenfunction:: cuda::experimental::stf::partition_cyclic(const exec_place_grid &e_place, dim4 strides, pos4 tile_id)

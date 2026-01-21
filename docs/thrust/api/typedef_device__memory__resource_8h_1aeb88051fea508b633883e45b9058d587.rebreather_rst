@@ -1,0 +1,6 @@
+thrust\:\:universal\_memory\_resource
+=====================================
+
+Defined in :ref:`thrust\/mr\/device\_memory\_resource.h <device__memory__resource_8h>`
+
+.. doxygentypedef:: thrust::universal_memory_resource

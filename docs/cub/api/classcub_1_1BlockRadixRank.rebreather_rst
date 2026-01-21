@@ -1,0 +1,6 @@
+cub\:\:BlockRadixRank
+=====================
+
+Defined in :ref:`cub\/block\/block\_radix\_rank.cuh <block__radix__rank_8cuh>`
+
+.. doxygenclass:: cub::BlockRadixRank

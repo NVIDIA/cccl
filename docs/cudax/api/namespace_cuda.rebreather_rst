@@ -1,0 +1,19 @@
+cuda
+====
+
+.. doxygennamespace:: cuda
+   :desc-only:
+
+Namespaces
+----------
+
+.. toctree::
+   :hidden:
+   :maxdepth: 1
+
+   namespace_cuda__experimental
+   namespace_cuda__std
+
+- :ref:`cuda\:\:experimental <namespacecuda_1_1experimental>`
+- :ref:`cuda\:\:std <namespacecuda_1_1std>`
+

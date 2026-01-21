@@ -1,0 +1,6 @@
+thrust\:\:random\:\:uniform\_int\_distribution
+==============================================
+
+Defined in :ref:`thrust\/random\/uniform\_int\_distribution.h <uniform__int__distribution_8h>`
+
+.. doxygenclass:: thrust::random::uniform_int_distribution

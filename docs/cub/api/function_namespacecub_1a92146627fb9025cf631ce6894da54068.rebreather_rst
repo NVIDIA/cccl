@@ -1,0 +1,6 @@
+cub\:\:Nominal4BItemsToItems
+============================
+
+Defined in :ref:`cub\/util\_math.cuh <util__math_8cuh>`
+
+.. doxygenfunction:: cub::Nominal4BItemsToItems(int nominal_4b_items_per_thread)

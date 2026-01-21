@@ -1,0 +1,6 @@
+cuda\:\:experimental\:\:stf\:\:async\_resources\_handle
+=======================================================
+
+Defined in :ref:`include\/cuda\/experimental\/\_\_stf\/internal\/async\_resources\_handle.cuh <async__resources__handle_8cuh>`
+
+.. doxygenclass:: cuda::experimental::stf::async_resources_handle

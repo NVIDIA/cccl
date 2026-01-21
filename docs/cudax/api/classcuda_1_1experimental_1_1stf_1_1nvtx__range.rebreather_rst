@@ -1,0 +1,6 @@
+cuda\:\:experimental\:\:stf\:\:nvtx\_range
+==========================================
+
+Defined in :ref:`include\/cuda\/experimental\/\_\_stf\/utility\/nvtx.cuh <nvtx_8cuh>`
+
+.. doxygenclass:: cuda::experimental::stf::nvtx_range

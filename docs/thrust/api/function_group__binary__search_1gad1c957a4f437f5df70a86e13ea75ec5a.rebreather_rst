@@ -1,0 +1,6 @@
+thrust\:\:lower\_bound
+======================
+
+Defined in :ref:`thrust\/binary\_search.h <binary__search_8h>`
+
+.. doxygenfunction:: thrust::lower_bound(ForwardIterator first, ForwardIterator last, const T &value, StrictWeakOrdering comp)

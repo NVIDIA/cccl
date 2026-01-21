@@ -1,0 +1,6 @@
+thrust\:\:stable\_partition\_copy
+=================================
+
+Defined in :ref:`thrust\/partition.h <partition_8h>`
+
+.. doxygenfunction:: thrust::stable_partition_copy(InputIterator first, InputIterator last, OutputIterator1 out_true, OutputIterator2 out_false, Predicate pred)

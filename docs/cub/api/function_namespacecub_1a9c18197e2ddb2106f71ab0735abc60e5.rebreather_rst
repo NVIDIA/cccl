@@ -1,0 +1,6 @@
+cub\:\:PtxVersionUncached
+=========================
+
+Defined in :ref:`cub\/util\_device.cuh <util__device_8cuh>`
+
+.. doxygenfunction:: cub::PtxVersionUncached(int &ptx_version)

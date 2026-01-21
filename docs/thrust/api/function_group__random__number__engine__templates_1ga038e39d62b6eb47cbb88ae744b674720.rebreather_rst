@@ -1,0 +1,6 @@
+thrust\:\:random\:\:operator\>\>
+================================
+
+Defined in :ref:`thrust\/random\/linear\_feedback\_shift\_engine.h <linear__feedback__shift__engine_8h>`
+
+.. doxygenfunction:: thrust::random::operator>>(std::basic_istream< CharT, Traits > &is, linear_feedback_shift_engine< UIntType_, w_, k_, q_, s_ > &e)

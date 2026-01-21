@@ -1,0 +1,6 @@
+cuda\:\:experimental\:\:stf\:\:interpreted\_execution\_policy
+=============================================================
+
+Defined in :ref:`include\/cuda\/experimental\/\_\_stf\/internal\/interpreted\_execution\_policy.cuh <interpreted__execution__policy_8cuh>`
+
+.. doxygenclass:: cuda::experimental::stf::interpreted_execution_policy

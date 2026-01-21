@@ -1,0 +1,67 @@
+.. _`dir_d583f216f1aafe19404e836b0c097ad2`:
+
+cub
+===
+
+Directories
+-----------
+
+.. toctree::
+   :hidden:
+   :maxdepth: 1
+
+   dir_cub_block
+   dir_cub_device
+   dir_cub_grid
+   dir_cub_iterator
+   dir_cub_thread
+   dir_cub_warp
+
+- :ref:`cub\/block <dir_011e1c944d88f71be72e1e24a5fda7cf>`
+- :ref:`cub\/device <dir_18fc672d63781b5a743137aee24ff656>`
+- :ref:`cub\/grid <dir_f2530eaff2fd0556614e1cfc33864b65>`
+- :ref:`cub\/iterator <dir_80932b4cec52750ff92b1a1912314cf5>`
+- :ref:`cub\/thread <dir_bb50a5ef59f19d030d06415663184d05>`
+- :ref:`cub\/warp <dir_cb3a671affffe7eeb3fdf5ae58e42cc8>`
+
+Files
+-----
+
+.. toctree::
+   :hidden:
+   :maxdepth: 1
+
+   file_cub_config.cuh
+   file_cub_cub.cuh
+   file_cub_util_allocator.cuh
+   file_cub_util_arch.cuh
+   file_cub_util_cpp_dialect.cuh
+   file_cub_util_debug.cuh
+   file_cub_util_device.cuh
+   file_cub_util_macro.cuh
+   file_cub_util_math.cuh
+   file_cub_util_namespace.cuh
+   file_cub_util_policy_wrapper_t.cuh
+   file_cub_util_ptx.cuh
+   file_cub_util_temporary_storage.cuh
+   file_cub_util_type.cuh
+   file_cub_util_vsmem.cuh
+   file_cub_version.cuh
+
+- :ref:`cub\/config.cuh <config_8cuh>`
+- :ref:`cub\/cub.cuh <cub_8cuh>`
+- :ref:`cub\/util\_allocator.cuh <util__allocator_8cuh>`
+- :ref:`cub\/util\_arch.cuh <util__arch_8cuh>`
+- :ref:`cub\/util\_cpp\_dialect.cuh <util__cpp__dialect_8cuh>`
+- :ref:`cub\/util\_debug.cuh <util__debug_8cuh>`
+- :ref:`cub\/util\_device.cuh <util__device_8cuh>`
+- :ref:`cub\/util\_macro.cuh <util__macro_8cuh>`
+- :ref:`cub\/util\_math.cuh <util__math_8cuh>`
+- :ref:`cub\/util\_namespace.cuh <util__namespace_8cuh>`
+- :ref:`cub\/util\_policy\_wrapper\_t.cuh <util__policy__wrapper__t_8cuh>`
+- :ref:`cub\/util\_ptx.cuh <util__ptx_8cuh>`
+- :ref:`cub\/util\_temporary\_storage.cuh <util__temporary__storage_8cuh>`
+- :ref:`cub\/util\_type.cuh <util__type_8cuh>`
+- :ref:`cub\/util\_vsmem.cuh <util__vsmem_8cuh>`
+- :ref:`cub\/version.cuh <version_8cuh>`
+

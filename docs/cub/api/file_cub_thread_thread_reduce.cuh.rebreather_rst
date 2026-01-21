@@ -1,0 +1,28 @@
+.. _`thread__reduce_8cuh`:
+
+cub\/thread\/thread\_reduce.cuh
+===============================
+
+In directory: :ref:`cub\/thread <dir_bb50a5ef59f19d030d06415663184d05>`
+
+Source file: :doc:`program_listing_file_cub_thread_thread_reduce.cuh`
+
+.. doxygenfile:: cub/thread/thread_reduce.cuh
+   :sections: briefdescription detaileddescription
+
+.. toctree::
+   :maxdepth: 1
+   :hidden:
+
+   Source file <program_listing_file_cub_thread_thread_reduce.cuh>
+
+Functions
+---------
+
+- :ref:`cub\:\:ThreadReduce <namespacecub_1a5bc54df3b7da4260d8c1d8579f63f0c0>`
+
+Namespaces
+----------
+
+- :ref:`cub <namespacecub>`
+

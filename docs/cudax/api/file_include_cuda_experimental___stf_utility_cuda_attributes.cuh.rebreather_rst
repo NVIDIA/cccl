@@ -1,0 +1,23 @@
+.. _`cuda__attributes_8cuh`:
+
+include\/cuda\/experimental\/\_\_stf\/utility\/cuda\_attributes.cuh
+===================================================================
+
+In directory: :ref:`include\/cuda\/experimental\/\_\_stf\/utility <dir_14105bc4e1d6df9ad9d3d55d2b993f2a>`
+
+Source file: :doc:`program_listing_file_include_cuda_experimental___stf_utility_cuda_attributes.cuh`
+
+.. doxygenfile:: include/cuda/experimental/__stf/utility/cuda_attributes.cuh
+   :sections: briefdescription detaileddescription
+
+.. toctree::
+   :maxdepth: 1
+   :hidden:
+
+   Source file <program_listing_file_include_cuda_experimental___stf_utility_cuda_attributes.cuh>
+
+Defines
+-------
+
+- :ref:`CUDASTF\_NO\_DEVICE\_STACK <cuda__attributes_8cuh_1ac9c0ba00ccfaa0f017093f9df67acbd3>`
+

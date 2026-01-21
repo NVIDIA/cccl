@@ -1,0 +1,23 @@
+thrust\:\:system\:\:tbb
+=======================
+
+.. doxygennamespace:: thrust::system::tbb
+   :desc-only:
+
+Typedefs
+--------
+
+.. toctree::
+   :hidden:
+   :maxdepth: 1
+
+   typedef_group__system__backends_1ga9b92fdb9b3ae543ca62565b34e14ddc7
+   typedef_group__system__backends_1ga1168b5478b7b7f50fb104bb27164522f
+   typedef_group__system__backends_1ga31e803d636c86e85f1f89d4c11af1820
+   typedef_group__system__backends_1gab2fbe246530ce9dbaba115bc958530fb
+
+- :ref:`thrust\:\:system\:\:tbb\:\:pointer <group__system__backends_1ga9b92fdb9b3ae543ca62565b34e14ddc7>`
+- :ref:`thrust\:\:system\:\:tbb\:\:reference <group__system__backends_1ga1168b5478b7b7f50fb104bb27164522f>`
+- :ref:`thrust\:\:system\:\:tbb\:\:universal\_host\_pinned\_pointer <group__system__backends_1ga31e803d636c86e85f1f89d4c11af1820>`
+- :ref:`thrust\:\:system\:\:tbb\:\:universal\_pointer <group__system__backends_1gab2fbe246530ce9dbaba115bc958530fb>`
+

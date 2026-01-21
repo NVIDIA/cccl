@@ -1,0 +1,6 @@
+thrust\:\:make\_tabulate\_output\_iterator
+==========================================
+
+Defined in :ref:`thrust\/iterator\/tabulate\_output\_iterator.h <tabulate__output__iterator_8h>`
+
+.. doxygenfunction:: thrust::make_tabulate_output_iterator(BinaryFunction fun)

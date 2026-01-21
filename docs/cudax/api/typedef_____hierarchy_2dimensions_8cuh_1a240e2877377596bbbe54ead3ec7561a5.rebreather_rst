@@ -1,0 +1,6 @@
+cuda\:\:experimental\:\:dimensions
+==================================
+
+Defined in :ref:`include\/cuda\/experimental\/\_\_hierarchy\/dimensions.cuh <____hierarchy_2dimensions_8cuh>`
+
+.. doxygentypedef:: cuda::experimental::dimensions

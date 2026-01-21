@@ -1,0 +1,6 @@
+thrust\:\:return\_temporary\_buffer
+===================================
+
+Defined in :ref:`thrust\/memory.h <memory_8h>`
+
+.. doxygenfunction:: thrust::return_temporary_buffer(const thrust::detail::execution_policy_base< DerivedPolicy > &system, Pointer p, std::ptrdiff_t n)

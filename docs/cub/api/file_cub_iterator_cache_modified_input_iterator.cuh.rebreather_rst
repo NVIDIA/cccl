@@ -1,0 +1,28 @@
+.. _`cache__modified__input__iterator_8cuh`:
+
+cub\/iterator\/cache\_modified\_input\_iterator.cuh
+===================================================
+
+In directory: :ref:`cub\/iterator <dir_80932b4cec52750ff92b1a1912314cf5>`
+
+Source file: :doc:`program_listing_file_cub_iterator_cache_modified_input_iterator.cuh`
+
+.. doxygenfile:: cub/iterator/cache_modified_input_iterator.cuh
+   :sections: briefdescription detaileddescription
+
+.. toctree::
+   :maxdepth: 1
+   :hidden:
+
+   Source file <program_listing_file_cub_iterator_cache_modified_input_iterator.cuh>
+
+Classes
+-------
+
+- :ref:`cub\:\:CacheModifiedInputIterator <classcub_1_1CacheModifiedInputIterator>`
+
+Namespaces
+----------
+
+- :ref:`cub <namespacecub>`
+

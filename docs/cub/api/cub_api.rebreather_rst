@@ -1,0 +1,277 @@
+
+CUB API
+=======
+
+Directory hierarchy
+-------------------
+
+.. card::
+   :class-card: rebreather hierarchy
+
+   .. dropdown:: dir :ref:`cub <dir_d583f216f1aafe19404e836b0c097ad2>`
+
+      .. dropdown:: dir :ref:`cub\/block <dir_011e1c944d88f71be72e1e24a5fda7cf>`
+
+         .. container:: rebreather hierarchy
+
+            - file :ref:`cub\/block\/block\_adjacent\_difference.cuh <block__adjacent__difference_8cuh>`
+            - file :ref:`cub\/block\/block\_discontinuity.cuh <block__discontinuity_8cuh>`
+            - file :ref:`cub\/block\/block\_exchange.cuh <block__exchange_8cuh>`
+            - file :ref:`cub\/block\/block\_histogram.cuh <block__histogram_8cuh>`
+            - file :ref:`cub\/block\/block\_load.cuh <block__load_8cuh>`
+            - file :ref:`cub\/block\/block\_merge\_sort.cuh <block__merge__sort_8cuh>`
+            - file :ref:`cub\/block\/block\_radix\_rank.cuh <block__radix__rank_8cuh>`
+            - file :ref:`cub\/block\/block\_radix\_sort.cuh <block__radix__sort_8cuh>`
+            - file :ref:`cub\/block\/block\_raking\_layout.cuh <block__raking__layout_8cuh>`
+            - file :ref:`cub\/block\/block\_reduce.cuh <block__reduce_8cuh>`
+            - file :ref:`cub\/block\/block\_run\_length\_decode.cuh <block__run__length__decode_8cuh>`
+            - file :ref:`cub\/block\/block\_scan.cuh <block__scan_8cuh>`
+            - file :ref:`cub\/block\/block\_shuffle.cuh <block__shuffle_8cuh>`
+            - file :ref:`cub\/block\/block\_store.cuh <block__store_8cuh>`
+            - file :ref:`cub\/block\/radix\_rank\_sort\_operations.cuh <radix__rank__sort__operations_8cuh>`
+
+      .. dropdown:: dir :ref:`cub\/device <dir_18fc672d63781b5a743137aee24ff656>`
+
+         .. container:: rebreather hierarchy
+
+            - file :ref:`cub\/device\/device\_adjacent\_difference.cuh <device__adjacent__difference_8cuh>`
+            - file :ref:`cub\/device\/device\_copy.cuh <device__copy_8cuh>`
+            - file :ref:`cub\/device\/device\_for.cuh <device__for_8cuh>`
+            - file :ref:`cub\/device\/device\_histogram.cuh <device__histogram_8cuh>`
+            - file :ref:`cub\/device\/device\_memcpy.cuh <device__memcpy_8cuh>`
+            - file :ref:`cub\/device\/device\_merge.cuh <device__merge_8cuh>`
+            - file :ref:`cub\/device\/device\_merge\_sort.cuh <device__merge__sort_8cuh>`
+            - file :ref:`cub\/device\/device\_partition.cuh <device__partition_8cuh>`
+            - file :ref:`cub\/device\/device\_radix\_sort.cuh <device__radix__sort_8cuh>`
+            - file :ref:`cub\/device\/device\_reduce.cuh <device__reduce_8cuh>`
+            - file :ref:`cub\/device\/device\_run\_length\_encode.cuh <device__run__length__encode_8cuh>`
+            - file :ref:`cub\/device\/device\_scan.cuh <device__scan_8cuh>`
+            - file :ref:`cub\/device\/device\_segmented\_radix\_sort.cuh <device__segmented__radix__sort_8cuh>`
+            - file :ref:`cub\/device\/device\_segmented\_reduce.cuh <device__segmented__reduce_8cuh>`
+            - file :ref:`cub\/device\/device\_segmented\_sort.cuh <device__segmented__sort_8cuh>`
+            - file :ref:`cub\/device\/device\_select.cuh <device__select_8cuh>`
+            - file :ref:`cub\/device\/device\_transform.cuh <device__transform_8cuh>`
+
+      .. dropdown:: dir :ref:`cub\/grid <dir_f2530eaff2fd0556614e1cfc33864b65>`
+
+         .. container:: rebreather hierarchy
+
+            - file :ref:`cub\/grid\/grid\_even\_share.cuh <grid__even__share_8cuh>`
+            - file :ref:`cub\/grid\/grid\_mapping.cuh <grid__mapping_8cuh>`
+            - file :ref:`cub\/grid\/grid\_queue.cuh <grid__queue_8cuh>`
+
+      .. dropdown:: dir :ref:`cub\/iterator <dir_80932b4cec52750ff92b1a1912314cf5>`
+
+         .. container:: rebreather hierarchy
+
+            - file :ref:`cub\/iterator\/arg\_index\_input\_iterator.cuh <arg__index__input__iterator_8cuh>`
+            - file :ref:`cub\/iterator\/cache\_modified\_input\_iterator.cuh <cache__modified__input__iterator_8cuh>`
+            - file :ref:`cub\/iterator\/cache\_modified\_output\_iterator.cuh <cache__modified__output__iterator_8cuh>`
+            - file :ref:`cub\/iterator\/tex\_obj\_input\_iterator.cuh <tex__obj__input__iterator_8cuh>`
+
+      .. dropdown:: dir :ref:`cub\/thread <dir_bb50a5ef59f19d030d06415663184d05>`
+
+         .. container:: rebreather hierarchy
+
+            - file :ref:`cub\/thread\/thread\_load.cuh <thread__load_8cuh>`
+            - file :ref:`cub\/thread\/thread\_operators.cuh <thread__operators_8cuh>`
+            - file :ref:`cub\/thread\/thread\_reduce.cuh <thread__reduce_8cuh>`
+            - file :ref:`cub\/thread\/thread\_scan.cuh <thread__scan_8cuh>`
+            - file :ref:`cub\/thread\/thread\_search.cuh <thread__search_8cuh>`
+            - file :ref:`cub\/thread\/thread\_simd.cuh <thread__simd_8cuh>`
+            - file :ref:`cub\/thread\/thread\_sort.cuh <thread__sort_8cuh>`
+            - file :ref:`cub\/thread\/thread\_store.cuh <thread__store_8cuh>`
+
+      .. dropdown:: dir :ref:`cub\/warp <dir_cb3a671affffe7eeb3fdf5ae58e42cc8>`
+
+         .. container:: rebreather hierarchy
+
+            - file :ref:`cub\/warp\/warp\_exchange.cuh <warp__exchange_8cuh>`
+            - file :ref:`cub\/warp\/warp\_load.cuh <warp__load_8cuh>`
+            - file :ref:`cub\/warp\/warp\_merge\_sort.cuh <warp__merge__sort_8cuh>`
+            - file :ref:`cub\/warp\/warp\_reduce.cuh <warp__reduce_8cuh>`
+            - file :ref:`cub\/warp\/warp\_scan.cuh <warp__scan_8cuh>`
+            - file :ref:`cub\/warp\/warp\_store.cuh <warp__store_8cuh>`
+            - file :ref:`cub\/warp\/warp\_utils.cuh <warp__utils_8cuh>`
+
+      .. container:: rebreather hierarchy
+
+         - file :ref:`cub\/config.cuh <config_8cuh>`
+         - file :ref:`cub\/cub.cuh <cub_8cuh>`
+         - file :ref:`cub\/util\_allocator.cuh <util__allocator_8cuh>`
+         - file :ref:`cub\/util\_arch.cuh <util__arch_8cuh>`
+         - file :ref:`cub\/util\_cpp\_dialect.cuh <util__cpp__dialect_8cuh>`
+         - file :ref:`cub\/util\_debug.cuh <util__debug_8cuh>`
+         - file :ref:`cub\/util\_device.cuh <util__device_8cuh>`
+         - file :ref:`cub\/util\_macro.cuh <util__macro_8cuh>`
+         - file :ref:`cub\/util\_math.cuh <util__math_8cuh>`
+         - file :ref:`cub\/util\_namespace.cuh <util__namespace_8cuh>`
+         - file :ref:`cub\/util\_policy\_wrapper\_t.cuh <util__policy__wrapper__t_8cuh>`
+         - file :ref:`cub\/util\_ptx.cuh <util__ptx_8cuh>`
+         - file :ref:`cub\/util\_temporary\_storage.cuh <util__temporary__storage_8cuh>`
+         - file :ref:`cub\/util\_type.cuh <util__type_8cuh>`
+         - file :ref:`cub\/util\_vsmem.cuh <util__vsmem_8cuh>`
+         - file :ref:`cub\/version.cuh <version_8cuh>`
+
+Namespace hierarchy
+-------------------
+
+.. card::
+   :class-card: rebreather hierarchy
+
+   .. dropdown:: namespace :ref:`cub <namespacecub>`
+
+      .. container:: rebreather hierarchy
+
+         - enum :ref:`cub\:\:BlockHistogramAlgorithm <namespacecub_1a845ca81ef9b346ef7429a35d4fdc80d2>`
+         - enum :ref:`cub\:\:BlockLoadAlgorithm <namespacecub_1a9d7e37497fdd99864c57adecda710401>`
+         - enum :ref:`cub\:\:BlockReduceAlgorithm <namespacecub_1add0251c713859b8974806079e498d10a>`
+         - enum :ref:`cub\:\:BlockScanAlgorithm <namespacecub_1abec44bba36037c547e7e84906d0d23ab>`
+         - enum :ref:`cub\:\:BlockStoreAlgorithm <namespacecub_1a839b145451e9eec3d44172e3c3619700>`
+         - enum :ref:`cub\:\:CacheLoadModifier <namespacecub_1ac5f2805ad56fdd0f2860a5421d76d9b9>`
+         - enum :ref:`cub\:\:CacheStoreModifier <namespacecub_1a648d25a92a50ca41cf73e93a35f21f37>`
+         - enum :ref:`cub\:\:GridMappingStrategy <namespacecub_1ab0872c68bb2f2deba92ae650a9aa3e97>`
+         - enum :ref:`cub\:\:RadixRankAlgorithm <namespacecub_1a2c368203492792b87069aa553cddcc1f>`
+         - enum :ref:`cub\:\:WarpExchangeAlgorithm <namespacecub_1a7cd3a577f1a3742f265863144cd69a04>`
+         - enum :ref:`cub\:\:WarpLoadAlgorithm <namespacecub_1a4eeeb4ce5215aa8f6f394db9b3ff0de1>`
+         - enum :ref:`cub\:\:WarpMatchAlgorithm <namespacecub_1aba00cdd73e8ef7f441861282dbc52f1c>`
+         - enum :ref:`cub\:\:WarpStoreAlgorithm <namespacecub_1ab9f09b230f6c6566d12470872db88048>`
+         - class :ref:`cub\:\:ArgIndexInputIterator <classcub_1_1ArgIndexInputIterator>`
+         - struct :ref:`cub\:\:ArgMax <structcub_1_1ArgMax>`
+         - struct :ref:`cub\:\:ArgMin <structcub_1_1ArgMin>`
+         - struct :ref:`cub\:\:BFEDigitExtractor <structcub_1_1BFEDigitExtractor>`
+         - struct :ref:`cub\:\:BaseDigitExtractor <structcub_1_1BaseDigitExtractor>`
+         - struct :ref:`cub\:\:BaseDigitExtractor\< KeyT\, true \> <structcub_1_1BaseDigitExtractor_3_01KeyT_00_01true_01_4>`
+         - class :ref:`cub\:\:BlockAdjacentDifference <classcub_1_1BlockAdjacentDifference>`
+         - class :ref:`cub\:\:BlockDiscontinuity <classcub_1_1BlockDiscontinuity>`
+         - class :ref:`cub\:\:BlockExchange <classcub_1_1BlockExchange>`
+         - class :ref:`cub\:\:BlockHistogram <classcub_1_1BlockHistogram>`
+         - class :ref:`cub\:\:BlockLoad <classcub_1_1BlockLoad>`
+         - struct :ref:`cub\:\:BlockLoadType <structcub_1_1BlockLoadType>`
+         - class :ref:`cub\:\:BlockMergeSort <classcub_1_1BlockMergeSort>`
+         - class :ref:`cub\:\:BlockMergeSortStrategy <classcub_1_1BlockMergeSortStrategy>`
+         - class :ref:`cub\:\:BlockRadixRank <classcub_1_1BlockRadixRank>`
+         - struct :ref:`cub\:\:BlockRadixRankEmptyCallback <structcub_1_1BlockRadixRankEmptyCallback>`
+         - class :ref:`cub\:\:BlockRadixRankMatch <classcub_1_1BlockRadixRankMatch>`
+         - struct :ref:`cub\:\:BlockRadixRankMatchEarlyCounts <structcub_1_1BlockRadixRankMatchEarlyCounts>`
+         - class :ref:`cub\:\:BlockRadixSort <classcub_1_1BlockRadixSort>`
+         - struct :ref:`cub\:\:BlockRakingLayout <structcub_1_1BlockRakingLayout>`
+         - class :ref:`cub\:\:BlockReduce <classcub_1_1BlockReduce>`
+         - class :ref:`cub\:\:BlockRunLengthDecode <classcub_1_1BlockRunLengthDecode>`
+         - class :ref:`cub\:\:BlockScan <classcub_1_1BlockScan>`
+         - class :ref:`cub\:\:BlockShuffle <classcub_1_1BlockShuffle>`
+         - class :ref:`cub\:\:BlockStore <classcub_1_1BlockStore>`
+         - class :ref:`cub\:\:CacheModifiedInputIterator <classcub_1_1CacheModifiedInputIterator>`
+         - class :ref:`cub\:\:CacheModifiedOutputIterator <classcub_1_1CacheModifiedOutputIterator>`
+         - struct :ref:`cub\:\:CachingDeviceAllocator <structcub_1_1CachingDeviceAllocator>`
+         - struct :ref:`cub\:\:CastOp <structcub_1_1CastOp>`
+         - struct :ref:`cub\:\:ChainedPolicy <structcub_1_1ChainedPolicy>`
+         - struct :ref:`cub\:\:ChainedPolicy\< PolicyPtxVersion\, PolicyT\, PolicyT \> <structcub_1_1ChainedPolicy_3_01PolicyPtxVersion_00_01PolicyT_00_01PolicyT_01_4>`
+         - struct :ref:`cub\:\:DeviceAdjacentDifference <structcub_1_1DeviceAdjacentDifference>`
+         - struct :ref:`cub\:\:DeviceCopy <structcub_1_1DeviceCopy>`
+         - struct :ref:`cub\:\:DeviceFor <structcub_1_1DeviceFor>`
+         - struct :ref:`cub\:\:DeviceHistogram <structcub_1_1DeviceHistogram>`
+         - struct :ref:`cub\:\:DeviceMemcpy <structcub_1_1DeviceMemcpy>`
+         - struct :ref:`cub\:\:DeviceMerge <structcub_1_1DeviceMerge>`
+         - struct :ref:`cub\:\:DeviceMergeSort <structcub_1_1DeviceMergeSort>`
+         - struct :ref:`cub\:\:DevicePartition <structcub_1_1DevicePartition>`
+         - struct :ref:`cub\:\:DeviceRadixSort <structcub_1_1DeviceRadixSort>`
+         - struct :ref:`cub\:\:DeviceReduce <structcub_1_1DeviceReduce>`
+         - struct :ref:`cub\:\:DeviceRunLengthEncode <structcub_1_1DeviceRunLengthEncode>`
+         - struct :ref:`cub\:\:DeviceScan <structcub_1_1DeviceScan>`
+         - struct :ref:`cub\:\:DeviceSegmentedRadixSort <structcub_1_1DeviceSegmentedRadixSort>`
+         - struct :ref:`cub\:\:DeviceSegmentedReduce <structcub_1_1DeviceSegmentedReduce>`
+         - struct :ref:`cub\:\:DeviceSegmentedSort <structcub_1_1DeviceSegmentedSort>`
+         - struct :ref:`cub\:\:DeviceSelect <structcub_1_1DeviceSelect>`
+         - struct :ref:`cub\:\:DeviceTransform <structcub_1_1DeviceTransform>`
+         - struct :ref:`cub\:\:GridEvenShare <structcub_1_1GridEvenShare>`
+         - class :ref:`cub\:\:GridQueue <classcub_1_1GridQueue>`
+         - struct :ref:`cub\:\:InequalityWrapper <structcub_1_1InequalityWrapper>`
+         - struct :ref:`cub\:\:PtxVersionCacheTag <structcub_1_1PtxVersionCacheTag>`
+         - struct :ref:`cub\:\:RadixSortTwiddle <structcub_1_1RadixSortTwiddle>`
+         - struct :ref:`cub\:\:ReduceByKeyOp <structcub_1_1ReduceByKeyOp>`
+         - struct :ref:`cub\:\:ReduceBySegmentOp <structcub_1_1ReduceBySegmentOp>`
+         - struct :ref:`cub\:\:ShiftDigitExtractor <structcub_1_1ShiftDigitExtractor>`
+         - struct :ref:`cub\:\:SmVersionCacheTag <structcub_1_1SmVersionCacheTag>`
+         - class :ref:`cub\:\:SwizzleScanOp <classcub_1_1SwizzleScanOp>`
+         - class :ref:`cub\:\:TexObjInputIterator <classcub_1_1TexObjInputIterator>`
+         - class :ref:`cub\:\:WarpExchange <classcub_1_1WarpExchange>`
+         - class :ref:`cub\:\:WarpLoad <classcub_1_1WarpLoad>`
+         - class :ref:`cub\:\:WarpMergeSort <classcub_1_1WarpMergeSort>`
+         - class :ref:`cub\:\:WarpReduce <classcub_1_1WarpReduce>`
+         - class :ref:`cub\:\:WarpScan <classcub_1_1WarpScan>`
+         - class :ref:`cub\:\:WarpStore <classcub_1_1WarpStore>`
+
+Defines
+-------
+
+.. toctree::
+   :hidden:
+   :maxdepth: 1
+
+   define_util__debug_8cuh_1a86d09cc83a7a62ec01933e61703d5ea9
+   define_util__debug_8cuh_1ab22190db10e3213805998e43ab8d9d54
+   define_util__debug_8cuh_1a8604bd214583084d96377e38f1aea236
+   define_util__macro_8cuh_1ae0e4c369f9d9e041efa3ecb69854c2f6
+   define_util__macro_8cuh_1a281cce6eb6ae602129375af1dbe3b95d
+   define_version_8cuh_1a825429c0c66c9beb903dc32bf0d83ae7
+   define_version_8cuh_1a02f2d200a10c6cff76ecf6b6b536c647
+   define_util__namespace_8cuh_1a4159c0878cc0b22304b8af3d7d234c57
+   define_util__namespace_8cuh_1ad0c50062c393b6f693088aba672221d5
+   define_util__namespace_8cuh_1a46a31fe0dc2a467cc1fa0c8de2b1b587
+   define_util__namespace_8cuh_1af3ddf9618820eddc668eb37757b2695c
+   define_util__namespace_8cuh_1ab73dffe3df22bf8ec798fcc92f8c0eba
+   define_version_8cuh_1afe68e00bac270dcd89b9fc8aed9a2eff
+   define_version_8cuh_1a756b2f33d0b0ca3390ea8a1643474d75
+   define_util__debug_8cuh_1a0865b69ce9080d7a93ef6fede04c660a
+   define_util__device_8cuh_1a121bba4bf0c0009196625772c01e899c
+   define_version_8cuh_1a2b2410557fc1b0da14f3b2ba7c6dc5fb
+   define_util__debug_8cuh_1a84c3a4c178bf6593e0fad2b763606236
+   define_util__debug_8cuh_1a26211db894893b3cec946e4e537536f8
+   define_util__macro_8cuh_1a1858d51fe58d958035af057a2d49ffb1
+   define_util__debug_8cuh_1a25f361894440b53e637cb7ead2a4c0b7
+
+- :ref:`CUB\_DEBUG\_ALL <util__debug_8cuh_1a86d09cc83a7a62ec01933e61703d5ea9>`
+- :ref:`CUB\_DEBUG\_LOG <util__debug_8cuh_1ab22190db10e3213805998e43ab8d9d54>`
+- :ref:`CUB\_DEBUG\_SYNC <util__debug_8cuh_1a8604bd214583084d96377e38f1aea236>`
+- :ref:`CUB\_DEFINE\_KERNEL\_GETTER <util__macro_8cuh_1ae0e4c369f9d9e041efa3ecb69854c2f6>`
+- :ref:`CUB\_DEFINE\_SUB\_POLICY\_GETTER <util__macro_8cuh_1a281cce6eb6ae602129375af1dbe3b95d>`
+- :ref:`CUB\_MAJOR\_VERSION <version_8cuh_1a825429c0c66c9beb903dc32bf0d83ae7>`
+- :ref:`CUB\_MINOR\_VERSION <version_8cuh_1a02f2d200a10c6cff76ecf6b6b536c647>`
+- :ref:`CUB\_NAMESPACE\_BEGIN <util__namespace_8cuh_1a4159c0878cc0b22304b8af3d7d234c57>`
+- :ref:`CUB\_NAMESPACE\_END <util__namespace_8cuh_1ad0c50062c393b6f693088aba672221d5>`
+- :ref:`CUB\_NS\_POSTFIX <util__namespace_8cuh_1a46a31fe0dc2a467cc1fa0c8de2b1b587>`
+- :ref:`CUB\_NS\_PREFIX <util__namespace_8cuh_1af3ddf9618820eddc668eb37757b2695c>`
+- :ref:`CUB\_NS\_QUALIFIER <util__namespace_8cuh_1ab73dffe3df22bf8ec798fcc92f8c0eba>`
+- :ref:`CUB\_PATCH\_NUMBER <version_8cuh_1afe68e00bac270dcd89b9fc8aed9a2eff>`
+- :ref:`CUB\_SUBMINOR\_VERSION <version_8cuh_1a756b2f33d0b0ca3390ea8a1643474d75>`
+- :ref:`CUB\_TEMP\_DEVICE\_CODE <util__debug_8cuh_1a0865b69ce9080d7a93ef6fede04c660a>`
+- :ref:`CUB\_TEMP\_GET\_PTX <util__device_8cuh_1a121bba4bf0c0009196625772c01e899c>`
+- :ref:`CUB\_VERSION <version_8cuh_1a2b2410557fc1b0da14f3b2ba7c6dc5fb>`
+- :ref:`CubDebug <util__debug_8cuh_1a84c3a4c178bf6593e0fad2b763606236>`
+- :ref:`CubDebugExit <util__debug_8cuh_1a26211db894893b3cec946e4e537536f8>`
+- :ref:`\_CCCL\_SORT\_MAYBE\_UNROLL <util__macro_8cuh_1a1858d51fe58d958035af057a2d49ffb1>`
+- :ref:`\_CubLog <util__debug_8cuh_1a25f361894440b53e637cb7ead2a4c0b7>`
+
+Directories
+-----------
+
+.. toctree::
+   :hidden:
+   :maxdepth: 1
+
+   dir_cub
+
+- :ref:`cub <dir_d583f216f1aafe19404e836b0c097ad2>`
+
+Namespaces
+----------
+
+.. toctree::
+   :hidden:
+   :maxdepth: 1
+
+   namespace_cub
+
+- :ref:`cub <namespacecub>`
+

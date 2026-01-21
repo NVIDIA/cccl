@@ -1,0 +1,6 @@
+thrust\:\:replace\_copy
+=======================
+
+Defined in :ref:`thrust\/replace.h <replace_8h>`
+
+.. doxygenfunction:: thrust::replace_copy(const thrust::detail::execution_policy_base< DerivedPolicy > &exec, InputIterator first, InputIterator last, OutputIterator result, const T &old_value, const T &new_value)

@@ -1,0 +1,183 @@
+cub\/iterator\/arg\_index\_input\_iterator.cuh
+==============================================
+
+File members: :ref:`cub\/iterator\/arg\_index\_input\_iterator.cuh <arg__index__input__iterator_8cuh>`
+
+.. code-block:: c++
+
+   /******************************************************************************
+    * Copyright (c) 2011, Duane Merrill.  All rights reserved.
+    * Copyright (c) 2011-2018, NVIDIA CORPORATION.  All rights reserved.
+    *
+    * Redistribution and use in source and binary forms, with or without
+    * modification, are permitted provided that the following conditions are met:
+    *     * Redistributions of source code must retain the above copyright
+    *       notice, this list of conditions and the following disclaimer.
+    *     * Redistributions in binary form must reproduce the above copyright
+    *       notice, this list of conditions and the following disclaimer in the
+    *       documentation and/or other materials provided with the distribution.
+    *     * Neither the name of the NVIDIA CORPORATION nor the
+    *       names of its contributors may be used to endorse or promote products
+    *       derived from this software without specific prior written permission.
+    *
+    * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+    * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+    * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+    * DISCLAIMED. IN NO EVENT SHALL NVIDIA CORPORATION BE LIABLE FOR ANY
+    * DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+    * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+    * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
+    * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+    * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+    * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+    *
+    ******************************************************************************/
+
+   #pragma once
+
+   #include <cub/config.cuh>
+
+   #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+   #  pragma GCC system_header
+   #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+   #  pragma clang system_header
+   #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+   #  pragma system_header
+   #endif // no system header
+
+   #include <cub/util_type.cuh>
+
+   #include <thrust/iterator/iterator_facade.h>
+
+   #if !_CCCL_COMPILER(NVRTC)
+   #  include <ostream>
+   #endif // !_CCCL_COMPILER(NVRTC)
+
+   CUB_NAMESPACE_BEGIN
+
+   template <typename InputIteratorT,
+             typename OffsetT      = ptrdiff_t,
+             typename OutputValueT = detail::it_value_t<InputIteratorT>>
+   class ArgIndexInputIterator
+   {
+   public:
+     // Required iterator traits
+
+     using self_type = ArgIndexInputIterator;
+
+     using difference_type = OffsetT;
+
+     using value_type = KeyValuePair<difference_type, OutputValueT>;
+
+     using pointer = value_type*;
+
+     using reference = value_type;
+
+     using iterator_category = typename THRUST_NS_QUALIFIER::detail::iterator_facade_category<
+       THRUST_NS_QUALIFIER::any_system_tag,
+       THRUST_NS_QUALIFIER::random_access_traversal_tag,
+       value_type,
+       reference>::type;
+
+   private:
+     InputIteratorT itr;
+     difference_type offset;
+
+   public:
+     _CCCL_HOST_DEVICE _CCCL_FORCEINLINE ArgIndexInputIterator(InputIteratorT itr, difference_type offset = 0)
+         : itr(itr)
+         , offset(offset)
+     {}
+
+     _CCCL_HOST_DEVICE _CCCL_FORCEINLINE self_type operator++(int)
+     {
+       self_type retval = *this;
+       offset++;
+       return retval;
+     }
+
+     _CCCL_HOST_DEVICE _CCCL_FORCEINLINE self_type operator++()
+     {
+       offset++;
+       return *this;
+     }
+
+     _CCCL_HOST_DEVICE _CCCL_FORCEINLINE reference operator*() const
+     {
+       value_type retval;
+       retval.value = itr[offset];
+       retval.key   = offset;
+       return retval;
+     }
+
+     template <typename Distance>
+     _CCCL_HOST_DEVICE _CCCL_FORCEINLINE self_type operator+(Distance n) const
+     {
+       self_type retval(itr, offset + n);
+       return retval;
+     }
+
+     template <typename Distance>
+     _CCCL_HOST_DEVICE _CCCL_FORCEINLINE self_type& operator+=(Distance n)
+     {
+       offset += n;
+       return *this;
+     }
+
+     template <typename Distance>
+     _CCCL_HOST_DEVICE _CCCL_FORCEINLINE self_type operator-(Distance n) const
+     {
+       self_type retval(itr, offset - n);
+       return retval;
+     }
+
+     template <typename Distance>
+     _CCCL_HOST_DEVICE _CCCL_FORCEINLINE self_type& operator-=(Distance n)
+     {
+       offset -= n;
+       return *this;
+     }
+
+     _CCCL_HOST_DEVICE _CCCL_FORCEINLINE difference_type operator-(self_type other) const
+     {
+       return offset - other.offset;
+     }
+
+     template <typename Distance>
+     _CCCL_HOST_DEVICE _CCCL_FORCEINLINE reference operator[](Distance n) const
+     {
+       self_type offset = (*this) + n;
+       return *offset;
+     }
+
+     _CCCL_HOST_DEVICE _CCCL_FORCEINLINE pointer operator->()
+     {
+       return &(*(*this));
+     }
+
+     _CCCL_HOST_DEVICE _CCCL_FORCEINLINE bool operator==(const self_type& rhs)
+     {
+       return ((itr == rhs.itr) && (offset == rhs.offset));
+     }
+
+     _CCCL_HOST_DEVICE _CCCL_FORCEINLINE bool operator!=(const self_type& rhs)
+     {
+       return ((itr != rhs.itr) || (offset != rhs.offset));
+     }
+
+     _CCCL_HOST_DEVICE _CCCL_FORCEINLINE void normalize()
+     {
+       itr += offset;
+       offset = 0;
+     }
+
+   #if !_CCCL_COMPILER(NVRTC)
+     friend ::std::ostream& operator<<(::std::ostream& os, const self_type& /*itr*/)
+     {
+       return os;
+     }
+   #endif // !_CCCL_COMPILER(NVRTC)
+   };
+
+   CUB_NAMESPACE_END
+

@@ -1,0 +1,34 @@
+.. _`system_2omp_2pointer_8h`:
+
+thrust\/system\/omp\/pointer.h
+==============================
+
+In directory: :ref:`thrust\/system\/omp <dir_8d0f0be15f7a4ed2349bed8439c4d8f0>`
+
+Source file: :doc:`program_listing_file_thrust_system_omp_pointer.h`
+
+.. doxygenfile:: thrust/system/omp/pointer.h
+   :sections: briefdescription detaileddescription
+
+.. toctree::
+   :maxdepth: 1
+   :hidden:
+
+   Source file <program_listing_file_thrust_system_omp_pointer.h>
+
+Namespaces
+----------
+
+- :ref:`thrust <namespacethrust>`
+- :ref:`thrust\:\:omp <namespacethrust_1_1omp>`
+- :ref:`thrust\:\:system <namespacethrust_1_1system>`
+- :ref:`thrust\:\:system\:\:omp <namespacethrust_1_1system_1_1omp>`
+
+Typedefs
+--------
+
+- :ref:`thrust\:\:system\:\:omp\:\:pointer <group__system__backends_1gaf56e4e06b93f911b4a3101762458d621>`
+- :ref:`thrust\:\:system\:\:omp\:\:reference <group__system__backends_1ga4e8ee99cde0e3768685b03ae854866d6>`
+- :ref:`thrust\:\:system\:\:omp\:\:universal\_host\_pinned\_pointer <group__system__backends_1gaee3bfee1ef83bfa47b1a1d66d719aee2>`
+- :ref:`thrust\:\:system\:\:omp\:\:universal\_pointer <group__system__backends_1ga30a9a8c84d5ca182999cde729150bcfa>`
+

@@ -1,0 +1,30 @@
+.. _`thread__search_8cuh`:
+
+cub\/thread\/thread\_search.cuh
+===============================
+
+In directory: :ref:`cub\/thread <dir_bb50a5ef59f19d030d06415663184d05>`
+
+Source file: :doc:`program_listing_file_cub_thread_thread_search.cuh`
+
+.. doxygenfile:: cub/thread/thread_search.cuh
+   :sections: briefdescription detaileddescription
+
+.. toctree::
+   :maxdepth: 1
+   :hidden:
+
+   Source file <program_listing_file_cub_thread_thread_search.cuh>
+
+Functions
+---------
+
+- :ref:`cub\:\:LowerBound <namespacecub_1a8dac1b15322b4ce6b75df7e1ef1a98ce>`
+- :ref:`cub\:\:MergePathSearch <namespacecub_1ae5dc63782e74ff9978bec0ef1d12f2f8>`
+- :ref:`cub\:\:UpperBound <namespacecub_1a9ce53dad7978b7158b23949f6cc959ee>`
+
+Namespaces
+----------
+
+- :ref:`cub <namespacecub>`
+

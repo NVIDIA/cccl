@@ -1,0 +1,6 @@
+cuda\:\:experimental\:\:stf\:\:blocked\_partition
+=================================================
+
+Defined in :ref:`include\/cuda\/experimental\/\_\_stf\/places\/blocked\_partition.cuh <blocked__partition_8cuh>`
+
+.. doxygentypedef:: cuda::experimental::stf::blocked_partition

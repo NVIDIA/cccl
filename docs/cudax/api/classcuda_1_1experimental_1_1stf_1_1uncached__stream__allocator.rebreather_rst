@@ -1,0 +1,6 @@
+cuda\:\:experimental\:\:stf\:\:uncached\_stream\_allocator
+==========================================================
+
+Defined in :ref:`include\/cuda\/experimental\/\_\_stf\/stream\/stream\_ctx.cuh <stream__ctx_8cuh>`
+
+.. doxygenclass:: cuda::experimental::stf::uncached_stream_allocator

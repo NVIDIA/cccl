@@ -1,0 +1,29 @@
+.. _`universal__allocator_8h`:
+
+thrust\/universal\_allocator.h
+==============================
+
+In directory: :ref:`thrust <dir_7807dea0fb0cf4ae34b71c9fa4b0a46c>`
+
+Source file: :doc:`program_listing_file_thrust_universal_allocator.h`
+
+.. doxygenfile:: thrust/universal_allocator.h
+   :sections: briefdescription detaileddescription
+
+.. toctree::
+   :maxdepth: 1
+   :hidden:
+
+   Source file <program_listing_file_thrust_universal_allocator.h>
+
+Namespaces
+----------
+
+- :ref:`thrust <namespacethrust>`
+
+Typedefs
+--------
+
+- :ref:`thrust\:\:universal\_host\_pinned\_ptr <group__memory__resources_1gaeec2095e3173cef7e1de1b986d77824d>`
+- :ref:`thrust\:\:universal\_ptr <group__memory__resources_1gac349015c75728ebc709912a192d2ec55>`
+

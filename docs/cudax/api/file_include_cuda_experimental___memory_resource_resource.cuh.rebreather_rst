@@ -1,0 +1,29 @@
+.. _`resource_8cuh`:
+
+include\/cuda\/experimental\/\_\_memory\_resource\/resource.cuh
+===============================================================
+
+In directory: :ref:`include\/cuda\/experimental\/\_\_memory\_resource <dir_f5bb634f025bcd1aa086d4ae07d690be>`
+
+Source file: :doc:`program_listing_file_include_cuda_experimental___memory_resource_resource.cuh`
+
+.. doxygenfile:: include/cuda/experimental/__memory_resource/resource.cuh
+   :sections: briefdescription detaileddescription
+
+.. toctree::
+   :maxdepth: 1
+   :hidden:
+
+   Source file <program_listing_file_include_cuda_experimental___memory_resource_resource.cuh>
+
+Functions
+---------
+
+- :ref:`cuda\:\:experimental\:\:operator\=\= <resource_8cuh_1a4acc751267d2d31e6e9b5f47e55a4a0b>`
+
+Namespaces
+----------
+
+- :ref:`cuda <namespacecuda>`
+- :ref:`cuda\:\:experimental <namespacecuda_1_1experimental>`
+

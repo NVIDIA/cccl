@@ -1,0 +1,6 @@
+\_CCCL\_SORT\_MAYBE\_UNROLL
+===========================
+
+Defined in :ref:`cub\/util\_macro.cuh <util__macro_8cuh>`
+
+.. doxygendefine:: _CCCL_SORT_MAYBE_UNROLL

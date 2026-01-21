@@ -1,0 +1,28 @@
+.. _`thread__sort_8cuh`:
+
+cub\/thread\/thread\_sort.cuh
+=============================
+
+In directory: :ref:`cub\/thread <dir_bb50a5ef59f19d030d06415663184d05>`
+
+Source file: :doc:`program_listing_file_cub_thread_thread_sort.cuh`
+
+.. doxygenfile:: cub/thread/thread_sort.cuh
+   :sections: briefdescription detaileddescription
+
+.. toctree::
+   :maxdepth: 1
+   :hidden:
+
+   Source file <program_listing_file_cub_thread_thread_sort.cuh>
+
+Functions
+---------
+
+- :ref:`cub\:\:StableOddEvenSort <namespacecub_1a7fbefdee9a2b826e71ea84be34d81c95>`
+
+Namespaces
+----------
+
+- :ref:`cub <namespacecub>`
+

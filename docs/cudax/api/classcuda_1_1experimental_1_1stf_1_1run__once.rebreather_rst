@@ -1,0 +1,6 @@
+cuda\:\:experimental\:\:stf\:\:run\_once
+========================================
+
+Defined in :ref:`include\/cuda\/experimental\/\_\_stf\/utility\/run\_once.cuh <run__once_8cuh>`
+
+.. doxygenclass:: cuda::experimental::stf::run_once

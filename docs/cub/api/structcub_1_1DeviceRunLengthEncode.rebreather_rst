@@ -1,0 +1,6 @@
+cub\:\:DeviceRunLengthEncode
+============================
+
+Defined in :ref:`cub\/device\/device\_run\_length\_encode.cuh <device__run__length__encode_8cuh>`
+
+.. doxygenstruct:: cub::DeviceRunLengthEncode

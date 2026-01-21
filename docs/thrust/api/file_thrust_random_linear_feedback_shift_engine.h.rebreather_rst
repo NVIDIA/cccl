@@ -1,0 +1,37 @@
+.. _`linear__feedback__shift__engine_8h`:
+
+thrust\/random\/linear\_feedback\_shift\_engine.h
+=================================================
+
+In directory: :ref:`thrust\/random <dir_6b5d3ab13cf47c9c63ea01a78cc86c7c>`
+
+Source file: :doc:`program_listing_file_thrust_random_linear_feedback_shift_engine.h`
+
+.. doxygenfile:: thrust/random/linear_feedback_shift_engine.h
+   :sections: briefdescription detaileddescription
+
+.. toctree::
+   :maxdepth: 1
+   :hidden:
+
+   Source file <program_listing_file_thrust_random_linear_feedback_shift_engine.h>
+
+Classes
+-------
+
+- :ref:`thrust\:\:random\:\:linear\_feedback\_shift\_engine <classthrust_1_1random_1_1linear__feedback__shift__engine>`
+
+Functions
+---------
+
+- :ref:`thrust\:\:random\:\:operator\!\= <group__random__number__engine__templates_1gab573cc345c857a96bef7bf6c2ad817e9>`
+- :ref:`thrust\:\:random\:\:operator\<\< <group__random__number__engine__templates_1gae2aa3d7b9853d80e0aa26d5960f78e67>`
+- :ref:`thrust\:\:random\:\:operator\=\= <group__random__number__engine__templates_1ga237571983d2d92d8e688c731aadb7569>`
+- :ref:`thrust\:\:random\:\:operator\>\> <group__random__number__engine__templates_1ga038e39d62b6eb47cbb88ae744b674720>`
+
+Namespaces
+----------
+
+- :ref:`thrust <namespacethrust>`
+- :ref:`thrust\:\:random <namespacethrust_1_1random>`
+

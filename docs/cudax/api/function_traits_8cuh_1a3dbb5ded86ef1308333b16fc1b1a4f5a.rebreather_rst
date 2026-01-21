@@ -1,0 +1,6 @@
+cuda\:\:experimental\:\:stf\:\:only\_convertible
+================================================
+
+Defined in :ref:`include\/cuda\/experimental\/\_\_stf\/utility\/traits.cuh <traits_8cuh>`
+
+.. doxygenfunction:: cuda::experimental::stf::only_convertible(P0 &&p0, [[maybe_unused]] P &&... p)

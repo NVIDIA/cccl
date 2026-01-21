@@ -1,0 +1,6 @@
+thrust\:\:make\_counting\_iterator
+==================================
+
+Defined in :ref:`thrust\/iterator\/counting\_iterator.h <counting__iterator_8h>`
+
+.. doxygenfunction:: thrust::make_counting_iterator(Incrementable x)

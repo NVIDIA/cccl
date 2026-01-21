@@ -1,0 +1,34 @@
+.. _`system_2tbb_2pointer_8h`:
+
+thrust\/system\/tbb\/pointer.h
+==============================
+
+In directory: :ref:`thrust\/system\/tbb <dir_78ae1529b0a334eb96b24abaa7d23fd1>`
+
+Source file: :doc:`program_listing_file_thrust_system_tbb_pointer.h`
+
+.. doxygenfile:: thrust/system/tbb/pointer.h
+   :sections: briefdescription detaileddescription
+
+.. toctree::
+   :maxdepth: 1
+   :hidden:
+
+   Source file <program_listing_file_thrust_system_tbb_pointer.h>
+
+Namespaces
+----------
+
+- :ref:`thrust <namespacethrust>`
+- :ref:`thrust\:\:system <namespacethrust_1_1system>`
+- :ref:`thrust\:\:system\:\:tbb <namespacethrust_1_1system_1_1tbb>`
+- :ref:`thrust\:\:tbb <namespacethrust_1_1tbb>`
+
+Typedefs
+--------
+
+- :ref:`thrust\:\:system\:\:tbb\:\:pointer <group__system__backends_1ga9b92fdb9b3ae543ca62565b34e14ddc7>`
+- :ref:`thrust\:\:system\:\:tbb\:\:reference <group__system__backends_1ga1168b5478b7b7f50fb104bb27164522f>`
+- :ref:`thrust\:\:system\:\:tbb\:\:universal\_host\_pinned\_pointer <group__system__backends_1ga31e803d636c86e85f1f89d4c11af1820>`
+- :ref:`thrust\:\:system\:\:tbb\:\:universal\_pointer <group__system__backends_1gab2fbe246530ce9dbaba115bc958530fb>`
+

@@ -1,0 +1,6 @@
+thrust\:\:random\:\:default\_random\_engine
+===========================================
+
+Defined in :ref:`thrust\/random.h <random_8h>`
+
+.. doxygentypedef:: thrust::random::default_random_engine

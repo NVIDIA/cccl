@@ -1,0 +1,45 @@
+.. _`reduce_8h`:
+
+thrust\/reduce.h
+================
+
+In directory: :ref:`thrust <dir_7807dea0fb0cf4ae34b71c9fa4b0a46c>`
+
+Source file: :doc:`program_listing_file_thrust_reduce.h`
+
+.. doxygenfile:: thrust/reduce.h
+   :sections: briefdescription detaileddescription
+
+.. toctree::
+   :maxdepth: 1
+   :hidden:
+
+   Source file <program_listing_file_thrust_reduce.h>
+
+Functions
+---------
+
+- :ref:`thrust\:\:reduce <group__reductions_1ga29b4e0824fb7af2b2c897d3f6e9422d3>`
+- :ref:`thrust\:\:reduce <group__reductions_1ga52c9e815fc0bfa4b3a8bc8a2315016dc>`
+- :ref:`thrust\:\:reduce <group__reductions_1ga5e9cef4919927834bec50fc4829f6e6b>`
+- :ref:`thrust\:\:reduce <group__reductions_1ga9ef66eea454f70b25c40b57f5b83b1bf>`
+- :ref:`thrust\:\:reduce <group__reductions_1gad88f81c37fb8a41039d2185f26fec99d>`
+- :ref:`thrust\:\:reduce <group__reductions_1gaefbf2731074cabf80c1b4034e2a816cf>`
+- :ref:`thrust\:\:reduce\_by\_key <group__reductions_1ga12501ca04b9b21b101d6a299d899d7af>`
+- :ref:`thrust\:\:reduce\_by\_key <group__reductions_1ga39ab1fa02b7a8ececa87e3a8fbe374b0>`
+- :ref:`thrust\:\:reduce\_by\_key <group__reductions_1ga54b44c9eb62aab0509c0e8c9c8399362>`
+- :ref:`thrust\:\:reduce\_by\_key <group__reductions_1ga561f079073556701066513f648f413d6>`
+- :ref:`thrust\:\:reduce\_by\_key <group__reductions_1gab2a639dcea2b476c2f8f3cdd5a975e19>`
+- :ref:`thrust\:\:reduce\_by\_key <group__reductions_1gac293a05a740d21a1112678b302094902>`
+- :ref:`thrust\:\:reduce\_into <group__reductions_1ga187357d2f97f7de0ec57ce5dbc1491bd>`
+- :ref:`thrust\:\:reduce\_into <group__reductions_1ga198ec1a0c411d4c74a7d58a0f3cd5b3a>`
+- :ref:`thrust\:\:reduce\_into <group__reductions_1ga21a2f16ca903ffa0e5155f0d3bbd8e16>`
+- :ref:`thrust\:\:reduce\_into <group__reductions_1ga5d0266aa6124f044b1ba68c78a5627f1>`
+- :ref:`thrust\:\:reduce\_into <group__reductions_1gab8ec9237fa68ed9d3820624df3d2a97c>`
+- :ref:`thrust\:\:reduce\_into <group__reductions_1gac4f1a13fe10dd1a2f4abf6ba347e09c8>`
+
+Namespaces
+----------
+
+- :ref:`thrust <namespacethrust>`
+

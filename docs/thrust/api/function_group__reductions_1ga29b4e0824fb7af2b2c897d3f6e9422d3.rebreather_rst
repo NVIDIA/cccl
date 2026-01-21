@@ -1,0 +1,6 @@
+thrust\:\:reduce
+================
+
+Defined in :ref:`thrust\/reduce.h <reduce_8h>`
+
+.. doxygenfunction:: thrust::reduce(InputIterator first, InputIterator last)

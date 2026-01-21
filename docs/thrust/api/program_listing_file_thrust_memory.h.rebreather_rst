@@ -1,0 +1,79 @@
+thrust\/memory.h
+================
+
+File members: :ref:`thrust\/memory.h <memory_8h>`
+
+.. code-block:: c++
+
+   /*
+    *  Copyright 2008-2013 NVIDIA Corporation
+    *
+    *  Licensed under the Apache License, Version 2.0 (the "License");
+    *  you may not use this file except in compliance with the License.
+    *  You may obtain a copy of the License at
+    *
+    *      http://www.apache.org/licenses/LICENSE-2.0
+    *
+    *  Unless required by applicable law or agreed to in writing, software
+    *  distributed under the License is distributed on an "AS IS" BASIS,
+    *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    *  See the License for the specific language governing permissions and
+    *  limitations under the License.
+    */
+
+   #pragma once
+
+   #include <thrust/detail/config.h>
+
+   #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+   #  pragma GCC system_header
+   #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+   #  pragma clang system_header
+   #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+   #  pragma system_header
+   #endif // no system header
+   #include <thrust/detail/pointer.h>
+   #include <thrust/detail/raw_pointer_cast.h>
+   #include <thrust/detail/raw_reference_cast.h>
+   #include <thrust/detail/reference.h>
+   #include <thrust/detail/temporary_buffer.h>
+   #include <thrust/detail/type_traits/pointer_traits.h>
+
+   THRUST_NAMESPACE_BEGIN
+
+   #ifndef _CCCL_DOXYGEN_INVOKED // Doxygen cannot handle both versions
+
+   template <typename DerivedPolicy>
+   _CCCL_HOST_DEVICE pointer<void, DerivedPolicy>
+   malloc(const thrust::detail::execution_policy_base<DerivedPolicy>& system, std::size_t n);
+
+   #endif // _CCCL_DOXYGEN_INVOKED
+
+   template <typename T, typename DerivedPolicy>
+   _CCCL_HOST_DEVICE pointer<T, DerivedPolicy>
+   malloc(const thrust::detail::execution_policy_base<DerivedPolicy>& system, std::size_t n);
+
+   template <typename T, typename DerivedPolicy>
+   _CCCL_HOST_DEVICE
+   thrust::pair<thrust::pointer<T, DerivedPolicy>, typename thrust::pointer<T, DerivedPolicy>::difference_type>
+   get_temporary_buffer(const thrust::detail::execution_policy_base<DerivedPolicy>& system,
+                        typename thrust::pointer<T, DerivedPolicy>::difference_type n);
+
+   template <typename DerivedPolicy, typename Pointer>
+   _CCCL_HOST_DEVICE void free(const thrust::detail::execution_policy_base<DerivedPolicy>& system, Pointer ptr);
+
+   template <typename DerivedPolicy, typename Pointer>
+   _CCCL_HOST_DEVICE void return_temporary_buffer(
+     const thrust::detail::execution_policy_base<DerivedPolicy>& system, Pointer p, std::ptrdiff_t n);
+
+   template <typename Pointer>
+   _CCCL_HOST_DEVICE typename thrust::detail::pointer_traits<Pointer>::raw_pointer raw_pointer_cast(Pointer ptr);
+
+   template <typename T>
+   _CCCL_HOST_DEVICE typename detail::raw_reference<T>::type raw_reference_cast(T& ref);
+
+   template <typename T>
+   _CCCL_HOST_DEVICE typename detail::raw_reference<const T>::type raw_reference_cast(const T& ref);
+
+   THRUST_NAMESPACE_END
+

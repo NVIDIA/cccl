@@ -1,0 +1,6 @@
+cuda\:\:experimental\:\:cudaMemAllocationHandleType
+===================================================
+
+Defined in :ref:`include\/cuda\/experimental\/\_\_memory\_resource\/memory\_pool\_base.cuh <memory__pool__base_8cuh>`
+
+.. doxygenenum:: cuda::experimental::cudaMemAllocationHandleType

@@ -1,0 +1,25 @@
+.. _`host__launch__scope_8cuh`:
+
+include\/cuda\/experimental\/\_\_stf\/internal\/host\_launch\_scope.cuh
+=======================================================================
+
+In directory: :ref:`include\/cuda\/experimental\/\_\_stf\/internal <dir_9a0afe0e3b482b68b2edbe22051d0386>`
+
+Source file: :doc:`program_listing_file_include_cuda_experimental___stf_internal_host_launch_scope.cuh`
+
+.. doxygenfile:: include/cuda/experimental/__stf/internal/host_launch_scope.cuh
+   :sections: briefdescription detaileddescription
+
+.. toctree::
+   :maxdepth: 1
+   :hidden:
+
+   Source file <program_listing_file_include_cuda_experimental___stf_internal_host_launch_scope.cuh>
+
+Namespaces
+----------
+
+- :ref:`cuda <namespacecuda>`
+- :ref:`cuda\:\:experimental <namespacecuda_1_1experimental>`
+- :ref:`cuda\:\:experimental\:\:stf <namespacecuda_1_1experimental_1_1stf>`
+

@@ -1,0 +1,6 @@
+cuda\:\:experimental\:\:stf\:\:array\_tuple
+===========================================
+
+Defined in :ref:`include\/cuda\/experimental\/\_\_stf\/utility\/traits.cuh <traits_8cuh>`
+
+.. doxygentypedef:: cuda::experimental::stf::array_tuple

@@ -1,0 +1,33 @@
+.. _`zip__function_8h`:
+
+thrust\/zip\_function.h
+=======================
+
+In directory: :ref:`thrust <dir_7807dea0fb0cf4ae34b71c9fa4b0a46c>`
+
+Source file: :doc:`program_listing_file_thrust_zip_function.h`
+
+.. doxygenfile:: thrust/zip_function.h
+   :sections: briefdescription detaileddescription
+
+.. toctree::
+   :maxdepth: 1
+   :hidden:
+
+   Source file <program_listing_file_thrust_zip_function.h>
+
+Classes
+-------
+
+- :ref:`thrust\:\:zip\_function <classthrust_1_1zip__function>`
+
+Functions
+---------
+
+- :ref:`thrust\:\:make\_zip\_function <group__function__object__adaptors_1ga0512ec9b8b0607ac12c59e909ebbf2cb>`
+
+Namespaces
+----------
+
+- :ref:`thrust <namespacethrust>`
+

@@ -1,0 +1,6 @@
+cuda\:\:experimental\:\:host\_launch
+====================================
+
+Defined in :ref:`include\/cuda\/experimental\/\_\_launch\/host\_launch.cuh <host__launch_8cuh>`
+
+.. doxygenfunction:: cuda::experimental::host_launch(stream_ref __stream, ::cuda::std::reference_wrapper< _Callable > __callable)

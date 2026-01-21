@@ -1,0 +1,6 @@
+cub\:\:DeviceMemcpy
+===================
+
+Defined in :ref:`cub\/device\/device\_memcpy.cuh <device__memcpy_8cuh>`
+
+.. doxygenstruct:: cub::DeviceMemcpy

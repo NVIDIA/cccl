@@ -1,0 +1,28 @@
+.. _`device__merge_8cuh`:
+
+cub\/device\/device\_merge.cuh
+==============================
+
+In directory: :ref:`cub\/device <dir_18fc672d63781b5a743137aee24ff656>`
+
+Source file: :doc:`program_listing_file_cub_device_device_merge.cuh`
+
+.. doxygenfile:: cub/device/device_merge.cuh
+   :sections: briefdescription detaileddescription
+
+.. toctree::
+   :maxdepth: 1
+   :hidden:
+
+   Source file <program_listing_file_cub_device_device_merge.cuh>
+
+Namespaces
+----------
+
+- :ref:`cub <namespacecub>`
+
+Structs
+-------
+
+- :ref:`cub\:\:DeviceMerge <structcub_1_1DeviceMerge>`
+

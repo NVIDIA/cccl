@@ -1,0 +1,6 @@
+cuda\:\:experimental\:\:operator\=\=
+====================================
+
+Defined in :ref:`include\/cuda\/experimental\/\_\_memory\_resource\/resource.cuh <resource_8cuh>`
+
+.. doxygenfunction:: cuda::experimental::operator==(_Resource const &, _OtherResource const &) noexcept

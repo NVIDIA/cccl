@@ -1,0 +1,6 @@
+cub\:\:CacheLoadModifier
+========================
+
+Defined in :ref:`cub\/thread\/thread\_load.cuh <thread__load_8cuh>`
+
+.. doxygenenum:: cub::CacheLoadModifier

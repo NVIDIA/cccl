@@ -1,0 +1,31 @@
+.. _`shuffle_8h`:
+
+thrust\/shuffle.h
+=================
+
+In directory: :ref:`thrust <dir_7807dea0fb0cf4ae34b71c9fa4b0a46c>`
+
+Source file: :doc:`program_listing_file_thrust_shuffle.h`
+
+.. doxygenfile:: thrust/shuffle.h
+   :sections: briefdescription detaileddescription
+
+.. toctree::
+   :maxdepth: 1
+   :hidden:
+
+   Source file <program_listing_file_thrust_shuffle.h>
+
+Functions
+---------
+
+- :ref:`thrust\:\:shuffle <group__shuffling_1ga1c1c3c7baefbd4539f2e51fd41efdd50>`
+- :ref:`thrust\:\:shuffle <group__shuffling_1ga5691add2f5ae54d226463c621eeb5455>`
+- :ref:`thrust\:\:shuffle\_copy <group__shuffling_1ga9e036fee256b44f41d25965fbf0125b1>`
+- :ref:`thrust\:\:shuffle\_copy <group__shuffling_1gaa981e499e02cbc84db91fe7b2ce2a7a1>`
+
+Namespaces
+----------
+
+- :ref:`thrust <namespacethrust>`
+

@@ -1,0 +1,28 @@
+.. _`block__radix__sort_8cuh`:
+
+cub\/block\/block\_radix\_sort.cuh
+==================================
+
+In directory: :ref:`cub\/block <dir_011e1c944d88f71be72e1e24a5fda7cf>`
+
+Source file: :doc:`program_listing_file_cub_block_block_radix_sort.cuh`
+
+.. doxygenfile:: cub/block/block_radix_sort.cuh
+   :sections: briefdescription detaileddescription
+
+.. toctree::
+   :maxdepth: 1
+   :hidden:
+
+   Source file <program_listing_file_cub_block_block_radix_sort.cuh>
+
+Classes
+-------
+
+- :ref:`cub\:\:BlockRadixSort <classcub_1_1BlockRadixSort>`
+
+Namespaces
+----------
+
+- :ref:`cub <namespacecub>`
+

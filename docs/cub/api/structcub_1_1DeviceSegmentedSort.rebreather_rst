@@ -1,0 +1,6 @@
+cub\:\:DeviceSegmentedSort
+==========================
+
+Defined in :ref:`cub\/device\/device\_segmented\_sort.cuh <device__segmented__sort_8cuh>`
+
+.. doxygenstruct:: cub::DeviceSegmentedSort

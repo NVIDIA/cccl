@@ -1,0 +1,6 @@
+thrust\:\:generate
+==================
+
+Defined in :ref:`thrust\/generate.h <generate_8h>`
+
+.. doxygenfunction:: thrust::generate(ForwardIterator first, ForwardIterator last, Generator gen)

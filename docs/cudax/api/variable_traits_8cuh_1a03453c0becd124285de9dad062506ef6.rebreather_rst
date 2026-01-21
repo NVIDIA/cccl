@@ -1,0 +1,6 @@
+cuda\:\:experimental\:\:stf\:\:type\_name
+=========================================
+
+Defined in :ref:`include\/cuda\/experimental\/\_\_stf\/utility\/traits.cuh <traits_8cuh>`
+
+.. doxygenvariable:: cuda::experimental::stf::type_name

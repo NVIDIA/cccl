@@ -1,0 +1,6 @@
+thrust\:\:sequence
+==================
+
+Defined in :ref:`thrust\/sequence.h <sequence_8h>`
+
+.. doxygenfunction:: thrust::sequence(ForwardIterator first, ForwardIterator last, T init, T step)

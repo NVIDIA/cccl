@@ -1,0 +1,6 @@
+thrust\:\:get\_temporary\_buffer
+================================
+
+Defined in :ref:`thrust\/memory.h <memory_8h>`
+
+.. doxygenfunction:: thrust::get_temporary_buffer(const thrust::detail::execution_policy_base< DerivedPolicy > &system, typename thrust::pointer< T, DerivedPolicy >::difference_type n)

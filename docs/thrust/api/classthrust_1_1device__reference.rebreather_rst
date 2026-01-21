@@ -1,0 +1,6 @@
+thrust\:\:device\_reference
+===========================
+
+Defined in :ref:`thrust\/device\_ptr.h <device__ptr_8h>`
+
+.. doxygenclass:: thrust::device_reference

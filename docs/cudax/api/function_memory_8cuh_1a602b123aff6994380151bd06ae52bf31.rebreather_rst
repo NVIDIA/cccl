@@ -1,0 +1,6 @@
+cuda\:\:experimental\:\:stf\:\:deallocateManagedMemory
+======================================================
+
+Defined in :ref:`include\/cuda\/experimental\/\_\_stf\/utility\/memory.cuh <memory_8cuh>`
+
+.. doxygenfunction:: cuda::experimental::stf::deallocateManagedMemory(void *p, size_t sz, const cuda::std::source_location loc=cuda::std::source_location::current())

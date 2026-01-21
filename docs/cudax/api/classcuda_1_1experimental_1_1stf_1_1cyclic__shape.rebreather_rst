@@ -1,0 +1,6 @@
+cuda\:\:experimental\:\:stf\:\:cyclic\_shape
+============================================
+
+Defined in :ref:`include\/cuda\/experimental\/\_\_stf\/places\/cyclic\_shape.cuh <cyclic__shape_8cuh>`
+
+.. doxygenclass:: cuda::experimental::stf::cyclic_shape

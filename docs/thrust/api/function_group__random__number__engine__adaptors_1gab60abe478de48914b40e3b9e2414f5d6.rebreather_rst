@@ -1,0 +1,6 @@
+thrust\:\:random\:\:operator\!\=
+================================
+
+Defined in :ref:`thrust\/random\/discard\_block\_engine.h <discard__block__engine_8h>`
+
+.. doxygenfunction:: thrust::random::operator!=(const discard_block_engine< Engine, p, r > &lhs, const discard_block_engine< Engine, p, r > &rhs)

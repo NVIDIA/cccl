@@ -1,0 +1,29 @@
+.. _`depends__on_8cuh`:
+
+include\/cuda\/experimental\/\_\_graph\/depends\_on.cuh
+=======================================================
+
+In directory: :ref:`include\/cuda\/experimental\/\_\_graph <dir_58f95481ee3b5964d4a284a75c631d27>`
+
+Source file: :doc:`program_listing_file_include_cuda_experimental___graph_depends_on.cuh`
+
+.. doxygenfile:: include/cuda/experimental/__graph/depends_on.cuh
+   :sections: briefdescription detaileddescription
+
+.. toctree::
+   :maxdepth: 1
+   :hidden:
+
+   Source file <program_listing_file_include_cuda_experimental___graph_depends_on.cuh>
+
+Functions
+---------
+
+- :ref:`cuda\:\:experimental\:\:depends\_on <depends__on_8cuh_1a83e91b3b8312b234d46c7ad497083685>`
+
+Namespaces
+----------
+
+- :ref:`cuda <namespacecuda>`
+- :ref:`cuda\:\:experimental <namespacecuda_1_1experimental>`
+

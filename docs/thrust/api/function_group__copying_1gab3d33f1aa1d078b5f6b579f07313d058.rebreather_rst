@@ -1,0 +1,6 @@
+thrust\:\:copy\_n
+=================
+
+Defined in :ref:`thrust\/copy.h <copy_8h>`
+
+.. doxygenfunction:: thrust::copy_n(InputIterator first, Size n, OutputIterator result)

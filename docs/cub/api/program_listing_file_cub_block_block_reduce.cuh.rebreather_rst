@@ -1,0 +1,186 @@
+cub\/block\/block\_reduce.cuh
+=============================
+
+File members: :ref:`cub\/block\/block\_reduce.cuh <block__reduce_8cuh>`
+
+.. code-block:: c++
+
+   /******************************************************************************
+    * Copyright (c) 2011, Duane Merrill.  All rights reserved.
+    * Copyright (c) 2011-2018, NVIDIA CORPORATION.  All rights reserved.
+    *
+    * Redistribution and use in source and binary forms, with or without
+    * modification, are permitted provided that the following conditions are met:
+    *     * Redistributions of source code must retain the above copyright
+    *       notice, this list of conditions and the following disclaimer.
+    *     * Redistributions in binary form must reproduce the above copyright
+    *       notice, this list of conditions and the following disclaimer in the
+    *       documentation and/or other materials provided with the distribution.
+    *     * Neither the name of the NVIDIA CORPORATION nor the
+    *       names of its contributors may be used to endorse or promote products
+    *       derived from this software without specific prior written permission.
+    *
+    * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+    * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+    * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+    * DISCLAIMED. IN NO EVENT SHALL NVIDIA CORPORATION BE LIABLE FOR ANY
+    * DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+    * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+    * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
+    * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+    * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+    * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+    *
+    ******************************************************************************/
+
+   #pragma once
+
+   #include <cub/config.cuh>
+
+   #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+   #  pragma GCC system_header
+   #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+   #  pragma clang system_header
+   #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+   #  pragma system_header
+   #endif // no system header
+
+   #include <cub/block/specializations/block_reduce_raking.cuh>
+   #include <cub/block/specializations/block_reduce_raking_commutative_only.cuh>
+   #include <cub/block/specializations/block_reduce_warp_reductions.cuh>
+   #include <cub/thread/thread_operators.cuh>
+   #include <cub/util_ptx.cuh>
+   #include <cub/util_type.cuh>
+
+   #include <cuda/std/type_traits>
+
+   CUB_NAMESPACE_BEGIN
+
+   /******************************************************************************
+    * Algorithmic variants
+    ******************************************************************************/
+
+   enum BlockReduceAlgorithm
+   {
+
+     BLOCK_REDUCE_RAKING_COMMUTATIVE_ONLY,
+
+     BLOCK_REDUCE_RAKING,
+
+     BLOCK_REDUCE_WARP_REDUCTIONS,
+
+     BLOCK_REDUCE_WARP_REDUCTIONS_NONDETERMINISTIC,
+   };
+
+   template <typename T,
+             int BLOCK_DIM_X,
+             BlockReduceAlgorithm ALGORITHM = BLOCK_REDUCE_WARP_REDUCTIONS,
+             int BLOCK_DIM_Y                = 1,
+             int BLOCK_DIM_Z                = 1>
+   class BlockReduce
+   {
+   private:
+     enum
+     {
+       BLOCK_THREADS = BLOCK_DIM_X * BLOCK_DIM_Y * BLOCK_DIM_Z,
+     };
+
+     using WarpReductions = detail::BlockReduceWarpReductions<T, BLOCK_DIM_X, BLOCK_DIM_Y, BLOCK_DIM_Z>;
+     using WarpReductionsNondeterministic =
+       detail::BlockReduceWarpReductions<T, BLOCK_DIM_X, BLOCK_DIM_Y, BLOCK_DIM_Z, false>;
+     using RakingCommutativeOnly = detail::BlockReduceRakingCommutativeOnly<T, BLOCK_DIM_X, BLOCK_DIM_Y, BLOCK_DIM_Z>;
+     using Raking                = detail::BlockReduceRaking<T, BLOCK_DIM_X, BLOCK_DIM_Y, BLOCK_DIM_Z>;
+
+     using InternalBlockReduce =
+       ::cuda::std::_If<ALGORITHM == BLOCK_REDUCE_WARP_REDUCTIONS,
+                        WarpReductions,
+                        ::cuda::std::_If<ALGORITHM == BLOCK_REDUCE_WARP_REDUCTIONS_NONDETERMINISTIC,
+                                         WarpReductionsNondeterministic,
+                                         ::cuda::std::_If<ALGORITHM == BLOCK_REDUCE_RAKING_COMMUTATIVE_ONLY,
+                                                          RakingCommutativeOnly,
+                                                          Raking>>>; // BlockReduceRaking
+
+     using _TempStorage = typename InternalBlockReduce::TempStorage;
+
+     _CCCL_DEVICE _CCCL_FORCEINLINE _TempStorage& PrivateStorage()
+     {
+       __shared__ _TempStorage private_storage;
+       return private_storage;
+     }
+
+     _TempStorage& temp_storage;
+
+     unsigned int linear_tid;
+
+   public:
+     struct TempStorage : Uninitialized<_TempStorage>
+     {};
+
+     _CCCL_DEVICE _CCCL_FORCEINLINE BlockReduce()
+         : temp_storage(PrivateStorage())
+         , linear_tid(RowMajorTid(BLOCK_DIM_X, BLOCK_DIM_Y, BLOCK_DIM_Z))
+     {}
+
+     _CCCL_DEVICE _CCCL_FORCEINLINE BlockReduce(TempStorage& temp_storage)
+         : temp_storage(temp_storage.Alias())
+         , linear_tid(RowMajorTid(BLOCK_DIM_X, BLOCK_DIM_Y, BLOCK_DIM_Z))
+     {}
+
+     template <typename ReductionOp>
+     _CCCL_DEVICE _CCCL_FORCEINLINE T Reduce(T input, ReductionOp reduction_op)
+     {
+       return InternalBlockReduce(temp_storage).template Reduce<true>(input, BLOCK_THREADS, reduction_op);
+     }
+
+     template <int ITEMS_PER_THREAD, typename ReductionOp>
+     _CCCL_DEVICE _CCCL_FORCEINLINE T Reduce(T (&inputs)[ITEMS_PER_THREAD], ReductionOp reduction_op)
+     {
+       // Reduce partials
+       T partial = cub::ThreadReduce(inputs, reduction_op);
+       return Reduce(partial, reduction_op);
+     }
+
+     template <typename ReductionOp>
+     _CCCL_DEVICE _CCCL_FORCEINLINE T Reduce(T input, ReductionOp reduction_op, int num_valid)
+     {
+       // Determine if we skip bounds checking
+       if (num_valid >= BLOCK_THREADS)
+       {
+         return InternalBlockReduce(temp_storage).template Reduce<true>(input, num_valid, reduction_op);
+       }
+       else
+       {
+         return InternalBlockReduce(temp_storage).template Reduce<false>(input, num_valid, reduction_op);
+       }
+     }
+
+     _CCCL_DEVICE _CCCL_FORCEINLINE T Sum(T input)
+     {
+       return InternalBlockReduce(temp_storage).template Sum<true>(input, BLOCK_THREADS);
+     }
+
+     template <int ITEMS_PER_THREAD>
+     _CCCL_DEVICE _CCCL_FORCEINLINE T Sum(T (&inputs)[ITEMS_PER_THREAD])
+     {
+       // Reduce partials
+       T partial = cub::ThreadReduce(inputs, ::cuda::std::plus<>{});
+       return Sum(partial);
+     }
+
+     _CCCL_DEVICE _CCCL_FORCEINLINE T Sum(T input, int num_valid)
+     {
+       // Determine if we skip bounds checking
+       if (num_valid >= BLOCK_THREADS)
+       {
+         return InternalBlockReduce(temp_storage).template Sum<true>(input, num_valid);
+       }
+       else
+       {
+         return InternalBlockReduce(temp_storage).template Sum<false>(input, num_valid);
+       }
+     }
+
+   };
+
+   CUB_NAMESPACE_END
+

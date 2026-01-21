@@ -1,0 +1,26 @@
+.. _`dir_6ef724ba58db6b2f1fb9755593e6e203`:
+
+include\/cuda\/experimental\/\_\_stf\/allocators
+================================================
+
+Files
+-----
+
+.. toctree::
+   :hidden:
+   :maxdepth: 1
+
+   file_include_cuda_experimental___stf_allocators_adapters.cuh
+   file_include_cuda_experimental___stf_allocators_block_allocator.cuh
+   file_include_cuda_experimental___stf_allocators_buddy_allocator.cuh
+   file_include_cuda_experimental___stf_allocators_cached_allocator.cuh
+   file_include_cuda_experimental___stf_allocators_pooled_allocator.cuh
+   file_include_cuda_experimental___stf_allocators_uncached_allocator.cuh
+
+- :ref:`include\/cuda\/experimental\/\_\_stf\/allocators\/adapters.cuh <adapters_8cuh>`
+- :ref:`include\/cuda\/experimental\/\_\_stf\/allocators\/block\_allocator.cuh <block__allocator_8cuh>`
+- :ref:`include\/cuda\/experimental\/\_\_stf\/allocators\/buddy\_allocator.cuh <buddy__allocator_8cuh>`
+- :ref:`include\/cuda\/experimental\/\_\_stf\/allocators\/cached\_allocator.cuh <cached__allocator_8cuh>`
+- :ref:`include\/cuda\/experimental\/\_\_stf\/allocators\/pooled\_allocator.cuh <pooled__allocator_8cuh>`
+- :ref:`include\/cuda\/experimental\/\_\_stf\/allocators\/uncached\_allocator.cuh <uncached__allocator_8cuh>`
+

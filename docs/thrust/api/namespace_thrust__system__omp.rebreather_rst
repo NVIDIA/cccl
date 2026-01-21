@@ -1,0 +1,23 @@
+thrust\:\:system\:\:omp
+=======================
+
+.. doxygennamespace:: thrust::system::omp
+   :desc-only:
+
+Typedefs
+--------
+
+.. toctree::
+   :hidden:
+   :maxdepth: 1
+
+   typedef_group__system__backends_1gaf56e4e06b93f911b4a3101762458d621
+   typedef_group__system__backends_1ga4e8ee99cde0e3768685b03ae854866d6
+   typedef_group__system__backends_1gaee3bfee1ef83bfa47b1a1d66d719aee2
+   typedef_group__system__backends_1ga30a9a8c84d5ca182999cde729150bcfa
+
+- :ref:`thrust\:\:system\:\:omp\:\:pointer <group__system__backends_1gaf56e4e06b93f911b4a3101762458d621>`
+- :ref:`thrust\:\:system\:\:omp\:\:reference <group__system__backends_1ga4e8ee99cde0e3768685b03ae854866d6>`
+- :ref:`thrust\:\:system\:\:omp\:\:universal\_host\_pinned\_pointer <group__system__backends_1gaee3bfee1ef83bfa47b1a1d66d719aee2>`
+- :ref:`thrust\:\:system\:\:omp\:\:universal\_pointer <group__system__backends_1ga30a9a8c84d5ca182999cde729150bcfa>`
+

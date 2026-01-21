@@ -1,0 +1,35 @@
+.. _`zip__iterator_8h`:
+
+thrust\/iterator\/zip\_iterator.h
+=================================
+
+In directory: :ref:`thrust\/iterator <dir_4a6d8329b843c73570cce28de80cb189>`
+
+Source file: :doc:`program_listing_file_thrust_iterator_zip_iterator.h`
+
+.. doxygenfile:: thrust/iterator/zip_iterator.h
+   :sections: briefdescription detaileddescription
+
+.. toctree::
+   :maxdepth: 1
+   :hidden:
+
+   Source file <program_listing_file_thrust_iterator_zip_iterator.h>
+
+Classes
+-------
+
+- :ref:`thrust\:\:zip\_iterator <classthrust_1_1zip__iterator>`
+
+Functions
+---------
+
+- :ref:`thrust\:\:make\_zip\_iterator <group__fancyiterator_1ga6cd72a719f23457bf603734a59f49254>`
+- :ref:`thrust\:\:make\_zip\_iterator <group__fancyiterator_1gabe41d094ec3f984bf9a0776f3774a1e5>`
+- :ref:`thrust\:\:zip\_iterator <group__fancyiterator_1ga25632a8bb1924105c24121b20833054b>`
+
+Namespaces
+----------
+
+- :ref:`thrust <namespacethrust>`
+

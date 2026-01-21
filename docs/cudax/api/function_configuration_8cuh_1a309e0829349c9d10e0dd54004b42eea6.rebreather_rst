@@ -1,0 +1,6 @@
+cuda\:\:experimental\:\:make\_config
+====================================
+
+Defined in :ref:`include\/cuda\/experimental\/\_\_launch\/configuration.cuh <configuration_8cuh>`
+
+.. doxygenfunction:: cuda::experimental::make_config(const Args &... args)

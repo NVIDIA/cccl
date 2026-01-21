@@ -1,0 +1,129 @@
+thrust\/iterator\/constant\_iterator.h
+======================================
+
+File members: :ref:`thrust\/iterator\/constant\_iterator.h <constant__iterator_8h>`
+
+.. code-block:: c++
+
+   /*
+    *  Copyright 2008-2013 NVIDIA Corporation
+    *
+    *  Licensed under the Apache License, Version 2.0 (the "License");
+    *  you may not use this file except in compliance with the License.
+    *  You may obtain a copy of the License at
+    *
+    *      http://www.apache.org/licenses/LICENSE-2.0
+    *
+    *  Unless required by applicable law or agreed to in writing, software
+    *  distributed under the License is distributed on an "AS IS" BASIS,
+    *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    *  See the License for the specific language governing permissions and
+    *  limitations under the License.
+    */
+
+   #pragma once
+
+   #include <thrust/detail/config.h>
+
+   #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+   #  pragma GCC system_header
+   #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+   #  pragma clang system_header
+   #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+   #  pragma system_header
+   #endif // no system header
+   #include <thrust/iterator/counting_iterator.h>
+   #include <thrust/iterator/iterator_adaptor.h>
+   #include <thrust/iterator/iterator_facade.h>
+
+   #include <cuda/std/cstdint>
+   #include <cuda/std/type_traits>
+
+   THRUST_NAMESPACE_BEGIN
+
+   template <typename, typename, typename>
+   class constant_iterator;
+
+   namespace detail
+   {
+   template <typename Value, typename Incrementable, typename System>
+   struct make_constant_iterator_base
+   {
+     using incrementable = replace_if_use_default<Incrementable, ::cuda::std::type_identity<::cuda::std::intmax_t>>;
+     using base_iterator = counting_iterator<incrementable, System, random_access_traversal_tag>;
+     using type =
+       iterator_adaptor<constant_iterator<Value, Incrementable, System>,
+                        base_iterator,
+                        Value,
+                        iterator_system_t<base_iterator>,
+                        iterator_traversal_t<base_iterator>,
+                        Value>;
+   };
+   } // namespace detail
+
+   template <typename Value, typename Incrementable = use_default, typename System = use_default>
+   class constant_iterator : public detail::make_constant_iterator_base<Value, Incrementable, System>::type
+   {
+     friend class iterator_core_access;
+     using super_t       = typename detail::make_constant_iterator_base<Value, Incrementable, System>::type;
+     using incrementable = typename detail::make_constant_iterator_base<Value, Incrementable, System>::incrementable;
+     using base_iterator = typename detail::make_constant_iterator_base<Value, Incrementable, System>::base_iterator;
+
+   public:
+     using reference  = typename super_t::reference;
+     using value_type = typename super_t::value_type;
+
+     constant_iterator() = default;
+
+     template <class OtherSystem,
+               detail::enable_if_convertible_t<iterator_system_t<constant_iterator<Value, Incrementable, OtherSystem>>,
+                                               iterator_system_t<super_t>,
+                                               int> = 0>
+     _CCCL_HOST_DEVICE constant_iterator(constant_iterator<Value, Incrementable, OtherSystem> const& rhs)
+         : super_t(rhs.base())
+         , m_value(rhs.value())
+     {}
+
+     _CCCL_HOST_DEVICE constant_iterator(value_type const& v, incrementable const& i = incrementable())
+         : super_t(base_iterator(i))
+         , m_value(v)
+     {}
+
+     template <typename OtherValue, typename OtherIncrementable>
+     _CCCL_HOST_DEVICE constant_iterator(OtherValue const& v, OtherIncrementable const& i = incrementable())
+         : super_t(base_iterator(i))
+         , m_value(v)
+     {}
+
+     _CCCL_HOST_DEVICE Value const& value() const
+     {
+       return m_value;
+     }
+
+   private: // Core iterator interface
+     _CCCL_HOST_DEVICE reference dereference() const
+     {
+       return m_value;
+     }
+
+     Value m_value{};
+
+   };
+
+   template <class ValueT>
+   _CCCL_HOST_DEVICE constant_iterator(ValueT) -> constant_iterator<ValueT>;
+
+   template <typename ValueT, typename IndexT>
+   inline _CCCL_HOST_DEVICE constant_iterator<ValueT, IndexT> make_constant_iterator(ValueT x, IndexT i = int())
+   {
+     return constant_iterator<ValueT, IndexT>(x, i);
+   } // end make_constant_iterator()
+
+   template <typename V>
+   inline _CCCL_HOST_DEVICE constant_iterator<V> make_constant_iterator(V x)
+   {
+     return constant_iterator<V>(x, 0);
+   } // end make_constant_iterator()
+
+   THRUST_NAMESPACE_END
+

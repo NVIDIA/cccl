@@ -1,0 +1,30 @@
+.. _`advance_8h`:
+
+thrust\/advance.h
+=================
+
+In directory: :ref:`thrust <dir_7807dea0fb0cf4ae34b71c9fa4b0a46c>`
+
+Source file: :doc:`program_listing_file_thrust_advance.h`
+
+.. doxygenfile:: thrust/advance.h
+   :sections: briefdescription detaileddescription
+
+.. toctree::
+   :maxdepth: 1
+   :hidden:
+
+   Source file <program_listing_file_thrust_advance.h>
+
+Functions
+---------
+
+- :ref:`thrust\:\:advance <advance_8h_1a1a067ddef0510e8b800535985b85af37>`
+- :ref:`thrust\:\:next <advance_8h_1ae268bfffafaa04f5a8a4cf902861367c>`
+- :ref:`thrust\:\:prev <advance_8h_1a253ceec56c467b5ce73b1593ff8b1375>`
+
+Namespaces
+----------
+
+- :ref:`thrust <namespacethrust>`
+

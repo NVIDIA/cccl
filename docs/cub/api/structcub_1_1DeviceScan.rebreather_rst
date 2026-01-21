@@ -1,0 +1,6 @@
+cub\:\:DeviceScan
+=================
+
+Defined in :ref:`cub\/device\/device\_scan.cuh <device__scan_8cuh>`
+
+.. doxygenstruct:: cub::DeviceScan

@@ -1,0 +1,23 @@
+.. _`addressof_8h`:
+
+thrust\/addressof.h
+===================
+
+In directory: :ref:`thrust <dir_7807dea0fb0cf4ae34b71c9fa4b0a46c>`
+
+Source file: :doc:`program_listing_file_thrust_addressof.h`
+
+.. doxygenfile:: thrust/addressof.h
+   :sections: briefdescription detaileddescription
+
+.. toctree::
+   :maxdepth: 1
+   :hidden:
+
+   Source file <program_listing_file_thrust_addressof.h>
+
+Namespaces
+----------
+
+- :ref:`thrust <namespacethrust>`
+

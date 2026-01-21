@@ -1,0 +1,6 @@
+cuda\:\:experimental\:\:stf\:\:loop\_dispatch
+=============================================
+
+Defined in :ref:`include\/cuda\/experimental\/\_\_stf\/places\/loop\_dispatch.cuh <loop__dispatch_8cuh>`
+
+.. doxygenfunction:: cuda::experimental::stf::loop_dispatch(context_t ctx, exec_place_t root_exec_place, place_partition_scope scope, size_t start, size_t end, ::std::function< void(size_t)> func)

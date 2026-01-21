@@ -1,0 +1,6 @@
+thrust\:\:count
+===============
+
+Defined in :ref:`thrust\/count.h <count_8h>`
+
+.. doxygenfunction:: thrust::count(InputIterator first, InputIterator last, const EqualityComparable &value)
