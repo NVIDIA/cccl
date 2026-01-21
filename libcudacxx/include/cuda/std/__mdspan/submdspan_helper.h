@@ -112,15 +112,19 @@ template <class _IndexType, class _From>
   }
 }
 
+_CCCL_EXEC_CHECK_DISABLE
 template <size_t _Index, class... _Slices>
 [[nodiscard]] _CCCL_API constexpr decltype(auto) __get_slice_at(_Slices&&... __slices) noexcept
 {
-  return ::cuda::std::get<_Index>(::cuda::std::forward_as_tuple(::cuda::std::forward<_Slices>(__slices)...));
+  // Pull in `::std::get` via ADL for host library types
+  using ::cuda::std::get;
+  return get<_Index>(::cuda::std::forward_as_tuple(::cuda::std::forward<_Slices>(__slices)...));
 }
 
 template <size_t _Index, class... _Slices>
 using __get_slice_type = tuple_element_t<_Index, __tuple_types<_Slices...>>;
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class _IndexType, size_t _Index, class... _Slices>
 [[nodiscard]] _CCCL_API constexpr _IndexType __first_extent_from_slice(_Slices... __slices) noexcept
 {
@@ -136,7 +140,9 @@ template <class _IndexType, size_t _Index, class... _Slices>
   {
     if constexpr (__index_pair_like<_SliceType, _IndexType>)
     {
-      return ::cuda::std::__index_cast<_IndexType>(::cuda::std::get<0>(__slice));
+      // Pull in `::std::get` via ADL for host library types
+      using ::cuda::std::get;
+      return ::cuda::std::__index_cast<_IndexType>(get<0>(__slice));
     }
     else if constexpr (__is_strided_slice<_SliceType>)
     {
@@ -149,6 +155,7 @@ template <class _IndexType, size_t _Index, class... _Slices>
   }
 }
 
+_CCCL_EXEC_CHECK_DISABLE
 template <size_t _Index, class _Extents, class... _Slices>
 [[nodiscard]] _CCCL_API constexpr typename _Extents::index_type
 __last_extent_from_slice(const _Extents& __src, _Slices... __slices) noexcept
@@ -166,7 +173,9 @@ __last_extent_from_slice(const _Extents& __src, _Slices... __slices) noexcept
   {
     if constexpr (__index_pair_like<_SliceType, _IndexType>)
     {
-      return ::cuda::std::__index_cast<_IndexType>(::cuda::std::get<1>(__slice));
+      // Pull in `::std::get` via ADL for host library types
+      using ::cuda::std::get;
+      return ::cuda::std::__index_cast<_IndexType>(get<1>(__slice));
     }
     else if constexpr (__is_strided_slice<_SliceType>)
     {
