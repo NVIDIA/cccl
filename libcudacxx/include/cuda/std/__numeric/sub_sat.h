@@ -40,12 +40,11 @@
 #  define _CCCL_BUILTIN_ELEMENTWISE_SUB_SAT(...) __builtin_elementwise_sub_sat(__VA_ARGS__)
 #endif // _CCCL_HAS_BUILTIN(__builtin_elementwise_sub_sat)
 
-// nvcc doesn't support __builtin_elementwise_sub_sat in device code
-#if _CCCL_CUDA_COMPILER(NVCC) && _CCCL_DEVICE_COMPILATION()
-#  undef _CCCL_BUILTIN_ELEMENTWISE_SUB_SAT
-#endif // _CCCL_CUDA_COMPILER(NVCC) && _CCCL_DEVICE_COMPILATION()
-
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
+
+// nvcc doesn't support __builtin_elementwise_sub_sat in device code and constant expressions. But we can use it in host
+// code or when compiling with clang-cuda.
+#if !defined(_CCCL_BUILTIN_ELEMENTWISE_SUB_SAT) || _CCCL_CUDA_COMPILER(NVCC)
 
 template <class _Tp>
 [[nodiscard]] _CCCL_API constexpr _Tp __sub_sat_impl_generic(_Tp __x, _Tp __y) noexcept
@@ -70,13 +69,16 @@ template <class _Tp>
   }
 }
 
-#if !_CCCL_COMPILER(NVRTC)
+#  if !_CCCL_COMPILER(NVRTC)
 template <class _Tp>
 [[nodiscard]] _CCCL_HOST_API _Tp __sub_sat_impl_host(_Tp __x, _Tp __y) noexcept
 {
+#    if defined(_CCCL_BUILTIN_ELEMENTWISE_SUB_SAT)
+  return _CCCL_BUILTIN_ELEMENTWISE_SUB_SAT(__x, __y);
+#    else // ^^^ _CCCL_BUILTIN_ELEMENTWISE_SUB_SAT ^^^ / vvv !_CCCL_BUILTIN_ELEMENTWISE_SUB_SAT vvv
   if constexpr (is_signed_v<_Tp>)
   {
-#  if _CCCL_COMPILER(MSVC, >=, 19, 41) && _CCCL_ARCH(X86_64)
+#      if _CCCL_COMPILER(MSVC, >=, 19, 41) && _CCCL_ARCH(X86_64)
     if constexpr (sizeof(_Tp) == sizeof(int8_t))
     {
       return ::_sat_sub_i8(__x, __y);
@@ -93,11 +95,11 @@ template <class _Tp>
     {
       return ::_sat_sub_i64(__x, __y);
     }
-#  endif // _CCCL_COMPILER(MSVC, >=, 19, 41) && _CCCL_ARCH(X86_64)
+#      endif // _CCCL_COMPILER(MSVC, >=, 19, 41) && _CCCL_ARCH(X86_64)
   }
   else
   {
-#  if _CCCL_COMPILER(MSVC, >=, 19, 41) && _CCCL_ARCH(X86_64)
+#      if _CCCL_COMPILER(MSVC, >=, 19, 41) && _CCCL_ARCH(X86_64)
     if constexpr (sizeof(_Tp) == sizeof(uint8_t))
     {
       return ::_sat_sub_u8(__x, __y);
@@ -114,13 +116,14 @@ template <class _Tp>
     {
       return ::_sat_sub_u64(__x, __y);
     }
-#  endif // _CCCL_COMPILER(MSVC, >=, 19, 41) && _CCCL_ARCH(X86_64)
+#      endif // _CCCL_COMPILER(MSVC, >=, 19, 41) && _CCCL_ARCH(X86_64)
   }
   return ::cuda::std::__sub_sat_impl_generic(__x, __y);
+#    endif // ^^^ !_CCCL_BUILTIN_ELEMENTWISE_SUB_SAT ^^^
 }
-#endif // !_CCCL_COMPILER(NVRTC)
+#  endif // !_CCCL_COMPILER(NVRTC)
 
-#if _CCCL_CUDA_COMPILATION()
+#  if _CCCL_CUDA_COMPILATION()
 template <class _Tp>
 [[nodiscard]] _CCCL_DEVICE_API _Tp __sub_sat_impl_device(_Tp __x, _Tp __y) noexcept
 {
@@ -147,15 +150,18 @@ template <class _Tp>
     return static_cast<_Tp>(::cuda::std::max<_Tp>(__x, __y) - __y);
   }
 }
-#endif // _CCCL_CUDA_COMPILATION()
+#  endif // _CCCL_CUDA_COMPILATION()
+
+#endif // !_CCCL_BUILTIN_ELEMENTWISE_SUB_SAT || _CCCL_CUDA_COMPILER(NVCC)
 
 _CCCL_TEMPLATE(class _Tp)
 _CCCL_REQUIRES(__cccl_is_integer_v<_Tp>)
 [[nodiscard]] _CCCL_API constexpr _Tp sub_sat(_Tp __x, _Tp __y) noexcept
 {
-#if defined(_CCCL_BUILTIN_ELEMENTWISE_SUB_SAT)
+#if defined(_CCCL_BUILTIN_ELEMENTWISE_SUB_SAT) && !_CCCL_CUDA_COMPILER(NVCC)
   return _CCCL_BUILTIN_ELEMENTWISE_SUB_SAT(__x, __y);
-#else // ^^^ _CCCL_BUILTIN_ELEMENTWISE_SUB_SAT ^^^ / vvv !_CCCL_BUILTIN_ELEMENTWISE_SUB_SAT vvv
+#else // ^^^ _CCCL_BUILTIN_ELEMENTWISE_SUB_SAT && !_CCCL_CUDA_COMPILER(NVCC) ^^^ /
+      // vvv !_CCCL_BUILTIN_ELEMENTWISE_SUB_SAT || _CCCL_CUDA_COMPILER(NVCC) vvv
   _CCCL_IF_NOT_CONSTEVAL_DEFAULT
   {
     NV_IF_ELSE_TARGET(NV_IS_HOST,
@@ -163,7 +169,7 @@ _CCCL_REQUIRES(__cccl_is_integer_v<_Tp>)
                       (return ::cuda::std::__sub_sat_impl_device(__x, __y);))
   }
   return ::cuda::std::__sub_sat_impl_generic(__x, __y);
-#endif // ^^^ !_CCCL_BUILTIN_ELEMENTWISE_SUB_SAT ^^^
+#endif // ^^^ !_CCCL_BUILTIN_ELEMENTWISE_SUB_SAT || _CCCL_CUDA_COMPILER(NVCC) ^^^
 }
 
 _CCCL_END_NAMESPACE_CUDA_STD
