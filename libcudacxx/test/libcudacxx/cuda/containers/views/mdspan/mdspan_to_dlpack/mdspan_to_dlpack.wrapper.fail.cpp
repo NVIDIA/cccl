@@ -11,12 +11,12 @@
 
 bool test_mdspan_to_dlpack_wrapper_get_lvalue()
 {
-  auto tensor = cuda::__dlpack_tensor<3>{}.get();
+  auto tensor = cuda::dlpack_tensor<3>{}.get();
   return true;
 }
 
 int main(int, char**)
 {
-  assert(test_mdspan_to_dlpack_wrapper_get_lvalue());
+  NV_IF_TARGET(NV_IS_HOST, (assert(test_mdspan_to_dlpack_wrapper_get_lvalue());))
   return 0;
 }

@@ -31,24 +31,20 @@ Conversion functions
 Types
 -----
 
-``/*dlpack_tensor*/`` is an internal class that stores a ``DLTensor`` and owns the backing storage for its ``shape`` and ``strides`` pointers. The class does not use any heap allocation.
+``/*dlpack_tensor*/`` is a internal helper class that stores a ``DLTensor`` and owns the backing storage for its ``shape`` and ``strides`` pointers. The class does not use any heap allocation.
 
 .. code:: cuda
 
   namespace cuda {
 
   template <size_t Rank>
-  class /*dlpack_tensor*/ {
-  public:
-      /*dlpack_tensor*/() noexcept;
-      /*dlpack_tensor*/(const /*dlpack_tensor*/&) noexcept;
-      /*dlpack_tensor*/(/*dlpack_tensor*/&&) noexcept;
-      /*dlpack_tensor*/& operator=(const /*dlpack_tensor*/&) noexcept;
-      /*dlpack_tensor*/& operator=(/*dlpack_tensor*/&&) noexcept;
-      ~/*dlpack_tensor*/() noexcept = default;
+  struct /*dlpack_tensor*/ {
+    // int64_t shape[Rank];
+    // int64_t strides[Rank];
 
-      const DLTensor& get() & const noexcept [[lifetimebound]];
-      const DLTensor& get() && const noexcept = delete;
+    DLTensor get() & const noexcept [[lifetimebound]];
+
+    DLTensor get() && = delete;
   };
 
   } // namespace cuda
@@ -57,7 +53,7 @@ Types
 
 .. note:: **Lifetime**
 
-  The ``DLTensor`` associated with ``/*dlpack_tensor*/`` must not outlive the wrapper. If the wrapper is destroyed or moved, the returned ``DLTensor::shape`` and ``DLTensor::strides`` pointers will dangle.
+  The ``DLTensor`` associated with ``/*dlpack_tensor*/`` must not outlive the wrapper. If the wrapper is destroyed, the returned ``DLTensor::shape`` and ``DLTensor::strides`` pointers will dangle.
 
 .. note:: **Const-correctness**
 
@@ -124,8 +120,8 @@ Example
     int data[6] = {0, 1, 2, 3, 4, 5};
     cuda::host_mdspan<int, extents_t> md{data, extents_t{}};
 
-    auto dl              = cuda::to_dlpack_tensor(md);
-    const auto& dltensor = dl.get();
+    auto dl       = cuda::to_dlpack_tensor(md);
+    auto dltensor = dl.get();
 
     // `dl` owns the shape/stride storage; `dltensor.data` is a non-owning pointer to `data`.
     assert(dltensor.device.device_type == kDLCPU);
@@ -143,28 +139,29 @@ Examples of invalid usage:
   #include <cuda/mdspan>
   #include <cuda/std/cstdint>
 
-  // out of scope
   void show_invalid_usage1() {
     using extents_t = cuda::std::extents<size_t, 2, 3>;
 
     int data[6] = {0, 1, 2, 3, 4, 5};
     cuda::host_mdspan<int, extents_t> md{data, extents_t{}};
 
-    auto dl              = cuda::to_dlpack_tensor(md);
-    auto dltensor = dl.get(); // WRONG: it returns a reference to a temporary object that will be destroyed at the end of the statement.
-    // use dltensor
+    // WRONG: calling get() on a temporary is deleted to prevent dangling references.
+    // const DLTensor& dltensor = cuda::to_dlpack_tensor(md).get(); // compile error
   }
 
-  // moved
-  void show_invalid_usage2() {
+.. code:: cuda
+
+  #include <dlpack/dlpack.h>
+  #include <cuda/mdspan>
+  #include <cuda/std/cstdint>
+
+  int64_t* show_invalid_usage2() {
     using extents_t = cuda::std::extents<size_t, 2, 3>;
 
     int data[6] = {0, 1, 2, 3, 4, 5};
     cuda::host_mdspan<int, extents_t> md{data, extents_t{}};
 
-    auto  dl       = cuda::to_dlpack_tensor(md);
-    auto& dltensor = dl.get();
-    auto shape_ptr = dltensor.shape;
-    auto moved     = cuda::std::move(dl);
-    auto shape0    = shape_ptr[0]; // WRONG: shape_ptr is not valid anymore.
+    auto dl       = cuda::to_dlpack_tensor(md);
+    auto dltensor = dl.get();
+    return dltensor.shape; // WRONG: returns a dangling pointer
   }

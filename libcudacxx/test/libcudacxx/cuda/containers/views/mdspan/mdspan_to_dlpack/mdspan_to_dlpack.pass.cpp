@@ -29,8 +29,8 @@ bool test_mdspan_to_dlpack_host_layout_right()
   using extents_t = cuda::std::extents<size_t, 2, 3>;
   int data[6]     = {0, 1, 2, 3, 4, 5};
   cuda::host_mdspan<int, extents_t> md{data, extents_t{}};
-  auto dlpack_wrapper  = cuda::to_dlpack_tensor(md);
-  const auto& dltensor = dlpack_wrapper.get();
+  auto dlpack_wrapper = cuda::to_dlpack_tensor(md);
+  auto dltensor       = dlpack_wrapper.get();
 
   assert(dltensor.device.device_type == kDLCPU);
   assert(dltensor.device.device_id == 0);
@@ -52,8 +52,8 @@ bool test_mdspan_to_dlpack_host_layout_left()
   using extents_t = cuda::std::extents<size_t, 2, 3>;
   int data[6]     = {0, 1, 2, 3, 4, 5};
   cuda::host_mdspan<int, extents_t, cuda::std::layout_left> md{data, extents_t{}};
-  auto dlpack_wrapper  = cuda::to_dlpack_tensor(md);
-  const auto& dltensor = dlpack_wrapper.get();
+  auto dlpack_wrapper = cuda::to_dlpack_tensor(md);
+  auto dltensor       = dlpack_wrapper.get();
 
   assert(dltensor.device.device_type == kDLCPU);
   assert(dltensor.device.device_id == 0);
@@ -75,8 +75,8 @@ bool test_mdspan_to_dlpack_empty_size()
   using extents_t = cuda::std::dims<2>;
   int data[1]     = {42};
   cuda::host_mdspan<int, extents_t> m{data, extents_t{0, 3}};
-  auto dlpack_wrapper  = cuda::to_dlpack_tensor(m);
-  const auto& dltensor = dlpack_wrapper.get();
+  auto dlpack_wrapper = cuda::to_dlpack_tensor(m);
+  auto dltensor       = dlpack_wrapper.get();
 
   assert(dltensor.device.device_type == kDLCPU);
   assert(dltensor.device.device_id == 0);
@@ -96,8 +96,8 @@ bool test_mdspan_to_dlpack_rank_0()
   using extents_t = cuda::std::extents<size_t>;
   int data[1]     = {7};
   cuda::host_mdspan<int, extents_t> md{data, extents_t{}};
-  auto dlpack_wrapper  = cuda::to_dlpack_tensor(md);
-  const auto& dltensor = dlpack_wrapper.get();
+  auto dlpack_wrapper = cuda::to_dlpack_tensor(md);
+  auto dltensor       = dlpack_wrapper.get();
 
   assert(dltensor.device.device_type == kDLCPU);
   assert(dltensor.device.device_id == 0);
@@ -115,8 +115,8 @@ bool test_mdspan_to_dlpack_const_pointer()
   using extents_t   = cuda::std::dims<3>;
   const int data[6] = {0, 1, 2, 3, 4, 5};
   cuda::host_mdspan<const int, extents_t> md{data, extents_t{2, 3, 4}};
-  auto dlpack_wrapper  = cuda::to_dlpack_tensor(md);
-  const auto& dltensor = dlpack_wrapper.get();
+  auto dlpack_wrapper = cuda::to_dlpack_tensor(md);
+  auto dltensor       = dlpack_wrapper.get();
 
   assert(dltensor.device.device_type == kDLCPU);
   assert(dltensor.device.device_id == 0);
@@ -139,8 +139,8 @@ bool test_mdspan_to_dlpack_device()
   float* data     = nullptr;
   assert(cudaMalloc(&data, 6 * sizeof(float)) == cudaSuccess);
   cuda::device_mdspan<float, extents_t> md{data, extents_t{}};
-  auto dlpack_wrapper  = cuda::to_dlpack_tensor(md);
-  const auto& dltensor = dlpack_wrapper.get();
+  auto dlpack_wrapper = cuda::to_dlpack_tensor(md);
+  auto dltensor       = dlpack_wrapper.get();
 
   assert(dltensor.device.device_type == kDLCUDA);
   assert(dltensor.device.device_id == 0);
@@ -161,8 +161,8 @@ bool test_mdspan_to_dlpack_managed()
   float* data     = nullptr;
   assert(cudaMallocManaged(&data, 6 * sizeof(float)) == cudaSuccess);
   cuda::managed_mdspan<float, extents_t> md{data, extents_t{}};
-  auto dlpack_wrapper  = cuda::to_dlpack_tensor(md);
-  const auto& dltensor = dlpack_wrapper.get();
+  auto dlpack_wrapper = cuda::to_dlpack_tensor(md);
+  auto dltensor       = dlpack_wrapper.get();
 
   assert(dltensor.device.device_type == kDLCUDAManaged);
   assert(dltensor.device.device_id == 0);
@@ -191,8 +191,8 @@ struct test_mdspan_to_dlpack_types_fn
     using extents_t = cuda::std::extents<size_t, 2, 3>;
     T data[6]       = {};
     cuda::host_mdspan<T, extents_t> md{data, extents_t{}};
-    auto dlpack_wrapper  = cuda::to_dlpack_tensor(md);
-    const auto& dltensor = dlpack_wrapper.get();
+    auto dlpack_wrapper = cuda::to_dlpack_tensor(md);
+    auto dltensor       = dlpack_wrapper.get();
 
     auto type = expected_types[index];
     check_datatype(dltensor.dtype, type.code, type.bits, type.lanes);

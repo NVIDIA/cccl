@@ -37,8 +37,6 @@
 #  include <cuda/std/__type_traits/num_bits.h>
 #  include <cuda/std/__type_traits/remove_cv.h>
 #  include <cuda/std/__utility/cmp.h>
-#  include <cuda/std/__utility/move.h>
-#  include <cuda/std/array>
 #  include <cuda/std/cstdint>
 #  include <cuda/std/mdspan>
 
@@ -153,80 +151,21 @@ template <typename _ElementType>
 }
 
 template <::cuda::std::size_t _Rank>
-class __dlpack_tensor
+struct __dlpack_tensor
 {
-  ::cuda::std::array<::cuda::std::int64_t, _Rank> __shape{};
-  ::cuda::std::array<::cuda::std::int64_t, _Rank> __strides{};
+  ::cuda::std::int64_t __shape[_Rank]{};
+  ::cuda::std::int64_t __strides[_Rank]{};
   ::DLTensor __tensor{};
 
-  _CCCL_HOST_API void __update_tensor() noexcept
+  [[nodiscard]] _CCCL_HOST_API ::DLTensor get() const& noexcept _CCCL_LIFETIMEBOUND
   {
-    __tensor.shape   = _Rank > 0 ? __shape.data() : nullptr;
-    __tensor.strides = _Rank > 0 ? __strides.data() : nullptr;
+    auto __tensor1    = __tensor;
+    __tensor1.shape   = _Rank > 0 ? const_cast<::cuda::std::int64_t*>(__shape) : nullptr;
+    __tensor1.strides = _Rank > 0 ? const_cast<::cuda::std::int64_t*>(__strides) : nullptr;
+    return __tensor1;
   }
 
-  template <typename _ElementType, typename _Extents, typename _Layout, typename _Accessor>
-  _CCCL_HOST_API friend __dlpack_tensor<_Extents::rank()>
-  __to_dlpack(const ::cuda::std::mdspan<_ElementType, _Extents, _Layout, _Accessor>&, ::DLDeviceType, int);
-
-public:
-  _CCCL_HOST_API explicit __dlpack_tensor() noexcept
-  {
-    __update_tensor();
-  }
-
-  _CCCL_HOST_API __dlpack_tensor(const __dlpack_tensor& __other) noexcept
-      : __shape{__other.__shape}
-      , __strides{__other.__strides}
-      , __tensor{__other.__tensor}
-  {
-    __update_tensor();
-  }
-
-  _CCCL_HOST_API __dlpack_tensor(__dlpack_tensor&& __other) noexcept
-      : __shape{::cuda::std::move(__other.__shape)}
-      , __strides{::cuda::std::move(__other.__strides)}
-      , __tensor{__other.__tensor}
-  {
-    __other.__tensor = ::DLTensor{};
-    __update_tensor();
-  }
-
-  _CCCL_HOST_API __dlpack_tensor& operator=(const __dlpack_tensor& __other) noexcept
-  {
-    if (this == &__other)
-    {
-      return *this;
-    }
-    __shape   = __other.__shape;
-    __strides = __other.__strides;
-    __tensor  = __other.__tensor;
-    __update_tensor();
-    return *this;
-  }
-
-  _CCCL_HOST_API __dlpack_tensor& operator=(__dlpack_tensor&& __other) noexcept
-  {
-    if (this == &__other)
-    {
-      return *this;
-    }
-    __shape          = ::cuda::std::move(__other.__shape);
-    __strides        = ::cuda::std::move(__other.__strides);
-    __tensor         = __other.__tensor;
-    __other.__tensor = ::DLTensor{};
-    __update_tensor();
-    return *this;
-  }
-
-  _CCCL_HIDE_FROM_ABI ~__dlpack_tensor() noexcept = default;
-
-  [[nodiscard]] _CCCL_HOST_API const ::DLTensor& get() const& noexcept _CCCL_LIFETIMEBOUND
-  {
-    return __tensor;
-  }
-
-  [[nodiscard]] _CCCL_HOST_API const ::DLTensor& get() const&& noexcept = delete;
+  ::DLTensor get() const&& = delete;
 };
 
 template <typename _ElementType, typename _Extents, typename _Layout, typename _Accessor>
@@ -256,8 +195,8 @@ __to_dlpack(const ::cuda::std::mdspan<_ElementType, _Extents, _Layout, _Accessor
       {
         _CCCL_THROW(::std::invalid_argument{"Stride is too large"});
       }
-      __tensor.shape[__i]   = static_cast<::cuda::std::int64_t>(__mdspan.extent(__i));
-      __tensor.strides[__i] = static_cast<::cuda::std::int64_t>(__mdspan.stride(__i));
+      __wrapper.__shape[__i]   = static_cast<::cuda::std::int64_t>(__mdspan.extent(__i));
+      __wrapper.__strides[__i] = static_cast<::cuda::std::int64_t>(__mdspan.stride(__i));
     }
   }
   __tensor.byte_offset = 0;
