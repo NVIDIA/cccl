@@ -25,7 +25,7 @@ Associativity
    } // namespace cuda
 
 Determines whether a binary operator ``Op`` is associative for type ``T``, meaning ``op(op(a, b), c) == op(a, op(b, c))``
-for all values ``a``, ``b``, ``c`` of type ``T``.
+for all values ``a``, ``b``, ``c`` of type ``T``. This allows the implementation to reorder operations.
 
 **Supported operators and types:**
 
