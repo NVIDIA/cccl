@@ -63,14 +63,22 @@ public:
 
   //! A strong type wrapper `sketch_size_kb` of `double`, for specifying the upper-bound
   //! sketch size of `cuda::experimental::cuco::hyperloglog(_ref)` in KB.
+  //!
+  //! @note Valid sketch sizes are in [0.0625 KB, 1024 KB], which correspond to precision [4, 18].
   using sketch_size_kb = ::cuda::experimental::cuco::__sketch_size_kb_t;
 
   //! A strong type wrapper `standard_deviation` of `double`, for specifying the desired
   //! standard deviation for the cardinality estimate of `cuda::experimental::cuco::hyperloglog(_ref)`.
+  //!
+  //! @note Valid standard deviations are approximately in [0.00216, 0.2765], which correspond to
+  //! precision [4, 18].
   using standard_deviation = ::cuda::experimental::cuco::__standard_deviation_t;
 
   //! A strong type wrapper `precision` of `int`, for specifying the HyperLogLog precision
   //! parameter of `cuda::experimental::cuco::hyperloglog(_ref)`.
+  //!
+  //! @note Valid precision values are in [4, 18], which correspond to sketch sizes in
+  //! [0.0625 KB, 1024 KB] and standard deviations approximately in [0.00216, 0.2765].
   using precision = ::cuda::experimental::cuco::__precision_t;
 
   template <::cuda::thread_scope _NewScope>
@@ -80,6 +88,7 @@ public:
   //!
   //! @throw If sketch size < 0.0625KB or 64B or standard deviation > 0.2765. Throws if called from
   //! host; UB if called from device.
+  //! @throw If sketch size or standard deviation imply precision outside [4, 18].
   //! @throw If sketch storage has insufficient alignment. Throws if called from host; UB if called
   //! from device.
   //!

@@ -21,8 +21,12 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__bit/countr.h>
+#include <cuda/std/__cccl/assert.h>
+#include <cuda/std/__exception/cuda_error.h>
 #include <cuda/std/cstddef>
 #include <cuda/stream>
+#include <cuda/utility>
 
 #include <cuda/experimental/__cuco/hash_functions.cuh>
 #include <cuda/experimental/__cuco/hyperloglog_ref.cuh>
@@ -65,14 +69,22 @@ public:
 
   //! A strong type wrapper `sketch_size_kb` of `double`, for specifying the upper-bound
   //! sketch size of `cuda::experimental::cuco::hyperloglog(_ref)` in KB.
+  //!
+  //! @note Valid sketch sizes are in [0.0625 KB, 1024 KB], which correspond to precision [4, 18].
   using sketch_size_kb = ::cuda::experimental::cuco::__sketch_size_kb_t;
 
   //! A strong type wrapper `standard_deviation` of `double`, for specifying the desired
   //! standard deviation for the cardinality estimate of `cuda::experimental::cuco::hyperloglog(_ref)`.
+  //!
+  //! @note Valid standard deviations are approximately in [0.00216, 0.2765], which correspond to
+  //! precision [4, 18].
   using standard_deviation = ::cuda::experimental::cuco::__standard_deviation_t;
 
   //! A strong type wrapper `precision` of `int`, for specifying the HyperLogLog precision
   //! parameter of `cuda::experimental::cuco::hyperloglog(_ref)`.
+  //!
+  //! @note Valid precision values are in [4, 18], which correspond to sketch sizes in
+  //! [0.0625 KB, 1024 KB] and standard deviations approximately in [0.00216, 0.2765].
   using precision = ::cuda::experimental::cuco::__precision_t;
 
 private:
@@ -94,19 +106,16 @@ public:
   //! @param __sketch_size_kb Maximum sketch size in KB
   //! @param __hash The hash function used to hash items
   //! @param __stream CUDA stream used to initialize the object
+  //!
+  //! @throw If sketch size implies precision outside [4, 18].
   template <typename _MemoryResource_ = _MemoryResource>
   constexpr hyperloglog(_MemoryResource_&& __memory_resource,
                         sketch_size_kb __sketch_size_kb = sketch_size_kb{32.0},
                         const _Hash& __hash             = {},
                         ::cuda::stream_ref __stream     = ::cuda::stream_ref{cudaStream_t{nullptr}})
-      : __sketch_buffer{__stream,
-                        ::cuda::std::forward<_MemoryResource_>(__memory_resource),
-                        ref_type<>::sketch_bytes(__sketch_size_kb) / sizeof(register_type),
-                        ::cuda::experimental::no_init}
-      , __ref{::cuda::std::as_writable_bytes(::cuda::std::span{__sketch_buffer.data(), __sketch_buffer.size()}), __hash}
-  {
-    clear_async(__stream);
-  }
+      : hyperloglog{
+          ::cuda::std::forward<_MemoryResource_>(__memory_resource), __to_precision(__sketch_size_kb), __hash, __stream}
+  {}
 
   //! @brief Constructs a `hyperloglog` host object.
   //!
@@ -115,17 +124,13 @@ public:
   //! @param __sketch_size_kb Maximum sketch size in KB
   //! @param __hash The hash function used to hash items
   //! @param __stream CUDA stream used to initialize the object
+  //!
+  //! @throw If sketch size implies precision outside [4, 18].
   constexpr hyperloglog(sketch_size_kb __sketch_size_kb = sketch_size_kb{32.0},
                         const _Hash& __hash             = {},
                         ::cuda::stream_ref __stream     = ::cuda::stream_ref{cudaStream_t{nullptr}})
-      : __sketch_buffer{__stream,
-                        ::cuda::device_default_memory_pool(::cuda::device_ref{0}),
-                        ref_type<>::sketch_bytes(__sketch_size_kb) / sizeof(register_type),
-                        ::cuda::no_init}
-      , __ref{::cuda::std::as_writable_bytes(::cuda::std::span{__sketch_buffer.data(), __sketch_buffer.size()}), __hash}
-  {
-    clear_async(__stream);
-  }
+      : hyperloglog{__to_precision(__sketch_size_kb), __hash, __stream}
+  {}
 
   //! @brief Constructs a `hyperloglog` host object.
   //!
@@ -135,19 +140,15 @@ public:
   //! @param __sd Desired standard deviation for the approximation error
   //! @param __hash The hash function used to hash items
   //! @param __stream CUDA stream used to initialize the object
+  //!
+  //! @throw If standard deviation implies precision outside [4, 18].
   template <typename _MemoryResource_ = _MemoryResource>
   constexpr hyperloglog(_MemoryResource_&& __memory_resource,
                         standard_deviation __sd,
                         const _Hash& __hash         = {},
                         ::cuda::stream_ref __stream = ::cuda::stream_ref{cudaStream_t{nullptr}})
-      : __sketch_buffer{__stream,
-                        ::cuda::std::forward<_MemoryResource_>(__memory_resource),
-                        ref_type<>::sketch_bytes(__sd) / sizeof(register_type),
-                        ::cuda::experimental::no_init}
-      , __ref{::cuda::std::as_writable_bytes(::cuda::std::span{__sketch_buffer.data(), __sketch_buffer.size()}), __hash}
-  {
-    clear_async(__stream);
-  }
+      : hyperloglog{::cuda::std::forward<_MemoryResource_>(__memory_resource), __to_precision(__sd), __hash, __stream}
+  {}
 
   //! @brief Constructs a `hyperloglog` host object.
   //!
@@ -157,6 +158,8 @@ public:
   //! @param __precision HyperLogLog precision parameter (determines number of registers as 2^precision)
   //! @param __hash The hash function used to hash items
   //! @param __stream CUDA stream used to initialize the object
+  //!
+  //! @throw If precision is outside [4, 18].
   template <typename _MemoryResource_ = _MemoryResource>
   constexpr hyperloglog(_MemoryResource_&& __memory_resource,
                         precision __precision,
@@ -164,7 +167,9 @@ public:
                         ::cuda::stream_ref __stream = ::cuda::stream_ref{cudaStream_t{nullptr}})
       : __sketch_buffer{__stream,
                         ::cuda::std::forward<_MemoryResource_>(__memory_resource),
-                        ref_type<>::sketch_bytes(__precision) / sizeof(register_type),
+                        ref_type<>::sketch_bytes(
+                          __precision_in_bounds(__precision, "HyperLogLog precision must be in [4, 18]"))
+                          / sizeof(register_type),
                         ::cuda::experimental::no_init}
       , __ref{::cuda::std::as_writable_bytes(::cuda::std::span{__sketch_buffer.data(), __sketch_buffer.size()}), __hash}
   {
@@ -178,17 +183,13 @@ public:
   //! @param __sd Desired standard deviation for the approximation error
   //! @param __hash The hash function used to hash items
   //! @param __stream CUDA stream used to initialize the object
+  //!
+  //! @throw If standard deviation implies precision outside [4, 18].
   constexpr hyperloglog(standard_deviation __sd,
                         const _Hash& __hash         = {},
                         ::cuda::stream_ref __stream = ::cuda::stream_ref{cudaStream_t{nullptr}})
-      : __sketch_buffer{__stream,
-                        ::cuda::device_default_memory_pool(::cuda::device_ref{0}),
-                        ref_type<>::sketch_bytes(__sd) / sizeof(register_type),
-                        ::cuda::no_init}
-      , __ref{::cuda::std::as_writable_bytes(::cuda::std::span{__sketch_buffer.data(), __sketch_buffer.size()}), __hash}
-  {
-    clear_async(__stream);
-  }
+      : hyperloglog{__to_precision(__sd), __hash, __stream}
+  {}
 
   //! @brief Constructs a `hyperloglog` host object.
   //!
@@ -197,12 +198,16 @@ public:
   //! @param __precision HyperLogLog precision parameter (determines number of registers as 2^precision)
   //! @param __hash The hash function used to hash items
   //! @param __stream CUDA stream used to initialize the object
+  //!
+  //! @throw If precision is outside [4, 18].
   constexpr hyperloglog(precision __precision,
                         const _Hash& __hash         = {},
                         ::cuda::stream_ref __stream = ::cuda::stream_ref{cudaStream_t{nullptr}})
       : __sketch_buffer{__stream,
                         ::cuda::device_default_memory_pool(::cuda::device_ref{0}),
-                        ref_type<>::sketch_bytes(__precision) / sizeof(register_type),
+                        ref_type<>::sketch_bytes(
+                          __precision_in_bounds(__precision, "HyperLogLog precision must be in [4, 18]"))
+                          / sizeof(register_type),
                         ::cuda::no_init}
       , __ref{::cuda::std::as_writable_bytes(::cuda::std::span{__sketch_buffer.data(), __sketch_buffer.size()}), __hash}
   {
@@ -423,6 +428,33 @@ public:
   [[nodiscard]] static constexpr ::cuda::std::size_t sketch_alignment() noexcept
   {
     return ref_type<>::sketch_alignment();
+  }
+
+private:
+  [[nodiscard]] static constexpr precision __precision_in_bounds(precision __precision, const char* __message)
+  {
+    const auto __value    = static_cast<int>(__precision);
+    const auto __in_range = ::cuda::in_range(__value, 4, 18);
+    if (!__in_range)
+    {
+      _CCCL_ASSERT(false, __message);
+      ::cuda::__throw_cuda_error(::cudaErrorNotSupported, __message);
+    }
+    return __precision;
+  }
+
+  [[nodiscard]] static constexpr precision __to_precision(sketch_size_kb __sketch_size_kb)
+  {
+    const auto __bytes     = ref_type<>::sketch_bytes(__sketch_size_kb) / sizeof(register_type);
+    const auto __precision = static_cast<int>(::cuda::std::countr_zero(static_cast<::cuda::std::size_t>(__bytes)));
+    return __precision_in_bounds(precision{__precision}, "HyperLogLog sketch size requires precision in [4, 18]");
+  }
+
+  [[nodiscard]] static constexpr precision __to_precision(standard_deviation __standard_deviation)
+  {
+    const auto __bytes     = ref_type<>::sketch_bytes(__standard_deviation) / sizeof(register_type);
+    const auto __precision = static_cast<int>(::cuda::std::countr_zero(static_cast<::cuda::std::size_t>(__bytes)));
+    return __precision_in_bounds(precision{__precision}, "HyperLogLog standard deviation requires precision in [4, 18]");
   }
 };
 } // namespace cuda::experimental::cuco

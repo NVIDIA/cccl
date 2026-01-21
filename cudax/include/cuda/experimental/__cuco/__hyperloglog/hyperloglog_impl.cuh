@@ -88,6 +88,8 @@ public:
   //!
   //! @throw If sketch size < 0.0625KB or 64B or standard deviation > 0.2765. Throws if called from
   //! host; UB if called from device.
+  //! @throw If sketch size implies precision outside [4, 18]. Throws if called from host; UB if
+  //! called from device.
   //! @throw If sketch storage has insufficient alignment. Throws if called from host; UB if called from device.
   //!
   //! @param sketch_span Reference to sketch storage
