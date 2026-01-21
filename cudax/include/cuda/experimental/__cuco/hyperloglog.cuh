@@ -437,8 +437,7 @@ private:
     const auto __in_range = ::cuda::in_range(__value, 4, 18);
     if (!__in_range)
     {
-      _CCCL_ASSERT(false, __message);
-      ::cuda::__throw_cuda_error(::cudaErrorNotSupported, __message);
+      _CCCL_THROW(::std::invalid_argument{__message});
     }
     return __precision;
   }
@@ -447,14 +446,16 @@ private:
   {
     const auto __bytes     = ref_type<>::sketch_bytes(__sketch_size_kb) / sizeof(register_type);
     const auto __precision = static_cast<int>(::cuda::std::countr_zero(static_cast<::cuda::std::size_t>(__bytes)));
-    return __precision_in_bounds(precision{__precision}, "HyperLogLog sketch size requires precision in [4, 18]");
+    return __precision_in_bounds(
+      precision{__precision}, "HyperLogLog sketch size must be in range [0.0625 KB, 1024 KB]");
   }
 
   [[nodiscard]] static constexpr precision __to_precision(standard_deviation __standard_deviation)
   {
     const auto __bytes     = ref_type<>::sketch_bytes(__standard_deviation) / sizeof(register_type);
     const auto __precision = static_cast<int>(::cuda::std::countr_zero(static_cast<::cuda::std::size_t>(__bytes)));
-    return __precision_in_bounds(precision{__precision}, "HyperLogLog standard deviation requires precision in [4, 18]");
+    return __precision_in_bounds(
+      precision{__precision}, "HyperLogLog standard deviation must be in range [0.00216, 0.2765]");
   }
 };
 } // namespace cuda::experimental::cuco

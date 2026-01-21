@@ -87,9 +87,9 @@ public:
   //! @brief Constructs a non-owning `hyperloglog_ref` object.
   //!
   //! @throw If sketch size < 0.0625KB or 64B or standard deviation > 0.2765. Throws if called from
-  //! host; UB if called from device.
+  //! host; __trap() if called from device.
   //! @throw If sketch size or standard deviation imply precision outside [4, 18].
-  //! @throw If sketch storage has insufficient alignment. Throws if called from host; UB if called
+  //! @throw If sketch storage has insufficient alignment. Throws if called from host; __trap() if called
   //! from device.
   //!
   //! @param __sketch_span Reference to sketch storage
@@ -173,7 +173,7 @@ public:
 
   //! @brief Merges the result of `other` estimator reference into `*this` estimator reference.
   //!
-  //! @throw If sketch_bytes() != other.sketch_bytes() then behavior is undefined
+  //! @throw If sketch_bytes() != other.sketch_bytes(), then terminates execution with a device __trap()
   //!
   //! @tparam _CG CUDA Cooperative Group type
   //! @tparam _OtherScope Thread scope of `other` estimator

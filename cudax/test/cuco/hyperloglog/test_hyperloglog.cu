@@ -97,7 +97,7 @@ C2H_TEST("HyperLogLog unique sequence", "[hyperloglog]", test_types)
   using estimator_type = cudax::cuco::hyperloglog<T>;
 
   const std::size_t num_items_pow2 = GENERATE(25, 26, 28);
-  const int hll_precision          = GENERATE(8, 10, 12, 13, 18, 20);
+  const int hll_precision          = GENERATE(8, 10, 12, 13, 18);
   const typename estimator_type::sketch_size_kb sketch_size_kb(4.0 * (1ull << hll_precision) / 1024.0);
   const std::size_t num_items = 1ull << num_items_pow2;
 
@@ -150,7 +150,7 @@ C2H_TEST("HyperLogLog Spark parity deterministic", "[hyperloglog]")
   // This factor determines the error threshold for passing the test
   double constexpr tolerance_factor = 3.0;
   const auto num_items              = GENERATE(100, 500, 1000, 5000, 10000, 50000, 100000, 500000, 1000000);
-  const auto standard_deviation     = GENERATE(0.1, 0.05, 0.025, 0.01, 0.001);
+  const auto standard_deviation     = GENERATE(0.1, 0.05, 0.025, 0.01, 0.005, 0.0025);
 
   const auto expected_hll_precision =
     std::max(static_cast<int32_t>(4),

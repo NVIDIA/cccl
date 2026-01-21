@@ -87,10 +87,10 @@ public:
   //! @brief Constructs a non-owning `_HyperLogLog_Impl` object.
   //!
   //! @throw If sketch size < 0.0625KB or 64B or standard deviation > 0.2765. Throws if called from
-  //! host; UB if called from device.
-  //! @throw If sketch size implies precision outside [4, 18]. Throws if called from host; UB if
+  //! host; __trap() if called from device.
+  //! @throw If sketch size implies precision outside [4, 18]. Throws if called from host; __trap() if
   //! called from device.
-  //! @throw If sketch storage has insufficient alignment. Throws if called from host; UB if called from device.
+  //! @throw If sketch storage has insufficient alignment. Throws if called from host; __trap() if called from device.
   //!
   //! @param sketch_span Reference to sketch storage
   //! @param hash The hash function used to hash items
@@ -104,12 +104,12 @@ public:
   {
     if (!::cuda::is_aligned(sketch_span.data(), __sketch_alignment()))
     {
-      ::cuda::__throw_cuda_error(::cudaErrorNotSupported, "Sketch storage has insufficient alignment");
+      _CCCL_THROW(::std::runtime_error{"Sketch storage has insufficient alignment"});
     }
 
     if (__precision < 4)
     {
-      ::cuda::__throw_cuda_error(::cudaErrorNotSupported, "Minimum required sketch size is 0.0625KB or 64B");
+      _CCCL_THROW(::std::runtime_error{"Minimum required sketch size is 0.0625KB or 64B"});
     }
   }
 
@@ -321,7 +321,7 @@ public:
 
   //! @brief Merges the result of `other` estimator reference into `*this` estimator reference.
   //!
-  //! @throw If __sketch_bytes() != other.__sketch_bytes() then behavior is undefined
+  //! @throw If __sketch_bytes() != other.__sketch_bytes(), then terminates execution with a device __trap()
   //!
   //! @tparam _CG CUDA Cooperative Group type
   //! @tparam _OtherScope Thread scope of `other` estimator
@@ -333,8 +333,7 @@ public:
   {
     if (__other.__precision != __precision)
     {
-      ::cuda::__throw_cuda_error(::cudaErrorNotSupported, "Cannot merge estimators with different sketch sizes");
-      return;
+      _CCCL_THROW(::std::runtime_error{"Cannot merge estimators with different sketch sizes"});
     }
 
     for (int __i = __group.thread_rank(); __i < __sketch.size(); __i += __group.size())
@@ -346,7 +345,7 @@ public:
   //! @brief Asynchronously merges the result of `other` estimator reference into `*this`
   //! estimator.
   //!
-  //! @throw If __sketch_bytes() != other.__sketch_bytes()
+  //! @throw If __sketch_bytes() != other.__sketch_bytes(), then terminates execution with a device __trap()
   //!
   //! @tparam _OtherScope Thread scope of `other` estimator
   //!
@@ -358,8 +357,7 @@ public:
   {
     if (__other.__precision != __precision)
     {
-      ::cuda::__throw_cuda_error(::cudaErrorNotSupported, "Cannot merge estimators with different sketch sizes");
-      return;
+      _CCCL_THROW(::std::runtime_error{"Cannot merge estimators with different sketch sizes"});
     }
 
     constexpr auto __block_size = 1024;
@@ -371,7 +369,7 @@ public:
   //! @note This function synchronizes the given stream. For asynchronous execution use
   //! `__merge_async`.
   //!
-  //! @throw If __sketch_bytes() != other.__sketch_bytes()
+  //! @throw If __sketch_bytes() != other.__sketch_bytes(), then terminates execution with a device __trap()
   //!
   //! @tparam _OtherScope Thread scope of `other` estimator
   //!
