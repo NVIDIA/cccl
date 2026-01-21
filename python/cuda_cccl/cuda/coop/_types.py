@@ -1894,21 +1894,17 @@ def _strip_source_preamble(src, algo, udf_decls):
     return body.lstrip()
 
 
-def prepare_ltoir_bundle(algorithms, *, bundle_name=None):
+def prepare_ltoir_bundle(algorithms, *, bundle_name=None, allow_single=False):
     if not algorithms:
         return None
 
-    # Avoid bundling when a source rewriter is active (it expects per-algo src).
     rewriter = _get_source_code_rewriter()
-    if rewriter is not None:
-        return None
-
     deduped = OrderedDict()
     for algo in algorithms:
         deduped[id(algo)] = algo
     algos = list(deduped.values())
 
-    if len(algos) < 2:
+    if len(algos) < 2 and not allow_single:
         return None
 
     per_algo_udf_decls = {}
@@ -1944,6 +1940,8 @@ def prepare_ltoir_bundle(algorithms, *, bundle_name=None):
     bodies = []
     for algo in algos:
         src = algo.source_code
+        if rewriter is not None:
+            src = rewriter(src, algo)
         body = _strip_source_preamble(src, algo, per_algo_udf_decls[algo])
         body = body.rstrip() + "\n"
         bodies.append(body)

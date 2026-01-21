@@ -29,6 +29,35 @@ def gpu_dataclass(dc: Any, *, compute_temp_storage: bool = True) -> Any:
         name: obj for (name, obj) in zip(names, objs) if isinstance(obj, BasePrimitive)
     }
     if compute_temp_storage and primitives:
+        from ._types import prepare_ltoir_bundle
+
+        algorithms = []
+        seen = set()
+        for primitive in primitives.values():
+            algo = getattr(primitive, "specialization", None)
+            if algo is None:
+                continue
+            if "_size_and_alignment_info" in algo.__dict__:
+                continue
+            key = id(algo)
+            if key in seen:
+                continue
+            seen.add(key)
+            algorithms.append(algo)
+
+        if algorithms:
+            uid = 0
+            for algo in algorithms:
+                if getattr(algo, "unique_id", None) is None:
+                    algo.unique_id = uid
+                    uid += 1
+
+            prepare_ltoir_bundle(
+                algorithms,
+                bundle_name=f"cuda_coop_gpu_dataclass_{id(dc)}",
+                allow_single=True,
+            )
+
         temp_storage_bytes_sum = sum(
             obj.temp_storage_bytes for obj in primitives.values()
         )

@@ -394,3 +394,27 @@
   - `tests/coop/test_nvrtc_compile_count.py`: add coverage for NVRTC source dump to a tmp directory.
 - Tests:
   - `pytest -q tests/coop/test_nvrtc_compile_count.py` (3 passed)
+
+## 2026-01-21 (gpu_dataclass bundling)
+- Request: ensure gpu_dataclass temp-storage sizing uses bundled LTOIR to avoid extra NVRTC compiles.
+- Changes:
+  - `cuda/coop/_types.py`: allow bundling with a source rewriter and optional single-primitive bundles.
+  - `cuda/coop/_dataclass.py`: trigger LTOIR bundling before temp-storage size/alignment queries.
+  - `tests/coop/test_nvrtc_compile_count.py`: add unit test to assert one NVRTC compile for gpu_dataclass temp-storage sizing.
+- Tests:
+  - `pytest -q tests/coop/test_nvrtc_compile_count.py` (4 passed)
+
+## 2026-01-21 (NVRTC GPU integration test)
+- Request: add a GPU integration test that compares NVRTC compile counts (bundle on/off).
+- Changes:
+  - `cuda/coop/_dataclass.py`: assign per-algorithm unique_id before bundling to avoid symbol collisions in gpu_dataclass bundles.
+  - `tests/coop/test_nvrtc_compile_count_gpu.py`: subprocess-based GPU integration test running the mamba kernel twice and asserting bundle reduces NVRTC compiles.
+- Tests:
+  - `pytest -q tests/coop/test_nvrtc_compile_count_gpu.py` (1 passed)
+
+## 2026-01-21 (NVRTC dump integration)
+- Request: assert NVRTC dump output for mamba kernel when bundling is enabled.
+- Changes:
+  - `tests/coop/test_nvrtc_compile_count_gpu.py`: add a GPU integration test that dumps NVRTC sources and asserts expected LTO compile count.
+- Tests:
+  - `pytest -q tests/coop/test_nvrtc_compile_count_gpu.py` (2 passed)
