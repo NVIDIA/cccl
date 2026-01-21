@@ -153,7 +153,7 @@ public:
   //! @brief Return the stream stored in the holder or a default stream
   _CCCL_TEMPLATE(bool _WithStream = __cuda_policy_with_stream<_Policy>)
   _CCCL_REQUIRES(_WithStream)
-  [[nodiscard]] _CCCL_HOST_API ::cuda::stream_ref query(const ::cuda::get_stream_t&) const noexcept
+  [[nodiscard]] _CCCL_API ::cuda::stream_ref query(const ::cuda::get_stream_t&) const noexcept
   {
     return this->__stream_;
   }
@@ -201,7 +201,7 @@ public:
   //! @brief Return either a stored or a default memory resource
   _CCCL_TEMPLATE(bool _WithResource = __cuda_policy_with_memory_resource<_Policy>)
   _CCCL_REQUIRES(_WithResource)
-  [[nodiscard]] _CCCL_HOST_API auto query(const ::cuda::mr::get_memory_resource_t&) const noexcept
+  [[nodiscard]] _CCCL_API auto query(const ::cuda::mr::get_memory_resource_t&) const noexcept
   {
     return this->__resource_;
   }
