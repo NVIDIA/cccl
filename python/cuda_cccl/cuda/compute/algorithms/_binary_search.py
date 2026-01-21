@@ -92,15 +92,6 @@ class _BinarySearch:
         num_values: int,
         stream=None,
     ):
-        if protocols.get_data_pointer(d_data) != self.data_ptr:
-            raise ValueError(
-                "d_data must match the array used to construct the binary search object."
-            )
-        if protocols.get_data_pointer(d_out) != self.out_ptr:
-            raise ValueError(
-                "d_out must match the array used to construct the binary search object."
-            )
-
         set_cccl_iterator_state(self.d_data_cccl, d_data)
         set_cccl_iterator_state(self.d_values_cccl, d_values)
         set_cccl_iterator_state(self.d_out_cccl, d_out)
