@@ -46,7 +46,7 @@ Functional
      - CCCL 2.8.0
      - CUDA 12.9
 
-   * - :ref:`cuda::is_associative <libcudacxx-extended-api-functional-operator-properties>`, :ref:`cuda::is_commutative <libcudacxx-extended-api-functional-operator-properties>`, :ref:`cuda::identity_element <libcudacxx-extended-api-functional-operator-properties>`, :ref:`cuda::absorbing_element <libcudacxx-extended-api-functional-operator-properties>`
+   * - :ref:`cuda::is_associative_v <libcudacxx-extended-api-functional-operator-properties>`, :ref:`cuda::is_commutative_v <libcudacxx-extended-api-functional-operator-properties>`, :ref:`cuda::identity_element <libcudacxx-extended-api-functional-operator-properties>`, :ref:`cuda::absorbing_element <libcudacxx-extended-api-functional-operator-properties>`
      - Determines if an operator is associative for a type
      - CCCL 3.3.0
      - CUDA 13.3

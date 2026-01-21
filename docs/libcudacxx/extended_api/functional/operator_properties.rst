@@ -16,11 +16,8 @@ Associativity
 
    namespace cuda {
 
-   template <class Op, class T>
-   struct is_associative;
-
-   template <class Op, class T>
-   inline constexpr bool is_associative_v = is_associative<Op, T>::value;
+   template <class Op, class T, class Enable = void>
+   inline constexpr bool is_associative_v;
 
    } // namespace cuda
 
@@ -84,11 +81,8 @@ Commutativity
 
    namespace cuda {
 
-   template <class Op, class T>
-   struct is_commutative;
-
-   template <class Op, class T>
-   inline constexpr bool is_commutative_v = is_commutative<Op, T>::value;
+   template <class Op, class T, class Enable = void>
+   inline constexpr bool is_commutative_v;
 
    } // namespace cuda
 
@@ -141,29 +135,6 @@ for all values ``a``, ``b`` of type ``T``.
      - ``true``
      - ``true``
 
-Element Existence
------------------
-
-.. code:: cuda
-
-   namespace cuda {
-
-   template <template <class...> class Trait, class... Tp>
-   inline constexpr bool element_exists = /* see below */;
-
-   } // namespace cuda
-
-A helper trait that evaluates to ``true`` if the given trait template ``Trait`` instantiated with types ``Tp...``
-has a valid ``value`` member.
-
-.. code:: cuda
-
-   // Check if identity_element is defined for plus<int> and int
-   static_assert(cuda::element_exists<cuda::identity_element, cuda::std::plus<int>, int>);
-
-   // Check if absorbing_element is defined for plus<int> and int (it's not)
-   static_assert(!cuda::element_exists<cuda::absorbing_element, cuda::std::plus<int>, int>);
-
 Identity Element
 ----------------
 
@@ -171,14 +142,14 @@ Identity Element
 
    namespace cuda {
 
-   template <class Op, class T>
+   template <class Op, class T, class Enable = void>
    struct identity_element;
 
    template <class Op, class T>
    constexpr auto get_identity_element() noexcept;
 
-   template <class Op, class T>
-   inline constexpr bool has_identity_element = /* see below */;
+   template <class Op, class T, class Enable = void>
+   inline constexpr bool has_identity_element_v;
 
    } // namespace cuda
 
@@ -187,7 +158,7 @@ Provides the identity element for operator ``Op`` and type ``T``. The identity e
 
 The function ``get_identity_element<Op, T>()`` returns ``identity_element<Op, T>::value``.
 
-``has_identity_element`` evaluates to ``true`` if an identity element is defined for the given operator and type.
+``has_identity_element_v`` evaluates to ``true`` if an identity element is defined for the given operator and type.
 
 **Identity elements by operator:**
 
@@ -242,14 +213,14 @@ Absorbing Element
 
    namespace cuda {
 
-   template <class Op, class T>
+   template <class Op, class T, class Enable = void>
    struct absorbing_element;
 
    template <class Op, class T>
    constexpr auto get_absorbing_element() noexcept;
 
-   template <class Op, class T>
-   inline constexpr bool has_absorbing_element = /* see below */;
+   template <class Op, class T, class Enable = void>
+   inline constexpr bool has_absorbing_element_v;
 
    } // namespace cuda
 
@@ -258,7 +229,7 @@ Provides the absorbing (annihilating) element for operator ``Op`` and type ``T``
 
 The function ``get_absorbing_element<Op, T>()`` returns ``absorbing_element<Op, T>::value``.
 
-``has_absorbing_element`` evaluates to ``true`` if an absorbing element is defined for the given operator and type.
+``has_absorbing_element_v`` evaluates to ``true`` if an absorbing element is defined for the given operator and type.
 
 **Absorbing elements by operator:**
 
@@ -322,10 +293,10 @@ Example
         printf("Associative: %s\n", cuda::is_associative_v<Op, T> ? "yes" : "no");
         printf("Commutative: %s\n", cuda::is_commutative_v<Op, T> ? "yes" : "no");
 
-        if constexpr (cuda::has_identity_element<Op, T>) {
+        if constexpr (cuda::has_identity_element_v<Op, T>) {
             printf("Identity element exists\n");
         }
-        if constexpr (cuda::has_absorbing_element<Op, T>) {
+        if constexpr (cuda::has_absorbing_element_v<Op, T>) {
             printf("Absorbing element exists\n");
         }
    }

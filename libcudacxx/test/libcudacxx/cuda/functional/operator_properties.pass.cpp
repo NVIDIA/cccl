@@ -9,7 +9,6 @@
 //===----------------------------------------------------------------------===//
 
 #include <cuda/functional>
-#include <cuda/std/__cccl/dialect.h>
 #include <cuda/std/cassert>
 #include <cuda/std/limits>
 
@@ -148,8 +147,8 @@ __host__ __device__ constexpr void test_identity_impl2(T identity)
 template <class Op, class T>
 __host__ __device__ constexpr void test_identity_impl(bool has_identity, [[maybe_unused]] T identity)
 {
-  assert((has_identity == cuda::has_identity_element<Op, T>) );
-  if constexpr (cuda::has_identity_element<Op, T>)
+  assert((has_identity == cuda::has_identity_element_v<Op, T>) );
+  if constexpr (cuda::has_identity_element_v<Op, T>)
   {
     // handle extended floating-point types separately
     if constexpr (!::cuda::std::__is_extended_floating_point_v<T>)
@@ -254,8 +253,8 @@ __host__ __device__ constexpr void test_absorbing_impl2([[maybe_unused]] T absor
 template <class Op, class T>
 __host__ __device__ constexpr void test_absorbing_impl(bool has_absorbing, [[maybe_unused]] T absorbing)
 {
-  assert((has_absorbing == cuda::has_absorbing_element<Op, T>) );
-  if constexpr (cuda::has_absorbing_element<Op, T>)
+  assert((has_absorbing == cuda::has_absorbing_element_v<Op, T>) );
+  if constexpr (cuda::has_absorbing_element_v<Op, T>)
   {
     // handle extended floating-point types separately
     if constexpr (!::cuda::std::__is_extended_floating_point_v<T>)
@@ -347,13 +346,13 @@ __host__ __device__ constexpr void test_absorbing_floating_point()
 template <template <class...> class Op, class T>
 __host__ __device__ constexpr bool no_absorbing()
 {
-  return !cuda::has_absorbing_element<Op<T>, T> && !cuda::has_absorbing_element<Op<>, T>;
+  return !cuda::has_absorbing_element_v<Op<T>, T> && !cuda::has_absorbing_element_v<Op<>, T>;
 }
 
 template <template <class...> class Op, class T>
 __host__ __device__ constexpr bool no_identity_no_absorbing()
 {
-  return !cuda::has_identity_element<Op<T>, T> && !cuda::has_identity_element<Op<>, T> && no_absorbing<Op, T>();
+  return !cuda::has_identity_element_v<Op<T>, T> && !cuda::has_identity_element_v<Op<>, T> && no_absorbing<Op, T>();
 }
 
 template <class T>

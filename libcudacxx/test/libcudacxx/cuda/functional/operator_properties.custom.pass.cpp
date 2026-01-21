@@ -54,11 +54,9 @@ struct cuda::absorbing_element<MyAdd, MyInt>
 __host__ __device__ constexpr bool test()
 {
   static_assert(cuda::is_associative_v<MyAdd, MyInt>);
-  static_assert(cuda::is_associative<MyAdd, MyInt>::value);
   static_assert(cuda::is_commutative_v<MyAdd, MyInt>);
-  static_assert(cuda::is_commutative<MyAdd, MyInt>::value);
-  static_assert(cuda::has_identity_element<MyAdd, MyInt>);
-  static_assert(cuda::has_absorbing_element<MyAdd, MyInt>);
+  static_assert(cuda::has_identity_element_v<MyAdd, MyInt>);
+  static_assert(cuda::has_absorbing_element_v<MyAdd, MyInt>);
   assert((cuda::get_absorbing_element<MyAdd, MyInt>().value == MyInt{0}.value));
   assert((cuda::get_identity_element<MyAdd, MyInt>().value == MyInt{0}.value));
   return true;
