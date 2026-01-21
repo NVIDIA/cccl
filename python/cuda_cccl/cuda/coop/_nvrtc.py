@@ -21,6 +21,7 @@ def CHECK_NVRTC(err, prog):
 
 _NVRTC_COMPILE_COUNTER = 0
 _NVRTC_COMPILE_COUNTER_ENABLED = None
+_NVRTC_DUMP_COUNTER = 0
 
 
 def _is_compile_counter_enabled():
@@ -34,6 +35,30 @@ def _is_compile_counter_enabled():
             "on",
         )
     return _NVRTC_COMPILE_COUNTER_ENABLED
+
+
+def _get_dump_dir():
+    dump_dir = os.environ.get("NUMBA_CCCL_COOP_NVRTC_DUMP_DIR")
+    if dump_dir:
+        return dump_dir
+    dump_enabled = os.environ.get("NUMBA_CCCL_COOP_NVRTC_DUMP")
+    if dump_enabled and dump_enabled.lower() in ("1", "true", "yes", "on"):
+        return "/tmp/cccl_nvrtc"
+    return None
+
+
+def _dump_source(cpp, cc, code):
+    dump_dir = _get_dump_dir()
+    if dump_dir is None:
+        return
+    os.makedirs(dump_dir, exist_ok=True)
+    global _NVRTC_DUMP_COUNTER
+    _NVRTC_DUMP_COUNTER += 1
+    suffix = "lto" if code == "lto" else "ptx"
+    filename = f"nvrtc_{_NVRTC_DUMP_COUNTER:04d}_cc{cc}_{suffix}.cu"
+    path = os.path.join(dump_dir, filename)
+    with open(path, "w", encoding="utf-8") as f:
+        f.write(cpp)
 
 
 def _set_compile_counter_enabled(enabled):
@@ -58,6 +83,7 @@ def get_compile_counter():
 @functools.lru_cache(maxsize=32)  # Always enabled
 @disk_cache  # Optional, see caching.py
 def compile_impl(cpp, cc, rdc, code, nvrtc_path, nvrtc_version):
+    _dump_source(cpp, cc, code)
     if _is_compile_counter_enabled():
         global _NVRTC_COMPILE_COUNTER
         _NVRTC_COMPILE_COUNTER += 1

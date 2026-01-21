@@ -386,3 +386,11 @@
   - `tests/coop/test_nvrtc_compile_count.py`: validate counter cache-miss behavior and bundling single-compile path using stubs.
 - Tests:
   - `pytest -q tests/coop/test_nvrtc_compile_count.py` (2 passed)
+
+## 2026-01-21 (NVRTC source dump)
+- Request: add env-gated dumps of NVRTC source for debugging.
+- Changes:
+  - `cuda/coop/_nvrtc.py`: add `NUMBA_CCCL_COOP_NVRTC_DUMP_DIR` (or `NUMBA_CCCL_COOP_NVRTC_DUMP=1`) to write NVRTC source files per compile.
+  - `tests/coop/test_nvrtc_compile_count.py`: add coverage for NVRTC source dump to a tmp directory.
+- Tests:
+  - `pytest -q tests/coop/test_nvrtc_compile_count.py` (3 passed)

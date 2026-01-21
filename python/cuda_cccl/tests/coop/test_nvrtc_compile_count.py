@@ -159,3 +159,15 @@ def test_bundle_uses_single_nvrtc_compile(monkeypatch):
     _types.prepare_ltoir_bundle([algo_a, algo_b], bundle_name="bundle_count")
 
     assert _nvrtc.get_compile_counter() == 1
+
+
+def test_nvrtc_dump_sources(tmp_path, monkeypatch):
+    _install_nvrtc_stub(monkeypatch)
+    monkeypatch.setenv("NUMBA_CCCL_COOP_NVRTC_DUMP_DIR", str(tmp_path))
+
+    _nvrtc.compile(cpp="x", cc=80, rdc=True, code="lto")
+
+    files = list(tmp_path.iterdir())
+    assert len(files) == 1
+    content = files[0].read_text(encoding="utf-8")
+    assert content == "x"
