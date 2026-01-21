@@ -71,6 +71,10 @@ public:
   //! standard deviation for the cardinality estimate of `cuda::experimental::cuco::hyperloglog(_ref)`.
   using standard_deviation = ::cuda::experimental::cuco::__standard_deviation_t;
 
+  //! A strong type wrapper `precision` of `int`, for specifying the HyperLogLog precision
+  //! parameter of `cuda::experimental::cuco::hyperloglog(_ref)`.
+  using precision = ::cuda::experimental::cuco::__precision_t;
+
 private:
   ::cuda::device_buffer<register_type> __sketch_buffer; ///< Storage for sketch
   ref_type<> __ref; ///< Device ref of the current `hyperloglog` object
@@ -149,6 +153,28 @@ public:
   //!
   //! @note This function synchronizes the given stream.
   //!
+  //! @param __memory_resource A memory resource used for allocating device storage
+  //! @param __precision HyperLogLog precision parameter (determines number of registers as 2^precision)
+  //! @param __hash The hash function used to hash items
+  //! @param __stream CUDA stream used to initialize the object
+  template <typename _MemoryResource_ = _MemoryResource>
+  constexpr hyperloglog(_MemoryResource_&& __memory_resource,
+                        precision __precision,
+                        const _Hash& __hash         = {},
+                        ::cuda::stream_ref __stream = ::cuda::stream_ref{cudaStream_t{nullptr}})
+      : __sketch_buffer{__stream,
+                        ::cuda::std::forward<_MemoryResource_>(__memory_resource),
+                        ref_type<>::sketch_bytes(__precision) / sizeof(register_type),
+                        ::cuda::experimental::no_init}
+      , __ref{::cuda::std::as_writable_bytes(::cuda::std::span{__sketch_buffer.data(), __sketch_buffer.size()}), __hash}
+  {
+    clear_async(__stream);
+  }
+
+  //! @brief Constructs a `hyperloglog` host object.
+  //!
+  //! @note This function synchronizes the given stream.
+  //!
   //! @param __sd Desired standard deviation for the approximation error
   //! @param __hash The hash function used to hash items
   //! @param __stream CUDA stream used to initialize the object
@@ -158,6 +184,25 @@ public:
       : __sketch_buffer{__stream,
                         ::cuda::device_default_memory_pool(::cuda::device_ref{0}),
                         ref_type<>::sketch_bytes(__sd) / sizeof(register_type),
+                        ::cuda::no_init}
+      , __ref{::cuda::std::as_writable_bytes(::cuda::std::span{__sketch_buffer.data(), __sketch_buffer.size()}), __hash}
+  {
+    clear_async(__stream);
+  }
+
+  //! @brief Constructs a `hyperloglog` host object.
+  //!
+  //! @note This function synchronizes the given stream.
+  //!
+  //! @param __precision HyperLogLog precision parameter (determines number of registers as 2^precision)
+  //! @param __hash The hash function used to hash items
+  //! @param __stream CUDA stream used to initialize the object
+  constexpr hyperloglog(precision __precision,
+                        const _Hash& __hash         = {},
+                        ::cuda::stream_ref __stream = ::cuda::stream_ref{cudaStream_t{nullptr}})
+      : __sketch_buffer{__stream,
+                        ::cuda::device_default_memory_pool(::cuda::device_ref{0}),
+                        ref_type<>::sketch_bytes(__precision) / sizeof(register_type),
                         ::cuda::no_init}
       , __ref{::cuda::std::as_writable_bytes(::cuda::std::span{__sketch_buffer.data(), __sketch_buffer.size()}), __hash}
   {
@@ -360,6 +405,16 @@ public:
   [[nodiscard]] static constexpr ::cuda::std::size_t sketch_bytes(standard_deviation __standard_deviation) noexcept
   {
     return ref_type<>::sketch_bytes(__standard_deviation);
+  }
+
+  //! @brief Gets the number of bytes required for the sketch storage.
+  //!
+  //! @param __precision HyperLogLog precision parameter
+  //!
+  //! @return The number of bytes required for the sketch
+  [[nodiscard]] static constexpr ::cuda::std::size_t sketch_bytes(precision __precision) noexcept
+  {
+    return ref_type<>::sketch_bytes(__precision);
   }
 
   //! @brief Gets the alignment required for the sketch storage.

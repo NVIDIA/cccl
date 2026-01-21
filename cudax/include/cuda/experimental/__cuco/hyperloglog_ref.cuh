@@ -69,6 +69,10 @@ public:
   //! standard deviation for the cardinality estimate of `cuda::experimental::cuco::hyperloglog(_ref)`.
   using standard_deviation = ::cuda::experimental::cuco::__standard_deviation_t;
 
+  //! A strong type wrapper `precision` of `int`, for specifying the HyperLogLog precision
+  //! parameter of `cuda::experimental::cuco::hyperloglog(_ref)`.
+  using precision = ::cuda::experimental::cuco::__precision_t;
+
   template <::cuda::thread_scope _NewScope>
   using with_scope = hyperloglog_ref<_Tp, _NewScope, _Hash>; ///< Ref type with different thread scope
 
@@ -274,6 +278,16 @@ public:
   sketch_bytes(standard_deviation __standard_deviation) noexcept
   {
     return __impl_type::sketch_bytes(__standard_deviation);
+  }
+
+  //! @brief Gets the number of bytes required for the sketch storage.
+  //!
+  //! @param __precision HyperLogLog precision parameter
+  //!
+  //! @return The number of bytes required for the sketch
+  [[nodiscard]] _CCCL_API static constexpr ::cuda::std::size_t sketch_bytes(precision __precision) noexcept
+  {
+    return __impl_type::sketch_bytes(__precision);
   }
 
   //! @brief Gets the alignment required for the sketch storage.

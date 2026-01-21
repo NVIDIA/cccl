@@ -57,6 +57,8 @@ CUDAX_CUCO_DEFINE_STRONG_TYPE(__sketch_size_kb_t, double);
 
 CUDAX_CUCO_DEFINE_STRONG_TYPE(__standard_deviation_t, double);
 
+CUDAX_CUCO_DEFINE_STRONG_TYPE(__precision_t, int);
+
 //! @brief A GPU-accelerated utility for approximating the number of distinct items in a multiset.
 //!
 //! @note This class implements the HyperLogLog/HyperLogLog++ algorithm:
@@ -537,6 +539,19 @@ public:
     // standard_deviation = 1.106 / exp((__precision_ * log(2.0)) / 2.0)
 
     return sizeof(register_type) * (1ull << __precision_);
+  }
+
+  //! @brief Gets the number of bytes required for the sketch storage.
+  //!
+  //! @param __precision HyperLogLog precision parameter
+  //!
+  //! @return The number of bytes required for the sketch
+  [[nodiscard]] _CCCL_API static constexpr ::cuda::std::size_t
+  sketch_bytes(::cuda::experimental::cuco::__precision_t __precision) noexcept
+  {
+    const auto __precision_value = static_cast<int>(__precision);
+
+    return sizeof(register_type) * (1ull << __precision_value);
   }
 
   //! @brief Gets the alignment required for the sketch storage.

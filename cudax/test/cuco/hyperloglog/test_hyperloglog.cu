@@ -189,3 +189,23 @@ C2H_TEST("HyperLogLog Spark parity deterministic", "[hyperloglog]")
   // Check if the error is acceptable
   REQUIRE(relative_error < expected_standard_deviation * tolerance_factor);
 }
+
+C2H_TEST("HyperLogLog precision constructor", "[hyperloglog]")
+{
+  using T              = int;
+  using estimator_type = cudax::cuco::hyperloglog<T>;
+
+  const auto precision_value = GENERATE(4, 6, 8, 12, 16, 18);
+
+  const estimator_type::precision precision(precision_value);
+  const auto expected_sketch_bytes = 4 * (1ull << precision_value);
+
+  CAPTURE(precision_value, expected_sketch_bytes);
+
+  REQUIRE(estimator_type::sketch_bytes(precision) == expected_sketch_bytes);
+
+  estimator_type estimator{precision};
+
+  REQUIRE(estimator.sketch_bytes() == expected_sketch_bytes);
+  REQUIRE(estimator.estimate() == 0);
+}
