@@ -91,7 +91,7 @@ constexpr std::size_t max_onesweep_temp_storage_size()
   using hist_agent  = cub::AgentRadixSortHistogram<hist_policy, SortOrder, KeyT, OffsetT>;
 
   return cuda::std::max(sizeof(typename agent_radix_sort_onesweep_t::TempStorage),
-                             sizeof(typename hist_agent::TempStorage));
+                        sizeof(typename hist_agent::TempStorage));
 }
 
 template <typename KeyT, typename ValueT, typename OffsetT, cub::SortOrder SortOrder>
