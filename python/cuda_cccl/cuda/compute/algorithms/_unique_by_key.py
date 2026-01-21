@@ -11,6 +11,7 @@ from .. import _bindings
 from .. import _cccl_interop as cccl
 from .._caching import cache_with_key
 from .._cccl_interop import call_build, set_cccl_iterator_state
+from .._nvtx import annotate
 from .._utils import protocols
 from .._utils.protocols import (
     get_data_pointer,
@@ -103,6 +104,7 @@ class _UniqueByKey:
             self.op_cccl,
         )
 
+    @annotate(message="_UniqueByKey.__call__")
     def __call__(
         self,
         temp_storage,
@@ -160,6 +162,7 @@ def _make_unique_by_key_cached(
     )
 
 
+@annotate()
 def make_unique_by_key(
     d_in_keys: DeviceArrayLike | IteratorBase,
     d_in_items: DeviceArrayLike | IteratorBase,
@@ -200,6 +203,7 @@ def make_unique_by_key(
     )
 
 
+@annotate()
 def unique_by_key(
     d_in_keys: DeviceArrayLike | IteratorBase,
     d_in_items: DeviceArrayLike | IteratorBase,

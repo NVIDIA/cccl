@@ -17,6 +17,7 @@ from .._cccl_interop import (
     set_cccl_iterator_state,
     to_cccl_value_state,
 )
+from .._nvtx import annotate
 from .._utils import protocols
 from .._utils.protocols import get_data_pointer, validate_and_get_stream
 from .._utils.temp_storage_buffer import TempStorageBuffer
@@ -114,6 +115,7 @@ class _Scan:
             case (False, _bindings.InitKind.NO_INIT):
                 raise ValueError("Exclusive scan with No init value is not supported")
 
+    @annotate(message="_Scan.__call__")
     def __call__(
         self,
         temp_storage,
@@ -214,6 +216,7 @@ def _make_inclusive_scan_cached(
 
 # TODO Figure out `sum` without operator and initial value
 # TODO Accept stream
+@annotate()
 def make_exclusive_scan(
     d_in: DeviceArrayLike | IteratorBase,
     d_out: DeviceArrayLike | IteratorBase,
@@ -243,6 +246,7 @@ def make_exclusive_scan(
     return _make_exclusive_scan_cached(d_in, d_out, op_adapter, init_value)
 
 
+@annotate()
 def exclusive_scan(
     d_in: DeviceArrayLike | IteratorBase,
     d_out: DeviceArrayLike | IteratorBase,
@@ -280,6 +284,7 @@ def exclusive_scan(
 
 # TODO Figure out `sum` without operator and initial value
 # TODO Accept stream
+@annotate()
 def make_inclusive_scan(
     d_in: DeviceArrayLike | IteratorBase,
     d_out: DeviceArrayLike | IteratorBase,
@@ -309,6 +314,7 @@ def make_inclusive_scan(
     return _make_inclusive_scan_cached(d_in, d_out, op_adapter, init_value)
 
 
+@annotate()
 def inclusive_scan(
     d_in: DeviceArrayLike | IteratorBase,
     d_out: DeviceArrayLike | IteratorBase,

@@ -8,6 +8,7 @@ from ... import _bindings
 from ... import _cccl_interop as cccl
 from ..._caching import cache_with_key
 from ..._cccl_interop import call_build, set_cccl_iterator_state
+from ..._nvtx import annotate
 from ..._utils.protocols import (
     get_data_pointer,
     get_dtype,
@@ -66,6 +67,7 @@ class _SegmentedSort:
             self.end_offsets_in_cccl,
         )
 
+    @annotate(message="_SegmentedSort.__call__")
     def __call__(
         self,
         temp_storage,
@@ -166,6 +168,7 @@ def make_cache_key(
     )
 
 
+@annotate()
 @cache_with_key(make_cache_key)
 def make_segmented_sort(
     d_in_keys: DeviceArrayLike | DoubleBuffer,
@@ -209,6 +212,7 @@ def make_segmented_sort(
     )
 
 
+@annotate()
 def segmented_sort(
     d_in_keys: DeviceArrayLike | DoubleBuffer,
     d_out_keys: DeviceArrayLike | None,

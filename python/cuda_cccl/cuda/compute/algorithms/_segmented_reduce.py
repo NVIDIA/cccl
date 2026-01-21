@@ -11,6 +11,7 @@ from .._cccl_interop import (
     set_cccl_iterator_state,
     to_cccl_value_state,
 )
+from .._nvtx import annotate
 from .._utils import protocols
 from .._utils.protocols import (
     get_data_pointer,
@@ -84,6 +85,7 @@ class _SegmentedReduce:
             self.h_init_cccl,
         )
 
+    @annotate(message="_SegmentedReduce.__call__")
     def __call__(
         self,
         temp_storage,
@@ -171,6 +173,7 @@ def _make_segmented_reduce_cached(
     return _SegmentedReduce(d_in, d_out, start_offsets_in, end_offsets_in, op, h_init)
 
 
+@annotate()
 def make_segmented_reduce(
     d_in: DeviceArrayLike | IteratorBase,
     d_out: DeviceArrayLike | IteratorBase,
@@ -206,6 +209,7 @@ def make_segmented_reduce(
     )
 
 
+@annotate()
 def segmented_reduce(
     d_in: DeviceArrayLike | IteratorBase,
     d_out: DeviceArrayLike | IteratorBase,

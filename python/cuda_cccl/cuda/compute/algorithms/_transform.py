@@ -9,6 +9,7 @@ from .. import _bindings
 from .. import _cccl_interop as cccl
 from .._caching import cache_with_key
 from .._cccl_interop import set_cccl_iterator_state
+from .._nvtx import annotate
 from .._utils import protocols
 from ..iterators._iterators import IteratorBase
 from ..op import OpAdapter, OpKind, make_op_adapter
@@ -39,6 +40,7 @@ class _UnaryTransform:
             self.op_cccl,
         )
 
+    @annotate(message="_UnaryTransform.__call__")
     def __call__(
         self,
         d_in,
@@ -95,6 +97,7 @@ class _BinaryTransform:
             self.op_cccl,
         )
 
+    @annotate(message="_BinaryTransform.__call__")
     def __call__(
         self,
         d_in1,
@@ -172,6 +175,7 @@ def _make_binary_transform_cached(
     return _BinaryTransform(d_in1, d_in2, d_out, op)
 
 
+@annotate()
 def make_unary_transform(
     d_in: DeviceArrayLike | IteratorBase,
     d_out: DeviceArrayLike | IteratorBase,
@@ -202,6 +206,7 @@ def make_unary_transform(
     return _make_unary_transform_cached(d_in, d_out, op_adapter)
 
 
+@annotate()
 def make_binary_transform(
     d_in1: DeviceArrayLike | IteratorBase,
     d_in2: DeviceArrayLike | IteratorBase,
@@ -234,6 +239,7 @@ def make_binary_transform(
     return _make_binary_transform_cached(d_in1, d_in2, d_out, op_adapter)
 
 
+@annotate()
 def unary_transform(
     d_in: DeviceArrayLike | IteratorBase,
     d_out: DeviceArrayLike | IteratorBase,
@@ -276,6 +282,7 @@ def unary_transform(
     transformer(d_in, d_out, num_items, stream)
 
 
+@annotate()
 def binary_transform(
     d_in1: DeviceArrayLike | IteratorBase,
     d_in2: DeviceArrayLike | IteratorBase,
