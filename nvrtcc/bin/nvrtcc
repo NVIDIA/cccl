@@ -12,6 +12,8 @@
 
 import argparse
 import copy
+import dataclasses
+import enum
 import os
 import re
 import shlex
@@ -20,14 +22,160 @@ import subprocess
 import sys
 
 
+# Custom command line parser for NV compilers. Implemented according to:
+# https://docs.nvidia.com/cuda/cuda-compiler-driver-nvcc/#command-option-types-and-notation
+#
+# TODO: add support for -Idir1,dir2
+class NvCommandLineParser:
+    class Error(Exception):
+        def __init__(self, message):
+            super().__init__(message)
+
+    class ArgType(enum.Enum):
+        BOOL = 1
+        SINGLE = 2
+        LIST = 3
+
+    @dataclasses.dataclass
+    class ArgInfo:
+        long_opt: str
+        arg_type: ...
+        default: ...
+
+    @dataclasses.dataclass
+    class State:
+        opts_it: ...
+        unknown_args: list[str]  # contains positional arguments, too
+        args: dict
+
+    def __init__(self):
+        self.args = dict()
+
+    def add_arg(self, short_opt: str, long_opt: str, arg_type: str, default=None):
+        assert short_opt.startswith("-")
+        assert long_opt.startswith("--")
+
+        short_opt_no_prefix = short_opt.removeprefix("-")
+        long_opt_no_prefix = long_opt.removeprefix("--")
+
+        # If default value was not specified, set it to the default.
+        if default is None:
+            match arg_type:
+                case NvCommandLineParser.ArgType.BOOL:
+                    default = False
+                case NvCommandLineParser.ArgType.SINGLE:
+                    default = None
+                case NvCommandLineParser.ArgType.LIST:
+                    default = []
+
+        if short_opt_no_prefix in self.args:
+            raise NvCommandLineParser.Error("option already present")
+
+        self.args[short_opt_no_prefix] = NvCommandLineParser.ArgInfo(
+            long_opt_no_prefix, arg_type, default
+        )
+
+    def _set_arg(self, state: State, arg_id: str, arg_type: ArgType, value):
+        match arg_type:
+            case NvCommandLineParser.ArgType.BOOL:
+                state.args[arg_id] = True
+            case NvCommandLineParser.ArgType.SINGLE:
+                state.args[arg_id] = value
+            case NvCommandLineParser.ArgType.LIST:
+                state.args[arg_id] += [value]
+
+    def _parse_long_opt(self, state: State, opt: str):
+        for short, data in self.args.items():
+            if opt.startswith(data.long_opt):
+                opt_value = opt.removeprefix(data.long_opt)
+                if len(opt_value) == 0:
+                    if data.arg_type == NvCommandLineParser.ArgType.BOOL:
+                        self._set_arg(state, short, data.arg_type, True)
+                    else:
+                        self._set_arg(state, short, data.arg_type, next(state.opts_it))
+                    return
+                elif opt_value.startswith("="):
+                    if data.arg_type == NvCommandLineParser.ArgType.BOOL:
+                        raise NvCommandLineParser.Error(
+                            "bool option type cannot have value"
+                        )
+                    self._set_arg(state, short, data.arg_type, opt_value[1:])
+                    return
+        state.unknown_args.append("--" + opt)
+
+    def _parse_short_opt(self, state: State, opt: str):
+        one_char_match_key = None
+        one_char_match_value = None
+        for short, data in self.args.items():
+            if opt.startswith(short):
+                opt_value = opt.removeprefix(short)
+                if len(opt_value) == 0:
+                    if data.arg_type == NvCommandLineParser.ArgType.BOOL:
+                        self._set_arg(state, short, data.arg_type, True)
+                    else:
+                        self._set_arg(state, short, data.arg_type, next(state.opts_it))
+                    return
+                elif opt_value.startswith("="):
+                    if data.arg_type == NvCommandLineParser.ArgType.BOOL:
+                        raise NvCommandLineParser.Error(
+                            "bool option type cannot have value"
+                        )
+                    self._set_arg(state, short, data.arg_type, opt_value[1:])
+                    return
+
+                # If the short opt is only 1 char long, we need to store the value first and continue searching for better match.
+                if len(short) == 1:
+                    one_char_match_key = short
+                    one_char_match_value = opt_value
+
+        # If there was no better match, use the 1 char match value.
+        if one_char_match_key is not None:
+            self._set_arg(
+                state,
+                one_char_match_key,
+                self.args[one_char_match_key].arg_type,
+                one_char_match_value,
+            )
+            return
+
+        state.unknown_args.append("-" + opt)
+
+    def _parse_opt(self, state: State, opt: str):
+        if opt.startswith("--"):
+            self._parse_long_opt(state, opt.removeprefix("--"))
+        elif opt.startswith("-"):
+            self._parse_short_opt(state, opt.removeprefix("-"))
+        else:
+            state.unknown_args.append(opt)
+
+    def parse_known_args(self, opts: list[str]):
+        state = NvCommandLineParser.State(iter(opts), [], dict())
+
+        # Fill the args with default values.
+        for short, data in self.args.items():
+            state.args[short] = data.default
+
+        try:
+            while True:
+                opt = next(state.opts_it)
+                try:
+                    self._parse_opt(state, opt)
+                except StopIteration:
+                    raise NvCommandLineParser.Error("missing argument value")
+        except StopIteration:
+            pass
+
+        return state.args, state.unknown_args
+
+
 class Nvrtcc:
     @staticmethod
     def _parse_nvrtcc_opts(opts):
-        parser = argparse.ArgumentParser(allow_abbrev=False)
+        parser = NvCommandLineParser()
 
-        parser.add_argument("-nvccbin", "--nvccbin", nargs=1)
-        parser.add_argument("-use-nvrtc", "--use-nvrtc", action="store_true")
-        parser.add_argument("-Xnvrtc", "--nvrtc-options", action="append", default=[])
+        parser.add_arg("-nvccbin", "--nvccbin", NvCommandLineParser.ArgType.SINGLE)
+        parser.add_arg("-use-nvrtc", "--use-nvrtc", NvCommandLineParser.ArgType.BOOL)
+        parser.add_arg("-Xnvrtc", "--nvrtc-options", NvCommandLineParser.ArgType.LIST)
 
         return parser.parse_known_args(opts)
 
@@ -45,261 +193,355 @@ class Nvrtcc:
 
     @staticmethod
     def _parse_nvcc_opts(nvcc_opts):
-        parser = argparse.ArgumentParser(allow_abbrev=False)
+        parser = NvCommandLineParser()
 
         # File and Path Specifications
-        parser.add_argument("-o", "--output-file", nargs=1, type=str)
-        parser.add_argument("-objtemp", "--objdir-as-tempdir", action="store_true")
-        parser.add_argument("-include", "--pre-include", action="append", default=[])
-        parser.add_argument("-l", "--library", action="append", default=[])
-        parser.add_argument("-D", "--define-macro", action="append", default=[])
-        parser.add_argument("-U", "--undefine-macro", action="append", default=[])
-        parser.add_argument("-I", "--include-path", action="append", default=[])
-        parser.add_argument("-isystem", "--system-include", action="append", default=[])
-        parser.add_argument("-L", "--library-path", action="append", default=[])
-        parser.add_argument("-odir", "--output-directory", nargs=1, type=str)
-        parser.add_argument("-MF", "--dependency-output", nargs=1, type=str)
-        parser.add_argument("-MP", "--generate-dependency-targets", action="store_true")
-        parser.add_argument("-ccbin", "--compiler-bindir", nargs=1, type=str)
-        parser.add_argument(
+        parser.add_arg("-o", "--output-file", NvCommandLineParser.ArgType.SINGLE)
+        parser.add_arg(
+            "-objtemp", "--objdir-as-tempdir", NvCommandLineParser.ArgType.BOOL
+        )
+        parser.add_arg("-include", "--pre-include", NvCommandLineParser.ArgType.LIST)
+        parser.add_arg("-l", "--library", NvCommandLineParser.ArgType.LIST)
+        parser.add_arg("-D", "--define-macro", NvCommandLineParser.ArgType.LIST)
+        parser.add_arg("-U", "--undefine-macro", NvCommandLineParser.ArgType.LIST)
+        parser.add_arg("-I", "--include-path", NvCommandLineParser.ArgType.LIST)
+        parser.add_arg("-isystem", "--system-include", NvCommandLineParser.ArgType.LIST)
+        parser.add_arg("-L", "--library-path", NvCommandLineParser.ArgType.LIST)
+        parser.add_arg(
+            "-odir", "--output-directory", NvCommandLineParser.ArgType.SINGLE
+        )
+        parser.add_arg("-MF", "--dependency-output", NvCommandLineParser.ArgType.SINGLE)
+        parser.add_arg(
+            "-MP", "--generate-dependency-targets", NvCommandLineParser.ArgType.BOOL
+        )
+        parser.add_arg(
+            "-ccbin", "--compiler-bindir", NvCommandLineParser.ArgType.SINGLE
+        )
+        parser.add_arg(
             "-allow-unsupported-compiler",
             "--allow-unsupported-compiler",
-            action="store_true",
+            NvCommandLineParser.ArgType.BOOL,
         )
-        parser.add_argument("-arbin", "--archiver-binary", nargs=1, type=str)
-        parser.add_argument("-cudart", "--cudart", choices=["none", "shared", "static"])
-        parser.add_argument("-cudadevrt", "--cudadevrt", choices=["none", "static"])
-        parser.add_argument("-ldir", "--libdevice-directory", nargs=1, type=str)
-        parser.add_argument("-target-dir", "--target-directory", nargs=1, type=str)
+        parser.add_arg(
+            "-arbin", "--archiver-binary", NvCommandLineParser.ArgType.SINGLE
+        )
+        parser.add_arg("-cudart", "--cudart", NvCommandLineParser.ArgType.SINGLE)
+        parser.add_arg("-cudadevrt", "--cudadevrt", NvCommandLineParser.ArgType.SINGLE)
+        parser.add_arg(
+            "-ldir", "--libdevice-directory", NvCommandLineParser.ArgType.SINGLE
+        )
+        parser.add_arg(
+            "-target-dir", "--target-directory", NvCommandLineParser.ArgType.SINGLE
+        )
 
         # Options for Specifying the Compilation Phase
-        parser.add_argument("-link", "--link", action="store_true")
-        parser.add_argument("-lib", "--lib", action="store_true")
-        parser.add_argument("-dlink", "--device-link", action="store_true")
-        parser.add_argument("-dc", "--device-c", action="store_true")
-        parser.add_argument("-dw", "--device-w", action="store_true")
-        parser.add_argument("-cuda", "--cuda", action="store_true")
-        parser.add_argument("-c", "--compile", action="store_true")
-        parser.add_argument("-fatbin", "--fatbin", action="store_true")
-        parser.add_argument("-cubin", "--cubin", action="store_true")
-        parser.add_argument("-ptx", "--ptx", action="store_true")
-        parser.add_argument("-E", "--preprocess", action="store_true")
-        parser.add_argument("-M", "--generate-dependencies", action="store_true")
-        parser.add_argument(
-            "-MM", "--generate-nonsystem-dependencies", action="store_true"
+        parser.add_arg("-link", "--link", NvCommandLineParser.ArgType.BOOL)
+        parser.add_arg("-lib", "--lib", NvCommandLineParser.ArgType.BOOL)
+        parser.add_arg("-dlink", "--device-link", NvCommandLineParser.ArgType.BOOL)
+        parser.add_arg("-dc", "--device-c", NvCommandLineParser.ArgType.BOOL)
+        parser.add_arg("-dw", "--device-w", NvCommandLineParser.ArgType.BOOL)
+        parser.add_arg("-cuda", "--cuda", NvCommandLineParser.ArgType.BOOL)
+        parser.add_arg("-c", "--compile", NvCommandLineParser.ArgType.BOOL)
+        parser.add_arg("-fatbin", "--fatbin", NvCommandLineParser.ArgType.BOOL)
+        parser.add_arg("-cubin", "--cubin", NvCommandLineParser.ArgType.BOOL)
+        parser.add_arg("-ptx", "--ptx", NvCommandLineParser.ArgType.BOOL)
+        parser.add_arg("-E", "--preprocess", NvCommandLineParser.ArgType.BOOL)
+        parser.add_arg(
+            "-M", "--generate-dependencies", NvCommandLineParser.ArgType.BOOL
         )
-        parser.add_argument(
-            "-MD", "--generate-dependencies-with-compile", action="store_true"
+        parser.add_arg(
+            "-MM", "--generate-nonsystem-dependencies", NvCommandLineParser.ArgType.BOOL
         )
-        parser.add_argument(
+        parser.add_arg(
+            "-MD",
+            "--generate-dependencies-with-compile",
+            NvCommandLineParser.ArgType.BOOL,
+        )
+        parser.add_arg(
             "-MMD",
             "--generate-nonsystem-dependencies-with-compile",
-            action="store_true",
+            NvCommandLineParser.ArgType.BOOL,
         )
-        parser.add_argument("-optix-ir", "--optix-ir", action="store_true")
-        parser.add_argument("-ltoir", "--ltoir", action="store_true")
-        parser.add_argument("-run", "--run", action="store_true")
+        parser.add_arg("-optix-ir", "--optix-ir", NvCommandLineParser.ArgType.BOOL)
+        parser.add_arg("-ltoir", "--ltoir", NvCommandLineParser.ArgType.BOOL)
+        parser.add_arg("-run", "--run", NvCommandLineParser.ArgType.BOOL)
 
         # Options for Specifying Behavior of Compiler/Linker
-        parser.add_argument("-pg", "--profile", action="store_true")
-        parser.add_argument("-g", "--debug", action="store_true")
-        parser.add_argument("-G", "--device-debug", action="store_true")
-        parser.add_argument("-lineinfo", "--generate-line-info", action="store_true")
-        parser.add_argument(
-            "-opt-info", "-optimization-info", action="append", default=[]
+        parser.add_arg("-pg", "--profile", NvCommandLineParser.ArgType.BOOL)
+        parser.add_arg("-g", "--debug", NvCommandLineParser.ArgType.BOOL)
+        parser.add_arg("-G", "--device-debug", NvCommandLineParser.ArgType.BOOL)
+        parser.add_arg(
+            "-lineinfo", "--generate-line-info", NvCommandLineParser.ArgType.BOOL
         )
-        parser.add_argument("-O", "--optimize", nargs=1, type=str)
-        parser.add_argument("-Ofc", "--Ofast-compile", nargs=1, type=str)
-        parser.add_argument("-dopt", "--dopt", choices=["on"])
-        parser.add_argument("-dlto", "--dlink-time-opt", action="store_true")
-        parser.add_argument("-lto", "--lto", action="store_true")
-        parser.add_argument("-gen-opt-lto", "--gen-opt-lto", action="store_true")
-        parser.add_argument(
-            "-ftemplate-backtrace-limit", "--ftemplate-backtrace-limit", nargs=1
+        parser.add_arg(
+            "-opt-info", "--optimization-info", NvCommandLineParser.ArgType.LIST
         )
-        parser.add_argument("-ftemplate-depth", "--ftemplate-depth", nargs=1, type=int)
-        parser.add_argument("-noeh", "--no-exceptions", action="store_true")
-        parser.add_argument("-shared", "--shared", action="store_true")
-        parser.add_argument("-x", "--x", nargs=1, type=str)
-        parser.add_argument("-std", "--std", nargs=1, type=str)
-        parser.add_argument(
-            "-nohdinitlist", "--no-host-device-initializer-list", action="store_true"
+        parser.add_arg("-O", "--optimize", NvCommandLineParser.ArgType.SINGLE)
+        parser.add_arg("-Ofc", "--Ofast-compile", NvCommandLineParser.ArgType.SINGLE)
+        parser.add_arg("-dopt", "--dopt", NvCommandLineParser.ArgType.SINGLE)
+        parser.add_arg("-dlto", "--dlink-time-opt", NvCommandLineParser.ArgType.BOOL)
+        parser.add_arg("-lto", "--lto", NvCommandLineParser.ArgType.BOOL)
+        parser.add_arg(
+            "-gen-opt-lto", "--gen-opt-lto", NvCommandLineParser.ArgType.BOOL
         )
-        parser.add_argument(
-            "-nohdmoveforward", "--no-host-device-move-forward", action="store_true"
+        parser.add_arg(
+            "-ftemplate-backtrace-limit",
+            "--ftemplate-backtrace-limit",
+            NvCommandLineParser.ArgType.SINGLE,
         )
-        parser.add_argument(
-            "-expt-relaxed-constexpr", "--expt-relaxed-constexpr", action="store_true"
+        parser.add_arg(
+            "-ftemplate-depth", "--ftemplate-depth", NvCommandLineParser.ArgType.SINGLE
         )
-        parser.add_argument(
-            "-extended-lambda", "--extended-lambda", action="store_true"
+        parser.add_arg("-noeh", "--no-exceptions", NvCommandLineParser.ArgType.BOOL)
+        parser.add_arg("-shared", "--shared", NvCommandLineParser.ArgType.BOOL)
+        parser.add_arg("-x", "--x", NvCommandLineParser.ArgType.SINGLE)
+        parser.add_arg("-std", "--std", NvCommandLineParser.ArgType.SINGLE)
+        parser.add_arg(
+            "-nohdinitlist",
+            "--no-host-device-initializer-list",
+            NvCommandLineParser.ArgType.BOOL,
         )
-        parser.add_argument(
-            "-expt-extended-lambda", "--expt-extended-lambda", action="store_true"
+        parser.add_arg(
+            "-nohdmoveforward",
+            "--no-host-device-move-forward",
+            NvCommandLineParser.ArgType.BOOL,
         )
-        parser.add_argument("-m", "--machine", nargs=1, type=int)
-        parser.add_argument("-m64", "--m64", action="store_true")
+        parser.add_arg(
+            "-expt-relaxed-constexpr",
+            "--expt-relaxed-constexpr",
+            NvCommandLineParser.ArgType.BOOL,
+        )
+        parser.add_arg(
+            "-extended-lambda", "--extended-lambda", NvCommandLineParser.ArgType.BOOL
+        )
+        parser.add_arg(
+            "-expt-extended-lambda",
+            "--expt-extended-lambda",
+            NvCommandLineParser.ArgType.BOOL,
+        )
+        parser.add_arg("-m", "--machine", NvCommandLineParser.ArgType.SINGLE)
+        parser.add_arg("-m64", "--m64", NvCommandLineParser.ArgType.BOOL)
 
         # Options for passing specific phase options
-        parser.add_argument(
-            "-Xcompiler", "--compiler-options", action="append", default=[]
+        parser.add_arg(
+            "-Xcompiler", "--compiler-options", NvCommandLineParser.ArgType.LIST
         )
-        parser.add_argument("-Xlinker", "--linker-options", action="append", default=[])
-        parser.add_argument(
-            "-Xarchive", "--archive-options", action="append", default=[]
+        parser.add_arg("-Xlinker", "--linker-options", NvCommandLineParser.ArgType.LIST)
+        parser.add_arg(
+            "-Xarchive", "--archive-options", NvCommandLineParser.ArgType.LIST
         )
-        parser.add_argument("-Xptxas", "--ptxas-options", action="append", default=[])
-        parser.add_argument("-Xnvlink", "--nvlink-options", action="append", default=[])
+        parser.add_arg("-Xptxas", "--ptxas-options", NvCommandLineParser.ArgType.LIST)
+        parser.add_arg("-Xnvlink", "--nvlink-options", NvCommandLineParser.ArgType.LIST)
 
         # Miscellaneous options for guiding the compiler driver.
-        parser.add_argument(
-            "-static-global-template-stub", "--static-global-template-stub", nargs=1
+        parser.add_arg(
+            "-static-global-template-stub",
+            "--static-global-template-stub",
+            NvCommandLineParser.ArgType.SINGLE,
         )
-        parser.add_argument(
+        parser.add_arg(
             "-device-entity-has-hidden-visibility",
             "--device-entity-has-hidden-visibility",
-            nargs=1,
+            NvCommandLineParser.ArgType.SINGLE,
         )
-        parser.add_argument(
+        parser.add_arg(
             "-forward-unknown-to-host-compiler",
             "--forward-unknown-to-host-compiler",
-            action="store_true",
+            NvCommandLineParser.ArgType.BOOL,
         )
-        parser.add_argument(
+        parser.add_arg(
             "-forward-unknown-to-host-linker",
             "--forward-unknown-to-host-linker",
-            action="store_true",
+            NvCommandLineParser.ArgType.BOOL,
         )
-        parser.add_argument(
-            "-forward-unknown-opts", "--forward-unknown-opts", action="store_true"
+        parser.add_arg(
+            "-forward-unknown-opts",
+            "--forward-unknown-opts",
+            NvCommandLineParser.ArgType.BOOL,
         )
-        parser.add_argument("-noprof", "--dont-use-profile", action="store_true")
-        parser.add_argument("-dryrun", "--dryrun", action="store_true")
-        parser.add_argument("-v", "--verbose", action="store_true")
-        parser.add_argument("-t", "--threads", nargs=1, type=int)
-        parser.add_argument("-split-compile", "--split-compile", nargs=1, type=int)
-        parser.add_argument(
-            "-split-compile-extended", "--split-compile-extended", nargs=1, type=int
+        parser.add_arg(
+            "-noprof", "--dont-use-profile", NvCommandLineParser.ArgType.BOOL
         )
-        parser.add_argument(
-            "-fdevice-syntax-only", "--fdevice-syntax-only", nargs=1, type=str
+        parser.add_arg("-dryrun", "--dryrun", NvCommandLineParser.ArgType.BOOL)
+        parser.add_arg("-v", "--verbose", NvCommandLineParser.ArgType.BOOL)
+        parser.add_arg("-t", "--threads", NvCommandLineParser.ArgType.SINGLE)
+        parser.add_arg(
+            "-split-compile", "--split-compile", NvCommandLineParser.ArgType.SINGLE
         )
-        parser.add_argument(
-            "-fdevice-time-trace", "--fdevice-time-trace", nargs=1, type=str
+        parser.add_arg(
+            "-split-compile-extended",
+            "--split-compile-extended",
+            NvCommandLineParser.ArgType.SINGLE,
         )
-        parser.add_argument("-keep", "--keep", action="store_true")
-        parser.add_argument("-keep-dir", "--keep-dir", nargs=1, type=str)
-        parser.add_argument("-save-temps", "--save-temps", action="store_true")
-        parser.add_argument("-clean", "--clean-targets", action="store_true")
-        parser.add_argument("-time", "--time", nargs=1, type=str)
-        parser.add_argument("-run-args", "--run-args", nargs=1)
-        parser.add_argument("-idp", "--input-drive-prefix", nargs=1, type=str)
-        parser.add_argument("-ddp", "--dependency-drive-prefix", nargs=1, type=str)
-        parser.add_argument("-dp", "--drive-prefix", nargs=1, type=str)
-        parser.add_argument("-MT", "--dependency-target-name", nargs=1, type=str)
-        parser.add_argument(
-            "-no-align-double", "--no-align-double", action="store_true"
+        parser.add_arg(
+            "-fdevice-syntax-only",
+            "--fdevice-syntax-only",
+            NvCommandLineParser.ArgType.SINGLE,
         )
-        parser.add_argument("-nodlink", "--no-device-link", action="store_true")
+        parser.add_arg(
+            "-fdevice-time-trace",
+            "--fdevice-time-trace",
+            NvCommandLineParser.ArgType.SINGLE,
+        )
+        parser.add_arg("-keep", "--keep", NvCommandLineParser.ArgType.BOOL)
+        parser.add_arg("-keep-dir", "--keep-dir", NvCommandLineParser.ArgType.SINGLE)
+        parser.add_arg("-save-temps", "--save-temps", NvCommandLineParser.ArgType.BOOL)
+        parser.add_arg("-clean", "--clean-targets", NvCommandLineParser.ArgType.BOOL)
+        parser.add_arg("-time", "--time", NvCommandLineParser.ArgType.SINGLE)
+        parser.add_arg("-run-args", "--run-args", NvCommandLineParser.ArgType.SINGLE)
+        parser.add_arg(
+            "-idp", "--input-drive-prefix", NvCommandLineParser.ArgType.SINGLE
+        )
+        parser.add_arg(
+            "-ddp", "--dependency-drive-prefix", NvCommandLineParser.ArgType.SINGLE
+        )
+        parser.add_arg("-dp", "--drive-prefix", NvCommandLineParser.ArgType.SINGLE)
+        parser.add_arg(
+            "-MT", "--dependency-target-name", NvCommandLineParser.ArgType.SINGLE
+        )
+        parser.add_arg(
+            "-no-align-double", "--no-align-double", NvCommandLineParser.ArgType.BOOL
+        )
+        parser.add_arg("-nodlink", "--no-device-link", NvCommandLineParser.ArgType.BOOL)
 
         # Options for steering GPU code generation.
-        parser.add_argument("-arch", "--gpu-architecture", action="append", default=[])
-        parser.add_argument("-code", "--gpu-code", action="append", default=[])
-        parser.add_argument("-gencode", "--generate-code", action="append", default=[])
-        parser.add_argument("-rdc", "--relocatable-device-code", nargs=1, type=str)
-        parser.add_argument("-e", "--entries", action="append", default=[])
-        parser.add_argument("-maxrregcount", "--maxrregcount", nargs=1)
-        parser.add_argument("-use_fast_math", "--use_fast_math", action="store_true")
-        parser.add_argument("-ftz", "--ftz", nargs=1, type=str)
-        parser.add_argument("-prec-div", "--prec-div", nargs=1)
-        parser.add_argument("-prec-sqrt", "--prec-sqrt", nargs=1)
-        parser.add_argument("-fmad", "--fmad", nargs=1)
-        parser.add_argument(
+        parser.add_arg("-arch", "--gpu-architecture", NvCommandLineParser.ArgType.LIST)
+        parser.add_arg("-code", "--gpu-code", NvCommandLineParser.ArgType.LIST)
+        parser.add_arg("-gencode", "--generate-code", NvCommandLineParser.ArgType.LIST)
+        parser.add_arg(
+            "-rdc", "--relocatable-device-code", NvCommandLineParser.ArgType.SINGLE
+        )
+        parser.add_arg("-e", "--entries", NvCommandLineParser.ArgType.LIST)
+        parser.add_arg(
+            "-maxrregcount", "--maxrregcount", NvCommandLineParser.ArgType.SINGLE
+        )
+        parser.add_arg(
+            "-use_fast_math", "--use_fast_math", NvCommandLineParser.ArgType.BOOL
+        )
+        parser.add_arg("-ftz", "--ftz", NvCommandLineParser.ArgType.SINGLE)
+        parser.add_arg("-prec-div", "--prec-div", NvCommandLineParser.ArgType.SINGLE)
+        parser.add_arg("-prec-sqrt", "--prec-sqrt", NvCommandLineParser.ArgType.SINGLE)
+        parser.add_arg("-fmad", "--fmad", NvCommandLineParser.ArgType.SINGLE)
+        parser.add_arg(
             "-extra-device-vectorization",
             "--extra-device-vectorization",
-            action="store_true",
+            NvCommandLineParser.ArgType.BOOL,
         )
 
         # Options for steering cuda compilation.
-        parser.add_argument("-default-stream", "--default-stream", nargs=1)
+        parser.add_arg(
+            "-default-stream", "--default-stream", NvCommandLineParser.ArgType.SINGLE
+        )
 
         # Generic tool options.
-        parser.add_argument("-w", "--disable-warnings", action="store_true")
-        parser.add_argument(
-            "-keep-device-functions", "--keep-device-functions", action="store_true"
+        parser.add_arg("-w", "--disable-warnings", NvCommandLineParser.ArgType.BOOL)
+        parser.add_arg(
+            "-keep-device-functions",
+            "--keep-device-functions",
+            NvCommandLineParser.ArgType.BOOL,
         )
-        parser.add_argument("-src-in-ptx", "--source-in-ptx", action="store_true")
-        parser.add_argument("-restrict", "--restrict", action="store_true")
-        parser.add_argument("-Wreorder", "--Wreorder", action="store_true")
-        parser.add_argument(
-            "-Wdefault-stream-launch", "--Wdefault-stream-launch", action="store_true"
+        parser.add_arg(
+            "-src-in-ptx", "--source-in-ptx", NvCommandLineParser.ArgType.BOOL
         )
-        parser.add_argument(
-            "-Wmissing-launch-bounds", "--Wmissing-launch-bounds", action="store_true"
+        parser.add_arg("-restrict", "--restrict", NvCommandLineParser.ArgType.BOOL)
+        parser.add_arg("-Wreorder", "--Wreorder", NvCommandLineParser.ArgType.BOOL)
+        parser.add_arg(
+            "-Wdefault-stream-launch",
+            "--Wdefault-stream-launch",
+            NvCommandLineParser.ArgType.BOOL,
         )
-        parser.add_argument(
+        parser.add_arg(
+            "-Wmissing-launch-bounds",
+            "--Wmissing-launch-bounds",
+            NvCommandLineParser.ArgType.BOOL,
+        )
+        parser.add_arg(
             "-Wext-lambda-captures-this",
             "--Wext-lambda-captures-this",
-            action="store_true",
+            NvCommandLineParser.ArgType.BOOL,
         )
-        parser.add_argument(
+        parser.add_arg(
             "-Wno-deprecated-declarations",
             "--Wno-deprecated-declarations",
-            action="store_true",
+            NvCommandLineParser.ArgType.BOOL,
         )
-        parser.add_argument(
+        parser.add_arg(
             "-Wno-deprecated-gpu-targets",
             "--Wno-deprecated-gpu-targets",
-            action="store_true",
+            NvCommandLineParser.ArgType.BOOL,
         )
-        parser.add_argument("-Werror", "--Werror", action="append", default=[])
-        parser.add_argument("-res-usage", "--resource-usage", action="store_true")
-        parser.add_argument("-ewp", "--extensible-whole-program", action="store_true")
-        parser.add_argument("-no-compress", "--no-compress", action="store_true")
-        parser.add_argument("-qpp-config", "--qpp-config", action="store_true")
-        parser.add_argument(
-            "-astoolpatch", "--compile-as-tools-patch", action="store_true"
+        parser.add_arg("-Werror", "--Werror", NvCommandLineParser.ArgType.LIST)
+        parser.add_arg(
+            "-res-usage", "--resource-usage", NvCommandLineParser.ArgType.BOOL
         )
-        parser.add_argument("-code-ls", "--list-gpu-code", action="store_true")
-        parser.add_argument("-arch-ls", "--list-gpu-arch", action="store_true")
-        parser.add_argument("-err-no", "--display-error-number", action="store_true")
-        parser.add_argument(
-            "-no-err-no", "--no-display-error-number", action="store_true"
+        parser.add_arg(
+            "-ewp", "--extensible-whole-program", NvCommandLineParser.ArgType.BOOL
         )
-        parser.add_argument("-diag-error", "--diag-error", action="append", default=[])
-        parser.add_argument(
-            "-diag-suppress", "--diag-suppress", action="append", default=[]
+        parser.add_arg(
+            "-no-compress", "--no-compress", NvCommandLineParser.ArgType.BOOL
         )
-        parser.add_argument("-diag-warn", "--diag-warn", action="append", default=[])
-        parser.add_argument("-hls", "--host-linker-script", nargs=1, type=str)
-        parser.add_argument(
-            "-aug-hls", "--augment-host-linker-script", action="store_true"
+        parser.add_arg("-qpp-config", "--qpp-config", NvCommandLineParser.ArgType.BOOL)
+        parser.add_arg(
+            "-astoolpatch", "--compile-as-tools-patch", NvCommandLineParser.ArgType.BOOL
         )
-        parser.add_argument("-r", "--relocatable-link", action="store_true")
-        parser.add_argument("-brief-diag", "--brief-diagnostics", nargs=1, type=str)
-        parser.add_argument("-jtd", "--jump-table-density", nargs=1, type=int)
-        parser.add_argument("-reloc-ptx", "--relocatable-ptx", action="store_true")
-        parser.add_argument(
-            "-device-stack-protector", "--device-stack-protector", nargs=1, type=str
+        parser.add_arg("-code-ls", "--list-gpu-code", NvCommandLineParser.ArgType.BOOL)
+        parser.add_arg("-arch-ls", "--list-gpu-arch", NvCommandLineParser.ArgType.BOOL)
+        parser.add_arg(
+            "-err-no", "--display-error-number", NvCommandLineParser.ArgType.BOOL
         )
-        parser.add_argument("-compress-mode", "--compress-mode", nargs=1, type=str)
-        parser.add_argument("-frandom-seed", "--frandom-seed", nargs=1, type=str)
-        parser.add_argument(
-            "-fdevice-sanitize", "--fdevice-sanitize", nargs=1, type=str
+        parser.add_arg(
+            "-no-err-no", "--no-display-error-number", NvCommandLineParser.ArgType.BOOL
         )
-        parser.add_argument("-jobserver", "--jobserver", action="store_true")
-        # "-h", "--help"
-        parser.add_argument("-V", "--version", action="store_true")
-        parser.add_argument("-optf", "--options-file", action="append", default=[])
+        parser.add_arg("-diag-error", "--diag-error", NvCommandLineParser.ArgType.LIST)
+        parser.add_arg(
+            "-diag-suppress", "--diag-suppress", NvCommandLineParser.ArgType.LIST
+        )
+        parser.add_arg("-diag-warn", "--diag-warn", NvCommandLineParser.ArgType.LIST)
+        parser.add_arg(
+            "-hls", "--host-linker-script", NvCommandLineParser.ArgType.SINGLE
+        )
+        parser.add_arg(
+            "-aug-hls", "--augment-host-linker-script", NvCommandLineParser.ArgType.BOOL
+        )
+        parser.add_arg("-r", "--relocatable-link", NvCommandLineParser.ArgType.BOOL)
+        parser.add_arg(
+            "-brief-diag", "--brief-diagnostics", NvCommandLineParser.ArgType.SINGLE
+        )
+        parser.add_arg(
+            "-jtd", "--jump-table-density", NvCommandLineParser.ArgType.SINGLE
+        )
+        parser.add_arg(
+            "-reloc-ptx", "--relocatable-ptx", NvCommandLineParser.ArgType.BOOL
+        )
+        parser.add_arg(
+            "-device-stack-protector",
+            "--device-stack-protector",
+            NvCommandLineParser.ArgType.SINGLE,
+        )
+        parser.add_arg(
+            "-compress-mode", "--compress-mode", NvCommandLineParser.ArgType.SINGLE
+        )
+        parser.add_arg(
+            "-frandom-seed", "--frandom-seed", NvCommandLineParser.ArgType.SINGLE
+        )
+        parser.add_arg(
+            "-fdevice-sanitize",
+            "--fdevice-sanitize",
+            NvCommandLineParser.ArgType.SINGLE,
+        )
+        parser.add_arg("-jobserver", "--jobserver", NvCommandLineParser.ArgType.BOOL)
+        parser.add_arg("-h", "--help", NvCommandLineParser.ArgType.BOOL)
+        parser.add_arg("-V", "--version", NvCommandLineParser.ArgType.BOOL)
+        parser.add_arg("-optf", "--options-file", NvCommandLineParser.ArgType.LIST)
 
         return parser.parse_known_args(nvcc_opts)[0]
 
     def __init__(self, opts: list[str], env):
         args, nvcc_opts = Nvrtcc._parse_nvrtcc_opts(opts)
 
-        self.nvcc_bin = Nvrtcc._get_nvcc_bin_abs_path(args.nvccbin, env)
-        self.use_nvrtc = args.use_nvrtc
-        self.nvrtc_opts = args.nvrtc_options
+        self.nvcc_bin = Nvrtcc._get_nvcc_bin_abs_path(args["nvccbin"], env)
+        self.use_nvrtc = args["use-nvrtc"]
+        self.nvrtc_opts = args["Xnvrtc"]
         self.nvcc_opts = ["-D__NVRTCC__"] + nvcc_opts
         self.nvcc_args = Nvrtcc._parse_nvcc_opts(self.nvcc_opts)
         self.device_compile_bin = os.path.join(
@@ -324,32 +566,32 @@ class Nvrtcc:
         print(f"nvrtcc warning: {msg}", file=sys.stderr)
 
     def _check_nvcc_args(self):
-        if self.nvcc_args.optix_ir:
+        if self.nvcc_args["optix-ir"]:
             Nvrtcc._emit_error(
                 "compiling to Optix IR with nvrtc is currently unsupported"
             )
 
         if (
-            self.nvcc_args.ltoir
-            or self.nvcc_args.dlink_time_opt
-            or self.nvcc_args.gen_opt_lto
+            self.nvcc_args["ltoir"]
+            or self.nvcc_args["dlto"]
+            or self.nvcc_args["gen-opt-lto"]
         ):
             Nvrtcc._emit_error(
                 "compiling to LTO IR with nvrtc is currently unsupported"
             )
 
-        if self.nvcc_args.expt_relaxed_constexpr:
-            Nvrtcc._emit_warning("relaxed constexpr is unsupported with nvrtc")
+        if self.nvcc_args["expt-relaxed-constexpr"]:
+            Nvrtcc._emit_error("relaxed constexpr is unsupported with nvrtc")
 
-        if self.nvcc_args.extended_lambda or self.nvcc_args.expt_extended_lambda:
-            Nvrtcc._emit_warning(
+        if self.nvcc_args["extended-lambda"] or self.nvcc_args["expt-extended-lambda"]:
+            Nvrtcc._emit_error(
                 "extended lambda declarations are unsupported with nvrtc"
             )
 
-        if self.nvcc_args.keep_device_functions:
-            Nvrtcc._emit_warning("keeping device functions is unsupported with nvrtc")
+        if self.nvcc_args["keep-device-functions"]:
+            Nvrtcc._emit_error("keeping device functions is unsupported with nvrtc")
 
-        if self.nvcc_args.options_file:
+        if self.nvcc_args["optf"]:
             Nvrtcc._emit_error("passing command line options via file is not supported")
 
     def _get_nvcc_cmd_list(self) -> list[str]:
@@ -358,7 +600,6 @@ class Nvrtcc:
             stderr=subprocess.PIPE,
             env=self.env,
         )
-
         if run_result.returncode != 0:
             Nvrtcc._emit_error(
                 "failed to retrieve nvcc command list", run_result.returncode
@@ -368,7 +609,7 @@ class Nvrtcc:
         return [line.removeprefix("#$ ") for line in lines]
 
     def _print_if_verbose(self, msg, **kwargs):
-        if self.nvcc_args.verbose:
+        if self.nvcc_args["v"]:
             print(msg, **kwargs)
 
     @staticmethod
@@ -489,7 +730,7 @@ class Nvrtcc:
         # Compilation targets
         cmd += [f"-arch={cicc_args.arch}"]
         cmd += ["-dc"] if cicc_args.device_c else []
-        cmd += ["-ewp"] if self.nvcc_args.extensible_whole_program else []
+        cmd += ["-ewp"] if self.nvcc_args["ewp"] else []
 
         # Debugging support
         cmd += ["-G"] if cicc_args.debug_mode else []
@@ -518,11 +759,11 @@ class Nvrtcc:
         )
 
         # Preprocessing
-        cmd += [f"-D{x}" for x in self.nvcc_args.define_macro]
-        cmd += [f"-U{x}" for x in self.nvcc_args.undefine_macro]
-        cmd += [f"-I{x}" for x in self.nvcc_args.include_path]
-        cmd += [f"-I{x}" for x in self.nvcc_args.system_include]
-        cmd += [f"-include={x}" for x in self.nvcc_args.pre_include]
+        cmd += [f"-D{x}" for x in self.nvcc_args["D"]]
+        cmd += [f"-U{x}" for x in self.nvcc_args["U"]]
+        cmd += [f"-I{x}" for x in self.nvcc_args["I"]]
+        cmd += [f"-I{x}" for x in self.nvcc_args["isystem"]]
+        cmd += [f"-include={x}" for x in self.nvcc_args["include"]]
 
         # Language Dialect
         cmd += ["-std=c++17"] if cicc_args.cxx17 else []
@@ -539,7 +780,7 @@ class Nvrtcc:
         cmd += [f"-diag-suppress={diag}" for diag in cicc_args.diag_suppress]
         # cmd += [f'-diag-warn={diag}' for diag in cicc_args.diag_warn]
         cmd += ["-brief_diag=true"] if cicc_args.brief_diagnostics else []
-        cmd += [f"-time={self.nvcc_args.time}"] if self.nvcc_args.time else []
+        cmd += [f"-time={self.nvcc_args['time']}"] if self.nvcc_args["time"] else []
         cmd += (
             [f"-split-compile={cicc_args.split_compile}"]
             if cicc_args.split_compile
@@ -553,27 +794,31 @@ class Nvrtcc:
 
         # Run the nvrtc compilation.
         self._print_if_verbose(f"#$ {' '.join(cmd)}")
-        if not self.nvcc_args.dryrun:
+        if not self.nvcc_args["dryrun"]:
             run_result = subprocess.run(cmd, env=self.env)
             if run_result.returncode != 0:
                 sys.exit(run_result.returncode)
 
     def _run_nvrtcc(self):
+        if self.nvcc_args["h"]:
+            print("TOOD: print help")
+            sys.exit(0)
+
         Nvrtcc._check_nvcc_args(self)
 
         for cmd in self._get_nvcc_cmd_list():
             self._print_if_verbose(f"#$ {cmd}")
 
-            if not self.nvcc_args.dryrun and Nvrtcc._is_comment(cmd):
+            if not self.nvcc_args["dryrun"] and Nvrtcc._is_comment(cmd):
                 continue
 
-            if not self.nvcc_args.dryrun and Nvrtcc._is_env_var_assign(cmd):
+            if not self.nvcc_args["dryrun"] and Nvrtcc._is_env_var_assign(cmd):
                 os.environ[cmd.split("=")[0]] = "".join(cmd.split("=")[1:])
                 continue
 
             bin, opts = Nvrtcc._split_cmd(cmd)
 
-            if not self.nvcc_args.dryrun:
+            if not self.nvcc_args["dryrun"]:
                 # For some reason nvcc produces rm command that can fail if the file doesn't exist, so we just ignore the return value and output.
                 if re.match(r"^rm$", bin):
                     subprocess.run(
