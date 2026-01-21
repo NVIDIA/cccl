@@ -18,6 +18,7 @@
 #include <thrust/logical.h>
 
 #include <cuda/iterator>
+#include <cuda/memory_pool>
 #include <cuda/std/__pstl/for_each.h>
 #include <cuda/std/execution>
 #include <cuda/std/functional>
@@ -51,13 +52,36 @@ C2H_TEST("cuda::std::for_each", "[parallel algorithm]")
     CHECK(thrust::all_of(res.begin(), res.end(), cuda::std::identity{}));
   }
 
-  SECTION("with unique stream")
+  SECTION("with provided stream")
   {
-    ::cuda::stream stream{::cuda::device_ref{0}};
+    cuda::stream stream{cuda::device_ref{0}};
     thrust::device_vector<bool> res(size, false);
     mark_present_for_each fn{thrust::raw_pointer_cast(res.data())};
 
     const auto policy = cuda::execution::__cub_par_unseq.set_stream(stream);
+    cuda::std::for_each(policy, cuda::counting_iterator{0}, cuda::counting_iterator{size}, fn);
+    CHECK(thrust::all_of(res.begin(), res.end(), cuda::std::identity{}));
+  }
+
+  SECTION("with provided memory_resource")
+  {
+    cuda::device_memory_pool_ref device_resource = cuda::device_default_memory_pool(cuda::device_ref{0});
+    thrust::device_vector<bool> res(size, false);
+    mark_present_for_each fn{thrust::raw_pointer_cast(res.data())};
+
+    const auto policy = cuda::execution::__cub_par_unseq.set_memory_resource(device_resource);
+    cuda::std::for_each(policy, cuda::counting_iterator{0}, cuda::counting_iterator{size}, fn);
+    CHECK(thrust::all_of(res.begin(), res.end(), cuda::std::identity{}));
+  }
+
+  SECTION("with provided stream and memory_resource")
+  {
+    cuda::stream stream{cuda::device_ref{0}};
+    cuda::device_memory_pool_ref device_resource = cuda::device_default_memory_pool(stream.device());
+    thrust::device_vector<bool> res(size, false);
+    mark_present_for_each fn{thrust::raw_pointer_cast(res.data())};
+
+    const auto policy = cuda::execution::__cub_par_unseq.set_memory_resource(device_resource).set_stream(stream);
     cuda::std::for_each(policy, cuda::counting_iterator{0}, cuda::counting_iterator{size}, fn);
     CHECK(thrust::all_of(res.begin(), res.end(), cuda::std::identity{}));
   }

@@ -33,6 +33,8 @@ _CCCL_DIAG_POP
 #  include <cuda/__execution/policy.h>
 #  include <cuda/__functional/call_or.h>
 #  include <cuda/__iterator/tabulate_output_iterator.h>
+#  include <cuda/__memory_pool/device_memory_pool.h>
+#  include <cuda/__memory_resource/get_memory_resource.h>
 #  include <cuda/__runtime/api_wrapper.h>
 #  include <cuda/__stream/get_stream.h>
 #  include <cuda/__stream/stream_ref.h>
@@ -61,7 +63,7 @@ template <>
 struct __pstl_dispatch<__pstl_algorithm::__reduce, __execution_backend::__cuda>
 {
   //! Ensures we properly deallocate the memory allocated for the result
-  template <class _Tp, class _AccumT>
+  template <class _Tp, class _AccumT, class _Resource>
   struct __allocation_guard
   {
     //! This helper struct ensures that we can properly assign types with a nontrivial assignment operator
@@ -81,24 +83,18 @@ struct __pstl_dispatch<__pstl_algorithm::__reduce, __execution_backend::__cuda>
     };
 
     ::cuda::stream_ref __stream_;
+    _Resource& __resource_;
     _Tp* __ptr_;
 
-    _CCCL_HOST_API __allocation_guard(::cuda::stream_ref __stream, size_t __num_bytes)
+    _CCCL_HOST_API __allocation_guard(::cuda::stream_ref __stream, _Resource& __resource, size_t __num_bytes)
         : __stream_(__stream)
-        , __ptr_(nullptr)
-    {
-      // Add the temporary storage from DeviceReduce to the allocation
-      _CCCL_TRY_CUDA_API(
-        ::cudaMallocAsync,
-        "__pstl_cuda_reduce: allocation failed",
-        reinterpret_cast<void**>(&__ptr_),
-        sizeof(_Tp) + __num_bytes,
-        __stream_.get());
-    }
+        , __resource_(__resource)
+        , __ptr_(static_cast<_Tp*>(__resource_.allocate(__stream_, sizeof(_Tp) + __num_bytes, alignof(_Tp))))
+    {}
 
     _CCCL_HOST_API ~__allocation_guard()
     {
-      _CCCL_ASSERT_CUDA_API(::cudaFreeAsync, "__pstl_cuda_reduce: deallocate failed", __ptr_, __stream_.get());
+      __resource_.deallocate(__stream_, __ptr_, sizeof(_Tp) + __num_bytes, alignof(_Tp));
       __stream_.sync();
     }
 
@@ -138,8 +134,10 @@ struct __pstl_dispatch<__pstl_algorithm::__reduce, __execution_backend::__cuda>
         __temp_storage, __num_bytes, __first, static_cast<_Tp*>(nullptr), __num_items, __func, __init);
 
       // Allocate memory for result
-      auto __stream = ::cuda::__call_or(::cuda::get_stream, ::cuda::stream_ref{cudaStreamPerThread}, __policy);
-      __allocation_guard<_Tp, _AccumT> __guard{__stream, __num_bytes};
+      auto __stream   = ::cuda::__call_or(::cuda::get_stream, ::cuda::stream_ref{cudaStreamPerThread}, __policy);
+      auto __resource = ::cuda::__call_or(
+        ::cuda::mr::get_memory_resource, ::cuda::device_default_memory_pool(__stream.device()), __policy);
+      __allocation_guard<_Tp, _AccumT, decltype(__resource)> __guard{__stream, __resource, __num_bytes};
 
       // Run the reduction
       ::cub::DeviceReduce::Reduce(
