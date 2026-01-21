@@ -118,14 +118,16 @@ class _BinarySearch:
 
 
 @cache_with_registered_key_functions
-def _make_binary_search_cached(
+def make_binary_search(
     d_data: DeviceArrayLike,
     d_values: DeviceArrayLike | IteratorBase,
     d_out: DeviceArrayLike,
     comp: OpAdapter,
     mode: _bindings.BinarySearchMode,
+    data_ptr: int,
+    out_ptr: int,
 ):
-    """Internal cached factory for _BinarySearch."""
+    """Cached factory for _BinarySearch."""
     return _BinarySearch(d_data, d_values, d_out, comp, mode)
 
 
@@ -156,12 +158,14 @@ def make_lower_bound(
         :func:`lower_bound`
     """
     comp_adapter = _normalize_comp(comp)
-    return _make_binary_search_cached(
+    return make_binary_search(
         d_data,
         d_values,
         d_out,
         comp_adapter,
         _bindings.BinarySearchMode.LOWER_BOUND_INDEX,
+        protocols.get_data_pointer(d_data),
+        protocols.get_data_pointer(d_out),
     )
 
 
@@ -192,12 +196,14 @@ def make_upper_bound(
         :func:`upper_bound`
     """
     comp_adapter = _normalize_comp(comp)
-    return _make_binary_search_cached(
+    return make_binary_search(
         d_data,
         d_values,
         d_out,
         comp_adapter,
         _bindings.BinarySearchMode.UPPER_BOUND_INDEX,
+        protocols.get_data_pointer(d_data),
+        protocols.get_data_pointer(d_out),
     )
 
 
