@@ -91,7 +91,11 @@ template <class _Tp>
     {
       return ::_sat_sub_i64(__x, __y);
     }
+    else
 #    endif // _CCCL_COMPILER(MSVC, >=, 19, 41) && _CCCL_ARCH(X86_64)
+    {
+      return ::cuda::std::__sub_sat_impl_generic(__x, __y);
+    }
   }
   else
   {
@@ -112,9 +116,12 @@ template <class _Tp>
     {
       return ::_sat_sub_u64(__x, __y);
     }
+    else
 #    endif // _CCCL_COMPILER(MSVC, >=, 19, 41) && _CCCL_ARCH(X86_64)
+    {
+      return ::cuda::std::__sub_sat_impl_generic(__x, __y);
+    }
   }
-  return ::cuda::std::__sub_sat_impl_generic(__x, __y);
 #  endif // ^^^ !_CCCL_BUILTIN_ELEMENTWISE_SUB_SAT ^^^
 }
 #endif // !_CCCL_COMPILER(NVRTC)

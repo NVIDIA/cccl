@@ -90,7 +90,11 @@ template <class _Tp>
     {
       return ::_sat_add_i64(__x, __y);
     }
+    else
 #    endif // _CCCL_COMPILER(MSVC, >=, 19, 41) && _CCCL_ARCH(X86_64)
+    {
+      return ::cuda::std::__add_sat_impl_generic(__x, __y);
+    }
   }
   else
   {
@@ -111,9 +115,12 @@ template <class _Tp>
     {
       return ::_sat_add_u64(__x, __y);
     }
+    else
 #    endif // _CCCL_COMPILER(MSVC, >=, 19, 41) && _CCCL_ARCH(X86_64)
+    {
+      return ::cuda::std::__add_sat_impl_generic(__x, __y);
+    }
   }
-  return ::cuda::std::__add_sat_impl_generic(__x, __y);
 #  endif // ^^^ !_CCCL_BUILTIN_ELEMENTWISE_ADD_SAT ^^^
 }
 #endif // !_CCCL_COMPILER(NVRTC)
@@ -122,8 +129,8 @@ template <class _Tp>
 template <class _Tp>
 [[nodiscard]] _CCCL_DEVICE_API _Tp __add_sat_impl_device(_Tp __x, _Tp __y) noexcept
 {
-  constexpr auto __max = cuda::std::numeric_limits<_Tp>::max();
-  constexpr auto __min = cuda::std::numeric_limits<_Tp>::min();
+  [[maybe_unused]] constexpr auto __max = cuda::std::numeric_limits<_Tp>::max();
+  [[maybe_unused]] constexpr auto __min = cuda::std::numeric_limits<_Tp>::min();
 
   if constexpr (is_signed_v<_Tp>)
   {
