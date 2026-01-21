@@ -9,48 +9,12 @@ import numpy as np
 
 from .. import _bindings
 from .. import _cccl_interop as cccl
-from .._caching import cache_with_key
+from .._caching import cache_with_registered_key_functions
 from .._cccl_interop import call_build, set_cccl_iterator_state
 from .._utils import protocols
 from ..iterators._iterators import IteratorBase
 from ..op import OpAdapter, OpKind, make_op_adapter
 from ..typing import DeviceArrayLike
-
-
-def _make_cache_key(
-    d_data: DeviceArrayLike | IteratorBase,
-    d_values: DeviceArrayLike | IteratorBase,
-    d_out: DeviceArrayLike | IteratorBase,
-    comp: OpAdapter,
-    mode: _bindings.BinarySearchMode,
-):
-    d_data_key = (
-        d_data.kind if isinstance(d_data, IteratorBase) else protocols.get_dtype(d_data)
-    )
-    d_values_key = (
-        d_values.kind
-        if isinstance(d_values, IteratorBase)
-        else protocols.get_dtype(d_values)
-    )
-    d_out_key = (
-        d_out.kind if isinstance(d_out, IteratorBase) else protocols.get_dtype(d_out)
-    )
-    data_ptr = (
-        None if isinstance(d_data, IteratorBase) else protocols.get_data_pointer(d_data)
-    )
-    out_ptr = (
-        None if isinstance(d_out, IteratorBase) else protocols.get_data_pointer(d_out)
-    )
-
-    return (
-        d_data_key,
-        d_values_key,
-        d_out_key,
-        data_ptr,
-        out_ptr,
-        comp.get_cache_key(),
-        mode,
-    )
 
 
 def _normalize_comp(comp: Callable | OpKind | None) -> OpAdapter:
@@ -153,7 +117,7 @@ class _BinarySearch:
         )
 
 
-@cache_with_key(_make_cache_key)
+@cache_with_registered_key_functions
 def _make_binary_search_cached(
     d_data: DeviceArrayLike,
     d_values: DeviceArrayLike | IteratorBase,
