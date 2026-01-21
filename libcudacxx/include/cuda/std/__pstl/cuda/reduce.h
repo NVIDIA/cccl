@@ -115,7 +115,7 @@ struct __pstl_dispatch<__pstl_algorithm::__reduce, __execution_backend::__cuda>
 
   template <class _Policy, class _Iter, class _Tp, class _BinaryOp>
   [[nodiscard]] _CCCL_HOST_API static _Tp
-  __par_impl([[maybe_unused]] _Policy __policy, _Iter __first, _Iter __last, _Tp __init, _BinaryOp __func)
+  __par_impl([[maybe_unused]] const _Policy& __policy, _Iter __first, _Iter __last, _Tp __init, _BinaryOp __func)
   {
     _Tp __ret;
 
@@ -158,14 +158,14 @@ struct __pstl_dispatch<__pstl_algorithm::__reduce, __execution_backend::__cuda>
 
   template <class _Policy, class _Iter, class _Tp, class _BinaryOp>
   [[nodiscard]] _CCCL_HOST_API _Tp
-  operator()([[maybe_unused]] _Policy __policy, _Iter __first, _Iter __last, _Tp __init, _BinaryOp __func) const
+  operator()([[maybe_unused]] const _Policy& __policy, _Iter __first, _Iter __last, _Tp __init, _BinaryOp __func) const
   {
     if constexpr (::cuda::std::__has_random_access_traversal<_Iter>)
     {
       try
       {
         return __par_impl(
-          ::cuda::std::move(__policy),
+          __policy,
           ::cuda::std::move(__first),
           ::cuda::std::move(__last),
           ::cuda::std::move(__init),

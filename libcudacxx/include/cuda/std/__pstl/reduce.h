@@ -57,7 +57,7 @@ _CCCL_BEGIN_NAMESPACE_ARCH_DEPENDENT
 _CCCL_TEMPLATE(class _Policy, class _Iter, class _Tp, class _BinaryOp)
 _CCCL_REQUIRES(__has_forward_traversal<_Iter> _CCCL_AND is_execution_policy_v<_Policy>)
 [[nodiscard]] _CCCL_HOST_API _Tp
-reduce([[maybe_unused]] _Policy __policy, _Iter __first, _Iter __last, _Tp __init, _BinaryOp __func)
+reduce([[maybe_unused]] const _Policy& __policy, _Iter __first, _Iter __last, _Tp __init, _BinaryOp __func)
 {
   static_assert(__indirect_binary_function<_Iter, _Tp, _BinaryOp>,
                 "cuda::std::reduce: The return value of BinaryOp is not convertible to T.");
@@ -67,7 +67,7 @@ reduce([[maybe_unused]] _Policy __policy, _Iter __first, _Iter __last, _Tp __ini
   if constexpr (::cuda::std::execution::__pstl_can_dispatch<decltype(__dispatch)>)
   {
     return __dispatch(
-      ::cuda::std::move(__policy),
+      __policy,
       ::cuda::std::move(__first),
       ::cuda::std::move(__last),
       ::cuda::std::move(__init),
@@ -83,26 +83,18 @@ reduce([[maybe_unused]] _Policy __policy, _Iter __first, _Iter __last, _Tp __ini
 
 _CCCL_TEMPLATE(class _Policy, class _Iter, class _Tp)
 _CCCL_REQUIRES(__has_forward_traversal<_Iter> _CCCL_AND is_execution_policy_v<_Policy>)
-[[nodiscard]] _CCCL_HOST_API _Tp reduce(_Policy __policy, _Iter __first, _Iter __last, _Tp __init)
+[[nodiscard]] _CCCL_HOST_API _Tp reduce(const _Policy& __policy, _Iter __first, _Iter __last, _Tp __init)
 {
   return ::cuda::std::reduce(
-    ::cuda::std::move(__policy),
-    ::cuda::std::move(__first),
-    ::cuda::std::move(__last),
-    ::cuda::std::move(__init),
-    ::cuda::std::plus<>{});
+    __policy, ::cuda::std::move(__first), ::cuda::std::move(__last), ::cuda::std::move(__init), ::cuda::std::plus<>{});
 }
 
 _CCCL_TEMPLATE(class _Policy, class _Iter)
 _CCCL_REQUIRES(__has_forward_traversal<_Iter> _CCCL_AND is_execution_policy_v<_Policy>)
-[[nodiscard]] _CCCL_HOST_API iter_value_t<_Iter> reduce(_Policy __policy, _Iter __first, _Iter __last)
+[[nodiscard]] _CCCL_HOST_API iter_value_t<_Iter> reduce(const _Policy& __policy, _Iter __first, _Iter __last)
 {
   return ::cuda::std::reduce(
-    ::cuda::std::move(__policy),
-    ::cuda::std::move(__first),
-    ::cuda::std::move(__last),
-    iter_value_t<_Iter>{},
-    ::cuda::std::plus<>{});
+    __policy, ::cuda::std::move(__first), ::cuda::std::move(__last), iter_value_t<_Iter>{}, ::cuda::std::plus<>{});
 }
 
 _CCCL_END_NAMESPACE_ARCH_DEPENDENT
