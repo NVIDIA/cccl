@@ -219,7 +219,7 @@ struct dispatch_segmented_scan
       const auto grid_size = ::cuda::ceil_div(static_cast<::cuda::std::uint32_t>(num_current_segments),
                                               static_cast<::cuda::std::uint32_t>(segments_per_block));
       launcher_factory(grid_size, policy.SegmentedScan().BlockThreads(), 0, stream)
-        .doit(small_segmented_scan_kernel,
+        .doit(large_segmented_scan_kernel,
               d_in,
               d_out,
               d_input_begin_offsets,
