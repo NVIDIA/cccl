@@ -30,6 +30,7 @@
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/is_signed.h>
 #include <cuda/std/__type_traits/is_unsigned.h>
+#include <cuda/std/__type_traits/type_list.h>
 #include <cuda/std/__utility/integer_sequence.h>
 #include <cuda/std/array>
 #include <cuda/std/tuple>
@@ -122,7 +123,7 @@ template <size_t _Index, class... _Slices>
 }
 
 template <size_t _Index, class... _Slices>
-using __get_slice_type = tuple_element_t<_Index, __tuple_types<_Slices...>>;
+using __get_slice_type = __type_at_c<_Index, __type_list<_Slices...>>;
 
 _CCCL_EXEC_CHECK_DISABLE
 template <class _IndexType, size_t _Index, class... _Slices>
