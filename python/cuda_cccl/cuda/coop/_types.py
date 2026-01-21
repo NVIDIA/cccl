@@ -4,6 +4,7 @@
 
 import re
 import time
+from collections import OrderedDict
 from dataclasses import dataclass, field
 from functools import cached_property
 from io import StringIO
@@ -1840,6 +1841,171 @@ class Algorithm:
 
     def codegen(self, func_to_overload):
         self.create_codegens(func_to_overload=func_to_overload)
+
+
+def _dedupe_ltoirs(ltoirs):
+    seen = set()
+    result = []
+    for ltoir in ltoirs:
+        key = (ltoir.name, hash(ltoir.data))
+        if key in seen:
+            continue
+        seen.add(key)
+        result.append(ltoir)
+    return result
+
+
+def _collect_udf_decls(algo):
+    udf_decls = OrderedDict()
+    for method in algo.parameters:
+        for param in method:
+            if isinstance(param, (StatelessOperator, StatefulOperator)):
+                if param.name not in udf_decls:
+                    udf_decls[param.name] = param.forward_decl()
+    return udf_decls
+
+
+def _collect_extra_ltoirs(algo):
+    extras = []
+    if algo.type_definitions:
+        for type_definition in algo.type_definitions:
+            extras.extend(getattr(type_definition, "lto_irs", []))
+    for method in algo.parameters:
+        for param in method:
+            ltoir = getattr(param, "ltoir", None)
+            if ltoir is not None:
+                extras.append(ltoir)
+    return _dedupe_ltoirs(extras)
+
+
+def _strip_source_preamble(src, algo, udf_decls):
+    body = src
+    body = body.replace("#include <cuda/std/cstdint>\n", "", 1)
+    includes = algo.includes or []
+    for include in includes:
+        body = body.replace(f"#include <{include}>\n", "", 1)
+    type_definitions = algo.type_definitions or []
+    for type_definition in type_definitions:
+        code = getattr(type_definition, "code", "")
+        if code:
+            body = body.replace(f"{code}\n", "", 1)
+    for decl in udf_decls.values():
+        body = body.replace(f"{decl}\n", "", 1)
+    return body.lstrip()
+
+
+def prepare_ltoir_bundle(algorithms, *, bundle_name=None):
+    if not algorithms:
+        return None
+
+    # Avoid bundling when a source rewriter is active (it expects per-algo src).
+    rewriter = _get_source_code_rewriter()
+    if rewriter is not None:
+        return None
+
+    deduped = OrderedDict()
+    for algo in algorithms:
+        deduped[id(algo)] = algo
+    algos = list(deduped.values())
+
+    if len(algos) < 2:
+        return None
+
+    per_algo_udf_decls = {}
+    includes = OrderedDict()
+    type_defs = OrderedDict()
+    udf_decls = OrderedDict()
+
+    for algo in algos:
+        per_algo_udf_decls[algo] = _collect_udf_decls(algo)
+        for include in algo.includes or []:
+            includes.setdefault(include, None)
+        for type_definition in algo.type_definitions or []:
+            code = getattr(type_definition, "code", "")
+            if code:
+                type_defs.setdefault(code, None)
+        for decl in per_algo_udf_decls[algo].values():
+            udf_decls.setdefault(decl, None)
+
+    buf = StringIO()
+    w = buf.write
+    w("#include <cuda/std/cstdint>\n")
+    for include in includes.keys():
+        w(f"#include <{include}>\n")
+    for code in type_defs.keys():
+        w(f"{code}\n")
+    w("\n")
+    if udf_decls:
+        w("\n")
+        for decl in udf_decls.keys():
+            w(f"{decl}\n")
+        w("\n")
+
+    bodies = []
+    for algo in algos:
+        src = algo.source_code
+        body = _strip_source_preamble(src, algo, per_algo_udf_decls[algo])
+        body = body.rstrip() + "\n"
+        bodies.append(body)
+
+    src = buf.getvalue() + "\n".join(bodies)
+
+    device = cuda.get_current_device()
+    cc_major, cc_minor = device.compute_capability
+    cc = cc_major * 10 + cc_minor
+
+    if bundle_name is None:
+        bundle_name = f"cuda_coop_bundle_{abs(hash(src))}"
+
+    _, blob = nvrtc.compile(
+        cpp=src,
+        cc=cc,
+        rdc=True,
+        code="lto",
+    )
+    bundle_ltoir = LTOIR(
+        name=bundle_name,
+        data=blob,
+    )
+
+    ltoir_obj = ObjectCode.from_ltoir(blob, name=bundle_name)
+    linker_options = LinkerOptions(
+        arch=f"sm_{cc}",
+        link_time_optimization=True,
+        ptx=True,
+    )
+    linker = Linker(ltoir_obj, options=linker_options)
+    linked_ptx = linker.link("ptx")
+    ptx = linked_ptx.code.decode("utf-8")
+
+    for algo in algos:
+        extras = _collect_extra_ltoirs(algo)
+        algo._lto_irs = extras
+        algo.__dict__["lto_irs"] = [bundle_ltoir] + extras
+
+        if algo.primitive.is_child:
+            continue
+
+        names = algo.names
+        temp_storage_bytes = find_unsigned(names.temp_storage_bytes, ptx)
+        temp_storage_alignment = find_unsigned(names.temp_storage_alignment, ptx)
+        algorithm_struct_size = find_unsigned(names.algorithm_struct_size, ptx)
+        algorithm_struct_alignment = find_unsigned(
+            names.algorithm_struct_alignment, ptx
+        )
+
+        algo._temp_storage_bytes = temp_storage_bytes
+        algo._temp_storage_alignment = temp_storage_alignment
+        algo._algorithm_struct_size = algorithm_struct_size
+        algo._algorithm_struct_alignment = algorithm_struct_alignment
+        algo.__dict__["_size_and_alignment_info"] = SimpleNamespace(
+            algorithm_struct_size=algorithm_struct_size,
+            algorithm_struct_alignment=algorithm_struct_alignment,
+            temp_storage_bytes=temp_storage_bytes,
+            temp_storage_alignment=temp_storage_alignment,
+        )
+
+    return bundle_ltoir
 
 
 class Invocable:

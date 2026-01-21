@@ -358,3 +358,31 @@
   - `pytest -q tests/coop/test_block_histogram.py -k two_phase0` (1 passed, 306 deselected)
 - Lint:
   - `pre-commit run --files cuda/coop/_decls.py tests/coop/mamba_selective_scan_fwd.py`
+
+## 2026-01-20 (bundle NVRTC LTO for coop)
+- Request: reduce per-primitive NVRTC overhead by bundling coop LTOIR generation.
+- Changes:
+  - `cuda/coop/_types.py`: add a bundled LTOIR compiler (`prepare_ltoir_bundle`) that dedupes preamble includes/typedefs, compiles a single LTO module, and seeds per-algorithm LTO/cache + size/alignment data.
+  - `cuda/coop/_rewrite.py`: add env-gated bundling (`NUMBA_CCCL_COOP_BUNDLE_LTOIR=1`) and trigger bundle compilation from the first lowering callback.
+- Tests: not run (no GPU available).
+
+## 2026-01-20 (bundle NVRTC LTO tests)
+- Request: add tests to verify the bundle env var and bundle cache seeding.
+- Changes:
+  - `tests/coop/test_ltoir_bundle.py`: add unit tests for `prepare_ltoir_bundle` cache seeding and `NUMBA_CCCL_COOP_BUNDLE_LTOIR` gating via `CoopNodeRewriter.ensure_ltoir_bundle()`.
+- Tests:
+  - `pytest -q tests/coop/test_ltoir_bundle.py` (2 passed)
+
+## 2026-01-21 (bundle NVRTC LTO smoke)
+- Request: exercise multi-primitive kernels with `NUMBA_CCCL_COOP_BUNDLE_LTOIR=1`.
+- Tests:
+  - `NUMBA_CCCL_COOP_BUNDLE_LTOIR=1 pytest -q tests/coop/test_mamba_selective_scan_fwd.py -k mamba` (1 passed)
+  - `NUMBA_CCCL_COOP_BUNDLE_LTOIR=1 pytest -q tests/coop/test_block_load_store_scan_single_phase.py -k single_phase` (14 passed, 1 skipped; NVRTC warnings about attribute #1866-D)
+
+## 2026-01-21 (NVRTC compile counter)
+- Request: add a repeatable compile-count validation hook for bundling.
+- Changes:
+  - `cuda/coop/_nvrtc.py`: add opt-in NVRTC compile counter (`NUMBA_CCCL_COOP_NVRTC_COMPILE_COUNT` or `_set_compile_counter_enabled(True)`), plus reset/get helpers.
+  - `tests/coop/test_nvrtc_compile_count.py`: validate counter cache-miss behavior and bundling single-compile path using stubs.
+- Tests:
+  - `pytest -q tests/coop/test_nvrtc_compile_count.py` (2 passed)

@@ -3,6 +3,7 @@
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 import functools
+import os
 
 from cuda.bindings import nvrtc
 
@@ -18,6 +19,37 @@ def CHECK_NVRTC(err, prog):
         raise RuntimeError(f"NVRTC error: {log.decode('ascii')}")
 
 
+_NVRTC_COMPILE_COUNTER = 0
+_NVRTC_COMPILE_COUNTER_ENABLED = None
+
+
+def _is_compile_counter_enabled():
+    global _NVRTC_COMPILE_COUNTER_ENABLED
+    if _NVRTC_COMPILE_COUNTER_ENABLED is None:
+        val = os.environ.get("NUMBA_CCCL_COOP_NVRTC_COMPILE_COUNT")
+        _NVRTC_COMPILE_COUNTER_ENABLED = val is not None and val.lower() in (
+            "1",
+            "true",
+            "yes",
+            "on",
+        )
+    return _NVRTC_COMPILE_COUNTER_ENABLED
+
+
+def _set_compile_counter_enabled(enabled):
+    global _NVRTC_COMPILE_COUNTER_ENABLED
+    _NVRTC_COMPILE_COUNTER_ENABLED = enabled
+
+
+def reset_compile_counter():
+    global _NVRTC_COMPILE_COUNTER
+    _NVRTC_COMPILE_COUNTER = 0
+
+
+def get_compile_counter():
+    return _NVRTC_COMPILE_COUNTER
+
+
 # cpp is the C++ source code
 # cc = 800 for Ampere, 900 Hopper, etc
 # rdc is true or false
@@ -26,6 +58,9 @@ def CHECK_NVRTC(err, prog):
 @functools.lru_cache(maxsize=32)  # Always enabled
 @disk_cache  # Optional, see caching.py
 def compile_impl(cpp, cc, rdc, code, nvrtc_path, nvrtc_version):
+    if _is_compile_counter_enabled():
+        global _NVRTC_COMPILE_COUNTER
+        _NVRTC_COMPILE_COUNTER += 1
     check_in("rdc", rdc, [True, False])
     check_in("code", code, ["lto", "ptx"])
 

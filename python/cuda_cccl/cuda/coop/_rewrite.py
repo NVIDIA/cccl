@@ -8,6 +8,7 @@
 import functools
 import inspect
 import itertools
+import os
 import struct
 import sys
 from collections import OrderedDict, defaultdict
@@ -107,6 +108,13 @@ def debug_print(*args, **kwargs):
     """
     if DEBUG_PRINT:
         print(*args, **kwargs)
+
+
+def _get_env_bool(name: str, default: bool = False) -> bool:
+    val = os.environ.get(name)
+    if val is None:
+        return default
+    return val.lower() in ("1", "true", "yes", "on")
 
 
 def add_ltoirs(context, ltoirs):
@@ -1453,6 +1461,9 @@ class CoopNode:
                     )
                     debug_print(msg)
                     node = invocable.node
+                    rewriter = getattr(node, "rewriter", None)
+                    if rewriter is not None:
+                        rewriter.ensure_ltoir_bundle()
                     cg = node.codegen
                     (_, codegen_method) = cg.intrinsic_impl()
                     res = codegen_method(context, builder, sig, args)
@@ -1740,6 +1751,9 @@ class CoopLoadStoreNode(CoopNode):
                 @lower(invocable, types.VarArg(types.Any))
                 def codegen(context, builder, sig, args):
                     node = invocable.node
+                    rewriter = getattr(node, "rewriter", None)
+                    if rewriter is not None:
+                        rewriter.ensure_ltoir_bundle()
                     cg = node.codegen
                     (_, codegen_method) = cg.intrinsic_impl()
                     res = codegen_method(context, builder, sig, args)
@@ -1857,6 +1871,9 @@ class CoopLoadStoreNode(CoopNode):
                 @lower(wrapper_func, types.VarArg(types.Any))
                 def codegen(context, builder, sig, args):
                     node = wrapper_func.node
+                    rewriter = getattr(node, "rewriter", None)
+                    if rewriter is not None:
+                        rewriter.ensure_ltoir_bundle()
                     cg = node.codegen
                     (_, codegen_method) = cg.intrinsic_impl()
                     res = codegen_method(context, builder, sig, args)
@@ -4374,6 +4391,9 @@ class CoopBlockRunLengthNode(CoopNode, CoopNodeMixin):
                 @lower(invocable, types.VarArg(types.Any))
                 def codegen(context, builder, sig, args):
                     node = invocable.node
+                    rewriter = getattr(node, "rewriter", None)
+                    if rewriter is not None:
+                        rewriter.ensure_ltoir_bundle()
                     cg = node.codegen
                     (_, codegen_method) = cg.intrinsic_impl()
                     res = codegen_method(context, builder, sig, args)
@@ -4607,6 +4627,9 @@ class CoopBlockRunLengthDecodeNode(CoopNode, CoopNodeMixin):
                 @lower(invocable, types.VarArg(types.Any))
                 def codegen(context, builder, sig, args):
                     node = invocable.node
+                    rewriter = getattr(node, "rewriter", None)
+                    if rewriter is not None:
+                        rewriter.ensure_ltoir_bundle()
                     cg = node.codegen
                     (_, codegen_method) = cg.intrinsic_impl()
                     res = codegen_method(context, builder, sig, args)
@@ -5413,6 +5436,13 @@ class CoopNodeRewriter(Rewrite):
         self.typemap = None
         self.calltypes = None
 
+        self._bundle_ltoir_enabled = _get_env_bool(
+            "NUMBA_CCCL_COOP_BUNDLE_LTOIR", default=False
+        )
+        self._bundle_ltoir_done = False
+        self._bundle_ltoir_failed = False
+        self._bundle_ltoir = None
+
         # Advanced C++ CUDA kernels will often leverage a templated struct
         # for specialized CUB primitives, e.g.
         #   template <T, int items_per_thread>
@@ -5484,6 +5514,46 @@ class CoopNodeRewriter(Rewrite):
         # `pre_launch_callbacks` list, providing another synthesized routine
         # that, when invoked, will update the kernel's extensions list.
         self.seen_structs = set()
+
+    def ensure_ltoir_bundle(self):
+        if not self._bundle_ltoir_enabled:
+            return
+        if self._bundle_ltoir_done or self._bundle_ltoir_failed:
+            return
+
+        algorithms = []
+        seen = set()
+        for node in self.nodes.values():
+            instance = getattr(node, "instance", None)
+            if instance is None:
+                continue
+            algo = getattr(instance, "specialization", None)
+            if algo is None:
+                continue
+            if "lto_irs" in algo.__dict__:
+                continue
+            key = id(algo)
+            if key in seen:
+                continue
+            seen.add(key)
+            algorithms.append(algo)
+
+        if len(algorithms) < 2:
+            self._bundle_ltoir_done = True
+            return
+
+        try:
+            from ._types import prepare_ltoir_bundle
+
+            bundle = prepare_ltoir_bundle(
+                algorithms, bundle_name=f"cuda_coop_bundle_{id(self)}"
+            )
+            if bundle is not None:
+                self._bundle_ltoir = bundle
+            self._bundle_ltoir_done = True
+        except Exception as exc:
+            self._bundle_ltoir_failed = True
+            debug_print("cuda.coop ltoir bundle failed:", exc)
 
     def _get_or_create_global_module(
         self,
