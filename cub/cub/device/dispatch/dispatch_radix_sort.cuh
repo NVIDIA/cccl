@@ -117,52 +117,43 @@ _CCCL_API constexpr auto convert_policy() -> radix_sort_policy
       p_t::SCAN_ALGORITHM};
   };
 
-  const auto histogram = [] {
-    using p = typename active_policy::HistogramPolicy;
-    return radix_sort_histogram_policy{p::BLOCK_THREADS, p::ITEMS_PER_THREAD, p::NUM_PARTS, p::RADIX_BITS};
-  }();
+  using hist_pol       = typename active_policy::HistogramPolicy;
+  const auto histogram = radix_sort_histogram_policy{
+    hist_pol::BLOCK_THREADS, hist_pol::ITEMS_PER_THREAD, hist_pol::NUM_PARTS, hist_pol::RADIX_BITS};
 
-  const auto exclusive_sum = [] {
-    using p = typename active_policy::ExclusiveSumPolicy;
-    return radix_sort_exclusive_sum_policy{p::BLOCK_THREADS, p::RADIX_BITS};
-  }();
+  using exc_sum_pol        = typename active_policy::ExclusiveSumPolicy;
+  const auto exclusive_sum = radix_sort_exclusive_sum_policy{exc_sum_pol::BLOCK_THREADS, exc_sum_pol::RADIX_BITS};
 
-  const auto onesweep = [] {
-    using p = typename active_policy::OnesweepPolicy;
-    return radix_sort_onesweep_policy{
-      p::BLOCK_THREADS,
-      p::ITEMS_PER_THREAD,
-      p::RANK_NUM_PARTS,
-      p::RADIX_BITS,
-      p::RANK_ALGORITHM,
-      p::SCAN_ALGORITHM,
-      p::STORE_ALGORITHM};
-  }();
+  using one_pol       = typename active_policy::OnesweepPolicy;
+  const auto onesweep = radix_sort_onesweep_policy{
+    one_pol::BLOCK_THREADS,
+    one_pol::ITEMS_PER_THREAD,
+    one_pol::RANK_NUM_PARTS,
+    one_pol::RADIX_BITS,
+    one_pol::RANK_ALGORITHM,
+    one_pol::SCAN_ALGORITHM,
+    one_pol::STORE_ALGORITHM};
 
-  const auto scan = [] {
-    using p = typename active_policy::ScanPolicy;
-    return scan_policy{
-      p::BLOCK_THREADS,
-      p::ITEMS_PER_THREAD,
-      p::LOAD_ALGORITHM,
-      p::LOAD_MODIFIER,
-      p::STORE_ALGORITHM,
-      p::SCAN_ALGORITHM,
-      delay_constructor_policy_from_type<typename p::detail::delay_constructor_t>};
-  }();
+  using scan_pol  = typename active_policy::ScanPolicy;
+  const auto scan = scan_policy{
+    scan_pol::BLOCK_THREADS,
+    scan_pol::ITEMS_PER_THREAD,
+    scan_pol::LOAD_ALGORITHM,
+    scan_pol::LOAD_MODIFIER,
+    scan_pol::STORE_ALGORITHM,
+    scan_pol::SCAN_ALGORITHM,
+    delay_constructor_policy_from_type<typename scan_pol::detail::delay_constructor_t>};
 
   const auto downsweep     = convert_downsweep_policy(typename active_policy::DownsweepPolicy{});
   const auto alt_downsweep = convert_downsweep_policy(typename active_policy::AltDownsweepPolicy{});
 
-  const auto upsweep = [] {
-    using p = typename active_policy::UpsweepPolicy;
-    return radix_sort_upsweep_policy{p::BLOCK_THREADS, p::ITEMS_PER_THREAD, p::RADIX_BITS, p::LOAD_MODIFIER};
-  }();
+  using up_pol       = typename active_policy::UpsweepPolicy;
+  const auto upsweep = radix_sort_upsweep_policy{
+    up_pol::BLOCK_THREADS, up_pol::ITEMS_PER_THREAD, up_pol::RADIX_BITS, up_pol::LOAD_MODIFIER};
 
-  const auto alt_upsweep = [] {
-    using p = typename active_policy::AltUpsweepPolicy;
-    return radix_sort_upsweep_policy{p::BLOCK_THREADS, p::ITEMS_PER_THREAD, p::RADIX_BITS, p::LOAD_MODIFIER};
-  }();
+  using alt_up_pol       = typename active_policy::AltUpsweepPolicy;
+  const auto alt_upsweep = radix_sort_upsweep_policy{
+    alt_up_pol::BLOCK_THREADS, alt_up_pol::ITEMS_PER_THREAD, alt_up_pol::RADIX_BITS, alt_up_pol::LOAD_MODIFIER};
 
   const auto single_tile   = convert_downsweep_policy(typename active_policy::SingleTilePolicy{});
   const auto segmented     = convert_downsweep_policy(typename active_policy::SegmentedPolicy{});
