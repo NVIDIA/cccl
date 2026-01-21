@@ -87,12 +87,12 @@ struct __pstl_dispatch<__pstl_algorithm::__reduce, __execution_backend::__cuda>
       _CCCL_TRY_CUDA_API(::cudaMalloc,
                          "__pstl_cuda_reduce: allocation failed",
                          reinterpret_cast<void**>(&__ptr_),
-                         __num_bytes + sizeof(_Tp));
+                         sizeof(_Tp) + __num_bytes);
     }
 
     _CCCL_HOST_API ~__allocation_guard()
     {
-      _CCCL_TRY_CUDA_API(::cudaFree, "__pstl_cuda_reduce: deallocate failed", __ptr_);
+      _CCCL_ASSERT_CUDA_API(::cudaFree, "__pstl_cuda_reduce: deallocate failed", __ptr_);
     }
 
     [[nodiscard]] _CCCL_HOST_API auto __get_result_iter()
