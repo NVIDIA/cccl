@@ -139,8 +139,8 @@ __host__ __device__ constexpr void test_identity_impl2(T identity)
   Op op{};
   T value      = get_value<T>();
   T identity1  = cuda::get_identity_element<Op, T>();
-  T result_lhs = op(value, identity1);
-  T result_rhs = op(identity1, value);
+  T result_lhs = static_cast<T>(op(value, identity1));
+  T result_rhs = static_cast<T>(op(identity1, value));
   assert(result_lhs == value);
   assert(result_rhs == value);
 }
@@ -245,8 +245,8 @@ __host__ __device__ constexpr void test_absorbing_impl2([[maybe_unused]] T absor
   Op op{};
   T value      = get_value<T>();
   T absorbing1 = cuda::get_absorbing_element<Op, T>();
-  T result_lhs = op(value, absorbing1);
-  T result_rhs = op(absorbing1, value);
+  T result_lhs = static_cast<T>(op(value, absorbing1));
+  T result_rhs = static_cast<T>(op(absorbing1, value));
   assert(result_lhs == absorbing1);
   assert(result_rhs == absorbing1);
 }
