@@ -67,7 +67,7 @@ reduce([[maybe_unused]] _Policy __policy, _Iter __first, _Iter __last, _Tp __ini
   if constexpr (::cuda::std::execution::__pstl_can_dispatch<decltype(__dispatch)>)
   {
     return __dispatch(
-      __policy,
+      ::cuda::std::move(__policy),
       ::cuda::std::move(__first),
       ::cuda::std::move(__last),
       ::cuda::std::move(__init),
