@@ -63,8 +63,7 @@ inline constexpr bool
   is_associative_v<::cuda::std::plus<_Tp>, _Tp, ::cuda::std::enable_if_t<::cuda::is_floating_point_v<_Tp>>> = false;
 
 template <class _Tp>
-inline constexpr bool is_associative_v<::cuda::std::plus<>, _Tp> =
-  is_associative_v<::cuda::std::plus<_Tp>, _Tp, void>;
+inline constexpr bool is_associative_v<::cuda::std::plus<>, _Tp> = is_associative_v<::cuda::std::plus<_Tp>, _Tp, void>;
 
 template <class _Tp>
 inline constexpr bool
@@ -206,8 +205,7 @@ inline constexpr bool
   is_commutative_v<::cuda::std::plus<_Tp>, _Tp, ::cuda::std::enable_if_t<::cuda::is_floating_point_v<_Tp>>> = true;
 
 template <class _Tp>
-inline constexpr bool is_commutative_v<::cuda::std::plus<>, _Tp> =
-  is_commutative_v<::cuda::std::plus<_Tp>, _Tp, void>;
+inline constexpr bool is_commutative_v<::cuda::std::plus<>, _Tp> = is_commutative_v<::cuda::std::plus<_Tp>, _Tp, void>;
 
 template <class _Tp>
 inline constexpr bool
@@ -216,7 +214,8 @@ inline constexpr bool
 
 template <class _Tp>
 inline constexpr bool
-  is_commutative_v<::cuda::std::multiplies<_Tp>, _Tp, ::cuda::std::enable_if_t<::cuda::is_floating_point_v<_Tp>>> = true;
+  is_commutative_v<::cuda::std::multiplies<_Tp>, _Tp, ::cuda::std::enable_if_t<::cuda::is_floating_point_v<_Tp>>> =
+    true;
 
 template <class _Tp>
 inline constexpr bool is_commutative_v<::cuda::std::multiplies<>, _Tp> =
@@ -349,9 +348,7 @@ struct identity_element<::cuda::std::plus<>, _Tp> : identity_element<::cuda::std
 {};
 
 template <class _Tp>
-struct identity_element<::cuda::std::multiplies<_Tp>,
-                        _Tp,
-                        ::cuda::std::enable_if_t<::cuda::std::__cccl_is_integer_v<_Tp>>>
+struct identity_element<::cuda::std::multiplies<_Tp>, _Tp, ::cuda::std::enable_if_t<::cuda::std::__cccl_is_integer_v<_Tp>>>
 {
   static constexpr auto value = _Tp{1};
 };
@@ -458,8 +455,8 @@ template <class _Op, class _Tp, class = void>
 inline constexpr bool has_identity_element_v = false;
 
 template <class _Op, class _Tp>
-inline constexpr bool has_identity_element_v<_Op, _Tp, ::cuda::std::void_t<decltype(identity_element<_Op, _Tp>::value)>> =
-  true;
+inline constexpr bool
+  has_identity_element_v<_Op, _Tp, ::cuda::std::void_t<decltype(identity_element<_Op, _Tp>::value)>> = true;
 
 /***********************************************************************************************************************
  * Absorbing Element
