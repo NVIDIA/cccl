@@ -15,10 +15,13 @@
 
 #include "test_macros.h"
 
-#if _CCCL_COMPILER(GCC, >=, 12) || _CCCL_CUDA_COMPILER(CLANG, >=, 13)
+#if _CCCL_COMPILER(GCC, >=, 12)
 _CCCL_BEGIN_NV_DIAG_SUPPRESS(3215) // "if consteval" and "if not consteval" are not standard in this mode
 _CCCL_DIAG_SUPPRESS_GCC("-Wc++23-extensions")
 #endif // _CCCL_COMPILER(GCC, >=, 12)
+#if _CCCL_CUDA_COMPILER(CLANG, >=, 13)
+_CCCL_DIAG_SUPPRESS_CLANG("-Wc++23-extensions")
+#endif // _CCCL_CUDA_COMPILER(CLANG, >=, 13)
 
 /***********************************************************************************************************************
  * Associativity and Commutativity
@@ -132,7 +135,7 @@ __host__ __device__ constexpr T get_value()
 template <class Op, class T>
 __host__ __device__ constexpr void test_identity_impl2(T identity)
 {
-  assert((identity == cuda::get_identity_element<Op, T>()) );
+  assert((identity == cuda::get_identity_element<Op, T>()));
   Op op{};
   T value      = get_value<T>();
   T identity1  = cuda::get_identity_element<Op, T>();
@@ -238,7 +241,7 @@ __host__ __device__ constexpr void test_identity_floating_point()
 template <class Op, class T>
 __host__ __device__ constexpr void test_absorbing_impl2([[maybe_unused]] T absorbing)
 {
-  assert((absorbing == cuda::get_absorbing_element<Op, T>()) );
+  assert((absorbing == cuda::get_absorbing_element<Op, T>()));
   Op op{};
   T value      = get_value<T>();
   T absorbing1 = cuda::get_absorbing_element<Op, T>();
