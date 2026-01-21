@@ -47,6 +47,7 @@ jobs:
       rapids_enabled: ${{ steps.export-flags.outputs.rapids_enabled }}
       matx_enabled: ${{ steps.export-flags.outputs.matx_enabled }}
       pytorch_enabled: ${{ steps.export-flags.outputs.pytorch_enabled }}
+      branch_notes_dirt: ${{ steps.branch-notes-dirt.outputs.branch_notes_dirt }}
     steps:
       - name: Export workflow flags
         id: export-flags
@@ -73,6 +74,37 @@ jobs:
         run: |
           echo "base_sha=${{ fromJSON(steps.get-pr-info.outputs.pr-info).base.sha }}" | tee -a "${GITHUB_OUTPUT}"
           echo "pr_number=${{ fromJSON(steps.get-pr-info.outputs.pr-info).number }}" | tee -a "${GITHUB_OUTPUT}"
+      - name: Detect .branch_notes changes
+        id: branch-notes-dirt
+        env:
+          BASE_SHA: ${{ steps.export-pr-info.outputs.base_sha }}
+        run: |
+          if [[ -z "${BASE_SHA}" ]]; then
+            echo "branch_notes_dirt=" >> "${GITHUB_OUTPUT}"
+            exit 0
+          fi
+
+          echo "Fetch history and determine merge base..."
+          git fetch origin --unshallow -q || true
+          git fetch origin "${BASE_SHA}" -q
+          merge_base_sha=$(git merge-base "${GITHUB_SHA}" "${BASE_SHA}")
+
+          echo "Head SHA: ${GITHUB_SHA}"
+          echo "PR Base SHA: ${BASE_SHA}"
+          echo "Merge Base SHA: ${merge_base_sha}"
+
+          # Only diff .branch_notes if it already exists at the merge base.
+          if git cat-file -e "${merge_base_sha}:.branch_notes" 2>/dev/null; then
+            branch_notes_dirt=$(git diff --name-only "${merge_base_sha}" "${GITHUB_SHA}" -- ".branch_notes")
+          else
+            branch_notes_dirt=""
+          fi
+
+          {
+            echo "branch_notes_dirt<<EOF"
+            echo "${branch_notes_dirt}"
+            echo "EOF"
+          } >> "${GITHUB_OUTPUT}"
       - name: Build workflow
         # Skip building the matrix when disabled, but still gather PR info for downstream jobs
         if: steps.export-flags.outputs.matrix_enabled == 'true'
@@ -271,6 +303,71 @@ jobs:
       contents: read
     uses: ./.github/workflows/build-pytorch.yml
 
+  # Test that cuda.compute can be imported on a CPU-only machine (no CUDA drivers).
+  test-cpu-import:
+    name: Test CPU-only import
+    runs-on: ubuntu-latest
+    needs:
+      - dispatch-groups-linux-two-stage
+      - dispatch-groups-linux-standalone
+    if: ${{ !cancelled() && github.repository == 'NVIDIA/cccl' }}
+    permissions:
+      contents: read
+    steps:
+      - name: Download wheel artifact
+        id: download
+        uses: actions/download-artifact@v4
+        continue-on-error: true
+        with:
+          name: wheel-cccl-linux-amd64-py3.13
+          path: artifact
+
+      - name: Check if wheel exists
+        id: check-wheel
+        run: |
+          if [[ "${{ steps.download.outcome }}" != "success" ]]; then
+            echo "No wheel artifact found (Python jobs likely didn't run). Skipping test."
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "Wheel artifact found."
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Set up Python
+        if: steps.check-wheel.outputs.skip != 'true'
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Install wheel
+        if: steps.check-wheel.outputs.skip != 'true'
+        run: |
+          echo "Artifact contents:"
+          find artifact -name "*.whl" -type f
+          pip install $(find artifact -name "*.whl" -type f | head -1)[cu13]
+
+      - name: Test CPU-only import
+        if: steps.check-wheel.outputs.skip != 'true'
+        run: |
+          python -c "
+          import cuda.compute
+          print('cuda.compute imported successfully!')
+          print(f'_BINDINGS_AVAILABLE: {cuda.compute._BINDINGS_AVAILABLE}')
+
+          # Verify that accessing missing attributes gives a helpful error
+          try:
+              _ = cuda.compute.reduce_into
+              print('ERROR: Should have raised AttributeError')
+              exit(1)
+          except AttributeError as e:
+              print(f'Got expected AttributeError: {e}')
+              if 'CUDA bindings are not available' not in str(e):
+                  print('ERROR: AttributeError message is not helpful')
+                  exit(1)
+
+          print('All CPU-only import tests passed!')
+          "
+
   # Check all other job statuses. This job gates branch protection checks.
   ci:
     name: CI
@@ -284,6 +381,7 @@ jobs:
       - verify-workflow
       - verify-devcontainers
       - docs-build
+      - test-cpu-import
     runs-on: ubuntu-latest
     steps:
       - name: Check results
@@ -306,6 +404,16 @@ jobs:
           check_result "verify-workflow"      "success" "${{needs.verify-workflow.result}}"
           check_result "verify-devcontainers" "success" "${{needs.verify-devcontainers.result}}"
           check_result "docs-build"           "success" "${{needs.docs-build.result}}"
+          check_result "test-cpu-import"      "success" "${{needs.test-cpu-import.result}}"
+
+          branch_notes_dirt="${{ needs.build-workflow.outputs.branch_notes_dirt }}"
+          branch_notes_dirt_trimmed=$(printf '%s' "${branch_notes_dirt}" | tr -d '\n' | tr -d ' ')
+          if [[ -n "${branch_notes_dirt_trimmed}" ]]; then
+            echo "::error::The .branch_notes directory was modified in this PR. Keep local notes there only; reset it before merging by running './.branch_notes/reset.sh'."
+            echo "Changed files:"
+            printf '%s\n' "${branch_notes_dirt}"
+            status="failed"
+          fi
 
           if [[ "$status" != "success" ]]; then
             exit 1

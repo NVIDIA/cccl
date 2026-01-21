@@ -144,3 +144,26 @@ C2H_TEST("dispatch_arch invokes correct policy", "[util][dispatch]")
     CHECK(cub::detail::dispatch_arch(policy_selector_minimal{}, id, closure_minimal) == cudaSuccess);
   }
 }
+
+#if _CCCL_HAS_CONCEPTS()
+// not comparable
+struct bad_policy
+{};
+
+struct policy_selector_not_regular
+{
+  _CCCL_API auto operator()(arch_id) const -> bad_policy
+  {
+    return bad_policy{};
+  }
+};
+
+C2H_TEST("policy_selector concept", "[util][dispatch]")
+{
+  STATIC_REQUIRE(::cub::detail::policy_selector<policy_selector_all, a_policy>);
+  STATIC_REQUIRE(::cub::detail::policy_selector<policy_selector_some, a_policy>);
+  STATIC_REQUIRE(::cub::detail::policy_selector<policy_selector_minimal, a_policy>);
+  STATIC_REQUIRE(!::cub::detail::policy_selector<policy_selector_not_regular, bad_policy>);
+  STATIC_REQUIRE(!::cub::detail::policy_selector<policy_selector_all, bad_policy>); // policy mismatch
+}
+#endif // _CCCL_HAS_CONCEPTS()
