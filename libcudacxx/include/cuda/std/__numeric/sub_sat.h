@@ -21,8 +21,7 @@
 #endif // no system header
 
 #include <cuda/__numeric/sub_overflow.h>
-#include <cuda/std/__algorithm/max.h>
-#include <cuda/std/__algorithm/min.h>
+#include <cuda/std/__algorithm/clamp.h>
 #include <cuda/std/__limits/numeric_limits.h>
 #include <cuda/std/__type_traits/is_integer.h>
 #include <cuda/std/__type_traits/is_signed.h>
