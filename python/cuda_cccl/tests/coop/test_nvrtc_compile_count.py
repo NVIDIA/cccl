@@ -171,3 +171,59 @@ def test_nvrtc_dump_sources(tmp_path, monkeypatch):
     assert len(files) == 1
     content = files[0].read_text(encoding="utf-8")
     assert content == "x"
+
+
+def test_gpu_dataclass_bundles_temp_storage(monkeypatch):
+    _install_nvrtc_stub(monkeypatch)
+    monkeypatch.setattr(_types.cuda, "get_current_device", lambda: _DummyDevice())
+    monkeypatch.setattr(_types, "ObjectCode", _DummyObjectCode)
+    monkeypatch.setattr(_types, "Linker", _DummyLinker)
+    monkeypatch.setattr(_types, "LinkerOptions", _DummyLinkerOptions)
+    monkeypatch.setattr(_types, "_get_source_code_rewriter", lambda: None)
+
+    ptx = (
+        ".global .align 4 .u32 algo_a_temp_storage_bytes = 64;\n"
+        ".global .align 4 .u32 algo_a_temp_storage_alignment = 8;\n"
+        ".global .align 4 .u32 algo_a_struct_size = 16;\n"
+        ".global .align 4 .u32 algo_a_struct_alignment = 4;\n"
+        ".global .align 4 .u32 algo_b_temp_storage_bytes = 96;\n"
+        ".global .align 4 .u32 algo_b_temp_storage_alignment = 16;\n"
+        ".global .align 4 .u32 algo_b_struct_size = 32;\n"
+        ".global .align 4 .u32 algo_b_struct_alignment = 8;\n"
+    )
+    monkeypatch.setattr(_DummyLinker, "_ptx", ptx, raising=False)
+
+    class DummyPrimitive(_types.BasePrimitive):
+        def __init__(self, name_prefix):
+            self.specialization = _DummyAlgo(name_prefix)
+
+    import numba
+    from numba.core.extending import typeof_impl
+
+    @typeof_impl.register(DummyPrimitive)
+    def typeof_dummy_primitive(val, c):
+        return numba.types.uintp
+
+    prim_a = DummyPrimitive("algo_a")
+    prim_b = DummyPrimitive("algo_b")
+
+    from dataclasses import dataclass
+
+    from cuda.coop._dataclass import gpu_dataclass
+
+    @dataclass
+    class Traits:
+        a: DummyPrimitive
+        b: DummyPrimitive
+
+    traits = Traits(prim_a, prim_b)
+
+    _nvrtc.reset_compile_counter()
+    _nvrtc._set_compile_counter_enabled(True)
+
+    gpu_dataclass(traits, compute_temp_storage=True)
+
+    assert _nvrtc.get_compile_counter() == 1
+    assert traits.temp_storage_bytes_sum == 160
+    assert traits.temp_storage_bytes_max == 96
+    assert traits.temp_storage_alignment == 16
