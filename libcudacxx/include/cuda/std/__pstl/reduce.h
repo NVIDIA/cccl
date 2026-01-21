@@ -33,6 +33,7 @@
 #  include <cuda/std/__pstl/dispatch.h>
 #  include <cuda/std/__type_traits/always_false.h>
 #  include <cuda/std/__type_traits/is_convertible.h>
+#  include <cuda/std/__type_traits/is_execution_policy.h>
 #  include <cuda/std/__type_traits/is_move_constructible.h>
 #  include <cuda/std/__utility/move.h>
 
