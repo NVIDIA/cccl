@@ -37,6 +37,7 @@
 #  include <cuda/std/__type_traits/num_bits.h>
 #  include <cuda/std/__type_traits/remove_cv.h>
 #  include <cuda/std/__utility/cmp.h>
+#  include <cuda/std/array>
 #  include <cuda/std/cstdint>
 #  include <cuda/std/mdspan>
 
@@ -153,8 +154,8 @@ template <typename _ElementType>
 template <::cuda::std::size_t _Rank>
 struct __dlpack_tensor
 {
-  ::cuda::std::array<::cuda::std::int64_t, _Rank> __shape[_Rank]{};
-  ::cuda::std::array<::cuda::std::int64_t, _Rank> __strides[_Rank]{};
+  ::cuda::std::array<::cuda::std::int64_t, _Rank> __shape{};
+  ::cuda::std::array<::cuda::std::int64_t, _Rank> __strides{};
   ::DLTensor __tensor{};
 
   [[nodiscard]] _CCCL_HOST_API ::DLTensor get() const& noexcept _CCCL_LIFETIMEBOUND
