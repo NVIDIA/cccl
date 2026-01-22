@@ -193,24 +193,6 @@ class reduce(BasePrimitive):
         )
 
 
-def BlockReduce(
-    dtype: DtypeType,
-    threads_per_block: DimType,
-    binary_op: Callable,
-    items_per_thread: int = 1,
-    algorithm=None,
-    methods: dict = None,
-):
-    return reduce.create(
-        dtype=dtype,
-        threads_per_block=threads_per_block,
-        items_per_thread=items_per_thread,
-        binary_op=binary_op,
-        algorithm=algorithm,
-        methods=methods,
-    )
-
-
 class sum(reduce):
     def __init__(
         self,
@@ -239,19 +221,26 @@ class sum(reduce):
             node=node,
         )
 
-
-def BlockSum(
-    dtype: DtypeType,
-    threads_per_block: DimType,
-    items_per_thread: int = 1,
-    algorithm=None,
-    methods: dict = None,
-):
-    return sum.create(
-        dtype=dtype,
-        threads_per_block=threads_per_block,
-        items_per_thread=items_per_thread,
-        binary_op=None,
-        algorithm=algorithm,
-        methods=methods,
-    )
+    @classmethod
+    def create(
+        cls,
+        dtype: DtypeType,
+        threads_per_block: DimType,
+        items_per_thread: int = 1,
+        algorithm=None,
+        methods: dict = None,
+    ):
+        algo = cls(
+            dtype=dtype,
+            threads_per_block=threads_per_block,
+            items_per_thread=items_per_thread,
+            algorithm=algorithm,
+            methods=methods,
+        )
+        specialization = algo.specialization
+        return Invocable(
+            ltoir_files=specialization.get_lto_ir(),
+            temp_storage_bytes=specialization.temp_storage_bytes,
+            temp_storage_alignment=specialization.temp_storage_alignment,
+            algorithm=specialization,
+        )

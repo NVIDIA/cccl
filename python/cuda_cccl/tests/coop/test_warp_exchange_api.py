@@ -15,7 +15,7 @@ def test_warp_exchange_striped_to_blocked():
     threads_in_warp = 32
     items_per_thread = 4
 
-    warp_exchange = coop.warp.exchange(
+    warp_exchange = coop.warp.exchange.create(
         numba.int32,
         items_per_thread,
         threads_in_warp=threads_in_warp,
@@ -59,7 +59,7 @@ def test_warp_exchange_scatter_to_striped():
     items_per_thread = 4
     total_items = threads_in_warp * items_per_thread
 
-    warp_exchange = coop.warp.exchange(
+    warp_exchange = coop.warp.exchange.create(
         numba.int32,
         items_per_thread,
         threads_in_warp=threads_in_warp,

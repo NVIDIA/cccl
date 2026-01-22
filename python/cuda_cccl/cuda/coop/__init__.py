@@ -20,20 +20,14 @@ from ._types import (
     TempStorage,
     ThreadData,
 )
-from .block._block_load_store import (
-    BlockLoad,
-    BlockStore,
-)
 
 __all__ = [
     "_init_extension",
     "block",
     "BlockHistogramAlgorithm",
-    "BlockLoad",
     "BlockLoadAlgorithm",
     "BlockScanAlgorithm",
     "BlockStoreAlgorithm",
-    "BlockStore",
     "gpu_dataclass",
     "local",
     "NoAlgorithm",

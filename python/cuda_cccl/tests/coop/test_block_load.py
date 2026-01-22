@@ -30,7 +30,9 @@ numba.config.CUDA_LOW_OCCUPANCY_WARNINGS = 0
     ],
 )
 def test_block_load(T, threads_per_block, items_per_thread, algorithm):
-    block_load = coop.block.BlockLoad(T, threads_per_block, items_per_thread, algorithm)
+    block_load = coop.block.load.create(
+        T, threads_per_block, items_per_thread, algorithm
+    )
 
     num_threads_per_block = (
         threads_per_block

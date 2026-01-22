@@ -191,23 +191,3 @@ class discontinuity(BasePrimitive):
             temp_storage_alignment=specialization.temp_storage_alignment,
             algorithm=specialization,
         )
-
-
-def BlockDiscontinuity(
-    dtype: DtypeType,
-    threads_per_block: DimType,
-    items_per_thread: int,
-    flag_op,
-    block_discontinuity_type: BlockDiscontinuityType = BlockDiscontinuityType.HEADS,
-    flag_dtype: DtypeType = None,
-    methods: dict = None,
-):
-    return discontinuity.create(
-        dtype,
-        threads_per_block,
-        items_per_thread,
-        flag_op=flag_op,
-        block_discontinuity_type=block_discontinuity_type,
-        flag_dtype=flag_dtype,
-        methods=methods,
-    )

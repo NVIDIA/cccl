@@ -428,3 +428,35 @@
   - `tests/coop/test_block_reduce_api.py`: add temp-storage coverage for reduce/sum.
 - Tests:
   - `pytest -q tests/coop/test_block_reduce_api.py -k temp_storage` (2 passed, 2 deselected)
+
+## 2026-01-21 (compare single-phase vs two-phase reduce/sum)
+- Request: update temp-storage tests to compare single-phase vs two-phase results.
+- Changes:
+  - `cuda/coop/block/_block_reduce.py`: add a `sum.create()` overload so `BlockSum` can build invocables.
+  - `tests/coop/test_block_reduce_api.py`: run single-phase and two-phase reduce/sum in the same kernel with separate outputs.
+- Tests:
+  - `pytest -q tests/coop/test_block_reduce_api.py -k temp_storage` (2 passed, 2 deselected)
+
+## 2026-01-22 (primitive naming cleanup)
+- Request: remove CamelCase/Block/Warp wrappers; ensure public primitives are snake_case BasePrimitive classes with `create()`.
+- Changes:
+  - `cuda/coop/block/_block_load_store.py`: rename `BaseLoadStore` -> `base_load_store` and update subclasses.
+  - `cuda/coop/block/_block_radix_sort.py`: rename `_RadixSortBase` -> `_radix_sort_base`.
+  - `cuda/coop/block/_block_scan.py`: convert `inclusive_sum`/`exclusive_scan`/`inclusive_scan` to classes with `create()`; fix class constructor docstring wiring.
+  - `cuda/coop/block/_block_histogram.py`, `cuda/coop/block/_block_run_length_decode.py`: rename parent/child classes to snake_case and add `create()` for parents.
+  - `cuda/coop/block/__init__.py`, `cuda/coop/__init__.py`: remove Block* wrapper exports; export snake_case primitives.
+  - `cuda/coop/warp/_warp_*.py`: convert warp primitives to BasePrimitive classes with `create()`.
+  - `tests/coop/*`: update two-phase tests and examples to use `.create()` for snake_case primitives.
+- Tests:
+  - `python -m py_compile cuda/coop/block/_block_scan.py`
+  - `NUMBA_ENABLE_CUDASIM=1 pytest -q tests/coop/test_warp_reduce_api.py -k warp` (fails: `AttributeError: module 'numba.cuda' has no attribute 'shared'`)
+
+## 2026-01-22 (warp single-phase scaffolding)
+- Request: add single-phase support for warp primitives and keep two-phase.
+- Changes:
+  - `cuda/coop/_decls.py`: add warp load/store/exchange/reduce/sum/exclusive_sum/merge_sort templates, warp module attribute resolution, and threads-in-warp validation.
+  - `cuda/coop/_rewrite.py`: add CoopWarp* nodes (load/store/exchange/merge_sort/reduce/sum/exclusive_sum) with single-phase rewrite paths.
+  - `tests/coop/test_warp_single_phase.py`: new single-phase tests for warp reduce/sum/exclusive_sum/load-store/merge-sort.
+  - `SINGLE-PHASE-TODO.md`: track warp single-phase completion.
+- Tests:
+  - `python -m py_compile cuda/coop/_decls.py cuda/coop/_rewrite.py tests/coop/test_warp_single_phase.py`

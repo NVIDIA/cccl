@@ -180,24 +180,3 @@ class shuffle(BasePrimitive):
             temp_storage_alignment=specialization.temp_storage_alignment,
             algorithm=specialization,
         )
-
-
-def BlockShuffle(
-    dtype: DtypeType,
-    threads_per_block: DimType,
-    items_per_thread: int = None,
-    block_shuffle_type: BlockShuffleType = BlockShuffleType.Up,
-    distance: int = None,
-    methods: dict = None,
-):
-    """
-    Create a two-phase block shuffle invocable.
-    """
-    return shuffle.create(
-        dtype=dtype,
-        threads_per_block=threads_per_block,
-        items_per_thread=items_per_thread,
-        block_shuffle_type=block_shuffle_type,
-        distance=distance,
-        methods=methods,
-    )

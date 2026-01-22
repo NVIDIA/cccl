@@ -648,6 +648,14 @@ def validate_items_per_thread(obj, items_per_thread):
     )
 
 
+def validate_threads_in_warp(obj, threads_in_warp):
+    return validate_positive_integer_literal(
+        obj,
+        threads_in_warp,
+        "threads_in_warp",
+    )
+
+
 def process_items_per_thread(obj, bound, arglist, two_phase, target_array=None):
     items_per_thread = bound.arguments.get("items_per_thread")
     if target_array is not None:
@@ -918,6 +926,177 @@ class CoopBlockStoreDecl(CoopLoadStoreBaseTemplate, StoreMixin, CoopDeclMixin):
 class CoopBlockStoreTempStorageGetItemDecl(CoopTempStorageGetItemDecl):
     target_key = coop.block.store
     target_template = CoopBlockStoreDecl
+
+
+# =============================================================================
+# Warp Load & Store (Single-phase)
+# =============================================================================
+
+
+class CoopWarpLoadStoreBaseTemplate(AbstractTemplate):
+    """
+    Base class for warp load/store functions. Subclasses must define:
+      - key
+      - primitive_name
+      - algorithm_enum
+      - default_algorithm
+    """
+
+    unsafe_casting = False
+    exact_match_required = True
+    prefer_literal = True
+
+    def __init__(self, context=None):
+        super().__init__(context=context)
+
+    def _validate_args_and_create_signature(self, bound, two_phase=False):
+        src = bound.arguments["src"]
+        dst = bound.arguments["dst"]
+        validate_src_dst(self, src, dst)
+
+        items_per_thread = bound.arguments.get("items_per_thread")
+        using_thread_data = isinstance(src, ThreadDataType) or isinstance(
+            dst, ThreadDataType
+        )
+        if not using_thread_data:
+            if not two_phase or items_per_thread is not None:
+                items_per_thread = validate_items_per_thread(self, items_per_thread)
+
+        threads_in_warp = bound.arguments.get("threads_in_warp")
+        if threads_in_warp is not None:
+            maybe_literal = validate_threads_in_warp(self, threads_in_warp)
+            if maybe_literal is not None:
+                threads_in_warp = maybe_literal
+
+        algorithm = bound.arguments.get("algorithm")
+        validate_algorithm(self, algorithm)
+
+        num_valid_items = bound.arguments.get("num_valid_items")
+        if num_valid_items is not None and not isinstance(
+            num_valid_items, types.Integer
+        ):
+            raise errors.TypingError(
+                f"{self.primitive_name} requires 'num_valid_items' "
+                f"to be an integer, got: {num_valid_items}"
+            )
+
+        temp_storage = bound.arguments.get("temp_storage")
+        if temp_storage is not None:
+            raise errors.TypingError(
+                f"{self.primitive_name} does not support 'temp_storage'"
+            )
+
+        if self.src_first:
+            array_args = (src, dst)
+        else:
+            array_args = (dst, src)
+
+        arglist = [*array_args]
+
+        if items_per_thread is not None:
+            arglist.append(items_per_thread)
+
+        if threads_in_warp is not None:
+            arglist.append(threads_in_warp)
+
+        if algorithm is not None:
+            arglist.append(algorithm)
+
+        if num_valid_items is not None:
+            arglist.append(num_valid_items)
+
+        oob_default = bound.arguments.get("oob_default")
+        if oob_default is not None:
+            if num_valid_items is None:
+                raise errors.TypingError(
+                    f"{self.primitive_name} requires 'num_valid_items' when "
+                    "'oob_default' is specified"
+                )
+            if not isinstance(oob_default, (types.Number, types.Boolean)):
+                raise errors.TypingError(
+                    f"{self.primitive_name} requires 'oob_default' to be a scalar"
+                )
+            arglist.append(oob_default)
+
+        sig = signature(types.void, *arglist)
+        return sig
+
+    def _prevalidate_args(self, args):
+        if len(args) < 2:
+            raise errors.TypingError(
+                f"{self.primitive_name} requires at least two positional arguments"
+            )
+
+    def generic(self, args, kwds):
+        self._prevalidate_args(args)
+        bound = self.signature(*args, **kwds)
+        return self._validate_args_and_create_signature(bound)
+
+
+class WarpLoadMixin:
+    src_first = True
+
+    @staticmethod
+    def signature(
+        src: types.Array,
+        dst: types.Array,
+        items_per_thread: int = None,
+        threads_in_warp: int = 32,
+        algorithm: coop.WarpLoadAlgorithm = None,
+        num_valid_items: int = None,
+        oob_default=None,
+        temp_storage: Union[types.Array, TempStorageType] = None,
+    ):
+        return inspect.signature(WarpLoadMixin.signature).bind(
+            src,
+            dst,
+            items_per_thread=items_per_thread,
+            threads_in_warp=threads_in_warp,
+            algorithm=algorithm,
+            num_valid_items=num_valid_items,
+            oob_default=oob_default,
+            temp_storage=temp_storage,
+        )
+
+
+class WarpStoreMixin:
+    src_first = False
+
+    @staticmethod
+    def signature(
+        dst: types.Array,
+        src: types.Array,
+        items_per_thread: int = None,
+        threads_in_warp: int = 32,
+        algorithm: coop.WarpStoreAlgorithm = None,
+        num_valid_items: int = None,
+        temp_storage: Union[types.Array, TempStorageType] = None,
+    ):
+        return inspect.signature(WarpStoreMixin.signature).bind(
+            dst,
+            src,
+            items_per_thread=items_per_thread,
+            threads_in_warp=threads_in_warp,
+            algorithm=algorithm,
+            num_valid_items=num_valid_items,
+            temp_storage=temp_storage,
+        )
+
+
+@register_global(coop.warp.load)
+class CoopWarpLoadDecl(CoopWarpLoadStoreBaseTemplate, WarpLoadMixin, CoopDeclMixin):
+    key = coop.warp.load
+    primitive_name = "coop.warp.load"
+    algorithm_enum = coop.WarpLoadAlgorithm
+    default_algorithm = coop.WarpLoadAlgorithm.DIRECT
+
+
+@register_global(coop.warp.store)
+class CoopWarpStoreDecl(CoopWarpLoadStoreBaseTemplate, WarpStoreMixin, CoopDeclMixin):
+    key = coop.warp.store
+    primitive_name = "coop.warp.store"
+    algorithm_enum = coop.WarpStoreAlgorithm
+    default_algorithm = coop.WarpStoreAlgorithm.DIRECT
 
 
 # =============================================================================
@@ -3193,6 +3372,292 @@ def lower_constant_block_sum_instance_type(context, builder, typ, value):
 
 
 # =============================================================================
+# Warp Primitives (Single-phase)
+# =============================================================================
+
+
+@register_global(coop.warp.exchange)
+class CoopWarpExchangeDecl(CoopAbstractTemplate, CoopDeclMixin):
+    key = coop.warp.exchange
+    primitive_name = "coop.warp.exchange"
+    is_constructor = False
+    minimum_num_args = 1
+    default_exchange_type = coop.warp.WarpExchangeType.StripedToBlocked
+
+    @staticmethod
+    def signature(
+        items: types.Array,
+        output_items: types.Array = None,
+        items_per_thread: int = None,
+        ranks: types.Array = None,
+        warp_exchange_type: coop.warp.WarpExchangeType = None,
+        threads_in_warp: int = 32,
+        offset_dtype: Optional[types.Type] = None,
+        temp_storage: Union[types.Array, TempStorageType] = None,
+    ):
+        return inspect.signature(CoopWarpExchangeDecl.signature).bind(
+            items,
+            output_items=output_items,
+            items_per_thread=items_per_thread,
+            ranks=ranks,
+            warp_exchange_type=warp_exchange_type,
+            threads_in_warp=threads_in_warp,
+            offset_dtype=offset_dtype,
+            temp_storage=temp_storage,
+        )
+
+    def _validate_args_and_create_signature(self, bound, two_phase=False):
+        items = bound.arguments["items"]
+        output_items = bound.arguments.get("output_items")
+        ranks = bound.arguments.get("ranks")
+        if not isinstance(items, types.Array):
+            raise errors.TypingError(
+                f"{self.primitive_name} requires 'items' to be a device array"
+            )
+        if output_items is not None:
+            validate_src_dst(self, items, output_items)
+
+        arglist = [items]
+        if output_items is not None:
+            arglist.append(output_items)
+
+        process_items_per_thread(self, bound, arglist, two_phase, target_array=items)
+
+        warp_exchange_type = bound.arguments.get("warp_exchange_type")
+        if warp_exchange_type is None:
+            warp_exchange_type = self.default_exchange_type
+        if isinstance(warp_exchange_type, enum.IntEnum):
+            if warp_exchange_type not in coop.warp.WarpExchangeType:
+                raise errors.TypingError(
+                    f"{self.primitive_name} requires a WarpExchangeType value"
+                )
+        elif isinstance(warp_exchange_type, types.EnumMember):
+            if warp_exchange_type.instance_class is not coop.warp.WarpExchangeType:
+                raise errors.TypingError(
+                    f"{self.primitive_name} requires a WarpExchangeType value"
+                )
+        else:
+            raise errors.TypingError(
+                f"{self.primitive_name} requires a WarpExchangeType value"
+            )
+        arglist.append(warp_exchange_type)
+
+        threads_in_warp = bound.arguments.get("threads_in_warp")
+        if threads_in_warp is not None:
+            maybe_literal = validate_threads_in_warp(self, threads_in_warp)
+            if maybe_literal is not None:
+                threads_in_warp = maybe_literal
+            arglist.append(threads_in_warp)
+
+        if warp_exchange_type == coop.warp.WarpExchangeType.ScatterToStriped:
+            if ranks is None:
+                raise errors.TypingError(
+                    f"{self.primitive_name} requires 'ranks' for ScatterToStriped"
+                )
+            if not isinstance(ranks, types.Array):
+                raise errors.TypingError(
+                    f"{self.primitive_name} requires 'ranks' to be an array"
+                )
+            if not isinstance(ranks.dtype, types.Integer):
+                raise errors.TypingError(
+                    f"{self.primitive_name} requires 'ranks' to be integer array"
+                )
+            arglist.append(ranks)
+
+            offset_dtype = bound.arguments.get("offset_dtype")
+            if offset_dtype is not None and not isinstance(
+                offset_dtype, (types.DType, types.Type)
+            ):
+                raise errors.TypingError(
+                    f"{self.primitive_name} requires 'offset_dtype' to be a dtype"
+                )
+            if offset_dtype is not None:
+                arglist.append(offset_dtype)
+        elif ranks is not None:
+            raise errors.TypingError(
+                f"{self.primitive_name} only accepts 'ranks' for ScatterToStriped"
+            )
+
+        temp_storage = bound.arguments.get("temp_storage")
+        if temp_storage is not None:
+            raise errors.TypingError(
+                f"{self.primitive_name} does not support 'temp_storage'"
+            )
+
+        return signature(types.void, *arglist)
+
+
+@register_global(coop.warp.reduce)
+class CoopWarpReduceDecl(CoopAbstractTemplate, CoopDeclMixin):
+    key = coop.warp.reduce
+    primitive_name = "coop.warp.reduce"
+    is_constructor = False
+    minimum_num_args = 2
+
+    @staticmethod
+    def signature(
+        src: types.Number,
+        binary_op: Optional[Callable] = None,
+        threads_in_warp: int = 32,
+    ):
+        return inspect.signature(CoopWarpReduceDecl.signature).bind(
+            src,
+            binary_op=binary_op,
+            threads_in_warp=threads_in_warp,
+        )
+
+    def _validate_args_and_create_signature(self, bound, two_phase=False):
+        src = bound.arguments["src"]
+        if isinstance(src, types.Array):
+            raise errors.TypingError(f"{self.primitive_name} requires a scalar input")
+        if not isinstance(src, types.Number):
+            raise errors.TypingError(f"{self.primitive_name} requires a numeric input")
+        arglist = [src]
+
+        binary_op = bound.arguments.get("binary_op")
+        if binary_op is None:
+            raise errors.TypingError(
+                f"{self.primitive_name} requires 'binary_op' to be specified"
+            )
+        arglist.append(binary_op)
+
+        threads_in_warp = bound.arguments.get("threads_in_warp")
+        if threads_in_warp is not None:
+            maybe_literal = validate_threads_in_warp(self, threads_in_warp)
+            if maybe_literal is not None:
+                threads_in_warp = maybe_literal
+            arglist.append(threads_in_warp)
+
+        return signature(src, *arglist)
+
+
+@register_global(coop.warp.sum)
+class CoopWarpSumDecl(CoopAbstractTemplate, CoopDeclMixin):
+    key = coop.warp.sum
+    primitive_name = "coop.warp.sum"
+    is_constructor = False
+    minimum_num_args = 1
+
+    @staticmethod
+    def signature(
+        src: types.Number,
+        threads_in_warp: int = 32,
+    ):
+        return inspect.signature(CoopWarpSumDecl.signature).bind(
+            src,
+            threads_in_warp=threads_in_warp,
+        )
+
+    def _validate_args_and_create_signature(self, bound, two_phase=False):
+        src = bound.arguments["src"]
+        if isinstance(src, types.Array):
+            raise errors.TypingError(f"{self.primitive_name} requires a scalar input")
+        if not isinstance(src, types.Number):
+            raise errors.TypingError(f"{self.primitive_name} requires a numeric input")
+        arglist = [src]
+
+        threads_in_warp = bound.arguments.get("threads_in_warp")
+        if threads_in_warp is not None:
+            maybe_literal = validate_threads_in_warp(self, threads_in_warp)
+            if maybe_literal is not None:
+                threads_in_warp = maybe_literal
+            arglist.append(threads_in_warp)
+
+        return signature(src, *arglist)
+
+
+@register_global(coop.warp.exclusive_sum)
+class CoopWarpExclusiveSumDecl(CoopAbstractTemplate, CoopDeclMixin):
+    key = coop.warp.exclusive_sum
+    primitive_name = "coop.warp.exclusive_sum"
+    is_constructor = False
+    minimum_num_args = 1
+
+    @staticmethod
+    def signature(
+        src: types.Number,
+        threads_in_warp: int = 32,
+    ):
+        return inspect.signature(CoopWarpExclusiveSumDecl.signature).bind(
+            src,
+            threads_in_warp=threads_in_warp,
+        )
+
+    def _validate_args_and_create_signature(self, bound, two_phase=False):
+        src = bound.arguments["src"]
+        if isinstance(src, types.Array):
+            raise errors.TypingError(f"{self.primitive_name} requires a scalar input")
+        if not isinstance(src, types.Number):
+            raise errors.TypingError(f"{self.primitive_name} requires a numeric input")
+        arglist = [src]
+
+        threads_in_warp = bound.arguments.get("threads_in_warp")
+        if threads_in_warp is not None:
+            maybe_literal = validate_threads_in_warp(self, threads_in_warp)
+            if maybe_literal is not None:
+                threads_in_warp = maybe_literal
+            arglist.append(threads_in_warp)
+
+        return signature(src, *arglist)
+
+
+@register_global(coop.warp.merge_sort_keys)
+class CoopWarpMergeSortDecl(CoopAbstractTemplate, CoopDeclMixin):
+    key = coop.warp.merge_sort_keys
+    primitive_name = "coop.warp.merge_sort_keys"
+    is_constructor = False
+    minimum_num_args = 2
+
+    @staticmethod
+    def signature(
+        keys: types.Array,
+        items_per_thread: int = None,
+        compare_op: Optional[Callable] = None,
+        threads_in_warp: int = 32,
+        temp_storage: Union[types.Array, TempStorageType] = None,
+    ):
+        return inspect.signature(CoopWarpMergeSortDecl.signature).bind(
+            keys,
+            items_per_thread=items_per_thread,
+            compare_op=compare_op,
+            threads_in_warp=threads_in_warp,
+            temp_storage=temp_storage,
+        )
+
+    def _validate_args_and_create_signature(self, bound, two_phase=False):
+        keys = bound.arguments["keys"]
+        if not isinstance(keys, types.Array):
+            raise errors.TypingError(
+                f"{self.primitive_name} requires 'keys' to be a device array"
+            )
+
+        arglist = [keys]
+        process_items_per_thread(self, bound, arglist, two_phase, target_array=keys)
+
+        compare_op = bound.arguments.get("compare_op")
+        if compare_op is None:
+            raise errors.TypingError(
+                f"{self.primitive_name} requires 'compare_op' to be specified"
+            )
+        arglist.append(compare_op)
+
+        threads_in_warp = bound.arguments.get("threads_in_warp")
+        if threads_in_warp is not None:
+            maybe_literal = validate_threads_in_warp(self, threads_in_warp)
+            if maybe_literal is not None:
+                threads_in_warp = maybe_literal
+            arglist.append(threads_in_warp)
+
+        temp_storage = bound.arguments.get("temp_storage")
+        if temp_storage is not None:
+            raise errors.TypingError(
+                f"{self.primitive_name} does not support 'temp_storage'"
+            )
+
+        return signature(types.void, *arglist)
+
+
+# =============================================================================
 # Module Template
 # =============================================================================
 
@@ -3243,11 +3708,40 @@ class CoopBlockModuleTemplate(AttributeTemplate):
 
 
 @register_attr
+class CoopWarpModuleTemplate(AttributeTemplate):
+    key = types.Module(coop.warp)
+
+    def resolve_load(self, mod):
+        return types.Function(CoopWarpLoadDecl)
+
+    def resolve_store(self, mod):
+        return types.Function(CoopWarpStoreDecl)
+
+    def resolve_exchange(self, mod):
+        return types.Function(CoopWarpExchangeDecl)
+
+    def resolve_reduce(self, mod):
+        return types.Function(CoopWarpReduceDecl)
+
+    def resolve_sum(self, mod):
+        return types.Function(CoopWarpSumDecl)
+
+    def resolve_exclusive_sum(self, mod):
+        return types.Function(CoopWarpExclusiveSumDecl)
+
+    def resolve_merge_sort_keys(self, mod):
+        return types.Function(CoopWarpMergeSortDecl)
+
+
+@register_attr
 class CoopModuleTemplate(AttributeTemplate):
     key = types.Module(coop)
 
     def resolve_block(self, mod):
         return types.Module(coop.block)
+
+    def resolve_warp(self, mod):
+        return types.Module(coop.warp)
 
     def resolve_local(self, mod):
         return types.Module(coop.local)
