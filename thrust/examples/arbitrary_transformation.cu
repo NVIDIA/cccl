@@ -63,7 +63,7 @@ int main()
                    [] __device__(auto t) {
                      // D[i] = A[i] + B[i] * C[i];
                      auto& [a, b, c, d] = t;
-                     d = a + b * c;
+                     d                  = a + b * c;
                    });
 
   // print the output

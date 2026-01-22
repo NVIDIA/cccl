@@ -22,7 +22,8 @@ public:
   using difference_type = typename cuda::std::iterator_traits<Iterator>::difference_type;
 
   // lambda that implements the repeat operation
-  __device__ auto create_repeat_functor(difference_type repeats) {
+  __device__ auto create_repeat_functor(difference_type repeats)
+  {
     return [=] __device__(const difference_type& i) {
       return i / repeats;
     }
