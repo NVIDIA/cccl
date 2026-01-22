@@ -1039,29 +1039,35 @@ class Algorithm:
             param_args = []
             out_param = None
             param_names = []
+            used_names = set()
 
             for pid, param in enumerate(method):
                 if isinstance(param, TempStoragePointer):
                     # Handled separately in the explicit temp storage path.
                     continue
-                param_name = param.name
-                if param_name is None:
-                    param_name = f"param_{pid}"
                 if isinstance(param, StatelessOperator):
-                    param_name = param.op_name or f"param_{pid}"
+                    param_name = _unique_param_name(
+                        param.op_name or f"param_{pid}",
+                        used_names,
+                    )
                     param_names.append(param_name)
                     func_decls.append(param.wrap_decl(param_name))
                     param_args.append(param_name)
                 elif isinstance(param, StatefulOperator):
-                    param_name = param.op_name or f"param_{pid}"
+                    param_name = _unique_param_name(
+                        param.op_name or f"param_{pid}",
+                        used_names,
+                    )
                     param_names.append(param_name)
                     func_decls.append(param.wrap_decl(param_name))
                     param_args.append(param_name)
                     param_decls.append(param.cpp_decl(param_name))
                 elif isinstance(param, CxxFunction):
+                    param_name = _pick_param_name(param, pid, used_names)
                     param_names.append(param_name)
                     param_args.append(param.cpp)
                 else:
+                    param_name = _pick_param_name(param, pid, used_names)
                     param_names.append(param_name)
                     param_decls.append(param.cpp_decl(param_name))
                     if not self.fake_return and param.is_output:
@@ -1255,26 +1261,30 @@ class Algorithm:
         param_args = []
         param_names = []
         out_param = None
+        used_names = set()
 
         for pid, param in enumerate(method):
-            param_name = param.name
-            if param_name is None:
-                param_name = f"param_{pid}"
             if isinstance(param, StatelessOperator):
-                param_name = param.op_name or f"param_{pid}"
+                param_name = _unique_param_name(
+                    param.op_name or f"param_{pid}", used_names
+                )
                 param_names.append(param_name)
                 func_decls.append(param.wrap_decl(param_name))
                 param_args.append(param_name)
             elif isinstance(param, StatefulOperator):
-                param_name = param.op_name or f"param_{pid}"
+                param_name = _unique_param_name(
+                    param.op_name or f"param_{pid}", used_names
+                )
                 param_names.append(param_name)
                 func_decls.append(param.wrap_decl(param_name))
                 param_args.append(param_name)
                 param_decls.append(param.cpp_decl(param_name))
             elif isinstance(param, CxxFunction):
+                param_name = _pick_param_name(param, pid, used_names)
                 param_names.append(param_name)
                 param_args.append(param.cpp)
             else:
+                param_name = _pick_param_name(param, pid, used_names)
                 param_names.append(param_name)
                 param_decls.append(param.cpp_decl(param_name))
                 # XXX: I think we can remove this for parent source.
@@ -1381,26 +1391,30 @@ class Algorithm:
         param_args = []
         param_names = []
         out_param = None
+        used_names = set()
 
         for pid, param in enumerate(method):
-            param_name = param.name
-            if param_name is None:
-                param_name = f"param_{pid}"
             if isinstance(param, StatelessOperator):
-                param_name = param.op_name or f"param_{pid}"
+                param_name = _unique_param_name(
+                    param.op_name or f"param_{pid}", used_names
+                )
                 param_names.append(param_name)
                 func_decls.append(param.wrap_decl(param_name))
                 param_args.append(param_name)
             elif isinstance(param, StatefulOperator):
-                param_name = param.op_name or f"param_{pid}"
+                param_name = _unique_param_name(
+                    param.op_name or f"param_{pid}", used_names
+                )
                 param_names.append(param_name)
                 func_decls.append(param.wrap_decl(param_name))
                 param_args.append(param_name)
                 param_decls.append(param.cpp_decl(param_name))
             elif isinstance(param, CxxFunction):
+                param_name = _pick_param_name(param, pid, used_names)
                 param_names.append(param_name)
                 param_args.append(param.cpp)
             else:
+                param_name = _pick_param_name(param, pid, used_names)
                 param_names.append(param_name)
                 param_decls.append(param.cpp_decl(param_name))
                 # XXX: I think we can remove this for parent source.
@@ -1876,6 +1890,37 @@ def _collect_extra_ltoirs(algo):
             if ltoir is not None:
                 extras.append(ltoir)
     return _dedupe_ltoirs(extras)
+
+
+def _unique_param_name(base, used):
+    if base not in used:
+        used.add(base)
+        return base
+    idx = 1
+    while True:
+        name = f"{base}_{idx}"
+        if name not in used:
+            used.add(name)
+            return name
+        idx += 1
+
+
+def _pick_param_name(param, pid, used):
+    base = param.name or f"param_{pid}"
+    if getattr(param, "is_output", False):
+        if param.name is None or base.startswith("param_"):
+            is_output_array = isinstance(param, Array) or (
+                isinstance(param, Pointer) and getattr(param, "is_array_pointer", False)
+            )
+            if is_output_array:
+                preferred = ("output", "result")
+            else:
+                preferred = ("result", "output")
+            for candidate in preferred:
+                if candidate not in used:
+                    return _unique_param_name(candidate, used)
+            return _unique_param_name(preferred[0], used)
+    return _unique_param_name(base, used)
 
 
 def _param_coalesce_key(param):
