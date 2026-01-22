@@ -133,8 +133,6 @@ cdef extern from "cccl/c/types.h":
     cpdef enum cccl_binary_search_mode_t:
         LOWER_BOUND "CCCL_BINARY_SEARCH_LOWER_BOUND"
         UPPER_BOUND "CCCL_BINARY_SEARCH_UPPER_BOUND"
-        LOWER_BOUND_INDEX "CCCL_BINARY_SEARCH_LOWER_BOUND_INDEX"
-        UPPER_BOUND_INDEX "CCCL_BINARY_SEARCH_UPPER_BOUND_INDEX"
 
 cdef void arg_type_check(
     str arg_name,

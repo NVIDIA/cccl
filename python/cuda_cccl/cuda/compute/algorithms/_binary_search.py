@@ -154,7 +154,7 @@ def make_lower_bound(
         d_values,
         d_out,
         comp_adapter,
-        _bindings.BinarySearchMode.LOWER_BOUND_INDEX,
+        _bindings.BinarySearchMode.LOWER_BOUND,
         protocols.get_data_pointer(d_data),
         protocols.get_data_pointer(d_out),
     )
@@ -192,7 +192,7 @@ def make_upper_bound(
         d_values,
         d_out,
         comp_adapter,
-        _bindings.BinarySearchMode.UPPER_BOUND_INDEX,
+        _bindings.BinarySearchMode.UPPER_BOUND,
         protocols.get_data_pointer(d_data),
         protocols.get_data_pointer(d_out),
     )
