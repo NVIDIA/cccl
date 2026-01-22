@@ -20,6 +20,7 @@ from .._types import (
     BasePrimitive,
     Dependency,
     DependentArray,
+    DependentPointerReference,
     DependentReference,
     Invocable,
     TemplateParameter,
@@ -50,6 +51,8 @@ class shuffle(BasePrimitive):
         threads_per_block: DimType,
         items_per_thread: int = None,
         distance: int = None,
+        block_prefix: Any = None,
+        block_suffix: Any = None,
         methods: dict = None,
         unique_id: int = None,
         temp_storage: Any = None,
@@ -67,6 +70,8 @@ class shuffle(BasePrimitive):
         self.dtype = dtype = normalize_dtype_param(dtype)
         self.items_per_thread = items_per_thread
         self.distance = distance
+        self.block_prefix = block_prefix
+        self.block_suffix = block_suffix
         self.unique_id = unique_id
         self.temp_storage = temp_storage
 
@@ -100,6 +105,10 @@ class shuffle(BasePrimitive):
         if use_array_inputs:
             if items_per_thread is None or items_per_thread < 1:
                 raise ValueError("items_per_thread must be >= 1 for Up/Down shuffles")
+            if block_shuffle_type == BlockShuffleType.Up and block_prefix is not None:
+                raise ValueError("block_prefix is not valid for Up shuffles")
+            if block_shuffle_type == BlockShuffleType.Down and block_suffix is not None:
+                raise ValueError("block_suffix is not valid for Down shuffles")
             specialization_kwds["ITEMS_PER_THREAD"] = items_per_thread
             method = [
                 DependentArray(
@@ -111,9 +120,29 @@ class shuffle(BasePrimitive):
                     name="output_items",
                 ),
             ]
+            if block_shuffle_type == BlockShuffleType.Up and block_suffix is not None:
+                method.append(
+                    DependentPointerReference(
+                        Dependency("T"),
+                        name="block_suffix",
+                        is_array_pointer=True,
+                    )
+                )
+            if block_shuffle_type == BlockShuffleType.Down and block_prefix is not None:
+                method.append(
+                    DependentPointerReference(
+                        Dependency("T"),
+                        name="block_prefix",
+                        is_array_pointer=True,
+                    )
+                )
         else:
             if items_per_thread is not None:
                 raise ValueError("items_per_thread is only valid for Up/Down shuffles")
+            if block_prefix is not None or block_suffix is not None:
+                raise ValueError(
+                    "block_prefix/block_suffix are only valid for Up/Down shuffles"
+                )
             method = [
                 DependentReference(Dependency("T"), name="input_item"),
                 DependentReference(Dependency("T"), name="output_item", is_output=True),
@@ -170,6 +199,8 @@ class shuffle(BasePrimitive):
             threads_per_block=threads_per_block,
             items_per_thread=items_per_thread,
             distance=distance,
+            block_prefix=None,
+            block_suffix=None,
             methods=methods,
             temp_storage=temp_storage,
         )

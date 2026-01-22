@@ -1677,6 +1677,8 @@ class CoopBlockShuffleDecl(CoopAbstractTemplate, CoopDeclMixin):
         block_shuffle_type: coop.block.BlockShuffleType = None,
         distance: Optional[int] = None,
         temp_storage: Union[types.Array, TempStorageType] = None,
+        block_prefix: types.Array = None,
+        block_suffix: types.Array = None,
     ):
         return inspect.signature(CoopBlockShuffleDecl.signature).bind(
             items,
@@ -1685,6 +1687,8 @@ class CoopBlockShuffleDecl(CoopAbstractTemplate, CoopDeclMixin):
             block_shuffle_type=block_shuffle_type,
             distance=distance,
             temp_storage=temp_storage,
+            block_prefix=block_prefix,
+            block_suffix=block_suffix,
         )
 
     def _validate_args_and_create_signature(self, bound, two_phase=False):
@@ -1790,11 +1794,75 @@ class CoopBlockShuffleDecl(CoopAbstractTemplate, CoopDeclMixin):
         temp_storage = bound.arguments.get("temp_storage")
         validate_temp_storage(self, temp_storage)
 
+        block_prefix = bound.arguments.get("block_prefix")
+        block_suffix = bound.arguments.get("block_suffix")
+
+        if block_prefix is not None or block_suffix is not None:
+            if not items_is_array:
+                raise errors.TypingError(
+                    f"{self.primitive_name} only supports block_prefix/block_suffix "
+                    "for Up/Down shuffles with array inputs"
+                )
+            if block_prefix is not None and block_suffix is not None:
+                raise errors.TypingError(
+                    f"{self.primitive_name} does not allow block_prefix and "
+                    "block_suffix together"
+                )
+            if block_shuffle_type_value is not None:
+                if block_shuffle_type_value == coop.block.BlockShuffleType.Up:
+                    if block_prefix is not None:
+                        raise errors.TypingError(
+                            f"{self.primitive_name} does not allow block_prefix for "
+                            "Up shuffles"
+                        )
+                if block_shuffle_type_value == coop.block.BlockShuffleType.Down:
+                    if block_suffix is not None:
+                        raise errors.TypingError(
+                            f"{self.primitive_name} does not allow block_suffix for "
+                            "Down shuffles"
+                        )
+            if block_prefix is not None and not isinstance(block_prefix, types.Array):
+                raise errors.TypingError(
+                    f"{self.primitive_name} requires block_prefix to be a device array"
+                )
+            if block_suffix is not None and not isinstance(block_suffix, types.Array):
+                raise errors.TypingError(
+                    f"{self.primitive_name} requires block_suffix to be a device array"
+                )
+
+            item_dtype = items.dtype if isinstance(items, types.Array) else None
+            if ThreadDataType is not None and isinstance(items, ThreadDataType):
+                item_dtype = items.dtype
+
+            if item_dtype is not None:
+                if (
+                    block_prefix is not None
+                    and isinstance(block_prefix, types.Array)
+                    and block_prefix.dtype != item_dtype
+                ):
+                    raise errors.TypingError(
+                        f"{self.primitive_name} requires block_prefix to have the "
+                        "same dtype as items"
+                    )
+                if (
+                    block_suffix is not None
+                    and isinstance(block_suffix, types.Array)
+                    and block_suffix.dtype != item_dtype
+                ):
+                    raise errors.TypingError(
+                        f"{self.primitive_name} requires block_suffix to have the "
+                        "same dtype as items"
+                    )
+
         if items_is_array:
             arglist = [items, output_items]
             if items_per_thread is not None:
                 arglist.append(items_per_thread)
             arglist.append(block_shuffle_type)
+            if block_prefix is not None:
+                arglist.append(block_prefix)
+            if block_suffix is not None:
+                arglist.append(block_suffix)
             if temp_storage is not None:
                 arglist.append(temp_storage)
             return signature(types.void, *arglist)
