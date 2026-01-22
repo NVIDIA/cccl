@@ -255,7 +255,7 @@ if (WIN32 AND MSVC)
   elseif (MSVC_VERSION EQUAL 1800)
     set(COMPILER_PREFIX "vc12")
   elseif (MSVC_VERSION GREATER_EQUAL 1900)
-    # 1900-1925 actually spans three Visual Studio versions:
+    # 1900-1950 actually spans several Visual Studio versions:
     # 1900      = VS 14.0 (v140 toolset) a.k.a. MSVC 2015
     # 1910-1919 = VS 15.0 (v141 toolset) a.k.a. MSVC 2017
     # 1920-1929 = VS 16.0 (v142 toolset) a.k.a. MSVC 2019
