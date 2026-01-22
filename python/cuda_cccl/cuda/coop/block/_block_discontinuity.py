@@ -25,6 +25,7 @@ from .._types import (
     Dependency,
     DependentArray,
     DependentPythonOperator,
+    DependentReference,
     Invocable,
     TemplateParameter,
     TempStoragePointer,
@@ -59,6 +60,8 @@ class discontinuity(BasePrimitive):
         methods: dict = None,
         unique_id: int = None,
         temp_storage=None,
+        tile_predecessor_item: Any = None,
+        tile_successor_item: Any = None,
         node: "CoopNode" = None,
     ) -> None:
         if block_discontinuity_type not in BlockDiscontinuityType:
@@ -80,7 +83,16 @@ class discontinuity(BasePrimitive):
         self.flag_dtype = flag_dtype = normalize_dtype_param(flag_dtype)
         self.unique_id = unique_id
         self.temp_storage = temp_storage
+        self.tile_predecessor_item = tile_predecessor_item
+        self.tile_successor_item = tile_successor_item
         self.flag_op = flag_op
+
+        if block_discontinuity_type == BlockDiscontinuityType.HEADS:
+            if tile_successor_item is not None:
+                raise ValueError("tile_successor_item is not valid for HEADS")
+        elif block_discontinuity_type == BlockDiscontinuityType.TAILS:
+            if tile_predecessor_item is not None:
+                raise ValueError("tile_predecessor_item is not valid for TAILS")
 
         specialization_kwds = {
             "T": dtype,
@@ -121,12 +133,49 @@ class discontinuity(BasePrimitive):
             name="flag_op",
         )
 
+        tile_predecessor_param = DependentReference(
+            Dependency("T"), name="tile_predecessor_item"
+        )
+        tile_successor_param = DependentReference(
+            Dependency("T"), name="tile_successor_item"
+        )
+
         if block_discontinuity_type == BlockDiscontinuityType.HEADS:
             method = [head_flags, input_items, flag_op_param]
+            if tile_predecessor_item is not None:
+                method.append(tile_predecessor_param)
         elif block_discontinuity_type == BlockDiscontinuityType.TAILS:
             method = [tail_flags, input_items, flag_op_param]
+            if tile_successor_item is not None:
+                method.append(tile_successor_param)
         else:
-            method = [head_flags, tail_flags, input_items, flag_op_param]
+            if tile_predecessor_item is not None and tile_successor_item is not None:
+                method = [
+                    head_flags,
+                    tile_predecessor_param,
+                    tail_flags,
+                    tile_successor_param,
+                    input_items,
+                    flag_op_param,
+                ]
+            elif tile_predecessor_item is not None:
+                method = [
+                    head_flags,
+                    tile_predecessor_param,
+                    tail_flags,
+                    input_items,
+                    flag_op_param,
+                ]
+            elif tile_successor_item is not None:
+                method = [
+                    head_flags,
+                    tail_flags,
+                    tile_successor_param,
+                    input_items,
+                    flag_op_param,
+                ]
+            else:
+                method = [head_flags, tail_flags, input_items, flag_op_param]
 
         if temp_storage is not None:
             method.insert(
@@ -171,6 +220,8 @@ class discontinuity(BasePrimitive):
         flag_dtype: DtypeType = None,
         methods: dict = None,
         temp_storage: Any = None,
+        tile_predecessor_item: Any = None,
+        tile_successor_item: Any = None,
     ):
         if flag_dtype is None:
             flag_dtype = numba.types.boolean
@@ -184,6 +235,8 @@ class discontinuity(BasePrimitive):
             flag_dtype=flag_dtype,
             methods=methods,
             temp_storage=temp_storage,
+            tile_predecessor_item=tile_predecessor_item,
+            tile_successor_item=tile_successor_item,
         )
         specialization = algo.specialization
         return Invocable(

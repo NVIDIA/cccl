@@ -49,10 +49,13 @@
 - [x] Store instance constructor parameters needed for two-phase inference.
 - [x] Remove `.create()`/`link=` usage from coop tests and examples.
 - [x] Add missing two-phase tests for block primitives.
-- [ ] Audit CUB block/warp overload coverage and fill gaps (e.g., block-scan
-      block-aggregate outputs, warp-reduce valid-items overloads, block-load
-      out-of-bounds default if supported, block-discontinuity tile
-      predecessor/successor items).
+- [ ] Audit CUB block/warp overload coverage and fill gaps.
+- [x] Add warp reduce/sum valid-items overloads.
+- [x] Add block load oob_default overload.
+- [x] Add block discontinuity tile predecessor/successor overloads.
+- [ ] Add block scan block-aggregate overloads (multi-output).
+- [ ] Add block merge/radix sort key/value + valid-items/oob_default/decomposer overloads.
+- [ ] Add warp merge sort key/value overloads.
 - [ ] Add multi-output support in `_types.py` (or alternate return strategy)
       to enable block-aggregate scan overloads.
 - [ ] Expand single-phase `temp_storage=` support across all primitives and

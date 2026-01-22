@@ -45,6 +45,56 @@ def test_warp_reduce_sum_single_phase():
     assert h_out_sum[0] == np.sum(h_input)
 
 
+def test_warp_sum_single_phase_valid_items():
+    threads_in_warp = 32
+    valid_items = 10
+
+    @cuda.jit
+    def kernel(d_in, d_out):
+        tid = cuda.threadIdx.x
+        val = d_in[tid]
+        warp_sum = coop.warp.sum(val, valid_items=valid_items)
+        if tid == 0:
+            d_out[0] = warp_sum
+
+    h_input = np.arange(threads_in_warp, dtype=np.int32)
+    d_input = cuda.to_device(h_input)
+    d_output = cuda.device_array(1, dtype=np.int32)
+
+    kernel[1, threads_in_warp](d_input, d_output)
+    cuda.synchronize()
+
+    h_output = d_output.copy_to_host()
+    assert h_output[0] == np.sum(h_input[:valid_items])
+
+
+def test_warp_reduce_single_phase_valid_items():
+    @cuda.jit(device=True)
+    def max_op(a, b):
+        return a if a > b else b
+
+    threads_in_warp = 32
+    valid_items = 7
+
+    @cuda.jit
+    def kernel(d_in, d_out):
+        tid = cuda.threadIdx.x
+        val = d_in[tid]
+        warp_max = coop.warp.reduce(val, max_op, valid_items=valid_items)
+        if tid == 0:
+            d_out[0] = warp_max
+
+    h_input = np.random.randint(0, 100, threads_in_warp, dtype=np.int32)
+    d_input = cuda.to_device(h_input)
+    d_output = cuda.device_array(1, dtype=np.int32)
+
+    kernel[1, threads_in_warp](d_input, d_output)
+    cuda.synchronize()
+
+    h_output = d_output.copy_to_host()
+    assert h_output[0] == np.max(h_input[:valid_items])
+
+
 @pytest.mark.parametrize("T", [types.int32])
 def test_warp_exclusive_sum_single_phase(T):
     threads_in_warp = 32

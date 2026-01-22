@@ -21,6 +21,7 @@ from .._types import (
     Dependency,
     DependentArray,
     DependentPointer,
+    DependentReference,
     Invocable,
     TemplateParameter,
     TempStoragePointer,
@@ -72,6 +73,7 @@ class base_load_store(BasePrimitive):
         items_per_thread: int,
         algorithm=None,
         num_valid_items=None,
+        oob_default=None,
         unique_id: int = None,
         node: "CoopNode" = None,
         temp_storage=None,
@@ -81,6 +83,7 @@ class base_load_store(BasePrimitive):
         self.dim = normalize_dim_param(dim)
         self.items_per_thread = items_per_thread
         self.num_valid_items = num_valid_items
+        self.oob_default = oob_default
         self.unique_id = unique_id
         if algorithm is None:
             algorithm_enum = self.default_algorithm
@@ -119,6 +122,14 @@ class base_load_store(BasePrimitive):
         ]
         if num_valid_items is not None:
             parameters[0].append(Value(numba.types.int32, name="num_valid_items"))
+        if oob_default is not None:
+            if self.method_name != "Load":
+                raise ValueError("oob_default is only valid for BlockLoad")
+            if num_valid_items is None:
+                raise ValueError("oob_default requires num_valid_items to be set")
+            parameters[0].append(
+                DependentReference(Dependency("T"), name="oob_default")
+            )
         if temp_storage is not None:
             parameters[0].insert(
                 0,

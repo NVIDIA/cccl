@@ -541,3 +541,34 @@
     expanded temp-storage plumbing, docstring/examples, validation, ThreadData, and
     gpu_dataclass coverage.
 - Tests: not run (review only).
+
+## 2026-01-22 (overload parity: load/reduce/discontinuity)
+- Request: start overload parity for high-value gaps.
+- Changes:
+  - `cuda/coop/block/_block_load_store.py`: support `oob_default` for BlockLoad.
+  - `cuda/coop/_decls.py`: expose `oob_default` for block load; add warp reduce/sum
+    `valid_items`; add block discontinuity tile predecessor/successor args.
+  - `cuda/coop/_rewrite.py`: plumb block load `oob_default`; add warp reduce/sum
+    `valid_items`; add block discontinuity tile predecessor/successor wiring and
+    two-phase re-instantiation where needed.
+  - `cuda/coop/warp/_warp_reduce.py`: add `valid_items` overloads for warp reduce/sum.
+  - `cuda/coop/block/_block_discontinuity.py`: add tile predecessor/successor overloads.
+  - `tests/coop/test_block_load_store_api_single_phase.py`: add block-load oob_default
+    tests (single- and two-phase).
+  - `tests/coop/test_warp_reduce_api.py`, `tests/coop/test_warp_single_phase.py`:
+    add warp reduce/sum valid_items tests.
+  - `tests/coop/test_block_discontinuity.py`: add tile predecessor/successor tests.
+  - `SINGLE-PHASE-TODO.md`: mark warp-reduce, block-load, and discontinuity overloads.
+- Tests: not run (changes only).
+
+## 2026-01-22 (warp valid_items + discontinuity fix)
+- Request: fix failing warp valid_items tests and run block discontinuity tile tests.
+- Changes:
+  - `cuda/coop/_rewrite.py`: wire `valid_items` handling into warp sum and add
+    `valid_items` const assigns for warp reduce/sum; allow runtime valid_items via
+    bound-argument fallback; reinstantiate two-phase when needed.
+  - `cuda/coop/block/_block_discontinuity.py`: import `DependentReference`.
+- Tests:
+  - `pytest -q tests/coop/test_warp_reduce_api.py -k valid_items` (2 passed, 2 deselected)
+  - `pytest -q tests/coop/test_warp_single_phase.py -k valid_items` (2 passed, 7 deselected)
+  - `pytest -q tests/coop/test_block_discontinuity.py -k tile` (2 passed, 2 deselected)

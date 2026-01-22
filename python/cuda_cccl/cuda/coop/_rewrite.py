@@ -1701,18 +1701,89 @@ class CoopLoadStoreNode(CoopNode):
 
         # algorithm is always optional.
         algorithm_id = self.get_arg_value_safe("algorithm")
-
         if algorithm_id is None:
-            algorithm_id = int(self.impl_class.default_algorithm)
+            if self.is_two_phase and self.two_phase_instance is not None:
+                algorithm_id = int(self.two_phase_instance.algorithm_enum)
+            else:
+                algorithm_id = int(self.impl_class.default_algorithm)
 
         num_valid_items = self.get_arg_value_safe("num_valid_items")
         if num_valid_items is None:
             num_valid_items = self.bound.arguments.get("num_valid_items", None)
 
+        num_valid_var = None
         if num_valid_items is not None:
-            runtime_args.append(num_valid_items)
+            if isinstance(num_valid_items, ir.Var):
+                num_valid_var = num_valid_items
+            elif isinstance(num_valid_items, ir.Const):
+                num_valid_value = num_valid_items.value
+            else:
+                num_valid_value = num_valid_items
+
+            if num_valid_var is None:
+                scope = self.instr.target.scope
+                const_name = f"$block_load_num_valid_{self.unique_id}"
+                const_var = ir.Var(scope, const_name, self.expr.loc)
+                if const_name in self.typemap:
+                    raise RuntimeError(
+                        f"Variable {const_name} already exists in typemap."
+                    )
+                const_assign = ir.Assign(
+                    value=ir.Const(int(num_valid_value), self.expr.loc),
+                    target=const_var,
+                    loc=self.expr.loc,
+                )
+                self.typemap[const_name] = types.int32
+                self.num_valid_assign = const_assign
+                num_valid_var = const_var
+
+            runtime_args.append(num_valid_var)
             runtime_arg_types.append(types.int32)
             runtime_arg_names.append("num_valid_items")
+            num_valid_items = num_valid_var
+
+        oob_default = self.get_arg_value_safe("oob_default")
+        if oob_default is None:
+            oob_default = self.bound.arguments.get("oob_default", None)
+        oob_default_var = None
+        if oob_default is not None:
+            if not self.is_load:
+                raise RuntimeError("oob_default is only valid for coop.block.load")
+            if num_valid_items is None:
+                raise RuntimeError(
+                    "coop.block.load requires num_valid_items when using oob_default"
+                )
+            if isinstance(oob_default, ir.Var):
+                oob_default_var = oob_default
+                oob_default_ty = self.typemap[oob_default.name]
+            elif isinstance(oob_default, ir.Const):
+                oob_default_value = oob_default.value
+                oob_default_ty = dtype
+            else:
+                oob_default_value = oob_default
+                oob_default_ty = dtype
+
+            if oob_default_var is None:
+                scope = self.instr.target.scope
+                const_name = f"$block_load_oob_default_{self.unique_id}"
+                const_var = ir.Var(scope, const_name, self.expr.loc)
+                if const_name in self.typemap:
+                    raise RuntimeError(
+                        f"Variable {const_name} already exists in typemap."
+                    )
+                const_assign = ir.Assign(
+                    value=ir.Const(oob_default_value, self.expr.loc),
+                    target=const_var,
+                    loc=self.expr.loc,
+                )
+                self.typemap[const_name] = oob_default_ty
+                self.oob_default_assign = const_assign
+                oob_default_var = const_var
+                oob_default_ty = oob_default_ty
+
+            runtime_args.append(oob_default_var)
+            runtime_arg_types.append(oob_default_ty)
+            runtime_arg_names.append("oob_default")
 
         temp_storage = self.bound.arguments.get("temp_storage")
         temp_storage_ty = None
@@ -1733,6 +1804,7 @@ class CoopLoadStoreNode(CoopNode):
         self.items_per_thread = items_per_thread
         self.algorithm_id = algorithm_id
         self.num_valid_items = num_valid_items
+        self.oob_default = oob_default
         self.src = src
         self.dst = dst
         self.temp_storage = temp_storage
@@ -1740,6 +1812,33 @@ class CoopLoadStoreNode(CoopNode):
         self.runtime_args = runtime_args
         self.runtime_arg_types = runtime_arg_types
         self.runtime_arg_names = runtime_arg_names
+
+        if self.is_two_phase and self.two_phase_instance is not None:
+            instance = self.two_phase_instance
+            needs_num_valid = (
+                num_valid_items is not None
+                and getattr(instance, "num_valid_items", None) is None
+            )
+            needs_oob_default = (
+                oob_default is not None
+                and getattr(instance, "oob_default", None) is None
+            )
+            needs_temp_storage = (
+                temp_storage is not None
+                and getattr(instance, "temp_storage", None) is None
+            )
+            if needs_num_valid or needs_oob_default or needs_temp_storage:
+                self.instance = self.impl_class(
+                    dtype=dtype,
+                    dim=self.threads_per_block,
+                    items_per_thread=self.items_per_thread,
+                    algorithm=algorithm_id,
+                    num_valid_items=num_valid_items,
+                    oob_default=oob_default,
+                    unique_id=self.unique_id,
+                    node=self,
+                    temp_storage=temp_storage,
+                )
 
     def rewrite(self, rewriter):
         if self.is_two_phase:
@@ -1764,6 +1863,7 @@ class CoopLoadStoreNode(CoopNode):
             items_per_thread=self.items_per_thread,
             algorithm=self.algorithm_id,
             num_valid_items=self.num_valid_items,
+            oob_default=self.oob_default,
             unique_id=self.unique_id,
             node=self,
             temp_storage=self.temp_storage,
@@ -1855,7 +1955,14 @@ class CoopLoadStoreNode(CoopNode):
         if existing:
             raise RuntimeError(f"Variable {g_var.name} already exists in typemap.")
         self.typemap[g_var.name] = func_ty
-        instrs = [g_assign, new_assign]
+        instrs = []
+        num_valid_assign = getattr(self, "num_valid_assign", None)
+        if num_valid_assign is not None:
+            instrs.append(num_valid_assign)
+        oob_default_assign = getattr(self, "oob_default_assign", None)
+        if oob_default_assign is not None:
+            instrs.append(oob_default_assign)
+        instrs.extend([g_assign, new_assign])
         if self.temp_storage_info is not None and self.temp_storage_info.auto_sync:
             instrs.extend(rewriter.emit_syncthreads_call(scope, expr.loc))
 
@@ -1867,7 +1974,7 @@ class CoopLoadStoreNode(CoopNode):
         #      of the primitive created, so we should be able to reuse it.
         #      However, try as I might, I couldn't get the lowering to kick
         #      in with all the other attempted variants.
-        instance = self.two_phase_instance
+        instance = self.instance or self.two_phase_instance
         instance.node = self
         algo = instance.specialization
         algo.unique_id = self.unique_id
@@ -1970,7 +2077,15 @@ class CoopLoadStoreNode(CoopNode):
 
         self.typemap[g_var.name] = func_ty
 
-        return (g_assign, new_assign)
+        instrs = []
+        num_valid_assign = getattr(self, "num_valid_assign", None)
+        if num_valid_assign is not None:
+            instrs.append(num_valid_assign)
+        oob_default_assign = getattr(self, "oob_default_assign", None)
+        if oob_default_assign is not None:
+            instrs.append(oob_default_assign)
+        instrs.extend([g_assign, new_assign])
+        return tuple(instrs)
 
 
 @dataclass
@@ -2143,7 +2258,12 @@ class CoopWarpLoadStoreNode(CoopNode):
 
     def rewrite(self, rewriter):
         rd = self.rewrite_details
-        return (rd.g_assign, rd.new_assign)
+        instrs = [rd.g_assign]
+        valid_items_assign = getattr(self, "valid_items_assign", None)
+        if valid_items_assign is not None:
+            instrs.append(valid_items_assign)
+        instrs.append(rd.new_assign)
+        return tuple(instrs)
 
     @cached_property
     def rewrite_details(self):
@@ -2663,7 +2783,12 @@ class CoopWarpExchangeNode(CoopNode, CoopNodeMixin):
 
     def rewrite(self, rewriter):
         rd = self.rewrite_details
-        return (rd.g_assign, rd.new_assign)
+        instrs = [rd.g_assign]
+        valid_items_assign = getattr(self, "valid_items_assign", None)
+        if valid_items_assign is not None:
+            instrs.append(valid_items_assign)
+        instrs.append(rd.new_assign)
+        return tuple(instrs)
 
     @cached_property
     def rewrite_details(self):
@@ -3508,6 +3633,73 @@ class CoopBlockDiscontinuityNode(CoopNode, CoopNodeMixin):
         if flag_op is None:
             raise RuntimeError("coop.block.discontinuity requires flag_op to be set")
 
+        tile_predecessor_item = bound.get("tile_predecessor_item")
+        tile_successor_item = bound.get("tile_successor_item")
+        tile_predecessor_var = None
+        tile_successor_var = None
+        if (
+            tile_predecessor_item is not None
+            and block_discontinuity_type == BlockDiscontinuityType.TAILS
+        ):
+            raise RuntimeError(
+                "coop.block.discontinuity does not accept tile_predecessor_item for TAILS"
+            )
+        if (
+            tile_successor_item is not None
+            and block_discontinuity_type == BlockDiscontinuityType.HEADS
+        ):
+            raise RuntimeError(
+                "coop.block.discontinuity does not accept tile_successor_item for HEADS"
+            )
+
+        if tile_predecessor_item is not None:
+            if isinstance(tile_predecessor_item, ir.Var):
+                tile_predecessor_var = tile_predecessor_item
+            elif isinstance(tile_predecessor_item, ir.Const):
+                tile_predecessor_value = tile_predecessor_item.value
+            else:
+                tile_predecessor_value = tile_predecessor_item
+            if tile_predecessor_var is None:
+                scope = self.instr.target.scope
+                const_name = f"$block_disc_tile_predecessor_{self.unique_id}"
+                const_var = ir.Var(scope, const_name, self.expr.loc)
+                if const_name in self.typemap:
+                    raise RuntimeError(
+                        f"Variable {const_name} already exists in typemap."
+                    )
+                const_assign = ir.Assign(
+                    value=ir.Const(tile_predecessor_value, self.expr.loc),
+                    target=const_var,
+                    loc=self.expr.loc,
+                )
+                self.typemap[const_name] = item_dtype
+                self.tile_predecessor_assign = const_assign
+                tile_predecessor_var = const_var
+
+        if tile_successor_item is not None:
+            if isinstance(tile_successor_item, ir.Var):
+                tile_successor_var = tile_successor_item
+            elif isinstance(tile_successor_item, ir.Const):
+                tile_successor_value = tile_successor_item.value
+            else:
+                tile_successor_value = tile_successor_item
+            if tile_successor_var is None:
+                scope = self.instr.target.scope
+                const_name = f"$block_disc_tile_successor_{self.unique_id}"
+                const_var = ir.Var(scope, const_name, self.expr.loc)
+                if const_name in self.typemap:
+                    raise RuntimeError(
+                        f"Variable {const_name} already exists in typemap."
+                    )
+                const_assign = ir.Assign(
+                    value=ir.Const(tile_successor_value, self.expr.loc),
+                    target=const_var,
+                    loc=self.expr.loc,
+                )
+                self.typemap[const_name] = item_dtype
+                self.tile_successor_assign = const_assign
+                tile_successor_var = const_var
+
         temp_storage = bound.get("temp_storage")
         temp_storage_info = None
         if temp_storage is not None:
@@ -3540,14 +3732,63 @@ class CoopBlockDiscontinuityNode(CoopNode, CoopNodeMixin):
             runtime_args.extend([head_flags, items])
             runtime_arg_types.extend([head_flags_ty, items_ty])
             runtime_arg_names.extend(["head_flags", "items"])
+            if tile_predecessor_var is not None:
+                runtime_args.append(tile_predecessor_var)
+                runtime_arg_types.append(item_dtype)
+                runtime_arg_names.append("tile_predecessor_item")
         elif block_discontinuity_type == BlockDiscontinuityType.TAILS:
             runtime_args.extend([head_flags, items])
             runtime_arg_types.extend([head_flags_ty, items_ty])
             runtime_arg_names.extend(["tail_flags", "items"])
+            if tile_successor_var is not None:
+                runtime_args.append(tile_successor_var)
+                runtime_arg_types.append(item_dtype)
+                runtime_arg_names.append("tile_successor_item")
         else:
-            runtime_args.extend([head_flags, tail_flags, items])
-            runtime_arg_types.extend([head_flags_ty, tail_flags_ty, items_ty])
-            runtime_arg_names.extend(["head_flags", "tail_flags", "items"])
+            if tile_predecessor_var is not None and tile_successor_var is not None:
+                runtime_args.extend(
+                    [
+                        head_flags,
+                        tile_predecessor_var,
+                        tail_flags,
+                        tile_successor_var,
+                        items,
+                    ]
+                )
+                runtime_arg_types.extend(
+                    [head_flags_ty, item_dtype, tail_flags_ty, item_dtype, items_ty]
+                )
+                runtime_arg_names.extend(
+                    [
+                        "head_flags",
+                        "tile_predecessor_item",
+                        "tail_flags",
+                        "tile_successor_item",
+                        "items",
+                    ]
+                )
+            elif tile_predecessor_var is not None:
+                runtime_args.extend(
+                    [head_flags, tile_predecessor_var, tail_flags, items]
+                )
+                runtime_arg_types.extend(
+                    [head_flags_ty, item_dtype, tail_flags_ty, items_ty]
+                )
+                runtime_arg_names.extend(
+                    ["head_flags", "tile_predecessor_item", "tail_flags", "items"]
+                )
+            elif tile_successor_var is not None:
+                runtime_args.extend([head_flags, tail_flags, tile_successor_var, items])
+                runtime_arg_types.extend(
+                    [head_flags_ty, tail_flags_ty, item_dtype, items_ty]
+                )
+                runtime_arg_names.extend(
+                    ["head_flags", "tail_flags", "tile_successor_item", "items"]
+                )
+            else:
+                runtime_args.extend([head_flags, tail_flags, items])
+                runtime_arg_types.extend([head_flags_ty, tail_flags_ty, items_ty])
+                runtime_arg_names.extend(["head_flags", "tail_flags", "items"])
 
         self.items = items
         self.head_flags = head_flags
@@ -3557,6 +3798,8 @@ class CoopBlockDiscontinuityNode(CoopNode, CoopNodeMixin):
         self.items_per_thread = items_per_thread
         self.flag_op = flag_op
         self.block_discontinuity_type = block_discontinuity_type
+        self.tile_predecessor_item = tile_predecessor_item
+        self.tile_successor_item = tile_successor_item
         self.temp_storage = temp_storage
         self.temp_storage_info = temp_storage_info
         self.methods = methods
@@ -3571,6 +3814,8 @@ class CoopBlockDiscontinuityNode(CoopNode, CoopNodeMixin):
             "methods": methods,
             "unique_id": self.unique_id,
             "temp_storage": temp_storage,
+            "tile_predecessor_item": tile_predecessor_item,
+            "tile_successor_item": tile_successor_item,
             "node": self,
         }
 
@@ -3578,9 +3823,29 @@ class CoopBlockDiscontinuityNode(CoopNode, CoopNodeMixin):
         self.runtime_arg_types = runtime_arg_types
         self.runtime_arg_names = runtime_arg_names
 
+        if self.is_two_phase and self.two_phase_instance is not None:
+            instance = self.two_phase_instance
+            needs_pred = (
+                tile_predecessor_item is not None
+                and getattr(instance, "tile_predecessor_item", None) is None
+            )
+            needs_succ = (
+                tile_successor_item is not None
+                and getattr(instance, "tile_successor_item", None) is None
+            )
+            if needs_pred or needs_succ:
+                self.instance = self.impl_class(**self.impl_kwds)
+
     def rewrite(self, rewriter):
         rd = self.rewrite_details
-        instrs = [rd.g_assign, rd.new_assign]
+        instrs = []
+        tile_predecessor_assign = getattr(self, "tile_predecessor_assign", None)
+        if tile_predecessor_assign is not None:
+            instrs.append(tile_predecessor_assign)
+        tile_successor_assign = getattr(self, "tile_successor_assign", None)
+        if tile_successor_assign is not None:
+            instrs.append(tile_successor_assign)
+        instrs.extend([rd.g_assign, rd.new_assign])
         if self.temp_storage_info is not None and self.temp_storage_info.auto_sync:
             instrs.extend(
                 rewriter.emit_syncthreads_call(self.instr.target.scope, self.expr.loc)
@@ -5653,9 +5918,44 @@ class CoopWarpExclusiveSumNode(CoopNode, CoopNodeMixin):
         if not isinstance(threads_in_warp, int) or threads_in_warp < 1:
             raise RuntimeError("threads_in_warp must be a positive integer")
 
+        valid_items = self.get_arg_value_safe("valid_items")
+        valid_items_var = None
+        valid_items_type = None
+        if valid_items is not None:
+            if isinstance(valid_items, ir.Var):
+                valid_items_var = valid_items
+                valid_items_type = self.typemap[valid_items.name]
+            elif isinstance(valid_items, ir.Const):
+                valid_items_value = valid_items.value
+            else:
+                valid_items_value = valid_items
+
+            if valid_items_var is None:
+                scope = self.instr.target.scope
+                const_name = f"$warp_sum_valid_items_{self.unique_id}"
+                const_var = ir.Var(scope, const_name, self.expr.loc)
+                if const_name in self.typemap:
+                    raise RuntimeError(
+                        f"Variable {const_name} already exists in typemap."
+                    )
+                const_assign = ir.Assign(
+                    value=ir.Const(int(valid_items_value), self.expr.loc),
+                    target=const_var,
+                    loc=self.expr.loc,
+                )
+                self.typemap[const_name] = types.int32
+                self.valid_items_assign = const_assign
+                valid_items_var = const_var
+                valid_items_type = types.int32
+
+            runtime_args.append(valid_items_var)
+            runtime_arg_types.append(valid_items_type or types.int32)
+            runtime_arg_names.append("valid_items")
+
         self.impl_kwds = {
             "dtype": src_ty,
             "threads_in_warp": threads_in_warp,
+            "valid_items": valid_items,
             "unique_id": self.unique_id,
             "temp_storage": None,
         }
@@ -5664,6 +5964,21 @@ class CoopWarpExclusiveSumNode(CoopNode, CoopNodeMixin):
         self.runtime_args = runtime_args
         self.runtime_arg_types = runtime_arg_types
         self.runtime_arg_names = runtime_arg_names
+
+        if (
+            self.is_two_phase
+            and self.two_phase_instance is not None
+            and valid_items is not None
+        ):
+            instance = self.two_phase_instance
+            if getattr(instance, "valid_items", None) is None:
+                self.instance = self.impl_class(
+                    dtype=src_ty,
+                    threads_in_warp=threads_in_warp,
+                    valid_items=valid_items,
+                    unique_id=self.unique_id,
+                    temp_storage=None,
+                )
 
     def rewrite(self, rewriter):
         rd = self.rewrite_details
@@ -6108,10 +6423,47 @@ class CoopWarpReduceNode(CoopNode, CoopNodeMixin):
         if methods is not None and not methods:
             methods = None
 
+        valid_items = self.get_arg_value_safe("valid_items")
+        if valid_items is None:
+            valid_items = self.bound.arguments.get("valid_items", None)
+        valid_items_var = None
+        valid_items_type = None
+        if valid_items is not None:
+            if isinstance(valid_items, ir.Var):
+                valid_items_var = valid_items
+                valid_items_type = self.typemap[valid_items.name]
+            elif isinstance(valid_items, ir.Const):
+                valid_items_value = valid_items.value
+            else:
+                valid_items_value = valid_items
+
+            if valid_items_var is None:
+                scope = self.instr.target.scope
+                const_name = f"$warp_reduce_valid_items_{self.unique_id}"
+                const_var = ir.Var(scope, const_name, self.expr.loc)
+                if const_name in self.typemap:
+                    raise RuntimeError(
+                        f"Variable {const_name} already exists in typemap."
+                    )
+                const_assign = ir.Assign(
+                    value=ir.Const(int(valid_items_value), self.expr.loc),
+                    target=const_var,
+                    loc=self.expr.loc,
+                )
+                self.typemap[const_name] = types.int32
+                self.valid_items_assign = const_assign
+                valid_items_var = const_var
+                valid_items_type = types.int32
+
+            runtime_args.append(valid_items_var)
+            runtime_arg_types.append(valid_items_type or types.int32)
+            runtime_arg_names.append("valid_items")
+
         self.impl_kwds = {
             "dtype": src_ty,
             "binary_op": binary_op,
             "threads_in_warp": threads_in_warp,
+            "valid_items": valid_items,
             "methods": methods,
             "unique_id": self.unique_id,
             "temp_storage": None,
@@ -6123,9 +6475,32 @@ class CoopWarpReduceNode(CoopNode, CoopNodeMixin):
         self.runtime_arg_types = runtime_arg_types
         self.runtime_arg_names = runtime_arg_names
 
+        if (
+            self.is_two_phase
+            and self.two_phase_instance is not None
+            and valid_items is not None
+        ):
+            instance = self.two_phase_instance
+            if getattr(instance, "valid_items", None) is None:
+                self.instance = self.impl_class(
+                    dtype=src_ty,
+                    binary_op=binary_op,
+                    threads_in_warp=threads_in_warp,
+                    valid_items=valid_items,
+                    methods=methods,
+                    unique_id=self.unique_id,
+                    temp_storage=None,
+                    node=self,
+                )
+
     def rewrite(self, rewriter):
         rd = self.rewrite_details
-        return (rd.g_assign, rd.new_assign)
+        instrs = [rd.g_assign]
+        valid_items_assign = getattr(self, "valid_items_assign", None)
+        if valid_items_assign is not None:
+            instrs.append(valid_items_assign)
+        instrs.append(rd.new_assign)
+        return tuple(instrs)
 
     @cached_property
     def rewrite_details(self):
@@ -6171,9 +6546,46 @@ class CoopWarpSumNode(CoopNode, CoopNodeMixin):
         if not isinstance(threads_in_warp, int) or threads_in_warp < 1:
             raise RuntimeError("threads_in_warp must be a positive integer")
 
+        valid_items = self.get_arg_value_safe("valid_items")
+        if valid_items is None:
+            valid_items = self.bound.arguments.get("valid_items", None)
+        valid_items_var = None
+        valid_items_type = None
+        if valid_items is not None:
+            if isinstance(valid_items, ir.Var):
+                valid_items_var = valid_items
+                valid_items_type = self.typemap[valid_items.name]
+            elif isinstance(valid_items, ir.Const):
+                valid_items_value = valid_items.value
+            else:
+                valid_items_value = valid_items
+
+            if valid_items_var is None:
+                scope = self.instr.target.scope
+                const_name = f"$warp_sum_valid_items_{self.unique_id}"
+                const_var = ir.Var(scope, const_name, self.expr.loc)
+                if const_name in self.typemap:
+                    raise RuntimeError(
+                        f"Variable {const_name} already exists in typemap."
+                    )
+                const_assign = ir.Assign(
+                    value=ir.Const(int(valid_items_value), self.expr.loc),
+                    target=const_var,
+                    loc=self.expr.loc,
+                )
+                self.typemap[const_name] = types.int32
+                self.valid_items_assign = const_assign
+                valid_items_var = const_var
+                valid_items_type = types.int32
+
+            runtime_args.append(valid_items_var)
+            runtime_arg_types.append(valid_items_type or types.int32)
+            runtime_arg_names.append("valid_items")
+
         self.impl_kwds = {
             "dtype": src_ty,
             "threads_in_warp": threads_in_warp,
+            "valid_items": valid_items,
             "unique_id": self.unique_id,
             "temp_storage": None,
         }
@@ -6183,9 +6595,29 @@ class CoopWarpSumNode(CoopNode, CoopNodeMixin):
         self.runtime_arg_types = runtime_arg_types
         self.runtime_arg_names = runtime_arg_names
 
+        if (
+            self.is_two_phase
+            and self.two_phase_instance is not None
+            and valid_items is not None
+        ):
+            instance = self.two_phase_instance
+            if getattr(instance, "valid_items", None) is None:
+                self.instance = self.impl_class(
+                    dtype=src_ty,
+                    threads_in_warp=threads_in_warp,
+                    valid_items=valid_items,
+                    unique_id=self.unique_id,
+                    temp_storage=None,
+                )
+
     def rewrite(self, rewriter):
         rd = self.rewrite_details
-        return (rd.g_assign, rd.new_assign)
+        instrs = [rd.g_assign]
+        valid_items_assign = getattr(self, "valid_items_assign", None)
+        if valid_items_assign is not None:
+            instrs.append(valid_items_assign)
+        instrs.append(rd.new_assign)
+        return tuple(instrs)
 
     @cached_property
     def rewrite_details(self):

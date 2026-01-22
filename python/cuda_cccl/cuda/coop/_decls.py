@@ -841,6 +841,27 @@ class CoopLoadStoreBaseTemplate(AbstractTemplate):
                 )
             arglist.append(num_valid_items)
 
+        oob_default = bound.arguments.get("oob_default")
+        if oob_default is not None:
+            if not self.src_first:
+                raise errors.TypingError(
+                    f"{self.primitive_name} does not support 'oob_default'"
+                )
+            if num_valid_items is None:
+                raise errors.TypingError(
+                    f"{self.primitive_name} requires 'num_valid_items' when "
+                    "using 'oob_default'"
+                )
+            if isinstance(oob_default, (types.Array, ThreadDataType)):
+                raise errors.TypingError(
+                    f"{self.primitive_name} requires 'oob_default' to be a scalar"
+                )
+            if not isinstance(oob_default, types.Number):
+                raise errors.TypingError(
+                    f"{self.primitive_name} requires 'oob_default' to be a scalar"
+                )
+            arglist.append(oob_default)
+
         if temp_storage is not None:
             arglist.append(temp_storage)
 
@@ -873,6 +894,7 @@ class LoadMixin:
         items_per_thread: int = None,
         algorithm: coop.BlockLoadAlgorithm = None,
         num_valid_items: int = None,
+        oob_default: Any = None,
         temp_storage: Union[types.Array, TempStorageType] = None,
     ):
         return inspect.signature(LoadMixin.signature).bind(
@@ -881,6 +903,7 @@ class LoadMixin:
             items_per_thread=items_per_thread,
             algorithm=algorithm,
             num_valid_items=num_valid_items,
+            oob_default=oob_default,
             temp_storage=temp_storage,
         )
 
@@ -889,6 +912,7 @@ class LoadMixin:
         src: types.Array,
         dst: types.Array,
         num_valid_items: int = None,
+        oob_default: Any = None,
         *,
         items_per_thread: int = None,
         algorithm: coop.BlockLoadAlgorithm = None,
@@ -898,6 +922,7 @@ class LoadMixin:
             src,
             dst,
             num_valid_items=num_valid_items,
+            oob_default=oob_default,
             items_per_thread=items_per_thread,
             algorithm=algorithm,
             temp_storage=temp_storage,
@@ -1804,6 +1829,8 @@ class CoopBlockDiscontinuityDecl(CoopAbstractTemplate, CoopDeclMixin):
         items_per_thread: int = None,
         flag_op: Optional[Callable] = None,
         block_discontinuity_type: coop.block.BlockDiscontinuityType = None,
+        tile_predecessor_item: Optional[Any] = None,
+        tile_successor_item: Optional[Any] = None,
         temp_storage: Union[types.Array, TempStorageType] = None,
     ):
         return inspect.signature(CoopBlockDiscontinuityDecl.signature).bind(
@@ -1813,6 +1840,8 @@ class CoopBlockDiscontinuityDecl(CoopAbstractTemplate, CoopDeclMixin):
             items_per_thread=items_per_thread,
             flag_op=flag_op,
             block_discontinuity_type=block_discontinuity_type,
+            tile_predecessor_item=tile_predecessor_item,
+            tile_successor_item=tile_successor_item,
             temp_storage=temp_storage,
         )
 
@@ -1853,12 +1882,14 @@ class CoopBlockDiscontinuityDecl(CoopAbstractTemplate, CoopDeclMixin):
         block_discontinuity_type = bound.arguments.get("block_discontinuity_type")
         if block_discontinuity_type is None:
             block_discontinuity_type = self.default_discontinuity_type
+        discontinuity_value = None
         if isinstance(block_discontinuity_type, enum.IntEnum):
             if block_discontinuity_type not in coop.block.BlockDiscontinuityType:
                 raise errors.TypingError(
                     f"{self.primitive_name} requires 'block_discontinuity_type' "
                     "to be a BlockDiscontinuityType enum value"
                 )
+            discontinuity_value = block_discontinuity_type
         else:
             if not isinstance(block_discontinuity_type, types.EnumMember):
                 raise errors.TypingError(
@@ -1875,8 +1906,7 @@ class CoopBlockDiscontinuityDecl(CoopAbstractTemplate, CoopDeclMixin):
                 )
 
         if (
-            block_discontinuity_type
-            == coop.block.BlockDiscontinuityType.HEADS_AND_TAILS
+            discontinuity_value == coop.block.BlockDiscontinuityType.HEADS_AND_TAILS
             and tail_flags is None
         ):
             raise errors.TypingError(
@@ -1888,6 +1918,33 @@ class CoopBlockDiscontinuityDecl(CoopAbstractTemplate, CoopDeclMixin):
             raise errors.TypingError(
                 f"{self.primitive_name} requires 'flag_op' to be specified"
             )
+
+        tile_predecessor_item = bound.arguments.get("tile_predecessor_item")
+        tile_successor_item = bound.arguments.get("tile_successor_item")
+        if tile_predecessor_item is not None and isinstance(
+            tile_predecessor_item, (types.Array, ThreadDataType)
+        ):
+            raise errors.TypingError(
+                f"{self.primitive_name} requires 'tile_predecessor_item' to be a scalar"
+            )
+        if tile_successor_item is not None and isinstance(
+            tile_successor_item, (types.Array, ThreadDataType)
+        ):
+            raise errors.TypingError(
+                f"{self.primitive_name} requires 'tile_successor_item' to be a scalar"
+            )
+        if discontinuity_value == coop.block.BlockDiscontinuityType.HEADS:
+            if tile_successor_item is not None:
+                raise errors.TypingError(
+                    f"{self.primitive_name} does not accept 'tile_successor_item' "
+                    "for HEADS"
+                )
+        if discontinuity_value == coop.block.BlockDiscontinuityType.TAILS:
+            if tile_predecessor_item is not None:
+                raise errors.TypingError(
+                    f"{self.primitive_name} does not accept 'tile_predecessor_item' "
+                    "for TAILS"
+                )
 
         temp_storage = bound.arguments.get("temp_storage")
         validate_temp_storage(self, temp_storage)
@@ -1904,6 +1961,11 @@ class CoopBlockDiscontinuityDecl(CoopAbstractTemplate, CoopDeclMixin):
 
         if block_discontinuity_type is not None:
             arglist.append(block_discontinuity_type)
+
+        if tile_predecessor_item is not None:
+            arglist.append(tile_predecessor_item)
+        if tile_successor_item is not None:
+            arglist.append(tile_successor_item)
 
         if temp_storage is not None:
             arglist.append(temp_storage)
@@ -3970,11 +4032,13 @@ class CoopWarpReduceDecl(CoopAbstractTemplate, CoopDeclMixin):
         src: types.Number,
         binary_op: Optional[Callable] = None,
         threads_in_warp: int = 32,
+        valid_items: Optional[int] = None,
     ):
         return inspect.signature(CoopWarpReduceDecl.signature).bind(
             src,
             binary_op=binary_op,
             threads_in_warp=threads_in_warp,
+            valid_items=valid_items,
         )
 
     @staticmethod
@@ -3983,11 +4047,13 @@ class CoopWarpReduceDecl(CoopAbstractTemplate, CoopDeclMixin):
         *,
         binary_op: Optional[Callable] = None,
         threads_in_warp: int = None,
+        valid_items: Optional[int] = None,
     ):
         return inspect.signature(CoopWarpReduceDecl.signature_instance).bind(
             src,
             binary_op=binary_op,
             threads_in_warp=threads_in_warp,
+            valid_items=valid_items,
         )
 
     def _validate_args_and_create_signature(self, bound, two_phase=False):
@@ -4015,6 +4081,14 @@ class CoopWarpReduceDecl(CoopAbstractTemplate, CoopDeclMixin):
                 threads_in_warp = maybe_literal
             arglist.append(threads_in_warp)
 
+        valid_items = bound.arguments.get("valid_items")
+        if valid_items is not None:
+            if not isinstance(valid_items, types.Integer):
+                raise errors.TypingError(
+                    f"{self.primitive_name} requires 'valid_items' to be an integer"
+                )
+            arglist.append(valid_items)
+
         return signature(src, *arglist)
 
 
@@ -4029,10 +4103,12 @@ class CoopWarpSumDecl(CoopAbstractTemplate, CoopDeclMixin):
     def signature(
         src: types.Number,
         threads_in_warp: int = 32,
+        valid_items: Optional[int] = None,
     ):
         return inspect.signature(CoopWarpSumDecl.signature).bind(
             src,
             threads_in_warp=threads_in_warp,
+            valid_items=valid_items,
         )
 
     def _validate_args_and_create_signature(self, bound, two_phase=False):
@@ -4049,6 +4125,14 @@ class CoopWarpSumDecl(CoopAbstractTemplate, CoopDeclMixin):
             if maybe_literal is not None:
                 threads_in_warp = maybe_literal
             arglist.append(threads_in_warp)
+
+        valid_items = bound.arguments.get("valid_items")
+        if valid_items is not None:
+            if not isinstance(valid_items, types.Integer):
+                raise errors.TypingError(
+                    f"{self.primitive_name} requires 'valid_items' to be an integer"
+                )
+            arglist.append(valid_items)
 
         return signature(src, *arglist)
 

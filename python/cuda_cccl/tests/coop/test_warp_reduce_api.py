@@ -59,3 +59,44 @@ def test_warp_sum():
     h_output = d_output.copy_to_host()
 
     assert h_output[0] == 32
+
+
+def test_warp_sum_valid_items():
+    warp_sum = coop.warp.sum(numba.int32)
+    valid_items = 8
+
+    @cuda.jit
+    def kernel(input, output):
+        warp_output = warp_sum(input[cuda.threadIdx.x], valid_items=valid_items)
+        if cuda.threadIdx.x == 0:
+            output[0] = warp_output
+
+    h_input = np.arange(32, dtype=np.int32)
+    d_input = cuda.to_device(h_input)
+    d_output = cuda.device_array(1, dtype=np.int32)
+    kernel[1, 32](d_input, d_output)
+    h_output = d_output.copy_to_host()
+
+    assert h_output[0] == np.sum(h_input[:valid_items])
+
+
+def test_warp_reduce_valid_items():
+    def op(a, b):
+        return a if a > b else b
+
+    warp_reduce = coop.warp.reduce(numba.int32, op)
+    valid_items = 12
+
+    @cuda.jit
+    def kernel(input, output):
+        warp_output = warp_reduce(input[cuda.threadIdx.x], valid_items=valid_items)
+        if cuda.threadIdx.x == 0:
+            output[0] = warp_output
+
+    h_input = np.random.randint(0, 42, 32, dtype=np.int32)
+    d_input = cuda.to_device(h_input)
+    d_output = cuda.device_array(1, dtype=np.int32)
+    kernel[1, 32](d_input, d_output)
+    h_output = d_output.copy_to_host()
+
+    assert h_output[0] == np.max(h_input[:valid_items])
