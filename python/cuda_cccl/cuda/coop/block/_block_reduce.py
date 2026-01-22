@@ -16,6 +16,7 @@ from .._types import (
     DependentReference,
     Invocable,
     TemplateParameter,
+    TempStoragePointer,
     Value,
     numba_type_to_wrapper,
 )
@@ -137,6 +138,14 @@ class reduce(BasePrimitive):
                 ]
                 if num_valid is not None:
                     parameters[0].insert(2, Value(numba.int32, name="num_valid"))
+
+        if temp_storage is not None:
+            parameters[0].insert(
+                0,
+                TempStoragePointer(
+                    numba.types.uint8, is_array_pointer=True, name="temp_storage"
+                ),
+            )
 
         if methods is not None:
             type_definitions = [numba_type_to_wrapper(dtype, methods=methods)]

@@ -5159,15 +5159,31 @@ class CoopBlockReduceNode(CoopNode, CoopNodeMixin):
             algorithm = "warp_reductions"
 
         temp_storage = bound.get("temp_storage")
+        temp_storage_info = None
         if temp_storage is not None:
-            raise RuntimeError(
-                "coop.block.reduce does not yet support temp_storage in single-phase"
-            )
+            if not isinstance(temp_storage, ir.Var):
+                raise RuntimeError(
+                    "coop.block.reduce temp_storage must be provided as a variable"
+                )
+            temp_storage_ty = self.typemap[temp_storage.name]
+            try:
+                from ._decls import TempStorageType
+            except Exception:
+                TempStorageType = None
+            if TempStorageType is not None and isinstance(
+                temp_storage_ty, TempStorageType
+            ):
+                temp_storage_info = rewriter.get_temp_storage_info(temp_storage)
+                temp_storage_ty = types.Array(types.uint8, 1, "C")
+            runtime_args.insert(0, temp_storage)
+            runtime_arg_types.insert(0, temp_storage_ty)
+            runtime_arg_names.insert(0, "temp_storage")
 
         self.dtype = dtype
         self.items_per_thread = items_per_thread
         self.algorithm = algorithm
-        self.temp_storage = None
+        self.temp_storage = temp_storage
+        self.temp_storage_info = temp_storage_info
         self.use_array_inputs = src_is_array
         self.methods = methods
         self.num_valid = num_valid
@@ -5180,7 +5196,7 @@ class CoopBlockReduceNode(CoopNode, CoopNodeMixin):
             "algorithm": algorithm,
             "methods": methods,
             "unique_id": self.unique_id,
-            "temp_storage": None,
+            "temp_storage": temp_storage,
             "num_valid": num_valid,
             "use_array_inputs": src_is_array,
             "node": self,
@@ -5198,6 +5214,10 @@ class CoopBlockReduceNode(CoopNode, CoopNodeMixin):
         if num_valid_assign is not None:
             instrs.append(num_valid_assign)
         instrs.append(rd.new_assign)
+        if self.temp_storage_info is not None and self.temp_storage_info.auto_sync:
+            instrs.extend(
+                rewriter.emit_syncthreads_call(self.instr.target.scope, self.expr.loc)
+            )
         return instrs
 
     @cached_property
@@ -5295,15 +5315,31 @@ class CoopBlockSumNode(CoopNode, CoopNodeMixin):
             algorithm = "warp_reductions"
 
         temp_storage = bound.get("temp_storage")
+        temp_storage_info = None
         if temp_storage is not None:
-            raise RuntimeError(
-                "coop.block.sum does not yet support temp_storage in single-phase"
-            )
+            if not isinstance(temp_storage, ir.Var):
+                raise RuntimeError(
+                    "coop.block.sum temp_storage must be provided as a variable"
+                )
+            temp_storage_ty = self.typemap[temp_storage.name]
+            try:
+                from ._decls import TempStorageType
+            except Exception:
+                TempStorageType = None
+            if TempStorageType is not None and isinstance(
+                temp_storage_ty, TempStorageType
+            ):
+                temp_storage_info = rewriter.get_temp_storage_info(temp_storage)
+                temp_storage_ty = types.Array(types.uint8, 1, "C")
+            runtime_args.insert(0, temp_storage)
+            runtime_arg_types.insert(0, temp_storage_ty)
+            runtime_arg_names.insert(0, "temp_storage")
 
         self.dtype = dtype
         self.items_per_thread = items_per_thread
         self.algorithm = algorithm
-        self.temp_storage = None
+        self.temp_storage = temp_storage
+        self.temp_storage_info = temp_storage_info
         self.use_array_inputs = src_is_array
         self.methods = methods
         self.num_valid = num_valid
@@ -5315,7 +5351,7 @@ class CoopBlockSumNode(CoopNode, CoopNodeMixin):
             "algorithm": algorithm,
             "methods": methods,
             "unique_id": self.unique_id,
-            "temp_storage": None,
+            "temp_storage": temp_storage,
             "num_valid": num_valid,
             "use_array_inputs": src_is_array,
             "node": self,
@@ -5333,6 +5369,10 @@ class CoopBlockSumNode(CoopNode, CoopNodeMixin):
         if num_valid_assign is not None:
             instrs.append(num_valid_assign)
         instrs.append(rd.new_assign)
+        if self.temp_storage_info is not None and self.temp_storage_info.auto_sync:
+            instrs.extend(
+                rewriter.emit_syncthreads_call(self.instr.target.scope, self.expr.loc)
+            )
         return instrs
 
     @cached_property

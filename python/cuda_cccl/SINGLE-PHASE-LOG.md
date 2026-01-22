@@ -418,3 +418,13 @@
   - `tests/coop/test_nvrtc_compile_count_gpu.py`: add a GPU integration test that dumps NVRTC sources and asserts expected LTO compile count.
 - Tests:
   - `pytest -q tests/coop/test_nvrtc_compile_count_gpu.py` (2 passed)
+
+## 2026-01-21 (explicit temp storage for reduce/sum)
+- Request: enable explicit temp storage for single-phase `coop.block.reduce`/`coop.block.sum` and add tests.
+- Changes:
+  - `cuda/coop/block/_block_reduce.py`: insert `TempStoragePointer` when explicit temp storage is requested.
+  - `cuda/coop/_decls.py`: allow `temp_storage` for single-phase reduce/sum with validation.
+  - `cuda/coop/_rewrite.py`: plumb `temp_storage`/`TempStorageType` handling and auto-sync for reduce/sum.
+  - `tests/coop/test_block_reduce_api.py`: add temp-storage coverage for reduce/sum.
+- Tests:
+  - `pytest -q tests/coop/test_block_reduce_api.py -k temp_storage` (2 passed, 2 deselected)
