@@ -2996,10 +2996,14 @@ class CoopBlockReduceDecl(CoopAbstractTemplate, CoopDeclMixin):
         arglist.append(algorithm)
 
         temp_storage = bound.arguments.get("temp_storage")
-        if temp_storage is not None:
-            raise errors.TypingError(
-                f"{self.primitive_name} does not support 'temp_storage' in single-phase"
-            )
+        temp_storage_is_none_type = isinstance(temp_storage, types.NoneType)
+        if temp_storage_is_none_type:
+            arglist.append(temp_storage)
+            temp_storage = None
+        if not temp_storage_is_none_type:
+            validate_temp_storage(self, temp_storage)
+            if temp_storage is not None:
+                arglist.append(temp_storage)
 
         sig = signature(return_type, *arglist)
 
@@ -3126,10 +3130,14 @@ class CoopBlockSumDecl(CoopAbstractTemplate, CoopDeclMixin):
         arglist.append(algorithm)
 
         temp_storage = bound.arguments.get("temp_storage")
-        if temp_storage is not None:
-            raise errors.TypingError(
-                f"{self.primitive_name} does not support 'temp_storage' in single-phase"
-            )
+        temp_storage_is_none_type = isinstance(temp_storage, types.NoneType)
+        if temp_storage_is_none_type:
+            arglist.append(temp_storage)
+            temp_storage = None
+        if not temp_storage_is_none_type:
+            validate_temp_storage(self, temp_storage)
+            if temp_storage is not None:
+                arglist.append(temp_storage)
 
         sig = signature(return_type, *arglist)
 

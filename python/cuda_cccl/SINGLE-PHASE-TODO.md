@@ -17,6 +17,7 @@
 - [x] Run targeted GPU tests for block scan (block_sum, block_scan_known_ops).
 - [x] Run targeted GPU tests for block scan (prefix callbacks, callable ops, user-defined types).
 - [x] Port block reduce/sum to single-phase (typing, rewrite, tests).
+- [x] Support explicit temp_storage for single-phase block reduce/sum.
 - [x] Port block exchange StripedToBlocked to single-phase (typing, rewrite, tests).
 - [x] Port block exchange BlockedToStriped variants.
 - [x] Port block exchange BlockedToWarpStriped variants.
