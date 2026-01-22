@@ -126,8 +126,6 @@ public:
   //! @brief Convert to a policy that holds a stream
   //! @note This cannot be merged with the other case where we already have a stream as this needs to be const qualified
   //!       This is because we start with a constexpr global and modify that through with_stream
-  _CCCL_TEMPLATE(bool _WithStream = __cuda_policy_with_stream<_Policy>)
-  _CCCL_REQUIRES((!_WithStream))
   [[nodiscard]] _CCCL_HOST_API auto with_stream(::cuda::stream_ref __stream) const noexcept
   {
     constexpr uint32_t __new_policy = __set_cuda_backend_option<_Policy, __cuda_backend_options::__with_stream>;
@@ -141,15 +139,6 @@ public:
     }
   }
 
-  //! @brief Set the current stream
-  _CCCL_TEMPLATE(bool _WithStream = __cuda_policy_with_stream<_Policy>)
-  _CCCL_REQUIRES(_WithStream)
-  [[nodiscard]] _CCCL_HOST_API __execution_policy_base& with_stream(::cuda::stream_ref __stream) noexcept
-  {
-    this->__stream_ = __stream;
-    return *this;
-  }
-
   //! @brief Return the stream stored in the holder or a default stream
   _CCCL_TEMPLATE(bool _WithStream = __cuda_policy_with_stream<_Policy>)
   _CCCL_REQUIRES(_WithStream)
@@ -160,15 +149,13 @@ public:
 
   //! @brief Convert to a policy that holds a memory resource
   //! @warning We hold the memory resource by reference, so passing rvalue is a bug
-  _CCCL_TEMPLATE(class _Resource, bool _WithResource = __cuda_policy_with_memory_resource<_Policy>)
-  _CCCL_REQUIRES((!_WithResource))
+  template <class _Resource>
   [[nodiscard]] _CCCL_HOST_API auto with_memory_resource(_Resource&&) const = delete;
 
   //! @brief Convert to a policy that holds a memory resource
   //! @note This cannot be merged with the other case as this needs to be const qualified
   //!       This is because we start with a constexpr global and modify that through with_stream
-  _CCCL_TEMPLATE(class _Resource, bool _WithResource = __cuda_policy_with_memory_resource<_Policy>)
-  _CCCL_REQUIRES((!_WithResource))
+  template <class _Resource>
   [[nodiscard]] _CCCL_HOST_API auto with_memory_resource(_Resource& __resource) const noexcept
   {
     constexpr uint32_t __new_policy =
@@ -181,21 +168,6 @@ public:
     {
       return __execution_policy_base<__new_policy>{__resource};
     }
-  }
-
-  //! @brief Set the current memory resource
-  //! @warning We hold the memory resource by reference, so passing rvalue is a bug
-  _CCCL_TEMPLATE(class _Resource, bool _WithResource = __cuda_policy_with_memory_resource<_Policy>)
-  _CCCL_REQUIRES(_WithResource)
-  [[nodiscard]] _CCCL_HOST_API __execution_policy_base& with_memory_resource(_Resource&&) = delete;
-
-  //! @brief Set the current memory resource
-  _CCCL_TEMPLATE(class _Resource, bool _WithResource = __cuda_policy_with_memory_resource<_Policy>)
-  _CCCL_REQUIRES(_WithResource)
-  [[nodiscard]] _CCCL_HOST_API __execution_policy_base& with_memory_resource(_Resource& __resource) noexcept
-  {
-    this->__resource_ = __resource;
-    return *this;
   }
 
   //! @brief Return either a stored or a default memory resource

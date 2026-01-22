@@ -85,16 +85,18 @@ struct __pstl_dispatch<__pstl_algorithm::__reduce, __execution_backend::__cuda>
     ::cuda::stream_ref __stream_;
     _Resource& __resource_;
     _Tp* __ptr_;
+    size_t __num_bytes_;
 
     _CCCL_HOST_API __allocation_guard(::cuda::stream_ref __stream, _Resource& __resource, size_t __num_bytes)
         : __stream_(__stream)
         , __resource_(__resource)
         , __ptr_(static_cast<_Tp*>(__resource_.allocate(__stream_, sizeof(_Tp) + __num_bytes, alignof(_Tp))))
+        , __num_bytes_(sizeof(_Tp) + __num_bytes)
     {}
 
     _CCCL_HOST_API ~__allocation_guard()
     {
-      __resource_.deallocate(__stream_, __ptr_, sizeof(_Tp) + __num_bytes, alignof(_Tp));
+      __resource_.deallocate(__stream_, __ptr_, __num_bytes_, alignof(_Tp));
       __stream_.sync();
     }
 

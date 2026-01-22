@@ -86,11 +86,12 @@ void test(Policy pol)
     using policy_t = decltype(pol_with_resource);
     test_resource other_resource{1337};
     decltype(auto) pol_with_other_resource = pol_with_resource.with_memory_resource(other_resource);
-    static_assert(cuda::std::is_same_v<decltype(pol_with_other_resource), policy_t&>);
-    assert(cuda::__call_or(::cuda::mr::get_memory_resource, fallback_resource, pol_with_resource) == other_resource);
+    static_assert(cuda::std::is_same_v<decltype(pol_with_other_resource), policy_t>);
+
+    // The original resource is unchanged
+    assert(cuda::__call_or(::cuda::mr::get_memory_resource, fallback_resource, pol_with_resource) == resource);
     assert(cuda::__call_or(::cuda::mr::get_memory_resource, fallback_resource, pol_with_other_resource)
            == other_resource);
-    assert(cuda::std::addressof(pol_with_resource) == cuda::std::addressof(pol_with_other_resource));
     assert(cuda::__call_or(::cuda::get_stream, cuda::stream_ref{cudaStreamPerThread}, pol_with_resource) == old_stream);
   }
 }

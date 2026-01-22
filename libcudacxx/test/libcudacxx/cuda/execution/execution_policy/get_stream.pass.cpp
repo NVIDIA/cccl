@@ -48,10 +48,11 @@ void test(Policy pol)
     using stream_policy_t = decltype(pol_with_stream);
     cuda::stream other_stream{cuda::device_ref{0}};
     decltype(auto) pol_with_other_stream = pol_with_stream.with_stream(other_stream);
-    static_assert(cuda::std::is_same_v<decltype(pol_with_other_stream), stream_policy_t&>);
-    assert(cuda::__call_or(::cuda::get_stream, default_stream, pol_with_stream) == other_stream);
+    static_assert(cuda::std::is_same_v<decltype(pol_with_other_stream), stream_policy_t>);
+
+    // The original stream remains unchanged
+    assert(cuda::__call_or(::cuda::get_stream, default_stream, pol_with_stream) == stream);
     assert(cuda::__call_or(::cuda::get_stream, default_stream, pol_with_other_stream) == other_stream);
-    assert(cuda::std::addressof(pol_with_stream) == cuda::std::addressof(pol_with_other_stream));
   }
 }
 
