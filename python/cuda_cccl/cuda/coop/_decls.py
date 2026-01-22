@@ -3566,6 +3566,41 @@ class CoopWarpSumDecl(CoopAbstractTemplate, CoopDeclMixin):
         return signature(src, *arglist)
 
 
+@register_global(coop.warp.inclusive_sum)
+class CoopWarpInclusiveSumDecl(CoopAbstractTemplate, CoopDeclMixin):
+    key = coop.warp.inclusive_sum
+    primitive_name = "coop.warp.inclusive_sum"
+    is_constructor = False
+    minimum_num_args = 1
+
+    @staticmethod
+    def signature(
+        src: types.Number,
+        threads_in_warp: int = 32,
+    ):
+        return inspect.signature(CoopWarpInclusiveSumDecl.signature).bind(
+            src,
+            threads_in_warp=threads_in_warp,
+        )
+
+    def _validate_args_and_create_signature(self, bound, two_phase=False):
+        src = bound.arguments["src"]
+        if isinstance(src, types.Array):
+            raise errors.TypingError(f"{self.primitive_name} requires a scalar input")
+        if not isinstance(src, types.Number):
+            raise errors.TypingError(f"{self.primitive_name} requires a numeric input")
+        arglist = [src]
+
+        threads_in_warp = bound.arguments.get("threads_in_warp")
+        if threads_in_warp is not None:
+            maybe_literal = validate_threads_in_warp(self, threads_in_warp)
+            if maybe_literal is not None:
+                threads_in_warp = maybe_literal
+            arglist.append(threads_in_warp)
+
+        return signature(src, *arglist)
+
+
 @register_global(coop.warp.exclusive_sum)
 class CoopWarpExclusiveSumDecl(CoopAbstractTemplate, CoopDeclMixin):
     key = coop.warp.exclusive_sum
@@ -3590,6 +3625,132 @@ class CoopWarpExclusiveSumDecl(CoopAbstractTemplate, CoopDeclMixin):
         if not isinstance(src, types.Number):
             raise errors.TypingError(f"{self.primitive_name} requires a numeric input")
         arglist = [src]
+
+        threads_in_warp = bound.arguments.get("threads_in_warp")
+        if threads_in_warp is not None:
+            maybe_literal = validate_threads_in_warp(self, threads_in_warp)
+            if maybe_literal is not None:
+                threads_in_warp = maybe_literal
+            arglist.append(threads_in_warp)
+
+        return signature(src, *arglist)
+
+
+@register_global(coop.warp.exclusive_scan)
+class CoopWarpExclusiveScanDecl(CoopAbstractTemplate, CoopDeclMixin):
+    key = coop.warp.exclusive_scan
+    primitive_name = "coop.warp.exclusive_scan"
+    is_constructor = False
+    minimum_num_args = 2
+
+    @staticmethod
+    def signature(
+        src: types.Number,
+        scan_op: ScanOpType,
+        initial_value: Optional[types.Number] = None,
+        threads_in_warp: int = 32,
+    ):
+        return inspect.signature(CoopWarpExclusiveScanDecl.signature).bind(
+            src,
+            scan_op,
+            initial_value=initial_value,
+            threads_in_warp=threads_in_warp,
+        )
+
+    def _validate_args_and_create_signature(self, bound, two_phase=False):
+        src = bound.arguments["src"]
+        if isinstance(src, types.Array):
+            raise errors.TypingError(f"{self.primitive_name} requires a scalar input")
+        if not isinstance(src, types.Number):
+            raise errors.TypingError(f"{self.primitive_name} requires a numeric input")
+        arglist = [src]
+
+        scan_op = bound.arguments.get("scan_op")
+        if scan_op is None or isinstance(scan_op, types.NoneType):
+            raise errors.TypingError(
+                f"{self.primitive_name} requires 'scan_op' to be specified"
+            )
+        if isinstance(scan_op, types.StringLiteral):
+            scan_op = scan_op.literal_value
+        try:
+            scan_op = ScanOp(scan_op)
+        except ValueError as e:
+            raise errors.TypingError(
+                f"Invalid scan_op '{scan_op}' for {self.primitive_name}: {e}"
+            )
+        arglist.append(scan_op)
+
+        initial_value = bound.arguments.get("initial_value")
+        if isinstance(initial_value, types.NoneType):
+            arglist.append(initial_value)
+            initial_value = None
+        if isinstance(initial_value, types.IntegerLiteral):
+            initial_value = initial_value.literal_value
+        if initial_value is not None:
+            arglist.append(initial_value)
+
+        threads_in_warp = bound.arguments.get("threads_in_warp")
+        if threads_in_warp is not None:
+            maybe_literal = validate_threads_in_warp(self, threads_in_warp)
+            if maybe_literal is not None:
+                threads_in_warp = maybe_literal
+            arglist.append(threads_in_warp)
+
+        return signature(src, *arglist)
+
+
+@register_global(coop.warp.inclusive_scan)
+class CoopWarpInclusiveScanDecl(CoopAbstractTemplate, CoopDeclMixin):
+    key = coop.warp.inclusive_scan
+    primitive_name = "coop.warp.inclusive_scan"
+    is_constructor = False
+    minimum_num_args = 2
+
+    @staticmethod
+    def signature(
+        src: types.Number,
+        scan_op: ScanOpType,
+        initial_value: Optional[types.Number] = None,
+        threads_in_warp: int = 32,
+    ):
+        return inspect.signature(CoopWarpInclusiveScanDecl.signature).bind(
+            src,
+            scan_op,
+            initial_value=initial_value,
+            threads_in_warp=threads_in_warp,
+        )
+
+    def _validate_args_and_create_signature(self, bound, two_phase=False):
+        src = bound.arguments["src"]
+        if isinstance(src, types.Array):
+            raise errors.TypingError(f"{self.primitive_name} requires a scalar input")
+        if not isinstance(src, types.Number):
+            raise errors.TypingError(f"{self.primitive_name} requires a numeric input")
+        arglist = [src]
+
+        scan_op = bound.arguments.get("scan_op")
+        if scan_op is None or isinstance(scan_op, types.NoneType):
+            raise errors.TypingError(
+                f"{self.primitive_name} requires 'scan_op' to be specified"
+            )
+        if isinstance(scan_op, types.StringLiteral):
+            scan_op = scan_op.literal_value
+        try:
+            scan_op = ScanOp(scan_op)
+        except ValueError as e:
+            raise errors.TypingError(
+                f"Invalid scan_op '{scan_op}' for {self.primitive_name}: {e}"
+            )
+        arglist.append(scan_op)
+
+        initial_value = bound.arguments.get("initial_value")
+        if isinstance(initial_value, types.NoneType):
+            arglist.append(initial_value)
+            initial_value = None
+        if isinstance(initial_value, types.IntegerLiteral):
+            initial_value = initial_value.literal_value
+        if initial_value is not None:
+            arglist.append(initial_value)
 
         threads_in_warp = bound.arguments.get("threads_in_warp")
         if threads_in_warp is not None:
@@ -3726,8 +3887,17 @@ class CoopWarpModuleTemplate(AttributeTemplate):
     def resolve_sum(self, mod):
         return types.Function(CoopWarpSumDecl)
 
+    def resolve_inclusive_sum(self, mod):
+        return types.Function(CoopWarpInclusiveSumDecl)
+
     def resolve_exclusive_sum(self, mod):
         return types.Function(CoopWarpExclusiveSumDecl)
+
+    def resolve_exclusive_scan(self, mod):
+        return types.Function(CoopWarpExclusiveScanDecl)
+
+    def resolve_inclusive_scan(self, mod):
+        return types.Function(CoopWarpInclusiveScanDecl)
 
     def resolve_merge_sort_keys(self, mod):
         return types.Function(CoopWarpMergeSortDecl)

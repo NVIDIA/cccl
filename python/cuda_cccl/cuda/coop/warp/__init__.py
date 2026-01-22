@@ -6,10 +6,18 @@ from ._warp_exchange import WarpExchangeType, exchange
 from ._warp_load_store import load, store
 from ._warp_merge_sort import merge_sort_keys
 from ._warp_reduce import reduce, sum
-from ._warp_scan import exclusive_sum
+from ._warp_scan import (
+    exclusive_scan,
+    exclusive_sum,
+    inclusive_scan,
+    inclusive_sum,
+)
 
 __all__ = [
+    "exclusive_scan",
     "exclusive_sum",
+    "inclusive_scan",
+    "inclusive_sum",
     "reduce",
     "sum",
     "merge_sort_keys",
