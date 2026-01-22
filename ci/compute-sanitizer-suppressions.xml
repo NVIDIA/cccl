@@ -44,6 +44,40 @@
       </frame>
     </hostStack>
   </record>
+  <!-- Another variant of the above -->
+  <record>
+    <kind>Initcheck</kind>
+    <what>
+      <text>Uninitialized __global__ memory read of size 2 bytes</text>
+      <size>2</size>
+    </what>
+    <where>
+      <func>DeviceReduceSingleTileKernel</func>
+    </where>
+    <hostStack>
+      <frame>
+        <func>cuLaunchKernel</func>
+      </frame>
+      <frame>
+        <func>libcudart.*</func>
+      </frame>
+      <frame>
+        <func>cudaLaunchKernel</func>
+      </frame>
+      <frame>
+        <func>.*::detail::reduce::DeviceReduceSingleTileKernel.*</func>
+      </frame>
+      <frame>
+        <func>.*triple_chevron::doit_host.*</func>
+      </frame>
+      <frame>
+        <func>.*DeviceReduce::Reduce.*</func>
+      </frame>
+      <frame>
+        <func>bool thrust::.*::equal.*</func>
+      </frame>
+    </hostStack>
+  </record>
   <!--
   Similar to the above, thrust::equal copies a tuple<bool, OffsetT> from host -> device
   with the result of the comparison. The padding bytes trigger host API initialization
