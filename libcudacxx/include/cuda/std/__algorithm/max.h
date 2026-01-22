@@ -58,8 +58,10 @@ template <class _Tp>
   return *::cuda::std::max_element(__t.begin(), __t.end(), __less{});
 }
 
+//! @brief Internal version of max that works with values instead of references. Can be used with extended arithmetic
+//!        types. Should be preferred as it produces better optimized code with nvcc.
 template <class _Tp>
-[[nodiscard]] _CCCL_API constexpr _Tp __vmax(_Tp __a, _Tp __b) noexcept
+[[nodiscard]] _CCCL_API constexpr _Tp __max(_Tp __a, _Tp __b) noexcept
 {
   static_assert(__is_extended_arithmetic_v<_Tp>);
   if constexpr (is_integral_v<_Tp>)

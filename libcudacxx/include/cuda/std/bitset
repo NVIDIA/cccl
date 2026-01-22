@@ -266,7 +266,7 @@ protected:
 
   _CCCL_API constexpr __bitset& operator<<=(size_t __pos) noexcept
   {
-    __pos = ::cuda::std::__vmin(__pos, _Size);
+    __pos = ::cuda::std::__min(__pos, _Size);
     ::cuda::std::copy_backward(__make_iter(0), __make_iter(_Size - __pos), __make_iter(_Size));
     ::cuda::std::fill_n(__make_iter(0), __pos, false);
     return *this;
@@ -274,7 +274,7 @@ protected:
 
   _CCCL_API constexpr __bitset& operator>>=(size_t __pos) noexcept
   {
-    __pos = ::cuda::std::__vmin(__pos, _Size);
+    __pos = ::cuda::std::__min(__pos, _Size);
     ::cuda::std::copy(__make_iter(__pos), __make_iter(_Size), __make_iter(0));
     ::cuda::std::fill_n(__make_iter(_Size - __pos), __pos, false);
     return *this;
@@ -678,7 +678,7 @@ public:
   _CCCL_API constexpr explicit bitset(
     const _CharT* __str, size_t __n = static_cast<size_t>(-1), _CharT __zero = _CharT('0'), _CharT __one = _CharT('1'))
   {
-    size_t __rlen = ::cuda::std::__vmin(__n, char_traits<_CharT>::length(__str));
+    size_t __rlen = ::cuda::std::__min(__n, char_traits<_CharT>::length(__str));
     __init_from_cstr(__str, __rlen, __zero, __one);
   }
 
@@ -695,7 +695,7 @@ public:
       ::cuda::std::__throw_out_of_range("bitset string pos out of range");
     }
 
-    size_t __rlen = ::cuda::std::__vmin(__n, __str.size() - __pos);
+    size_t __rlen = ::cuda::std::__min(__n, __str.size() - __pos);
     __init_from_cstr(__str.data() + __pos, __rlen, __zero, __one);
   }
 
@@ -713,7 +713,7 @@ public:
       ::cuda::std::__throw_out_of_range("bitset string pos out of range");
     }
 
-    size_t __rlen = ::cuda::std::__vmin(__n, __str.size() - __pos);
+    size_t __rlen = ::cuda::std::__min(__n, __str.size() - __pos);
     __init_from_cstr(__str.data() + __pos, __rlen, __zero, __one);
   }
 #endif // defined(_LIBCUDACXX_HAS_STRING)
@@ -921,7 +921,7 @@ private:
       }
     }
 
-    size_t __mp = ::cuda::std::__vmin(__size, _Size);
+    size_t __mp = ::cuda::std::__min(__size, _Size);
     size_t __i  = 0;
     for (; __i < __mp; ++__i)
     {

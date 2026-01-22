@@ -150,7 +150,7 @@ template <class _Tp, class _CharT, class _FmtCtx>
     __out_it                  = ::cuda::std::__fmt_copy(__array, __first, ::cuda::std::move(__out_it));
     __specs.__alignment_      = ::cuda::std::to_underlying(__fmt_spec_alignment::__right);
     __specs.__fill_.__data[0] = _CharT{'0'};
-    __specs.__width_ -= ::cuda::std::__vmin(static_cast<uint32_t>(__last - __first), __specs.__width_);
+    __specs.__width_ -= ::cuda::std::__min(static_cast<uint32_t>(__last - __first), __specs.__width_);
   }
 
   if (__specs.__std_.__type_ != __fmt_spec_type::__hexadecimal_upper_case)

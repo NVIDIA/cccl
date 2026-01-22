@@ -1254,7 +1254,7 @@ __fmt_estimate_column_width(basic_string_view<_CharT> __str, size_t __maximum, _
   // When Unicode isn't supported assume ASCII and every code unit is one code
   // point. In ASCII the estimated column width is always one. Thus there's no
   // need for rounding.
-  size_t __width = ::cuda::std::__vmin(__str.size(), __maximum);
+  size_t __width = ::cuda::std::__min(__str.size(), __maximum);
   return {__width, __str.begin() + __width};
 }
 
