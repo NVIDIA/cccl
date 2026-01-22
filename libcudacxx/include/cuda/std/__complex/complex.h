@@ -311,7 +311,7 @@ template <class _Tp>
   }
 #endif // _CCCL_BUILTIN_IS_CONSTANT_EVALUATED
 
-  __abcd_results<_Tp> __partials = __complex_calculate_partials(__a, __b, __c, __d);
+  __abcd_results<_Tp> __partials = ::cuda::std::__complex_calculate_partials(__a, __b, __c, __d);
 
   _Tp __x = __partials.__ac - __partials.__bd;
   _Tp __y = __partials.__ad + __partials.__bc;
@@ -371,7 +371,7 @@ template <class _Tp>
     }
     if (__recalc)
     {
-      __partials = __complex_calculate_partials(__a, __b, __c, __d);
+      __partials = ::cuda::std::__complex_calculate_partials(__a, __b, __c, __d);
 
       __x = numeric_limits<_Tp>::infinity() * (__partials.__ac - __partials.__bd);
       __y = numeric_limits<_Tp>::infinity() * (__partials.__ad + __partials.__bc);
