@@ -23,6 +23,7 @@ class _DummyAlgo:
         self.parameters = [[]]
         self.primitive = _DummyPrimitive(is_child=False)
         self.names = types.SimpleNamespace(
+            target_name=name_prefix,
             temp_storage_bytes=f"{name_prefix}_temp_storage_bytes",
             temp_storage_alignment=f"{name_prefix}_temp_storage_alignment",
             algorithm_struct_size=f"{name_prefix}_struct_size",
@@ -149,20 +150,23 @@ def _make_dummy_nodes():
 def test_env_var_gates_ltoir_bundle(monkeypatch):
     called = {"count": 0}
 
-    def fake_bundle(algorithms, bundle_name=None):
+    def fake_bundle(algorithms, bundle_name=None, **kwargs):
         called["count"] += 1
         return object()
 
     monkeypatch.setattr(_types, "prepare_ltoir_bundle", fake_bundle)
+    monkeypatch.setattr(
+        "cuda.coop._rewrite.algo_coalesce_key", lambda algo, **_: id(algo)
+    )
 
-    monkeypatch.setenv("NUMBA_CCCL_COOP_BUNDLE_LTOIR", "1")
+    monkeypatch.delenv("NUMBA_CCCL_COOP_BUNDLE_LTOIR", raising=False)
     rewriter = CoopNodeRewriter(types.SimpleNamespace(typingctx=object()))
     rewriter.nodes = _make_dummy_nodes()
     rewriter.ensure_ltoir_bundle()
 
     assert called["count"] == 1
 
-    monkeypatch.delenv("NUMBA_CCCL_COOP_BUNDLE_LTOIR", raising=False)
+    monkeypatch.setenv("NUMBA_CCCL_COOP_BUNDLE_LTOIR", "0")
     rewriter2 = CoopNodeRewriter(types.SimpleNamespace(typingctx=object()))
     rewriter2.nodes = _make_dummy_nodes()
     rewriter2.ensure_ltoir_bundle()

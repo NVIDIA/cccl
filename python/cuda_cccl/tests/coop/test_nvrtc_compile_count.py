@@ -89,6 +89,7 @@ class _DummyAlgo:
         self.parameters = [[]]
         self.primitive = _DummyPrimitive()
         self.names = types.SimpleNamespace(
+            target_name=name_prefix,
             temp_storage_bytes=f"{name_prefix}_temp_storage_bytes",
             temp_storage_alignment=f"{name_prefix}_temp_storage_alignment",
             algorithm_struct_size=f"{name_prefix}_struct_size",
