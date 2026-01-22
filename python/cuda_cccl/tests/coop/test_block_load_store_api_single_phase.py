@@ -220,6 +220,71 @@ def test_block_load_store_two_phase():
     np.testing.assert_allclose(h_output, h_input)
 
 
+def test_block_load_single_phase_oob_default():
+    dtype = np.int32
+    threads_per_block = 64
+    items_per_thread = 4
+    total_items = threads_per_block * items_per_thread
+    num_valid = total_items - 3
+    oob_default = np.int32(-123)
+
+    @cuda.jit
+    def kernel(d_in, d_out, num_valid_items):
+        thread_data = cuda.local.array(items_per_thread, dtype=numba.int32)
+        coop.block.load(
+            d_in,
+            thread_data,
+            items_per_thread=items_per_thread,
+            num_valid_items=num_valid_items,
+            oob_default=oob_default,
+        )
+        coop.block.store(d_out, thread_data, items_per_thread=items_per_thread)
+
+    h_input = np.random.randint(0, 42, total_items, dtype=dtype)
+    d_input = cuda.to_device(h_input)
+    d_output = cuda.device_array(total_items, dtype=dtype)
+
+    kernel[1, threads_per_block](d_input, d_output, num_valid)
+    h_output = d_output.copy_to_host()
+
+    expected = np.full(total_items, oob_default, dtype=dtype)
+    expected[:num_valid] = h_input[:num_valid]
+    np.testing.assert_array_equal(h_output, expected)
+
+
+def test_block_load_two_phase_oob_default():
+    dtype = np.int32
+    threads_per_block = 64
+    items_per_thread = 4
+    total_items = threads_per_block * items_per_thread
+    num_valid = total_items - 5
+    oob_default = np.int32(-7)
+
+    block_load = coop.block.load(dtype, threads_per_block, items_per_thread)
+
+    @cuda.jit
+    def kernel(d_in, d_out, num_valid_items):
+        thread_data = cuda.local.array(items_per_thread, dtype=numba.int32)
+        block_load(
+            d_in,
+            thread_data,
+            num_valid_items=num_valid_items,
+            oob_default=oob_default,
+        )
+        coop.block.store(d_out, thread_data, items_per_thread=items_per_thread)
+
+    h_input = np.random.randint(0, 42, total_items, dtype=dtype)
+    d_input = cuda.to_device(h_input)
+    d_output = cuda.device_array(total_items, dtype=dtype)
+
+    kernel[1, threads_per_block](d_input, d_output, num_valid)
+    h_output = d_output.copy_to_host()
+
+    expected = np.full(total_items, oob_default, dtype=dtype)
+    expected[:num_valid] = h_input[:num_valid]
+    np.testing.assert_array_equal(h_output, expected)
+
+
 _global_test_dtype = np.int32
 _global_test_dim = 128
 _global_test_items_per_thread = 16
