@@ -5,6 +5,8 @@
 
 #include <cub/device/dispatch/dispatch_scan_by_key.cuh>
 
+#include <cuda/std/functional>
+
 #include "catch2_test_device_scan.cuh"
 #include <c2h/catch2_test_helper.h>
 
