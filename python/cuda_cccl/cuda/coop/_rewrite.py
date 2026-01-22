@@ -2817,6 +2817,8 @@ class CoopBlockShuffleNode(CoopNode, CoopNodeMixin):
         bound = self.bound.arguments
         items = bound.get("items")
         output_items = bound.get("output_items")
+        block_prefix = bound.get("block_prefix")
+        block_suffix = bound.get("block_suffix")
 
         if items is None:
             raise RuntimeError("coop.block.shuffle requires items")
@@ -2943,6 +2945,55 @@ class CoopBlockShuffleNode(CoopNode, CoopNodeMixin):
                     "coop.block.shuffle does not accept distance for Up/Down"
                 )
 
+            if block_prefix is not None and block_suffix is not None:
+                raise RuntimeError(
+                    "coop.block.shuffle does not allow block_prefix and "
+                    "block_suffix together"
+                )
+
+            if block_shuffle_type == BlockShuffleType.Up and block_prefix is not None:
+                raise RuntimeError(
+                    "coop.block.shuffle does not allow block_prefix for Up shuffles"
+                )
+            if block_shuffle_type == BlockShuffleType.Down and block_suffix is not None:
+                raise RuntimeError(
+                    "coop.block.shuffle does not allow block_suffix for Down shuffles"
+                )
+
+            block_prefix_ty = None
+            block_suffix_ty = None
+            if block_prefix is not None:
+                if not isinstance(block_prefix, ir.Var):
+                    raise RuntimeError(
+                        "coop.block.shuffle block_prefix must be a variable"
+                    )
+                block_prefix_ty = self.typemap[block_prefix.name]
+                if not isinstance(block_prefix_ty, types.Array):
+                    raise RuntimeError(
+                        "coop.block.shuffle block_prefix must be a device array"
+                    )
+                if block_prefix_ty.dtype != item_dtype:
+                    raise RuntimeError(
+                        "coop.block.shuffle requires block_prefix to have the same "
+                        "dtype as items"
+                    )
+
+            if block_suffix is not None:
+                if not isinstance(block_suffix, ir.Var):
+                    raise RuntimeError(
+                        "coop.block.shuffle block_suffix must be a variable"
+                    )
+                block_suffix_ty = self.typemap[block_suffix.name]
+                if not isinstance(block_suffix_ty, types.Array):
+                    raise RuntimeError(
+                        "coop.block.shuffle block_suffix must be a device array"
+                    )
+                if block_suffix_ty.dtype != item_dtype:
+                    raise RuntimeError(
+                        "coop.block.shuffle requires block_suffix to have the same "
+                        "dtype as items"
+                    )
+
             temp_storage = bound.get("temp_storage")
             temp_storage_info = None
             if temp_storage is not None:
@@ -2970,6 +3021,15 @@ class CoopBlockShuffleNode(CoopNode, CoopNodeMixin):
             runtime_arg_types.extend([items_ty, output_items_ty])
             runtime_arg_names.extend(["items", "output_items"])
 
+            if block_prefix is not None:
+                runtime_args.append(block_prefix)
+                runtime_arg_types.append(block_prefix_ty)
+                runtime_arg_names.append("block_prefix")
+            if block_suffix is not None:
+                runtime_args.append(block_suffix)
+                runtime_arg_types.append(block_suffix_ty)
+                runtime_arg_names.append("block_suffix")
+
             self.return_type = types.void
             self.items_per_thread = items_per_thread
             self.block_shuffle_type = block_shuffle_type
@@ -2985,6 +3045,8 @@ class CoopBlockShuffleNode(CoopNode, CoopNodeMixin):
                 "threads_per_block": self.threads_per_block,
                 "items_per_thread": items_per_thread,
                 "distance": None,
+                "block_prefix": block_prefix,
+                "block_suffix": block_suffix,
                 "methods": methods,
                 "unique_id": self.unique_id,
                 "temp_storage": temp_storage,
@@ -2994,6 +3056,22 @@ class CoopBlockShuffleNode(CoopNode, CoopNodeMixin):
             self.runtime_args = runtime_args
             self.runtime_arg_types = runtime_arg_types
             self.runtime_arg_names = runtime_arg_names
+
+            if self.is_two_phase and self.two_phase_instance is not None:
+                instance = self.two_phase_instance
+                needs_rebuild = False
+                if (
+                    block_prefix is not None
+                    and getattr(instance, "block_prefix", None) is None
+                ):
+                    needs_rebuild = True
+                if (
+                    block_suffix is not None
+                    and getattr(instance, "block_suffix", None) is None
+                ):
+                    needs_rebuild = True
+                if needs_rebuild:
+                    self.instance = self.impl_class(**self.impl_kwds)
             return
 
         if not items_is_scalar:
@@ -3033,6 +3111,11 @@ class CoopBlockShuffleNode(CoopNode, CoopNodeMixin):
         if output_items is not None:
             raise RuntimeError(
                 "coop.block.shuffle does not accept output_items for scalar shuffles"
+            )
+        if block_prefix is not None or block_suffix is not None:
+            raise RuntimeError(
+                "coop.block.shuffle does not accept block_prefix/block_suffix for "
+                "scalar shuffles"
             )
 
         items_per_thread_kwarg = self.get_arg_value_safe("items_per_thread")

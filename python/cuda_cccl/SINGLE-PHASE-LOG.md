@@ -572,3 +572,17 @@
   - `pytest -q tests/coop/test_warp_reduce_api.py -k valid_items` (2 passed, 2 deselected)
   - `pytest -q tests/coop/test_warp_single_phase.py -k valid_items` (2 passed, 7 deselected)
   - `pytest -q tests/coop/test_block_discontinuity.py -k tile` (2 passed, 2 deselected)
+
+## 2026-01-22 (block shuffle prefix/suffix overloads)
+- Request: continue overload parity with block shuffle prefix/suffix outputs.
+- Changes:
+  - `cuda/coop/block/_block_shuffle.py`: add block_prefix/block_suffix optional
+    parameters and emit pointer-reference shims for Up/Down overloads.
+  - `cuda/coop/_decls.py`: allow block_prefix/block_suffix kwargs and validate
+    array-only usage + dtype matching for Up/Down shuffles.
+  - `cuda/coop/_rewrite.py`: plumb block_prefix/block_suffix runtime args and
+    rebuild two-phase instances when provided.
+  - `tests/coop/test_block_shuffle.py`: add single- and two-phase tests for
+    block_prefix/block_suffix outputs.
+- Tests:
+  - `pytest -q tests/coop/test_block_shuffle.py -k prefix` (2 passed, 4 deselected)

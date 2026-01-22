@@ -53,6 +53,7 @@
 - [x] Add warp reduce/sum valid-items overloads.
 - [x] Add block load oob_default overload.
 - [x] Add block discontinuity tile predecessor/successor overloads.
+- [x] Add block shuffle prefix/suffix overloads (block_prefix/block_suffix).
 - [ ] Add block scan block-aggregate overloads (multi-output).
 - [ ] Add block merge/radix sort key/value + valid-items/oob_default/decomposer overloads.
 - [ ] Add warp merge sort key/value overloads.
