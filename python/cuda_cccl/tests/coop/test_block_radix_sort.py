@@ -6,6 +6,7 @@ from functools import reduce
 from operator import mul
 
 import numba
+import numpy as np
 import pytest
 from helpers import NUMBA_TYPES_TO_NP, random_int, row_major_tid
 from numba import cuda, types
@@ -13,6 +14,80 @@ from numba import cuda, types
 from cuda import coop
 
 numba.config.CUDA_LOW_OCCUPANCY_WARNINGS = 0
+
+
+def test_block_radix_sort_two_phase():
+    threads_per_block = 64
+    items_per_thread = 2
+    dtype = np.int32
+    begin_bit = numba.int32(0)
+    end_bit = numba.int32(32)
+
+    block_radix_sort = coop.block.radix_sort_keys(
+        numba.int32,
+        threads_per_block,
+        items_per_thread,
+        begin_bit,
+        end_bit,
+    )
+
+    @cuda.jit
+    def kernel(input, output):
+        tid = row_major_tid()
+        thread_data = cuda.local.array(shape=items_per_thread, dtype=numba.int32)
+        for i in range(items_per_thread):
+            thread_data[i] = input[tid * items_per_thread + i]
+        block_radix_sort(thread_data, items_per_thread, begin_bit, end_bit)
+        for i in range(items_per_thread):
+            output[tid * items_per_thread + i] = thread_data[i]
+
+    items_per_tile = threads_per_block * items_per_thread
+    h_input = random_int(items_per_tile, dtype)
+    d_input = cuda.to_device(h_input)
+    d_output = cuda.device_array(items_per_tile, dtype=dtype)
+    kernel[1, threads_per_block](d_input, d_output)
+    cuda.synchronize()
+
+    h_output = d_output.copy_to_host()
+    reference = sorted(h_input)
+    np.testing.assert_array_equal(h_output, reference)
+
+
+def test_block_radix_sort_descending_two_phase():
+    threads_per_block = 64
+    items_per_thread = 2
+    dtype = np.int32
+    begin_bit = numba.int32(0)
+    end_bit = numba.int32(32)
+
+    block_radix_sort_desc = coop.block.radix_sort_keys_descending(
+        numba.int32,
+        threads_per_block,
+        items_per_thread,
+        begin_bit,
+        end_bit,
+    )
+
+    @cuda.jit
+    def kernel(input, output):
+        tid = row_major_tid()
+        thread_data = cuda.local.array(shape=items_per_thread, dtype=numba.int32)
+        for i in range(items_per_thread):
+            thread_data[i] = input[tid * items_per_thread + i]
+        block_radix_sort_desc(thread_data, items_per_thread, begin_bit, end_bit)
+        for i in range(items_per_thread):
+            output[tid * items_per_thread + i] = thread_data[i]
+
+    items_per_tile = threads_per_block * items_per_thread
+    h_input = random_int(items_per_tile, dtype)
+    d_input = cuda.to_device(h_input)
+    d_output = cuda.device_array(items_per_tile, dtype=dtype)
+    kernel[1, threads_per_block](d_input, d_output)
+    cuda.synchronize()
+
+    h_output = d_output.copy_to_host()
+    reference = sorted(h_input, reverse=True)
+    np.testing.assert_array_equal(h_output, reference)
 
 
 @pytest.mark.parametrize("T", [types.int8, types.int16, types.uint32, types.uint64])

@@ -159,3 +159,72 @@ def test_block_sum_temp_storage():
     assert h_output_single[0] == threads_per_block
     assert h_output_two[0] == threads_per_block
     assert h_output_single[0] == h_output_two[0]
+
+
+def test_block_reduce_two_phase_temp_storage():
+    @cuda.jit(device=True)
+    def op(a, b):
+        return a + b
+
+    threads_per_block = 128
+    block_reduce = coop.block.reduce(
+        np.int32,
+        threads_per_block,
+        op,
+        items_per_thread=1,
+    )
+    temp_storage_bytes = block_reduce.temp_storage_bytes
+    temp_storage_alignment = block_reduce.temp_storage_alignment
+
+    @cuda.jit
+    def kernel(input, output):
+        temp_storage = coop.TempStorage(
+            temp_storage_bytes,
+            temp_storage_alignment,
+        )
+        block_output = block_reduce(
+            input[cuda.threadIdx.x],
+            temp_storage=temp_storage,
+        )
+        if cuda.threadIdx.x == 0:
+            output[0] = block_output
+
+    h_input = np.random.randint(0, 42, threads_per_block, dtype=np.int32)
+    d_input = cuda.to_device(h_input)
+    d_output = cuda.device_array(1, dtype=np.int32)
+    kernel[1, threads_per_block](d_input, d_output)
+    h_output = d_output.copy_to_host()
+
+    assert h_output[0] == np.sum(h_input)
+
+
+def test_block_sum_two_phase_temp_storage():
+    threads_per_block = 128
+    block_sum = coop.block.sum(
+        np.int32,
+        threads_per_block,
+        items_per_thread=1,
+    )
+    temp_storage_bytes = block_sum.temp_storage_bytes
+    temp_storage_alignment = block_sum.temp_storage_alignment
+
+    @cuda.jit
+    def kernel(input, output):
+        temp_storage = coop.TempStorage(
+            temp_storage_bytes,
+            temp_storage_alignment,
+        )
+        block_output = block_sum(
+            input[cuda.threadIdx.x],
+            temp_storage=temp_storage,
+        )
+        if cuda.threadIdx.x == 0:
+            output[0] = block_output
+
+    h_input = np.ones(threads_per_block, dtype=np.int32)
+    d_input = cuda.to_device(h_input)
+    d_output = cuda.device_array(1, dtype=np.int32)
+    kernel[1, threads_per_block](d_input, d_output)
+    h_output = d_output.copy_to_host()
+
+    assert h_output[0] == threads_per_block

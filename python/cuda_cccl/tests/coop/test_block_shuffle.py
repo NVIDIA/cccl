@@ -46,6 +46,44 @@ def test_block_shuffle_offset_scalar():
     np.testing.assert_array_equal(h_output, expected)
 
 
+def test_block_shuffle_offset_scalar_two_phase():
+    threads_per_block = 64
+    distance = 1
+    dtype = np.int32
+
+    block_shuffle = coop.block.shuffle(
+        coop.block.BlockShuffleType.Offset,
+        numba.int32,
+        threads_per_block,
+        distance=distance,
+    )
+
+    @cuda.jit
+    def kernel(d_in, d_out):
+        tid = row_major_tid()
+        value = d_in[tid]
+        shuffled = block_shuffle(
+            value,
+            block_shuffle_type=coop.block.BlockShuffleType.Offset,
+            distance=distance,
+        )
+        if tid + distance < d_out.shape[0]:
+            d_out[tid] = shuffled
+
+    num_threads = threads_per_block
+    h_input = np.arange(num_threads, dtype=dtype)
+    h_output = np.full(num_threads, -1, dtype=dtype)
+    d_input = cuda.to_device(h_input)
+    d_output = cuda.to_device(h_output)
+
+    kernel[1, threads_per_block](d_input, d_output)
+    h_output = d_output.copy_to_host()
+
+    expected = np.full_like(h_output, -1)
+    expected[:-distance] = h_input[distance:]
+    np.testing.assert_array_equal(h_output, expected)
+
+
 def test_block_shuffle_rotate_scalar():
     threads_per_block = 32
     distance = 3

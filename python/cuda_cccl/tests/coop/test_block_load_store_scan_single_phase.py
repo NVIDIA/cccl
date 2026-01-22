@@ -173,7 +173,7 @@ def test_block_load_store_scan_thread_data():
 
     dtype = np.int32
     threads_per_block = 128
-    items_per_thread = 4
+    items_per_thread = 1
     num_total_items = threads_per_block * items_per_thread
 
     h_input = np.random.randint(0, 42, num_total_items, dtype=dtype)
@@ -210,6 +210,43 @@ def test_block_load_store_scan_temp_storage_placeholder():
         thread_data = coop.ThreadData(items_per_thread)
         coop.block.load(d_in, thread_data)
         coop.block.scan(thread_data, thread_data, temp_storage=temp_storage)
+        coop.block.store(d_out, thread_data)
+
+    num_total_items = threads_per_block * items_per_thread
+    h_input = np.random.randint(0, 42, num_total_items, dtype=dtype)
+    d_input = cuda.to_device(h_input)
+    d_output = cuda.device_array_like(d_input)
+
+    kernel[1, threads_per_block](d_input, d_output)
+    cuda.synchronize()
+
+    h_reference = np.zeros_like(h_input)
+    if len(h_input) > 0:
+        h_reference[0] = 0
+        h_reference[1:] = np.cumsum(h_input[:-1])
+
+    h_output = d_output.copy_to_host()
+    np.testing.assert_array_equal(h_output, h_reference)
+
+
+def test_block_load_store_scan_two_phase_temp_storage():
+    dtype = np.int32
+    threads_per_block = 128
+    items_per_thread = 1
+
+    block_scan = coop.block.scan(dtype, threads_per_block, items_per_thread)
+    temp_storage_bytes = block_scan.temp_storage_bytes
+    temp_storage_alignment = block_scan.temp_storage_alignment
+
+    @cuda.jit
+    def kernel(d_in, d_out):
+        temp_storage = coop.TempStorage(
+            temp_storage_bytes,
+            temp_storage_alignment,
+        )
+        thread_data = coop.ThreadData(items_per_thread)
+        coop.block.load(d_in, thread_data)
+        block_scan(thread_data, thread_data, temp_storage=temp_storage)
         coop.block.store(d_out, thread_data)
 
     num_total_items = threads_per_block * items_per_thread

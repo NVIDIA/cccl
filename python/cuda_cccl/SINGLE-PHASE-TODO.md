@@ -48,3 +48,4 @@
 - [x] Add two-phase instance typing for remaining block/warp primitives.
 - [x] Store instance constructor parameters needed for two-phase inference.
 - [x] Remove `.create()`/`link=` usage from coop tests and examples.
+- [x] Add missing two-phase tests for block primitives.
