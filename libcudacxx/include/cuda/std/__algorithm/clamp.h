@@ -21,6 +21,8 @@
 #endif // no system header
 
 #include <cuda/std/__algorithm/comp.h>
+#include <cuda/std/__algorithm/max.h>
+#include <cuda/std/__algorithm/min.h>
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -39,6 +41,12 @@ template <class _Tp>
 {
   _CCCL_ASSERT(!(__hi < __lo), "Bad bounds passed to cuda::std::clamp");
   return __v < __lo ? __lo : __hi < __v ? __hi : __v;
+}
+
+template <class _Tp>
+[[nodiscard]] _CCCL_API constexpr _Tp __vclamp(_Tp __v, _Tp __lo, _Tp __hi) noexcept
+{
+  return ::cuda::std::__vmax(__lo, ::cuda::std::__vmin(__v, __hi));
 }
 
 _CCCL_END_NAMESPACE_CUDA_STD

@@ -53,8 +53,8 @@ public:
   {
     // Calculate number of bits needed to represent num_elements - 1
     // Prevent zero
-    const uint64_t __max_index  = ::cuda::std::max(static_cast<uint64_t>(1), __num_elements) - 1;
-    const uint64_t __total_bits = static_cast<uint64_t>(::cuda::std::max(8, ::cuda::std::bit_width(__max_index)));
+    const uint64_t __max_index  = ::cuda::std::__vmax(static_cast<uint64_t>(1), __num_elements) - 1;
+    const uint64_t __total_bits = static_cast<uint64_t>(::cuda::std::__vmax(8, ::cuda::std::bit_width(__max_index)));
 
     // Half bits rounded down
     __L_bits_ = __total_bits / 2;

@@ -84,7 +84,7 @@ _CCCL_REQUIRES(::cuda::std::__cccl_is_unsigned_integer_v<_Tp>)
       // The result is computed as max(1, bit_width(__t - 1)) because it is more efficient than the ternary operator
       NV_IF_TARGET(NV_IS_DEVICE, //
                    (auto __shift = ::cuda::ptx::shl(_Up{1}, __width); // 2^(ceil(log2(__t - 1)))
-                    auto __ret   = static_cast<_Tp>(::cuda::std::max(_Up{1}, __shift)); //
+                    auto __ret   = static_cast<_Tp>(::cuda::std::__vmax(_Up{1}, __shift)); //
                     _CCCL_ASSUME(__ret >= __t);
                     return __ret;))
     }

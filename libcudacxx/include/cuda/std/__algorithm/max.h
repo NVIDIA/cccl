@@ -23,6 +23,9 @@
 #include <cuda/std/__algorithm/comp.h>
 #include <cuda/std/__algorithm/comp_ref_type.h>
 #include <cuda/std/__algorithm/max_element.h>
+#include <cuda/std/__cmath/min_max.h>
+#include <cuda/std/__type_traits/is_extended_arithmetic.h>
+#include <cuda/std/__type_traits/is_integral.h>
 #include <cuda/std/initializer_list>
 
 #include <cuda/std/__cccl/prologue.h>
@@ -53,6 +56,20 @@ template <class _Tp>
 [[nodiscard]] _CCCL_API constexpr _Tp max(initializer_list<_Tp> __t)
 {
   return *::cuda::std::max_element(__t.begin(), __t.end(), __less{});
+}
+
+template <class _Tp>
+[[nodiscard]] _CCCL_API constexpr _Tp __vmax(_Tp __a, _Tp __b) noexcept
+{
+  static_assert(__is_extended_arithmetic_v<_Tp>);
+  if constexpr (is_integral_v<_Tp>)
+  {
+    return (__a < __b) ? __b : __a;
+  }
+  else
+  {
+    return ::cuda::std::fmax(__a, __b);
+  }
 }
 
 _CCCL_END_NAMESPACE_CUDA_STD

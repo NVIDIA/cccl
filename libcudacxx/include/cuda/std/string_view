@@ -359,7 +359,7 @@ public:
     {
       ::cuda::std::__throw_out_of_range("string_view::copy");
     }
-    const auto __rlen = ::cuda::std::min(__n, __size_ - __pos);
+    const auto __rlen = ::cuda::std::__vmin(__n, __size_ - __pos);
     _Traits::copy(__s, __data_ + __pos, __rlen);
     return __rlen;
   }
@@ -373,14 +373,14 @@ public:
     {
       ::cuda::std::__throw_out_of_range("string_view::substr");
     }
-    return basic_string_view{__assume_valid{}, __data_ + __pos, ::cuda::std::min(__n, __size_ - __pos)};
+    return basic_string_view{__assume_valid{}, __data_ + __pos, ::cuda::std::__vmin(__n, __size_ - __pos)};
   }
 
   // compare
 
   [[nodiscard]] _CCCL_API constexpr int compare(basic_string_view __sv) const noexcept
   {
-    const auto __rlen = ::cuda::std::min(__size_, __sv.__size_);
+    const auto __rlen = ::cuda::std::__vmin(__size_, __sv.__size_);
     int __retval      = _Traits::compare(__data_, __sv.__data_, __rlen);
     if (__retval == 0) // first __rlen chars matched
     {
