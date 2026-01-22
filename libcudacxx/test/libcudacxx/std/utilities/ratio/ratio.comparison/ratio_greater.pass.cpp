@@ -22,43 +22,43 @@ __host__ __device__ void test()
 int main(int, char**)
 {
   {
-    typedef cuda::std::ratio<1, 1> R1;
-    typedef cuda::std::ratio<1, 1> R2;
+    using R1 = cuda::std::ratio<1, 1>;
+    using R2 = cuda::std::ratio<1, 1>;
     test<R1, R2, false>();
   }
   {
-    typedef cuda::std::ratio<0x7FFFFFFFFFFFFFFFLL, 1> R1;
-    typedef cuda::std::ratio<0x7FFFFFFFFFFFFFFFLL, 1> R2;
+    using R1 = cuda::std::ratio<0x7FFFFFFFFFFFFFFFLL, 1>;
+    using R2 = cuda::std::ratio<0x7FFFFFFFFFFFFFFFLL, 1>;
     test<R1, R2, false>();
   }
   {
-    typedef cuda::std::ratio<-0x7FFFFFFFFFFFFFFFLL, 1> R1;
-    typedef cuda::std::ratio<-0x7FFFFFFFFFFFFFFFLL, 1> R2;
+    using R1 = cuda::std::ratio<-0x7FFFFFFFFFFFFFFFLL, 1>;
+    using R2 = cuda::std::ratio<-0x7FFFFFFFFFFFFFFFLL, 1>;
     test<R1, R2, false>();
   }
   {
-    typedef cuda::std::ratio<1, 0x7FFFFFFFFFFFFFFFLL> R1;
-    typedef cuda::std::ratio<1, 0x7FFFFFFFFFFFFFFFLL> R2;
+    using R1 = cuda::std::ratio<1, 0x7FFFFFFFFFFFFFFFLL>;
+    using R2 = cuda::std::ratio<1, 0x7FFFFFFFFFFFFFFFLL>;
     test<R1, R2, false>();
   }
   {
-    typedef cuda::std::ratio<1, 1> R1;
-    typedef cuda::std::ratio<1, -1> R2;
+    using R1 = cuda::std::ratio<1, 1>;
+    using R2 = cuda::std::ratio<1, -1>;
     test<R1, R2, true>();
   }
   {
-    typedef cuda::std::ratio<0x7FFFFFFFFFFFFFFFLL, 1> R1;
-    typedef cuda::std::ratio<-0x7FFFFFFFFFFFFFFFLL, 1> R2;
+    using R1 = cuda::std::ratio<0x7FFFFFFFFFFFFFFFLL, 1>;
+    using R2 = cuda::std::ratio<-0x7FFFFFFFFFFFFFFFLL, 1>;
     test<R1, R2, true>();
   }
   {
-    typedef cuda::std::ratio<-0x7FFFFFFFFFFFFFFFLL, 1> R1;
-    typedef cuda::std::ratio<0x7FFFFFFFFFFFFFFFLL, 1> R2;
+    using R1 = cuda::std::ratio<-0x7FFFFFFFFFFFFFFFLL, 1>;
+    using R2 = cuda::std::ratio<0x7FFFFFFFFFFFFFFFLL, 1>;
     test<R1, R2, false>();
   }
   {
-    typedef cuda::std::ratio<1, 0x7FFFFFFFFFFFFFFFLL> R1;
-    typedef cuda::std::ratio<1, -0x7FFFFFFFFFFFFFFFLL> R2;
+    using R1 = cuda::std::ratio<1, 0x7FFFFFFFFFFFFFFFLL>;
+    using R2 = cuda::std::ratio<1, -0x7FFFFFFFFFFFFFFFLL>;
     test<R1, R2, true>();
   }
 

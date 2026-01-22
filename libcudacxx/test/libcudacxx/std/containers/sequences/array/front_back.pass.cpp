@@ -20,9 +20,9 @@
 __host__ __device__ constexpr bool tests()
 {
   {
-    typedef double T;
-    typedef cuda::std::array<T, 3> C;
-    C c = {1, 2, 3.5};
+    using T = double;
+    using C = cuda::std::array<T, 3>;
+    C c     = {1, 2, 3.5};
 
     C::reference r1 = c.front();
     assert(r1 == 1);
@@ -35,9 +35,9 @@ __host__ __device__ constexpr bool tests()
     assert(c[2] == 7.5);
   }
   {
-    typedef double T;
-    typedef cuda::std::array<T, 0> C;
-    C c = {};
+    using T = double;
+    using C = cuda::std::array<T, 0>;
+    C c     = {};
     static_assert(cuda::std::is_same_v<decltype(c.back()), C::reference>);
     static_assert(noexcept(c.back()));
     static_assert(cuda::std::is_same_v<decltype(c.front()), C::reference>);
@@ -49,9 +49,9 @@ __host__ __device__ constexpr bool tests()
     }
   }
   {
-    typedef double T;
-    typedef cuda::std::array<const T, 0> C;
-    C c = {};
+    using T = double;
+    using C = cuda::std::array<const T, 0>;
+    C c     = {};
     static_assert(cuda::std::is_same_v<decltype(c.back()), C::reference>);
     static_assert(noexcept(c.back()));
     static_assert(cuda::std::is_same_v<decltype(c.front()), C::reference>);

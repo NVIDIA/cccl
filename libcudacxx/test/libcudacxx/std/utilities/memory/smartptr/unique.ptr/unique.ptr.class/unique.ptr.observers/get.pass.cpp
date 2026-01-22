@@ -22,11 +22,11 @@
 template <bool IsArray>
 __host__ __device__ TEST_CONSTEXPR_CXX23 void test_basic()
 {
-  typedef typename cuda::std::conditional<IsArray, int[], int>::type VT;
-  typedef const VT CVT;
+  using VT  = typename cuda::std::conditional<IsArray, int[], int>::type;
+  using CVT = const VT;
   {
-    typedef cuda::std::unique_ptr<VT> U;
-    int* p = newValue<VT>(1);
+    using U = cuda::std::unique_ptr<VT>;
+    int* p  = newValue<VT>(1);
     U s(p);
     U const& sc = s;
     static_assert(cuda::std::is_same_v<decltype(s.get()), int*>);
@@ -35,7 +35,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX23 void test_basic()
     assert(sc.get() == s.get());
   }
   {
-    typedef cuda::std::unique_ptr<CVT> U;
+    using U      = cuda::std::unique_ptr<CVT>;
     const int* p = newValue<VT>(1);
     U s(p);
     U const& sc = s;

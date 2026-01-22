@@ -84,7 +84,7 @@
 template <class A, class T, template <typename, typename> class Selector>
 __host__ __device__ void do_test()
 {
-  typedef typename cuda::std::remove_pointer<T>::type X;
+  using X = typename cuda::std::remove_pointer<T>::type;
   Selector<T, constructor_initializer> sel;
   T& val = *sel.construct(T(0));
   A obj(val);

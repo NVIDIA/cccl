@@ -232,8 +232,8 @@ void test_exception(const optional<U>& rhs)
 
 void test_exceptions()
 {
-  typedef Z T;
-  typedef int U;
+  using T = Z;
+  using U = int;
   optional<U> rhs(3);
   test_exception<T>(rhs);
 }

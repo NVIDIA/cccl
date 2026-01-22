@@ -40,7 +40,7 @@
 template <bool IsArray>
 __host__ __device__ TEST_CONSTEXPR_CXX23 void test_pointer()
 {
-  typedef typename cuda::std::conditional<!IsArray, A, A[]>::type ValueT;
+  using ValueT           = typename cuda::std::conditional<!IsArray, A, A[]>::type;
   const int expect_alive = IsArray ? 5 : 1;
   {
     using U1 = cuda::std::unique_ptr<ValueT>;

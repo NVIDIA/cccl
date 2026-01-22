@@ -205,7 +205,7 @@ int main(int, char**)
   static_assert(e - b == 3, "");
 
   {
-    typedef cuda::std::array<int, 5> C;
+    using C = cuda::std::array<int, 5>;
     constexpr const C local_const_array{0, 1, 2, 3, 4};
 
     static_assert(local_const_array.begin() == cuda::std::begin(local_const_array), "");

@@ -13,17 +13,17 @@
 // struct array
 // {
 //     // types:
-//     typedef T& reference;
-//     typedef const T& const_reference;
-//     typedef implementation defined iterator;
-//     typedef implementation defined const_iterator;
-//     typedef T value_type;
-//     typedef T* pointer;
-//     typedef size_t size_type;
-//     typedef ptrdiff_t difference_type;
-//     typedef T value_type;
-//     typedef cuda::std::reverse_iterator<iterator> reverse_iterator;
-//     typedef cuda::std::reverse_iterator<const_iterator> const_reverse_iterator;
+//     using reference =              T&;
+//     using const_reference =        const T&;
+//     using iterator =               implementation defined;
+//     using const_iterator =         implementation defined;
+//     using value_type =             T;
+//     using pointer =                T*;
+//     using size_type =              size_t;
+//     using difference_type =        ptrdiff_t;
+//     using value_type =             T;
+//     using reverse_iterator =       cuda::std::reverse_iterator<iterator>;
+//     using const_reverse_iterator = cuda::std::reverse_iterator<const_iterator>;
 
 #include <cuda/std/array>
 #include <cuda/std/iterator>
@@ -34,8 +34,8 @@
 template <class C>
 __host__ __device__ void test_iterators()
 {
-  typedef cuda::std::iterator_traits<typename C::iterator> ItT;
-  typedef cuda::std::iterator_traits<typename C::const_iterator> CItT;
+  using ItT  = cuda::std::iterator_traits<typename C::iterator>;
+  using CItT = cuda::std::iterator_traits<typename C::const_iterator>;
   static_assert((cuda::std::is_same<typename ItT::iterator_category, cuda::std::random_access_iterator_tag>::value),
                 "");
   static_assert((cuda::std::is_same<typename ItT::value_type, typename C::value_type>::value), "");
@@ -54,8 +54,8 @@ __host__ __device__ void test_iterators()
 int main(int, char**)
 {
   {
-    typedef double T;
-    typedef cuda::std::array<T, 10> C;
+    using T = double;
+    using C = cuda::std::array<T, 10>;
     static_assert((cuda::std::is_same<C::reference, T&>::value), "");
     static_assert((cuda::std::is_same<C::const_reference, const T&>::value), "");
     static_assert((cuda::std::is_same<C::iterator, T*>::value), "");
@@ -81,8 +81,8 @@ int main(int, char**)
       "");
   }
   {
-    typedef int* T;
-    typedef cuda::std::array<T, 0> C;
+    using T = int*;
+    using C = cuda::std::array<T, 0>;
     static_assert((cuda::std::is_same<C::reference, T&>::value), "");
     static_assert((cuda::std::is_same<C::const_reference, const T&>::value), "");
     static_assert((cuda::std::is_same<C::iterator, T*>::value), "");

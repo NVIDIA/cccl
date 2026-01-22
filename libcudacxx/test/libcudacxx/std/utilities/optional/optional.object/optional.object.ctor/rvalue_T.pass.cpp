@@ -74,7 +74,7 @@ void test_exceptions()
 int main(int, char**)
 {
   {
-    typedef TestTypes::TestType T;
+    using T = TestTypes::TestType;
     T::reset();
     optional<T> opt = T{3};
     assert(T::alive() == 1);
@@ -83,7 +83,7 @@ int main(int, char**)
     assert(opt.value().value == 3);
   }
   {
-    typedef ExplicitTestTypes::TestType T;
+    using T = ExplicitTestTypes::TestType;
     static_assert(!cuda::std::is_convertible<T&&, optional<T>>::value, "");
     T::reset();
     optional<T> opt(T{3});
@@ -93,7 +93,7 @@ int main(int, char**)
     assert(opt.value().value == 3);
   }
   {
-    typedef TestTypes::TestType T;
+    using T = TestTypes::TestType;
     T::reset();
     optional<T> opt = {3};
     assert(T::alive() == 1);

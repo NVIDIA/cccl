@@ -255,7 +255,7 @@ public:
   void launch_worker()
   {
     // Avoid C++ whining ...
-    typedef void* (*func_ptr)(void*);
+    using func_ptr = void* (*) (void*);
     pthread_create(&progress_thread, NULL, (func_ptr) &callback_queue::callback_queue_worker, this);
   }
 

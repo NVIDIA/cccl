@@ -8,7 +8,7 @@
 
 // <cuda/std/chrono>
 
-// typedef duration<signed integral type of at least 55 bits, micro> microseconds;
+// using microseconds = duration<signed integral type of at least 55 bits, micro>;
 
 #include <cuda/std/chrono>
 #include <cuda/std/limits>
@@ -16,9 +16,9 @@
 
 int main(int, char**)
 {
-  typedef cuda::std::chrono::microseconds D;
-  typedef D::rep Rep;
-  typedef D::period Period;
+  using D      = cuda::std::chrono::microseconds;
+  using Rep    = D::rep;
+  using Period = D::period;
   static_assert(cuda::std::is_signed<Rep>::value, "");
   static_assert(cuda::std::is_integral<Rep>::value, "");
   static_assert(cuda::std::numeric_limits<Rep>::digits >= 54, "");

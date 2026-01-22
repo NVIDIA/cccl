@@ -22,73 +22,73 @@ __host__ __device__ void test()
 int main(int, char**)
 {
   {
-    typedef cuda::std::ratio<1, 1> R1;
-    typedef cuda::std::ratio<1, 1> R2;
+    using R1 = cuda::std::ratio<1, 1>;
+    using R2 = cuda::std::ratio<1, 1>;
     test<R1, R2, false>();
   }
   {
-    typedef cuda::std::ratio<0x7FFFFFFFFFFFFFFFLL, 1> R1;
-    typedef cuda::std::ratio<0x7FFFFFFFFFFFFFFFLL, 1> R2;
+    using R1 = cuda::std::ratio<0x7FFFFFFFFFFFFFFFLL, 1>;
+    using R2 = cuda::std::ratio<0x7FFFFFFFFFFFFFFFLL, 1>;
     test<R1, R2, false>();
   }
   {
-    typedef cuda::std::ratio<-0x7FFFFFFFFFFFFFFFLL, 1> R1;
-    typedef cuda::std::ratio<-0x7FFFFFFFFFFFFFFFLL, 1> R2;
+    using R1 = cuda::std::ratio<-0x7FFFFFFFFFFFFFFFLL, 1>;
+    using R2 = cuda::std::ratio<-0x7FFFFFFFFFFFFFFFLL, 1>;
     test<R1, R2, false>();
   }
   {
-    typedef cuda::std::ratio<1, 0x7FFFFFFFFFFFFFFFLL> R1;
-    typedef cuda::std::ratio<1, 0x7FFFFFFFFFFFFFFFLL> R2;
+    using R1 = cuda::std::ratio<1, 0x7FFFFFFFFFFFFFFFLL>;
+    using R2 = cuda::std::ratio<1, 0x7FFFFFFFFFFFFFFFLL>;
     test<R1, R2, false>();
   }
   {
-    typedef cuda::std::ratio<1, 1> R1;
-    typedef cuda::std::ratio<1, -1> R2;
+    using R1 = cuda::std::ratio<1, 1>;
+    using R2 = cuda::std::ratio<1, -1>;
     test<R1, R2, false>();
   }
   {
-    typedef cuda::std::ratio<0x7FFFFFFFFFFFFFFFLL, 1> R1;
-    typedef cuda::std::ratio<-0x7FFFFFFFFFFFFFFFLL, 1> R2;
+    using R1 = cuda::std::ratio<0x7FFFFFFFFFFFFFFFLL, 1>;
+    using R2 = cuda::std::ratio<-0x7FFFFFFFFFFFFFFFLL, 1>;
     test<R1, R2, false>();
   }
   {
-    typedef cuda::std::ratio<-0x7FFFFFFFFFFFFFFFLL, 1> R1;
-    typedef cuda::std::ratio<0x7FFFFFFFFFFFFFFFLL, 1> R2;
+    using R1 = cuda::std::ratio<-0x7FFFFFFFFFFFFFFFLL, 1>;
+    using R2 = cuda::std::ratio<0x7FFFFFFFFFFFFFFFLL, 1>;
     test<R1, R2, true>();
   }
   {
-    typedef cuda::std::ratio<1, 0x7FFFFFFFFFFFFFFFLL> R1;
-    typedef cuda::std::ratio<1, -0x7FFFFFFFFFFFFFFFLL> R2;
+    using R1 = cuda::std::ratio<1, 0x7FFFFFFFFFFFFFFFLL>;
+    using R2 = cuda::std::ratio<1, -0x7FFFFFFFFFFFFFFFLL>;
     test<R1, R2, false>();
   }
   {
-    typedef cuda::std::ratio<0x7FFFFFFFFFFFFFFFLL, 0x7FFFFFFFFFFFFFFELL> R1;
-    typedef cuda::std::ratio<0x7FFFFFFFFFFFFFFDLL, 0x7FFFFFFFFFFFFFFCLL> R2;
+    using R1 = cuda::std::ratio<0x7FFFFFFFFFFFFFFFLL, 0x7FFFFFFFFFFFFFFELL>;
+    using R2 = cuda::std::ratio<0x7FFFFFFFFFFFFFFDLL, 0x7FFFFFFFFFFFFFFCLL>;
     test<R1, R2, true>();
   }
   {
-    typedef cuda::std::ratio<0x7FFFFFFFFFFFFFFDLL, 0x7FFFFFFFFFFFFFFCLL> R1;
-    typedef cuda::std::ratio<0x7FFFFFFFFFFFFFFFLL, 0x7FFFFFFFFFFFFFFELL> R2;
+    using R1 = cuda::std::ratio<0x7FFFFFFFFFFFFFFDLL, 0x7FFFFFFFFFFFFFFCLL>;
+    using R2 = cuda::std::ratio<0x7FFFFFFFFFFFFFFFLL, 0x7FFFFFFFFFFFFFFELL>;
     test<R1, R2, false>();
   }
   {
-    typedef cuda::std::ratio<-0x7FFFFFFFFFFFFFFDLL, 0x7FFFFFFFFFFFFFFCLL> R1;
-    typedef cuda::std::ratio<-0x7FFFFFFFFFFFFFFFLL, 0x7FFFFFFFFFFFFFFELL> R2;
+    using R1 = cuda::std::ratio<-0x7FFFFFFFFFFFFFFDLL, 0x7FFFFFFFFFFFFFFCLL>;
+    using R2 = cuda::std::ratio<-0x7FFFFFFFFFFFFFFFLL, 0x7FFFFFFFFFFFFFFELL>;
     test<R1, R2, true>();
   }
   {
-    typedef cuda::std::ratio<0x7FFFFFFFFFFFFFFFLL, 0x7FFFFFFFFFFFFFFELL> R1;
-    typedef cuda::std::ratio<0x7FFFFFFFFFFFFFFELL, 0x7FFFFFFFFFFFFFFDLL> R2;
+    using R1 = cuda::std::ratio<0x7FFFFFFFFFFFFFFFLL, 0x7FFFFFFFFFFFFFFELL>;
+    using R2 = cuda::std::ratio<0x7FFFFFFFFFFFFFFELL, 0x7FFFFFFFFFFFFFFDLL>;
     test<R1, R2, true>();
   }
   {
-    typedef cuda::std::ratio<641981, 1339063> R1;
-    typedef cuda::std::ratio<1291640, 2694141LL> R2;
+    using R1 = cuda::std::ratio<641981, 1339063>;
+    using R2 = cuda::std::ratio<1291640, 2694141LL>;
     test<R1, R2, false>();
   }
   {
-    typedef cuda::std::ratio<1291640, 2694141LL> R1;
-    typedef cuda::std::ratio<641981, 1339063> R2;
+    using R1 = cuda::std::ratio<1291640, 2694141LL>;
+    using R2 = cuda::std::ratio<641981, 1339063>;
     test<R1, R2, true>();
   }
 

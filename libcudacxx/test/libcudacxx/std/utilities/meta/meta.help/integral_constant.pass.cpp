@@ -17,7 +17,7 @@
 
 int main(int, char**)
 {
-  typedef cuda::std::integral_constant<int, 5> _5;
+  using _5 = cuda::std::integral_constant<int, 5>;
   static_assert(_5::value == 5, "");
   static_assert((cuda::std::is_same<_5::value_type, int>::value), "");
   static_assert((cuda::std::is_same<_5::type, _5>::value), "");

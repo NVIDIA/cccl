@@ -20,95 +20,95 @@
 
 int main(int, char**)
 {
-  // typedef cuda::std::int8_t
+  // using cuda::std::int8_t
   static_assert(sizeof(cuda::std::int8_t) * CHAR_BIT == 8, "");
   static_assert(cuda::std::is_signed<cuda::std::int8_t>::value, "");
-  // typedef cuda::std::int16_t
+  // using cuda::std::int16_t
   static_assert(sizeof(cuda::std::int16_t) * CHAR_BIT == 16, "");
   static_assert(cuda::std::is_signed<cuda::std::int16_t>::value, "");
-  // typedef cuda::std::int32_t
+  // using cuda::std::int32_t
   static_assert(sizeof(cuda::std::int32_t) * CHAR_BIT == 32, "");
   static_assert(cuda::std::is_signed<cuda::std::int32_t>::value, "");
-  // typedef cuda::std::int64_t
+  // using cuda::std::int64_t
   static_assert(sizeof(cuda::std::int64_t) * CHAR_BIT == 64, "");
   static_assert(cuda::std::is_signed<cuda::std::int64_t>::value, "");
 
-  // typedef cuda::std::uint8_t
+  // using cuda::std::uint8_t
   static_assert(sizeof(cuda::std::uint8_t) * CHAR_BIT == 8, "");
   static_assert(cuda::std::is_unsigned<cuda::std::uint8_t>::value, "");
-  // typedef cuda::std::uint16_t
+  // using cuda::std::uint16_t
   static_assert(sizeof(cuda::std::uint16_t) * CHAR_BIT == 16, "");
   static_assert(cuda::std::is_unsigned<cuda::std::uint16_t>::value, "");
-  // typedef cuda::std::uint32_t
+  // using cuda::std::uint32_t
   static_assert(sizeof(cuda::std::uint32_t) * CHAR_BIT == 32, "");
   static_assert(cuda::std::is_unsigned<cuda::std::uint32_t>::value, "");
-  // typedef cuda::std::uint64_t
+  // using cuda::std::uint64_t
   static_assert(sizeof(cuda::std::uint64_t) * CHAR_BIT == 64, "");
   static_assert(cuda::std::is_unsigned<cuda::std::uint64_t>::value, "");
 
-  // typedef cuda::std::int_fast8_t
+  // using cuda::std::int_fast8_t
   static_assert(sizeof(cuda::std::int_fast8_t) * CHAR_BIT >= 8, "");
   static_assert(cuda::std::is_signed<cuda::std::int_fast8_t>::value, "");
-  // typedef cuda::std::int_fast16_t
+  // using cuda::std::int_fast16_t
   static_assert(sizeof(cuda::std::int_fast16_t) * CHAR_BIT >= 16, "");
   static_assert(cuda::std::is_signed<cuda::std::int_fast16_t>::value, "");
-  // typedef cuda::std::int_fast32_t
+  // using cuda::std::int_fast32_t
   static_assert(sizeof(cuda::std::int_fast32_t) * CHAR_BIT >= 32, "");
   static_assert(cuda::std::is_signed<cuda::std::int_fast32_t>::value, "");
-  // typedef cuda::std::int_fast64_t
+  // using cuda::std::int_fast64_t
   static_assert(sizeof(cuda::std::int_fast64_t) * CHAR_BIT >= 64, "");
   static_assert(cuda::std::is_signed<cuda::std::int_fast64_t>::value, "");
 
-  // typedef cuda::std::uint_fast8_t
+  // using cuda::std::uint_fast8_t
   static_assert(sizeof(cuda::std::uint_fast8_t) * CHAR_BIT >= 8, "");
   static_assert(cuda::std::is_unsigned<cuda::std::uint_fast8_t>::value, "");
-  // typedef cuda::std::uint_fast16_t
+  // using cuda::std::uint_fast16_t
   static_assert(sizeof(cuda::std::uint_fast16_t) * CHAR_BIT >= 16, "");
   static_assert(cuda::std::is_unsigned<cuda::std::uint_fast16_t>::value, "");
-  // typedef cuda::std::uint_fast32_t
+  // using cuda::std::uint_fast32_t
   static_assert(sizeof(cuda::std::uint_fast32_t) * CHAR_BIT >= 32, "");
   static_assert(cuda::std::is_unsigned<cuda::std::uint_fast32_t>::value, "");
-  // typedef cuda::std::uint_fast64_t
+  // using cuda::std::uint_fast64_t
   static_assert(sizeof(cuda::std::uint_fast64_t) * CHAR_BIT >= 64, "");
   static_assert(cuda::std::is_unsigned<cuda::std::uint_fast64_t>::value, "");
 
-  // typedef cuda::std::int_least8_t
+  // using cuda::std::int_least8_t
   static_assert(sizeof(cuda::std::int_least8_t) * CHAR_BIT >= 8, "");
   static_assert(cuda::std::is_signed<cuda::std::int_least8_t>::value, "");
-  // typedef cuda::std::int_least16_t
+  // using cuda::std::int_least16_t
   static_assert(sizeof(cuda::std::int_least16_t) * CHAR_BIT >= 16, "");
   static_assert(cuda::std::is_signed<cuda::std::int_least16_t>::value, "");
-  // typedef cuda::std::int_least32_t
+  // using cuda::std::int_least32_t
   static_assert(sizeof(cuda::std::int_least32_t) * CHAR_BIT >= 32, "");
   static_assert(cuda::std::is_signed<cuda::std::int_least32_t>::value, "");
-  // typedef cuda::std::int_least64_t
+  // using cuda::std::int_least64_t
   static_assert(sizeof(cuda::std::int_least64_t) * CHAR_BIT >= 64, "");
   static_assert(cuda::std::is_signed<cuda::std::int_least64_t>::value, "");
 
-  // typedef cuda::std::uint_least8_t
+  // using cuda::std::uint_least8_t
   static_assert(sizeof(cuda::std::uint_least8_t) * CHAR_BIT >= 8, "");
   static_assert(cuda::std::is_unsigned<cuda::std::uint_least8_t>::value, "");
-  // typedef cuda::std::uint_least16_t
+  // using cuda::std::uint_least16_t
   static_assert(sizeof(cuda::std::uint_least16_t) * CHAR_BIT >= 16, "");
   static_assert(cuda::std::is_unsigned<cuda::std::uint_least16_t>::value, "");
-  // typedef cuda::std::uint_least32_t
+  // using cuda::std::uint_least32_t
   static_assert(sizeof(cuda::std::uint_least32_t) * CHAR_BIT >= 32, "");
   static_assert(cuda::std::is_unsigned<cuda::std::uint_least32_t>::value, "");
-  // typedef cuda::std::uint_least64_t
+  // using cuda::std::uint_least64_t
   static_assert(sizeof(cuda::std::uint_least64_t) * CHAR_BIT >= 64, "");
   static_assert(cuda::std::is_unsigned<cuda::std::uint_least64_t>::value, "");
 
-  // typedef cuda::std::intptr_t
+  // using cuda::std::intptr_t
   static_assert(sizeof(cuda::std::intptr_t) >= sizeof(void*), "");
   static_assert(cuda::std::is_signed<cuda::std::intptr_t>::value, "");
-  // typedef cuda::std::uintptr_t
+  // using cuda::std::uintptr_t
   static_assert(sizeof(cuda::std::uintptr_t) >= sizeof(void*), "");
   static_assert(cuda::std::is_unsigned<cuda::std::uintptr_t>::value, "");
 
-  // typedef cuda::std::intmax_t
+  // using cuda::std::intmax_t
   static_assert(sizeof(cuda::std::intmax_t) >= sizeof(long long), "");
   static_assert(cuda::std::is_signed<cuda::std::intmax_t>::value, "");
-  // typedef cuda::std::uintmax_t
+  // using cuda::std::uintmax_t
   static_assert(sizeof(cuda::std::uintmax_t) >= sizeof(unsigned long long), "");
   static_assert(cuda::std::is_unsigned<cuda::std::uintmax_t>::value, "");
 

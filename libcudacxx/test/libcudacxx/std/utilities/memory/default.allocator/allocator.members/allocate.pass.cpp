@@ -61,7 +61,7 @@ struct alignas(Align) AlignedType
 template <cuda::std::size_t Align>
 __host__ __device__ void test_aligned()
 {
-  typedef AlignedType<Align> T;
+  using T                 = AlignedType<Align>;
   AlignedType_constructed = 0;
   globalMemCounter.reset();
   cuda::std::allocator<T> a;
@@ -98,7 +98,7 @@ __host__ __device__ void test_aligned()
 template <cuda::std::size_t Align>
 __host__ __device__ constexpr bool test_aligned_constexpr()
 {
-  typedef AlignedType<Align> T;
+  using T = AlignedType<Align>;
   cuda::std::allocator<T> a;
   T* ap = a.allocate(3);
   a.deallocate(ap, 3);

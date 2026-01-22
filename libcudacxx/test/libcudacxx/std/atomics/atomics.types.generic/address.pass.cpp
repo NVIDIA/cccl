@@ -84,7 +84,7 @@
 template <class A, class T, template <typename, typename> class Selector>
 __host__ __device__ void do_test()
 {
-  typedef typename cuda::std::remove_pointer<T>::type X;
+  using X = typename cuda::std::remove_pointer<T>::type;
   Selector<A, constructor_initializer> sel;
   A& obj                   = *sel.construct(T(0));
   [[maybe_unused]] bool b0 = obj.is_lock_free();

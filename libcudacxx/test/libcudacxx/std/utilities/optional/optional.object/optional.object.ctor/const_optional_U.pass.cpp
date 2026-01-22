@@ -190,8 +190,8 @@ void test_exception(const optional<U>& rhs)
 
 void test_exceptions()
 {
-  typedef Z T;
-  typedef int U;
+  using T = Z;
+  using U = int;
   optional<U> rhs(U{3});
   test_exception<T>(rhs);
 }
@@ -205,8 +205,8 @@ int main(int, char**)
 #endif // TEST_STD_VER > 2017 && defined(_CCCL_BUILTIN_ADDRESSOF)
 
   {
-    typedef TerminatesOnConstruction T;
-    typedef int U;
+    using T = TerminatesOnConstruction;
+    using U = int;
     const optional<U> rhs;
     optional<T> lhs{rhs};
     assert(!lhs.has_value());

@@ -37,7 +37,7 @@ __global__ void test_global_kernel()
 
 int main(int, char**)
 {
-  typedef cuda::std::unary_negate<cuda::std::logical_not<int>> F;
+  using F   = cuda::std::unary_negate<cuda::std::logical_not<int>>;
   const F f = F(cuda::std::logical_not<int>());
 #if TEST_STD_VER <= 2017
   static_assert((cuda::std::is_same<F::argument_type, int>::value), "");

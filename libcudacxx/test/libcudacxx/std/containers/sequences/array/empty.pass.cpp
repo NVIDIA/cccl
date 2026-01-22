@@ -21,14 +21,14 @@
 __host__ __device__ constexpr bool tests()
 {
   {
-    typedef cuda::std::array<int, 2> C;
-    C c = {};
+    using C = cuda::std::array<int, 2>;
+    C c     = {};
     static_assert(noexcept(c.empty()));
     assert(!c.empty());
   }
   {
-    typedef cuda::std::array<int, 0> C;
-    C c = {};
+    using C = cuda::std::array<int, 0>;
+    C c     = {};
     static_assert(noexcept(c.empty()));
     assert(c.empty());
   }

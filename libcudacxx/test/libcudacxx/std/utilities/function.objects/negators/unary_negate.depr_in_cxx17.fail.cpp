@@ -20,7 +20,7 @@
 
 struct Predicate
 {
-  typedef int argument_type;
+  using argument_type = int;
   bool operator()(argument_type) const
   {
     return true;

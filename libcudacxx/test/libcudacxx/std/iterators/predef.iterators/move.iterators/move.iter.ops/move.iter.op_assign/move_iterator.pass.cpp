@@ -41,11 +41,11 @@ struct Derived : Base
 
 struct ToIter
 {
-  typedef cuda::std::forward_iterator_tag iterator_category;
-  typedef char* pointer;
-  typedef char& reference;
-  typedef char value_type;
-  typedef signed char difference_type;
+  using iterator_category = cuda::std::forward_iterator_tag;
+  using pointer           = char*;
+  using reference         = char&;
+  using value_type        = char;
+  using difference_type   = signed char;
 
   __host__ __device__ explicit constexpr ToIter()
       : m_value(0)

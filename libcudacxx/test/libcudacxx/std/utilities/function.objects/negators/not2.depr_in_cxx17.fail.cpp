@@ -20,8 +20,8 @@
 
 struct Predicate
 {
-  typedef int first_argument_type;
-  typedef int second_argument_type;
+  using first_argument_type  = int;
+  using second_argument_type = int;
   bool operator()(first_argument_type, second_argument_type) const
   {
     return true;

@@ -39,7 +39,7 @@ __global__ void test_global_kernel()
 
 int main(int, char**)
 {
-  typedef cuda::std::logical_not<int> F;
+  using F   = cuda::std::logical_not<int>;
   const F f = F();
 #if TEST_STD_VER <= 2017
   static_assert((cuda::std::is_same<F::argument_type, int>::value), "");
@@ -48,7 +48,7 @@ int main(int, char**)
   assert(!f(36));
   assert(f(0));
 
-  typedef cuda::std::logical_not<> F2;
+  using F2    = cuda::std::logical_not<>;
   const F2 f2 = F2();
   assert(!f2(36));
   assert(f2(0));

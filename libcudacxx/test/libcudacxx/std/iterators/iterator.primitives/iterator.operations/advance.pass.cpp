@@ -40,7 +40,7 @@ __host__ __device__ constexpr bool tests()
 
   // Check with iterator_traits::difference_type
   {
-    typedef cuda::std::iterator_traits<const char*>::difference_type Distance;
+    using Distance = cuda::std::iterator_traits<const char*>::difference_type;
     check_advance<Distance>(cpp17_input_iterator<const char*>(s), 10, cpp17_input_iterator<const char*>(s + 10));
     check_advance<Distance>(forward_iterator<const char*>(s), 10, forward_iterator<const char*>(s + 10));
     check_advance<Distance>(bidirectional_iterator<const char*>(s + 5), 5, bidirectional_iterator<const char*>(s + 10));
@@ -53,7 +53,7 @@ __host__ __device__ constexpr bool tests()
 
   // Also check with other distance types
   {
-    typedef int Distance;
+    using Distance = int;
     check_advance<Distance>(cpp17_input_iterator<const char*>(s), 10, cpp17_input_iterator<const char*>(s + 10));
     check_advance<Distance>(forward_iterator<const char*>(s), 10, forward_iterator<const char*>(s + 10));
     check_advance<Distance>(bidirectional_iterator<const char*>(s), 10, bidirectional_iterator<const char*>(s + 10));
@@ -62,7 +62,7 @@ __host__ __device__ constexpr bool tests()
 
   // Check with unsigned distance types to catch signedness-change issues
   {
-    typedef cuda::std::size_t Distance;
+    using Distance = cuda::std::size_t;
     check_advance<Distance>(cpp17_input_iterator<const char*>(s), 10u, cpp17_input_iterator<const char*>(s + 10));
     check_advance<Distance>(forward_iterator<const char*>(s), 10u, forward_iterator<const char*>(s + 10));
     check_advance<Distance>(bidirectional_iterator<const char*>(s), 10u, bidirectional_iterator<const char*>(s + 10));

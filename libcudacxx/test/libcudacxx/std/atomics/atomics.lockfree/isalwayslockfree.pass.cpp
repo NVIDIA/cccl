@@ -82,7 +82,7 @@ __host__ __device__ void run()
 #define CHECK_ALWAYS_LOCK_FREE(T) \
   do                              \
   {                               \
-    typedef T type;               \
+    using type = T;               \
     checkAlwaysLockFree<type>();  \
   } while (0)
 
