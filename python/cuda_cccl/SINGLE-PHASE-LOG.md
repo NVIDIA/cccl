@@ -521,3 +521,14 @@
 - Tests:
   - `pytest -q tests/coop/test_block_reduce_api.py -k two_phase_temp_storage` (2 passed, 4 deselected)
   - `pytest -q tests/coop/test_block_load_store_scan_single_phase.py -k two_phase_temp_storage` (1 passed, 15 deselected)
+
+## 2026-01-22 (coalesce identical one-shot shims)
+- Request: coalesce identical one-shot primitives under LTOIR bundling and add tests that inspect generated shims.
+- Changes:
+  - `cuda/coop/_rewrite.py`: enable LTOIR bundling by default; add coalesce symbol IDs; ensure bundling can run for duplicate primitives; use coalesced symbol IDs for one-shot shims.
+  - `cuda/coop/_types.py`: add coalesce key helpers; allow bundle compilation to dedupe identical shim bodies; allow node-provided `symbol_name` for stable shim symbols.
+  - `tests/coop/test_ltoir_bundle.py`: update env-var gating test for new default (bundle on, opt-out with env=0).
+  - `tests/coop/test_coalesce_shims_gpu.py`: new GPU test that inspects NVRTC dumped shim code and verifies identical block.sum calls produce a single shim definition.
+- Tests:
+  - `pytest -q tests/coop/test_ltoir_bundle.py` (2 passed)
+  - `pytest -q tests/coop/test_coalesce_shims_gpu.py` (requires GPU)

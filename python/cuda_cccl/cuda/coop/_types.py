@@ -1142,9 +1142,9 @@ class Algorithm:
         node = self.primitive.node
         try:
             target = node.target
-            target_name = f"{target.name}"
+            target_name = node.symbol_name or f"{target.name}"
             if "$" in target_name:
-                target_name = self.c_name
+                target_name = self.c_name if node.symbol_name is None else target_name
             if self.unique_id is not None:
                 target_name += f"_{self.unique_id}"
         except AttributeError:
@@ -1878,6 +1878,102 @@ def _collect_extra_ltoirs(algo):
     return _dedupe_ltoirs(extras)
 
 
+def _param_coalesce_key(param):
+    if isinstance(param, Array):
+        return (
+            "Array",
+            str(param.value_dtype),
+            param.size,
+            param.is_output,
+            param.is_array_pointer,
+            param.restrict,
+        )
+    if isinstance(param, Pointer):
+        return (
+            "Pointer",
+            str(param.value_dtype),
+            param.type_name,
+            param.is_output,
+            param.is_array_pointer,
+            param.restrict,
+            getattr(param, "deref_on_call", False),
+        )
+    if isinstance(param, Reference):
+        return ("Reference", str(param.value_dtype), param.is_output)
+    if isinstance(param, Value):
+        return ("Value", str(param.value_type), param.is_output)
+    if isinstance(param, StatelessOperator):
+        return (
+            "StatelessOperator",
+            param.name,
+            param.ret_cpp_type,
+            tuple(param.arg_cpp_types),
+            hash(param.ltoir.data),
+        )
+    if isinstance(param, StatefulOperator):
+        return (
+            "StatefulOperator",
+            param.name,
+            str(param.op_type),
+            param.ret_cpp_type,
+            tuple(param.arg_cpp_types),
+            hash(param.ltoir.data),
+        )
+    if isinstance(param, CxxFunction):
+        return ("CxxFunction", param.cpp, str(param.func_dtype))
+    return (type(param).__name__, repr(param))
+
+
+def algo_coalesce_key(algo, *, include_target_name: bool = True):
+    """
+    Return a hashable key describing the algorithm specialization without
+    including per-node unique IDs or variable names.
+    """
+    type_defs = []
+    for type_definition in getattr(algo, "type_definitions", None) or []:
+        code = getattr(type_definition, "code", None) or ""
+        ltoirs = getattr(type_definition, "lto_irs", []) or []
+        ltoir_hashes = tuple(hash(ltoir.data) for ltoir in ltoirs)
+        type_defs.append((code, ltoir_hashes))
+
+    params_key = tuple(
+        tuple(_param_coalesce_key(param) for param in method)
+        for method in getattr(algo, "parameters", [])
+    )
+
+    target_name = None
+    if include_target_name:
+        names = getattr(algo, "names", None)
+        target_name = getattr(names, "target_name", None)
+
+    struct_name = getattr(algo, "struct_name", None)
+    method_name = getattr(algo, "method_name", None)
+    c_name = getattr(algo, "c_name", None)
+    threads = getattr(algo, "threads", None)
+    fake_return = getattr(algo, "fake_return", None)
+    implicit_temp_storage = getattr(algo, "implicit_temp_storage", None)
+    primitive = getattr(algo, "primitive", None)
+    is_one_shot = getattr(primitive, "is_one_shot", None)
+    is_parent = getattr(primitive, "is_parent", None)
+    is_child = getattr(primitive, "is_child", None)
+
+    return (
+        target_name,
+        struct_name,
+        method_name,
+        c_name,
+        tuple(getattr(algo, "includes", None) or []),
+        tuple(type_defs),
+        params_key,
+        threads,
+        fake_return,
+        is_one_shot,
+        is_parent,
+        is_child,
+        implicit_temp_storage,
+    )
+
+
 def _strip_source_preamble(src, algo, udf_decls):
     body = src
     body = body.replace("#include <cuda/std/cstdint>\n", "", 1)
@@ -1899,10 +1995,17 @@ def prepare_ltoir_bundle(algorithms, *, bundle_name=None, allow_single=False):
         return None
 
     rewriter = _get_source_code_rewriter()
-    deduped = OrderedDict()
+    deduped_by_id = OrderedDict()
     for algo in algorithms:
-        deduped[id(algo)] = algo
-    algos = list(deduped.values())
+        deduped_by_id[id(algo)] = algo
+    all_algos = list(deduped_by_id.values())
+
+    deduped_by_key = OrderedDict()
+    for algo in all_algos:
+        key = algo_coalesce_key(algo)
+        if key not in deduped_by_key:
+            deduped_by_key[key] = algo
+    algos = list(deduped_by_key.values())
 
     if len(algos) < 2 and not allow_single:
         return None
@@ -1976,7 +2079,7 @@ def prepare_ltoir_bundle(algorithms, *, bundle_name=None, allow_single=False):
     linked_ptx = linker.link("ptx")
     ptx = linked_ptx.code.decode("utf-8")
 
-    for algo in algos:
+    for algo in all_algos:
         extras = _collect_extra_ltoirs(algo)
         algo._lto_irs = extras
         algo.__dict__["lto_irs"] = [bundle_ltoir] + extras

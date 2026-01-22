@@ -44,6 +44,7 @@ from numba.cuda.cudadrv.devicearray import DeviceNDArray
 from numba.cuda.cudaimpl import lower
 
 from ._types import Algorithm as CoopAlgorithm
+from ._types import algo_coalesce_key
 
 try:
     from numba.cuda.launchconfig import (
@@ -971,6 +972,9 @@ class CoopNode:
 
     # Optional.
     threads: int = None
+    symbol_id: Optional[int] = None
+    symbol_name: Optional[str] = None
+    coalesce_key: Optional[Any] = None
 
     # Provided after the fact by the rewrite pass.
     dtype: types.DType = None
@@ -1377,7 +1381,11 @@ class CoopNode:
 
             self.instance = instance
             algo = instance.specialization
-            algo.unique_id = self.unique_id
+            rewriter = getattr(self, "rewriter", None)
+            if rewriter is not None and self.is_one_shot:
+                rewriter.maybe_coalesce_algo(self, algo)
+            else:
+                algo.unique_id = self.unique_id
         elif self.is_one_shot:
             # One-shot instances should not have an instance yet.
             if self.instance is not None:
@@ -1386,6 +1394,10 @@ class CoopNode:
                     f"{self.instance!r}"
                 )
             instance = self.instance = self.impl_class(**self.impl_kwds)
+            algo = instance.specialization
+            rewriter = getattr(self, "rewriter", None)
+            if rewriter is not None:
+                rewriter.maybe_coalesce_algo(self, algo)
         elif self.is_parent:
             # Parent instances should have an instance.
             instance = self.instance
@@ -6432,11 +6444,13 @@ class CoopNodeRewriter(Rewrite):
         self.calltypes = None
 
         self._bundle_ltoir_enabled = _get_env_bool(
-            "NUMBA_CCCL_COOP_BUNDLE_LTOIR", default=False
+            "NUMBA_CCCL_COOP_BUNDLE_LTOIR", default=True
         )
         self._bundle_ltoir_done = False
         self._bundle_ltoir_failed = False
         self._bundle_ltoir = None
+        self._symbol_id_counter = itertools.count(0)
+        self._symbol_id_map: dict[Any, int] = {}
 
         # Advanced C++ CUDA kernels will often leverage a templated struct
         # for specialized CUB primitives, e.g.
@@ -6540,8 +6554,12 @@ class CoopNodeRewriter(Rewrite):
         try:
             from ._types import prepare_ltoir_bundle
 
+            coalesce_keys = {algo_coalesce_key(algo) for algo in algorithms}
+            allow_single = len(coalesce_keys) == 1 and len(algorithms) > 1
             bundle = prepare_ltoir_bundle(
-                algorithms, bundle_name=f"cuda_coop_bundle_{id(self)}"
+                algorithms,
+                bundle_name=f"cuda_coop_bundle_{id(self)}",
+                allow_single=allow_single,
             )
             if bundle is not None:
                 self._bundle_ltoir = bundle
@@ -7026,6 +7044,29 @@ class CoopNodeRewriter(Rewrite):
 
     def next_unique_id(self):
         return next(self._unique_id_counter)
+
+    def next_symbol_id(self):
+        return next(self._symbol_id_counter)
+
+    def get_symbol_id(self, key):
+        symbol_id = self._symbol_id_map.get(key)
+        if symbol_id is None:
+            symbol_id = self.next_symbol_id()
+            self._symbol_id_map[key] = symbol_id
+        return symbol_id
+
+    def maybe_coalesce_algo(self, node, algo):
+        if not self._bundle_ltoir_enabled:
+            node.symbol_id = node.unique_id
+            algo.unique_id = node.unique_id
+            return
+        key = algo_coalesce_key(algo, include_target_name=False)
+        node.coalesce_key = key
+        symbol_id = self.get_symbol_id(key)
+        node.symbol_id = symbol_id
+        if node.symbol_name is None:
+            node.symbol_name = algo.c_name
+        algo.unique_id = symbol_id
 
     def get_or_create_parent_node(
         self,
