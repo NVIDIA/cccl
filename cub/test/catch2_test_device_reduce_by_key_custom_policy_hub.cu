@@ -34,9 +34,9 @@ C2H_TEST("DispatchReduceByKey::Dispatch: custom policy hub", "[reduce_by_key][de
   using key_t          = int;
   using value_t        = int;
   using offset_t       = int;
-  using equality_op_t  = ::cuda::std::equal_to<>;
-  using reduction_op_t = ::cuda::std::plus<>;
-  using accum_t        = ::cuda::std::__accumulator_t<reduction_op_t, value_t, value_t>;
+  using equality_op_t  = cuda::std::equal_to<>;
+  using reduction_op_t = cuda::std::plus<>;
+  using accum_t        = cuda::std::__accumulator_t<reduction_op_t, value_t, value_t>;
 
   const c2h::host_vector<key_t> h_keys_in{1, 1, 2, 2, 2, 3, 3};
   const c2h::host_vector<value_t> h_values_in{1, 2, 3, 4, 5, 6, 7};
