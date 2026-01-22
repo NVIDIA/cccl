@@ -39,8 +39,8 @@ Types
 
   template <size_t Rank>
   struct /*dlpack_tensor*/ {
-    // int64_t shape[Rank];
-    // int64_t strides[Rank];
+    // cuda::std::array<int64_t, Rank> shape;
+    // cuda::std::array<int64_t, Rank> strides;
 
     DLTensor get() & const noexcept [[lifetimebound]];
 

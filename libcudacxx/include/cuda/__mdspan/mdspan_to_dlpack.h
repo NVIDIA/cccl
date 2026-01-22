@@ -153,15 +153,15 @@ template <typename _ElementType>
 template <::cuda::std::size_t _Rank>
 struct __dlpack_tensor
 {
-  ::cuda::std::int64_t __shape[_Rank]{};
-  ::cuda::std::int64_t __strides[_Rank]{};
+  ::cuda::std::array<::cuda::std::int64_t, _Rank> __shape[_Rank]{};
+  ::cuda::std::array<::cuda::std::int64_t, _Rank> __strides[_Rank]{};
   ::DLTensor __tensor{};
 
   [[nodiscard]] _CCCL_HOST_API ::DLTensor get() const& noexcept _CCCL_LIFETIMEBOUND
   {
     auto __tensor1    = __tensor;
-    __tensor1.shape   = _Rank > 0 ? const_cast<::cuda::std::int64_t*>(__shape) : nullptr;
-    __tensor1.strides = _Rank > 0 ? const_cast<::cuda::std::int64_t*>(__strides) : nullptr;
+    __tensor1.shape   = _Rank > 0 ? const_cast<::cuda::std::int64_t*>(__shape.data()) : nullptr;
+    __tensor1.strides = _Rank > 0 ? const_cast<::cuda::std::int64_t*>(__strides.data()) : nullptr;
     return __tensor1;
   }
 
