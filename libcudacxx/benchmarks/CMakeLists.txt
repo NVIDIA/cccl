@@ -5,7 +5,7 @@ cccl_get_nvbench_helper()
 set(benches_root "${CMAKE_CURRENT_LIST_DIR}")
 
 if (NOT CMAKE_BUILD_TYPE STREQUAL "Release")
-  message(FATAL_ERROR "PSTL benchmarks must be built in release mode.")
+  message(FATAL_ERROR "libcu++ benchmarks must be built in release mode.")
 endif()
 
 if (NOT DEFINED CMAKE_CUDA_ARCHITECTURES)
