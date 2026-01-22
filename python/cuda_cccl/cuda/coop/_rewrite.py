@@ -5587,7 +5587,6 @@ class CoopWarpExclusiveSumNode(CoopNode, CoopNodeMixin):
             "threads_in_warp": threads_in_warp,
             "unique_id": self.unique_id,
             "temp_storage": None,
-            "node": self,
         }
 
         self.return_type = src_ty
@@ -5598,6 +5597,233 @@ class CoopWarpExclusiveSumNode(CoopNode, CoopNodeMixin):
     def rewrite(self, rewriter):
         rd = self.rewrite_details
         return (rd.g_assign, rd.new_assign)
+
+    @cached_property
+    def rewrite_details(self):
+        return self.do_rewrite()
+
+
+@dataclass
+class CoopWarpInclusiveSumNode(CoopNode, CoopNodeMixin):
+    primitive_name = "coop.warp.inclusive_sum"
+    disposition = Disposition.ONE_SHOT
+
+    def refine_match(self, rewriter):
+        launch_config = rewriter.launch_config
+        if launch_config is None:
+            return False
+
+        runtime_args = []
+        runtime_arg_types = []
+        runtime_arg_names = []
+
+        expr = self.expr
+        expr_args = list(expr.args)
+        src = expr_args.pop(0)
+        if src is None:
+            raise RuntimeError("coop.warp.inclusive_sum requires a src argument")
+
+        src_ty = self.typemap[src.name]
+        if isinstance(src_ty, types.Array):
+            raise RuntimeError("coop.warp.inclusive_sum requires a scalar input")
+        if not isinstance(src_ty, types.Number):
+            raise RuntimeError("coop.warp.inclusive_sum requires a numeric input")
+
+        runtime_args.append(src)
+        runtime_arg_types.append(src_ty)
+        runtime_arg_names.append("src")
+
+        threads_in_warp = self.get_arg_value_safe("threads_in_warp")
+        threads_in_warp_arg = self.bound.arguments.get("threads_in_warp")
+        if threads_in_warp is None and threads_in_warp_arg is not None:
+            raise RuntimeError("threads_in_warp must be a compile-time constant")
+        if threads_in_warp is None:
+            threads_in_warp = 32
+        if not isinstance(threads_in_warp, int) or threads_in_warp < 1:
+            raise RuntimeError("threads_in_warp must be a positive integer")
+
+        self.impl_kwds = {
+            "dtype": src_ty,
+            "threads_in_warp": threads_in_warp,
+            "unique_id": self.unique_id,
+            "temp_storage": None,
+        }
+
+        self.return_type = src_ty
+        self.runtime_args = runtime_args
+        self.runtime_arg_types = runtime_arg_types
+        self.runtime_arg_names = runtime_arg_names
+
+    def rewrite(self, rewriter):
+        rd = self.rewrite_details
+        return (rd.g_assign, rd.new_assign)
+
+    @cached_property
+    def rewrite_details(self):
+        return self.do_rewrite()
+
+
+def _refine_warp_scan_node(node, rewriter):
+    launch_config = rewriter.launch_config
+    if launch_config is None:
+        return False
+
+    runtime_args = []
+    runtime_arg_types = []
+    runtime_arg_names = []
+
+    expr = node.expr
+    expr_args = list(expr.args)
+    src = expr_args.pop(0)
+    if src is None:
+        raise RuntimeError(f"{node.primitive_name} requires a src argument")
+
+    src_ty = node.typemap[src.name]
+    if isinstance(src_ty, types.Array):
+        raise RuntimeError(f"{node.primitive_name} requires a scalar input")
+    if not isinstance(src_ty, types.Number):
+        raise RuntimeError(f"{node.primitive_name} requires a numeric input")
+
+    runtime_args.append(src)
+    runtime_arg_types.append(src_ty)
+    runtime_arg_names.append("src")
+
+    scan_op = node.get_arg_value_safe("scan_op")
+    if scan_op is None:
+        raise RuntimeError(f"{node.primitive_name} requires scan_op to be provided")
+
+    from ._scan_op import ScanOp
+
+    try:
+        scan_op_obj = scan_op if isinstance(scan_op, ScanOp) else ScanOp(scan_op)
+    except ValueError as e:
+        raise RuntimeError(
+            f"{node.primitive_name} invalid scan_op {scan_op!r}: {e}"
+        ) from e
+
+    bound = node.bound.arguments
+    initial_value = bound.get("initial_value")
+    initial_value_var = None
+    initial_value_value = None
+    initial_value_type = None
+    if initial_value is not None:
+        if isinstance(initial_value, ir.Var):
+            initial_value_var = initial_value
+            initial_value_type = node.typemap[initial_value.name]
+        elif isinstance(initial_value, ir.Const):
+            initial_value_value = initial_value.value
+        else:
+            initial_value_value = initial_value
+
+    if scan_op_obj.is_sum and (
+        initial_value_var is not None or initial_value_value is not None
+    ):
+        raise RuntimeError(
+            f"{node.primitive_name} does not support initial_value for sum operators"
+        )
+
+    include_initial_value = not scan_op_obj.is_sum and (
+        initial_value_var is not None or initial_value_value is not None
+    )
+    if include_initial_value:
+        if initial_value_var is not None:
+            runtime_args.append(initial_value_var)
+            runtime_arg_types.append(initial_value_type)
+        else:
+            from numba.np.numpy_support import as_dtype
+
+            const_value = initial_value_value
+            try:
+                const_value = as_dtype(src_ty).type(initial_value_value)
+            except Exception:
+                pass
+            scope = node.instr.target.scope
+            const_name = f"$warp_scan_init_{node.unique_id}"
+            const_var = ir.Var(scope, const_name, expr.loc)
+            if const_name in node.typemap:
+                raise RuntimeError(f"Variable {const_name} already exists in typemap.")
+            const_assign = ir.Assign(
+                value=ir.Const(const_value, expr.loc),
+                target=const_var,
+                loc=expr.loc,
+            )
+            if isinstance(src_ty, types.Integer):
+                node.typemap[const_name] = types.IntegerLiteral(int(const_value))
+            elif isinstance(src_ty, types.Boolean):
+                node.typemap[const_name] = types.BooleanLiteral(bool(const_value))
+            else:
+                node.typemap[const_name] = src_ty
+            node.initial_value_assign = const_assign
+            runtime_args.append(const_var)
+            runtime_arg_types.append(src_ty)
+        runtime_arg_names.append("initial_value")
+
+    threads_in_warp = node.get_arg_value_safe("threads_in_warp")
+    threads_in_warp_arg = node.bound.arguments.get("threads_in_warp")
+    if threads_in_warp is None and threads_in_warp_arg is not None:
+        raise RuntimeError("threads_in_warp must be a compile-time constant")
+    if threads_in_warp is None:
+        threads_in_warp = 32
+    if not isinstance(threads_in_warp, int) or threads_in_warp < 1:
+        raise RuntimeError("threads_in_warp must be a positive integer")
+
+    initial_value_for_impl = (
+        initial_value_var if initial_value_var is not None else initial_value_value
+    )
+
+    node.impl_kwds = {
+        "dtype": src_ty,
+        "scan_op": scan_op,
+        "initial_value": initial_value_for_impl,
+        "threads_in_warp": threads_in_warp,
+        "unique_id": node.unique_id,
+        "temp_storage": None,
+    }
+
+    node.return_type = src_ty
+    node.runtime_args = runtime_args
+    node.runtime_arg_types = runtime_arg_types
+    node.runtime_arg_names = runtime_arg_names
+
+
+@dataclass
+class CoopWarpExclusiveScanNode(CoopNode, CoopNodeMixin):
+    primitive_name = "coop.warp.exclusive_scan"
+    disposition = Disposition.ONE_SHOT
+
+    def refine_match(self, rewriter):
+        return _refine_warp_scan_node(self, rewriter)
+
+    def rewrite(self, rewriter):
+        rd = self.rewrite_details
+        instrs = [rd.g_assign]
+        initial_value_assign = getattr(self, "initial_value_assign", None)
+        if initial_value_assign is not None:
+            instrs.append(initial_value_assign)
+        instrs.append(rd.new_assign)
+        return tuple(instrs)
+
+    @cached_property
+    def rewrite_details(self):
+        return self.do_rewrite()
+
+
+@dataclass
+class CoopWarpInclusiveScanNode(CoopNode, CoopNodeMixin):
+    primitive_name = "coop.warp.inclusive_scan"
+    disposition = Disposition.ONE_SHOT
+
+    def refine_match(self, rewriter):
+        return _refine_warp_scan_node(self, rewriter)
+
+    def rewrite(self, rewriter):
+        rd = self.rewrite_details
+        instrs = [rd.g_assign]
+        initial_value_assign = getattr(self, "initial_value_assign", None)
+        if initial_value_assign is not None:
+            instrs.append(initial_value_assign)
+        instrs.append(rd.new_assign)
+        return tuple(instrs)
 
     @cached_property
     def rewrite_details(self):
@@ -5879,7 +6105,6 @@ class CoopWarpSumNode(CoopNode, CoopNodeMixin):
             "threads_in_warp": threads_in_warp,
             "unique_id": self.unique_id,
             "temp_storage": None,
-            "node": self,
         }
 
         self.return_type = src_ty

@@ -460,3 +460,30 @@
   - `SINGLE-PHASE-TODO.md`: track warp single-phase completion.
 - Tests:
   - `python -m py_compile cuda/coop/_decls.py cuda/coop/_rewrite.py tests/coop/test_warp_single_phase.py`
+
+## 2026-01-22 (warp scan coverage)
+- Request: add warp inclusive sum + inclusive/exclusive scan support (single-phase + two-phase) with tests.
+- Changes:
+  - `cuda/coop/warp/_warp_scan.py`: add inclusive_sum, exclusive_scan, inclusive_scan implementations and shared scan-op handling; pass threads to LTO IR.
+  - `cuda/coop/warp/__init__.py`: export warp scan primitives.
+  - `cuda/coop/_decls.py`: add typing templates for warp inclusive_sum/exclusive_scan/inclusive_scan and module attribute resolution.
+  - `cuda/coop/_rewrite.py`: add warp inclusive_sum/exclusive_scan/inclusive_scan nodes with scan-op/initial_value handling.
+  - `tests/coop/test_warp_scan.py`: add two-phase tests for inclusive_sum and max scans.
+  - `tests/coop/test_warp_scan_api.py`: add inclusive_sum API example.
+  - `tests/coop/test_warp_single_phase.py`: add single-phase inclusive_sum and max scan tests.
+- Tests:
+  - `python -m py_compile cuda/coop/warp/_warp_scan.py cuda/coop/warp/__init__.py cuda/coop/_decls.py cuda/coop/_rewrite.py tests/coop/test_warp_scan.py tests/coop/test_warp_scan_api.py tests/coop/test_warp_single_phase.py`
+
+## 2026-01-22 (warp single-phase test fixes)
+- Request: run targeted tests.
+- Changes:
+  - `cuda/coop/_rewrite.py`: stop passing unsupported `node` kwarg to warp sum/exclusive_sum primitives.
+  - `tests/coop/test_warp_single_phase.py`: use enum algorithms for warp load/store; mark merge-sort compare op as device function; fix indentation.
+- Tests:
+  - `pytest -q tests/coop/test_warp_scan.py` (6 passed)
+  - `pytest -q tests/coop/test_warp_single_phase.py -k warp` (7 passed)
+
+## 2026-01-22 (warp test sweep)
+- Request: run all warp tests.
+- Tests:
+  - `pytest -q tests/coop -k warp` (503 passed, 2440 deselected; ~9m45s)

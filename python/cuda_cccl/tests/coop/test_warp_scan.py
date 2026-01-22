@@ -39,3 +39,73 @@ def test_warp_exclusive_sum(T):
 
     assert "LDL" not in sass
     assert "STL" not in sass
+
+
+@pytest.mark.parametrize("T", [types.uint32, types.uint64])
+def test_warp_inclusive_sum(T):
+    warp_inclusive_sum = coop.warp.inclusive_sum.create(dtype=T)
+
+    @cuda.jit(link=warp_inclusive_sum.files)
+    def kernel(input, output):
+        tid = cuda.threadIdx.x
+        output[tid] = warp_inclusive_sum(input[tid])
+
+    dtype = NUMBA_TYPES_TO_NP[T]
+    h_input = random_int(32, dtype)
+    d_input = cuda.to_device(h_input)
+    d_output = cuda.device_array(32, dtype=dtype)
+    kernel[1, 32](d_input, d_output)
+    cuda.synchronize()
+
+    output = d_output.copy_to_host()
+    reference = np.cumsum(h_input)
+    for i in range(32):
+        assert output[i] == reference[i]
+
+
+@pytest.mark.parametrize("T", [types.int32])
+def test_warp_exclusive_scan_max(T):
+    warp_exclusive_scan = coop.warp.exclusive_scan.create(
+        dtype=T, scan_op="max", initial_value=0
+    )
+
+    @cuda.jit(link=warp_exclusive_scan.files)
+    def kernel(input, output):
+        tid = cuda.threadIdx.x
+        output[tid] = warp_exclusive_scan(input[tid], 0)
+
+    dtype = NUMBA_TYPES_TO_NP[T]
+    h_input = random_int(32, dtype)
+    d_input = cuda.to_device(h_input)
+    d_output = cuda.device_array(32, dtype=dtype)
+    kernel[1, 32](d_input, d_output)
+    cuda.synchronize()
+
+    output = d_output.copy_to_host()
+    reference = np.empty_like(h_input)
+    running = 0
+    for i in range(32):
+        reference[i] = running
+        running = max(running, int(h_input[i]))
+    np.testing.assert_array_equal(output, reference)
+
+
+@pytest.mark.parametrize("T", [types.int32])
+def test_warp_inclusive_scan_max(T):
+    warp_inclusive_scan = coop.warp.inclusive_scan.create(dtype=T, scan_op="max")
+
+    @cuda.jit(link=warp_inclusive_scan.files)
+    def kernel(input, output):
+        tid = cuda.threadIdx.x
+        output[tid] = warp_inclusive_scan(input[tid])
+
+    dtype = NUMBA_TYPES_TO_NP[T]
+    h_input = random_int(32, dtype)
+    d_input = cuda.to_device(h_input)
+    d_output = cuda.device_array(32, dtype=dtype)
+    kernel[1, 32](d_input, d_output)
+    cuda.synchronize()
+
+    output = d_output.copy_to_host()
+    reference = np.maximum.accumulate(h_input)
+    np.testing.assert_array_equal(output, reference)

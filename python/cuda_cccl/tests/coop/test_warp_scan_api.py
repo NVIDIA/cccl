@@ -37,3 +37,25 @@ def test_warp_exclusive_sum():
 
 
 test_warp_exclusive_sum()
+
+
+def test_warp_inclusive_sum():
+    # example-begin inclusive-sum
+    warp_inclusive_sum = coop.warp.inclusive_sum.create(numba.int32)
+
+    @cuda.jit(link=warp_inclusive_sum.files)
+    def kernel(data):
+        data[cuda.threadIdx.x] = warp_inclusive_sum(data[cuda.threadIdx.x])
+
+    # example-end inclusive-sum
+
+    tile_size = 32
+    h_keys = np.ones(tile_size, dtype=np.int32)
+    d_keys = cuda.to_device(h_keys)
+    kernel[1, 32](d_keys)
+    h_keys = d_keys.copy_to_host()
+    for i in range(tile_size):
+        assert h_keys[i] == i + 1
+
+
+test_warp_inclusive_sum()
