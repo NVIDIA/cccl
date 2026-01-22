@@ -200,30 +200,3 @@ class adjacent_difference(BasePrimitive):
             temp_storage_alignment=specialization.temp_storage_alignment,
             algorithm=specialization,
         )
-
-
-def BlockAdjacentDifference(
-    dtype: DtypeType,
-    threads_per_block: DimType,
-    items_per_thread: int,
-    difference_op,
-    block_adjacent_difference_type: BlockAdjacentDifferenceType = BlockAdjacentDifferenceType.SubtractLeft,
-    methods: dict = None,
-    valid_items: Any = None,
-    tile_predecessor_item: Any = None,
-    tile_successor_item: Any = None,
-):
-    """
-    Create a two-phase block adjacent difference invocable.
-    """
-    return adjacent_difference.create(
-        dtype=dtype,
-        threads_per_block=threads_per_block,
-        items_per_thread=items_per_thread,
-        difference_op=difference_op,
-        block_adjacent_difference_type=block_adjacent_difference_type,
-        methods=methods,
-        valid_items=valid_items,
-        tile_predecessor_item=tile_predecessor_item,
-        tile_successor_item=tile_successor_item,
-    )

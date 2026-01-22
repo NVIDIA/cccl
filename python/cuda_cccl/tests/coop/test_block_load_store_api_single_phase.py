@@ -251,12 +251,12 @@ def test_block_load_store_two_phase_global():
     np.testing.assert_allclose(h_output, h_input)
 
 
-def test_block_load_store_two_phase_camel_constructor():
+def test_block_load_store_two_phase_constructor():
     dtype = np.int32
     dim = 128
     items_per_thread = 16
 
-    block_load = coop.BlockLoad(dtype, dim, items_per_thread)
+    block_load = coop.block.load.create(dtype, dim, items_per_thread)
 
     @cuda.jit(link=block_load.files)
     def kernel(d_in, d_out, items_per_thread):

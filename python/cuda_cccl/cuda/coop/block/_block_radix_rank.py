@@ -163,24 +163,3 @@ class radix_rank(BasePrimitive):
             temp_storage_alignment=specialization.temp_storage_alignment,
             algorithm=specialization,
         )
-
-
-def BlockRadixRank(
-    dtype: Union[str, type, "np.dtype", "numba.types.Type"],
-    threads_per_block: Union[int, Tuple[int, int], Tuple[int, int, int], dim3],
-    items_per_thread: int,
-    begin_bit: int,
-    end_bit: int,
-    descending: bool = False,
-):
-    """
-    Create a two-phase block radix rank invocable.
-    """
-    return radix_rank.create(
-        dtype=dtype,
-        threads_per_block=threads_per_block,
-        items_per_thread=items_per_thread,
-        begin_bit=begin_bit,
-        end_bit=end_bit,
-        descending=descending,
-    )

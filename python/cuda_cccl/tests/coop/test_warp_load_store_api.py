@@ -15,10 +15,10 @@ def test_warp_load_store():
     threads_in_warp = 32
     items_per_thread = 4
 
-    warp_load = coop.warp.load(
+    warp_load = coop.warp.load.create(
         numba.int32, items_per_thread, threads_in_warp, algorithm="striped"
     )
-    warp_store = coop.warp.store(
+    warp_store = coop.warp.store.create(
         numba.int32, items_per_thread, threads_in_warp, algorithm="striped"
     )
 
@@ -48,7 +48,7 @@ def test_warp_load_store_num_valid_oob_default():
     oob_default = np.int32(-123)
     sentinel = np.int32(-999)
 
-    warp_load = coop.warp.load(
+    warp_load = coop.warp.load.create(
         numba.int32,
         items_per_thread,
         threads_in_warp,
@@ -56,10 +56,10 @@ def test_warp_load_store_num_valid_oob_default():
         num_valid_items=num_valid,
         oob_default=oob_default,
     )
-    warp_store_all = coop.warp.store(
+    warp_store_all = coop.warp.store.create(
         numba.int32, items_per_thread, threads_in_warp, algorithm="striped"
     )
-    warp_store_valid = coop.warp.store(
+    warp_store_valid = coop.warp.store.create(
         numba.int32,
         items_per_thread,
         threads_in_warp,

@@ -25,7 +25,7 @@ def test_block_adjacent_difference_subtract_left_thread_data_temp_storage():
     threads_per_block = 128
     items_per_thread = 4
 
-    block_adj = coop.block.BlockAdjacentDifference(
+    block_adj = coop.block.adjacent_difference.create(
         dtype,
         threads_per_block,
         items_per_thread,

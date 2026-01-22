@@ -44,3 +44,4 @@
 - [x] Fix gpu_dataclass kernel-traits argument handling and add test coverage.
 - [x] Allow two-phase coop.block.scan instance calls to omit mode/scan_op/items_per_thread (kernel-traits defaulting).
 - [x] Switch coop primitives to AbstractTemplate so two-phase instance calls accept kwargs.
+- [x] Port warp primitives to single-phase (typing, rewrite, tests).

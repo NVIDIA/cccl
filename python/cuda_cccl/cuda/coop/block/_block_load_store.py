@@ -53,7 +53,7 @@ CUB_BLOCK_STORE_ALGOS = {
 }
 
 
-class BaseLoadStore(BasePrimitive):
+class base_load_store(BasePrimitive):
     is_one_shot = True
 
     template_parameters = [
@@ -155,7 +155,7 @@ class BaseLoadStore(BasePrimitive):
         )
 
 
-class load(BaseLoadStore):
+class load(base_load_store):
     default_algorithm = BlockLoadAlgorithm.DIRECT
     cub_algorithm_map = CUB_BLOCK_LOAD_ALGOS
     struct_name = "BlockLoad"
@@ -164,34 +164,10 @@ class load(BaseLoadStore):
     includes = ["cub/block/block_load.cuh"]
 
 
-def BlockLoad(
-    dtype: DtypeType,
-    threads_per_block: DimType,
-    items_per_thread: int,
-    algorithm=None,
-):
-    """
-    Creates a block-wide load operation.
-    """
-    return load.create(dtype, threads_per_block, items_per_thread, algorithm)
-
-
-class store(BaseLoadStore):
+class store(base_load_store):
     default_algorithm = BlockStoreAlgorithm.DIRECT
     cub_algorithm_map = CUB_BLOCK_STORE_ALGOS
     struct_name = "BlockStore"
     method_name = "Store"
     c_name = "block_store"
     includes = ["cub/block/block_store.cuh"]
-
-
-def BlockStore(
-    dtype: DtypeType,
-    threads_per_block: DimType,
-    items_per_thread: int,
-    algorithm=None,
-):
-    """
-    Creates a block-wide store operation.
-    """
-    return store.create(dtype, threads_per_block, items_per_thread, algorithm)

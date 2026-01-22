@@ -23,7 +23,7 @@ from .._typing import (
 )
 
 
-class BlockRunLengthDecode(BasePrimitive):
+class run_length_decode(BasePrimitive):
     is_child = True
 
     c_name = "decode"
@@ -35,7 +35,7 @@ class BlockRunLengthDecode(BasePrimitive):
 
     def __init__(
         self,
-        parent: "BlockRunLength",
+        parent: "run_length",
         decoded_items_dtype: DtypeType,
         decoded_window_offset_dtype: DtypeType,
         relative_offsets_dtype: DtypeType = None,
@@ -101,7 +101,7 @@ class BlockRunLengthDecode(BasePrimitive):
         self.specialization = self.algorithm.specialize(self.specialization_kwds)
 
 
-class BlockRunLength(BasePrimitive):
+class run_length(BasePrimitive):
     is_parent = True
 
     struct_name = "BlockRunLengthDecode"
@@ -207,7 +207,7 @@ class BlockRunLength(BasePrimitive):
 
         if temp_storage is not None:
             raise NotImplementedError(
-                "Temporary storage is not yet supported for BlockRunLengthDecode."
+                "Temporary storage is not yet supported for run_length decode."
             )
             # method.insert(0, TempStoragePointer())
 
@@ -243,13 +243,36 @@ class BlockRunLength(BasePrimitive):
         decoded_window_offset_dtype,
         relative_offsets_dtype=None,
     ):
-        return BlockRunLengthDecode(
+        return run_length_decode(
             self,
             decoded_items_dtype,
             decoded_window_offset_dtype,
             relative_offsets_dtype=relative_offsets_dtype,
         )
 
-
-class run_length(BlockRunLength):
-    pass
+    @classmethod
+    def create(
+        cls,
+        item_dtype: DtypeType,
+        dim: DimType,
+        runs_per_thread: int,
+        decoded_items_per_thread: int,
+        decoded_offset_dtype: DtypeType = None,
+        run_values=None,
+        run_lengths=None,
+        total_decoded_size=None,
+        unique_id=None,
+        temp_storage=None,
+    ):
+        return cls(
+            item_dtype=item_dtype,
+            dim=dim,
+            runs_per_thread=runs_per_thread,
+            decoded_items_per_thread=decoded_items_per_thread,
+            decoded_offset_dtype=decoded_offset_dtype,
+            run_values=run_values,
+            run_lengths=run_lengths,
+            total_decoded_size=total_decoded_size,
+            unique_id=unique_id,
+            temp_storage=temp_storage,
+        )

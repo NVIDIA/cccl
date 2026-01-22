@@ -1912,6 +1912,183 @@ class CoopBlockStoreNode(CoopLoadStoreNode, CoopNodeMixin):
     primitive_name = "coop.block.store"
 
 
+class CoopWarpLoadStoreNode(CoopNode):
+    threads_in_warp = None
+    disposition = Disposition.ONE_SHOT
+
+    def refine_match(self, rewriter):
+        launch_config = rewriter.launch_config
+        if launch_config is None:
+            return False
+
+        expr = self.expr
+        dtype = None
+        items_per_thread = None
+        algorithm_id = None
+        expr_args = self.expr_args = list(expr.args)
+        if self.is_load:
+            src = expr_args.pop(0)
+            dst = expr_args.pop(0)
+            runtime_args = [src, dst]
+            runtime_arg_types = [
+                self.typemap[src.name],
+                self.typemap[dst.name],
+            ]
+            runtime_arg_names = ["src", "dst"]
+            items_per_thread_array_var = dst
+        else:
+            dst = expr_args.pop(0)
+            src = expr_args.pop(0)
+            runtime_args = [dst, src]
+            runtime_arg_types = [
+                self.typemap[dst.name],
+                self.typemap[src.name],
+            ]
+            runtime_arg_names = ["dst", "src"]
+            items_per_thread_array_var = src
+
+        array_root = rewriter.get_root_def(items_per_thread_array_var)
+        array_leaf = array_root.leaf_constructor_call
+        if isinstance(array_leaf, ArrayCallDefinition):
+            items_per_thread = array_leaf.shape
+        else:
+            raise RuntimeError(
+                "coop.warp.load/store requires array inputs in single-phase"
+            )
+        if not isinstance(items_per_thread, int):
+            raise RuntimeError(
+                f"Expected items_per_thread to be an int, got {items_per_thread!r}"
+            )
+
+        items_per_thread_kwarg = self.get_arg_value_safe("items_per_thread")
+        if (
+            items_per_thread_kwarg is not None
+            and items_per_thread_kwarg != items_per_thread
+        ):
+            raise RuntimeError(
+                f"Expected items_per_thread to be {items_per_thread}, "
+                f"but got {items_per_thread_kwarg} for {self!r}"
+            )
+
+        src_ty = self.typemap[src.name]
+        dst_ty = self.typemap[dst.name]
+        if not isinstance(src_ty, types.Array) or not isinstance(dst_ty, types.Array):
+            raise RuntimeError(
+                "coop.warp.load/store requires array inputs in single-phase"
+            )
+        if src_ty.dtype != dst_ty.dtype:
+            raise RuntimeError(
+                "coop.warp.load/store requires src and dst to have the same dtype"
+            )
+        dtype = src_ty.dtype
+
+        methods = getattr(dtype, "methods", None)
+        if methods is not None and not methods:
+            methods = None
+
+        threads_in_warp = self.get_arg_value_safe("threads_in_warp")
+        threads_in_warp_arg = self.bound.arguments.get("threads_in_warp")
+        if threads_in_warp is None and threads_in_warp_arg is not None:
+            raise RuntimeError("threads_in_warp must be a compile-time constant")
+        if threads_in_warp is None:
+            threads_in_warp = 32
+        if not isinstance(threads_in_warp, int) or threads_in_warp < 1:
+            raise RuntimeError("threads_in_warp must be a positive integer")
+        self.threads_in_warp = threads_in_warp
+
+        algorithm_id = self.get_arg_value_safe("algorithm")
+        if algorithm_id is None:
+            algorithm_var = self.bound.arguments.get("algorithm")
+            if isinstance(algorithm_var, ir.Var):
+                algorithm_ty = self.typemap.get(algorithm_var.name)
+                if isinstance(algorithm_ty, types.EnumMember):
+                    literal_value = getattr(algorithm_ty, "literal_value", None)
+                    if literal_value is None:
+                        literal_value = algorithm_ty.value
+                    algorithm_id = algorithm_ty.instance_class(literal_value)
+        if algorithm_id is None:
+            try:
+                from cuda.coop._enums import WarpLoadAlgorithm, WarpStoreAlgorithm
+            except Exception:
+                WarpLoadAlgorithm = None
+                WarpStoreAlgorithm = None
+            if self.is_load and WarpLoadAlgorithm is not None:
+                algorithm_id = WarpLoadAlgorithm.DIRECT
+            elif not self.is_load and WarpStoreAlgorithm is not None:
+                algorithm_id = WarpStoreAlgorithm.DIRECT
+
+        num_valid_items = self.get_arg_value_safe("num_valid_items")
+        if num_valid_items is None:
+            num_valid_items = self.bound.arguments.get("num_valid_items", None)
+        if num_valid_items is not None:
+            runtime_args.append(num_valid_items)
+            runtime_arg_types.append(types.int32)
+            runtime_arg_names.append("num_valid_items")
+
+        oob_default = self.get_arg_value_safe("oob_default")
+        if oob_default is None:
+            oob_default = self.bound.arguments.get("oob_default", None)
+        if oob_default is not None:
+            if not self.is_load:
+                raise RuntimeError("oob_default is only valid for coop.warp.load")
+            if num_valid_items is None:
+                raise RuntimeError(
+                    "coop.warp.load requires num_valid_items when using oob_default"
+                )
+            runtime_args.append(oob_default)
+            runtime_arg_types.append(dtype)
+            runtime_arg_names.append("oob_default")
+
+        temp_storage = self.bound.arguments.get("temp_storage")
+        if temp_storage is not None:
+            raise RuntimeError("coop.warp.load/store does not support temp_storage")
+
+        self.dtype = dtype
+        self.items_per_thread = items_per_thread
+        self.algorithm_id = algorithm_id
+        self.num_valid_items = num_valid_items
+        self.src = src
+        self.dst = dst
+        self.runtime_args = runtime_args
+        self.runtime_arg_types = runtime_arg_types
+        self.runtime_arg_names = runtime_arg_names
+
+        impl_kwds = {
+            "dtype": dtype,
+            "items_per_thread": items_per_thread,
+            "threads_in_warp": threads_in_warp,
+            "algorithm": algorithm_id,
+            "num_valid_items": num_valid_items,
+            "methods": methods,
+            "unique_id": self.unique_id,
+            "temp_storage": None,
+            "node": self,
+        }
+        if self.is_load:
+            impl_kwds["oob_default"] = oob_default
+
+        self.impl_kwds = impl_kwds
+        self.return_type = types.void
+
+    def rewrite(self, rewriter):
+        rd = self.rewrite_details
+        return (rd.g_assign, rd.new_assign)
+
+    @cached_property
+    def rewrite_details(self):
+        return self.do_rewrite()
+
+
+@dataclass
+class CoopWarpLoadNode(CoopWarpLoadStoreNode, CoopNodeMixin):
+    primitive_name = "coop.warp.load"
+
+
+@dataclass
+class CoopWarpStoreNode(CoopWarpLoadStoreNode, CoopNodeMixin):
+    primitive_name = "coop.warp.store"
+
+
 @dataclass
 class CoopBlockExchangeNode(CoopNode, CoopNodeMixin):
     primitive_name = "coop.block.exchange"
@@ -2215,6 +2392,207 @@ class CoopBlockExchangeNode(CoopNode, CoopNodeMixin):
                 rewriter.emit_syncthreads_call(self.instr.target.scope, self.expr.loc)
             )
         return tuple(instrs)
+
+    @cached_property
+    def rewrite_details(self):
+        return self.do_rewrite()
+
+
+@dataclass
+class CoopWarpExchangeNode(CoopNode, CoopNodeMixin):
+    primitive_name = "coop.warp.exchange"
+    disposition = Disposition.ONE_SHOT
+
+    def refine_match(self, rewriter):
+        launch_config = rewriter.launch_config
+        if launch_config is None:
+            return False
+
+        runtime_args = []
+        runtime_arg_types = []
+        runtime_arg_names = []
+
+        bound = self.bound.arguments
+        items = bound.get("items")
+        if items is None or not isinstance(items, ir.Var):
+            raise RuntimeError("coop.warp.exchange requires items to be a variable")
+
+        output_items = bound.get("output_items")
+        ranks = bound.get("ranks")
+
+        items_ty = self.typemap[items.name]
+        if not isinstance(items_ty, types.Array):
+            raise RuntimeError("coop.warp.exchange requires items to be an array")
+
+        output_items_ty = None
+        if output_items is not None:
+            if not isinstance(output_items, ir.Var):
+                raise RuntimeError("coop.warp.exchange output_items must be a variable")
+            output_items_ty = self.typemap[output_items.name]
+            if not isinstance(output_items_ty, types.Array):
+                raise RuntimeError(
+                    "coop.warp.exchange requires output_items to be an array"
+                )
+
+        items_root = rewriter.get_root_def(items)
+        items_leaf = items_root.leaf_constructor_call
+        if not isinstance(items_leaf, ArrayCallDefinition):
+            raise RuntimeError("coop.warp.exchange requires items to be a local array")
+        items_per_thread = items_leaf.shape
+        if not isinstance(items_per_thread, int):
+            raise RuntimeError(
+                f"Expected items_per_thread to be an int, got {items_per_thread!r}"
+            )
+
+        if output_items is not None:
+            output_root = rewriter.get_root_def(output_items)
+            output_leaf = output_root.leaf_constructor_call
+            if not isinstance(output_leaf, ArrayCallDefinition):
+                raise RuntimeError(
+                    "coop.warp.exchange requires output_items to be a local array"
+                )
+            if output_leaf.shape != items_per_thread:
+                raise RuntimeError(
+                    "coop.warp.exchange requires items and output_items to have "
+                    "the same items_per_thread"
+                )
+
+        items_per_thread_kwarg = self.get_arg_value_safe("items_per_thread")
+        if (
+            items_per_thread_kwarg is not None
+            and items_per_thread_kwarg != items_per_thread
+        ):
+            raise RuntimeError(
+                f"coop.warp.exchange items_per_thread must match array shape "
+                f"({items_per_thread}); got {items_per_thread_kwarg}"
+            )
+
+        dtype = items_ty.dtype
+        if output_items_ty is not None and output_items_ty.dtype != dtype:
+            raise RuntimeError(
+                "coop.warp.exchange requires items and output_items to have "
+                "the same dtype"
+            )
+
+        methods = getattr(dtype, "methods", None)
+        if methods is not None and not methods:
+            methods = None
+
+        warp_exchange_type = self.get_arg_value_safe("warp_exchange_type")
+        if warp_exchange_type is None:
+            from cuda.coop.warp._warp_exchange import WarpExchangeType
+
+            warp_exchange_type = WarpExchangeType.StripedToBlocked
+        else:
+            from cuda.coop.warp._warp_exchange import WarpExchangeType
+
+            if isinstance(warp_exchange_type, types.EnumMember):
+                literal_value = getattr(warp_exchange_type, "literal_value", None)
+                if literal_value is None:
+                    literal_value = warp_exchange_type.value
+                warp_exchange_type = warp_exchange_type.instance_class(literal_value)
+            if isinstance(warp_exchange_type, int):
+                warp_exchange_type = WarpExchangeType(warp_exchange_type)
+            if warp_exchange_type not in WarpExchangeType:
+                raise RuntimeError(
+                    "coop.warp.exchange requires warp_exchange_type to be a "
+                    "WarpExchangeType enum value"
+                )
+
+        threads_in_warp = self.get_arg_value_safe("threads_in_warp")
+        threads_in_warp_arg = self.bound.arguments.get("threads_in_warp")
+        if threads_in_warp is None and threads_in_warp_arg is not None:
+            raise RuntimeError("threads_in_warp must be a compile-time constant")
+        if threads_in_warp is None:
+            threads_in_warp = 32
+        if not isinstance(threads_in_warp, int) or threads_in_warp < 1:
+            raise RuntimeError("threads_in_warp must be a positive integer")
+
+        uses_ranks = warp_exchange_type == WarpExchangeType.ScatterToStriped
+
+        ranks_ty = None
+        offset_dtype = None
+        if uses_ranks:
+            if ranks is None:
+                raise RuntimeError(
+                    "coop.warp.exchange requires ranks for ScatterToStriped"
+                )
+            if not isinstance(ranks, ir.Var):
+                raise RuntimeError("coop.warp.exchange ranks must be a variable")
+            ranks_ty = self.typemap[ranks.name]
+            if not isinstance(ranks_ty, types.Array):
+                raise RuntimeError("coop.warp.exchange requires ranks to be an array")
+            if not isinstance(ranks_ty.dtype, types.Integer):
+                raise RuntimeError(
+                    "coop.warp.exchange requires ranks to be an integer array"
+                )
+            ranks_root = rewriter.get_root_def(ranks)
+            ranks_leaf = ranks_root.leaf_constructor_call
+            if not isinstance(ranks_leaf, ArrayCallDefinition):
+                raise RuntimeError(
+                    "coop.warp.exchange requires ranks to be a local array"
+                )
+            if ranks_leaf.shape != items_per_thread:
+                raise RuntimeError(
+                    "coop.warp.exchange requires ranks to have the same "
+                    "items_per_thread as items"
+                )
+            offset_dtype = ranks_ty.dtype
+        elif ranks is not None:
+            raise RuntimeError(
+                "coop.warp.exchange ranks are only valid for ScatterToStriped"
+            )
+
+        offset_dtype_arg = self.get_arg_value_safe("offset_dtype")
+        if offset_dtype_arg is not None:
+            if not uses_ranks:
+                raise RuntimeError(
+                    "coop.warp.exchange offset_dtype is only valid for ScatterToStriped"
+                )
+            offset_dtype = offset_dtype_arg
+
+        temp_storage = bound.get("temp_storage")
+        if temp_storage is not None:
+            raise RuntimeError("coop.warp.exchange does not support temp_storage")
+
+        runtime_args.append(items)
+        runtime_arg_types.append(items_ty)
+        runtime_arg_names.append("items")
+
+        if output_items is not None:
+            runtime_args.append(output_items)
+            runtime_arg_types.append(output_items_ty)
+            runtime_arg_names.append("output_items")
+        else:
+            runtime_args.append(items)
+            runtime_arg_types.append(items_ty)
+            runtime_arg_names.append("output_items")
+
+        if uses_ranks:
+            runtime_args.append(ranks)
+            runtime_arg_types.append(ranks_ty)
+            runtime_arg_names.append("ranks")
+
+        self.impl_kwds = {
+            "dtype": dtype,
+            "items_per_thread": items_per_thread,
+            "threads_in_warp": threads_in_warp,
+            "warp_exchange_type": warp_exchange_type,
+            "offset_dtype": offset_dtype,
+            "methods": methods,
+            "unique_id": self.unique_id,
+            "temp_storage": None,
+            "node": self,
+        }
+
+        self.return_type = types.void
+        self.runtime_args = runtime_args
+        self.runtime_arg_types = runtime_arg_types
+        self.runtime_arg_names = runtime_arg_names
+
+    def rewrite(self, rewriter):
+        rd = self.rewrite_details
+        return (rd.g_assign, rd.new_assign)
 
     @cached_property
     def rewrite_details(self):
@@ -3219,6 +3597,106 @@ class CoopBlockMergeSortNode(CoopNode, CoopNodeMixin):
             "threads_per_block": self.threads_per_block,
             "items_per_thread": items_per_thread,
             "compare_op": compare_op,
+            "methods": methods,
+            "unique_id": self.unique_id,
+            "temp_storage": None,
+            "node": self,
+        }
+
+        self.return_type = types.void
+        self.runtime_args = runtime_args
+        self.runtime_arg_types = runtime_arg_types
+        self.runtime_arg_names = runtime_arg_names
+
+    def rewrite(self, rewriter):
+        rd = self.rewrite_details
+        return (rd.g_assign, rd.new_assign)
+
+    @cached_property
+    def rewrite_details(self):
+        return self.do_rewrite()
+
+
+@dataclass
+class CoopWarpMergeSortNode(CoopNode, CoopNodeMixin):
+    primitive_name = "coop.warp.merge_sort_keys"
+    disposition = Disposition.ONE_SHOT
+
+    def refine_match(self, rewriter):
+        launch_config = rewriter.launch_config
+        if launch_config is None:
+            return False
+
+        runtime_args = []
+        runtime_arg_types = []
+        runtime_arg_names = []
+
+        bound = self.bound.arguments
+        keys = bound.get("keys")
+        if keys is None or not isinstance(keys, ir.Var):
+            raise RuntimeError("coop.warp.merge_sort_keys requires keys")
+
+        keys_ty = self.typemap[keys.name]
+        if not isinstance(keys_ty, types.Array):
+            raise RuntimeError("coop.warp.merge_sort_keys requires keys to be an array")
+
+        keys_root = rewriter.get_root_def(keys)
+        keys_leaf = keys_root.leaf_constructor_call
+        if not isinstance(keys_leaf, ArrayCallDefinition):
+            raise RuntimeError(
+                "coop.warp.merge_sort_keys requires keys to be a local array"
+            )
+        items_per_thread = keys_leaf.shape
+        if not isinstance(items_per_thread, int):
+            raise RuntimeError(
+                f"Expected items_per_thread to be an int, got {items_per_thread!r}"
+            )
+
+        items_per_thread_kwarg = self.get_arg_value("items_per_thread")
+        if (
+            items_per_thread_kwarg is not None
+            and items_per_thread_kwarg != items_per_thread
+        ):
+            raise RuntimeError(
+                "coop.warp.merge_sort_keys items_per_thread must match the "
+                f"keys array shape ({items_per_thread}); got {items_per_thread_kwarg}"
+            )
+        if items_per_thread < 1:
+            raise RuntimeError("items_per_thread must be >= 1")
+
+        compare_op = self.get_arg_value_safe("compare_op")
+        if compare_op is None:
+            raise RuntimeError("coop.warp.merge_sort_keys requires compare_op")
+
+        threads_in_warp = self.get_arg_value_safe("threads_in_warp")
+        threads_in_warp_arg = self.bound.arguments.get("threads_in_warp")
+        if threads_in_warp is None and threads_in_warp_arg is not None:
+            raise RuntimeError("threads_in_warp must be a compile-time constant")
+        if threads_in_warp is None:
+            threads_in_warp = 32
+        if not isinstance(threads_in_warp, int) or threads_in_warp < 1:
+            raise RuntimeError("threads_in_warp must be a positive integer")
+
+        dtype = keys_ty.dtype
+        methods = getattr(dtype, "methods", None)
+        if methods is not None and not methods:
+            methods = None
+
+        temp_storage = bound.get("temp_storage")
+        if temp_storage is not None:
+            raise RuntimeError(
+                "coop.warp.merge_sort_keys does not support temp_storage in single-phase"
+            )
+
+        runtime_args.append(keys)
+        runtime_arg_types.append(keys_ty)
+        runtime_arg_names.append("keys")
+
+        self.impl_kwds = {
+            "dtype": dtype,
+            "items_per_thread": items_per_thread,
+            "compare_op": compare_op,
+            "threads_in_warp": threads_in_warp,
             "methods": methods,
             "unique_id": self.unique_id,
             "temp_storage": None,
@@ -5066,6 +5544,67 @@ class CoopBlockScanNode(CoopNode, CoopNodeMixin):
 
 
 @dataclass
+class CoopWarpExclusiveSumNode(CoopNode, CoopNodeMixin):
+    primitive_name = "coop.warp.exclusive_sum"
+    disposition = Disposition.ONE_SHOT
+
+    def refine_match(self, rewriter):
+        launch_config = rewriter.launch_config
+        if launch_config is None:
+            return False
+
+        runtime_args = []
+        runtime_arg_types = []
+        runtime_arg_names = []
+
+        expr = self.expr
+        expr_args = list(expr.args)
+        src = expr_args.pop(0)
+        if src is None:
+            raise RuntimeError("coop.warp.exclusive_sum requires a src argument")
+
+        src_ty = self.typemap[src.name]
+        if isinstance(src_ty, types.Array):
+            raise RuntimeError("coop.warp.exclusive_sum requires a scalar input")
+        if not isinstance(src_ty, types.Number):
+            raise RuntimeError("coop.warp.exclusive_sum requires a numeric input")
+
+        runtime_args.append(src)
+        runtime_arg_types.append(src_ty)
+        runtime_arg_names.append("src")
+
+        threads_in_warp = self.get_arg_value_safe("threads_in_warp")
+        threads_in_warp_arg = self.bound.arguments.get("threads_in_warp")
+        if threads_in_warp is None and threads_in_warp_arg is not None:
+            raise RuntimeError("threads_in_warp must be a compile-time constant")
+        if threads_in_warp is None:
+            threads_in_warp = 32
+        if not isinstance(threads_in_warp, int) or threads_in_warp < 1:
+            raise RuntimeError("threads_in_warp must be a positive integer")
+
+        self.impl_kwds = {
+            "dtype": src_ty,
+            "threads_in_warp": threads_in_warp,
+            "unique_id": self.unique_id,
+            "temp_storage": None,
+            "node": self,
+        }
+
+        self.return_type = src_ty
+        self.runtime_args = runtime_args
+        self.runtime_arg_types = runtime_arg_types
+        self.runtime_arg_names = runtime_arg_names
+
+    def rewrite(self, rewriter):
+        rd = self.rewrite_details
+        return (rd.g_assign, rd.new_assign)
+
+    @cached_property
+    def rewrite_details(self):
+        return self.do_rewrite()
+
+
+@dataclass
 class CoopBlockReduceNode(CoopNode, CoopNodeMixin):
     primitive_name = "coop.block.reduce"
     disposition = Disposition.ONE_SHOT
@@ -5219,6 +5758,138 @@ class CoopBlockReduceNode(CoopNode, CoopNodeMixin):
                 rewriter.emit_syncthreads_call(self.instr.target.scope, self.expr.loc)
             )
         return instrs
+
+    @cached_property
+    def rewrite_details(self):
+        return self.do_rewrite()
+
+
+@dataclass
+class CoopWarpReduceNode(CoopNode, CoopNodeMixin):
+    primitive_name = "coop.warp.reduce"
+    disposition = Disposition.ONE_SHOT
+
+    def refine_match(self, rewriter):
+        launch_config = rewriter.launch_config
+        if launch_config is None:
+            return False
+
+        runtime_args = []
+        runtime_arg_types = []
+        runtime_arg_names = []
+
+        expr = self.expr
+        expr_args = list(expr.args)
+        src = expr_args.pop(0)
+        if src is None:
+            raise RuntimeError("coop.warp.reduce requires a src argument")
+
+        src_ty = self.typemap[src.name]
+        if isinstance(src_ty, types.Array):
+            raise RuntimeError("coop.warp.reduce requires a scalar input")
+        if not isinstance(src_ty, types.Number):
+            raise RuntimeError("coop.warp.reduce requires a numeric input")
+
+        runtime_args.append(src)
+        runtime_arg_types.append(src_ty)
+        runtime_arg_names.append("src")
+
+        binary_op = self.get_arg_value_safe("binary_op")
+        if binary_op is None:
+            raise RuntimeError("coop.warp.reduce requires binary_op to be provided")
+
+        threads_in_warp = self.get_arg_value_safe("threads_in_warp")
+        threads_in_warp_arg = self.bound.arguments.get("threads_in_warp")
+        if threads_in_warp is None and threads_in_warp_arg is not None:
+            raise RuntimeError("threads_in_warp must be a compile-time constant")
+        if threads_in_warp is None:
+            threads_in_warp = 32
+        if not isinstance(threads_in_warp, int) or threads_in_warp < 1:
+            raise RuntimeError("threads_in_warp must be a positive integer")
+
+        methods = getattr(src_ty, "methods", None)
+        if methods is not None and not methods:
+            methods = None
+
+        self.impl_kwds = {
+            "dtype": src_ty,
+            "binary_op": binary_op,
+            "threads_in_warp": threads_in_warp,
+            "methods": methods,
+            "unique_id": self.unique_id,
+            "temp_storage": None,
+            "node": self,
+        }
+
+        self.return_type = src_ty
+        self.runtime_args = runtime_args
+        self.runtime_arg_types = runtime_arg_types
+        self.runtime_arg_names = runtime_arg_names
+
+    def rewrite(self, rewriter):
+        rd = self.rewrite_details
+        return (rd.g_assign, rd.new_assign)
+
+    @cached_property
+    def rewrite_details(self):
+        return self.do_rewrite()
+
+
+@dataclass
+class CoopWarpSumNode(CoopNode, CoopNodeMixin):
+    primitive_name = "coop.warp.sum"
+    disposition = Disposition.ONE_SHOT
+
+    def refine_match(self, rewriter):
+        launch_config = rewriter.launch_config
+        if launch_config is None:
+            return False
+
+        runtime_args = []
+        runtime_arg_types = []
+        runtime_arg_names = []
+
+        expr = self.expr
+        expr_args = list(expr.args)
+        src = expr_args.pop(0)
+        if src is None:
+            raise RuntimeError("coop.warp.sum requires a src argument")
+
+        src_ty = self.typemap[src.name]
+        if isinstance(src_ty, types.Array):
+            raise RuntimeError("coop.warp.sum requires a scalar input")
+        if not isinstance(src_ty, types.Number):
+            raise RuntimeError("coop.warp.sum requires a numeric input")
+
+        runtime_args.append(src)
+        runtime_arg_types.append(src_ty)
+        runtime_arg_names.append("src")
+
+        threads_in_warp = self.get_arg_value_safe("threads_in_warp")
+        threads_in_warp_arg = self.bound.arguments.get("threads_in_warp")
+        if threads_in_warp is None and threads_in_warp_arg is not None:
+            raise RuntimeError("threads_in_warp must be a compile-time constant")
+        if threads_in_warp is None:
+            threads_in_warp = 32
+        if not isinstance(threads_in_warp, int) or threads_in_warp < 1:
+            raise RuntimeError("threads_in_warp must be a positive integer")
+
+        self.impl_kwds = {
+            "dtype": src_ty,
+            "threads_in_warp": threads_in_warp,
+            "unique_id": self.unique_id,
+            "temp_storage": None,
+            "node": self,
+        }
+
+        self.return_type = src_ty
+        self.runtime_args = runtime_args
+        self.runtime_arg_types = runtime_arg_types
+        self.runtime_arg_names = runtime_arg_names
+
+    def rewrite(self, rewriter):
+        rd = self.rewrite_details
+        return (rd.g_assign, rd.new_assign)
 
     @cached_property
     def rewrite_details(self):

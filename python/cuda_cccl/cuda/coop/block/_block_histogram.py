@@ -18,7 +18,6 @@ from .._types import (
     Algorithm,
     Array,
     BasePrimitive,
-    Invocable,
     TemplateParameter,
 )
 from .._typing import (
@@ -131,7 +130,7 @@ struct BlockHistogramAtomicWrapper
 """
 
 
-class BlockHistogramInit(BasePrimitive):
+class histogram_init(BasePrimitive):
     is_child = True
     c_name = "init"
     method_name = "InitHistogram"
@@ -140,7 +139,7 @@ class BlockHistogramInit(BasePrimitive):
 
     def __init__(
         self,
-        parent: "BlockHistogram",
+        parent: "histogram",
         node: "CoopNode",
     ) -> None:
         self.node = node
@@ -189,7 +188,7 @@ class BlockHistogramInit(BasePrimitive):
         self.specialization = self.algorithm.specialize(specialization_kwds)
 
 
-class BlockHistogramComposite(BasePrimitive):
+class histogram_composite(BasePrimitive):
     is_child = True
     c_name = "composite"
     method_name = "Composite"
@@ -201,7 +200,7 @@ class BlockHistogramComposite(BasePrimitive):
 
     def __init__(
         self,
-        parent: "BlockHistogram",
+        parent: "histogram",
         node: "CoopNode",
         items: numba.types.Array,
     ) -> None:
@@ -255,7 +254,7 @@ class BlockHistogramComposite(BasePrimitive):
         self.specialization = self.algorithm.specialize(specialization_kwds)
 
 
-class BlockHistogram(BasePrimitive):
+class histogram(BasePrimitive):
     is_parent = True
     c_name = "BlockHistogram"
     method_name = "BlockHistogram"
@@ -342,7 +341,7 @@ class BlockHistogram(BasePrimitive):
 
         if temp_storage is not None:
             raise NotImplementedError(
-                "Temporary storage is not yet supported for BlockRunLengthDecode."
+                "Temporary storage is not yet supported for histogram."
             )
 
         # Validation complete, continue with algorithm creation.
@@ -397,48 +396,33 @@ class BlockHistogram(BasePrimitive):
 
         self.specialization = self.algorithm.specialize(specialization_kwds)
 
-    def init(self, node: "CoopNode") -> BlockHistogramInit:
-        return BlockHistogramInit(self, node)
+    def init(self, node: "CoopNode") -> histogram_init:
+        return histogram_init(self, node)
 
-    def composite(self, node: "CoopNode", items) -> BlockHistogramComposite:
-        return BlockHistogramComposite(self, node, items)
+    def composite(self, node: "CoopNode", items) -> histogram_composite:
+        return histogram_composite(self, node, items)
 
     @classmethod
     def create(
         cls,
         item_dtype: DtypeType,
+        counter_dtype: DtypeType,
         dim: DimType,
         items_per_thread: int,
         algorithm: BlockHistogramAlgorithm = None,
         bins: int = 256,
         temp_storage=None,
-    ) -> "BlockHistogram":
+    ) -> "histogram":
         """
-        Create a BlockHistogram instance with the specified parameters.
+        Create a histogram instance with the specified parameters.
         """
-        raise NotImplementedError
         algo = cls(
             item_dtype=item_dtype,
+            counter_dtype=counter_dtype,
             dim=dim,
             items_per_thread=items_per_thread,
             algorithm=algorithm,
             bins=bins,
             temp_storage=temp_storage,
         )
-        specialization = algo.specialization
-
-        ltoir_files = specialization.get_lto_ir()
-        temp_storage_bytes = specialization.temp_storage_bytes
-        temp_storage_alignment = specialization.temp_storage_alignment
-        algorithm = specialization
-
-        return Invocable(
-            ltoir_files=ltoir_files,
-            temp_storage_bytes=temp_storage_bytes,
-            temp_storage_alignment=temp_storage_alignment,
-            algorithm=algorithm,
-        )
-
-
-class histogram(BlockHistogram):
-    pass
+        return algo

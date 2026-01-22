@@ -114,7 +114,7 @@ def _get_template_parameter_specializations(
     return specialization
 
 
-class _RadixSortBase(BasePrimitive):
+class _radix_sort_base(BasePrimitive):
     is_one_shot = True
 
     def __init__(
@@ -201,7 +201,7 @@ class _RadixSortBase(BasePrimitive):
         )
 
 
-class radix_sort_keys(_RadixSortBase):
+class radix_sort_keys(_radix_sort_base):
     """Performs an ascending block-wide radix sort over a :ref:`blocked arrangement <flexible-data-arrangement>` of keys.
 
     Example:
@@ -264,7 +264,7 @@ class radix_sort_keys(_RadixSortBase):
         )
 
 
-class radix_sort_keys_descending(_RadixSortBase):
+class radix_sort_keys_descending(_radix_sort_base):
     """Performs an descending block-wide radix sort over a :ref:`blocked arrangement <flexible-data-arrangement>` of keys.
 
     Example:
@@ -325,35 +325,3 @@ class radix_sort_keys_descending(_RadixSortBase):
             temp_storage=temp_storage,
             node=node,
         )
-
-
-def BlockRadixSort(
-    dtype: Union[str, type, "np.dtype", "numba.types.Type"],
-    threads_per_block: Union[int, Tuple[int, int], Tuple[int, int, int], dim3],
-    items_per_thread: int,
-):
-    """
-    Create a two-phase ascending block radix sort invocable.
-    """
-    return _RadixSortBase.create(
-        dtype=dtype,
-        threads_per_block=threads_per_block,
-        items_per_thread=items_per_thread,
-        descending=False,
-    )
-
-
-def BlockRadixSortDescending(
-    dtype: Union[str, type, "np.dtype", "numba.types.Type"],
-    threads_per_block: Union[int, Tuple[int, int], Tuple[int, int, int], dim3],
-    items_per_thread: int,
-):
-    """
-    Create a two-phase descending block radix sort invocable.
-    """
-    return _RadixSortBase.create(
-        dtype=dtype,
-        threads_per_block=threads_per_block,
-        items_per_thread=items_per_thread,
-        descending=True,
-    )

@@ -19,7 +19,6 @@ from .._types import (
     DependentArray,
     DependentPythonOperator,
     Invocable,
-    Pointer,
     TemplateParameter,
     numba_type_to_cpp,
     numba_type_to_wrapper,
@@ -84,7 +83,7 @@ class merge_sort_keys(BasePrimitive):
 
             Returns:
                 A callable object that can be invoked from a CUDA kernel in single-phase,
-                or a two-phase invocable via :func:`BlockMergeSort`.
+                or a two-phase invocable via ``merge_sort_keys.create``.
         """
         if compare_op is None:
             raise ValueError("compare_op must be provided")
@@ -178,64 +177,3 @@ class merge_sort_keys(BasePrimitive):
             temp_storage_alignment=specialization.temp_storage_alignment,
             algorithm=specialization,
         )
-
-
-def BlockMergeSort(
-    dtype: Union[str, type, "np.dtype", "numba.types.Type"],
-    threads_per_block: int,
-    items_per_thread: int,
-    compare_op: Callable,
-    methods: Literal["construct", "assign"] = None,
-):
-    """
-    Create a two-phase block merge sort invocable (explicit temp storage).
-    """
-    dim = normalize_dim_param(threads_per_block)
-    dtype = normalize_dtype_param(dtype)
-
-    template = Algorithm(
-        "BlockMergeSort",
-        "Sort",
-        "block_merge_sort",
-        ["cub/block/block_merge_sort.cuh"],
-        [
-            TemplateParameter("KeyT"),
-            TemplateParameter("BLOCK_DIM_X"),
-            TemplateParameter("ITEMS_PER_THREAD"),
-            TemplateParameter("ValueT"),
-            TemplateParameter("BLOCK_DIM_Y"),
-            TemplateParameter("BLOCK_DIM_Z"),
-        ],
-        [
-            [
-                Pointer(numba.uint8),
-                DependentArray(Dependency("KeyT"), Dependency("ITEMS_PER_THREAD")),
-                DependentPythonOperator(
-                    Constant(numba.int8),
-                    [Dependency("KeyT"), Dependency("KeyT")],
-                    Dependency("Op"),
-                ),
-            ]
-        ],
-        type_definitions=[numba_type_to_wrapper(dtype, methods=methods)],
-    )
-    specialization = template.specialize(
-        {
-            "KeyT": dtype,
-            "BLOCK_DIM_X": dim[0],
-            "ITEMS_PER_THREAD": items_per_thread,
-            "ValueT": "::cub::NullType",
-            "BLOCK_DIM_Y": dim[1],
-            "BLOCK_DIM_Z": dim[2],
-            "Op": compare_op,
-        }
-    )
-    return Invocable(
-        temp_files=[
-            make_binary_tempfile(ltoir, ".ltoir")
-            for ltoir in specialization.get_lto_ir()
-        ],
-        temp_storage_bytes=specialization.temp_storage_bytes,
-        temp_storage_alignment=specialization.temp_storage_alignment,
-        algorithm=specialization,
-    )
