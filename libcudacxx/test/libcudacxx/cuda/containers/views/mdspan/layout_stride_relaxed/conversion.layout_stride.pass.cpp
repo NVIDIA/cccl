@@ -21,8 +21,7 @@
 using cuda::std::intptr_t;
 
 template <class E>
-__host__ __device__ constexpr void
-test_conversion(E ext, cuda::std::array<intptr_t, E::rank()> input_strides)
+__host__ __device__ constexpr void test_conversion(E ext, cuda::std::array<intptr_t, E::rank()> input_strides)
 {
   using RelaxedMapping = cuda::layout_stride_relaxed::template mapping<E>;
   using StrideMapping  = cuda::std::layout_stride::template mapping<E>;
