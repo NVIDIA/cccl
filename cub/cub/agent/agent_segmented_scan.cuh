@@ -698,11 +698,10 @@ struct agent_segmented_scan
       {
         const unsigned work_id = chunk_id * block_threads + threadIdx.x;
 
+        // TODO: use BlockLoad to load
         const OffsetT input_segment_begin = (work_id < n_segments) ? inp_idx_begin_it[work_id] : 0;
-        const OffsetT segment_size =
-          (work_id < n_segments)
-            ? ::cuda::std::max(inp_idx_end_it[work_id], input_segment_begin) - input_segment_begin
-            : 0;
+        const OffsetT input_segment_end = (work_id < n_segments) ? inp_idx_end_it[work_id] : 0;
+        const OffsetT segment_size = input_segment_end - input_segment_begin;
 
         OffsetT prefix;
         block_offset_scan_t(temp_storage.reused.offset_scan).InclusiveSum(segment_size, prefix, prefix_callback_op);
@@ -715,7 +714,7 @@ struct agent_segmented_scan
     __syncthreads();
 
     ::cuda::std::span<OffsetT, NumSegments> cum_sizes{temp_storage.logical_segment_offsets};
-    OffsetT items_per_block = temp_storage.logical_segment_offsets[n_segments - 1];
+    const OffsetT items_per_block = temp_storage.logical_segment_offsets[n_segments - 1];
 
     const OffsetT n_chunks = ::cuda::ceil_div(items_per_block, tile_items);
 
@@ -740,23 +739,26 @@ struct agent_segmented_scan
       augmented_accum_t thread_flag_values[items_per_thread];
       {
         constexpr auto oob_default = make_value_flag(AccumT{}, false);
+        constexpr projector<AccumT, bool> projection_op{};
         if constexpr (has_init)
         {
+          const packer_iv<AccumT, bool, ScanOpT> packer_op{static_cast<AccumT>(initial_value), scan_op};
           new_multi_segmented_iterator it_in{
             d_in,
             chunk_begin,
             cum_sizes,
             inp_idx_begin_it,
-            packer_iv<AccumT, bool, ScanOpT>{static_cast<AccumT>(initial_value), scan_op},
-            projector<AccumT, bool>{}};
+            packer_op,
+            projection_op};
 
           // AccumT thread_values[items_per_thread];
           block_load_t(temp_storage.reused.load).Load(it_in, thread_flag_values, chunk_size, oob_default);
         }
         else
         {
+          constexpr packer<AccumT, bool> packer_op{};
           new_multi_segmented_iterator it_in{
-            d_in, chunk_begin, cum_sizes, inp_idx_begin_it, packer<AccumT, bool>{}, projector<AccumT, bool>{}};
+            d_in, chunk_begin, cum_sizes, inp_idx_begin_it, packer_op, projection_op};
 
           // AccumT thread_values[items_per_thread];
           block_load_t(temp_storage.reused.load).Load(it_in, thread_flag_values, chunk_size, oob_default);
@@ -778,22 +780,25 @@ struct agent_segmented_scan
 
       // store prefix-scan values, discarding head flags
       {
+        constexpr packer<AccumT, bool> packer_op{};
         const OffsetT out_offset = chunk_id * tile_items;
         if constexpr (is_inclusive)
         {
+          constexpr projector<AccumT, bool> projector_op{};
           new_multi_segmented_iterator it_out{
-            d_out, out_offset, cum_sizes, out_idx_begin_it, packer<AccumT, bool>{}, projector<AccumT, bool>{}};
+            d_out, out_offset, cum_sizes, out_idx_begin_it, packer_op, projector_op};
           block_store_t(temp_storage.reused.store).Store(it_out, thread_flag_values, chunk_size);
         }
         else
         {
+          const projector_iv<AccumT, bool> projector_op{static_cast<AccumT>(initial_value)}; 
           new_multi_segmented_iterator it_out{
             d_out,
             out_offset,
             cum_sizes,
             out_idx_begin_it,
-            packer<AccumT, bool>{},
-            projector_iv<AccumT, bool>{static_cast<AccumT>(initial_value)}};
+            packer_op,
+            projector_op};
           block_store_t(temp_storage.reused.store).Store(it_out, thread_flag_values, chunk_size);
         }
       }
@@ -1012,17 +1017,19 @@ private:
   private:
     _CCCL_DEVICE _CCCL_FORCEINLINE ::cuda::std::tuple<int, difference_type> locate(difference_type n) const
     {
-      static constexpr int offset_size = extract_extent<SpanTy>::extent;
+      int offset_size = static_cast<int>(m_offsets.size());
       const difference_type offset     = m_start + n;
 
       difference_type shifted_offset = offset;
       int segment_id                 = 0;
-#pragma unroll
+      auto offset_c = m_offsets[0];
       for (int i = 0; i + 1 < offset_size; ++i)
       {
-        const bool cond = ((m_offsets[i] <= offset) && (offset < m_offsets[i + 1]));
+        const auto offset_n = m_offsets[i+1];
+        const bool cond = ((offset_c <= offset) && (offset < offset_n));
         segment_id      = (cond) ? i + 1 : segment_id;
-        shifted_offset  = (cond) ? offset - m_offsets[i] : shifted_offset;
+        shifted_offset  = (cond) ? offset - offset_c : shifted_offset;
+        offset_c = offset_n;
       }
       return {segment_id, shifted_offset};
     }
