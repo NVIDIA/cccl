@@ -22,6 +22,7 @@
 
 #if _CCCL_HAS_DLPACK()
 
+#  include <cuda/__cmath/mul_hi.h>
 #  include <cuda/__internal/dlpack.h>
 #  include <cuda/__mdspan/host_device_mdspan.h>
 #  include <cuda/__mdspan/mdspan_to_dlpack.h>
@@ -50,12 +51,16 @@ template <typename _ElementType>
 }
 
 [[nodiscard]]
-_CCCL_HOST_API inline ::cuda::std::int64_t __layout_right_stride(
-  const ::cuda::std::int64_t* __shapes, ::cuda::std::size_t __pos, ::cuda::std::size_t __rank) noexcept
+_CCCL_HOST_API inline ::cuda::std::int64_t
+__get_layout_right_stride(const ::cuda::std::int64_t* __shapes, ::cuda::std::size_t __pos, ::cuda::std::size_t __rank)
 {
   ::cuda::std::int64_t __stride = 1;
   for (auto __i = __pos + 1; __i < __rank; ++__i)
   {
+    if (__stride * __shapes[__i] < 0 || ::cuda::mul_hi(__stride, __shapes[__i]) != 0) // TODO: replace with mul_overflow
+    {
+      _CCCL_THROW(::std::invalid_argument{"shape overflow"});
+    }
     __stride *= __shapes[__i]; // TODO: check for overflow
   }
   return __stride;
@@ -63,12 +68,16 @@ _CCCL_HOST_API inline ::cuda::std::int64_t __layout_right_stride(
 
 [[nodiscard]]
 _CCCL_HOST_API inline ::cuda::std::int64_t
-__layout_left_stride(const ::cuda::std::int64_t* __shapes, ::cuda::std::size_t __pos) noexcept
+__get_layout_left_stride(const ::cuda::std::int64_t* __shapes, ::cuda::std::size_t __pos)
 {
   ::cuda::std::int64_t __stride = 1;
   for (::cuda::std::size_t __i = 0; __i < __pos; ++__i)
   {
-    __stride *= __shapes[__i]; // TODO: check for overflow
+    if (__stride * __shapes[__i] < 0 || ::cuda::mul_hi(__stride, __shapes[__i]) != 0) // TODO: replace with mul_overflow
+    {
+      _CCCL_THROW(::std::invalid_argument{"shape overflow"});
+    }
+    __stride *= __shapes[__i];
   }
   return __stride;
 }
@@ -83,7 +92,7 @@ _CCCL_HOST_API void __validate_dlpack_strides(const ::DLTensor& __tensor, [[mayb
   const auto __strides_ptr = __tensor.strides;
   if (__strides_ptr == nullptr)
   {
-#  if DLPACK_MAJOR_VERSION > 1 || (DLPACK_MAJOR_VERSION == 1 && DLPACK_MINOR_VERSION >= 2)
+#  if _CCCL_DLPACK_AT_LEAST(1, 2)
     _CCCL_THROW(::std::invalid_argument{"strides=nullptr is not supported for DLPack v1.2 and later"});
 #  else
     // strides == nullptr means row-major (C-contiguous) layout
@@ -95,20 +104,20 @@ _CCCL_HOST_API void __validate_dlpack_strides(const ::DLTensor& __tensor, [[mayb
     {
       return;
     }
-#  endif // DLPACK_MAJOR_VERSION > 1 || (DLPACK_MAJOR_VERSION == 1 && DLPACK_MINOR_VERSION >= 2)
+#  endif // _CCCL_DLPACK_AT_LEAST(1, 2)
   }
   for (::cuda::std::size_t __pos = 0; __pos < __rank; ++__pos)
   {
     if constexpr (__is_layout_right)
     {
-      if (__strides_ptr[__pos] != ::cuda::__layout_right_stride(__tensor.shape, __pos, __rank))
+      if (__strides_ptr[__pos] != ::cuda::__get_layout_right_stride(__tensor.shape, __pos, __rank))
       {
         _CCCL_THROW(::std::invalid_argument{"DLTensor strides are not compatible with layout_right"});
       }
     }
     else if constexpr (__is_layout_left)
     {
-      if (__strides_ptr[__pos] != ::cuda::__layout_left_stride(__tensor.shape, __pos))
+      if (__strides_ptr[__pos] != ::cuda::__get_layout_left_stride(__tensor.shape, __pos))
       {
         _CCCL_THROW(::std::invalid_argument{"DLTensor strides are not compatible with layout_left"});
       }
@@ -117,7 +126,7 @@ _CCCL_HOST_API void __validate_dlpack_strides(const ::DLTensor& __tensor, [[mayb
     {
       if (__strides_ptr[__pos] <= 0)
       {
-        _CCCL_THROW(::std::invalid_argument{"mdspan strides must be positive"});
+        _CCCL_THROW(::std::invalid_argument{"layout_stride requires strictly positive strides"});
       }
     }
   }
@@ -135,11 +144,10 @@ __to_mdspan(const ::DLTensor& __tensor)
   constexpr bool __is_layout_right  = ::cuda::std::is_same_v<_LayoutPolicy, ::cuda::std::layout_right>;
   constexpr bool __is_layout_left   = ::cuda::std::is_same_v<_LayoutPolicy, ::cuda::std::layout_left>;
   constexpr bool __is_layout_stride = ::cuda::std::is_same_v<_LayoutPolicy, ::cuda::std::layout_stride>;
-  // TODO: add support for layout_right_padded and layout_left_padded
+  // TODO: add support for layout_stride_relaxed, layout_right_padded, layout_left_padded
   if constexpr (!__is_layout_right && !__is_layout_left && !__is_layout_stride)
   {
     static_assert(::cuda::std::__always_false_v<_LayoutPolicy>, "Unsupported layout policy");
-    _CCCL_UNREACHABLE();
     return __mdspan_type{};
   }
   else
@@ -182,7 +190,7 @@ __to_mdspan(const ::DLTensor& __tensor)
       {
         if (__tensor.shape[__i] < 0)
         {
-          _CCCL_THROW(::std::invalid_argument{"DLTensor shape must be positive"});
+          _CCCL_THROW(::std::invalid_argument{"DLTensor shapes must be positive"});
         }
         __extents_array[__i] = __tensor.shape[__i];
       }
@@ -194,14 +202,13 @@ __to_mdspan(const ::DLTensor& __tensor)
         {
           const bool __has_strides = __tensor.strides != nullptr;
           __strides_array[__i] =
-            __has_strides ? __tensor.strides[__i] : ::cuda::__layout_right_stride(__tensor.shape, __i, _Rank);
+            __has_strides ? __tensor.strides[__i] : ::cuda::__get_layout_right_stride(__tensor.shape, __i, _Rank);
         }
         return __mdspan_type{__data, __mapping_type{__extents_array, __strides_array}};
       }
       else
       {
-        __extents_type __extents{__extents_array};
-        return __mdspan_type{__data, __extents};
+        return __mdspan_type{__data, __extents_type{__extents_array}};
       }
     }
   }

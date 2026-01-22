@@ -53,6 +53,15 @@ The conversion produces a non-owning ``mdspan`` view of the ``DLTensor`` data:
   - ``kDLCUDA`` for ``to_device_mdspan``
   - ``kDLCUDAManaged`` for ``to_managed_mdspan``
 
+Supported element types:
+
+- ``bool``.
+- Signed and unsigned integers.
+- IEEE-754 Floating-point and extended precision floating-point, including ``__half``, ``__nv_bfloat16``, ``__float128``, FP8, FP6, FP4 when available.
+- Complex: ``cuda::std::complex<__half>``, ``cuda::std::complex<float>``, and ``cuda::std::complex<double>``.
+- `CUDA built-in vector types <https://docs.nvidia.com/cuda/cuda-programming-guide/05-appendices/cpp-language-extensions.html#built-in-types>`__, such as ``int2``, ``float4``, etc.
+- Vector types for extended floating-point, such as ``__half2``, ``__nv_fp8x4_e4m3``, etc.
+
 Constraints
 -----------
 
@@ -108,7 +117,7 @@ Example
     tensor.data        = data;
     tensor.device      = {kDLCPU, 0};
     tensor.ndim        = 2;
-    tensor.dtype       = {kDLInt, 32, 1};
+    tensor.dtype       = DLDataType{kDLInt, 32, 1};
     tensor.shape       = shape;
     tensor.strides     = strides;
     tensor.byte_offset = 0;
