@@ -56,7 +56,7 @@ C2H_TEST("cuda::std::for_each_n", "[parallel algorithm]")
     thrust::device_vector<bool> res(size, false);
     mark_present_for_each fn{thrust::raw_pointer_cast(res.data())};
 
-    const auto policy = cuda::execution::__cub_par_unseq.set_stream(stream);
+    const auto policy = cuda::execution::__cub_par_unseq.with_stream(stream);
     cuda::std::for_each_n(policy, cuda::counting_iterator{0}, size, fn);
     CHECK(thrust::all_of(res.begin(), res.end(), cuda::std::identity{}));
   }
@@ -67,7 +67,7 @@ C2H_TEST("cuda::std::for_each_n", "[parallel algorithm]")
     thrust::device_vector<bool> res(size, false);
     mark_present_for_each fn{thrust::raw_pointer_cast(res.data())};
 
-    const auto policy = cuda::execution::__cub_par_unseq.set_memory_resource(device_resource);
+    const auto policy = cuda::execution::__cub_par_unseq.with_memory_resource(device_resource);
     cuda::std::for_each_n(policy, cuda::counting_iterator{0}, size, fn);
     CHECK(thrust::all_of(res.begin(), res.end(), cuda::std::identity{}));
   }
@@ -79,7 +79,7 @@ C2H_TEST("cuda::std::for_each_n", "[parallel algorithm]")
     thrust::device_vector<bool> res(size, false);
     mark_present_for_each fn{thrust::raw_pointer_cast(res.data())};
 
-    const auto policy = cuda::execution::__cub_par_unseq.set_memory_resource(device_resource).set_stream(stream);
+    const auto policy = cuda::execution::__cub_par_unseq.with_memory_resource(device_resource).with_stream(stream);
     cuda::std::for_each_n(policy, cuda::counting_iterator{0}, size, fn);
     CHECK(thrust::all_of(res.begin(), res.end(), cuda::std::identity{}));
   }

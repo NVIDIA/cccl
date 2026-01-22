@@ -58,7 +58,7 @@ C2H_TEST("cuda::std::reduce(Iter, Iter)", "[parallel algorithm]")
     thrust::sequence(data.begin(), data.end(), 1);
 
     ::cuda::stream stream{::cuda::device_ref{0}};
-    const auto policy  = cuda::execution::__cub_par_unseq.set_stream(stream);
+    const auto policy  = cuda::execution::__cub_par_unseq.with_stream(stream);
     decltype(auto) res = cuda::std::reduce(policy, data.begin(), data.end());
 #if !TEST_CUDA_COMPILER(NVCC, <, 12, 5)
     static_assert(cuda::std::is_same_v<decltype(res), int>);
@@ -92,7 +92,7 @@ C2H_TEST("cuda::std::reduce(Iter, Iter, Tp)", "[parallel algorithm]")
     thrust::sequence(data.begin(), data.end(), 1);
 
     ::cuda::stream stream{::cuda::device_ref{0}};
-    const auto policy  = cuda::execution::__cub_par_unseq.set_stream(stream);
+    const auto policy  = cuda::execution::__cub_par_unseq.with_stream(stream);
     decltype(auto) res = cuda::std::reduce(policy, data.begin(), data.end(), 42);
 #if !TEST_CUDA_COMPILER(NVCC, <, 12, 5)
     static_assert(cuda::std::is_same_v<decltype(res), int>);
@@ -108,7 +108,7 @@ C2H_TEST("cuda::std::reduce(Iter, Iter, Tp)", "[parallel algorithm]")
     thrust::sequence(data.begin(), data.end(), 1);
 
     cuda::device_memory_pool_ref device_resource = cuda::device_default_memory_pool(cuda::device_ref{0});
-    const auto policy  = cuda::execution::__cub_par_unseq.set_memory_resource(device_resource);
+    const auto policy  = cuda::execution::__cub_par_unseq.with_memory_resource(device_resource);
     decltype(auto) res = cuda::std::reduce(policy, data.begin(), data.end(), 42);
 #if !TEST_CUDA_COMPILER(NVCC, <, 12, 5)
     static_assert(cuda::std::is_same_v<decltype(res), int>);
@@ -125,7 +125,7 @@ C2H_TEST("cuda::std::reduce(Iter, Iter, Tp)", "[parallel algorithm]")
 
     cuda::stream stream{cuda::device_ref{0}};
     cuda::device_memory_pool_ref device_resource = cuda::device_default_memory_pool(stream.device());
-    const auto policy  = cuda::execution::__cub_par_unseq.set_stream(stream).set_memory_resource(device_resource);
+    const auto policy  = cuda::execution::__cub_par_unseq.with_stream(stream).with_memory_resource(device_resource);
     decltype(auto) res = cuda::std::reduce(policy, data.begin(), data.end(), 42);
 #if !TEST_CUDA_COMPILER(NVCC, <, 12, 5)
     static_assert(cuda::std::is_same_v<decltype(res), int>);
@@ -167,7 +167,7 @@ C2H_TEST("cuda::std::reduce(Iter, Iter, Tp, Fn)", "[parallel algorithm]")
     thrust::sequence(data.begin(), data.end(), 1);
 
     ::cuda::stream stream{::cuda::device_ref{0}};
-    const auto policy  = cuda::execution::__cub_par_unseq.set_stream(stream);
+    const auto policy  = cuda::execution::__cub_par_unseq.with_stream(stream);
     decltype(auto) res = cuda::std::reduce(policy, data.begin(), data.end(), 42, plus_two{});
 #if !TEST_CUDA_COMPILER(NVCC, <, 12, 5)
     static_assert(cuda::std::is_same_v<decltype(res), int>);

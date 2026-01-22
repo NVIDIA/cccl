@@ -32,22 +32,22 @@ void test(Policy pol)
 
   { // Ensure that we can attach a stream to an execution policy
     cuda::stream stream{cuda::device_ref{0}};
-    auto pol_with_stream = pol.set_stream(stream);
+    auto pol_with_stream = pol.with_stream(stream);
     assert(cuda::__call_or(::cuda::get_stream, default_stream, pol_with_stream) == stream);
 
     using stream_policy_t = decltype(pol_with_stream);
-    static_assert(noexcept(pol.set_stream(stream)));
+    static_assert(noexcept(pol.with_stream(stream)));
     static_assert(cuda::std::is_execution_policy_v<stream_policy_t>);
   }
 
   { // Ensure that attaching a stream multiple times just overwrites the old stream
     cuda::stream stream{cuda::device_ref{0}};
-    auto pol_with_stream = pol.set_stream(stream);
+    auto pol_with_stream = pol.with_stream(stream);
     assert(cuda::__call_or(::cuda::get_stream, default_stream, pol_with_stream) == stream);
 
     using stream_policy_t = decltype(pol_with_stream);
     cuda::stream other_stream{cuda::device_ref{0}};
-    decltype(auto) pol_with_other_stream = pol_with_stream.set_stream(other_stream);
+    decltype(auto) pol_with_other_stream = pol_with_stream.with_stream(other_stream);
     static_assert(cuda::std::is_same_v<decltype(pol_with_other_stream), stream_policy_t&>);
     assert(cuda::__call_or(::cuda::get_stream, default_stream, pol_with_stream) == other_stream);
     assert(cuda::__call_or(::cuda::get_stream, default_stream, pol_with_other_stream) == other_stream);
@@ -67,7 +67,7 @@ void test()
 
   // Ensure that all works even if we have a memory resource
   cuda::device_memory_pool_ref resource = ::cuda::device_default_memory_pool(::cuda::device_ref{0});
-  test(cuda::execution::__cub_par_unseq.set_memory_resource(resource));
+  test(cuda::execution::__cub_par_unseq.with_memory_resource(resource));
 }
 
 int main(int, char**)
