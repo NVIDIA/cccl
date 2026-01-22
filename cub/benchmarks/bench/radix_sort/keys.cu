@@ -113,11 +113,15 @@ constexpr bool fits_in_default_shared_memory()
 #endif // TUNE_BASE
 
 template <typename T, typename OffsetT>
-void radix_sort_keys(std::integral_constant<bool, true>, nvbench::state& state, nvbench::type_list<T, OffsetT>)
+void radix_sort_keys(nvbench::state& state, nvbench::type_list<T, OffsetT>)
 {
   using offset_t = cub::detail::choose_offset_t<OffsetT>;
+  using key_t    = T;
+  if constexpr (!fits_in_default_shared_memory<key_t, value_t, offset_t>())
+  {
+    return;
+  }
 
-  using key_t = T;
   using dispatch_t =
     cub::DispatchRadixSort<sort_order,
                            key_t,
@@ -182,21 +186,6 @@ void radix_sort_keys(std::integral_constant<bool, true>, nvbench::state& state, 
       is_overwrite_ok,
       launch.get_stream());
   });
-}
-
-template <typename T, typename OffsetT>
-void radix_sort_keys(std::integral_constant<bool, false>, nvbench::state&, nvbench::type_list<T, OffsetT>)
-{
-  (void) sort_order;
-  (void) is_overwrite_ok;
-}
-
-template <typename T, typename OffsetT>
-void radix_sort_keys(nvbench::state& state, nvbench::type_list<T, OffsetT> tl)
-{
-  using offset_t = cub::detail::choose_offset_t<OffsetT>;
-
-  radix_sort_keys(std::integral_constant<bool, fits_in_default_shared_memory<T, value_t, offset_t>()>{}, state, tl);
 }
 
 NVBENCH_BENCH_TYPES(radix_sort_keys, NVBENCH_TYPE_AXES(fundamental_types, offset_types))
