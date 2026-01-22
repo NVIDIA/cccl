@@ -278,7 +278,7 @@ struct agent_segmented_scan
     const OffsetT n_chunks      = ::cuda::ceil_div(segment_items, tile_items);
 
     AccumT exclusive_prefix{};
-    block_prefix_callback_t<AccumT, ScanOpT> prefix_op{exclusive_prefix, scan_op};
+    block_prefix_callback_t prefix_op{exclusive_prefix, scan_op};
 
     for (OffsetT chunk_id = 0; chunk_id < n_chunks;)
     {
@@ -495,7 +495,8 @@ struct agent_segmented_scan
       unsigned n_chunks        = ::cuda::ceil_div<unsigned>(n_segments, block_threads);
       OffsetT exclusive_prefix = 0;
       using plus_t             = ::cuda::std::plus<>;
-      block_prefix_callback_t<OffsetT, plus_t> prefix_callback_op{exclusive_prefix, plus_t{}};
+      const plus_t offsets_scan_op{};
+      block_prefix_callback_t prefix_callback_op{exclusive_prefix, offsets_scan_op};
 
       for (unsigned chunk_id = 0; chunk_id < n_chunks; ++chunk_id)
       {
@@ -529,7 +530,7 @@ struct agent_segmented_scan
     augmented_scan_op_t augmented_scan_op{scan_op};
 
     augmented_accum_t exclusive_prefix{};
-    block_prefix_callback_t<augmented_accum_t, augmented_scan_op_t> prefix_op{exclusive_prefix, augmented_scan_op};
+    block_prefix_callback_t prefix_op{exclusive_prefix, augmented_scan_op};
 
     for (OffsetT chunk_id = 0; chunk_id < n_chunks;)
     {
@@ -692,7 +693,8 @@ struct agent_segmented_scan
       unsigned n_chunks        = ::cuda::ceil_div<unsigned>(n_segments, block_threads);
       OffsetT exclusive_prefix = 0;
       using plus_t             = ::cuda::std::plus<>;
-      block_prefix_callback_t<OffsetT, plus_t> prefix_callback_op{exclusive_prefix, plus_t{}};
+      const plus_t offsets_scan_op{};
+      block_prefix_callback_t prefix_callback_op{exclusive_prefix, offsets_scan_op};
 
       for (unsigned chunk_id = 0; chunk_id < n_chunks; ++chunk_id)
       {
@@ -725,7 +727,7 @@ struct agent_segmented_scan
     augmented_scan_op_t augmented_scan_op{scan_op};
 
     augmented_accum_t exclusive_prefix{};
-    block_prefix_callback_t<augmented_accum_t, augmented_scan_op_t> prefix_op{exclusive_prefix, augmented_scan_op};
+    block_prefix_callback_t prefix_op{exclusive_prefix, augmented_scan_op};
 
     for (OffsetT chunk_id = 0; chunk_id < n_chunks;)
     {
@@ -924,17 +926,6 @@ private:
     using reference             = void;
     using pointer               = void;
 
-    // workaround for CTK 12.0 where span::extent is not constexpr
-    template <typename T>
-    struct extract_extent
-    {};
-
-    template <typename T, ::cuda::std::size_t N>
-    struct extract_extent<::cuda::std::span<T, N>>
-    {
-      static constexpr int extent = static_cast<int>(N);
-    };
-
     static_assert(::cuda::std::is_same_v<difference_type, typename SpanTy::value_type>, "types are inconsistent");
 
     struct __mapping_proxy
@@ -950,8 +941,8 @@ private:
           : m_it(it)
           , m_offset(offset)
           , m_head_flag(head_flag)
-          , m_read_fn(read_fn)
-          , m_write_fn(write_fn)
+          , m_read_fn(::cuda::std::move(read_fn))
+          , m_write_fn(::cuda::std::move(write_fn))
       {}
 
       _CCCL_DEVICE _CCCL_FORCEINLINE operator value_type() const
@@ -1023,11 +1014,11 @@ private:
       difference_type shifted_offset = offset;
       int segment_id                 = 0;
       auto offset_c = m_offsets[0];
-      for (int i = 0; i + 1 < offset_size; ++i)
+      for (int i = 1; i < offset_size; ++i)
       {
-        const auto offset_n = m_offsets[i+1];
+        const auto offset_n = m_offsets[i];
         const bool cond = ((offset_c <= offset) && (offset < offset_n));
-        segment_id      = (cond) ? i + 1 : segment_id;
+        segment_id      = (cond) ? i: segment_id;
         shifted_offset  = (cond) ? offset - offset_c : shifted_offset;
         offset_c = offset_n;
       }
@@ -1039,22 +1030,24 @@ private:
   struct block_prefix_callback_t
   {
     PrefixTy& m_exclusive_prefix;
-    BinaryOpTy m_scan_op;
+    BinaryOpTy& m_scan_op;
+
+    _CCCL_DEVICE _CCCL_FORCEINLINE block_prefix_callback_t(PrefixTy &prefix, BinaryOpTy& op) : m_exclusive_prefix(prefix), m_scan_op(op) {}
 
     _CCCL_DEVICE _CCCL_FORCEINLINE PrefixTy operator()(PrefixTy block_aggregate)
     {
-      PrefixTy previous_prefix = m_exclusive_prefix;
+      const PrefixTy previous_prefix = m_exclusive_prefix;
       m_exclusive_prefix       = m_scan_op(m_exclusive_prefix, block_aggregate);
       return previous_prefix;
     }
   };
 
-  template <typename ItemTy, typename InitValueTy, typename ScanOpTy, bool IsInclusive = is_inclusive>
+  template <typename ItemTy, typename InitValueTy, typename ScanOpTy, bool IsInclusive = is_inclusive, bool HasInit = has_init>
   _CCCL_DEVICE _CCCL_FORCEINLINE void
   scan_first_tile(ItemTy (&items)[items_per_thread], InitValueTy init_value, ScanOpTy scan_op, ItemTy& block_aggregate)
   {
     block_scan_t block_scan_algo(temp_storage.reused.scan);
-    if constexpr (has_init)
+    if constexpr (HasInit)
     {
       if constexpr (IsInclusive)
       {
