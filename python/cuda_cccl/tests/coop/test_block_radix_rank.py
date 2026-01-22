@@ -85,6 +85,53 @@ def _run_radix_rank_test(
     _validate_ranks(h_input, h_output, begin_bit, end_bit, descending)
 
 
+def _run_radix_rank_two_phase_test(
+    threads_per_block, items_per_thread, begin_bit, end_bit, descending
+):
+    num_threads_per_block = (
+        threads_per_block
+        if isinstance(threads_per_block, int)
+        else reduce(mul, threads_per_block)
+    )
+    total_items = num_threads_per_block * items_per_thread
+
+    radix_rank = coop.block.radix_rank(
+        numba.uint32,
+        threads_per_block,
+        items_per_thread,
+        begin_bit,
+        end_bit,
+        descending=descending,
+    )
+
+    @cuda.jit
+    def kernel(d_in, d_out):
+        tid = row_major_tid()
+        items = cuda.local.array(items_per_thread, numba.uint32)
+        ranks = cuda.local.array(items_per_thread, numba.int32)
+        for i in range(items_per_thread):
+            items[i] = d_in[tid * items_per_thread + i]
+        radix_rank(
+            items,
+            ranks,
+            items_per_thread,
+            begin_bit,
+            end_bit,
+            descending,
+        )
+        for i in range(items_per_thread):
+            d_out[tid * items_per_thread + i] = ranks[i]
+
+    h_input = np.random.randint(0, 2**16, total_items, dtype=np.uint32)
+    d_input = cuda.to_device(h_input)
+    d_output = cuda.device_array(total_items, dtype=np.int32)
+
+    kernel[1, threads_per_block](d_input, d_output)
+    h_output = d_output.copy_to_host()
+
+    _validate_ranks(h_input, h_output, begin_bit, end_bit, descending)
+
+
 def test_block_radix_rank_ascending():
     _run_radix_rank_test(
         threads_per_block=128,
@@ -100,6 +147,26 @@ def test_block_radix_rank_descending():
         threads_per_block=64,
         items_per_thread=3,
         begin_bit=2,
+        end_bit=6,
+        descending=True,
+    )
+
+
+def test_block_radix_rank_two_phase_ascending():
+    _run_radix_rank_two_phase_test(
+        threads_per_block=64,
+        items_per_thread=2,
+        begin_bit=0,
+        end_bit=5,
+        descending=False,
+    )
+
+
+def test_block_radix_rank_two_phase_descending():
+    _run_radix_rank_two_phase_test(
+        threads_per_block=32,
+        items_per_thread=3,
+        begin_bit=1,
         end_bit=6,
         descending=True,
     )

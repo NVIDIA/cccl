@@ -1353,14 +1353,29 @@ class CoopNode:
 
     def do_rewrite(self):
         if self.is_two_phase:
-            if self.instance is None:
-                self.instance = self.two_phase_instance
-            elif self.instance is not self.two_phase_instance:
+            instance = self.instance or self.two_phase_instance
+            if instance is None:
                 raise RuntimeError(
-                    f"Two-phase instance mismatch for {self!r}: "
+                    f"Two-phase instance missing for {self!r}: "
                     f"{self.instance!r} vs {self.two_phase_instance!r}"
                 )
-            instance = self.instance
+
+            needs_explicit_temp = (
+                self.is_one_shot
+                and self.temp_storage is not None
+                and getattr(instance, "temp_storage", None) is None
+            )
+            if needs_explicit_temp:
+                if not self.impl_kwds:
+                    raise RuntimeError(
+                        f"Missing impl_kwds for explicit temp_storage on {self!r}"
+                    )
+                impl_kwds = dict(self.impl_kwds)
+                if impl_kwds.get("temp_storage") is None:
+                    impl_kwds["temp_storage"] = self.temp_storage
+                instance = self.impl_class(**impl_kwds)
+
+            self.instance = instance
             algo = instance.specialization
             algo.unique_id = self.unique_id
         elif self.is_one_shot:

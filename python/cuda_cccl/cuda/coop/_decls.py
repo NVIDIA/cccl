@@ -2840,19 +2840,17 @@ block_run_length_attrs_template = CoopBlockRunLengthAttrsTemplate(None)
 
 @lower_constant(CoopBlockRunLengthInstanceType)
 def lower_constant_block_run_length_instance_type(context, builder, typ, value):
-    raise RuntimeError("Not yet implemented")
     return context.get_dummy_value()
 
 
 @lower_builtin(CoopBlockRunLengthInstanceType, types.VarArg(types.Any))
 def codegen_block_run_length(context, builder, sig, args):
-    raise RuntimeError("Not yet implemented")
+    # This isn't actually ever called, but it needs to exist.
     return context.get_dummy_value()
 
 
 @lower_builtin("call", CoopBlockRunLengthInstanceType, types.VarArg(types.Any))
 def codegen_block_run_length_call(context, builder, sig, args):
-    raise RuntimeError("Not yet implemented")
     return context.get_dummy_value()
 
 

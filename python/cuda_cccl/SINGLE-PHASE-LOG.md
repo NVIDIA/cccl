@@ -496,3 +496,28 @@
   - `cuda/coop/warp/_warp_load_store.py`, `cuda/coop/block/_block_load_store.py`: preserve algorithm enums for default injection.
 - Tests:
   - `pytest -q tests/coop -k warp` (503 passed, 2440 deselected, 0:07:43)
+
+## 2026-01-22 (two-phase block test additions)
+- Request: add missing two-phase block primitive tests and ensure explicit temp_storage works with two-phase instances.
+- Changes:
+  - `cuda/coop/_decls.py`: implement dummy lowerings for `CoopBlockRunLengthInstanceType`.
+  - `cuda/coop/_rewrite.py`: allow two-phase one-shot instances to synthesize an explicit-temp-storage specialization at call time.
+  - `tests/coop/test_block_adjacent_difference.py`: fix two-phase instance construction argument order.
+  - `tests/coop/test_block_discontinuity.py`: add two-phase test (already present) now passes with explicit temp_storage.
+  - `tests/coop/test_block_exchange.py`, `tests/coop/test_block_merge_sort.py`, `tests/coop/test_block_radix_sort.py`,
+    `tests/coop/test_block_radix_rank.py`, `tests/coop/test_block_run_length_decode.py`,
+    `tests/coop/test_block_shuffle.py`, `tests/coop/test_block_discontinuity.py`,
+    `tests/coop/test_block_adjacent_difference.py`: added two-phase coverage.
+- Tests:
+  - `pytest -q tests/coop/test_block_run_length_decode.py -k two_phase` (1 passed, 1 deselected)
+  - `pytest -q tests/coop/test_block_discontinuity.py tests/coop/test_block_adjacent_difference.py -k two_phase` (2 passed, 3 deselected)
+  - `pytest -q tests/coop/test_block_exchange.py tests/coop/test_block_merge_sort.py tests/coop/test_block_radix_sort.py tests/coop/test_block_radix_rank.py tests/coop/test_block_shuffle.py tests/coop/test_block_discontinuity.py tests/coop/test_block_adjacent_difference.py -k two_phase` (9 passed, 324 deselected)
+
+## 2026-01-22 (two-phase explicit temp-storage tests)
+- Request: add more two-phase tests that pass explicit temp storage.
+- Changes:
+  - `tests/coop/test_block_reduce_api.py`: add two-phase explicit temp-storage coverage for block reduce and sum.
+  - `tests/coop/test_block_load_store_scan_single_phase.py`: add two-phase explicit temp-storage scan via load/scan/store.
+- Tests:
+  - `pytest -q tests/coop/test_block_reduce_api.py -k two_phase_temp_storage` (2 passed, 4 deselected)
+  - `pytest -q tests/coop/test_block_load_store_scan_single_phase.py -k two_phase_temp_storage` (1 passed, 15 deselected)
