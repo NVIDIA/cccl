@@ -22,6 +22,8 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__cccl/version.h>
+
 #if _CCCL_CUDA_COMPILATION() || _CCCL_HAS_INCLUDE(<cuda_runtime_api.h>)
 #  define _CCCL_HAS_CTK() 1
 #else // ^^^ has cuda toolkit ^^^ / vvv no cuda toolkit vvv
@@ -52,5 +54,23 @@
 #define _CCCL_CTK_MAKE_VERSION(_MAJOR, _MINOR) ((_MAJOR) * 1000 + (_MINOR) * 10)
 #define _CCCL_CTK_BELOW(...)                   _CCCL_VERSION_COMPARE(_CCCL_CTK_, _CCCL_CTK, <, __VA_ARGS__)
 #define _CCCL_CTK_AT_LEAST(...)                _CCCL_VERSION_COMPARE(_CCCL_CTK_, _CCCL_CTK, >=, __VA_ARGS__)
+
+// Check CTK version compatibility.
+#if _CCCL_HAS_CTK() && !defined(CCCL_ALLOW_UNSUPPORTED_CTK)
+// CTK and CCCL versions are shifted by 10, for example CCCL 3.0 was released with CTK 13.0.
+#  define _CCCL_MAJOR_TO_CTK_MAJOR_VERSION(_X) (_X + 10)
+
+// CCCL supports whole previous CTK major release.
+#  if _CCCL_CTK_BELOW(_CCCL_MAJOR_TO_CTK_MAJOR_VERSION(CCCL_MAJOR_VERSION) - 1, 0)
+#    error \
+      "This CCCL version does not support CUDA Toolkit below 12.0. Define CCCL_ALLOW_UNSUPPORTED_CTK to suppress this warning."
+#  endif // _CCCL_CTK_BELOW(_CCCL_MAJOR_TO_CTK_MAJOR_VERSION(CCCL_MAJOR_VERSION) - 1, 0)
+
+// CCCL is not forward compatible with CTK.
+#  if _CCCL_CTK_AT_LEAST(_CCCL_MAJOR_TO_CTK_MAJOR_VERSION(CCCL_MAJOR_VERSION), CCCL_MINOR_VERSION + 1)
+#    error \
+      "Attempting to use CCCL with newer CUDA Toolkit than the version it was released with. CCCL is not forward compatible with future CUDA Toolkits. Define CCCL_ALLOW_UNSUPPORTED_CTK to suppress this warning."
+#  endif // _CCCL_CTK_AT_LEAST(_CCCL_MAJOR_TO_CTK_MAJOR_VERSION(CCCL_MAJOR_VERSION), CCCL_MINOR_VERSION + 1)
+#endif // _CCCL_HAS_CTK() && !CCCL_ALLOW_UNSUPPORTED_CTK
 
 #endif // __CCCL_CUDA_TOOLKIT_H
