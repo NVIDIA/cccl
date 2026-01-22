@@ -21,12 +21,12 @@ def exclusive_sum_multiple_items_example():
     threads_per_block = 128
 
     # Specialize exclusive sum for a 1D block of 128 threads owning 4 integer items each
-    block_exclusive_sum = coop.block.exclusive_sum.create(
+    block_exclusive_sum = coop.block.exclusive_sum(
         numba.int32, threads_per_block, items_per_thread
     )
 
     # Link the exclusive sum to a CUDA kernel
-    @cuda.jit(link=block_exclusive_sum.files)
+    @cuda.jit
     def kernel(data):
         # Obtain a segment of consecutive items that are blocked across threads
         thread_data = cuda.local.array(shape=items_per_thread, dtype=numba.int32)
@@ -62,12 +62,12 @@ def exclusive_sum_single_item_example():
 
     # Specialize exclusive sum for a 1D block of 128 threads.  Each thread
     # owns a single integer item.
-    block_exclusive_sum = coop.block.exclusive_sum.create(
+    block_exclusive_sum = coop.block.exclusive_sum(
         numba.int32, threads_per_block, items_per_thread
     )
 
     # Link the exclusive sum to a CUDA kernel
-    @cuda.jit(link=block_exclusive_sum.files)
+    @cuda.jit
     def kernel(data):
         thread_data = 1
 
@@ -97,11 +97,11 @@ def variable_input_scan_example():
     items_per_thread = 2
     threads_per_block = 64
 
-    block_exclusive_sum = coop.block.exclusive_sum.create(
+    block_exclusive_sum = coop.block.exclusive_sum(
         numba.int32, threads_per_block, items_per_thread
     )
 
-    @cuda.jit(link=block_exclusive_sum.files)
+    @cuda.jit
     def kernel(input_data, output_data):
         # Each thread loads its items
         thread_data = cuda.local.array(shape=items_per_thread, dtype=numba.int32)

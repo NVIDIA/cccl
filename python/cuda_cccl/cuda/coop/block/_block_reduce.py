@@ -60,6 +60,10 @@ class reduce(BasePrimitive):
         (algorithm_cub, algorithm_enum) = self.resolve_cub_algorithm(
             algorithm,
         )
+        if algorithm is None:
+            self.algorithm = "warp_reductions"
+        else:
+            self.algorithm = algorithm
 
         specialization_kwds = {
             "T": dtype,

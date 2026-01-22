@@ -363,6 +363,7 @@ class scan(BasePrimitive):
                 algorithm_enum = self.default_algorithm
         self.algorithm_enum = algorithm_enum
         self.algorithm_id = int(algorithm_enum)
+        self.algorithm = algorithm_enum
         self.initial_value = initial_value
         self.block_prefix_callback_op = block_prefix_callback_op
 

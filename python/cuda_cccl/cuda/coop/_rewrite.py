@@ -43,6 +43,8 @@ from numba.cuda.cudadecl import register_global
 from numba.cuda.cudadrv.devicearray import DeviceNDArray
 from numba.cuda.cudaimpl import lower
 
+from ._types import Algorithm as CoopAlgorithm
+
 try:
     from numba.cuda.launchconfig import (
         current_launch_config,
@@ -1075,8 +1077,13 @@ class CoopNode:
         Get the value of an argument by name from the expression arguments.
         """
         arg_var = self.bound.arguments.get(arg_name, None)
-        if not arg_var:
+        if arg_var is None:
             return
+        if isinstance(arg_var, ir.Const):
+            return arg_var.value
+        if not isinstance(arg_var, ir.Var):
+            # Two-phase defaults are injected as concrete values; return as-is.
+            return arg_var
 
         arg_ty = self.typemap[arg_var.name]
 
@@ -1146,6 +1153,8 @@ class CoopNode:
 
     @cached_property
     def decl_signature(self):
+        if self.is_two_phase and hasattr(self.template, "signature_instance"):
+            return inspect.signature(self.template.signature_instance)
         if hasattr(self.template, "signature"):
             return inspect.signature(self.template.signature)
         else:
@@ -1158,7 +1167,42 @@ class CoopNode:
         Return the bound signature for the cooperative operation.
         """
         sig = self.decl_signature
-        return sig.bind(*list(self.expr.args), **dict(self.expr.kws))
+        args = list(self.expr.args)
+        kwds = dict(self.expr.kws)
+
+        if self.is_two_phase:
+            # Fill in any missing arguments from the two-phase instance.
+            defaults = self.impl_kwds
+            if defaults is None:
+                defaults = {}
+                instance = self.two_phase_instance or self.instance
+                if instance is not None:
+                    defaults.update(getattr(instance, "__dict__", {}))
+                    if isinstance(defaults.get("algorithm"), CoopAlgorithm):
+                        defaults.pop("algorithm")
+                    algo = getattr(instance, "algorithm_enum", None)
+                    if algo is None:
+                        algo = getattr(instance, "algorithm", None)
+                    if isinstance(algo, CoopAlgorithm):
+                        algo = None
+                    if algo is not None:
+                        defaults.setdefault("algorithm", algo)
+                    specialization = getattr(instance, "specialization", None)
+                    if specialization is not None:
+                        threads = getattr(specialization, "threads", None)
+                        if threads is not None:
+                            defaults.setdefault("threads_in_warp", threads)
+                self.impl_kwds = defaults
+
+            if defaults:
+                param_names = list(sig.parameters.keys())
+                provided = set(param_names[: len(args)]) | set(kwds.keys())
+                for name, value in defaults.items():
+                    if name in sig.parameters and name not in provided:
+                        kwds[name] = value
+                        provided.add(name)
+
+        return sig.bind(*args, **kwds)
 
     @cached_property
     def call_var_name(self):

@@ -16,10 +16,10 @@ numba.config.CUDA_LOW_OCCUPANCY_WARNINGS = 0
 def test_warp_exclusive_sum():
     # example-begin exclusive-sum
     # Specialize exclusive sum for a warp of threads
-    warp_exclusive_sum = coop.warp.exclusive_sum.create(numba.int32)
+    warp_exclusive_sum = coop.warp.exclusive_sum(numba.int32)
 
     # Link the exclusive sum to a CUDA kernel
-    @cuda.jit(link=warp_exclusive_sum.files)
+    @cuda.jit
     def kernel(data):
         # Collectively compute the warp-wide exclusive prefix sum
         data[cuda.threadIdx.x] = warp_exclusive_sum(data[cuda.threadIdx.x])
@@ -41,9 +41,9 @@ test_warp_exclusive_sum()
 
 def test_warp_inclusive_sum():
     # example-begin inclusive-sum
-    warp_inclusive_sum = coop.warp.inclusive_sum.create(numba.int32)
+    warp_inclusive_sum = coop.warp.inclusive_sum(numba.int32)
 
-    @cuda.jit(link=warp_inclusive_sum.files)
+    @cuda.jit
     def kernel(data):
         data[cuda.threadIdx.x] = warp_inclusive_sum(data[cuda.threadIdx.x])
 

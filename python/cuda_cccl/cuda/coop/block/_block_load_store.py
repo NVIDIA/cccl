@@ -82,9 +82,23 @@ class base_load_store(BasePrimitive):
         self.items_per_thread = items_per_thread
         self.num_valid_items = num_valid_items
         self.unique_id = unique_id
-        (algorithm_cub, algorithm_enum) = self.resolve_cub_algorithm(
-            algorithm,
-        )
+        if algorithm is None:
+            algorithm_enum = self.default_algorithm
+        elif isinstance(algorithm, str):
+            enum_cls = self.default_algorithm.__class__
+            try:
+                algorithm_enum = enum_cls[algorithm.upper()]
+            except KeyError as exc:
+                raise ValueError(f"Invalid algorithm: {algorithm}") from exc
+        elif isinstance(algorithm, int):
+            algorithm_enum = self.default_algorithm.__class__(algorithm)
+        elif isinstance(algorithm, self.default_algorithm.__class__):
+            algorithm_enum = algorithm
+        else:
+            raise ValueError(f"Invalid algorithm: {algorithm}")
+
+        self.algorithm_enum = algorithm_enum
+        (algorithm_cub, _) = self.resolve_cub_algorithm(algorithm_enum)
 
         input_is_array_pointer = True
 

@@ -40,7 +40,10 @@ class exclusive_sum(BasePrimitive):
     def __init__(self, dtype, threads_in_warp=32, unique_id=None, temp_storage=None):
         """Computes an exclusive warp-wide prefix sum using addition (+)."""
         self.temp_storage = temp_storage
-        dtype = normalize_dtype_param(dtype)
+        self.dtype = normalize_dtype_param(dtype)
+        self.threads_in_warp = threads_in_warp
+        self.scan_op = ScanOp("+")
+        self.initial_value = None
 
         template = Algorithm(
             "WarpScan",
@@ -61,7 +64,7 @@ class exclusive_sum(BasePrimitive):
         )
         self.algorithm = template
         self.specialization = template.specialize(
-            {"T": dtype, "VIRTUAL_WARP_THREADS": threads_in_warp}
+            {"T": self.dtype, "VIRTUAL_WARP_THREADS": threads_in_warp}
         )
 
     @classmethod
@@ -82,7 +85,10 @@ class inclusive_sum(BasePrimitive):
     def __init__(self, dtype, threads_in_warp=32, unique_id=None, temp_storage=None):
         """Computes an inclusive warp-wide prefix sum using addition (+)."""
         self.temp_storage = temp_storage
-        dtype = normalize_dtype_param(dtype)
+        self.dtype = normalize_dtype_param(dtype)
+        self.threads_in_warp = threads_in_warp
+        self.scan_op = ScanOp("+")
+        self.initial_value = None
 
         template = Algorithm(
             "WarpScan",
@@ -103,7 +109,7 @@ class inclusive_sum(BasePrimitive):
         )
         self.algorithm = template
         self.specialization = template.specialize(
-            {"T": dtype, "VIRTUAL_WARP_THREADS": threads_in_warp}
+            {"T": self.dtype, "VIRTUAL_WARP_THREADS": threads_in_warp}
         )
 
     @classmethod
@@ -132,12 +138,17 @@ class exclusive_scan(BasePrimitive):
     ):
         """Computes an exclusive warp-wide prefix scan using the specified scan operator."""
         self.temp_storage = temp_storage
-        dtype = normalize_dtype_param(dtype)
-        scan_op = scan_op if isinstance(scan_op, ScanOp) else ScanOp(scan_op)
+        self.dtype = normalize_dtype_param(dtype)
+        self.scan_op = scan_op if isinstance(scan_op, ScanOp) else ScanOp(scan_op)
+        self.initial_value = initial_value
+        self.threads_in_warp = threads_in_warp
 
         parameters = []
-        specialization_kwds = {"T": dtype, "VIRTUAL_WARP_THREADS": threads_in_warp}
-        if scan_op.is_sum:
+        specialization_kwds = {
+            "T": self.dtype,
+            "VIRTUAL_WARP_THREADS": threads_in_warp,
+        }
+        if self.scan_op.is_sum:
             if initial_value is not None:
                 raise ValueError(
                     "initial_value is not supported for exclusive scans using sum"
@@ -157,10 +168,10 @@ class exclusive_scan(BasePrimitive):
             ]
             if initial_value is not None:
                 params.append(DependentReference(Dependency("T")))
-            params.append(_make_scan_op_param(scan_op))
+            params.append(_make_scan_op_param(self.scan_op))
             parameters = [params]
-            if scan_op.is_callable:
-                specialization_kwds["ScanOp"] = scan_op.op
+            if self.scan_op.is_callable:
+                specialization_kwds["ScanOp"] = self.scan_op.op
 
         template = Algorithm(
             "WarpScan",
@@ -208,12 +219,17 @@ class inclusive_scan(BasePrimitive):
     ):
         """Computes an inclusive warp-wide prefix scan using the specified scan operator."""
         self.temp_storage = temp_storage
-        dtype = normalize_dtype_param(dtype)
-        scan_op = scan_op if isinstance(scan_op, ScanOp) else ScanOp(scan_op)
+        self.dtype = normalize_dtype_param(dtype)
+        self.scan_op = scan_op if isinstance(scan_op, ScanOp) else ScanOp(scan_op)
+        self.initial_value = initial_value
+        self.threads_in_warp = threads_in_warp
 
         parameters = []
-        specialization_kwds = {"T": dtype, "VIRTUAL_WARP_THREADS": threads_in_warp}
-        if scan_op.is_sum:
+        specialization_kwds = {
+            "T": self.dtype,
+            "VIRTUAL_WARP_THREADS": threads_in_warp,
+        }
+        if self.scan_op.is_sum:
             if initial_value is not None:
                 raise ValueError(
                     "initial_value is not supported for inclusive scans using sum"
@@ -233,10 +249,10 @@ class inclusive_scan(BasePrimitive):
             ]
             if initial_value is not None:
                 params.append(DependentReference(Dependency("T")))
-            params.append(_make_scan_op_param(scan_op))
+            params.append(_make_scan_op_param(self.scan_op))
             parameters = [params]
-            if scan_op.is_callable:
-                specialization_kwds["ScanOp"] = scan_op.op
+            if self.scan_op.is_callable:
+                specialization_kwds["ScanOp"] = self.scan_op.op
 
         template = Algorithm(
             "WarpScan",

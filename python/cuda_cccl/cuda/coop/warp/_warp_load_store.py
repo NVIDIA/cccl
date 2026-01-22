@@ -36,17 +36,20 @@ CUB_WARP_STORE_ALGOS = {
 }
 
 
-def _resolve_algorithm(algorithm, default_algorithm, cub_map):
+def _normalize_algorithm_enum(algorithm, default_algorithm, cub_map):
     if algorithm is None:
-        return str(default_algorithm)
+        return default_algorithm
     if isinstance(algorithm, str):
         if algorithm not in cub_map:
             raise ValueError(f"Invalid algorithm: {algorithm}")
-        return cub_map[algorithm]
+        try:
+            return default_algorithm.__class__[algorithm.upper()]
+        except KeyError as exc:
+            raise ValueError(f"Invalid algorithm: {algorithm}") from exc
     if isinstance(algorithm, int):
-        return str(default_algorithm.__class__(algorithm))
+        return default_algorithm.__class__(algorithm)
     if isinstance(algorithm, default_algorithm.__class__):
-        return str(algorithm)
+        return algorithm
     raise ValueError(f"Invalid algorithm: {algorithm}")
 
 
@@ -75,10 +78,16 @@ class load(BasePrimitive):
         self.node = node
         self.temp_storage = temp_storage
 
-        dtype = normalize_dtype_param(dtype)
-        algorithm_cub = _resolve_algorithm(
+        self.dtype = normalize_dtype_param(dtype)
+        self.items_per_thread = items_per_thread
+        self.threads_in_warp = threads_in_warp
+        self.num_valid_items = num_valid_items
+        self.oob_default = oob_default
+        self.methods = methods
+        self.algorithm_enum = _normalize_algorithm_enum(
             algorithm, WarpLoadAlgorithm.DIRECT, CUB_WARP_LOAD_ALGOS
         )
+        algorithm_cub = str(self.algorithm_enum)
 
         template_parameters = [
             TemplateParameter("T"),
@@ -129,7 +138,7 @@ class load(BasePrimitive):
         self.algorithm = template
         self.specialization = template.specialize(
             {
-                "T": dtype,
+                "T": self.dtype,
                 "ITEMS_PER_THREAD": items_per_thread,
                 "ALGORITHM": algorithm_cub,
                 "LOGICAL_WARP_THREADS": threads_in_warp,
@@ -187,10 +196,15 @@ class store(BasePrimitive):
         self.node = node
         self.temp_storage = temp_storage
 
-        dtype = normalize_dtype_param(dtype)
-        algorithm_cub = _resolve_algorithm(
+        self.dtype = normalize_dtype_param(dtype)
+        self.items_per_thread = items_per_thread
+        self.threads_in_warp = threads_in_warp
+        self.num_valid_items = num_valid_items
+        self.methods = methods
+        self.algorithm_enum = _normalize_algorithm_enum(
             algorithm, WarpStoreAlgorithm.DIRECT, CUB_WARP_STORE_ALGOS
         )
+        algorithm_cub = str(self.algorithm_enum)
 
         template_parameters = [
             TemplateParameter("T"),
@@ -237,7 +251,7 @@ class store(BasePrimitive):
         self.algorithm = template
         self.specialization = template.specialize(
             {
-                "T": dtype,
+                "T": self.dtype,
                 "ITEMS_PER_THREAD": items_per_thread,
                 "ALGORITHM": algorithm_cub,
                 "LOGICAL_WARP_THREADS": threads_in_warp,

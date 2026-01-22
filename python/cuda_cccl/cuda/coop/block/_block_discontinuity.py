@@ -80,6 +80,7 @@ class discontinuity(BasePrimitive):
         self.flag_dtype = flag_dtype = normalize_dtype_param(flag_dtype)
         self.unique_id = unique_id
         self.temp_storage = temp_storage
+        self.flag_op = flag_op
 
         specialization_kwds = {
             "T": dtype,

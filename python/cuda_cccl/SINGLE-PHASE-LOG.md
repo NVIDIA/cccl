@@ -487,3 +487,12 @@
 - Request: run all warp tests.
 - Tests:
   - `pytest -q tests/coop -k warp` (503 passed, 2440 deselected; ~9m45s)
+
+## 2026-01-22 (two-phase instance call binding)
+- Request: remove public .create(), make two-phase instance calls use runtime-friendly signatures without link=, and ensure warp tests pass.
+- Changes:
+  - `cuda/coop/_decls.py`: add `signature_instance` for block/warp load/store/exchange/reduce/scan/merge_sort; relax two-phase validation for baked args; switch instance type binding to runtime signatures; allow positional num_valid/initial_value/ranks for instances.
+  - `cuda/coop/_rewrite.py`: use `signature_instance` for two-phase bound signatures; avoid injecting Algorithm templates as `algorithm` defaults.
+  - `cuda/coop/warp/_warp_load_store.py`, `cuda/coop/block/_block_load_store.py`: preserve algorithm enums for default injection.
+- Tests:
+  - `pytest -q tests/coop -k warp` (503 passed, 2440 deselected, 0:07:43)

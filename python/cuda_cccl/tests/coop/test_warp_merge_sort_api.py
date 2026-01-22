@@ -17,12 +17,12 @@ def test_warp_merge_sort():
 
     # Specialize merge sort for a warp of threads owning 4 integer items each
     items_per_thread = 4
-    warp_merge_sort = coop.warp.merge_sort_keys.create(
+    warp_merge_sort = coop.warp.merge_sort_keys(
         numba.int32, items_per_thread, compare_op
     )
 
     # Link the merge sort to a CUDA kernel
-    @cuda.jit(link=warp_merge_sort.files)
+    @cuda.jit
     def kernel(keys):
         # Obtain a segment of consecutive items that are blocked across threads
         thread_keys = cuda.local.array(shape=items_per_thread, dtype=numba.int32)

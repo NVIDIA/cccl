@@ -35,7 +35,11 @@ class merge_sort_keys(BasePrimitive):
         """Performs a warp-wide merge sort over blocked keys."""
         self.node = node
         self.temp_storage = temp_storage
-        dtype = normalize_dtype_param(dtype)
+        self.dtype = normalize_dtype_param(dtype)
+        self.items_per_thread = items_per_thread
+        self.compare_op = compare_op
+        self.threads_in_warp = threads_in_warp
+        self.methods = methods
 
         template = Algorithm(
             "WarpMergeSort",
@@ -59,7 +63,7 @@ class merge_sort_keys(BasePrimitive):
                 ]
             ],
             self,
-            type_definitions=[numba_type_to_wrapper(dtype, methods=methods)]
+            type_definitions=[numba_type_to_wrapper(self.dtype, methods=methods)]
             if methods is not None
             else None,
             threads=threads_in_warp,
@@ -68,7 +72,7 @@ class merge_sort_keys(BasePrimitive):
         self.algorithm = template
         self.specialization = template.specialize(
             {
-                "KeyT": dtype,
+                "KeyT": self.dtype,
                 "VIRTUAL_WARP_THREADS": threads_in_warp,
                 "ITEMS_PER_THREAD": items_per_thread,
                 "Op": compare_op,

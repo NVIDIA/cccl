@@ -256,9 +256,9 @@ def test_block_load_store_two_phase_constructor():
     dim = 128
     items_per_thread = 16
 
-    block_load = coop.block.load.create(dtype, dim, items_per_thread)
+    block_load = coop.block.load(dtype, dim, items_per_thread)
 
-    @cuda.jit(link=block_load.files)
+    @cuda.jit
     def kernel(d_in, d_out, items_per_thread):
         thread_data = coop.local.array(items_per_thread, dtype=d_in.dtype)
         block_load(d_in, thread_data)

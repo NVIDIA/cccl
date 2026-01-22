@@ -15,14 +15,14 @@ def test_warp_load_store():
     threads_in_warp = 32
     items_per_thread = 4
 
-    warp_load = coop.warp.load.create(
+    warp_load = coop.warp.load(
         numba.int32, items_per_thread, threads_in_warp, algorithm="striped"
     )
-    warp_store = coop.warp.store.create(
+    warp_store = coop.warp.store(
         numba.int32, items_per_thread, threads_in_warp, algorithm="striped"
     )
 
-    @cuda.jit(link=warp_load.files + warp_store.files)
+    @cuda.jit
     def kernel(d_in, d_out):
         items = cuda.local.array(items_per_thread, numba.int32)
         warp_load(d_in, items)
@@ -48,7 +48,7 @@ def test_warp_load_store_num_valid_oob_default():
     oob_default = np.int32(-123)
     sentinel = np.int32(-999)
 
-    warp_load = coop.warp.load.create(
+    warp_load = coop.warp.load(
         numba.int32,
         items_per_thread,
         threads_in_warp,
@@ -56,10 +56,10 @@ def test_warp_load_store_num_valid_oob_default():
         num_valid_items=num_valid,
         oob_default=oob_default,
     )
-    warp_store_all = coop.warp.store.create(
+    warp_store_all = coop.warp.store(
         numba.int32, items_per_thread, threads_in_warp, algorithm="striped"
     )
-    warp_store_valid = coop.warp.store.create(
+    warp_store_valid = coop.warp.store(
         numba.int32,
         items_per_thread,
         threads_in_warp,
@@ -67,7 +67,7 @@ def test_warp_load_store_num_valid_oob_default():
         num_valid_items=num_valid,
     )
 
-    @cuda.jit(link=warp_load.files + warp_store_all.files)
+    @cuda.jit
     def kernel_all(d_in, d_out_all):
         items = cuda.local.array(items_per_thread, numba.int32)
         num_valid_items = numba.int32(num_valid)
@@ -75,7 +75,7 @@ def test_warp_load_store_num_valid_oob_default():
         warp_load(d_in, items, num_valid_items, oob)
         warp_store_all(d_out_all, items)
 
-    @cuda.jit(link=warp_load.files + warp_store_valid.files)
+    @cuda.jit
     def kernel_valid(d_in, d_out_valid):
         items = cuda.local.array(items_per_thread, numba.int32)
         num_valid_items = numba.int32(num_valid)

@@ -30,9 +30,7 @@ numba.config.CUDA_LOW_OCCUPANCY_WARNINGS = 0
     ],
 )
 def test_block_load(T, threads_per_block, items_per_thread, algorithm):
-    block_load = coop.block.load.create(
-        T, threads_per_block, items_per_thread, algorithm
-    )
+    block_load = coop.block.load(T, threads_per_block, items_per_thread, algorithm)
 
     num_threads_per_block = (
         threads_per_block
@@ -51,7 +49,7 @@ def test_block_load(T, threads_per_block, items_per_thread, algorithm):
         def output_index(i):
             return row_major_tid() * items_per_thread + i
 
-    @cuda.jit(link=block_load.files)
+    @cuda.jit
     def kernel(d_input, d_output):
         thread_data = cuda.local.array(shape=items_per_thread, dtype=dtype)
         block_load(d_input, thread_data)
