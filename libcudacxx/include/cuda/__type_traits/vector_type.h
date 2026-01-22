@@ -339,6 +339,8 @@ template <class _Tp, ::cuda::std::size_t _Size>
   }
 }
 
+_CCCL_SUPPRESS_DEPRECATED_PUSH
+
 template <class _Tp, ::cuda::std::size_t _Size>
 using __vector_type_t = decltype(::cuda::__cccl_vector_type_t_impl<_Tp, _Size>());
 
@@ -531,6 +533,7 @@ template <>
 inline constexpr bool __is_extended_fp_vector_type_v<::__nv_fp4x4_e2m1> = true;
 #  endif // _CCCL_HAS_NVFP4()
 
+_CCCL_SUPPRESS_DEPRECATED_POP
 _CCCL_END_NAMESPACE_CUDA
 
 #  include <cuda/std/__cccl/epilogue.h>

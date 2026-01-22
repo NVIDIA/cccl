@@ -284,32 +284,30 @@ CUresult cccl_device_radix_sort_build_ex(
   const char* libcudacxx_path,
   const char* ctk_path,
   cccl_build_config* config)
+try
 {
-  CUresult error = CUDA_SUCCESS;
-  try
-  {
-    const char* name = "test";
+  const char* name = "test";
 
-    const int cc       = cc_major * 10 + cc_minor;
-    const auto key_cpp = cccl_type_enum_to_name(input_keys_it.value_type.type);
-    const auto value_cpp =
-      input_values_it.type == cccl_iterator_kind_t::CCCL_POINTER && input_values_it.state == nullptr
-        ? "cub::NullType"
-        : cccl_type_enum_to_name(input_values_it.value_type.type);
-    const std::string op_src =
-      (decomposer.name == nullptr || (decomposer.name != nullptr && decomposer.name[0] == '\0'))
-        ? "using op_wrapper = cub::detail::identity_decomposer_t;"
-        : make_kernel_user_unary_operator(key_cpp, decomposer_return_type, decomposer);
-    constexpr std::string_view chained_policy_t = "device_radix_sort_policy";
+  const int cc       = cc_major * 10 + cc_minor;
+  const auto key_cpp = cccl_type_enum_to_name(input_keys_it.value_type.type);
+  const auto value_cpp =
+    input_values_it.type == cccl_iterator_kind_t::CCCL_POINTER && input_values_it.state == nullptr
+      ? "cub::NullType"
+      : cccl_type_enum_to_name(input_values_it.value_type.type);
+  const std::string op_src =
+    (decomposer.name == nullptr || (decomposer.name != nullptr && decomposer.name[0] == '\0'))
+      ? "using op_wrapper = cub::detail::identity_decomposer_t;"
+      : make_kernel_user_unary_operator(key_cpp, decomposer_return_type, decomposer);
+  constexpr std::string_view chained_policy_t = "device_radix_sort_policy";
 
-    std::string offset_t;
-    check(cccl_type_name_from_nvrtc<OffsetT>(&offset_t));
+  std::string offset_t;
+  check(cccl_type_name_from_nvrtc<OffsetT>(&offset_t));
 
-    const auto policy_hub_expr =
-      std::format("cub::detail::radix_sort::policy_hub<{}, {}, {}>", key_cpp, value_cpp, offset_t);
+  const auto policy_hub_expr =
+    std::format("cub::detail::radix_sort::policy_hub<{}, {}, {}>", key_cpp, value_cpp, offset_t);
 
-    const std::string final_src = std::format(
-      R"XXX(
+  const std::string final_src = std::format(
+    R"XXX(
 #include <cub/device/dispatch/tuning/tuning_radix_sort.cuh>
 #include <cub/device/dispatch/kernels/kernel_radix_sort.cuh>
 #include <cub/agent/single_pass_scan_operators.cuh>
@@ -329,158 +327,158 @@ __device__ consteval auto& policy_generator() {{
     = cub::detail::radix_sort::RadixSortPolicyWrapper<{5}::ActivePolicy>::EncodedPolicy();
 }}
 )XXX",
-      input_keys_it.value_type.size, // 0
-      input_keys_it.value_type.alignment, // 1
-      input_values_it.value_type.size, // 2
-      input_values_it.value_type.alignment, // 3
-      op_src, // 4
-      chained_policy_t, // 5
-      policy_hub_expr); // 6
+    input_keys_it.value_type.size, // 0
+    input_keys_it.value_type.alignment, // 1
+    input_values_it.value_type.size, // 2
+    input_values_it.value_type.alignment, // 3
+    op_src, // 4
+    chained_policy_t, // 5
+    policy_hub_expr); // 6
 
 #if false // CCCL_DEBUGGING_SWITCH
-    fflush(stderr);
-    printf("\nCODE4NVRTC BEGIN\n%sCODE4NVRTC END\n", final_src.c_str());
-    fflush(stdout);
+  fflush(stderr);
+  printf("\nCODE4NVRTC BEGIN\n%sCODE4NVRTC END\n", final_src.c_str());
+  fflush(stdout);
 #endif
 
-    std::string single_tile_kernel_name =
-      radix_sort::get_single_tile_kernel_name(chained_policy_t, sort_order, key_cpp, value_cpp, offset_t);
-    std::string upsweep_kernel_name =
-      radix_sort::get_upsweep_kernel_name(chained_policy_t, false, sort_order, key_cpp, offset_t);
-    std::string alt_upsweep_kernel_name =
-      radix_sort::get_upsweep_kernel_name(chained_policy_t, true, sort_order, key_cpp, offset_t);
-    std::string scan_bins_kernel_name = radix_sort::get_scan_bins_kernel_name(chained_policy_t, offset_t);
-    std::string downsweep_kernel_name =
-      radix_sort::get_downsweep_kernel_name(chained_policy_t, false, sort_order, key_cpp, value_cpp, offset_t);
-    std::string alt_downsweep_kernel_name =
-      radix_sort::get_downsweep_kernel_name(chained_policy_t, true, sort_order, key_cpp, value_cpp, offset_t);
-    std::string histogram_kernel_name =
-      radix_sort::get_histogram_kernel_name(chained_policy_t, sort_order, key_cpp, offset_t);
-    std::string exclusive_sum_kernel_name = radix_sort::get_exclusive_sum_kernel_name(chained_policy_t, offset_t);
-    std::string onesweep_kernel_name =
-      radix_sort::get_onesweep_kernel_name(chained_policy_t, sort_order, key_cpp, value_cpp, offset_t);
-    std::string single_tile_kernel_lowered_name;
-    std::string upsweep_kernel_lowered_name;
-    std::string alt_upsweep_kernel_lowered_name;
-    std::string scan_bins_kernel_lowered_name;
-    std::string downsweep_kernel_lowered_name;
-    std::string alt_downsweep_kernel_lowered_name;
-    std::string histogram_kernel_lowered_name;
-    std::string exclusive_sum_kernel_lowered_name;
-    std::string onesweep_kernel_lowered_name;
+  std::string single_tile_kernel_name =
+    radix_sort::get_single_tile_kernel_name(chained_policy_t, sort_order, key_cpp, value_cpp, offset_t);
+  std::string upsweep_kernel_name =
+    radix_sort::get_upsweep_kernel_name(chained_policy_t, false, sort_order, key_cpp, offset_t);
+  std::string alt_upsweep_kernel_name =
+    radix_sort::get_upsweep_kernel_name(chained_policy_t, true, sort_order, key_cpp, offset_t);
+  std::string scan_bins_kernel_name = radix_sort::get_scan_bins_kernel_name(chained_policy_t, offset_t);
+  std::string downsweep_kernel_name =
+    radix_sort::get_downsweep_kernel_name(chained_policy_t, false, sort_order, key_cpp, value_cpp, offset_t);
+  std::string alt_downsweep_kernel_name =
+    radix_sort::get_downsweep_kernel_name(chained_policy_t, true, sort_order, key_cpp, value_cpp, offset_t);
+  std::string histogram_kernel_name =
+    radix_sort::get_histogram_kernel_name(chained_policy_t, sort_order, key_cpp, offset_t);
+  std::string exclusive_sum_kernel_name = radix_sort::get_exclusive_sum_kernel_name(chained_policy_t, offset_t);
+  std::string onesweep_kernel_name =
+    radix_sort::get_onesweep_kernel_name(chained_policy_t, sort_order, key_cpp, value_cpp, offset_t);
+  std::string single_tile_kernel_lowered_name;
+  std::string upsweep_kernel_lowered_name;
+  std::string alt_upsweep_kernel_lowered_name;
+  std::string scan_bins_kernel_lowered_name;
+  std::string downsweep_kernel_lowered_name;
+  std::string alt_downsweep_kernel_lowered_name;
+  std::string histogram_kernel_lowered_name;
+  std::string exclusive_sum_kernel_lowered_name;
+  std::string onesweep_kernel_lowered_name;
 
-    const std::string arch = std::format("-arch=sm_{0}{1}", cc_major, cc_minor);
+  const std::string arch = std::format("-arch=sm_{0}{1}", cc_major, cc_minor);
 
-    std::vector<const char*> args = {
-      arch.c_str(),
-      cub_path,
-      thrust_path,
-      libcudacxx_path,
-      ctk_path,
-      "-rdc=true",
-      "-dlto",
-      "-DCUB_DISABLE_CDP",
-      "-DCUB_ENABLE_POLICY_PTX_JSON",
-      "-std=c++20"};
+  std::vector<const char*> args = {
+    arch.c_str(),
+    cub_path,
+    thrust_path,
+    libcudacxx_path,
+    ctk_path,
+    "-rdc=true",
+    "-dlto",
+    "-default-device",
+    "-DCUB_DISABLE_CDP",
+    "-DCUB_ENABLE_POLICY_PTX_JSON",
+    "-std=c++20"};
 
-    cccl::detail::extend_args_with_build_config(args, config);
+  cccl::detail::extend_args_with_build_config(args, config);
 
-    constexpr size_t num_lto_args   = 2;
-    const char* lopts[num_lto_args] = {"-lto", arch.c_str()};
+  constexpr size_t num_lto_args   = 2;
+  const char* lopts[num_lto_args] = {"-lto", arch.c_str()};
 
-    // Collect all LTO-IRs to be linked.
-    nvrtc_linkable_list linkable_list;
-    nvrtc_linkable_list_appender appender{linkable_list};
-    appender.append_operation(decomposer);
+  // Collect all LTO-IRs to be linked.
+  nvrtc_linkable_list linkable_list;
+  nvrtc_linkable_list_appender appender{linkable_list};
+  appender.append_operation(decomposer);
 
-    nvrtc_link_result result =
-      begin_linking_nvrtc_program(num_lto_args, lopts)
-        ->add_program(nvrtc_translation_unit{final_src.c_str(), name})
-        ->add_expression({single_tile_kernel_name})
-        ->add_expression({upsweep_kernel_name})
-        ->add_expression({alt_upsweep_kernel_name})
-        ->add_expression({scan_bins_kernel_name})
-        ->add_expression({downsweep_kernel_name})
-        ->add_expression({alt_downsweep_kernel_name})
-        ->add_expression({histogram_kernel_name})
-        ->add_expression({exclusive_sum_kernel_name})
-        ->add_expression({onesweep_kernel_name})
-        ->compile_program({args.data(), args.size()})
-        ->get_name({single_tile_kernel_name, single_tile_kernel_lowered_name})
-        ->get_name({upsweep_kernel_name, upsweep_kernel_lowered_name})
-        ->get_name({alt_upsweep_kernel_name, alt_upsweep_kernel_lowered_name})
-        ->get_name({scan_bins_kernel_name, scan_bins_kernel_lowered_name})
-        ->get_name({downsweep_kernel_name, downsweep_kernel_lowered_name})
-        ->get_name({alt_downsweep_kernel_name, alt_downsweep_kernel_lowered_name})
-        ->get_name({histogram_kernel_name, histogram_kernel_lowered_name})
-        ->get_name({exclusive_sum_kernel_name, exclusive_sum_kernel_lowered_name})
-        ->get_name({onesweep_kernel_name, onesweep_kernel_lowered_name})
-        ->link_program()
-        ->add_link_list(linkable_list)
-        ->finalize_program();
+  nvrtc_link_result result =
+    begin_linking_nvrtc_program(num_lto_args, lopts)
+      ->add_program(nvrtc_translation_unit{final_src.c_str(), name})
+      ->add_expression({single_tile_kernel_name})
+      ->add_expression({upsweep_kernel_name})
+      ->add_expression({alt_upsweep_kernel_name})
+      ->add_expression({scan_bins_kernel_name})
+      ->add_expression({downsweep_kernel_name})
+      ->add_expression({alt_downsweep_kernel_name})
+      ->add_expression({histogram_kernel_name})
+      ->add_expression({exclusive_sum_kernel_name})
+      ->add_expression({onesweep_kernel_name})
+      ->compile_program({args.data(), args.size()})
+      ->get_name({single_tile_kernel_name, single_tile_kernel_lowered_name})
+      ->get_name({upsweep_kernel_name, upsweep_kernel_lowered_name})
+      ->get_name({alt_upsweep_kernel_name, alt_upsweep_kernel_lowered_name})
+      ->get_name({scan_bins_kernel_name, scan_bins_kernel_lowered_name})
+      ->get_name({downsweep_kernel_name, downsweep_kernel_lowered_name})
+      ->get_name({alt_downsweep_kernel_name, alt_downsweep_kernel_lowered_name})
+      ->get_name({histogram_kernel_name, histogram_kernel_lowered_name})
+      ->get_name({exclusive_sum_kernel_name, exclusive_sum_kernel_lowered_name})
+      ->get_name({onesweep_kernel_name, onesweep_kernel_lowered_name})
+      ->link_program()
+      ->add_link_list(linkable_list)
+      ->finalize_program();
 
-    cuLibraryLoadData(&build_ptr->library, result.data.get(), nullptr, nullptr, 0, nullptr, nullptr, 0);
-    check(
-      cuLibraryGetKernel(&build_ptr->single_tile_kernel, build_ptr->library, single_tile_kernel_lowered_name.c_str()));
-    check(cuLibraryGetKernel(&build_ptr->upsweep_kernel, build_ptr->library, upsweep_kernel_lowered_name.c_str()));
-    check(
-      cuLibraryGetKernel(&build_ptr->alt_upsweep_kernel, build_ptr->library, alt_upsweep_kernel_lowered_name.c_str()));
-    check(cuLibraryGetKernel(&build_ptr->scan_bins_kernel, build_ptr->library, scan_bins_kernel_lowered_name.c_str()));
-    check(cuLibraryGetKernel(&build_ptr->downsweep_kernel, build_ptr->library, downsweep_kernel_lowered_name.c_str()));
-    check(cuLibraryGetKernel(
-      &build_ptr->alt_downsweep_kernel, build_ptr->library, alt_downsweep_kernel_lowered_name.c_str()));
-    check(cuLibraryGetKernel(&build_ptr->histogram_kernel, build_ptr->library, histogram_kernel_lowered_name.c_str()));
-    check(cuLibraryGetKernel(
-      &build_ptr->exclusive_sum_kernel, build_ptr->library, exclusive_sum_kernel_lowered_name.c_str()));
-    check(cuLibraryGetKernel(&build_ptr->onesweep_kernel, build_ptr->library, onesweep_kernel_lowered_name.c_str()));
+  cuLibraryLoadData(&build_ptr->library, result.data.get(), nullptr, nullptr, 0, nullptr, nullptr, 0);
+  check(
+    cuLibraryGetKernel(&build_ptr->single_tile_kernel, build_ptr->library, single_tile_kernel_lowered_name.c_str()));
+  check(cuLibraryGetKernel(&build_ptr->upsweep_kernel, build_ptr->library, upsweep_kernel_lowered_name.c_str()));
+  check(
+    cuLibraryGetKernel(&build_ptr->alt_upsweep_kernel, build_ptr->library, alt_upsweep_kernel_lowered_name.c_str()));
+  check(cuLibraryGetKernel(&build_ptr->scan_bins_kernel, build_ptr->library, scan_bins_kernel_lowered_name.c_str()));
+  check(cuLibraryGetKernel(&build_ptr->downsweep_kernel, build_ptr->library, downsweep_kernel_lowered_name.c_str()));
+  check(cuLibraryGetKernel(
+    &build_ptr->alt_downsweep_kernel, build_ptr->library, alt_downsweep_kernel_lowered_name.c_str()));
+  check(cuLibraryGetKernel(&build_ptr->histogram_kernel, build_ptr->library, histogram_kernel_lowered_name.c_str()));
+  check(cuLibraryGetKernel(
+    &build_ptr->exclusive_sum_kernel, build_ptr->library, exclusive_sum_kernel_lowered_name.c_str()));
+  check(cuLibraryGetKernel(&build_ptr->onesweep_kernel, build_ptr->library, onesweep_kernel_lowered_name.c_str()));
 
-    nlohmann::json runtime_policy =
-      cub::detail::ptx_json::parse("device_radix_sort_policy", {result.data.get(), result.size});
+  nlohmann::json runtime_policy =
+    cub::detail::ptx_json::parse("device_radix_sort_policy", {result.data.get(), result.size});
 
-    using namespace cub::detail::radix_sort_runtime_policies;
-    using cub::detail::RuntimeScanAgentPolicy;
-    auto single_tile_policy =
-      cub::detail::RuntimeRadixSortDownsweepAgentPolicy::from_json(runtime_policy, "SingleTilePolicy");
-    auto onesweep_policy    = RuntimeRadixSortOnesweepAgentPolicy::from_json(runtime_policy, "OnesweepPolicy");
-    auto upsweep_policy     = RuntimeRadixSortUpsweepAgentPolicy::from_json(runtime_policy, "UpsweepPolicy");
-    auto alt_upsweep_policy = RuntimeRadixSortUpsweepAgentPolicy::from_json(runtime_policy, "AltUpsweepPolicy");
-    auto downsweep_policy =
-      cub::detail::RuntimeRadixSortDownsweepAgentPolicy::from_json(runtime_policy, "DownsweepPolicy");
-    auto alt_downsweep_policy =
-      cub::detail::RuntimeRadixSortDownsweepAgentPolicy::from_json(runtime_policy, "AltDownsweepPolicy");
-    auto histogram_policy = RuntimeRadixSortHistogramAgentPolicy::from_json(runtime_policy, "HistogramPolicy");
-    auto exclusive_sum_policy =
-      RuntimeRadixSortExclusiveSumAgentPolicy::from_json(runtime_policy, "ExclusiveSumPolicy");
-    auto scan_policy = RuntimeScanAgentPolicy::from_json(runtime_policy, "ScanPolicy");
-    auto is_onesweep = runtime_policy["Onesweep"].get<bool>();
+  using namespace cub::detail::radix_sort_runtime_policies;
+  using cub::detail::RuntimeScanAgentPolicy;
+  auto single_tile_policy =
+    cub::detail::RuntimeRadixSortDownsweepAgentPolicy::from_json(runtime_policy, "SingleTilePolicy");
+  auto onesweep_policy    = RuntimeRadixSortOnesweepAgentPolicy::from_json(runtime_policy, "OnesweepPolicy");
+  auto upsweep_policy     = RuntimeRadixSortUpsweepAgentPolicy::from_json(runtime_policy, "UpsweepPolicy");
+  auto alt_upsweep_policy = RuntimeRadixSortUpsweepAgentPolicy::from_json(runtime_policy, "AltUpsweepPolicy");
+  auto downsweep_policy =
+    cub::detail::RuntimeRadixSortDownsweepAgentPolicy::from_json(runtime_policy, "DownsweepPolicy");
+  auto alt_downsweep_policy =
+    cub::detail::RuntimeRadixSortDownsweepAgentPolicy::from_json(runtime_policy, "AltDownsweepPolicy");
+  auto histogram_policy     = RuntimeRadixSortHistogramAgentPolicy::from_json(runtime_policy, "HistogramPolicy");
+  auto exclusive_sum_policy = RuntimeRadixSortExclusiveSumAgentPolicy::from_json(runtime_policy, "ExclusiveSumPolicy");
+  auto scan_policy          = RuntimeScanAgentPolicy::from_json(runtime_policy, "ScanPolicy");
+  auto is_onesweep          = runtime_policy["Onesweep"].get<bool>();
 
-    build_ptr->cc             = cc;
-    build_ptr->cubin          = (void*) result.data.release();
-    build_ptr->cubin_size     = result.size;
-    build_ptr->key_type       = input_keys_it.value_type;
-    build_ptr->value_type     = input_values_it.value_type;
-    build_ptr->order          = sort_order;
-    build_ptr->runtime_policy = new radix_sort::radix_sort_runtime_tuning_policy{
-      histogram_policy,
-      exclusive_sum_policy,
-      onesweep_policy,
-      scan_policy,
-      downsweep_policy,
-      alt_downsweep_policy,
-      upsweep_policy,
-      alt_upsweep_policy,
-      single_tile_policy,
-      is_onesweep};
-  }
-  catch (const std::exception& exc)
-  {
-    fflush(stderr);
-    printf("\nEXCEPTION in cccl_device_radix_sort_build(): %s\n", exc.what());
-    fflush(stdout);
-    error = CUDA_ERROR_UNKNOWN;
-  }
+  build_ptr->cc             = cc;
+  build_ptr->cubin          = (void*) result.data.release();
+  build_ptr->cubin_size     = result.size;
+  build_ptr->key_type       = input_keys_it.value_type;
+  build_ptr->value_type     = input_values_it.value_type;
+  build_ptr->order          = sort_order;
+  build_ptr->runtime_policy = new radix_sort::radix_sort_runtime_tuning_policy{
+    histogram_policy,
+    exclusive_sum_policy,
+    onesweep_policy,
+    scan_policy,
+    downsweep_policy,
+    alt_downsweep_policy,
+    upsweep_policy,
+    alt_upsweep_policy,
+    single_tile_policy,
+    is_onesweep};
 
-  return error;
+  return CUDA_SUCCESS;
+}
+catch (const std::exception& exc)
+{
+  fflush(stderr);
+  printf("\nEXCEPTION in cccl_device_radix_sort_build(): %s\n", exc.what());
+  fflush(stdout);
+
+  return CUDA_ERROR_UNKNOWN;
 }
 
 template <cub::SortOrder Order>
@@ -641,25 +639,24 @@ CUresult cccl_device_radix_sort_build(
 }
 
 CUresult cccl_device_radix_sort_cleanup(cccl_device_radix_sort_build_result_t* build_ptr)
+try
 {
-  try
+  if (build_ptr == nullptr)
   {
-    if (build_ptr == nullptr)
-    {
-      return CUDA_ERROR_INVALID_VALUE;
-    }
+    return CUDA_ERROR_INVALID_VALUE;
+  }
 
-    std::unique_ptr<char[]> cubin(reinterpret_cast<char*>(build_ptr->cubin));
-    std::unique_ptr<char[]> runtime_policy(reinterpret_cast<char*>(build_ptr->runtime_policy));
-    check(cuLibraryUnload(build_ptr->library));
-  }
-  catch (const std::exception& exc)
-  {
-    fflush(stderr);
-    printf("\nEXCEPTION in cccl_device_radix_sort_cleanup(): %s\n", exc.what());
-    fflush(stdout);
-    return CUDA_ERROR_UNKNOWN;
-  }
+  std::unique_ptr<char[]> cubin(reinterpret_cast<char*>(build_ptr->cubin));
+  std::unique_ptr<char[]> runtime_policy(reinterpret_cast<char*>(build_ptr->runtime_policy));
+  check(cuLibraryUnload(build_ptr->library));
 
   return CUDA_SUCCESS;
+}
+catch (const std::exception& exc)
+{
+  fflush(stderr);
+  printf("\nEXCEPTION in cccl_device_radix_sort_cleanup(): %s\n", exc.what());
+  fflush(stdout);
+
+  return CUDA_ERROR_UNKNOWN;
 }

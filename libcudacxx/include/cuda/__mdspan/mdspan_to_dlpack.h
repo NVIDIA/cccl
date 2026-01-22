@@ -3,7 +3,7 @@
 // Part of the libcu++ Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -20,12 +20,13 @@
 #  pragma system_header
 #endif // no system header
 
-#if !_CCCL_COMPILER(NVRTC) && _CCCL_HAS_INCLUDE(<dlpack/dlpack.h>)
+#if _CCCL_HAS_DLPACK()
 
+#  include <cuda/__driver/driver_api.h>
+#  include <cuda/__internal/dlpack.h>
 #  include <cuda/__mdspan/host_device_mdspan.h>
 #  include <cuda/__type_traits/is_floating_point.h>
 #  include <cuda/__type_traits/vector_type.h>
-#  include <cuda/devices>
 #  include <cuda/std/__cstddef/types.h>
 #  include <cuda/std/__exception/exception_macros.h>
 #  include <cuda/std/__fwd/complex.h>
@@ -36,20 +37,15 @@
 #  include <cuda/std/__type_traits/num_bits.h>
 #  include <cuda/std/__type_traits/remove_cv.h>
 #  include <cuda/std/__utility/cmp.h>
-#  include <cuda/std/__utility/move.h>
 #  include <cuda/std/array>
 #  include <cuda/std/cstdint>
 #  include <cuda/std/mdspan>
 
 #  include <stdexcept>
 
-#  include <dlpack/dlpack.h>
-//
 #  include <cuda/std/__cccl/prologue.h>
 
 _CCCL_BEGIN_NAMESPACE_CUDA
-
-static_assert(DLPACK_MAJOR_VERSION == 1, "DLPACK_MAJOR_VERSION must be 1");
 
 template <typename _ElementType>
 [[nodiscard]] _CCCL_HOST_API inline ::DLDataType __data_type_to_dlpack() noexcept
@@ -156,79 +152,21 @@ template <typename _ElementType>
 }
 
 template <::cuda::std::size_t _Rank>
-class __dlpack_tensor
+struct __dlpack_tensor
 {
   ::cuda::std::array<::cuda::std::int64_t, _Rank> __shape{};
   ::cuda::std::array<::cuda::std::int64_t, _Rank> __strides{};
   ::DLTensor __tensor{};
 
-  _CCCL_HOST_API void __update_tensor() noexcept
+  [[nodiscard]] _CCCL_HOST_API ::DLTensor get() const& noexcept _CCCL_LIFETIMEBOUND
   {
-    __tensor.shape   = _Rank > 0 ? __shape.data() : nullptr;
-    __tensor.strides = _Rank > 0 ? __strides.data() : nullptr;
+    auto __tensor1    = __tensor;
+    __tensor1.shape   = _Rank > 0 ? const_cast<::cuda::std::int64_t*>(__shape.data()) : nullptr;
+    __tensor1.strides = _Rank > 0 ? const_cast<::cuda::std::int64_t*>(__strides.data()) : nullptr;
+    return __tensor1;
   }
 
-public:
-  _CCCL_HOST_API explicit __dlpack_tensor() noexcept
-  {
-    __update_tensor();
-  }
-
-  _CCCL_HOST_API __dlpack_tensor(const __dlpack_tensor& __other) noexcept
-      : __shape{__other.__shape}
-      , __strides{__other.__strides}
-      , __tensor{__other.__tensor}
-  {
-    __update_tensor();
-  }
-
-  _CCCL_HOST_API __dlpack_tensor(__dlpack_tensor&& __other) noexcept
-      : __shape{::cuda::std::move(__other.__shape)}
-      , __strides{::cuda::std::move(__other.__strides)}
-      , __tensor{__other.__tensor}
-  {
-    __other.__tensor = ::DLTensor{};
-    __update_tensor();
-  }
-
-  _CCCL_HOST_API __dlpack_tensor& operator=(const __dlpack_tensor& __other) noexcept
-  {
-    if (this == &__other)
-    {
-      return *this;
-    }
-    __shape   = __other.__shape;
-    __strides = __other.__strides;
-    __tensor  = __other.__tensor;
-    __update_tensor();
-    return *this;
-  }
-
-  _CCCL_HOST_API __dlpack_tensor& operator=(__dlpack_tensor&& __other) noexcept
-  {
-    if (this == &__other)
-    {
-      return *this;
-    }
-    __shape          = ::cuda::std::move(__other.__shape);
-    __strides        = ::cuda::std::move(__other.__strides);
-    __tensor         = __other.__tensor;
-    __other.__tensor = ::DLTensor{};
-    __update_tensor();
-    return *this;
-  }
-
-  _CCCL_HIDE_FROM_ABI ~__dlpack_tensor() noexcept = default;
-
-  [[nodiscard]] _CCCL_HOST_API ::DLTensor& get() noexcept
-  {
-    return __tensor;
-  }
-
-  [[nodiscard]] _CCCL_HOST_API const ::DLTensor& get() const noexcept
-  {
-    return __tensor;
-  }
+  ::DLTensor get() const&& = delete;
 };
 
 template <typename _ElementType, typename _Extents, typename _Layout, typename _Accessor>
@@ -240,7 +178,7 @@ __to_dlpack(const ::cuda::std::mdspan<_ElementType, _Extents, _Layout, _Accessor
   static_assert(::cuda::std::is_pointer_v<typename _Accessor::data_handle_type>, "data_handle_type must be a pointer");
   using __element_type = ::cuda::std::remove_cv_t<_ElementType>;
   __dlpack_tensor<_Extents::rank()> __wrapper{};
-  auto& __tensor  = __wrapper.get();
+  auto& __tensor  = __wrapper.__tensor;
   __tensor.data   = __mdspan.size() > 0 ? const_cast<__element_type*>(__mdspan.data_handle()) : nullptr;
   __tensor.device = ::DLDevice{__device_type, __device_id};
   __tensor.ndim   = static_cast<int>(__mdspan.rank());
@@ -258,8 +196,8 @@ __to_dlpack(const ::cuda::std::mdspan<_ElementType, _Extents, _Layout, _Accessor
       {
         _CCCL_THROW(::std::invalid_argument{"Stride is too large"});
       }
-      __tensor.shape[__i]   = static_cast<::cuda::std::int64_t>(__mdspan.extent(__i));
-      __tensor.strides[__i] = static_cast<::cuda::std::int64_t>(__mdspan.stride(__i));
+      __wrapper.__shape[__i]   = static_cast<::cuda::std::int64_t>(__mdspan.extent(__i));
+      __wrapper.__strides[__i] = static_cast<::cuda::std::int64_t>(__mdspan.stride(__i));
     }
   }
   __tensor.byte_offset = 0;
@@ -272,7 +210,7 @@ __to_dlpack(const ::cuda::std::mdspan<_ElementType, _Extents, _Layout, _Accessor
 
 template <typename _ElementType, typename _Extents, typename _Layout, typename _Accessor>
 [[nodiscard]] _CCCL_HOST_API __dlpack_tensor<_Extents::rank()>
-to_dlpack(const ::cuda::host_mdspan<_ElementType, _Extents, _Layout, _Accessor>& __mdspan)
+to_dlpack_tensor(const ::cuda::host_mdspan<_ElementType, _Extents, _Layout, _Accessor>& __mdspan)
 {
   using __mdspan_type = ::cuda::std::mdspan<_ElementType, _Extents, _Layout, _Accessor>;
   return ::cuda::__to_dlpack(__mdspan_type{__mdspan}, ::kDLCPU, 0);
@@ -280,16 +218,23 @@ to_dlpack(const ::cuda::host_mdspan<_ElementType, _Extents, _Layout, _Accessor>&
 
 template <typename _ElementType, typename _Extents, typename _Layout, typename _Accessor>
 [[nodiscard]] _CCCL_HOST_API __dlpack_tensor<_Extents::rank()>
-to_dlpack(const ::cuda::device_mdspan<_ElementType, _Extents, _Layout, _Accessor>& __mdspan,
-          ::cuda::device_ref __device = ::cuda::device_ref{0})
+to_dlpack_tensor(const ::cuda::device_mdspan<_ElementType, _Extents, _Layout, _Accessor>& __mdspan)
 {
-  using __mdspan_type = ::cuda::std::mdspan<_ElementType, _Extents, _Layout, _Accessor>;
-  return ::cuda::__to_dlpack(__mdspan_type{__mdspan}, ::kDLCUDA, __device.get());
+  using __mdspan_type              = ::cuda::std::mdspan<_ElementType, _Extents, _Layout, _Accessor>;
+  ::CUpointer_attribute __attrs[1] = {::CU_POINTER_ATTRIBUTE_DEVICE_ORDINAL};
+  int __ptr_dev_id                 = 0;
+  void* __results[1]               = {&__ptr_dev_id};
+  const auto __status = ::cuda::__driver::__pointerGetAttributesNoThrow(__attrs, __results, __mdspan.data_handle());
+  if (__status != ::cudaSuccess)
+  {
+    ::cuda::__throw_cuda_error(__status, "Failed to get device ordinal of a pointer");
+  }
+  return ::cuda::__to_dlpack(__mdspan_type{__mdspan}, ::kDLCUDA, __ptr_dev_id);
 }
 
 template <typename _ElementType, typename _Extents, typename _Layout, typename _Accessor>
 [[nodiscard]] _CCCL_HOST_API __dlpack_tensor<_Extents::rank()>
-to_dlpack(const ::cuda::managed_mdspan<_ElementType, _Extents, _Layout, _Accessor>& __mdspan)
+to_dlpack_tensor(const ::cuda::managed_mdspan<_ElementType, _Extents, _Layout, _Accessor>& __mdspan)
 {
   using __mdspan_type = ::cuda::std::mdspan<_ElementType, _Extents, _Layout, _Accessor>;
   return ::cuda::__to_dlpack(__mdspan_type{__mdspan}, ::kDLCUDAManaged, 0);
@@ -299,5 +244,5 @@ _CCCL_END_NAMESPACE_CUDA
 
 #  include <cuda/std/__cccl/epilogue.h>
 
-#endif // !_CCCL_COMPILER(NVRTC) && _CCCL_HAS_INCLUDE(<dlpack/dlpack.h>)
+#endif // _CCCL_HAS_DLPACK()
 #endif // _CUDA___MDSPAN_MDSPAN_TO_DLPACK_H

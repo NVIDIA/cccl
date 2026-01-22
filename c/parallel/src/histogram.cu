@@ -272,39 +272,36 @@ CUresult cccl_device_histogram_build_ex(
   const char* libcudacxx_path,
   const char* ctk_path,
   cccl_build_config* config)
+try
 {
-  CUresult error = CUDA_SUCCESS;
+  const char* name = "test";
 
-  try
-  {
-    const char* name = "test";
+  const int cc           = cc_major * 10 + cc_minor;
+  const auto sample_cpp  = cccl_type_enum_to_name(d_samples.value_type.type);
+  const auto counter_cpp = cccl_type_enum_to_name(d_output_histograms.value_type.type);
+  const auto level_cpp   = cccl_type_enum_to_name(lower_level.type.type);
 
-    const int cc           = cc_major * 10 + cc_minor;
-    const auto sample_cpp  = cccl_type_enum_to_name(d_samples.value_type.type);
-    const auto counter_cpp = cccl_type_enum_to_name(d_output_histograms.value_type.type);
-    const auto level_cpp   = cccl_type_enum_to_name(lower_level.type.type);
+  const std::string offset_cpp =
+    ((unsigned long long) (num_rows * row_stride_samples * d_samples.value_type.size) < (unsigned long long) INT_MAX)
+      ? "int"
+      : "long long";
 
-    const std::string offset_cpp =
-      ((unsigned long long) (num_rows * row_stride_samples * d_samples.value_type.size) < (unsigned long long) INT_MAX)
-        ? "int"
-        : "long long";
+  std::string samples_iterator_name;
+  check(cccl_type_name_from_nvrtc<samples_iterator_t>(&samples_iterator_name));
 
-    std::string samples_iterator_name;
-    check(cccl_type_name_from_nvrtc<samples_iterator_t>(&samples_iterator_name));
+  const std::string samples_iterator_src =
+    make_kernel_input_iterator(offset_cpp, samples_iterator_name, sample_cpp, d_samples);
 
-    const std::string samples_iterator_src =
-      make_kernel_input_iterator(offset_cpp, samples_iterator_name, sample_cpp, d_samples);
+  std::string policy_hub_expr = std::format(
+    "cub::detail::histogram::policy_hub<{}, {}, {}, {}, {}>",
+    sample_cpp,
+    counter_cpp,
+    num_channels,
+    num_active_channels,
+    is_evenly_segmented ? "true" : "false");
 
-    std::string policy_hub_expr = std::format(
-      "cub::detail::histogram::policy_hub<{}, {}, {}, {}, {}>",
-      sample_cpp,
-      counter_cpp,
-      num_channels,
-      num_active_channels,
-      is_evenly_segmented ? "true" : "false");
-
-    std::string final_src = std::format(
-      R"XXX(
+  std::string final_src = std::format(
+    R"XXX(
 #include <cub/agent/agent_histogram.cuh>
 #include <cub/block/block_load.cuh>
 #include <cub/device/dispatch/kernels/kernel_histogram.cuh>
@@ -322,111 +319,110 @@ __device__ consteval auto& policy_generator() {{
     = cub::detail::histogram::HistogramPolicyWrapper<device_histogram_policy::ActivePolicy>::EncodedPolicy();
 }}
 )XXX",
-      d_samples.value_type.size, // 0
-      d_samples.value_type.alignment, // 1
-      samples_iterator_src, // 2
-      policy_hub_expr // 3
-    );
+    d_samples.value_type.size, // 0
+    d_samples.value_type.alignment, // 1
+    samples_iterator_src, // 2
+    policy_hub_expr // 3
+  );
 
 #if false // CCCL_DEBUGGING_SWITCH
-    fflush(stderr);
-    printf("\nCODE4NVRTC BEGIN\n%sCODE4NVRTC END\n", final_src.c_str());
-    fflush(stdout);
+  fflush(stderr);
+  printf("\nCODE4NVRTC BEGIN\n%sCODE4NVRTC END\n", final_src.c_str());
+  fflush(stdout);
 #endif
 
-    // TODO: This is tricky because we need to know the input to set this to a
-    // value greater than 0 (see dispatch_histogram.cuh), but we don't have this
-    // information here.
-    const int privatized_smem_bins =
-      num_output_levels_val - 1 > cub::detail::histogram::max_privatized_smem_bins ? 0 : 256;
+  // TODO: This is tricky because we need to know the input to set this to a
+  // value greater than 0 (see dispatch_histogram.cuh), but we don't have this
+  // information here.
+  const int privatized_smem_bins =
+    num_output_levels_val - 1 > cub::detail::histogram::max_privatized_smem_bins ? 0 : 256;
 
-    const bool is_byte_sample = d_samples.value_type.size == 1;
+  const bool is_byte_sample = d_samples.value_type.size == 1;
 
-    std::string init_kernel_name  = histogram::get_init_kernel_name(num_active_channels, counter_cpp, offset_cpp);
-    std::string sweep_kernel_name = histogram::get_sweep_kernel_name(
-      privatized_smem_bins,
-      num_channels,
-      num_active_channels,
-      d_samples,
-      counter_cpp,
-      level_cpp,
-      offset_cpp,
-      is_evenly_segmented,
-      is_byte_sample);
+  std::string init_kernel_name  = histogram::get_init_kernel_name(num_active_channels, counter_cpp, offset_cpp);
+  std::string sweep_kernel_name = histogram::get_sweep_kernel_name(
+    privatized_smem_bins,
+    num_channels,
+    num_active_channels,
+    d_samples,
+    counter_cpp,
+    level_cpp,
+    offset_cpp,
+    is_evenly_segmented,
+    is_byte_sample);
 
-    std::string init_kernel_lowered_name;
-    std::string sweep_kernel_lowered_name;
+  std::string init_kernel_lowered_name;
+  std::string sweep_kernel_lowered_name;
 
-    const std::string arch = std::format("-arch=sm_{0}{1}", cc_major, cc_minor);
+  const std::string arch = std::format("-arch=sm_{0}{1}", cc_major, cc_minor);
 
-    // Note: `-default-device` is needed because of the constexpr functions in
-    // tuning_histogram.cuh
-    std::vector<const char*> args = {
-      arch.c_str(),
-      cub_path,
-      thrust_path,
-      libcudacxx_path,
-      ctk_path,
-      "-rdc=true",
-      "-dlto",
-      "-default-device",
-      "-DCUB_DISABLE_CDP",
-      "-DCUB_ENABLE_POLICY_PTX_JSON",
-      "-std=c++20"};
+  // Note: `-default-device` is needed because of the constexpr functions in
+  // tuning_histogram.cuh
+  std::vector<const char*> args = {
+    arch.c_str(),
+    cub_path,
+    thrust_path,
+    libcudacxx_path,
+    ctk_path,
+    "-rdc=true",
+    "-dlto",
+    "-default-device",
+    "-DCUB_DISABLE_CDP",
+    "-DCUB_ENABLE_POLICY_PTX_JSON",
+    "-std=c++20"};
 
-    cccl::detail::extend_args_with_build_config(args, config);
+  cccl::detail::extend_args_with_build_config(args, config);
 
-    constexpr size_t num_lto_args   = 2;
-    const char* lopts[num_lto_args] = {"-lto", arch.c_str()};
+  constexpr size_t num_lto_args   = 2;
+  const char* lopts[num_lto_args] = {"-lto", arch.c_str()};
 
-    nvrtc_linkable_list linkable_list;
-    nvrtc_linkable_list_appender appender{linkable_list};
+  nvrtc_linkable_list linkable_list;
+  nvrtc_linkable_list_appender appender{linkable_list};
 
-    appender.add_iterator_definition(d_samples);
-    appender.add_iterator_definition(d_output_histograms);
+  appender.add_iterator_definition(d_samples);
+  appender.add_iterator_definition(d_output_histograms);
 
-    nvrtc_link_result result =
-      begin_linking_nvrtc_program(num_lto_args, lopts)
-        ->add_program(nvrtc_translation_unit({final_src.c_str(), name}))
-        ->add_expression({init_kernel_name})
-        ->add_expression({sweep_kernel_name})
-        ->compile_program({args.data(), args.size()})
-        ->get_name({init_kernel_name, init_kernel_lowered_name})
-        ->get_name({sweep_kernel_name, sweep_kernel_lowered_name})
-        ->link_program()
-        ->add_link_list(linkable_list)
-        ->finalize_program();
+  nvrtc_link_result result =
+    begin_linking_nvrtc_program(num_lto_args, lopts)
+      ->add_program(nvrtc_translation_unit({final_src.c_str(), name}))
+      ->add_expression({init_kernel_name})
+      ->add_expression({sweep_kernel_name})
+      ->compile_program({args.data(), args.size()})
+      ->get_name({init_kernel_name, init_kernel_lowered_name})
+      ->get_name({sweep_kernel_name, sweep_kernel_lowered_name})
+      ->link_program()
+      ->add_link_list(linkable_list)
+      ->finalize_program();
 
-    cuLibraryLoadData(&build_ptr->library, result.data.get(), nullptr, nullptr, 0, nullptr, nullptr, 0);
-    check(cuLibraryGetKernel(&build_ptr->init_kernel, build_ptr->library, init_kernel_lowered_name.c_str()));
-    check(cuLibraryGetKernel(&build_ptr->sweep_kernel, build_ptr->library, sweep_kernel_lowered_name.c_str()));
+  cuLibraryLoadData(&build_ptr->library, result.data.get(), nullptr, nullptr, 0, nullptr, nullptr, 0);
+  check(cuLibraryGetKernel(&build_ptr->init_kernel, build_ptr->library, init_kernel_lowered_name.c_str()));
+  check(cuLibraryGetKernel(&build_ptr->sweep_kernel, build_ptr->library, sweep_kernel_lowered_name.c_str()));
 
-    nlohmann::json runtime_policy =
-      cub::detail::ptx_json::parse("device_histogram_policy", {result.data.get(), result.size});
+  nlohmann::json runtime_policy =
+    cub::detail::ptx_json::parse("device_histogram_policy", {result.data.get(), result.size});
 
-    using cub::detail::RuntimeHistogramAgentPolicy;
-    auto histogram_policy = RuntimeHistogramAgentPolicy::from_json(runtime_policy, "HistogramPolicy");
+  using cub::detail::RuntimeHistogramAgentPolicy;
+  auto histogram_policy = RuntimeHistogramAgentPolicy::from_json(runtime_policy, "HistogramPolicy");
 
-    build_ptr->cc                  = cc;
-    build_ptr->cubin               = (void*) result.data.release();
-    build_ptr->cubin_size          = result.size;
-    build_ptr->counter_type        = d_output_histograms.value_type;
-    build_ptr->level_type          = lower_level.type;
-    build_ptr->sample_type         = d_samples.value_type;
-    build_ptr->num_active_channels = num_active_channels;
-    build_ptr->may_overflow = false; // This is set in cccl_device_histogram_even_impl so that kernel source can access
-                                     // it later.
-    build_ptr->runtime_policy = new histogram::histogram_runtime_tuning_policy{histogram_policy};
-  }
-  catch (const std::exception& exc)
-  {
-    fflush(stderr);
-    printf("\nEXCEPTION in cccl_device_histogram_build(): %s\n", exc.what());
-    fflush(stdout);
-    error = CUDA_ERROR_UNKNOWN;
-  }
+  build_ptr->cc                  = cc;
+  build_ptr->cubin               = (void*) result.data.release();
+  build_ptr->cubin_size          = result.size;
+  build_ptr->counter_type        = d_output_histograms.value_type;
+  build_ptr->level_type          = lower_level.type;
+  build_ptr->sample_type         = d_samples.value_type;
+  build_ptr->num_active_channels = num_active_channels;
+  build_ptr->may_overflow = false; // This is set in cccl_device_histogram_even_impl so that kernel source can access
+                                   // it later.
+  build_ptr->runtime_policy = new histogram::histogram_runtime_tuning_policy{histogram_policy};
 
-  return error;
+  return CUDA_SUCCESS;
+}
+catch (const std::exception& exc)
+{
+  fflush(stderr);
+  printf("\nEXCEPTION in cccl_device_histogram_build(): %s\n", exc.what());
+  fflush(stdout);
+  return CUDA_ERROR_UNKNOWN;
 }
 
 template <typename is_byte_sample>
@@ -593,25 +589,23 @@ CUresult cccl_device_histogram_build(
 }
 
 CUresult cccl_device_histogram_cleanup(cccl_device_histogram_build_result_t* build_ptr)
+try
 {
-  try
+  if (build_ptr == nullptr)
   {
-    if (build_ptr == nullptr)
-    {
-      return CUDA_ERROR_INVALID_VALUE;
-    }
+    return CUDA_ERROR_INVALID_VALUE;
+  }
 
-    std::unique_ptr<char[]> cubin(reinterpret_cast<char*>(build_ptr->cubin));
-    std::unique_ptr<char[]> policy(reinterpret_cast<char*>(build_ptr->runtime_policy));
-    check(cuLibraryUnload(build_ptr->library));
-  }
-  catch (const std::exception& exc)
-  {
-    fflush(stderr);
-    printf("\nEXCEPTION in cccl_device_histogram_cleanup(): %s\n", exc.what());
-    fflush(stdout);
-    return CUDA_ERROR_UNKNOWN;
-  }
+  std::unique_ptr<char[]> cubin(reinterpret_cast<char*>(build_ptr->cubin));
+  std::unique_ptr<char[]> policy(reinterpret_cast<char*>(build_ptr->runtime_policy));
+  check(cuLibraryUnload(build_ptr->library));
 
   return CUDA_SUCCESS;
+}
+catch (const std::exception& exc)
+{
+  fflush(stderr);
+  printf("\nEXCEPTION in cccl_device_histogram_cleanup(): %s\n", exc.what());
+  fflush(stdout);
+  return CUDA_ERROR_UNKNOWN;
 }
