@@ -82,6 +82,7 @@ class adjacent_difference(BasePrimitive):
         self.valid_items = valid_items
         self.tile_predecessor_item = tile_predecessor_item
         self.tile_successor_item = tile_successor_item
+        self.difference_op = difference_op
 
         use_partial_tile = valid_items is not None
         use_tile_item = (

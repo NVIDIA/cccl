@@ -45,3 +45,6 @@
 - [x] Allow two-phase coop.block.scan instance calls to omit mode/scan_op/items_per_thread (kernel-traits defaulting).
 - [x] Switch coop primitives to AbstractTemplate so two-phase instance calls accept kwargs.
 - [x] Port warp primitives to single-phase (typing, rewrite, tests).
+- [x] Add two-phase instance typing for remaining block/warp primitives.
+- [x] Store instance constructor parameters needed for two-phase inference.
+- [x] Remove `.create()`/`link=` usage from coop tests and examples.

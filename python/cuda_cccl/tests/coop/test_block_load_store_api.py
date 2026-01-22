@@ -18,14 +18,14 @@ def test_block_load_store():
     # example-begin load_store
     threads_per_block = 32
     items_per_thread = 4
-    block_load = coop.block.load.create(
+    block_load = coop.block.load(
         numba.int32, threads_per_block, items_per_thread, "striped"
     )
-    block_store = coop.block.store.create(
+    block_store = coop.block.store(
         numba.int32, threads_per_block, items_per_thread, "striped"
     )
 
-    @cuda.jit(link=block_load.files + block_store.files)
+    @cuda.jit
     def kernel(input, output):
         tmp = cuda.local.array(items_per_thread, numba.int32)
         block_load(input, tmp)

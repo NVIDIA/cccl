@@ -150,7 +150,7 @@ def test_block_radix_sort_mangling():
     )
     double_temp_storage_bytes = double_block_radix_sort.temp_storage_bytes
 
-    @cuda.jit(link=int_block_radix_sort.files + double_block_radix_sort.files)
+    @cuda.jit
     def kernel(int_input, int_output, double_input, double_output):
         tid = cuda.threadIdx.x
         int_temp_storage = cuda.shared.array(

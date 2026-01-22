@@ -151,6 +151,19 @@ class CoopInstanceTypeMixin:
         # Register this instance type in the global map.
         _register_coop_instance_of_instance_type(self)
 
+    def _bind_instance_signature(self, *args, **kwargs):
+        """
+        Bind runtime call arguments to the appropriate signature.
+
+        If a decl provides a specialized instance-call signature, prefer it.
+        This allows two-phase instances to use a runtime-friendly argument
+        ordering while still sharing validation logic.
+        """
+        sig_fn = getattr(self.decl, "signature_instance", None)
+        if sig_fn is None:
+            sig_fn = self.decl.signature
+        return sig_fn(*args, **kwargs)
+
 
 class CoopAbstractTemplate(AbstractTemplate):
     """
@@ -671,6 +684,8 @@ def process_items_per_thread(obj, bound, arglist, two_phase, target_array=None):
     if items_per_thread is None:
         if using_thread_data:
             return items_per_thread
+        if two_phase:
+            return items_per_thread
         raise errors.TypingError(
             f"{obj.primitive_name} requires 'items_per_thread' to be specified"
         )
@@ -869,6 +884,25 @@ class LoadMixin:
             temp_storage=temp_storage,
         )
 
+    @staticmethod
+    def signature_instance(
+        src: types.Array,
+        dst: types.Array,
+        num_valid_items: int = None,
+        *,
+        items_per_thread: int = None,
+        algorithm: coop.BlockLoadAlgorithm = None,
+        temp_storage: Union[types.Array, TempStorageType] = None,
+    ):
+        return inspect.signature(LoadMixin.signature_instance).bind(
+            src,
+            dst,
+            num_valid_items=num_valid_items,
+            items_per_thread=items_per_thread,
+            algorithm=algorithm,
+            temp_storage=temp_storage,
+        )
+
 
 class StoreMixin:
     src_first = False
@@ -888,6 +922,25 @@ class StoreMixin:
             items_per_thread=items_per_thread,
             algorithm=algorithm,
             num_valid_items=num_valid_items,
+            temp_storage=temp_storage,
+        )
+
+    @staticmethod
+    def signature_instance(
+        dst: types.Array,
+        src: types.Array,
+        num_valid_items: int = None,
+        *,
+        items_per_thread: int = None,
+        algorithm: coop.BlockStoreAlgorithm = None,
+        temp_storage: Union[types.Array, TempStorageType] = None,
+    ):
+        return inspect.signature(StoreMixin.signature_instance).bind(
+            dst,
+            src,
+            num_valid_items=num_valid_items,
+            items_per_thread=items_per_thread,
+            algorithm=algorithm,
             temp_storage=temp_storage,
         )
 
@@ -1058,6 +1111,29 @@ class WarpLoadMixin:
             temp_storage=temp_storage,
         )
 
+    @staticmethod
+    def signature_instance(
+        src: types.Array,
+        dst: types.Array,
+        num_valid_items: int = None,
+        oob_default=None,
+        *,
+        items_per_thread: int = None,
+        threads_in_warp: int = None,
+        algorithm: coop.WarpLoadAlgorithm = None,
+        temp_storage: Union[types.Array, TempStorageType] = None,
+    ):
+        return inspect.signature(WarpLoadMixin.signature_instance).bind(
+            src,
+            dst,
+            num_valid_items=num_valid_items,
+            oob_default=oob_default,
+            items_per_thread=items_per_thread,
+            threads_in_warp=threads_in_warp,
+            algorithm=algorithm,
+            temp_storage=temp_storage,
+        )
+
 
 class WarpStoreMixin:
     src_first = False
@@ -1079,6 +1155,27 @@ class WarpStoreMixin:
             threads_in_warp=threads_in_warp,
             algorithm=algorithm,
             num_valid_items=num_valid_items,
+            temp_storage=temp_storage,
+        )
+
+    @staticmethod
+    def signature_instance(
+        dst: types.Array,
+        src: types.Array,
+        num_valid_items: int = None,
+        *,
+        items_per_thread: int = None,
+        threads_in_warp: int = None,
+        algorithm: coop.WarpStoreAlgorithm = None,
+        temp_storage: Union[types.Array, TempStorageType] = None,
+    ):
+        return inspect.signature(WarpStoreMixin.signature_instance).bind(
+            dst,
+            src,
+            num_valid_items=num_valid_items,
+            items_per_thread=items_per_thread,
+            threads_in_warp=threads_in_warp,
+            algorithm=algorithm,
             temp_storage=temp_storage,
         )
 
@@ -1134,6 +1231,29 @@ class CoopBlockExchangeDecl(CoopAbstractTemplate, CoopDeclMixin):
             temp_storage=temp_storage,
         )
 
+    @staticmethod
+    def signature_instance(
+        items: types.Array,
+        output_items: types.Array = None,
+        ranks: types.Array = None,
+        valid_flags: types.Array = None,
+        *,
+        items_per_thread: int = None,
+        block_exchange_type: coop.block.BlockExchangeType = None,
+        warp_time_slicing: bool = None,
+        temp_storage: Union[types.Array, TempStorageType] = None,
+    ):
+        return inspect.signature(CoopBlockExchangeDecl.signature_instance).bind(
+            items,
+            output_items=output_items,
+            ranks=ranks,
+            valid_flags=valid_flags,
+            items_per_thread=items_per_thread,
+            block_exchange_type=block_exchange_type,
+            warp_time_slicing=warp_time_slicing,
+            temp_storage=temp_storage,
+        )
+
     def _validate_args_and_create_signature(self, bound, two_phase=False):
         items = bound.arguments["items"]
         output_items = bound.arguments.get("output_items")
@@ -1157,9 +1277,15 @@ class CoopBlockExchangeDecl(CoopAbstractTemplate, CoopDeclMixin):
                 items_per_thread = validate_items_per_thread(self, items_per_thread)
 
         block_exchange_type = bound.arguments.get("block_exchange_type")
+        block_exchange_is_none_type = isinstance(block_exchange_type, types.NoneType)
+        if block_exchange_type is None or block_exchange_is_none_type:
+            if not two_phase:
+                block_exchange_type = self.default_exchange_type
+            else:
+                block_exchange_type = None
         if block_exchange_type is None:
-            block_exchange_type = self.default_exchange_type
-        if isinstance(block_exchange_type, enum.IntEnum):
+            exchange_type_value = None
+        elif isinstance(block_exchange_type, enum.IntEnum):
             if block_exchange_type not in coop.block.BlockExchangeType:
                 raise errors.TypingError(
                     f"{self.primitive_name} requires 'block_exchange_type' to be "
@@ -1254,9 +1380,13 @@ class CoopBlockExchangeDecl(CoopAbstractTemplate, CoopDeclMixin):
                 )
 
         warp_time_slicing = bound.arguments.get("warp_time_slicing")
-        if warp_time_slicing is None:
-            warp_time_slicing = False
-        if not isinstance(
+        warp_time_slicing_is_none_type = isinstance(warp_time_slicing, types.NoneType)
+        if warp_time_slicing is None or warp_time_slicing_is_none_type:
+            if not two_phase:
+                warp_time_slicing = False
+            else:
+                warp_time_slicing = None
+        if warp_time_slicing is not None and not isinstance(
             warp_time_slicing, (types.Boolean, types.BooleanLiteral, bool)
         ):
             raise errors.TypingError(
@@ -1325,11 +1455,14 @@ class CoopBlockMergeSortDecl(CoopAbstractTemplate, CoopDeclMixin):
         process_items_per_thread(self, bound, arglist, two_phase, target_array=keys)
 
         compare_op = bound.arguments.get("compare_op")
-        if compare_op is None:
-            raise errors.TypingError(
-                f"{self.primitive_name} requires 'compare_op' to be specified"
-            )
-        arglist.append(compare_op)
+        compare_op_is_none_type = isinstance(compare_op, types.NoneType)
+        if compare_op is None or compare_op_is_none_type:
+            if not two_phase:
+                raise errors.TypingError(
+                    f"{self.primitive_name} requires 'compare_op' to be specified"
+                )
+        else:
+            arglist.append(compare_op)
 
         temp_storage = bound.arguments.get("temp_storage")
         if temp_storage is not None:
@@ -2046,22 +2179,26 @@ class CoopLoadStoreInstanceBaseType(types.Type, CoopInstanceTypeMixin):
         types.Type.__init__(self, name=name)
         CoopInstanceTypeMixin.__init__(self)
 
-    def _validate_args_and_create_signature(
-        self,
-        src,
-        dst,
-        items_per_thread=None,
-        num_valid_items=None,
-        temp_storage=None,
-    ):
-        bound = inspect.signature(self.decl.signature).bind(
-            src,
-            dst,
-            items_per_thread=items_per_thread,
-            algorithm=None,
-            num_valid_items=num_valid_items,
-            temp_storage=temp_storage,
-        )
+    def _validate_args_and_create_signature(self, *args, **kwargs):
+        bound = self._bind_instance_signature(*args, **kwargs)
+        return self.decl._validate_args_and_create_signature(bound, two_phase=True)
+
+
+# Generic instance type for two-phase primitives with no special handling.
+class CoopSimpleInstanceType(types.Type, CoopInstanceTypeMixin):
+    decl_class = None
+
+    def __init__(self):
+        if self.decl_class is None:
+            msg = "Subclasses must define 'decl_class' attribute"
+            raise ValueError(msg)
+        self.decl = self.decl_class()
+        name = self.decl_class.primitive_name
+        types.Type.__init__(self, name=name)
+        CoopInstanceTypeMixin.__init__(self)
+
+    def _validate_args_and_create_signature(self, *args, **kwargs):
+        bound = self._bind_instance_signature(*args, **kwargs)
         return self.decl._validate_args_and_create_signature(bound, two_phase=True)
 
 
@@ -2349,7 +2486,7 @@ class CoopBlockHistogramInstanceType(types.Type, CoopInstanceTypeMixin):
             return signature(block_histogram_instance_type)
 
         if "items" in kwds or "histogram" in kwds or len(args) >= 2:
-            bound = inspect.signature(self.decl.signature).bind(*args, **kwds)
+            bound = self._bind_instance_signature(*args, **kwds)
             return self.decl._validate_args_and_create_signature(bound, two_phase=True)
 
         if kwds and set(kwds) - {"temp_storage"}:
@@ -2665,7 +2802,7 @@ class CoopBlockRunLengthInstanceType(types.Type, CoopInstanceTypeMixin):
         if not args and not kwds:
             return signature(block_run_length_instance_type)
 
-        bound = inspect.signature(self.decl.signature).bind(*args, **kwds)
+        bound = self._bind_instance_signature(*args, **kwds)
         return self.decl._validate_args_and_create_signature(bound, two_phase=True)
 
 
@@ -2756,6 +2893,31 @@ class CoopBlockScanDecl(CoopAbstractTemplate, CoopDeclMixin):
             mode=mode,
             scan_op=scan_op,
             initial_value=initial_value,
+            block_prefix_callback_op=block_prefix_callback_op,
+            algorithm=algorithm,
+            temp_storage=temp_storage,
+        )
+
+    @staticmethod
+    def signature_instance(
+        src: Union[types.Array, types.Number],
+        dst: Union[types.Array, types.Number] = None,
+        initial_value: Optional[Any] = None,
+        *,
+        items_per_thread: int = None,
+        mode: Optional[Literal["exclusive", "inclusive"]] = None,
+        scan_op: ScanOpType = None,
+        block_prefix_callback_op: Optional[Callable] = None,
+        algorithm: coop.BlockScanAlgorithm = None,
+        temp_storage: Union[types.Array, TempStorageType] = None,
+    ):
+        return inspect.signature(CoopBlockScanDecl.signature_instance).bind(
+            src,
+            dst,
+            initial_value=initial_value,
+            items_per_thread=items_per_thread,
+            mode=mode,
+            scan_op=scan_op,
             block_prefix_callback_op=block_prefix_callback_op,
             algorithm=algorithm,
             temp_storage=temp_storage,
@@ -3040,29 +3202,8 @@ class CoopBlockScanInstanceType(types.Type, CoopInstanceTypeMixin):
         types.Type.__init__(self, name=name)
         CoopInstanceTypeMixin.__init__(self)
 
-    def _validate_args_and_create_signature(
-        self,
-        src,
-        dst,
-        items_per_thread=None,
-        initial_value=None,
-        mode=None,
-        scan_op=None,
-        block_prefix_callback_op=None,
-        algorithm=None,
-        temp_storage=None,
-    ):
-        bound = inspect.signature(self.decl.signature).bind(
-            src,
-            dst,
-            items_per_thread=items_per_thread,
-            initial_value=initial_value,
-            mode=mode,
-            scan_op=scan_op,
-            block_prefix_callback_op=block_prefix_callback_op,
-            algorithm=algorithm,
-            temp_storage=temp_storage,
-        )
+    def _validate_args_and_create_signature(self, *args, **kwargs):
+        bound = self._bind_instance_signature(*args, **kwargs)
         return self.decl._validate_args_and_create_signature(bound, two_phase=True)
 
 
@@ -3071,6 +3212,26 @@ block_scan_instance_type = CoopBlockScanInstanceType()
 
 @typeof_impl.register(coop.block.scan)
 def typeof_block_scan_instance(*args, **kwargs):
+    return block_scan_instance_type
+
+
+@typeof_impl.register(coop.block.exclusive_sum)
+def typeof_block_exclusive_sum_instance(*args, **kwargs):
+    return block_scan_instance_type
+
+
+@typeof_impl.register(coop.block.inclusive_sum)
+def typeof_block_inclusive_sum_instance(*args, **kwargs):
+    return block_scan_instance_type
+
+
+@typeof_impl.register(coop.block.exclusive_scan)
+def typeof_block_exclusive_scan_instance(*args, **kwargs):
+    return block_scan_instance_type
+
+
+@typeof_impl.register(coop.block.inclusive_scan)
+def typeof_block_inclusive_scan_instance(*args, **kwargs):
     return block_scan_instance_type
 
 
@@ -3123,6 +3284,25 @@ class CoopBlockReduceDecl(CoopAbstractTemplate, CoopDeclMixin):
         )
 
     @staticmethod
+    def signature_instance(
+        src: Union[types.Array, types.Number],
+        num_valid: Optional[int] = None,
+        *,
+        items_per_thread: int = None,
+        binary_op: Optional[Callable] = None,
+        algorithm: Optional[str] = None,
+        temp_storage: Union[types.Array, TempStorageType] = None,
+    ):
+        return inspect.signature(CoopBlockReduceDecl.signature_instance).bind(
+            src,
+            num_valid=num_valid,
+            items_per_thread=items_per_thread,
+            binary_op=binary_op,
+            algorithm=algorithm,
+            temp_storage=temp_storage,
+        )
+
+    @staticmethod
     def get_instance_type():
         return block_reduce_instance_type
 
@@ -3145,11 +3325,14 @@ class CoopBlockReduceDecl(CoopAbstractTemplate, CoopDeclMixin):
         )
 
         binary_op = bound.arguments.get("binary_op")
-        if binary_op is None:
-            raise errors.TypingError(
-                f"{self.primitive_name} requires 'binary_op' to be specified"
-            )
-        arglist.append(binary_op)
+        binary_op_is_none_type = isinstance(binary_op, types.NoneType)
+        if binary_op is None or binary_op_is_none_type:
+            if not two_phase:
+                raise errors.TypingError(
+                    f"{self.primitive_name} requires 'binary_op' to be specified"
+                )
+        else:
+            arglist.append(binary_op)
 
         num_valid = bound.arguments.get("num_valid")
         if num_valid is not None:
@@ -3164,15 +3347,20 @@ class CoopBlockReduceDecl(CoopAbstractTemplate, CoopDeclMixin):
             arglist.append(num_valid)
 
         algorithm = bound.arguments.get("algorithm")
-        if algorithm is None:
-            algorithm = self.default_algorithm
-        if isinstance(algorithm, types.StringLiteral):
-            algorithm = algorithm.literal_value
-        if algorithm not in CUB_BLOCK_REDUCE_ALGOS:
-            raise errors.TypingError(
-                f"Invalid algorithm '{algorithm}' for {self.primitive_name}"
-            )
-        arglist.append(algorithm)
+        algorithm_is_none_type = isinstance(algorithm, types.NoneType)
+        if algorithm is None or algorithm_is_none_type:
+            if not two_phase:
+                algorithm = self.default_algorithm
+            else:
+                algorithm = None
+        if algorithm is not None:
+            if isinstance(algorithm, types.StringLiteral):
+                algorithm = algorithm.literal_value
+            if algorithm not in CUB_BLOCK_REDUCE_ALGOS:
+                raise errors.TypingError(
+                    f"Invalid algorithm '{algorithm}' for {self.primitive_name}"
+                )
+            arglist.append(algorithm)
 
         temp_storage = bound.arguments.get("temp_storage")
         temp_storage_is_none_type = isinstance(temp_storage, types.NoneType)
@@ -3198,28 +3386,17 @@ class CoopBlockReduceInstanceType(types.Type, CoopInstanceTypeMixin):
         types.Type.__init__(self, name=name)
         CoopInstanceTypeMixin.__init__(self)
 
-    def _validate_args_and_create_signature(
-        self,
-        src,
-        items_per_thread=None,
-        binary_op=None,
-        num_valid=None,
-        algorithm=None,
-        temp_storage=None,
-    ):
-        bound = inspect.signature(self.decl.signature).bind(
-            src,
-            items_per_thread=items_per_thread,
-            binary_op=binary_op,
-            num_valid=num_valid,
-            algorithm=algorithm,
-            temp_storage=temp_storage,
-        )
-
+    def _validate_args_and_create_signature(self, *args, **kwargs):
+        bound = self._bind_instance_signature(*args, **kwargs)
         return self.decl._validate_args_and_create_signature(bound, two_phase=True)
 
 
 block_reduce_instance_type = CoopBlockReduceInstanceType()
+
+
+@typeof_impl.register(coop.block.reduce)
+def typeof_block_reduce_instance(*args, **kwargs):
+    return block_reduce_instance_type
 
 
 @register
@@ -3264,6 +3441,23 @@ class CoopBlockSumDecl(CoopAbstractTemplate, CoopDeclMixin):
         )
 
     @staticmethod
+    def signature_instance(
+        src: Union[types.Array, types.Number],
+        num_valid: Optional[int] = None,
+        *,
+        items_per_thread: int = None,
+        algorithm: Optional[str] = None,
+        temp_storage: Union[types.Array, TempStorageType] = None,
+    ):
+        return inspect.signature(CoopBlockSumDecl.signature_instance).bind(
+            src,
+            num_valid=num_valid,
+            items_per_thread=items_per_thread,
+            algorithm=algorithm,
+            temp_storage=temp_storage,
+        )
+
+    @staticmethod
     def get_instance_type():
         return block_sum_instance_type
 
@@ -3298,15 +3492,20 @@ class CoopBlockSumDecl(CoopAbstractTemplate, CoopDeclMixin):
             arglist.append(num_valid)
 
         algorithm = bound.arguments.get("algorithm")
-        if algorithm is None:
-            algorithm = self.default_algorithm
-        if isinstance(algorithm, types.StringLiteral):
-            algorithm = algorithm.literal_value
-        if algorithm not in CUB_BLOCK_REDUCE_ALGOS:
-            raise errors.TypingError(
-                f"Invalid algorithm '{algorithm}' for {self.primitive_name}"
-            )
-        arglist.append(algorithm)
+        algorithm_is_none_type = isinstance(algorithm, types.NoneType)
+        if algorithm is None or algorithm_is_none_type:
+            if not two_phase:
+                algorithm = self.default_algorithm
+            else:
+                algorithm = None
+        if algorithm is not None:
+            if isinstance(algorithm, types.StringLiteral):
+                algorithm = algorithm.literal_value
+            if algorithm not in CUB_BLOCK_REDUCE_ALGOS:
+                raise errors.TypingError(
+                    f"Invalid algorithm '{algorithm}' for {self.primitive_name}"
+                )
+            arglist.append(algorithm)
 
         temp_storage = bound.arguments.get("temp_storage")
         temp_storage_is_none_type = isinstance(temp_storage, types.NoneType)
@@ -3332,26 +3531,17 @@ class CoopBlockSumInstanceType(types.Type, CoopInstanceTypeMixin):
         types.Type.__init__(self, name=name)
         CoopInstanceTypeMixin.__init__(self)
 
-    def _validate_args_and_create_signature(
-        self,
-        src,
-        items_per_thread=None,
-        num_valid=None,
-        algorithm=None,
-        temp_storage=None,
-    ):
-        bound = inspect.signature(self.decl.signature).bind(
-            src,
-            items_per_thread=items_per_thread,
-            num_valid=num_valid,
-            algorithm=algorithm,
-            temp_storage=temp_storage,
-        )
-
+    def _validate_args_and_create_signature(self, *args, **kwargs):
+        bound = self._bind_instance_signature(*args, **kwargs)
         return self.decl._validate_args_and_create_signature(bound, two_phase=True)
 
 
 block_sum_instance_type = CoopBlockSumInstanceType()
+
+
+@typeof_impl.register(coop.block.sum)
+def typeof_block_sum_instance(*args, **kwargs):
+    return block_sum_instance_type
 
 
 @register
@@ -3368,6 +3558,247 @@ class CoopBlockSumInstanceModel(models.OpaqueModel):
 
 @lower_constant(CoopBlockSumInstanceType)
 def lower_constant_block_sum_instance_type(context, builder, typ, value):
+    return context.get_dummy_value()
+
+
+# =============================================================================
+# Block Primitives (Two-phase Instances)
+# =============================================================================
+
+
+class CoopBlockExchangeInstanceType(CoopSimpleInstanceType):
+    decl_class = CoopBlockExchangeDecl
+
+
+block_exchange_instance_type = CoopBlockExchangeInstanceType()
+
+
+@typeof_impl.register(coop.block.exchange)
+def typeof_block_exchange_instance(*args, **kwargs):
+    return block_exchange_instance_type
+
+
+@register
+class CoopBlockExchangeInstanceDecl(CoopInstanceTemplate):
+    key = block_exchange_instance_type
+    instance_type = block_exchange_instance_type
+    primitive_name = "coop.block.exchange"
+
+
+@register_model(CoopBlockExchangeInstanceType)
+class CoopBlockExchangeInstanceModel(models.OpaqueModel):
+    pass
+
+
+@lower_constant(CoopBlockExchangeInstanceType)
+def lower_constant_block_exchange_instance_type(context, builder, typ, value):
+    return context.get_dummy_value()
+
+
+class CoopBlockMergeSortInstanceType(CoopSimpleInstanceType):
+    decl_class = CoopBlockMergeSortDecl
+
+
+block_merge_sort_instance_type = CoopBlockMergeSortInstanceType()
+
+
+@typeof_impl.register(coop.block.merge_sort_keys)
+def typeof_block_merge_sort_instance(*args, **kwargs):
+    return block_merge_sort_instance_type
+
+
+@register
+class CoopBlockMergeSortInstanceDecl(CoopInstanceTemplate):
+    key = block_merge_sort_instance_type
+    instance_type = block_merge_sort_instance_type
+    primitive_name = "coop.block.merge_sort_keys"
+
+
+@register_model(CoopBlockMergeSortInstanceType)
+class CoopBlockMergeSortInstanceModel(models.OpaqueModel):
+    pass
+
+
+@lower_constant(CoopBlockMergeSortInstanceType)
+def lower_constant_block_merge_sort_instance_type(context, builder, typ, value):
+    return context.get_dummy_value()
+
+
+class CoopBlockAdjacentDifferenceInstanceType(CoopSimpleInstanceType):
+    decl_class = CoopBlockAdjacentDifferenceDecl
+
+
+block_adjacent_difference_instance_type = CoopBlockAdjacentDifferenceInstanceType()
+
+
+@typeof_impl.register(coop.block.adjacent_difference)
+def typeof_block_adjacent_difference_instance(*args, **kwargs):
+    return block_adjacent_difference_instance_type
+
+
+@register
+class CoopBlockAdjacentDifferenceInstanceDecl(CoopInstanceTemplate):
+    key = block_adjacent_difference_instance_type
+    instance_type = block_adjacent_difference_instance_type
+    primitive_name = "coop.block.adjacent_difference"
+
+
+@register_model(CoopBlockAdjacentDifferenceInstanceType)
+class CoopBlockAdjacentDifferenceInstanceModel(models.OpaqueModel):
+    pass
+
+
+@lower_constant(CoopBlockAdjacentDifferenceInstanceType)
+def lower_constant_block_adjacent_difference_instance_type(
+    context, builder, typ, value
+):
+    return context.get_dummy_value()
+
+
+class CoopBlockShuffleInstanceType(CoopSimpleInstanceType):
+    decl_class = CoopBlockShuffleDecl
+
+
+block_shuffle_instance_type = CoopBlockShuffleInstanceType()
+
+
+@typeof_impl.register(coop.block.shuffle)
+def typeof_block_shuffle_instance(*args, **kwargs):
+    return block_shuffle_instance_type
+
+
+@register
+class CoopBlockShuffleInstanceDecl(CoopInstanceTemplate):
+    key = block_shuffle_instance_type
+    instance_type = block_shuffle_instance_type
+    primitive_name = "coop.block.shuffle"
+
+
+@register_model(CoopBlockShuffleInstanceType)
+class CoopBlockShuffleInstanceModel(models.OpaqueModel):
+    pass
+
+
+@lower_constant(CoopBlockShuffleInstanceType)
+def lower_constant_block_shuffle_instance_type(context, builder, typ, value):
+    return context.get_dummy_value()
+
+
+class CoopBlockDiscontinuityInstanceType(CoopSimpleInstanceType):
+    decl_class = CoopBlockDiscontinuityDecl
+
+
+block_discontinuity_instance_type = CoopBlockDiscontinuityInstanceType()
+
+
+@typeof_impl.register(coop.block.discontinuity)
+def typeof_block_discontinuity_instance(*args, **kwargs):
+    return block_discontinuity_instance_type
+
+
+@register
+class CoopBlockDiscontinuityInstanceDecl(CoopInstanceTemplate):
+    key = block_discontinuity_instance_type
+    instance_type = block_discontinuity_instance_type
+    primitive_name = "coop.block.discontinuity"
+
+
+@register_model(CoopBlockDiscontinuityInstanceType)
+class CoopBlockDiscontinuityInstanceModel(models.OpaqueModel):
+    pass
+
+
+@lower_constant(CoopBlockDiscontinuityInstanceType)
+def lower_constant_block_discontinuity_instance_type(context, builder, typ, value):
+    return context.get_dummy_value()
+
+
+class CoopBlockRadixSortInstanceType(CoopSimpleInstanceType):
+    decl_class = CoopBlockRadixSortDecl
+
+
+block_radix_sort_instance_type = CoopBlockRadixSortInstanceType()
+
+
+@typeof_impl.register(coop.block.radix_sort_keys)
+def typeof_block_radix_sort_instance(*args, **kwargs):
+    return block_radix_sort_instance_type
+
+
+@register
+class CoopBlockRadixSortInstanceDecl(CoopInstanceTemplate):
+    key = block_radix_sort_instance_type
+    instance_type = block_radix_sort_instance_type
+    primitive_name = "coop.block.radix_sort_keys"
+
+
+@register_model(CoopBlockRadixSortInstanceType)
+class CoopBlockRadixSortInstanceModel(models.OpaqueModel):
+    pass
+
+
+@lower_constant(CoopBlockRadixSortInstanceType)
+def lower_constant_block_radix_sort_instance_type(context, builder, typ, value):
+    return context.get_dummy_value()
+
+
+class CoopBlockRadixSortDescendingInstanceType(CoopSimpleInstanceType):
+    decl_class = CoopBlockRadixSortDescendingDecl
+
+
+block_radix_sort_descending_instance_type = CoopBlockRadixSortDescendingInstanceType()
+
+
+@typeof_impl.register(coop.block.radix_sort_keys_descending)
+def typeof_block_radix_sort_descending_instance(*args, **kwargs):
+    return block_radix_sort_descending_instance_type
+
+
+@register
+class CoopBlockRadixSortDescendingInstanceDecl(CoopInstanceTemplate):
+    key = block_radix_sort_descending_instance_type
+    instance_type = block_radix_sort_descending_instance_type
+    primitive_name = "coop.block.radix_sort_keys_descending"
+
+
+@register_model(CoopBlockRadixSortDescendingInstanceType)
+class CoopBlockRadixSortDescendingInstanceModel(models.OpaqueModel):
+    pass
+
+
+@lower_constant(CoopBlockRadixSortDescendingInstanceType)
+def lower_constant_block_radix_sort_descending_instance_type(
+    context, builder, typ, value
+):
+    return context.get_dummy_value()
+
+
+class CoopBlockRadixRankInstanceType(CoopSimpleInstanceType):
+    decl_class = CoopBlockRadixRankDecl
+
+
+block_radix_rank_instance_type = CoopBlockRadixRankInstanceType()
+
+
+@typeof_impl.register(coop.block.radix_rank)
+def typeof_block_radix_rank_instance(*args, **kwargs):
+    return block_radix_rank_instance_type
+
+
+@register
+class CoopBlockRadixRankInstanceDecl(CoopInstanceTemplate):
+    key = block_radix_rank_instance_type
+    instance_type = block_radix_rank_instance_type
+    primitive_name = "coop.block.radix_rank"
+
+
+@register_model(CoopBlockRadixRankInstanceType)
+class CoopBlockRadixRankInstanceModel(models.OpaqueModel):
+    pass
+
+
+@lower_constant(CoopBlockRadixRankInstanceType)
+def lower_constant_block_radix_rank_instance_type(context, builder, typ, value):
     return context.get_dummy_value()
 
 
@@ -3406,6 +3837,29 @@ class CoopWarpExchangeDecl(CoopAbstractTemplate, CoopDeclMixin):
             temp_storage=temp_storage,
         )
 
+    @staticmethod
+    def signature_instance(
+        items: types.Array,
+        output_items: types.Array = None,
+        ranks: types.Array = None,
+        *,
+        items_per_thread: int = None,
+        warp_exchange_type: coop.warp.WarpExchangeType = None,
+        threads_in_warp: int = None,
+        offset_dtype: Optional[types.Type] = None,
+        temp_storage: Union[types.Array, TempStorageType] = None,
+    ):
+        return inspect.signature(CoopWarpExchangeDecl.signature_instance).bind(
+            items,
+            output_items=output_items,
+            ranks=ranks,
+            items_per_thread=items_per_thread,
+            warp_exchange_type=warp_exchange_type,
+            threads_in_warp=threads_in_warp,
+            offset_dtype=offset_dtype,
+            temp_storage=temp_storage,
+        )
+
     def _validate_args_and_create_signature(self, bound, two_phase=False):
         items = bound.arguments["items"]
         output_items = bound.arguments.get("output_items")
@@ -3424,23 +3878,28 @@ class CoopWarpExchangeDecl(CoopAbstractTemplate, CoopDeclMixin):
         process_items_per_thread(self, bound, arglist, two_phase, target_array=items)
 
         warp_exchange_type = bound.arguments.get("warp_exchange_type")
-        if warp_exchange_type is None:
-            warp_exchange_type = self.default_exchange_type
-        if isinstance(warp_exchange_type, enum.IntEnum):
-            if warp_exchange_type not in coop.warp.WarpExchangeType:
+        warp_exchange_is_none_type = isinstance(warp_exchange_type, types.NoneType)
+        if warp_exchange_type is None or warp_exchange_is_none_type:
+            if not two_phase:
+                warp_exchange_type = self.default_exchange_type
+            else:
+                warp_exchange_type = None
+        if warp_exchange_type is not None:
+            if isinstance(warp_exchange_type, enum.IntEnum):
+                if warp_exchange_type not in coop.warp.WarpExchangeType:
+                    raise errors.TypingError(
+                        f"{self.primitive_name} requires a WarpExchangeType value"
+                    )
+            elif isinstance(warp_exchange_type, types.EnumMember):
+                if warp_exchange_type.instance_class is not coop.warp.WarpExchangeType:
+                    raise errors.TypingError(
+                        f"{self.primitive_name} requires a WarpExchangeType value"
+                    )
+            else:
                 raise errors.TypingError(
                     f"{self.primitive_name} requires a WarpExchangeType value"
                 )
-        elif isinstance(warp_exchange_type, types.EnumMember):
-            if warp_exchange_type.instance_class is not coop.warp.WarpExchangeType:
-                raise errors.TypingError(
-                    f"{self.primitive_name} requires a WarpExchangeType value"
-                )
-        else:
-            raise errors.TypingError(
-                f"{self.primitive_name} requires a WarpExchangeType value"
-            )
-        arglist.append(warp_exchange_type)
+            arglist.append(warp_exchange_type)
 
         threads_in_warp = bound.arguments.get("threads_in_warp")
         if threads_in_warp is not None:
@@ -3454,6 +3913,7 @@ class CoopWarpExchangeDecl(CoopAbstractTemplate, CoopDeclMixin):
                 raise errors.TypingError(
                     f"{self.primitive_name} requires 'ranks' for ScatterToStriped"
                 )
+        if ranks is not None:
             if not isinstance(ranks, types.Array):
                 raise errors.TypingError(
                     f"{self.primitive_name} requires 'ranks' to be an array"
@@ -3473,10 +3933,23 @@ class CoopWarpExchangeDecl(CoopAbstractTemplate, CoopDeclMixin):
                 )
             if offset_dtype is not None:
                 arglist.append(offset_dtype)
-        elif ranks is not None:
+        elif ranks is None and warp_exchange_type is not None:
+            if warp_exchange_type != coop.warp.WarpExchangeType.ScatterToStriped:
+                offset_dtype = bound.arguments.get("offset_dtype")
+                if offset_dtype is not None:
+                    raise errors.TypingError(
+                        f"{self.primitive_name} only accepts 'offset_dtype' with 'ranks'"
+                    )
+        elif ranks is not None and warp_exchange_type is None and not two_phase:
             raise errors.TypingError(
                 f"{self.primitive_name} only accepts 'ranks' for ScatterToStriped"
             )
+        elif ranks is None and warp_exchange_type is None and not two_phase:
+            offset_dtype = bound.arguments.get("offset_dtype")
+            if offset_dtype is not None:
+                raise errors.TypingError(
+                    f"{self.primitive_name} only accepts 'offset_dtype' with 'ranks'"
+                )
 
         temp_storage = bound.arguments.get("temp_storage")
         if temp_storage is not None:
@@ -3506,6 +3979,19 @@ class CoopWarpReduceDecl(CoopAbstractTemplate, CoopDeclMixin):
             threads_in_warp=threads_in_warp,
         )
 
+    @staticmethod
+    def signature_instance(
+        src: types.Number,
+        *,
+        binary_op: Optional[Callable] = None,
+        threads_in_warp: int = None,
+    ):
+        return inspect.signature(CoopWarpReduceDecl.signature_instance).bind(
+            src,
+            binary_op=binary_op,
+            threads_in_warp=threads_in_warp,
+        )
+
     def _validate_args_and_create_signature(self, bound, two_phase=False):
         src = bound.arguments["src"]
         if isinstance(src, types.Array):
@@ -3515,11 +4001,14 @@ class CoopWarpReduceDecl(CoopAbstractTemplate, CoopDeclMixin):
         arglist = [src]
 
         binary_op = bound.arguments.get("binary_op")
-        if binary_op is None:
-            raise errors.TypingError(
-                f"{self.primitive_name} requires 'binary_op' to be specified"
-            )
-        arglist.append(binary_op)
+        binary_op_is_none_type = isinstance(binary_op, types.NoneType)
+        if binary_op is None or binary_op_is_none_type:
+            if not two_phase:
+                raise errors.TypingError(
+                    f"{self.primitive_name} requires 'binary_op' to be specified"
+                )
+        else:
+            arglist.append(binary_op)
 
         threads_in_warp = bound.arguments.get("threads_in_warp")
         if threads_in_warp is not None:
@@ -3657,6 +4146,21 @@ class CoopWarpExclusiveScanDecl(CoopAbstractTemplate, CoopDeclMixin):
             threads_in_warp=threads_in_warp,
         )
 
+    @staticmethod
+    def signature_instance(
+        src: types.Number,
+        initial_value: Optional[types.Number] = None,
+        *,
+        scan_op: ScanOpType = None,
+        threads_in_warp: int = None,
+    ):
+        return inspect.signature(CoopWarpExclusiveScanDecl.signature_instance).bind(
+            src,
+            initial_value=initial_value,
+            scan_op=scan_op,
+            threads_in_warp=threads_in_warp,
+        )
+
     def _validate_args_and_create_signature(self, bound, two_phase=False):
         src = bound.arguments["src"]
         if isinstance(src, types.Array):
@@ -3666,19 +4170,23 @@ class CoopWarpExclusiveScanDecl(CoopAbstractTemplate, CoopDeclMixin):
         arglist = [src]
 
         scan_op = bound.arguments.get("scan_op")
-        if scan_op is None or isinstance(scan_op, types.NoneType):
-            raise errors.TypingError(
-                f"{self.primitive_name} requires 'scan_op' to be specified"
-            )
-        if isinstance(scan_op, types.StringLiteral):
-            scan_op = scan_op.literal_value
-        try:
-            scan_op = ScanOp(scan_op)
-        except ValueError as e:
-            raise errors.TypingError(
-                f"Invalid scan_op '{scan_op}' for {self.primitive_name}: {e}"
-            )
-        arglist.append(scan_op)
+        scan_op_is_none_type = isinstance(scan_op, types.NoneType)
+        if scan_op is None or scan_op_is_none_type:
+            if not two_phase:
+                raise errors.TypingError(
+                    f"{self.primitive_name} requires 'scan_op' to be specified"
+                )
+            scan_op = None
+        if scan_op is not None:
+            if isinstance(scan_op, types.StringLiteral):
+                scan_op = scan_op.literal_value
+            try:
+                scan_op = ScanOp(scan_op)
+            except ValueError as e:
+                raise errors.TypingError(
+                    f"Invalid scan_op '{scan_op}' for {self.primitive_name}: {e}"
+                )
+            arglist.append(scan_op)
 
         initial_value = bound.arguments.get("initial_value")
         if isinstance(initial_value, types.NoneType):
@@ -3720,6 +4228,21 @@ class CoopWarpInclusiveScanDecl(CoopAbstractTemplate, CoopDeclMixin):
             threads_in_warp=threads_in_warp,
         )
 
+    @staticmethod
+    def signature_instance(
+        src: types.Number,
+        initial_value: Optional[types.Number] = None,
+        *,
+        scan_op: ScanOpType = None,
+        threads_in_warp: int = None,
+    ):
+        return inspect.signature(CoopWarpInclusiveScanDecl.signature_instance).bind(
+            src,
+            initial_value=initial_value,
+            scan_op=scan_op,
+            threads_in_warp=threads_in_warp,
+        )
+
     def _validate_args_and_create_signature(self, bound, two_phase=False):
         src = bound.arguments["src"]
         if isinstance(src, types.Array):
@@ -3729,19 +4252,23 @@ class CoopWarpInclusiveScanDecl(CoopAbstractTemplate, CoopDeclMixin):
         arglist = [src]
 
         scan_op = bound.arguments.get("scan_op")
-        if scan_op is None or isinstance(scan_op, types.NoneType):
-            raise errors.TypingError(
-                f"{self.primitive_name} requires 'scan_op' to be specified"
-            )
-        if isinstance(scan_op, types.StringLiteral):
-            scan_op = scan_op.literal_value
-        try:
-            scan_op = ScanOp(scan_op)
-        except ValueError as e:
-            raise errors.TypingError(
-                f"Invalid scan_op '{scan_op}' for {self.primitive_name}: {e}"
-            )
-        arglist.append(scan_op)
+        scan_op_is_none_type = isinstance(scan_op, types.NoneType)
+        if scan_op is None or scan_op_is_none_type:
+            if not two_phase:
+                raise errors.TypingError(
+                    f"{self.primitive_name} requires 'scan_op' to be specified"
+                )
+            scan_op = None
+        if scan_op is not None:
+            if isinstance(scan_op, types.StringLiteral):
+                scan_op = scan_op.literal_value
+            try:
+                scan_op = ScanOp(scan_op)
+            except ValueError as e:
+                raise errors.TypingError(
+                    f"Invalid scan_op '{scan_op}' for {self.primitive_name}: {e}"
+                )
+            arglist.append(scan_op)
 
         initial_value = bound.arguments.get("initial_value")
         if isinstance(initial_value, types.NoneType):
@@ -3785,6 +4312,23 @@ class CoopWarpMergeSortDecl(CoopAbstractTemplate, CoopDeclMixin):
             temp_storage=temp_storage,
         )
 
+    @staticmethod
+    def signature_instance(
+        keys: types.Array,
+        *,
+        items_per_thread: int = None,
+        compare_op: Optional[Callable] = None,
+        threads_in_warp: int = None,
+        temp_storage: Union[types.Array, TempStorageType] = None,
+    ):
+        return inspect.signature(CoopWarpMergeSortDecl.signature_instance).bind(
+            keys,
+            items_per_thread=items_per_thread,
+            compare_op=compare_op,
+            threads_in_warp=threads_in_warp,
+            temp_storage=temp_storage,
+        )
+
     def _validate_args_and_create_signature(self, bound, two_phase=False):
         keys = bound.arguments["keys"]
         if not isinstance(keys, types.Array):
@@ -3796,11 +4340,14 @@ class CoopWarpMergeSortDecl(CoopAbstractTemplate, CoopDeclMixin):
         process_items_per_thread(self, bound, arglist, two_phase, target_array=keys)
 
         compare_op = bound.arguments.get("compare_op")
-        if compare_op is None:
-            raise errors.TypingError(
-                f"{self.primitive_name} requires 'compare_op' to be specified"
-            )
-        arglist.append(compare_op)
+        compare_op_is_none_type = isinstance(compare_op, types.NoneType)
+        if compare_op is None or compare_op_is_none_type:
+            if not two_phase:
+                raise errors.TypingError(
+                    f"{self.primitive_name} requires 'compare_op' to be specified"
+                )
+        else:
+            arglist.append(compare_op)
 
         threads_in_warp = bound.arguments.get("threads_in_warp")
         if threads_in_warp is not None:
@@ -3816,6 +4363,301 @@ class CoopWarpMergeSortDecl(CoopAbstractTemplate, CoopDeclMixin):
             )
 
         return signature(types.void, *arglist)
+
+
+# =============================================================================
+# Warp Primitives (Two-phase Instances)
+# =============================================================================
+
+
+class CoopWarpLoadInstanceType(CoopSimpleInstanceType):
+    decl_class = CoopWarpLoadDecl
+
+
+warp_load_instance_type = CoopWarpLoadInstanceType()
+
+
+@typeof_impl.register(coop.warp.load)
+def typeof_warp_load_instance(*args, **kwargs):
+    return warp_load_instance_type
+
+
+@register
+class CoopWarpLoadInstanceDecl(CoopInstanceTemplate):
+    key = warp_load_instance_type
+    instance_type = warp_load_instance_type
+    primitive_name = "coop.warp.load"
+
+
+@register_model(CoopWarpLoadInstanceType)
+class CoopWarpLoadInstanceModel(models.OpaqueModel):
+    pass
+
+
+@lower_constant(CoopWarpLoadInstanceType)
+def lower_constant_warp_load_instance_type(context, builder, typ, value):
+    return context.get_dummy_value()
+
+
+class CoopWarpStoreInstanceType(CoopSimpleInstanceType):
+    decl_class = CoopWarpStoreDecl
+
+
+warp_store_instance_type = CoopWarpStoreInstanceType()
+
+
+@typeof_impl.register(coop.warp.store)
+def typeof_warp_store_instance(*args, **kwargs):
+    return warp_store_instance_type
+
+
+@register
+class CoopWarpStoreInstanceDecl(CoopInstanceTemplate):
+    key = warp_store_instance_type
+    instance_type = warp_store_instance_type
+    primitive_name = "coop.warp.store"
+
+
+@register_model(CoopWarpStoreInstanceType)
+class CoopWarpStoreInstanceModel(models.OpaqueModel):
+    pass
+
+
+@lower_constant(CoopWarpStoreInstanceType)
+def lower_constant_warp_store_instance_type(context, builder, typ, value):
+    return context.get_dummy_value()
+
+
+class CoopWarpExchangeInstanceType(CoopSimpleInstanceType):
+    decl_class = CoopWarpExchangeDecl
+
+
+warp_exchange_instance_type = CoopWarpExchangeInstanceType()
+
+
+@typeof_impl.register(coop.warp.exchange)
+def typeof_warp_exchange_instance(*args, **kwargs):
+    return warp_exchange_instance_type
+
+
+@register
+class CoopWarpExchangeInstanceDecl(CoopInstanceTemplate):
+    key = warp_exchange_instance_type
+    instance_type = warp_exchange_instance_type
+    primitive_name = "coop.warp.exchange"
+
+
+@register_model(CoopWarpExchangeInstanceType)
+class CoopWarpExchangeInstanceModel(models.OpaqueModel):
+    pass
+
+
+@lower_constant(CoopWarpExchangeInstanceType)
+def lower_constant_warp_exchange_instance_type(context, builder, typ, value):
+    return context.get_dummy_value()
+
+
+class CoopWarpReduceInstanceType(CoopSimpleInstanceType):
+    decl_class = CoopWarpReduceDecl
+
+
+warp_reduce_instance_type = CoopWarpReduceInstanceType()
+
+
+@typeof_impl.register(coop.warp.reduce)
+def typeof_warp_reduce_instance(*args, **kwargs):
+    return warp_reduce_instance_type
+
+
+@register
+class CoopWarpReduceInstanceDecl(CoopInstanceTemplate):
+    key = warp_reduce_instance_type
+    instance_type = warp_reduce_instance_type
+    primitive_name = "coop.warp.reduce"
+
+
+@register_model(CoopWarpReduceInstanceType)
+class CoopWarpReduceInstanceModel(models.OpaqueModel):
+    pass
+
+
+@lower_constant(CoopWarpReduceInstanceType)
+def lower_constant_warp_reduce_instance_type(context, builder, typ, value):
+    return context.get_dummy_value()
+
+
+class CoopWarpSumInstanceType(CoopSimpleInstanceType):
+    decl_class = CoopWarpSumDecl
+
+
+warp_sum_instance_type = CoopWarpSumInstanceType()
+
+
+@typeof_impl.register(coop.warp.sum)
+def typeof_warp_sum_instance(*args, **kwargs):
+    return warp_sum_instance_type
+
+
+@register
+class CoopWarpSumInstanceDecl(CoopInstanceTemplate):
+    key = warp_sum_instance_type
+    instance_type = warp_sum_instance_type
+    primitive_name = "coop.warp.sum"
+
+
+@register_model(CoopWarpSumInstanceType)
+class CoopWarpSumInstanceModel(models.OpaqueModel):
+    pass
+
+
+@lower_constant(CoopWarpSumInstanceType)
+def lower_constant_warp_sum_instance_type(context, builder, typ, value):
+    return context.get_dummy_value()
+
+
+class CoopWarpInclusiveSumInstanceType(CoopSimpleInstanceType):
+    decl_class = CoopWarpInclusiveSumDecl
+
+
+warp_inclusive_sum_instance_type = CoopWarpInclusiveSumInstanceType()
+
+
+@typeof_impl.register(coop.warp.inclusive_sum)
+def typeof_warp_inclusive_sum_instance(*args, **kwargs):
+    return warp_inclusive_sum_instance_type
+
+
+@register
+class CoopWarpInclusiveSumInstanceDecl(CoopInstanceTemplate):
+    key = warp_inclusive_sum_instance_type
+    instance_type = warp_inclusive_sum_instance_type
+    primitive_name = "coop.warp.inclusive_sum"
+
+
+@register_model(CoopWarpInclusiveSumInstanceType)
+class CoopWarpInclusiveSumInstanceModel(models.OpaqueModel):
+    pass
+
+
+@lower_constant(CoopWarpInclusiveSumInstanceType)
+def lower_constant_warp_inclusive_sum_instance_type(context, builder, typ, value):
+    return context.get_dummy_value()
+
+
+class CoopWarpExclusiveSumInstanceType(CoopSimpleInstanceType):
+    decl_class = CoopWarpExclusiveSumDecl
+
+
+warp_exclusive_sum_instance_type = CoopWarpExclusiveSumInstanceType()
+
+
+@typeof_impl.register(coop.warp.exclusive_sum)
+def typeof_warp_exclusive_sum_instance(*args, **kwargs):
+    return warp_exclusive_sum_instance_type
+
+
+@register
+class CoopWarpExclusiveSumInstanceDecl(CoopInstanceTemplate):
+    key = warp_exclusive_sum_instance_type
+    instance_type = warp_exclusive_sum_instance_type
+    primitive_name = "coop.warp.exclusive_sum"
+
+
+@register_model(CoopWarpExclusiveSumInstanceType)
+class CoopWarpExclusiveSumInstanceModel(models.OpaqueModel):
+    pass
+
+
+@lower_constant(CoopWarpExclusiveSumInstanceType)
+def lower_constant_warp_exclusive_sum_instance_type(context, builder, typ, value):
+    return context.get_dummy_value()
+
+
+class CoopWarpExclusiveScanInstanceType(CoopSimpleInstanceType):
+    decl_class = CoopWarpExclusiveScanDecl
+
+
+warp_exclusive_scan_instance_type = CoopWarpExclusiveScanInstanceType()
+
+
+@typeof_impl.register(coop.warp.exclusive_scan)
+def typeof_warp_exclusive_scan_instance(*args, **kwargs):
+    return warp_exclusive_scan_instance_type
+
+
+@register
+class CoopWarpExclusiveScanInstanceDecl(CoopInstanceTemplate):
+    key = warp_exclusive_scan_instance_type
+    instance_type = warp_exclusive_scan_instance_type
+    primitive_name = "coop.warp.exclusive_scan"
+
+
+@register_model(CoopWarpExclusiveScanInstanceType)
+class CoopWarpExclusiveScanInstanceModel(models.OpaqueModel):
+    pass
+
+
+@lower_constant(CoopWarpExclusiveScanInstanceType)
+def lower_constant_warp_exclusive_scan_instance_type(context, builder, typ, value):
+    return context.get_dummy_value()
+
+
+class CoopWarpInclusiveScanInstanceType(CoopSimpleInstanceType):
+    decl_class = CoopWarpInclusiveScanDecl
+
+
+warp_inclusive_scan_instance_type = CoopWarpInclusiveScanInstanceType()
+
+
+@typeof_impl.register(coop.warp.inclusive_scan)
+def typeof_warp_inclusive_scan_instance(*args, **kwargs):
+    return warp_inclusive_scan_instance_type
+
+
+@register
+class CoopWarpInclusiveScanInstanceDecl(CoopInstanceTemplate):
+    key = warp_inclusive_scan_instance_type
+    instance_type = warp_inclusive_scan_instance_type
+    primitive_name = "coop.warp.inclusive_scan"
+
+
+@register_model(CoopWarpInclusiveScanInstanceType)
+class CoopWarpInclusiveScanInstanceModel(models.OpaqueModel):
+    pass
+
+
+@lower_constant(CoopWarpInclusiveScanInstanceType)
+def lower_constant_warp_inclusive_scan_instance_type(context, builder, typ, value):
+    return context.get_dummy_value()
+
+
+class CoopWarpMergeSortInstanceType(CoopSimpleInstanceType):
+    decl_class = CoopWarpMergeSortDecl
+
+
+warp_merge_sort_instance_type = CoopWarpMergeSortInstanceType()
+
+
+@typeof_impl.register(coop.warp.merge_sort_keys)
+def typeof_warp_merge_sort_instance(*args, **kwargs):
+    return warp_merge_sort_instance_type
+
+
+@register
+class CoopWarpMergeSortInstanceDecl(CoopInstanceTemplate):
+    key = warp_merge_sort_instance_type
+    instance_type = warp_merge_sort_instance_type
+    primitive_name = "coop.warp.merge_sort_keys"
+
+
+@register_model(CoopWarpMergeSortInstanceType)
+class CoopWarpMergeSortInstanceModel(models.OpaqueModel):
+    pass
+
+
+@lower_constant(CoopWarpMergeSortInstanceType)
+def lower_constant_warp_merge_sort_instance_type(context, builder, typ, value):
+    return context.get_dummy_value()
 
 
 # =============================================================================

@@ -15,9 +15,9 @@ numba.config.CUDA_LOW_OCCUPANCY_WARNINGS = 0
 
 @pytest.mark.parametrize("T", [types.uint32, types.uint64])
 def test_warp_exclusive_sum(T):
-    warp_exclusive_sum = coop.warp.exclusive_sum.create(dtype=T)
+    warp_exclusive_sum = coop.warp.exclusive_sum(dtype=T)
 
-    @cuda.jit(link=warp_exclusive_sum.files)
+    @cuda.jit
     def kernel(input, output):
         tid = cuda.threadIdx.x
         output[tid] = warp_exclusive_sum(input[tid])
@@ -43,9 +43,9 @@ def test_warp_exclusive_sum(T):
 
 @pytest.mark.parametrize("T", [types.uint32, types.uint64])
 def test_warp_inclusive_sum(T):
-    warp_inclusive_sum = coop.warp.inclusive_sum.create(dtype=T)
+    warp_inclusive_sum = coop.warp.inclusive_sum(dtype=T)
 
-    @cuda.jit(link=warp_inclusive_sum.files)
+    @cuda.jit
     def kernel(input, output):
         tid = cuda.threadIdx.x
         output[tid] = warp_inclusive_sum(input[tid])
@@ -65,11 +65,11 @@ def test_warp_inclusive_sum(T):
 
 @pytest.mark.parametrize("T", [types.int32])
 def test_warp_exclusive_scan_max(T):
-    warp_exclusive_scan = coop.warp.exclusive_scan.create(
+    warp_exclusive_scan = coop.warp.exclusive_scan(
         dtype=T, scan_op="max", initial_value=0
     )
 
-    @cuda.jit(link=warp_exclusive_scan.files)
+    @cuda.jit
     def kernel(input, output):
         tid = cuda.threadIdx.x
         output[tid] = warp_exclusive_scan(input[tid], 0)
@@ -92,9 +92,9 @@ def test_warp_exclusive_scan_max(T):
 
 @pytest.mark.parametrize("T", [types.int32])
 def test_warp_inclusive_scan_max(T):
-    warp_inclusive_scan = coop.warp.inclusive_scan.create(dtype=T, scan_op="max")
+    warp_inclusive_scan = coop.warp.inclusive_scan(dtype=T, scan_op="max")
 
-    @cuda.jit(link=warp_inclusive_scan.files)
+    @cuda.jit
     def kernel(input, output):
         tid = cuda.threadIdx.x
         output[tid] = warp_inclusive_scan(input[tid])

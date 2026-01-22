@@ -18,9 +18,9 @@ def test_warp_reduction_of_integral_type(T):
     def op(a, b):
         return a if a < b else b
 
-    warp_reduce = coop.warp.reduce.create(T, op)
+    warp_reduce = coop.warp.reduce(T, op)
 
-    @cuda.jit(link=warp_reduce.files)
+    @cuda.jit
     def kernel(input, output):
         warp_output = warp_reduce(input[cuda.threadIdx.x])
 
@@ -47,9 +47,9 @@ def test_warp_reduction_of_integral_type(T):
 
 @pytest.mark.parametrize("T", [types.uint32, types.uint64])
 def test_warp_sum(T):
-    warp_reduce = coop.warp.sum.create(T)
+    warp_reduce = coop.warp.sum(T)
 
-    @cuda.jit(link=warp_reduce.files)
+    @cuda.jit
     def kernel(input, output):
         warp_output = warp_reduce(input[cuda.threadIdx.x])
 

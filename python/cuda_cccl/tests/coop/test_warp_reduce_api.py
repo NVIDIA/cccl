@@ -18,9 +18,9 @@ def test_warp_reduction():
         return a if a > b else b
 
     # example-begin reduce
-    warp_reduce = coop.warp.reduce.create(numba.int32, op)
+    warp_reduce = coop.warp.reduce(numba.int32, op)
 
-    @cuda.jit(link=warp_reduce.files)
+    @cuda.jit
     def kernel(input, output):
         warp_output = warp_reduce(input[cuda.threadIdx.x])
 
@@ -41,9 +41,9 @@ def test_warp_reduction():
 
 def test_warp_sum():
     # example-begin sum
-    warp_sum = coop.warp.sum.create(numba.int32)
+    warp_sum = coop.warp.sum(numba.int32)
 
-    @cuda.jit(link=warp_sum.files)
+    @cuda.jit
     def kernel(input, output):
         warp_output = warp_sum(input[cuda.threadIdx.x])
 

@@ -80,7 +80,7 @@ def test_block_reduction_temp_storage():
         return a + b
 
     threads_per_block = 128
-    block_reduce = coop.block.reduce.create(
+    block_reduce = coop.block.reduce(
         np.int32,
         threads_per_block,
         op_two,
@@ -89,7 +89,7 @@ def test_block_reduction_temp_storage():
     temp_storage_bytes = block_reduce.temp_storage_bytes
     temp_storage_alignment = block_reduce.temp_storage_alignment
 
-    @cuda.jit(link=block_reduce.files)
+    @cuda.jit
     def kernel(input, output_single, output_two):
         temp_storage = coop.TempStorage(
             temp_storage_bytes,
@@ -123,7 +123,7 @@ def test_block_reduction_temp_storage():
 
 def test_block_sum_temp_storage():
     threads_per_block = 128
-    block_sum = coop.block.sum.create(
+    block_sum = coop.block.sum(
         np.int32,
         threads_per_block,
         items_per_thread=1,
@@ -131,7 +131,7 @@ def test_block_sum_temp_storage():
     temp_storage_bytes = block_sum.temp_storage_bytes
     temp_storage_alignment = block_sum.temp_storage_alignment
 
-    @cuda.jit(link=block_sum.files)
+    @cuda.jit
     def kernel(input, output_single, output_two):
         temp_storage = coop.TempStorage(
             temp_storage_bytes,

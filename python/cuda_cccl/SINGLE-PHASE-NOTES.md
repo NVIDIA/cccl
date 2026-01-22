@@ -46,9 +46,8 @@ block_store = coop.block.store(
     items_per_thread=items_per_thread
 )
 
-# The `.files` of every primitive (LTO IR blobs) need to be explicitly
-# passed to to the `@cuda.jit` decorator.
-@cuda.jit(link=block_load.files + block_store.files)
+# The rewrite pass handles linking automatically; no `link=` is required.
+@cuda.jit
 def elaborate_gpu_memcpy(d_in, d_out):
     # Would be nice if `dtype` could be inferred from the `d_in`
     # argument, but `cuda.local.array` requires a known literal value

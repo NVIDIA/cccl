@@ -31,7 +31,10 @@ class reduce(BasePrimitive):
         """Computes a warp-wide reduction for lane :sub:`0` using the specified binary reduction functor."""
         self.node = node
         self.temp_storage = temp_storage
-        dtype = normalize_dtype_param(dtype)
+        self.dtype = normalize_dtype_param(dtype)
+        self.binary_op = binary_op
+        self.threads_in_warp = threads_in_warp
+        self.methods = methods
 
         template = Algorithm(
             "WarpReduce",
@@ -52,7 +55,7 @@ class reduce(BasePrimitive):
                 ]
             ],
             self,
-            type_definitions=[numba_type_to_wrapper(dtype, methods=methods)]
+            type_definitions=[numba_type_to_wrapper(self.dtype, methods=methods)]
             if methods is not None
             else None,
             threads=threads_in_warp,
@@ -60,7 +63,11 @@ class reduce(BasePrimitive):
         )
         self.algorithm = template
         self.specialization = template.specialize(
-            {"T": dtype, "VIRTUAL_WARP_THREADS": threads_in_warp, "Op": binary_op}
+            {
+                "T": self.dtype,
+                "VIRTUAL_WARP_THREADS": threads_in_warp,
+                "Op": binary_op,
+            }
         )
 
     @classmethod
@@ -86,7 +93,9 @@ class sum(BasePrimitive):
     def __init__(self, dtype, threads_in_warp=32, unique_id=None, temp_storage=None):
         """Computes a warp-wide reduction for lane :sub:`0` using addition (+)."""
         self.temp_storage = temp_storage
-        dtype = normalize_dtype_param(dtype)
+        self.dtype = normalize_dtype_param(dtype)
+        self.binary_op = None
+        self.threads_in_warp = threads_in_warp
 
         template = Algorithm(
             "WarpReduce",
@@ -106,7 +115,7 @@ class sum(BasePrimitive):
         )
         self.algorithm = template
         self.specialization = template.specialize(
-            {"T": dtype, "VIRTUAL_WARP_THREADS": threads_in_warp}
+            {"T": self.dtype, "VIRTUAL_WARP_THREADS": threads_in_warp}
         )
 
     @classmethod

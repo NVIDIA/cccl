@@ -51,10 +51,18 @@ class exchange(BasePrimitive):
 
         self.node = node
         self.temp_storage = temp_storage
+        self.dtype = normalize_dtype_param(dtype)
+        self.items_per_thread = items_per_thread
+        self.threads_in_warp = threads_in_warp
+        self.warp_exchange_type = warp_exchange_type
+        self.offset_dtype = (
+            normalize_dtype_param(offset_dtype) if offset_dtype is not None else None
+        )
+        self.methods = methods
 
-        dtype = normalize_dtype_param(dtype)
+        dtype = self.dtype
         if offset_dtype is not None:
-            offset_dtype = normalize_dtype_param(offset_dtype)
+            offset_dtype = self.offset_dtype
 
         method_name = {
             WarpExchangeType.StripedToBlocked: "StripedToBlocked",

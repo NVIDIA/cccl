@@ -15,14 +15,14 @@ def test_warp_exchange_striped_to_blocked():
     threads_in_warp = 32
     items_per_thread = 4
 
-    warp_exchange = coop.warp.exchange.create(
+    warp_exchange = coop.warp.exchange(
         numba.int32,
         items_per_thread,
         threads_in_warp=threads_in_warp,
         warp_exchange_type=coop.warp.WarpExchangeType.StripedToBlocked,
     )
 
-    @cuda.jit(link=warp_exchange.files)
+    @cuda.jit
     def kernel(d_in, d_out):
         tid = cuda.threadIdx.x
         input_items = cuda.local.array(items_per_thread, numba.int32)
@@ -59,7 +59,7 @@ def test_warp_exchange_scatter_to_striped():
     items_per_thread = 4
     total_items = threads_in_warp * items_per_thread
 
-    warp_exchange = coop.warp.exchange.create(
+    warp_exchange = coop.warp.exchange(
         numba.int32,
         items_per_thread,
         threads_in_warp=threads_in_warp,
@@ -67,7 +67,7 @@ def test_warp_exchange_scatter_to_striped():
         offset_dtype=numba.int32,
     )
 
-    @cuda.jit(link=warp_exchange.files)
+    @cuda.jit
     def kernel(d_in, d_ranks, d_out):
         tid = cuda.threadIdx.x
         input_items = cuda.local.array(items_per_thread, numba.int32)
