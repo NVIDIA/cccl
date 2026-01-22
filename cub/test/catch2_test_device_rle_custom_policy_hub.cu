@@ -37,7 +37,7 @@ C2H_TEST("DeviceRleDispatch::Dispatch: custom policy hub", "[device][run_length_
   using input_t  = int;
   using offset_t = int;
   using length_t = int;
-  using equal_t  = ::cuda::std::equal_to<>;
+  using equal_t  = cuda::std::equal_to<>;
 
   c2h::device_vector<input_t> d_in{1, 1, 2, 2, 2, 3, 3, 4, 4};
   const offset_t num_items = static_cast<offset_t>(d_in.size());
