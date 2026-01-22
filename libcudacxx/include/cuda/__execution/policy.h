@@ -108,7 +108,7 @@ private:
   _CCCL_HOST_API constexpr __execution_policy_base(
     ::cuda::mr::resource_ref<::cuda::mr::device_accessible> __resource) noexcept
       : __stream_holder()
-      , __resource_holder(__resource)
+      , __resource_holder(::cuda::std::move(__resource)) // NVCC 12.0 needs the move
   {}
 
   _CCCL_TEMPLATE(bool _WithStream   = __cuda_policy_with_stream<_Policy>,
@@ -117,7 +117,7 @@ private:
   _CCCL_HOST_API constexpr __execution_policy_base(
     ::cuda::stream_ref __stream, ::cuda::mr::resource_ref<::cuda::mr::device_accessible> __resource) noexcept
       : __stream_holder(__stream)
-      , __resource_holder(__resource)
+      , __resource_holder(::cuda::std::move(__resource))
   {}
 
 public:
