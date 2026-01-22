@@ -23,6 +23,7 @@
 
 #include <cuda/__mdspan/host_device_mdspan.h>
 #include <cuda/__mdspan/layout_stride_relaxed.h>
+#include <cuda/__mdspan/mdspan_to_dlpack.h>
 #include <cuda/__mdspan/restrict_mdspan.h>
 #include <cuda/__mdspan/shared_memory_mdspan.h>
 #include <cuda/__mdspan/strides.h>

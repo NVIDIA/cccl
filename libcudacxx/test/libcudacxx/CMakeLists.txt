@@ -1,44 +1,52 @@
+option(
+  LIBCUDACXX_TEST_WITH_NVRTC
+  "Test libcu++ with runtime compilation instead of offline compilation. Only runs device side tests."
+  OFF
+)
+
 ###############################################################################
 ### C2H tests:
 cccl_get_c2h()
 
-file(
-  GLOB_RECURSE test_srcs
-  RELATIVE "${CMAKE_CURRENT_LIST_DIR}"
-  CONFIGURE_DEPENDS
-  *.cu
-)
-
 set(c2h_all_target "libcudacxx.test.c2h_all")
 add_custom_target(${c2h_all_target})
 
-function(libcudacxx_add_test target_name_var source)
-  string(REPLACE "/" "." target_name "${source}")
-  string(PREPEND target_name "libcudacxx.test.")
-  string(REGEX REPLACE "\\.[^.]+$" "" target_name "${target_name}")
-  set(${target_name_var} ${target_name} PARENT_SCOPE)
-
-  add_executable(${target_name} "${source}")
-  cccl_configure_target(${target_name} DIALECT ${CMAKE_CUDA_STANDARD})
-  target_include_directories(
-    ${target_name}
-    PRIVATE "${libcudacxx_SOURCE_DIR}/test/libcudacxx/cuda/ccclrt/common"
-  )
-  target_link_libraries(
-    ${target_name}
-    PRIVATE #
-      libcudacxx.compiler_interface
-      cccl.c2h.main
+if (NOT LIBCUDACXX_TEST_WITH_NVRTC)
+  file(
+    GLOB_RECURSE test_srcs
+    RELATIVE "${CMAKE_CURRENT_LIST_DIR}"
+    CONFIGURE_DEPENDS
+    *.cu
   )
 
-  add_dependencies(${c2h_all_target} ${target_name})
+  function(libcudacxx_add_test target_name_var source)
+    string(REPLACE "/" "." target_name "${source}")
+    string(PREPEND target_name "libcudacxx.test.")
+    string(REGEX REPLACE "\\.[^.]+$" "" target_name "${target_name}")
+    set(${target_name_var} ${target_name} PARENT_SCOPE)
 
-  add_test(NAME ${target_name} COMMAND ${target_name})
-endfunction()
+    add_executable(${target_name} "${source}")
+    cccl_configure_target(${target_name} DIALECT ${CMAKE_CUDA_STANDARD})
+    target_include_directories(
+      ${target_name}
+      PRIVATE "${libcudacxx_SOURCE_DIR}/test/libcudacxx/cuda/ccclrt/common"
+    )
+    target_link_libraries(
+      ${target_name}
+      PRIVATE #
+        libcudacxx.compiler_interface
+        cccl.c2h.main
+    )
 
-foreach (test_src IN LISTS test_srcs)
-  libcudacxx_add_test(test_target "${test_src}")
-endforeach()
+    add_dependencies(${c2h_all_target} ${target_name})
+
+    add_test(NAME ${target_name} COMMAND ${target_name})
+  endfunction()
+
+  foreach (test_src IN LISTS test_srcs)
+    libcudacxx_add_test(test_target "${test_src}")
+  endforeach()
+endif()
 
 ###############################################################################
 ### Lit tests:
@@ -64,12 +72,6 @@ foreach (COMPUTE_ARCH ${LIBCUDACXX_COMPUTE_ARCHS})
 endforeach()
 
 message(STATUS "Lit enabled CUDA architectures:${_compute_message}")
-
-option(
-  LIBCUDACXX_TEST_WITH_NVRTC
-  "Test libcu++ with runtime compilation instead of offline compilation. Only runs device side tests."
-  OFF
-)
 
 if (LIBCUDACXX_TEST_WITH_NVRTC)
   # TODO: Use project properties to get path to binary.

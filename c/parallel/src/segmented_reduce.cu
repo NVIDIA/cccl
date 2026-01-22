@@ -151,41 +151,37 @@ CUresult cccl_device_segmented_reduce_build_ex(
   const char* libcudacxx_path,
   const char* ctk_path,
   cccl_build_config* config)
+try
 {
-  CUresult error = CUDA_SUCCESS;
+  const char* name = "device_segmented_reduce";
 
-  try
-  {
-    const char* name = "device_segmented_reduce";
+  const int cc                 = cc_major * 10 + cc_minor;
+  const cccl_type_info accum_t = segmented_reduce::get_accumulator_type(op, input_it, init);
+  const auto accum_cpp         = cccl_type_enum_to_name(accum_t.type);
 
-    const int cc                 = cc_major * 10 + cc_minor;
-    const cccl_type_info accum_t = segmented_reduce::get_accumulator_type(op, input_it, init);
-    const auto accum_cpp         = cccl_type_enum_to_name(accum_t.type);
+  const auto [input_iterator_name, input_iterator_src] =
+    get_specialization<segmented_reduce_input_iterator_tag>(template_id<input_iterator_traits>(), input_it);
 
-    const auto [input_iterator_name, input_iterator_src] =
-      get_specialization<segmented_reduce_input_iterator_tag>(template_id<input_iterator_traits>(), input_it);
+  const auto [output_iterator_name, output_iterator_src] =
+    get_specialization<segmented_reduce_output_iterator_tag>(template_id<output_iterator_traits>(), output_it, accum_t);
 
-    const auto [output_iterator_name, output_iterator_src] = get_specialization<segmented_reduce_output_iterator_tag>(
-      template_id<output_iterator_traits>(), output_it, accum_t);
+  const auto [start_offset_iterator_name, start_offset_iterator_src] =
+    get_specialization<segmented_reduce_start_offset_iterator_tag>(
+      template_id<input_iterator_traits>(), start_offset_it);
 
-    const auto [start_offset_iterator_name, start_offset_iterator_src] =
-      get_specialization<segmented_reduce_start_offset_iterator_tag>(
-        template_id<input_iterator_traits>(), start_offset_it);
+  const auto [end_offset_iterator_name, end_offset_iterator_src] =
+    get_specialization<segmented_reduce_end_offset_iterator_tag>(template_id<input_iterator_traits>(), end_offset_it);
 
-    const auto [end_offset_iterator_name, end_offset_iterator_src] =
-      get_specialization<segmented_reduce_end_offset_iterator_tag>(template_id<input_iterator_traits>(), end_offset_it);
+  const auto [op_name, op_src] =
+    get_specialization<segmented_reduce_operation_tag>(template_id<binary_user_operation_traits>(), op, accum_t);
 
-    const auto [op_name, op_src] =
-      get_specialization<segmented_reduce_operation_tag>(template_id<binary_user_operation_traits>(), op, accum_t);
+  // OffsetT is checked to match have 64-bit size
+  const auto offset_t = cccl_type_enum_to_name(cccl_type_enum::CCCL_UINT64);
 
-    // OffsetT is checked to match have 64-bit size
-    const auto offset_t = cccl_type_enum_to_name(cccl_type_enum::CCCL_UINT64);
+  const auto policy_hub_expr = std::format("cub::detail::reduce::policy_hub<{}, {}, {}>", accum_cpp, offset_t, op_name);
 
-    const auto policy_hub_expr =
-      std::format("cub::detail::reduce::policy_hub<{}, {}, {}>", accum_cpp, offset_t, op_name);
-
-    const auto final_src = std::format(
-      R"XXX(
+  const auto final_src = std::format(
+    R"XXX(
 #include <cub/block/block_reduce.cuh>
 #include <cub/device/dispatch/tuning/tuning_reduce.cuh>
 #include <cub/device/dispatch/kernels/kernel_segmented_reduce.cuh>
@@ -206,93 +202,93 @@ __device__ consteval auto& policy_generator() {{
     = cub::detail::reduce::ReducePolicyWrapper<device_segmented_reduce_policy::ActivePolicy>::EncodedPolicy();
 }};
 )XXX",
-      jit_template_header_contents, // 0
-      input_it.value_type.size, // 1
-      input_it.value_type.alignment, // 2
-      input_iterator_src, // 3
-      output_iterator_src, // 4
-      op_src, // 5
-      start_offset_iterator_src, // 6
-      end_offset_iterator_src, // 7
-      policy_hub_expr); // 8
+    jit_template_header_contents, // 0
+    input_it.value_type.size, // 1
+    input_it.value_type.alignment, // 2
+    input_iterator_src, // 3
+    output_iterator_src, // 4
+    op_src, // 5
+    start_offset_iterator_src, // 6
+    end_offset_iterator_src, // 7
+    policy_hub_expr); // 8
 
-    std::string segmented_reduce_kernel_name = segmented_reduce::get_device_segmented_reduce_kernel_name(
-      op_name,
-      input_iterator_name,
-      output_iterator_name,
-      start_offset_iterator_name,
-      end_offset_iterator_name,
-      init,
-      accum_cpp);
-    std::string segmented_reduce_kernel_lowered_name;
+  std::string segmented_reduce_kernel_name = segmented_reduce::get_device_segmented_reduce_kernel_name(
+    op_name,
+    input_iterator_name,
+    output_iterator_name,
+    start_offset_iterator_name,
+    end_offset_iterator_name,
+    init,
+    accum_cpp);
+  std::string segmented_reduce_kernel_lowered_name;
 
-    const std::string arch = std::format("-arch=sm_{0}{1}", cc_major, cc_minor);
+  const std::string arch = std::format("-arch=sm_{0}{1}", cc_major, cc_minor);
 
-    std::vector<const char*> args = {
-      arch.c_str(),
-      cub_path,
-      thrust_path,
-      libcudacxx_path,
-      ctk_path,
-      "-rdc=true",
-      "-dlto",
-      "-DCUB_DISABLE_CDP",
-      "-DCUB_ENABLE_POLICY_PTX_JSON",
-      "-std=c++20"};
+  std::vector<const char*> args = {
+    arch.c_str(),
+    cub_path,
+    thrust_path,
+    libcudacxx_path,
+    ctk_path,
+    "-rdc=true",
+    "-dlto",
+    "-DCUB_DISABLE_CDP",
+    "-DCUB_ENABLE_POLICY_PTX_JSON",
+    "-std=c++20"};
 
-    cccl::detail::extend_args_with_build_config(args, config);
+  cccl::detail::extend_args_with_build_config(args, config);
 
-    constexpr size_t num_lto_args   = 2;
-    const char* lopts[num_lto_args] = {"-lto", arch.c_str()};
+  constexpr size_t num_lto_args   = 2;
+  const char* lopts[num_lto_args] = {"-lto", arch.c_str()};
 
-    // Collect all LTO-IRs to be linked.
-    nvrtc_linkable_list linkable_list;
-    nvrtc_linkable_list_appender appender{linkable_list};
+  // Collect all LTO-IRs to be linked.
+  nvrtc_linkable_list linkable_list;
+  nvrtc_linkable_list_appender appender{linkable_list};
 
-    // add definition of binary operation op
-    appender.append_operation(op);
-    // add iterator definitions
-    appender.add_iterator_definition(input_it);
-    appender.add_iterator_definition(output_it);
-    appender.add_iterator_definition(start_offset_it);
-    appender.add_iterator_definition(end_offset_it);
+  // add definition of binary operation op
+  appender.append_operation(op);
+  // add iterator definitions
+  appender.add_iterator_definition(input_it);
+  appender.add_iterator_definition(output_it);
+  appender.add_iterator_definition(start_offset_it);
+  appender.add_iterator_definition(end_offset_it);
 
-    nvrtc_link_result result =
-      begin_linking_nvrtc_program(num_lto_args, lopts)
-        ->add_program(nvrtc_translation_unit{final_src.c_str(), name})
-        ->add_expression({segmented_reduce_kernel_name})
-        ->compile_program({args.data(), args.size()})
-        ->get_name({segmented_reduce_kernel_name, segmented_reduce_kernel_lowered_name})
-        ->link_program()
-        ->add_link_list(linkable_list)
-        ->finalize_program();
+  nvrtc_link_result result =
+    begin_linking_nvrtc_program(num_lto_args, lopts)
+      ->add_program(nvrtc_translation_unit{final_src.c_str(), name})
+      ->add_expression({segmented_reduce_kernel_name})
+      ->compile_program({args.data(), args.size()})
+      ->get_name({segmented_reduce_kernel_name, segmented_reduce_kernel_lowered_name})
+      ->link_program()
+      ->add_link_list(linkable_list)
+      ->finalize_program();
 
-    // populate build struct members
-    cuLibraryLoadData(&build_ptr->library, result.data.get(), nullptr, nullptr, 0, nullptr, nullptr, 0);
-    check(cuLibraryGetKernel(
-      &build_ptr->segmented_reduce_kernel, build_ptr->library, segmented_reduce_kernel_lowered_name.c_str()));
+  // populate build struct members
+  cuLibraryLoadData(&build_ptr->library, result.data.get(), nullptr, nullptr, 0, nullptr, nullptr, 0);
+  check(cuLibraryGetKernel(
+    &build_ptr->segmented_reduce_kernel, build_ptr->library, segmented_reduce_kernel_lowered_name.c_str()));
 
-    nlohmann::json runtime_policy =
-      cub::detail::ptx_json::parse("device_segmented_reduce_policy", {result.data.get(), result.size});
+  nlohmann::json runtime_policy =
+    cub::detail::ptx_json::parse("device_segmented_reduce_policy", {result.data.get(), result.size});
 
-    using cub::detail::RuntimeReduceAgentPolicy;
-    auto segmented_reduce_policy = RuntimeReduceAgentPolicy::from_json(runtime_policy, "SegmentedReducePolicy");
+  using cub::detail::RuntimeReduceAgentPolicy;
+  auto segmented_reduce_policy = RuntimeReduceAgentPolicy::from_json(runtime_policy, "SegmentedReducePolicy");
 
-    build_ptr->cc               = cc;
-    build_ptr->cubin            = (void*) result.data.release();
-    build_ptr->cubin_size       = result.size;
-    build_ptr->accumulator_size = accum_t.size;
-    build_ptr->runtime_policy   = new segmented_reduce::segmented_reduce_runtime_tuning_policy{segmented_reduce_policy};
-  }
-  catch (const std::exception& exc)
-  {
-    fflush(stderr);
-    printf("\nEXCEPTION in cccl_device_segmented_reduce_build(): %s\n", exc.what());
-    fflush(stdout);
-    error = CUDA_ERROR_UNKNOWN;
-  }
+  build_ptr->cc               = cc;
+  build_ptr->cubin            = (void*) result.data.release();
+  build_ptr->cubin_size       = result.size;
+  build_ptr->accumulator_size = accum_t.size;
+  build_ptr->runtime_policy   = new segmented_reduce::segmented_reduce_runtime_tuning_policy{segmented_reduce_policy};
 
-  return error;
+  return CUDA_SUCCESS;
+}
+catch (const std::exception& exc)
+{
+  fflush(stderr);
+  printf("\nEXCEPTION in cccl_device_segmented_reduce_build(): %s\n", exc.what());
+  fflush(stdout);
+
+  return CUDA_ERROR_UNKNOWN;
 }
 
 CUresult cccl_device_segmented_reduce(
@@ -396,26 +392,25 @@ CUresult cccl_device_segmented_reduce_build(
 }
 
 CUresult cccl_device_segmented_reduce_cleanup(cccl_device_segmented_reduce_build_result_t* build_ptr)
+try
 {
-  try
+  if (build_ptr == nullptr)
   {
-    if (build_ptr == nullptr)
-    {
-      return CUDA_ERROR_INVALID_VALUE;
-    }
+    return CUDA_ERROR_INVALID_VALUE;
+  }
 
-    // allocation behind cubin is owned by unique_ptr with delete[] deleter now
-    std::unique_ptr<char[]> cubin(reinterpret_cast<char*>(build_ptr->cubin));
-    std::unique_ptr<char[]> policy(reinterpret_cast<char*>(build_ptr->runtime_policy));
-    check(cuLibraryUnload(build_ptr->library));
-  }
-  catch (const std::exception& exc)
-  {
-    fflush(stderr);
-    printf("\nEXCEPTION in cccl_device_reduce_cleanup(): %s\n", exc.what());
-    fflush(stdout);
-    return CUDA_ERROR_UNKNOWN;
-  }
+  // allocation behind cubin is owned by unique_ptr with delete[] deleter now
+  std::unique_ptr<char[]> cubin(reinterpret_cast<char*>(build_ptr->cubin));
+  std::unique_ptr<char[]> policy(reinterpret_cast<char*>(build_ptr->runtime_policy));
+  check(cuLibraryUnload(build_ptr->library));
 
   return CUDA_SUCCESS;
-};
+}
+catch (const std::exception& exc)
+{
+  fflush(stderr);
+  printf("\nEXCEPTION in cccl_device_reduce_cleanup(): %s\n", exc.what());
+  fflush(stdout);
+
+  return CUDA_ERROR_UNKNOWN;
+}

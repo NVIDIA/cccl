@@ -111,13 +111,16 @@ constexpr bool fits_in_default_shared_memory()
 #endif // TUNE_BASE
 
 template <typename KeyT, typename ValueT, typename OffsetT>
-void radix_sort_values(
-  std::integral_constant<bool, true>, nvbench::state& state, nvbench::type_list<KeyT, ValueT, OffsetT>)
+void radix_sort_values(nvbench::state& state, nvbench::type_list<KeyT, ValueT, OffsetT>)
 {
   using offset_t = cub::detail::choose_offset_t<OffsetT>;
+  using key_t    = KeyT;
+  using value_t  = ValueT;
+  if constexpr (!fits_in_default_shared_memory<key_t, value_t, offset_t>())
+  {
+    return;
+  }
 
-  using key_t   = KeyT;
-  using value_t = ValueT;
   using dispatch_t =
     cub::DispatchRadixSort<sort_order,
                            key_t,
@@ -187,21 +190,6 @@ void radix_sort_values(
       is_overwrite_ok,
       launch.get_stream());
   });
-}
-
-template <typename KeyT, typename ValueT, typename OffsetT>
-void radix_sort_values(std::integral_constant<bool, false>, nvbench::state&, nvbench::type_list<KeyT, ValueT, OffsetT>)
-{
-  (void) sort_order;
-  (void) is_overwrite_ok;
-}
-
-template <typename KeyT, typename ValueT, typename OffsetT>
-void radix_sort_values(nvbench::state& state, nvbench::type_list<KeyT, ValueT, OffsetT> tl)
-{
-  using offset_t = cub::detail::choose_offset_t<OffsetT>;
-
-  radix_sort_values(std::integral_constant<bool, fits_in_default_shared_memory<KeyT, ValueT, offset_t>()>{}, state, tl);
 }
 
 #ifdef TUNE_KeyT

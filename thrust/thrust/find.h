@@ -79,6 +79,10 @@ THRUST_NAMESPACE_BEGIN
  *
  *  \see find_if
  *  \see mismatch
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename DerivedPolicy, typename InputIterator, typename T>
 _CCCL_HOST_DEVICE InputIterator
@@ -120,6 +124,10 @@ find(const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
  *
  *  \see find_if
  *  \see mismatch
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename InputIterator, typename T>
 InputIterator find(InputIterator first, InputIterator last, const T& value);
@@ -184,6 +192,10 @@ InputIterator find(InputIterator first, InputIterator last, const T& value);
  *  \see find
  *  \see find_if_not
  *  \see mismatch
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename DerivedPolicy, typename InputIterator, typename Predicate>
 _CCCL_HOST_DEVICE InputIterator find_if(
@@ -245,6 +257,10 @@ _CCCL_HOST_DEVICE InputIterator find_if(
  *  \see find
  *  \see find_if_not
  *  \see mismatch
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename InputIterator, typename Predicate>
 InputIterator find_if(InputIterator first, InputIterator last, Predicate pred);
@@ -309,6 +325,10 @@ InputIterator find_if(InputIterator first, InputIterator last, Predicate pred);
  *  \see find
  *  \see find_if
  *  \see mismatch
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename DerivedPolicy, typename InputIterator, typename Predicate>
 _CCCL_HOST_DEVICE InputIterator find_if_not(
@@ -370,6 +390,10 @@ _CCCL_HOST_DEVICE InputIterator find_if_not(
  *  \see find
  *  \see find_if
  *  \see mismatch
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename InputIterator, typename Predicate>
 InputIterator find_if_not(InputIterator first, InputIterator last, Predicate pred);
