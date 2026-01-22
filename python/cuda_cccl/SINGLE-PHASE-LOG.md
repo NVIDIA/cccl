@@ -526,9 +526,18 @@
 - Request: coalesce identical one-shot primitives under LTOIR bundling and add tests that inspect generated shims.
 - Changes:
   - `cuda/coop/_rewrite.py`: enable LTOIR bundling by default; add coalesce symbol IDs; ensure bundling can run for duplicate primitives; use coalesced symbol IDs for one-shot shims.
-  - `cuda/coop/_types.py`: add coalesce key helpers; allow bundle compilation to dedupe identical shim bodies; allow node-provided `symbol_name` for stable shim symbols.
+  - `cuda/coop/_types.py`: add coalesce key helpers; allow bundle compilation to dedupe identical shim bodies; allow node-provided `symbol_name` for stable shim symbols; use `result`/`output` for auto-named output params.
+  - `cuda/coop/_types.py`: prefer `output` for array outputs and `result` for scalar outputs in shim params.
   - `tests/coop/test_ltoir_bundle.py`: update env-var gating test for new default (bundle on, opt-out with env=0).
   - `tests/coop/test_coalesce_shims_gpu.py`: new GPU test that inspects NVRTC dumped shim code and verifies identical block.sum calls produce a single shim definition.
 - Tests:
   - `pytest -q tests/coop/test_ltoir_bundle.py` (2 passed)
   - `pytest -q tests/coop/test_coalesce_shims_gpu.py` (requires GPU)
+
+## 2026-01-22 (single-phase status review)
+- Request: review overall single-phase status, CUB parity, docs/tests, and update TODO/notes.
+- Changes:
+  - `SINGLE-PHASE-TODO.md`: add follow-up items for overload parity, multi-output support,
+    expanded temp-storage plumbing, docstring/examples, validation, ThreadData, and
+    gpu_dataclass coverage.
+- Tests: not run (review only).
