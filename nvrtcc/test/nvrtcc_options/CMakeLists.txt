@@ -9,14 +9,14 @@
 ##===----------------------------------------------------------------------===##
 
 # 1. Add -use-nvrtc test.
-add_executable(test.nvrtcc_options.use_nvrtc.false use_nvrtc.false.cu)
+add_executable(test.nvrtcc_options.use_nvrtc.false use_nvrtc.cu)
 add_dependencies(nvrtcc.test test.nvrtcc_options.use_nvrtc.false)
 add_test(
   NAME test.nvrtcc_options.use_nvrtc.false.run
   COMMAND ${CMAKE_CURRENT_BINARY_DIR}/test.nvrtcc_options.use_nvrtc.false
 )
 
-add_executable(test.nvrtcc_options.use_nvrtc use_nvrtc.true.cu)
+add_executable(test.nvrtcc_options.use_nvrtc use_nvrtc.cu)
 add_dependencies(nvrtcc.test test.nvrtcc_options.use_nvrtc)
 target_compile_options(test.nvrtcc_options.use_nvrtc PRIVATE "--use-nvrtc")
 add_test(
@@ -24,7 +24,7 @@ add_test(
   COMMAND ${CMAKE_CURRENT_BINARY_DIR}/test.nvrtcc_options.use_nvrtc
 )
 
-add_executable(test.nvrtcc_options.use_nvrtc.short use_nvrtc.true.cu)
+add_executable(test.nvrtcc_options.use_nvrtc.short use_nvrtc.cu)
 add_dependencies(nvrtcc.test test.nvrtcc_options.use_nvrtc.short)
 target_compile_options(test.nvrtcc_options.use_nvrtc.short PRIVATE "-use-nvrtc")
 add_test(
