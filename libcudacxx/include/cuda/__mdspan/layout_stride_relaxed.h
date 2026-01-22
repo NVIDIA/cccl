@@ -29,7 +29,9 @@
 #include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__mdspan/concepts.h>
 #include <cuda/std/__mdspan/extents.h>
+#include <cuda/std/__mdspan/layout_left.h>
 #include <cuda/std/__mdspan/layout_right.h>
+#include <cuda/std/__mdspan/layout_stride.h>
 #include <cuda/std/__type_traits/conjunction.h>
 #include <cuda/std/__type_traits/is_constructible.h>
 #include <cuda/std/__type_traits/is_convertible.h>
@@ -139,6 +141,21 @@ private:
       }
       return strides_type(__init_strides);
     }
+  }
+
+  [[nodiscard]] _CCCL_API constexpr bool __has_positive_strides() const noexcept
+  {
+    if constexpr (__rank_ > 0) // avoid pointless comparison of unsigned integer with zero warning
+    {
+      for (rank_type __r = 0; __r < __rank_; ++__r)
+      {
+        if (__strides_.stride(__r) <= 0)
+        {
+          return false;
+        }
+      }
+    }
+    return true;
   }
 
 public:
@@ -367,6 +384,27 @@ public:
   {
     _CCCL_ASSERT(__r < __rank_, "layout_stride_relaxed::mapping::stride(): invalid rank index");
     return __strides_.stride(__r);
+  }
+
+  // Conversion operators to layout_stride
+
+  //! @brief Explicit conversion to layout_stride::mapping
+  //! @pre offset() == 0 and all strides are positive
+  [[nodiscard]] _CCCL_API explicit constexpr operator ::cuda::std::layout_stride::mapping<extents_type>() const noexcept
+  {
+    _CCCL_ASSERT(__offset_ == 0,
+                 "layout_stride_relaxed::mapping: cannot convert to layout_stride with non-zero offset");
+    _CCCL_ASSERT(__has_positive_strides(),
+                 "layout_stride_relaxed::mapping: cannot convert to layout_stride with non-positive strides");
+    ::cuda::std::array<index_type, __rank_> __stride_array{};
+    if constexpr (__rank_ > 0) // avoid pointless comparison of unsigned integer with zero warning
+    {
+      for (rank_type __r = 0; __r < __rank_; ++__r)
+      {
+        __stride_array[__r] = static_cast<index_type>(__strides_.stride(__r));
+      }
+    }
+    return ::cuda::std::layout_stride::mapping<extents_type>(__extents_, __stride_array);
   }
 
   // [mdspan.layout.stride.cmp], comparison
