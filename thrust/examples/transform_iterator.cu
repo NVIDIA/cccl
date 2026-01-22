@@ -13,18 +13,7 @@ template <typename T>
 auto make_clamp_lambda(T lo, T hi)
 {
   return [=] __device__(T x) {
-    if (x < lo)
-    {
-      return lo;
-    }
-    else if (x < hi)
-    {
-      return x;
-    }
-    else
-    {
-      return hi;
-    }
+    return cuda::std::clamp(x, lo, hi);
   };
 }
 

@@ -132,13 +132,9 @@ int main()
       {
         return x < y;
       }
-      else if (x % 2)
-      {
-        return false;
-      }
       else
       {
-        return true;
+        return !(x % 2);
       }
     });
     print(keys);

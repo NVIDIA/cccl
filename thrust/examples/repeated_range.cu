@@ -22,11 +22,12 @@ public:
   using difference_type = typename cuda::std::iterator_traits<Iterator>::difference_type;
 
   // lambda that implements the repeat operation
-  using repeat_functor = decltype([](difference_type repeats) {
+  __device__ auto create_repeat_functor(difference_type repeats) {
     return [=] __device__(const difference_type& i) {
       return i / repeats;
-    };
-  }(difference_type{}));
+    }
+  }
+  using repeat_functor = decltype(create_repeat_functor(difference_type{}));
 
   using CountingIterator    = typename thrust::counting_iterator<difference_type>;
   using TransformIterator   = typename thrust::transform_iterator<repeat_functor, CountingIterator>;

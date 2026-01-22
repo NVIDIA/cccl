@@ -49,15 +49,6 @@ struct arbitrary_functor1
   }
 };
 
-struct arbitrary_functor2
-{
-  __host__ __device__ void operator()(const float& a, const float& b, const float& c, float& d)
-  {
-    // D[i] = A[i] + B[i] * C[i];
-    d = a + b * c;
-  }
-};
-
 int main()
 {
   // allocate and initialize
@@ -71,7 +62,8 @@ int main()
                    thrust::make_zip_iterator(A.end(), B.end(), C.end(), D1.end()),
                    [] __device__(auto t) {
                      // D[i] = A[i] + B[i] * C[i];
-                     thrust::get<3>(t) = thrust::get<0>(t) + thrust::get<1>(t) * thrust::get<2>(t);
+                     auto& [a, b, c, d] = t;
+                     d = a + b * c;
                    });
 
   // print the output

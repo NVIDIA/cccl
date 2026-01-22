@@ -39,8 +39,8 @@ int main()
   Vector output(values.size());
 
   // lambda returns true if the argument is odd, and false otherwise
-  auto is_odd = [] __device__(int x) {
-    return x % 2;
+  auto is_odd = [] __device__(int x) -> bool {
+    return x % 2 == 1;
   };
 
   // copy odd numbers to separate array
