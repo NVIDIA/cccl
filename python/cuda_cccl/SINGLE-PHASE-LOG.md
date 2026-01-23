@@ -691,3 +691,43 @@
 - Tests:
   - `pytest -q tests/coop/test_block_exchange_api.py::test_block_exchange_striped_to_blocked tests/coop/test_block_discontinuity_api.py::test_block_discontinuity_flag_heads` (2 passed)
   - `pytest -q tests/coop/test_block_radix_sort.py::test_block_radix_sort_two_phase tests/coop/test_block_radix_sort.py::test_block_radix_sort_temp_storage tests/coop/test_block_radix_sort.py::test_block_radix_sort_descending_two_phase` (3 passed)
+
+## 2026-01-23 (warp docstring literalincludes + scan doc update)
+- Request: align BlockScan docs with block-aggregate support and add warp literalinclude examples.
+- Changes:
+  - `cuda/coop/block/_block_scan.py`: replace “unsupported block_aggregate” section with supported out-param note.
+  - `tests/coop/test_warp_exchange_api.py`: add literalinclude markers for imports + striped-to-blocked example.
+  - `tests/coop/test_warp_load_store_api.py`: add literalinclude markers for imports + load/store example.
+  - `tests/coop/test_warp_merge_sort_api.py`: add imports marker + CUDA warnings config.
+  - `cuda/coop/warp/_warp_exchange.py`: add docstring literalinclude blocks.
+  - `cuda/coop/warp/_warp_load_store.py`: add docstring literalinclude blocks.
+  - `cuda/coop/warp/_warp_merge_sort.py`: add docstring literalinclude blocks.
+  - `cuda/coop/warp/_warp_reduce.py`: add docstring literalinclude blocks for reduce/sum.
+  - `cuda/coop/warp/_warp_scan.py`: add docstring literalinclude blocks for exclusive/inclusive sum.
+  - `SINGLE-PHASE-TODO.md`: mark block-aggregate out-param support complete; add deferred section.
+- Tests: not run (doc-only changes).
+
+## 2026-01-23 (cuda.coop docs guides kickoff)
+- Request: begin comprehensive cuda.coop docs update (single/two-phase, temp storage, gpu_dataclass, advanced, FAQ, limitations).
+- Changes:
+  - `docs/python/coop.rst`: expanded overview + guide toctree.
+  - `docs/python/coop_single_phase.rst`: new single-phase guide with examples.
+  - `docs/python/coop_two_phase.rst`: new two-phase/pre-create guide.
+  - `docs/python/coop_temp_storage.rst`: new temp storage and shared memory guide.
+  - `docs/python/coop_gpu_dataclass.rst`: new gpu_dataclass/KernelTraits guide with Mamba references.
+  - `docs/python/coop_advanced.rst`: new advanced LTOIR/NVRTC env var guide.
+  - `docs/python/coop_faq.rst`: new FAQ covering single vs two-phase and when to use each.
+  - `docs/python/coop_limitations.rst`: new limitations/deferred features page.
+  - `docs/python/coop_api.rst`: add link to guides.
+- Tests: not run (doc-only changes).
+
+## 2026-01-23
+- Fixed indentation in docs/python/coop_faq.rst to satisfy Sphinx list formatting.
+- Ran Sphinx installs for docs requirements.
+- Tried targeted coop-only Sphinx build via temp conf; master_doc filtering hit exclude-pattern limits.
+- Build status: regular Sphinx build still succeeds with warnings; coop-only build needs a cleaner conf strategy.
+
+## 2026-01-23
+- Added coop-local "Flexible data arrangement" section in docs/python/coop.rst.
+- Updated coop block scan/merge/radix sort docstrings to reference the new coop label.
+- Planned to rerun coop API Sphinx build after label update.

@@ -33,7 +33,23 @@ class reduce(BasePrimitive):
         temp_storage=None,
         node=None,
     ):
-        """Computes a warp-wide reduction for lane :sub:`0` using the specified binary reduction functor."""
+        """
+        Computes a warp-wide reduction for lane :sub:`0` using the specified
+        binary reduction functor.
+
+        Example:
+            .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_warp_reduce_api.py
+                :language: python
+                :dedent:
+                :start-after: example-begin imports
+                :end-before: example-end imports
+
+            .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_warp_reduce_api.py
+                :language: python
+                :dedent:
+                :start-after: example-begin reduce
+                :end-before: example-end reduce
+        """
         self.node = node
         self.temp_storage = temp_storage
         self.dtype = normalize_dtype_param(dtype)
@@ -118,7 +134,22 @@ class sum(BasePrimitive):
         unique_id=None,
         temp_storage=None,
     ):
-        """Computes a warp-wide reduction for lane :sub:`0` using addition (+)."""
+        """
+        Computes a warp-wide sum for lane :sub:`0` using addition (+).
+
+        Example:
+            .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_warp_reduce_api.py
+                :language: python
+                :dedent:
+                :start-after: example-begin imports
+                :end-before: example-end imports
+
+            .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_warp_reduce_api.py
+                :language: python
+                :dedent:
+                :start-after: example-begin sum
+                :end-before: example-end sum
+        """
         self.temp_storage = temp_storage
         self.dtype = normalize_dtype_param(dtype)
         self.binary_op = None

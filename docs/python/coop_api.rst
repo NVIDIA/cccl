@@ -7,6 +7,8 @@
   ``cuda.coop`` is in public beta.
   The API is subject to change without notice.
 
+For conceptual guides and best practices, see :doc:`coop`.
+
 .. automodule:: cuda.coop.warp
   :members:
   :undoc-members:

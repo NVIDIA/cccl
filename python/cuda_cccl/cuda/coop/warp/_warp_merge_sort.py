@@ -34,7 +34,22 @@ class merge_sort_keys(BasePrimitive):
         temp_storage=None,
         node=None,
     ):
-        """Performs a warp-wide merge sort over blocked keys."""
+        """
+        Performs a warp-wide merge sort over blocked keys.
+
+        Example:
+            .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_warp_merge_sort_api.py
+                :language: python
+                :dedent:
+                :start-after: example-begin imports
+                :end-before: example-end imports
+
+            .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_warp_merge_sort_api.py
+                :language: python
+                :dedent:
+                :start-after: example-begin merge-sort
+                :end-before: example-end merge-sort
+        """
         self.node = node
         self.temp_storage = temp_storage
         self.dtype = normalize_dtype_param(dtype)

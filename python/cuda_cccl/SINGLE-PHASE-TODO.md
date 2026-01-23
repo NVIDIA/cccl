@@ -60,8 +60,7 @@
 - [x] Add block radix rank exclusive_digit_prefix output overloads.
 - [ ] Enable BlockRadixSort decomposer for user-defined types (blocked: CUB expects tuple-of-references; need C++ adapter or alternate lowering).
 - [x] Add warp merge sort key/value overloads.
-- [ ] Add multi-output support in `_types.py` (or alternate return strategy)
-      to enable block-aggregate scan overloads.
+- [x] Support block-aggregate scan out-params (no tuple-style multi-output return).
 - [x] Expand single-phase `temp_storage=` support across all primitives and
       keep `TempStorage` getitem syntax compatible; add coverage.
 - [x] Add GPU tests that use `gpu_dataclass` with multiple primitives sharing
@@ -69,7 +68,14 @@
 - [x] Add/upgrade docstrings for every public primitive with
       `literalinclude`-based examples in `tests/coop/*_api.py`; remove any
       mention of `.create()` from public docs.
+- [x] Fix coop FAQ indentation issues (Sphinx).
+- [x] Add coop-local flexible data arrangement doc section and update docstring refs.
 - [ ] Improve kwarg validation and error messages for primitives with many
       overloads (match CUB API supersets; fail early with friendly errors).
 - [ ] Extend ThreadData inference (alignment/shape/dtype propagation from
       inputs/outputs and `coop.(shared|local).array`) and add tests.
+
+## Deferred / Not Planned
+
+- BlockRadixSort decomposer support (requires a C++ tuple-of-references adapter).
+- Multi-channel BlockHistogram outputs (not exposed via current CUB BlockHistogram API).
