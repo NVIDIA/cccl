@@ -229,6 +229,12 @@ static_assert(
     policy_sel_expr, // 8
     policy_sel_str.view()); // 9
 
+#if false // CCCL_DEBUGGING_SWITCH
+  fflush(stderr);
+  printf("\nCODE4NVRTC BEGIN\n%sCODE4NVRTC END\n", final_src.c_str());
+  fflush(stdout);
+#endif
+
   std::string segmented_reduce_kernel_name = segmented_reduce::get_device_segmented_reduce_kernel_name(
     op_name,
     input_iterator_name,
@@ -323,16 +329,16 @@ CUresult cccl_device_segmented_reduce(
     CUdevice cu_device;
     check(cuCtxGetDevice(&cu_device));
 
-    auto exec_status = cub::detail::segmented_reduce::dispatch<void, /* OffsetType */ uint64_t>(
+    auto exec_status = cub::detail::segmented_reduce::dispatch</* OverrideAccumT */ void, OffsetT>(
       d_temp_storage,
       *temp_storage_bytes,
-      d_in,
+      indirect_arg_t{d_in},
       indirect_iterator_t{d_out},
       num_segments,
       indirect_iterator_t{start_offset},
       indirect_iterator_t{end_offset},
-      op,
-      init,
+      indirect_arg_t{op},
+      indirect_arg_t{init},
       stream,
       *static_cast<cub::detail::segmented_reduce::policy_selector*>(build.runtime_policy),
       segmented_reduce::segmented_reduce_kernel_source{build},
