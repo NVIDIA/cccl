@@ -92,6 +92,7 @@ def test_block_exclusive_sum_block_aggregate():
         numba.int32, threads_per_block, items_per_thread
     )
 
+    # example-begin exclusive-sum-block-aggregate
     @cuda.jit
     def kernel(output, aggregates):
         tid = cuda.threadIdx.x
@@ -103,6 +104,8 @@ def test_block_exclusive_sum_block_aggregate():
         )
         output[tid] = result
         aggregates[tid] = block_aggregate[0]
+
+    # example-end exclusive-sum-block-aggregate
 
     d_output = cuda.device_array(threads_per_block, dtype=np.int32)
     d_aggregates = cuda.device_array(threads_per_block, dtype=np.int32)

@@ -113,6 +113,7 @@ def test_warp_load_store_num_valid_oob_default():
         num_valid_items=num_valid,
     )
 
+    # example-begin load-store-num-valid-oob-default
     @cuda.jit
     def kernel_all(d_in, d_out_all):
         items = cuda.local.array(items_per_thread, numba.int32)
@@ -128,6 +129,8 @@ def test_warp_load_store_num_valid_oob_default():
         oob = numba.int32(oob_default)
         warp_load(d_in, items, num_valid_items, oob)
         warp_store_valid(d_out_valid, items, num_valid_items)
+
+    # example-end load-store-num-valid-oob-default
 
     h_input = np.arange(total_items, dtype=np.int32)
     d_input = cuda.to_device(h_input)

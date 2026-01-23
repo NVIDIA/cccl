@@ -59,3 +59,47 @@ def test_warp_inclusive_sum():
 
 
 test_warp_inclusive_sum()
+
+
+def test_warp_exclusive_scan():
+    # example-begin exclusive-scan
+    def op(a, b):
+        return a + b
+
+    warp_scan = coop.warp.exclusive_scan(numba.int32, op)
+
+    @cuda.jit
+    def kernel(data):
+        data[cuda.threadIdx.x] = warp_scan(data[cuda.threadIdx.x])
+
+    # example-end exclusive-scan
+
+    tile_size = 32
+    h_keys = np.ones(tile_size, dtype=np.int32)
+    d_keys = cuda.to_device(h_keys)
+    kernel[1, 32](d_keys)
+    h_keys = d_keys.copy_to_host()
+    for i in range(tile_size):
+        assert h_keys[i] == i
+
+
+def test_warp_inclusive_scan():
+    # example-begin inclusive-scan
+    def op(a, b):
+        return a + b
+
+    warp_scan = coop.warp.inclusive_scan(numba.int32, op)
+
+    @cuda.jit
+    def kernel(data):
+        data[cuda.threadIdx.x] = warp_scan(data[cuda.threadIdx.x])
+
+    # example-end inclusive-scan
+
+    tile_size = 32
+    h_keys = np.ones(tile_size, dtype=np.int32)
+    d_keys = cuda.to_device(h_keys)
+    kernel[1, 32](d_keys)
+    h_keys = d_keys.copy_to_host()
+    for i in range(tile_size):
+        assert h_keys[i] == i + 1

@@ -89,6 +89,7 @@ def test_block_reduction_temp_storage():
     temp_storage_bytes = block_reduce.temp_storage_bytes
     temp_storage_alignment = block_reduce.temp_storage_alignment
 
+    # example-begin reduce-temp-storage
     @cuda.jit
     def kernel(input, output_single, output_two):
         temp_storage = coop.TempStorage(
@@ -106,6 +107,8 @@ def test_block_reduction_temp_storage():
         if cuda.threadIdx.x == 0:
             output_single[0] = block_output
             output_two[0] = block_output_two_phase
+
+    # example-end reduce-temp-storage
 
     h_input = np.random.randint(0, 42, threads_per_block, dtype=np.int32)
     d_input = cuda.to_device(h_input)
@@ -131,6 +134,7 @@ def test_block_sum_temp_storage():
     temp_storage_bytes = block_sum.temp_storage_bytes
     temp_storage_alignment = block_sum.temp_storage_alignment
 
+    # example-begin sum-temp-storage
     @cuda.jit
     def kernel(input, output_single, output_two):
         temp_storage = coop.TempStorage(
@@ -147,6 +151,8 @@ def test_block_sum_temp_storage():
         if cuda.threadIdx.x == 0:
             output_single[0] = block_output
             output_two[0] = block_output_two_phase
+
+    # example-end sum-temp-storage
 
     h_input = np.ones(threads_per_block, dtype=np.int32)
     d_input = cuda.to_device(h_input)
@@ -176,6 +182,7 @@ def test_block_reduce_two_phase_temp_storage():
     temp_storage_bytes = block_reduce.temp_storage_bytes
     temp_storage_alignment = block_reduce.temp_storage_alignment
 
+    # example-begin reduce-two-phase-temp-storage
     @cuda.jit
     def kernel(input, output):
         temp_storage = coop.TempStorage(
@@ -188,6 +195,8 @@ def test_block_reduce_two_phase_temp_storage():
         )
         if cuda.threadIdx.x == 0:
             output[0] = block_output
+
+    # example-end reduce-two-phase-temp-storage
 
     h_input = np.random.randint(0, 42, threads_per_block, dtype=np.int32)
     d_input = cuda.to_device(h_input)
@@ -208,6 +217,7 @@ def test_block_sum_two_phase_temp_storage():
     temp_storage_bytes = block_sum.temp_storage_bytes
     temp_storage_alignment = block_sum.temp_storage_alignment
 
+    # example-begin sum-two-phase-temp-storage
     @cuda.jit
     def kernel(input, output):
         temp_storage = coop.TempStorage(
@@ -220,6 +230,8 @@ def test_block_sum_two_phase_temp_storage():
         )
         if cuda.threadIdx.x == 0:
             output[0] = block_output
+
+    # example-end sum-two-phase-temp-storage
 
     h_input = np.ones(threads_per_block, dtype=np.int32)
     d_input = cuda.to_device(h_input)

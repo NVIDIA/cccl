@@ -81,7 +81,33 @@ def exclusive_sum(
     temp_storage=None,
     methods: dict | None = None,
 ):
-    """Exclusive block-wide sum for per-thread items."""
+    """Exclusive block-wide sum for per-thread items.
+
+    Example:
+        .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_block_scan_api.py
+            :language: python
+            :dedent:
+            :start-after: example-begin imports
+            :end-before: example-end imports
+
+        .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_block_scan_api.py
+            :language: python
+            :dedent:
+            :start-after: example-begin exclusive-sum
+            :end-before: example-end exclusive-sum
+
+        .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_block_scan_api.py
+            :language: python
+            :dedent:
+            :start-after: example-begin exclusive-sum-single-input-per-thread
+            :end-before: example-end exclusive-sum-single-input-per-thread
+
+        .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_block_scan_api.py
+            :language: python
+            :dedent:
+            :start-after: example-begin exclusive-sum-block-aggregate
+            :end-before: example-end exclusive-sum-block-aggregate
+    """
 
 
 def inclusive_sum(
@@ -93,7 +119,15 @@ def inclusive_sum(
     temp_storage=None,
     methods: dict | None = None,
 ):
-    """Inclusive block-wide sum for per-thread items."""
+    """Inclusive block-wide sum for per-thread items.
+
+    Example:
+        .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_block_scan_api_extra.py
+            :language: python
+            :dedent:
+            :start-after: example-begin inclusive-sum
+            :end-before: example-end inclusive-sum
+    """
 
 
 def exclusive_scan(
@@ -106,7 +140,15 @@ def exclusive_scan(
     temp_storage=None,
     methods: dict | None = None,
 ):
-    """Exclusive block-wide scan with a custom operator."""
+    """Exclusive block-wide scan with a custom operator.
+
+    Example:
+        .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_block_scan_api_extra.py
+            :language: python
+            :dedent:
+            :start-after: example-begin exclusive-scan
+            :end-before: example-end exclusive-scan
+    """
 
 
 def inclusive_scan(
@@ -119,7 +161,15 @@ def inclusive_scan(
     temp_storage=None,
     methods: dict | None = None,
 ):
-    """Inclusive block-wide scan with a custom operator."""
+    """Inclusive block-wide scan with a custom operator.
+
+    Example:
+        .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_block_scan_api_extra.py
+            :language: python
+            :dedent:
+            :start-after: example-begin inclusive-scan
+            :end-before: example-end inclusive-scan
+    """
 
 
 def scan(
@@ -134,7 +184,15 @@ def scan(
     temp_storage=None,
     methods: dict | None = None,
 ):
-    """Flexible block-wide scan entry point."""
+    """Flexible block-wide scan entry point.
+
+    Example:
+        .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_block_scan_api.py
+            :language: python
+            :dedent:
+            :start-after: example-begin exclusive-sum
+            :end-before: example-end exclusive-sum
+    """
 
 
 def reduce(
@@ -147,7 +205,27 @@ def reduce(
     temp_storage=None,
     methods: dict | None = None,
 ):
-    """Block-wide reduction with a custom operator."""
+    """Block-wide reduction with a custom operator.
+
+    Example:
+        .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_block_reduce_api.py
+            :language: python
+            :dedent:
+            :start-after: example-begin reduce
+            :end-before: example-end reduce
+
+        .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_block_reduce_api.py
+            :language: python
+            :dedent:
+            :start-after: example-begin reduce-temp-storage
+            :end-before: example-end reduce-temp-storage
+
+        .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_block_reduce_api.py
+            :language: python
+            :dedent:
+            :start-after: example-begin reduce-two-phase-temp-storage
+            :end-before: example-end reduce-two-phase-temp-storage
+    """
 
 
 def sum(
@@ -159,7 +237,27 @@ def sum(
     temp_storage=None,
     methods: dict | None = None,
 ):
-    """Block-wide sum reduction."""
+    """Block-wide sum reduction.
+
+    Example:
+        .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_block_reduce_api.py
+            :language: python
+            :dedent:
+            :start-after: example-begin sum
+            :end-before: example-end sum
+
+        .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_block_reduce_api.py
+            :language: python
+            :dedent:
+            :start-after: example-begin sum-temp-storage
+            :end-before: example-end sum-temp-storage
+
+        .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_block_reduce_api.py
+            :language: python
+            :dedent:
+            :start-after: example-begin sum-two-phase-temp-storage
+            :end-before: example-end sum-two-phase-temp-storage
+    """
 
 
 def load(
@@ -172,7 +270,27 @@ def load(
     oob_default=None,
     temp_storage=None,
 ):
-    """Block-wide cooperative load into per-thread items."""
+    """Block-wide cooperative load into per-thread items.
+
+    Example:
+        .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_block_load_store_api_single_phase.py
+            :language: python
+            :dedent:
+            :start-after: example-begin imports
+            :end-before: example-end imports
+
+        .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_block_load_store_api_single_phase.py
+            :language: python
+            :dedent:
+            :start-after: example-begin load-store-single-phase
+            :end-before: example-end load-store-single-phase
+
+        .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_block_load_store_api_single_phase.py
+            :language: python
+            :dedent:
+            :start-after: example-begin load-single-phase-oob-default
+            :end-before: example-end load-single-phase-oob-default
+    """
 
 
 def store(
@@ -184,7 +302,15 @@ def store(
     num_valid: int | None = None,
     temp_storage=None,
 ):
-    """Block-wide cooperative store from per-thread items."""
+    """Block-wide cooperative store from per-thread items.
+
+    Example:
+        .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_block_load_store_api_single_phase.py
+            :language: python
+            :dedent:
+            :start-after: example-begin load-store-single-phase
+            :end-before: example-end load-store-single-phase
+    """
 
 
 def exchange(
@@ -197,7 +323,21 @@ def exchange(
     valid_flags=None,
     temp_storage=None,
 ):
-    """Rearrange items across a block using an exchange pattern."""
+    """Rearrange items across a block using an exchange pattern.
+
+    Example:
+        .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_block_exchange_api.py
+            :language: python
+            :dedent:
+            :start-after: example-begin striped-to-blocked
+            :end-before: example-end striped-to-blocked
+
+        .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_block_exchange_api.py
+            :language: python
+            :dedent:
+            :start-after: example-begin blocked-to-striped
+            :end-before: example-end blocked-to-striped
+    """
 
 
 def shuffle(
@@ -209,7 +349,33 @@ def shuffle(
     indices=None,
     temp_storage=None,
 ):
-    """Shuffle items across a block."""
+    """Shuffle items across a block.
+
+    Example:
+        .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_block_shuffle_api.py
+            :language: python
+            :dedent:
+            :start-after: example-begin offset-scalar
+            :end-before: example-end offset-scalar
+
+        .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_block_shuffle_api.py
+            :language: python
+            :dedent:
+            :start-after: example-begin rotate-scalar
+            :end-before: example-end rotate-scalar
+
+        .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_block_shuffle_api.py
+            :language: python
+            :dedent:
+            :start-after: example-begin up-scalar
+            :end-before: example-end up-scalar
+
+        .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_block_shuffle_api.py
+            :language: python
+            :dedent:
+            :start-after: example-begin down-scalar
+            :end-before: example-end down-scalar
+    """
 
 
 def discontinuity(
@@ -221,7 +387,27 @@ def discontinuity(
     successor=None,
     temp_storage=None,
 ):
-    """Flag discontinuities in a blocked arrangement."""
+    """Flag discontinuities in a blocked arrangement.
+
+    Example:
+        .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_block_discontinuity_api.py
+            :language: python
+            :dedent:
+            :start-after: example-begin flag-heads
+            :end-before: example-end flag-heads
+
+        .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_block_discontinuity_api.py
+            :language: python
+            :dedent:
+            :start-after: example-begin flag-tails
+            :end-before: example-end flag-tails
+
+        .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_block_discontinuity_api.py
+            :language: python
+            :dedent:
+            :start-after: example-begin flag-heads-and-tails
+            :end-before: example-end flag-heads-and-tails
+    """
 
 
 def adjacent_difference(
@@ -233,7 +419,21 @@ def adjacent_difference(
     successor=None,
     temp_storage=None,
 ):
-    """Compute adjacent differences in a blocked arrangement."""
+    """Compute adjacent differences in a blocked arrangement.
+
+    Example:
+        .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_block_adjacent_difference_api.py
+            :language: python
+            :dedent:
+            :start-after: example-begin subtract-left
+            :end-before: example-end subtract-left
+
+        .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_block_adjacent_difference_api.py
+            :language: python
+            :dedent:
+            :start-after: example-begin subtract-right
+            :end-before: example-end subtract-right
+    """
 
 
 def merge_sort_keys(
@@ -245,7 +445,15 @@ def merge_sort_keys(
     oob_default=None,
     temp_storage=None,
 ):
-    """Block-wide merge sort for keys."""
+    """Block-wide merge sort for keys.
+
+    Example:
+        .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_block_merge_sort_api.py
+            :language: python
+            :dedent:
+            :start-after: example-begin merge-sort
+            :end-before: example-end merge-sort
+    """
 
 
 def merge_sort_pairs(
@@ -258,7 +466,15 @@ def merge_sort_pairs(
     oob_default=None,
     temp_storage=None,
 ):
-    """Block-wide merge sort for key-value pairs."""
+    """Block-wide merge sort for key-value pairs.
+
+    Example:
+        .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_block_merge_sort_pairs_api.py
+            :language: python
+            :dedent:
+            :start-after: example-begin merge-sort-pairs
+            :end-before: example-end merge-sort-pairs
+    """
 
 
 def radix_sort_keys(
@@ -269,7 +485,15 @@ def radix_sort_keys(
     end_bit: int | None = None,
     temp_storage=None,
 ):
-    """Block-wide radix sort for keys (ascending)."""
+    """Block-wide radix sort for keys (ascending).
+
+    Example:
+        .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_block_radix_sort_api.py
+            :language: python
+            :dedent:
+            :start-after: example-begin radix-sort
+            :end-before: example-end radix-sort
+    """
 
 
 def radix_sort_keys_descending(
@@ -280,7 +504,15 @@ def radix_sort_keys_descending(
     end_bit: int | None = None,
     temp_storage=None,
 ):
-    """Block-wide radix sort for keys (descending)."""
+    """Block-wide radix sort for keys (descending).
+
+    Example:
+        .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_block_radix_sort_api.py
+            :language: python
+            :dedent:
+            :start-after: example-begin radix-sort-descending
+            :end-before: example-end radix-sort-descending
+    """
 
 
 def radix_sort_pairs(
@@ -292,7 +524,15 @@ def radix_sort_pairs(
     end_bit: int | None = None,
     temp_storage=None,
 ):
-    """Block-wide radix sort for key-value pairs (ascending)."""
+    """Block-wide radix sort for key-value pairs (ascending).
+
+    Example:
+        .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_block_radix_sort_pairs_api.py
+            :language: python
+            :dedent:
+            :start-after: example-begin radix-sort-pairs
+            :end-before: example-end radix-sort-pairs
+    """
 
 
 def radix_sort_pairs_descending(
@@ -304,7 +544,15 @@ def radix_sort_pairs_descending(
     end_bit: int | None = None,
     temp_storage=None,
 ):
-    """Block-wide radix sort for key-value pairs (descending)."""
+    """Block-wide radix sort for key-value pairs (descending).
+
+    Example:
+        .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_block_radix_sort_pairs_api.py
+            :language: python
+            :dedent:
+            :start-after: example-begin radix-sort-pairs-descending
+            :end-before: example-end radix-sort-pairs-descending
+    """
 
 
 def radix_rank(
@@ -316,7 +564,15 @@ def radix_rank(
     descending: bool = False,
     temp_storage=None,
 ):
-    """Block-wide radix rank for keys."""
+    """Block-wide radix rank for keys.
+
+    Example:
+        .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_block_radix_rank_api.py
+            :language: python
+            :dedent:
+            :start-after: example-begin radix-rank
+            :end-before: example-end radix-rank
+    """
 
 
 def run_length(
@@ -328,7 +584,15 @@ def run_length(
     relative_offsets=None,
     window_offset: int | None = None,
 ):
-    """Block-wide run-length decode for per-thread items."""
+    """Block-wide run-length decode for per-thread items.
+
+    Example:
+        .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_block_run_length_api.py
+            :language: python
+            :dedent:
+            :start-after: example-begin run-length
+            :end-before: example-end run-length
+    """
 
 
 def histogram(
@@ -338,7 +602,15 @@ def histogram(
     bins: int | None = None,
     temp_storage=None,
 ):
-    """Block-wide histogram (single-phase uses ``samples`` + output)."""
+    """Block-wide histogram (single-phase uses ``samples`` + output).
+
+    Example:
+        .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_block_histogram_api.py
+            :language: python
+            :dedent:
+            :start-after: example-begin histogram
+            :end-before: example-end histogram
+    """
 
 
 __all__ = [

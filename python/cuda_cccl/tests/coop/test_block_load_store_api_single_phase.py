@@ -10,17 +10,22 @@ from numba import cuda
 
 import cuda.coop as coop
 
-# coop._init_extension()
-
+# example-begin imports
 numba.config.CUDA_LOW_OCCUPANCY_WARNINGS = 0
+# example-end imports
+
+# coop._init_extension()
 
 
 def test_block_load_store_single_phase():
+    # example-begin load-store-single-phase
     @cuda.jit
     def kernel(d_in, d_out, items_per_thread):
         thread_data = coop.local.array(items_per_thread, dtype=d_in.dtype)
         coop.block.load(d_in, thread_data, items_per_thread)
         coop.block.store(d_out, thread_data, items_per_thread)
+
+    # example-end load-store-single-phase
 
     dtype = np.int32
     threads_per_block = 128
@@ -38,11 +43,14 @@ def test_block_load_store_single_phase():
 
 
 def test_block_load_store_single_phase_thread_data():
+    # example-begin load-store-thread-data
     @cuda.jit
     def kernel(d_in, d_out, items_per_thread):
         thread_data = coop.ThreadData(items_per_thread)
         coop.block.load(d_in, thread_data)
         coop.block.store(d_out, thread_data)
+
+    # example-end load-store-thread-data
 
     dtype = np.int32
     threads_per_block = 128
@@ -84,6 +92,7 @@ def test_block_load_store_single_phase_thread_data_temp_storage():
         block_store.temp_storage_alignment,
     )
 
+    # example-begin load-store-thread-data-temp-storage
     @cuda.jit
     def kernel(d_in, d_out):
         temp_storage = coop.TempStorage(
@@ -104,6 +113,8 @@ def test_block_load_store_single_phase_thread_data_temp_storage():
             temp_storage=temp_storage,
         )
 
+    # example-end load-store-thread-data-temp-storage
+
     h_input = np.random.randint(
         0, 42, threads_per_block * items_per_thread, dtype=dtype
     )
@@ -116,6 +127,7 @@ def test_block_load_store_single_phase_thread_data_temp_storage():
 
 
 def test_block_load_store_single_phase_num_valid_items():
+    # example-begin load-store-num-valid-items
     @cuda.jit
     def kernel(d_in, d_out, items_per_thread, num_total_items):
         threads_per_block = cuda.blockDim.x * cuda.blockDim.y * cuda.blockDim.z
@@ -170,6 +182,8 @@ def test_block_load_store_single_phase_num_valid_items():
             # Move to next data block
             block_offset += items_per_block * cuda.gridDim.x
 
+    # example-end load-store-num-valid-items
+
     dtype = np.int32
     threads_per_block = 128
     num_total_items = 1000
@@ -204,11 +218,14 @@ def test_block_load_store_two_phase():
 
     block_load = coop.block.load(dtype, dim, items_per_thread)
 
+    # example-begin load-store-two-phase
     @cuda.jit
     def kernel(d_in, d_out, items_per_thread):
         thread_data = coop.local.array(items_per_thread, dtype=d_in.dtype)
         block_load(d_in, thread_data)
         coop.block.store(d_out, thread_data, items_per_thread)
+
+    # example-end load-store-two-phase
 
     h_input = np.random.randint(0, 42, dim * items_per_thread, dtype=dtype)
     d_input = cuda.to_device(h_input)
@@ -228,6 +245,7 @@ def test_block_load_single_phase_oob_default():
     num_valid = total_items - 3
     oob_default = np.int32(-123)
 
+    # example-begin load-single-phase-oob-default
     @cuda.jit
     def kernel(d_in, d_out, num_valid_items):
         thread_data = cuda.local.array(items_per_thread, dtype=numba.int32)
@@ -239,6 +257,8 @@ def test_block_load_single_phase_oob_default():
             oob_default=oob_default,
         )
         coop.block.store(d_out, thread_data, items_per_thread=items_per_thread)
+
+    # example-end load-single-phase-oob-default
 
     h_input = np.random.randint(0, 42, total_items, dtype=dtype)
     d_input = cuda.to_device(h_input)
@@ -262,6 +282,7 @@ def test_block_load_two_phase_oob_default():
 
     block_load = coop.block.load(dtype, threads_per_block, items_per_thread)
 
+    # example-begin load-two-phase-oob-default
     @cuda.jit
     def kernel(d_in, d_out, num_valid_items):
         thread_data = cuda.local.array(items_per_thread, dtype=numba.int32)
@@ -272,6 +293,8 @@ def test_block_load_two_phase_oob_default():
             oob_default=oob_default,
         )
         coop.block.store(d_out, thread_data, items_per_thread=items_per_thread)
+
+    # example-end load-two-phase-oob-default
 
     h_input = np.random.randint(0, 42, total_items, dtype=dtype)
     d_input = cuda.to_device(h_input)
