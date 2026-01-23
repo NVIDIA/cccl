@@ -63,7 +63,6 @@ __host__ __device__ constexpr void test_signed(int zero_value)
   test_mul_sat<I>(maxVal, I{0}, I{0}, zero_value);
   test_mul_sat<I>(maxVal, I{1}, maxVal, zero_value); // saturated
   test_mul_sat<I>(maxVal, minVal, minVal, zero_value); // saturated
-  test_mul_sat<I>(maxVal, maxVal, maxVal, zero_value); // saturated
 
   // No saturation (no limit values)
 

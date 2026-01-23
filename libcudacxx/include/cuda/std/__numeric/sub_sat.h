@@ -23,6 +23,7 @@
 #include <cuda/__numeric/sub_overflow.h>
 #include <cuda/std/__algorithm/clamp.h>
 #include <cuda/std/__algorithm/max.h>
+#include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__limits/numeric_limits.h>
 #include <cuda/std/__type_traits/is_integer.h>
 #include <cuda/std/__type_traits/is_signed.h>
@@ -134,10 +135,9 @@ template <class _Tp>
   {
     if constexpr (sizeof(_Tp) < sizeof(int32_t))
     {
-      constexpr auto __min = static_cast<int32_t>(numeric_limits<_Tp>::min());
-      constexpr auto __max = static_cast<int32_t>(numeric_limits<_Tp>::max());
-      const auto __result  = static_cast<int32_t>(__x) - static_cast<int32_t>(__y);
-      return static_cast<_Tp>(::cuda::std::clamp(__result, __min, __max));
+      constexpr auto __min = int32_t{numeric_limits<_Tp>::min()};
+      constexpr auto __max = int32_t{numeric_limits<_Tp>::max()};
+      return static_cast<_Tp>(::cuda::std::clamp(int32_t{__x} - int32_t{__y}, __min, __max));
     }
     // Disabled due to nvbug 5033045
     // else if constexpr (sizeof(_Tp) == sizeof(int32_t))

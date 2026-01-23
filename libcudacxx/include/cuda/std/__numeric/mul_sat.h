@@ -26,11 +26,13 @@
 #include <cuda/std/__algorithm/clamp.h>
 #include <cuda/std/__algorithm/min.h>
 #include <cuda/std/__concepts/concept_macros.h>
+#include <cuda/std/__limits/numeric_limits.h>
+#include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/is_integer.h>
 #include <cuda/std/__type_traits/is_signed.h>
 #include <cuda/std/__type_traits/make_nbit_int.h>
+#include <cuda/std/__type_traits/num_bits.h>
 #include <cuda/std/cstdint>
-#include <cuda/std/limits>
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -50,9 +52,8 @@ _CCCL_REQUIRES(__cccl_is_integer_v<_Tp>)
     // Upcast to a greater integer type if possible, fallback to slow implementation otherwise.
     if constexpr (sizeof(_Tp) < sizeof(__cccl_intmax_t))
     {
-      using _Up = _If<(sizeof(_Tp) < sizeof(int32_t)), int32_t, __make_nbit_int_t<2 * sizeof(_Tp) * CHAR_BIT>>;
-      const auto __result = static_cast<_Up>(__x) * static_cast<_Up>(__y);
-      return static_cast<_Tp>(::cuda::std::clamp(__result, static_cast<_Up>(__min), static_cast<_Up>(__max)));
+      using _Up = conditional_t<(sizeof(_Tp) < sizeof(int32_t)), int32_t, __make_nbit_int_t<2 * __num_bits_v<_Tp>>>;
+      return static_cast<_Tp>(::cuda::std::clamp(_Up{__x} * _Up{__y}, _Up{__min}, _Up{__max}));
     }
     else
     {
@@ -69,23 +70,18 @@ _CCCL_REQUIRES(__cccl_is_integer_v<_Tp>)
       {
         return (__negative_result) ? __min : __max;
       }
-      return (__negative_result) ? ::cuda::neg(__uresult_lo) : __uresult_lo;
+      return static_cast<_Tp>((__negative_result) ? ::cuda::neg(__uresult_lo) : __uresult_lo);
     }
   }
   else // ^^^ signed types ^^^ / vvv unsigned types vvv
   {
     if constexpr (sizeof(_Tp) < sizeof(uint32_t))
     {
-      using _Up           = uint32_t;
-      const auto __result = static_cast<_Up>(__x) * static_cast<_Up>(__y);
-      return static_cast<_Tp>(::cuda::std::min(__result, static_cast<_Up>(__max)));
+      return static_cast<_Tp>(::cuda::std::min(uint32_t{__x} * uint32_t{__y}, uint32_t{__max}));
     }
     else
     {
-      _Tp __lo{}, __hi{};
-      __lo = __x * __y;
-      __hi = ::cuda::mul_hi(__x, __y);
-      return (__hi == _Tp{0}) ? __lo : __max;
+      return (::cuda::mul_hi(__x, __y) == _Tp{0}) ? (__x * __y) : __max;
     }
   } // ^^^ unsigned types ^^^
 }

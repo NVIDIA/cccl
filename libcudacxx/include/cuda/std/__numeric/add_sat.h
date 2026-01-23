@@ -22,12 +22,14 @@
 
 #include <cuda/__numeric/add_overflow.h>
 #include <cuda/std/__algorithm/clamp.h>
-#include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__algorithm/min.h>
+#include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__limits/numeric_limits.h>
 #include <cuda/std/__type_traits/is_integer.h>
 #include <cuda/std/__type_traits/is_signed.h>
 #include <cuda/std/cstdint>
+
+#include <nv/target>
 
 #if _CCCL_COMPILER(MSVC)
 #  include <intrin.h>
@@ -129,38 +131,19 @@ template <class _Tp>
 template <class _Tp>
 [[nodiscard]] _CCCL_DEVICE_API _Tp __add_sat_impl_device(_Tp __x, _Tp __y) noexcept
 {
-  [[maybe_unused]] constexpr auto __max = cuda::std::numeric_limits<_Tp>::max();
-  [[maybe_unused]] constexpr auto __min = cuda::std::numeric_limits<_Tp>::min();
+  [[maybe_unused]] constexpr auto __max = numeric_limits<_Tp>::max();
+  [[maybe_unused]] constexpr auto __min = numeric_limits<_Tp>::min();
 
   if constexpr (is_signed_v<_Tp>)
   {
     if constexpr (sizeof(_Tp) < sizeof(int32_t))
     {
-      using _Up = int32_t;
-      return static_cast<_Tp>(::cuda::std::clamp(
-        static_cast<_Up>(__x) + static_cast<_Up>(__y), static_cast<_Up>(__min), static_cast<_Up>(__max)));
+      return static_cast<_Tp>(::cuda::std::clamp(int32_t{__x} + int32_t{__y}, int32_t{__min}, int32_t{__max}));
     }
     else if constexpr (sizeof(_Tp) == sizeof(int32_t))
     {
       int32_t __result;
       asm("add.sat.s32 %0, %1, %2;" : "=r"(__result) : "r"(__x), "r"(__y));
-      return __result;
-    }
-    else if constexpr (sizeof(_Tp) == sizeof(int64_t))
-    {
-      int64_t __result;
-      asm volatile(R"({
-.reg .pred p, q, r;
-.reg .s64 temp;
-add.s64 %0, %1, %2;
-setp.lt.s64 p, %0, %1;
-setp.lt.s64 q, %2, 0;
-xor.pred r, p, q;
-selp.s64 temp, -9223372036854775808, 9223372036854775807, q;
-selp.s64 %0, temp, %0, r;
-})"
-                   : "=l"(__result)
-                   : "l"(__x), "l"(__y));
       return __result;
     }
     return ::cuda::std::__add_sat_impl_generic(__x, __y);
@@ -169,8 +152,7 @@ selp.s64 %0, temp, %0, r;
   {
     if constexpr (sizeof(_Tp) < sizeof(uint32_t))
     {
-      using _Up = uint32_t;
-      return ::cuda::std::min(static_cast<_Up>(__x) + static_cast<_Up>(__y), static_cast<_Up>(__max));
+      return ::cuda::std::min(uint32_t{__x} + uint32_t{__y}, uint32_t{__max});
     }
     else
     {
