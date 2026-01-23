@@ -26,9 +26,9 @@
 #include <cuda/std/__cmath/abs.h>
 #include <cuda/std/__cmath/logarithms.h>
 #include <cuda/std/__cmath/rounding_functions.h>
+#include <cuda/std/__cstddef/types.h>
+#include <cuda/std/__limits/numeric_limits.h>
 #include <cuda/std/__numeric/midpoint.h>
-#include <cuda/std/cstddef>
-#include <cuda/std/limits>
 
 #include <cuda/experimental/__cuco/__hyperloglog/tuning.cuh>
 

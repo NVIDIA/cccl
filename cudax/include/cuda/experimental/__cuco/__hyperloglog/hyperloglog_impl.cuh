@@ -21,25 +21,26 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/__container/buffer.h>
 #include <cuda/__memory/is_aligned.h>
-#include <cuda/__memory_pool/pinned_memory_pool.h>
+#include <cuda/__memory_resource/legacy_pinned_memory_resource.h>
 #include <cuda/__runtime/api_wrapper.h>
+#include <cuda/__stream/stream_ref.h>
 #include <cuda/atomic>
 #include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__bit/countr.h>
 #include <cuda/std/__bit/integral.h>
+#include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__iterator/concepts.h>
 #include <cuda/std/__memory/addressof.h>
-#include <cuda/std/cstddef>
+#include <cuda/std/__utility/declval.h>
+#include <cuda/std/numbers>
 #include <cuda/std/span>
-#include <cuda/std/utility>
-#include <cuda/stream>
 
 #include <cuda/experimental/__cuco/__hyperloglog/finalizer.cuh>
 #include <cuda/experimental/__cuco/__hyperloglog/kernels.cuh>
 #include <cuda/experimental/__cuco/__utility/strong_type.cuh>
 #include <cuda/experimental/__cuco/hash_functions.cuh>
-#include <cuda/experimental/container.cuh>
 #include <cuda/experimental/memory_resource.cuh>
 
 #include <cooperative_groups.h>
@@ -539,10 +540,11 @@ public:
     // implementation taken from
     // https://github.com/apache/spark/blob/6a27789ad7d59cd133653a49be0bb49729542abe/sql/catalyst/src/main/scala/org/apache/spark/sql/catalyst/util/HyperLogLogPlusPlusHelper.scala#L43
 
+    auto const __precision_from_sd = static_cast<int>(
+      ::cuda::std::ceil(2.0 * ::cuda::std::log(1.106 / __standard_deviation) / ::cuda::std::numbers::ln2));
+
     //  minimum precision is 4 or 64 bytes
-    const auto __precision_ = ::cuda::std::max(
-      static_cast<int>(4),
-      static_cast<int>(::cuda::std::ceil(2.0 * ::cuda::std::log(1.106 / __standard_deviation) / ::cuda::std::log(2.0))));
+    const auto __precision_ = ::cuda::std::max(static_cast<int>(4), __precision_from_sd);
 
     // inverse of this function (omitting the minimum precision constraint) is
     // standard_deviation = 1.106 / exp((__precision_ * log(2.0)) / 2.0)

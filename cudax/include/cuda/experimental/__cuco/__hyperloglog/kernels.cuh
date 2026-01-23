@@ -23,7 +23,7 @@
 
 #include <cuda/std/__memory/assume_aligned.h>
 #include <cuda/std/array>
-#include <cuda/std/cstddef>
+#include <cuda/std/cstdint>
 #include <cuda/std/span>
 
 #include <cooperative_groups.h>
@@ -38,17 +38,17 @@ namespace cuda::experimental::cuco::__hyperloglog_ns
 //! @brief Returns the global thread ID in a 1D grid
 //!
 //! @return The global thread ID
-[[nodiscard]] _CCCL_DEVICE inline int64_t __global_thread_id() noexcept
+[[nodiscard]] _CCCL_DEVICE inline ::cuda::std::int64_t __global_thread_id() noexcept
 {
-  return static_cast<int64_t>(blockDim.x) * blockIdx.x + threadIdx.x;
+  return static_cast<::cuda::std::int64_t>(blockDim.x) * blockIdx.x + threadIdx.x;
 }
 
 //! @brief Returns the grid stride of a 1D grid
 //!
 //! @return The grid stride
-[[nodiscard]] _CCCL_DEVICE inline int64_t __grid_stride() noexcept
+[[nodiscard]] _CCCL_DEVICE inline ::cuda::std::int64_t __grid_stride() noexcept
 {
-  return static_cast<int64_t>(gridDim.x) * blockDim.x;
+  return static_cast<::cuda::std::int64_t>(gridDim.x) * blockDim.x;
 }
 
 template <class _RefType>
@@ -63,7 +63,7 @@ CCCL_DETAIL_KERNEL_ATTRIBUTES void __clear(_RefType __ref)
 
 template <int _VectorSize, class _RefType>
 CCCL_DETAIL_KERNEL_ATTRIBUTES void
-__add_shmem_vectorized(const typename _RefType::value_type* __first, int64_t __n, _RefType __ref)
+__add_shmem_vectorized(const typename _RefType::value_type* __first, ::cuda::std::int64_t __n, _RefType __ref)
 {
   using __value_type     = typename _RefType::value_type;
   using __vector_type    = ::cuda::std::array<__value_type, _VectorSize>;
@@ -120,7 +120,7 @@ __add_shmem_vectorized(const typename _RefType::value_type* __first, int64_t __n
 }
 
 template <class _InputIt, class _RefType>
-CCCL_DETAIL_KERNEL_ATTRIBUTES void __add_shmem(_InputIt __first, int64_t __n, _RefType __ref)
+CCCL_DETAIL_KERNEL_ATTRIBUTES void __add_shmem(_InputIt __first, ::cuda::std::int64_t __n, _RefType __ref)
 {
   using __local_ref_type = typename _RefType::template with_scope<::cuda::std::thread_scope_block>;
 
@@ -146,7 +146,7 @@ CCCL_DETAIL_KERNEL_ATTRIBUTES void __add_shmem(_InputIt __first, int64_t __n, _R
 }
 
 template <class _InputIt, class _RefType>
-CCCL_DETAIL_KERNEL_ATTRIBUTES void __add_gmem(_InputIt __first, int64_t __n, _RefType __ref)
+CCCL_DETAIL_KERNEL_ATTRIBUTES void __add_gmem(_InputIt __first, ::cuda::std::int64_t __n, _RefType __ref)
 {
   const auto __loop_stride = __grid_stride();
   auto __idx               = __global_thread_id();
