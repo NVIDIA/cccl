@@ -53,11 +53,6 @@ struct DeviceSegmentedReduceKernelSource
       ReductionOpT,
       InitT,
       AccumT>)
-
-  CUB_RUNTIME_FUNCTION static constexpr ::cuda::std::size_t AccumSize()
-  {
-    return sizeof(AccumT);
-  }
 };
 } // namespace detail::reduce
 
