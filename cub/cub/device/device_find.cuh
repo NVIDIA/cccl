@@ -126,7 +126,8 @@ struct DeviceFind
   //!   ``RangeIteratorT`` using ``CompareOpT`` as the predicate.
   //!
   //! @tparam OutputIteratorT
-  //!   is a model of [Random Access Iterator], whose value type is assignable from ``RangeIteratorT``.
+  //!   is a model of [Random Access Iterator], whose value type is assignable from ``RangeIteratorT``'s difference
+  //!   type.
   //!
   //! @tparam CompareOpT
   //!   is a model of [Strict Weak Ordering], which forms a [Relation] with the value types of ``RangeIteratorT``
@@ -209,7 +210,8 @@ struct DeviceFind
   //!   ``RangeIteratorT`` using ``CompareOpT`` as the predicate.
   //!
   //! @tparam OutputIteratorT
-  //!   is a model of [Random Access Iterator], whose value type is assignable from ``RangeIteratorT``.
+  //!   is a model of [Random Access Iterator], whose value type is assignable from ``RangeIteratorT``'s difference
+  //!   type.
   //!
   //! @tparam CompareOpT
   //!   is a model of [Strict Weak Ordering], which forms a [Relation] with the value types of ``RangeIteratorT``

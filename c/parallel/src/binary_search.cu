@@ -156,22 +156,7 @@ CUB_DETAIL_KERNEL_ATTRIBUTES
 __launch_bounds__(device_for_policy::ActivePolicy::for_policy_t::block_threads)
 void binary_search_kernel({1} d_data, OffsetT num_data, {3} d_values, OffsetT num_values, {5} d_out, {7} op)
 {{
-  auto d_out_typed = [&] {{
-    constexpr auto out_is_ptr = cuda::std::is_pointer_v<decltype(d_out)>;
-    constexpr auto out_matches_items = cuda::std::is_same_v<decltype(*d_out), decltype(d_data)>;
-    constexpr auto need_cast = out_is_ptr && !out_matches_items;
-
-    if constexpr (need_cast) {{
-      static_assert(sizeof(decltype(*d_out)) == sizeof(decltype(d_data)), "");
-      static_assert(alignof(decltype(*d_out)) == alignof(decltype(d_data)), "");
-      return reinterpret_cast<{1} *>(d_out);
-    }}
-    else {{
-      return d_out;
-    }}
-  }}();
-
-  auto input_it     = cuda::make_zip_iterator(d_values, d_out_typed);
+  auto input_it     = cuda::make_zip_iterator(d_values, d_out);
   auto comp_wrapper = cub::detail::find::make_comp_wrapper<{8}>(d_data, d_data + num_data, op);
   auto agent_op     = [&comp_wrapper, &input_it](OffsetT index) {{
     comp_wrapper(input_it[index]);
