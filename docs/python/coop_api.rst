@@ -9,13 +9,19 @@
 
 For conceptual guides and best practices, see :doc:`coop`.
 
-.. automodule:: cuda.coop.warp
+Block Primitives
+----------------
+
+.. automodule:: cuda.coop.block
   :members:
   :undoc-members:
   :imported-members:
 
 
-.. automodule:: cuda.coop.block
+Warp Primitives
+---------------
+
+.. automodule:: cuda.coop.warp
   :members:
   :undoc-members:
   :imported-members:

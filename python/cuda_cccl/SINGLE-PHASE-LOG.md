@@ -731,3 +731,7 @@
 - Added coop-local "Flexible data arrangement" section in docs/python/coop.rst.
 - Updated coop block scan/merge/radix sort docstrings to reference the new coop label.
 - Planned to rerun coop API Sphinx build after label update.
+
+## 2026-01-23
+- Added coop block/warp API documentation stub modules at cuda/coop/block/api.py and cuda/coop/warp/api.py.
+- Switched docs/python/coop_api.rst to document the new stub modules.
