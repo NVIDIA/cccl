@@ -538,7 +538,8 @@ struct uninitialized_array
     return data()[idx];
   }
 
-  _CCCL_HOST_DEVICE T (&as_array()) [N] {
+  _CCCL_HOST_DEVICE T (&as_array())[N]
+  {
     return static_cast<T(&)[N]>(data_);
   }
 };
