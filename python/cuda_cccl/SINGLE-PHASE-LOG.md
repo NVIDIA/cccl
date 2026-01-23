@@ -741,3 +741,16 @@
 - Added API example tests for block/warp key-value merge/radix sort and block scan variants.
 - Updated coop block/warp stub docstrings to include literalinclude examples.
 - Ran coop Sphinx build (master_doc=coop) successfully.
+
+## 2026-01-23
+- Swept coop tests/examples to shorten enum references via direct imports.
+- Fixed test_block_discontinuity_api::test_block_discontinuity_flag_heads_and_tails by using separate head/tail buffers.
+- Added dedicated heads-and-tails example test for docs.
+- Ran pytest for test_block_discontinuity_flag_heads_and_tails (passed).
+
+## 2026-01-23
+- Swept remaining coop tests/examples to shorten enum usages.
+- Fixed radix sort pairs API tests to use values= overload and corrected descending expectations.
+- Added dedicated heads+tails discontinuity example test and updated docs literalinclude.
+- Ran pytest for discontinuity heads+tails and radix sort pairs (passed).
+- Rebuilt coop docs (succeeded).

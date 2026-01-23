@@ -24,17 +24,18 @@ from helpers import (
 from numba import cuda, types
 
 from cuda import coop
+from cuda.coop.block import BlockExchangeType
 
 numba.config.CUDA_LOW_OCCUPANCY_WARNINGS = 0
 
-striped_to_blocked = coop.block.BlockExchangeType.StripedToBlocked
-blocked_to_striped = coop.block.BlockExchangeType.BlockedToStriped
-warp_striped_to_blocked = coop.block.BlockExchangeType.WarpStripedToBlocked
-blocked_to_warp_striped = coop.block.BlockExchangeType.BlockedToWarpStriped
-scatter_to_blocked = coop.block.BlockExchangeType.ScatterToBlocked
-scatter_to_striped = coop.block.BlockExchangeType.ScatterToStriped
-scatter_to_striped_guarded = coop.block.BlockExchangeType.ScatterToStripedGuarded
-scatter_to_striped_flagged = coop.block.BlockExchangeType.ScatterToStripedFlagged
+striped_to_blocked = BlockExchangeType.StripedToBlocked
+blocked_to_striped = BlockExchangeType.BlockedToStriped
+warp_striped_to_blocked = BlockExchangeType.WarpStripedToBlocked
+blocked_to_warp_striped = BlockExchangeType.BlockedToWarpStriped
+scatter_to_blocked = BlockExchangeType.ScatterToBlocked
+scatter_to_striped = BlockExchangeType.ScatterToStriped
+scatter_to_striped_guarded = BlockExchangeType.ScatterToStripedGuarded
+scatter_to_striped_flagged = BlockExchangeType.ScatterToStripedFlagged
 
 WARP_SIZE = 32
 

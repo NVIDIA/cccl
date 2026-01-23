@@ -36,6 +36,7 @@ from numba.core.extending import (
 )
 
 from cuda import coop
+from cuda.coop import BlockScanAlgorithm
 from cuda.coop.block._block_scan import (
     ScanOp,
 )
@@ -102,7 +103,7 @@ def impl_block_prefix_callback_op(context, builder, sig, args):
 @pytest.mark.parametrize("threads_per_block", [32, (4, 16), (4, 8, 8)])
 @pytest.mark.parametrize("items_per_thread", [1, 4])
 @pytest.mark.parametrize("mode", ["inclusive", "exclusive"])
-@pytest.mark.parametrize("algorithm", [coop.BlockScanAlgorithm.RAKING])
+@pytest.mark.parametrize("algorithm", [BlockScanAlgorithm.RAKING])
 def test_block_sum(T, threads_per_block, items_per_thread, mode, algorithm):
     """
     Tests block-wide sums with either inclusive or exclusive scans.
@@ -116,7 +117,7 @@ def test_block_sum(T, threads_per_block, items_per_thread, mode, algorithm):
     )
 
     # Avoid resource issues in some configurations for raking_memoize.
-    if algorithm == coop.BlockScanAlgorithm.RAKING_MEMOIZE and num_threads >= 512:
+    if algorithm == BlockScanAlgorithm.RAKING_MEMOIZE and num_threads >= 512:
         pytest.skip("raking_memoize can exceed resources for >= 512 threads.")
 
     @cuda.jit
@@ -272,7 +273,7 @@ def test_block_scan_array_block_aggregate():
 @pytest.mark.parametrize("threads_per_block", [32, (4, 16), (4, 8, 8)])
 @pytest.mark.parametrize("items_per_thread", [1, 4])
 @pytest.mark.parametrize("mode", ["inclusive", "exclusive"])
-@pytest.mark.parametrize("algorithm", [coop.BlockScanAlgorithm.RAKING])
+@pytest.mark.parametrize("algorithm", [BlockScanAlgorithm.RAKING])
 def test_block_sum_prefix_op(threads_per_block, items_per_thread, mode, algorithm):
     """
     Tests block-wide sums with a user-supplied prefix callback operator.
@@ -402,7 +403,7 @@ def test_block_scan_sum_invalid_algorithm(mode):
 @pytest.mark.parametrize("threads_per_block", [32, (4, 16), (4, 8, 8)])
 @pytest.mark.parametrize("items_per_thread", [1, 4])
 @pytest.mark.parametrize("mode", ["inclusive", "exclusive"])
-@pytest.mark.parametrize("algorithm", [coop.BlockScanAlgorithm.RAKING])
+@pytest.mark.parametrize("algorithm", [BlockScanAlgorithm.RAKING])
 def test_block_scan_user_defined_type(
     initial_value, items_per_thread, threads_per_block, mode, algorithm
 ):
@@ -547,7 +548,7 @@ def test_block_scan_user_defined_type(
 @pytest.mark.parametrize("threads_per_block", [32, (4, 16), (4, 8, 8)])
 @pytest.mark.parametrize("items_per_thread", [1, 4])
 @pytest.mark.parametrize("mode", ["inclusive", "exclusive"])
-@pytest.mark.parametrize("algorithm", [coop.BlockScanAlgorithm.RAKING])
+@pytest.mark.parametrize("algorithm", [BlockScanAlgorithm.RAKING])
 def test_block_scan_with_callable(
     T, threads_per_block, items_per_thread, mode, algorithm
 ):
@@ -751,7 +752,7 @@ def test_block_scan_with_prefix_op_multi_items(
             mode=mode,
             scan_op=add_op,
             block_prefix_callback_op=block_prefix_op,
-            algorithm=coop.BlockScanAlgorithm.RAKING,
+            algorithm=BlockScanAlgorithm.RAKING,
         )
 
         for i in range(items_per_thread):
@@ -797,7 +798,7 @@ def test_block_scan_with_prefix_op_multi_items(
 @pytest.mark.parametrize("T", [types.uint32])
 @pytest.mark.parametrize("threads_per_block", [32, (4, 8, 8)])
 @pytest.mark.parametrize("items_per_thread", [1, 4])
-@pytest.mark.parametrize("algorithm", [coop.BlockScanAlgorithm.RAKING])
+@pytest.mark.parametrize("algorithm", [BlockScanAlgorithm.RAKING])
 def test_block_scan_known_ops(
     mode, scan_op, T, threads_per_block, items_per_thread, algorithm
 ):

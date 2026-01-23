@@ -13,6 +13,7 @@ import pytest
 from numba import cuda
 
 import cuda.coop as coop
+from cuda.coop import BlockHistogramAlgorithm, BlockLoadAlgorithm
 
 numba.config.CUDA_LOW_OCCUPANCY_WARNINGS = 0
 
@@ -109,7 +110,7 @@ def test_block_histogram_histo_atomic_single_phase0():
             d_in[block_offset:],
             thread_samples,
             items_per_thread=items_per_thread,
-            algorithm=coop.BlockLoadAlgorithm.WARP_TRANSPOSE,
+            algorithm=BlockLoadAlgorithm.WARP_TRANSPOSE,
             num_valid_items=num_valid_items,
         )
 
@@ -188,7 +189,7 @@ def test_block_histogram_histo_atomic_single_phase_0():
                 d_in[block_offset:],
                 thread_samples,
                 items_per_thread=items_per_thread,
-                algorithm=coop.BlockLoadAlgorithm.WARP_TRANSPOSE,
+                algorithm=BlockLoadAlgorithm.WARP_TRANSPOSE,
                 num_valid_items=num_valid_items,
             )
 
@@ -266,7 +267,7 @@ def test_block_histogram_histo_atomic_single_phase_1():
             coop.block.load(
                 d_in[block_offset:],
                 thread_samples,
-                algorithm=coop.BlockLoadAlgorithm.WARP_TRANSPOSE,
+                algorithm=BlockLoadAlgorithm.WARP_TRANSPOSE,
                 num_valid_items=num_valid_items,
             )
 
@@ -339,8 +340,8 @@ def test_block_histogram_histo_atomic_single_phase_1():
 @pytest.mark.parametrize(
     "algorithm",
     [
-        coop.BlockHistogramAlgorithm.ATOMIC,
-        coop.BlockHistogramAlgorithm.SORT,
+        BlockHistogramAlgorithm.ATOMIC,
+        BlockHistogramAlgorithm.SORT,
     ],
 )
 def test_block_histogram_histo_atomic_single_phase_2(
@@ -389,7 +390,7 @@ def test_block_histogram_histo_atomic_single_phase_2(
             coop.block.load(
                 d_in[block_offset:],
                 thread_samples,
-                algorithm=coop.BlockLoadAlgorithm.WARP_TRANSPOSE,
+                algorithm=BlockLoadAlgorithm.WARP_TRANSPOSE,
                 num_valid_items=num_valid_items,
             )
 
@@ -473,8 +474,8 @@ def test_block_histogram_histo_atomic_single_phase_2(
 @pytest.mark.parametrize(
     "algorithm",
     [
-        coop.BlockHistogramAlgorithm.ATOMIC,
-        coop.BlockHistogramAlgorithm.SORT,
+        BlockHistogramAlgorithm.ATOMIC,
+        BlockHistogramAlgorithm.SORT,
     ],
 )
 def foo():
@@ -499,8 +500,8 @@ def foo():
 @pytest.mark.parametrize(
     "algorithm",
     [
-        coop.BlockHistogramAlgorithm.ATOMIC,
-        coop.BlockHistogramAlgorithm.SORT,
+        BlockHistogramAlgorithm.ATOMIC,
+        BlockHistogramAlgorithm.SORT,
     ],
 )
 def test_block_histogram_histo_atomic_single_phase_3(
@@ -548,7 +549,7 @@ def test_block_histogram_histo_atomic_single_phase_3(
             coop.block.load(
                 d_in[block_offset:],
                 thread_samples,
-                algorithm=coop.BlockLoadAlgorithm.WARP_TRANSPOSE,
+                algorithm=BlockLoadAlgorithm.WARP_TRANSPOSE,
                 num_valid_items=num_valid_items,
             )
 
@@ -634,8 +635,8 @@ def test_block_histogram_histo_atomic_single_phase_3(
 @pytest.mark.parametrize(
     "algorithm",
     [
-        coop.BlockHistogramAlgorithm.ATOMIC,
-        coop.BlockHistogramAlgorithm.SORT,
+        BlockHistogramAlgorithm.ATOMIC,
+        BlockHistogramAlgorithm.SORT,
     ],
 )
 def test_block_histogram_histo_atomic_single_phase_4(
@@ -683,7 +684,7 @@ def test_block_histogram_histo_atomic_single_phase_4(
             coop.block.load(
                 d_in[block_offset:],
                 thread_samples,
-                algorithm=coop.BlockLoadAlgorithm.WARP_TRANSPOSE,
+                algorithm=BlockLoadAlgorithm.WARP_TRANSPOSE,
                 num_valid_items=num_valid_items,
             )
 
@@ -751,7 +752,7 @@ def test_block_histogram_histo_atomic_single_phase1():
     items_per_thread = 4
     threads_per_block = 128
     # total_items = 1 << 15  # 32KB
-    algorithm = coop.BlockHistogramAlgorithm.ATOMIC
+    algorithm = BlockHistogramAlgorithm.ATOMIC
 
     block_load = coop.block.load(
         item_dtype,
@@ -797,7 +798,7 @@ def test_block_histogram_histo_sort_two_phase0():
     items_per_thread = 4
     threads_per_block = 128
     total_items = 1 << 15  # 32KB
-    algorithm = coop.BlockHistogramAlgorithm.SORT
+    algorithm = BlockHistogramAlgorithm.SORT
 
     block_load = coop.block.load(
         item_dtype,
@@ -918,7 +919,7 @@ def test_block_histogram_histo_sort_two_phase1():
     items_per_thread = 4
     threads_per_block = 128
     total_items = 1 << 15  # 32KB
-    algorithm = coop.BlockHistogramAlgorithm.SORT
+    algorithm = BlockHistogramAlgorithm.SORT
 
     block_load = coop.block.load(
         item_dtype,
@@ -1050,7 +1051,7 @@ def test_block_histogram_histo_sort_two_phase2():
     items_per_thread = 4
     threads_per_block = 128
     total_items = 1 << 15  # 32KB
-    algorithm = coop.BlockHistogramAlgorithm.SORT
+    algorithm = BlockHistogramAlgorithm.SORT
 
     block_load = coop.block.load(
         item_dtype,

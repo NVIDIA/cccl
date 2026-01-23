@@ -6,6 +6,7 @@ import pytest
 from numba import cuda
 
 from cuda import coop
+from cuda.coop import BlockHistogramAlgorithm, BlockLoadAlgorithm
 
 
 def get_histogram_bins_for_type(np_type):
@@ -32,8 +33,8 @@ def get_histogram_bins_for_type(np_type):
 @pytest.mark.parametrize(
     "algorithm",
     [
-        coop.BlockHistogramAlgorithm.ATOMIC,
-        coop.BlockHistogramAlgorithm.SORT,
+        BlockHistogramAlgorithm.ATOMIC,
+        BlockHistogramAlgorithm.SORT,
     ],
 )
 def test_block_histogram_histo_single_phase_2(
@@ -53,7 +54,7 @@ def test_block_histogram_histo_single_phase_2(
         counter_dtype=np.int32,
         dim=128,
         items_per_thread=4,
-        algorithm=coop.BlockHistogramAlgorithm.ATOMIC,
+        algorithm=BlockHistogramAlgorithm.ATOMIC,
         bins=256,
     )
 
@@ -128,7 +129,7 @@ def test_block_histogram_histo_single_phase_2(
             coop.block.load(
                 d_in[block_offset:],
                 thread_samples,
-                algorithm=coop.BlockLoadAlgorithm.WARP_TRANSPOSE,
+                algorithm=BlockLoadAlgorithm.WARP_TRANSPOSE,
             )
 
             # This is the second "child" call against the parent histogram

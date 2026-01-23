@@ -28,7 +28,11 @@ def test_block_radix_sort_pairs():
             thread_keys[i] = keys[base + i]
             thread_vals[i] = values[base + i]
 
-        coop.block.radix_sort_pairs(thread_keys, thread_vals, items_per_thread)
+        coop.block.radix_sort_keys(
+            thread_keys,
+            items_per_thread,
+            values=thread_vals,
+        )
 
         for i in range(items_per_thread):
             keys[base + i] = thread_keys[i]
@@ -65,8 +69,10 @@ def test_block_radix_sort_pairs_descending():
             thread_keys[i] = keys[base + i]
             thread_vals[i] = values[base + i]
 
-        coop.block.radix_sort_pairs_descending(
-            thread_keys, thread_vals, items_per_thread
+        coop.block.radix_sort_keys_descending(
+            thread_keys,
+            items_per_thread,
+            values=thread_vals,
         )
 
         for i in range(items_per_thread):
@@ -86,4 +92,5 @@ def test_block_radix_sort_pairs_descending():
     h_vals = d_vals.copy_to_host()
 
     assert np.all(h_keys[:-1] >= h_keys[1:])
-    assert np.all(h_vals == np.arange(tile_size, dtype=np.int32))
+    expected_vals = np.arange(tile_size - 1, -1, -1, dtype=np.int32)
+    assert np.all(h_vals == expected_vals)

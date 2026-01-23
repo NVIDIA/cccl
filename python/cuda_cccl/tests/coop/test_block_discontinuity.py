@@ -11,6 +11,7 @@ from helpers import row_major_tid
 from numba import cuda
 
 from cuda import coop
+from cuda.coop.block import BlockDiscontinuityType
 
 numba.config.CUDA_LOW_OCCUPANCY_WARNINGS = 0
 
@@ -32,7 +33,7 @@ def test_block_discontinuity_flag_heads_thread_data_temp_storage():
         items_per_thread,
         flag_op=flag_op,
         flag_dtype=flag_dtype,
-        block_discontinuity_type=coop.block.BlockDiscontinuityType.HEADS,
+        block_discontinuity_type=BlockDiscontinuityType.HEADS,
     )
     temp_storage_bytes = block_disc.temp_storage_bytes
     temp_storage_alignment = block_disc.temp_storage_alignment
@@ -51,7 +52,7 @@ def test_block_discontinuity_flag_heads_thread_data_temp_storage():
             items,
             flags,
             flag_op=flag_op,
-            block_discontinuity_type=coop.block.BlockDiscontinuityType.HEADS,
+            block_discontinuity_type=BlockDiscontinuityType.HEADS,
             temp_storage=temp_storage,
         )
 
@@ -97,7 +98,7 @@ def test_block_discontinuity_two_phase_heads():
         items_per_thread,
         flag_op=flag_op,
         flag_dtype=flag_dtype,
-        block_discontinuity_type=coop.block.BlockDiscontinuityType.HEADS,
+        block_discontinuity_type=BlockDiscontinuityType.HEADS,
     )
     temp_storage_bytes = block_disc.temp_storage_bytes
     temp_storage_alignment = block_disc.temp_storage_alignment
@@ -116,7 +117,7 @@ def test_block_discontinuity_two_phase_heads():
             items,
             flags,
             flag_op=flag_op,
-            block_discontinuity_type=coop.block.BlockDiscontinuityType.HEADS,
+            block_discontinuity_type=BlockDiscontinuityType.HEADS,
             temp_storage=temp_storage,
         )
 
@@ -159,7 +160,7 @@ def test_block_discontinuity_heads_tile_predecessor():
         items_per_thread,
         flag_op=flag_op,
         flag_dtype=flag_dtype,
-        block_discontinuity_type=coop.block.BlockDiscontinuityType.HEADS,
+        block_discontinuity_type=BlockDiscontinuityType.HEADS,
     )
     temp_storage_bytes = block_disc.temp_storage_bytes
     temp_storage_alignment = block_disc.temp_storage_alignment
@@ -178,7 +179,7 @@ def test_block_discontinuity_heads_tile_predecessor():
             items,
             flags,
             flag_op=flag_op,
-            block_discontinuity_type=coop.block.BlockDiscontinuityType.HEADS,
+            block_discontinuity_type=BlockDiscontinuityType.HEADS,
             tile_predecessor_item=tile_predecessor_item,
             temp_storage=temp_storage,
         )
@@ -222,7 +223,7 @@ def test_block_discontinuity_heads_and_tails_tile_pred_succ():
         items_per_thread,
         flag_op=flag_op,
         flag_dtype=flag_dtype,
-        block_discontinuity_type=coop.block.BlockDiscontinuityType.HEADS_AND_TAILS,
+        block_discontinuity_type=BlockDiscontinuityType.HEADS_AND_TAILS,
     )
     temp_storage_bytes = block_disc.temp_storage_bytes
     temp_storage_alignment = block_disc.temp_storage_alignment
@@ -243,7 +244,7 @@ def test_block_discontinuity_heads_and_tails_tile_pred_succ():
             head_flags,
             tail_flags,
             flag_op=flag_op,
-            block_discontinuity_type=coop.block.BlockDiscontinuityType.HEADS_AND_TAILS,
+            block_discontinuity_type=BlockDiscontinuityType.HEADS_AND_TAILS,
             tile_predecessor_item=tile_predecessor_item,
             tile_successor_item=tile_successor_item,
             temp_storage=temp_storage,

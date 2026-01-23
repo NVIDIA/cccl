@@ -11,6 +11,7 @@ from helpers import random_int
 from numba import cuda
 
 from cuda import coop
+from cuda.coop import BlockLoadAlgorithm, BlockStoreAlgorithm
 
 numba.config.CUDA_LOW_OCCUPANCY_WARNINGS = 0
 
@@ -52,32 +53,32 @@ def _run_load_store_kernel(load_algo, store_algo, items_per_thread, offset=0):
 @pytest.mark.parametrize(
     "load_algo",
     [
-        coop.BlockLoadAlgorithm.TRANSPOSE,
-        coop.BlockLoadAlgorithm.WARP_TRANSPOSE,
-        coop.BlockLoadAlgorithm.WARP_TRANSPOSE_TIMESLICED,
+        BlockLoadAlgorithm.TRANSPOSE,
+        BlockLoadAlgorithm.WARP_TRANSPOSE,
+        BlockLoadAlgorithm.WARP_TRANSPOSE_TIMESLICED,
     ],
 )
 def test_block_load_shared_memory_algorithms(load_algo):
-    _run_load_store_kernel(load_algo, coop.BlockStoreAlgorithm.DIRECT, 4)
+    _run_load_store_kernel(load_algo, BlockStoreAlgorithm.DIRECT, 4)
 
 
 @pytest.mark.parametrize(
     "store_algo",
     [
-        coop.BlockStoreAlgorithm.TRANSPOSE,
-        coop.BlockStoreAlgorithm.WARP_TRANSPOSE,
-        coop.BlockStoreAlgorithm.WARP_TRANSPOSE_TIMESLICED,
+        BlockStoreAlgorithm.TRANSPOSE,
+        BlockStoreAlgorithm.WARP_TRANSPOSE,
+        BlockStoreAlgorithm.WARP_TRANSPOSE_TIMESLICED,
     ],
 )
 def test_block_store_shared_memory_algorithms(store_algo):
-    _run_load_store_kernel(coop.BlockLoadAlgorithm.DIRECT, store_algo, 4)
+    _run_load_store_kernel(BlockLoadAlgorithm.DIRECT, store_algo, 4)
 
 
 @pytest.mark.parametrize("offset", [0, 1])
 def test_block_load_vectorize_alignment(offset):
     _run_load_store_kernel(
-        coop.BlockLoadAlgorithm.VECTORIZE,
-        coop.BlockStoreAlgorithm.DIRECT,
+        BlockLoadAlgorithm.VECTORIZE,
+        BlockStoreAlgorithm.DIRECT,
         4,
         offset=offset,
     )
@@ -86,8 +87,8 @@ def test_block_load_vectorize_alignment(offset):
 @pytest.mark.parametrize("offset", [0, 1])
 def test_block_store_vectorize_alignment(offset):
     _run_load_store_kernel(
-        coop.BlockLoadAlgorithm.DIRECT,
-        coop.BlockStoreAlgorithm.VECTORIZE,
+        BlockLoadAlgorithm.DIRECT,
+        BlockStoreAlgorithm.VECTORIZE,
         4,
         offset=offset,
     )
@@ -95,15 +96,15 @@ def test_block_store_vectorize_alignment(offset):
 
 def test_block_load_vectorize_odd_items_per_thread():
     _run_load_store_kernel(
-        coop.BlockLoadAlgorithm.VECTORIZE,
-        coop.BlockStoreAlgorithm.DIRECT,
+        BlockLoadAlgorithm.VECTORIZE,
+        BlockStoreAlgorithm.DIRECT,
         3,
     )
 
 
 def test_block_store_vectorize_odd_items_per_thread():
     _run_load_store_kernel(
-        coop.BlockLoadAlgorithm.DIRECT,
-        coop.BlockStoreAlgorithm.VECTORIZE,
+        BlockLoadAlgorithm.DIRECT,
+        BlockStoreAlgorithm.VECTORIZE,
         3,
     )
