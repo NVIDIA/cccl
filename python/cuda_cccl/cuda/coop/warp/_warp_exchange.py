@@ -15,6 +15,7 @@ from .._types import (
     DependentArray,
     Invocable,
     TemplateParameter,
+    TempStoragePointer,
     numba_type_to_wrapper,
 )
 
@@ -92,6 +93,15 @@ class exchange(BasePrimitive):
         )
 
         method = [input_items, output_items]
+        if temp_storage is not None:
+            method.insert(
+                0,
+                TempStoragePointer(
+                    numba.types.uint8,
+                    is_array_pointer=True,
+                    name="temp_storage",
+                ),
+            )
 
         if warp_exchange_type == WarpExchangeType.ScatterToStriped:
             if offset_dtype is None:

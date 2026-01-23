@@ -40,6 +40,47 @@ def test_warp_load_store():
     np.testing.assert_allclose(h_output, h_input)
 
 
+def test_warp_load_store_temp_storage():
+    threads_in_warp = 32
+    items_per_thread = 4
+
+    warp_load = coop.warp.load(
+        numba.int32, items_per_thread, threads_in_warp, algorithm="striped"
+    )
+    warp_store = coop.warp.store(
+        numba.int32, items_per_thread, threads_in_warp, algorithm="striped"
+    )
+    temp_storage_bytes = max(
+        warp_load.temp_storage_bytes,
+        warp_store.temp_storage_bytes,
+    )
+    temp_storage_alignment = max(
+        warp_load.temp_storage_alignment,
+        warp_store.temp_storage_alignment,
+    )
+
+    @cuda.jit
+    def kernel(d_in, d_out):
+        temp_storage = coop.TempStorage(
+            temp_storage_bytes,
+            temp_storage_alignment,
+        )
+        items = cuda.local.array(items_per_thread, numba.int32)
+        warp_load(d_in, items, temp_storage=temp_storage)
+        warp_store(d_out, items, temp_storage=temp_storage)
+
+    h_input = np.random.randint(
+        0, 42, threads_in_warp * items_per_thread, dtype=np.int32
+    )
+    d_input = cuda.to_device(h_input)
+    d_output = cuda.device_array_like(d_input)
+
+    kernel[1, threads_in_warp](d_input, d_output)
+    h_output = d_output.copy_to_host()
+
+    np.testing.assert_allclose(h_output, h_input)
+
+
 def test_warp_load_store_num_valid_oob_default():
     threads_in_warp = 32
     items_per_thread = 2

@@ -1323,7 +1323,11 @@ class Algorithm:
                     elif pid == 1:
                         assert param_name == "size", param_name
                         continue
-                    if getattr(param, "deref_on_call", False):
+                    if isinstance(param, TempStoragePointer):
+                        param_args.append(
+                            f"*reinterpret_cast<{n.temp_storage_t} *>({param_name})"
+                        )
+                    elif getattr(param, "deref_on_call", False):
                         param_args.append(f"*{param_name}")
                     else:
                         param_args.append(param_name)

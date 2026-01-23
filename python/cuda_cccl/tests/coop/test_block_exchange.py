@@ -207,6 +207,57 @@ def test_block_exchange_two_phase_striped_to_blocked():
     np.testing.assert_array_equal(h_output, expected)
 
 
+def test_block_exchange_temp_storage():
+    threads_per_block = 64
+    items_per_thread = 2
+    dtype = np.int32
+
+    block_exchange = coop.block.exchange(
+        striped_to_blocked,
+        numba.int32,
+        threads_per_block,
+        items_per_thread,
+    )
+    temp_storage_bytes = block_exchange.temp_storage_bytes
+    temp_storage_alignment = block_exchange.temp_storage_alignment
+
+    @cuda.jit
+    def kernel(input_arr, output_arr):
+        tid = row_major_tid()
+        temp_storage = coop.TempStorage(
+            temp_storage_bytes,
+            temp_storage_alignment,
+        )
+        items = cuda.local.array(items_per_thread, numba.int32)
+        for i in range(items_per_thread):
+            idx = tid + i * threads_per_block
+            items[i] = input_arr[idx]
+
+        block_exchange(items, temp_storage=temp_storage)
+
+        for i in range(items_per_thread):
+            output_arr[tid * items_per_thread + i] = items[i]
+
+    total_items = threads_per_block * items_per_thread
+    h_input = np.arange(total_items, dtype=dtype)
+    d_input = cuda.to_device(h_input)
+    d_output = cuda.device_array_like(d_input)
+
+    kernel[1, threads_per_block](d_input, d_output)
+    cuda.synchronize()
+
+    h_output = d_output.copy_to_host()
+
+    expected = np.zeros_like(h_output)
+    for blocked_idx in range(total_items):
+        s_tid = blocked_idx % threads_per_block
+        s_item_idx_in_stripe = blocked_idx // threads_per_block
+        src_striped_idx = s_tid + s_item_idx_in_stripe * threads_per_block
+        expected[blocked_idx] = h_input[src_striped_idx]
+
+    np.testing.assert_array_equal(h_output, expected)
+
+
 @pytest.mark.parametrize("threads_per_block", [32, (4, 16), (4, 8, 8)])
 @pytest.mark.parametrize("items_per_thread", [1])
 @pytest.mark.parametrize("warp_time_slicing", [False, True])

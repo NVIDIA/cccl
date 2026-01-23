@@ -3,6 +3,7 @@
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 import textwrap
+from dataclasses import dataclass
 from functools import reduce
 from operator import mul
 
@@ -261,6 +262,164 @@ def test_block_load_store_scan_two_phase_temp_storage():
     if len(h_input) > 0:
         h_reference[0] = 0
         h_reference[1:] = np.cumsum(h_input[:-1])
+
+    h_output = d_output.copy_to_host()
+    np.testing.assert_array_equal(h_output, h_reference)
+
+
+def test_block_load_store_scan_gpu_dataclass_temp_storage():
+    dtype = np.int32
+    threads_per_block = 128
+    items_per_thread = 1
+
+    block_load = coop.block.load(
+        dtype,
+        threads_per_block,
+        items_per_thread,
+        algorithm=coop.BlockLoadAlgorithm.DIRECT,
+    )
+    block_scan = coop.block.scan(dtype, threads_per_block, items_per_thread)
+    block_store = coop.block.store(
+        dtype,
+        threads_per_block,
+        items_per_thread,
+        algorithm=coop.BlockStoreAlgorithm.DIRECT,
+    )
+
+    @dataclass
+    class KernelParams:
+        items_per_thread: int
+        block_load: coop.block.load
+        block_scan: coop.block.scan
+        block_store: coop.block.store
+
+    kp = KernelParams(
+        items_per_thread=items_per_thread,
+        block_load=block_load,
+        block_scan=block_scan,
+        block_store=block_store,
+    )
+    kp = coop.gpu_dataclass(kp)
+
+    temp_storage_bytes = kp.temp_storage_bytes_max
+    temp_storage_alignment = kp.temp_storage_alignment
+    expected_max = max(
+        block_load.temp_storage_bytes,
+        block_scan.temp_storage_bytes,
+        block_store.temp_storage_bytes,
+    )
+    expected_alignment = max(
+        block_load.temp_storage_alignment,
+        block_scan.temp_storage_alignment,
+        block_store.temp_storage_alignment,
+    )
+    assert temp_storage_bytes == expected_max
+    assert temp_storage_alignment == expected_alignment
+
+    @cuda.jit
+    def kernel(d_in, d_out, kp):
+        items_per_thread = kp.items_per_thread
+        threads_per_block = cuda.blockDim.x * cuda.blockDim.y * cuda.blockDim.z
+        items_per_block = items_per_thread * threads_per_block
+        block_offset = cuda.blockIdx.x * items_per_block
+
+        temp_storage = coop.TempStorage(
+            temp_storage_bytes,
+            temp_storage_alignment,
+        )
+        thread_data = coop.local.array(items_per_thread, dtype=d_in.dtype)
+        kp.block_load(d_in[block_offset:], thread_data, temp_storage=temp_storage)
+        kp.block_scan(thread_data, thread_data, temp_storage=temp_storage)
+        kp.block_store(d_out[block_offset:], thread_data, temp_storage=temp_storage)
+
+    num_total_items = threads_per_block * items_per_thread
+    h_input = np.random.randint(0, 42, num_total_items, dtype=dtype)
+    d_input = cuda.to_device(h_input)
+    d_output = cuda.device_array_like(d_input)
+
+    kernel[1, threads_per_block](d_input, d_output, kp)
+    cuda.synchronize()
+
+    h_reference = np.zeros_like(h_input)
+    if len(h_input) > 0:
+        h_reference[0] = 0
+        h_reference[1:] = np.cumsum(h_input[:-1])
+
+    h_output = d_output.copy_to_host()
+    np.testing.assert_array_equal(h_output, h_reference)
+
+
+def test_block_load_store_scan_gpu_dataclass_temp_storage_bit_or():
+    dtype = np.int32
+    threads_per_block = 128
+    items_per_thread = 4
+
+    block_load = coop.block.load(
+        dtype,
+        threads_per_block,
+        items_per_thread,
+        algorithm=coop.BlockLoadAlgorithm.DIRECT,
+    )
+    block_scan = coop.block.scan(
+        dtype,
+        threads_per_block,
+        items_per_thread,
+        scan_op="bit_or",
+    )
+    block_store = coop.block.store(
+        dtype,
+        threads_per_block,
+        items_per_thread,
+        algorithm=coop.BlockStoreAlgorithm.DIRECT,
+    )
+
+    @dataclass
+    class KernelParams:
+        items_per_thread: int
+        block_load: coop.block.load
+        block_scan: coop.block.scan
+        block_store: coop.block.store
+
+    kp = KernelParams(
+        items_per_thread=items_per_thread,
+        block_load=block_load,
+        block_scan=block_scan,
+        block_store=block_store,
+    )
+    kp = coop.gpu_dataclass(kp)
+
+    temp_storage_bytes = kp.temp_storage_bytes_max
+    temp_storage_alignment = kp.temp_storage_alignment
+
+    @cuda.jit
+    def kernel(d_in, d_out, kp):
+        items_per_thread = kp.items_per_thread
+        threads_per_block = cuda.blockDim.x * cuda.blockDim.y * cuda.blockDim.z
+        items_per_block = items_per_thread * threads_per_block
+        block_offset = cuda.blockIdx.x * items_per_block
+
+        temp_storage = coop.TempStorage(
+            temp_storage_bytes,
+            temp_storage_alignment,
+        )
+        thread_data = coop.local.array(items_per_thread, dtype=d_in.dtype)
+        kp.block_load(d_in[block_offset:], thread_data, temp_storage=temp_storage)
+        kp.block_scan(thread_data, thread_data, temp_storage=temp_storage)
+        kp.block_store(d_out[block_offset:], thread_data, temp_storage=temp_storage)
+
+    num_total_items = threads_per_block * items_per_thread
+    h_input = np.random.randint(0, 16, num_total_items, dtype=dtype)
+    d_input = cuda.to_device(h_input)
+    d_output = cuda.device_array_like(d_input)
+
+    kernel[1, threads_per_block](d_input, d_output, kp)
+    cuda.synchronize()
+
+    h_reference = np.empty_like(h_input)
+    running = np.int32(0)
+    for i in range(len(h_input)):
+        h_reference[i] = running
+        running = np.int32(running | h_input[i])
 
     h_output = d_output.copy_to_host()
     np.testing.assert_array_equal(h_output, h_reference)

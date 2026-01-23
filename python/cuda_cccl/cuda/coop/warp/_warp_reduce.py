@@ -13,6 +13,7 @@ from .._types import (
     DependentReference,
     Invocable,
     TemplateParameter,
+    TempStoragePointer,
     Value,
     numba_type_to_wrapper,
 )
@@ -55,6 +56,13 @@ class reduce(BasePrimitive):
         ]
         if valid_items is not None:
             parameters[0].append(Value(numba.types.int32, name="valid_items"))
+        if temp_storage is not None:
+            parameters[0].insert(
+                0,
+                TempStoragePointer(
+                    numba.types.uint8, is_array_pointer=True, name="temp_storage"
+                ),
+            )
 
         template = Algorithm(
             "WarpReduce",
@@ -125,6 +133,13 @@ class sum(BasePrimitive):
         ]
         if valid_items is not None:
             parameters[0].append(Value(numba.types.int32, name="valid_items"))
+        if temp_storage is not None:
+            parameters[0].insert(
+                0,
+                TempStoragePointer(
+                    numba.types.uint8, is_array_pointer=True, name="temp_storage"
+                ),
+            )
 
         template = Algorithm(
             "WarpReduce",

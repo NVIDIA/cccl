@@ -14,6 +14,7 @@ from .._types import (
     DependentPythonOperator,
     Invocable,
     TemplateParameter,
+    TempStoragePointer,
     numba_type_to_wrapper,
 )
 
@@ -48,6 +49,15 @@ class merge_sort_keys(BasePrimitive):
         method = [
             DependentArray(Dependency("KeyT"), Dependency("ITEMS_PER_THREAD")),
         ]
+        if temp_storage is not None:
+            method.insert(
+                0,
+                TempStoragePointer(
+                    numba.types.uint8,
+                    is_array_pointer=True,
+                    name="temp_storage",
+                ),
+            )
         if self.value_dtype is not None:
             method.append(
                 DependentArray(Dependency("ValueT"), Dependency("ITEMS_PER_THREAD"))

@@ -144,3 +144,42 @@ def test_warp_merge_sort_key_value():
 
     assert list(keys_out) == exp_keys
     assert list(values_out) == exp_values
+
+
+def test_warp_merge_sort_temp_storage():
+    T = types.int32
+    items_per_thread = 2
+
+    def op(a, b):
+        return a < b
+
+    warp_merge_sort = coop.warp.merge_sort_keys(T, items_per_thread, op)
+    temp_storage_bytes = warp_merge_sort.temp_storage_bytes
+    temp_storage_alignment = warp_merge_sort.temp_storage_alignment
+
+    @cuda.jit
+    def kernel(input, output):
+        tid = cuda.threadIdx.x
+        temp_storage = coop.TempStorage(
+            temp_storage_bytes,
+            temp_storage_alignment,
+        )
+        thread_data = cuda.local.array(shape=items_per_thread, dtype=dtype)
+        for i in range(items_per_thread):
+            thread_data[i] = input[tid * items_per_thread + i]
+        warp_merge_sort(thread_data, temp_storage=temp_storage)
+        for i in range(items_per_thread):
+            output[tid * items_per_thread + i] = thread_data[i]
+
+    dtype = NUMBA_TYPES_TO_NP[T]
+    items_per_tile = 32 * items_per_thread
+    h_input = random_int(items_per_tile, dtype)
+    d_input = cuda.to_device(h_input)
+    d_output = cuda.device_array(items_per_tile, dtype=dtype)
+    kernel[1, 32](d_input, d_output)
+    cuda.synchronize()
+
+    output = d_output.copy_to_host()
+    reference = sorted(h_input)
+    for i in range(items_per_tile):
+        assert output[i] == reference[i]
