@@ -119,10 +119,6 @@ struct segmented_reduce_kernel_source
 {
   cccl_device_segmented_reduce_build_result_t& build;
 
-  std::size_t AccumSize() const
-  {
-    return build.accumulator_size;
-  }
   CUkernel SegmentedReduceKernel() const
   {
     return build.segmented_reduce_kernel;
