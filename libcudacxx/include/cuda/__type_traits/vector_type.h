@@ -25,7 +25,9 @@
 
 #  include <cuda/std/__cstddef/types.h>
 #  include <cuda/std/__floating_point/cuda_fp_types.h>
+#  include <cuda/std/__type_traits/enable_if.h>
 #  include <cuda/std/__type_traits/is_same.h>
+#  include <cuda/std/__type_traits/void_t.h>
 
 #  if !_CCCL_CUDA_COMPILATION()
 #    include <vector_types.h>
@@ -469,6 +471,59 @@ using __vector_type_t = decltype(::cuda::__cccl_vector_type_t_impl<_Tp, _Size>()
 
 template <class _Tp, ::cuda::std::size_t _Size>
 inline constexpr bool __has_vector_type_v = !::cuda::std::is_same_v<__vector_type_t<_Tp, _Size>, void>;
+
+template <class _Tp>
+inline constexpr bool __is_vector_type_v = false;
+
+template <class _Tp, class = void>
+inline constexpr bool __has_x_elements_v = false;
+
+template <class _Tp>
+inline constexpr bool __has_x_elements_v<_Tp, ::cuda::std::void_t<decltype(_Tp::x)>> = true;
+
+template <class _Tp, class = void>
+inline constexpr bool __has___x_elements_v = false;
+
+template <class _Tp>
+inline constexpr bool __has___x_elements_v<_Tp, ::cuda::std::void_t<decltype(_Tp::__x)>> = false;
+
+template <class _Tp, class = void>
+struct __scalar_type;
+
+template <class _Tp>
+struct __scalar_type<_Tp, ::cuda::std::enable_if_t<::cuda::__is_vector_type_v<_Tp> && __has_x_elements_v<_Tp>>>
+{
+  using type = decltype(_Tp::x);
+};
+template <class _Tp>
+struct __scalar_type<_Tp, ::cuda::std::enable_if_t<::cuda::__is_vector_type_v<_Tp> && __has___x_elements_v<_Tp>>>
+{
+  using type = decltype(_Tp::__x);
+};
+
+template <class _Tp>
+using __scalar_type_t = typename __scalar_type<_Tp>::type;
+
+template <class _Tp>
+inline constexpr int __vector_size_v = 0;
+
+template <>
+inline constexpr int __vector_size_v<::int1> = 1;
+template <>
+inline constexpr int __vector_size_v<::int2> = 2;
+template <>
+inline constexpr int __vector_size_v<::int3> = 3;
+template <>
+inline constexpr int __vector_size_v<::int4> = 4;
+
+template <>
+inline constexpr int __vector_size_v<::uint1> = 1;
+template <>
+inline constexpr int __vector_size_v<::uint2> = 2;
+template <>
+inline constexpr int __vector_size_v<::uint3> = 3;
+template <>
+inline constexpr int __vector_size_v<::uint4> = 4;
 
 _CCCL_END_NAMESPACE_CUDA
 
