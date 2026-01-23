@@ -16,6 +16,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cub/detail/segmented_scan_multi_segment_helpers.cuh>
 #include <cub/iterator/cache_modified_input_iterator.cuh>
 #include <cub/thread/thread_reduce.cuh> // ThreadReduce
 #include <cub/thread/thread_scan.cuh> // detail::ThreadInclusiveScan
@@ -29,7 +30,6 @@
 #include <cuda/std/__type_traits/is_pointer.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/span>
-#include <cuda/std/tuple>
 
 CUB_NAMESPACE_BEGIN
 
@@ -38,25 +38,14 @@ namespace detail::segmented_scan
 // define policy
 //   Policy contains: CacheLoadModifier, block size, items per thread
 
-template <typename ComputeT, int SegmentsPerThread>
-using agent_thread_segmented_scan_compute_t = ComputeT;
-// ::cuda::std::conditional_t<SegmentsPerThread == 1, ComputeT, ::cuda::std::tuple<bool, ComputeT>>;
-
 template <int Nominal4ByteBlockThreads,
           int Nominal4BytesItemsPerThread,
           typename ComputeT,
           CacheLoadModifier LoadModifier,
-          int SegmentsPerThread = 1,
-          typename ScalingType =
-            detail::MemBoundScaling<Nominal4ByteBlockThreads,
-                                    Nominal4BytesItemsPerThread,
-                                    agent_thread_segmented_scan_compute_t<ComputeT, SegmentsPerThread>>>
+          typename ScalingType = detail::MemBoundScaling<Nominal4ByteBlockThreads, Nominal4BytesItemsPerThread, ComputeT>>
 struct agent_thread_segmented_scan_policy_t : ScalingType
 {
-  static_assert(SegmentsPerThread > 0, "SegmentsPerThread template value parameter must be positive");
-
   static constexpr CacheLoadModifier load_modifier = LoadModifier;
-  static constexpr int segments_per_thread         = SegmentsPerThread;
 };
 
 // helper
@@ -206,13 +195,12 @@ struct agent_thread_segmented_scan
   // We are relying on either initial value not being `NullType`
   // or the ForceInclusive tag to be true for inclusive scan
   // to get picked up.
-  static constexpr bool is_inclusive       = ForceInclusive || !has_init;
-  static constexpr int block_threads       = AgentSegmentedScanPolicyT::BLOCK_THREADS;
-  static constexpr int items_per_thread    = AgentSegmentedScanPolicyT::ITEMS_PER_THREAD;
-  static constexpr int tile_items          = items_per_thread;
-  static constexpr int segments_per_thread = AgentSegmentedScanPolicyT::segments_per_thread;
+  static constexpr bool is_inclusive    = ForceInclusive || !has_init;
+  static constexpr int block_threads    = AgentSegmentedScanPolicyT::BLOCK_THREADS;
+  static constexpr int items_per_thread = AgentSegmentedScanPolicyT::ITEMS_PER_THREAD;
+  static constexpr int tile_items       = items_per_thread;
 
-  using augmented_accum_t = agent_thread_segmented_scan_compute_t<AccumT, segments_per_thread>;
+  using augmented_accum_t = AccumT;
 
   struct _TempStorage
   {};
@@ -252,7 +240,7 @@ struct agent_thread_segmented_scan
   {}
 
   //! @brief
-  _CCCL_DEVICE _CCCL_FORCEINLINE void consume_range_one_segment_at_a_time()
+  _CCCL_DEVICE _CCCL_FORCEINLINE void consume_range_one_segment_at_a_time(int segments_per_thread)
   {
     constexpr auto segments_per_block = static_cast<OffsetT>(block_threads * segments_per_thread);
     const OffsetT thread_work_id0 =
@@ -330,14 +318,14 @@ struct agent_thread_segmented_scan
   }
 
   //! @brief
-  _CCCL_DEVICE _CCCL_FORCEINLINE void consume_range_multi_segment()
+  _CCCL_DEVICE _CCCL_FORCEINLINE void consume_range_multi_segment(int segments_per_thread)
   {
     // if (threadIdx.x == 0 && blockIdx.x == 0)
     // {
     //   printf("segments_per_thread = %d, itp: %d\n", segments_per_thread, items_per_thread);
     // }
 
-    constexpr auto segments_per_block = static_cast<OffsetT>(block_threads * segments_per_thread);
+    const auto segments_per_block = static_cast<OffsetT>(block_threads * segments_per_thread);
     const OffsetT thread_work_id0 =
       static_cast<OffsetT>(blockIdx.x) * segments_per_block + static_cast<OffsetT>(threadIdx.x);
 
@@ -348,7 +336,7 @@ struct agent_thread_segmented_scan
     multi_segmented_seq_iterator it{
       segments_per_thread, d_inp_begin_offset, d_inp_end_offset, d_out_begin_offset, n_segments, get_work_id};
 
-    using augmented_scan_op_t = schwarz_scan_op<bool, AccumT, ScanOpT>;
+    using augmented_scan_op_t = multi_segment_helpers::schwarz_scan_op<AccumT, bool, ScanOpT>;
     using hv_t                = typename augmented_scan_op_t::fv_t;
 
     augmented_scan_op_t augmented_scan_op{scan_op};
@@ -369,22 +357,22 @@ struct agent_thread_segmented_scan
         {
           const OffsetT inp_offset = it.get_input_offset();
           flags[k]                 = it.get_head_flag();
-          items[k]                 = make_value_flag(d_in[inp_offset], flags[k]);
+          items[k]                 = multi_segment_helpers::make_value_flag(d_in[inp_offset], flags[k]);
           out_offsets[k]           = it.get_output_offset();
           ++chunk_size;
           ++it;
         }
         else
         {
-          items[k] = make_value_flag(AccumT{}, true);
+          items[k] = multi_segment_helpers::make_value_flag(AccumT{}, true);
         }
       }
 
       // compute scan
       if (chunk_id == 0)
       {
-        using augmented_init_value_t                = ::cuda::std::tuple<InitValueT, bool>;
-        augmented_init_value_t augmented_init_value = make_value_flag(initial_value, false);
+        using augmented_init_value_t                = multi_segment_helpers::augmented_value_t<InitValueT, bool>;
+        augmented_init_value_t augmented_init_value = multi_segment_helpers::make_value_flag(initial_value, false);
         scan_first_tile(items, augmented_init_value, augmented_scan_op, exclusive_prefix);
       }
       else
@@ -399,7 +387,7 @@ struct agent_thread_segmented_scan
         if (k < chunk_size)
         {
           const OffsetT oo          = out_offsets[k];
-          const augmented_accum_t v = get_value(items[k]);
+          const augmented_accum_t v = multi_segment_helpers::get_value(items[k]);
           if constexpr (is_inclusive)
           {
             d_out[oo] = v;
@@ -415,58 +403,24 @@ struct agent_thread_segmented_scan
     }
   }
 
-  _CCCL_DEVICE _CCCL_FORCEINLINE void consume_range()
+  _CCCL_DEVICE _CCCL_FORCEINLINE void consume_range(int segments_per_thread)
   {
-    consume_range_multi_segment();
+    consume_range_multi_segment(segments_per_thread);
     // consume_range_one_segment_at_a_time();
   }
 
 private:
-  template <typename ValueTy, typename FlagTy>
-  _CCCL_DEVICE _CCCL_FORCEINLINE static FlagTy get_flag(::cuda::std::tuple<ValueTy, FlagTy> fv) noexcept
-  {
-    return ::cuda::std::get<1>(fv);
-  }
-
-  template <typename ValueTy, typename FlagTy>
-  _CCCL_DEVICE _CCCL_FORCEINLINE static ValueTy get_value(::cuda::std::tuple<ValueTy, FlagTy> fv) noexcept
-  {
-    return ::cuda::std::get<0>(fv);
-  }
-
-  template <typename ValueTy, typename FlagTy>
-  _CCCL_DEVICE _CCCL_FORCEINLINE static ::cuda::std::tuple<ValueTy, FlagTy> make_value_flag(ValueTy v, FlagTy f) noexcept
-  {
-    return {v, f};
-  }
-
-  template <typename FlagTy, typename ValueTy, typename BinaryOpTy>
-  struct schwarz_scan_op
-  {
-    using fv_t = ::cuda::std::tuple<ValueTy, FlagTy>;
-    BinaryOpTy& scan_op;
-
-    _CCCL_DEVICE _CCCL_FORCEINLINE fv_t operator()(fv_t o1, fv_t o2)
-    {
-      if (get_flag(o2))
-      {
-        return o2;
-      }
-      const auto o2_value     = get_value(o2);
-      const auto o1_value     = get_value(o1);
-      const ValueTy res_value = scan_op(o1_value, o2_value);
-
-      return make_value_flag(res_value, get_flag(o1));
-    }
-  };
-
-  template <typename ItemTy, typename InitValueTy, typename ScanOpTy, bool IsInclusive = is_inclusive>
+  template <typename ItemTy,
+            typename InitValueTy,
+            typename ScanOpTy,
+            bool IsInclusive = is_inclusive,
+            bool HasInit     = has_init>
   _CCCL_DEVICE _CCCL_FORCEINLINE void
   scan_first_tile(ItemTy (&items)[items_per_thread], InitValueTy init_value, ScanOpTy scan_op, ItemTy& aggregate)
   {
     ItemTy init_v;
     aggregate = cub::ThreadReduce(items, scan_op);
-    if constexpr (has_init)
+    if constexpr (HasInit)
     {
       init_v    = static_cast<ItemTy>(init_value);
       aggregate = scan_op(init_v, aggregate);

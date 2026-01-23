@@ -206,6 +206,8 @@ struct DeviceSegmentedScan
         d_in_begin_offsets,
         scan_op,
         detail::InputValue<init_value_t>(init_value),
+        1,
+        detail::segmented_scan::worker::block,
         stream);
   }
 
@@ -343,6 +345,8 @@ struct DeviceSegmentedScan
         d_out_begin_offsets,
         scan_op,
         detail::InputValue<init_value_t>(init_value),
+        1,
+        detail::segmented_scan::worker::block,
         stream);
   }
 
@@ -480,6 +484,8 @@ struct DeviceSegmentedScan
         d_in_begin_offsets,
         scan_op,
         detail::InputValue<InitValueT>(init_value),
+        1,
+        detail::segmented_scan::worker::block,
         stream);
   }
 
@@ -618,6 +624,8 @@ struct DeviceSegmentedScan
         d_out_begin_offsets,
         scan_op,
         detail::InputValue<InitValueT>(init_value),
+        1,
+        detail::segmented_scan::worker::block,
         stream);
   }
 
@@ -739,6 +747,8 @@ struct DeviceSegmentedScan
                           d_in_begin_offsets,
                           scan_op,
                           NullType(),
+                          1,
+                          detail::segmented_scan::worker::block,
                           stream);
   }
 
@@ -874,6 +884,8 @@ struct DeviceSegmentedScan
                           d_out_begin_offsets,
                           scan_op,
                           NullType(),
+                          1,
+                          detail::segmented_scan::worker::block,
                           stream);
   }
 
@@ -986,6 +998,8 @@ struct DeviceSegmentedScan
                           d_in_begin_offsets,
                           scan_op,
                           NullType(),
+                          1,
+                          detail::segmented_scan::worker::block,
                           stream);
   }
 
@@ -1125,6 +1139,8 @@ struct DeviceSegmentedScan
                           d_out_begin_offsets,
                           scan_op,
                           NullType(),
+                          1,
+                          detail::segmented_scan::worker::block,
                           stream);
   }
 
@@ -1256,17 +1272,21 @@ struct DeviceSegmentedScan
       ScanOpT,
       detail::InputValue<InitValueT>,
       accum_t,
-      ForceInclusive::Yes>::dispatch(d_temp_storage,
-                                     temp_storage_bytes,
-                                     d_in,
-                                     d_out,
-                                     num_segments,
-                                     d_in_begin_offsets,
-                                     d_in_end_offsets,
-                                     d_in_begin_offsets,
-                                     scan_op,
-                                     detail::InputValue<InitValueT>(init_value),
-                                     stream);
+      ForceInclusive::Yes>::
+      dispatch(
+        d_temp_storage,
+        temp_storage_bytes,
+        d_in,
+        d_out,
+        num_segments,
+        d_in_begin_offsets,
+        d_in_end_offsets,
+        d_in_begin_offsets,
+        scan_op,
+        detail::InputValue<InitValueT>(init_value),
+        1,
+        detail::segmented_scan::worker::block,
+        stream);
   }
 
   //! @rst
@@ -1398,17 +1418,21 @@ struct DeviceSegmentedScan
       ScanOpT,
       detail::InputValue<InitValueT>,
       accum_t,
-      ForceInclusive::Yes>::dispatch(d_temp_storage,
-                                     temp_storage_bytes,
-                                     d_in,
-                                     d_out,
-                                     num_segments,
-                                     d_in_begin_offsets,
-                                     d_in_end_offsets,
-                                     d_out_begin_offsets,
-                                     scan_op,
-                                     detail::InputValue<InitValueT>(init_value),
-                                     stream);
+      ForceInclusive::Yes>::
+      dispatch(
+        d_temp_storage,
+        temp_storage_bytes,
+        d_in,
+        d_out,
+        num_segments,
+        d_in_begin_offsets,
+        d_in_end_offsets,
+        d_out_begin_offsets,
+        scan_op,
+        detail::InputValue<InitValueT>(init_value),
+        1,
+        detail::segmented_scan::worker::block,
+        stream);
   }
 };
 
