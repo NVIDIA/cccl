@@ -70,7 +70,7 @@ struct policy_hub_t
 
 template <typename ComputeT, int NumSegmentsPerWorkUnit>
 using segmented_scan_compute_t =
-  ::cuda::std::conditional_t<NumSegmentsPerWorkUnit == 1, ComputeT, ::cuda::std::tuple<bool, ComputeT>>;
+  ::cuda::std::conditional_t<NumSegmentsPerWorkUnit == 1, ComputeT, ::cuda::std::tuple<ComputeT, bool>>;
 
 template <typename AccumT, int SegmentsPerWorkUnit, int ItemsPerThread>
 struct user_policy_hub_t
@@ -82,7 +82,7 @@ struct user_policy_hub_t
             cub::CacheLoadModifier LoadModifier,
             cub::BlockStoreAlgorithm StoreAlgorithm,
             cub::BlockScanAlgorithm ScanAlgorithm,
-            int _SegmentsPerBlock = 1>
+            int MaxSegmentsPerBlock = 1>
   using block_level_agent_policy_t = cub::detail::segmented_scan::agent_segmented_scan_policy_t<
     Nominal4ByteBlockThreads,
     Nominal4ByteItemsPerThread,
@@ -91,10 +91,10 @@ struct user_policy_hub_t
     LoadModifier,
     StoreAlgorithm,
     ScanAlgorithm,
-    _SegmentsPerBlock,
+    MaxSegmentsPerBlock,
     cub::detail::MemBoundScaling<Nominal4ByteBlockThreads,
                                  Nominal4ByteItemsPerThread,
-                                 segmented_scan_compute_t<ComputeT, _SegmentsPerBlock>>>;
+                                 segmented_scan_compute_t<ComputeT, MaxSegmentsPerBlock>>>;
   template <int Nominal4ByteBlockThreads,
             int Nominal4ByteItemsPerThread,
             typename ComputeT,
@@ -117,17 +117,13 @@ struct user_policy_hub_t
   template <int Nominal4ByteBlockThreads,
             int Nominal4ByteItemsPerThread,
             typename ComputeT,
-            cub::CacheLoadModifier LoadModifier,
-            int _SegmentsPerWarp = 1>
+            cub::CacheLoadModifier LoadModifier>
   using thread_level_agent_policy_t = cub::detail::segmented_scan::agent_thread_segmented_scan_policy_t<
     Nominal4ByteBlockThreads,
     Nominal4ByteItemsPerThread,
     ComputeT,
     LoadModifier,
-    _SegmentsPerWarp,
-    cub::detail::MemBoundScaling<Nominal4ByteBlockThreads,
-                                 Nominal4ByteItemsPerThread,
-                                 segmented_scan_compute_t<ComputeT, _SegmentsPerWarp>>>;
+    cub::detail::MemBoundScaling<Nominal4ByteBlockThreads, Nominal4ByteItemsPerThread, ComputeT>>;
 
   using base_block_level_policy_t =
     typename cub::detail::segmented_scan::policy_hub<void, void, AccumT, void, void>::MaxPolicy::segmented_scan_policy_t;
@@ -160,11 +156,7 @@ struct user_policy_hub_t
       SegmentsPerWorkUnit>;
 
     using thread_segmented_scan_policy_t =
-      thread_level_agent_policy_t<128,
-                                  ItemsPerThread,
-                                  AccumT,
-                                  base_thread_level_policy_t::load_modifier,
-                                  SegmentsPerWorkUnit>;
+      thread_level_agent_policy_t<128, ItemsPerThread, AccumT, base_thread_level_policy_t::load_modifier>;
   };
 
   using MaxPolicy = policy_t;
@@ -249,6 +241,27 @@ static void basic(
   state.add_global_memory_reads<offset_t>(num_segments, "In Offsets");
   state.add_global_memory_writes<T>(elements, "Out");
 
+  int num_segments_per_worker = static_cast<int>(state.get_int64("SegmentsPerWorker{io}"));
+  cub::detail::segmented_scan::worker worker_choice;
+
+  auto token = state.get_string("Worker{io}");
+  if (token == "block")
+  {
+    worker_choice = cub::detail::segmented_scan::worker::block;
+  }
+  else if (token == "warp")
+  {
+    worker_choice = cub::detail::segmented_scan::worker::warp;
+  }
+  else if (token == "thread")
+  {
+    worker_choice = cub::detail::segmented_scan::worker::thread;
+  }
+  else
+  {
+    throw std::runtime_error("Unrecognized value of Worker{io} axis value. Expected 'block', 'wapr', or 'thread'.");
+  }
+
   size_t tmp_size;
   dispatch_t::dispatch(
     nullptr,
@@ -261,6 +274,8 @@ static void basic(
     d_offsets,
     op_t{},
     wrapped_init_t{T{}},
+    num_segments_per_worker,
+    worker_choice,
     0 /* stream */);
 
   thrust::device_vector<nvbench::uint8_t> tmp(tmp_size, thrust::no_init);
@@ -278,6 +293,8 @@ static void basic(
       d_offsets,
       op_t{},
       wrapped_init_t{T{}},
+      num_segments_per_worker,
+      worker_choice,
       launch.get_stream());
   });
 }
@@ -291,7 +308,7 @@ using bench_types = all_types;
 #ifdef TUNE_SEGMENTS_PER_BLOCK
 using segments_per_block = nvbench::type_list<std::integral_constant<int, TUNE_SEGMENTS_PER_BLOCK>>;
 #else
-using segments_per_block = nvbench::type_list<std::integral_constant<int, 1>, std::integral_constant<int, 256>>;
+using max_segments_per_worker = nvbench::type_list<std::integral_constant<int, 1>, std::integral_constant<int, 256>>;
 
 #endif
 
@@ -305,8 +322,10 @@ using itps =
                      std::integral_constant<int, 3>,
                      std::integral_constant<int, 1>>;
 #endif
-NVBENCH_BENCH_TYPES(basic, NVBENCH_TYPE_AXES(bench_types, offset_types, segments_per_block, itps))
+NVBENCH_BENCH_TYPES(basic, NVBENCH_TYPE_AXES(bench_types, offset_types, max_segments_per_worker, itps))
   .set_name("base")
-  .set_type_axes_names({"T{ct}", "OffsetT{ct}", "SegmentsPerBlock{ct}", "ItemsPerThread{ct}"})
+  .set_type_axes_names({"T{ct}", "OffsetT{ct}", "MaxSegmentsPerWorker{ct}", "ItemsPerThread{ct}"})
   .add_int64_power_of_two_axis("Elements{io}", nvbench::range(18, 26, 4))
-  .add_int64_axis("SegmentSize{io}", {51, 123, 233, 513, 1337, 4417});
+  .add_int64_axis("SegmentSize{io}", {51, 123, 233, 513, 1337, 4417})
+  .add_int64_axis("SegmentsPerWorker{io}", {1})
+  .add_string_axis("Worker{io}", {"block"});

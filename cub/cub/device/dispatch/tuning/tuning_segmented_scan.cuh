@@ -46,7 +46,7 @@ template <typename StaticPolicyT>
 struct segmented_scan_policy_wrapper<
   StaticPolicyT,
   ::cuda::std::void_t<decltype(StaticPolicyT::segmented_scan_policy_t::load_modifier),
-                      decltype(StaticPolicyT::segmented_scan_policy_t::segments_per_block)>> : StaticPolicyT
+                      decltype(StaticPolicyT::segmented_scan_policy_t::max_segments_per_block)>> : StaticPolicyT
 {
   CUB_RUNTIME_FUNCTION segmented_scan_policy_wrapper(StaticPolicyT base)
       : StaticPolicyT(base)
@@ -62,9 +62,9 @@ struct segmented_scan_policy_wrapper<
     return StaticPolicyT::segmented_scan_policy_t::load_modifier;
   }
 
-  CUB_RUNTIME_FUNCTION static constexpr int SegmentsPerBlock()
+  CUB_RUNTIME_FUNCTION static constexpr int WorkersPerBlock()
   {
-    return StaticPolicyT::segmented_scan_policy_t::segments_per_block;
+    return 1;
   }
 
   CUB_RUNTIME_FUNCTION constexpr void CheckLoadModifier()
@@ -111,10 +111,9 @@ struct warp_segmented_scan_policy_wrapper<
     return StaticPolicyT::warp_segmented_scan_policy_t::load_modifier;
   }
 
-  CUB_RUNTIME_FUNCTION static constexpr int SegmentsPerBlock()
+  CUB_RUNTIME_FUNCTION static constexpr int WorkersPerBlock()
   {
-    return StaticPolicyT::warp_segmented_scan_policy_t::segments_per_warp
-         * (int(StaticPolicyT::warp_segmented_scan_policy_t::BLOCK_THREADS) >> cub::detail::log2_warp_threads);
+    return (int(StaticPolicyT::warp_segmented_scan_policy_t::BLOCK_THREADS) >> cub::detail::log2_warp_threads);
   }
 
   CUB_RUNTIME_FUNCTION static constexpr int SegmentsPerWarp()
@@ -149,8 +148,7 @@ struct thread_segmented_scan_policy_wrapper : PolicyT
 template <typename StaticPolicyT>
 struct thread_segmented_scan_policy_wrapper<
   StaticPolicyT,
-  ::cuda::std::void_t<decltype(StaticPolicyT::thread_segmented_scan_policy_t::load_modifier),
-                      decltype(StaticPolicyT::thread_segmented_scan_policy_t::segments_per_thread)>> : StaticPolicyT
+  ::cuda::std::void_t<decltype(StaticPolicyT::thread_segmented_scan_policy_t::load_modifier)>> : StaticPolicyT
 {
   CUB_RUNTIME_FUNCTION thread_segmented_scan_policy_wrapper(StaticPolicyT base)
       : StaticPolicyT(base)
@@ -166,10 +164,9 @@ struct thread_segmented_scan_policy_wrapper<
     return StaticPolicyT::thread_segmented_scan_policy_t::load_modifier;
   }
 
-  CUB_RUNTIME_FUNCTION static constexpr int SegmentsPerBlock()
+  CUB_RUNTIME_FUNCTION static constexpr int WorkersPerBlock()
   {
-    return StaticPolicyT::thread_segmented_scan_policy_t::segments_per_thread
-         * (int(StaticPolicyT::thread_segmented_scan_policy_t::BLOCK_THREADS));
+    return (int(StaticPolicyT::thread_segmented_scan_policy_t::BLOCK_THREADS));
   }
 
   CUB_RUNTIME_FUNCTION static constexpr int SegmentsPerThread()

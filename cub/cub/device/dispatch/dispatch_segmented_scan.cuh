@@ -40,6 +40,13 @@ CUB_NAMESPACE_BEGIN
 
 namespace detail::segmented_scan
 {
+enum class worker
+{
+  block,
+  warp,
+  thread
+};
+
 template <typename MaxPolicyT,
           typename InputIteratorT,
           typename OutputIteratorT,
@@ -172,6 +179,11 @@ struct dispatch_segmented_scan
   /// Initial value to seed the exclusive scan
   InitValueT init_value;
 
+  /// Number of segments processed by a worker
+  int num_segments_per_worker;
+
+  worker worker_choice;
+
   /// CUDA stream to launch kernels within. Default is stream<sub>0</sub>.
   cudaStream_t stream;
 
@@ -201,7 +213,7 @@ struct dispatch_segmented_scan
       return cudaSuccess;
     }
 
-    const auto segments_per_block              = policy.SegmentsPerBlock();
+    const auto segments_per_block              = num_segments_per_worker * policy.WorkersPerBlock();
     const auto int32_max                       = ::cuda::std::numeric_limits<::cuda::std::int32_t>::max();
     const auto num_segments_per_invocation     = static_cast<::cuda::std::int64_t>(int32_max);
     const ::cuda::std::int64_t num_invocations = ::cuda::ceil_div(num_segments, num_segments_per_invocation);
@@ -218,16 +230,53 @@ struct dispatch_segmented_scan
 
       const auto grid_size = ::cuda::ceil_div(static_cast<::cuda::std::uint32_t>(num_current_segments),
                                               static_cast<::cuda::std::uint32_t>(segments_per_block));
-      launcher_factory(grid_size, policy.SegmentedScan().BlockThreads(), 0, stream)
-        .doit(large_segmented_scan_kernel,
-              d_in,
-              d_out,
-              d_input_begin_offsets,
-              d_input_end_offsets,
-              d_output_begin_offsets,
-              static_cast<OffsetT>(num_current_segments),
-              scan_op,
-              init_value);
+
+      auto launcher = launcher_factory(grid_size, policy.SegmentedScan().BlockThreads(), 0, stream);
+
+      switch (worker_choice)
+      {
+        case worker::block:
+          launcher.doit(
+            large_segmented_scan_kernel,
+            d_in,
+            d_out,
+            d_input_begin_offsets,
+            d_input_end_offsets,
+            d_output_begin_offsets,
+            static_cast<OffsetT>(num_current_segments),
+            scan_op,
+            init_value,
+            num_segments_per_worker);
+          break;
+        case worker::warp:
+          launcher.doit(
+            medium_segmented_scan_kernel,
+            d_in,
+            d_out,
+            d_input_begin_offsets,
+            d_input_end_offsets,
+            d_output_begin_offsets,
+            static_cast<OffsetT>(num_current_segments),
+            scan_op,
+            init_value,
+            num_segments_per_worker);
+          break;
+        case worker::thread:
+          launcher.doit(
+            small_segmented_scan_kernel,
+            d_in,
+            d_out,
+            d_input_begin_offsets,
+            d_input_end_offsets,
+            d_output_begin_offsets,
+            static_cast<OffsetT>(num_current_segments),
+            scan_op,
+            init_value,
+            num_segments_per_worker);
+          break;
+        default:
+          _CCCL_UNREACHABLE();
+      }
 
       cudaError_t error = CubDebug(cudaPeekAtLastError());
       if (cudaSuccess != error)
@@ -277,6 +326,8 @@ struct dispatch_segmented_scan
     BeginOffsetIteratorOutputT output_begin_offsets,
     ScanOpT scan_op,
     InitValueT init_value,
+    int num_segments_per_worker,
+    worker worker_choice,
     cudaStream_t stream,
     KernelSource kernel_source             = {},
     KernelLauncherFactory launcher_factory = {},
@@ -305,6 +356,8 @@ struct dispatch_segmented_scan
       output_begin_offsets,
       scan_op,
       init_value,
+      num_segments_per_worker,
+      worker_choice,
       stream,
       ptx_version,
       kernel_source,
