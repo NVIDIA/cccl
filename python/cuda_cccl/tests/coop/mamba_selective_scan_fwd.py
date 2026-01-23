@@ -28,6 +28,7 @@ from numba.core.extending import (
 from numba.core.imputils import lower_constant
 
 import cuda.coop as coop
+from cuda.coop import BlockLoadAlgorithm, BlockScanAlgorithm, BlockStoreAlgorithm
 
 numba.config.CUDA_LOW_OCCUPANCY_WARNINGS = 0
 
@@ -181,19 +182,19 @@ def make_kernel_traits(dtype, threads_per_block, items_per_thread):
         dtype,
         threads_per_block,
         items_per_thread,
-        algorithm=coop.BlockLoadAlgorithm.WARP_TRANSPOSE,
+        algorithm=BlockLoadAlgorithm.WARP_TRANSPOSE,
     )
     block_load_delta = coop.block.load(
         dtype,
         threads_per_block,
         items_per_thread,
-        algorithm=coop.BlockLoadAlgorithm.WARP_TRANSPOSE,
+        algorithm=BlockLoadAlgorithm.WARP_TRANSPOSE,
     )
     block_store = coop.block.store(
         dtype,
         threads_per_block,
         items_per_thread,
-        algorithm=coop.BlockStoreAlgorithm.WARP_TRANSPOSE,
+        algorithm=BlockStoreAlgorithm.WARP_TRANSPOSE,
     )
     block_scan = coop.block.scan(
         dtype=float2_type,
@@ -206,7 +207,7 @@ def make_kernel_traits(dtype, threads_per_block, items_per_thread):
             ssm_prefix_callback_op_type,
             name="ssm_scan_prefix",
         ),
-        algorithm=coop.BlockScanAlgorithm.WARP_SCANS,
+        algorithm=BlockScanAlgorithm.WARP_SCANS,
         methods=float2_type.methods,
     )
     traits = KernelTraits(

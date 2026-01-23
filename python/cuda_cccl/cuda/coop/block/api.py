@@ -402,7 +402,7 @@ def discontinuity(
             :start-after: example-begin flag-tails
             :end-before: example-end flag-tails
 
-        .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_block_discontinuity_api.py
+        .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_block_discontinuity_flag_heads_and_tails_api.py
             :language: python
             :dedent:
             :start-after: example-begin flag-heads-and-tails
@@ -526,6 +526,11 @@ def radix_sort_pairs(
 ):
     """Block-wide radix sort for key-value pairs (ascending).
 
+    Note:
+        ``cuda.coop`` does not currently expose a dedicated ``radix_sort_pairs``
+        entry point. Use :func:`radix_sort_keys` with ``value_dtype`` to sort
+        paired values instead.
+
     Example:
         .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_block_radix_sort_pairs_api.py
             :language: python
@@ -545,6 +550,12 @@ def radix_sort_pairs_descending(
     temp_storage=None,
 ):
     """Block-wide radix sort for key-value pairs (descending).
+
+    Note:
+        ``cuda.coop`` does not currently expose a dedicated
+        ``radix_sort_pairs_descending`` entry point. Use
+        :func:`radix_sort_keys_descending` with ``value_dtype`` to sort paired
+        values instead.
 
     Example:
         .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_block_radix_sort_pairs_api.py

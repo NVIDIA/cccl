@@ -11,6 +11,7 @@ from helpers import row_major_tid
 from numba import cuda, types
 
 from cuda import coop
+from cuda.coop.block import BlockAdjacentDifferenceType
 
 numba.config.CUDA_LOW_OCCUPANCY_WARNINGS = 0
 
@@ -26,7 +27,7 @@ def test_block_adjacent_difference_subtract_left_thread_data_temp_storage():
     items_per_thread = 4
 
     block_adj = coop.block.adjacent_difference(
-        coop.block.BlockAdjacentDifferenceType.SubtractLeft,
+        BlockAdjacentDifferenceType.SubtractLeft,
         dtype,
         threads_per_block,
         items_per_thread,
@@ -49,7 +50,7 @@ def test_block_adjacent_difference_subtract_left_thread_data_temp_storage():
             items,
             output,
             difference_op=diff_op,
-            block_adjacent_difference_type=coop.block.BlockAdjacentDifferenceType.SubtractLeft,
+            block_adjacent_difference_type=BlockAdjacentDifferenceType.SubtractLeft,
             temp_storage=temp_storage,
         )
         coop.block.store(d_out, output)
@@ -105,7 +106,7 @@ def test_block_adjacent_difference_subtract_right():
             output,
             items_per_thread=items_per_thread,
             difference_op=diff_op_right,
-            block_adjacent_difference_type=coop.block.BlockAdjacentDifferenceType.SubtractRight,
+            block_adjacent_difference_type=BlockAdjacentDifferenceType.SubtractRight,
         )
 
         for i in range(items_per_thread):
@@ -142,7 +143,7 @@ def test_block_adjacent_difference_two_phase_subtract_left():
     items_per_thread = 2
 
     block_adj = coop.block.adjacent_difference(
-        coop.block.BlockAdjacentDifferenceType.SubtractLeft,
+        BlockAdjacentDifferenceType.SubtractLeft,
         dtype,
         threads_per_block,
         items_per_thread,
@@ -165,7 +166,7 @@ def test_block_adjacent_difference_two_phase_subtract_left():
             items,
             output,
             difference_op=diff_op,
-            block_adjacent_difference_type=coop.block.BlockAdjacentDifferenceType.SubtractLeft,
+            block_adjacent_difference_type=BlockAdjacentDifferenceType.SubtractLeft,
             temp_storage=temp_storage,
         )
         coop.block.store(d_out, output)

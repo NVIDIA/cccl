@@ -7,6 +7,7 @@ import numpy as np
 from numba import cuda
 
 from cuda import coop
+from cuda.coop.warp import WarpExchangeType
 
 # example-begin imports
 numba.config.CUDA_LOW_OCCUPANCY_WARNINGS = 0
@@ -22,7 +23,7 @@ def test_warp_exchange_striped_to_blocked():
         numba.int32,
         items_per_thread,
         threads_in_warp=threads_in_warp,
-        warp_exchange_type=coop.warp.WarpExchangeType.StripedToBlocked,
+        warp_exchange_type=WarpExchangeType.StripedToBlocked,
     )
 
     @cuda.jit
@@ -67,7 +68,7 @@ def test_warp_exchange_temp_storage():
         numba.int32,
         items_per_thread,
         threads_in_warp=threads_in_warp,
-        warp_exchange_type=coop.warp.WarpExchangeType.StripedToBlocked,
+        warp_exchange_type=WarpExchangeType.StripedToBlocked,
     )
     temp_storage_bytes = warp_exchange.temp_storage_bytes
     temp_storage_alignment = warp_exchange.temp_storage_alignment
@@ -117,7 +118,7 @@ def test_warp_exchange_scatter_to_striped():
         numba.int32,
         items_per_thread,
         threads_in_warp=threads_in_warp,
-        warp_exchange_type=coop.warp.WarpExchangeType.ScatterToStriped,
+        warp_exchange_type=WarpExchangeType.ScatterToStriped,
         offset_dtype=numba.int32,
     )
 
@@ -164,7 +165,7 @@ def test_warp_exchange_blocked_to_striped():
         numba.int32,
         items_per_thread,
         threads_in_warp=threads_in_warp,
-        warp_exchange_type=coop.warp.WarpExchangeType.BlockedToStriped,
+        warp_exchange_type=WarpExchangeType.BlockedToStriped,
     )
 
     @cuda.jit

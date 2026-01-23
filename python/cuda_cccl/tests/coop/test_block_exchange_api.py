@@ -8,6 +8,7 @@ import numpy as np
 from numba import cuda
 
 from cuda import coop
+from cuda.coop.block import BlockExchangeType
 
 numba.config.CUDA_LOW_OCCUPANCY_WARNINGS = 0
 
@@ -32,7 +33,7 @@ def test_block_exchange_striped_to_blocked():
         coop.block.exchange(
             items,
             items_per_thread=items_per_thread,
-            block_exchange_type=coop.block.BlockExchangeType.StripedToBlocked,
+            block_exchange_type=BlockExchangeType.StripedToBlocked,
         )
 
         for i in range(items_per_thread):
@@ -80,7 +81,7 @@ def test_block_exchange_blocked_to_striped():
         coop.block.exchange(
             items,
             items_per_thread=items_per_thread,
-            block_exchange_type=coop.block.BlockExchangeType.BlockedToStriped,
+            block_exchange_type=BlockExchangeType.BlockedToStriped,
         )
 
         for i in range(items_per_thread):

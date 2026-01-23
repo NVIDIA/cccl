@@ -8,6 +8,7 @@ import numpy as np
 from numba import cuda
 
 from cuda import coop
+from cuda.coop.block import BlockAdjacentDifferenceType
 
 numba.config.CUDA_LOW_OCCUPANCY_WARNINGS = 0
 
@@ -35,7 +36,7 @@ def test_block_adjacent_difference_subtract_left():
             output,
             items_per_thread=1,
             difference_op=diff_op,
-            block_adjacent_difference_type=coop.block.BlockAdjacentDifferenceType.SubtractLeft,
+            block_adjacent_difference_type=BlockAdjacentDifferenceType.SubtractLeft,
         )
         d_out[tid] = output[0]
 
@@ -71,7 +72,7 @@ def test_block_adjacent_difference_subtract_right():
             output,
             items_per_thread=1,
             difference_op=diff_op,
-            block_adjacent_difference_type=coop.block.BlockAdjacentDifferenceType.SubtractRight,
+            block_adjacent_difference_type=BlockAdjacentDifferenceType.SubtractRight,
         )
         d_out[tid] = output[0]
 

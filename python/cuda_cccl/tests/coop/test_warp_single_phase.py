@@ -9,6 +9,7 @@ from helpers import NUMBA_TYPES_TO_NP, random_int
 from numba import cuda, types
 
 from cuda import coop
+from cuda.coop import WarpLoadAlgorithm, WarpStoreAlgorithm
 
 numba.config.CUDA_LOW_OCCUPANCY_WARNINGS = 0
 
@@ -437,14 +438,14 @@ def test_warp_load_store_single_phase():
             items,
             items_per_thread=items_per_thread,
             threads_in_warp=threads_in_warp,
-            algorithm=coop.WarpLoadAlgorithm.STRIPED,
+            algorithm=WarpLoadAlgorithm.STRIPED,
         )
         coop.warp.store(
             d_out,
             items,
             items_per_thread=items_per_thread,
             threads_in_warp=threads_in_warp,
-            algorithm=coop.WarpStoreAlgorithm.STRIPED,
+            algorithm=WarpStoreAlgorithm.STRIPED,
         )
 
     h_input = np.random.randint(

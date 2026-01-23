@@ -11,6 +11,7 @@ from helpers import row_major_tid
 from numba import cuda
 
 from cuda import coop
+from cuda.coop.block import BlockShuffleType
 
 numba.config.CUDA_LOW_OCCUPANCY_WARNINGS = 0
 
@@ -26,7 +27,7 @@ def test_block_shuffle_offset_scalar():
         value = d_in[tid]
         shuffled = coop.block.shuffle(
             value,
-            block_shuffle_type=coop.block.BlockShuffleType.Offset,
+            block_shuffle_type=BlockShuffleType.Offset,
             distance=distance,
         )
         if tid + distance < d_out.shape[0]:
@@ -52,7 +53,7 @@ def test_block_shuffle_offset_scalar_two_phase():
     dtype = np.int32
 
     block_shuffle = coop.block.shuffle(
-        coop.block.BlockShuffleType.Offset,
+        BlockShuffleType.Offset,
         numba.int32,
         threads_per_block,
         distance=distance,
@@ -64,7 +65,7 @@ def test_block_shuffle_offset_scalar_two_phase():
         value = d_in[tid]
         shuffled = block_shuffle(
             value,
-            block_shuffle_type=coop.block.BlockShuffleType.Offset,
+            block_shuffle_type=BlockShuffleType.Offset,
             distance=distance,
         )
         if tid + distance < d_out.shape[0]:
@@ -95,7 +96,7 @@ def test_block_shuffle_rotate_scalar():
         value = d_in[tid]
         shuffled = coop.block.shuffle(
             value,
-            block_shuffle_type=coop.block.BlockShuffleType.Rotate,
+            block_shuffle_type=BlockShuffleType.Rotate,
             distance=distance,
         )
         d_out[tid] = shuffled
@@ -136,7 +137,7 @@ def test_block_shuffle_up_down_arrays():
             items,
             items,
             items_per_thread=items_per_thread,
-            block_shuffle_type=coop.block.BlockShuffleType.Up,
+            block_shuffle_type=BlockShuffleType.Up,
         )
 
         for i in range(items_per_thread):
@@ -154,7 +155,7 @@ def test_block_shuffle_up_down_arrays():
             items,
             items,
             items_per_thread=items_per_thread,
-            block_shuffle_type=coop.block.BlockShuffleType.Down,
+            block_shuffle_type=BlockShuffleType.Down,
         )
 
         for i in range(items_per_thread):
@@ -205,7 +206,7 @@ def test_block_shuffle_up_down_block_prefix_suffix():
             items,
             items,
             items_per_thread=items_per_thread,
-            block_shuffle_type=coop.block.BlockShuffleType.Up,
+            block_shuffle_type=BlockShuffleType.Up,
             block_suffix=block_suffix,
         )
 
@@ -226,7 +227,7 @@ def test_block_shuffle_up_down_block_prefix_suffix():
             items,
             items,
             items_per_thread=items_per_thread,
-            block_shuffle_type=coop.block.BlockShuffleType.Down,
+            block_shuffle_type=BlockShuffleType.Down,
             block_prefix=block_prefix,
         )
 
@@ -274,13 +275,13 @@ def test_block_shuffle_up_down_block_prefix_suffix_two_phase():
     total_items = num_threads * items_per_thread
 
     block_shuffle_up = coop.block.shuffle(
-        coop.block.BlockShuffleType.Up,
+        BlockShuffleType.Up,
         numba.int32,
         threads_per_block,
         items_per_thread=items_per_thread,
     )
     block_shuffle_down = coop.block.shuffle(
-        coop.block.BlockShuffleType.Down,
+        BlockShuffleType.Down,
         numba.int32,
         threads_per_block,
         items_per_thread=items_per_thread,
@@ -303,14 +304,14 @@ def test_block_shuffle_up_down_block_prefix_suffix_two_phase():
             items_up,
             items_up,
             items_per_thread=items_per_thread,
-            block_shuffle_type=coop.block.BlockShuffleType.Up,
+            block_shuffle_type=BlockShuffleType.Up,
             block_suffix=block_suffix,
         )
         block_shuffle_down(
             items_down,
             items_down,
             items_per_thread=items_per_thread,
-            block_shuffle_type=coop.block.BlockShuffleType.Down,
+            block_shuffle_type=BlockShuffleType.Down,
             block_prefix=block_prefix,
         )
 

@@ -9,6 +9,7 @@ import numpy as np
 from numba import cuda
 
 import cuda.coop as coop
+from cuda.coop import BlockLoadAlgorithm, BlockStoreAlgorithm
 
 # example-begin imports
 numba.config.CUDA_LOW_OCCUPANCY_WARNINGS = 0
@@ -75,13 +76,13 @@ def test_block_load_store_single_phase_thread_data_temp_storage():
         dtype,
         threads_per_block,
         items_per_thread,
-        algorithm=coop.BlockLoadAlgorithm.TRANSPOSE,
+        algorithm=BlockLoadAlgorithm.TRANSPOSE,
     )
     block_store = coop.block.store(
         dtype,
         threads_per_block,
         items_per_thread,
-        algorithm=coop.BlockStoreAlgorithm.TRANSPOSE,
+        algorithm=BlockStoreAlgorithm.TRANSPOSE,
     )
     temp_storage_bytes = max(
         block_load.temp_storage_bytes,
@@ -103,13 +104,13 @@ def test_block_load_store_single_phase_thread_data_temp_storage():
         coop.block.load(
             d_in,
             thread_data,
-            algorithm=coop.BlockLoadAlgorithm.TRANSPOSE,
+            algorithm=BlockLoadAlgorithm.TRANSPOSE,
             temp_storage=temp_storage,
         )
         coop.block.store(
             d_out,
             thread_data,
-            algorithm=coop.BlockStoreAlgorithm.TRANSPOSE,
+            algorithm=BlockStoreAlgorithm.TRANSPOSE,
             temp_storage=temp_storage,
         )
 
@@ -152,14 +153,14 @@ def test_block_load_store_single_phase_num_valid_items():
                     d_in[block_offset:],
                     thread_data,
                     items_per_thread=items_per_thread,
-                    algorithm=coop.BlockLoadAlgorithm.WARP_TRANSPOSE,
+                    algorithm=BlockLoadAlgorithm.WARP_TRANSPOSE,
                 )
 
                 coop.block.store(
                     d_out[block_offset:],
                     thread_data,
                     items_per_thread=items_per_thread,
-                    algorithm=coop.BlockStoreAlgorithm.DIRECT,
+                    algorithm=BlockStoreAlgorithm.DIRECT,
                 )
 
             else:
@@ -167,7 +168,7 @@ def test_block_load_store_single_phase_num_valid_items():
                     d_in[block_offset:],
                     thread_data,
                     items_per_thread=items_per_thread,
-                    algorithm=coop.BlockLoadAlgorithm.WARP_TRANSPOSE,
+                    algorithm=BlockLoadAlgorithm.WARP_TRANSPOSE,
                     num_valid_items=num_valid_items,
                 )
 
@@ -175,7 +176,7 @@ def test_block_load_store_single_phase_num_valid_items():
                     d_out[block_offset:],
                     thread_data,
                     items_per_thread=items_per_thread,
-                    algorithm=coop.BlockStoreAlgorithm.DIRECT,
+                    algorithm=BlockStoreAlgorithm.DIRECT,
                     num_valid_items=num_valid_items,
                 )
 

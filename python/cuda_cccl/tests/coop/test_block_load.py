@@ -11,6 +11,7 @@ from helpers import NUMBA_TYPES_TO_NP, random_int, row_major_tid
 from numba import cuda, types
 
 from cuda import coop
+from cuda.coop import BlockLoadAlgorithm
 
 numba.config.CUDA_LOW_OCCUPANCY_WARNINGS = 0
 
@@ -21,12 +22,12 @@ numba.config.CUDA_LOW_OCCUPANCY_WARNINGS = 0
 @pytest.mark.parametrize(
     "algorithm",
     [
-        coop.BlockLoadAlgorithm.DIRECT,
-        coop.BlockLoadAlgorithm.STRIPED,
-        coop.BlockLoadAlgorithm.VECTORIZE,
-        coop.BlockLoadAlgorithm.TRANSPOSE,
-        coop.BlockLoadAlgorithm.WARP_TRANSPOSE,
-        coop.BlockLoadAlgorithm.WARP_TRANSPOSE_TIMESLICED,
+        BlockLoadAlgorithm.DIRECT,
+        BlockLoadAlgorithm.STRIPED,
+        BlockLoadAlgorithm.VECTORIZE,
+        BlockLoadAlgorithm.TRANSPOSE,
+        BlockLoadAlgorithm.WARP_TRANSPOSE,
+        BlockLoadAlgorithm.WARP_TRANSPOSE_TIMESLICED,
     ],
 )
 def test_block_load(T, threads_per_block, items_per_thread, algorithm):
@@ -38,7 +39,7 @@ def test_block_load(T, threads_per_block, items_per_thread, algorithm):
         else reduce(mul, threads_per_block)
     )
 
-    if algorithm == "striped" or algorithm == coop.BlockLoadAlgorithm.STRIPED:
+    if algorithm == "striped" or algorithm == BlockLoadAlgorithm.STRIPED:
 
         @cuda.jit(device=True)
         def output_index(i):

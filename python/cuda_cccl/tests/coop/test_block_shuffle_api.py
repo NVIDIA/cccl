@@ -8,6 +8,7 @@ import numpy as np
 from numba import cuda
 
 from cuda import coop
+from cuda.coop.block import BlockShuffleType
 
 numba.config.CUDA_LOW_OCCUPANCY_WARNINGS = 0
 
@@ -25,7 +26,7 @@ def test_block_shuffle_offset_scalar():
         value = d_in[tid]
         shuffled = coop.block.shuffle(
             value,
-            block_shuffle_type=coop.block.BlockShuffleType.Offset,
+            block_shuffle_type=BlockShuffleType.Offset,
             distance=distance,
         )
         d_out[tid] = -1
@@ -58,7 +59,7 @@ def test_block_shuffle_rotate_scalar():
         value = d_in[tid]
         shuffled = coop.block.shuffle(
             value,
-            block_shuffle_type=coop.block.BlockShuffleType.Rotate,
+            block_shuffle_type=BlockShuffleType.Rotate,
             distance=distance,
         )
         d_out[tid] = shuffled
@@ -90,7 +91,7 @@ def test_block_shuffle_up_scalar():
         value = d_in[tid]
         shuffled = coop.block.shuffle(
             value,
-            block_shuffle_type=coop.block.BlockShuffleType.Up,
+            block_shuffle_type=BlockShuffleType.Up,
             distance=distance,
         )
         d_out[tid] = shuffled
@@ -122,7 +123,7 @@ def test_block_shuffle_down_scalar():
         value = d_in[tid]
         shuffled = coop.block.shuffle(
             value,
-            block_shuffle_type=coop.block.BlockShuffleType.Down,
+            block_shuffle_type=BlockShuffleType.Down,
             distance=distance,
         )
         d_out[tid] = shuffled

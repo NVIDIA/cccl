@@ -25,6 +25,7 @@ from numba.core.extending import (
 )
 
 import cuda.coop as coop
+from cuda.coop import BlockLoadAlgorithm, BlockScanAlgorithm, BlockStoreAlgorithm
 
 # coop._init_extension()
 
@@ -119,7 +120,7 @@ def test_block_load_store_scan_simple1():
             d_in[block_offset:],
             thread_data,
             items_per_thread=items_per_thread,
-            algorithm=coop.BlockLoadAlgorithm.WARP_TRANSPOSE,
+            algorithm=BlockLoadAlgorithm.WARP_TRANSPOSE,
         )
 
         coop.block.scan(
@@ -132,7 +133,7 @@ def test_block_load_store_scan_simple1():
             d_out[block_offset:],
             thread_data,
             items_per_thread=items_per_thread,
-            algorithm=coop.BlockStoreAlgorithm.DIRECT,
+            algorithm=BlockStoreAlgorithm.DIRECT,
         )
 
     dtype = np.int32
@@ -276,14 +277,14 @@ def test_block_load_store_scan_gpu_dataclass_temp_storage():
         dtype,
         threads_per_block,
         items_per_thread,
-        algorithm=coop.BlockLoadAlgorithm.DIRECT,
+        algorithm=BlockLoadAlgorithm.DIRECT,
     )
     block_scan = coop.block.scan(dtype, threads_per_block, items_per_thread)
     block_store = coop.block.store(
         dtype,
         threads_per_block,
         items_per_thread,
-        algorithm=coop.BlockStoreAlgorithm.DIRECT,
+        algorithm=BlockStoreAlgorithm.DIRECT,
     )
 
     @dataclass
@@ -358,7 +359,7 @@ def test_block_load_store_scan_gpu_dataclass_temp_storage_bit_or():
         dtype,
         threads_per_block,
         items_per_thread,
-        algorithm=coop.BlockLoadAlgorithm.DIRECT,
+        algorithm=BlockLoadAlgorithm.DIRECT,
     )
     block_scan = coop.block.scan(
         dtype,
@@ -370,7 +371,7 @@ def test_block_load_store_scan_gpu_dataclass_temp_storage_bit_or():
         dtype,
         threads_per_block,
         items_per_thread,
-        algorithm=coop.BlockStoreAlgorithm.DIRECT,
+        algorithm=BlockStoreAlgorithm.DIRECT,
     )
 
     @dataclass
@@ -446,7 +447,7 @@ def test_block_load_store_scan_simple2():
             d_in[block_offset:],
             thread_data,
             items_per_thread=items_per_thread,
-            algorithm=coop.BlockLoadAlgorithm.WARP_TRANSPOSE,
+            algorithm=BlockLoadAlgorithm.WARP_TRANSPOSE,
             num_valid_items=num_valid_items,
         )
 
@@ -470,7 +471,7 @@ def test_block_load_store_scan_simple2():
             d_out[block_offset:],
             thread_data,
             items_per_thread=items_per_thread,
-            algorithm=coop.BlockStoreAlgorithm.DIRECT,
+            algorithm=BlockStoreAlgorithm.DIRECT,
             num_valid_items=num_valid_items,
         )
 
@@ -528,7 +529,7 @@ def test_block_load_store_scan_simple3():
             d_in[block_offset:],
             thread_data,
             items_per_thread=items_per_thread,
-            algorithm=coop.BlockLoadAlgorithm.WARP_TRANSPOSE,
+            algorithm=BlockLoadAlgorithm.WARP_TRANSPOSE,
             num_valid_items=num_valid_items,
         )
 
@@ -551,7 +552,7 @@ def test_block_load_store_scan_simple3():
             d_out[block_offset:],
             thread_data,
             items_per_thread=items_per_thread,
-            algorithm=coop.BlockStoreAlgorithm.DIRECT,
+            algorithm=BlockStoreAlgorithm.DIRECT,
             num_valid_items=num_valid_items,
         )
 
@@ -662,7 +663,7 @@ def test_block_load_store_scan_simple4():
             d_in[block_offset:],
             thread_in,
             items_per_thread=items_per_thread,
-            algorithm=coop.BlockLoadAlgorithm.WARP_TRANSPOSE,
+            algorithm=BlockLoadAlgorithm.WARP_TRANSPOSE,
             num_valid_items=num_valid_items,
         )
 
@@ -689,7 +690,7 @@ def test_block_load_store_scan_simple4():
             d_out[block_offset:],
             thread_out,
             items_per_thread=items_per_thread,
-            algorithm=coop.BlockStoreAlgorithm.DIRECT,
+            algorithm=BlockStoreAlgorithm.DIRECT,
             num_valid_items=num_valid_items,
         )
 
@@ -874,7 +875,7 @@ def test_block_load_store_scan_simple5():
             d_in[block_offset:],
             thread_in,
             items_per_thread=items_per_thread,
-            algorithm=coop.BlockLoadAlgorithm.WARP_TRANSPOSE,
+            algorithm=BlockLoadAlgorithm.WARP_TRANSPOSE,
             num_valid_items=num_valid_items,
         )
 
@@ -901,7 +902,7 @@ def test_block_load_store_scan_simple5():
             d_out[block_offset:],
             thread_out,
             items_per_thread=items_per_thread,
-            algorithm=coop.BlockStoreAlgorithm.DIRECT,
+            algorithm=BlockStoreAlgorithm.DIRECT,
             num_valid_items=num_valid_items,
         )
 
@@ -1231,7 +1232,7 @@ def test_block_load_store_scan_simple7():
             d_in[block_offset:],
             thread_in,
             items_per_thread=items_per_thread,
-            algorithm=coop.BlockLoadAlgorithm.WARP_TRANSPOSE,
+            algorithm=BlockLoadAlgorithm.WARP_TRANSPOSE,
             num_valid_items=num_valid_items,
         )
 
@@ -1255,7 +1256,7 @@ def test_block_load_store_scan_simple7():
             d_out[block_offset:],
             thread_out,
             items_per_thread=items_per_thread,
-            algorithm=coop.BlockStoreAlgorithm.DIRECT,
+            algorithm=BlockStoreAlgorithm.DIRECT,
             num_valid_items=num_valid_items,
         )
 
@@ -1335,7 +1336,7 @@ def test_block_load_store_num_valid_items_with_single_phase_scan():
                 d_in[block_offset:],
                 thread_data,
                 items_per_thread=items_per_thread,
-                algorithm=coop.BlockLoadAlgorithm.WARP_TRANSPOSE,
+                algorithm=BlockLoadAlgorithm.WARP_TRANSPOSE,
                 num_valid_items=num_valid_items,
             )
 
@@ -1359,7 +1360,7 @@ def test_block_load_store_num_valid_items_with_single_phase_scan():
                 d_out[block_offset:],
                 thread_data,
                 items_per_thread=items_per_thread,
-                algorithm=coop.BlockStoreAlgorithm.DIRECT,
+                algorithm=BlockStoreAlgorithm.DIRECT,
                 num_valid_items=num_valid_items,
             )
 
@@ -1436,7 +1437,7 @@ def test_block_sum_prefix_op(threads_per_block, items_per_thread, mode):
         threads_per_block=threads_per_block,
         items_per_thread=items_per_thread,
         prefix_op=prefix_op,
-        algorithm=coop.BlockScanAlgorithm.RAKING,
+        algorithm=BlockScanAlgorithm.RAKING,
     )
     temp_storage_bytes = block_sum.temp_storage_bytes
     print(temp_storage_bytes)

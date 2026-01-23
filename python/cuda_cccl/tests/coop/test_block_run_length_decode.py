@@ -3,6 +3,7 @@ import numpy as np
 from numba import cuda
 
 import cuda.coop as coop
+from cuda.coop import BlockLoadAlgorithm
 
 numba.config.CUDA_LOW_OCCUPANCY_WARNINGS = 0
 
@@ -66,13 +67,13 @@ def test_block_run_length_decode_single_phase():
             run_values[block_offset:],
             run_values_local,
             items_per_thread=runs_per_thread,
-            algorithm=coop.BlockLoadAlgorithm.DIRECT,
+            algorithm=BlockLoadAlgorithm.DIRECT,
         )
         coop.block.load(
             run_lengths[block_offset:],
             run_lengths_local,
             items_per_thread=runs_per_thread,
-            algorithm=coop.BlockLoadAlgorithm.DIRECT,
+            algorithm=BlockLoadAlgorithm.DIRECT,
         )
 
         decoded_offset_dtype = total_decoded_size_out.dtype
@@ -178,13 +179,13 @@ def test_block_run_length_decode_two_phase():
             run_values[block_offset:],
             run_values_local,
             items_per_thread=runs_per_thread,
-            algorithm=coop.BlockLoadAlgorithm.DIRECT,
+            algorithm=BlockLoadAlgorithm.DIRECT,
         )
         coop.block.load(
             run_lengths[block_offset:],
             run_lengths_local,
             items_per_thread=runs_per_thread,
-            algorithm=coop.BlockLoadAlgorithm.DIRECT,
+            algorithm=BlockLoadAlgorithm.DIRECT,
         )
 
         total_decoded_size = coop.local.array(1, dtype=decoded_offset_dtype)
@@ -291,13 +292,13 @@ def test_block_run_length_decode_single_phase_temp_storage():
             run_values[block_offset:],
             run_values_local,
             items_per_thread=runs_per_thread,
-            algorithm=coop.BlockLoadAlgorithm.DIRECT,
+            algorithm=BlockLoadAlgorithm.DIRECT,
         )
         coop.block.load(
             run_lengths[block_offset:],
             run_lengths_local,
             items_per_thread=runs_per_thread,
-            algorithm=coop.BlockLoadAlgorithm.DIRECT,
+            algorithm=BlockLoadAlgorithm.DIRECT,
         )
 
         decoded_offset_dtype = total_decoded_size_out.dtype
@@ -410,13 +411,13 @@ def test_block_run_length_decode_two_phase_temp_storage():
             run_values[block_offset:],
             run_values_local,
             items_per_thread=runs_per_thread,
-            algorithm=coop.BlockLoadAlgorithm.DIRECT,
+            algorithm=BlockLoadAlgorithm.DIRECT,
         )
         coop.block.load(
             run_lengths[block_offset:],
             run_lengths_local,
             items_per_thread=runs_per_thread,
-            algorithm=coop.BlockLoadAlgorithm.DIRECT,
+            algorithm=BlockLoadAlgorithm.DIRECT,
         )
 
         total_decoded_size = coop.local.array(1, dtype=decoded_offset_dtype)
