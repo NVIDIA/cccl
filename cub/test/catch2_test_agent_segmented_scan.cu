@@ -180,8 +180,10 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::segmented_scan_policy_t::BLO
     ScanOpT scan_op,
     InitValueT init_value)
 {
-  using segmented_scan_policy_t = typename ChainedPolicyT::ActivePolicy::segmented_scan_policy_t;
-  static_assert(segmented_scan_policy_t::segments_per_block == 2, "Policy with two segment per block must be used");
+  using segmented_scan_policy_t        = typename ChainedPolicyT::ActivePolicy::segmented_scan_policy_t;
+  constexpr int num_segments_per_block = 2;
+  static_assert(segmented_scan_policy_t::segments_per_block >= num_segments_per_block,
+                "Policy with two segment per block must be used");
 
   using agent_segmented_scan_t = cub::detail::segmented_scan::agent_segmented_scan<
     segmented_scan_policy_t,
@@ -199,7 +201,6 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::segmented_scan_policy_t::BLO
 
   const auto work_id = blockIdx.x;
 
-  constexpr int num_segments_per_block = segmented_scan_policy_t::segments_per_block;
   _CCCL_ASSERT(n_segments % num_segments_per_block == 0, "Kernel requires number of segments to be even");
   _CCCL_ASSERT(num_segments_per_block * (work_id + 1) <= n_segments,
                "device_segmented_scan_kernel launch configuration results in access violation");
@@ -231,8 +232,10 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::segmented_scan_policy_t::BLO
     ScanOpT scan_op,
     InitValueT init_value)
 {
-  using segmented_scan_policy_t = typename ChainedPolicyT::ActivePolicy::segmented_scan_policy_t;
-  static_assert(segmented_scan_policy_t::segments_per_block == 3, "Policy with three segment per block must be used");
+  using segmented_scan_policy_t        = typename ChainedPolicyT::ActivePolicy::segmented_scan_policy_t;
+  constexpr int num_segments_per_block = 3;
+  static_assert(segmented_scan_policy_t::segments_per_block >= num_segments_per_block,
+                "Policy with three segment per block must be used");
 
   using agent_segmented_scan_t = cub::detail::segmented_scan::agent_segmented_scan<
     segmented_scan_policy_t,
@@ -248,8 +251,7 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::segmented_scan_policy_t::BLO
 
   const ActualInitValueT _init_value = init_value;
 
-  const auto work_id                   = blockIdx.x;
-  constexpr int num_segments_per_block = segmented_scan_policy_t::segments_per_block;
+  const auto work_id = blockIdx.x;
 
   _CCCL_ASSERT(num_segments_per_block * work_id < n_segments,
                "device_segmented_scan_kernel launch configuration results in access violation");
@@ -357,10 +359,12 @@ C2H_TEST("cub::detail::segmented_scan::agent_segmented_scan works with two segme
   pair_t* d_output    = thrust::raw_pointer_cast(output.data());
   unsigned* d_offsets = thrust::raw_pointer_cast(offsets.data());
 
-  constexpr int block_size         = 128;
-  constexpr int items_per_thread   = 4;
+  constexpr int block_size             = 128;
+  constexpr int items_per_thread       = 4;
+  constexpr int max_segments_per_block = 256;
+  using chained_policy_t               = ChainedPolicy<block_size, items_per_thread, max_segments_per_block>;
+
   constexpr int segments_per_block = 2;
-  using chained_policy_t           = ChainedPolicy<block_size, items_per_thread, segments_per_block>;
 
   const auto n_segments = static_cast<unsigned>(num_segments);
   const auto grid_size  = n_segments / segments_per_block;
@@ -435,10 +439,12 @@ C2H_TEST("cub::detail::segmented_scan::agent_segmented_scan works with three seg
   pair_t* d_output    = thrust::raw_pointer_cast(output.data());
   unsigned* d_offsets = thrust::raw_pointer_cast(offsets.data());
 
-  constexpr int block_size         = 128;
-  constexpr int items_per_thread   = 4;
+  constexpr int block_size             = 128;
+  constexpr int items_per_thread       = 4;
+  constexpr int max_segments_per_block = 256;
+  using chained_policy_t               = ChainedPolicy<block_size, items_per_thread, max_segments_per_block>;
+
   constexpr int segments_per_block = 3;
-  using chained_policy_t           = ChainedPolicy<block_size, items_per_thread, segments_per_block>;
 
   const auto n_segments = static_cast<unsigned>(num_segments);
   const auto grid_size  = cuda::ceil_div(n_segments, segments_per_block);
@@ -512,10 +518,11 @@ C2H_TEST("agent_segmented_scan works for exclusive_scan with two segments per bl
   pair_t* d_output    = thrust::raw_pointer_cast(output.data());
   unsigned* d_offsets = thrust::raw_pointer_cast(offsets.data());
 
-  constexpr int block_size         = 128;
-  constexpr int items_per_thread   = 4;
-  constexpr int segments_per_block = 2;
-  using chained_policy_t           = ChainedPolicy<block_size, items_per_thread, segments_per_block>;
+  constexpr int block_size             = 128;
+  constexpr int items_per_thread       = 4;
+  constexpr int segments_per_block     = 2;
+  constexpr int max_segments_per_block = 256;
+  using chained_policy_t               = ChainedPolicy<block_size, items_per_thread, max_segments_per_block>;
 
   const auto n_segments = static_cast<unsigned>(num_segments);
   const auto grid_size  = cuda::ceil_div(n_segments, segments_per_block);
@@ -597,10 +604,11 @@ C2H_TEST("agent_segmented_scan works for exclusive_scan with three segments per 
   value_t* d_output   = thrust::raw_pointer_cast(output.data());
   unsigned* d_offsets = thrust::raw_pointer_cast(offsets.data());
 
-  constexpr int block_size         = 128;
-  constexpr int items_per_thread   = 4;
-  constexpr int segments_per_block = 3;
-  using chained_policy_t           = ChainedPolicy<block_size, items_per_thread, segments_per_block>;
+  constexpr int block_size             = 128;
+  constexpr int items_per_thread       = 4;
+  constexpr int segments_per_block     = 3;
+  constexpr int max_segments_per_block = 64;
+  using chained_policy_t               = ChainedPolicy<block_size, items_per_thread, max_segments_per_block>;
 
   const auto n_segments = static_cast<unsigned>(num_segments);
   const auto grid_size  = cuda::ceil_div(n_segments, segments_per_block);
