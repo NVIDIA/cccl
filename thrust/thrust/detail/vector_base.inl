@@ -165,8 +165,8 @@ vector_base<T, Alloc>& vector_base<T, Alloc>::operator=(const vector_base& v)
   {
     m_storage.destroy_on_allocator_mismatch(v.m_storage, begin(), end());
     m_storage.deallocate_on_allocator_mismatch(v.m_storage);
-
     m_storage.propagate_allocator(v.m_storage);
+    m_size = 0;
 
     assign(v.begin(), v.end());
   } // end if
