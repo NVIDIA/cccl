@@ -4,10 +4,11 @@
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
+#include <cuda/__type_traits/is_vector_type.h>
 #include <cuda/__type_traits/vector_type.h>
 #include <cuda/std/cstddef>
 #include <cuda/std/type_traits>
@@ -190,6 +191,53 @@ __host__ __device__ void test()
 #endif // _CCCL_CTK_AT_LEAST(13, 0)
 
   static_assert(cuda::__is_vector_type_v<dim3>);
+
+  // Extended floating-point vector types
+#if _CCCL_HAS_NVFP16()
+  test<__half, 2, __half2>();
+  static_assert(cuda::__is_extended_fp_vector_type_v<__half2>);
+#endif // _CCCL_HAS_NVFP16()
+
+#if _CCCL_HAS_NVBF16()
+  test<__nv_bfloat16, 2, __nv_bfloat162>();
+  static_assert(cuda::__is_extended_fp_vector_type_v<__nv_bfloat162>);
+#endif // _CCCL_HAS_NVBF16()
+
+#if _CCCL_HAS_NVFP8()
+  test<__nv_fp8_e4m3, 2, __nv_fp8x2_e4m3>();
+  test<__nv_fp8_e4m3, 4, __nv_fp8x4_e4m3>();
+  test<__nv_fp8_e5m2, 2, __nv_fp8x2_e5m2>();
+  test<__nv_fp8_e5m2, 4, __nv_fp8x4_e5m2>();
+  static_assert(cuda::__is_extended_fp_vector_type_v<__nv_fp8x2_e4m3>);
+  static_assert(cuda::__is_extended_fp_vector_type_v<__nv_fp8x4_e4m3>);
+  static_assert(cuda::__is_extended_fp_vector_type_v<__nv_fp8x2_e5m2>);
+  static_assert(cuda::__is_extended_fp_vector_type_v<__nv_fp8x4_e5m2>);
+
+#  if _CCCL_CTK_AT_LEAST(12, 8)
+  test<__nv_fp8_e8m0, 2, __nv_fp8x2_e8m0>();
+  test<__nv_fp8_e8m0, 4, __nv_fp8x4_e8m0>();
+  static_assert(cuda::__is_extended_fp_vector_type_v<__nv_fp8x2_e8m0>);
+  static_assert(cuda::__is_extended_fp_vector_type_v<__nv_fp8x4_e8m0>);
+#  endif // _CCCL_CTK_AT_LEAST(12, 8)
+#endif // _CCCL_HAS_NVFP8()
+
+#if _CCCL_HAS_NVFP6()
+  test<__nv_fp6_e2m3, 2, __nv_fp6x2_e2m3>();
+  test<__nv_fp6_e2m3, 4, __nv_fp6x4_e2m3>();
+  test<__nv_fp6_e3m2, 2, __nv_fp6x2_e3m2>();
+  test<__nv_fp6_e3m2, 4, __nv_fp6x4_e3m2>();
+  static_assert(cuda::__is_extended_fp_vector_type_v<__nv_fp6x2_e2m3>);
+  static_assert(cuda::__is_extended_fp_vector_type_v<__nv_fp6x4_e2m3>);
+  static_assert(cuda::__is_extended_fp_vector_type_v<__nv_fp6x2_e3m2>);
+  static_assert(cuda::__is_extended_fp_vector_type_v<__nv_fp6x4_e3m2>);
+#endif // _CCCL_HAS_NVFP6()
+
+#if _CCCL_HAS_NVFP4()
+  test<__nv_fp4_e2m1, 2, __nv_fp4x2_e2m1>();
+  test<__nv_fp4_e2m1, 4, __nv_fp4x4_e2m1>();
+  static_assert(cuda::__is_extended_fp_vector_type_v<__nv_fp4x2_e2m1>);
+  static_assert(cuda::__is_extended_fp_vector_type_v<__nv_fp4x4_e2m1>);
+#endif // _CCCL_HAS_NVFP4()
 
   // 2. Test invalid combinations
 
