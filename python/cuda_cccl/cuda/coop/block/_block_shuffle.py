@@ -58,6 +58,24 @@ class shuffle(BasePrimitive):
         temp_storage: Any = None,
         node: "CoopNode" = None,
     ) -> None:
+        """
+        Shuffles items across a thread block using the selected shuffle type.
+
+        Example:
+            The snippet below demonstrates a scalar offset shuffle.
+
+            .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_block_shuffle_api.py
+                :language: python
+                :dedent:
+                :start-after: example-begin imports
+                :end-before: example-end imports
+
+            .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_block_shuffle_api.py
+                :language: python
+                :dedent:
+                :start-after: example-begin offset-scalar
+                :end-before: example-end offset-scalar
+        """
         if block_shuffle_type not in BlockShuffleType:
             raise ValueError(
                 "block_shuffle_type must be a valid BlockShuffleType value; got: "

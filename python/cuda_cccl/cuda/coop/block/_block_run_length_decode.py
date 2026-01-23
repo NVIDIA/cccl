@@ -137,6 +137,25 @@ class run_length(BasePrimitive):
         unique_id=None,
         temp_storage=None,
     ) -> None:
+        """
+        Constructs a block run-length decode primitive.
+
+        Example:
+            The snippet below demonstrates a run-length decode with a decode
+            call on the resulting instance.
+
+            .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_block_run_length_api.py
+                :language: python
+                :dedent:
+                :start-after: example-begin imports
+                :end-before: example-end imports
+
+            .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_block_run_length_api.py
+                :language: python
+                :dedent:
+                :start-after: example-begin run-length
+                :end-before: example-end run-length
+        """
         self.item_dtype = normalize_dtype_param(item_dtype)
         self.dim = normalize_dim_param(dim)
 

@@ -64,6 +64,25 @@ class discontinuity(BasePrimitive):
         tile_successor_item: Any = None,
         node: "CoopNode" = None,
     ) -> None:
+        """
+        Flags discontinuities across a block using the supplied comparison
+        operator.
+
+        Example:
+            The snippet below flags heads (changes) between adjacent items.
+
+            .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_block_discontinuity_api.py
+                :language: python
+                :dedent:
+                :start-after: example-begin imports
+                :end-before: example-end imports
+
+            .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_block_discontinuity_api.py
+                :language: python
+                :dedent:
+                :start-after: example-begin flag-heads
+                :end-before: example-end flag-heads
+        """
         if block_discontinuity_type not in BlockDiscontinuityType:
             raise ValueError(
                 "block_discontinuity_type must be a valid BlockDiscontinuityType "

@@ -89,7 +89,7 @@ class merge_sort_keys(BasePrimitive):
 
             Returns:
                 A callable object that can be invoked from a CUDA kernel in single-phase,
-                or a two-phase invocable via ``merge_sort_keys.create``.
+                or as a two-phase invocable constructed outside the kernel.
         """
         if compare_op is None:
             raise ValueError("compare_op must be provided")

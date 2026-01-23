@@ -57,6 +57,25 @@ class adjacent_difference(BasePrimitive):
         temp_storage: Any = None,
         node: "CoopNode" = None,
     ) -> None:
+        """
+        Computes adjacent differences across a block with the specified
+        difference operator.
+
+        Example:
+            The snippet below computes left-differences for scalar inputs.
+
+            .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_block_adjacent_difference_api.py
+                :language: python
+                :dedent:
+                :start-after: example-begin imports
+                :end-before: example-end imports
+
+            .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_block_adjacent_difference_api.py
+                :language: python
+                :dedent:
+                :start-after: example-begin subtract-left
+                :end-before: example-end subtract-left
+        """
         if block_adjacent_difference_type not in BlockAdjacentDifferenceType:
             raise ValueError(
                 "block_adjacent_difference_type must be a valid "
