@@ -21,6 +21,7 @@
 #endif // no system header
 
 #include <cub/detail/launcher/cuda_runtime.cuh>
+#include <cub/device/dispatch/dispatch_common.cuh>
 #include <cub/device/dispatch/kernels/kernel_reduce.cuh>
 #include <cub/device/dispatch/tuning/tuning_reduce.cuh>
 #include <cub/grid/grid_even_share.cuh>
@@ -85,36 +86,6 @@ struct DeviceReduceKernelSource
   CUB_RUNTIME_FUNCTION static constexpr size_t AccumSize()
   {
     return sizeof(AccumT);
-  }
-};
-
-// TODO(bgruber): remove in CCCL 4.0
-template <typename PolicyHub>
-struct policy_selector_from_hub
-{
-  // this is only called in device code, so we can ignore the arch parameter
-  _CCCL_DEVICE_API constexpr auto operator()(::cuda::arch_id /*arch*/) const -> reduce_policy
-  {
-    using ap             = typename PolicyHub::MaxPolicy::ActivePolicy;
-    using ap_reduce      = typename ap::ReducePolicy;
-    using ap_single_tile = typename ap::SingleTilePolicy;
-    return reduce_policy{
-      agent_reduce_policy{
-        ap_reduce::BLOCK_THREADS,
-        ap_reduce::ITEMS_PER_THREAD,
-        ap_reduce::VECTOR_LOAD_LENGTH,
-        ap_reduce::BLOCK_ALGORITHM,
-        ap_reduce::LOAD_MODIFIER,
-      },
-      agent_reduce_policy{
-        ap_single_tile::BLOCK_THREADS,
-        ap_single_tile::ITEMS_PER_THREAD,
-        ap_single_tile::VECTOR_LOAD_LENGTH,
-        ap_single_tile::BLOCK_ALGORITHM,
-        ap_single_tile::LOAD_MODIFIER,
-      },
-      /* segmented reduce, not used */ {},
-      /* non deterministic reduce, not used */ {}};
   }
 };
 } // namespace detail::reduce
@@ -706,15 +677,12 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t invoke_passes(
   }
 
   return cudaSuccess;
-};
-
-struct no_override
-{};
+}
 
 // select the accumulator type using an overload set, so __accumulator_t and invoke_result_t are not instantiated when
 // an overriding accumulator type is present. This is needed by CCCL.C.
 template <typename InputIteratorT, typename InitT, typename ReductionOpT, typename TransformOpT>
-_CCCL_API auto select_accum_t(no_override*)
+_CCCL_API auto select_accum_t(use_default*)
   -> ::cuda::std::__accumulator_t<ReductionOpT,
                                   ::cuda::std::invoke_result_t<TransformOpT, ::cuda::std::iter_value_t<InputIteratorT>>,
                                   InitT>;
@@ -723,11 +691,11 @@ template <typename InputIteratorT,
           typename ReductionOpT,
           typename TransformOpT,
           typename OverrideAccumT,
-          ::cuda::std::enable_if_t<!::cuda::std::is_same_v<OverrideAccumT, no_override>, int> = 0>
+          ::cuda::std::enable_if_t<!::cuda::std::is_same_v<OverrideAccumT, use_default>, int> = 0>
 _CCCL_API auto select_accum_t(OverrideAccumT*) -> OverrideAccumT;
 
 template <
-  typename OverrideAccumT = no_override,
+  typename OverrideAccumT = use_default,
   typename InputIteratorT,
   typename OutputIteratorT,
   typename OffsetT,
