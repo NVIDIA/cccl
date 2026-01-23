@@ -735,3 +735,9 @@
 ## 2026-01-23
 - Added coop block/warp API documentation stub modules at cuda/coop/block/api.py and cuda/coop/warp/api.py.
 - Switched docs/python/coop_api.rst to document the new stub modules.
+
+## 2026-01-23
+- Added new coop API example snippets (block scans, block discontinuity tails/head+tail, block adjacent difference right, block exchange blocked-to-striped, block shuffle rotate/up/down, warp scan/reduce valid-items, warp exchange blocked-to-striped, load/store num-valid examples).
+- Added API example tests for block/warp key-value merge/radix sort and block scan variants.
+- Updated coop block/warp stub docstrings to include literalinclude examples.
+- Ran coop Sphinx build (master_doc=coop) successfully.

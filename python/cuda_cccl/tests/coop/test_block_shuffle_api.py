@@ -45,3 +45,99 @@ def test_block_shuffle_offset_scalar():
     expected = np.full_like(h_output, -1)
     expected[:-distance] = h_input[distance:]
     np.testing.assert_array_equal(h_output, expected)
+
+
+def test_block_shuffle_rotate_scalar():
+    # example-begin rotate-scalar
+    threads_per_block = 64
+    distance = 3
+
+    @cuda.jit
+    def kernel(d_in, d_out):
+        tid = cuda.threadIdx.x
+        value = d_in[tid]
+        shuffled = coop.block.shuffle(
+            value,
+            block_shuffle_type=coop.block.BlockShuffleType.Rotate,
+            distance=distance,
+        )
+        d_out[tid] = shuffled
+
+    # example-end rotate-scalar
+
+    h_input = np.arange(threads_per_block, dtype=np.int32)
+    d_input = cuda.to_device(h_input)
+    d_output = cuda.device_array_like(d_input)
+
+    kernel[1, threads_per_block](d_input, d_output)
+    cuda.synchronize()
+
+    h_output = d_output.copy_to_host()
+    expected = np.empty_like(h_output)
+    for tid in range(threads_per_block):
+        expected[tid] = h_input[(tid + distance) % threads_per_block]
+    np.testing.assert_array_equal(h_output, expected)
+
+
+def test_block_shuffle_up_scalar():
+    # example-begin up-scalar
+    threads_per_block = 64
+    distance = 2
+
+    @cuda.jit
+    def kernel(d_in, d_out):
+        tid = cuda.threadIdx.x
+        value = d_in[tid]
+        shuffled = coop.block.shuffle(
+            value,
+            block_shuffle_type=coop.block.BlockShuffleType.Up,
+            distance=distance,
+        )
+        d_out[tid] = shuffled
+
+    # example-end up-scalar
+
+    h_input = np.arange(threads_per_block, dtype=np.int32)
+    d_input = cuda.to_device(h_input)
+    d_output = cuda.device_array_like(d_input)
+
+    kernel[1, threads_per_block](d_input, d_output)
+    cuda.synchronize()
+
+    h_output = d_output.copy_to_host()
+    expected = np.empty_like(h_output)
+    expected[:distance] = h_input[:distance]
+    expected[distance:] = h_input[:-distance]
+    np.testing.assert_array_equal(h_output, expected)
+
+
+def test_block_shuffle_down_scalar():
+    # example-begin down-scalar
+    threads_per_block = 64
+    distance = 2
+
+    @cuda.jit
+    def kernel(d_in, d_out):
+        tid = cuda.threadIdx.x
+        value = d_in[tid]
+        shuffled = coop.block.shuffle(
+            value,
+            block_shuffle_type=coop.block.BlockShuffleType.Down,
+            distance=distance,
+        )
+        d_out[tid] = shuffled
+
+    # example-end down-scalar
+
+    h_input = np.arange(threads_per_block, dtype=np.int32)
+    d_input = cuda.to_device(h_input)
+    d_output = cuda.device_array_like(d_input)
+
+    kernel[1, threads_per_block](d_input, d_output)
+    cuda.synchronize()
+
+    h_output = d_output.copy_to_host()
+    expected = np.empty_like(h_output)
+    expected[-distance:] = h_input[-distance:]
+    expected[:-distance] = h_input[distance:]
+    np.testing.assert_array_equal(h_output, expected)

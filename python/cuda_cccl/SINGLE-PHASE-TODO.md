@@ -50,6 +50,7 @@
 - [x] Remove `.create()`/`link=` usage from coop tests and examples.
 - [x] Add missing two-phase tests for block primitives.
 - [ ] Audit CUB block/warp overload coverage and fill gaps.
+- [x] Add literalinclude examples for coop API overloads (doc stubs + tests).
 - [x] Add warp reduce/sum valid-items overloads.
 - [x] Add WarpScan warp_aggregate/valid_items/temp_storage overloads and tests.
 - [x] Add block load oob_default overload.

@@ -152,3 +152,48 @@ def test_warp_exchange_scatter_to_striped():
     h_output = d_output.copy_to_host()
 
     np.testing.assert_array_equal(h_output, h_expected)
+
+
+def test_warp_exchange_blocked_to_striped():
+    # example-begin blocked-to-striped
+    threads_in_warp = 32
+    items_per_thread = 2
+    total_items = threads_in_warp * items_per_thread
+
+    warp_exchange = coop.warp.exchange(
+        numba.int32,
+        items_per_thread,
+        threads_in_warp=threads_in_warp,
+        warp_exchange_type=coop.warp.WarpExchangeType.BlockedToStriped,
+    )
+
+    @cuda.jit
+    def kernel(d_in, d_out):
+        tid = cuda.threadIdx.x
+        input_items = cuda.local.array(items_per_thread, numba.int32)
+        output_items = cuda.local.array(items_per_thread, numba.int32)
+
+        for i in range(items_per_thread):
+            input_items[i] = d_in[tid * items_per_thread + i]
+
+        warp_exchange(input_items, output_items)
+
+        for i in range(items_per_thread):
+            d_out[tid + i * threads_in_warp] = output_items[i]
+
+    # example-end blocked-to-striped
+
+    h_input = np.arange(total_items, dtype=np.int32)
+    d_input = cuda.to_device(h_input)
+    d_output = cuda.device_array_like(d_input)
+
+    kernel[1, threads_in_warp](d_input, d_output)
+    h_output = d_output.copy_to_host()
+
+    expected = np.empty_like(h_output)
+    for idx in range(total_items):
+        tid = idx % threads_in_warp
+        item = idx // threads_in_warp
+        expected[idx] = h_input[tid * items_per_thread + item]
+
+    np.testing.assert_array_equal(h_output, expected)

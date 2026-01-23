@@ -22,13 +22,6 @@ class WarpExchangeType:
     BlockedToStriped = "BlockedToStriped"
     ScatterToStriped = "ScatterToStriped"
 
-    StripedToBlocked = "StripedToBlocked"
-    BlockedToStriped = "BlockedToStriped"
-    ScatterToBlocked = "ScatterToBlocked"
-    ScatterToStriped = "ScatterToStriped"
-    ScatterToStripedGuarded = "ScatterToStripedGuarded"
-    ScatterToStripedFlagged = "ScatterToStripedFlagged"
-
 
 def exclusive_sum(
     items,
@@ -38,7 +31,15 @@ def exclusive_sum(
     algorithm: str | None = None,
     temp_storage=None,
 ):
-    """Exclusive warp-wide sum for per-thread items."""
+    """Exclusive warp-wide sum for per-thread items.
+
+    Example:
+        .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_warp_scan_api.py
+            :language: python
+            :dedent:
+            :start-after: example-begin exclusive-sum
+            :end-before: example-end exclusive-sum
+    """
 
 
 def inclusive_sum(
@@ -49,7 +50,15 @@ def inclusive_sum(
     algorithm: str | None = None,
     temp_storage=None,
 ):
-    """Inclusive warp-wide sum for per-thread items."""
+    """Inclusive warp-wide sum for per-thread items.
+
+    Example:
+        .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_warp_scan_api.py
+            :language: python
+            :dedent:
+            :start-after: example-begin inclusive-sum
+            :end-before: example-end inclusive-sum
+    """
 
 
 def exclusive_scan(
@@ -61,7 +70,15 @@ def exclusive_scan(
     algorithm: str | None = None,
     temp_storage=None,
 ):
-    """Exclusive warp-wide scan with a custom operator."""
+    """Exclusive warp-wide scan with a custom operator.
+
+    Example:
+        .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_warp_scan_api.py
+            :language: python
+            :dedent:
+            :start-after: example-begin exclusive-scan
+            :end-before: example-end exclusive-scan
+    """
 
 
 def inclusive_scan(
@@ -73,7 +90,15 @@ def inclusive_scan(
     algorithm: str | None = None,
     temp_storage=None,
 ):
-    """Inclusive warp-wide scan with a custom operator."""
+    """Inclusive warp-wide scan with a custom operator.
+
+    Example:
+        .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_warp_scan_api.py
+            :language: python
+            :dedent:
+            :start-after: example-begin inclusive-scan
+            :end-before: example-end inclusive-scan
+    """
 
 
 def reduce(
@@ -84,7 +109,21 @@ def reduce(
     algorithm: str | None = None,
     temp_storage=None,
 ):
-    """Warp-wide reduction with a custom operator."""
+    """Warp-wide reduction with a custom operator.
+
+    Example:
+        .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_warp_reduce_api.py
+            :language: python
+            :dedent:
+            :start-after: example-begin reduce
+            :end-before: example-end reduce
+
+        .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_warp_reduce_api.py
+            :language: python
+            :dedent:
+            :start-after: example-begin reduce-valid-items
+            :end-before: example-end reduce-valid-items
+    """
 
 
 def sum(
@@ -94,7 +133,21 @@ def sum(
     algorithm: str | None = None,
     temp_storage=None,
 ):
-    """Warp-wide sum reduction."""
+    """Warp-wide sum reduction.
+
+    Example:
+        .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_warp_reduce_api.py
+            :language: python
+            :dedent:
+            :start-after: example-begin sum
+            :end-before: example-end sum
+
+        .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_warp_reduce_api.py
+            :language: python
+            :dedent:
+            :start-after: example-begin sum-valid-items
+            :end-before: example-end sum-valid-items
+    """
 
 
 def load(
@@ -107,7 +160,21 @@ def load(
     oob_default=None,
     temp_storage=None,
 ):
-    """Warp-wide cooperative load into per-thread items."""
+    """Warp-wide cooperative load into per-thread items.
+
+    Example:
+        .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_warp_load_store_api.py
+            :language: python
+            :dedent:
+            :start-after: example-begin load-store
+            :end-before: example-end load-store
+
+        .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_warp_load_store_api.py
+            :language: python
+            :dedent:
+            :start-after: example-begin load-store-num-valid-oob-default
+            :end-before: example-end load-store-num-valid-oob-default
+    """
 
 
 def store(
@@ -119,7 +186,15 @@ def store(
     num_valid: int | None = None,
     temp_storage=None,
 ):
-    """Warp-wide cooperative store from per-thread items."""
+    """Warp-wide cooperative store from per-thread items.
+
+    Example:
+        .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_warp_load_store_api.py
+            :language: python
+            :dedent:
+            :start-after: example-begin load-store
+            :end-before: example-end load-store
+    """
 
 
 def exchange(
@@ -131,7 +206,21 @@ def exchange(
     valid_flags=None,
     temp_storage=None,
 ):
-    """Rearrange items across a warp using an exchange pattern."""
+    """Rearrange items across a warp using an exchange pattern.
+
+    Example:
+        .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_warp_exchange_api.py
+            :language: python
+            :dedent:
+            :start-after: example-begin striped-to-blocked
+            :end-before: example-end striped-to-blocked
+
+        .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_warp_exchange_api.py
+            :language: python
+            :dedent:
+            :start-after: example-begin blocked-to-striped
+            :end-before: example-end blocked-to-striped
+    """
 
 
 def merge_sort_keys(
@@ -143,7 +232,15 @@ def merge_sort_keys(
     oob_default=None,
     temp_storage=None,
 ):
-    """Warp-wide merge sort for keys."""
+    """Warp-wide merge sort for keys.
+
+    Example:
+        .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_warp_merge_sort_api.py
+            :language: python
+            :dedent:
+            :start-after: example-begin merge-sort
+            :end-before: example-end merge-sort
+    """
 
 
 def merge_sort_pairs(
@@ -156,7 +253,15 @@ def merge_sort_pairs(
     oob_default=None,
     temp_storage=None,
 ):
-    """Warp-wide merge sort for key-value pairs."""
+    """Warp-wide merge sort for key-value pairs.
+
+    Example:
+        .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_warp_merge_sort_pairs_api.py
+            :language: python
+            :dedent:
+            :start-after: example-begin merge-sort-pairs
+            :end-before: example-end merge-sort-pairs
+    """
 
 
 __all__ = [

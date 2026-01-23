@@ -61,3 +61,48 @@ def test_block_exchange_striped_to_blocked():
         expected[blocked_idx] = h_input[src_striped_1d_idx]
 
     np.testing.assert_array_equal(h_output, expected)
+
+
+def test_block_exchange_blocked_to_striped():
+    # example-begin blocked-to-striped
+    threads_per_block = 32
+    items_per_thread = 2
+    total_items = threads_per_block * items_per_thread
+
+    @cuda.jit
+    def kernel(d_in, d_out):
+        tid = cuda.threadIdx.x
+        items = cuda.local.array(items_per_thread, dtype=numba.int32)
+
+        for i in range(items_per_thread):
+            items[i] = d_in[tid * items_per_thread + i]
+
+        coop.block.exchange(
+            items,
+            items_per_thread=items_per_thread,
+            block_exchange_type=coop.block.BlockExchangeType.BlockedToStriped,
+        )
+
+        for i in range(items_per_thread):
+            d_out[tid + i * threads_per_block] = items[i]
+
+    # example-end blocked-to-striped
+
+    h_input = np.empty(total_items, dtype=np.int32)
+    for i in range(total_items):
+        h_input[i] = i
+
+    d_input = cuda.to_device(h_input)
+    d_output = cuda.device_array_like(d_input)
+
+    kernel[1, threads_per_block](d_input, d_output)
+    cuda.synchronize()
+
+    h_output = d_output.copy_to_host()
+    expected = np.empty_like(h_output)
+    for striped_idx in range(total_items):
+        tid = striped_idx % threads_per_block
+        item = striped_idx // threads_per_block
+        expected[striped_idx] = h_input[tid * items_per_thread + item]
+
+    np.testing.assert_array_equal(h_output, expected)
