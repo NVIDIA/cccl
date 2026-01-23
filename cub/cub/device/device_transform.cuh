@@ -17,7 +17,9 @@
 #include <cub/device/dispatch/dispatch_transform.cuh>
 #include <cub/util_namespace.cuh>
 
+#include <cuda/__execution/tune.h>
 #include <cuda/__functional/address_stability.h>
+#include <cuda/__functional/call_or.h>
 #include <cuda/__stream/get_stream.h>
 #include <cuda/std/__execution/env.h>
 #include <cuda/std/tuple>
@@ -44,25 +46,31 @@ struct ::cuda::proclaims_copyable_arguments<CUB_NS_QUALIFIER::detail::__return_c
 {};
 
 CUB_NAMESPACE_BEGIN
+namespace detail::transform
+{
+struct get_tuning_query_t
+{};
+} // namespace detail::transform
+
 //! DeviceTransform provides device-wide, parallel operations for transforming elements tuple-wise from multiple input
 //! sequences into an output sequence.
 struct DeviceTransform
 {
 private:
-  template <typename... RandomAccessIteratorsIn,
+  template <detail::transform::requires_stable_address StableAddress = detail::transform::requires_stable_address::no,
+            typename... RandomAccessIteratorsIn,
             typename RandomAccessIteratorOut,
             typename NumItemsT,
             typename Predicate,
             typename TransformOp,
-            typename StableAddress = cuda::std::false_type>
+            typename Env>
   CUB_RUNTIME_FUNCTION static cudaError_t TransformInternal(
     ::cuda::std::tuple<RandomAccessIteratorsIn...> inputs,
     RandomAccessIteratorOut output,
     NumItemsT num_items,
     Predicate predicate,
     TransformOp transform_op,
-    cudaStream_t stream,
-    StableAddress = {})
+    Env env)
   {
     using choose_offset_t = detail::choose_signed_offset<NumItemsT>;
     using offset_t        = typename choose_offset_t::type;
@@ -73,28 +81,31 @@ private:
       return error;
     }
 
-    return detail::transform::dispatch_t < StableAddress::value
-           ? detail::transform::requires_stable_address::yes
-           : detail::transform::requires_stable_address::no,
-           offset_t, ::cuda::std::tuple<RandomAccessIteratorsIn...>, RandomAccessIteratorOut, Predicate,
-           TransformOp > ::dispatch(
-             ::cuda::std::move(inputs),
-             ::cuda::std::move(output),
-             num_items,
-             ::cuda::std::move(predicate),
-             ::cuda::std::move(transform_op),
-             stream);
-  }
+    using tuning_env_t =
+      ::cuda::__call_result_or_t<::cuda::execution::__get_tuning_t, ::cuda::std::execution::env<>, Env>;
+    using transform_tuning_t = ::cuda::__call_result_or_t<detail::transform::get_tuning_query_t, int, tuning_env_t>;
 
-  template <typename Env>
-  CUB_RUNTIME_FUNCTION static auto get_stream(Env env) -> cudaStream_t
-  {
-    return ::cuda::std::execution::__query_or(env, ::cuda::get_stream, ::cuda::stream_ref{cudaStream_t{}}).get();
-  }
-
-  CUB_RUNTIME_FUNCTION static auto get_stream(cudaStream_t stream) -> cudaStream_t
-  {
-    return stream;
+    if constexpr (!::cuda::std::is_same_v<transform_tuning_t, int>)
+    {
+      return detail::transform::dispatch<StableAddress>(
+        ::cuda::std::move(inputs),
+        ::cuda::std::move(output),
+        static_cast<offset_t>(num_items),
+        ::cuda::std::move(predicate),
+        ::cuda::std::move(transform_op),
+        ::cuda::__call_or(::cuda::get_stream, ::cuda::stream_ref{cudaStream_t{}}, env).get(),
+        transform_tuning_t{});
+    }
+    else
+    {
+      return detail::transform::dispatch<StableAddress>(
+        ::cuda::std::move(inputs),
+        ::cuda::std::move(output),
+        static_cast<offset_t>(num_items),
+        ::cuda::std::move(predicate),
+        ::cuda::std::move(transform_op),
+        ::cuda::__call_or(::cuda::get_stream, ::cuda::stream_ref{cudaStream_t{}}, env).get());
+    }
   }
 
 public:
@@ -146,7 +157,7 @@ public:
       num_items,
       detail::transform::always_true_predicate{},
       ::cuda::std::move(transform_op),
-      get_stream(env));
+      ::cuda::std::move(env));
   }
 
 #ifndef _CCCL_DOXYGEN_INVOKED // Do not document
@@ -269,7 +280,7 @@ public:
       num_items,
       detail::transform::always_true_predicate{},
       ::cuda::std::move(generator),
-      get_stream(env));
+      ::cuda::std::move(env));
   }
 
 #ifndef _CCCL_DOXYGEN_INVOKED // Do not document
@@ -322,7 +333,7 @@ public:
       num_items,
       detail::transform::always_true_predicate{},
       detail::__return_constant<Value>{::cuda::std::move(value)},
-      get_stream(env));
+      ::cuda::std::move(env));
   }
 
 #ifndef _CCCL_DOXYGEN_INVOKED // Do not document
@@ -401,7 +412,7 @@ public:
       num_items,
       ::cuda::std::move(predicate),
       ::cuda::std::move(transform_op),
-      get_stream(env));
+      ::cuda::std::move(env));
   }
 
 #ifndef _CCCL_DOXYGEN_INVOKED // Do not document
@@ -489,7 +500,7 @@ public:
       num_items,
       ::cuda::std::move(predicate),
       ::cuda::std::move(transform_op),
-      get_stream(env));
+      ::cuda::std::move(env));
   }
 
 #ifndef _CCCL_DOXYGEN_INVOKED // Do not document
@@ -567,14 +578,13 @@ public:
     Env env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceTransform::TransformStableArgumentAddresses");
-    return TransformInternal(
+    return TransformInternal<detail::transform::requires_stable_address::yes>(
       ::cuda::std::move(inputs),
       ::cuda::std::move(output),
       num_items,
       detail::transform::always_true_predicate{},
       ::cuda::std::move(transform_op),
-      get_stream(env),
-      ::cuda::std::true_type{});
+      ::cuda::std::move(env));
   }
 
 #ifndef _CCCL_DOXYGEN_INVOKED // Do not document
@@ -633,7 +643,7 @@ public:
       ::cuda::std::move(output),
       num_items,
       ::cuda::std::move(transform_op),
-      get_stream(env));
+      ::cuda::std::move(env));
   }
 
 #ifndef _CCCL_DOXYGEN_INVOKED // Do not document

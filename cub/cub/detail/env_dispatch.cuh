@@ -16,6 +16,7 @@
 #include <cub/detail/temporary_storage.cuh>
 
 #include <cuda/__execution/tune.h>
+#include <cuda/__functional/call_or.h>
 #include <cuda/__memory_resource/get_memory_resource.h>
 #include <cuda/__stream/get_stream.h>
 #include <cuda/std/__execution/env.h>
@@ -39,22 +40,13 @@ template <typename EnvT, typename AlgorithmCallable>
 CUB_RUNTIME_FUNCTION static cudaError_t dispatch_with_env(EnvT env, AlgorithmCallable&& algorithm_callable)
 {
   // Query stream from environment
-  auto stream = ::cuda::std::execution::__query_or(env, ::cuda::get_stream, ::cuda::stream_ref{cudaStream_t{}});
+  auto stream = ::cuda::__call_or(::cuda::get_stream, ::cuda::stream_ref{cudaStream_t{}}, env);
 
   // Query memory resource from environment
-  auto mr =
-    ::cuda::std::execution::__query_or(env, ::cuda::mr::__get_memory_resource, detail::device_memory_resource{});
+  auto mr = ::cuda::__call_or(::cuda::mr::__get_memory_resource, detail::device_memory_resource{}, env);
 
   // Query tuning from environment
-
-  // clang 15-19 ICE when using __query_result_or_t, so we just use the underlying machinery as a workaround
-#if _CCCL_COMPILER(CLANG, >=, 15) && _CCCL_COMPILER(CLANG, <, 19)
-  const auto tuning = ::cuda::std::execution::__detail::__query_or_t{}(
-    env, ::cuda::execution::__get_tuning_t{}, ::cuda::std::execution::env<>{});
-#else
-  const auto tuning =
-    ::cuda::std::execution::__query_result_or_t<EnvT, ::cuda::execution::__get_tuning_t, ::cuda::std::execution::env<>>{};
-#endif
+  const auto tuning = ::cuda::__call_or(::cuda::execution::__get_tuning, ::cuda::std::execution::env<>{}, env);
 
   void* d_temp_storage      = nullptr;
   size_t temp_storage_bytes = 0;

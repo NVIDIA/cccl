@@ -316,23 +316,39 @@ jobs:
       contents: read
     steps:
       - name: Download wheel artifact
+        id: download
         uses: actions/download-artifact@v4
+        continue-on-error: true
         with:
           name: wheel-cccl-linux-amd64-py3.13
           path: artifact
 
+      - name: Check if wheel exists
+        id: check-wheel
+        run: |
+          if [[ "${{ steps.download.outcome }}" != "success" ]]; then
+            echo "No wheel artifact found (Python jobs likely didn't run). Skipping test."
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "Wheel artifact found."
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Set up Python
+        if: steps.check-wheel.outputs.skip != 'true'
         uses: actions/setup-python@v5
         with:
           python-version: '3.13'
 
       - name: Install wheel
+        if: steps.check-wheel.outputs.skip != 'true'
         run: |
           echo "Artifact contents:"
           find artifact -name "*.whl" -type f
           pip install $(find artifact -name "*.whl" -type f | head -1)[cu13]
 
       - name: Test CPU-only import
+        if: steps.check-wheel.outputs.skip != 'true'
         run: |
           python -c "
           import cuda.compute
