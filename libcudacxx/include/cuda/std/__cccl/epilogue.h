@@ -317,12 +317,28 @@ _CCCL_DIAG_POP
 #  undef _CCCL_POP_MACRO_min
 #endif
 
+#if defined(__min)
+#  error \
+    "cccl internal error: macro `__min` was redefined between <cuda/std/__cccl/prologue.h> and <cuda/std/__cccl/epilogue.h>"
+#elif defined(_CCCL_POP_MACRO___min)
+#  pragma pop_macro("__min")
+#  undef _CCCL_POP_MACRO___min
+#endif
+
 #if defined(max)
 #  error \
     "cccl internal error: macro `max` was redefined between <cuda/std/__cccl/prologue.h> and <cuda/std/__cccl/epilogue.h>"
 #elif defined(_CCCL_POP_MACRO_max)
 #  pragma pop_macro("max")
 #  undef _CCCL_POP_MACRO_max
+#endif
+
+#if defined(__max)
+#  error \
+    "cccl internal error: macro `__max` was redefined between <cuda/std/__cccl/prologue.h> and <cuda/std/__cccl/epilogue.h>"
+#elif defined(_CCCL_POP_MACRO___max)
+#  pragma pop_macro("__max")
+#  undef _CCCL_POP_MACRO___max
 #endif
 
 #if defined(interface)
