@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-from typing import TYPE_CHECKING, Tuple, Union
+from typing import TYPE_CHECKING, Any, Tuple, Union
 
 import numba
 
@@ -17,12 +17,17 @@ from .._common import (
 from .._types import (
     Algorithm,
     BasePrimitive,
+    Constant,
+    Decomposer,
     Dependency,
     DependentArray,
+    DependentPythonOperator,
     Invocable,
-    Pointer,
     TemplateParameter,
+    TempStoragePointer,
     Value,
+    numba_type_to_cpp,
+    numba_type_to_wrapper,
 )
 
 if TYPE_CHECKING:
@@ -45,31 +50,6 @@ TEMPLATE_PARAMETERS = [
 ]
 
 
-METHOD_PARAMETERS_SINGLE_PHASE = [
-    [
-        DependentArray(Dependency("KeyT"), Dependency("ITEMS_PER_THREAD")),
-    ],
-    [
-        DependentArray(Dependency("KeyT"), Dependency("ITEMS_PER_THREAD")),
-        Value(numba.int32, name="begin_bit"),
-        Value(numba.int32, name="end_bit"),
-    ],
-]
-
-METHOD_PARAMETERS_TWO_PHASE = [
-    [
-        Pointer(numba.uint8),
-        DependentArray(Dependency("KeyT"), Dependency("ITEMS_PER_THREAD")),
-    ],
-    [
-        Pointer(numba.uint8),
-        DependentArray(Dependency("KeyT"), Dependency("ITEMS_PER_THREAD")),
-        Value(numba.int32, name="begin_bit"),
-        Value(numba.int32, name="end_bit"),
-    ],
-]
-
-
 # N.B. In order to support multi-dimensional block dimensions, we have to
 #      defaults for all the template parameters preceding the final Y and
 #      Z dimensions.  This will be improved in the future, allowing users
@@ -84,8 +64,54 @@ TEMPLATE_PARAMETER_DEFAULTS = {
 }
 
 
+def _build_method_parameters(
+    *,
+    has_values: bool,
+    has_bits: bool,
+    has_decomposer: bool,
+    explicit_temp_storage: bool,
+    decomposer_ret_dtype: numba.types.Type = None,
+):
+    method = []
+    if explicit_temp_storage:
+        method.append(
+            TempStoragePointer(
+                numba.types.uint8,
+                is_array_pointer=True,
+                name="temp_storage",
+            )
+        )
+    method.append(
+        DependentArray(Dependency("KeyT"), Dependency("ITEMS_PER_THREAD"), name="keys")
+    )
+    if has_values:
+        method.append(
+            DependentArray(
+                Dependency("ValueT"),
+                Dependency("ITEMS_PER_THREAD"),
+                name="values",
+            )
+        )
+    if has_decomposer:
+        method.append(
+            DependentPythonOperator(
+                Constant(decomposer_ret_dtype),
+                [Dependency("KeyT")],
+                Dependency("Decomposer"),
+                name="decomposer",
+            )
+        )
+    if has_bits:
+        method.append(Value(numba.int32, name="begin_bit"))
+        method.append(Value(numba.int32, name="end_bit"))
+    return [method]
+
+
 def _get_template_parameter_specializations(
-    dtype: numba.types.Type, dim: dim3, items_per_thread: int
+    dtype: numba.types.Type,
+    dim: dim3,
+    items_per_thread: int,
+    value_dtype: numba.types.Type = None,
 ) -> dict:
     """
     Returns a dictionary of template parameter specializations for the block
@@ -110,6 +136,8 @@ def _get_template_parameter_specializations(
     }
 
     specialization.update(TEMPLATE_PARAMETER_DEFAULTS)
+    if value_dtype is not None:
+        specialization["ValueT"] = value_dtype
 
     return specialization
 
@@ -123,8 +151,11 @@ class _radix_sort_base(BasePrimitive):
         threads_per_block: Union[int, Tuple[int, int], Tuple[int, int, int], dim3],
         items_per_thread: int,
         descending: bool,
+        value_dtype: Union[str, type, "np.dtype", "numba.types.Type"] = None,
         begin_bit: int = None,
         end_bit: int = None,
+        decomposer: Any = None,
+        blocked_to_striped: bool = False,
         unique_id: int = None,
         temp_storage=None,
         node: "CoopNode" = None,
@@ -138,34 +169,81 @@ class _radix_sort_base(BasePrimitive):
         self.temp_storage = temp_storage
         self.dim = normalize_dim_param(threads_per_block)
         self.dtype = normalize_dtype_param(dtype)
+        self.value_dtype = (
+            normalize_dtype_param(value_dtype) if value_dtype is not None else None
+        )
         self.items_per_thread = items_per_thread
         self.descending = descending
         self.begin_bit = begin_bit
         self.end_bit = end_bit
+        self.decomposer = decomposer
+        self.blocked_to_striped = blocked_to_striped
         self.unique_id = unique_id
 
+        if decomposer is not None:
+            raise ValueError(
+                "BlockRadixSort decomposer is not supported yet in cuda.coop. "
+                "CUB requires tuple-of-references for custom key types and does "
+                "not accept custom decomposers for built-in key types."
+            )
+
         method_name = "SortDescending" if descending else "Sort"
-        parameters = (
-            [METHOD_PARAMETERS_SINGLE_PHASE[1]]
-            if begin_bit is not None
-            else [METHOD_PARAMETERS_SINGLE_PHASE[0]]
+        if blocked_to_striped:
+            method_name = (
+                "SortDescendingBlockedToStriped"
+                if descending
+                else "SortBlockedToStriped"
+            )
+
+        decomposer_op = None
+        decomposer_ret_dtype = None
+        if decomposer is not None:
+            if isinstance(decomposer, Decomposer):
+                decomposer_op = decomposer.op
+                decomposer_ret_dtype = decomposer.ret_dtype
+            else:
+                decomposer_op = decomposer
+                decomposer_ret_dtype = getattr(
+                    decomposer, "ret_dtype", getattr(decomposer, "return_dtype", None)
+                )
+            if decomposer_ret_dtype is None:
+                raise ValueError(
+                    "decomposer requires a return dtype; use coop.Decomposer(op, ret_dtype)"
+                )
+
+        parameters = _build_method_parameters(
+            has_values=self.value_dtype is not None,
+            has_bits=begin_bit is not None,
+            has_decomposer=decomposer is not None,
+            explicit_temp_storage=temp_storage is not None,
+            decomposer_ret_dtype=decomposer_ret_dtype,
         )
+
+        type_definitions = None
+        methods = getattr(self.dtype, "methods", None)
+        if methods is not None and not methods:
+            methods = None
+        if methods is not None or numba_type_to_cpp(self.dtype) == "storage_t":
+            type_definitions = [numba_type_to_wrapper(self.dtype, methods=methods)]
 
         self.algorithm = Algorithm(
             "BlockRadixSort",
             method_name,
             "block_radix_sort",
-            ["cub/block/block_radix_sort.cuh"],
+            ["cub/block/block_radix_sort.cuh"]
+            + (["cuda/std/tuple"] if decomposer is not None else []),
             TEMPLATE_PARAMETERS,
             parameters,
             self,
+            type_definitions=type_definitions,
             unique_id=unique_id,
         )
-        self.specialization = self.algorithm.specialize(
-            _get_template_parameter_specializations(
-                self.dtype, self.dim, self.items_per_thread
-            )
+        specialization_kwds = _get_template_parameter_specializations(
+            self.dtype, self.dim, self.items_per_thread, self.value_dtype
         )
+        if decomposer_op is not None:
+            specialization_kwds["Decomposer"] = decomposer_op
+        self.specialization = self.algorithm.specialize(specialization_kwds)
 
     @classmethod
     def create(
@@ -174,22 +252,25 @@ class _radix_sort_base(BasePrimitive):
         threads_per_block: Union[int, Tuple[int, int], Tuple[int, int, int], dim3],
         items_per_thread: int,
         descending: bool,
+        value_dtype: Union[str, type, "np.dtype", "numba.types.Type"] = None,
+        begin_bit: int = None,
+        end_bit: int = None,
+        decomposer: Any = None,
+        blocked_to_striped: bool = False,
     ) -> Invocable:
-        dim = normalize_dim_param(threads_per_block)
-        dtype = normalize_dtype_param(dtype)
-
-        method_name = "SortDescending" if descending else "Sort"
-        template = Algorithm(
-            "BlockRadixSort",
-            method_name,
-            "block_radix_sort",
-            ["cub/block/block_radix_sort.cuh"],
-            TEMPLATE_PARAMETERS,
-            METHOD_PARAMETERS_TWO_PHASE,
+        algo = cls(
+            dtype=dtype,
+            threads_per_block=threads_per_block,
+            items_per_thread=items_per_thread,
+            descending=descending,
+            value_dtype=value_dtype,
+            begin_bit=begin_bit,
+            end_bit=end_bit,
+            decomposer=decomposer,
+            blocked_to_striped=blocked_to_striped,
+            temp_storage=True,
         )
-        specialization = template.specialize(
-            _get_template_parameter_specializations(dtype, dim, items_per_thread)
-        )
+        specialization = algo.specialization
         return Invocable(
             temp_files=[
                 make_binary_tempfile(ltoir, ".ltoir")
@@ -236,6 +317,11 @@ class radix_sort_keys(_radix_sort_base):
 
         items_per_thread: The number of items each thread owns
 
+        decomposer: Not yet supported in cuda.coop. CUB requires a tuple-of-
+            references decomposer for custom key types and does not accept
+            custom decomposers for built-in key types. Passing one raises
+            ``ValueError``.
+
     Returns:
         A callable object that can be linked to and invoked from a CUDA kernel
     """
@@ -245,8 +331,11 @@ class radix_sort_keys(_radix_sort_base):
         dtype,
         threads_per_block,
         items_per_thread,
+        value_dtype: Union[str, type, "np.dtype", "numba.types.Type"] = None,
         begin_bit: int = None,
         end_bit: int = None,
+        decomposer: Any = None,
+        blocked_to_striped: bool = False,
         unique_id: int = None,
         temp_storage=None,
         node: "CoopNode" = None,
@@ -256,8 +345,11 @@ class radix_sort_keys(_radix_sort_base):
             threads_per_block=threads_per_block,
             items_per_thread=items_per_thread,
             descending=False,
+            value_dtype=value_dtype,
             begin_bit=begin_bit,
             end_bit=end_bit,
+            decomposer=decomposer,
+            blocked_to_striped=blocked_to_striped,
             unique_id=unique_id,
             temp_storage=temp_storage,
             node=node,
@@ -299,6 +391,11 @@ class radix_sort_keys_descending(_radix_sort_base):
 
         items_per_thread: The number of items each thread owns
 
+        decomposer: Not yet supported in cuda.coop. CUB requires a tuple-of-
+            references decomposer for custom key types and does not accept
+            custom decomposers for built-in key types. Passing one raises
+            ``ValueError``.
+
     Returns:
         A callable object that can be linked to and invoked from a CUDA kernel
     """
@@ -308,8 +405,11 @@ class radix_sort_keys_descending(_radix_sort_base):
         dtype,
         threads_per_block,
         items_per_thread,
+        value_dtype: Union[str, type, "np.dtype", "numba.types.Type"] = None,
         begin_bit: int = None,
         end_bit: int = None,
+        decomposer: Any = None,
+        blocked_to_striped: bool = False,
         unique_id: int = None,
         temp_storage=None,
         node: "CoopNode" = None,
@@ -319,8 +419,11 @@ class radix_sort_keys_descending(_radix_sort_base):
             threads_per_block=threads_per_block,
             items_per_thread=items_per_thread,
             descending=True,
+            value_dtype=value_dtype,
             begin_bit=begin_bit,
             end_bit=end_bit,
+            decomposer=decomposer,
+            blocked_to_striped=blocked_to_striped,
             unique_id=unique_id,
             temp_storage=temp_storage,
             node=node,

@@ -113,6 +113,14 @@ NUMBA_TYPES_TO_CPP = {
 
 
 def numba_type_to_cpp(numba_type, default="storage_t"):
+    if isinstance(numba_type, (types.Tuple, types.UniTuple)):
+        elem_cpp = []
+        for elem in numba_type:
+            cpp_type = numba_type_to_cpp(elem, default=None)
+            if cpp_type is None or cpp_type == "storage_t":
+                return default
+            elem_cpp.append(cpp_type)
+        return f"::cuda::std::tuple<{', '.join(elem_cpp)}>"
     return NUMBA_TYPES_TO_CPP.get(numba_type, default)
 
 
@@ -366,6 +374,12 @@ class StatefulFunction:
 
 
 @dataclass
+class Decomposer:
+    op: Any
+    ret_dtype: numba.types.Type
+
+
+@dataclass
 class StatefulOperator:
     name: str
     op_type: numba.types.Type
@@ -511,7 +525,11 @@ class DependentPythonOperator:
 
         if isinstance(op, StatefulFunction):
             binary_op = op.op.__call__
-            mangled_name = f"F{binary_op.__name__}_{ret_dtype}__" + "_".join(arg_dtypes)
+            ret_mangled = internal_mangle_cpp(str(ret_dtype))
+            arg_mangled = [internal_mangle_cpp(dtype) for dtype in arg_dtypes]
+            mangled_name = f"F{binary_op.__name__}_{ret_mangled}__" + "_".join(
+                arg_mangled
+            )
             # name = f"F{op.name}"
             if ret_cpp_type == "storage_t":
                 binary_op_signature = signature(
@@ -544,7 +562,11 @@ class DependentPythonOperator:
             )
         else:
             binary_op = op
-            mangled_name = f"F{binary_op.__name__}_{ret_dtype}__" + "_".join(arg_dtypes)
+            ret_mangled = internal_mangle_cpp(str(ret_dtype))
+            arg_mangled = [internal_mangle_cpp(dtype) for dtype in arg_dtypes]
+            mangled_name = f"F{binary_op.__name__}_{ret_mangled}__" + "_".join(
+                arg_mangled
+            )
             # name = f'F{op.name}'
             if ret_cpp_type == "storage_t":
                 binary_op_signature = signature(

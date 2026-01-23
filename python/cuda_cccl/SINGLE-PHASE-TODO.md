@@ -54,9 +54,10 @@
 - [x] Add block load oob_default overload.
 - [x] Add block discontinuity tile predecessor/successor overloads.
 - [x] Add block shuffle prefix/suffix overloads (block_prefix/block_suffix).
-- [ ] Add block scan block-aggregate overloads (multi-output).
-- [ ] Add block merge/radix sort key/value + valid-items/oob_default/decomposer overloads.
-- [ ] Add warp merge sort key/value overloads.
+- [x] Add block scan block-aggregate overloads (multi-output).
+- [x] Add block merge/radix sort key/value + valid-items/oob_default/decomposer overloads.
+- [ ] Enable BlockRadixSort decomposer for user-defined types (blocked: CUB expects tuple-of-references; need C++ adapter or alternate lowering).
+- [x] Add warp merge sort key/value overloads.
 - [ ] Add multi-output support in `_types.py` (or alternate return strategy)
       to enable block-aggregate scan overloads.
 - [ ] Expand single-phase `temp_storage=` support across all primitives and

@@ -586,3 +586,26 @@
     block_prefix/block_suffix outputs.
 - Tests:
   - `pytest -q tests/coop/test_block_shuffle.py -k prefix` (2 passed, 4 deselected)
+
+## 2026-01-23 (radix/warp merge sort key-value + radix decomposer/blocked-to-striped)
+- Request: continue overload parity (block radix sort key/value + decomposer + blocked-to-striped; warp merge sort key/value).
+- Changes:
+  - `cuda/coop/_rewrite.py`: pass block radix sort decomposer objects through instantiation; add warp merge sort value handling and two-phase rebuild for value dtype.
+  - `cuda/coop/warp/_warp_merge_sort.py`: add key/value overload support via `value_dtype` and ValueT template specialization.
+  - `cuda/coop/_decls.py`: accept `values` for warp merge sort and add `Decomposer` type lowering.
+  - `cuda/coop/block/_block_radix_sort.py`: add value-type support, custom type wrappers, decomposer ret dtype handling, and guard decomposer usage (pending CUB/Numba support).
+  - `cuda/coop/_types.py`: mangle python-operator names for tuple return types.
+  - `tests/coop/test_block_radix_sort.py`: add key/value, two-phase key/value, blocked-to-striped tests; decomposer test asserts a guarded error.
+  - `tests/coop/test_warp_merge_sort.py`: add two-phase key/value test.
+  - `tests/coop/test_warp_single_phase.py`: add single-phase key/value test.
+  - `SINGLE-PHASE-TODO.md`: mark overload parity items complete (decomposer currently guarded).
+- Tests:
+  - `pytest -q tests/coop/test_block_radix_sort.py -k "key_value or blocked_to_striped or decomposer"` (4 passed, 100 deselected)
+  - `pytest -q tests/coop/test_warp_merge_sort.py -k key_value` (1 passed, 9 deselected)
+  - `pytest -q tests/coop/test_warp_single_phase.py -k key_value` (1 passed, 9 deselected)
+
+## 2026-01-23 (doc note for radix sort decomposer)
+- Request: document decomposer restriction.
+- Changes:
+  - `cuda/coop/block/_block_radix_sort.py`: add docstring note that decomposer is not supported and raises ValueError.
+- Tests: not run (doc-only).

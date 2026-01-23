@@ -82,3 +82,39 @@ def test_block_exclusive_sum_single_input_per_thread():
     h_keys = d_keys.copy_to_host()
     for i in range(tile_size):
         assert h_keys[i] == i
+
+
+def test_block_exclusive_sum_block_aggregate():
+    threads_per_block = 64
+    items_per_thread = 1
+
+    block_exclusive_sum = coop.block.exclusive_sum(
+        numba.int32, threads_per_block, items_per_thread
+    )
+
+    @cuda.jit
+    def kernel(output, aggregates):
+        tid = cuda.threadIdx.x
+        value = numba.int32(tid + 1)
+        block_aggregate = cuda.local.array(1, numba.int32)
+        result = block_exclusive_sum(
+            value,
+            block_aggregate=block_aggregate,
+        )
+        output[tid] = result
+        aggregates[tid] = block_aggregate[0]
+
+    d_output = cuda.device_array(threads_per_block, dtype=np.int32)
+    d_aggregates = cuda.device_array(threads_per_block, dtype=np.int32)
+    kernel[1, threads_per_block](d_output, d_aggregates)
+    h_output = d_output.copy_to_host()
+    h_aggregates = d_aggregates.copy_to_host()
+
+    expected_aggregate = (threads_per_block * (threads_per_block + 1)) // 2
+    expected_exclusive = np.arange(threads_per_block, dtype=np.int32)
+    expected_exclusive = expected_exclusive * (expected_exclusive + 1) // 2
+
+    np.testing.assert_array_equal(h_output, expected_exclusive)
+    np.testing.assert_array_equal(
+        h_aggregates, np.full(threads_per_block, expected_aggregate, dtype=np.int32)
+    )
