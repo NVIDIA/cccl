@@ -209,3 +209,33 @@ C2H_TEST("HyperLogLog precision constructor", "[hyperloglog]")
   REQUIRE(estimator.sketch_bytes() == expected_sketch_bytes);
   REQUIRE(estimator.estimate() == 0);
 }
+
+#if _CCCL_CTK_AT_LEAST(12, 6) // Pinned memory resource is only supported with CTK 12.6 and later
+C2H_TEST("Hyperloglog estimate works with pinned memory pool", "[hyperloglog]")
+{
+  using T              = int32_t;
+  using estimator_type = cudax::cuco::hyperloglog<T>;
+
+  const std::size_t num_items = 1 << 20;
+  const int hll_precision     = 12;
+  const typename estimator_type::sketch_size_kb sketch_size_kb(4.0 * (1ull << hll_precision) / 1024.0);
+
+  CAPTURE(num_items, hll_precision, sketch_size_kb);
+
+  double constexpr tolerance_factor        = 2.5;
+  double const relative_standard_deviation = 1.04 / std::sqrt(static_cast<double>(1ull << hll_precision));
+
+  thrust::device_vector<T> items(num_items);
+  thrust::sequence(items.begin(), items.end(), T{0});
+
+  estimator_type estimator{sketch_size_kb};
+  estimator.add(items.begin(), items.end());
+
+  auto host_mr        = ::cuda::pinned_default_memory_pool();
+  auto const estimate = estimator.estimate(host_mr);
+
+  double const relative_error = std::abs((static_cast<double>(estimate) / static_cast<double>(num_items)) - 1.0);
+
+  REQUIRE(relative_error < tolerance_factor * relative_standard_deviation);
+}
+#endif // _CCCL_CTK_AT_LEAST(12, 6)

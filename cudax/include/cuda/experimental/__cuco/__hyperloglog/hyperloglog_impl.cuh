@@ -454,12 +454,16 @@ public:
   //!
   //! @note This function synchronizes the given stream.
   //!
+  //! @tparam _HostMemoryResource Host memory resource used for allocating the host buffer required to
+  //! compute the final estimate by copying the sketch from device to host
+  //!
+  //! @param __host_mr Host memory resource used for copying the sketch
   //! @param __stream CUDA stream this operation is executed in
   //!
   //! @return Approximate distinct items count
-  template <typename MemoryResourceRef = ::cuda::pinned_memory_pool_ref>
+  template <typename _HostMemoryResource>
   [[nodiscard]] _CCCL_HOST ::cuda::std::size_t
-  __estimate(::cuda::stream_ref __stream, MemoryResourceRef __host_mr = ::cuda::pinned_default_memory_pool()) const
+  __estimate(_HostMemoryResource __host_mr, ::cuda::stream_ref __stream) const
   {
     const auto __num_regs = __sketch.size();
 
