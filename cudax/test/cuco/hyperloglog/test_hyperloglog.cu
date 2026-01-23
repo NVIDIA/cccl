@@ -30,7 +30,7 @@ __global__ void estimate_kernel(typename Ref::sketch_size_kb sketch_size_kb, Inp
 {
   extern __shared__ cuda::std::byte local_sketch[];
 
-  auto const block = cooperative_groups::this_thread_block();
+  const auto block = cooperative_groups::this_thread_block();
 
   // only a single block computes the estimate
   if (block.group_index().x == 0)
@@ -45,7 +45,7 @@ __global__ void estimate_kernel(typename Ref::sketch_size_kb sketch_size_kb, Inp
       estimator.add(*(in + i));
     }
     block.sync();
-    auto const estimate = estimator.estimate(block);
+    const auto estimate = estimator.estimate(block);
     if (block.thread_rank() == 0)
     {
       *out = estimate;
@@ -79,7 +79,7 @@ C2H_TEST("HyperLogLog device ref", "[hyperloglog]", test_types)
   // Add all items to the estimator
   estimator.add(items.begin(), items.end());
 
-  auto const host_estimate = estimator.estimate();
+  const auto host_estimate = estimator.estimate();
 
   thrust::device_vector<std::size_t> device_estimate(1);
   estimate_kernel<typename estimator_type::template ref_type<cuda::thread_scope_block>>
@@ -104,9 +104,9 @@ C2H_TEST("HyperLogLog unique sequence", "[hyperloglog]", test_types)
   CAPTURE(num_items, hll_precision, sketch_size_kb);
 
   // This factor determines the error threshold for passing the test
-  double constexpr tolerance_factor = 2.5;
+  constexpr double tolerance_factor = 2.5;
   // RSD for a given precision is given by the following formula
-  double const relative_standard_deviation = 1.04 / std::sqrt(static_cast<double>(1ull << hll_precision));
+  const double relative_standard_deviation = 1.04 / std::sqrt(static_cast<double>(1ull << hll_precision));
 
   thrust::device_vector<T> items(num_items);
 
@@ -121,7 +121,7 @@ C2H_TEST("HyperLogLog unique sequence", "[hyperloglog]", test_types)
   // Add all items to the estimator
   estimator.add(items.begin(), items.end());
 
-  auto const estimate = estimator.estimate();
+  const auto estimate = estimator.estimate();
 
   // Adding the same items again should not affect the result
   estimator.add(items.begin(), items.begin() + num_items / 2);
@@ -131,7 +131,7 @@ C2H_TEST("HyperLogLog unique sequence", "[hyperloglog]", test_types)
   estimator.clear();
   REQUIRE(estimator.estimate() == 0);
 
-  double const relative_error = std::abs((static_cast<double>(estimate) / static_cast<double>(num_items)) - 1.0);
+  const double relative_error = std::abs((static_cast<double>(estimate) / static_cast<double>(num_items)) - 1.0);
 
   // Check if the error is acceptable
   REQUIRE(relative_error < tolerance_factor * relative_standard_deviation);
@@ -148,7 +148,7 @@ C2H_TEST("HyperLogLog Spark parity deterministic", "[hyperloglog]")
 
   constexpr std::size_t repeats = 10;
   // This factor determines the error threshold for passing the test
-  double constexpr tolerance_factor = 3.0;
+  constexpr double tolerance_factor = 3.0;
   const auto num_items              = GENERATE(100, 500, 1000, 5000, 10000, 50000, 100000, 500000, 1000000);
   const auto standard_deviation     = GENERATE(0.1, 0.05, 0.025, 0.01, 0.005, 0.0025);
 
@@ -179,12 +179,12 @@ C2H_TEST("HyperLogLog Spark parity deterministic", "[hyperloglog]")
   // Add all items to the estimator
   estimator.add(items_begin, items_begin + num_items);
 
-  auto const estimate = estimator.estimate();
+  const auto estimate = estimator.estimate();
 
-  double const relative_error =
+  const double relative_error =
     std::abs((static_cast<double>(estimate) / static_cast<double>(num_items / repeats)) - 1.0);
   // RSD for a given precision is given by the following formula
-  double const expected_standard_deviation = 1.04 / std::sqrt(static_cast<double>(1ull << expected_hll_precision));
+  const double expected_standard_deviation = 1.04 / std::sqrt(static_cast<double>(1ull << expected_hll_precision));
 
   // Check if the error is acceptable
   REQUIRE(relative_error < expected_standard_deviation * tolerance_factor);
@@ -222,8 +222,8 @@ C2H_TEST("Hyperloglog estimate works with pinned memory pool", "[hyperloglog]")
 
   CAPTURE(num_items, hll_precision, sketch_size_kb);
 
-  double constexpr tolerance_factor        = 2.5;
-  double const relative_standard_deviation = 1.04 / std::sqrt(static_cast<double>(1ull << hll_precision));
+  constexpr double tolerance_factor        = 2.5;
+  const double relative_standard_deviation = 1.04 / std::sqrt(static_cast<double>(1ull << hll_precision));
 
   thrust::device_vector<T> items(num_items);
   thrust::sequence(items.begin(), items.end(), T{0});
@@ -232,9 +232,9 @@ C2H_TEST("Hyperloglog estimate works with pinned memory pool", "[hyperloglog]")
   estimator.add(items.begin(), items.end());
 
   auto host_mr        = ::cuda::pinned_default_memory_pool();
-  auto const estimate = estimator.estimate(host_mr);
+  const auto estimate = estimator.estimate(host_mr);
 
-  double const relative_error = std::abs((static_cast<double>(estimate) / static_cast<double>(num_items)) - 1.0);
+  const double relative_error = std::abs((static_cast<double>(estimate) / static_cast<double>(num_items)) - 1.0);
 
   REQUIRE(relative_error < tolerance_factor * relative_standard_deviation);
 }
