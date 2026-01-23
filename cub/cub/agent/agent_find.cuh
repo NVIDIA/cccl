@@ -15,6 +15,7 @@
 #include <cuda/__memory/is_aligned.h>
 #include <cuda/atomic>
 #include <cuda/std/__type_traits/integral_constant.h>
+#include <cuda/std/__type_traits/is_default_constructible.h>
 
 CUB_NAMESPACE_BEGIN
 namespace detail::find
@@ -51,7 +52,8 @@ struct agent_t
   // Can vectorize according to the policy if the input iterator is a native pointer to a primitive type
   static constexpr bool attempt_vectorization =
     (vector_load_length > 1) && (items_per_thread % vector_load_length == 0)
-    && (::cuda::std::contiguous_iterator<InputIteratorT>) && THRUST_NS_QUALIFIER::is_trivially_relocatable_v<InputT>;
+    && (::cuda::std::contiguous_iterator<InputIteratorT>) && THRUST_NS_QUALIFIER::is_trivially_relocatable_v<InputT> //
+    && ::cuda::std::is_default_constructible_v<InputT>; // We load into an C-array, which requires initialization
 
   static constexpr CacheLoadModifier load_modifier = AgentFindPolicy::load_modifier;
 
