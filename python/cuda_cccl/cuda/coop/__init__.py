@@ -16,6 +16,7 @@ from ._enums import (
 )
 from ._numba_extension import _init_extension
 from ._types import (
+    Decomposer,
     StatefulFunction,
     TempStorage,
     ThreadData,
@@ -31,6 +32,7 @@ __all__ = [
     "gpu_dataclass",
     "local",
     "NoAlgorithm",
+    "Decomposer",
     "shared",
     "StatefulFunction",
     "TempStorage",

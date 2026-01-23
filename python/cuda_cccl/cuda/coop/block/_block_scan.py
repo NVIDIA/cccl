@@ -99,6 +99,7 @@ from .._types import (
     Dependency,
     DependentArray,
     DependentCxxOperator,
+    DependentPointerReference,
     DependentPythonOperator,
     DependentReference,
     Invocable,
@@ -232,6 +233,7 @@ class scan(BasePrimitive):
         scan_op: ScanOpType = "+",
         initial_value: Any = None,
         block_prefix_callback_op: Callable = None,
+        block_aggregate: Any = None,
         algorithm=None,
         methods: dict = None,
         unique_id: int = None,
@@ -366,6 +368,12 @@ class scan(BasePrimitive):
         self.algorithm = algorithm_enum
         self.initial_value = initial_value
         self.block_prefix_callback_op = block_prefix_callback_op
+        self.block_aggregate = block_aggregate
+
+        if block_aggregate is not None and block_prefix_callback_op is not None:
+            raise ValueError(
+                "block_aggregate is not supported when block_prefix_callback_op is provided"
+            )
 
         specialization_kwds = {
             "T": dtype,
@@ -753,6 +761,15 @@ class scan(BasePrimitive):
         # Invariant check: if we get here, parameters should have one element.
         assert len(parameters) == 1, "parameters should have one element"
 
+        if block_aggregate is not None:
+            parameters[0].append(
+                DependentPointerReference(
+                    Dependency("T"),
+                    name="block_aggregate",
+                    is_array_pointer=True,
+                )
+            )
+
         if temp_storage is not None:
             parameters[0].insert(
                 0,
@@ -813,6 +830,7 @@ class scan(BasePrimitive):
             mode=mode,
             scan_op=scan_op,
             block_prefix_callback_op=block_prefix_callback_op,
+            block_aggregate=None,
             algorithm=algorithm,
             methods=methods,
             temp_storage=temp_storage,

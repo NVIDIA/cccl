@@ -26,6 +26,7 @@ class merge_sort_keys(BasePrimitive):
         dtype,
         items_per_thread,
         compare_op,
+        value_dtype=None,
         threads_in_warp=32,
         methods=None,
         unique_id=None,
@@ -36,10 +37,29 @@ class merge_sort_keys(BasePrimitive):
         self.node = node
         self.temp_storage = temp_storage
         self.dtype = normalize_dtype_param(dtype)
+        self.value_dtype = (
+            normalize_dtype_param(value_dtype) if value_dtype is not None else None
+        )
         self.items_per_thread = items_per_thread
         self.compare_op = compare_op
         self.threads_in_warp = threads_in_warp
         self.methods = methods
+
+        method = [
+            DependentArray(Dependency("KeyT"), Dependency("ITEMS_PER_THREAD")),
+        ]
+        if self.value_dtype is not None:
+            method.append(
+                DependentArray(Dependency("ValueT"), Dependency("ITEMS_PER_THREAD"))
+            )
+        method.append(
+            DependentPythonOperator(
+                Constant(numba.int8),
+                [Dependency("KeyT"), Dependency("KeyT")],
+                Dependency("Op"),
+                name="compare_op",
+            )
+        )
 
         template = Algorithm(
             "WarpMergeSort",
@@ -50,18 +70,9 @@ class merge_sort_keys(BasePrimitive):
                 TemplateParameter("KeyT"),
                 TemplateParameter("ITEMS_PER_THREAD"),
                 TemplateParameter("VIRTUAL_WARP_THREADS"),
+                TemplateParameter("ValueT"),
             ],
-            [
-                [
-                    DependentArray(Dependency("KeyT"), Dependency("ITEMS_PER_THREAD")),
-                    DependentPythonOperator(
-                        Constant(numba.int8),
-                        [Dependency("KeyT"), Dependency("KeyT")],
-                        Dependency("Op"),
-                        name="compare_op",
-                    ),
-                ]
-            ],
+            [method],
             self,
             type_definitions=[numba_type_to_wrapper(self.dtype, methods=methods)]
             if methods is not None
@@ -75,6 +86,7 @@ class merge_sort_keys(BasePrimitive):
                 "KeyT": self.dtype,
                 "VIRTUAL_WARP_THREADS": threads_in_warp,
                 "ITEMS_PER_THREAD": items_per_thread,
+                "ValueT": self.value_dtype or "::cub::NullType",
                 "Op": compare_op,
             }
         )
@@ -85,6 +97,7 @@ class merge_sort_keys(BasePrimitive):
         dtype,
         items_per_thread,
         compare_op,
+        value_dtype=None,
         threads_in_warp=32,
         methods=None,
     ):
@@ -92,6 +105,7 @@ class merge_sort_keys(BasePrimitive):
             dtype=dtype,
             items_per_thread=items_per_thread,
             compare_op=compare_op,
+            value_dtype=value_dtype,
             threads_in_warp=threads_in_warp,
             methods=methods,
         )

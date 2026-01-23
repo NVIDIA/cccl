@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-from typing import TYPE_CHECKING, Callable, Literal, Union
+from typing import TYPE_CHECKING, Any, Callable, Literal, Union
 
 import numba
 
@@ -18,8 +18,10 @@ from .._types import (
     Dependency,
     DependentArray,
     DependentPythonOperator,
+    DependentReference,
     Invocable,
     TemplateParameter,
+    Value,
     numba_type_to_cpp,
     numba_type_to_wrapper,
 )
@@ -39,6 +41,9 @@ class merge_sort_keys(BasePrimitive):
         threads_per_block: int,
         items_per_thread: int,
         compare_op: Callable,
+        value_dtype: Union[str, type, "np.dtype", "numba.types.Type"] = None,
+        valid_items: int = None,
+        oob_default: Any = None,
         methods: Literal["construct", "assign"] = None,
         unique_id: int = None,
         temp_storage=None,
@@ -89,13 +94,20 @@ class merge_sort_keys(BasePrimitive):
             raise ValueError("compare_op must be provided")
         if items_per_thread < 1:
             raise ValueError("items_per_thread must be >= 1")
+        if (valid_items is None) != (oob_default is None):
+            raise ValueError("valid_items and oob_default must be provided together")
 
         self.node = node
         self.temp_storage = temp_storage
         self.dim = normalize_dim_param(threads_per_block)
         self.dtype = normalize_dtype_param(dtype)
+        self.value_dtype = (
+            normalize_dtype_param(value_dtype) if value_dtype is not None else None
+        )
         self.items_per_thread = items_per_thread
         self.compare_op = compare_op
+        self.valid_items = valid_items
+        self.oob_default = oob_default
         self.unique_id = unique_id
 
         template_parameters = [
@@ -107,21 +119,34 @@ class merge_sort_keys(BasePrimitive):
             TemplateParameter("BLOCK_DIM_Z"),
         ]
 
-        parameters = [
-            [
-                DependentArray(
-                    Dependency("KeyT"),
-                    Dependency("ITEMS_PER_THREAD"),
-                    name="keys",
-                ),
-                DependentPythonOperator(
-                    Constant(numba.int8),
-                    [Dependency("KeyT"), Dependency("KeyT")],
-                    Dependency("Op"),
-                    name="compare_op",
-                ),
-            ]
+        method = [
+            DependentArray(
+                Dependency("KeyT"),
+                Dependency("ITEMS_PER_THREAD"),
+                name="keys",
+            ),
         ]
+        if self.value_dtype is not None:
+            method.append(
+                DependentArray(
+                    Dependency("ValueT"),
+                    Dependency("ITEMS_PER_THREAD"),
+                    name="values",
+                )
+            )
+        method.append(
+            DependentPythonOperator(
+                Constant(numba.int8),
+                [Dependency("KeyT"), Dependency("KeyT")],
+                Dependency("Op"),
+                name="compare_op",
+            )
+        )
+        if valid_items is not None:
+            method.append(Value(numba.int32, name="valid_items"))
+            method.append(DependentReference(Dependency("KeyT"), name="oob_default"))
+
+        parameters = [method]
 
         type_definitions = None
         if methods is not None or numba_type_to_cpp(self.dtype) == "storage_t":
@@ -143,7 +168,7 @@ class merge_sort_keys(BasePrimitive):
             "KeyT": self.dtype,
             "BLOCK_DIM_X": self.dim[0],
             "ITEMS_PER_THREAD": self.items_per_thread,
-            "ValueT": "::cub::NullType",
+            "ValueT": self.value_dtype or "::cub::NullType",
             "BLOCK_DIM_Y": self.dim[1],
             "BLOCK_DIM_Z": self.dim[2],
             "Op": compare_op,

@@ -323,6 +323,32 @@ class CoopTempStorageGetItemDecl(AbstractTemplate):
 
 
 # =============================================================================
+# Decomposer
+# =============================================================================
+class DecomposerType(types.Type):
+    def __init__(self):
+        super().__init__(name="coop.Decomposer")
+
+
+decomposer_type = DecomposerType()
+
+
+@typeof_impl.register(coop.Decomposer)
+def typeof_decomposer(*args, **kwargs):
+    return decomposer_type
+
+
+@register_model(DecomposerType)
+class DecomposerModel(models.OpaqueModel):
+    pass
+
+
+@lower_constant(DecomposerType)
+def lower_constant_decomposer(context, builder, typ, value):
+    return context.get_dummy_value()
+
+
+# =============================================================================
 # Thread Data
 # =============================================================================
 
@@ -1460,12 +1486,18 @@ class CoopBlockMergeSortDecl(CoopAbstractTemplate, CoopDeclMixin):
         keys: types.Array,
         items_per_thread: int = None,
         compare_op: Optional[Callable] = None,
+        values: types.Array = None,
+        valid_items: Optional[int] = None,
+        oob_default: Optional[Any] = None,
         temp_storage: Union[types.Array, TempStorageType] = None,
     ):
         return inspect.signature(CoopBlockMergeSortDecl.signature).bind(
             keys,
             items_per_thread=items_per_thread,
             compare_op=compare_op,
+            values=values,
+            valid_items=valid_items,
+            oob_default=oob_default,
             temp_storage=temp_storage,
         )
 
@@ -1488,6 +1520,38 @@ class CoopBlockMergeSortDecl(CoopAbstractTemplate, CoopDeclMixin):
                 )
         else:
             arglist.append(compare_op)
+
+        values = bound.arguments.get("values")
+        values_is_none_type = isinstance(values, types.NoneType)
+        if values_is_none_type:
+            arglist.append(values)
+            values = None
+        if values is not None:
+            if not isinstance(values, types.Array):
+                raise errors.TypingError(
+                    f"{self.primitive_name} requires 'values' to be a device array"
+                )
+            arglist.append(values)
+
+        valid_items = bound.arguments.get("valid_items")
+        oob_default = bound.arguments.get("oob_default")
+        if (valid_items is None) != (oob_default is None):
+            raise errors.TypingError(
+                f"{self.primitive_name} requires valid_items and oob_default together"
+            )
+        if valid_items is not None:
+            if not isinstance(valid_items, (types.Integer, types.IntegerLiteral)):
+                raise errors.TypingError(
+                    f"{self.primitive_name} requires 'valid_items' to be an integer"
+                )
+            if isinstance(oob_default, types.NoneType):
+                oob_default = None
+            if oob_default is None:
+                raise errors.TypingError(
+                    f"{self.primitive_name} requires 'oob_default' when valid_items is provided"
+                )
+            arglist.append(valid_items)
+            arglist.append(oob_default)
 
         temp_storage = bound.arguments.get("temp_storage")
         if temp_storage is not None:
@@ -2059,6 +2123,9 @@ class CoopBlockRadixSortDecl(CoopAbstractTemplate, CoopDeclMixin):
         items_per_thread: int = None,
         begin_bit: Optional[int] = None,
         end_bit: Optional[int] = None,
+        values: types.Array = None,
+        decomposer: Optional[Callable] = None,
+        blocked_to_striped: Optional[bool] = None,
         temp_storage: Union[types.Array, TempStorageType] = None,
     ):
         return inspect.signature(CoopBlockRadixSortDecl.signature).bind(
@@ -2066,6 +2133,9 @@ class CoopBlockRadixSortDecl(CoopAbstractTemplate, CoopDeclMixin):
             items_per_thread=items_per_thread,
             begin_bit=begin_bit,
             end_bit=end_bit,
+            values=values,
+            decomposer=decomposer,
+            blocked_to_striped=blocked_to_striped,
             temp_storage=temp_storage,
         )
 
@@ -2095,6 +2165,40 @@ class CoopBlockRadixSortDecl(CoopAbstractTemplate, CoopDeclMixin):
                     f"{self.primitive_name} requires 'end_bit' to be an integer"
                 )
             arglist.extend([begin_bit, end_bit])
+
+        values = bound.arguments.get("values")
+        values_is_none_type = isinstance(values, types.NoneType)
+        if values_is_none_type:
+            arglist.append(values)
+            values = None
+        if values is not None:
+            if not isinstance(values, types.Array):
+                raise errors.TypingError(
+                    f"{self.primitive_name} requires 'values' to be a device array"
+                )
+            arglist.append(values)
+
+        decomposer = bound.arguments.get("decomposer")
+        decomposer_is_none_type = isinstance(decomposer, types.NoneType)
+        if decomposer_is_none_type:
+            arglist.append(decomposer)
+            decomposer = None
+        if decomposer is not None:
+            arglist.append(decomposer)
+
+        blocked_to_striped = bound.arguments.get("blocked_to_striped")
+        blocked_is_none_type = isinstance(blocked_to_striped, types.NoneType)
+        if blocked_is_none_type:
+            arglist.append(blocked_to_striped)
+            blocked_to_striped = None
+        if blocked_to_striped is not None:
+            if not isinstance(
+                blocked_to_striped, (types.Boolean, types.BooleanLiteral, bool)
+            ):
+                raise errors.TypingError(
+                    f"{self.primitive_name} requires 'blocked_to_striped' to be a boolean"
+                )
+            arglist.append(blocked_to_striped)
 
         temp_storage = bound.arguments.get("temp_storage")
         if temp_storage is not None:
@@ -2118,6 +2222,9 @@ class CoopBlockRadixSortDescendingDecl(CoopAbstractTemplate, CoopDeclMixin):
         items_per_thread: int = None,
         begin_bit: Optional[int] = None,
         end_bit: Optional[int] = None,
+        values: types.Array = None,
+        decomposer: Optional[Callable] = None,
+        blocked_to_striped: Optional[bool] = None,
         temp_storage: Union[types.Array, TempStorageType] = None,
     ):
         return inspect.signature(CoopBlockRadixSortDescendingDecl.signature).bind(
@@ -2125,6 +2232,9 @@ class CoopBlockRadixSortDescendingDecl(CoopAbstractTemplate, CoopDeclMixin):
             items_per_thread=items_per_thread,
             begin_bit=begin_bit,
             end_bit=end_bit,
+            values=values,
+            decomposer=decomposer,
+            blocked_to_striped=blocked_to_striped,
             temp_storage=temp_storage,
         )
 
@@ -2154,6 +2264,40 @@ class CoopBlockRadixSortDescendingDecl(CoopAbstractTemplate, CoopDeclMixin):
                     f"{self.primitive_name} requires 'end_bit' to be an integer"
                 )
             arglist.extend([begin_bit, end_bit])
+
+        values = bound.arguments.get("values")
+        values_is_none_type = isinstance(values, types.NoneType)
+        if values_is_none_type:
+            arglist.append(values)
+            values = None
+        if values is not None:
+            if not isinstance(values, types.Array):
+                raise errors.TypingError(
+                    f"{self.primitive_name} requires 'values' to be a device array"
+                )
+            arglist.append(values)
+
+        decomposer = bound.arguments.get("decomposer")
+        decomposer_is_none_type = isinstance(decomposer, types.NoneType)
+        if decomposer_is_none_type:
+            arglist.append(decomposer)
+            decomposer = None
+        if decomposer is not None:
+            arglist.append(decomposer)
+
+        blocked_to_striped = bound.arguments.get("blocked_to_striped")
+        blocked_is_none_type = isinstance(blocked_to_striped, types.NoneType)
+        if blocked_is_none_type:
+            arglist.append(blocked_to_striped)
+            blocked_to_striped = None
+        if blocked_to_striped is not None:
+            if not isinstance(
+                blocked_to_striped, (types.Boolean, types.BooleanLiteral, bool)
+            ):
+                raise errors.TypingError(
+                    f"{self.primitive_name} requires 'blocked_to_striped' to be a boolean"
+                )
+            arglist.append(blocked_to_striped)
 
         temp_storage = bound.arguments.get("temp_storage")
         if temp_storage is not None:
@@ -3007,6 +3151,7 @@ class CoopBlockScanDecl(CoopAbstractTemplate, CoopDeclMixin):
         mode: Literal["exclusive", "inclusive"] = "exclusive",
         scan_op: ScanOpType = "+",
         block_prefix_callback_op: Optional[Callable] = None,
+        block_aggregate: types.Array = None,
         algorithm: coop.BlockScanAlgorithm = None,
         temp_storage: Union[types.Array, TempStorageType] = None,
     ):
@@ -3022,6 +3167,7 @@ class CoopBlockScanDecl(CoopAbstractTemplate, CoopDeclMixin):
             scan_op=scan_op,
             initial_value=initial_value,
             block_prefix_callback_op=block_prefix_callback_op,
+            block_aggregate=block_aggregate,
             algorithm=algorithm,
             temp_storage=temp_storage,
         )
@@ -3036,6 +3182,7 @@ class CoopBlockScanDecl(CoopAbstractTemplate, CoopDeclMixin):
         mode: Optional[Literal["exclusive", "inclusive"]] = None,
         scan_op: ScanOpType = None,
         block_prefix_callback_op: Optional[Callable] = None,
+        block_aggregate: types.Array = None,
         algorithm: coop.BlockScanAlgorithm = None,
         temp_storage: Union[types.Array, TempStorageType] = None,
     ):
@@ -3047,6 +3194,7 @@ class CoopBlockScanDecl(CoopAbstractTemplate, CoopDeclMixin):
             mode=mode,
             scan_op=scan_op,
             block_prefix_callback_op=block_prefix_callback_op,
+            block_aggregate=block_aggregate,
             algorithm=algorithm,
             temp_storage=temp_storage,
         )
@@ -3259,6 +3407,49 @@ class CoopBlockScanDecl(CoopAbstractTemplate, CoopDeclMixin):
             pysig_params.append(
                 inspect.Parameter(
                     "block_prefix_callback_op",
+                    inspect.Parameter.POSITIONAL_OR_KEYWORD,
+                    default=None,
+                )
+            )
+
+        block_aggregate = bound.arguments.get("block_aggregate")
+        block_aggregate_is_none_type = isinstance(block_aggregate, types.NoneType)
+        if block_aggregate_is_none_type:
+            arglist.append(block_aggregate)
+            pysig_params.append(
+                inspect.Parameter(
+                    "block_aggregate",
+                    inspect.Parameter.POSITIONAL_OR_KEYWORD,
+                    default=None,
+                )
+            )
+            block_aggregate = None
+        if not block_aggregate_is_none_type and block_aggregate is not None:
+            if block_prefix_callback_op is not None:
+                raise errors.TypingError(
+                    f"{self.primitive_name} does not support block_aggregate when "
+                    "block_prefix_callback_op is provided"
+                )
+            if not isinstance(block_aggregate, types.Array):
+                raise errors.TypingError(
+                    f"{self.primitive_name} requires block_aggregate to be a device "
+                    "array"
+                )
+            if scalar_return:
+                expected_dtype = src
+            else:
+                expected_dtype = src.dtype if isinstance(src, types.Array) else src
+                if ThreadDataType is not None and isinstance(src, ThreadDataType):
+                    expected_dtype = src.dtype
+            if block_aggregate.dtype != expected_dtype:
+                raise errors.TypingError(
+                    f"{self.primitive_name} requires block_aggregate to have the same "
+                    "dtype as the input"
+                )
+            arglist.append(block_aggregate)
+            pysig_params.append(
+                inspect.Parameter(
+                    "block_aggregate",
                     inspect.Parameter.POSITIONAL_OR_KEYWORD,
                     default=None,
                 )
@@ -4452,6 +4643,7 @@ class CoopWarpMergeSortDecl(CoopAbstractTemplate, CoopDeclMixin):
         items_per_thread: int = None,
         compare_op: Optional[Callable] = None,
         threads_in_warp: int = 32,
+        values: types.Array = None,
         temp_storage: Union[types.Array, TempStorageType] = None,
     ):
         return inspect.signature(CoopWarpMergeSortDecl.signature).bind(
@@ -4459,6 +4651,7 @@ class CoopWarpMergeSortDecl(CoopAbstractTemplate, CoopDeclMixin):
             items_per_thread=items_per_thread,
             compare_op=compare_op,
             threads_in_warp=threads_in_warp,
+            values=values,
             temp_storage=temp_storage,
         )
 
@@ -4469,6 +4662,7 @@ class CoopWarpMergeSortDecl(CoopAbstractTemplate, CoopDeclMixin):
         items_per_thread: int = None,
         compare_op: Optional[Callable] = None,
         threads_in_warp: int = None,
+        values: types.Array = None,
         temp_storage: Union[types.Array, TempStorageType] = None,
     ):
         return inspect.signature(CoopWarpMergeSortDecl.signature_instance).bind(
@@ -4476,6 +4670,7 @@ class CoopWarpMergeSortDecl(CoopAbstractTemplate, CoopDeclMixin):
             items_per_thread=items_per_thread,
             compare_op=compare_op,
             threads_in_warp=threads_in_warp,
+            values=values,
             temp_storage=temp_storage,
         )
 
@@ -4505,6 +4700,18 @@ class CoopWarpMergeSortDecl(CoopAbstractTemplate, CoopDeclMixin):
             if maybe_literal is not None:
                 threads_in_warp = maybe_literal
             arglist.append(threads_in_warp)
+
+        values = bound.arguments.get("values")
+        values_is_none_type = isinstance(values, types.NoneType)
+        if values_is_none_type:
+            arglist.append(values)
+            values = None
+        if values is not None:
+            if not isinstance(values, types.Array):
+                raise errors.TypingError(
+                    f"{self.primitive_name} requires 'values' to be a device array"
+                )
+            arglist.append(values)
 
         temp_storage = bound.arguments.get("temp_storage")
         if temp_storage is not None:

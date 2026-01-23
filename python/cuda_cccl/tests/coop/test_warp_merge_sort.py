@@ -97,3 +97,50 @@ def test_warp_merge_sort_multiple_warps():
     assert "LDL" not in sass
     assert "STL" not in sass
     assert "BAR.SYNC" not in sass
+
+
+def test_warp_merge_sort_key_value():
+    T = types.int32
+    items_per_thread = 2
+
+    def op(a, b):
+        return a < b
+
+    warp_merge_sort = coop.warp.merge_sort_keys(T, items_per_thread, op, value_dtype=T)
+
+    @cuda.jit
+    def kernel(keys_in, values_in, keys_out, values_out):
+        tid = cuda.threadIdx.x
+        thread_keys = cuda.local.array(shape=items_per_thread, dtype=dtype)
+        thread_values = cuda.local.array(shape=items_per_thread, dtype=dtype)
+        for i in range(items_per_thread):
+            idx = tid * items_per_thread + i
+            thread_keys[i] = keys_in[idx]
+            thread_values[i] = values_in[idx]
+        warp_merge_sort(thread_keys, values=thread_values)
+        for i in range(items_per_thread):
+            idx = tid * items_per_thread + i
+            keys_out[idx] = thread_keys[i]
+            values_out[idx] = thread_values[i]
+
+    dtype = NUMBA_TYPES_TO_NP[T]
+    items_per_tile = 32 * items_per_thread
+    h_keys = random_int(items_per_tile, dtype)
+    h_values = (h_keys * 2 + 1).astype(dtype)
+    d_keys = cuda.to_device(h_keys)
+    d_values = cuda.to_device(h_values)
+    d_keys_out = cuda.device_array(items_per_tile, dtype=dtype)
+    d_values_out = cuda.device_array(items_per_tile, dtype=dtype)
+
+    kernel[1, 32](d_keys, d_values, d_keys_out, d_values_out)
+    cuda.synchronize()
+
+    keys_out = d_keys_out.copy_to_host()
+    values_out = d_values_out.copy_to_host()
+
+    expected = sorted(zip(h_keys, h_values), key=lambda kv: kv[0])
+    exp_keys = [kv[0] for kv in expected]
+    exp_values = [kv[1] for kv in expected]
+
+    assert list(keys_out) == exp_keys
+    assert list(values_out) == exp_values
