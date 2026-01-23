@@ -2,27 +2,33 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-from ._warp_exchange import WarpExchangeType, exchange
-from ._warp_load_store import load, store
-from ._warp_merge_sort import merge_sort_keys
-from ._warp_reduce import reduce, sum
-from ._warp_scan import (
-    exclusive_scan,
-    exclusive_sum,
-    inclusive_scan,
-    inclusive_sum,
-)
+import os
 
-__all__ = [
-    "exclusive_scan",
-    "exclusive_sum",
-    "inclusive_scan",
-    "inclusive_sum",
-    "reduce",
-    "sum",
-    "merge_sort_keys",
-    "load",
-    "store",
-    "exchange",
-    "WarpExchangeType",
-]
+if os.environ.get("CCCL_COOP_DOCS") == "1":
+    from .api import *  # noqa: F403
+    from .api import __all__  # noqa: F401
+else:
+    from ._warp_exchange import WarpExchangeType, exchange
+    from ._warp_load_store import load, store
+    from ._warp_merge_sort import merge_sort_keys
+    from ._warp_reduce import reduce, sum
+    from ._warp_scan import (
+        exclusive_scan,
+        exclusive_sum,
+        inclusive_scan,
+        inclusive_sum,
+    )
+
+    __all__ = [
+        "exclusive_scan",
+        "exclusive_sum",
+        "inclusive_scan",
+        "inclusive_sum",
+        "reduce",
+        "sum",
+        "merge_sort_keys",
+        "load",
+        "store",
+        "exchange",
+        "WarpExchangeType",
+    ]

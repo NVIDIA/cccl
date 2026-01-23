@@ -2,6 +2,8 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+import os
+
 from . import block, warp
 from ._array import local, shared
 from ._dataclass import gpu_dataclass
@@ -44,5 +46,6 @@ __all__ = [
 
 # Our extension initialization doesn't appear to be getting called
 # automatically, despite the pyproject.toml entry, so, manually
-# call it here.
-_init_extension()
+# call it here (skip during docs builds).
+if os.environ.get("CCCL_COOP_DOCS") != "1":
+    _init_extension()

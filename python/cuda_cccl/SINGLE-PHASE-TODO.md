@@ -70,6 +70,7 @@
       mention of `.create()` from public docs.
 - [x] Fix coop FAQ indentation issues (Sphinx).
 - [x] Add coop-local flexible data arrangement doc section and update docstring refs.
+- [x] Add coop block/warp API doc stub modules and update coop_api docs.
 - [ ] Improve kwarg validation and error messages for primitives with many
       overloads (match CUB API supersets; fail early with friendly errors).
 - [ ] Extend ThreadData inference (alignment/shape/dtype propagation from
