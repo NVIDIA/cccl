@@ -1514,7 +1514,7 @@
 <span class="p">{</span>
 <span class="w">  </span><span class="k">auto</span><span class="w"> </span><span class="n">e</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">cuda_exception</span><span class="p">(</span><span class="n">CUDA_SUCCESS</span><span class="p">);</span>
 <span class="w">  </span><span class="n">EXPECT</span><span class="p">(</span><span class="n">e</span><span class="p">.</span><span class="n">what</span><span class="p">()[</span><span class="mi">0</span><span class="p">]</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">0</span><span class="p">);</span>
-<span class="cp">#  if _CCCL_HAS_INCLUDE(&lt;cusolverDn.h&gt;)</span>
+<span class="cp">#  if __has_include(&lt;cusolverDn.h&gt;)</span>
 <span class="w">  </span><span class="k">auto</span><span class="w"> </span><span class="n">e1</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">cuda_exception</span><span class="p">(</span><span class="n">CUSOLVER_STATUS_ZERO_PIVOT</span><span class="p">);</span>
 <span class="w">  </span><span class="n">EXPECT</span><span class="p">(</span><span class="n">strlen</span><span class="p">(</span><span class="n">e1</span><span class="p">.</span><span class="n">what</span><span class="p">())</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">0u</span><span class="p">);</span>
 <span class="cp">#  endif</span>
