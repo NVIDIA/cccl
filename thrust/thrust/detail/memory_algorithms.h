@@ -41,8 +41,7 @@ _CCCL_HOST_DEVICE void destroy_at(T* location) noexcept
 template <typename Allocator, typename T>
 _CCCL_HOST_DEVICE void destroy_at(Allocator const& alloc, T* location) noexcept
 {
-  using traits =
-    typename detail::allocator_traits<::cuda::std::remove_cvref_t<Allocator>>::template rebind_traits<T>::other;
+  using traits = typename detail::allocator_traits<::cuda::std::remove_cvref_t<Allocator>>::template rebind_traits<T>;
 
   typename traits::allocator_type alloc_T(alloc);
 
@@ -63,9 +62,8 @@ _CCCL_HOST_DEVICE ForwardIt destroy(ForwardIt first, ForwardIt last) noexcept
 template <typename Allocator, typename ForwardIt>
 _CCCL_HOST_DEVICE ForwardIt destroy(Allocator const& alloc, ForwardIt first, ForwardIt last) noexcept
 {
-  using T = detail::it_value_t<ForwardIt>;
-  using traits =
-    typename detail::allocator_traits<::cuda::std::remove_cvref_t<Allocator>>::template rebind_traits<T>::other;
+  using T      = detail::it_value_t<ForwardIt>;
+  using traits = typename detail::allocator_traits<::cuda::std::remove_cvref_t<Allocator>>::template rebind_traits<T>;
 
   typename traits::allocator_type alloc_T(alloc);
 
@@ -91,9 +89,8 @@ _CCCL_HOST_DEVICE ForwardIt destroy_n(ForwardIt first, Size n) noexcept
 template <typename Allocator, typename ForwardIt, typename Size>
 _CCCL_HOST_DEVICE ForwardIt destroy_n(Allocator const& alloc, ForwardIt first, Size n) noexcept
 {
-  using T = detail::it_value_t<ForwardIt>;
-  using traits =
-    typename detail::allocator_traits<::cuda::std::remove_cvref_t<Allocator>>::template rebind_traits<T>::other;
+  using T      = detail::it_value_t<ForwardIt>;
+  using traits = typename detail::allocator_traits<::cuda::std::remove_cvref_t<Allocator>>::template rebind_traits<T>;
 
   typename traits::allocator_type alloc_T(alloc);
 

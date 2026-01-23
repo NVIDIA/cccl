@@ -104,10 +104,6 @@ struct allocator_traits : public ::cuda::std::allocator_traits<Alloc>
     typename eval_if<allocator_traits_detail::has_system_type<Alloc>,
                      allocator_traits_detail::nested_system_type<Alloc>,
                      thrust::iterator_system<pointer>>::type;
-
-  // We define this nested type alias for compatibility with the C++03-style rebind_* mechanisms.
-  // TODO(miscco): drop all uses of the old rebind mechanism
-  using other = allocator_traits;
 };
 
 // XXX consider moving this non-standard functionality inside allocator_traits
