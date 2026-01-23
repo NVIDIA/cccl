@@ -23,7 +23,6 @@
 
 #include <cuda/std/__bit/countr.h>
 #include <cuda/std/__cccl/assert.h>
-#include <cuda/std/__exception/cuda_error.h>
 #include <cuda/std/cstddef>
 #include <cuda/stream>
 #include <cuda/utility>
@@ -33,10 +32,6 @@
 #include <cuda/experimental/container.cuh>
 #include <cuda/experimental/memory_resource.cuh>
 #include <cuda/experimental/stream.cuh>
-
-// TODO : remove these includes
-#include <iterator>
-#include <memory>
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -170,7 +165,7 @@ public:
                         ref_type<>::sketch_bytes(
                           __precision_in_bounds(__precision, "HyperLogLog precision must be in [4, 18]"))
                           / sizeof(register_type),
-                        ::cuda::experimental::no_init}
+                        ::cuda::no_init}
       , __ref{::cuda::std::as_writable_bytes(::cuda::std::span{__sketch_buffer.data(), __sketch_buffer.size()}), __hash}
   {
     clear_async(__stream);
@@ -281,7 +276,7 @@ public:
 
   //! @brief Asynchronously merges the result of `other` estimator into `*this` estimator.
   //!
-  //! @throw If sketch_bytes() != other.sketch_bytes()
+  //! @throw If sketch_bytes() != __other.sketch_bytes()
   //!
   //! @tparam _OtherScope Thread scope of `other` estimator
   //! @tparam _OtherMemoryResource Memory resource type of `other` estimator
@@ -300,7 +295,7 @@ public:
   //! @note This function synchronizes the given stream. For asynchronous execution use
   //! `merge_async`.
   //!
-  //! @throw If sketch_bytes() != other.sketch_bytes()
+  //! @throw If sketch_bytes() != __other.sketch_bytes()
   //!
   //! @tparam _OtherScope Thread scope of `other` estimator
   //! @tparam _OtherMemoryResource Memory resource type of `other` estimator
@@ -316,7 +311,7 @@ public:
 
   //! @brief Asynchronously merges the result of `other` estimator reference into `*this` estimator.
   //!
-  //! @throw If sketch_bytes() != other.sketch_bytes()
+  //! @throw If sketch_bytes() != __other.sketch_bytes()
   //!
   //! @tparam _OtherScope Thread scope of `other` estimator
   //!
@@ -334,7 +329,7 @@ public:
   //! @note This function synchronizes the given stream. For asynchronous execution use
   //! `merge_async`.
   //!
-  //! @throw If sketch_bytes() != other.sketch_bytes()
+  //! @throw If sketch_bytes() != __other.sketch_bytes()
   //!
   //! @tparam _OtherScope Thread scope of `other` estimator
   //!

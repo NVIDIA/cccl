@@ -21,15 +21,13 @@
 #  pragma system_header
 #endif // no system header
 
-#include <thrust/detail/raw_pointer_cast.h>
-
 #include <cuda/__memory/is_aligned.h>
+#include <cuda/__memory_pool/pinned_memory_pool.h>
 #include <cuda/__runtime/api_wrapper.h>
 #include <cuda/atomic>
 #include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__bit/countr.h>
 #include <cuda/std/__bit/integral.h>
-#include <cuda/std/__exception/cuda_error.h>
 #include <cuda/std/__iterator/concepts.h>
 #include <cuda/std/__memory/addressof.h>
 #include <cuda/std/cstddef>
@@ -43,8 +41,6 @@
 #include <cuda/experimental/__cuco/hash_functions.cuh>
 #include <cuda/experimental/container.cuh>
 #include <cuda/experimental/memory_resource.cuh>
-
-#include <vector>
 
 #include <cooperative_groups.h>
 
@@ -75,11 +71,20 @@ class _HyperLogLog_Impl
   using __hash_value_type = decltype(::cuda::std::declval<_Hash>()(::cuda::std::declval<_Tp>())); ///< Hash value type
 
 public:
-  static constexpr auto thread_scope = _Scope; ///< CUDA thread scope
+  using __value_type    = _Tp; ///< Type of items to count
+  using __hasher        = _Hash; ///< Hash function type
+  using __register_type = int; ///< HLL register type
 
-  using value_type    = _Tp; ///< Type of items to count
-  using hasher        = _Hash; ///< Hash function type
-  using register_type = int; ///< HLL register type
+private:
+  __hasher __hash; ///< Hash function used to hash items
+  int __precision; ///< HLL precision parameter
+  ::cuda::std::span<__register_type> __sketch; ///< HLL sketch storage
+
+  template <class _Tp_, ::cuda::thread_scope _Scope_, class _Hash_>
+  friend struct _HyperLogLog_Impl;
+
+public:
+  static constexpr auto __thread_scope = _Scope; ///< CUDA thread scope
 
   template <::cuda::thread_scope _NewScope>
   using with_scope = _HyperLogLog_Impl<_Tp, _NewScope, _Hash>; ///< Ref type with different thread scope
@@ -92,24 +97,24 @@ public:
   //! called from device.
   //! @throw If sketch storage has insufficient alignment. Throws if called from host; __trap() if called from device.
   //!
-  //! @param sketch_span Reference to sketch storage
-  //! @param hash The hash function used to hash items
-  _CCCL_API constexpr _HyperLogLog_Impl(::cuda::std::span<::cuda::std::byte> sketch_span, const _Hash& hash)
-      : __hash{hash}
+  //! @param __sketch_span Reference to sketch storage
+  //! @param __hash The hash function used to hash items
+  _CCCL_API constexpr _HyperLogLog_Impl(::cuda::std::span<::cuda::std::byte> __sketch_span, const _Hash& __hash)
+      : __hash{__hash}
       , __precision{::cuda::std::countr_zero(
-          __sketch_bytes(static_cast<::cuda::experimental::cuco::__sketch_size_kb_t>(sketch_span.size() / 1024.0))
-          / sizeof(register_type))}
-      , __sketch{reinterpret_cast<int*>(sketch_span.data()), __sketch_bytes() / sizeof(register_type)}
-  // MSVC fails with register_type*, use int* instead
+          __sketch_bytes(static_cast<::cuda::experimental::cuco::__sketch_size_kb_t>(__sketch_span.size() / 1024.0))
+          / sizeof(__register_type))}
+      , __sketch{reinterpret_cast<int*>(__sketch_span.data()), __sketch_bytes() / sizeof(__register_type)}
+  // MSVC fails with __register_type*, use int* instead
   {
-    if (!::cuda::is_aligned(sketch_span.data(), __sketch_alignment()))
+    if (!::cuda::is_aligned(__sketch_span.data(), __sketch_alignment()))
     {
-      _CCCL_THROW(::std::runtime_error{"Sketch storage has insufficient alignment"});
+      _CCCL_THROW(::std::invalid_argument{"Sketch storage has insufficient alignment"});
     }
 
     if (__precision < 4)
     {
-      _CCCL_THROW(::std::runtime_error{"Minimum required sketch size is 0.0625KB or 64B"});
+      _CCCL_THROW(::std::invalid_argument{"Minimum required sketch size is 0.0625KB or 64B"});
     }
   }
 
@@ -123,7 +128,7 @@ public:
   {
     for (int __i = __group.thread_rank(); __i < __sketch.size(); __i += __group.size())
     {
-      __sketch[__i] = register_type{};
+      __sketch[__i] = __register_type{};
     }
   }
 
@@ -132,7 +137,7 @@ public:
   //! @note This function synchronizes the given stream. For asynchronous execution use
   //! `__clear_async`.
   //!
-  //! @param stream CUDA stream this operation is executed in
+  //! @param __stream CUDA stream this operation is executed in
   _CCCL_HOST constexpr void __clear(::cuda::stream_ref __stream)
   {
     __clear_async(__stream);
@@ -141,7 +146,7 @@ public:
 
   //! @brief Asynchronously resets the estimator, i.e., clears the current count estimate.
   //!
-  //! @param stream CUDA stream this operation is executed in
+  //! @param __stream CUDA stream this operation is executed in
   _CCCL_HOST constexpr void __clear_async(::cuda::stream_ref __stream)
   {
     constexpr auto __block_size = 1024;
@@ -150,7 +155,7 @@ public:
 
   //! @brief Adds an item to the estimator.
   //!
-  //! @param item The item to be counted
+  //! @param __item The item to be counted
   _CCCL_DEVICE constexpr void __add(const _Tp& __item) noexcept
   {
     const auto __h      = __hash(__item);
@@ -195,7 +200,7 @@ public:
       constexpr auto __max_vector_bytes = 32;
       const auto __alignment =
         1u << ::cuda::std::countr_zero(reinterpret_cast<::cuda::std::uintptr_t>(__ptr) | __max_vector_bytes);
-      const auto __vector_size = __alignment / sizeof(value_type);
+      const auto __vector_size = __alignment / sizeof(__value_type);
 
       switch (__vector_size)
       {
@@ -333,7 +338,7 @@ public:
   {
     if (__other.__precision != __precision)
     {
-      _CCCL_THROW(::std::runtime_error{"Cannot merge estimators with different sketch sizes"});
+      _CCCL_THROW(::std::invalid_argument{"Cannot merge estimators with different sketch sizes"});
     }
 
     for (int __i = __group.thread_rank(); __i < __sketch.size(); __i += __group.size())
@@ -345,7 +350,7 @@ public:
   //! @brief Asynchronously merges the result of `other` estimator reference into `*this`
   //! estimator.
   //!
-  //! @throw If __sketch_bytes() != other.__sketch_bytes(), then terminates execution with a device __trap()
+  //! @throw If __sketch_bytes() != __other.__sketch_bytes(), then terminates execution with a device __trap()
   //!
   //! @tparam _OtherScope Thread scope of `other` estimator
   //!
@@ -357,7 +362,7 @@ public:
   {
     if (__other.__precision != __precision)
     {
-      _CCCL_THROW(::std::runtime_error{"Cannot merge estimators with different sketch sizes"});
+      _CCCL_THROW(::std::invalid_argument{"Cannot merge estimators with different sketch sizes"});
     }
 
     constexpr auto __block_size = 1024;
@@ -369,7 +374,7 @@ public:
   //! @note This function synchronizes the given stream. For asynchronous execution use
   //! `__merge_async`.
   //!
-  //! @throw If __sketch_bytes() != other.__sketch_bytes(), then terminates execution with a device __trap()
+  //! @throw If __sketch_bytes() != __other.__sketch_bytes(), then terminates execution with a device __trap()
   //!
   //! @tparam _OtherScope Thread scope of `other` estimator
   //!
@@ -385,7 +390,7 @@ public:
 
   //! @brief Compute the estimated distinct items count.
   //!
-  //! @param group CUDA thread block group this operation is executed in
+  //! @param __group CUDA thread block group this operation is executed in
   //!
   //! @return Approximate distinct items count
   [[nodiscard]] _CCCL_DEVICE ::cuda::std::size_t
@@ -449,19 +454,19 @@ public:
   //!
   //! @note This function synchronizes the given stream.
   //!
-  //! @param stream CUDA stream this operation is executed in
+  //! @param __stream CUDA stream this operation is executed in
   //!
   //! @return Approximate distinct items count
-  template <typename MemoryResourceRef = cuda::pinned_memory_pool_ref>
+  template <typename MemoryResourceRef = ::cuda::pinned_memory_pool_ref>
   [[nodiscard]] _CCCL_HOST ::cuda::std::size_t
-  __estimate(::cuda::stream_ref __stream, MemoryResourceRef __host_mr = cuda::pinned_default_memory_pool()) const
+  __estimate(::cuda::stream_ref __stream, MemoryResourceRef __host_mr = ::cuda::pinned_default_memory_pool()) const
   {
     const auto __num_regs = __sketch.size();
 
-    ::cuda::host_buffer<register_type> __host_sketch_buf{__stream, __host_mr, __sketch.size(), ::cuda::no_init};
+    ::cuda::host_buffer<__register_type> __host_sketch_buf{__stream, __host_mr, __sketch.size(), ::cuda::no_init};
 
     ::cuda::__driver::__memcpyAsync(
-      __host_sketch_buf.data(), __sketch.data(), sizeof(register_type) * __num_regs, __stream.get());
+      __host_sketch_buf.data(), __sketch.data(), sizeof(__register_type) * __num_regs, __stream.get());
     __stream.sync();
 
     __fp_type __sum = 0;
@@ -503,7 +508,7 @@ public:
   //! @return The number of bytes required for the sketch
   [[nodiscard]] _CCCL_API constexpr ::cuda::std::size_t __sketch_bytes() const noexcept
   {
-    return (1ull << __precision) * sizeof(register_type);
+    return (1ull << __precision) * sizeof(__register_type);
   }
 
   //! @brief Gets the number of bytes required for the sketch storage.
@@ -515,7 +520,7 @@ public:
   __sketch_bytes(::cuda::experimental::cuco::__sketch_size_kb_t __sketch_size_kb) noexcept
   {
     // minimum precision is 4 or 64 bytes
-    return ::cuda::std::max(static_cast<::cuda::std::size_t>(sizeof(register_type) * (1ull << 4)),
+    return ::cuda::std::max(static_cast<::cuda::std::size_t>(sizeof(__register_type) * (1ull << 4)),
                             ::cuda::std::bit_floor(static_cast<::cuda::std::size_t>(__sketch_size_kb * 1024)));
   }
 
@@ -538,7 +543,7 @@ public:
     // inverse of this function (omitting the minimum precision constraint) is
     // standard_deviation = 1.106 / exp((__precision_ * log(2.0)) / 2.0)
 
-    return sizeof(register_type) * (1ull << __precision_);
+    return sizeof(__register_type) * (1ull << __precision_);
   }
 
   //! @brief Gets the number of bytes required for the sketch storage.
@@ -551,7 +556,7 @@ public:
   {
     const auto __precision_value = static_cast<int>(__precision);
 
-    return sizeof(register_type) * (1ull << __precision_value);
+    return sizeof(__register_type) * (1ull << __precision_value);
   }
 
   //! @brief Gets the alignment required for the sketch storage.
@@ -559,7 +564,7 @@ public:
   //! @return The required alignment
   [[nodiscard]] _CCCL_API static constexpr ::cuda::std::size_t __sketch_alignment() noexcept
   {
-    return alignof(register_type);
+    return alignof(__register_type);
   }
 
 private:
@@ -578,9 +583,9 @@ private:
   //!
   //! @param i Register index
   //! @param value New value
-  _CCCL_DEVICE constexpr void __update_max(int __i, register_type __value) noexcept
+  _CCCL_DEVICE constexpr void __update_max(int __i, __register_type __value) noexcept
   {
-    ::cuda::atomic_ref<register_type, _Scope> __register_ref(__sketch[__i]);
+    ::cuda::atomic_ref<__register_type, _Scope> __register_ref(__sketch[__i]);
     __register_ref.fetch_max(__value, ::cuda::memory_order_relaxed);
   }
 
@@ -620,13 +625,6 @@ private:
       return false;
     }
   }
-
-  hasher __hash; ///< Hash function used to hash items
-  int __precision; ///< HLL precision parameter
-  ::cuda::std::span<register_type> __sketch; ///< HLL sketch storage
-
-  template <class _Tp_, ::cuda::thread_scope _Scope_, class _Hash_>
-  friend struct _HyperLogLog_Impl;
 };
 } // namespace cuda::experimental::cuco
 

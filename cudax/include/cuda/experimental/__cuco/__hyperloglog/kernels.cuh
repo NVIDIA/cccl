@@ -51,8 +51,8 @@ namespace cuda::experimental::cuco::__hyperloglog_ns
   return static_cast<int64_t>(gridDim.x) * blockDim.x;
 }
 
-template <class RefType>
-CCCL_DETAIL_KERNEL_ATTRIBUTES void __clear(RefType __ref)
+template <class _RefType>
+CCCL_DETAIL_KERNEL_ATTRIBUTES void __clear(_RefType __ref)
 {
   const auto __block = ::cooperative_groups::this_thread_block();
   if (__block.group_index().x == 0)
@@ -61,13 +61,13 @@ CCCL_DETAIL_KERNEL_ATTRIBUTES void __clear(RefType __ref)
   }
 }
 
-template <int VectorSize, class RefType>
+template <int _VectorSize, class _RefType>
 CCCL_DETAIL_KERNEL_ATTRIBUTES void
-__add_shmem_vectorized(const typename RefType::value_type* __first, int64_t __n, RefType __ref)
+__add_shmem_vectorized(const typename _RefType::value_type* __first, int64_t __n, _RefType __ref)
 {
-  using value_type     = typename RefType::value_type;
-  using vector_type    = ::cuda::std::array<value_type, VectorSize>;
-  using local_ref_type = typename RefType::template with_scope<::cuda::std::thread_scope_block>;
+  using __value_type     = typename _RefType::value_type;
+  using __vector_type    = ::cuda::std::array<__value_type, _VectorSize>;
+  using __local_ref_type = typename _RefType::template with_scope<::cuda::std::thread_scope_block>;
 
   // Base address of dynamic shared memory is guaranteed to be aligned to at least 16 bytes which is
   // sufficient for this purpose
@@ -78,18 +78,17 @@ __add_shmem_vectorized(const typename RefType::value_type* __first, int64_t __n,
   const auto __grid        = ::cooperative_groups::this_grid();
   const auto __block       = ::cooperative_groups::this_thread_block();
 
-  local_ref_type __local_ref(::cuda::std::span{__local_sketch, __ref.__sketch_bytes()}, {});
+  __local_ref_type __local_ref(::cuda::std::span{__local_sketch, __ref.__sketch_bytes()}, {});
   __local_ref.__clear(__block);
   __block.sync();
 
   // each thread processes VectorSize-many items per iteration
-  vector_type __vec;
-  while (__idx < __n / VectorSize)
+  __vector_type __vec;
+  while (__idx < __n / _VectorSize)
   {
-    __vec =
-      *static_cast<const vector_type*>(::cuda::std::assume_aligned<sizeof(vector_type)>(__first + __idx * VectorSize));
-
-    for (int i = 0; i < VectorSize; ++i)
+    __vec = *static_cast<const __vector_type*>(
+      ::cuda::std::assume_aligned<sizeof(__vector_type)>(__first + __idx * _VectorSize));
+    for (int i = 0; i < _VectorSize; ++i)
     {
       __local_ref.__add(__vec[i]);
     }
@@ -97,9 +96,9 @@ __add_shmem_vectorized(const typename RefType::value_type* __first, int64_t __n,
     __idx += __loop_stride;
   }
   // a single thread processes the remaining items
-#if defined(CUCO_HAS_CG_INVOKE_ONE)
+#if defined(CUDART_VERSION) && (CUDART_VERSION >= 12010)
   ::cooperative_groups::invoke_one(__grid, [&]() {
-    const auto __remainder = __n % VectorSize;
+    const auto __remainder = __n % _VectorSize;
     for (int __i = 0; __i < __remainder; ++__i)
     {
       __local_ref.__add(*(__first + __n - __i - 1));
@@ -108,7 +107,7 @@ __add_shmem_vectorized(const typename RefType::value_type* __first, int64_t __n,
 #else
   if (__grid.thread_rank() == 0)
   {
-    const auto __remainder = __n % VectorSize;
+    const auto __remainder = __n % _VectorSize;
     for (int __i = 0; __i < __remainder; ++__i)
     {
       __local_ref.__add(*(__first + __n - __i - 1));
@@ -120,10 +119,10 @@ __add_shmem_vectorized(const typename RefType::value_type* __first, int64_t __n,
   __ref.__merge(__block, __local_ref);
 }
 
-template <class InputIt, class RefType>
-CCCL_DETAIL_KERNEL_ATTRIBUTES void __add_shmem(InputIt __first, int64_t __n, RefType __ref)
+template <class _InputIt, class _RefType>
+CCCL_DETAIL_KERNEL_ATTRIBUTES void __add_shmem(_InputIt __first, int64_t __n, _RefType __ref)
 {
-  using local_ref_type = typename RefType::template with_scope<::cuda::std::thread_scope_block>;
+  using __local_ref_type = typename _RefType::template with_scope<::cuda::std::thread_scope_block>;
 
   // TODO assert alignment
   extern __shared__ ::cuda::std::byte __local_sketch[];
@@ -132,7 +131,7 @@ CCCL_DETAIL_KERNEL_ATTRIBUTES void __add_shmem(InputIt __first, int64_t __n, Ref
   auto __idx               = __global_thread_id();
   const auto __block       = ::cooperative_groups::this_thread_block();
 
-  local_ref_type __local_ref(::cuda::std::span{__local_sketch, __ref.__sketch_bytes()}, {});
+  __local_ref_type __local_ref(::cuda::std::span{__local_sketch, __ref.__sketch_bytes()}, {});
   __local_ref.__clear(__block);
   __block.sync();
 
@@ -146,8 +145,8 @@ CCCL_DETAIL_KERNEL_ATTRIBUTES void __add_shmem(InputIt __first, int64_t __n, Ref
   __ref.__merge(__block, __local_ref);
 }
 
-template <class InputIt, class RefType>
-CCCL_DETAIL_KERNEL_ATTRIBUTES void __add_gmem(InputIt __first, int64_t __n, RefType __ref)
+template <class _InputIt, class _RefType>
+CCCL_DETAIL_KERNEL_ATTRIBUTES void __add_gmem(_InputIt __first, int64_t __n, _RefType __ref)
 {
   const auto __loop_stride = __grid_stride();
   auto __idx               = __global_thread_id();
@@ -159,28 +158,13 @@ CCCL_DETAIL_KERNEL_ATTRIBUTES void __add_gmem(InputIt __first, int64_t __n, RefT
   }
 }
 
-template <class OtherRefType, class RefType>
-CCCL_DETAIL_KERNEL_ATTRIBUTES void __merge(OtherRefType __other_ref, RefType __ref)
+template <class _OtherRefType, class _RefType>
+CCCL_DETAIL_KERNEL_ATTRIBUTES void __merge(_OtherRefType __other_ref, _RefType __ref)
 {
   const auto __block = ::cooperative_groups::this_thread_block();
   if (__block.group_index().x == 0)
   {
     __ref.__merge(__block, __other_ref);
-  }
-}
-
-// TODO this kernel currently isn't being used
-template <class RefType>
-CCCL_DETAIL_KERNEL_ATTRIBUTES void __estimate(::cuda::std::size_t* __cardinality, RefType __ref)
-{
-  const auto __block = ::cooperative_groups::this_thread_block();
-  if (__block.group_index().x == 0)
-  {
-    const auto __estimate = __ref.__estimate(__block);
-    if (__block.thread_rank() == 0)
-    {
-      *__cardinality = __estimate;
-    }
   }
 }
 } // namespace cuda::experimental::cuco::__hyperloglog_ns

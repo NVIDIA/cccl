@@ -22,6 +22,7 @@
 #endif // no system header
 
 #include <cuda/std/cstddef>
+#include <cuda/std/span>
 #include <cuda/stream>
 
 #include <cuda/experimental/__cuco/__hyperloglog/hyperloglog_impl.cuh>
@@ -55,11 +56,11 @@ class hyperloglog_ref
   friend class hyperloglog_ref;
 
 public:
-  static constexpr auto thread_scope = __impl_type::thread_scope; ///< CUDA thread scope
+  static constexpr auto thread_scope = __impl_type::__thread_scope; ///< CUDA thread scope
 
-  using value_type    = typename __impl_type::value_type; ///< Type of items to count
-  using hasher        = typename __impl_type::hasher; ///< Type of hash function
-  using register_type = typename __impl_type::register_type; ///< HLL register type
+  using value_type    = typename __impl_type::__value_type; ///< Type of items to count
+  using hasher        = typename __impl_type::__hasher; ///< Type of hash function
+  using register_type = typename __impl_type::__register_type; ///< HLL register type
 
   //! A strong type wrapper `sketch_size_kb` of `double`, for specifying the upper-bound
   //! sketch size of `cuda::experimental::cuco::hyperloglog(_ref)` in KB.
@@ -173,7 +174,7 @@ public:
 
   //! @brief Merges the result of `other` estimator reference into `*this` estimator reference.
   //!
-  //! @throw If sketch_bytes() != other.sketch_bytes(), then terminates execution with a device __trap()
+  //! @throw If sketch_bytes() != __other.sketch_bytes(), then terminates execution with a device __trap()
   //!
   //! @tparam _CG CUDA Cooperative Group type
   //! @tparam _OtherScope Thread scope of `other` estimator
@@ -189,8 +190,9 @@ public:
   //! @brief Asynchronously merges the result of `other` estimator reference into `*this`
   //! estimator.
   //!
-  //! @throw If sketch_bytes() != other.sketch_bytes()
+  //! @throw If sketch_bytes() != __other.sketch_bytes()
   //!
+  // Review: For host-side merges, consider validating `__other` is on the same device.
   //! @tparam _OtherScope Thread scope of `other` estimator
   //!
   //! @param __other Other estimator reference to be merged into `*this`
@@ -207,7 +209,7 @@ public:
   //! @note This function synchronizes the given stream. For asynchronous execution use
   //! `merge_async`.
   //!
-  //! @throw If sketch_bytes() != other.sketch_bytes()
+  //! @throw If sketch_bytes() != __other.sketch_bytes()
   //!
   //! @tparam _OtherScope Thread scope of `other` estimator
   //!

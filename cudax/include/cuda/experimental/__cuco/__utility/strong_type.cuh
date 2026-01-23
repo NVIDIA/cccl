@@ -28,27 +28,27 @@ namespace cuda::experimental::cuco
 //! A strong type wrapper
 //!
 //! Template parameter:
-//! - `_T`: Type of the underlying value
-template <class _T>
+//! - `_Tp`: Type of the underlying value
+template <class _Tp>
 struct __strong_type
 {
   //! Constructs a strong type
   //!
   //! Parameter:
   //! - `v`: Value to be wrapped as a strong type
-  __host__ __device__ explicit constexpr __strong_type(_T __v)
+  _CCCL_API explicit constexpr __strong_type(_Tp __v)
       : __value{__v}
   {}
 
   //! Implicit conversion operator to the underlying value.
   //!
   //! Returns: Underlying value
-  __host__ __device__ constexpr operator _T() const noexcept
+  _CCCL_API constexpr operator _Tp() const noexcept
   {
     return __value;
   }
 
-  _T __value; //!< Underlying data value
+  _Tp __value; //!< Underlying data value
 };
 } // namespace cuda::experimental::cuco
 
@@ -56,7 +56,7 @@ struct __strong_type
 #define CUDAX_CUCO_DEFINE_STRONG_TYPE(Name, Type)                      \
   struct Name : public ::cuda::experimental::cuco::__strong_type<Type> \
   {                                                                    \
-    __host__ __device__ explicit constexpr Name(Type __value)          \
+    _CCCL_API explicit constexpr Name(Type __value)                    \
         : ::cuda::experimental::cuco::__strong_type<Type>(__value)     \
     {}                                                                 \
   };

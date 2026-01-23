@@ -118,7 +118,7 @@ private:
   [[nodiscard]] _CCCL_API constexpr double __bias(double __e) const noexcept
   {
     const auto __anchor_index = __interpolation_anchor_index(__e);
-    const int __n             = __raw_estimate_data_size(__precision);
+    const auto __n            = static_cast<int>(__raw_estimate_data_size(__precision));
 
     auto __low  = ::cuda::std::max(__anchor_index - __k + 1, 0);
     auto __high = ::cuda::std::min(__low + __k, __n);
@@ -149,7 +149,7 @@ private:
   [[nodiscard]] _CCCL_API constexpr int __interpolation_anchor_index(double __e) const noexcept
   {
     const auto __estimates = __raw_estimate_data(__precision);
-    const int __n          = __raw_estimate_data_size(__precision);
+    const auto __n         = static_cast<int>(__raw_estimate_data_size(__precision));
     int __left             = 0;
     int __right            = static_cast<int>(__n) - 1;
     int __mid              = -1;

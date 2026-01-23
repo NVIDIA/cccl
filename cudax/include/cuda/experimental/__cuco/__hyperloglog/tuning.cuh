@@ -24,8 +24,6 @@
 #include <cuda/std/array>
 #include <cuda/std/cstddef>
 
-#include <vector>
-
 #include <cuda/std/__cccl/prologue.h>
 
 namespace cuda::experimental::cuco::__hyperloglog_ns
@@ -33,7 +31,7 @@ namespace cuda::experimental::cuco::__hyperloglog_ns
 // TODO this will spawn one copy of each array in every TU :(
 // TODO use __constant__?
 #ifndef CUDAX_CUCO_HLL_TUNING_ARR_DECL
-#  define CUDAX_CUCO_HLL_TUNING_ARR_DECL __device__ static constexpr cuda::std::array
+#  define CUDAX_CUCO_HLL_TUNING_ARR_DECL __device__ static constexpr ::cuda::std::array
 #endif
 
 // clang-format off
@@ -157,30 +155,6 @@ CUDAX_CUCO_HLL_TUNING_ARR_DECL __bias_data_p18{189083.0, 185696.913, 182348.774,
   }
 }
 
-//! @brief Get size of bias data array for a given precision
-//!
-//! @param __precision The precision value (4-18)
-//! @return Size of the bias data array for the given precision
-[[nodiscard]] _CCCL_API constexpr ::cuda::std::size_t ____bias_data_size(int __precision) noexcept {
-  switch (__precision) {
-    case 4:  return __bias_data_p4.size();
-    case 5:  return __bias_data_p5.size();
-    case 6:  return __bias_data_p6.size();
-    case 7:  return __bias_data_p7.size();
-    case 8:  return __bias_data_p8.size();
-    case 9:  return __bias_data_p9.size();
-    case 10: return __bias_data_p10.size();
-    case 11: return __bias_data_p11.size();
-    case 12: return __bias_data_p12.size();
-    case 13: return __bias_data_p13.size();
-    case 14: return __bias_data_p14.size();
-    case 15: return __bias_data_p15.size();
-    case 16: return __bias_data_p16.size();
-    case 17: return __bias_data_p17.size();
-    case 18: return __bias_data_p18.size();
-    default: return 0;
-  }
-}
 // clang-format on
 } // namespace cuda::experimental::cuco::__hyperloglog_ns
 
