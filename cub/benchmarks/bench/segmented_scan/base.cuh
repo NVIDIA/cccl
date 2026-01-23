@@ -291,16 +291,7 @@ using bench_types = all_types;
 #ifdef TUNE_SEGMENTS_PER_BLOCK
 using segments_per_block = nvbench::type_list<std::integral_constant<int, TUNE_SEGMENTS_PER_BLOCK>>;
 #else
-using segments_per_block =
-  nvbench::type_list<std::integral_constant<int, 1>,
-                     std::integral_constant<int, 2>,
-                     std::integral_constant<int, 3>,
-                     std::integral_constant<int, 4>,
-                     std::integral_constant<int, 6>,
-                     std::integral_constant<int, 8>,
-                     std::integral_constant<int, 16>,
-                     std::integral_constant<int, 32>,
-                     std::integral_constant<int, 64>>;
+using segments_per_block = nvbench::type_list<std::integral_constant<int, 1>, std::integral_constant<int, 256>>;
 
 #endif
 
