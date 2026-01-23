@@ -34,6 +34,7 @@
 #include <thrust/detail/type_traits/pointer_traits.h>
 #include <thrust/iterator/iterator_traits.h>
 
+#include <cuda/std/__iterator/iterator_traits.h>
 #include <cuda/std/__memory/allocator_traits.h>
 #include <cuda/std/__type_traits/add_lvalue_reference.h>
 #include <cuda/std/__type_traits/conditional.h>
@@ -107,11 +108,6 @@ struct allocator_traits : public ::cuda::std::allocator_traits<Alloc>
   // We define this nested type alias for compatibility with the C++03-style rebind_* mechanisms.
   // TODO(miscco): drop all uses of the old rebind mechanism
   using other = allocator_traits;
-
-  // Deprecated std::allocator aliases that we need:
-  // NOTE: this cannot yet use ::cuda::std::pointer_traits as thrust has special handling for void*
-  using reference       = typename pointer_traits<pointer>::reference;
-  using const_reference = typename pointer_traits<const_pointer>::reference;
 };
 
 // we consider a type an allocator if T::value_type exists

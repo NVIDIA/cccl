@@ -30,6 +30,7 @@
 #include <thrust/detail/execution_policy.h>
 #include <thrust/iterator/detail/normal_iterator.h>
 
+#include <cuda/std/__iterator/iterator_traits.h>
 #include <cuda/std/__utility/move.h>
 #include <cuda/std/__utility/swap.h>
 
@@ -63,8 +64,8 @@ public:
   using const_pointer   = typename alloc_traits::const_pointer;
   using size_type       = typename alloc_traits::size_type;
   using difference_type = typename alloc_traits::difference_type;
-  using reference       = typename alloc_traits::reference;
-  using const_reference = typename alloc_traits::const_reference;
+  using reference       = typename ::cuda::std::iterator_traits<pointer>::reference;
+  using const_reference = typename ::cuda::std::iterator_traits<const_pointer>::reference;
 
   using iterator       = thrust::detail::normal_iterator<pointer>;
   using const_iterator = thrust::detail::normal_iterator<const_pointer>;

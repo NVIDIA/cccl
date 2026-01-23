@@ -47,8 +47,8 @@ public:
 
   using pointer         = typename base_traits::pointer;
   using const_pointer   = typename base_traits::const_pointer;
-  using reference       = typename base_traits::reference;
-  using const_reference = typename base_traits::const_reference;
+  using reference       = typename cuda::std::iterator_traits<pointer>::reference;
+  using const_reference = typename cuda::std::iterator_traits<const_pointer>::reference;
 
   pointer allocate(std::size_t size)
   {
