@@ -70,17 +70,17 @@ template <class _Tp>
   {
     _CCCL_IF_NOT_CONSTEVAL_DEFAULT
     {
-      NV_IF_TARGET(NV_IS_DEVICE({
-        if constexpr (sizeof(_Tp) < sizeof(int))
-        {
-          using _Up = __make_nbit_int_t<32, is_signed_v<_Tp>>;
-          return static_cast<_Tp>(::cuda::std::__min(static_cast<_Up>(__a), static_cast<_Up>(__b)));
-        }
-        else if constexpr (sizeof(_Tp) <= sizeof(long long))
-        {
-          return ::min(__a, __b);
-        }
-      }))
+      NV_IF_TARGET(NV_IS_DEVICE, ({
+                     if constexpr (sizeof(_Tp) < sizeof(int))
+                     {
+                       using _Up = __make_nbit_int_t<32, is_signed_v<_Tp>>;
+                       return static_cast<_Tp>(::cuda::std::__min(static_cast<_Up>(__a), static_cast<_Up>(__b)));
+                     }
+                     else if constexpr (sizeof(_Tp) <= sizeof(long long))
+                     {
+                       return ::min(__a, __b);
+                     }
+                   }))
     }
     return (__b < __a) ? __b : __a;
   }
