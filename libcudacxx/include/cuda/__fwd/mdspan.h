@@ -63,6 +63,12 @@ using dstrides =
 template <::cuda::std::size_t _Rank, class _OffsetType = ::cuda::std::ptrdiff_t>
 using steps = dstrides<_OffsetType, _Rank>;
 
+template <class _Tp>
+inline constexpr bool __is_cuda_strides_v = false;
+
+template <class _OffsetType, ::cuda::std::ptrdiff_t... _Strides>
+inline constexpr bool __is_cuda_strides_v<strides<_OffsetType, _Strides...>> = true;
+
 //! @brief Layout policy with relaxed stride mapping that supports negative strides and offsets.
 //!
 //! Unlike `layout_stride`, this layout allows:

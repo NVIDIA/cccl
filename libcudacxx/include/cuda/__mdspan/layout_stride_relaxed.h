@@ -96,18 +96,20 @@ _CCCL_CONCEPT __layout_stride_relaxed_converts_implicit_from_strided =
  * layout_stride_relaxed::mapping
  **********************************************************************************************************************/
 
-template <class _Extents, class _Stride>
+template <class _Extents, class _Strides>
 class layout_stride_relaxed::mapping
 {
 public:
   static_assert(::cuda::std::__is_cuda_std_extents_v<_Extents>,
                 "layout_stride_relaxed::mapping template argument must be a specialization of extents.");
+  static_assert(::cuda::__is_cuda_strides_v<_Strides>,
+                "layout_stride_relaxed::mapping strides template argument must be a specialization of strides.");
 
-  static_assert(_Extents::rank() == _Stride::rank(),
+  static_assert(_Extents::rank() == _Strides::rank(),
                 "layout_stride_relaxed::mapping: extents and strides must have the same rank");
 
   using extents_type = _Extents;
-  using strides_type = _Stride;
+  using strides_type = _Strides;
   using index_type   = typename extents_type::index_type;
   using size_type    = typename extents_type::size_type;
   using rank_type    = typename extents_type::rank_type;
