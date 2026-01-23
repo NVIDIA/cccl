@@ -73,7 +73,7 @@ template <int BlockThreads,
           cub::CacheLoadModifier LoadModifier,
           cub::BlockStoreAlgorithm StoreAlgorithm,
           cub::BlockScanAlgorithm ScanAlgorithm,
-          int SegmentsPerBlock = 1>
+          int MaxSegmentsPerBlock = 1>
 struct agent_policy_t
 {
   static constexpr int BLOCK_THREADS                        = BlockThreads;
@@ -82,7 +82,7 @@ struct agent_policy_t
   static constexpr cub::CacheLoadModifier load_modifier     = LoadModifier;
   static constexpr cub::BlockStoreAlgorithm store_algorithm = StoreAlgorithm;
   static constexpr cub::BlockScanAlgorithm scan_algorithm   = ScanAlgorithm;
-  static constexpr int segments_per_block                   = SegmentsPerBlock;
+  static constexpr int max_segments_per_block               = MaxSegmentsPerBlock;
 };
 
 template <int BlockThreads, int ItemsPerThread, int SegmentsPerBlock = 1>
@@ -128,7 +128,8 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::segmented_scan_policy_t::BLO
     InitValueT init_value)
 {
   using segmented_scan_policy_t = typename ChainedPolicyT::ActivePolicy::segmented_scan_policy_t;
-  static_assert(segmented_scan_policy_t::segments_per_block == 1, "Policy with single segment per block must be used");
+  static_assert(segmented_scan_policy_t::max_segments_per_block == 1,
+                "Policy with single segment per block must be used");
 
   using agent_segmented_scan_t = cub::detail::segmented_scan::agent_segmented_scan<
     segmented_scan_policy_t,
@@ -182,7 +183,7 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::segmented_scan_policy_t::BLO
 {
   using segmented_scan_policy_t        = typename ChainedPolicyT::ActivePolicy::segmented_scan_policy_t;
   constexpr int num_segments_per_block = 2;
-  static_assert(segmented_scan_policy_t::segments_per_block >= num_segments_per_block,
+  static_assert(segmented_scan_policy_t::max_segments_per_block >= num_segments_per_block,
                 "Policy with two segment per block must be used");
 
   using agent_segmented_scan_t = cub::detail::segmented_scan::agent_segmented_scan<
@@ -234,7 +235,7 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::segmented_scan_policy_t::BLO
 {
   using segmented_scan_policy_t        = typename ChainedPolicyT::ActivePolicy::segmented_scan_policy_t;
   constexpr int num_segments_per_block = 3;
-  static_assert(segmented_scan_policy_t::segments_per_block >= num_segments_per_block,
+  static_assert(segmented_scan_policy_t::max_segments_per_block >= num_segments_per_block,
                 "Policy with three segment per block must be used");
 
   using agent_segmented_scan_t = cub::detail::segmented_scan::agent_segmented_scan<

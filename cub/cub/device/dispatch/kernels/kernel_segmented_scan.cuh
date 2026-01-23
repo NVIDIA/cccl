@@ -46,7 +46,8 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::segmented_scan_policy_t::BLO
     BeginOffsetIteratorOutputT begin_offset_d_out,
     OffsetT n_segments,
     ScanOpT scan_op,
-    InitValueT init_value)
+    InitValueT init_value,
+    int num_segments_per_worker)
 {
   using segmented_scan_policy_t = typename ChainedPolicyT::ActivePolicy::segmented_scan_policy_t;
 
@@ -63,13 +64,15 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::segmented_scan_policy_t::BLO
   __shared__ typename agent_segmented_scan_t::TempStorage temp_storage;
 
   const ActualInitValueT _init_value = init_value;
+  _CCCL_ASSERT(num_segments_per_worker > 0, "Number of segments to be processed by block must be positive");
+  _CCCL_ASSERT(num_segments_per_worker <= segmented_scan_policy_t::max_segments_per_block,
+               "Requested number of segments to be processed by block exceeds compile-time maximum");
 
-  static constexpr int num_segments_per_block = segmented_scan_policy_t::segments_per_block;
-  const auto work_id                          = num_segments_per_block * blockIdx.x;
+  const auto work_id = num_segments_per_worker * blockIdx.x;
 
   _CCCL_ASSERT(work_id < n_segments, "device_segmented_scan_kernel launch configuration results in access violation");
 
-  if constexpr (num_segments_per_block == 1)
+  if constexpr (segmented_scan_policy_t::max_segments_per_block == 1)
   {
     const OffsetT inp_begin_offset = begin_offset_d_in[work_id];
     const OffsetT inp_end_offset   = end_offset_d_in[work_id];
@@ -81,11 +84,15 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::segmented_scan_policy_t::BLO
   else
   {
     const auto start_id = work_id;
-    const auto end_id   = ::cuda::std::min<decltype(start_id)>(start_id + num_segments_per_block, n_segments);
+    const auto end_id   = ::cuda::std::min<decltype(start_id)>(start_id + num_segments_per_worker, n_segments);
     int size            = end_id - start_id;
 
+    auto worker_beg_off_d_in  = begin_offset_d_in + start_id;
+    auto worker_end_off_d_in  = end_offset_d_in + start_id;
+    auto worker_beg_off_d_out = begin_offset_d_out + start_id;
+
     agent_segmented_scan_t(temp_storage, d_in, d_out, scan_op, _init_value)
-      .consume_ranges(begin_offset_d_in + start_id, end_offset_d_in + start_id, begin_offset_d_out + start_id, size);
+      .consume_ranges(worker_beg_off_d_in, worker_end_off_d_in, worker_beg_off_d_out, size);
   }
 }
 
@@ -110,7 +117,8 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::warp_segmented_scan_policy_t
     BeginOffsetIteratorOutputT begin_offset_d_out,
     OffsetT n_segments,
     ScanOpT scan_op,
-    InitValueT init_value)
+    InitValueT init_value,
+    int /* num_segments_per_worker */)
 {
   using policy_t = typename ChainedPolicyT::ActivePolicy::warp_segmented_scan_policy_t;
 
@@ -204,7 +212,8 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::warp_segmented_scan_policy_t
     BeginOffsetIteratorOutputT begin_offset_d_out,
     OffsetT n_segments,
     ScanOpT scan_op,
-    InitValueT init_value)
+    InitValueT init_value,
+    int num_segments_per_worker)
 {
   using policy_t = typename ChainedPolicyT::ActivePolicy::thread_segmented_scan_policy_t;
 
@@ -227,7 +236,7 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::warp_segmented_scan_policy_t
 
   agent_t agent(
     temp_storage, d_in, d_out, begin_offset_d_in, end_offset_d_in, begin_offset_d_out, n_segments, scan_op, _init_value);
-  agent.consume_range();
+  agent.consume_range(num_segments_per_worker);
 }
 } // namespace detail::segmented_scan
 

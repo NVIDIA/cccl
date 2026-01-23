@@ -19,22 +19,29 @@
 
 CUB_NAMESPACE_BEGIN
 
-namespace detail::segmented_scan
+namespace detail::segmented_scan::multi_segment_helpers
 {
 template <typename ValueT, typename FlagT>
-_CCCL_DEVICE _CCCL_FORCEINLINE constexpr FlagT get_flag(::cuda::std::tuple<ValueT, FlagT> fv) noexcept
+using augmented_value_t = ::cuda::std::tuple<ValueT, FlagT>;
+
+template <typename ComputeT, int MaxSegmentsPerWorker>
+using agent_segmented_scan_compute_t =
+  ::cuda::std::conditional_t<MaxSegmentsPerWorker == 1, ComputeT, augmented_value_t<ComputeT, bool>>;
+
+template <typename ValueT, typename FlagT>
+_CCCL_DEVICE _CCCL_FORCEINLINE constexpr FlagT get_flag(augmented_value_t<ValueT, FlagT> fv) noexcept
 {
   return ::cuda::std::get<1>(fv);
 }
 
 template <typename ValueT, typename FlagT>
-_CCCL_DEVICE _CCCL_FORCEINLINE constexpr ValueT get_value(::cuda::std::tuple<ValueT, FlagT> fv) noexcept
+_CCCL_DEVICE _CCCL_FORCEINLINE constexpr ValueT get_value(augmented_value_t<ValueT, FlagT> fv) noexcept
 {
   return ::cuda::std::get<0>(fv);
 }
 
 template <typename ValueT, typename FlagT>
-_CCCL_DEVICE _CCCL_FORCEINLINE constexpr ::cuda::std::tuple<ValueT, FlagT> make_value_flag(ValueT v, FlagT f) noexcept
+_CCCL_DEVICE _CCCL_FORCEINLINE constexpr augmented_value_t<ValueT, FlagT> make_value_flag(ValueT v, FlagT f) noexcept
 {
   return {v, f};
 }
@@ -42,7 +49,7 @@ _CCCL_DEVICE _CCCL_FORCEINLINE constexpr ::cuda::std::tuple<ValueT, FlagT> make_
 template <typename ValueT, typename FlagT, typename BinaryOpT>
 struct schwarz_scan_op
 {
-  using fv_t = ::cuda::std::tuple<ValueT, FlagT>;
+  using fv_t = augmented_value_t<ValueT, FlagT>;
   BinaryOpT& scan_op;
 
   _CCCL_DEVICE _CCCL_FORCEINLINE fv_t operator()(fv_t o1, fv_t o2)
@@ -56,6 +63,52 @@ struct schwarz_scan_op
     const ValueT res_value = scan_op(o1_value, o2_value);
 
     return make_value_flag(res_value, get_flag(::cuda::std::move(o1)));
+  }
+};
+
+template <typename V, typename F>
+struct packer
+{
+  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE constexpr auto operator()(V v, F f) const
+  {
+    return make_value_flag(v, f);
+  }
+};
+
+template <typename V, typename F, typename ScanOp>
+struct packer_iv
+{
+  V init_v;
+  ScanOp& op;
+
+  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE constexpr auto operator()(V v, F f) const
+  {
+    V res = v;
+    if (f)
+    {
+      res = op(init_v, v);
+    }
+    return make_value_flag(res, f);
+  }
+};
+
+template <typename V, typename F>
+struct projector
+{
+  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE constexpr auto operator()(V v, F) const
+  {
+    return v;
+  }
+};
+
+template <typename V, typename F>
+struct projector_iv
+{
+  V init_v;
+
+  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE constexpr auto operator()(V v, F f) const
+  {
+    return (f) ? init_v : v;
   }
 };
 
@@ -181,25 +234,6 @@ private:
     return {segment_id, shifted_offset};
   }
 };
-
-template <typename PrefixTy, typename BinaryOpTy>
-struct block_prefix_callback_t
-{
-  PrefixTy& m_exclusive_prefix;
-  BinaryOpTy& m_scan_op;
-
-  _CCCL_DEVICE _CCCL_FORCEINLINE block_prefix_callback_t(PrefixTy& prefix, BinaryOpTy& op)
-      : m_exclusive_prefix(prefix)
-      , m_scan_op(op)
-  {}
-
-  _CCCL_DEVICE _CCCL_FORCEINLINE PrefixTy operator()(PrefixTy block_aggregate)
-  {
-    const PrefixTy previous_prefix = m_exclusive_prefix;
-    m_exclusive_prefix             = m_scan_op(m_exclusive_prefix, block_aggregate);
-    return previous_prefix;
-  }
-};
-} // namespace detail::segmented_scan
+} // namespace detail::segmented_scan::multi_segment_helpers
 
 CUB_NAMESPACE_END
