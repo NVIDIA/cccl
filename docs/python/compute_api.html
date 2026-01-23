@@ -1619,6 +1619,202 @@ The API is subject to change without notice.</p>
 </dd></dl>
 
 <dl class="py function">
+<dt class="sig sig-object py" id="cuda.compute.algorithms.lower_bound">
+<span class="sig-prename descclassname"><span class="pre">cuda.compute.algorithms.</span></span><span class="sig-name descname"><span class="pre">lower_bound</span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><span class="n"><span class="pre">d_data</span></span></em>,</dd>
+<dd><em class="sig-param"><span class="n"><span class="pre">d_values</span></span></em>,</dd>
+<dd><em class="sig-param"><span class="n"><span class="pre">d_out</span></span></em>,</dd>
+<dd><em class="sig-param"><span class="n"><span class="pre">num_items</span></span></em>,</dd>
+<dd><em class="sig-param"><span class="n"><span class="pre">num_values</span></span></em>,</dd>
+<dd><em class="sig-param"><span class="n"><span class="pre">comp</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>,</dd>
+<dd><em class="sig-param"><span class="n"><span class="pre">stream</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>,</dd>
+</dl>
+
+<span class="sig-paren">)</span><a class="headerlink" href="#cuda.compute.algorithms.lower_bound" title="Link to this definition">#</a></dt>
+<dd><p>Find the <em>first</em> position that each value in <code class="docutils literal notranslate"><span class="pre">d_values</span></code> would be inserted into
+<code class="docutils literal notranslate"><span class="pre">d_data</span></code> to maintain sorted order.</p>
+<p class="rubric">Example</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">cupy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">cp</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">cuda.compute</span>
+
+<span class="n">h_data</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">7</span><span class="p">,</span> <span class="mi">9</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">int32</span><span class="p">)</span>
+<span class="n">h_values</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">0</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">10</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">int32</span><span class="p">)</span>
+
+<span class="n">d_data</span> <span class="o">=</span> <span class="n">cp</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">h_data</span><span class="p">)</span>
+<span class="n">d_values</span> <span class="o">=</span> <span class="n">cp</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">h_values</span><span class="p">)</span>
+<span class="n">d_out</span> <span class="o">=</span> <span class="n">cp</span><span class="o">.</span><span class="n">empty</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">h_values</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">uintp</span><span class="p">)</span>
+
+<span class="n">cuda</span><span class="o">.</span><span class="n">compute</span><span class="o">.</span><span class="n">lower_bound</span><span class="p">(</span><span class="n">d_data</span><span class="p">,</span> <span class="n">d_values</span><span class="p">,</span> <span class="n">d_out</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">d_data</span><span class="p">),</span> <span class="nb">len</span><span class="p">(</span><span class="n">d_values</span><span class="p">))</span>
+
+<span class="n">expected</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">searchsorted</span><span class="p">(</span><span class="n">h_data</span><span class="p">,</span> <span class="n">h_values</span><span class="p">,</span> <span class="n">side</span><span class="o">=</span><span class="s2">&quot;left&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">uintp</span><span class="p">)</span>
+<span class="n">got</span> <span class="o">=</span> <span class="n">cp</span><span class="o">.</span><span class="n">asnumpy</span><span class="p">(</span><span class="n">d_out</span><span class="p">)</span>
+
+<span class="k">assert</span> <span class="n">np</span><span class="o">.</span><span class="n">array_equal</span><span class="p">(</span><span class="n">got</span><span class="p">,</span> <span class="n">expected</span><span class="p">)</span>
+</pre></div>
+</div>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>d_data</strong> (<em>DeviceArrayLike</em>) – Device array containing the sorted input range.</p></li>
+<li><p><strong>d_values</strong> (<em>DeviceArrayLike</em><em> | </em><em>IteratorBase</em>) – Device array or iterator containing the search values.</p></li>
+<li><p><strong>d_out</strong> (<em>DeviceArrayLike</em>) – Device array to store the index results.</p></li>
+<li><p><strong>num_items</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a>) – Number of items in <code class="docutils literal notranslate"><span class="pre">d_data</span></code>.</p></li>
+<li><p><strong>num_values</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a>) – Number of items in <code class="docutils literal notranslate"><span class="pre">d_values</span></code>.</p></li>
+<li><p><strong>comp</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Callable" title="(in Python v3.14)"><em>Callable</em></a><em> | </em><em>cuda.compute._bindings.OpKind</em><em> | </em><em>None</em>) – Optional comparison operator (default: <code class="docutils literal notranslate"><span class="pre">OpKind.LESS</span></code>).</p></li>
+<li><p><strong>stream</strong> – CUDA stream for the operation (optional).</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="cuda.compute.algorithms.make_lower_bound">
+<span class="sig-prename descclassname"><span class="pre">cuda.compute.algorithms.</span></span><span class="sig-name descname"><span class="pre">make_lower_bound</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">d_data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">d_values</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">d_out</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">comp</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#cuda.compute.algorithms.make_lower_bound" title="Link to this definition">#</a></dt>
+<dd><p>Create a lower_bound object that can be called to find insertion positions.</p>
+<p class="rubric">Example</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">cupy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">cp</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">cuda.compute</span>
+
+<span class="n">h_data</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">7</span><span class="p">,</span> <span class="mi">9</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">int32</span><span class="p">)</span>
+<span class="n">h_values</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">0</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">10</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">int32</span><span class="p">)</span>
+
+<span class="n">d_data</span> <span class="o">=</span> <span class="n">cp</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">h_data</span><span class="p">)</span>
+<span class="n">d_values</span> <span class="o">=</span> <span class="n">cp</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">h_values</span><span class="p">)</span>
+<span class="n">d_out</span> <span class="o">=</span> <span class="n">cp</span><span class="o">.</span><span class="n">empty</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">h_values</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">uintp</span><span class="p">)</span>
+
+<span class="n">searcher</span> <span class="o">=</span> <span class="n">cuda</span><span class="o">.</span><span class="n">compute</span><span class="o">.</span><span class="n">make_lower_bound</span><span class="p">(</span><span class="n">d_data</span><span class="p">,</span> <span class="n">d_values</span><span class="p">,</span> <span class="n">d_out</span><span class="p">)</span>
+<span class="n">searcher</span><span class="p">(</span><span class="n">d_data</span><span class="p">,</span> <span class="n">d_values</span><span class="p">,</span> <span class="n">d_out</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">d_data</span><span class="p">),</span> <span class="nb">len</span><span class="p">(</span><span class="n">d_values</span><span class="p">))</span>
+
+<span class="n">expected</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">searchsorted</span><span class="p">(</span><span class="n">h_data</span><span class="p">,</span> <span class="n">h_values</span><span class="p">,</span> <span class="n">side</span><span class="o">=</span><span class="s2">&quot;left&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">uintp</span><span class="p">)</span>
+<span class="n">got</span> <span class="o">=</span> <span class="n">cp</span><span class="o">.</span><span class="n">asnumpy</span><span class="p">(</span><span class="n">d_out</span><span class="p">)</span>
+
+<span class="k">assert</span> <span class="n">np</span><span class="o">.</span><span class="n">array_equal</span><span class="p">(</span><span class="n">got</span><span class="p">,</span> <span class="n">expected</span><span class="p">)</span>
+</pre></div>
+</div>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>d_data</strong> (<em>DeviceArrayLike</em>) – Device array containing the sorted input range.</p></li>
+<li><p><strong>d_values</strong> (<em>DeviceArrayLike</em><em> | </em><em>IteratorBase</em>) – Device array or iterator containing the search values.</p></li>
+<li><p><strong>d_out</strong> (<em>DeviceArrayLike</em>) – Device array to store the index results.</p></li>
+<li><p><strong>comp</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Callable" title="(in Python v3.14)"><em>Callable</em></a><em> | </em><em>cuda.compute._bindings.OpKind</em><em> | </em><em>None</em>) – Optional comparison operator (default: <code class="docutils literal notranslate"><span class="pre">OpKind.LESS</span></code>).</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>A callable object that performs lower_bound.</p>
+</dd>
+</dl>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p><a class="reference internal" href="#cuda.compute.algorithms.lower_bound" title="cuda.compute.algorithms.lower_bound"><code class="xref py py-func docutils literal notranslate"><span class="pre">lower_bound()</span></code></a></p>
+</div>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="cuda.compute.algorithms.upper_bound">
+<span class="sig-prename descclassname"><span class="pre">cuda.compute.algorithms.</span></span><span class="sig-name descname"><span class="pre">upper_bound</span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><span class="n"><span class="pre">d_data</span></span></em>,</dd>
+<dd><em class="sig-param"><span class="n"><span class="pre">d_values</span></span></em>,</dd>
+<dd><em class="sig-param"><span class="n"><span class="pre">d_out</span></span></em>,</dd>
+<dd><em class="sig-param"><span class="n"><span class="pre">num_items</span></span></em>,</dd>
+<dd><em class="sig-param"><span class="n"><span class="pre">num_values</span></span></em>,</dd>
+<dd><em class="sig-param"><span class="n"><span class="pre">comp</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>,</dd>
+<dd><em class="sig-param"><span class="n"><span class="pre">stream</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>,</dd>
+</dl>
+
+<span class="sig-paren">)</span><a class="headerlink" href="#cuda.compute.algorithms.upper_bound" title="Link to this definition">#</a></dt>
+<dd><p>Find the <em>last</em> position that each value in <code class="docutils literal notranslate"><span class="pre">d_values</span></code> would be inserted into
+<code class="docutils literal notranslate"><span class="pre">d_data</span></code> to maintain sorted order.</p>
+<p class="rubric">Example</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">cupy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">cp</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">cuda.compute</span>
+
+<span class="n">h_data</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">7</span><span class="p">,</span> <span class="mi">9</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">int32</span><span class="p">)</span>
+<span class="n">h_values</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">0</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">10</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">int32</span><span class="p">)</span>
+
+<span class="n">d_data</span> <span class="o">=</span> <span class="n">cp</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">h_data</span><span class="p">)</span>
+<span class="n">d_values</span> <span class="o">=</span> <span class="n">cp</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">h_values</span><span class="p">)</span>
+<span class="n">d_out</span> <span class="o">=</span> <span class="n">cp</span><span class="o">.</span><span class="n">empty</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">h_values</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">uintp</span><span class="p">)</span>
+
+<span class="n">cuda</span><span class="o">.</span><span class="n">compute</span><span class="o">.</span><span class="n">upper_bound</span><span class="p">(</span><span class="n">d_data</span><span class="p">,</span> <span class="n">d_values</span><span class="p">,</span> <span class="n">d_out</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">d_data</span><span class="p">),</span> <span class="nb">len</span><span class="p">(</span><span class="n">d_values</span><span class="p">))</span>
+
+<span class="n">expected</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">searchsorted</span><span class="p">(</span><span class="n">h_data</span><span class="p">,</span> <span class="n">h_values</span><span class="p">,</span> <span class="n">side</span><span class="o">=</span><span class="s2">&quot;right&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">uintp</span><span class="p">)</span>
+<span class="n">got</span> <span class="o">=</span> <span class="n">cp</span><span class="o">.</span><span class="n">asnumpy</span><span class="p">(</span><span class="n">d_out</span><span class="p">)</span>
+
+<span class="k">assert</span> <span class="n">np</span><span class="o">.</span><span class="n">array_equal</span><span class="p">(</span><span class="n">got</span><span class="p">,</span> <span class="n">expected</span><span class="p">)</span>
+</pre></div>
+</div>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>d_data</strong> (<em>DeviceArrayLike</em>) – Device array containing the sorted input range.</p></li>
+<li><p><strong>d_values</strong> (<em>DeviceArrayLike</em><em> | </em><em>IteratorBase</em>) – Device array or iterator containing the search values.</p></li>
+<li><p><strong>d_out</strong> (<em>DeviceArrayLike</em>) – Device array to store the index results.</p></li>
+<li><p><strong>num_items</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a>) – Number of items in <code class="docutils literal notranslate"><span class="pre">d_data</span></code>.</p></li>
+<li><p><strong>num_values</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a>) – Number of items in <code class="docutils literal notranslate"><span class="pre">d_values</span></code>.</p></li>
+<li><p><strong>comp</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Callable" title="(in Python v3.14)"><em>Callable</em></a><em> | </em><em>cuda.compute._bindings.OpKind</em><em> | </em><em>None</em>) – Optional comparison operator (default: <code class="docutils literal notranslate"><span class="pre">OpKind.LESS</span></code>).</p></li>
+<li><p><strong>stream</strong> – CUDA stream for the operation (optional).</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="cuda.compute.algorithms.make_upper_bound">
+<span class="sig-prename descclassname"><span class="pre">cuda.compute.algorithms.</span></span><span class="sig-name descname"><span class="pre">make_upper_bound</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">d_data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">d_values</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">d_out</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">comp</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#cuda.compute.algorithms.make_upper_bound" title="Link to this definition">#</a></dt>
+<dd><p>Create an upper_bound object that can be called to find insertion positions.</p>
+<p class="rubric">Example</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">cupy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">cp</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">cuda.compute</span>
+
+<span class="n">h_data</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">7</span><span class="p">,</span> <span class="mi">9</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">int32</span><span class="p">)</span>
+<span class="n">h_values</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">0</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">10</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">int32</span><span class="p">)</span>
+
+<span class="n">d_data</span> <span class="o">=</span> <span class="n">cp</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">h_data</span><span class="p">)</span>
+<span class="n">d_values</span> <span class="o">=</span> <span class="n">cp</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">h_values</span><span class="p">)</span>
+<span class="n">d_out</span> <span class="o">=</span> <span class="n">cp</span><span class="o">.</span><span class="n">empty</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">h_values</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">uintp</span><span class="p">)</span>
+
+<span class="n">searcher</span> <span class="o">=</span> <span class="n">cuda</span><span class="o">.</span><span class="n">compute</span><span class="o">.</span><span class="n">make_upper_bound</span><span class="p">(</span><span class="n">d_data</span><span class="p">,</span> <span class="n">d_values</span><span class="p">,</span> <span class="n">d_out</span><span class="p">)</span>
+<span class="n">searcher</span><span class="p">(</span><span class="n">d_data</span><span class="p">,</span> <span class="n">d_values</span><span class="p">,</span> <span class="n">d_out</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">d_data</span><span class="p">),</span> <span class="nb">len</span><span class="p">(</span><span class="n">d_values</span><span class="p">))</span>
+
+<span class="n">expected</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">searchsorted</span><span class="p">(</span><span class="n">h_data</span><span class="p">,</span> <span class="n">h_values</span><span class="p">,</span> <span class="n">side</span><span class="o">=</span><span class="s2">&quot;right&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">uintp</span><span class="p">)</span>
+<span class="n">got</span> <span class="o">=</span> <span class="n">cp</span><span class="o">.</span><span class="n">asnumpy</span><span class="p">(</span><span class="n">d_out</span><span class="p">)</span>
+
+<span class="k">assert</span> <span class="n">np</span><span class="o">.</span><span class="n">array_equal</span><span class="p">(</span><span class="n">got</span><span class="p">,</span> <span class="n">expected</span><span class="p">)</span>
+</pre></div>
+</div>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>d_data</strong> (<em>DeviceArrayLike</em>) – Device array containing the sorted input range.</p></li>
+<li><p><strong>d_values</strong> (<em>DeviceArrayLike</em><em> | </em><em>IteratorBase</em>) – Device array or iterator containing the search values.</p></li>
+<li><p><strong>d_out</strong> (<em>DeviceArrayLike</em>) – Device array to store the index results.</p></li>
+<li><p><strong>comp</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Callable" title="(in Python v3.14)"><em>Callable</em></a><em> | </em><em>cuda.compute._bindings.OpKind</em><em> | </em><em>None</em>) – Optional comparison operator (default: <code class="docutils literal notranslate"><span class="pre">OpKind.LESS</span></code>).</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>A callable object that performs upper_bound.</p>
+</dd>
+</dl>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p><a class="reference internal" href="#cuda.compute.algorithms.upper_bound" title="cuda.compute.algorithms.upper_bound"><code class="xref py py-func docutils literal notranslate"><span class="pre">upper_bound()</span></code></a></p>
+</div>
+</dd></dl>
+
+<dl class="py function">
 <dt class="sig sig-object py" id="cuda.compute.algorithms.inclusive_scan">
 <span class="sig-prename descclassname"><span class="pre">cuda.compute.algorithms.</span></span><span class="sig-name descname"><span class="pre">inclusive_scan</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">d_in</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">d_out</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">op</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">init_value</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_items</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">stream</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#cuda.compute.algorithms.inclusive_scan" title="Link to this definition">#</a></dt>
 <dd><p>Performs device-wide inclusive scan.</p>
@@ -4782,6 +4978,10 @@ Numba type can be obtained using <code class="docutils literal notranslate"><spa
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#module-cuda.compute.algorithms">Algorithms</a><ul class="visible nav section-nav flex-column">
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#cuda.compute.algorithms.reduce_into"><code class="docutils literal notranslate"><span class="pre">reduce_into()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#cuda.compute.algorithms.make_reduce_into"><code class="docutils literal notranslate"><span class="pre">make_reduce_into()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#cuda.compute.algorithms.lower_bound"><code class="docutils literal notranslate"><span class="pre">lower_bound()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#cuda.compute.algorithms.make_lower_bound"><code class="docutils literal notranslate"><span class="pre">make_lower_bound()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#cuda.compute.algorithms.upper_bound"><code class="docutils literal notranslate"><span class="pre">upper_bound()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#cuda.compute.algorithms.make_upper_bound"><code class="docutils literal notranslate"><span class="pre">make_upper_bound()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#cuda.compute.algorithms.inclusive_scan"><code class="docutils literal notranslate"><span class="pre">inclusive_scan()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#cuda.compute.algorithms.make_inclusive_scan"><code class="docutils literal notranslate"><span class="pre">make_inclusive_scan()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#cuda.compute.algorithms.exclusive_scan"><code class="docutils literal notranslate"><span class="pre">exclusive_scan()</span></code></a></li>
