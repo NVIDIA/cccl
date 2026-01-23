@@ -9,6 +9,7 @@
 //===----------------------------------------------------------------------===//
 
 #include <cuda/buffer>
+#include <cuda/devices>
 #include <cuda/memory_resource>
 #include <cuda/std/algorithm>
 #include <cuda/std/array>
@@ -20,15 +21,8 @@
 #include <stdexcept>
 
 #include "helper.h"
+#include "test_resources.h"
 #include "types.h"
-
-#if _CCCL_CTK_AT_LEAST(12, 6)
-using test_types = c2h::type_list<cuda::std::tuple<int, cuda::mr::host_accessible>,
-                                  cuda::std::tuple<unsigned long long, cuda::mr::device_accessible>,
-                                  cuda::std::tuple<int, cuda::mr::host_accessible, cuda::mr::device_accessible>>;
-#else // ^^^ _CCCL_CTK_AT_LEAST(12, 6) ^^^ / vvv _CCCL_CTK_BELOW(12, 6) vvv
-using test_types = c2h::type_list<cuda::std::tuple<int, cuda::mr::device_accessible>>;
-#endif // ^^^ _CCCL_CTK_BELOW(12, 6) ^^^
 
 // Checks if the offsetting resource wrapper correctly got passed the alignment by the buffer constructor.
 template <typename T>
@@ -40,13 +34,17 @@ bool check_offseted_pointer(const T* ptr)
 
 C2H_CCCLRT_TEST("cuda::buffer constructors", "[container][buffer]", test_types)
 {
-  using TestT    = c2h::get<0, TestType>;
-  using Resource = typename extract_properties<TestT>::resource;
-  using Buffer   = typename extract_properties<TestT>::buffer;
+  using Buffer   = c2h::get<0, TestType>;
+  using Resource = typename extract_properties<Buffer>::resource;
   using T        = typename Buffer::value_type;
 
+  if (!extract_properties<Buffer>::is_resource_supported())
+  {
+    return;
+  }
+
   cuda::stream stream{cuda::device_ref{0}};
-  Resource resource = extract_properties<TestT>::get_resource();
+  Resource resource = extract_properties<Buffer>::get_resource();
 
   SECTION("Construction with explicit size")
   {
@@ -63,13 +61,13 @@ C2H_CCCLRT_TEST("cuda::buffer constructors", "[container][buffer]", test_types)
     }
 
     {
-      const auto buf = cuda::make_buffer(stream, extract_properties<TestT>::get_resource(), 0, T{42});
+      const auto buf = cuda::make_buffer(stream, extract_properties<Buffer>::get_resource(), 0, T{42});
       CCCLRT_CHECK(buf.empty());
       CCCLRT_CHECK(buf.data() == nullptr);
     }
 
     {
-      const auto buf = cuda::make_buffer(stream, extract_properties<TestT>::get_resource(), 5, T{42});
+      const auto buf = cuda::make_buffer(stream, extract_properties<Buffer>::get_resource(), 5, T{42});
       CCCLRT_CHECK(check_offseted_pointer(buf.data()));
       CCCLRT_CHECK(buf.size() == 5);
       CCCLRT_CHECK(equal_size_value(buf, 5, T(42)));
@@ -391,6 +389,10 @@ C2H_CCCLRT_TEST("cuda::buffer constructors with legacy resource", "[container][b
 #if _CCCL_CTK_AT_LEAST(12, 6)
 C2H_CCCLRT_TEST("cuda::make_buffer narrowing properties", "[container][buffer]")
 {
+  if (!cuda::__is_host_memory_pool_supported())
+  {
+    return;
+  }
   auto resource = cuda::pinned_default_memory_pool();
   cuda::stream stream{cuda::device_ref{0}};
 
