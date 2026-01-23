@@ -8,10 +8,13 @@ from numba import cuda
 
 from cuda import coop
 
+# example-begin imports
 numba.config.CUDA_LOW_OCCUPANCY_WARNINGS = 0
+# example-end imports
 
 
 def test_warp_exchange_striped_to_blocked():
+    # example-begin striped-to-blocked
     threads_in_warp = 32
     items_per_thread = 4
 
@@ -35,6 +38,8 @@ def test_warp_exchange_striped_to_blocked():
 
         for i in range(items_per_thread):
             d_out[tid * items_per_thread + i] = output_items[i]
+
+    # example-end striped-to-blocked
 
     total_items = threads_in_warp * items_per_thread
     h_input = np.random.randint(0, 64, total_items, dtype=np.int32)

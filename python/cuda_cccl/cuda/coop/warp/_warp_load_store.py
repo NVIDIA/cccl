@@ -70,7 +70,22 @@ class load(BasePrimitive):
         temp_storage=None,
         node=None,
     ):
-        """Create a warp-wide load operation."""
+        """
+        Loads items from global memory into a warp-striped layout.
+
+        Example:
+            .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_warp_load_store_api.py
+                :language: python
+                :dedent:
+                :start-after: example-begin imports
+                :end-before: example-end imports
+
+            .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_warp_load_store_api.py
+                :language: python
+                :dedent:
+                :start-after: example-begin load-store
+                :end-before: example-end load-store
+        """
         if items_per_thread < 1:
             raise ValueError("items_per_thread must be >= 1")
         if oob_default is not None and num_valid_items is None:
@@ -199,7 +214,22 @@ class store(BasePrimitive):
         temp_storage=None,
         node=None,
     ):
-        """Create a warp-wide store operation."""
+        """
+        Stores items from a warp-striped layout into global memory.
+
+        Example:
+            .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_warp_load_store_api.py
+                :language: python
+                :dedent:
+                :start-after: example-begin imports
+                :end-before: example-end imports
+
+            .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_warp_load_store_api.py
+                :language: python
+                :dedent:
+                :start-after: example-begin load-store
+                :end-before: example-end load-store
+        """
         if items_per_thread < 1:
             raise ValueError("items_per_thread must be >= 1")
 

@@ -53,9 +53,18 @@ class exclusive_sum(BasePrimitive):
         """
         Computes an exclusive warp-wide prefix sum using addition (+).
 
-        Example (explicit temp storage):
-            temp_storage = coop.TempStorage(bytes, alignment)
-            out = warp_exclusive_sum(x, temp_storage=temp_storage)
+        Example:
+            .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_warp_scan_api.py
+                :language: python
+                :dedent:
+                :start-after: example-begin imports
+                :end-before: example-end imports
+
+            .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_warp_scan_api.py
+                :language: python
+                :dedent:
+                :start-after: example-begin exclusive-sum
+                :end-before: example-end exclusive-sum
         """
         self.temp_storage = temp_storage
         self.dtype = normalize_dtype_param(dtype)
@@ -127,9 +136,18 @@ class inclusive_sum(BasePrimitive):
         """
         Computes an inclusive warp-wide prefix sum using addition (+).
 
-        Example (explicit temp storage):
-            temp_storage = coop.TempStorage(bytes, alignment)
-            out = warp_inclusive_sum(x, temp_storage=temp_storage)
+        Example:
+            .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_warp_scan_api.py
+                :language: python
+                :dedent:
+                :start-after: example-begin imports
+                :end-before: example-end imports
+
+            .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_warp_scan_api.py
+                :language: python
+                :dedent:
+                :start-after: example-begin inclusive-sum
+                :end-before: example-end inclusive-sum
         """
         self.temp_storage = temp_storage
         self.dtype = normalize_dtype_param(dtype)

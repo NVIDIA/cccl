@@ -40,33 +40,13 @@ The following :class:`cub.BlockScan` C++ APIs are supported:
     InclusiveScan(T&)[ITEMS_PER_THREAD] input, T(&)[ITEMS_PER_THREAD] output, ScanOp scan_op, BlockPrefixCallbackOp &prefix_op)
     InclusiveScanT(&)[ITEMS_PER_THREAD] input, T(&)[ITEMS_PER_THREAD] output, T initial_value, ScanOp scan_op)
 
-Unsupported C++ APIs
-++++++++++++++++++++
+Block-aggregate outputs
++++++++++++++++++++++++
 
-This module does not support any of the :class:`cub.BlockScan` C++ APIs
-that take a block aggregate reference as an argument.  That being said, the
-`BlockPrefixCallbackOp` callable is supported, and thus, block aggregates can
-be obtained using those measures.
-
-The reason the `T &block_aggregate` pattern is not supported as it will usually
-result in two output parameters, which we don't support in our underlying type
-machinery (i.e. _types.py).
-
-The unsupported APIs are as follows:
-
-    ExclusiveSum(T input, T &output, T &block_aggregate)
-    ExclusiveSum(T&)[ITEMS_PER_THREAD] input, T(&)[ITEMS_PER_THREAD] output, T &block_aggregate)
-
-    InclusiveSum(T input, T &output, T &block_aggregate)
-    InclusiveSum(T&)[ITEMS_PER_THREAD] input, T(&)[ITEMS_PER_THREAD] output, T &block_aggregate)
-
-    ExclusiveScan(T input, T &output, ScanOp scan_op, T &block_aggregate)
-    ExclusiveScan(T input, T &output, T initial_value, ScanOp scan_op, T &block_aggregate)
-    ExclusiveScan(T&)[ITEMS_PER_THREAD] input, T(&)[ITEMS_PER_THREAD] output, ScanOp scan_op, T &block_aggregate)
-    ExclusiveScan(T&)[ITEMS_PER_THREAD] input, T(&)[ITEMS_PER_THREAD] output, T initial_value, ScanOp scan_op, T &block_aggregate)
-
-    InclusiveScan(T input, T &output, ScanOp scan_op, T &block_aggregate)
-    InclusiveScan(T&)[ITEMS_PER_THREAD] input, T(&)[ITEMS_PER_THREAD] output, T initial_value, ScanOp scan_op, T &block_aggregate)
+This module supports the block-aggregate out-parameter overloads for
+Exclusive/Inclusive Sum and Scan variants (scalar and array forms) via the
+optional ``block_aggregate`` argument. The block aggregate is written into a
+1-element array. Tuple-style multi-output returns are not used.
 """
 
 import enum
@@ -894,7 +874,7 @@ class exclusive_sum(scan):
         Example:
             The code snippet below illustrates an exclusive prefix sum of 512
             integer items that are partitioned in a
-            :ref:`blocked arrangement <flexible-data-arrangement>` across 128
+            :ref:`blocked arrangement <coop-flexible-data-arrangement>` across 128
             threads where each thread owns 4 consecutive items.
 
             .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_block_scan_api.py

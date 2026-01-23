@@ -8,10 +8,13 @@ from numba import cuda
 
 from cuda import coop
 
+# example-begin imports
 numba.config.CUDA_LOW_OCCUPANCY_WARNINGS = 0
+# example-end imports
 
 
 def test_warp_load_store():
+    # example-begin load-store
     threads_in_warp = 32
     items_per_thread = 4
 
@@ -27,6 +30,8 @@ def test_warp_load_store():
         items = cuda.local.array(items_per_thread, numba.int32)
         warp_load(d_in, items)
         warp_store(d_out, items)
+
+    # example-end load-store
 
     h_input = np.random.randint(
         0, 42, threads_in_warp * items_per_thread, dtype=np.int32

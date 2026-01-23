@@ -8,6 +8,10 @@ from numba import cuda
 
 from cuda import coop
 
+# example-begin imports
+numba.config.CUDA_LOW_OCCUPANCY_WARNINGS = 0
+# example-end imports
+
 
 def test_warp_merge_sort():
     # example-begin merge-sort

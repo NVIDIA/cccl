@@ -50,11 +50,11 @@ class merge_sort_keys(BasePrimitive):
         temp_storage=None,
         node: "CoopNode" = None,
     ):
-        """Performs a block-wide merge sort over a :ref:`blocked arrangement <flexible-data-arrangement>` of keys.
+        """Performs a block-wide merge sort over a :ref:`blocked arrangement <coop-flexible-data-arrangement>` of keys.
 
         Example:
             The code snippet below illustrates a sort of 512 integer keys that
-            are partitioned in a :ref:`blocked arrangement <flexible-data-arrangement>` across 128 threads
+            are partitioned in a :ref:`blocked arrangement <coop-flexible-data-arrangement>` across 128 threads
             where each thread owns 4 consecutive keys. We start by importing necessary modules:
 
             .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_block_merge_sort_api.py
