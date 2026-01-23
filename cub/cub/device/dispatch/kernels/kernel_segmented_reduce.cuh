@@ -15,7 +15,10 @@
 
 #include <cub/agent/agent_reduce.cuh>
 #include <cub/device/dispatch/kernels/kernel_reduce.cuh> // finalize_and_store_aggregate
+#include <cub/device/dispatch/tuning/tuning_reduce.cuh>
 #include <cub/iterator/arg_index_input_iterator.cuh>
+
+#include <cuda/__device/arch_id.h>
 
 CUB_NAMESPACE_BEGIN
 
@@ -36,8 +39,8 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void NormalizeReductionOutput(
 
 /**
  * Segmented reduction (one block per segment)
- * @tparam ChainedPolicyT
- *   Chained tuning policy
+ * @tparam PolicySelector
+ *   Policy selector
  *
  * @tparam InputIteratorT
  *   Random-access input iterator type for reading input items @iterator
@@ -90,7 +93,7 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void NormalizeReductionOutput(
  * @param[in] init
  *   The initial value of the reduction
  */
-template <typename ChainedPolicyT,
+template <typename PolicySelector,
           typename InputIteratorT,
           typename OutputIteratorT,
           typename BeginOffsetIteratorT,
@@ -99,18 +102,31 @@ template <typename ChainedPolicyT,
           typename ReductionOpT,
           typename InitT,
           typename AccumT>
-CUB_DETAIL_KERNEL_ATTRIBUTES
-__launch_bounds__(int(ChainedPolicyT::ActivePolicy::ReducePolicy::BLOCK_THREADS)) void DeviceSegmentedReduceKernel(
-  InputIteratorT d_in,
-  OutputIteratorT d_out,
-  BeginOffsetIteratorT d_begin_offsets,
-  EndOffsetIteratorT d_end_offsets,
-  ReductionOpT reduction_op,
-  InitT init)
+#if _CCCL_HAS_CONCEPTS()
+  requires reduce_policy_selector<PolicySelector>
+#endif // _CCCL_HAS_CONCEPTS()
+CUB_DETAIL_KERNEL_ATTRIBUTES __launch_bounds__(int(
+  PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10})
+    .segmented_reduce.block_threads)) void DeviceSegmentedReduceKernel(InputIteratorT d_in,
+                                                                       OutputIteratorT d_out,
+                                                                       BeginOffsetIteratorT d_begin_offsets,
+                                                                       EndOffsetIteratorT d_end_offsets,
+                                                                       ReductionOpT reduction_op,
+                                                                       InitT init)
 {
+  static constexpr agent_reduce_policy policy = PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10}).segmented_reduce;
+  // TODO(bgruber): pass policy directly as template argument to AgentReduce in C++20
+  using agent_policy_t =
+    AgentReducePolicy<policy.block_threads,
+                      policy.items_per_thread,
+                      AccumT,
+                      policy.vector_load_length,
+                      policy.block_algorithm,
+                      policy.load_modifier,
+                      NoScaling<policy.block_threads, policy.items_per_thread, AccumT>>;
+
   // Thread block type for reducing input tiles
-  using AgentReduceT =
-    AgentReduce<typename ChainedPolicyT::ActivePolicy::ReducePolicy, InputIteratorT, OffsetT, ReductionOpT, AccumT>;
+  using AgentReduceT = AgentReduce<agent_policy_t, InputIteratorT, OffsetT, ReductionOpT, AccumT>;
 
   // Shared memory storage
   __shared__ typename AgentReduceT::TempStorage temp_storage;

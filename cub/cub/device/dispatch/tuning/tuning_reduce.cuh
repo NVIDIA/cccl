@@ -88,6 +88,76 @@ struct reduce_policy
 #endif // !_CCCL_COMPILER(NVRTC)
 };
 
+// TODO(bgruber): remove in CCCL 4.0
+template <typename PolicyHub>
+struct policy_selector_from_hub
+{
+  // TODO(bgruber): codex generated all the structs below: why are the needed? what test fails without them?
+  template <typename PolicyT, typename = void>
+  struct segmented_policy_selector
+  {
+    using type = typename PolicyT::ReducePolicy;
+  };
+
+  template <typename PolicyT>
+  struct segmented_policy_selector<PolicyT, ::cuda::std::void_t<typename PolicyT::SegmentedReducePolicy>>
+  {
+    using type = typename PolicyT::SegmentedReducePolicy;
+  };
+
+  template <typename PolicyT, typename = void>
+  struct reduce_nondet_policy_selector
+  {
+    using type = typename PolicyT::ReducePolicy;
+  };
+
+  template <typename PolicyT>
+  struct reduce_nondet_policy_selector<PolicyT, ::cuda::std::void_t<typename PolicyT::ReduceNondeterministicPolicy>>
+  {
+    using type = typename PolicyT::ReduceNondeterministicPolicy;
+  };
+
+  // this is only called in device code, so we can ignore the arch parameter
+  _CCCL_DEVICE_API constexpr auto operator()(::cuda::arch_id /*arch*/) const -> reduce_policy
+  {
+    using ap               = typename PolicyHub::MaxPolicy::ActivePolicy;
+    using ap_reduce        = typename ap::ReducePolicy;
+    using ap_single_tile   = typename ap::SingleTilePolicy;
+    using ap_segmented     = typename segmented_policy_selector<ap>::type;
+    using ap_reduce_nondet = typename reduce_nondet_policy_selector<ap>::type;
+    return reduce_policy{
+      agent_reduce_policy{
+        ap_reduce::BLOCK_THREADS,
+        ap_reduce::ITEMS_PER_THREAD,
+        ap_reduce::VECTOR_LOAD_LENGTH,
+        ap_reduce::BLOCK_ALGORITHM,
+        ap_reduce::LOAD_MODIFIER,
+      },
+      agent_reduce_policy{
+        ap_single_tile::BLOCK_THREADS,
+        ap_single_tile::ITEMS_PER_THREAD,
+        ap_single_tile::VECTOR_LOAD_LENGTH,
+        ap_single_tile::BLOCK_ALGORITHM,
+        ap_single_tile::LOAD_MODIFIER,
+      },
+      agent_reduce_policy{
+        ap_segmented::BLOCK_THREADS,
+        ap_segmented::ITEMS_PER_THREAD,
+        ap_segmented::VECTOR_LOAD_LENGTH,
+        ap_segmented::BLOCK_ALGORITHM,
+        ap_segmented::LOAD_MODIFIER,
+      },
+      agent_reduce_policy{
+        ap_reduce_nondet::BLOCK_THREADS,
+        ap_reduce_nondet::ITEMS_PER_THREAD,
+        ap_reduce_nondet::VECTOR_LOAD_LENGTH,
+        ap_reduce_nondet::BLOCK_ALGORITHM,
+        ap_reduce_nondet::LOAD_MODIFIER,
+      },
+    };
+  }
+};
+
 #if _CCCL_HAS_CONCEPTS()
 template <typename T>
 concept reduce_policy_selector = policy_selector<T, reduce_policy>;
