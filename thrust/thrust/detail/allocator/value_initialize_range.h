@@ -26,11 +26,13 @@
 #  pragma system_header
 #endif // no system header
 
-#include <thrust/detail/allocator/allocator_traits.h>
+#include <thrust/detail/allocator/allocator_system.h>
 #include <thrust/detail/type_traits.h>
 #include <thrust/detail/type_traits/pointer_traits.h>
 #include <thrust/for_each.h>
 #include <thrust/uninitialized_fill.h>
+
+#include <cuda/std/__memory/allocator_traits.h>
 
 THRUST_NAMESPACE_BEGIN
 namespace detail
@@ -43,7 +45,7 @@ struct construct1_via_allocator
   template <typename T>
   inline _CCCL_HOST_DEVICE void operator()(T& x)
   {
-    allocator_traits<Allocator>::construct(a, &x);
+    ::cuda::std::allocator_traits<Allocator>::construct(a, &x);
   }
 };
 

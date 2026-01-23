@@ -26,12 +26,13 @@
 #  pragma system_header
 #endif // no system header
 
-#include <thrust/detail/allocator/allocator_traits.h>
+#include <thrust/detail/allocator/allocator_system.h>
 #include <thrust/detail/allocator/destroy_range.h>
 #include <thrust/detail/type_traits/pointer_traits.h>
 #include <thrust/for_each.h>
 
 #include <cuda/std/__cccl/memory_wrapper.h>
+#include <cuda/std/__memory/allocator_traits.h>
 
 THRUST_NAMESPACE_BEGIN
 namespace detail
@@ -58,7 +59,7 @@ struct destroy_via_allocator
   template <typename T>
   _CCCL_HOST_DEVICE void operator()(T& x) noexcept
   {
-    allocator_traits<Allocator>::destroy(a, &x);
+    ::cuda::std::allocator_traits<Allocator>::destroy(a, &x);
   }
 };
 

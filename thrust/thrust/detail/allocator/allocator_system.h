@@ -50,9 +50,6 @@ namespace detail
 template <typename Alloc>
 struct allocator_system;
 
-template <typename Alloc>
-struct allocator_traits;
-
 namespace allocator_traits_detail
 {
 template <class T, class = void>
@@ -86,26 +83,6 @@ template <typename Alloc>
 }
 } // namespace allocator_traits_detail
 
-template <typename Alloc>
-struct allocator_traits : public ::cuda::std::allocator_traits<Alloc>
-{
-  // Pull in the base class aliases explicitly for use below
-  using pointer       = typename ::cuda::std::allocator_traits<Alloc>::pointer;
-  using const_pointer = typename ::cuda::std::allocator_traits<Alloc>::const_pointer;
-
-  // Need to rebind to this allocator traits implementation as opposed to the cuda::std one
-  template <class T>
-  using rebind_alloc = typename ::cuda::std::allocator_traits<Alloc>::template rebind_alloc<T>;
-  template <class T>
-  using rebind_traits = allocator_traits<rebind_alloc<T>>;
-
-  // Nonstandard extension to extract the system from the allocator
-  using system_type =
-    typename eval_if<allocator_traits_detail::has_system_type<Alloc>,
-                     allocator_traits_detail::nested_system_type<Alloc>,
-                     thrust::iterator_system<pointer>>::type;
-};
-
 // XXX consider moving this non-standard functionality inside allocator_traits
 template <typename Alloc>
 struct allocator_system
@@ -113,7 +90,7 @@ struct allocator_system
   // the type of the allocator's system
   using type = typename eval_if<allocator_traits_detail::has_system_type<Alloc>,
                                 allocator_traits_detail::nested_system_type<Alloc>,
-                                thrust::iterator_system<typename allocator_traits<Alloc>::pointer>>::type;
+                                thrust::iterator_system<typename ::cuda::std::allocator_traits<Alloc>::pointer>>::type;
 
   // the type that get returns
   using get_result_type =

@@ -26,11 +26,11 @@
 #  pragma system_header
 #endif // no system header
 
-#include <thrust/detail/allocator/allocator_traits.h>
 #include <thrust/detail/execution_policy.h>
 #include <thrust/iterator/detail/normal_iterator.h>
 
 #include <cuda/std/__iterator/iterator_traits.h>
+#include <cuda/std/__memory/allocator_traits.h>
 #include <cuda/std/__utility/move.h>
 #include <cuda/std/__utility/swap.h>
 
@@ -55,7 +55,7 @@ template <typename T, typename Alloc>
 class contiguous_storage
 {
 private:
-  using alloc_traits = thrust::detail::allocator_traits<Alloc>;
+  using alloc_traits = ::cuda::std::allocator_traits<Alloc>;
 
 public:
   using allocator_type  = Alloc;
@@ -122,15 +122,15 @@ public:
     swap(m_size, other.m_size);
 
     // From C++ standard [container.reqmts]
-    //   If allocator_traits<allocator_type>::propagate_on_container_swap::value is true, then allocator_type
-    //   shall meet the Cpp17Swappable requirements and the allocators of a and b shall also be exchanged by calling
-    //   swap as described in [swappable.requirements]. Otherwise, the allocators shall not be swapped, and the behavior
-    //   is undefined unless a.get_allocator() == b.get_allocator().
-    if constexpr (allocator_traits<Alloc>::propagate_on_container_swap::value)
+    //   If ::cuda::std::allocator_traits<allocator_type>::propagate_on_container_swap::value is true, then
+    //   allocator_type shall meet the Cpp17Swappable requirements and the allocators of a and b shall also be exchanged
+    //   by calling swap as described in [swappable.requirements]. Otherwise, the allocators shall not be swapped, and
+    //   the behavior is undefined unless a.get_allocator() == b.get_allocator().
+    if constexpr (::cuda::std::allocator_traits<Alloc>::propagate_on_container_swap::value)
     {
       swap(m_allocator, other.m_allocator);
     }
-    else if constexpr (!allocator_traits<Alloc>::is_always_equal::value)
+    else if constexpr (!::cuda::std::allocator_traits<Alloc>::is_always_equal::value)
     {
       NV_IF_TARGET(NV_IS_DEVICE, (assert(m_allocator == other.m_allocator);), (if (m_allocator != other.m_allocator) {
                      throw allocator_mismatch_on_swap();
@@ -161,7 +161,7 @@ public:
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_HOST_DEVICE void deallocate_on_allocator_mismatch(const contiguous_storage& other) noexcept
   {
-    if constexpr (allocator_traits<Alloc>::propagate_on_container_copy_assignment::value)
+    if constexpr (::cuda::std::allocator_traits<Alloc>::propagate_on_container_copy_assignment::value)
     {
       if (m_allocator != other.m_allocator)
       {
@@ -174,7 +174,7 @@ public:
   _CCCL_HOST_DEVICE void destroy_on_allocator_mismatch(
     const contiguous_storage& other, [[maybe_unused]] iterator first, [[maybe_unused]] iterator last) noexcept
   {
-    if constexpr (allocator_traits<Alloc>::propagate_on_container_copy_assignment::value)
+    if constexpr (::cuda::std::allocator_traits<Alloc>::propagate_on_container_copy_assignment::value)
     {
       if (m_allocator != other.m_allocator)
       {
@@ -188,7 +188,7 @@ public:
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_HOST_DEVICE void propagate_allocator(const contiguous_storage& other)
   {
-    if constexpr (allocator_traits<Alloc>::propagate_on_container_copy_assignment::value)
+    if constexpr (::cuda::std::allocator_traits<Alloc>::propagate_on_container_copy_assignment::value)
     {
       m_allocator = other.m_allocator;
     }
@@ -197,7 +197,7 @@ public:
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_HOST_DEVICE void propagate_allocator(contiguous_storage& other)
   {
-    if constexpr (allocator_traits<Alloc>::propagate_on_container_move_assignment::value)
+    if constexpr (::cuda::std::allocator_traits<Alloc>::propagate_on_container_move_assignment::value)
     {
       m_allocator = ::cuda::std::move(other.m_allocator);
     }
