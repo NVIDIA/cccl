@@ -363,7 +363,11 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT allocator_traits
     }
     else
     {
+#if _CCCL_COMPILER(GCC, <, 8) // GCC7 and below fail with narrowing conversions
+      ::new (const_cast<void*>(static_cast<const volatile void*>(__p))) _Tp(::cuda::std::forward<_Args>(__args)...);
+#else // ^^^ _CCCL_COMPILER(GCC, <, 8) ^^^ / vvv _CCCL_COMPILER(GCC, >=, 8) vvv
       ::cuda::std::__construct_at(__p, ::cuda::std::forward<_Args>(__args)...);
+#endif // _CCCL_COMPILER(GCC, >=, 8)
     }
   }
 
