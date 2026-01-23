@@ -86,7 +86,7 @@ std::string get_device_segmented_reduce_kernel_name(
    DeviceSegmentedReduceKernel(...);
   */
   return std::format(
-    "cub::detail::reduce::DeviceSegmentedReduceKernel<{0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}, {8}>",
+    "cub::detail::segmented_reduce::DeviceSegmentedReduceKernel<{0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}, {8}>",
     policy_selector_t, // 0
     input_iterator_t, // 1
     output_iterator_t, // 2
@@ -158,34 +158,37 @@ try
 
   // TODO(bgruber): share this with reduce.cu
   const auto policy_sel = [&] {
-    using namespace cub::detail::reduce;
+    using namespace cub::detail;
 
-    auto accum_type = accum_type::other;
+    auto accum_type = type_t::other;
     if (accum_t.type == CCCL_FLOAT32)
     {
-      accum_type = accum_type::float32;
+      accum_type = type_t::float32;
     }
     else if (accum_t.type == CCCL_FLOAT64)
     {
-      accum_type = accum_type::float64;
+      accum_type = type_t::float64;
     }
 
-    auto operation_t = op_type::unknown;
+    auto operation_t = op_kind_t::other;
     switch (op.type)
     {
       case CCCL_PLUS:
-        operation_t = op_type::plus;
+        operation_t = op_kind_t::plus;
         break;
       case CCCL_MINIMUM:
+        operation_t = op_kind_t::min;
+        break;
       case CCCL_MAXIMUM:
-        operation_t = op_type::min_or_max;
+        operation_t = op_kind_t::max;
         break;
       default:
         break;
     }
 
     const int offset_size = int{sizeof(OffsetT)};
-    return policy_selector{accum_type, operation_t, offset_size, static_cast<int>(accum_t.size)};
+    return cub::detail::segmented_reduce::policy_selector{
+      accum_type, operation_t, offset_size, static_cast<int>(accum_t.size)};
   }();
 
   // TODO(bgruber): drop this if tuning policies become formattable
@@ -193,12 +196,12 @@ try
   policy_sel_str << policy_sel(cuda::to_arch_id(cuda::compute_capability{cc_major, cc_minor}));
 
   const auto policy_sel_expr =
-    std::format("cub::detail::reduce::policy_selector_from_types<{}, {}, {}>", accum_cpp, offset_t, op_name);
+    std::format("cub::detail::segmented_reduce::policy_selector_from_types<{}, {}, {}>", accum_cpp, offset_t, op_name);
 
   const auto final_src = std::format(
     R"XXX(
 #include <cub/block/block_reduce.cuh>
-#include <cub/device/dispatch/tuning/tuning_reduce.cuh>
+#include <cub/device/dispatch/tuning/tuning_segmented_reduce.cuh>
 #include <cub/device/dispatch/kernels/kernel_segmented_reduce.cuh>
 {0}
 struct __align__({2}) storage_t {{
@@ -212,6 +215,7 @@ struct __align__({2}) storage_t {{
 using device_segmented_reduce_policy = {8};
 using namespace cub;
 using namespace cub::detail::reduce;
+using namespace cub::detail::segmented_reduce;
 static_assert(
   device_segmented_reduce_policy()(::cuda::arch_id{{CUB_PTX_ARCH / 10}}) == {9},
   "Host generated and JIT compiled policy mismatch");
@@ -286,7 +290,7 @@ static_assert(
   build_ptr->cubin            = (void*) result.data.release();
   build_ptr->cubin_size       = result.size;
   build_ptr->accumulator_size = accum_t.size;
-  build_ptr->runtime_policy   = new cub::detail::reduce::policy_selector{policy_sel};
+  build_ptr->runtime_policy   = new cub::detail::segmented_reduce::policy_selector{policy_sel};
 
   return CUDA_SUCCESS;
 }
@@ -321,7 +325,7 @@ CUresult cccl_device_segmented_reduce(
     CUdevice cu_device;
     check(cuCtxGetDevice(&cu_device));
 
-    auto exec_status = cub::detail::reduce::dispatch_segmented<void>(
+    auto exec_status = cub::detail::segmented_reduce::dispatch<void, /* OffsetType */ uint64_t>(
       d_temp_storage,
       *temp_storage_bytes,
       d_in,
@@ -332,7 +336,7 @@ CUresult cccl_device_segmented_reduce(
       op,
       init,
       stream,
-      *static_cast<cub::detail::reduce::policy_selector*>(build.runtime_policy),
+      *static_cast<cub::detail::segmented_reduce::policy_selector*>(build.runtime_policy),
       segmented_reduce::segmented_reduce_kernel_source{build},
       cub::detail::CudaDriverLauncherFactory{cu_device, build.cc});
 
@@ -397,8 +401,8 @@ try
 
   // allocation behind cubin is owned by unique_ptr with delete[] deleter now
   std::unique_ptr<char[]> cubin(reinterpret_cast<char*>(build_ptr->cubin));
-  std::unique_ptr<cub::detail::reduce::policy_selector> policy(
-    static_cast<cub::detail::reduce::policy_selector*>(build_ptr->runtime_policy));
+  std::unique_ptr<cub::detail::segmented_reduce::policy_selector> policy(
+    static_cast<cub::detail::segmented_reduce::policy_selector*>(build_ptr->runtime_policy));
   check(cuLibraryUnload(build_ptr->library));
 
   return CUDA_SUCCESS;

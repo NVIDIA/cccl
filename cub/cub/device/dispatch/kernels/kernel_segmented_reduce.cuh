@@ -15,14 +15,14 @@
 
 #include <cub/agent/agent_reduce.cuh>
 #include <cub/device/dispatch/kernels/kernel_reduce.cuh> // finalize_and_store_aggregate
-#include <cub/device/dispatch/tuning/tuning_reduce.cuh>
+#include <cub/device/dispatch/tuning/tuning_segmented_reduce.cuh>
 #include <cub/iterator/arg_index_input_iterator.cuh>
 
 #include <cuda/__device/arch_id.h>
 
 CUB_NAMESPACE_BEGIN
 
-namespace detail::reduce
+namespace detail::segmented_reduce
 {
 /// Normalize input iterator to segment offset
 template <typename T, typename OffsetT, typename IteratorT>
@@ -103,7 +103,7 @@ template <typename PolicySelector,
           typename InitT,
           typename AccumT>
 #if _CCCL_HAS_CONCEPTS()
-  requires reduce_policy_selector<PolicySelector>
+  requires segmented_reduce_policy_selector<PolicySelector>
 #endif // _CCCL_HAS_CONCEPTS()
 CUB_DETAIL_KERNEL_ATTRIBUTES __launch_bounds__(int(
   PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10})
@@ -114,7 +114,8 @@ CUB_DETAIL_KERNEL_ATTRIBUTES __launch_bounds__(int(
                                                                        ReductionOpT reduction_op,
                                                                        InitT init)
 {
-  static constexpr agent_reduce_policy policy = PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10}).segmented_reduce;
+  static constexpr reduce::agent_reduce_policy policy =
+    PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10}).segmented_reduce;
   // TODO(bgruber): pass policy directly as template argument to AgentReduce in C++20
   using agent_policy_t =
     AgentReducePolicy<policy.block_threads,
@@ -126,7 +127,7 @@ CUB_DETAIL_KERNEL_ATTRIBUTES __launch_bounds__(int(
                       NoScaling<policy.block_threads, policy.items_per_thread, AccumT>>;
 
   // Thread block type for reducing input tiles
-  using AgentReduceT = AgentReduce<agent_policy_t, InputIteratorT, OffsetT, ReductionOpT, AccumT>;
+  using AgentReduceT = reduce::AgentReduce<agent_policy_t, InputIteratorT, OffsetT, ReductionOpT, AccumT>;
 
   // Shared memory storage
   __shared__ typename AgentReduceT::TempStorage temp_storage;
@@ -152,7 +153,7 @@ CUB_DETAIL_KERNEL_ATTRIBUTES __launch_bounds__(int(
 
   if (threadIdx.x == 0)
   {
-    finalize_and_store_aggregate(d_out + blockIdx.x, reduction_op, init, block_aggregate);
+    reduce::finalize_and_store_aggregate(d_out + blockIdx.x, reduction_op, init, block_aggregate);
   }
 }
 
@@ -214,13 +215,14 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::ReducePolicy::BLOCK_THREADS)
   using ActivePolicyT = typename ChainedPolicyT::ActivePolicy;
 
   // Thread block type for reducing input tiles
-  using AgentReduceT = AgentReduce<typename ActivePolicyT::ReducePolicy, InputIteratorT, int, ReductionOpT, AccumT>;
+  using AgentReduceT =
+    reduce::AgentReduce<typename ActivePolicyT::ReducePolicy, InputIteratorT, int, ReductionOpT, AccumT>;
 
   using AgentMediumReduceT =
-    AgentWarpReduce<typename ActivePolicyT::MediumReducePolicy, InputIteratorT, int, ReductionOpT, AccumT>;
+    reduce::AgentWarpReduce<typename ActivePolicyT::MediumReducePolicy, InputIteratorT, int, ReductionOpT, AccumT>;
 
   using AgentSmallReduceT =
-    AgentWarpReduce<typename ActivePolicyT::SmallReducePolicy, InputIteratorT, int, ReductionOpT, AccumT>;
+    reduce::AgentWarpReduce<typename ActivePolicyT::SmallReducePolicy, InputIteratorT, int, ReductionOpT, AccumT>;
 
   constexpr auto segments_per_medium_block = ActivePolicyT::MediumReducePolicy::SEGMENTS_PER_BLOCK;
   constexpr auto medium_threads_per_warp   = ActivePolicyT::MediumReducePolicy::WARP_THREADS;
@@ -267,7 +269,7 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::ReducePolicy::BLOCK_THREADS)
 
       if (lane_id == 0)
       {
-        finalize_and_store_aggregate(d_out + global_segment_id, reduction_op, init, warp_aggregate);
+        reduce::finalize_and_store_aggregate(d_out + global_segment_id, reduction_op, init, warp_aggregate);
       }
     }
   }
@@ -288,7 +290,7 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::ReducePolicy::BLOCK_THREADS)
 
       if (lane_id == 0)
       {
-        finalize_and_store_aggregate(d_out + global_segment_id, reduction_op, init, warp_aggregate);
+        reduce::finalize_and_store_aggregate(d_out + global_segment_id, reduction_op, init, warp_aggregate);
       }
     }
   }
@@ -302,10 +304,10 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::ReducePolicy::BLOCK_THREADS)
 
     if (tid == 0)
     {
-      finalize_and_store_aggregate(d_out + bid, reduction_op, init, block_aggregate);
+      reduce::finalize_and_store_aggregate(d_out + bid, reduction_op, init, block_aggregate);
     }
   }
 }
-} // namespace detail::reduce
+} // namespace detail::segmented_reduce
 
 CUB_NAMESPACE_END

@@ -35,7 +35,7 @@
 
 CUB_NAMESPACE_BEGIN
 
-namespace detail::reduce
+namespace detail::segmented_reduce
 {
 template <typename PolicySelector,
           typename InputIteratorT,
@@ -64,7 +64,7 @@ struct DeviceSegmentedReduceKernelSource
       InitT,
       AccumT>)
 };
-} // namespace detail::reduce
+} // namespace detail::segmented_reduce
 
 // TODO(bgruber): deprecate once we publish the tuning API
 /**
@@ -104,8 +104,8 @@ template <typename InputIteratorT,
           typename InitT  = cub::detail::non_void_value_t<OutputIteratorT, cub::detail::it_value_t<InputIteratorT>>,
           typename AccumT = ::cuda::std::__accumulator_t<ReductionOpT, cub::detail::it_value_t<InputIteratorT>, InitT>,
           typename PolicyHub    = detail::reduce::policy_hub<AccumT, OffsetT, ReductionOpT>,
-          typename KernelSource = detail::reduce::DeviceSegmentedReduceKernelSource<
-            detail::reduce::policy_selector_from_hub<PolicyHub>,
+          typename KernelSource = detail::segmented_reduce::DeviceSegmentedReduceKernelSource<
+            detail::segmented_reduce::policy_selector_from_hub<PolicyHub>,
             InputIteratorT,
             OutputIteratorT,
             BeginOffsetIteratorT,
@@ -413,7 +413,7 @@ struct DispatchSegmentedReduce
   }
 };
 
-namespace detail::reduce
+namespace detail::segmented_reduce
 {
 // select the accumulator type using an overload set, so __accumulator_t is not instantiated when
 // an overriding accumulator type is present. This is needed by CCCL.C.
@@ -426,13 +426,7 @@ template <typename InputIteratorT,
           typename ReductionOpT,
           typename OverrideAccumT,
           ::cuda::std::enable_if_t<!::cuda::std::is_same_v<OverrideAccumT, use_default>, int> = 0>
-_CCCL_API auto select_segmented_accum_t(OverrideAccumT*) -> OverrideAccumT
-{
-  static_assert(
-    ::cuda::std::is_same_v<OverrideAccumT,
-                           ::cuda::std::__accumulator_t<ReductionOpT, ::cuda::std::iter_value_t<InputIteratorT>, InitT>>);
-  return {};
-}
+_CCCL_API auto select_segmented_accum_t(OverrideAccumT*) -> OverrideAccumT;
 
 template <
   typename OverrideAccumT  = use_default,
@@ -441,9 +435,10 @@ template <
   typename OutputIteratorT,
   typename BeginOffsetIteratorT,
   typename EndOffsetIteratorT,
-  typename OffsetT = ::cuda::std::conditional_t<::cuda::std::is_same_v<OverrideOffsetT, use_default>,
-                                                common_iterator_value_t<BeginOffsetIteratorT, EndOffsetIteratorT>,
-                                                OverrideOffsetT>,
+  // need to evaluate common_iterator_value lazily. This is needed by CCCL.C.
+  typename OffsetT = typename ::cuda::std::conditional_t<::cuda::std::is_same_v<OverrideOffsetT, use_default>,
+                                                         common_iterator_value<BeginOffsetIteratorT, EndOffsetIteratorT>,
+                                                         ::cuda::std::type_identity<OverrideOffsetT>>::type,
   typename ReductionOpT,
   typename InitT = non_void_value_t<OutputIteratorT, it_value_t<InputIteratorT>>,
   typename AccumT =
@@ -461,9 +456,9 @@ template <
       AccumT>,
   typename KernelLauncherFactory = CUB_DETAIL_DEFAULT_KERNEL_LAUNCHER_FACTORY>
 #if _CCCL_HAS_CONCEPTS()
-  requires reduce_policy_selector<PolicySelector>
+  requires segmented_reduce_policy_selector<PolicySelector>
 #endif // _CCCL_HAS_CONCEPTS()
-CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch_segmented(
+CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
   void* d_temp_storage,
   size_t& temp_storage_bytes,
   InputIteratorT d_in,
@@ -490,7 +485,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch_segmented(
     return error;
   }
 
-  const reduce_policy active_policy = policy_selector(arch_id);
+  const segmented_reduce_policy active_policy = policy_selector(arch_id);
 #if !_CCCL_COMPILER(NVRTC) && defined(CUB_DEBUG_LOG)
   NV_IF_TARGET(
     NV_IS_HOST,
@@ -566,6 +561,6 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch_segmented(
 
   return cudaSuccess;
 }
-} // namespace detail::reduce
+} // namespace detail::segmented_reduce
 
 CUB_NAMESPACE_END
