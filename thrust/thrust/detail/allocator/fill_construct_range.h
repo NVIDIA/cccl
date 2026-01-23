@@ -44,8 +44,7 @@ namespace detail
 //   2. construct via uninitialized_fill
 
 template <typename Allocator, typename T, typename Arg1>
-inline constexpr bool has_effectful_member_construct2 =
-  allocator_traits_detail::has_member_construct2<Allocator, T, Arg1>::value;
+inline constexpr bool has_effectful_member_construct2 = ::cuda::std::__has_construct<Allocator, T*, Arg1>;
 
 // std::allocator::construct's only effect is to invoke placement new
 template <typename U, typename T, typename Arg1>

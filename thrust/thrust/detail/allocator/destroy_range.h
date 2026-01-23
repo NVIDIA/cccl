@@ -44,7 +44,7 @@ namespace detail
 //   3. if T has a trivial destructor, do a no-op
 
 template <typename Allocator, typename T>
-inline constexpr bool has_effectful_member_destroy = allocator_traits_detail::has_member_destroy<Allocator, T>::value;
+inline constexpr bool has_effectful_member_destroy = ::cuda::std::__has_destroy<Allocator, T*>;
 
 // std::allocator::destroy's only effect is to invoke its argument's destructor
 template <typename U, typename T>

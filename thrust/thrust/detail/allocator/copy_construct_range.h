@@ -65,8 +65,7 @@ struct copy_construct_with_allocator
 // 2. T has a non-trivial copy constructor
 template <typename Allocator, typename T>
 inline constexpr bool needs_copy_construct_via_allocator =
-  allocator_traits_detail::has_member_construct2<Allocator, T, T>::value
-  || !::cuda::std::is_trivially_copy_constructible_v<T>;
+  ::cuda::std::__has_construct<Allocator, T*, T> || !::cuda::std::is_trivially_copy_constructible_v<T>;
 
 // we know that std::allocator::construct's only effect is to call T's
 // copy constructor, so we needn't consider or use its construct() member for copy construction

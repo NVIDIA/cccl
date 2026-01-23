@@ -326,11 +326,13 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT allocator_traits
   template <class _Tp>
   using rebind_traits = allocator_traits<rebind_alloc<_Tp>>;
 
+  _CCCL_EXEC_CHECK_DISABLE
   [[nodiscard]] _CCCL_API inline _CCCL_CONSTEXPR_CXX20 static pointer allocate(allocator_type& __a, size_type __n)
   {
     return __a.allocate(__n);
   }
 
+  _CCCL_EXEC_CHECK_DISABLE
   [[nodiscard]] _CCCL_API inline _CCCL_CONSTEXPR_CXX20 static pointer
   allocate(allocator_type& __a, size_type __n, [[maybe_unused]] const_void_pointer __hint)
   {
@@ -344,11 +346,13 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT allocator_traits
     }
   }
 
+  _CCCL_EXEC_CHECK_DISABLE
   _CCCL_API inline _CCCL_CONSTEXPR_CXX20 static void deallocate(allocator_type& __a, pointer __p, size_type __n) noexcept
   {
     __a.deallocate(__p, __n);
   }
 
+  _CCCL_EXEC_CHECK_DISABLE
   template <class _Tp, class... _Args>
   _CCCL_API inline _CCCL_CONSTEXPR_CXX20 static void
   construct([[maybe_unused]] allocator_type& __a, _Tp* __p, _Args&&... __args)
@@ -363,6 +367,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT allocator_traits
     }
   }
 
+  _CCCL_EXEC_CHECK_DISABLE
   template <class _Tp>
   _CCCL_API inline _CCCL_CONSTEXPR_CXX20 static void destroy([[maybe_unused]] allocator_type& __a, _Tp* __p) noexcept
   {
@@ -376,6 +381,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT allocator_traits
     }
   }
 
+  _CCCL_EXEC_CHECK_DISABLE
   _CCCL_API inline _CCCL_CONSTEXPR_CXX20 static size_type max_size([[maybe_unused]] const allocator_type& __a) noexcept
   {
     if constexpr (__has_max_size<const _Alloc>)
@@ -388,6 +394,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT allocator_traits
     }
   }
 
+  _CCCL_EXEC_CHECK_DISABLE
   _CCCL_API inline _CCCL_CONSTEXPR_CXX20 static allocator_type
   select_on_container_copy_construction(const allocator_type& __a)
   {
@@ -401,6 +408,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT allocator_traits
     }
   }
 
+  _CCCL_EXEC_CHECK_DISABLE
   template <class _Ptr>
   _CCCL_API inline static void
   __construct_forward_with_exception_guarantees(allocator_type& __a, _Ptr __begin1, _Ptr __end1, _Ptr& __begin2)

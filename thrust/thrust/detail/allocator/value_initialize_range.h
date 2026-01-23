@@ -51,8 +51,7 @@ struct construct1_via_allocator
 // does something interesting
 template <typename Allocator, typename T>
 inline constexpr bool needs_default_construct_via_allocator =
-  allocator_traits_detail::has_member_construct1<Allocator, T>::value
-  || !::cuda::std::is_trivially_default_constructible_v<T>;
+  ::cuda::std::__has_construct<Allocator, T*> || !::cuda::std::is_trivially_default_constructible_v<T>;
 
 // we know that std::allocator::construct's only effect is to call T's
 // default constructor, so we needn't use it for default construction
