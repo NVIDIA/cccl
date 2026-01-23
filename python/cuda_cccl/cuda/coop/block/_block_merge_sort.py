@@ -21,6 +21,7 @@ from .._types import (
     DependentReference,
     Invocable,
     TemplateParameter,
+    TempStoragePointer,
     Value,
     numba_type_to_cpp,
     numba_type_to_wrapper,
@@ -126,6 +127,15 @@ class merge_sort_keys(BasePrimitive):
                 name="keys",
             ),
         ]
+        if temp_storage is not None:
+            method.insert(
+                0,
+                TempStoragePointer(
+                    numba.types.uint8,
+                    is_array_pointer=True,
+                    name="temp_storage",
+                ),
+            )
         if self.value_dtype is not None:
             method.append(
                 DependentArray(

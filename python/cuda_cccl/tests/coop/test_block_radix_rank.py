@@ -47,6 +47,38 @@ def _validate_ranks(keys, ranks, begin_bit, end_bit, descending):
         assert start <= rank < end
 
 
+def _compute_exclusive_digit_prefix(
+    keys, begin_bit, end_bit, descending, block_threads
+):
+    radix_bits = end_bit - begin_bit
+    radix_digits = 1 << radix_bits
+    bins_per_thread = max(1, (radix_digits + block_threads - 1) // block_threads)
+    digits = (keys >> begin_bit) & (radix_digits - 1)
+
+    counts = np.zeros(radix_digits, dtype=np.int32)
+    for digit in digits:
+        counts[int(digit)] += 1
+
+    prefix = np.zeros(radix_digits, dtype=np.int32)
+    running = 0
+    if descending:
+        for digit in range(radix_digits - 1, -1, -1):
+            prefix[digit] = running
+            running += int(counts[digit])
+    else:
+        for digit in range(radix_digits):
+            prefix[digit] = running
+            running += int(counts[digit])
+
+    expected = np.full((block_threads, bins_per_thread), -1, dtype=np.int32)
+    for tid in range(block_threads):
+        for track in range(bins_per_thread):
+            bin_idx = tid * bins_per_thread + track
+            if block_threads == radix_digits or bin_idx < radix_digits:
+                expected[tid, track] = prefix[bin_idx]
+    return expected
+
+
 def _run_radix_rank_test(
     threads_per_block, items_per_thread, begin_bit, end_bit, descending
 ):
@@ -132,6 +164,104 @@ def _run_radix_rank_two_phase_test(
     _validate_ranks(h_input, h_output, begin_bit, end_bit, descending)
 
 
+def _run_radix_rank_prefix_test(
+    threads_per_block,
+    items_per_thread,
+    begin_bit,
+    end_bit,
+    descending,
+    use_two_phase=False,
+):
+    num_threads_per_block = (
+        threads_per_block
+        if isinstance(threads_per_block, int)
+        else reduce(mul, threads_per_block)
+    )
+    total_items = num_threads_per_block * items_per_thread
+    radix_bits = end_bit - begin_bit
+    radix_digits = 1 << radix_bits
+    bins_per_thread = max(
+        1, (radix_digits + num_threads_per_block - 1) // num_threads_per_block
+    )
+
+    if use_two_phase:
+        radix_rank = coop.block.radix_rank(
+            numba.uint32,
+            threads_per_block,
+            items_per_thread,
+            begin_bit,
+            end_bit,
+            descending=descending,
+        )
+
+        @cuda.jit
+        def kernel(d_in, d_ranks, d_prefix):
+            tid = row_major_tid()
+            items = cuda.local.array(items_per_thread, numba.uint32)
+            ranks = cuda.local.array(items_per_thread, numba.int32)
+            exclusive_digit_prefix = cuda.local.array(bins_per_thread, numba.int32)
+            for i in range(items_per_thread):
+                items[i] = d_in[tid * items_per_thread + i]
+            radix_rank(
+                items,
+                ranks,
+                items_per_thread,
+                begin_bit,
+                end_bit,
+                descending,
+                exclusive_digit_prefix=exclusive_digit_prefix,
+            )
+            for i in range(items_per_thread):
+                d_ranks[tid * items_per_thread + i] = ranks[i]
+            for i in range(bins_per_thread):
+                d_prefix[tid * bins_per_thread + i] = exclusive_digit_prefix[i]
+    else:
+
+        @cuda.jit
+        def kernel(d_in, d_ranks, d_prefix):
+            tid = row_major_tid()
+            items = cuda.local.array(items_per_thread, numba.uint32)
+            ranks = cuda.local.array(items_per_thread, numba.int32)
+            exclusive_digit_prefix = cuda.local.array(bins_per_thread, numba.int32)
+            for i in range(items_per_thread):
+                items[i] = d_in[tid * items_per_thread + i]
+            coop.block.radix_rank(
+                items,
+                ranks,
+                items_per_thread,
+                begin_bit,
+                end_bit,
+                descending,
+                exclusive_digit_prefix=exclusive_digit_prefix,
+            )
+            for i in range(items_per_thread):
+                d_ranks[tid * items_per_thread + i] = ranks[i]
+            for i in range(bins_per_thread):
+                d_prefix[tid * bins_per_thread + i] = exclusive_digit_prefix[i]
+
+    h_input = np.random.randint(0, 2**16, total_items, dtype=np.uint32)
+    d_input = cuda.to_device(h_input)
+    d_ranks = cuda.device_array(total_items, dtype=np.int32)
+    d_prefix = cuda.device_array(
+        num_threads_per_block * bins_per_thread, dtype=np.int32
+    )
+
+    kernel[1, threads_per_block](d_input, d_ranks, d_prefix)
+    h_ranks = d_ranks.copy_to_host()
+    h_prefix = d_prefix.copy_to_host().reshape(num_threads_per_block, bins_per_thread)
+
+    _validate_ranks(h_input, h_ranks, begin_bit, end_bit, descending)
+    expected_prefix = _compute_exclusive_digit_prefix(
+        h_input,
+        begin_bit,
+        end_bit,
+        descending,
+        num_threads_per_block,
+    )
+    valid_mask = expected_prefix != -1
+    np.testing.assert_array_equal(h_prefix[valid_mask], expected_prefix[valid_mask])
+
+
 def test_block_radix_rank_ascending():
     _run_radix_rank_test(
         threads_per_block=128,
@@ -169,4 +299,26 @@ def test_block_radix_rank_two_phase_descending():
         begin_bit=1,
         end_bit=6,
         descending=True,
+    )
+
+
+def test_block_radix_rank_exclusive_digit_prefix_single_phase():
+    _run_radix_rank_prefix_test(
+        threads_per_block=128,
+        items_per_thread=2,
+        begin_bit=0,
+        end_bit=4,
+        descending=False,
+        use_two_phase=False,
+    )
+
+
+def test_block_radix_rank_exclusive_digit_prefix_two_phase():
+    _run_radix_rank_prefix_test(
+        threads_per_block=64,
+        items_per_thread=3,
+        begin_bit=2,
+        end_bit=6,
+        descending=True,
+        use_two_phase=True,
     )

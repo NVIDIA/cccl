@@ -54,6 +54,8 @@ The following :cpp:class:`cub.BlockExchange` APIs are supported:
 from enum import IntEnum, auto
 from typing import TYPE_CHECKING
 
+import numba
+
 from .._common import (
     normalize_dim_param,
     normalize_dtype_param,
@@ -65,6 +67,7 @@ from .._types import (
     DependentArray,
     Invocable,
     TemplateParameter,
+    TempStoragePointer,
     numba_type_to_wrapper,
 )
 from .._typing import (
@@ -211,6 +214,14 @@ class exchange(BasePrimitive):
         )
 
         method = []
+        if temp_storage is not None:
+            method.append(
+                TempStoragePointer(
+                    numba.types.uint8,
+                    is_array_pointer=True,
+                    name="temp_storage",
+                )
+            )
         if use_output_items:
             method.extend([input_items, output_items])
         else:

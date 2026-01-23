@@ -54,6 +54,55 @@ def test_warp_exchange_striped_to_blocked():
     np.testing.assert_array_equal(h_output, h_reference)
 
 
+def test_warp_exchange_temp_storage():
+    threads_in_warp = 32
+    items_per_thread = 4
+
+    warp_exchange = coop.warp.exchange(
+        numba.int32,
+        items_per_thread,
+        threads_in_warp=threads_in_warp,
+        warp_exchange_type=coop.warp.WarpExchangeType.StripedToBlocked,
+    )
+    temp_storage_bytes = warp_exchange.temp_storage_bytes
+    temp_storage_alignment = warp_exchange.temp_storage_alignment
+
+    @cuda.jit
+    def kernel(d_in, d_out):
+        tid = cuda.threadIdx.x
+        temp_storage = coop.TempStorage(
+            temp_storage_bytes,
+            temp_storage_alignment,
+        )
+        input_items = cuda.local.array(items_per_thread, numba.int32)
+        output_items = cuda.local.array(items_per_thread, numba.int32)
+
+        for i in range(items_per_thread):
+            input_items[i] = d_in[tid + i * threads_in_warp]
+
+        warp_exchange(input_items, output_items, temp_storage=temp_storage)
+
+        for i in range(items_per_thread):
+            d_out[tid * items_per_thread + i] = output_items[i]
+
+    total_items = threads_in_warp * items_per_thread
+    h_input = np.random.randint(0, 64, total_items, dtype=np.int32)
+    d_input = cuda.to_device(h_input)
+    d_output = cuda.device_array(total_items, dtype=np.int32)
+
+    kernel[1, threads_in_warp](d_input, d_output)
+    h_output = d_output.copy_to_host()
+
+    h_reference = np.zeros_like(h_output)
+    for blocked_idx in range(total_items):
+        source_thread = blocked_idx % threads_in_warp
+        source_item = blocked_idx // threads_in_warp
+        source_idx = source_thread + source_item * threads_in_warp
+        h_reference[blocked_idx] = h_input[source_idx]
+
+    np.testing.assert_array_equal(h_output, h_reference)
+
+
 def test_warp_exchange_scatter_to_striped():
     threads_in_warp = 16
     items_per_thread = 4

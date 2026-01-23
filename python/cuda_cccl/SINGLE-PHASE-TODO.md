@@ -51,18 +51,20 @@
 - [x] Add missing two-phase tests for block primitives.
 - [ ] Audit CUB block/warp overload coverage and fill gaps.
 - [x] Add warp reduce/sum valid-items overloads.
+- [x] Add WarpScan warp_aggregate/valid_items/temp_storage overloads and tests.
 - [x] Add block load oob_default overload.
 - [x] Add block discontinuity tile predecessor/successor overloads.
 - [x] Add block shuffle prefix/suffix overloads (block_prefix/block_suffix).
 - [x] Add block scan block-aggregate overloads (multi-output).
 - [x] Add block merge/radix sort key/value + valid-items/oob_default/decomposer overloads.
+- [x] Add block radix rank exclusive_digit_prefix output overloads.
 - [ ] Enable BlockRadixSort decomposer for user-defined types (blocked: CUB expects tuple-of-references; need C++ adapter or alternate lowering).
 - [x] Add warp merge sort key/value overloads.
 - [ ] Add multi-output support in `_types.py` (or alternate return strategy)
       to enable block-aggregate scan overloads.
-- [ ] Expand single-phase `temp_storage=` support across all primitives and
+- [x] Expand single-phase `temp_storage=` support across all primitives and
       keep `TempStorage` getitem syntax compatible; add coverage.
-- [ ] Add GPU tests that use `gpu_dataclass` with multiple primitives sharing
+- [x] Add GPU tests that use `gpu_dataclass` with multiple primitives sharing
       temp storage (load/scan/reduce/store pipelines, mixed parent/child).
 - [ ] Add/upgrade docstrings for every public primitive with
       `literalinclude`-based examples in `tests/coop/*_api.py`; remove any

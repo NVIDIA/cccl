@@ -76,6 +76,7 @@ class radix_rank(BasePrimitive):
         begin_bit: int,
         end_bit: int,
         descending: bool = False,
+        exclusive_digit_prefix: Any = None,
         unique_id: int = None,
         temp_storage: Any = None,
         node: "CoopNode" = None,
@@ -95,9 +96,14 @@ class radix_rank(BasePrimitive):
         self.begin_bit = begin_bit
         self.end_bit = end_bit
         self.descending = descending
+        self.exclusive_digit_prefix = exclusive_digit_prefix
         self.unique_id = unique_id
 
         radix_bits = end_bit - begin_bit
+        radix_digits = 1 << radix_bits
+        block_threads = self.dim[0] * self.dim[1] * self.dim[2]
+        bins_per_thread = max(1, (radix_digits + block_threads - 1) // block_threads)
+        self.bins_per_thread = bins_per_thread
 
         specialization_kwds = _get_template_parameter_specializations(
             self.dim, radix_bits, descending
@@ -115,6 +121,15 @@ class radix_rank(BasePrimitive):
             Array(numba.int32, items_per_thread, name="ranks"),
             CxxFunction(cpp=digit_extractor_cpp, func_dtype=self.dtype),
         ]
+
+        if exclusive_digit_prefix is not None:
+            method.append(
+                Array(
+                    numba.int32,
+                    bins_per_thread,
+                    name="exclusive_digit_prefix",
+                )
+            )
 
         if temp_storage is not None:
             method.insert(

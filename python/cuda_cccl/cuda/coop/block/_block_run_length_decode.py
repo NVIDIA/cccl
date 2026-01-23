@@ -16,6 +16,7 @@ from .._types import (
     DependentPointerReference,
     DependentReference,
     TemplateParameter,
+    TempStoragePointer,
 )
 from .._typing import (
     DimType,
@@ -206,10 +207,12 @@ class run_length(BasePrimitive):
             )
 
         if temp_storage is not None:
-            raise NotImplementedError(
-                "Temporary storage is not yet supported for run_length decode."
+            method.insert(
+                0,
+                TempStoragePointer(
+                    numba.types.uint8, is_array_pointer=True, name="temp_storage"
+                ),
             )
-            # method.insert(0, TempStoragePointer())
 
         if method:
             self.parameters = [

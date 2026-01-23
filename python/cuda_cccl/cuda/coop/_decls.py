@@ -1085,10 +1085,7 @@ class CoopWarpLoadStoreBaseTemplate(AbstractTemplate):
             )
 
         temp_storage = bound.arguments.get("temp_storage")
-        if temp_storage is not None:
-            raise errors.TypingError(
-                f"{self.primitive_name} does not support 'temp_storage'"
-            )
+        validate_temp_storage(self, temp_storage)
 
         if self.src_first:
             array_args = (src, dst)
@@ -1121,6 +1118,8 @@ class CoopWarpLoadStoreBaseTemplate(AbstractTemplate):
                     f"{self.primitive_name} requires 'oob_default' to be a scalar"
                 )
             arglist.append(oob_default)
+        if temp_storage is not None:
+            arglist.append(temp_storage)
 
         sig = signature(types.void, *arglist)
         return sig
@@ -1445,10 +1444,7 @@ class CoopBlockExchangeDecl(CoopAbstractTemplate, CoopDeclMixin):
             )
 
         temp_storage = bound.arguments.get("temp_storage")
-        if temp_storage is not None:
-            raise errors.TypingError(
-                f"{self.primitive_name} does not support 'temp_storage' in single-phase"
-            )
+        validate_temp_storage(self, temp_storage)
 
         arglist = [items]
         if output_items is not None:
@@ -1463,6 +1459,8 @@ class CoopBlockExchangeDecl(CoopAbstractTemplate, CoopDeclMixin):
             arglist.append(block_exchange_type)
         if warp_time_slicing is not None:
             arglist.append(warp_time_slicing)
+        if temp_storage is not None:
+            arglist.append(temp_storage)
 
         sig = signature(types.void, *arglist)
 
@@ -1554,10 +1552,9 @@ class CoopBlockMergeSortDecl(CoopAbstractTemplate, CoopDeclMixin):
             arglist.append(oob_default)
 
         temp_storage = bound.arguments.get("temp_storage")
+        validate_temp_storage(self, temp_storage)
         if temp_storage is not None:
-            raise errors.TypingError(
-                f"{self.primitive_name} does not support 'temp_storage' in single-phase"
-            )
+            arglist.append(temp_storage)
 
         return signature(types.void, *arglist)
 
@@ -2201,10 +2198,9 @@ class CoopBlockRadixSortDecl(CoopAbstractTemplate, CoopDeclMixin):
             arglist.append(blocked_to_striped)
 
         temp_storage = bound.arguments.get("temp_storage")
+        validate_temp_storage(self, temp_storage)
         if temp_storage is not None:
-            raise errors.TypingError(
-                f"{self.primitive_name} does not support 'temp_storage' in single-phase"
-            )
+            arglist.append(temp_storage)
 
         return signature(types.void, *arglist)
 
@@ -2300,10 +2296,9 @@ class CoopBlockRadixSortDescendingDecl(CoopAbstractTemplate, CoopDeclMixin):
             arglist.append(blocked_to_striped)
 
         temp_storage = bound.arguments.get("temp_storage")
+        validate_temp_storage(self, temp_storage)
         if temp_storage is not None:
-            raise errors.TypingError(
-                f"{self.primitive_name} does not support 'temp_storage' in single-phase"
-            )
+            arglist.append(temp_storage)
 
         return signature(types.void, *arglist)
 
@@ -2329,6 +2324,7 @@ class CoopBlockRadixRankDecl(CoopAbstractTemplate, CoopDeclMixin):
         end_bit: Optional[int] = None,
         descending: Optional[bool] = None,
         temp_storage: Union[types.Array, TempStorageType] = None,
+        exclusive_digit_prefix: types.Array = None,
     ):
         return inspect.signature(CoopBlockRadixRankDecl.signature).bind(
             items,
@@ -2338,6 +2334,7 @@ class CoopBlockRadixRankDecl(CoopAbstractTemplate, CoopDeclMixin):
             end_bit=end_bit,
             descending=descending,
             temp_storage=temp_storage,
+            exclusive_digit_prefix=exclusive_digit_prefix,
         )
 
     def _validate_args_and_create_signature(self, bound, two_phase=False):
@@ -2403,18 +2400,41 @@ class CoopBlockRadixRankDecl(CoopAbstractTemplate, CoopDeclMixin):
                 f"{self.primitive_name} requires descending to be a boolean"
             )
 
-        temp_storage = bound.arguments.get("temp_storage")
-        validate_temp_storage(self, temp_storage)
-
         arglist = [items, ranks]
         if items_per_thread is not None:
             arglist.append(items_per_thread)
         arglist.extend([begin_bit, end_bit])
         if descending is not None:
             arglist.append(descending)
+
+        temp_storage = bound.arguments.get("temp_storage")
+        validate_temp_storage(self, temp_storage)
         if temp_storage is not None:
             arglist.append(temp_storage)
 
+        exclusive_digit_prefix = bound.arguments.get("exclusive_digit_prefix")
+        exclusive_prefix_is_none_type = isinstance(
+            exclusive_digit_prefix, types.NoneType
+        )
+        if exclusive_prefix_is_none_type:
+            arglist.append(exclusive_digit_prefix)
+            exclusive_digit_prefix = None
+        if not exclusive_prefix_is_none_type and exclusive_digit_prefix is not None:
+            if not isinstance(exclusive_digit_prefix, (types.Array, ThreadDataType)):
+                raise errors.TypingError(
+                    f"{self.primitive_name} requires exclusive_digit_prefix to be "
+                    "a device or thread-data array"
+                )
+            prefix_dtype = exclusive_digit_prefix.dtype
+            if (
+                not isinstance(prefix_dtype, types.Integer)
+                or prefix_dtype.bitwidth != 32
+            ):
+                raise errors.TypingError(
+                    f"{self.primitive_name} requires exclusive_digit_prefix to be "
+                    "an int32 array"
+                )
+            arglist.append(exclusive_digit_prefix)
         return signature(types.void, *arglist)
 
 
@@ -4271,10 +4291,9 @@ class CoopWarpExchangeDecl(CoopAbstractTemplate, CoopDeclMixin):
                 )
 
         temp_storage = bound.arguments.get("temp_storage")
+        validate_temp_storage(self, temp_storage)
         if temp_storage is not None:
-            raise errors.TypingError(
-                f"{self.primitive_name} does not support 'temp_storage'"
-            )
+            arglist.append(temp_storage)
 
         return signature(types.void, *arglist)
 
@@ -4292,12 +4311,14 @@ class CoopWarpReduceDecl(CoopAbstractTemplate, CoopDeclMixin):
         binary_op: Optional[Callable] = None,
         threads_in_warp: int = 32,
         valid_items: Optional[int] = None,
+        temp_storage: Union[types.Array, TempStorageType] = None,
     ):
         return inspect.signature(CoopWarpReduceDecl.signature).bind(
             src,
             binary_op=binary_op,
             threads_in_warp=threads_in_warp,
             valid_items=valid_items,
+            temp_storage=temp_storage,
         )
 
     @staticmethod
@@ -4307,12 +4328,14 @@ class CoopWarpReduceDecl(CoopAbstractTemplate, CoopDeclMixin):
         binary_op: Optional[Callable] = None,
         threads_in_warp: int = None,
         valid_items: Optional[int] = None,
+        temp_storage: Union[types.Array, TempStorageType] = None,
     ):
         return inspect.signature(CoopWarpReduceDecl.signature_instance).bind(
             src,
             binary_op=binary_op,
             threads_in_warp=threads_in_warp,
             valid_items=valid_items,
+            temp_storage=temp_storage,
         )
 
     def _validate_args_and_create_signature(self, bound, two_phase=False):
@@ -4348,6 +4371,16 @@ class CoopWarpReduceDecl(CoopAbstractTemplate, CoopDeclMixin):
                 )
             arglist.append(valid_items)
 
+        temp_storage = bound.arguments.get("temp_storage")
+        temp_storage_is_none_type = isinstance(temp_storage, types.NoneType)
+        if temp_storage_is_none_type:
+            arglist.append(temp_storage)
+            temp_storage = None
+        if not temp_storage_is_none_type:
+            validate_temp_storage(self, temp_storage)
+            if temp_storage is not None:
+                arglist.append(temp_storage)
+
         return signature(src, *arglist)
 
 
@@ -4363,11 +4396,13 @@ class CoopWarpSumDecl(CoopAbstractTemplate, CoopDeclMixin):
         src: types.Number,
         threads_in_warp: int = 32,
         valid_items: Optional[int] = None,
+        temp_storage: Union[types.Array, TempStorageType] = None,
     ):
         return inspect.signature(CoopWarpSumDecl.signature).bind(
             src,
             threads_in_warp=threads_in_warp,
             valid_items=valid_items,
+            temp_storage=temp_storage,
         )
 
     def _validate_args_and_create_signature(self, bound, two_phase=False):
@@ -4393,6 +4428,16 @@ class CoopWarpSumDecl(CoopAbstractTemplate, CoopDeclMixin):
                 )
             arglist.append(valid_items)
 
+        temp_storage = bound.arguments.get("temp_storage")
+        temp_storage_is_none_type = isinstance(temp_storage, types.NoneType)
+        if temp_storage_is_none_type:
+            arglist.append(temp_storage)
+            temp_storage = None
+        if not temp_storage_is_none_type:
+            validate_temp_storage(self, temp_storage)
+            if temp_storage is not None:
+                arglist.append(temp_storage)
+
         return signature(src, *arglist)
 
 
@@ -4407,10 +4452,14 @@ class CoopWarpInclusiveSumDecl(CoopAbstractTemplate, CoopDeclMixin):
     def signature(
         src: types.Number,
         threads_in_warp: int = 32,
+        warp_aggregate: types.Array = None,
+        temp_storage: Union[types.Array, TempStorageType] = None,
     ):
         return inspect.signature(CoopWarpInclusiveSumDecl.signature).bind(
             src,
             threads_in_warp=threads_in_warp,
+            warp_aggregate=warp_aggregate,
+            temp_storage=temp_storage,
         )
 
     def _validate_args_and_create_signature(self, bound, two_phase=False):
@@ -4427,6 +4476,33 @@ class CoopWarpInclusiveSumDecl(CoopAbstractTemplate, CoopDeclMixin):
             if maybe_literal is not None:
                 threads_in_warp = maybe_literal
             arglist.append(threads_in_warp)
+
+        warp_aggregate = bound.arguments.get("warp_aggregate")
+        warp_aggregate_is_none_type = isinstance(warp_aggregate, types.NoneType)
+        if warp_aggregate_is_none_type:
+            arglist.append(warp_aggregate)
+            warp_aggregate = None
+        if not warp_aggregate_is_none_type and warp_aggregate is not None:
+            if not isinstance(warp_aggregate, types.Array):
+                raise errors.TypingError(
+                    f"{self.primitive_name} requires warp_aggregate to be a device array"
+                )
+            if warp_aggregate.dtype != src:
+                raise errors.TypingError(
+                    f"{self.primitive_name} requires warp_aggregate to have the same "
+                    "dtype as the input"
+                )
+            arglist.append(warp_aggregate)
+
+        temp_storage = bound.arguments.get("temp_storage")
+        temp_storage_is_none_type = isinstance(temp_storage, types.NoneType)
+        if temp_storage_is_none_type:
+            arglist.append(temp_storage)
+            temp_storage = None
+        if not temp_storage_is_none_type:
+            validate_temp_storage(self, temp_storage)
+            if temp_storage is not None:
+                arglist.append(temp_storage)
 
         return signature(src, *arglist)
 
@@ -4442,10 +4518,14 @@ class CoopWarpExclusiveSumDecl(CoopAbstractTemplate, CoopDeclMixin):
     def signature(
         src: types.Number,
         threads_in_warp: int = 32,
+        warp_aggregate: types.Array = None,
+        temp_storage: Union[types.Array, TempStorageType] = None,
     ):
         return inspect.signature(CoopWarpExclusiveSumDecl.signature).bind(
             src,
             threads_in_warp=threads_in_warp,
+            warp_aggregate=warp_aggregate,
+            temp_storage=temp_storage,
         )
 
     def _validate_args_and_create_signature(self, bound, two_phase=False):
@@ -4462,6 +4542,33 @@ class CoopWarpExclusiveSumDecl(CoopAbstractTemplate, CoopDeclMixin):
             if maybe_literal is not None:
                 threads_in_warp = maybe_literal
             arglist.append(threads_in_warp)
+
+        warp_aggregate = bound.arguments.get("warp_aggregate")
+        warp_aggregate_is_none_type = isinstance(warp_aggregate, types.NoneType)
+        if warp_aggregate_is_none_type:
+            arglist.append(warp_aggregate)
+            warp_aggregate = None
+        if not warp_aggregate_is_none_type and warp_aggregate is not None:
+            if not isinstance(warp_aggregate, types.Array):
+                raise errors.TypingError(
+                    f"{self.primitive_name} requires warp_aggregate to be a device array"
+                )
+            if warp_aggregate.dtype != src:
+                raise errors.TypingError(
+                    f"{self.primitive_name} requires warp_aggregate to have the same "
+                    "dtype as the input"
+                )
+            arglist.append(warp_aggregate)
+
+        temp_storage = bound.arguments.get("temp_storage")
+        temp_storage_is_none_type = isinstance(temp_storage, types.NoneType)
+        if temp_storage_is_none_type:
+            arglist.append(temp_storage)
+            temp_storage = None
+        if not temp_storage_is_none_type:
+            validate_temp_storage(self, temp_storage)
+            if temp_storage is not None:
+                arglist.append(temp_storage)
 
         return signature(src, *arglist)
 
@@ -4479,12 +4586,18 @@ class CoopWarpExclusiveScanDecl(CoopAbstractTemplate, CoopDeclMixin):
         scan_op: ScanOpType,
         initial_value: Optional[types.Number] = None,
         threads_in_warp: int = 32,
+        valid_items: Optional[int] = None,
+        warp_aggregate: types.Array = None,
+        temp_storage: Union[types.Array, TempStorageType] = None,
     ):
         return inspect.signature(CoopWarpExclusiveScanDecl.signature).bind(
             src,
             scan_op,
             initial_value=initial_value,
             threads_in_warp=threads_in_warp,
+            valid_items=valid_items,
+            warp_aggregate=warp_aggregate,
+            temp_storage=temp_storage,
         )
 
     @staticmethod
@@ -4494,12 +4607,18 @@ class CoopWarpExclusiveScanDecl(CoopAbstractTemplate, CoopDeclMixin):
         *,
         scan_op: ScanOpType = None,
         threads_in_warp: int = None,
+        valid_items: Optional[int] = None,
+        warp_aggregate: types.Array = None,
+        temp_storage: Union[types.Array, TempStorageType] = None,
     ):
         return inspect.signature(CoopWarpExclusiveScanDecl.signature_instance).bind(
             src,
             initial_value=initial_value,
             scan_op=scan_op,
             threads_in_warp=threads_in_warp,
+            valid_items=valid_items,
+            warp_aggregate=warp_aggregate,
+            temp_storage=temp_storage,
         )
 
     def _validate_args_and_create_signature(self, bound, two_phase=False):
@@ -4544,6 +4663,45 @@ class CoopWarpExclusiveScanDecl(CoopAbstractTemplate, CoopDeclMixin):
             if maybe_literal is not None:
                 threads_in_warp = maybe_literal
             arglist.append(threads_in_warp)
+
+        valid_items = bound.arguments.get("valid_items")
+        valid_items_is_none_type = isinstance(valid_items, types.NoneType)
+        if valid_items_is_none_type:
+            arglist.append(valid_items)
+            valid_items = None
+        if not valid_items_is_none_type and valid_items is not None:
+            if not isinstance(valid_items, (types.Integer, types.IntegerLiteral)):
+                raise errors.TypingError(
+                    f"{self.primitive_name} requires 'valid_items' to be an integer"
+                )
+            arglist.append(valid_items)
+
+        warp_aggregate = bound.arguments.get("warp_aggregate")
+        warp_aggregate_is_none_type = isinstance(warp_aggregate, types.NoneType)
+        if warp_aggregate_is_none_type:
+            arglist.append(warp_aggregate)
+            warp_aggregate = None
+        if not warp_aggregate_is_none_type and warp_aggregate is not None:
+            if not isinstance(warp_aggregate, types.Array):
+                raise errors.TypingError(
+                    f"{self.primitive_name} requires warp_aggregate to be a device array"
+                )
+            if warp_aggregate.dtype != src:
+                raise errors.TypingError(
+                    f"{self.primitive_name} requires warp_aggregate to have the same "
+                    "dtype as the input"
+                )
+            arglist.append(warp_aggregate)
+
+        temp_storage = bound.arguments.get("temp_storage")
+        temp_storage_is_none_type = isinstance(temp_storage, types.NoneType)
+        if temp_storage_is_none_type:
+            arglist.append(temp_storage)
+            temp_storage = None
+        if not temp_storage_is_none_type:
+            validate_temp_storage(self, temp_storage)
+            if temp_storage is not None:
+                arglist.append(temp_storage)
 
         return signature(src, *arglist)
 
@@ -4561,12 +4719,18 @@ class CoopWarpInclusiveScanDecl(CoopAbstractTemplate, CoopDeclMixin):
         scan_op: ScanOpType,
         initial_value: Optional[types.Number] = None,
         threads_in_warp: int = 32,
+        valid_items: Optional[int] = None,
+        warp_aggregate: types.Array = None,
+        temp_storage: Union[types.Array, TempStorageType] = None,
     ):
         return inspect.signature(CoopWarpInclusiveScanDecl.signature).bind(
             src,
             scan_op,
             initial_value=initial_value,
             threads_in_warp=threads_in_warp,
+            valid_items=valid_items,
+            warp_aggregate=warp_aggregate,
+            temp_storage=temp_storage,
         )
 
     @staticmethod
@@ -4576,12 +4740,18 @@ class CoopWarpInclusiveScanDecl(CoopAbstractTemplate, CoopDeclMixin):
         *,
         scan_op: ScanOpType = None,
         threads_in_warp: int = None,
+        valid_items: Optional[int] = None,
+        warp_aggregate: types.Array = None,
+        temp_storage: Union[types.Array, TempStorageType] = None,
     ):
         return inspect.signature(CoopWarpInclusiveScanDecl.signature_instance).bind(
             src,
             initial_value=initial_value,
             scan_op=scan_op,
             threads_in_warp=threads_in_warp,
+            valid_items=valid_items,
+            warp_aggregate=warp_aggregate,
+            temp_storage=temp_storage,
         )
 
     def _validate_args_and_create_signature(self, bound, two_phase=False):
@@ -4626,6 +4796,45 @@ class CoopWarpInclusiveScanDecl(CoopAbstractTemplate, CoopDeclMixin):
             if maybe_literal is not None:
                 threads_in_warp = maybe_literal
             arglist.append(threads_in_warp)
+
+        valid_items = bound.arguments.get("valid_items")
+        valid_items_is_none_type = isinstance(valid_items, types.NoneType)
+        if valid_items_is_none_type:
+            arglist.append(valid_items)
+            valid_items = None
+        if not valid_items_is_none_type and valid_items is not None:
+            if not isinstance(valid_items, (types.Integer, types.IntegerLiteral)):
+                raise errors.TypingError(
+                    f"{self.primitive_name} requires 'valid_items' to be an integer"
+                )
+            arglist.append(valid_items)
+
+        warp_aggregate = bound.arguments.get("warp_aggregate")
+        warp_aggregate_is_none_type = isinstance(warp_aggregate, types.NoneType)
+        if warp_aggregate_is_none_type:
+            arglist.append(warp_aggregate)
+            warp_aggregate = None
+        if not warp_aggregate_is_none_type and warp_aggregate is not None:
+            if not isinstance(warp_aggregate, types.Array):
+                raise errors.TypingError(
+                    f"{self.primitive_name} requires warp_aggregate to be a device array"
+                )
+            if warp_aggregate.dtype != src:
+                raise errors.TypingError(
+                    f"{self.primitive_name} requires warp_aggregate to have the same "
+                    "dtype as the input"
+                )
+            arglist.append(warp_aggregate)
+
+        temp_storage = bound.arguments.get("temp_storage")
+        temp_storage_is_none_type = isinstance(temp_storage, types.NoneType)
+        if temp_storage_is_none_type:
+            arglist.append(temp_storage)
+            temp_storage = None
+        if not temp_storage_is_none_type:
+            validate_temp_storage(self, temp_storage)
+            if temp_storage is not None:
+                arglist.append(temp_storage)
 
         return signature(src, *arglist)
 
@@ -4714,10 +4923,9 @@ class CoopWarpMergeSortDecl(CoopAbstractTemplate, CoopDeclMixin):
             arglist.append(values)
 
         temp_storage = bound.arguments.get("temp_storage")
+        validate_temp_storage(self, temp_storage)
         if temp_storage is not None:
-            raise errors.TypingError(
-                f"{self.primitive_name} does not support 'temp_storage'"
-            )
+            arglist.append(temp_storage)
 
         return signature(types.void, *arglist)
 

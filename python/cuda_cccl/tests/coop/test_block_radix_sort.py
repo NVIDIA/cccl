@@ -59,6 +59,55 @@ def test_block_radix_sort_two_phase():
     np.testing.assert_array_equal(h_output, reference)
 
 
+def test_block_radix_sort_temp_storage():
+    threads_per_block = 64
+    items_per_thread = 2
+    begin_bit = 0
+    end_bit = 6
+    dtype = np.uint32
+
+    block_radix_sort = coop.block.radix_sort_keys(
+        numba.uint32,
+        threads_per_block,
+        items_per_thread,
+        begin_bit,
+        end_bit,
+    )
+    temp_storage_bytes = block_radix_sort.temp_storage_bytes
+    temp_storage_alignment = block_radix_sort.temp_storage_alignment
+
+    @cuda.jit
+    def kernel(input, output):
+        tid = row_major_tid()
+        temp_storage = coop.TempStorage(
+            temp_storage_bytes,
+            temp_storage_alignment,
+        )
+        thread_data = cuda.local.array(shape=items_per_thread, dtype=numba.uint32)
+        for i in range(items_per_thread):
+            thread_data[i] = input[tid * items_per_thread + i]
+        block_radix_sort(
+            thread_data,
+            items_per_thread,
+            begin_bit,
+            end_bit,
+            temp_storage=temp_storage,
+        )
+        for i in range(items_per_thread):
+            output[tid * items_per_thread + i] = thread_data[i]
+
+    items_per_tile = threads_per_block * items_per_thread
+    h_input = np.random.randint(0, 256, items_per_tile, dtype=dtype)
+    d_input = cuda.to_device(h_input)
+    d_output = cuda.device_array(items_per_tile, dtype=dtype)
+    kernel[1, threads_per_block](d_input, d_output)
+    cuda.synchronize()
+
+    h_output = d_output.copy_to_host()
+    reference = np.sort(h_input)
+    np.testing.assert_array_equal(h_output, reference)
+
+
 def test_block_radix_sort_descending_two_phase():
     threads_per_block = 64
     items_per_thread = 2

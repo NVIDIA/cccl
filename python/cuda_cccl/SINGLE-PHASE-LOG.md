@@ -609,3 +609,66 @@
 - Changes:
   - `cuda/coop/block/_block_radix_sort.py`: add docstring note that decomposer is not supported and raises ValueError.
 - Tests: not run (doc-only).
+
+## 2026-01-23 (warp scan valid_items/warp_aggregate/temp_storage)
+- Request: implement WarpScan features (valid_items, warp_aggregate, temp_storage) with two-phase + single-phase tests.
+- Changes:
+  - `cuda/coop/warp/_warp_scan.py`: add `valid_items`, `warp_aggregate`, and `temp_storage` support for exclusive/inclusive scan and sum overloads.
+  - `cuda/coop/warp/_warp_scan.py`: allow sum scan ops to use scan overloads when `valid_items` or `initial_value` is present.
+  - `cuda/coop/_decls.py`: extend warp scan/sum typing to accept valid_items, warp_aggregate, and temp_storage with validation.
+  - `cuda/coop/_rewrite.py`: plumb warp scan runtime args for valid_items/warp_aggregate/temp_storage and ensure valid_items literals are assigned before inclusive scan calls.
+  - `tests/coop/test_warp_scan.py`: add two-phase warp_aggregate, valid_items, and temp_storage coverage.
+  - `tests/coop/test_warp_single_phase.py`: add single-phase warp_aggregate/valid_items and temp_storage coverage.
+  - `SINGLE-PHASE-TODO.md`: mark WarpScan overload item complete.
+- Tests:
+  - `pytest -q tests/coop/test_warp_scan.py tests/coop/test_warp_single_phase.py`
+    - Result: 22 passed.
+
+## 2026-01-23 (warp scan sum valid_items + doc examples)
+- Request: add scan_op="+" + valid_items coverage and document temp_storage usage.
+- Changes:
+  - `cuda/coop/warp/_warp_scan.py`: add temp_storage examples to warp scan/sum docstrings.
+  - `tests/coop/test_warp_scan.py`: add two-phase sum + valid_items tests for inclusive/exclusive scan.
+  - `tests/coop/test_warp_single_phase.py`: add single-phase sum + valid_items test for inclusive scan.
+- Tests:
+  - `pytest -q tests/coop/test_warp_scan.py tests/coop/test_warp_single_phase.py`
+    - Result: 25 passed.
+
+## 2026-01-23 (warp scan sum valid_items single-phase symmetry)
+- Request: add exclusive sum valid_items single-phase coverage for symmetry.
+- Changes:
+  - `tests/coop/test_warp_single_phase.py`: add exclusive scan sum + valid_items test.
+- Tests:
+  - `pytest -q tests/coop/test_warp_single_phase.py -k "sum_valid_items_single_phase"`
+    - Result: 2 passed, 13 deselected.
+
+## 2026-01-23 (block radix rank exclusive_digit_prefix)
+- Request: add BlockRadixRank exclusive_digit_prefix output overload support.
+- Changes:
+  - `cuda/coop/block/_block_radix_rank.py`: add optional exclusive_digit_prefix output parameter sizing (BINS_TRACKED_PER_THREAD).
+  - `cuda/coop/_decls.py`: accept exclusive_digit_prefix in block radix rank typing.
+  - `cuda/coop/_rewrite.py`: plumb exclusive_digit_prefix runtime args, validate length, and rebuild two-phase instance when provided.
+  - `tests/coop/test_block_radix_rank.py`: add single- and two-phase exclusive_digit_prefix tests and host-side validation.
+  - `SINGLE-PHASE-TODO.md`: mark exclusive_digit_prefix overload complete.
+- Tests:
+  - `pytest -q tests/coop/test_block_radix_rank.py -k exclusive_digit_prefix`
+    - Result: 2 passed, 4 deselected.
+  - `pytest -q tests/coop/test_block_radix_rank.py`
+    - Result: 6 passed.
+
+## 2026-01-23 (explicit temp_storage parity + gpu_dataclass pipeline)
+- Request: enable explicit temp_storage across remaining primitives and add gpu_dataclass shared-smem coverage.
+- Changes:
+  - `cuda/coop/warp/_warp_reduce.py`: add temp_storage support for warp reduce/sum.
+  - `cuda/coop/_decls.py`: accept temp_storage for warp.reduce and warp.sum typing.
+  - `cuda/coop/_rewrite.py`: plumb temp_storage for warp reduce/sum and run_length; add auto-sync handling.
+  - `cuda/coop/block/_block_run_length_decode.py`: enable temp_storage support for run_length.
+  - `cuda/coop/_types.py`: cast TempStoragePointer to TempStorage reference in parent constructors.
+  - `tests/coop/test_warp_single_phase.py`: add warp reduce/sum temp_storage (single + two-phase) coverage.
+  - `tests/coop/test_block_run_length_decode.py`: add run_length temp_storage single- and two-phase tests.
+  - `tests/coop/test_block_load_store_scan_single_phase.py`: add gpu_dataclass multi-primitive temp_storage pipeline test.
+  - `SINGLE-PHASE-TODO.md`: mark temp_storage parity + gpu_dataclass pipeline tests complete.
+- Tests:
+  - `pytest -q tests/coop/test_warp_single_phase.py -k "temp_storage"` (3 passed, 14 deselected)
+  - `pytest -q tests/coop/test_block_run_length_decode.py -k "temp_storage"` (2 passed, 2 deselected)
+  - `pytest -q tests/coop/test_block_load_store_scan_single_phase.py -k "gpu_dataclass"` (2 passed, 16 deselected)

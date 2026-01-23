@@ -17,6 +17,7 @@ from .._types import (
     DependentReference,
     Invocable,
     TemplateParameter,
+    TempStoragePointer,
     Value,
     numba_type_to_wrapper,
 )
@@ -111,6 +112,15 @@ class load(BasePrimitive):
                 ),
             ]
         ]
+        if temp_storage is not None:
+            parameters[0].insert(
+                0,
+                TempStoragePointer(
+                    numba.types.uint8,
+                    is_array_pointer=True,
+                    name="temp_storage",
+                ),
+            )
         if num_valid_items is not None:
             parameters[0].append(Value(numba.types.int32, name="num_valid_items"))
         if oob_default is not None:
@@ -228,6 +238,15 @@ class store(BasePrimitive):
                 ),
             ]
         ]
+        if temp_storage is not None:
+            parameters[0].insert(
+                0,
+                TempStoragePointer(
+                    numba.types.uint8,
+                    is_array_pointer=True,
+                    name="temp_storage",
+                ),
+            )
         if num_valid_items is not None:
             parameters[0].append(Value(numba.types.int32, name="num_valid_items"))
 

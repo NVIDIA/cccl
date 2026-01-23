@@ -2226,8 +2226,25 @@ class CoopWarpLoadStoreNode(CoopNode):
             runtime_arg_names.append("oob_default")
 
         temp_storage = self.bound.arguments.get("temp_storage")
+        temp_storage_info = None
         if temp_storage is not None:
-            raise RuntimeError("coop.warp.load/store does not support temp_storage")
+            if not isinstance(temp_storage, ir.Var):
+                raise RuntimeError(
+                    "coop.warp.load/store temp_storage must be provided as a variable"
+                )
+            temp_storage_ty = self.typemap[temp_storage.name]
+            try:
+                from ._decls import TempStorageType
+            except Exception:
+                TempStorageType = None
+            if TempStorageType is not None and isinstance(
+                temp_storage_ty, TempStorageType
+            ):
+                temp_storage_info = rewriter.get_temp_storage_info(temp_storage)
+                temp_storage_ty = types.Array(types.uint8, 1, "C")
+            runtime_args.insert(0, temp_storage)
+            runtime_arg_types.insert(0, temp_storage_ty)
+            runtime_arg_names.insert(0, "temp_storage")
 
         self.dtype = dtype
         self.items_per_thread = items_per_thread
@@ -2235,6 +2252,8 @@ class CoopWarpLoadStoreNode(CoopNode):
         self.num_valid_items = num_valid_items
         self.src = src
         self.dst = dst
+        self.temp_storage = temp_storage
+        self.temp_storage_info = temp_storage_info
         self.runtime_args = runtime_args
         self.runtime_arg_types = runtime_arg_types
         self.runtime_arg_names = runtime_arg_names
@@ -2247,7 +2266,7 @@ class CoopWarpLoadStoreNode(CoopNode):
             "num_valid_items": num_valid_items,
             "methods": methods,
             "unique_id": self.unique_id,
-            "temp_storage": None,
+            "temp_storage": temp_storage,
             "node": self,
         }
         if self.is_load:
@@ -2255,6 +2274,15 @@ class CoopWarpLoadStoreNode(CoopNode):
 
         self.impl_kwds = impl_kwds
         self.return_type = types.void
+
+        if self.is_two_phase and self.two_phase_instance is not None:
+            instance = self.two_phase_instance
+            needs_temp_storage = (
+                temp_storage is not None
+                and getattr(instance, "temp_storage", None) is None
+            )
+            if needs_temp_storage:
+                self.instance = self.impl_class(**self.impl_kwds)
 
     def rewrite(self, rewriter):
         rd = self.rewrite_details
@@ -2312,8 +2340,9 @@ class CoopBlockExchangeNode(CoopNode, CoopNodeMixin):
 
         items_ty = self.typemap[items.name]
         try:
-            from ._decls import ThreadDataType
+            from ._decls import TempStorageType, ThreadDataType
         except Exception:
+            TempStorageType = None
             ThreadDataType = None
 
         items_is_thread = ThreadDataType is not None and isinstance(
@@ -2526,10 +2555,21 @@ class CoopBlockExchangeNode(CoopNode, CoopNodeMixin):
             )
 
         temp_storage = bound.get("temp_storage")
+        temp_storage_info = None
         if temp_storage is not None:
-            raise RuntimeError(
-                "coop.block.exchange does not support temp_storage in single-phase"
-            )
+            if not isinstance(temp_storage, ir.Var):
+                raise RuntimeError(
+                    "coop.block.exchange temp_storage must be provided as a variable"
+                )
+            temp_storage_ty = self.typemap[temp_storage.name]
+            if TempStorageType is not None and isinstance(
+                temp_storage_ty, TempStorageType
+            ):
+                temp_storage_info = rewriter.get_temp_storage_info(temp_storage)
+                temp_storage_ty = types.Array(types.uint8, 1, "C")
+            runtime_args.insert(0, temp_storage)
+            runtime_arg_types.insert(0, temp_storage_ty)
+            runtime_arg_names.insert(0, "temp_storage")
 
         if ThreadDataType is not None:
             array_ty = types.Array(dtype, 1, "C")
@@ -2562,7 +2602,7 @@ class CoopBlockExchangeNode(CoopNode, CoopNodeMixin):
             "warp_time_slicing": warp_time_slicing,
             "methods": methods,
             "unique_id": self.unique_id,
-            "temp_storage": None,
+            "temp_storage": temp_storage,
             "use_output_items": output_items is not None,
             "offset_dtype": ranks_ty.dtype if uses_ranks else None,
             "valid_flag_dtype": valid_flags_ty.dtype if uses_valid_flags else None,
@@ -2573,6 +2613,17 @@ class CoopBlockExchangeNode(CoopNode, CoopNodeMixin):
         self.runtime_args = runtime_args
         self.runtime_arg_types = runtime_arg_types
         self.runtime_arg_names = runtime_arg_names
+        self.temp_storage = temp_storage
+        self.temp_storage_info = temp_storage_info
+
+        if self.is_two_phase and self.two_phase_instance is not None:
+            instance = self.two_phase_instance
+            needs_temp_storage = (
+                temp_storage is not None
+                and getattr(instance, "temp_storage", None) is None
+            )
+            if needs_temp_storage:
+                self.instance = self.impl_class(**self.impl_kwds)
 
     def rewrite(self, rewriter):
         rd = self.rewrite_details
@@ -2743,8 +2794,25 @@ class CoopWarpExchangeNode(CoopNode, CoopNodeMixin):
             offset_dtype = offset_dtype_arg
 
         temp_storage = bound.get("temp_storage")
+        temp_storage_info = None
         if temp_storage is not None:
-            raise RuntimeError("coop.warp.exchange does not support temp_storage")
+            if not isinstance(temp_storage, ir.Var):
+                raise RuntimeError(
+                    "coop.warp.exchange temp_storage must be provided as a variable"
+                )
+            temp_storage_ty = self.typemap[temp_storage.name]
+            try:
+                from ._decls import TempStorageType
+            except Exception:
+                TempStorageType = None
+            if TempStorageType is not None and isinstance(
+                temp_storage_ty, TempStorageType
+            ):
+                temp_storage_info = rewriter.get_temp_storage_info(temp_storage)
+                temp_storage_ty = types.Array(types.uint8, 1, "C")
+            runtime_args.insert(0, temp_storage)
+            runtime_arg_types.insert(0, temp_storage_ty)
+            runtime_arg_names.insert(0, "temp_storage")
 
         runtime_args.append(items)
         runtime_arg_types.append(items_ty)
@@ -2772,7 +2840,7 @@ class CoopWarpExchangeNode(CoopNode, CoopNodeMixin):
             "offset_dtype": offset_dtype,
             "methods": methods,
             "unique_id": self.unique_id,
-            "temp_storage": None,
+            "temp_storage": temp_storage,
             "node": self,
         }
 
@@ -2780,6 +2848,17 @@ class CoopWarpExchangeNode(CoopNode, CoopNodeMixin):
         self.runtime_args = runtime_args
         self.runtime_arg_types = runtime_arg_types
         self.runtime_arg_names = runtime_arg_names
+        self.temp_storage = temp_storage
+        self.temp_storage_info = temp_storage_info
+
+        if self.is_two_phase and self.two_phase_instance is not None:
+            instance = self.two_phase_instance
+            needs_temp_storage = (
+                temp_storage is not None
+                and getattr(instance, "temp_storage", None) is None
+            )
+            if needs_temp_storage:
+                self.instance = self.impl_class(**self.impl_kwds)
 
     def rewrite(self, rewriter):
         rd = self.rewrite_details
@@ -4094,11 +4173,25 @@ class CoopBlockMergeSortNode(CoopNode, CoopNodeMixin):
                 oob_default_var = const_var
 
         temp_storage = bound.get("temp_storage")
+        temp_storage_info = None
         if temp_storage is not None:
-            raise RuntimeError(
-                "coop.block.merge_sort_keys does not support temp_storage "
-                "in single-phase"
-            )
+            if not isinstance(temp_storage, ir.Var):
+                raise RuntimeError(
+                    "coop.block.merge_sort_keys temp_storage must be provided as a variable"
+                )
+            temp_storage_ty = self.typemap[temp_storage.name]
+            try:
+                from ._decls import TempStorageType
+            except Exception:
+                TempStorageType = None
+            if TempStorageType is not None and isinstance(
+                temp_storage_ty, TempStorageType
+            ):
+                temp_storage_info = rewriter.get_temp_storage_info(temp_storage)
+                temp_storage_ty = types.Array(types.uint8, 1, "C")
+            runtime_args.insert(0, temp_storage)
+            runtime_arg_types.insert(0, temp_storage_ty)
+            runtime_arg_names.insert(0, "temp_storage")
 
         runtime_args.append(keys)
         runtime_arg_types.append(keys_ty)
@@ -4125,7 +4218,7 @@ class CoopBlockMergeSortNode(CoopNode, CoopNodeMixin):
             "oob_default": oob_default,
             "methods": methods,
             "unique_id": self.unique_id,
-            "temp_storage": None,
+            "temp_storage": temp_storage,
             "node": self,
         }
 
@@ -4133,6 +4226,8 @@ class CoopBlockMergeSortNode(CoopNode, CoopNodeMixin):
         self.runtime_args = runtime_args
         self.runtime_arg_types = runtime_arg_types
         self.runtime_arg_names = runtime_arg_names
+        self.temp_storage = temp_storage
+        self.temp_storage_info = temp_storage_info
 
         if self.is_two_phase and self.two_phase_instance is not None:
             instance = self.two_phase_instance
@@ -4149,6 +4244,12 @@ class CoopBlockMergeSortNode(CoopNode, CoopNodeMixin):
             ):
                 needs_rebuild = True
             if needs_rebuild:
+                self.instance = self.impl_class(**self.impl_kwds)
+            needs_temp_storage = (
+                temp_storage is not None
+                and getattr(instance, "temp_storage", None) is None
+            )
+            if needs_temp_storage:
                 self.instance = self.impl_class(**self.impl_kwds)
 
     def rewrite(self, rewriter):
@@ -4262,10 +4363,25 @@ class CoopWarpMergeSortNode(CoopNode, CoopNodeMixin):
             methods = None
 
         temp_storage = bound.get("temp_storage")
+        temp_storage_info = None
         if temp_storage is not None:
-            raise RuntimeError(
-                "coop.warp.merge_sort_keys does not support temp_storage in single-phase"
-            )
+            if not isinstance(temp_storage, ir.Var):
+                raise RuntimeError(
+                    "coop.warp.merge_sort_keys temp_storage must be provided as a variable"
+                )
+            temp_storage_ty = self.typemap[temp_storage.name]
+            try:
+                from ._decls import TempStorageType
+            except Exception:
+                TempStorageType = None
+            if TempStorageType is not None and isinstance(
+                temp_storage_ty, TempStorageType
+            ):
+                temp_storage_info = rewriter.get_temp_storage_info(temp_storage)
+                temp_storage_ty = types.Array(types.uint8, 1, "C")
+            runtime_args.insert(0, temp_storage)
+            runtime_arg_types.insert(0, temp_storage_ty)
+            runtime_arg_names.insert(0, "temp_storage")
 
         runtime_args.append(keys)
         runtime_arg_types.append(keys_ty)
@@ -4283,7 +4399,7 @@ class CoopWarpMergeSortNode(CoopNode, CoopNodeMixin):
             "threads_in_warp": threads_in_warp,
             "methods": methods,
             "unique_id": self.unique_id,
-            "temp_storage": None,
+            "temp_storage": temp_storage,
             "node": self,
         }
 
@@ -4291,6 +4407,8 @@ class CoopWarpMergeSortNode(CoopNode, CoopNodeMixin):
         self.runtime_args = runtime_args
         self.runtime_arg_types = runtime_arg_types
         self.runtime_arg_names = runtime_arg_names
+        self.temp_storage = temp_storage
+        self.temp_storage_info = temp_storage_info
 
         if self.is_two_phase and self.two_phase_instance is not None:
             instance = self.two_phase_instance
@@ -4300,10 +4418,21 @@ class CoopWarpMergeSortNode(CoopNode, CoopNodeMixin):
             elif value_dtype is not None and instance_value_dtype is not None:
                 if value_dtype != instance_value_dtype:
                     self.instance = self.impl_class(**self.impl_kwds)
+            needs_temp_storage = (
+                temp_storage is not None
+                and getattr(instance, "temp_storage", None) is None
+            )
+            if needs_temp_storage:
+                self.instance = self.impl_class(**self.impl_kwds)
 
     def rewrite(self, rewriter):
         rd = self.rewrite_details
-        return (rd.g_assign, rd.new_assign)
+        instrs = [rd.g_assign, rd.new_assign]
+        if self.temp_storage_info is not None and self.temp_storage_info.auto_sync:
+            instrs.extend(
+                rewriter.emit_syncthreads_call(self.instr.target.scope, self.expr.loc)
+            )
+        return tuple(instrs)
 
     @cached_property
     def rewrite_details(self):
@@ -4485,11 +4614,25 @@ class CoopBlockRadixSortNode(CoopNode, CoopNodeMixin):
                 )
 
         temp_storage = bound.get("temp_storage")
+        temp_storage_info = None
         if temp_storage is not None:
-            raise RuntimeError(
-                "coop.block.radix_sort_keys does not support temp_storage "
-                "in single-phase"
-            )
+            if not isinstance(temp_storage, ir.Var):
+                raise RuntimeError(
+                    "coop.block.radix_sort_keys temp_storage must be provided as a variable"
+                )
+            temp_storage_ty = self.typemap[temp_storage.name]
+            try:
+                from ._decls import TempStorageType
+            except Exception:
+                TempStorageType = None
+            if TempStorageType is not None and isinstance(
+                temp_storage_ty, TempStorageType
+            ):
+                temp_storage_info = rewriter.get_temp_storage_info(temp_storage)
+                temp_storage_ty = types.Array(types.uint8, 1, "C")
+            runtime_args.insert(0, temp_storage)
+            runtime_arg_types.insert(0, temp_storage_ty)
+            runtime_arg_names.insert(0, "temp_storage")
 
         runtime_args.append(keys)
         runtime_arg_types.append(keys_ty)
@@ -4519,7 +4662,7 @@ class CoopBlockRadixSortNode(CoopNode, CoopNodeMixin):
             "decomposer": decomposer_obj,
             "blocked_to_striped": blocked_to_striped,
             "unique_id": self.unique_id,
-            "temp_storage": None,
+            "temp_storage": temp_storage,
             "node": self,
         }
 
@@ -4527,6 +4670,8 @@ class CoopBlockRadixSortNode(CoopNode, CoopNodeMixin):
         self.runtime_args = runtime_args
         self.runtime_arg_types = runtime_arg_types
         self.runtime_arg_names = runtime_arg_names
+        self.temp_storage = temp_storage
+        self.temp_storage_info = temp_storage_info
 
         if self.is_two_phase and self.two_phase_instance is not None:
             instance = self.two_phase_instance
@@ -4550,6 +4695,11 @@ class CoopBlockRadixSortNode(CoopNode, CoopNodeMixin):
                     needs_rebuild = True
             if blocked_to_striped and not getattr(
                 instance, "blocked_to_striped", False
+            ):
+                needs_rebuild = True
+            if (
+                temp_storage is not None
+                and getattr(instance, "temp_storage", None) is None
             ):
                 needs_rebuild = True
             if needs_rebuild:
@@ -4610,6 +4760,7 @@ class CoopBlockRadixRankNode(CoopNode, CoopNodeMixin):
         bound = self.bound.arguments
         items = bound.get("items")
         ranks = bound.get("ranks")
+        exclusive_digit_prefix = bound.get("exclusive_digit_prefix")
         if items is None or ranks is None:
             raise RuntimeError(
                 "coop.block.radix_rank requires items and ranks arguments"
@@ -4642,6 +4793,12 @@ class CoopBlockRadixRankNode(CoopNode, CoopNodeMixin):
         if not ranks_is_thread and not isinstance(ranks_ty, types.Array):
             raise RuntimeError(
                 "coop.block.radix_rank requires ranks to be an array or ThreadData"
+            )
+        if exclusive_digit_prefix is not None and not isinstance(
+            exclusive_digit_prefix, ir.Var
+        ):
+            raise RuntimeError(
+                "coop.block.radix_rank exclusive_digit_prefix must be a variable"
             )
 
         def _infer_items_per_thread(var, is_thread):
@@ -4695,6 +4852,15 @@ class CoopBlockRadixRankNode(CoopNode, CoopNodeMixin):
         if end_bit <= begin_bit:
             raise RuntimeError("coop.block.radix_rank requires end_bit > begin_bit")
 
+        block_threads = (
+            self.threads_per_block[0]
+            * self.threads_per_block[1]
+            * self.threads_per_block[2]
+        )
+        radix_bits = end_bit - begin_bit
+        radix_digits = 1 << radix_bits
+        bins_per_thread = max(1, (radix_digits + block_threads - 1) // block_threads)
+
         descending = bound.get("descending")
         if descending is None:
             descending_value = False
@@ -4739,6 +4905,48 @@ class CoopBlockRadixRankNode(CoopNode, CoopNodeMixin):
         )
         runtime_arg_names.extend(["items", "ranks"])
 
+        prefix_dtype = None
+        prefix_is_thread = False
+        if exclusive_digit_prefix is not None:
+            prefix_ty = self.typemap[exclusive_digit_prefix.name]
+            prefix_is_thread = ThreadDataType is not None and isinstance(
+                prefix_ty, ThreadDataType
+            )
+            if not prefix_is_thread and not isinstance(prefix_ty, types.Array):
+                raise RuntimeError(
+                    "coop.block.radix_rank requires exclusive_digit_prefix to be an "
+                    "array or ThreadData"
+                )
+
+            prefix_items_per_thread = _infer_items_per_thread(
+                exclusive_digit_prefix, prefix_is_thread
+            )
+            if prefix_items_per_thread != bins_per_thread:
+                raise RuntimeError(
+                    "coop.block.radix_rank exclusive_digit_prefix must have "
+                    f"{bins_per_thread} items per thread; got {prefix_items_per_thread}"
+                )
+
+            if prefix_is_thread:
+                prefix_dtype = rewriter.get_thread_data_info(
+                    exclusive_digit_prefix
+                ).dtype
+            else:
+                prefix_dtype = prefix_ty.dtype
+            if (
+                not isinstance(prefix_dtype, types.Integer)
+                or prefix_dtype.bitwidth != 32
+            ):
+                raise RuntimeError(
+                    "coop.block.radix_rank requires exclusive_digit_prefix to be an "
+                    "int32 array"
+                )
+
+            array_prefix_ty = types.Array(prefix_dtype, 1, "C")
+            runtime_args.append(exclusive_digit_prefix)
+            runtime_arg_types.append(array_prefix_ty if prefix_is_thread else prefix_ty)
+            runtime_arg_names.append("exclusive_digit_prefix")
+
         self.impl_kwds = {
             "dtype": item_dtype,
             "threads_per_block": self.threads_per_block,
@@ -4746,6 +4954,7 @@ class CoopBlockRadixRankNode(CoopNode, CoopNodeMixin):
             "begin_bit": begin_bit,
             "end_bit": end_bit,
             "descending": descending_value,
+            "exclusive_digit_prefix": exclusive_digit_prefix,
             "unique_id": self.unique_id,
             "temp_storage": temp_storage,
             "node": self,
@@ -4757,6 +4966,15 @@ class CoopBlockRadixRankNode(CoopNode, CoopNodeMixin):
         self.runtime_arg_names = runtime_arg_names
         self.temp_storage_info = temp_storage_info
         self.temp_storage = temp_storage
+
+        if self.is_two_phase and self.two_phase_instance is not None:
+            instance = self.two_phase_instance
+            needs_prefix = (
+                exclusive_digit_prefix is not None
+                and getattr(instance, "exclusive_digit_prefix", None) is None
+            )
+            if needs_prefix:
+                self.instance = self.impl_class(**self.impl_kwds)
 
     def rewrite(self, rewriter):
         rd = self.rewrite_details
@@ -5276,6 +5494,9 @@ class CoopBlockHistogramInitNode(CoopNode, CoopNodeMixin):
         initial_value_assign = getattr(self, "initial_value_assign", None)
         if initial_value_assign is not None:
             instrs.append(initial_value_assign)
+        valid_items_assign = getattr(self, "valid_items_assign", None)
+        if valid_items_assign is not None:
+            instrs.append(valid_items_assign)
         instrs.append(rd.new_assign)
         return tuple(instrs)
 
@@ -5419,13 +5640,25 @@ class CoopBlockRunLengthNode(CoopNode, CoopNodeMixin):
             decoded_offset_dtype = normalize_dtype_param(decoded_offset_dtype)
 
         temp_storage = self.bound.arguments.get("temp_storage")
-        temp_storage_ty = None
+        temp_storage_info = None
         if temp_storage is not None:
-            assert isinstance(temp_storage, ir.Var)
+            if not isinstance(temp_storage, ir.Var):
+                raise RuntimeError(
+                    "coop.block.run_length temp_storage must be provided as a variable"
+                )
             temp_storage_ty = self.typemap[temp_storage.name]
-            runtime_args.append(temp_storage)
-            runtime_arg_types.append(temp_storage_ty)
-            runtime_arg_names.append("temp_storage")
+            try:
+                from ._decls import TempStorageType
+            except Exception:
+                TempStorageType = None
+            if TempStorageType is not None and isinstance(
+                temp_storage_ty, TempStorageType
+            ):
+                temp_storage_info = rewriter.get_temp_storage_info(temp_storage)
+                temp_storage_ty = types.Array(types.uint8, 1, "C")
+            runtime_args.insert(0, temp_storage)
+            runtime_arg_types.insert(0, temp_storage_ty)
+            runtime_arg_names.insert(0, "temp_storage")
 
         if decoded_offset_dtype is None and self.child_expr is not None:
             # We're being created indirectly as part of the rewriter
@@ -5458,6 +5691,7 @@ class CoopBlockRunLengthNode(CoopNode, CoopNodeMixin):
         self.decoded_items_per_thread = decoded_items_per_thread
         self.total_decoded_size = total_decoded_size
         self.temp_storage = temp_storage
+        self.temp_storage_info = temp_storage_info
         self.decoded_offset_dtype = decoded_offset_dtype
         self.runtime_args = runtime_args
         self.runtime_arg_types = runtime_arg_types
@@ -5475,7 +5709,7 @@ class CoopBlockRunLengthNode(CoopNode, CoopNodeMixin):
             run_lengths=run_lengths_ty,
             total_decoded_size=total_decoded_size_ty,
             unique_id=self.unique_id,
-            temp_storage=temp_storage_ty,
+            temp_storage=temp_storage,
         )
         self.instance.node = self
 
@@ -6310,66 +6544,79 @@ class CoopWarpExclusiveSumNode(CoopNode, CoopNodeMixin):
         if not isinstance(threads_in_warp, int) or threads_in_warp < 1:
             raise RuntimeError("threads_in_warp must be a positive integer")
 
-        valid_items = self.get_arg_value_safe("valid_items")
-        valid_items_var = None
-        valid_items_type = None
-        if valid_items is not None:
-            if isinstance(valid_items, ir.Var):
-                valid_items_var = valid_items
-                valid_items_type = self.typemap[valid_items.name]
-            elif isinstance(valid_items, ir.Const):
-                valid_items_value = valid_items.value
-            else:
-                valid_items_value = valid_items
-
-            if valid_items_var is None:
-                scope = self.instr.target.scope
-                const_name = f"$warp_sum_valid_items_{self.unique_id}"
-                const_var = ir.Var(scope, const_name, self.expr.loc)
-                if const_name in self.typemap:
-                    raise RuntimeError(
-                        f"Variable {const_name} already exists in typemap."
-                    )
-                const_assign = ir.Assign(
-                    value=ir.Const(int(valid_items_value), self.expr.loc),
-                    target=const_var,
-                    loc=self.expr.loc,
+        warp_aggregate = self.bound.arguments.get("warp_aggregate")
+        warp_aggregate_ty = None
+        if warp_aggregate is not None:
+            if not isinstance(warp_aggregate, ir.Var):
+                raise RuntimeError(
+                    "coop.warp.exclusive_sum warp_aggregate must be provided as a "
+                    "variable"
                 )
-                self.typemap[const_name] = types.int32
-                self.valid_items_assign = const_assign
-                valid_items_var = const_var
-                valid_items_type = types.int32
+            warp_aggregate_ty = self.typemap[warp_aggregate.name]
+            if not isinstance(warp_aggregate_ty, types.Array):
+                raise RuntimeError(
+                    "coop.warp.exclusive_sum warp_aggregate must be a device array"
+                )
+            if warp_aggregate_ty.dtype != src_ty:
+                raise RuntimeError(
+                    "coop.warp.exclusive_sum requires warp_aggregate to have the "
+                    "same dtype as the input"
+                )
+            runtime_args.append(warp_aggregate)
+            runtime_arg_types.append(warp_aggregate_ty)
+            runtime_arg_names.append("warp_aggregate")
 
-            runtime_args.append(valid_items_var)
-            runtime_arg_types.append(valid_items_type or types.int32)
-            runtime_arg_names.append("valid_items")
+        temp_storage = self.bound.arguments.get("temp_storage")
+        temp_storage_info = None
+        if temp_storage is not None:
+            if not isinstance(temp_storage, ir.Var):
+                raise RuntimeError(
+                    "coop.warp.exclusive_sum temp_storage must be provided as a "
+                    "variable"
+                )
+            temp_storage_ty = self.typemap[temp_storage.name]
+            try:
+                from ._decls import TempStorageType
+            except Exception:
+                TempStorageType = None
+            if TempStorageType is not None and isinstance(
+                temp_storage_ty, TempStorageType
+            ):
+                temp_storage_info = rewriter.get_temp_storage_info(temp_storage)
+                temp_storage_ty = types.Array(types.uint8, 1, "C")
+            runtime_args.insert(0, temp_storage)
+            runtime_arg_types.insert(0, temp_storage_ty)
+            runtime_arg_names.insert(0, "temp_storage")
 
         self.impl_kwds = {
             "dtype": src_ty,
             "threads_in_warp": threads_in_warp,
-            "valid_items": valid_items,
             "unique_id": self.unique_id,
-            "temp_storage": None,
+            "warp_aggregate": warp_aggregate,
+            "temp_storage": temp_storage,
         }
 
         self.return_type = src_ty
         self.runtime_args = runtime_args
         self.runtime_arg_types = runtime_arg_types
         self.runtime_arg_names = runtime_arg_names
+        self.warp_aggregate = warp_aggregate
+        self.temp_storage = temp_storage
+        self.temp_storage_info = temp_storage_info
 
         if (
             self.is_two_phase
             and self.two_phase_instance is not None
-            and valid_items is not None
+            and warp_aggregate is not None
         ):
             instance = self.two_phase_instance
-            if getattr(instance, "valid_items", None) is None:
+            if getattr(instance, "warp_aggregate", None) is None:
                 self.instance = self.impl_class(
                     dtype=src_ty,
                     threads_in_warp=threads_in_warp,
-                    valid_items=valid_items,
                     unique_id=self.unique_id,
-                    temp_storage=None,
+                    warp_aggregate=warp_aggregate,
+                    temp_storage=temp_storage,
                 )
 
     def rewrite(self, rewriter):
@@ -6420,17 +6667,80 @@ class CoopWarpInclusiveSumNode(CoopNode, CoopNodeMixin):
         if not isinstance(threads_in_warp, int) or threads_in_warp < 1:
             raise RuntimeError("threads_in_warp must be a positive integer")
 
+        warp_aggregate = self.bound.arguments.get("warp_aggregate")
+        warp_aggregate_ty = None
+        if warp_aggregate is not None:
+            if not isinstance(warp_aggregate, ir.Var):
+                raise RuntimeError(
+                    "coop.warp.inclusive_sum warp_aggregate must be provided as a "
+                    "variable"
+                )
+            warp_aggregate_ty = self.typemap[warp_aggregate.name]
+            if not isinstance(warp_aggregate_ty, types.Array):
+                raise RuntimeError(
+                    "coop.warp.inclusive_sum warp_aggregate must be a device array"
+                )
+            if warp_aggregate_ty.dtype != src_ty:
+                raise RuntimeError(
+                    "coop.warp.inclusive_sum requires warp_aggregate to have the "
+                    "same dtype as the input"
+                )
+            runtime_args.append(warp_aggregate)
+            runtime_arg_types.append(warp_aggregate_ty)
+            runtime_arg_names.append("warp_aggregate")
+
+        temp_storage = self.bound.arguments.get("temp_storage")
+        temp_storage_info = None
+        if temp_storage is not None:
+            if not isinstance(temp_storage, ir.Var):
+                raise RuntimeError(
+                    "coop.warp.inclusive_sum temp_storage must be provided as a "
+                    "variable"
+                )
+            temp_storage_ty = self.typemap[temp_storage.name]
+            try:
+                from ._decls import TempStorageType
+            except Exception:
+                TempStorageType = None
+            if TempStorageType is not None and isinstance(
+                temp_storage_ty, TempStorageType
+            ):
+                temp_storage_info = rewriter.get_temp_storage_info(temp_storage)
+                temp_storage_ty = types.Array(types.uint8, 1, "C")
+            runtime_args.insert(0, temp_storage)
+            runtime_arg_types.insert(0, temp_storage_ty)
+            runtime_arg_names.insert(0, "temp_storage")
+
         self.impl_kwds = {
             "dtype": src_ty,
             "threads_in_warp": threads_in_warp,
             "unique_id": self.unique_id,
-            "temp_storage": None,
+            "warp_aggregate": warp_aggregate,
+            "temp_storage": temp_storage,
         }
 
         self.return_type = src_ty
         self.runtime_args = runtime_args
         self.runtime_arg_types = runtime_arg_types
         self.runtime_arg_names = runtime_arg_names
+        self.warp_aggregate = warp_aggregate
+        self.temp_storage = temp_storage
+        self.temp_storage_info = temp_storage_info
+
+        if (
+            self.is_two_phase
+            and self.two_phase_instance is not None
+            and warp_aggregate is not None
+        ):
+            instance = self.two_phase_instance
+            if getattr(instance, "warp_aggregate", None) is None:
+                self.instance = self.impl_class(
+                    dtype=src_ty,
+                    threads_in_warp=threads_in_warp,
+                    unique_id=self.unique_id,
+                    warp_aggregate=warp_aggregate,
+                    temp_storage=temp_storage,
+                )
 
     def rewrite(self, rewriter):
         rd = self.rewrite_details
@@ -6466,7 +6776,11 @@ def _refine_warp_scan_node(node, rewriter):
     runtime_arg_types.append(src_ty)
     runtime_arg_names.append("src")
 
+    instance = node.two_phase_instance if node.is_two_phase else None
+
     scan_op = node.get_arg_value_safe("scan_op")
+    if scan_op is None and instance is not None:
+        scan_op = getattr(instance, "scan_op", None)
     if scan_op is None:
         raise RuntimeError(f"{node.primitive_name} requires scan_op to be provided")
 
@@ -6478,6 +6792,7 @@ def _refine_warp_scan_node(node, rewriter):
         raise RuntimeError(
             f"{node.primitive_name} invalid scan_op {scan_op!r}: {e}"
         ) from e
+    scan_op = scan_op_obj
 
     bound = node.bound.arguments
     initial_value = bound.get("initial_value")
@@ -6492,15 +6807,46 @@ def _refine_warp_scan_node(node, rewriter):
             initial_value_value = initial_value.value
         else:
             initial_value_value = initial_value
+    elif instance is not None:
+        instance_initial_value = getattr(instance, "initial_value", None)
+        if instance_initial_value is not None:
+            initial_value_value = instance_initial_value
 
-    if scan_op_obj.is_sum and (
-        initial_value_var is not None or initial_value_value is not None
-    ):
-        raise RuntimeError(
-            f"{node.primitive_name} does not support initial_value for sum operators"
-        )
+    valid_items = node.get_arg_value_safe("valid_items")
+    if valid_items is None:
+        valid_items = bound.get("valid_items", None)
+    if valid_items is None and instance is not None:
+        instance_valid_items = getattr(instance, "valid_items", None)
+        if instance_valid_items is not None:
+            valid_items = instance_valid_items
+    valid_items_var = None
+    valid_items_type = None
+    if valid_items is not None:
+        if isinstance(valid_items, ir.Var):
+            valid_items_var = valid_items
+            valid_items_type = node.typemap[valid_items.name]
+        elif isinstance(valid_items, ir.Const):
+            valid_items_value = valid_items.value
+        else:
+            valid_items_value = valid_items
 
-    include_initial_value = not scan_op_obj.is_sum and (
+        if valid_items_var is None:
+            scope = node.instr.target.scope
+            const_name = f"$warp_scan_valid_items_{node.unique_id}"
+            const_var = ir.Var(scope, const_name, expr.loc)
+            if const_name in node.typemap:
+                raise RuntimeError(f"Variable {const_name} already exists in typemap.")
+            const_assign = ir.Assign(
+                value=ir.Const(int(valid_items_value), expr.loc),
+                target=const_var,
+                loc=expr.loc,
+            )
+            node.typemap[const_name] = types.int32
+            node.valid_items_assign = const_assign
+            valid_items_var = const_var
+            valid_items_type = types.int32
+
+    include_initial_value = (
         initial_value_var is not None or initial_value_value is not None
     )
     if include_initial_value:
@@ -6536,14 +6882,63 @@ def _refine_warp_scan_node(node, rewriter):
             runtime_arg_types.append(src_ty)
         runtime_arg_names.append("initial_value")
 
+    if valid_items_var is not None:
+        runtime_args.append(valid_items_var)
+        runtime_arg_types.append(valid_items_type or types.int32)
+        runtime_arg_names.append("valid_items")
+
+    warp_aggregate = bound.get("warp_aggregate")
+    warp_aggregate_ty = None
+    if warp_aggregate is not None:
+        if not isinstance(warp_aggregate, ir.Var):
+            raise RuntimeError(
+                f"{node.primitive_name} warp_aggregate must be provided as a variable"
+            )
+        warp_aggregate_ty = node.typemap[warp_aggregate.name]
+        if not isinstance(warp_aggregate_ty, types.Array):
+            raise RuntimeError(
+                f"{node.primitive_name} warp_aggregate must be a device array"
+            )
+        if warp_aggregate_ty.dtype != src_ty:
+            raise RuntimeError(
+                f"{node.primitive_name} requires warp_aggregate to have the same "
+                "dtype as the input"
+            )
+        runtime_args.append(warp_aggregate)
+        runtime_arg_types.append(warp_aggregate_ty)
+        runtime_arg_names.append("warp_aggregate")
+
     threads_in_warp = node.get_arg_value_safe("threads_in_warp")
     threads_in_warp_arg = node.bound.arguments.get("threads_in_warp")
     if threads_in_warp is None and threads_in_warp_arg is not None:
         raise RuntimeError("threads_in_warp must be a compile-time constant")
+    if threads_in_warp is None and instance is not None:
+        instance_threads = getattr(instance, "threads_in_warp", None)
+        if instance_threads is not None:
+            threads_in_warp = instance_threads
     if threads_in_warp is None:
         threads_in_warp = 32
     if not isinstance(threads_in_warp, int) or threads_in_warp < 1:
         raise RuntimeError("threads_in_warp must be a positive integer")
+
+    temp_storage = bound.get("temp_storage")
+    temp_storage_info = None
+    if temp_storage is not None:
+        if not isinstance(temp_storage, ir.Var):
+            raise RuntimeError(
+                f"{node.primitive_name} temp_storage must be provided as a variable"
+            )
+        temp_storage_ty = node.typemap[temp_storage.name]
+        try:
+            from ._decls import TempStorageType
+        except Exception:
+            TempStorageType = None
+        if TempStorageType is not None and isinstance(temp_storage_ty, TempStorageType):
+            temp_storage_info = rewriter.get_temp_storage_info(temp_storage)
+            temp_storage_ty = types.Array(types.uint8, 1, "C")
+        runtime_args.insert(0, temp_storage)
+        runtime_arg_types.insert(0, temp_storage_ty)
+        runtime_arg_names.insert(0, "temp_storage")
 
     initial_value_for_impl = (
         initial_value_var if initial_value_var is not None else initial_value_value
@@ -6554,14 +6949,32 @@ def _refine_warp_scan_node(node, rewriter):
         "scan_op": scan_op,
         "initial_value": initial_value_for_impl,
         "threads_in_warp": threads_in_warp,
+        "valid_items": valid_items,
+        "warp_aggregate": warp_aggregate,
         "unique_id": node.unique_id,
-        "temp_storage": None,
+        "temp_storage": temp_storage,
     }
 
     node.return_type = src_ty
     node.runtime_args = runtime_args
     node.runtime_arg_types = runtime_arg_types
     node.runtime_arg_names = runtime_arg_names
+    node.temp_storage = temp_storage
+    node.temp_storage_info = temp_storage_info
+    node.valid_items = valid_items
+    node.warp_aggregate = warp_aggregate
+
+    if node.is_two_phase and node.two_phase_instance is not None:
+        instance = node.two_phase_instance
+        needs_valid_items = (
+            valid_items is not None and getattr(instance, "valid_items", None) is None
+        )
+        needs_warp_aggregate = (
+            warp_aggregate is not None
+            and getattr(instance, "warp_aggregate", None) is None
+        )
+        if needs_valid_items or needs_warp_aggregate:
+            node.instance = node.impl_class(**node.impl_kwds)
 
 
 @dataclass
@@ -6578,6 +6991,9 @@ class CoopWarpExclusiveScanNode(CoopNode, CoopNodeMixin):
         initial_value_assign = getattr(self, "initial_value_assign", None)
         if initial_value_assign is not None:
             instrs.append(initial_value_assign)
+        valid_items_assign = getattr(self, "valid_items_assign", None)
+        if valid_items_assign is not None:
+            instrs.append(valid_items_assign)
         instrs.append(rd.new_assign)
         return tuple(instrs)
 
@@ -6600,6 +7016,9 @@ class CoopWarpInclusiveScanNode(CoopNode, CoopNodeMixin):
         initial_value_assign = getattr(self, "initial_value_assign", None)
         if initial_value_assign is not None:
             instrs.append(initial_value_assign)
+        valid_items_assign = getattr(self, "valid_items_assign", None)
+        if valid_items_assign is not None:
+            instrs.append(valid_items_assign)
         instrs.append(rd.new_assign)
         return tuple(instrs)
 
@@ -6851,6 +7270,27 @@ class CoopWarpReduceNode(CoopNode, CoopNodeMixin):
             runtime_arg_types.append(valid_items_type or types.int32)
             runtime_arg_names.append("valid_items")
 
+        temp_storage = self.bound.arguments.get("temp_storage")
+        temp_storage_info = None
+        if temp_storage is not None:
+            if not isinstance(temp_storage, ir.Var):
+                raise RuntimeError(
+                    "coop.warp.reduce temp_storage must be provided as a variable"
+                )
+            temp_storage_ty = self.typemap[temp_storage.name]
+            try:
+                from ._decls import TempStorageType
+            except Exception:
+                TempStorageType = None
+            if TempStorageType is not None and isinstance(
+                temp_storage_ty, TempStorageType
+            ):
+                temp_storage_info = rewriter.get_temp_storage_info(temp_storage)
+                temp_storage_ty = types.Array(types.uint8, 1, "C")
+            runtime_args.insert(0, temp_storage)
+            runtime_arg_types.insert(0, temp_storage_ty)
+            runtime_arg_names.insert(0, "temp_storage")
+
         self.impl_kwds = {
             "dtype": src_ty,
             "binary_op": binary_op,
@@ -6858,7 +7298,7 @@ class CoopWarpReduceNode(CoopNode, CoopNodeMixin):
             "valid_items": valid_items,
             "methods": methods,
             "unique_id": self.unique_id,
-            "temp_storage": None,
+            "temp_storage": temp_storage,
             "node": self,
         }
 
@@ -6866,14 +7306,24 @@ class CoopWarpReduceNode(CoopNode, CoopNodeMixin):
         self.runtime_args = runtime_args
         self.runtime_arg_types = runtime_arg_types
         self.runtime_arg_names = runtime_arg_names
+        self.temp_storage = temp_storage
+        self.temp_storage_info = temp_storage_info
 
         if (
             self.is_two_phase
             and self.two_phase_instance is not None
-            and valid_items is not None
+            and (valid_items is not None or temp_storage is not None)
         ):
             instance = self.two_phase_instance
-            if getattr(instance, "valid_items", None) is None:
+            needs_valid_items = (
+                valid_items is not None
+                and getattr(instance, "valid_items", None) is None
+            )
+            needs_temp_storage = (
+                temp_storage is not None
+                and getattr(instance, "temp_storage", None) is None
+            )
+            if needs_valid_items or needs_temp_storage:
                 self.instance = self.impl_class(
                     dtype=src_ty,
                     binary_op=binary_op,
@@ -6881,7 +7331,7 @@ class CoopWarpReduceNode(CoopNode, CoopNodeMixin):
                     valid_items=valid_items,
                     methods=methods,
                     unique_id=self.unique_id,
-                    temp_storage=None,
+                    temp_storage=temp_storage,
                     node=self,
                 )
 
@@ -6892,6 +7342,10 @@ class CoopWarpReduceNode(CoopNode, CoopNodeMixin):
         if valid_items_assign is not None:
             instrs.append(valid_items_assign)
         instrs.append(rd.new_assign)
+        if self.temp_storage_info is not None and self.temp_storage_info.auto_sync:
+            instrs.extend(
+                rewriter.emit_syncthreads_call(self.instr.target.scope, self.expr.loc)
+            )
         return tuple(instrs)
 
     @cached_property
@@ -6974,32 +7428,63 @@ class CoopWarpSumNode(CoopNode, CoopNodeMixin):
             runtime_arg_types.append(valid_items_type or types.int32)
             runtime_arg_names.append("valid_items")
 
+        temp_storage = self.bound.arguments.get("temp_storage")
+        temp_storage_info = None
+        if temp_storage is not None:
+            if not isinstance(temp_storage, ir.Var):
+                raise RuntimeError(
+                    "coop.warp.sum temp_storage must be provided as a variable"
+                )
+            temp_storage_ty = self.typemap[temp_storage.name]
+            try:
+                from ._decls import TempStorageType
+            except Exception:
+                TempStorageType = None
+            if TempStorageType is not None and isinstance(
+                temp_storage_ty, TempStorageType
+            ):
+                temp_storage_info = rewriter.get_temp_storage_info(temp_storage)
+                temp_storage_ty = types.Array(types.uint8, 1, "C")
+            runtime_args.insert(0, temp_storage)
+            runtime_arg_types.insert(0, temp_storage_ty)
+            runtime_arg_names.insert(0, "temp_storage")
+
         self.impl_kwds = {
             "dtype": src_ty,
             "threads_in_warp": threads_in_warp,
             "valid_items": valid_items,
             "unique_id": self.unique_id,
-            "temp_storage": None,
+            "temp_storage": temp_storage,
         }
 
         self.return_type = src_ty
         self.runtime_args = runtime_args
         self.runtime_arg_types = runtime_arg_types
         self.runtime_arg_names = runtime_arg_names
+        self.temp_storage = temp_storage
+        self.temp_storage_info = temp_storage_info
 
         if (
             self.is_two_phase
             and self.two_phase_instance is not None
-            and valid_items is not None
+            and (valid_items is not None or temp_storage is not None)
         ):
             instance = self.two_phase_instance
-            if getattr(instance, "valid_items", None) is None:
+            needs_valid_items = (
+                valid_items is not None
+                and getattr(instance, "valid_items", None) is None
+            )
+            needs_temp_storage = (
+                temp_storage is not None
+                and getattr(instance, "temp_storage", None) is None
+            )
+            if needs_valid_items or needs_temp_storage:
                 self.instance = self.impl_class(
                     dtype=src_ty,
                     threads_in_warp=threads_in_warp,
                     valid_items=valid_items,
                     unique_id=self.unique_id,
-                    temp_storage=None,
+                    temp_storage=temp_storage,
                 )
 
     def rewrite(self, rewriter):
@@ -7009,6 +7494,10 @@ class CoopWarpSumNode(CoopNode, CoopNodeMixin):
         if valid_items_assign is not None:
             instrs.append(valid_items_assign)
         instrs.append(rd.new_assign)
+        if self.temp_storage_info is not None and self.temp_storage_info.auto_sync:
+            instrs.extend(
+                rewriter.emit_syncthreads_call(self.instr.target.scope, self.expr.loc)
+            )
         return tuple(instrs)
 
     @cached_property
