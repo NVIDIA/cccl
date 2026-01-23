@@ -190,8 +190,8 @@ inline bool __is_host_memory_pool_supported()
 //! @param __device The device for which to query support.
 //! @throws cuda_error if \c cudaDeviceGetAttribute failed.
 //! @returns true if \c cudaDevAttrMemoryPoolsSupported is not zero.
-inline void
-__verify_device_supports_stream_ordered_allocations(::CUmemLocation __location, ::CUmemAllocationType __allocation_type)
+inline void __verify_device_supports_stream_ordered_allocations(
+  ::CUmemLocation __location, [[maybe_unused]] ::CUmemAllocationType __allocation_type)
 {
   auto __device =
     __location.type == ::CU_MEM_LOCATION_TYPE_DEVICE ? cuda::device_ref{__location.id} : cuda::device_ref{0};
@@ -199,15 +199,19 @@ __verify_device_supports_stream_ordered_allocations(::CUmemLocation __location, 
   {
     ::cuda::__throw_cuda_error(::cudaErrorNotSupported, "stream-ordered allocations are not supported");
   }
+#  if _CCCL_CTK_AT_LEAST(13, 0)
   if (__allocation_type == ::CU_MEM_ALLOCATION_TYPE_MANAGED
       && !::cuda::device_attributes::concurrent_managed_access(__device))
   {
     ::cuda::__throw_cuda_error(::cudaErrorNotSupported, "managed memory pools are not supported");
   }
+#  endif // _CCCL_CTK_AT_LEAST(13, 0)
+#  if _CCCL_CTK_AT_LEAST(12, 6)
   if (__location.type == ::CU_MEM_LOCATION_TYPE_HOST && !__is_host_memory_pool_supported())
   {
     ::cuda::__throw_cuda_error(::cudaErrorNotSupported, "host memory pools are not supported");
   }
+#  endif // _CCCL_CTK_AT_LEAST(12, 6)
 }
 
 //! @brief Check whether the specified `cudaMemAllocationHandleType` is
@@ -255,7 +259,7 @@ __get_default_memory_pool(const CUmemLocation __location, [[maybe_unused]] const
 #  else // ^^^ _CCCL_CTK_AT_LEAST(13, 0) ^^^ / vvv _CCCL_CTK_BELOW(13, 0) vvv
   _CCCL_ASSERT(__location.type == ::CU_MEM_LOCATION_TYPE_DEVICE,
                "Before CUDA 13 only device memory pools have a default");
-  ::cudaMemPool_t __pool = ::cuda::__driver::__deviceGetDefaultMemPool(__device);
+  ::cudaMemPool_t __pool = ::cuda::__driver::__deviceGetDefaultMemPool(::CUdevice{__location.id});
 #  endif // ^^^ _CCCL_CTK_BELOW(13, 0) ^^^
   return __pool;
 }

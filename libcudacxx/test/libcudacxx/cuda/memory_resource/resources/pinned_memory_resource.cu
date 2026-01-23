@@ -78,9 +78,7 @@ C2H_CCCLRT_TEST_LIST("pinned_memory_resource allocation", "[memory_resource]", T
   using pinned_resource = TestType;
 
 #if _CCCL_CTK_AT_LEAST(12, 6)
-  if (cuda::std::is_same_v<pinned_resource, cuda::pinned_memory_pool_ref>
-      && !cuda::__driver::__deviceGetAttribute(
-        CU_DEVICE_ATTRIBUTE_HOST_MEMORY_POOLS_SUPPORTED, ::cuda::__driver::__deviceGet(cuda::devices[0].get())))
+  if (!cuda::__is_host_memory_pools_supported() && cuda::std::is_same_v<pinned_resource, cuda::pinned_memory_pool_ref>)
   {
     return;
   }
