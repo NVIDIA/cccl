@@ -110,16 +110,6 @@ struct allocator_traits : public ::cuda::std::allocator_traits<Alloc>
   using other = allocator_traits;
 };
 
-// we consider a type an allocator if T::value_type exists
-// it doesn't make much sense (containers, which are not allocators, will fulfill this requirement),
-// but allocator_traits is specified to work for any type with that nested alias
-template <typename T, typename = void>
-struct is_allocator : ::cuda::std::false_type
-{};
-template <typename T>
-struct is_allocator<T, ::cuda::std::void_t<typename T::value_type>> : ::cuda::std::true_type
-{};
-
 // XXX consider moving this non-standard functionality inside allocator_traits
 template <typename Alloc>
 struct allocator_system
