@@ -91,13 +91,31 @@ struct reduce_policy
 template <typename PolicyHub>
 struct policy_selector_from_hub
 {
+  // not every PolicyHub may have a ReduceNondeterministicPolicy
+  template <typename ActivePolicy, typename ap_reduce_nondet = typename ActivePolicy::ReduceNondeterministicPolicy>
+  _CCCL_DEVICE_API constexpr auto convert_nondet_policy(int) const
+  {
+    return agent_reduce_policy{
+      ap_reduce_nondet::BLOCK_THREADS,
+      ap_reduce_nondet::ITEMS_PER_THREAD,
+      ap_reduce_nondet::VECTOR_LOAD_LENGTH,
+      ap_reduce_nondet::BLOCK_ALGORITHM,
+      ap_reduce_nondet::LOAD_MODIFIER,
+    };
+  }
+
+  template <typename>
+  _CCCL_DEVICE_API constexpr auto convert_nondet_policy(long) const
+  {
+    return agent_reduce_policy{};
+  }
+
   // this is only called in device code, so we can ignore the arch parameter
   _CCCL_DEVICE_API constexpr auto operator()(::cuda::arch_id /*arch*/) const -> reduce_policy
   {
-    using ap               = typename PolicyHub::MaxPolicy::ActivePolicy;
-    using ap_reduce        = typename ap::ReducePolicy;
-    using ap_single_tile   = typename ap::SingleTilePolicy;
-    using ap_reduce_nondet = typename ap::ReduceNondeterministicPolicy;
+    using ap             = typename PolicyHub::MaxPolicy::ActivePolicy;
+    using ap_reduce      = typename ap::ReducePolicy;
+    using ap_single_tile = typename ap::SingleTilePolicy;
     return reduce_policy{
       agent_reduce_policy{
         ap_reduce::BLOCK_THREADS,
@@ -113,13 +131,7 @@ struct policy_selector_from_hub
         ap_single_tile::BLOCK_ALGORITHM,
         ap_single_tile::LOAD_MODIFIER,
       },
-      agent_reduce_policy{
-        ap_reduce_nondet::BLOCK_THREADS,
-        ap_reduce_nondet::ITEMS_PER_THREAD,
-        ap_reduce_nondet::VECTOR_LOAD_LENGTH,
-        ap_reduce_nondet::BLOCK_ALGORITHM,
-        ap_reduce_nondet::LOAD_MODIFIER,
-      },
+      convert_nondet_policy<ap>(0),
     };
   }
 };
