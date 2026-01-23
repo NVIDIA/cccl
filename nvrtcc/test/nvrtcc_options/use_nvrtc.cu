@@ -33,6 +33,10 @@ int main()
   proof_kernel<<<1, 1>>>();
   assert(cudaDeviceSynchronize() == cudaSuccess);
 
+#  if defined(__NVRTCC_USE_NVRTC__)
+  assert(proof_var == 1);
+#  else // ^^^ __NVRTCC_USE_NVRTC__ ^^^ / vvv !__NVRTCC_USE_NVRTC__ vvv
   assert(proof_var == -1);
+#  endif // ^^^ !__NVRTCC_USE_NVRTC__ ^^^
 }
 #endif // ^^^ !__CUDACC_RTC__ ^^^

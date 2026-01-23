@@ -3,6 +3,10 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+from ._binary_search import lower_bound as lower_bound
+from ._binary_search import make_lower_bound as make_lower_bound
+from ._binary_search import make_upper_bound as make_upper_bound
+from ._binary_search import upper_bound as upper_bound
 from ._histogram import histogram_even as histogram_even
 from ._histogram import make_histogram_even as make_histogram_even
 from ._reduce import make_reduce_into as make_reduce_into
@@ -33,6 +37,10 @@ from ._unique_by_key import unique_by_key as unique_by_key
 __all__ = [
     "reduce_into",
     "make_reduce_into",
+    "lower_bound",
+    "make_lower_bound",
+    "upper_bound",
+    "make_upper_bound",
     "inclusive_scan",
     "make_inclusive_scan",
     "exclusive_scan",
