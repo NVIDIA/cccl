@@ -66,7 +66,7 @@ int main()
 #else // ^^^ _CCCL_CTK_BELOW(12, 4) ^^^ / vvv _CCCL_CTK_AT_LEAST(12, 4) vvv
   // Test both data place modes
   test_green_ctx_affinity(false); // Device data place (default)
-  test_green_ctx_affinity(true);  // Green context data place extension
+  test_green_ctx_affinity(true); // Green context data place extension
   return 0;
 #endif // ^^^ _CCCL_CTK_AT_LEAST(12, 4) ^^^
 }
