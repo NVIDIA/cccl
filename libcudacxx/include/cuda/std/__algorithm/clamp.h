@@ -44,7 +44,7 @@ template <class _Tp>
 }
 
 //! @brief Internal version of clamp that works with values instead of references. Can be used with extended arithmetic
-//!        types. Should be preferred as it produces better optimized code with nvcc.
+//!        types. Should be preferred as it produces better optimized code with nvcc (see nvbug 5455679).
 template <class _Tp>
 [[nodiscard]] _CCCL_API constexpr _Tp __clamp(_Tp __v, _Tp __lo, _Tp __hi) noexcept
 {
