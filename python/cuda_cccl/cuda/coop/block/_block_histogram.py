@@ -288,6 +288,22 @@ class histogram(BasePrimitive):
         Creates a block-wide histogram primitive based on the CUB library's
         BlockHistogram functionality.
 
+        Example:
+            The snippet below demonstrates a block histogram with explicit
+            init and composite calls.
+
+            .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_block_histogram_api.py
+                :language: python
+                :dedent:
+                :start-after: example-begin imports
+                :end-before: example-end imports
+
+            .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_block_histogram_api.py
+                :language: python
+                :dedent:
+                :start-after: example-begin histogram
+                :end-before: example-end histogram
+
         :param item_dtype: Supplies the data type of the items being sampled.
             Note that this is almost always an 8-bit integer type, e.g.
             ``np.uint8``.

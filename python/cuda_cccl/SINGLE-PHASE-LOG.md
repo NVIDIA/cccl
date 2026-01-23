@@ -672,3 +672,22 @@
   - `pytest -q tests/coop/test_warp_single_phase.py -k "temp_storage"` (3 passed, 14 deselected)
   - `pytest -q tests/coop/test_block_run_length_decode.py -k "temp_storage"` (2 passed, 2 deselected)
   - `pytest -q tests/coop/test_block_load_store_scan_single_phase.py -k "gpu_dataclass"` (2 passed, 16 deselected)
+
+## 2026-01-23 (block API example coverage + fixes)
+- Request: add block primitive `_api.py` example tests and docstring literalinclude blocks.
+- Changes:
+  - `tests/coop/test_block_exchange_api.py`: fix striped→blocked expected mapping.
+  - `tests/coop/test_block_shuffle_api.py`: initialize output to make offset example deterministic.
+  - `tests/coop/test_block_discontinuity_api.py`: remove unsupported `flag_dtype` kwarg.
+  - `tests/coop/test_block_run_length_api.py`: add decoded_offset_dtype + local literals for run_length example.
+- Tests:
+  - `pytest -q tests/coop/test_block_exchange_api.py tests/coop/test_block_shuffle_api.py tests/coop/test_block_discontinuity_api.py tests/coop/test_block_adjacent_difference_api.py tests/coop/test_block_histogram_api.py tests/coop/test_block_radix_rank_api.py tests/coop/test_block_run_length_api.py`
+    - Result: 7 passed.
+
+## 2026-01-23 (block radix sort test fixes)
+- Request: address local failures for radix sort + api tests.
+- Changes:
+  - `tests/coop/test_block_radix_sort.py`: pass begin/end bits by keyword to avoid value_dtype positional confusion; use end_bit=8 for uint32 temp_storage coverage.
+- Tests:
+  - `pytest -q tests/coop/test_block_exchange_api.py::test_block_exchange_striped_to_blocked tests/coop/test_block_discontinuity_api.py::test_block_discontinuity_flag_heads` (2 passed)
+  - `pytest -q tests/coop/test_block_radix_sort.py::test_block_radix_sort_two_phase tests/coop/test_block_radix_sort.py::test_block_radix_sort_temp_storage tests/coop/test_block_radix_sort.py::test_block_radix_sort_descending_two_phase` (3 passed)

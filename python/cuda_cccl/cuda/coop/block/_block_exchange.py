@@ -112,6 +112,26 @@ class exchange(BasePrimitive):
         valid_flag_dtype: DtypeType = None,
         node: "CoopNode" = None,
     ):
+        """
+        Rearranges items across a CUDA thread block using a selected exchange
+        pattern.
+
+        Example:
+            The snippet below demonstrates a striped-to-blocked exchange with
+            per-thread arrays.
+
+            .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_block_exchange_api.py
+                :language: python
+                :dedent:
+                :start-after: example-begin imports
+                :end-before: example-end imports
+
+            .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_block_exchange_api.py
+                :language: python
+                :dedent:
+                :start-after: example-begin striped-to-blocked
+                :end-before: example-end striped-to-blocked
+        """
         # Validate initial parameters.
         if block_exchange_type not in BlockExchangeType:
             raise ValueError(

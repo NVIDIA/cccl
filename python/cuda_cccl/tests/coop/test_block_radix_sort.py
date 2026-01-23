@@ -33,8 +33,8 @@ def test_block_radix_sort_two_phase():
         numba.int32,
         threads_per_block,
         items_per_thread,
-        begin_bit,
-        end_bit,
+        begin_bit=begin_bit,
+        end_bit=end_bit,
     )
 
     @cuda.jit
@@ -63,15 +63,15 @@ def test_block_radix_sort_temp_storage():
     threads_per_block = 64
     items_per_thread = 2
     begin_bit = 0
-    end_bit = 6
+    end_bit = 8
     dtype = np.uint32
 
     block_radix_sort = coop.block.radix_sort_keys(
         numba.uint32,
         threads_per_block,
         items_per_thread,
-        begin_bit,
-        end_bit,
+        begin_bit=begin_bit,
+        end_bit=end_bit,
     )
     temp_storage_bytes = block_radix_sort.temp_storage_bytes
     temp_storage_alignment = block_radix_sort.temp_storage_alignment
@@ -119,8 +119,8 @@ def test_block_radix_sort_descending_two_phase():
         numba.int32,
         threads_per_block,
         items_per_thread,
-        begin_bit,
-        end_bit,
+        begin_bit=begin_bit,
+        end_bit=end_bit,
     )
 
     @cuda.jit

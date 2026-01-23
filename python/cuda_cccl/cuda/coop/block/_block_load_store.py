@@ -78,6 +78,26 @@ class base_load_store(BasePrimitive):
         node: "CoopNode" = None,
         temp_storage=None,
     ) -> None:
+        """
+        Loads or stores a blocked arrangement of items using the selected
+        BlockLoad/BlockStore algorithm.
+
+        Example:
+            The snippet below demonstrates using block load and store
+            invocables.
+
+            .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_block_load_store_api.py
+                :language: python
+                :dedent:
+                :start-after: example-begin imports
+                :end-before: example-end imports
+
+            .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_block_load_store_api.py
+                :language: python
+                :dedent:
+                :start-after: example-begin load_store
+                :end-before: example-end load_store
+        """
         self.node = node
         self.dtype = normalize_dtype_param(dtype)
         self.dim = normalize_dim_param(dim)

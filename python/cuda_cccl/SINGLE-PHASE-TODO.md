@@ -66,7 +66,7 @@
       keep `TempStorage` getitem syntax compatible; add coverage.
 - [x] Add GPU tests that use `gpu_dataclass` with multiple primitives sharing
       temp storage (load/scan/reduce/store pipelines, mixed parent/child).
-- [ ] Add/upgrade docstrings for every public primitive with
+- [x] Add/upgrade docstrings for every public primitive with
       `literalinclude`-based examples in `tests/coop/*_api.py`; remove any
       mention of `.create()` from public docs.
 - [ ] Improve kwarg validation and error messages for primitives with many

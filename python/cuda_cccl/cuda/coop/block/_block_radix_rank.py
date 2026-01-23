@@ -81,6 +81,24 @@ class radix_rank(BasePrimitive):
         temp_storage: Any = None,
         node: "CoopNode" = None,
     ) -> None:
+        """
+        Computes radix ranks for a block of keys within the specified bit range.
+
+        Example:
+            The snippet below ranks keys using a 4-bit radix.
+
+            .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_block_radix_rank_api.py
+                :language: python
+                :dedent:
+                :start-after: example-begin imports
+                :end-before: example-end imports
+
+            .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_block_radix_rank_api.py
+                :language: python
+                :dedent:
+                :start-after: example-begin radix-rank
+                :end-before: example-end radix-rank
+        """
         if items_per_thread < 1:
             raise ValueError("items_per_thread must be >= 1")
         if begin_bit is None or end_bit is None:

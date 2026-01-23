@@ -45,6 +45,25 @@ class reduce(BasePrimitive):
         use_array_inputs: bool = False,
         node: "CoopNode" = None,
     ) -> None:
+        """
+        Reduces items across a block using the supplied binary operator.
+
+        Example:
+            The snippet below demonstrates a block reduction using a custom
+            max operator.
+
+            .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_block_reduce_api.py
+                :language: python
+                :dedent:
+                :start-after: example-begin imports
+                :end-before: example-end imports
+
+            .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_block_reduce_api.py
+                :language: python
+                :dedent:
+                :start-after: example-begin reduce
+                :end-before: example-end reduce
+        """
         if items_per_thread < 1:
             raise ValueError("items_per_thread must be greater than or equal to 1")
 
@@ -211,6 +230,24 @@ class sum(reduce):
         use_array_inputs: bool = False,
         node: "CoopNode" = None,
     ) -> None:
+        """
+        Reduces items across a block using addition.
+
+        Example:
+            The snippet below demonstrates a block sum.
+
+            .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_block_reduce_api.py
+                :language: python
+                :dedent:
+                :start-after: example-begin imports
+                :end-before: example-end imports
+
+            .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_block_reduce_api.py
+                :language: python
+                :dedent:
+                :start-after: example-begin sum
+                :end-before: example-end sum
+        """
         return super().__init__(
             dtype=dtype,
             threads_per_block=threads_per_block,
