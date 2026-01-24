@@ -1132,10 +1132,9 @@ class Algorithm:
                 w(f"    {storage}\n")
                 for decl in func_decls:
                     w(f"    {decl}\n")
-                if out_param:
-                    w(f"    {out_param} = ")
-                else:
-                    w("    ")
+                w("    ")
+                if out_param and self.fake_return:
+                    w(f"{out_param} = ")
                 w(f"{n.algorithm_t}(temp_storage).")
                 w(f"{method_name}({param_args_csv});\n")
                 w(f"    {sync}\n")
@@ -1152,7 +1151,7 @@ class Algorithm:
                     "    auto &temp_storage_ref = *reinterpret_cast"
                     f"<{n.temp_storage_t} *>(temp_storage);\n"
                 )
-                if out_param:
+                if out_param and self.fake_return:
                     w(f"    {out_param} = ")
                 else:
                     w("    ")

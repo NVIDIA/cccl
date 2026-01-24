@@ -174,11 +174,10 @@ class shuffle(BasePrimitive):
                 DependentReference(Dependency("T"), name="input_item"),
                 DependentReference(Dependency("T"), name="output_item", is_output=True),
             ]
-            if block_shuffle_type not in (BlockShuffleType.Up, BlockShuffleType.Down):
-                if distance is None:
-                    distance = 1
-                self.distance = distance
-                method.append(Value(numba.types.int32, name="distance"))
+            if distance is None:
+                distance = 1
+            self.distance = distance
+            method.append(Value(numba.types.int32, name="distance"))
 
         if temp_storage is not None:
             method.insert(

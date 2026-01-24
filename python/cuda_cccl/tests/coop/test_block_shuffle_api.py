@@ -44,8 +44,7 @@ def test_block_shuffle_offset_scalar():
 
     h_output = d_output.copy_to_host()
     expected = np.full_like(h_output, -1)
-    expected[: threads_per_block // 2] = h_input[0 : threads_per_block // 2] * 2
-    expected[threads_per_block // 2 : -1] = 0
+    expected[:-distance] = h_input[distance:]
     np.testing.assert_array_equal(h_output, expected)
 
 
@@ -79,8 +78,10 @@ def test_block_shuffle_rotate_scalar():
 
     h_output = d_output.copy_to_host()
     expected = np.empty_like(h_output)
-    expected[: threads_per_block // 2] = h_input[0 : threads_per_block // 2] * 2
-    expected[threads_per_block // 2 :] = h_input[0 : threads_per_block // 2] * 2
+    expected[:distance] = h_input[:distance]
+    expected[distance:] = h_input[
+        (np.arange(distance, threads_per_block) + distance) % threads_per_block
+    ]
     np.testing.assert_array_equal(h_output, expected)
 
 

@@ -3245,9 +3245,14 @@ class CoopBlockShuffleNode(CoopNode, CoopNodeMixin):
 
         distance = bound.get("distance")
         distance_var = None
+        distance_value = None
+        distance_literal = None
         if distance is not None:
             if isinstance(distance, ir.Var):
                 distance_var = distance
+                distance_var_ty = self.typemap.get(distance.name)
+                if isinstance(distance_var_ty, types.IntegerLiteral):
+                    distance_literal = int(distance_var_ty.literal_value)
             elif isinstance(distance, ir.Const):
                 distance_value = distance.value
             else:
@@ -3256,11 +3261,25 @@ class CoopBlockShuffleNode(CoopNode, CoopNodeMixin):
             distance_value = 1
 
         if block_shuffle_type in (BlockShuffleType.Up, BlockShuffleType.Down):
-            if distance_var is not None:
+            if distance_var is not None and distance_literal is None:
                 raise RuntimeError(
                     "coop.block.shuffle requires distance to be a compile-time constant for Up/Down"
                 )
-        if distance_var is None:
+
+        if distance_literal is not None:
+            distance_value = distance_literal
+        impl_shuffle_type = block_shuffle_type
+        if block_shuffle_type in (BlockShuffleType.Up, BlockShuffleType.Down):
+            distance_value = int(distance_value)
+            if distance_value < 0:
+                raise RuntimeError(
+                    "coop.block.shuffle requires distance >= 0 for Up/Down"
+                )
+            impl_shuffle_type = BlockShuffleType.Offset
+            if block_shuffle_type == BlockShuffleType.Up:
+                distance_value = -distance_value
+
+        if distance_var is None or distance_literal is not None:
             scope = self.instr.target.scope
             const_name = f"$block_shuffle_distance_{self.unique_id}"
             const_var = ir.Var(scope, const_name, self.expr.loc)
@@ -3271,16 +3290,9 @@ class CoopBlockShuffleNode(CoopNode, CoopNodeMixin):
                 target=const_var,
                 loc=self.expr.loc,
             )
-            self.typemap[const_name] = types.int32
+            self.typemap[const_name] = types.IntegerLiteral(int(distance_value))
             self.distance_assign = const_assign
             distance_var = const_var
-
-        if block_shuffle_type in (BlockShuffleType.Up, BlockShuffleType.Down):
-            distance_value = int(distance_value)
-            if distance_value < 0:
-                raise RuntimeError(
-                    "coop.block.shuffle requires distance >= 0 for Up/Down"
-                )
 
         temp_storage = bound.get("temp_storage")
         temp_storage_info = None
@@ -3302,31 +3314,24 @@ class CoopBlockShuffleNode(CoopNode, CoopNodeMixin):
         runtime_args.append(items)
         runtime_arg_types.append(items_ty)
         runtime_arg_names.append("input_item")
-        runtime_args.append(items)
-        runtime_arg_types.append(items_ty)
-        runtime_arg_names.append("output_item")
         runtime_args.append(distance_var)
         runtime_arg_types.append(types.int32)
         runtime_arg_names.append("distance")
 
         self.return_type = items_ty
         self.items_per_thread = None
-        self.block_shuffle_type = block_shuffle_type
+        self.block_shuffle_type = impl_shuffle_type
         self.distance = distance
         self.temp_storage_info = temp_storage_info
         self.temp_storage = temp_storage
         self.item_dtype = items_ty
         self.methods = None
 
-        impl_items_per_thread = None
-        if block_shuffle_type in (BlockShuffleType.Up, BlockShuffleType.Down):
-            impl_items_per_thread = 1
-
         self.impl_kwds = {
-            "block_shuffle_type": block_shuffle_type,
+            "block_shuffle_type": impl_shuffle_type,
             "dtype": items_ty,
             "threads_per_block": self.threads_per_block,
-            "items_per_thread": impl_items_per_thread,
+            "items_per_thread": None,
             "distance": distance,
             "methods": None,
             "unique_id": self.unique_id,
@@ -4296,6 +4301,20 @@ class CoopBlockMergeSortNode(CoopNode, CoopNodeMixin):
             "temp_storage": temp_storage,
             "node": self,
         }
+        if alias_pairs:
+            self.impl_kwds = {
+                "keys": dtype,
+                "values": value_dtype,
+                "threads_per_block": self.threads_per_block,
+                "items_per_thread": items_per_thread,
+                "compare_op": compare_op,
+                "valid_items": valid_items,
+                "oob_default": oob_default,
+                "methods": methods,
+                "unique_id": self.unique_id,
+                "temp_storage": temp_storage,
+                "node": self,
+            }
         if alias_pairs and value_dtype is None and values_ty is not None:
             self.impl_kwds["value_dtype"] = values_ty.dtype
 
@@ -4842,7 +4861,12 @@ class CoopBlockRadixSortDescendingNode(CoopNode, CoopNodeMixin):
 
     def rewrite(self, rewriter):
         rd = self.rewrite_details
-        return (rd.g_assign, rd.new_assign)
+        instrs = [rd.g_assign]
+        scalar_alloc = getattr(self, "scalar_output_alloc", None)
+        if scalar_alloc is not None:
+            instrs.insert(0, scalar_alloc)
+        instrs.append(rd.new_assign)
+        return tuple(instrs)
 
     @cached_property
     def rewrite_details(self):
@@ -5666,7 +5690,8 @@ class CoopBlockHistogramCompositeNode(CoopNode, CoopNodeMixin):
 
     def rewrite(self, rewriter):
         rd = self.rewrite_details
-        return (rd.g_assign, rd.new_assign)
+        instrs = [rd.g_assign, rd.new_assign]
+        return tuple(instrs)
 
     @cached_property
     def rewrite_details(self):
@@ -6253,6 +6278,8 @@ class CoopBlockScanNode(CoopNode, CoopNodeMixin):
                 )
             use_array_inputs = False
             dtype = src_ty
+            scalar_output_target = self.instr.target
+            self.scalar_output_target = scalar_output_target
         else:
             if src_is_scalar or dst_is_scalar:
                 raise RuntimeError(
@@ -6284,16 +6311,19 @@ class CoopBlockScanNode(CoopNode, CoopNodeMixin):
             methods = None
 
         if dst is not None:
-            runtime_args.append(dst)
-            runtime_arg_types.append(dst_ty)
-            runtime_arg_names.append("dst")
             runtime_args.append(src)
             runtime_arg_types.append(src_ty)
             runtime_arg_names.append("src")
+            runtime_args.append(dst)
+            runtime_arg_types.append(dst_ty)
+            runtime_arg_names.append("dst")
         else:
             runtime_args.append(src)
             runtime_arg_types.append(src_ty)
             runtime_arg_names.append("src")
+            runtime_args.append(self.scalar_output_target)
+            runtime_arg_types.append(dtype)
+            runtime_arg_names.append("dst")
 
         if ThreadDataType is not None and use_array_inputs:
             array_ty = types.Array(dtype, 1, "C")
@@ -6456,6 +6486,10 @@ class CoopBlockScanNode(CoopNode, CoopNodeMixin):
                 raise RuntimeError(
                     "coop.block.scan does not support block_aggregate when "
                     "block_prefix_callback_op is provided"
+                )
+            if dst is None:
+                raise RuntimeError(
+                    "coop.block.scan block_aggregate requires a dst array when using scalar inputs"
                 )
             if isinstance(block_aggregate, ir.Var):
                 block_aggregate_ty = self.typemap[block_aggregate.name]
@@ -6620,6 +6654,21 @@ class CoopBlockScanNode(CoopNode, CoopNodeMixin):
             instance = self.two_phase_instance
             if getattr(instance, "block_aggregate", None) is None:
                 self.instance = self.impl_class(**self.impl_kwds)
+
+        if self.is_two_phase and self.two_phase_instance is not None:
+            instance = self.two_phase_instance
+            instance_use_array = getattr(instance, "use_array_inputs", None)
+            if (
+                instance_use_array is not None
+                and instance_use_array != use_array_inputs
+            ):
+                self.instance = self.impl_class(**self.impl_kwds)
+
+        if not use_array_inputs:
+            if self.is_two_phase and self.two_phase_instance is not None:
+                instance = self.two_phase_instance
+                if getattr(instance, "return_type", None) != self.return_type:
+                    self.instance = self.impl_class(**self.impl_kwds)
 
         return
 
