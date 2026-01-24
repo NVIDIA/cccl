@@ -786,3 +786,8 @@
 
 ## 2026-01-24
 - Removed unused local in CoopBlockExchangeNode refine_match to satisfy ruff.
+
+## 2026-01-24
+- Restored one-shot codegen output assignment for non-fake-return primitives.
+- Treated scalar block scans as fake-return and stopped passing implicit dst args in rewrite.
+- Allowed scalar block shuffle Up/Down distance to resolve from compile-time constants.
