@@ -80,16 +80,20 @@ def test_block_exclusive_sum_single_input_per_thread():
 
 def test_block_exclusive_sum_block_aggregate():
     threads_per_block = 64
-    items_per_thread = 1
-
-    # Ensure the block exclusive sum is compiled for the doc snippet.
-    _ = coop.block.exclusive_sum(numba.int32, threads_per_block, items_per_thread)
 
     @cuda.jit
     def kernel(output, aggregates):
         tid = cuda.threadIdx.x
-        output[tid] = tid
-        aggregates[tid] = threads_per_block * (threads_per_block + 1) // 2
+        value = numba.int32(tid + 1)
+        block_aggregate = cuda.local.array(1, numba.int32)
+        result = coop.block.scan(
+            value,
+            mode="exclusive",
+            scan_op="+",
+            block_aggregate=block_aggregate,
+        )
+        output[tid] = result
+        aggregates[tid] = block_aggregate[0]
 
     d_output = cuda.device_array(threads_per_block, dtype=np.int32)
     d_aggregates = cuda.device_array(threads_per_block, dtype=np.int32)
@@ -99,8 +103,52 @@ def test_block_exclusive_sum_block_aggregate():
 
     expected_aggregate = (threads_per_block * (threads_per_block + 1)) // 2
     expected_exclusive = np.arange(threads_per_block, dtype=np.int32)
+    expected_exclusive = expected_exclusive * (expected_exclusive + 1) // 2
 
     np.testing.assert_array_equal(h_output, expected_exclusive)
+    np.testing.assert_array_equal(
+        h_aggregates, np.full(threads_per_block, expected_aggregate, dtype=np.int32)
+    )
+
+
+def test_block_exclusive_sum_block_aggregate_array():
+    threads_per_block = 32
+    items_per_thread = 2
+    total_items = threads_per_block * items_per_thread
+
+    @cuda.jit
+    def kernel(output, aggregates):
+        tid = cuda.threadIdx.x
+        items = cuda.local.array(items_per_thread, numba.int32)
+        out_items = cuda.local.array(items_per_thread, numba.int32)
+        block_aggregate = cuda.local.array(1, numba.int32)
+
+        for i in range(items_per_thread):
+            items[i] = 1
+
+        coop.block.scan(
+            items,
+            out_items,
+            items_per_thread=items_per_thread,
+            mode="exclusive",
+            scan_op="+",
+            block_aggregate=block_aggregate,
+        )
+
+        for i in range(items_per_thread):
+            output[tid * items_per_thread + i] = out_items[i]
+        aggregates[tid] = block_aggregate[0]
+
+    d_output = cuda.device_array(total_items, dtype=np.int32)
+    d_aggregates = cuda.device_array(threads_per_block, dtype=np.int32)
+    kernel[1, threads_per_block](d_output, d_aggregates)
+    h_output = d_output.copy_to_host()
+    h_aggregates = d_aggregates.copy_to_host()
+
+    expected_aggregate = total_items
+    expected_output = np.arange(total_items, dtype=np.int32)
+
+    np.testing.assert_array_equal(h_output, expected_output)
     np.testing.assert_array_equal(
         h_aggregates, np.full(threads_per_block, expected_aggregate, dtype=np.int32)
     )

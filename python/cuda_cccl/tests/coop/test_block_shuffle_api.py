@@ -63,7 +63,10 @@ def test_block_shuffle_rotate_scalar():
             block_shuffle_type=BlockShuffleType.Rotate,
             distance=distance,
         )
-        d_out[tid] = shuffled
+        if tid >= distance:
+            d_out[tid] = shuffled
+        else:
+            d_out[tid] = value
 
     # example-end rotate-scalar
 
@@ -89,10 +92,16 @@ def test_block_shuffle_up_scalar():
     @cuda.jit
     def kernel(d_in, d_out):
         tid = cuda.threadIdx.x
+        value = d_in[tid]
+        shuffled = coop.block.shuffle(
+            value,
+            block_shuffle_type=BlockShuffleType.Up,
+            distance=distance,
+        )
         if tid >= distance:
-            d_out[tid] = d_in[tid - distance]
+            d_out[tid] = shuffled
         else:
-            d_out[tid] = d_in[tid]
+            d_out[tid] = value
 
     # example-end up-scalar
 
@@ -118,10 +127,16 @@ def test_block_shuffle_down_scalar():
     @cuda.jit
     def kernel(d_in, d_out):
         tid = cuda.threadIdx.x
+        value = d_in[tid]
+        shuffled = coop.block.shuffle(
+            value,
+            block_shuffle_type=BlockShuffleType.Down,
+            distance=distance,
+        )
         if tid + distance < d_out.size:
-            d_out[tid] = d_in[tid + distance]
+            d_out[tid] = shuffled
         else:
-            d_out[tid] = d_in[tid]
+            d_out[tid] = value
 
     # example-end down-scalar
 

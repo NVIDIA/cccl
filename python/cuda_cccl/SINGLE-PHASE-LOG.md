@@ -771,3 +771,6 @@
 
 ## 2026-01-24
 - Fixed ruff failures from the prior coop updates (duplicate signature, missing primitive_name lookup, unused locals in tests).
+
+## 2026-01-24
+- Reintroduced scalar Up/Down block shuffle support and restored block-aggregate scan tests in coop block scan API.

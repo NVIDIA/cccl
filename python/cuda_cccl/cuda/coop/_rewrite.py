@@ -3255,6 +3255,11 @@ class CoopBlockShuffleNode(CoopNode, CoopNodeMixin):
         else:
             distance_value = 1
 
+        if block_shuffle_type in (BlockShuffleType.Up, BlockShuffleType.Down):
+            if distance_var is not None:
+                raise RuntimeError(
+                    "coop.block.shuffle requires distance to be a compile-time constant for Up/Down"
+                )
         if distance_var is None:
             scope = self.instr.target.scope
             const_name = f"$block_shuffle_distance_{self.unique_id}"
@@ -3294,20 +3299,15 @@ class CoopBlockShuffleNode(CoopNode, CoopNodeMixin):
             runtime_arg_types.insert(0, temp_storage_ty)
             runtime_arg_names.insert(0, "temp_storage")
 
-        if block_shuffle_type in (BlockShuffleType.Up, BlockShuffleType.Down):
-            raise RuntimeError(
-                "coop.block.shuffle scalar Up/Down is not supported yet; use a local array"
-            )
-        else:
-            runtime_args.append(items)
-            runtime_arg_types.append(items_ty)
-            runtime_arg_names.append("input_item")
-            runtime_args.append(items)
-            runtime_arg_types.append(items_ty)
-            runtime_arg_names.append("output_item")
-            runtime_args.append(distance_var)
-            runtime_arg_types.append(types.int32)
-            runtime_arg_names.append("distance")
+        runtime_args.append(items)
+        runtime_arg_types.append(items_ty)
+        runtime_arg_names.append("input_item")
+        runtime_args.append(items)
+        runtime_arg_types.append(items_ty)
+        runtime_arg_names.append("output_item")
+        runtime_args.append(distance_var)
+        runtime_arg_types.append(types.int32)
+        runtime_arg_names.append("distance")
 
         self.return_type = items_ty
         self.items_per_thread = None
@@ -3344,9 +3344,6 @@ class CoopBlockShuffleNode(CoopNode, CoopNodeMixin):
         distance_assign = getattr(self, "distance_assign", None)
         if distance_assign is not None:
             instrs.append(distance_assign)
-        scalar_array_assign = getattr(self, "scalar_array_assign", None)
-        if scalar_array_assign is not None:
-            instrs.append(scalar_array_assign)
         instrs.extend([rd.g_assign, rd.new_assign])
         if self.temp_storage_info is not None and self.temp_storage_info.auto_sync:
             instrs.extend(
@@ -6221,6 +6218,8 @@ class CoopBlockScanNode(CoopNode, CoopNodeMixin):
         src = bound.get("src")
         dst = bound.get("dst")
         block_aggregate = bound.get("block_aggregate")
+        if block_aggregate is not None and isinstance(block_aggregate, types.NoneType):
+            block_aggregate = None
 
         assert src is not None, src
 
@@ -6458,20 +6457,21 @@ class CoopBlockScanNode(CoopNode, CoopNodeMixin):
                     "coop.block.scan does not support block_aggregate when "
                     "block_prefix_callback_op is provided"
                 )
-            if not isinstance(block_aggregate, ir.Var):
+            if isinstance(block_aggregate, ir.Var):
+                block_aggregate_ty = self.typemap[block_aggregate.name]
+                if not isinstance(block_aggregate_ty, types.Array):
+                    raise RuntimeError(
+                        "coop.block.scan block_aggregate must be a device array"
+                    )
+                expected_dtype = dtype
+                if block_aggregate_ty.dtype != expected_dtype:
+                    raise RuntimeError(
+                        "coop.block.scan requires block_aggregate to have the same "
+                        "dtype as the input"
+                    )
+            else:
                 raise RuntimeError(
                     "coop.block.scan block_aggregate must be provided as a variable"
-                )
-            block_aggregate_ty = self.typemap[block_aggregate.name]
-            if not isinstance(block_aggregate_ty, types.Array):
-                raise RuntimeError(
-                    "coop.block.scan block_aggregate must be a device array"
-                )
-            expected_dtype = dtype
-            if block_aggregate_ty.dtype != expected_dtype:
-                raise RuntimeError(
-                    "coop.block.scan requires block_aggregate to have the same "
-                    "dtype as the input"
                 )
 
         if scan_op_obj.is_sum:

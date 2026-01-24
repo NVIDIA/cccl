@@ -123,6 +123,8 @@ class shuffle(BasePrimitive):
             and items_per_thread is not None
         )
         fake_return = not use_array_inputs
+        if block_shuffle_type in (BlockShuffleType.Up, BlockShuffleType.Down):
+            fake_return = True
 
         if use_array_inputs:
             if items_per_thread is None or items_per_thread < 1:
