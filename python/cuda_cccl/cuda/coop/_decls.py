@@ -1559,6 +1559,12 @@ class CoopBlockMergeSortDecl(CoopAbstractTemplate, CoopDeclMixin):
         return signature(types.void, *arglist)
 
 
+@register_global(coop.block.merge_sort_pairs)
+class CoopBlockMergeSortPairsDecl(CoopBlockMergeSortDecl):
+    key = coop.block.merge_sort_pairs
+    primitive_name = "coop.block.merge_sort_pairs"
+
+
 # =============================================================================
 # Adjacent Difference
 # =============================================================================
@@ -1821,12 +1827,14 @@ class CoopBlockShuffleDecl(CoopAbstractTemplate, CoopDeclMixin):
             scalar_shuffle = block_shuffle_type_value in (
                 coop.block.BlockShuffleType.Offset,
                 coop.block.BlockShuffleType.Rotate,
+                coop.block.BlockShuffleType.Up,
+                coop.block.BlockShuffleType.Down,
             )
 
             if items_is_scalar and not scalar_shuffle:
                 raise errors.TypingError(
-                    f"{self.primitive_name} requires Offset or Rotate for scalar "
-                    "shuffles"
+                    f"{self.primitive_name} requires a valid BlockShuffleType for "
+                    "scalar shuffles"
                 )
             if items_is_array and not array_shuffle:
                 raise errors.TypingError(
@@ -3963,6 +3971,35 @@ def lower_constant_block_merge_sort_instance_type(context, builder, typ, value):
     return context.get_dummy_value()
 
 
+class CoopBlockMergeSortPairsInstanceType(CoopSimpleInstanceType):
+    decl_class = CoopBlockMergeSortPairsDecl
+
+
+block_merge_sort_pairs_instance_type = CoopBlockMergeSortPairsInstanceType()
+
+
+@typeof_impl.register(coop.block.merge_sort_pairs)
+def typeof_block_merge_sort_pairs_instance(*args, **kwargs):
+    return block_merge_sort_pairs_instance_type
+
+
+@register
+class CoopBlockMergeSortPairsInstanceDecl(CoopInstanceTemplate):
+    key = block_merge_sort_pairs_instance_type
+    instance_type = block_merge_sort_pairs_instance_type
+    primitive_name = "coop.block.merge_sort_pairs"
+
+
+@register_model(CoopBlockMergeSortPairsInstanceType)
+class CoopBlockMergeSortPairsInstanceModel(models.OpaqueModel):
+    pass
+
+
+@lower_constant(CoopBlockMergeSortPairsInstanceType)
+def lower_constant_block_merge_sort_pairs_instance_type(context, builder, typ, value):
+    return context.get_dummy_value()
+
+
 class CoopBlockAdjacentDifferenceInstanceType(CoopSimpleInstanceType):
     decl_class = CoopBlockAdjacentDifferenceDecl
 
@@ -4867,19 +4904,19 @@ class CoopWarpMergeSortDecl(CoopAbstractTemplate, CoopDeclMixin):
     @staticmethod
     def signature_instance(
         keys: types.Array,
+        values: types.Array = None,
         *,
         items_per_thread: int = None,
         compare_op: Optional[Callable] = None,
         threads_in_warp: int = None,
-        values: types.Array = None,
         temp_storage: Union[types.Array, TempStorageType] = None,
     ):
         return inspect.signature(CoopWarpMergeSortDecl.signature_instance).bind(
             keys,
+            values,
             items_per_thread=items_per_thread,
             compare_op=compare_op,
             threads_in_warp=threads_in_warp,
-            values=values,
             temp_storage=temp_storage,
         )
 
@@ -4928,6 +4965,49 @@ class CoopWarpMergeSortDecl(CoopAbstractTemplate, CoopDeclMixin):
             arglist.append(temp_storage)
 
         return signature(types.void, *arglist)
+
+
+@register_global(coop.warp.merge_sort_pairs)
+class CoopWarpMergeSortPairsDecl(CoopWarpMergeSortDecl):
+    key = coop.warp.merge_sort_pairs
+    primitive_name = "coop.warp.merge_sort_pairs"
+
+    @staticmethod
+    def signature(
+        keys: types.Array,
+        items_per_thread: int = None,
+        compare_op: Optional[Callable] = None,
+        threads_in_warp: int = 32,
+        values: types.Array = None,
+        temp_storage: Union[types.Array, TempStorageType] = None,
+    ):
+        return inspect.signature(CoopWarpMergeSortPairsDecl.signature).bind(
+            keys,
+            items_per_thread=items_per_thread,
+            compare_op=compare_op,
+            threads_in_warp=threads_in_warp,
+            values=values,
+            temp_storage=temp_storage,
+        )
+
+    @staticmethod
+    def signature_instance(
+        keys: types.Array,
+        values: types.Array,
+        *,
+        items_per_thread: int = None,
+        compare_op: Optional[Callable] = None,
+        threads_in_warp: int = None,
+        temp_storage: Union[types.Array, TempStorageType] = None,
+    ):
+        return inspect.signature(CoopWarpMergeSortPairsDecl.signature_instance).bind(
+            keys,
+            values,
+            items_per_thread=items_per_thread,
+            compare_op=compare_op,
+            threads_in_warp=threads_in_warp,
+            temp_storage=temp_storage,
+        )
 
 
 # =============================================================================
@@ -5225,6 +5305,35 @@ def lower_constant_warp_merge_sort_instance_type(context, builder, typ, value):
     return context.get_dummy_value()
 
 
+class CoopWarpMergeSortPairsInstanceType(CoopSimpleInstanceType):
+    decl_class = CoopWarpMergeSortPairsDecl
+
+
+warp_merge_sort_pairs_instance_type = CoopWarpMergeSortPairsInstanceType()
+
+
+@typeof_impl.register(coop.warp.merge_sort_pairs)
+def typeof_warp_merge_sort_pairs_instance(*args, **kwargs):
+    return warp_merge_sort_pairs_instance_type
+
+
+@register
+class CoopWarpMergeSortPairsInstanceDecl(CoopInstanceTemplate):
+    key = warp_merge_sort_pairs_instance_type
+    instance_type = warp_merge_sort_pairs_instance_type
+    primitive_name = "coop.warp.merge_sort_pairs"
+
+
+@register_model(CoopWarpMergeSortPairsInstanceType)
+class CoopWarpMergeSortPairsInstanceModel(models.OpaqueModel):
+    pass
+
+
+@lower_constant(CoopWarpMergeSortPairsInstanceType)
+def lower_constant_warp_merge_sort_pairs_instance_type(context, builder, typ, value):
+    return context.get_dummy_value()
+
+
 # =============================================================================
 # Module Template
 # =============================================================================
@@ -5274,6 +5383,24 @@ class CoopBlockModuleTemplate(AttributeTemplate):
     def resolve_sum(self, mod):
         return types.Function(CoopBlockSumDecl)
 
+    def resolve_merge_sort_keys(self, mod):
+        return types.Function(CoopBlockMergeSortDecl)
+
+    def resolve_merge_sort_pairs(self, mod):
+        return types.Function(CoopBlockMergeSortPairsDecl)
+
+    def resolve_radix_sort_keys(self, mod):
+        return types.Function(CoopBlockRadixSortDecl)
+
+    def resolve_radix_sort_keys_descending(self, mod):
+        return types.Function(CoopBlockRadixSortDescendingDecl)
+
+    def resolve_radix_sort_pairs(self, mod):
+        return types.Function(CoopBlockRadixSortDecl)
+
+    def resolve_radix_sort_pairs_descending(self, mod):
+        return types.Function(CoopBlockRadixSortDescendingDecl)
+
 
 @register_attr
 class CoopWarpModuleTemplate(AttributeTemplate):
@@ -5308,6 +5435,9 @@ class CoopWarpModuleTemplate(AttributeTemplate):
 
     def resolve_merge_sort_keys(self, mod):
         return types.Function(CoopWarpMergeSortDecl)
+
+    def resolve_merge_sort_pairs(self, mod):
+        return types.Function(CoopWarpMergeSortPairsDecl)
 
 
 @register_attr

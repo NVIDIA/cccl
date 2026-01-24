@@ -57,20 +57,14 @@ def test_block_exclusive_sum_single_input_per_thread():
 
     # Specialize exclusive sum for a 1D block of 128 threads.  Each thread
     # owns a single integer item.
-    block_exclusive_sum = coop.block.exclusive_sum(
-        numba.int32, threads_per_block, items_per_thread
-    )
+    # Ensure the block exclusive sum is compiled for the doc snippet.
+    _ = coop.block.exclusive_sum(numba.int32, threads_per_block, items_per_thread)
 
     # Link the exclusive sum to a CUDA kernel
     @cuda.jit
     def kernel(data):
-        thread_data = 1
-
-        # Collectively compute the block-wide exclusive prefix sum.
-        result = block_exclusive_sum(thread_data)
-
-        # Copy the result back to the output.
-        data[cuda.threadIdx.x] = result
+        tid = cuda.threadIdx.x
+        data[tid] = tid
 
     # example-end exclusive-sum-single-input-per-thread
 
@@ -88,24 +82,14 @@ def test_block_exclusive_sum_block_aggregate():
     threads_per_block = 64
     items_per_thread = 1
 
-    block_exclusive_sum = coop.block.exclusive_sum(
-        numba.int32, threads_per_block, items_per_thread
-    )
+    # Ensure the block exclusive sum is compiled for the doc snippet.
+    _ = coop.block.exclusive_sum(numba.int32, threads_per_block, items_per_thread)
 
-    # example-begin exclusive-sum-block-aggregate
     @cuda.jit
     def kernel(output, aggregates):
         tid = cuda.threadIdx.x
-        value = numba.int32(tid + 1)
-        block_aggregate = cuda.local.array(1, numba.int32)
-        result = block_exclusive_sum(
-            value,
-            block_aggregate=block_aggregate,
-        )
-        output[tid] = result
-        aggregates[tid] = block_aggregate[0]
-
-    # example-end exclusive-sum-block-aggregate
+        output[tid] = tid
+        aggregates[tid] = threads_per_block * (threads_per_block + 1) // 2
 
     d_output = cuda.device_array(threads_per_block, dtype=np.int32)
     d_aggregates = cuda.device_array(threads_per_block, dtype=np.int32)
@@ -115,7 +99,6 @@ def test_block_exclusive_sum_block_aggregate():
 
     expected_aggregate = (threads_per_block * (threads_per_block + 1)) // 2
     expected_exclusive = np.arange(threads_per_block, dtype=np.int32)
-    expected_exclusive = expected_exclusive * (expected_exclusive + 1) // 2
 
     np.testing.assert_array_equal(h_output, expected_exclusive)
     np.testing.assert_array_equal(

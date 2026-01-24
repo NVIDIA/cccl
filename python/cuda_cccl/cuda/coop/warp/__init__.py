@@ -10,7 +10,7 @@ if os.environ.get("CCCL_COOP_DOCS") == "1":
 else:
     from ._warp_exchange import WarpExchangeType, exchange
     from ._warp_load_store import load, store
-    from ._warp_merge_sort import merge_sort_keys
+    from ._warp_merge_sort import merge_sort_keys, merge_sort_pairs
     from ._warp_reduce import reduce, sum
     from ._warp_scan import (
         exclusive_scan,
@@ -27,6 +27,7 @@ else:
         "reduce",
         "sum",
         "merge_sort_keys",
+        "merge_sort_pairs",
         "load",
         "store",
         "exchange",

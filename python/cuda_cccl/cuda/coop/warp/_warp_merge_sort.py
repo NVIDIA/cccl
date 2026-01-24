@@ -141,3 +141,55 @@ class merge_sort_keys(BasePrimitive):
             temp_storage_alignment=specialization.temp_storage_alignment,
             algorithm=specialization,
         )
+
+
+class merge_sort_pairs(merge_sort_keys):
+    def __init__(
+        self,
+        keys,
+        values,
+        items_per_thread,
+        compare_op,
+        threads_in_warp=32,
+        methods=None,
+        unique_id=None,
+        temp_storage=None,
+        node=None,
+    ):
+        super().__init__(
+            dtype=keys,
+            items_per_thread=items_per_thread,
+            compare_op=compare_op,
+            value_dtype=values,
+            threads_in_warp=threads_in_warp,
+            methods=methods,
+            unique_id=unique_id,
+            temp_storage=temp_storage,
+            node=node,
+        )
+
+    @classmethod
+    def create(
+        cls,
+        keys,
+        values,
+        items_per_thread,
+        compare_op,
+        threads_in_warp=32,
+        methods=None,
+    ):
+        algo = cls(
+            keys=keys,
+            values=values,
+            items_per_thread=items_per_thread,
+            compare_op=compare_op,
+            threads_in_warp=threads_in_warp,
+            methods=methods,
+        )
+        specialization = algo.specialization
+        return Invocable(
+            ltoir_files=specialization.get_lto_ir(threads=threads_in_warp),
+            temp_storage_bytes=specialization.temp_storage_bytes,
+            temp_storage_alignment=specialization.temp_storage_alignment,
+            algorithm=specialization,
+        )

@@ -299,6 +299,9 @@ class scan(BasePrimitive):
             perform the block-wide prefix scan.
         :rtype: Callable
         """
+        if callable(items_per_thread) and not callable(scan_op):
+            scan_op, items_per_thread = items_per_thread, scan_op
+
         if items_per_thread < 1:
             raise ValueError("items_per_thread must be greater than or equal to 1")
 
@@ -379,6 +382,8 @@ class scan(BasePrimitive):
             fake_return = False
         else:
             fake_return = True
+            if scan_op.is_sum and block_prefix_callback_op is None:
+                fake_return = False
 
         # A "known" scan op is the standard set of associative operators,
         # e.g. ::cuda::std::plus<>, etc.  A "callable" scan op is a Python

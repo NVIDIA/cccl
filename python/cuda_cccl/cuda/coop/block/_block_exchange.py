@@ -261,6 +261,12 @@ class exchange(BasePrimitive):
         else:
             type_definitions = None
 
+        if block_exchange_type == BlockExchangeType.BlockedToStriped:
+            if use_output_items:
+                method = [output_items, input_items]
+            else:
+                method = [input_items]
+
         self.algorithm = Algorithm(
             "BlockExchange",
             method_name,
