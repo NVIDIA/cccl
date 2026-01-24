@@ -774,3 +774,4 @@
 
 ## 2026-01-24
 - Reintroduced scalar Up/Down block shuffle support and restored block-aggregate scan tests in coop block scan API.
+- Updated HEADS_AND_TAILS doc-test expectations to always flag the last tail.

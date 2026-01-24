@@ -71,6 +71,7 @@ def test_block_discontinuity_flag_heads_and_tails():
     for idx in range(threads_per_block):
         nxt = h_input[idx + 1] if idx < threads_per_block - 1 else h_input[idx]
         expected_tails[idx] = 1 if h_input[idx] != nxt else 0
+    expected_tails[-1] = 1
 
     np.testing.assert_array_equal(h_head, expected_heads)
     np.testing.assert_array_equal(h_tail, expected_tails)
