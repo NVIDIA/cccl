@@ -61,6 +61,7 @@
 - [x] Add block radix rank exclusive_digit_prefix output overloads.
 - [ ] Enable BlockRadixSort decomposer for user-defined types (blocked: CUB expects tuple-of-references; need C++ adapter or alternate lowering).
 - [x] Add warp merge sort key/value overloads.
+- [x] Add single-phase parity tests for warp primitives (reduce/scan/exchange/load-store/merge sort).
 - [x] Support block-aggregate scan out-params (no tuple-style multi-output return).
 - [x] Expand single-phase `temp_storage=` support across all primitives and
       keep `TempStorage` getitem syntax compatible; add coverage.

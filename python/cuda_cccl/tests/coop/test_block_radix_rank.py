@@ -322,3 +322,39 @@ def test_block_radix_rank_exclusive_digit_prefix_two_phase():
         descending=True,
         use_two_phase=True,
     )
+
+
+def test_block_radix_rank():
+    # example-begin radix-rank
+    threads_per_block = 64
+    items_per_thread = 1
+    begin_bit = 0
+    end_bit = 4
+
+    @cuda.jit
+    def kernel(d_in, d_out):
+        tid = cuda.threadIdx.x
+        items = cuda.local.array(items_per_thread, numba.uint32)
+        ranks = cuda.local.array(items_per_thread, numba.int32)
+        items[0] = d_in[tid]
+        coop.block.radix_rank(
+            items,
+            ranks,
+            items_per_thread,
+            begin_bit,
+            end_bit,
+            False,
+        )
+        d_out[tid] = ranks[0]
+
+    # example-end radix-rank
+
+    h_input = np.random.randint(0, 2**16, threads_per_block, dtype=np.uint32)
+    d_input = cuda.to_device(h_input)
+    d_output = cuda.device_array(threads_per_block, dtype=np.int32)
+
+    kernel[1, threads_per_block](d_input, d_output)
+    cuda.synchronize()
+
+    h_output = d_output.copy_to_host()
+    _validate_ranks(h_input, h_output, begin_bit, end_bit, False)

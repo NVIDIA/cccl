@@ -4601,7 +4601,21 @@ class CoopWarpMergeSortNode(CoopNode, CoopNodeMixin):
             "temp_storage": temp_storage,
             "node": self,
         }
-        if alias_pairs and value_dtype is None and values_ty is not None:
+        if alias_pairs:
+            self.impl_kwds = {
+                "keys": dtype,
+                "values": value_dtype,
+                "items_per_thread": items_per_thread,
+                "compare_op": compare_op,
+                "threads_in_warp": threads_in_warp,
+                "methods": methods,
+                "unique_id": self.unique_id,
+                "temp_storage": temp_storage,
+                "node": self,
+            }
+            if value_dtype is None and values_ty is not None:
+                self.impl_kwds["values"] = values_ty.dtype
+        elif value_dtype is None and values_ty is not None:
             self.impl_kwds["value_dtype"] = values_ty.dtype
 
         self.return_type = types.void

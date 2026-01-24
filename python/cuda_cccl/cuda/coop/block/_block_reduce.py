@@ -52,13 +52,13 @@ class reduce(BasePrimitive):
             The snippet below demonstrates a block reduction using a custom
             max operator.
 
-            .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_block_reduce_api.py
+            .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_block_reduce.py
                 :language: python
                 :dedent:
                 :start-after: example-begin imports
                 :end-before: example-end imports
 
-            .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_block_reduce_api.py
+            .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_block_reduce.py
                 :language: python
                 :dedent:
                 :start-after: example-begin reduce
@@ -236,13 +236,13 @@ class sum(reduce):
         Example:
             The snippet below demonstrates a block sum.
 
-            .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_block_reduce_api.py
+            .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_block_reduce.py
                 :language: python
                 :dedent:
                 :start-after: example-begin imports
                 :end-before: example-end imports
 
-            .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_block_reduce_api.py
+            .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_block_reduce.py
                 :language: python
                 :dedent:
                 :start-after: example-begin sum

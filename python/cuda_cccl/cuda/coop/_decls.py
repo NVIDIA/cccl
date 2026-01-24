@@ -5057,18 +5057,18 @@ class CoopWarpMergeSortPairsDecl(CoopWarpMergeSortDecl):
     @staticmethod
     def signature(
         keys: types.Array,
+        values: types.Array,
         items_per_thread: int = None,
         compare_op: Optional[Callable] = None,
         threads_in_warp: int = 32,
-        values: types.Array = None,
         temp_storage: Union[types.Array, TempStorageType] = None,
     ):
         return inspect.signature(CoopWarpMergeSortPairsDecl.signature).bind(
             keys,
+            values,
             items_per_thread=items_per_thread,
             compare_op=compare_op,
             threads_in_warp=threads_in_warp,
-            values=values,
             temp_storage=temp_storage,
         )
 

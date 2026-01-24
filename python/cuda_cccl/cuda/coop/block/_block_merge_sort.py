@@ -57,7 +57,7 @@ class merge_sort_keys(BasePrimitive):
             are partitioned in a :ref:`blocked arrangement <coop-flexible-data-arrangement>` across 128 threads
             where each thread owns 4 consecutive keys. We start by importing necessary modules:
 
-            .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_block_merge_sort_api.py
+            .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_block_merge_sort.py
                 :language: python
                 :dedent:
                 :start-after: example-begin imports
@@ -65,7 +65,7 @@ class merge_sort_keys(BasePrimitive):
 
             Below is the code snippet that demonstrates the usage of the ``merge_sort_keys`` API:
 
-            .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_block_merge_sort_api.py
+            .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_block_merge_sort.py
                 :language: python
                 :dedent:
                 :start-after: example-begin merge-sort

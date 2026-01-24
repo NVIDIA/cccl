@@ -290,7 +290,7 @@ class radix_sort_keys(_radix_sort_base):
         are partitioned in a :ref:`blocked arrangement <coop-flexible-data-arrangement>` across 128 threads
         where each thread owns 4 consecutive keys. We start by importing necessary modules:
 
-        .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_block_radix_sort_api.py
+        .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_block_radix_sort.py
             :language: python
             :dedent:
             :start-after: example-begin imports
@@ -298,7 +298,7 @@ class radix_sort_keys(_radix_sort_base):
 
         Below is the code snippet that demonstrates the usage of the ``radix_sort_keys`` API:
 
-        .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_block_radix_sort_api.py
+        .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_block_radix_sort.py
             :language: python
             :dedent:
             :start-after: example-begin radix-sort
@@ -364,7 +364,7 @@ class radix_sort_keys_descending(_radix_sort_base):
         are partitioned in a :ref:`blocked arrangement <coop-flexible-data-arrangement>` across 128 threads
         where each thread owns 4 consecutive keys. We start by importing necessary modules:
 
-        .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_block_radix_sort_api.py
+        .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_block_radix_sort.py
             :language: python
             :dedent:
             :start-after: example-begin imports
@@ -372,7 +372,7 @@ class radix_sort_keys_descending(_radix_sort_base):
 
         Below is the code snippet that demonstrates the usage of the ``radix_sort_keys`` API:
 
-        .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_block_radix_sort_api.py
+        .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_block_radix_sort.py
             :language: python
             :dedent:
             :start-after: example-begin radix-sort-descending

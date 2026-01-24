@@ -208,19 +208,19 @@ def reduce(
     """Block-wide reduction with a custom operator.
 
     Example:
-        .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_block_reduce_api.py
+        .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_block_reduce.py
             :language: python
             :dedent:
             :start-after: example-begin reduce
             :end-before: example-end reduce
 
-        .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_block_reduce_api.py
+        .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_block_reduce.py
             :language: python
             :dedent:
             :start-after: example-begin reduce-temp-storage
             :end-before: example-end reduce-temp-storage
 
-        .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_block_reduce_api.py
+        .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_block_reduce.py
             :language: python
             :dedent:
             :start-after: example-begin reduce-two-phase-temp-storage
@@ -240,19 +240,19 @@ def sum(
     """Block-wide sum reduction.
 
     Example:
-        .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_block_reduce_api.py
+        .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_block_reduce.py
             :language: python
             :dedent:
             :start-after: example-begin sum
             :end-before: example-end sum
 
-        .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_block_reduce_api.py
+        .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_block_reduce.py
             :language: python
             :dedent:
             :start-after: example-begin sum-temp-storage
             :end-before: example-end sum-temp-storage
 
-        .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_block_reduce_api.py
+        .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_block_reduce.py
             :language: python
             :dedent:
             :start-after: example-begin sum-two-phase-temp-storage
@@ -273,19 +273,19 @@ def load(
     """Block-wide cooperative load into per-thread items.
 
     Example:
-        .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_block_load_store_api_single_phase.py
+        .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_block_load_store_api.py
             :language: python
             :dedent:
             :start-after: example-begin imports
             :end-before: example-end imports
 
-        .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_block_load_store_api_single_phase.py
+        .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_block_load_store_api.py
             :language: python
             :dedent:
             :start-after: example-begin load-store-single-phase
             :end-before: example-end load-store-single-phase
 
-        .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_block_load_store_api_single_phase.py
+        .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_block_load_store_api.py
             :language: python
             :dedent:
             :start-after: example-begin load-single-phase-oob-default
@@ -305,7 +305,7 @@ def store(
     """Block-wide cooperative store from per-thread items.
 
     Example:
-        .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_block_load_store_api_single_phase.py
+        .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_block_load_store_api.py
             :language: python
             :dedent:
             :start-after: example-begin load-store-single-phase
@@ -448,7 +448,7 @@ def merge_sort_keys(
     """Block-wide merge sort for keys.
 
     Example:
-        .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_block_merge_sort_api.py
+        .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_block_merge_sort.py
             :language: python
             :dedent:
             :start-after: example-begin merge-sort
@@ -469,7 +469,7 @@ def merge_sort_pairs(
     """Block-wide merge sort for key-value pairs.
 
     Example:
-        .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_block_merge_sort_pairs_api.py
+        .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_block_merge_sort.py
             :language: python
             :dedent:
             :start-after: example-begin merge-sort-pairs
@@ -488,7 +488,7 @@ def radix_sort_keys(
     """Block-wide radix sort for keys (ascending).
 
     Example:
-        .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_block_radix_sort_api.py
+        .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_block_radix_sort.py
             :language: python
             :dedent:
             :start-after: example-begin radix-sort
@@ -507,7 +507,7 @@ def radix_sort_keys_descending(
     """Block-wide radix sort for keys (descending).
 
     Example:
-        .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_block_radix_sort_api.py
+        .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_block_radix_sort.py
             :language: python
             :dedent:
             :start-after: example-begin radix-sort-descending
@@ -532,7 +532,7 @@ def radix_sort_pairs(
         paired values instead.
 
     Example:
-        .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_block_radix_sort_pairs_api.py
+        .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_block_radix_sort.py
             :language: python
             :dedent:
             :start-after: example-begin radix-sort-pairs
@@ -558,7 +558,7 @@ def radix_sort_pairs_descending(
         values instead.
 
     Example:
-        .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_block_radix_sort_pairs_api.py
+        .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_block_radix_sort.py
             :language: python
             :dedent:
             :start-after: example-begin radix-sort-pairs-descending
@@ -578,7 +578,7 @@ def radix_rank(
     """Block-wide radix rank for keys.
 
     Example:
-        .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_block_radix_rank_api.py
+        .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_block_radix_rank.py
             :language: python
             :dedent:
             :start-after: example-begin radix-rank

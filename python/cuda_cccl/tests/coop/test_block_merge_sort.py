@@ -371,3 +371,84 @@ def test_block_merge_sort_user_defined_type():
     reference = sorted(input, reverse=True, key=lambda x: x.real)
     for i in range(items_per_tile):
         assert output[i] == reference[i]
+
+
+def test_block_merge_sort_api():
+    # example-begin merge-sort
+    # Define comparison operator
+    @cuda.jit(device=True)
+    def compare_op(a, b):
+        return a > b
+
+    # Specialize merge sort for a 1D block of 128 threads owning 4 integer items each
+    items_per_thread = 4
+    threads_per_block = 128
+
+    @cuda.jit
+    def kernel(keys):
+        # Obtain a segment of consecutive items that are blocked across threads
+        thread_keys = cuda.local.array(shape=items_per_thread, dtype=numba.int32)
+
+        for i in range(items_per_thread):
+            thread_keys[i] = keys[cuda.threadIdx.x * items_per_thread + i]
+
+        # Collectively sort the keys
+        coop.block.merge_sort_keys(thread_keys, items_per_thread, compare_op)
+
+        # Copy the sorted keys back to the output
+        for i in range(items_per_thread):
+            keys[cuda.threadIdx.x * items_per_thread + i] = thread_keys[i]
+
+    # example-end merge-sort
+
+    tile_size = threads_per_block * items_per_thread
+
+    h_keys = np.arange(0, tile_size, dtype=np.int32)
+    d_keys = cuda.to_device(h_keys)
+    kernel[1, threads_per_block](d_keys)
+    h_keys = d_keys.copy_to_host()
+    for i in range(tile_size):
+        assert h_keys[i] == tile_size - 1 - i
+
+
+def test_block_merge_sort_pairs():
+    # example-begin merge-sort-pairs
+    @cuda.jit(device=True)
+    def compare_op(a, b):
+        return a > b
+
+    items_per_thread = 4
+    threads_per_block = 128
+
+    @cuda.jit
+    def kernel(keys, values):
+        thread_keys = cuda.local.array(shape=items_per_thread, dtype=numba.int32)
+        thread_vals = cuda.local.array(shape=items_per_thread, dtype=numba.int32)
+
+        base = cuda.threadIdx.x * items_per_thread
+        for i in range(items_per_thread):
+            thread_keys[i] = keys[base + i]
+            thread_vals[i] = values[base + i]
+
+        coop.block.merge_sort_pairs(
+            thread_keys, thread_vals, items_per_thread, compare_op
+        )
+
+        for i in range(items_per_thread):
+            keys[base + i] = thread_keys[i]
+            values[base + i] = thread_vals[i]
+
+    # example-end merge-sort-pairs
+
+    tile_size = threads_per_block * items_per_thread
+    h_keys = np.arange(tile_size - 1, -1, -1, dtype=np.int32)
+    h_vals = np.arange(tile_size, dtype=np.int32)
+    d_keys = cuda.to_device(h_keys)
+    d_vals = cuda.to_device(h_vals)
+
+    kernel[1, threads_per_block](d_keys, d_vals)
+    h_keys = d_keys.copy_to_host()
+    h_vals = d_vals.copy_to_host()
+
+    assert np.all(h_keys[:-1] >= h_keys[1:])
+    assert np.all(h_vals == np.arange(tile_size, dtype=np.int32))

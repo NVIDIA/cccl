@@ -801,3 +801,36 @@
 ## 2026-01-24
 - Fixed warp load/store linker duplicate symbol by using a global symbol-id counter (unique across kernels).
 - Ran pytest: tests/coop/test_warp_load_store_api.py::test_warp_load_store_num_valid_oob_default (passed).
+
+## 2026-01-24
+- Expanded warp single-phase coverage: unsigned reduce/sum, randomized inclusive/exclusive sums, load/store temp_storage + num_valid/oob_default, exchange variants (striped/blocked/scatter + temp_storage), and merge sort variants (typed, multi-warp, temp_storage, pairs).
+- Tests not run (requires GPU).
+
+## 2026-01-24
+- Fixed warp merge_sort_pairs single-phase typing/rewrite: accept positional values in decl signature and map one-shot impl_kwds to keys/values for warp merge sort pairs.
+- Ran pytest: `python -m pytest tests/coop/test_warp_single_phase.py` (44 passed).
+
+## 2026-01-24
+- Moved warp single-phase tests into existing warp test files (reduce/scan/exchange/load-store/merge sort) and removed test_warp_single_phase.py.
+- Ran pytest: `python -m pytest tests/coop/test_warp_reduce.py tests/coop/test_warp_scan.py tests/coop/test_warp_exchange_api.py tests/coop/test_warp_load_store_api.py tests/coop/test_warp_merge_sort.py` (76 passed).
+
+## 2026-01-24
+- Merged block single-phase load/store API, algorithm, and load+scan tests into tests/coop/test_block_load_store_api.py; removed the standalone single-phase files and updated block API literalinclude paths.
+- Ran pytest: `python -m pytest tests/coop/test_block_load_store_api.py` (42 passed, 1 skipped).
+
+## 2026-01-24
+- Moved block scan single-phase load/scan integration tests into tests/coop/test_block_scan.py, added count-tracking prefix callback helper, and trimmed test_block_load_store_api.py back to load/store coverage + algorithm tests.
+- Ran pytest: `python -m pytest tests/coop/test_block_scan.py` (175 passed, 25 skipped; NVRTC warning #1866-D in test_block_load_store_scan_simple55/test_block_load_store_scan_simple6).
+- Ran pytest: `python -m pytest tests/coop/test_block_load_store_api.py` (25 passed).
+
+## 2026-01-24
+- Merged block reduce API examples into tests/coop/test_block_reduce.py, removed tests/coop/test_block_reduce_api.py, and repointed literalincludes to the merged file.
+- Ran pytest: `python -m pytest tests/coop/test_block_reduce.py` (873 passed).
+
+## 2026-01-24
+- Added single-phase temp_storage coverage for block exchange (striped-to-blocked) alongside existing two-phase tests.
+- Ran pytest: `python -m pytest tests/coop/test_block_exchange.py` (124 passed).
+
+## 2026-01-24
+- Merged block merge/radix sort and radix rank API examples into their main test files; removed standalone *_api.py files and repointed literalincludes to merged files.
+- Ran pytest: `python -m pytest tests/coop/test_block_merge_sort.py tests/coop/test_block_radix_sort.py tests/coop/test_block_radix_rank.py` (220 passed).

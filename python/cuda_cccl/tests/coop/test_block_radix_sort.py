@@ -513,3 +513,152 @@ def test_block_radix_sort_mangling():
     double_reference = sorted(double_input)
     for i in range(items_per_tile):
         assert double_output[i] == double_reference[i]
+
+
+def test_block_radix_sort_api():
+    # example-begin radix-sort
+    # Specialize radix sort for a 1D block of 128 threads owning 4 integer items each
+    items_per_thread = 4
+    threads_per_block = 128
+
+    @cuda.jit
+    def kernel(keys):
+        # Obtain a segment of consecutive items that are blocked across threads
+        thread_keys = cuda.local.array(shape=items_per_thread, dtype=numba.int32)
+
+        for i in range(items_per_thread):
+            thread_keys[i] = keys[cuda.threadIdx.x * items_per_thread + i]
+
+        # Collectively sort the keys
+        coop.block.radix_sort_keys(thread_keys, items_per_thread)
+
+        # Copy the sorted keys back to the output
+        for i in range(items_per_thread):
+            keys[cuda.threadIdx.x * items_per_thread + i] = thread_keys[i]
+
+    # example-end radix-sort
+
+    tile_size = threads_per_block * items_per_thread
+
+    h_keys = np.arange(tile_size - 1, -1, -1, dtype=np.int32)
+    d_keys = cuda.to_device(h_keys)
+    kernel[1, threads_per_block](d_keys)
+    h_keys = d_keys.copy_to_host()
+    for i in range(tile_size):
+        assert h_keys[i] == i
+
+
+def test_block_radix_sort_descending_api():
+    # example-begin radix-sort-descending
+    # Specialize radix sort for a 1D block of 128 threads owning 4 integer items each
+    items_per_thread = 4
+    threads_per_block = 128
+
+    @cuda.jit
+    def kernel(keys):
+        # Obtain a segment of consecutive items that are blocked across threads
+        thread_keys = cuda.local.array(shape=items_per_thread, dtype=numba.int32)
+
+        for i in range(items_per_thread):
+            thread_keys[i] = keys[cuda.threadIdx.x * items_per_thread + i]
+
+        # Collectively sort the keys
+        coop.block.radix_sort_keys_descending(thread_keys, items_per_thread)
+
+        # Copy the sorted keys back to the output
+        for i in range(items_per_thread):
+            keys[cuda.threadIdx.x * items_per_thread + i] = thread_keys[i]
+
+    # example-end radix-sort-descending
+
+    tile_size = threads_per_block * items_per_thread
+
+    h_keys = np.arange(0, tile_size, dtype=np.int32)
+    d_keys = cuda.to_device(h_keys)
+    kernel[1, threads_per_block](d_keys)
+    h_keys = d_keys.copy_to_host()
+    for i in range(tile_size):
+        assert h_keys[i] == tile_size - 1 - i
+
+
+def test_block_radix_sort_pairs():
+    # example-begin radix-sort-pairs
+    items_per_thread = 4
+    threads_per_block = 128
+
+    @cuda.jit
+    def kernel(keys, values):
+        thread_keys = cuda.local.array(shape=items_per_thread, dtype=numba.int32)
+        thread_vals = cuda.local.array(shape=items_per_thread, dtype=numba.int32)
+
+        base = cuda.threadIdx.x * items_per_thread
+        for i in range(items_per_thread):
+            thread_keys[i] = keys[base + i]
+            thread_vals[i] = values[base + i]
+
+        coop.block.radix_sort_keys(
+            thread_keys,
+            items_per_thread,
+            values=thread_vals,
+        )
+
+        for i in range(items_per_thread):
+            keys[base + i] = thread_keys[i]
+            values[base + i] = thread_vals[i]
+
+    # example-end radix-sort-pairs
+
+    tile_size = threads_per_block * items_per_thread
+    h_keys = np.arange(tile_size - 1, -1, -1, dtype=np.int32)
+    h_vals = np.arange(tile_size, dtype=np.int32)
+    d_keys = cuda.to_device(h_keys)
+    d_vals = cuda.to_device(h_vals)
+
+    kernel[1, threads_per_block](d_keys, d_vals)
+    h_keys = d_keys.copy_to_host()
+    h_vals = d_vals.copy_to_host()
+
+    assert np.all(h_keys[:-1] <= h_keys[1:])
+    assert np.all(h_vals == np.arange(tile_size - 1, -1, -1, dtype=np.int32))
+
+
+def test_block_radix_sort_pairs_descending():
+    # example-begin radix-sort-pairs-descending
+    items_per_thread = 4
+    threads_per_block = 128
+
+    @cuda.jit
+    def kernel(keys, values):
+        thread_keys = cuda.local.array(shape=items_per_thread, dtype=numba.int32)
+        thread_vals = cuda.local.array(shape=items_per_thread, dtype=numba.int32)
+
+        base = cuda.threadIdx.x * items_per_thread
+        for i in range(items_per_thread):
+            thread_keys[i] = keys[base + i]
+            thread_vals[i] = values[base + i]
+
+        coop.block.radix_sort_keys_descending(
+            thread_keys,
+            items_per_thread,
+            values=thread_vals,
+        )
+
+        for i in range(items_per_thread):
+            keys[base + i] = thread_keys[i]
+            values[base + i] = thread_vals[i]
+
+    # example-end radix-sort-pairs-descending
+
+    tile_size = threads_per_block * items_per_thread
+    h_keys = np.arange(tile_size, dtype=np.int32)
+    h_vals = np.arange(tile_size, dtype=np.int32)
+    d_keys = cuda.to_device(h_keys)
+    d_vals = cuda.to_device(h_vals)
+
+    kernel[1, threads_per_block](d_keys, d_vals)
+    h_keys = d_keys.copy_to_host()
+    h_vals = d_vals.copy_to_host()
+
+    assert np.all(h_keys[:-1] >= h_keys[1:])
+    expected_vals = np.arange(tile_size - 1, -1, -1, dtype=np.int32)
+    assert np.all(h_vals == expected_vals)
