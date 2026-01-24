@@ -1133,7 +1133,7 @@ class Algorithm:
                 for decl in func_decls:
                     w(f"    {decl}\n")
                 w("    ")
-                if out_param and self.fake_return:
+                if out_param and not self.fake_return:
                     w(f"{out_param} = ")
                 w(f"{n.algorithm_t}(temp_storage).")
                 w(f"{method_name}({param_args_csv});\n")
@@ -1151,7 +1151,7 @@ class Algorithm:
                     "    auto &temp_storage_ref = *reinterpret_cast"
                     f"<{n.temp_storage_t} *>(temp_storage);\n"
                 )
-                if out_param and self.fake_return:
+                if out_param and not self.fake_return:
                     w(f"    {out_param} = ")
                 else:
                     w("    ")

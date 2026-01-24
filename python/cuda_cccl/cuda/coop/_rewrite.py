@@ -3253,6 +3253,10 @@ class CoopBlockShuffleNode(CoopNode, CoopNodeMixin):
                 distance_var_ty = self.typemap.get(distance.name)
                 if isinstance(distance_var_ty, types.IntegerLiteral):
                     distance_literal = int(distance_var_ty.literal_value)
+                else:
+                    distance_value = self.get_arg_value_safe("distance")
+                    if isinstance(distance_value, int):
+                        distance_var = None
             elif isinstance(distance, ir.Const):
                 distance_value = distance.value
             else:
@@ -3265,6 +3269,11 @@ class CoopBlockShuffleNode(CoopNode, CoopNodeMixin):
                 raise RuntimeError(
                     "coop.block.shuffle requires distance to be a compile-time constant for Up/Down"
                 )
+            if distance_var is None and distance_literal is None:
+                if distance_value is None or not isinstance(distance_value, int):
+                    raise RuntimeError(
+                        "coop.block.shuffle requires distance to be a compile-time constant for Up/Down"
+                    )
 
         if distance_literal is not None:
             distance_value = distance_literal
@@ -6278,8 +6287,6 @@ class CoopBlockScanNode(CoopNode, CoopNodeMixin):
                 )
             use_array_inputs = False
             dtype = src_ty
-            scalar_output_target = self.instr.target
-            self.scalar_output_target = scalar_output_target
         else:
             if src_is_scalar or dst_is_scalar:
                 raise RuntimeError(
@@ -6321,9 +6328,6 @@ class CoopBlockScanNode(CoopNode, CoopNodeMixin):
             runtime_args.append(src)
             runtime_arg_types.append(src_ty)
             runtime_arg_names.append("src")
-            runtime_args.append(self.scalar_output_target)
-            runtime_arg_types.append(dtype)
-            runtime_arg_names.append("dst")
 
         if ThreadDataType is not None and use_array_inputs:
             array_ty = types.Array(dtype, 1, "C")
