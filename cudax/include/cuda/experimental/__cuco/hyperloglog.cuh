@@ -21,10 +21,10 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/__stream/stream_ref.h>
 #include <cuda/std/__bit/countr.h>
 #include <cuda/std/__cccl/assert.h>
-#include <cuda/std/cstddef>
-#include <cuda/stream>
+#include <cuda/std/__cstddef/types.h>
 #include <cuda/utility>
 
 #include <cuda/experimental/__cuco/hash_functions.cuh>

@@ -21,7 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/cstddef>
+#include <cuda/std/__cstddef/types.h>
 #include <cuda/std/span>
 #include <cuda/stream>
 
