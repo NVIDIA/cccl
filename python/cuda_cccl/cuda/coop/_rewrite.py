@@ -103,6 +103,7 @@ CUDA_CCCL_COOP_ARRAY_MODULE_NAME = f"{CUDA_CCCL_COOP_MODULE_NAME}._array"
 NUMBA_CUDA_ARRAY_MODULE_NAME = "numba.cuda.stubs"
 
 DEBUG_PRINT = False
+_GLOBAL_SYMBOL_ID_COUNTER = itertools.count(0)
 
 
 def debug_print(*args, **kwargs):
@@ -2210,14 +2211,46 @@ class CoopWarpLoadStoreNode(CoopNode):
                 algorithm_id = WarpStoreAlgorithm.DIRECT
 
         num_valid_items = self.get_arg_value_safe("num_valid_items")
+        num_valid_items_var = None
+        num_valid_items_value = None
+        num_valid_items_type = None
         if num_valid_items is None:
             num_valid_items = self.bound.arguments.get("num_valid_items", None)
         if num_valid_items is not None:
-            runtime_args.append(num_valid_items)
-            runtime_arg_types.append(types.int32)
+            if isinstance(num_valid_items, ir.Var):
+                num_valid_items_var = num_valid_items
+                num_valid_items_type = self.typemap[num_valid_items.name]
+            elif isinstance(num_valid_items, ir.Const):
+                num_valid_items_value = num_valid_items.value
+            else:
+                num_valid_items_value = num_valid_items
+
+            if num_valid_items_var is None:
+                scope = self.instr.target.scope
+                const_name = f"$warp_load_num_valid_{self.unique_id}"
+                const_var = ir.Var(scope, const_name, expr.loc)
+                if const_name in self.typemap:
+                    raise RuntimeError(
+                        f"Variable {const_name} already exists in typemap."
+                    )
+                const_assign = ir.Assign(
+                    value=ir.Const(int(num_valid_items_value), expr.loc),
+                    target=const_var,
+                    loc=expr.loc,
+                )
+                self.typemap[const_name] = types.int32
+                self.num_valid_assign = const_assign
+                num_valid_items_var = const_var
+                num_valid_items_type = types.int32
+
+            runtime_args.append(num_valid_items_var)
+            runtime_arg_types.append(num_valid_items_type or types.int32)
             runtime_arg_names.append("num_valid_items")
 
         oob_default = self.get_arg_value_safe("oob_default")
+        oob_default_var = None
+        oob_default_value = None
+        oob_default_type = None
         if oob_default is None:
             oob_default = self.bound.arguments.get("oob_default", None)
         if oob_default is not None:
@@ -2227,8 +2260,46 @@ class CoopWarpLoadStoreNode(CoopNode):
                 raise RuntimeError(
                     "coop.warp.load requires num_valid_items when using oob_default"
                 )
-            runtime_args.append(oob_default)
-            runtime_arg_types.append(dtype)
+            if isinstance(oob_default, ir.Var):
+                oob_default_var = oob_default
+                oob_default_type = self.typemap[oob_default.name]
+            elif isinstance(oob_default, ir.Const):
+                oob_default_value = oob_default.value
+            else:
+                oob_default_value = oob_default
+
+            if oob_default_var is None:
+                from numba.np.numpy_support import as_dtype
+
+                const_value = oob_default_value
+                try:
+                    const_value = as_dtype(dtype).type(oob_default_value)
+                except Exception:
+                    pass
+                scope = self.instr.target.scope
+                const_name = f"$warp_load_oob_default_{self.unique_id}"
+                const_var = ir.Var(scope, const_name, expr.loc)
+                if const_name in self.typemap:
+                    raise RuntimeError(
+                        f"Variable {const_name} already exists in typemap."
+                    )
+                const_assign = ir.Assign(
+                    value=ir.Const(const_value, expr.loc),
+                    target=const_var,
+                    loc=expr.loc,
+                )
+                if isinstance(dtype, types.Integer):
+                    self.typemap[const_name] = types.IntegerLiteral(int(const_value))
+                elif isinstance(dtype, types.Boolean):
+                    self.typemap[const_name] = types.BooleanLiteral(bool(const_value))
+                else:
+                    self.typemap[const_name] = dtype
+                self.oob_default_assign = const_assign
+                oob_default_var = const_var
+                oob_default_type = dtype
+
+            runtime_args.append(oob_default_var)
+            runtime_arg_types.append(oob_default_type or dtype)
             runtime_arg_names.append("oob_default")
 
         temp_storage = self.bound.arguments.get("temp_storage")
@@ -2293,9 +2364,12 @@ class CoopWarpLoadStoreNode(CoopNode):
     def rewrite(self, rewriter):
         rd = self.rewrite_details
         instrs = [rd.g_assign]
-        valid_items_assign = getattr(self, "valid_items_assign", None)
-        if valid_items_assign is not None:
-            instrs.append(valid_items_assign)
+        num_valid_assign = getattr(self, "num_valid_assign", None)
+        if num_valid_assign is not None:
+            instrs.append(num_valid_assign)
+        oob_default_assign = getattr(self, "oob_default_assign", None)
+        if oob_default_assign is not None:
+            instrs.append(oob_default_assign)
         instrs.append(rd.new_assign)
         return tuple(instrs)
 
@@ -6991,6 +7065,13 @@ def _refine_warp_scan_node(node, rewriter):
         instance_initial_value = getattr(instance, "initial_value", None)
         if instance_initial_value is not None:
             initial_value_value = instance_initial_value
+    if (
+        initial_value_var is None
+        and initial_value_value is None
+        and node.primitive_name == "coop.warp.exclusive_scan"
+        and scan_op.is_callable
+    ):
+        initial_value_value = 0
 
     valid_items = node.get_arg_value_safe("valid_items")
     if valid_items is None:
@@ -7146,6 +7227,10 @@ def _refine_warp_scan_node(node, rewriter):
 
     if node.is_two_phase and node.two_phase_instance is not None:
         instance = node.two_phase_instance
+        needs_initial_value = (
+            initial_value_for_impl is not None
+            and getattr(instance, "initial_value", None) is None
+        )
         needs_valid_items = (
             valid_items is not None and getattr(instance, "valid_items", None) is None
         )
@@ -7153,7 +7238,7 @@ def _refine_warp_scan_node(node, rewriter):
             warp_aggregate is not None
             and getattr(instance, "warp_aggregate", None) is None
         )
-        if needs_valid_items or needs_warp_aggregate:
+        if needs_initial_value or needs_valid_items or needs_warp_aggregate:
             node.instance = node.impl_class(**node.impl_kwds)
 
 
@@ -7942,7 +8027,7 @@ class CoopNodeRewriter(Rewrite):
         self._bundle_ltoir_done = False
         self._bundle_ltoir_failed = False
         self._bundle_ltoir = None
-        self._symbol_id_counter = itertools.count(0)
+        self._symbol_id_counter = _GLOBAL_SYMBOL_ID_COUNTER
         self._symbol_id_map: dict[Any, int] = {}
 
         # Advanced C++ CUDA kernels will often leverage a templated struct

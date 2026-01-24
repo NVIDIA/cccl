@@ -223,6 +223,18 @@ class Value(ParameterMixin):
         return f"{self.value_type}"
 
 
+@dataclass
+class DependentValue(Value):
+    value_type: Any
+
+    def specialize(self, template_arguments):
+        return Value(
+            self.value_type.resolve(template_arguments),
+            is_output=self.is_output,
+            name=self.name,
+        )
+
+
 class PointerMixin:
     def cpp_decl(self, name):
         var_name = name
