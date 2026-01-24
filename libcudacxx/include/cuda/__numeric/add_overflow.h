@@ -3,7 +3,7 @@
 // Part of the libcu++ Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -131,7 +131,24 @@ template <class _Tp>
   }
   else
   {
-    return ::cuda::__add_overflow_generic_impl(__lhs, __rhs); // do not use builtin functions
+    using ::cuda::std::int32_t;
+
+    if constexpr (sizeof(_Tp) < sizeof(int32_t))
+    {
+      constexpr auto __max         = int32_t{::cuda::std::numeric_limits<_Tp>::max()};
+      constexpr auto __min         = int32_t{::cuda::std::numeric_limits<_Tp>::min()};
+      const auto __result_enlarged = int32_t{__lhs} + int32_t{__rhs};
+      return overflow_result<_Tp>{
+        static_cast<_Tp>(__result_enlarged), __result_enlarged > __max || __result_enlarged < __min};
+    }
+    else
+    {
+      using _Up                = ::cuda::std::make_unsigned_t<_Tp>;
+      const auto __uadd_result = ::cuda::__add_overflow_device(static_cast<_Up>(__lhs), static_cast<_Up>(__rhs));
+      const auto __result      = static_cast<_Tp>(__uadd_result.value);
+      const auto __overflow    = ((__lhs >= 0) == (__rhs >= 0)) && (__uadd_result.overflow == (__result >= 0));
+      return {__result, __overflow};
+    }
   }
 }
 
