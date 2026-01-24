@@ -25,11 +25,13 @@ else:
         load,
         store,
     )
-    from ._block_merge_sort import merge_sort_keys
+    from ._block_merge_sort import merge_sort_keys, merge_sort_pairs
     from ._block_radix_rank import radix_rank
     from ._block_radix_sort import (
         radix_sort_keys,
         radix_sort_keys_descending,
+        radix_sort_pairs,
+        radix_sort_pairs_descending,
     )
     from ._block_reduce import reduce, sum
     from ._block_run_length_decode import run_length
@@ -61,8 +63,11 @@ else:
         "inclusive_sum",
         "load",
         "merge_sort_keys",
+        "merge_sort_pairs",
         "radix_sort_keys",
         "radix_sort_keys_descending",
+        "radix_sort_pairs",
+        "radix_sort_pairs_descending",
         "radix_rank",
         "reduce",
         "run_length",

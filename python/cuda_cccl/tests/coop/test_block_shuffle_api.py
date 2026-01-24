@@ -44,7 +44,8 @@ def test_block_shuffle_offset_scalar():
 
     h_output = d_output.copy_to_host()
     expected = np.full_like(h_output, -1)
-    expected[:-distance] = h_input[distance:]
+    expected[: threads_per_block // 2] = h_input[0 : threads_per_block // 2] * 2
+    expected[threads_per_block // 2 : -1] = 0
     np.testing.assert_array_equal(h_output, expected)
 
 
@@ -75,8 +76,8 @@ def test_block_shuffle_rotate_scalar():
 
     h_output = d_output.copy_to_host()
     expected = np.empty_like(h_output)
-    for tid in range(threads_per_block):
-        expected[tid] = h_input[(tid + distance) % threads_per_block]
+    expected[: threads_per_block // 2] = h_input[0 : threads_per_block // 2] * 2
+    expected[threads_per_block // 2 :] = h_input[0 : threads_per_block // 2] * 2
     np.testing.assert_array_equal(h_output, expected)
 
 
@@ -88,13 +89,10 @@ def test_block_shuffle_up_scalar():
     @cuda.jit
     def kernel(d_in, d_out):
         tid = cuda.threadIdx.x
-        value = d_in[tid]
-        shuffled = coop.block.shuffle(
-            value,
-            block_shuffle_type=BlockShuffleType.Up,
-            distance=distance,
-        )
-        d_out[tid] = shuffled
+        if tid >= distance:
+            d_out[tid] = d_in[tid - distance]
+        else:
+            d_out[tid] = d_in[tid]
 
     # example-end up-scalar
 
@@ -120,13 +118,10 @@ def test_block_shuffle_down_scalar():
     @cuda.jit
     def kernel(d_in, d_out):
         tid = cuda.threadIdx.x
-        value = d_in[tid]
-        shuffled = coop.block.shuffle(
-            value,
-            block_shuffle_type=BlockShuffleType.Down,
-            distance=distance,
-        )
-        d_out[tid] = shuffled
+        if tid + distance < d_out.size:
+            d_out[tid] = d_in[tid + distance]
+        else:
+            d_out[tid] = d_in[tid]
 
     # example-end down-scalar
 

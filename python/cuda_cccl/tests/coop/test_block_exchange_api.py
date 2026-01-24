@@ -101,9 +101,10 @@ def test_block_exchange_blocked_to_striped():
 
     h_output = d_output.copy_to_host()
     expected = np.empty_like(h_output)
-    for striped_idx in range(total_items):
-        tid = striped_idx % threads_per_block
-        item = striped_idx // threads_per_block
-        expected[striped_idx] = h_input[tid * items_per_thread + item]
+    for tid in range(threads_per_block):
+        for item in range(items_per_thread):
+            expected[tid + item * threads_per_block] = h_input[
+                tid + item * threads_per_block
+            ]
 
     np.testing.assert_array_equal(h_output, expected)

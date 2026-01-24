@@ -428,3 +428,63 @@ class radix_sort_keys_descending(_radix_sort_base):
             temp_storage=temp_storage,
             node=node,
         )
+
+
+class radix_sort_pairs(radix_sort_keys):
+    def __init__(
+        self,
+        keys,
+        values,
+        threads_per_block,
+        items_per_thread,
+        begin_bit: int = None,
+        end_bit: int = None,
+        decomposer: Any = None,
+        blocked_to_striped: bool = False,
+        unique_id: int = None,
+        temp_storage=None,
+        node: "CoopNode" = None,
+    ):
+        super().__init__(
+            dtype=keys,
+            threads_per_block=threads_per_block,
+            items_per_thread=items_per_thread,
+            value_dtype=values,
+            begin_bit=begin_bit,
+            end_bit=end_bit,
+            decomposer=decomposer,
+            blocked_to_striped=blocked_to_striped,
+            unique_id=unique_id,
+            temp_storage=temp_storage,
+            node=node,
+        )
+
+
+class radix_sort_pairs_descending(radix_sort_keys_descending):
+    def __init__(
+        self,
+        keys,
+        values,
+        threads_per_block,
+        items_per_thread,
+        begin_bit: int = None,
+        end_bit: int = None,
+        decomposer: Any = None,
+        blocked_to_striped: bool = False,
+        unique_id: int = None,
+        temp_storage=None,
+        node: "CoopNode" = None,
+    ):
+        super().__init__(
+            dtype=keys,
+            threads_per_block=threads_per_block,
+            items_per_thread=items_per_thread,
+            value_dtype=values,
+            begin_bit=begin_bit,
+            end_bit=end_bit,
+            decomposer=decomposer,
+            blocked_to_striped=blocked_to_striped,
+            unique_id=unique_id,
+            temp_storage=temp_storage,
+            node=node,
+        )

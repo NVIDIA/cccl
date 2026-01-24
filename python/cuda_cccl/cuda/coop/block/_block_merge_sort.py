@@ -212,3 +212,67 @@ class merge_sort_keys(BasePrimitive):
             temp_storage_alignment=specialization.temp_storage_alignment,
             algorithm=specialization,
         )
+
+
+class merge_sort_pairs(BasePrimitive):
+    is_one_shot = True
+
+    def __init__(
+        self,
+        keys: Union[str, type, "np.dtype", "numba.types.Type"],
+        values: Union[str, type, "np.dtype", "numba.types.Type"],
+        threads_per_block: int,
+        items_per_thread: int,
+        compare_op: Callable,
+        valid_items: int = None,
+        oob_default: Any = None,
+        methods: Literal["construct", "assign"] = None,
+        unique_id: int = None,
+        temp_storage=None,
+        node: "CoopNode" = None,
+    ):
+        self._impl = merge_sort_keys(
+            dtype=keys,
+            threads_per_block=threads_per_block,
+            items_per_thread=items_per_thread,
+            compare_op=compare_op,
+            value_dtype=values,
+            valid_items=valid_items,
+            oob_default=oob_default,
+            methods=methods,
+            unique_id=unique_id,
+            temp_storage=temp_storage,
+            node=node,
+        )
+        self.specialization = self._impl.specialization
+        self.temp_storage = temp_storage
+        self.node = node
+
+    @classmethod
+    def create(
+        cls,
+        keys: Union[str, type, "np.dtype", "numba.types.Type"],
+        values: Union[str, type, "np.dtype", "numba.types.Type"],
+        threads_per_block: int,
+        items_per_thread: int,
+        compare_op: Callable,
+        methods: Literal["construct", "assign"] = None,
+    ):
+        algo = cls(
+            keys=keys,
+            values=values,
+            threads_per_block=threads_per_block,
+            items_per_thread=items_per_thread,
+            compare_op=compare_op,
+            methods=methods,
+        )
+        specialization = algo.specialization
+        return Invocable(
+            temp_files=[
+                make_binary_tempfile(ltoir, ".ltoir")
+                for ltoir in specialization.get_lto_ir()
+            ],
+            temp_storage_bytes=specialization.temp_storage_bytes,
+            temp_storage_alignment=specialization.temp_storage_alignment,
+            algorithm=specialization,
+        )

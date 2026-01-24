@@ -1630,6 +1630,8 @@ class CoopLoadStoreNode(CoopNode):
                 f"ThreadDataCallDefinition, but got {array_leaf!r} for "
                 f"{items_per_thread_array_var!r}"
             )
+        if isinstance(items_per_thread, types.IntegerLiteral):
+            items_per_thread = items_per_thread.literal_value
         assert isinstance(items_per_thread, int), (
             f"Expected items_per_thread to be an int, but got {items_per_thread!r}"
         )
@@ -2141,6 +2143,10 @@ class CoopWarpLoadStoreNode(CoopNode):
             raise RuntimeError(
                 "coop.warp.load/store requires array inputs in single-phase"
             )
+        if isinstance(items_per_thread, types.IntegerLiteral):
+            items_per_thread = items_per_thread.literal_value
+        if isinstance(items_per_thread, types.IntegerLiteral):
+            items_per_thread = items_per_thread.literal_value
         if not isinstance(items_per_thread, int):
             raise RuntimeError(
                 f"Expected items_per_thread to be an int, got {items_per_thread!r}"
@@ -2381,6 +2387,8 @@ class CoopBlockExchangeNode(CoopNode, CoopNodeMixin):
             )
         else:
             items_per_thread = items_leaf.shape
+        if isinstance(items_per_thread, types.IntegerLiteral):
+            items_per_thread = items_per_thread.literal_value
         assert isinstance(items_per_thread, int), (
             f"Expected items_per_thread to be an int, got {items_per_thread!r}"
         )
@@ -2578,10 +2586,14 @@ class CoopBlockExchangeNode(CoopNode, CoopNodeMixin):
             if output_items is not None and output_is_thread:
                 output_items_ty = array_ty
 
-        runtime_args.append(items)
-        runtime_arg_types.append(items_ty)
-        runtime_arg_names.append("items")
-        if output_items is not None:
+        if output_items is None:
+            runtime_args.append(items)
+            runtime_arg_types.append(items_ty)
+            runtime_arg_names.append("input_items")
+        else:
+            runtime_args.append(items)
+            runtime_arg_types.append(items_ty)
+            runtime_arg_names.append("input_items")
             runtime_args.append(output_items)
             runtime_arg_types.append(output_items_ty)
             runtime_arg_names.append("output_items")
@@ -2627,7 +2639,15 @@ class CoopBlockExchangeNode(CoopNode, CoopNodeMixin):
 
     def rewrite(self, rewriter):
         rd = self.rewrite_details
-        instrs = [rd.g_assign, rd.new_assign]
+        instrs = []
+        swap_assign = getattr(self, "swap_assign", None)
+        swap_target = getattr(self, "swap_target", None)
+        if swap_assign is not None:
+            instrs.append(swap_assign)
+        instrs.append(rd.g_assign)
+        if swap_target is not None:
+            rd.new_call.args = (swap_target,) + rd.new_call.args[1:]
+        instrs.append(rd.new_assign)
         temp_storage_info = getattr(self, "temp_storage_info", None)
         if temp_storage_info is not None and temp_storage_info.auto_sync:
             instrs.extend(
@@ -2681,6 +2701,8 @@ class CoopWarpExchangeNode(CoopNode, CoopNodeMixin):
         if not isinstance(items_leaf, ArrayCallDefinition):
             raise RuntimeError("coop.warp.exchange requires items to be a local array")
         items_per_thread = items_leaf.shape
+        if isinstance(items_per_thread, types.IntegerLiteral):
+            items_per_thread = items_per_thread.literal_value
         if not isinstance(items_per_thread, int):
             raise RuntimeError(
                 f"Expected items_per_thread to be an int, got {items_per_thread!r}"
@@ -2740,6 +2762,8 @@ class CoopWarpExchangeNode(CoopNode, CoopNodeMixin):
                     "coop.warp.exchange requires warp_exchange_type to be a "
                     "WarpExchangeType enum value"
                 )
+
+        # Keep BlockedToStriped behavior; handled by coop intrinsic.
 
         threads_in_warp = self.get_arg_value_safe("threads_in_warp")
         threads_in_warp_arg = self.bound.arguments.get("threads_in_warp")
@@ -2814,17 +2838,16 @@ class CoopWarpExchangeNode(CoopNode, CoopNodeMixin):
             runtime_arg_types.insert(0, temp_storage_ty)
             runtime_arg_names.insert(0, "temp_storage")
 
-        runtime_args.append(items)
-        runtime_arg_types.append(items_ty)
-        runtime_arg_names.append("items")
-
-        if output_items is not None:
-            runtime_args.append(output_items)
-            runtime_arg_types.append(output_items_ty)
-            runtime_arg_names.append("output_items")
+        if output_items is None:
+            runtime_args.append(items)
+            runtime_arg_types.append(items_ty)
+            runtime_arg_names.append("input_items")
         else:
             runtime_args.append(items)
             runtime_arg_types.append(items_ty)
+            runtime_arg_names.append("input_items")
+            runtime_args.append(output_items)
+            runtime_arg_types.append(output_items_ty)
             runtime_arg_names.append("output_items")
 
         if uses_ranks:
@@ -2843,6 +2866,21 @@ class CoopWarpExchangeNode(CoopNode, CoopNodeMixin):
             "temp_storage": temp_storage,
             "node": self,
         }
+
+        if (
+            warp_exchange_type == WarpExchangeType.BlockedToStriped
+            and output_items is not None
+        ):
+            scope = self.instr.target.scope
+            temp_name = f"$warp_exchange_swap_{self.unique_id}"
+            temp_var = ir.Var(scope, temp_name, self.expr.loc)
+            if temp_name in self.typemap:
+                raise RuntimeError(f"Variable {temp_name} already exists in typemap.")
+            self.typemap[temp_name] = items_ty
+            self.swap_assign = ir.Assign(
+                value=items, target=temp_var, loc=self.expr.loc
+            )
+            self.swap_target = temp_var
 
         self.return_type = types.void
         self.runtime_args = runtime_args
@@ -3182,9 +3220,11 @@ class CoopBlockShuffleNode(CoopNode, CoopNodeMixin):
         if block_shuffle_type not in (
             BlockShuffleType.Offset,
             BlockShuffleType.Rotate,
+            BlockShuffleType.Up,
+            BlockShuffleType.Down,
         ):
             raise RuntimeError(
-                "coop.block.shuffle requires Offset or Rotate for scalar shuffles"
+                "coop.block.shuffle requires a valid BlockShuffleType for scalar shuffles"
             )
 
         if output_items is not None:
@@ -3230,6 +3270,13 @@ class CoopBlockShuffleNode(CoopNode, CoopNodeMixin):
             self.distance_assign = const_assign
             distance_var = const_var
 
+        if block_shuffle_type in (BlockShuffleType.Up, BlockShuffleType.Down):
+            distance_value = int(distance_value)
+            if distance_value < 0:
+                raise RuntimeError(
+                    "coop.block.shuffle requires distance >= 0 for Up/Down"
+                )
+
         temp_storage = bound.get("temp_storage")
         temp_storage_info = None
         if temp_storage is not None:
@@ -3247,13 +3294,20 @@ class CoopBlockShuffleNode(CoopNode, CoopNodeMixin):
             runtime_arg_types.insert(0, temp_storage_ty)
             runtime_arg_names.insert(0, "temp_storage")
 
-        runtime_args.append(items)
-        runtime_arg_types.append(items_ty)
-        runtime_arg_names.append("items")
-
-        runtime_args.append(distance_var)
-        runtime_arg_types.append(types.int32)
-        runtime_arg_names.append("distance")
+        if block_shuffle_type in (BlockShuffleType.Up, BlockShuffleType.Down):
+            raise RuntimeError(
+                "coop.block.shuffle scalar Up/Down is not supported yet; use a local array"
+            )
+        else:
+            runtime_args.append(items)
+            runtime_arg_types.append(items_ty)
+            runtime_arg_names.append("input_item")
+            runtime_args.append(items)
+            runtime_arg_types.append(items_ty)
+            runtime_arg_names.append("output_item")
+            runtime_args.append(distance_var)
+            runtime_arg_types.append(types.int32)
+            runtime_arg_names.append("distance")
 
         self.return_type = items_ty
         self.items_per_thread = None
@@ -3264,11 +3318,15 @@ class CoopBlockShuffleNode(CoopNode, CoopNodeMixin):
         self.item_dtype = items_ty
         self.methods = None
 
+        impl_items_per_thread = None
+        if block_shuffle_type in (BlockShuffleType.Up, BlockShuffleType.Down):
+            impl_items_per_thread = 1
+
         self.impl_kwds = {
             "block_shuffle_type": block_shuffle_type,
             "dtype": items_ty,
             "threads_per_block": self.threads_per_block,
-            "items_per_thread": None,
+            "items_per_thread": impl_items_per_thread,
             "distance": distance,
             "methods": None,
             "unique_id": self.unique_id,
@@ -3286,6 +3344,9 @@ class CoopBlockShuffleNode(CoopNode, CoopNodeMixin):
         distance_assign = getattr(self, "distance_assign", None)
         if distance_assign is not None:
             instrs.append(distance_assign)
+        scalar_array_assign = getattr(self, "scalar_array_assign", None)
+        if scalar_array_assign is not None:
+            instrs.append(scalar_array_assign)
         instrs.extend([rd.g_assign, rd.new_assign])
         if self.temp_storage_info is not None and self.temp_storage_info.auto_sync:
             instrs.extend(
@@ -3382,6 +3443,8 @@ class CoopBlockAdjacentDifferenceNode(CoopNode, CoopNodeMixin):
                 "coop.block.adjacent_difference requires items and output_items to "
                 "have the same items_per_thread"
             )
+        if isinstance(items_per_thread, types.IntegerLiteral):
+            items_per_thread = items_per_thread.literal_value
         if not isinstance(items_per_thread, int):
             raise RuntimeError(
                 f"Expected items_per_thread to be an int, got {items_per_thread!r}"
@@ -3707,6 +3770,8 @@ class CoopBlockDiscontinuityNode(CoopNode, CoopNodeMixin):
             return leaf.shape
 
         items_per_thread = _infer_items_per_thread(items, items_is_thread)
+        if isinstance(items_per_thread, types.IntegerLiteral):
+            items_per_thread = items_per_thread.literal_value
         if not isinstance(items_per_thread, int):
             raise RuntimeError(
                 f"Expected items_per_thread to be an int, got {items_per_thread!r}"
@@ -4059,14 +4124,25 @@ class CoopBlockMergeSortNode(CoopNode, CoopNodeMixin):
                 f"but got {keys_leaf!r} for {keys!r}"
             )
         items_per_thread = keys_leaf.shape
+        if isinstance(items_per_thread, types.IntegerLiteral):
+            items_per_thread = items_per_thread.literal_value
         if not isinstance(items_per_thread, int):
             raise RuntimeError(
                 f"Expected items_per_thread to be an int, got {items_per_thread!r}"
             )
 
+        primitive_name = getattr(self, "primitive_name", "coop.block.merge_sort_keys")
+        compare_op = self.get_arg_value_safe("compare_op")
+        if compare_op is None and values is not None:
+            compare_op = self.get_arg_value_safe("values")
+            if primitive_name.endswith("merge_sort_pairs") and compare_op is values:
+                compare_op = None
+        if compare_op is None:
+            raise RuntimeError("coop.block.merge_sort_keys requires compare_op")
+
         value_dtype = None
         values_ty = None
-        if values is not None:
+        if values is not None and compare_op is not values:
             if not isinstance(values, ir.Var):
                 raise RuntimeError(
                     "coop.block.merge_sort_keys values must be a variable"
@@ -4090,8 +4166,14 @@ class CoopBlockMergeSortNode(CoopNode, CoopNodeMixin):
                     f"the same items_per_thread; got {values_items} vs {items_per_thread}"
                 )
             value_dtype = values_ty.dtype
+        if compare_op is values:
+            values = None
+            values_ty = None
+            value_dtype = None
 
-        items_per_thread_kwarg = self.get_arg_value("items_per_thread")
+        items_per_thread_kwarg = self.get_arg_value_safe("items_per_thread")
+        if items_per_thread_kwarg is None:
+            items_per_thread_kwarg = items_per_thread
         if items_per_thread_kwarg != items_per_thread:
             raise RuntimeError(
                 "coop.block.merge_sort_keys items_per_thread must match the "
@@ -4100,15 +4182,10 @@ class CoopBlockMergeSortNode(CoopNode, CoopNodeMixin):
         if items_per_thread < 1:
             raise RuntimeError("items_per_thread must be >= 1")
 
-        compare_op = self.get_arg_value_safe("compare_op")
-        if compare_op is None:
-            raise RuntimeError("coop.block.merge_sort_keys requires compare_op")
-
         dtype = keys_ty.dtype
         methods = getattr(dtype, "methods", None)
         if methods is not None and not methods:
             methods = None
-
         if (valid_items is None) != (oob_default is None):
             raise RuntimeError(
                 "coop.block.merge_sort_keys requires valid_items and oob_default together"
@@ -4208,6 +4285,7 @@ class CoopBlockMergeSortNode(CoopNode, CoopNodeMixin):
             runtime_arg_types.append(dtype)
             runtime_arg_names.append("oob_default")
 
+        alias_pairs = primitive_name.endswith("merge_sort_pairs")
         self.impl_kwds = {
             "dtype": dtype,
             "threads_per_block": self.threads_per_block,
@@ -4221,6 +4299,8 @@ class CoopBlockMergeSortNode(CoopNode, CoopNodeMixin):
             "temp_storage": temp_storage,
             "node": self,
         }
+        if alias_pairs and value_dtype is None and values_ty is not None:
+            self.impl_kwds["value_dtype"] = values_ty.dtype
 
         self.return_type = types.void
         self.runtime_args = runtime_args
@@ -4270,6 +4350,11 @@ class CoopBlockMergeSortNode(CoopNode, CoopNodeMixin):
 
 
 @dataclass
+class CoopBlockMergeSortPairsNode(CoopBlockMergeSortNode, CoopNodeMixin):
+    primitive_name = "coop.block.merge_sort_pairs"
+
+
+@dataclass
 class CoopWarpMergeSortNode(CoopNode, CoopNodeMixin):
     primitive_name = "coop.warp.merge_sort_keys"
     disposition = Disposition.ONE_SHOT
@@ -4300,14 +4385,36 @@ class CoopWarpMergeSortNode(CoopNode, CoopNodeMixin):
                 "coop.warp.merge_sort_keys requires keys to be a local array"
             )
         items_per_thread = keys_leaf.shape
+        if isinstance(items_per_thread, types.IntegerLiteral):
+            items_per_thread = items_per_thread.literal_value
         if not isinstance(items_per_thread, int):
             raise RuntimeError(
                 f"Expected items_per_thread to be an int, got {items_per_thread!r}"
             )
 
+        items_per_thread_kwarg = self.get_arg_value_safe("items_per_thread")
+        if items_per_thread_kwarg is None:
+            items_per_thread_kwarg = items_per_thread
+        if items_per_thread_kwarg != items_per_thread:
+            raise RuntimeError(
+                "coop.warp.merge_sort_keys items_per_thread must match the "
+                f"keys array shape ({items_per_thread}); got {items_per_thread_kwarg}"
+            )
+        if items_per_thread < 1:
+            raise RuntimeError("items_per_thread must be >= 1")
+
+        primitive_name = getattr(self, "primitive_name", "coop.warp.merge_sort_keys")
+        compare_op = self.get_arg_value_safe("compare_op")
+        if compare_op is None and values is not None:
+            compare_op = self.get_arg_value_safe("values")
+            if primitive_name.endswith("merge_sort_pairs") and compare_op is values:
+                compare_op = None
+        if compare_op is None:
+            raise RuntimeError("coop.warp.merge_sort_keys requires compare_op")
+
         value_dtype = None
         values_ty = None
-        if values is not None:
+        if values is not None and compare_op is not values:
             if not isinstance(values, ir.Var):
                 raise RuntimeError(
                     "coop.warp.merge_sort_keys values must be a variable"
@@ -4332,21 +4439,9 @@ class CoopWarpMergeSortNode(CoopNode, CoopNodeMixin):
                 )
             value_dtype = values_ty.dtype
 
-        items_per_thread_kwarg = self.get_arg_value("items_per_thread")
-        if (
-            items_per_thread_kwarg is not None
-            and items_per_thread_kwarg != items_per_thread
-        ):
-            raise RuntimeError(
-                "coop.warp.merge_sort_keys items_per_thread must match the "
-                f"keys array shape ({items_per_thread}); got {items_per_thread_kwarg}"
-            )
-        if items_per_thread < 1:
-            raise RuntimeError("items_per_thread must be >= 1")
-
-        compare_op = self.get_arg_value_safe("compare_op")
-        if compare_op is None:
-            raise RuntimeError("coop.warp.merge_sort_keys requires compare_op")
+        if compare_op is values:
+            values = None
+            values_ty = None
 
         threads_in_warp = self.get_arg_value_safe("threads_in_warp")
         threads_in_warp_arg = self.bound.arguments.get("threads_in_warp")
@@ -4361,6 +4456,10 @@ class CoopWarpMergeSortNode(CoopNode, CoopNodeMixin):
         methods = getattr(dtype, "methods", None)
         if methods is not None and not methods:
             methods = None
+
+        if compare_op is values:
+            values = None
+            values_ty = None
 
         temp_storage = bound.get("temp_storage")
         temp_storage_info = None
@@ -4391,6 +4490,7 @@ class CoopWarpMergeSortNode(CoopNode, CoopNodeMixin):
             runtime_arg_types.append(values_ty)
             runtime_arg_names.append("values")
 
+        alias_pairs = primitive_name.endswith("merge_sort_pairs")
         self.impl_kwds = {
             "dtype": dtype,
             "items_per_thread": items_per_thread,
@@ -4402,6 +4502,8 @@ class CoopWarpMergeSortNode(CoopNode, CoopNodeMixin):
             "temp_storage": temp_storage,
             "node": self,
         }
+        if alias_pairs and value_dtype is None and values_ty is not None:
+            self.impl_kwds["value_dtype"] = values_ty.dtype
 
         self.return_type = types.void
         self.runtime_args = runtime_args
@@ -4437,6 +4539,11 @@ class CoopWarpMergeSortNode(CoopNode, CoopNodeMixin):
     @cached_property
     def rewrite_details(self):
         return self.do_rewrite()
+
+
+@dataclass
+class CoopWarpMergeSortPairsNode(CoopWarpMergeSortNode, CoopNodeMixin):
+    primitive_name = "coop.warp.merge_sort_pairs"
 
 
 @dataclass
@@ -4482,6 +4589,8 @@ class CoopBlockRadixSortNode(CoopNode, CoopNodeMixin):
                 f"but got {keys_leaf!r} for {keys!r}"
             )
         items_per_thread = keys_leaf.shape
+        if isinstance(items_per_thread, types.IntegerLiteral):
+            items_per_thread = items_per_thread.literal_value
         if not isinstance(items_per_thread, int):
             raise RuntimeError(
                 f"Expected items_per_thread to be an int, got {items_per_thread!r}"
@@ -4514,7 +4623,9 @@ class CoopBlockRadixSortNode(CoopNode, CoopNodeMixin):
                 )
             value_dtype = values_ty.dtype
 
-        items_per_thread_kwarg = self.get_arg_value("items_per_thread")
+        items_per_thread_kwarg = self.get_arg_value_safe("items_per_thread")
+        if items_per_thread_kwarg is None:
+            items_per_thread_kwarg = items_per_thread
         if items_per_thread_kwarg != items_per_thread:
             raise RuntimeError(
                 "coop.block.radix_sort_keys items_per_thread must match the "
@@ -4819,6 +4930,8 @@ class CoopBlockRadixRankNode(CoopNode, CoopNodeMixin):
                 "coop.block.radix_rank requires items and ranks to have the same "
                 "items_per_thread"
             )
+        if isinstance(items_per_thread, types.IntegerLiteral):
+            items_per_thread = items_per_thread.literal_value
         if not isinstance(items_per_thread, int):
             raise RuntimeError(
                 f"Expected items_per_thread to be an int, got {items_per_thread!r}"
@@ -6171,14 +6284,17 @@ class CoopBlockScanNode(CoopNode, CoopNodeMixin):
         if methods is not None and not methods:
             methods = None
 
-        runtime_args.append(src)
-        runtime_arg_types.append(src_ty)
-        runtime_arg_names.append("src")
-
         if dst is not None:
             runtime_args.append(dst)
             runtime_arg_types.append(dst_ty)
             runtime_arg_names.append("dst")
+            runtime_args.append(src)
+            runtime_arg_types.append(src_ty)
+            runtime_arg_names.append("src")
+        else:
+            runtime_args.append(src)
+            runtime_arg_types.append(src_ty)
+            runtime_arg_names.append("src")
 
         if ThreadDataType is not None and use_array_inputs:
             array_ty = types.Array(dtype, 1, "C")
@@ -6188,6 +6304,8 @@ class CoopBlockScanNode(CoopNode, CoopNodeMixin):
                 runtime_arg_types[1] = array_ty
 
         items_per_thread = self.get_arg_value_safe("items_per_thread")
+        if isinstance(items_per_thread, types.IntegerLiteral):
+            items_per_thread = items_per_thread.literal_value
         if use_array_inputs:
 
             def _infer_items_per_thread(var, is_thread):
@@ -6208,6 +6326,10 @@ class CoopBlockScanNode(CoopNode, CoopNodeMixin):
                     "coop.block.scan requires src and dst to have the same "
                     "items_per_thread"
                 )
+            if isinstance(src_items, types.IntegerLiteral):
+                src_items = src_items.literal_value
+            if isinstance(dst_items, types.IntegerLiteral):
+                dst_items = dst_items.literal_value
             if items_per_thread is None:
                 items_per_thread = src_items
             elif items_per_thread != src_items:
@@ -6252,6 +6374,10 @@ class CoopBlockScanNode(CoopNode, CoopNodeMixin):
         initial_value_var = None
         initial_value_value = None
         initial_value_type = None
+        instance_initial_value = None
+        initial_value_is_none_type = isinstance(initial_value, types.NoneType)
+        if initial_value_is_none_type or initial_value is None:
+            initial_value = None
         if initial_value is not None:
             if isinstance(initial_value, ir.Var):
                 initial_value_var = initial_value
@@ -6260,7 +6386,7 @@ class CoopBlockScanNode(CoopNode, CoopNodeMixin):
                 initial_value_value = initial_value.value
             else:
                 initial_value_value = initial_value
-        elif instance is not None:
+        elif not initial_value_is_none_type and instance is not None:
             instance_initial_value = getattr(instance, "initial_value", None)
             if instance_initial_value is not None:
                 initial_value_value = instance_initial_value
@@ -6349,7 +6475,8 @@ class CoopBlockScanNode(CoopNode, CoopNodeMixin):
                 )
 
         if scan_op_obj.is_sum:
-            if initial_value_var is not None or initial_value_value is not None:
+            explicit_initial = initial_value_var is not None
+            if explicit_initial and not initial_value_is_none_type:
                 raise RuntimeError(
                     "initial_value is not supported for inclusive and exclusive sums"
                 )

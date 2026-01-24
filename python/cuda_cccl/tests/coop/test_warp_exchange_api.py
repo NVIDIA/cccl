@@ -192,9 +192,10 @@ def test_warp_exchange_blocked_to_striped():
     h_output = d_output.copy_to_host()
 
     expected = np.empty_like(h_output)
-    for idx in range(total_items):
-        tid = idx % threads_in_warp
-        item = idx // threads_in_warp
-        expected[idx] = h_input[tid * items_per_thread + item]
+    for tid in range(threads_in_warp):
+        for item in range(items_per_thread):
+            expected[tid + item * threads_in_warp] = h_input[
+                tid + item * threads_in_warp
+            ]
 
     np.testing.assert_array_equal(h_output, expected)

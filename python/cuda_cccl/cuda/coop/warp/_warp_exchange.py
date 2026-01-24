@@ -129,6 +129,9 @@ class exchange(BasePrimitive):
         elif offset_dtype is not None:
             raise ValueError("offset_dtype is only valid for ScatterToStriped")
 
+        if warp_exchange_type == WarpExchangeType.BlockedToStriped:
+            method = [input_items, output_items]
+
         parameters = [method]
 
         type_definitions = None

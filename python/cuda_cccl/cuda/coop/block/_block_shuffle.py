@@ -114,9 +114,13 @@ class shuffle(BasePrimitive):
             "BLOCK_DIM_Z": dim[2],
         }
 
-        use_array_inputs = block_shuffle_type in (
-            BlockShuffleType.Up,
-            BlockShuffleType.Down,
+        use_array_inputs = (
+            block_shuffle_type
+            in (
+                BlockShuffleType.Up,
+                BlockShuffleType.Down,
+            )
+            and items_per_thread is not None
         )
         fake_return = not use_array_inputs
 
@@ -155,7 +159,10 @@ class shuffle(BasePrimitive):
                     )
                 )
         else:
-            if items_per_thread is not None:
+            if items_per_thread is not None and block_shuffle_type not in (
+                BlockShuffleType.Up,
+                BlockShuffleType.Down,
+            ):
                 raise ValueError("items_per_thread is only valid for Up/Down shuffles")
             if block_prefix is not None or block_suffix is not None:
                 raise ValueError(
@@ -165,10 +172,11 @@ class shuffle(BasePrimitive):
                 DependentReference(Dependency("T"), name="input_item"),
                 DependentReference(Dependency("T"), name="output_item", is_output=True),
             ]
-            if distance is None:
-                distance = 1
-            self.distance = distance
-            method.append(Value(numba.types.int32, name="distance"))
+            if block_shuffle_type not in (BlockShuffleType.Up, BlockShuffleType.Down):
+                if distance is None:
+                    distance = 1
+                self.distance = distance
+                method.append(Value(numba.types.int32, name="distance"))
 
         if temp_storage is not None:
             method.insert(
