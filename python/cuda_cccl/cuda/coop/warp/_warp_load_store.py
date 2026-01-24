@@ -14,7 +14,7 @@ from .._types import (
     Dependency,
     DependentArray,
     DependentPointer,
-    DependentReference,
+    DependentValue,
     Invocable,
     TemplateParameter,
     TempStoragePointer,
@@ -139,9 +139,7 @@ class load(BasePrimitive):
         if num_valid_items is not None:
             parameters[0].append(Value(numba.types.int32, name="num_valid_items"))
         if oob_default is not None:
-            parameters[0].append(
-                DependentReference(Dependency("T"), name="oob_default")
-            )
+            parameters[0].append(DependentValue(Dependency("T"), name="oob_default"))
 
         type_definitions = None
         if methods is not None:

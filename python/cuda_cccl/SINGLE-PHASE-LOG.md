@@ -791,3 +791,13 @@
 - Restored one-shot codegen output assignment for non-fake-return primitives.
 - Treated scalar block scans as fake-return and stopped passing implicit dst args in rewrite.
 - Allowed scalar block shuffle Up/Down distance to resolve from compile-time constants.
+
+## 2026-01-24
+- Added DependentValue for template-dependent by-value params and used it for warp load oob_default.
+- Added const-var handling for warp load/store num_valid_items and oob_default plus rewrite insertion.
+- Defaulted warp exclusive_scan callable ops to an initial_value of 0 and ensured two-phase instance recreation when initial_value is injected.
+- Tests not run (no GPU available).
+
+## 2026-01-24
+- Fixed warp load/store linker duplicate symbol by using a global symbol-id counter (unique across kernels).
+- Ran pytest: tests/coop/test_warp_load_store_api.py::test_warp_load_store_num_valid_oob_default (passed).
