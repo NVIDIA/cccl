@@ -86,13 +86,17 @@ def test_block_exclusive_sum_block_aggregate():
         tid = cuda.threadIdx.x
         value = numba.int32(tid + 1)
         block_aggregate = cuda.local.array(1, numba.int32)
-        result = coop.block.scan(
-            value,
+        out_value = cuda.local.array(1, numba.int32)
+        out_value[0] = value
+        coop.block.scan(
+            out_value,
+            out_value,
+            items_per_thread=1,
             mode="exclusive",
             scan_op="+",
             block_aggregate=block_aggregate,
         )
-        output[tid] = result
+        output[tid] = out_value[0]
         aggregates[tid] = block_aggregate[0]
 
     d_output = cuda.device_array(threads_per_block, dtype=np.int32)

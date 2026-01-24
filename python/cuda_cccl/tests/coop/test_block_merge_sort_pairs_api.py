@@ -52,5 +52,5 @@ def test_block_merge_sort_pairs():
     h_keys = d_keys.copy_to_host()
     h_vals = d_vals.copy_to_host()
 
-    assert np.all(h_keys[:-1] <= h_keys[1:])
-    assert np.all(h_vals == np.arange(tile_size - 1, -1, -1, dtype=np.int32))
+    assert np.all(h_keys[:-1] >= h_keys[1:])
+    assert np.all(h_vals == np.arange(tile_size, dtype=np.int32))

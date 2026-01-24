@@ -1563,6 +1563,88 @@ class CoopBlockMergeSortDecl(CoopAbstractTemplate, CoopDeclMixin):
 class CoopBlockMergeSortPairsDecl(CoopBlockMergeSortDecl):
     key = coop.block.merge_sort_pairs
     primitive_name = "coop.block.merge_sort_pairs"
+    minimum_num_args = 4
+
+    @staticmethod
+    def signature(
+        keys: types.Array,
+        values: types.Array,
+        items_per_thread: int = None,
+        compare_op: Optional[Callable] = None,
+        valid_items: Optional[int] = None,
+        oob_default: Optional[Any] = None,
+        temp_storage: Union[types.Array, TempStorageType] = None,
+    ):
+        return inspect.signature(CoopBlockMergeSortPairsDecl.signature).bind(
+            keys,
+            values,
+            items_per_thread=items_per_thread,
+            compare_op=compare_op,
+            valid_items=valid_items,
+            oob_default=oob_default,
+            temp_storage=temp_storage,
+        )
+
+    def _validate_args_and_create_signature(self, bound, two_phase=False):
+        keys = bound.arguments["keys"]
+        if not isinstance(keys, types.Array):
+            raise errors.TypingError(
+                f"{self.primitive_name} requires 'keys' to be a device array"
+            )
+
+        values = bound.arguments.get("values")
+        values_is_array = isinstance(values, (types.Array, ThreadDataType))
+        if not values_is_array and ThreadDataType is not None:
+            try:
+                values = ThreadDataType.from_array(values)
+                values_is_array = True
+            except Exception:
+                values_is_array = False
+
+        if not values_is_array:
+            raise errors.TypingError(
+                f"{self.primitive_name} requires 'values' to be a device array"
+            )
+
+        arglist = [keys, values]
+        process_items_per_thread(self, bound, arglist, two_phase, target_array=keys)
+
+        compare_op = bound.arguments.get("compare_op")
+        compare_op_is_none_type = isinstance(compare_op, types.NoneType)
+        if compare_op is None or compare_op_is_none_type:
+            if not two_phase:
+                raise errors.TypingError(
+                    f"{self.primitive_name} requires 'compare_op' to be specified"
+                )
+        else:
+            arglist.append(compare_op)
+
+        valid_items = bound.arguments.get("valid_items")
+        oob_default = bound.arguments.get("oob_default")
+        if (valid_items is None) != (oob_default is None):
+            raise errors.TypingError(
+                f"{self.primitive_name} requires valid_items and oob_default together"
+            )
+        if valid_items is not None:
+            if not isinstance(valid_items, (types.Integer, types.IntegerLiteral)):
+                raise errors.TypingError(
+                    f"{self.primitive_name} requires 'valid_items' to be an integer"
+                )
+            if isinstance(oob_default, types.NoneType):
+                oob_default = None
+            if oob_default is None:
+                raise errors.TypingError(
+                    f"{self.primitive_name} requires 'oob_default' when valid_items is provided"
+                )
+            arglist.append(valid_items)
+            arglist.append(oob_default)
+
+        temp_storage = bound.arguments.get("temp_storage")
+        validate_temp_storage(self, temp_storage)
+        if temp_storage is not None:
+            arglist.append(temp_storage)
+
+        return signature(types.void, *arglist)
 
 
 # =============================================================================

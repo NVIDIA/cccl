@@ -375,15 +375,15 @@ class scan(BasePrimitive):
         ]
 
         use_array_inputs = use_array_inputs or items_per_thread > 1
+        if block_aggregate is not None:
+            use_array_inputs = True
         self.use_array_inputs = use_array_inputs
 
         if use_array_inputs:
             specialization_kwds["ITEMS_PER_THREAD"] = items_per_thread
             fake_return = False
         else:
-            fake_return = True
-            if scan_op.is_sum and block_prefix_callback_op is None:
-                fake_return = False
+            fake_return = scan_op.is_sum
 
         # A "known" scan op is the standard set of associative operators,
         # e.g. ::cuda::std::plus<>, etc.  A "callable" scan op is a Python

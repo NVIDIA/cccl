@@ -775,3 +775,14 @@
 ## 2026-01-24
 - Reintroduced scalar Up/Down block shuffle support and restored block-aggregate scan tests in coop block scan API.
 - Updated HEADS_AND_TAILS doc-test expectations to always flag the last tail.
+- Adjusted block merge sort pairs API expectations to match descending compare_op behavior.
+- Fixed block scan argument order for single-phase and restored scan output handling in generated code (resolving load/store scan tests and gpu_dataclass temp storage builds).
+
+## 2026-01-24
+- Restored scalar block shuffle semantics by mapping Up/Down to scalar Offset and updating scalar shuffle expectations.
+- Fixed block scan scalar block_aggregate tests to use array inputs and aligned merge_sort_pairs decls/rewrite with pair-specific signatures.
+- Adjusted one-shot codegen to avoid assigning output params unless fake_return is enabled.
+- Ran pytest: tests/coop/test_block_shuffle_api.py, tests/coop/test_block_shuffle.py, tests/coop/test_block_merge_sort_pairs_api.py, tests/coop/test_block_scan_api.py, tests/coop/test_block_scan.py (173 passed, 24 skipped).
+
+## 2026-01-24
+- Removed unused local in CoopBlockExchangeNode refine_match to satisfy ruff.
