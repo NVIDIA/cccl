@@ -834,3 +834,7 @@
 ## 2026-01-24
 - Merged block merge/radix sort and radix rank API examples into their main test files; removed standalone *_api.py files and repointed literalincludes to merged files.
 - Ran pytest: `python -m pytest tests/coop/test_block_merge_sort.py tests/coop/test_block_radix_sort.py tests/coop/test_block_radix_rank.py` (220 passed).
+
+## 2026-01-24
+- Merged block shuffle API examples into tests/coop/test_block_shuffle.py, added single-phase up/down scalar tests, and repointed block shuffle literalincludes; removed tests/coop/test_block_shuffle_api.py.
+- Ran pytest: `python -m pytest tests/coop/test_block_shuffle.py` (8 passed).

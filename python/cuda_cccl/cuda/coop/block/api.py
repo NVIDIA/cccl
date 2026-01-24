@@ -352,25 +352,25 @@ def shuffle(
     """Shuffle items across a block.
 
     Example:
-        .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_block_shuffle_api.py
+        .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_block_shuffle.py
             :language: python
             :dedent:
             :start-after: example-begin offset-scalar
             :end-before: example-end offset-scalar
 
-        .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_block_shuffle_api.py
+        .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_block_shuffle.py
             :language: python
             :dedent:
             :start-after: example-begin rotate-scalar
             :end-before: example-end rotate-scalar
 
-        .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_block_shuffle_api.py
+        .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_block_shuffle.py
             :language: python
             :dedent:
             :start-after: example-begin up-scalar
             :end-before: example-end up-scalar
 
-        .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_block_shuffle_api.py
+        .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_block_shuffle.py
             :language: python
             :dedent:
             :start-after: example-begin down-scalar
