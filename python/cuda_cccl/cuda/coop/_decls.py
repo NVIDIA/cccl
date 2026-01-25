@@ -97,7 +97,13 @@ def get_coop_decl_class_map():
             yield subclass
             stack.extend(subclass.__subclasses__())
 
-    return {subclass: getattr(subclass, "key") for subclass in _iter_decl_subclasses()}
+    decl_map = {}
+    for subclass in _iter_decl_subclasses():
+        impl_key = getattr(subclass, "impl_key", None)
+        if impl_key is None:
+            impl_key = getattr(subclass, "key")
+        decl_map[subclass] = impl_key
+    return decl_map
 
 
 # Unlike the dict returned by get_coop_decl_class_map() on the fly, we use
@@ -3622,6 +3628,172 @@ class CoopBlockScanDecl(CoopAbstractTemplate, CoopDeclMixin):
         return sig
 
 
+@register
+class CoopBlockExclusiveSumDecl(CoopAbstractTemplate, CoopDeclMixin):
+    key = coop.block.exclusive_sum
+    impl_key = coop.block.scan
+    primitive_name = "coop.block.scan"
+    algorithm_enum = coop.BlockScanAlgorithm
+    default_algorithm = coop.BlockScanAlgorithm.RAKING
+    forced_mode = "exclusive"
+    forced_scan_op = "+"
+    is_constructor = False
+    minimum_num_args = 1
+
+    @staticmethod
+    def signature(
+        src: Union[types.Array, types.Number],
+        dst: Union[types.Array, types.Number] = None,
+        items_per_thread: int = None,
+        prefix_op: Optional[Callable] = None,
+        block_aggregate: types.Array = None,
+        algorithm: coop.BlockScanAlgorithm = None,
+        temp_storage: Union[types.Array, TempStorageType] = None,
+    ):
+        return CoopBlockScanDecl.signature(
+            src,
+            dst,
+            items_per_thread=items_per_thread,
+            initial_value=None,
+            mode="exclusive",
+            scan_op="+",
+            block_prefix_callback_op=prefix_op,
+            block_aggregate=block_aggregate,
+            algorithm=algorithm,
+            temp_storage=temp_storage,
+        )
+
+    def _validate_args_and_create_signature(self, bound, two_phase=False):
+        return CoopBlockScanDecl._validate_args_and_create_signature(
+            self, bound, two_phase=two_phase
+        )
+
+
+@register
+class CoopBlockInclusiveSumDecl(CoopAbstractTemplate, CoopDeclMixin):
+    key = coop.block.inclusive_sum
+    impl_key = coop.block.scan
+    primitive_name = "coop.block.scan"
+    algorithm_enum = coop.BlockScanAlgorithm
+    default_algorithm = coop.BlockScanAlgorithm.RAKING
+    forced_mode = "inclusive"
+    forced_scan_op = "+"
+    is_constructor = False
+    minimum_num_args = 1
+
+    @staticmethod
+    def signature(
+        src: Union[types.Array, types.Number],
+        dst: Union[types.Array, types.Number] = None,
+        items_per_thread: int = None,
+        prefix_op: Optional[Callable] = None,
+        block_aggregate: types.Array = None,
+        algorithm: coop.BlockScanAlgorithm = None,
+        temp_storage: Union[types.Array, TempStorageType] = None,
+    ):
+        return CoopBlockScanDecl.signature(
+            src,
+            dst,
+            items_per_thread=items_per_thread,
+            initial_value=None,
+            mode="inclusive",
+            scan_op="+",
+            block_prefix_callback_op=prefix_op,
+            block_aggregate=block_aggregate,
+            algorithm=algorithm,
+            temp_storage=temp_storage,
+        )
+
+    def _validate_args_and_create_signature(self, bound, two_phase=False):
+        return CoopBlockScanDecl._validate_args_and_create_signature(
+            self, bound, two_phase=two_phase
+        )
+
+
+@register
+class CoopBlockExclusiveScanDecl(CoopAbstractTemplate, CoopDeclMixin):
+    key = coop.block.exclusive_scan
+    impl_key = coop.block.scan
+    primitive_name = "coop.block.scan"
+    algorithm_enum = coop.BlockScanAlgorithm
+    default_algorithm = coop.BlockScanAlgorithm.RAKING
+    forced_mode = "exclusive"
+    is_constructor = False
+    minimum_num_args = 2
+
+    @staticmethod
+    def signature(
+        src: Union[types.Array, types.Number],
+        dst: Union[types.Array, types.Number] = None,
+        items_per_thread: int = None,
+        scan_op: ScanOpType = None,
+        initial_value: Optional[Any] = None,
+        prefix_op: Optional[Callable] = None,
+        block_aggregate: types.Array = None,
+        algorithm: coop.BlockScanAlgorithm = None,
+        temp_storage: Union[types.Array, TempStorageType] = None,
+    ):
+        return CoopBlockScanDecl.signature(
+            src,
+            dst,
+            items_per_thread=items_per_thread,
+            initial_value=initial_value,
+            mode="exclusive",
+            scan_op=scan_op,
+            block_prefix_callback_op=prefix_op,
+            block_aggregate=block_aggregate,
+            algorithm=algorithm,
+            temp_storage=temp_storage,
+        )
+
+    def _validate_args_and_create_signature(self, bound, two_phase=False):
+        return CoopBlockScanDecl._validate_args_and_create_signature(
+            self, bound, two_phase=two_phase
+        )
+
+
+@register
+class CoopBlockInclusiveScanDecl(CoopAbstractTemplate, CoopDeclMixin):
+    key = coop.block.inclusive_scan
+    impl_key = coop.block.scan
+    primitive_name = "coop.block.scan"
+    algorithm_enum = coop.BlockScanAlgorithm
+    default_algorithm = coop.BlockScanAlgorithm.RAKING
+    forced_mode = "inclusive"
+    is_constructor = False
+    minimum_num_args = 2
+
+    @staticmethod
+    def signature(
+        src: Union[types.Array, types.Number],
+        dst: Union[types.Array, types.Number] = None,
+        items_per_thread: int = None,
+        scan_op: ScanOpType = None,
+        initial_value: Optional[Any] = None,
+        prefix_op: Optional[Callable] = None,
+        block_aggregate: types.Array = None,
+        algorithm: coop.BlockScanAlgorithm = None,
+        temp_storage: Union[types.Array, TempStorageType] = None,
+    ):
+        return CoopBlockScanDecl.signature(
+            src,
+            dst,
+            items_per_thread=items_per_thread,
+            initial_value=initial_value,
+            mode="inclusive",
+            scan_op=scan_op,
+            block_prefix_callback_op=prefix_op,
+            block_aggregate=block_aggregate,
+            algorithm=algorithm,
+            temp_storage=temp_storage,
+        )
+
+    def _validate_args_and_create_signature(self, bound, two_phase=False):
+        return CoopBlockScanDecl._validate_args_and_create_signature(
+            self, bound, two_phase=two_phase
+        )
+
+
 class CoopBlockScanInstanceType(types.Type, CoopInstanceTypeMixin):
     decl_class = CoopBlockScanDecl
 
@@ -5461,6 +5633,18 @@ class CoopBlockModuleTemplate(AttributeTemplate):
 
     def resolve_scan(self, mod):
         return types.Function(CoopBlockScanDecl)
+
+    def resolve_exclusive_sum(self, mod):
+        return types.Function(CoopBlockExclusiveSumDecl)
+
+    def resolve_inclusive_sum(self, mod):
+        return types.Function(CoopBlockInclusiveSumDecl)
+
+    def resolve_exclusive_scan(self, mod):
+        return types.Function(CoopBlockExclusiveScanDecl)
+
+    def resolve_inclusive_scan(self, mod):
+        return types.Function(CoopBlockInclusiveScanDecl)
 
     def resolve_sum(self, mod):
         return types.Function(CoopBlockSumDecl)

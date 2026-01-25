@@ -59,3 +59,4 @@ This directory tracks the CUDA cooperative single-phase effort. Start with
 - BlockLoad/Store algorithms that use shared memory in CUB: TRANSPOSE,
   WARP_TRANSPOSE, WARP_TRANSPOSE_TIMESLICED (same for store). There is no
   separate BlockLoadToShared API; shared memory is internal to the algorithm.
+- After any Python changes, run `pre-commit` checks (e.g. `pre-commit run --files <changed files>`).

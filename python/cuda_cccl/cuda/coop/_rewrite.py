@@ -6491,6 +6491,14 @@ class CoopBlockScanNode(CoopNode, CoopNodeMixin):
         if scan_op is None:
             scan_op = "+"
 
+        forced_mode = getattr(self.template, "forced_mode", None)
+        if forced_mode is not None:
+            mode = forced_mode
+
+        forced_scan_op = getattr(self.template, "forced_scan_op", None)
+        if forced_scan_op is not None:
+            scan_op = forced_scan_op
+
         initial_value = bound.get("initial_value")
         initial_value_var = None
         initial_value_value = None

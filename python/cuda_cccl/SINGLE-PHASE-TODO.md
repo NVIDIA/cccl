@@ -73,6 +73,9 @@
 - [x] Fix coop FAQ indentation issues (Sphinx).
 - [x] Add coop-local flexible data arrangement doc section and update docstring refs.
 - [x] Add coop block/warp API doc stub modules and update coop_api docs.
+- [ ] Expand stress tests: overlapping carved smem slices, mixed auto_sync usage,
+      partial tiles with num_valid/oob_default, 2D/3D block dims, mixed warp+block
+      primitives, and ThreadData inference conflicts.
 - [ ] Improve kwarg validation and error messages for primitives with many
       overloads (match CUB API supersets; fail early with friendly errors).
 - [ ] Extend ThreadData inference (alignment/shape/dtype propagation from
