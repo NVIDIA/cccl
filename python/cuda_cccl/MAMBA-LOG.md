@@ -23,3 +23,9 @@
 - Switched coop typing to AbstractTemplate so instance calls accept kwargs.
 - Updated selective-scan kernel to call `traits.block_scan` with keyword args.
 - Tests: `pytest -q tests/coop/test_mamba_selective_scan_fwd.py -k mamba`.
+
+## 2026-01-25
+- Built mamba CUDA extensions locally (added sm_75 support + temporary CUB compat shims for LaneId/CTA_SYNC).
+- Added `tests/coop/generate_mamba_selective_scan_fwd_ref.py` and captured mamba CUDA output into `tests/coop/data/mamba_selective_scan_fwd_ref.npz`.
+- Updated `tests/coop/test_mamba_selective_scan_fwd.py` to compare against the stored reference data.
+- Tests: `CUDA_VISIBLE_DEVICES=1 python -m pytest tests/coop/test_mamba_selective_scan_fwd.py -k mamba`.

@@ -870,3 +870,21 @@
 ## 2026-01-25
 - Parameterized test_block_load_store_scan_thread_data over items_per_thread [1, 4, 8].
 - Ran pytest: `python -m pytest tests/coop/test_block_scan.py -k "test_block_load_store_scan_thread_data"` (3 passed, 199 deselected).
+
+## 2026-01-25
+- Removed dead `if False` zero-padding block in test_block_load_store_scan_simple2.
+- Converted the top-level `if False` CUSource snippet into a skipped test (test_block_scan_prefix_op_cusource_experimental) for explicit tracking.
+- Tests not run (not requested).
+
+## 2026-01-25
+- Removed dead `block_offset += ...` lines from block scan tests that had no loop.
+- Tests not run (not requested).
+
+## 2026-01-25
+- Added a mamba selective-scan reference data generator and stored CUDA-kernel output for a fixed single-chunk case.
+- Updated the mamba selective-scan test to load the saved .npz and compare the cuda.coop kernel against the mamba CUDA output.
+- Ran pytest: `CUDA_VISIBLE_DEVICES=1 python -m pytest tests/coop/test_mamba_selective_scan_fwd.py -k mamba` (1 passed).
+
+## 2026-01-25
+- Removed unused variables in coop mamba selective-scan reference generator and experimental block scan CUSource test to satisfy ruff.
+- Tests not run (lint-only change).

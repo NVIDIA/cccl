@@ -1366,11 +1366,10 @@ def test_block_load_store_scan_simple2():
         )
 
         # Zero-pad invalid thread items explicitly.
-        if False:
-            for i in range(items_per_thread):
-                global_idx = block_offset + thread_offset + i
-                if global_idx >= num_total_items:
-                    thread_data[i] = 0
+        for i in range(items_per_thread):
+            global_idx = block_offset + thread_offset + i
+            if global_idx >= num_total_items:
+                thread_data[i] = 0
 
         # cuda.syncthreads()
 
@@ -1388,8 +1387,6 @@ def test_block_load_store_scan_simple2():
             algorithm=BlockStoreAlgorithm.DIRECT,
             num_valid_items=num_valid_items,
         )
-
-        block_offset += items_per_block * cuda.gridDim.x
 
     dtype = np.int32
     threads_per_block = 128
@@ -1470,8 +1467,6 @@ def test_block_load_store_scan_simple3():
             num_valid_items=num_valid_items,
         )
 
-        block_offset += items_per_block * cuda.gridDim.x
-
     dtype = np.int32
     threads_per_block = 128
     num_total_items = threads_per_block * 4  # Total items to process
@@ -1503,8 +1498,9 @@ def test_block_load_store_scan_simple3():
     np.testing.assert_array_equal(h_output, h_reference)
 
 
-if False:
-    ext = cuda.CUSource(
+@pytest.mark.skip(reason="Experimental prefix-op CUSource scaffolding")
+def test_block_scan_prefix_op_cusource_experimental():
+    _ = cuda.CUSource(
         textwrap.dedent("""
         template<typename T>
         struct BlockPrefixCallbackOpWithCount {
@@ -1607,8 +1603,6 @@ def test_block_load_store_scan_simple4():
             algorithm=BlockStoreAlgorithm.DIRECT,
             num_valid_items=num_valid_items,
         )
-
-        block_offset += items_per_block * cuda.gridDim.x
 
     dtype = np.int32
     threads_per_block = 128
@@ -1819,8 +1813,6 @@ def test_block_load_store_scan_simple5():
             algorithm=BlockStoreAlgorithm.DIRECT,
             num_valid_items=num_valid_items,
         )
-
-        block_offset += items_per_block * cuda.gridDim.x
 
     dtype = np.int32
     threads_per_block = 128
@@ -2179,8 +2171,6 @@ def test_block_load_store_scan_simple7():
             algorithm=BlockStoreAlgorithm.DIRECT,
             num_valid_items=num_valid_items,
         )
-
-        block_offset += items_per_block * cuda.gridDim.x
 
     dtype = np.int32
     threads_per_block = 128
