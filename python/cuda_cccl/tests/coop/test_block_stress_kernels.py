@@ -17,6 +17,7 @@ from cuda.coop import (
     BlockStoreAlgorithm,
 )
 from cuda.coop.block import BlockDiscontinuityType, BlockExchangeType
+from cuda.coop.warp import WarpExchangeType
 
 numba.config.CUDA_LOW_OCCUPANCY_WARNINGS = 0
 
@@ -28,6 +29,16 @@ def _merge_op(a, b):
 
 @cuda.jit(device=True)
 def _flag_op(lhs, rhs):
+    return numba.int32(1 if lhs != rhs else 0)
+
+
+@cuda.jit(device=True)
+def _flag_op_heads(lhs, rhs):
+    return numba.int32(1 if lhs != rhs else 0)
+
+
+@cuda.jit(device=True)
+def _flag_op_tails(lhs, rhs):
     return numba.int32(1 if lhs != rhs else 0)
 
 
@@ -50,8 +61,22 @@ def _discontinuity_heads_host(tile):
     return flags
 
 
+def _discontinuity_tails_host(tile):
+    flags = np.zeros_like(tile, dtype=np.int32)
+    if tile.size == 0:
+        return flags
+    flags[-1] = 1
+    for idx in range(tile.size - 1):
+        flags[idx] = 1 if tile[idx] != tile[idx + 1] else 0
+    return flags
+
+
 def _align_up(value, alignment):
     return (value + alignment - 1) // alignment * alignment
+
+
+def _align_down(value, alignment):
+    return (value // alignment) * alignment
 
 
 def test_block_primitives_single_phase_sort_scan_strided():
@@ -445,6 +470,246 @@ def test_block_primitives_2d_block_exchange_discontinuity_sort():
 
     np.testing.assert_array_equal(h_output, h_reference)
     np.testing.assert_array_equal(h_flags, h_flags_ref)
+
+
+def test_block_primitives_exchange_discontinuity_radix_chain_warp_striped():
+    threads_per_block = 128
+    items_per_thread = 4
+    items_per_block = threads_per_block * items_per_thread
+    begin_bit = 0
+    end_bit = 8
+
+    dtype = np.uint32
+
+    block_exchange_to_warp = coop.block.exchange(
+        BlockExchangeType.BlockedToWarpStriped,
+        dtype,
+        threads_per_block,
+        items_per_thread,
+    )
+    block_exchange_to_blocked = coop.block.exchange(
+        BlockExchangeType.WarpStripedToBlocked,
+        dtype,
+        threads_per_block,
+        items_per_thread,
+    )
+    block_discontinuity_heads = coop.block.discontinuity(
+        dtype,
+        threads_per_block,
+        items_per_thread,
+        flag_op=_flag_op_heads,
+        flag_dtype=np.int32,
+    )
+    block_discontinuity_tails = coop.block.discontinuity(
+        dtype,
+        threads_per_block,
+        items_per_thread,
+        flag_op=_flag_op_tails,
+        flag_dtype=np.int32,
+    )
+    block_radix_sort = coop.block.radix_sort_keys(
+        dtype,
+        threads_per_block,
+        items_per_thread,
+        begin_bit=begin_bit,
+        end_bit=end_bit,
+    )
+
+    exchange_warp_bytes = block_exchange_to_warp.temp_storage_bytes
+    exchange_warp_alignment = block_exchange_to_warp.temp_storage_alignment or 1
+    exchange_block_bytes = block_exchange_to_blocked.temp_storage_bytes
+    exchange_block_alignment = block_exchange_to_blocked.temp_storage_alignment or 1
+    disc_heads_bytes = block_discontinuity_heads.temp_storage_bytes
+    disc_heads_alignment = block_discontinuity_heads.temp_storage_alignment or 1
+    disc_tails_bytes = block_discontinuity_tails.temp_storage_bytes
+    disc_tails_alignment = block_discontinuity_tails.temp_storage_alignment or 1
+    radix_bytes = block_radix_sort.temp_storage_bytes
+    radix_alignment = block_radix_sort.temp_storage_alignment or 1
+
+    @cuda.jit
+    def kernel(d_in, d_out, d_heads, d_tails):
+        thread_data = coop.local.array(items_per_thread, dtype=d_in.dtype)
+        flags_heads = coop.local.array(items_per_thread, dtype=np.int32)
+        flags_tails = coop.local.array(items_per_thread, dtype=np.int32)
+
+        temp_exchange_warp = coop.TempStorage(
+            exchange_warp_bytes,
+            exchange_warp_alignment,
+        )
+        temp_exchange_block = coop.TempStorage(
+            exchange_block_bytes,
+            exchange_block_alignment,
+        )
+        temp_disc_heads = coop.TempStorage(
+            disc_heads_bytes,
+            disc_heads_alignment,
+        )
+        temp_disc_tails = coop.TempStorage(
+            disc_tails_bytes,
+            disc_tails_alignment,
+        )
+        temp_radix = coop.TempStorage(
+            radix_bytes,
+            radix_alignment,
+        )
+
+        coop.block.load(
+            d_in,
+            thread_data,
+            items_per_thread=items_per_thread,
+        )
+
+        block_exchange_to_warp(thread_data, temp_storage=temp_exchange_warp)
+        block_exchange_to_blocked(thread_data, temp_storage=temp_exchange_block)
+
+        block_discontinuity_heads(
+            thread_data,
+            flags_heads,
+            flag_op=_flag_op_heads,
+            block_discontinuity_type=BlockDiscontinuityType.HEADS,
+            temp_storage=temp_disc_heads,
+        )
+        cuda.syncthreads()
+        block_discontinuity_tails(
+            thread_data,
+            flags_tails,
+            flag_op=_flag_op_tails,
+            block_discontinuity_type=BlockDiscontinuityType.TAILS,
+            temp_storage=temp_disc_tails,
+        )
+
+        cuda.syncthreads()
+        block_radix_sort(
+            thread_data,
+            items_per_thread,
+            begin_bit,
+            end_bit,
+            temp_storage=temp_radix,
+        )
+
+        coop.block.store(
+            d_out,
+            thread_data,
+            items_per_thread=items_per_thread,
+        )
+
+        tid = cuda.threadIdx.x
+        base = tid * items_per_thread
+        for i in range(items_per_thread):
+            d_heads[base + i] = flags_heads[i]
+            d_tails[base + i] = flags_tails[i]
+
+    h_input = np.random.randint(0, 16, items_per_block, dtype=dtype)
+    d_input = cuda.to_device(h_input)
+    d_output = cuda.device_array_like(d_input)
+    d_heads = cuda.device_array(items_per_block, dtype=np.int32)
+    d_tails = cuda.device_array(items_per_block, dtype=np.int32)
+
+    kernel[1, threads_per_block](d_input, d_output, d_heads, d_tails)
+    cuda.synchronize()
+
+    h_output = d_output.copy_to_host()
+    h_heads = d_heads.copy_to_host()
+    h_tails = d_tails.copy_to_host()
+    h_reference = np.sort(h_input)
+    h_heads_ref = _discontinuity_heads_host(h_input)
+    h_tails_ref = _discontinuity_tails_host(h_input)
+
+    np.testing.assert_array_equal(h_output, h_reference)
+    np.testing.assert_array_equal(h_heads, h_heads_ref)
+    np.testing.assert_array_equal(h_tails, h_tails_ref)
+
+
+def test_block_primitives_warp_block_warp_chain():
+    threads_per_block = 128
+    threads_in_warp = 32
+    items_per_thread = 4
+    items_per_block = threads_per_block * items_per_thread
+
+    dtype = np.uint32
+
+    @cuda.jit
+    def kernel(d_in, d_warp_sum, d_block_scan, d_final):
+        tid = cuda.threadIdx.x
+        input_items = coop.local.array(items_per_thread, dtype=d_in.dtype)
+        output_items = coop.local.array(items_per_thread, dtype=d_in.dtype)
+
+        warp_base = (tid // threads_in_warp) * threads_in_warp * items_per_thread
+        lane = tid % threads_in_warp
+        for i in range(items_per_thread):
+            input_items[i] = d_in[warp_base + lane + i * threads_in_warp]
+
+        coop.warp.exchange(
+            input_items,
+            output_items,
+            items_per_thread=items_per_thread,
+            warp_exchange_type=WarpExchangeType.StripedToBlocked,
+            threads_in_warp=threads_in_warp,
+        )
+
+        acc = output_items[0]
+        for i in range(1, items_per_thread):
+            acc += output_items[i]
+        d_warp_sum[tid] = acc
+
+        cuda.syncthreads()
+
+        thread_data = coop.local.array(1, dtype=d_in.dtype)
+        thread_data[0] = acc
+        coop.block.exclusive_sum(
+            thread_data,
+            thread_data,
+            items_per_thread=1,
+        )
+        d_block_scan[tid] = thread_data[0]
+
+        cuda.syncthreads()
+
+        d_final[tid] = coop.warp.inclusive_sum(
+            thread_data[0],
+            threads_in_warp=threads_in_warp,
+        )
+
+    h_input = np.random.randint(0, 8, items_per_block, dtype=dtype)
+    d_input = cuda.to_device(h_input)
+    d_warp_sum = cuda.device_array(threads_per_block, dtype=dtype)
+    d_block_scan = cuda.device_array(threads_per_block, dtype=dtype)
+    d_final = cuda.device_array(threads_per_block, dtype=dtype)
+
+    kernel[1, threads_per_block](d_input, d_warp_sum, d_block_scan, d_final)
+    cuda.synchronize()
+
+    h_warp_sum = d_warp_sum.copy_to_host()
+    h_block_scan = d_block_scan.copy_to_host()
+    h_final = d_final.copy_to_host()
+
+    h_warp_sum_ref = np.empty_like(h_warp_sum)
+    num_warps = threads_per_block // threads_in_warp
+    for warp_id in range(num_warps):
+        warp_base = warp_id * threads_in_warp * items_per_thread
+        warp_striped = h_input[
+            warp_base : warp_base + threads_in_warp * items_per_thread
+        ]
+        striped = warp_striped.reshape(items_per_thread, threads_in_warp).T
+        for lane in range(threads_in_warp):
+            total = 0
+            for item in range(items_per_thread):
+                logical_idx = lane * items_per_thread + item
+                src_lane = logical_idx % threads_in_warp
+                src_item = logical_idx // threads_in_warp
+                total += striped[src_lane, src_item]
+            h_warp_sum_ref[warp_id * threads_in_warp + lane] = total
+
+    h_block_scan_ref = _exclusive_scan_host(h_warp_sum_ref)
+    h_final_ref = np.empty_like(h_block_scan_ref)
+    for warp_id in range(num_warps):
+        start = warp_id * threads_in_warp
+        end = start + threads_in_warp
+        h_final_ref[start:end] = np.cumsum(h_block_scan_ref[start:end])
+
+    np.testing.assert_array_equal(h_warp_sum, h_warp_sum_ref)
+    np.testing.assert_array_equal(h_block_scan, h_block_scan_ref)
+    np.testing.assert_array_equal(h_final, h_final_ref)
 
 
 def test_block_primitives_dynamic_shared_overlapping_slices():
@@ -1639,6 +1904,113 @@ def test_block_primitives_dynamic_shared_temp_storage_carved():
     h_flags_ref = _discontinuity_heads_host(h_input)
     np.testing.assert_array_equal(h_output, h_reference)
     np.testing.assert_array_equal(h_flags, h_flags_ref)
+
+
+@pytest.mark.parametrize("size_mode", ["near_limit", "above_48k"])
+def test_block_primitives_dynamic_shared_limits(size_mode):
+    threads_per_block = 128
+    items_per_thread = 1
+    dtype = np.uint32
+
+    block_exclusive_sum = coop.block.exclusive_sum(
+        dtype,
+        threads_per_block,
+        items_per_thread,
+    )
+    scan_bytes = block_exclusive_sum.temp_storage_bytes
+    scan_alignment = block_exclusive_sum.temp_storage_alignment or 1
+
+    max_optin = cuda.current_context().device.MAX_SHARED_MEMORY_PER_BLOCK_OPTIN
+    if max_optin <= 48 * 1024:
+        pytest.skip("Device does not support shared memory opt-in.")
+
+    if size_mode == "near_limit":
+        dynamic_shared_bytes = _align_down(max_optin - 1, scan_alignment)
+        if dynamic_shared_bytes <= 0:
+            pytest.skip("Unable to allocate near-limit dynamic shared memory.")
+    else:
+        dynamic_shared_bytes = _align_up(48 * 1024 + 256, scan_alignment)
+
+    if dynamic_shared_bytes > max_optin:
+        pytest.skip(
+            "Device does not support requested dynamic shared memory size "
+            f"({dynamic_shared_bytes} > {max_optin})."
+        )
+    if dynamic_shared_bytes < scan_bytes:
+        pytest.skip(
+            "Dynamic shared memory size is smaller than required temp storage "
+            f"({dynamic_shared_bytes} < {scan_bytes})."
+        )
+
+    @cuda.jit
+    def kernel(d_in, d_out, shared_bytes):
+        smem = cuda.shared.array(0, dtype=numba.uint8)
+        temp_scan = smem[:scan_bytes]
+
+        thread_data = coop.local.array(items_per_thread, dtype=d_in.dtype)
+        thread_data[0] = d_in[cuda.threadIdx.x]
+
+        block_exclusive_sum(
+            thread_data,
+            thread_data,
+            items_per_thread=items_per_thread,
+            temp_storage=temp_scan,
+        )
+
+        d_out[cuda.threadIdx.x] = thread_data[0]
+
+        if cuda.threadIdx.x == 0:
+            smem[shared_bytes - 1] = np.uint8(1)
+
+    h_input = np.random.randint(0, 16, threads_per_block, dtype=dtype)
+    d_input = cuda.to_device(h_input)
+    d_output = cuda.device_array_like(d_input)
+
+    def _set_dynamic_shared(kernel_obj, launch_config):
+        cufunc = kernel_obj._codelibrary.get_cufunc()
+        driver.driver.cuKernelSetAttribute(
+            driver.binding.CUfunction_attribute.CU_FUNC_ATTRIBUTE_MAX_DYNAMIC_SHARED_SIZE_BYTES,
+            dynamic_shared_bytes,
+            cufunc.handle,
+            cufunc.device.id,
+        )
+        cufunc.set_shared_memory_carveout(100)
+
+    configured = kernel[1, threads_per_block, 0, dynamic_shared_bytes]
+    configured.pre_launch_callbacks.append(_set_dynamic_shared)
+    configured(d_input, d_output, np.int32(dynamic_shared_bytes))
+    cuda.synchronize()
+
+    h_output = d_output.copy_to_host()
+    h_reference = _exclusive_scan_host(h_input)
+    np.testing.assert_array_equal(h_output, h_reference)
+
+
+def test_block_primitives_dynamic_shared_zero_errors():
+    threads_per_block = 128
+
+    @cuda.jit
+    def kernel():
+        smem = cuda.shared.array(0, dtype=numba.uint8)
+        if cuda.threadIdx.x == 0:
+            smem[1] = 7
+
+    configured = kernel[1, threads_per_block, 0, 0]
+
+    try:
+        configured()
+        cuda.synchronize()
+    except Exception:
+        try:
+            cuda.current_context().reset()
+        except Exception:
+            pass
+        return
+
+    pytest.xfail(
+        "Kernel completed without error with sharedmem=0; "
+        "illegal shared memory access may not be detected on this device."
+    )
 
 
 def test_block_primitives_dynamic_shared_run_length_histogram_shared():

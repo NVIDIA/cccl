@@ -952,3 +952,19 @@
 ## 2026-01-25
 - Added run-length decode window-offset test with per-block random offsets, relative offsets output, and decoded_offset_dtype coverage.
 - Ran pytest: `python -m pytest tests/coop/test_block_run_length_decode.py -k window_offsets_random` (2 passed).
+
+## 2026-01-25
+- Added exchange→discontinuity→radix-sort chain test using BlockedToWarpStriped/WarpStripedToBlocked plus heads/tails flags with explicit temp storage.
+- Ran pytest: `python -m pytest tests/coop/test_block_stress_kernels.py -k exchange_discontinuity_radix_chain_warp_striped` (1 passed).
+
+## 2026-01-25
+- Added warp→block→warp chain test (warp exchange + block exclusive sum + warp inclusive sum) to stress mixed primitive sequencing.
+- Ran pytest: `python -m pytest tests/coop/test_block_stress_kernels.py -k warp_block_warp_chain` (1 passed).
+
+## 2026-01-25
+- Added dynamic shared memory limit tests (near MAX opt-in, just above 48KB) plus sharedmem=0 error path for dynamic shared array.
+- Ran pytest: `python -m pytest tests/coop/test_block_stress_kernels.py -k "dynamic_shared_limits or dynamic_shared_zero_errors"` (3 passed).
+
+## 2026-01-25
+- Added compile-time error-path tests for scan items_per_thread mismatch, missing run_length args, and ThreadData misuse with warp exchange.
+- Ran pytest: `python -m pytest tests/coop/test_compile_time_error_paths.py` (3 passed).
