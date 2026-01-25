@@ -292,13 +292,13 @@ class histogram(BasePrimitive):
             The snippet below demonstrates a block histogram with explicit
             init and composite calls.
 
-            .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_block_histogram_api.py
+            .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_block_histogram.py
                 :language: python
                 :dedent:
                 :start-after: example-begin imports
                 :end-before: example-end imports
 
-            .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_block_histogram_api.py
+            .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_block_histogram.py
                 :language: python
                 :dedent:
                 :start-after: example-begin histogram

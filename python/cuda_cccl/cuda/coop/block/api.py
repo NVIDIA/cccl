@@ -616,7 +616,7 @@ def histogram(
     """Block-wide histogram (single-phase uses ``samples`` + output).
 
     Example:
-        .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_block_histogram_api.py
+        .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_block_histogram.py
             :language: python
             :dedent:
             :start-after: example-begin histogram

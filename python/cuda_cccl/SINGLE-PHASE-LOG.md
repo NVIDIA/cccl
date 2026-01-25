@@ -838,3 +838,7 @@
 ## 2026-01-24
 - Merged block shuffle API examples into tests/coop/test_block_shuffle.py, added single-phase up/down scalar tests, and repointed block shuffle literalincludes; removed tests/coop/test_block_shuffle_api.py.
 - Ran pytest: `python -m pytest tests/coop/test_block_shuffle.py` (8 passed).
+
+## 2026-01-24
+- Merged block histogram API example into tests/coop/test_block_histogram.py and repointed block histogram literalincludes; removed tests/coop/test_block_histogram_api.py.
+- Ran pytest: `python -m pytest tests/coop/test_block_histogram.py -k "init_composite"` (1 passed, 307 deselected).
