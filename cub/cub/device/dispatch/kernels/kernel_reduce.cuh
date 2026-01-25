@@ -313,22 +313,21 @@ CUB_DETAIL_KERNEL_ATTRIBUTES __launch_bounds__(
  * @param[in] reduction_op
  *   Binary reduction functor
  */
-template <typename ChainedPolicyT, typename InputIteratorT, typename ReductionOpT, typename AccumT, typename TransformOpT>
-CUB_DETAIL_KERNEL_ATTRIBUTES
-__launch_bounds__(int(ChainedPolicyT::ActivePolicy::ReducePolicy::BLOCK_THREADS)) void DeterministicDeviceReduceKernel(
-  InputIteratorT d_in,
-  AccumT* d_out,
-  int num_items,
-  ReductionOpT reduction_op,
-  TransformOpT transform_op,
-  const int reduce_grid_size)
+template <typename PolicySelector, typename InputIteratorT, typename ReductionOpT, typename AccumT, typename TransformOpT>
+CUB_DETAIL_KERNEL_ATTRIBUTES __launch_bounds__(int(
+  PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10})
+    .reduce.block_threads)) void DeterministicDeviceReduceKernel(InputIteratorT d_in,
+                                                                 AccumT* d_out,
+                                                                 int num_items,
+                                                                 ReductionOpT reduction_op,
+                                                                 TransformOpT transform_op,
+                                                                 const int reduce_grid_size)
 {
-  using reduce_policy_t = typename ChainedPolicyT::ActivePolicy::ReducePolicy;
+  constexpr rfa::reduce_policy policy = PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10}).reduce;
+  constexpr int items_per_thread      = policy.items_per_thread;
+  constexpr int block_threads         = policy.block_threads;
 
-  constexpr auto items_per_thread = reduce_policy_t::ITEMS_PER_THREAD;
-  constexpr auto block_threads    = reduce_policy_t::BLOCK_THREADS;
-
-  using block_reduce_t = BlockReduce<AccumT, block_threads, reduce_policy_t::BLOCK_ALGORITHM>;
+  using block_reduce_t = BlockReduce<AccumT, block_threads, policy.block_algorithm>;
 
   // Shared memory storage
   __shared__ typename block_reduce_t::TempStorage temp_storage;
@@ -440,7 +439,7 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::ReducePolicy::BLOCK_THREADS)
  * @param[in] init
  *   The initial value of the reduction
  */
-template <typename ChainedPolicyT,
+template <typename PolicySelector,
           typename InputIteratorT,
           typename OutputIteratorT,
           typename ReductionOpT,
@@ -448,7 +447,7 @@ template <typename ChainedPolicyT,
           typename AccumT,
           typename TransformOpT = ::cuda::std::identity>
 CUB_DETAIL_KERNEL_ATTRIBUTES __launch_bounds__(
-  int(ChainedPolicyT::ActivePolicy::SingleTilePolicy::BLOCK_THREADS),
+  int(PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10}).single_tile.block_threads),
   1) void DeterministicDeviceReduceSingleTileKernel(InputIteratorT d_in,
                                                     OutputIteratorT d_out,
                                                     int num_items,
@@ -456,11 +455,10 @@ CUB_DETAIL_KERNEL_ATTRIBUTES __launch_bounds__(
                                                     InitT init,
                                                     TransformOpT transform_op)
 {
-  using single_tile_policy_t = typename ChainedPolicyT::ActivePolicy::SingleTilePolicy;
+  constexpr rfa::single_tile_policy policy = PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10}).single_tile;
+  constexpr int block_threads              = policy.block_threads;
 
-  constexpr auto block_threads = single_tile_policy_t::BLOCK_THREADS;
-
-  using block_reduce_t = BlockReduce<AccumT, block_threads, single_tile_policy_t::BLOCK_ALGORITHM>;
+  using block_reduce_t = BlockReduce<AccumT, block_threads, policy.block_algorithm>;
 
   // Shared memory storage
   __shared__ typename block_reduce_t::TempStorage temp_storage;

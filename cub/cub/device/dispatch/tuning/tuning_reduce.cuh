@@ -417,135 +417,85 @@ struct policy_selector_from_types
 
 namespace rfa
 {
-template <class AccumT>
-struct sm90_tuning;
-
-template <>
-struct sm90_tuning<float>
+struct reduce_policy
 {
-  // ipt_13.tpb_224  1.107188  1.009709  1.097114  1.316820
-  static constexpr int items   = 13;
-  static constexpr int threads = 224;
+  int block_threads;
+  int items_per_thread;
+  BlockReduceAlgorithm block_algorithm;
 };
 
-template <class AccumT>
-struct sm86_tuning;
-
-template <>
-struct sm86_tuning<float>
+struct single_tile_policy
 {
-  // ipt_6.tpb_224  1.034383  1.000000  1.032097  1.090909
-  static constexpr int items   = 6;
-  static constexpr int threads = 224;
+  int block_threads;
+  int items_per_thread;
+  BlockReduceAlgorithm block_algorithm;
 };
 
-template <>
-struct sm86_tuning<double>
+struct rfa_policy
 {
-  // ipt_11.tpb_128 ()  1.232089  1.002124  1.245336  1.582279
-  static constexpr int items   = 11;
-  static constexpr int threads = 128;
+  reduce_policy reduce;
+  single_tile_policy single_tile;
 };
 
-/**
- * @tparam AccumT
- *   Accumulator data type
- *
- * OffsetT
- *   Signed integer type for global offsets
- *
- * ReductionOpT
- *   Binary reduction functor type having member
- *   `auto operator()(const T &a, const U &b)`
- */
-template <typename AccumT, typename OffsetT, typename ReductionOpT>
-struct policy_hub
+struct policy_selector
 {
-  //---------------------------------------------------------------------------
-  // Architecture-specific tuning policies
-  //---------------------------------------------------------------------------
+  type_t accum_t;
+  int accum_size;
 
-  /// SM50
-  struct Policy500 : ChainedPolicy<500, Policy500, Policy500>
+  [[nodiscard]] _CCCL_API constexpr auto operator()(::cuda::arch_id arch) const -> rfa_policy
   {
-    static constexpr int threads_per_block  = 256;
-    static constexpr int items_per_thread   = 20;
-    static constexpr int items_per_vec_load = 4;
+    if (arch >= ::cuda::arch_id::sm_90)
+    {
+      // only tuned for float, fall through for other types
+      if (accum_t == type_t::float32)
+      {
+        // ipt_13.tpb_224  1.107188  1.009709  1.097114  1.316820
+        const auto scaled = scale_mem_bound(224, 13, accum_size);
+        return {{scaled.block_threads, scaled.items_per_thread, BLOCK_REDUCE_RAKING},
+                {scaled.block_threads, scaled.items_per_thread, BLOCK_REDUCE_RAKING}};
+      }
+    }
 
-    // ReducePolicy (GTX Titan: 255.1 GB/s @ 48M 4B items; 228.7 GB/s @ 192M 1B
-    // items)
-    using ReducePolicy =
-      AgentReducePolicy<threads_per_block,
-                        items_per_thread,
-                        AccumT,
-                        items_per_vec_load,
-                        BLOCK_REDUCE_WARP_REDUCTIONS,
-                        LOAD_LDG>;
+    if (arch >= ::cuda::arch_id::sm_86)
+    {
+      // only tuned for float and double, fall through for other types
+      if (accum_t == type_t::float32)
+      {
+        // ipt_6.tpb_224  1.034383  1.000000  1.032097  1.090909
+        const auto scaled = scale_mem_bound(224, 6, accum_size);
+        return {{scaled.block_threads, scaled.items_per_thread, BLOCK_REDUCE_RAKING},
+                {scaled.block_threads, scaled.items_per_thread, BLOCK_REDUCE_RAKING}};
+      }
+      if (accum_t == type_t::float64)
+      {
+        // ipt_11.tpb_128 ()  1.232089  1.002124  1.245336  1.582279
+        const auto scaled = scale_mem_bound(128, 11, accum_size);
+        return {{scaled.block_threads, scaled.items_per_thread, BLOCK_REDUCE_RAKING},
+                {scaled.block_threads, scaled.items_per_thread, BLOCK_REDUCE_RAKING}};
+      }
+    }
 
-    // SingleTilePolicy
-    using SingleTilePolicy = ReducePolicy;
-  };
+    if (arch >= ::cuda::arch_id::sm_60)
+    {
+      const auto scaled = scale_mem_bound(256, 16, accum_size);
+      return {{scaled.block_threads, scaled.items_per_thread, BLOCK_REDUCE_RAKING},
+              {scaled.block_threads, scaled.items_per_thread, BLOCK_REDUCE_RAKING}};
+    }
 
-  /// SM60
-  struct Policy600 : ChainedPolicy<600, Policy600, Policy500>
+    const auto scaled = scale_mem_bound(256, 20, accum_size);
+    return {{scaled.block_threads, scaled.items_per_thread, BLOCK_REDUCE_RAKING},
+            {scaled.block_threads, scaled.items_per_thread, BLOCK_REDUCE_RAKING}};
+  }
+};
+
+// stateless version which can be passed to kernels
+template <typename AccumT>
+struct policy_selector_from_types
+{
+  [[nodiscard]] _CCCL_API constexpr auto operator()(::cuda::arch_id arch) const -> rfa_policy
   {
-    static constexpr int threads_per_block  = 256;
-    static constexpr int items_per_thread   = 16;
-    static constexpr int items_per_vec_load = 4;
-
-    // ReducePolicy (P100: 591 GB/s @ 64M 4B items; 583 GB/s @ 256M 1B items)
-    using ReducePolicy =
-      AgentReducePolicy<threads_per_block,
-                        items_per_thread,
-                        AccumT,
-                        items_per_vec_load,
-                        BLOCK_REDUCE_WARP_REDUCTIONS,
-                        LOAD_LDG>;
-
-    // SingleTilePolicy
-    using SingleTilePolicy = ReducePolicy;
-  };
-
-  /// SM86
-  struct Policy860 : ChainedPolicy<860, Policy860, Policy600>
-  {
-    static constexpr int items_per_vec_load = 4;
-
-    // Use values from tuning if a specialization exists, otherwise pick Policy600
-    template <typename Tuning>
-    static _CCCL_HOST_DEVICE auto select_agent_policy(int)
-      -> AgentReducePolicy<Tuning::threads, Tuning::items, AccumT, items_per_vec_load, BLOCK_REDUCE_RAKING, LOAD_LDG>;
-
-    // use Policy600 as DefaultPolicy
-    template <typename Tuning>
-    static _CCCL_HOST_DEVICE auto select_agent_policy(long) -> typename Policy600::ReducePolicy;
-
-    using ReducePolicy = decltype(select_agent_policy<sm86_tuning<AccumT>>(0));
-
-    using SingleTilePolicy = ReducePolicy;
-  };
-
-  /// SM90
-  struct Policy900 : ChainedPolicy<900, Policy900, Policy860>
-  {
-    static constexpr int items_per_vec_load = 4;
-
-    // Use values from tuning if a specialization exists, otherwise pick Policy860
-    template <typename Tuning>
-    static _CCCL_HOST_DEVICE auto select_agent_policy(int)
-      -> AgentReducePolicy<Tuning::threads, Tuning::items, AccumT, items_per_vec_load, BLOCK_REDUCE_RAKING, LOAD_LDG>;
-
-    // use Policy860 as DefaultPolicy
-    template <typename Tuning>
-    static _CCCL_HOST_DEVICE auto select_agent_policy(long) -> typename Policy860::ReducePolicy;
-
-    using ReducePolicy = decltype(select_agent_policy<sm90_tuning<AccumT>>(0));
-
-    // SingleTilePolicy
-    using SingleTilePolicy = ReducePolicy;
-  };
-
-  using MaxPolicy = Policy900;
+    return policy_selector{classify_type<AccumT>, int{sizeof(AccumT)}}(arch);
+  }
 };
 } // namespace rfa
 
