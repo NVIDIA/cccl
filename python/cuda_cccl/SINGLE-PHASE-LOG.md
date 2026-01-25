@@ -968,3 +968,7 @@
 ## 2026-01-25
 - Added compile-time error-path tests for scan items_per_thread mismatch, missing run_length args, and ThreadData misuse with warp exchange.
 - Ran pytest: `python -m pytest tests/coop/test_compile_time_error_paths.py` (3 passed).
+
+## 2026-01-25
+- Isolated sharedmem=0 illegal access test in a subprocess to avoid poisoning the main CUDA context; full block_stress_kernels now runs cleanly.
+- Ran pytest: `python -m pytest tests/coop/test_block_stress_kernels.py` (21 passed, 2 xfailed).

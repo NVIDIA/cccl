@@ -2,6 +2,9 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+import os
+import subprocess
+import sys
 from dataclasses import dataclass
 
 import numba
@@ -1987,30 +1990,42 @@ def test_block_primitives_dynamic_shared_limits(size_mode):
 
 
 def test_block_primitives_dynamic_shared_zero_errors():
-    threads_per_block = 128
+    if os.environ.get("CCCL_ZERO_SMEM_CHILD") == "1":
+        threads_per_block = 128
 
-    @cuda.jit
-    def kernel():
-        smem = cuda.shared.array(0, dtype=numba.uint8)
-        if cuda.threadIdx.x == 0:
-            smem[1] = 7
+        @cuda.jit
+        def kernel():
+            smem = cuda.shared.array(0, dtype=numba.uint8)
+            if cuda.threadIdx.x == 0:
+                smem[1] = 7
 
-    configured = kernel[1, threads_per_block, 0, 0]
-
-    try:
-        configured()
-        cuda.synchronize()
-    except Exception:
+        configured = kernel[1, threads_per_block, 0, 0]
         try:
-            cuda.current_context().reset()
+            configured()
+            cuda.synchronize()
         except Exception:
-            pass
-        return
+            raise SystemExit(0)
+        raise SystemExit(2)
 
-    pytest.xfail(
-        "Kernel completed without error with sharedmem=0; "
-        "illegal shared memory access may not be detected on this device."
+    env = dict(os.environ)
+    env["CCCL_ZERO_SMEM_CHILD"] = "1"
+    result = subprocess.run(
+        [
+            sys.executable,
+            "-c",
+            "import tests.coop.test_block_stress_kernels as t; t.test_block_primitives_dynamic_shared_zero_errors()",
+        ],
+        env=env,
+        check=False,
     )
+    if result.returncode == 0:
+        return
+    if result.returncode == 2:
+        pytest.xfail(
+            "Kernel completed without error with sharedmem=0; "
+            "illegal shared memory access may not be detected on this device."
+        )
+    pytest.fail(f"Unexpected child process return code: {result.returncode}")
 
 
 def test_block_primitives_dynamic_shared_run_length_histogram_shared():
