@@ -451,25 +451,6 @@ struct agent_segmented_scan
   }
 
 private:
-  template <typename PrefixTy, typename BinaryOpTy>
-  struct block_prefix_callback_t
-  {
-    PrefixTy& m_exclusive_prefix;
-    BinaryOpTy& m_scan_op;
-
-    _CCCL_DEVICE _CCCL_FORCEINLINE block_prefix_callback_t(PrefixTy& prefix, BinaryOpTy& op)
-        : m_exclusive_prefix(prefix)
-        , m_scan_op(op)
-    {}
-
-    _CCCL_DEVICE _CCCL_FORCEINLINE PrefixTy operator()(PrefixTy block_aggregate)
-    {
-      const PrefixTy previous_prefix = m_exclusive_prefix;
-      m_exclusive_prefix             = m_scan_op(m_exclusive_prefix, block_aggregate);
-      return previous_prefix;
-    }
-  };
-
   template <typename ItemTy,
             typename InitValueTy,
             typename ScanOpTy,

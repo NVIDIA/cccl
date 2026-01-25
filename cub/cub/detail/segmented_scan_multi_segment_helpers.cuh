@@ -19,7 +19,9 @@
 
 CUB_NAMESPACE_BEGIN
 
-namespace detail::segmented_scan::multi_segment_helpers
+namespace detail::segmented_scan
+{
+namespace multi_segment_helpers
 {
 template <typename ValueT, typename FlagT>
 using augmented_value_t = ::cuda::std::tuple<ValueT, FlagT>;
@@ -234,6 +236,26 @@ private:
     return {segment_id, shifted_offset};
   }
 };
-} // namespace detail::segmented_scan::multi_segment_helpers
+} // namespace multi_segment_helpers
+
+template <typename PrefixTy, typename BinaryOpTy>
+struct block_prefix_callback_t
+{
+  PrefixTy& m_exclusive_prefix;
+  BinaryOpTy& m_scan_op;
+
+  _CCCL_DEVICE _CCCL_FORCEINLINE block_prefix_callback_t(PrefixTy& prefix, BinaryOpTy& op)
+      : m_exclusive_prefix(prefix)
+      , m_scan_op(op)
+  {}
+
+  _CCCL_DEVICE _CCCL_FORCEINLINE PrefixTy operator()(PrefixTy block_aggregate)
+  {
+    const PrefixTy previous_prefix = m_exclusive_prefix;
+    m_exclusive_prefix             = m_scan_op(m_exclusive_prefix, block_aggregate);
+    return previous_prefix;
+  }
+};
+} // namespace detail::segmented_scan
 
 CUB_NAMESPACE_END
