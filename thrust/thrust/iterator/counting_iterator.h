@@ -162,6 +162,10 @@ using unit_stride = compile_time_value<1>;
 //! \endcode
 //!
 //! \see make_counting_iterator
+/*! \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
+ */
 template <typename Incrementable,
           typename System       = use_default,
           typename Traversal    = use_default,

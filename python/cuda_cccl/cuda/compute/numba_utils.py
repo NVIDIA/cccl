@@ -1,15 +1,20 @@
 import inspect
+import typing
 
 import numba
 from numba import cuda
 from numba.core.extending import as_numba_type
 from numpy.typing import DTypeLike
 
+from ._utils import sanitize_identifier
 from .typing import GpuStruct
 
 
 def get_inferred_return_type(op, args: tuple):
-    _, return_type = cuda.compile(op, args)
+    sanitized_name = sanitize_identifier(op.__name__)
+    unique_suffix = hex(id(op))[2:]
+    abi_name = f"{sanitized_name}_{unique_suffix}"
+    _, return_type = cuda.compile(op, args, abi_info={"abi_name": abi_name})
     return return_type
 
 
@@ -40,15 +45,18 @@ def signature_from_annotations(func) -> numba.core.typing.Signature:
     argspec = inspect.getfullargspec(func)
     num_args = len(argspec.args)
     try:
-        ret_ann = argspec.annotations["return"]
+        annotations = typing.get_type_hints(func)
+    except Exception:
+        annotations = func.__annotations__
+    try:
+        ret_ann = annotations["return"]
     except KeyError:
         raise ValueError("Function has incomplete annotations: missing return type")
     retty = to_numba_type(ret_ann)
-    if num_args != len(argspec.annotations) - 1:  # -1 for the return type
+    if num_args != len(annotations) - 1:  # -1 for the return type
         raise ValueError("One or more arguments are missing type annotations")
-    argtys = tuple(
-        to_numba_type(tp)
-        for name, tp in func.__annotations__.items()
-        if name != "return"
-    )
+    try:
+        argtys = tuple(to_numba_type(annotations[name]) for name in argspec.args)
+    except KeyError:
+        raise ValueError("One or more arguments are missing type annotations")
     return retty(*argtys)

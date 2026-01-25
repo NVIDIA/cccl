@@ -21,21 +21,24 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/__memory_resource/properties.h>
-#include <cuda/__memory_resource/resource.h>
-#include <cuda/std/__new_>
-#include <cuda/std/__type_traits/is_swappable.h>
-#include <cuda/std/__utility/exchange.h>
-#include <cuda/std/__utility/forward.h>
-#include <cuda/std/__utility/in_place.h>
-#include <cuda/std/__utility/move.h>
-#include <cuda/std/atomic>
+#if _CCCL_HAS_CTK()
 
-#include <cuda/std/__cccl/prologue.h>
+#  include <cuda/__memory_resource/properties.h>
+#  include <cuda/__memory_resource/resource.h>
+#  include <cuda/std/__new_>
+#  include <cuda/std/__type_traits/is_swappable.h>
+#  include <cuda/std/__utility/exchange.h>
+#  include <cuda/std/__utility/forward.h>
+#  include <cuda/std/__utility/in_place.h>
+#  include <cuda/std/__utility/move.h>
+#  include <cuda/std/atomic>
+
+#  include <cuda/std/__cccl/prologue.h>
 
 _CCCL_BEGIN_NAMESPACE_CUDA_MR
+
 //! @rst
-//! .. _cudax-memory-resource-shared-resource:
+//! .. _libcudacxx-memory-resource-shared-resource:
 //!
 //! Resource wrapper to share ownership of a resource
 //! --------------------------------------------------
@@ -131,6 +134,48 @@ struct shared_resource : ::cuda::mr::__copy_default_queries<_Resource>
   friend void swap(shared_resource& __left, shared_resource& __right) noexcept
   {
     __left.swap(__right);
+  }
+
+  //! @brief Returns a reference to the stored resource.
+  //! @return A reference to the stored resource.
+  [[nodiscard]] _Resource& get() noexcept
+  {
+    return __control_block->__resource;
+  }
+
+  //! @brief Returns a const reference to the stored resource.
+  //! @return A const reference to the stored resource.
+  [[nodiscard]] const _Resource& get() const noexcept
+  {
+    return __control_block->__resource;
+  }
+
+  //! @brief Returns a pointer to the stored resource.
+  //! @return A pointer to the stored resource.
+  [[nodiscard]] _Resource* operator->() noexcept
+  {
+    return &__control_block->__resource;
+  }
+
+  //! @brief Returns a const pointer to the stored resource.
+  //! @return A const pointer to the stored resource.
+  [[nodiscard]] const _Resource* operator->() const noexcept
+  {
+    return &__control_block->__resource;
+  }
+
+  //! @brief Returns a reference to the stored resource.
+  //! @return A reference to the stored resource.
+  [[nodiscard]] _Resource& operator*() noexcept
+  {
+    return __control_block->__resource;
+  }
+
+  //! @brief Returns a const reference to the stored resource.
+  //! @return A const reference to the stored resource.
+  [[nodiscard]] const _Resource& operator*() const noexcept
+  {
+    return __control_block->__resource;
   }
 
   //! @brief Allocate memory of size at least \p __bytes using the stored resource.
@@ -235,7 +280,7 @@ private:
 };
 
 //! @rst
-//! .. _cudax-memory-resource-make-shared-resource:
+//! .. _libcudacxx-memory-resource-make-shared-resource:
 //!
 //! Factory function for `shared_resource` objects
 //! -----------------------------------------------
@@ -254,8 +299,11 @@ auto make_shared_resource(_Args&&... __args) -> shared_resource<_Resource>
                 "_Resource does not satisfy the cuda::mr::synchronous_resource concept");
   return shared_resource<_Resource>{::cuda::std::in_place_type<_Resource>, ::cuda::std::forward<_Args>(__args)...};
 }
+
 _CCCL_END_NAMESPACE_CUDA_MR
 
-#include <cuda/std/__cccl/epilogue.h>
+#  include <cuda/std/__cccl/epilogue.h>
+
+#endif // _CCCL_HAS_CTK()
 
 #endif // _CUDA___MEMORY_RESOURCE_SHARED_RESOURCE_H

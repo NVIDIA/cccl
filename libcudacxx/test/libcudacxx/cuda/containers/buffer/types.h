@@ -13,6 +13,7 @@
 
 #include <thrust/equal.h>
 
+#include <cuda/memory_pool>
 #include <cuda/memory_resource>
 #include <cuda/std/array>
 #include <cuda/std/iterator>

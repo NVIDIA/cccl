@@ -38,7 +38,7 @@ namespace cuda::experimental::execution
 namespace __detail
 {
 template <class _Env>
-using __starting_domain = __call_result_or_t<get_domain_t, default_domain, const _Env&>;
+using __starting_domain = __domain_of_t<const _Env&>;
 
 template <class _Sndr, class _Env>
 using __completing_domain = __call_result_t<get_completion_domain_t<set_value_t>, env_of_t<_Sndr>, const _Env&>;
@@ -71,7 +71,7 @@ struct __transform_sender_t
     else
     {
       using __transform_recurse_t = __transform_sender_t<__completing_domain<__result_t, _Env>, set_value_t>;
-      return __transform_recurse_t::template __get_declfn<__result_t, set_value_t, (_Nothrow && __is_nothrow)>();
+      return __transform_recurse_t::template __get_declfn<__result_t, _Env, (_Nothrow && __is_nothrow)>();
     }
   }
 

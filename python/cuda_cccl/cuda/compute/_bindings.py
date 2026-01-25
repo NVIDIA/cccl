@@ -69,11 +69,17 @@ if os.name == "nt":
             except Exception:
                 pass
 
+_BINDINGS_AVAILABLE = False
+
 try:
     bindings_module = importlib.import_module(module_suffix, __package__)
     # Import all symbols from the module
     globals().update(bindings_module.__dict__)
+    _BINDINGS_AVAILABLE = True
 except ImportError as e:
-    raise ImportError(
-        f"Failed to import CUDA CCCL bindings for CUDA {cuda_version}. "
-    ) from e
+    import warnings
+
+    warnings.warn(
+        f"CUDA CCCL bindings for CUDA {cuda_version} not available: {e}",
+        RuntimeWarning,
+    )

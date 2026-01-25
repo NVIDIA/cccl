@@ -9,57 +9,13 @@ import numba
 
 from .. import _bindings
 from .. import _cccl_interop as cccl
-from .._caching import CachableFunction, cache_with_key
+from .._caching import cache_with_registered_key_functions
 from .._cccl_interop import call_build, set_cccl_iterator_state
 from .._utils import protocols
 from .._utils.temp_storage_buffer import TempStorageBuffer
 from ..iterators._iterators import IteratorBase
+from ..op import OpAdapter, make_op_adapter
 from ..typing import DeviceArrayLike
-
-
-def make_cache_key(
-    d_in: DeviceArrayLike | IteratorBase,
-    d_first_part_out: DeviceArrayLike | IteratorBase,
-    d_second_part_out: DeviceArrayLike | IteratorBase,
-    d_unselected_out: DeviceArrayLike | IteratorBase,
-    d_num_selected_out: DeviceArrayLike | IteratorBase,
-    select_first_part_op: Callable,
-    select_second_part_op: Callable,
-):
-    d_in_key = (
-        d_in.kind if isinstance(d_in, IteratorBase) else protocols.get_dtype(d_in)
-    )
-    d_first_part_out_key = (
-        d_first_part_out.kind
-        if isinstance(d_first_part_out, IteratorBase)
-        else protocols.get_dtype(d_first_part_out)
-    )
-    d_second_part_out_key = (
-        d_second_part_out.kind
-        if isinstance(d_second_part_out, IteratorBase)
-        else protocols.get_dtype(d_second_part_out)
-    )
-    d_unselected_out_key = (
-        d_unselected_out.kind
-        if isinstance(d_unselected_out, IteratorBase)
-        else protocols.get_dtype(d_unselected_out)
-    )
-    d_num_selected_out_key = (
-        d_num_selected_out.kind
-        if isinstance(d_num_selected_out, IteratorBase)
-        else protocols.get_dtype(d_num_selected_out)
-    )
-    select_first_part_op_key = CachableFunction(select_first_part_op)
-    select_second_part_op_key = CachableFunction(select_second_part_op)
-    return (
-        d_in_key,
-        d_first_part_out_key,
-        d_second_part_out_key,
-        d_unselected_out_key,
-        d_num_selected_out_key,
-        select_first_part_op_key,
-        select_second_part_op_key,
-    )
 
 
 class _ThreeWayPartition:
@@ -70,8 +26,10 @@ class _ThreeWayPartition:
         "d_second_part_out_cccl",
         "d_unselected_out_cccl",
         "d_num_selected_out_cccl",
-        "select_first_part_op_wrapper",
-        "select_second_part_op_wrapper",
+        "select_first_part_op",
+        "select_second_part_op",
+        "select_first_part_op_cccl",
+        "select_second_part_op_cccl",
     ]
 
     def __init__(
@@ -81,8 +39,8 @@ class _ThreeWayPartition:
         d_second_part_out: DeviceArrayLike | IteratorBase,
         d_unselected_out: DeviceArrayLike | IteratorBase,
         d_num_selected_out: DeviceArrayLike | IteratorBase,
-        select_first_part_op: Callable,
-        select_second_part_op: Callable,
+        select_first_part_op: OpAdapter,
+        select_second_part_op: OpAdapter,
     ):
         self.d_in_cccl = cccl.to_cccl_input_iter(d_in)
         self.d_first_part_out_cccl = cccl.to_cccl_output_iter(d_first_part_out)
@@ -90,12 +48,14 @@ class _ThreeWayPartition:
         self.d_unselected_out_cccl = cccl.to_cccl_output_iter(d_unselected_out)
         self.d_num_selected_out_cccl = cccl.to_cccl_output_iter(d_num_selected_out)
 
+        # Compile ops - partition predicates return uint8 (boolean)
         value_type = cccl.get_value_type(d_in)
-        sig = numba.types.uint8(value_type)
-
-        # There are no well-known operations that can be used with three_way_partition
-        self.select_first_part_op_wrapper = cccl.to_cccl_op(select_first_part_op, sig)
-        self.select_second_part_op_wrapper = cccl.to_cccl_op(select_second_part_op, sig)
+        self.select_first_part_op_cccl = select_first_part_op.compile(
+            (value_type,), numba.types.uint8
+        )
+        self.select_second_part_op_cccl = select_second_part_op.compile(
+            (value_type,), numba.types.uint8
+        )
 
         self.build_result = call_build(
             _bindings.DeviceThreeWayPartitionBuildResult,
@@ -104,8 +64,8 @@ class _ThreeWayPartition:
             self.d_second_part_out_cccl,
             self.d_unselected_out_cccl,
             self.d_num_selected_out_cccl,
-            self.select_first_part_op_wrapper,
-            self.select_second_part_op_wrapper,
+            self.select_first_part_op_cccl,
+            self.select_second_part_op_cccl,
         )
 
     def __call__(
@@ -124,6 +84,7 @@ class _ThreeWayPartition:
         set_cccl_iterator_state(self.d_second_part_out_cccl, d_second_part_out)
         set_cccl_iterator_state(self.d_unselected_out_cccl, d_unselected_out)
         set_cccl_iterator_state(self.d_num_selected_out_cccl, d_num_selected_out)
+
         stream_handle = protocols.validate_and_get_stream(stream)
 
         if temp_storage is None:
@@ -141,23 +102,23 @@ class _ThreeWayPartition:
             self.d_second_part_out_cccl,
             self.d_unselected_out_cccl,
             self.d_num_selected_out_cccl,
-            self.select_first_part_op_wrapper,
-            self.select_second_part_op_wrapper,
+            self.select_first_part_op_cccl,
+            self.select_second_part_op_cccl,
             num_items,
             stream_handle,
         )
         return temp_storage_bytes
 
 
-@cache_with_key(make_cache_key)
+@cache_with_registered_key_functions
 def make_three_way_partition(
     d_in: DeviceArrayLike | IteratorBase,
     d_first_part_out: DeviceArrayLike | IteratorBase,
     d_second_part_out: DeviceArrayLike | IteratorBase,
     d_unselected_out: DeviceArrayLike | IteratorBase,
     d_num_selected_out: DeviceArrayLike | IteratorBase,
-    select_first_part_op: Callable,
-    select_second_part_op: Callable,
+    select_first_part_op: Callable | OpAdapter,
+    select_second_part_op: Callable | OpAdapter,
 ):
     """
     Computes a device-wide three-way partition using the specified unary ``select_first_part_op`` and ``select_second_part_op`` operators.
@@ -175,20 +136,25 @@ def make_three_way_partition(
         d_second_part_out: Device array or iterator to store the second part of the output
         d_unselected_out: Device array or iterator to store the unselected items
         d_num_selected_out: Device array to store the number of items selected. The total number of items selected by ``select_first_part_op`` and ``select_second_part_op`` is stored in ``d_num_selected_out[0]`` and ``d_num_selected_out[1]``, respectively.
-        select_first_part_op: Callable representing the unary operator to select the first part
-        select_second_part_op: Callable representing the unary operator to select the second part
+        select_first_part_op: Callable representing the unary operator to select the first part.
+            Can reference device arrays as globals/closures - they will be automatically captured.
+        select_second_part_op: Callable representing the unary operator to select the second part.
+            Can reference device arrays as globals/closures - they will be automatically captured.
 
     Returns:
         A callable object that can be used to perform the three-way partition
     """
+    first_op_adapter = make_op_adapter(select_first_part_op)
+    second_op_adapter = make_op_adapter(select_second_part_op)
+
     return _ThreeWayPartition(
         d_in,
         d_first_part_out,
         d_second_part_out,
         d_unselected_out,
         d_num_selected_out,
-        select_first_part_op,
-        select_second_part_op,
+        first_op_adapter,
+        second_op_adapter,
     )
 
 

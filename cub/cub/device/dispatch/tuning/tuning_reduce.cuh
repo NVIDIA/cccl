@@ -20,10 +20,6 @@
 #include <cuda/__device/arch_id.h>
 #include <cuda/std/optional>
 
-#if _CCCL_HAS_CONCEPTS()
-#  include <cuda/std/concepts>
-#endif // _CCCL_HAS_CONCEPTS()
-
 #if !_CCCL_COMPILER(NVRTC)
 #  include <ostream>
 #endif
@@ -64,45 +60,37 @@ struct agent_reduce_policy // equivalent of AgentReducePolicy
 #endif // !_CCCL_COMPILER(NVRTC)
 };
 
-// TODO(bgruber): bikeshed name before we make the tuning API public
-struct reduce_arch_policy // equivalent of a policy for a single CUDA architecture
+struct reduce_policy
 {
-  agent_reduce_policy reduce_policy;
-  agent_reduce_policy single_tile_policy;
-  agent_reduce_policy segmented_reduce_policy;
-  agent_reduce_policy reduce_nondeterministic_policy;
+  agent_reduce_policy reduce;
+  agent_reduce_policy single_tile;
+  agent_reduce_policy segmented_reduce;
+  agent_reduce_policy reduce_nondeterministic;
 
-  _CCCL_API constexpr friend bool operator==(const reduce_arch_policy& lhs, const reduce_arch_policy& rhs)
+  _CCCL_API constexpr friend bool operator==(const reduce_policy& lhs, const reduce_policy& rhs)
   {
-    return lhs.reduce_policy == rhs.reduce_policy && lhs.single_tile_policy == rhs.single_tile_policy
-        && lhs.segmented_reduce_policy == rhs.segmented_reduce_policy
-        && lhs.reduce_nondeterministic_policy == rhs.reduce_nondeterministic_policy;
+    return lhs.reduce == rhs.reduce && lhs.single_tile == rhs.single_tile
+        && lhs.segmented_reduce == rhs.segmented_reduce && lhs.reduce_nondeterministic == rhs.reduce_nondeterministic;
   }
 
-  _CCCL_API constexpr friend bool operator!=(const reduce_arch_policy& lhs, const reduce_arch_policy& rhs)
+  _CCCL_API constexpr friend bool operator!=(const reduce_policy& lhs, const reduce_policy& rhs)
   {
     return !(lhs == rhs);
   }
 
 #if !_CCCL_COMPILER(NVRTC)
-  friend ::std::ostream& operator<<(::std::ostream& os, const reduce_arch_policy& p)
+  friend ::std::ostream& operator<<(::std::ostream& os, const reduce_policy& p)
   {
-    return os << "reduce_arch_policy { .reduce_policy = " << p.reduce_policy << ", .single_tile_policy = "
-              << p.single_tile_policy << ", .segmented_reduce_policy = " << p.segmented_reduce_policy
-              << ", .reduce_nondeterministic_policy = " << p.reduce_nondeterministic_policy << " }";
+    return os
+        << "reduce_policy { .reduce = " << p.reduce << ", .single_tile = " << p.single_tile << ", .segmented_reduce = "
+        << p.segmented_reduce << ", .reduce_nondeterministic = " << p.reduce_nondeterministic << " }";
   }
 #endif // !_CCCL_COMPILER(NVRTC)
 };
 
 #if _CCCL_HAS_CONCEPTS()
-_CCCL_API consteval void __needs_a_constexpr_value(auto) {}
-
-// TODO(bgruber): bikeshed name before we make the tuning API public
 template <typename T>
-concept reduce_policy_hub = requires(T hub, ::cuda::arch_id arch) {
-  { hub(arch) } -> _CCCL_CONCEPT_VSTD::same_as<reduce_arch_policy>;
-  { __needs_a_constexpr_value(hub(arch)) };
-};
+concept reduce_policy_selector = policy_selector<T, reduce_policy>;
 #endif // _CCCL_HAS_CONCEPTS()
 
 template <typename PolicyT, typename = void>
@@ -419,17 +407,14 @@ struct policy_hub
   using MaxPolicy = Policy1000;
 };
 
-struct arch_policies // equivalent to the policy_hub, holds policies for a bunch of CUDA architectures
+struct policy_selector
 {
   accum_type accum_t; // TODO(bgruber): accum_type should become some CCCL global enum
   op_type operation_t; // TODO(bgruber): op_type should become some CCCL global enum
   int offset_size;
   int accum_size;
 
-  // IDEA(bgruber): instead of the constexpr function, we could also provide a map<int, reduce_arch_policy> and move the
-  // selection mechanism elsewhere
-
-  [[nodiscard]] _CCCL_API constexpr auto operator()(::cuda::arch_id arch) const -> reduce_arch_policy
+  [[nodiscard]] _CCCL_API constexpr auto operator()(::cuda::arch_id arch) const -> reduce_policy
   {
     // if we don't have a tuning for sm100, fall through
     auto sm100_tuning = get_sm100_tuning(accum_t, operation_t, offset_size, accum_size);
@@ -478,16 +463,16 @@ struct arch_policies // equivalent to the policy_hub, holds policies for a bunch
 };
 
 #if _CCCL_HAS_CONCEPTS()
-static_assert(reduce_policy_hub<arch_policies>);
+static_assert(reduce_policy_selector<policy_selector>);
 #endif // _CCCL_HAS_CONCEPTS()
 
 // stateless version which can be passed to kernels
 template <typename AccumT, typename OffsetT, typename ReductionOpT>
-struct arch_policies_from_types
+struct policy_selector_from_types
 {
-  [[nodiscard]] _CCCL_API constexpr auto operator()(::cuda::arch_id arch) const -> reduce_arch_policy
+  [[nodiscard]] _CCCL_API constexpr auto operator()(::cuda::arch_id arch) const -> reduce_policy
   {
-    constexpr auto policies = arch_policies{
+    constexpr auto policies = policy_selector{
       classify_accum_type<AccumT>(), classify_op<ReductionOpT>(), int{sizeof(OffsetT)}, int{sizeof(AccumT)}};
     return policies(arch);
   }

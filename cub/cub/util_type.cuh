@@ -64,6 +64,20 @@ using it_difference_t = typename ::cuda::std::iterator_traits<It>::difference_ty
 template <typename It>
 using it_pointer_t = typename ::cuda::std::iterator_traits<It>::pointer;
 
+// Like sizeof(T) but works for void (yields 0)
+template <typename T>
+inline constexpr size_t size_of = sizeof(T);
+
+template <>
+inline constexpr size_t size_of<void> = 0;
+
+// Like alignof(T) but works for void (yields 0)
+template <typename T>
+inline constexpr size_t align_of = alignof(T);
+
+template <>
+inline constexpr size_t align_of<void> = 0;
+
 // use this whenever you need to lazily evaluate a trait. E.g., as an alternative in replace_if_use_default.
 template <template <typename...> typename Trait, typename... Args>
 struct lazy_trait
@@ -243,7 +257,7 @@ struct InputValue
 {
   using value_type    = T;
   using iterator_type = IterT;
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE operator T()
+  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE operator T() const
   {
     if (m_is_future)
     {

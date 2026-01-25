@@ -18,9 +18,9 @@ CUDA Experimental
 However, any feature within this library has important use cases and we encourage users to experiment with them.
 
 Specifically, ``cudax`` provides:
-   - :ref:`uninitialized storage <cudax-containers-uninitialized-buffer>`
-   - :ref:`an owning type erased memory resource <cudax-memory-resource-any-async-resource>`
-   - :ref:`stream-ordered memory resources <cudax-memory-resource-async>`
+   - :ref:`uninitialized storage <libcudacxx-containers-uninitialized-buffer>`
+   - :ref:`an owning type erased memory resource <libcudacxx-memory-resource-any-async-resource>`
+   - :ref:`stream-ordered memory resources <libcudacxx-memory-resource-async>`
    - :ref:`graph functionality <cudax-graph>`
    - dimensions description functionality
    - :ref:`an implementation of the STF (Sequential Task Flow) programming model <stf>`

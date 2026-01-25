@@ -23,10 +23,19 @@
 
 #if _CCCL_HAS_CTK() && !_CCCL_COMPILER(NVRTC)
 
+#  include <cuda/std/__cstddef/types.h>
 #  include <cuda/std/__exception/cuda_error.h>
 #  include <cuda/std/__internal/namespaces.h>
+#  include <cuda/std/__limits/numeric_limits.h>
 #  include <cuda/std/__type_traits/always_false.h>
 #  include <cuda/std/__type_traits/is_same.h>
+#  if _CCCL_OS(WINDOWS)
+#    include <windows.h>
+#  else
+#    include <dlfcn.h>
+#  endif
+
+#  include <stdexcept>
 
 #  include <cuda.h>
 
@@ -46,16 +55,37 @@ _CCCL_BEGIN_NAMESPACE_CUDA_DRIVER
 _CCCL_SUPPRESS_DEPRECATED_PUSH
 
 //! @brief Gets the cuGetProcAddress function pointer.
-[[nodiscard]] _CCCL_HOST_API inline auto __getProcAddressFn() -> decltype(cuGetProcAddress)*
+[[nodiscard]] _CCCL_PUBLIC_HOST_API inline auto __getProcAddressFn() -> decltype(cuGetProcAddress)*
 {
-  // TODO switch to dlopen of libcuda.so instead of the below
-  void* __fn;
-  ::cudaDriverEntryPointQueryResult __result;
-  ::cudaError_t __status = ::cudaGetDriverEntryPoint("cuGetProcAddress", &__fn, ::cudaEnableDefault, &__result);
-  if (__status != ::cudaSuccess || __result != ::cudaDriverEntryPointSuccess)
+  const char* __fn_name = "cuGetProcAddress_v2";
+#  if _CCCL_OS(WINDOWS)
+  static auto __driver_library = ::LoadLibraryExA("nvcuda.dll", nullptr, LOAD_LIBRARY_SEARCH_SYSTEM32);
+  if (__driver_library == nullptr)
   {
-    ::cuda::__throw_cuda_error(::cudaErrorUnknown, "Failed to get cuGetProcAddress");
+    ::cuda::__throw_cuda_error(::cudaErrorUnknown, "Failed to load nvcuda.dll");
   }
+  static void* __fn = ::GetProcAddress(__driver_library, __fn_name);
+  if (__fn == nullptr)
+  {
+    ::cuda::__throw_cuda_error(::cudaErrorInitializationError, "Failed to get cuGetProcAddress from nvcuda.dll");
+  }
+#  else // ^^^ _CCCL_OS(WINDOWS) ^^^ / vvv !_CCCL_OS(WINDOWS) vvv
+#    if _CCCL_OS(ANDROID)
+  const char* __driver_library_name = "libcuda.so";
+#    else // ^^^ _CCCL_OS(ANDROID) ^^^ / vvv !_CCCL_OS(ANDROID) vvv
+  const char* __driver_library_name = "libcuda.so.1";
+#    endif // ^^^ !_CCCL_OS(ANDROID) ^^^
+  static void* __driver_library = ::dlopen(__driver_library_name, RTLD_NOW);
+  if (__driver_library == nullptr)
+  {
+    ::cuda::__throw_cuda_error(::cudaErrorUnknown, "Failed to load libcuda.so.1");
+  }
+  static void* __fn = ::dlsym(__driver_library, __fn_name);
+  if (__fn == nullptr)
+  {
+    ::cuda::__throw_cuda_error(::cudaErrorInitializationError, "Failed to get cuGetProcAddress from libcuda.so.1");
+  }
+#  endif // ^^^ !_CCCL_OS(WINDOWS) ^^^
   return reinterpret_cast<decltype(cuGetProcAddress)*>(__fn);
 }
 
@@ -146,7 +176,7 @@ _CCCL_HOST_API inline void __call_driver_fn(Fn __fn, const char* __err_msg, Args
 //! @return The address of the symbol.
 //!
 //! @throws @c cuda::cuda_error if the symbol cannot be obtained or the CUDA driver failed to initialize.
-[[nodiscard]] _CCCL_HOST_API inline void*
+[[nodiscard]] _CCCL_PUBLIC_HOST_API inline void*
 __get_driver_entry_point(const char* __name, [[maybe_unused]] int __major = 12, [[maybe_unused]] int __minor = 0)
 {
   // Get cuGetProcAddress function and call cuInit(0) only on the first call
@@ -196,7 +226,7 @@ __get_driver_entry_point(const char* __name, [[maybe_unused]] int __major = 12, 
   return __result;
 }
 
-[[nodiscard]] _CCCL_HOST_API inline ::CUdevice __deviceGetAttribute(::CUdevice_attribute __attr, ::CUdevice __device)
+[[nodiscard]] _CCCL_HOST_API inline int __deviceGetAttribute(::CUdevice_attribute __attr, ::CUdevice __device)
 {
   static auto __driver_fn = _CCCLRT_GET_DRIVER_FUNCTION(cuDeviceGetAttribute);
   int __result;
@@ -280,7 +310,8 @@ _CCCL_HOST_API inline ::CUcontext __ctxPop()
 
 // Memory management
 
-_CCCL_HOST_API inline void __memcpyAsync(void* __dst, const void* __src, size_t __count, ::CUstream __stream)
+_CCCL_HOST_API inline void
+__memcpyAsync(void* __dst, const void* __src, ::cuda::std::size_t __count, ::CUstream __stream)
 {
   static auto __driver_fn = _CCCLRT_GET_DRIVER_FUNCTION(cuMemcpyAsync);
   ::cuda::__driver::__call_driver_fn(
@@ -294,10 +325,10 @@ _CCCL_HOST_API inline void __memcpyAsync(void* __dst, const void* __src, size_t 
 
 #  if _CCCL_CTK_AT_LEAST(13, 0)
 _CCCL_HOST_API inline void __memcpyAsyncWithAttributes(
-  void* __dst, const void* __src, size_t __count, ::CUstream __stream, ::CUmemcpyAttributes __attributes)
+  void* __dst, const void* __src, ::cuda::std::size_t __count, ::CUstream __stream, ::CUmemcpyAttributes __attributes)
 {
-  static auto __driver_fn = _CCCLRT_GET_DRIVER_FUNCTION_VERSIONED(cuMemcpyBatchAsync, cuMemcpyBatchAsync, 13, 0);
-  size_t __zero           = 0;
+  static auto __driver_fn    = _CCCLRT_GET_DRIVER_FUNCTION_VERSIONED(cuMemcpyBatchAsync, cuMemcpyBatchAsync, 13, 0);
+  ::cuda::std::size_t __zero = 0;
   ::cuda::__driver::__call_driver_fn(
     __driver_fn,
     "Failed to perform a memcpy with attributes",
@@ -313,7 +344,7 @@ _CCCL_HOST_API inline void __memcpyAsyncWithAttributes(
 #  endif // _CCCL_CTK_AT_LEAST(13, 0)
 
 template <typename _Tp>
-_CCCL_HOST_API void __memsetAsync(void* __dst, _Tp __value, size_t __count, ::CUstream __stream)
+_CCCL_HOST_API void __memsetAsync(void* __dst, _Tp __value, ::cuda::std::size_t __count, ::CUstream __stream)
 {
   if constexpr (sizeof(_Tp) == 1)
   {
@@ -352,10 +383,10 @@ _CCCL_HOST_API inline void __mempoolSetAttribute(::CUmemoryPool __pool, ::CUmemP
   ::cuda::__driver::__call_driver_fn(__driver_fn, "Failed to set attribute for a memory pool", __pool, __attr, __value);
 }
 
-_CCCL_HOST_API inline size_t __mempoolGetAttribute(::CUmemoryPool __pool, ::CUmemPool_attribute __attr)
+_CCCL_HOST_API inline ::cuda::std::size_t __mempoolGetAttribute(::CUmemoryPool __pool, ::CUmemPool_attribute __attr)
 {
-  size_t __value          = 0;
-  static auto __driver_fn = _CCCLRT_GET_DRIVER_FUNCTION(cuMemPoolGetAttribute);
+  ::cuda::std::size_t __value = 0;
+  static auto __driver_fn     = _CCCLRT_GET_DRIVER_FUNCTION(cuMemPoolGetAttribute);
   ::cuda::__driver::__call_driver_fn(__driver_fn, "Failed to get attribute for a memory pool", __pool, __attr, &__value);
   return __value;
 }
@@ -388,7 +419,8 @@ _CCCL_HOST_API inline ::cudaError_t __freeAsyncNoThrow(::CUdeviceptr __dptr, ::C
   return static_cast<::cudaError_t>(__driver_fn(__dptr, __stream));
 }
 
-_CCCL_HOST_API inline void __mempoolSetAccess(::CUmemoryPool __pool, ::CUmemAccessDesc* __descs, ::size_t __count)
+_CCCL_HOST_API inline void
+__mempoolSetAccess(::CUmemoryPool __pool, ::CUmemAccessDesc* __descs, ::cuda::std::size_t __count)
 {
   static auto __driver_fn = _CCCLRT_GET_DRIVER_FUNCTION(cuMemPoolSetAccess);
   ::cuda::__driver::__call_driver_fn(__driver_fn, "Failed to set access of a memory pool", __pool, __descs, __count);
@@ -400,6 +432,13 @@ _CCCL_HOST_API inline ::CUmemAccess_flags __mempoolGetAccess(::CUmemoryPool __po
   ::CUmemAccess_flags __flags;
   ::cuda::__driver::__call_driver_fn(__driver_fn, "Failed to get access of a memory pool", &__flags, __pool, __location);
   return __flags;
+}
+
+_CCCL_HOST_API inline ::cudaError_t
+__mempoolGetAccessNoThrow(::CUmemAccess_flags& __flags, ::CUmemoryPool __pool, ::CUmemLocation* __location) noexcept
+{
+  static auto __driver_fn = _CCCLRT_GET_DRIVER_FUNCTION(cuMemPoolGetAccess);
+  return static_cast<::cudaError_t>(__driver_fn(&__flags, __pool, __location));
 }
 
 #  if _CCCL_CTK_AT_LEAST(13, 0)
@@ -851,6 +890,13 @@ __graphKernelNodeSetAttribute(::CUgraphNode __node, ::CUkernelNodeAttrID __id, c
   return static_cast<bool>(__result);
 }
 
+[[nodiscard]] _CCCL_HOST_API inline ::cudaError_t
+__deviceCanAccessPeerNoThrow(int& __result, ::CUdevice __dev, ::CUdevice __peer_dev) noexcept
+{
+  static auto __driver_fn = _CCCLRT_GET_DRIVER_FUNCTION(cuDeviceCanAccessPeer);
+  return static_cast<::cudaError_t>(__driver_fn(&__result, __dev, __peer_dev));
+}
+
 // Green contexts
 
 #  if _CCCL_CTK_AT_LEAST(12, 5)
@@ -889,8 +935,54 @@ __graphKernelNodeSetAttribute(::CUgraphNode __node, ::CUkernelNodeAttrID __id, c
 }
 #  endif // _CCCL_CTK_AT_LEAST(13, 0)
 
-[[nodiscard]] _CCCL_HOST_API inline ::cudaError_t __tensorMapEncodeTiledNoThrow(
-  ::CUtensorMap& __tensorMap,
+[[nodiscard]] _CCCL_HOST_API inline ::cuda::std::size_t
+__cutensormap_size_bytes(::cuda::std::size_t __num_items, ::CUtensorMapDataType __data_type)
+{
+  constexpr auto __max_size = ::cuda::std::numeric_limits<::cuda::std::size_t>::max();
+  switch (__data_type)
+  {
+    case ::CU_TENSOR_MAP_DATA_TYPE_UINT8:
+#  if _CCCL_CTK_AT_LEAST(12, 8)
+    case ::CU_TENSOR_MAP_DATA_TYPE_16U6_ALIGN16B:
+#  endif // _CCCL_CTK_AT_LEAST(12, 8)
+      return __num_items;
+    case ::CU_TENSOR_MAP_DATA_TYPE_UINT16:
+    case ::CU_TENSOR_MAP_DATA_TYPE_BFLOAT16:
+    case ::CU_TENSOR_MAP_DATA_TYPE_FLOAT16:
+      if (__num_items > __max_size / 2)
+      {
+        _CCCL_THROW(::std::invalid_argument{"Number of items must be less than or equal to 2^64 / 2"});
+      }
+      return __num_items * 2;
+    case ::CU_TENSOR_MAP_DATA_TYPE_INT32:
+    case ::CU_TENSOR_MAP_DATA_TYPE_UINT32:
+    case ::CU_TENSOR_MAP_DATA_TYPE_FLOAT32:
+    case ::CU_TENSOR_MAP_DATA_TYPE_FLOAT32_FTZ:
+    case ::CU_TENSOR_MAP_DATA_TYPE_TFLOAT32:
+    case ::CU_TENSOR_MAP_DATA_TYPE_TFLOAT32_FTZ:
+      if (__num_items > __max_size / 4)
+      {
+        _CCCL_THROW(::std::invalid_argument{"Number of items must be less than or equal to 2^64 / 4"});
+      }
+      return __num_items * 4;
+    case ::CU_TENSOR_MAP_DATA_TYPE_INT64:
+    case ::CU_TENSOR_MAP_DATA_TYPE_UINT64:
+    case ::CU_TENSOR_MAP_DATA_TYPE_FLOAT64:
+      if (__num_items > __max_size / 8)
+      {
+        _CCCL_THROW(::std::invalid_argument{"Number of items must be less than or equal to 2^64 / 8"});
+      }
+      return __num_items * 8;
+#  if _CCCL_CTK_AT_LEAST(12, 8)
+    case ::CU_TENSOR_MAP_DATA_TYPE_16U4_ALIGN8B:
+    case ::CU_TENSOR_MAP_DATA_TYPE_16U4_ALIGN16B:
+      return __num_items / 2;
+#  endif // _CCCL_CTK_AT_LEAST(12, 8)
+  }
+  return 0; // MSVC workaround
+}
+
+[[nodiscard]] _CCCL_HOST_API inline ::CUtensorMap __tensorMapEncodeTiled(
   ::CUtensorMapDataType __tensorDataType,
   ::cuda::std::uint32_t __tensorRank,
   void* __globalAddress,
@@ -901,10 +993,13 @@ __graphKernelNodeSetAttribute(::CUgraphNode __node, ::CUkernelNodeAttrID __id, c
   ::CUtensorMapInterleave __interleave,
   ::CUtensorMapSwizzle __swizzle,
   ::CUtensorMapL2promotion __l2Promotion,
-  ::CUtensorMapFloatOOBfill __oobFill) noexcept
+  ::CUtensorMapFloatOOBfill __oobFill)
 {
+  ::CUtensorMap __tensorMap{};
   static auto __driver_fn = _CCCLRT_GET_DRIVER_FUNCTION(cuTensorMapEncodeTiled);
-  return static_cast<::cudaError_t>(__driver_fn(
+  __call_driver_fn(
+    __driver_fn,
+    "Failed to encode TMA descriptor",
     &__tensorMap,
     __tensorDataType,
     __tensorRank,
@@ -916,7 +1011,24 @@ __graphKernelNodeSetAttribute(::CUgraphNode __node, ::CUkernelNodeAttrID __id, c
     __interleave,
     __swizzle,
     __l2Promotion,
-    __oobFill));
+    __oobFill);
+  // workaround for nvbug 5736804
+  if (::cuda::__driver::__version_below(13, 2))
+  {
+    const auto __tensor_req_size                = __globalDim[__tensorRank - 1] * __globalStrides[__tensorRank - 1];
+    ::cuda::std::size_t __tensor_req_size_bytes = 0;
+    __tensor_req_size_bytes   = ::cuda::__driver::__cutensormap_size_bytes(__tensor_req_size, __tensorDataType);
+    const auto __tensorMapPtr = reinterpret_cast<::cuda::std::uint64_t*>(static_cast<void*>(&__tensorMap));
+    if (__tensor_req_size_bytes < 128 * 1024) // 128 KiB
+    {
+      __tensorMapPtr[1] &= ~(::cuda::std::uint64_t{1} << 21); // clear the bit
+    }
+    else
+    {
+      __tensorMapPtr[1] |= ::cuda::std::uint64_t{1} << 21; // set the bit
+    }
+  }
+  return __tensorMap;
 }
 
 #  undef _CCCLRT_GET_DRIVER_FUNCTION

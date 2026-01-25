@@ -113,7 +113,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT continues_on_t
 
     _CCCL_API constexpr void set_value() noexcept
     {
-      __state_->__result_.__visit(__send_result_visitor{}, __state_->__result_, __state_->__rcvr_);
+      __visit(__send_result_visitor{}, __state_->__result_, __state_->__rcvr_);
     }
 
     template <class _Error>
@@ -204,6 +204,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT continues_on_t
     using __rcvr_t       = continues_on_t::__rcvr_t<_Rcvr, __results_t>;
     using __stash_rcvr_t = continues_on_t::__stash_rcvr_t<_Sch, _Rcvr, __results_t>;
 
+    _CCCL_EXEC_CHECK_DISABLE
     _CCCL_API constexpr explicit __opstate_t(_CvSndr&& __sndr, _Sch __sch, _Rcvr __rcvr)
         : __state_{{static_cast<_Rcvr&&>(__rcvr), {}}, execution::connect(schedule(__sch), __rcvr_t{&__state_})}
         , __opstate1_{execution::connect(static_cast<_CvSndr&&>(__sndr), __stash_rcvr_t{&__state_})}
@@ -230,6 +231,7 @@ public:
   template <class _Sch>
   struct _CCCL_TYPE_VISIBILITY_DEFAULT __closure_t
   {
+    _CCCL_EXEC_CHECK_DISABLE
     template <class _Sndr>
     [[nodiscard]]
     _CCCL_API constexpr auto operator()(_Sndr __sndr) const -> __sndr_t<_Sch, __call_result_t<schedule_from_t, _Sndr>>
@@ -239,6 +241,7 @@ public:
       return __sndr_t<_Sch, __child_t>{{}, __sch_, schedule_from(static_cast<_Sndr&&>(__sndr))};
     }
 
+    _CCCL_EXEC_CHECK_DISABLE
     template <class _Sndr>
     [[nodiscard]]
     _CCCL_API constexpr friend auto operator|(_Sndr __sndr, __closure_t __clsur)
@@ -252,6 +255,7 @@ public:
     _Sch __sch_;
   };
 
+  _CCCL_EXEC_CHECK_DISABLE
   template <class _Sch>
   [[nodiscard]] _CCCL_API constexpr auto operator()(_Sch __sch) const -> __closure_t<_Sch>
   {
@@ -259,6 +263,7 @@ public:
     return __closure_t<_Sch>{__sch};
   }
 
+  _CCCL_EXEC_CHECK_DISABLE
   template <class _Sch, class _Sndr>
   [[nodiscard]] _CCCL_API constexpr auto operator()(_Sndr __sndr, _Sch __sch) const
     -> __sndr_t<_Sch, __call_result_t<schedule_from_t, _Sndr>>
@@ -318,6 +323,7 @@ public:
   //! Otherwise, if the scheduler's sender never completes with @c _SetTag, then a
   //! @c _SetTag completion can only come from the original sender, so return the
   //! original sender's completion scheduler.
+  _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _SetTag, class... _Env)
   _CCCL_REQUIRES((__same_as<_SetTag, set_value_t> || __never_completes_with<_Sndr, _SetTag, __fwd_env_t<_Env>...>)
                    _CCCL_AND(!__has_decay_copy_errors<_SetTag, _Env...>()))
@@ -328,6 +334,7 @@ public:
   }
 
   //! @overload
+  _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _SetTag, class... _Env)
   _CCCL_REQUIRES(__never_completes_with<schedule_result_t<_Sch>, _SetTag, __fwd_env_t<_Env>...>)
   [[nodiscard]] _CCCL_API constexpr auto query(get_completion_scheduler_t<_SetTag>, const _Env&... __env) const noexcept
@@ -432,12 +439,14 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT continues_on_t::__sndr_t
     _CCCL_UNREACHABLE();
   }
 
+  _CCCL_EXEC_CHECK_DISABLE
   template <class _Rcvr>
   [[nodiscard]] _CCCL_API constexpr auto connect(_Rcvr __rcvr) && -> __opstate_t<_Sch, _Sndr, _Rcvr>
   {
     return __opstate_t<_Sch, _Sndr, _Rcvr>{static_cast<_Sndr&&>(__sndr_), __sch_, static_cast<_Rcvr&&>(__rcvr)};
   }
 
+  _CCCL_EXEC_CHECK_DISABLE
   template <class _Rcvr>
   [[nodiscard]] _CCCL_API constexpr auto connect(_Rcvr __rcvr) const& -> __opstate_t<_Sch, const _Sndr&, _Rcvr>
   {
@@ -455,7 +464,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT continues_on_t::__sndr_t
 };
 
 template <class _Sch, class _Sndr>
-inline constexpr size_t structured_binding_size<continues_on_t::__sndr_t<_Sch, _Sndr>> = 3;
+inline constexpr int structured_binding_size<continues_on_t::__sndr_t<_Sch, _Sndr>> = 3;
 
 _CCCL_GLOBAL_CONSTANT continues_on_t continues_on{};
 } // namespace cuda::experimental::execution

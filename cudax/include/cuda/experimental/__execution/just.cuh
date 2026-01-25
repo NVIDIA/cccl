@@ -53,7 +53,7 @@ private:
     using __tuple_t               = ::cuda::std::__tuple<_Ts...>;
 
     _CCCL_API constexpr explicit __opstate_t(_Rcvr&& __rcvr, __tuple_t __values)
-        : __rcvr_{__rcvr}
+        : __rcvr_{static_cast<_Rcvr&&>(__rcvr)}
         , __values_{static_cast<__tuple_t&&>(__values)}
     {}
 
@@ -166,11 +166,11 @@ _CCCL_API constexpr auto __just_t<_JustTag, _SetTag>::operator()(_Ts... __ts) co
 }
 
 template <class... _Ts>
-inline constexpr size_t structured_binding_size<just_t::__sndr_t<_Ts...>> = 2;
+inline constexpr int structured_binding_size<just_t::__sndr_t<_Ts...>> = 2;
 template <class... _Ts>
-inline constexpr size_t structured_binding_size<just_error_t::__sndr_t<_Ts...>> = 2;
+inline constexpr int structured_binding_size<just_error_t::__sndr_t<_Ts...>> = 2;
 template <class... _Ts>
-inline constexpr size_t structured_binding_size<just_stopped_t::__sndr_t<_Ts...>> = 2;
+inline constexpr int structured_binding_size<just_stopped_t::__sndr_t<_Ts...>> = 2;
 
 _CCCL_GLOBAL_CONSTANT auto just         = just_t{};
 _CCCL_GLOBAL_CONSTANT auto just_error   = just_error_t{};

@@ -83,6 +83,10 @@ THRUST_NAMESPACE_BEGIN
  *
  *  \see https://en.cppreference.com/w/cpp/algorithm/adjacent_difference
  *  \see inclusive_scan
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename DerivedPolicy, typename InputIterator, typename OutputIterator>
 _CCCL_HOST_DEVICE OutputIterator adjacent_difference(
@@ -142,6 +146,10 @@ _CCCL_HOST_DEVICE OutputIterator adjacent_difference(
  *
  *  \see https://en.cppreference.com/w/cpp/algorithm/adjacent_difference
  *  \see inclusive_scan
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename DerivedPolicy, typename InputIterator, typename OutputIterator, typename BinaryFunction>
 _CCCL_HOST_DEVICE OutputIterator adjacent_difference(
@@ -192,6 +200,10 @@ _CCCL_HOST_DEVICE OutputIterator adjacent_difference(
  *
  *  \see https://en.cppreference.com/w/cpp/algorithm/adjacent_difference
  *  \see inclusive_scan
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename InputIterator, typename OutputIterator>
 OutputIterator adjacent_difference(InputIterator first, InputIterator last, OutputIterator result);
@@ -241,6 +253,10 @@ OutputIterator adjacent_difference(InputIterator first, InputIterator last, Outp
  *
  *  \see https://en.cppreference.com/w/cpp/algorithm/adjacent_difference
  *  \see inclusive_scan
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename InputIterator, typename OutputIterator, typename BinaryFunction>
 OutputIterator

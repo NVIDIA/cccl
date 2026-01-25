@@ -23,7 +23,11 @@
 
 #if !_CCCL_COMPILER(NVRTC)
 #  include <initializer_list>
-#endif // !_CCCL_COMPILER(NVRTC)
+#else // ^^^ !_CCCL_COMPILER(NVRTC) ^^^ / vvv _CCCL_COMPILER(NVRTC) vvv
+#  if !defined(__NV_BUILTIN_INITIALIZER_LIST)
+#    error "libcu++ requires -builtin-initializer-list=true when compiling with NVRTC"
+#  endif // !__NV_BUILTIN_INITIALIZER_LIST
+#endif // ^^^ _CCCL_COMPILER(NVRTC) ^^^
 
 #include <cuda/std/__cccl/prologue.h>
 

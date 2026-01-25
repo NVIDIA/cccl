@@ -15,19 +15,30 @@ from ..typing import DeviceArrayLike, GpuStruct
 
 
 def get_data_pointer(arr: DeviceArrayLike) -> int:
+    # TODO: these are fast paths for CuPy and PyTorch until
+    # we have a more general solution.
+
+    # Fast path for PyTorch (arr.data_ptr())
     try:
-        # TODO: this is a fast path for CuPy until
-        # we have a more general solution.
+        return arr.data_ptr()  # type: ignore
+    except AttributeError:
+        pass
+
+    # Fast path for CuPy (arr.data.ptr)
+    try:
         return arr.data.ptr  # type: ignore
     except AttributeError:
-        return arr.__cuda_array_interface__["data"][0]
+        pass
+
+    # Fall back to __cuda_array_interface__
+    return arr.__cuda_array_interface__["data"][0]
 
 
 def get_dtype(arr: DeviceArrayLike | GpuStruct | np.ndarray) -> np.dtype:
     # Try the fast path via .dtype attribute (works for np.ndarray, GpuStruct, and most device arrays)
     try:
         return np.dtype(arr.dtype)  # type: ignore
-    except AttributeError:
+    except (AttributeError, TypeError):
         pass
 
     # Fall back to __cuda_array_interface__ for DeviceArrayLike

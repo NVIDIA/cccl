@@ -13,7 +13,7 @@ from numba.core.typing.ctypes_utils import to_ctypes
 from numba.cuda.dispatcher import CUDADispatcher
 
 from .._bindings import IteratorState
-from .._caching import CachableFunction
+from .._caching import CachableFunction, cache_with_registered_key_functions
 from .._utils.protocols import (
     compute_c_contiguous_strides_in_bytes,
     get_data_pointer,
@@ -136,10 +136,10 @@ class IteratorBase:
         return self.output_dereference is not None
 
     def get_advance_ltoir(self) -> Tuple:
-        from .._cccl_interop import _create_advance_wrapper
+        from .._odr_helpers import create_advance_void_ptr_wrapper
 
         abi_name = f"advance_{_get_abi_suffix(self.kind)}"
-        wrapped_advance, wrapper_sig = _create_advance_wrapper(
+        wrapped_advance, wrapper_sig = create_advance_void_ptr_wrapper(
             self.advance, self.state_ptr_type
         )
         ltoir, _ = cached_compile(
@@ -151,10 +151,10 @@ class IteratorBase:
         return (abi_name, ltoir)
 
     def get_input_dereference_ltoir(self) -> Tuple:
-        from .._cccl_interop import _create_input_dereference_wrapper
+        from .._odr_helpers import create_input_dereference_void_ptr_wrapper
 
         abi_name = f"input_dereference_{_get_abi_suffix(self.kind)}"
-        wrapped_deref, wrapper_sig = _create_input_dereference_wrapper(
+        wrapped_deref, wrapper_sig = create_input_dereference_void_ptr_wrapper(
             self.input_dereference, self.state_ptr_type, self.value_type
         )
         ltoir, _ = cached_compile(
@@ -166,10 +166,10 @@ class IteratorBase:
         return (abi_name, ltoir)
 
     def get_output_dereference_ltoir(self) -> Tuple:
-        from .._cccl_interop import _create_output_dereference_wrapper
+        from .._odr_helpers import create_output_dereference_void_ptr_wrapper
 
         abi_name = f"output_dereference_{_get_abi_suffix(self.kind)}"
-        wrapped_deref, wrapper_sig = _create_output_dereference_wrapper(
+        wrapped_deref, wrapper_sig = create_output_dereference_void_ptr_wrapper(
             self.output_dereference, self.state_ptr_type, self.value_type
         )
         ltoir, _ = cached_compile(
@@ -678,3 +678,6 @@ def _get_last_element_ptr(device_array) -> int:
 
     ptr = get_data_pointer(device_array)
     return ptr + offset_to_last_element
+
+
+cache_with_registered_key_functions.register(IteratorBase, lambda it: it.kind)
