@@ -852,3 +852,21 @@
 - Added single-phase parity for block load/store tests by running both single-phase and two-phase paths and comparing to reference input.
 - Adjusted block store single-phase to use BlockStoreAlgorithm enums and separate thread_data buffers to avoid shared-memory algorithms clobbering input.
 - Ran pytest: `python -m pytest tests/coop/test_block_load.py tests/coop/test_block_store.py` (480 passed).
+
+## 2026-01-25
+- Moved block scan API extra examples into tests/coop/test_block_scan_api.py, updated scan doc literalincludes, and removed tests/coop/test_block_scan_api_extra.py.
+- Updated scan example kernels to use single-phase block load/store for I/O.
+- Ran pytest: `python -m pytest tests/coop/test_block_scan_api.py -k "inclusive_sum or exclusive_scan or inclusive_scan"` (3 passed).
+
+## 2026-01-25
+- Added a single-phase block load/scan/store example mirroring the two-phase sample (saved as sp1.py).
+- Tests not run (example-only change).
+
+## 2026-01-25
+- Added single-phase parity to warp scan/reduce/merge sort API tests, with warp load/store for I/O and thread-0 comparisons where warp-wide outputs are defined.
+- Updated scan/reduce ops to device functions for single-phase callable typing.
+- Ran pytest: `python -m pytest tests/coop/test_warp_scan_api.py tests/coop/test_warp_reduce_api.py tests/coop/test_warp_merge_sort_api.py tests/coop/test_warp_merge_sort_pairs_api.py` (10 passed).
+
+## 2026-01-25
+- Parameterized test_block_load_store_scan_thread_data over items_per_thread [1, 4, 8].
+- Ran pytest: `python -m pytest tests/coop/test_block_scan.py -k "test_block_load_store_scan_thread_data"` (3 passed, 199 deselected).

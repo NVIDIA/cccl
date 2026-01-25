@@ -1079,7 +1079,8 @@ def test_block_load_store_scan_simple1():
     np.testing.assert_array_equal(h_output, h_reference)
 
 
-def test_block_load_store_scan_thread_data():
+@pytest.mark.parametrize("items_per_thread", [1, 4, 8])
+def test_block_load_store_scan_thread_data(items_per_thread):
     @cuda.jit
     def kernel(d_in, d_out, items_per_thread):
         thread_data = coop.ThreadData(items_per_thread)
@@ -1089,7 +1090,6 @@ def test_block_load_store_scan_thread_data():
 
     dtype = np.int32
     threads_per_block = 128
-    items_per_thread = 1
     num_total_items = threads_per_block * items_per_thread
 
     h_input = np.random.randint(0, 42, num_total_items, dtype=dtype)

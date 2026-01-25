@@ -122,7 +122,7 @@ def inclusive_sum(
     """Inclusive block-wide sum for per-thread items.
 
     Example:
-        .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_block_scan_api_extra.py
+        .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_block_scan_api.py
             :language: python
             :dedent:
             :start-after: example-begin inclusive-sum
@@ -143,7 +143,7 @@ def exclusive_scan(
     """Exclusive block-wide scan with a custom operator.
 
     Example:
-        .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_block_scan_api_extra.py
+        .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_block_scan_api.py
             :language: python
             :dedent:
             :start-after: example-begin exclusive-scan
@@ -164,7 +164,7 @@ def inclusive_scan(
     """Inclusive block-wide scan with a custom operator.
 
     Example:
-        .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_block_scan_api_extra.py
+        .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_block_scan_api.py
             :language: python
             :dedent:
             :start-after: example-begin inclusive-scan
