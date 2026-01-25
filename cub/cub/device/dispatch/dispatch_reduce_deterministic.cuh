@@ -22,6 +22,7 @@
 #include <cub/agent/agent_reduce.cuh>
 #include <cub/detail/rfa.cuh>
 #include <cub/device/dispatch/dispatch_reduce.cuh>
+#include <cub/device/dispatch/tuning/tuning_reduce_deterministic.cuh>
 #include <cub/grid/grid_even_share.cuh>
 #include <cub/iterator/arg_index_input_iterator.cuh>
 #include <cub/thread/thread_operators.cuh>
