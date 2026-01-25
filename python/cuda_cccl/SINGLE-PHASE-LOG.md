@@ -888,3 +888,7 @@
 ## 2026-01-25
 - Removed unused variables in coop mamba selective-scan reference generator and experimental block scan CUSource test to satisfy ruff.
 - Tests not run (lint-only change).
+
+## 2026-01-25
+- Added a test that ensures coop.ThreadData detects mismatched dtype usage between primitives (load/store) and raises.
+- Tests not run (not requested).
