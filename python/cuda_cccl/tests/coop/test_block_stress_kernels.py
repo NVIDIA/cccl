@@ -242,6 +242,115 @@ def test_block_primitives_single_phase_partial_tiles_num_valid():
     np.testing.assert_array_equal(h_output, h_reference)
 
 
+def test_block_primitives_partial_tiles_scan_carry_in():
+    threads_per_block = 64
+    items_per_thread = 4
+    items_per_block = threads_per_block * items_per_thread
+    blocks_per_grid = 2
+    partial = items_per_block - 9
+    total_items = items_per_block * (blocks_per_grid + 1) + partial
+    oob_default = np.uint32(11)
+
+    @cuda.jit
+    def kernel(d_in, d_out, total_items, oob_capture):
+        thread_data = coop.local.array(items_per_thread, dtype=d_in.dtype)
+        tid = cuda.threadIdx.x
+        carry = cuda.shared.array(1, dtype=d_in.dtype)
+
+        if tid == 0:
+            carry[0] = 0
+        cuda.syncthreads()
+
+        block_offset = cuda.blockIdx.x * items_per_block
+        grid_stride = cuda.gridDim.x * items_per_block
+
+        while block_offset < total_items:
+            remaining = total_items - block_offset
+            num_valid_items = (
+                remaining if remaining < items_per_block else items_per_block
+            )
+
+            coop.block.load(
+                d_in[block_offset:],
+                thread_data,
+                items_per_thread=items_per_thread,
+                num_valid_items=num_valid_items,
+                oob_default=oob_default,
+            )
+
+            if num_valid_items < items_per_block:
+                for i in range(items_per_thread):
+                    idx = tid * items_per_thread + i
+                    if idx < items_per_block:
+                        oob_capture[idx] = thread_data[i]
+                for i in range(items_per_thread):
+                    global_idx = block_offset + tid * items_per_thread + i
+                    if global_idx >= total_items:
+                        thread_data[i] = 0
+
+            prefix = carry[0]
+            tile_sum = coop.block.sum(
+                thread_data,
+                items_per_thread=items_per_thread,
+            )
+            coop.block.scan(
+                thread_data,
+                thread_data,
+                items_per_thread=items_per_thread,
+            )
+            for i in range(items_per_thread):
+                thread_data[i] += prefix
+
+            if tid == 0:
+                carry[0] = prefix + tile_sum
+            cuda.syncthreads()
+
+            coop.block.store(
+                d_out[block_offset:],
+                thread_data,
+                items_per_thread=items_per_thread,
+                num_valid_items=num_valid_items,
+            )
+            block_offset += grid_stride
+            cuda.syncthreads()
+
+    h_input = np.random.randint(0, 16, total_items, dtype=np.uint32)
+    d_input = cuda.to_device(h_input)
+    h_output = np.full(total_items + items_per_block, 0xFE, dtype=np.uint32)
+    d_output = cuda.to_device(h_output)
+    h_oob = np.full(items_per_block, 0xEE, dtype=np.uint32)
+    d_oob = cuda.to_device(h_oob)
+
+    kernel[blocks_per_grid, threads_per_block](d_input, d_output, total_items, d_oob)
+    cuda.synchronize()
+
+    h_reference = h_output.copy()
+    grid_stride = blocks_per_grid * items_per_block
+    for block_idx in range(blocks_per_grid):
+        carry = np.uint64(0)
+        block_offset = block_idx * items_per_block
+        while block_offset < total_items:
+            num_valid_items = min(items_per_block, total_items - block_offset)
+            tile = h_input[block_offset : block_offset + num_valid_items]
+            scanned = _exclusive_scan_host(tile) + carry
+            h_reference[block_offset : block_offset + num_valid_items] = scanned
+            carry += tile.sum(dtype=np.uint64)
+            block_offset += grid_stride
+
+    num_tiles = (total_items + items_per_block - 1) // items_per_block
+    last_tile_offset = (num_tiles - 1) * items_per_block
+    last_tile_valid = total_items - last_tile_offset
+    h_oob_reference = np.full(items_per_block, oob_default, dtype=np.uint32)
+    h_oob_reference[:last_tile_valid] = h_input[
+        last_tile_offset : last_tile_offset + last_tile_valid
+    ]
+
+    h_output = d_output.copy_to_host()
+    h_oob = d_oob.copy_to_host()
+    np.testing.assert_array_equal(h_output, h_reference)
+    np.testing.assert_array_equal(h_oob, h_oob_reference)
+
+
 def test_block_primitives_2d_block_exchange_discontinuity_sort():
     block_dim = (16, 4, 1)
     threads_per_block = block_dim

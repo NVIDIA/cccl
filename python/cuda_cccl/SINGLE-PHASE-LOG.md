@@ -940,3 +940,15 @@
 - Added single-phase support for coop.block exclusive/inclusive sum/scan aliases (new decls, module resolve hooks, impl_key override, forced mode/scan_op in rewrite).
 - Added tests in `tests/coop/test_block_scan_single_phase_aliases.py`.
 - Ran pytest: `python -m pytest tests/coop/test_block_scan_single_phase_aliases.py` (4 passed).
+
+## 2026-01-25
+- Added partial-tiles grid-stride scan + carry-in test with num_valid_items/oob_default capture.
+- Ran pytest: `python -m pytest tests/coop/test_block_stress_kernels.py -k "partial_tiles_scan_carry_in"` (1 passed).
+
+## 2026-01-25
+- Added weird block-dim tests (3D exchange+discontinuity, 2D histogram) and stateful prefix-op scan + custom-type merge sort tests.
+- Ran pytest: `python -m pytest tests/coop/test_block_weird_dims_stateful_custom_types.py` (4 passed).
+
+## 2026-01-25
+- Added run-length decode window-offset test with per-block random offsets, relative offsets output, and decoded_offset_dtype coverage.
+- Ran pytest: `python -m pytest tests/coop/test_block_run_length_decode.py -k window_offsets_random` (2 passed).

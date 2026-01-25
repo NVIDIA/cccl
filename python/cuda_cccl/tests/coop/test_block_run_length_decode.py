@@ -1,6 +1,7 @@
 # example-begin imports
 import numba
 import numpy as np
+import pytest
 from numba import cuda
 
 import cuda.coop as coop
@@ -571,3 +572,150 @@ def test_block_run_length_decode_two_phase_temp_storage():
     np.testing.assert_array_equal(h_decoded_items, expected_items)
     np.testing.assert_array_equal(h_relative_offsets, expected_offsets)
     np.testing.assert_array_equal(h_total_decoded_size, [window_size])
+
+
+@pytest.mark.parametrize("decoded_offset_dtype", [np.uint32, np.uint64])
+def test_block_run_length_decode_single_phase_window_offsets_random(
+    decoded_offset_dtype,
+):
+    item_dtype = np.uint32
+    length_dtype = np.uint32
+
+    threads_per_block = 32
+    runs_per_thread = 2
+    decoded_items_per_thread = 4
+    num_blocks = 3
+
+    total_runs = threads_per_block * runs_per_thread
+    window_size = threads_per_block * decoded_items_per_thread
+
+    rng = np.random.default_rng(20250125)
+    h_run_values = rng.integers(
+        0,
+        127,
+        size=(num_blocks, total_runs),
+    ).astype(item_dtype)
+    h_run_lengths = rng.integers(
+        1,
+        4,
+        size=(num_blocks, total_runs),
+    ).astype(length_dtype)
+
+    h_window_offsets = np.empty(num_blocks, dtype=decoded_offset_dtype)
+    expected_items = np.empty((num_blocks, window_size), dtype=item_dtype)
+    expected_offsets = np.empty((num_blocks, window_size), dtype=length_dtype)
+    expected_total_decoded = np.empty(num_blocks, dtype=decoded_offset_dtype)
+
+    for block_idx in range(num_blocks):
+        lengths = h_run_lengths[block_idx]
+        total_decoded = int(lengths.sum())
+        if total_decoded <= window_size:
+            lengths[-1] = lengths[-1] + (window_size + 1 - total_decoded)
+            total_decoded = int(lengths.sum())
+
+        max_offset = total_decoded - window_size
+        window_offset = int(rng.integers(1, max_offset + 1))
+        h_window_offsets[block_idx] = window_offset
+
+        decoded_items, decoded_offsets = _expected_decode(
+            h_run_values[block_idx], lengths
+        )
+        start = window_offset
+        end = window_offset + window_size
+        expected_items[block_idx] = decoded_items[start:end]
+        expected_offsets[block_idx] = decoded_offsets[start:end]
+        expected_total_decoded[block_idx] = total_decoded
+
+    d_run_values = cuda.to_device(h_run_values.reshape(-1))
+    d_run_lengths = cuda.to_device(h_run_lengths.reshape(-1))
+    d_decoded_items = cuda.device_array(num_blocks * window_size, dtype=item_dtype)
+    d_relative_offsets = cuda.device_array(
+        num_blocks * window_size,
+        dtype=length_dtype,
+    )
+    d_total_decoded_size = cuda.device_array(num_blocks, dtype=decoded_offset_dtype)
+    d_window_offsets = cuda.to_device(h_window_offsets)
+
+    @cuda.jit
+    def kernel(
+        run_values,
+        run_lengths,
+        decoded_items_out,
+        relative_offsets_out,
+        total_decoded_size_out,
+        decoded_window_offsets,
+    ):
+        runs_per_thread = 2
+        decoded_items_per_thread = 4
+
+        run_values_local = coop.local.array(runs_per_thread, dtype=run_values.dtype)
+        run_lengths_local = coop.local.array(runs_per_thread, dtype=run_lengths.dtype)
+
+        block_offset = cuda.blockIdx.x * runs_per_thread * cuda.blockDim.x
+
+        coop.block.load(
+            run_values[block_offset:],
+            run_values_local,
+            items_per_thread=runs_per_thread,
+            algorithm=BlockLoadAlgorithm.DIRECT,
+        )
+        coop.block.load(
+            run_lengths[block_offset:],
+            run_lengths_local,
+            items_per_thread=runs_per_thread,
+            algorithm=BlockLoadAlgorithm.DIRECT,
+        )
+
+        decoded_offset_dtype = total_decoded_size_out.dtype
+        total_decoded_size = coop.local.array(1, dtype=decoded_offset_dtype)
+        total_decoded_size[0] = 0
+
+        run_length = coop.block.run_length(
+            run_values_local,
+            run_lengths_local,
+            runs_per_thread,
+            decoded_items_per_thread,
+            total_decoded_size,
+            decoded_offset_dtype=decoded_offset_dtype,
+        )
+
+        decoded_items = coop.local.array(
+            decoded_items_per_thread, dtype=run_values.dtype
+        )
+        relative_offsets = coop.local.array(
+            decoded_items_per_thread, dtype=run_lengths.dtype
+        )
+        decoded_window_offset = decoded_window_offsets[cuda.blockIdx.x]
+
+        run_length.decode(decoded_items, decoded_window_offset, relative_offsets)
+
+        base = (
+            cuda.blockIdx.x * decoded_items_per_thread * cuda.blockDim.x
+            + cuda.threadIdx.x * decoded_items_per_thread
+        )
+        for i in range(decoded_items_per_thread):
+            decoded_items_out[base + i] = decoded_items[i]
+            relative_offsets_out[base + i] = relative_offsets[i]
+
+        if cuda.threadIdx.x == 0:
+            total_decoded_size_out[cuda.blockIdx.x] = total_decoded_size[0]
+
+    kernel[num_blocks, threads_per_block](
+        d_run_values,
+        d_run_lengths,
+        d_decoded_items,
+        d_relative_offsets,
+        d_total_decoded_size,
+        d_window_offsets,
+    )
+    cuda.synchronize()
+
+    h_decoded_items = d_decoded_items.copy_to_host().reshape(num_blocks, window_size)
+    h_relative_offsets = d_relative_offsets.copy_to_host().reshape(
+        num_blocks, window_size
+    )
+    h_total_decoded_size = d_total_decoded_size.copy_to_host()
+
+    np.testing.assert_array_equal(h_decoded_items, expected_items)
+    np.testing.assert_array_equal(h_relative_offsets, expected_offsets)
+    np.testing.assert_array_equal(h_total_decoded_size, expected_total_decoded)
