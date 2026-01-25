@@ -1211,6 +1211,7 @@
 <li class="toctree-l4"><a class="reference internal" href="classcuda_1_1experimental_1_1stf_1_1data__instance.html">cuda::experimental::stf::data_instance</a></li>
 <li class="toctree-l4"><a class="reference internal" href="classcuda_1_1experimental_1_1stf_1_1data__interface.html">cuda::experimental::stf::data_interface</a></li>
 <li class="toctree-l4"><a class="reference internal" href="classcuda_1_1experimental_1_1stf_1_1data__place.html">cuda::experimental::stf::data_place</a></li>
+<li class="toctree-l4"><a class="reference internal" href="classcuda_1_1experimental_1_1stf_1_1data__place__extension.html">cuda::experimental::stf::data_place_extension</a></li>
 <li class="toctree-l4"><a class="reference internal" href="classcuda_1_1experimental_1_1stf_1_1deferred__stream__task.html">cuda::experimental::stf::deferred_stream_task</a></li>
 <li class="toctree-l4"><a class="reference internal" href="classcuda_1_1experimental_1_1stf_1_1dim4.html">cuda::experimental::stf::dim4</a></li>
 <li class="toctree-l4"><a class="reference internal" href="classcuda_1_1experimental_1_1stf_1_1event__impl.html">cuda::experimental::stf::event_impl</a></li>
@@ -1231,6 +1232,7 @@
 <li class="toctree-l4"><a class="reference internal" href="classcuda_1_1experimental_1_1stf_1_1graph__task.html">cuda::experimental::stf::graph_task</a></li>
 <li class="toctree-l4"><a class="reference internal" href="classcuda_1_1experimental_1_1stf_1_1graph__task_3_4.html">cuda::experimental::stf::graph_task&lt;&gt;</a></li>
 <li class="toctree-l4"><a class="reference internal" href="classcuda_1_1experimental_1_1stf_1_1green__context__helper.html">cuda::experimental::stf::green_context_helper</a></li>
+<li class="toctree-l4"><a class="reference internal" href="classcuda_1_1experimental_1_1stf_1_1green__ctx__data__place.html">cuda::experimental::stf::green_ctx_data_place</a></li>
 <li class="toctree-l4"><a class="reference internal" href="classcuda_1_1experimental_1_1stf_1_1green__ctx__view.html">cuda::experimental::stf::green_ctx_view</a></li>
 <li class="toctree-l4"><a class="reference internal" href="classcuda_1_1experimental_1_1stf_1_1hashtable.html">cuda::experimental::stf::hashtable</a></li>
 <li class="toctree-l4"><a class="reference internal" href="classcuda_1_1experimental_1_1stf_1_1hashtable__stream__interface.html">cuda::experimental::stf::hashtable_stream_interface</a></li>
@@ -1352,6 +1354,7 @@
 <li class="toctree-l4"><a class="reference internal" href="namespacecuda_1_1experimental_1_1stf_1a1a3f54ba8407a462e7410a45af0f75a3.html">cuda::experimental::stf::data_hash</a></li>
 <li class="toctree-l4"><a class="reference internal" href="namespacecuda_1_1experimental_1_1stf_1abe262e91fef7dd1a874d0c45463f4529.html">cuda::experimental::stf::data_dump</a></li>
 <li class="toctree-l4"><a class="reference internal" href="namespacecuda_1_1experimental_1_1stf_1acddbda1fa79384aa723f05740d12001c.html">cuda::experimental::stf::pack_state</a></li>
+<li class="toctree-l4"><a class="reference internal" href="namespacecuda_1_1experimental_1_1stf_1a20c223a02a2cfb089fe1d91f932912f2.html">cuda::experimental::stf::make_green_ctx_data_place</a></li>
 <li class="toctree-l4"><a class="reference internal" href="namespacecuda_1_1experimental_1_1stf_1a5b257d4c2331422fd492439852cb9005.html">cuda::experimental::stf::get_cuda_context_id</a></li>
 <li class="toctree-l4"><a class="reference internal" href="namespacecuda_1_1experimental_1_1stf_1a58cda9cdc2010f7451a34efc10f8f3f2.html">cuda::experimental::stf::place_partition_scope_to_string</a></li>
 <li class="toctree-l4"><a class="reference internal" href="namespacecuda_1_1experimental_1_1stf_1a742f1c47d0b76725772e86a449d8d604.html">cuda::experimental::stf::make_grid</a></li>
@@ -1796,19 +1799,36 @@
 <dd></dd></dl>
 
 <dl class="cpp function">
-<dt class="sig sig-object cpp" id="_CPPv4N4cuda12experimental3stf15exec_place_host9green_ctxERK14green_ctx_view">
-<span class="target" id="classcuda_1_1experimental_1_1stf_1_1exec__place_1a48363717c51689b6a61690b3e7bc2e89"></span><span class="k"><span class="pre">static</span></span><span class="w"> </span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><a class="reference internal" href="classcuda_1_1experimental_1_1stf_1_1exec__place.html#_CPPv4N4cuda12experimental3stf10exec_placeE" title="cuda::experimental::stf::exec_place"><span class="n"><span class="pre">exec_place</span></span></a><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">green_ctx</span></span></span><span class="sig-paren">(</span><em class="sig-param"><span class="k"><span class="pre">const</span></span><span class="w"> </span><a class="reference internal" href="classcuda_1_1experimental_1_1stf_1_1green__ctx__view.html#_CPPv4N4cuda12experimental3stf14green_ctx_viewE" title="cuda::experimental::stf::green_ctx_view"><span class="n"><span class="pre">green_ctx_view</span></span></a><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="n sig-param"><span class="pre">gc_view</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N4cuda12experimental3stf15exec_place_host9green_ctxERK14green_ctx_view" title="Link to this definition">#</a><br /></dt>
-<dd></dd></dl>
-
-<dl class="cpp function">
-<dt class="sig sig-object cpp" id="_CPPv4N4cuda12experimental3stf15exec_place_host9green_ctxERKNSt10shared_ptrI14green_ctx_viewEE">
-<span class="target" id="classcuda_1_1experimental_1_1stf_1_1exec__place_1aa7f4f20e5ac2b697ba7c8a41c571e484"></span><span class="k"><span class="pre">static</span></span><span class="w"> </span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><a class="reference internal" href="classcuda_1_1experimental_1_1stf_1_1exec__place.html#_CPPv4N4cuda12experimental3stf10exec_placeE" title="cuda::experimental::stf::exec_place"><span class="n"><span class="pre">exec_place</span></span></a><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">green_ctx</span></span></span><span class="sig-paren">(</span>
+<dt class="sig sig-object cpp" id="_CPPv4N4cuda12experimental3stf15exec_place_host9green_ctxERK14green_ctx_viewb">
+<span class="target" id="classcuda_1_1experimental_1_1stf_1_1exec__place_1a819f30a2c7adfdc5c4f0077c7559c3b7"></span><span class="k"><span class="pre">static</span></span><span class="w"> </span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><a class="reference internal" href="classcuda_1_1experimental_1_1stf_1_1exec__place.html#_CPPv4N4cuda12experimental3stf10exec_placeE" title="cuda::experimental::stf::exec_place"><span class="n"><span class="pre">exec_place</span></span></a><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">green_ctx</span></span></span><span class="sig-paren">(</span>
 
 <dl>
-<dd><em class="sig-param"><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">shared_ptr</span></span><span class="p"><span class="pre">&lt;</span></span><a class="reference internal" href="classcuda_1_1experimental_1_1stf_1_1green__ctx__view.html#_CPPv4N4cuda12experimental3stf14green_ctx_viewE" title="cuda::experimental::stf::green_ctx_view"><span class="n"><span class="pre">green_ctx_view</span></span></a><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="n sig-param"><span class="pre">gc_view_ptr</span></span></em></dd>
+<dd><em class="sig-param"><span class="k"><span class="pre">const</span></span><span class="w"> </span><a class="reference internal" href="classcuda_1_1experimental_1_1stf_1_1green__ctx__view.html#_CPPv4N4cuda12experimental3stf14green_ctx_viewE" title="cuda::experimental::stf::green_ctx_view"><span class="n"><span class="pre">green_ctx_view</span></span></a><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="n sig-param"><span class="pre">gc_view</span></span></em>,</dd>
+<dd><em class="sig-param"><span class="kt"><span class="pre">bool</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">use_green_ctx_data_place</span></span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="k"><span class="pre">false</span></span></em></dd>
 </dl>
 
-<span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N4cuda12experimental3stf15exec_place_host9green_ctxERKNSt10shared_ptrI14green_ctx_viewEE" title="Link to this definition">#</a><br /></dt>
+<span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N4cuda12experimental3stf15exec_place_host9green_ctxERK14green_ctx_viewb" title="Link to this definition">#</a><br /></dt>
+<dd><p>Create a green context execution place. </p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>gc_view</strong> – The green context view </p></li>
+<li><p><strong>use_green_ctx_data_place</strong> – If true, use a green context data place as the affine data place. If false (default), use a regular device data place instead. </p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N4cuda12experimental3stf15exec_place_host9green_ctxERKNSt10shared_ptrI14green_ctx_viewEEb">
+<span class="target" id="classcuda_1_1experimental_1_1stf_1_1exec__place_1a017720add3b29633608dee777ce02b4f"></span><span class="k"><span class="pre">static</span></span><span class="w"> </span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><a class="reference internal" href="classcuda_1_1experimental_1_1stf_1_1exec__place.html#_CPPv4N4cuda12experimental3stf10exec_placeE" title="cuda::experimental::stf::exec_place"><span class="n"><span class="pre">exec_place</span></span></a><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">green_ctx</span></span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">shared_ptr</span></span><span class="p"><span class="pre">&lt;</span></span><a class="reference internal" href="classcuda_1_1experimental_1_1stf_1_1green__ctx__view.html#_CPPv4N4cuda12experimental3stf14green_ctx_viewE" title="cuda::experimental::stf::green_ctx_view"><span class="n"><span class="pre">green_ctx_view</span></span></a><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="n sig-param"><span class="pre">gc_view_ptr</span></span></em>,</dd>
+<dd><em class="sig-param"><span class="kt"><span class="pre">bool</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">use_green_ctx_data_place</span></span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="k"><span class="pre">false</span></span></em></dd>
+</dl>
+
+<span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N4cuda12experimental3stf15exec_place_host9green_ctxERKNSt10shared_ptrI14green_ctx_viewEEb" title="Link to this definition">#</a><br /></dt>
 <dd></dd></dl>
 
 <dl class="cpp function">
@@ -2029,8 +2049,8 @@
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N4cuda12experimental3stf15exec_place_host4hostEv"><code class="docutils literal notranslate"><span class="pre">host()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N4cuda12experimental3stf15exec_place_host11device_autoEv"><code class="docutils literal notranslate"><span class="pre">device_auto()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N4cuda12experimental3stf15exec_place_host6deviceEi"><code class="docutils literal notranslate"><span class="pre">device()</span></code></a></li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N4cuda12experimental3stf15exec_place_host9green_ctxERK14green_ctx_view"><code class="docutils literal notranslate"><span class="pre">green_ctx()</span></code></a></li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N4cuda12experimental3stf15exec_place_host9green_ctxERKNSt10shared_ptrI14green_ctx_viewEE"><code class="docutils literal notranslate"><span class="pre">green_ctx()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N4cuda12experimental3stf15exec_place_host9green_ctxERK14green_ctx_viewb"><code class="docutils literal notranslate"><span class="pre">green_ctx()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N4cuda12experimental3stf15exec_place_host9green_ctxERKNSt10shared_ptrI14green_ctx_viewEEb"><code class="docutils literal notranslate"><span class="pre">green_ctx()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N4cuda12experimental3stf15exec_place_host11cuda_streamE12cudaStream_t"><code class="docutils literal notranslate"><span class="pre">cuda_stream()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N4cuda12experimental3stf15exec_place_host11cuda_streamERK16decorated_stream"><code class="docutils literal notranslate"><span class="pre">cuda_stream()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N4cuda12experimental3stf15exec_place_host14current_deviceEv"><code class="docutils literal notranslate"><span class="pre">current_device()</span></code></a></li>

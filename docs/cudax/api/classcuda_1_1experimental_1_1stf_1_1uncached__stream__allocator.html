@@ -1211,6 +1211,7 @@
 <li class="toctree-l4"><a class="reference internal" href="classcuda_1_1experimental_1_1stf_1_1data__instance.html">cuda::experimental::stf::data_instance</a></li>
 <li class="toctree-l4"><a class="reference internal" href="classcuda_1_1experimental_1_1stf_1_1data__interface.html">cuda::experimental::stf::data_interface</a></li>
 <li class="toctree-l4"><a class="reference internal" href="classcuda_1_1experimental_1_1stf_1_1data__place.html">cuda::experimental::stf::data_place</a></li>
+<li class="toctree-l4"><a class="reference internal" href="classcuda_1_1experimental_1_1stf_1_1data__place__extension.html">cuda::experimental::stf::data_place_extension</a></li>
 <li class="toctree-l4"><a class="reference internal" href="classcuda_1_1experimental_1_1stf_1_1deferred__stream__task.html">cuda::experimental::stf::deferred_stream_task</a></li>
 <li class="toctree-l4"><a class="reference internal" href="classcuda_1_1experimental_1_1stf_1_1dim4.html">cuda::experimental::stf::dim4</a></li>
 <li class="toctree-l4"><a class="reference internal" href="classcuda_1_1experimental_1_1stf_1_1event__impl.html">cuda::experimental::stf::event_impl</a></li>
@@ -1231,6 +1232,7 @@
 <li class="toctree-l4"><a class="reference internal" href="classcuda_1_1experimental_1_1stf_1_1graph__task.html">cuda::experimental::stf::graph_task</a></li>
 <li class="toctree-l4"><a class="reference internal" href="classcuda_1_1experimental_1_1stf_1_1graph__task_3_4.html">cuda::experimental::stf::graph_task&lt;&gt;</a></li>
 <li class="toctree-l4"><a class="reference internal" href="classcuda_1_1experimental_1_1stf_1_1green__context__helper.html">cuda::experimental::stf::green_context_helper</a></li>
+<li class="toctree-l4"><a class="reference internal" href="classcuda_1_1experimental_1_1stf_1_1green__ctx__data__place.html">cuda::experimental::stf::green_ctx_data_place</a></li>
 <li class="toctree-l4"><a class="reference internal" href="classcuda_1_1experimental_1_1stf_1_1green__ctx__view.html">cuda::experimental::stf::green_ctx_view</a></li>
 <li class="toctree-l4"><a class="reference internal" href="classcuda_1_1experimental_1_1stf_1_1hashtable.html">cuda::experimental::stf::hashtable</a></li>
 <li class="toctree-l4"><a class="reference internal" href="classcuda_1_1experimental_1_1stf_1_1hashtable__stream__interface.html">cuda::experimental::stf::hashtable_stream_interface</a></li>
@@ -1352,6 +1354,7 @@
 <li class="toctree-l4"><a class="reference internal" href="namespacecuda_1_1experimental_1_1stf_1a1a3f54ba8407a462e7410a45af0f75a3.html">cuda::experimental::stf::data_hash</a></li>
 <li class="toctree-l4"><a class="reference internal" href="namespacecuda_1_1experimental_1_1stf_1abe262e91fef7dd1a874d0c45463f4529.html">cuda::experimental::stf::data_dump</a></li>
 <li class="toctree-l4"><a class="reference internal" href="namespacecuda_1_1experimental_1_1stf_1acddbda1fa79384aa723f05740d12001c.html">cuda::experimental::stf::pack_state</a></li>
+<li class="toctree-l4"><a class="reference internal" href="namespacecuda_1_1experimental_1_1stf_1a20c223a02a2cfb089fe1d91f932912f2.html">cuda::experimental::stf::make_green_ctx_data_place</a></li>
 <li class="toctree-l4"><a class="reference internal" href="namespacecuda_1_1experimental_1_1stf_1a5b257d4c2331422fd492439852cb9005.html">cuda::experimental::stf::get_cuda_context_id</a></li>
 <li class="toctree-l4"><a class="reference internal" href="namespacecuda_1_1experimental_1_1stf_1a58cda9cdc2010f7451a34efc10f8f3f2.html">cuda::experimental::stf::place_partition_scope_to_string</a></li>
 <li class="toctree-l4"><a class="reference internal" href="namespacecuda_1_1experimental_1_1stf_1a742f1c47d0b76725772e86a449d8d604.html">cuda::experimental::stf::make_grid</a></li>
@@ -1549,14 +1552,14 @@
 
 <dl class="cpp function">
 <dt class="sig sig-object cpp" id="_CPPv4N4cuda12experimental3stf25uncached_stream_allocator10deallocateER19backend_ctx_untypedRK10data_placeR10event_listPv6size_t">
-<span class="target" id="classcuda_1_1experimental_1_1stf_1_1uncached__stream__allocator_1a195d11824a4bc00c375a22dc7506630a"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="k"><span class="pre">virtual</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">deallocate</span></span></span><span class="sig-paren">(</span>
+<span class="target" id="classcuda_1_1experimental_1_1stf_1_1uncached__stream__allocator_1ae97814c0a91accf5aeb49eba1746c4d7"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="k"><span class="pre">virtual</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">deallocate</span></span></span><span class="sig-paren">(</span>
 
 <dl>
 <dd><em class="sig-param"><a class="reference internal" href="classcuda_1_1experimental_1_1stf_1_1backend__ctx__untyped.html#_CPPv4N4cuda12experimental3stf19backend_ctx_untypedE" title="cuda::experimental::stf::backend_ctx_untyped"><span class="n"><span class="pre">backend_ctx_untyped</span></span></a><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="n sig-param"><span class="pre">ctx</span></span></em>,</dd>
 <dd><em class="sig-param"><span class="k"><span class="pre">const</span></span><span class="w"> </span><a class="reference internal" href="classcuda_1_1experimental_1_1stf_1_1data__place.html#_CPPv4N4cuda12experimental3stf10data_placeE" title="cuda::experimental::stf::data_place"><span class="n"><span class="pre">data_place</span></span></a><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="n sig-param"><span class="pre">memory_node</span></span></em>,</dd>
 <dd><em class="sig-param"><a class="reference internal" href="classcuda_1_1experimental_1_1stf_1_1event__list.html#_CPPv4N4cuda12experimental3stf10event_listE" title="cuda::experimental::stf::event_list"><span class="n"><span class="pre">event_list</span></span></a><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="n sig-param"><span class="pre">prereqs</span></span></em>,</dd>
 <dd><em class="sig-param"><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">ptr</span></span></em>,</dd>
-<dd><em class="sig-param"><span class="n"><span class="pre">size_t</span></span></em></dd>
+<dd><em class="sig-param"><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">sz</span></span></em></dd>
 </dl>
 
 <span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">override</span></span><a class="headerlink" href="#_CPPv4N4cuda12experimental3stf25uncached_stream_allocator10deallocateER19backend_ctx_untypedRK10data_placeR10event_listPv6size_t" title="Link to this definition">#</a><br /></dt>

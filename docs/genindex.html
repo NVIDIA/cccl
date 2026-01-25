@@ -1204,6 +1204,7 @@
 <li class="toctree-l4"><a class="reference internal" href="cudax/api/classcuda_1_1experimental_1_1stf_1_1data__instance.html">cuda::experimental::stf::data_instance</a></li>
 <li class="toctree-l4"><a class="reference internal" href="cudax/api/classcuda_1_1experimental_1_1stf_1_1data__interface.html">cuda::experimental::stf::data_interface</a></li>
 <li class="toctree-l4"><a class="reference internal" href="cudax/api/classcuda_1_1experimental_1_1stf_1_1data__place.html">cuda::experimental::stf::data_place</a></li>
+<li class="toctree-l4"><a class="reference internal" href="cudax/api/classcuda_1_1experimental_1_1stf_1_1data__place__extension.html">cuda::experimental::stf::data_place_extension</a></li>
 <li class="toctree-l4"><a class="reference internal" href="cudax/api/classcuda_1_1experimental_1_1stf_1_1deferred__stream__task.html">cuda::experimental::stf::deferred_stream_task</a></li>
 <li class="toctree-l4"><a class="reference internal" href="cudax/api/classcuda_1_1experimental_1_1stf_1_1dim4.html">cuda::experimental::stf::dim4</a></li>
 <li class="toctree-l4"><a class="reference internal" href="cudax/api/classcuda_1_1experimental_1_1stf_1_1event__impl.html">cuda::experimental::stf::event_impl</a></li>
@@ -1224,6 +1225,7 @@
 <li class="toctree-l4"><a class="reference internal" href="cudax/api/classcuda_1_1experimental_1_1stf_1_1graph__task.html">cuda::experimental::stf::graph_task</a></li>
 <li class="toctree-l4"><a class="reference internal" href="cudax/api/classcuda_1_1experimental_1_1stf_1_1graph__task_3_4.html">cuda::experimental::stf::graph_task&lt;&gt;</a></li>
 <li class="toctree-l4"><a class="reference internal" href="cudax/api/classcuda_1_1experimental_1_1stf_1_1green__context__helper.html">cuda::experimental::stf::green_context_helper</a></li>
+<li class="toctree-l4"><a class="reference internal" href="cudax/api/classcuda_1_1experimental_1_1stf_1_1green__ctx__data__place.html">cuda::experimental::stf::green_ctx_data_place</a></li>
 <li class="toctree-l4"><a class="reference internal" href="cudax/api/classcuda_1_1experimental_1_1stf_1_1green__ctx__view.html">cuda::experimental::stf::green_ctx_view</a></li>
 <li class="toctree-l4"><a class="reference internal" href="cudax/api/classcuda_1_1experimental_1_1stf_1_1hashtable.html">cuda::experimental::stf::hashtable</a></li>
 <li class="toctree-l4"><a class="reference internal" href="cudax/api/classcuda_1_1experimental_1_1stf_1_1hashtable__stream__interface.html">cuda::experimental::stf::hashtable_stream_interface</a></li>
@@ -1345,6 +1347,7 @@
 <li class="toctree-l4"><a class="reference internal" href="cudax/api/namespacecuda_1_1experimental_1_1stf_1a1a3f54ba8407a462e7410a45af0f75a3.html">cuda::experimental::stf::data_hash</a></li>
 <li class="toctree-l4"><a class="reference internal" href="cudax/api/namespacecuda_1_1experimental_1_1stf_1abe262e91fef7dd1a874d0c45463f4529.html">cuda::experimental::stf::data_dump</a></li>
 <li class="toctree-l4"><a class="reference internal" href="cudax/api/namespacecuda_1_1experimental_1_1stf_1acddbda1fa79384aa723f05740d12001c.html">cuda::experimental::stf::pack_state</a></li>
+<li class="toctree-l4"><a class="reference internal" href="cudax/api/namespacecuda_1_1experimental_1_1stf_1a20c223a02a2cfb089fe1d91f932912f2.html">cuda::experimental::stf::make_green_ctx_data_place</a></li>
 <li class="toctree-l4"><a class="reference internal" href="cudax/api/namespacecuda_1_1experimental_1_1stf_1a5b257d4c2331422fd492439852cb9005.html">cuda::experimental::stf::get_cuda_context_id</a></li>
 <li class="toctree-l4"><a class="reference internal" href="cudax/api/namespacecuda_1_1experimental_1_1stf_1a58cda9cdc2010f7451a34efc10f8f3f2.html">cuda::experimental::stf::place_partition_scope_to_string</a></li>
 <li class="toctree-l4"><a class="reference internal" href="cudax/api/namespacecuda_1_1experimental_1_1stf_1a742f1c47d0b76725772e86a449d8d604.html">cuda::experimental::stf::make_grid</a></li>
@@ -3669,6 +3672,10 @@
 </li>
       <li><a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1data__place.html#_CPPv4N4cuda12experimental3stf10data_place6affineEv">cuda::experimental::stf::data_place::affine (C++ function)</a>
 </li>
+      <li><a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1data__place.html#_CPPv4NK4cuda12experimental3stf10data_place8allocateENSt9ptrdiff_tE12cudaStream_t">cuda::experimental::stf::data_place::allocate (C++ function)</a>
+</li>
+      <li><a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1data__place.html#_CPPv4NK4cuda12experimental3stf10data_place28allocation_is_stream_orderedEv">cuda::experimental::stf::data_place::allocation_is_stream_ordered (C++ function)</a>
+</li>
       <li><a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1data__place.html#_CPPv4I0EN4cuda12experimental3stf10data_place9compositeE10data_place13partitioner_tRK15exec_place_grid">cuda::experimental::stf::data_place::composite (C++ function)</a>, <a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1data__place.html#_CPPv4N4cuda12experimental3stf10data_place9compositeE19get_executor_func_tRK15exec_place_grid">[1]</a>
 </li>
       <li><a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1data__place.html#_CPPv4N4cuda12experimental3stf10data_place15composite_stateE">cuda::experimental::stf::data_place::composite_state (C++ class)</a>
@@ -3683,15 +3690,19 @@
 </li>
       <li><a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1data__place.html#_CPPv4N4cuda12experimental3stf10data_place10data_placeEv">cuda::experimental::stf::data_place::data_place (C++ function)</a>
 </li>
+      <li><a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1data__place.html#_CPPv4NK4cuda12experimental3stf10data_place10deallocateEPv6size_t12cudaStream_t">cuda::experimental::stf::data_place::deallocate (C++ function)</a>
+</li>
       <li><a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1data__place.html#_CPPv4N4cuda12experimental3stf10data_place6deviceEi">cuda::experimental::stf::data_place::device (C++ function)</a>
 </li>
       <li><a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1data__place.html#_CPPv4N4cuda12experimental3stf10data_place11device_autoEv">cuda::experimental::stf::data_place::device_auto (C++ function)</a>
 </li>
       <li><a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1data__place.html#_CPPv4N4cuda12experimental3stf10data_place14device_ordinalERK10data_place">cuda::experimental::stf::data_place::device_ordinal (C++ function)</a>
 </li>
-      <li><a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1data__place.html#_CPPv4N4cuda12experimental3stf10data_place7gc_viewE">cuda::experimental::stf::data_place::gc_view (C++ member)</a>
+      <li><a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1data__place.html#_CPPv4N4cuda12experimental3stf10data_place14from_extensionENSt10shared_ptrI20data_place_extensionEE">cuda::experimental::stf::data_place::from_extension (C++ function)</a>
 </li>
       <li><a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1data__place.html#_CPPv4NK4cuda12experimental3stf10data_place21get_affine_exec_placeEv">cuda::experimental::stf::data_place::get_affine_exec_place (C++ function)</a>
+</li>
+      <li><a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1data__place.html#_CPPv4NK4cuda12experimental3stf10data_place13get_extensionEv">cuda::experimental::stf::data_place::get_extension (C++ function)</a>
 </li>
       <li><a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1data__place.html#_CPPv4NK4cuda12experimental3stf10data_place8get_gridEv">cuda::experimental::stf::data_place::get_grid (C++ function)</a>
 </li>
@@ -3699,7 +3710,9 @@
 </li>
       <li><a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1data__place.html#_CPPv4NK4cuda12experimental3stf10data_place13getDataStreamER22async_resources_handle">cuda::experimental::stf::data_place::getDataStream (C++ function)</a>
 </li>
-      <li><a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1data__place.html#_CPPv4N4cuda12experimental3stf10data_place9green_ctxERK14green_ctx_view">cuda::experimental::stf::data_place::green_ctx (C++ function)</a>
+      <li><a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1data__place.html#_CPPv4N4cuda12experimental3stf10data_place9green_ctxENSt10shared_ptrI14green_ctx_viewEE">cuda::experimental::stf::data_place::green_ctx (C++ function)</a>, <a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1data__place.html#_CPPv4N4cuda12experimental3stf10data_place9green_ctxERK14green_ctx_view">[1]</a>
+</li>
+      <li><a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1data__place.html#_CPPv4NK4cuda12experimental3stf10data_place13has_extensionEv">cuda::experimental::stf::data_place::has_extension (C++ function)</a>
 </li>
       <li><a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1data__place.html#_CPPv4N4cuda12experimental3stf10data_place4hostEv">cuda::experimental::stf::data_place::host (C++ function)</a>
 </li>
@@ -3713,7 +3726,7 @@
 </li>
       <li><a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1data__place.html#_CPPv4NK4cuda12experimental3stf10data_place14is_device_autoEv">cuda::experimental::stf::data_place::is_device_auto (C++ function)</a>
 </li>
-      <li><a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1data__place.html#_CPPv4NK4cuda12experimental3stf10data_place12is_green_ctxEv">cuda::experimental::stf::data_place::is_green_ctx (C++ function)</a>
+      <li><a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1data__place.html#_CPPv4NK4cuda12experimental3stf10data_place12is_extensionEv">cuda::experimental::stf::data_place::is_extension (C++ function)</a>
 </li>
       <li><a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1data__place.html#_CPPv4NK4cuda12experimental3stf10data_place7is_hostEv">cuda::experimental::stf::data_place::is_host (C++ function)</a>
 </li>
@@ -3723,6 +3736,8 @@
 </li>
       <li><a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1data__place.html#_CPPv4N4cuda12experimental3stf10data_place7managedEv">cuda::experimental::stf::data_place::managed (C++ function)</a>
 </li>
+      <li><a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1data__place.html#_CPPv4NK4cuda12experimental3stf10data_place10mem_createEP28CUmemGenericAllocationHandle6size_t">cuda::experimental::stf::data_place::mem_create (C++ function)</a>
+</li>
       <li><a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1data__place.html#_CPPv4NK4cuda12experimental3stf10data_placeneERK10data_place">cuda::experimental::stf::data_place::operator!= (C++ function)</a>
 </li>
       <li><a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1data__place.html#_CPPv4NK4cuda12experimental3stf10data_placeeqERK10data_place">cuda::experimental::stf::data_place::operator== (C++ function)</a>
@@ -3730,6 +3745,28 @@
       <li><a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1data__place.html#_CPPv4N4cuda12experimental3stf10data_place8to_indexERK10data_place">cuda::experimental::stf::data_place::to_index (C++ function)</a>
 </li>
       <li><a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1data__place.html#_CPPv4NK4cuda12experimental3stf10data_place9to_stringEv">cuda::experimental::stf::data_place::to_string (C++ function)</a>
+</li>
+      <li><a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1data__place__extension.html#_CPPv4N4cuda12experimental3stf20data_place_extensionE">cuda::experimental::stf::data_place_extension (C++ class)</a>
+</li>
+      <li><a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1data__place__extension.html#_CPPv4NK4cuda12experimental3stf20data_place_extension8allocateENSt9ptrdiff_tE12cudaStream_t">cuda::experimental::stf::data_place_extension::allocate (C++ function)</a>
+</li>
+      <li><a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1data__place__extension.html#_CPPv4NK4cuda12experimental3stf20data_place_extension28allocation_is_stream_orderedEv">cuda::experimental::stf::data_place_extension::allocation_is_stream_ordered (C++ function)</a>
+</li>
+      <li><a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1data__place__extension.html#_CPPv4NK4cuda12experimental3stf20data_place_extension10deallocateEPv6size_t12cudaStream_t">cuda::experimental::stf::data_place_extension::deallocate (C++ function)</a>
+</li>
+      <li><a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1data__place__extension.html#_CPPv4NK4cuda12experimental3stf20data_place_extension6equalsERK20data_place_extension">cuda::experimental::stf::data_place_extension::equals (C++ function)</a>
+</li>
+      <li><a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1data__place__extension.html#_CPPv4NK4cuda12experimental3stf20data_place_extension21get_affine_exec_placeEv">cuda::experimental::stf::data_place_extension::get_affine_exec_place (C++ function)</a>
+</li>
+      <li><a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1data__place__extension.html#_CPPv4NK4cuda12experimental3stf20data_place_extension18get_device_ordinalEv">cuda::experimental::stf::data_place_extension::get_device_ordinal (C++ function)</a>
+</li>
+      <li><a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1data__place__extension.html#_CPPv4NK4cuda12experimental3stf20data_place_extension4hashEv">cuda::experimental::stf::data_place_extension::hash (C++ function)</a>
+</li>
+      <li><a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1data__place__extension.html#_CPPv4NK4cuda12experimental3stf20data_place_extension10mem_createEP28CUmemGenericAllocationHandle6size_t">cuda::experimental::stf::data_place_extension::mem_create (C++ function)</a>
+</li>
+      <li><a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1data__place__extension.html#_CPPv4NK4cuda12experimental3stf20data_place_extension9to_stringEv">cuda::experimental::stf::data_place_extension::to_string (C++ function)</a>
+</li>
+      <li><a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1data__place__extension.html#_CPPv4N4cuda12experimental3stf20data_place_extensionD0Ev">cuda::experimental::stf::data_place_extension::~data_place_extension (C++ function)</a>
 </li>
       <li><a href="cudax/api/structcuda_1_1experimental_1_1stf_1_1decorated__stream.html#_CPPv4N4cuda12experimental3stf16decorated_streamE">cuda::experimental::stf::decorated_stream (C++ struct)</a>
 </li>
@@ -3885,7 +3922,7 @@
 </li>
       <li><a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1exec__place.html#_CPPv4NK4cuda12experimental3stf10exec_place9getStreamER22async_resources_handleb">cuda::experimental::stf::exec_place::getStream (C++ function)</a>
 </li>
-      <li><a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1exec__place.html#_CPPv4N4cuda12experimental3stf10exec_place9green_ctxERK14green_ctx_view">cuda::experimental::stf::exec_place::green_ctx (C++ function)</a>, <a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1exec__place.html#_CPPv4N4cuda12experimental3stf10exec_place9green_ctxERKNSt10shared_ptrI14green_ctx_viewEE">[1]</a>
+      <li><a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1exec__place.html#_CPPv4N4cuda12experimental3stf10exec_place9green_ctxERK14green_ctx_viewb">cuda::experimental::stf::exec_place::green_ctx (C++ function)</a>, <a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1exec__place.html#_CPPv4N4cuda12experimental3stf10exec_place9green_ctxERKNSt10shared_ptrI14green_ctx_viewEEb">[1]</a>
 </li>
       <li><a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1exec__place.html#_CPPv4NK4cuda12experimental3stf10exec_place8grid_dimEi">cuda::experimental::stf::exec_place::grid_dim (C++ function)</a>
 </li>
@@ -3999,7 +4036,7 @@
 </li>
       <li><a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1exec__place__cuda__stream.html#_CPPv4NK4cuda12experimental3stf22exec_place_cuda_stream9getStreamER22async_resources_handleb">cuda::experimental::stf::exec_place_cuda_stream::getStream (C++ function)</a>
 </li>
-      <li><a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1exec__place__cuda__stream.html#_CPPv4N4cuda12experimental3stf22exec_place_cuda_stream9green_ctxERK14green_ctx_view">cuda::experimental::stf::exec_place_cuda_stream::green_ctx (C++ function)</a>, <a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1exec__place__cuda__stream.html#_CPPv4N4cuda12experimental3stf22exec_place_cuda_stream9green_ctxERKNSt10shared_ptrI14green_ctx_viewEE">[1]</a>
+      <li><a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1exec__place__cuda__stream.html#_CPPv4N4cuda12experimental3stf22exec_place_cuda_stream9green_ctxERK14green_ctx_viewb">cuda::experimental::stf::exec_place_cuda_stream::green_ctx (C++ function)</a>, <a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1exec__place__cuda__stream.html#_CPPv4N4cuda12experimental3stf22exec_place_cuda_stream9green_ctxERKNSt10shared_ptrI14green_ctx_viewEEb">[1]</a>
 </li>
       <li><a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1exec__place__cuda__stream.html#_CPPv4NK4cuda12experimental3stf22exec_place_cuda_stream8grid_dimEi">cuda::experimental::stf::exec_place_cuda_stream::grid_dim (C++ function)</a>
 </li>
@@ -4089,7 +4126,7 @@
 </li>
       <li><a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1exec__place__green__ctx.html#_CPPv4N4cuda12experimental3stf20exec_place_green_ctx3endEv">cuda::experimental::stf::exec_place_green_ctx::end (C++ function)</a>
 </li>
-      <li><a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1exec__place__green__ctx.html#_CPPv4N4cuda12experimental3stf20exec_place_green_ctx20exec_place_green_ctxE14green_ctx_view">cuda::experimental::stf::exec_place_green_ctx::exec_place_green_ctx (C++ function)</a>, <a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1exec__place__green__ctx.html#_CPPv4N4cuda12experimental3stf20exec_place_green_ctx20exec_place_green_ctxENSt10shared_ptrI14green_ctx_viewEE">[1]</a>
+      <li><a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1exec__place__green__ctx.html#_CPPv4N4cuda12experimental3stf20exec_place_green_ctx20exec_place_green_ctxE14green_ctx_viewb">cuda::experimental::stf::exec_place_green_ctx::exec_place_green_ctx (C++ function)</a>, <a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1exec__place__green__ctx.html#_CPPv4N4cuda12experimental3stf20exec_place_green_ctx20exec_place_green_ctxENSt10shared_ptrI14green_ctx_viewEEb">[1]</a>
 </li>
       <li><a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1exec__place__green__ctx.html#_CPPv4NK4cuda12experimental3stf20exec_place_green_ctx8get_implEv">cuda::experimental::stf::exec_place_green_ctx::get_impl (C++ function)</a>
 </li>
@@ -4097,7 +4134,7 @@
 </li>
       <li><a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1exec__place__green__ctx.html#_CPPv4NK4cuda12experimental3stf20exec_place_green_ctx9getStreamER22async_resources_handleb">cuda::experimental::stf::exec_place_green_ctx::getStream (C++ function)</a>
 </li>
-      <li><a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1exec__place__green__ctx.html#_CPPv4N4cuda12experimental3stf20exec_place_green_ctx9green_ctxERK14green_ctx_view">cuda::experimental::stf::exec_place_green_ctx::green_ctx (C++ function)</a>, <a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1exec__place__green__ctx.html#_CPPv4N4cuda12experimental3stf20exec_place_green_ctx9green_ctxERKNSt10shared_ptrI14green_ctx_viewEE">[1]</a>
+      <li><a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1exec__place__green__ctx.html#_CPPv4N4cuda12experimental3stf20exec_place_green_ctx9green_ctxERK14green_ctx_viewb">cuda::experimental::stf::exec_place_green_ctx::green_ctx (C++ function)</a>, <a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1exec__place__green__ctx.html#_CPPv4N4cuda12experimental3stf20exec_place_green_ctx9green_ctxERKNSt10shared_ptrI14green_ctx_viewEEb">[1]</a>
 </li>
       <li><a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1exec__place__green__ctx.html#_CPPv4NK4cuda12experimental3stf20exec_place_green_ctx8grid_dimEi">cuda::experimental::stf::exec_place_green_ctx::grid_dim (C++ function)</a>
 </li>
@@ -4117,7 +4154,7 @@
 </li>
       <li><a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1exec__place__green__ctx.html#_CPPv4NK4cuda12experimental3stf20exec_place_green_ctx4impl9getStreamER22async_resources_handleb">cuda::experimental::stf::exec_place_green_ctx::impl::getStream (C++ function)</a>
 </li>
-      <li><a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1exec__place__green__ctx.html#_CPPv4N4cuda12experimental3stf20exec_place_green_ctx4impl4implE14green_ctx_view">cuda::experimental::stf::exec_place_green_ctx::impl::impl (C++ function)</a>, <a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1exec__place__green__ctx.html#_CPPv4N4cuda12experimental3stf20exec_place_green_ctx4impl4implE9CUcontext">[1]</a>
+      <li><a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1exec__place__green__ctx.html#_CPPv4N4cuda12experimental3stf20exec_place_green_ctx4impl4implE14green_ctx_viewb">cuda::experimental::stf::exec_place_green_ctx::impl::impl (C++ function)</a>, <a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1exec__place__green__ctx.html#_CPPv4N4cuda12experimental3stf20exec_place_green_ctx4impl4implE9CUcontext">[1]</a>
 </li>
       <li><a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1exec__place__green__ctx.html#_CPPv4NK4cuda12experimental3stf20exec_place_green_ctx4impl9is_deviceEv">cuda::experimental::stf::exec_place_green_ctx::impl::is_device (C++ function)</a>
 </li>
@@ -4207,7 +4244,7 @@
 </li>
       <li><a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1exec__place__grid.html#_CPPv4NK4cuda12experimental3stf15exec_place_grid9getStreamER22async_resources_handleb">cuda::experimental::stf::exec_place_grid::getStream (C++ function)</a>
 </li>
-      <li><a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1exec__place__grid.html#_CPPv4N4cuda12experimental3stf15exec_place_grid9green_ctxERK14green_ctx_view">cuda::experimental::stf::exec_place_grid::green_ctx (C++ function)</a>, <a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1exec__place__grid.html#_CPPv4N4cuda12experimental3stf15exec_place_grid9green_ctxERKNSt10shared_ptrI14green_ctx_viewEE">[1]</a>
+      <li><a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1exec__place__grid.html#_CPPv4N4cuda12experimental3stf15exec_place_grid9green_ctxERK14green_ctx_viewb">cuda::experimental::stf::exec_place_grid::green_ctx (C++ function)</a>, <a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1exec__place__grid.html#_CPPv4N4cuda12experimental3stf15exec_place_grid9green_ctxERKNSt10shared_ptrI14green_ctx_viewEEb">[1]</a>
 </li>
       <li><a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1exec__place__grid.html#_CPPv4NK4cuda12experimental3stf15exec_place_grid8grid_dimEi">cuda::experimental::stf::exec_place_grid::grid_dim (C++ function)</a>
 </li>
@@ -4329,7 +4366,7 @@
 </li>
       <li><a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1exec__place__host.html#_CPPv4NK4cuda12experimental3stf15exec_place_host9getStreamER22async_resources_handleb">cuda::experimental::stf::exec_place_host::getStream (C++ function)</a>
 </li>
-      <li><a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1exec__place__host.html#_CPPv4N4cuda12experimental3stf15exec_place_host9green_ctxERK14green_ctx_view">cuda::experimental::stf::exec_place_host::green_ctx (C++ function)</a>, <a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1exec__place__host.html#_CPPv4N4cuda12experimental3stf15exec_place_host9green_ctxERKNSt10shared_ptrI14green_ctx_viewEE">[1]</a>
+      <li><a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1exec__place__host.html#_CPPv4N4cuda12experimental3stf15exec_place_host9green_ctxERK14green_ctx_viewb">cuda::experimental::stf::exec_place_host::green_ctx (C++ function)</a>, <a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1exec__place__host.html#_CPPv4N4cuda12experimental3stf15exec_place_host9green_ctxERKNSt10shared_ptrI14green_ctx_viewEEb">[1]</a>
 </li>
       <li><a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1exec__place__host.html#_CPPv4NK4cuda12experimental3stf15exec_place_host8grid_dimEi">cuda::experimental::stf::exec_place_host::grid_dim (C++ function)</a>
 </li>
@@ -4591,10 +4628,10 @@
 </li>
       <li><a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1graph__ctx.html#_CPPv4N4cuda12experimental3stf9graph_ctx5phaseE">cuda::experimental::stf::graph_ctx::phase (C++ enum)</a>
 </li>
-      <li><a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1graph__ctx.html#_CPPv4N4cuda12experimental3stf9graph_ctx5phase9finalizedE">cuda::experimental::stf::graph_ctx::phase::finalized (C++ enumerator)</a>
-</li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1graph__ctx.html#_CPPv4N4cuda12experimental3stf9graph_ctx5phase9finalizedE">cuda::experimental::stf::graph_ctx::phase::finalized (C++ enumerator)</a>
+</li>
       <li><a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1graph__ctx.html#_CPPv4N4cuda12experimental3stf9graph_ctx5phase5setupE">cuda::experimental::stf::graph_ctx::phase::setup (C++ enumerator)</a>
 </li>
       <li><a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1graph__ctx.html#_CPPv4N4cuda12experimental3stf9graph_ctx5phase9submittedE">cuda::experimental::stf::graph_ctx::phase::submitted (C++ enumerator)</a>
@@ -4830,6 +4867,36 @@
       <li><a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1green__context__helper.html#_CPPv4N4cuda12experimental3stf20green_context_helper9partitionE6size_t">cuda::experimental::stf::green_context_helper::partition (C++ function)</a>
 </li>
       <li><a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1green__context__helper.html#_CPPv4N4cuda12experimental3stf20green_context_helperD0Ev">cuda::experimental::stf::green_context_helper::~green_context_helper (C++ function)</a>
+</li>
+      <li><a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1green__ctx__data__place.html#_CPPv4N4cuda12experimental3stf20green_ctx_data_placeE">cuda::experimental::stf::green_ctx_data_place (C++ class)</a>
+</li>
+      <li><a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1green__ctx__data__place.html#_CPPv4N4cuda12experimental3stf20green_ctx_data_place6createENSt10shared_ptrI14green_ctx_viewEE">cuda::experimental::stf::green_ctx_data_place::create (C++ function)</a>, <a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1green__ctx__data__place.html#_CPPv4N4cuda12experimental3stf20green_ctx_data_place6createERK14green_ctx_view">[1]</a>
+</li>
+      <li><a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1green__ctx__data__place.html#_CPPv4N4cuda12experimental3stf20green_ctx_data_place9extensionE">cuda::experimental::stf::green_ctx_data_place::extension (C++ class)</a>
+</li>
+      <li><a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1green__ctx__data__place.html#_CPPv4NK4cuda12experimental3stf20green_ctx_data_place9extension8allocateENSt9ptrdiff_tE12cudaStream_t">cuda::experimental::stf::green_ctx_data_place::extension::allocate (C++ function)</a>
+</li>
+      <li><a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1green__ctx__data__place.html#_CPPv4NK4cuda12experimental3stf20green_ctx_data_place9extension28allocation_is_stream_orderedEv">cuda::experimental::stf::green_ctx_data_place::extension::allocation_is_stream_ordered (C++ function)</a>
+</li>
+      <li><a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1green__ctx__data__place.html#_CPPv4NK4cuda12experimental3stf20green_ctx_data_place9extension10deallocateEPv6size_t12cudaStream_t">cuda::experimental::stf::green_ctx_data_place::extension::deallocate (C++ function)</a>
+</li>
+      <li><a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1green__ctx__data__place.html#_CPPv4NK4cuda12experimental3stf20green_ctx_data_place9extension6equalsERK20data_place_extension">cuda::experimental::stf::green_ctx_data_place::extension::equals (C++ function)</a>
+</li>
+      <li><a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1green__ctx__data__place.html#_CPPv4N4cuda12experimental3stf20green_ctx_data_place9extension9extensionE14green_ctx_view">cuda::experimental::stf::green_ctx_data_place::extension::extension (C++ function)</a>, <a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1green__ctx__data__place.html#_CPPv4N4cuda12experimental3stf20green_ctx_data_place9extension9extensionENSt10shared_ptrI14green_ctx_viewEE">[1]</a>
+</li>
+      <li><a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1green__ctx__data__place.html#_CPPv4NK4cuda12experimental3stf20green_ctx_data_place9extension21get_affine_exec_placeEv">cuda::experimental::stf::green_ctx_data_place::extension::get_affine_exec_place (C++ function)</a>
+</li>
+      <li><a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1green__ctx__data__place.html#_CPPv4NK4cuda12experimental3stf20green_ctx_data_place9extension18get_device_ordinalEv">cuda::experimental::stf::green_ctx_data_place::extension::get_device_ordinal (C++ function)</a>
+</li>
+      <li><a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1green__ctx__data__place.html#_CPPv4NK4cuda12experimental3stf20green_ctx_data_place9extension8get_viewEv">cuda::experimental::stf::green_ctx_data_place::extension::get_view (C++ function)</a>
+</li>
+      <li><a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1green__ctx__data__place.html#_CPPv4NK4cuda12experimental3stf20green_ctx_data_place9extension12get_view_ptrEv">cuda::experimental::stf::green_ctx_data_place::extension::get_view_ptr (C++ function)</a>
+</li>
+      <li><a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1green__ctx__data__place.html#_CPPv4NK4cuda12experimental3stf20green_ctx_data_place9extension4hashEv">cuda::experimental::stf::green_ctx_data_place::extension::hash (C++ function)</a>
+</li>
+      <li><a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1green__ctx__data__place.html#_CPPv4NK4cuda12experimental3stf20green_ctx_data_place9extension10mem_createEP28CUmemGenericAllocationHandle6size_t">cuda::experimental::stf::green_ctx_data_place::extension::mem_create (C++ function)</a>
+</li>
+      <li><a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1green__ctx__data__place.html#_CPPv4NK4cuda12experimental3stf20green_ctx_data_place9extension9to_stringEv">cuda::experimental::stf::green_ctx_data_place::extension::to_string (C++ function)</a>
 </li>
       <li><a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1green__ctx__view.html#_CPPv4N4cuda12experimental3stf14green_ctx_viewE">cuda::experimental::stf::green_ctx_view (C++ class)</a>
 </li>

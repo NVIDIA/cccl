@@ -33,6 +33,7 @@ Classes
 * :doc:`cuda::experimental::stf::data_instance <classcuda_1_1experimental_1_1stf_1_1data__instance>`
 * :doc:`cuda::experimental::stf::data_interface <classcuda_1_1experimental_1_1stf_1_1data__interface>`
 * :doc:`cuda::experimental::stf::data_place <classcuda_1_1experimental_1_1stf_1_1data__place>`
+* :doc:`cuda::experimental::stf::data_place_extension <classcuda_1_1experimental_1_1stf_1_1data__place__extension>`
 * :doc:`cuda::experimental::stf::deferred_stream_task <classcuda_1_1experimental_1_1stf_1_1deferred__stream__task>`
 * :doc:`cuda::experimental::stf::dim4 <classcuda_1_1experimental_1_1stf_1_1dim4>`
 * :doc:`cuda::experimental::stf::event_impl <classcuda_1_1experimental_1_1stf_1_1event__impl>`
@@ -53,6 +54,7 @@ Classes
 * :doc:`cuda::experimental::stf::graph_task <classcuda_1_1experimental_1_1stf_1_1graph__task>`
 * :doc:`classcuda_1_1experimental_1_1stf_1_1graph__task_3_4`
 * :doc:`cuda::experimental::stf::green_context_helper <classcuda_1_1experimental_1_1stf_1_1green__context__helper>`
+* :doc:`cuda::experimental::stf::green_ctx_data_place <classcuda_1_1experimental_1_1stf_1_1green__ctx__data__place>`
 * :doc:`cuda::experimental::stf::green_ctx_view <classcuda_1_1experimental_1_1stf_1_1green__ctx__view>`
 * :doc:`cuda::experimental::stf::hashtable <classcuda_1_1experimental_1_1stf_1_1hashtable>`
 * :doc:`cuda::experimental::stf::hashtable_stream_interface <classcuda_1_1experimental_1_1stf_1_1hashtable__stream__interface>`
@@ -186,6 +188,7 @@ Functions
 * :doc:`cuda::experimental::stf::hash_all <namespacecuda_1_1experimental_1_1stf_1a7c493042d80f4d9653af9fd5f7a318d1>`
 * :doc:`cuda::experimental::stf::hash_combine <namespacecuda_1_1experimental_1_1stf_1a046313a0322d9d1594210dffd8b02658>`
 * :doc:`cuda::experimental::stf::join <namespacecuda_1_1experimental_1_1stf_1ad18742cd2980317d08fa22179fe9838b>`
+* :doc:`cuda::experimental::stf::make_green_ctx_data_place <namespacecuda_1_1experimental_1_1stf_1a20c223a02a2cfb089fe1d91f932912f2>`
 * :doc:`cuda::experimental::stf::make_grid <namespacecuda_1_1experimental_1_1stf_1a742f1c47d0b76725772e86a449d8d604>`
 * :doc:`cuda::experimental::stf::make_slice <namespacecuda_1_1experimental_1_1stf_1a6e1e1d7e034f7e4b86eb9d22a3c01421>`
 * :doc:`cuda::experimental::stf::make_tuple_indexwise <namespacecuda_1_1experimental_1_1stf_1a8f15f696bcf96721e3ae9df7cde3e2cd>`
@@ -289,6 +292,7 @@ Variables
    classcuda_1_1experimental_1_1stf_1_1data__instance
    classcuda_1_1experimental_1_1stf_1_1data__interface
    classcuda_1_1experimental_1_1stf_1_1data__place
+   classcuda_1_1experimental_1_1stf_1_1data__place__extension
    classcuda_1_1experimental_1_1stf_1_1deferred__stream__task
    classcuda_1_1experimental_1_1stf_1_1dim4
    classcuda_1_1experimental_1_1stf_1_1event__impl
@@ -309,6 +313,7 @@ Variables
    classcuda_1_1experimental_1_1stf_1_1graph__task
    classcuda_1_1experimental_1_1stf_1_1graph__task_3_4
    classcuda_1_1experimental_1_1stf_1_1green__context__helper
+   classcuda_1_1experimental_1_1stf_1_1green__ctx__data__place
    classcuda_1_1experimental_1_1stf_1_1green__ctx__view
    classcuda_1_1experimental_1_1stf_1_1hashtable
    classcuda_1_1experimental_1_1stf_1_1hashtable__stream__interface
@@ -430,6 +435,7 @@ Variables
    namespacecuda_1_1experimental_1_1stf_1a1a3f54ba8407a462e7410a45af0f75a3
    namespacecuda_1_1experimental_1_1stf_1abe262e91fef7dd1a874d0c45463f4529
    namespacecuda_1_1experimental_1_1stf_1acddbda1fa79384aa723f05740d12001c
+   namespacecuda_1_1experimental_1_1stf_1a20c223a02a2cfb089fe1d91f932912f2
    namespacecuda_1_1experimental_1_1stf_1a5b257d4c2331422fd492439852cb9005
    namespacecuda_1_1experimental_1_1stf_1a58cda9cdc2010f7451a34efc10f8f3f2
    namespacecuda_1_1experimental_1_1stf_1a742f1c47d0b76725772e86a449d8d604
