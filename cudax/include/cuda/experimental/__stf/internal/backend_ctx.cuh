@@ -41,10 +41,6 @@
 #include <cuda/experimental/__stf/internal/void_interface.cuh>
 #include <cuda/experimental/__stf/localization/composite_slice.cuh>
 
-// XXX there is currently a dependency on this header for places.h
-// Until we find a solution we need to include this
-#include <cuda/experimental/__stf/places/exec/green_context.cuh>
-
 #include <atomic>
 #include <fstream>
 #include <sstream>
