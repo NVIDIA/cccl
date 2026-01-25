@@ -842,3 +842,13 @@
 ## 2026-01-24
 - Merged block histogram API example into tests/coop/test_block_histogram.py and repointed block histogram literalincludes; removed tests/coop/test_block_histogram_api.py.
 - Ran pytest: `python -m pytest tests/coop/test_block_histogram.py -k "init_composite"` (1 passed, 307 deselected).
+
+## 2026-01-24
+- Merged block run-length API example into tests/coop/test_block_run_length_decode.py and repointed run-length literalincludes; removed tests/coop/test_block_run_length_api.py.
+- Added single-phase coverage split between the example test (items only) and a new offsets test.
+- Ran pytest: `python -m pytest tests/coop/test_block_run_length_decode.py` (5 passed).
+
+## 2026-01-25
+- Added single-phase parity for block load/store tests by running both single-phase and two-phase paths and comparing to reference input.
+- Adjusted block store single-phase to use BlockStoreAlgorithm enums and separate thread_data buffers to avoid shared-memory algorithms clobbering input.
+- Ran pytest: `python -m pytest tests/coop/test_block_load.py tests/coop/test_block_store.py` (480 passed).

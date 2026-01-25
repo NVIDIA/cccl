@@ -598,7 +598,7 @@ def run_length(
     """Block-wide run-length decode for per-thread items.
 
     Example:
-        .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_block_run_length_api.py
+        .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_block_run_length_decode.py
             :language: python
             :dedent:
             :start-after: example-begin run-length
