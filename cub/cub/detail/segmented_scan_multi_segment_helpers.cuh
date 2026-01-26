@@ -238,21 +238,21 @@ private:
 };
 } // namespace multi_segment_helpers
 
-template <typename PrefixTy, typename BinaryOpTy>
-struct block_prefix_callback_t
+template <typename PrefixT, typename BinaryOpT>
+struct worker_prefix_callback_t
 {
-  PrefixTy& m_exclusive_prefix;
-  BinaryOpTy& m_scan_op;
+  PrefixT& m_exclusive_prefix;
+  BinaryOpT& m_scan_op;
 
-  _CCCL_DEVICE _CCCL_FORCEINLINE block_prefix_callback_t(PrefixTy& prefix, BinaryOpTy& op)
+  _CCCL_DEVICE _CCCL_FORCEINLINE worker_prefix_callback_t(PrefixT& prefix, BinaryOpT& op)
       : m_exclusive_prefix(prefix)
       , m_scan_op(op)
   {}
 
-  _CCCL_DEVICE _CCCL_FORCEINLINE PrefixTy operator()(PrefixTy block_aggregate)
+  _CCCL_DEVICE _CCCL_FORCEINLINE PrefixT operator()(PrefixT block_aggregate)
   {
-    const PrefixTy previous_prefix = m_exclusive_prefix;
-    m_exclusive_prefix             = m_scan_op(m_exclusive_prefix, block_aggregate);
+    const PrefixT previous_prefix = m_exclusive_prefix;
+    m_exclusive_prefix            = m_scan_op(m_exclusive_prefix, block_aggregate);
     return previous_prefix;
   }
 };
