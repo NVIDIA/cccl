@@ -141,8 +141,8 @@ Functions
 * :doc:`adjacent_difference <group__transformations_1ga0f4d328d7b75f58901672a42591f4d3d>`
 * :doc:`advance <namespacethrust_1a1a067ddef0510e8b800535985b85af37>`
 * :doc:`all_of <group__logical_1ga0e0104d89eb247a7e10a6a75c1a024a2>`
-* :doc:`allocate_unique <namespacethrust_1a2ac27e75b5e3ff9162038c65f9a962e6>`
-* :doc:`allocate_unique_n <namespacethrust_1ac43d207f42ebc9d5ecf79d7708119ec1>`
+* :doc:`allocate_unique <namespacethrust_1a82dc371eac6d1499d28f153e3f921926>`
+* :doc:`allocate_unique_n <namespacethrust_1a66c4817439220a11edc1c810c9f2c4e4>`
 * :doc:`any_of <group__logical_1gac5a8c0f6c91c7655a8e719b0e3aa030d>`
 * :doc:`arg <group__complex__numbers_1ga7038bbec1ad0891c7e84cf49691de669>`
 * :doc:`asin <group__complex__numbers_1ga2402d40d11cc358cbd8a15f0d3e0a640>`
@@ -284,8 +284,8 @@ Functions
 * :doc:`transform_n <group__transformations_1ga172372017111c92f4736d3c8ff38f087>`
 * :doc:`transform_reduce <group__transformed__reductions_1ga096f193143e236850baaf3369b861137>`
 * :doc:`try_unwrap_contiguous_iterator <namespacethrust_1a2afd9592c3194b676fda5d87897cd6c6>`
-* :doc:`uninitialized_allocate_unique <namespacethrust_1a422a511a42fdee806b0c6fd3b2c1a297>`
-* :doc:`uninitialized_allocate_unique_n <namespacethrust_1a107423505ed1d5bd9e05dda2e3c2a4ad>`
+* :doc:`uninitialized_allocate_unique <namespacethrust_1ae7fd98cda27174a35283582ebdd724c1>`
+* :doc:`uninitialized_allocate_unique_n <namespacethrust_1a3a4c778f56a57b41e72b4a6037ed08da>`
 * :doc:`uninitialized_copy <group__copying_1gad26f989a9260881c5df7707b57694fe9>`
 * :doc:`uninitialized_copy_n <group__copying_1gacf44f607e6db43cd1acd0fc17ac5e988>`
 * :doc:`uninitialized_fill <group__filling_1ga309ec097df7d9064fbbd2f1f45ab3ab3>`
@@ -575,10 +575,10 @@ Variables
    namespacethrust_1ae268bfffafaa04f5a8a4cf902861367c
    namespacethrust_1a253ceec56c467b5ce73b1593ff8b1375
    namespacethrust_1aadb50b0c546159c3f06ecdf8349fb901
-   namespacethrust_1a2ac27e75b5e3ff9162038c65f9a962e6
-   namespacethrust_1a422a511a42fdee806b0c6fd3b2c1a297
-   namespacethrust_1ac43d207f42ebc9d5ecf79d7708119ec1
-   namespacethrust_1a107423505ed1d5bd9e05dda2e3c2a4ad
+   namespacethrust_1a82dc371eac6d1499d28f153e3f921926
+   namespacethrust_1ae7fd98cda27174a35283582ebdd724c1
+   namespacethrust_1a66c4817439220a11edc1c810c9f2c4e4
+   namespacethrust_1a3a4c778f56a57b41e72b4a6037ed08da
    group__binary__search_1gad2ac5a1c5091366144d6fdbf2ff5551e
    group__binary__search_1gac85cc9ea00f4bdd8f80ad25fff16741d
    group__binary__search_1gaa855fdcf3942f95919bb712e26c7bfc6
