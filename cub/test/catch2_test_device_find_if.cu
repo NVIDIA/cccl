@@ -255,14 +255,12 @@ C2H_TEST("Device find_if works with non default constructible types", "[device][
 
   CAPTURE(num_items, val_to_find);
 
-  const auto expected_if_found = cuda::std::min(static_cast<offset_t>(val_to_find), num_items);
-
   // counting_iterator input
   auto c_it = cuda::make_transform_iterator(cuda::make_counting_iterator(input_t{0}), converter{});
   {
     c2h::device_vector<offset_t> out_result(1, thrust::no_init);
     auto predicate = thrust::detail::equal_to_value<NotDefaultConstructible>{NotDefaultConstructible{val_to_find}};
     find_if(c_it, thrust::raw_pointer_cast(out_result.data()), predicate, num_items);
-    REQUIRE(expected_if_found == out_result[0]);
+    REQUIRE(val_to_find == out_result[0]);
   }
 }
