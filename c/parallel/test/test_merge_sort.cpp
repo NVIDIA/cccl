@@ -140,7 +140,7 @@ C2H_TEST("DeviceMergeSort::SortKeys works with well-known predicate", "[merge_so
   auto& build_cache    = get_cache<DeviceMergeSort_SortKeys_WellKnown_Fixture_Tag>();
   const auto& test_key = make_key<key_t>();
 
-  merge_sort<true>(input_keys_it, input_items_it, input_keys_it, input_items_it, num_items, op, build_cache, test_key);
+  merge_sort(input_keys_it, input_items_it, input_keys_it, input_items_it, num_items, op, build_cache, test_key);
 
   std::sort(expected_keys.begin(), expected_keys.end());
   REQUIRE(expected_keys == std::vector<key_t>(input_keys_it));
@@ -193,7 +193,7 @@ C2H_TEST("DeviceMergeSort::SortPairs works", "[merge_sort]", key_types)
   auto& build_cache    = get_cache<DeviceMergeSort_SortPairs_Fixture_Tag>();
   const auto& test_key = make_key<key_t, item_t>();
 
-  merge_sort(input_keys_it, input_items_it, input_keys_it, input_items_it, num_items, op, build_cache, test_key);
+  merge_sort<true>(input_keys_it, input_items_it, input_keys_it, input_items_it, num_items, op, build_cache, test_key);
 
   std::sort(expected_keys.begin(), expected_keys.end());
   std::sort(expected_items.begin(), expected_items.end());
