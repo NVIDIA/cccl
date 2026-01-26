@@ -15,7 +15,7 @@
 
 inline void FormatHeader(std::ostream& out)
 {
-  std::string header = R"XXX(//===----------------------------------------------------------------------===//
+  constexpr auto header = R"XXX(//===----------------------------------------------------------------------===//
 //
 // Part of libcu++, the C++ Standard Library for your entire system,
 // under the Apache License v2.0 with LLVM Exceptions.
@@ -70,7 +70,7 @@ extern "C" _CCCL_DEVICE void __atomic_ldst_128b_unsupported_before_SM_70();
 
 inline void FormatTail(std::ostream& out)
 {
-  std::string tail = R"XXX(
+  constexpr auto tail = R"XXX(
 #endif // _CCCL_CUDA_COMPILATION()
 
 _CCCL_END_NAMESPACE_CUDA_STD

@@ -14,8 +14,8 @@
 //   ForwardIterator for_each_n(ExecutionPolicy&& exec, ForwardIterator first, Size n,
 //                              Function f);
 
-#include <cuda/std/__algorithm_>
 #include <cuda/std/__pstl/for_each_n.h>
+#include <cuda/std/algorithm>
 #include <cuda/std/cassert>
 
 #include "test_execution_policies.h"

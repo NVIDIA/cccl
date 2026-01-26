@@ -71,6 +71,10 @@ THRUST_NAMESPACE_BEGIN
  *        guarantee on order of execution.
  *
  *  \see https://en.cppreference.com/w/cpp/algorithm/iota
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename DerivedPolicy, typename ForwardIterator>
 _CCCL_HOST_DEVICE void
@@ -105,6 +109,10 @@ sequence(const thrust::detail::execution_policy_base<DerivedPolicy>& exec, Forwa
  *        guarantee on order of execution.
  *
  *  \see https://en.cppreference.com/w/cpp/algorithm/iota
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename ForwardIterator>
 void sequence(ForwardIterator first, ForwardIterator last);
@@ -146,6 +154,10 @@ void sequence(ForwardIterator first, ForwardIterator last);
  *        guarantee on order of execution.
  *
  *  \see https://en.cppreference.com/w/cpp/algorithm/iota
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename DerivedPolicy, typename ForwardIterator, typename T>
 _CCCL_HOST_DEVICE void sequence(
@@ -182,6 +194,10 @@ _CCCL_HOST_DEVICE void sequence(
  *        guarantee on order of execution.
  *
  *  \see https://en.cppreference.com/w/cpp/algorithm/iota
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename ForwardIterator, typename T>
 void sequence(ForwardIterator first, ForwardIterator last, T init);
@@ -224,6 +240,10 @@ void sequence(ForwardIterator first, ForwardIterator last, T init);
  *        guarantee on order of execution.
  *
  *  \see https://en.cppreference.com/w/cpp/algorithm/iota
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename DerivedPolicy, typename ForwardIterator, typename T>
 _CCCL_HOST_DEVICE void sequence(
@@ -265,6 +285,10 @@ _CCCL_HOST_DEVICE void sequence(
  *        guarantee on order of execution.
  *
  *  \see https://en.cppreference.com/w/cpp/algorithm/iota
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename ForwardIterator, typename T>
 void sequence(ForwardIterator first, ForwardIterator last, T init, T step);
