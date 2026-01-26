@@ -221,4 +221,11 @@ def make_permutation_iterator(values, indices):
                 )
             return output_dereference_func
 
+        @property
+        def children(self):
+            return (self._values, self._indices)
+
+        def _rebuild_value_type_from_children(self):
+            self.value_type = self._values.value_type
+
     return PermutationIterator(values, indices)

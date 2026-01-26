@@ -561,6 +561,38 @@ def _get_abi_suffix():
     return uuid.uuid4().hex
 
 
+def _resolve_iterator_value_types(it):
+    # transform iterators sometimes need help figuring their input or
+    # output types (depending on whether it's an input or output
+    # iterator). This requires inspecting type annotations, or
+    # using numba's type inference. This function takes an iterator
+    # (possibly a compound iterator like ZipIterator) and traverses
+    # its children recursively, finding any TransformIterators
+    # and setting their value types. At the end, it calls
+    # it._rebuild_value_type_from_children() which propagates
+    # the updated value types back up to the "parent" iterators.
+    from .iterators._iterators import TransformIteratorKind
+
+    children = getattr(it, "children", ())
+    for child in children:
+        _resolve_iterator_value_types(child)
+
+    kind = getattr(it, "kind", None)
+    if isinstance(kind, TransformIteratorKind):
+        op_func = kind.op._func
+        _ensure_function_structs_registered(op_func)
+        if kind.io_kind == "input":
+            _, output_td = infer_signature(op_func, (it.value_type,))
+            it.value_type = output_td
+        else:
+            input_tds, _ = infer_signature(op_func)
+            it.value_type = input_tds[0]
+
+    rebuild_value_type = getattr(it, "_rebuild_value_type_from_children", None)
+    if rebuild_value_type is not None:
+        rebuild_value_type()
+
+
 def compile_iterator(it, io_kind: str):
     """
     Compile an iterator into a CCCL Iterator binding object.
@@ -578,6 +610,8 @@ def compile_iterator(it, io_kind: str):
         create_input_dereference_void_ptr_wrapper,
         create_output_dereference_void_ptr_wrapper,
     )
+
+    _resolve_iterator_value_types(it)
 
     # Convert TypeDescriptors to Numba types for compilation
     numba_state_type = type_descriptor_to_numba(it.state_type)

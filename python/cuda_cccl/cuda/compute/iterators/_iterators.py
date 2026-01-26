@@ -107,6 +107,10 @@ class IteratorBase:
         return None
 
     @property
+    def children(self):
+        return ()
+
+    @property
     def is_input_iterator(self) -> bool:
         return self.input_dereference is not None
 
@@ -416,6 +420,10 @@ def make_reverse_iterator(it: DeviceArrayLike | IteratorBase):
             return self._advance
 
         @property
+        def children(self):
+            return (self._it,)
+
+        @property
         def advance(self):
             return self._advance
 
@@ -501,32 +509,21 @@ def make_transform_iterator(it: IteratorBase, op: Callable, io_kind: str):
             self._op = CachableFunction(op.py_func)
             state_type = it.state_type
 
-            # Get the value type from annotations or inference
-            from .._jit import infer_signature
-
-            input_tds, output_td = infer_signature(
-                op.py_func,
-                (it.value_type,) if io_kind == "input" else None,
-            )
-            # For input iterators: value_type is the OUTPUT of the transform
-            # For output iterators: value_type is the INPUT to the transform
-            if io_kind == "input":
-                value_type_descriptor = output_td
-            else:
-                # Output iterator: use the first input type
-                value_type_descriptor = input_tds[0]
-
             kind = TransformIteratorKind(it.kind, self._op, io_kind)
             super().__init__(
                 kind=kind,
                 cvalue=it.cvalue,
                 state_type=state_type,
-                value_type=value_type_descriptor,
+                value_type=it.value_type,
             )
 
         @property
         def host_advance(self):
             return it_host_advance
+
+        @property
+        def children(self):
+            return (self._it,)
 
         @property
         def advance(self):
@@ -560,6 +557,17 @@ def make_transform_iterator(it: IteratorBase, op: Callable, io_kind: str):
         @staticmethod
         def _output_dereference(state, x):
             it_output_dereference(state, op(x))
+
+        def __add__(self, offset: int):
+            res = type(self).__new__(type(self))
+            res._it = self._it + offset
+            res._op = self._op
+            res.state_type = self.state_type
+            res.value_type = self.value_type
+            res._kind = self._kind
+            res.cvalue = type(self.cvalue)(self.cvalue.value + offset)
+            res._state = IteratorState(res.cvalue)
+            return res
 
     return TransformIterator(it, op, io_kind)
 

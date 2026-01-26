@@ -242,4 +242,19 @@ def make_zip_iterator(*iterators):
                 )
             return output_dereference_func
 
+        @property
+        def children(self):
+            return tuple(self._iterators)
+
+        def _rebuild_value_type_from_children(self):
+            from ..struct import gpu_struct
+
+            if not self._iterators:
+                raise ValueError("Zip iterator has no children")
+            value_fields = {
+                f"value_{i}": child.value_type
+                for i, child in enumerate(self._iterators)
+            }
+            self.value_type = gpu_struct(value_fields, name="ZipValue")._type_descriptor
+
     return ZipIterator(processed_iterators)
