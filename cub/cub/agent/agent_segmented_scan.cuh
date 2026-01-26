@@ -38,11 +38,9 @@ namespace detail::segmented_scan
  * Tuning policy types
  ******************************************************************************/
 
-using multi_segment_helpers::augmented_value_t;
-
 template <typename ComputeT, int NumSegmentsPerBlock>
 using agent_segmented_scan_compute_t =
-  ::cuda::std::conditional_t<NumSegmentsPerBlock == 1, ComputeT, augmented_value_t<ComputeT, bool>>;
+  multi_segment_helpers::agent_segmented_scan_compute_t<ComputeT, NumSegmentsPerBlock>;
 
 //! @brief Parameterizable tuning policy type for agent_segmented_scan
 //!
@@ -233,7 +231,7 @@ struct agent_segmented_scan
     const OffsetT n_chunks      = ::cuda::ceil_div(segment_items, tile_items);
 
     AccumT exclusive_prefix{};
-    block_prefix_callback_t prefix_op{exclusive_prefix, scan_op};
+    worker_prefix_callback_t prefix_op{exclusive_prefix, scan_op};
 
     for (OffsetT chunk_id = 0; chunk_id < n_chunks;)
     {
@@ -310,7 +308,7 @@ struct agent_segmented_scan
       OffsetT exclusive_prefix = 0;
       using plus_t             = ::cuda::std::plus<>;
       const plus_t offsets_scan_op{};
-      block_prefix_callback_t prefix_callback_op{exclusive_prefix, offsets_scan_op};
+      worker_prefix_callback_t prefix_callback_op{exclusive_prefix, offsets_scan_op};
 
       for (unsigned chunk_id = 0; chunk_id < n_chunks; ++chunk_id)
       {
@@ -321,11 +319,16 @@ struct agent_segmented_scan
         const OffsetT input_segment_end   = (work_id < n_segments) ? inp_idx_end_it[work_id] : 0;
         const OffsetT segment_size        = input_segment_end - input_segment_begin;
 
+        block_offset_scan_t offset_scanner(temp_storage.reused.offset_scan);
+
         OffsetT prefix;
-        block_offset_scan_t(temp_storage.reused.offset_scan).InclusiveSum(segment_size, prefix, prefix_callback_op);
+        offset_scanner.InclusiveSum(segment_size, prefix, prefix_callback_op);
         __syncthreads();
 
-        temp_storage.logical_segment_offsets[work_id] = prefix;
+        if (work_id < n_segments)
+        {
+          temp_storage.logical_segment_offsets[work_id] = prefix;
+        }
       }
     }
 
@@ -339,12 +342,12 @@ struct agent_segmented_scan
 
     using augmented_scan_op_t = multi_segment_helpers::schwarz_scan_op<AccumT, bool, ScanOpT>;
     using augmented_init_value_t =
-      ::cuda::std::conditional_t<has_init, augmented_accum_t, augmented_value_t<InitValueT, bool>>;
+      ::cuda::std::conditional_t<has_init, augmented_accum_t, multi_segment_helpers::augmented_value_t<InitValueT, bool>>;
 
     augmented_scan_op_t augmented_scan_op{scan_op};
 
     augmented_accum_t exclusive_prefix{};
-    block_prefix_callback_t prefix_op{exclusive_prefix, augmented_scan_op};
+    worker_prefix_callback_t prefix_op{exclusive_prefix, augmented_scan_op};
 
     using multi_segment_helpers::multi_segmented_iterator;
     using multi_segment_helpers::packer;
@@ -366,7 +369,7 @@ struct agent_segmented_scan
         constexpr auto oob_default = multi_segment_helpers::make_value_flag(AccumT{}, false);
         constexpr projector<AccumT, bool> projection_op{};
 
-        block_load_t load_algo(temp_storage.reused.load);
+        block_load_t loader(temp_storage.reused.load);
         if constexpr (has_init)
         {
           const packer_iv<AccumT, bool, ScanOpT> packer_op{static_cast<AccumT>(initial_value), scan_op};
@@ -374,11 +377,11 @@ struct agent_segmented_scan
 
           if (chunk_size == tile_items)
           {
-            load_algo.Load(it_in, thread_flag_values);
+            loader.Load(it_in, thread_flag_values);
           }
           else
           {
-            load_algo.Load(it_in, thread_flag_values, chunk_size, oob_default);
+            loader.Load(it_in, thread_flag_values, chunk_size, oob_default);
           }
         }
         else
@@ -388,11 +391,11 @@ struct agent_segmented_scan
 
           if (chunk_size == tile_items)
           {
-            load_algo.Load(it_in, thread_flag_values);
+            loader.Load(it_in, thread_flag_values);
           }
           else
           {
-            load_algo.Load(it_in, thread_flag_values, chunk_size, oob_default);
+            loader.Load(it_in, thread_flag_values, chunk_size, oob_default);
           }
         }
       }
@@ -414,7 +417,8 @@ struct agent_segmented_scan
       {
         constexpr packer<AccumT, bool> packer_op{};
         const OffsetT out_offset = chunk_id * tile_items;
-        block_store_t store_algo(temp_storage.reused.store);
+
+        block_store_t storer(temp_storage.reused.store);
         if constexpr (is_inclusive)
         {
           constexpr projector<AccumT, bool> projector_op{};
@@ -422,11 +426,11 @@ struct agent_segmented_scan
 
           if (chunk_size == tile_items)
           {
-            store_algo.Store(it_out, thread_flag_values);
+            storer.Store(it_out, thread_flag_values);
           }
           else
           {
-            store_algo.Store(it_out, thread_flag_values, chunk_size);
+            storer.Store(it_out, thread_flag_values, chunk_size);
           }
         }
         else
@@ -435,11 +439,11 @@ struct agent_segmented_scan
           multi_segmented_iterator it_out{d_out, out_offset, cum_sizes, out_idx_begin_it, packer_op, projector_op};
           if (chunk_size == tile_items)
           {
-            store_algo.Store(it_out, thread_flag_values);
+            storer.Store(it_out, thread_flag_values);
           }
           else
           {
-            store_algo.Store(it_out, thread_flag_values, chunk_size);
+            storer.Store(it_out, thread_flag_values, chunk_size);
           }
         }
       }
@@ -459,23 +463,23 @@ private:
   _CCCL_DEVICE _CCCL_FORCEINLINE void
   scan_first_tile(ItemTy (&items)[items_per_thread], InitValueTy init_value, ScanOpTy scan_op, ItemTy& block_aggregate)
   {
-    block_scan_t block_scan_algo(temp_storage.reused.scan);
+    block_scan_t scanner(temp_storage.reused.scan);
     if constexpr (HasInit)
     {
       if constexpr (IsInclusive)
       {
-        block_scan_algo.InclusiveScan(items, items, init_value, scan_op, block_aggregate);
+        scanner.InclusiveScan(items, items, init_value, scan_op, block_aggregate);
       }
       else
       {
-        block_scan_algo.ExclusiveScan(items, items, init_value, scan_op, block_aggregate);
+        scanner.ExclusiveScan(items, items, init_value, scan_op, block_aggregate);
       }
       block_aggregate = scan_op(init_value, block_aggregate);
     }
     else
     {
       static_assert(IsInclusive, "Unexpected ExclusiveScan without initial value call");
-      block_scan_algo.InclusiveScan(items, items, scan_op, block_aggregate);
+      scanner.InclusiveScan(items, items, scan_op, block_aggregate);
     }
   }
 
@@ -483,14 +487,14 @@ private:
   _CCCL_DEVICE _CCCL_FORCEINLINE void
   scan_later_tile(ItemTy (&items)[items_per_thread], ScanOpTy scan_op, PrefixCallback& prefix_op)
   {
-    block_scan_t block_scan_algo(temp_storage.reused.scan);
+    block_scan_t scanner(temp_storage.reused.scan);
     if constexpr (IsInclusive)
     {
-      block_scan_algo.InclusiveScan(items, items, scan_op, prefix_op);
+      scanner.InclusiveScan(items, items, scan_op, prefix_op);
     }
     else
     {
-      block_scan_algo.ExclusiveScan(items, items, scan_op, prefix_op);
+      scanner.ExclusiveScan(items, items, scan_op, prefix_op);
     }
   }
 };
