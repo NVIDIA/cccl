@@ -27,13 +27,13 @@
 #endif // no system header
 #include <thrust/detail/type_traits.h>
 #include <thrust/detail/type_traits/has_nested_type.h>
-#include <thrust/detail/type_traits/is_metafunction_defined.h>
 #include <thrust/detail/type_traits/is_thrust_pointer.h>
 #include <thrust/iterator/iterator_traits.h>
 
 #include <cuda/std/__type_traits/add_lvalue_reference.h>
 #include <cuda/std/__type_traits/conjunction.h>
 #include <cuda/std/__type_traits/enable_if.h>
+#include <cuda/std/__type_traits/is_comparable.h>
 #include <cuda/std/__type_traits/is_convertible.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/is_void.h>
@@ -288,45 +288,60 @@ struct pointer_traits<const void*>
 };
 
 template <typename FromPtr, typename ToPtr>
-struct is_pointer_system_convertible : ::cuda::std::is_convertible<iterator_system_t<FromPtr>, iterator_system_t<ToPtr>>
-{};
+inline constexpr bool is_pointer_system_convertible_v =
+  ::cuda::std::is_convertible_v<iterator_system_t<FromPtr>, iterator_system_t<ToPtr>>;
 
 template <typename FromPtr, typename ToPtr>
-struct is_pointer_convertible
-    : ::cuda::std::_And<
-        ::cuda::std::is_convertible<typename pointer_element<FromPtr>::type*, typename pointer_element<ToPtr>::type*>,
-        is_pointer_system_convertible<FromPtr, ToPtr>>
-{};
+inline constexpr bool is_pointer_convertible_v =
+  ::cuda::std::is_convertible_v<typename pointer_element<FromPtr>::type*, typename pointer_element<ToPtr>::type*>
+  && is_pointer_system_convertible_v<FromPtr, ToPtr>;
 
 template <typename FromPtr, typename ToPtr>
-struct is_void_pointer_system_convertible
-    : ::cuda::std::_And<::cuda::std::is_same<typename pointer_element<FromPtr>::type, void>,
-                        is_pointer_system_convertible<FromPtr, ToPtr>>
-{};
+inline constexpr bool is_void_pointer_system_convertible_v =
+  ::cuda::std::is_void_v<typename pointer_element<FromPtr>::type> //
+  && is_pointer_system_convertible_v<FromPtr, ToPtr>;
 
 // avoid inspecting traits of the arguments if they aren't known to be pointers
-template <typename FromPtr, typename ToPtr>
-struct lazy_is_pointer_convertible
-    : thrust::detail::eval_if<is_thrust_pointer_v<FromPtr> && is_thrust_pointer_v<ToPtr>,
-                              is_pointer_convertible<FromPtr, ToPtr>,
-                              ::cuda::std::type_identity<thrust::detail::false_type>>
-{};
+template <typename FromPtr, typename ToPtr, bool = is_thrust_pointer_v<FromPtr> && is_thrust_pointer_v<ToPtr>>
+inline constexpr bool lazy_is_pointer_convertible_v = false;
 
 template <typename FromPtr, typename ToPtr>
-struct lazy_is_void_pointer_system_convertible
-    : thrust::detail::eval_if<is_thrust_pointer_v<FromPtr> && is_thrust_pointer_v<ToPtr>,
-                              is_void_pointer_system_convertible<FromPtr, ToPtr>,
-                              ::cuda::std::type_identity<thrust::detail::false_type>>
-{};
+inline constexpr bool lazy_is_pointer_convertible_v<FromPtr, ToPtr, true> = is_pointer_convertible_v<FromPtr, ToPtr>;
+
+template <typename FromPtr, typename ToPtr, bool = is_thrust_pointer_v<FromPtr> && is_thrust_pointer_v<ToPtr>>
+inline constexpr bool lazy_is_void_pointer_system_convertible_v = false;
+
+template <typename FromPtr, typename ToPtr>
+inline constexpr bool lazy_is_void_pointer_system_convertible_v<FromPtr, ToPtr, true> =
+  is_void_pointer_system_convertible_v<FromPtr, ToPtr>;
 
 template <typename FromPtr, typename ToPtr, typename T = void>
-struct enable_if_pointer_is_convertible
-    : ::cuda::std::enable_if<lazy_is_pointer_convertible<FromPtr, ToPtr>::type::value, T>
-{};
+using enable_if_pointer_is_convertible_t = ::cuda::std::enable_if_t<lazy_is_pointer_convertible_v<FromPtr, ToPtr>, T>;
 
 template <typename FromPtr, typename ToPtr, typename T = void>
-struct enable_if_void_pointer_is_system_convertible
-    : ::cuda::std::enable_if<lazy_is_void_pointer_system_convertible<FromPtr, ToPtr>::type::value, T>
-{};
+using enable_if_void_pointer_is_system_convertible_t =
+  ::cuda::std::enable_if_t<lazy_is_void_pointer_system_convertible_v<FromPtr, ToPtr>, T>;
+
+// tagged pointers can only compare if they have a matching system and comparable pointer type
+template <typename FromPtr, typename ToPtr>
+inline constexpr bool ptr_can_compare_equal =
+  is_pointer_system_convertible_v<FromPtr, ToPtr>
+  && ::cuda::std::__is_cpp17_equality_comparable_v<typename FromPtr::value_type*, typename ToPtr::value_type*>;
+
+template <typename FromPtr, typename ToPtr>
+inline constexpr bool ptr_can_compare_less_than =
+  is_pointer_system_convertible_v<FromPtr, ToPtr>
+  && ::cuda::std::__is_cpp17_less_than_comparable_v<typename FromPtr::value_type*, typename ToPtr::value_type*>;
+
+// tagged references can only compare if they have a matching system and comparable value type
+template <typename FromPtr, typename ToPtr>
+inline constexpr bool ref_can_compare_equal =
+  is_pointer_system_convertible_v<FromPtr, ToPtr>
+  && ::cuda::std::__is_cpp17_equality_comparable_v<typename FromPtr::value_type, typename ToPtr::value_type>;
+
+template <typename FromPtr, typename ToPtr>
+inline constexpr bool ref_can_compare_less_than =
+  is_pointer_system_convertible_v<FromPtr, ToPtr>
+  && ::cuda::std::__is_cpp17_less_than_comparable_v<typename FromPtr::value_type, typename ToPtr::value_type>;
 } // namespace detail
 THRUST_NAMESPACE_END

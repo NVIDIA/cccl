@@ -1,0 +1,74 @@
+name: Black Duck SCA
+
+on:
+  push:
+    branches:
+      - "main"
+      # Once we get things working on main
+      # - "pull-request/[0-9]+"
+      # - "branch/*"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  blackduck-sca:
+    name: Black Duck SCA Scan
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Source
+        uses: actions/checkout@v4
+
+      - name: Black Duck SCA
+        id: black-duck-sca-scan
+        uses: blackduck-inc/black-duck-security-scan@v2
+        env:
+          DETECT_PROJECT_NAME: ${{ github.event.repository.name }}
+        with:
+          ### SCANNING: Required fields
+          blackducksca_url: ${{ vars.BLACKDUCK_URL }}
+          blackducksca_token: ${{ secrets.BLACKDUCK_TOKEN }}
+          ### SCANNING: Optional fields
+          blackducksca_scan_full: true
+          # blackducksca_scan_failure_severities: "BLOCKER,CRITICAL"
+          # blackducksca_waitForScan: true
+          ### Arbitrary product-related CLI arguments
+          # detect_search_depth: 2
+          # detect_args: "--detect.diagnostic=true"
+          # detect_config_path: "/path/to/application.properties"
+          ### FIX PULL REQUEST CREATION: Uncomment below to enable
+          # blackducksca_fixpr_enabled: true
+          # blackducksca_fixpr_maxCount: 5
+          # blackducksca_fixpr_filter_severities: "CRITICAL,HIGH"
+          # blackducksca_fixpr_useUpgradeGuidance: "SHORT_TERM,LONG_TERM"
+          # github_token: ${{ secrets.GITHUB_TOKEN }} # Required when Fix PRs are enabled
+          ### PULL REQUEST COMMENTS: Uncomment below to enable
+          # blackducksca_prComment_enabled: true
+          # github_token: ${{ secrets.GITHUB_TOKEN }} # Required when PR comments are enabled
+          ### SARIF report generation and upload to GitHub Advanced Security: Uncomment below to enable
+          # blackducksca_reports_sarif_create: true
+          # blackducksca_reports_sarif_file_path: "/path/to/report.sarif.json"
+          # blackducksca_reports_sarif_severities: "CRITICAL,HIGH"
+          # blackducksca_reports_sarif_groupSCAIssues: true
+          # blackducksca_upload_sarif_report: true
+          # github_token: ${{ secrets.GITHUB_TOKEN }} # Required when SARIF upload is enabled
+          ### To enable Black Duck SCA policy badges
+          # blackducksca_policy_badges_create: true
+          # blackducksca_policy_badges_maxCount: 5
+          # github_token: ${{ secrets.GITHUB_TOKEN }} # Required when policy badges are enabled
+          # project_directory: ${{ vars.PROJECT_DIRECTORY }}
+          ### Mark build status if policy violating issues are found
+          # mark_build_status: "success"
+          ### Uncomment below configuration if Bridge diagnostic files needs to be uploaded
+          # include_diagnostics: true
+          ### To enable self-signed certificates
+          # network_ssl_trustAll: true
+          # network_ssl_cert_file: "/path/to/cert.pem"
+
+      ### Uncomment below configuration to add custom logic based on return status
+      # - name: cmdLine
+      #   id: cmdLine
+      #   run: |
+      #     EXIT_CODE=${{ steps.black-duck-sca-scan.outputs.status }}
+      #     echo "Black Duck Security Scan exit status - $EXIT_CODE"

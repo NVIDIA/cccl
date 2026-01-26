@@ -49,6 +49,7 @@ auto& get_cache()
   return fixture<three_way_partition_build_cache_t, Tag>::get_or_create().get_value();
 }
 
+template <bool DisableSassCheck = false>
 struct three_way_partition_build
 {
   template <typename... Rest>
@@ -74,6 +75,11 @@ struct three_way_partition_build
       select_first_part_op,
       select_second_part_op,
       rest...);
+  }
+
+  static constexpr bool should_check_sass(int)
+  {
+    return !DisableSassCheck;
   }
 };
 
@@ -194,7 +200,7 @@ std_partition(FirstPartSelectionOp first_selector, SecondPartSelectionOp second_
   return result;
 }
 
-template <typename OperationT, typename KeyT, typename NumSelectedT, typename TagT>
+template <typename OperationT, typename KeyT, typename NumSelectedT, typename TagT, bool DisableSassCheck = false>
 three_way_partition_result_t<KeyT>
 c_parallel_partition(OperationT first_selector, OperationT second_selector, const std::vector<KeyT>& input)
 {
@@ -209,7 +215,7 @@ c_parallel_partition(OperationT first_selector, OperationT second_selector, cons
   auto& build_cache    = get_cache<TagT>();
   const auto& test_key = make_key<KeyT, NumSelectedT>();
 
-  three_way_partition(
+  three_way_partition<DisableSassCheck>(
     input_ptr,
     first_part_output_ptr,
     second_part_output_ptr,
@@ -235,7 +241,9 @@ c_parallel_partition(OperationT first_selector, OperationT second_selector, cons
     num_items - num_selected[0] - num_selected[1]);
 }
 
-template <typename BuildCache = three_way_partition_build_cache_t, typename KeyT = std::string>
+template <bool DisableSassCheck = false,
+          typename BuildCache   = three_way_partition_build_cache_t,
+          typename KeyT         = std::string>
 void three_way_partition(
   cccl_iterator_t d_in,
   cccl_iterator_t d_first_part_out,
@@ -249,7 +257,7 @@ void three_way_partition(
   const std::optional<KeyT>& lookup_key)
 {
   AlgorithmExecute<BuildResultT,
-                   three_way_partition_build,
+                   three_way_partition_build<DisableSassCheck>,
                    three_way_partition_cleanup,
                    three_way_partition_run,
                    BuildCache,
@@ -308,7 +316,7 @@ C2H_TEST("ThreeWayPartition works with primitive types", "[three_way_partition]"
   const std::vector<key_t> input(input_int.begin(), input_int.end());
 
   auto c_parallel_result =
-    c_parallel_partition<operation_t, key_t, num_selected_t, ThreeWayPartition_PrimitiveTypes_Fixture_Tag>(
+    c_parallel_partition<operation_t, key_t, num_selected_t, ThreeWayPartition_PrimitiveTypes_Fixture_Tag, true>(
       less_op, greater_or_equal_op, input);
   auto std_result = std_partition(less_than_t<key_t>{key_t{21}}, greater_or_equal_t<key_t>{key_t{21}}, input);
 

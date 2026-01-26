@@ -192,7 +192,7 @@ enum class address_space
                       "  selp.u32 %0, 1, 0, p;\n\t"
                       "}\n\t" : "=r"(__ret) : "l"(__ptr));
          return static_cast<bool>(__ret);),
-        (return false;))
+        (return ::cuda::device::__internal_is_address_from(__ptr, address_space::shared);))
 #  else // ^^^ _CCCL_CUDA_COMPILER(NVCC, <, 12, 3) || _CCCL_CUDA_COMPILER(NVRTC, <, 12, 3) ^^^ /
         // vvv !_CCCL_CUDA_COMPILER(NVCC, <, 12, 3) && !_CCCL_CUDA_COMPILER(NVRTC, <, 12, 3) vvv
       NV_IF_ELSE_TARGET(
@@ -203,7 +203,7 @@ enum class address_space
            _CCCL_ASSUME(__p); //
          } //
          return __p;),
-        (return false;))
+        (return ::cuda::device::__internal_is_address_from(__ptr, address_space::shared);))
 #  endif // ^^^ !_CCCL_CUDA_COMPILER(NVCC, <, 12, 3) && !_CCCL_CUDA_COMPILER(NVRTC, <, 12, 3) ^^^
     }
     default:

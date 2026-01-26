@@ -35,11 +35,10 @@ These commands can be combined with the [override matrix](#temporarily-overridin
   - `[skip-vdc]`: Skip all "Validate Devcontainer" jobs.
   - `[skip-docs]`: Skip the documentation verification build.
   - `[skip-third-party-testing]` (alias `[skip-tpt]`): Skip all third-party canary builds (MatX, PyTorch, and RAPIDS).
+  - `[skip-rapids]`: Skip all RAPIDS canary builds.
   - `[skip-matx]`: Skip all MatX canary builds.
   - `[skip-pytorch]`: Skip all PyTorch canary builds.
   - **Example:** `git commit -m "README tidy-up [skip-matrix][skip-vdc][skip-docs][skip-third-party-testing]"`
-
-- `[test-rapids]`: Opt‑in to run RAPIDS canary builds alongside CCCL CI.
 
 ### Temporarily Overriding the Pull Request Matrix
 
