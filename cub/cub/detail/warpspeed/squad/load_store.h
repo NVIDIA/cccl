@@ -32,6 +32,10 @@ namespace detail::warpspeed
 template <typename Tp>
 struct CpAsyncOobInfo
 {
+  // The aligned up and down pointers below must be char*, since the nearest aligned up/down ptr may not point to a
+  // multiple of sizeof(Tp). E.g. a uchar3* pointing to address 0x...5 will be aligned down to 0x...0, but that's
+  // not a valid start for an uchar3 in that array. So we must express all aligned pointers in bytes here.
+
   char* ptrGmem;
   char* ptrGmemStartAlignDown;
   char* ptrGmemStartAlignUp;
@@ -41,30 +45,27 @@ struct CpAsyncOobInfo
   uint32_t overCopySizeBytes;
   uint32_t underCopySizeBytes;
   uint32_t origCopySizeBytes;
-  uint32_t smemStartSkipElem; // ptrSmem + smemStartSkipElem will point to the first valid element copied from ptrGmem
   uint32_t smemStartSkipBytes;
-  uint32_t smemEndElemAfter16BBoundary; // number of elements after the last 16B boundary in GMEM/SMEM
-  uint32_t smemEndBytesAfter16BBoundary;
+  uint32_t smemEndBytesAfter16BBoundary; // number of bytes after the last 16B boundary in GMEM/SMEM that still contains
+                                         // valid (partial) elements
 };
 
 template <typename Tp>
 _CCCL_DEVICE_API inline CpAsyncOobInfo<Tp> prepareCpAsyncOob(const Tp* ptrGmem, uint32_t sizeElem)
 {
-  // TODO(bgruber): the aligned up and down pointers below must be char*, since the nearest aligned up/down ptr may not
-  // be a multiple of sizeof(Tp) away. E.g. a uchar3* to address 0x5 will be aligned down to 0x0, but that's not a valid
-  // start for an uchar3 in that array. So we need to express everything in byte pointers here.
+  const char* ptrGmemBytes = reinterpret_cast<const char*>(ptrGmem);
 
   // We will copy from [ptrGmemBase, ptrGmemEnd). Both pointers have to be 16B aligned.
-  const Tp* ptrGmemStartAlignDown = cuda::align_down(ptrGmem, ::cuda::std::size_t(16));
-  const Tp* ptrGmemStartAlignUp   = cuda::align_up(ptrGmem, ::cuda::std::size_t(16));
-  const Tp* ptrGmemEnd            = ptrGmem + sizeElem;
-  const Tp* ptrGmemEndAlignUp     = cuda::align_up(ptrGmemEnd, ::cuda::std::size_t(16));
-  const Tp* ptrGmemEndAlignDown   = cuda::align_down(ptrGmemEnd, ::cuda::std::size_t(16));
+  const char* ptrGmemStartAlignDown = ::cuda::align_down(ptrGmemBytes, ::cuda::std::size_t(16));
+  const char* ptrGmemStartAlignUp   = ::cuda::align_up(ptrGmemBytes, ::cuda::std::size_t(16));
+  const char* ptrGmemEnd            = reinterpret_cast<const char*>(ptrGmem + sizeElem);
+  const char* ptrGmemEndAlignUp     = ::cuda::align_up(ptrGmemEnd, ::cuda::std::size_t(16));
+  const char* ptrGmemEndAlignDown   = ::cuda::align_down(ptrGmemEnd, ::cuda::std::size_t(16));
 
   // Compute the final copy size in bytes. It can be either sizeElem or sizeElem + 16 / sizeof(T).
   const uint32_t origCopySizeBytes = static_cast<uint32_t>(sizeof(Tp) * sizeElem);
-  const uint32_t overCopySizeBytes = static_cast<uint32_t>(sizeof(Tp) * (ptrGmemEndAlignUp - ptrGmemStartAlignDown));
-  uint32_t underCopySizeBytes      = static_cast<uint32_t>(sizeof(Tp) * (ptrGmemEndAlignDown - ptrGmemStartAlignUp));
+  const uint32_t overCopySizeBytes = static_cast<uint32_t>(ptrGmemEndAlignUp - ptrGmemStartAlignDown);
+  uint32_t underCopySizeBytes      = static_cast<uint32_t>(ptrGmemEndAlignDown - ptrGmemStartAlignUp);
   if (origCopySizeBytes < underCopySizeBytes)
   {
     // If ptrGmemStart and ptrGmemEnd are aligned to [1, .., 15] bytes, then
@@ -72,8 +73,6 @@ _CCCL_DEVICE_API inline CpAsyncOobInfo<Tp> prepareCpAsyncOob(const Tp* ptrGmem, 
     // that here. In that case, the undercopy size is zero.
     underCopySizeBytes = 0;
   }
-  const uint32_t smemStartSkipElem           = static_cast<uint32_t>(ptrGmem - ptrGmemStartAlignDown);
-  const uint32_t smemEndElemAfter16BBoundary = static_cast<uint32_t>(ptrGmemEnd - ptrGmemEndAlignDown);
 
   _CCCL_ASSERT(::cuda::is_aligned(ptrGmemStartAlignDown, 16), "");
   _CCCL_ASSERT(::cuda::is_aligned(ptrGmemStartAlignUp, 16), "");
@@ -92,10 +91,8 @@ _CCCL_DEVICE_API inline CpAsyncOobInfo<Tp> prepareCpAsyncOob(const Tp* ptrGmem, 
     .overCopySizeBytes            = overCopySizeBytes,
     .underCopySizeBytes           = underCopySizeBytes,
     .origCopySizeBytes            = static_cast<uint32_t>(sizeof(Tp) * sizeElem),
-    .smemStartSkipElem            = smemStartSkipElem,
-    .smemStartSkipBytes           = static_cast<uint32_t>(sizeof(Tp) * smemStartSkipElem),
-    .smemEndElemAfter16BBoundary  = smemEndElemAfter16BBoundary,
-    .smemEndBytesAfter16BBoundary = static_cast<uint32_t>(sizeof(Tp) * smemEndElemAfter16BBoundary),
+    .smemStartSkipBytes           = static_cast<uint32_t>(ptrGmemBytes - ptrGmemStartAlignDown),
+    .smemEndBytesAfter16BBoundary = static_cast<uint32_t>(ptrGmemEnd - ptrGmemEndAlignDown),
   };
 }
 
@@ -103,7 +100,7 @@ template <typename ResourceTp, typename Tp>
 _CCCL_DEVICE_API inline void
 squadLoadBulk(Squad squad, SmemRef<ResourceTp>& refDestSmem, CpAsyncOobInfo<Tp> cpAsyncOobInfo)
 {
-  Tp* ptrSmem = refDestSmem.data().in;
+  char* ptrSmem = refDestSmem.data().inout;
   _CCCL_ASSERT(::cuda::is_aligned(ptrSmem, 16), "");
   uint64_t* ptrBar = refDestSmem.ptrCurBarrierRelease();
 
@@ -149,7 +146,7 @@ squadLoadBulk(Squad squad, SmemRef<ResourceTp>& refDestSmem, CpAsyncOobInfo<Tp> 
       _CCCL_ASSERT(elemCount <= squad.threadCount(), "");
       if (squad.threadRank() < elemCount)
       {
-        ptrSmem[cpAsyncOobInfo.smemStartSkipElem + squad.threadRank()] =
+        reinterpret_cast<Tp*>(ptrSmem + cpAsyncOobInfo.smemStartSkipBytes)[squad.threadRank()] =
           reinterpret_cast<const Tp*>(cpAsyncOobInfo.ptrGmem)[squad.threadRank()];
       }
       return; // no bulk copy has been performed so we don't need to update the tx count of any barrier
@@ -159,7 +156,7 @@ squadLoadBulk(Squad squad, SmemRef<ResourceTp>& refDestSmem, CpAsyncOobInfo<Tp> 
 
     const bool doStartCopy = cpAsyncOobInfo.smemStartSkipBytes > 0;
 
-    char* ptrSmemMiddle = (char*) ptrSmem;
+    char* ptrSmemMiddle = ptrSmem;
     if (doStartCopy)
     {
       ptrSmemMiddle += 16;
@@ -201,7 +198,7 @@ squadLoadBulk(Squad squad, SmemRef<ResourceTp>& refDestSmem, CpAsyncOobInfo<Tp> 
 
     if (squad.threadRank() < head_elements)
     {
-      reinterpret_cast<load_word_t*>(ptrSmem)[cpAsyncOobInfo.smemStartSkipElem + squad.threadRank()] = head_value;
+      reinterpret_cast<load_word_t*>(ptrSmem + cpAsyncOobInfo.smemStartSkipBytes)[squad.threadRank()] = head_value;
     }
     if (squad.threadRank() < tail_elements)
     {
@@ -213,7 +210,7 @@ squadLoadBulk(Squad squad, SmemRef<ResourceTp>& refDestSmem, CpAsyncOobInfo<Tp> 
 }
 
 template <typename OutputT>
-_CCCL_DEVICE_API inline void squadStoreBulkSync(Squad squad, CpAsyncOobInfo<OutputT> cpAsyncOobInfo, OutputT* srcSmem)
+_CCCL_DEVICE_API inline void squadStoreBulkSync(Squad squad, CpAsyncOobInfo<OutputT> cpAsyncOobInfo, const char* srcSmem)
 {
   // This function performs either 1 copy, or three copies, depending on the
   // size and alignment of the output tile in global memory.
@@ -245,7 +242,7 @@ _CCCL_DEVICE_API inline void squadStoreBulkSync(Squad squad, CpAsyncOobInfo<Outp
     const uint16_t byteMaskSmall =
       byteMaskStart & (byteMask >> (16 - (cpAsyncOobInfo.ptrGmemEnd - cpAsyncOobInfo.ptrGmemStartAlignDown)));
 
-    char* ptrSmemMiddle = (char*) srcSmem;
+    const char* ptrSmemMiddle = srcSmem;
     if (doStartCopy)
     {
       ptrSmemMiddle += 16;
