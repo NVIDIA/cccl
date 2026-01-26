@@ -324,9 +324,9 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void kernelBody(
         warpspeed::SmemRef refInOutRW = phaseInOutRW.acquireRef();
         // Load data
         AccumT regInput[elemPerThread];
-        // Handle unaligned refInOutRW.data() + loadInfo.smemStartOffsetElem points to the first element of the tile.
+        // Handle unaligned refInOutRW.data() + loadInfo.smemStartSkipElem points to the first element of the tile.
         // in the last tile, we load some invalid elements, but don't process them later
-        warpspeed::squadLoadSmem(squad, regInput, &refInOutRW.data().in[0] + loadInfo.smemStartOffsetElem);
+        warpspeed::squadLoadSmem(squad, regInput, &refInOutRW.data().in[0] + loadInfo.smemStartSkipElem);
 
         ////////////////////////////////////////////////////////////////////////////////
         // Reduce across thread and warp
@@ -567,7 +567,7 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void kernelBody(
 
       // We are always loading a full tile even for the last one. That will call scan_op on invalid data
       // loading partial tiles here regresses perf for about 10-15%
-      warpspeed::squadLoadSmem(squad, regSumInclusive, &refInOutRW.data().in[0] + loadInfo.smemStartOffsetElem);
+      warpspeed::squadLoadSmem(squad, regSumInclusive, &refInOutRW.data().in[0] + loadInfo.smemStartSkipElem);
 
       // Perform inclusive scan of register array in current thread.
       // warp_0/thread_0 in the first tile when there is no initial value, we MUST NOT use sumExclusive
@@ -592,7 +592,7 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void kernelBody(
       {
         warpspeed::CpAsyncOobInfo storeInfo = warpspeed::prepareCpAsyncOob(params.ptrOut + idxTileBase, valid_items);
 
-        warpspeed::squadStoreSmem(squad, smem_output_tile + storeInfo.smemStartOffsetElem, regSumInclusive);
+        warpspeed::squadStoreSmem(squad, smem_output_tile + storeInfo.smemStartSkipElem, regSumInclusive);
         // We do *not* release refSmemInOut here, because we will issue a TMA
         // instruction below. Instead, we issue a squad-local syncthreads +
         // fence.proxy.async to sync the shared memory writes with the TMA store.
@@ -614,15 +614,15 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void kernelBody(
           const int chunk_size = ::cuda::std::min(valid_items - chunk_offset, elem_per_chunk);
           warpspeed::CpAsyncOobInfo storeInfo =
             warpspeed::prepareCpAsyncOob(params.ptrOut + idxTileBase + chunk_offset, chunk_size);
-          OutputT* smemBuf = smem_output_tile + storeInfo.smemStartOffsetElem;
+          OutputT* smemBuf = smem_output_tile + storeInfo.smemStartSkipElem;
 
           // only stage elements of the current chunk to SMEM
-          // storeInfo.smemStartOffsetElem < 16 and smem_output_tile contains extra 16 bytes, so we should fit
-          _CCCL_ASSERT((storeInfo.smemStartOffsetElem + elem_per_chunk) * sizeof(OutputT) <= res.smemInOut.mSizeBytes,
+          // storeInfo.smemStartSkipElem < 16 and smem_output_tile contains extra 16 bytes, so we should fit
+          _CCCL_ASSERT((storeInfo.smemStartSkipElem + elem_per_chunk) * sizeof(OutputT) <= res.smemInOut.mSizeBytes,
                        "");
           warpspeed::squadStoreSmemPartial(
             squad,
-            smem_output_tile + storeInfo.smemStartOffsetElem,
+            smem_output_tile + storeInfo.smemStartSkipElem,
             regSumInclusive,
             chunk_offset,
             chunk_offset + chunk_size);
