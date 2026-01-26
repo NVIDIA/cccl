@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 //! @file
-//! The @c cub::block_topk class provides a :ref:`collective <collective-primitives>` method for selecting the top-k
-//! elements from a set of items within a CUDA thread block.
+//! The @c cub::detail::block_topk class provides a :ref:`collective <collective-primitives>` method for selecting the
+//! top-k elements from a set of items within a CUDA thread block.
 
 #pragma once
 
@@ -45,33 +45,33 @@ public:
       : temp_storage(temp_storage)
   {}
 
-  _CCCL_DEVICE _CCCL_FORCEINLINE void
-  Max(KeyT (&keys)[ItemsPerThread],
-      ValueT (&values)[ItemsPerThread],
-      int /*k*/,
-      int begin_bit = 0,
-      int end_bit   = sizeof(KeyT) * 8)
+  _CCCL_DEVICE _CCCL_FORCEINLINE void max_pairs(
+    KeyT (&keys)[ItemsPerThread],
+    ValueT (&values)[ItemsPerThread],
+    int /*k*/,
+    int begin_bit = 0,
+    int end_bit   = sizeof(KeyT) * 8)
   {
     BlockRadixSortT(temp_storage.sort_storage).SortDescending(keys, values, begin_bit, end_bit);
   }
 
   _CCCL_DEVICE _CCCL_FORCEINLINE void
-  Max(KeyT (&keys)[ItemsPerThread], int /*k*/, int begin_bit = 0, int end_bit = sizeof(KeyT) * 8)
+  max_keys(KeyT (&keys)[ItemsPerThread], int /*k*/, int begin_bit = 0, int end_bit = sizeof(KeyT) * 8)
   {
     BlockRadixSortT(temp_storage.sort_storage).SortDescending(keys, begin_bit, end_bit);
   }
-  _CCCL_DEVICE _CCCL_FORCEINLINE void
-  Min(KeyT (&keys)[ItemsPerThread],
-      ValueT (&values)[ItemsPerThread],
-      int /*k*/,
-      int begin_bit = 0,
-      int end_bit   = sizeof(KeyT) * 8)
+  _CCCL_DEVICE _CCCL_FORCEINLINE void min_pairs(
+    KeyT (&keys)[ItemsPerThread],
+    ValueT (&values)[ItemsPerThread],
+    int /*k*/,
+    int begin_bit = 0,
+    int end_bit   = sizeof(KeyT) * 8)
   {
     BlockRadixSortT(temp_storage.sort_storage).Sort(keys, values, begin_bit, end_bit);
   }
 
   _CCCL_DEVICE _CCCL_FORCEINLINE void
-  Min(KeyT (&keys)[ItemsPerThread], int /*k*/, int begin_bit = 0, int end_bit = sizeof(KeyT) * 8)
+  min_keys(KeyT (&keys)[ItemsPerThread], int /*k*/, int begin_bit = 0, int end_bit = sizeof(KeyT) * 8)
   {
     BlockRadixSortT(temp_storage.sort_storage).Sort(keys, begin_bit, end_bit);
   }

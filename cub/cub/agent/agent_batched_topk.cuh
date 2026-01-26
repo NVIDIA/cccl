@@ -1,8 +1,6 @@
 // SPDX-FileCopyrightText: Copyright (c) 2025, NVIDIA CORPORATION. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-//! @file
-//! cub::AgentBatchedTopK implements a stateful abstraction of CUDA thread blocks for participating in device-wide topK.
 #pragma once
 
 #include <cub/config.cuh>
@@ -52,11 +50,11 @@ struct agent_batched_topk_worker_per_segment
   // Types and Constants
   // -------------------------------------------------------------------------
   // Derive inner types from Iterator of Iterators
-  using key_it_t   = typename ::cuda::std::iterator_traits<KeyInputItItT>::value_type;
-  using value_it_t = typename ::cuda::std::iterator_traits<ValueInputItItT>::value_type;
+  using key_it_t   = it_value_t<KeyInputItItT>;
+  using value_it_t = it_value_t<ValueInputItItT>;
 
-  using key_t   = typename ::cuda::std::iterator_traits<key_it_t>::value_type;
-  using value_t = typename ::cuda::std::iterator_traits<value_it_t>::value_type;
+  using key_t   = it_value_t<key_it_t>;
+  using value_t = it_value_t<value_it_t>;
 
   static constexpr int block_threads    = ActivePolicyT::BLOCK_THREADS;
   static constexpr int items_per_thread = ActivePolicyT::ITEMS_PER_THREAD;
@@ -141,11 +139,11 @@ struct agent_batched_topk_worker_per_segment
   {
     if constexpr (Direction == detail::topk::select::max)
     {
-      block_topk_t(temp_storage.topk).Max(keys, k);
+      block_topk_t(temp_storage.topk).max_keys(keys, k);
     }
     else
     {
-      block_topk_t(temp_storage.topk).Min(keys, k);
+      block_topk_t(temp_storage.topk).min_keys(keys, k);
     }
   }
 
@@ -158,11 +156,11 @@ struct agent_batched_topk_worker_per_segment
   {
     if constexpr (Direction == detail::topk::select::max)
     {
-      block_topk_t(temp_storage.topk).Max(keys, values, k);
+      block_topk_t(temp_storage.topk).max_pairs(keys, values, k);
     }
     else
     {
-      block_topk_t(temp_storage.topk).Min(keys, values, k);
+      block_topk_t(temp_storage.topk).min_pairs(keys, values, k);
     }
   }
 
@@ -231,7 +229,7 @@ struct agent_batched_topk_worker_per_segment
     if constexpr (!is_keys_only)
     {
       // Pass both keys and values
-      bool is_successful_dispatch = detail::params::dispatch_discrete(
+      const bool is_successful_dispatch = detail::params::dispatch_discrete(
         select_directions, segment_id, [this, &thread_keys, &thread_values, k](auto direction_tag) {
           select_topk_pairs(thread_keys, thread_values, k, direction_tag);
         });
@@ -239,7 +237,7 @@ struct agent_batched_topk_worker_per_segment
     }
     else
     {
-      bool is_successful_dispatch =
+      const bool is_successful_dispatch =
         detail::params::dispatch_discrete(select_directions, segment_id, [this, &thread_keys, k](auto direction_tag) {
           select_topk_keys(thread_keys, k, direction_tag);
         });
