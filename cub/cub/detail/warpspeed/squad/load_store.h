@@ -236,11 +236,11 @@ _CCCL_DEVICE_API inline void squadStoreBulkSync(Squad squad, CpAsyncOobInfo<Outp
     const bool doEndCopy    = cpAsyncOobInfo.smemEndBytesAfter16BBoundary > 0;
     const bool doMiddleCopy = cpAsyncOobInfo.ptrGmemStartAlignUp != cpAsyncOobInfo.ptrGmemEndAlignUp;
 
-    uint16_t byteMask            = 0xFFFF;
+    const uint16_t byteMask      = 0xFFFF;
     const uint16_t byteMaskStart = byteMask << cpAsyncOobInfo.smemStartSkipBytes;
     const uint16_t byteMaskEnd   = byteMask >> (16 - cpAsyncOobInfo.smemEndBytesAfter16BBoundary);
     // byteMaskStart contains zeroes at the left.
-    uint16_t byteMaskSmall =
+    const uint16_t byteMaskSmall =
       byteMaskStart & (byteMask >> (16 - (cpAsyncOobInfo.ptrGmemEnd - cpAsyncOobInfo.ptrGmemStartAlignDown)));
 
     char* ptrSmemMiddle = (char*) srcSmem;
@@ -285,7 +285,7 @@ _CCCL_DEVICE_API inline void squadStoreBulkSync(Squad squad, CpAsyncOobInfo<Outp
           ::cuda::ptx::cp_async_bulk_cp_mask(
             ::cuda::ptx::space_global,
             ::cuda::ptx::space_shared,
-            ((char*) cpAsyncOobInfo.ptrGmemStartAlignUp) + cpAsyncOobInfo.underCopySizeBytes,
+            cpAsyncOobInfo.ptrGmemEndAlignDown,
             ptrSmemMiddle + cpAsyncOobInfo.underCopySizeBytes,
             /*size*/ 16,
             byteMaskEnd);
