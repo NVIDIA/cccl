@@ -619,7 +619,7 @@ C2H_TEST("agent_segmented_scan works for exclusive_scan with three segments per 
   value_t init_value_{10};
 
   // force inclusive is false (last template parameter), initial value is provided
-  // hence this call computes exclusive scan algorithm
+  // hence this call computes inclusive scan algorithm
   device_segmented_scan_kernel_three_segments_per_block<
     chained_policy_t,
     value_t*,
@@ -631,7 +631,7 @@ C2H_TEST("agent_segmented_scan works for exclusive_scan with three segments per 
     op_t,
     cub::detail::InputValue<value_t>,
     value_t,
-    false><<<grid_size, block_size>>>(
+    true><<<grid_size, block_size>>>(
     d_input,
     d_output,
     d_offsets,
@@ -651,12 +651,12 @@ C2H_TEST("agent_segmented_scan works for exclusive_scan with three segments per 
 
   for (unsigned segment_id = 0; segment_id < num_segments; ++segment_id)
   {
-    compute_exclusive_scan_reference(
+    compute_inclusive_scan_reference(
       h_input.begin() + h_offsets[segment_id],
       h_input.begin() + h_offsets[segment_id + 1],
       h_expected.begin() + h_offsets[segment_id],
-      init_value_,
-      op_t{});
+      op_t{},
+      init_value_);
   }
 
   if (h_expected != h_output)
