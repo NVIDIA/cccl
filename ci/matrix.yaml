@@ -178,7 +178,7 @@ workflows:
     - {jobs: ['limited'], project: 'cub', std: 17, gpu: 'rtx2080'}
     # NVRTC tests don't currently support 12.0:
     - {jobs: ['nvrtc'],          project: 'libcudacxx', ctk: [        '12.X', '13.0', '13.X'], cxx: 'gcc12', std: 'all', gpu: 'rtx2080', sm: 'gpu'}
-    - {jobs: ['verify_codegen'], project: 'libcudacxx', ctk: ['12.0', '12.X', '13.0', '13.X'], cxx: 'gcc12'}
+    - {jobs: ['verify_codegen'], project: 'libcudacxx'}
     # c.parallel -- pinned to gcc13 to match python
     - {jobs: ['test'],  project: ['cccl_c_parallel'], ctk: '12.X', cxx: ['gcc13', 'msvc'], gpu: ['rtx2080']}
     - {jobs: ['test'],  project: ['cccl_c_parallel'], ctk: '13.X', cxx: ['gcc13', 'msvc'], gpu: ['rtx2080', 'l4', 'h100']}
@@ -263,7 +263,7 @@ workflows:
     - {jobs: ['build'], project: ['cub'], std: 'max', sm: 'all-cccl', cmake_options: '-DCUB_ENABLE_LAUNCH_VARIANTS=OFF'}
     # NVRTC tests don't currently support 12.0:
     - {jobs: ['nvrtc'],          project: 'libcudacxx', ctk: [        '12.X', '13.0', '13.X'], cxx: 'gcc12', std: 'all', gpu: 'rtx2080', sm: 'gpu'}
-    - {jobs: ['verify_codegen'], project: 'libcudacxx', ctk: ['12.0', '12.X', '13.0', '13.X'], cxx: 'gcc12'}
+    - {jobs: ['verify_codegen'], project: 'libcudacxx'}
     # c.parallel -- pinned to gcc13 to match python
     - {jobs: ['test'],  project: ['cccl_c_parallel'], ctk: '12.X', cxx: ['gcc13', 'msvc'], gpu: ['rtx2080']}
     - {jobs: ['test'],  project: ['cccl_c_parallel'], ctk: '13.X', cxx: ['gcc13', 'msvc'], gpu: ['rtx2080', 'l4', 'h100']}

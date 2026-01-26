@@ -60,6 +60,7 @@
 #define _CCCL_COMPILER_MSVC()     _CCCL_VERSION_INVALID()
 #define _CCCL_COMPILER_MSVC2019() _CCCL_VERSION_INVALID()
 #define _CCCL_COMPILER_MSVC2022() _CCCL_VERSION_INVALID()
+#define _CCCL_COMPILER_MSVC2026() _CCCL_VERSION_INVALID()
 #define _CCCL_COMPILER_NVRTC()    _CCCL_VERSION_INVALID()
 
 // Determine the host compiler and its version
@@ -78,6 +79,7 @@
 #  undef _CCCL_COMPILER_GCC
 #  define _CCCL_COMPILER_GCC() (__GNUC__, __GNUC_MINOR__)
 #elif defined(_MSC_VER)
+// see https://learn.microsoft.com/en-us/cpp/overview/compiler-versions?view=msvc-180#version-macros
 #  undef _CCCL_COMPILER_MSVC
 #  define _CCCL_COMPILER_MSVC() (_MSC_VER / 100, _MSC_VER % 100)
 #  if _CCCL_COMPILER(MSVC, <, 19, 20)
@@ -90,10 +92,14 @@
 #    undef _CCCL_COMPILER_MSVC2019
 #    define _CCCL_COMPILER_MSVC2019() _CCCL_COMPILER_MSVC()
 #  endif // _CCCL_COMPILER(MSVC, >=, 19, 20) && _CCCL_COMPILER(MSVC, <, 19, 30)
-#  if _CCCL_COMPILER(MSVC, >=, 19, 30) && _CCCL_COMPILER(MSVC, <, 19, 40)
+#  if _CCCL_COMPILER(MSVC, >=, 19, 30) && _CCCL_COMPILER(MSVC, <, 19, 50)
 #    undef _CCCL_COMPILER_MSVC2022
 #    define _CCCL_COMPILER_MSVC2022() _CCCL_COMPILER_MSVC()
-#  endif // _CCCL_COMPILER(MSVC, >=, 19, 30) && _CCCL_COMPILER(MSVC, <, 19, 40)
+#  endif // _CCCL_COMPILER(MSVC, >=, 19, 30) && _CCCL_COMPILER(MSVC, <, 19, 50)
+#  if _CCCL_COMPILER(MSVC, >=, 19, 50)
+#    undef _CCCL_COMPILER_MSVC2026
+#    define _CCCL_COMPILER_MSVC2026() _CCCL_COMPILER_MSVC()
+#  endif // _CCCL_COMPILER(MSVC, >=, 19, 45)
 #elif defined(__CUDACC_RTC__)
 #  undef _CCCL_COMPILER_NVRTC
 #  define _CCCL_COMPILER_NVRTC() (__CUDACC_VER_MAJOR__, __CUDACC_VER_MINOR__)

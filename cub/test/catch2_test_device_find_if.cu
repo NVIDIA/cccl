@@ -202,3 +202,65 @@ C2H_TEST("Device find_if works with non primitive iterator", "[device][find_if]"
     REQUIRE(-expected_if_found == out_result[0]);
   }
 }
+
+struct NotDefaultConstructible
+{
+  int value_;
+
+  __host__ __device__ constexpr explicit NotDefaultConstructible(int value = 0)
+      : value_(value)
+  {}
+
+  __host__ __device__ friend constexpr bool
+  operator==(const NotDefaultConstructible& lhs, const NotDefaultConstructible& rhs)
+  {
+    return lhs.value_ == rhs.value_;
+  }
+  __host__ __device__ friend constexpr bool
+  operator!=(const NotDefaultConstructible& lhs, const NotDefaultConstructible& rhs)
+  {
+    return lhs.value_ != rhs.value_;
+  }
+
+  __host__ __device__ constexpr operator int() const noexcept
+  {
+    return value_;
+  }
+};
+
+struct converter
+{
+  __host__ __device__ constexpr NotDefaultConstructible operator()(const int val) const noexcept
+  {
+    return NotDefaultConstructible{val};
+  }
+};
+
+C2H_TEST("Device find_if works with non default constructible types", "[device][find_if]")
+{
+  using input_t  = int32_t;
+  using offset_t = int32_t;
+
+  constexpr offset_t min_items = 1;
+  constexpr offset_t max_items = 10'000; // 10k items for reasonable test time
+
+  // Generate the input sizes to test for
+  const offset_t num_items = GENERATE_COPY(
+    take(1, random(min_items, max_items)),
+    values({
+      min_items,
+      max_items,
+    }));
+  const input_t val_to_find = static_cast<input_t>(num_items - 1);
+
+  CAPTURE(num_items, val_to_find);
+
+  // counting_iterator input
+  auto c_it = cuda::make_transform_iterator(cuda::make_counting_iterator(input_t{0}), converter{});
+  {
+    c2h::device_vector<offset_t> out_result(1, thrust::no_init);
+    auto predicate = thrust::detail::equal_to_value<NotDefaultConstructible>{NotDefaultConstructible{val_to_find}};
+    find_if(c_it, thrust::raw_pointer_cast(out_result.data()), predicate, num_items);
+    REQUIRE(val_to_find == out_result[0]);
+  }
+}

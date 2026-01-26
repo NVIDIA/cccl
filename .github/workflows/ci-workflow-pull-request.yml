@@ -53,14 +53,15 @@ jobs:
         id: export-flags
         env:
           skip_tpt: ${{ contains(github.event.head_commit.message, '[skip-tpt]') || contains(github.event.head_commit.message, '[skip-third-party-testing]') }}
+          skip_rapids: ${{ contains(github.event.head_commit.message, '[skip-rapids]') }}
         run: |
           output() { echo "$1=$2" | tee -a "${GITHUB_OUTPUT}"; }
 
           output matrix_enabled  "${{ !contains(github.event.head_commit.message, '[skip-matrix]') }}"
           output vdc_enabled     "${{ !contains(github.event.head_commit.message, '[skip-vdc]') }}"
           output docs_enabled    "${{ !contains(github.event.head_commit.message, '[skip-docs]') }}"
-          output rapids_enabled  "${{  contains(github.event.head_commit.message, '[test-rapids]') && !fromJSON(env.skip_tpt) }}"
-          output matx_enabled    "${{ !contains(github.event.head_commit.message, '[skip-matx]') && !fromJSON(env.skip_tpt) }}"
+          output rapids_enabled  "${{ !contains(github.event.head_commit.message, '[skip-rapids]')  && !fromJSON(env.skip_tpt) }}"
+          output matx_enabled    "${{ !contains(github.event.head_commit.message, '[skip-matx]')    && !fromJSON(env.skip_tpt) }}"
           output pytorch_enabled "${{ !contains(github.event.head_commit.message, '[skip-pytorch]') && !fromJSON(env.skip_tpt) }}"
       - name: Checkout repo
         uses: actions/checkout@v4

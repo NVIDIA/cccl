@@ -2,10 +2,6 @@
 // SPDX-License-Identifier: BSD-3
 
 #include <cub/device/device_radix_sort.cuh>
-#include <cub/util_arch.cuh>
-
-#include <cuda/std/functional>
-#include <cuda/std/type_traits>
 
 #include <nvbench_helper.cuh>
 
@@ -15,122 +11,22 @@
 // %RANGE% TUNE_ITEMS_PER_THREAD ipt 7:24:1
 // %RANGE% TUNE_THREADS_PER_BLOCK tpb 128:1024:32
 
-constexpr cub::SortOrder sort_order = cub::SortOrder::Ascending;
-constexpr bool is_overwrite_ok      = false;
-
-#if !TUNE_BASE
-template <typename KeyT, typename ValueT, typename OffsetT>
-struct policy_hub_t
-{
-  static constexpr bool KEYS_ONLY = std::is_same_v<ValueT, cub::NullType>;
-
-  using DominantT = ::cuda::std::_If<(sizeof(ValueT) > sizeof(KeyT)), ValueT, KeyT>;
-
-  struct policy_t : cub::ChainedPolicy<300, policy_t, policy_t>
-  {
-    static constexpr int ONESWEEP_RADIX_BITS = TUNE_RADIX_BITS;
-    static constexpr bool ONESWEEP           = true;
-    static constexpr bool OFFSET_64BIT       = sizeof(OffsetT) == 8;
-
-    // Onesweep policy
-    using OnesweepPolicy = cub::AgentRadixSortOnesweepPolicy<
-      TUNE_THREADS_PER_BLOCK,
-      TUNE_ITEMS_PER_THREAD,
-      DominantT,
-      1,
-      cub::RADIX_RANK_MATCH_EARLY_COUNTS_ANY,
-      cub::BLOCK_SCAN_RAKING_MEMOIZE,
-      cub::RADIX_SORT_STORE_DIRECT,
-      ONESWEEP_RADIX_BITS>;
-
-    // These kernels are launched once, no point in tuning at the moment
-    using HistogramPolicy    = cub::AgentRadixSortHistogramPolicy<128, 16, 1, KeyT, ONESWEEP_RADIX_BITS>;
-    using ExclusiveSumPolicy = cub::AgentRadixSortExclusiveSumPolicy<256, ONESWEEP_RADIX_BITS>;
-    using ScanPolicy =
-      cub::AgentScanPolicy<512,
-                           23,
-                           OffsetT,
-                           cub::BLOCK_LOAD_WARP_TRANSPOSE,
-                           cub::LOAD_DEFAULT,
-                           cub::BLOCK_STORE_WARP_TRANSPOSE,
-                           cub::BLOCK_SCAN_RAKING_MEMOIZE>;
-
-    // No point in tuning
-    static constexpr int SINGLE_TILE_RADIX_BITS = (sizeof(KeyT) > 1) ? 6 : 5;
-
-    // No point in tuning single-tile policy
-    using SingleTilePolicy = cub::AgentRadixSortDownsweepPolicy<
-      256,
-      19,
-      DominantT,
-      cub::BLOCK_LOAD_DIRECT,
-      cub::LOAD_LDG,
-      cub::RADIX_RANK_MEMOIZE,
-      cub::BLOCK_SCAN_WARP_SCANS,
-      SINGLE_TILE_RADIX_BITS>;
-  };
-
-  using MaxPolicy = policy_t;
-};
-
-template <typename KeyT, typename ValueT, typename OffsetT>
-constexpr std::size_t max_onesweep_temp_storage_size()
-{
-  using portion_offset  = int;
-  using onesweep_policy = typename policy_hub_t<KeyT, ValueT, OffsetT>::policy_t::OnesweepPolicy;
-  using agent_radix_sort_onesweep_t =
-    cub::AgentRadixSortOnesweep<onesweep_policy, sort_order, KeyT, ValueT, OffsetT, portion_offset>;
-
-  using hist_policy = typename policy_hub_t<KeyT, ValueT, OffsetT>::policy_t::HistogramPolicy;
-  using hist_agent  = cub::AgentRadixSortHistogram<hist_policy, sort_order, KeyT, OffsetT>;
-
-  return (::cuda::std::max) (sizeof(typename agent_radix_sort_onesweep_t::TempStorage),
-                             sizeof(typename hist_agent::TempStorage));
-}
-
-template <typename KeyT, typename ValueT, typename OffsetT>
-constexpr std::size_t max_temp_storage_size()
-{
-  using policy_t = typename policy_hub_t<KeyT, ValueT, OffsetT>::policy_t;
-
-  static_assert(policy_t::ONESWEEP);
-  return max_onesweep_temp_storage_size<KeyT, ValueT, OffsetT>();
-}
-
-template <typename KeyT, typename ValueT, typename OffsetT>
-constexpr bool fits_in_default_shared_memory()
-{
-  return max_temp_storage_size<KeyT, ValueT, OffsetT>() < cub::detail::max_smem_per_block;
-}
-#else // TUNE_BASE
-template <typename, typename, typename>
-constexpr bool fits_in_default_shared_memory()
-{
-  return true;
-}
-#endif // TUNE_BASE
+#include "policy_selector.h"
 
 template <typename KeyT, typename ValueT, typename OffsetT>
 void radix_sort_values(nvbench::state& state, nvbench::type_list<KeyT, ValueT, OffsetT>)
 {
   using offset_t = cub::detail::choose_offset_t<OffsetT>;
-  using key_t    = KeyT;
-  using value_t  = ValueT;
-  if constexpr (!fits_in_default_shared_memory<key_t, value_t, offset_t>())
+
+  constexpr cub::SortOrder sort_order = cub::SortOrder::Ascending;
+  constexpr bool is_overwrite_ok      = false;
+  using key_t                         = KeyT;
+  using value_t                       = ValueT;
+
+  if constexpr (!fits_in_default_shared_memory<key_t, value_t, offset_t, sort_order>())
   {
     return;
   }
-
-  using dispatch_t =
-    cub::DispatchRadixSort<sort_order,
-                           key_t,
-                           value_t,
-                           offset_t
-#if !TUNE_BASE
-                           ,
-                           policy_hub_t<key_t, value_t, offset_t>
-#endif // TUNE_BASE
-                           >;
 
   constexpr int begin_bit = 0;
   constexpr int end_bit   = sizeof(key_t) * 8;
@@ -161,7 +57,7 @@ void radix_sort_values(nvbench::state& state, nvbench::type_list<KeyT, ValueT, O
 
   // Allocate temporary storage:
   std::size_t temp_size{};
-  dispatch_t::Dispatch(
+  cub::detail::radix_sort::dispatch<sort_order>(
     nullptr,
     temp_size,
     d_keys,
@@ -170,16 +66,22 @@ void radix_sort_values(nvbench::state& state, nvbench::type_list<KeyT, ValueT, O
     begin_bit,
     end_bit,
     is_overwrite_ok,
-    0 /* stream */);
+    0 /* stream */
+#if !TUNE_BASE
+    ,
+    cub::detail::identity_decomposer_t{},
+    policy_selector<KeyT>{}
+#endif // !TUNE_BASE
+  );
 
-  thrust::device_vector<nvbench::uint8_t> temp(temp_size);
+  thrust::device_vector<nvbench::uint8_t> temp(temp_size, thrust::no_init);
   auto* temp_storage = thrust::raw_pointer_cast(temp.data());
 
   state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch, [&](nvbench::launch& launch) {
     cub::DoubleBuffer<key_t> keys     = d_keys;
     cub::DoubleBuffer<value_t> values = d_values;
 
-    dispatch_t::Dispatch(
+    cub::detail::radix_sort::dispatch<sort_order>(
       temp_storage,
       temp_size,
       keys,
@@ -188,7 +90,13 @@ void radix_sort_values(nvbench::state& state, nvbench::type_list<KeyT, ValueT, O
       begin_bit,
       end_bit,
       is_overwrite_ok,
-      launch.get_stream());
+      launch.get_stream()
+#if !TUNE_BASE
+        ,
+      cub::detail::identity_decomposer_t{},
+      policy_selector<KeyT>{}
+#endif // !TUNE_BASE
+    );
   });
 }
 

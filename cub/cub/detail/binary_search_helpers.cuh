@@ -15,6 +15,7 @@
 
 #include <cuda/std/__algorithm/lower_bound.h>
 #include <cuda/std/__algorithm/upper_bound.h>
+#include <cuda/std/cstddef>
 #include <cuda/std/tuple>
 
 CUB_NAMESPACE_BEGIN
@@ -44,20 +45,20 @@ _CCCL_HOST_DEVICE auto make_comp_wrapper(RangeIteratorT first, RangeIteratorT la
 struct lower_bound
 {
   template <typename RangeIteratorT, typename T, typename CompareOpT>
-  _CCCL_DEVICE _CCCL_FORCEINLINE static RangeIteratorT
+  _CCCL_DEVICE _CCCL_FORCEINLINE static ::cuda::std::ptrdiff_t
   Invoke(RangeIteratorT first, RangeIteratorT last, const T& value, CompareOpT comp)
   {
-    return ::cuda::std::lower_bound(first, last, value, comp);
+    return ::cuda::std::lower_bound(first, last, value, comp) - first;
   }
 };
 
 struct upper_bound
 {
   template <typename RangeIteratorT, typename T, typename CompareOpT>
-  _CCCL_DEVICE _CCCL_FORCEINLINE static RangeIteratorT
+  _CCCL_DEVICE _CCCL_FORCEINLINE static ::cuda::std::ptrdiff_t
   Invoke(RangeIteratorT first, RangeIteratorT last, const T& value, CompareOpT comp)
   {
-    return ::cuda::std::upper_bound(first, last, value, comp);
+    return ::cuda::std::upper_bound(first, last, value, comp) - first;
   }
 };
 } // namespace detail::find
