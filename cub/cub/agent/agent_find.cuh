@@ -15,7 +15,6 @@
 #include <cuda/__memory/is_aligned.h>
 #include <cuda/atomic>
 #include <cuda/std/__type_traits/integral_constant.h>
-#include <cuda/std/__type_traits/is_default_constructible.h>
 
 CUB_NAMESPACE_BEGIN
 namespace detail::find
