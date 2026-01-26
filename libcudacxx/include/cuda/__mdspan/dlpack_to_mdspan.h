@@ -35,7 +35,9 @@
 #  include <cuda/std/cstdint>
 #  include <cuda/std/mdspan>
 
-#  include <stdexcept>
+#  if !_CCCL_COMPILER(NVRTC)
+#    include <stdexcept>
+#  endif // !_CCCL_COMPILER(NVRTC)
 
 #  include <dlpack/dlpack.h>
 //
@@ -185,10 +187,8 @@ __to_mdspan(const ::DLTensor& __tensor)
       {
         _CCCL_THROW(::std::invalid_argument{"DLTensor shape must be non-null"});
       }
-      using ::cuda::std::int64_t;
-      using ::cuda::std::size_t;
-      ::cuda::std::array<int64_t, _Rank> __extents_array{};
-      for (size_t __i = 0; __i < _Rank; ++__i)
+      ::cuda::std::array<::cuda::std::int64_t, _Rank> __extents_array{};
+      for (::cuda::std::size_t __i = 0; __i < _Rank; ++__i)
       {
         if (__tensor.shape[__i] < 0)
         {
@@ -199,8 +199,8 @@ __to_mdspan(const ::DLTensor& __tensor)
       ::cuda::__validate_dlpack_strides<_LayoutPolicy>(__tensor, _Rank);
       if constexpr (__is_layout_stride)
       {
-        ::cuda::std::array<int64_t, _Rank> __strides_array{};
-        for (size_t __i = 0; __i < _Rank; ++__i)
+        ::cuda::std::array<::cuda::std::int64_t, _Rank> __strides_array{};
+        for (::cuda::std::size_t __i = 0; __i < _Rank; ++__i)
         {
           const bool __has_strides = __tensor.strides != nullptr;
           __strides_array[__i] =
