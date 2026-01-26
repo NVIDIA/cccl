@@ -70,6 +70,27 @@
 #  endif // !__FP_LOGBNAN_MIN
 #endif // !FP_ILOGBNAN
 
+#if !_CCCL_COMPILER(NVRTC)
+// This function may or may not be implemented as a function macro so we need to handle that case
+#  ifdef fpclassify
+
+template <class _Tp>
+[[nodiscard]] _CCCL_HOST_API int __cccl_fpclassify_runtime(_Tp __x) noexcept
+{
+  return fpclassify(__x);
+}
+#    pragma push_macro("fpclassify")
+#    undef fpclassify
+#    define _CCCL_POP_MACRO_fpclassify
+#  else // ^^^ Function Macro fpclassify ^^^ / vvv No function macro fpclassify vvv
+template <class _Tp>
+[[nodiscard]] _CCCL_HOST_API int __cccl_fpclassify_runtime(_Tp __x) noexcept
+{
+  return ::fpclassify(__x);
+}
+#  endif // No function macro fpclassify
+#endif // _CCCL_COMPILER(NVRTC)
+
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 #if _CCCL_CHECK_BUILTIN(builtin_fpclassify) || _CCCL_COMPILER(GCC)
@@ -126,7 +147,7 @@ template <class _Tp>
 #else // ^^^ _CCCL_BUILTIN_FPCLASSIFY ^^^ / vvv !_CCCL_BUILTIN_FPCLASSIFY vvv
   _CCCL_IF_NOT_CONSTEVAL_DEFAULT
   {
-    NV_IF_TARGET(NV_IS_HOST, (return ::fpclassify(__x);))
+    NV_IF_TARGET(NV_IS_HOST, (return ::__cccl_fpclassify_runtime(__x);))
   }
   return ::cuda::std::__fpclassify_impl(__x);
 #endif // !_CCCL_BUILTIN_FPCLASSIFY
@@ -139,7 +160,7 @@ template <class _Tp>
 #else // ^^^ _CCCL_BUILTIN_FPCLASSIFY ^^^ / vvv !_CCCL_BUILTIN_FPCLASSIFY vvv
   _CCCL_IF_NOT_CONSTEVAL_DEFAULT
   {
-    NV_IF_TARGET(NV_IS_HOST, (return ::fpclassify(__x);))
+    NV_IF_TARGET(NV_IS_HOST, (return ::__cccl_fpclassify_runtime(__x);))
   }
   return ::cuda::std::__fpclassify_impl(__x);
 #endif // !_CCCL_BUILTIN_FPCLASSIFY
@@ -153,7 +174,7 @@ template <class _Tp>
 #  else // ^^^ _CCCL_BUILTIN_FPCLASSIFY ^^^ / vvv !_CCCL_BUILTIN_FPCLASSIFY vvv
   _CCCL_IF_NOT_CONSTEVAL_DEFAULT
   {
-    NV_IF_TARGET(NV_IS_HOST, (return ::fpclassify(__x);))
+    NV_IF_TARGET(NV_IS_HOST, (return ::__cccl_fpclassify_runtime(__x);))
   }
   return ::cuda::std::__fpclassify_impl(__x);
 #  endif // !_CCCL_BUILTIN_FPCLASSIFY
@@ -224,6 +245,11 @@ _CCCL_REQUIRES(is_integral_v<_Tp>)
 }
 
 _CCCL_END_NAMESPACE_CUDA_STD
+
+#ifdef _CCCL_POP_MACRO_fpclassify
+#  pragma pop_macro("fpclassify")
+#  undef _CCCL_POP_MACRO_fpclassify
+#endif
 
 #include <cuda/std/__cccl/epilogue.h>
 

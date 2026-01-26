@@ -29,6 +29,14 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
+// This function may or may not be implemented as a function macro so we need to handle that case
+#ifdef signbit
+// No fallback implementation as we implement it natively anyhow
+#  pragma push_macro("signbit")
+#  undef signbit
+#  define _CCCL_POP_MACRO_signbit
+#endif // signbit
+
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 _CCCL_TEMPLATE(class _Tp)
@@ -50,6 +58,11 @@ _CCCL_REQUIRES(__is_extended_arithmetic_v<_Tp>)
 }
 
 _CCCL_END_NAMESPACE_CUDA_STD
+
+#ifdef _CCCL_POP_MACRO_signbit
+#  pragma pop_macro("signbit")
+#  undef _CCCL_POP_MACRO_signbit
+#endif
 
 #include <cuda/std/__cccl/epilogue.h>
 

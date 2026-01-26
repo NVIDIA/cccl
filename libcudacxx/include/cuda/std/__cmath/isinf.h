@@ -34,6 +34,25 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
+// This function may or may not be implemented as a function macro so we need to handle that case
+#ifdef isinf
+
+template <class _Tp>
+[[nodiscard]] _CCCL_API bool __cccl_isinf_runtime(_Tp __x) noexcept
+{
+  return isinf(__x);
+}
+#  pragma push_macro("isinf")
+#  undef isinf
+#  define _CCCL_POP_MACRO_isinf
+#else // ^^^ Function Macro isinf ^^^ / vvv No function macro isinf vvv
+template <class _Tp>
+[[nodiscard]] _CCCL_API bool __cccl_isinf_runtime(_Tp __x) noexcept
+{
+  return ::isinf(__x);
+}
+#endif // No function macro isinf
+
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 #if _CCCL_CHECK_BUILTIN(builtin_isinf) || _CCCL_COMPILER(GCC)
@@ -46,7 +65,7 @@ template <class _Tp>
   static_assert(is_floating_point_v<_Tp>, "Only standard floating-point types are supported");
   _CCCL_IF_NOT_CONSTEVAL_DEFAULT
   {
-    return ::isinf(__x);
+    return ::__cccl_isinf_runtime(__x);
   }
   if (::cuda::std::isnan(__x))
   {
@@ -69,7 +88,7 @@ template <class _Tp>
 #elif _CCCL_HAS_CONSTEXPR_BIT_CAST()
   _CCCL_IF_NOT_CONSTEVAL_DEFAULT
   {
-    return ::isinf(__x);
+    return ::__cccl_isinf_runtime(__x);
   }
   return (::cuda::std::__fp_get_storage(__x) & __fp_exp_mant_mask_of_v<float>) == __fp_exp_mask_of_v<float>;
 #else // ^^^ _CCCL_HAS_CONSTEXPR_BIT_CAST() ^^^ / vvv !_CCCL_HAS_CONSTEXPR_BIT_CAST() vvv
@@ -91,7 +110,7 @@ template <class _Tp>
 #elif _CCCL_HAS_CONSTEXPR_BIT_CAST()
   _CCCL_IF_NOT_CONSTEVAL_DEFAULT
   {
-    return ::isinf(__x);
+    return ::__cccl_isinf_runtime(__x);
   }
   return (::cuda::std::__fp_get_storage(__x) & __fp_exp_mant_mask_of_v<double>) == __fp_exp_mask_of_v<double>;
 #else // ^^^ _CCCL_HAS_CONSTEXPR_BIT_CAST() ^^^ / vvv !_CCCL_HAS_CONSTEXPR_BIT_CAST() vvv
@@ -197,6 +216,11 @@ _CCCL_REQUIRES(is_integral_v<_Tp>)
 }
 
 _CCCL_END_NAMESPACE_CUDA_STD
+
+#ifdef _CCCL_POP_MACRO_isinf
+#  pragma pop_macro("isinf")
+#  undef _CCCL_POP_MACRO_isinf
+#endif
 
 #include <cuda/std/__cccl/epilogue.h>
 

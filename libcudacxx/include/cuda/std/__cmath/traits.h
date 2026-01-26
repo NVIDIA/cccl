@@ -39,6 +39,112 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
+#if !_CCCL_COMPILER(NVRTC)
+// This function may or may not be implemented as a function macro so we need to handle that case
+#  ifdef isgreater
+
+template <class _Tp>
+[[nodiscard]] _CCCL_HOST_API bool __cccl_isgreater_runtime(_Tp __x, _Tp __y) noexcept
+{
+  return isgreater(__x, __y);
+}
+#    pragma push_macro("isgreater")
+#    undef isgreater
+#    define _CCCL_POP_MACRO_isgreater
+#  else // ^^^ Function Macro isgreater ^^^ / vvv No function macro isgreater vvv
+template <class _Tp>
+[[nodiscard]] _CCCL_HOST_API bool __cccl_isgreater_runtime(_Tp __x, _Tp __y) noexcept
+{
+  return ::isgreater(__x, __y);
+}
+#  endif // No function macro isgreater
+
+// This function may or may not be implemented as a function macro so we need to handle that case
+#  ifdef isgreaterequal
+
+template <class _Tp>
+[[nodiscard]] _CCCL_HOST_API bool __cccl_isgreaterequal_runtime(_Tp __x, _Tp __y) noexcept
+{
+  return isgreaterequal(__x, __y);
+}
+#    pragma push_macro("isgreaterequal")
+#    undef isgreaterequal
+#    define _CCCL_POP_MACRO_isgreaterequal
+#  else // ^^^ Function Macro isgreaterequal ^^^ / vvv No function macro isgreaterequal vvv
+template <class _Tp>
+[[nodiscard]] _CCCL_HOST_API bool __cccl_isgreaterequal_runtime(_Tp __x, _Tp __y) noexcept
+{
+  return ::isgreaterequal(__x, __y);
+}
+#  endif // No function macro isgreaterequal
+
+// This function may or may not be implemented as a function macro so we need to handle that case
+#  ifdef isless
+
+template <class _Tp>
+[[nodiscard]] _CCCL_HOST_API bool __cccl_isless_runtime(_Tp __x, _Tp __y) noexcept
+{
+  return isless(__x, __y);
+}
+#    pragma push_macro("isless")
+#    undef isless
+#    define _CCCL_POP_MACRO_isless
+#  else // ^^^ Function Macro isless ^^^ / vvv No function macro isless vvv
+template <class _Tp>
+[[nodiscard]] _CCCL_HOST_API bool __cccl_isless_runtime(_Tp __x, _Tp __y) noexcept
+{
+  return ::isless(__x, __y);
+}
+#  endif // No function macro isless
+
+// This function may or may not be implemented as a function macro so we need to handle that case
+#  ifdef islessequal
+
+template <class _Tp>
+[[nodiscard]] _CCCL_HOST_API bool __cccl_islessequal_runtime(_Tp __x, _Tp __y) noexcept
+{
+  return islessequal(__x, __y);
+}
+#    pragma push_macro("islessequal")
+#    undef islessequal
+#    define _CCCL_POP_MACRO_islessequal
+#  else // ^^^ Function Macro islessequal ^^^ / vvv No function macro islessequal vvv
+template <class _Tp>
+[[nodiscard]] _CCCL_HOST_API bool __cccl_islessequal_runtime(_Tp __x, _Tp __y) noexcept
+{
+  return ::islessequal(__x, __y);
+}
+#  endif // No function macro islessequal
+
+// This function may or may not be implemented as a function macro so we need to handle that case
+#  ifdef islessgreater
+
+template <class _Tp>
+[[nodiscard]] _CCCL_HOST_API bool __cccl_islessgreater_runtime(_Tp __x, _Tp __y) noexcept
+{
+  return islessgreater(__x, __y);
+}
+#    pragma push_macro("islessgreater")
+#    undef islessgreater
+#    define _CCCL_POP_MACRO_islessgreater
+#  else // ^^^ Function Macro islessgreater ^^^ / vvv No function macro islessgreater vvv
+template <class _Tp>
+[[nodiscard]] _CCCL_HOST_API bool __cccl_islessgreater_runtime(_Tp __x, _Tp __y) noexcept
+{
+  return ::islessgreater(__x, __y);
+}
+#  endif // No function macro islessgreater
+
+// This function may or may not be implemented as a function macro so we need to handle that case
+#  ifdef isunordered
+// No fallback implementation
+#    pragma push_macro("isunordered")
+#    undef isunordered
+#    define _CCCL_POP_MACRO_isunordered
+#  endif // Function macro isunordered
+
+#endif // !_CCCL_COMPILER(NVRTC)
+
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 // isgreater
@@ -64,7 +170,7 @@ template <class _A1, enable_if_t<__is_extended_arithmetic_v<_A1>, int> = 0>
 #  if defined(_CCCL_BUILTIN_ISGREATER)
   return _CCCL_BUILTIN_ISGREATER(__x, __y);
 #  else // ^^^ _CCCL_BUILTIN_ISGREATER ^^^ / vvv !_CCCL_BUILTIN_ISGREATER vvv
-  return ::isgreater(__x, __y);
+  return ::__cccl_isgreater_runtime(__x, __y);
 #  endif // !_CCCL_BUILTIN_ISGREATER
 }
 #endif // !_CCCL_COMPILER(NVRTC)
@@ -101,7 +207,7 @@ template <class _A1, enable_if_t<__is_extended_arithmetic_v<_A1>, int> = 0>
 #  if defined(_CCCL_BUILTIN_ISGREATEREQUAL)
   return _CCCL_BUILTIN_ISGREATEREQUAL(__x, __y);
 #  else // ^^^ _CCCL_BUILTIN_ISGREATEREQUAL ^^^ / vvv !_CCCL_BUILTIN_ISGREATEREQUAL vvv
-  return ::isgreaterequal(__x, __y);
+  return ::__cccl_isgreaterequal_runtime(__x, __y);
 #  endif // !_CCCL_BUILTIN_ISGREATEREQUAL
 }
 #endif // !_CCCL_COMPILER(NVRTC)
@@ -138,7 +244,7 @@ template <class _A1, enable_if_t<__is_extended_arithmetic_v<_A1>, int> = 0>
 #  if defined(_CCCL_BUILTIN_ISLESS)
   return _CCCL_BUILTIN_ISLESS(__x, __y);
 #  else // ^^^ _CCCL_BUILTIN_ISLESS ^^^ / vvv !_CCCL_BUILTIN_ISLESS vvv
-  return ::isless(__x, __y);
+  return ::__cccl_isless_runtime(__x, __y);
 #  endif // !_CCCL_BUILTIN_ISLESS
 }
 #endif // !_CCCL_COMPILER(NVRTC)
@@ -175,7 +281,7 @@ template <class _A1, enable_if_t<__is_extended_arithmetic_v<_A1>, int> = 0>
 #  if defined(_CCCL_BUILTIN_ISLESSEQUAL)
   return _CCCL_BUILTIN_ISLESSEQUAL(__x, __y);
 #  else // ^^^ _CCCL_BUILTIN_ISLESSEQUAL ^^^ / vvv !_CCCL_BUILTIN_ISLESSEQUAL vvv
-  return ::islessequal(__x, __y);
+  return ::__cccl_islessequal_runtime(__x, __y);
 #  endif // !_CCCL_BUILTIN_ISLESSEQUAL
 }
 #endif // !_CCCL_COMPILER(NVRTC)
@@ -212,7 +318,7 @@ template <class _A1, enable_if_t<__is_extended_arithmetic_v<_A1>, int> = 0>
 #  if defined(_CCCL_BUILTIN_ISLESSGREATER)
   return _CCCL_BUILTIN_ISLESSGREATER(__x, __y);
 #  else // ^^^ _CCCL_BUILTIN_ISLESSGREATER ^^^ / vvv !_CCCL_BUILTIN_ISLESSGREATER vvv
-  return ::islessgreater(__x, __y);
+  return ::__cccl_islessgreater_runtime(__x, __y);
 #  endif // !_CCCL_BUILTIN_ISLESSGREATER
 }
 #endif // !_CCCL_COMPILER(NVRTC)
@@ -236,6 +342,36 @@ template <class _A1, class _A2, enable_if_t<__is_extended_arithmetic_v<_A1> && _
 }
 
 _CCCL_END_NAMESPACE_CUDA_STD
+
+#ifdef _CCCL_POP_MACRO_isgreater
+#  pragma pop_macro("isgreater")
+#  undef _CCCL_POP_MACRO_isgreater
+#endif
+
+#ifdef _CCCL_POP_MACRO_isgreaterequal
+#  pragma pop_macro("isgreaterequal")
+#  undef _CCCL_POP_MACRO_isgreaterequal
+#endif
+
+#ifdef _CCCL_POP_MACRO_isless
+#  pragma pop_macro("isless")
+#  undef _CCCL_POP_MACRO_isless
+#endif
+
+#ifdef _CCCL_POP_MACRO_islessequal
+#  pragma pop_macro("islessequal")
+#  undef _CCCL_POP_MACRO_islessequal
+#endif
+
+#ifdef _CCCL_POP_MACRO_islessgreater
+#  pragma pop_macro("islessgreater")
+#  undef _CCCL_POP_MACRO_islessgreater
+#endif
+
+#ifdef _CCCL_POP_MACRO_isunordered
+#  pragma pop_macro("isunordered")
+#  undef _CCCL_POP_MACRO_isunordered
+#endif
 
 #include <cuda/std/__cccl/epilogue.h>
 

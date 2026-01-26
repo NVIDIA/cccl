@@ -34,6 +34,25 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
+// This function may or may not be implemented as a function macro so we need to handle that case
+#ifdef isfinite
+
+template <class _Tp>
+[[nodiscard]] _CCCL_API bool __cccl_isfinite_runtime(_Tp __x) noexcept
+{
+  return isfinite(__x);
+}
+#  pragma push_macro("isfinite")
+#  undef isfinite
+#  define _CCCL_POP_MACRO_isfinite
+#else // ^^^ Function Macro isfinite ^^^ / vvv No function macro isfinite vvv
+template <class _Tp>
+[[nodiscard]] _CCCL_API bool __cccl_isfinite_runtime(_Tp __x) noexcept
+{
+  return ::isfinite(__x);
+}
+#endif // No function macro isfinite
+
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 #if _CCCL_CHECK_BUILTIN(builtin_isfinite) || _CCCL_COMPILER(GCC) || _CCCL_COMPILER(NVRTC, >, 12, 2)
@@ -46,7 +65,7 @@ template <class _Tp>
   static_assert(is_floating_point_v<_Tp>, "Only standard floating-point types are supported");
   _CCCL_IF_NOT_CONSTEVAL_DEFAULT
   {
-    return ::isfinite(__x);
+    return ::__cccl_isfinite_runtime(__x);
   }
   return !::cuda::std::isnan(__x) && !::cuda::std::isinf(__x);
 }
@@ -58,7 +77,7 @@ template <class _Tp>
 #else // ^^^ _CCCL_BUILTIN_ISFINITE ^^^ / vvv !_CCCL_BUILTIN_ISFINITE vvv
   _CCCL_IF_NOT_CONSTEVAL_DEFAULT
   {
-    return ::isfinite(__x);
+    return ::__cccl_isfinite_runtime(__x);
   }
 #  if _CCCL_HAS_CONSTEXPR_BIT_CAST()
   return (::cuda::std::__fp_get_storage(__x) & __fp_exp_mask_of_v<float>) != __fp_exp_mask_of_v<float>;
@@ -75,7 +94,7 @@ template <class _Tp>
 #else // ^^^ _CCCL_BUILTIN_ISFINITE ^^^ / vvv !_CCCL_BUILTIN_ISFINITE vvv
   _CCCL_IF_NOT_CONSTEVAL_DEFAULT
   {
-    return ::isfinite(__x);
+    return ::__cccl_isfinite_runtime(__x);
   }
 #  if _CCCL_HAS_CONSTEXPR_BIT_CAST()
   return (::cuda::std::__fp_get_storage(__x) & __fp_exp_mask_of_v<double>) != __fp_exp_mask_of_v<double>;
@@ -160,6 +179,11 @@ _CCCL_REQUIRES(is_integral_v<_Tp>)
 }
 
 _CCCL_END_NAMESPACE_CUDA_STD
+
+#ifdef _CCCL_POP_MACRO_isfinite
+#  pragma pop_macro("isfinite")
+#  undef _CCCL_POP_MACRO_isfinite
+#endif
 
 #include <cuda/std/__cccl/epilogue.h>
 

@@ -32,6 +32,25 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
+// This function may or may not be implemented as a function macro so we need to handle that case
+#ifdef isnan
+
+template <class _Tp>
+[[nodiscard]] _CCCL_API bool __cccl_isnan_runtime(_Tp __x) noexcept
+{
+  return isnan(__x);
+}
+#  pragma push_macro("isnan")
+#  undef isnan
+#  define _CCCL_POP_MACRO_isnan
+#else // ^^^ Function Macro isnan ^^^ / vvv No function macro isnan vvv
+template <class _Tp>
+[[nodiscard]] _CCCL_API bool __cccl_isnan_runtime(_Tp __x) noexcept
+{
+  return ::isnan(__x);
+}
+#endif // No function macro isnan
+
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 #if _CCCL_CHECK_BUILTIN(builtin_isnan) || _CCCL_COMPILER(GCC)
@@ -44,7 +63,7 @@ template <class _Tp>
   static_assert(is_floating_point_v<_Tp>, "Only standard floating-point types are supported");
   _CCCL_IF_NOT_CONSTEVAL_DEFAULT
   {
-    return ::isnan(__x);
+    return ::__cccl_isnan_runtime(__x);
   }
   return __x != __x;
 }
@@ -178,6 +197,11 @@ _CCCL_REQUIRES(is_integral_v<_Tp>)
 }
 
 _CCCL_END_NAMESPACE_CUDA_STD
+
+#ifdef _CCCL_POP_MACRO_isnan
+#  pragma pop_macro("isnan")
+#  undef _CCCL_POP_MACRO_isnan
+#endif
 
 #include <cuda/std/__cccl/epilogue.h>
 

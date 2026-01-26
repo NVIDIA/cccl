@@ -28,6 +28,14 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
+// This function may or may not be implemented as a function macro so we need to handle that case
+#ifdef isnormal
+// No fallback implementation as we go through fpclassify anyhow
+#  pragma push_macro("isnormal")
+#  undef isnormal
+#  define _CCCL_POP_MACRO_isnormal
+#endif // isnormal
+
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 #if _CCCL_CHECK_BUILTIN(builtin_isnormal) || _CCCL_COMPILER(GCC)
@@ -132,6 +140,11 @@ _CCCL_REQUIRES(is_integral_v<_Tp>)
 }
 
 _CCCL_END_NAMESPACE_CUDA_STD
+
+#ifdef _CCCL_POP_MACRO_isnormal
+#  pragma pop_macro("isnormal")
+#  undef _CCCL_POP_MACRO_isnormal
+#endif
 
 #include <cuda/std/__cccl/epilogue.h>
 
