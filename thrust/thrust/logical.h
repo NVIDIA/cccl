@@ -76,6 +76,10 @@ THRUST_NAMESPACE_BEGIN
  *  \see any_of
  *  \see none_of
  *  \see transform_reduce
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename DerivedPolicy, typename InputIterator, typename Predicate>
 _CCCL_HOST_DEVICE bool
@@ -115,6 +119,10 @@ all_of(const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
  *  \see any_of
  *  \see none_of
  *  \see transform_reduce
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename InputIterator, typename Predicate>
 bool all_of(InputIterator first, InputIterator last, Predicate pred);
@@ -156,6 +164,10 @@ bool all_of(InputIterator first, InputIterator last, Predicate pred);
  *  \see all_of
  *  \see none_of
  *  \see transform_reduce
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename DerivedPolicy, typename InputIterator, typename Predicate>
 _CCCL_HOST_DEVICE bool
@@ -196,6 +208,10 @@ any_of(const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
  *  \see all_of
  *  \see none_of
  *  \see transform_reduce
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename InputIterator, typename Predicate>
 bool any_of(InputIterator first, InputIterator last, Predicate pred);
@@ -237,6 +253,10 @@ bool any_of(InputIterator first, InputIterator last, Predicate pred);
  *  \see all_of
  *  \see any_of
  *  \see transform_reduce
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename DerivedPolicy, typename InputIterator, typename Predicate>
 _CCCL_HOST_DEVICE bool
@@ -277,6 +297,10 @@ none_of(const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
  *  \see all_of
  *  \see any_of
  *  \see transform_reduce
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename InputIterator, typename Predicate>
 bool none_of(InputIterator first, InputIterator last, Predicate pred);

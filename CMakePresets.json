@@ -23,6 +23,7 @@
         "CCCL_ENABLE_EXAMPLES": false,
         "CCCL_ENABLE_C_PARALLEL": false,
         "CCCL_ENABLE_C_EXPERIMENTAL_STF": false,
+        "CCCL_SKIP_BUILD_CHECKS": false,
         "libcudacxx_ENABLE_INSTALL_RULES": true,
         "CUB_ENABLE_INSTALL_RULES": true,
         "Thrust_ENABLE_INSTALL_RULES": true,
@@ -34,18 +35,19 @@
       "displayName": "Installation / Packaging (only stable libraries)",
       "inherits": "base",
       "cacheVariables": {
-        "cudax_ENABLE_INSTALL_RULES": false
+        "cudax_ENABLE_INSTALL_RULES": false,
+        "CCCL_SKIP_BUILD_CHECKS": true
       }
     },
     {
       "name": "install-unstable",
       "displayName": "Installation / Packaging (includes experimental libraries)",
-      "inherits": "base"
+      "inherits": "install"
     },
     {
       "name": "install-unstable-only",
       "displayName": "Installation / Packaging (*only* experimental libraries)",
-      "inherits": "base",
+      "inherits": "install",
       "cacheVariables": {
         "libcudacxx_ENABLE_INSTALL_RULES": false,
         "CUB_ENABLE_INSTALL_RULES": false,

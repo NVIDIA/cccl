@@ -39,9 +39,9 @@
 
 // include minimal std:: headers
 #if _CCCL_HAS_BUILTIN_STD_FORWARD_LIKE()
-#  if _CCCL_HOST_STD_LIB(LIBSTDCXX) && _CCCL_HAS_INCLUDE(<bits/move.h>)
+#  if _CCCL_HOST_STD_LIB(LIBSTDCXX) && __has_include(<bits/move.h>)
 #    include <bits/move.h>
-#  elif _CCCL_HOST_STD_LIB(LIBCXX) && _CCCL_HAS_INCLUDE(<__utility/forward_like.h>)
+#  elif _CCCL_HOST_STD_LIB(LIBCXX) && __has_include(<__utility/forward_like.h>)
 #    include <__utility/forward_like.h>
 #  elif !_CCCL_COMPILER(NVRTC)
 #    include <utility>

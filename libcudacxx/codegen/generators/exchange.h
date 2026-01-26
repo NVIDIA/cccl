@@ -11,10 +11,10 @@
 #ifndef EXCHANGE_H
 #define EXCHANGE_H
 
+#include <format>
 #include <string>
 
 #include "definitions.h"
-#include <fmt/format.h>
 
 inline void FormatExchange(std::ostream& out)
 {
@@ -56,7 +56,7 @@ static inline _CCCL_DEVICE void __cuda_atomic_exchange_memory_order_dispatch(_Fn
   // 4 - Memory Order function tag
   // 5 - Scope Constraint
   // 6 - Scope function tag
-  const std::string asm_intrinsic_format_128 = R"XXX(
+  constexpr auto asm_intrinsic_format_128 = R"XXX(
 template <class _Type>
 static inline _CCCL_DEVICE void __cuda_atomic_exchange(
   _Type* __ptr, _Type& __old, _Type __new, {4}, __atomic_cuda_operand_{0}{1}, {6})
@@ -77,7 +77,7 @@ static inline _CCCL_DEVICE void __cuda_atomic_exchange(
   )YYY" : "=l"(__old.__x),"=l"(__old.__y) : "l"(__ptr), "l"(__new.__x),"l"(__new.__y) : "memory");
 }})XXX";
 
-  const std::string asm_intrinsic_format = R"XXX(
+  constexpr auto asm_intrinsic_format = R"XXX(
 template <class _Type>
 static inline _CCCL_DEVICE void __cuda_atomic_exchange(
   _Type* __ptr, _Type& __old, _Type __new, {4}, __atomic_cuda_operand_{0}{1}, {6})
@@ -124,15 +124,31 @@ static inline _CCCL_DEVICE void __cuda_atomic_exchange(
           {
             continue;
           }
-          out << fmt::format(
-            (size == 128) ? asm_intrinsic_format_128 : asm_intrinsic_format,
-            operand(type),
-            size,
-            constraints(type, size),
-            semantic(sem),
-            semantic_tag(sem),
-            scope(sco),
-            scope_tag(sco));
+
+          if (size == 128)
+          {
+            out << std::format(
+              asm_intrinsic_format_128,
+              operand(type),
+              size,
+              constraints(type, size),
+              semantic(sem),
+              semantic_tag(sem),
+              scope(sco),
+              scope_tag(sco));
+          }
+          else
+          {
+            out << std::format(
+              asm_intrinsic_format,
+              operand(type),
+              size,
+              constraints(type, size),
+              semantic(sem),
+              semantic_tag(sem),
+              scope(sco),
+              scope_tag(sco));
+          }
         }
       }
     }

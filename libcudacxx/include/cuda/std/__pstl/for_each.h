@@ -28,6 +28,7 @@
 #  include <cuda/std/__iterator/distance.h>
 #  include <cuda/std/__pstl/dispatch.h>
 #  include <cuda/std/__type_traits/always_false.h>
+#  include <cuda/std/__type_traits/is_execution_policy.h>
 #  include <cuda/std/__utility/move.h>
 
 #  if _CCCL_HAS_BACKEND_CUDA()
@@ -42,16 +43,14 @@ _CCCL_BEGIN_NAMESPACE_ARCH_DEPENDENT
 
 _CCCL_TEMPLATE(class _Policy, class _Iter, class _Fn)
 _CCCL_REQUIRES(__has_forward_traversal<_Iter> _CCCL_AND is_execution_policy_v<_Policy>)
-_CCCL_HOST_API void for_each([[maybe_unused]] _Policy __policy, _Iter __first, _Iter __last, _Fn __func)
+_CCCL_HOST_API void for_each([[maybe_unused]] const _Policy& __policy, _Iter __first, _Iter __last, _Fn __func)
 {
   [[maybe_unused]] auto __dispatch =
     ::cuda::std::execution::__pstl_select_dispatch<::cuda::std::execution::__pstl_algorithm::__for_each_n, _Policy>();
   if constexpr (::cuda::std::execution::__pstl_can_dispatch<decltype(__dispatch)>)
   {
-    (void) __dispatch(::cuda::std::move(__policy),
-                      ::cuda::std::move(__first),
-                      ::cuda::std::distance(__first, __last),
-                      ::cuda::std::move(__func));
+    const auto __count = ::cuda::std::distance(__first, __last);
+    (void) __dispatch(__policy, ::cuda::std::move(__first), __count, ::cuda::std::move(__func));
   }
   else
   {

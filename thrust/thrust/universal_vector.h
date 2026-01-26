@@ -64,6 +64,10 @@ THRUST_NAMESPACE_BEGIN
  *                   shared by \p universal_vector.
  *  \see device_vector
  *  \see universal_host_pinned_vector
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename T, typename Allocator = universal_allocator<T>>
 using universal_vector = thrust::system::__THRUST_DEVICE_SYSTEM_NAMESPACE::universal_vector<T, Allocator>;

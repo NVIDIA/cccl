@@ -9,39 +9,12 @@ import numpy as np
 
 from .. import _bindings
 from .. import _cccl_interop as cccl
-from .._caching import cache_with_key
+from .._caching import cache_with_registered_key_functions
 from .._cccl_interop import call_build, set_cccl_iterator_state, to_cccl_value_state
-from .._utils.protocols import get_data_pointer, get_dtype, validate_and_get_stream
+from .._utils.protocols import get_data_pointer, validate_and_get_stream
 from .._utils.temp_storage_buffer import TempStorageBuffer
 from ..iterators._iterators import IteratorBase
 from ..typing import DeviceArrayLike
-
-
-def make_cache_key(
-    d_samples: DeviceArrayLike | IteratorBase,
-    d_histogram: DeviceArrayLike,
-    d_num_output_levels: DeviceArrayLike,
-    h_lower_level: np.ndarray,
-    h_upper_level: np.ndarray,
-    num_samples: int,
-):
-    d_samples_key = (
-        d_samples.kind if isinstance(d_samples, IteratorBase) else get_dtype(d_samples)
-    )
-
-    d_histogram_key = get_dtype(d_histogram)
-    d_num_output_levels_key = get_dtype(d_num_output_levels)
-    d_lower_level_key = h_lower_level.dtype
-    d_upper_level_key = h_upper_level.dtype
-
-    return (
-        d_samples_key,
-        d_histogram_key,
-        d_num_output_levels_key,
-        d_lower_level_key,
-        d_upper_level_key,
-        num_samples,
-    )
 
 
 class _Histogram:
@@ -134,7 +107,7 @@ class _Histogram:
         return temp_storage_bytes
 
 
-@cache_with_key(make_cache_key)
+@cache_with_registered_key_functions
 def make_histogram_even(
     d_samples: DeviceArrayLike | IteratorBase,
     d_histogram: DeviceArrayLike,

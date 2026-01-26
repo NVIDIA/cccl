@@ -56,6 +56,10 @@ THRUST_NAMESPACE_BEGIN
  *  \return p, casted to <tt>T</tt>'s type.
  *
  *  \see device_ptr
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename T>
 device_ptr<T> device_new(device_ptr<void> p, const size_t n = 1)
@@ -81,6 +85,10 @@ device_ptr<T> device_new(device_ptr<void> p, const size_t n = 1)
  *
  *  \see device_ptr
  *  \see fill
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename T>
 device_ptr<T> device_new(device_ptr<void> p, const T& exemplar, const size_t n = 1)
@@ -98,6 +106,10 @@ device_ptr<T> device_new(device_ptr<void> p, const T& exemplar, const size_t n =
  *
  *  \param n The number of objects to allocate. Defaults to \c 1.
  *  \return A \p device_ptr to the newly allocated region of device memory.
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename T>
 device_ptr<T> device_new(const size_t n = 1)

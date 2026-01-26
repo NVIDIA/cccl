@@ -8,7 +8,7 @@
 template <typename BaseAlloc, bool PropagateOnSwap>
 class stateful_allocator : public BaseAlloc
 {
-  using base_traits = thrust::detail::allocator_traits<BaseAlloc>;
+  using base_traits = cuda::std::allocator_traits<BaseAlloc>;
 
 public:
   stateful_allocator(int i)
@@ -47,8 +47,8 @@ public:
 
   using pointer         = typename base_traits::pointer;
   using const_pointer   = typename base_traits::const_pointer;
-  using reference       = typename base_traits::reference;
-  using const_reference = typename base_traits::const_reference;
+  using reference       = typename cuda::std::iterator_traits<pointer>::reference;
+  using const_reference = typename cuda::std::iterator_traits<const_pointer>::reference;
 
   pointer allocate(std::size_t size)
   {
@@ -177,8 +177,7 @@ template <typename Vector>
 void TestVectorAllocatorPropagateOnCopyAssignment()
 {
   ASSERT_EQUAL(
-    thrust::detail::allocator_traits<typename Vector::allocator_type>::propagate_on_container_copy_assignment::value,
-    true);
+    cuda::std::allocator_traits<typename Vector::allocator_type>::propagate_on_container_copy_assignment::value, true);
 
   using Alloc = typename Vector::allocator_type;
   Alloc alloc1(1);
@@ -211,8 +210,7 @@ void TestVectorAllocatorPropagateOnMoveAssignment()
 {
   using Alloc = typename Vector::allocator_type;
   ASSERT_EQUAL(
-    thrust::detail::allocator_traits<typename Vector::allocator_type>::propagate_on_container_copy_assignment::value,
-    true);
+    cuda::std::allocator_traits<typename Vector::allocator_type>::propagate_on_container_copy_assignment::value, true);
 
   using Alloc = typename Vector::allocator_type;
   Alloc alloc1(1);

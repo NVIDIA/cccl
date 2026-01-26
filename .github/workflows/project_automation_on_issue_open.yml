@@ -1,0 +1,237 @@
+# SPDX-FileCopyrightText: Copyright (c) 2023, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+name: project_automation_on_issue_open
+
+on:
+  issues:
+    # Run this action when an issue is opened
+    types: [opened]
+
+env:
+  ISSUE_NODE_ID: ${{ github.event.issue.node_id }}
+
+  # The environment vars below are hard-coded from external queries to save time + complexity here.
+  # This also keeps the action from breaking if field/option names change.
+  #
+  # Obtain a SSO-authed PAT with `read:project` and `read:orgs` scopes and query fields with:
+  #
+  # gh api graphql -f query='
+  #   query {
+  #     node(id: "PVT_kwDOABpemM4AEhOI") { # CCCL Project ID
+  #       ... on ProjectV2 {
+  #         _field: field(name: "Sprint") { # <--------- Change field name here
+  #           ... on ProjectV2SingleSelectField { id options { id name }}
+  #         }
+  #       }
+  #     }
+  #   }'
+  #
+  # Note: PVT means Project V2, not "Private" - although this is a private project
+  # PVT = Project V2, PVTSSF = Project V2 Single Select Field, PVTIF = Project V2 Iteration Field
+  PROJECT_ID: "PVT_kwDOABpemM4AEhOI"
+
+  ISSUE_TYPE_FIELD_ID: "PVTSSF_lADOABpemM4AEhOIzgCzg-4"
+  BUG_OPTION_ID: "e7e7e23f"
+  FEATURE_OPTION_ID: "f8765953"
+  DOCS_OPTION_ID: "cb6cb7bf"
+  EPIC_OPTION_ID: "1d095615"
+  THEME_OPTION_ID: "22f101c0"
+
+  STATUS_FIELD_ID:                    "PVTSSF_lADOABpemM4AEhOIzgCmnYc"
+  STATUS_OPTION_NEEDS_TRIAGE_ID:      "560bf16e"
+  STATUS_OPTION_TODO_ID:              "f75ad846"
+  STATUS_OPTION_BLOCKED_ID:           "34f3515e"
+  STATUS_OPTION_PAUSED_ID:            "a2faa254"
+  STATUS_OPTION_IN_PROGRESS_ID:       "47fc9ee4"
+  STATUS_OPTION_IN_REVIEW_ID:         "c6b49c6b"
+  STATUS_OPTION_TESTING_ID:           "1d4ea070"
+  STATUS_OPTION_AWAITING_FEEDBACK_ID: "d14f18af"
+  STATUS_OPTION_DONE_ID:              "98236657"
+
+  ROADMAP_FIELD_ID:                   "PVTSSF_lADOABpemM4AEhOIzgC_MXI"
+  ROADMAP_OPTION_ONGOING_ID:          "9aead860"
+  ROADMAP_OPTION_RELEASE_PLANNING_ID: "efbf779e"
+  ROADMAP_OPTION_PRIORITY_BACKLOG_ID: "6afdb794"
+  ROADMAP_OPTION_BACKLOG_ID:          "ea2cfcba"
+
+  SPRINT_FIELD_ID:                    "PVTSSF_lADOABpemM4AEhOIzg73Nzs"
+  SPRINT_OPTION_CURRENT_ID:           "1d350ae5"
+  SPRINT_OPTION_NEXT_ID:              "42fdb629"
+
+jobs:
+  update_issue_fields_in_project:
+    if: github.repository == 'NVIDIA/cccl'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Sleep 1s
+        id: sleep_1s
+        run: sleep 1 # We sleep to ensure the issue is added to the project before we run this action
+
+      - name: Generate token
+        id: generate_token
+        uses: tibdex/github-app-token@v1.8.0
+        with:
+          app_id: ${{ secrets.CCCL_AUTH_APP_ID }}
+          private_key: ${{ secrets.CCCL_AUTH_APP_PEM }}
+
+      - name: Get Issue Project ID
+        id: get_issue_id
+        env:
+            GITHUB_TOKEN: ${{ steps.generate_token.outputs.token }}
+        run: |
+            # Query up to 10 projects for the Issue
+            gh api graphql -f query='
+              query {
+                node(id: "${{ env.ISSUE_NODE_ID }}") {
+                  ... on Issue {
+                    projectItems(first: 10) {
+                      nodes {
+                        id
+                        project {
+                          id
+                        }
+                      }
+                    }
+                  }
+                }
+              }' > "project_data.json"
+
+            # Filter the json result to only the project-specific ID for the PR
+            # An issue can be in multiple projects so we need to filter by the project ID we want
+            issue_id=$(jq -r '.data.node.projectItems.nodes[] |
+                           select(.project.id == "${{ env.PROJECT_ID }}") |
+                           .id' "project_data.json")
+            echo "ISSUE_PROJECT_ID=$issue_id" >> "$GITHUB_ENV"
+
+      - name: Extract Issue Type Text
+        id: extract_issue_type
+        env:
+            ISSUE_TITLE: ${{ github.event.issue.title }}
+        run: |
+            # Extract the text between two brackets in the issue title
+            issue_type=$(echo "$ISSUE_TITLE" | grep -o '\[.*\]' | tr -d '[]')
+
+            # Set the issue type option ID based on the extracted text
+            if [ "$issue_type" == "BUG" ]; then
+              option_id=${{ env.BUG_OPTION_ID }}
+            elif [ "$issue_type" == "FEA" ]; then
+              option_id=${{ env.FEATURE_OPTION_ID }}
+            elif [ "$issue_type" == "DOC" ]; then
+              option_id=${{ env.DOCS_OPTION_ID }}
+            elif [ "$issue_type" == "EPIC" ]; then
+              option_id=${{ env.EPIC_OPTION_ID }}
+            elif [ "$issue_type" == "THEME" ]; then
+              option_id=${{ env.THEME_OPTION_ID }}
+            else
+              option_id="Undefined"
+            fi
+            echo "TYPE_OPTION_ID=$option_id" >> "$GITHUB_ENV"
+
+      - name: Set Issue Type
+        id: set_issue_type
+        env:
+            GITHUB_TOKEN: ${{ steps.generate_token.outputs.token }}
+        if: ${{ env.TYPE_OPTION_ID }} != "Undefined"
+        run: |
+            # Mutation to update the Issue's Issue Type field
+            gh api graphql -f query='
+              mutation {
+                  updateProjectV2ItemFieldValue(
+                      input: {
+                          projectId: "${{ env.PROJECT_ID }}"
+                          itemId: "${{ env.ISSUE_PROJECT_ID }}"
+                          fieldId: "${{ env.ISSUE_TYPE_FIELD_ID }}"
+                      value: {
+                          singleSelectOptionId: "${{ env.TYPE_OPTION_ID }}"
+                              }
+                          }
+                      ) {
+                          projectV2Item {
+                              id
+                          }
+                      }
+                  }'
+
+      - name: Set Status to Needs Triage
+        id: set_needs_triage
+        if: contains(github.event.issue.labels.*.name, 'needs triage')
+        env:
+          GITHUB_TOKEN: ${{ steps.generate_token.outputs.token }}
+        run: |
+          gh api graphql -f query='
+            mutation {
+              updateProjectV2ItemFieldValue(
+                input: {
+                  projectId: "${{ env.PROJECT_ID }}"
+                  itemId: "${{ env.ISSUE_PROJECT_ID }}"
+                  fieldId: "${{ env.STATUS_FIELD_ID }}"
+                  value: {
+                    singleSelectOptionId: "${{ env.STATUS_OPTION_NEEDS_TRIAGE_ID }}"
+                  }
+                }
+              ) {
+                projectV2Item {
+                  id
+                }
+              }
+            }'
+
+      - name: Set Devex/Infra Triage
+        id: set_devex_infra_fields
+        if: >-
+          contains(github.event.issue.labels.*.name, 'devex') ||
+          contains(github.event.issue.labels.*.name, 'infra') ||
+          contains(github.event.issue.title, '[DEVEX]') ||
+          contains(github.event.issue.title, '[INFRA]')
+        env:
+          GITHUB_TOKEN: ${{ steps.generate_token.outputs.token }}
+        run: |
+            gh api graphql -f query='
+              mutation {
+                updateProjectV2ItemFieldValue(
+                  input: {
+                    projectId: "${{ env.PROJECT_ID }}"
+                    itemId: "${{ env.ISSUE_PROJECT_ID }}"
+                    fieldId: "${{ env.STATUS_FIELD_ID }}"
+                    value: {
+                      singleSelectOptionId: "${{ env.STATUS_OPTION_NEEDS_TRIAGE_ID }}"
+                    }
+                  }
+                ) {
+                  projectV2Item {
+                    id
+                  }
+                }
+              }'
+
+            gh api graphql -f query='
+              mutation {
+                updateProjectV2ItemFieldValue(
+                  input: {
+                    projectId: "${{ env.PROJECT_ID }}"
+                    itemId: "${{ env.ISSUE_PROJECT_ID }}"
+                    fieldId: "${{ env.ROADMAP_FIELD_ID }}"
+                    value: {
+                      singleSelectOptionId: "${{ env.ROADMAP_OPTION_ONGOING_ID }}"
+                    }
+                  }
+                ) {
+                  projectV2Item {
+                    id
+                  }
+                }
+              }'

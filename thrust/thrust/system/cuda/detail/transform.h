@@ -175,12 +175,7 @@ OutputIt _CCCL_API _CCCL_FORCEINLINE cub_transform_many(
   cudaError_t status;
   THRUST_INDEX_TYPE_DISPATCH(
     status,
-    (cub::detail::transform::dispatch_t<stable_address,
-                                        decltype(num_items_fixed),
-                                        ::cuda::std::tuple<InputIts...>,
-                                        OutputIt,
-                                        Predicate,
-                                        TransformOp>::dispatch),
+    (cub::detail::transform::dispatch<stable_address>),
     num_items,
     (firsts, result, num_items_fixed, pred, transform_op, cuda_cub::stream(policy)));
   throw_on_error(status, "transform: failed inside CUB");

@@ -6,6 +6,8 @@
 from enum import Enum
 from typing import Tuple
 
+from ..._caching import cache_with_registered_key_functions
+from ..._utils.protocols import get_dtype
 from ...typing import DeviceArrayLike
 
 
@@ -50,3 +52,9 @@ def _get_arrays(
         d_out_values_array = d_out_values
 
     return d_in_keys_array, d_out_keys_array, d_in_values_array, d_out_values_array
+
+
+# DoubleBuffer: extract dtype from current buffer
+cache_with_registered_key_functions.register(
+    DoubleBuffer, lambda buf: get_dtype(buf.current())
+)

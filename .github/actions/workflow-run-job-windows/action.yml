@@ -77,6 +77,32 @@ runs:
         aws-region: us-east-2
         role-duration-seconds: 43200 # 12 hours
 
+    - name: Prepare AWS credentials file for container
+      shell: bash --noprofile --norc -euo pipefail {0}
+      env:
+        AWS_ACCESS_KEY_ID: "${{ env.AWS_ACCESS_KEY_ID }}"
+        AWS_SESSION_TOKEN: "${{ env.AWS_SESSION_TOKEN }}"
+        AWS_SECRET_ACCESS_KEY: "${{ env.AWS_SECRET_ACCESS_KEY }}"
+      run: |
+        umask 077
+
+        repo_dir="${{ github.event.repository.name }}"
+        aws_dir="${repo_dir}/.aws"
+        mkdir -p "${aws_dir}"
+
+        cat <<EOF > "${aws_dir}/config"
+        [default]
+        bucket=rapids-sccache-devs
+        region=us-east-2
+        EOF
+
+        cat <<EOF > "${aws_dir}/credentials"
+        [default]
+        aws_access_key_id=${AWS_ACCESS_KEY_ID:-}
+        aws_session_token=${AWS_SESSION_TOKEN:-}
+        aws_secret_access_key=${AWS_SECRET_ACCESS_KEY:-}
+        EOF
+
     - name: Initialize artifact environment
       shell: bash --noprofile --norc -euo pipefail {0}
       run: |
@@ -179,9 +205,8 @@ runs:
           --env "ARTIFACT_ARCHIVES=${{env.ARTIFACT_ARCHIVES}}" \
           --env "ARTIFACT_UPLOAD_REGISTERY=${{env.ARTIFACT_UPLOAD_REGISTERY}}" \
           --env "ARTIFACT_UPLOAD_STAGE=${{env.ARTIFACT_UPLOAD_STAGE}}" \
-          --env "AWS_ACCESS_KEY_ID=${{env.AWS_ACCESS_KEY_ID}}" \
-          --env "AWS_SECRET_ACCESS_KEY=${{env.AWS_SECRET_ACCESS_KEY}}" \
-          --env "AWS_SESSION_TOKEN=${{env.AWS_SESSION_TOKEN}}" \
+          --env "AWS_CONFIG_FILE=${{steps.paths.outputs.MOUNT_REPO}}/.aws/config" \
+          --env "AWS_SHARED_CREDENTIALS_FILE=${{steps.paths.outputs.MOUNT_REPO}}/.aws/credentials" \
           --env "CONTAINER_WORKSPACE=${{steps.paths.outputs.MOUNT_REPO}}" \
           --env "CI=true" \
           --env "DEVCONTAINER_NAME=cuda${{inputs.cuda}}-${{inputs.host}}" \

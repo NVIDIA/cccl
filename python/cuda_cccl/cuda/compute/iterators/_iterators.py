@@ -13,7 +13,7 @@ from numba.core.typing.ctypes_utils import to_ctypes
 from numba.cuda.dispatcher import CUDADispatcher
 
 from .._bindings import IteratorState
-from .._caching import CachableFunction
+from .._caching import CachableFunction, cache_with_registered_key_functions
 from .._utils.protocols import (
     compute_c_contiguous_strides_in_bytes,
     get_data_pointer,
@@ -678,3 +678,6 @@ def _get_last_element_ptr(device_array) -> int:
 
     ptr = get_data_pointer(device_array)
     return ptr + offset_to_last_element
+
+
+cache_with_registered_key_functions.register(IteratorBase, lambda it: it.kind)

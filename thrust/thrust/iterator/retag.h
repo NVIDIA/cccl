@@ -48,6 +48,10 @@ THRUST_NAMESPACE_BEGIN
  *  \note Unlike \p retag, \p reinterpret_tag does not enforce that the converted-to system tag be
  *        related to the converted-from system tag.
  *  \see retag
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename Tag, typename Iterator>
 _CCCL_HOST_DEVICE unspecified_iterator_type reinterpret_tag(Iterator iter);
@@ -62,6 +66,10 @@ _CCCL_HOST_DEVICE unspecified_iterator_type reinterpret_tag(Iterator iter);
  *  \note Unlike \p reinterpret_tag, \p retag enforces that the converted-to system tag be
  *        related to the converted-from system tag.
  *  \see reinterpret_tag
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename Tag, typename Iterator>
 _CCCL_HOST_DEVICE unspecified_iterator_type retag(Iterator iter);

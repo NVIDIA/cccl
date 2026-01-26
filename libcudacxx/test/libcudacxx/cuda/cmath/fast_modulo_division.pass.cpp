@@ -95,6 +95,15 @@ __host__ __device__ void test_cpp_semantic()
   assert(cuda::div(5, div) == (cuda::std::pair<int, int>{1, 2}));
 }
 
+__host__ __device__ void test_divisor_is_never_one()
+{
+  cuda::fast_mod_div<int, true> div{3};
+  assert(div == 3);
+  assert(3 % div == 0);
+  assert(div + 1 == 4);
+  assert(cuda::div(5, div) == (cuda::std::pair<int, int>{1, 2}));
+}
+
 __host__ __device__ bool test()
 {
   test<int8_t, int8_t>();
@@ -115,8 +124,10 @@ __host__ __device__ bool test()
 #if _CCCL_HAS_INT128()
   test<int64_t, uint64_t>();
 #endif // _CCCL_HAS_INT128()
-  //
+
   test_cpp_semantic();
+  test_divisor_is_never_one();
+
   return true;
 }
 

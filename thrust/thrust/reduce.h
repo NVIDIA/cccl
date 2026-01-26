@@ -82,6 +82,10 @@ THRUST_NAMESPACE_BEGIN
  *  \endcode
  *
  *  \see https://en.cppreference.com/w/cpp/algorithm/accumulate
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename DerivedPolicy, typename InputIterator>
 _CCCL_HOST_DEVICE detail::it_value_t<InputIterator>
@@ -124,6 +128,10 @@ reduce(const thrust::detail::execution_policy_base<DerivedPolicy>& exec, InputIt
  *  \endcode
  *
  *  \see https://en.cppreference.com/w/cpp/algorithm/accumulate
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename InputIterator>
 detail::it_value_t<InputIterator> reduce(InputIterator first, InputIterator last);
@@ -171,6 +179,10 @@ detail::it_value_t<InputIterator> reduce(InputIterator first, InputIterator last
  *  \endcode
  *
  *  \see https://en.cppreference.com/w/cpp/algorithm/accumulate
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename DerivedPolicy, typename InputIterator, typename T>
 _CCCL_HOST_DEVICE T reduce(
@@ -213,6 +225,10 @@ _CCCL_HOST_DEVICE T reduce(
  *  \endcode
  *
  *  \see https://en.cppreference.com/w/cpp/algorithm/accumulate
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename InputIterator, typename T>
 T reduce(InputIterator first, InputIterator last, T init);
@@ -267,6 +283,10 @@ T reduce(InputIterator first, InputIterator last, T init);
  *
  *  \see https://en.cppreference.com/w/cpp/algorithm/accumulate
  *  \see transform_reduce
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename DerivedPolicy, typename InputIterator, typename T, typename BinaryFunction>
 _CCCL_HOST_DEVICE T reduce(
@@ -319,6 +339,10 @@ _CCCL_HOST_DEVICE T reduce(
  *
  *  \see https://en.cppreference.com/w/cpp/algorithm/accumulate
  *  \see transform_reduce
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename InputIterator, typename T, typename BinaryFunction>
 T reduce(InputIterator first, InputIterator last, T init, BinaryFunction binary_op);
@@ -375,6 +399,10 @@ T reduce(InputIterator first, InputIterator last, T init, BinaryFunction binary_
  *
  *  \see https://en.cppreference.com/w/cpp/algorithm/accumulate
  *  \see reduce
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 3.2.0
+ *  \endverbatim
  */
 template <typename DerivedPolicy, typename InputIterator, typename OutputIterator>
 _CCCL_HOST_DEVICE void reduce_into(
@@ -431,6 +459,10 @@ _CCCL_HOST_DEVICE void reduce_into(
  *
  *  \see https://en.cppreference.com/w/cpp/algorithm/accumulate
  *  \see reduce
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 3.2.0
+ *  \endverbatim
  */
 template <typename InputIterator, typename OutputIterator>
 void reduce_into(InputIterator first, InputIterator last, OutputIterator output);
@@ -489,6 +521,10 @@ void reduce_into(InputIterator first, InputIterator last, OutputIterator output)
  *
  *  \see https://en.cppreference.com/w/cpp/algorithm/accumulate
  *  \see reduce
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 3.2.0
+ *  \endverbatim
  */
 template <typename DerivedPolicy, typename InputIterator, typename OutputIterator, typename T>
 _CCCL_HOST_DEVICE void reduce_into(
@@ -547,6 +583,10 @@ _CCCL_HOST_DEVICE void reduce_into(
  *
  *  \see https://en.cppreference.com/w/cpp/algorithm/accumulate
  *  \see reduce
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 3.2.0
+ *  \endverbatim
  */
 template <typename InputIterator, typename OutputIterator, typename T>
 void reduce_into(InputIterator first, InputIterator last, OutputIterator output, T init);
@@ -613,6 +653,10 @@ void reduce_into(InputIterator first, InputIterator last, OutputIterator output,
  *  \see reduce
  *  \see transform_reduce
  *  \see transform_reduce_into
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 3.2.0
+ *  \endverbatim
  */
 template <typename DerivedPolicy, typename InputIterator, typename OutputIterator, typename T, typename BinaryFunction>
 _CCCL_HOST_DEVICE void reduce_into(
@@ -673,6 +717,10 @@ _CCCL_HOST_DEVICE void reduce_into(
  *  \see reduce
  *  \see transform_reduce
  *  \see transform_reduce_into
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 3.2.0
+ *  \endverbatim
  */
 template <typename InputIterator, typename OutputIterator, typename T, typename BinaryFunction>
 void reduce_into(InputIterator first, InputIterator last, OutputIterator output, T init, BinaryFunction binary_op);
@@ -733,6 +781,10 @@ void reduce_into(InputIterator first, InputIterator last, OutputIterator output,
  *  \see unique_copy
  *  \see unique_by_key
  *  \see unique_by_key_copy
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename DerivedPolicy,
           typename InputIterator1,
@@ -797,6 +849,10 @@ _CCCL_HOST_DEVICE ::cuda::std::pair<OutputIterator1, OutputIterator2> reduce_by_
  *  \see unique_copy
  *  \see unique_by_key
  *  \see unique_by_key_copy
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename InputIterator1, typename InputIterator2, typename OutputIterator1, typename OutputIterator2>
 ::cuda::std::pair<OutputIterator1, OutputIterator2> reduce_by_key(
@@ -865,6 +921,10 @@ template <typename InputIterator1, typename InputIterator2, typename OutputItera
  *  \see unique_copy
  *  \see unique_by_key
  *  \see unique_by_key_copy
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename DerivedPolicy,
           typename InputIterator1,
@@ -934,6 +994,10 @@ _CCCL_HOST_DEVICE ::cuda::std::pair<OutputIterator1, OutputIterator2> reduce_by_
  *  \see unique_copy
  *  \see unique_by_key
  *  \see unique_by_key_copy
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename InputIterator1,
           typename InputIterator2,
@@ -1013,6 +1077,10 @@ template <typename InputIterator1,
  *  \see unique_copy
  *  \see unique_by_key
  *  \see unique_by_key_copy
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename DerivedPolicy,
           typename InputIterator1,
@@ -1090,6 +1158,10 @@ _CCCL_HOST_DEVICE ::cuda::std::pair<OutputIterator1, OutputIterator2> reduce_by_
  *  \see unique_copy
  *  \see unique_by_key
  *  \see unique_by_key_copy
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename InputIterator1,
           typename InputIterator2,

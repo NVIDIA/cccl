@@ -9,57 +9,13 @@ import numba
 
 from .. import _bindings
 from .. import _cccl_interop as cccl
-from .._caching import cache_with_key
+from .._caching import cache_with_registered_key_functions
 from .._cccl_interop import call_build, set_cccl_iterator_state
 from .._utils import protocols
 from .._utils.temp_storage_buffer import TempStorageBuffer
 from ..iterators._iterators import IteratorBase
 from ..op import OpAdapter, make_op_adapter
 from ..typing import DeviceArrayLike
-
-
-def _make_cache_key(
-    d_in: DeviceArrayLike | IteratorBase,
-    d_first_part_out: DeviceArrayLike | IteratorBase,
-    d_second_part_out: DeviceArrayLike | IteratorBase,
-    d_unselected_out: DeviceArrayLike | IteratorBase,
-    d_num_selected_out: DeviceArrayLike | IteratorBase,
-    select_first_part_op: OpAdapter,
-    select_second_part_op: OpAdapter,
-):
-    d_in_key = (
-        d_in.kind if isinstance(d_in, IteratorBase) else protocols.get_dtype(d_in)
-    )
-    d_first_part_out_key = (
-        d_first_part_out.kind
-        if isinstance(d_first_part_out, IteratorBase)
-        else protocols.get_dtype(d_first_part_out)
-    )
-    d_second_part_out_key = (
-        d_second_part_out.kind
-        if isinstance(d_second_part_out, IteratorBase)
-        else protocols.get_dtype(d_second_part_out)
-    )
-    d_unselected_out_key = (
-        d_unselected_out.kind
-        if isinstance(d_unselected_out, IteratorBase)
-        else protocols.get_dtype(d_unselected_out)
-    )
-    d_num_selected_out_key = (
-        d_num_selected_out.kind
-        if isinstance(d_num_selected_out, IteratorBase)
-        else protocols.get_dtype(d_num_selected_out)
-    )
-
-    return (
-        d_in_key,
-        d_first_part_out_key,
-        d_second_part_out_key,
-        d_unselected_out_key,
-        d_num_selected_out_key,
-        select_first_part_op.get_cache_key(),
-        select_second_part_op.get_cache_key(),
-    )
 
 
 class _ThreeWayPartition:
@@ -154,28 +110,7 @@ class _ThreeWayPartition:
         return temp_storage_bytes
 
 
-@cache_with_key(_make_cache_key)
-def _make_three_way_partition_cached(
-    d_in: DeviceArrayLike | IteratorBase,
-    d_first_part_out: DeviceArrayLike | IteratorBase,
-    d_second_part_out: DeviceArrayLike | IteratorBase,
-    d_unselected_out: DeviceArrayLike | IteratorBase,
-    d_num_selected_out: DeviceArrayLike | IteratorBase,
-    select_first_part_op: OpAdapter,
-    select_second_part_op: OpAdapter,
-):
-    """Internal cached factory for _ThreeWayPartition."""
-    return _ThreeWayPartition(
-        d_in,
-        d_first_part_out,
-        d_second_part_out,
-        d_unselected_out,
-        d_num_selected_out,
-        select_first_part_op,
-        select_second_part_op,
-    )
-
-
+@cache_with_registered_key_functions
 def make_three_way_partition(
     d_in: DeviceArrayLike | IteratorBase,
     d_first_part_out: DeviceArrayLike | IteratorBase,
@@ -212,7 +147,7 @@ def make_three_way_partition(
     first_op_adapter = make_op_adapter(select_first_part_op)
     second_op_adapter = make_op_adapter(select_second_part_op)
 
-    return _make_three_way_partition_cached(
+    return _ThreeWayPartition(
         d_in,
         d_first_part_out,
         d_second_part_out,

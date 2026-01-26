@@ -1,4 +1,5 @@
 import inspect
+import typing
 
 import numba
 from numba import cuda
@@ -44,15 +45,18 @@ def signature_from_annotations(func) -> numba.core.typing.Signature:
     argspec = inspect.getfullargspec(func)
     num_args = len(argspec.args)
     try:
-        ret_ann = argspec.annotations["return"]
+        annotations = typing.get_type_hints(func)
+    except Exception:
+        annotations = func.__annotations__
+    try:
+        ret_ann = annotations["return"]
     except KeyError:
         raise ValueError("Function has incomplete annotations: missing return type")
     retty = to_numba_type(ret_ann)
-    if num_args != len(argspec.annotations) - 1:  # -1 for the return type
+    if num_args != len(annotations) - 1:  # -1 for the return type
         raise ValueError("One or more arguments are missing type annotations")
-    argtys = tuple(
-        to_numba_type(tp)
-        for name, tp in func.__annotations__.items()
-        if name != "return"
-    )
+    try:
+        argtys = tuple(to_numba_type(annotations[name]) for name in argspec.args)
+    except KeyError:
+        raise ValueError("One or more arguments are missing type annotations")
     return retty(*argtys)

@@ -1,0 +1,58 @@
+name: DevEx Request
+description: Suggest improvements to GitHub project infrastructure and workflows.
+title: '[DEVEX]: '
+labels: ['devex']
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this template for low-priority DevEx improvements.
+        For critical infrastructure issues, raise them in Slack for faster visibility.
+
+  - type: checkboxes
+    id: check-duplicates
+    attributes:
+      label: Is this a duplicate?
+      description: Check for duplicate issues.
+      options:
+        - label: I confirmed there appear to be no [duplicate issues](https://github.com/NVIDIA/cccl/issues) for this request and that I agree to the [Code of Conduct](CODE_OF_CONDUCT.md)
+    validations:
+      required: true
+
+  - type: textarea
+    id: overview
+    attributes:
+      label: Overview
+      description: 1 sentence describing your request with minimal context.
+      placeholder: Add devcontainer name to the default bash prompt.
+    validations:
+      required: true
+
+  - type: textarea
+    id: workflow-details
+    attributes:
+      label: Details
+      description: Additional context about your workflow.
+      placeholder: |
+        I often have several devcontainers open at once, and the prompts currently only differ by SHA.
+        The container name would be more recognizable.
+    validations:
+      required: false
+
+  - type: textarea
+    id: prior-work
+    attributes:
+      label: Proof of Concept / Prior Work
+      description: Have you implemented this locally and are willing to share your implementation? Do so here.
+      placeholder: I've verified that `export PS1="[\$DEVCONTAINER_NAME] \$PS1"` works as expected.
+    validations:
+      required: false
+
+  - type: textarea
+    id: design-suggestions
+    attributes:
+      label: Suggested Implementation
+      description: How do you envision this being implemented?
+      placeholder: Formatting the prompt in `~/.bashrc` seems like the simplest approach.
+    validations:
+      required: false

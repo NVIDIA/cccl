@@ -10,7 +10,7 @@ from numba import cuda, types  # noqa: F401
 from numba.core.datamodel.registry import default_manager  # noqa: F401
 from numba.core.extending import as_numba_type, intrinsic  # noqa: F401
 
-from .._caching import cache_with_key
+from .._caching import cache_with_registered_key_functions
 from .._cccl_interop import get_dtype
 from ..struct import make_struct_type
 from ._iterators import (
@@ -24,12 +24,7 @@ class PermutationIteratorKind(IteratorKind):
     pass
 
 
-def _make_cache_key(values, indices):
-    """Create a cache key based on value type and iterator kinds."""
-    return (values.value_type, values.kind, indices.kind)
-
-
-@cache_with_key(_make_cache_key)
+@cache_with_registered_key_functions
 def _generate_advance_and_dereference_methods(values, indices):
     values_state_type = values.state_type
     index_type = indices.value_type

@@ -49,6 +49,10 @@ THRUST_NAMESPACE_BEGIN
  *  \tparam MR type of a memory resource to get an instance from. Must be \p DefaultConstructible.
  *  \param system execution policy for which the resource is requested.
  *  \return a pointer to a global instance of \p MR for the current device.
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename MR, typename DerivedPolicy>
 _CCCL_HOST MR* get_per_device_resource(const thrust::detail::execution_policy_base<DerivedPolicy>& system)
@@ -66,6 +70,10 @@ _CCCL_HOST MR* get_per_device_resource(const thrust::detail::execution_policy_ba
  *      \p thrust::mr::memory_resource and must be \p final.
  *  \tparam ExecutionPolicy the execution policy of the system to be used to retrieve the resource for the current
  * device.
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename T, typename Upstream, typename ExecutionPolicy>
 class per_device_allocator : public thrust::mr::allocator<T, Upstream>
@@ -76,6 +84,10 @@ public:
   /*! The \p rebind metafunction provides the type of an \p per_device_allocator instantiated with another type.
    *
    *  \tparam U the other type to use for instantiation.
+   *
+   *  \verbatim embed:rst:leading-asterisk
+   *     .. versionadded:: 2.2.0
+   *  \endverbatim
    */
   template <typename U>
   struct rebind
@@ -87,6 +99,10 @@ public:
 
   /*! Default constructor. Uses \p get_global_resource to get the global instance of \p Upstream and initializes the
    *      \p allocator base subobject with that resource.
+   *
+   *  \verbatim embed:rst:leading-asterisk
+   *     .. versionadded:: 2.2.0
+   *  \endverbatim
    */
   _CCCL_HOST per_device_allocator()
       : base(get_per_device_resource<Upstream>(ExecutionPolicy()))

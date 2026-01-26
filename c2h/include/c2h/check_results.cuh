@@ -1,5 +1,7 @@
 // SPDX-FileCopyrightText: Copyright (c) 2025, NVIDIA CORPORATION. All rights reserved.
-// SPDX-License-Identifier: BSD-3-Clause#pragma once
+// SPDX-License-Identifier: BSD-3-Clause
+
+#pragma once
 
 #include <cub/detail/type_traits.cuh>
 #include <cub/util_device.cuh>

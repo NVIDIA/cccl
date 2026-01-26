@@ -11,12 +11,11 @@
 #ifndef DEFINITIONS_H
 #define DEFINITIONS_H
 
+#include <format>
 #include <map>
 #include <string>
 #include <type_traits>
 #include <vector>
-
-#include <fmt/format.h>
 
 enum class Mmio
 {
@@ -76,10 +75,10 @@ inline std::string operand_proxy_type(Operand op, size_t sz)
   }
   else if (op == Operand::Signed)
   {
-    return fmt::format("int{}_t", sz);
+    return std::format("int{}_t", sz);
   }
   // Binary and unsigned can be the same proxy_type
-  return fmt::format("uint{}_t", sz);
+  return std::format("uint{}_t", sz);
 }
 
 inline std::string constraints(Operand op, size_t sz)

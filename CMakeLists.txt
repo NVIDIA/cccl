@@ -31,7 +31,7 @@ if (NOT CCCL_TOPLEVEL_PROJECT)
   include(cmake/CCCLAddSubdir.cmake)
 endif()
 
-if (CCCL_TOPLEVEL_PROJECT)
+if (CCCL_TOPLEVEL_PROJECT AND NOT CCCL_SKIP_BUILD_CHECKS)
   # We require a higher cmake version for dev builds
   cmake_minimum_required(VERSION 3.21)
 

@@ -22,6 +22,7 @@
 #endif // no system header
 
 #include <cuda/__fwd/devices.h>
+#include <cuda/std/__fwd/format.h>
 #include <cuda/std/__utility/to_underlying.h>
 
 #include <cuda/std/__cccl/prologue.h>
@@ -171,6 +172,30 @@ public:
 };
 
 _CCCL_END_NAMESPACE_CUDA
+
+#if __cpp_lib_format >= 201907L
+_CCCL_BEGIN_NAMESPACE_STD
+
+template <class _CharT>
+struct formatter<::cuda::compute_capability, _CharT> : private formatter<int, _CharT>
+{
+  template <class _ParseCtx>
+  _CCCL_HOST_API constexpr auto parse(_ParseCtx& __ctx)
+  {
+    return __ctx.begin();
+  }
+
+  template <class _FmtCtx>
+  _CCCL_HOST_API auto format(const ::cuda::compute_capability& __cc, _FmtCtx& __ctx) const
+  {
+    return formatter<int, _CharT>::format(__cc.get(), __ctx);
+  }
+};
+
+_CCCL_END_NAMESPACE_STD
+#endif // __cpp_lib_format >= 201907L
+
+// todo: specialize cuda::std::formatter for cuda::compute_capability
 
 #if _CCCL_CUDA_COMPILATION()
 

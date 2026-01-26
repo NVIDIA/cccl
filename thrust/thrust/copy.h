@@ -86,6 +86,10 @@ THRUST_NAMESPACE_BEGIN
  *
  *  // vec1 is now a copy of vec0
  *  \endcode
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename DerivedPolicy, typename InputIterator, typename OutputIterator>
 _CCCL_HOST_DEVICE OutputIterator
@@ -138,6 +142,10 @@ copy(const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
  *
  *  \see https://en.cppreference.com/w/cpp/algorithm/copy_n
  *  \see thrust::copy
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename DerivedPolicy, typename InputIterator, typename Size, typename OutputIterator>
 _CCCL_HOST_DEVICE OutputIterator copy_n(
@@ -184,6 +192,10 @@ _CCCL_HOST_DEVICE OutputIterator copy_n(
  *
  *  // vec1 is now a copy of vec0
  *  \endcode
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename InputIterator, typename OutputIterator>
 OutputIterator copy(InputIterator first, InputIterator last, OutputIterator result);
@@ -227,6 +239,10 @@ OutputIterator copy(InputIterator first, InputIterator last, OutputIterator resu
  *
  *  \see https://en.cppreference.com/w/cpp/algorithm/copy_n
  *  \see thrust::copy
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename InputIterator, typename Size, typename OutputIterator>
 OutputIterator copy_n(InputIterator first, Size n, OutputIterator result);
@@ -294,6 +310,10 @@ OutputIterator copy_n(InputIterator first, Size n, OutputIterator result);
  *  \endcode
  *
  *  \see \c remove_copy_if
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename DerivedPolicy, typename InputIterator, typename OutputIterator, typename Predicate>
 _CCCL_HOST_DEVICE OutputIterator copy_if(
@@ -354,6 +374,10 @@ _CCCL_HOST_DEVICE OutputIterator copy_if(
  *  \endcode
  *
  *  \see \c remove_copy_if
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename InputIterator, typename OutputIterator, typename Predicate>
 OutputIterator copy_if(InputIterator first, InputIterator last, OutputIterator result, Predicate pred);
@@ -421,6 +445,10 @@ OutputIterator copy_if(InputIterator first, InputIterator last, OutputIterator r
  *  \endcode
  *
  *  \see \c remove_copy_if
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename DerivedPolicy,
           typename InputIterator1,
@@ -492,6 +520,10 @@ _CCCL_HOST_DEVICE OutputIterator copy_if(
  *  \endcode
  *
  *  \see \c remove_copy_if
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename InputIterator1, typename InputIterator2, typename OutputIterator, typename Predicate>
 OutputIterator

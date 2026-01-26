@@ -226,38 +226,35 @@ CUresult cccl_device_scan_build_ex(
   const char* libcudacxx_path,
   const char* ctk_path,
   cccl_build_config* config)
+try
 {
-  CUresult error = CUDA_SUCCESS;
+  const char* name = "test";
 
-  try
-  {
-    const char* name = "test";
+  const int cc                 = cc_major * 10 + cc_minor;
+  const cccl_type_info accum_t = scan::get_accumulator_type(op, input_it, init);
+  const auto accum_cpp         = cccl_type_enum_to_name(accum_t.type);
+  const auto input_it_value_t  = cccl_type_enum_to_name(input_it.value_type.type);
+  const auto offset_t          = cccl_type_enum_to_name(cccl_type_enum::CCCL_UINT64);
 
-    const int cc                 = cc_major * 10 + cc_minor;
-    const cccl_type_info accum_t = scan::get_accumulator_type(op, input_it, init);
-    const auto accum_cpp         = cccl_type_enum_to_name(accum_t.type);
-    const auto input_it_value_t  = cccl_type_enum_to_name(input_it.value_type.type);
-    const auto offset_t          = cccl_type_enum_to_name(cccl_type_enum::CCCL_UINT64);
+  const std::string input_iterator_src =
+    make_kernel_input_iterator(offset_t, "input_iterator_state_t", input_it_value_t, input_it);
+  const std::string output_iterator_src =
+    make_kernel_output_iterator(offset_t, "output_iterator_t", accum_cpp, output_it);
 
-    const std::string input_iterator_src =
-      make_kernel_input_iterator(offset_t, "input_iterator_state_t", input_it_value_t, input_it);
-    const std::string output_iterator_src =
-      make_kernel_output_iterator(offset_t, "output_iterator_t", accum_cpp, output_it);
+  const std::string op_src = make_kernel_user_binary_operator(accum_cpp, accum_cpp, accum_cpp, op);
 
-    const std::string op_src = make_kernel_user_binary_operator(accum_cpp, accum_cpp, accum_cpp, op);
+  const auto output_it_value_t = cccl_type_enum_to_name(output_it.value_type.type);
 
-    const auto output_it_value_t = cccl_type_enum_to_name(output_it.value_type.type);
+  std::string policy_hub_expr = std::format(
+    "cub::detail::scan::policy_hub<{}, {}, {}, {}, {}>",
+    input_it_value_t,
+    output_it_value_t,
+    accum_cpp,
+    offset_t,
+    "op_wrapper");
 
-    std::string policy_hub_expr = std::format(
-      "cub::detail::scan::policy_hub<{}, {}, {}, {}, {}>",
-      input_it_value_t,
-      output_it_value_t,
-      accum_cpp,
-      offset_t,
-      "op_wrapper");
-
-    std::string final_src = std::format(
-      R"XXX(
+  std::string final_src = std::format(
+    R"XXX(
 #include <cub/device/dispatch/tuning/tuning_scan.cuh>
 #include <cub/block/block_scan.cuh>
 #include <cub/device/dispatch/kernels/kernel_scan.cuh>
@@ -276,12 +273,12 @@ __device__ consteval auto& policy_generator() {{
     = cub::detail::scan::ScanPolicyWrapper<device_scan_policy::ActivePolicy>::EncodedPolicy();
 }}
 )XXX",
-      input_it.value_type.size, // 0
-      input_it.value_type.alignment, // 1
-      input_iterator_src, // 2
-      output_iterator_src, // 3
-      op_src, // 4
-      policy_hub_expr); // 5
+    input_it.value_type.size, // 0
+    input_it.value_type.alignment, // 1
+    input_iterator_src, // 2
+    output_iterator_src, // 3
+    op_src, // 4
+    policy_hub_expr); // 5
 
 #if false // CCCL_DEBUGGING_SWITCH
     fflush(stderr);
@@ -289,83 +286,81 @@ __device__ consteval auto& policy_generator() {{
     fflush(stdout);
 #endif
 
-    std::string init_kernel_name = scan::get_init_kernel_name(input_it, output_it, op, init);
-    std::string scan_kernel_name =
-      scan::get_scan_kernel_name(input_it, output_it, op, init, force_inclusive, init_kind);
-    std::string init_kernel_lowered_name;
-    std::string scan_kernel_lowered_name;
+  std::string init_kernel_name = scan::get_init_kernel_name(input_it, output_it, op, init);
+  std::string scan_kernel_name = scan::get_scan_kernel_name(input_it, output_it, op, init, force_inclusive, init_kind);
+  std::string init_kernel_lowered_name;
+  std::string scan_kernel_lowered_name;
 
-    const std::string arch = std::format("-arch=sm_{0}{1}", cc_major, cc_minor);
+  const std::string arch = std::format("-arch=sm_{0}{1}", cc_major, cc_minor);
 
-    std::vector<const char*> args = {
-      arch.c_str(),
-      cub_path,
-      thrust_path,
-      libcudacxx_path,
-      ctk_path,
-      "-rdc=true",
-      "-dlto",
-      "-DCUB_DISABLE_CDP",
-      "-DCUB_ENABLE_POLICY_PTX_JSON",
-      "-std=c++20"};
+  std::vector<const char*> args = {
+    arch.c_str(),
+    cub_path,
+    thrust_path,
+    libcudacxx_path,
+    ctk_path,
+    "-rdc=true",
+    "-dlto",
+    "-DCUB_DISABLE_CDP",
+    "-DCUB_ENABLE_POLICY_PTX_JSON",
+    "-std=c++20"};
 
-    cccl::detail::extend_args_with_build_config(args, config);
+  cccl::detail::extend_args_with_build_config(args, config);
 
-    constexpr size_t num_lto_args   = 2;
-    const char* lopts[num_lto_args] = {"-lto", arch.c_str()};
+  constexpr size_t num_lto_args   = 2;
+  const char* lopts[num_lto_args] = {"-lto", arch.c_str()};
 
-    // Collect all LTO-IRs to be linked.
-    nvrtc_linkable_list linkable_list;
-    nvrtc_linkable_list_appender appender{linkable_list};
+  // Collect all LTO-IRs to be linked.
+  nvrtc_linkable_list linkable_list;
+  nvrtc_linkable_list_appender appender{linkable_list};
 
-    appender.append_operation(op);
-    appender.add_iterator_definition(input_it);
-    appender.add_iterator_definition(output_it);
+  appender.append_operation(op);
+  appender.add_iterator_definition(input_it);
+  appender.add_iterator_definition(output_it);
 
-    nvrtc_link_result result =
-      begin_linking_nvrtc_program(num_lto_args, lopts)
-        ->add_program(nvrtc_translation_unit{final_src.c_str(), name})
-        ->add_expression({init_kernel_name})
-        ->add_expression({scan_kernel_name})
-        ->compile_program({args.data(), args.size()})
-        ->get_name({init_kernel_name, init_kernel_lowered_name})
-        ->get_name({scan_kernel_name, scan_kernel_lowered_name})
-        ->link_program()
-        ->add_link_list(linkable_list)
-        ->finalize_program();
+  nvrtc_link_result result =
+    begin_linking_nvrtc_program(num_lto_args, lopts)
+      ->add_program(nvrtc_translation_unit{final_src.c_str(), name})
+      ->add_expression({init_kernel_name})
+      ->add_expression({scan_kernel_name})
+      ->compile_program({args.data(), args.size()})
+      ->get_name({init_kernel_name, init_kernel_lowered_name})
+      ->get_name({scan_kernel_name, scan_kernel_lowered_name})
+      ->link_program()
+      ->add_link_list(linkable_list)
+      ->finalize_program();
 
-    cuLibraryLoadData(&build_ptr->library, result.data.get(), nullptr, nullptr, 0, nullptr, nullptr, 0);
-    check(cuLibraryGetKernel(&build_ptr->init_kernel, build_ptr->library, init_kernel_lowered_name.c_str()));
-    check(cuLibraryGetKernel(&build_ptr->scan_kernel, build_ptr->library, scan_kernel_lowered_name.c_str()));
+  cuLibraryLoadData(&build_ptr->library, result.data.get(), nullptr, nullptr, 0, nullptr, nullptr, 0);
+  check(cuLibraryGetKernel(&build_ptr->init_kernel, build_ptr->library, init_kernel_lowered_name.c_str()));
+  check(cuLibraryGetKernel(&build_ptr->scan_kernel, build_ptr->library, scan_kernel_lowered_name.c_str()));
 
-    auto [description_bytes_per_tile,
-          payload_bytes_per_tile] = get_tile_state_bytes_per_tile(accum_t, accum_cpp, args.data(), args.size(), arch);
+  auto [description_bytes_per_tile,
+        payload_bytes_per_tile] = get_tile_state_bytes_per_tile(accum_t, accum_cpp, args.data(), args.size(), arch);
 
-    nlohmann::json runtime_policy =
-      cub::detail::ptx_json::parse("device_scan_policy", {result.data.get(), result.size});
+  nlohmann::json runtime_policy = cub::detail::ptx_json::parse("device_scan_policy", {result.data.get(), result.size});
 
-    using cub::detail::RuntimeScanAgentPolicy;
-    auto scan_policy = RuntimeScanAgentPolicy::from_json(runtime_policy, "ScanPolicyT");
+  using cub::detail::RuntimeScanAgentPolicy;
+  auto scan_policy = RuntimeScanAgentPolicy::from_json(runtime_policy, "ScanPolicyT");
 
-    build_ptr->cc                         = cc;
-    build_ptr->cubin                      = (void*) result.data.release();
-    build_ptr->cubin_size                 = result.size;
-    build_ptr->accumulator_type           = accum_t;
-    build_ptr->force_inclusive            = force_inclusive;
-    build_ptr->init_kind                  = init_kind;
-    build_ptr->description_bytes_per_tile = description_bytes_per_tile;
-    build_ptr->payload_bytes_per_tile     = payload_bytes_per_tile;
-    build_ptr->runtime_policy             = new scan::scan_runtime_tuning_policy{scan_policy};
-  }
-  catch (const std::exception& exc)
-  {
-    fflush(stderr);
-    printf("\nEXCEPTION in cccl_device_scan_build(): %s\n", exc.what());
-    fflush(stdout);
-    error = CUDA_ERROR_UNKNOWN;
-  }
+  build_ptr->cc                         = cc;
+  build_ptr->cubin                      = (void*) result.data.release();
+  build_ptr->cubin_size                 = result.size;
+  build_ptr->accumulator_type           = accum_t;
+  build_ptr->force_inclusive            = force_inclusive;
+  build_ptr->init_kind                  = init_kind;
+  build_ptr->description_bytes_per_tile = description_bytes_per_tile;
+  build_ptr->payload_bytes_per_tile     = payload_bytes_per_tile;
+  build_ptr->runtime_policy             = new scan::scan_runtime_tuning_policy{scan_policy};
 
-  return error;
+  return CUDA_SUCCESS;
+}
+catch (const std::exception& exc)
+{
+  fflush(stderr);
+  printf("\nEXCEPTION in cccl_device_scan_build(): %s\n", exc.what());
+  fflush(stdout);
+
+  return CUDA_ERROR_UNKNOWN;
 }
 
 template <cub::ForceInclusive EnforceInclusive, typename InitValueT>
@@ -547,24 +542,23 @@ CUresult cccl_device_scan_build(
 }
 
 CUresult cccl_device_scan_cleanup(cccl_device_scan_build_result_t* build_ptr)
+try
 {
-  try
+  if (build_ptr == nullptr)
   {
-    if (build_ptr == nullptr)
-    {
-      return CUDA_ERROR_INVALID_VALUE;
-    }
-    std::unique_ptr<char[]> cubin(reinterpret_cast<char*>(build_ptr->cubin));
-    std::unique_ptr<char[]> policy(reinterpret_cast<char*>(build_ptr->runtime_policy));
-    check(cuLibraryUnload(build_ptr->library));
+    return CUDA_ERROR_INVALID_VALUE;
   }
-  catch (const std::exception& exc)
-  {
-    fflush(stderr);
-    printf("\nEXCEPTION in cccl_device_scan_cleanup(): %s\n", exc.what());
-    fflush(stdout);
-    return CUDA_ERROR_UNKNOWN;
-  }
+  std::unique_ptr<char[]> cubin(reinterpret_cast<char*>(build_ptr->cubin));
+  std::unique_ptr<char[]> policy(reinterpret_cast<char*>(build_ptr->runtime_policy));
+  check(cuLibraryUnload(build_ptr->library));
 
   return CUDA_SUCCESS;
+}
+catch (const std::exception& exc)
+{
+  fflush(stderr);
+  printf("\nEXCEPTION in cccl_device_scan_cleanup(): %s\n", exc.what());
+  fflush(stdout);
+
+  return CUDA_ERROR_UNKNOWN;
 }

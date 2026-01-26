@@ -51,6 +51,10 @@ THRUST_NAMESPACE_BEGIN
  *
  *  \tparam N This parameter selects the member of interest.
  *  \tparam T A \c pair type of interest.
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 #ifdef _CCCL_DOXYGEN_INVOKED // Provide a fake alias for doxygen
 template <size_t N, class T>
@@ -64,6 +68,10 @@ using ::cuda::std::tuple_element;
  *  in its nested data member, \c value.
  *
  *  \tparam Pair A \c pair type of interest.
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 #ifdef _CCCL_DOXYGEN_INVOKED // Provide a fake alias for doxygen
 template <class T>
@@ -82,6 +90,10 @@ using ::cuda::std::tuple_size;
  *  \tparam T2 The type of \p pair's second object type.  There are no
  *          requirements on the type of \p T2. <tt>T2</tt>'s type is
  *          provided by <tt>pair::second_type</tt>.
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 #ifdef _CCCL_DOXYGEN_INVOKED // Provide a fake alias for doxygen
 template <class T, class U>

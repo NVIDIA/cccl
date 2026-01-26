@@ -10,7 +10,7 @@ import numpy as np
 
 from .. import _bindings
 from .. import _cccl_interop as cccl
-from .._caching import cache_with_key
+from .._caching import cache_with_registered_key_functions
 from .._cccl_interop import (
     call_build,
     get_value_type,
@@ -164,56 +164,9 @@ class _Scan:
         return temp_storage_bytes
 
 
-def _make_cache_key(
-    d_in: DeviceArrayLike | IteratorBase,
-    d_out: DeviceArrayLike | IteratorBase,
-    op: OpAdapter,
-    init_value: np.ndarray | DeviceArrayLike | GpuStruct | None,
-):
-    d_in_key = (
-        d_in.kind if isinstance(d_in, IteratorBase) else protocols.get_dtype(d_in)
-    )
-    d_out_key = (
-        d_out.kind if isinstance(d_out, IteratorBase) else protocols.get_dtype(d_out)
-    )
-
-    init_kind_key = get_init_kind(init_value)
-    match init_kind_key:
-        case _bindings.InitKind.NO_INIT:
-            init_value_key = None
-        case _bindings.InitKind.FUTURE_VALUE_INIT:
-            init_value_key = protocols.get_dtype(cast(DeviceArrayLike, init_value))
-        case _bindings.InitKind.VALUE_INIT:
-            init_value = cast(np.ndarray | GpuStruct, init_value)
-            init_value_key = init_value.dtype
-
-    return (d_in_key, d_out_key, op.get_cache_key(), init_value_key, init_kind_key)
-
-
-@cache_with_key(_make_cache_key)
-def _make_exclusive_scan_cached(
-    d_in: DeviceArrayLike | IteratorBase,
-    d_out: DeviceArrayLike | IteratorBase,
-    op: OpAdapter,
-    init_value: np.ndarray | DeviceArrayLike | GpuStruct | None,
-):
-    """Internal cached factory for exclusive _Scan."""
-    return _Scan(d_in, d_out, op, init_value, False)
-
-
-@cache_with_key(_make_cache_key)
-def _make_inclusive_scan_cached(
-    d_in: DeviceArrayLike | IteratorBase,
-    d_out: DeviceArrayLike | IteratorBase,
-    op: OpAdapter,
-    init_value: np.ndarray | DeviceArrayLike | GpuStruct | None,
-):
-    """Internal cached factory for inclusive _Scan."""
-    return _Scan(d_in, d_out, op, init_value, True)
-
-
 # TODO Figure out `sum` without operator and initial value
 # TODO Accept stream
+@cache_with_registered_key_functions
 def make_exclusive_scan(
     d_in: DeviceArrayLike | IteratorBase,
     d_out: DeviceArrayLike | IteratorBase,
@@ -240,7 +193,7 @@ def make_exclusive_scan(
         A callable object that can be used to perform the scan
     """
     op_adapter = make_op_adapter(op)
-    return _make_exclusive_scan_cached(d_in, d_out, op_adapter, init_value)
+    return _Scan(d_in, d_out, op_adapter, init_value, False)
 
 
 def exclusive_scan(
@@ -280,6 +233,7 @@ def exclusive_scan(
 
 # TODO Figure out `sum` without operator and initial value
 # TODO Accept stream
+@cache_with_registered_key_functions
 def make_inclusive_scan(
     d_in: DeviceArrayLike | IteratorBase,
     d_out: DeviceArrayLike | IteratorBase,
@@ -306,7 +260,7 @@ def make_inclusive_scan(
         A callable object that can be used to perform the scan
     """
     op_adapter = make_op_adapter(op)
-    return _make_inclusive_scan_cached(d_in, d_out, op_adapter, init_value)
+    return _Scan(d_in, d_out, op_adapter, init_value, True)
 
 
 def inclusive_scan(

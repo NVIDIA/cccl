@@ -94,6 +94,10 @@ THRUST_NAMESPACE_BEGIN
  *  \endcode
  *
  *  \note \p scatter is the inverse of thrust::gather.
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename DerivedPolicy, typename InputIterator1, typename InputIterator2, typename RandomAccessIterator>
 _CCCL_HOST_DEVICE void
@@ -152,6 +156,10 @@ scatter(const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
  *  \endcode
  *
  *  \note \p scatter is the inverse of thrust::gather.
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename InputIterator1, typename InputIterator2, typename RandomAccessIterator>
 void scatter(InputIterator1 first, InputIterator1 last, InputIterator2 map, RandomAccessIterator result);
@@ -210,6 +218,10 @@ void scatter(InputIterator1 first, InputIterator1 last, InputIterator2 map, Rand
  *  \endcode
  *
  *  \note \p scatter_if is the inverse of thrust::gather_if.
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename DerivedPolicy,
           typename InputIterator1,
@@ -273,6 +285,10 @@ _CCCL_HOST_DEVICE void scatter_if(
  *  \endcode
  *
  *  \note \p scatter_if is the inverse of thrust::gather_if.
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename InputIterator1, typename InputIterator2, typename InputIterator3, typename RandomAccessIterator>
 void scatter_if(
@@ -346,6 +362,10 @@ void scatter_if(
  *  \endcode
  *
  *  \note \p scatter_if is the inverse of thrust::gather_if.
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename DerivedPolicy,
           typename InputIterator1,
@@ -425,6 +445,10 @@ _CCCL_HOST_DEVICE void scatter_if(
  *  \endcode
  *
  *  \note \p scatter_if is the inverse of thrust::gather_if.
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename InputIterator1,
           typename InputIterator2,

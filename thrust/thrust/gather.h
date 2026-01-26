@@ -88,6 +88,10 @@ THRUST_NAMESPACE_BEGIN
  *                 d_output.begin());
  *  // d_output is now {1, 1, 1, 1, 1, 0, 0, 0, 0, 0}
  *  \endcode
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename DerivedPolicy, typename InputIterator, typename RandomAccessIterator, typename OutputIterator>
 _CCCL_HOST_DEVICE OutputIterator gather(
@@ -141,6 +145,10 @@ _CCCL_HOST_DEVICE OutputIterator gather(
  *                 d_output.begin());
  *  // d_output is now {1, 1, 1, 1, 1, 0, 0, 0, 0, 0}
  *  \endcode
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename InputIterator, typename RandomAccessIterator, typename OutputIterator>
 OutputIterator
@@ -207,6 +215,10 @@ gather(InputIterator map_first, InputIterator map_last, RandomAccessIterator inp
  *                    d_output.begin());
  *  // d_output is now {0, 7, 4, 7, 8, 7, 3, 7, 7, 7}
  *  \endcode
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename DerivedPolicy,
           typename InputIterator1,
@@ -276,6 +288,10 @@ _CCCL_HOST_DEVICE OutputIterator gather_if(
  *                    d_output.begin());
  *  // d_output is now {0, 7, 4, 7, 8, 7, 3, 7, 7, 7}
  *  \endcode
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename InputIterator1, typename InputIterator2, typename RandomAccessIterator, typename OutputIterator>
 OutputIterator gather_if(
@@ -359,6 +375,10 @@ OutputIterator gather_if(
  *                    is_even());
  *  // d_output is now {0, 7, 4, 7, 8, 7, 3, 7, 7, 7}
  *  \endcode
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename DerivedPolicy,
           typename InputIterator1,
@@ -442,6 +462,10 @@ _CCCL_HOST_DEVICE OutputIterator gather_if(
  *                    is_even());
  *  // d_output is now {0, 7, 4, 7, 8, 7, 3, 7, 7, 7}
  *  \endcode
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename InputIterator1,
           typename InputIterator2,

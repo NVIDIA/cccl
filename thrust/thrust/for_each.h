@@ -90,6 +90,10 @@ THRUST_NAMESPACE_BEGIN
  *
  *  \see for_each_n
  *  \see https://en.cppreference.com/w/cpp/algorithm/for_each
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename DerivedPolicy, typename InputIterator, typename UnaryFunction>
 _CCCL_HOST_DEVICE InputIterator for_each(
@@ -148,6 +152,10 @@ _CCCL_HOST_DEVICE InputIterator for_each(
  *
  *  \see for_each
  *  \see https://en.cppreference.com/w/cpp/algorithm/for_each
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename DerivedPolicy, typename InputIterator, typename Size, typename UnaryFunction>
 _CCCL_HOST_DEVICE InputIterator for_each_n(
@@ -199,6 +207,10 @@ _CCCL_HOST_DEVICE InputIterator for_each_n(
  *
  *  \see for_each_n
  *  \see https://en.cppreference.com/w/cpp/algorithm/for_each
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename InputIterator, typename UnaryFunction>
 InputIterator for_each(InputIterator first, InputIterator last, UnaryFunction f);
@@ -249,6 +261,10 @@ InputIterator for_each(InputIterator first, InputIterator last, UnaryFunction f)
  *
  *  \see for_each
  *  \see https://en.cppreference.com/w/cpp/algorithm/for_each
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename InputIterator, typename Size, typename UnaryFunction>
 InputIterator for_each_n(InputIterator first, Size n, UnaryFunction f);

@@ -111,6 +111,10 @@ struct make_constant_iterator_base
 //! \endcode
 //!
 //! \see make_constant_iterator
+/*! \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
+ */
 template <typename Value, typename Incrementable = use_default, typename System = use_default>
 class constant_iterator : public detail::make_constant_iterator_base<Value, Incrementable, System>::type
 {

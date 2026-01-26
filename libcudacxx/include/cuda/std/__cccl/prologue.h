@@ -90,6 +90,12 @@
 #  define _CCCL_POP_MACRO_jitintrinsic
 #endif // defined(jitintrinsic)
 
+#if defined(lifetimebound)
+#  pragma push_macro("lifetimebound")
+#  undef lifetimebound
+#  define _CCCL_POP_MACRO_lifetimebound
+#endif // defined(lifetimebound)
+
 #if defined(naked)
 #  pragma push_macro("naked")
 #  undef naked

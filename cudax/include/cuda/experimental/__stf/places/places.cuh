@@ -29,6 +29,7 @@
 
 #include <cuda/experimental/__stf/internal/async_resources_handle.cuh>
 #include <cuda/experimental/__stf/internal/interpreted_execution_policy.cuh>
+#include <cuda/experimental/__stf/places/data_place_extension.cuh>
 #include <cuda/experimental/__stf/places/exec/green_ctx_view.cuh>
 #include <cuda/experimental/__stf/utility/core.cuh>
 #include <cuda/experimental/__stf/utility/cuda_safe_call.cuh>
@@ -146,6 +147,7 @@ public:
 
 #if _CCCL_CTK_AT_LEAST(12, 4)
   static data_place green_ctx(const green_ctx_view& gc_view);
+  static data_place green_ctx(::std::shared_ptr<green_ctx_view> gc_view_ptr);
 #endif // _CCCL_CTK_AT_LEAST(12, 4)
 
   bool operator==(const data_place& rhs) const;
@@ -163,17 +165,11 @@ public:
     return (devid == composite_devid);
   }
 
-  /// checks if this data place is a green context data place
-  bool is_green_ctx() const
+  /// checks if this data place has an extension (green context, etc.)
+  bool is_extension() const
   {
-#if _CCCL_CTK_AT_LEAST(12, 4)
-    // If the devid indicates green_ctx_devid then we must have a descriptor
-    _CCCL_ASSERT(devid != green_ctx_devid || gc_view != nullptr, "invalid state");
-
-    return (devid == green_ctx_devid);
-#else // ^^^ _CCCL_CTK_AT_LEAST(12, 4) ^^^ / vvv _CCCL_CTK_BELOW(12, 4) vvv
-    return false;
-#endif // ^^^ _CCCL_CTK_BELOW(12, 4) ^^^
+    _CCCL_ASSERT(devid != extension_devid || extension != nullptr, "invalid state");
+    return (devid == extension_devid);
   }
 
   bool is_invalid() const
@@ -227,9 +223,9 @@ public:
       return "invalid";
     }
 
-    if (is_green_ctx())
+    if (is_extension())
     {
-      return "green ctx";
+      return extension->to_string();
     }
 
     if (is_composite())
@@ -258,13 +254,9 @@ public:
    */
   friend inline int device_ordinal(const data_place& p)
   {
-    if (p.is_green_ctx())
+    if (p.is_extension())
     {
-#if _CCCL_CTK_AT_LEAST(12, 4)
-      return p.gc_view->devid;
-#else // ^^^ _CCCL_CTK_AT_LEAST(12, 4) ^^^ / vvv _CCCL_CTK_BELOW(12, 4) vvv
-      assert(0);
-#endif // ^^^ _CCCL_CTK_BELOW(12, 4) ^^^
+      return p.extension->get_device_ordinal();
     }
 
     // TODO: restrict this function, i.e. sometimes it's called with invalid places.
@@ -292,19 +284,243 @@ private:
   int devid = invalid_devid; // invalid by default
   // Stores the fields specific to composite data places
   ::std::shared_ptr<composite_state> composite_desc;
+  // Extension for custom place types (green contexts, etc.)
+  ::std::shared_ptr<data_place_extension> extension;
+  //} state
 
 public:
-#if _CCCL_CTK_AT_LEAST(12, 4)
-  ::std::shared_ptr<green_ctx_view> gc_view;
-#endif // _CCCL_CTK_AT_LEAST(12, 4)
-  //} state
+  /**
+   * @brief Check if this data place has a custom extension
+   */
+  bool has_extension() const
+  {
+    return extension != nullptr;
+  }
+
+  /**
+   * @brief Get the extension (may be nullptr for standard place types)
+   */
+  const ::std::shared_ptr<data_place_extension>& get_extension() const
+  {
+    return extension;
+  }
+
+  /**
+   * @brief Create a data_place from an extension
+   *
+   * This factory method allows custom place types to be created from
+   * data_place_extension implementations.
+   */
+  static data_place from_extension(::std::shared_ptr<data_place_extension> ext)
+  {
+    data_place result(extension_devid);
+    result.extension = mv(ext);
+    return result;
+  }
+
+  /**
+   * @brief Create a physical memory allocation for this place (VMM API)
+   *
+   * This method is used by localized arrays (composite_slice) to create physical
+   * memory segments that are then mapped into a contiguous virtual address space.
+   * It delegates to the extension's mem_create if present (enabling custom place
+   * types to override memory allocation), otherwise creates a standard pinned
+   * allocation on this place's device or host.
+   *
+   * Managed memory is not supported by the VMM API.
+   *
+   * @note For regular memory allocation (not VMM-based), use the allocate() method
+   *       instead, which provides stream-ordered allocation via cudaMallocAsync.
+   *
+   * @param handle Output parameter for the allocation handle
+   * @param size Size of the allocation in bytes
+   * @return CUresult indicating success or failure
+   *
+   * @see allocate() for regular memory allocation
+   */
+  CUresult mem_create(CUmemGenericAllocationHandle* handle, size_t size) const
+  {
+    if (extension)
+    {
+      return extension->mem_create(handle, size);
+    }
+
+    int dev_ordinal = device_ordinal(*this);
+
+    CUmemAllocationProp prop = {};
+    prop.type                = CU_MEM_ALLOCATION_TYPE_PINNED;
+    if (dev_ordinal >= 0)
+    {
+      // Device memory
+      prop.location.type = CU_MEM_LOCATION_TYPE_DEVICE;
+      prop.location.id   = dev_ordinal;
+    }
+#if _CCCL_CTK_AT_LEAST(12, 2)
+    else if (dev_ordinal == -1)
+    {
+      // Host memory (device ordinal -1)
+      // CU_MEM_LOCATION_TYPE_HOST requires CUDA 12.2+
+      prop.location.type = CU_MEM_LOCATION_TYPE_HOST;
+      prop.location.id   = 0;
+    }
+    else
+    {
+      // Managed memory (-2) is not supported by the VMM API
+      _CCCL_ASSERT(false, "mem_create: managed memory is not supported by the VMM API");
+      return CUDA_ERROR_NOT_SUPPORTED;
+    }
+#else // ^^^ _CCCL_CTK_AT_LEAST(12, 2) ^^^ / vvv _CCCL_CTK_BELOW(12, 2) vvv
+    else if (dev_ordinal == -1)
+    {
+      // Host VMM requires CU_MEM_LOCATION_TYPE_HOST which is only available in CUDA 12.2+
+      _CCCL_ASSERT(false, "mem_create: host VMM requires CUDA 12.2+ (CU_MEM_LOCATION_TYPE_HOST not available)");
+      return CUDA_ERROR_NOT_SUPPORTED;
+    }
+    else
+    {
+      // Managed memory (-2) is not supported by the VMM API
+      _CCCL_ASSERT(false, "mem_create: managed memory is not supported by the VMM API");
+      return CUDA_ERROR_NOT_SUPPORTED;
+    }
+#endif // _CCCL_CTK_AT_LEAST(12, 2)
+    return cuMemCreate(handle, size, &prop, 0);
+  }
+
+  /**
+   * @brief Allocate memory at this data place (raw allocation)
+   *
+   * This is the low-level allocation interface that handles all place types:
+   * - For extensions: delegates to extension->allocate()
+   * - For host: uses cudaMallocHost (immediate, stream ignored)
+   * - For managed: uses cudaMallocManaged (immediate, stream ignored)
+   * - For device: uses cudaMallocAsync (stream-ordered)
+   *
+   * @param size Size of the allocation in bytes
+   * @param stream CUDA stream for stream-ordered allocations (ignored for immediate allocations, defaults to nullptr)
+   * @return Pointer to allocated memory
+   */
+  void* allocate(::std::ptrdiff_t size, cudaStream_t stream = nullptr) const
+  {
+    // Delegate to extension if present
+    if (extension)
+    {
+      return extension->allocate(size, stream);
+    }
+
+    void* result = nullptr;
+
+    if (is_host())
+    {
+      cuda_safe_call(cudaMallocHost(&result, size));
+    }
+    else if (is_managed())
+    {
+      cuda_safe_call(cudaMallocManaged(&result, size));
+    }
+    else
+    {
+      // Device allocation
+      EXPECT(!is_composite(), "Composite places don't support direct allocation");
+      const int prev_dev   = cuda_try<cudaGetDevice>();
+      const int target_dev = devid;
+
+      if (prev_dev != target_dev)
+      {
+        cuda_safe_call(cudaSetDevice(target_dev));
+      }
+
+      SCOPE(exit)
+      {
+        if (prev_dev != target_dev)
+        {
+          cuda_safe_call(cudaSetDevice(prev_dev));
+        }
+      };
+
+      cuda_safe_call(cudaMallocAsync(&result, size, stream));
+    }
+
+    return result;
+  }
+
+  /**
+   * @brief Deallocate memory at this data place (raw deallocation)
+   *
+   * For immediate deallocations (host, managed), the stream is ignored.
+   * Note that cudaFree (used for managed memory) may introduce implicit synchronization.
+   *
+   * @param ptr Pointer to memory to deallocate
+   * @param size Size of the allocation
+   * @param stream CUDA stream for stream-ordered deallocations (ignored for immediate deallocations, defaults to
+   * nullptr)
+   */
+  void deallocate(void* ptr, size_t size, cudaStream_t stream = nullptr) const
+  {
+    // Delegate to extension if present
+    if (extension)
+    {
+      extension->deallocate(ptr, size, stream);
+      return;
+    }
+
+    if (is_host())
+    {
+      cuda_safe_call(cudaFreeHost(ptr));
+    }
+    else if (is_managed())
+    {
+      cuda_safe_call(cudaFree(ptr));
+    }
+    else
+    {
+      // Device deallocation
+      const int prev_dev   = cuda_try<cudaGetDevice>();
+      const int target_dev = devid;
+
+      if (prev_dev != target_dev)
+      {
+        cuda_safe_call(cudaSetDevice(target_dev));
+      }
+
+      SCOPE(exit)
+      {
+        if (prev_dev != target_dev)
+        {
+          cuda_safe_call(cudaSetDevice(prev_dev));
+        }
+      };
+
+      cuda_safe_call(cudaFreeAsync(ptr, stream));
+    }
+  }
+
+  /**
+   * @brief Returns true if allocation/deallocation is stream-ordered
+   *
+   * When this returns true, the allocation uses stream-ordered APIs like
+   * cudaMallocAsync, and allocators should use stream_async_op to synchronize
+   * prerequisites before allocation.
+   *
+   * When this returns false, the allocation is immediate (like cudaMallocHost)
+   * and the stream parameter is ignored. Note that immediate deallocations
+   * (e.g., cudaFree) may introduce implicit synchronization.
+   */
+  bool allocation_is_stream_ordered() const
+  {
+    if (extension)
+    {
+      return extension->allocation_is_stream_ordered();
+    }
+    // Host and managed are immediate (stream ignored), device is stream-ordered
+    return !is_host() && !is_managed();
+  }
 
 private:
   /* Constants to implement data_place::invalid(), data_place::host(), etc. */
   enum devid : int
   {
     invalid_devid     = ::std::numeric_limits<int>::min(),
-    green_ctx_devid   = -6,
+    extension_devid   = -6, // For any custom extension-based place
     composite_devid   = -5,
     device_auto_devid = -4,
     affine_devid      = -3,
@@ -699,8 +915,16 @@ public:
 
 // Green contexts are only supported since CUDA 12.4
 #if _CCCL_CTK_AT_LEAST(12, 4)
-  static exec_place green_ctx(const green_ctx_view& gc_view);
-  static exec_place green_ctx(const ::std::shared_ptr<green_ctx_view>& gc_view_ptr);
+  /**
+   * @brief Create a green context execution place
+   *
+   * @param gc_view The green context view
+   * @param use_green_ctx_data_place If true, use a green context data place as the
+   *        affine data place. If false (default), use a regular device data place instead.
+   */
+  static exec_place green_ctx(const green_ctx_view& gc_view, bool use_green_ctx_data_place = false);
+  static exec_place green_ctx(const ::std::shared_ptr<green_ctx_view>& gc_view_ptr,
+                              bool use_green_ctx_data_place = false);
 #endif // _CCCL_CTK_AT_LEAST(12, 4)
 
   static exec_place_cuda_stream cuda_stream(cudaStream_t stream);
@@ -1444,16 +1668,6 @@ inline data_place data_place::composite(get_executor_func_t f, const exec_place_
   return result;
 }
 
-#if _CCCL_CTK_AT_LEAST(12, 4)
-inline data_place data_place::green_ctx(const green_ctx_view& gc_view)
-{
-  data_place result;
-  result.devid   = green_ctx_devid;
-  result.gc_view = ::std::make_shared<green_ctx_view>(gc_view);
-  return result;
-}
-#endif // _CCCL_CTK_AT_LEAST(12, 4)
-
 // User-visible API when the same partitioner as the one of the grid
 template <typename partitioner_t>
 data_place data_place::composite(partitioner_t, const exec_place_grid& g)
@@ -1483,13 +1697,10 @@ inline exec_place data_place::get_affine_exec_place() const
     return get_grid();
   }
 
-#if _CCCL_CTK_AT_LEAST(12, 4)
-  if (is_green_ctx())
+  if (is_extension())
   {
-    EXPECT(gc_view != nullptr);
-    return exec_place::green_ctx(gc_view);
+    return extension->get_affine_exec_place();
   }
-#endif // _CCCL_CTK_AT_LEAST(12, 4)
 
   // This must be a device
   return exec_place::device(devid);
@@ -1516,24 +1727,20 @@ inline bool data_place::operator==(const data_place& rhs) const
     return false;
   }
 
-  if (is_green_ctx() != rhs.is_green_ctx())
+  if (is_extension() != rhs.is_extension())
   {
     return false;
   }
 
-  if (!is_composite())
+  if (!is_composite() && !is_extension())
   {
     return devid == rhs.devid;
   }
 
-  if (is_green_ctx())
+  if (is_extension())
   {
-#if _CCCL_CTK_AT_LEAST(12, 4)
-    _CCCL_ASSERT(devid == green_ctx_devid, "");
-    return (rhs.devid == green_ctx_devid && *gc_view == *rhs.gc_view);
-#else // ^^^ _CCCL_CTK_AT_LEAST(12, 4) ^^^ / vvv _CCCL_CTK_BELOW(12, 4) vvv
-    assert(0);
-#endif // ^^^ _CCCL_CTK_BELOW(12, 4) ^^^
+    _CCCL_ASSERT(devid == extension_devid, "");
+    return (rhs.devid == extension_devid && extension->equals(*rhs.extension));
   }
 
   return (get_grid() == rhs.get_grid() && (get_partitioner() == rhs.get_partitioner()));
@@ -1827,14 +2034,10 @@ struct hash<data_place>
     // Not implemented for composite places
     EXPECT(!k.is_composite());
 
-    // TODO fix gc_view visibility or provide a getter
-    if (k.is_green_ctx())
+    // Extensions provide their own hash
+    if (k.is_extension())
     {
-#if _CCCL_CTK_AT_LEAST(12, 4)
-      return hash<green_ctx_view>()(*(k.gc_view));
-#else // ^^^ _CCCL_CTK_AT_LEAST(12, 4) ^^^ / vvv _CCCL_CTK_BELOW(12, 4) vvv
-      assert(0);
-#endif // ^^^ _CCCL_CTK_BELOW(12, 4) ^^^
+      return k.get_extension()->hash();
     }
 
     return ::std::hash<int>()(device_ordinal(k));

@@ -91,6 +91,10 @@ THRUST_NAMESPACE_BEGIN
  *
  *  \see find
  *  \see find_if
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename DerivedPolicy, typename InputIterator1, typename InputIterator2>
 _CCCL_HOST_DEVICE ::cuda::std::pair<InputIterator1, InputIterator2>
@@ -142,6 +146,10 @@ mismatch(const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
  *
  *  \see find
  *  \see find_if
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename InputIterator1, typename InputIterator2>
 ::cuda::std::pair<InputIterator1, InputIterator2>
@@ -196,6 +204,10 @@ mismatch(InputIterator1 first1, InputIterator1 last1, InputIterator2 first2);
  *
  *  \see find
  *  \see find_if
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename DerivedPolicy, typename InputIterator1, typename InputIterator2, typename BinaryPredicate>
 _CCCL_HOST_DEVICE ::cuda::std::pair<InputIterator1, InputIterator2> mismatch(
@@ -249,6 +261,10 @@ _CCCL_HOST_DEVICE ::cuda::std::pair<InputIterator1, InputIterator2> mismatch(
  *
  *  \see find
  *  \see find_if
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename InputIterator1, typename InputIterator2, typename BinaryPredicate>
 ::cuda::std::pair<InputIterator1, InputIterator2>

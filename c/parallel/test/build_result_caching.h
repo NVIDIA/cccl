@@ -39,23 +39,22 @@ public:
   result_wrapper_t& operator=(result_wrapper_t&&)      = default;
 
   ~result_wrapper_t() noexcept
+  try
   {
     if (!m_owner)
     {
       return;
     }
-    try
+
+    if (m_owner.use_count() <= 1)
     {
-      if (m_owner.use_count() <= 1)
-      {
-        // release resources
-        CleanupCallable{}(m_owner.get());
-      }
+      // release resources
+      CleanupCallable{}(m_owner.get());
     }
-    catch (const std::exception& e)
-    {
-      std::cerr << "~result_wrapper_t ignores exception: " << e.what() << std::endl;
-    }
+  }
+  catch (const std::exception& e)
+  {
+    std::cerr << "~result_wrapper_t ignores exception: " << e.what() << std::endl;
   }
 
   ResultT& get()

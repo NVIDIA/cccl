@@ -103,7 +103,7 @@
 
 // Third party libraries
 
-#if _CCCL_HAS_INCLUDE(<dlpack/dlpack.h>) && !_CCCL_COMPILER(NVRTC) && !defined(CCCL_DISABLE_DLPACK)
+#if __has_include(<dlpack/dlpack.h>) && !_CCCL_COMPILER(NVRTC) && !defined(CCCL_DISABLE_DLPACK)
 #  define _CCCL_HAS_DLPACK() 1
 #else // ^^^ has dlpack ^^^ / vvv no dlpack vvv
 #  define _CCCL_HAS_DLPACK() 0

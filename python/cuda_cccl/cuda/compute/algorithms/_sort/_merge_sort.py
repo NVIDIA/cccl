@@ -9,9 +9,8 @@ import numba
 
 from ... import _bindings
 from ... import _cccl_interop as cccl
-from ..._caching import cache_with_key
+from ..._caching import cache_with_registered_key_functions
 from ..._cccl_interop import call_build, set_cccl_iterator_state
-from ..._utils import protocols
 from ..._utils.protocols import (
     get_data_pointer,
     validate_and_get_stream,
@@ -20,45 +19,6 @@ from ..._utils.temp_storage_buffer import TempStorageBuffer
 from ...iterators._iterators import IteratorBase
 from ...op import OpAdapter, OpKind, make_op_adapter
 from ...typing import DeviceArrayLike
-
-
-def _make_cache_key(
-    d_in_keys: DeviceArrayLike | IteratorBase,
-    d_in_items: DeviceArrayLike | IteratorBase | None,
-    d_out_keys: DeviceArrayLike,
-    d_out_items: DeviceArrayLike | None,
-    op: OpAdapter,
-):
-    d_in_keys_key = (
-        d_in_keys.kind
-        if isinstance(d_in_keys, IteratorBase)
-        else protocols.get_dtype(d_in_keys)
-    )
-    if d_in_items is None:
-        d_in_items_key = None
-    else:
-        d_in_items_key = (
-            d_in_items.kind
-            if isinstance(d_in_items, IteratorBase)
-            else protocols.get_dtype(d_in_items)
-        )
-    d_out_keys_key = protocols.get_dtype(d_out_keys)
-    if d_out_items is None:
-        d_out_items_key = None
-    else:
-        d_out_items_key = (
-            d_out_items.kind
-            if isinstance(d_out_items, IteratorBase)
-            else protocols.get_dtype(d_out_items)
-        )
-
-    return (
-        d_in_keys_key,
-        d_in_items_key,
-        d_out_keys_key,
-        d_out_items_key,
-        op.get_cache_key(),
-    )
 
 
 class _MergeSort:
@@ -149,18 +109,7 @@ class _MergeSort:
         return temp_storage_bytes
 
 
-@cache_with_key(_make_cache_key)
-def _make_merge_sort_cached(
-    d_in_keys: DeviceArrayLike | IteratorBase,
-    d_in_items: DeviceArrayLike | IteratorBase | None,
-    d_out_keys: DeviceArrayLike,
-    d_out_items: DeviceArrayLike | None,
-    op: OpAdapter,
-):
-    """Internal cached factory for _MergeSort."""
-    return _MergeSort(d_in_keys, d_in_items, d_out_keys, d_out_items, op)
-
-
+@cache_with_registered_key_functions
 def make_merge_sort(
     d_in_keys: DeviceArrayLike | IteratorBase,
     d_in_items: DeviceArrayLike | IteratorBase | None,
@@ -189,9 +138,7 @@ def make_merge_sort(
         A callable object that can be used to perform the merge sort
     """
     op_adapter = make_op_adapter(op)
-    return _make_merge_sort_cached(
-        d_in_keys, d_in_items, d_out_keys, d_out_items, op_adapter
-    )
+    return _MergeSort(d_in_keys, d_in_items, d_out_keys, d_out_items, op_adapter)
 
 
 def merge_sort(

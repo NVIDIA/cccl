@@ -123,6 +123,10 @@ struct make_permutation_iterator_base
 //! \endcode
 //!
 //! \see make_permutation_iterator
+/*! \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
+ */
 template <typename ElementIterator, typename IndexIterator>
 class _CCCL_DECLSPEC_EMPTY_BASES permutation_iterator
     : public detail::make_permutation_iterator_base<ElementIterator, IndexIterator>::type

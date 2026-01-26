@@ -37,6 +37,7 @@
 #endif // no system header
 #include <thrust/system/cuda/config.h>
 
+#include <thrust/detail/type_traits/has_nested_type.h>
 #include <thrust/system/cuda/detail/util.h>
 
 #include <cuda/std/__type_traits/conditional.h>

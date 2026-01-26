@@ -218,6 +218,10 @@ public:
 //! \endcode
 //!
 //! \see make_transform_iterator
+/*! \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
+ */
 template <class AdaptableUnaryFunction, class Iterator, class Reference = use_default, class Value = use_default>
 class transform_iterator
     : public detail::make_transform_iterator_base<AdaptableUnaryFunction, Iterator, Reference, Value>::type

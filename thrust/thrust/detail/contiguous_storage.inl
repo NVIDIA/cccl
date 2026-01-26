@@ -254,7 +254,7 @@ _CCCL_HOST_DEVICE contiguous_storage<T, Alloc>& contiguous_storage<T, Alloc>::op
   {
     deallocate();
   }
-  if constexpr (allocator_traits<Alloc>::propagate_on_container_move_assignment::value)
+  if constexpr (::cuda::std::allocator_traits<Alloc>::propagate_on_container_move_assignment::value)
   {
     m_allocator = ::cuda::std::move(other.m_allocator);
   }

@@ -59,7 +59,7 @@
 #endif // ^^^ TEST_STD_VER <= 2020
 
 // Attempt to deduce the GLIBC version
-#if _CCCL_HAS_INCLUDE(<features.h>) || defined(__linux__)
+#if __has_include(<features.h>) || defined(__linux__)
 #  include <features.h>
 #  if defined(__GLIBC_PREREQ)
 #    define TEST_HAS_GLIBC

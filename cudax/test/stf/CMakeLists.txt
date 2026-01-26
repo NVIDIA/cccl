@@ -47,6 +47,8 @@ set(
   local_stf/legacy_to_stf.cu
   local_stf/threads_multiple_graphs.cu
   places/affinity_gc.cu
+  places/data_place_alloc.cu
+  places/data_place_vmm.cu
   places/managed.cu
   places/managed_from_user.cu
   places/non_current_device.cu

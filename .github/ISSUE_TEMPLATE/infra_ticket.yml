@@ -1,0 +1,38 @@
+name: Infra Ticket
+description: Request updates, report issues, etc. for CMake / GHA / CI / devcontainers.
+title: '[INFRA]: '
+labels: ['infra']
+body:
+  - type: markdown
+    attributes:
+      value: |
+        **For critical infrastructure issues, also raise them in Slack for faster visibility.**
+
+  - type: checkboxes
+    id: check-duplicates
+    attributes:
+      label: Is this a duplicate?
+      description: Check for duplicate issues.
+      options:
+        - label: I confirmed there appear to be no [duplicate issues](https://github.com/NVIDIA/cccl/issues) for this request and that I agree to the [Code of Conduct](CODE_OF_CONDUCT.md)
+    validations:
+      required: true
+
+  - type: textarea
+    id: overview
+    attributes:
+      label: Overview
+      description: 1 sentence describing your request with minimal context.
+      placeholder: Add CI coverage for a new python cccl.foo module.
+    validations:
+      required: true
+
+  - type: textarea
+    id: details
+    attributes:
+      label: Details
+      description: Additional context about the infrastructure change or issue.
+      placeholder: |
+        We're adding a new "cccl.foo" module in PR #123 and need to setup standard python CI jobs.
+    validations:
+      required: false

@@ -75,10 +75,12 @@ struct apply_type_identity
 {
   Func func_;
 
+  _CCCL_EXEC_CHECK_DISABLE
   __host__ __device__ apply_type_identity(Func func)
       : func_(func)
   {}
 
+  _CCCL_EXEC_CHECK_DISABLE
   template <class... Args>
   __host__ __device__ decltype(auto) operator()() const
   {

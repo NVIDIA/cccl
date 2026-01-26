@@ -36,7 +36,7 @@
 
 // include minimal std:: headers
 #if _CCCL_HAS_BUILTIN_STD_AS_CONST()
-#  if _CCCL_HOST_STD_LIB(LIBCXX) && _CCCL_HAS_INCLUDE(<__utility/as_const.h>)
+#  if _CCCL_HOST_STD_LIB(LIBCXX) && __has_include(<__utility/as_const.h>)
 #    include <__utility/as_const.h>
 #  elif !_CCCL_COMPILER(NVRTC)
 #    include <utility>

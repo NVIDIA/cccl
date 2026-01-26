@@ -105,6 +105,10 @@ THRUST_NAMESPACE_BEGIN
  *  \see \p set_union
  *  \see \p sort
  *  \see \p is_sorted
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename DerivedPolicy, typename InputIterator1, typename InputIterator2, typename OutputIterator>
 _CCCL_HOST_DEVICE OutputIterator merge(
@@ -170,6 +174,10 @@ _CCCL_HOST_DEVICE OutputIterator merge(
  *  \see \p set_union
  *  \see \p sort
  *  \see \p is_sorted
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename InputIterator1, typename InputIterator2, typename OutputIterator>
 OutputIterator
@@ -235,6 +243,10 @@ merge(InputIterator1 first1, InputIterator1 last1, InputIterator2 first2, InputI
  *  \see https://en.cppreference.com/w/cpp/algorithm/merge
  *  \see \p sort
  *  \see \p is_sorted
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename DerivedPolicy,
           typename InputIterator1,
@@ -301,6 +313,10 @@ _CCCL_HOST_DEVICE OutputIterator merge(
  *  \see https://en.cppreference.com/w/cpp/algorithm/merge
  *  \see \p sort
  *  \see \p is_sorted
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename InputIterator1, typename InputIterator2, typename OutputIterator, typename StrictWeakCompare>
 OutputIterator
@@ -399,6 +415,10 @@ merge(InputIterator1 first1,
  *  \see merge
  *  \see \p sort_by_key
  *  \see \p is_sorted
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename DerivedPolicy,
           typename InputIterator1,
@@ -497,6 +517,10 @@ _CCCL_HOST_DEVICE ::cuda::std::pair<OutputIterator1, OutputIterator2> merge_by_k
  *  \see merge
  *  \see \p sort_by_key
  *  \see \p is_sorted
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename InputIterator1,
           typename InputIterator2,
@@ -601,6 +625,10 @@ template <typename InputIterator1,
  *  \see merge
  *  \see \p sort_by_key
  *  \see \p is_sorted
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename DerivedPolicy,
           typename InputIterator1,
@@ -699,6 +727,10 @@ _CCCL_HOST_DEVICE ::cuda::std::pair<OutputIterator1, OutputIterator2> merge_by_k
  *  \see merge
  *  \see \p sort_by_key
  *  \see \p is_sorted
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename InputIterator1,
           typename InputIterator2,

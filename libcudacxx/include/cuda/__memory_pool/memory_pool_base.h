@@ -38,6 +38,10 @@
 
 _CCCL_BEGIN_NAMESPACE_CUDA
 
+_CCCL_DIAG_PUSH
+_CCCL_DIAG_SUPPRESS_CLANG("-Wmissing-braces")
+// clang complains about missing braces in CUmemLocation constructor but GCC complains if we add them
+
 enum class __pool_attr_settable : bool
 {
 };
@@ -635,6 +639,8 @@ public:
 };
 
 _CCCL_END_NAMESPACE_CUDA
+
+_CCCL_DIAG_POP
 
 #  include <cuda/std/__cccl/epilogue.h>
 

@@ -15,8 +15,8 @@
 //                 ForwardIterator first, ForwardIterator last,
 //                 Function f);
 
-#include <cuda/std/__algorithm_>
 #include <cuda/std/__pstl/for_each.h>
+#include <cuda/std/algorithm>
 #include <cuda/std/cassert>
 
 #include "test_execution_policies.h"

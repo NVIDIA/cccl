@@ -71,6 +71,10 @@ THRUST_NAMESPACE_BEGIN
  *  \endcode
  *
  *  \see \p shuffle_copy
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename DerivedPolicy, typename RandomIterator, typename URBG>
 _CCCL_HOST_DEVICE void shuffle(
@@ -99,6 +103,10 @@ _CCCL_HOST_DEVICE void shuffle(
  *  \endcode
  *
  *  \see \p shuffle_copy
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename RandomIterator, typename URBG>
 _CCCL_HOST_DEVICE void shuffle(RandomIterator first, RandomIterator last, URBG&& g);
@@ -137,6 +145,10 @@ _CCCL_HOST_DEVICE void shuffle(RandomIterator first, RandomIterator last, URBG&&
  *  \endcode
  *
  *  \see \p shuffle
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename DerivedPolicy, typename RandomIterator, typename OutputIterator, typename URBG>
 _CCCL_HOST_DEVICE void shuffle_copy(
@@ -173,6 +185,10 @@ _CCCL_HOST_DEVICE void shuffle_copy(
  *  \endcode
  *
  *  \see \p shuffle
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename RandomIterator, typename OutputIterator, typename URBG>
 _CCCL_HOST_DEVICE void shuffle_copy(RandomIterator first, RandomIterator last, OutputIterator result, URBG&& g);

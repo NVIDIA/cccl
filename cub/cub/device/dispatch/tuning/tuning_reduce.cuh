@@ -20,10 +20,6 @@
 #include <cuda/__device/arch_id.h>
 #include <cuda/std/optional>
 
-#if _CCCL_HAS_CONCEPTS()
-#  include <cuda/std/concepts>
-#endif // _CCCL_HAS_CONCEPTS()
-
 #if !_CCCL_COMPILER(NVRTC)
 #  include <ostream>
 #endif
@@ -93,14 +89,8 @@ struct reduce_policy
 };
 
 #if _CCCL_HAS_CONCEPTS()
-_CCCL_API consteval void __needs_a_constexpr_value(auto) {}
-
-// TODO(bgruber): replace this by a more general concept
 template <typename T>
-concept reduce_policy_selector = requires(T hub, ::cuda::arch_id arch) {
-  { hub(arch) } -> _CCCL_CONCEPT_VSTD::same_as<reduce_policy>;
-  { __needs_a_constexpr_value(hub(arch)) };
-};
+concept reduce_policy_selector = policy_selector<T, reduce_policy>;
 #endif // _CCCL_HAS_CONCEPTS()
 
 template <typename PolicyT, typename = void>

@@ -97,7 +97,7 @@ public:
 
   template <typename _Lhs>
   [[nodiscard]] _CCCL_API friend ::cuda::std::common_type_t<_Tp, _Lhs>
-  operator/(_Lhs __dividend, fast_mod_div<_Tp> __divisor1) noexcept
+  operator/(_Lhs __dividend, fast_mod_div __divisor1) noexcept
   {
     using ::cuda::std::is_same_v;
     using ::cuda::std::is_signed_v;
@@ -142,7 +142,7 @@ public:
 
   template <typename _Lhs>
   [[nodiscard]] _CCCL_API friend ::cuda::std::common_type_t<_Tp, _Lhs>
-  operator%(_Lhs __dividend, fast_mod_div<_Tp> __divisor1) noexcept
+  operator%(_Lhs __dividend, fast_mod_div __divisor1) noexcept
   {
     return __dividend - (__dividend / __divisor1) * __divisor1.__divisor;
   }
@@ -163,8 +163,9 @@ private:
  * Non-member functions
  **********************************************************************************************************************/
 
-template <typename _Tp, typename _Lhs>
-[[nodiscard]] _CCCL_API ::cuda::std::pair<_Tp, _Lhs> div(_Tp __dividend, fast_mod_div<_Lhs> __divisor) noexcept
+template <typename _Tp, typename _Lhs, bool _DivisorIsNeverOne>
+[[nodiscard]] _CCCL_API ::cuda::std::pair<_Tp, _Lhs>
+div(_Tp __dividend, fast_mod_div<_Lhs, _DivisorIsNeverOne> __divisor) noexcept
 {
   auto __quotient  = __dividend / __divisor;
   auto __remainder = __dividend - __quotient * __divisor;

@@ -95,6 +95,10 @@ THRUST_NAMESPACE_BEGIN
  *  \see remove_if
  *  \see remove_copy
  *  \see remove_copy_if
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename DerivedPolicy, typename ForwardIterator, typename T>
 _CCCL_HOST_DEVICE ForwardIterator remove(
@@ -154,6 +158,10 @@ _CCCL_HOST_DEVICE ForwardIterator remove(
  *  \see remove_if
  *  \see remove_copy
  *  \see remove_copy_if
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename ForwardIterator, typename T>
 ForwardIterator remove(ForwardIterator first, ForwardIterator last, const T& value);
@@ -205,6 +213,10 @@ ForwardIterator remove(ForwardIterator first, ForwardIterator last, const T& val
  *  \see remove
  *  \see remove_if
  *  \see remove_copy_if
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename DerivedPolicy, typename InputIterator, typename OutputIterator, typename T>
 _CCCL_HOST_DEVICE OutputIterator remove_copy(
@@ -255,6 +267,10 @@ _CCCL_HOST_DEVICE OutputIterator remove_copy(
  *  \see remove
  *  \see remove_if
  *  \see remove_copy_if
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename InputIterator, typename OutputIterator, typename T>
 OutputIterator remove_copy(InputIterator first, InputIterator last, OutputIterator result, const T& value);
@@ -327,6 +343,10 @@ OutputIterator remove_copy(InputIterator first, InputIterator last, OutputIterat
  *  \see remove
  *  \see remove_copy
  *  \see remove_copy_if
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename DerivedPolicy, typename ForwardIterator, typename Predicate>
 _CCCL_HOST_DEVICE ForwardIterator remove_if(
@@ -397,6 +417,10 @@ _CCCL_HOST_DEVICE ForwardIterator remove_if(
  *  \see remove
  *  \see remove_copy
  *  \see remove_copy_if
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename ForwardIterator, typename Predicate>
 ForwardIterator remove_if(ForwardIterator first, ForwardIterator last, Predicate pred);
@@ -458,6 +482,10 @@ ForwardIterator remove_if(ForwardIterator first, ForwardIterator last, Predicate
  *  \see remove
  *  \see remove_copy
  *  \see remove_if
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename DerivedPolicy, typename InputIterator, typename OutputIterator, typename Predicate>
 _CCCL_HOST_DEVICE OutputIterator remove_copy_if(
@@ -518,6 +546,10 @@ _CCCL_HOST_DEVICE OutputIterator remove_copy_if(
  *  \see remove
  *  \see remove_copy
  *  \see remove_if
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename InputIterator, typename OutputIterator, typename Predicate>
 OutputIterator remove_copy_if(InputIterator first, InputIterator last, OutputIterator result, Predicate pred);
@@ -577,6 +609,10 @@ OutputIterator remove_copy_if(InputIterator first, InputIterator last, OutputIte
  *  \see remove
  *  \see remove_copy
  *  \see remove_copy_if
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename DerivedPolicy, typename ForwardIterator, typename InputIterator, typename Predicate>
 _CCCL_HOST_DEVICE ForwardIterator remove_if(
@@ -635,6 +671,10 @@ _CCCL_HOST_DEVICE ForwardIterator remove_if(
  *  \see remove
  *  \see remove_copy
  *  \see remove_copy_if
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename ForwardIterator, typename InputIterator, typename Predicate>
 ForwardIterator remove_if(ForwardIterator first, ForwardIterator last, InputIterator stencil, Predicate pred);
@@ -693,6 +733,10 @@ ForwardIterator remove_if(ForwardIterator first, ForwardIterator last, InputIter
  *  \see remove_copy
  *  \see remove_if
  *  \see copy_if
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename DerivedPolicy,
           typename InputIterator1,
@@ -755,6 +799,10 @@ _CCCL_HOST_DEVICE OutputIterator remove_copy_if(
  *  \see remove_copy
  *  \see remove_if
  *  \see copy_if
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename InputIterator1, typename InputIterator2, typename OutputIterator, typename Predicate>
 OutputIterator remove_copy_if(

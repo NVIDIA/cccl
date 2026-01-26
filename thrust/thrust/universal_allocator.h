@@ -88,6 +88,10 @@ using thrust::system::__THRUST_DEVICE_SYSTEM_NAMESPACE::universal_host_pinned_al
  *  \see host_ptr For the documentation of the complete interface which is
  *                shared by \p universal_ptr.
  *  \see raw_pointer_cast
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename T>
 using universal_ptr = thrust::system::__THRUST_DEVICE_SYSTEM_NAMESPACE::universal_pointer<T>;

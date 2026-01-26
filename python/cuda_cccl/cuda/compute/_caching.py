@@ -4,56 +4,137 @@
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 import functools
+import types
+from typing import Any, Callable, Hashable
+
+import numpy as np
 
 try:
     from cuda.core import Device
 except ImportError:
     from cuda.core.experimental import Device
 
+from ._utils.protocols import get_dtype
+from .typing import DeviceArrayLike, GpuStruct
+
+# Registry thet maps type -> key function for extracting cache key
+# from a value of that type.
+_KEY_FUNCTIONS: dict[type, Callable[[Any], Hashable]] = {}
+
+
+def _key_for(value: Any) -> Hashable:
+    """
+    Extract a cache key from a value using the registered KEY_FUNCTIONS.
+
+    This function checks the type of the value and delegates to the
+    appropriate registered keyer. Falls back to using the value
+    directly if no keyer is registered.
+
+    Args:
+        value: The value to extract a cache key from
+
+    Returns:
+        A hashable cache key
+    """
+    # Handle sequences (lists, tuples) by recursively converting to tuple
+    if isinstance(value, (list, tuple)):
+        return tuple(_key_for(item) for item in value)
+
+    # Check for exact type match first
+    value_type = type(value)
+    if value_type in _KEY_FUNCTIONS:
+        return _KEY_FUNCTIONS[value_type](value)
+
+    # Check for instance match (handles inheritance)
+    for registered_type, keyer in _KEY_FUNCTIONS.items():
+        if isinstance(value, registered_type):
+            return keyer(value)
+
+    # Fallback: use value directly (assumes it's hashable)
+    return value
+
+
+def _make_cache_key_from_args(*args, **kwargs) -> tuple:
+    """
+    Create a cache key from function arguments.
+
+    Args:
+        *args: Positional arguments
+        **kwargs: Keyword arguments
+
+    Returns:
+        A tuple containing the extracted cache keys
+    """
+
+    positional_keys = tuple(_key_for(arg) for arg in args)
+
+    # Sort kwargs by key name for consistent ordering
+    if kwargs:
+        sorted_kwargs = sorted(kwargs.items())
+        kwarg_keys = tuple((k, _key_for(v)) for k, v in sorted_kwargs)
+        return positional_keys + (kwarg_keys,)
+
+    return positional_keys
+
 
 # Central registry of all algorithm caches
 _cache_registry: dict[str, object] = {}
 
 
-def cache_with_key(key):
+class _CacheWithRegisteredKeyFunctions:
     """
-    Decorator to cache the result of the decorated function.  Uses the
-    provided `key` function to compute the key for cache lookup. `key`
-    receives all arguments passed to the function.
+    Decorator to cache the result of the decorated function.
 
-    Notes
-    -----
-    The CUDA compute capability of the current device is appended to
-    the cache key returned by `key`.
-
-    The decorated function is automatically registered in the central
-    cache registry for easy cache management.
+    The cache key is automatically computed from the decorated function's
+    arguments using the registered key functions.
     """
 
-    def deco(func):
-        cache = {}
+    def __call__(self, func: Callable) -> Callable:
+        """
+        Decorator to cache the result of the decorated function.
+
+        Args:
+            func: The function whose result is to be cached.
+
+        Notes
+        -----
+        The CUDA compute capability of the current device is appended to
+        the cache key.
+        """
+        cache: dict = {}
 
         @functools.wraps(func)
         def inner(*args, **kwargs):
             cc = Device().compute_capability
-            cache_key = (key(*args, **kwargs), tuple(cc))
+            user_cache_key = _make_cache_key_from_args(*args, **kwargs)
+            cache_key = (user_cache_key, tuple(cc))
             if cache_key not in cache:
                 result = func(*args, **kwargs)
                 cache[cache_key] = result
             return cache[cache_key]
 
-        def cache_clear():
-            cache.clear()
-
-        inner.cache_clear = cache_clear
+        inner.cache_clear = cache.clear  # type: ignore[attr-defined]
 
         # Register the cache in the central registry
-        cache_name = func.__qualname__
-        _cache_registry[cache_name] = inner
+        _cache_registry[func.__qualname__] = inner
 
         return inner
 
-    return deco
+    def register(self, type_: type, key_function: Callable[[Any], Hashable]) -> None:
+        """
+        Register a key function for a specific type.
+
+        A key function extracts a hashable cache key from a value.
+
+        Args:
+            type_: The type to register
+            key_function: A callable that takes an instance of type_ and
+                returns a hashable cache key
+        """
+        _KEY_FUNCTIONS[type_] = key_function
+
+
+cache_with_registered_key_functions = _CacheWithRegisteredKeyFunctions()
 
 
 def _hash_device_array_like(value):
@@ -138,3 +219,23 @@ class CachableFunction:
 
     def __repr__(self):
         return str(self._func)
+
+
+# Register keyers for built-in types
+# Include fully-qualified type name to distinguish np.ndarray from cp.ndarray from GpuStruct
+def _type_fqn(v):
+    return f"{type(v).__module__}.{type(v).__name__}"
+
+
+cache_with_registered_key_functions.register(
+    np.ndarray, lambda arr: ("numpy.ndarray", arr.dtype)
+)
+cache_with_registered_key_functions.register(
+    types.FunctionType, lambda fn: CachableFunction(fn)
+)
+cache_with_registered_key_functions.register(
+    DeviceArrayLike, lambda v: (_type_fqn(v), get_dtype(v))
+)
+cache_with_registered_key_functions.register(
+    GpuStruct, lambda v: (_type_fqn(v), v.dtype)
+)

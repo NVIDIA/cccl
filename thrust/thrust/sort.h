@@ -78,6 +78,10 @@ THRUST_NAMESPACE_BEGIN
  *  \see https://en.cppreference.com/w/cpp/algorithm/sort
  *  \see \p stable_sort
  *  \see \p sort_by_key
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename DerivedPolicy, typename RandomAccessIterator>
 _CCCL_HOST_DEVICE void sort(const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
@@ -119,6 +123,10 @@ _CCCL_HOST_DEVICE void sort(const thrust::detail::execution_policy_base<DerivedP
  *  \see https://en.cppreference.com/w/cpp/algorithm/sort
  *  \see \p stable_sort
  *  \see \p sort_by_key
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename RandomAccessIterator>
 void sort(RandomAccessIterator first, RandomAccessIterator last);
@@ -165,6 +173,10 @@ void sort(RandomAccessIterator first, RandomAccessIterator last);
  *  \see https://en.cppreference.com/w/cpp/algorithm/sort
  *  \see \p stable_sort
  *  \see \p sort_by_key
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename DerivedPolicy, typename RandomAccessIterator, typename StrictWeakOrdering>
 _CCCL_HOST_DEVICE void
@@ -210,6 +222,10 @@ sort(const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
  *  \see https://en.cppreference.com/w/cpp/algorithm/sort
  *  \see \p stable_sort
  *  \see \p sort_by_key
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename RandomAccessIterator, typename StrictWeakOrdering>
 _CCCL_HOST_DEVICE void sort(RandomAccessIterator first, RandomAccessIterator last, StrictWeakOrdering comp);
@@ -258,6 +274,10 @@ _CCCL_HOST_DEVICE void sort(RandomAccessIterator first, RandomAccessIterator las
  *  \see https://en.cppreference.com/w/cpp/algorithm/stable_sort
  *  \see \p sort
  *  \see \p stable_sort_by_key
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename DerivedPolicy, typename RandomAccessIterator>
 _CCCL_HOST_DEVICE void stable_sort(const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
@@ -303,6 +323,10 @@ _CCCL_HOST_DEVICE void stable_sort(const thrust::detail::execution_policy_base<D
  *  \see https://en.cppreference.com/w/cpp/algorithm/stable_sort
  *  \see \p sort
  *  \see \p stable_sort_by_key
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename RandomAccessIterator>
 void stable_sort(RandomAccessIterator first, RandomAccessIterator last);
@@ -353,6 +377,10 @@ void stable_sort(RandomAccessIterator first, RandomAccessIterator last);
  *  \see https://en.cppreference.com/w/cpp/algorithm/stable_sort
  *  \see \p sort
  *  \see \p stable_sort_by_key
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename DerivedPolicy, typename RandomAccessIterator, typename StrictWeakOrdering>
 _CCCL_HOST_DEVICE void stable_sort(
@@ -402,6 +430,10 @@ _CCCL_HOST_DEVICE void stable_sort(
  *  \see https://en.cppreference.com/w/cpp/algorithm/stable_sort
  *  \see \p sort
  *  \see \p stable_sort_by_key
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename RandomAccessIterator, typename StrictWeakOrdering>
 void stable_sort(RandomAccessIterator first, RandomAccessIterator last, StrictWeakOrdering comp);
@@ -465,6 +497,10 @@ void stable_sort(RandomAccessIterator first, RandomAccessIterator last, StrictWe
  *  \see https://en.cppreference.com/w/cpp/algorithm/sort
  *  \see \p stable_sort_by_key
  *  \see \p sort
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename DerivedPolicy, typename RandomAccessIterator1, typename RandomAccessIterator2>
 _CCCL_HOST_DEVICE void sort_by_key(
@@ -522,6 +558,10 @@ _CCCL_HOST_DEVICE void sort_by_key(
  *  \see https://en.cppreference.com/w/cpp/algorithm/sort
  *  \see \p stable_sort_by_key
  *  \see \p sort
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename RandomAccessIterator1, typename RandomAccessIterator2>
 void sort_by_key(RandomAccessIterator1 keys_first, RandomAccessIterator1 keys_last, RandomAccessIterator2 values_first);
@@ -582,6 +622,10 @@ void sort_by_key(RandomAccessIterator1 keys_first, RandomAccessIterator1 keys_la
  *  \see https://en.cppreference.com/w/cpp/algorithm/sort
  *  \see \p stable_sort_by_key
  *  \see \p sort
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename DerivedPolicy,
           typename RandomAccessIterator1,
@@ -645,6 +689,10 @@ _CCCL_HOST_DEVICE void sort_by_key(
  *  \see https://en.cppreference.com/w/cpp/algorithm/sort
  *  \see \p stable_sort_by_key
  *  \see \p sort
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename RandomAccessIterator1, typename RandomAccessIterator2, typename StrictWeakOrdering>
 void sort_by_key(RandomAccessIterator1 keys_first,
@@ -709,6 +757,10 @@ void sort_by_key(RandomAccessIterator1 keys_first,
  *  \see https://en.cppreference.com/w/cpp/algorithm/sort
  *  \see \p sort_by_key
  *  \see \p stable_sort
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename DerivedPolicy, typename RandomAccessIterator1, typename RandomAccessIterator2>
 _CCCL_HOST_DEVICE void stable_sort_by_key(
@@ -768,6 +820,10 @@ _CCCL_HOST_DEVICE void stable_sort_by_key(
  *  \see https://en.cppreference.com/w/cpp/algorithm/sort
  *  \see \p sort_by_key
  *  \see \p stable_sort
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename RandomAccessIterator1, typename RandomAccessIterator2>
 void stable_sort_by_key(
@@ -827,11 +883,13 @@ void stable_sort_by_key(
  *  // keys is now   {  8,   7,   5,   4,   2,   1}
  *  // values is now {'d', 'f', 'e', 'b', 'c', 'a'}
  *  \endcode
- *
- *
  *  \see https://en.cppreference.com/w/cpp/algorithm/sort
  *  \see \p sort_by_key
  *  \see \p stable_sort
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename DerivedPolicy,
           typename RandomAccessIterator1,
@@ -893,11 +951,13 @@ _CCCL_HOST_DEVICE void stable_sort_by_key(
  *  // keys is now   {  8,   7,   5,   4,   2,   1}
  *  // values is now {'d', 'f', 'e', 'b', 'c', 'a'}
  *  \endcode
- *
- *
  *  \see https://en.cppreference.com/w/cpp/algorithm/sort
  *  \see \p sort_by_key
  *  \see \p stable_sort
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename RandomAccessIterator1, typename RandomAccessIterator2, typename StrictWeakOrdering>
 void stable_sort_by_key(RandomAccessIterator1 keys_first,
@@ -934,8 +994,6 @@ void stable_sort_by_key(RandomAccessIterator1 keys_first,
  * href="https://en.cppreference.com/w/cpp/named_req/LessThanComparable">LessThan Comparable</a>, and the ordering on
  * objects of \p ForwardIterator's \c value_type is a <em>strict weak ordering</em>, as defined in the <a
  * href="https://en.cppreference.com/w/cpp/named_req/LessThanComparable">LessThan Comparable</a> requirements.
- *
- *
  *  The following code demonstrates how to use \p is_sorted to test whether the
  *  contents of a \c device_vector are stored in ascending order using the \p thrust::device execution policy
  *  for parallelization:
@@ -969,6 +1027,10 @@ void stable_sort_by_key(RandomAccessIterator1 keys_first,
  *  \see \c sort
  *  \see \c stable_sort
  *  \see \c less<T>
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename DerivedPolicy, typename ForwardIterator>
 _CCCL_HOST_DEVICE bool is_sorted(
@@ -990,8 +1052,6 @@ _CCCL_HOST_DEVICE bool is_sorted(
  * href="https://en.cppreference.com/w/cpp/named_req/LessThanComparable">LessThan Comparable</a>, and the ordering on
  * objects of \p ForwardIterator's \c value_type is a <em>strict weak ordering</em>, as defined in the <a
  * href="https://en.cppreference.com/w/cpp/named_req/LessThanComparable">LessThan Comparable</a> requirements.
- *
- *
  *  The following code demonstrates how to use \p is_sorted to test whether the
  *  contents of a \c device_vector are stored in ascending order.
  *
@@ -1023,6 +1083,10 @@ _CCCL_HOST_DEVICE bool is_sorted(
  *  \see \c sort
  *  \see \c stable_sort
  *  \see \c less<T>
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename ForwardIterator>
 bool is_sorted(ForwardIterator first, ForwardIterator last);
@@ -1080,6 +1144,10 @@ bool is_sorted(ForwardIterator first, ForwardIterator last);
  *  \see \c sort
  *  \see \c stable_sort
  *  \see \c less<T>
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename DerivedPolicy, typename ForwardIterator, typename Compare>
 _CCCL_HOST_DEVICE bool
@@ -1136,6 +1204,10 @@ is_sorted(const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
  *  \see \c sort
  *  \see \c stable_sort
  *  \see \c less<T>
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename ForwardIterator, typename Compare>
 bool is_sorted(ForwardIterator first, ForwardIterator last, Compare comp);
@@ -1179,6 +1251,10 @@ bool is_sorted(ForwardIterator first, ForwardIterator last, Compare comp);
  *  \see \p sort_by_key
  *  \see \p stable_sort
  *  \see \p stable_sort_by_key
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename DerivedPolicy, typename ForwardIterator>
 _CCCL_HOST_DEVICE ForwardIterator is_sorted_until(
@@ -1217,6 +1293,10 @@ _CCCL_HOST_DEVICE ForwardIterator is_sorted_until(
  *  \see \p sort_by_key
  *  \see \p stable_sort
  *  \see \p stable_sort_by_key
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename ForwardIterator>
 ForwardIterator is_sorted_until(ForwardIterator first, ForwardIterator last);
@@ -1263,6 +1343,10 @@ ForwardIterator is_sorted_until(ForwardIterator first, ForwardIterator last);
  *  \see \p sort_by_key
  *  \see \p stable_sort
  *  \see \p stable_sort_by_key
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename DerivedPolicy, typename ForwardIterator, typename Compare>
 _CCCL_HOST_DEVICE ForwardIterator is_sorted_until(
@@ -1307,6 +1391,10 @@ _CCCL_HOST_DEVICE ForwardIterator is_sorted_until(
  *  \see \p sort_by_key
  *  \see \p stable_sort
  *  \see \p stable_sort_by_key
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename ForwardIterator, typename Compare>
 ForwardIterator is_sorted_until(ForwardIterator first, ForwardIterator last, Compare comp);

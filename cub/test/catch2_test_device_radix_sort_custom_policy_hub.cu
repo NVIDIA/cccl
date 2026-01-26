@@ -14,8 +14,7 @@ using namespace cub;
 template <typename KeyT, typename OffsetT>
 struct my_policy_hub
 {
-  static constexpr bool KEYS_ONLY = true;
-  using DominantT                 = KeyT;
+  using DominantT = KeyT;
 
   // from Policy500 of the CUB radix sort tunings
   struct MaxPolicy : ChainedPolicy<500, MaxPolicy, MaxPolicy>

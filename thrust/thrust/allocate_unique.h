@@ -14,12 +14,12 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
-#include <thrust/detail/allocator/allocator_traits.h>
 #include <thrust/detail/memory_algorithms.h>
 #include <thrust/detail/raw_pointer_cast.h>
 #include <thrust/detail/type_deduction.h>
 
 #include <cuda/std/__cccl/memory_wrapper.h>
+#include <cuda/std/__memory/allocator_traits.h>
 #include <cuda/std/__type_traits/remove_cvref.h>
 #include <cuda/std/__utility/move.h>
 #include <cuda/std/__utility/swap.h>
@@ -35,7 +35,7 @@ struct allocator_delete final
 {
   using allocator_type =
     typename std::remove_cv<typename std::remove_reference<Allocator>::type>::type::template rebind<T>::other;
-  using pointer = typename detail::allocator_traits<allocator_type>::pointer;
+  using pointer = typename ::cuda::std::allocator_traits<allocator_type>::pointer;
 
   template <typename UAllocator>
   allocator_delete(UAllocator&& other) noexcept
@@ -66,7 +66,7 @@ struct allocator_delete final
 
   void operator()(pointer p)
   {
-    using traits = detail::allocator_traits<::cuda::std::remove_cvref_t<Allocator>>;
+    using traits = ::cuda::std::allocator_traits<::cuda::std::remove_cvref_t<Allocator>>;
     typename traits::allocator_type alloc_T(alloc_);
 
     if (nullptr != detail::pointer_traits<pointer>::get(p))
@@ -106,7 +106,7 @@ struct array_allocator_delete final
 {
   using allocator_type =
     typename std::remove_cv<typename std::remove_reference<Allocator>::type>::type::template rebind<T>::other;
-  using pointer = typename detail::allocator_traits<allocator_type>::pointer;
+  using pointer = typename ::cuda::std::allocator_traits<allocator_type>::pointer;
 
   template <typename UAllocator>
   array_allocator_delete(UAllocator&& other, std::size_t n) noexcept
@@ -142,7 +142,7 @@ struct array_allocator_delete final
 
   void operator()(pointer p)
   {
-    using traits = detail::allocator_traits<::cuda::std::remove_cvref_t<Allocator>>;
+    using traits = ::cuda::std::allocator_traits<::cuda::std::remove_cvref_t<Allocator>>;
     typename traits::allocator_type alloc_T(get_allocator());
     if (nullptr != detail::pointer_traits<pointer>::get(p))
     {
@@ -204,11 +204,12 @@ template <typename T, typename Allocator, typename... Args>
 _CCCL_HOST
 std::unique_ptr<T,
                 allocator_delete<T,
-                                 typename detail::allocator_traits<
+                                 typename ::cuda::std::allocator_traits<
                                    ::cuda::std::remove_cvref_t<Allocator>>::template rebind_traits<T>::allocator_type>>
 allocate_unique(Allocator const& alloc, Args&&... args)
 {
-  using traits = typename detail::allocator_traits<::cuda::std::remove_cvref_t<Allocator>>::template rebind_traits<T>;
+  using traits =
+    typename ::cuda::std::allocator_traits<::cuda::std::remove_cvref_t<Allocator>>::template rebind_traits<T>;
 
   typename traits::allocator_type alloc_T(alloc);
 
@@ -228,12 +229,13 @@ allocate_unique(Allocator const& alloc, Args&&... args)
 template <typename T, typename Allocator>
 _CCCL_HOST std::unique_ptr<
   T,
-  uninitialized_allocator_delete<
-    T,
-    typename detail::allocator_traits<::cuda::std::remove_cvref_t<Allocator>>::template rebind_traits<T>::allocator_type>>
+  uninitialized_allocator_delete<T,
+                                 typename ::cuda::std::allocator_traits<
+                                   ::cuda::std::remove_cvref_t<Allocator>>::template rebind_traits<T>::allocator_type>>
 uninitialized_allocate_unique(Allocator const& alloc)
 {
-  using traits = typename detail::allocator_traits<::cuda::std::remove_cvref_t<Allocator>>::template rebind_traits<T>;
+  using traits =
+    typename ::cuda::std::allocator_traits<::cuda::std::remove_cvref_t<Allocator>>::template rebind_traits<T>;
 
   typename traits::allocator_type alloc_T(alloc);
 
@@ -253,11 +255,12 @@ template <typename T, typename Allocator, typename Size, typename... Args>
 _CCCL_HOST std::unique_ptr<
   T[],
   array_allocator_delete<T,
-                         typename detail::allocator_traits<typename std::remove_cv<typename std::remove_reference<
+                         typename ::cuda::std::allocator_traits<typename std::remove_cv<typename std::remove_reference<
                            Allocator>::type>::type>::template rebind_traits<T>::allocator_type>>
 allocate_unique_n(Allocator const& alloc, Size n, Args&&... args)
 {
-  using traits = typename detail::allocator_traits<::cuda::std::remove_cvref_t<Allocator>>::template rebind_traits<T>;
+  using traits =
+    typename ::cuda::std::allocator_traits<::cuda::std::remove_cvref_t<Allocator>>::template rebind_traits<T>;
 
   typename traits::allocator_type alloc_T(alloc);
 
@@ -275,14 +278,15 @@ allocate_unique_n(Allocator const& alloc, Size n, Args&&... args)
 //! Creates a \p std::unique_ptr holding storage for an array of objects of type \p T without constructing them, using
 //! \p alloc as the allocator.
 template <typename T, typename Allocator, typename Size>
-_CCCL_HOST std::unique_ptr<
-  T[],
-  uninitialized_array_allocator_delete<
-    T,
-    typename detail::allocator_traits<::cuda::std::remove_cvref_t<Allocator>>::template rebind_traits<T>::allocator_type>>
+_CCCL_HOST
+std::unique_ptr<T[],
+                uninitialized_array_allocator_delete<T,
+                                                     typename ::cuda::std::allocator_traits<::cuda::std::remove_cvref_t<
+                                                       Allocator>>::template rebind_traits<T>::allocator_type>>
 uninitialized_allocate_unique_n(Allocator const& alloc, Size n)
 {
-  using traits = typename detail::allocator_traits<::cuda::std::remove_cvref_t<Allocator>>::template rebind_traits<T>;
+  using traits =
+    typename ::cuda::std::allocator_traits<::cuda::std::remove_cvref_t<Allocator>>::template rebind_traits<T>;
 
   typename traits::allocator_type alloc_T(alloc);
 

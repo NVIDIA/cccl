@@ -61,98 +61,45 @@ public:
   void*
   allocate(backend_ctx_untyped& ctx, const data_place& memory_node, ::std::ptrdiff_t& s, event_list& prereqs) override
   {
-    void* result = nullptr;
+    auto dstream = memory_node.getDataStream(ctx.async_resources());
 
-    // That is a miss, we need to do an allocation
-    if (memory_node.is_host())
+    if (!memory_node.allocation_is_stream_ordered())
     {
-      cuda_safe_call(cudaMallocHost(&result, s));
+      // Blocking allocation (e.g., cudaMallocHost, cudaMallocManaged) - no stream synchronization needed
+      return memory_node.allocate(s, dstream.stream);
     }
-    else if (memory_node.is_managed())
+
+    // Stream-ordered allocation - synchronize prereqs with the stream
+    auto op = stream_async_op(ctx, dstream, prereqs);
+    if (ctx.generate_event_symbols())
     {
-      cuda_safe_call(cudaMallocManaged(&result, s));
+      op.set_symbol("allocate");
     }
-    else
-    {
-      if (memory_node.is_green_ctx())
-      {
-        fprintf(stderr,
-                "Pretend we use cudaMallocAsync on green context (using device %d in reality)\n",
-                device_ordinal(memory_node));
-      }
-
-      const int prev_dev_id = cuda_try<cudaGetDevice>();
-      // Optimization: track the current device ID
-      int current_dev_id = prev_dev_id;
-      SCOPE(exit)
-      {
-        if (current_dev_id != prev_dev_id)
-        {
-          cuda_safe_call(cudaSetDevice(prev_dev_id));
-        }
-      };
-
-      EXPECT(!memory_node.is_composite());
-
-      // (Note device_ordinal works with green contexts as well)
-      cuda_safe_call(cudaSetDevice(device_ordinal(memory_node)));
-      current_dev_id = device_ordinal(memory_node);
-
-      // Last possibility : this is a device
-      auto dstream = memory_node.getDataStream(ctx.async_resources());
-      auto op      = stream_async_op(ctx, dstream, prereqs);
-      if (ctx.generate_event_symbols())
-      {
-        op.set_symbol("cudaMallocAsync");
-      }
-      cuda_safe_call(cudaMallocAsync(&result, s, dstream.stream));
-      prereqs = op.end(ctx);
-    }
+    void* result = memory_node.allocate(s, dstream.stream);
+    prereqs      = op.end(ctx);
     return result;
   }
 
   void deallocate(
-    backend_ctx_untyped& ctx, const data_place& memory_node, event_list& prereqs, void* ptr, size_t /* sz */) override
+    backend_ctx_untyped& ctx, const data_place& memory_node, event_list& prereqs, void* ptr, size_t sz) override
   {
     auto dstream = memory_node.getDataStream(ctx.async_resources());
-    auto op      = stream_async_op(ctx, dstream, prereqs);
+
+    if (!memory_node.allocation_is_stream_ordered())
+    {
+      // Blocking deallocation - synchronize stream first, then free
+      cuda_safe_call(cudaStreamSynchronize(dstream.stream));
+      memory_node.deallocate(ptr, sz, dstream.stream);
+      return;
+    }
+
+    // Stream-ordered deallocation - synchronize prereqs with the stream
+    auto op = stream_async_op(ctx, dstream, prereqs);
     if (ctx.generate_event_symbols())
     {
-      op.set_symbol("cudaFreeAsync");
+      op.set_symbol("deallocate");
     }
-
-    if (memory_node.is_host())
-    {
-      // XXX TODO defer to deinit (or implement a blocking policy)?
-      cuda_safe_call(cudaStreamSynchronize(dstream.stream));
-      cuda_safe_call(cudaFreeHost(ptr));
-    }
-    else if (memory_node.is_managed())
-    {
-      cuda_safe_call(cudaStreamSynchronize(dstream.stream));
-      cuda_safe_call(cudaFree(ptr));
-    }
-    else
-    {
-      const int prev_dev_id = cuda_try<cudaGetDevice>();
-      // Optimization: track the current device ID
-      int current_dev_id = prev_dev_id;
-      SCOPE(exit)
-      {
-        if (current_dev_id != prev_dev_id)
-        {
-          cuda_safe_call(cudaSetDevice(prev_dev_id));
-        }
-      };
-
-      // (Note device_ordinal works with green contexts as well)
-      cuda_safe_call(cudaSetDevice(device_ordinal(memory_node)));
-      current_dev_id = device_ordinal(memory_node);
-
-      // Assuming device memory
-      cuda_safe_call(cudaFreeAsync(ptr, dstream.stream));
-    }
-
+    memory_node.deallocate(ptr, sz, dstream.stream);
     prereqs = op.end(ctx);
   }
 

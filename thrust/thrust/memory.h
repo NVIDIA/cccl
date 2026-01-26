@@ -75,6 +75,10 @@ THRUST_NAMESPACE_BEGIN
  *
  *  \see free
  *  \see device_malloc
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename DerivedPolicy>
 _CCCL_HOST_DEVICE pointer<void, DerivedPolicy>
@@ -114,6 +118,10 @@ malloc(const thrust::detail::execution_policy_base<DerivedPolicy>& system, std::
  *
  *  \see free
  *  \see device_malloc
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename T, typename DerivedPolicy>
 _CCCL_HOST_DEVICE pointer<T, DerivedPolicy>
@@ -168,6 +176,10 @@ malloc(const thrust::detail::execution_policy_base<DerivedPolicy>& system, std::
  *
  *  \see malloc
  *  \see return_temporary_buffer
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename T, typename DerivedPolicy>
 _CCCL_HOST_DEVICE ::cuda::std::pair<thrust::pointer<T, DerivedPolicy>,
@@ -203,6 +215,10 @@ get_temporary_buffer(const thrust::detail::execution_policy_base<DerivedPolicy>&
  *  // deallocate ptr with thrust::free
  *  thrust::free(device_sys, ptr);
  *  \endcode
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename DerivedPolicy, typename Pointer>
 _CCCL_HOST_DEVICE void free(const thrust::detail::execution_policy_base<DerivedPolicy>& system, Pointer ptr);
@@ -250,6 +266,10 @@ _CCCL_HOST_DEVICE void free(const thrust::detail::execution_policy_base<DerivedP
  *
  *  \see free
  *  \see get_temporary_buffer
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename DerivedPolicy, typename Pointer>
 _CCCL_HOST_DEVICE void return_temporary_buffer(
@@ -261,6 +281,10 @@ _CCCL_HOST_DEVICE void return_temporary_buffer(
  *  \param ptr The pointer of interest.
  *  \return <tt>ptr.get()</tt>, if the expression is well formed; <tt>ptr</tt>, otherwise.
  *  \see raw_reference_cast
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename Pointer>
 _CCCL_HOST_DEVICE typename thrust::detail::pointer_traits<Pointer>::raw_pointer raw_pointer_cast(Pointer ptr);
@@ -275,6 +299,10 @@ _CCCL_HOST_DEVICE typename thrust::detail::pointer_traits<Pointer>::raw_pointer 
  *  \note There are two versions of \p raw_reference_cast. One for <tt>const</tt> references,
  *        and one for non-<tt>const</tt>.
  *  \see raw_pointer_cast
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename T>
 _CCCL_HOST_DEVICE typename detail::raw_reference<T>::type raw_reference_cast(T& ref);
@@ -289,6 +317,10 @@ _CCCL_HOST_DEVICE typename detail::raw_reference<T>::type raw_reference_cast(T& 
  *  \note There are two versions of \p raw_reference_cast. One for <tt>const</tt> references,
  *        and one for non-<tt>const</tt>.
  *  \see raw_pointer_cast
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename T>
 _CCCL_HOST_DEVICE typename detail::raw_reference<const T>::type raw_reference_cast(const T& ref);
