@@ -55,11 +55,13 @@ struct scanKernelParams
 template <typename WarpspeedPolicy, typename InputT, typename OutputT, typename AccumT>
 struct ScanResources
 {
-  // Handle unaligned loads. We have at least 16 extra bytes of padding in every stage for squadLoadBulk.
+  // To handle unaligned loads, we have **at least** 16 extra bytes of padding in every stage for squadLoadBulk. This
+  // does not guarantee 16-byte alignment of every stage.
   static constexpr size_t input_tile_size  = WarpspeedPolicy::tile_size + ::cuda::ceil_div(16, sizeof(InputT));
   static constexpr size_t output_tile_size = input_tile_size * sizeof(InputT) / sizeof(OutputT);
 
-  union InOutT
+  // align to 16 bytes so each stage starts with the correct alignment
+  union alignas(16) InOutT
   {
     InputT in[input_tile_size];
     OutputT out[output_tile_size];
