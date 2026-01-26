@@ -55,15 +55,14 @@ struct scanKernelParams
 template <typename WarpspeedPolicy, typename InputT, typename OutputT, typename AccumT>
 struct ScanResources
 {
-  // To handle unaligned loads, we have **at least** 16 extra bytes of padding in every stage for squadLoadBulk. This
-  // does not guarantee 16-byte alignment of every stage.
-  static constexpr size_t input_tile_size  = WarpspeedPolicy::tile_size + ::cuda::ceil_div(16, sizeof(InputT));
-  static constexpr size_t output_tile_size = input_tile_size * sizeof(InputT) / sizeof(OutputT);
-
-  // align to 16 bytes so each stage starts with the correct alignment
-  struct alignas(16) InOutT
+  // align to at least 16 bytes (InputT/OutputT may be aligned higher) so each stage starts correctly aligned
+  struct alignas(16) alignas(InputT) alignas(OutputT) InOutT
   {
-    char inout[input_tile_size * sizeof(InputT)];
+    // the tile_size size is a multiple of the warp size, and thus for sure a multiple of 16
+    static_assert(WarpspeedPolicy::tile_size % 16 == 0, "tile_size must be multiple of 16");
+
+    // therefore, unaligned inputs need exactly 16 bytes extra for overcopying (tail padding = 16 - head padding)
+    char inout[WarpspeedPolicy::tile_size * sizeof(InputT) + 16];
   };
   static_assert(alignof(InOutT) >= alignof(InputT));
   static_assert(alignof(InOutT) >= alignof(OutputT));
@@ -616,7 +615,7 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void kernelBody(
         // otherwise, issue multiple bulk copies in chunks of the input tile size
         // TODO(bgruber): I am sure this could be implemented a lot more efficiently
         static constexpr int elem_per_chunk =
-          static_cast<int>(ScanResources<WarpspeedPolicy, InputT, OutputT, AccumT>::output_tile_size);
+          static_cast<int>(WarpspeedPolicy::tile_size * sizeof(InputT) / sizeof(OutputT));
         for (int chunk_offset = 0; chunk_offset < valid_items; chunk_offset += elem_per_chunk)
         {
           const int chunk_size = ::cuda::std::min(valid_items - chunk_offset, elem_per_chunk);
