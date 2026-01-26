@@ -232,7 +232,7 @@ __launch_bounds__(int(
                     KParameterT,
                     SelectDirectionParameterT,
                     NumSegmentsParameterT>::worker_per_segment_policy_t::BLOCK_THREADS)) __global__
-  void DeviceSegmentedTopKKernel(
+  void device_segmented_topk_kernel(
     KeyInputItItT d_key_segments_it,
     KeyOutputItItT d_key_segments_out_it,
     ValueInputItItT d_value_segments_it,
@@ -377,15 +377,15 @@ struct dispatch_batched_topk
 
     cudaError_t error = CubDebug(
       THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(grid_dim, block_dim, 0, stream)
-        .doit(DeviceSegmentedTopKKernel<max_policy_t,
-                                        KeyInputItItT,
-                                        KeyOutputItItT,
-                                        ValueInputItItT,
-                                        ValueOutputItItT,
-                                        SegmentSizeParameterT,
-                                        KParameterT,
-                                        SelectDirectionParameterT,
-                                        NumSegmentsParameterT>,
+        .doit(device_segmented_topk_kernel<max_policy_t,
+                                           KeyInputItItT,
+                                           KeyOutputItItT,
+                                           ValueInputItItT,
+                                           ValueOutputItItT,
+                                           SegmentSizeParameterT,
+                                           KParameterT,
+                                           SelectDirectionParameterT,
+                                           NumSegmentsParameterT>,
               d_key_segments_it,
               d_key_segments_out_it,
               d_value_segments_it,

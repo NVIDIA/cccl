@@ -216,7 +216,7 @@ C2H_TEST("DeviceSegmentedTopK::{Min,Max}Pairs work with small fixed-size segment
   auto d_keys_out     = cuda::make_strided_iterator(cuda::make_counting_iterator(d_keys_out_ptr), k);
 
   // Prepare values input & output
-auto values_in_it = cuda::make_counting_iterator(val_t{0});
+  auto values_in_it = cuda::make_counting_iterator(val_t{0});
   c2h::device_vector<val_t> values_out_buffer(num_segments * k, thrust::no_init);
   auto d_values_out_ptr = thrust::raw_pointer_cast(values_out_buffer.data());
   auto d_values_in      = cuda::make_strided_iterator(cuda::make_counting_iterator(values_in_it), segment_size);
@@ -237,7 +237,7 @@ auto values_in_it = cuda::make_counting_iterator(val_t{0});
     cub::detail::batched_topk::num_segments_uniform<>{num_segments},
     cub::detail::batched_topk::total_num_items_guarantee{num_segments * segment_size});
 
-  // Verificatoin:
+  // Verification:
   // - We verify correct top-k selection through the keys
   // - We verify that values were permuted along correctly by making sure values remain associated with their keys and making sure we do not duplicate values
   // Verify values remain associated with their corresponding keys
