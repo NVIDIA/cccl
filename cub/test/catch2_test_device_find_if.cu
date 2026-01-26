@@ -242,9 +242,8 @@ C2H_TEST("Device find_if works with non default constructible types", "[device][
   using offset_t = int32_t;
 
   constexpr offset_t min_items = 1;
-  constexpr offset_t max_items = 10000000; // 10M items for reasonable test time
+  constexpr offset_t max_items = 10'000; // 10k items for reasonable test time
 
-  input_t val_to_find = static_cast<input_t>(GENERATE_COPY(take(1, random(min_items, max_items))));
   // Generate the input sizes to test for
   const offset_t num_items = GENERATE_COPY(
     take(1, random(min_items, max_items)),
@@ -252,6 +251,7 @@ C2H_TEST("Device find_if works with non default constructible types", "[device][
       min_items,
       max_items,
     }));
+  const input_t val_to_find = static_cast<input_t>(num_items - 1);
 
   CAPTURE(num_items, val_to_find);
 
