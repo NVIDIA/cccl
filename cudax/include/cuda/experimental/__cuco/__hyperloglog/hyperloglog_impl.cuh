@@ -67,7 +67,6 @@ CUDAX_CUCO_DEFINE_STRONG_TYPE(__precision_t, int);
 template <class _Tp, ::cuda::thread_scope _Scope, class _Hash>
 class _HyperLogLog_Impl
 {
-  // We use `int` here since this is the smallest type that supports native `atomicMax` on GPUs
   using __fp_type         = double; ///< Floating point type used for reduction
   using __hash_value_type = decltype(::cuda::std::declval<_Hash>()(::cuda::std::declval<_Tp>())); ///< Hash value type
 
@@ -129,7 +128,7 @@ public:
   {
     for (int __i = __group.thread_rank(); __i < __sketch.size(); __i += __group.size())
     {
-      __sketch[__i] = __register_type{};
+      __sketch[__i] = 0;
     }
   }
 
@@ -161,7 +160,7 @@ public:
   {
     const auto __h      = __hash(__item);
     const auto __reg    = __h & __register_mask();
-    const auto __zeroes = ::cuda::std::countl_zero(__h | __register_mask()) + 1; // __clz
+    const auto __zeroes = ::cuda::std::countl_zero(__h | __register_mask()) + 1;
 
     // reversed order (same one as Spark uses)
     // const auto __reg    = __h >> ((sizeof(__hash_value_type) * 8) - __precision);
@@ -197,7 +196,7 @@ public:
     // vectorized loads
     if constexpr (::cuda::std::contiguous_iterator<_InputIt>)
     {
-      const auto __ptr                  = ::cuda::std::addressof(__first[0]);
+      const auto __ptr                  = ::cuda::std::to_address(__first[0]);
       constexpr auto __max_vector_bytes = 32;
       const auto __alignment =
         1u << ::cuda::std::countr_zero(reinterpret_cast<::cuda::std::uintptr_t>(__ptr) | __max_vector_bytes);
@@ -403,8 +402,8 @@ public:
 
     if (__group.thread_rank() == 0)
     {
-      new (&__block_sum) decltype(__block_sum){0};
-      new (&__block_zeroes) decltype(__block_zeroes){0};
+      __block_sum.store(0);
+      __block_zeroes.store(0);
     }
     __group.sync();
 
@@ -419,24 +418,10 @@ public:
 
     // warp reduce Z and V
     const auto __warp = ::cooperative_groups::tiled_partition<32, ::cooperative_groups::thread_block>(__group);
-
-    // TODO check if this is always true with latest ctk or cccl version and remove
-#if defined(CUDART_VERSION) && (CUDART_VERSION >= 12000)
     ::cooperative_groups::reduce_update_async(
       __warp, __block_sum, __thread_sum, ::cooperative_groups::plus<__fp_type>());
     ::cooperative_groups::reduce_update_async(
       __warp, __block_zeroes, __thread_zeroes, ::cooperative_groups::plus<int>());
-#else
-    const auto __warp_sum = ::cooperative_groups::reduce(__warp, __thread_sum, ::cooperative_groups::plus<__fp_type>());
-    const auto __warp_zeroes = ::cooperative_groups::reduce(__warp, __thread_zeroes, ::cooperative_groups::plus<int>());
-    // TODO warp sync needed?
-    // TODO use invoke_one
-    if (__warp.thread_rank() == 0)
-    {
-      __block_sum.fetch_add(__warp_sum, ::cuda::std::memory_order_relaxed);
-      __block_zeroes.fetch_add(__warp_zeroes, ::cuda::std::memory_order_relaxed);
-    }
-#endif
     __group.sync();
 
     if (__group.thread_rank() == 0)
