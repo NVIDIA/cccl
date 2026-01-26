@@ -24,12 +24,6 @@ CCCL_IGNORE_MSVC_TRADITIONAL_PREPROCESSOR_WARNING to suppress this warning.
 #  endif // !defined(_MSVC_TRADITIONAL) || _MSVC_TRADITIONAL == 1
 #endif // defined(_MSC_VER) && !defined(__clang__)
 
-#ifdef __has_include
-#  define _CCCL_HAS_INCLUDE(_X) __has_include(_X)
-#else
-#  define _CCCL_HAS_INCLUDE(_X) 0
-#endif
-
 #ifdef __COUNTER__
 #  define _CCCL_COUNTER() __COUNTER__
 #else

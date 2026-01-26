@@ -7,6 +7,8 @@
 
 #include <thrust/detail/raw_pointer_cast.h>
 
+#include <cuda/std/functional>
+
 #include "catch2_test_device_reduce.cuh"
 #include <c2h/catch2_test_helper.h>
 
@@ -32,8 +34,8 @@ C2H_TEST("DispatchSegmentedReduce::Dispatch: custom policy hub", "[segmented][re
   using input_t     = int;
   using output_t    = int;
   using offset_t    = int;
-  using reduction_t = ::cuda::std::plus<>;
-  using accum_t     = ::cuda::std::__accumulator_t<reduction_t, input_t, output_t>;
+  using reduction_t = cuda::std::plus<>;
+  using accum_t     = cuda::std::__accumulator_t<reduction_t, input_t, output_t>;
 
   c2h::device_vector<offset_t> offsets{0, 3, 3, 7, 9, 15};
   c2h::device_vector<input_t> in_items{

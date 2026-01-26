@@ -165,7 +165,13 @@ vector_base<T, Alloc>& vector_base<T, Alloc>::operator=(const vector_base& v)
   {
     m_storage.destroy_on_allocator_mismatch(v.m_storage, begin(), end());
     m_storage.deallocate_on_allocator_mismatch(v.m_storage);
-
+    if constexpr (::cuda::std::allocator_traits<Alloc>::propagate_on_container_copy_assignment::value)
+    {
+      if (m_storage.get_allocator() != v.m_storage.get_allocator())
+      {
+        m_size = 0;
+      }
+    }
     m_storage.propagate_allocator(v.m_storage);
 
     assign(v.begin(), v.end());

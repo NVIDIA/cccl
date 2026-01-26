@@ -97,7 +97,7 @@ public:
 //! ``device_memory_pool`` allocates device memory using
 //! `cudaMallocFromPoolAsync / cudaFreeAsync
 //! <https://docs.nvidia.com/cuda/cuda-runtime-api/group__CUDART__MEMORY__POOLS.html>`__
-//! for allocation/deallocation. A When constructed it creates an underlying \c
+//! for allocation/deallocation. When constructed it creates an underlying \c
 //! cudaMemPool_t with the location type set to \c cudaMemLocationTypeDevice and
 //! owns it.
 //!

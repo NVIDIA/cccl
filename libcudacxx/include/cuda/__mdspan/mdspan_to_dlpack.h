@@ -26,7 +26,7 @@
 #  include <cuda/__internal/dlpack.h>
 #  include <cuda/__mdspan/host_device_mdspan.h>
 #  include <cuda/__type_traits/is_floating_point.h>
-#  include <cuda/__type_traits/vector_type.h>
+#  include <cuda/__type_traits/is_vector_type.h>
 #  include <cuda/std/__cstddef/types.h>
 #  include <cuda/std/__exception/exception_macros.h>
 #  include <cuda/std/__fwd/complex.h>
