@@ -345,17 +345,17 @@ In C++23, the ``if consteval`` statement (`link <https://en.cppreference.com/w/c
 
 CUDA doesn't support exceptions in device code, however, sometimes we need to write host/device functions that use exceptions on host and ``__trap()`` on device. CCCL provides a set of macros that should be used in place of the standard C++ keywords to make the code compile in both, host and device code.
 
-+-----------------------------+-----------------------------------------------------------------------------------------------------------------+
-| ``_CCCL_TRY``               | Replacement for the ``try`` keyword                                                                             |
-+-----------------------------+-----------------------------------------------------------------------------------------------------------------+
-| ``_CCCL_CATCH (X)``         | Replacement for the ``catch (/*X*/)`` statement                                                                 |
-+-----------------------------+-----------------------------------------------------------------------------------------------------------------+
-| ``_CCCL_CATCH_ALL``         | Replacement for the ``catch (...)`` statement                                                                   |
-+-----------------------------+-----------------------------------------------------------------------------------------------------------------+
-| ``_CCCL_THROW(X, ...)``     | Replacement for the ``throw X(...)`` expression, ``X`` must be fully qualified type, without the leading ``::`` |
-+-----------------------------+-----------------------------------------------------------------------------------------------------------------+
-| ``_CCCL_RETHROW``           | Replacement for the plain ``throw`` expression                                                                  |
-+-----------------------------+-----------------------------------------------------------------------------------------------------------------+
++-----------------------------+------------------------------------------------------------------------------------------------------------------+
+| ``_CCCL_TRY``               | Replacement for the ``try`` keyword.                                                                             |
++-----------------------------+------------------------------------------------------------------------------------------------------------------+
+| ``_CCCL_CATCH (X)``         | Replacement for the ``catch (/*X*/)`` statement.                                                                 |
++-----------------------------+------------------------------------------------------------------------------------------------------------------+
+| ``_CCCL_CATCH_ALL``         | Replacement for the ``catch (...)`` statement.                                                                   |
++-----------------------------+------------------------------------------------------------------------------------------------------------------+
+| ``_CCCL_THROW(X, ...)``     | Replacement for the ``throw X(...)`` expression. ``X`` must be fully qualified type, without the leading ``::``. |
++-----------------------------+------------------------------------------------------------------------------------------------------------------+
+| ``_CCCL_RETHROW``           | Replacement for the plain ``throw`` expression.                                                                  |
++-----------------------------+------------------------------------------------------------------------------------------------------------------+
 
 *Note*: The ``_CCCL_CATCH`` clause must always introduce a named variable, like: ``_CCCL_CATCH(const exception_type& var)``.
 
