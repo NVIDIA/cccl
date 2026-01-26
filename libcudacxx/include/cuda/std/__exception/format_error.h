@@ -23,7 +23,6 @@
 #endif // no system header
 
 #include <cuda/std/__exception/msg_storage.h>
-#include <cuda/std/__string/string_view.h>
 #include <cuda/std/source_location>
 
 #if !_CCCL_COMPILER(NVRTC)
@@ -37,18 +36,17 @@ _CCCL_BEGIN_NAMESPACE_CUDA
 #if !_CCCL_COMPILER(NVRTC)
 
 inline char* __format_error(__msg_storage& __msg_buffer,
-                            ::cuda::std::__string_view __type_name,
+                            const char* __type_name,
                             const char* __msg,
                             ::cuda::std::source_location __loc = ::cuda::std::source_location::current()) noexcept
 {
   (void) ::snprintf(
     __msg_buffer.__buffer,
     __msg_buffer.__size,
-    "%s:%u: %.*s: %s",
+    "%s:%u: %s: %s",
     __loc.file_name(),
     __loc.line(),
-    static_cast<int>(__type_name.size()),
-    (__type_name.data() != nullptr) ? __type_name.data() : "<unknown_type>",
+    (__type_name != nullptr) ? __type_name : "<unknown_type>",
     (__msg != nullptr) ? __msg : "<unknown_error>");
   return __msg_buffer.__buffer;
 }

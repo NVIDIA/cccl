@@ -70,8 +70,8 @@ _CCCL_END_NAMESPACE_CUDA_STD
 #  define _CCCL_CATCH     catch
 #  define _CCCL_CATCH_ALL catch (...)
 #  define _CCCL_CATCH_FALLTHROUGH
-#  define _CCCL_THROW(...) throw __VA_ARGS__
-#  define _CCCL_RETHROW    throw
+#  define _CCCL_THROW(_TYPE, ...) throw ::_TYPE(__VA_ARGS__)
+#  define _CCCL_RETHROW           throw
 #else // ^^^ use exceptions ^^^ / vvv no exceptions vvv
 #  define _CCCL_TRY     \
     if constexpr (true) \
@@ -88,17 +88,18 @@ _CCCL_END_NAMESPACE_CUDA_STD
     else                          \
     {                             \
     }
-#  define _CCCL_THROW(...)                                                                                         \
-    do                                                                                                             \
-    {                                                                                                              \
-      NV_IF_TARGET(NV_IS_HOST, ({                                                                                  \
-                     ::cuda::__msg_storage __msg_buffer{};                                                         \
-                     ::cuda::__format_error(                                                                       \
-                       __msg_buffer, ::cuda::std::__pretty_nameof<decltype(__VA_ARGS__)>(), (__VA_ARGS__).what()); \
-                     ::fprintf(stderr, "%s\n", __msg_buffer.__buffer);                                             \
-                     ::fflush(stderr);                                                                             \
-                   }));                                                                                            \
-      ::cuda::std::terminate();                                                                                    \
+#  define _CCCL_THROW(_TYPE, ...)                                                                        \
+    do                                                                                                   \
+    {                                                                                                    \
+      NV_IF_ELSE_TARGET(NV_IS_HOST,                                                                      \
+                        ({                                                                               \
+                          ::cuda::__msg_storage __msg_buffer{};                                          \
+                          ::cuda::__format_error(__msg_buffer, #_TYPE, (_TYPE(__VA_ARGS__)).what());     \
+                          ::fputs(__msg_buffer.__buffer, stderr);                                        \
+                          ::fflush(stderr);                                                              \
+                        }),                                                                              \
+                        ({ _CCCL_ASSERT(false, "An instance of class " #_TYPE " would be thrown."); })); \
+      ::cuda::std::terminate();                                                                          \
     } while (0)
 #  define _CCCL_RETHROW ::cuda::std::terminate()
 #endif // ^^^ no exceptions ^^^
