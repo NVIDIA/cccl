@@ -1,4 +1,4 @@
-# Copyright (c) 2025, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
+# Copyright (c) 2025-2026, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
@@ -67,7 +67,7 @@ except ModuleNotFoundError:
         "   cd ..\n"
         "   git clone https://github.com/tpn/numba-cuda\n"
         "   cd numba-cuda\n"
-        "   git checkout 280-launch-config-contextvar\n"
+        "   git checkout 280-launch-config-v2\n"
         "   pip install -e '.[cu12]'\n"
         "   cd ..\n"
         "   # Assuming you don't have cccl already cloned:\n"
@@ -83,16 +83,6 @@ from ._common import (
 
 if TYPE_CHECKING:
     from numba.cuda.launchconfig import LaunchConfig
-
-if False:
-    from numba.core import config
-
-    config.DEBUG = True
-    config.DEBUG_JIT = True
-    config.DUMP_IR = True
-    config.CUDA_LOG_API_ARGS = True
-    config.CUDA_LOG_LEVEL = "debug"
-    # config.CUDA_ENABLE_PYNVJITLINK = True
 
 # Select the IR implementation once imports are complete.
 ir = cuda_ir if cuda_ir is not None else core_ir
@@ -451,6 +441,9 @@ def get_root_definition(
     all_assignments = []
     definitions = []
 
+    from ._types import TempStorage as TempStorageClass
+    from ._types import ThreadData as ThreadDataClass
+
     while instructions:
         counter += 1
         instr = instructions.pop()
@@ -618,9 +611,6 @@ def get_root_definition(
                     func_def = func_ir.get_definition(func.name)
                     if isinstance(func_def, (ir.Global, ir.FreeVar)):
                         func_obj = func_def.value
-
-                    from ._types import TempStorage as TempStorageClass
-                    from ._types import ThreadData as ThreadDataClass
 
                     is_thread_data = (
                         py_func is ThreadDataClass or func_obj is ThreadDataClass
