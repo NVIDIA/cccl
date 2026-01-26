@@ -17,7 +17,7 @@
 
 #include <cuda/iterator>
 #include <cuda/memory_pool>
-#include <cuda/std/__pstl/for_each_n.h>
+#include <cuda/std/__pstl_algorithm>
 #include <cuda/std/execution>
 #include <cuda/std/functional>
 #include <cuda/stream>

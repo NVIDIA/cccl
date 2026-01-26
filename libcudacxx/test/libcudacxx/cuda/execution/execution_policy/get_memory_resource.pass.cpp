@@ -12,7 +12,7 @@
 
 #include <cuda/functional>
 #include <cuda/memory_resource>
-#include <cuda/std/__pstl/for_each.h>
+#include <cuda/std/__pstl_algorithm>
 #include <cuda/std/execution>
 #include <cuda/std/memory>
 #include <cuda/std/type_traits>

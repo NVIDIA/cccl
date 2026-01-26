@@ -11,7 +11,7 @@
 #include <thrust/device_vector.h>
 
 #include <cuda/memory_pool>
-#include <cuda/std/__pstl/reduce.h>
+#include <cuda/std/__pstl_algorithm>
 
 #include "nvbench_helper.cuh"
 
