@@ -21,9 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__exception/format_error.h>
 #include <cuda/std/__exception/terminate.h>
-#include <cuda/std/__utility/typeid.h>
 
 #if !_CCCL_COMPILER(NVRTC)
 #  include <cstdio>
@@ -88,18 +86,21 @@ _CCCL_END_NAMESPACE_CUDA_STD
     else                          \
     {                             \
     }
-#  define _CCCL_THROW(_TYPE, ...)                                                                        \
-    do                                                                                                   \
-    {                                                                                                    \
-      NV_IF_ELSE_TARGET(NV_IS_HOST,                                                                      \
-                        ({                                                                               \
-                          ::cuda::__msg_storage __msg_buffer{};                                          \
-                          ::cuda::__format_error(__msg_buffer, #_TYPE, (_TYPE(__VA_ARGS__)).what());     \
-                          ::fputs(__msg_buffer.__buffer, stderr);                                        \
-                          ::fflush(stderr);                                                              \
-                        }),                                                                              \
-                        ({ _CCCL_ASSERT(false, "An instance of class " #_TYPE " would be thrown."); })); \
-      ::cuda::std::terminate();                                                                          \
+#  define _CCCL_THROW(_TYPE, ...)                                                                                \
+    do                                                                                                           \
+    {                                                                                                            \
+      NV_IF_ELSE_TARGET(NV_IS_HOST,                                                                              \
+                        ({                                                                                       \
+                          ::fprintf(stderr,                                                                      \
+                                    "%s:%u: An instance of class %s would be thrown.\n  what():  %s\nAborted\n", \
+                                    __FILE__,                                                                    \
+                                    __LINE__,                                                                    \
+                                    #_TYPE,                                                                      \
+                                    (_TYPE(__VA_ARGS__)).what());                                                \
+                          ::fflush(stderr);                                                                      \
+                        }),                                                                                      \
+                        ({ _CCCL_ASSERT(false, "An instance of class " #_TYPE " would be thrown."); }))          \
+      ::cuda::std::terminate();                                                                                  \
     } while (0)
 #  define _CCCL_RETHROW ::cuda::std::terminate()
 #endif // ^^^ no exceptions ^^^
