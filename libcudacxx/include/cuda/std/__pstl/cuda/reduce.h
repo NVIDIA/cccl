@@ -159,7 +159,7 @@ struct __pstl_dispatch<__pstl_algorithm::__reduce, __execution_backend::__cuda>
         ::cuda::std::addressof(__ret),
         __guard.__ptr_,
         sizeof(_Tp),
-        ::cudaMemcpyDeviceToHost,
+        ::cudaMemcpyDefault,
         __stream.get());
     }
 
