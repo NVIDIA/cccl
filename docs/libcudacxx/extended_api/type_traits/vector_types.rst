@@ -32,7 +32,7 @@ Defined in the ``<cuda/type_traits>`` header.
 - ``longlong1``, ``longlong2``, ``longlong3``, ``longlong4``, and alignment variants in CUDA Toolkit 13.0+.
 - ``ulonglong1``, ``ulonglong2``, ``ulonglong3``, ``ulonglong4``, and alignment variants in CUDA Toolkit 13.0+.
 - ``float1``, ``float2``, ``float3``, ``float4``.
-- ``double1``, ``double2``, ``double3``, ``double4`` (and alignment variants in CUDA Toolkit 13.0+).
+- ``double1``, ``double2``, ``double3``, ``double4``, and alignment variants in CUDA Toolkit 13.0+.
 - ``dim3``.
 
 ``cuda::is_extended_fp_vector_type_v``
