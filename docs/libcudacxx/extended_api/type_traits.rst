@@ -26,5 +26,5 @@ Type traits
 
    * - :ref:`Vector Type Traits <libcudacxx-extended-api-type_traits-vector_types>`
      - Type traits for CUDA vector types
-     - CCCL 3.0.0
-     - CUDA 13.0
+     - CCCL 3.3.0
+     - CUDA 13.3
