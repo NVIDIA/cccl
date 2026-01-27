@@ -500,16 +500,18 @@ def generate_dispatch_job_image(matrix_job, job_type):
 
     return f"rapidsai/devcontainers:{devcontainer_version}-cpp-{host_compiler}-cuda{ctk}{ctk_suffix}"
 
+
 def generate_dispatch_job_environment(matrix_job, job_type):
     if not matrix_job["environment"]:
         return "[]"
 
-    env = "[ "
+    env = "["
     for environ in matrix_job["environment"]:
-        env += environ
+        env += f" '{environ}' "
 
-    env += " ]"
+    env += "]"
     return env
+
 
 def generate_dispatch_job_command(matrix_job, job_type):
     script_path = "./ci/windows" if is_windows(matrix_job) else "./ci"
