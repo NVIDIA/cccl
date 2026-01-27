@@ -34,6 +34,8 @@
 #include <cuda/experimental/memory_resource.cuh>
 #include <cuda/experimental/stream.cuh>
 
+#include <stdexcept>
+
 #include <cuda/std/__cccl/prologue.h>
 
 namespace cuda::experimental::cuco
@@ -438,7 +440,7 @@ private:
     const auto __in_range = ::cuda::in_range(__value, 4, 18);
     if (!__in_range)
     {
-      _CCCL_THROW(::std::invalid_argument{__message});
+      _CCCL_THROW(std::invalid_argument, __message);
     }
     return __precision;
   }
