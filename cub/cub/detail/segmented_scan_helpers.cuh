@@ -114,41 +114,41 @@ struct projector_iv
   }
 };
 
-template <typename IterTy,
-          typename OffsetTy,
-          typename SpanTy,
-          typename BeginOffsetIterTy,
+template <typename IterT,
+          typename OffsetT,
+          typename SpanT,
+          typename BeginOffsetIterT,
           typename ReadTransformT,
           typename WriteTransformT>
 struct multi_segmented_iterator
 {
-  IterTy m_it;
-  OffsetTy m_start;
-  SpanTy m_offsets;
-  BeginOffsetIterTy m_it_idx_begin;
+  IterT m_it;
+  OffsetT m_start;
+  SpanT m_offsets;
+  BeginOffsetIterT m_it_idx_begin;
   ReadTransformT m_read_transform_fn;
   WriteTransformT m_write_transform_fn;
 
   using iterator_concept      = ::cuda::std::random_access_iterator_tag;
   using iterator_category     = ::cuda::std::random_access_iterator_tag;
-  using underlying_value_type = ::cuda::std::iter_value_t<IterTy>;
+  using underlying_value_type = ::cuda::std::iter_value_t<IterT>;
   using value_type            = ::cuda::std::invoke_result_t<ReadTransformT, underlying_value_type, bool>;
-  using difference_type       = ::cuda::std::remove_cv_t<OffsetTy>;
+  using difference_type       = ::cuda::std::remove_cv_t<OffsetT>;
   using reference             = void;
   using pointer               = void;
 
-  static_assert(::cuda::std::is_same_v<difference_type, typename SpanTy::value_type>, "types are inconsistent");
+  static_assert(::cuda::std::is_same_v<difference_type, typename SpanT::value_type>, "types are inconsistent");
 
   struct __mapping_proxy
   {
-    IterTy m_it;
-    OffsetTy m_offset;
+    IterT m_it;
+    OffsetT m_offset;
     bool m_head_flag;
     ReadTransformT m_read_fn;
     WriteTransformT m_write_fn;
 
     _CCCL_DEVICE _CCCL_FORCEINLINE explicit __mapping_proxy(
-      IterTy it, OffsetTy offset, bool head_flag, ReadTransformT read_fn, WriteTransformT write_fn)
+      IterT it, OffsetT offset, bool head_flag, ReadTransformT read_fn, WriteTransformT write_fn)
         : m_it(it)
         , m_offset(offset)
         , m_head_flag(head_flag)
@@ -175,10 +175,10 @@ struct multi_segmented_iterator
   };
 
   _CCCL_DEVICE _CCCL_FORCEINLINE multi_segmented_iterator(
-    IterTy it,
-    OffsetTy start,
-    SpanTy cum_sizes,
-    BeginOffsetIterTy it_idx_begin,
+    IterT it,
+    OffsetT start,
+    SpanT cum_sizes,
+    BeginOffsetIterT it_idx_begin,
     ReadTransformT read_fn,
     WriteTransformT write_fn)
       : m_it{it}
@@ -191,22 +191,16 @@ struct multi_segmented_iterator
 
   _CCCL_DEVICE _CCCL_FORCEINLINE __mapping_proxy operator*() const
   {
-    const auto& [segment_id, rel_offset] = locate(0);
-    const auto offset                    = m_it_idx_begin[segment_id] + rel_offset;
-    const bool head_flag                 = rel_offset == 0;
-    return __mapping_proxy(m_it, offset, head_flag, m_read_transform_fn, m_write_transform_fn);
+    return make_proxy(0);
   }
 
   _CCCL_DEVICE _CCCL_FORCEINLINE __mapping_proxy operator[](difference_type n) const
   {
-    const auto& [segment_id, rel_offset] = locate(n);
-    const auto offset                    = m_it_idx_begin[segment_id] + rel_offset;
-    const bool head_flag                 = (rel_offset == 0);
-    return __mapping_proxy(m_it, offset, head_flag, m_read_transform_fn, m_write_transform_fn);
+    return make_proxy(n);
   }
 
   _CCCL_DEVICE _CCCL_FORCEINLINE friend multi_segmented_iterator
-  operator+(const multi_segmented_iterator& iter, OffsetTy n)
+  operator+(const multi_segmented_iterator& iter, difference_type n)
   {
     return {iter.m_it,
             iter.m_start + n,
@@ -222,10 +216,11 @@ private:
     int offset_size              = static_cast<int>(m_offsets.size());
     const difference_type offset = m_start + n;
 
+    int segment_id = 0;
+    auto offset_c  = static_cast<typename SpanT::value_type>(0);
+    ;
     difference_type shifted_offset = offset;
-    int segment_id                 = 0;
-    auto offset_c                  = m_offsets[0];
-    for (int i = 1; i < offset_size; ++i)
+    for (int i = 0; i < offset_size; ++i)
     {
       const auto offset_n = m_offsets[i];
       const bool cond     = ((offset_c <= offset) && (offset < offset_n));
@@ -234,6 +229,14 @@ private:
       offset_c            = offset_n;
     }
     return {segment_id, shifted_offset};
+  }
+
+  _CCCL_DEVICE _CCCL_FORCEINLINE __mapping_proxy make_proxy(difference_type n) const
+  {
+    const auto& [segment_id, rel_offset] = locate(n);
+    const auto offset                    = m_it_idx_begin[segment_id] + rel_offset;
+    const bool head_flag                 = (rel_offset == 0);
+    return __mapping_proxy(m_it, offset, head_flag, m_read_transform_fn, m_write_transform_fn);
   }
 };
 } // namespace multi_segment_helpers
