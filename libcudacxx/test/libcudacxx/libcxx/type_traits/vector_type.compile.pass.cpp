@@ -8,10 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#include <cuda/__type_traits/is_vector_type.h>
-#include <cuda/__type_traits/vector_type.h>
 #include <cuda/std/cstddef>
-#include <cuda/std/type_traits>
+#include <cuda/type_traits>
 
 template <class T, cuda::std::size_t Size, class Ref>
 __host__ __device__ void test()
@@ -19,6 +17,11 @@ __host__ __device__ void test()
   using Vec = cuda::__vector_type_t<T, Size>;
   static_assert(cuda::std::is_same_v<Vec, Ref>);
   static_assert(cuda::__has_vector_type_v<T, Size> == !cuda::std::is_same_v<Ref, void>);
+  if constexpr (!cuda::std::is_same_v<Ref, void>)
+  {
+    static_assert(cuda::__vector_size_v<Vec> == Size);
+    static_assert(cuda::std::is_same_v<cuda::__scalar_type_t<Vec>, T>);
+  }
 }
 
 __host__ __device__ void test()
@@ -196,11 +199,19 @@ __host__ __device__ void test()
 #if _CCCL_HAS_NVFP16()
   test<__half, 2, __half2>();
   static_assert(cuda::__is_extended_fp_vector_type_v<__half2>);
+  // invalid combinations
+  test<__half, 1, void>();
+  test<__half, 3, void>();
+  test<__half, 4, void>();
 #endif // _CCCL_HAS_NVFP16()
 
 #if _CCCL_HAS_NVBF16()
   test<__nv_bfloat16, 2, __nv_bfloat162>();
   static_assert(cuda::__is_extended_fp_vector_type_v<__nv_bfloat162>);
+  // invalid combinations
+  test<__nv_bfloat16, 1, void>();
+  test<__nv_bfloat16, 3, void>();
+  test<__nv_bfloat16, 4, void>();
 #endif // _CCCL_HAS_NVBF16()
 
 #if _CCCL_HAS_NVFP8()
@@ -247,6 +258,8 @@ __host__ __device__ void test()
 
   static_assert(!cuda::__is_vector_type_v<int>);
   static_assert(!cuda::__is_vector_type_v<void>);
+  static_assert(cuda::__is_vector_type_v<dim3>);
+  static_assert(cuda::__vector_size_v<dim3> == 3);
 }
 
 int main(int, char**)
