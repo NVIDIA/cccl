@@ -16,7 +16,7 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cub/detail/segmented_scan_multi_segment_helpers.cuh>
+#include <cub/detail/segmented_scan_helpers.cuh>
 #include <cub/iterator/cache_modified_input_iterator.cuh>
 #include <cub/thread/thread_reduce.cuh> // ThreadReduce
 #include <cub/thread/thread_scan.cuh> // detail::ThreadInclusiveScan
