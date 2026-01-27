@@ -42,7 +42,7 @@
 #if !defined(_CCCL_HAS_THREAD_API_PTHREAD) && !defined(_CCCL_HAS_THREAD_API_WIN32) \
   && !defined(_CCCL_HAS_THREAD_API_EXTERNAL)
 #  if defined(__GNU__) || _CCCL_OS(LINUX) || _CCCL_OS(APPLE) || _CCCL_OS(QNX) \
-    || (defined(__MINGW32__) && _CCCL_HAS_INCLUDE(<pthread.h>))
+    || (defined(__MINGW32__) && __has_include(<pthread.h>))
 #    define _CCCL_HAS_THREAD_API_PTHREAD
 #  elif defined(_WIN32)
 #    define _CCCL_HAS_THREAD_API_WIN32
