@@ -21,6 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/__utility/in_range.h>
 #include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__algorithm/min.h>
 #include <cuda/std/__cmath/abs.h>
@@ -40,7 +41,7 @@ namespace cuda::experimental::cuco::__hyperloglog_ns
 //!
 //! @note Variable names correspond to the definitions given in the HLL++ paper:
 //! https://static.googleusercontent.com/media/research.google.com/de//pubs/archive/40671.pdf
-//! @note Previcion must be >= 4.
+//! @note Precision must be >= 4.
 //!
 class _Finalizer
 {
@@ -50,16 +51,18 @@ class _Finalizer
 public:
   //! @brief Constructs an HLL finalizer object.
   //!
-  //! @param precision HLL precision parameter
+  //! @param __precision_ HLL precision parameter
   _CCCL_API constexpr _Finalizer(int __precision_) noexcept
       : __precision{__precision_}
       , __m{static_cast<int>(1u << __precision_)}
-  {}
+  {
+    _CCCL_ASSERT(::cuda::in_range(__precision_, 4, 18), "Precision must be between 4 and 18");
+  }
 
   //! @brief Compute the bias-corrected cardinality estimate.
   //!
-  //! @param z Geometric mean of registers
-  //! @param v Number of 0 registers
+  //! @param __z Geometric mean of registers
+  //! @param __v Number of 0 registers
   //!
   //! @return Bias-corrected cardinality estimate
   [[nodiscard]] _CCCL_API ::cuda::std::size_t operator()(double __z, int __v) const noexcept

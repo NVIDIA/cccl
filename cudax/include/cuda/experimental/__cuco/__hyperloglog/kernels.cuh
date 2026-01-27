@@ -63,11 +63,11 @@ CCCL_DETAIL_KERNEL_ATTRIBUTES void __clear(_RefType __ref)
 
 template <int _VectorSize, class _RefType>
 CCCL_DETAIL_KERNEL_ATTRIBUTES void
-__add_shmem_vectorized(const typename _RefType::value_type* __first, ::cuda::std::int64_t __n, _RefType __ref)
+__add_shmem_vectorized(const typename _RefType::__value_type* __first, ::cuda::std::int64_t __n, _RefType __ref)
 {
-  using __value_type     = typename _RefType::value_type;
+  using __value_type     = typename _RefType::__value_type;
   using __vector_type    = ::cuda::std::array<__value_type, _VectorSize>;
-  using __local_ref_type = typename _RefType::template with_scope<::cuda::std::thread_scope_block>;
+  using __local_ref_type = typename _RefType::template __with_scope<::cuda::std::thread_scope_block>;
 
   // Base address of dynamic shared memory is guaranteed to be aligned to at least 16 bytes which is
   // sufficient for this purpose
@@ -86,7 +86,7 @@ __add_shmem_vectorized(const typename _RefType::value_type* __first, ::cuda::std
   __vector_type __vec;
   while (__idx < __n / _VectorSize)
   {
-    __vec = *static_cast<const __vector_type*>(
+    __vec = *reinterpret_cast<const __vector_type*>(
       ::cuda::std::assume_aligned<sizeof(__vector_type)>(__first + __idx * _VectorSize));
     for (int i = 0; i < _VectorSize; ++i)
     {
@@ -96,7 +96,6 @@ __add_shmem_vectorized(const typename _RefType::value_type* __first, ::cuda::std
     __idx += __loop_stride;
   }
   // a single thread processes the remaining items
-#if defined(CUDART_VERSION) && (CUDART_VERSION >= 12010)
   ::cooperative_groups::invoke_one(__grid, [&]() {
     const auto __remainder = __n % _VectorSize;
     for (int __i = 0; __i < __remainder; ++__i)
@@ -104,16 +103,7 @@ __add_shmem_vectorized(const typename _RefType::value_type* __first, ::cuda::std
       __local_ref.__add(*(__first + __n - __i - 1));
     }
   });
-#else
-  if (__grid.thread_rank() == 0)
-  {
-    const auto __remainder = __n % _VectorSize;
-    for (int __i = 0; __i < __remainder; ++__i)
-    {
-      __local_ref.__add(*(__first + __n - __i - 1));
-    }
-  }
-#endif
+
   __block.sync();
 
   __ref.__merge(__block, __local_ref);
@@ -122,7 +112,7 @@ __add_shmem_vectorized(const typename _RefType::value_type* __first, ::cuda::std
 template <class _InputIt, class _RefType>
 CCCL_DETAIL_KERNEL_ATTRIBUTES void __add_shmem(_InputIt __first, ::cuda::std::int64_t __n, _RefType __ref)
 {
-  using __local_ref_type = typename _RefType::template with_scope<::cuda::std::thread_scope_block>;
+  using __local_ref_type = typename _RefType::template __with_scope<::cuda::std::thread_scope_block>;
 
   // TODO assert alignment
   extern __shared__ ::cuda::std::byte __local_sketch[];

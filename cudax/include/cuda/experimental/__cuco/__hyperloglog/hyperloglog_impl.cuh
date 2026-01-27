@@ -26,6 +26,7 @@
 #include <cuda/__memory_resource/legacy_pinned_memory_resource.h>
 #include <cuda/__runtime/api_wrapper.h>
 #include <cuda/__stream/stream_ref.h>
+#include <cuda/__utility/in_range.h>
 #include <cuda/atomic>
 #include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__bit/countr.h>
@@ -33,6 +34,7 @@
 #include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__iterator/concepts.h>
 #include <cuda/std/__memory/addressof.h>
+#include <cuda/std/__memory/pointer_traits.h>
 #include <cuda/std/__utility/declval.h>
 #include <cuda/std/numbers>
 #include <cuda/std/span>
@@ -65,7 +67,7 @@ CUDAX_CUCO_DEFINE_STRONG_TYPE(__precision_t, int);
 //! @tparam _Scope The scope in which operations will be performed by individual threads
 //! @tparam _Hash Hash function used to hash items
 template <class _Tp, ::cuda::thread_scope _Scope, class _Hash>
-class _HyperLogLog_Impl
+class __hyperloglog_impl
 {
   using __fp_type         = double; ///< Floating point type used for reduction
   using __hash_value_type = decltype(::cuda::std::declval<_Hash>()(::cuda::std::declval<_Tp>())); ///< Hash value type
@@ -81,15 +83,15 @@ private:
   ::cuda::std::span<__register_type> __sketch; ///< HLL sketch storage
 
   template <class _Tp_, ::cuda::thread_scope _Scope_, class _Hash_>
-  friend struct _HyperLogLog_Impl;
+  friend struct __hyperloglog_impl;
 
 public:
   static constexpr auto __thread_scope = _Scope; ///< CUDA thread scope
 
   template <::cuda::thread_scope _NewScope>
-  using with_scope = _HyperLogLog_Impl<_Tp, _NewScope, _Hash>; ///< Ref type with different thread scope
+  using __with_scope = __hyperloglog_impl<_Tp, _NewScope, _Hash>; ///< Ref type with different thread scope
 
-  //! @brief Constructs a non-owning `_HyperLogLog_Impl` object.
+  //! @brief Constructs a non-owning `__hyperloglog_impl` object.
   //!
   //! @throw If sketch size < 0.0625KB or 64B or standard deviation > 0.2765. Throws if called from
   //! host; __trap() if called from device.
@@ -99,7 +101,7 @@ public:
   //!
   //! @param __sketch_span Reference to sketch storage
   //! @param __hash The hash function used to hash items
-  _CCCL_API constexpr _HyperLogLog_Impl(::cuda::std::span<::cuda::std::byte> __sketch_span, const _Hash& __hash)
+  _CCCL_API constexpr __hyperloglog_impl(::cuda::std::span<::cuda::std::byte> __sketch_span, const _Hash& __hash)
       : __hash{__hash}
       , __precision{::cuda::std::countr_zero(
           __sketch_bytes(static_cast<::cuda::experimental::cuco::__sketch_size_kb_t>(__sketch_span.size() / 1024.0))
@@ -112,7 +114,7 @@ public:
       _CCCL_THROW(::std::invalid_argument{"Sketch storage has insufficient alignment"});
     }
 
-    if (__precision < 4)
+    if (!::cuda::in_range(__precision, 4, 18))
     {
       _CCCL_THROW(::std::invalid_argument{"Minimum required sketch size is 0.0625KB or 64B"});
     }
@@ -196,7 +198,7 @@ public:
     // vectorized loads
     if constexpr (::cuda::std::contiguous_iterator<_InputIt>)
     {
-      const auto __ptr                  = ::cuda::std::to_address(__first[0]);
+      const auto __ptr                  = ::cuda::std::to_address(__first);
       constexpr auto __max_vector_bytes = 32;
       const auto __alignment =
         1u << ::cuda::std::countr_zero(reinterpret_cast<::cuda::std::uintptr_t>(__ptr) | __max_vector_bytes);
@@ -206,16 +208,16 @@ public:
       {
         using ::cuda::experimental::cuco::__hyperloglog_ns::__add_shmem_vectorized;
         case 2:
-          __kernel = reinterpret_cast<const void*>(__add_shmem_vectorized<2, _HyperLogLog_Impl>);
+          __kernel = reinterpret_cast<const void*>(__add_shmem_vectorized<2, __hyperloglog_impl>);
           break;
         case 4:
-          __kernel = reinterpret_cast<const void*>(__add_shmem_vectorized<4, _HyperLogLog_Impl>);
+          __kernel = reinterpret_cast<const void*>(__add_shmem_vectorized<4, __hyperloglog_impl>);
           break;
         case 8:
-          __kernel = reinterpret_cast<const void*>(__add_shmem_vectorized<8, _HyperLogLog_Impl>);
+          __kernel = reinterpret_cast<const void*>(__add_shmem_vectorized<8, __hyperloglog_impl>);
           break;
         case 16:
-          __kernel = reinterpret_cast<const void*>(__add_shmem_vectorized<16, _HyperLogLog_Impl>);
+          __kernel = reinterpret_cast<const void*>(__add_shmem_vectorized<16, __hyperloglog_impl>);
           break;
       };
     }
@@ -253,7 +255,7 @@ public:
     else
     {
       __kernel = reinterpret_cast<const void*>(
-        ::cuda::experimental::cuco::__hyperloglog_ns::__add_shmem<_InputIt, _HyperLogLog_Impl>);
+        ::cuda::experimental::cuco::__hyperloglog_ns::__add_shmem<_InputIt, __hyperloglog_impl>);
       void* __kernel_args[] = {const_cast<void*>(reinterpret_cast<const void*>(&__first)),
                                const_cast<void*>(reinterpret_cast<const void*>(&__num_items)),
                                reinterpret_cast<void*>(this)};
@@ -282,7 +284,7 @@ public:
         // Computes sketch directly in global memory. (Fallback path in case there is not enough
         // shared memory available)
         __kernel = reinterpret_cast<const void*>(
-          ::cuda::experimental::cuco::__hyperloglog_ns::__add_gmem<_InputIt, _HyperLogLog_Impl>);
+          ::cuda::experimental::cuco::__hyperloglog_ns::__add_gmem<_InputIt, __hyperloglog_impl>);
 
         _CCCL_TRY_CUDA_API(
           ::cudaOccupancyMaxPotentialBlockSize,
@@ -334,7 +336,7 @@ public:
   //! @param __group CUDA Cooperative group this operation is executed in
   //! @param __other Other estimator reference to be merged into `*this`
   template <class _CG, ::cuda::thread_scope _OtherScope>
-  _CCCL_DEVICE constexpr void __merge(_CG __group, _HyperLogLog_Impl<_Tp, _OtherScope, _Hash>& __other)
+  _CCCL_DEVICE constexpr void __merge(_CG __group, __hyperloglog_impl<_Tp, _OtherScope, _Hash>& __other)
   {
     if (__other.__precision != __precision)
     {
@@ -358,7 +360,7 @@ public:
   //! @param __stream CUDA stream this operation is executed in
   template <::cuda::thread_scope _OtherScope>
   _CCCL_HOST constexpr void
-  __merge_async(const _HyperLogLog_Impl<_Tp, _OtherScope, _Hash>& __other, ::cuda::stream_ref __stream)
+  __merge_async(const __hyperloglog_impl<_Tp, _OtherScope, _Hash>& __other, ::cuda::stream_ref __stream)
   {
     if (__other.__precision != __precision)
     {
@@ -382,7 +384,7 @@ public:
   //! @param __stream CUDA stream this operation is executed in
   template <::cuda::thread_scope _OtherScope>
   _CCCL_HOST constexpr void
-  __merge(const _HyperLogLog_Impl<_Tp, _OtherScope, _Hash>& __other, ::cuda::stream_ref __stream)
+  __merge(const __hyperloglog_impl<_Tp, _OtherScope, _Hash>& __other, ::cuda::stream_ref __stream)
   {
     __merge_async(__other, __stream);
     __stream.sync();
@@ -525,8 +527,8 @@ public:
     // implementation taken from
     // https://github.com/apache/spark/blob/6a27789ad7d59cd133653a49be0bb49729542abe/sql/catalyst/src/main/scala/org/apache/spark/sql/catalyst/util/HyperLogLogPlusPlusHelper.scala#L43
 
-    auto const __precision_from_sd = static_cast<int>(
-      ::cuda::std::ceil(2.0 * ::cuda::std::log(1.106 / __standard_deviation) / ::cuda::std::numbers::ln2));
+    auto const __precision_from_sd =
+      static_cast<int>(::cuda::std::ceil(2.0 * ::cuda::std::log2(1.106 / __standard_deviation)));
 
     //  minimum precision is 4 or 64 bytes
     const auto __precision_ = ::cuda::std::max(static_cast<int>(4), __precision_from_sd);

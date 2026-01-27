@@ -22,10 +22,11 @@
 #endif // no system header
 
 #include <cuda/__stream/stream_ref.h>
+#include <cuda/__utility/in_range.h>
 #include <cuda/std/__bit/countr.h>
 #include <cuda/std/__cccl/assert.h>
 #include <cuda/std/__cstddef/types.h>
-#include <cuda/utility>
+#include <cuda/std/__utility/forward.h>
 
 #include <cuda/experimental/__cuco/hash_functions.cuh>
 #include <cuda/experimental/__cuco/hyperloglog_ref.cuh>

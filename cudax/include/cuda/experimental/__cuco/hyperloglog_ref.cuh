@@ -48,7 +48,7 @@ template <class _Tp,
           class _Hash = ::cuda::experimental::cuco::hash<_Tp, ::cuda::experimental::cuco::hash_algorithm::xxhash_64>>
 class hyperloglog_ref
 {
-  using __impl_type = ::cuda::experimental::cuco::_HyperLogLog_Impl<_Tp, _Scope, _Hash>;
+  using __impl_type = ::cuda::experimental::cuco::__hyperloglog_impl<_Tp, _Scope, _Hash>;
 
   __impl_type __impl; ///< Implementation object
 
