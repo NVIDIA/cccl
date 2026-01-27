@@ -125,7 +125,7 @@ template <typename _ElementType>
   //--------------------------------------------------------------------------------------------------------------------
   // CUDA built-in vector types
 #  if _CCCL_HAS_CTK()
-  else if constexpr (::cuda::__is_vector_type_v<_ElementType> || ::cuda::__is_extended_fp_vector_type_v<_ElementType>)
+  else if constexpr (::cuda::is_vector_type_v<_ElementType> || ::cuda::is_extended_fp_vector_type_v<_ElementType>)
   {
     constexpr ::cuda::std::uint16_t __lanes = ::cuda::std::tuple_size_v<_ElementType>;
     if constexpr (__lanes == 2 || __lanes == 4)

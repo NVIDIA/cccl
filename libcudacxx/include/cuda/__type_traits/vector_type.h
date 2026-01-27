@@ -466,16 +466,16 @@ template <class _Tp, ::cuda::std::size_t _Size>
 }
 
 template <class _Tp, ::cuda::std::size_t _Size>
-using __vector_type_t = decltype(::cuda::__cccl_vector_type_t_impl<_Tp, _Size>());
+using vector_type_t = decltype(::cuda::__cccl_vector_type_t_impl<_Tp, _Size>());
 
 template <class _Tp, ::cuda::std::size_t _Size>
-inline constexpr bool __has_vector_type_v = !::cuda::std::is_same_v<__vector_type_t<_Tp, _Size>, void>;
+inline constexpr bool has_vector_type_v = !::cuda::std::is_same_v<vector_type_t<_Tp, _Size>, void>;
 
 template <class _Tp>
-using __scalar_type_t = ::cuda::std::tuple_element_t<0, _Tp>;
+using scalar_type_t = ::cuda::std::tuple_element_t<0, _Tp>;
 
 template <class _Tp>
-inline constexpr auto __vector_size_v = ::cuda::std::tuple_size_v<_Tp>;
+inline constexpr auto vector_size_v = ::cuda::std::tuple_size_v<_Tp>;
 
 _CCCL_END_NAMESPACE_CUDA
 
