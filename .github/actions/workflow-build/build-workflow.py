@@ -505,11 +505,12 @@ def generate_dispatch_job_environment(matrix_job, job_type):
     if not matrix_job["environment"]:
         return "[]"
 
-    env = "["
+    env = "[ "
+
     for environ in matrix_job["environment"]:
         env += f" '{environ}' "
 
-    env += "]"
+    env += " ]"
     return env
 
 
