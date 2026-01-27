@@ -243,5 +243,8 @@ C2H_TEST("DeviceBatchedTopK::{Min,Max}Pairs work with small fixed-size segments"
   segmented_sort_keys(expected_keys, num_segments, segment_size, direction);
   compact_sorted_keys_to_topk(expected_keys, segment_size, k);
 
+  // Since the results of top-k are unordered, sort output segments before comparison.
+  segmented_sort_keys(keys_out_buffer, num_segments, k, direction);
+
   REQUIRE(expected_keys == keys_out_buffer);
 }
