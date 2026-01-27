@@ -90,8 +90,8 @@ C2H_CCCLRT_TEST_LIST("managed_memory_resource allocation", "[memory_resource]", 
 {
   using managed_resource = TestType;
 #if _CCCL_CTK_AT_LEAST(13, 0)
-  if (cuda::std::is_same_v<managed_resource, cuda::managed_memory_pool_ref>
-      && !cuda::device_attributes::concurrent_managed_access(cuda::devices[0]))
+  if (!cuda::device_attributes::concurrent_managed_access(cuda::devices[0])
+      && cuda::std::is_same_v<managed_resource, cuda::managed_memory_pool_ref>)
   {
     return;
   }
@@ -182,8 +182,8 @@ C2H_CCCLRT_TEST_LIST("managed_memory_resource comparison", "[memory_resource]", 
 {
   using managed_resource = TestType;
 #if _CCCL_CTK_AT_LEAST(13, 0)
-  if (cuda::std::is_same_v<managed_resource, cuda::managed_memory_pool_ref>
-      && !cuda::device_attributes::concurrent_managed_access(cuda::devices[0]))
+  if (!cuda::device_attributes::concurrent_managed_access(cuda::devices[0])
+      && cuda::std::is_same_v<managed_resource, cuda::managed_memory_pool_ref>)
   {
     return;
   }
