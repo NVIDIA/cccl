@@ -57,6 +57,7 @@ _TYPE_TO_ENUM = {
     types.float16: TypeEnum.FLOAT16,
     types.float32: TypeEnum.FLOAT32,
     types.float64: TypeEnum.FLOAT64,
+    types.boolean: TypeEnum.BOOLEAN,
 }
 
 
