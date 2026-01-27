@@ -115,4 +115,3 @@ See Also
 --------
 
 - :ref:`Tuple Protocol for Vector Types <libcudacxx-extended-api-vector-tuple-protocol>` - Tuple protocol support for CUDA vector types.
-  
