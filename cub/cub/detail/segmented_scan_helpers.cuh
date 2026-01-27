@@ -13,6 +13,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__algorithm/upper_bound.h>
 #include <cuda/std/__cccl/execution_space.h>
 #include <cuda/std/__cccl/visibility.h>
 #include <cuda/std/tuple>
@@ -211,29 +212,51 @@ struct multi_segmented_iterator
   }
 
 private:
-  _CCCL_DEVICE _CCCL_FORCEINLINE ::cuda::std::tuple<int, difference_type> locate(difference_type n) const
+  // Given ordinal logical position in the sequence of input segments comprising several segments,
+  // return the segment elements is a part of, and relative position within that segment
+
+  // Linear search
+  _CCCL_DEVICE _CCCL_FORCEINLINE ::cuda::std::tuple<int, difference_type> locate_linear_search(difference_type n) const
   {
-    int offset_size              = static_cast<int>(m_offsets.size());
-    const difference_type offset = m_start + n;
+    const int offset_size     = static_cast<int>(m_offsets.size());
+    const difference_type pos = m_start + n;
 
     int segment_id = 0;
     auto offset_c  = static_cast<typename SpanT::value_type>(0);
-    ;
-    difference_type shifted_offset = offset;
+
+    difference_type shifted_offset = pos;
+
+    _CCCL_PRAGMA_UNROLL(4)
     for (int i = 0; i < offset_size; ++i)
     {
       const auto offset_n = m_offsets[i];
-      const bool cond     = ((offset_c <= offset) && (offset < offset_n));
+      const bool cond     = ((offset_c <= pos) && (pos < offset_n));
       segment_id          = (cond) ? i : segment_id;
-      shifted_offset      = (cond) ? offset - offset_c : shifted_offset;
+      shifted_offset      = (cond) ? pos - offset_c : shifted_offset;
       offset_c            = offset_n;
     }
     return {segment_id, shifted_offset};
   }
 
+  // Binary search
+  _CCCL_DEVICE _CCCL_FORCEINLINE ::cuda::std::tuple<int, difference_type> locate_binary_search(difference_type n) const
+  {
+    const int offset_size     = static_cast<int>(m_offsets.size());
+    const difference_type pos = m_start + n;
+
+    const auto beg_it    = m_offsets.data();
+    const auto end_it    = beg_it + offset_size;
+    const auto ub        = ::cuda::std::upper_bound(beg_it, end_it, pos);
+    const int segment_id = ::cuda::std::distance(ub, beg_it);
+
+    const difference_type shifted_offset = (segment_id == 0) ? 0 : m_offsets[segment_id - 1];
+
+    return {segment_id, shifted_offset};
+  }
+
   _CCCL_DEVICE _CCCL_FORCEINLINE __mapping_proxy make_proxy(difference_type n) const
   {
-    const auto& [segment_id, rel_offset] = locate(n);
+    const auto& [segment_id, rel_offset] = locate_linear_search(n);
     const auto offset                    = m_it_idx_begin[segment_id] + rel_offset;
     const bool head_flag                 = (rel_offset == 0);
     return __mapping_proxy(m_it, offset, head_flag, m_read_transform_fn, m_write_transform_fn);
