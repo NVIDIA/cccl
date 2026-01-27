@@ -330,6 +330,7 @@ Tags appended to the commit summary (case-sensitive) control CI behavior:
 * `[skip-third-party-testing]` / `[skip-tpt]`: Skip third-party smoke tests (MatX, PyTorch, RAPIDS).
 * `[skip-matx]`: Skip building the MatX third-party smoke test.
 * `[skip-pytorch]`: Skip building the PyTorch third-party smoke test.
+* `[skip-rapids]`: Skip building the RAPIDS third-party smoke test.
 
 > ⚠️ All of these tags block merging until removed and a full CI run (with no overrides) succeeds.
 

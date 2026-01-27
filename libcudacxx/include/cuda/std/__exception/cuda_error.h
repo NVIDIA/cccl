@@ -100,7 +100,7 @@ private:
   [[maybe_unused]] const char* __api                  = nullptr,
   [[maybe_unused]] ::cuda::std::source_location __loc = ::cuda::std::source_location::current())
 {
-  _CCCL_THROW(::cuda::cuda_error(__status, __msg, __api, __loc));
+  _CCCL_THROW(cuda::cuda_error, __status, __msg, __api, __loc);
 }
 
 _CCCL_END_NAMESPACE_CUDA

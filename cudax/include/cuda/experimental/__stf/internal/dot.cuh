@@ -1510,7 +1510,7 @@ inline void dot_section::push(::std::shared_ptr<per_ctx_dot>& pc, ::std::string 
     return;
   }
 
-#if _CCCL_HAS_INCLUDE(<nvtx3/nvToolsExt.h>) && (!_CCCL_COMPILER(NVHPC) || _CCCL_STD_VER <= 2017)
+#if __has_include(<nvtx3/nvToolsExt.h>) && (!_CCCL_COMPILER(NVHPC) || _CCCL_STD_VER <= 2017)
   nvtxRangePushA(symbol.c_str());
 #endif
 
@@ -1550,7 +1550,7 @@ inline void dot_section::pop(::std::shared_ptr<per_ctx_dot>& pc)
     pc->section_id_stack.pop_back();
   } // Release lock before potentially expensive NVTX call
 
-#if _CCCL_HAS_INCLUDE(<nvtx3/nvToolsExt.h>) && (!_CCCL_COMPILER(NVHPC) || _CCCL_STD_VER <= 2017)
+#if __has_include(<nvtx3/nvToolsExt.h>) && (!_CCCL_COMPILER(NVHPC) || _CCCL_STD_VER <= 2017)
   nvtxRangePop();
 #endif
 }

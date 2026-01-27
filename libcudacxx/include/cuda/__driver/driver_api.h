@@ -951,7 +951,7 @@ __cutensormap_size_bytes(::cuda::std::size_t __num_items, ::CUtensorMapDataType 
     case ::CU_TENSOR_MAP_DATA_TYPE_FLOAT16:
       if (__num_items > __max_size / 2)
       {
-        _CCCL_THROW(::std::invalid_argument{"Number of items must be less than or equal to 2^64 / 2"});
+        _CCCL_THROW(std::invalid_argument, "Number of items must be less than or equal to 2^64 / 2");
       }
       return __num_items * 2;
     case ::CU_TENSOR_MAP_DATA_TYPE_INT32:
@@ -962,7 +962,7 @@ __cutensormap_size_bytes(::cuda::std::size_t __num_items, ::CUtensorMapDataType 
     case ::CU_TENSOR_MAP_DATA_TYPE_TFLOAT32_FTZ:
       if (__num_items > __max_size / 4)
       {
-        _CCCL_THROW(::std::invalid_argument{"Number of items must be less than or equal to 2^64 / 4"});
+        _CCCL_THROW(std::invalid_argument, "Number of items must be less than or equal to 2^64 / 4");
       }
       return __num_items * 4;
     case ::CU_TENSOR_MAP_DATA_TYPE_INT64:
@@ -970,7 +970,7 @@ __cutensormap_size_bytes(::cuda::std::size_t __num_items, ::CUtensorMapDataType 
     case ::CU_TENSOR_MAP_DATA_TYPE_FLOAT64:
       if (__num_items > __max_size / 8)
       {
-        _CCCL_THROW(::std::invalid_argument{"Number of items must be less than or equal to 2^64 / 8"});
+        _CCCL_THROW(std::invalid_argument, "Number of items must be less than or equal to 2^64 / 8");
       }
       return __num_items * 8;
 #  if _CCCL_CTK_AT_LEAST(12, 8)
