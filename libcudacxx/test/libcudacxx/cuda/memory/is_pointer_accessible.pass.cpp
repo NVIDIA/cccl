@@ -233,6 +233,6 @@ void test()
 
 int main(int, char**)
 {
-  NV_IF_TARGET(NV_IS_HOST, (assert(test());))
+  NV_IF_TARGET(NV_IS_HOST, (test();))
   return 0;
 }
