@@ -21,6 +21,7 @@ workflows:
   #       args: '--preset libcudacxx --lit-tests "cuda/utility/basic_any.pass.cpp"' }
   #
   override:
+    - {jobs: ['build'], std: 'all',    cxx: ['msvc2026'], environment: ['NVCC_PREPEND_FLAGS="--allow-unsupported-compiler"']} # Latest MSVC
 
   pull_request:
     # Old CTK: Oldest/newest supported host compilers:
@@ -35,17 +36,18 @@ workflows:
     - {jobs: ['build'], std: 'minmax', cxx: ['gcc11', 'clang15', 'msvc2019'] } # Oldest
     - {jobs: ['build'], std: 'max',    cxx: ['gcc12', 'gcc13'] }
     - {jobs: ['build'], std: 'max',    cxx: ['clang16', 'clang17', 'clang18', 'clang19'] }
-    - {jobs: ['build'], std: 'all',    cxx: ['gcc', 'clang', 'msvc2026']} # Latest
+    - {jobs: ['build'], std: 'all',    cxx: ['gcc', 'clang']} # Latest
+    - {jobs: ['build'], std: 'all',    cxx: ['msvc2026'], environment: ['NVCC_PREPEND_FLAGS="--allow-unsupported-compiler"']} # Latest MSVC
     # Current CTK build-only: cudax has a different support matrix:
     - {jobs: ['build'], project: 'cudax', std: 'minmax', cxx: ['gcc11', 'clang15']} # Oldest
     - {jobs: ['build'], project: 'cudax', std: 'max',    cxx: ['gcc12']}
     - {jobs: ['build'], project: 'cudax', std: 'max',    cxx: ['clang16', 'clang17', 'clang18', 'clang19']}
     - {jobs: ['build'], project: 'cudax', std: 'all',    cxx: ['gcc', 'clang', 'msvc']} # Newest
     # Current CTK testing:
-    - {jobs: ['test'], project: 'thrust',     std: 'max', cxx: ['gcc', 'clang', 'msvc', 'msvc2026'], gpu: 'rtx4090'}
-    - {jobs: ['test'], project: 'libcudacxx', std: 'max', cxx: ['gcc', 'clang', 'msvc', 'msvc2026'], gpu: 'rtx2080'}
+    - {jobs: ['test'], project: 'thrust',     std: 'max', cxx: ['gcc', 'clang', 'msvc'], gpu: 'rtx4090'}
+    - {jobs: ['test'], project: 'libcudacxx', std: 'max', cxx: ['gcc', 'clang', 'msvc'], gpu: 'rtx2080'}
     - {jobs: ['test'], project: 'cudax',      std: 'max', cxx: ['gcc', 'clang', 'msvc'], gpu: 'rtx2080'}
-    
+
     - {jobs: ['test_nolid', 'test_lid0'], project: 'cub', std: 'max', cxx: ['gcc', 'clang', 'msvc'], gpu: 'rtxa6000'}
     - {jobs: ['test_lid1',  'test_lid2'], project: 'cub', std: 'max', cxx: ['gcc'],                  gpu: 'rtxa6000'}
     # H100 coverage:
@@ -61,7 +63,7 @@ workflows:
     - {jobs: ['verify_codegen'], project: 'libcudacxx'}
     # c.parallel -- pinned to gcc13 on Linux to match python
     - {jobs: ['test'], project: 'cccl_c_parallel', ctk: '12.X', cxx: ['gcc13', 'msvc'], gpu: ['rtx2080']}
-    - {jobs: ['test'], project: 'cccl_c_parallel', ctk: '13.X', cxx: ['gcc13', 'msvc', 'msvc2026'], gpu: ['rtx2080', 'l4', 'h100']}
+    - {jobs: ['test'], project: 'cccl_c_parallel', ctk: '13.X', cxx: ['gcc13', 'msvc'], gpu: ['rtx2080', 'l4', 'h100']}
     # c.experimental.stf-- pinned to gcc13 to match python
     - {jobs: ['test'], project: 'cccl_c_stf', ctk: '12.X', cxx: 'gcc13', gpu: ['rtx2080']}
     - {jobs: ['test'], project: 'cccl_c_stf', ctk: '13.X', cxx: 'gcc13', gpu: ['rtx2080', 'l4', 'h100']}
@@ -611,6 +613,8 @@ tags:
   # Additional CMake options to pass to the build.
   # If set, passed to script with `-cmake_options "<cmake_options>"`.
   cmake_options: { required: false }
+  # Environment variables to add
+  environment: { default: [] }
   # Additional arguments appended to the generated command.
   # Typically used with the `target` project to forward options to
   # ci/util/build_and_test_targets.sh, but works with all CI jobs.

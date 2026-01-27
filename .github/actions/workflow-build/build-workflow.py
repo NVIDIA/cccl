@@ -500,6 +500,16 @@ def generate_dispatch_job_image(matrix_job, job_type):
 
     return f"rapidsai/devcontainers:{devcontainer_version}-cpp-{host_compiler}-cuda{ctk}{ctk_suffix}"
 
+def generate_dispatch_job_environment(matrix_job, job_type):
+    if not matrix_job["environment"]:
+        return "[]"
+
+    env = "[ "
+    for environ in matrix_job["environment"]:
+        env += environ
+
+    env += " ]"
+    return env
 
 def generate_dispatch_job_command(matrix_job, job_type):
     script_path = "./ci/windows" if is_windows(matrix_job) else "./ci"
@@ -590,6 +600,7 @@ def generate_dispatch_job_json(matrix_job, job_type):
         "name": generate_dispatch_job_name(matrix_job, job_type),
         "runner": generate_dispatch_job_runner(matrix_job, job_type),
         "image": generate_dispatch_job_image(matrix_job, job_type),
+        "environment": generate_dispatch_job_environment(matrix_job, job_type),
         "command": generate_dispatch_job_command(matrix_job, job_type),
         "origin": generate_dispatch_job_origin(matrix_job, job_type),
     }

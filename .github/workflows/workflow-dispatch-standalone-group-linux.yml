@@ -32,6 +32,7 @@ jobs:
         uses: ./.github/actions/workflow-run-job-linux
         with:
           id:      ${{ matrix.id }}
+          environment: ${{ matrix.environment }}
           command: ${{ matrix.command }}
           image:   ${{ matrix.image }}
           runner:  ${{ matrix.runner }}
