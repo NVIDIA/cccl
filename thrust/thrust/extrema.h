@@ -83,6 +83,10 @@ using ::cuda::std::min;
  *  \endcode
  *
  *  \see https://en.cppreference.com/w/cpp/algorithm/min_element
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename DerivedPolicy, typename ForwardIterator>
 _CCCL_HOST_DEVICE ForwardIterator min_element(
@@ -120,6 +124,10 @@ _CCCL_HOST_DEVICE ForwardIterator min_element(
  *  \endcode
  *
  *  \see https://en.cppreference.com/w/cpp/algorithm/min_element
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename ForwardIterator>
 ForwardIterator min_element(ForwardIterator first, ForwardIterator last);
@@ -184,6 +192,10 @@ ForwardIterator min_element(ForwardIterator first, ForwardIterator last);
  *  \endcode
  *
  *  \see https://en.cppreference.com/w/cpp/algorithm/min_element
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename DerivedPolicy, typename ForwardIterator, typename BinaryPredicate>
 _CCCL_HOST_DEVICE ForwardIterator min_element(
@@ -246,6 +258,10 @@ _CCCL_HOST_DEVICE ForwardIterator min_element(
  *  \endcode
  *
  *  \see https://en.cppreference.com/w/cpp/algorithm/min_element
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename ForwardIterator, typename BinaryPredicate>
 ForwardIterator min_element(ForwardIterator first, ForwardIterator last, BinaryPredicate comp);
@@ -286,6 +302,10 @@ ForwardIterator min_element(ForwardIterator first, ForwardIterator last, BinaryP
  *  \endcode
  *
  *  \see https://en.cppreference.com/w/cpp/algorithm/max_element
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename DerivedPolicy, typename ForwardIterator>
 _CCCL_HOST_DEVICE ForwardIterator max_element(
@@ -322,6 +342,10 @@ _CCCL_HOST_DEVICE ForwardIterator max_element(
  *  \endcode
  *
  *  \see https://en.cppreference.com/w/cpp/algorithm/max_element
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename ForwardIterator>
 ForwardIterator max_element(ForwardIterator first, ForwardIterator last);
@@ -386,6 +410,10 @@ ForwardIterator max_element(ForwardIterator first, ForwardIterator last);
  *  \endcode
  *
  *  \see https://en.cppreference.com/w/cpp/algorithm/max_element
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename DerivedPolicy, typename ForwardIterator, typename BinaryPredicate>
 _CCCL_HOST_DEVICE ForwardIterator max_element(
@@ -448,6 +476,10 @@ _CCCL_HOST_DEVICE ForwardIterator max_element(
  *  \endcode
  *
  *  \see https://en.cppreference.com/w/cpp/algorithm/max_element
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename ForwardIterator, typename BinaryPredicate>
 ForwardIterator max_element(ForwardIterator first, ForwardIterator last, BinaryPredicate comp);
@@ -486,6 +518,10 @@ ForwardIterator max_element(ForwardIterator first, ForwardIterator last, BinaryP
  *  \see min_element
  *  \see max_element
  *  \see http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2005/n1840.pdf
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename DerivedPolicy, typename ForwardIterator>
 _CCCL_HOST_DEVICE ::cuda::std::pair<ForwardIterator, ForwardIterator> minmax_element(
@@ -520,6 +556,10 @@ _CCCL_HOST_DEVICE ::cuda::std::pair<ForwardIterator, ForwardIterator> minmax_ele
  *  \see min_element
  *  \see max_element
  *  \see http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2005/n1840.pdf
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename ForwardIterator>
 ::cuda::std::pair<ForwardIterator, ForwardIterator> minmax_element(ForwardIterator first, ForwardIterator last);
@@ -583,6 +623,10 @@ template <typename ForwardIterator>
  *  \see min_element
  *  \see max_element
  *  \see http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2005/n1840.pdf
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename DerivedPolicy, typename ForwardIterator, typename BinaryPredicate>
 _CCCL_HOST_DEVICE ::cuda::std::pair<ForwardIterator, ForwardIterator> minmax_element(
@@ -643,6 +687,10 @@ _CCCL_HOST_DEVICE ::cuda::std::pair<ForwardIterator, ForwardIterator> minmax_ele
  *  \see min_element
  *  \see max_element
  *  \see http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2005/n1840.pdf
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename ForwardIterator, typename BinaryPredicate>
 ::cuda::std::pair<ForwardIterator, ForwardIterator>

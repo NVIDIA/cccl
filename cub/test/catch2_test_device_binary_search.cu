@@ -45,28 +45,26 @@ void test_vectorized(Variant variant, HostVariant host_variant, std::size_t num_
   thrust::copy(c2h::device_policy, target_values_d.begin(), target_values_d.end(), values_d.begin());
   thrust::sort(c2h::device_policy, values_d.begin(), values_d.end(), compare_op);
 
-  using Result = Value*;
-  c2h::device_vector<Result> result_d(target_values_d.size(), thrust::default_init);
+  using Result = std::ptrdiff_t;
+  c2h::device_vector<Result> offsets_d(target_values_d.size(), thrust::default_init);
   variant(thrust::raw_pointer_cast(values_d.data()),
           thrust::raw_pointer_cast(values_d.data() + num_items),
           thrust::raw_pointer_cast(target_values_d.data()),
           thrust::raw_pointer_cast(target_values_d.data() + target_values_d.size()),
-          thrust::raw_pointer_cast(result_d.data()),
+          thrust::raw_pointer_cast(offsets_d.data()),
           compare_op);
 
   c2h::host_vector<Value> target_values_h = target_values_d;
   c2h::host_vector<Value> values_h        = values_d;
 
-  c2h::host_vector<Result> result_h = result_d;
+  c2h::host_vector<Result> offsets_h = offsets_d;
 
-  c2h::host_vector<std::ptrdiff_t> offsets_ref(result_h.size(), thrust::default_init);
-  c2h::host_vector<std::ptrdiff_t> offsets_h(result_h.size(), thrust::default_init);
+  c2h::host_vector<std::ptrdiff_t> offsets_ref(offsets_h.size(), thrust::default_init);
 
   for (auto i = 0u; i < target_values_h.size(); ++i)
   {
     offsets_ref[i] =
       host_variant(values_h.data(), values_h.data() + num_items, target_values_h[i], compare_op) - values_h.data();
-    offsets_h[i] = result_h[i] - thrust::raw_pointer_cast(values_d.data());
   }
 
   CHECK(offsets_ref == offsets_h);

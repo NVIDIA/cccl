@@ -12,6 +12,10 @@
 #  error "missing __NVRTCC__ definition"
 #endif // !__NVRTCC__
 
+#if defined(__CUDACC_RTC__) && !defined(__NVRTCC_USE_NVRTC__)
+#  error "__CUDACC_RTC__ cannot be defined without __NVRTCC_USE_NVRTC__ being also defined"
+#endif // __CUDACC_RTC__ && !__NVRTCC_USE_NVRTC__
+
 #if defined(__NVCC__) != !defined(__CUDACC_RTC__)
 #  error "__NVCC__ and __CUDACC_RTC__ should never be defined at the same time"
 #endif // __NVCC__ != !__CUDACC_RTC__
@@ -39,6 +43,14 @@
 #if !defined(__NVCC_DIAG_PRAGMA_SUPPORT__)
 #  error "missing __NVCC_DIAG_PRAGMA_SUPPORT__ definition"
 #endif // !__NVCC_DIAG_PRAGMA_SUPPORT__
+
+#if defined(__CUDACC_RELAXED_CONSTEXPR__) && defined(__NVRTCC_USE_NVRTC__)
+#  error "__CUDACC_RELAXED_CONSTEXPR__ must not be defined when __NVRTCC_USE_NVRTC__ is defined."
+#endif // __CUDACC_RELAXED_CONSTEXPR__ && __NVRTCC_USE_NVRTC__
+
+#if defined(__CUDACC_EXTENDED_LAMBDA__) && defined(__NVRTCC_USE_NVRTC__)
+#  error "__CUDACC_EXTENDED_LAMBDA__ must not be defined when __NVRTCC_USE_NVRTC__ is defined."
+#endif // __CUDACC_EXTENDED_LAMBDA__ && __NVRTCC_USE_NVRTC__
 
 #if defined(__CUDACC_DEBUG__) != defined(EXPECT_CUDACC_DEBUG)
 #  error "__CUDACC_DEBUG__ must match EXPECT_CUDACC_DEBUG definition."

@@ -26,12 +26,12 @@
 #  pragma system_header
 #endif // no system header
 
-#include <thrust/detail/allocator/allocator_traits.h>
 #include <thrust/detail/execute_with_allocator_fwd.h>
 #include <thrust/detail/raw_pointer_cast.h>
 #include <thrust/detail/type_traits/pointer_traits.h>
 
 #include <cuda/__cmath/ceil_div.h>
+#include <cuda/std/__memory/allocator_traits.h>
 #include <cuda/std/__utility/pair.h>
 
 THRUST_NAMESPACE_BEGIN
@@ -43,7 +43,7 @@ _CCCL_HOST ::cuda::std::pair<T*, std::ptrdiff_t>
 get_temporary_buffer(thrust::detail::execute_with_allocator<Allocator, BaseSystem>& system, std::ptrdiff_t n)
 {
   using naked_allocator = ::cuda::std::remove_reference_t<Allocator>;
-  using alloc_traits    = typename thrust::detail::allocator_traits<naked_allocator>;
+  using alloc_traits    = typename ::cuda::std::allocator_traits<naked_allocator>;
   using void_pointer    = typename alloc_traits::void_pointer;
   using size_type       = typename alloc_traits::size_type;
   using value_type      = typename alloc_traits::value_type;
@@ -63,7 +63,7 @@ _CCCL_HOST void return_temporary_buffer(
   thrust::detail::execute_with_allocator<Allocator, BaseSystem>& system, Pointer p, std::ptrdiff_t n)
 {
   using naked_allocator = ::cuda::std::remove_reference_t<Allocator>;
-  using alloc_traits    = typename thrust::detail::allocator_traits<naked_allocator>;
+  using alloc_traits    = typename ::cuda::std::allocator_traits<naked_allocator>;
   using pointer         = typename alloc_traits::pointer;
   using size_type       = typename alloc_traits::size_type;
   using value_type      = typename alloc_traits::value_type;
