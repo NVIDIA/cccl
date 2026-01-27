@@ -65,7 +65,8 @@ template <int _VectorSize, class _RefType>
 CCCL_DETAIL_KERNEL_ATTRIBUTES void
 __add_shmem_vectorized(const typename _RefType::__value_type* __first, ::cuda::std::int64_t __n, _RefType __ref)
 {
-  using __value_type     = typename _RefType::__value_type;
+  using __value_type = typename _RefType::__value_type;
+  // TODO: replace with ::cuda::__vector_type
   using __vector_type    = ::cuda::std::array<__value_type, _VectorSize>;
   using __local_ref_type = typename _RefType::template __with_scope<::cuda::std::thread_scope_block>;
 

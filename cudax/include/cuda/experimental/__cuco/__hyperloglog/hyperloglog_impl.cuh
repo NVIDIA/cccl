@@ -36,7 +36,6 @@
 #include <cuda/std/__memory/addressof.h>
 #include <cuda/std/__memory/pointer_traits.h>
 #include <cuda/std/__utility/declval.h>
-#include <cuda/std/numbers>
 #include <cuda/std/span>
 
 #include <cuda/experimental/__cuco/__hyperloglog/finalizer.cuh>
@@ -572,10 +571,8 @@ private:
 
   //! @brief Atomically updates the register at position `i` with `max(reg[i], value)`.
   //!
-  //! @tparam Scope CUDA thread scope
-  //!
-  //! @param i Register index
-  //! @param value New value
+  //! @param __i Register index
+  //! @param __value New value
   _CCCL_DEVICE constexpr void __update_max(int __i, __register_type __value) noexcept
   {
     ::cuda::atomic_ref<__register_type, _Scope> __register_ref(__sketch[__i]);
