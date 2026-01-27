@@ -30,6 +30,7 @@ option(
   OFF
 )
 option(cudax_ENABLE_CUFILE "Enable cuFile in CUDA Experimental" ON)
+option(cudax_ENABLE_CUTLASS "Enable CUTLASS headers in CUDA Experimental" OFF)
 
 if (cudax_ENABLE_CUFILE)
   if (WIN32)
