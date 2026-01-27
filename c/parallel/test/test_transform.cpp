@@ -518,6 +518,48 @@ C2H_TEST("Binary transform with one iterator", "[transform]")
   }
 }
 
+struct transform_stateful_counter_state_t
+{
+  int* d_counter;
+};
+
+C2H_TEST("Transform works with stateful unary operators", "[transform]")
+{
+  const std::size_t num_items = GENERATE(0, 42, take(4, random(1 << 12, 1 << 16)));
+  pointer_t<int> counter(1);
+  stateful_operation_t<transform_stateful_counter_state_t> op = make_operation(
+    "op",
+    R"(struct transform_stateful_counter_state_t { int* d_counter; };
+extern "C" __device__ void op(void* state_ptr, void* x_ptr, void* out_ptr) {
+  auto* state = static_cast<transform_stateful_counter_state_t*>(state_ptr);
+  atomicAdd(state->d_counter, 1);
+  int x = *static_cast<int*>(x_ptr);
+  *static_cast<int*>(out_ptr) = x * 2;
+})",
+    transform_stateful_counter_state_t{counter.ptr});
+
+  const std::vector<int> input = generate<int>(num_items);
+  const std::vector<int> output(num_items, 0);
+  pointer_t<int> input_ptr(input);
+  pointer_t<int> output_ptr(output);
+
+  std::optional<transform_build_cache_t> build_cache = std::nullopt;
+  std::optional<std::string> test_key                = std::nullopt;
+
+  unary_transform(input_ptr, output_ptr, num_items, op, build_cache, test_key);
+
+  std::vector<int> expected(num_items, 0);
+  std::transform(input.begin(), input.end(), expected.begin(), [](int x) {
+    return x * 2;
+  });
+
+  if (num_items > 0)
+  {
+    REQUIRE(expected == std::vector<int>(output_ptr));
+    REQUIRE(counter[0] == static_cast<int>(num_items));
+  }
+}
+
 using floating_point_types = c2h::type_list<
 #if _CCCL_HAS_NVFP16()
   __half,

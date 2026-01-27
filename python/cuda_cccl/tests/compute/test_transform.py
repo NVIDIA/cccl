@@ -386,10 +386,10 @@ def test_unary_transform_stateful_counting():
     """Test unary_transform with state that counts even numbers."""
     from numba import cuda as numba_cuda
 
-    d_in = cp.arange(100, dtype=np.int32)
+    d_in = cp.arange(100, dtype=np.int64)
     d_out = cp.empty_like(d_in)
 
-    even_count = cp.zeros(1, dtype=np.int32)
+    even_count = cp.zeros(1, dtype=np.int64)
 
     # Define op that references state as closure
     def count_evens(x):
@@ -399,7 +399,7 @@ def test_unary_transform_stateful_counting():
 
     cuda.compute.unary_transform(d_in, d_out, count_evens, len(d_in))
 
-    expected_output = cp.arange(100, dtype=np.int32) * 2
+    expected_output = cp.arange(100, dtype=np.int64) * 2
     np.testing.assert_array_equal(d_out.get(), expected_output.get())
 
     num_evens = int(even_count.get()[0])
