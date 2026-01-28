@@ -124,6 +124,8 @@ class _IteratorIO(enum.Enum):
 def _to_cccl_iter(
     it: DeviceArrayLike | IteratorBase | None, io_kind: _IteratorIO
 ) -> Iterator:
+    from ._jit import compile_iterator
+
     if it is None:
         return _none_to_cccl_iter()
     if isinstance(it, IteratorBase):
