@@ -61,22 +61,29 @@ catch (const std::bad_alloc&)
     .set_type_axes_names({"T{ct}"})                                         \
     .add_int64_power_of_two_axis("Elements{io}", nvbench::range(16, 28, 4));
 
+// See: https://github.com/pytorch/pytorch/blob/main/aten/src/ATen/OpMathType.h
+using opmath_t = float;
+
+// See for example:
+// https://github.com/pytorch/pytorch/blob/5a48148c1ab83c1e3779283d904ba5744bbe8eb3/aten/src/ATen/native/cuda/ActivationLeakyReluKernel.cu#L28-L35
 struct relu_op
 {
   template <typename T>
   _CCCL_API auto operator()(T value) const
   {
-    return ::cuda::std::max(value, T{0});
+    return static_cast<T>(::cuda::std::max(static_cast<opmath_t>(value), opmath_t{0}));
   }
 };
 BENCHMARK_UNARY(relu);
 
+// See for example:
+// https://github.com/pytorch/pytorch/blob/5a48148c1ab83c1e3779283d904ba5744bbe8eb3/aten/src/ATen/native/cuda/UnarySpecialOpsKernel.cu#L152-L157
 struct sigmoid_op
 {
   template <typename T>
   _CCCL_API auto operator()(T value) const
   {
-    return T{1} / (T{1} + ::cuda::std::exp(-value));
+    return static_cast<T>(opmath_t{1} / (opmath_t{1} + ::cuda::std::exp(-static_cast<opmath_t>(value))));
   }
 };
 BENCHMARK_UNARY(sigmoid);
@@ -91,12 +98,15 @@ struct tanh_op
 };
 BENCHMARK_UNARY(tanh);
 
+// See for example:
+// https://github.com/pytorch/pytorch/blob/5a48148c1ab83c1e3779283d904ba5744bbe8eb3/aten/src/ATen/native/cuda/ActivationGeluKernel.cu#L21
 struct gelu_op
 {
   template <typename T>
   _CCCL_API auto operator()(T value) const
   {
-    return value * T{0.5} * (T{1} + ::cuda::std::erf(value * T{M_SQRT1_2}));
+    return static_cast<opmath_t>(value) * opmath_t{0.5}
+         * (opmath_t{1} + ::cuda::std::erf(static_cast<opmath_t>(value) * opmath_t{M_SQRT1_2}));
   }
 };
 BENCHMARK_UNARY(gelu);
