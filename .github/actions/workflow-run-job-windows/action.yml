@@ -151,12 +151,12 @@ runs:
       shell: bash --noprofile --norc -euo pipefail {0}
       run: |
         if [[ -z "${{inputs.environment}}" || "${{inputs.environment}}" == "null" ]]; then
-          echo "ENVARGS=" >> $GITHUB_OUTPUT
+          echo "ENVARGS=" >> "$GITHUB_ENV"
         else
           # Convert JSON array to --env arguments
           # Extra space is necessary to prevent jq from merging arguments
           ENVARGS=$(echo ${{inputs.environment}} | jq -rj '.[] | "--env \(.) "')
-          echo "ENVARGS=$ENVARGS" >> $GITHUB_OUTPUT
+          echo "ENVARGS=$ENVARGS" >> "$GITHUB_ENV"
         fi
 
     - name: Fetch ${{ inputs.image }}

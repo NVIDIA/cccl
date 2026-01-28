@@ -91,11 +91,11 @@ runs:
       shell: bash --noprofile --norc -euo pipefail {0}
       run: |
         if [[ -z "${{inputs.environment}}" || "${{inputs.environment}}" == "null" ]]; then
-          echo "ENVARGS=" >> $GITHUB_OUTPUT
+          echo "ENVARGS=" >> "$GITHUB_ENV"
         else
           # Convert JSON array to --env arguments
           ENVARGS=$(echo ${{inputs.environment}} | jq -rj '.[] | "--env \(.) "')
-          echo "ENVARGS=$ENVARGS" >> $GITHUB_OUTPUT
+          echo "ENVARGS=$ENVARGS" >> "$GITHUB_ENV"
         fi
 
     - name: Run command # Do not change this step's name, it is checked in parse-job-times.py
