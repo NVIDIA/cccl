@@ -144,7 +144,7 @@ Identity Element
 
    template <class Op, class T>
    __host__ __device__
-   constexpr auto identity_element();
+   constexpr auto identity_element() noexcept;
 
    template <class Op, class T, class Enable = void>
    inline constexpr bool has_identity_element_v;
@@ -214,7 +214,7 @@ Absorbing Element
 
    template <class Op, class T>
    __host__ __device__
-   constexpr auto absorbing_element();
+   constexpr auto absorbing_element() noexcept;
 
    template <class Op, class T, class Enable = void>
    inline constexpr bool has_absorbing_element_v;
@@ -329,12 +329,12 @@ the internal variable templates. The following specializations are available:
 
    template <>
    __host__ __device__
-   constexpr auto cuda::identity_element<MyOperator, MyType>() {
+   constexpr auto cuda::identity_element<MyOperator, MyType>() noexcept {
         return /* MyType identity element */;
    }
 
    template <>
    __host__ __device__
-   constexpr auto cuda::absorbing_element<MyOperator, MyType>() {
+   constexpr auto cuda::absorbing_element<MyOperator, MyType>() noexcept {
        return /* MyType absorbing element */;
    }

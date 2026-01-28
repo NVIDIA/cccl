@@ -36,13 +36,13 @@ template <>
 inline constexpr bool cuda::is_commutative_v<MyAdd, MyInt> = true;
 
 template <>
-__host__ __device__ constexpr auto cuda::identity_element<MyAdd, MyInt>()
+__host__ __device__ constexpr auto cuda::identity_element<MyAdd, MyInt>() noexcept
 {
   return MyInt{3};
 }
 
 template <>
-__host__ __device__ constexpr auto cuda::absorbing_element<MyAdd, MyInt>()
+__host__ __device__ constexpr auto cuda::absorbing_element<MyAdd, MyInt>() noexcept
 {
   return MyInt{4};
 }
