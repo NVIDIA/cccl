@@ -742,7 +742,7 @@ device_scan_init_lookahead_body(warpspeed::tile_state_t<AccumT>* tile_states, co
 }
 
 template <typename WarpspeedPolicy, typename InputT, typename OutputT, typename AccumT>
-CUB_RUNTIME_FUNCTION _CCCL_HOST constexpr auto smem_for_stages(int num_stages) -> int
+_CCCL_API constexpr auto smem_for_stages(int num_stages) -> int
 {
   warpspeed::SyncHandler syncHandler{};
   warpspeed::SmemAllocator smemAllocator{};
@@ -751,21 +751,22 @@ CUB_RUNTIME_FUNCTION _CCCL_HOST constexpr auto smem_for_stages(int num_stages) -
   return static_cast<int>(smemAllocator.sizeBytes());
 }
 
+// TODO(bgruber): disable before merging to production
 // we check the required shared memory inside a template, so the error message shows the amount in case of failure
 template <int RequiredSharedMemory>
-CUB_RUNTIME_FUNCTION _CCCL_HOST constexpr void verify_smem()
+_CCCL_API constexpr void verify_smem()
 {
   static_assert(RequiredSharedMemory <= max_smem_per_block,
                 "Single stage configuration exceeds architecture independent SMEM (48KiB)");
 }
 
 template <typename WarpspeedPolicy, typename InputIteratorT, typename OutputIteratorT, typename AccumT>
-CUB_RUNTIME_FUNCTION _CCCL_HOST constexpr auto one_stage_fits_48KiB_SMEM() -> bool
+_CCCL_API constexpr auto one_stage_fits_48KiB_SMEM() -> bool
 {
   using InputT                    = it_value_t<InputIteratorT>;
   using OutputT                   = it_value_t<OutputIteratorT>;
   constexpr int smem_size_1_stage = smem_for_stages<WarpspeedPolicy, InputT, OutputT, AccumT>(1);
-  verify_smem<smem_size_1_stage>(); // TODO(bgruber): remove before merging to production
+  verify_smem<smem_size_1_stage>(); // TODO(bgruber): disable before merging to production
   return smem_size_1_stage <= max_smem_per_block;
 }
 
