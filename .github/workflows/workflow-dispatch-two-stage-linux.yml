@@ -34,6 +34,7 @@ jobs:
         uses: ./.github/actions/workflow-run-job-linux
         with:
           id:      ${{ fromJSON(inputs.producers)[0].id }}
+          environment: ${{ fromJSON(inputs.producers)[0].environment }}
           command: ${{ fromJSON(inputs.producers)[0].command }}
           image:   ${{ fromJSON(inputs.producers)[0].image }}
           runner:  ${{ fromJSON(inputs.producers)[0].runner }}
@@ -60,6 +61,7 @@ jobs:
         uses: ./.github/actions/workflow-run-job-linux
         with:
           id:      ${{ matrix.id }}
+          environment: ${{ matrix.environment }}
           command: ${{ matrix.command }}
           image:   ${{ matrix.image }}
           runner:  ${{ matrix.runner }}
