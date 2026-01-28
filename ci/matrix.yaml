@@ -21,7 +21,6 @@ workflows:
   #       args: '--preset libcudacxx --lit-tests "cuda/utility/basic_any.pass.cpp"' }
   #
   override:
-    - {jobs: ['build'], std: 'all',    cxx: ['msvc2026'], environment: ['NVCC_PREPEND_FLAGS=\"--allow-unsupported-compiler\"']} # Latest MSVC
 
   pull_request:
     # Old CTK: Oldest/newest supported host compilers:
@@ -37,7 +36,7 @@ workflows:
     - {jobs: ['build'], std: 'max',    cxx: ['gcc12', 'gcc13'] }
     - {jobs: ['build'], std: 'max',    cxx: ['clang16', 'clang17', 'clang18', 'clang19'] }
     - {jobs: ['build'], std: 'all',    cxx: ['gcc', 'clang']} # Latest
-    - {jobs: ['build'], std: 'all',    cxx: ['msvc2026'], environment: ['NVCC_PREPEND_FLAGS="--allow-unsupported-compiler"']} # Latest MSVC
+    - {jobs: ['build'], std: 'all',    cxx: ['msvc2026'], environment: ['NVCC_PREPEND_FLAGS=--allow-unsupported-compiler']} # Latest MSVC
     # Current CTK build-only: cudax has a different support matrix:
     - {jobs: ['build'], project: 'cudax', std: 'minmax', cxx: ['gcc11', 'clang15']} # Oldest
     - {jobs: ['build'], project: 'cudax', std: 'max',    cxx: ['gcc12']}
