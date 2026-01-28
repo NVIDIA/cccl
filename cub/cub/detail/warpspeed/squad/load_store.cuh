@@ -12,7 +12,7 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cub/detail/warpspeed/squad/squad.h>
+#include <cub/detail/warpspeed/squad/squad.cuh>
 
 #include <cuda/__memory/align_down.h>
 #include <cuda/__memory/align_up.h>
