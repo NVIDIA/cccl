@@ -242,13 +242,16 @@ struct agent_segmented_scan
       const int chunk_size = static_cast<int>(chunk_end - chunk_begin);
 
       AccumT thread_values[items_per_thread];
-      if (chunk_size == tile_items)
       {
-        block_load_t(temp_storage.reused.load).Load(d_in + chunk_begin, thread_values);
-      }
-      else
-      {
-        block_load_t(temp_storage.reused.load).Load(d_in + chunk_begin, thread_values, chunk_size, AccumT{});
+        block_load_t loader(temp_storage.reused.load);
+        if (chunk_size == tile_items)
+        {
+          loader.Load(d_in + chunk_begin, thread_values);
+        }
+        else
+        {
+          loader.Load(d_in + chunk_begin, thread_values, chunk_size, AccumT{});
+        }
       }
       __syncthreads();
 
@@ -263,14 +266,16 @@ struct agent_segmented_scan
       }
       __syncthreads();
 
-      if (chunk_size == tile_items)
       {
-        block_store_t(temp_storage.reused.store).Store(d_out + out_idx_begin + chunk_id * tile_items, thread_values);
-      }
-      else
-      {
-        block_store_t(temp_storage.reused.store)
-          .Store(d_out + out_idx_begin + chunk_id * tile_items, thread_values, chunk_size);
+        block_store_t storer(temp_storage.reused.store);
+        if (chunk_size == tile_items)
+        {
+          storer.Store(d_out + out_idx_begin + chunk_id * tile_items, thread_values);
+        }
+        else
+        {
+          storer.Store(d_out + out_idx_begin + chunk_id * tile_items, thread_values, chunk_size);
+        }
       }
       if (++chunk_id < n_chunks)
       {
