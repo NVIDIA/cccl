@@ -66,6 +66,23 @@ struct DeviceSegmentedReduceKernelSource
       InitT,
       AccumT>)
 };
+
+template <typename PolicyHub>
+struct policy_selector_from_hub
+{
+  // this is only called in device code, so we can ignore the arch parameter
+  _CCCL_DEVICE_API constexpr auto operator()(::cuda::arch_id /*arch*/) const -> segmented_reduce_policy
+  {
+    using p = typename PolicyHub::MaxPolicy::ActivePolicy::SegmentedReducePolicy;
+    return segmented_reduce_policy{{
+      p::BLOCK_THREADS,
+      p::ITEMS_PER_THREAD,
+      p::VECTOR_LOAD_LENGTH,
+      p::BLOCK_ALGORITHM,
+      p::LOAD_MODIFIER,
+    }};
+  }
+};
 } // namespace detail::segmented_reduce
 
 // TODO(bgruber): deprecate once we publish the tuning API
