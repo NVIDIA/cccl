@@ -50,11 +50,12 @@ union tile_state_kernel_arg_t
  * @param[in] num_tiles
  *   Number of tiles
  */
-template <typename ChainedPolicyT, typename ScanTileState, typename AccumT>
+template <typename ChainedPolicyT, typename InputIteratorT, typename OutputIteratorT, typename ScanTileState, typename AccumT>
 CUB_DETAIL_KERNEL_ATTRIBUTES __launch_bounds__(128) void DeviceScanInitKernel(
   tile_state_kernel_arg_t<ScanTileState, AccumT> tile_state, int num_tiles)
 {
-  if constexpr (detail::scan::scan_use_warpspeed<typename ChainedPolicyT::ActivePolicy>)
+  if constexpr (detail::scan::
+                  scan_use_warpspeed<typename ChainedPolicyT::ActivePolicy, InputIteratorT, OutputIteratorT, AccumT>)
   {
     device_scan_init_lookahead_body(tile_state.lookahead, num_tiles);
   }
@@ -155,10 +156,11 @@ template <typename ChainedPolicyT,
           typename AccumT,
           bool ForceInclusive,
           typename RealInitValueT = typename InitValueT::value_type>
-__launch_bounds__(detail::scan::scan_use_warpspeed<typename ChainedPolicyT::ActivePolicy>
-                    ? get_scan_block_threads<typename ChainedPolicyT::ActivePolicy>
-                    : int(ChainedPolicyT::ActivePolicy::ScanPolicyT::BLOCK_THREADS),
-                  1) // TODO(bgruber): is the 1 ok?
+__launch_bounds__(
+  detail::scan::scan_use_warpspeed<typename ChainedPolicyT::ActivePolicy, InputIteratorT, OutputIteratorT, AccumT>
+    ? get_scan_block_threads<typename ChainedPolicyT::ActivePolicy>
+    : int(ChainedPolicyT::ActivePolicy::ScanPolicyT::BLOCK_THREADS),
+  1) // TODO(bgruber): is the 1 ok?
   CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceScanKernel(
     __grid_constant__ const InputIteratorT d_in,
     __grid_constant__ const OutputIteratorT d_out,
@@ -170,9 +172,7 @@ __launch_bounds__(detail::scan::scan_use_warpspeed<typename ChainedPolicyT::Acti
     __grid_constant__ const int num_stages)
 {
   using ActivePolicy = typename ChainedPolicyT::ActivePolicy;
-  if constexpr (detail::scan::scan_use_warpspeed<ActivePolicy>
-                && THRUST_NS_QUALIFIER::is_contiguous_iterator_v<InputIteratorT>
-                && THRUST_NS_QUALIFIER::is_contiguous_iterator_v<OutputIteratorT>)
+  if constexpr (detail::scan::scan_use_warpspeed<ActivePolicy, InputIteratorT, OutputIteratorT, AccumT>)
   {
     NV_IF_TARGET(NV_PROVIDES_SM_100, ({
                    auto scan_params = scanKernelParams<it_value_t<InputIteratorT>, it_value_t<OutputIteratorT>, AccumT>{
