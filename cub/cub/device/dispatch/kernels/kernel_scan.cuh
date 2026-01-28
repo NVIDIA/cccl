@@ -14,7 +14,7 @@
 #endif // no system header
 
 #include <cub/agent/agent_scan.cuh>
-#include <cub/detail/warpspeed/look_ahead.h>
+#include <cub/detail/warpspeed/look_ahead.cuh>
 #include <cub/device/dispatch/kernels/kernel_scan_warpspeed.cuh>
 #include <cub/device/dispatch/tuning/tuning_scan.cuh>
 #include <cub/util_macro.cuh>
