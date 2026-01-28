@@ -505,12 +505,12 @@ def generate_dispatch_job_environment(matrix_job, job_type):
     if not matrix_job["environment"]:
         return "[]"
 
-    env = "[ "
+    env = "["
 
     for environ in matrix_job["environment"]:
-        env += f" '{environ}' "
+        env += f"'{environ}',"
 
-    env += " ]"
+    env += "]"
     return env
 
 
@@ -709,12 +709,13 @@ def merge_dispatch_groups(accum_dispatch_groups, new_dispatch_groups):
 
 
 def compare_dispatch_jobs(job1, job2):
-    "Compare two dispatch job specs for equality. Considers only name/runner/image/command."
+    "Compare two dispatch job specs for equality. Considers only name/runner/image/environment/command."
     # Ignores the 'origin' key, which may vary between identical job specifications.
     return (
         job1["name"] == job2["name"]
         and job1["runner"] == job2["runner"]
         and job1["image"] == job2["image"]
+        and job1["environment"] == job2["environment"]
         and job1["command"] == job2["command"]
     )
 
@@ -1109,7 +1110,7 @@ def set_derived_tags(matrix_job):
 
 
 def next_explode_tag(matrix_job):
-    non_exploded_tags = ["jobs"]
+    non_exploded_tags = ["jobs", "environment"]
 
     for tag in matrix_job:
         if tag not in non_exploded_tags and isinstance(matrix_job[tag], list):
