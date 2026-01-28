@@ -613,7 +613,7 @@ tags:
   # If set, passed to script with `-cmake_options "<cmake_options>"`.
   cmake_options: { required: false }
   # Environment variables to add
-  environment: { default: [] }
+  environment: { required: false, default: [] }
   # Additional arguments appended to the generated command.
   # Typically used with the `target` project to forward options to
   # ci/util/build_and_test_targets.sh, but works with all CI jobs.

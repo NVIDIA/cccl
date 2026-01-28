@@ -502,7 +502,7 @@ def generate_dispatch_job_image(matrix_job, job_type):
 
 
 def generate_dispatch_job_environment(matrix_job, job_type):
-    if not matrix_job["environment"]:
+    if not matrix_job.get("environment"):
         return "[]"
 
     env = "'["
