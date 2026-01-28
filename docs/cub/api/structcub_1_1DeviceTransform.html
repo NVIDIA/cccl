@@ -1567,7 +1567,7 @@ input elements and writing the result to the corresponding output element. No gu
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>inputs</strong> – A tuple of iterators to the input sequences where num_items elements are read from each. The iterators’ value types must be trivially relocatable. </p></li>
+<li><p><strong>inputs</strong> – A tuple of iterators to the input sequences where num_items elements are read from each. </p></li>
 <li><p><strong>output</strong> – An iterator to the output sequence where num_items results are written to. May point to the beginning of one of the input sequences, performing the transformation inplace. The output sequence must not overlap with any of the input sequence in any other way. </p></li>
 <li><p><strong>num_items</strong> – The number of elements in each input sequence. </p></li>
 <li><p><strong>transform_op</strong> – An n-ary function object, where n is the number of input sequences. The input iterators’ value types must be convertible to the parameters of the function object’s call operator. The return type of the call operator must be assignable to the dereferenced output iterator. </p></li>
@@ -1596,7 +1596,7 @@ address) of the objects passed to the call operator of the transformation operat
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>input</strong> – An iterator to the input sequence where num_items elements are read from. The iterator’s value type must be trivially relocatable. </p></li>
+<li><p><strong>input</strong> – An iterator to the input sequence where num_items elements are read from. </p></li>
 <li><p><strong>output</strong> – An iterator to the output sequence where num_items results are written to. May point to the same sequence as <code class="docutils literal notranslate"><span class="pre">input</span></code>, performing the transformation inplace. The output sequence must not overlap with the input sequence in any other way. </p></li>
 <li><p><strong>num_items</strong> – The number of elements in each input sequence. </p></li>
 <li><p><strong>transform_op</strong> – A unary function object. The input iterator’s value type must be convertible to the parameter of the function object’s call operator. The return type of the call operator must be assignable to the dereferenced output iterator. </p></li>
@@ -1708,7 +1708,7 @@ predicate and transformation operation. Output elements for which the predicate 
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>inputs</strong> – A tuple of iterators to the input sequences where num_items elements are read from each. The iterators’ value types must be trivially relocatable. </p></li>
+<li><p><strong>inputs</strong> – A tuple of iterators to the input sequences where num_items elements are read from each. </p></li>
 <li><p><strong>output</strong> – An iterator to the output sequence where num_items results are written to. May point to the beginning of one of the input sequences, performing the transformation inplace. The output sequence must not overlap with any of the input sequence in any other way. </p></li>
 <li><p><strong>num_items</strong> – The number of elements in each input sequence. </p></li>
 <li><p><strong>predicate</strong> – An n-ary function object, where n is the number of input sequences. The input iterators’ value types must be convertible to the parameters of the function object’s call operator, which must return a boolean value. </p></li>
@@ -1761,7 +1761,7 @@ transformation operation. Output elements for which the predicate returns false 
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>input</strong> – An iterator to the input sequence where num_items elements are read from. The iterator’s value type must be trivially relocatable. </p></li>
+<li><p><strong>input</strong> – An iterator to the input sequence where num_items elements are read from. </p></li>
 <li><p><strong>output</strong> – An iterator to the output sequence where num_items results are written to. May point to the same sequence as <code class="docutils literal notranslate"><span class="pre">input</span></code>, performing the transformation inplace. The output sequence must not overlap with the input sequence in any other way. </p></li>
 <li><p><strong>num_items</strong> – The number of elements in each input sequence. </p></li>
 <li><p><strong>predicate</strong> – A unary function objects returning <code class="docutils literal notranslate"><span class="pre">bool</span></code>. The input iterators’ value types must be convertible to the parameters of the function object’s call operator. </p></li>
@@ -1816,7 +1816,7 @@ of the transformation operation are guaranteed to reside in the input sequences 
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>inputs</strong> – A tuple of iterators to the input sequences where num_items elements are read from each. The iterators’ value types must be trivially relocatable. </p></li>
+<li><p><strong>inputs</strong> – A tuple of iterators to the input sequences where num_items elements are read from each. </p></li>
 <li><p><strong>output</strong> – An iterator to the output sequence where num_items results are written to. May point to the beginning of one of the input sequences, performing the transformation inplace. The output sequence must not overlap with any of the input sequence in any other way. </p></li>
 <li><p><strong>num_items</strong> – The number of elements in each input sequence. </p></li>
 <li><p><strong>transform_op</strong> – An n-ary function object, where n is the number of input sequences. The input iterators’ value types must be convertible to the parameters of the function object’s call operator. The return type of the call operator must be assignable to the dereferenced output iterator. </p></li>
@@ -1845,7 +1845,7 @@ of the transformation operation are guaranteed to reside in the input sequences 
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>input</strong> – An iterator to the input sequence where num_items elements are read from. The iterator’s value type must be trivially relocatable. </p></li>
+<li><p><strong>input</strong> – An iterator to the input sequence where num_items elements are read from. </p></li>
 <li><p><strong>output</strong> – An iterator to the output sequence where num_items results are written to. May point to the beginning of one of the input sequences, performing the transformation inplace. The output sequence must not overlap with any of the input sequence in any other way. </p></li>
 <li><p><strong>num_items</strong> – The number of elements in each input sequence. </p></li>
 <li><p><strong>transform_op</strong> – An n-ary function object, where n is the number of input sequences. The input iterators’ value types must be convertible to the parameters of the function object’s call operator. The return type of the call operator must be assignable to the dereferenced output iterator. </p></li>
