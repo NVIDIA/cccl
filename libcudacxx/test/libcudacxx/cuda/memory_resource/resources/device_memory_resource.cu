@@ -65,7 +65,7 @@ static bool ensure_export_handle(::cudaMemPool_t pool, const ::cudaMemAllocation
   return allocation_handle == ::cudaMemHandleTypeNone ? status == ::cudaErrorInvalidValue : status == ::cudaSuccess;
 }
 
-C2H_CCCLRT_TEST("device_memory_resource construction", "[memory_resource]")
+C2H_CCCLRT_TEST("device_memory_pool construction", "[memory_resource]")
 {
   int current_device = 0;
   cuda::__ensure_current_context guard{cuda::device_ref{current_device}};
@@ -217,7 +217,7 @@ static void ensure_device_ptr(void* ptr)
   CHECK(attributes.type == cudaMemoryTypeDevice);
 }
 
-C2H_CCCLRT_TEST("device_memory_resource allocation", "[memory_resource]")
+C2H_CCCLRT_TEST("device_memory_pool allocation", "[memory_resource]")
 {
   cudaStream_t raw_stream;
   {
@@ -332,7 +332,7 @@ C2H_CCCLRT_TEST("device_memory_resource allocation", "[memory_resource]")
   }
 }
 
-C2H_CCCLRT_TEST("device_memory_resource comparison", "[memory_resource]")
+C2H_CCCLRT_TEST("device_memory_pool comparison", "[memory_resource]")
 {
   int current_device = 0;
   cuda::__ensure_current_context guard{cuda::device_ref{current_device}};
