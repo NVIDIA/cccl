@@ -246,10 +246,9 @@ C2H_TEST("cub::detail::segmented_scan::agent_segmented_scan works with one segme
   pair_t* d_output    = thrust::raw_pointer_cast(output.data());
   unsigned* d_offsets = thrust::raw_pointer_cast(offsets.data());
 
-  constexpr int block_size         = 128;
-  constexpr int items_per_thread   = 4;
-  constexpr int segments_per_block = 1;
-  using chained_policy_t           = ChainedPolicy<block_size, items_per_thread>;
+  constexpr int block_size       = 128;
+  constexpr int items_per_thread = 4;
+  using chained_policy_t         = ChainedPolicy<block_size, items_per_thread>;
 
   const auto n_segments = static_cast<unsigned>(num_segments);
   const auto grid_size  = n_segments;
