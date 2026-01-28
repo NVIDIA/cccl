@@ -31,7 +31,7 @@ namespace cuda::experimental::cuco::__hyperloglog_ns
 #  if _CCCL_OS(WINDOWS)
 #    define _CUDAX_CUCO_HLL_TUNING_ARR_DECL _CCCL_GLOBAL_CONSTANT double
 #  else
-#    define _CUDAX_CUCO_HLL_TUNING_ARR_DECL _CCCL_DEVICE static inline constexpr double
+#    define _CUDAX_CUCO_HLL_TUNING_ARR_DECL _CCCL_DEVICE inline constexpr double
 #  endif
 #endif
 
