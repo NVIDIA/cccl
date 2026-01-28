@@ -162,14 +162,14 @@ __launch_bounds__(
     : int(ChainedPolicyT::ActivePolicy::ScanPolicyT::BLOCK_THREADS),
   1) // TODO(bgruber): is the 1 ok?
   CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceScanKernel(
-    __grid_constant__ const InputIteratorT d_in,
-    __grid_constant__ const OutputIteratorT d_out,
+    _CCCL_GRID_CONSTANT const InputIteratorT d_in,
+    _CCCL_GRID_CONSTANT const OutputIteratorT d_out,
     tile_state_kernel_arg_t<ScanTileState, AccumT> tile_state,
-    __grid_constant__ const int start_tile,
+    _CCCL_GRID_CONSTANT const int start_tile,
     ScanOpT scan_op,
-    __grid_constant__ const InitValueT init_value,
-    __grid_constant__ const OffsetT num_items,
-    __grid_constant__ const int num_stages)
+    _CCCL_GRID_CONSTANT const InitValueT init_value,
+    _CCCL_GRID_CONSTANT const OffsetT num_items,
+    _CCCL_GRID_CONSTANT const int num_stages)
 {
   using ActivePolicy = typename ChainedPolicyT::ActivePolicy;
   if constexpr (detail::scan::scan_use_warpspeed<ActivePolicy, InputIteratorT, OutputIteratorT, AccumT>)
