@@ -32,24 +32,26 @@ struct parameter_mapping<cccl_op_t>
 {
   static const constexpr auto archetype = cccl_op_t_mapping{};
 
-  template <typename Traits>
-  static std::string map(template_id<Traits>, cccl_op_t op)
+  template <typename Traits, typename ArgT>
+  static std::string map(template_id<Traits>, ArgT arg)
   {
+    const auto& value = arg_traits<cuda::std::decay_t<ArgT>>::unwrap(arg);
     return std::format(
       "cccl_op_t_mapping{{.is_stateless = {}, .size = {}, .alignment = {}, .operation = {}}}",
-      op.type != cccl_op_kind_t::CCCL_STATEFUL,
-      op.size,
-      op.alignment,
-      op.name);
+      value.type != cccl_op_kind_t::CCCL_STATEFUL,
+      value.size,
+      value.alignment,
+      value.name);
   }
 
-  template <typename Traits>
-  static std::string aux(template_id<Traits>, cccl_op_t op)
+  template <typename Traits, typename ArgT>
+  static std::string aux(template_id<Traits>, ArgT arg)
   {
+    const auto& value = arg_traits<cuda::std::decay_t<ArgT>>::unwrap(arg);
     return std::format(R"(
         extern "C" __device__ void {}();
         )",
-                       op.name);
+                       value.name);
   }
 };
 #endif

@@ -98,5 +98,18 @@ struct output_iterator_traits
 
     return cuda::std::nullopt;
   }
+
+  template <typename Tag, typename StorageT, typename AssignStorageT>
+  static cuda::std::optional<specialization>
+  special(tagged_arg<StorageT, cccl_iterator_t> it, tagged_arg<AssignStorageT, cccl_type_info> assign_t)
+  {
+    if (it.value.type == cccl_iterator_kind_t::CCCL_POINTER)
+    {
+      return cuda::std::make_optional(
+        specialization{cccl_type_enum_to_name<AssignStorageT>(assign_t.value.type, true), ""});
+    }
+
+    return cuda::std::nullopt;
+  }
 };
 #endif
