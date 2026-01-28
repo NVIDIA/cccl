@@ -74,6 +74,10 @@ THRUST_NAMESPACE_BEGIN
  *  \see thrust::fill
  *  \see thrust::generate
  *  \see thrust::sequence
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename DerivedPolicy, typename ForwardIterator, typename UnaryOperation>
 _CCCL_HOST_DEVICE void
@@ -113,6 +117,10 @@ tabulate(const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
  *  \see thrust::fill
  *  \see thrust::generate
  *  \see thrust::sequence
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename ForwardIterator, typename UnaryOperation>
 void tabulate(ForwardIterator first, ForwardIterator last, UnaryOperation unary_op);

@@ -25,14 +25,23 @@ Example flow:
 from __future__ import annotations
 
 import enum
+import itertools
 import textwrap
+import threading
 from typing import TYPE_CHECKING
 
 from numba import types
 from numba.core.extending import intrinsic
 
+from ._utils import sanitize_identifier
+
 if TYPE_CHECKING:
     from numba.core.typing import Signature
+
+# Global counter to generate unique symbol names even when the same function
+# is used multiple times (e.g., as both selectors in `three_way_partition`).
+_wrapper_name_counter = itertools.count()
+_wrapper_name_lock = threading.Lock()
 
 __all__ = [
     "create_op_void_ptr_wrapper",
@@ -144,9 +153,11 @@ def _create_void_ptr_wrapper(
     arg_str = ", ".join(arg_names)
     void_sig = types.void(*(types.voidptr for _ in arg_specs))
 
-    # Create unique wrapper name
-    unique_suffix = hex(id(func))[2:]
-    wrapper_name = f"wrapped_{name}_{unique_suffix}"
+    # Create unique wrapper name using global counter
+    sanitized_name = sanitize_identifier(name)
+    with _wrapper_name_lock:
+        unique_suffix = next(_wrapper_name_counter)
+    wrapper_name = f"wrapped_{sanitized_name}_{unique_suffix}"
 
     # We need exec() here because Numba's @intrinsic decorator requires:
     # 1. A function with a specific signature visible at parse time

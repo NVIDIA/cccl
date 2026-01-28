@@ -15,32 +15,32 @@
 
 CUB_NAMESPACE_BEGIN
 
-// Options for specifying memory aliasing
+//! @brief Options for specifying memory aliasing
 enum class MayAlias
 {
   Yes,
   No
 };
 
-// Options for specifying sorting order.
+//! @brief Options for specifying sorting order.
 enum class SortOrder
 {
   Ascending,
   Descending
 };
 
-// Options for specifying the behavior of the stream compaction algorithm.
+//! @brief Options for specifying the behavior of the stream compaction algorithm.
 enum class SelectImpl
 {
-  // Stream compaction, discarding rejected items. It's required that memory of input and output are disjoint.
+  //! Stream compaction, discarding rejected items. It's required that memory of input and output are disjoint.
   Select,
-  // Stream compaction, discarding rejected items. Memory of the input may be identical to the memory of the output.
+  //! Stream compaction, discarding rejected items. Memory of the input may be identical to the memory of the output.
   SelectPotentiallyInPlace,
-  // Partition, keeping rejected items. It's required that memory of input and output are disjoint.
+  //! Partition, keeping rejected items. It's required that memory of input and output are disjoint.
   Partition
 };
 
-// Options for forcing inclusive prefix-scan even when initial value has been provided
+//! @brief Options for forcing inclusive prefix-scan even when initial value has been provided
 enum class ForceInclusive
 {
   Yes,

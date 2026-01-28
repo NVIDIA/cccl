@@ -1,17 +1,21 @@
+# Copyright (c) 2025-2026, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
+#
+#
+# SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+
 from typing import Callable
 
 import numpy as np
 
 from .. import _bindings
 from .. import _cccl_interop as cccl
-from .._caching import cache_with_key
+from .._caching import cache_with_registered_key_functions
 from .._cccl_interop import (
     call_build,
     get_value_type,
     set_cccl_iterator_state,
     to_cccl_value_state,
 )
-from .._utils import protocols
 from .._utils.protocols import (
     get_data_pointer,
     validate_and_get_stream,
@@ -49,10 +53,8 @@ class _SegmentedReduce:
         self.end_offsets_in_cccl = cccl.to_cccl_input_iter(end_offsets_in)
 
         # set host advance functions
-        cccl.cccl_iterator_set_host_advance(self.d_out_cccl, d_out)
-        cccl.cccl_iterator_set_host_advance(
-            self.start_offsets_in_cccl, start_offsets_in
-        )
+        cccl.set_host_advance(self.d_out_cccl, d_out)
+        cccl.set_host_advance(self.start_offsets_in_cccl, start_offsets_in)
         if (
             self.start_offsets_in_cccl.is_kind_iterator()
             and self.end_offsets_in_cccl.is_kind_iterator()
@@ -64,9 +66,7 @@ class _SegmentedReduce:
                 self.start_offsets_in_cccl.host_advance_fn
             )
         else:
-            cccl.cccl_iterator_set_host_advance(
-                self.end_offsets_in_cccl, end_offsets_in
-            )
+            cccl.set_host_advance(self.end_offsets_in_cccl, end_offsets_in)
 
         self.h_init_cccl = cccl.to_cccl_value(h_init)
 
@@ -125,52 +125,7 @@ class _SegmentedReduce:
         return temp_storage_bytes
 
 
-def _to_key(d_in: DeviceArrayLike | IteratorBase):
-    "Return key for an input array-like argument or an iterator"
-    d_in_key = (
-        d_in.kind if isinstance(d_in, IteratorBase) else protocols.get_dtype(d_in)
-    )
-    return d_in_key
-
-
-def _make_cache_key(
-    d_in: DeviceArrayLike | IteratorBase,
-    d_out: DeviceArrayLike | IteratorBase,
-    start_offsets_in: DeviceArrayLike | IteratorBase,
-    end_offsets_in: DeviceArrayLike | IteratorBase,
-    op: OpAdapter,
-    h_init: np.ndarray | GpuStruct,
-):
-    d_in_key = _to_key(d_in)
-    d_out_key = (
-        d_out.kind if isinstance(d_out, IteratorBase) else protocols.get_dtype(d_out)
-    )
-    start_offsets_in_key = _to_key(start_offsets_in)
-    end_offsets_in_key = _to_key(end_offsets_in)
-    h_init_key = h_init.dtype
-    return (
-        d_in_key,
-        d_out_key,
-        start_offsets_in_key,
-        end_offsets_in_key,
-        op.get_cache_key(),
-        h_init_key,
-    )
-
-
-@cache_with_key(_make_cache_key)
-def _make_segmented_reduce_cached(
-    d_in: DeviceArrayLike | IteratorBase,
-    d_out: DeviceArrayLike | IteratorBase,
-    start_offsets_in: DeviceArrayLike | IteratorBase,
-    end_offsets_in: DeviceArrayLike | IteratorBase,
-    op: OpAdapter,
-    h_init: np.ndarray | GpuStruct,
-):
-    """Internal cached factory for _SegmentedReduce."""
-    return _SegmentedReduce(d_in, d_out, start_offsets_in, end_offsets_in, op, h_init)
-
-
+@cache_with_registered_key_functions
 def make_segmented_reduce(
     d_in: DeviceArrayLike | IteratorBase,
     d_out: DeviceArrayLike | IteratorBase,
@@ -201,7 +156,7 @@ def make_segmented_reduce(
         A callable object that can be used to perform the reduction
     """
     op_adapter = make_op_adapter(op)
-    return _make_segmented_reduce_cached(
+    return _SegmentedReduce(
         d_in, d_out, start_offsets_in, end_offsets_in, op_adapter, h_init
     )
 

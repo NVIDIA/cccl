@@ -38,6 +38,10 @@
 
 _CCCL_BEGIN_NAMESPACE_CUDA
 
+_CCCL_DIAG_PUSH
+_CCCL_DIAG_SUPPRESS_CLANG("-Wmissing-braces")
+// clang complains about missing braces in CUmemLocation constructor but GCC complains if we add them
+
 enum class __pool_attr_settable : bool
 {
 };
@@ -168,18 +172,46 @@ using used_mem_high_t = __pool_attr<::cudaMemPoolAttrUsedMemHigh>;
 static constexpr used_mem_high_t used_mem_high{};
 }; // namespace memory_pool_attributes
 
+inline bool __is_host_memory_pool_supported()
+{
+  // Both host_numa and host memory pool flags should agree, but check the one corresponding to the implementation
+  // of the default pool just to be sure
+#  if _CCCL_CTK_AT_LEAST(13, 0)
+  return ::cuda::device_attributes::host_memory_pools_supported(cuda::device_ref{0});
+#  elif _CCCL_CTK_AT_LEAST(12, 6)
+  return ::cuda::device_attributes::host_numa_memory_pools_supported(cuda::device_ref{0});
+#  else
+  return false;
+#  endif
+}
+
 //! @brief  Checks whether the current device supports stream-ordered
 //! allocations.
 //! @param __device The device for which to query support.
 //! @throws cuda_error if \c cudaDeviceGetAttribute failed.
 //! @returns true if \c cudaDevAttrMemoryPoolsSupported is not zero.
-inline void __verify_device_supports_stream_ordered_allocations(const device_ref __device)
+inline void __verify_device_supports_stream_ordered_allocations(
+  ::CUmemLocation __location, [[maybe_unused]] ::CUmemAllocationType __allocation_type)
 {
-  if (!__device.attribute(::cuda::device_attributes::memory_pools_supported))
+  auto __device =
+    __location.type == ::CU_MEM_LOCATION_TYPE_DEVICE ? cuda::device_ref{__location.id} : cuda::device_ref{0};
+  if (!::cuda::device_attributes::memory_pools_supported(__device))
   {
-    ::cuda::__throw_cuda_error(
-      ::cudaErrorNotSupported, "stream-ordered allocations are not supported on the given device");
+    ::cuda::__throw_cuda_error(::cudaErrorNotSupported, "stream-ordered allocations are not supported");
   }
+#  if _CCCL_CTK_AT_LEAST(13, 0)
+  if (__allocation_type == ::CU_MEM_ALLOCATION_TYPE_MANAGED
+      && !::cuda::device_attributes::concurrent_managed_access(__device))
+  {
+    ::cuda::__throw_cuda_error(::cudaErrorNotSupported, "managed memory pools are not supported");
+  }
+#  endif // _CCCL_CTK_AT_LEAST(13, 0)
+#  if _CCCL_CTK_AT_LEAST(12, 6)
+  if (__location.type == ::CU_MEM_LOCATION_TYPE_HOST && !__is_host_memory_pool_supported())
+  {
+    ::cuda::__throw_cuda_error(::cudaErrorNotSupported, "host memory pools are not supported");
+  }
+#  endif // _CCCL_CTK_AT_LEAST(12, 6)
 }
 
 //! @brief Check whether the specified `cudaMemAllocationHandleType` is
@@ -216,8 +248,7 @@ inline void __verify_device_supports_export_handle_type(
 [[nodiscard]] _CCCL_HOST_API inline cudaMemPool_t
 __get_default_memory_pool(const CUmemLocation __location, [[maybe_unused]] const CUmemAllocationType __allocation_type)
 {
-  auto __device = __location.type == ::CU_MEM_LOCATION_TYPE_DEVICE ? __location.id : 0;
-  ::cuda::__verify_device_supports_stream_ordered_allocations(__device);
+  ::cuda::__verify_device_supports_stream_ordered_allocations(__location, __allocation_type);
 
 #  if _CCCL_CTK_AT_LEAST(13, 0)
   ::cudaMemPool_t __pool = ::cuda::__driver::__getDefaultMemPool(__location, __allocation_type);
@@ -228,7 +259,7 @@ __get_default_memory_pool(const CUmemLocation __location, [[maybe_unused]] const
 #  else // ^^^ _CCCL_CTK_AT_LEAST(13, 0) ^^^ / vvv _CCCL_CTK_BELOW(13, 0) vvv
   _CCCL_ASSERT(__location.type == ::CU_MEM_LOCATION_TYPE_DEVICE,
                "Before CUDA 13 only device memory pools have a default");
-  ::cudaMemPool_t __pool = ::cuda::__driver::__deviceGetDefaultMemPool(__device);
+  ::cudaMemPool_t __pool = ::cuda::__driver::__deviceGetDefaultMemPool(::CUdevice{__location.id});
 #  endif // ^^^ _CCCL_CTK_BELOW(13, 0) ^^^
   return __pool;
 }
@@ -324,7 +355,7 @@ struct memory_pool_properties
   {
     auto __device = __location.type == ::CU_MEM_LOCATION_TYPE_DEVICE ? __location.id : 0;
     // Mempool creation failed, lets try to figure out why
-    ::cuda::__verify_device_supports_stream_ordered_allocations(__device);
+    ::cuda::__verify_device_supports_stream_ordered_allocations(__location, __allocation_type);
     ::cuda::__verify_device_supports_export_handle_type(__device, __properties.allocation_handle_type, __location);
 
     // Could not find the reason, throw a generic error
@@ -635,6 +666,8 @@ public:
 };
 
 _CCCL_END_NAMESPACE_CUDA
+
+_CCCL_DIAG_POP
 
 #  include <cuda/std/__cccl/epilogue.h>
 

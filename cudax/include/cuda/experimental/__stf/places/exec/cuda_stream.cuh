@@ -49,14 +49,14 @@ public:
     }
 
     /* We set the current device to be the device on which the CUDA stream was created */
-    exec_place activate(backend_ctx_untyped& bctx) const override
+    exec_place activate() const override
     {
-      return exec_place::device(dstream.dev_id).activate(bctx);
+      return exec_place::device(dstream.dev_id).activate();
     }
 
-    void deactivate(backend_ctx_untyped& bctx, const exec_place& prev) const override
+    void deactivate(const exec_place& prev) const override
     {
-      return exec_place::device(dstream.dev_id).deactivate(bctx, prev);
+      return exec_place::device(dstream.dev_id).deactivate(prev);
     }
 
     stream_pool& get_stream_pool(async_resources_handle&, bool) const override

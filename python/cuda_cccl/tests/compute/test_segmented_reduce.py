@@ -311,6 +311,23 @@ def test_segmented_reduce_well_known_maximum():
     np.testing.assert_equal(d_output.get(), expected)
 
 
+def test_segmented_reduce_bool_maximum():
+    h_init = np.array([False], dtype=np.bool_)
+
+    # Create segmented data: [False, True] | [False, False] | [True]
+    d_input = cp.array([False, True, False, False, True], dtype=np.bool_)
+    d_starts = cp.array([0, 2, 4], dtype=np.int32)
+    d_ends = cp.array([2, 4, 5], dtype=np.int32)
+    d_output = cp.empty(3, dtype=np.bool_)
+
+    cuda.compute.segmented_reduce(
+        d_input, d_output, d_starts, d_ends, OpKind.MAXIMUM, h_init, 3
+    )
+
+    expected = np.array([True, False, True], dtype=np.bool_)
+    np.testing.assert_equal(d_output.get(), expected)
+
+
 def test_segmented_reduce_transform_output_iterator(floating_array):
     """Test segmented reduce with TransformOutputIterator."""
     dtype = floating_array.dtype
@@ -375,3 +392,23 @@ def test_device_segmented_reduce_for_rowwise_sum():
 
     expected = cp.sum(mat, axis=-1)
     assert cp.all(d_output == expected)
+
+
+def test_segmented_reduce_with_lambda():
+    """Test segmented_reduce with a lambda function as the reducer."""
+    dtype = np.int32
+    h_init = np.array([0], dtype=dtype)
+
+    # Create segmented data: [1, 2, 3] | [4, 5] | [6, 7, 8, 9]
+    d_input = cp.array([1, 2, 3, 4, 5, 6, 7, 8, 9], dtype=dtype)
+    d_starts = cp.array([0, 3, 5], dtype=np.int32)
+    d_ends = cp.array([3, 5, 9], dtype=np.int32)
+    d_output = cp.empty(3, dtype=dtype)
+
+    # Use a lambda function directly as the reducer
+    cuda.compute.segmented_reduce(
+        d_input, d_output, d_starts, d_ends, lambda a, b: a + b, h_init, 3
+    )
+
+    expected = np.array([6, 9, 30])  # sum of each segment
+    np.testing.assert_equal(d_output.get(), expected)

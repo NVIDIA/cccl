@@ -21,7 +21,9 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/__mdspan/dlpack_to_mdspan.h>
 #include <cuda/__mdspan/host_device_mdspan.h>
+#include <cuda/__mdspan/mdspan_to_dlpack.h>
 #include <cuda/__mdspan/restrict_mdspan.h>
 #include <cuda/__mdspan/shared_memory_mdspan.h>
 #include <cuda/std/mdspan>

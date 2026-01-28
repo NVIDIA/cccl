@@ -175,12 +175,7 @@ OutputIt _CCCL_API _CCCL_FORCEINLINE cub_transform_many(
   cudaError_t status;
   THRUST_INDEX_TYPE_DISPATCH(
     status,
-    (cub::detail::transform::dispatch_t<stable_address,
-                                        decltype(num_items_fixed),
-                                        ::cuda::std::tuple<InputIts...>,
-                                        OutputIt,
-                                        Predicate,
-                                        TransformOp>::dispatch),
+    (cub::detail::transform::dispatch<stable_address>),
     num_items,
     (firsts, result, num_items_fixed, pred, transform_op, cuda_cub::stream(policy)));
   throw_on_error(status, "transform: failed inside CUB");
@@ -202,7 +197,7 @@ OutputIt _CCCL_API _CCCL_FORCEINLINE cub_transform_many(
   zip_function<TransformOp> transform_op)
 {
   return cub_transform_many(
-    policy, get<0>(firsts).get_iterator_tuple(), result, num_items, transform_op.underlying_function());
+    policy, ::cuda::std::get<0>(firsts).get_iterator_tuple(), result, num_items, transform_op.underlying_function());
 }
 
 template <class Derived, class Offset, class... InputIts, class OutputIt, class TransformOp>
@@ -213,7 +208,7 @@ OutputIt _CCCL_API _CCCL_FORCEINLINE cub_transform_many(
   Offset num_items,
   ::cuda::zip_function<TransformOp> transform_op)
 {
-  return cub_transform_many(policy, get<0>(firsts).__iterators(), result, num_items, transform_op.__fun());
+  return cub_transform_many(policy, ::cuda::std::get<0>(firsts).__iterators(), result, num_items, transform_op.__fun());
 }
 
 template <typename F>

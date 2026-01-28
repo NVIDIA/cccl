@@ -258,7 +258,7 @@ LoadDirectBlockedVectorized(int linear_tid, T* block_src_ptr, T (&dst_items)[Ite
   InternalLoadDirectBlockedVectorized<LOAD_DEFAULT>(linear_tid, block_src_ptr, dst_items);
 }
 
-//! @} end member group
+//! @}
 //! @name Striped arrangement I/O (direct)
 //! @{
 
@@ -413,7 +413,7 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void LoadDirectStriped(
   LoadDirectStriped<BlockThreads>(linear_tid, block_src_it, dst_items, block_items_end);
 }
 
-//! @} end member group
+//! @}
 //! @name Warp-striped arrangement I/O (direct)
 //! @{
 
@@ -571,7 +571,7 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void LoadDirectWarpStriped(
   LoadDirectWarpStriped(linear_tid, block_src_it, dst_items, block_items_end);
 }
 
-//! @} end member group
+//! @}
 
 //! @brief cub::BlockLoadAlgorithm enumerates alternative algorithms for cub::BlockLoad to read a linear segment of data
 //!        from memory into a blocked arrangement across a CUDA thread block.
@@ -696,7 +696,7 @@ enum BlockLoadAlgorithm
   BLOCK_LOAD_WARP_TRANSPOSE_TIMESLICED,
 };
 
-#if !_CCCL_COMPILER(NVRTC)
+#if !_CCCL_COMPILER(NVRTC) && !defined(_CCCL_DOXYGEN_INVOKED)
 inline ::std::ostream& operator<<(::std::ostream& os, BlockLoadAlgorithm algo)
 {
   switch (algo)
@@ -717,7 +717,7 @@ inline ::std::ostream& operator<<(::std::ostream& os, BlockLoadAlgorithm algo)
       return os << "<unknown BlockLoadAlgorithm: " << static_cast<int>(algo) << ">";
   }
 }
-#endif // !_CCCL_COMPILER(NVRTC)
+#endif // !_CCCL_COMPILER(NVRTC) && !_CCCL_DOXYGEN_INVOKED
 
 //! @rst
 //! The BlockLoad class provides :ref:`collective <collective-primitives>` data movement methods for loading a linear
@@ -1096,7 +1096,7 @@ public:
       , linear_tid(RowMajorTid(BlockDimX, BlockDimY, BlockDimZ))
   {}
 
-  //! @} end member group
+  //! @}
   //! @name Data movement
   //! @{
 
@@ -1257,7 +1257,7 @@ public:
     InternalLoad(temp_storage, linear_tid).Load(block_src_it, dst_items, block_items_end, oob_default);
   }
 
-  //! @}  end member group
+  //! @}
 };
 
 template <class Policy, class It, class T = cub::detail::it_value_t<It>>

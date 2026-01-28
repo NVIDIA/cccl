@@ -11,10 +11,10 @@
 #ifndef LD_ST_H
 #define LD_ST_H
 
+#include <format>
 #include <string>
 
 #include "definitions.h"
-#include <fmt/format.h>
 
 inline std::string semantic_ld_st(Semantic sem)
 {
@@ -74,7 +74,7 @@ static inline _CCCL_DEVICE void __cuda_atomic_load_memory_order_dispatch(_Fn &__
   // 6 - Scope semantic
   // 7 - Mmio tag
   // 8 - Mmio semantic
-  const std::string asm_intrinsic_format_128 = R"XXX(
+  constexpr auto asm_intrinsic_format_128 = R"XXX(
   template <class _Type>
 static inline _CCCL_DEVICE void __cuda_atomic_load(
   const _Type* __ptr, _Type& __dst, {3}, __atomic_cuda_operand_{0}{1}, {5}, {7})
@@ -92,7 +92,7 @@ static inline _CCCL_DEVICE void __cuda_atomic_load(
     }}
   )YYY" : "=l"(__dst.__x),"=l"(__dst.__y) : "l"(__ptr) : "memory");
 }})XXX";
-  const std::string asm_intrinsic_format     = R"XXX(
+  constexpr auto asm_intrinsic_format     = R"XXX(
 template <class _Type>
 static inline _CCCL_DEVICE void __cuda_atomic_load(
   const _Type* __ptr, _Type& __dst, {3}, __atomic_cuda_operand_{0}{1}, {5}, {7})
@@ -152,17 +152,35 @@ static inline _CCCL_DEVICE void __cuda_atomic_load(
             {
               continue;
             }
-            out << fmt::format(
-              (size == 128) ? asm_intrinsic_format_128 : asm_intrinsic_format,
-              /* 0 */ operand(type),
-              /* 1 */ size,
-              /* 2 */ constraints(type, size),
-              /* 3 */ semantic_tag(sem),
-              /* 4 */ semantic_ld_st(sem),
-              /* 5 */ scope_tag(sco),
-              /* 6 */ scope_ld_st(sem, sco),
-              /* 7 */ mmio_tag(mm),
-              /* 8 */ mmio(mm));
+
+            if (size == 128)
+            {
+              out << std::format(
+                asm_intrinsic_format_128,
+                /* 0 */ operand(type),
+                /* 1 */ size,
+                /* 2 */ constraints(type, size),
+                /* 3 */ semantic_tag(sem),
+                /* 4 */ semantic_ld_st(sem),
+                /* 5 */ scope_tag(sco),
+                /* 6 */ scope_ld_st(sem, sco),
+                /* 7 */ mmio_tag(mm),
+                /* 8 */ mmio(mm));
+            }
+            else
+            {
+              out << std::format(
+                asm_intrinsic_format,
+                /* 0 */ operand(type),
+                /* 1 */ size,
+                /* 2 */ constraints(type, size),
+                /* 3 */ semantic_tag(sem),
+                /* 4 */ semantic_ld_st(sem),
+                /* 5 */ scope_tag(sco),
+                /* 6 */ scope_ld_st(sem, sco),
+                /* 7 */ mmio_tag(mm),
+                /* 8 */ mmio(mm));
+            }
           }
         }
       }
@@ -240,7 +258,7 @@ static inline _CCCL_DEVICE void __cuda_atomic_store_memory_order_dispatch(_Fn &_
   // 6 - Scope semantic
   // 7 - Mmio tag
   // 8 - Mmio semantic
-  const std::string asm_intrinsic_format_128 = R"XXX(
+  constexpr auto asm_intrinsic_format_128 = R"XXX(
 template <class _Type>
 static inline _CCCL_DEVICE void __cuda_atomic_store(
   _Type* __ptr, _Type& __val, {3}, __atomic_cuda_operand_{0}{1}, {5}, {7})
@@ -258,7 +276,7 @@ static inline _CCCL_DEVICE void __cuda_atomic_store(
     }}
   )YYY" :: "l"(__ptr), "l"(__val.__x),"l"(__val.__y) : "memory");
 }})XXX";
-  const std::string asm_intrinsic_format     = R"XXX(
+  constexpr auto asm_intrinsic_format     = R"XXX(
 template <class _Type>
 static inline _CCCL_DEVICE void __cuda_atomic_store(
   _Type* __ptr, _Type& __val, {3}, __atomic_cuda_operand_{0}{1}, {5}, {7})
@@ -315,17 +333,35 @@ static inline _CCCL_DEVICE void __cuda_atomic_store(
             {
               continue;
             }
-            out << fmt::format(
-              (size == 128) ? asm_intrinsic_format_128 : asm_intrinsic_format,
-              /* 0 */ operand(type),
-              /* 1 */ size,
-              /* 2 */ constraints(type, size),
-              /* 3 */ semantic_tag(sem),
-              /* 4 */ semantic_ld_st(sem),
-              /* 5 */ scope_tag(sco),
-              /* 6 */ scope_ld_st(sem, sco),
-              /* 7 */ mmio_tag(mm),
-              /* 8 */ mmio(mm));
+
+            if (size == 128)
+            {
+              out << std::format(
+                asm_intrinsic_format_128,
+                /* 0 */ operand(type),
+                /* 1 */ size,
+                /* 2 */ constraints(type, size),
+                /* 3 */ semantic_tag(sem),
+                /* 4 */ semantic_ld_st(sem),
+                /* 5 */ scope_tag(sco),
+                /* 6 */ scope_ld_st(sem, sco),
+                /* 7 */ mmio_tag(mm),
+                /* 8 */ mmio(mm));
+            }
+            else
+            {
+              out << std::format(
+                asm_intrinsic_format,
+                /* 0 */ operand(type),
+                /* 1 */ size,
+                /* 2 */ constraints(type, size),
+                /* 3 */ semantic_tag(sem),
+                /* 4 */ semantic_ld_st(sem),
+                /* 5 */ scope_tag(sco),
+                /* 6 */ scope_ld_st(sem, sco),
+                /* 7 */ mmio_tag(mm),
+                /* 8 */ mmio(mm));
+            }
           }
         }
       }

@@ -5,31 +5,13 @@
 
 from typing import Callable
 
-from .._caching import cache_with_key
-from .._utils import protocols
+from .._caching import cache_with_registered_key_functions
 from .._utils.temp_storage_buffer import TempStorageBuffer
 from ..iterators._factories import DiscardIterator
 from ..iterators._iterators import IteratorBase
 from ..op import OpAdapter, make_op_adapter
 from ..typing import DeviceArrayLike
 from ._three_way_partition import make_three_way_partition
-
-
-def _make_cache_key(
-    d_in: DeviceArrayLike | IteratorBase,
-    d_out: DeviceArrayLike | IteratorBase,
-    d_num_selected_out: DeviceArrayLike,
-    cond: OpAdapter,
-):
-    d_in_key = (
-        d_in.kind if isinstance(d_in, IteratorBase) else protocols.get_dtype(d_in)
-    )
-    d_out_key = (
-        d_out.kind if isinstance(d_out, IteratorBase) else protocols.get_dtype(d_out)
-    )
-    d_num_selected_out_key = protocols.get_dtype(d_num_selected_out)
-
-    return (d_in_key, d_out_key, d_num_selected_out_key, cond.get_cache_key())
 
 
 class _Select:
@@ -47,10 +29,6 @@ class _Select:
         self.discard_second = DiscardIterator(d_out)
         self.discard_unselected = DiscardIterator(d_out)
 
-        # Create a predicate that always returns False
-        def _cccl_always_false(x):
-            return False
-
         # Use three_way_partition internally
         self.partitioner = make_three_way_partition(
             d_in,
@@ -59,7 +37,7 @@ class _Select:
             self.discard_unselected,  # unselected_out - discarded
             d_num_selected_out,
             cond,  # select_first_part_op - user's select condition
-            _cccl_always_false,  # select_second_part_op - always false
+            lambda x: False,  # select_second_part_op - always false
         )
 
     def __call__(
@@ -83,20 +61,7 @@ class _Select:
         )
 
 
-@cache_with_key(_make_cache_key)
-def _make_select_cached(
-    d_in: DeviceArrayLike | IteratorBase,
-    d_out: DeviceArrayLike | IteratorBase,
-    d_num_selected_out: DeviceArrayLike,
-    cond: OpAdapter,
-):
-    """Internal cached factory for _Select."""
-    # Note: _Select internally calls make_three_way_partition which will
-    # normalize the cond. But we've already normalized it, so the Op
-    # will be passed through make_op unchanged.
-    return _Select(d_in, d_out, d_num_selected_out, cond)
-
-
+@cache_with_registered_key_functions
 def make_select(
     d_in: DeviceArrayLike | IteratorBase,
     d_out: DeviceArrayLike | IteratorBase,
@@ -128,7 +93,10 @@ def make_select(
         A callable object that performs the selection operation.
     """
     cond_adapter = make_op_adapter(cond)
-    return _make_select_cached(d_in, d_out, d_num_selected_out, cond_adapter)
+    # Note: _Select internally calls make_three_way_partition which will
+    # normalize the cond. But we've already normalized it, so the Op
+    # will be passed through make_op unchanged.
+    return _Select(d_in, d_out, d_num_selected_out, cond_adapter)
 
 
 def select(

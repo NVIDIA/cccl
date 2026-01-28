@@ -1,4 +1,4 @@
-#include <thrust/detail/allocator/allocator_traits.h>
+#include <thrust/detail/allocator/allocator_system.h>
 #include <thrust/functional.h>
 #include <thrust/iterator/constant_iterator.h>
 #include <thrust/transform.h>
@@ -13,7 +13,7 @@ struct rebind_vector;
 template <typename T, typename U, typename Allocator>
 struct rebind_vector<thrust::host_vector<T, Allocator>, U>
 {
-  using alloc_traits = typename thrust::detail::allocator_traits<Allocator>;
+  using alloc_traits = typename cuda::std::allocator_traits<Allocator>;
   using new_alloc    = typename alloc_traits::template rebind_alloc<U>;
   using type         = thrust::host_vector<U, new_alloc>;
 };
