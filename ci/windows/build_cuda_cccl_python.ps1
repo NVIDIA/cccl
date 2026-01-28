@@ -31,12 +31,16 @@
     Optional. The Docker image name used for a nested build of the CUDA 13
     wheel when the outer container defaults to CUDA 12.9.  The default value
     matches the RAPIDS dev‑container image that contains the required
-    toolchain: `rapidsai/devcontainers:25.12-cuda13.0-cl14.44-windows2022`.
+    toolchain: `rapidsai/devcontainers:26.02-cuda13.0-cl14.44-windows2022`.
 
 .PARAMETER SkipUpload
     When set, prevents the final wheel(s) from being uploaded as a GitHub
     Actions artifact even when the script detects it is running inside an
     Action.
+
+.PARAMETER SetGitSafeDirectory
+    Run `git config --global --add safe.directory $RepoRoot`
+    before building
 
 .EXAMPLE
     # Build a single cuda-cccl wheel for Python 3.13 (consisting of both CUDA
@@ -57,20 +61,29 @@ Param(
     [string]$OnlyCudaMajor,
 
     [Parameter(Mandatory = $false)]
-    [string]$Cuda13Image = "rapidsai/devcontainers:25.12-cuda13.0-cl14.44-windows2022",
+    [string]$Cuda13Image = "rapidsai/devcontainers:26.02-cuda13.0-cl14.44-windows2022",
 
     [Parameter(Mandatory = $false)]
-    [switch]$SkipUpload
+    [switch]$SkipUpload,
+
+    [Parameter(Mandatory = $false)]
+    [Alias("set-git-safe-directory")]
+    [switch]$SetGitSafeDirectory
 )
 
 $ErrorActionPreference = "Stop"
+
+# Resolve repo root from this script's location.
+$RepoRoot = Resolve-Path "$PSScriptRoot/../.."
+
+if ($SetGitSafeDirectory) {
+    git config --global --add safe.directory $RepoRoot
+}
 
 # Import shared helpers.
 Import-Module "$PSScriptRoot/build_common.psm1"
 Import-Module "$PSScriptRoot/build_common_python.psm1" -Force
 
-# Resolve repo root from this script's location.
-$RepoRoot = Resolve-Path "$PSScriptRoot/../.."
 Write-Host "Repo root: $RepoRoot"
 
 # Get the full path to the python.exe for the version we need.
@@ -220,7 +233,8 @@ function Invoke-Cuda13NestedBuild {
         '-File', $targetFile,
         '-py-version', $PyVersion,
         '-OnlyCudaMajor', '13',
-        '-SkipUpload'
+        '-SkipUpload',
+        '-SetGitSafeDirectory'
     )
 
     Write-Host ("About to invoke: docker " + ($dockerArgs -join ' '))

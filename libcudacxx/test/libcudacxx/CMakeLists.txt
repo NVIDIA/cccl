@@ -65,15 +65,7 @@ cccl_get_dlpack()
 
 get_target_property(CUDA_INCLUDE_DIR CUDA::cudart INTERFACE_INCLUDE_DIRECTORIES)
 
-foreach (COMPUTE_ARCH ${LIBCUDACXX_COMPUTE_ARCHS})
-  set(_compute_message "${_compute_message} sm_${COMPUTE_ARCH}")
-  set(
-    LIBCUDACXX_COMPUTE_ARCHS_STRING
-    "${LIBCUDACXX_COMPUTE_ARCHS_STRING} ${COMPUTE_ARCH}"
-  )
-endforeach()
-
-message(STATUS "Lit enabled CUDA architectures:${_compute_message}")
+message(STATUS "Lit enabled CUDA architectures: ${CMAKE_CUDA_ARCHITECTURES}")
 
 if (LIBCUDACXX_TEST_WITH_NVRTC)
   # TODO: Use project properties to get path to binary.
@@ -126,10 +118,7 @@ if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
 endif()
 
 if (NOT MSVC AND NOT ${CMAKE_CUDA_COMPILER_ID} STREQUAL "Clang")
-  set(
-    LIBCUDACXX_WARNING_LEVEL
-    "--compiler-options=-Wall --compiler-options=-Wextra"
-  )
+  set(LIBCUDACXX_WARNING_LEVEL "-Xcompiler=-Wall -Xcompiler=-Wextra")
 endif()
 
 if (MSVC)
@@ -176,8 +165,6 @@ elseif (${CMAKE_CUDA_COMPILER_ID} STREQUAL "NVHPC")
   string(APPEND LIBCUDACXX_TEST_COMPILER_FLAGS " -stdpar")
   string(APPEND LIBCUDACXX_TEST_LINKER_FLAGS " -stdpar")
 endif()
-
-set(LIBCUDACXX_COMPUTE_ARCHS_STRING "${CMAKE_CUDA_ARCHITECTURES}")
 
 include(AddLLVM)
 
@@ -258,6 +245,7 @@ if (NOT LIBCUDACXX_TEST_WITH_NVRTC)
           "-Dexecutor=\"NoopExecutor()\""
           "${libcudacxx_SOURCE_DIR}/test/libcudacxx"
     # gersemi: on
+    USES_TERMINAL
   )
 endif()
 
@@ -279,13 +267,14 @@ add_test(
         ${libcudacxx_LIT_FLAGS}
         -j "${libcudacxx_LIT_PARALLEL_LEVEL}"
         "${libcudacxx_SOURCE_DIR}/test/libcudacxx"
-  # gersemi: on
+    # gersemi: on
+    USES_TERMINAL
 )
 
 set_tests_properties(
   libcudacxx.test.lit
   PROPERTIES
-    # 3hr, some CI machines are slow
-    TIMEOUT 10800
+    # 6hr to match CI timeout
+    TIMEOUT 21600
     RUN_SERIAL TRUE
 )
