@@ -101,7 +101,7 @@ struct user_policy_hub_t
             cub::WarpLoadAlgorithm LoadAlgorithm,
             cub::CacheLoadModifier LoadModifier,
             cub::WarpStoreAlgorithm StoreAlgorithm,
-            int _SegmentsPerWarp = 1>
+            int MaxSegmentsPerWarp = 1>
   using warp_level_agent_policy_t = cub::detail::segmented_scan::agent_warp_segmented_scan_policy_t<
     Nominal4ByteBlockThreads,
     Nominal4ByteItemsPerThread,
@@ -109,10 +109,10 @@ struct user_policy_hub_t
     LoadAlgorithm,
     LoadModifier,
     StoreAlgorithm,
-    _SegmentsPerWarp,
+    MaxSegmentsPerWarp,
     cub::detail::MemBoundScaling<Nominal4ByteBlockThreads,
                                  Nominal4ByteItemsPerThread,
-                                 segmented_scan_compute_t<ComputeT, _SegmentsPerWarp>>>;
+                                 segmented_scan_compute_t<ComputeT, MaxSegmentsPerWarp>>>;
 
   template <int Nominal4ByteBlockThreads,
             int Nominal4ByteItemsPerThread,
