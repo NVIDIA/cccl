@@ -318,7 +318,7 @@ C2H_TEST("cub::detail::segmented_scan::agent_segmented_scan works with one segme
   constexpr unsigned segments_per_block = segments_per_worker * workers_in_block;
 
   const auto n_segments = static_cast<unsigned>(num_segments);
-  const auto grid_size  = ::cuda::ceil_div(n_segments, cub::detail::warp_threads);
+  const auto grid_size  = ::cuda::ceil_div(n_segments, segments_per_block);
 
   [[maybe_unused]] const auto itp = items_per_thread;
 
