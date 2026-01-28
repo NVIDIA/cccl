@@ -10,7 +10,7 @@ import os
 import subprocess
 import tempfile
 import warnings
-from typing import TYPE_CHECKING, Callable, List
+from typing import Callable, List
 
 try:
     from cuda.core import Device as CudaDevice
@@ -48,7 +48,6 @@ from ._bindings import (
 from ._utils.protocols import get_data_pointer, get_dtype, is_contiguous
 from .iterators._iterators import IteratorBase
 from .typing import DeviceArrayLike, GpuStruct
-
 
 # Mapping from numpy dtype to TypeEnum for creating TypeInfo
 _NUMPY_DTYPE_TO_ENUM = {
@@ -97,14 +96,7 @@ def to_cccl_op(op, input_types, output_type=None) -> Op:
     elif callable(op):
         from ._jit import compile_op
 
-        ltoir, name = compile_op(op, input_types, output_type)
-        return Op(
-            operator_type=OpKind.STATELESS,
-            name=name,
-            ltoir=ltoir,
-            state_alignment=1,
-            state=None,
-        )
+        return compile_op(op, input_types, output_type)
     else:
         raise ValueError(f"Invalid operator: {op}")
 

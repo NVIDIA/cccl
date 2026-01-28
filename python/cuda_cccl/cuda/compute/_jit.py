@@ -524,6 +524,7 @@ def infer_signature(py_func, input_types=None):
 def compile_op(op, input_types, output_type=None):
     """Compile a user-provided binary operator for use with CCCL algorithms."""
     from . import types as cccl_types
+    from ._bindings import Op, OpKind
     from ._odr_helpers import create_op_void_ptr_wrapper
 
     # Ensure any gpu_struct classes referenced in the op are registered
@@ -542,7 +543,13 @@ def compile_op(op, input_types, output_type=None):
     sig = numba_output_type(*numba_input_types)
     wrapped_op, wrapper_sig = create_op_void_ptr_wrapper(op, sig)
     ltoir, _ = numba.cuda.compile(wrapped_op, sig=wrapper_sig, output="ltoir")
-    return ltoir, wrapped_op.__name__
+    return Op(
+        operator_type=OpKind.STATELESS,
+        name=wrapped_op.__name__,
+        ltoir=ltoir,
+        state_alignment=1,
+        state=None,
+    )
 
 
 # -----------------------------------------------------------------------------
@@ -711,6 +718,5 @@ __all__ = [
     "compile_host_op",
     "compile_iterator",
     "compile_op",
-    "infer_signature",
     "type_descriptor_to_numba",
 ]
