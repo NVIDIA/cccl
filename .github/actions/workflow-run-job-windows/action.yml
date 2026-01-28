@@ -155,7 +155,7 @@ runs:
         else
           # Convert JSON array to --env arguments
           # Extra space is necessary to prevent jq from merging arguments
-          ENVARGS=$(echo "${{inputs.environment}}" | jq -rj '.[] | "--env \(.) "')
+          ENVARGS=$(echo ${{inputs.environment}} | jq -rj '.[] | "--env \(.) "')
           echo "ENVARGS=$ENVARGS" >> $GITHUB_OUTPUT
         fi
 
