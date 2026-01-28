@@ -94,7 +94,7 @@ runs:
           echo "ENVARGS=" >> $GITHUB_OUTPUT
         else
           # Convert JSON array to --env arguments
-          ENVARGS=$(echo "${{inputs.environment}}" | jq -r '.[] | "--env \(.)"')
+          ENVARGS=$(echo "${{inputs.environment}}" | jq -rj '.[] | "--env \(.) "')
           echo "ENVARGS=$ENVARGS" >> $GITHUB_OUTPUT
         fi
 

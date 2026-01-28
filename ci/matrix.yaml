@@ -21,7 +21,7 @@ workflows:
   #       args: '--preset libcudacxx --lit-tests "cuda/utility/basic_any.pass.cpp"' }
   #
   override:
-    - {jobs: ['build'], std: 'all',    cxx: ['msvc2026'], environment: ['NVCC_PREPEND_FLAGS="--allow-unsupported-compiler"']} # Latest MSVC
+    - {jobs: ['build'], std: 'all',    cxx: ['msvc2026'], environment: ['NVCC_PREPEND_FLAGS=\"--allow-unsupported-compiler\"']} # Latest MSVC
 
   pull_request:
     # Old CTK: Oldest/newest supported host compilers:
