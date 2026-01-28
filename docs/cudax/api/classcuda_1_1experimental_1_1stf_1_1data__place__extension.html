@@ -422,7 +422,6 @@
 <li class="toctree-l4"><a class="reference internal" href="../../cub/developer/warp_level.html">Warp-level</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../cub/developer/block_scope.html">Block-scope</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../cub/developer/device_scope.html">Device-scope</a></li>
-<li class="toctree-l4"><a class="reference internal" href="../../cub/developer/visibility.html">Symbol Visibility</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../cub/developer/nvtx.html">NVTX</a></li>
 </ul>
 </details></li>
@@ -1427,6 +1426,12 @@
 <li class="toctree-l3"><a class="reference internal" href="../../cccl/development/macro.html">CCCL Internal Macros</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../cccl/development/testing.html">CCCL Testing Utilities</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../cccl/development/build_and_bisect_tools.html">Build and Bisect Utilities</a></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../cccl/development/visibility.html">Symbol Visibility</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../cccl/development/visibility/host_stub_visibility.html">Host Stub Visibility Issue</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../cccl/development/visibility/device_kernel_visibility.html">Device Kernel Visibility Issue</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../cccl/development/visibility/different_architectures.html">Linking TUs compiled with different architectures</a></li>
+</ul>
+</details></li>
 </ul>
 </details></li>
 <li class="toctree-l2 has-children"><a class="reference internal" href="../../cccl/contributing.html">Contributing to the CUDA Core Compute Libraries</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
@@ -1621,7 +1626,7 @@
 
 <span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="m"><span class="pre">0</span></span><a class="headerlink" href="#_CPPv4NK4cuda12experimental3stf20data_place_extension8allocateENSt9ptrdiff_tE12cudaStream_t" title="Link to this definition">#</a><br /></dt>
 <dd><p>Allocate memory for this place (raw allocation) </p>
-<p>This is the low-level allocation interface. For stream-ordered allocations (where <a class="reference internal" href="classcuda_1_1experimental_1_1stf_1_1green__ctx__data__place.html#classcuda_1_1experimental_1_1stf_1_1data__place__extension_1a38e702bb87e4abe1b8ece89da6ff0e4b"><span class="std std-ref">allocation_is_stream_ordered()</span></a> returns true), the allocation will be ordered with respect to other operations on the stream. For immediate allocations, the stream parameter is ignored.</p>
+<p>This is the low-level allocation interface. For stream-ordered allocations (where <a class="reference internal" href="#classcuda_1_1experimental_1_1stf_1_1data__place__extension_1a38e702bb87e4abe1b8ece89da6ff0e4b"><span class="std std-ref">allocation_is_stream_ordered()</span></a> returns true), the allocation will be ordered with respect to other operations on the stream. For immediate allocations, the stream parameter is ignored.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">

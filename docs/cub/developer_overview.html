@@ -424,7 +424,6 @@
 <li class="toctree-l4"><a class="reference internal" href="developer/warp_level.html">Warp-level</a></li>
 <li class="toctree-l4"><a class="reference internal" href="developer/block_scope.html">Block-scope</a></li>
 <li class="toctree-l4"><a class="reference internal" href="developer/device_scope.html">Device-scope</a></li>
-<li class="toctree-l4"><a class="reference internal" href="developer/visibility.html">Symbol Visibility</a></li>
 <li class="toctree-l4"><a class="reference internal" href="developer/nvtx.html">NVTX</a></li>
 </ul>
 </details></li>
@@ -1429,6 +1428,12 @@
 <li class="toctree-l3"><a class="reference internal" href="../cccl/development/macro.html">CCCL Internal Macros</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../cccl/development/testing.html">CCCL Testing Utilities</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../cccl/development/build_and_bisect_tools.html">Build and Bisect Utilities</a></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../cccl/development/visibility.html">Symbol Visibility</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../cccl/development/visibility/host_stub_visibility.html">Host Stub Visibility Issue</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../cccl/development/visibility/device_kernel_visibility.html">Device Kernel Visibility Issue</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../cccl/development/visibility/different_architectures.html">Linking TUs compiled with different architectures</a></li>
+</ul>
+</details></li>
 </ul>
 </details></li>
 <li class="toctree-l2 has-children"><a class="reference internal" href="../cccl/contributing.html">Contributing to the CUDA Core Compute Libraries</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
@@ -1647,8 +1652,7 @@ there are commonalities among all of them:</p>
 <li><p><a class="reference internal" href="developer/device_scope.html#cub-developer-guide-device-scope"><span class="std std-ref">device-scope algorithms</span></a></p></li>
 </ul>
 </div></blockquote>
-<p>There is additional information for <a class="reference internal" href="developer/visibility.html#cub-developer-guide-visibility"><span class="std std-ref">symbol visibility issues</span></a> with respect to
-kernels and <a class="reference internal" href="developer/nvtx.html#cub-developer-guide-nvtx"><span class="std std-ref">nvtx ranges</span></a></p>
+<p>There is additional information for <a class="reference internal" href="developer/nvtx.html#cub-developer-guide-nvtx"><span class="std std-ref">nvtx ranges</span></a></p>
 </section>
 </section>
 
