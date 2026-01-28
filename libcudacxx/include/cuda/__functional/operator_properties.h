@@ -56,7 +56,8 @@ inline constexpr bool is_associative_v = __is_associative_static_assert<_Op>();
 // strictly speaking, plus (+) and multiply (*) are not associative because of overflow UB
 template <class _Tp>
 inline constexpr bool
-  is_associative_v<::cuda::std::plus<_Tp>, _Tp, ::cuda::std::enable_if_t<::cuda::std::__cccl_is_integer_v<_Tp>>> = true;
+  is_associative_v<::cuda::std::plus<_Tp>, _Tp, ::cuda::std::enable_if_t<::cuda::std::__cccl_is_cv_integer_v<_Tp>>> =
+    true;
 
 template <class _Tp>
 inline constexpr bool
@@ -67,7 +68,7 @@ inline constexpr bool is_associative_v<::cuda::std::plus<>, _Tp> = is_associativ
 
 template <class _Tp>
 inline constexpr bool
-  is_associative_v<::cuda::std::multiplies<_Tp>, _Tp, ::cuda::std::enable_if_t<::cuda::std::__cccl_is_integer_v<_Tp>>> =
+  is_associative_v<::cuda::std::multiplies<_Tp>, _Tp, ::cuda::std::enable_if_t<::cuda::std::__cccl_is_cv_integer_v<_Tp>>> =
     true;
 
 template <class _Tp>
@@ -81,7 +82,7 @@ inline constexpr bool is_associative_v<::cuda::std::multiplies<>, _Tp> =
 
 template <class _Tp>
 inline constexpr bool
-  is_associative_v<::cuda::std::bit_and<_Tp>, _Tp, ::cuda::std::enable_if_t<::cuda::std::__cccl_is_integer_v<_Tp>>> =
+  is_associative_v<::cuda::std::bit_and<_Tp>, _Tp, ::cuda::std::enable_if_t<::cuda::std::__cccl_is_cv_integer_v<_Tp>>> =
     true;
 
 template <class _Tp>
@@ -90,7 +91,7 @@ inline constexpr bool is_associative_v<::cuda::std::bit_and<>, _Tp> =
 
 template <class _Tp>
 inline constexpr bool
-  is_associative_v<::cuda::std::bit_or<_Tp>, _Tp, ::cuda::std::enable_if_t<::cuda::std::__cccl_is_integer_v<_Tp>>> =
+  is_associative_v<::cuda::std::bit_or<_Tp>, _Tp, ::cuda::std::enable_if_t<::cuda::std::__cccl_is_cv_integer_v<_Tp>>> =
     true;
 
 template <class _Tp>
@@ -99,7 +100,7 @@ inline constexpr bool is_associative_v<::cuda::std::bit_or<>, _Tp> =
 
 template <class _Tp>
 inline constexpr bool
-  is_associative_v<::cuda::std::bit_xor<_Tp>, _Tp, ::cuda::std::enable_if_t<::cuda::std::__cccl_is_integer_v<_Tp>>> =
+  is_associative_v<::cuda::std::bit_xor<_Tp>, _Tp, ::cuda::std::enable_if_t<::cuda::std::__cccl_is_cv_integer_v<_Tp>>> =
     true;
 
 template <class _Tp>
@@ -126,7 +127,8 @@ inline constexpr bool is_associative_v<::cuda::std::logical_or<>, _Tp> =
 
 template <class _Tp>
 inline constexpr bool
-  is_associative_v<::cuda::minimum<_Tp>, _Tp, ::cuda::std::enable_if_t<::cuda::std::__cccl_is_integer_v<_Tp>>> = true;
+  is_associative_v<::cuda::minimum<_Tp>, _Tp, ::cuda::std::enable_if_t<::cuda::std::__cccl_is_cv_integer_v<_Tp>>> =
+    true;
 
 template <class _Tp>
 inline constexpr bool
@@ -137,7 +139,8 @@ inline constexpr bool is_associative_v<::cuda::minimum<>, _Tp> = is_associative_
 
 template <class _Tp>
 inline constexpr bool
-  is_associative_v<::cuda::maximum<_Tp>, _Tp, ::cuda::std::enable_if_t<::cuda::std::__cccl_is_integer_v<_Tp>>> = true;
+  is_associative_v<::cuda::maximum<_Tp>, _Tp, ::cuda::std::enable_if_t<::cuda::std::__cccl_is_cv_integer_v<_Tp>>> =
+    true;
 
 template <class _Tp>
 inline constexpr bool
@@ -148,7 +151,7 @@ inline constexpr bool is_associative_v<::cuda::maximum<>, _Tp> = is_associative_
 
 template <class _Tp>
 inline constexpr bool
-  is_associative_v<::cuda::std::minus<_Tp>, _Tp, ::cuda::std::enable_if_t<::cuda::std::__cccl_is_integer_v<_Tp>>> =
+  is_associative_v<::cuda::std::minus<_Tp>, _Tp, ::cuda::std::enable_if_t<::cuda::std::__cccl_is_cv_integer_v<_Tp>>> =
     false;
 
 template <class _Tp>
@@ -161,7 +164,7 @@ inline constexpr bool is_associative_v<::cuda::std::minus<>, _Tp> =
 
 template <class _Tp>
 inline constexpr bool
-  is_associative_v<::cuda::std::divides<_Tp>, _Tp, ::cuda::std::enable_if_t<::cuda::std::__cccl_is_integer_v<_Tp>>> =
+  is_associative_v<::cuda::std::divides<_Tp>, _Tp, ::cuda::std::enable_if_t<::cuda::std::__cccl_is_cv_integer_v<_Tp>>> =
     false;
 
 template <class _Tp>
@@ -174,7 +177,7 @@ inline constexpr bool is_associative_v<::cuda::std::divides<>, _Tp> =
 
 template <class _Tp>
 inline constexpr bool
-  is_associative_v<::cuda::std::modulus<_Tp>, _Tp, ::cuda::std::enable_if_t<::cuda::std::__cccl_is_integer_v<_Tp>>> =
+  is_associative_v<::cuda::std::modulus<_Tp>, _Tp, ::cuda::std::enable_if_t<::cuda::std::__cccl_is_cv_integer_v<_Tp>>> =
     false;
 
 template <class _Tp>
@@ -198,7 +201,8 @@ inline constexpr bool is_commutative_v = ::cuda::__is_commutative_static_assert<
 
 template <class _Tp>
 inline constexpr bool
-  is_commutative_v<::cuda::std::plus<_Tp>, _Tp, ::cuda::std::enable_if_t<::cuda::std::__cccl_is_integer_v<_Tp>>> = true;
+  is_commutative_v<::cuda::std::plus<_Tp>, _Tp, ::cuda::std::enable_if_t<::cuda::std::__cccl_is_cv_integer_v<_Tp>>> =
+    true;
 
 template <class _Tp>
 inline constexpr bool
@@ -209,7 +213,7 @@ inline constexpr bool is_commutative_v<::cuda::std::plus<>, _Tp> = is_commutativ
 
 template <class _Tp>
 inline constexpr bool
-  is_commutative_v<::cuda::std::multiplies<_Tp>, _Tp, ::cuda::std::enable_if_t<::cuda::std::__cccl_is_integer_v<_Tp>>> =
+  is_commutative_v<::cuda::std::multiplies<_Tp>, _Tp, ::cuda::std::enable_if_t<::cuda::std::__cccl_is_cv_integer_v<_Tp>>> =
     true;
 
 template <class _Tp>
@@ -223,7 +227,7 @@ inline constexpr bool is_commutative_v<::cuda::std::multiplies<>, _Tp> =
 
 template <class _Tp>
 inline constexpr bool
-  is_commutative_v<::cuda::std::bit_and<_Tp>, _Tp, ::cuda::std::enable_if_t<::cuda::std::__cccl_is_integer_v<_Tp>>> =
+  is_commutative_v<::cuda::std::bit_and<_Tp>, _Tp, ::cuda::std::enable_if_t<::cuda::std::__cccl_is_cv_integer_v<_Tp>>> =
     true;
 
 template <class _Tp>
@@ -232,7 +236,7 @@ inline constexpr bool is_commutative_v<::cuda::std::bit_and<>, _Tp> =
 
 template <class _Tp>
 inline constexpr bool
-  is_commutative_v<::cuda::std::bit_or<_Tp>, _Tp, ::cuda::std::enable_if_t<::cuda::std::__cccl_is_integer_v<_Tp>>> =
+  is_commutative_v<::cuda::std::bit_or<_Tp>, _Tp, ::cuda::std::enable_if_t<::cuda::std::__cccl_is_cv_integer_v<_Tp>>> =
     true;
 
 template <class _Tp>
@@ -241,7 +245,7 @@ inline constexpr bool is_commutative_v<::cuda::std::bit_or<>, _Tp> =
 
 template <class _Tp>
 inline constexpr bool
-  is_commutative_v<::cuda::std::bit_xor<_Tp>, _Tp, ::cuda::std::enable_if_t<::cuda::std::__cccl_is_integer_v<_Tp>>> =
+  is_commutative_v<::cuda::std::bit_xor<_Tp>, _Tp, ::cuda::std::enable_if_t<::cuda::std::__cccl_is_cv_integer_v<_Tp>>> =
     true;
 
 template <class _Tp>
@@ -268,7 +272,8 @@ inline constexpr bool is_commutative_v<::cuda::std::logical_or<>, _Tp> =
 
 template <class _Tp>
 inline constexpr bool
-  is_commutative_v<::cuda::minimum<_Tp>, _Tp, ::cuda::std::enable_if_t<::cuda::std::__cccl_is_integer_v<_Tp>>> = true;
+  is_commutative_v<::cuda::minimum<_Tp>, _Tp, ::cuda::std::enable_if_t<::cuda::std::__cccl_is_cv_integer_v<_Tp>>> =
+    true;
 
 template <class _Tp>
 inline constexpr bool
@@ -279,7 +284,8 @@ inline constexpr bool is_commutative_v<::cuda::minimum<>, _Tp> = is_commutative_
 
 template <class _Tp>
 inline constexpr bool
-  is_commutative_v<::cuda::maximum<_Tp>, _Tp, ::cuda::std::enable_if_t<::cuda::std::__cccl_is_integer_v<_Tp>>> = true;
+  is_commutative_v<::cuda::maximum<_Tp>, _Tp, ::cuda::std::enable_if_t<::cuda::std::__cccl_is_cv_integer_v<_Tp>>> =
+    true;
 
 template <class _Tp>
 inline constexpr bool
@@ -290,7 +296,7 @@ inline constexpr bool is_commutative_v<::cuda::maximum<>, _Tp> = is_commutative_
 
 template <class _Tp>
 inline constexpr bool
-  is_commutative_v<::cuda::std::minus<_Tp>, _Tp, ::cuda::std::enable_if_t<::cuda::std::__cccl_is_integer_v<_Tp>>> =
+  is_commutative_v<::cuda::std::minus<_Tp>, _Tp, ::cuda::std::enable_if_t<::cuda::std::__cccl_is_cv_integer_v<_Tp>>> =
     false;
 
 template <class _Tp>
@@ -303,7 +309,7 @@ inline constexpr bool is_commutative_v<::cuda::std::minus<>, _Tp> =
 
 template <class _Tp>
 inline constexpr bool
-  is_commutative_v<::cuda::std::divides<_Tp>, _Tp, ::cuda::std::enable_if_t<::cuda::std::__cccl_is_integer_v<_Tp>>> =
+  is_commutative_v<::cuda::std::divides<_Tp>, _Tp, ::cuda::std::enable_if_t<::cuda::std::__cccl_is_cv_integer_v<_Tp>>> =
     false;
 
 template <class _Tp>
@@ -316,7 +322,7 @@ inline constexpr bool is_commutative_v<::cuda::std::divides<>, _Tp> =
 
 template <class _Tp>
 inline constexpr bool
-  is_commutative_v<::cuda::std::modulus<_Tp>, _Tp, ::cuda::std::enable_if_t<::cuda::std::__cccl_is_integer_v<_Tp>>> =
+  is_commutative_v<::cuda::std::modulus<_Tp>, _Tp, ::cuda::std::enable_if_t<::cuda::std::__cccl_is_cv_integer_v<_Tp>>> =
     false;
 
 template <class _Tp>
@@ -327,243 +333,350 @@ inline constexpr bool is_commutative_v<::cuda::std::modulus<>, _Tp> =
  * Identity Element
  **********************************************************************************************************************/
 
+struct __no_identity_element
+{};
+
 template <class _Op, class _Tp, class Enable = void>
-struct identity_element
-{};
+inline constexpr auto identity_element_v = __no_identity_element{};
+
+// cuda::std::plus
 
 template <class _Tp>
-struct identity_element<::cuda::std::plus<_Tp>, _Tp, ::cuda::std::enable_if_t<::cuda::std::__cccl_is_integer_v<_Tp>>>
-{
-  static constexpr auto value = _Tp{};
-};
+inline constexpr auto
+  identity_element_v<::cuda::std::plus<_Tp>, _Tp, ::cuda::std::enable_if_t<::cuda::std::__cccl_is_cv_integer_v<_Tp>>> =
+    _Tp{};
 
 template <class _Tp>
-struct identity_element<::cuda::std::plus<_Tp>, _Tp, ::cuda::std::enable_if_t<::cuda::is_floating_point_v<_Tp>>>
-{
-  static constexpr auto value = ::cuda::std::__fp_neg(_Tp{}); // -0.0 to preserve negative zero: -0.0 + (-0.0) = -0.0
-};
+inline constexpr auto
+  identity_element_v<::cuda::std::plus<_Tp>, _Tp, ::cuda::std::enable_if_t<::cuda::std::is_floating_point_v<_Tp>>> =
+    -_Tp{}; // -0.0 to preserve negative zero: -0.0 + (-0.0) = -0.0
 
 template <class _Tp>
-struct identity_element<::cuda::std::plus<>, _Tp> : identity_element<::cuda::std::plus<_Tp>, _Tp>
-{};
+inline constexpr auto
+  identity_element_v<::cuda::std::plus<>,
+                     _Tp,
+                     ::cuda::std::enable_if_t<!::cuda::std::__is_cv_extended_floating_point_v<_Tp>>> =
+    identity_element_v<::cuda::std::plus<_Tp>, _Tp>;
 
 template <class _Tp>
-struct identity_element<::cuda::std::multiplies<_Tp>, _Tp, ::cuda::std::enable_if_t<::cuda::std::__cccl_is_integer_v<_Tp>>>
-{
-  static constexpr auto value = _Tp{1};
-};
+_CCCL_GLOBAL_CONSTANT auto
+  identity_element_v<::cuda::std::plus<_Tp>,
+                     _Tp,
+                     ::cuda::std::enable_if_t<::cuda::std::__is_cv_extended_floating_point_v<_Tp>>> =
+    ::cuda::std::__fp_neg(_Tp{}); // -0.0 to preserve negative zero: -0.0 + (-0.0) = -0.0
 
 template <class _Tp>
-struct identity_element<::cuda::std::multiplies<_Tp>, _Tp, ::cuda::std::enable_if_t<::cuda::is_floating_point_v<_Tp>>>
-{
-  static constexpr auto value = ::cuda::std::__fp_one<_Tp>();
-};
+_CCCL_GLOBAL_CONSTANT auto
+  identity_element_v<::cuda::std::plus<>,
+                     _Tp,
+                     ::cuda::std::enable_if_t<::cuda::std::__is_cv_extended_floating_point_v<_Tp>>> =
+    identity_element_v<::cuda::std::plus<_Tp>, _Tp>;
+
+// cuda::std::multiplies
 
 template <class _Tp>
-struct identity_element<::cuda::std::multiplies<>, _Tp> : identity_element<::cuda::std::multiplies<_Tp>, _Tp>
-{};
+inline constexpr auto identity_element_v<::cuda::std::multiplies<_Tp>,
+                                         _Tp,
+                                         ::cuda::std::enable_if_t<::cuda::std::__cccl_is_cv_integer_v<_Tp>>> = _Tp{1};
 
 template <class _Tp>
-struct identity_element<::cuda::std::bit_and<_Tp>, _Tp, ::cuda::std::enable_if_t<::cuda::std::__cccl_is_integer_v<_Tp>>>
-{
-  static constexpr auto value = static_cast<_Tp>(~_Tp{});
-};
+inline constexpr auto
+  identity_element_v<::cuda::std::multiplies<_Tp>, _Tp, ::cuda::std::enable_if_t<::cuda::std::is_floating_point_v<_Tp>>> =
+    _Tp{1};
 
 template <class _Tp>
-struct identity_element<::cuda::std::bit_and<>, _Tp> : identity_element<::cuda::std::bit_and<_Tp>, _Tp>
-{};
+inline constexpr auto
+  identity_element_v<::cuda::std::multiplies<>,
+                     _Tp,
+                     ::cuda::std::enable_if_t<!::cuda::std::__is_cv_extended_floating_point_v<_Tp>>> =
+    identity_element_v<::cuda::std::multiplies<_Tp>, _Tp>;
 
 template <class _Tp>
-struct identity_element<::cuda::std::bit_or<_Tp>, _Tp, ::cuda::std::enable_if_t<::cuda::std::__cccl_is_integer_v<_Tp>>>
-{
-  static constexpr auto value = _Tp{};
-};
+_CCCL_GLOBAL_CONSTANT auto
+  identity_element_v<::cuda::std::multiplies<_Tp>,
+                     _Tp,
+                     ::cuda::std::enable_if_t<::cuda::std::__is_cv_extended_floating_point_v<_Tp>>> =
+    ::cuda::std::__fp_one<_Tp>();
 
 template <class _Tp>
-struct identity_element<::cuda::std::bit_or<>, _Tp> : identity_element<::cuda::std::bit_or<_Tp>, _Tp>
-{};
+_CCCL_GLOBAL_CONSTANT auto
+  identity_element_v<::cuda::std::multiplies<>,
+                     _Tp,
+                     ::cuda::std::enable_if_t<::cuda::std::__is_cv_extended_floating_point_v<_Tp>>> =
+    identity_element_v<::cuda::std::multiplies<_Tp>, _Tp>;
+
+// cuda::std::bit_and
 
 template <class _Tp>
-struct identity_element<::cuda::std::bit_xor<_Tp>, _Tp, ::cuda::std::enable_if_t<::cuda::std::__cccl_is_integer_v<_Tp>>>
-{
-  static constexpr auto value = _Tp{};
-};
+inline constexpr auto
+  identity_element_v<::cuda::std::bit_and<_Tp>, _Tp, ::cuda::std::enable_if_t<::cuda::std::__cccl_is_cv_integer_v<_Tp>>> =
+    static_cast<_Tp>(~_Tp{});
 
 template <class _Tp>
-struct identity_element<::cuda::std::bit_xor<>, _Tp> : identity_element<::cuda::std::bit_xor<_Tp>, _Tp>
-{};
+_CCCL_GLOBAL_CONSTANT auto identity_element_v<::cuda::std::bit_and<>, _Tp> =
+  identity_element_v<::cuda::std::bit_and<_Tp>, _Tp>;
+
+// cuda::std::bit_or
 
 template <class _Tp>
-struct identity_element<::cuda::std::logical_and<_Tp>, _Tp, ::cuda::std::enable_if_t<::cuda::std::is_same_v<_Tp, bool>>>
-{
-  static constexpr auto value = true;
-};
+inline constexpr auto
+  identity_element_v<::cuda::std::bit_or<_Tp>, _Tp, ::cuda::std::enable_if_t<::cuda::std::__cccl_is_cv_integer_v<_Tp>>> =
+    _Tp{};
 
 template <class _Tp>
-struct identity_element<::cuda::std::logical_and<>, _Tp> : identity_element<::cuda::std::logical_and<_Tp>, _Tp>
-{};
+_CCCL_GLOBAL_CONSTANT auto identity_element_v<::cuda::std::bit_or<>, _Tp> =
+  identity_element_v<::cuda::std::bit_or<_Tp>, _Tp>;
+
+// cuda::std::bit_xor
 
 template <class _Tp>
-struct identity_element<::cuda::std::logical_or<_Tp>, _Tp, ::cuda::std::enable_if_t<::cuda::std::is_same_v<_Tp, bool>>>
-{
-  static constexpr auto value = false;
-};
+inline constexpr auto
+  identity_element_v<::cuda::std::bit_xor<_Tp>, _Tp, ::cuda::std::enable_if_t<::cuda::std::__cccl_is_cv_integer_v<_Tp>>> =
+    _Tp{};
 
 template <class _Tp>
-struct identity_element<::cuda::std::logical_or<>, _Tp> : identity_element<::cuda::std::logical_or<_Tp>, _Tp>
-{};
+_CCCL_GLOBAL_CONSTANT auto identity_element_v<::cuda::std::bit_xor<>, _Tp> =
+  identity_element_v<::cuda::std::bit_xor<_Tp>, _Tp>;
+
+// cuda::std::logical_and
 
 template <class _Tp>
-struct identity_element<::cuda::minimum<_Tp>, _Tp, ::cuda::std::enable_if_t<::cuda::std::__cccl_is_integer_v<_Tp>>>
-{
-  static constexpr auto value = ::cuda::std::numeric_limits<_Tp>::max();
-};
+inline constexpr auto
+  identity_element_v<::cuda::std::logical_and<_Tp>, _Tp, ::cuda::std::enable_if_t<::cuda::std::is_same_v<_Tp, bool>>> =
+    true;
 
 template <class _Tp>
-struct identity_element<::cuda::minimum<_Tp>, _Tp, ::cuda::std::enable_if_t<::cuda::is_floating_point_v<_Tp>>>
-{
-  static constexpr auto value = ::cuda::std::numeric_limits<_Tp>::infinity();
-};
+_CCCL_GLOBAL_CONSTANT auto identity_element_v<::cuda::std::logical_and<>, _Tp> =
+  identity_element_v<::cuda::std::logical_and<_Tp>, _Tp>;
+
+// cuda::std::logical_or
 
 template <class _Tp>
-struct identity_element<::cuda::minimum<>, _Tp> : identity_element<::cuda::minimum<_Tp>, _Tp>
-{};
+inline constexpr auto
+  identity_element_v<::cuda::std::logical_or<_Tp>, _Tp, ::cuda::std::enable_if_t<::cuda::std::is_same_v<_Tp, bool>>> =
+    false;
 
 template <class _Tp>
-struct identity_element<::cuda::maximum<_Tp>, _Tp, ::cuda::std::enable_if_t<::cuda::std::__cccl_is_integer_v<_Tp>>>
-{
-  static constexpr auto value = ::cuda::std::numeric_limits<_Tp>::lowest();
-};
+_CCCL_GLOBAL_CONSTANT auto identity_element_v<::cuda::std::logical_or<>, _Tp> =
+  identity_element_v<::cuda::std::logical_or<_Tp>, _Tp>;
+
+// cuda::minimum
 
 template <class _Tp>
-struct identity_element<::cuda::maximum<_Tp>, _Tp, ::cuda::std::enable_if_t<::cuda::is_floating_point_v<_Tp>>>
-{
-  static constexpr auto value = ::cuda::std::__fp_neg(::cuda::std::__fp_inf<_Tp>());
-};
+inline constexpr auto
+  identity_element_v<::cuda::minimum<_Tp>, _Tp, ::cuda::std::enable_if_t<::cuda::std::__cccl_is_cv_integer_v<_Tp>>> =
+    ::cuda::std::numeric_limits<_Tp>::max();
 
 template <class _Tp>
-struct identity_element<::cuda::maximum<>, _Tp> : identity_element<::cuda::maximum<_Tp>, _Tp>
-{};
+inline constexpr auto
+  identity_element_v<::cuda::minimum<_Tp>, _Tp, ::cuda::std::enable_if_t<::cuda::std::is_floating_point_v<_Tp>>> =
+    ::cuda::std::numeric_limits<_Tp>::infinity();
 
-template <class _Op, class _Tp>
-_CCCL_API constexpr auto get_identity_element() noexcept
-{
-  return identity_element<_Op, _Tp>::value;
-}
+template <class _Tp>
+inline constexpr auto
+  identity_element_v<::cuda::minimum<>,
+                     _Tp,
+                     ::cuda::std::enable_if_t<!::cuda::std::__is_cv_extended_floating_point_v<_Tp>>> =
+    identity_element_v<::cuda::minimum<_Tp>, _Tp>;
+
+template <class _Tp>
+_CCCL_GLOBAL_CONSTANT auto
+  identity_element_v<::cuda::minimum<_Tp>,
+                     _Tp,
+                     ::cuda::std::enable_if_t<::cuda::std::__is_cv_extended_floating_point_v<_Tp>>> =
+    ::cuda::std::numeric_limits<_Tp>::infinity();
+
+template <class _Tp>
+_CCCL_GLOBAL_CONSTANT auto
+  identity_element_v<::cuda::minimum<>,
+                     _Tp,
+                     ::cuda::std::enable_if_t<::cuda::std::__is_cv_extended_floating_point_v<_Tp>>> =
+    identity_element_v<::cuda::minimum<_Tp>, _Tp>;
+
+// cuda::maximum
+
+template <class _Tp>
+inline constexpr auto
+  identity_element_v<::cuda::maximum<_Tp>, _Tp, ::cuda::std::enable_if_t<::cuda::std::__cccl_is_cv_integer_v<_Tp>>> =
+    ::cuda::std::numeric_limits<_Tp>::lowest();
+
+template <class _Tp>
+inline constexpr auto
+  identity_element_v<::cuda::maximum<_Tp>, _Tp, ::cuda::std::enable_if_t<::cuda::std::is_floating_point_v<_Tp>>> =
+    -cuda::std::numeric_limits<_Tp>::infinity();
+
+template <class _Tp>
+inline constexpr auto
+  identity_element_v<::cuda::maximum<>,
+                     _Tp,
+                     ::cuda::std::enable_if_t<!::cuda::std::__is_cv_extended_floating_point_v<_Tp>>> =
+    identity_element_v<::cuda::maximum<_Tp>, _Tp>;
+
+template <class _Tp>
+_CCCL_GLOBAL_CONSTANT auto
+  identity_element_v<::cuda::maximum<_Tp>,
+                     _Tp,
+                     ::cuda::std::enable_if_t<::cuda::std::__is_cv_extended_floating_point_v<_Tp>>> =
+    ::cuda::std::__fp_neg(::cuda::std::__fp_inf<_Tp>());
+
+template <class _Tp>
+_CCCL_GLOBAL_CONSTANT auto
+  identity_element_v<::cuda::maximum<>,
+                     _Tp,
+                     ::cuda::std::enable_if_t<::cuda::std::__is_cv_extended_floating_point_v<_Tp>>> =
+    identity_element_v<::cuda::maximum<_Tp>, _Tp>;
 
 template <class _Op, class _Tp, class = void>
 inline constexpr bool has_identity_element_v = false;
 
 template <class _Op, class _Tp>
-inline constexpr bool
-  has_identity_element_v<_Op, _Tp, ::cuda::std::void_t<decltype(identity_element<_Op, _Tp>::value)>> = true;
+inline constexpr bool has_identity_element_v<
+  _Op,
+  _Tp,
+  ::cuda::std::enable_if_t<!::cuda::std::is_same_v<decltype(identity_element_v<_Op, _Tp>), const __no_identity_element>>> =
+  true;
 
 /***********************************************************************************************************************
  * Absorbing Element
  **********************************************************************************************************************/
 
+struct __no_absorbing_element
+{};
+
 template <class _Op, class _Tp, class Enable = void>
-struct absorbing_element
-{};
+inline constexpr auto absorbing_element_v = __no_absorbing_element{};
+
+// cuda::std::multiplies (no absorbing element for floating-point due to NaN, infinity, and -1.0 * +0.0 = -0.0  (!=
+// +0.0))
 
 template <class _Tp>
-struct absorbing_element<::cuda::std::multiplies<_Tp>,
-                         _Tp,
-                         ::cuda::std::enable_if_t<::cuda::std::__cccl_is_integer_v<_Tp>>>
-{
-  static constexpr auto value = _Tp{};
-};
-
-// no absorbing element for floating-point due to NaN, infinity, and -1.0 * +0.0 = -0.0  (!= +0.0)
+inline constexpr auto absorbing_element_v<::cuda::std::multiplies<_Tp>,
+                                          _Tp,
+                                          ::cuda::std::enable_if_t<::cuda::std::__cccl_is_cv_integer_v<_Tp>>> = _Tp{};
 
 template <class _Tp>
-struct absorbing_element<::cuda::std::multiplies<>, _Tp> : absorbing_element<::cuda::std::multiplies<_Tp>, _Tp>
-{};
+inline constexpr auto absorbing_element_v<::cuda::std::multiplies<>, _Tp> =
+  absorbing_element_v<::cuda::std::multiplies<_Tp>, _Tp>;
+
+// cuda::std::bit_and
 
 template <class _Tp>
-struct absorbing_element<::cuda::std::bit_and<_Tp>, _Tp, ::cuda::std::enable_if_t<::cuda::std::__cccl_is_integer_v<_Tp>>>
-{
-  static constexpr auto value = _Tp{};
-};
+inline constexpr auto
+  absorbing_element_v<::cuda::std::bit_and<_Tp>, _Tp, ::cuda::std::enable_if_t<::cuda::std::__cccl_is_cv_integer_v<_Tp>>> =
+    _Tp{};
 
 template <class _Tp>
-struct absorbing_element<::cuda::std::bit_and<>, _Tp> : absorbing_element<::cuda::std::bit_and<_Tp>, _Tp>
-{};
+inline constexpr auto absorbing_element_v<::cuda::std::bit_and<>, _Tp> =
+  absorbing_element_v<::cuda::std::bit_and<_Tp>, _Tp>;
+
+// cuda::std::bit_or
 
 template <class _Tp>
-struct absorbing_element<::cuda::std::bit_or<_Tp>, _Tp, ::cuda::std::enable_if_t<::cuda::std::__cccl_is_integer_v<_Tp>>>
-{
-  static constexpr auto value = static_cast<_Tp>(~_Tp{});
-};
+inline constexpr auto
+  absorbing_element_v<::cuda::std::bit_or<_Tp>, _Tp, ::cuda::std::enable_if_t<::cuda::std::__cccl_is_cv_integer_v<_Tp>>> =
+    static_cast<_Tp>(~_Tp{});
 
 template <class _Tp>
-struct absorbing_element<::cuda::std::bit_or<>, _Tp> : absorbing_element<::cuda::std::bit_or<_Tp>, _Tp>
-{};
+inline constexpr auto absorbing_element_v<::cuda::std::bit_or<>, _Tp> =
+  absorbing_element_v<::cuda::std::bit_or<_Tp>, _Tp>;
+
+// cuda::std::logical_and
 
 template <class _Tp>
-struct absorbing_element<::cuda::std::logical_and<_Tp>, _Tp, ::cuda::std::enable_if_t<::cuda::std::is_same_v<_Tp, bool>>>
-{
-  static constexpr auto value = false;
-};
+inline constexpr auto
+  absorbing_element_v<::cuda::std::logical_and<_Tp>, _Tp, ::cuda::std::enable_if_t<::cuda::std::is_same_v<_Tp, bool>>> =
+    false;
 
 template <class _Tp>
-struct absorbing_element<::cuda::std::logical_and<>, _Tp> : absorbing_element<::cuda::std::logical_and<_Tp>, _Tp>
-{};
+inline constexpr auto absorbing_element_v<::cuda::std::logical_and<>, _Tp> =
+  absorbing_element_v<::cuda::std::logical_and<_Tp>, _Tp>;
+
+// cuda::std::logical_or
 
 template <class _Tp>
-struct absorbing_element<::cuda::std::logical_or<_Tp>, _Tp, ::cuda::std::enable_if_t<::cuda::std::is_same_v<_Tp, bool>>>
-{
-  static constexpr auto value = true;
-};
+inline constexpr auto
+  absorbing_element_v<::cuda::std::logical_or<_Tp>, _Tp, ::cuda::std::enable_if_t<::cuda::std::is_same_v<_Tp, bool>>> =
+    true;
 
 template <class _Tp>
-struct absorbing_element<::cuda::std::logical_or<>, _Tp> : absorbing_element<::cuda::std::logical_or<_Tp>, _Tp>
-{};
+inline constexpr auto absorbing_element_v<::cuda::std::logical_or<>, _Tp> =
+  absorbing_element_v<::cuda::std::logical_or<_Tp>, _Tp>;
+
+// cuda::minimum
 
 template <class _Tp>
-struct absorbing_element<::cuda::minimum<_Tp>, _Tp, ::cuda::std::enable_if_t<::cuda::std::__cccl_is_integer_v<_Tp>>>
-{
-  static constexpr auto value = ::cuda::std::numeric_limits<_Tp>::lowest();
-};
+inline constexpr auto
+  absorbing_element_v<::cuda::minimum<_Tp>, _Tp, ::cuda::std::enable_if_t<::cuda::std::__cccl_is_cv_integer_v<_Tp>>> =
+    ::cuda::std::numeric_limits<_Tp>::lowest();
 
 template <class _Tp>
-struct absorbing_element<::cuda::minimum<_Tp>, _Tp, ::cuda::std::enable_if_t<::cuda::is_floating_point_v<_Tp>>>
-{
-  static constexpr auto value = ::cuda::std::__fp_neg(::cuda::std::numeric_limits<_Tp>::infinity());
-};
+inline constexpr auto
+  absorbing_element_v<::cuda::minimum<_Tp>, _Tp, ::cuda::std::enable_if_t<::cuda::std::is_floating_point_v<_Tp>>> =
+    ::cuda::std::__fp_neg(::cuda::std::numeric_limits<_Tp>::infinity());
 
 template <class _Tp>
-struct absorbing_element<::cuda::minimum<>, _Tp> : absorbing_element<::cuda::minimum<_Tp>, _Tp>
-{};
+inline constexpr auto
+  absorbing_element_v<::cuda::minimum<>,
+                      _Tp,
+                      ::cuda::std::enable_if_t<!::cuda::std::__is_cv_extended_floating_point_v<_Tp>>> =
+    absorbing_element_v<::cuda::minimum<_Tp>, _Tp>;
 
 template <class _Tp>
-struct absorbing_element<::cuda::maximum<_Tp>, _Tp, ::cuda::std::enable_if_t<::cuda::std::__cccl_is_integer_v<_Tp>>>
-{
-  static constexpr auto value = ::cuda::std::numeric_limits<_Tp>::max();
-};
+_CCCL_GLOBAL_CONSTANT auto
+  absorbing_element_v<::cuda::minimum<_Tp>,
+                      _Tp,
+                      ::cuda::std::enable_if_t<::cuda::std::__is_cv_extended_floating_point_v<_Tp>>> =
+    ::cuda::std::__fp_neg(::cuda::std::__fp_inf<_Tp>());
 
 template <class _Tp>
-struct absorbing_element<::cuda::maximum<_Tp>, _Tp, ::cuda::std::enable_if_t<::cuda::is_floating_point_v<_Tp>>>
-{
-  static constexpr auto value = ::cuda::std::numeric_limits<_Tp>::infinity();
-};
+_CCCL_GLOBAL_CONSTANT auto
+  absorbing_element_v<::cuda::minimum<>,
+                      _Tp,
+                      ::cuda::std::enable_if_t<::cuda::std::__is_cv_extended_floating_point_v<_Tp>>> =
+    absorbing_element_v<::cuda::minimum<_Tp>, _Tp>;
+
+// cuda::maximum
 
 template <class _Tp>
-struct absorbing_element<::cuda::maximum<>, _Tp> : absorbing_element<::cuda::maximum<_Tp>, _Tp>
-{};
+inline constexpr auto
+  absorbing_element_v<::cuda::maximum<_Tp>, _Tp, ::cuda::std::enable_if_t<::cuda::std::__cccl_is_cv_integer_v<_Tp>>> =
+    ::cuda::std::numeric_limits<_Tp>::max();
 
-template <class _Op, class _Tp>
-_CCCL_API constexpr auto get_absorbing_element() noexcept
-{
-  return absorbing_element<_Op, _Tp>::value;
-}
+template <class _Tp>
+inline constexpr auto
+  absorbing_element_v<::cuda::maximum<_Tp>, _Tp, ::cuda::std::enable_if_t<::cuda::std::is_floating_point_v<_Tp>>> =
+    ::cuda::std::numeric_limits<_Tp>::infinity();
+
+template <class _Tp>
+inline constexpr auto
+  absorbing_element_v<::cuda::maximum<>,
+                      _Tp,
+                      ::cuda::std::enable_if_t<!::cuda::std::__is_cv_extended_floating_point_v<_Tp>>> =
+    absorbing_element_v<::cuda::maximum<_Tp>, _Tp>;
+
+template <class _Tp>
+_CCCL_GLOBAL_CONSTANT auto
+  absorbing_element_v<::cuda::maximum<_Tp>,
+                      _Tp,
+                      ::cuda::std::enable_if_t<::cuda::std::__is_cv_extended_floating_point_v<_Tp>>> =
+    ::cuda::std::__fp_inf<_Tp>();
+
+template <class _Tp>
+_CCCL_GLOBAL_CONSTANT auto
+  absorbing_element_v<::cuda::maximum<>,
+                      _Tp,
+                      ::cuda::std::enable_if_t<::cuda::std::__is_cv_extended_floating_point_v<_Tp>>> =
+    absorbing_element_v<::cuda::maximum<_Tp>, _Tp>;
 
 template <class _Op, class _Tp, class = void>
 inline constexpr bool has_absorbing_element_v = false;
 
 template <class _Op, class _Tp>
-inline constexpr bool
-  has_absorbing_element_v<_Op, _Tp, ::cuda::std::void_t<decltype(absorbing_element<_Op, _Tp>::value)>> = true;
+inline constexpr bool has_absorbing_element_v<
+  _Op,
+  _Tp,
+  ::cuda::std::enable_if_t<
+    !::cuda::std::is_same_v<decltype(absorbing_element_v<_Op, _Tp>), const __no_absorbing_element>>> = true;
 
 _CCCL_END_NAMESPACE_CUDA
 

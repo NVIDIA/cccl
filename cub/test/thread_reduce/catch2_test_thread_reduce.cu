@@ -274,7 +274,7 @@ C2H_TEST("ThreadReduce Integral Type Tests", "[reduce][thread]", integral_type_l
   using op_t                       = c2h::get<1, TestType>;
   constexpr auto reduce_op         = op_t{};
   constexpr auto std_reduce_op     = cub_operator_to_std_t<value_t, op_t>{};
-  constexpr auto operator_identity = cuda::get_identity_element<op_t, value_t>();
+  constexpr auto operator_identity = cuda::identity_element_v<op_t, value_t>;
   CAPTURE(c2h::type_name<value_t>(), max_size, c2h::type_name<decltype(reduce_op)>());
   c2h::device_vector<value_t> d_in(max_size);
   c2h::device_vector<value_t> d_out(1);
@@ -294,7 +294,7 @@ C2H_TEST("ThreadReduce Floating-Point Type Tests", "[reduce][thread]", fp_type_l
   using op_t                   = c2h::get<1, TestType>;
   constexpr auto reduce_op     = op_t{};
   constexpr auto std_reduce_op = cub_operator_to_std_t<value_t, op_t>{};
-  const auto operator_identity = cuda::get_identity_element<op_t, value_t>();
+  const auto operator_identity = cuda::identity_element_v<op_t, value_t>;
   CAPTURE(c2h::type_name<value_t>(), max_size, c2h::type_name<decltype(reduce_op)>());
   c2h::device_vector<value_t> d_in(max_size);
   c2h::device_vector<value_t> d_out(1);
@@ -319,7 +319,7 @@ C2H_TEST("ThreadReduce Narrow PrecisionType Tests",
   using op_t                   = c2h::get<1, TestType>;
   constexpr auto reduce_op     = op_t{};
   constexpr auto std_reduce_op = cub_operator_to_std_t<float, op_t>{};
-  const auto operator_identity = cuda::get_identity_element<op_t, float>();
+  const auto operator_identity = cuda::identity_element_v<op_t, float>;
   c2h::device_vector<value_t> d_in(max_size);
   c2h::device_vector<value_t> d_out(1);
   c2h::gen(C2H_SEED(num_seeds), d_in, value_t{1.0f}, value_t{2.0f});

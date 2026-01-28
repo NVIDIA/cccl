@@ -143,10 +143,7 @@ Identity Element
    namespace cuda {
 
    template <class Op, class T, class Enable = void>
-   struct identity_element;
-
-   template <class Op, class T>
-   constexpr auto get_identity_element() noexcept;
+   inline constexpr auto identity_element_v;
 
    template <class Op, class T, class Enable = void>
    inline constexpr bool has_identity_element_v;
@@ -155,8 +152,6 @@ Identity Element
 
 Provides the identity element for operator ``Op`` and type ``T``. The identity element ``e`` satisfies
 ``op(e, x) == op(x, e) == x`` for all values ``x`` of type ``T``.
-
-The function ``get_identity_element<Op, T>()`` returns ``identity_element<Op, T>::value``.
 
 ``has_identity_element_v`` evaluates to ``true`` if an identity element is defined for the given operator and type.
 
@@ -214,10 +209,7 @@ Absorbing Element
    namespace cuda {
 
    template <class Op, class T, class Enable = void>
-   struct absorbing_element;
-
-   template <class Op, class T>
-   constexpr auto get_absorbing_element() noexcept;
+   inline constexpr auto absorbing_element_v;
 
    template <class Op, class T, class Enable = void>
    inline constexpr bool has_absorbing_element_v;
@@ -226,8 +218,6 @@ Absorbing Element
 
 Provides the absorbing (annihilating) element for operator ``Op`` and type ``T``. The absorbing element ``z`` satisfies
 ``op(z, x) == op(x, z) == z`` for all values ``x`` of type ``T``.
-
-The function ``get_absorbing_element<Op, T>()`` returns ``absorbing_element<Op, T>::value``.
 
 ``has_absorbing_element_v`` evaluates to ``true`` if an absorbing element is defined for the given operator and type.
 
@@ -279,6 +269,7 @@ Supported Types
 ---------------
 
 The functionality supports all integer and floating-point types, including extended floating-point types.
+Due to the limitations of extended floating-point types, ``identity_element_v`` and ``absorbing_element_v`` are not supported at run-time for these types.
 
 Example
 -------
@@ -313,6 +304,6 @@ Example
         static_assert(cuda::is_commutative_v<cuda::std::plus<float>, float>);
 
         // Use identity element for reduction initialization
-        int sum_identity = cuda::get_identity_element<cuda::std::plus<int>, int>();       // 0
-        int mul_identity = cuda::get_identity_element<cuda::std::multiplies<int>, int>(); // 1
+        int sum_identity = cuda::identity_element_v<cuda::std::plus<int>, int>;       // 0
+        int mul_identity = cuda::identity_element_v<cuda::std::multiplies<int>, int>; // 1
    }
