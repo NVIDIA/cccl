@@ -120,6 +120,8 @@ struct agent_warp_segmented_scan
     } reused;
   };
 
+  static_assert(sizeof(_TempStorage) <= cub::detail::max_smem_per_block);
+
   // Alias wrapper allowing storage to be unioned
   using TempStorage = Uninitialized<_TempStorage>;
 
@@ -128,8 +130,8 @@ struct agent_warp_segmented_scan
   OutputIteratorT d_out; ///< Output data
   ScanOpT scan_op; ///< Binary associative scan operator
   InitValueT initial_value; ///< The initial value element for ScanOpT
-  unsigned int warp_id;
-  unsigned int lane_id;
+  unsigned int warp_id; ///< Warp identifier within CTA
+  unsigned int lane_id; ///< Thread identified within warp
 
   _CCCL_DEVICE _CCCL_FORCEINLINE agent_warp_segmented_scan(
     TempStorage& temp_storage, InputIteratorT d_in, OutputIteratorT d_out, ScanOpT scan_op, InitValueT initial_value)
@@ -158,15 +160,17 @@ struct agent_warp_segmented_scan
       // chunk_size <= TILE_ITEMS, casting to int is safe
       const int chunk_size = static_cast<int>(chunk_end - chunk_begin);
 
+      warp_load_t loader(temp_storage.reused.load[warp_id]);
       AccumT thread_values[items_per_thread];
+
       if (chunk_size == tile_items)
       {
-        warp_load_t(temp_storage.reused.load[warp_id]).Load(d_in + chunk_begin, thread_values);
+        loader.Load(d_in + chunk_begin, thread_values);
       }
       else
       {
         constexpr AccumT oob_default{};
-        warp_load_t(temp_storage.reused.load[warp_id]).Load(d_in + chunk_begin, thread_values, chunk_size, oob_default);
+        loader.Load(d_in + chunk_begin, thread_values, chunk_size, oob_default);
       }
       __syncwarp();
 
@@ -182,13 +186,15 @@ struct agent_warp_segmented_scan
       __syncwarp();
 
       const OffsetT out_offset = out_idx_begin + chunk_id * tile_items;
+      warp_store_t storer(temp_storage.reused.store[warp_id]);
+
       if (chunk_size == tile_items)
       {
-        warp_store_t(temp_storage.reused.store[warp_id]).Store(d_out + out_offset, thread_values);
+        storer.Store(d_out + out_offset, thread_values);
       }
       else
       {
-        warp_store_t(temp_storage.reused.store[warp_id]).Store(d_out + out_offset, thread_values, chunk_size);
+        storer.Store(d_out + out_offset, thread_values, chunk_size);
       }
       if (++chunk_id < n_chunks)
       {
@@ -209,9 +215,9 @@ struct agent_warp_segmented_scan
     OutputBeginOffsetIteratorT out_idx_begin_it,
     int n_segments)
   {
-    static_assert(::cuda::std::is_same_v<::cuda::std::iter_value_t<InputBeginOffsetIteratorT>, OffsetT>,
+    static_assert(::cuda::std::is_convertible_v<::cuda::std::iter_value_t<InputBeginOffsetIteratorT>, OffsetT>,
                   "Unexpected iterator type");
-    static_assert(::cuda::std::is_same_v<::cuda::std::iter_value_t<OutputBeginOffsetIteratorT>, OffsetT>,
+    static_assert(::cuda::std::is_convertible_v<::cuda::std::iter_value_t<OutputBeginOffsetIteratorT>, OffsetT>,
                   "Unexpected iterator type");
 
     _CCCL_ASSERT(n_segments > 0, "Number of segments should be greater than zero");
@@ -220,20 +226,22 @@ struct agent_warp_segmented_scan
 
     // cooperatively compute inclusive scan of sizes of segments to be processed by this block
     {
-      n_segments                        = ::cuda::std::min(n_segments, static_cast<int>(NumSegments));
-      constexpr unsigned worker_threads = cub::detail::warp_threads;
-      unsigned n_chunks                 = ::cuda::ceil_div<unsigned>(n_segments, worker_threads);
-      OffsetT exclusive_prefix          = 0;
-      using plus_t                      = ::cuda::std::plus<>;
+      constexpr unsigned worker_thread_count = cub::detail::warp_threads;
+
+      n_segments        = ::cuda::std::min(n_segments, static_cast<int>(NumSegments));
+      unsigned n_chunks = ::cuda::ceil_div<unsigned>(n_segments, worker_thread_count);
+
+      using plus_t = ::cuda::std::plus<>;
       const plus_t offsets_scan_op{};
+
+      OffsetT exclusive_prefix = 0;
       worker_prefix_callback_t prefix_callback_op{exclusive_prefix, offsets_scan_op};
 
-      warp_scan_offsets_t offset_scan_algo(temp_storage.reused.offsets_scan[warp_id]);
+      warp_scan_offsets_t offset_scanner(temp_storage.reused.offsets_scan[warp_id]);
 
-      const unsigned lane_id = (threadIdx.x % worker_threads);
       for (unsigned chunk_id = 0; chunk_id < n_chunks; ++chunk_id)
       {
-        const unsigned work_id = chunk_id * worker_threads + lane_id;
+        const unsigned work_id = chunk_id * worker_thread_count + lane_id;
 
         // TODO: use WarpLoad to load?
         const OffsetT input_segment_begin = (work_id < n_segments) ? inp_idx_begin_it[work_id] : 0;
@@ -242,12 +250,14 @@ struct agent_warp_segmented_scan
 
         OffsetT prefix;
         OffsetT warp_aggregate;
-        offset_scan_algo.InclusiveSum(segment_size, prefix, warp_aggregate);
+        offset_scanner.InclusiveSum(segment_size, prefix, warp_aggregate);
         __syncwarp();
         OffsetT warp_prefix = prefix_callback_op(warp_aggregate);
 
         if (work_id < n_segments)
         {
+          _CCCL_ASSERT(work_id < max_segments_per_warp, "Access violation in work_id index");
+          _CCCL_ASSERT(warp_id < warps_in_block, "Access violation in warp_id index");
           temp_storage.logical_segment_offsets[warp_id][work_id] = warp_prefix + prefix;
         }
       }
