@@ -22,6 +22,15 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
+#if _CCCL_HAS_HOST_STD_LIB()
+_CCCL_BEGIN_NAMESPACE_STD
+
+template <class...>
+class tuple;
+
+_CCCL_END_NAMESPACE_STD
+#endif // _CCCL_HAS_HOST_STD_LIB()
+
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 template <class...>
