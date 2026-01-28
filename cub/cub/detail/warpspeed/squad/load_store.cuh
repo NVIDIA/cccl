@@ -82,7 +82,7 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE CpAsyncOobInfo<Tp> prepareCpAsyncOob(Tp* ptrG
   _CCCL_ASSERT(overCopySizeBytes % 16 == 0, "");
   _CCCL_ASSERT(underCopySizeBytes % 16 == 0, "");
 
-  return {
+  return CpAsyncOobInfo<Tp>{
     .ptrGmem                      = ptrGmemBytes,
     .ptrGmemStartAlignDown        = ptrGmemStartAlignDown,
     .ptrGmemStartAlignUp          = ptrGmemStartAlignUp,
