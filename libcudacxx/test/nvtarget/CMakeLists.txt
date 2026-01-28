@@ -17,25 +17,24 @@ add_custom_target(libcudacxx.test.nvtarget)
 
 foreach(dialect ${nvtarget_dialects})
   if ("cxx_std_${dialect}" IN_LIST CMAKE_CXX_COMPILE_FEATURES)
-    add_library("nvtarget_cpp${dialect}" OBJECT nvtargettest.cpp)
+    add_library("libcudacxx.test.nvtarget.cpp${dialect}" OBJECT nvtargettest.cpp)
     # This is required to override CMAKE_CXX_STANDARD - target_compile_features is insufficient.
     set_target_properties(
-      "nvtarget_cpp${dialect}" PROPERTIES
+      "libcudacxx.test.nvtarget.cpp${dialect}" PROPERTIES
       CXX_STANDARD "${dialect}"
       CXX_STANDARD_REQUIRED ON
     )
-    add_dependencies(libcudacxx.test.nvtarget "nvtarget_cpp${dialect}")
+    add_dependencies(libcudacxx.test.nvtarget "libcudacxx.test.nvtarget.cpp${dialect}")
   endif()
 
   if ("cuda_std_${dialect}" IN_LIST CMAKE_CUDA_COMPILE_FEATURES AND "cxx_std_${dialect}" IN_LIST CMAKE_CXX_COMPILE_FEATURES)
-    add_library("nvtarget_cuda${dialect}" OBJECT nvtargettest.cu)
+    add_library("libcudacxx.test.nvtarget.cuda${dialect}" OBJECT nvtargettest.cu)
     # This is required to override CMAKE_CXX_STANDARD - target_compile_features is insufficient.
     set_target_properties(
-      "nvtarget_cuda${dialect}" PROPERTIES
+      "libcudacxx.test.nvtarget.cuda${dialect}" PROPERTIES
       CUDA_STANDARD "${dialect}"
       CUDA_STANDARD_REQUIRED ON
     )
-    add_dependencies(libcudacxx.test.nvtarget "nvtarget_cuda${dialect}")
+    add_dependencies(libcudacxx.test.nvtarget "libcudacxx.test.nvtarget.cuda${dialect}")
   endif()
-
 endforeach()
