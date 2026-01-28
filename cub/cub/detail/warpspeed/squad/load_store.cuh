@@ -12,6 +12,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cub/detail/warpspeed/resource/smem_ref.cuh>
 #include <cub/detail/warpspeed/squad/squad.cuh>
 
 #include <cuda/__memory/align_down.h>
