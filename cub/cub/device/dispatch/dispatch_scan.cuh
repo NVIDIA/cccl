@@ -53,8 +53,8 @@ CUB_NAMESPACE_BEGIN
 namespace detail::scan
 {
 template <typename MaxPolicyT,
-          typename InputIteratorT,
-          typename OutputIteratorT,
+          typename UnwrappedInputIteratorT,
+          typename UnwrappedOutputIteratorT,
           typename ScanOpT,
           typename InitValueT,
           typename OffsetT,
@@ -64,13 +64,15 @@ struct DeviceScanKernelSource
 {
   using ScanTileStateT = ScanTileState<AccumT>;
 
-  CUB_DEFINE_KERNEL_GETTER(InitKernel, DeviceScanInitKernel<MaxPolicyT, ScanTileStateT, AccumT>)
+  CUB_DEFINE_KERNEL_GETTER(
+    InitKernel,
+    DeviceScanInitKernel<MaxPolicyT, UnwrappedInputIteratorT, UnwrappedOutputIteratorT, ScanTileStateT, AccumT>)
 
   CUB_DEFINE_KERNEL_GETTER(
     ScanKernel,
     DeviceScanKernel<MaxPolicyT,
-                     InputIteratorT,
-                     OutputIteratorT,
+                     UnwrappedInputIteratorT,
+                     UnwrappedOutputIteratorT,
                      ScanTileStateT,
                      ScanOpT,
                      InitValueT,
@@ -412,29 +414,9 @@ struct DispatchScan
     return cudaSuccess;
   }
 
-  template <typename WarpspeedPolicy, typename InputT, typename OutputT>
-  CUB_RUNTIME_FUNCTION _CCCL_HOST static constexpr auto smem_for_stages(int num_stages) -> int
-  {
-    detail::warpspeed::SyncHandler syncHandler{};
-    detail::warpspeed::SmemAllocator smemAllocator{};
-    (void) detail::scan::allocResources<WarpspeedPolicy, InputT, OutputT, AccumT>(
-      syncHandler, smemAllocator, num_stages);
-    syncHandler.mHasInitialized = true; // avoid assertion in destructor
-    return static_cast<int>(smemAllocator.sizeBytes());
-  }
-
-  // we check the required shared memory inside a template, so the error message shows the amount in case of failure
-  template <int RequiredSharedMemory>
-  CUB_RUNTIME_FUNCTION _CCCL_HOST static constexpr void verify_smem()
-  {
-    static_assert(RequiredSharedMemory <= detail::max_smem_per_block,
-                  "Single stage configuration exceeds architecture independent SMEM (48KiB)");
-  }
-
 #if __cccl_ptx_isa >= 860
   template <typename ActivePolicyT>
-  CUB_RUNTIME_FUNCTION _CCCL_HOST _CCCL_FORCEINLINE cudaError_t
-  __invoke_lookahead_algorithm(ActivePolicyT, int smem_size_1_stage)
+  CUB_RUNTIME_FUNCTION _CCCL_HOST _CCCL_FORCEINLINE cudaError_t __invoke_lookahead_algorithm(ActivePolicyT)
   {
     using InputT          = ::cuda::std::iter_value_t<InputIteratorT>;
     using OutputT         = ::cuda::std::iter_value_t<OutputIteratorT>;
@@ -469,6 +451,9 @@ struct DispatchScan
     // TODO(bgruber): we probably need to ensure alignment of d_temp_storage
     _CCCL_ASSERT(::cuda::is_aligned(d_temp_storage, kernel_source.look_ahead_tile_state_alignment()), "");
 
+    constexpr int smem_size_1_stage = detail::scan::smem_for_stages<WarpspeedPolicy, InputT, OutputT, AccumT>(1);
+    static_assert(smem_size_1_stage <= detail::max_smem_per_block); // this is ensured by scan_use_warpspeed
+
     auto scan_kernel = kernel_source.ScanKernel();
     int num_stages   = 1;
     int smem_size    = smem_size_1_stage;
@@ -477,7 +462,8 @@ struct DispatchScan
     NV_IF_TARGET(NV_IS_HOST, ({
                    while (num_stages <= max_stages_for_even_workload)
                    {
-                     const auto next_smem_size = smem_for_stages<WarpspeedPolicy, InputT, OutputT>(num_stages + 1);
+                     const auto next_smem_size =
+                       detail::scan::smem_for_stages<WarpspeedPolicy, InputT, OutputT, AccumT>(num_stages + 1);
                      if (next_smem_size > max_dynamic_smem_size)
                      {
                        // This number of stages failed, so stay at the current settings
@@ -562,26 +548,13 @@ struct DispatchScan
   CUB_RUNTIME_FUNCTION _CCCL_HOST _CCCL_FORCEINLINE cudaError_t Invoke(ActivePolicyT active_policy = {})
   {
 #if __cccl_ptx_isa >= 860
-    if constexpr (detail::scan::scan_use_warpspeed<ActivePolicyT>
-                  && THRUST_NS_QUALIFIER::is_contiguous_iterator_v<InputIteratorT>
-                  && THRUST_NS_QUALIFIER::is_contiguous_iterator_v<OutputIteratorT>)
+    if constexpr (detail::scan::scan_use_warpspeed<
+                    ActivePolicyT,
+                    THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator_t<InputIteratorT>,
+                    THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator_t<OutputIteratorT>,
+                    AccumT>)
     {
-      // if we cannot fit one stage of the lookahead implementation, we need to use the old kernel
-      using InputT                    = ::cuda::std::iter_value_t<InputIteratorT>;
-      using OutputT                   = ::cuda::std::iter_value_t<OutputIteratorT>;
-      using WarpspeedPolicy           = typename ActivePolicyT::WarpspeedPolicy;
-      constexpr int smem_size_1_stage = smem_for_stages<WarpspeedPolicy, InputT, OutputT>(1);
-      verify_smem<smem_size_1_stage>(); // TODO(bgruber): remove before merging to production
-
-      if constexpr (smem_size_1_stage <= detail::max_smem_per_block)
-      {
-        return __invoke_lookahead_algorithm(active_policy, smem_size_1_stage);
-      }
-      else
-      {
-        return Invoke(
-          kernel_source.InitKernel(), kernel_source.ScanKernel(), detail::scan::MakeScanPolicyWrapper(active_policy));
-      }
+      return __invoke_lookahead_algorithm(active_policy);
     }
     else
 #endif // __cccl_ptx_isa >= 860
