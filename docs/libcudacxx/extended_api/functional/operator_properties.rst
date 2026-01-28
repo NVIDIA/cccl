@@ -142,8 +142,9 @@ Identity Element
 
    namespace cuda {
 
-   template <class Op, class T, class Enable = void>
-   inline constexpr auto identity_element_v;
+   template <class Op, class T>
+   __host__ __device__
+   constexpr auto identity_element();
 
    template <class Op, class T, class Enable = void>
    inline constexpr bool has_identity_element_v;
@@ -152,6 +153,9 @@ Identity Element
 
 Provides the identity element for operator ``Op`` and type ``T``. The identity element ``e`` satisfies
 ``op(e, x) == op(x, e) == x`` for all values ``x`` of type ``T``.
+
+The function ``identity_element<Op, T>()`` returns the identity element at compile time. If no identity element
+exists for the given operator and type combination, it returns an internal sentinel type.
 
 ``has_identity_element_v`` evaluates to ``true`` if an identity element is defined for the given operator and type.
 
@@ -208,8 +212,9 @@ Absorbing Element
 
    namespace cuda {
 
-   template <class Op, class T, class Enable = void>
-   inline constexpr auto absorbing_element_v;
+   template <class Op, class T>
+   __host__ __device__
+   constexpr auto absorbing_element();
 
    template <class Op, class T, class Enable = void>
    inline constexpr bool has_absorbing_element_v;
@@ -218,6 +223,9 @@ Absorbing Element
 
 Provides the absorbing (annihilating) element for operator ``Op`` and type ``T``. The absorbing element ``z`` satisfies
 ``op(z, x) == op(x, z) == z`` for all values ``x`` of type ``T``.
+
+The function ``absorbing_element<Op, T>()`` returns the absorbing element at compile time. If no absorbing element
+exists for the given operator and type combination, it returns an internal sentinel type.
 
 ``has_absorbing_element_v`` evaluates to ``true`` if an absorbing element is defined for the given operator and type.
 
@@ -269,7 +277,6 @@ Supported Types
 ---------------
 
 The functionality supports all integer and floating-point types, including extended floating-point types.
-Due to the limitations of extended floating-point types, ``identity_element_v`` and ``absorbing_element_v`` are not supported at run-time for these types.
 
 Example
 -------
@@ -281,8 +288,10 @@ Example
 
    template <class Op, class T>
    __host__ __device__ void print_properties() {
-        printf("Associative: %s\n", cuda::is_associative_v<Op, T> ? "yes" : "no");
-        printf("Commutative: %s\n", cuda::is_commutative_v<Op, T> ? "yes" : "no");
+        printf("Associative:   %s\n", cuda::is_associative_v<Op, T> ? "yes" : "no");
+        printf("Commutative:   %s\n", cuda::is_commutative_v<Op, T> ? "yes" : "no");
+        printf("Has identity:  %s\n", cuda::has_identity_element_v<Op, T> ? "yes" : "no");
+        printf("Has absorbing: %s\n", cuda::has_absorbing_element_v<Op, T> ? "yes" : "no");
 
         if constexpr (cuda::has_identity_element_v<Op, T>) {
             printf("Identity element exists\n");
@@ -296,14 +305,36 @@ Example
         // Integer plus: associative, commutative, identity=0, no absorbing
         print_properties<cuda::std::plus<int>, int>();
 
-        // Integer multiplies: associative, commutative, identity=1, absorbing=0
-        print_properties<cuda::std::multiplies<int>, int>();
+        // Integer plus: NOT associative, commutative, identity=-0.0f, no absorbing
+        print_properties<cuda::std::plus<float>, float>();
 
-        // Floating-point plus: commutative but NOT associative
-        static_assert(!cuda::is_associative_v<cuda::std::plus<float>, float>);
-        static_assert(cuda::is_commutative_v<cuda::std::plus<float>, float>);
+        // identity element
+        constexpr int sum_identity = cuda::identity_element<cuda::std::plus<int>, int>();       // 0
+        constexpr int mul_identity = cuda::identity_element<cuda::std::multiplies<int>, int>(); // 1
+   }
 
-        // Use identity element for reduction initialization
-        int sum_identity = cuda::identity_element_v<cuda::std::plus<int>, int>;       // 0
-        int mul_identity = cuda::identity_element_v<cuda::std::multiplies<int>, int>; // 1
+Customization
+-------------
+
+Users can extend the operator properties traits to support custom operators or custom types by specializing
+the internal variable templates. The following specializations are available:
+
+.. code:: cuda
+
+   template <>
+   inline constexpr bool cuda::is_associative_v<MyOperator, MyType> = true;
+
+   template <>
+   inline constexpr bool cuda::is_commutative_v<MyOperator, MyType> = true;
+
+   template <>
+   __host__ __device__
+   constexpr auto cuda::identity_element<MyOperator, MyType>() {
+        return /* MyType identity element */;
+   }
+
+   template <>
+   __host__ __device__
+   constexpr auto cuda::absorbing_element<MyOperator, MyType>() {
+       return /* MyType absorbing element */;
    }

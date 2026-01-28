@@ -51,25 +51,15 @@ __host__ __device__ constexpr T get_value()
  **********************************************************************************************************************/
 
 template <class Op, class T>
-__host__ __device__ constexpr void test_absorbing_impl2([[maybe_unused]] T absorbing)
+__host__ __device__ constexpr void test_absorbing_impl2()
 {
-  assert((absorbing == cuda::absorbing_element_v<Op, cuda::std::remove_cv_t<T>>) );
   Op op{};
-  auto value = get_value<cuda::std::remove_cv_t<T>>();
-  {
-    auto absorbing1 = cuda::absorbing_element_v<Op, T>;
-    T result_lhs    = static_cast<T>(op(value, absorbing1));
-    T result_rhs    = static_cast<T>(op(absorbing1, value));
-    assert(result_lhs == absorbing1);
-    assert(result_rhs == absorbing1);
-  }
-  {
-    auto absorbing1 = cuda::absorbing_element_v<Op, volatile T>;
-    T result_lhs    = static_cast<T>(op(value, absorbing1));
-    T result_rhs    = static_cast<T>(op(absorbing1, value));
-    assert(result_lhs == absorbing1);
-    assert(result_rhs == absorbing1);
-  }
+  auto value      = get_value<cuda::std::remove_cv_t<T>>();
+  auto absorbing1 = cuda::absorbing_element<Op, T>();
+  auto result_lhs = static_cast<T>(op(value, absorbing1));
+  auto result_rhs = static_cast<T>(op(absorbing1, value));
+  assert(result_lhs == absorbing1);
+  assert(result_rhs == absorbing1);
 }
 
 template <class Op, class T>
@@ -78,19 +68,22 @@ __host__ __device__ constexpr void test_absorbing_impl(bool has_absorbing, [[may
   assert((has_absorbing == cuda::has_absorbing_element_v<Op, T>) );
   if constexpr (cuda::has_absorbing_element_v<Op, T>)
   {
+    assert((absorbing == cuda::absorbing_element<Op, T>()));
     // handle extended floating-point types separately
     if constexpr (!::cuda::std::__is_extended_floating_point_v<T>)
     {
-      test_absorbing_impl2<Op, T>(absorbing);
-      test_absorbing_impl2<Op, const T>(absorbing);
+      test_absorbing_impl2<Op, T>();
+      test_absorbing_impl2<Op, const T>();
+      test_absorbing_impl2<Op, volatile T>();
+      test_absorbing_impl2<Op, const volatile T>();
     }
 #if _CCCL_CTK_AT_LEAST(12, 2)
     else
     {
       _CCCL_IF_NOT_CONSTEVAL_DEFAULT
       {
-        test_absorbing_impl2<Op, T>(absorbing);
-        test_absorbing_impl2<Op, const T>(absorbing);
+        test_absorbing_impl2<Op, T>();
+        test_absorbing_impl2<Op, const T>();
       }
     }
 #endif // _CCCL_CTK_AT_LEAST(12, 2)

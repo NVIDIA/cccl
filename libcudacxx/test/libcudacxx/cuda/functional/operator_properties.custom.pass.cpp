@@ -36,10 +36,16 @@ template <>
 inline constexpr bool cuda::is_commutative_v<MyAdd, MyInt> = true;
 
 template <>
-inline constexpr MyInt cuda::identity_element_v<MyAdd, MyInt> = MyInt{0};
+__host__ __device__ constexpr auto cuda::identity_element<MyAdd, MyInt>()
+{
+  return MyInt{3};
+}
 
 template <>
-inline constexpr MyInt cuda::absorbing_element_v<MyAdd, MyInt> = MyInt{0};
+__host__ __device__ constexpr auto cuda::absorbing_element<MyAdd, MyInt>()
+{
+  return MyInt{4};
+}
 
 /***********************************************************************************************************************
  * Test dispatch
@@ -51,8 +57,8 @@ __host__ __device__ constexpr bool test()
   static_assert(cuda::is_commutative_v<MyAdd, MyInt>);
   static_assert(cuda::has_identity_element_v<MyAdd, MyInt>);
   static_assert(cuda::has_absorbing_element_v<MyAdd, MyInt>);
-  assert((cuda::absorbing_element_v<MyAdd, MyInt>.value == MyInt{0}.value));
-  assert((cuda::identity_element_v<MyAdd, MyInt>.value == MyInt{0}.value));
+  assert((cuda::identity_element<MyAdd, MyInt>().value == MyInt{3}.value));
+  assert((cuda::absorbing_element<MyAdd, MyInt>().value == MyInt{4}.value));
   return true;
 }
 
