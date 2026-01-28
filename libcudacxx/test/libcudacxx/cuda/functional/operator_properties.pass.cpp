@@ -20,13 +20,19 @@
 template <template <class...> class Op, class T>
 __host__ __device__ constexpr bool is_commutative()
 {
-  return cuda::is_commutative_v<Op<T>, T> && cuda::is_commutative_v<Op<>, T>;
+  return cuda::is_commutative_v<Op<T>, T> && cuda::is_commutative_v<Op<>, T> && //
+         cuda::is_commutative_v<Op<T>, const T> && cuda::is_commutative_v<Op<T>, const T> && //
+         cuda::is_commutative_v<Op<T>, volatile T> && cuda::is_commutative_v<Op<T>, volatile T> && //
+         cuda::is_commutative_v<Op<T>, const volatile T> && cuda::is_commutative_v<Op<T>, const volatile T>;
 }
 
 template <template <class...> class Op, class T>
 __host__ __device__ constexpr bool is_associative()
 {
-  return cuda::is_associative_v<Op<T>, T> && cuda::is_associative_v<Op<>, T>;
+  return cuda::is_associative_v<Op<T>, T> && cuda::is_associative_v<Op<>, T> && //
+         cuda::is_associative_v<Op<T>, const T> && cuda::is_associative_v<Op<T>, const T> && //
+         cuda::is_associative_v<Op<T>, volatile T> && cuda::is_associative_v<Op<T>, volatile T> && //
+         cuda::is_associative_v<Op<T>, const volatile T> && cuda::is_associative_v<Op<T>, const volatile T>;
 }
 
 template <template <class...> class Op, class T>

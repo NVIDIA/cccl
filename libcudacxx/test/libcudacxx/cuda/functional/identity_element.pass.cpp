@@ -53,14 +53,23 @@ __host__ __device__ constexpr T get_value()
 template <class Op, class T>
 __host__ __device__ constexpr void test_identity_impl2(T identity)
 {
-  assert((identity == cuda::identity_element_v<Op, T>) );
+  assert((identity == cuda::identity_element_v<Op, cuda::std::remove_cv_t<T>>) );
   Op op{};
-  T value      = get_value<T>();
-  T identity1  = cuda::identity_element_v<Op, T>;
-  T result_lhs = static_cast<T>(op(value, identity1));
-  T result_rhs = static_cast<T>(op(identity1, value));
-  assert(result_lhs == value);
-  assert(result_rhs == value);
+  auto value = get_value<cuda::std::remove_cv_t<T>>();
+  {
+    auto identity1  = cuda::identity_element_v<Op, T>;
+    auto result_lhs = static_cast<T>(op(value, identity1));
+    auto result_rhs = static_cast<T>(op(identity1, value));
+    assert(result_lhs == value);
+    assert(result_rhs == value);
+  }
+  {
+    auto identity1  = cuda::identity_element_v<Op, volatile T>;
+    auto result_lhs = static_cast<T>(op(value, identity1));
+    auto result_rhs = static_cast<T>(op(identity1, value));
+    assert(result_lhs == value);
+    assert(result_rhs == value);
+  }
 }
 
 template <class Op, class T>
@@ -73,6 +82,7 @@ __host__ __device__ constexpr void test_identity_impl(bool has_identity, [[maybe
     if constexpr (!::cuda::std::__is_extended_floating_point_v<T>)
     {
       test_identity_impl2<Op, T>(identity);
+      test_identity_impl2<Op, const T>(identity);
     }
 #if _CCCL_CTK_AT_LEAST(12, 2)
     else
@@ -80,6 +90,7 @@ __host__ __device__ constexpr void test_identity_impl(bool has_identity, [[maybe
       _CCCL_IF_NOT_CONSTEVAL_DEFAULT
       {
         test_identity_impl2<Op, T>(identity);
+        test_identity_impl2<Op, const T>(identity);
       }
     }
 #endif // _CCCL_CTK_AT_LEAST(12, 2)

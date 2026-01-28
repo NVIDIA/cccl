@@ -53,14 +53,23 @@ __host__ __device__ constexpr T get_value()
 template <class Op, class T>
 __host__ __device__ constexpr void test_absorbing_impl2([[maybe_unused]] T absorbing)
 {
-  assert((absorbing == cuda::absorbing_element_v<Op, T>));
+  assert((absorbing == cuda::absorbing_element_v<Op, cuda::std::remove_cv_t<T>>) );
   Op op{};
-  T value      = get_value<T>();
-  T absorbing1 = cuda::absorbing_element_v<Op, T>;
-  T result_lhs = static_cast<T>(op(value, absorbing1));
-  T result_rhs = static_cast<T>(op(absorbing1, value));
-  assert(result_lhs == absorbing1);
-  assert(result_rhs == absorbing1);
+  auto value = get_value<cuda::std::remove_cv_t<T>>();
+  {
+    auto absorbing1 = cuda::absorbing_element_v<Op, T>;
+    T result_lhs    = static_cast<T>(op(value, absorbing1));
+    T result_rhs    = static_cast<T>(op(absorbing1, value));
+    assert(result_lhs == absorbing1);
+    assert(result_rhs == absorbing1);
+  }
+  {
+    auto absorbing1 = cuda::absorbing_element_v<Op, volatile T>;
+    T result_lhs    = static_cast<T>(op(value, absorbing1));
+    T result_rhs    = static_cast<T>(op(absorbing1, value));
+    assert(result_lhs == absorbing1);
+    assert(result_rhs == absorbing1);
+  }
 }
 
 template <class Op, class T>
@@ -73,6 +82,7 @@ __host__ __device__ constexpr void test_absorbing_impl(bool has_absorbing, [[may
     if constexpr (!::cuda::std::__is_extended_floating_point_v<T>)
     {
       test_absorbing_impl2<Op, T>(absorbing);
+      test_absorbing_impl2<Op, const T>(absorbing);
     }
 #if _CCCL_CTK_AT_LEAST(12, 2)
     else
@@ -80,6 +90,7 @@ __host__ __device__ constexpr void test_absorbing_impl(bool has_absorbing, [[may
       _CCCL_IF_NOT_CONSTEVAL_DEFAULT
       {
         test_absorbing_impl2<Op, T>(absorbing);
+        test_absorbing_impl2<Op, const T>(absorbing);
       }
     }
 #endif // _CCCL_CTK_AT_LEAST(12, 2)
@@ -137,15 +148,19 @@ __host__ __device__ constexpr void test_absorbing_floating_point()
 {
   test_absorbing_floating_point<float>();
   test_absorbing_floating_point<double>();
-//#if _CCCL_HAS_NVFP16()
-//  test_absorbing_floating_point<__half>();
-//#endif // _CCCL_HAS_NVFP16()
-//#if _CCCL_HAS_NVBF16()
-//  test_absorbing_floating_point<__nv_bfloat16>();
-//#endif // _CCCL_HAS_NVBF16()
 #if _CCCL_HAS_FLOAT128()
   test_absorbing_floating_point<__float128>();
 #endif // _CCCL_HAS_FLOAT128()
+}
+
+__host__ __device__ void test_absorbing_extended_floating_point()
+{
+#if _CCCL_HAS_NVFP16()
+  test_absorbing_floating_point<__half>();
+#endif // _CCCL_HAS_NVFP16()
+#if _CCCL_HAS_NVBF16()
+  test_absorbing_floating_point<__nv_bfloat16>();
+#endif // _CCCL_HAS_NVBF16()
 }
 
 /***********************************************************************************************************************
@@ -207,39 +222,45 @@ __host__ __device__ constexpr void test_negative_floating_point()
 {
   test_no_absorbing<float>();
   test_no_absorbing<double>();
-//#if _CCCL_HAS_NVFP16()
-//  test_no_absorbing<__half>();
-//#endif // _CCCL_HAS_NVFP16()
-//#if _CCCL_HAS_NVBF16()
-//  test_no_absorbing<__nv_bfloat16>();
-//#endif // _CCCL_HAS_NVBF16()
 #if _CCCL_HAS_FLOAT128()
   test_no_absorbing<__float128>();
 #endif // _CCCL_HAS_FLOAT128()
 
   static_assert(no_absorbing<cuda::std::plus, float>());
   static_assert(no_absorbing<cuda::std::plus, double>());
-//#if _CCCL_HAS_NVFP16()
-//  static_assert(no_absorbing<cuda::std::plus, __half>());
-//#endif // _CCCL_HAS_NVFP16()
-//#if _CCCL_HAS_NVBF16()
-//  static_assert(no_absorbing<cuda::std::plus, __nv_bfloat16>());
-//#endif // _CCCL_HAS_NVBF16()
 #if _CCCL_HAS_FLOAT128()
   static_assert(no_absorbing<cuda::std::plus, __float128>());
 #endif // _CCCL_HAS_FLOAT128()
 
   static_assert(no_absorbing<cuda::std::multiplies, float>());
   static_assert(no_absorbing<cuda::std::multiplies, double>());
-//#if _CCCL_HAS_NVFP16()
-//  static_assert(no_absorbing<cuda::std::multiplies, __half>());
-//#endif // _CCCL_HAS_NVFP16()
-//#if _CCCL_HAS_NVBF16()
-//  static_assert(no_absorbing<cuda::std::multiplies, __nv_bfloat16>());
-//#endif // _CCCL_HAS_NVBF16()
 #if _CCCL_HAS_FLOAT128()
   static_assert(no_absorbing<cuda::std::multiplies, __float128>());
 #endif // _CCCL_HAS_FLOAT128()
+}
+
+__host__ __device__ void test_negative_extended_floating_point()
+{
+#if _CCCL_HAS_NVFP16()
+  test_no_absorbing<__half>();
+#endif // _CCCL_HAS_NVFP16()
+#if _CCCL_HAS_NVBF16()
+  test_no_absorbing<__nv_bfloat16>();
+#endif // _CCCL_HAS_NVBF16()
+
+#if _CCCL_HAS_NVFP16()
+  static_assert(no_absorbing<cuda::std::plus, __half>());
+#endif // _CCCL_HAS_NVFP16()
+#if _CCCL_HAS_NVBF16()
+  static_assert(no_absorbing<cuda::std::plus, __nv_bfloat16>());
+#endif // _CCCL_HAS_NVBF16()
+
+#if _CCCL_HAS_NVFP16()
+  static_assert(no_absorbing<cuda::std::multiplies, __half>());
+#endif // _CCCL_HAS_NVFP16()
+#if _CCCL_HAS_NVBF16()
+  static_assert(no_absorbing<cuda::std::multiplies, __nv_bfloat16>());
+#endif // _CCCL_HAS_NVBF16()
 }
 
 /***********************************************************************************************************************
@@ -255,9 +276,17 @@ __host__ __device__ constexpr bool test()
   return true;
 }
 
+__host__ __device__ bool test_extended_floating_point()
+{
+  test_absorbing_extended_floating_point();
+  test_negative_extended_floating_point();
+  return true;
+}
+
 int main(int, char**)
 {
   assert(test());
   static_assert(test());
+  assert(test_extended_floating_point()); // run-time only
   return 0;
 }
