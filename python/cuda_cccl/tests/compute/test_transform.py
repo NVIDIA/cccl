@@ -429,3 +429,16 @@ def test_binary_transform_with_lambda():
 
     expected = np.array([11, 22, 33, 44, 55], dtype=np.int32)
     np.testing.assert_array_equal(d_out.get(), expected)
+
+
+def test_binary_transform_bool_equal_to():
+    d_input1 = cp.array([True, False, True, False], dtype=np.bool_)
+    d_input2 = cp.array([True, True, False, False], dtype=np.bool_)
+    d_output = cp.empty_like(d_input1)
+
+    cuda.compute.binary_transform(
+        d_input1, d_input2, d_output, OpKind.EQUAL_TO, len(d_input1)
+    )
+
+    expected = np.array([True, False, False, True], dtype=np.bool_)
+    np.testing.assert_array_equal(d_output.get(), expected)
