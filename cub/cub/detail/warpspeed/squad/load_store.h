@@ -240,6 +240,8 @@ _CCCL_DEVICE_API inline void squadStoreBulkSync(Squad squad, CpAsyncOobInfo<Outp
     const uint16_t byteMaskStart = byteMask << cpAsyncOobInfo.smemStartSkipBytes;
     const uint16_t byteMaskEnd   = byteMask >> (16 - cpAsyncOobInfo.smemEndBytesAfter16BBoundary);
     // byteMaskStart contains zeroes at the left.
+    // TODO(bgruber): this should be `const uint16_t byteMaskSmall = byteMaskStart & byteMaskEnd;`, but this results in
+    // `ptxas fatal   : (C7907) Internal compiler error`
     const uint16_t byteMaskSmall =
       byteMaskStart & (byteMask >> (16 - (cpAsyncOobInfo.ptrGmemEnd - cpAsyncOobInfo.ptrGmemStartAlignDown)));
 
