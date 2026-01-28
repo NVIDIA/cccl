@@ -97,6 +97,7 @@ __add_shmem_vectorized(const typename _RefType::__value_type* __first, ::cuda::s
     __idx += __loop_stride;
   }
   // a single thread processes the remaining items
+#if _CCCL_CTK_AT_LEAST(12, 1)
   ::cooperative_groups::invoke_one(__grid, [&]() {
     const auto __remainder = __n % _VectorSize;
     for (int __i = 0; __i < __remainder; ++__i)
@@ -104,6 +105,16 @@ __add_shmem_vectorized(const typename _RefType::__value_type* __first, ::cuda::s
       __local_ref.__add(*(__first + __n - __i - 1));
     }
   });
+#else
+  if (__grid.thread_rank() == 0)
+  {
+    const auto __remainder = __n % _VectorSize;
+    for (int __i = 0; __i < __remainder; ++__i)
+    {
+      __local_ref.__add(*(__first + __n - __i - 1));
+    }
+  }
+#endif
 
   __block.sync();
 
