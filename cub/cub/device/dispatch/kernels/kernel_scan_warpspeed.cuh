@@ -26,6 +26,8 @@
 #include <cub/warp/warp_reduce.cuh>
 #include <cub/warp/warp_scan.cuh>
 
+#include <thrust/type_traits/is_contiguous_iterator.h>
+
 #include <cuda/__cmath/ceil_div.h>
 #include <cuda/__memory/align_down.h>
 #include <cuda/__memory/align_up.h>
@@ -738,6 +740,51 @@ device_scan_init_lookahead_body(warpspeed::tile_state_t<AccumT>* tile_states, co
     tile_states[tile_id] = warpspeed::tile_state_t<AccumT>{};
   }
 }
+
+template <typename WarpspeedPolicy, typename InputT, typename OutputT, typename AccumT>
+CUB_RUNTIME_FUNCTION _CCCL_HOST constexpr auto smem_for_stages(int num_stages) -> int
+{
+  warpspeed::SyncHandler syncHandler{};
+  warpspeed::SmemAllocator smemAllocator{};
+  (void) scan::allocResources<WarpspeedPolicy, InputT, OutputT, AccumT>(syncHandler, smemAllocator, num_stages);
+  syncHandler.mHasInitialized = true; // avoid assertion in destructor
+  return static_cast<int>(smemAllocator.sizeBytes());
+}
+
+// we check the required shared memory inside a template, so the error message shows the amount in case of failure
+template <int RequiredSharedMemory>
+CUB_RUNTIME_FUNCTION _CCCL_HOST constexpr void verify_smem()
+{
+  static_assert(RequiredSharedMemory <= max_smem_per_block,
+                "Single stage configuration exceeds architecture independent SMEM (48KiB)");
+}
+
+template <typename WarpspeedPolicy, typename InputIteratorT, typename OutputIteratorT, typename AccumT>
+CUB_RUNTIME_FUNCTION _CCCL_HOST constexpr auto one_stage_fits_48KiB_SMEM() -> bool
+{
+  using InputT                    = it_value_t<InputIteratorT>;
+  using OutputT                   = it_value_t<OutputIteratorT>;
+  constexpr int smem_size_1_stage = smem_for_stages<WarpspeedPolicy, InputT, OutputT, AccumT>(1);
+  verify_smem<smem_size_1_stage>(); // TODO(bgruber): remove before merging to production
+  return smem_size_1_stage <= max_smem_per_block;
+}
+
+template <typename Policy, typename InputIterator, typename OutputIterator, typename AccumT, typename = void>
+inline constexpr bool scan_use_warpspeed = false;
+
+// detect the use via CCCL.C (pre-compiled dispatch and JIT pass) and disable the new kernel.
+// See https://github.com/NVIDIA/cccl/issues/6821 for more details.
+#if !defined(CUB_ENABLE_POLICY_PTX_JSON) && !defined(CUB_DEFINE_RUNTIME_POLICIES)
+template <typename Policy, typename InputIteratorT, typename OutputIteratorT, typename AccumT>
+inline constexpr bool scan_use_warpspeed<Policy,
+                                         InputIteratorT,
+                                         OutputIteratorT,
+                                         AccumT,
+                                         ::cuda::std::void_t<typename Policy::WarpspeedPolicy>> =
+  THRUST_NS_QUALIFIER::is_contiguous_iterator_v<InputIteratorT>
+  && THRUST_NS_QUALIFIER::is_contiguous_iterator_v<OutputIteratorT>
+  && one_stage_fits_48KiB_SMEM<typename Policy::WarpspeedPolicy, InputIteratorT, OutputIteratorT, AccumT>();
+#endif // !defined(CUB_ENABLE_POLICY_PTX_JSON) && !defined(CUB_DEFINE_RUNTIME_POLICIES)
 } // namespace detail::scan
 
 CUB_NAMESPACE_END
