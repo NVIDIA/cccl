@@ -23,6 +23,11 @@
 #include <cuda/std/__algorithm/comp.h>
 #include <cuda/std/__algorithm/comp_ref_type.h>
 #include <cuda/std/__algorithm/min_element.h>
+#include <cuda/std/__cmath/min_max.h>
+#include <cuda/std/__type_traits/is_extended_arithmetic.h>
+#include <cuda/std/__type_traits/is_integral.h>
+#include <cuda/std/__type_traits/is_signed.h>
+#include <cuda/std/__type_traits/make_nbit_int.h>
 #include <cuda/std/initializer_list>
 
 #include <cuda/std/__cccl/prologue.h>
@@ -53,6 +58,36 @@ template <class _Tp>
 [[nodiscard]] _CCCL_API constexpr _Tp min(initializer_list<_Tp> __t)
 {
   return *::cuda::std::min_element(__t.begin(), __t.end(), __less{});
+}
+
+//! @brief Internal version of min that works with values instead of references. Can be used with extended arithmetic
+//!        types. Should be preferred as it produces better optimized code with nvcc (see nvbug 5455679).
+template <class _Tp>
+[[nodiscard]] _CCCL_API constexpr _Tp __min(_Tp __a, _Tp __b) noexcept
+{
+  static_assert(__is_extended_arithmetic_v<_Tp>);
+  if constexpr (is_integral_v<_Tp>)
+  {
+    _CCCL_IF_NOT_CONSTEVAL_DEFAULT
+    {
+      NV_IF_TARGET(NV_IS_DEVICE, ({
+                     if constexpr (sizeof(_Tp) < sizeof(int))
+                     {
+                       using _Up = __make_nbit_int_t<32, is_signed_v<_Tp>>;
+                       return static_cast<_Tp>(::cuda::std::__min(static_cast<_Up>(__a), static_cast<_Up>(__b)));
+                     }
+                     else if constexpr (sizeof(_Tp) <= sizeof(long long))
+                     {
+                       return ::min(__a, __b);
+                     }
+                   }))
+    }
+    return (__b < __a) ? __b : __a;
+  }
+  else
+  {
+    return ::cuda::std::fmin(__a, __b);
+  }
 }
 
 _CCCL_END_NAMESPACE_CUDA_STD
