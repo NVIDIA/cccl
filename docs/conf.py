@@ -50,6 +50,7 @@ extensions = [
     "nbsphinx",
     # "rst_processor",  # Disabled - breathe handles embed:rst natively
     "auto_api_generator",  # Automatically generate API reference pages from Doxygen XML
+    "sphinx_remove_toctrees",
 ]
 
 # Breathe configuration for Doxygen integration
@@ -236,6 +237,9 @@ copybutton_prompt_text = ">>> |$ |# "
 autosummary_imported_members = False
 autosummary_generate = True
 autoclass_content = "class"
+
+# Set the path of  the global toc file
+remove_from_toctrees = ["libcudacxx/api", "cub/api/*", "cudax/api/*", "thrust/api/*"]
 
 
 def setup(app):
