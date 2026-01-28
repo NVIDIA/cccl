@@ -154,7 +154,7 @@ runs:
           echo "ENVARGS=" >> $GITHUB_OUTPUT
         else
           # Convert JSON array to --env arguments
-          # Extra space is necessary to avoid jq from merging arguments
+          # Extra space is necessary to prevent jq from merging arguments
           ENVARGS=$(echo "${{inputs.environment}}" | jq -rj '.[] | "--env \(.) "')
           echo "ENVARGS=$ENVARGS" >> $GITHUB_OUTPUT
         fi
