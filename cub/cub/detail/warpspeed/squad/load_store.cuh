@@ -82,18 +82,18 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE CpAsyncOobInfo<Tp> prepareCpAsyncOob(Tp* ptrG
   _CCCL_ASSERT(overCopySizeBytes % 16 == 0, "");
   _CCCL_ASSERT(underCopySizeBytes % 16 == 0, "");
 
-  return CpAsyncOobInfo<Tp>{
-    .ptrGmem                      = ptrGmemBytes,
-    .ptrGmemStartAlignDown        = ptrGmemStartAlignDown,
-    .ptrGmemStartAlignUp          = ptrGmemStartAlignUp,
-    .ptrGmemEnd                   = ptrGmemEnd,
-    .ptrGmemEndAlignDown          = ptrGmemEndAlignDown,
-    .ptrGmemEndAlignUp            = ptrGmemEndAlignUp,
-    .overCopySizeBytes            = overCopySizeBytes,
-    .underCopySizeBytes           = underCopySizeBytes,
-    .origCopySizeBytes            = static_cast<uint32_t>(sizeof(Tp) * sizeElem),
-    .smemStartSkipBytes           = static_cast<uint32_t>(ptrGmemBytes - ptrGmemStartAlignDown),
-    .smemEndBytesAfter16BBoundary = static_cast<uint32_t>(ptrGmemEnd - ptrGmemEndAlignDown),
+  return {
+    ptrGmemBytes,
+    ptrGmemStartAlignDown,
+    ptrGmemStartAlignUp,
+    ptrGmemEnd,
+    ptrGmemEndAlignDown,
+    ptrGmemEndAlignUp,
+    overCopySizeBytes,
+    underCopySizeBytes,
+    static_cast<uint32_t>(sizeof(Tp) * sizeElem),
+    static_cast<uint32_t>(ptrGmemBytes - ptrGmemStartAlignDown),
+    static_cast<uint32_t>(ptrGmemEnd - ptrGmemEndAlignDown),
   };
 }
 
