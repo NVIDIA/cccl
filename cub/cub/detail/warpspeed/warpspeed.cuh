@@ -12,12 +12,12 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cub/detail/warpspeed/allocators/smem_allocator.h>
-#include <cub/detail/warpspeed/constant_assert.h>
+#include <cub/detail/warpspeed/allocators/smem_allocator.cuh>
+#include <cub/detail/warpspeed/constant_assert.cuh>
 #include <cub/detail/warpspeed/make_warp_uniform.cuh>
 #include <cub/detail/warpspeed/special_registers.cuh>
-#include <cub/detail/warpspeed/sync_handler.h>
-#include <cub/detail/warpspeed/values.h>
+#include <cub/detail/warpspeed/sync_handler.cuh>
+#include <cub/detail/warpspeed/values.cuh>
 
 // TODO: rename .cuh headers to .h
 #include <cub/detail/warpspeed/resource/smem_phase.cuh>
@@ -25,5 +25,5 @@
 #include <cub/detail/warpspeed/resource/smem_resource.cuh>
 #include <cub/detail/warpspeed/resource/smem_resource_raw.cuh>
 #include <cub/detail/warpspeed/resource/smem_stage.cuh>
-#include <cub/detail/warpspeed/squad/squad.h>
-#include <cub/detail/warpspeed/squad/squad_desc.h>
+#include <cub/detail/warpspeed/squad/squad.cuh>
+#include <cub/detail/warpspeed/squad/squad_desc.cuh>
