@@ -25,6 +25,7 @@
 
 #  include <cuda/__device/all_devices.h>
 #  include <cuda/__memory_pool/memory_pool_base.h>
+#  include <cuda/__memory_resource/any_resource.h>
 #  include <cuda/__memory_resource/properties.h>
 #  include <cuda/std/__concepts/concept_macros.h>
 #  include <cuda/std/__exception/throw_error.h>
@@ -169,9 +170,25 @@ struct pinned_memory_pool : pinned_memory_pool_ref
 
   //! @brief Returns a \c pinned_memory_pool_ref for this \c pinned_memory_pool.
   //! The result is the same as if this object was cast to a \c pinned_memory_pool_ref.
-  _CCCL_HOST_API pinned_memory_pool_ref as_ref() noexcept
+  _CCCL_HOST_API pinned_memory_pool_ref as_ref() const noexcept
   {
     return pinned_memory_pool_ref(__pool_);
+  }
+
+  template <class... _Properties>
+  static constexpr bool __valid_execution_spaces =
+    (::cuda::mr::__contains_execution_space_property<_Properties> && ...);
+
+  //! @brief Returns a \c resource_ref for this \c pinned_memory_pool.
+  //! The result is the same as if this object was cast to a \c pinned_memory_pool_ref and then converted to a
+  //! \c resource_ref.
+  _CCCL_TEMPLATE(class... _Properties)
+  _CCCL_REQUIRES(__valid_execution_spaces<_Properties...>)
+  [[nodiscard]]
+  _CCCL_HOST_API operator ::cuda::mr::resource_ref<_Properties...>() const noexcept
+  {
+    auto ref = managed_memory_pool_ref(__pool_);
+    return ::cuda::mr::resource_ref<_Properties...>(ref);
   }
 
   pinned_memory_pool(const pinned_memory_pool&)            = delete;

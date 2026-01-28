@@ -24,6 +24,7 @@
 #if _CCCL_HAS_CTK()
 
 #  include <cuda/__memory_pool/memory_pool_base.h>
+#  include <cuda/__memory_resource/any_resource.h>
 #  include <cuda/__memory_resource/get_property.h>
 #  include <cuda/__memory_resource/properties.h>
 #  include <cuda/__runtime/api_wrapper.h>
@@ -138,9 +139,18 @@ struct device_memory_pool : device_memory_pool_ref
 
   //! @brief Returns a \c device_memory_pool_ref for this \c device_memory_pool.
   //! The result is the same as if this object was cast to a \c device_memory_pool_ref.
-  [[nodiscard]] _CCCL_HOST_API device_memory_pool_ref as_ref() noexcept
+  [[nodiscard]] _CCCL_HOST_API device_memory_pool_ref as_ref() const noexcept
   {
     return device_memory_pool_ref(__pool_);
+  }
+
+  //! @brief Returns a \c resource_ref for this \c device_memory_pool.
+  //! The result is the same as if this object was cast to a \c device_memory_pool_ref and then converted to a
+  //! \c resource_ref.
+  [[nodiscard]] _CCCL_HOST_API operator ::cuda::mr::resource_ref<::cuda::mr::device_accessible>() const noexcept
+  {
+    auto ref = device_memory_pool_ref(__pool_);
+    return ::cuda::mr::resource_ref<::cuda::mr::device_accessible>(ref);
   }
 
   device_memory_pool(const device_memory_pool&)            = delete;
