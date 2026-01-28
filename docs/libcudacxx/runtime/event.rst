@@ -42,10 +42,11 @@ Availability: CCCL 3.1.0 / CUDA 13.1
 
    #include <cuda/stream>
    #include <cuda/devices>
+   #include <cuda/std/optional>
 
    cuda::std::optional<cuda::event> query_and_record_on_stream(cuda::stream_ref stream) {
      if (stream.is_done()) {
-      return std::nullopt;
+      return cuda::std::nullopt;
      }
      else {
       return cuda::event{stream};

@@ -31,7 +31,7 @@ Example:
 
     // compare against other stream_ref or cudaStream_t
     assert(ref == stream);
-    assert(ref != cuda::stream_ref{nullptr});
+    assert(ref != cuda::invalid_stream);
 
     cudaStreamDestroy(stream);
 
