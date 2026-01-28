@@ -405,21 +405,20 @@ void operator delete[](void* p, cuda::std::size_t) noexcept
 }
 #  endif // TEST_COMPILER(GCC)
 
-#  if _LIBCUDACXX_HAS_ALIGNED_ALLOCATION()
-#    if defined(_WIN32)
-#      define USE_ALIGNED_ALLOC
-#    endif
+#  if defined(_WIN32)
+#    define USE_ALIGNED_ALLOC
+#  endif
 
 void* operator new(cuda::std::size_t s, cuda::std::align_val_t av)
 {
   const cuda::std::size_t a = static_cast<cuda::std::size_t>(av);
   getGlobalMemCounter()->alignedNewCalled(s, a);
   void* ret;
-#    ifdef USE_ALIGNED_ALLOC
+#  ifdef USE_ALIGNED_ALLOC
   ret = _aligned_malloc(s, a);
-#    else
+#  else
   posix_memalign(&ret, a, s);
-#    endif
+#  endif
   if (ret == nullptr)
   {
     cuda::std::__throw_bad_alloc();
@@ -433,11 +432,11 @@ void operator delete(void* p, cuda::std::align_val_t av) noexcept
   getGlobalMemCounter()->alignedDeleteCalled(p, a);
   if (p)
   {
-#    ifdef USE_ALIGNED_ALLOC
+#  ifdef USE_ALIGNED_ALLOC
     ::_aligned_free(p);
-#    else
+#  else
     ::free(p);
-#    endif
+#  endif
   }
 }
 
@@ -454,8 +453,6 @@ void operator delete[](void* p, cuda::std::align_val_t av) noexcept
   getGlobalMemCounter()->alignedDeleteArrayCalled(p, a);
   return operator delete(p, av);
 }
-
-#  endif // _LIBCUDACXX_HAS_ALIGNED_ALLOCATION()
 
 #endif // DISABLE_NEW_COUNT
 
