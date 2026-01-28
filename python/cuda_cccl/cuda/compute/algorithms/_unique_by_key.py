@@ -1,13 +1,11 @@
-# Copyright (c) 2024-2025, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
+# Copyright (c) 2024-2026, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
 #
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 from typing import Callable
 
-import numba
-
-from .. import _bindings
+from .. import _bindings, types
 from .. import _cccl_interop as cccl
 from .._caching import cache_with_registered_key_functions
 from .._cccl_interop import call_build, set_cccl_iterator_state
@@ -50,7 +48,7 @@ class _UniqueByKey:
 
         # Compile the op - unique_by_key expects bool return (comparison)
         value_type = cccl.get_value_type(d_in_keys)
-        self.op_cccl = op.compile((value_type, value_type), numba.types.uint8)
+        self.op_cccl = op.compile((value_type, value_type), types.uint8)
 
         self.build_result = call_build(
             _bindings.DeviceUniqueByKeyBuildResult,

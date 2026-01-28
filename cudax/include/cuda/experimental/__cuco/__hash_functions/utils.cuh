@@ -4,12 +4,12 @@
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDAX__CUCO_DETAIL_HASH_FUNCTIONS_UTILS_CUH
-#define _CUDAX__CUCO_DETAIL_HASH_FUNCTIONS_UTILS_CUH
+#ifndef _CUDAX___CUCO___HASH_FUNCTIONS_UTILS_CUH
+#define _CUDAX___CUCO___HASH_FUNCTIONS_UTILS_CUH
 
 #include <cuda/__cccl_config>
 
@@ -27,7 +27,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-namespace cuda::experimental::cuco::__detail
+namespace cuda::experimental::cuco
 {
 //! @brief Loads a chunk of type _Tp from a byte pointer at a given index, handling alignment
 //!
@@ -139,8 +139,8 @@ struct _Byte_holder<_KeySize, _ChunkSize, _BlockSize, _UseTailBlock, _BlockT, tr
 
   _BlockT __blocks[__num_blocks];
 };
-}; // namespace cuda::experimental::cuco::__detail
+} // namespace cuda::experimental::cuco
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _CUDAX__CUCO_DETAIL_HASH_FUNCTIONS_UTILS_CUH
+#endif // _CUDAX___CUCO___HASH_FUNCTIONS_UTILS_CUH

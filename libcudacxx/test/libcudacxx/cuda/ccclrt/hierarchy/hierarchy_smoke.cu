@@ -22,7 +22,7 @@
 
 namespace cg = cooperative_groups;
 
-using size_t3 = cuda::__vector_type_t<cuda::std::size_t, 3>;
+using size_t3 = cuda::vector_type_t<cuda::std::size_t, 3>;
 
 struct basic_test_single_dim
 {

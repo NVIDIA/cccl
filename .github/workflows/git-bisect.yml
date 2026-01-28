@@ -15,7 +15,7 @@ on:
       launch_args:
         description: "'.devcontainer/launch.sh -d' add'l args. Ex: '--cuda 12.9 --host gcc13'"
         required: false
-        default: "--cuda 13.0 --host gcc14"
+        default: "--cuda 13.1 --host gcc14"
         type: string
       preset:
         description: "CMake preset. Ex: cub-cpp20"

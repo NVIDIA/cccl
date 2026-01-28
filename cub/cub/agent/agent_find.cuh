@@ -103,8 +103,8 @@ struct agent_t
     auto load_ptr = reinterpret_cast<const VectorT*>(d_in + tile_offset + (threadIdx.x * vector_load_length));
     CacheModifiedInputIterator<AgentFindPolicy::load_modifier, VectorT> d_vec_in(load_ptr);
 
-    InputT input_items[items_per_thread];
-    auto* vec_items = reinterpret_cast<VectorT*>(input_items);
+    alignas(InputT) unsigned char input_bytes[items_per_thread * sizeof(InputT)];
+    auto* vec_items = reinterpret_cast<VectorT*>(input_bytes);
 
     constexpr int number_of_vectors = items_per_thread / vector_load_length;
     _CCCL_PRAGMA_UNROLL_FULL()
@@ -112,7 +112,6 @@ struct agent_t
     {
       vec_items[i] = d_vec_in[block_threads * i];
     }
-    // vectorized loads end
 
     for (int i = 0; i < items_per_thread; ++i)
     {
@@ -122,6 +121,7 @@ struct agent_t
 
       OffsetT index = tile_offset + vector_of_tile * vector_load_length + element_in_vector;
 
+      auto* input_items = reinterpret_cast<InputT*>(input_bytes);
       if (index < num_items && predicate(input_items[i]))
       {
         atomicMin(&temp_storage.block_result, index);

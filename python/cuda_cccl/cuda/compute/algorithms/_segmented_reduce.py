@@ -1,3 +1,8 @@
+# Copyright (c) 2025-2026, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
+#
+#
+# SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+
 from typing import Callable
 
 import numpy as np
@@ -48,10 +53,8 @@ class _SegmentedReduce:
         self.end_offsets_in_cccl = cccl.to_cccl_input_iter(end_offsets_in)
 
         # set host advance functions
-        cccl.cccl_iterator_set_host_advance(self.d_out_cccl, d_out)
-        cccl.cccl_iterator_set_host_advance(
-            self.start_offsets_in_cccl, start_offsets_in
-        )
+        cccl.set_host_advance(self.d_out_cccl, d_out)
+        cccl.set_host_advance(self.start_offsets_in_cccl, start_offsets_in)
         if (
             self.start_offsets_in_cccl.is_kind_iterator()
             and self.end_offsets_in_cccl.is_kind_iterator()
@@ -63,9 +66,7 @@ class _SegmentedReduce:
                 self.start_offsets_in_cccl.host_advance_fn
             )
         else:
-            cccl.cccl_iterator_set_host_advance(
-                self.end_offsets_in_cccl, end_offsets_in
-            )
+            cccl.set_host_advance(self.end_offsets_in_cccl, end_offsets_in)
 
         self.h_init_cccl = cccl.to_cccl_value(h_init)
 
