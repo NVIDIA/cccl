@@ -24,7 +24,7 @@
 
 #include <cub/agent/agent_scan.cuh>
 #include <cub/detail/launcher/cuda_runtime.cuh>
-#include <cub/detail/warpspeed/warpspeed.h>
+#include <cub/detail/warpspeed/warpspeed.cuh>
 #include <cub/device/dispatch/dispatch_common.cuh>
 #include <cub/device/dispatch/kernels/kernel_scan.cuh>
 #include <cub/device/dispatch/tuning/tuning_scan.cuh>

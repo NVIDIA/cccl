@@ -12,7 +12,7 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cub/detail/warpspeed/constant_assert.h>
+#include <cub/detail/warpspeed/constant_assert.cuh>
 #include <cub/detail/warpspeed/special_registers.cuh>
 
 #include <cuda/__ptx/instructions/elect_sync.h>
