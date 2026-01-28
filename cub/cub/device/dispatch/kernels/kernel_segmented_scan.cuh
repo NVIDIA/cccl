@@ -74,6 +74,7 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::segmented_scan_policy_t::BLO
 
   if constexpr (segmented_scan_policy_t::max_segments_per_block == 1)
   {
+    _CCCL_ASSERT(num_segments_per_worker == 1, "Inconsistent parameters in device_warp_segmented_scan_kernel");
     const OffsetT inp_begin_offset = begin_offset_d_in[work_id];
     const OffsetT inp_end_offset   = end_offset_d_in[work_id];
     const OffsetT out_begin_offset = begin_offset_d_out[work_id];
@@ -139,10 +140,11 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::warp_segmented_scan_policy_t
   static constexpr unsigned int warps_in_block = int(policy_t::BLOCK_THREADS) >> cub::detail::log2_warp_threads;
   const unsigned int warp_id                   = threadIdx.x >> cub::detail::log2_warp_threads;
 
-  const auto work_id = num_segments_per_worker * (blockIdx.x * warps_in_block) + warp_id;
+  const auto work_id = num_segments_per_worker * (blockIdx.x * warps_in_block + warp_id);
 
   if constexpr (policy_t::max_segments_per_warp == 1)
   {
+    _CCCL_ASSERT(num_segments_per_worker == 1, "Inconsistent parameters in device_warp_segmented_scan_kernel");
     if (work_id < n_segments)
     {
       const OffsetT inp_begin_offset = begin_offset_d_in[work_id];
