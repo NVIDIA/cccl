@@ -25,9 +25,9 @@
 #include <cuda/std/__bit/popcount.h>
 #include <cuda/std/__type_traits/underlying_type.h>
 
-#if _CCCL_CUDA_COMPILER(NVCC, >=, 12, 8)
+#if !_CCCL_CUDA_COMPILER(NVCC, >=, 12, 8)
 #  include <cuda/atomic>
-#endif // _CCCL_CUDA_COMPILER(NVCC, >=, 12, 8)
+#endif // !_CCCL_CUDA_COMPILER(NVCC, >=, 12, 8)
 
 CUB_NAMESPACE_BEGIN
 
