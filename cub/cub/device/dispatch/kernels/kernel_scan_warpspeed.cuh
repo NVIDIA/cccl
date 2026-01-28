@@ -33,6 +33,7 @@
 #include <cuda/__memory/align_up.h>
 #include <cuda/__ptx/instructions/clusterlaunchcontrol.h>
 #include <cuda/std/__algorithm/clamp.h>
+#include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__cccl/cuda_capabilities.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__utility/move.h>
@@ -56,7 +57,7 @@ template <typename WarpspeedPolicy, typename InputT, typename OutputT, typename 
 struct ScanResources
 {
   // align to at least 16 bytes (InputT/OutputT may be aligned higher) so each stage starts correctly aligned
-  struct alignas(16) alignas(InputT) alignas(OutputT) InOutT
+  struct alignas(::cuda::std::max({size_t{16}, alignof(InputT), alignof(OutputT)})) InOutT
   {
     // the tile_size size is a multiple of the warp size, and thus for sure a multiple of 16
     static_assert(WarpspeedPolicy::tile_size % 16 == 0, "tile_size must be multiple of 16");
