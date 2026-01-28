@@ -38,7 +38,7 @@
 _CCCL_BEGIN_NAMESPACE_CUDA_MR
 
 //! @rst
-//! .. _cudax-memory-resource-shared-resource:
+//! .. _libcudacxx-memory-resource-shared-resource:
 //!
 //! Resource wrapper to share ownership of a resource
 //! --------------------------------------------------
@@ -134,6 +134,48 @@ struct shared_resource : ::cuda::mr::__copy_default_queries<_Resource>
   friend void swap(shared_resource& __left, shared_resource& __right) noexcept
   {
     __left.swap(__right);
+  }
+
+  //! @brief Returns a reference to the stored resource.
+  //! @return A reference to the stored resource.
+  [[nodiscard]] _Resource& get() noexcept
+  {
+    return __control_block->__resource;
+  }
+
+  //! @brief Returns a const reference to the stored resource.
+  //! @return A const reference to the stored resource.
+  [[nodiscard]] const _Resource& get() const noexcept
+  {
+    return __control_block->__resource;
+  }
+
+  //! @brief Returns a pointer to the stored resource.
+  //! @return A pointer to the stored resource.
+  [[nodiscard]] _Resource* operator->() noexcept
+  {
+    return &__control_block->__resource;
+  }
+
+  //! @brief Returns a const pointer to the stored resource.
+  //! @return A const pointer to the stored resource.
+  [[nodiscard]] const _Resource* operator->() const noexcept
+  {
+    return &__control_block->__resource;
+  }
+
+  //! @brief Returns a reference to the stored resource.
+  //! @return A reference to the stored resource.
+  [[nodiscard]] _Resource& operator*() noexcept
+  {
+    return __control_block->__resource;
+  }
+
+  //! @brief Returns a const reference to the stored resource.
+  //! @return A const reference to the stored resource.
+  [[nodiscard]] const _Resource& operator*() const noexcept
+  {
+    return __control_block->__resource;
   }
 
   //! @brief Allocate memory of size at least \p __bytes using the stored resource.
@@ -238,7 +280,7 @@ private:
 };
 
 //! @rst
-//! .. _cudax-memory-resource-make-shared-resource:
+//! .. _libcudacxx-memory-resource-make-shared-resource:
 //!
 //! Factory function for `shared_resource` objects
 //! -----------------------------------------------

@@ -154,6 +154,9 @@ function(cccl_build_compiler_targets)
     # See https://github.com/microsoft/STL/issues/696
     append_option_if_available("/wd4494" cxx_compile_options)
 
+    # Get error messages with a little arrow indicating the error location more exactly
+    append_option_if_available("/diagnostics:caret" cxx_compile_options)
+
     if (MSVC_TOOLSET_VERSION LESS 143)
       # winbase.h(9572): warning C5105: macro expansion producing 'defined' has undefined behavior
       append_option_if_available("/wd5105" cxx_compile_options)

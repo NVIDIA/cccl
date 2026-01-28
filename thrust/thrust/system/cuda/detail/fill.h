@@ -73,13 +73,7 @@ fill_n(execution_policy<Derived>& policy, OutputIterator first, Size count, cons
      cudaError_t status;
      THRUST_INDEX_TYPE_DISPATCH(
        status,
-       (CUB_NS_QUALIFIER::detail::transform::dispatch_t<
-         CUB_NS_QUALIFIER::detail::transform::requires_stable_address::no,
-         decltype(count_fixed),
-         ::cuda::std::tuple<>,
-         OutputIterator,
-         Predicate,
-         TransformOp>::dispatch),
+       (CUB_NS_QUALIFIER::detail::transform::dispatch<CUB_NS_QUALIFIER::detail::transform::requires_stable_address::no>),
        count,
        (::cuda::std::tuple<>{}, first, count_fixed, Predicate{}, TransformOp{value}, cuda_cub::stream(policy)));
      throw_on_error(status, "fill_n: failed inside CUB");

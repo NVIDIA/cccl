@@ -73,6 +73,7 @@ public:
   static constexpr bool __is_nothrow_invocable =
     noexcept(::cuda::std::apply(::cuda::std::declval<_Fn2>(), ::cuda::std::declval<_Tuple>()));
 
+#ifndef _CCCL_DOXYGEN_INVOKED // Doxygen interprets this as a duplicated function
   //! @brief Applies a tuple to the stored functor
   //! @param __tuple The tuple of arguments to be passed
   _CCCL_EXEC_CHECK_DISABLE
@@ -93,6 +94,7 @@ public:
   {
     return ::cuda::std::apply(__fun_, ::cuda::std::forward<_Tuple>(__tuple));
   }
+#endif // !_CCCL_DOXYGEN_INVOKED
 
   [[nodiscard]] _CCCL_API constexpr _Fn& __fun() noexcept
   {

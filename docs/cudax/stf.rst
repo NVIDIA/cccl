@@ -1894,6 +1894,7 @@ in existing code.
   the application take care of synchronization.
 - ``Tokens`` make it possible to enforce concurrent execution while
   letting the application manage data allocations and data transfers.
+- ``Execution places`` can be used without tasks for example to automate the management of CUDA streams, or set the current execution context.
 
 Freezing logical data
 ^^^^^^^^^^^^^^^^^^^^^
@@ -2015,6 +2016,261 @@ or an ``rw()`` access. There is no need to set any content in the token
 A token corresponds to a ``logical_data<void_interface>`` object, so that the
 ``token`` type serves as a short-hand for this type. ``ctx.token()`` thus
 returns an object with a ``token`` type.
+
+Stream management with execution places
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+CUDASTF's execution places can be used independently of the task system to
+manage CUDA streams in a structured way. This is useful when you want to use
+CUDASTF's place abstractions (devices, green contexts) for stream management
+without the full task-based programming model.
+
+The ``exec_place::pick_stream`` method returns a CUDA stream from the stream
+pool associated with a specific execution place. To use this facility, you need
+an ``async_resources_handle`` object, which manages the underlying stream pools.
+
+The method accepts an optional ``for_computation`` hint (defaults to ``true``)
+that may select between computation and data transfer stream pools to improve
+overlapping. This is purely a performance hint, and it does not affect correctness. Not all execution places enforce
+it.
+
+**Using execution places without a context:**
+
+When using execution places without a CUDASTF context, create a standalone
+``async_resources_handle``:
+
+.. code:: cpp
+
+    #include <cuda/experimental/stf.cuh>
+    using namespace cuda::experimental::stf;
+
+    // Create an async_resources_handle (manages stream pools)
+    async_resources_handle resources;
+
+    // Get a stream from the current device
+    exec_place place = exec_place::current_device();
+    cudaStream_t stream = place.pick_stream(resources);
+
+    // Use the stream for CUDA operations
+    myKernel<<<grid, block, 0, stream>>>(d_data);
+
+    // Get streams from specific devices
+    cudaStream_t stream_dev0 = exec_place::device(0).pick_stream(resources);
+    cudaStream_t stream_dev1 = exec_place::device(1).pick_stream(resources);
+
+Stream pools are populated lazily—CUDA streams are only created when first
+requested via ``pick_stream()``.
+
+**Using execution places alongside a context:**
+
+When working alongside a CUDASTF context, use ``ctx.async_resources()`` to
+ensure the same stream pools are shared between your code and the context's
+internal operations:
+
+.. code:: cpp
+
+    stream_ctx ctx;
+
+    // Get a stream using the context's async_resources
+    exec_place place = exec_place::device(0);
+    cudaStream_t stream = place.pick_stream(ctx.async_resources());
+
+    // This stream comes from the same pool used by the context internally.
+    // ctx.pick_stream() is a shorthand that uses the default execution place
+    // for the calling thread.
+    cudaStream_t ctx_stream = ctx.pick_stream();
+
+    ctx.finalize();
+
+**Getting multiple streams:**
+
+You can query the pool size and retrieve all streams as a vector:
+
+.. code:: cpp
+
+    async_resources_handle resources;
+    exec_place place = exec_place::current_device();
+
+    // Query the number of streams in the pool
+    size_t pool_size = place.stream_pool_size(resources);
+
+    // Get all streams from the pool as a vector
+    std::vector<cudaStream_t> streams = place.pick_all_streams(resources);
+
+    // Use the streams for concurrent operations
+    for (size_t i = 0; i < streams.size(); ++i) {
+        myKernel<<<grid, block, 0, streams[i]>>>(d_data[i]);
+    }
+
+Setting the current device or context
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The ``exec_place::activate()`` method provides a generic alternative to
+``cudaSetDevice()`` that works uniformly across different execution place types.
+This is useful when you want to set the current CUDA device or context without
+using CUDASTF tasks.
+
+The method returns an ``exec_place`` representing the previous state, which can
+be used to restore the original device or context.
+
+**Behavior by execution place type:**
+
+- **Device places** (``exec_place::device(id)``): Calls ``cudaSetDevice(id)``
+- **Green context places**: Sets the current CUDA driver context via ``cuCtxSetCurrent()``
+- **Host places**: No-op
+
+**Basic usage with devices:**
+
+.. code:: cpp
+
+    exec_place place = exec_place::device(1);
+    exec_place prev = place.activate();  // Switch to device 1
+
+    // ... perform operations on device 1 ...
+
+    place.deactivate(prev);  // Restore previous device
+
+**Alternative restoration pattern:**
+
+You can also restore by calling ``activate()`` on the returned place:
+
+.. code:: cpp
+
+    exec_place place = exec_place::device(1);
+    exec_place prev = place.activate();
+
+    // ... work on device 1 ...
+
+    prev.activate();  // Equivalent to place.deactivate(prev)
+
+**Usage with green contexts (CUDA 12.4+):**
+
+Green contexts provide SM-level partitioning of GPU resources. The
+``activate()``/``deactivate()`` methods handle the underlying driver context
+management:
+
+.. code:: cpp
+
+    // Create green contexts with 8 SMs each
+    green_context_helper gc(8, device_id);
+    auto view = gc.get_view(0);
+
+    exec_place gc_place = exec_place::green_ctx(view);
+    exec_place prev = gc_place.activate();  // Sets green context as current
+
+    // ... GPU work runs with SM affinity ...
+
+    gc_place.deactivate(prev);  // Restore original context
+
+Memory allocation with data places
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Data places provide a unified interface for memory allocation that works across
+different memory types (host, device, managed) and place extensions (green
+contexts, user-defined places). This allows you to allocate memory without using
+CUDASTF tasks, while benefiting from the place abstraction.
+
+The ``data_place::allocate()`` and ``data_place::deallocate()`` methods provide
+raw memory allocation. The stream parameter defaults to ``nullptr``, which is
+convenient for non-stream-ordered allocations (host, managed) where the stream
+is ignored:
+
+.. code:: cpp
+
+    #include <cuda/experimental/stf.cuh>
+    using namespace cuda::experimental::stf;
+
+    // Allocate on host (pinned memory) - stream defaults to nullptr
+    void* host_ptr = data_place::host().allocate(1024);
+    // ... use host_ptr ...
+    data_place::host().deallocate(host_ptr, 1024);
+
+    // Allocate on a specific device (stream-ordered)
+    cudaStream_t stream;
+    cudaStreamCreate(&stream);
+    void* dev_ptr = data_place::device(0).allocate(1024, stream);
+    // ... use dev_ptr with stream ...
+    data_place::device(0).deallocate(dev_ptr, 1024, stream);
+    cudaStreamDestroy(stream);
+
+    // Allocate managed memory - stream defaults to nullptr
+    void* managed_ptr = data_place::managed().allocate(1024);
+    // ... use managed_ptr from host or device ...
+    data_place::managed().deallocate(managed_ptr, 1024);
+
+**Stream-ordered vs immediate allocations:**
+
+Different data places have different allocation behaviors:
+
+- **Host** (``data_place::host()``): Uses ``cudaMallocHost()`` / ``cudaFreeHost()`` - immediate, stream parameter is ignored
+- **Managed** (``data_place::managed()``): Uses ``cudaMallocManaged()`` / ``cudaFree()`` - immediate, stream parameter is ignored (note: ``cudaFree`` may introduce implicit synchronization)
+- **Device** (``data_place::device(id)``): Uses ``cudaMallocAsync()`` / ``cudaFreeAsync()`` - stream-ordered
+- **Extensions** (green contexts, etc.): Behavior depends on the extension implementation
+
+You can query whether a place uses stream-ordered allocation with
+``allocation_is_stream_ordered()``:
+
+.. code:: cpp
+
+    data_place place = data_place::device(0);
+    if (place.allocation_is_stream_ordered()) {
+        // Allocation is stream-ordered - synchronize via the stream
+        void* ptr = place.allocate(size, stream);
+        myKernel<<<grid, block, 0, stream>>>(ptr);
+        place.deallocate(ptr, size, stream);
+        cudaStreamSynchronize(stream);
+    } else {
+        // Allocation is immediate - stream is ignored, safe to use right away
+        void* ptr = place.allocate(size);
+        // ... use ptr ...
+        place.deallocate(ptr, size);
+    }
+
+This abstraction is particularly useful when writing generic code that needs to
+work with different types of places, including custom place extensions.
+
+VMM-based allocation with mem_create
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+For advanced use cases involving CUDA's Virtual Memory Management (VMM) API,
+``data_place`` also provides the ``mem_create()`` method. This is a lower-level
+interface used internally by localized arrays (``composite_slice``) to create
+physical memory segments that are then mapped into a contiguous virtual address
+space.
+
+Unlike ``allocate()``, which returns a usable pointer directly, ``mem_create()``
+returns a ``CUmemGenericAllocationHandle`` that must be subsequently mapped with
+``cuMemMap()`` before use:
+
+.. code:: cpp
+
+    #include <cuda/experimental/stf.cuh>
+    using namespace cuda::experimental::stf;
+
+    // Create a physical memory handle for device 0
+    CUmemGenericAllocationHandle handle;
+    data_place::device(0).mem_create(&handle, size);
+
+    // The handle must be mapped to a virtual address before use
+    // (see CUDA VMM documentation for cuMemMap, cuMemSetAccess, etc.)
+
+**When to use each method:**
+
+- Use ``allocate()`` for most cases - it provides ready-to-use memory with
+  stream-ordered semantics where applicable.
+
+- Use ``mem_create()`` only when you need explicit control over virtual memory
+  mapping, such as creating localized arrays that span multiple devices with a
+  unified virtual address space.
+
+**Limitations of mem_create:**
+
+- Only supports device memory and host memory (pinned)
+- Managed memory is **not supported** by the VMM API
+- The returned handle requires additional VMM API calls to be usable
+
+Custom place extensions can override ``mem_create()`` to provide specialized
+VMM allocation behavior (e.g., memory localization for hardware partitions).
 
 Debugging
 ---------

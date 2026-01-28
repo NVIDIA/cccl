@@ -6,11 +6,10 @@
 
 from ... import _bindings
 from ... import _cccl_interop as cccl
-from ..._caching import cache_with_key
+from ..._caching import cache_with_registered_key_functions
 from ..._cccl_interop import call_build, set_cccl_iterator_state
 from ..._utils.protocols import (
     get_data_pointer,
-    get_dtype,
     validate_and_get_stream,
 )
 from ..._utils.temp_storage_buffer import TempStorageBuffer
@@ -131,42 +130,7 @@ class _SegmentedSort:
         return temp_storage_bytes
 
 
-def make_cache_key(
-    d_in_keys: DeviceArrayLike | DoubleBuffer,
-    d_out_keys: DeviceArrayLike | None,
-    d_in_values: DeviceArrayLike | DoubleBuffer | None,
-    d_out_values: DeviceArrayLike | None,
-    start_offsets_in: DeviceArrayLike,
-    end_offsets_in: DeviceArrayLike,
-    order: SortOrder,
-):
-    d_in_keys_array, d_out_keys_array, d_in_values_array, d_out_values_array = (
-        _get_arrays(d_in_keys, d_out_keys, d_in_values, d_out_values)
-    )
-
-    d_in_keys_key = get_dtype(d_in_keys_array)
-    d_out_keys_key = None if d_out_keys_array is None else get_dtype(d_out_keys_array)
-    d_in_values_key = (
-        None if d_in_values_array is None else get_dtype(d_in_values_array)
-    )
-    d_out_values_key = (
-        None if d_out_values_array is None else get_dtype(d_out_values_array)
-    )
-    start_offsets_in_key = get_dtype(start_offsets_in)
-    end_offsets_in_key = get_dtype(end_offsets_in)
-
-    return (
-        d_in_keys_key,
-        d_out_keys_key,
-        d_in_values_key,
-        d_out_values_key,
-        start_offsets_in_key,
-        end_offsets_in_key,
-        order,
-    )
-
-
-@cache_with_key(make_cache_key)
+@cache_with_registered_key_functions
 def make_segmented_sort(
     d_in_keys: DeviceArrayLike | DoubleBuffer,
     d_out_keys: DeviceArrayLike | None,
@@ -182,7 +146,7 @@ def make_segmented_sort(
     Example:
         Below, ``make_segmented_sort`` is used to create a segmented sort object that can be reused.
 
-        .. literalinclude:: ../../python/cuda_cccl/tests/parallel/examples/sort/segmented_sort_object.py
+        .. literalinclude:: ../../python/cuda_cccl/tests/compute/examples/sort/segmented_sort_object.py
             :language: python
             :start-after: # example-begin
 
@@ -229,14 +193,14 @@ def segmented_sort(
     Example:
         Below, ``segmented_sort`` is used to perform a segmented sort. It also rearranges the values according to the keys' order.
 
-        .. literalinclude:: ../../python/cuda_cccl/tests/parallel/examples/sort/segmented_sort_basic.py
+        .. literalinclude:: ../../python/cuda_cccl/tests/compute/examples/sort/segmented_sort_basic.py
             :language: python
             :start-after: # example-begin
 
 
         In the following example, ``segmented_sort`` is used to perform a segmented sort with a ``DoubleBuffer` for reduced temporary storage.
 
-        .. literalinclude:: ../../python/cuda_cccl/tests/parallel/examples/sort/segmented_sort_buffer.py
+        .. literalinclude:: ../../python/cuda_cccl/tests/compute/examples/sort/segmented_sort_buffer.py
             :language: python
             :start-after: # example-begin
 

@@ -69,6 +69,11 @@ class Determinism(IntEnum):
     RUN_TO_RUN = ...
     GPU_TO_GPU = ...
 
+class BinarySearchMode(IntEnum):
+    _value_: int
+    LOWER_BOUND = ...
+    UPPER_BOUND = ...
+
 class Op:
     def __init__(
         self,
@@ -462,6 +467,31 @@ class DeviceHistogramBuildResult:
         num_row_pixels: int,
         num_rows: int,
         row_stride_samples: int,
+        stream,
+    ) -> None: ...
+
+# -------------------
+# DeviceBinarySearch
+# -------------------
+
+class DeviceBinarySearchBuildResult:
+    def __init__(
+        self,
+        mode: BinarySearchMode,
+        d_data: Iterator,
+        d_values: Iterator,
+        d_out: Iterator,
+        comparison_op: Op,
+        info: CommonData,
+    ): ...
+    def compute(
+        self,
+        d_data: Iterator,
+        num_items: int,
+        d_values: Iterator,
+        num_values: int,
+        d_out: Iterator,
+        comparison_op: Op,
         stream,
     ) -> None: ...
 
