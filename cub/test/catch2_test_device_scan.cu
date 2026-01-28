@@ -80,6 +80,7 @@ C2H_TEST("Device scan works with all device interfaces", "[scan][device]", full_
 
   // Generate the input sizes to test for
   const offset_t num_items = GENERATE_COPY(
+    1,
     10,
     1000,
     1337,
