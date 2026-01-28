@@ -780,7 +780,9 @@ inline constexpr bool scan_use_warpspeed = false;
 
 // detect the use via CCCL.C (pre-compiled dispatch and JIT pass) and disable the new kernel.
 // See https://github.com/NVIDIA/cccl/issues/6821 for more details.
-#if !defined(CUB_ENABLE_POLICY_PTX_JSON) && !defined(CUB_DEFINE_RUNTIME_POLICIES)
+// We also need `cuda::std::is_constant_evaluated` for the compile-time SMEM computation. And we need PTX ISA 8.6.
+#if !defined(CUB_ENABLE_POLICY_PTX_JSON) && !defined(CUB_DEFINE_RUNTIME_POLICIES) \
+  && defined(_CCCL_BUILTIN_IS_CONSTANT_EVALUATED) && __cccl_ptx_isa >= 860
 template <typename Policy, typename InputIteratorT, typename OutputIteratorT, typename AccumT>
 inline constexpr bool scan_use_warpspeed<Policy,
                                          InputIteratorT,
@@ -790,7 +792,8 @@ inline constexpr bool scan_use_warpspeed<Policy,
   THRUST_NS_QUALIFIER::is_contiguous_iterator_v<InputIteratorT>
   && THRUST_NS_QUALIFIER::is_contiguous_iterator_v<OutputIteratorT>
   && one_stage_fits_48KiB_SMEM<typename Policy::WarpspeedPolicy, InputIteratorT, OutputIteratorT, AccumT>();
-#endif // !defined(CUB_ENABLE_POLICY_PTX_JSON) && !defined(CUB_DEFINE_RUNTIME_POLICIES)
+#endif // !defined(CUB_ENABLE_POLICY_PTX_JSON) && !defined(CUB_DEFINE_RUNTIME_POLICIES) &&
+       // defined(_CCCL_BUILTIN_IS_CONSTANT_EVALUATED) && __cccl_ptx_isa >= 860
 } // namespace detail::scan
 
 CUB_NAMESPACE_END
