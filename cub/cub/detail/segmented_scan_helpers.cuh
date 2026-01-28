@@ -247,9 +247,9 @@ private:
     const auto beg_it    = m_offsets.data();
     const auto end_it    = beg_it + offset_size;
     const auto ub        = ::cuda::std::upper_bound(beg_it, end_it, pos);
-    const int segment_id = ::cuda::std::distance(ub, beg_it);
+    const int segment_id = ::cuda::std::distance(beg_it, ub);
 
-    const difference_type shifted_offset = (segment_id == 0) ? 0 : m_offsets[segment_id - 1];
+    const difference_type shifted_offset = (segment_id == 0) ? pos : pos - m_offsets[segment_id - 1];
 
     return {segment_id, shifted_offset};
   }
