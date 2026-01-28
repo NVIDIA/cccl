@@ -4796,57 +4796,11 @@ in parallel algorithms, including arithmetic, logical, and bitwise operations.</
 </section>
 <section id="module-cuda.compute.struct">
 <span id="utilities"></span><h2>Utilities<a class="headerlink" href="#module-cuda.compute.struct" title="Link to this heading">#</a></h2>
-<p>This module provides <cite>gpu_struct</cite>, a factory for producing “struct” types that have
-pass-by-value semantics when used with Numba CUDA device functions.</p>
-<p>Numba supports record types, but they have pass-by-reference semantics:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">numba.np.numpy_support</span><span class="w"> </span><span class="kn">import</span> <span class="n">from_struct_dtype</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">numba</span><span class="w"> </span><span class="kn">import</span> <span class="n">cuda</span>
-<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
-
-<span class="n">tp</span> <span class="o">=</span> <span class="n">from_struct_dtype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">dtype</span><span class="p">([(</span><span class="s1">&#39;x&#39;</span><span class="p">,</span> <span class="s1">&#39;i4&#39;</span><span class="p">),</span> <span class="p">(</span><span class="s1">&#39;y&#39;</span><span class="p">,</span> <span class="s1">&#39;i8&#39;</span><span class="p">)]))</span>
-
-<span class="k">def</span><span class="w"> </span><span class="nf">foo</span><span class="p">(</span><span class="n">a</span><span class="p">:</span> <span class="n">tp</span><span class="p">,</span> <span class="n">b</span><span class="p">:</span> <span class="n">tp</span><span class="p">):</span>
-    <span class="k">return</span> <span class="n">a</span>
-
-<span class="n">ptx</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">cuda</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="n">foo</span><span class="p">,</span> <span class="p">(</span><span class="n">tp</span><span class="p">,</span> <span class="n">tp</span><span class="p">))</span>
-<span class="nb">print</span><span class="p">(</span><span class="n">ptx</span><span class="p">)</span>
-</pre></div>
-</div>
-<p>Inspecting the PTX, we see that the structs are passed by reference to the device function
-<cite>foo</cite>.</p>
-<div class="highlight-ptx notranslate"><div class="highlight"><pre><span></span><span class="kr">.visible</span><span class="w"> </span><span class="kr">.func</span><span class="w">  </span><span class="p">(</span><span class="kp">.param</span><span class="w"> </span><span class="kt">.b64</span><span class="w"> </span><span class="nv">func_retval0</span><span class="p">)</span><span class="w"> </span><span class="nv">foo</span><span class="p">(</span>
-<span class="w">        </span><span class="kp">.param</span><span class="w"> </span><span class="kt">.b64</span><span class="w"> </span><span class="nv">foo_param_0</span><span class="o">,</span>
-<span class="w">        </span><span class="kp">.param</span><span class="w"> </span><span class="kt">.b64</span><span class="w"> </span><span class="nv">foo_param_1</span>
-<span class="p">)</span>
-</pre></div>
-</div>
-<p>With gpu_struct, we can create a struct type with pass-by-value semantics:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">numba.core.extending</span><span class="w"> </span><span class="kn">import</span> <span class="n">as_numba_type</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">cuda.compute</span><span class="w"> </span><span class="kn">import</span> <span class="n">gpu_struct</span>
-
-<span class="n">S</span> <span class="o">=</span> <span class="n">gpu_struct</span><span class="p">({</span><span class="s1">&#39;x&#39;</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">int32</span><span class="p">,</span> <span class="s1">&#39;y&#39;</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">int64</span><span class="p">})</span>
-<span class="n">tp</span> <span class="o">=</span> <span class="n">as_numba_type</span><span class="p">(</span><span class="n">S</span><span class="p">)</span>
-
-<span class="k">def</span><span class="w"> </span><span class="nf">foo</span><span class="p">(</span><span class="n">a</span><span class="p">:</span> <span class="n">tp</span><span class="p">,</span> <span class="n">b</span><span class="p">:</span> <span class="n">tp</span><span class="p">):</span>
-    <span class="k">return</span> <span class="n">a</span>
-
-<span class="n">ptx</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">cuda</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="n">foo</span><span class="p">,</span> <span class="p">(</span><span class="n">tp</span><span class="p">,</span> <span class="n">tp</span><span class="p">))</span>
-<span class="nb">print</span><span class="p">(</span><span class="n">ptx</span><span class="p">)</span>
-</pre></div>
-</div>
-<p>Inspecting the PTX, we see that the structs are passed by value to the device function:</p>
-<div class="highlight-ptx notranslate"><div class="highlight"><pre><span></span><span class="kr">.visible</span><span class="w"> </span><span class="kr">.func</span><span class="w">  </span><span class="p">(</span><span class="kp">.param</span><span class="w"> </span><span class="kr">.align</span><span class="w"> </span><span class="m">8</span><span class="w"> </span><span class="kt">.b8</span><span class="w"> </span><span class="nv">func_retval0</span><span class="p">[</span><span class="m">16</span><span class="p">])</span><span class="w"> </span><span class="nv">foo</span><span class="p">(</span>
-<span class="w">    </span><span class="kp">.param</span><span class="w"> </span><span class="kt">.b32</span><span class="w"> </span><span class="nv">foo_param_0</span><span class="o">,</span>
-<span class="w">    </span><span class="kp">.param</span><span class="w"> </span><span class="kt">.b64</span><span class="w"> </span><span class="nv">foo_param_1</span><span class="o">,</span>
-<span class="w">    </span><span class="kp">.param</span><span class="w"> </span><span class="kt">.b32</span><span class="w"> </span><span class="nv">foo_param_2</span><span class="o">,</span>
-<span class="w">    </span><span class="kp">.param</span><span class="w"> </span><span class="kt">.b64</span><span class="w"> </span><span class="nv">foo_param_3</span>
-<span class="p">)</span>
-</pre></div>
-</div>
+<p>This module provides <cite>gpu_struct</cite>, a factory for producing struct types.</p>
 <dl class="py function">
 <dt class="sig sig-object py" id="cuda.compute.struct.gpu_struct">
 <span class="sig-prename descclassname"><span class="pre">cuda.compute.struct.</span></span><span class="sig-name descname"><span class="pre">gpu_struct</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">field_dict</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'AnonymousStruct'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#cuda.compute.struct.gpu_struct" title="Link to this definition">#</a></dt>
-<dd><p>A factory for creating struct types with pass-by-value semantics in Numba.</p>
+<dd><p>A factory for creating struct types.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
@@ -4856,78 +4810,7 @@ mapping of field names to data types.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p>A Python class that has been registered with Numba as a struct type.
-<code class="docutils literal notranslate"><span class="pre">as_numba_type()</span></code> can be used to get the underlying Numba type.
-Instances of this class can be passed as arguments to device functions.</p>
-</dd>
-</dl>
-<p>Examples:</p>
-<p>Construction from a dictionary.</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">S</span> <span class="o">=</span> <span class="n">gpu_struct</span><span class="p">({</span><span class="s1">&#39;x&#39;</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">int32</span><span class="p">,</span> <span class="s1">&#39;y&#39;</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">int64</span><span class="p">})</span>
-</pre></div>
-</div>
-<p>Construction from a numpy dtype.</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">S</span> <span class="o">=</span> <span class="n">gpu_struct</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">dtype</span><span class="p">([(</span><span class="s1">&#39;x&#39;</span><span class="p">,</span> <span class="s1">&#39;i4&#39;</span><span class="p">),</span> <span class="p">(</span><span class="s1">&#39;y&#39;</span><span class="p">,</span> <span class="s1">&#39;i8&#39;</span><span class="p">)]))</span>
-</pre></div>
-</div>
-<p>Construction from an annotated class.</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="nd">@gpu_struct</span>
-<span class="k">class</span><span class="w"> </span><span class="nc">MyStruct</span><span class="p">:</span>
-    <span class="n">x</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">int32</span>
-    <span class="n">y</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">int64</span>
-</pre></div>
-</div>
-<p>Nesting gpu_structs.</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="nd">@gpu_struct</span>
-<span class="k">class</span><span class="w"> </span><span class="nc">MyStruct</span><span class="p">:</span>
-    <span class="n">x</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">int32</span>
-    <span class="n">y</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">int64</span>
-
-<span class="nd">@gpu_struct</span>
-<span class="k">class</span><span class="w"> </span><span class="nc">MyNestedStruct</span><span class="p">:</span>
-    <span class="n">a</span><span class="p">:</span> <span class="n">MyStruct</span>
-    <span class="n">b</span><span class="p">:</span> <span class="n">MyStruct</span>
-</pre></div>
-</div>
-<p>Compiling a device function with gpu_struct arguments.</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">foo</span><span class="p">(</span><span class="n">a</span><span class="p">:</span> <span class="n">MyStruct</span><span class="p">,</span> <span class="n">b</span><span class="p">:</span> <span class="n">MyStruct</span><span class="p">):</span>
-    <span class="k">return</span> <span class="n">a</span>
-
-<span class="n">nb_type</span> <span class="o">=</span> <span class="n">as_numba_type</span><span class="p">(</span><span class="n">MyStruct</span><span class="p">)</span>
-<span class="n">ptx</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">cuda</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="n">foo</span><span class="p">,</span> <span class="p">(</span><span class="n">nb_type</span><span class="p">,</span> <span class="n">nb_type</span><span class="p">))</span>
-<span class="nb">print</span><span class="p">(</span><span class="n">ptx</span><span class="p">)</span>
-</pre></div>
-</div>
-</dd></dl>
-
-<dl class="py function">
-<dt class="sig sig-object py" id="cuda.compute.struct.make_struct_type">
-<span class="sig-prename descclassname"><span class="pre">cuda.compute.struct.</span></span><span class="sig-name descname"><span class="pre">make_struct_type</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">field_names</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">field_types</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#cuda.compute.struct.make_struct_type" title="Link to this definition">#</a></dt>
-<dd><p>Core factory function that uses the Numba extension machinery to
-create a struct type with pass-by-value semantics.</p>
-<ul class="simple">
-<li><p>Creates a Python type (and corresponding Numba type) representing a struct with the given
-field names and types.</p></li>
-<li><p>Implements typing and lowering for operations like construction, indexing, and attribute
-access within device functions.</p></li>
-<li><p>Returns the Python type. The corresponding Numba type can be obtained using
-<code class="docutils literal notranslate"><span class="pre">as_numba_type()</span></code>.</p></li>
-</ul>
-<p>Note, the return Python type does not have any useful methods or attributes,
-other than the private class attribute <code class="docutils literal notranslate"><span class="pre">_field_spec</span></code> containing the  mapping
-of field names to field types. Any Python-side functionality can be implemented
-by patching in methods.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>name</strong> – The name of the struct type that will be returned.</p></li>
-<li><p><strong>field_names</strong> – A tuple of field names.</p></li>
-<li><p><strong>field_types</strong> – A tuple of field types.</p></li>
-</ul>
-</dd>
-<dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p>Python type that can be used to construct struct instances. The corresponding
-Numba type can be obtained using <code class="docutils literal notranslate"><span class="pre">as_numba_type()</span></code>.</p>
+<dd class="field-even"><p>A struct class helpful for writing operations on struct values.</p>
 </dd>
 </dl>
 </dd></dl>
@@ -5072,7 +4955,6 @@ Numba type can be obtained using <code class="docutils literal notranslate"><spa
 </li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#module-cuda.compute.struct">Utilities</a><ul class="visible nav section-nav flex-column">
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#cuda.compute.struct.gpu_struct"><code class="docutils literal notranslate"><span class="pre">gpu_struct()</span></code></a></li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#cuda.compute.struct.make_struct_type"><code class="docutils literal notranslate"><span class="pre">make_struct_type()</span></code></a></li>
 </ul>
 </li>
 </ul>
