@@ -62,7 +62,7 @@ struct ScanResources
     static_assert(WarpspeedPolicy::tile_size % 16 == 0, "tile_size must be multiple of 16");
 
     // therefore, unaligned inputs need exactly 16 bytes extra for overcopying (tail padding = 16 - head padding)
-    char inout[WarpspeedPolicy::tile_size * sizeof(InputT) + 16];
+    ::cuda::std::byte inout[WarpspeedPolicy::tile_size * sizeof(InputT) + 16];
   };
   static_assert(alignof(InOutT) >= alignof(InputT));
   static_assert(alignof(InOutT) >= alignof(OutputT));
@@ -285,7 +285,8 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void kernelBody(
     _CCCL_ASSERT(idxTileBase < params.numElem, "");
     const int valid_items   = static_cast<int>(cuda::std::min(params.numElem - idxTileBase, size_t(tile_size)));
     const bool is_last_tile = valid_items < tile_size;
-    warpspeed::CpAsyncOobInfo loadInfo = warpspeed::prepareCpAsyncOob(params.ptrIn + idxTileBase, valid_items);
+    warpspeed::CpAsyncOobInfo loadInfo =
+      warpspeed::prepareCpAsyncOob(const_cast<InputT*>(params.ptrIn) + idxTileBase, valid_items);
 
     if (squad == squadLoad)
     {
@@ -593,7 +594,7 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void kernelBody(
       // Sync before storing to avoid data races on SMEM
       squad.syncThreads();
 
-      char* smem_output_tile = refInOutRW.data().inout;
+      ::cuda::std::byte* smem_output_tile = refInOutRW.data().inout;
       if constexpr (sizeof(OutputT) <= sizeof(InputT))
       {
         warpspeed::CpAsyncOobInfo storeInfo = warpspeed::prepareCpAsyncOob(params.ptrOut + idxTileBase, valid_items);
@@ -627,7 +628,7 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void kernelBody(
           _CCCL_ASSERT(storeInfo.smemStartSkipBytes + elem_per_chunk * sizeof(OutputT) <= res.smemInOut.mSizeBytes, "");
           warpspeed::squadStoreSmemPartial(
             squad,
-            reinterpret_cast<OutputT*>(smem_output_tile + storeInfo.smemStartSkipBytes),
+            reinterpret_cast<OutputT*>(smem_output_tile + storeInfo.smemStartSkipBytes), // different in each iteration
             regSumInclusive,
             chunk_offset,
             chunk_offset + chunk_size);
