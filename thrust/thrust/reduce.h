@@ -727,7 +727,7 @@ void reduce_into(InputIterator first, InputIterator last, OutputIterator output,
 
 /*! \p reduce_by_key is a generalization of \p reduce to key-value pairs.
  *  For each group of consecutive keys in the range <tt>[keys_first, keys_last)</tt>
- *  that are equal, \p reduce_by_key copies the first element of the group to the
+ *  that are equal, \p reduce_by_key copies the last element of the group to the
  *  \c keys_output. The corresponding values in the range are reduced using the
  *  \c plus and the result copied to \c values_output.
  *
@@ -801,7 +801,7 @@ _CCCL_HOST_DEVICE ::cuda::std::pair<OutputIterator1, OutputIterator2> reduce_by_
 
 /*! \p reduce_by_key is a generalization of \p reduce to key-value pairs.
  *  For each group of consecutive keys in the range <tt>[keys_first, keys_last)</tt>
- *  that are equal, \p reduce_by_key copies the first element of the group to the
+ *  that are equal, \p reduce_by_key copies the last element of the group to the
  *  \c keys_output. The corresponding values in the range are reduced using the
  *  \c plus and the result copied to \c values_output.
  *
@@ -864,7 +864,7 @@ template <typename InputIterator1, typename InputIterator2, typename OutputItera
 
 /*! \p reduce_by_key is a generalization of \p reduce to key-value pairs.
  *  For each group of consecutive keys in the range <tt>[keys_first, keys_last)</tt>
- *  that are equal, \p reduce_by_key copies the first element of the group to the
+ *  that are equal, \p reduce_by_key copies the last element of the group to the
  *  \c keys_output. The corresponding values in the range are reduced using the
  *  \c plus and the result copied to \c values_output.
  *
@@ -943,7 +943,7 @@ _CCCL_HOST_DEVICE ::cuda::std::pair<OutputIterator1, OutputIterator2> reduce_by_
 
 /*! \p reduce_by_key is a generalization of \p reduce to key-value pairs.
  *  For each group of consecutive keys in the range <tt>[keys_first, keys_last)</tt>
- *  that are equal, \p reduce_by_key copies the first element of the group to the
+ *  that are equal, \p reduce_by_key copies the last element of the group to the
  *  \c keys_output. The corresponding values in the range are reduced using the
  *  \c plus and the result copied to \c values_output.
  *
@@ -1014,7 +1014,7 @@ template <typename InputIterator1,
 
 /*! \p reduce_by_key is a generalization of \p reduce to key-value pairs.
  *  For each group of consecutive keys in the range <tt>[keys_first, keys_last)</tt>
- *  that are equal, \p reduce_by_key copies the first element of the group to the
+ *  that are equal, \p reduce_by_key copies the last element of the group to the
  *  \c keys_output. The corresponding values in the range are reduced using the
  *  \c BinaryFunction \c binary_op and the result copied to \c values_output.
  *  Specifically, if consecutive key iterators \c i and \c (i + 1) are
@@ -1101,7 +1101,7 @@ _CCCL_HOST_DEVICE ::cuda::std::pair<OutputIterator1, OutputIterator2> reduce_by_
 
 /*! \p reduce_by_key is a generalization of \p reduce to key-value pairs.
  *  For each group of consecutive keys in the range <tt>[keys_first, keys_last)</tt>
- *  that are equal, \p reduce_by_key copies the first element of the group to the
+ *  that are equal, \p reduce_by_key copies the last element of the group to the
  *  \c keys_output. The corresponding values in the range are reduced using the
  *  \c BinaryFunction \c binary_op and the result copied to \c values_output.
  *  Specifically, if consecutive key iterators \c i and \c (i + 1) are
