@@ -703,7 +703,8 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void device_scan_lookahead_body(
     WarpspeedPolicy::squadLookback(),
   };
 
-  warpspeed::squadDispatch(specialRegisters, scanSquads, [&](warpspeed::Squad squad) {
+  // we need to force inline the lambda, but clang in CUDA mode only likes the GNU syntax
+  warpspeed::squadDispatch(specialRegisters, scanSquads, [&](warpspeed::Squad squad) __attribute__((always_inline)) {
     kernelBody<WarpspeedPolicy, InputT, OutputT, AccumT, ScanOpT, RealInitValueT, ForceInclusive>(
       squad, specialRegisters, params, ::cuda::std::move(scan_op), static_cast<RealInitValueT>(init_value));
   });
