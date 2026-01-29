@@ -411,11 +411,9 @@ struct DeviceRleDispatch
 #endif // CUB_DEBUG_LOG
 
       // Invoke device_scan_init_kernel to initialize tile descriptors and queue descriptors
-      THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(init_grid_size, init_kernel_threads, 0, stream)
-        .doit(device_scan_init_kernel, tile_status, num_current_tiles, d_num_runs_out);
-
-      // Check for failure to launch
-      error = CubDebug(cudaPeekAtLastError());
+      error = CubDebug(
+        THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(init_grid_size, init_kernel_threads, 0, stream)
+          .doit(device_scan_init_kernel, tile_status, num_current_tiles, d_num_runs_out));
       if (cudaSuccess != error)
       {
         return error;
@@ -463,38 +461,41 @@ struct DeviceRleDispatch
           &tmp_num_uniques[buffer_selector],
           &tmp_num_uniques[buffer_selector ^ 0x01]};
 
-        THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(num_current_tiles, block_threads, 0, stream)
-          .doit(device_rle_sweep_kernel,
-                d_in + current_partition_offset,
-                d_offsets_out,
-                d_lengths_out,
-                d_num_runs_out,
-                tile_status,
-                equality_op,
-                static_cast<local_offset_t>(current_num_items),
-                num_current_tiles,
-                streaming_context);
+        error = CubDebug(
+          THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(num_current_tiles, block_threads, 0, stream)
+            .doit(device_rle_sweep_kernel,
+                  d_in + current_partition_offset,
+                  d_offsets_out,
+                  d_lengths_out,
+                  d_num_runs_out,
+                  tile_status,
+                  equality_op,
+                  static_cast<local_offset_t>(current_num_items),
+                  num_current_tiles,
+                  streaming_context));
+        if (cudaSuccess != error)
+        {
+          return error;
+        }
       }
       else
       {
-        THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(num_current_tiles, block_threads, 0, stream)
-          .doit(device_rle_sweep_kernel,
-                d_in + current_partition_offset,
-                d_offsets_out,
-                d_lengths_out,
-                d_num_runs_out,
-                tile_status,
-                equality_op,
-                static_cast<local_offset_t>(current_num_items),
-                num_current_tiles,
-                NullType{});
-      }
-
-      // Check for failure to launch
-      error = CubDebug(cudaPeekAtLastError());
-      if (cudaSuccess != error)
-      {
-        return error;
+        error = CubDebug(
+          THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(num_current_tiles, block_threads, 0, stream)
+            .doit(device_rle_sweep_kernel,
+                  d_in + current_partition_offset,
+                  d_offsets_out,
+                  d_lengths_out,
+                  d_num_runs_out,
+                  tile_status,
+                  equality_op,
+                  static_cast<local_offset_t>(current_num_items),
+                  num_current_tiles,
+                  NullType{}));
+        if (cudaSuccess != error)
+        {
+          return error;
+        }
       }
 
       // Sync the stream if specified to flush runtime errors

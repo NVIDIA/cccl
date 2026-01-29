@@ -426,11 +426,9 @@ struct DispatchReduceByKey
 #endif // CUB_DEBUG_LOG
 
       // Invoke init_kernel to initialize tile descriptors
-      THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(init_grid_size, INIT_KERNEL_THREADS, 0, stream)
-        .doit(init_kernel, tile_state, num_tiles, d_num_runs_out);
-
-      // Check for failure to launch
-      error = CubDebug(cudaPeekAtLastError());
+      error = CubDebug(
+        THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(init_grid_size, INIT_KERNEL_THREADS, 0, stream)
+          .doit(init_kernel, tile_state, num_tiles, d_num_runs_out));
       if (cudaSuccess != error)
       {
         break;
@@ -483,23 +481,21 @@ struct DispatchReduceByKey
 #endif // CUB_DEBUG_LOG
 
         // Invoke reduce_by_key_kernel
-        THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(scan_grid_size, block_threads, 0, stream)
-          .doit(reduce_by_key_kernel,
-                d_keys_in,
-                d_unique_out,
-                d_values_in,
-                d_aggregates_out,
-                d_num_runs_out,
-                tile_state,
-                start_tile,
-                equality_op,
-                reduction_op,
-                num_items,
-                streaming_context_t{},
-                cub::detail::vsmem_t{allocations[1]});
-
-        // Check for failure to launch
-        error = CubDebug(cudaPeekAtLastError());
+        error = CubDebug(
+          THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(scan_grid_size, block_threads, 0, stream)
+            .doit(reduce_by_key_kernel,
+                  d_keys_in,
+                  d_unique_out,
+                  d_values_in,
+                  d_aggregates_out,
+                  d_num_runs_out,
+                  tile_state,
+                  start_tile,
+                  equality_op,
+                  reduction_op,
+                  num_items,
+                  streaming_context_t{},
+                  cub::detail::vsmem_t{allocations[1]}));
         if (cudaSuccess != error)
         {
           break;

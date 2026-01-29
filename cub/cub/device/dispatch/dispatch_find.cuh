@@ -171,28 +171,32 @@ struct dispatch_t
 
     // use d_temp_storage as the intermediate device result to read and write from. Then store the final result in the
     // output iterator.
-    THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(1, 1, 0, stream, true)
-      .doit(init_found_pos_pointer<OffsetT, OffsetT>, found_pos_ptr, num_items);
+    if (const auto error = CubDebug(THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(1, 1, 0, stream, true)
+                                      .doit(init_found_pos_pointer<OffsetT, OffsetT>, found_pos_ptr, num_items)))
+    {
+      return error;
+    }
 
     // Unwrap the input iterator to convert device_ptr<T> to T* (raw pointer). This ensures that dereferencing yields T&
     // instead of device_reference<T>, which is necessary for predicates that don't accept proxy types.
     auto d_in_unwrapped = THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator(d_in);
 
     // Invoke FindIfKernel with transformed iterator
-    THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(
-      findif_grid_size, ActivePolicyT::FindPolicy::BLOCK_THREADS, 0, stream, true)
-      .doit(kernel_ptr, d_in_unwrapped, num_items, found_pos_ptr, predicate);
+    if (const auto error = CubDebug(THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(
+                                      findif_grid_size, ActivePolicyT::FindPolicy::BLOCK_THREADS, 0, stream, true)
+                                      .doit(kernel_ptr, d_in_unwrapped, num_items, found_pos_ptr, predicate)))
+    {
+      return error;
+    }
 
     if constexpr (!can_write_to_output_direclty)
     {
-      THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(1, 1, 0, stream, true)
-        .doit(copy_final_result_to_output_iterator<OffsetT, OutputIteratorT>, found_pos_ptr, d_out);
-    }
-
-    // Check for failure to launch
-    if (const auto error = CubDebug(cudaPeekAtLastError()))
-    {
-      return error;
+      if (const auto error = CubDebug(
+            THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(1, 1, 0, stream, true)
+              .doit(copy_final_result_to_output_iterator<OffsetT, OutputIteratorT>, found_pos_ptr, d_out)))
+      {
+        return error;
+      }
     }
 
     // Sync the stream if specified to flush runtime errors

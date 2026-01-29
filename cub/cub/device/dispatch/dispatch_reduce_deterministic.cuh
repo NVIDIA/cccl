@@ -190,10 +190,10 @@ struct dispatch_t
             ActivePolicyT::SingleTilePolicy::ITEMS_PER_THREAD);
 #endif
     // Invoke single_reduce_sweep_kernel
-    THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(1, ActivePolicyT::SingleTilePolicy::BLOCK_THREADS, 0, stream)
-      .doit(single_tile_kernel, d_in, d_out, static_cast<int>(num_items), reduction_op, init, transform_op);
-    // Check for failure to launch
-    if (const auto error = CubDebug(cudaPeekAtLastError()))
+    if (const auto error = CubDebug(
+          THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(
+            1, ActivePolicyT::SingleTilePolicy::BLOCK_THREADS, 0, stream)
+            .doit(single_tile_kernel, d_in, d_out, static_cast<int>(num_items), reduction_op, init, transform_op)))
     {
       return error;
     }
@@ -309,18 +309,16 @@ struct dispatch_t
               reduce_config.sm_occupancy);
 #endif // CUB_DETAIL_DEBUG_ENABLE_LOG
 
-      THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(
-        current_grid_size, ActivePolicyT::ReducePolicy::BLOCK_THREADS, 0, stream)
-        .doit(reduce_kernel,
-              d_in,
-              d_chunk_block_reductions,
-              num_current_items,
-              reduction_op,
-              transform_op,
-              current_grid_size);
-
-      // Check for failure to launch
-      if (const auto error = CubDebug(cudaPeekAtLastError()))
+      if (const auto error = CubDebug(
+            THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(
+              current_grid_size, ActivePolicyT::ReducePolicy::BLOCK_THREADS, 0, stream)
+              .doit(reduce_kernel,
+                    d_in,
+                    d_chunk_block_reductions,
+                    num_current_items,
+                    reduction_op,
+                    transform_op,
+                    current_grid_size)))
       {
         return error;
       }
@@ -347,17 +345,16 @@ struct dispatch_t
 #endif // CUB_DETAIL_DEBUG_ENABLE_LOG
 
     // Invoke DeterministicDeviceReduceSingleTileKernel
-    THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(1, ActivePolicyT::SingleTilePolicy::BLOCK_THREADS, 0, stream)
-      .doit(single_tile_kernel,
-            d_block_reductions,
-            d_out,
-            reduce_grid_size, // triple_chevron is not type safe, make sure to use int
-            reduction_op,
-            init,
-            ::cuda::std::identity{});
-
-    // Check for failure to launch
-    if (const auto error = CubDebug(cudaPeekAtLastError()))
+    if (const auto error = CubDebug(
+          THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(
+            1, ActivePolicyT::SingleTilePolicy::BLOCK_THREADS, 0, stream)
+            .doit(single_tile_kernel,
+                  d_block_reductions,
+                  d_out,
+                  reduce_grid_size, // triple_chevron is not type safe, make sure to use int
+                  reduction_op,
+                  init,
+                  ::cuda::std::identity{})))
     {
       return error;
     }

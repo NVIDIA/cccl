@@ -237,11 +237,9 @@ struct DispatchStreamingReduceByKey
 #endif // CUB_DEBUG_LOG
 
       // Invoke init_kernel to initialize tile descriptors
-      THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(init_grid_size, init_kernel_threads, 0, stream)
-        .doit(init_kernel, tile_state, num_current_tiles, d_num_runs_out);
-
-      // Check for failure to launch
-      error = CubDebug(cudaPeekAtLastError());
+      error = CubDebug(
+        THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(init_grid_size, init_kernel_threads, 0, stream)
+          .doit(init_kernel, tile_state, num_current_tiles, d_num_runs_out));
       if (cudaSuccess != error)
       {
         return error;
@@ -290,44 +288,47 @@ struct DispatchStreamingReduceByKey
           &tmp_num_uniques[buffer_selector],
           &tmp_num_uniques[buffer_selector ^ 0x01]};
 
-        THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(num_current_tiles, block_threads, 0, stream)
-          .doit(reduce_by_key_kernel,
-                d_keys_in + current_partition_offset,
-                d_unique_out,
-                d_values_in + current_partition_offset,
-                d_aggregates_out,
-                d_num_runs_out,
-                tile_state,
-                0,
-                equality_op,
-                reduction_op,
-                static_cast<local_offset_t>(current_num_items),
-                streaming_context,
-                cub::detail::vsmem_t{nullptr});
+        error = CubDebug(
+          THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(num_current_tiles, block_threads, 0, stream)
+            .doit(reduce_by_key_kernel,
+                  d_keys_in + current_partition_offset,
+                  d_unique_out,
+                  d_values_in + current_partition_offset,
+                  d_aggregates_out,
+                  d_num_runs_out,
+                  tile_state,
+                  0,
+                  equality_op,
+                  reduction_op,
+                  static_cast<local_offset_t>(current_num_items),
+                  streaming_context,
+                  cub::detail::vsmem_t{nullptr}));
+        if (cudaSuccess != error)
+        {
+          return error;
+        }
       }
       else
       {
-        THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(num_current_tiles, block_threads, 0, stream)
-          .doit(reduce_by_key_kernel,
-                d_keys_in + current_partition_offset,
-                d_unique_out,
-                d_values_in + current_partition_offset,
-                d_aggregates_out,
-                d_num_runs_out,
-                tile_state,
-                0,
-                equality_op,
-                reduction_op,
-                static_cast<local_offset_t>(current_num_items),
-                NullType{},
-                cub::detail::vsmem_t{nullptr});
-      }
-
-      // Check for failure to launch
-      error = CubDebug(cudaPeekAtLastError());
-      if (cudaSuccess != error)
-      {
-        return error;
+        error = CubDebug(
+          THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(num_current_tiles, block_threads, 0, stream)
+            .doit(reduce_by_key_kernel,
+                  d_keys_in + current_partition_offset,
+                  d_unique_out,
+                  d_values_in + current_partition_offset,
+                  d_aggregates_out,
+                  d_num_runs_out,
+                  tile_state,
+                  0,
+                  equality_op,
+                  reduction_op,
+                  static_cast<local_offset_t>(current_num_items),
+                  NullType{},
+                  cub::detail::vsmem_t{nullptr}));
+        if (cudaSuccess != error)
+        {
+          return error;
+        }
       }
 
       // Sync the stream if specified to flush runtime errors
