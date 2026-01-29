@@ -789,8 +789,14 @@ inline constexpr bool scan_use_warpspeed<Policy,
                                          OutputIteratorT,
                                          AccumT,
                                          ::cuda::std::void_t<typename Policy::WarpspeedPolicy>> =
+  // for bulk copy: input and output iterators must be contiguous and their value types must be trivially copyable
   THRUST_NS_QUALIFIER::is_contiguous_iterator_v<InputIteratorT>
+  && ::cuda::std::is_trivially_copyable_v<it_value_t<InputIteratorT>>
   && THRUST_NS_QUALIFIER::is_contiguous_iterator_v<OutputIteratorT>
+  && ::cuda::std::is_trivially_copyable_v<it_value_t<OutputIteratorT>>
+  // for bulk copy store: we need to prepare a buffer of output types in SMEM
+  && ::cuda::std::is_default_constructible_v<it_value_t<OutputIteratorT>>
+  // need to fit one stage into 48KiB so binaries stay forward compatible with future GPUs
   && one_stage_fits_48KiB_SMEM<typename Policy::WarpspeedPolicy, InputIteratorT, OutputIteratorT, AccumT>();
 #endif // !defined(CUB_ENABLE_POLICY_PTX_JSON) && !defined(CUB_DEFINE_RUNTIME_POLICIES) &&
        // defined(_CCCL_BUILTIN_IS_CONSTANT_EVALUATED) && __cccl_ptx_isa >= 860
