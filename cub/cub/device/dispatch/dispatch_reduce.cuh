@@ -21,6 +21,7 @@
 #endif // no system header
 
 #include <cub/detail/launcher/cuda_runtime.cuh>
+#include <cub/device/dispatch/dispatch_common.cuh>
 #include <cub/device/dispatch/kernels/kernel_reduce.cuh>
 #include <cub/device/dispatch/tuning/tuning_reduce.cuh>
 #include <cub/grid/grid_even_share.cuh>
@@ -92,6 +93,25 @@ struct DeviceReduceKernelSource
 template <typename PolicyHub>
 struct policy_selector_from_hub
 {
+  // not every PolicyHub may have a ReduceNondeterministicPolicy
+  template <typename ActivePolicy, typename ap_reduce_nondet = typename ActivePolicy::ReduceNondeterministicPolicy>
+  _CCCL_DEVICE_API constexpr auto convert_nondet_policy(int) const
+  {
+    return agent_reduce_policy{
+      ap_reduce_nondet::BLOCK_THREADS,
+      ap_reduce_nondet::ITEMS_PER_THREAD,
+      ap_reduce_nondet::VECTOR_LOAD_LENGTH,
+      ap_reduce_nondet::BLOCK_ALGORITHM,
+      ap_reduce_nondet::LOAD_MODIFIER,
+    };
+  }
+
+  template <typename>
+  _CCCL_DEVICE_API constexpr auto convert_nondet_policy(long) const
+  {
+    return agent_reduce_policy{};
+  }
+
   // this is only called in device code, so we can ignore the arch parameter
   _CCCL_DEVICE_API constexpr auto operator()(::cuda::arch_id /*arch*/) const -> reduce_policy
   {
@@ -113,8 +133,8 @@ struct policy_selector_from_hub
         ap_single_tile::BLOCK_ALGORITHM,
         ap_single_tile::LOAD_MODIFIER,
       },
-      /* segmented reduce, not used */ {},
-      /* non deterministic reduce, not used */ {}};
+      convert_nondet_policy<ap>(0),
+    };
   }
 };
 } // namespace detail::reduce
@@ -706,15 +726,12 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t invoke_passes(
   }
 
   return cudaSuccess;
-};
-
-struct no_override
-{};
+}
 
 // select the accumulator type using an overload set, so __accumulator_t and invoke_result_t are not instantiated when
 // an overriding accumulator type is present. This is needed by CCCL.C.
 template <typename InputIteratorT, typename InitT, typename ReductionOpT, typename TransformOpT>
-_CCCL_API auto select_accum_t(no_override*)
+_CCCL_API auto select_accum_t(use_default*)
   -> ::cuda::std::__accumulator_t<ReductionOpT,
                                   ::cuda::std::invoke_result_t<TransformOpT, ::cuda::std::iter_value_t<InputIteratorT>>,
                                   InitT>;
@@ -723,11 +740,11 @@ template <typename InputIteratorT,
           typename ReductionOpT,
           typename TransformOpT,
           typename OverrideAccumT,
-          ::cuda::std::enable_if_t<!::cuda::std::is_same_v<OverrideAccumT, no_override>, int> = 0>
+          ::cuda::std::enable_if_t<!::cuda::std::is_same_v<OverrideAccumT, use_default>, int> = 0>
 _CCCL_API auto select_accum_t(OverrideAccumT*) -> OverrideAccumT;
 
 template <
-  typename OverrideAccumT = no_override,
+  typename OverrideAccumT = use_default,
   typename InputIteratorT,
   typename OutputIteratorT,
   typename OffsetT,

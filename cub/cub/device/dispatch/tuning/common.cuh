@@ -90,6 +90,8 @@ inline constexpr auto classify_type<double> = type_t::float64;
 enum class op_kind_t
 {
   plus,
+  min,
+  max,
   other
 };
 

@@ -61,7 +61,8 @@ struct DeviceFixedSizeSegmentedReduceKernelSource
 {
   CUB_DEFINE_KERNEL_GETTER(
     FixedSizeSegmentedReduceKernel,
-    DeviceFixedSizeSegmentedReduceKernel<MaxPolicyT, InputIteratorT, OutputIteratorT, OffsetT, ReductionOpT, InitT, AccumT>)
+    segmented_reduce::
+      DeviceFixedSizeSegmentedReduceKernel<MaxPolicyT, InputIteratorT, OutputIteratorT, OffsetT, ReductionOpT, InitT, AccumT>)
 
   CUB_RUNTIME_FUNCTION static constexpr ::cuda::std::size_t AccumSize()
   {
