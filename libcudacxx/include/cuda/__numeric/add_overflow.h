@@ -48,11 +48,10 @@
 #  define _CCCL_BUILTIN_ADD_OVERFLOW(...) __builtin_add_overflow(__VA_ARGS__)
 #endif // _CCCL_CHECK_BUILTIN(builtin_add_overflow)
 
-// nvc++ doesn't support 128-bit integers and crashes when certain type combinations are used (nvbug 5730860), so let's
-// just disable the builtin for now.
-#if _CCCL_COMPILER(NVHPC)
+// nvc++ < 26.1 doesn't support 128-bit integers and crashes when certain type combinations are used (nvbug 5730860).
+#if _CCCL_COMPILER(NVHPC, <, 26, 1)
 #  undef _CCCL_BUILTIN_ADD_OVERFLOW
-#endif // _CCCL_COMPILER(NVHPC)
+#endif // _CCCL_COMPILER(NVHPC, <, 26, 1)
 
 _CCCL_BEGIN_NAMESPACE_CUDA
 
