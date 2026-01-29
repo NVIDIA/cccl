@@ -12,6 +12,11 @@
 #include <cuda/std/span>
 #include <cuda/std/type_traits>
 
+#if THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA
+#  include <cuda/memory_resource>
+#  include <cuda/stream>
+#endif // THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA
+
 #include <map>
 #include <stdexcept>
 
@@ -573,6 +578,31 @@ struct caching_allocator_t
     free_blocks.insert(std::make_pair(num_bytes, ptr));
   }
 
+#if THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA
+  void* allocate_sync(size_t num_bytes, size_t)
+  {
+    return allocate(num_bytes);
+  }
+
+  void deallocate_sync(void* ptr, size_t num_bytes, size_t)
+  {
+    deallocate(static_cast<char*>(ptr), num_bytes);
+  }
+
+  void* allocate(::cuda::stream_ref __stream, size_t num_bytes, size_t)
+  {
+    void* __res = allocate(num_bytes);
+    __stream.sync();
+    return __res;
+  }
+
+  void deallocate(::cuda::stream_ref __stream, void* ptr, size_t num_bytes, size_t)
+  {
+    deallocate(static_cast<char*>(ptr), num_bytes);
+    __stream.sync();
+  }
+#endif // THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA
+
 private:
   using free_blocks_type      = std::multimap<std::ptrdiff_t, char*>;
   using allocated_blocks_type = std::map<char*, std::ptrdiff_t>;
@@ -616,6 +646,20 @@ private:
     delete[] ptr;
 #endif
   }
+
+  friend bool operator==(const caching_allocator_t& lhs, const caching_allocator_t& rhs)
+  {
+    return lhs.free_blocks == rhs.free_blocks && lhs.allocated_blocks == rhs.allocated_blocks;
+  }
+
+  friend bool operator!=(const caching_allocator_t& lhs, const caching_allocator_t& rhs)
+  {
+    return lhs.free_blocks == rhs.free_blocks && lhs.allocated_blocks == rhs.allocated_blocks;
+  }
+
+#if THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA
+  friend constexpr void get_property(const caching_allocator_t&, cuda::mr::device_accessible) noexcept {}
+#endif // THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA
 };
 
 #if THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA
