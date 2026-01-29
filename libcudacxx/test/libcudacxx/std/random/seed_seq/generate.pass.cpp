@@ -8,7 +8,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-#include <cuda/std/__random_>
+#include <cuda/std/random>
 #if !_CCCL_COMPILER(NVRTC)
 #  include <cstdint>
 #  include <random>

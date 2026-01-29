@@ -8,18 +8,19 @@
 //
 //===----------------------------------------------------------------------===//
 
-#include <cuda/std/random>
+#ifndef _CUDA_STD_RANDOM
+#define _CUDA_STD_RANDOM
 
-#include "random_utilities/test_engine.h"
+#include <cuda/std/detail/__config>
 
-__host__ __device__ void test()
-{
-  test_engine<cuda::std::minstd_rand0, 1043618065u>();
-  test_engine<cuda::std::minstd_rand, 399268537ull>();
-}
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 
-int main(int, char**)
-{
-  test();
-  return 0;
-}
+#include <cuda/std/__random_>
+
+#endif // _CUDA_STD_RANDOM
