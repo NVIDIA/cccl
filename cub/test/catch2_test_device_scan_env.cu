@@ -224,7 +224,7 @@ C2H_TEST("Device scan exclusive-scan uses environment", "[scan][device]")
           == cub::DeviceScan::ExclusiveScan(
             nullptr, expected_bytes_allocated, d_in, d_out.begin(), scan_op_t{}, init, num_items));
 
-  auto env = stdexec::env{cuda::execution::require(cuda::execution::determinism::run_to_run), // determinism
+  auto env = stdexec::env{cuda::execution::require(cuda::execution::determinism::not_guaranteed), // determinism
                           expected_allocation_size(expected_bytes_allocated)}; // temp storage size
 
   device_scan_exclusive(d_in, d_out.begin(), scan_op_t{}, init, num_items, env);
@@ -248,7 +248,7 @@ C2H_TEST("Device scan exclusive-sum uses environment", "[scan][device]")
   REQUIRE(
     cudaSuccess == cub::DeviceScan::ExclusiveSum(nullptr, expected_bytes_allocated, d_in, d_out.begin(), num_items));
 
-  auto env = stdexec::env{cuda::execution::require(cuda::execution::determinism::run_to_run), // determinism
+  auto env = stdexec::env{cuda::execution::require(cuda::execution::determinism::not_guaranteed), // determinism
                           expected_allocation_size(expected_bytes_allocated)}; // temp storage size
 
   device_scan_exclusive_sum(d_in, d_out.begin(), num_items, env);

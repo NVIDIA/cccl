@@ -165,22 +165,29 @@ struct DeviceScan
     using requested_determinism_t =
       ::cuda::std::execution::__query_result_or_t<requirements_t,
                                                   ::cuda::execution::determinism::__get_determinism_t,
-                                                  ::cuda::execution::determinism::run_to_run_t>;
+                                                  ::cuda::execution::determinism::not_guaranteed_t>;
 
-    // Static assert to reject gpu_to_gpu determinism since it's not implemented
-    static_assert(!::cuda::std::is_same_v<requested_determinism_t, ::cuda::execution::determinism::gpu_to_gpu_t>,
-                  "gpu_to_gpu determinism is not supported");
+    using accum_t =
+      ::cuda::std::__accumulator_t<ScanOpT,
+                                   cub::detail::it_value_t<InputIteratorT>,
+                                   ::cuda::std::_If<::cuda::std::is_same_v<InitValueT, NullType>,
+                                                    cub::detail::it_value_t<InputIteratorT>,
+                                                    typename InitValueT::value_type>>;
 
-    static_assert(!::cuda::std::is_same_v<requested_determinism_t, ::cuda::execution::determinism::not_guaranteed_t>,
-                  "not_guaranteed determinism is not supported");
+    constexpr bool is_determinism_required =
+      !::cuda::std::is_same_v<requested_determinism_t, ::cuda::execution::determinism::not_guaranteed_t>;
+    constexpr bool is_safe_integral_op =
+      ::cuda::std::is_integral_v<accum_t> && detail::is_cuda_binary_operator<ScanOpT>;
 
-    using determinism_t = ::cuda::execution::determinism::run_to_run_t;
+    // Logic: If determinism is required, we must have a safe integral operator.
+    static_assert(!is_determinism_required || is_safe_integral_op,
+                  "run_to_run or gpu_to_gpu is only supported for integral types with known operators");
 
     // Dispatch with environment - handles all boilerplate
     return detail::dispatch_with_env(env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, auto stream) {
       using tuning_t = decltype(tuning);
       return scan_impl_determinism<tuning_t>(
-        storage, bytes, d_in, d_out, scan_op, init, num_items, determinism_t{}, stream);
+        storage, bytes, d_in, d_out, scan_op, init, num_items, requested_determinism_t{}, stream);
     });
   }
   //! @endcond
