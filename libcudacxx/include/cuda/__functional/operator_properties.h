@@ -517,7 +517,7 @@ template <class _Op, class _Tp>
     }
     else if constexpr (::cuda::is_floating_point_v<_Up>)
     {
-      return -::cuda::std::numeric_limits<_Up>::infinity();
+      return ::cuda::std::__fp_neg(::cuda::std::__fp_inf<_Up>());
     }
     else
     {

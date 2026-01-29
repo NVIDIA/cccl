@@ -132,7 +132,7 @@ C2H_TEST("ThreadReduce Integral Type Tests",
   constexpr int num_items          = c2h::get<2, TestType>::value;
   using dist_param                 = dist_interval<value_t, op_t, num_items>;
   constexpr auto reduce_op         = op_t{};
-  constexpr auto operator_identity = cuda::identity_element_v<op_t, accum_t>;
+  constexpr auto operator_identity = cuda::identity_element<op_t, accum_t>();
   const int valid_items            = GENERATE_COPY(
     take(1, random(2, cuda::std::max(2, num_items - 1))),
     take(1, random(num_items + 2, cuda::std::numeric_limits<int>::max())),
@@ -164,7 +164,7 @@ C2H_TEST("ThreadReduce Floating-Point Type Tests",
   constexpr int num_items      = c2h::get<2, TestType>::value;
   using dist_param             = dist_interval<value_t, op_t, num_items>;
   constexpr auto reduce_op     = op_t{};
-  const auto operator_identity = cuda::identity_element_v<op_t, accum_t>;
+  const auto operator_identity = cuda::identity_element<op_t, accum_t>();
   const int valid_items        = GENERATE_COPY(
     take(1, random(2, cuda::std::max(2, num_items - 1))),
     take(1, random(num_items + 2, cuda::std::numeric_limits<int>::max())),

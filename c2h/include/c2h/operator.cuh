@@ -16,7 +16,7 @@
  **********************************************************************************************************************/
 
 template <typename Operator, typename T, typename = void>
-inline constexpr T identity_v = cuda::identity_element_v<Operator, T>;
+inline constexpr T identity_v = cuda::identity_element<Operator, T>();
 
 template <typename T>
 inline const T identity_v<cuda::std::plus<>, T> = T{}; // e.g. short2, float2, complex<__half> etc.

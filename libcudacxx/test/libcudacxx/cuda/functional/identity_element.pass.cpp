@@ -69,7 +69,6 @@ __host__ __device__ constexpr void test_identity_impl(bool has_identity, [[maybe
   assert((has_identity == cuda::has_identity_element_v<Op, T>) );
   if constexpr (cuda::has_identity_element_v<Op, T>)
   {
-    assert((identity == cuda::identity_element<Op, T>()));
     if constexpr (::cuda::is_floating_point_v<T>)
     {
       assert(cuda::std::signbit(identity) == cuda::std::signbit(cuda::identity_element<Op, T>()));
@@ -77,21 +76,23 @@ __host__ __device__ constexpr void test_identity_impl(bool has_identity, [[maybe
     // handle extended floating-point types separately
     if constexpr (!::cuda::std::__is_extended_floating_point_v<T>)
     {
+      assert((identity == cuda::identity_element<Op, T>()));
       test_identity_impl2<Op, T>();
       test_identity_impl2<Op, const T>();
       test_identity_impl2<Op, volatile T>();
       test_identity_impl2<Op, const volatile T>();
     }
-    // #if _CCCL_CTK_AT_LEAST(12, 2)
-    //     else
-    //     {
-    //       _CCCL_IF_NOT_CONSTEVAL_DEFAULT
-    //       {
-    //         test_identity_impl2<Op, T>();
-    //         test_identity_impl2<Op, const T>();
-    //       }
-    //     }
-    // #endif // _CCCL_CTK_AT_LEAST(12, 2)
+#if _CCCL_CTK_AT_LEAST(12, 2) || _CCCL_DEVICE_COMPILATION()
+    else
+    {
+      _CCCL_IF_NOT_CONSTEVAL_DEFAULT
+      {
+        assert((identity == cuda::identity_element<Op, T>()));
+        test_identity_impl2<Op, T>();
+        test_identity_impl2<Op, const T>();
+      }
+    }
+#endif // _CCCL_CTK_AT_LEAST(12, 2) || _CCCL_DEVICE_COMPILATION()
   }
 }
 

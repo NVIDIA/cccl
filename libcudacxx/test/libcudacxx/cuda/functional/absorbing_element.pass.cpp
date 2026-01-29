@@ -68,25 +68,26 @@ __host__ __device__ constexpr void test_absorbing_impl(bool has_absorbing, [[may
   assert((has_absorbing == cuda::has_absorbing_element_v<Op, T>) );
   if constexpr (cuda::has_absorbing_element_v<Op, T>)
   {
-    assert((absorbing == cuda::absorbing_element<Op, T>()));
     // handle extended floating-point types separately
     if constexpr (!::cuda::std::__is_extended_floating_point_v<T>)
     {
+      assert((absorbing == cuda::absorbing_element<Op, T>()));
       test_absorbing_impl2<Op, T>();
       test_absorbing_impl2<Op, const T>();
       test_absorbing_impl2<Op, volatile T>();
       test_absorbing_impl2<Op, const volatile T>();
     }
-#if _CCCL_CTK_AT_LEAST(12, 2)
+#if _CCCL_CTK_AT_LEAST(12, 2) || _CCCL_DEVICE_COMPILATION()
     else
     {
+      assert((absorbing == cuda::absorbing_element<Op, T>()));
       _CCCL_IF_NOT_CONSTEVAL_DEFAULT
       {
         test_absorbing_impl2<Op, T>();
         test_absorbing_impl2<Op, const T>();
       }
     }
-#endif // _CCCL_CTK_AT_LEAST(12, 2)
+#endif // _CCCL_CTK_AT_LEAST(12, 2) || _CCCL_DEVICE_COMPILATION()
   }
 }
 

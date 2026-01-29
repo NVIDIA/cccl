@@ -159,7 +159,7 @@ C2H_TEST("ThreadScanExclusive Integral Type Tests",
   using dist_param                 = dist_interval<value_t, op_t, num_items, accum_t, output_t>;
   using filler_dist_param          = dist_interval<accum_t, op_t, num_items, accum_t, output_t>;
   constexpr auto scan_op           = op_t{};
-  constexpr auto operator_identity = cuda::identity_element_v<op_t, accum_t>;
+  constexpr auto operator_identity = cuda::identity_element<op_t, accum_t>();
   const int valid_items            = GENERATE_COPY(
     take(1, random(2, cuda::std::max(2, num_items - 1))),
     take(1, random(num_items + 2, cuda::std::numeric_limits<int>::max())),
@@ -216,7 +216,7 @@ C2H_TEST("ThreadScanExclusive Floating-Point Type Tests",
   using dist_param             = dist_interval<value_t, op_t, num_items, accum_t, output_t>;
   using filler_dist_param      = dist_interval<accum_t, op_t, num_items, accum_t, output_t>;
   constexpr auto scan_op       = op_t{};
-  const auto operator_identity = cuda::identity_element_v<op_t, accum_t>;
+  const auto operator_identity = cuda::identity_element<op_t, accum_t>();
   const int valid_items        = GENERATE_COPY(
     take(1, random(2, cuda::std::max(2, num_items - 1))),
     take(1, random(num_items + 2, cuda::std::numeric_limits<int>::max())),
