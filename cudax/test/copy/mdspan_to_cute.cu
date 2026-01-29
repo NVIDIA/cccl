@@ -12,6 +12,8 @@
 #include <cuda/std/mdspan>
 
 #include <cuda/experimental/__copy/mdspan_to_cute.cuh>
+#include <cuda/experimental/__copy/mdspan_d2h_h2d.cuh>
+
 
 #include "testing.cuh"
 #include <cute/tensor.hpp>
