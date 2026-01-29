@@ -71,6 +71,10 @@ THRUST_NAMESPACE_BEGIN
  *
  *  \see generate_n
  *  \see https://en.cppreference.com/w/cpp/algorithm/generate
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename DerivedPolicy, typename ForwardIterator, typename Generator>
 _CCCL_HOST_DEVICE void
@@ -109,6 +113,10 @@ generate(const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
  *
  *  \see generate_n
  *  \see https://en.cppreference.com/w/cpp/algorithm/generate
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename ForwardIterator, typename Generator>
 void generate(ForwardIterator first, ForwardIterator last, Generator gen);
@@ -147,6 +155,10 @@ void generate(ForwardIterator first, ForwardIterator last, Generator gen);
  *
  *  \see generate
  *  \see https://en.cppreference.com/w/cpp/algorithm/generate
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename DerivedPolicy, typename OutputIterator, typename Size, typename Generator>
 _CCCL_HOST_DEVICE OutputIterator generate_n(
@@ -181,6 +193,10 @@ _CCCL_HOST_DEVICE OutputIterator generate_n(
  *
  *  \see generate
  *  \see https://en.cppreference.com/w/cpp/algorithm/generate
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename OutputIterator, typename Size, typename Generator>
 OutputIterator generate_n(OutputIterator first, Size n, Generator gen);

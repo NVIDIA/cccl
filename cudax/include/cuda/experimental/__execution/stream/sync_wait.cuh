@@ -49,8 +49,8 @@ struct __sync_wait_t : private sync_wait_t
     auto __new_sndr = stream_domain{}.transform_sender(set_value, static_cast<_Sndr&&>(__sndr), __env);
 
     NV_IF_TARGET(NV_IS_HOST,
-                 (return __host_apply(::cuda::std::move(__new_sndr), static_cast<_Env&&>(__env));),
-                 (return __device_apply(::cuda::std::move(__new_sndr), static_cast<_Env&&>(__env));))
+                 (return __host_apply(_CCCL_MOVE(__new_sndr), static_cast<_Env&&>(__env));),
+                 (return __device_apply(_CCCL_MOVE(__new_sndr), static_cast<_Env&&>(__env));))
     _CCCL_UNREACHABLE();
   }
 
@@ -112,10 +112,10 @@ private:
 
     if (__state.__errors_.__index() != __npos)
     {
-      __state.__errors_.__visit(sync_wait_t::__throw_error_fn{}, ::cuda::std::move(__state.__errors_));
+      __visit(sync_wait_t::__throw_error_fn{}, _CCCL_MOVE(__state.__errors_));
     }
 
-    return ::cuda::std::move(__box->__value.__result_);
+    return _CCCL_MOVE(__box->__value.__result_);
   }
 };
 } // namespace __stream

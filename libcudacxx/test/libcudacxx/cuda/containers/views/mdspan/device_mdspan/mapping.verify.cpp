@@ -15,6 +15,7 @@
 // Mandates:
 //  - LayoutPolicy shall meet the layout mapping policy requirements ([mdspan.layout.policy.reqmts])
 
+#define _CCCL_DISABLE_MDSPAN_ACCESSOR_DETECT_INVALIDITY
 #include <cuda/mdspan>
 
 #include "test_macros.h"

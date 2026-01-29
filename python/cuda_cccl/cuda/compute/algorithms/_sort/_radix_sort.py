@@ -5,7 +5,7 @@
 
 from ... import _bindings
 from ... import _cccl_interop as cccl
-from ..._caching import cache_with_key
+from ..._caching import cache_with_registered_key_functions
 from ..._cccl_interop import call_build, set_cccl_iterator_state
 from ..._utils.protocols import (
     get_data_pointer,
@@ -15,35 +15,6 @@ from ..._utils.protocols import (
 from ..._utils.temp_storage_buffer import TempStorageBuffer
 from ...typing import DeviceArrayLike
 from ._sort_common import DoubleBuffer, SortOrder, _get_arrays
-
-
-def make_cache_key(
-    d_in_keys: DeviceArrayLike | DoubleBuffer,
-    d_out_keys: DeviceArrayLike | None,
-    d_in_values: DeviceArrayLike | DoubleBuffer | None,
-    d_out_values: DeviceArrayLike | None,
-    order: SortOrder,
-):
-    d_in_keys_array, d_out_keys_array, d_in_values_array, d_out_values_array = (
-        _get_arrays(d_in_keys, d_out_keys, d_in_values, d_out_values)
-    )
-
-    d_in_keys_key = get_dtype(d_in_keys_array)
-    d_in_values_key = (
-        None if d_in_values_array is None else get_dtype(d_in_values_array)
-    )
-    d_out_keys_key = get_dtype(d_out_keys_array)
-    d_out_values_key = (
-        None if d_out_values_array is None else get_dtype(d_out_values_array)
-    )
-
-    return (
-        d_in_keys_key,
-        d_out_keys_key,
-        d_in_values_key,
-        d_out_values_key,
-        order,
-    )
 
 
 class _RadixSort:
@@ -164,7 +135,7 @@ class _RadixSort:
         return temp_storage_bytes
 
 
-@cache_with_key(make_cache_key)
+@cache_with_registered_key_functions
 def make_radix_sort(
     d_in_keys: DeviceArrayLike | DoubleBuffer,
     d_out_keys: DeviceArrayLike | None,

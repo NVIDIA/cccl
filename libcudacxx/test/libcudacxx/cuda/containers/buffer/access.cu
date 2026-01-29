@@ -23,33 +23,26 @@
 #include "helper.h"
 #include "types.h"
 
-#if _CCCL_CTK_AT_LEAST(12, 6)
-using test_types = c2h::type_list<cuda::std::tuple<int, cuda::mr::host_accessible>,
-                                  cuda::std::tuple<unsigned long long, cuda::mr::device_accessible>,
-                                  cuda::std::tuple<int, cuda::mr::host_accessible, cuda::mr::device_accessible>>;
-#else // ^^^ _CCCL_CTK_AT_LEAST(12, 6) ^^^ / vvv _CCCL_CTK_BELOW(12, 6) vvv
-using test_types = c2h::type_list<cuda::std::tuple<int, cuda::mr::device_accessible>>;
-#endif // ^^^ _CCCL_CTK_BELOW(12, 6) ^^^
-
 C2H_CCCLRT_TEST("cuda::buffer access and stream", "[container][buffer]", test_types)
 {
-  using TestT           = c2h::get<0, TestType>;
-  using Resource        = typename extract_properties<TestT>::resource;
-  using Buffer          = typename extract_properties<TestT>::buffer;
-  using T               = typename Buffer::value_type;
-  using reference       = typename Buffer::reference;
-  using const_reference = typename Buffer::const_reference;
-  using pointer         = typename Buffer::pointer;
-  using const_pointer   = typename Buffer::const_pointer;
+  using Buffer   = c2h::get<0, TestType>;
+  using Resource = typename extract_properties<Buffer>::resource;
+  using T        = typename Buffer::value_type;
+
+  if (!extract_properties<Buffer>::is_resource_supported())
+  {
+    return;
+  }
 
   cuda::stream stream{cuda::device_ref{0}};
-  Resource resource = extract_properties<TestT>::get_resource();
+  Resource resource = extract_properties<Buffer>::get_resource();
 
   SECTION("cuda::buffer::get_unsynchronized")
   {
-    static_assert(cuda::std::is_same_v<decltype(cuda::std::declval<Buffer&>().get_unsynchronized(1ull)), reference>);
-    static_assert(
-      cuda::std::is_same_v<decltype(cuda::std::declval<const Buffer&>().get_unsynchronized(1ull)), const_reference>);
+    static_assert(cuda::std::is_same_v<decltype(cuda::std::declval<Buffer&>().get_unsynchronized(1ull)),
+                                       typename Buffer::reference>);
+    static_assert(cuda::std::is_same_v<decltype(cuda::std::declval<const Buffer&>().get_unsynchronized(1ull)),
+                                       typename Buffer::const_reference>);
 
     {
       Buffer buf{stream, resource, {T(1), T(42), T(1337), T(0)}};
@@ -67,8 +60,9 @@ C2H_CCCLRT_TEST("cuda::buffer access and stream", "[container][buffer]", test_ty
 
   SECTION("cuda::buffer::data")
   {
-    static_assert(cuda::std::is_same_v<decltype(cuda::std::declval<Buffer&>().data()), pointer>);
-    static_assert(cuda::std::is_same_v<decltype(cuda::std::declval<const Buffer&>().data()), const_pointer>);
+    static_assert(cuda::std::is_same_v<decltype(cuda::std::declval<Buffer&>().data()), typename Buffer::pointer>);
+    static_assert(
+      cuda::std::is_same_v<decltype(cuda::std::declval<const Buffer&>().data()), typename Buffer::const_pointer>);
 
     { // Works without allocation
       Buffer buf{stream, resource};
@@ -86,6 +80,35 @@ C2H_CCCLRT_TEST("cuda::buffer access and stream", "[container][buffer]", test_ty
     }
   }
 
+  SECTION("cuda::buffer::memory_resource")
+  {
+    static_assert(noexcept(cuda::std::declval<const Buffer&>().memory_resource()));
+
+    { // Returns the resource used during construction
+      Buffer buf{stream, resource, {T(1), T(42), T(1337), T(0)}};
+      const auto& mr = buf.memory_resource();
+      CCCLRT_CHECK(mr == resource);
+    }
+
+    { // Works with empty buffer
+      Buffer buf{stream, resource, 0, cuda::no_init};
+      const auto& mr = buf.memory_resource();
+      CCCLRT_CHECK(mr == resource);
+    }
+
+    { // Returns same resource after move assignment
+      Buffer buf1{stream, resource, {T(1), T(42)}};
+
+      Resource other_resource = extract_properties<Buffer>::get_resource();
+      Buffer buf2{stream, other_resource, {T(99), T(88)}};
+
+      buf1 = cuda::std::move(buf2);
+      // After move assignment, buf1 should have buf2's resource
+      const auto& mr_after = buf1.memory_resource();
+      CCCLRT_CHECK(mr_after == other_resource);
+    }
+  }
+
   SECTION("cuda::buffer::stream")
   {
     Buffer buf{stream, resource, {T(1), T(42), T(1337), T(0)}};
@@ -100,5 +123,61 @@ C2H_CCCLRT_TEST("cuda::buffer access and stream", "[container][buffer]", test_ty
 
     CCCLRT_CHECK(buf.stream() == stream);
     buf.destroy(stream);
+  }
+
+  SECTION("cuda::buffer::destroy")
+  {
+    { // destroy with explicit stream
+      Buffer buf{stream, resource, {T(1), T(42), T(1337), T(0)}};
+      CCCLRT_CHECK(!buf.empty());
+      CCCLRT_CHECK(buf.data() != nullptr);
+
+      cuda::stream destroy_stream{cuda::device_ref{0}};
+      destroy_stream.wait(stream);
+      buf.destroy(destroy_stream);
+      CCCLRT_CHECK(buf.empty());
+      CCCLRT_CHECK(buf.data() == nullptr);
+    }
+
+    { // destroy without explicit stream (uses stored stream)
+      Buffer buf{stream, resource, {T(1), T(42), T(1337), T(0)}};
+      CCCLRT_CHECK(!buf.empty());
+      CCCLRT_CHECK(buf.data() != nullptr);
+
+      buf.destroy();
+      CCCLRT_CHECK(buf.empty());
+      CCCLRT_CHECK(buf.data() == nullptr);
+    }
+
+    { // destroy empty buffer
+      Buffer buf{stream, resource, 0, cuda::no_init};
+      CCCLRT_CHECK(buf.empty());
+      CCCLRT_CHECK(buf.data() == nullptr);
+
+      buf.destroy();
+      CCCLRT_CHECK(buf.empty());
+      CCCLRT_CHECK(buf.data() == nullptr);
+    }
+
+    { // destroy and then move assign (should be valid)
+      Buffer buf1{stream, resource, {T(1), T(42), T(1337)}};
+      Buffer buf2{stream, resource, {T(99), T(88)}};
+
+      buf1.destroy();
+      CCCLRT_CHECK(buf1.empty());
+
+      buf1 = cuda::std::move(buf2);
+      CCCLRT_CHECK(buf1.size() == 2);
+      CCCLRT_CHECK(buf2.empty());
+    }
+
+    { // destroy and then destroy again (should be safe)
+      Buffer buf{stream, resource, {T(1), T(42)}};
+      buf.destroy();
+      CCCLRT_CHECK(buf.empty());
+
+      buf.destroy();
+      CCCLRT_CHECK(buf.empty());
+    }
   }
 }

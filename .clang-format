@@ -148,8 +148,6 @@ Macros:
 - _CCCL_TEMPLATE(...)=template<...>
 - _CCCL_REQUIRES(...)=requires (...)
 - _CUDAX_SEMI_PRIVATE=private
-WhitespaceSensitiveMacros:
-- _CCCL_HAS_INCLUDE
 NamespaceIndentation: None
 PackConstructorInitializers: Never
 PenaltyBreakAssignment: 30

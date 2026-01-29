@@ -790,7 +790,7 @@ public:
                               stream);
   }
 
-  //! @}  end member group
+  //! @}
   //! @name Keys-only
   //! @{
 
@@ -1466,7 +1466,7 @@ public:
                               stream);
   }
 
-  //! @}  end member group
+  //! @}
 };
 
 CUB_NAMESPACE_END

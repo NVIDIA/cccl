@@ -121,8 +121,8 @@ struct make_zip_iterator_base<::cuda::std::tuple<Its...>>
 //!
 //! \code
 //! #include <thrust/iterator/zip_iterator.h>
-//! #include <thrust/tuple.h>
 //! #include <thrust/device_vector.h>
+//! #include <cuda/std/tuple>
 //! ...
 //! thrust::device_vector<int> int_v{0, 1, 2};
 //! thrust::device_vector<float> float_v{0.0f, 1.0f, 2.0f};
@@ -134,22 +134,22 @@ struct make_zip_iterator_base<::cuda::std::tuple<Its...>>
 //! using CharIterator = thrust::device_vector<char>::iterator;
 //!
 //! // alias for a tuple of these iterators
-//! using IteratorTuple = thrust::tuple<IntIterator, FloatIterator, CharIterator>;
+//! using IteratorTuple = cuda::std::tuple<IntIterator, FloatIterator, CharIterator>;
 //!
 //! // alias the zip_iterator of this tuple
 //! using ZipIterator = thrust::zip_iterator<IteratorTuple>;
 //!
 //! // finally, create the zip_iterator
-//! ZipIterator iter(thrust::make_tuple(int_v.begin(), float_v.begin(), char_v.begin()));
+//! ZipIterator iter(cuda::std::make_tuple(int_v.begin(), float_v.begin(), char_v.begin()));
 //!
 //! *iter;   // returns (0, 0.0f, 'a')
 //! iter[0]; // returns (0, 0.0f, 'a')
 //! iter[1]; // returns (1, 1.0f, 'b')
 //! iter[2]; // returns (2, 2.0f, 'c')
 //!
-//! thrust::get<0>(iter[2]); // returns 2
-//! thrust::get<1>(iter[0]); // returns 0.0f
-//! thrust::get<2>(iter[1]); // returns 'b'
+//! cuda::std::get<0>(iter[2]); // returns 2
+//! cuda::std::get<1>(iter[0]); // returns 0.0f
+//! cuda::std::get<2>(iter[1]); // returns 'b'
 //!
 //! // iter[3] is an out-of-bounds error
 //! \endcode
@@ -161,7 +161,7 @@ struct make_zip_iterator_base<::cuda::std::tuple<Its...>>
 //!
 //! \code
 //! #include <thrust/zip_iterator.h>
-//! #include <thrust/tuple.h>
+//! #include <cuda/std/tuple>
 //! #include <thrust/device_vector.h>
 //!
 //! int main()
@@ -184,6 +184,10 @@ struct make_zip_iterator_base<::cuda::std::tuple<Its...>>
 //! \see make_tuple
 //! \see tuple
 //! \see get
+/*! \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
+ */
 template <typename IteratorTuple>
 class _CCCL_DECLSPEC_EMPTY_BASES zip_iterator : public detail::make_zip_iterator_base<IteratorTuple>::type
 {
@@ -255,7 +259,7 @@ private:
   template <typename OtherIteratorTuple>
   inline _CCCL_HOST_DEVICE bool equal(const zip_iterator<OtherIteratorTuple>& other) const
   {
-    return get<0>(get_iterator_tuple()) == get<0>(other.get_iterator_tuple());
+    return ::cuda::std::get<0>(get_iterator_tuple()) == ::cuda::std::get<0>(other.get_iterator_tuple());
   }
 
   _CCCL_EXEC_CHECK_DISABLE
@@ -302,7 +306,7 @@ private:
   inline _CCCL_HOST_DEVICE typename super_t::difference_type
   distance_to(const zip_iterator<OtherIteratorTuple>& other) const
   {
-    return get<0>(other.get_iterator_tuple()) - get<0>(get_iterator_tuple());
+    return ::cuda::std::get<0>(other.get_iterator_tuple()) - ::cuda::std::get<0>(get_iterator_tuple());
   }
 
   // The iterator tuple.

@@ -65,11 +65,6 @@ macro(cccl_get_dlpack)
   CPMAddPackage("gh:dmlc/dlpack#v1.2")
 endmacro()
 
-macro(cccl_get_fmt)
-  include("${_cccl_cpm_file}")
-  CPMAddPackage("gh:fmtlib/fmt#11.0.1")
-endmacro()
-
 macro(cccl_get_json)
   include("${_cccl_cpm_file}")
   CPMAddPackage("gh:nlohmann/json@3.12.0")
@@ -87,7 +82,7 @@ endmacro()
 
 set(
   CCCL_NVBENCH_SHA
-  "0c24f0250bf4414ab5ad19709090c6396e76516b"
+  "34f1e2a7eeeeec7bb2965a3ec9667d297b479cfe"
   CACHE STRING
   "SHA/tag to use for CCCL's NVBench."
 )

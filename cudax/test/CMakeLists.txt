@@ -22,7 +22,7 @@ function(cudax_add_catch2_test target_name_var test_name) # ARGN=test sources
     PRIVATE #
       cudax.compiler_interface
       cccl.c2h.main
-      CUDA::cudart
+      CUDA::cudart_static
   )
   target_compile_options(
     ${test_target}
@@ -83,6 +83,10 @@ cudax_add_catch2_test(test_target containers
 
 cudax_add_catch2_test(test_target cuco
     cuco/utility/test_hashers.cu
+)
+
+cudax_add_catch2_test(test_target cuco_hyperloglog ${cudax_target}
+  cuco/hyperloglog/test_hyperloglog.cu
 )
 
 cudax_add_catch2_test(test_target green_context

@@ -59,6 +59,12 @@ THRUST_NAMESPACE_BEGIN
  *
  *  \see pair
  *  \see tuple
+ *
+ *  \deprecated Use cuda::std::tuple_element instead
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 #ifdef _CCCL_DOXYGEN_INVOKED // Provide a fake alias for doxygen
 template <size_t N, class T>
@@ -74,6 +80,12 @@ using ::cuda::std::tuple_element;
  *
  *  \see pair
  *  \see tuple
+ *
+ *  \deprecated Use cuda::std::tuple_size instead
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 #ifdef _CCCL_DOXYGEN_INVOKED // Provide a fake alias for doxygen
 template <class T>
@@ -118,6 +130,12 @@ using ::cuda::std::tuple_size;
  *  \see tuple_element
  *  \see tuple_size
  *  \see tie
+ *
+ *  \deprecated Use cuda::std::tuple instead
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 #ifdef _CCCL_DOXYGEN_INVOKED // Provide a fake alias for doxygen
 template <class... Ts>
