@@ -31,19 +31,26 @@ function(thrust_configure_multiconfig)
       "Generate build configurations that use TBB."
       OFF
     )
+    option(
+      THRUST_MULTICONFIG_ENABLE_SYSTEM_HPX
+      "Generate build configurations that use HPX."
+      OFF
+    )
 
     # Workload:
-    # - `SMALL`: [3 configs] Minimal coverage and validation of each device system against the `CPP` host.
-    # - `MEDIUM`: [6 configs] Cheap extended coverage.
-    # - `LARGE`: [8 configs] Expensive extended coverage. Include all useful build configurations.
-    # - `FULL`: [12 configs] The complete cross product of all possible build configurations.
+    # - `SMALL`: [4 configs] Minimal coverage and validation of each device system against the `CPP` host.
+    # - `MEDIUM`: [8 configs] Cheap extended coverage.
+    # - `LARGE`: [10 configs] Expensive extended coverage. Include all useful build configurations.
+    # - `FULL`: [14 configs] The complete cross product of all possible build configurations.
     #
     # Config   | Workloads | Value      | Expense   | Note
     # ---------|-----------|------------|-----------|-----------------------------
     # CPP/CUDA | F L M S   | Essential  | Expensive | Validates CUDA against CPP
+    # CPP/HPX  | F L M S   | Essential  | Cheap     | Validates HPX against CPP
     # CPP/OMP  | F L M S   | Essential  | Cheap     | Validates OMP against CPP
     # CPP/TBB  | F L M S   | Essential  | Cheap     | Validates TBB against CPP
     # CPP/CPP  | F L M     | Important  | Cheap     | Tests CPP as device
+    # HPX/HPX  | F L M     | Important  | Cheap     | Tests HPX as host
     # OMP/OMP  | F L M     | Important  | Cheap     | Tests OMP as host
     # TBB/TBB  | F L M     | Important  | Cheap     | Tests TBB as host
     # TBB/CUDA | F L       | Important  | Expensive | Validates TBB/CUDA interop
@@ -68,6 +75,7 @@ function(thrust_configure_multiconfig)
       CPP_OMP
       CPP_TBB
       CPP_CUDA
+      CPP_HPX
       CACHE INTERNAL
       "Host/device combos enabled for SMALL workloads."
       FORCE
@@ -78,6 +86,7 @@ function(thrust_configure_multiconfig)
       CPP_CPP
       TBB_TBB
       OMP_OMP
+      HPX_HPX
       CACHE INTERNAL
       "Host/device combos enabled for MEDIUM workloads."
       FORCE
