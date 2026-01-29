@@ -108,7 +108,8 @@ squadDispatch(SpecialRegisters sr, const SquadDesc (&squads)[numSquads], F f, in
     // Leaf
     SquadDesc squad = squads[0];
 
-    if (warpIdxStart <= sr.warpIdx && sr.warpIdx < warpIdxStart + squad.warpCount())
+    if (static_cast<unsigned>(warpIdxStart) <= sr.warpIdx
+        && sr.warpIdx < static_cast<unsigned>(warpIdxStart + squad.warpCount()))
     {
       f(Squad(squad, sr));
     }
@@ -122,7 +123,7 @@ squadDispatch(SpecialRegisters sr, const SquadDesc (&squads)[numSquads], F f, in
     {
       warpIdxStartMid += squads[gi].warpCount();
     }
-    if (sr.warpIdx < warpIdxStartMid)
+    if (sr.warpIdx < static_cast<unsigned>(warpIdxStartMid))
     {
       if constexpr (0 < mid)
       {
