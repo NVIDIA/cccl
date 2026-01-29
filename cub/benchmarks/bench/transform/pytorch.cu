@@ -71,7 +71,7 @@ struct relu_op
   template <typename T>
   _CCCL_API auto operator()(T value) const
   {
-    return static_cast<T>(::cuda::std::max(static_cast<opmath_t>(value), opmath_t{0}));
+    return static_cast<T>(static_cast<opmath_t>(value) > opmath_t{0} ? static_cast<opmath_t>(value) : opmath_t{0});
   }
 };
 BENCHMARK_UNARY(relu);
