@@ -159,13 +159,20 @@ template <class _Tp>
       return overflow_result<_Tp>{
         static_cast<_Tp>(__result_enlarged), __result_enlarged > __max || __result_enlarged < __min};
     }
-    else
+#  if _CCCL_HAS_INT128()
+    else if constexpr (sizeof(_Tp) == sizeof(__int128_t))
     {
       using _Up                = ::cuda::std::make_unsigned_t<_Tp>;
       const auto __uadd_result = ::cuda::__sub_overflow_device(static_cast<_Up>(__lhs), static_cast<_Up>(__rhs));
       const auto __result      = static_cast<_Tp>(__uadd_result.value);
       const auto __overflow    = ((__lhs >= 0) != (__rhs >= 0)) && (__uadd_result.overflow != (__result >= 0));
       return {__result, __overflow};
+    }
+#  endif // _CCCL_HAS_INT128()
+    else
+    {
+      // For 32 and 64 bit types, this seems to be the more efficient path.
+      ::cuda::__sub_overflow_generic_impl(__lhs, __rhs);
     }
   }
 }
