@@ -2,7 +2,7 @@
 // SPDX-FileCopyrightText: Copyright (c) 2014-2018, Bryce Adelstein Lelbach
 // SPDX-FileCopyrightText: Copyright (c) 2001-2015, Housemarque Oy (housemarque.com)
 // SPDX-FileCopyrightText: Copyright (c) 2007-2015, Hartmut Kaiser
-// SPDX-FileCopyrightText: Copyright (c) 2002, Peter Dimov and Multi Media Ltd
+// SPDX-FileCopyrightText: Copyright (c) 2002, Peter Dimov and Multi Media Ltd (`THRUST_CURRENT_FUNCTION`)
 // SPDX-License-Identifier: BSL-1.0
 
 #pragma once
