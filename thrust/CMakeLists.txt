@@ -47,6 +47,7 @@ message(STATUS "CPP system found?  ${THRUST_CPP_FOUND}")
 message(STATUS "CUDA system found? ${THRUST_CUDA_FOUND}")
 message(STATUS "TBB system found?  ${THRUST_TBB_FOUND}")
 message(STATUS "OMP system found?  ${THRUST_OMP_FOUND}")
+message(STATUS "HPX system found?  ${THRUST_HPX_FOUND}")
 
 if (THRUST_ENABLE_HEADER_TESTING)
   include(cmake/ThrustHeaderTesting.cmake)
