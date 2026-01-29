@@ -2771,7 +2771,7 @@ device vector of <cite>int</cite> data elements.</p>
 <dd><p><p>Reduces segments of values, where segments are demarcated by corresponding runs of identical keys.</p>
 <p>This operation computes segmented reductions within <code class="docutils literal notranslate"><span class="pre">d_values_in</span></code> using the specified binary <code class="docutils literal notranslate"><span class="pre">reduction_op</span></code>
 functor. The segments are identified by “runs” of corresponding keys in <cite>d_keys_in</cite>, where runs are maximal
-ranges of consecutive, identical keys. For the <em>i</em><sup>th</sup> run encountered, the first key of the run and
+ranges of consecutive, identical keys. For the <em>i</em><sup>th</sup> run encountered, the last key of the run and
 the corresponding value aggregate of that run are written to <code class="docutils literal notranslate"><span class="pre">d_unique_out[i]</span></code> and <code class="docutils literal notranslate"><span class="pre">d_aggregates_out[i]</span></code>,
 respectively. The total number of runs encountered is written to <code class="docutils literal notranslate"><span class="pre">d_num_runs_out</span></code>.</p>
 <ul class="simple">
