@@ -222,13 +222,13 @@ public:
 //! @brief Deduction guide for construction from complex types.
 _CCCL_TEMPLATE(class _Tp)
 _CCCL_REQUIRES(__is_any_complex_v<_Tp>)
-_CCCL_HOST_DEVICE complex(const _Tp&) -> complex<typename _Tp::value_type>;
+_CCCL_DEDUCTION_GUIDE_EXSPACE complex(const _Tp&) -> complex<typename _Tp::value_type>;
 
 #if _CCCL_STD_VER >= 2020
 //! @brief Deduction guide for construction from a tuple-like object.
 _CCCL_TEMPLATE(class _Tp)
 _CCCL_REQUIRES((!__is_any_complex_v<_Tp>) _CCCL_AND __is_complex_compatible_tuple_like<_Tp>)
-_CCCL_HOST_DEVICE complex(const _Tp&) -> complex<__complex_tuple_like_value_type_t<_Tp>>;
+_CCCL_DEDUCTION_GUIDE_EXSPACE complex(const _Tp&) -> complex<__complex_tuple_like_value_type_t<_Tp>>;
 #endif // _CCCL_STD_VER >= 2020
 
 _CCCL_END_NAMESPACE_CUDA
