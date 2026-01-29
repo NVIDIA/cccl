@@ -62,11 +62,11 @@ template <class _Tp>
   auto __sum = static_cast<_Tp>(static_cast<_Up>(__lhs) + static_cast<_Up>(__rhs));
   if constexpr (::cuda::std::is_signed_v<_Tp>)
   {
-    return overflow_result<_Tp>{__sum, (__sum < __lhs) == (__rhs >= _Tp{0})};
+    return {__sum, (__sum < __lhs) == (__rhs >= _Tp{0})};
   }
   else
   {
-    return overflow_result<_Tp>{__sum, __sum < __lhs};
+    return {__sum, __sum < __lhs};
   }
 }
 
@@ -94,7 +94,7 @@ template <class _Tp>
           "addc.u32 %1, 0, 0;"
           : "=r"(__result), "=r"(__overflow)
           : "r"(__lhs), "r"(__rhs));
-      return overflow_result<_Tp>{__result, static_cast<bool>(__overflow)};
+      return {__result, static_cast<bool>(__overflow)};
     }
     else if constexpr (sizeof(_Tp) == sizeof(uint64_t))
     {
@@ -104,7 +104,7 @@ template <class _Tp>
           "addc.u32 %1, 0, 0;"
           : "=l"(__result), "=r"(__overflow)
           : "l"(__lhs), "l"(__rhs));
-      return overflow_result<_Tp>{__result, static_cast<bool>(__overflow)};
+      return {__result, static_cast<bool>(__overflow)};
     }
 #  if _CCCL_HAS_INT128()
     else if constexpr (sizeof(_Tp) == sizeof(__uint128_t))
@@ -120,8 +120,7 @@ template <class _Tp>
             "l"(static_cast<uint64_t>(__lhs)),
             "l"(static_cast<uint64_t>(__rhs >> 64)),
             "l"(static_cast<uint64_t>(__rhs)));
-      return overflow_result<_Tp>{
-        (static_cast<__uint128_t>(__result_hi) << 64) | __result_lo, static_cast<bool>(__overflow)};
+      return {(static_cast<__uint128_t>(__result_hi) << 64) | __result_lo, static_cast<bool>(__overflow)};
     }
 #  endif // _CCCL_HAS_INT128()
     else
@@ -138,8 +137,7 @@ template <class _Tp>
       constexpr auto __max         = int32_t{::cuda::std::numeric_limits<_Tp>::max()};
       constexpr auto __min         = int32_t{::cuda::std::numeric_limits<_Tp>::min()};
       const auto __result_enlarged = int32_t{__lhs} + int32_t{__rhs};
-      return overflow_result<_Tp>{
-        static_cast<_Tp>(__result_enlarged), __result_enlarged > __max || __result_enlarged < __min};
+      return {static_cast<_Tp>(__result_enlarged), __result_enlarged > __max || __result_enlarged < __min};
     }
 #  if _CCCL_HAS_INT128()
     else if constexpr (sizeof(_Tp) == sizeof(__int128_t))
