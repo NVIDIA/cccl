@@ -32,12 +32,11 @@
 #include <thrust/detail/allocator/value_initialize_range.h>
 #include <thrust/detail/contiguous_storage.h>
 
+#include <cuda/std/__host_stdlib/stdexcept>
 #include <cuda/std/__utility/move.h>
 #include <cuda/std/__utility/swap.h>
 
 #include <nv/target>
-
-#include <stdexcept> // for std::runtime_error
 
 THRUST_NAMESPACE_BEGIN
 
