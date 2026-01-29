@@ -111,7 +111,7 @@ struct reduce_tuning : cub::detail::reduce::tuning<reduce_tuning<BlockThreads>>
   {
     const auto policy = cub::detail::reduce::agent_reduce_policy{
       BlockThreads, 1, 1, cub::BLOCK_REDUCE_WARP_REDUCTIONS, cub::LOAD_DEFAULT};
-    return {policy, policy, policy, policy};
+    return {policy, policy, policy};
   }
 };
 
