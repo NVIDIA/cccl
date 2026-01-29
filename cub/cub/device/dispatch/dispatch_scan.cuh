@@ -437,7 +437,7 @@ struct DispatchScan
     }
     // number of stages to have an even workload across all SMs (improves small problem sizes), assuming 1 CTA per SM
     // +1 since it tends to improve performance
-    const int max_stages_for_even_workload =
+    [[maybe_unused]] const int max_stages_for_even_workload =
       ::cuda::ceil_div(num_items, static_cast<OffsetT>(sm_count * WarpspeedPolicy::tile_size)) + 1;
 
     // Maximum dynamic shared memory size that we can use for temporary storage.
