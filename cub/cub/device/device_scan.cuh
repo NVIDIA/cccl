@@ -174,18 +174,20 @@ struct DeviceScan
                                                     cub::detail::it_value_t<InputIteratorT>,
                                                     typename InitValueT::value_type>>;
 
-    // static assert to reject `run_to_run` determinism if `accum_t` is not integral or op type is not well-known
-    static_assert(!(!::cuda::std::is_same_v<requested_determinism_t, ::cuda::execution::determinism::not_guaranteed_t>
-                    && (!::cuda::std::is_integral_v<accum_t> || !detail::is_cuda_binary_operator<ScanOpT>) ),
-                  "run_to_run or gpu_to_gpu is only supported for integral types with known operators");
+    constexpr bool is_determinism_required =
+      !::cuda::std::is_same_v<requested_determinism_t, ::cuda::execution::determinism::not_guaranteed_t>;
+    constexpr bool is_safe_integral_op =
+      ::cuda::std::is_integral_v<accum_t> && detail::is_cuda_binary_operator<ScanOpT>;
 
-    using determinism_t = ::cuda::execution::determinism::not_guaranteed_t;
+    // Logic: If determinism is required, we must have a safe integral operator.
+    static_assert(!is_determinism_required || is_safe_integral_op,
+                  "run_to_run or gpu_to_gpu is only supported for integral types with known operators");
 
     // Dispatch with environment - handles all boilerplate
     return detail::dispatch_with_env(env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, auto stream) {
       using tuning_t = decltype(tuning);
       return scan_impl_determinism<tuning_t>(
-        storage, bytes, d_in, d_out, scan_op, init, num_items, determinism_t{}, stream);
+        storage, bytes, d_in, d_out, scan_op, init, num_items, requested_determinism_t{}, stream);
     });
   }
   //! @endcond
