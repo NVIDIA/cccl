@@ -32,42 +32,9 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD_EXECUTION
 
 enum class __pstl_algorithm
 {
-  // The find_if family
-  __find,
-  __find_if,
-  __any_of,
-  __all_of,
-  __none_of,
-  __is_partitioned,
-
-  // merge family
-  // non implemented
-
-  // sort family
-  __sort,
-
-  // for_each family
   __for_each_n,
-  __fill,
-  __fill_n,
-  __replace,
-  __replace_if,
-  __generate,
-  __generate_n,
-
-  // transform_reduce and transform_reduce_binary family
-  __count_if,
-  __count,
-  __equal,
   __reduce,
-
-  // transform and transform_binary family
-  __replace_copy_if,
-  __replace_copy,
-  __move,
-  __copy,
-  __copy_n,
-  __rotate_copy,
+  __transform,
 };
 
 //! @brief tag type to indicate that we cannot dispatch to a parallel algorithm and should run the algorithm serially
