@@ -292,6 +292,11 @@ __device__ {1} operator{2}(const {3} & lhs, const {3} & rhs)
   template <typename, typename... Args>
   static cuda::std::optional<specialization> special(cccl_op_t operation, cccl_type_info ret, Args... arguments)
   {
+    if (ret.type == cccl_type_enum::CCCL_STORAGE || ((arguments.type == cccl_type_enum::CCCL_STORAGE) || ...))
+    {
+      return cuda::std::nullopt;
+    }
+
     auto entry = well_known_operation_description(operation.type);
     if (!entry)
     {
@@ -320,6 +325,15 @@ __device__ {1} operator{2}(const {3} & lhs, const {3} & rhs)
 
     return specialization{std::format(entry->name, cccl_type_enum_to_name(type_info_table[1]).c_str()), aux};
   }
+
+  template <typename Tag, typename RetStorageT, typename... ArgStorageTs>
+  static cuda::std::optional<specialization>
+  special(cccl_op_t operation,
+          tagged_arg<RetStorageT, cccl_type_info> ret,
+          tagged_arg<ArgStorageTs, cccl_type_info>... arguments)
+  {
+    return special<Tag>(operation, ret.value, arguments.value...);
+  }
 #endif
 };
 
@@ -335,6 +349,12 @@ struct binary_user_operation_traits
   {
     return user_operation_traits::special<Tag>(operation, arg_t, arg_t, arg_t);
   }
+
+  template <typename Tag, typename StorageT>
+  static cuda::std::optional<specialization> special(cccl_op_t operation, tagged_arg<StorageT, cccl_type_info> arg_t)
+  {
+    return user_operation_traits::special<Tag>(operation, arg_t.value, arg_t.value, arg_t.value);
+  }
 #endif
 };
 
@@ -349,6 +369,12 @@ struct binary_user_predicate_traits
   static cuda::std::optional<specialization> special(cccl_op_t operation, cccl_type_info arg_t)
   {
     return user_operation_traits::special<Tag>(operation, arg_t, arg_t, arg_t);
+  }
+
+  template <typename Tag, typename StorageT>
+  static cuda::std::optional<specialization> special(cccl_op_t operation, tagged_arg<StorageT, cccl_type_info> arg_t)
+  {
+    return user_operation_traits::special<Tag>(operation, arg_t.value, arg_t.value, arg_t.value);
   }
 #endif
 };

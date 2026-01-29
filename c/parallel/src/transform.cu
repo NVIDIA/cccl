@@ -20,16 +20,19 @@
 #include <cuda/std/memory>
 
 #include <format>
+#include <sstream>
 #include <string>
 #include <type_traits>
 #include <vector>
 
 #include <stdio.h> // printf
 
+#include "jit_templates/templates/input_iterator.h"
+#include "jit_templates/templates/operation.h"
+#include "jit_templates/templates/output_iterator.h"
+#include "jit_templates/traits.h"
 #include <cccl/c/transform.h>
 #include <cccl/c/types.h> // cccl_type_info
-#include <kernels/iterators.h>
-#include <kernels/operators.h>
 #include <nvrtc/command_list.h>
 #include <nvrtc/ltoir_list_appender.h>
 #include <util/build_utils.h>
@@ -38,48 +41,34 @@
 #include <util/indirect_arg.h>
 #include <util/types.h>
 
-struct op_wrapper;
 struct device_transform_policy;
 
 using OffsetT = ptrdiff_t;
 static_assert(std::is_same_v<cub::detail::choose_signed_offset_t<OffsetT>, OffsetT>,
               "OffsetT must be signed int32 or int64");
 
+struct unary_transform_input_iterator_tag;
+struct unary_transform_output_iterator_tag;
+struct unary_transform_operation_tag;
+struct binary_transform_input1_iterator_tag;
+struct binary_transform_input2_iterator_tag;
+struct binary_transform_output_iterator_tag;
+struct binary_transform_operation_tag;
 struct input_storage_t;
+struct output_storage_t;
 struct input1_storage_t;
 struct input2_storage_t;
-struct output_storage_t;
 
 namespace transform
 {
-constexpr auto input_iterator_name  = "input_iterator_t";
-constexpr auto input1_iterator_name = "input1_iterator_t";
-constexpr auto input2_iterator_name = "input2_iterator_t";
-constexpr auto output_iterator_name = "output_iterator_t";
-
-template <typename StorageT>
-const std::string get_iterator_name(cccl_iterator_t iterator, const std::string& name)
-{
-  if (iterator.type == cccl_iterator_kind_t::CCCL_POINTER)
-  {
-    return cccl_type_enum_to_name<StorageT>(iterator.value_type.type, true);
-  }
-  return name;
-}
-
-std::string get_kernel_name(cccl_iterator_t input_it, cccl_iterator_t output_it, cccl_op_t /*op*/)
+std::string
+get_kernel_name(std::string_view input_iterator_t, std::string_view output_iterator_t, std::string_view transform_op_t)
 {
   std::string chained_policy_t;
   check(cccl_type_name_from_nvrtc<device_transform_policy>(&chained_policy_t));
 
-  const std::string input_iterator_t  = get_iterator_name<input_storage_t>(input_it, input_iterator_name);
-  const std::string output_iterator_t = get_iterator_name<output_storage_t>(output_it, output_iterator_name);
-
   std::string offset_t;
   check(cccl_type_name_from_nvrtc<OffsetT>(&offset_t));
-
-  std::string transform_op_t;
-  check(cccl_type_name_from_nvrtc<op_wrapper>(&transform_op_t));
 
   return std::format(
     "cub::detail::transform::transform_kernel<{0}, {1}, cub::detail::transform::always_true_predicate, {2}, {3}, {4}>",
@@ -90,21 +79,16 @@ std::string get_kernel_name(cccl_iterator_t input_it, cccl_iterator_t output_it,
     input_iterator_t); // 4
 }
 
-std::string
-get_kernel_name(cccl_iterator_t input1_it, cccl_iterator_t input2_it, cccl_iterator_t output_it, cccl_op_t /*op*/)
+std::string get_kernel_name(std::string_view input1_iterator_t,
+                            std::string_view input2_iterator_t,
+                            std::string_view output_iterator_t,
+                            std::string_view transform_op_t)
 {
   std::string chained_policy_t;
   check(cccl_type_name_from_nvrtc<device_transform_policy>(&chained_policy_t));
 
-  const std::string input1_iterator_t = get_iterator_name<input1_storage_t>(input1_it, input1_iterator_name);
-  const std::string input2_iterator_t = get_iterator_name<input2_storage_t>(input2_it, input2_iterator_name);
-  const std::string output_iterator_t = get_iterator_name<output_storage_t>(output_it, output_iterator_name);
-
   std::string offset_t;
   check(cccl_type_name_from_nvrtc<OffsetT>(&offset_t));
-
-  std::string transform_op_t;
-  check(cccl_type_name_from_nvrtc<op_wrapper>(&transform_op_t));
 
   return std::format(
     "cub::detail::transform::transform_kernel<{0}, {1}, cub::detail::transform::always_true_predicate, {2}, {3}, {4}, "
@@ -227,14 +211,19 @@ try
 {
   const char* name = "test";
 
-  const auto input_it_value_t  = cccl_type_enum_to_name<input_storage_t>(input_it.value_type.type);
-  const auto output_it_value_t = cccl_type_enum_to_name<output_storage_t>(output_it.value_type.type);
-  const auto offset_t          = cccl_type_enum_to_name(cccl_type_enum::CCCL_INT64);
-  const std::string input_iterator_src =
-    make_kernel_input_iterator(offset_t, transform::input_iterator_name, input_it_value_t, input_it);
-  const std::string output_iterator_src =
-    make_kernel_output_iterator(offset_t, transform::output_iterator_name, output_it_value_t, output_it);
-  const std::string op_src = make_kernel_user_unary_operator(input_it_value_t, output_it_value_t, op);
+  const auto [input_iterator_name, input_iterator_src] =
+    get_specialization<unary_transform_input_iterator_tag, input_iterator_traits>(
+      template_id<input_iterator_traits>(), tagged_arg<input_storage_t, cccl_iterator_t>{input_it});
+  const auto [output_iterator_name, output_iterator_src] =
+    get_specialization<unary_transform_output_iterator_tag, output_iterator_traits>(
+      template_id<output_iterator_traits>(),
+      tagged_arg<output_storage_t, cccl_iterator_t>{output_it},
+      tagged_arg<output_storage_t, cccl_type_info>{output_it.value_type});
+  const auto [op_name, op_src] = get_specialization<unary_transform_operation_tag, user_operation_traits>(
+    template_id<user_operation_traits>(),
+    op,
+    tagged_arg<output_storage_t, cccl_type_info>{output_it.value_type},
+    tagged_arg<input_storage_t, cccl_type_info>{input_it.value_type});
 
   const auto inputs     = cuda::std::array<cub::detail::iterator_info, 1>{transform::make_iterator_info(input_it)};
   const auto output     = transform::make_iterator_info(output_it);
@@ -246,36 +235,38 @@ try
 
   const auto policy_hub_expr = std::format(
     "cub::detail::transform::policy_selector_from_types<false, true, ::cuda::std::tuple<{}>, {}>",
-    transform::get_iterator_name<input_storage_t>(input_it, transform::input_iterator_name),
-    transform::get_iterator_name<output_storage_t>(output_it, transform::output_iterator_name));
+    input_iterator_name,
+    output_iterator_name);
 
   std::string final_src = std::format(
     R"XXX(
 #include <cub/device/dispatch/tuning/tuning_transform.cuh>
 #include <cub/device/dispatch/kernels/kernel_transform.cuh>
-struct __align__({1}) input_storage_t {{
-  char data[{0}];
+{0}
+struct __align__({2}) input_storage_t {{
+  char data[{1}];
 }};
-struct __align__({3}) output_storage_t {{
-  char data[{2}];
+struct __align__({4}) output_storage_t {{
+  char data[{3}];
 }};
-{4}
 {5}
 {6}
-using device_transform_policy = {7};
+{7}
+using device_transform_policy = {8};
 using namespace cub;
 using namespace cub::detail::transform;
-static_assert(device_transform_policy()(::cuda::arch_id{{CUB_PTX_ARCH / 10}}) == {8}, "Host generated and JIT compiled policy mismatch");
+static_assert(device_transform_policy()(::cuda::arch_id{{CUB_PTX_ARCH / 10}}) == {9}, "Host generated and JIT compiled policy mismatch");
 )XXX",
-    input_it.value_type.size, // 0
-    input_it.value_type.alignment, // 1
-    output_it.value_type.size, // 2
-    output_it.value_type.alignment, // 3
-    input_iterator_src, // 4
-    output_iterator_src, // 5
-    op_src, // 6
-    policy_hub_expr, // 7
-    policy_sel_str.view()); // 8
+    jit_template_header_contents, // 0
+    input_it.value_type.size, // 1
+    input_it.value_type.alignment, // 2
+    output_it.value_type.size, // 3
+    output_it.value_type.alignment, // 4
+    input_iterator_src, // 5
+    output_iterator_src, // 6
+    op_src, // 7
+    policy_hub_expr, // 8
+    policy_sel_str.view()); // 9
 
 #if false // CCCL_DEBUGGING_SWITCH
     fflush(stderr);
@@ -283,7 +274,7 @@ static_assert(device_transform_policy()(::cuda::arch_id{{CUB_PTX_ARCH / 10}}) ==
     fflush(stdout);
 #endif
 
-  std::string kernel_name = transform::get_kernel_name(input_it, output_it, op);
+  std::string kernel_name = transform::get_kernel_name(input_iterator_name, output_iterator_name, op_name);
   std::string kernel_lowered_name;
 
   const std::string arch = std::format("-arch=sm_{0}{1}", cc_major, cc_minor);
@@ -371,7 +362,7 @@ CUresult cccl_device_unary_transform(
       indirect_iterator_t{d_out},
       static_cast<OffsetT>(num_items),
       transform::cdt::always_true_predicate{},
-      op,
+      indirect_arg_t{op},
       stream,
       *static_cast<cub::detail::transform::policy_selector<1>*>(build.runtime_policy),
       transform::transform_kernel_source<1>{build, {transform::make_iterator_info(d_in)}},
@@ -409,20 +400,23 @@ try
 {
   const char* name = "test";
 
-  const auto input1_it_value_t = cccl_type_enum_to_name<input1_storage_t>(input1_it.value_type.type);
-  const auto input2_it_value_t = cccl_type_enum_to_name<input2_storage_t>(input2_it.value_type.type);
-
-  const auto output_it_value_t = cccl_type_enum_to_name<output_storage_t>(output_it.value_type.type);
-  const auto offset_t          = cccl_type_enum_to_name(cccl_type_enum::CCCL_INT64);
-  const std::string input1_iterator_src =
-    make_kernel_input_iterator(offset_t, transform::input1_iterator_name, input1_it_value_t, input1_it);
-  const std::string input2_iterator_src =
-    make_kernel_input_iterator(offset_t, transform::input2_iterator_name, input2_it_value_t, input2_it);
-
-  const std::string output_iterator_src =
-    make_kernel_output_iterator(offset_t, transform::output_iterator_name, output_it_value_t, output_it);
-  const std::string op_src =
-    make_kernel_user_binary_operator(input1_it_value_t, input2_it_value_t, output_it_value_t, op);
+  const auto [input1_iterator_name, input1_iterator_src] =
+    get_specialization<binary_transform_input1_iterator_tag, input_iterator_traits>(
+      template_id<input_iterator_traits>(), tagged_arg<input1_storage_t, cccl_iterator_t>{input1_it});
+  const auto [input2_iterator_name, input2_iterator_src] =
+    get_specialization<binary_transform_input2_iterator_tag, input_iterator_traits>(
+      template_id<input_iterator_traits>(), tagged_arg<input2_storage_t, cccl_iterator_t>{input2_it});
+  const auto [output_iterator_name, output_iterator_src] =
+    get_specialization<binary_transform_output_iterator_tag, output_iterator_traits>(
+      template_id<output_iterator_traits>(),
+      tagged_arg<output_storage_t, cccl_iterator_t>{output_it},
+      tagged_arg<output_storage_t, cccl_type_info>{output_it.value_type});
+  const auto [op_name, op_src] = get_specialization<binary_transform_operation_tag, user_operation_traits>(
+    template_id<user_operation_traits>(),
+    op,
+    tagged_arg<output_storage_t, cccl_type_info>{output_it.value_type},
+    tagged_arg<input1_storage_t, cccl_type_info>{input1_it.value_type},
+    tagged_arg<input2_storage_t, cccl_type_info>{input2_it.value_type});
 
   const auto inputs = cuda::std::array<cub::detail::iterator_info, 2>{
     transform::make_iterator_info(input1_it), transform::make_iterator_info(input2_it)};
@@ -435,44 +429,46 @@ try
 
   const auto policy_hub_expr = std::format(
     "cub::detail::transform::policy_selector_from_types<false, true, ::cuda::std::tuple<{0}, {1}>, {2}>",
-    transform::get_iterator_name<input1_storage_t>(input1_it, transform::input1_iterator_name),
-    transform::get_iterator_name<input2_storage_t>(input2_it, transform::input2_iterator_name),
-    transform::get_iterator_name<output_storage_t>(output_it, transform::output_iterator_name));
+    input1_iterator_name,
+    input2_iterator_name,
+    output_iterator_name);
 
   std::string final_src = std::format(
     R"XXX(
+#include <cub/device/dispatch/tuning/tuning_transform.cuh>
 #include <cub/device/dispatch/kernels/kernel_transform.cuh>
-struct __align__({1}) input1_storage_t {{
-  char data[{0}];
+{0}
+struct __align__({2}) input1_storage_t {{
+  char data[{1}];
 }};
-struct __align__({3}) input2_storage_t {{
-  char data[{2}];
+struct __align__({4}) input2_storage_t {{
+  char data[{3}];
 }};
-
-struct __align__({5}) output_storage_t {{
-  char data[{4}];
+struct __align__({6}) output_storage_t {{
+  char data[{5}];
 }};
-{6}
 {7}
 {8}
 {9}
-using device_transform_policy = {10};
+{10}
+using device_transform_policy = {11};
 using namespace cub;
 using namespace cub::detail::transform;
-static_assert(device_transform_policy()(::cuda::arch_id{{CUB_PTX_ARCH / 10}}) == {11}, "Host generated and JIT compiled policy mismatch");
+static_assert(device_transform_policy()(::cuda::arch_id{{CUB_PTX_ARCH / 10}}) == {12}, "Host generated and JIT compiled policy mismatch");
 )XXX",
-    input1_it.value_type.size, // 0
-    input1_it.value_type.alignment, // 1
-    input2_it.value_type.size, // 2
-    input2_it.value_type.alignment, // 3
-    output_it.value_type.size, // 4
-    output_it.value_type.alignment, // 5
-    input1_iterator_src, // 6
-    input2_iterator_src, // 7
-    output_iterator_src, // 8
-    op_src, // 9
-    policy_hub_expr, // 10
-    policy_sel_str.view()); // 11
+    jit_template_header_contents, // 0
+    input1_it.value_type.size, // 1
+    input1_it.value_type.alignment, // 2
+    input2_it.value_type.size, // 3
+    input2_it.value_type.alignment, // 4
+    output_it.value_type.size, // 5
+    output_it.value_type.alignment, // 6
+    input1_iterator_src, // 7
+    input2_iterator_src, // 8
+    output_iterator_src, // 9
+    op_src, // 10
+    policy_hub_expr, // 11
+    policy_sel_str.view()); // 12
 
 #if false // CCCL_DEBUGGING_SWITCH
     fflush(stderr);
@@ -480,7 +476,8 @@ static_assert(device_transform_policy()(::cuda::arch_id{{CUB_PTX_ARCH / 10}}) ==
     fflush(stdout);
 #endif
 
-  std::string kernel_name = transform::get_kernel_name(input1_it, input2_it, output_it, op);
+  std::string kernel_name =
+    transform::get_kernel_name(input1_iterator_name, input2_iterator_name, output_iterator_name, op_name);
   std::string kernel_lowered_name;
 
   const std::string arch = std::format("-arch=sm_{0}{1}", cc_major, cc_minor);
@@ -568,7 +565,7 @@ CUresult cccl_device_binary_transform(
       indirect_iterator_t{d_out},
       static_cast<OffsetT>(num_items),
       transform::cdt::always_true_predicate{},
-      op,
+      indirect_arg_t{op},
       stream,
       *static_cast<cub::detail::transform::policy_selector<2>*>(build.runtime_policy),
       transform::transform_kernel_source<2>{
