@@ -144,7 +144,7 @@ template <class _Tp>
 #  endif // _CCCL_HAS_INT128()
     else
     {
-      ::cuda::__sub_overflow_generic_impl(__lhs, __rhs); // do not use builtin functions
+      return ::cuda::__sub_overflow_generic_impl(__lhs, __rhs);
     }
   }
   else
@@ -172,7 +172,7 @@ template <class _Tp>
     else
     {
       // For 32 and 64 bit types, this seems to be the more efficient path.
-      ::cuda::__sub_overflow_generic_impl(__lhs, __rhs);
+      return ::cuda::__sub_overflow_generic_impl(__lhs, __rhs);
     }
   }
 }
