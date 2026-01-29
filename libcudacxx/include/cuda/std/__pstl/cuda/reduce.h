@@ -31,12 +31,16 @@ _CCCL_DIAG_SUPPRESS_CLANG("-Wshadow")
 _CCCL_DIAG_POP
 
 #  include <cuda/__execution/policy.h>
+#  include <cuda/__functional/call_or.h>
 #  include <cuda/__iterator/tabulate_output_iterator.h>
+#  include <cuda/__memory_pool/device_memory_pool.h>
+#  include <cuda/__memory_resource/get_memory_resource.h>
 #  include <cuda/__runtime/api_wrapper.h>
+#  include <cuda/__stream/get_stream.h>
+#  include <cuda/__stream/stream_ref.h>
 #  include <cuda/std/__exception/cuda_error.h>
 #  include <cuda/std/__execution/env.h>
 #  include <cuda/std/__execution/policy.h>
-#  include <cuda/std/__functional/invoke.h>
 #  include <cuda/std/__iterator/distance.h>
 #  include <cuda/std/__iterator/iterator_traits.h>
 #  include <cuda/std/__memory/addressof.h>
@@ -59,7 +63,7 @@ template <>
 struct __pstl_dispatch<__pstl_algorithm::__reduce, __execution_backend::__cuda>
 {
   //! Ensures we properly deallocate the memory allocated for the result
-  template <class _Tp, class _AccumT>
+  template <class _Tp, class _AccumT, class _Resource>
   struct __allocation_guard
   {
     //! This helper struct ensures that we can properly assign types with a nontrivial assignment operator
@@ -78,21 +82,22 @@ struct __pstl_dispatch<__pstl_algorithm::__reduce, __execution_backend::__cuda>
       }
     };
 
-    void* __ptr_;
+    ::cuda::stream_ref __stream_;
+    _Resource& __resource_;
+    _Tp* __ptr_;
+    size_t __num_bytes_;
 
-    _CCCL_HOST_API __allocation_guard(size_t __num_bytes)
-        : __ptr_(nullptr)
-    {
-      // Add the temporary storage from DeviceReduce to the allocation
-      _CCCL_TRY_CUDA_API(::cudaMalloc,
-                         "__pstl_cuda_reduce: allocation failed",
-                         reinterpret_cast<void**>(&__ptr_),
-                         sizeof(_Tp) + __num_bytes);
-    }
+    _CCCL_HOST_API __allocation_guard(::cuda::stream_ref __stream, _Resource& __resource, size_t __num_bytes)
+        : __stream_(__stream)
+        , __resource_(__resource)
+        , __ptr_(static_cast<_Tp*>(__resource_.allocate(__stream_, sizeof(_Tp) + __num_bytes, alignof(_Tp))))
+        , __num_bytes_(sizeof(_Tp) + __num_bytes)
+    {}
 
     _CCCL_HOST_API ~__allocation_guard()
     {
-      _CCCL_ASSERT_CUDA_API(::cudaFree, "__pstl_cuda_reduce: deallocate failed", __ptr_);
+      __resource_.deallocate(__stream_, __ptr_, __num_bytes_, alignof(_Tp));
+      __stream_.sync();
     }
 
     [[nodiscard]] _CCCL_HOST_API auto __get_result_iter()
@@ -109,7 +114,7 @@ struct __pstl_dispatch<__pstl_algorithm::__reduce, __execution_backend::__cuda>
 
     [[nodiscard]] _CCCL_HOST_API void* __get_temp_storage()
     {
-      return static_cast<void*>(static_cast<unsigned char*>(__ptr_) + sizeof(_Tp));
+      return static_cast<void*>(reinterpret_cast<unsigned char*>(__ptr_) + sizeof(_Tp));
     }
   };
 
@@ -131,7 +136,10 @@ struct __pstl_dispatch<__pstl_algorithm::__reduce, __execution_backend::__cuda>
         __temp_storage, __num_bytes, __first, static_cast<_Tp*>(nullptr), __num_items, __func, __init);
 
       // Allocate memory for result
-      __allocation_guard<_Tp, _AccumT> __guard{__num_bytes};
+      auto __stream   = ::cuda::__call_or(::cuda::get_stream, ::cuda::stream_ref{cudaStreamPerThread}, __policy);
+      auto __resource = ::cuda::__call_or(
+        ::cuda::mr::get_memory_resource, ::cuda::device_default_memory_pool(__stream.device()), __policy);
+      __allocation_guard<_Tp, _AccumT, decltype(__resource)> __guard{__stream, __resource, __num_bytes};
 
       // Run the reduction
       ::cub::DeviceReduce::Reduce(
@@ -141,16 +149,18 @@ struct __pstl_dispatch<__pstl_algorithm::__reduce, __execution_backend::__cuda>
         __guard.__get_result_iter(),
         __num_items,
         ::cuda::std::move(__func),
-        ::cuda::std::move(__init));
+        ::cuda::std::move(__init),
+        __stream.get());
 
       // Copy the result back from storage
       _CCCL_TRY_CUDA_API(
-        ::cudaMemcpy,
+        ::cudaMemcpyAsync,
         "__pstl_cuda_reduce: copy of result from device to host failed",
         ::cuda::std::addressof(__ret),
         __guard.__ptr_,
         sizeof(_Tp),
-        ::cudaMemcpyDeviceToHost);
+        ::cudaMemcpyDefault,
+        __stream.get());
     }
 
     return __ret;
