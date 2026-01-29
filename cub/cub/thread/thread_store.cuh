@@ -21,6 +21,7 @@
 #include <cub/util_type.cuh>
 
 #include <cuda/std/__iterator/concepts.h>
+#include <cuda/std/__memory/pointer_traits.h>
 #include <cuda/std/__type_traits/integral_constant.h>
 
 CUB_NAMESPACE_BEGIN
