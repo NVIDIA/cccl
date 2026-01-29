@@ -24,6 +24,6 @@ foreach (thrust_target IN LISTS THRUST_TARGETS)
     PRIVATE "${Thrust_SOURCE_DIR}/testing"
   )
   if ("CUDA" STREQUAL "${config_device}")
-    thrust_configure_cuda_target(${framework_target} RDC ${THRUST_FORCE_RDC})
+    cccl_set_rdc(${framework_target} ${THRUST_FORCE_RDC})
   endif()
 endforeach()

@@ -117,7 +117,7 @@ function(
       add_library(${config_c2h_target} INTERFACE)
       cccl_configure_target(${config_c2h_target})
       cccl_ensure_metatargets(${config_c2h_target})
-      cub_configure_cuda_target(${config_c2h_target} RDC ${cdp_val})
+      cccl_set_rdc(${config_c2h_target} ${cdp_val})
       target_include_directories(
         ${config_c2h_target}
         INTERFACE "${CUB_SOURCE_DIR}/test"
@@ -318,7 +318,7 @@ foreach (test_src IN LISTS test_srcs)
 
     # Only one version of this test.
     cub_add_test(test_target ${test_name} "${variant_suffix}" "${test_src}" ${launcher})
-    cub_configure_cuda_target(${test_target} RDC ${CUB_FORCE_RDC})
+    cccl_set_rdc(${test_target} ${CUB_FORCE_RDC})
   else() # has variants:
     cccl_log_variant_params(
       "${test_name}"
@@ -377,7 +377,7 @@ foreach (test_src IN LISTS test_srcs)
       #
       # Tests that explicitly request no cdp (lid_0 label) should never enable
       # RDC.
-      cub_configure_cuda_target(${test_target} RDC ${cdp_val})
+      cccl_set_rdc(${test_target} ${cdp_val})
     endforeach() # Variant
   endif() # Has variants
 endforeach() # Source file
