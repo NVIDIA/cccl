@@ -52,7 +52,7 @@ C2H_TEST("cuda::std::for_each_n", "[parallel algorithm]")
 
   SECTION("with provided stream")
   {
-    ::cuda::stream stream{::cuda::device_ref{0}};
+    cuda::stream stream{cuda::device_ref{0}};
     thrust::device_vector<bool> res(size, false);
     mark_present_for_each fn{thrust::raw_pointer_cast(res.data())};
 

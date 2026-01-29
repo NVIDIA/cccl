@@ -11,7 +11,7 @@ endif()
 if (NOT DEFINED CMAKE_CUDA_ARCHITECTURES)
   message(
     FATAL_ERROR
-    "CMAKE_CUDA_ARCHITECTURES must be set to build PSTL benchmarks."
+    "CMAKE_CUDA_ARCHITECTURES must be set to build libcu++ benchmarks."
   )
 endif()
 

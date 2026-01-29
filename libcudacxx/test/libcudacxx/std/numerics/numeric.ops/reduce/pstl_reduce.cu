@@ -37,11 +37,11 @@ inline constexpr int size = 100;
 
 C2H_TEST("cuda::std::reduce(Iter, Iter)", "[parallel algorithm]")
 {
+  thrust::device_vector<int> data(size);
+  thrust::sequence(data.begin(), data.end(), 1);
+
   SECTION("with default stream")
   {
-    thrust::device_vector<int> data(size);
-    thrust::sequence(data.begin(), data.end(), 1);
-
     const auto policy  = cuda::execution::__cub_par_unseq;
     decltype(auto) res = cuda::std::reduce(policy, data.begin(), data.end());
 #if !TEST_CUDA_COMPILER(NVCC, <, 12, 5)
@@ -54,10 +54,7 @@ C2H_TEST("cuda::std::reduce(Iter, Iter)", "[parallel algorithm]")
 
   SECTION("with provided stream")
   {
-    thrust::device_vector<int> data(size);
-    thrust::sequence(data.begin(), data.end(), 1);
-
-    ::cuda::stream stream{::cuda::device_ref{0}};
+    cuda::stream stream{cuda::device_ref{0}};
     const auto policy  = cuda::execution::__cub_par_unseq.with_stream(stream);
     decltype(auto) res = cuda::std::reduce(policy, data.begin(), data.end());
 #if !TEST_CUDA_COMPILER(NVCC, <, 12, 5)
@@ -71,11 +68,11 @@ C2H_TEST("cuda::std::reduce(Iter, Iter)", "[parallel algorithm]")
 
 C2H_TEST("cuda::std::reduce(Iter, Iter, Tp)", "[parallel algorithm]")
 {
+  thrust::device_vector<int> data(size);
+  thrust::sequence(data.begin(), data.end(), 1);
+
   SECTION("with default stream")
   {
-    thrust::device_vector<int> data(size);
-    thrust::sequence(data.begin(), data.end(), 1);
-
     const auto policy  = cuda::execution::__cub_par_unseq;
     decltype(auto) res = cuda::std::reduce(policy, data.begin(), data.end(), 42);
 #if !TEST_CUDA_COMPILER(NVCC, <, 12, 5)
@@ -88,10 +85,7 @@ C2H_TEST("cuda::std::reduce(Iter, Iter, Tp)", "[parallel algorithm]")
 
   SECTION("with provided stream")
   {
-    thrust::device_vector<int> data(size);
-    thrust::sequence(data.begin(), data.end(), 1);
-
-    ::cuda::stream stream{::cuda::device_ref{0}};
+    cuda::stream stream{cuda::device_ref{0}};
     const auto policy  = cuda::execution::__cub_par_unseq.with_stream(stream);
     decltype(auto) res = cuda::std::reduce(policy, data.begin(), data.end(), 42);
 #if !TEST_CUDA_COMPILER(NVCC, <, 12, 5)
@@ -104,9 +98,6 @@ C2H_TEST("cuda::std::reduce(Iter, Iter, Tp)", "[parallel algorithm]")
 
   SECTION("with provided memory_resource")
   {
-    thrust::device_vector<int> data(size);
-    thrust::sequence(data.begin(), data.end(), 1);
-
     cuda::device_memory_pool_ref device_resource = cuda::device_default_memory_pool(cuda::device_ref{0});
     const auto policy  = cuda::execution::__cub_par_unseq.with_memory_resource(device_resource);
     decltype(auto) res = cuda::std::reduce(policy, data.begin(), data.end(), 42);
@@ -120,9 +111,6 @@ C2H_TEST("cuda::std::reduce(Iter, Iter, Tp)", "[parallel algorithm]")
 
   SECTION("with provided stream and memory_resource")
   {
-    thrust::device_vector<int> data(size);
-    thrust::sequence(data.begin(), data.end(), 1);
-
     cuda::stream stream{cuda::device_ref{0}};
     cuda::device_memory_pool_ref device_resource = cuda::device_default_memory_pool(stream.device());
     const auto policy  = cuda::execution::__cub_par_unseq.with_stream(stream).with_memory_resource(device_resource);
@@ -146,11 +134,11 @@ struct plus_two
 
 C2H_TEST("cuda::std::reduce(Iter, Iter, Tp, Fn)", "[parallel algorithm]")
 {
+  thrust::device_vector<int> data(size);
+  thrust::sequence(data.begin(), data.end(), 1);
+
   SECTION("with default stream")
   {
-    thrust::device_vector<int> data(size);
-    thrust::sequence(data.begin(), data.end(), 1);
-
     const auto policy  = cuda::execution::__cub_par_unseq;
     decltype(auto) res = cuda::std::reduce(policy, data.begin(), data.end(), 42, plus_two{});
 #if !TEST_CUDA_COMPILER(NVCC, <, 12, 5)
@@ -163,10 +151,7 @@ C2H_TEST("cuda::std::reduce(Iter, Iter, Tp, Fn)", "[parallel algorithm]")
 
   SECTION("with provided stream")
   {
-    thrust::device_vector<int> data(size);
-    thrust::sequence(data.begin(), data.end(), 1);
-
-    ::cuda::stream stream{::cuda::device_ref{0}};
+    cuda::stream stream{cuda::device_ref{0}};
     const auto policy  = cuda::execution::__cub_par_unseq.with_stream(stream);
     decltype(auto) res = cuda::std::reduce(policy, data.begin(), data.end(), 42, plus_two{});
 #if !TEST_CUDA_COMPILER(NVCC, <, 12, 5)
