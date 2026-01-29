@@ -51,7 +51,7 @@ int main()
     init2,
     [](int lhs, int rhs) {
       return lhs + rhs + 1;
-    })
+    });
 
     for (std::size_t i = 0; i < N; ++i)
   {
