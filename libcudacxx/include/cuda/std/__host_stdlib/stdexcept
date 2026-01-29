@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDA_STD__CCCL_ALGORITHM_WRAPPER_H
-#define _CUDA_STD__CCCL_ALGORITHM_WRAPPER_H
+#ifndef _CUDA_STD___HOST_STDLIB_STDEXCEPT
+#define _CUDA_STD___HOST_STDLIB_STDEXCEPT
 
 #include <cuda/std/detail/__config>
 
@@ -21,16 +21,8 @@
 #  pragma system_header
 #endif // no system header
 
-// When nvc++ uses CCCL components as part of its implementation of
-// Standard C++ algorithms, a cycle of included files may result when CCCL code
-// tries to use a standard algorithm. The THRUST_INCLUDING_ALGORITHMS_HEADER macro
-// is defined only when CCCL is including an algorithms-related header, giving
-// the compiler a chance to detect and break the cycle of includes.
-
 #if !_CCCL_COMPILER(NVRTC)
-#  define THRUST_INCLUDING_ALGORITHMS_HEADER
-#  include <algorithm>
-#  undef THRUST_INCLUDING_ALGORITHMS_HEADER
+#  include <stdexcept>
 #endif // !_CCCL_COMPILER(NVRTC)
 
-#endif // _CUDA_STD__CCCL_ALGORITHM_WRAPPER_H
+#endif // _CUDA_STD___HOST_STDLIB_STDEXCEPT

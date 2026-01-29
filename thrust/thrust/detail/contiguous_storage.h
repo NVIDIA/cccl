@@ -29,12 +29,11 @@
 #include <thrust/detail/execution_policy.h>
 #include <thrust/iterator/detail/normal_iterator.h>
 
+#include <cuda/std/__host_stdlib/stdexcept>
 #include <cuda/std/__iterator/iterator_traits.h>
 #include <cuda/std/__memory/allocator_traits.h>
 #include <cuda/std/__utility/move.h>
 #include <cuda/std/__utility/swap.h>
-
-#include <stdexcept>
 
 THRUST_NAMESPACE_BEGIN
 

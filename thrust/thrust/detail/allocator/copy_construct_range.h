@@ -34,7 +34,7 @@
 #include <thrust/iterator/iterator_traits.h>
 #include <thrust/iterator/zip_iterator.h>
 
-#include <cuda/std/__cccl/memory_wrapper.h>
+#include <cuda/std/__host_stdlib/memory>
 #include <cuda/std/__iterator/advance.h>
 #include <cuda/std/__iterator/distance.h>
 #include <cuda/std/__memory/allocator_traits.h>

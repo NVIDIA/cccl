@@ -37,6 +37,7 @@
 #include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__algorithm/min.h>
 #include <cuda/std/__functional/operations.h>
+#include <cuda/std/__host_stdlib/stdexcept>
 #include <cuda/std/__iterator/advance.h>
 #include <cuda/std/__iterator/distance.h>
 #include <cuda/std/__iterator/next.h>
@@ -47,8 +48,6 @@
 #include <cuda/std/__type_traits/is_trivially_constructible.h>
 #include <cuda/std/__utility/move.h>
 #include <cuda/std/initializer_list>
-
-#include <stdexcept>
 
 THRUST_NAMESPACE_BEGIN
 
