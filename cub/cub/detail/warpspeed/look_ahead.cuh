@@ -61,7 +61,7 @@ storeTileAggregate(tile_state_t<AccumT>* ptrTileStates, scan_state scanState, Ac
   _CCCL_ASSERT(::cuda::is_aligned(ptrTileStates, alignof(tile_state_t<AccumT>)), "");
   _CCCL_ASSERT(index >= 0 && index < gridDim.x, "Reading out of bounds tile state");
 
-  if constexpr (sizeof(tile_state_t<AccumT>) <= 16)
+  if constexpr (sizeof(tile_state_t<AccumT>) <= 16 && ::cuda::std::is_trivially_copyable_v<tile_state_t<AccumT>>)
   {
     tile_state_t<AccumT> tmp{scanState, sum};
 #  ifdef __CUDACC_DEVICE_ATOMIC_BUILTINS__
@@ -86,7 +86,7 @@ _CCCL_DEVICE_API inline tile_state_t<AccumT> loadTileAggregate(tile_state_t<Accu
   _CCCL_ASSERT(index >= 0 && index < gridDim.x, "Reading out of bounds tile state");
 
   tile_state_t<AccumT> res;
-  if constexpr (sizeof(tile_state_t<AccumT>) <= 16)
+  if constexpr (sizeof(tile_state_t<AccumT>) <= 16 && ::cuda::std::is_trivially_copyable_v<tile_state_t<AccumT>>)
   {
 #  ifdef __CUDACC_DEVICE_ATOMIC_BUILTINS__
     __nv_atomic_load(ptrTileStates + index, &res, __NV_ATOMIC_RELAXED, __NV_THREAD_SCOPE_DEVICE);
