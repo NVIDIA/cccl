@@ -32,7 +32,7 @@
 #include <thrust/detail/type_traits.h>
 #include <thrust/system/error_code.h>
 
-#include <stdexcept>
+#include <cuda/std/__host_stdlib/stdexcept>
 
 THRUST_NAMESPACE_BEGIN
 

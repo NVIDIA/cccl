@@ -21,10 +21,10 @@
 
 #include <cuda/std/__exception/cuda_error.h>
 #include <cuda/std/__exception/terminate.h>
+#include <cuda/std/__host_stdlib/stdexcept>
 #include <cuda/std/source_location>
 
 #include <cstdio>
-#include <stdexcept>
 
 #include <cufile.h>
 

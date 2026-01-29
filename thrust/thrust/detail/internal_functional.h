@@ -41,7 +41,7 @@
 #include <cuda/__iterator/tabulate_output_iterator.h>
 #include <cuda/__iterator/transform_input_output_iterator.h>
 #include <cuda/__iterator/transform_output_iterator.h>
-#include <cuda/std/__cccl/memory_wrapper.h> // for ::new
+#include <cuda/std/__host_stdlib/memory>
 #include <cuda/std/__new/device_new.h>
 #include <cuda/std/__tuple_dir/get.h>
 #include <cuda/std/__tuple_dir/tuple_element.h>

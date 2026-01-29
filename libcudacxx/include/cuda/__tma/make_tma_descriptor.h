@@ -30,12 +30,11 @@
 #  include <cuda/std/__algorithm/min.h>
 #  include <cuda/std/__cstddef/types.h>
 #  include <cuda/std/__exception/exception_macros.h>
+#  include <cuda/std/__host_stdlib/stdexcept>
 #  include <cuda/std/__utility/unreachable.h>
 #  include <cuda/std/array>
 #  include <cuda/std/cstdint>
 #  include <cuda/std/span>
-
-#  include <stdexcept>
 
 #  include <driver_types.h>
 

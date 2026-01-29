@@ -26,12 +26,9 @@
 #include <cuda/std/__cmath/isnan.h>
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__floating_point/fp.h>
+#include <cuda/std/__host_stdlib/math.h>
 #include <cuda/std/__type_traits/is_integral.h>
 #include <cuda/std/limits>
-
-#if !_CCCL_COMPILER(NVRTC)
-#  include <math.h>
-#endif // !_CCCL_COMPILER(NVRTC)
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -51,9 +48,7 @@
 #  ifndef FP_NORMAL
 #    define FP_NORMAL 4
 #  endif // ! FP_NORMAL
-#else // ^^^ _CCCL_COMPILER(NVRTC) ^^^ ^/  vvv !_CCCL_COMPILER(NVRTC) vvv
-#  include <math.h>
-#endif // !_CCCL_COMPILER(NVRTC)
+#endif // _CCCL_COMPILER(NVRTC)
 
 #ifndef FP_ILOGB0
 #  define FP_ILOGB0 (-INT_MAX - 1)

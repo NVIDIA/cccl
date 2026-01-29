@@ -40,7 +40,7 @@
 #include <cuda/std/__utility/move.h>
 
 #if _CCCL_STD_VER >= 2020 // need to backfill ::std::construct_at
-#  include <cuda/std/__cccl/memory_wrapper.h>
+#  include <cuda/std/__host_stdlib/memory>
 
 #  ifndef __cpp_lib_constexpr_dynamic_alloc
 namespace std

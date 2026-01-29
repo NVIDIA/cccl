@@ -29,15 +29,12 @@
 #  include <cuda/__memory/is_aligned.h>
 #  include <cuda/std/__cstddef/types.h>
 #  include <cuda/std/__exception/exception_macros.h>
+#  include <cuda/std/__host_stdlib/stdexcept>
 #  include <cuda/std/__type_traits/is_same.h>
 #  include <cuda/std/__utility/cmp.h>
 #  include <cuda/std/array>
 #  include <cuda/std/cstdint>
 #  include <cuda/std/mdspan>
-
-#  if !_CCCL_COMPILER(NVRTC)
-#    include <stdexcept>
-#  endif // !_CCCL_COMPILER(NVRTC)
 
 #  include <dlpack/dlpack.h>
 //

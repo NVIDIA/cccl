@@ -32,6 +32,7 @@
 #include <cuda/std/__bit/countr.h>
 #include <cuda/std/__bit/integral.h>
 #include <cuda/std/__cstddef/types.h>
+#include <cuda/std/__host_stdlib/stdexcept>
 #include <cuda/std/__iterator/concepts.h>
 #include <cuda/std/__memory/addressof.h>
 #include <cuda/std/__memory/pointer_traits.h>
@@ -43,8 +44,6 @@
 #include <cuda/experimental/__cuco/__utility/strong_type.cuh>
 #include <cuda/experimental/__cuco/hash_functions.cuh>
 #include <cuda/experimental/memory_resource.cuh>
-
-#include <stdexcept>
 
 #include <cooperative_groups.h>
 

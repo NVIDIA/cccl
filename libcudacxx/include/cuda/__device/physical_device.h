@@ -26,8 +26,8 @@
 #  include <cuda/__device/device_ref.h>
 #  include <cuda/__driver/driver_api.h>
 #  include <cuda/__fwd/devices.h>
-#  include <cuda/std/__cccl/memory_wrapper.h>
 #  include <cuda/std/__cstddef/types.h>
+#  include <cuda/std/__host_stdlib/memory>
 #  include <cuda/std/span>
 #  include <cuda/std/string_view>
 
