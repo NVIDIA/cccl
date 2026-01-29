@@ -240,7 +240,7 @@ squadStoreBulkSync(Squad squad, CpAsyncOobInfo<OutputT> cpAsyncOobInfo, const ::
     const uint16_t byteMaskEnd   = byteMask >> (16 - cpAsyncOobInfo.smemEndBytesAfter16BBoundary);
     // byteMaskStart contains zeroes at the left.
     // TODO(bgruber): this should be `const uint16_t byteMaskSmall = byteMaskStart & byteMaskEnd;`, but this results in
-    // `ptxas fatal   : (C7907) Internal compiler error`
+    // `ptxas fatal   : (C7907) Internal compiler error`, see nvbug 5848313
     const uint16_t byteMaskSmall =
       byteMaskStart & (byteMask >> (16 - (cpAsyncOobInfo.ptrGmemEnd - cpAsyncOobInfo.ptrGmemStartAlignDown)));
 
