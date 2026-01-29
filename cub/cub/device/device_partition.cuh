@@ -53,6 +53,9 @@ struct DevicePartition
   //! ``d_in`` into a partitioned sequence ``d_out``.
   //! The total number of items copied into the first partition is written to ``d_num_selected_out``.
   //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
+  //!
   //! - The value type of ``d_flags`` must be castable to ``bool`` (e.g., ``bool``, ``char``, ``int``, etc.).
   //! - Copies of the selected items are compacted into ``d_out`` and maintain
   //!   their original relative ordering, however copies of the unselected
@@ -197,6 +200,9 @@ struct DevicePartition
   //! Uses the ``select_op`` functor to split the corresponding items from ``d_in`` into
   //! a partitioned sequence ``d_out``. The total number of items copied into the first partition is written
   //! to ``d_num_selected_out``.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! - Copies of the selected items are compacted into ``d_out`` and maintain
   //!   their original relative ordering, however copies of the unselected
@@ -428,6 +434,9 @@ public:
   //! The total number of items copied into the first partition is written
   //! to ``d_num_selected_out[0]``, while the total number of items copied into the second partition is written
   //! to ``d_num_selected_out[1]``.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! - Copies of the items selected by ``select_first_part_op`` are compacted
   //!   into ``d_first_part_out`` and maintain their original relative ordering.

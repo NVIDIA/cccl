@@ -52,6 +52,9 @@ struct DeviceHistogram
   //! @rst
   //! Computes an intensity histogram from a sequence of data samples using equal-width bins.
   //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
+  //!
   //! - The number of histogram bins is (``num_levels - 1``)
   //! - All bins comprise the same width of sample values: ``(upper_level - lower_level) / (num_levels - 1)``.
   //! - If the common type of ``SampleT`` and ``LevelT`` is of integral type, the bin for a sample is
@@ -183,6 +186,9 @@ struct DeviceHistogram
 
   //! @rst
   //! Computes an intensity histogram from a sequence of data samples using equal-width bins.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! - A two-dimensional *region of interest* within ``d_samples`` can be specified using
   //!   the ``num_row_samples``, ``num_rows``, and ``row_stride_bytes`` parameters.
@@ -335,6 +341,9 @@ struct DeviceHistogram
   //! @rst
   //! Computes per-channel intensity histograms from a sequence of multi-channel "pixel" data samples using
   //! equal-width bins.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! - The input is a sequence of *pixel* structures, where each pixel comprises
   //!   a record of ``NUM_CHANNELS`` consecutive data samples
@@ -547,6 +556,9 @@ public:
   //! @rst
   //! Computes per-channel intensity histograms from a sequence of
   //! multi-channel "pixel" data samples using equal-width bins.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! - The input is a sequence of *pixel* structures, where each pixel
   //!   comprises a record of ``NUM_CHANNELS`` consecutive data samples (e.g., an *RGBA* pixel).
@@ -800,6 +812,9 @@ public:
   //! @rst
   //! Computes an intensity histogram from a sequence of data samples using the specified bin boundary levels.
   //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
+  //!
   //! - The number of histogram bins is (``num_levels - 1``)
   //! - The value range for bin\ :sub:`i` is ``[level[i], level[i+1])``
   //! - The range ``[d_histogram, d_histogram + num_levels - 1)`` shall not
@@ -920,6 +935,9 @@ public:
 
   //! @rst
   //! Computes an intensity histogram from a sequence of data samples using the specified bin boundary levels.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! - A two-dimensional *region of interest* within ``d_samples`` can be
   //!   specified using the ``num_row_samples``, ``num_rows``, and ``row_stride_bytes`` parameters.
@@ -1059,6 +1077,9 @@ public:
   //! @rst
   //! Computes per-channel intensity histograms from a sequence of multi-channel "pixel" data samples
   //! using the specified bin boundary levels.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! - The input is a sequence of *pixel* structures, where each pixel
   //!   comprises a record of ``NUM_CHANNELS`` consecutive data samples (e.g., an *RGBA* pixel).
@@ -1246,6 +1267,9 @@ public:
   //! @rst
   //! Computes per-channel intensity histograms from a sequence of multi-channel "pixel" data samples using
   //! the specified bin boundary levels.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! - The input is a sequence of *pixel* structures, where each pixel comprises
   //!   a record of ``NUM_CHANNELS`` consecutive data samples (e.g., an *RGBA* pixel).

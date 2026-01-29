@@ -49,6 +49,11 @@ CUB_NAMESPACE_BEGIN
  * Before invoking a child grid, a parent thread will typically construct an
  * instance of GridEvenShare.  The instance can be passed to child thread blocks
  * which can initialize their per-thread block offsets using \p BlockInit().
+ *
+ * @rst
+ * .. versionadded:: 2.2.0
+ *    First appears in CUDA Toolkit 12.3.
+ * @endrst
  */
 template <typename OffsetT>
 struct GridEvenShare

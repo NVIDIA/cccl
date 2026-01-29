@@ -61,6 +61,8 @@ struct DeviceSegmentedScan
   //!   shall not overlap in any other way.
   //! - @devicestorage
   //!
+  //! .. versionadded:: 3.3.0
+  //!
   //! Preconditions
   //! +++++++++++++
   //!
@@ -216,6 +218,8 @@ struct DeviceSegmentedScan
   //!   shall not overlap in any other way.
   //! - @devicestorage
   //!
+  //! .. versionadded:: 3.3.0
+  //!
   //! Snippet
   //! +++++++++++++++++++++++++++++++++++++++++++++
   //!
@@ -355,6 +359,8 @@ struct DeviceSegmentedScan
   //!   shall not overlap in any other way.
   //! - @devicestorage
   //!
+  //! .. versionadded:: 3.3.0
+  //!
   //! Snippet
   //! +++++++++++++++++++++++++++++++++++++++++++++
   //!
@@ -490,6 +496,8 @@ struct DeviceSegmentedScan
   //!   shall not overlap in any other way.
   //! - @devicestorage
   //!
+  //! .. versionadded:: 3.3.0
+  //!
   //! @endrst
   //! @tparam InputIteratorT
   //!   **[inferred]** Random-access input iterator type for reading segmented scan inputs @iterator
@@ -623,6 +631,8 @@ struct DeviceSegmentedScan
   //!   shall not overlap in any other way.
   //! - @devicestorage
   //!
+  //! .. versionadded:: 3.3.0
+  //!
   //! Snippet
   //! +++++++++++++++++++++++++++++++++++++++++++++
   //!
@@ -741,6 +751,8 @@ struct DeviceSegmentedScan
   //! - When ``d_in`` and ``d_out`` are equal, the scan is performed in-place. The input and output sequences
   //!   shall not overlap in any other way.
   //! - @devicestorage
+  //!
+  //! .. versionadded:: 3.3.0
   //!
   //! Snippet
   //! +++++++++++++++++++++++++++++++++++++++++++++
@@ -877,6 +889,8 @@ struct DeviceSegmentedScan
   //!   shall not overlap in any other way.
   //! - @devicestorage
   //!
+  //! .. versionadded:: 3.3.0
+  //!
   //! @endrst
   //! @tparam InputIteratorT
   //!   **[inferred]** Random-access input iterator type for reading segmented scan inputs @iterator
@@ -987,6 +1001,8 @@ struct DeviceSegmentedScan
   //! - When ``d_in`` and ``d_out`` are equal, the scan is performed in-place. The input and output sequences
   //!   shall not overlap in any other way.
   //! - @devicestorage
+  //!
+  //! .. versionadded:: 3.3.0
   //!
   //! Snippet
   //! +++++++++++++++++++++++++++++++++++++++++++++
@@ -1127,6 +1143,8 @@ struct DeviceSegmentedScan
   //!   shall not overlap in any other way.
   //! - @devicestorage
   //!
+  //! .. versionadded:: 3.3.0
+  //!
   //! Snippet
   //! +++++++++++++++++++++++++++++++++++++++++++++
   //!
@@ -1265,6 +1283,8 @@ struct DeviceSegmentedScan
   //! - When ``d_in`` and ``d_out`` are equal, the scan is performed in-place. The input and output sequences
   //!   shall not overlap in any other way.
   //! - @devicestorage
+  //!
+  //! .. versionadded:: 3.3.0
   //!
   //! @endrst
   //!

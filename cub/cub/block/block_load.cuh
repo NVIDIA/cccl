@@ -36,6 +36,9 @@ CUB_NAMESPACE_BEGIN
 //! @rst
 //! Load a linear segment of items into a blocked arrangement across the thread block.
 //!
+//! .. versionadded:: 2.2.0
+//!    First appears in CUDA Toolkit 12.3.
+//!
 //! @blocked
 //!
 //! @endrst
@@ -72,6 +75,9 @@ LoadDirectBlocked(int linear_tid, RandomAccessIterator block_src_it, T (&dst_ite
 
 //! @rst
 //! Load a linear segment of items into a blocked arrangement across the thread block, guarded by range.
+//!
+//! .. versionadded:: 2.2.0
+//!    First appears in CUDA Toolkit 12.3.
 //!
 //! @blocked
 //!
@@ -116,6 +122,9 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void LoadDirectBlocked(
 //! @rst
 //! Load a linear segment of items into a blocked arrangement across the thread block, guarded
 //! by range, with a fall-back assignment of out-of-bound elements.
+//!
+//! .. versionadded:: 2.2.0
+//!    First appears in CUDA Toolkit 12.3.
 //!
 //! @blocked
 //!
@@ -224,6 +233,9 @@ InternalLoadDirectBlockedVectorized(int linear_tid, const T* block_src_ptr, T (&
 //! @rst
 //! Load a linear segment of items into a blocked arrangement across the thread block.
 //!
+//! .. versionadded:: 2.2.0
+//!    First appears in CUDA Toolkit 12.3.
+//!
 //! @blocked
 //!
 //! The input offset (``block_ptr + block_offset``) must be quad-item aligned
@@ -264,6 +276,9 @@ LoadDirectBlockedVectorized(int linear_tid, T* block_src_ptr, T (&dst_items)[Ite
 
 //! @rst
 //! Load a linear segment of items into a striped arrangement across the thread block.
+//!
+//! .. versionadded:: 2.2.0
+//!    First appears in CUDA Toolkit 12.3.
 //!
 //! @striped
 //!
@@ -318,6 +333,9 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void load_transform_direct_striped(
 //! @rst
 //! Load a linear segment of items into a striped arrangement across the thread block, guarded by range
 //!
+//! .. versionadded:: 2.2.0
+//!    First appears in CUDA Toolkit 12.3.
+//!
 //! @striped
 //!
 //! @endrst
@@ -364,6 +382,9 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void LoadDirectStriped(
 //! @rst
 //! Load a linear segment of items into a striped arrangement across the thread block, guarded
 //! by range, with a fall-back assignment of out-of-bound elements.
+//!
+//! .. versionadded:: 2.2.0
+//!    First appears in CUDA Toolkit 12.3.
 //!
 //! @striped
 //!
@@ -420,6 +441,9 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void LoadDirectStriped(
 //! @rst
 //! Load a linear segment of items into a warp-striped arrangement across the thread block.
 //!
+//! .. versionadded:: 2.2.0
+//!    First appears in CUDA Toolkit 12.3.
+//!
 //! @warpstriped
 //!
 //! Usage Considerations
@@ -465,6 +489,9 @@ LoadDirectWarpStriped(int linear_tid, RandomAccessIterator block_src_it, T (&dst
 
 //! @rst
 //! Load a linear segment of items into a warp-striped arrangement across the thread block, guarded by range
+//!
+//! .. versionadded:: 2.2.0
+//!    First appears in CUDA Toolkit 12.3.
 //!
 //! @warpstriped
 //!
@@ -519,6 +546,9 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void LoadDirectWarpStriped(
 //! @rst
 //! Load a linear segment of items into a warp-striped arrangement across the thread block,
 //! guarded by range, with a fall-back assignment of out-of-bound elements.
+//!
+//! .. versionadded:: 2.2.0
+//!    First appears in CUDA Toolkit 12.3.
 //!
 //! @warpstriped
 //!
@@ -1083,14 +1113,25 @@ public:
   //! @name Collective constructors
   //! @{
 
-  /// @brief Collective constructor using a private static allocation of shared memory as temporary storage.
+  //! @brief Collective constructor using a private static allocation of shared memory as temporary storage.
+  //!
+  //! @rst
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
+  //! @endrst
   _CCCL_DEVICE _CCCL_FORCEINLINE BlockLoad()
       : temp_storage(PrivateStorage())
       , linear_tid(RowMajorTid(BlockDimX, BlockDimY, BlockDimZ))
   {}
 
-  /// @brief Collective constructor using the specified memory allocation as temporary storage.
-  /// @param[in] temp_storage Reference to memory allocation having layout type TempStorage
+  //! @brief Collective constructor using the specified memory allocation as temporary storage.
+  //!
+  //! @rst
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
+  //! @endrst
+  //!
+  //! @param[in] temp_storage Reference to memory allocation having layout type TempStorage
   _CCCL_DEVICE _CCCL_FORCEINLINE BlockLoad(TempStorage& temp_storage)
       : temp_storage(temp_storage.Alias())
       , linear_tid(RowMajorTid(BlockDimX, BlockDimY, BlockDimZ))
@@ -1102,6 +1143,9 @@ public:
 
   //! @rst
   //! Load a linear segment of items from memory.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! - @blocked
   //! - @smemreuse
@@ -1148,8 +1192,10 @@ public:
   }
 
   //! @rst
-  //!
   //! Load a linear segment of items from memory, guarded by range.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! - @blocked
   //! - @smemreuse
@@ -1203,6 +1249,9 @@ public:
 
   //! @rst
   //! Load a linear segment of items from memory, guarded by range, with a fall-back assignment of out-of-bound elements
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! - @blocked
   //! - @smemreuse

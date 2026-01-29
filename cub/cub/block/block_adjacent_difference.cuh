@@ -201,12 +201,23 @@ public:
   //! @{
 
   //! @brief Collective constructor using a private static allocation of shared memory as temporary storage
+  //!
+  //! @rst
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
+  //! @endrst
   _CCCL_DEVICE _CCCL_FORCEINLINE BlockAdjacentDifference()
       : temp_storage(PrivateStorage())
       , linear_tid(RowMajorTid(BlockDimX, BlockDimY, BlockDimZ))
   {}
 
   //! @brief Collective constructor using the specified memory allocation as temporary storage
+  //!
+  //! @rst
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
+  //! @endrst
+  //!
   //! @param[in] temp_storage Reference to memory allocation having layout type TempStorage
   _CCCL_DEVICE _CCCL_FORCEINLINE BlockAdjacentDifference(TempStorage& temp_storage)
       : temp_storage(temp_storage.Alias())
@@ -219,6 +230,9 @@ public:
 
   //! @rst
   //! Subtracts the left element of each adjacent pair of elements partitioned across a CUDA thread block.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! - @rowmajor
   //! - @smemreuse
@@ -266,6 +280,7 @@ public:
   //! ``{ [4,2,1,1], [1,1,1,1], [2,3,3,3], [3,4,1,4], ... }``.
   //! The corresponding output ``result`` in those threads will be
   //! ``{ [4,-2,-1,0], [0,0,0,0], [1,1,0,0], [0,1,-3,3], ... }``.
+  //!
   //! @endrst
   //!
   //! @param[out] output
@@ -303,6 +318,9 @@ public:
 
   //! @rst
   //! Subtracts the left element of each adjacent pair of elements partitioned across a CUDA thread block.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! - @rowmajor
   //! - @smemreuse
@@ -356,6 +374,7 @@ public:
   //! and that `tile_predecessor_item` is `3`. The corresponding output
   //! ``result`` in those threads will be
   //! ``{ [1,-2,-1,0], [0,0,0,0], [1,1,0,0], [0,1,-3,3], ... }``.
+  //!
   //! @endrst
   //!
   //! @param[out] output
@@ -403,6 +422,9 @@ public:
 
   //! @rst
   //! Subtracts the left element of each adjacent pair of elements partitioned across a CUDA thread block.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! - @rowmajor
   //! - @smemreuse
@@ -453,6 +475,7 @@ public:
   //! ``{ [4,2,1,1], [1,1,1,1], [2,3,3,3], [3,4,1,4], ... }``.
   //! The corresponding output ``result`` in those threads will be
   //! ``{ [4,-2,-1,0], [0,0,0,0], [1,3,3,3], [3,4,1,4], ... }``.
+  //!
   //! @endrst
   //!
   //! @param[out] output
@@ -514,6 +537,9 @@ public:
   //! @rst
   //! Subtracts the left element of each adjacent pair of elements partitioned across a CUDA thread block.
   //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
+  //!
   //! - @rowmajor
   //! - @smemreuse
   //!
@@ -566,6 +592,7 @@ public:
   //! ``{ [4,2,1,1], [1,1,1,1], [2,3,3,3], [3,4,1,4], ... }``.
   //! The corresponding output ``result`` in those threads will be
   //! ``{ [0,-2,-1,0], [0,0,0,0], [1,3,3,3], [3,4,1,4], ... }``.
+  //!
   //! @endrst
   //!
   //! @param[out] output
@@ -646,6 +673,9 @@ public:
   //!
   //! Subtracts the right element of each adjacent pair of elements partitioned across a CUDA thread block.
   //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
+  //!
   //! - @rowmajor
   //! - @smemreuse
   //!
@@ -693,6 +723,7 @@ public:
   //! ``{ ...3], [4,2,1,1], [1,1,1,1], [2,3,3,3], [3,4,1,4] }``.
   //! The corresponding output ``result`` in those threads will be
   //! ``{ ...-1, [2,1,0,0], [0,0,0,-1], [-1,0,0,0], [-1,3,-3,4] }``.
+  //!
   //! @endrst
   //!
   //! @param[out] output
@@ -731,6 +762,9 @@ public:
 
   //! @rst
   //! Subtracts the right element of each adjacent pair of elements partitioned across a CUDA thread block.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! - @rowmajor
   //! - @smemreuse
@@ -785,6 +819,7 @@ public:
   //! and that ``tile_successor_item`` is ``3``. The corresponding output ``result``
   //! in those threads will be
   //! ``{ ...-1, [2,1,0,0], [0,0,0,-1], [-1,0,0,0], [-1,3,-3,1] }``.
+  //!
   //! @endrst
   //!
   //! @param[out] output
@@ -829,6 +864,9 @@ public:
 
   //! @rst
   //! Subtracts the right element of each adjacent pair in range of elements partitioned across a CUDA thread block.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! - @rowmajor
   //! - @smemreuse
@@ -880,6 +918,7 @@ public:
   //! and that ``valid_items`` is ``507``. The corresponding output ``result`` in
   //! those threads will be
   //! ``{ ...-1, [2,1,0,0], [0,0,0,-1], [-1,0,3,3], [3,4,1,4] }``.
+  //!
   //! @endrst
   //!
   //! @param[out] output
