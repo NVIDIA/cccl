@@ -186,6 +186,9 @@ public:
   //! @rst
   //! Sorts key-value pairs into ascending order using :math:`\approx 2N` auxiliary storage.
   //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
+  //!
   //! - The contents of the input data are not altered by the sorting operation.
   //! - Pointers to contiguous memory must be used; iterators are not currently
   //!   supported.
@@ -208,6 +211,7 @@ public:
   //!
   //! The code snippet below illustrates the sorting of a device vector of ``int``
   //! keys with associated vector of ``int`` values.
+  //!
   //! @endrst
   //!
   //! @code{.cpp}
@@ -326,6 +330,9 @@ public:
 
   //! @rst
   //! Sorts key-value pairs into ascending order using :math:`\approx 2N` auxiliary storage.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! * The contents of the input data are not altered by the sorting operation.
   //! * Pointers to contiguous memory must be used; iterators are not currently
@@ -480,6 +487,9 @@ public:
   //! @rst
   //! Sorts key-value pairs into ascending order using :math:`\approx 2N` auxiliary storage.
   //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
+  //!
   //! * The contents of the input data are not altered by the sorting operation.
   //! * Pointers to contiguous memory must be used; iterators are not currently
   //!   supported.
@@ -618,6 +628,9 @@ public:
   //! @rst
   //! Sorts key-value pairs into ascending order using :math:`\approx N` auxiliary storage.
   //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
+  //!
   //! - The sorting operation is given a pair of key buffers and a corresponding
   //!   pair of associated value buffers.  Each pair is managed by a DoubleBuffer
   //!   structure that indicates which of the two buffers is "current" (and thus
@@ -647,6 +660,7 @@ public:
   //!
   //! The code snippet below illustrates the sorting of a device vector of ``int``
   //! keys with associated vector of ``int`` values.
+  //!
   //! @endrst
   //!
   //! @code
@@ -756,6 +770,9 @@ public:
 
   //! @rst
   //! Sorts key-value pairs into ascending order using :math:`\approx N` auxiliary storage.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! * The sorting operation is given a pair of key buffers and a corresponding
   //!   pair of associated value buffers.  Each pair is managed by a DoubleBuffer
@@ -889,6 +906,9 @@ public:
 
   //! @rst
   //! Sorts key-value pairs into ascending order using :math:`\approx N` auxiliary storage.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! * The sorting operation is given a pair of key buffers and a corresponding
   //!   pair of associated value buffers.  Each pair is managed by a DoubleBuffer
@@ -1038,6 +1058,9 @@ public:
   //! @rst
   //! Sorts key-value pairs into descending order using :math:`\approx 2N` auxiliary storage.
   //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
+  //!
   //! - The contents of the input data are not altered by the sorting operation.
   //! - Pointers to contiguous memory must be used; iterators are not currently
   //!   supported.
@@ -1061,6 +1084,7 @@ public:
   //!
   //! The code snippet below illustrates the sorting of a device vector of ``int``
   //! keys with associated vector of ``int`` values.
+  //!
   //! @endrst
   //!
   //! @code{.cpp}
@@ -1179,6 +1203,9 @@ public:
 
   //! @rst
   //! Sorts key-value pairs into descending order using :math:`\approx 2N` auxiliary storage.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! * The contents of the input data are not altered by the sorting operation.
   //! * Pointers to contiguous memory must be used; iterators are not currently
@@ -1335,6 +1362,9 @@ public:
   //! @rst
   //! Sorts key-value pairs into descending order using :math:`\approx 2N` auxiliary storage.
   //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
+  //!
   //! * The contents of the input data are not altered by the sorting operation.
   //! * Pointers to contiguous memory must be used; iterators are not currently
   //!   supported.
@@ -1475,6 +1505,9 @@ public:
   //! @rst
   //! Sorts key-value pairs into descending order using :math:`\approx N` auxiliary storage.
   //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
+  //!
   //! - The sorting operation is given a pair of key buffers and a corresponding
   //!   pair of associated value buffers.  Each pair is managed by a DoubleBuffer
   //!   structure that indicates which of the two buffers is "current" (and thus
@@ -1504,6 +1537,7 @@ public:
   //!
   //! The code snippet below illustrates the sorting of a device vector of ``int``
   //! keys with associated vector of ``int`` values.
+  //!
   //! @endrst
   //!
   //! @code{.cpp}
@@ -1613,6 +1647,9 @@ public:
 
   //! @rst
   //! Sorts key-value pairs into descending order using :math:`\approx N` auxiliary storage.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! * The sorting operation is given a pair of key buffers and a corresponding
   //!   pair of associated value buffers.  Each pair is managed by a DoubleBuffer
@@ -1747,6 +1784,9 @@ public:
 
   //! @rst
   //! Sorts key-value pairs into descending order using :math:`\approx N` auxiliary storage.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! * The sorting operation is given a pair of key buffers and a corresponding
   //!   pair of associated value buffers.  Each pair is managed by a DoubleBuffer
@@ -1901,6 +1941,9 @@ public:
   //! @rst
   //! Sorts keys into ascending order using :math:`\approx 2N` auxiliary storage.
   //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
+  //!
   //! - The contents of the input data are not altered by the sorting operation.
   //! - Pointers to contiguous memory must be used; iterators are not currently
   //!   supported.
@@ -1922,6 +1965,7 @@ public:
   //!
   //! The code snippet below illustrates the sorting of a device vector of
   //! ``int`` keys.
+  //!
   //! @endrst
   //!
   //! @code{.cpp}
@@ -2027,6 +2071,9 @@ public:
 
   //! @rst
   //! Sorts keys into ascending order using :math:`\approx 2N` auxiliary storage.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! * The contents of the input data are not altered by the sorting operation.
   //! * Pointers to contiguous memory must be used; iterators are not currently
@@ -2168,6 +2215,9 @@ public:
   //! @rst
   //! Sorts keys into ascending order using :math:`\approx 2N` auxiliary storage.
   //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
+  //!
   //! * The contents of the input data are not altered by the sorting operation.
   //! * Pointers to contiguous memory must be used; iterators are not currently
   //!   supported.
@@ -2296,6 +2346,9 @@ public:
   //! @rst
   //! Sorts keys into ascending order using :math:`\approx N` auxiliary storage.
   //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
+  //!
   //! - The sorting operation is given a pair of key buffers managed by a
   //!   DoubleBuffer structure that indicates which of the two buffers is
   //!   "current" (and thus contains the input data to be sorted).
@@ -2321,6 +2374,7 @@ public:
   //!
   //! The code snippet below illustrates the sorting of a device vector of
   //! ``int`` keys.
+  //!
   //! @endrst
   //!
   //! @code{.cpp}
@@ -2420,6 +2474,9 @@ public:
 
   //! @rst
   //! Sorts keys into ascending order using :math:`\approx N` auxiliary storage.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! * The sorting operation is given a pair of key buffers managed by a
   //!   DoubleBuffer structure that indicates which of the two buffers is
@@ -2542,6 +2599,9 @@ public:
 
   //! @rst
   //! Sorts keys into ascending order using :math:`\approx N` auxiliary storage.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! * The sorting operation is given a pair of key buffers managed by a
   //!   DoubleBuffer structure that indicates which of the two buffers is
@@ -2679,6 +2739,9 @@ public:
 
   //! @rst Sorts keys into descending order using :math:`\approx 2N` auxiliary storage.
   //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
+  //!
   //! - The contents of the input data are not altered by the sorting operation.
   //! - Pointers to contiguous memory must be used; iterators are not currently
   //!   supported.
@@ -2700,6 +2763,7 @@ public:
   //!
   //! The code snippet below illustrates the sorting of a device vector of
   //! ``int`` keys.
+  //!
   //! @endrst
   //!
   //! @code{.cpp}
@@ -2804,6 +2868,9 @@ public:
 
   //! @rst
   //! Sorts keys into descending order using :math:`\approx 2N` auxiliary storage.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! * The contents of the input data are not altered by the sorting operation.
   //! * Pointers to contiguous memory must be used; iterators are not currently
@@ -2946,6 +3013,9 @@ public:
   //! @rst
   //! Sorts keys into descending order using :math:`\approx 2N` auxiliary storage.
   //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
+  //!
   //! * The contents of the input data are not altered by the sorting operation.
   //! * Pointers to contiguous memory must be used; iterators are not currently
   //!   supported.
@@ -3072,6 +3142,9 @@ public:
   //! @rst
   //! Sorts keys into descending order using :math:`\approx N` auxiliary storage.
   //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
+  //!
   //! - The sorting operation is given a pair of key buffers managed by a
   //!   DoubleBuffer structure that indicates which of the two buffers is
   //!   "current" (and thus contains the input data to be sorted).
@@ -3096,6 +3169,7 @@ public:
   //! --------------------------------------------------
   //!
   //! The code snippet below illustrates the sorting of a device vector of ``int`` keys.
+  //!
   //! @endrst
   //!
   //! @code{.cpp}
@@ -3195,6 +3269,9 @@ public:
 
   //! @rst
   //! Sorts keys into descending order using :math:`\approx N` auxiliary storage.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! * The sorting operation is given a pair of key buffers managed by a
   //!   DoubleBuffer structure that indicates which of the two buffers is
@@ -3318,6 +3395,9 @@ public:
 
   //! @rst
   //! Sorts keys into descending order using :math:`\approx N` auxiliary storage.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! * The sorting operation is given a pair of key buffers managed by a
   //!   DoubleBuffer structure that indicates which of the two buffers is

@@ -113,6 +113,9 @@ public:
   //! @rst
   //! Subtracts the left element of each adjacent pair of elements residing within device-accessible memory
   //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
+  //!
   //! Overview
   //! ++++++++++++++++++++++++++
   //!
@@ -239,6 +242,9 @@ public:
   //! @rst
   //! Subtracts the left element of each adjacent pair of elements residing within device-accessible memory.
   //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
+  //!
   //! Overview
   //! +++++++++++++++++++++++++++++++++++++++++++++
   //!
@@ -346,6 +352,9 @@ public:
 
   //! @rst
   //! Subtracts the right element of each adjacent pair of elements residing within device-accessible memory.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! Overview
   //! ++++++++++++++++++++++++++
@@ -473,6 +482,9 @@ public:
 
   //! @rst
   //! Subtracts the right element of each adjacent pair of elements residing within device-accessible memory.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! Overview
   //! ++++++++++++++++++++++++++

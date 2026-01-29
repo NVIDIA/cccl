@@ -34,6 +34,8 @@ struct DeviceFind
   //! - The range ``[d_out, d_out + 1)`` shall not overlap ``[d_in, d_in + num_items)`` in any way.
   //! - @devicestorage
   //!
+  //! .. versionadded:: 3.3.0
+  //!
   //! Snippet
   //! ==========================================================================
   //!
@@ -114,6 +116,8 @@ struct DeviceFind
   //! **before** ``value``.
   //!
   //! - The range ``[first, last)`` must be sorted consistently with ``comp``.
+  //!
+  //! .. versionadded:: 3.3.0
   //!
   //! @endrst
   //!
@@ -198,6 +202,8 @@ struct DeviceFind
   //! **after** ``value``.
   //!
   //! - The range ``[first, last)`` must be sorted consistently with ``comp``.
+  //!
+  //! .. versionadded:: 3.3.0
   //!
   //! @endrst
   //!
