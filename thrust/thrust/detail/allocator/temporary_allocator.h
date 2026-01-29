@@ -110,9 +110,9 @@ public:
       // Deallocate must be noexcept to be safe in destructors and during exception unwinding.
       // Clear CUDA error state and leak the memory rather than propagating exception.
       // Memory is leaked, but this matches standard allocator behavior when deallocation fails.
-#if defined(__CUDACC__)
+#if _CCCL_CUDA_COMPILATION()
       NV_IF_TARGET(NV_IS_HOST, cudaGetLastError();)
-#endif
+#endif // _CCCL_CUDA_COMPILATION()
     }
   }
 
