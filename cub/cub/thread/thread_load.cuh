@@ -332,24 +332,22 @@ _CCCL_DEVICE _CCCL_FORCEINLINE detail::it_value_t<RandomAccessIterator> ThreadLo
   {
     return *reinterpret_cast<const volatile T*>(::cuda::std::to_address(itr));
   }
-  else
+  else if constexpr (MODIFIER == LOAD_VOLATILE)
   {
-    using LoadWord = ::cuda::std::
-      conditional_t<MODIFIER == LOAD_VOLATILE, typename UnitWord<T>::VolatileWord, typename UnitWord<T>::DeviceWord>;
+    using LoadWord              = typename UnitWord<T>::VolatileWord;
     constexpr int LOAD_MULTIPLE = sizeof(T) / sizeof(LoadWord);
-
     T retval;
     auto* words = reinterpret_cast<LoadWord*>(&retval);
-    if constexpr (MODIFIER == LOAD_VOLATILE)
-    {
-      UnrolledCopy<LOAD_MULTIPLE>(reinterpret_cast<const volatile LoadWord*>(::cuda::std::to_address(itr)), words);
-    }
-    else
-    {
-      UnrolledThreadLoad<LOAD_MULTIPLE, MODIFIER>(
-        reinterpret_cast<const LoadWord*>(::cuda::std::to_address(itr)), words);
-    }
+    UnrolledCopy<LOAD_MULTIPLE>(reinterpret_cast<const volatile LoadWord*>(::cuda::std::to_address(itr)), words);
     return retval;
+  }
+  else
+  {
+    using LoadWord              = typename UnitWord<T>::DeviceWord;
+    constexpr int LOAD_MULTIPLE = sizeof(T) / sizeof(LoadWord);
+    LoadWord words[LOAD_MULTIPLE];
+    UnrolledThreadLoad<LOAD_MULTIPLE, MODIFIER>(reinterpret_cast<const LoadWord*>(::cuda::std::to_address(itr)), words);
+    return *reinterpret_cast<T*>(words);
   }
 }
 
