@@ -53,13 +53,28 @@ struct summary_stats_data
   }
 };
 
-// stats_unary_op is a functor that takes in a value x and
-// returns a variace_data whose mean value is initialized to x.
-template <typename T>
-struct summary_stats_unary_op
+template <typename Iterator>
+void print_range(const std::string& name, Iterator first, Iterator last)
 {
-  __host__ __device__ summary_stats_data<T> operator()(const T& x) const
-  {
+  using T = typename std::iterator_traits<Iterator>::value_type;
+
+  std::cout << name << ": ";
+  thrust::copy(first, last, std::ostream_iterator<T>(std::cout, " "));
+  std::cout << "\n";
+}
+
+int main()
+{
+  using T = float;
+
+  // initialize host array
+  thrust::host_vector<T> h_x{4, 7, 13, 16};
+
+  // transfer to device
+  thrust::device_vector<T> d_x(h_x);
+
+  // lambda that takes in a value x and returns a summary_stats_data whose mean value is initialized to x
+  auto unary_op = [] __device__(const T& x) {
     summary_stats_data<T> result;
     result.n    = 1;
     result.min  = x;
@@ -68,21 +83,12 @@ struct summary_stats_unary_op
     result.M2   = 0;
     result.M3   = 0;
     result.M4   = 0;
-
     return result;
-  }
-};
+  };
 
-// summary_stats_binary_op is a functor that accepts two summary_stats_data
-// structs and returns a new summary_stats_data which are an
-// approximation to the summary_stats for
-// all values that have been aggregated so far
-template <typename T>
-struct summary_stats_binary_op
-{
-  __host__ __device__ summary_stats_data<T>
-  operator()(const summary_stats_data<T>& x, const summary_stats_data<T>& y) const
-  {
+  // lambda that accepts two summary_stats_data structs and returns a new summary_stats_data
+  // which is an approximation to the summary_stats for all values that have been aggregated so far
+  auto binary_op = [] __device__(const summary_stats_data<T>& x, const summary_stats_data<T>& y) {
     summary_stats_data<T> result;
 
     // precompute some common subexpressions
@@ -115,34 +121,9 @@ struct summary_stats_binary_op
     result.M4 += (T) 4.0 * delta * (x.n * y.M3 - y.n * x.M3) / n;
 
     return result;
-  }
-};
+  };
 
-template <typename Iterator>
-void print_range(const std::string& name, Iterator first, Iterator last)
-{
-  using T = typename std::iterator_traits<Iterator>::value_type;
-
-  std::cout << name << ": ";
-  thrust::copy(first, last, std::ostream_iterator<T>(std::cout, " "));
-  std::cout << "\n";
-}
-
-int main()
-{
-  using T = float;
-
-  // initialize host array
-  thrust::host_vector<T> h_x{4, 7, 13, 16};
-
-  // transfer to device
-  thrust::device_vector<T> d_x(h_x);
-
-  // setup arguments
-  summary_stats_unary_op<T> unary_op;
-  summary_stats_binary_op<T> binary_op;
   summary_stats_data<T> init;
-
   init.initialize();
 
   // compute summary statistics
