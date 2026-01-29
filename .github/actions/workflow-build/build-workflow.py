@@ -509,7 +509,7 @@ def generate_dispatch_job_environment(matrix_job, job_type):
     comma = ""
 
     for environ in matrix_job["environment"]:
-        env += f"{comma}\"{environ}\""
+        env += f'{comma}"{environ}"'
         comma = ","
 
     env += "]'"
