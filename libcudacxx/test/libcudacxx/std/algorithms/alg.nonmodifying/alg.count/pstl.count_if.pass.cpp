@@ -10,10 +10,8 @@
 // UNSUPPORTED: nvrtc
 // XFAIL: true
 
-// template<class ExecutionPolicy, class ForwardIterator, class Function>
-//   void for_each(ExecutionPolicy&& exec,
-//                 ForwardIterator first, ForwardIterator last,
-//                 Function f);
+// template<class ExecutionPolicy, class ForwardIterator, class UnaryPred>
+//   void count_if(ExecutionPolicy&& exec, ForwardIterator first, ForwardIterator last, UnaryPred pred);
 
 #include <cuda/std/__pstl_algorithm>
 #include <cuda/std/algorithm>
@@ -23,13 +21,20 @@
 #include "test_iterators.h"
 #include "test_macros.h"
 
-EXECUTION_POLICY_SFINAE_TEST(for_each);
+EXECUTION_POLICY_SFINAE_TEST(count_if);
 
-static_assert(!sfinae_test_for_each<int, int*, int*, bool (*)(int)>);
-static_assert(sfinae_test_for_each<cuda::std::execution::parallel_policy, int*, int*, bool (*)(int)>);
+static_assert(!sfinae_test_count<int, int*, int*, bool (*)(int)>);
+static_assert(sfinae_test_count<cuda::std::execution::parallel_policy, int*, int*, bool (*)(int)>);
 
 int data[100];
-bool called[100];
+
+struct equal_to_42
+{
+  __host__ __device__ constexpr bool operator()(const int& val) const noexcept
+  {
+    return val == 42;
+  }
+};
 
 template <class Iter>
 struct Test
@@ -38,23 +43,18 @@ struct Test
   void operator()(Policy&& policy)
   {
     int sizes[] = {0, 1, 2, 100};
+    cuda::std::iota(data, data + size, 0);
     for (auto size : sizes)
     {
-      cuda::std::fill(called, called + size, false);
-      cuda::std::for_each(policy, Iter(data), Iter(data + size), [&](int& v) {
-        assert(!called[&v - data]);
-        called[&v - data] = true;
-      });
-      assert(cuda::std::all_of(called, called + size, [](bool b) {
-        return b;
-      }));
+      const auto res = cuda::std::count_if(policy, Iter(data), Iter(data + size), equal_to_42{});
+      assert(res == 1);
     }
   }
 };
 
 __host__ void test()
 {
-  types::for_each(types::forward_iterator_list<int*>{}, TestIteratorWithPolicies<Test>{});
+  types::count_if(types::forward_iterator_list<int*>{}, TestIteratorWithPolicies<Test>{});
 }
 
 int main(int, char**)

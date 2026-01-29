@@ -8,14 +8,15 @@
 //
 //===----------------------------------------------------------------------===//
 
-// template<class ExecutionPolicy, class ForwardIterator, class Function>
-//   void for_each(ExecutionPolicy&& exec,
-//                 ForwardIterator first, ForwardIterator last,
-//                 Function f);
+// template<class ExecutionPolicy, class ForwardIterator, class UnaryPredicate>
+// iter_difference<ForwardIterator> count_if(ExecutionPolicy&& exec,
+//                                           ForwardIterator first,
+//                                           ForwardIterator last,
+//                                           UnaryPredicate pred);
 
 #include <thrust/device_vector.h>
 #include <thrust/execution_policy.h>
-#include <thrust/logical.h>
+#include <thrust/sequence.h>
 
 #include <cuda/iterator>
 #include <cuda/memory_pool>
@@ -29,60 +30,49 @@
 
 inline constexpr int size = 1000;
 
-struct mark_present_for_each
+struct equal_to_42
 {
-  bool* ptr_;
-
-  template <typename T>
-  __host__ __device__ void operator()(T val) const noexcept
+  __host__ __device__ constexpr bool operator()(const int& val) const noexcept
   {
-    ptr_[val] = true;
+    return val == 42;
   }
 };
 
-C2H_TEST("cuda::std::for_each", "[parallel algorithm]")
+C2H_TEST("cuda::std::count_if", "[parallel algorithm]")
 {
   SECTION("with default stream")
   {
-    thrust::device_vector<bool> res(size, false);
-    mark_present_for_each fn{thrust::raw_pointer_cast(res.data())};
-
     const auto policy = cuda::execution::__cub_par_unseq;
-    cuda::std::for_each(policy, cuda::counting_iterator{0}, cuda::counting_iterator{size}, fn);
-    CHECK(thrust::all_of(res.begin(), res.end(), cuda::std::identity{}));
+    const auto res =
+      cuda::std::count_if(policy, cuda::counting_iterator{0}, cuda::counting_iterator{size}, equal_to_42{});
+    CHECK(res == 1);
   }
 
   SECTION("with provided stream")
   {
     cuda::stream stream{cuda::device_ref{0}};
-    thrust::device_vector<bool> res(size, false);
-    mark_present_for_each fn{thrust::raw_pointer_cast(res.data())};
-
     const auto policy = cuda::execution::__cub_par_unseq.with_stream(stream);
-    cuda::std::for_each(policy, cuda::counting_iterator{0}, cuda::counting_iterator{size}, fn);
-    CHECK(thrust::all_of(res.begin(), res.end(), cuda::std::identity{}));
+    const auto res =
+      cuda::std::count_if(policy, cuda::counting_iterator{0}, cuda::counting_iterator{size}, equal_to_42{});
+    CHECK(res == 1);
   }
 
   SECTION("with provided memory_resource")
   {
     cuda::device_memory_pool_ref device_resource = cuda::device_default_memory_pool(cuda::device_ref{0});
-    thrust::device_vector<bool> res(size, false);
-    mark_present_for_each fn{thrust::raw_pointer_cast(res.data())};
-
     const auto policy = cuda::execution::__cub_par_unseq.with_memory_resource(device_resource);
-    cuda::std::for_each(policy, cuda::counting_iterator{0}, cuda::counting_iterator{size}, fn);
-    CHECK(thrust::all_of(res.begin(), res.end(), cuda::std::identity{}));
+    const auto res =
+      cuda::std::count_if(policy, cuda::counting_iterator{0}, cuda::counting_iterator{size}, equal_to_42{});
+    CHECK(res == 1);
   }
 
   SECTION("with provided stream and memory_resource")
   {
     cuda::stream stream{cuda::device_ref{0}};
     cuda::device_memory_pool_ref device_resource = cuda::device_default_memory_pool(stream.device());
-    thrust::device_vector<bool> res(size, false);
-    mark_present_for_each fn{thrust::raw_pointer_cast(res.data())};
-
     const auto policy = cuda::execution::__cub_par_unseq.with_memory_resource(device_resource).with_stream(stream);
-    cuda::std::for_each(policy, cuda::counting_iterator{0}, cuda::counting_iterator{size}, fn);
-    CHECK(thrust::all_of(res.begin(), res.end(), cuda::std::identity{}));
+    const auto res =
+      cuda::std::count_if(policy, cuda::counting_iterator{0}, cuda::counting_iterator{size}, equal_to_42{});
+    CHECK(res == 1);
   }
 }

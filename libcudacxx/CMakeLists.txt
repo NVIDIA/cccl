@@ -43,3 +43,7 @@ if (LIBCUDACXX_ENABLE_LIBCUDACXX_TESTS)
 
   add_subdirectory(test)
 endif()
+
+if (CCCL_ENABLE_BENCHMARKS)
+  add_subdirectory(benchmarks)
+endif()
