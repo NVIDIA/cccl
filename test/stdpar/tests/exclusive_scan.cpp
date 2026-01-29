@@ -43,17 +43,11 @@ int main()
 
   // exclusive_scan with initial value & custom binary ops
   const int init2 = 7;
-  std::exclusive_scan(
-    std::execution::par,
-    in.begin(),
-    in.end(),
-    out.begin(),
-    init2,
-    [](int lhs, int rhs) {
-      return lhs + rhs + 1;
-    });
+  std::exclusive_scan(std::execution::par, in.begin(), in.end(), out.begin(), init2, [](int lhs, int rhs) {
+    return lhs + rhs + 1;
+  });
 
-    for (std::size_t i = 0; i < N; ++i)
+  for (std::size_t i = 0; i < N; ++i)
   {
     const int expected = init2 + static_cast<int>(2 * i);
     if (out[i] != expected)
