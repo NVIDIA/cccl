@@ -338,6 +338,7 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void kernelBody(
         ////////////////////////////////////////////////////////////////////////////////
         if (is_last_tile)
         {
+          // TODO(bgruber): for operators where we know the identity we can probably optimize further here
           regThreadSum = ThreadReducePartial(regInput, scan_op, valid_items_this_thread);
           regWarpSum   = warpReducePartial(regThreadSum, scan_op, valid_threads_this_warp);
         }
