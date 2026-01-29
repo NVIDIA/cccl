@@ -33,8 +33,6 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-#if defined(LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE)
-
 //! @file
 //! The \c uninitialized_buffer class provides a typed buffer allocated from a given memory resource.
 namespace cuda::experimental
@@ -103,7 +101,7 @@ private:
   //! @pre The buffer must have the cuda::mr::device_accessible property.
   template <class _Tp2 = _Tp>
   [[nodiscard]] _CCCL_HIDE_FROM_ABI friend auto
-  transform_device_argument(::cuda::stream_ref, uninitialized_buffer& __self) noexcept
+  transform_launch_argument(::cuda::stream_ref, uninitialized_buffer& __self) noexcept
     _CCCL_TRAILING_REQUIRES(::cuda::std::span<_Tp>)(
       ::cuda::std::same_as<_Tp, _Tp2>&& ::cuda::std::__is_included_in_v<::cuda::mr::device_accessible, _Properties...>)
   {
@@ -114,7 +112,7 @@ private:
   //! @pre The buffer must have the cuda::mr::device_accessible property.
   template <class _Tp2 = _Tp>
   [[nodiscard]] _CCCL_HIDE_FROM_ABI friend auto
-  transform_device_argument(::cuda::stream_ref, const uninitialized_buffer& __self) noexcept
+  transform_launch_argument(::cuda::stream_ref, const uninitialized_buffer& __self) noexcept
     _CCCL_TRAILING_REQUIRES(::cuda::std::span<const _Tp>)(
       ::cuda::std::same_as<_Tp, _Tp2>&& ::cuda::std::__is_included_in_v<::cuda::mr::device_accessible, _Properties...>)
   {
@@ -258,7 +256,7 @@ public:
   }
 
   //! @rst
-  //! Returns a \c const reference to the :ref:`any_resource <cudax-memory-resource-any-resource>`
+  //! Returns a \c const reference to the :ref:`any_resource <libcudacxx-memory-resource-any-resource>`
   //! that holds the memory resource used to allocate the buffer
   //! @endrst
   [[nodiscard]] _CCCL_HIDE_FROM_ABI const __resource& memory_resource() const noexcept
@@ -288,8 +286,6 @@ public:
 template <class _Tp>
 using uninitialized_device_buffer = uninitialized_buffer<_Tp, ::cuda::mr::device_accessible>;
 } // namespace cuda::experimental
-
-#endif // LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE
 
 #include <cuda/std/__cccl/epilogue.h>
 

@@ -219,7 +219,7 @@ void TestFillZipIterator()
 
   thrust::fill(thrust::make_zip_iterator(v1.begin(), v2.begin(), v3.begin()),
                thrust::make_zip_iterator(v1.end(), v2.end(), v3.end()),
-               thrust::tuple<T, T, T>(4, 7, 13));
+               cuda::std::tuple<T, T, T>(4, 7, 13));
 
   Vector ref1{4, 4, 4};
   ASSERT_EQUAL(ref1, v1);
@@ -235,7 +235,7 @@ DECLARE_VECTOR_UNITTEST(TestFillZipIterator);
 void TestFillTuple()
 {
   using T     = int;
-  using Tuple = thrust::tuple<T, T>;
+  using Tuple = cuda::std::tuple<T, T>;
 
   thrust::host_vector<Tuple> h(3, Tuple(0, 0));
   thrust::device_vector<Tuple> d(3, Tuple(0, 0));

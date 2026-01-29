@@ -14,6 +14,7 @@
 #include <thrust/equal.h>
 
 #include <cuda/buffer>
+#include <cuda/devices>
 #include <cuda/functional>
 #include <cuda/memory_pool>
 #include <cuda/std/algorithm>
@@ -28,20 +29,49 @@ inline constexpr ::cuda::std::initializer_list<int> compare_data_initializer_lis
 __device__ constexpr int device_data[] = {1, 42, 1337, 0, 12, -1};
 constexpr int host_data[]              = {1, 42, 1337, 0, 12, -1};
 
+template <typename Iter>
+__global__ void check_equal_kernel(Iter ptr)
+{
+  for (int i = 0; i < cuda::std::size(device_data); i++)
+  {
+    if (ptr[i] != device_data[i])
+    {
+      __trap();
+    }
+  }
+}
+
+template <typename Iter, typename Val>
+__global__ void check_equal_value_kernel(Iter ptr, size_t size, Val value)
+{
+  for (size_t i = 0; i < size; i++)
+  {
+    if (ptr[i] != value)
+    {
+      __trap();
+    }
+  }
+}
+
 template <class Buffer>
 bool equal_range(const Buffer& buf)
 {
-  if constexpr (!Buffer::properties_list::has_property(cuda::mr::device_accessible{}))
+  if constexpr (Buffer::properties_list::has_property(cuda::mr::host_accessible{}))
   {
     buf.stream().sync();
     return cuda::std::equal(buf.begin(), buf.end(), cuda::std::begin(host_data), cuda::std::end(host_data));
   }
   else
   {
+    if (buf.size() != cuda::std::size(device_data))
+    {
+      return false;
+    }
     cuda::__ensure_current_context guard{cuda::device_ref{0}};
-    return buf.size() == cuda::std::size(device_data)
-        && thrust::equal(
-             thrust::cuda::par.on(buf.stream().get()), buf.begin(), buf.end(), cuda::get_device_address(device_data[0]));
+    check_equal_kernel<<<1, 1, 0, buf.stream().get()>>>(buf.begin());
+    CCCLRT_CHECK(cudaGetLastError() == cudaSuccess);
+    buf.stream().sync();
+    return true;
   }
 }
 
@@ -108,7 +138,7 @@ struct equal_to_value
 template <class Buffer>
 bool equal_size_value(const Buffer& buf, const size_t size, const int value)
 {
-  if constexpr (!Buffer::properties_list::has_property(cuda::mr::device_accessible{}))
+  if constexpr (Buffer::properties_list::has_property(cuda::mr::host_accessible{}))
   {
     buf.stream().sync();
     return buf.size() == size
@@ -119,13 +149,15 @@ bool equal_size_value(const Buffer& buf, const size_t size, const int value)
   }
   else
   {
+    if (buf.size() != size)
+    {
+      return false;
+    }
     cuda::__ensure_current_context guard{cuda::device_ref{0}};
-    return buf.size() == size
-        && thrust::equal(thrust::cuda::par.on(buf.stream().get()),
-                         buf.begin(),
-                         buf.end(),
-                         cuda::std::begin(device_data),
-                         equal_to_value{static_cast<typename Buffer::value_type>(value)});
+    check_equal_value_kernel<<<1, 1, 0, buf.stream().get()>>>(buf.begin(), size, value);
+    CCCLRT_CHECK(cudaGetLastError() == cudaSuccess);
+    buf.stream().sync();
+    return true;
   }
 }
 
@@ -151,31 +183,49 @@ template <class>
 struct extract_properties;
 
 template <class T, class... Properties>
-struct extract_properties<cuda::std::tuple<T, Properties...>>
+struct extract_properties<cuda::buffer<T, Properties...>>
 {
   static auto get_resource()
   {
     if constexpr (cuda::mr::__is_host_accessible<Properties...>)
     {
 #if _CCCL_CTK_AT_LEAST(12, 6)
-      return cuda::pinned_default_memory_pool();
+      return offset_by_alignment_resource(cuda::pinned_default_memory_pool());
 #else // ^^^ _CCCL_CTK_AT_LEAST(12, 6) ^^^ / vvv _CCCL_CTK_BELOW(12, 6) vvv
-      return;
+      throw std::runtime_error("Host accessible memory pools are not supported");
 #endif // ^^^ _CCCL_CTK_BELOW(12, 6) ^^^
     }
     else
     {
-      return cuda::device_default_memory_pool(cuda::device_ref{0});
+      return offset_by_alignment_resource(cuda::device_default_memory_pool(cuda::device_ref{0}));
     }
   }
 
-  using buffer         = cuda::buffer<T, Properties...>;
-  using resource       = decltype(get_resource());
-  using iterator       = cuda::heterogeneous_iterator<T, Properties...>;
-  using const_iterator = cuda::heterogeneous_iterator<const T, Properties...>;
+  static bool is_resource_supported()
+  {
+    if constexpr (cuda::mr::__is_host_accessible<Properties...>)
+    {
+      return cuda::__is_host_memory_pool_supported();
+    }
+    else
+    {
+      // Device memory pools are always supported
+      return true;
+    }
+  }
 
-  using matching_vector   = cuda::buffer<T, other_property, Properties...>;
+  using resource = decltype(get_resource());
+
+  using matching_buffer   = cuda::buffer<T, other_property, Properties...>;
   using matching_resource = memory_resource_wrapper<other_property, Properties...>;
 };
+
+#if _CCCL_CTK_AT_LEAST(12, 6)
+using test_types = c2h::type_list<cuda::buffer<int, cuda::mr::host_accessible>,
+                                  cuda::buffer<unsigned long long, cuda::mr::device_accessible>,
+                                  cuda::buffer<int, cuda::mr::host_accessible, cuda::mr::device_accessible>>;
+#else // ^^^ _CCCL_CTK_AT_LEAST(12, 6) ^^^ / vvv _CCCL_CTK_BELOW(12, 6) vvv
+using test_types = c2h::type_list<cuda::buffer<int, cuda::mr::device_accessible>>;
+#endif // ^^^ _CCCL_CTK_BELOW(12, 6) ^^^
 
 #endif // CUDA_TEST_CONTAINER_VECTOR_HELPER_H

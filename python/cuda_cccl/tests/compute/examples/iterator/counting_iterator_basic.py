@@ -19,8 +19,8 @@ from cuda.compute import (
 )
 
 # Prepare the input and output arrays.
-first_item = 10
-num_items = 3
+first_item = 1
+num_items = 100
 
 # Create the counting iterator.
 first_it = CountingIterator(np.int32(first_item))

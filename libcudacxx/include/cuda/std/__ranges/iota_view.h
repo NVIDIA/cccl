@@ -157,19 +157,19 @@ public:
   _CCCL_TEMPLATE(class _BoundSentinel2 = _BoundSentinel)
   _CCCL_REQUIRES(same_as<_Start, _BoundSentinel2>)
   _CCCL_API constexpr iota_view(__iterator __first, __iterator __last)
-      : iota_view(::cuda::std::move(*__first), ::cuda::std::move(*__last))
+      : iota_view(*__first, *__last)
   {}
 
   _CCCL_TEMPLATE(class _BoundSentinel2 = _BoundSentinel)
   _CCCL_REQUIRES(same_as<_BoundSentinel2, unreachable_sentinel_t>)
   _CCCL_API constexpr iota_view(__iterator __first, _BoundSentinel __last)
-      : iota_view(::cuda::std::move(*__first), ::cuda::std::move(__last))
+      : iota_view(*__first, ::cuda::std::move(__last))
   {}
 
   _CCCL_TEMPLATE(class _BoundSentinel2 = _BoundSentinel)
   _CCCL_REQUIRES((!same_as<_Start, _BoundSentinel2>) _CCCL_AND(!same_as<_Start, unreachable_sentinel_t>))
   _CCCL_API constexpr iota_view(__iterator __first, __sentinel __last)
-      : iota_view(::cuda::std::move(*__first), ::cuda::std::move(__last.__bound_sentinel_))
+      : iota_view(*__first, ::cuda::std::move(__last.__bound_sentinel_))
   {}
 
   [[nodiscard]] _CCCL_API constexpr __iterator begin() const
@@ -191,7 +191,6 @@ public:
     {
       return __sentinel{__bound_sentinel_};
     }
-    _CCCL_UNREACHABLE();
   }
 
   _CCCL_TEMPLATE(class _BoundSentinel2 = _BoundSentinel)
@@ -215,7 +214,6 @@ public:
     {
       return ::cuda::std::__to_unsigned_like(__bound_sentinel_ - __value_);
     }
-    _CCCL_UNREACHABLE();
   }
 };
 

@@ -8,6 +8,7 @@
 //
 //===----------------------------------------------------------------------===//
 
+#include <cuda/launch>
 #include <cuda/memory_pool>
 #include <cuda/memory_resource>
 #include <cuda/std/cstdint>
@@ -177,28 +178,34 @@ C2H_CCCLRT_TEST("device_memory_resource construction", "[memory_resource]")
     CHECK(ensure_export_handle(get, ::cudaMemHandleTypeNone));
   }
 
-  // Allocation handles are only supported after 11.2
-  SECTION("Construct with allocation handle")
+  // Allocation handles are only supported after 11.2 and not on Windows
+#if !_CCCL_OS(WINDOWS)
+  if (cuda::devices[0].attribute(::cuda::device_attributes::memory_pool_supported_handle_types)
+      & ::cudaMemHandleTypePosixFileDescriptor)
   {
-    cuda::memory_pool_properties props = {
-      20,
-      42,
-      ::cudaMemHandleTypePosixFileDescriptor,
-    };
-    cuda::device_memory_pool with_allocation_handle{current_device, props};
+    SECTION("Construct with allocation handle")
+    {
+      cuda::memory_pool_properties props = {
+        20,
+        42,
+        ::cudaMemHandleTypePosixFileDescriptor,
+      };
+      cuda::device_memory_pool with_allocation_handle{current_device, props};
 
-    ::cudaMemPool_t get = with_allocation_handle.get();
-    CHECK(get != current_default_pool);
+      ::cudaMemPool_t get = with_allocation_handle.get();
+      CHECK(get != current_default_pool);
 
-    // Ensure we use the right release threshold
-    CHECK(ensure_release_threshold(get, props.release_threshold));
+      // Ensure we use the right release threshold
+      CHECK(ensure_release_threshold(get, props.release_threshold));
 
-    // Ensure that we disable reuse with unsupported drivers
-    CHECK(ensure_disable_reuse(get, driver_version));
+      // Ensure that we disable reuse with unsupported drivers
+      CHECK(ensure_disable_reuse(get, driver_version));
 
-    // Ensure that we disable export
-    CHECK(ensure_export_handle(get, props.allocation_handle_type));
+      // Ensure that we disable export
+      CHECK(ensure_export_handle(get, props.allocation_handle_type));
+    }
   }
+#endif // !_CCCL_OS(WINDOWS)
 }
 
 static void ensure_device_ptr(void* ptr)
@@ -374,22 +381,21 @@ C2H_CCCLRT_TEST("device_memory_resource comparison", "[memory_resource]")
 
 C2H_CCCLRT_TEST("Async memory resource access", "")
 {
-  /* disable until we move the launch API to libcudacxx
   if (cuda::devices.size() > 1)
   {
     auto peers = cuda::devices[0].peers();
     if (peers.size() > 0)
     {
       cuda::device_memory_pool pool{cuda::devices[0]};
-      cuda::stream_ref stream{peers.front()};
+      cuda::stream stream{peers.front()};
       CCCLRT_CHECK(pool.is_accessible_from(cuda::devices[0]));
 
       auto allocate_and_check_access = [&](auto& resource) {
         auto* ptr1  = resource.allocate(stream, sizeof(int));
         auto* ptr2  = resource.allocate_sync(sizeof(int));
-        auto config = cudax::distribute<1>(1);
-        cudax::launch(stream, config, test::assign_42{}, (int*) ptr1);
-        cudax::launch(stream, config, test::assign_42{}, (int*) ptr2);
+        auto config = cuda::distribute<1>(1);
+        cuda::launch(stream, config, test::assign_42{}, (int*) ptr1);
+        cuda::launch(stream, config, test::assign_42{}, (int*) ptr2);
         stream.sync();
         resource.deallocate(stream, ptr1, sizeof(int));
         resource.deallocate_sync(ptr2, sizeof(int));
@@ -400,7 +406,7 @@ C2H_CCCLRT_TEST("Async memory resource access", "")
       CCCLRT_CHECK(pool.is_accessible_from(peers.front()));
       allocate_and_check_access(pool);
 
-      cudax::device_memory_pool_ref resource{pool};
+      cuda::device_memory_pool_ref resource{pool};
       CCCLRT_CHECK(resource.is_accessible_from(peers.front()));
       allocate_and_check_access(resource);
 
@@ -421,7 +427,9 @@ C2H_CCCLRT_TEST("Async memory resource access", "")
 
       // Check if enable can include the device on which the pool resides
       {
-        std::vector peers_ext(peers.begin(), peers.end());
+        // Separate insert call because GCC 7 doesn't like the constructor from iterators
+        std::vector<cuda::device_ref> peers_ext;
+        peers_ext.insert(peers_ext.end(), peers.begin(), peers.end());
         peers_ext.push_back(cuda::devices[0]);
         pool.enable_access_from(peers_ext);
 
@@ -439,5 +447,4 @@ C2H_CCCLRT_TEST("Async memory resource access", "")
       }
     }
   }
-  */
 }

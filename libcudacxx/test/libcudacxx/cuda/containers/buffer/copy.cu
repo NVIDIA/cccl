@@ -22,14 +22,6 @@
 #include "helper.h"
 #include "types.h"
 
-#if _CCCL_CTK_AT_LEAST(12, 6)
-using test_types = c2h::type_list<cuda::std::tuple<int, cuda::mr::host_accessible>,
-                                  cuda::std::tuple<unsigned long long, cuda::mr::device_accessible>,
-                                  cuda::std::tuple<int, cuda::mr::host_accessible, cuda::mr::device_accessible>>;
-#else // ^^^ _CCCL_CTK_AT_LEAST(12, 6) ^^^ / _CCCL_CTK_BELOW(12, 6) vvv
-using test_types = c2h::type_list<cuda::std::tuple<int, cuda::mr::device_accessible>>;
-#endif // ^^^ _CCCL_CTK_BELOW(12, 6) ^^^
-
 template <class T1, class T2, class... PropertiesSuperSet, class... PropertiesSubset>
 constexpr bool is_matching_buffer(const cuda::buffer<T1, PropertiesSuperSet...>&,
                                   const cuda::buffer<T2, PropertiesSubset...>&) noexcept
@@ -40,15 +32,17 @@ constexpr bool is_matching_buffer(const cuda::buffer<T1, PropertiesSuperSet...>&
 
 C2H_CCCLRT_TEST("cuda::buffer make_buffer", "[container][buffer]", test_types)
 {
-  using TestT    = c2h::get<0, TestType>;
-  using Resource = typename extract_properties<TestT>::resource;
-  using Buffer   = typename extract_properties<TestT>::buffer;
+  using Buffer   = c2h::get<0, TestType>;
+  using Resource = typename extract_properties<Buffer>::resource;
   using T        = typename Buffer::value_type;
 
-  cuda::stream stream{cuda::device_ref{0}};
-  Resource resource = extract_properties<TestT>::get_resource();
+  if (!extract_properties<Buffer>::is_resource_supported())
+  {
+    return;
+  }
 
-  using MatchingResource = typename extract_properties<TestT>::matching_resource;
+  cuda::stream stream{cuda::device_ref{0}};
+  Resource resource = extract_properties<Buffer>::get_resource();
 
   SECTION("Same resource and stream")
   {

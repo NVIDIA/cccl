@@ -191,7 +191,7 @@ StoreDirectBlockedVectorized(int linear_tid, T* block_ptr, T (&items)[ItemsPerTh
   }
 }
 
-//! @}  end member group
+//! @}
 //! @name Striped arrangement I/O (direct)
 //! @{
 
@@ -287,7 +287,7 @@ StoreDirectStriped(int linear_tid, OutputIteratorT block_itr, T (&items)[ItemsPe
   }
 }
 
-//! @}  end member group
+//! @}
 //! @name Warp-striped arrangement I/O (direct)
 //! @{
 
@@ -395,7 +395,7 @@ StoreDirectWarpStriped(int linear_tid, OutputIteratorT block_itr, T (&items)[Ite
   }
 }
 
-//! @}  end member group
+//! @}
 
 //-----------------------------------------------------------------------------
 // Generic BlockStore abstraction
@@ -530,7 +530,7 @@ enum BlockStoreAlgorithm
   BLOCK_STORE_WARP_TRANSPOSE_TIMESLICED,
 };
 
-#if !_CCCL_COMPILER(NVRTC)
+#if !_CCCL_COMPILER(NVRTC) && !defined(_CCCL_DOXYGEN_INVOKED)
 inline ::std::ostream& operator<<(::std::ostream& os, BlockStoreAlgorithm algo)
 {
   switch (algo)
@@ -551,7 +551,7 @@ inline ::std::ostream& operator<<(::std::ostream& os, BlockStoreAlgorithm algo)
       return os << "<unknown BlockStoreAlgorithm: " << static_cast<int>(algo) << ">";
   }
 }
-#endif // !_CCCL_COMPILER(NVRTC)
+#endif // !_CCCL_COMPILER(NVRTC) && !_CCCL_DOXYGEN_INVOKED
 
 //! @rst
 //! The BlockStore class provides :ref:`collective <collective-primitives>` data movement
@@ -1112,7 +1112,7 @@ public:
       , linear_tid(RowMajorTid(BlockDimX, BlockDimY, BlockDimZ))
   {}
 
-  //! @}  end member group
+  //! @}
   //! @name Data movement
   //! @{
 
@@ -1224,7 +1224,7 @@ public:
     InternalStore(temp_storage, linear_tid).Store(block_itr, items, valid_items);
   }
 
-  //! @}  end member group
+  //! @}
 };
 
 #ifndef _CCCL_DOXYGEN_INVOKED // Do not document

@@ -90,6 +90,10 @@ THRUST_NAMESPACE_BEGIN
  *  \see \c uninitialized_copy
  *  \see \c device_new
  *  \see \c device_malloc
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename DerivedPolicy, typename ForwardIterator, typename T>
 _CCCL_HOST_DEVICE void uninitialized_fill(
@@ -145,6 +149,10 @@ _CCCL_HOST_DEVICE void uninitialized_fill(
  *  \see \c uninitialized_copy
  *  \see \c device_new
  *  \see \c device_malloc
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename ForwardIterator, typename T>
 void uninitialized_fill(ForwardIterator first, ForwardIterator last, const T& x);
@@ -202,6 +210,10 @@ void uninitialized_fill(ForwardIterator first, ForwardIterator last, const T& x)
  *  \see \c uninitialized_copy_n
  *  \see \c device_new
  *  \see \c device_malloc
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename DerivedPolicy, typename ForwardIterator, typename Size, typename T>
 _CCCL_HOST_DEVICE ForwardIterator uninitialized_fill_n(
@@ -255,6 +267,10 @@ _CCCL_HOST_DEVICE ForwardIterator uninitialized_fill_n(
  *  \see \c uninitialized_copy_n
  *  \see \c device_new
  *  \see \c device_malloc
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename ForwardIterator, typename Size, typename T>
 ForwardIterator uninitialized_fill_n(ForwardIterator first, Size n, const T& x);

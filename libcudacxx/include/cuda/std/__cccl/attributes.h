@@ -61,7 +61,7 @@
 // Debuggers do not step into functions marked with __attribute__((__artificial__)). This
 // is useful for small wrapper functions that just dispatch to other functions and that
 // are inlined into the caller.
-#if _CCCL_HAS_ATTRIBUTE(__artificial__) && !_CCCL_HAS_CUDA_COMPILER()
+#if _CCCL_HAS_ATTRIBUTE(__artificial__) && !_CCCL_CUDA_COMPILER(NVCC)
 #  define _CCCL_ARTIFICIAL __attribute__((__artificial__))
 #else // ^^^ _CCCL_HAS_ATTRIBUTE(__artificial__) ^^^ / vvv !_CCCL_HAS_ATTRIBUTE(__artificial__) vvv
 #  define _CCCL_ARTIFICIAL
@@ -153,6 +153,16 @@
 
 #define _CCCL_NO_SPECIALIZATIONS \
   _CCCL_NO_SPECIALIZATIONS_BECAUSE("Users are not allowed to specialize this cccl entity")
+
+// _CCCL_LIFETIMEBOUND
+
+#if _CCCL_HAS_CPP_ATTRIBUTE(clang::lifetimebound) || _CCCL_COMPILER(CLANG)
+#  define _CCCL_LIFETIMEBOUND [[clang::lifetimebound]]
+#elif _CCCL_HAS_CPP_ATTRIBUTE(msvc::lifetimebound) || _CCCL_COMPILER(MSVC, >=, 19, 37)
+#  define _CCCL_LIFETIMEBOUND [[msvc::lifetimebound]]
+#else
+#  define _CCCL_LIFETIMEBOUND
+#endif
 
 // _CCCL_NO_UNIQUE_ADDRESS
 

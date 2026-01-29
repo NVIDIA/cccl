@@ -11,9 +11,9 @@
 #include <nvbench_helper.cuh>
 
 #if !TUNE_BASE
-struct arch_policies
+struct policy_selector
 {
-  _CCCL_API constexpr auto operator()(cuda::arch_id) const -> ::cub::reduce_arch_policy
+  _CCCL_API constexpr auto operator()(cuda::arch_id) const -> ::cub::reduce_policy
   {
     const auto [items, threads] = cub::detail::scale_mem_bound(TUNE_THREADS_PER_BLOCK, TUNE_ITEMS_PER_THREAD);
     const auto policy           = cub::agent_reduce_policy{
@@ -60,7 +60,7 @@ void reduce(nvbench::state& state, nvbench::type_list<T, OffsetT>)
       ::cuda::std::execution::prop{
         ::cuda::execution::__get_tuning_t,
         ::cuda::std::execution::env{
-          ::cuda::std::execution::prop{::cub::detail::reduce::get_tuning_query_t, arch_policies{}}}}
+          ::cuda::std::execution::prop{::cub::detail::reduce::get_tuning_query_t, policy_selector{}}}}
 #  endif
     };
     static_assert(::cuda::std::execution::__queryable_with<decltype(env), ::cuda::mr::__get_memory_resource_t>);
@@ -84,7 +84,7 @@ void reduce(nvbench::state& state, nvbench::type_list<T, OffsetT>)
     transform_op
 #if !TUNE_BASE
     ,
-    arch_policies{}
+    policy_selector{}
 #endif
   );
 
@@ -104,7 +104,7 @@ void reduce(nvbench::state& state, nvbench::type_list<T, OffsetT>)
       transform_op
 #if !TUNE_BASE
       ,
-      arch_policies{}
+      policy_selector{}
 #endif
     );
   });

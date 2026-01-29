@@ -22,11 +22,7 @@ function(cudax_add_catch2_test target_name_var test_name) # ARGN=test sources
     PRIVATE #
       cudax.compiler_interface
       cccl.c2h.main
-      CUDA::cudart
-  )
-  target_compile_definitions(
-    ${test_target}
-    PRIVATE LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE
+      CUDA::cudart_static
   )
   target_compile_options(
     ${test_target}
@@ -55,7 +51,9 @@ cudax_add_catch2_test(test_target execution ${cudax_target}
     execution/test_sequence.cu
     execution/test_starts_on.cu
     execution/test_stream_context.cu
+    execution/test_task_scheduler.cu
     execution/test_then.cu
+    execution/test_trampoline_scheduler.cu
     execution/test_visit.cu
     execution/test_when_all.cu
     execution/test_write_attrs.cu
@@ -85,6 +83,10 @@ cudax_add_catch2_test(test_target containers
 
 cudax_add_catch2_test(test_target cuco
     cuco/utility/test_hashers.cu
+)
+
+cudax_add_catch2_test(test_target cuco_hyperloglog ${cudax_target}
+  cuco/hyperloglog/test_hyperloglog.cu
 )
 
 cudax_add_catch2_test(test_target green_context

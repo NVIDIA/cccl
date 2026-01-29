@@ -22,7 +22,7 @@
 
 #include <cuda/std/__internal/features.h>
 
-#if _CCCL_HAS_CUDA_COMPILER()
+#if _CCCL_CUDA_COMPILATION()
 #  define _CCCL_ATOMIC_ALWAYS_LOCK_FREE(size, ptr) (size <= 8)
 #elif _CCCL_COMPILER(CLANG) || _CCCL_COMPILER(GCC)
 #  define _CCCL_ATOMIC_ALWAYS_LOCK_FREE(...) __atomic_always_lock_free(__VA_ARGS__)

@@ -50,7 +50,7 @@ enum CacheLoadModifier
   LOAD_VOLATILE, ///< Volatile (any memory space)
 };
 
-#if !_CCCL_COMPILER(NVRTC)
+#if !_CCCL_COMPILER(NVRTC) && !defined(_CCCL_DOXYGEN_INVOKED)
 inline ::std::ostream& operator<<(::std::ostream& os, CacheLoadModifier modifier)
 {
   switch (modifier)
@@ -73,7 +73,7 @@ inline ::std::ostream& operator<<(::std::ostream& os, CacheLoadModifier modifier
       return os << "<unknown CacheLoadModifier: " << static_cast<int>(modifier) << ">";
   }
 }
-#endif // !_CCCL_COMPILER(NVRTC)
+#endif // !_CCCL_COMPILER(NVRTC) && !_CCCL_DOXYGEN_INVOKED
 
 /**
  * @name Thread I/O (cache modified)
@@ -115,7 +115,7 @@ inline ::std::ostream& operator<<(::std::ostream& os, CacheLoadModifier modifier
 template <CacheLoadModifier MODIFIER, typename RandomAccessIterator>
 _CCCL_DEVICE _CCCL_FORCEINLINE cub::detail::it_value_t<RandomAccessIterator> ThreadLoad(RandomAccessIterator itr);
 
-//@}  end member group
+//@}
 
 #ifndef _CCCL_DOXYGEN_INVOKED // Do not document
 

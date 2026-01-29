@@ -125,6 +125,15 @@ cdef extern from "cccl/c/types.h":
         FUTURE_VALUE_INIT "CCCL_FUTURE_VALUE_INIT"
         NO_INIT "CCCL_NO_INIT"
 
+    cpdef enum cccl_determinism_t:
+        NOT_GUARANTEED "CCCL_NOT_GUARANTEED"
+        RUN_TO_RUN "CCCL_RUN_TO_RUN"
+        GPU_TO_GPU "CCCL_GPU_TO_GPU"
+
+    cpdef enum cccl_binary_search_mode_t:
+        LOWER_BOUND "CCCL_BINARY_SEARCH_LOWER_BOUND"
+        UPPER_BOUND "CCCL_BINARY_SEARCH_UPPER_BOUND"
+
 cdef void arg_type_check(
     str arg_name,
     object expected_type,
@@ -141,6 +150,8 @@ TypeEnum = cccl_type_enum
 IteratorKind = cccl_iterator_kind_t
 SortOrder = cccl_sort_order_t
 InitKind = cccl_init_kind_t
+Determinism = cccl_determinism_t
+BinarySearchMode = cccl_binary_search_mode_t
 
 cdef void _validate_alignment(int alignment) except *:
     """
@@ -834,10 +845,23 @@ cdef extern from "cccl/c/reduce.h":
         cccl_iterator_t,
         cccl_op_t,
         cccl_value_t,
+        cccl_determinism_t,
         int, int, const char*, const char*, const char*, const char*
     ) nogil
 
     cdef CUresult cccl_device_reduce(
+        cccl_device_reduce_build_result_t,
+        void *,
+        size_t *,
+        cccl_iterator_t,
+        cccl_iterator_t,
+        uint64_t,
+        cccl_op_t,
+        cccl_value_t,
+        CUstream
+    ) nogil
+
+    cdef CUresult cccl_device_reduce_nondeterministic(
         cccl_device_reduce_build_result_t,
         void *,
         size_t *,
@@ -863,6 +887,7 @@ cdef class DeviceReduceBuildResult:
         Iterator d_out,
         Op op,
         Value h_init,
+        cccl_determinism_t determinism,
         CommonData common_data
     ):
         cdef CUresult status = -1
@@ -881,6 +906,7 @@ cdef class DeviceReduceBuildResult:
                 d_out.iter_data,
                 op.op_data,
                 h_init.value_data,
+                determinism,
                 cc_major,
                 cc_minor,
                 cub_path,
@@ -931,6 +957,40 @@ cdef class DeviceReduceBuildResult:
         if status != 0:
             raise RuntimeError(
                 f"Failed executing reduce, error code: {status}"
+            )
+        return storage_sz
+
+    cpdef int compute_nondeterministic(
+        DeviceReduceBuildResult self,
+        temp_storage_ptr,
+        temp_storage_bytes,
+        Iterator d_in,
+        Iterator d_out,
+        size_t num_items,
+        Op op,
+        Value h_init,
+        stream
+    ):
+        cdef CUresult status = -1
+        cdef void *storage_ptr = (<void *><uintptr_t>temp_storage_ptr) if temp_storage_ptr else NULL
+        cdef size_t storage_sz = <size_t>temp_storage_bytes
+        cdef CUstream c_stream = <CUstream><uintptr_t>(stream) if stream else NULL
+
+        with nogil:
+            status = cccl_device_reduce_nondeterministic(
+                self.build_data,
+                storage_ptr,
+                &storage_sz,
+                d_in.iter_data,
+                d_out.iter_data,
+                <uint64_t>num_items,
+                op.op_data,
+                h_init.value_data,
+                c_stream
+            )
+        if status != 0:
+            raise RuntimeError(
+                f"Failed executing reduce not guaranteed determinism, error code: {status}"
             )
         return storage_sz
 
@@ -2125,6 +2185,127 @@ cdef class DeviceHistogramBuildResult:
             )
         return storage_sz
 
+
+    def _get_cubin(self):
+        return PyBytes_FromStringAndSize(
+            <const char*>self.build_data.cubin,
+            self.build_data.cubin_size
+        )
+
+
+# -------------------
+#   DeviceBinarySearch
+# -------------------
+cdef extern from "cccl/c/binary_search.h":
+    cdef struct cccl_device_binary_search_build_result_t 'cccl_device_binary_search_build_result_t':
+        int cc
+        void* cubin
+        size_t cubin_size
+        CUlibrary library
+        CUkernel kernel
+
+    cdef CUresult cccl_device_binary_search_build(
+        cccl_device_binary_search_build_result_t*,
+        cccl_binary_search_mode_t,
+        cccl_iterator_t,
+        cccl_iterator_t,
+        cccl_iterator_t,
+        cccl_op_t,
+        int, int, const char*, const char*, const char*, const char*
+    ) nogil
+
+    cdef CUresult cccl_device_binary_search(
+        cccl_device_binary_search_build_result_t,
+        cccl_iterator_t,
+        uint64_t,
+        cccl_iterator_t,
+        uint64_t,
+        cccl_iterator_t,
+        cccl_op_t,
+        CUstream
+    ) nogil
+
+    cdef CUresult cccl_device_binary_search_cleanup(
+        cccl_device_binary_search_build_result_t *build_ptr
+    ) nogil
+
+
+cdef class DeviceBinarySearchBuildResult:
+    cdef cccl_device_binary_search_build_result_t build_data
+
+    def __dealloc__(DeviceBinarySearchBuildResult self):
+        cdef CUresult status = -1
+        with nogil:
+            status = cccl_device_binary_search_cleanup(&self.build_data)
+        if (status != 0):
+            print(f"Return code {status} encountered during binary_search result cleanup")
+
+    def __cinit__(
+        DeviceBinarySearchBuildResult self,
+        cccl_binary_search_mode_t mode,
+        Iterator d_data,
+        Iterator d_values,
+        Iterator d_out,
+        Op op,
+        CommonData common_data
+    ):
+        cdef CUresult status = -1
+        cdef int cc_major = common_data.get_cc_major()
+        cdef int cc_minor = common_data.get_cc_minor()
+        cdef const char *cub_path = common_data.cub_path_get_c_str()
+        cdef const char *thrust_path = common_data.thrust_path_get_c_str()
+        cdef const char *libcudacxx_path = common_data.libcudacxx_path_get_c_str()
+        cdef const char *ctk_path = common_data.ctk_path_get_c_str()
+
+        memset(&self.build_data, 0, sizeof(cccl_device_binary_search_build_result_t))
+        with nogil:
+            status = cccl_device_binary_search_build(
+                &self.build_data,
+                mode,
+                d_data.iter_data,
+                d_values.iter_data,
+                d_out.iter_data,
+                op.op_data,
+                cc_major,
+                cc_minor,
+                cub_path,
+                thrust_path,
+                libcudacxx_path,
+                ctk_path,
+            )
+        if status != 0:
+            raise RuntimeError(
+                f"Failed building binary_search, error code: {status}"
+            )
+
+    cpdef void compute(
+        DeviceBinarySearchBuildResult self,
+        Iterator d_data,
+        size_t num_items,
+        Iterator d_values,
+        size_t num_values,
+        Iterator d_out,
+        Op op,
+        stream
+    ):
+        cdef CUresult status = -1
+        cdef CUstream c_stream = <CUstream><uintptr_t>(stream) if stream else NULL
+
+        with nogil:
+            status = cccl_device_binary_search(
+                self.build_data,
+                d_data.iter_data,
+                <uint64_t>num_items,
+                d_values.iter_data,
+                <uint64_t>num_values,
+                d_out.iter_data,
+                op.op_data,
+                c_stream
+            )
+        if status != 0:
+            raise RuntimeError(
+                f"Failed executing binary_search, error code: {status}"
+            )
 
     def _get_cubin(self):
         return PyBytes_FromStringAndSize(

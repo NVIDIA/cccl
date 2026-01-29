@@ -21,18 +21,15 @@
 #  pragma system_header
 #endif // no system header
 
-#if _CCCL_CUDA_COMPILER(CLANG)
-#  include <cuda_runtime.h>
-#  include <cuda_runtime_api.h>
-#endif // _CCCL_CUDA_COMPILER(CLANG)
+#if _CCCL_HAS_CTK()
 
-#include <cuda/__memory_pool/memory_pool_base.h>
-#include <cuda/__memory_resource/get_property.h>
-#include <cuda/__memory_resource/properties.h>
-#include <cuda/__runtime/api_wrapper.h>
-#include <cuda/std/__concepts/concept_macros.h>
+#  include <cuda/__memory_pool/memory_pool_base.h>
+#  include <cuda/__memory_resource/get_property.h>
+#  include <cuda/__memory_resource/properties.h>
+#  include <cuda/__runtime/api_wrapper.h>
+#  include <cuda/std/__concepts/concept_macros.h>
 
-#include <cuda/std/__cccl/prologue.h>
+#  include <cuda/std/__cccl/prologue.h>
 
 //! @file
 //! The \c device_memory_pool class provides an asynchronous memory resource
@@ -40,7 +37,7 @@
 _CCCL_BEGIN_NAMESPACE_CUDA
 
 //! @rst
-//! .. _cudax-memory-resource-async:
+//! .. _libcudacxx-memory-resource-async:
 //!
 //! Stream ordered memory pool
 //! ------------------------------
@@ -92,7 +89,7 @@ public:
 }
 
 //! @rst
-//! .. _cudax-memory-resource-async:
+//! .. _libcudacxx-memory-resource-async:
 //!
 //! Stream ordered memory resource
 //! ------------------------------
@@ -100,7 +97,7 @@ public:
 //! ``device_memory_pool`` allocates device memory using
 //! `cudaMallocFromPoolAsync / cudaFreeAsync
 //! <https://docs.nvidia.com/cuda/cuda-runtime-api/group__CUDART__MEMORY__POOLS.html>`__
-//! for allocation/deallocation. A When constructed it creates an underlying \c
+//! for allocation/deallocation. When constructed it creates an underlying \c
 //! cudaMemPool_t with the location type set to \c cudaMemLocationTypeDevice and
 //! owns it.
 //!
@@ -139,6 +136,13 @@ struct device_memory_pool : device_memory_pool_ref
     return device_memory_pool(__pool);
   }
 
+  //! @brief Returns a \c device_memory_pool_ref for this \c device_memory_pool.
+  //! The result is the same as if this object was cast to a \c device_memory_pool_ref.
+  [[nodiscard]] _CCCL_HOST_API device_memory_pool_ref as_ref() noexcept
+  {
+    return device_memory_pool_ref(__pool_);
+  }
+
   device_memory_pool(const device_memory_pool&)            = delete;
   device_memory_pool& operator=(const device_memory_pool&) = delete;
 
@@ -154,6 +158,8 @@ static_assert(::cuda::mr::resource_with<device_memory_pool, ::cuda::mr::device_a
 
 _CCCL_END_NAMESPACE_CUDA
 
-#include <cuda/std/__cccl/epilogue.h>
+#  include <cuda/std/__cccl/epilogue.h>
+
+#endif // _CCCL_HAS_CTK()
 
 #endif //_CUDA___MEMORY_RESOURCE_DEVICE_MEMORY_POOL_H

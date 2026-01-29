@@ -23,13 +23,18 @@
 
 #include <cuda/std/__cccl/assert.h>
 #include <cuda/std/__concepts/constructible.h>
-#include <cuda/std/__concepts/same_as.h>
+#include <cuda/std/__memory/addressof.h>
 #include <cuda/std/__memory/construct_at.h>
 #include <cuda/std/__new/device_new.h>
 #include <cuda/std/__new/launder.h>
+#include <cuda/std/__type_traits/copy_cvref.h>
 #include <cuda/std/__type_traits/decay.h>
-#include <cuda/std/__type_traits/type_set.h>
+#include <cuda/std/__type_traits/remove_reference.h>
+#include <cuda/std/__type_traits/type_list.h>
+#include <cuda/std/__utility/declval.h>
+#include <cuda/std/__utility/exchange.h>
 #include <cuda/std/__utility/integer_sequence.h>
+#include <cuda/std/__utility/monostate.h>
 
 #include <cuda/experimental/__detail/type_traits.cuh>
 #include <cuda/experimental/__execution/meta.cuh>
@@ -49,96 +54,135 @@ namespace cuda::experimental::execution
 /* the need for a default constructor for each alternative type.                */
 /********************************************************************************/
 
-struct __monostate
-{};
+using __monostate = ::cuda::std::monostate;
 
-template <class _Idx, class... _Ts>
-class __variant_impl;
-
-template <>
-class __variant_impl<::cuda::std::index_sequence<>>
+template <size_t _Idx, bool _Check = true, class _CvVariant>
+[[nodiscard]]
+_CCCL_TRIVIAL_API constexpr auto&& __variant_get(_CvVariant&& __var) noexcept
 {
-public:
-  template <class _Fn, class... _Us>
-  _CCCL_API static void __visit(_Fn&&, _Us&&...) noexcept
+  using __variant_t = ::cuda::std::remove_reference_t<_CvVariant>;
+  using __element_t = typename __variant_t::template __at<_Idx>;
+  using __result_t  = ::cuda::std::__copy_cvref_t<_CvVariant, __element_t>;
+  if constexpr (_Check)
   {
-    _CCCL_ASSERT(false, "cannot visit a stateless variant");
+    _CCCL_ASSERT(__var.__index() == _Idx, "variant index mismatch");
+  }
+  return static_cast<__result_t&&>(*static_cast<__element_t*>(__var.__ptr()));
+}
+
+struct __visit_t
+{
+  _CCCL_EXEC_CHECK_DISABLE
+  template <size_t... _Idx, class _Fn, class _CvVariant, class... _As>
+  _CCCL_API static void
+  __visit(::cuda::std::index_sequence<_Idx...>*,
+          const size_t __index,
+          _Fn&& __fn,
+          _CvVariant&& __var,
+          _As&&... __as) //
+    noexcept(noexcept((
+      (_Idx == __index ? declval<_Fn>()(declval<_As>()..., execution::__variant_get<_Idx, false>(declval<_CvVariant>()))
+                       : void()),
+      ...)))
+  {
+    _CCCL_ASSERT(__index != __npos, "cannot visit a stateless variant");
+    // Use a fold expression to avoid the need for a loop.
+    ((_Idx == __index
+        ? static_cast<_Fn&&>(
+            __fn)(static_cast<_As&&>(__as)..., execution::__variant_get<_Idx, false>(static_cast<_CvVariant&&>(__var)))
+        : void()),
+     ...);
   }
 
-  [[nodiscard]] _CCCL_API static constexpr size_t __index() noexcept
+  template <class _Fn, class _CvVariant, class... _As>
+  _CCCL_TRIVIAL_API void operator()(_Fn&& __fn, _CvVariant&& __var, _As&&... __as) const noexcept(
+    noexcept(__visit_t::__visit(__var.__indices(), size_t(), declval<_Fn>(), declval<_CvVariant>(), declval<_As>()...)))
   {
-    return __npos;
+    __visit_t::__visit(
+      __var.__indices(),
+      __var.__index(),
+      static_cast<_Fn&&>(__fn),
+      static_cast<_CvVariant&&>(__var),
+      static_cast<_As&&>(__as)...);
   }
 };
 
-template <size_t... _Idx, class... _Ts>
-class __variant_impl<::cuda::std::index_sequence<_Idx...>, _Ts...>
-{
-  static constexpr size_t __max_size = __maximum({sizeof(_Ts)...});
-  static_assert(__max_size != 0);
-  size_t __index_{__npos};
-  alignas(_Ts...) unsigned char __storage_[__max_size];
+_CCCL_GLOBAL_CONSTANT __visit_t __visit{};
 
+namespace __detail
+{
+struct __destroy_fn
+{
+  template <class _Ty>
+  _CCCL_API void operator()(_Ty& __ty) const noexcept
+  {
+    ::cuda::std::__destroy_at(::cuda::std::addressof(__ty));
+  }
+};
+
+struct __move_to_fn
+{
+  template <class _Ty>
+  _CCCL_API void operator()(_Ty&& __from) const noexcept
+  {
+    ::cuda::std::__construct_at(static_cast<decay_t<_Ty>*>(__to), static_cast<_Ty&&>(__from));
+  }
+
+  void* __to;
+};
+} // namespace __detail
+
+template <class... _Ts>
+class __variant
+{
+public:
   template <size_t _Ny>
   using __at _CCCL_NODEBUG_ALIAS = ::cuda::std::__type_index_c<_Ny, _Ts...>;
 
-  _CCCL_API void __destroy() noexcept
-  {
-    if (__index_ != __npos)
-    {
-      // make this local in case destroying the sub-object destroys *this
-      const auto index = execution::__exchange(__index_, __npos);
-      ((_Idx == index ? ::cuda::std::destroy_at(static_cast<__at<_Idx>*>(__ptr())) : void(0)), ...);
-    }
-  }
-
-public:
-  _CCCL_API __variant_impl() noexcept {}
+  _CCCL_API __variant() noexcept {}
 
   _CCCL_TEMPLATE(class...)
   _CCCL_REQUIRES((::cuda::std::move_constructible<_Ts> && ...))
-  __variant_impl(__variant_impl&& __other) noexcept
+  __variant(__variant&& __other) noexcept
   {
     if (__other.__index_ != __npos)
     {
-      ((_Idx == __other.__index_
-          ? static_cast<void>(__emplace<__at<_Idx>>(static_cast<__variant_impl&&>(__other).template __get<_Idx>()))
-          : void(0)),
-       ...);
+      __visit_t::__visit(
+        __indices(), __other.__index(), __detail::__move_to_fn{__ptr()}, static_cast<__variant&&>(__other));
       __index_ = __other.__index_;
-      __other.__destroy();
+      __other.__reset();
     }
   }
 
-  _CCCL_API ~__variant_impl()
+  _CCCL_API ~__variant()
   {
-    __destroy();
+    __reset();
   }
 
-  [[nodiscard]] _CCCL_API void* __ptr() noexcept
+  [[nodiscard]] _CCCL_TRIVIAL_API void* __ptr() noexcept
   {
     return __storage_;
   }
 
-  [[nodiscard]] _CCCL_API size_t __index() const noexcept
+  [[nodiscard]] _CCCL_TRIVIAL_API size_t __index() const noexcept
   {
     return __index_;
   }
 
-  template <class _Ty>
+  template <int = 0, class _Ty>
   _CCCL_API auto __emplace(_Ty&& __value) noexcept(__nothrow_decay_copyable<_Ty>) -> decay_t<_Ty>&
   {
-    return __emplace<decay_t<_Ty>, _Ty>(static_cast<_Ty&&>(__value));
+    return __emplace<decay_t<_Ty>>(static_cast<_Ty&&>(__value));
   }
 
   _CCCL_EXEC_CHECK_DISABLE
   template <class _Ty, class... _As>
   _CCCL_API auto __emplace(_As&&... __as) noexcept(__nothrow_constructible<_Ty, _As...>) -> _Ty&
   {
-    constexpr size_t __new_index = execution::__index_of<_Ty, _Ts...>();
+    constexpr size_t __new_index = __index_of<_Ty, _Ts...>();
     static_assert(__new_index != __npos, "Type not in variant");
 
-    __destroy();
+    __reset();
     _Ty* __value = ::new (__ptr()) _Ty{static_cast<_As&&>(__as)...};
     __index_     = __new_index;
     return *::cuda::std::launder(__value);
@@ -150,7 +194,7 @@ public:
   {
     static_assert(_Ny < sizeof...(_Ts), "variant index is too large");
 
-    __destroy();
+    __reset();
     __at<_Ny>* __value = ::new (__ptr()) __at<_Ny>{static_cast<_As&&>(__as)...};
     __index_           = _Ny;
     return *::cuda::std::launder(__value);
@@ -162,54 +206,61 @@ public:
     noexcept(__nothrow_callable<_Fn, _As...>) -> __call_result_t<_Fn, _As...>&
   {
     using __result_t _CCCL_NODEBUG_ALIAS = __call_result_t<_Fn, _As...>;
-    constexpr size_t __new_index         = execution::__index_of<__result_t, _Ts...>();
+    constexpr size_t __new_index         = __index_of<__result_t, _Ts...>();
     static_assert(__new_index != __npos, "_Type not in variant");
 
-    __destroy();
+    __reset();
     __result_t* __value = ::new (__ptr()) __result_t(static_cast<_Fn&&>(__fn)(static_cast<_As&&>(__as)...));
     __index_            = __new_index;
     return *::cuda::std::launder(__value);
   }
 
-  _CCCL_EXEC_CHECK_DISABLE
-  template <class _Fn, class _Self, class... _As>
-  _CCCL_API static void __visit(_Fn&& __fn, _Self&& __self, _As&&... __as) //
-    noexcept((__nothrow_callable<_Fn, _As..., ::cuda::std::__copy_cvref_t<_Self, _Ts>> && ...))
+  _CCCL_API void __reset() noexcept
   {
-    // make this local in case destroying the sub-object destroys *this
-    const auto index = __self.__index_;
-    _CCCL_ASSERT(index != __npos, "cannot visit a stateless variant");
-    ((_Idx == index
-        ? static_cast<_Fn&&>(__fn)(static_cast<_As&&>(__as)..., static_cast<_Self&&>(__self).template __get<_Idx>())
-        : void()),
-     ...);
+    if (__index_ != __npos)
+    {
+      // We must set the index to __npos *before* destroying the value on the off chance that
+      // destroying the active value might cause the destruction of *this. But then, we must
+      // tell the __visit function what the old index was so it can destroy the correct type.
+      const auto __index = ::cuda::std::exchange(__index_, __npos);
+      __visit_t::__visit(__indices(), __index, __detail::__destroy_fn{}, *this);
+    }
   }
 
-  template <size_t _Ny>
-  [[nodiscard]] _CCCL_API auto __get() && noexcept -> __at<_Ny>&&
+private:
+  friend struct __visit_t;
+
+  template <size_t, bool _Check, class _CvVariant>
+  friend _CCCL_API constexpr auto&& __variant_get(_CvVariant&& __var) noexcept;
+
+  _CCCL_TRIVIAL_API static constexpr auto __indices() noexcept -> ::cuda::std::make_index_sequence<sizeof...(_Ts)>*
   {
-    _CCCL_ASSERT(_Ny == __index_, "");
-    return static_cast<__at<_Ny>&&>(*static_cast<__at<_Ny>*>(__ptr()));
+    return nullptr;
   }
 
-  template <size_t _Ny>
-  [[nodiscard]] _CCCL_API auto __get() & noexcept -> __at<_Ny>&
-  {
-    _CCCL_ASSERT(_Ny == __index_, "");
-    return *static_cast<__at<_Ny>*>(__ptr());
-  }
-
-  template <size_t _Ny>
-  [[nodiscard]] _CCCL_API auto __get() const& noexcept -> const __at<_Ny>&
-  {
-    _CCCL_ASSERT(_Ny == __index_, "");
-    return *static_cast<const __at<_Ny>*>(__ptr());
-  }
+  size_t __index_{__npos};
+  alignas(_Ts...) unsigned char __storage_[__maximum({sizeof(_Ts)...})];
 };
 
-template <class... _Ts>
-struct __variant : __variant_impl<::cuda::std::index_sequence_for<_Ts...>, _Ts...>
-{};
+template <>
+class __variant<>
+{
+public:
+  _CCCL_HIDE_FROM_ABI __variant() noexcept = default;
+
+  [[nodiscard]] _CCCL_TRIVIAL_API static constexpr size_t __index() noexcept
+  {
+    return __npos;
+  }
+
+private:
+  friend struct __visit_t;
+
+  _CCCL_TRIVIAL_API static constexpr auto __indices() noexcept -> ::cuda::std::index_sequence<>*
+  {
+    return nullptr;
+  }
+};
 
 template <class... _Ts>
 using __nullable_variant _CCCL_NODEBUG_ALIAS = __variant<__monostate, _Ts...>;

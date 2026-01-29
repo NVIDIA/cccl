@@ -21,6 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/__cmath/mul_hi.h>
 #include <cuda/std/__bit/rotate.h>
 #include <cuda/std/__limits/numeric_limits.h>
 #include <cuda/std/__random/is_seed_sequence.h>

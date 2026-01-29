@@ -21,12 +21,14 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__concepts/same_as.h>
-#include <cuda/std/__type_traits/remove_const_ref.h>
-#include <cuda/std/__type_traits/void_t.h>
-#include <cuda/std/__utility/declval.h>
+#if _CCCL_HAS_CTK()
 
-#include <cuda/std/__cccl/prologue.h>
+#  include <cuda/std/__concepts/same_as.h>
+#  include <cuda/std/__type_traits/remove_const_ref.h>
+#  include <cuda/std/__type_traits/void_t.h>
+#  include <cuda/std/__utility/declval.h>
+
+#  include <cuda/std/__cccl/prologue.h>
 
 _CCCL_BEGIN_NAMESPACE_CUDA
 
@@ -34,7 +36,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA
 //! @rst
 //! For \c has_property we require the following free function to be callable
 //!
-//! .. code cpp::
+//! .. code-block:: cpp
 //!
 //!    get_property(const Resource& res, Property prop);
 //!
@@ -49,7 +51,7 @@ using __property_value_t = typename _Property::value_type;
 //! @brief The \c property_with_value concept verifies that a Property is stateful and signals this through the
 //! `value_type` alias
 //! @rst
-//! .. code cpp::
+//! .. code-block:: cpp
 //!
 //!    struct stateless_property {};
 //!    static_assert(!cuda::property_with_value<stateless_property>);
@@ -66,7 +68,7 @@ _CCCL_CONCEPT property_with_value = _CCCL_REQUIRES_EXPR((_Property))(typename(__
 //! For \c has_property_with we require the following free function to be callable and its return type to exactly match
 //! the ``value_type`` of the Property
 //!
-//! .. code cpp::
+//! .. code-block:: cpp
 //!
 //!    struct stateless_property {};
 //!    constexpr void get_property(const Resource& res, stateless_property) {}
@@ -128,7 +130,7 @@ _CCCL_END_NAMESPACE_CPO
 
 //! @brief The \c forward_property CRTP template allows Derived to forward all properties of Upstream
 //! @rst
-//! .. code cpp::
+//! .. code-block:: cpp
 //!
 //!    class UpstreamWithProperties;
 //!
@@ -148,6 +150,8 @@ using forward_property = __forward_property::__fn<_Derived, _Upstream>;
 
 _CCCL_END_NAMESPACE_CUDA
 
-#include <cuda/std/__cccl/epilogue.h>
+#  include <cuda/std/__cccl/epilogue.h>
+
+#endif // _CCCL_HAS_CTK()
 
 #endif //_CUDA___MEMORY_RESOURCE_GET_PROPERTY_H

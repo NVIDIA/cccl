@@ -67,7 +67,7 @@ __host__ __device__ constexpr bool test()
   };
   S x{};
   static_assert(noexcept(id(x)));
-  static_assert(noexcept(id(S())));
+  static_assert(noexcept(id(S{})));
   unused(x);
 
   return true;

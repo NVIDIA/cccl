@@ -1,27 +1,25 @@
-# Copyright (c) 2024-2025, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
+# Copyright (c) 2024-2026, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
 #
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-from typing import Callable, Union, cast
+from typing import Callable, cast
 
-import numba
 import numpy as np
 
 from .. import _bindings
 from .. import _cccl_interop as cccl
-from .._caching import CachableFunction, cache_with_key
+from .._caching import cache_with_registered_key_functions
 from .._cccl_interop import (
     call_build,
     get_value_type,
     set_cccl_iterator_state,
     to_cccl_value_state,
 )
-from .._utils import protocols
 from .._utils.protocols import get_data_pointer, validate_and_get_stream
 from .._utils.temp_storage_buffer import TempStorageBuffer
 from ..iterators._iterators import IteratorBase
-from ..op import OpKind
+from ..op import OpAdapter, OpKind, make_op_adapter
 from ..typing import DeviceArrayLike, GpuStruct
 
 
@@ -43,7 +41,8 @@ class _Scan:
         "d_in_cccl",
         "d_out_cccl",
         "init_value_cccl",
-        "op_wrapper",
+        "op",
+        "op_cccl",
         "device_scan_fn",
         "init_kind",
     ]
@@ -53,7 +52,7 @@ class _Scan:
         self,
         d_in: DeviceArrayLike | IteratorBase,
         d_out: DeviceArrayLike | IteratorBase,
-        op: Callable | OpKind,
+        op: OpAdapter,
         init_value: np.ndarray | DeviceArrayLike | GpuStruct | None,
         force_inclusive: bool,
     ):
@@ -74,9 +73,7 @@ class _Scan:
                 self.init_value_cccl = cccl.to_cccl_input_iter(
                     cast(DeviceArrayLike, init_value)
                 )
-                value_type = numba.from_dtype(
-                    protocols.get_dtype(cast(DeviceArrayLike, init_value))
-                )
+                value_type = get_value_type(cast(DeviceArrayLike, init_value))
                 init_value_type_info = self.init_value_cccl.value_type
 
             case _bindings.InitKind.VALUE_INIT:
@@ -85,17 +82,14 @@ class _Scan:
                 value_type = get_value_type(init_value_typed)
                 init_value_type_info = self.init_value_cccl.type
 
-        # For well-known operations, we don't need a signature
-        if isinstance(op, OpKind):
-            self.op_wrapper = cccl.to_cccl_op(op, None)
-        else:
-            self.op_wrapper = cccl.to_cccl_op(op, value_type(value_type, value_type))
+        # Compile the op with value types
+        self.op_cccl = op.compile((value_type, value_type), value_type)
 
         self.build_result = call_build(
             _bindings.DeviceScanBuildResult,
             self.d_in_cccl,
             self.d_out_cccl,
-            self.op_wrapper,
+            self.op_cccl,
             init_value_type_info,
             force_inclusive,
             self.init_kind,
@@ -159,49 +153,16 @@ class _Scan:
             self.d_in_cccl,
             self.d_out_cccl,
             num_items,
-            self.op_wrapper,
+            self.op_cccl,
             self.init_value_cccl,
             stream_handle,
         )
         return temp_storage_bytes
 
 
-def make_cache_key(
-    d_in: DeviceArrayLike | IteratorBase,
-    d_out: DeviceArrayLike | IteratorBase,
-    op: Callable | OpKind,
-    init_value: np.ndarray | DeviceArrayLike | GpuStruct | None,
-):
-    d_in_key = (
-        d_in.kind if isinstance(d_in, IteratorBase) else protocols.get_dtype(d_in)
-    )
-    d_out_key = (
-        d_out.kind if isinstance(d_out, IteratorBase) else protocols.get_dtype(d_out)
-    )
-
-    # Handle well-known operations differently
-    op_key: Union[tuple[str, int], CachableFunction]
-    if isinstance(op, OpKind):
-        op_key = (op.name, op.value)
-    else:
-        op_key = CachableFunction(op)
-
-    init_kind_key = get_init_kind(init_value)
-    match init_kind_key:
-        case _bindings.InitKind.NO_INIT:
-            init_value_key = None
-        case _bindings.InitKind.FUTURE_VALUE_INIT:
-            init_value_key = protocols.get_dtype(cast(DeviceArrayLike, init_value))
-        case _bindings.InitKind.VALUE_INIT:
-            init_value = cast(np.ndarray | GpuStruct, init_value)
-            init_value_key = init_value.dtype
-
-    return (d_in_key, d_out_key, op_key, init_value_key, init_kind_key)
-
-
 # TODO Figure out `sum` without operator and initial value
 # TODO Accept stream
-@cache_with_key(make_cache_key)
+@cache_with_registered_key_functions
 def make_exclusive_scan(
     d_in: DeviceArrayLike | IteratorBase,
     d_out: DeviceArrayLike | IteratorBase,
@@ -227,7 +188,8 @@ def make_exclusive_scan(
     Returns:
         A callable object that can be used to perform the scan
     """
-    return _Scan(d_in, d_out, op, init_value, False)
+    op_adapter = make_op_adapter(op)
+    return _Scan(d_in, d_out, op_adapter, init_value, False)
 
 
 def exclusive_scan(
@@ -267,7 +229,7 @@ def exclusive_scan(
 
 # TODO Figure out `sum` without operator and initial value
 # TODO Accept stream
-@cache_with_key(make_cache_key)
+@cache_with_registered_key_functions
 def make_inclusive_scan(
     d_in: DeviceArrayLike | IteratorBase,
     d_out: DeviceArrayLike | IteratorBase,
@@ -293,7 +255,8 @@ def make_inclusive_scan(
     Returns:
         A callable object that can be used to perform the scan
     """
-    return _Scan(d_in, d_out, op, init_value, True)
+    op_adapter = make_op_adapter(op)
+    return _Scan(d_in, d_out, op_adapter, init_value, True)
 
 
 def inclusive_scan(
