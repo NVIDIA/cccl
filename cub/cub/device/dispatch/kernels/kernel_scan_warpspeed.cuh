@@ -757,7 +757,7 @@ _CCCL_API constexpr auto smem_for_stages(int num_stages) -> int
   return static_cast<int>(smemAllocator.sizeBytes());
 }
 
-// TODO(bgruber): disable before merging to production
+#if 0
 // we check the required shared memory inside a template, so the error message shows the amount in case of failure
 template <int RequiredSharedMemory>
 _CCCL_API constexpr void verify_smem()
@@ -765,6 +765,7 @@ _CCCL_API constexpr void verify_smem()
   static_assert(RequiredSharedMemory <= max_smem_per_block,
                 "Single stage configuration exceeds architecture independent SMEM (48KiB)");
 }
+#endif
 
 template <typename WarpspeedPolicy, typename InputIteratorT, typename OutputIteratorT, typename AccumT>
 _CCCL_API constexpr auto one_stage_fits_48KiB_SMEM() -> bool
@@ -772,7 +773,10 @@ _CCCL_API constexpr auto one_stage_fits_48KiB_SMEM() -> bool
   using InputT                    = it_value_t<InputIteratorT>;
   using OutputT                   = it_value_t<OutputIteratorT>;
   constexpr int smem_size_1_stage = smem_for_stages<WarpspeedPolicy, InputT, OutputT, AccumT>(1);
-  verify_smem<smem_size_1_stage>(); // TODO(bgruber): disable before merging to production
+// We can turn this on to report if a single stage of the warpspeed scan would exceed 48KiB if SMEM.
+#if 0
+  verify_smem<smem_size_1_stage>();
+#endif
   return smem_size_1_stage <= max_smem_per_block;
 }
 
