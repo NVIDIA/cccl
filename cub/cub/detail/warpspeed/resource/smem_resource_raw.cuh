@@ -132,7 +132,7 @@ struct SmemResourceRaw
   [[nodiscard]] _CCCL_DEVICE_API uint64_t* ptrCurBarrierRelease(int phase)
   {
     uint64_t* ptrBarPhase = mPtrBar[phase];
-    constantAssert(phase < mNumPhases, "Phase exceeds limit.");
+    _WS_CONSTANT_ASSERT(phase < mNumPhases, "Phase exceeds limit.");
     return &ptrBarPhase[mStageCurrent];
   }
   _CCCL_DEVICE_API void release(int phase)
@@ -161,7 +161,7 @@ struct SmemResourceRaw
 
   _CCCL_DEVICE_API void acquire(int phase)
   {
-    constantAssert(phase < mNumPhases, "Phase exceeds limit.");
+    _WS_CONSTANT_ASSERT(phase < mNumPhases, "Phase exceeds limit.");
 
     // The release of the previous phase occurs on the `phase - 1` barrier. So
     // that is what we wait on.
