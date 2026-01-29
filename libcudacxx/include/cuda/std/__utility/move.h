@@ -26,7 +26,8 @@
 #include <cuda/std/__type_traits/is_nothrow_move_constructible.h>
 #include <cuda/std/__type_traits/remove_reference.h>
 
-#if _CCCL_COMPILER(CLANG, >=, 15) || _CCCL_COMPILER(GCC, >=, 12) || _CCCL_COMPILER(NVRTC)
+#if _CCCL_COMPILER(CLANG, >=, 15) || _CCCL_COMPILER(GCC, >=, 12) \
+  || (_CCCL_COMPILER(NVRTC) && defined(__NV_BUILTIN_MOVE_FORWARD))
 #  define _CCCL_HAS_BUILTIN_STD_MOVE() 1
 #else // ^^^ has builtin std::move ^^^ / vvv no builtin std::move vvv
 #  define _CCCL_HAS_BUILTIN_STD_MOVE() 0
@@ -52,9 +53,9 @@
 
 // include minimal std:: headers, nvcc in device mode doesn't need the std:: header
 #if _CCCL_HAS_BUILTIN_STD_MOVE() || _CCCL_HAS_BUILTIN_STD_MOVE_IF_NOEXCEPT()
-#  if _CCCL_HOST_STD_LIB(LIBSTDCXX) && _CCCL_HAS_INCLUDE(<bits/move.h>)
+#  if _CCCL_HOST_STD_LIB(LIBSTDCXX) && __has_include(<bits/move.h>)
 #    include <bits/move.h>
-#  elif _CCCL_HOST_STD_LIB(LIBCXX) && _CCCL_HAS_INCLUDE(<__utility/move.h>)
+#  elif _CCCL_HOST_STD_LIB(LIBCXX) && __has_include(<__utility/move.h>)
 #    include <__utility/move.h> // includes std::move_if_noexcept, too
 #  elif !_CCCL_COMPILER(NVRTC)
 #    include <utility>

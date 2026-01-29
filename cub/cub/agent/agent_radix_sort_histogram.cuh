@@ -31,21 +31,38 @@
 #include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__algorithm/min.h>
 #include <cuda/std/__functional/operations.h>
+#include <cuda/std/__type_traits/is_void.h>
 
 CUB_NAMESPACE_BEGIN
 
+//! @param ComputeT If void, use NOMINAL_4B_NUM_PARTS directly for NUM_PARTS. Otherwise, perform scaling.
 template <int BlockThreads, int ItemsPerThread, int NOMINAL_4B_NUM_PARTS, typename ComputeT, int RadixBits>
 struct AgentRadixSortHistogramPolicy
 {
   static constexpr int BLOCK_THREADS    = BlockThreads;
   static constexpr int ITEMS_PER_THREAD = ItemsPerThread;
+
+  // need to discard sizeof(ComputeType) in case it's void
+  template <typename ComputeType = ComputeT>
+  _CCCL_API static constexpr int num_parts_helper()
+  {
+    if constexpr (::cuda::std::is_void_v<ComputeT>)
+    {
+      return NOMINAL_4B_NUM_PARTS;
+    }
+    else
+    {
+      return ::cuda::std::max(1, NOMINAL_4B_NUM_PARTS * 4 / ::cuda::std::max(int{sizeof(ComputeType)}, 4));
+    }
+  }
+
   /** NUM_PARTS is the number of private histograms (parts) each histogram is split
    * into. Each warp lane is assigned to a specific part based on the lane
    * ID. However, lanes with the same ID in different warp use the same private
    * histogram. This arrangement helps reduce the degree of conflicts in atomic
    * operations. */
-  static constexpr int NUM_PARTS =
-    ::cuda::std::max(1, NOMINAL_4B_NUM_PARTS * 4 / ::cuda::std::max(int{sizeof(ComputeT)}, 4));
+  static constexpr int NUM_PARTS = num_parts_helper<ComputeT>();
+
   static constexpr int RADIX_BITS = RadixBits;
 };
 

@@ -39,11 +39,15 @@
 #if _CCCL_CUDA_COMPILATION()
 #  include <thrust/system/cuda/config.h>
 
-#  include <thrust/system/cuda/detail/execution_policy.h>
+#  include <cub/device/device_find.cuh>
 
-#  include <cuda/__iterator/counting_iterator.h>
-#  include <cuda/__iterator/transform_iterator.h>
-#  include <cuda/__iterator/zip_iterator.h>
+#  include <thrust/detail/temporary_array.h>
+#  include <thrust/system/cuda/detail/cdp_dispatch.h>
+#  include <thrust/system/cuda/detail/dispatch.h>
+#  include <thrust/system/cuda/detail/execution_policy.h>
+#  include <thrust/system/cuda/detail/get_value.h>
+#  include <thrust/system/cuda/detail/util.h>
+
 #  include <cuda/std/__iterator/distance.h>
 
 THRUST_NAMESPACE_BEGIN
@@ -62,82 +66,63 @@ InputIt _CCCL_HOST_DEVICE find(execution_policy<Derived>& policy, InputIt first,
 }; // namespace cuda_cub
 THRUST_NAMESPACE_END
 
-#  include <thrust/system/cuda/detail/reduce.h>
+#  include <thrust/find.h>
 
 THRUST_NAMESPACE_BEGIN
 namespace cuda_cub
 {
-namespace __find_if
+namespace detail
 {
-template <typename TupleType>
-struct functor
+template <typename Derived, typename InputIt, typename Size, typename Predicate>
+THRUST_RUNTIME_FUNCTION Size
+find_if_n_impl(execution_policy<Derived>& policy, InputIt first, Size num_items, Predicate predicate)
 {
-  _CCCL_DEVICE_API _CCCL_FORCEINLINE TupleType operator()(const TupleType& lhs, const TupleType& rhs) const
-  {
-    // select the smallest index among true results
-    if (thrust::get<0>(lhs) && thrust::get<0>(rhs))
-    {
-      return TupleType(true, (::cuda::std::min) (thrust::get<1>(lhs), thrust::get<1>(rhs)));
-    }
-    else if (thrust::get<0>(lhs))
-    {
-      return lhs;
-    }
-    else
-    {
-      return rhs;
-    }
-  }
-};
-} // namespace __find_if
+  cudaStream_t stream = cuda_cub::stream(policy);
 
+  auto call_with_adjusted_size_type = [&](auto num_items_fixed) -> Size {
+    // we use the same offset type that CUB uses internally for writing the result. avoids an extra kernel
+    using adjusted_size_type = cub::detail::choose_offset_t<decltype(num_items_fixed)>;
+
+    size_t tmp_size = 0;
+    auto status     = cub::DeviceFind::FindIf(
+      nullptr, tmp_size, first, static_cast<adjusted_size_type*>(nullptr), predicate, num_items_fixed, stream);
+    cuda_cub::throw_on_error(status, "find_if: failed to get temp storage size");
+
+    // Allocate temporary storage for both the algorithm and the result.
+    thrust::detail::temporary_array<std::uint8_t, Derived> tmp(policy, sizeof(adjusted_size_type) + tmp_size);
+
+    // Run find_if.
+    adjusted_size_type* result_ptr = thrust::detail::aligned_reinterpret_cast<adjusted_size_type*>(tmp.data().get());
+    void* tmp_ptr                  = static_cast<void*>((tmp.data() + sizeof(adjusted_size_type)).get());
+
+    status = cub::DeviceFind::FindIf(tmp_ptr, tmp_size, first, result_ptr, predicate, num_items_fixed, stream);
+    cuda_cub::throw_on_error(status, "find_if: failed to run algorithm");
+
+    return static_cast<Size>(cuda_cub::get_value(policy, result_ptr));
+  };
+
+  Size result;
+  THRUST_INDEX_TYPE_DISPATCH(result, call_with_adjusted_size_type, num_items, (num_items_fixed));
+  return result;
+}
+} // namespace detail
+
+_CCCL_EXEC_CHECK_DISABLE
 template <class Derived, class InputIt, class Size, class Predicate>
 InputIt _CCCL_HOST_DEVICE
 find_if_n(execution_policy<Derived>& policy, InputIt first, Size num_items, Predicate predicate)
 {
-  using result_type = ::cuda::std::tuple<bool, Size>;
-
-  // empty sequence
   if (num_items == 0)
   {
     return first;
   }
 
-  // this implementation breaks up the sequence into separate intervals
-  // in an attempt to early-out as soon as a value is found
-  //
-  // XXX compose find_if from a look-back prefix scan algorithm
-  //     and abort kernel when the first element is found
+  Size result_idx = num_items;
+  THRUST_CDP_DISPATCH(
+    (result_idx = cuda_cub::detail::find_if_n_impl(policy, first, num_items, predicate);),
+    (result_idx = thrust::find_if(cvt_to_seq(derived_cast(policy)), first, first + num_items, predicate) - first;));
 
-  // TODO incorporate sizeof(InputType) into interval_threshold and round to multiple of 32
-  const Size interval_threshold = 1 << 20;
-  const Size interval_size      = (::cuda::std::min) (interval_threshold, num_items);
-
-  const auto begin = ::cuda::make_zip_iterator(
-    ::cuda::make_transform_iterator(try_unwrap_contiguous_iterator(first), predicate),
-    ::cuda::counting_iterator<Size>(0));
-  const auto end = begin + num_items;
-
-  for (auto interval_begin = begin; interval_begin < end; interval_begin += interval_size)
-  {
-    auto interval_end = interval_begin + interval_size;
-    if (end < interval_end)
-    {
-      interval_end = end;
-    } // end if
-
-    const result_type result = reduce(
-      policy, interval_begin, interval_end, result_type(false, interval_end - begin), __find_if::functor<result_type>());
-
-    // see if we found something
-    if (thrust::get<0>(result))
-    {
-      return first + thrust::get<1>(result);
-    }
-  }
-
-  // nothing was found if we reach here...
-  return first + num_items;
+  return first + result_idx;
 }
 
 template <class Derived, class InputIt, class Predicate>

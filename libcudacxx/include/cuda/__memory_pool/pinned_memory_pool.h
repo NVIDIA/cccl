@@ -38,13 +38,17 @@ _CCCL_BEGIN_NAMESPACE_CUDA
 
 #  if _CCCL_CTK_AT_LEAST(12, 6)
 
+_CCCL_DIAG_PUSH
+_CCCL_DIAG_SUPPRESS_CLANG("-Wmissing-braces")
+// clang complains about missing braces in CUmemLocation constructor but GCC complains if we add them
+
 static ::cudaMemPool_t __get_default_host_pinned_pool();
 
 //! @rst
-//! .. _cudax-memory-resource-async:
+//! .. _libcudacxx-memory-resource-async:
 //!
 //! Stream ordered host pinned memory pool
-//! ------------------------------
+//! ---------------------------------------
 //!
 //! ``pinned_memory_pool_ref`` allocates pinned memory using
 //! `cudaMallocFromPoolAsync / cudaFreeAsync
@@ -90,7 +94,7 @@ public:
 }
 
 //! @rst
-//! .. _cudax-memory-resource-async:
+//! .. _libcudacxx-memory-resource-async:
 //!
 //! Stream ordered memory resource
 //! ------------------------------
@@ -205,6 +209,8 @@ static_assert(::cuda::mr::resource_with<pinned_memory_pool, ::cuda::mr::host_acc
 #    endif // ^^^ _CCCL_CTK_BELOW(13, 0) ^^^
   return __default_pool;
 }
+
+_CCCL_DIAG_POP
 
 #  endif // _CCCL_CTK_AT_LEAST(12, 6)
 

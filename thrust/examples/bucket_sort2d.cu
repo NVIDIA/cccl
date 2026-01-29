@@ -10,7 +10,7 @@
 #include <iostream>
 
 // define a 2d float vector
-using vec2 = thrust::tuple<float, float>;
+using vec2 = cuda::std::tuple<float, float>;
 
 // return a random vec2 in [0,1)^2
 vec2 make_random_vec2()
@@ -37,8 +37,8 @@ struct point_to_bucket_index
   __host__ __device__ unsigned int operator()(const vec2& v) const
   {
     // find the raster indices of p's bucket
-    unsigned int x = static_cast<unsigned int>(thrust::get<0>(v) * width);
-    unsigned int y = static_cast<unsigned int>(thrust::get<1>(v) * height);
+    unsigned int x = static_cast<unsigned int>(cuda::std::get<0>(v) * width);
+    unsigned int y = static_cast<unsigned int>(cuda::std::get<1>(v) * height);
 
     // return the bucket's linear index
     return y * width + x;
@@ -91,7 +91,7 @@ int main()
   for (unsigned int point_idx = bucket_begin[bucket_idx]; point_idx != bucket_end[bucket_idx]; ++point_idx)
   {
     vec2 p = points[point_idx];
-    std::cout << "(" << thrust::get<0>(p) << "," << thrust::get<1>(p) << ")" << std::endl;
+    std::cout << "(" << cuda::std::get<0>(p) << "," << cuda::std::get<1>(p) << ")" << std::endl;
   }
 
   return 0;

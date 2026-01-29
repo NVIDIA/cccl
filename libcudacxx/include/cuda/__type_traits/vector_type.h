@@ -4,7 +4,7 @@
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -24,7 +24,8 @@
 #if _CCCL_HAS_CTK()
 
 #  include <cuda/std/__cstddef/types.h>
-#  include <cuda/std/__type_traits/always_false.h>
+#  include <cuda/std/__floating_point/cuda_fp_types.h>
+#  include <cuda/std/__tuple_dir/vector_types.h>
 #  include <cuda/std/__type_traits/is_same.h>
 
 #  if !_CCCL_CUDA_COMPILATION()
@@ -334,6 +335,130 @@ template <class _Tp, ::cuda::std::size_t _Size>
       return;
     }
   }
+#  if _CCCL_HAS_NVFP16()
+  else if constexpr (::cuda::std::is_same_v<_Tp, ::__half>)
+  {
+    if constexpr (_Size == 2)
+    {
+      return ::__half2{};
+    }
+    else
+    {
+      return;
+    }
+  }
+#  endif // _CCCL_HAS_NVFP16()
+#  if _CCCL_HAS_NVBF16()
+  else if constexpr (::cuda::std::is_same_v<_Tp, ::__nv_bfloat16>)
+  {
+    if constexpr (_Size == 2)
+    {
+      return ::__nv_bfloat162{};
+    }
+    else
+    {
+      return;
+    }
+  }
+#  endif // _CCCL_HAS_NVBF16()
+#  if _CCCL_HAS_NVFP8()
+  else if constexpr (::cuda::std::is_same_v<_Tp, ::__nv_fp8_e5m2>)
+  {
+    if constexpr (_Size == 2)
+    {
+      return ::__nv_fp8x2_e5m2{};
+    }
+    else if constexpr (_Size == 4)
+    {
+      return ::__nv_fp8x4_e5m2{};
+    }
+    else
+    {
+      return;
+    }
+  }
+  else if constexpr (::cuda::std::is_same_v<_Tp, ::__nv_fp8_e4m3>)
+  {
+    if constexpr (_Size == 2)
+    {
+      return ::__nv_fp8x2_e4m3{};
+    }
+    else if constexpr (_Size == 4)
+    {
+      return ::__nv_fp8x4_e4m3{};
+    }
+    else
+    {
+      return;
+    }
+  }
+#    if _CCCL_CTK_AT_LEAST(12, 8)
+  else if constexpr (::cuda::std::is_same_v<_Tp, ::__nv_fp8_e8m0>)
+  {
+    if constexpr (_Size == 2)
+    {
+      return ::__nv_fp8x2_e8m0{};
+    }
+    else if constexpr (_Size == 4)
+    {
+      return ::__nv_fp8x4_e8m0{};
+    }
+    else
+    {
+      return;
+    }
+  }
+#    endif // _CCCL_CTK_AT_LEAST(12, 8)
+#  endif // _CCCL_HAS_NVFP8()
+#  if _CCCL_HAS_NVFP6()
+  else if constexpr (::cuda::std::is_same_v<_Tp, ::__nv_fp6_e3m2>)
+  {
+    if constexpr (_Size == 2)
+    {
+      return ::__nv_fp6x2_e3m2{};
+    }
+    else if constexpr (_Size == 4)
+    {
+      return ::__nv_fp6x4_e3m2{};
+    }
+    else
+    {
+      return;
+    }
+  }
+  else if constexpr (::cuda::std::is_same_v<_Tp, ::__nv_fp6_e2m3>)
+  {
+    if constexpr (_Size == 2)
+    {
+      return ::__nv_fp6x2_e2m3{};
+    }
+    else if constexpr (_Size == 4)
+    {
+      return ::__nv_fp6x4_e2m3{};
+    }
+    else
+    {
+      return;
+    }
+  }
+#  endif // _CCCL_HAS_NVFP6()
+#  if _CCCL_HAS_NVFP4()
+  else if constexpr (::cuda::std::is_same_v<_Tp, ::__nv_fp4_e2m1>)
+  {
+    if constexpr (_Size == 2)
+    {
+      return ::__nv_fp4x2_e2m1{};
+    }
+    else if constexpr (_Size == 4)
+    {
+      return ::__nv_fp4x4_e2m1{};
+    }
+    else
+    {
+      return;
+    }
+  }
+#  endif // _CCCL_HAS_NVFP4()
   else
   {
     return;
@@ -341,15 +466,20 @@ template <class _Tp, ::cuda::std::size_t _Size>
 }
 
 template <class _Tp, ::cuda::std::size_t _Size>
-using __vector_type_t = decltype(::cuda::__cccl_vector_type_t_impl<_Tp, _Size>());
+using vector_type_t = decltype(::cuda::__cccl_vector_type_t_impl<_Tp, _Size>());
 
 template <class _Tp, ::cuda::std::size_t _Size>
-inline constexpr bool __has_vector_type_v = !::cuda::std::is_same_v<__vector_type_t<_Tp, _Size>, void>;
+inline constexpr bool has_vector_type_v = !::cuda::std::is_same_v<vector_type_t<_Tp, _Size>, void>;
+
+template <class _Tp>
+using scalar_type_t = ::cuda::std::tuple_element_t<0, _Tp>;
+
+template <class _Tp>
+inline constexpr auto vector_size_v = ::cuda::std::tuple_size_v<_Tp>;
 
 _CCCL_END_NAMESPACE_CUDA
 
 #  include <cuda/std/__cccl/epilogue.h>
 
 #endif // !_CCCL_HAS_CTK()
-
 #endif // _CUDA__TYPE_TRAITS_VECTOR_TYPE_H

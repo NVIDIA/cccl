@@ -25,7 +25,8 @@
 #include <cuda/std/__type_traits/remove_reference.h>
 #include <cuda/std/cstddef>
 
-#if _CCCL_COMPILER(CLANG, >=, 15) || _CCCL_COMPILER(GCC, >=, 12) || _CCCL_COMPILER(NVRTC)
+#if _CCCL_COMPILER(CLANG, >=, 15) || _CCCL_COMPILER(GCC, >=, 12) \
+  || (_CCCL_COMPILER(NVRTC) && defined(__NV_BUILTIN_MOVE_FORWARD))
 #  define _CCCL_HAS_BUILTIN_STD_FORWARD() 1
 #else // ^^^ has builtin std::forward ^^^ / vvv no builtin std::forward vvv
 #  define _CCCL_HAS_BUILTIN_STD_FORWARD() 0
@@ -39,9 +40,9 @@
 
 // include minimal std:: headers, nvcc in device mode doesn't need the std:: header
 #if _CCCL_HAS_BUILTIN_STD_FORWARD() && !(_CCCL_CUDA_COMPILER(NVCC) && _CCCL_DEVICE_COMPILATION())
-#  if _CCCL_HOST_STD_LIB(LIBSTDCXX) && _CCCL_HAS_INCLUDE(<bits/move.h>)
+#  if _CCCL_HOST_STD_LIB(LIBSTDCXX) && __has_include(<bits/move.h>)
 #    include <bits/move.h>
-#  elif _CCCL_HOST_STD_LIB(LIBCXX) && _CCCL_HAS_INCLUDE(<__utility/forward.h>)
+#  elif _CCCL_HOST_STD_LIB(LIBCXX) && __has_include(<__utility/forward.h>)
 #    include <__utility/forward.h>
 #  elif !_CCCL_COMPILER(NVRTC)
 #    include <utility>

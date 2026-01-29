@@ -50,6 +50,10 @@ THRUST_NAMESPACE_BEGIN
 /*! \addtogroup arithmetic_operations Arithmetic Operations
  *  \ingroup predefined_function_objects
  *  \{
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 
 template <class T = void>
@@ -92,6 +96,10 @@ using plus CCCL_DEPRECATED_BECAUSE("Use cuda::std::plus instead") = ::cuda::std:
  *                    thrust::square<float>());
  *  // V2 is now {1, 4, 9, ..., 1000000}
  *  \endcode
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename T = void>
 struct square
@@ -122,6 +130,10 @@ struct square<void>
 /*! \addtogroup comparison_operations Comparison Operations
  *  \ingroup predefined_function_objects
  *  \{
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 
 //! deprecated [since 3.1]
@@ -149,6 +161,10 @@ using not_equal_to CCCL_DEPRECATED_BECAUSE("Use cuda::std::not_equal_to instead"
 /*! \addtogroup logical_operations Logical Operations
  *  \ingroup predefined_function_objects
  *  \{
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 
 //! deprecated [since 3.1]
@@ -167,6 +183,10 @@ using logical_or CCCL_DEPRECATED_BECAUSE("Use cuda::std::logical_or instead") = 
 /*! \addtogroup bitwise_operations Bitwise Operations
  *  \ingroup predefined_function_objects
  *  \{
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 
 //! deprecated [since 3.1]
@@ -185,6 +205,10 @@ using bit_xor CCCL_DEPRECATED_BECAUSE("Use cuda::std::bit_xor instead") = ::cuda
 /*! \addtogroup generalized_identity_operations Generalized Identity Operations
  *  \ingroup predefined_function_objects
  *  \{
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 
 //! deprecated [since 3.1]
@@ -210,11 +234,19 @@ using minimum CCCL_DEPRECATED_BECAUSE("Use cuda::minimum instead") = ::cuda::min
  *
  *  \see identity
  *  \see project2nd
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename T1 = void, typename T2 = void>
 struct project1st
 {
   /*! Function call operator. The return value is <tt>lhs</tt>.
+   *
+   *  \verbatim embed:rst:leading-asterisk
+   *     .. versionadded:: 2.2.0
+   *  \endverbatim
    */
   _CCCL_HOST_DEVICE constexpr const T1& operator()(const T1& lhs, const T2& /*rhs*/) const
   {
@@ -251,11 +283,19 @@ struct project1st<void, void>
  *
  *  \see identity
  *  \see project1st
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename T1 = void, typename T2 = void>
 struct project2nd
 {
   /*! Function call operator. The return value is <tt>rhs</tt>.
+   *
+   *  \verbatim embed:rst:leading-asterisk
+   *     .. versionadded:: 2.2.0
+   *  \endverbatim
    */
   _CCCL_HOST_DEVICE constexpr const T2& operator()(const T1& /*lhs*/, const T2& rhs) const
   {
@@ -346,46 +386,90 @@ _CCCL_REQUIRES(::cuda::std::is_constructible_v<::cuda::std::decay_t<_Fn>, _Fn>
  *    // y is now {3, 5, 7, 9}
  *  }
  *  \endcode
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 namespace placeholders
 {
 /*! \p thrust::placeholders::_1 is the placeholder for the first function parameter.
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 _CCCL_GLOBAL_CONSTANT thrust::detail::functional::placeholder<0>::type _1;
 
 /*! \p thrust::placeholders::_2 is the placeholder for the second function parameter.
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 _CCCL_GLOBAL_CONSTANT thrust::detail::functional::placeholder<1>::type _2;
 
 /*! \p thrust::placeholders::_3 is the placeholder for the third function parameter.
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 _CCCL_GLOBAL_CONSTANT thrust::detail::functional::placeholder<2>::type _3;
 
 /*! \p thrust::placeholders::_4 is the placeholder for the fourth function parameter.
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 _CCCL_GLOBAL_CONSTANT thrust::detail::functional::placeholder<3>::type _4;
 
 /*! \p thrust::placeholders::_5 is the placeholder for the fifth function parameter.
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 _CCCL_GLOBAL_CONSTANT thrust::detail::functional::placeholder<4>::type _5;
 
 /*! \p thrust::placeholders::_6 is the placeholder for the sixth function parameter.
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 _CCCL_GLOBAL_CONSTANT thrust::detail::functional::placeholder<5>::type _6;
 
 /*! \p thrust::placeholders::_7 is the placeholder for the seventh function parameter.
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 _CCCL_GLOBAL_CONSTANT thrust::detail::functional::placeholder<6>::type _7;
 
 /*! \p thrust::placeholders::_8 is the placeholder for the eighth function parameter.
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 _CCCL_GLOBAL_CONSTANT thrust::detail::functional::placeholder<7>::type _8;
 
 /*! \p thrust::placeholders::_9 is the placeholder for the ninth function parameter.
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 _CCCL_GLOBAL_CONSTANT thrust::detail::functional::placeholder<8>::type _9;
 
 /*! \p thrust::placeholders::_10 is the placeholder for the tenth function parameter.
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 _CCCL_GLOBAL_CONSTANT thrust::detail::functional::placeholder<9>::type _10;
 } // namespace placeholders
@@ -396,4 +480,3 @@ _CCCL_GLOBAL_CONSTANT thrust::detail::functional::placeholder<9>::type _10;
 THRUST_NAMESPACE_END
 
 #include <thrust/detail/functional/operators.h>
-#include <thrust/detail/type_traits/is_commutative.h>

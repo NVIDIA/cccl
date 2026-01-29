@@ -42,11 +42,9 @@ _CCCL_CONCEPT __has_member_get_resource = _CCCL_REQUIRES_EXPR((_Tp), const _Tp& 
   requires(resource<::cuda::std::remove_cvref_t<decltype(__t.get_memory_resource())>>));
 
 template <class _Env>
-_CCCL_CONCEPT __has_query_get_memory_resource = _CCCL_REQUIRES_EXPR((_Env))(
-  requires(!__has_member_get_resource<_Env>),
-  requires(
-    resource<
-      ::cuda::std::remove_cvref_t<::cuda::std::execution::__query_result_t<const _Env&, __get_memory_resource_t>>>));
+_CCCL_CONCEPT __has_query_get_memory_resource = _CCCL_REQUIRES_EXPR(
+  (_Env))(requires(!__has_member_get_resource<_Env>),
+          requires(::cuda::std::execution::__queryable_with<const _Env&, __get_memory_resource_t>));
 
 //! @brief `__get_memory_resource_t` is a customization point object that queries a type `T` for an associated memory
 //! resource
@@ -67,6 +65,8 @@ struct __get_memory_resource_t
   [[nodiscard]] _CCCL_API constexpr decltype(auto) operator()(const _Env& __env) const noexcept
   {
     static_assert(noexcept(__env.query(*this)), "get_memory_resource_t query must be noexcept");
+    static_assert(resource<::cuda::std::remove_cvref_t<decltype(__env.query(*this))>>,
+                  "get_memory_resource_t query must return a cuda::mr::resource");
     return __env.query(*this);
   }
 };

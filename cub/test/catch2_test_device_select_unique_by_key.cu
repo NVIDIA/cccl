@@ -228,7 +228,7 @@ struct project_first
   template <typename Tuple>
   __host__ __device__ bool operator()(const Tuple& lhs, const Tuple& rhs) const
   {
-    return equality_op(thrust::get<0>(lhs), thrust::get<0>(rhs));
+    return equality_op(cuda::std::get<0>(lhs), cuda::std::get<0>(rhs));
   }
 };
 

@@ -188,10 +188,10 @@
 
 // Fixme: replace the condition with (!_CCCL_DEVICE_COMPILATION())
 // FIXME: Enable this for clang-cuda in a followup
-#if !_CCCL_CUDA_COMPILATION()
+#if !_CCCL_CUDA_COMPILATION() && !defined(CCCL_DISABLE_LONG_DOUBLE_SUPPORT)
 #  define _CCCL_HAS_LONG_DOUBLE() 1
-#else // ^^^ !_CCCL_CUDA_COMPILATION() ^^^ / vvv _CCCL_CUDA_COMPILATION() vvv
+#else // ^^^ has long double ^^^ / vvv no long double vvv
 #  define _CCCL_HAS_LONG_DOUBLE() 0
-#endif // ^^^ _CCCL_CUDA_COMPILATION() ^^^
+#endif // ^^^ no long double ^^^
 
 #endif // __CCCL_DIALECT_H
