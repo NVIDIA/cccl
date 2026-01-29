@@ -1,0 +1,22 @@
+name: cuda-compute-bench
+channels:
+  - nvidia
+  - conda-forge
+dependencies:
+  - cuda-toolkit <13
+  - cupy
+
+  - gcc >=14,<15
+  - gxx >=14,<15
+  - gcc_linux-64 >=14,<15
+  - gxx_linux-64 >=14,<15
+
+  # nvbench
+  - cmake
+  - ninja
+  - fmt
+
+  # analysis
+  - jsondiff
+  - tabulate
+  - colorama
