@@ -20,8 +20,8 @@
 #include <cub/util_ptx.cuh>
 #include <cub/util_type.cuh>
 
+#include <cuda/std/__iterator/concepts.h>
 #include <cuda/std/__type_traits/integral_constant.h>
-#include <cuda/std/__type_traits/is_pointer.h>
 
 CUB_NAMESPACE_BEGIN
 
@@ -315,13 +315,13 @@ ThreadStore(T* ptr, T val, detail::constant_t<MODIFIER> /*modifier*/, ::cuda::st
 template <CacheStoreModifier MODIFIER, typename OutputIteratorT, typename T>
 _CCCL_DEVICE _CCCL_FORCEINLINE void ThreadStore(OutputIteratorT itr, T val)
 {
-  if constexpr (!::cuda::std::is_pointer_v<OutputIteratorT> || MODIFIER == STORE_DEFAULT)
+  if constexpr (!::cuda::std::contiguous_iterator<OutputIteratorT> || MODIFIER == STORE_DEFAULT)
   {
     *itr = val;
   }
   else if constexpr (MODIFIER == STORE_VOLATILE && detail::is_primitive_v<T>)
   {
-    *reinterpret_cast<volatile T*>(itr) = val;
+    *reinterpret_cast<volatile T*>(::cuda::std::to_address(itr)) = val;
   }
   else
   {
@@ -344,12 +344,16 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void ThreadStore(OutputIteratorT itr, T val)
     if constexpr (MODIFIER == STORE_VOLATILE)
     {
       detail::dereference_helper<MODIFIER>(
-        reinterpret_cast<volatile StoreWord*>(itr), words, ::cuda::std::make_index_sequence<WORD_MULTIPLE>{});
+        reinterpret_cast<volatile StoreWord*>(::cuda::std::to_address(itr)),
+        words,
+        ::cuda::std::make_index_sequence<WORD_MULTIPLE>{});
     }
     else
     {
       detail::store_helper<MODIFIER>(
-        reinterpret_cast<StoreWord*>(itr), words, ::cuda::std::make_index_sequence<WORD_MULTIPLE>{});
+        reinterpret_cast<StoreWord*>(::cuda::std::to_address(itr)),
+        words,
+        ::cuda::std::make_index_sequence<WORD_MULTIPLE>{});
     }
   }
 }
