@@ -324,8 +324,12 @@ struct DispatchScan
 #endif // CUB_DEBUG_LOG
 
     // Invoke init_kernel to initialize tile descriptors
-    launcher_factory(init_grid_size, INIT_KERNEL_THREADS, 0, stream, /* use_pdl */ true)
-      .doit(init_kernel, kernel_source.make_tile_state_kernel_arg(tile_state), num_tiles);
+    if (const auto error = CubDebug(
+          launcher_factory(init_grid_size, INIT_KERNEL_THREADS, 0, stream, /* use_pdl */ true)
+            .doit(init_kernel, kernel_source.make_tile_state_kernel_arg(tile_state), num_tiles)))
+    {
+      return error;
+    }
 
     // Check for failure to launch
     if (const auto error = CubDebug(cudaPeekAtLastError()))
@@ -371,16 +375,20 @@ struct DispatchScan
 #endif // CUB_DEBUG_LOG
 
       // Invoke scan_kernel
-      launcher_factory(scan_grid_size, policy.Scan().BlockThreads(), 0, stream, /* use_pdl */ true)
-        .doit(scan_kernel,
-              THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator(d_in),
-              THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator(d_out),
-              kernel_source.make_tile_state_kernel_arg(tile_state),
-              start_tile,
-              scan_op,
-              init_value,
-              num_items,
-              /* num_stages, unused */ 1);
+      if (const auto error = CubDebug(
+            launcher_factory(scan_grid_size, policy.Scan().BlockThreads(), 0, stream, /* use_pdl */ true)
+              .doit(scan_kernel,
+                    THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator(d_in),
+                    THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator(d_out),
+                    kernel_source.make_tile_state_kernel_arg(tile_state),
+                    start_tile,
+                    scan_op,
+                    init_value,
+                    num_items,
+                    /* num_stages, unused */ 1)))
+      {
+        return error;
+      }
 
       // Check for failure to launch
       if (const auto error = CubDebug(cudaPeekAtLastError()))
@@ -443,7 +451,7 @@ struct DispatchScan
     // Maximum dynamic shared memory size that we can use for temporary storage.
     int max_dynamic_smem_size{};
     if (const auto error =
-          launcher_factory.max_dynamic_smem_size_for(max_dynamic_smem_size, kernel_source.ScanKernel()))
+          CubDebug(launcher_factory.max_dynamic_smem_size_for(max_dynamic_smem_size, kernel_source.ScanKernel())))
     {
       return error;
     }
@@ -492,8 +500,14 @@ struct DispatchScan
               (long long) stream);
 #  endif // CUB_DEBUG_LOG
 
-      launcher_factory(init_grid_size, init_kernel_threads, 0, stream, /* use_pdl */ true)
-        .doit(kernel_source.InitKernel(), kernel_source.look_ahead_make_tile_state_kernel_arg(d_temp_storage), grid_dim);
+      if (const auto error = CubDebug(
+            launcher_factory(init_grid_size, init_kernel_threads, 0, stream, /* use_pdl */ true)
+              .doit(kernel_source.InitKernel(),
+                    kernel_source.look_ahead_make_tile_state_kernel_arg(d_temp_storage),
+                    grid_dim)))
+      {
+        return error;
+      }
 
       // Check for failure to launch
       if (const auto error = CubDebug(cudaPeekAtLastError()))
@@ -516,16 +530,20 @@ struct DispatchScan
       _CubLog("Invoking DeviceScanKernel<<<%d, %d, %d, %lld>>>()\n", grid_dim, block_dim, smem_size, (long long) stream);
 #  endif // CUB_DEBUG_LOG
 
-      launcher_factory(grid_dim, block_dim, smem_size, stream, /* use_pdl */ true)
-        .doit(scan_kernel,
-              THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator(d_in),
-              THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator(d_out),
-              kernel_source.look_ahead_make_tile_state_kernel_arg(d_temp_storage),
-              /* start_tile, unused */ 0,
-              ::cuda::std::move(scan_op),
-              init_value,
-              num_items,
-              num_stages);
+      if (const auto error = CubDebug(
+            launcher_factory(grid_dim, block_dim, smem_size, stream, /* use_pdl */ true)
+              .doit(scan_kernel,
+                    THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator(d_in),
+                    THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator(d_out),
+                    kernel_source.look_ahead_make_tile_state_kernel_arg(d_temp_storage),
+                    /* start_tile, unused */ 0,
+                    ::cuda::std::move(scan_op),
+                    init_value,
+                    num_items,
+                    num_stages)))
+      {
+        return error;
+      }
 
       // Check for failure to launch
       if (const auto error = CubDebug(cudaPeekAtLastError()))
