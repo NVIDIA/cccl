@@ -49,10 +49,10 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::segmented_scan_policy_t::BLO
     InitValueT init_value,
     int num_segments_per_worker)
 {
-  using segmented_scan_policy_t = typename ChainedPolicyT::ActivePolicy::segmented_scan_policy_t;
+  using policy_t = typename ChainedPolicyT::ActivePolicy::segmented_scan_policy_t;
 
-  using agent_segmented_scan_t = cub::detail::segmented_scan::agent_segmented_scan<
-    segmented_scan_policy_t,
+  using agent_t = cub::detail::segmented_scan::agent_segmented_scan<
+    policy_t,
     InputIteratorT,
     OutputIteratorT,
     OffsetT,
@@ -61,26 +61,27 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::segmented_scan_policy_t::BLO
     AccumT,
     ForceInclusive>;
 
-  __shared__ typename agent_segmented_scan_t::TempStorage temp_storage;
+  __shared__ typename agent_t::TempStorage temp_storage;
 
   const ActualInitValueT _init_value = init_value;
   _CCCL_ASSERT(num_segments_per_worker > 0, "Number of segments to be processed by block must be positive");
-  _CCCL_ASSERT(num_segments_per_worker <= segmented_scan_policy_t::max_segments_per_block,
+  _CCCL_ASSERT(num_segments_per_worker <= policy_t::max_segments_per_block,
                "Requested number of segments to be processed by block exceeds compile-time maximum");
 
   const auto work_id = num_segments_per_worker * blockIdx.x;
 
   _CCCL_ASSERT(work_id < n_segments, "device_segmented_scan_kernel launch configuration results in access violation");
 
-  if constexpr (segmented_scan_policy_t::max_segments_per_block == 1)
+  agent_t agent(temp_storage, d_in, d_out, scan_op, _init_value);
+
+  if constexpr (policy_t::max_segments_per_block == 1)
   {
     _CCCL_ASSERT(num_segments_per_worker == 1, "Inconsistent parameters in device_warp_segmented_scan_kernel");
     const OffsetT inp_begin_offset = begin_offset_d_in[work_id];
     const OffsetT inp_end_offset   = end_offset_d_in[work_id];
     const OffsetT out_begin_offset = begin_offset_d_out[work_id];
 
-    agent_segmented_scan_t(temp_storage, d_in, d_out, scan_op, _init_value)
-      .consume_range(inp_begin_offset, inp_end_offset, out_begin_offset);
+    agent.consume_range(inp_begin_offset, inp_end_offset, out_begin_offset);
   }
   else
   {
@@ -92,8 +93,7 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::segmented_scan_policy_t::BLO
     auto worker_end_off_d_in  = end_offset_d_in + start_id;
     auto worker_beg_off_d_out = begin_offset_d_out + start_id;
 
-    agent_segmented_scan_t(temp_storage, d_in, d_out, scan_op, _init_value)
-      .consume_ranges(worker_beg_off_d_in, worker_end_off_d_in, worker_beg_off_d_out, size);
+    agent.consume_ranges(worker_beg_off_d_in, worker_end_off_d_in, worker_beg_off_d_out, size);
   }
 }
 
@@ -137,45 +137,49 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::warp_segmented_scan_policy_t
 
   const ActualInitValueT _init_value = init_value;
 
+  _CCCL_ASSERT(num_segments_per_worker > 0, "Number of segments to be processed by warp must be positive");
+  _CCCL_ASSERT(num_segments_per_worker <= policy_t::max_segments_per_warp,
+               "Requested number of segments to be processed by warp exceeds compile-time maximum");
+
   static constexpr unsigned int warps_in_block = int(policy_t::BLOCK_THREADS) >> cub::detail::log2_warp_threads;
   const unsigned int warp_id                   = threadIdx.x >> cub::detail::log2_warp_threads;
 
-  const auto work_id = num_segments_per_worker * (blockIdx.x * warps_in_block + warp_id);
+  const auto work_id = num_segments_per_worker * (blockIdx.x * warps_in_block) + warp_id;
 
-  if constexpr (policy_t::max_segments_per_warp == 1)
+  if (work_id < n_segments)
   {
-    _CCCL_ASSERT(num_segments_per_worker == 1, "Inconsistent parameters in device_warp_segmented_scan_kernel");
-    if (work_id < n_segments)
+    agent_t agent(temp_storage, d_in, d_out, scan_op, _init_value);
+
+    if constexpr (policy_t::max_segments_per_warp == 1)
     {
       const OffsetT inp_begin_offset = begin_offset_d_in[work_id];
       const OffsetT inp_end_offset   = end_offset_d_in[work_id];
       const OffsetT out_begin_offset = begin_offset_d_out[work_id];
 
-      agent_t(temp_storage, d_in, d_out, scan_op, _init_value)
-        .consume_range(inp_begin_offset, inp_end_offset, out_begin_offset);
-    }
-  }
-  else
-  {
-    const ::cuda::strided_iterator<BeginOffsetIteratorInputT> raked_begin_inp{
-      begin_offset_d_in + work_id, warps_in_block};
-    const ::cuda::strided_iterator<EndOffsetIteratorInputT> raked_end_inp{end_offset_d_in + work_id, warps_in_block};
-    const ::cuda::strided_iterator<BeginOffsetIteratorOutputT> raked_begin_out{
-      begin_offset_d_out + work_id, warps_in_block};
-
-    if (work_id + num_segments_per_worker * warps_in_block < n_segments)
-    {
-      agent_t(temp_storage, d_in, d_out, scan_op, _init_value)
-        .consume_ranges(raked_begin_inp, raked_end_inp, raked_begin_out, num_segments_per_worker);
+      agent.consume_range(inp_begin_offset, inp_end_offset, out_begin_offset);
     }
     else
     {
-      if (work_id < n_segments)
-      {
-        int tail_size = (n_segments - work_id) / warps_in_block;
-        agent_t(temp_storage, d_in, d_out, scan_op, _init_value)
-          .consume_ranges(raked_begin_inp, raked_end_inp, raked_begin_out, tail_size);
-      }
+      // agent consumes interleaved segments, to improve locality of CTA memory access pattern
+
+      // agent accesses offset iterators with index: thread_work_id = chunk_id * worker_thread_count + lane_id;
+      // for 0 <= chunk_id < ::cuda::ceil_div<unsigned>(n_segments, worker_thread_count)
+      //
+      //
+      //  total_offset = num_segments_per_worker * (blockIdx.x * warps_in_block) + warp_id +
+      //      warps_in_block * thread_work_id;
+      //
+      const ::cuda::strided_iterator<BeginOffsetIteratorInputT> raked_begin_inp{
+        begin_offset_d_in + work_id, warps_in_block};
+      const ::cuda::strided_iterator<EndOffsetIteratorInputT> raked_end_inp{end_offset_d_in + work_id, warps_in_block};
+      const ::cuda::strided_iterator<BeginOffsetIteratorOutputT> raked_begin_out{
+        begin_offset_d_out + work_id, warps_in_block};
+
+      const int n_segments_per_warp =
+        (work_id + num_segments_per_worker * warps_in_block < n_segments)
+          ? num_segments_per_worker
+          : (n_segments - work_id) / warps_in_block;
+      agent.consume_ranges(raked_begin_inp, raked_end_inp, raked_begin_out, n_segments_per_warp);
     }
   }
 }
@@ -222,6 +226,8 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::warp_segmented_scan_policy_t
   __shared__ typename agent_t::TempStorage temp_storage;
 
   const ActualInitValueT _init_value = init_value;
+
+  _CCCL_ASSERT(num_segments_per_worker > 0, "Number of segments to be processed by thread must be positive");
 
   agent_t agent(
     temp_storage, d_in, d_out, begin_offset_d_in, end_offset_d_in, begin_offset_d_out, n_segments, scan_op, _init_value);
