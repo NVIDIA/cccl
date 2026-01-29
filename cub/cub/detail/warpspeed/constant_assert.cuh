@@ -15,41 +15,41 @@
 #include <cuda/std/cassert>
 
 /*
- * constantAssert: an assertion that is intended to be verified at compile time.
+ * _WS_CONSTANT_ASSERT: an assertion that is intended to be verified at compile time.
  *
- * A constantAssert asserts something that the compiler (optimizer) can verify
+ * A _WS_CONSTANT_ASSERT asserts something that the compiler (optimizer) can verify
  * at compile time. Therefore, it does not result in an actual call to assert in
  * the compiled binary. This allows checking various properties that cannot be
  * verified using static_assert.
  *
- * To ensure that all constantAsserts are in fact eliminated, compile with
- * -DWARPSPEED_FORCE_ASSERT_AT_COMPILE_TIME. With this macro defined, any
- * constantAssert failure will output illegal PTX containing the error message.
+ * To ensure that all _WS_CONSTANT_ASSERTs are in fact eliminated, compile with
+ * -D_WARPSPEED_FORCE_ASSERT_AT_COMPILE_TIME. With this macro defined, any
+ * _WS_CONSTANT_ASSERT failure will output illegal PTX containing the error message.
  * As a result, compilation will fail.
  *
- * Compiling with -DWARPSPEED_FORCE_ASSERT_AT_COMPILE_TIME has the additional
+ * Compiling with -D_WARPSPEED_FORCE_ASSERT_AT_COMPILE_TIME has the additional
  * advantage that violating any of the assertions can be detected at compile
  * time and before even running the code.
  *
  */
 
-#define WS_STRINGIZE_DETAIL(x) #x
-#define WS_STRINGIZE(x)        WS_STRINGIZE_DETAIL(x)
+#define _WS_STRINGIZE_DETAIL(x) #x
+#define _WS_STRINGIZE(x)        _WS_STRINGIZE_DETAIL(x)
 
-#if defined(WARPSPEED_FORCE_ASSERT_AT_COMPILE_TIME) && defined(__CUDA_ARCH__)
-// When WARPSPEED_FORCE_ASSERT_AT_COMPILE_TIME is defined and compiling for device, output illegal PTX.
+#if defined(_WARPSPEED_FORCE_ASSERT_AT_COMPILE_TIME) && defined(__CUDA_ARCH__)
+// When _WARPSPEED_FORCE_ASSERT_AT_COMPILE_TIME is defined and compiling for device, output illegal PTX.
 // This causes the compilation to fail.
-#  define constantAssert(expr, msg)                                                            \
+#  define _WS_CONSTANT_ASSERT(expr, msg)                                                       \
     do                                                                                         \
     {                                                                                          \
       if (!(expr))                                                                             \
       {                                                                                        \
-        asm volatile(".pragma \"\n" __FILE__ "(" WS_STRINGIZE(                                 \
+        asm volatile(".pragma \"\n" __FILE__ "(" _WS_STRINGIZE(                                \
           __LINE__) "): %0"                                                                    \
                     ": error: constant assertion failed with '" msg "'\n\";" ::"C"(__func__)); \
       }                                                                                        \
     } while (0)
 #else
-// Host or !WARPSPEED_FORCE_ASSERT_AT_COMPILE_TIME
-#  define constantAssert(expr, msg) (assert((expr) && (msg)))
+// Host or !_WARPSPEED_FORCE_ASSERT_AT_COMPILE_TIME
+#  define _WS_CONSTANT_ASSERT(expr, msg) (assert((expr) && (msg)))
 #endif

@@ -69,8 +69,8 @@ struct SmemPhaseStructuredBinding
 template <size_t numPhases, typename _Tp>
 [[nodiscard]] _CCCL_DEVICE_API inline SmemPhaseStructuredBinding<_Tp, numPhases> bindPhases(SmemStage<_Tp>& smemStage)
 {
-  constantAssert(smemStage.mSmemResourceRaw.mNumPhases == numPhases,
-                 "Number of bound phases must match resource phases.");
+  _WS_CONSTANT_ASSERT(smemStage.mSmemResourceRaw.mNumPhases == numPhases,
+                      "Number of bound phases must match resource phases.");
 
   return SmemPhaseStructuredBinding<_Tp, numPhases>{smemStage.mSmemResourceRaw};
 }

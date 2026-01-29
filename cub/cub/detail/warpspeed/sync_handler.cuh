@@ -52,7 +52,7 @@ struct SyncHandler
 #if _CCCL_STD_VER >= 2020
   _CCCL_API constexpr ~SyncHandler()
   {
-    constantAssert(mHasInitialized, "SyncHandler must have been initialized at end of kernel.");
+    _WS_CONSTANT_ASSERT(mHasInitialized, "SyncHandler must have been initialized at end of kernel.");
   }
 #endif // _CCCL_STD_VER >= 2020
 
@@ -66,9 +66,9 @@ struct SyncHandler
   // registerResource and registerPhase can be called on host and device.
   [[nodiscard]] _CCCL_API constexpr int registerResource(int numStages)
   {
-    constantAssert(!mHasInitialized, "Cannot register resource after SyncHandler has been initialized.");
+    _WS_CONSTANT_ASSERT(!mHasInitialized, "Cannot register resource after SyncHandler has been initialized.");
     // Avoid exceeding the max number of stages
-    constantAssert(mNextResourceHandle < mMaxNumResources, "Cannot register more than 10 resources.");
+    _WS_CONSTANT_ASSERT(mNextResourceHandle < mMaxNumResources, "Cannot register more than 10 resources.");
 
     // Get a handle
     int handle = mNextResourceHandle;
@@ -81,12 +81,12 @@ struct SyncHandler
 
   _CCCL_API void constexpr registerPhase(int resourceHandle, int numOwningThreads, uint64_t* ptrBar)
   {
-    constantAssert(!mHasInitialized, "Cannot register phase after SyncHandler has been initialized.");
-    constantAssert(resourceHandle < mNextResourceHandle, "Invalid resource handle.");
+    _WS_CONSTANT_ASSERT(!mHasInitialized, "Cannot register phase after SyncHandler has been initialized.");
+    _WS_CONSTANT_ASSERT(resourceHandle < mNextResourceHandle, "Invalid resource handle.");
 
     // Get phase index:
     int curPhase = mNumPhases[resourceHandle];
-    constantAssert(curPhase < mMaxNumPhases, "Cannot register more phases than maximum.");
+    _WS_CONSTANT_ASSERT(curPhase < mMaxNumPhases, "Cannot register more phases than maximum.");
 
     mNumOwningThreads[resourceHandle][curPhase] = numOwningThreads;
     mPtrBar[resourceHandle][curPhase]           = ptrBar;
@@ -97,7 +97,7 @@ struct SyncHandler
   // clusterInitSync can only be called on device.
   _CCCL_DEVICE_API inline void clusterInitSync(SpecialRegisters sr, SkipSync)
   {
-    constantAssert(!mHasInitialized, "Cannot initialize SyncHandler twice.");
+    _WS_CONSTANT_ASSERT(!mHasInitialized, "Cannot initialize SyncHandler twice.");
     mHasInitialized = true;
 
     // TODO: This could take a Group parameter to split the barrier
