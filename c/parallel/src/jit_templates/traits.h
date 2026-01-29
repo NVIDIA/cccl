@@ -52,9 +52,14 @@ struct arg_traits
   using storage_type = storage_t;
   using value_type   = T;
 
-  static const T& unwrap(const T& value)
+  static constexpr const T& unwrap(const T& value)
   {
     return value;
+  }
+
+  static constexpr auto wrap(const T& value)
+  {
+    return tagged_arg<storage_t, T>{value};
   }
 };
 
@@ -64,9 +69,14 @@ struct arg_traits<tagged_arg<StorageT, T>>
   using storage_type = StorageT;
   using value_type   = T;
 
-  static const T& unwrap(const tagged_arg<StorageT, T>& value)
+  static constexpr const T& unwrap(const tagged_arg<StorageT, T>& value)
   {
     return value.value;
+  }
+
+  static constexpr const auto& wrap(const tagged_arg<StorageT, T>& value)
+  {
+    return value;
   }
 };
 
