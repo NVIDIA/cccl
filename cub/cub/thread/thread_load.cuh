@@ -22,8 +22,9 @@
 #include <cub/util_ptx.cuh>
 #include <cub/util_type.cuh>
 
+#include <cuda/std/__iterator/concepts.h>
+#include <cuda/std/__memory/pointer_traits.h>
 #include <cuda/std/__type_traits/integral_constant.h>
-#include <cuda/std/__type_traits/is_pointer.h>
 #include <cuda/std/__utility/integer_sequence.h>
 
 #if !_CCCL_COMPILER(NVRTC)
@@ -323,13 +324,13 @@ template <CacheLoadModifier MODIFIER, typename RandomAccessIterator>
 _CCCL_DEVICE _CCCL_FORCEINLINE detail::it_value_t<RandomAccessIterator> ThreadLoad(RandomAccessIterator itr)
 {
   using T = detail::it_value_t<RandomAccessIterator>;
-  if constexpr (!::cuda::std::is_pointer_v<RandomAccessIterator> || MODIFIER == LOAD_DEFAULT)
+  if constexpr (!::cuda::std::__4::contiguous_iterator<RandomAccessIterator> || MODIFIER == LOAD_DEFAULT)
   {
     return *itr;
   }
   else if constexpr (MODIFIER == LOAD_VOLATILE && detail::is_primitive_v<T>)
   {
-    return *reinterpret_cast<const volatile T*>(itr);
+    return *reinterpret_cast<const volatile T*>(::cuda::std::to_address(itr));
   }
   else
   {
@@ -341,11 +342,12 @@ _CCCL_DEVICE _CCCL_FORCEINLINE detail::it_value_t<RandomAccessIterator> ThreadLo
     auto* words = reinterpret_cast<LoadWord*>(&retval);
     if constexpr (MODIFIER == LOAD_VOLATILE)
     {
-      UnrolledCopy<LOAD_MULTIPLE>(reinterpret_cast<const volatile LoadWord*>(itr), words);
+      UnrolledCopy<LOAD_MULTIPLE>(reinterpret_cast<const volatile LoadWord*>(::cuda::std::to_address(itr)), words);
     }
     else
     {
-      UnrolledThreadLoad<LOAD_MULTIPLE, MODIFIER>(reinterpret_cast<const LoadWord*>(itr), words);
+      UnrolledThreadLoad<LOAD_MULTIPLE, MODIFIER>(
+        reinterpret_cast<const LoadWord*>(::cuda::std::to_address(itr)), words);
     }
     return retval;
   }
