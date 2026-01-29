@@ -88,7 +88,10 @@ struct specialization
   std::string aux_code = "";
 };
 
-template <typename Tag, typename Traits, typename... Args>
+template <typename Tag,
+          typename Traits,
+          typename... Args,
+          typename = Traits::template type<void, parameter_mapping<typename mapping_arg_type<Args>::type>::archetype...>>
 specialization get_specialization(template_id<Traits> id, Args... args)
 {
 #ifdef __CUDA_ARCH__
