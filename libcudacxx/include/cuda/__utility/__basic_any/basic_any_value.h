@@ -134,32 +134,10 @@ public:
     __emplace_from<_Up>(static_cast<_Fn&&>(__fn), static_cast<_Args&&>(__args)...);
   }
 
-#if _CCCL_HAS_CONCEPTS() || defined(_CCCL_DOXYGEN_INVOKED)
-  //! @brief Move constructs a `__basic_any` object.
-  //! @pre `_Interface` must extend `__imovable<>`.
-  //! @post `__other.has_value() == false` and `has_value()` is `true` if and
-  //! only if `__other.has_value()` was `true`.
-  _CCCL_API __basic_any(__basic_any&& __other) noexcept
-    requires(__movable)
-  {
-    __convert_from(::cuda::std::move(__other));
-  }
-
-  //! @brief Copy constructs a `__basic_any` object.
-  //! @pre `_Interface` must extend `__icopyable<>`.
-  //! @post `has_value() == __other.has_value()`. If `_Interface` extends
-  //! `__iequality_comparable<>`, then `*this == __other` is `true`.
-  _CCCL_API __basic_any(__basic_any const& __other)
-    requires(__copyable)
-  {
-    __convert_from(__other);
-  }
-#else // ^^^ _CCCL_HAS_CONCEPTS() ^^^ / vvv !_CCCL_HAS_CONCEPTS() vvv
-  // Without real concepts, we use base classes to implement movability and
-  // copyability. All we need here is to accept the default implementations.
+  // We use base classes to implement movability and copyability. All we need here is to
+  // accept the default implementations.
   __basic_any(__basic_any&& __other)      = default;
   __basic_any(__basic_any const& __other) = default;
-#endif // ^^^ !_CCCL_HAS_CONCEPTS() ^^^
 
   //! @brief Converting constructor that move constructs from a compatible
   //! `__basic_any` object.
@@ -213,32 +191,10 @@ public:
     reset();
   }
 
-#if _CCCL_HAS_CONCEPTS() || defined(_CCCL_DOXYGEN_INVOKED)
-  //! @brief Move assigns a `__basic_any` object.
-  //! @pre `_Interface` must extend `__imovable<>`.
-  //! @post `__other.has_value() == false` and `has_value()` is `true` if and
-  //! only if `__other.has_value()` was `true`.
-  _CCCL_API __basic_any& operator=(__basic_any&& __other) noexcept
-    requires(__extension_of<_Interface, __imovable<>>)
-  {
-    return __assign_from(::cuda::std::move(__other));
-  }
-
-  //! @brief Copy assigns a `__basic_any` object.
-  //! @pre `_Interface` must extend `__icopyable<>`.
-  //! @post `has_value() == __other.has_value()`. If `_Interface` extends
-  //! `__iequality_comparable<>`, then `*this == __other` is `true`.
-  _CCCL_API __basic_any& operator=(__basic_any const& __other)
-    requires(__extension_of<_Interface, __icopyable<>>)
-  {
-    return __assign_from(__other);
-  }
-#else // ^^^ _CCCL_HAS_CONCEPTS() ^^^ / vvv !_CCCL_HAS_CONCEPTS() vvv
-  // Without real concepts, we use base classes to implement movability and
-  // copyability. All we need here is to accept the default implementations.
+  // We use base classes to implement movability and copyability. All we need here is to
+  // accept the default implementations.
   auto operator=(__basic_any&& __other) -> __basic_any&      = default;
   auto operator=(__basic_any const& __other) -> __basic_any& = default;
-#endif // ^^^ !_CCCL_HAS_CONCEPTS() ^^^
 
   //! @brief Converting move assignment operator from a compatible `__basic_any`
   //! object.
