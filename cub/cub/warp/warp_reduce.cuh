@@ -179,6 +179,9 @@ public:
   //! Computes a warp-wide sum in the calling warp.
   //! The output is valid in warp *lane*\ :sub:`0`.
   //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
+  //!
   //! @smemwarpreuse
   //!
   //! Snippet
@@ -258,6 +261,9 @@ public:
   //! All threads across the calling warp must agree on the same value for ``valid_items``.
   //! Otherwise the result is undefined.
   //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
+  //!
   //! @smemwarpreuse
   //!
   //! Snippet
@@ -321,6 +327,9 @@ public:
   //! The sum of each segment is returned to the first lane in that segment
   //! (which always includes *lane*\ :sub:`0`).
   //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
+  //!
   //! @smemwarpreuse
   //!
   //! Snippet
@@ -375,6 +384,9 @@ public:
   //! Computes a segmented sum in the calling warp where segments are defined by tail-flags.
   //! The sum of each segment is returned to the first lane in that segment
   //! (which always includes *lane*\ :sub:`0`).
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! @smemwarpreuse
   //!
@@ -434,6 +446,9 @@ public:
   //! functor. The output is valid in warp *lane*\ :sub:`0`.
   //!
   //! Supports non-commutative reduction operators
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! @smemwarpreuse
   //!
@@ -500,6 +515,9 @@ public:
   //!
   //! Supports non-commutative reduction operators
   //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
+  //!
   //! @smemwarpreuse
   //!
   //! Snippet
@@ -560,6 +578,9 @@ public:
   //!
   //! Supports non-commutative reduction operators
   //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
+  //!
   //! @smemwarpreuse
   //!
   //! Snippet
@@ -618,6 +639,9 @@ public:
   //! (which always includes *lane*\ :sub:`0`).
   //!
   //! Supports non-commutative reduction operators
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! @smemwarpreuse
   //!
