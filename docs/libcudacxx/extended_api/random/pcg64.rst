@@ -5,16 +5,9 @@
 
 Defined in the ``<cuda/random>`` header.
 
-.. code:: cuda
-
-    namespace cuda {
-
-    using pcg64 = /* implementation-defined */;
-
-    } // namespace cuda
-
 ``cuda::pcg64`` is a 128-bit state PCG XSL RR 128/64 engine that produces 64-bit unsigned integer outputs. It has a
-period of ``2^128`` and supports logarithmic-time ``discard``.
+period of ``2^128`` and supports logarithmic-time ``discard``. ``cuda::pcg64`` models the
+`UniformRandomBitGenerator <https://en.cppreference.com/w/cpp/named_req/UniformRandomBitGenerator>`_ named requirement.
 
 Example
 -------
