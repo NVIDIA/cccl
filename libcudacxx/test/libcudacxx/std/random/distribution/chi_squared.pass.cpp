@@ -14,9 +14,9 @@
 // template<class RealType = double>
 // class chi_squared_distribution
 
-#include <cuda/std/__random_>
 #include <cuda/std/cassert>
 #include <cuda/std/cmath>
+#include <cuda/std/random>
 
 #include "random_utilities/stats_functions.h"
 #include "random_utilities/test_distribution.h"
