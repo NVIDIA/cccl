@@ -720,8 +720,6 @@ device_scan_init_lookahead_body(warpspeed::tile_state_t<AccumT>* tile_states, co
   {
     return;
   }
-  _CCCL_PDL_GRID_DEPENDENCY_SYNC();
-  _CCCL_PDL_TRIGGER_NEXT_LAUNCH();
   // we strive to initialize the padding bits to avoid compute-sanitizer's initcheck to report reading uninitialized
   // data when reading the tile state. We use a single atomic load/store up until 16 bytes.
   static_assert(warpspeed::EMPTY == 0); // so we can zero init each tile state

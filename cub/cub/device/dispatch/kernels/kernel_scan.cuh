@@ -54,6 +54,8 @@ template <typename ChainedPolicyT, typename InputIteratorT, typename OutputItera
 CUB_DETAIL_KERNEL_ATTRIBUTES __launch_bounds__(128) void DeviceScanInitKernel(
   tile_state_kernel_arg_t<ScanTileState, AccumT> tile_state, int num_tiles)
 {
+  _CCCL_PDL_GRID_DEPENDENCY_SYNC();
+  _CCCL_PDL_TRIGGER_NEXT_LAUNCH(); // beneficial for all problem sizes in cub.bench.scan.exclusive.sum.base
   if constexpr (detail::scan::
                   scan_use_warpspeed<typename ChainedPolicyT::ActivePolicy, InputIteratorT, OutputIteratorT, AccumT>)
   {
@@ -61,8 +63,6 @@ CUB_DETAIL_KERNEL_ATTRIBUTES __launch_bounds__(128) void DeviceScanInitKernel(
   }
   else
   {
-    _CCCL_PDL_GRID_DEPENDENCY_SYNC();
-    _CCCL_PDL_TRIGGER_NEXT_LAUNCH(); // beneficial for all problem sizes in cub.bench.scan.exclusive.sum.base
     // Initialize tile status
     tile_state.lookback.InitializeStatus(num_tiles);
   }
