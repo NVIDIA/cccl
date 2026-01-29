@@ -176,7 +176,7 @@ template <int numTileStatesPerThread, typename AccumT, typename ScanOpT>
   using warp_reduce_t = WarpReduce<AccumT>;
   static_assert(sizeof(typename warp_reduce_t::TempStorage) <= 4,
                 "WarpReduce with non-trivial temporary storage is not supported yet in this kernel.");
-  typename warp_reduce_t::TempStorage temp_storage;
+  [[maybe_unused]] typename warp_reduce_t::TempStorage temp_storage;
 
   using warp_reduce_or_t = WarpReduce<uint32_t>;
   typename warp_reduce_or_t::TempStorage temp_storage_or;
