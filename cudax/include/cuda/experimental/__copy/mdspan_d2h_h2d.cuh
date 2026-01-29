@@ -118,11 +118,11 @@ _CCCL_HOST_API void copy(::cuda::host_mdspan<_TpIn, _ExtentsIn, _LayoutPolicyIn,
   static_assert(!::cuda::std::is_const_v<_TpOut>, "TpOut must not be const");
   static_assert(::cuda::std::is_same_v<::cuda::std::remove_cv_t<_TpIn>, ::cuda::std::remove_cv_t<_TpOut>>,
                 "TpIn and TpOut must be the same type");
-  if (__src.extents() != __dst.extents())
+  if (__src.size() != __dst.size())
   {
-    _CCCL_THROW(std::invalid_argument, "mdspan extents must be equal");
+    _CCCL_THROW(std::invalid_argument, "mdspans must have the same size");
   }
-  if (__src.size() == 0)
+  if (__src.size() == 0 && __dst.size() == 0)
   {
     return;
   }
@@ -135,6 +135,11 @@ _CCCL_HOST_API void copy(::cuda::host_mdspan<_TpIn, _ExtentsIn, _LayoutPolicyIn,
   const auto __src2 = ::cute::coalesce(__src1);
   const auto __dst2 = ::cute::coalesce(__dst1);
   // check compatibility of the two tensors
+  // if (__src.extents() != __dst.extents())
+  //{
+  //  _CCCL_THROW(std::invalid_argument, "mdspan extents must be compatible");
+  //}
+
   if constexpr (::cute::rank(__src2) == 0)
   {
   }
