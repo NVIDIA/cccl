@@ -535,7 +535,6 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void kernelBody(
         }
       }
 
-      // TODO(bgruber): consider merging the below branch into the next block of branches with `hasInit`
       if constexpr (hasInit)
       {
         if (is_first_tile)
