@@ -3,7 +3,7 @@
 // Part of the libcu++ Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -63,11 +63,11 @@ template <class _Tp>
   auto __sum = static_cast<_Tp>(static_cast<_Up>(__lhs) + static_cast<_Up>(__rhs));
   if constexpr (::cuda::std::is_signed_v<_Tp>)
   {
-    return overflow_result<_Tp>{__sum, (__sum < __lhs) == (__rhs >= _Tp{0})};
+    return {__sum, (__sum < __lhs) == (__rhs >= _Tp{0})};
   }
   else
   {
-    return overflow_result<_Tp>{__sum, __sum < __lhs};
+    return {__sum, __sum < __lhs};
   }
 }
 
@@ -95,7 +95,7 @@ template <class _Tp>
           "addc.u32 %1, 0, 0;"
           : "=r"(__result), "=r"(__overflow)
           : "r"(__lhs), "r"(__rhs));
-      return overflow_result<_Tp>{__result, static_cast<bool>(__overflow)};
+      return {__result, static_cast<bool>(__overflow)};
     }
     else if constexpr (sizeof(_Tp) == sizeof(uint64_t))
     {
@@ -105,7 +105,7 @@ template <class _Tp>
           "addc.u32 %1, 0, 0;"
           : "=l"(__result), "=r"(__overflow)
           : "l"(__lhs), "l"(__rhs));
-      return overflow_result<_Tp>{__result, static_cast<bool>(__overflow)};
+      return {__result, static_cast<bool>(__overflow)};
     }
 #  if _CCCL_HAS_INT128()
     else if constexpr (sizeof(_Tp) == sizeof(__uint128_t))
@@ -121,8 +121,7 @@ template <class _Tp>
             "l"(static_cast<uint64_t>(__lhs)),
             "l"(static_cast<uint64_t>(__rhs >> 64)),
             "l"(static_cast<uint64_t>(__rhs)));
-      return overflow_result<_Tp>{
-        (static_cast<__uint128_t>(__result_hi) << 64) | __result_lo, static_cast<bool>(__overflow)};
+      return {(static_cast<__uint128_t>(__result_hi) << 64) | __result_lo, static_cast<bool>(__overflow)};
     }
 #  endif // _CCCL_HAS_INT128()
     else
@@ -132,7 +131,30 @@ template <class _Tp>
   }
   else
   {
-    return ::cuda::__add_overflow_generic_impl(__lhs, __rhs); // do not use builtin functions
+    using ::cuda::std::int32_t;
+
+    if constexpr (sizeof(_Tp) < sizeof(int32_t))
+    {
+      constexpr auto __max         = int32_t{::cuda::std::numeric_limits<_Tp>::max()};
+      constexpr auto __min         = int32_t{::cuda::std::numeric_limits<_Tp>::min()};
+      const auto __result_enlarged = int32_t{__lhs} + int32_t{__rhs};
+      return {static_cast<_Tp>(__result_enlarged), __result_enlarged > __max || __result_enlarged < __min};
+    }
+#  if _CCCL_HAS_INT128()
+    else if constexpr (sizeof(_Tp) == sizeof(__int128_t))
+    {
+      using _Up                = ::cuda::std::make_unsigned_t<_Tp>;
+      const auto __uadd_result = ::cuda::__add_overflow_device(static_cast<_Up>(__lhs), static_cast<_Up>(__rhs));
+      const auto __result      = static_cast<_Tp>(__uadd_result.value);
+      const auto __overflow    = ((__lhs >= 0) == (__rhs >= 0)) && (__uadd_result.overflow == (__result >= 0));
+      return {__result, __overflow};
+    }
+#  endif // _CCCL_HAS_INT128()
+    else
+    {
+      // For 32 and 64 bit ints, this seems to be the more efficient path.
+      return ::cuda::__add_overflow_generic_impl(__lhs, __rhs);
+    }
   }
 }
 
