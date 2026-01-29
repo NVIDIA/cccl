@@ -47,7 +47,7 @@ struct output_iterator_t
 {
   using iterator_category = cuda::std::random_access_iterator_tag;
   using difference_type   = cuda::std::size_t;
-  using value_type        = void;
+  using value_type        = typename decltype(AssignTV)::Type;
   using reference =
     output_iterator_proxy_t<Tag, Iterator.size, Iterator.alignment, typename decltype(AssignTV)::Type, Iterator.assign>;
   using pointer = reference*;
