@@ -153,7 +153,10 @@ struct user_policy_hub_t
       base_warp_level_policy_t::load_algorithm,
       base_warp_level_policy_t::load_modifier,
       base_warp_level_policy_t::store_algorithm,
-      SegmentsPerWorkUnit>;
+      // IMPORTANT: Make sure not to hurt occupancy
+      // since shared memory is allocated per warp, scale it down so that total amount of shared memory
+      // per CTA is the same as in block-level segmented scan
+      ::cuda::ceil_div(SegmentsPerWorkUnit* cub::detail::warp_threads, 128)>;
 
     using thread_segmented_scan_policy_t =
       thread_level_agent_policy_t<128, ItemsPerThread, AccumT, base_thread_level_policy_t::load_modifier>;
