@@ -40,6 +40,8 @@ PTX Instructions
    instructions/shfl_sync
    instructions/st_async
    instructions/st_bulk
+   instructions/ldmatrix
+   instructions/stmatrix
    instructions/tcgen05_alloc
    instructions/tcgen05_commit
    instructions/tcgen05_cp
@@ -467,9 +469,9 @@ Instructions by section
    * - `mma <https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#warp-level-matrix-instructions-mma>`__
      - No
    * - `ldmatrix <https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#warp-level-matrix-load-instruction-ldmatrix>`__
-     - No
+     - CCCL 3.3 / CUDA 13.3
    * - `stmatrix <https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#warp-level-matrix-store-instruction-stmatrix>`__
-     - No
+     - CCCL 3.3 / CUDA 13.3
    * - `movmatrix <https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#warp-level-matrix-transpose-instruction-movmatrix>`__
      - No
    * - `mma.sp <https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#warp-level-matrix-instructions-for-sparse-mma>`__
