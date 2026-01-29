@@ -203,12 +203,13 @@ struct agent_warp_segmented_scan
     }
   };
 
-  //! @brief Scan dynamically given number of segment of values
+  //! @brief Scan dynamically given number of segments of values
+  //! All arguments are warp-uniform
   template <typename InputBeginOffsetIteratorT,
             typename InputEndOffsetIteratorT,
             typename OutputBeginOffsetIteratorT,
-            ::cuda::std::size_t NumSegments = max_segments_per_warp,
-            class = ::cuda::std::enable_if_t<(NumSegments > 1) && (NumSegments != ::cuda::std::dynamic_extent)>>
+            ::cuda::std::size_t MaxNumSegments = max_segments_per_warp,
+            class                              = ::cuda::std::enable_if_t<(MaxNumSegments > 1)>>
   _CCCL_DEVICE _CCCL_FORCEINLINE void consume_ranges(
     InputBeginOffsetIteratorT inp_idx_begin_it,
     InputEndOffsetIteratorT inp_idx_end_it,
@@ -228,7 +229,7 @@ struct agent_warp_segmented_scan
     {
       constexpr unsigned worker_thread_count = cub::detail::warp_threads;
 
-      n_segments        = ::cuda::std::min(n_segments, static_cast<int>(NumSegments));
+      n_segments        = ::cuda::std::min(n_segments, static_cast<int>(MaxNumSegments));
       unsigned n_chunks = ::cuda::ceil_div<unsigned>(n_segments, worker_thread_count);
 
       using plus_t = ::cuda::std::plus<>;
