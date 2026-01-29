@@ -8,7 +8,6 @@
 #include <thrust/iterator/counting_iterator.h>
 #include <thrust/iterator/transform_iterator.h>
 
-#include <cuda/__execution/max_segment_size.h>
 #include <cuda/std/type_traits>
 
 #include <nvbench_helper.cuh>
@@ -59,8 +58,8 @@ struct policy_hub_t
 };
 #endif // !TUNE_BASE
 
-template <typename T, typename OffsetT, typename MaxSegmentSizeGuaranteeT>
-void variable_segmented_reduce(nvbench::state& state)
+template <typename T, typename OffsetT>
+void variable_segmented_reduce(nvbench::state& state, nvbench::type_list<T, OffsetT>)
 {
   static constexpr bool is_argmin = std::is_same_v<op_t, cub::detail::arg_min>;
   static constexpr bool is_argmax = std::is_same_v<op_t, cub::detail::arg_max>;
@@ -71,26 +70,24 @@ void variable_segmented_reduce(nvbench::state& state)
   using accum_t        = output_t;
   using init_t =
     cuda::std::conditional_t<(is_argmin || is_argmax), cub::detail::reduce::empty_problem_init_t<accum_t>, T>;
-  using offset_t                     = OffsetT;
-  using begin_offset_it_t            = const offset_t*;
-  using end_offset_it_t              = const offset_t*;
-  using max_segment_size_guarantee_t = MaxSegmentSizeGuaranteeT;
+  using offset_t          = OffsetT;
+  using begin_offset_it_t = const offset_t*;
+  using end_offset_it_t   = const offset_t*;
 
   // Retrieve axis parameters
   const auto elements                = static_cast<std::size_t>(state.get_int64("Elements{io}"));
   const auto max_segment_size        = static_cast<std::size_t>(state.get_int64("MaxSegmentSize"));
   const auto guaranteed_max_seg_size = static_cast<std::size_t>(state.get_int64("GuaranteeMaxSegSize"));
 
-  // skip if default segment size or max_segment_size > guaranteed_max_seg_size
+  // skip if max_segment_size > guaranteed_max_seg_size
   if (guaranteed_max_seg_size != 0 && max_segment_size > guaranteed_max_seg_size)
   {
     state.skip("max_segment_size > guaranteed_max_seg_size");
     return;
   }
 
-  // Compute min segment size as half of max (similar to segmented_sort)
+  const auto min_segment_size     = 1;
   const auto max_segment_size_log = static_cast<offset_t>(std::log2(max_segment_size));
-  const auto min_segment_size     = std::max<std::size_t>(1, 1 << (max_segment_size_log - 1));
 
   // Generate segment offsets
   thrust::device_vector<offset_t> segment_offsets =
@@ -140,15 +137,12 @@ void variable_segmented_reduce(nvbench::state& state)
     offset_t,
     op_t,
     init_t,
-    accum_t,
-    max_segment_size_guarantee_t
+    accum_t
 #if !TUNE_BASE
     ,
     policy_hub_t<accum_t>
 #endif // TUNE_BASE
     >;
-
-  auto max_seg_size_guarantee = max_segment_size_guarantee_t{guaranteed_max_seg_size};
 
   // Allocate temporary storage
   std::size_t temp_size{};
@@ -163,7 +157,7 @@ void variable_segmented_reduce(nvbench::state& state)
     op_t{},
     init_t{},
     0 /* stream */,
-    max_seg_size_guarantee);
+    guaranteed_max_seg_size);
 
   thrust::device_vector<nvbench::uint8_t> temp(temp_size);
   auto* temp_storage = thrust::raw_pointer_cast(temp.data());
@@ -180,59 +174,35 @@ void variable_segmented_reduce(nvbench::state& state)
       op_t{},
       init_t{},
       launch.get_stream(),
-      max_seg_size_guarantee);
+      guaranteed_max_seg_size);
   });
 }
 
-template <typename T, typename OffsetT>
-void variable_segmented_reduce_default(nvbench::state& state, nvbench::type_list<T, OffsetT>)
-{
-  variable_segmented_reduce<T, OffsetT, cuda::execution::max_segment_size<0>>(state);
-}
-
-NVBENCH_BENCH_TYPES(variable_segmented_reduce_default, NVBENCH_TYPE_AXES(value_types, some_offset_types))
+NVBENCH_BENCH_TYPES(variable_segmented_reduce, NVBENCH_TYPE_AXES(value_types, some_offset_types))
   .set_name("variable_default")
   .set_type_axes_names({"T{ct}", "OffsetT{ct}"})
   .add_int64_power_of_two_axis("Elements{io}", nvbench::range(16, 28, 4))
   .add_int64_power_of_two_axis("MaxSegmentSize", nvbench::range(1, 16, 1))
   .add_int64_axis("GuaranteeMaxSegSize", {0});
 
-template <typename T, typename OffsetT>
-void variable_segmented_reduce_dynamic_small(nvbench::state& state, nvbench::type_list<T, OffsetT>)
-{
-  variable_segmented_reduce<T, OffsetT, cuda::execution::max_segment_size<>>(state);
-}
-
 // Small segments: 1-16 items per segment
-NVBENCH_BENCH_TYPES(variable_segmented_reduce_dynamic_small, NVBENCH_TYPE_AXES(value_types, some_offset_types))
+NVBENCH_BENCH_TYPES(variable_segmented_reduce, NVBENCH_TYPE_AXES(value_types, some_offset_types))
   .set_name("variable_small_dynamic")
   .set_type_axes_names({"T{ct}", "OffsetT{ct}"})
   .add_int64_power_of_two_axis("Elements{io}", nvbench::range(16, 28, 4))
   .add_int64_power_of_two_axis("MaxSegmentSize", nvbench::range(1, 4, 1))
   .add_int64_power_of_two_axis("GuaranteeMaxSegSize", nvbench::range(1, 4, 1));
 
-template <typename T, typename OffsetT>
-void variable_segmented_reduce_dynamic_medium(nvbench::state& state, nvbench::type_list<T, OffsetT>)
-{
-  variable_segmented_reduce<T, OffsetT, cuda::execution::max_segment_size<>>(state);
-}
-
 // Medium segments: 32-256 items per segment
-NVBENCH_BENCH_TYPES(variable_segmented_reduce_dynamic_medium, NVBENCH_TYPE_AXES(value_types, some_offset_types))
+NVBENCH_BENCH_TYPES(variable_segmented_reduce, NVBENCH_TYPE_AXES(value_types, some_offset_types))
   .set_name("variable_medium_dynamic")
   .set_type_axes_names({"T{ct}", "OffsetT{ct}"})
   .add_int64_power_of_two_axis("Elements{io}", nvbench::range(16, 28, 4))
   .add_int64_power_of_two_axis("MaxSegmentSize", nvbench::range(5, 8, 1))
   .add_int64_power_of_two_axis("GuaranteeMaxSegSize", nvbench::range(5, 8, 1));
 
-template <typename T, typename OffsetT>
-void variable_segmented_reduce_dynamic_large(nvbench::state& state, nvbench::type_list<T, OffsetT>)
-{
-  variable_segmented_reduce<T, OffsetT, cuda::execution::max_segment_size<>>(state);
-}
-
 // Large segments: 512+ items per segment
-NVBENCH_BENCH_TYPES(variable_segmented_reduce_dynamic_large, NVBENCH_TYPE_AXES(value_types, some_offset_types))
+NVBENCH_BENCH_TYPES(variable_segmented_reduce, NVBENCH_TYPE_AXES(value_types, some_offset_types))
   .set_name("variable_large_dynamic")
   .set_type_axes_names({"T{ct}", "OffsetT{ct}"})
   .add_int64_power_of_two_axis("Elements{io}", nvbench::range(16, 28, 4))

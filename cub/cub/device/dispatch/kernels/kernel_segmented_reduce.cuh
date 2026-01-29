@@ -17,8 +17,6 @@
 #include <cub/device/dispatch/kernels/kernel_reduce.cuh> // finalize_and_store_aggregate
 #include <cub/iterator/arg_index_input_iterator.cuh>
 
-#include <cuda/__execution/max_segment_size.h>
-
 CUB_NAMESPACE_BEGIN
 
 namespace detail::reduce
@@ -100,10 +98,7 @@ template <typename ChainedPolicyT,
           typename OffsetT,
           typename ReductionOpT,
           typename InitT,
-          typename AccumT,
-          // TODO: replace with enum classes consisting (small, medium large) to reduce number of instantiations when
-          // using static max segment size
-          typename MaxSegmentSizeT>
+          typename AccumT>
 CUB_DETAIL_KERNEL_ATTRIBUTES
 __launch_bounds__(int(ChainedPolicyT::ActivePolicy::ReducePolicy::BLOCK_THREADS)) void DeviceSegmentedReduceKernel(
   InputIteratorT d_in,
@@ -113,7 +108,7 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::ReducePolicy::BLOCK_THREADS)
   ::cuda::std::int64_t num_segments,
   ReductionOpT reduction_op,
   InitT init,
-  MaxSegmentSizeT max_segment_size)
+  size_t max_segment_size)
 {
   using ActivePolicyT = typename ChainedPolicyT::ActivePolicy;
 
@@ -146,8 +141,6 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::ReducePolicy::BLOCK_THREADS)
 
   const int bid = blockIdx.x;
   const int tid = threadIdx.x;
-
-  constexpr auto compile_time_known_segment_size = MaxSegmentSizeT::size != ::cuda::execution::dynamic_max_segment_size;
 
   auto small_medium_reduction =
     [&](auto agent_tag, auto& storage, auto threads_per_warp_tag, auto segments_per_block_tag) {
@@ -229,36 +222,17 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::ReducePolicy::BLOCK_THREADS)
     }
   };
 
-  if constexpr (compile_time_known_segment_size)
+  if (max_segment_size != 0 && max_segment_size <= small_items_per_tile)
   {
-    constexpr auto ct_max_segment_size = MaxSegmentSizeT{};
-    if constexpr (ct_max_segment_size != 0 && ct_max_segment_size <= small_items_per_tile)
-    {
-      small_segment_reduction();
-    }
-    else if constexpr (ct_max_segment_size != 0 && ct_max_segment_size <= medium_items_per_tile)
-    {
-      medium_segment_reduction();
-    }
-    else
-    {
-      large_segment_reduction();
-    }
+    small_segment_reduction();
+  }
+  else if (max_segment_size != 0 && max_segment_size <= medium_items_per_tile)
+  {
+    medium_segment_reduction();
   }
   else
   {
-    if (max_segment_size != 0 && max_segment_size <= small_items_per_tile)
-    {
-      small_segment_reduction();
-    }
-    else if (max_segment_size != 0 && max_segment_size <= medium_items_per_tile)
-    {
-      medium_segment_reduction();
-    }
-    else
-    {
-      large_segment_reduction();
-    }
+    large_segment_reduction();
   }
 }
 

@@ -31,8 +31,6 @@
 #include <thrust/iterator/transform_iterator.h>
 
 #include <cuda/__execution/determinism.h>
-#include <cuda/__execution/guarantee.h>
-#include <cuda/__execution/max_segment_size.h>
 #include <cuda/__execution/require.h>
 #include <cuda/__functional/maximum.h>
 #include <cuda/__functional/minimum.h>
@@ -553,14 +551,6 @@ struct DeviceSegmentedReduce
                                                   ::cuda::execution::determinism::__get_determinism_t,
                                                   ::cuda::execution::determinism::run_to_run_t>;
 
-    auto provided_guarantees =
-      ::cuda::std::execution::__query_or(env, ::cuda::execution::__get_guarantees, ::cuda::std::execution::env{});
-
-    const auto max_segment_size = ::cuda::std::execution::__query_or(
-      provided_guarantees, ::cuda::execution::__get_max_segment_size, ::cuda::execution::max_segment_size<0>{});
-
-    using max_segment_size_t = decltype(max_segment_size);
-
     using dispatch_t = DispatchSegmentedReduce<
       InputIteratorT,
       OutputIteratorT,
@@ -570,7 +560,6 @@ struct DeviceSegmentedReduce
       ::cuda::std::plus<>,
       init_t,
       AccumT,
-      max_segment_size_t,
       policy_t>;
 
     // Static assert to reject gpu_to_gpu determinism since it's not properly implemented atm
@@ -598,8 +587,7 @@ struct DeviceSegmentedReduce
         d_end_offsets,
         ::cuda::std::plus<>{},
         init_t{}, // zero-initialize
-        stream.get(),
-        max_segment_size);
+        stream.get());
       if (error != cudaSuccess)
       {
         return error;
@@ -623,8 +611,7 @@ struct DeviceSegmentedReduce
         d_end_offsets,
         ::cuda::std::plus<>{},
         init_t{}, // zero-initialize
-        stream.get(),
-        max_segment_size);
+        stream.get());
 
       // Try to deallocate regardless of the error to avoid memory leaks
       cudaError_t deallocate_error =

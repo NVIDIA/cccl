@@ -7,18 +7,18 @@
 
 #include <thrust/device_vector.h>
 
-#include <cuda/__execution/guarantee.h>
-#include <cuda/__execution/max_segment_size.h>
-#include <cuda/std/__execution/env.h>
-
 #include "catch2_test_device_reduce.cuh"
+#include "catch2_test_launch_helper.h"
 #include <c2h/catch2_test_helper.h>
 
-using full_type_list = c2h::type_list<uint8_t, int8_t, uint16_t, int16_t, uint32_t, int32_t, uint64_t, int64_t>;
+DECLARE_LAUNCH_WRAPPER(cub::DeviceSegmentedReduce::Sum, device_segmented_sum);
 
-using offsets = c2h::type_list<std::int32_t, std::uint32_t, std::int64_t, std::uint64_t>;
+// %PARAM% TEST_LAUNCH lid 0
 
-C2H_TEST("Device segmented reduce works with static and dynamic max segment sizes",
+using full_type_list = c2h::type_list<uint8_t, int16_t, uint32_t, int64_t, float, double>;
+using offsets        = c2h::type_list<std::int32_t, std::uint64_t>;
+
+C2H_TEST("Device segmented reduce works with dynamic max segment sizes",
          "[segmented][reduce][device]",
          full_type_list,
          offsets)
@@ -40,17 +40,7 @@ C2H_TEST("Device segmented reduce works with static and dynamic max segment size
     }));
   INFO("Test num_items: " << num_items);
 
-  const cuda::execution::max_segment_size max_seg_size = GENERATE(
-    5, // dynamic segment sizes
-    10,
-    100,
-    1000,
-    10000,
-    cuda::execution::max_segment_size<5>{}, // static segment sizes
-    cuda::execution::max_segment_size<10>{},
-    cuda::execution::max_segment_size<100>{},
-    cuda::execution::max_segment_size<1000>{},
-    cuda::execution::max_segment_size<10000>{});
+  const size_t max_seg_size = GENERATE(5, 10, 100, 1000, 10000);
 
   // Range of segment sizes to generate
   // Note that the segment range [0, 1] may also include one last segment with more than 1 items
@@ -82,13 +72,9 @@ C2H_TEST("Device segmented reduce works with static and dynamic max segment size
     c2h::device_vector<output_t> out_result(num_segments);
     auto d_out_it = unwrap_it(thrust::raw_pointer_cast(out_result.data()));
 
-    auto g_env = cuda::execution::guarantee(max_seg_size);
-
-    auto error =
-      cub::DeviceSegmentedReduce::Sum(d_in_it, d_out_it, num_segments, d_offsets_it, d_offsets_it + 1, g_env);
+    device_segmented_sum(d_in_it, d_out_it, num_segments, d_offsets_it, d_offsets_it + 1);
 
     // Verify result
     REQUIRE(expected_result == out_result);
-    REQUIRE(error == cudaSuccess);
   }
 }
