@@ -72,12 +72,14 @@ struct __pstl_dispatch<__pstl_algorithm::__transform, __execution_backend::__cud
     constexpr auto __stable_address = CUB_NS_QUALIFIER::detail::transform::requires_stable_address::no;
     auto __stream = ::cuda::__call_or(::cuda::get_stream, ::cuda::stream_ref{cudaStreamPerThread}, __policy);
 
+    const auto __ret = __result + __count;
+
     // We pass the policy as an environment to device_transform
     _CCCL_TRY_CUDA_API(
       CUB_NS_QUALIFIER::detail::transform::dispatch<__stable_address>,
       "cuda::std::transform: failed inside CUDA backend",
       ::cuda::std::move(__first),
-      __result,
+      ::cuda::std::move(__result),
       __count,
       ::cuda::std::move(__pred),
       ::cuda::std::move(__func),
@@ -85,7 +87,7 @@ struct __pstl_dispatch<__pstl_algorithm::__transform, __execution_backend::__cud
 
     __stream.sync();
 
-    return __result + __count;
+    return __ret;
   }
 
   _CCCL_TEMPLATE(class _Policy,
