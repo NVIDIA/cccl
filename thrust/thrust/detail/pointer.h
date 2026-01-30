@@ -39,6 +39,7 @@
 
 #include <cuda/std/__memory/addressof.h>
 #include <cuda/std/__memory/pointer_traits.h>
+#include <cuda/std/__type_traits/add_lvalue_reference.h>
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/is_comparable.h>
 #include <cuda/std/__type_traits/is_reference.h>
@@ -402,6 +403,83 @@ public:
   operator<=(pointer const& lhs, pointer<OtherElement, OtherTag, OtherReference, OtherDerived> const& rhs) = delete;
 };
 
+namespace detail
+{
+template <typename Ptr, typename T>
+struct thrust_pointer_rebind;
+
+template <typename T, typename U>
+struct thrust_pointer_rebind<T*, U>
+{
+  using type = U*;
+};
+
+// Rebind generic fancy pointers.
+template <template <typename, typename...> class Ptr, typename OldT, typename... Tail, typename T>
+struct thrust_pointer_rebind<Ptr<OldT, Tail...>, T>
+{
+  using type = Ptr<T, Tail...>;
+};
+
+// Rebind `thrust::pointer`-like things with `thrust::reference`-like references.
+template <template <typename, typename, typename, typename...> class Ptr,
+          typename OldT,
+          typename Tag,
+          template <typename...> class Ref,
+          typename... RefTail,
+          typename... PtrTail,
+          typename T>
+struct thrust_pointer_rebind<Ptr<OldT, Tag, Ref<OldT, RefTail...>, PtrTail...>, T>
+{
+  //  static_assert(is_same<OldT, Tag>::value, "0");
+  using type = Ptr<T, Tag, Ref<T, RefTail...>, PtrTail...>;
+};
+
+// Rebind `thrust::pointer`-like things with `thrust::reference`-like references
+// and templated derived types.
+template <template <typename, typename, typename, typename...> class Ptr,
+          typename OldT,
+          typename Tag,
+          template <typename...> class Ref,
+          typename... RefTail,
+          template <typename...> class DerivedPtr,
+          typename... DerivedPtrTail,
+          typename T>
+struct thrust_pointer_rebind<Ptr<OldT, Tag, Ref<OldT, RefTail...>, DerivedPtr<OldT, DerivedPtrTail...>>, T>
+{
+  //  static_assert(::cuda::std::is_same<OldT, Tag>::value, "1");
+  using type = Ptr<T, Tag, Ref<T, RefTail...>, DerivedPtr<T, DerivedPtrTail...>>;
+};
+
+// Rebind `thrust::pointer`-like things with native reference types.
+template <template <typename, typename, typename, typename...> class Ptr,
+          typename OldT,
+          typename Tag,
+          typename... PtrTail,
+          typename T>
+struct thrust_pointer_rebind<Ptr<OldT, Tag, ::cuda::std::add_lvalue_reference_t<OldT>, PtrTail...>, T>
+{
+  //  static_assert(::cuda::std::is_same<OldT, Tag>::value, "2");
+  using type = Ptr<T, Tag, ::cuda::std::add_lvalue_reference_t<T>, PtrTail...>;
+};
+
+// Rebind `thrust::pointer`-like things with native reference types and templated
+// derived types.
+template <template <typename, typename, typename, typename...> class Ptr,
+          typename OldT,
+          typename Tag,
+          template <typename...> class DerivedPtr,
+          typename... DerivedPtrTail,
+          typename T>
+struct thrust_pointer_rebind<
+  Ptr<OldT, Tag, ::cuda::std::add_lvalue_reference_t<OldT>, DerivedPtr<OldT, DerivedPtrTail...>>,
+  T>
+{
+  //  static_assert(is_same<OldT, Tag>::value, "3");
+  using type = Ptr<T, Tag, ::cuda::std::add_lvalue_reference_t<T>, DerivedPtr<T, DerivedPtrTail...>>;
+};
+} // namespace detail
+
 /*! \} // memory_management
  */
 
@@ -420,7 +498,7 @@ struct pointer_traits<Pointer, void_t<typename Pointer::raw_pointer>>
   template <typename U>
   struct rebind
   {
-    using other = typename THRUST_NS_QUALIFIER::detail::rebind_pointer<pointer, U>::type;
+    using other = typename THRUST_NS_QUALIFIER::detail::thrust_pointer_rebind<pointer, U>::type;
   };
 
   // Backwards compatability with thrust::detail::pointer_traits
@@ -437,6 +515,12 @@ struct pointer_traits<Pointer, void_t<typename Pointer::raw_pointer>>
   //! @param iter A thrust::pointer
   //! @return A pointer to the element pointed to by the thrust pointer
   [[nodiscard]] _CCCL_API static constexpr raw_pointer to_address(const pointer iter) noexcept
+  {
+    return iter.get();
+  }
+
+  //! For backwards compatability with old pointer traits
+  [[nodiscard]] _CCCL_API static constexpr raw_pointer get(const pointer iter) noexcept
   {
     return iter.get();
   }
