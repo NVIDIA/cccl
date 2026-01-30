@@ -430,7 +430,8 @@ struct DispatchScan
     using OutputT         = ::cuda::std::iter_value_t<OutputIteratorT>;
     using WarpspeedPolicy = typename ActivePolicyT::WarpspeedPolicy;
 
-    const int grid_dim = ::cuda::ceil_div(num_items, static_cast<OffsetT>(WarpspeedPolicy::tile_size));
+    const int grid_dim =
+      static_cast<int>(::cuda::ceil_div(num_items, static_cast<OffsetT>(WarpspeedPolicy::tile_size)));
 
     if (d_temp_storage == nullptr)
     {
@@ -446,7 +447,7 @@ struct DispatchScan
     // number of stages to have an even workload across all SMs (improves small problem sizes), assuming 1 CTA per SM
     // +1 since it tends to improve performance
     [[maybe_unused]] const int max_stages_for_even_workload =
-      ::cuda::ceil_div(num_items, static_cast<OffsetT>(sm_count * WarpspeedPolicy::tile_size)) + 1;
+      static_cast<int>(::cuda::ceil_div(num_items, static_cast<OffsetT>(sm_count * WarpspeedPolicy::tile_size)) + 1);
 
     // Maximum dynamic shared memory size that we can use for temporary storage.
     int max_dynamic_smem_size{};
