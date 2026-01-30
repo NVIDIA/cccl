@@ -7,6 +7,7 @@
 #include <cub/block/block_load.cuh>
 #include <cub/block/block_scan.cuh>
 #include <cub/block/block_store.cuh>
+#include <cub/device/dispatch/kernels/kernel_segmented_scan.cuh>
 #include <cub/iterator/cache_modified_input_iterator.cuh>
 
 #include <thrust/tabulate.h>
@@ -103,180 +104,6 @@ struct ChainedPolicy
 {
   using ActivePolicy = policy_wrapper<BlockThreads, ItemsPerThread, SegmentsPerBlock>;
 };
-
-template <typename ChainedPolicyT,
-          typename InputIteratorT,
-          typename OutputIteratorT,
-          typename BeginOffsetIteratorInputT,
-          typename EndOffsetIteratorInputT,
-          typename BeginOffsetIteratorOutputT,
-          typename OffsetT,
-          typename ScanOpT,
-          typename InitValueT,
-          typename AccumT,
-          bool ForceInclusive,
-          typename ActualInitValueT = typename InitValueT::value_type>
-__launch_bounds__(int(ChainedPolicyT::ActivePolicy::segmented_scan_policy_t::BLOCK_THREADS)) __global__
-  void device_segmented_scan_kernel_one_segment_per_block(
-    InputIteratorT d_in,
-    OutputIteratorT d_out,
-    BeginOffsetIteratorInputT begin_offset_d_in,
-    EndOffsetIteratorInputT end_offset_d_in,
-    BeginOffsetIteratorOutputT begin_offset_d_out,
-    OffsetT n_segments,
-    ScanOpT scan_op,
-    InitValueT init_value)
-{
-  using segmented_scan_policy_t = typename ChainedPolicyT::ActivePolicy::segmented_scan_policy_t;
-  static_assert(segmented_scan_policy_t::max_segments_per_block == 1,
-                "Policy with single segment per block must be used");
-
-  using agent_segmented_scan_t = cub::detail::segmented_scan::agent_segmented_scan<
-    segmented_scan_policy_t,
-    InputIteratorT,
-    OutputIteratorT,
-    OffsetT,
-    ScanOpT,
-    ActualInitValueT,
-    AccumT,
-    ForceInclusive>;
-
-  __shared__ typename agent_segmented_scan_t::TempStorage temp_storage;
-
-  const ActualInitValueT _init_value = init_value;
-
-  const auto segment_id = blockIdx.x;
-
-  _CCCL_ASSERT(segment_id < n_segments,
-               "device_segmented_scan_kernel launch configuration results in access violation");
-
-  const OffsetT inp_begin_offset = begin_offset_d_in[segment_id];
-  const OffsetT inp_end_offset   = end_offset_d_in[segment_id];
-  const OffsetT out_begin_offset = begin_offset_d_out[segment_id];
-
-  agent_segmented_scan_t(temp_storage, d_in, d_out, scan_op, _init_value)
-    .consume_range(inp_begin_offset, inp_end_offset, out_begin_offset);
-}
-
-template <typename ChainedPolicyT,
-          typename InputIteratorT,
-          typename OutputIteratorT,
-          typename BeginOffsetIteratorInputT,
-          typename EndOffsetIteratorInputT,
-          typename BeginOffsetIteratorOutputT,
-          typename OffsetT,
-          typename ScanOpT,
-          typename InitValueT,
-          typename AccumT,
-          bool ForceInclusive,
-          typename ActualInitValueT = typename InitValueT::value_type>
-__launch_bounds__(int(ChainedPolicyT::ActivePolicy::segmented_scan_policy_t::BLOCK_THREADS)) __global__
-  void device_segmented_scan_kernel_two_segments_per_block(
-    InputIteratorT d_in,
-    OutputIteratorT d_out,
-    BeginOffsetIteratorInputT begin_offset_d_in,
-    EndOffsetIteratorInputT end_offset_d_in,
-    BeginOffsetIteratorOutputT begin_offset_d_out,
-    OffsetT n_segments,
-    ScanOpT scan_op,
-    InitValueT init_value)
-{
-  using segmented_scan_policy_t        = typename ChainedPolicyT::ActivePolicy::segmented_scan_policy_t;
-  constexpr int num_segments_per_block = 2;
-  static_assert(segmented_scan_policy_t::max_segments_per_block >= num_segments_per_block,
-                "Policy with two segment per block must be used");
-
-  using agent_segmented_scan_t = cub::detail::segmented_scan::agent_segmented_scan<
-    segmented_scan_policy_t,
-    InputIteratorT,
-    OutputIteratorT,
-    OffsetT,
-    ScanOpT,
-    ActualInitValueT,
-    AccumT,
-    ForceInclusive>;
-
-  __shared__ typename agent_segmented_scan_t::TempStorage temp_storage;
-
-  const ActualInitValueT _init_value = init_value;
-
-  const auto work_id = blockIdx.x;
-
-  _CCCL_ASSERT(n_segments % num_segments_per_block == 0, "Kernel requires number of segments to be even");
-  _CCCL_ASSERT(num_segments_per_block * (work_id + 1) <= n_segments,
-               "device_segmented_scan_kernel launch configuration results in access violation");
-
-  agent_segmented_scan_t(temp_storage, d_in, d_out, scan_op, _init_value)
-    .consume_ranges(begin_offset_d_in + 2 * work_id, end_offset_d_in + 2 * work_id, begin_offset_d_out + 2 * work_id, 2);
-}
-
-template <typename ChainedPolicyT,
-          typename InputIteratorT,
-          typename OutputIteratorT,
-          typename BeginOffsetIteratorInputT,
-          typename EndOffsetIteratorInputT,
-          typename BeginOffsetIteratorOutputT,
-          typename OffsetT,
-          typename ScanOpT,
-          typename InitValueT,
-          typename AccumT,
-          bool ForceInclusive,
-          typename ActualInitValueT = typename InitValueT::value_type>
-__launch_bounds__(int(ChainedPolicyT::ActivePolicy::segmented_scan_policy_t::BLOCK_THREADS)) __global__
-  void device_segmented_scan_kernel_three_segments_per_block(
-    InputIteratorT d_in,
-    OutputIteratorT d_out,
-    BeginOffsetIteratorInputT begin_offset_d_in,
-    EndOffsetIteratorInputT end_offset_d_in,
-    BeginOffsetIteratorOutputT begin_offset_d_out,
-    OffsetT n_segments,
-    ScanOpT scan_op,
-    InitValueT init_value)
-{
-  using segmented_scan_policy_t        = typename ChainedPolicyT::ActivePolicy::segmented_scan_policy_t;
-  constexpr int num_segments_per_block = 3;
-  static_assert(segmented_scan_policy_t::max_segments_per_block >= num_segments_per_block,
-                "Policy with three segment per block must be used");
-
-  using agent_segmented_scan_t = cub::detail::segmented_scan::agent_segmented_scan<
-    segmented_scan_policy_t,
-    InputIteratorT,
-    OutputIteratorT,
-    OffsetT,
-    ScanOpT,
-    ActualInitValueT,
-    AccumT,
-    ForceInclusive>;
-
-  __shared__ typename agent_segmented_scan_t::TempStorage temp_storage;
-
-  const ActualInitValueT _init_value = init_value;
-
-  const auto work_id = blockIdx.x;
-
-  _CCCL_ASSERT(num_segments_per_block * work_id < n_segments,
-               "device_segmented_scan_kernel launch configuration results in access violation");
-
-  OffsetT inp_end_offsets[num_segments_per_block] = {};
-
-  if (num_segments_per_block * blockIdx.x + num_segments_per_block < n_segments)
-  {
-    agent_segmented_scan_t(temp_storage, d_in, d_out, scan_op, _init_value)
-      .consume_ranges(begin_offset_d_in + num_segments_per_block * work_id,
-                      end_offset_d_in + num_segments_per_block * work_id,
-                      begin_offset_d_out + num_segments_per_block * work_id,
-                      num_segments_per_block);
-  }
-  else
-  {
-    int tail_size = n_segments - num_segments_per_block * blockIdx.x;
-    agent_segmented_scan_t(temp_storage, d_in, d_out, scan_op, _init_value)
-      .consume_ranges(begin_offset_d_in + num_segments_per_block * work_id,
-                      end_offset_d_in + num_segments_per_block * work_id,
-                      begin_offset_d_out + num_segments_per_block * work_id,
-                      tail_size);
-  }
-}
 } // namespace
 
 C2H_TEST("cub::detail::segmented_scan::agent_segmented_scan works with one segment per block",
@@ -307,7 +134,7 @@ C2H_TEST("cub::detail::segmented_scan::agent_segmented_scan works with one segme
 
   [[maybe_unused]] const auto itp = items_per_thread;
 
-  device_segmented_scan_kernel_one_segment_per_block<
+  cub::detail::segmented_scan::device_segmented_scan_kernel<
     chained_policy_t,
     pair_t*,
     pair_t*,
@@ -319,7 +146,7 @@ C2H_TEST("cub::detail::segmented_scan::agent_segmented_scan works with one segme
     cub::NullType,
     pair_t,
     true><<<grid_size, block_size>>>(
-    d_input, d_output, d_offsets, d_offsets + 1, d_offsets, n_segments, op_t{}, cub::NullType{});
+    d_input, d_output, d_offsets, d_offsets + 1, d_offsets, n_segments, op_t{}, cub::NullType{}, segments_per_block);
 
   REQUIRE(cudaSuccess == cudaGetLastError());
 
@@ -374,7 +201,7 @@ C2H_TEST("cub::detail::segmented_scan::agent_segmented_scan works with two segme
 
   [[maybe_unused]] const auto itp = items_per_thread;
 
-  device_segmented_scan_kernel_two_segments_per_block<
+  cub::detail::segmented_scan::device_segmented_scan_kernel<
     chained_policy_t,
     pair_t*,
     pair_t*,
@@ -386,7 +213,7 @@ C2H_TEST("cub::detail::segmented_scan::agent_segmented_scan works with two segme
     cub::NullType,
     pair_t,
     false><<<grid_size, block_size>>>(
-    d_input, d_output, d_offsets, d_offsets + 1, d_offsets, n_segments, op_t{}, cub::NullType{});
+    d_input, d_output, d_offsets, d_offsets + 1, d_offsets, n_segments, op_t{}, cub::NullType{}, segments_per_block);
 
   REQUIRE(cudaSuccess == cudaGetLastError());
 
@@ -453,7 +280,7 @@ C2H_TEST("cub::detail::segmented_scan::agent_segmented_scan works with three seg
   [[maybe_unused]] const auto itp = items_per_thread;
 
   // inclusive scan (no initial condition)
-  device_segmented_scan_kernel_three_segments_per_block<
+  cub::detail::segmented_scan::device_segmented_scan_kernel<
     chained_policy_t,
     pair_t*,
     pair_t*,
@@ -465,7 +292,7 @@ C2H_TEST("cub::detail::segmented_scan::agent_segmented_scan works with three seg
     cub::NullType,
     pair_t,
     false><<<grid_size, block_size>>>(
-    d_input, d_output, d_offsets, d_offsets + 1, d_offsets, n_segments, op_t{}, cub::NullType{});
+    d_input, d_output, d_offsets, d_offsets + 1, d_offsets, n_segments, op_t{}, cub::NullType{}, segments_per_block);
 
   REQUIRE(cudaSuccess == cudaGetLastError());
 
@@ -532,7 +359,7 @@ C2H_TEST("agent_segmented_scan works for exclusive_scan with two segments per bl
 
   // force inclusive is false (last template parameter), initial value is provided
   // hence this call computes exclusive scan algorithm
-  device_segmented_scan_kernel_two_segments_per_block<
+  cub::detail::segmented_scan::device_segmented_scan_kernel<
     chained_policy_t,
     pair_t*,
     pair_t*,
@@ -551,7 +378,8 @@ C2H_TEST("agent_segmented_scan works for exclusive_scan with two segments per bl
     d_offsets,
     n_segments,
     op_t{},
-    cub::detail::InputValue<pair_t>{pair_t{1, 1}});
+    cub::detail::InputValue<pair_t>{pair_t{1, 1}},
+    segments_per_block);
 
   REQUIRE(cudaSuccess == cudaGetLastError());
 
@@ -620,7 +448,7 @@ C2H_TEST("agent_segmented_scan works for exclusive_scan with three segments per 
 
   // force inclusive is false (last template parameter), initial value is provided
   // hence this call computes inclusive scan algorithm
-  device_segmented_scan_kernel_three_segments_per_block<
+  cub::detail::segmented_scan::device_segmented_scan_kernel<
     chained_policy_t,
     value_t*,
     value_t*,
@@ -639,7 +467,8 @@ C2H_TEST("agent_segmented_scan works for exclusive_scan with three segments per 
     d_offsets,
     n_segments,
     op_t{},
-    cub::detail::InputValue<value_t>{init_value_});
+    cub::detail::InputValue<value_t>{init_value_},
+    segments_per_block);
 
   REQUIRE(cudaSuccess == cudaGetLastError());
 
