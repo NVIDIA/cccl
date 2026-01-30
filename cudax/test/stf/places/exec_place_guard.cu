@@ -184,40 +184,39 @@ void test_multithreaded_guards(int ndevs)
   ::std::vector<::std::thread> threads;
   for (int i = 0; i < num_threads; ++i)
   {
-    threads.emplace_back(
-      [&results, i, ndevs]() {
-        // Each thread starts on device 0
-        cuda_safe_call(cudaSetDevice(0));
+    threads.emplace_back([&results, i, ndevs]() {
+      // Each thread starts on device 0
+      cuda_safe_call(cudaSetDevice(0));
 
-        int target_dev = i % ndevs;
+      int target_dev = i % ndevs;
 
-        {
-          exec_place_guard guard(exec_place::device(target_dev));
+      {
+        exec_place_guard guard(exec_place::device(target_dev));
 
-          int dev = -1;
-          cuda_safe_call(cudaGetDevice(&dev));
-          if (dev != target_dev)
-          {
-            return;
-          }
-
-          // Do some work
-          cudaStream_t stream;
-          cuda_safe_call(cudaStreamCreate(&stream));
-          cuda_safe_call(cudaStreamSynchronize(stream));
-          cuda_safe_call(cudaStreamDestroy(stream));
-        }
-
-        // Verify restoration
-        int dev_after = -1;
-        cuda_safe_call(cudaGetDevice(&dev_after));
-        if (dev_after != 0)
+        int dev = -1;
+        cuda_safe_call(cudaGetDevice(&dev));
+        if (dev != target_dev)
         {
           return;
         }
 
-        results[i] = true;
-      });
+        // Do some work
+        cudaStream_t stream;
+        cuda_safe_call(cudaStreamCreate(&stream));
+        cuda_safe_call(cudaStreamSynchronize(stream));
+        cuda_safe_call(cudaStreamDestroy(stream));
+      }
+
+      // Verify restoration
+      int dev_after = -1;
+      cuda_safe_call(cudaGetDevice(&dev_after));
+      if (dev_after != 0)
+      {
+        return;
+      }
+
+      results[i] = true;
+    });
   }
 
   for (auto& th : threads)
