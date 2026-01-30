@@ -120,7 +120,7 @@ std::string get_init_kernel_name(cccl_iterator_t input_it, cccl_iterator_t outpu
       ? cccl_type_enum_to_name(output_it.value_type.type, true) //
       : scan::get_output_iterator_name();
   return std::format(
-    "cub::detail::scan::DeviceScanInitKernel<{0}, {1}, {2}, cub::ScanTileState<{1}>, {1}>",
+    "cub::detail::scan::DeviceScanInitKernel<{0}, {1}, {2}, cub::ScanTileState<{3}>, {3}>",
     chained_policy_t,
     input_iterator_t,
     output_iterator_t,
