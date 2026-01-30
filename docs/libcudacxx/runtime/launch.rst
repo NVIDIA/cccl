@@ -9,7 +9,9 @@ The launch API provides abstractions for launching CUDA kernels with a given con
 ----------------
 .. _cccl-runtime-launch-launch:
 
-``cuda::launch(stream, config, kernel, args...)`` launches a kernel function or a device callable object on the specified stream with a given configuration. The kernel can accept the configuration as its first argument, or it can be omitted if not needed. If it does, ``cuda::launch()`` will automatically pass it into the kernel without the need to pass the configuration as an argument twice.
+``cuda::launch(stream, config, kernel, args...)`` launches a kernel function or a device callable object on the specified stream with a given configuration. The kernel can accept the configuration as its first argument to enable some device-side functionality, but it is not required. If the kernel does accept the configuration as its first argument, ``cuda::launch()`` will automatically pass it into the kernel without the need to pass the configuration as an argument twice.
+
+*Note:* Configuration won't be passed automatically into the kernel if it is an extended device lambda, it needs to be passed as the second launch function argument and as the first kernel argument.
 
 The benefit of using a callable object with a device call operator (later called a kernel functor) is that it can be have its template arguments deduced from the arguments, while a kernel function needs to be explicitly instantiated. It also allows to attach a default configuration that is later combined with the configuration passed to the launch.
 
@@ -59,6 +61,24 @@ Example with kernel functor:
      cuda::launch(stream, config, kernel{}, 42);
    }
 
+Example with extended device lambda:
+
+.. code:: cpp
+
+   #include <cuda/launch>
+   #include <cuda/hierarchy>
+   #include <cstdio>
+
+   void launch_kernel(cuda::stream_ref stream) {
+     auto config = cuda::make_config(cuda::block_dims<128>(), cuda::grid_dims(4), cuda::cooperative_launch{});
+     auto lambda = [](cuda::config conf, unsigned int thread_to_print) {
+      if (cuda::gpu_thread.rank(cuda::grid, conf) == thread_to_print) {
+         printf("Hello from the GPU\n");
+       }
+     };
+     // notice that the configuration needs to be passed twice, unlike in other examples
+     cuda::launch(stream, config, lambda, config, 42);
+   }
 
 ``cuda::kernel_config``
 -----------------------
@@ -79,10 +99,9 @@ Availability: CCCL 3.2.0 / CUDA 13.2
 ---------------------
 .. _cccl-runtime-launch-make-config:
 
-``cuda::make_config()`` creates a kernel configuration from hierarchy dimensions and optional launch options. It can be called with:
+``cuda::make_config()`` creates a kernel configuration from `hierarchy dimensions <cccl-runtime-hierarchy>` and optional launch options. It can be called with:
 
 - A hierarchy and options: ``make_config(hierarchy, option1, option2, ...)``
-- Just a hierarchy: ``make_config(hierarchy)``
 - Dimensions directly: ``make_config(grid_dims(...), block_dims<...>(), option1, option2, ...)``
 
 In the last case, the dimensions arguments must come first, followed by options.

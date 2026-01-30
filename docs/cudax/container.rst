@@ -26,6 +26,6 @@ annotations are checked by the type system.
    * - :ref:`<cuda/experimental/container.cuh> <libcudacxx-containers-heterogeneous-iterator>`
      - Iterator providing type safe iteration and memory access through a set of properties
      - cudax 2.7.0 / CCCL 2.7.0
-   * - :ref:`<cuda/experimental/container.cuh> <libcudacxx-containers-async-vector>`
+   * - :ref:`<cuda/experimental/container.cuh> <libcudacxx-containers-buffer>`
      - High level containers, that provide *heterogeneous* storage satisfying a set of properties
      - cudax 2.7.0 / CCCL 2.7.0

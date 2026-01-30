@@ -3,10 +3,66 @@
 Runtime
 =======
 
+The Runtime API provides higher-level building blocks for core CUDA functionality. It takes the existing CUDA Runtime API set and removes or replaces some problematic patterns e.g. implicit state.
+It is designed to make common patterns like resource management, work submission and memory allocation easier to express and safer
+to compose.  These APIs lower to the CUDA Driver API under the hood, but remain composable with the CUDA Runtime API by
+reusing runtime handle types (such as ``cudaStream_t``) in the interfaces. This results in an interface that applies RAII for lifetime management, but is still composable with old CUDA C++ code that manages the resources explicitly.
+
+At a glance, the runtime layer includes:
+
+- Streams and events for non-owning and owning wrappers around CUDA runtime handles.
+- Buffers for typed, stream-ordered storage with property-checked resources.
+- Memory pools to allocate device, managed, and pinned memory with directly or through buffers.
+- Legacy memory resources as synchronous compatibility fallbacks for older toolkits.
+- Runtime algorithms like ``copy_bytes`` and ``fill_bytes`` for basic data movement.
+
+See :ref:`CUDA Runtime interactions <cccl-runtime-cudart-interactions>` if you are interested in CUDA Runtime interoperability.
+
+Example: vector add with buffers, pools, and launch
+---------------------------------------------------
+
+.. code:: cpp
+
+   #include <cuda/devices>
+   #include <cuda/stream>
+   #include <cuda/std/span>
+   #include <cuda/buffer>
+   #include <cuda/memory_pool>
+   #include <cuda/launch>
+
+   struct kernel {
+     template <typename Config>
+     __device__ void operator()(Config config,
+                                cuda::std::span<const float> A,
+                                cuda::std::span<const float> B,
+                                cuda::std::span<float> C) {
+       auto tid = cuda::gpu_thread.rank(cuda::grid, config);
+       if (tid < A.size())
+         C[tid] = A[tid] + B[tid];
+     }
+   };
+
+   int main() {
+     cuda::device_ref device = cuda::devices[0];
+     cuda::stream stream{device};
+     auto pool = cuda::device_default_memory_pool(device);
+
+     int num_elements = 1000;
+     auto A = cuda::make_buffer<float>(stream, pool, num_elements, 1.0);
+     auto B = cuda::make_buffer<float>(stream, pool, num_elements, 2.0);
+     auto C = cuda::make_buffer<float>(stream, pool, num_elements, cuda::no_init);
+
+     constexpr int threads_per_block = 256;
+     auto config = cuda::distribute<threads_per_block>(num_elements);
+
+     cuda::launch(stream, config, kernel{}, A, B, C);
+   }
+
 .. toctree::
    :hidden:
    :maxdepth: 1
 
+   runtime/cudart_interactions
    runtime/stream
    runtime/event
    runtime/algorithm
@@ -14,8 +70,8 @@ Runtime
    runtime/hierarchy
    runtime/launch
    runtime/buffer
-   runtime/memory_resource
    runtime/memory_pools
+   runtime/legacy_resources
 
 .. list-table::
    :widths: 25 45 30 30
@@ -90,7 +146,7 @@ Runtime
      - Kernel launch configuration combining hierarchy dimensions and launch options
      - CCCL 3.2.0
      - CUDA 13.2
-     
+
    * - :ref:`make_config <cccl-runtime-launch-make-config>`
      - Factory function to create kernel configurations from hierarchy dimensions and launch options
      - CCCL 3.2.0
@@ -126,32 +182,12 @@ Runtime
      - CCCL 3.2.0
      - CUDA 13.2
 
-   * - :ref:`Memory Resources (Extended API) <libcudacxx-extended-api-memory-resources>`
-     - ``cuda::mr`` concepts, properties, and resource implementations
-     - CCCL 2.2.0 (experimental), CCCL 3.1.0 (stable)
-     - CUDA 12.3 (experimental), CUDA 13.1 (stable)
-
    * - :ref:`buffer <cccl-runtime-buffer-buffer>`
      - Typed data container allocated from memory resources. It handles stream-ordered allocation, initialization, and deallocation of memory.
      - CCCL 3.2.0
      - CUDA 13.2
 
-   * - :ref:`any_resource <cccl-runtime-memory-resource-any-resource>`
-     - Type-erased wrapper that owns any memory resource satisfying specified properties
-     - CCCL 3.2.0
-     - CUDA 13.2
-
-   * - :ref:`resource_ref <cccl-runtime-memory-resource-resource-ref>`
-     - Non-owning, type-erased wrapper around a stream-ordered memory resource
-     - CCCL 3.2.0
-     - CUDA 13.2
-
-   * - :ref:`shared_resource <cccl-runtime-memory-resource-shared-resource>`
-     - Reference-counted wrapper for sharing memory resources
-     - CCCL 3.2.0
-     - CUDA 13.2
-
-   * - :ref:`synchronous_resource_adapter <cccl-runtime-memory-resource-synchronous-adapter>`
-     - Adapter that enables synchronous resources to work with streams
+   * - :ref:`legacy resources <cccl-runtime-legacy-resources>`
+     - Synchronous compatibility resources backed by legacy CUDA allocation APIs.
      - CCCL 3.2.0
      - CUDA 13.2

@@ -9,9 +9,13 @@ The buffer API provides a typed container allocated from memory resources. It ha
 ----------------
 .. _cccl-runtime-buffer-buffer:
 
-``cuda::buffer`` is a container that provides typed storage allocated from a given :ref:`memory resource <libcudacxx-extended-api-memory-resources-resource>`. It handles alignment and release of allocations. The elements are initialized during construction, which may require a kernel launch.
+``cuda::buffer`` is a container that manages typed storage allocated from a given :ref:`memory resource <libcudacxx-extended-api-memory-resources-resource>` in stream order using a provided :ref:`stream_ref <cccl-runtime-stream-stream-ref>`. The elements are initialized during construction, which may require a kernel launch. Stream provided during construction is stored and later used for deallocation of the buffer, either explicitly or when the buffer destructor is called.
+
+Buffer owns a copy of the memory resource, which means it must be copy constructible. In case a resource is not copy constructible, like the memory pool objects, :ref:`shared_resource <libcudacxx-extended-api-memory-resources-shared-resource>` can be used to attach shared ownership to a resource type.
 
 In addition to being typed, ``buffer`` also takes a set of :ref:`properties <libcudacxx-extended-api-memory-resources-properties>` to ensure that memory accessibility and other constraints are checked at compile time.
+
+While the buffer operates in stream order, it can also be constructed with a :ref:`synchronous_resource <libcudacxx-extended-api-memory-resources-synchronous-resource>`, in which case it will automatically use the :ref:`synchronous_resource_adapter <libcudacxx-extended-api-memory-resources-synchronous-adapter>` to wrap the provided resource.
 
 Availability: CCCL 3.2.0 / CUDA 13.2
 
@@ -21,7 +25,7 @@ Example:
 
    #include <cuda/buffer>
    #include <cuda/devices>
-   #include <cuda/memory_resource>
+   #include <cuda/memory_pool>
    #include <cuda/stream>
 
    void use_buffer(cuda::stream_ref stream) {
@@ -73,7 +77,6 @@ Buffers can be constructed in several ways, for different ways to initialize the
 
 - Empty buffer: ``buffer(stream, resource)``
 - With size (uninitialized): ``buffer(stream, resource, size, no_init)``
-- With size and value: ``buffer(stream, resource, size, value)``
 - From iterator range: ``buffer(stream, resource, first, last)``
 - From initializer list: ``buffer(stream, resource, {val1, val2, ...})``
 - From range: ``buffer(stream, resource, range)``
@@ -113,12 +116,12 @@ Stored Stream Management and Deallocation
 -----------------------------------------
 .. _cccl-runtime-buffer-stream-management:
 
-Buffers store the stream they were constructed with, and can have their stream changed:
+Buffers store a reference to the stream they were constructed with, and can have that stream queried or changed:
 
 - ``stream()`` - Get the associated stream
 - ``set_stream(new_stream)`` - Change the associated stream (synchronizes with old stream)
 
-When the buffer is destroyed, the memory is deallocated using the stored stream.
+When the buffer is destroyed, the memory is deallocated using the stored stream. The behavior is undefined if the stream to which reference is stored in the buffer is destroyed before the buffer.
 Buffer can also be explicitly destroyed with ``destroy()`` or ``destroy(stream_ref)``, which will deallocate the memory using the provided stream.
 
 Example:
@@ -142,15 +145,15 @@ Example:
     buf.set_stream(stream2);
 
     // Explicit deallocation on the stored stream (stream2)
-    // Alternative would be to call buf.destroy(stream2)
     buf.destroy();
+    // Alternative would be to call buf.destroy(stream2)
    }
 
 ``cuda::make_buffer``
 ---------------------
 .. _cccl-runtime-buffer-make-buffer:
 
-``cuda::make_buffer()`` is a factory function that creates buffers with automatic property deduction from the memory resource. It supports the same construction patterns as the buffer constructors.
+``cuda::make_buffer()`` is a factory function that creates buffers with automatic property deduction from the memory resource. It supports the same construction patterns as the buffer constructors in addiditon to an overload setting all elements of the buffer to the same value.
 
 Example:
 
@@ -164,7 +167,8 @@ Example:
     auto mr = cuda::device_default_memory_pool(cuda::devices[0]);
 
      // Properties are automatically deduced from the memory resource
-     auto buf = cuda::make_buffer<float>(stream, mr, 1024);
+     // and all elements are set to 42.0f
+     auto buf = cuda::make_buffer<float>(stream, mr, 1024, 42.0f);
    }
 
 Iterators and Access
@@ -212,4 +216,3 @@ Memory Resource Access
 Buffers provide access to their underlying memory resource:
 
 - ``memory_resource()`` - Get a const reference to the memory resource
-

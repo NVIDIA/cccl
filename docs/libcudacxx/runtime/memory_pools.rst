@@ -5,9 +5,11 @@ Memory Pools
 
 Memory pools provide efficient, stream-ordered memory allocation using CUDA's memory pool API. They support both synchronous and stream-ordered allocation/deallocation and can be configured with various properties and attributes.
 
-Memory pool objects implement the :ref:`cuda::memory_resource <libcudacxx-memory-resource>` interface with ``allocate(stream, size, alignment)`` and ``deallocate(stream, ptr, size, alignment)`` member functions. They also provide synchronous variants with ``allocate_sync(size, alignment)`` and ``deallocate_sync(ptr, size, alignment)`` member functions. For all of them the alignment argument is optional.
+Memory pool objects implement the :ref:`cuda::memory_resource <libcudacxx-extended-api-memory-resources-resource>` interface with ``allocate(stream, size, alignment)`` and ``deallocate(stream, ptr, size, alignment)`` member functions. They also provide synchronous variants with ``allocate_sync(size, alignment)`` and ``deallocate_sync(ptr, size, alignment)`` member functions. For all of them the alignment argument is optional.
 
-Host memory pools are supported on CUDA 12.6 and later. Managed memory pools are supported on CUDA 13.0 and later and are not supported on Windows. For those cases use the :ref:`cuda::legacy_pinned_memory_pool <libcudacxx-memory-resource-legacy-pinned-memory-pool>` and :ref:`cuda::legacy_managed_memory_pool <libcudacxx-memory-resource-legacy-managed-memory-pool>` instead.
+For the full memory resource model and property system, see :ref:`Memory Resources (Extended API) <libcudacxx-extended-api-memory-resources>`.
+
+Host memory pools are supported on CUDA 12.6 and later. Managed memory pools are supported on CUDA 13.0 and later and are not supported on Windows. For those cases use :ref:`cuda::mr::legacy_pinned_memory_resource <libcudacxx-memory-resource-legacy-pinned-memory-resource>` and :ref:`cuda::mr::legacy_managed_memory_resource <libcudacxx-memory-resource-legacy-managed-memory-resource>` instead.
 
 ``cuda::device_memory_pool``
 ----------------------------
@@ -165,9 +167,9 @@ Example:
 
      // Allocate from the default pool
      void* ptr = pool.allocate(stream, 1024);
-     
+
      // Use memory...
-     
+
      // Deallocate back to the pool
      pool.deallocate(stream, ptr, 1024);
    }
@@ -231,7 +233,7 @@ Notes on Default Pools
 ~~~~~~~~~~~~~~~~~~~~~~
 
 - Default pools are created automatically by CUDA and shared across the application
-- The pools returned are non-owning references (``*_pool_ref`` types)
+- The pools are returned as non-owning references (``*_pool_ref`` types)
 - Default pools use CUDA's default configuration and cannot be destroyed
 - Multiple calls to the same getter function return references to the same pool
 - Default pools are thread-safe and can be used concurrently from multiple threads
@@ -271,7 +273,7 @@ Memory Pool Attributes
 
 ``cuda::memory_pool_attributes`` provides access to pool attributes for querying and configuration:
 
-- ``release_threshold`` - Get/set the release threshold, which controls how much memory the pool can keep reserved, but not used
+- ``release_threshold`` - Get/set the release threshold, which controls how much memory the pool can keep reserved, both used and unused
 - ``reuse_follow_event_dependencies`` - Enable/disable reuse across streams with event dependencies
 - ``reuse_allow_opportunistic`` - Enable/disable opportunistic reuse
 - ``reuse_allow_internal_dependencies`` - Enable/disable reuse with internal dependencies
@@ -310,7 +312,7 @@ Pool Management
 Memory pools provide additional management functions:
 
 - ``trim_to(min_bytes)`` - Release memory down to a minimum size
-- ``enable/disable_access_from(devices)`` - Enable or disable access from specific devices (for peer access or access to host pinned memory) 
+- ``enable/disable_access_from(devices)`` - Enable or disable access from specific devices (for peer access or access to host pinned memory)
 - ``get()`` - Get the underlying ``cudaMemPool_t`` handle
 - ``release()`` - Release ownership of the pool handle
 
