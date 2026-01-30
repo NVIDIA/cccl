@@ -121,8 +121,14 @@ cudax_add_catch2_test(test_target algorithm
     algorithm/copy.cu
 )
 
-cudax_add_catch2_test(test_target demangle binutils/demangle.cu)
-target_link_libraries(${test_target} PRIVATE ${cudax_cufilt_lib})
+# Disable cudax::demangle testing on windows, due to:
+#   error LNK2038: mismatch detected for 'RuntimeLibrary': value 'MT_StaticRelease' doesn't match value
+#                  'MD_DynamicRelease' in catch2_runner.cu.obj
+# This is caused by catch2_runner.cu.obj using dynamic runtime and cu++filt.lib using static runtime.
+if (NOT WIN32)
+  cudax_add_catch2_test(test_target demangle binutils/demangle.cu)
+  target_link_libraries(${test_target} PRIVATE ${cudax_cufilt_lib})
+endif()
 
 if (cudax_ENABLE_CUFILE)
   cudax_add_catch2_test(test_target cufile.driver_attributes
