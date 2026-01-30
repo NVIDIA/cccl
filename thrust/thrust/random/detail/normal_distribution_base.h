@@ -25,6 +25,7 @@
 #include <cuda/std/__cmath/roots.h>
 #include <cuda/std/__cmath/trigonometric_functions.h>
 #include <cuda/std/limits>
+#include <cuda/std/numbers>
 
 THRUST_NAMESPACE_BEGIN
 namespace random::detail
@@ -45,7 +46,7 @@ protected:
     constexpr RealType S1 = static_cast<RealType>(1. / static_cast<double>(urng_range));
     constexpr RealType S2 = S1 / 2;
 
-    RealType S3 = static_cast<RealType>(-1.4142135623730950488016887242097); // -sqrt(2)
+    auto S3 = -::cuda::std::__numbers<RealType>::__sqrt2();
 
     // Get the integer value
     uint_type u = urng() - UniformRandomNumberGenerator::min;
@@ -118,7 +119,7 @@ protected:
       m_valid = false;
     }
 
-    const RealType pi = RealType(3.14159265358979323846);
+    constexpr auto pi = ::cuda::std::__numbers<RealType>::__pi();
 
     RealType result = m_cached_rho * (m_valid ? cos(RealType(2) * pi * m_r1) : sin(RealType(2) * pi * m_r1));
 

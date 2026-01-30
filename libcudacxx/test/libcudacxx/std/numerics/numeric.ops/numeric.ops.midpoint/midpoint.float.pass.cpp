@@ -14,6 +14,7 @@
 
 #include <cuda/std/cassert>
 #include <cuda/std/cmath>
+#include <cuda/std/numbers>
 #include <cuda/std/numeric>
 
 #include "fp_compare.h"
@@ -68,8 +69,7 @@ __host__ __device__ void fp_test()
   assert((fptest_close_pct(cuda::std::midpoint(T(11.2345), T(14.5432)), T(12.88885), pct)));
 
   //  From e to pi
-  assert((fptest_close_pct(cuda::std::midpoint(T(2.71828182845904523536028747135266249775724709369995),
-                                               T(3.14159265358979323846264338327950288419716939937510)),
+  assert((fptest_close_pct(cuda::std::midpoint(cuda::std::__numbers<T>::__e(), cuda::std::__numbers<T>::__pi()),
                            T(2.92993724102441923691146542731608269097720824653752),
                            pct)));
 
