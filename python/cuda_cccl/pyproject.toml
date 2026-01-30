@@ -56,6 +56,7 @@ test-cu12 = [
   "pytest-xdist",
   "cupy-cuda12x",
   "pytest-benchmark",
+  "cuda-bench[cu12]",
 ]
 test-cu13 = [
   "cuda-cccl[cu13]",
@@ -63,6 +64,7 @@ test-cu13 = [
   "pytest-xdist",
   "cupy-cuda13x",
   "pytest-benchmark",
+  "cuda-bench[cu13]",
 ]
 
 [project.urls]
