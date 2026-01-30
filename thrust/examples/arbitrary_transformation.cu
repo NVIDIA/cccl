@@ -49,15 +49,6 @@ struct arbitrary_functor1
   }
 };
 
-struct arbitrary_functor2
-{
-  __host__ __device__ void operator()(const float& a, const float& b, const float& c, float& d)
-  {
-    // D[i] = A[i] + B[i] * C[i];
-    d = a + b * c;
-  }
-};
-
 int main()
 {
   // allocate and initialize
@@ -69,23 +60,32 @@ int main()
   // apply the transformation
   thrust::for_each(thrust::make_zip_iterator(A.begin(), B.begin(), C.begin(), D1.begin()),
                    thrust::make_zip_iterator(A.end(), B.end(), C.end(), D1.end()),
-                   arbitrary_functor1());
+                   [] __device__(auto t) {
+                     // D[i] = A[i] + B[i] * C[i];
+                     auto& [a, b, c, d] = t;
+                     d                  = a + b * c;
+                   });
 
   // print the output
-  std::cout << "Tuple functor" << std::endl;
+  std::cout << "Tuple lambda" << std::endl;
   for (size_t i = 0; i < A.size(); i++)
   {
     std::cout << A[i] << " + " << B[i] << " * " << C[i] << " = " << D1[i] << std::endl;
   }
 
-  // apply the transformation using zip_function
+  // apply the transformation using zip_function with lambda
   thrust::device_vector<float> D2(5);
+  auto arbitrary_lambda2 = [] __device__(const float& a, const float& b, const float& c, float& d) {
+    // D[i] = A[i] + B[i] * C[i];
+    d = a + b * c;
+  };
+
   thrust::for_each(thrust::make_zip_iterator(A.begin(), B.begin(), C.begin(), D2.begin()),
                    thrust::make_zip_iterator(A.end(), B.end(), C.end(), D2.end()),
-                   thrust::make_zip_function(arbitrary_functor2()));
+                   thrust::make_zip_function(arbitrary_lambda2));
 
   // print the output
-  std::cout << "N-ary functor" << std::endl;
+  std::cout << "N-ary lambda" << std::endl;
   for (size_t i = 0; i < A.size(); i++)
   {
     std::cout << A[i] << " + " << B[i] << " * " << C[i] << " = " << D2[i] << std::endl;
