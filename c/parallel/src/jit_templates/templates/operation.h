@@ -295,6 +295,22 @@ __device__ {1} operator{2}(const {3} & lhs, const {3} & rhs)
           tagged_arg<RetStorageT, cccl_type_info> ret,
           tagged_arg<ArgStorageTs, cccl_type_info>... arguments)
   {
+    // We cannot use well-known operations with storage types as there
+    // is currently no way to tell whether multiple storage types,
+    // e.g., input and output, are the same type. This is necessary in
+    // order for operations like `negate` to work, as it requires both
+    // input and output to be the same type. For now, this check short
+    // circuits the specialization process for well-known operations
+    // with storage types. The code below that checks whether any of
+    // the arguments or the return type are storage types will
+    // currently not run, but is left here as it will be needed in the
+    // future.
+    if (ret.value.type == cccl_type_enum::CCCL_STORAGE
+        || ((arguments.value.type == cccl_type_enum::CCCL_STORAGE) || ...))
+    {
+      return cuda::std::nullopt;
+    }
+
     auto entry = well_known_operation_description(operation.type);
     if (!entry)
     {
