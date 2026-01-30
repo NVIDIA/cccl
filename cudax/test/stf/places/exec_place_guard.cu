@@ -157,10 +157,12 @@ void test_stream_creation_in_guard(int ndevs)
     cuda_safe_call(cudaStreamCreate(&stream));
   }
 
-  // Verify stream was created on device 1
+#if _CCCL_CTK_AT_LEAST(12, 8)
+  // Verify stream was created on device 1 (cudaStreamGetDevice requires CUDA 12.8+)
   int stream_dev = -1;
   cuda_safe_call(cudaStreamGetDevice(stream, &stream_dev));
   EXPECT(stream_dev == 1);
+#endif // _CCCL_CTK_AT_LEAST(12, 8)
 
   // Clean up (need to be on correct device for some operations)
   {
