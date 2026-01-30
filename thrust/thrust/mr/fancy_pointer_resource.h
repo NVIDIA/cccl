@@ -55,7 +55,7 @@ public:
   virtual void do_deallocate(Pointer p, std::size_t bytes, std::size_t alignment) override
   {
     return m_upstream->do_deallocate(
-      static_cast<typename Upstream::pointer>(thrust::detail::pointer_traits<Pointer>::get(p)), bytes, alignment);
+      static_cast<typename Upstream::pointer>(::cuda::std::to_address(p)), bytes, alignment);
   }
 
 private:

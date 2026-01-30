@@ -69,7 +69,7 @@ struct allocator_delete final
     using traits = ::cuda::std::allocator_traits<::cuda::std::remove_cvref_t<Allocator>>;
     typename traits::allocator_type alloc_T(alloc_);
 
-    if (nullptr != detail::pointer_traits<pointer>::get(p))
+    if (nullptr != ::cuda::std::to_address(p))
     {
       if constexpr (!Uninitialized)
       {
@@ -144,7 +144,7 @@ struct array_allocator_delete final
   {
     using traits = ::cuda::std::allocator_traits<::cuda::std::remove_cvref_t<Allocator>>;
     typename traits::allocator_type alloc_T(get_allocator());
-    if (nullptr != detail::pointer_traits<pointer>::get(p))
+    if (nullptr != ::cuda::std::to_address(p))
     {
       if constexpr (!Uninitialized)
       {
