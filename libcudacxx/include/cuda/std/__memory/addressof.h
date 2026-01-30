@@ -39,8 +39,8 @@
 #    include <bits/move.h>
 #  elif _CCCL_HOST_STD_LIB(LIBCXX) && __has_include(<__memory/addressof.h>)
 #    include <__memory/addressof.h>
-#  elif !_CCCL_COMPILER(NVRTC)
-#    include <cuda/std/__cccl/memory_wrapper.h>
+#  else
+#    include <cuda/std/__host_stdlib/memory>
 #  endif
 #endif // _CCCL_HAS_BUILTIN_STD_ADDRESSOF()
 

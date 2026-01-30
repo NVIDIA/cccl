@@ -2160,7 +2160,7 @@ public:
   //!
   //! This operation computes segmented reductions within ``d_values_in`` using the specified binary ``reduction_op``
   //! functor. The segments are identified by "runs" of corresponding keys in `d_keys_in`, where runs are maximal
-  //! ranges of consecutive, identical keys. For the *i*\ :sup:`th` run encountered, the first key of the run and
+  //! ranges of consecutive, identical keys. For the *i*\ :sup:`th` run encountered, the last key of the run and
   //! the corresponding value aggregate of that run are written to ``d_unique_out[i]`` and ``d_aggregates_out[i]``,
   //! respectively. The total number of runs encountered is written to ``d_num_runs_out``.
   //!

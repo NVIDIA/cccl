@@ -730,7 +730,7 @@ public:
 
   using TempStorage = typename InternalWarpReduce::TempStorage;
 
-  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE WarpReduce(TempStorage& /*temp_storage */) {}
+  _CCCL_DEVICE _CCCL_FORCEINLINE WarpReduce(TempStorage& /*temp_storage */) {}
 
   [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE T Sum(T input)
   {

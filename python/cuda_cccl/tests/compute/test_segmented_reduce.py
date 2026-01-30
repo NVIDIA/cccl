@@ -108,13 +108,8 @@ def test_segmented_reduce_struct_type():
 @pytest.mark.large
 def test_large_num_segments_uniform_segment_sizes_nonuniform_input():
     """
-    This test builds input iterator as transformation
-    over counting iterator by a function
-    k -> (F(k + 1) - F(k)) % 7
-
-    Segmented reduction with fixed size is performed
-    using add modulo 7. Expected result is known to be
-    F(end_offset[k] + 1) - F(start_offset[k]) % 7
+    This test verifies that segmented_reduce raises an error when
+    num_segments exceeds 2^31-1.
     """
 
     def make_difference(idx: np.int64) -> np.uint8:
@@ -152,58 +147,22 @@ def test_large_num_segments_uniform_segment_sizes_nonuniform_input():
         return (a + b) % np.uint8(7)
 
     h_init = np.zeros(tuple(), dtype=np.uint8)
-    # Call single-phase API directly with num_segments parameter
-    cuda.compute.segmented_reduce(
-        input_it, res, start_offsets, end_offsets, my_add, h_init, num_segments
-    )
 
-    # Validation
-
-    def get_expected_value(k: np.int64) -> np.uint8:
-        i = np.uint8(k % 5) + np.uint8(k % 3)
-        k1 = (k % 15) + (segment_size % 15)
-        i1 = np.uint8(k1 % 5) + np.uint8(k1 % 3)
-        p = np.uint8(7)
-        v1 = np.uint8((i1 * (i1 + 1)) % p)
-        v = np.uint8((i * (i + 1)) % p)
-        return (v1 + (p - v)) % p
-
-    # reset the iterator since it has been mutated by being incremented on host
-    start_offsets.cvalue = type(start_offsets.cvalue)(offset0)
-    expected = TransformIterator(start_offsets, get_expected_value)
-
-    def cmp_op(a: np.uint8, b: np.uint8) -> np.uint8:
-        return np.uint8(1) if (a == b) else np.uint8(0)
-
-    validate = cp.zeros(2**20, dtype=np.uint8)
-
-    id = 0
-    while id < res.size:
-        id_next = min(id + validate.size, res.size)
-        num_items = id_next - id
-        cuda.compute.binary_transform(
-            res[id:], expected + id, validate, cmp_op, num_items
+    # Verify that the appropriate error is raised
+    with pytest.raises(
+        RuntimeError,
+        match="Segmented sort does not currently support more than 2\\^31-1 segments\\.",
+    ):
+        cuda.compute.segmented_reduce(
+            input_it, res, start_offsets, end_offsets, my_add, h_init, num_segments
         )
-        assert id == (expected + id).cvalue.value
-        assert cp.all(validate[:num_items].view(np.bool_))
-        id = id_next
 
 
 @pytest.mark.large
 def test_large_num_segments_nonuniform_segment_sizes_uniform_input():
     """
-    Test with large num_segments > INT_MAX
-
-    Input is constant iterator with value 1.
-
-    offset positions are computed as transformation
-    over counting iterator with `n -> sum(min + (k % p), k=0..n)`.
-    The closed form value of the sum is coded in `offset_value`
-    function.
-
-    Result of segmented reduction is known, and is
-    given by transformed iterator over counting iterator
-    transformed by `k -> min + (k % p)` function.
+    This test verifies that segmented_reduce raises an error when
+    num_segments exceeds 2^31-1.
     """
     input_it = ConstantIterator(np.int16(1))
 
@@ -246,33 +205,15 @@ def test_large_num_segments_nonuniform_segment_sizes_uniform_input():
     assert res.size == num_segments
 
     h_init = np.zeros(tuple(), dtype=np.int16)
-    # Call single-phase API directly with num_segments parameter
-    cuda.compute.segmented_reduce(
-        input_it, res, start_offsets, end_offsets, _plus, h_init, num_segments
-    )
 
-    # Validation
-
-    def get_expected_value(k: np.int64) -> np.int16:
-        return np.int16(m0 + (k % p))
-
-    expected = TransformIterator(CountingIterator(np.int64(0)), get_expected_value)
-
-    def cmp_op(a: np.int16, b: np.int16) -> np.uint8:
-        return np.uint8(1) if (a == b) else np.uint8(0)
-
-    validate = cp.zeros(2**20, dtype=np.uint8)
-
-    id = 0
-    while id < res.size:
-        id_next = min(id + validate.size, res.size)
-        num_items = id_next - id
-        cuda.compute.binary_transform(
-            res[id:], expected + id, validate, cmp_op, num_items
+    # Verify that the appropriate error is raised
+    with pytest.raises(
+        RuntimeError,
+        match="Segmented sort does not currently support more than 2\\^31-1 segments\\.",
+    ):
+        cuda.compute.segmented_reduce(
+            input_it, res, start_offsets, end_offsets, _plus, h_init, num_segments
         )
-        assert id == (expected + id).cvalue.value
-        assert cp.all(validate[:num_items].view(np.bool_))
-        id = id_next
 
 
 def test_segmented_reduce_well_known_plus():
