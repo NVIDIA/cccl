@@ -57,6 +57,9 @@ struct DeviceSelect
   //! Uses the ``d_flags`` sequence to selectively copy the corresponding items from ``d_in`` into ``d_out``.
   //! The total number of items selected is written to ``d_num_selected_out``.
   //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
+  //!
   //! - The value type of ``d_flags`` must be castable to ``bool`` (e.g., ``bool``, ``char``, ``int``, etc.).
   //! - Copies of the selected items are compacted into ``d_out`` and maintain their original relative ordering.
   //! - | The range ``[d_out, d_out + *d_num_selected_out)`` shall not overlap ``[d_in, d_in + num_items)``,
@@ -180,6 +183,9 @@ struct DeviceSelect
   //! Uses the ``d_flags`` sequence to selectively compact the items in `d_data``.
   //! The total number of items selected is written to ``d_num_selected_out``.
   //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
+  //!
   //! - The value type of ``d_flags`` must be castable to ``bool`` (e.g., ``bool``, ``char``, ``int``, etc.).
   //! - Copies of the selected items are compacted in-place and maintain their original relative ordering.
   //! - | The ``d_data`` may equal ``d_flags``. The range ``[d_data, d_data + num_items)`` shall not overlap
@@ -295,6 +301,9 @@ struct DeviceSelect
   //! @rst
   //! Uses the ``select_op`` functor to selectively copy items from ``d_in`` into ``d_out``.
   //! The total number of items selected is written to ``d_num_selected_out``.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! - Copies of the selected items are compacted into ``d_out`` and maintain
   //!   their original relative ordering.
@@ -434,6 +443,9 @@ struct DeviceSelect
   //! Uses the ``select_op`` functor to selectively compact items in ``d_data``.
   //! The total number of items selected is written to ``d_num_selected_out``.
   //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
+  //!
   //! - | Copies of the selected items are compacted in ``d_data`` and maintain
   //!   | their original relative ordering.
   //! - @devicestorage
@@ -563,6 +575,9 @@ struct DeviceSelect
   //! corresponding items from ``d_in`` into ``d_out``.
   //! The total number of items selected is written to ``d_num_selected_out``.
   //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
+  //!
   //! - The expression ``select_op(flag)`` must be convertible to ``bool``,
   //!   where the type of ``flag`` corresponds to the value type of ``FlagIterator``.
   //! - Copies of the selected items are compacted into ``d_out`` and maintain
@@ -681,6 +696,9 @@ struct DeviceSelect
   //! corresponding items in ``d_data``.
   //! The total number of items selected is written to ``d_num_selected_out``.
   //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
+  //!
   //! - The expression ``select_op(flag)`` must be convertible to ``bool``,
   //!   where the type of ``flag`` corresponds to the value type of ``FlagIterator``.
   //! - Copies of the selected items are compacted in-place and maintain their original relative ordering.
@@ -786,6 +804,9 @@ struct DeviceSelect
   //! Given an input sequence ``d_in`` having runs of consecutive equal-valued keys,
   //! only the first key from each run is selectively copied to ``d_out``.
   //! The total number of items selected is written to ``d_num_selected_out``.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! - The ``==`` equality operator is used to determine whether keys are equivalent
   //! - Copies of the selected items are compacted into ``d_out`` and maintain their original relative ordering.
@@ -905,6 +926,9 @@ struct DeviceSelect
   //! equal-valued keys, only the first key and its value from each run is selectively copied
   //! to ``d_keys_out`` and ``d_values_out``.
   //! The total number of items selected is written to ``d_num_selected_out``.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! - The user-provided equality operator, `equality_op`, is used to determine whether keys are equivalent
   //! - Copies of the selected items are compacted into ``d_out`` and maintain
@@ -1066,6 +1090,9 @@ struct DeviceSelect
   //! equal-valued keys, only the first key and its value from each run is selectively copied
   //! to ``d_keys_out`` and ``d_values_out``.
   //! The total number of items selected is written to ``d_num_selected_out``.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! - The ``==`` equality operator is used to determine whether keys are equivalent
   //! - Copies of the selected items are compacted into ``d_out`` and maintain

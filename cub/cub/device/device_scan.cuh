@@ -199,6 +199,9 @@ struct DeviceScan
   //! Computes a device-wide exclusive prefix sum.
   //! The value of ``0`` is applied as the initial value, and is assigned to ``*d_out``.
   //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
+  //!
   //! - Supports non-commutative sum operators.
   //! - Results are not deterministic for pseudo-associative operators (e.g.,
   //!   addition of floating-point types). Results for pseudo-associative
@@ -307,6 +310,9 @@ struct DeviceScan
   //! Computes a device-wide exclusive prefix sum.
   //! The value of ``0`` is applied as the initial value, and is assigned to ``*d_out``.
   //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
+  //!
   //! - Supports non-commutative sum operators.
   //! - Results are not deterministic for pseudo-associative operators (e.g.,
   //!   addition of floating-point types). Results for pseudo-associative
@@ -382,6 +388,9 @@ struct DeviceScan
   //! @rst
   //! Computes a device-wide exclusive prefix sum in-place.
   //! The value of ``0`` is applied as the initial value, and is assigned to ``*d_data``.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! - Supports non-commutative sum operators.
   //! - Results are not deterministic for pseudo-associative operators (e.g.,
@@ -459,6 +468,9 @@ struct DeviceScan
   //! Computes a device-wide exclusive prefix scan using the specified
   //! binary associative ``scan_op`` functor. The ``init_value`` value is applied as
   //! the initial value, and is assigned to ``*d_out``.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! - Supports non-commutative scan operators.
   //! - Results are not deterministic for pseudo-associative operators (e.g.,
@@ -591,6 +603,9 @@ struct DeviceScan
   //! binary associative ``scan_op`` functor. The ``init_value`` value is applied as
   //! the initial value, and is assigned to ``*d_out``.
   //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
+  //!
   //! - Supports non-commutative scan operators.
   //! - Results are not deterministic for pseudo-associative operators (e.g.,
   //!   addition of floating-point types). Results for pseudo-associative
@@ -675,6 +690,9 @@ struct DeviceScan
   //! Computes a device-wide exclusive prefix scan using the specified
   //! binary associative ``scan_op`` functor. The ``init_value`` value is applied as
   //! the initial value, and is assigned to ``*d_data``.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! - Supports non-commutative scan operators.
   //! - Results are not deterministic for pseudo-associative operators (e.g.,
@@ -782,6 +800,9 @@ struct DeviceScan
   //! @rst
   //! Computes a device-wide exclusive prefix scan using the specified
   //! binary associative ``scan_op`` functor. The ``init_value`` value is provided as a future value.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! - Supports non-commutative scan operators.
   //! - Results are not deterministic for pseudo-associative operators (e.g.,
@@ -923,6 +944,9 @@ struct DeviceScan
   //! Computes a device-wide exclusive prefix scan using the specified binary associative ``scan_op`` functor.
   //! The ``init_value`` value is provided as a future value.
   //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
+  //!
   //! - Supports non-commutative scan operators.
   //! - Results are not deterministic for pseudo-associative operators (e.g.,
   //!   addition of floating-point types). Results for pseudo-associative
@@ -1042,6 +1066,9 @@ struct DeviceScan
   //! @rst
   //! Computes a device-wide inclusive prefix sum.
   //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
+  //!
   //! - Supports non-commutative sum operators.
   //! - Results are not deterministic for pseudo-associative operators (e.g.,
   //!   addition of floating-point types). Results for pseudo-associative
@@ -1138,6 +1165,9 @@ struct DeviceScan
   //! @rst
   //! Computes a device-wide inclusive prefix sum in-place.
   //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
+  //!
   //! - Supports non-commutative sum operators.
   //! - Results are not deterministic for pseudo-associative operators (e.g.,
   //!   addition of floating-point types). Results for pseudo-associative
@@ -1212,6 +1242,9 @@ struct DeviceScan
 
   //! @rst
   //! Computes a device-wide inclusive prefix scan using the specified binary associative ``scan_op`` functor.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! - Supports non-commutative scan operators.
   //! - Results are not deterministic for pseudo-associative operators (e.g.,
@@ -1331,6 +1364,9 @@ struct DeviceScan
   //! The result of applying the ``scan_op`` binary operator to ``init_value`` value and ``*d_in``
   //! is assigned to ``*d_out``.
   //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
+  //!
   //! - Supports non-commutative scan operators.
   //! - Results are not deterministic for pseudo-associative operators (e.g.,
   //!   addition of floating-point types). Results for pseudo-associative
@@ -1431,6 +1467,9 @@ struct DeviceScan
 
   //! @rst
   //! Computes a device-wide inclusive prefix scan using the specified binary associative ``scan_op`` functor.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! - Supports non-commutative scan operators.
   //! - Results are not deterministic for pseudo-associative operators (e.g.,
@@ -1536,6 +1575,9 @@ struct DeviceScan
   //! Computes a device-wide exclusive prefix sum-by-key with key equality
   //! defined by ``equality_op``. The value of ``0`` is applied as the initial
   //! value, and is assigned to the beginning of each segment in ``d_values_out``.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! - Supports non-commutative sum operators.
   //! - Results are not deterministic for pseudo-associative operators (e.g.,
@@ -1677,6 +1719,9 @@ struct DeviceScan
   //! specified binary associative ``scan_op`` functor. The key equality is defined by
   //! ``equality_op``.  The ``init_value`` value is applied as the initial
   //! value, and is assigned to the beginning of each segment in ``d_values_out``.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! - Supports non-commutative scan operators.
   //! - Results are not deterministic for pseudo-associative operators (e.g.,
@@ -1856,6 +1901,9 @@ struct DeviceScan
   //! @rst
   //! Computes a device-wide inclusive prefix sum-by-key with key equality defined by ``equality_op``.
   //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
+  //!
   //! - Supports non-commutative sum operators.
   //! - Results are not deterministic for pseudo-associative operators (e.g.,
   //!   addition of floating-point types). Results for pseudo-associative
@@ -1990,6 +2038,9 @@ struct DeviceScan
   //! @rst
   //! Computes a device-wide inclusive prefix scan-by-key using the
   //! specified binary associative ``scan_op`` functor. The key equality is defined by ``equality_op``.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! - Supports non-commutative scan operators.
   //! - Results are not deterministic for pseudo-associative operators (e.g.,
