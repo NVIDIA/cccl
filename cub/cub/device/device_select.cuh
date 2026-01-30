@@ -19,15 +19,41 @@
 #endif // no system header
 
 #include <cub/detail/choose_offset.cuh>
+#include <cub/detail/env_dispatch.cuh>
+#include <cub/detail/temporary_storage.cuh>
 #include <cub/device/dispatch/dispatch_select_if.cuh>
 #include <cub/device/dispatch/dispatch_unique_by_key.cuh>
 
+#include <cuda/__execution/determinism.h>
+#include <cuda/__execution/require.h>
+#include <cuda/std/__execution/env.h>
 #include <cuda/std/__functional/operations.h>
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/is_convertible.h>
 #include <cuda/std/cstdint>
 
 CUB_NAMESPACE_BEGIN
+
+namespace detail::select
+{
+struct get_tuning_query_t
+{};
+
+template <class Derived>
+struct tuning
+{
+  [[nodiscard]] _CCCL_TRIVIAL_API constexpr auto query(const get_tuning_query_t&) const noexcept -> Derived
+  {
+    return static_cast<const Derived&>(*this);
+  }
+};
+
+struct default_tuning : tuning<default_tuning>
+{
+  template <class InputT, class FlagT, class OffsetT, bool DistinctPartitions, SelectImpl Impl>
+  using fn = policy_hub<InputT, FlagT, OffsetT, DistinctPartitions, Impl>;
+};
+} // namespace detail::select
 
 //! @rst
 //! DeviceSelect provides device-wide, parallel operations for compacting selected items from sequences of data items
@@ -53,6 +79,64 @@ CUB_NAMESPACE_BEGIN
 //! @endrst
 struct DeviceSelect
 {
+private:
+  template <typename TuningEnvT,
+            typename InputIteratorT,
+            typename FlagIteratorT,
+            typename OutputIteratorT,
+            typename NumSelectedIteratorT,
+            typename SelectOpT,
+            typename EqualityOpT,
+            typename OffsetT,
+            SelectImpl SelectionMode,
+            ::cuda::execution::determinism::__determinism_t Determinism>
+  CUB_RUNTIME_FUNCTION static cudaError_t select_impl(
+    void* d_temp_storage,
+    size_t& temp_storage_bytes,
+    InputIteratorT d_in,
+    FlagIteratorT d_flags,
+    OutputIteratorT d_out,
+    NumSelectedIteratorT d_num_selected_out,
+    OffsetT num_items,
+    SelectOpT select_op,
+    EqualityOpT equality_op,
+    ::cuda::execution::determinism::__determinism_holder_t<Determinism> determinism_holder_arg,
+    cudaStream_t stream)
+  {
+    (void) determinism_holder_arg; // determisnim is of no use in DeviceSelect at the moment
+    using select_tuning_t = ::cuda::std::execution::
+      __query_result_or_t<TuningEnvT, detail::select::get_tuning_query_t, detail::select::default_tuning>;
+
+    using flag_t = detail::it_value_t<FlagIteratorT>;
+
+    using policy_t =
+      typename select_tuning_t::template fn<detail::it_value_t<InputIteratorT>, flag_t, OffsetT, false, SelectionMode>;
+
+    using dispatch_t =
+      DispatchSelectIf<InputIteratorT,
+                       FlagIteratorT,
+                       OutputIteratorT,
+                       NumSelectedIteratorT,
+                       SelectOpT,
+                       EqualityOpT,
+                       OffsetT,
+                       SelectionMode,
+                       policy_t>;
+
+    return dispatch_t::Dispatch(
+      d_temp_storage,
+      temp_storage_bytes,
+      d_in,
+      d_flags,
+      d_out,
+      d_num_selected_out,
+      select_op,
+      equality_op,
+      num_items,
+      stream);
+  }
+
+public:
   //! @rst
   //! Uses the ``d_flags`` sequence to selectively copy the corresponding items from ``d_in`` into ``d_out``.
   //! The total number of items selected is written to ``d_num_selected_out``.
@@ -174,6 +258,266 @@ struct DeviceSelect
                                     EqualityOp(),
                                     num_items,
                                     stream);
+  }
+
+  //! @rst
+  //! Uses the ``d_flags`` sequence to selectively copy the corresponding items from ``d_in`` into ``d_out``.
+  //! The total number of items selected is written to ``d_num_selected_out``.
+  //!
+  //! This is an environment-based API that allows customization of:
+  //!
+  //! - Stream: Query via ``cuda::get_stream``
+  //! - Memory resource: Query via ``cuda::mr::get_memory_resource``
+  //!
+  //! - The value type of ``d_flags`` must be castable to ``bool`` (e.g., ``bool``, ``char``, ``int``, etc.).
+  //! - Copies of the selected items are compacted into ``d_out`` and maintain their original relative ordering.
+  //! - | The range ``[d_out, d_out + *d_num_selected_out)`` shall not overlap ``[d_in, d_in + num_items)``,
+  //!   | ``[d_flags, d_flags + num_items)`` nor ``d_num_selected_out`` in any way.
+  //!
+  //! Snippet
+  //! +++++++++++++++++++++++++++++++++++++++++++++
+  //!
+  //! The code snippet below illustrates the compaction of flagged items from an ``int`` device vector
+  //! using determinism requirements:
+  //!
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_select_env_api.cu
+  //!     :language: c++
+  //!     :dedent:
+  //!     :start-after: example-begin select-flagged-env-determinism
+  //!     :end-before: example-end select-flagged-env-determinism
+  //!
+  //! @endrst
+  //!
+  //! @tparam InputIteratorT
+  //!   **[inferred]** Random-access input iterator type for reading input items @iterator
+  //!
+  //! @tparam FlagIterator
+  //!   **[inferred]** Random-access input iterator type for reading selection flags @iterator
+  //!
+  //! @tparam OutputIteratorT
+  //!   **[inferred]** Random-access output iterator type for writing selected items @iterator
+  //!
+  //! @tparam NumSelectedIteratorT
+  //!   **[inferred]** Output iterator type for recording the number of items selected @iterator
+  //!
+  //! @tparam NumItemsT
+  //!   **[inferred]** Type of num_items
+  //!
+  //! @tparam EnvT
+  //!   **[inferred]** Environment type (e.g., `cuda::std::execution::env<...>`)
+  //!
+  //! @param[in] d_in
+  //!   Pointer to the input sequence of data items
+  //!
+  //! @param[in] d_flags
+  //!   Pointer to the input sequence of selection flags
+  //!
+  //! @param[out] d_out
+  //!   Pointer to the output sequence of selected data items
+  //!
+  //! @param[out] d_num_selected_out
+  //!   Pointer to the output total number of items selected (i.e., length of `d_out`)
+  //!
+  //! @param[in] num_items
+  //!   Total number of input items (i.e., length of `d_in`)
+  //!
+  //! @param[in] env
+  //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
+  //!   @endrst
+  template <typename InputIteratorT,
+            typename FlagIterator,
+            typename OutputIteratorT,
+            typename NumSelectedIteratorT,
+            typename NumItemsT,
+            typename EnvT = ::cuda::std::execution::env<>,
+            typename ::cuda::std::enable_if_t<
+              ::cuda::std::is_integral_v<NumItemsT> && !::cuda::std::is_same_v<InputIteratorT, void*>
+                && !::cuda::std::is_same_v<FlagIterator, size_t&>,
+              int> = 0>
+  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t Flagged(
+    InputIteratorT d_in,
+    FlagIterator d_flags,
+    OutputIteratorT d_out,
+    NumSelectedIteratorT d_num_selected_out,
+    NumItemsT num_items,
+    EnvT env = {})
+  {
+    _CCCL_NVTX_RANGE_SCOPE("cub::DeviceSelect::Flagged");
+
+    static_assert(!::cuda::std::execution::__queryable_with<EnvT, ::cuda::execution::determinism::__get_determinism_t>,
+                  "Determinism should be used inside requires to have an effect.");
+
+    using offset_t = detail::choose_offset_t<NumItemsT>;
+
+    // Extract determinism from environment, defaulting to run_to_run
+    using requirements_t = ::cuda::std::execution::
+      __query_result_or_t<EnvT, ::cuda::execution::__get_requirements_t, ::cuda::std::execution::env<>>;
+    using requested_determinism_t =
+      ::cuda::std::execution::__query_result_or_t<requirements_t, //
+                                                  ::cuda::execution::determinism::__get_determinism_t,
+                                                  ::cuda::execution::determinism::run_to_run_t>;
+
+    // Static assert to reject gpu_to_gpu determinism since it makes no sense for DeviceSelect
+    static_assert(!::cuda::std::is_same_v<requested_determinism_t, ::cuda::execution::determinism::gpu_to_gpu_t>,
+                  "gpu_to_gpu determinism is not supported");
+
+    using determinism_t = ::cuda::execution::determinism::run_to_run_t;
+
+    // Dispatch with environment - handles all boilerplate
+    return detail::dispatch_with_env(env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, auto stream) {
+      using tuning_t = decltype(tuning);
+      return select_impl<tuning_t,
+                         InputIteratorT,
+                         FlagIterator,
+                         OutputIteratorT,
+                         NumSelectedIteratorT,
+                         NullType,
+                         NullType,
+                         offset_t,
+                         SelectImpl::Select,
+                         determinism_t::value>(
+        storage,
+        bytes,
+        d_in,
+        d_flags,
+        d_out,
+        d_num_selected_out,
+        static_cast<offset_t>(num_items),
+        NullType{},
+        NullType{},
+        determinism_t{},
+        stream);
+    });
+  }
+
+  //! @rst
+  //! Uses the ``select_op`` functor to selectively copy items from ``d_in`` into ``d_out``.
+  //! The total number of items selected is written to ``d_num_selected_out``.
+  //!
+  //! This is an environment-based API that allows customization of:
+  //!
+  //! - Stream: Query via ``cuda::get_stream``
+  //! - Memory resource: Query via ``cuda::mr::get_memory_resource``
+  //!
+  //! - Copies of the selected items are compacted into ``d_out`` and maintain
+  //!   their original relative ordering.
+  //! - | The range ``[d_out, d_out + *d_num_selected_out)`` shall not overlap
+  //!   | ``[d_in, d_in + num_items)`` nor ``d_num_selected_out`` in any way.
+  //!
+  //! Snippet
+  //! +++++++++++++++++++++++++++++++++++++++++++++
+  //!
+  //! The code snippet below illustrates the compaction of items selected from an ``int`` device vector
+  //! using determinism requirements:
+  //!
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_select_env_api.cu
+  //!     :language: c++
+  //!     :dedent:
+  //!     :start-after: example-begin select-if-env-determinism
+  //!     :end-before: example-end select-if-env-determinism
+  //!
+  //! @endrst
+  //!
+  //! @tparam InputIteratorT
+  //!   **[inferred]** Random-access input iterator type for reading input items @iterator
+  //!
+  //! @tparam OutputIteratorT
+  //!   **[inferred]** Random-access output iterator type for writing selected items @iterator
+  //!
+  //! @tparam NumSelectedIteratorT
+  //!   **[inferred]** Output iterator type for recording the number of items selected @iterator
+  //!
+  //! @tparam SelectOp
+  //!   **[inferred]** Selection operator type having member `bool operator()(const T &a)`
+  //!
+  //! @tparam NumItemsT
+  //!   **[inferred]** Type of num_items
+  //!
+  //! @tparam EnvT
+  //!   **[inferred]** Environment type (e.g., `cuda::std::execution::env<...>`)
+  //!
+  //! @param[in] d_in
+  //!   Pointer to the input sequence of data items
+  //!
+  //! @param[out] d_out
+  //!   Pointer to the output sequence of selected data items
+  //!
+  //! @param[out] d_num_selected_out
+  //!   Pointer to the output total number of items selected
+  //!   (i.e., length of `d_out`)
+  //!
+  //! @param[in] num_items
+  //!   Total number of input items (i.e., length of `d_in`)
+  //!
+  //! @param[in] select_op
+  //!   Unary selection operator
+  //!
+  //! @param[in] env
+  //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
+  //!   @endrst
+  template <
+    typename InputIteratorT,
+    typename OutputIteratorT,
+    typename NumSelectedIteratorT,
+    typename SelectOp,
+    typename NumItemsT,
+    typename EnvT = ::cuda::std::execution::env<>,
+    typename ::cuda::std::
+      enable_if_t<::cuda::std::is_integral_v<NumItemsT> && !::cuda::std::is_same_v<InputIteratorT, void*>, int> = 0>
+  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t
+  If(InputIteratorT d_in,
+     OutputIteratorT d_out,
+     NumSelectedIteratorT d_num_selected_out,
+     NumItemsT num_items,
+     SelectOp select_op,
+     EnvT env = {})
+  {
+    _CCCL_NVTX_RANGE_SCOPE("cub::DeviceSelect::If");
+
+    static_assert(!::cuda::std::execution::__queryable_with<EnvT, ::cuda::execution::determinism::__get_determinism_t>,
+                  "Determinism should be used inside requires to have an effect.");
+
+    using offset_t = detail::choose_offset_t<NumItemsT>;
+
+    // Extract determinism from environment, defaulting to run_to_run
+    using requirements_t = ::cuda::std::execution::
+      __query_result_or_t<EnvT, ::cuda::execution::__get_requirements_t, ::cuda::std::execution::env<>>;
+    using requested_determinism_t =
+      ::cuda::std::execution::__query_result_or_t<requirements_t, //
+                                                  ::cuda::execution::determinism::__get_determinism_t,
+                                                  ::cuda::execution::determinism::run_to_run_t>;
+
+    // Static assert to reject gpu_to_gpu determinism since it makes no sense for DeviceSelect
+    static_assert(!::cuda::std::is_same_v<requested_determinism_t, ::cuda::execution::determinism::gpu_to_gpu_t>,
+                  "gpu_to_gpu determinism is not supported");
+
+    using determinism_t = ::cuda::execution::determinism::run_to_run_t;
+
+    // Dispatch with environment - handles all boilerplate
+    return detail::dispatch_with_env(env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, auto stream) {
+      using tuning_t = decltype(tuning);
+      return select_impl<tuning_t,
+                         InputIteratorT,
+                         NullType*,
+                         OutputIteratorT,
+                         NumSelectedIteratorT,
+                         SelectOp,
+                         NullType,
+                         offset_t,
+                         SelectImpl::Select,
+                         determinism_t::value>(
+        storage,
+        bytes,
+        d_in,
+        nullptr,
+        d_out,
+        d_num_selected_out,
+        static_cast<offset_t>(num_items),
+        select_op,
+        NullType{},
+        determinism_t{},
+        stream);
+    });
   }
 
   //! @rst
