@@ -110,8 +110,7 @@ using num_segments_per_segment =
 // ------------ TOTAL NUMBER OF ITEMS PARAMETER TYPES ------------
 
 // Number of items guarantee
-template <::cuda::std::int64_t MaxNumItems  = ::cuda::std::numeric_limits<::cuda::std::int64_t>::max(),
-          ::cuda::std::int64_t MinNumItemsT = 1>
+template <::cuda::std::int64_t MinNumItemsT = 1, ::cuda::std::int64_t MaxNumItems  = ::cuda::std::numeric_limits<::cuda::std::int64_t>::max()>
 struct total_num_items_guarantee
 {
   static constexpr ::cuda::std::int64_t static_min_num_items = MinNumItemsT;
