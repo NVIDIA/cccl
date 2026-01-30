@@ -430,47 +430,55 @@ struct DispatchTopK
         const auto topk_first_pass_grid_size = ::cuda::std::min(first_pass_kernel_max_occupancy, num_tiles);
 
         // Compute histogram of the first pass
-        THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(topk_first_pass_grid_size, block_threads, 0, stream)
-          .doit(
-            topk_first_pass_kernel,
-            d_keys_in,
-            d_keys_out,
-            d_values_in,
-            d_values_out,
-            in_buf,
-            in_idx_buf,
-            out_buf,
-            out_idx_buf,
-            counter,
-            histogram,
-            num_items,
-            k,
-            candidate_buffer_length,
-            extract_bin_op,
-            identify_candidates_op,
-            pass);
+        error = CubDebug(
+          THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(topk_first_pass_grid_size, block_threads, 0, stream)
+            .doit(topk_first_pass_kernel,
+                  d_keys_in,
+                  d_keys_out,
+                  d_values_in,
+                  d_values_out,
+                  in_buf,
+                  in_idx_buf,
+                  out_buf,
+                  out_idx_buf,
+                  counter,
+                  histogram,
+                  num_items,
+                  k,
+                  candidate_buffer_length,
+                  extract_bin_op,
+                  identify_candidates_op,
+                  pass));
+        if (cudaSuccess != error)
+        {
+          return error;
+        }
       }
       else
       {
-        THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(topk_grid_size, block_threads, 0, stream)
-          .doit(
-            topk_kernel,
-            d_keys_in,
-            d_keys_out,
-            d_values_in,
-            d_values_out,
-            in_buf,
-            in_idx_buf,
-            out_buf,
-            out_idx_buf,
-            counter,
-            histogram,
-            num_items,
-            k,
-            candidate_buffer_length,
-            extract_bin_op,
-            identify_candidates_op,
-            pass);
+        error = CubDebug(
+          THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(topk_grid_size, block_threads, 0, stream)
+            .doit(topk_kernel,
+                  d_keys_in,
+                  d_keys_out,
+                  d_values_in,
+                  d_values_out,
+                  in_buf,
+                  in_idx_buf,
+                  out_buf,
+                  out_idx_buf,
+                  counter,
+                  histogram,
+                  num_items,
+                  k,
+                  candidate_buffer_length,
+                  extract_bin_op,
+                  identify_candidates_op,
+                  pass));
+        if (cudaSuccess != error)
+        {
+          return error;
+        }
       }
     }
 
@@ -483,20 +491,25 @@ struct DispatchTopK
     }
     const auto last_filter_kernel_max_occupancy = static_cast<unsigned int>(last_filter_kernel_blocks_per_sm * num_sms);
     const auto last_filter_grid_size            = ::cuda::std::min(last_filter_kernel_max_occupancy, num_tiles);
-    THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(last_filter_grid_size, block_threads, 0, stream)
-      .doit(topk_last_filter_kernel,
-            d_keys_in,
-            d_keys_out,
-            d_values_in,
-            d_values_out,
-            out_buf,
-            out_idx_buf,
-            counter,
-            num_items,
-            k,
-            candidate_buffer_length,
-            identify_candidates_op,
-            pass);
+    error                                       = CubDebug(
+      THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(last_filter_grid_size, block_threads, 0, stream)
+        .doit(topk_last_filter_kernel,
+              d_keys_in,
+              d_keys_out,
+              d_values_in,
+              d_values_out,
+              out_buf,
+              out_idx_buf,
+              counter,
+              num_items,
+              k,
+              candidate_buffer_length,
+              identify_candidates_op,
+              pass));
+    if (cudaSuccess != error)
+    {
+      return error;
+    }
 
     // pass==num_passes to align with the usage of identify_candidates_op in previous passes.
     return error;

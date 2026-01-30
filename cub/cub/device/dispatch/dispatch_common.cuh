@@ -59,4 +59,10 @@ enum class select
 };
 } // namespace detail::topk
 
+namespace detail
+{
+struct use_default
+{};
+} // namespace detail
+
 CUB_NAMESPACE_END

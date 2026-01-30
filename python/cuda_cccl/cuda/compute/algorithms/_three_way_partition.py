@@ -1,13 +1,11 @@
-# Copyright (c) 2025, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
+# Copyright (c) 2025-2026, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
 #
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 from typing import Callable
 
-import numba
-
-from .. import _bindings
+from .. import _bindings, types
 from .. import _cccl_interop as cccl
 from .._caching import cache_with_registered_key_functions
 from .._cccl_interop import call_build, set_cccl_iterator_state
@@ -51,10 +49,10 @@ class _ThreeWayPartition:
         # Compile ops - partition predicates return uint8 (boolean)
         value_type = cccl.get_value_type(d_in)
         self.select_first_part_op_cccl = select_first_part_op.compile(
-            (value_type,), numba.types.uint8
+            (value_type,), types.uint8
         )
         self.select_second_part_op_cccl = select_second_part_op.compile(
-            (value_type,), numba.types.uint8
+            (value_type,), types.uint8
         )
 
         self.build_result = call_build(

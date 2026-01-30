@@ -39,6 +39,7 @@ CUB_NAMESPACE_BEGIN
  * Tuning policy types
  ******************************************************************************/
 
+// TODO(bgruber): deprecate once we publish the tuning API
 /**
  * Parameterizable tuning policy type for AgentReduce
  * @tparam NominalBlockThreads4B Threads per thread block

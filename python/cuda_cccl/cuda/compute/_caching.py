@@ -146,11 +146,10 @@ def _hash_device_array_like(value):
 
 
 def _make_hashable(value):
-    import numba.cuda.dispatcher
-
     from .typing import DeviceArrayLike
 
-    if isinstance(value, numba.cuda.dispatcher.CUDADispatcher):
+    # Duck-type check for numba.cuda.CUDADispatcher (has py_func attribute)
+    if hasattr(value, "py_func") and callable(value.py_func):
         return CachableFunction(value.py_func)
     elif isinstance(value, DeviceArrayLike):
         return _hash_device_array_like(value)
@@ -196,8 +195,7 @@ class CachableFunction:
 
         closure = func.__closure__ if func.__closure__ is not None else []
         contents = []
-        # if any of the contents is a numba.cuda.dispatcher.CUDADispatcher
-        # use the function for caching purposes:
+        # Make closure contents hashable
         for cell in closure:
             contents.append(_make_hashable(cell.cell_contents))
         self._identity = (

@@ -1,7 +1,5 @@
-// Copyright (c) 2018 NVIDIA Corporation
-// Author: Bryce Adelstein Lelbach <brycelelbach@gmail.com>
-//
-// Distributed under the Boost Software License v1.0 (boost.org/LICENSE_1_0.txt)
+// SPDX-FileCopyrightText: Copyright (c) 2018, NVIDIA Corporation
+// SPDX-License-Identifier: BSL-1.0
 
 #pragma once
 
@@ -18,7 +16,7 @@
 #include <thrust/detail/raw_pointer_cast.h>
 #include <thrust/detail/type_deduction.h>
 
-#include <cuda/std/__cccl/memory_wrapper.h>
+#include <cuda/std/__host_stdlib/memory>
 #include <cuda/std/__memory/allocator_traits.h>
 #include <cuda/std/__type_traits/remove_cvref.h>
 #include <cuda/std/__utility/move.h>

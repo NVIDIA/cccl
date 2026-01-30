@@ -1,3 +1,8 @@
+# Copyright (c) 2025-2026, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
+#
+#
+# SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+
 from typing import Callable
 
 import numpy as np
@@ -46,27 +51,6 @@ class _SegmentedReduce:
         self.d_out_cccl = cccl.to_cccl_output_iter(d_out)
         self.start_offsets_in_cccl = cccl.to_cccl_input_iter(start_offsets_in)
         self.end_offsets_in_cccl = cccl.to_cccl_input_iter(end_offsets_in)
-
-        # set host advance functions
-        cccl.cccl_iterator_set_host_advance(self.d_out_cccl, d_out)
-        cccl.cccl_iterator_set_host_advance(
-            self.start_offsets_in_cccl, start_offsets_in
-        )
-        if (
-            self.start_offsets_in_cccl.is_kind_iterator()
-            and self.end_offsets_in_cccl.is_kind_iterator()
-            and isinstance(start_offsets_in, IteratorBase)
-            and isinstance(end_offsets_in, IteratorBase)
-            and start_offsets_in.kind == end_offsets_in.kind
-        ):
-            self.end_offsets_in_cccl.host_advance_fn = (
-                self.start_offsets_in_cccl.host_advance_fn
-            )
-        else:
-            cccl.cccl_iterator_set_host_advance(
-                self.end_offsets_in_cccl, end_offsets_in
-            )
-
         self.h_init_cccl = cccl.to_cccl_value(h_init)
 
         # Compile the op with value types
@@ -94,6 +78,10 @@ class _SegmentedReduce:
         h_init,
         stream=None,
     ):
+        if num_segments > np.iinfo(np.int32).max:
+            raise RuntimeError(
+                "Segmented sort does not currently support more than 2^31-1 segments."
+            )
         set_cccl_iterator_state(self.d_in_cccl, d_in)
         set_cccl_iterator_state(self.d_out_cccl, d_out)
         set_cccl_iterator_state(self.start_offsets_in_cccl, start_offsets_in)
