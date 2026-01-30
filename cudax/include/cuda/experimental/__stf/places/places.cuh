@@ -1061,7 +1061,10 @@ public:
   template <typename T,
             typename = ::std::enable_if_t<!::std::is_same_v<::std::decay_t<T>, exec_place>
                                           && !::std::is_base_of_v<exec_place, ::std::decay_t<T>>>>
-  exec_place_guard(T&&) = delete;
+  exec_place_guard(T&&)
+  {
+    static_assert(!::std::is_same_v<T, T>, "exec_place_guard requires an exec_place, not a data_place or other type.");
+  }
 
 private:
   exec_place place_;
