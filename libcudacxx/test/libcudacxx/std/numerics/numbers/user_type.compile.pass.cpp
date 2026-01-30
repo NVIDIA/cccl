@@ -7,6 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
+// UNSUPPORTED: windows
+
 // <cuda/std/numbers>
 
 #include <cuda/std/numbers>
