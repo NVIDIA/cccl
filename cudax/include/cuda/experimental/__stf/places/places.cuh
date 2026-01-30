@@ -1005,6 +1005,73 @@ private:
 };
 
 /**
+ * @brief RAII guard that activates an execution place and restores the previous one on destruction.
+ *
+ * This class provides a scoped mechanism for temporarily switching the active execution place.
+ * When constructed, it activates the given execution place (e.g., sets the current CUDA device).
+ * When destroyed, it restores the previous execution place that was active before construction.
+ *
+ * The guard is non-copyable and non-movable to ensure proper RAII semantics.
+ *
+ * @note This class only accepts `exec_place` objects. Implicit conversions from other types
+ *       (such as `data_place`) are explicitly disabled to prevent accidental misuse.
+ *
+ * Example usage:
+ * @code
+ * // Assume current device is 0
+ * {
+ *   exec_place_guard guard(exec_place::device(1));
+ *   // Device 1 is now active
+ *   // ... perform operations on device 1 ...
+ * }
+ * // Device 0 is restored
+ * @endcode
+ */
+class exec_place_guard
+{
+public:
+  /**
+   * @brief Constructs the guard and activates the given execution place.
+   *
+   * @param place The execution place to activate. Must be an `exec_place` object;
+   *              implicit conversions from other types are disabled.
+   */
+  explicit exec_place_guard(exec_place place)
+      : place_(mv(place))
+      , prev_(place_.activate())
+  {}
+
+  /**
+   * @brief Destructor that restores the previous execution place.
+   */
+  ~exec_place_guard()
+  {
+    place_.deactivate(prev_);
+  }
+
+  // Non-copyable
+  exec_place_guard(const exec_place_guard&)            = delete;
+  exec_place_guard& operator=(const exec_place_guard&) = delete;
+
+  // Non-movable
+  exec_place_guard(exec_place_guard&&)            = delete;
+  exec_place_guard& operator=(exec_place_guard&&) = delete;
+
+  // Prevent implicit conversions from other types (e.g., data_place)
+  template <typename T,
+            typename = ::std::enable_if_t<!::std::is_same_v<::std::decay_t<T>, exec_place>
+                                          && !::std::is_base_of_v<exec_place, ::std::decay_t<T>>>>
+  exec_place_guard(T&&)
+  {
+    static_assert(!::std::is_same_v<T, T>, "exec_place_guard requires an exec_place, not a data_place or other type.");
+  }
+
+private:
+  exec_place place_;
+  exec_place prev_;
+};
+
+/**
  * @brief Designates execution that is to run on the host.
  *
  */
