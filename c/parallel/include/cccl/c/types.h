@@ -103,6 +103,11 @@ typedef struct cccl_op_t
   size_t size;
   size_t alignment;
   void* state;
+  // Extra LTOIR modules to link with this op (for composite ops that reference
+  // other compiled functions). Each entry is an LTOIR module.
+  const char** extra_ltoirs;
+  size_t* extra_ltoir_sizes;
+  size_t num_extra_ltoirs;
 } cccl_op_t;
 
 typedef struct cccl_build_config
