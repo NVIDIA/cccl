@@ -157,7 +157,7 @@ __launch_bounds__(device_for_policy::ActivePolicy::for_policy_t::block_threads)
 void binary_search_kernel({1} d_data, OffsetT num_data, {3} d_values, OffsetT num_values, {5} d_out, {7} op)
 {{
   auto input_it     = cuda::make_zip_iterator(d_values, d_out);
-  auto comp_wrapper = cub::detail::find::make_comp_wrapper<{8}>(d_data, d_data + num_data, op);
+  auto comp_wrapper = cub::detail::find::make_comp_wrapper<{8}>(d_data, num_data, op);
   auto agent_op     = [&comp_wrapper, &input_it](OffsetT index) {{
     comp_wrapper(input_it[index]);
   }};

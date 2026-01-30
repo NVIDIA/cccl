@@ -15,6 +15,7 @@
 
 #include <cuda/std/__algorithm/lower_bound.h>
 #include <cuda/std/__algorithm/upper_bound.h>
+#include <cuda/std/__iterator/iterator_traits.h>
 #include <cuda/std/cstddef>
 #include <cuda/std/tuple>
 
@@ -22,24 +23,27 @@ CUB_NAMESPACE_BEGIN
 
 namespace detail::find
 {
-template <typename RangeIteratorT, typename CompareOpT, typename Mode>
+template <typename RangeIteratorT, typename RangeNumItemsT, typename CompareOpT, typename Mode>
 struct comp_wrapper_t
 {
   RangeIteratorT first;
-  RangeIteratorT last;
+  RangeNumItemsT num_items;
   CompareOpT op;
 
   template <typename Value, typename Output>
   _CCCL_DEVICE _CCCL_FORCEINLINE void operator()(::cuda::std::tuple<Value, Output> args) const
   {
+    using DifferenceT = ::cuda::std::iter_difference_t<RangeIteratorT>;
+    const auto last   = first + static_cast<DifferenceT>(num_items);
+
     ::cuda::std::get<1>(args) = Mode::Invoke(first, last, ::cuda::std::get<0>(args), op);
   }
 };
 
-template <typename Mode, typename RangeIteratorT, typename CompareOpT>
-_CCCL_HOST_DEVICE auto make_comp_wrapper(RangeIteratorT first, RangeIteratorT last, CompareOpT comp)
+template <typename Mode, typename RangeIteratorT, typename RangeNumItemsT, typename CompareOpT>
+_CCCL_HOST_DEVICE auto make_comp_wrapper(RangeIteratorT first, RangeNumItemsT num_items, CompareOpT comp)
 {
-  return comp_wrapper_t<RangeIteratorT, CompareOpT, Mode>{first, last, comp};
+  return comp_wrapper_t<RangeIteratorT, RangeNumItemsT, CompareOpT, Mode>{first, num_items, comp};
 }
 
 struct lower_bound
