@@ -123,7 +123,7 @@ Class template to describe the strides of a multi-dimensional array layout. Simi
     * - ``operator==``
       - ``true`` if ranks are equal and all stride values compare equal; ``false`` otherwise.
     * - ``operator!=``
-      - ``false`` if ranks are equal and all stride values compare equal; ``true`` otherwise.
+      - ``false`` if ranks are equal and all extent and stride values compare equal; ``true`` otherwise.
 
 **Constructors**
 
