@@ -63,6 +63,17 @@ class InitKind(IntEnum):
     FUTURE_VALUE_INIT = ...
     VALUE_INIT = ...
 
+class Determinism(IntEnum):
+    _value_: int
+    NOT_GUARANTEED = ...
+    RUN_TO_RUN = ...
+    GPU_TO_GPU = ...
+
+class BinarySearchMode(IntEnum):
+    _value_: int
+    LOWER_BOUND = ...
+    UPPER_BOUND = ...
+
 class Op:
     def __init__(
         self,
@@ -181,9 +192,21 @@ class DeviceReduceBuildResult:
         d_out: Iterator,
         binary_op: Op,
         h_init: Value,
+        determinism: Determinism,
         info: CommonData,
     ): ...
     def compute(
+        self,
+        temp_storage_ptr: int | None,
+        temp_storage_nbytes: int,
+        d_in: Iterator,
+        d_out: Iterator,
+        num_items: int,
+        binary_op: Op,
+        h_init: Value,
+        stream,
+    ) -> int: ...
+    def compute_nondeterministic(
         self,
         temp_storage_ptr: int | None,
         temp_storage_nbytes: int,
@@ -444,6 +467,31 @@ class DeviceHistogramBuildResult:
         num_row_pixels: int,
         num_rows: int,
         row_stride_samples: int,
+        stream,
+    ) -> None: ...
+
+# -------------------
+# DeviceBinarySearch
+# -------------------
+
+class DeviceBinarySearchBuildResult:
+    def __init__(
+        self,
+        mode: BinarySearchMode,
+        d_data: Iterator,
+        d_values: Iterator,
+        d_out: Iterator,
+        comparison_op: Op,
+        info: CommonData,
+    ): ...
+    def compute(
+        self,
+        d_data: Iterator,
+        num_items: int,
+        d_values: Iterator,
+        num_values: int,
+        d_out: Iterator,
+        comparison_op: Op,
         stream,
     ) -> None: ...
 

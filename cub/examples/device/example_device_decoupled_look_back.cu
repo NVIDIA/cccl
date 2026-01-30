@@ -51,8 +51,14 @@ __global__ void decoupled_look_back_kernel(cub::ScanTileState<MessageT> tile_sta
 
     if (warp_id == 0)
     {
-      // Perform the decoupled look-back
-      // Invocation of the prefix will block until the look-back is complete.
+      // Perform the decoupled look-back.
+      // 1. Publish the block's local aggregate to global memory immediately.
+      //    This allows downstream blocks to include this tile's contribution without waiting for this block to fully
+      //    resolve its global prefix.
+      // 2. Block and traverse predecessor tiles (look-back) to compute the global exclusive prefix for this tile.
+      // 3. Update this tile's global state to 'Prefix' (inclusive sum), creating a checkpoint that stops the look-back
+      // of downstream blocks.
+      // Note, the invocation of the prefix will block until the look-back is complete.
       MessageT exclusive_prefix = prefix(block_aggregate);
 
       if (tid == 0)

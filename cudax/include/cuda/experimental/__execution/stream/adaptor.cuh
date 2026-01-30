@@ -21,10 +21,11 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/__utility/immovable.h>
+#include <cuda/__launch/configuration.h>
+#include <cuda/__launch/launch.h>
+#include <cuda/hierarchy>
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__memory/unique_ptr.h>
-#include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/remove_cvref.h>
 #include <cuda/std/__utility/pod_tuple.h>
 
@@ -36,7 +37,6 @@
 #include <cuda/experimental/__execution/utility.cuh>
 #include <cuda/experimental/__execution/variant.cuh>
 #include <cuda/experimental/__execution/visit.cuh>
-#include <cuda/experimental/__launch/configuration.cuh>
 #include <cuda/experimental/__launch/launch.cuh>
 #include <cuda/experimental/__stream/stream_ref.cuh>
 
@@ -112,7 +112,7 @@ _CCCL_API constexpr auto __with_cuda_error(_Completions __completions) noexcept
 }
 
 template <class _Config>
-using __dims_of_t = decltype(_Config::dims);
+using __dims_of_t = typename _Config::hierarchy_type;
 
 // This kernel forwards the results from the child sender to the receiver of the parent
 // sender. The receiver is where most algorithms do their work, so we want the receiver to
@@ -123,7 +123,7 @@ _CCCL_VISIBILITY_HIDDEN __launch_bounds__(_BlockThreads) __global__
   void __completion_kernel(__state_base_t<_Rcvr, _Variant>* __state)
 {
   _CCCL_ASSERT(__state->__results_.__index() != __npos, "__completion_kernel called with empty results");
-  _Variant::__visit(__visit_results{}, __state->__results_, __state->__rcvr_);
+  __visit(__visit_results{}, __state->__results_, __state->__rcvr_);
 }
 
 // This is the environment of the inner receiver that is used to connect the child sender.
@@ -229,7 +229,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __opstate_t
   template <class _Rcvr2>
   _CCCL_API auto __set_results(_Rcvr2& __rcvr) noexcept
   {
-    __results_t::__visit(__visit_results{}, __get_state().__state_.__results_, __rcvr);
+    __visit(__visit_results{}, __get_state().__state_.__results_, __rcvr);
   }
 
 private:
@@ -269,31 +269,35 @@ private:
     // the completion kernel, we will be completing the parent's receiver, so we must let
     // the receiver tell us how to launch the kernel.
     auto const __launch_config    = get_launch_config(execution::get_env(__state.__state_.__rcvr_));
-    using __launch_dims_t         = decltype(__launch_config.dims);
-    constexpr int __block_threads = __launch_dims_t::static_count(thread, block);
-    int const __grid_blocks       = __launch_config.dims.count(block, grid);
-    static_assert(__block_threads != ::cuda::std::dynamic_extent);
+    constexpr int __block_threads = gpu_thread.count(block, __launch_config);
 
     // Start the child operation state. This will launch kernels for all the predecessors
     // of this operation.
     execution::start(__state.__opstate_);
 
-    // launch a kernel to pass the results to the receiver.
-    __completion_kernel<__block_threads><<<__grid_blocks, __block_threads, 0, __stream_.get()>>>(&__state.__state_);
-
-    // Check for errors in the kernel launch.
-    if (auto __status = cudaGetLastError(); __status != cudaSuccess)
+    _CCCL_TRY
     {
-      execution::set_error(static_cast<_Rcvr&&>(__state.__state_.__rcvr_), cudaError_t(__status));
+      // launch a kernel to pass the results to the receiver.
+      auto* __kernel = &__completion_kernel<__block_threads, _Rcvr, __results_t>;
+      ::cuda::launch(__stream_, __launch_config, __kernel, &__state.__state_);
+    }
+    _CCCL_CATCH (::cuda::cuda_error & __error) // Check for errors in the kernel launch.
+    {
+      execution::set_error(static_cast<_Rcvr&&>(__state.__state_.__rcvr_), __error.status());
+    }
+    _CCCL_CATCH_ALL
+    {
+      execution::set_error(static_cast<_Rcvr&&>(__state.__state_.__rcvr_), cudaErrorUnknown);
     }
   }
 
   // TODO: untested
   _CCCL_DEVICE_API void __device_start() noexcept
   {
-    using __launch_dims_t         = __dims_of_t<__rcvr_config_t>;
-    constexpr int __block_threads = __launch_dims_t::static_count(thread, block);
-    auto& __state                 = __get_state();
+    auto& __state = __get_state();
+
+    auto const __launch_config    = get_launch_config(execution::get_env(__state.__state_.__rcvr_));
+    constexpr int __block_threads = gpu_thread.count(block, __launch_config);
 
     // without the following, the kernel in __host_start will fail to launch with
     // cudaErrorInvalidDeviceFunction.
@@ -318,7 +322,9 @@ private:
   // in dyncamically-allocated managed memory.
   [[nodiscard]] _CCCL_API constexpr auto __get_state() noexcept -> __state_t&
   {
-    return __state_.__index() == 0 ? __state_.template __get<0>() : __state_.template __get<1>()->__value;
+    return __state_.__index() == 0
+           ? execution::__variant_get<0>(__state_)
+           : execution::__variant_get<1>(__state_)->__value;
   }
 
   stream_ref __stream_;
@@ -411,7 +417,7 @@ _CCCL_API constexpr auto __adapt(_Sndr&& __sndr, _GetStream __get_stream) noexce
 } // namespace __stream
 
 template <class _Sndr, class _GetStream>
-inline constexpr size_t structured_binding_size<__stream::__sndr_t<_Sndr, _GetStream>> = 3;
+inline constexpr int structured_binding_size<__stream::__sndr_t<_Sndr, _GetStream>> = 3;
 } // namespace cuda::experimental::execution
 
 _CCCL_DIAG_POP

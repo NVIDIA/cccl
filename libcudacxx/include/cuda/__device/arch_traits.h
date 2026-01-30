@@ -21,17 +21,15 @@
 #  pragma system_header
 #endif // no system header
 
-#if _CCCL_HAS_CTK()
+#include <cuda/__device/arch_id.h>
+#include <cuda/__device/compute_capability.h>
+#include <cuda/__fwd/devices.h>
+#include <cuda/std/__exception/cuda_error.h>
+#include <cuda/std/__type_traits/always_false.h>
+#include <cuda/std/cstdint>
+#include <cuda/std/limits>
 
-#  include <cuda/__device/arch_id.h>
-#  include <cuda/__device/compute_capability.h>
-#  include <cuda/__fwd/devices.h>
-#  include <cuda/std/__exception/cuda_error.h>
-#  include <cuda/std/__type_traits/always_false.h>
-#  include <cuda/std/cstdint>
-#  include <cuda/std/limits>
-
-#  include <cuda/std/__cccl/prologue.h>
+#include <cuda/std/__cccl/prologue.h>
 
 _CCCL_BEGIN_NAMESPACE_CUDA
 
@@ -182,8 +180,8 @@ struct arch_traits_t
   __traits.max_registers_per_multiprocessor = 64 * 1024;
   __traits.max_registers_per_thread         = 255;
   __traits.arch_id                          = __arch_id;
-  __traits.compute_capability_major         = __cc.major();
-  __traits.compute_capability_minor         = __cc.minor();
+  __traits.compute_capability_major         = __cc.major_cap();
+  __traits.compute_capability_minor         = __cc.minor_cap();
   __traits.compute_capability               = __cc;
   // __traits.max_shared_memory_per_multiprocessor; // set up individually
   // __traits.max_blocks_per_multiprocessor; // set up individually
@@ -507,7 +505,11 @@ template <>
     case arch_id::sm_121a:
       return ::cuda::arch_traits<arch_id::sm_121a>();
     default:
+#if _CCCL_HAS_CTK()
       ::cuda::__throw_cuda_error(::cudaErrorInvalidValue, "Traits requested for an unknown architecture");
+#else // ^^^ _CCCL_HAS_CTK() ^^^ / vvv !_CCCL_HAS_CTK() vvv
+      ::cuda::__throw_cuda_error(/*cudaErrorInvalidValue*/ 1, "Traits requested for an unknown architecture");
+#endif // ^^^ !_CCCL_HAS_CTK() ^^^
       break;
   }
 }
@@ -522,7 +524,7 @@ template <>
 
 _CCCL_END_NAMESPACE_CUDA
 
-#  if _CCCL_CUDA_COMPILATION()
+#if _CCCL_CUDA_COMPILATION()
 
 _CCCL_BEGIN_NAMESPACE_CUDA_DEVICE
 
@@ -533,21 +535,19 @@ _CCCL_BEGIN_NAMESPACE_CUDA_DEVICE
 //!
 //! @note This API cannot be used in constexpr context when compiling with nvc++ in CUDA mode.
 template <class _Dummy = void>
-[[nodiscard]] _CCCL_DEVICE_API _CCCL_TARGET_CONSTEXPR ::cuda::arch_traits_t current_arch_traits() noexcept
+[[nodiscard]] _CCCL_DEVICE_API inline _CCCL_TARGET_CONSTEXPR ::cuda::arch_traits_t current_arch_traits() noexcept
 {
-#    if _CCCL_DEVICE_COMPILATION()
+#  if _CCCL_DEVICE_COMPILATION()
   return ::cuda::arch_traits_for(::cuda::device::current_arch_id<_Dummy>());
-#    else // ^^^ _CCCL_DEVICE_COMPILATION() ^^^ / vvv !_CCCL_DEVICE_COMPILATION() vvv
+#  else // ^^^ _CCCL_DEVICE_COMPILATION() ^^^ / vvv !_CCCL_DEVICE_COMPILATION() vvv
   return {};
-#    endif // ^^^ !_CCCL_DEVICE_COMPILATION() ^^^
+#  endif // ^^^ !_CCCL_DEVICE_COMPILATION() ^^^
 }
 
 _CCCL_END_NAMESPACE_CUDA_DEVICE
 
-#  endif // _CCCL_CUDA_COMPILATION
+#endif // _CCCL_CUDA_COMPILATION
 
-#  include <cuda/std/__cccl/epilogue.h>
-
-#endif // _CCCL_HAS_CTK()
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _CUDA___DEVICE_ARCH_TRAITS_H

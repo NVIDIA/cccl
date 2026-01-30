@@ -1,18 +1,5 @@
-/*
- *  Copyright 2008-2013 NVIDIA Corporation
- *
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- */
+// SPDX-FileCopyrightText: Copyright (c) 2008-2013, NVIDIA Corporation. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0
 
 #pragma once
 
@@ -26,20 +13,21 @@
 #  pragma system_header
 #endif // no system header
 
-#include <thrust/detail/allocator/allocator_traits.h>
+#include <thrust/detail/allocator/allocator_system.h>
 #include <thrust/detail/copy.h>
 #include <thrust/detail/execution_policy.h>
 #include <thrust/detail/type_traits/pointer_traits.h>
 #include <thrust/for_each.h>
 #include <thrust/iterator/iterator_traits.h>
 #include <thrust/iterator/zip_iterator.h>
-#include <thrust/tuple.h>
 
-#include <cuda/std/__cccl/memory_wrapper.h>
+#include <cuda/std/__host_stdlib/memory>
 #include <cuda/std/__iterator/advance.h>
 #include <cuda/std/__iterator/distance.h>
+#include <cuda/std/__memory/allocator_traits.h>
 #include <cuda/std/__type_traits/is_convertible.h>
 #include <cuda/std/__type_traits/is_trivially_copy_constructible.h>
+#include <cuda/std/tuple>
 
 THRUST_NAMESPACE_BEGIN
 namespace detail
@@ -52,21 +40,20 @@ struct copy_construct_with_allocator
   template <typename Tuple>
   inline _CCCL_HOST_DEVICE void operator()(Tuple t)
   {
-    const InputType& in = thrust::get<0>(t);
-    OutputType& out     = thrust::get<1>(t);
+    const InputType& in = ::cuda::std::get<0>(t);
+    OutputType& out     = ::cuda::std::get<1>(t);
 
-    allocator_traits<Allocator>::construct(a, &out, in);
+    ::cuda::std::allocator_traits<Allocator>::construct(a, &out, in);
   }
 };
 
-// we need to use allocator_traits<Allocator>::construct() to
+// we need to use ::cuda::std::allocator_traits<Allocator>::construct() to
 // copy construct a T if either:
 // 1. Allocator has a 2-argument construct() member or
 // 2. T has a non-trivial copy constructor
 template <typename Allocator, typename T>
 inline constexpr bool needs_copy_construct_via_allocator =
-  allocator_traits_detail::has_member_construct2<Allocator, T, T>::value
-  || !::cuda::std::is_trivially_copy_constructible_v<T>;
+  ::cuda::std::__has_construct<Allocator, T*, T> || !::cuda::std::is_trivially_copy_constructible_v<T>;
 
 // we know that std::allocator::construct's only effect is to call T's
 // copy constructor, so we needn't consider or use its construct() member for copy construction
@@ -90,7 +77,7 @@ _CCCL_HOST_DEVICE Pointer uninitialized_copy_with_allocator(
   if constexpr (::cuda::std::is_convertible_v<FromSystem, ToSystem>)
   {
     // zip up the iterators
-    using IteratorTuple = thrust::tuple<InputIterator, Pointer>;
+    using IteratorTuple = ::cuda::std::tuple<InputIterator, Pointer>;
     using ZipIterator   = thrust::zip_iterator<IteratorTuple>;
 
     ZipIterator begin = thrust::make_zip_iterator(first, result);
@@ -109,7 +96,7 @@ _CCCL_HOST_DEVICE Pointer uninitialized_copy_with_allocator(
     thrust::for_each(to_system, begin, end, copy_construct_with_allocator<Allocator, InputType, OutputType>{a});
 
     // return the end of the output range
-    return thrust::get<1>(end.get_iterator_tuple());
+    return ::cuda::std::get<1>(end.get_iterator_tuple());
   }
   else
   {
@@ -135,7 +122,7 @@ _CCCL_HOST_DEVICE Pointer uninitialized_copy_with_allocator_n(
   if constexpr (::cuda::std::is_convertible_v<FromSystem, ToSystem>)
   {
     // zip up the iterators
-    using IteratorTuple = thrust::tuple<InputIterator, Pointer>;
+    using IteratorTuple = ::cuda::std::tuple<InputIterator, Pointer>;
     using ZipIterator   = thrust::zip_iterator<IteratorTuple>;
 
     ZipIterator begin = thrust::make_zip_iterator(first, result);
@@ -150,7 +137,7 @@ _CCCL_HOST_DEVICE Pointer uninitialized_copy_with_allocator_n(
       thrust::for_each_n(to_system, begin, n, copy_construct_with_allocator<Allocator, InputType, OutputType>(a));
 
     // return the end of the output range
-    return thrust::get<1>(end.get_iterator_tuple());
+    return ::cuda::std::get<1>(end.get_iterator_tuple());
   }
   else
   {

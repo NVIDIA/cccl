@@ -9,11 +9,14 @@ GENERATE_XML           = YES
 XML_OUTPUT             = xml
 XML_PROGRAMLISTING     = YES
 
-INPUT                  = ../../libcudacxx/include/cuda/__iterator \
-                         ../../libcudacxx/include/cuda/__stream \
+INPUT                  = ../../libcudacxx/include/cuda/__algorithm \
+                         ../../libcudacxx/include/cuda/__container \
                          ../../libcudacxx/include/cuda/__device \
                          ../../libcudacxx/include/cuda/__event \
-                         ../../libcudacxx/include/cuda/__algorithm \
+                         ../../libcudacxx/include/cuda/__iterator \
+                         ../../libcudacxx/include/cuda/__memory_pool \
+                         ../../libcudacxx/include/cuda/__memory_resource \
+                         ../../libcudacxx/include/cuda/__stream \
                          ../../libcudacxx/include/nv
 
 RECURSIVE              = YES
@@ -125,7 +128,6 @@ PREDEFINED = \
     "CUB_NAMESPACE_BEGIN=namespace cub {" \
     "CUB_NAMESPACE_END=}" \
     "CUB_RUNTIME_FUNCTION=" \
-    "LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE" \
     "THRUST_FWD(x)=x" \
     "THRUST_NAMESPACE_BEGIN=namespace thrust {" \
     "THRUST_NAMESPACE_END=}" \

@@ -44,16 +44,6 @@ namespace cuda::experimental
 {
 namespace execution
 {
-namespace __detail
-{
-template <class _Env, class _Query>
-using __statically_queryable_with_t = decltype(::cuda::std::remove_cvref_t<_Env>::query(std::declval<_Query>()));
-} // namespace __detail
-
-template <class _Env, class _Query>
-_CCCL_CONCEPT __statically_queryable_with =
-  __is_instantiable_with<__detail::__statically_queryable_with_t, _Env, _Query>;
-
 template <class _Env>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT __fwd_env_;
 
@@ -209,6 +199,33 @@ struct __mk_sch_env_t
 };
 
 _CCCL_GLOBAL_CONSTANT __mk_sch_env_t __mk_sch_env{};
+
+//////////////////////////////////////////////////////////////////////////////////////////
+// __sch_attrs
+
+//! @brief __sch_attrs_t is a utility that builds attributes for a sender from a
+//! scheduler. It defines the `get_completion_scheduler<set_value_t>` query and provides a default for the
+//! `get_completion_domain_t<set_value_t>` query.
+template <class _Sch>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT __sch_attrs_t
+{
+  [[nodiscard]] _CCCL_API constexpr auto query(get_completion_scheduler_t<set_value_t>) const noexcept -> const _Sch&
+  {
+    return __sch_;
+  }
+
+  _CCCL_TEMPLATE(class... _Env)
+  _CCCL_REQUIRES(__callable<get_completion_domain_t<set_value_t>, _Sch, _Env...>)
+  [[nodiscard]] _CCCL_API constexpr auto query(get_completion_domain_t<set_value_t>, const _Env&...) const noexcept
+  {
+    return __call_result_t<get_completion_domain_t<set_value_t>, _Sch, _Env...>{};
+  }
+
+  _Sch __sch_;
+};
+
+template <class _Sch>
+_CCCL_HOST_DEVICE __sch_attrs_t(_Sch) -> __sch_attrs_t<_Sch>;
 
 //////////////////////////////////////////////////////////////////////////////////////////
 // __inln_attrs

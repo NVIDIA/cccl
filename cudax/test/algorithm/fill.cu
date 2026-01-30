@@ -15,7 +15,7 @@ C2H_TEST("Fill", "[data_manipulation]")
   cuda::stream _stream{cuda::device_ref{0}};
   SECTION("Host resource")
   {
-    cuda::legacy_pinned_memory_resource host_resource;
+    cuda::mr::legacy_pinned_memory_resource host_resource;
     cudax::uninitialized_buffer<int, cuda::mr::device_accessible> buffer(host_resource, buffer_size);
 
     cuda::fill_bytes(_stream, buffer, fill_byte);
@@ -37,7 +37,7 @@ C2H_TEST("Fill", "[data_manipulation]")
   }
   SECTION("Launch transform")
   {
-    cuda::legacy_pinned_memory_resource host_resource;
+    cuda::mr::legacy_pinned_memory_resource host_resource;
     cudax::weird_buffer buffer(host_resource, buffer_size);
 
     cuda::fill_bytes(_stream, buffer, fill_byte);
@@ -65,7 +65,7 @@ C2H_TEST("Mdspan Fill", "[data_manipulation]")
     check_result_and_erase(stream, cuda::std::span(buffer.data(), buffer.size()));
   }
   {
-    cuda::legacy_pinned_memory_resource host_resource;
+    cuda::mr::legacy_pinned_memory_resource host_resource;
     using static_extents = cuda::std::extents<size_t, 2, 3, 4>;
     auto size            = cuda::std::layout_left::mapping<static_extents>().required_span_size();
     cudax::weird_buffer<cuda::std::mdspan<int, static_extents>> buffer(host_resource, size);

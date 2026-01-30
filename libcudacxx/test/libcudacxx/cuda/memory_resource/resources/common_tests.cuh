@@ -10,6 +10,7 @@
 
 #pragma once
 
+#include <testing.cuh>
 #include <utility.cuh>
 
 template <typename ResourceType>

@@ -23,10 +23,7 @@
 #endif // no system header
 
 #include <cuda/std/__exception/terminate.h>
-
-#if _CCCL_HAS_EXCEPTIONS()
-#  include <stdexcept>
-#endif // _LIBCUDACXX_HAS_STRING
+#include <cuda/std/__host_stdlib/stdexcept>
 
 #include <cuda/std/__cccl/prologue.h>
 

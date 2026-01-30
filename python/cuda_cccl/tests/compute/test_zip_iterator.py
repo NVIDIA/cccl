@@ -44,12 +44,7 @@ def test_zip_iterator_basic(num_items):
 
 @pytest.mark.parametrize("num_items", [10, 1_000, 100_000])
 def test_zip_iterator_with_counting_iterator(num_items):
-    """Test ZipIterator with two counting iterators."""
-
-    @gpu_struct
-    class IndexValuePair:
-        index: np.int32
-        value: np.int32
+    """Test ZipIterator with counting iterator and numpy struct dtype as initial value."""
 
     def max_by_value(p1, p2):
         # Return the pair with the larger value
@@ -60,8 +55,10 @@ def test_zip_iterator_with_counting_iterator(num_items):
 
     zip_it = ZipIterator(counting_it, arr)
 
-    d_output = cp.empty(1, dtype=IndexValuePair.dtype)
-    h_init = IndexValuePair(-1, -1)
+    dtype = np.dtype([("index", np.int32), ("value", np.int32)], align=True)
+    h_init = np.asarray([(-1, -1)], dtype=dtype)
+
+    d_output = cp.empty(1, dtype=dtype)
 
     cuda.compute.reduce_into(zip_it, d_output, max_by_value, num_items, h_init)
 

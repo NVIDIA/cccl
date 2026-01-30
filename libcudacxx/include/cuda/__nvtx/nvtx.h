@@ -32,7 +32,7 @@
 // * NVTX is not explicitly disabled (via CCCL_DISABLE_NVTX or NVTX_DISABLE)
 // * the compiler is not nvc++ (NVTX3 uses module as an identifier, which trips up NVHPC, fixed in CTK >= 13.0)
 // * the compiler is not NVRTC
-#if _CCCL_HAS_INCLUDE(<nvtx3/nvToolsExt.h>) && !defined(CCCL_DISABLE_NVTX) && !defined(NVTX_DISABLE) \
+#if __has_include(<nvtx3/nvToolsExt.h>) && !defined(CCCL_DISABLE_NVTX) && !defined(NVTX_DISABLE) \
                       && (!_CCCL_COMPILER(NVHPC) || _CCCL_CTK_AT_LEAST(13, 0))                       \
                       && !_CCCL_COMPILER(NVRTC)
 
@@ -45,11 +45,11 @@
 
 // Include our NVTX3 C++ wrapper if not available from the CTK or not provided by the user
 // Note: NVTX3 is available in the CTK since 12.9, so we can drop our copy once this is the minimum supported version
-#  if _CCCL_HAS_INCLUDE(<nvtx3/nvtx3.hpp>)
+#  if __has_include(<nvtx3/nvtx3.hpp>)
 #    include <nvtx3/nvtx3.hpp>
-#  else // _CCCL_HAS_INCLUDE(<nvtx3/nvtx3.hpp>)
+#  else // __has_include(<nvtx3/nvtx3.hpp>)
 #    include <cuda/__nvtx/nvtx3.h>
-#  endif // _CCCL_HAS_INCLUDE(<nvtx3/nvtx3.hpp>)
+#  endif // __has_include(<nvtx3/nvtx3.hpp>)
 
 #  ifndef NVTX_AS_SYSTEM_HEADER_DEFINED_BY_USER
 #    undef NVTX_AS_SYSTEM_HEADER
@@ -71,7 +71,7 @@
 #      warning nvtx3.h is available but does not define the V1 API. This is odd. Please open a GitHub issue at: https://github.com/NVIDIA/cccl/issues.
 #    endif
 #  endif // NVTX3_CPP_DEFINITIONS_V1_0
-#endif // _CCCL_HAS_INCLUDE(<nvtx3/nvToolsExt.h>) && !defined(CCCL_DISABLE_NVTX) && !defined(NVTX_DISABLE) &&
+#endif // __has_include(<nvtx3/nvToolsExt.h>) && !defined(CCCL_DISABLE_NVTX) && !defined(NVTX_DISABLE) &&
        // (!_CCCL_COMPILER(NVHPC)) && !_CCCL_COMPILER(NVRTC)
 
 #if _CCCL_HAS_NVTX3()
@@ -94,19 +94,26 @@ _CCCL_END_NAMESPACE_CUDA
 #    define _CCCL_BEFORE_NVTX_RANGE_SCOPE(name)
 #  endif // !CCCL_DETAIL_BEFORE_NVTX_RANGE_SCOPE
 
+#  if _CCCL_HOST_COMPILATION()
 // Conditionally inserts a NVTX range starting here until the end of the current function scope in host code. Does
 // nothing in device code.
 // The optional is needed to defer the construction of an NVTX range (host-only code) and message string registration
 // into a dispatch region running only on the host, while preserving the semantic scope where the range is declared.
-#  define _CCCL_NVTX_RANGE_SCOPE_IF(condition, name)                                                               \
-    _CCCL_BEFORE_NVTX_RANGE_SCOPE(name)                                                                            \
-    ::cuda::std::optional<::nvtx3::v1::scoped_range_in<::cuda::detail::NVTXCCCLDomain>> __cuda_nvtx3_range;        \
-    NV_IF_TARGET(                                                                                                  \
-      NV_IS_HOST,                                                                                                  \
-      static const ::nvtx3::v1::registered_string_in<::cuda::detail::NVTXCCCLDomain> __cuda_nvtx3_func_name{name}; \
-      static const ::nvtx3::v1::event_attributes __cuda_nvtx3_func_attr{__cuda_nvtx3_func_name};                   \
-      if (condition) __cuda_nvtx3_range.emplace(__cuda_nvtx3_func_attr);                                           \
-      (void) __cuda_nvtx3_range;)
+#    define _CCCL_NVTX_RANGE_SCOPE_IF(condition, name)                                                                 \
+      _CCCL_BEFORE_NVTX_RANGE_SCOPE(name)                                                                              \
+      ::cuda::std::optional<::nvtx3::v1::scoped_range_in<::cuda::detail::NVTXCCCLDomain>> __cuda_nvtx3_range;          \
+      NV_IF_TARGET(                                                                                                    \
+        NV_IS_HOST, ({                                                                                                 \
+          static const ::nvtx3::v1::registered_string_in<::cuda::detail::NVTXCCCLDomain> __cuda_nvtx3_func_name{name}; \
+          static const ::nvtx3::v1::event_attributes __cuda_nvtx3_func_attr{__cuda_nvtx3_func_name};                   \
+          if (condition)                                                                                               \
+          {                                                                                                            \
+            __cuda_nvtx3_range.emplace(__cuda_nvtx3_func_attr);                                                        \
+          }                                                                                                            \
+        }))
+#  else // ^^^ _CCCL_HOST_COMPILATION() ^^^ / vvv !_CCCL_HOST_COMPILATION() vvv
+#    define _CCCL_NVTX_RANGE_SCOPE_IF(condition, name)
+#  endif // ^^^ !_CCCL_HOST_COMPILATION() ^^^
 
 #  define _CCCL_NVTX_RANGE_SCOPE(name) _CCCL_NVTX_RANGE_SCOPE_IF(true, name)
 

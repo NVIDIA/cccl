@@ -10,7 +10,7 @@ add_custom_target(libcudacxx.test.internal_headers)
 if ("NVHPC" STREQUAL "${CMAKE_CXX_COMPILER_ID}")
   find_package(NVHPC)
 else()
-  find_package(CUDAToolkit)
+  cccl_get_cudatoolkit()
 endif()
 
 # We need to handle atomic headers differently as they do not compile on architectures below sm70

@@ -69,9 +69,12 @@ _CCCL_NODEBUG_API auto __c_style_cast(_Src* __ptr) noexcept -> _DstPtr
   return (_DstPtr) __ptr; // NOLINT(cppcoreguidelines-pro-type-cstyle-cast)
 }
 
-template <class _Tp, auto _Fn, class _Ret, bool _IsConst, bool _IsNothrow, class... _Args>
-[[nodiscard]] _CCCL_API auto __override_fn_([[maybe_unused]] ::cuda::std::__maybe_const<_IsConst, void>* __pv,
-                                            [[maybe_unused]] _Args... __args) noexcept(_IsNothrow) -> _Ret
+// Helper function to not use a function pointer as a template parameter, which breaks MSVC in some cases.
+template <class _Tp, class _FnType, class _Ret, bool _IsConst, bool _IsNothrow, class... _Args>
+[[nodiscard]] _CCCL_API auto __override_fn_dispatch_impl(
+  [[maybe_unused]] _FnType __fn,
+  [[maybe_unused]] ::cuda::std::__maybe_const<_IsConst, void>* __pv,
+  [[maybe_unused]] _Args... __args) noexcept(_IsNothrow) -> _Ret
 {
   using __value_type _CCCL_NODEBUG_ALIAS = ::cuda::std::__maybe_const<_IsConst, _Tp>;
 
@@ -81,21 +84,28 @@ template <class _Tp, auto _Fn, class _Ret, bool _IsConst, bool _IsNothrow, class
     // type. It is never actually called.
     _CCCL_UNREACHABLE();
   }
-  else if constexpr (::cuda::std::is_member_function_pointer_v<decltype(_Fn)>)
+  else if constexpr (::cuda::std::is_member_function_pointer_v<_FnType>)
   {
     // _Fn may be a pointer to a member function of a private base of _Tp. So
     // after static_cast-ing to _Tp*, we need to use a C-style cast to get a
     // pointer to the correct base class.
-    using __class_type  = ::cuda::std::__maybe_const<_IsConst, __class_of<decltype(_Fn)>>;
+    using __class_type  = ::cuda::std::__maybe_const<_IsConst, __class_of<_FnType>>;
     __class_type& __obj = *::cuda::__c_style_cast<__class_type*>(static_cast<__value_type*>(__pv));
-    return (__obj.*_Fn)(static_cast<_Args&&>(__args)...);
+    return (__obj.*__fn)(static_cast<_Args&&>(__args)...);
   }
   else
   {
     __value_type& __obj = *static_cast<__value_type*>(__pv);
-    return (*_Fn)(__obj, static_cast<_Args&&>(__args)...);
+    return (*__fn)(__obj, static_cast<_Args&&>(__args)...);
   }
-  _CCCL_UNREACHABLE();
+}
+
+template <class _Tp, auto _Fn, class _Ret, bool _IsConst, bool _IsNothrow, class... _Args>
+[[nodiscard]] _CCCL_API auto __override_fn_([[maybe_unused]] ::cuda::std::__maybe_const<_IsConst, void>* __pv,
+                                            [[maybe_unused]] _Args... __args) noexcept(_IsNothrow) -> _Ret
+{
+  return __override_fn_dispatch_impl<_Tp, decltype(_Fn), _Ret, _IsConst, _IsNothrow, _Args...>(
+    _Fn, __pv, static_cast<_Args&&>(__args)...);
 }
 
 _CCCL_DIAG_POP

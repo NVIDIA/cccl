@@ -31,7 +31,7 @@
     Optional. The Docker image name used for a nested build of the CUDA 13
     wheel when the outer container defaults to CUDA 12.9.  The default value
     matches the RAPIDS dev‑container image that contains the required
-    toolchain: `rapidsai/devcontainers:25.12-cuda13.0-cl14.44-windows2022`.
+    toolchain: `rapidsai/devcontainers:26.02-cuda13.0-cl14.44-windows2022`.
 
 .PARAMETER SkipUpload
     When set, prevents the final wheel(s) from being uploaded as a GitHub
@@ -57,7 +57,7 @@ Param(
     [string]$OnlyCudaMajor,
 
     [Parameter(Mandatory = $false)]
-    [string]$Cuda13Image = "rapidsai/devcontainers:25.12-cuda13.0-cl14.44-windows2022",
+    [string]$Cuda13Image = "rapidsai/devcontainers:26.02-cuda13.0-cl14.44-windows2022",
 
     [Parameter(Mandatory = $false)]
     [switch]$SkipUpload

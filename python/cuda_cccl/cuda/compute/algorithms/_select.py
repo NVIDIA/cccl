@@ -5,29 +5,13 @@
 
 from typing import Callable
 
-from .._caching import CachableFunction, cache_with_key
-from .._utils import protocols
+from .._caching import cache_with_registered_key_functions
+from .._utils.temp_storage_buffer import TempStorageBuffer
 from ..iterators._factories import DiscardIterator
 from ..iterators._iterators import IteratorBase
+from ..op import OpAdapter, make_op_adapter
 from ..typing import DeviceArrayLike
 from ._three_way_partition import make_three_way_partition
-
-
-def make_cache_key(
-    d_in: DeviceArrayLike | IteratorBase,
-    d_out: DeviceArrayLike | IteratorBase,
-    d_num_selected_out: DeviceArrayLike,
-    cond: Callable,
-):
-    d_in_key = (
-        d_in.kind if isinstance(d_in, IteratorBase) else protocols.get_dtype(d_in)
-    )
-    d_out_key = (
-        d_out.kind if isinstance(d_out, IteratorBase) else protocols.get_dtype(d_out)
-    )
-    d_num_selected_out_key = protocols.get_dtype(d_num_selected_out)
-    cond_key = CachableFunction(cond)
-    return (d_in_key, d_out_key, d_num_selected_out_key, cond_key)
 
 
 class _Select:
@@ -38,16 +22,12 @@ class _Select:
         d_in: DeviceArrayLike | IteratorBase,
         d_out: DeviceArrayLike | IteratorBase,
         d_num_selected_out: DeviceArrayLike,
-        cond: Callable,
+        cond: OpAdapter,
     ):
         # Create discard iterators for unused outputs, using d_out as reference
         # to match the input/output type
         self.discard_second = DiscardIterator(d_out)
         self.discard_unselected = DiscardIterator(d_out)
-
-        # Create a predicate that always returns False
-        def _cccl_always_false(x):
-            return False
 
         # Use three_way_partition internally
         self.partitioner = make_three_way_partition(
@@ -57,7 +37,7 @@ class _Select:
             self.discard_unselected,  # unselected_out - discarded
             d_num_selected_out,
             cond,  # select_first_part_op - user's select condition
-            _cccl_always_false,  # select_second_part_op - always false
+            lambda x: False,  # select_second_part_op - always false
         )
 
     def __call__(
@@ -81,7 +61,7 @@ class _Select:
         )
 
 
-@cache_with_key(make_cache_key)
+@cache_with_registered_key_functions
 def make_select(
     d_in: DeviceArrayLike | IteratorBase,
     d_out: DeviceArrayLike | IteratorBase,
@@ -112,7 +92,11 @@ def make_select(
     Returns:
         A callable object that performs the selection operation.
     """
-    return _Select(d_in, d_out, d_num_selected_out, cond)
+    cond_adapter = make_op_adapter(cond)
+    # Note: _Select internally calls make_three_way_partition which will
+    # normalize the cond. But we've already normalized it, so the Op
+    # will be passed through make_op unchanged.
+    return _Select(d_in, d_out, d_num_selected_out, cond_adapter)
 
 
 def select(
@@ -131,6 +115,9 @@ def select(
     compacted form. The number of selected elements is written to ``d_num_selected_out[0]``.
 
     This function automatically handles temporary storage allocation and execution.
+
+    The ``cond`` function can reference device arrays as globals or closures - they will
+    be automatically captured as state arrays, enabling stateful operations like counting.
 
     Example:
         Below, ``select`` is used to select even numbers from an input array:
@@ -152,12 +139,12 @@ def select(
             The count is stored in ``d_num_selected_out[0]``.
         cond: Callable representing the selection condition (predicate). Should return a
             boolean-like value (typically uint8) where non-zero means the item passes the selection.
+            Can reference device arrays as globals/closures - they will be automatically captured.
         num_items: Number of items in the input sequence.
         stream: CUDA stream to use for the operation (optional).
     """
-    from .._utils.temp_storage_buffer import TempStorageBuffer
-
     selector = make_select(d_in, d_out, d_num_selected_out, cond)
+
     tmp_storage_bytes = selector(
         None,
         d_in,

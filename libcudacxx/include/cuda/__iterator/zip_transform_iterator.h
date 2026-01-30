@@ -76,7 +76,6 @@ template <class _Fn, class... _Iterators>
   {
     return ::cuda::std::input_iterator_tag{};
   }
-  _CCCL_UNREACHABLE();
 }
 
 //! @brief @c zip_transform_iterator is an iterator which represents the result of a transformation of a set of
@@ -481,7 +480,6 @@ public:
     {
       return __zip_apply(__zip_op_eq{}, __n.__iters(), __y.__iters());
     }
-    _CCCL_UNREACHABLE();
   }
 
 #if _CCCL_STD_VER <= 2017
@@ -498,7 +496,6 @@ public:
     {
       return !__zip_apply(__zip_op_eq{}, __n.__iters(), __y.__iters());
     }
-    _CCCL_UNREACHABLE();
   }
 #endif // _CCCL_STD_VER <= 2017
 

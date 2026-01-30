@@ -28,6 +28,10 @@
 #include <cuda/std/__functional/operations.h>
 #include <cuda/std/__type_traits/conditional.h>
 
+#if !_CCCL_COMPILER(NVRTC)
+#  include <ostream>
+#endif // !_CCCL_COMPILER(NVRTC)
+
 CUB_NAMESPACE_BEGIN
 
 /******************************************************************************
@@ -147,6 +151,25 @@ enum BlockReduceAlgorithm
   //! @endrst
   BLOCK_REDUCE_WARP_REDUCTIONS_NONDETERMINISTIC,
 };
+
+#if !_CCCL_COMPILER(NVRTC) && !defined(_CCCL_DOXYGEN_INVOKED)
+inline ::std::ostream& operator<<(::std::ostream& os, const BlockReduceAlgorithm& alg)
+{
+  switch (alg)
+  {
+    case BlockReduceAlgorithm::BLOCK_REDUCE_RAKING_COMMUTATIVE_ONLY:
+      return os << "BLOCK_REDUCE_RAKING_COMMUTATIVE_ONLY";
+    case BlockReduceAlgorithm::BLOCK_REDUCE_RAKING:
+      return os << "BLOCK_REDUCE_RAKING";
+    case BlockReduceAlgorithm::BLOCK_REDUCE_WARP_REDUCTIONS:
+      return os << "BLOCK_REDUCE_WARP_REDUCTIONS";
+    case BlockReduceAlgorithm::BLOCK_REDUCE_WARP_REDUCTIONS_NONDETERMINISTIC:
+      return os << "BLOCK_REDUCE_WARP_REDUCTIONS_NONDETERMINISTIC";
+    default:
+      return os << "<unknown BlockReduceAlgorithm: " << static_cast<int>(alg) << ">";
+  }
+}
+#endif // !_CCCL_COMPILER(NVRTC) && !_CCCL_DOXYGEN_INVOKED
 
 //! @rst
 //! The BlockReduce class provides :ref:`collective <collective-primitives>` methods for computing a
@@ -309,7 +332,7 @@ public:
       , linear_tid(RowMajorTid(BlockDimX, BlockDimY, BlockDimZ))
   {}
 
-  //! @}  end member group
+  //! @}
   //! @name Generic reductions
   //! @{
 
@@ -480,7 +503,7 @@ public:
     }
   }
 
-  //! @}  end member group
+  //! @}
   //! @name Summation reductions
   //! @{
 
@@ -632,7 +655,7 @@ public:
     }
   }
 
-  //! @}  end member group
+  //! @}
 };
 
 CUB_NAMESPACE_END

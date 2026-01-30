@@ -14,6 +14,7 @@
 
 #include <cstdint>
 #include <cstdlib>
+#include <iomanip>
 #include <tuple>
 #include <type_traits>
 
@@ -28,6 +29,7 @@
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/generators/catch_generators_all.hpp>
 #include <catch2/matchers/catch_matchers.hpp>
+#include <catch2/matchers/catch_matchers_templated.hpp>
 #include <catch2/matchers/catch_matchers_vector.hpp>
 
 // workaround for error #3185-D: no '#pragma diagnostic push' was found to match this 'diagnostic pop'
@@ -233,6 +235,57 @@ std::vector<T> to_vec(std::vector<T> const& vec)
     REQUIRE_THAT(vec_ref, Catch::Matchers::Approx(vec_out).margin(abs)); \
   }
 
+namespace c2h::detail
+{
+// Copy of Catch2::MatchExpr, but streamReconstructedExpression does not print arg
+template <typename ArgT, typename MatcherT>
+class QuietMatchExpr : public Catch::ITransientExpression
+{
+  ArgT&& m_arg;
+  MatcherT const& m_matcher;
+
+public:
+  constexpr QuietMatchExpr(ArgT&& arg, MatcherT const& matcher)
+      : ITransientExpression{true, matcher.match(arg)}
+      , m_arg(CATCH_FORWARD(arg))
+      , m_matcher(matcher)
+  {}
+
+  void streamReconstructedExpression(std::ostream& os) const override
+  {
+    os << m_matcher.toString();
+  }
+};
+
+template <typename ArgT, typename MatcherT>
+QuietMatchExpr(ArgT&&, MatcherT) -> QuietMatchExpr<ArgT, MatcherT>;
+} // namespace c2h::detail
+
+// Copy of Catch2's INTERNAL_CHECK_THAT macro, but using QuietMatchExpr to suppress printing arg
+#define INTERNAL_CHECK_THAT_QUIET(macroName, matcher, resultDisposition, arg)        \
+  do                                                                                 \
+  {                                                                                  \
+    Catch::AssertionHandler catchAssertionHandler(                                   \
+      macroName##_catch_sr,                                                          \
+      CATCH_INTERNAL_LINEINFO,                                                       \
+      CATCH_INTERNAL_STRINGIFY(arg) ", " CATCH_INTERNAL_STRINGIFY(matcher),          \
+      resultDisposition);                                                            \
+    INTERNAL_CATCH_TRY                                                               \
+    {                                                                                \
+      catchAssertionHandler.handleExpr(::c2h::detail::QuietMatchExpr(arg, matcher)); \
+    }                                                                                \
+    INTERNAL_CATCH_CATCH(catchAssertionHandler)                                      \
+    catchAssertionHandler.complete();                                                \
+  } while (false)
+
+// Copy of Catch2's CHECK_THAT macro, but suppressing printing arg
+#define CHECK_THAT_QUIET(arg, matcher) \
+  INTERNAL_CHECK_THAT_QUIET("CHECK_THAT", matcher, Catch::ResultDisposition::ContinueOnFailure, arg)
+
+// Copy of Catch2's REQUIRE_THAT macro, but suppressing printing arg
+#define REQUIRE_THAT_QUIET(arg, matcher) \
+  INTERNAL_CHECK_THAT_QUIET("REQUIRE_THAT", matcher, Catch::ResultDisposition::Normal, arg)
+
 namespace detail
 {
 // Returns true if values are equal, or both NaN:
@@ -305,6 +358,167 @@ auto BitwiseEqualsRange(const Range& range) -> CustomEqualsRangeMatcher<Range, b
     auto vec_out = detail::to_vec(out);                     \
     REQUIRE_THAT(vec_ref, detail::NaNEqualsRange(vec_out)); \
   }
+
+namespace c2h::detail
+{
+template <typename T>
+struct indexed_value_t
+{
+  size_t index;
+  T value;
+};
+
+template <typename T>
+struct element_compare_result_t
+{
+  size_t index;
+  T actual;
+  T expected;
+};
+
+template <typename T>
+struct vector_compare_result_t
+{
+  size_t actual_size;
+  size_t expected_size;
+  size_t total_mismatches;
+  std::vector<indexed_value_t<T>> good_values;
+  std::vector<element_compare_result_t<T>> first_mismatches;
+  std::optional<std::vector<element_compare_result_t<T>>> last_mismatches;
+};
+
+template <typename T>
+auto compare_vectors(const host_vector<T>& actual, const host_vector<T>& expected) -> vector_compare_result_t<T>
+{
+  constexpr size_t good_values_before_mismatch = 3;
+  constexpr size_t first_mismatches_count      = 5;
+  constexpr size_t last_mismatches_count       = 5;
+
+  vector_compare_result_t<T> result{};
+  result.actual_size   = actual.size();
+  result.expected_size = expected.size();
+  if (result.actual_size != result.expected_size)
+  {
+    return result;
+  }
+
+  std::vector<element_compare_result_t<T>> mismatches;
+  mismatches.reserve(actual.size()); // TODO(bgruber): this seems excessive
+  for (size_t i = 0; i < actual.size(); ++i)
+  {
+    if (actual[i] != expected[i])
+    {
+      if (mismatches.empty()) // at the first mismatch
+      {
+        // store up to 3 good values before the first mismatch
+        const size_t count = ::cuda::std::min(good_values_before_mismatch, i);
+        for (size_t j = i - count; j < i; j++)
+        {
+          result.good_values.emplace_back(indexed_value_t<T>{j, actual[j]});
+        }
+      }
+      mismatches.emplace_back(element_compare_result_t<T>{i, actual[i], expected[i]});
+    }
+  }
+  result.total_mismatches = mismatches.size();
+
+  // Handle first mismatches
+  size_t first_count = cuda::std::min<size_t>(mismatches.size(), first_mismatches_count);
+  result.first_mismatches.assign(mismatches.begin(), mismatches.begin() + first_count);
+
+  // Handle last mismatches
+  if (mismatches.size() > first_mismatches_count)
+  {
+    const auto start =
+      mismatches.end() - cuda::std::min<size_t>(mismatches.size() - first_mismatches_count, last_mismatches_count);
+    result.last_mismatches.emplace(start, mismatches.end());
+  }
+
+  return result;
+}
+
+template <typename T>
+void print_comparison(const vector_compare_result_t<T>& res, std::ostream& os)
+{
+  if (res.actual_size != res.expected_size)
+  {
+    os << "Actual size (" << res.actual_size << ") != expected size (" << res.expected_size << ")\n";
+    return;
+  }
+
+  const auto mismatch_percent = (static_cast<double>(res.total_mismatches) / res.actual_size) * 100.0;
+  os << res.total_mismatches << " mismatch" << (res.total_mismatches > 1 ? "es" : "") << " (" << std::fixed
+     << std::setprecision(2) << mismatch_percent << "% of " << res.expected_size << " elements)\n";
+
+  // print good values
+  for (const auto& [idx, v] : res.good_values)
+  {
+    os << "good [" << idx << "]: " << CoutCast(v) << " == " << CoutCast(v) << '\n';
+  }
+
+  // insert dots between mismatches that are not consecutive
+  size_t last_printed_idx = res.good_values.empty() ? 0 : res.good_values.back().index;
+  auto print_dots         = [&](size_t idx) {
+    if (last_printed_idx + 1 != idx)
+    {
+      os << "...\n";
+    }
+    last_printed_idx = idx;
+  };
+
+  // print first mismatches
+  for (const auto& [idx, a, b] : res.first_mismatches)
+  {
+    print_dots(idx);
+    os << "BAD  [" << idx << "]: " << CoutCast(a) << " != " << CoutCast(b) << '\n';
+  }
+
+  // print last mismatches if we have any
+  if (res.last_mismatches)
+  {
+    for (const auto& [idx, a, b] : *res.last_mismatches)
+    {
+      print_dots(idx);
+      os << "BAD  [" << idx << "]: " << CoutCast(a) << " != " << CoutCast(b) << '\n';
+    }
+  }
+}
+
+template <typename Vec>
+struct vector_matcher : Catch::Matchers::MatcherGenericBase
+{
+  vector_matcher(Vec const& expected)
+      : expected_vec{expected}
+  {}
+
+  template <typename OtherVec>
+  bool match(OtherVec const& actual_vec) const // TODO(Bgruber): remove const?
+  {
+    using T           = typename Vec::value_type;
+    comparison_result = compare_vectors(host_vector<T>(actual_vec), host_vector<T>(expected_vec));
+    return actual_vec == expected_vec;
+  }
+
+  std::string describe() const override
+  {
+    std::stringstream ss;
+    print_comparison(comparison_result, ss);
+    return ss.str();
+  }
+
+private:
+  mutable vector_compare_result_t<typename Vec::value_type> comparison_result;
+  Vec const& expected_vec;
+};
+} // namespace c2h::detail
+
+//! Compare thrust vectors in a match expression. Example: CHECK_THAT_QUIET(vec_a, Equals(vec_v))
+template <typename T, typename Alloc>
+auto Equals(const THRUST_NS_QUALIFIER::detail::vector_base<T, Alloc>& expected)
+  -> c2h::detail::vector_matcher<THRUST_NS_QUALIFIER::detail::vector_base<T, Alloc>>
+{
+  return {expected};
+}
 
 #include <cuda/std/tuple>
 _CCCL_BEGIN_NAMESPACE_CUDA_STD

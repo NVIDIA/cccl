@@ -420,3 +420,145 @@ def test_select_with_zip_iterator(monkeypatch):
     expected_count = np.sum(h_sums < 70)
 
     assert num_selected == expected_count
+
+
+def test_select_stateful_threshold():
+    """Test stateful select that uses state for threshold"""
+    num_items = 1000
+    h_in = random_array(num_items, np.int32, max_value=100)
+
+    # Create device state containing threshold value
+    threshold_value = 50
+    threshold_state = cp.array([threshold_value], dtype=np.int32)
+
+    # Define condition that references state as closure
+    def threshold_select(x):
+        return x > threshold_state[0]
+
+    d_in = cp.asarray(h_in)
+    d_out = cp.empty_like(d_in)
+    d_num_selected = cp.empty(2, dtype=np.uint64)
+
+    cuda.compute.select(
+        d_in,
+        d_out,
+        d_num_selected,
+        threshold_select,
+        num_items,
+    )
+
+    # Check selected output
+    num_selected = int(d_num_selected[0].get())
+    got = d_out.get()[:num_selected]
+
+    # Verify all output values are > threshold
+    assert np.all(got > threshold_value)
+
+    # Verify we got the expected number of items
+    expected_selected = h_in[h_in > threshold_value]
+    expected_count = len(expected_selected)
+
+    assert num_selected == expected_count
+
+    # Verify exact results
+    assert np.array_equal(got, expected_selected)
+
+
+def test_select_stateful_atomic():
+    """Test stateful select with atomic operations to count rejected items"""
+    from numba import cuda as numba_cuda
+
+    num_items = 1000
+    h_in = random_array(num_items, np.int32, max_value=100)
+
+    # Create device state for counting rejected items
+    reject_counter = cp.zeros(1, dtype=np.int32)
+
+    # Define condition that references state as closure
+    def count_rejects(x):
+        if x > 50:
+            return True
+        else:
+            numba_cuda.atomic.add(reject_counter, 0, 1)
+            return False
+
+    d_in = cp.asarray(h_in)
+    d_out = cp.empty_like(d_in)
+    d_num_selected = cp.empty(2, dtype=np.uint64)
+
+    cuda.compute.select(
+        d_in,
+        d_out,
+        d_num_selected,
+        count_rejects,
+        num_items,
+    )
+
+    # Check selected output
+    num_selected = int(d_num_selected[0].get())
+    got = d_out.get()[:num_selected]
+
+    # Verify all output values are > 50
+    assert np.all(got > 50)
+
+    # Verify we got the expected number of items
+    expected_selected = h_in[h_in > 50]
+    expected_count = len(expected_selected)
+
+    assert num_selected == expected_count
+
+    # Verify exact results
+    assert np.array_equal(got, expected_selected)
+
+    # Verify state contains count of rejected items
+    rejected_count = int(reject_counter[0].get())
+    expected_rejected = len(h_in[h_in <= 50])
+    assert rejected_count == expected_rejected, (
+        f"Expected {expected_rejected} rejections, got {rejected_count}"
+    )
+
+
+def test_select_with_side_effect_counting_rejects():
+    """Select with side effect that counts rejected items"""
+    from numba import cuda as numba_cuda
+
+    d_in = cp.arange(100, dtype=np.int32)
+    d_out = cp.empty_like(d_in)
+    d_num_selected = cp.empty(1, dtype=np.uint64)
+
+    reject_count = cp.zeros(1, dtype=np.int32)
+
+    # Define condition that references state as closure
+    def count_rejects(x):
+        if x >= 50:
+            return True
+        else:
+            numba_cuda.atomic.add(reject_count, 0, 1)
+            return False
+
+    cuda.compute.select(d_in, d_out, d_num_selected, count_rejects, len(d_in))
+
+    num_selected = int(d_num_selected.get()[0])
+    num_rejected = int(reject_count.get()[0])
+
+    assert num_selected == 50  # Values 50-99
+    assert num_rejected == 50  # Values 0-49
+
+
+def test_select_with_lambda():
+    """Test select with a lambda function as predicate."""
+    num_items = 100
+    h_in = np.arange(num_items, dtype=np.int32)
+
+    d_in = cp.asarray(h_in)
+    d_out = cp.empty_like(d_in)
+    d_num_selected = cp.empty(2, dtype=np.uint64)
+
+    # Use a lambda function directly as the predicate
+    cuda.compute.select(d_in, d_out, d_num_selected, lambda x: x % 2 == 0, num_items)
+
+    num_selected = int(d_num_selected.get()[0])
+    expected_selected = [x for x in h_in if x % 2 == 0]
+
+    assert num_selected == len(expected_selected)
+    np.testing.assert_array_equal(d_out.get()[:num_selected], expected_selected)

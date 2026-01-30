@@ -25,9 +25,14 @@ _CCCL_SUPPRESS_DEPRECATED_PUSH
 #include <cuda/std/__memory/allocator.h>
 _CCCL_SUPPRESS_DEPRECATED_POP
 
+#include <cuda/__launch/configuration.h>
+#include <cuda/hierarchy>
+#include <cuda/std/__concepts/concept_macros.h>
+#include <cuda/std/__concepts/convertible_to.h>
 #include <cuda/std/__execution/env.h>
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/is_callable.h>
+#include <cuda/std/__type_traits/remove_cvref.h>
 #include <cuda/std/__utility/exchange.h>
 #include <cuda/std/__utility/unreachable.h>
 
@@ -39,24 +44,33 @@ _CCCL_SUPPRESS_DEPRECATED_POP
 #include <cuda/experimental/__execution/stop_token.cuh>
 #include <cuda/experimental/__execution/type_traits.cuh>
 #include <cuda/experimental/__execution/utility.cuh>
-#include <cuda/experimental/__launch/configuration.cuh>
 
 #include <cuda/experimental/__execution/prologue.cuh>
 
 namespace cuda::experimental::execution
 {
+namespace __detail
+{
+template <class _Env, class _Query>
+using __statically_queryable_with_t = decltype(::cuda::std::remove_cvref_t<_Env>::query(declval<_Query>()));
+} // namespace __detail
+
+template <class _Env, class _Query>
+_CCCL_CONCEPT __statically_queryable_with =
+  __is_instantiable_with<__detail::__statically_queryable_with_t, _Env, _Query>;
+
 //////////////////////////////////////////////////////////////////////////////////////////
 // get_allocator
 _CCCL_GLOBAL_CONSTANT struct get_allocator_t
 {
   template <class _Env>
   [[nodiscard]] _CCCL_API constexpr auto operator()(const _Env& __env) const noexcept
-    -> __query_result_or_t<_Env, get_allocator_t, ::cuda::std::allocator<void>>
+    -> __query_result_or_t<_Env, get_allocator_t, ::cuda::std::allocator<::cuda::std::byte>>
   {
     static_assert(__nothrow_queryable_with_or<_Env, get_allocator_t, true>,
                   "The get_allocator query must be noexcept.");
     // NOT TO SPEC: return a default allocator if the query is not supported.
-    return __query_or(__env, *this, ::cuda::std::allocator<void>{});
+    return __query_or(__env, *this, ::cuda::std::allocator<::cuda::std::byte>{});
   }
 
   [[nodiscard]] _CCCL_API static constexpr auto query(forwarding_query_t) noexcept -> bool
@@ -92,7 +106,9 @@ _CCCL_GLOBAL_CONSTANT struct get_scheduler_t
   _CCCL_TEMPLATE(class _Tag = set_value_t, class _Env)
   _CCCL_REQUIRES(__queryable_with<_Env, get_scheduler_t>)
   [[nodiscard]] _CCCL_API constexpr auto operator()(const _Env& __env) const noexcept
-    -> __call_result_t<get_completion_scheduler_t<_Tag>, __query_result_t<_Env, get_scheduler_t>, __hide_scheduler<_Env>>
+    -> __call_result_t<get_completion_scheduler_t<_Tag>,
+                       __query_result_t<_Env, get_scheduler_t>,
+                       __hide_scheduler<const _Env&>>
   {
     static_assert(noexcept(__env.query(*this)));
     static_assert(__is_scheduler<__query_result_t<_Env, get_scheduler_t>>);
@@ -184,7 +200,7 @@ private:
 
       if constexpr (__callable<__read_query_t, _Sch, const _Env&...>)
       {
-        using __sch2_t = __call_result_t<__read_query_t, _Sch, const _Env&...>;
+        using __sch2_t = decay_t<__call_result_t<__read_query_t, _Sch, const _Env&...>>;
         if constexpr (__same_as<_Sch, __sch2_t>)
         {
           _Sch __prev = __sch;
@@ -322,19 +338,42 @@ _CCCL_GLOBAL_CONSTANT struct get_forward_progress_guarantee_t
 
   [[nodiscard]] _CCCL_API static constexpr auto query(forwarding_query_t) noexcept -> bool
   {
-    return true;
+    return false;
   }
 } get_forward_progress_guarantee{};
 
+//////////////////////////////////////////////////////////////////////////////////////////
+// get_available_parallelism
+
+// This query is not a forwarding query.
+_CCCL_GLOBAL_CONSTANT struct get_available_parallelism_t
+{
+  template <class _Sch>
+  [[nodiscard]] _CCCL_API constexpr auto operator()(const _Sch& __sch) const noexcept
+  {
+    static_assert(__nothrow_queryable_with_or<const _Sch&, get_available_parallelism_t, true>,
+                  "The get_available_parallelism query must be noexcept.");
+    static_assert(
+      cuda::std::convertible_to<__query_result_or_t<const _Sch&, get_available_parallelism_t, size_t>, size_t>,
+      "The get_available_parallelism query must return a type convertible to size_t.");
+    return __query_or(__sch, *this, size_t(1));
+  }
+
+  [[nodiscard]] _CCCL_NODEBUG_API static constexpr auto query(forwarding_query_t) noexcept -> bool
+  {
+    return false;
+  }
+} get_available_parallelism{};
+
 // By default, CUDA kernels are launched with a single thread and a single block.
-using __single_threaded_config_base_t = decltype(experimental::make_config(grid_dims<1>(), block_dims<1>()));
+using __single_threaded_config_base_t = decltype(make_config(grid_dims<1>(), block_dims<1>()));
 
 // We hide the complicated type of the default launch configuration so diagnositics are
 // easier to read.
 struct __single_threaded_config_t : __single_threaded_config_base_t
 {
   _CCCL_HOST_API constexpr __single_threaded_config_t() noexcept
-      : __single_threaded_config_base_t{experimental::make_config(grid_dims<1>(), block_dims<1>())}
+      : __single_threaded_config_base_t{make_config(grid_dims<1>(), block_dims<1>())}
   {}
 };
 
