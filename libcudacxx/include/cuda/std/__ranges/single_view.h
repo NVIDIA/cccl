@@ -121,7 +121,7 @@ public:
 };
 
 template <class _Tp>
-_CCCL_HOST_DEVICE single_view(_Tp) -> single_view<_Tp>;
+_CCCL_DEDUCTION_GUIDE_EXSPACE single_view(_Tp) -> single_view<_Tp>;
 
 _CCCL_END_NAMESPACE_CUDA_STD_RANGES
 
