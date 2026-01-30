@@ -32,7 +32,7 @@
 #endif // no system header
 #include <thrust/detail/vector_base.h>
 
-#include <cuda/std/__cccl/memory_wrapper.h>
+#include <cuda/std/__host_stdlib/memory>
 #include <cuda/std/__utility/move.h>
 #include <cuda/std/initializer_list>
 

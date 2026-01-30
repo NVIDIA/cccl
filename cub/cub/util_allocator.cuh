@@ -22,11 +22,11 @@
 #include <cub/util_debug.cuh>
 #include <cub/util_namespace.cuh>
 
+#include <cuda/std/__host_stdlib/math.h>
+
 #include <map>
 #include <mutex>
 #include <set>
-
-#include <math.h>
 
 CUB_NAMESPACE_BEGIN
 

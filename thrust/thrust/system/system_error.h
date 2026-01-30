@@ -30,9 +30,11 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
+
 #include <thrust/system/error_code.h>
 
-#include <stdexcept>
+#include <cuda/std/__host_stdlib/stdexcept>
+
 #include <string>
 
 THRUST_NAMESPACE_BEGIN
