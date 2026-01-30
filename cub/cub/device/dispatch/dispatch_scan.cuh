@@ -446,6 +446,7 @@ struct DispatchScan
     }
     // number of stages to have an even workload across all SMs (improves small problem sizes), assuming 1 CTA per SM
     // +1 since it tends to improve performance
+    // TODO(bgruber): make the +1 a tuning parameter
     [[maybe_unused]] const int max_stages_for_even_workload =
       static_cast<int>(::cuda::ceil_div(num_items, static_cast<OffsetT>(sm_count * WarpspeedPolicy::tile_size)) + 1);
 
