@@ -1,6 +1,17 @@
 cccl_get_c2h()
 cccl_get_cudatoolkit()
 
+# Find the cu++filt library.
+find_library(
+  cudax_cufilt_lib
+  "cufilt"
+  PATHS "${CUDAToolkit_LIBRARY_DIR}"
+  NO_DEFAULT_PATH
+)
+if (NOT cudax_cufilt_lib)
+  message(FATAL_ERROR "cudax: cu++filt library (libcufilt.a) not found.")
+endif()
+
 ## cudax_add_test
 #
 # Add a catch2 test executable and register it with ctest.
@@ -109,6 +120,9 @@ cudax_add_catch2_test(test_target algorithm
     algorithm/fill.cu
     algorithm/copy.cu
 )
+
+cudax_add_catch2_test(test_target demangle binutils/demangle.cu)
+target_link_libraries(${test_target} PRIVATE ${cudax_cufilt_lib})
 
 if (cudax_ENABLE_CUFILE)
   cudax_add_catch2_test(test_target cufile.driver_attributes
