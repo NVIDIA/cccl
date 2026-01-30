@@ -8,6 +8,8 @@
 #include <thrust/shuffle.h>
 #include <thrust/sort.h>
 
+#include <cuda/std/numbers>
+
 #include <algorithm>
 #include <limits>
 #include <map>
@@ -250,7 +252,7 @@ double inverse_erf(double x)
   x   = (1 - x) * (1 + x);
   lnx = cuda::std::log(x);
 
-  tt1 = 2 / (3.14159265358979323846 * 0.147) + 0.5f * lnx;
+  tt1 = 2 / (cuda::std::__numbers<double>::__pi() * 0.147) + 0.5f * lnx;
   tt2 = 1 / (0.147) * lnx;
 
   return (sgn * cuda::std::sqrt(-tt1 + cuda::std::sqrt(tt1 * tt1 - tt2)));
