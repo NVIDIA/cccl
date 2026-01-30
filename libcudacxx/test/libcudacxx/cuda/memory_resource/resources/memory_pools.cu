@@ -616,8 +616,8 @@ C2H_CCCLRT_TEST("pinned_memory_pool::enable_access", "[memory_resource]")
 #if !_CCCL_OS(WINDOWS)
 C2H_CCCLRT_TEST("device_memory_pool with allocation handle", "[memory_resource]")
 {
-  if (!cuda::device_attributes::memory_pool_supported_handle_types(cuda::devices[0])
-      & cudaMemHandleTypePosixFileDescriptor)
+  if (!(cuda::device_attributes::memory_pool_supported_handle_types(cuda::devices[0])
+        & cudaMemHandleTypePosixFileDescriptor))
   {
     return;
   }
@@ -646,8 +646,8 @@ C2H_CCCLRT_TEST("device_memory_pool with allocation handle", "[memory_resource]"
 #  if _CCCL_CTK_AT_LEAST(12, 6)
 C2H_CCCLRT_TEST("pinned_memory_pool with allocation handle", "[memory_resource]")
 {
-  if (!cuda::device_attributes::memory_pool_supported_handle_types(cuda::devices[0])
-      & cudaMemHandleTypePosixFileDescriptor)
+  if (!(cuda::device_attributes::memory_pool_supported_handle_types(cuda::devices[0])
+        & cudaMemHandleTypePosixFileDescriptor))
   {
     return;
   }
