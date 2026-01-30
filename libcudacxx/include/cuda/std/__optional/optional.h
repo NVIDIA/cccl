@@ -23,6 +23,7 @@
 
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__concepts/invocable.h>
+#include <cuda/std/__exception/exception_macros.h>
 #include <cuda/std/__functional/invoke.h>
 #include <cuda/std/__fwd/optional.h>
 #include <cuda/std/__memory/addressof.h>
@@ -378,7 +379,7 @@ public:
   {
     if (!this->has_value())
     {
-      __throw_bad_optional_access();
+      _CCCL_THROW(std::bad_optional_access);
     }
     return this->__get();
   }
@@ -387,7 +388,7 @@ public:
   {
     if (!this->has_value())
     {
-      __throw_bad_optional_access();
+      _CCCL_THROW(std::bad_optional_access);
     }
     return this->__get();
   }
@@ -396,7 +397,7 @@ public:
   {
     if (!this->has_value())
     {
-      __throw_bad_optional_access();
+      _CCCL_THROW(std::bad_optional_access);
     }
     return ::cuda::std::move(this->__get());
   }
@@ -405,7 +406,7 @@ public:
   {
     if (!this->has_value())
     {
-      __throw_bad_optional_access();
+      _CCCL_THROW(std::bad_optional_access);
     }
     return ::cuda::std::move(this->__get());
   }
