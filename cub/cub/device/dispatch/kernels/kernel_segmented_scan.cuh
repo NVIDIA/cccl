@@ -160,7 +160,7 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::warp_segmented_scan_policy_t
     }
     else
     {
-      // agent consumes interleaved segments, to improve locality of CTA memory access pattern
+      // agent consumes interleaved segments, to improve CTA' memory access locality
 
       // agent accesses offset iterators with index: thread_work_id = chunk_id * worker_thread_count + lane_id;
       // for 0 <= chunk_id < ::cuda::ceil_div<unsigned>(n_segments, worker_thread_count)
@@ -169,16 +169,15 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::warp_segmented_scan_policy_t
       //  total_offset = num_segments_per_worker * (blockIdx.x * warps_in_block) + warp_id +
       //      warps_in_block * thread_work_id;
       //
-      const ::cuda::strided_iterator<BeginOffsetIteratorInputT> raked_begin_inp{
-        begin_offset_d_in + work_id, warps_in_block};
-      const ::cuda::strided_iterator<EndOffsetIteratorInputT> raked_end_inp{end_offset_d_in + work_id, warps_in_block};
-      const ::cuda::strided_iterator<BeginOffsetIteratorOutputT> raked_begin_out{
-        begin_offset_d_out + work_id, warps_in_block};
-
       const int n_segments_per_warp =
         (work_id + num_segments_per_worker * warps_in_block < n_segments)
           ? num_segments_per_worker
-          : (n_segments - work_id) / warps_in_block;
+          : ::cuda::ceil_div(n_segments - work_id, warps_in_block);
+
+      const ::cuda::strided_iterator raked_begin_inp{begin_offset_d_in + work_id, warps_in_block};
+      const ::cuda::strided_iterator raked_end_inp{end_offset_d_in + work_id, warps_in_block};
+      const ::cuda::strided_iterator raked_begin_out{begin_offset_d_out + work_id, warps_in_block};
+
       agent.consume_ranges(raked_begin_inp, raked_end_inp, raked_begin_out, n_segments_per_warp);
     }
   }
