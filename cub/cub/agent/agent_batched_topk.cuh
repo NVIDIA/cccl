@@ -199,6 +199,7 @@ struct agent_batched_topk_worker_per_segment
     else
     {
       // Potentially partial final load with padding
+      // TODO (elstehle): explore whether a runtime check for segment_size == tile_size improves performance
       block_load_keys_t(temp_storage.load_keys).Load(block_keys_in, thread_keys, segment_size, padding_key);
     }
 
@@ -219,6 +220,7 @@ struct agent_batched_topk_worker_per_segment
       else
       {
         // Potentially partial final load with padding
+        // TODO (elstehle): explore whether a runtime check for segment_size == tile_size improves performance
         block_load_vals_t(temp_storage.load_vals).Load(block_vals_in, thread_values, segment_size);
       }
     }

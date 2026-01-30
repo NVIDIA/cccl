@@ -166,7 +166,7 @@ struct find_valid_policy_impl
 
   // Instantiate agent to check temporary storage size
   using current_agent_t      = WorkerPerSegmentAgentT<current_policy_t, AgentParamsT...>;
-  static constexpr bool fits = (sizeof(typename current_agent_t::TempStorage) <= 48 * 1024);
+  static constexpr bool fits = (sizeof(typename current_agent_t::TempStorage) <= max_smem_per_block);
 
   // The 'next' policy in the chain
   using next_step = find_valid_policy_impl<PoliciesT, Index + 1, Count, WorkerPerSegmentAgentT, AgentParamsT...>;
@@ -260,7 +260,7 @@ __launch_bounds__(int(
   // Static Assertions (Constraints)
   static_assert(agent_t::tile_size >= params::static_max_value_v<SegmentSizeParameterT>,
                 "Block size exceeds maximum segment size supported by SegmentSizeParameterT");
-  static_assert(sizeof(typename agent_t::TempStorage) <= 48 * 1024,
+  static_assert(sizeof(typename agent_t::TempStorage) <= max_smem_per_block,
                 "Static shared memory per block must not exceed 48KB limit.");
 
   // Temporary storage allocation

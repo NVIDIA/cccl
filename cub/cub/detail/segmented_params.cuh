@@ -84,8 +84,6 @@ struct uniform_param : public static_bounds_mixin<T, Min, Max>
   uniform_param() = default;
 };
 
-// Deduction Guide:
-// Allows: uniform_param{5} -> uniform_param<int, INT_MIN, INT_MAX>
 template <typename T>
 uniform_param(T) -> uniform_param<T>;
 
@@ -107,13 +105,7 @@ struct per_segment_param : public static_bounds_mixin<T, Min, Max>
   T min_value = Min;
   T max_value = Max;
 
-  // Constructor 1: Implicit bounds (from template args)
-  _CCCL_HOST_DEVICE constexpr per_segment_param(IteratorT iter)
-      : iterator(iter)
-  {}
-
-  // Constructor 2: Explicit runtime bounds
-  _CCCL_HOST_DEVICE constexpr per_segment_param(IteratorT iter, T min_v, T max_v)
+  _CCCL_HOST_DEVICE constexpr per_segment_param(IteratorT iter, T min_v = Min, T max_v = Max)
       : iterator(iter)
       , min_value(min_v)
       , max_value(max_v)
