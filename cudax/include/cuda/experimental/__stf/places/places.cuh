@@ -1057,12 +1057,13 @@ public:
   exec_place_guard(exec_place_guard&&)            = delete;
   exec_place_guard& operator=(exec_place_guard&&) = delete;
 
-  // Accept only exec_place and nothing else
+  // Prevent implicit conversions from other types (e.g., data_place)
   template <typename T,
-            typename = ::std::enable_if_t<::std::is_same_v<T, exec_place>>
-  explicit exec_place_guard(T place)
-     : place_(mv(place))
+            typename = ::std::enable_if_t<!::std::is_same_v<::std::decay_t<T>, exec_place>
+                                          && !::std::is_base_of_v<exec_place, ::std::decay_t<T>>>>
+  exec_place_guard(T&&)
   {
+    static_assert(!::std::is_same_v<T, T>, "exec_place_guard requires an exec_place, not a data_place or other type.");
   }
 
 private:
