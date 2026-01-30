@@ -195,7 +195,7 @@ template <typename ChainedPolicyT,
           typename AccumT,
           bool ForceInclusive,
           typename ActualInitValueT = typename InitValueT::value_type>
-__launch_bounds__(int(ChainedPolicyT::ActivePolicy::warp_segmented_scan_policy_t::BLOCK_THREADS))
+__launch_bounds__(int(ChainedPolicyT::ActivePolicy::thread_segmented_scan_policy_t::BLOCK_THREADS))
   CUB_DETAIL_KERNEL_ATTRIBUTES void device_thread_segmented_scan_kernel(
     InputIteratorT d_in,
     OutputIteratorT d_out,
