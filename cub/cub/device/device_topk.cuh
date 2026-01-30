@@ -26,6 +26,7 @@
 #include <cuda/__functional/call_or.h>
 #include <cuda/__stream/get_stream.h>
 #include <cuda/std/__execution/env.h>
+#include <cuda/std/__type_traits/enable_if.h>
 
 CUB_NAMESPACE_BEGIN
 
@@ -38,6 +39,7 @@ template <topk::select SelectDirection,
           typename ValueOutputIteratorT,
           typename NumItemsT,
           typename NumOutItemsT,
+          typename DecomposerT,
           typename EnvT>
 CUB_RUNTIME_FUNCTION static cudaError_t dispatch_topk(
   void* d_temp_storage,
@@ -48,6 +50,7 @@ CUB_RUNTIME_FUNCTION static cudaError_t dispatch_topk(
   ValueOutputIteratorT d_values_out,
   NumItemsT num_items,
   NumOutItemsT k,
+  DecomposerT decomposer,
   EnvT env)
 {
   // Offset type selection
@@ -90,7 +93,40 @@ CUB_RUNTIME_FUNCTION static cudaError_t dispatch_topk(
     d_values_out,
     static_cast<offset_t>(num_items),
     static_cast<out_offset_t>(k),
+    decomposer,
     stream.get());
+}
+
+template <topk::select SelectDirection,
+          typename KeyInputIteratorT,
+          typename KeyOutputIteratorT,
+          typename ValueInputIteratorT,
+          typename ValueOutputIteratorT,
+          typename NumItemsT,
+          typename NumOutItemsT,
+          typename EnvT>
+CUB_RUNTIME_FUNCTION static cudaError_t dispatch_topk_hub(
+  void* d_temp_storage,
+  size_t& temp_storage_bytes,
+  KeyInputIteratorT d_keys_in,
+  KeyOutputIteratorT d_keys_out,
+  ValueInputIteratorT d_values_in,
+  ValueOutputIteratorT d_values_out,
+  NumItemsT num_items,
+  NumOutItemsT k,
+  EnvT env)
+{
+  return dispatch_topk<SelectDirection>(
+    d_temp_storage,
+    temp_storage_bytes,
+    d_keys_in,
+    d_keys_out,
+    d_values_in,
+    d_values_out,
+    num_items,
+    k,
+    detail::identity_decomposer_t{},
+    env);
 }
 } // namespace detail
 
@@ -111,7 +147,8 @@ CUB_RUNTIME_FUNCTION static cudaError_t dispatch_topk(
 //! ++++++++++++++++++++++++++
 //!
 //! DeviceTopK can process all of the built-in C++ numeric primitive types (`unsigned char`, `int`, `double`, etc.) as
-//! well as CUDA's `__half`  and `__nv_bfloat16` 16-bit floating-point types.
+//! well as CUDA's `__half`  and `__nv_bfloat16` 16-bit floating-point types. User-defined types are supported as long
+//! as a decomposer object is provided.
 //!
 //! Determinism
 //! ++++++++++++++++++++++++++
@@ -240,7 +277,61 @@ struct DeviceTopK
       d_values_out,
       num_items,
       k,
+      detail::identity_decomposer_t{},
       ::cuda::std::move(env));
+  }
+
+  //! @tparam DecomposerT
+  //!   **[inferred]** Type of a callable object responsible for decomposing a key into a tuple of references to its
+  //!   constituent arithmetic types.
+  //!
+  //! @param decomposer
+  //!   Callable object responsible for decomposing a key into a tuple of references to its constituent arithmetic
+  //!   types.
+  template <typename KeyInputIteratorT,
+            typename KeyOutputIteratorT,
+            typename ValueInputIteratorT,
+            typename ValueOutputIteratorT,
+            typename NumItemsT,
+            typename NumOutItemsT,
+            typename DecomposerT,
+            typename EnvT = ::cuda::std::execution::env<>>
+  CUB_RUNTIME_FUNCTION static //
+    ::cuda::std::enable_if_t<
+      !::cuda::std::execution::__queryable_with<DecomposerT, ::cuda::execution::__get_requirements_t>,
+      cudaError_t>
+    MaxPairs(void* d_temp_storage,
+             size_t& temp_storage_bytes,
+             KeyInputIteratorT d_keys_in,
+             KeyOutputIteratorT d_keys_out,
+             ValueInputIteratorT d_values_in,
+             ValueOutputIteratorT d_values_out,
+             NumItemsT num_items,
+             NumOutItemsT k,
+             DecomposerT decomposer,
+             EnvT env = {})
+  {
+    _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceTopK::MaxPairs");
+    using key_t              = detail::it_value_t<KeyInputIteratorT>;
+    using decomposer_check_t = detail::radix::decomposer_check_t<key_t, DecomposerT>;
+
+    static_assert(decomposer_check_t::value,
+                  "DecomposerT must be a callable object returning a tuple of references to arithmetic types");
+
+    if constexpr (decomposer_check_t::value)
+    {
+      return detail::dispatch_topk_hub<detail::topk::select::max>(
+        d_temp_storage,
+        temp_storage_bytes,
+        d_keys_in,
+        d_keys_out,
+        d_values_in,
+        d_values_out,
+        num_items,
+        k,
+        decomposer,
+        ::cuda::std::move(env));
+    }
   }
 
   //! @rst
@@ -349,7 +440,61 @@ struct DeviceTopK
       d_values_out,
       num_items,
       k,
+      detail::identity_decomposer_t{},
       ::cuda::std::move(env));
+  }
+
+  //! @tparam DecomposerT
+  //!   **[inferred]** Type of a callable object responsible for decomposing a key into a tuple of references to its
+  //!   constituent arithmetic types.
+  //!
+  //! @param decomposer
+  //!   Callable object responsible for decomposing a key into a tuple of references to its constituent arithmetic
+  //!   types.
+  template <typename KeyInputIteratorT,
+            typename KeyOutputIteratorT,
+            typename ValueInputIteratorT,
+            typename ValueOutputIteratorT,
+            typename NumItemsT,
+            typename NumOutItemsT,
+            typename DecomposerT,
+            typename EnvT = ::cuda::std::execution::env<>>
+  CUB_RUNTIME_FUNCTION static //
+    ::cuda::std::enable_if_t<
+      !::cuda::std::execution::__queryable_with<DecomposerT, ::cuda::execution::__get_requirements_t>,
+      cudaError_t>
+    MinPairs(void* d_temp_storage,
+             size_t& temp_storage_bytes,
+             KeyInputIteratorT d_keys_in,
+             KeyOutputIteratorT d_keys_out,
+             ValueInputIteratorT d_values_in,
+             ValueOutputIteratorT d_values_out,
+             NumItemsT num_items,
+             NumOutItemsT k,
+             DecomposerT decomposer,
+             EnvT env = {})
+  {
+    _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceTopK::MinPairs");
+    using key_t              = detail::it_value_t<KeyInputIteratorT>;
+    using decomposer_check_t = detail::radix::decomposer_check_t<key_t, DecomposerT>;
+
+    static_assert(decomposer_check_t::value,
+                  "DecomposerT must be a callable object returning a tuple of references to arithmetic types");
+
+    if constexpr (decomposer_check_t::value)
+    {
+      return detail::dispatch_topk_hub<detail::topk::select::min>(
+        d_temp_storage,
+        temp_storage_bytes,
+        d_keys_in,
+        d_keys_out,
+        d_values_in,
+        d_values_out,
+        num_items,
+        k,
+        decomposer,
+        ::cuda::std::move(env));
+    }
   }
 
   //! @rst
@@ -441,7 +586,57 @@ struct DeviceTopK
       static_cast<NullType*>(nullptr),
       num_items,
       k,
+      detail::identity_decomposer_t{},
       ::cuda::std::move(env));
+  }
+
+  //! @tparam DecomposerT
+  //!   **[inferred]** Type of a callable object responsible for decomposing a key into a tuple of references to its
+  //!   constituent arithmetic types.
+  //!
+  //! @param decomposer
+  //!   Callable object responsible for decomposing a key into a tuple of references to its constituent arithmetic
+  //!   types.
+  template <typename KeyInputIteratorT,
+            typename KeyOutputIteratorT,
+            typename NumItemsT,
+            typename NumOutItemsT,
+            typename DecomposerT,
+            typename EnvT = ::cuda::std::execution::env<>>
+  CUB_RUNTIME_FUNCTION static //
+    ::cuda::std::enable_if_t<
+      !::cuda::std::execution::__queryable_with<DecomposerT, ::cuda::execution::__get_requirements_t>,
+      cudaError_t>
+    MaxKeys(void* d_temp_storage,
+            size_t& temp_storage_bytes,
+            KeyInputIteratorT d_keys_in,
+            KeyOutputIteratorT d_keys_out,
+            NumItemsT num_items,
+            NumOutItemsT k,
+            DecomposerT decomposer,
+            EnvT env = {})
+  {
+    _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceTopK::MaxKeys");
+    using key_t              = detail::it_value_t<KeyInputIteratorT>;
+    using decomposer_check_t = detail::radix::decomposer_check_t<key_t, DecomposerT>;
+
+    static_assert(decomposer_check_t::value,
+                  "DecomposerT must be a callable object returning a tuple of references to arithmetic types");
+
+    if constexpr (decomposer_check_t::value)
+    {
+      return detail::dispatch_topk_hub<detail::topk::select::max>(
+        d_temp_storage,
+        temp_storage_bytes,
+        d_keys_in,
+        d_keys_out,
+        static_cast<NullType*>(nullptr),
+        static_cast<NullType*>(nullptr),
+        num_items,
+        k,
+        decomposer,
+        ::cuda::std::move(env));
+    }
   }
 
   //! @rst
@@ -533,7 +728,57 @@ struct DeviceTopK
       static_cast<NullType*>(nullptr),
       num_items,
       k,
+      detail::identity_decomposer_t{},
       ::cuda::std::move(env));
+  }
+
+  //! @tparam DecomposerT
+  //!   **[inferred]** Type of a callable object responsible for decomposing a key into a tuple of references to its
+  //!   constituent arithmetic types.
+  //!
+  //! @param decomposer
+  //!   Callable object responsible for decomposing a key into a tuple of references to its constituent arithmetic
+  //!   types.
+  template <typename KeyInputIteratorT,
+            typename KeyOutputIteratorT,
+            typename NumItemsT,
+            typename NumOutItemsT,
+            typename DecomposerT,
+            typename EnvT = ::cuda::std::execution::env<>>
+  CUB_RUNTIME_FUNCTION static //
+    ::cuda::std::enable_if_t<
+      !::cuda::std::execution::__queryable_with<DecomposerT, ::cuda::execution::__get_requirements_t>,
+      cudaError_t>
+    MinKeys(void* d_temp_storage,
+            size_t& temp_storage_bytes,
+            KeyInputIteratorT d_keys_in,
+            KeyOutputIteratorT d_keys_out,
+            NumItemsT num_items,
+            NumOutItemsT k,
+            DecomposerT decomposer,
+            EnvT env = {})
+  {
+    _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceTopK::MinKeys");
+    using key_t              = detail::it_value_t<KeyInputIteratorT>;
+    using decomposer_check_t = detail::radix::decomposer_check_t<key_t, DecomposerT>;
+
+    static_assert(decomposer_check_t::value,
+                  "DecomposerT must be a callable object returning a tuple of references to arithmetic types");
+
+    if constexpr (decomposer_check_t::value)
+    {
+      return detail::dispatch_topk_hub<detail::topk::select::min>(
+        d_temp_storage,
+        temp_storage_bytes,
+        d_keys_in,
+        d_keys_out,
+        static_cast<NullType*>(nullptr),
+        static_cast<NullType*>(nullptr),
+        num_items,
+        k,
+        decomposer,
+        ::cuda::std::move(env));
+    }
   }
 };
 

@@ -18,6 +18,7 @@
 #include <cub/block/block_load.cuh>
 #include <cub/block/block_scan.cuh>
 #include <cub/block/block_store.cuh>
+#include <cub/block/radix_rank_sort_operations.cuh>
 #include <cub/util_type.cuh>
 
 CUB_NAMESPACE_BEGIN
@@ -55,7 +56,47 @@ struct AgentTopKPolicy
   static constexpr BlockScanAlgorithm SCAN_ALGORITHM = ScanAlgorithm;
 };
 
-template <typename KeyInT, typename OffsetT, typename OutOffsetT>
+template <typename T, int BitsPerPass>
+_CCCL_HOST_DEVICE _CCCL_FORCEINLINE constexpr int calc_num_passes();
+
+template <typename T, int BitsPerPass>
+_CCCL_HOST_DEVICE _CCCL_FORCEINLINE constexpr int calc_start_bit(const int pass);
+
+template <typename KeyT, int BitsPerPass, bool IsFundamental = detail::radix::is_fundamental_type<KeyT>::value>
+struct key_prefix_storage_t;
+
+template <typename KeyT, int BitsPerPass>
+struct key_prefix_storage_t<KeyT, BitsPerPass, true>
+{
+  using bits_t = typename Traits<KeyT>::UnsignedBits;
+  bits_t bits;
+};
+
+template <typename KeyT, int BitsPerPass>
+struct key_prefix_storage_t<KeyT, BitsPerPass, false>
+{
+  static constexpr int max_passes = calc_num_passes<KeyT, BitsPerPass>();
+  unsigned int digits[max_passes];
+};
+
+template <typename KeyT, int BitsPerPass>
+_CCCL_DEVICE _CCCL_FORCEINLINE void set_kth_key_bits(
+  key_prefix_storage_t<KeyT, BitsPerPass>& prefix, const int total_bits, const int pass, const unsigned int bucket)
+{
+  static_cast<void>(total_bits);
+  if constexpr (detail::radix::is_fundamental_type<KeyT>::value)
+  {
+    using bits_t      = typename Traits<KeyT>::UnsignedBits;
+    const int bit_pos = calc_start_bit<KeyT, BitsPerPass>(pass);
+    prefix.bits |= static_cast<bits_t>(bucket) << bit_pos;
+  }
+  else
+  {
+    prefix.digits[pass] = bucket;
+  }
+}
+
+template <typename KeyInT, typename OffsetT, typename OutOffsetT, int BitsPerPass>
 struct alignas(128) Counter
 {
   // We are processing the items in multiple passes, from most-significant to least-significant bits. In each pass, we
@@ -72,7 +113,7 @@ struct alignas(128) Counter
   // element is a result (written to `out`), a candidate for next pass (written to
   // `out_buf`), or not useful (discarded). The bits that are not yet processed do not
   // matter for this purpose.
-  typename Traits<KeyInT>::UnsignedBits kth_key_bits;
+  key_prefix_storage_t<KeyInT, BitsPerPass> kth_key_bits;
 
   // Record how many elements have passed filtering. It's used to determine the position
   // in the `out_buf` where an element should be written.
@@ -112,6 +153,12 @@ _CCCL_HOST_DEVICE _CCCL_FORCEINLINE constexpr int calc_num_passes(int bits_per_p
   return ::cuda::ceil_div<int>(sizeof(T) * 8, bits_per_pass);
 }
 
+template <int BitsPerPass>
+_CCCL_HOST_DEVICE _CCCL_FORCEINLINE int calc_num_passes(const int total_bits)
+{
+  return ::cuda::ceil_div<int>(total_bits, BitsPerPass);
+}
+
 // Calculates the starting bit for a given pass (bit 0 is the least significant (rightmost) bit).
 // We process the input from the most to the least significant bit. This way, we can skip some passes in the end.
 template <typename T, int BitsPerPass>
@@ -125,12 +172,31 @@ _CCCL_HOST_DEVICE _CCCL_FORCEINLINE constexpr int calc_start_bit(const int pass)
   return start_bit;
 }
 
+template <int BitsPerPass>
+_CCCL_HOST_DEVICE _CCCL_FORCEINLINE int calc_start_bit(const int total_bits, const int pass)
+{
+  int start_bit = total_bits - (pass + 1) * BitsPerPass;
+  if (start_bit < 0)
+  {
+    start_bit = 0;
+  }
+  return start_bit;
+}
+
 // Used in the bin ID calculation to exclude bits unrelated to the current pass
 template <typename T, int BitsPerPass>
 _CCCL_HOST_DEVICE _CCCL_FORCEINLINE constexpr unsigned calc_mask(const int pass)
 {
   int num_bits = calc_start_bit<T, BitsPerPass>(pass - 1) - calc_start_bit<T, BitsPerPass>(pass);
   return (1 << num_bits) - 1;
+}
+
+template <int BitsPerPass>
+_CCCL_HOST_DEVICE _CCCL_FORCEINLINE unsigned calc_mask(const int total_bits, const int pass)
+{
+  const int num_bits =
+    calc_start_bit<BitsPerPass>(total_bits, pass - 1) - calc_start_bit<BitsPerPass>(total_bits, pass);
+  return (1u << num_bits) - 1u;
 }
 
 //! @brief AgentTopK implements a stateful abstraction of CUDA thread blocks for participating in
@@ -227,6 +293,7 @@ struct AgentTopK
   OffsetT num_items; // Total number of input items
   OutOffsetT k; // Total number of output items
   OffsetT buffer_length; // Size of the buffer for storing intermediate candidates
+  int total_bits; // Total number of key bits considered
   ExtractBinOpT extract_bin_op; // The operation for bin
   IdentifyCandidatesOpT identify_candidates_op; // The operation for filtering
 
@@ -272,6 +339,7 @@ struct AgentTopK
     OffsetT num_items,
     OutOffsetT k,
     OffsetT buffer_length,
+    int total_bits,
     ExtractBinOpT extract_bin_op,
     IdentifyCandidatesOpT identify_candidates_op)
       : temp_storage(temp_storage.Alias())
@@ -282,6 +350,7 @@ struct AgentTopK
       , num_items(num_items)
       , k(k)
       , buffer_length(buffer_length)
+      , total_bits(total_bits)
       , extract_bin_op(extract_bin_op)
       , identify_candidates_op(identify_candidates_op)
   {}
@@ -391,7 +460,7 @@ struct AgentTopK
     key_in_t* out_buf,
     OffsetT* out_idx_buf,
     OffsetT previous_len,
-    Counter<key_in_t, OffsetT, OutOffsetT>* counter,
+    Counter<key_in_t, OffsetT, OutOffsetT, bits_per_pass>* counter,
     OffsetT* histogram,
     bool early_stop,
     bool load_from_original_input)
@@ -545,7 +614,7 @@ struct AgentTopK
 
   // Identify the bucket that the k-th value falls into
   _CCCL_DEVICE _CCCL_FORCEINLINE void
-  choose_bucket(Counter<key_in_t, OffsetT, OutOffsetT>* counter, const OutOffsetT k, const int pass)
+  choose_bucket(Counter<key_in_t, OffsetT, OutOffsetT, bits_per_pass>* counter, const OutOffsetT k, const int pass)
   {
     // Initialize histogram bin counts to zeros
     int histo_offset = 0;
@@ -563,11 +632,10 @@ struct AgentTopK
         counter->k = k - prev;
 
         // The number of candidates in the next pass
-        counter->len                                   = cur - prev;
-        typename Traits<key_in_t>::UnsignedBits bucket = bin_idx;
+        counter->len              = cur - prev;
+        const unsigned int bucket = static_cast<unsigned int>(bin_idx);
         // Update the "splitter" key by adding the radix digit of the k-th item bin of this pass
-        const int start_bit = calc_start_bit<key_in_t, bits_per_pass>(pass);
-        counter->kth_key_bits |= bucket << start_bit;
+        set_kth_key_bits<key_in_t, bits_per_pass>(counter->kth_key_bits, total_bits, pass, bucket);
       }
     };
 
@@ -584,7 +652,11 @@ struct AgentTopK
   }
 
   _CCCL_DEVICE _CCCL_FORCEINLINE void invoke_last_filter(
-    key_in_t* in_buf, OffsetT* in_idx_buf, Counter<key_in_t, OffsetT, OutOffsetT>* counter, OutOffsetT k, int pass)
+    key_in_t* in_buf,
+    OffsetT* in_idx_buf,
+    Counter<key_in_t, OffsetT, OutOffsetT, bits_per_pass>* counter,
+    OutOffsetT k,
+    int pass)
   {
     const bool load_from_original_input = (pass <= 1) || counter->previous_len > buffer_length;
     const OffsetT current_len           = load_from_original_input ? num_items : counter->previous_len;
@@ -647,7 +719,7 @@ struct AgentTopK
     OffsetT* in_idx_buf,
     key_in_t* out_buf,
     OffsetT* out_idx_buf,
-    Counter<key_in_t, OffsetT, OutOffsetT>* counter,
+    Counter<key_in_t, OffsetT, OutOffsetT, bits_per_pass>* counter,
     OffsetT* histogram,
     int pass)
   {

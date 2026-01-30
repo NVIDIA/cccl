@@ -37,62 +37,154 @@ CUB_NAMESPACE_BEGIN
 namespace detail::topk
 {
 // Get the bin ID from the value of element
-template <typename T, select SelectDirection, int BitsPerPass>
-struct extract_bin_op_t
-{
-  int pass{};
-  int start_bit;
-  unsigned mask;
+template <typename T,
+          select SelectDirection,
+          int BitsPerPass,
+          typename DecomposerT,
+          bool IsFundamental = detail::radix::is_fundamental_type<T>::value>
+struct extract_bin_op_t;
 
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE extract_bin_op_t(int pass)
-      : pass(pass)
-  {
-    start_bit = calc_start_bit<T, BitsPerPass>(pass);
-    mask      = calc_mask<T, BitsPerPass>(pass);
-  }
+template <typename T, select SelectDirection, int BitsPerPass, typename DecomposerT>
+struct extract_bin_op_t<T, SelectDirection, BitsPerPass, DecomposerT, true>
+{
+  static constexpr bool is_descending = SelectDirection != select::min;
+  using bit_ordered_type              = typename Traits<T>::UnsignedBits;
+
+  int start_bit{};
+  unsigned mask{};
+  DecomposerT decomposer{};
+
+  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE extract_bin_op_t(int pass, int total_bits, DecomposerT decomposer)
+      : start_bit(calc_start_bit<BitsPerPass>(total_bits, pass))
+      , mask(calc_mask<BitsPerPass>(total_bits, pass))
+      , decomposer(decomposer)
+  {}
 
   _CCCL_HOST_DEVICE _CCCL_FORCEINLINE int operator()(T key) const
   {
-    auto bits = reinterpret_cast<typename Traits<T>::UnsignedBits&>(key);
-    bits      = Traits<T>::TwiddleIn(bits);
-    if constexpr (SelectDirection != select::min)
-    {
-      bits = ~bits;
-    }
-    int bucket = (bits >> start_bit) & mask;
-    return bucket;
+    bit_ordered_type bits = reinterpret_cast<bit_ordered_type&>(key);
+    bits                  = RadixSortTwiddle<is_descending, T>::In(bits, decomposer);
+    return (bits >> start_bit) & mask;
+  }
+};
+
+template <typename T, select SelectDirection, int BitsPerPass, typename DecomposerT>
+struct extract_bin_op_t<T, SelectDirection, BitsPerPass, DecomposerT, false>
+{
+  static constexpr bool is_descending = SelectDirection != select::min;
+  using radix_traits_t                = detail::radix::traits_t<T>;
+  using bit_ordered_type              = typename radix_traits_t::bit_ordered_type;
+  using digit_extractor_t = typename radix_traits_t::template digit_extractor_t<ShiftDigitExtractor<T>, DecomposerT>;
+
+  DecomposerT decomposer{};
+  digit_extractor_t digit_extractor;
+
+  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE extract_bin_op_t(int pass, int total_bits, DecomposerT decomposer)
+      : decomposer(decomposer)
+      , digit_extractor(radix_traits_t::template digit_extractor<ShiftDigitExtractor<T>>(
+          calc_start_bit<BitsPerPass>(total_bits, pass),
+          calc_start_bit<BitsPerPass>(total_bits, pass - 1) - calc_start_bit<BitsPerPass>(total_bits, pass),
+          decomposer))
+  {}
+
+  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE int operator()(T key) const
+  {
+    bit_ordered_type ordered = key;
+    ordered                  = RadixSortTwiddle<is_descending, T>::In(ordered, decomposer);
+    return static_cast<int>(digit_extractor.Digit(ordered));
   }
 };
 
 // Check if the input element is still a candidate for the target pass.
-template <typename T, select SelectDirection, int BitsPerPass>
-struct identify_candidates_op_t
+template <typename T,
+          select SelectDirection,
+          int BitsPerPass,
+          typename DecomposerT,
+          bool IsFundamental = detail::radix::is_fundamental_type<T>::value>
+struct identify_candidates_op_t;
+
+template <typename T, select SelectDirection, int BitsPerPass, typename DecomposerT>
+struct identify_candidates_op_t<T, SelectDirection, BitsPerPass, DecomposerT, true>
 {
-  using unsigned_bits_t = typename Traits<T>::UnsignedBits;
-  unsigned_bits_t* kth_key_bits;
-  int start_bit;
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE identify_candidates_op_t(unsigned_bits_t* kth_key_bits, int pass)
+  static constexpr bool is_descending = SelectDirection != select::min;
+  using bit_ordered_type              = typename Traits<T>::UnsignedBits;
+  using key_prefix_t                  = key_prefix_storage_t<T, BitsPerPass>;
+
+  key_prefix_t* kth_key_bits{};
+  int start_bit{};
+  DecomposerT decomposer{};
+
+  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE
+  identify_candidates_op_t(key_prefix_t* kth_key_bits, int pass, int total_bits, DecomposerT decomposer)
       : kth_key_bits(kth_key_bits)
-  {
-    start_bit = calc_start_bit<T, BitsPerPass>(pass - 1);
-  }
+      , start_bit(calc_start_bit<BitsPerPass>(total_bits, pass - 1))
+      , decomposer(decomposer)
+  {}
 
   _CCCL_HOST_DEVICE _CCCL_FORCEINLINE candidate_class operator()(T key) const
   {
-    auto bits = reinterpret_cast<unsigned_bits_t&>(key);
-    bits      = Traits<T>::TwiddleIn(bits);
+    bit_ordered_type bits = reinterpret_cast<bit_ordered_type&>(key);
+    bits                  = RadixSortTwiddle<is_descending, T>::In(bits, decomposer);
+    bits                  = (bits >> start_bit) << start_bit;
 
-    if constexpr (SelectDirection != select::min)
-    {
-      bits = ~bits;
-    }
-
-    bits = (bits >> start_bit) << start_bit;
-
-    return (bits < *kth_key_bits) ? candidate_class::selected
-         : (bits == *kth_key_bits)
+    return (bits < kth_key_bits->bits) ? candidate_class::selected
+         : (bits == kth_key_bits->bits)
            ? candidate_class::candidate
            : candidate_class::rejected;
+  }
+};
+
+template <typename T, select SelectDirection, int BitsPerPass, typename DecomposerT>
+struct identify_candidates_op_t<T, SelectDirection, BitsPerPass, DecomposerT, false>
+{
+  static constexpr bool is_descending = SelectDirection != select::min;
+  using radix_traits_t                = detail::radix::traits_t<T>;
+  using bit_ordered_type              = typename radix_traits_t::bit_ordered_type;
+  using key_prefix_t                  = key_prefix_storage_t<T, BitsPerPass>;
+
+  key_prefix_t* kth_key_bits{};
+  int pass{};
+  int total_bits{};
+  DecomposerT decomposer{};
+
+  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE
+  identify_candidates_op_t(key_prefix_t* kth_key_bits, int pass, int total_bits, DecomposerT decomposer)
+      : kth_key_bits(kth_key_bits)
+      , pass(pass)
+      , total_bits(total_bits)
+      , decomposer(decomposer)
+  {}
+
+  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE candidate_class operator()(T key) const
+  {
+    if (pass <= 0)
+    {
+      return candidate_class::candidate;
+    }
+
+    bit_ordered_type ordered = key;
+    ordered                  = RadixSortTwiddle<is_descending, T>::In(ordered, decomposer);
+
+    for (int prefix_pass = 0; prefix_pass < pass; ++prefix_pass)
+    {
+      const int start_bit = calc_start_bit<BitsPerPass>(total_bits, prefix_pass);
+      const int num_bits =
+        calc_start_bit<BitsPerPass>(total_bits, prefix_pass - 1) - calc_start_bit<BitsPerPass>(total_bits, prefix_pass);
+      auto extractor =
+        radix_traits_t::template digit_extractor<ShiftDigitExtractor<T>>(start_bit, num_bits, decomposer);
+      const unsigned int digit = static_cast<unsigned int>(extractor.Digit(ordered));
+      const unsigned int kth   = kth_key_bits->digits[prefix_pass];
+      if (digit < kth)
+      {
+        return candidate_class::selected;
+      }
+      if (digit > kth)
+      {
+        return candidate_class::rejected;
+      }
+    }
+
+    return candidate_class::candidate;
   }
 };
 
@@ -120,11 +212,15 @@ __launch_bounds__(int(PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10}).block
     OffsetT* in_idx_buf,
     KeyInT* out_buf,
     OffsetT* out_idx_buf,
-    Counter<it_value_t<KeyInputIteratorT>, OffsetT, OutOffsetT>* counter,
+    Counter<it_value_t<KeyInputIteratorT>,
+            OffsetT,
+            OutOffsetT,
+            PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10}).bits_per_pass>* counter,
     OffsetT* histogram,
     OffsetT num_items,
     OutOffsetT k,
     OffsetT buffer_length,
+    int total_bits,
     ExtractBinOpT extract_bin_op,
     IdentifyCandidatesOpT identify_candidates_op,
     int pass)
@@ -157,6 +253,7 @@ __launch_bounds__(int(PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10}).block
     num_items,
     k,
     buffer_length,
+    total_bits,
     extract_bin_op,
     identify_candidates_op)
     .template invoke_filter_and_histogram<IsFirstPass>(
@@ -183,10 +280,14 @@ __launch_bounds__(int(PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10}).block
     ValueOutputIteratorT d_values_out,
     KeyInT* in_buf,
     OffsetT* in_idx_buf,
-    Counter<it_value_t<KeyInputIteratorT>, OffsetT, OutOffsetT>* counter,
+    Counter<it_value_t<KeyInputIteratorT>,
+            OffsetT,
+            OutOffsetT,
+            PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10}).bits_per_pass>* counter,
     OffsetT num_items,
     OutOffsetT k,
     OffsetT buffer_length,
+    int total_bits,
     IdentifyCandidatesOpT identify_candidates_op,
     int pass)
 {
@@ -219,6 +320,7 @@ __launch_bounds__(int(PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10}).block
     num_items,
     k,
     buffer_length,
+    total_bits,
     extract_bin_op_t{},
     identify_candidates_op)
     .invoke_last_filter(in_buf, in_idx_buf, counter, k, pass);
@@ -244,6 +346,10 @@ __launch_bounds__(int(PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10}).block
 //!
 //! @tparam OutOffsetT
 //!  Data Type for variables: k
+//!
+//! @tparam DecomposerT
+//!   Implementation detail, do not specify directly, requirements on the content of this type are subject to breaking
+//!   change.
 template <select SelectDirection,
           typename KeyInputIteratorT,
           typename KeyOutputIteratorT,
@@ -251,6 +357,7 @@ template <select SelectDirection,
           typename ValueOutputIteratorT,
           typename OffsetT,
           typename OutOffsetT,
+          typename DecomposerT           = detail::identity_decomposer_t,
           typename PolicySelector        = policy_selector_from_types<it_value_t<KeyInputIteratorT>>,
           typename KernelLauncherFactory = CUB_DETAIL_DEFAULT_KERNEL_LAUNCHER_FACTORY>
 #if _CCCL_HAS_CONCEPTS()
@@ -265,6 +372,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
   ValueOutputIteratorT d_values_out,
   OffsetT num_items,
   OutOffsetT k,
+  DecomposerT decomposer,
   cudaStream_t stream,
   PolicySelector policy_selector         = {},
   KernelLauncherFactory launcher_factory = {})
@@ -301,19 +409,21 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
     constexpr int bits_per_pass                               = active_policy.bits_per_pass;
     constexpr int tile_size                                   = block_threads * items_per_thread;
     const auto num_tiles      = static_cast<unsigned int>(::cuda::ceil_div(num_items, tile_size));
-    constexpr int num_passes  = calc_num_passes<key_in_t>(bits_per_pass);
+    const int total_bits      = detail::radix::traits_t<key_in_t>::default_end_bit(decomposer);
+    const int num_passes      = calc_num_passes<bits_per_pass>(total_bits);
     constexpr int num_buckets = 1 << bits_per_pass;
 
     // Define operators
-    using identify_candidates_op = identify_candidates_op_t<key_in_t, SelectDirection, active_policy.bits_per_pass>;
-    using extract_bin_op         = extract_bin_op_t<key_in_t, SelectDirection, active_policy.bits_per_pass>;
+    using identify_candidates_op = identify_candidates_op_t<key_in_t, SelectDirection, bits_per_pass, DecomposerT>;
+    using extract_bin_op         = extract_bin_op_t<key_in_t, SelectDirection, bits_per_pass, DecomposerT>;
 
     // We are capping k at a maximum of num_items
     using common_offset_t = ::cuda::std::common_type_t<OffsetT, OutOffsetT>;
     k = static_cast<OutOffsetT>((::cuda::std::min) (common_offset_t{k}, static_cast<common_offset_t>(num_items)));
 
     // Specify temporary storage allocation requirements
-    const size_t size_counter   = sizeof(Counter<key_in_t, OffsetT, OutOffsetT>);
+    using counter_t             = Counter<key_in_t, OffsetT, OutOffsetT, bits_per_pass>;
+    const size_t size_counter   = sizeof(counter_t);
     const size_t size_histogram = num_buckets * sizeof(OffsetT);
     const OffsetT candidate_buffer_length =
       (::cuda::std::max) (OffsetT{1}, num_items / coefficient_for_candidate_buffer);
@@ -392,18 +502,18 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
 #endif // CUB_DEBUG_LOG
 
     // Initialize address variables
-    Counter<key_in_t, OffsetT, OutOffsetT>* counter = static_cast<decltype(counter)>(allocations[0]);
-    OffsetT* histogram                              = static_cast<decltype(histogram)>(allocations[1]);
-    key_in_t* in_buf                                = nullptr;
-    key_in_t* out_buf                               = nullptr;
-    OffsetT* in_idx_buf                             = nullptr;
-    OffsetT* out_idx_buf                            = nullptr;
-    int pass                                        = 0;
+    counter_t* counter   = static_cast<counter_t*>(allocations[0]);
+    OffsetT* histogram   = static_cast<decltype(histogram)>(allocations[1]);
+    key_in_t* in_buf     = nullptr;
+    key_in_t* out_buf    = nullptr;
+    OffsetT* in_idx_buf  = nullptr;
+    OffsetT* out_idx_buf = nullptr;
+    int pass             = 0;
     for (; pass < num_passes; pass++)
     {
       // Set operator
-      extract_bin_op extract_op(pass);
-      identify_candidates_op identify_op(&counter->kth_key_bits, pass);
+      extract_bin_op extract_op(pass, total_bits, decomposer);
+      identify_candidates_op identify_op(&counter->kth_key_bits, pass, total_bits, decomposer);
 
       // Initialize address variables
       in_buf  = static_cast<key_in_t*>(pass % 2 == 0 ? allocations[2] : allocations[3]);
@@ -458,6 +568,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
                       num_items,
                       k,
                       candidate_buffer_length,
+                      total_bits,
                       extract_op,
                       identify_op,
                       pass)))
@@ -483,6 +594,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
                       num_items,
                       k,
                       candidate_buffer_length,
+                      total_bits,
                       extract_op,
                       identify_op,
                       pass)))
@@ -503,7 +615,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
       key_in_t,
       identify_candidates_op>;
 
-    identify_candidates_op identify_op(&counter->kth_key_bits, pass);
+    identify_candidates_op identify_op(&counter->kth_key_bits, pass, total_bits, decomposer);
     int last_filter_kernel_blocks_per_sm = 0;
     if (const auto error = CubDebug(
           launcher_factory.MaxSmOccupancy(last_filter_kernel_blocks_per_sm, topk_last_filter_kernel, block_threads)))
@@ -525,6 +637,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
                   num_items,
                   k,
                   candidate_buffer_length,
+                  total_bits,
                   identify_op,
                   pass)))
     {
