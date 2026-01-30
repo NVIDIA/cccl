@@ -30,7 +30,7 @@ struct cauchy_cdf
   __host__ __device__ double operator()(double x, const P& p) const
   {
     // CDF of Cauchy distribution: F(x; a, b) = (1/π) * arctan((x - a) / b) + 0.5
-    return (1.0 / cuda::std::numbers::pi) * cuda::std::atan((x - p.a()) / p.b()) + 0.5;
+    return (1.0 / cuda::std::__numbers<double>::__pi()) * cuda::std::atan((x - p.a()) / p.b()) + 0.5;
   }
 };
 
