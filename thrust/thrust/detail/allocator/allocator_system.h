@@ -31,11 +31,11 @@
 #endif // no system header
 
 #include <thrust/detail/type_traits.h>
-#include <thrust/detail/type_traits/pointer_traits.h>
 #include <thrust/iterator/iterator_traits.h>
 
 #include <cuda/std/__iterator/iterator_traits.h>
 #include <cuda/std/__memory/allocator_traits.h>
+#include <cuda/std/__memory/pointer_traits.h>
 #include <cuda/std/__type_traits/add_lvalue_reference.h>
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/integral_constant.h>

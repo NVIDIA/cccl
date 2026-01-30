@@ -25,9 +25,11 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
-#include <thrust/detail/type_traits/pointer_traits.h>
+
 #include <thrust/mr/memory_resource.h>
 #include <thrust/mr/validator.h>
+
+#include <cuda/std/__memory/pointer_traits.h>
 
 THRUST_NAMESPACE_BEGIN
 namespace mr

@@ -34,7 +34,6 @@
 #include <thrust/detail/raw_reference_cast.h>
 #include <thrust/detail/reference.h>
 #include <thrust/detail/temporary_buffer.h>
-#include <thrust/detail/type_traits/pointer_traits.h>
 
 #include <cuda/std/__memory/pointer_traits.h>
 

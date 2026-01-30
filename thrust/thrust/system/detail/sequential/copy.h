@@ -30,12 +30,13 @@
 #  pragma system_header
 #endif // no system header
 #include <thrust/detail/type_traits.h>
-#include <thrust/detail/type_traits/pointer_traits.h>
 #include <thrust/iterator/iterator_traits.h>
 #include <thrust/system/detail/sequential/execution_policy.h>
 #include <thrust/system/detail/sequential/general_copy.h>
 #include <thrust/system/detail/sequential/trivial_copy.h>
 #include <thrust/type_traits/is_trivially_relocatable.h>
+
+#include <cuda/std/__memory/pointer_traits.h>
 
 THRUST_NAMESPACE_BEGIN
 namespace system::detail::sequential

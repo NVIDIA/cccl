@@ -30,6 +30,7 @@
 #include <thrust/detail/type_traits.h>
 #include <thrust/detail/type_traits/has_nested_type.h>
 
+#include <cuda/std/__memory/pointer_traits.h>
 #include <cuda/std/__tuple_dir/apply.h>
 #include <cuda/std/__type_traits/add_lvalue_reference.h>
 #include <cuda/std/__type_traits/enable_if.h>
@@ -75,7 +76,7 @@ struct raw_reference_impl : ::cuda::std::add_lvalue_reference<T>
 
 template <typename T>
 struct raw_reference_impl<T, ::cuda::std::enable_if_t<is_wrapped_reference<::cuda::std::remove_cv_t<T>>::value>>
-    : ::cuda::std::add_lvalue_reference<typename pointer_element<typename T::pointer>::type>
+    : ::cuda::std::add_lvalue_reference<typename ::cuda::std::pointer_traits<typename T::pointer>::element_type>
 {};
 
 template <typename T>

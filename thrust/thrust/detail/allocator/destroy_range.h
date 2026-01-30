@@ -28,11 +28,11 @@
 
 #include <thrust/detail/allocator/allocator_system.h>
 #include <thrust/detail/allocator/destroy_range.h>
-#include <thrust/detail/type_traits/pointer_traits.h>
 #include <thrust/for_each.h>
 
 #include <cuda/std/__host_stdlib/memory>
 #include <cuda/std/__memory/allocator_traits.h>
+#include <cuda/std/__memory/pointer_traits.h>
 
 THRUST_NAMESPACE_BEGIN
 namespace detail
@@ -78,7 +78,7 @@ template <typename Allocator, typename Pointer, typename Size>
 _CCCL_HOST_DEVICE void
 destroy_range([[maybe_unused]] Allocator& a, [[maybe_unused]] Pointer p, [[maybe_unused]] Size n) noexcept
 {
-  using pe_t = typename pointer_element<Pointer>::type;
+  using pe_t = typename ::cuda::std::pointer_traits<Pointer>::element_type;
 
   // case 1: destroy via allocator
   if constexpr (has_effectful_member_destroy<Allocator, pe_t>)

@@ -35,6 +35,7 @@
 
 #include <thrust/binary_search.h>
 #include <thrust/detail/seq.h>
+#include <thrust/detail/type_traits/pointer_traits.h>
 #include <thrust/find.h>
 #include <thrust/host_vector.h>
 #include <thrust/mr/allocator.h>
@@ -46,7 +47,6 @@
 #include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__algorithm/min.h>
 #include <cuda/std/__host_stdlib/algorithm>
-#include <cuda/std/__memory/pointer_traits.h>
 #include <cuda/std/cassert>
 #include <cuda/std/cstdint>
 

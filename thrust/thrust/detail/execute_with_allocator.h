@@ -28,7 +28,6 @@
 
 #include <thrust/detail/execute_with_allocator_fwd.h>
 #include <thrust/detail/raw_pointer_cast.h>
-#include <thrust/detail/type_traits/pointer_traits.h>
 
 #include <cuda/__cmath/ceil_div.h>
 #include <cuda/std/__memory/allocator_traits.h>

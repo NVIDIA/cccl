@@ -26,8 +26,6 @@
 #  pragma system_header
 #endif // no system header
 
-#include <thrust/detail/type_traits/pointer_traits.h>
-
 #include <cuda/std/__memory/pointer_traits.h>
 
 THRUST_NAMESPACE_BEGIN
@@ -41,15 +39,15 @@ _CCCL_HOST_DEVICE auto raw_pointer_cast(Pointer ptr)
 template <typename ToPointer, typename FromPointer>
 _CCCL_HOST_DEVICE ToPointer reinterpret_pointer_cast(FromPointer ptr)
 {
-  using to_element = typename thrust::detail::pointer_element<ToPointer>::type;
-  return ToPointer(reinterpret_cast<to_element*>(thrust::raw_pointer_cast(ptr)));
+  using to_element = typename ::cuda::std::pointer_traits<ToPointer>::element_type;
+  return ToPointer(reinterpret_cast<to_element*>(::cuda::std::to_address(ptr)));
 }
 
 template <typename ToPointer, typename FromPointer>
 _CCCL_HOST_DEVICE ToPointer static_pointer_cast(FromPointer ptr)
 {
-  using to_element = typename thrust::detail::pointer_element<ToPointer>::type;
-  return ToPointer(static_cast<to_element*>(thrust::raw_pointer_cast(ptr)));
+  using to_element = typename ::cuda::std::pointer_traits<ToPointer>::element_type;
+  return ToPointer(static_cast<to_element*>(::cuda::std::to_address(ptr)));
 }
 
 THRUST_NAMESPACE_END

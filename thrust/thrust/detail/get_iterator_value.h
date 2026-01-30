@@ -25,7 +25,6 @@
 #  pragma system_header
 #endif // no system header
 
-#include <thrust/detail/type_traits/pointer_traits.h>
 #include <thrust/execution_policy.h>
 #include <thrust/iterator/iterator_traits.h>
 #include <thrust/system/detail/generic/memory.h> // for get_value()
